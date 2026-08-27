@@ -594,8 +594,12 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             sz = tocall/max(1.0, float(pot))
             # 상대 레인지는 '내가 관찰한 상대 추정치'로 모델링한다.
             # profile 은 나 자신이므로 여기 쓰면 내 블러프 성향을 상대에게 투영하게 된다.
-            bet_r = R.narrow_by_actions(opp_range, board,
-                                        [(street, 'bet', sz)], opp_est or None)
+            # perceived_range 를 써야 한다. narrow_by_actions 를 직접 부르면
+            # range_read 가 낮은 사람도 완전한 축소를 얻어, session 에서 걸러둔
+            # 인식 한계가 여기서 무효화된다.
+            # 인식 주체는 '나'(profile)다 — opp_est 는 상대 성향 모델링용이다.
+            bet_r = R.perceived_range(opp_range, board,
+                                      [(street, 'bet', sz)], profile)
             eq = bot.equity_vs_combos(hero, board,
                                       [bet_r] + [opp_range]*max(0, n_opp-1),
                                       sims=600)
