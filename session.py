@@ -16,14 +16,25 @@ def showdown(hole, board, contenders):
     ranked = sorted(contenders, key=lambda s: best5(hole[s]+board), reverse=True)
     return [(s, best5(hole[s]+board)) for s in ranked]
 
-def award_pots(contrib, hole, board, folded, stacks):
-    """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역"""
+def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
+    """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역
+
+    dead(안테 등 데드머니)는 **메인팟에만** 얹는다.
+    예전에는 각자 기여분(contrib)에 균등 분배했는데,
+    100 단위 게임에서 안테를 인원수로 나누면 나눠떨어지지 않아
+    스택에 51,370 같은 끝자리가 생겼다. 안테는 개인 기여가 아니라
+    팟 전체에 들어가는 돈이므로 기여분을 건드리면 안 된다.
+    """
     levels = sorted(set(v for v in contrib.values() if v > 0))
     won = {s: 0 for s in contrib}
     detail = []; prev = 0
+    first_pot = True
     for lv in levels:
         elig_all = [s for s, v in contrib.items() if v >= lv]
         amount = (lv - prev) * len(elig_all); prev = lv
+        if first_pot:
+            amount += int(dead)          # 데드머니는 메인팟에만
+            first_pot = False
         elig = [s for s in elig_all if s not in folded]
         if not elig:
             elig = elig_all
@@ -33,7 +44,10 @@ def award_pots(contrib, hole, board, folded, stacks):
             ranks = {s: best5(hole[s]+board) for s in elig}
             top = max(ranks.values())
             winners = [s for s in elig if ranks[s] == top]
-        share = amount // len(winners)
+        # 칩 단위(unit) 아래로는 쪼갤 수 없다. 실제 토너에서 300 을 둘이 나눠
+        # 150 씩 갖는 일은 없다 — 나눌 수 없는 칩은 한 명에게 간다.
+        u = max(1, int(unit))
+        share = (amount // len(winners) // u) * u
         rem = amount - share*len(winners)
         for i, w in enumerate(winners):
             won[w] += share + (rem if i == 0 else 0)
@@ -457,17 +471,7 @@ class HandRun:
                     'board': board, 'stacks': dict(h.stacks), 'hash': h.hash,
                     'full_log': getattr(self, 'full_log', []),
                     'pos': {k: v for k, v in h.pos.items()}}
-        c2 = dict(contrib)
-        if dead:                     # 안테는 데드머니 → 최저 레벨 팟에 합류
-            base = min([v for v in c2.values() if v > 0], default=0)
-            if base and c2:
-                # 정수 분배 + 나머지를 앞자리부터 1씩. 실수 나눗셈으로 나누면
-                # 나눠떨어지지 않을 때 나머지가 소멸해 칩 총량이 어긋난다.
-                ks = sorted(c2)
-                per, rem = divmod(int(dead), len(ks))
-                for i, k in enumerate(ks):
-                    c2[k] += per + (1 if i < rem else 0)
-                dead = 0
+        c2 = dict(contrib)          # 기여분은 그대로 둔다 (안테는 award_pots 에서 처리)
         # 쇼다운 관찰: 깐 패의 강도와 공격 여부
         try:
             import preflop as _pf
@@ -481,12 +485,13 @@ class HandRun:
             # 관찰 실패를 조용히 삼키면 장부가 안 쌓이고 리딩이 통째로 죽는다.
             h.book_errors = getattr(h, 'book_errors', [])
             h.book_errors.append('showdown: %r' % (_e,))
-        won, detail = award_pots(c2, h.hole, h.board, folded, h.stacks)
+        won, detail = award_pots(c2, h.hole, h.board, folded, h.stacks, dead,
+                                 unit=getattr(h, 'sb', 0) or 1)
         if not detail:
             return {'how': 'void', 'winners': [], 'pot': 0, 'showdown': False,
                     'board': board, 'stacks': dict(h.stacks), 'hash': h.hash}
-        if dead:
-            h.stacks[detail[-1]['winners'][0]] += dead
+        # dead 는 award_pots 가 메인팟에 얹어 이미 분배했다.
+        # 여기서 또 주면 안테가 두 번 지급되어 칩이 늘어난다.
         try:
             for k, v in h.stacks.items():
                 d = (v - self._before.get(k, v))/max(1, h.bb)

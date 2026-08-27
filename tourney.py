@@ -133,7 +133,10 @@ class Tournament:
         for p in newcomers:
             if not empty: break
             s = empty.pop(0)
-            self.stacks[s] = max(bb, int(round(p['stack_bb']*bb)))
+            # 칩 단위(sb)로 반올림한다. 실수 bb 를 그대로 환산하면
+            # 33,920 같은 끝자리가 생겨 실제 토너에 없는 액수가 나온다.
+            _unit = max(1, self.blinds()[0])
+            self.stacks[s] = max(bb, int(round(p['stack_bb']*bb/_unit))*_unit)
             # p 는 이미 완성된 개념 벡터 개인이다. 버리고 다시 뽑지 않는다.
             p.setdefault('label', p.get('type', 'TAG'))
             self.profiles[str(s)] = p
@@ -152,7 +155,10 @@ class Tournament:
         for s in picked:
             p = F.make_player(self.rng, s, avg, entries=self.entries,
                               buyin_level=self.buyin_level, aggr_bias=self.aggr_bias)
-            self.stacks[s] = max(bb, int(round(p['stack_bb']*bb)))
+            # 칩 단위(sb)로 반올림한다. 실수 bb 를 그대로 환산하면
+            # 33,920 같은 끝자리가 생겨 실제 토너에 없는 액수가 나온다.
+            _unit = max(1, self.blinds()[0])
+            self.stacks[s] = max(bb, int(round(p['stack_bb']*bb/_unit))*_unit)
             p.setdefault('label', p.get('type', 'TAG'))
             self.profiles[str(s)] = p
         self.notes.append('🔄 테이블 이동 — 상대 전원 교체 (%d명 착석)' % n_others)
