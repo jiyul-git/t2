@@ -447,16 +447,36 @@ def read_opponent(prof, opp_est):
     att = temper(prof, 'attention', 5.0)
     adp = temper(prof, 'adaptability', 5.0)
     rr  = sk(prof, 'range_read')
-    # 세 능력의 곱. 하나라도 낮으면 전체가 낮아진다.
-    ability = (min(1.0, att/8.0) * min(1.0, rr/8.0) * min(1.0, adp/8.0)) ** (1/3.0)
-    ability = max(0.0, min(1.0, (ability - 0.30) / 0.60))
-    if ability <= 0.0:
-        return neutral                      # 자기 패만 보고 치는 사람
+    stl = sk(prof, 'sizing_tell')
+
+    # ---------- 축별 독립 게이트 ----------
+    # 능력을 하나로 곱해 뭉치면 안 된다.
+    # '빈도는 못 세는데 사이즈에서 이상함을 느끼는' 사람이 실제로 있고,
+    # 그런 조합이 표현되지 않으면 성향이 죽는다.
+    # 각 축은 자기 능력에만 걸리고, 서로 독립이다.
+    #
+    # 계단식(문턱 넘으면 1, 아니면 0)도 안 된다. 3.9와 4.1 이 완전히
+    # 다른 사람이 되어버린다. 하한만 두고 그 위로는 연속 감쇠한다.
+    #   2 미만 → 0 (아예 못 봄) / 8 이상 → 1 (완전히 봄) / 사이는 선형
+    def _see(v):
+        return max(0.0, min(1.0, (v - 2.0) / 6.0))
+
+    see_freq = _see(att)      # 빈도(몇 % 로 치는가/접는가) — 세기만 하면 된다
+    see_line = _see(rr)       # 스트리트 구분·블러프 성향 — 레인지와 대조해야 안다
+    see_size = _see(stl)      # 사이즈의 의미 — 사이즈에 주목해야 안다
+
+    # 쓸 의지는 별개다. 볼 줄 알아도 자기 전략을 안 바꾸는 사람이 있다.
+    use = _see(adp)
+    if use <= 0.0:
+        return neutral                      # 알아도 안 바꾸는 사람
 
     data = min(1.0, conf) * min(1.0, n/12.0)
-    w = round(max(0.0, min(0.85, ability * data)), 3)
+    # w 는 '이 상대에 대해 조정할 여지'의 상한. 축별 게이트가 그 위에 곱해진다.
+    w = round(max(0.0, min(0.85, use * data)), 3)
     if w <= 0.0:
         return neutral
+    if max(see_freq, see_line, see_size) <= 0.0:
+        return neutral                      # 아무 축도 못 보는 사람
 
     g = lambda k, d: float(opp_est.get(k) if opp_est.get(k) is not None else d)
     ftb = g('ftb', 0.52)
@@ -466,27 +486,37 @@ def read_opponent(prof, opp_est):
     # '리버까지 안 접는' 사람은 완전히 다른 대응이 필요하다.
     fg = lambda v: max(-0.5, min(0.5, v - 0.52))
     return {'w': w,
-            'fold_gap': fg(ftb),                       # 전체 평균 (폴백)
-            'fold_gap_flop':  fg(g('ftb_flop', ftb)),
-            'fold_gap_turn':  fg(g('ftb_turn', ftb)),
-            'fold_gap_river': fg(g('ftb_river', ftb)),
-            # 프리플랍 공격성은 별도 축이다
-            'tb_gap':   max(-0.5, min(0.5, g('pf_3bet', 0.07) - 0.07)) * 4.0,
-            'f2tb_gap': fg(g('pf_fold_to_3bet', 0.55) + 0.52 - 0.55),
+            'see_freq': round(see_freq, 3), 'see_line': round(see_line, 3),
+            'see_size': round(see_size, 3),
+            'fold_gap': fg(ftb) * see_freq,            # 전체 평균 (폴백)
+            # 스트리트 구분은 레인지 리딩이 있어야 한다.
+            # 못 하는 사람은 전체 평균(fold_gap)만 보이고, 그것도 see_freq 만큼만.
+            'fold_gap_flop':  fg(g('ftb_flop', ftb)) * see_line
+                              + fg(ftb) * see_freq * (1.0 - see_line),
+            'fold_gap_turn':  fg(g('ftb_turn', ftb)) * see_line
+                              + fg(ftb) * see_freq * (1.0 - see_line),
+            'fold_gap_river': fg(g('ftb_river', ftb)) * see_line
+                              + fg(ftb) * see_freq * (1.0 - see_line),
+            # 프리플랍 공격성 — 빈도만 세면 되므로 see_freq
+            'tb_gap':   max(-0.5, min(0.5, g('pf_3bet', 0.07) - 0.07)) * 4.0 * see_freq,
+            'f2tb_gap': fg(g('pf_fold_to_3bet', 0.55) + 0.52 - 0.55) * see_freq,
             # 4벳 축. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
-            'fb_gap':   max(-0.5, min(0.5, g('pf_4bet', 0.04) - 0.04)) * 6.0,
-            'f2fb_gap': fg(g('pf_fold_to_4bet', 0.60) + 0.52 - 0.60),
+            'fb_gap':   max(-0.5, min(0.5, g('pf_4bet', 0.04) - 0.04)) * 6.0 * see_freq,
+            'f2fb_gap': fg(g('pf_fold_to_4bet', 0.60) + 0.52 - 0.60) * see_freq,
             # 사이즈 축.
             #  size_gap : 평균적으로 크게 치는가 (-1~+1)
             #  size_info: 사이즈에서 정보를 얻을 수 있는가 (0~1).
             #             항상 같은 사이즈만 치는 사람은 사이즈가 레인지를 안 나눈다.
             #             표본이 적어도 낮게 잡는다.
-            'size_gap':  max(-1.0, min(1.0, (g('sz_mean', 0.62) - 0.62)/0.45)),
+            # 사이즈 축은 sizing_tell 에만 걸린다.
+            # 빈도를 못 세는 사람이 사이즈에서 이상함을 느끼는 조합이 가능해야 한다.
+            'size_gap':  max(-1.0, min(1.0, (g('sz_mean', 0.62) - 0.62)/0.45)) * see_size,
+            # 분산 인식은 사이즈 인식의 상위 단계다 (제곱으로 더 가파르게)
             'size_info': (max(0.0, min(1.0, (g('sz_sd', 0.22) - 0.08)/0.35))
-                          * min(1.0, g('sz_n', 0)/8.0)),
-            'size_big':  max(0.0, min(1.0, g('sz_big', 0.15))),
+                          * min(1.0, g('sz_n', 0)/8.0)) * (see_size ** 2),
+            'size_big':  max(0.0, min(1.0, g('sz_big', 0.15))) * see_size,
             'size_river': g('sz_river', g('sz_mean', 0.62)),
-            'bluff_gap': max(-1.0, min(1.0, (bl - 4.5)/4.5)),
+            'bluff_gap': max(-1.0, min(1.0, (bl - 4.5)/4.5)) * see_line,
             'passive': max(-1.0, min(1.0, (5.0 - ag)/5.0)),
             'station': max(-0.5, min(0.5, 0.52 - ftb))}
 
