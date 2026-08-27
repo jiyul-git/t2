@@ -637,8 +637,14 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 dev = abs(sz_now - 0.6)                      # 표준 사이즈에서 벗어난 정도
                 trust *= (1.0 + 0.10*(stell - 5.0)/5.0 * min(2.0, dev/0.4))
             need -= trust * (read - 0.35)
-        # 최종 상한. 어떤 보정도 팟오즈를 배 이상 부풀리지 못한다.
-        need = max(0.01, min(0.95, min(need, need_true*1.75 + 0.05)))
+        # 상·하한. 상한은 팟오즈를 배 이상 부풀리지 못하게,
+        # 하한은 팟오즈의 절반 아래로 못 내려가게 한다.
+        # 예전엔 하한이 없어서 상대를 블러프로 크게 읽으면
+        # need 가 실제 팟오즈(32%)보다 낮은 19% 까지 떨어졌다.
+        # 리딩은 문턱을 조정하는 것이지 팟오즈를 뒤집는 게 아니다.
+        need = min(need, need_true*1.75 + 0.05)
+        need = max(need, need_true*0.55)
+        need = max(0.01, min(0.95, need))
         made_now = bot.made_strength(hero, board) if board else 0
         # 개인 행동 편향 — 같은 eq·같은 팟오즈라도 사람마다 다른 답을 낸다.
         # 이게 없으면 성향이 아무리 달라도 콜/폴드는 eq>=need 하나의 문턱으로 수렴해서
