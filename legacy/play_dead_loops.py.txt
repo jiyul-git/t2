@@ -1,0 +1,119 @@
+"""사용되지 않던 play.Hand.preflop/postflop 사본. session.HandRun._run 이 실제 경로.
+보존만 하고 import 하지 않는다. 되살릴 때는 session.py 와 반드시 대조할 것."""
+
+    def preflop(self):
+        rnd = RU.Round(None, [self.seat_of[p] for p in PRE if p in self.seat_of],
+                       self.stacks, self.bb)
+        sb_s, bb_s = self.seat_of.get('SB'), self.seat_of.get('BB')
+        for s, amt in [(sb_s, self.sb), (bb_s, self.bb + self.bb)]:   # BB + 안테
+            if s is None: continue
+            pay = min(amt, rnd.stacks[s]); rnd.stacks[s] -= pay
+            rnd.contrib[s] = rnd.contrib.get(s, 0) + min(pay, self.bb if s == bb_s else self.sb)
+            if s == bb_s: rnd.ante = pay - rnd.contrib[s]
+        rnd.current = self.bb; rnd.min_raise = self.bb
+        self.ante = self.bb
+        aggressor = None; limpers = []; callers = 0
+        while True:
+            s = rnd.needs_action()
+            if s is None: break
+            if s == self.hero: return rnd, aggressor, 'HERO'
+            pos = self.pos[s]; ax, _ = self.axes(s)
+            hand = self.hole[s]; bbs = rnd.stacks[s]/self.bb
+            tc = rnd.to_call(s)
+            try:
+                if aggressor is None and not limpers:
+                    a, sz = pf.open_decision({'type': ax['type']}, pos, bbs, hand, self.rng)
+                    if a == 'fold': rnd.apply(s, 'fold')
+                    elif a == 'limp':
+                        rnd.apply(s, 'call'); limpers.append(s)
+                    elif a == 'shove':
+                        rnd.apply(s, 'allin'); aggressor = s
+                    else:
+                        amt = RU.shape_size(self.bb*sz, ax['type'], self.rng)
+                        rnd.apply(s, 'raise', max(amt, rnd.current + rnd.min_raise)); aggressor = s
+                elif aggressor is None and limpers:
+                    a, sz = pf.iso_decision({'type': ax['type']}, pos, hand, len(limpers), bbs, self.rng)
+                    if a == 'fold': rnd.apply(s, 'fold')
+                    elif a == 'limp': rnd.apply(s, 'call'); limpers.append(s)
+                    else:
+                        amt = RU.shape_size(self.bb*sz, ax['type'], self.rng)
+                        rnd.apply(s, 'raise', max(amt, rnd.current + rnd.min_raise)); aggressor = s
+                else:
+                    open_bb = rnd.current/self.bb
+                    a, sz = pf.defend_decision({'type': ax['type']}, pos, self.pos[aggressor],
+                                               hand, bbs, open_bb, callers, self.rng)
+                    if a == 'fold': rnd.apply(s, 'fold')
+                    elif a == 'call': rnd.apply(s, 'call'); callers += 1
+                    elif a == 'shove': rnd.apply(s, 'allin'); aggressor = s
+                    else:
+                        amt = RU.shape_size(self.bb*sz*open_bb/2.5*2.5, ax['type'], self.rng)
+                        rnd.apply(s, 'raise', max(amt, rnd.current + rnd.min_raise))
+                        aggressor = s; callers = 0
+            except ValueError:
+                rnd.apply(s, 'call' if tc > 0 else 'check')
+        return rnd, aggressor, 'DONE'
+
+    # ---------- 포스트플랍 ----------
+    def postflop(self, live, contrib, pot, aggressor):
+        prev = []
+        for street, ncards in [('flop', 3), ('turn', 4), ('river', 5)]:
+            board = self.board[:ncards]
+            if len(live) < 2: break
+            order = [self.seat_of[p] for p in POST if p in self.seat_of and self.seat_of[p] in live]
+            rnd = RU.Round(None, order, self.stacks, self.bb)
+            while True:
+                s = rnd.needs_action()
+                if s is None: break
+                if s == self.hero: return rnd, board, 'HERO', street
+                ax, _ = self.axes(s)
+                behind = len([x for x in order if x not in rnd.acted and x != s and x not in rnd.folded])
+                n_opp = len(rnd.live()) - 1
+                key = s
+                my_r = R.preflop_range(ax['type'], self.pos[s],
+                                       'open' if s == aggressor else 'call',
+                                       self.bbs(s), set(board), opener_pos=self.pos.get(aggressor))
+                # 생존 상대 각각의 타입·액션으로 레인지를 구성해 합집합
+                opp_r = []
+                for o in rnd.live():
+                    if o == s: continue
+                    oax, _ = self.axes(o)
+                    o_act = 'open' if o == aggressor else 'call'
+                    orange = R.preflop_range(oax['type'], self.pos[o], o_act, self.bbs(o),
+                                             set(board), opener_pos=self.pos.get(aggressor))
+                    orange, note = RU.adjust_range_by_history(orange, self.dyn, o, board)
+                    opp_r.extend(orange)
+                if not opp_r:
+                    opp_r = R.preflop_range('TAG', 'BB', 'call', 30, set(board), opener_pos='CO')
+                if key not in self.plans or street == 'flop':
+                    self.plans[key] = PL.make_plan(self.hole[s], board, my_r, opp_r, ax,
+                                                   pot, rnd.stacks[s], street,
+                                                   seed=self.rng.randrange(10**6),
+                                                   n_opp=n_opp, to_act_behind=behind)
+                else:
+                    self.plans[key] = RU.revise_plan(self.plans[key], self.hole[s], board, my_r,
+                                                     opp_r, ax, pot, rnd.stacks[s], street,
+                                                     self.rng.randrange(10**6), n_opp, behind, prev)
+                tc = rnd.to_call(s)
+                act, eq, need = PL.act_with_plan(
+                    self.hole[s], board, ax, self.plans[key], pot, tc, rnd.stacks[s], street,
+                    initiative=RU.has_initiative(s, aggressor), oop=(POST.index(self.pos[s]) < 3),
+                    opp_range=opp_r, bf=self.bf(s), seed=self.rng.randrange(10**6),
+                    n_opp=n_opp, to_act_behind=behind)
+                a, amt = act
+                try:
+                    if a in ('bet', 'raise'):
+                        amt = RU.shape_size(amt, ax['type'], self.rng, pot=pot)
+                        rnd.apply(s, a, max(amt, rnd.current + rnd.min_raise) if rnd.current else amt)
+                        aggressor = s
+                    else:
+                        rnd.apply(s, a, amt)
+                except ValueError:
+                    rnd.apply(s, 'call' if tc > 0 else 'check')
+            for (x, a, amt) in rnd.log:
+                self.log.append((street, x, a, amt))
+            for k, v in rnd.contrib.items():
+                contrib[k] = contrib.get(k, 0) + v; pot += v
+                self.stacks[k] = rnd.stacks[k]
+            live = [x for x in rnd.live()]
+            prev = board
+        return None, self.board, 'DONE', 'river'

@@ -1,0 +1,501 @@
+"""제너레이터 기반 재개형 핸드 진행 + 쇼다운/사이드팟 정산 + 토너 세션."""
+import random, json, os, hashlib, itertools, zlib as _zlib
+import zlib as _zlib
+import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD
+from play import Hand, POST, PRE
+
+D = os.path.dirname(os.path.abspath(__file__))
+
+def best5(cards): return bot.eval7(cards)
+
+def _cache_key(street, seat, n):
+    return '%s|%s|%d' % (street, seat, n)
+
+def showdown(hole, board, contenders):
+    """사이드팟 포함 순위 판정. -> [(seat, rank)] 강한 순"""
+    ranked = sorted(contenders, key=lambda s: best5(hole[s]+board), reverse=True)
+    return [(s, best5(hole[s]+board)) for s in ranked]
+
+def award_pots(contrib, hole, board, folded, stacks):
+    """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역"""
+    levels = sorted(set(v for v in contrib.values() if v > 0))
+    won = {s: 0 for s in contrib}
+    detail = []; prev = 0
+    for lv in levels:
+        elig_all = [s for s, v in contrib.items() if v >= lv]
+        amount = (lv - prev) * len(elig_all); prev = lv
+        elig = [s for s in elig_all if s not in folded]
+        if not elig:
+            elig = elig_all
+        if len(elig) == 1:
+            winners = elig
+        else:
+            ranks = {s: best5(hole[s]+board) for s in elig}
+            top = max(ranks.values())
+            winners = [s for s in elig if ranks[s] == top]
+        share = amount // len(winners)
+        rem = amount - share*len(winners)
+        for i, w in enumerate(winners):
+            won[w] += share + (rem if i == 0 else 0)
+        detail.append({'amount': amount, 'eligible': elig, 'winners': winners})
+    for s, v in won.items(): stacks[s] += v
+    return won, detail
+
+
+class HandRun:
+    """히어로 차례에 yield하고 send()로 재개하는 핸드 진행기.
+       REPLAY: 이미 확정된 봇 결정은 재계산하지 않고 그대로 재생한다."""
+    def __init__(self, hand, decisions=None):
+        self.h = hand
+        self.REPLAY = list(decisions or [])
+        self.recorded = []
+        self._didx = 0
+        self.gen = self._run()
+        self.result = None
+        self._pot_at = {}          # street -> 스트리트 시작 시점 팟
+
+    def start(self):
+        try: return next(self.gen)
+        except StopIteration as e: return {'done': True, 'result': self.result}
+
+    def send(self, action, amount=0):
+        try: return self.gen.send((action, amount))
+        except StopIteration: return {'done': True, 'result': self.result}
+
+    # ---------- 내부 ----------
+    def _pid(self, seat):
+        """관찰 장부의 키. 좌석 번호가 아니라 사람 식별자여야 테이블 간 오염이 없다.
+
+        _run 안의 지역 람다로 두면 _finish 에서 NameError 가 나고,
+        그게 except: pass 에 삼켜져 쇼다운 관찰이 통째로 유실된다. (실제로 그랬다)
+        """
+        h = self.h
+        return h.seat_pid.get(seat, 'T%s_%s' % (getattr(h, 'table_id', 0), seat))
+
+    def _dseed(self, seat, street, tag, extra=0):
+        """결정 하나에 쓸 시드. 공유 rng 에서 뽑지 않고 상황에서 유도한다.
+
+        h.rng 를 모든 결정이 공유하면, 어느 한 곳에서 소비 횟수가 한 번만 어긋나도
+        이후 모든 결정의 난수가 밀려 같은 시드가 재현되지 않는다.
+        (조건부로만 난수를 쓰는 함수가 하나만 있어도 그렇게 된다.)
+        상황에서 유도하면 '같은 핸드·같은 좌석·같은 스트리트·같은 시점 = 같은 난수'가
+        보장되고, 다른 결정의 소비량과 무관해진다.
+        """
+        h = self.h
+        key = '%s|%s|%s|%s|%s' % (getattr(h, 'hash', ''), seat, street, tag, extra)
+        return _zlib.crc32(key.encode())
+
+    def _acts_of(self, seat, upto_street=None):
+        """그 좌석의 포스트플랍 관측 액션 [(street, action, size_frac), ...].
+
+        size_frac 은 그 액션 시점의 팟 대비 비율. 팟 추적이 없으면 0.0(모름)으로 둔다.
+        프리플랍은 preflop_range 가 이미 반영하므로 제외한다.
+        """
+        out = []
+        for (stt, x, a, amt) in (getattr(self, 'full_log', []) or []):
+            if stt == 'preflop' or x != seat:
+                continue
+            pot = (self._pot_at or {}).get(stt, 0)
+            sz = (amt/pot) if (pot and amt) else 0.0
+            out.append((stt, a, sz))
+        return out
+
+    def _run(self):
+        h = self.h
+        self._before = dict(h.stacks)
+        rnd = RU.Round(None, [h.seat_of[p] for p in PRE if p in h.seat_of], h.stacks, h.bb)
+        sb_s, bb_s = h.seat_of.get('SB'), h.seat_of.get('BB')
+        if sb_s: 
+            pay = min(h.sb, rnd.stacks[sb_s]); rnd.stacks[sb_s] -= pay; rnd.contrib[sb_s] = pay
+        ante_pot = 0
+        if bb_s:
+            pay = min(h.bb, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= pay; rnd.contrib[bb_s] = pay
+            a = min(h.bb, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= a; ante_pot = a
+        rnd.current = h.bb; rnd.min_raise = h.bb
+        aggressor = None; limpers = []; callers = 0
+
+        while True:
+            # 살아있는 사람이 하나뿐이면 끝난 핸드다. BB 에게 액션을 물으면 안 된다.
+            # (needs_action 은 '아직 액션 안 한 좌석'을 그대로 돌려주므로
+            #  전원 폴드된 워크 상황에서도 BB 를 반환한다.)
+            if len(rnd.live()) <= 1: break
+            s = rnd.needs_action()
+            if s is None: break
+            pos = h.pos[s]; tc = rnd.to_call(s)
+            if s == h.hero:
+                act = yield {'stage': 'preflop', 'pos': pos, 'hole': h.hole[s],
+                             'stacks': dict(rnd.stacks), 'contrib': dict(rnd.contrib),
+                             'pot': sum(rnd.contrib.values())+ante_pot, 'tocall': tc,
+                             'stack': rnd.stacks[s], 'min_raise': rnd.current+rnd.min_raise,
+                             'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
+                             'contrib': dict(rnd.contrib), 'live': list(rnd.live()),
+                             'allin': list(rnd.allin), 'hash': h.hash}
+                a, amt = act
+                try: rnd.apply(s, a, amt)
+                except ValueError as e:
+                    act = yield {'stage': 'preflop', 'error': str(e), 'pos': pos,
+                                 'hole': h.hole[s], 'pot': sum(rnd.contrib.values())+ante_pot,
+                                 'tocall': tc, 'stack': rnd.stacks[s],
+                                 'min_raise': rnd.current+rnd.min_raise,
+                                 'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
+                                 'hash': h.hash}
+                    rnd.apply(s, act[0], act[1])
+                if a in ('raise', 'allin'): aggressor = s; callers = 0
+                elif a == 'call' and aggressor: callers += 1
+                elif a == 'call': limpers.append(s)
+                continue
+            ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
+            _ck = _cache_key('pre', s, len(rnd.log))
+            _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
+            if _cached:
+                try: rnd.apply(s, _cached[1], _cached[2])
+                except ValueError: rnd.apply(s, 'call' if tc > 0 else 'check')
+                if _cached[1] in ('raise','allin'): aggressor = s; callers = 0
+                elif _cached[1] == 'call' and aggressor: callers += 1
+                continue
+            _pre_len = len(rnd.log)
+            try:
+                # 프리플랍도 판단 층을 거친다. 액션만 내고 끝내면
+                # '왜 이렇게 쳤는가'가 플랍 계획에 이어지지 않는다.
+                _behind = [rnd.stacks[x]/h.bb for x in rnd.order
+                           if x != s and x not in rnd.folded
+                           and rnd.order.index(x) > rnd.order.index(s)] \
+                    if (aggressor is None and not limpers) else None
+                _obb = (rnd.current/h.bb) if aggressor is not None else 0.0
+                _rlevel = max(1, sum(1 for (_, act, _) in rnd.log
+                                     if act in ('raise', 'allin')))
+                a, sz, _seed = PL.preflop_plan(
+                    ax, pos, hand, bbs, h.rng,
+                    aggressor_pos=(h.pos[aggressor] if aggressor is not None else None),
+                    open_bb=_obb, n_callers=callers, n_limpers=len(limpers),
+                    raise_level=_rlevel, behind_stacks=_behind,
+                    tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6))
+                h.pf_seed = getattr(h, 'pf_seed', {})
+                h.pf_seed[s] = _seed
+                if a == 'fold':
+                    rnd.apply(s, 'fold' if tc > 0 else 'check')
+                elif a == 'limp':
+                    rnd.apply(s, 'call'); limpers.append(s)
+                elif a == 'call':
+                    rnd.apply(s, 'call'); callers += 1
+                elif a == 'shove':
+                    rnd.apply(s, 'allin'); aggressor = s
+                else:
+                    rnd.apply(s, 'raise',
+                              max(RU.shape_size(h.bb*sz, ax['type'], h.rng),
+                                  rnd.current + rnd.min_raise))
+                    aggressor = s
+                    if _seed['pf_role'] == 'defend': callers = 0
+            except ValueError:
+                rnd.apply(s, 'call' if tc > 0 else 'check')
+
+        self.full_log = [('preflop', x, a, amt) for (x, a, amt) in rnd.log]
+        # 프리플랍 관찰 기록
+        _pid = self._pid
+        seats_all = [x for x in rnd.order]
+        acted = {}
+        for (x, a_, _) in rnd.log:
+            acted.setdefault(x, []).append(a_)
+        obs_ids = [_pid(x) for x in seats_all]
+        for x in seats_all:
+            acts = acted.get(x, [])
+            vpip = any(a_ in ('call','raise','allin') for a_ in acts)
+            pfr = any(a_ in ('raise','allin') for a_ in acts)
+            h.book.observe_preflop(obs_ids, _pid(x), vpip, pfr)
+        contrib = dict(rnd.contrib)
+        if bb_s: contrib[bb_s] = contrib.get(bb_s, 0)          # 안테는 별도
+        for k in rnd.stacks: h.stacks[k] = rnd.stacks[k]
+        folded = set(rnd.folded)
+        live = [x for x in rnd.order if x not in folded]
+        dead = ante_pot
+
+        if len(live) <= 1:
+            self.result = self._finish(contrib, dead, folded, live, [], 'preflop')
+            return
+
+        prev = []
+        for street, nc in [('flop', 3), ('turn', 4), ('river', 5)]:
+            board = h.board[:nc]
+            active = [x for x in live if h.stacks[x] > 0]
+            if len(active) < 2: break
+            order = [h.seat_of[p] for p in POST if p in h.seat_of and h.seat_of[p] in active]
+            r2 = RU.Round(None, order, h.stacks, h.bb)
+            street_aggr = aggressor          # 이 스트리트에 들어올 때의 공격자(루프 중 갱신되므로 스냅샷)
+            pot_now = sum(contrib.values()) + dead
+            self._pot_at[street] = pot_now      # 사이즈 비율 계산 기준
+            while True:
+                if len(r2.live()) <= 1: break     # 한 명만 남으면 그 스트리트는 끝
+                s = r2.needs_action()
+                if s is None: break
+                tc = r2.to_call(s)
+                if s == h.hero:
+                    act = yield {'stage': street, 'board': board, 'hole': h.hole[s],
+                                 'stacks': dict(r2.stacks), 'contrib': dict(r2.contrib),
+                                 'pot': pot_now + sum(r2.contrib.values()), 'tocall': tc,
+                                 'stack': r2.stacks[s], 'min_raise': r2.current+r2.min_raise,
+                                 'can_raise': r2.can_raise(s), 'log': list(r2.log),
+                                 'prior_log': list(getattr(self, 'full_log', [])),
+                                 'live': r2.live(), 'contrib': dict(r2.contrib),
+                                 'allin': list(r2.allin), 'hash': h.hash}
+                    try: r2.apply(s, act[0], act[1])
+                    except ValueError as e:
+                        act = yield {'stage': street, 'error': str(e), 'board': board,
+                                     'hole': h.hole[s], 'pot': pot_now+sum(r2.contrib.values()),
+                                     'tocall': tc, 'stack': r2.stacks[s],
+                                     'min_raise': r2.current+r2.min_raise,
+                                     'can_raise': r2.can_raise(s), 'log': list(r2.log),
+                                     'live': r2.live(), 'hash': h.hash}
+                        r2.apply(s, act[0], act[1])
+                    if act[0] in ('bet', 'raise', 'allin'): aggressor = s
+                    continue
+                ax, _ = h.axes(s)
+                _ck = _cache_key(street, s, len(r2.log))
+                _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
+                if _cached:
+                    try: r2.apply(s, _cached[1], _cached[2])
+                    except ValueError: r2.apply(s, 'call' if tc > 0 else 'check')
+                    if _cached[1] in ('bet','raise','allin'): aggressor = s
+                    continue
+                behind = len([x for x in order if x not in r2.acted and x != s and x not in r2.folded])
+                n_opp = len(r2.live())-1
+                my_r = R.preflop_range(ax, h.pos[s], 'open' if s == aggressor else 'call',
+                                       h.bbs(s), set(board), opener_pos=h.pos.get(aggressor))
+                my_r = sorted(set(my_r))      # 순서 확정 (판단이 순서에 의존하면 안 된다)
+                opp_r = []
+                for o in r2.live():
+                    if o == s: continue
+                    oax, _ = h.axes(o)
+                    orange = R.preflop_range(oax, h.pos[o],
+                                             'open' if o == aggressor else 'call',
+                                             h.bbs(o), set(board), opener_pos=h.pos.get(aggressor))
+                    # 관측된 포스트플랍 액션으로 레인지를 좁힌다.
+                    # 이걸 빼면 상대가 무슨 행동을 했든 매 스트리트 프리플랍 레인지가 된다.
+                    orange = R.narrow_by_actions(orange, board, self._acts_of(o), oax)
+                    # 쇼다운 이력이 예상보다 넓/좁았다면 추가 보정
+                    orange, _note = RU.adjust_range_by_history(orange, h.dyn, o, board,
+                                                              dead=set(h.hole[s])|set(board))
+                    opp_r.extend(orange)
+                # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
+                # 흔들려도 판단이 바뀌면 안 되므로 여기서 순서를 확정한다.
+                # 이걸 빼면 같은 시드가 재현되지 않는다 (rng.choice 가 순서에 의존).
+                opp_r = sorted(set(opp_r))
+                if not opp_r: opp_r = sorted(set(my_r))
+                key = s
+                if key in h.plans and street != h.plans[key].get('street_made'):
+                    h.plans[key].setdefault('streets', []).append(street)
+                # 주 상대를 정한다: 공격자가 있으면 그 사람, 없으면 스택이 가장 깊은 상대.
+                # 계획 수립·갱신·실행이 모두 같은 상대를 봐야 하므로 분기 밖에서 만든다.
+                _others = [x for x in r2.live() if x != s]
+                _main = aggressor if (aggressor is not None and aggressor != s
+                                      and aggressor in _others) else (
+                        max(_others, key=lambda x: r2.stacks.get(x, 0)) if _others else None)
+                _est = (RD.perceived_profile(h.book, _pid(s), _pid(_main), ax,
+                                             random.Random(self._dseed(s, street, 'est', _main)))
+                        if _main is not None else None)
+                _ostk = (r2.stacks.get(_main, 0)/h.bb) if _main is not None else None
+                # 계획 갱신은 update_plan 하나로 들어간다.
+                # (예전에는 make/revise/refresh/river_fix/_allowed/attach 를
+                #  여기서 직접 순서대로 불렀고, 그 순서 의존이 이력 유실을 만들었다)
+                h.plans[key] = PL.update_plan(
+                    h.plans.get(key), h.hole[s], board, my_r, opp_r, ax,
+                    pot_now, r2.stacks[s], street,
+                    self._dseed(s, street, 'plan', len(r2.log)),
+                    n_opp, behind, prev,
+                    POST.index(h.pos[s]) < 3, s == aggressor,
+                    opp_est=_est, opp_stack_bb=_ostk, tilt=h.axes(s)[1],
+                    first=(key not in h.plans or street == 'flop'),
+                    pf_seed=getattr(h, 'pf_seed', {}).get(s))
+                # 실제 팟은 스트리트 시작 팟 + 이번 스트리트에 들어온 칩이다.
+                # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
+                # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
+                pot_live = pot_now + sum(r2.contrib.values())
+                _pl = h.plans[key]
+                h.intents = getattr(h, 'intents', [])
+                if not any(i['street'] == street and i['seat'] == s for i in h.intents):
+                    h.intents.append({'street': street, 'seat': s, 'type': ax.get('type'),
+                                  'plan': _pl.get('plan'), 'why': _pl.get('why'),
+                                  'rel': _pl.get('rel'), 'eq': _pl.get('eq'),
+                                  'outs': _pl.get('outs'), 'blocker': _pl.get('blocker')})
+                # --- 배팅라인 리딩: 진짜 프로필이 아니라 '내가 관찰한 추정치'로 ---
+                read_val = None
+                est = None
+                if tc > 0 and aggressor is not None and aggressor != s:
+                    est = RD.perceived_profile(h.book, _pid(s), _pid(aggressor), ax,
+                                               random.Random(self._dseed(s, street, 'est2', aggressor)))
+                    n_barrels = sum(1 for (stt, x, act, _) in getattr(self, 'full_log', [])
+                                    if x == aggressor and act in ('bet', 'raise'))
+                    n_barrels = max(1, n_barrels)
+                    sz_frac = tc/max(1, pot_live)
+                    read_val = PL.line_bluff_prior(est, street, n_barrels, sz_frac, board,
+                                                  POST.index(h.pos[aggressor]) < 3)
+                    h.reads_log = getattr(h, 'reads_log', [])
+                    h.reads_log.append({'street': street, 'observer': s, 'target': aggressor,
+                                        'est_bluff': round(est['bluff'],1),
+                                        'confidence': est['confidence'], 'n': est['n'],
+                                        'barrels': n_barrels, 'read': round(read_val,2)})
+                a2, eq, need = PL.act_with_plan(h.hole[s], board, ax, h.plans[key], pot_live, tc,
+                                                r2.stacks[s], street,
+                                                initiative=RU.has_initiative(s, aggressor),
+                                                oop=(POST.index(h.pos[s]) < 3), opp_range=opp_r,
+                                                bf=h.bf(s), seed=self._dseed(s, street, 'act', len(r2.log)),
+                                                n_opp=n_opp, to_act_behind=behind, read=read_val,
+                                                opp_est=est if tc > 0 and aggressor is not None
+                                                        and aggressor != s else None)
+                a, amt = a2
+                # 어느 스트리트에서 실제로 공격했는지 기록한다 (지연 씨벳 판단에 필요).
+                if a in ('bet', 'raise', 'allin'):
+                    h.plans[key].setdefault('bet_streets', [])
+                    if street not in h.plans[key]['bet_streets']:
+                        h.plans[key]['bet_streets'].append(street)
+                # 체크 후 벳을 맞은 상황이면 체크레이즈 판정.
+                # r2.acted 는 풀레이즈가 나오면 {레이저} 로 초기화되므로
+                # 's in r2.acted' 로 판정하면 이 분기가 절대 성립하지 않는다.
+                # 이번 스트리트에 실제로 체크한 기록(r2.log)이 유일하게 옳은 근거다.
+                if tc > 0 and a in ('call', 'fold'):
+                    already_checked = any(x == s and act == 'check' for (x, act, _) in r2.log)
+                    if already_checked and PL.checkraise_decision(
+                            h.hole[s], board, ax, h.plans[key], pot_live, tc,
+                            r2.stacks[s], street,
+                            seed=self._dseed(s, street, 'ckr', len(r2.log)),
+                            opp_est=_est):
+                        a = 'raise'
+                        amt = PL.checkraise_size(ax, pot_live, tc, r2.stacks[s],
+                                                 board, street,
+                                                 random.Random(self._dseed(s, street, 'ckrsz',
+                                                                           len(r2.log))))
+                        amt = min(r2.stacks[s] + r2.contrib.get(s, 0), amt + r2.contrib.get(s, 0))
+                        h.plans[key].setdefault('acts', []).append('체크레이즈 실행')
+                try:
+                    if a in ('bet', 'raise'):
+                        amt = RU.shape_size(
+                            amt, ax['type'],
+                            random.Random(self._dseed(s, street, 'size', len(r2.log))),
+                            pot=pot_live)
+                        r2.apply(s, a, max(amt, r2.current+r2.min_raise) if r2.current else amt)
+                        aggressor = s
+                    else: r2.apply(s, a, amt)
+                except ValueError as _ve:
+                    # 사이즈가 규칙에 안 맞아 거부됐다. 폴백하되 그 사실을 남긴다.
+                    # 기록이 없으면 '의도는 벳인데 체크가 실행됨'이 원인 불명으로 남는다.
+                    _fb = 'call' if tc > 0 else 'check'
+                    h.plans[key].setdefault('deviations', []).append(
+                        {'street': street, 'planned': a, 'executed': _fb,
+                         'why': '사이즈 거부(%s)' % _ve})
+                    a = _fb
+                    r2.apply(s, a)
+                if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
+                # 액션이 끝난 뒤 계획을 다시 손대지 않는다.
+                # _allowed(개념 보유 검사)는 update_plan 안에서 이미 적용됐고,
+                # 여기서 또 돌리면 '실행 후 계획 변경' = 사후 수정이 된다.
+                _pl2 = h.plans[key]
+                h.intents = getattr(h, 'intents', [])
+                h.intents = [i for i in h.intents if not (i['street'] == street and i['seat'] == s)]
+                h.intents.append({'street': street, 'seat': s, 'type': ax.get('type'),
+                                  'action': a, 'plan': _pl2.get('plan'), 'why': _pl2.get('why'),
+                                  'rel': _pl2.get('rel'), 'eq': _pl2.get('eq'),
+                                  'outs': _pl2.get('outs'), 'blocker': _pl2.get('blocker')})
+            _any_bet = any(_a in ('bet', 'raise', 'allin') for (_, _a, _) in r2.log)
+            if not _any_bet:
+                for k, v in list(h.plans.items()):
+                    if v.get('plan') == 'trap':
+                        h.plans[k] = PL.mark_no_bite(v)
+            # 포스트플랍 관찰 기록.
+            # 씨벳/배럴 '기회'는 직전 스트리트의 공격자가 이번 스트리트에서
+            # 처음 액션하는 시점이고, 그때까지 아무도 베팅하지 않았어야 한다.
+            # (예전엔 로그의 첫 항목인지로 판정했는데, 공격자는 보통 포지션이 있어
+            #  마지막에 액션하므로 기회가 거의 잡히지 않았다 — 60핸드에 0.3회.)
+            # 관찰자는 '그 핸드에 참여한 사람'이 아니라 '테이블에 앉아 있는 사람' 전원이다.
+            # 폴드했어도 상대 플레이는 다 보고 있다. 생존자만 관찰자로 세면
+            # 표본이 몇 배로 줄어 리딩이 성립하지 않는다.
+            _ord = [_pid(x) for x in h.seats]
+            _acted_once = set()
+            _bet_seen = False
+            for (x, a_, _) in r2.log:
+                opp_spot = (x == street_aggr and x not in _acted_once and not _bet_seen)
+                is_cbet = (street == 'flop' and opp_spot)
+                is_barrel = (street in ('turn', 'river') and opp_spot)
+                h.book.observe_postflop(_ord, _pid(x), a_, is_cbet, is_barrel,
+                                        facing_bet=_bet_seen)
+                _acted_once.add(x)
+                if a_ in ('bet', 'raise', 'allin'): _bet_seen = True
+            self.full_log.extend(('%s' % street, x, a, amt) for (x, a, amt) in r2.log)
+            for k, v in r2.contrib.items():
+                contrib[k] = contrib.get(k, 0)+v
+            for k in r2.stacks: h.stacks[k] = r2.stacks[k]
+            folded |= set(r2.folded)
+            # 이전 스트리트에서 올인한 사람도 쇼다운 자격이 있다
+            allin_prev = [x for x in h.seats
+                          if x not in folded and h.stacks.get(x, 0) <= 0]
+            live = sorted(set(r2.live()) | set(allin_prev))
+            prev = board
+            if len(live) <= 1: break
+
+        self.result = self._finish(contrib, dead, folded, live, h.board, 'showdown')
+        return
+
+    def _finish(self, contrib, dead, folded, live, board, how):
+        h = self.h
+        # 장부 저장은 소유자(드라이버)의 책임. 여기서 전역 파일에 쓰지 않는다.
+        self._before = getattr(self, '_before', dict(h.stacks))
+        pot_total = sum(contrib.values())+dead
+        if not any(v > 0 for v in contrib.values()) and dead == 0:
+            return {'how': 'void', 'winners': [], 'pot': 0, 'showdown': False,
+                    'board': board, 'stacks': dict(h.stacks), 'hash': h.hash,
+                    'note': '유효 참가자 부족으로 무효'}
+        if len(live) <= 1:
+            w = live[0] if live else max(contrib, key=contrib.get)
+            h.stacks[w] += pot_total
+            try:
+                for k, v in h.stacks.items():
+                    d = (v - self._before.get(k, v))/max(1, h.bb)
+                    if abs(d) >= 1:
+                        DY.record_pot(h.dyn, k, d, stack_bb=self._before.get(k, 0)/max(1, h.bb))
+                DY.decay(h.dyn)
+            except Exception: pass
+            return {'how': 'fold', 'winners': [w], 'pot': pot_total, 'showdown': False,
+                    'board': board, 'stacks': dict(h.stacks), 'hash': h.hash,
+                    'full_log': getattr(self, 'full_log', []),
+                    'pos': {k: v for k, v in h.pos.items()}}
+        c2 = dict(contrib)
+        if dead:                     # 안테는 데드머니 → 최저 레벨 팟에 합류
+            base = min([v for v in c2.values() if v > 0], default=0)
+            if base and c2:
+                # 정수 분배 + 나머지를 앞자리부터 1씩. 실수 나눗셈으로 나누면
+                # 나눠떨어지지 않을 때 나머지가 소멸해 칩 총량이 어긋난다.
+                ks = sorted(c2)
+                per, rem = divmod(int(dead), len(ks))
+                for i, k in enumerate(ks):
+                    c2[k] += per + (1 if i < rem else 0)
+                dead = 0
+        # 쇼다운 관찰: 깐 패의 강도와 공격 여부
+        try:
+            import preflop as _pf
+            aggr_seats = {x for (_, x, a_, _) in getattr(self, 'full_log', [])
+                          if a_ in ('bet', 'raise')}
+            _all = [self._pid(x) for x in h.seats]
+            for sd in live:
+                RD_pct = _pf.PCT[_pf.cls(h.hole[sd])]
+                h.book.observe_showdown(_all, self._pid(sd), RD_pct, sd in aggr_seats)
+        except Exception as _e:
+            # 관찰 실패를 조용히 삼키면 장부가 안 쌓이고 리딩이 통째로 죽는다.
+            h.book_errors = getattr(h, 'book_errors', [])
+            h.book_errors.append('showdown: %r' % (_e,))
+        won, detail = award_pots(c2, h.hole, h.board, folded, h.stacks)
+        if not detail:
+            return {'how': 'void', 'winners': [], 'pot': 0, 'showdown': False,
+                    'board': board, 'stacks': dict(h.stacks), 'hash': h.hash}
+        if dead:
+            h.stacks[detail[-1]['winners'][0]] += dead
+        try:
+            for k, v in h.stacks.items():
+                d = (v - self._before.get(k, v))/max(1, h.bb)
+                if abs(d) >= 1: DY.record_pot(h.dyn, k, d)
+            DY.decay(h.dyn)
+        except Exception: pass
+        all_w = sorted({w for d in detail for w in d['winners']})
+        return {'how': 'showdown', 'winners': all_w,
+                'main_winners': detail[0]['winners'], 'pot': pot_total,
+                'showdown': True, 'board': h.board, 'pots': detail,
+                'hole': {s: h.hole[s] for s in live}, 'stacks': dict(h.stacks),
+                'hash': h.hash, 'full_log': getattr(self, 'full_log', []),
+                'pos': {k: v for k, v in h.pos.items()}}
