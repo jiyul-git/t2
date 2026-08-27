@@ -161,11 +161,34 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     v3 = 0.80 + 0.06*mw          # 3스트리트 밸류 문턱
     v2 = 0.66 + 0.07*mw
     pcz = 0.50 + 0.06*mw
+
+    # ---------- 상대 정보가 판단의 뼈대에 들어간다 ----------
+    # 정보가 없으면(초반) rd['w']=0 이라 아래 보정이 전부 0 이 되어
+    # 자동으로 '내 전략대로'가 된다. 별도 분기가 필요 없다.
+    # 정보가 쌓이면 밸류 문턱·블러프 빈도·함정 빈도가 같이 움직인다 —
+    # 익스플로잇은 한 지점에 붙는 보정이 아니라 판단 체계 전체의 전환이다.
+    rd = PS.read_opponent(profile, opp_est)
+    if rd['w'] > 0:
+        wq = rd['w']
+        # **그 스트리트의** 폴드 성향을 쓴다. 전체 평균으로 뭉개면
+        # '플랍은 잘 치는데 턴에서 멈추는' 사람을 구분할 수 없다.
+        sg = PS.street_gap(rd, street)
+        # 잘 접는 상대: 밸류로 콜을 못 받으니 문턱을 올리고, 블러프는 늘린다.
+        # 안 접는 상대(스테이션): 밸류 문턱을 낮추고 블러프를 줄인다.
+        v3 += wq * 0.55 * sg
+        v2 += wq * 0.45 * sg
+        pcz += wq * 0.30 * sg
     # 블로커는 하드 게이트가 아니라 가중치. 넛 우위가 없으면 블러프 빈도 하락.
     bluff_ok = (profile['bluff']/12.0) * (0.5 + 1.8*blk) * (0.75 + 0.35*max(0, nut)) \
                * (0.35 ** mw) * (0.55 ** min(to_act_behind, 3))
+    if rd['w'] > 0:
+        # 잘 접는 상대에게 블러프를 늘린다. 그 스트리트 기준으로.
+        bluff_ok *= max(0.25, 1.0 + rd['w'] * 1.6 * PS.street_gap(rd, street))
     # 트랩 빈도 = 성향 함수. 저SPR·젖은 보드에서 줄되 0이 되지는 않는다.
     trap_p = (0.10 + 0.045*profile.get('bluff', 5)) * (1 - 0.55*dang)
+    if rd['w'] > 0:
+        # 함정은 상대가 쳐줘야 성립한다. 수동적인 상대에게는 무료 카드만 준다.
+        trap_p *= max(0.15, 1.0 - rd['w'] * 1.2 * max(0.0, rd['passive']))
     if s < 3.0: trap_p *= 0.45          # 커밋 구간이면 줄지만 남는다
     if n_opp > 1: trap_p *= 0.5
     if profile['value'] == 'xr': trap_p *= 1.8
@@ -771,7 +794,7 @@ def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, st
 
 def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  n_callers=0, n_limpers=0, raise_level=1, behind_stacks=None,
-                 tilt=0.0, field_q=0.6):
+                 tilt=0.0, field_q=0.6, opp_est=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -782,6 +805,14 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
       plan_seed 는 포스트플랍 계획의 출발점이 되는 사전 정보다.
     """
     import preflop as _pf
+    # 상대 정보가 프리플랍 레인지부터 움직인다.
+    # 예전에는 preflop_plan 이 opp_est 를 아예 안 받아서,
+    # 상대가 3벳에 과하게 접는 걸 알아도 3벳 레인지가 안 넓어졌다.
+    rd = PS.read_opponent(profile, opp_est)
+    if rd['w'] > 0 and aggressor_pos is not None:
+        # 잘 접는 상대의 오픈에는 3벳을 넓히고, 안 접는 상대에겐 좁힌다.
+        # pct 문턱을 직접 옮기지 않고 defend 결과를 재해석한다 (아래 참조).
+        pass
     if aggressor_pos is None and not n_limpers:
         a, sz = _pf.open_decision(profile, pos, bb, hand, rng,
                                   behind_stacks=behind_stacks,
@@ -794,7 +825,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     else:
         a, sz = _pf.defend_decision(profile, pos, aggressor_pos, hand, bb, open_bb,
                                     n_callers, rng, raise_level=raise_level,
-                                    stack_bb=bb, tilt=tilt, field_q=field_q)
+                                    stack_bb=bb, tilt=tilt, field_q=field_q,
+                                    exploit=rd)
         role = 'defend'
 
     # 프리플랍에서 확정된 것들 — 포스트플랍 계획이 이걸 물려받는다

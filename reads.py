@@ -5,7 +5,7 @@ import math, random
 # 모집단 사전분포 — 표본이 적을 때 끌려가는 기준점
 PRIOR = {'vpip': 0.26, 'pfr': 0.15, 'cbet': 0.55, 'barrel': 0.42,
          'wtsd': 0.28, 'aggr': 5.0, 'bluff': 4.5, 'tight': 5.0,
-         'fold_to_bet': 0.52}
+         'fold_to_bet': 0.52, 'pf_3bet': 0.07, 'pf_fold_to_3bet': 0.55}
 
 # 관찰력: 표본을 얼마나 잘 반영하는가 / 과신 정도 / 노이즈
 import archetypes as A
@@ -57,7 +57,28 @@ class Book:
             'barrel_opp': 0, 'barrel': 0,
             'showdowns': 0, 'sd_strong': 0, 'sd_weak': 0,
             'facing_bet': 0, 'fold_to_bet': 0,
+            # 스트리트별 폴드 — '플랍은 잘 치는데 턴에서 멈추는' 사람을 구분한다
+            'fb_flop': 0, 'f2b_flop': 0,
+            'fb_turn': 0, 'f2b_turn': 0,
+            'fb_river': 0, 'f2b_river': 0,
+            # 프리플랍 공격성 — 3벳 많이 치는 사람과 포스트플랍 공격형은 다르다
+            'pf_3bet_opp': 0, 'pf_3bet': 0,
+            'pf_faced_3bet': 0, 'pf_fold_to_3bet': 0,
             'agg_actions': 0, 'passive_actions': 0})
+
+    def observe_3bet(self, observers, actor, had_chance, did_3bet,
+                     faced_3bet=False, folded_to_3bet=False):
+        """프리플랍 공격성은 포스트플랍 공격성과 다른 축이다.
+           '3벳만 많이 치는 사람'을 구분하려면 따로 세야 한다."""
+        for i in observers:
+            if i == actor: continue
+            r = self.rec(i, actor)
+            if had_chance:
+                r['pf_3bet_opp'] += 1
+                if did_3bet: r['pf_3bet'] += 1
+            if faced_3bet:
+                r['pf_faced_3bet'] += 1
+                if folded_to_3bet: r['pf_fold_to_3bet'] += 1
 
     def observe_preflop(self, observers, actor, vpip, pfr):
         for i in observers:
@@ -68,13 +89,16 @@ class Book:
             r['pfr'] += 1 if pfr else 0
 
     def observe_postflop(self, observers, actor, action, is_cbet_spot, is_barrel_spot,
-                         facing_bet=False):
+                         facing_bet=False, street=None):
         for i in observers:
             if i == actor: continue
             r = self.rec(i, actor)
             if facing_bet:
                 r['facing_bet'] += 1
                 if action == 'fold': r['fold_to_bet'] += 1
+                if street in ('flop', 'turn', 'river'):
+                    r['fb_' + street] += 1
+                    if action == 'fold': r['f2b_' + street] += 1
             if is_cbet_spot:
                 r['cbet_opp'] += 1
                 if action in ('bet', 'raise'): r['cbet'] += 1
@@ -112,7 +136,13 @@ def estimate(book, observer, target, observer_type, rng=None):
     o = OBSERVER.get(observer_type, DEFAULT_OBS)
     r = book.d.get(book._k(observer, target))
     if not r or r['hands'] == 0:
-        est = dict(PRIOR); est['n'] = 0; est['confidence'] = 0.0
+        # PRIOR 의 키는 'fold_to_bet' 이지만 소비 측은 'ftb' 를 본다.
+        # 이름을 맞춰주지 않으면 관찰 기록이 없는 상대에서 KeyError 가 난다.
+        est = dict(PRIOR)
+        est['ftb'] = PRIOR['fold_to_bet']
+        for _k in ('ftb_flop', 'ftb_turn', 'ftb_river'):
+            est[_k] = PRIOR['fold_to_bet']
+        est['n'] = 0; est['confidence'] = 0.0
         return est
     n = min(r['hands'], o['memory'])
     vpip = r['vpip']/max(1, r['hands'])
@@ -121,6 +151,13 @@ def estimate(book, observer, target, observer_type, rng=None):
     barrel = r['barrel']/max(1, r['barrel_opp']) if r['barrel_opp'] else PRIOR['barrel']
     agg = r['agg_actions']/max(1, r['agg_actions']+r['passive_actions'])
     ftb = (r['fold_to_bet']/r['facing_bet']) if r.get('facing_bet') else PRIOR['fold_to_bet']
+    def _rate(num, den, prior):
+        return (r.get(num, 0)/r[den]) if r.get(den) else prior
+    ftb_f = _rate('f2b_flop', 'fb_flop', PRIOR['fold_to_bet'])
+    ftb_t = _rate('f2b_turn', 'fb_turn', PRIOR['fold_to_bet'])
+    ftb_r = _rate('f2b_river', 'fb_river', PRIOR['fold_to_bet'])
+    tb    = _rate('pf_3bet', 'pf_3bet_opp', PRIOR['pf_3bet'])
+    f2tb  = _rate('pf_fold_to_3bet', 'pf_faced_3bet', PRIOR['pf_fold_to_3bet'])
 
     cap = o['memory']                      # 기억 한계는 기회 횟수에도 적용
     n_cb = min(r['cbet_opp'], cap)
@@ -152,7 +189,13 @@ def estimate(book, observer, target, observer_type, rng=None):
     ns = o['noise'] * (1.0 - min(0.7, n/60.0))
     jitter = lambda x: max(1.0, min(10.0, x*(1 + rng.uniform(-ns, ns))))
     conf = min(1.0, (n*o['skill'])/25.0)
+    _sh = lambda v, d, pr: _shrink(v, min(r.get(d, 0), cap), pr, o['skill'], o['overconf'])
     return {'vpip': vpip_e, 'pfr': pfr_e, 'cbet': cbet_e, 'barrel': bar_e, 'ftb': ftb_e,
+            'ftb_flop': _sh(ftb_f, 'fb_flop', PRIOR['fold_to_bet']),
+            'ftb_turn': _sh(ftb_t, 'fb_turn', PRIOR['fold_to_bet']),
+            'ftb_river': _sh(ftb_r, 'fb_river', PRIOR['fold_to_bet']),
+            'pf_3bet': _sh(tb, 'pf_3bet_opp', PRIOR['pf_3bet']),
+            'pf_fold_to_3bet': _sh(f2tb, 'pf_faced_3bet', PRIOR['pf_fold_to_3bet']),
             'aggr': jitter(aggr_axis), 'bluff': jitter(bluff_axis),
             'tight': jitter(tight_axis), 'n': r['hands'], 'confidence': round(conf, 2)}
 
@@ -168,6 +211,9 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
     return {'bluff': e['bluff'], 'aggr': e['aggr'], 'tight': e['tight'],
             'vpip': e['vpip'], 'pfr': e['pfr'],
             'cbet': e['cbet'], 'barrel': e['barrel'], 'ftb': e['ftb'],
+            'ftb_flop': e.get('ftb_flop'), 'ftb_turn': e.get('ftb_turn'),
+            'ftb_river': e.get('ftb_river'),
+            'pf_3bet': e.get('pf_3bet'), 'pf_fold_to_3bet': e.get('pf_fold_to_3bet'),
             'type': None, 'confidence': e['confidence'], 'n': e['n']}
 
 

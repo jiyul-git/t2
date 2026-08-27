@@ -198,12 +198,30 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
 
 
 def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng,
-                    raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6):
-    """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간."""
+                    raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
+                    exploit=None):
+    """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
+
+    exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
+    3벳/콜 구간 자체가 움직인다. 정보가 없으면 w=0 이라 무보정.
+    """
     band = depth_band(bb)
     vs = PS.variance_seek(prof, tilt, field_q, bb) if prof.get('concepts') else 0.0
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
                                 n_callers, raise_level)
+    if exploit and exploit.get('w', 0) > 0:
+        w = exploit['w']
+        if raise_level >= 2:
+            # 3벳을 마주한 상황: 상대가 3벳을 남발하면 4벳/콜을 넓힌다.
+            tbg = exploit.get('tb_gap', 0.0)
+            tp = max(0.0, min(0.9, tp * (1.0 + w*1.3*tbg)))
+            tot = max(tp, min(0.95, tot * (1.0 + w*0.8*tbg)))
+        else:
+            # 오픈을 마주한 상황: 상대가 3벳에 잘 접으면 3벳을 넓힌다.
+            # 포스트플랍 폴드율이 아니라 '3벳 대면 폴드율'을 봐야 한다.
+            f2tb = exploit.get('f2tb_gap', exploit.get('fold_gap', 0.0))
+            tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2tb)))
+            tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2tb)))
     r = pct(hand)
     # --- 핫존 리쇼브: 콜 대신 3벳 올인 (혼합) ---
     if stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:

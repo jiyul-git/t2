@@ -414,6 +414,75 @@ def exploit_weight(prof, confidence=0.0, n_hands=0):
     return round(max(0.0, min(0.85, trait * data)), 3)
 
 
+def read_opponent(prof, opp_est):
+    """상대 추정치를 '어떻게 착취할 것인가'로 번역한다. 판단 층의 단일 입구.
+
+    지점마다 exploit_weight 를 곱하는 방식은 세 가지가 문제였다:
+      1. ftb(폴드율) 하나만 봤다 — 씬밸류·배럴·체크레이즈 성향은 안 봄
+      2. 계획 선택의 뼈대(v3/v2 문턱, bluff_ok, trap_p)에는 안 들어갔다
+      3. '정보를 얻는 능력'과 '쓰는 능력'과 '쓸 의지'가 하나로 뭉개졌다
+
+    여기서 한 번 만들어 판단 전체에 흘린다. 반환 dict:
+      w          — 익스플로잇 가중치 0~1 (0이면 전부 중립)
+      fold_gap   — 상대가 모집단보다 얼마나 잘 접는가 (-0.5~+0.5)
+      bluff_gap  — 상대가 얼마나 블러프를 많이 하는가 (-1~+1)
+      passive    — 상대가 얼마나 수동적인가 (-1~+1)
+      station    — 상대가 얼마나 안 접는가 (= -fold_gap 의 별칭, 가독성용)
+
+    세 능력을 곱으로 분리한다:
+      attention   — 관찰 자체를 하는가 (표본을 모으는가)
+      range_read  — 관찰을 판단으로 옮길 수 있는가
+      adaptability— 알아도 자기 전략을 바꿀 의지가 있는가
+    어느 하나라도 낮으면 익스플로잇이 약해진다.
+    """
+    neutral = {'w': 0.0, 'fold_gap': 0.0, 'bluff_gap': 0.0,
+               'passive': 0.0, 'station': 0.0}
+    if not prof or not prof.get('concepts') or not opp_est:
+        return neutral
+    conf = float(opp_est.get('confidence', 0.0) or 0.0)
+    n = int(opp_est.get('n', 0) or 0)
+    if conf <= 0.0 or n <= 0:
+        return neutral                      # 정보가 없다 = 내 전략대로
+
+    att = temper(prof, 'attention', 5.0)
+    adp = temper(prof, 'adaptability', 5.0)
+    rr  = sk(prof, 'range_read')
+    # 세 능력의 곱. 하나라도 낮으면 전체가 낮아진다.
+    ability = (min(1.0, att/8.0) * min(1.0, rr/8.0) * min(1.0, adp/8.0)) ** (1/3.0)
+    ability = max(0.0, min(1.0, (ability - 0.30) / 0.60))
+    if ability <= 0.0:
+        return neutral                      # 자기 패만 보고 치는 사람
+
+    data = min(1.0, conf) * min(1.0, n/12.0)
+    w = round(max(0.0, min(0.85, ability * data)), 3)
+    if w <= 0.0:
+        return neutral
+
+    g = lambda k, d: float(opp_est.get(k) if opp_est.get(k) is not None else d)
+    ftb = g('ftb', 0.52)
+    bl  = g('bluff', 4.5)
+    ag  = g('aggr', 5.0)
+    # 스트리트별로 나눈다. '플랍은 잘 치는데 턴에서 멈추는' 사람과
+    # '리버까지 안 접는' 사람은 완전히 다른 대응이 필요하다.
+    fg = lambda v: max(-0.5, min(0.5, v - 0.52))
+    return {'w': w,
+            'fold_gap': fg(ftb),                       # 전체 평균 (폴백)
+            'fold_gap_flop':  fg(g('ftb_flop', ftb)),
+            'fold_gap_turn':  fg(g('ftb_turn', ftb)),
+            'fold_gap_river': fg(g('ftb_river', ftb)),
+            # 프리플랍 공격성은 별도 축이다
+            'tb_gap':   max(-0.5, min(0.5, g('pf_3bet', 0.07) - 0.07)) * 4.0,
+            'f2tb_gap': fg(g('pf_fold_to_3bet', 0.55) + 0.52 - 0.55),
+            'bluff_gap': max(-1.0, min(1.0, (bl - 4.5)/4.5)),
+            'passive': max(-1.0, min(1.0, (5.0 - ag)/5.0)),
+            'station': max(-0.5, min(0.5, 0.52 - ftb))}
+
+
+def street_gap(rd, street):
+    """그 스트리트의 폴드 성향. 없으면 전체 평균으로 물러난다."""
+    return rd.get('fold_gap_' + str(street), rd.get('fold_gap', 0.0))
+
+
 def blend(baseline, exploit, w):
     """자기 전략과 익스플로잇 조정을 섞는다. 판단 지점마다 이 한 줄만 쓴다."""
     return baseline*(1.0 - w) + exploit*w

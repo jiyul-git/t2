@@ -183,7 +183,11 @@ class HandRun:
                     aggressor_pos=(h.pos[aggressor] if aggressor is not None else None),
                     open_bb=_obb, n_callers=callers, n_limpers=len(limpers),
                     raise_level=_rlevel, behind_stacks=_behind,
-                    tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6))
+                    tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6),
+                    opp_est=(RD.perceived_profile(
+                        h.book, self._pid(s), self._pid(aggressor), ax,
+                        random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
+                        if aggressor is not None and aggressor != s else None))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _seed
                 if a == 'fold':
@@ -216,6 +220,22 @@ class HandRun:
             vpip = any(a_ in ('call','raise','allin') for a_ in acts)
             pfr = any(a_ in ('raise','allin') for a_ in acts)
             h.book.observe_preflop(obs_ids, _pid(x), vpip, pfr)
+            # 3벳 기회/실행, 3벳 대면/폴드를 따로 센다.
+            # '3벳만 많이 치는 사람'은 포스트플랍 공격형과 다른 대응이 필요하다.
+            _seq = [(y, b_) for (y, b_, _) in rnd.log]
+            _raises_before = 0
+            _chance = _did = _faced = _folded = False
+            for (y, b_) in _seq:
+                if y == x:
+                    if _raises_before == 1:
+                        _chance = True
+                        if b_ in ('raise', 'allin'): _did = True
+                    elif _raises_before >= 2:
+                        _faced = True
+                        if b_ == 'fold': _folded = True
+                if b_ in ('raise', 'allin'):
+                    _raises_before += 1
+            h.book.observe_3bet(obs_ids, _pid(x), _chance, _did, _faced, _folded)
         contrib = dict(rnd.contrib)
         if bb_s: contrib[bb_s] = contrib.get(bb_s, 0)          # 안테는 별도
         for k in rnd.stacks: h.stacks[k] = rnd.stacks[k]
@@ -430,7 +450,7 @@ class HandRun:
                 is_cbet = (street == 'flop' and opp_spot)
                 is_barrel = (street in ('turn', 'river') and opp_spot)
                 h.book.observe_postflop(_ord, _pid(x), a_, is_cbet, is_barrel,
-                                        facing_bet=_bet_seen)
+                                        facing_bet=_bet_seen, street=street)
                 _acted_once.add(x)
                 if a_ in ('bet', 'raise', 'allin'): _bet_seen = True
             self.full_log.extend(('%s' % street, x, a, amt) for (x, a, amt) in r2.log)
