@@ -236,6 +236,18 @@ class HandRun:
                 if b_ in ('raise', 'allin'):
                     _raises_before += 1
             h.book.observe_3bet(obs_ids, _pid(x), _chance, _did, _faced, _folded)
+            # 4벳 이상: 레이즈가 2회 있은 뒤의 액션
+            _rb = 0; _c4 = _d4 = _f4 = _fd4 = False
+            for (y, b_) in _seq:
+                if y == x:
+                    if _rb == 2:
+                        _c4 = True
+                        if b_ in ('raise', 'allin'): _d4 = True
+                    elif _rb >= 3:
+                        _f4 = True
+                        if b_ == 'fold': _fd4 = True
+                if b_ in ('raise', 'allin'): _rb += 1
+            h.book.observe_4bet(obs_ids, _pid(x), _c4, _d4, _f4, _fd4)
         contrib = dict(rnd.contrib)
         if bb_s: contrib[bb_s] = contrib.get(bb_s, 0)          # 안테는 별도
         for k in rnd.stacks: h.stacks[k] = rnd.stacks[k]
@@ -445,12 +457,16 @@ class HandRun:
             _ord = [_pid(x) for x in h.seats]
             _acted_once = set()
             _bet_seen = False
-            for (x, a_, _) in r2.log:
+            for (x, a_, amt) in r2.log:
                 opp_spot = (x == street_aggr and x not in _acted_once and not _bet_seen)
                 is_cbet = (street == 'flop' and opp_spot)
                 is_barrel = (street in ('turn', 'river') and opp_spot)
                 h.book.observe_postflop(_ord, _pid(x), a_, is_cbet, is_barrel,
                                         facing_bet=_bet_seen, street=street)
+                if a_ in ('bet', 'raise', 'allin'):
+                    _p0 = self._pot_at.get(street, 0)
+                    h.book.observe_size(_ord, _pid(x),
+                                        (amt/_p0) if _p0 else 0.0, street)
                 _acted_once.add(x)
                 if a_ in ('bet', 'raise', 'allin'): _bet_seen = True
             self.full_log.extend(('%s' % street, x, a, amt) for (x, a, amt) in r2.log)

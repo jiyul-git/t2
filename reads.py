@@ -5,7 +5,9 @@ import math, random
 # 모집단 사전분포 — 표본이 적을 때 끌려가는 기준점
 PRIOR = {'vpip': 0.26, 'pfr': 0.15, 'cbet': 0.55, 'barrel': 0.42,
          'wtsd': 0.28, 'aggr': 5.0, 'bluff': 4.5, 'tight': 5.0,
-         'fold_to_bet': 0.52, 'pf_3bet': 0.07, 'pf_fold_to_3bet': 0.55}
+         'fold_to_bet': 0.52, 'pf_3bet': 0.07, 'pf_fold_to_3bet': 0.55,
+         'pf_4bet': 0.04, 'pf_fold_to_4bet': 0.60,
+         'sz_mean': 0.62, 'sz_sd': 0.22}
 
 # 관찰력: 표본을 얼마나 잘 반영하는가 / 과신 정도 / 노이즈
 import archetypes as A
@@ -64,7 +66,44 @@ class Book:
             # 프리플랍 공격성 — 3벳 많이 치는 사람과 포스트플랍 공격형은 다르다
             'pf_3bet_opp': 0, 'pf_3bet': 0,
             'pf_faced_3bet': 0, 'pf_fold_to_3bet': 0,
+            # 4벳 이상. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
+            'pf_4bet_opp': 0, 'pf_4bet': 0,
+            'pf_faced_4bet': 0, 'pf_fold_to_4bet': 0,
+            # 베팅 사이즈. 평균만이 아니라 **분산**이 중요하다.
+            # 항상 60%만 치는 사람과 30~120% 를 섞는 사람은
+            # 같은 60% 벳이라도 레인지 해석이 완전히 달라진다.
+            'sz_n': 0, 'sz_sum': 0.0, 'sz_sq': 0.0,
+            'sz_big': 0, 'sz_small': 0,          # 100%+ / 40%-
+            'szr_n': 0, 'szr_sum': 0.0,          # 리버 사이즈만 따로
             'agg_actions': 0, 'passive_actions': 0})
+
+    def observe_size(self, observers, actor, size_frac, street=None):
+        """베팅 사이즈 관측. 평균·분산·극단 빈도를 함께 센다."""
+        if not size_frac or size_frac <= 0:
+            return
+        s = min(3.0, float(size_frac))
+        for i in observers:
+            if i == actor: continue
+            r = self.rec(i, actor)
+            r['sz_n'] += 1
+            r['sz_sum'] += s
+            r['sz_sq'] += s*s
+            if s >= 1.0: r['sz_big'] += 1
+            elif s <= 0.40: r['sz_small'] += 1
+            if street == 'river':
+                r['szr_n'] += 1; r['szr_sum'] += s
+
+    def observe_4bet(self, observers, actor, had_chance, did_4bet,
+                     faced_4bet=False, folded_to_4bet=False):
+        for i in observers:
+            if i == actor: continue
+            r = self.rec(i, actor)
+            if had_chance:
+                r['pf_4bet_opp'] += 1
+                if did_4bet: r['pf_4bet'] += 1
+            if faced_4bet:
+                r['pf_faced_4bet'] += 1
+                if folded_to_4bet: r['pf_fold_to_4bet'] += 1
 
     def observe_3bet(self, observers, actor, had_chance, did_3bet,
                      faced_3bet=False, folded_to_3bet=False):
@@ -142,6 +181,7 @@ def estimate(book, observer, target, observer_type, rng=None):
         est['ftb'] = PRIOR['fold_to_bet']
         for _k in ('ftb_flop', 'ftb_turn', 'ftb_river'):
             est[_k] = PRIOR['fold_to_bet']
+        est['sz_big'] = 0.15; est['sz_river'] = PRIOR['sz_mean']; est['sz_n'] = 0
         est['n'] = 0; est['confidence'] = 0.0
         return est
     n = min(r['hands'], o['memory'])
@@ -158,6 +198,18 @@ def estimate(book, observer, target, observer_type, rng=None):
     ftb_r = _rate('f2b_river', 'fb_river', PRIOR['fold_to_bet'])
     tb    = _rate('pf_3bet', 'pf_3bet_opp', PRIOR['pf_3bet'])
     f2tb  = _rate('pf_fold_to_3bet', 'pf_faced_3bet', PRIOR['pf_fold_to_3bet'])
+    fb    = _rate('pf_4bet', 'pf_4bet_opp', PRIOR['pf_4bet'])
+    f2fb  = _rate('pf_fold_to_4bet', 'pf_faced_4bet', PRIOR['pf_fold_to_4bet'])
+    # 사이즈: 평균과 표준편차. 분산이 낮으면 사이즈에서 정보가 안 나온다.
+    _sn = r.get('sz_n', 0)
+    if _sn >= 2:
+        _m = r['sz_sum']/_sn
+        _var = max(0.0, r['sz_sq']/_sn - _m*_m)
+        sz_mean, sz_sd = _m, _var ** 0.5
+    else:
+        sz_mean, sz_sd = PRIOR['sz_mean'], PRIOR['sz_sd']
+    sz_big = _rate('sz_big', 'sz_n', 0.15)
+    sz_riv = (r['szr_sum']/r['szr_n']) if r.get('szr_n') else sz_mean
 
     cap = o['memory']                      # 기억 한계는 기회 횟수에도 적용
     n_cb = min(r['cbet_opp'], cap)
@@ -196,6 +248,10 @@ def estimate(book, observer, target, observer_type, rng=None):
             'ftb_river': _sh(ftb_r, 'fb_river', PRIOR['fold_to_bet']),
             'pf_3bet': _sh(tb, 'pf_3bet_opp', PRIOR['pf_3bet']),
             'pf_fold_to_3bet': _sh(f2tb, 'pf_faced_3bet', PRIOR['pf_fold_to_3bet']),
+            'pf_4bet': _sh(fb, 'pf_4bet_opp', PRIOR['pf_4bet']),
+            'pf_fold_to_4bet': _sh(f2fb, 'pf_faced_4bet', PRIOR['pf_fold_to_4bet']),
+            'sz_mean': sz_mean, 'sz_sd': sz_sd,
+            'sz_big': sz_big, 'sz_river': sz_riv, 'sz_n': _sn,
             'aggr': jitter(aggr_axis), 'bluff': jitter(bluff_axis),
             'tight': jitter(tight_axis), 'n': r['hands'], 'confidence': round(conf, 2)}
 
@@ -214,6 +270,10 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'ftb_flop': e.get('ftb_flop'), 'ftb_turn': e.get('ftb_turn'),
             'ftb_river': e.get('ftb_river'),
             'pf_3bet': e.get('pf_3bet'), 'pf_fold_to_3bet': e.get('pf_fold_to_3bet'),
+            'pf_4bet': e.get('pf_4bet'), 'pf_fold_to_4bet': e.get('pf_fold_to_4bet'),
+            'sz_mean': e.get('sz_mean'), 'sz_sd': e.get('sz_sd'),
+            'sz_big': e.get('sz_big'), 'sz_river': e.get('sz_river'),
+            'sz_n': e.get('sz_n'),
             'type': None, 'confidence': e['confidence'], 'n': e['n']}
 
 

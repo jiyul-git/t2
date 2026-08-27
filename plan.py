@@ -637,6 +637,16 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             # 상대가 실제로 밟아온 액션 경로로 좁혀진 레인지가 있으면 그것을 쓴다.
             # 여기서 다시 22% 고정 가정으로 돌아가면 콜/폴드 판단만 리딩을 못 받는다.
             sz = tocall/max(1.0, float(pot))
+            # 상대의 사이즈 습관을 반영한다.
+            # 항상 같은 사이즈만 치는 사람(size_info 낮음)은 사이즈가 레인지를
+            # 나누지 않는다. 그런 상대의 이번 사이즈는 정보가 아니므로
+            # 그 사람의 평균 쪽으로 되돌려 해석한다.
+            # 사이즈를 섞는 사람이면 실제 사이즈를 그대로 믿는다.
+            _rdo = PS.read_opponent(profile, opp_est)
+            if _rdo['w'] > 0 and opp_est and opp_est.get('sz_mean'):
+                _pull = _rdo['w'] * (1.0 - _rdo.get('size_info', 0.0))
+                if _pull > 0:
+                    sz = sz*(1.0 - _pull) + float(opp_est['sz_mean'])*_pull
             # 상대 레인지는 '내가 관찰한 상대 추정치'로 모델링한다.
             # profile 은 나 자신이므로 여기 쓰면 내 블러프 성향을 상대에게 투영하게 된다.
             # perceived_range 를 써야 한다. narrow_by_actions 를 직접 부르면

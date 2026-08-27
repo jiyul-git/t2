@@ -473,6 +473,19 @@ def read_opponent(prof, opp_est):
             # 프리플랍 공격성은 별도 축이다
             'tb_gap':   max(-0.5, min(0.5, g('pf_3bet', 0.07) - 0.07)) * 4.0,
             'f2tb_gap': fg(g('pf_fold_to_3bet', 0.55) + 0.52 - 0.55),
+            # 4벳 축. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
+            'fb_gap':   max(-0.5, min(0.5, g('pf_4bet', 0.04) - 0.04)) * 6.0,
+            'f2fb_gap': fg(g('pf_fold_to_4bet', 0.60) + 0.52 - 0.60),
+            # 사이즈 축.
+            #  size_gap : 평균적으로 크게 치는가 (-1~+1)
+            #  size_info: 사이즈에서 정보를 얻을 수 있는가 (0~1).
+            #             항상 같은 사이즈만 치는 사람은 사이즈가 레인지를 안 나눈다.
+            #             표본이 적어도 낮게 잡는다.
+            'size_gap':  max(-1.0, min(1.0, (g('sz_mean', 0.62) - 0.62)/0.45)),
+            'size_info': (max(0.0, min(1.0, (g('sz_sd', 0.22) - 0.08)/0.35))
+                          * min(1.0, g('sz_n', 0)/8.0)),
+            'size_big':  max(0.0, min(1.0, g('sz_big', 0.15))),
+            'size_river': g('sz_river', g('sz_mean', 0.62)),
             'bluff_gap': max(-1.0, min(1.0, (bl - 4.5)/4.5)),
             'passive': max(-1.0, min(1.0, (5.0 - ag)/5.0)),
             'station': max(-0.5, min(0.5, 0.52 - ftb))}
