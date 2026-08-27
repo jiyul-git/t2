@@ -259,6 +259,43 @@ def draw_strength(hero, board):
         outs += gain if outs == 0 else gain//2       # 플러시드로우와 겹치면 절반만
     return outs
 
+def made_strength(hero, board):
+    """내 홀카드가 **실제로 기여한** 완성 강도.
+
+    eval7(hero+board)[0] 은 7장 최고 조합이라 보드만으로 성립하는 것도 센다.
+    98o 가 6s Ks Kc 보드에서 원페어(=보드의 KK)로 잡혀 '쇼다운 가치 있음'이
+    되는 문제가 있었다. draw_strength 는 이미 같은 규칙을 지킨다
+    ("보드만으로 성립하는 연결/수트는 내 드로우가 아니다").
+
+    반환: 내 기여가 없으면 0, 있으면 eval7 등급.
+    """
+    if not board:
+        return 0
+    full = eval7(list(hero) + list(board))
+    # 내 카드를 뺀 조합과 비교한다. 같으면 내 기여가 없다는 뜻이다.
+    # 보드가 5장 미만일 땐 5장을 못 만드니, 보드가 만들 수 있는
+    # 최고 등급(페어/트립스 등)만 따져서 비교한다.
+    if len(board) >= 5:
+        board_best = eval7(list(board))
+        # 등급(카테고리)이 같으면 내 카드는 킥커로만 얹힌 것이다.
+        # 킥커까지 비교하면 98o 가 KK 보드에서 '원페어 보유'로 잡혀
+        # 쇼다운 가치가 있다고 오판한다.
+        if full[0] <= board_best[0]:
+            return 0
+        return full[0]
+    ranks = [c[0] for c in board]
+    cnt = {}
+    for r in ranks: cnt[r] = cnt.get(r, 0) + 1
+    m = max(cnt.values()) if cnt else 1
+    board_cat = {1: 0, 2: 1, 3: 3, 4: 7}.get(m, 0)   # 하이/원페어/트립스/쿼드
+    su = {}
+    for c in board: su[c[1]] = su.get(c[1], 0) + 1
+    if su and max(su.values()) >= 5: board_cat = max(board_cat, 5)
+    if full[0] <= board_cat:
+        return 0
+    return full[0]
+
+
 def _sd_strength(combo, board):
     """콤보의 '계속 가치'. 완성 강도 + 드로우 지분.
 

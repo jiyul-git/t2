@@ -148,7 +148,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     pc = max(0.0, min(1.0, (profile['icm'] + (10-profile['gamble']) + (10-profile['aggr']))/30.0))
 
     # 절대 강도 + 상대 레인지 대비 강도
-    made = bot.eval7(hero + board)[0] if board else 0
+    # 내 카드가 실제로 기여한 강도만 센다 (보드만으로 성립하는 건 내 것이 아니다)
+    made = bot.made_strength(hero, board) if board else 0
     rel = relative_strength(hero, board, opp_range) if board else 0.5
     monster = made >= 5                     # 플러시 이상은 다인원 보정 면제
     strong  = made >= 3                     # 트립스 이상
@@ -623,7 +624,7 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 trust *= (1.0 + 0.10*(stell - 5.0)/5.0 * min(2.0, dev/0.4))
             need -= trust * (read - 0.35)
             need = max(0.03, min(0.95, need))
-        made_now = bot.eval7(hero+board)[0] if board else 0
+        made_now = bot.made_strength(hero, board) if board else 0
         # 개인 행동 편향 — 같은 eq·같은 팟오즈라도 사람마다 다른 답을 낸다.
         # 이게 없으면 성향이 아무리 달라도 콜/폴드는 eq>=need 하나의 문턱으로 수렴해서
         # '평균은 맞지만 아무도 개성이 없는' 필드가 된다. calc_noise(랜덤 오차)와 달리
@@ -831,7 +832,7 @@ def river_fix(state, hero, board):
     st = dict(state)
     st['outs'] = 0
     if st.get('plan') == 'semibluff':
-        made = bot.eval7(hero + board)[0]
+        made = bot.made_strength(hero, board)
         rel = st.get('rel', 0.5)
         if made >= 2 or rel >= 0.65:
             st['plan'] = 'value_2street'
@@ -912,7 +913,7 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     rel = relative_strength(hero, board, opp_range)
     eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
     outs = draw_strength(hero, board)
-    made = bot.eval7(hero + board)[0]
+    made = bot.made_strength(hero, board)
     st.update({'rel': round(rel,2), 'eq': round(eq,3), 'outs': outs,
                'made': made, 'danger': round(bot.board_danger(board),2)})
     why = list(st.get('why') or [])
