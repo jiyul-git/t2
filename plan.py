@@ -339,10 +339,17 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         return 'call', 0.0, need, '밸류이나 콜 선택'
 
     # --- 블러프 레이즈: reraise × bluff 개념 ---
-    if has_c and eq < need - 0.05:
-        blr = (PS.sk(profile, 'reraise')/10.0) * (PS.sk(profile, 'bluff')/10.0)
-        if rng.random() < blr*0.28:
-            return 'raise', 1.0, need, '블러프 레이즈(개념 %.2f)' % blr
+    # 계획을 반드시 본다. 예전에는 plan 조건이 없어서 pot_control(팟을 작게
+    # 유지하겠다는 계획)인데도 여기로 떨어져 올인급 레이즈가 나왔다.
+    # 또 쇼다운 가치가 있는 패를 블러프로 쓰면 이길 수 있는 상황을 버리게 된다.
+    if has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'giveup'):
+        made_sd = plan_state.get('made', 0)
+        if made_sd >= 2:
+            pass                       # 투페어 이상은 쇼다운 가치가 있다 → 블러프 부적합
+        else:
+            blr = (PS.sk(profile, 'reraise')/10.0) * (PS.sk(profile, 'bluff')/10.0)
+            if rng.random() < blr*0.28:
+                return 'raise', 1.0, need, '블러프 레이즈(개념 %.2f)' % blr
 
     # --- 세미블러프: 레이즈 or 내재오즈 콜 ---
     if plan == 'semibluff' and plan_state.get('outs', 0) >= 8 and street != 'river':
