@@ -343,7 +343,10 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     # 계획을 반드시 본다. 예전에는 plan 조건이 없어서 pot_control(팟을 작게
     # 유지하겠다는 계획)인데도 여기로 떨어져 올인급 레이즈가 나왔다.
     # 또 쇼다운 가치가 있는 패를 블러프로 쓰면 이길 수 있는 상황을 버리게 된다.
-    if has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'giveup'):
+    # giveup 은 제외한다. 그 계획의 사유 자체가 '블러프 개념/조건 미달'이라
+    # 여기서 블러프 레이즈를 내면 판단 층이 이미 기각한 것을 집행부가 되살리는 셈이다.
+    # 규율이 낮아 뒤집는 경우는 아래 이탈 경로에서 따로 처리한다.
+    if has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff'):
         made_sd = plan_state.get('made', 0)
         if made_sd >= 2:
             pass                       # 투페어 이상은 쇼다운 가치가 있다 → 블러프 부적합
@@ -361,6 +364,18 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
             need = max(0.02, need - implied)
         act = 'call' if eq >= need else 'fold'
         return act, 0.0, need, '세미블러프 내재오즈 반영'
+
+    if plan == 'giveup' and has_c and eq < need - 0.05:
+        # 포기 계획을 뒤집는 블러프 레이즈. 규율이 낮을수록 자주 나온다.
+        # 계획 이탈이므로 반드시 기록한다.
+        disc = PS.temper(profile, 'discipline', 5.0)
+        blr = (PS.sk(profile, 'reraise')/10.0) * (PS.sk(profile, 'bluff')/10.0)
+        p_dev = blr * 0.28 * max(0.05, 1.0 - 0.085*disc)
+        if plan_state.get('made', 0) < 2 and rng.random() < p_dev:
+            plan_state.setdefault('deviations', []).append(
+                {'street': street, 'planned': 'fold', 'executed': 'raise',
+                 'why': '규율 %.1f → 포기 계획 뒤집고 블러프 레이즈' % disc})
+            return 'raise', 1.0, need, 'DEVIATE:포기 계획 뒤집은 블러프 레이즈'
 
     if plan in ('bluff_2street', 'giveup'):
         # 계획은 포기지만 팟오즈가 실제로 맞으면 접으면 안 된다.
