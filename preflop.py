@@ -90,10 +90,13 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     if rng.random() < limp_p and band in ('normal','deep') and pos != 'SB':
         return ('limp', 1.0)
     if should_shove(band, r, t, pos, bb): return ('shove', bb)
-    if vs > 0.05 and band in ('normal', 'deep'):
-        # 딥스택 오픈 쇼브. 정상 전략에는 없는 행동이므로 분산 추구에서만 나온다.
-        # 강한 핸드일수록, 분산 추구가 클수록 자주.
-        p_sh = vs * (0.28 if r <= 0.10 else 0.16 if r <= 0.25 else 0.07)
+    # 분산 추구 오픈 쇼브.
+    # 스택 상한이 중요하다. 실제로 '스킬 구간을 없애려고' 쇼브하는 건
+    # 대략 60bb 이하에서다. 134bb 에서 AKs 를 쇼브하면 콜 레인지가
+    # AA/KK 뿐이라 분산을 키우는 게 아니라 그냥 최악의 EV 다.
+    # 예전에는 band 조건만 있고 상한이 없어 155bb 쇼브까지 나왔다.
+    if vs > 0.12 and band == 'normal' and bb <= 60:
+        p_sh = vs * (0.22 if r <= 0.10 else 0.12 if r <= 0.25 else 0.05)
         if rng.random() < p_sh:
             return ('shove', bb)
     sz = open_size_bb(band, pos, rng)
