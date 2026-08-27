@@ -157,6 +157,34 @@ def _check_range(r, board, street, cbet_axis, damp=1.0):
     return ranked[drop:] if n - drop >= _MIN_KEEP else ranked
 
 
+def perceived_range(base, board, acts, profile=None):
+    """이 사람이 **실제로 인식하는** 상대 레인지.
+
+    개념을 아는 것과 그 정보가 판단에 들어오는 것은 다르다.
+    range_read 가 낮은 사람은 '상대가 어떤 액션을 밟아왔는가'를
+    레인지에 반영하지 못한다. 그런 사람에게는 상대가 3배럴을 하든
+    체크만 하든 레인지가 거의 그대로다.
+
+    예전에는 이 축소가 range_read 와 무관하게 항상 완전히 적용돼서,
+    피시도 레귤러와 똑같이 정밀한 상대 레인지를 얻었다.
+    """
+    if not profile or not profile.get('concepts'):
+        return narrow_by_actions(base, board, acts, profile)
+    rr = PS.sk(profile, 'range_read')
+    if rr < 1.5:
+        return list(base)                     # 액션을 아예 반영 못 한다
+    full = narrow_by_actions(base, board, acts, profile)
+    grasp = min(1.0, (rr - 1.5) / 6.0)        # rr 7.5 이상이면 완전 반영
+    if grasp >= 0.98 or not full:
+        return full
+    # 부분 인식: 좁혀진 레인지와 원본 사이를 섞는다.
+    # '어렴풋이 안다'는 좁힌 레인지 + 원본 잔여로 표현된다.
+    keep = set(full)
+    rest = [c for c in base if c not in keep]
+    n_extra = int(len(rest) * (1.0 - grasp))
+    return full + rest[:n_extra]
+
+
 def narrow_by_actions(base, board, acts, profile=None):
     """관측된 포스트플랍 액션 경로로 레인지를 순차 축소한다.
 
