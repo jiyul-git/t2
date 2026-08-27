@@ -3,7 +3,7 @@ import sys, json
 sys.path.insert(0, '/home/claude/t2')
 import tourney as T
 
-SEED = 555001
+SEED = 666001
 ACTS = '/home/claude/t2/auto_acts.json'
 
 def load():

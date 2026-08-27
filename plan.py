@@ -605,10 +605,20 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # pot 은 pot_live 다 — 상대가 방금 낸 벳이 이미 포함돼 있다.
         # 여기서 tocall 을 또 더하면 분모에 콜 비용이 두 번 들어가 need 가
         # 실제보다 훨씬 낮게 나온다 (2,500/8,800=28% 가 6% 로 계산됐다).
-        need = (tocall*bf)/max(1.0, float(pot))
+        need_true = (tocall*bf)/max(1.0, float(pot))
+        need = need_true
         if profile.get('concepts'):
-            need *= PS.calc_noise(profile, 'potodds', rng)     # 팟오즈 계산 오차
-        if to_act_behind: need += 0.05*to_act_behind      # 뒤에 남은 사람 리스크
+            # 팟오즈 계산 오차. calc_noise 는 최대 3배까지 곱하는데,
+            # need 는 확률이라 3배를 곱하면 38% 가 100% 가 되어 '더 강해졌는데
+            # 폴드'하는 모순이 나온다. 오차는 오차 범위 안에 있어야 한다.
+            nz = PS.calc_noise(profile, 'potodds', rng)
+            nz = max(0.65, min(1.55, nz))
+            need = need_true * nz
+        if to_act_behind:
+            # 뒤에 남은 사람 리스크. 확률에 상수를 더하지 않고
+            # 남은 팟 지분 기준으로 비례 가산한다.
+            need += (1.0 - need_true) * min(0.18, 0.06*to_act_behind)
+        need = max(0.01, min(0.97, need))
         # 배팅라인 리딩 — 상대가 블러프일 사전확률만큼 문턱을 낮춘다
         if read is not None:
             trust = 0.25 + 0.06*profile.get('aggr', 5)
@@ -623,7 +633,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 dev = abs(sz_now - 0.6)                      # 표준 사이즈에서 벗어난 정도
                 trust *= (1.0 + 0.10*(stell - 5.0)/5.0 * min(2.0, dev/0.4))
             need -= trust * (read - 0.35)
-            need = max(0.03, min(0.95, need))
+        # 최종 상한. 어떤 보정도 팟오즈를 배 이상 부풀리지 못한다.
+        need = max(0.01, min(0.95, min(need, need_true*1.75 + 0.05)))
         made_now = bot.made_strength(hero, board) if board else 0
         # 개인 행동 편향 — 같은 eq·같은 팟오즈라도 사람마다 다른 답을 낸다.
         # 이게 없으면 성향이 아무리 달라도 콜/폴드는 eq>=need 하나의 문턱으로 수렴해서
