@@ -213,9 +213,16 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
         elif sk('potcontrol') >= 1 and rng.random() < min(0.75, pc*0.8 + 0.12 + 0.18*mw):
             plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
-        else:
+        elif rel >= 0.45 and made >= 1:
             plan = 'value_2street'
             why.append('중간강도(eq %.2f, rel %.2f) → 얇은 밸류' % (eq, rel))
+        else:
+            # 폴백이 밸류면 안 된다. rel 0.0 에 made 0 인 완전 미스가
+            # '얇은 밸류'로 분류돼, 계획은 밸류인데 실행은 체크하는
+            # 모순이 생겼다 (decide_aggression 이 rel 을 보므로).
+            plan = 'showdown' if made >= 1 else 'giveup'
+            why.append('중간강도이나 상대레인지 열세(rel %.2f, made %d) → %s'
+                       % (rel, made, plan))
     elif outs >= 8 and to_act_behind <= 1 and sk('semibluff') >= 0.4 \
          and rng.random() < min(0.95, 0.25 + 0.24*sk('semibluff')):
         plan = 'semibluff'; why.append('드로우 %d아웃 → 세미블러프' % outs)
