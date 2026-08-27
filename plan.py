@@ -362,7 +362,12 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         return act, 0.0, need, '세미블러프 내재오즈 반영'
 
     if plan in ('bluff_2street', 'giveup'):
-        return 'fold', 0.0, need, '포기/블러프 계획 → 저항에 폴드'
+        # 계획은 포기지만 팟오즈가 실제로 맞으면 접으면 안 된다.
+        # 부등호를 계획으로 덮어쓰면 eq > need 인데 폴드하는 모순이 생긴다.
+        # (계획이 못 미더우면 need 를 올려야지 부등호를 무시하면 안 된다)
+        if eq >= need:
+            return 'call', 0.0, need, '포기 계획이나 팟오즈가 맞음(eq %.3f ≥ need %.3f)' % (eq, need)
+        return 'fold', 0.0, need, '포기/블러프 계획 + 팟오즈 미달 → 폴드'
 
     act = 'call' if eq >= need else 'fold'
     return act, 0.0, need, 'eq %.3f vs need %.3f' % (eq, need)
@@ -596,7 +601,10 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         else:
             eq = bot.equity_vs_betting(hero, board, [(0.22, profile['bluff'])], callers,
                                        street, sims=600, seed=seed)
-        need = (tocall*bf)/(pot+tocall)
+        # pot 은 pot_live 다 — 상대가 방금 낸 벳이 이미 포함돼 있다.
+        # 여기서 tocall 을 또 더하면 분모에 콜 비용이 두 번 들어가 need 가
+        # 실제보다 훨씬 낮게 나온다 (2,500/8,800=28% 가 6% 로 계산됐다).
+        need = (tocall*bf)/max(1.0, float(pot))
         if profile.get('concepts'):
             need *= PS.calc_noise(profile, 'potodds', rng)     # 팟오즈 계산 오차
         if to_act_behind: need += 0.05*to_act_behind      # 뒤에 남은 사람 리스크
