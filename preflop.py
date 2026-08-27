@@ -216,12 +216,25 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
             tbg = exploit.get('tb_gap', 0.0)
             tp = max(0.0, min(0.9, tp * (1.0 + w*1.3*tbg)))
             tot = max(tp, min(0.95, tot * (1.0 + w*0.8*tbg)))
+            # 3벳 빈도만으로는 부족하다. '3벳은 자주 하는데 4벳에는 접는' 사람과
+            # '4벳도 안 접는' 사람은 4벳 블러프 여부가 정반대다.
+            f2fb = exploit.get('f2fb_gap', 0.0)
+            tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2fb)))
+            tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2fb)))
         else:
             # 오픈을 마주한 상황: 상대가 3벳에 잘 접으면 3벳을 넓힌다.
             # 포스트플랍 폴드율이 아니라 '3벳 대면 폴드율'을 봐야 한다.
             f2tb = exploit.get('f2tb_gap', exploit.get('fold_gap', 0.0))
             tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2tb)))
             tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2tb)))
+            # 4벳을 자주 하는 상대에게 라이트 3벳은 손해다. 3벳 구간만 줄이고
+            # 참가 폭(tot)은 유지한다 — 3벳 대신 콜로 흡수되어야 한다.
+            fbg = exploit.get('fb_gap', 0.0)
+            if fbg > 0:
+                # 줄어드는 건 라이트 3벳이다. 4벳 머신을 상대로도 밸류 3벳은
+                # 오히려 늘어야 하므로 상위 6%(밸류 코어)는 바닥으로 남긴다.
+                # 하한이 없으면 fb_gap 이 커질 때 3벳 자체가 사라진다.
+                tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))
     r = pct(hand)
     # --- 핫존 리쇼브: 콜 대신 3벳 올인 (혼합) ---
     if stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:

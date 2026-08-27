@@ -818,11 +818,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     # 상대 정보가 프리플랍 레인지부터 움직인다.
     # 예전에는 preflop_plan 이 opp_est 를 아예 안 받아서,
     # 상대가 3벳에 과하게 접는 걸 알아도 3벳 레인지가 안 넓어졌다.
+    # 잘 접는 상대의 오픈에는 3벳을 넓히고, 안 접는 상대에겐 좁힌다.
+    # 실제 반영은 defend_decision(exploit=rd) 안의 역치 보정에서 이뤄진다.
     rd = PS.read_opponent(profile, opp_est)
-    if rd['w'] > 0 and aggressor_pos is not None:
-        # 잘 접는 상대의 오픈에는 3벳을 넓히고, 안 접는 상대에겐 좁힌다.
-        # pct 문턱을 직접 옮기지 않고 defend 결과를 재해석한다 (아래 참조).
-        pass
     if aggressor_pos is None and not n_limpers:
         a, sz = _pf.open_decision(profile, pos, bb, hand, rng,
                                   behind_stacks=behind_stacks,

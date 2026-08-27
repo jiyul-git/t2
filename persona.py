@@ -517,8 +517,10 @@ def read_opponent(prof, opp_est):
             'size_big':  max(0.0, min(1.0, g('sz_big', 0.15))) * see_size,
             'size_river': g('sz_river', g('sz_mean', 0.62)),
             'bluff_gap': max(-1.0, min(1.0, (bl - 4.5)/4.5)) * see_line,
-            'passive': max(-1.0, min(1.0, (5.0 - ag)/5.0)),
-            'station': max(-0.5, min(0.5, 0.52 - ftb))}
+            # passive/station 도 빈도 관찰이다. fold_gap 은 see_freq 로 막아놓고
+            # 같은 원천(ftb/aggr)에서 나온 이 둘만 무게이트면 우회로가 된다.
+            'passive': max(-1.0, min(1.0, (5.0 - ag)/5.0)) * see_freq,
+            'station': max(-0.5, min(0.5, 0.52 - ftb)) * see_freq}
 
 
 def street_gap(rd, street):
