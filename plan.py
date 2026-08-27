@@ -988,9 +988,14 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 함정을 팠는데 아무도 물지 않았다 → 직접 밸류로 전환
         st['plan'] = 'value_3street' if rel >= 0.85 else 'value_2street'
         why.append('%s: 상대가 벳하지 않음 → 함정 해제, 직접 밸류' % street)
-    elif old in ('pot_control','block') and rel >= 0.88:
-        st['plan'] = 'value_2street'
-        why.append('%s: 상대강도 %.2f로 상승 → 밸류 전환' % (street, rel))
+    elif old in ('pot_control', 'block', 'showdown') and (
+            rel >= 0.70 or made >= max(2, st.get('made', 0) + 1)):
+        # 승격 조건. 예전에는 rel >= 0.88 하나뿐이라
+        # 리버에 트립스가 되어 rel 0.05 → 0.76, made 1 → 3 이 됐는데도
+        # 계획이 턴의 pot_control 그대로 남아 체크했다.
+        # rel 만이 아니라 '내 완성 강도가 올라갔는가'도 승격 근거다.
+        st['plan'] = 'value_3street' if rel >= 0.88 else 'value_2street'
+        why.append('%s: 강도 상승(rel %.2f, made %d) → 밸류 전환' % (street, rel, made))
     elif old == 'bluff_2street' and rel >= 0.75:
         st['plan'] = 'value_2street'
         why.append('%s: 블러프였으나 강도 상승 → 밸류 전환' % street)

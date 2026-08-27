@@ -16,6 +16,12 @@ def replay(acts):
     i = 0; st = t.next_hand()
     while True:
         while st and not st.get('done'):
+            if st.get('error'):
+                # 사이즈가 규칙에 안 맞아 재입력을 요구받았다.
+                # 재생 중이면 최소 레이즈로 올려서 진행한다.
+                mr = st.get('min_raise') or 0
+                st = t.submit('raise', mr) if mr else t.submit('call', 0)
+                continue
             if i >= len(acts): return t, st, False
             a = acts[i]; i += 1
             st = t.submit(a[0], a[1] if len(a) > 1 else 0)
