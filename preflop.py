@@ -115,9 +115,13 @@ def prof_aggr(prof):
 def reraise_mult(level, def_pos):
     """레이즈 단계별 배수. 단계가 올라갈수록 작아진다."""
     ip = def_pos in ('BTN','CO','HJ','LJ')
-    return {2: (3.0 if ip else 3.7),   # 3벳
-            3: (2.15 if ip else 2.35), # 4벳
-            4: (2.1 if ip else 2.2),   # 5벳
+    # level 규약은 '마주한 레이즈 수'다 (defend_thresholds 와 동일).
+    # 오픈 대면 = 1 → 내가 치면 3벳. 예전 표는 키가 2부터라
+    # 오픈 대면이 표에 없어 기본값 2.1 이 나왔고, 모든 3벳이 2.1배로 작았다.
+    # AA 로도 3bb 오픈에 6.25bb 밖에 못 쳐서 밸류가 안 나왔다.
+    return {1: (3.0 if ip else 3.7),   # 3벳
+            2: (2.15 if ip else 2.35), # 4벳
+            3: (2.1 if ip else 2.2),   # 5벳
             }.get(level, 2.1)
 
 HOT_LO, HOT_HI = 12.0, 26.0
