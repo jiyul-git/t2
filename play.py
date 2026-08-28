@@ -2,8 +2,9 @@
 import random, json, os, hashlib
 import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU
 
+import table as _TB
 from table import SEAT_ORDER as ORDER
-from table import PRE_ORDER as PRE, POST_ORDER as POST   # 단일 출처 재수출
+from table import PRE_ORDER as PRE, POST_ORDER as POST   # 단일 출처 재수출 (8맥스 기본)
 
 class Hand:
     def __init__(self, seats, profiles, stacks, button, sb, bb, hero=None,
@@ -32,7 +33,9 @@ class Hand:
         self.book = book if book is not None else _RD.Book()
         n = len(self.seats)
         i = self.seats.index(button)
-        order = ORDER[:n]
+        # 좌석 수마다 포지션 사다리가 다르다. 8맥스 목록을 잘라 쓰면
+        # 9인 테이블에서 인덱스가 넘친다.
+        order, self.PRE, self.POST = _TB.orders(n)
         self.pos = {self.seats[(i+k) % n]: order[k] for k in range(n)}
         self.seat_of = {v: k for k, v in self.pos.items()}
         self._start_stacks = dict(self.stacks)

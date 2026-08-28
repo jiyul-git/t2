@@ -50,7 +50,7 @@ FAMILY_LIMP = {'reg': 0.01, 'nit': 0.02, 'fish': 0.45, 'maniac': 0.04,
 FAMILY_ISO  = {'reg': 0.80, 'nit': 0.35, 'fish': 0.15, 'maniac': 0.90,
                'tilt': 0.70, 'live': 0.45}
 
-POS_BASE = {'UTG':.10,'UTG+1':.12,'LJ':.15,'HJ':.19,'CO':.26,'BTN':.42,'SB':.30}
+POS_BASE = {'UTG':.10,'UTG+1':.12,'UTG+2':.135,'LJ':.15,'HJ':.19,'CO':.26,'BTN':.42,'SB':.30}
 
 def axes(name):
     t, a, b, g, i, k, fam, desc = ARCHETYPES[name]

@@ -39,8 +39,8 @@ def _saturate(tp_raw, tot_raw, ceiling=0.80, scale=0.55):
     tot = ceiling * (1 - math.exp(-tot_raw/scale))
     return tot * (tp_raw/tot_raw), tot
 
-OPENER_MULT = {'UTG':1.4,'UTG+1':1.5,'LJ':1.8,'HJ':2.2,'CO':2.9,'BTN':4.2,'SB':4.6}
-DEF_POS_MULT = {'BB':1.0,'SB':0.55,'BTN':0.9,'CO':0.7,'HJ':0.6,'LJ':0.5,'UTG+1':0.45,'UTG':0.4}
+OPENER_MULT = {'UTG':1.4,'UTG+1':1.5,'UTG+2':1.65,'LJ':1.8,'HJ':2.2,'CO':2.9,'BTN':4.2,'SB':4.6}
+DEF_POS_MULT = {'BB':1.0,'SB':0.55,'BTN':0.9,'CO':0.7,'HJ':0.6,'LJ':0.5,'UTG+2':0.47,'UTG+1':0.45,'UTG':0.4}
 
 # ---------- 스택 뎁스 ----------
 def depth_band(bb):

@@ -10,9 +10,25 @@ HANDS_PER_LEVEL = 12
 
 # ---------- 포지션 순서 (단일 출처) ----------
 # 사본을 만들지 말 것. 좌석 수를 바꿀 때 여기만 고치면 되도록 유지한다.
-SEAT_ORDER = ['BTN','SB','BB','UTG','UTG+1','LJ','HJ','CO']   # 버튼 기준 좌석 배치 순
-PRE_ORDER  = ['UTG','UTG+1','LJ','HJ','CO','BTN','SB','BB']   # 프리플랍 액션 순
-POST_ORDER = ['SB','BB','UTG','UTG+1','LJ','HJ','CO','BTN']   # 포스트플랍 액션 순
+#
+# 좌석 수마다 포지션 사다리가 다르다. 라이브는 9맥스가 표준이고
+# 온라인은 8맥스, 6맥스도 있다. 8맥스만 가정하면 9인 테이블에서
+# 인덱스가 넘쳐 IndexError 가 난다 (실제로 그랬다).
+_PRE = {
+    6: ['UTG','HJ','CO','BTN','SB','BB'],
+    7: ['UTG','LJ','HJ','CO','BTN','SB','BB'],
+    8: ['UTG','UTG+1','LJ','HJ','CO','BTN','SB','BB'],
+    9: ['UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN','SB','BB'],
+}
+
+def orders(n=8):
+    """좌석 수 n 의 (SEAT_ORDER, PRE_ORDER, POST_ORDER)."""
+    pre = _PRE.get(n) or _PRE[8]
+    post = pre[-2:] + pre[:-2]              # SB, BB 가 먼저
+    seat = ['BTN','SB','BB'] + [x for x in pre if x not in ('BTN','SB','BB')]
+    return seat, list(pre), post
+
+SEAT_ORDER, PRE_ORDER, POST_ORDER = orders(8)   # 기본값(하위호환)
 
 class Table:
     def __init__(self, path='table_state.json'):

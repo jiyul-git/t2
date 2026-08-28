@@ -2,6 +2,7 @@
 import random, math
 import play, session as SE, field as F, view as V
 from table import BLINDS, HANDS_PER_LEVEL
+import formats as FM
 
 import archetypes as A
 
@@ -16,9 +17,19 @@ def mk_profile(label_or_q, rng, quality=0.78, aggr_bias=0.0, loose_bias=0.0):
     return p
 
 class Tournament:
-    def __init__(self, entries=100, start_stack=30000, hero_seat=7, seats=8,
-                 seed=None, itm_frac=0.15, hands_per_level=HANDS_PER_LEVEL,
-                 buyin_level=1.0):
+    def __init__(self, entries=100, start_stack=None, hero_seat=7, seats=None,
+                 seed=None, itm_frac=None, hands_per_level=None,
+                 buyin_level=None, fmt=None):
+        # 포맷이 기본값을 정하고, 명시적으로 넘긴 인자가 그것을 덮어쓴다.
+        f = FM.get(fmt)
+        self.fmt = f
+        self.blinds_tbl = FM.blind_schedule(BLINDS, f['blind_mult'], len(BLINDS))
+        _bb0 = self.blinds_tbl[0][2]
+        if start_stack is None:     start_stack = f['start_bb'] * _bb0
+        if seats is None:           seats = f['seats']
+        if itm_frac is None:        itm_frac = f['itm_frac']
+        if hands_per_level is None: hands_per_level = f['hpl']
+        if buyin_level is None:     buyin_level = f['buyin_level']
         self.rng = random.Random(seed)
         self.seats = list(range(1, seats+1))
         self.hero = hero_seat
@@ -40,6 +51,9 @@ class Tournament:
         self.loose_bias = round(max(-1.8, min(1.8,
                              (self.field.variance - 1.15) * 1.9
                              + (self.field.aggression - 1.1) * 0.5)), 2)
+        # 상금 구조. 위성처럼 평탄하면 ICM 이 완전히 달라진다.
+        self.payouts = FM.payouts(self.field.itm, f['payout_flat'])
+        self.ante_from = f['ante_from']
         self.stacks = {s: start_stack for s in self.seats}
         self.profiles = {}
         for s in self.seats:
@@ -69,10 +83,11 @@ class Tournament:
 
     # ---------- 레벨 ----------
     @property
-    def level(self): return min(1 + self.hand_no//self.hpl, len(BLINDS))
+    def level(self): return min(1 + self.hand_no//self.hpl, len(self.blinds_tbl))
     def blinds(self):
-        _, sb, bb = BLINDS[self.level-1]; return sb, bb
-    def prev_level(self): return min(1 + max(0, self.hand_no-1)//self.hpl, len(BLINDS))
+        _, sb, bb = self.blinds_tbl[self.level-1]; return sb, bb
+    def prev_level(self):
+        return min(1 + max(0, self.hand_no-1)//self.hpl, len(self.blinds_tbl))
 
     # ---------- 핸드 ----------
     def next_hand(self):

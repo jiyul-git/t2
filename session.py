@@ -117,7 +117,7 @@ class HandRun:
     def _run(self):
         h = self.h
         self._before = dict(h.stacks)
-        rnd = RU.Round(None, [h.seat_of[p] for p in PRE if p in h.seat_of], h.stacks, h.bb)
+        rnd = RU.Round(None, [h.seat_of[p] for p in h.PRE if p in h.seat_of], h.stacks, h.bb)
         sb_s, bb_s = h.seat_of.get('SB'), h.seat_of.get('BB')
         if sb_s: 
             pay = min(h.sb, rnd.stacks[sb_s]); rnd.stacks[sb_s] -= pay; rnd.contrib[sb_s] = pay
@@ -265,7 +265,7 @@ class HandRun:
             board = h.board[:nc]
             active = [x for x in live if h.stacks[x] > 0]
             if len(active) < 2: break
-            order = [h.seat_of[p] for p in POST if p in h.seat_of and h.seat_of[p] in active]
+            order = [h.seat_of[p] for p in h.POST if p in h.seat_of and h.seat_of[p] in active]
             r2 = RU.Round(None, order, h.stacks, h.bb)
             street_aggr = aggressor          # 이 스트리트에 들어올 때의 공격자(루프 중 갱신되므로 스냅샷)
             pot_now = sum(contrib.values()) + dead
@@ -349,7 +349,7 @@ class HandRun:
                     pot_now, r2.stacks[s], street,
                     self._dseed(s, street, 'plan', len(r2.log)),
                     n_opp, behind, prev,
-                    POST.index(h.pos[s]) < 3, s == aggressor,
+                    h.POST.index(h.pos[s]) < 3, s == aggressor,
                     opp_est=_est, opp_stack_bb=_ostk, tilt=h.axes(s)[1],
                     first=(key not in h.plans or street == 'flop'),
                     pf_seed=getattr(h, 'pf_seed', {}).get(s))
@@ -375,7 +375,7 @@ class HandRun:
                     n_barrels = max(1, n_barrels)
                     sz_frac = tc/max(1, pot_live)
                     read_val = PL.line_bluff_prior(est, street, n_barrels, sz_frac, board,
-                                                  POST.index(h.pos[aggressor]) < 3)
+                                                  h.POST.index(h.pos[aggressor]) < 3)
                     h.reads_log = getattr(h, 'reads_log', [])
                     h.reads_log.append({'street': street, 'observer': s, 'target': aggressor,
                                         'est_bluff': round(est['bluff'],1),
@@ -384,7 +384,7 @@ class HandRun:
                 a2, eq, need = PL.act_with_plan(h.hole[s], board, ax, h.plans[key], pot_live, tc,
                                                 r2.stacks[s], street,
                                                 initiative=RU.has_initiative(s, aggressor),
-                                                oop=(POST.index(h.pos[s]) < 3), opp_range=opp_r,
+                                                oop=(h.POST.index(h.pos[s]) < 3), opp_range=opp_r,
                                                 bf=h.bf(s), seed=self._dseed(s, street, 'act', len(r2.log)),
                                                 n_opp=n_opp, to_act_behind=behind, read=read_val,
                                                 opp_est=est if tc > 0 and aggressor is not None

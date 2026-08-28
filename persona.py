@@ -226,7 +226,7 @@ def calc_noise(prof, concept, rng):
 # 포지션별 탄력성 — 성향 차이가 오픈 폭에 얼마나 크게 반영되는가.
 # 얼리에서는 누구나 쓰레기를 접으므로 타입 차이가 작고,
 # 레이트로 갈수록 닛과 매니악의 격차가 벌어진다. 이건 실제 통계와 같은 방향이다.
-OPEN_ELASTICITY = {'UTG':0.75,'UTG+1':0.80,'LJ':0.90,'HJ':1.00,
+OPEN_ELASTICITY = {'UTG':0.75,'UTG+1':0.80,'UTG+2':0.85,'LJ':0.90,'HJ':1.00,
                    'CO':1.10,'BTN':1.25,'SB':1.20,'BB':1.10}
 
 def open_pct(prof, pos):
@@ -238,7 +238,7 @@ def open_pct(prof, pos):
     오픈 의지는 루즈함만이 아니라 공격성에도 달렸다.
     같은 폭의 핸드를 봐도 소극적인 사람은 림프하고 공격적인 사람은 올린다.
     """
-    base = {'UTG':.10,'UTG+1':.12,'LJ':.15,'HJ':.19,'CO':.26,'BTN':.42,'SB':.30,'BB':.30}
+    base = {'UTG':.10,'UTG+1':.12,'UTG+2':.135,'LJ':.15,'HJ':.19,'CO':.26,'BTN':.42,'SB':.30,'BB':.30}
     loose = temper(prof, 'looseness', 5.0)
     aggr  = temper(prof, 'aggression', 5.0)
     drive = max(0.4, 0.70*loose + 0.30*aggr)
