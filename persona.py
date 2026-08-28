@@ -20,6 +20,17 @@ TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
 
 ALL_CONCEPTS = EXEC + CALC
 
+# ---------- 개념 난이도/편차: 전부 잠정값 ----------
+# 아래 LOADING 의 base 와 SPREAD 의 값은 **아직 검토되지 않았다.**
+# 개념을 추가할 때마다 즉흥으로 정해서 서로 어긋나 있다.
+#
+# 코드를 다 정리한 뒤 개념 전체를 '얼마나 알려졌나 / 얼마나 계산이 귀찮나'로
+# 줄세우고 그 순서에 맞춰 한 번에 배분한다. 그때까지는 건드리지 않는다.
+# 개별 값을 지금 조정하면 나중 일괄 정리가 더 어려워진다.
+#
+# 검토 대상 목록을 보려면: python3 -c "import persona; persona.dump_loading()"
+LOADING_PROVISIONAL = True
+
 # ---------- 잠재 요인 ----------
 # 각 개념은 몇 개의 잠재 요인(공부량, 공격 성향, 경험)에서 파생된다.
 # (study, aggro, exp) 가중치 + 개별 노이즈
@@ -112,6 +123,22 @@ SPREAD = {
     'pf_range':         2.30,   # 외웠나 아닌가로 가장 크게 갈리는 개념
     'positional':       1.60,   # 공부 없이 경험으로도 붙어서 중간
 }
+
+
+def dump_loading():
+    """개념 난이도/편차 일괄 검토용 덤프. base 오름차순(어려운 것부터).
+
+    출력을 보고 '이 개념이 저 개념보다 어렵나?'만 판단하면 된다.
+    """
+    rows = sorted(LOADING.items(), key=lambda kv: kv[1][3])
+    print('%-20s %5s %6s   %s' % ('개념', 'base', 'spread', '(study aggro exp)'))
+    print('-' * 62)
+    for k, (ws, wa, we, base) in rows:
+        print('%-20s %5.1f %6.2f   (%.2f %+.2f %.2f)'
+              % (k, base, SPREAD.get(k, DEFAULT_SPREAD), ws, wa, we))
+    print('-' * 62)
+    print('base 낮을수록 어렵다(필드 평균이 낮다) / spread 클수록 사람마다 갈린다')
+    print('%d개 · 전부 잠정값 · 코드 정리 후 일괄 재배분' % len(rows))
 
 
 def _clamp(x, lo=0.0, hi=10.0): return max(lo, min(hi, x))
