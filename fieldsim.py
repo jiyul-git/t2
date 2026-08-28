@@ -1,6 +1,6 @@
 """필드 전체를 실제로 돌린다. 확률 모델 없이 모든 탈락이 실제 파산에서 나온다."""
 import json, os, math, random
-import play, session as SE, persona as PS, reads as RD
+import play, session as SE, persona as PS, reads as RD, field as FLD
 from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
