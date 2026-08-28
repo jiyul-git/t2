@@ -27,6 +27,13 @@ class Tournament:
         _bb0 = self.blinds_tbl[0][2]
         if start_stack is None:     start_stack = f['start_bb'] * _bb0
         if seats is None:           seats = f['seats']
+        # 한계는 formats.py 한 곳에서만 정한다.
+        # 좌석 상한은 포지션 사다리(table.orders)가 9까지만 정의되어 있기 때문이고,
+        # 엔트리 상한은 합의된 운영 범위다. 넘기면 조용히 자르지 않고 막는다.
+        if not (FM.MIN_SEATS <= seats <= FM.MAX_SEATS):
+            raise ValueError('좌석은 %d~%d (받은 값 %s)' % (FM.MIN_SEATS, FM.MAX_SEATS, seats))
+        if not (2 <= entries <= FM.MAX_ENTRIES):
+            raise ValueError('엔트리는 2~%d (받은 값 %s)' % (FM.MAX_ENTRIES, entries))
         if itm_frac is None:        itm_frac = f['itm_frac']
         if hands_per_level is None: hands_per_level = f['hpl']
         if buyin_level is None:     buyin_level = f['buyin_level']

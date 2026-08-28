@@ -84,6 +84,11 @@ FORMATS = {
 
 DEFAULT = 'standard'
 
+# ---------- 한계 ----------
+MAX_ENTRIES = 400      # 필드 최대 인원
+MAX_SEATS   = 9        # 테이블 최대 인원 (포지션 사다리 상한)
+MIN_SEATS   = 6
+
 
 def get(name=None):
     """포맷 dict 사본. 없는 이름이면 기본값."""
