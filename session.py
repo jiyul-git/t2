@@ -184,6 +184,7 @@ class HandRun:
                     open_bb=_obb, n_callers=callers, n_limpers=len(limpers),
                     raise_level=_rlevel, behind_stacks=_behind,
                     tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6),
+                    bf=h.bf(s),
                     opp_est=(RD.perceived_profile(
                         h.book, self._pid(s), self._pid(aggressor), ax,
                         random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))

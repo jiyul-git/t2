@@ -310,7 +310,17 @@ def bias(prof, name):
     return 0.0
 
 
-def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None):
+def icm_signal(bf):
+    """버블팩터(1.0~4.0)를 0~1 신호로 옮긴다.
+
+    규약: 모든 상황 신호는 0~1 로 낸다. 0 = 압박 없음.
+    그 신호를 읽는 능력(개념)은 별도 0~1 가중치로 따로 곱한다.
+    신호와 능력을 한 값에 섞으면 '신호는 센데 못 읽는 사람'이 표현되지 않는다.
+    """
+    return max(0.0, min(1.0, (float(bf or 1.0) - 1.0) / 3.0))
+
+
+def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0):
     """분산을 일부러 키우려는 성향. 0~1.
 
     실력 열세를 인정한 사람이 쓰는 실제 전략이다. 프리플랍 올인은
@@ -335,6 +345,15 @@ def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None):
     aware = min(1.0, (0.6*T('attention') + 0.4*sk(prof, 'range_read'))/10.0)
     gap = max(0.0, (field_q*10.0 - my)/10.0)          # 필드가 나보다 얼마나 센가
     strategic = gap * aware * (0.25 + 0.075*T('gamble'))
+    # ICM 압박은 전략 경로만 억제한다.
+    # '실력 열세를 자각해서 분산으로 간다'는 계산이므로, 같은 계산을 하는 사람은
+    # 버블에서 그 계산이 뒤집힌다는 것도 안다.
+    # 틸트는 계산이 아니다. 감정 경로에는 걸지 않는다.
+    # 하한 0.15 — icm 개념이 0 이어도 '이번에 죽으면 상금을 못 받는다'는
+    # 개념이 아니라 상식이다. 아무도 완전히 무시하지는 않는다.
+    icm_p = icm_signal(bf)                              # 상황 신호 0~1
+    icm_w = max(0.15, sk(prof, 'icm') / 10.0)           # 읽는 능력 0~1
+    strategic *= 1.0 - icm_p * icm_w * 0.90
     emotional = max(0.0, min(1.0, tilt)) * (1.2 - 0.09*T('discipline'))
     v = 0.65*strategic + 0.55*emotional
     if stack_bb is not None and stack_bb < 20:

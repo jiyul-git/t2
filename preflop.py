@@ -70,13 +70,13 @@ def should_shove(band, hand_pct, traits, pos, bb):
     return False
 
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
-                  tilt=0.0, field_q=0.6):
+                  tilt=0.0, field_q=0.6, bf=1.0):
     band = depth_band(bb)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 간다. 포스트플랍이라는 스킬 구간을 없애 결과를
     # 카드에 수렴시키는 것이다. 못 이기니까 운으로 가는 것.
-    vs = PS.variance_seek(prof, tilt, field_q, bb) if prof.get('concepts') else 0.0
+    vs = PS.variance_seek(prof, tilt, field_q, bb, bf) if prof.get('concepts') else 0.0
     thr = _open(prof, pos) * DEPTH_OPEN_MULT[band]
     thr = min(0.9, thr + t['shove_add'] if band in ('micro','short','mid') else thr)
     r = pct(hand)
@@ -263,14 +263,14 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
 
 def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng,
                     raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
-                    exploit=None):
+                    exploit=None, bf=1.0):
     """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
 
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
     3벳/콜 구간 자체가 움직인다. 정보가 없으면 w=0 이라 무보정.
     """
     band = depth_band(bb)
-    vs = PS.variance_seek(prof, tilt, field_q, bb) if prof.get('concepts') else 0.0
+    vs = PS.variance_seek(prof, tilt, field_q, bb, bf) if prof.get('concepts') else 0.0
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
                                 n_callers, raise_level)
     if exploit and exploit.get('w', 0) > 0:

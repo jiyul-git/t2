@@ -93,6 +93,11 @@ class Tournament:
         h = play.Hand(self.seats, self.profiles, self.stacks, self.button, sb, bb,
                       hero=self.hero, seed=self.rng.randrange(10**9), book=self.book)
         h.field_q = self.field_q          # 분산 추구 판단에 필요 (내 실력 vs 필드)
+        # ICM 은 필드 상태를 봐야 한다. 이 두 줄이 없으면 play.Hand.bf() 가
+        # 항상 1.0(칩EV)을 반환해서 버블·머니점프가 어떤 판단에도 안 들어간다.
+        # live.py 경로에는 있었고 여기만 빠져 있었다.
+        h.field_remaining = self.field.remaining
+        h.field_itm = self.field.itm
         self.hand = h
         self.run = SE.HandRun(h)
         return self.run.start()

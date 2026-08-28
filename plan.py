@@ -804,7 +804,7 @@ def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, st
 
 def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  n_callers=0, n_limpers=0, raise_level=1, behind_stacks=None,
-                 tilt=0.0, field_q=0.6, opp_est=None):
+                 tilt=0.0, field_q=0.6, opp_est=None, bf=1.0):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -824,7 +824,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     if aggressor_pos is None and not n_limpers:
         a, sz = _pf.open_decision(profile, pos, bb, hand, rng,
                                   behind_stacks=behind_stacks,
-                                  tilt=tilt, field_q=field_q)
+                                  tilt=tilt, field_q=field_q, bf=bf)
         role = 'open'
     elif aggressor_pos is None:
         a, sz = _pf.iso_decision({'type': profile.get('type')}, pos, hand,
@@ -834,7 +834,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         a, sz = _pf.defend_decision(profile, pos, aggressor_pos, hand, bb, open_bb,
                                     n_callers, rng, raise_level=raise_level,
                                     stack_bb=bb, tilt=tilt, field_q=field_q,
-                                    exploit=rd)
+                                    exploit=rd, bf=bf)
         role = 'defend'
 
     # 프리플랍에서 확정된 것들 — 포스트플랍 계획이 이걸 물려받는다
