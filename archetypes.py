@@ -50,6 +50,9 @@ FAMILY_LIMP = {'reg': 0.01, 'nit': 0.02, 'fish': 0.45, 'maniac': 0.04,
 FAMILY_ISO  = {'reg': 0.80, 'nit': 0.35, 'fish': 0.15, 'maniac': 0.90,
                'tilt': 0.70, 'live': 0.45}
 
+# 구형 라벨(아키타입) 전용 상대비율. **기준 레인지가 아니다.**
+# 기준은 gto.RFI_BY_BEHIND 하나뿐이고, preflop._open 이 이 표를
+# 그 기준에 대한 비율로만 쓴다. 여기 숫자를 기준으로 오해하지 말 것.
 POS_BASE = {'UTG':.10,'UTG+1':.12,'UTG+2':.135,'LJ':.15,'HJ':.19,'CO':.26,'BTN':.42,'SB':.30}
 
 def axes(name):

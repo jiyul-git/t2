@@ -18,12 +18,20 @@ import persona as PS
 BASE_OPEN = {n: A.open_range(n) for n in A.all_names()}   # 구형 호환
 TRAITS    = {n: A.traits(n)     for n in A.all_names()}
 
-def _open(prof, pos):
-    """프로필 dict(개념 벡터 우선) 또는 라벨 문자열 둘 다 받는다."""
+def _open(prof, pos, seats=8, bb=100.0, ante=True):
+    """오픈 폭. 깊이·안테·좌석수가 이미 반영된 값을 돌려준다.
+
+    호출부에서 DEPTH_OPEN_MULT 를 또 곱하지 말 것.
+    깊이는 gto.rfi 안에서 한 번만 적용된다.
+    """
     if isinstance(prof, dict):
-        if prof.get('concepts'): return PS.open_pct(prof, pos)[pos]
+        if prof.get('concepts'):
+            return PS.open_pct(prof, pos, seats, bb, ante)
         prof = prof.get('type', 'TAG')
-    return BASE_OPEN.get(prof, BASE_OPEN['TAG']).get(pos, 0.2)
+    import gto as _G
+    lab = BASE_OPEN.get(prof, BASE_OPEN['TAG']).get(pos, 0.2)
+    ref = _G.rfi(pos, seats, 100.0, True) or 0.2
+    return max(0.02, min(0.92, _G.rfi(pos, seats, bb, ante) * (lab/ref)))
 
 def _tr(prof):
     """프로필 dict(개념 벡터 우선) 또는 라벨 문자열 둘 다 받는다."""
@@ -70,14 +78,15 @@ def should_shove(band, hand_pct, traits, pos, bb):
     return False
 
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
-                  tilt=0.0, field_q=0.6, bf=1.0):
+                  tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True):
     band = depth_band(bb)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 간다. 포스트플랍이라는 스킬 구간을 없애 결과를
     # 카드에 수렴시키는 것이다. 못 이기니까 운으로 가는 것.
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf) if prof.get('concepts') else 0.0
-    thr = _open(prof, pos) * DEPTH_OPEN_MULT[band]
+    # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
+    thr = _open(prof, pos, seats, bb, ante)
     thr = min(0.9, thr + t['shove_add'] if band in ('micro','short','mid') else thr)
     r = pct(hand)
     if r > thr: return ('fold', 0)
@@ -363,7 +372,7 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
 
 def iso_decision(prof, pos, hand, n_limpers, bb, rng):
     t = _tr(prof)
-    thr = _open(prof, pos) * (1.0 + 0.35*t['iso'])
+    thr = _open(prof, pos) * (1.0 + 0.35*t['iso'])   # iso 는 깊이 미반영(기존 유지)
     r = pct(hand)
     if r <= thr and rng.random() < t['iso']:
         return ('raise', 3.0 + n_limpers)

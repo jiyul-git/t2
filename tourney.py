@@ -118,6 +118,8 @@ class Tournament:
         # ICM 은 필드 상태를 봐야 한다. 이 두 줄이 없으면 play.Hand.bf() 가
         # 항상 1.0(칩EV)을 반환해서 버블·머니점프가 어떤 판단에도 안 들어간다.
         # live.py 경로에는 있었고 여기만 빠져 있었다.
+        # 안테 액수. 포맷의 ante_from 레벨부터 1BB 안테.
+        h.ante = bb if self.level >= self.ante_from else 0
         h.field_remaining = self.field.remaining
         h.field_itm = self.field.itm
         self.hand = h

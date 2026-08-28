@@ -22,14 +22,14 @@ _base_open = pf._open
 _traits    = pf._tr
 
 def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
-                  opener_pos=None, open_bb=2.5):
+                  opener_pos=None, open_bb=2.5, seats=8, ante=True):
     """액션 경로로부터 그 플레이어의 프리플랍 레인지.
        call/3bet은 실제 디펜스 역치와 동일한 구간을 쓴다 (중첩 없음)."""
-    base = _base_open(prof_type, pos)
+    base = _base_open(prof_type, pos, seats, bb, ante)
     t = _traits(prof_type)
     lo, hi = 0.0, 0.35
     if action == 'open':
-        hi = base * pf.DEPTH_OPEN_MULT[pf.depth_band(bb)]
+        hi = base            # 깊이는 _open 안에서 이미 반영됨
     elif action == 'limp':
         hi = min(0.85, base * 2.6)
     elif action in ('call','3bet'):

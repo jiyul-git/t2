@@ -122,9 +122,14 @@ class HandRun:
         if sb_s: 
             pay = min(h.sb, rnd.stacks[sb_s]); rnd.stacks[sb_s] -= pay; rnd.contrib[sb_s] = pay
         ante_pot = 0
+        # 안테는 포맷이 정한 레벨부터 걷는다.
+        # 예전에는 ante_from 이 저장만 되고 무조건 1레벨부터 걷혔다.
+        _ante = getattr(h, 'ante', None)
+        if _ante is None: _ante = h.bb
         if bb_s:
             pay = min(h.bb, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= pay; rnd.contrib[bb_s] = pay
-            a = min(h.bb, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= a; ante_pot = a
+            if _ante > 0:
+                a = min(_ante, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= a; ante_pot = a
         rnd.current = h.bb; rnd.min_raise = h.bb
         aggressor = None; limpers = []; callers = 0
 
@@ -185,6 +190,7 @@ class HandRun:
                     raise_level=_rlevel, behind_stacks=_behind,
                     tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6),
                     bf=h.bf(s),
+                    seats=len(h.seats), ante=(getattr(h, 'ante', h.bb) > 0),
                     opp_est=(RD.perceived_profile(
                         h.book, self._pid(s), self._pid(aggressor), ax,
                         random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
@@ -305,8 +311,10 @@ class HandRun:
                     continue
                 behind = len([x for x in order if x not in r2.acted and x != s and x not in r2.folded])
                 n_opp = len(r2.live())-1
+                _seats, _ante = len(h.seats), (getattr(h, 'ante', h.bb) > 0)
                 my_r = R.preflop_range(ax, h.pos[s], 'open' if s == aggressor else 'call',
-                                       h.bbs(s), set(board), opener_pos=h.pos.get(aggressor))
+                                       h.bbs(s), set(board), opener_pos=h.pos.get(aggressor),
+                                       seats=_seats, ante=_ante)
                 my_r = sorted(set(my_r))      # 순서 확정 (판단이 순서에 의존하면 안 된다)
                 opp_r = []
                 for o in r2.live():
@@ -314,7 +322,8 @@ class HandRun:
                     oax, _ = h.axes(o)
                     orange = R.preflop_range(oax, h.pos[o],
                                              'open' if o == aggressor else 'call',
-                                             h.bbs(o), set(board), opener_pos=h.pos.get(aggressor))
+                                             h.bbs(o), set(board), opener_pos=h.pos.get(aggressor),
+                                             seats=_seats, ante=_ante)
                     # 관측된 포스트플랍 액션으로 레인지를 좁힌다.
                     # 이걸 빼면 상대가 무슨 행동을 했든 매 스트리트 프리플랍 레인지가 된다.
                     # 상대 레인지는 '이 사람이 인식하는 만큼'만 좁혀진다 (range_read).

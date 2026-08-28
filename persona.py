@@ -229,24 +229,30 @@ def calc_noise(prof, concept, rng):
 OPEN_ELASTICITY = {'UTG':0.75,'UTG+1':0.80,'UTG+2':0.85,'LJ':0.90,'HJ':1.00,
                    'CO':1.10,'BTN':1.25,'SB':1.20,'BB':1.10}
 
-def open_pct(prof, pos):
-    """성향에서 포지션별 오픈 폭을 파생.
+def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
+    """실제 오픈 폭 = GTO 기준 × 성향 조정 × 누적 판단.
 
-    덧셈형(base + k*loose)으로 만들면 상수항이 모두를 평균으로 끌어당겨
-    닛과 매니악이 2배 남짓밖에 차이나지 않는다. 곱셈형이라야 성향이 살아남는다.
+    기준은 여기서 만들지 않는다. gto.rfi 가 유일한 출처다.
+    예전에는 이 함수 안에 base dict 가 인라인으로 박혀 있었고
+    archetypes.POS_BASE 에 같은 숫자가 또 있었다. 좌석수도 안 봤다.
+
+    성향은 곱셈으로 얹는다. 덧셈형(base + k*loose)이면 상수항이
+    모두를 평균으로 끌어당겨 닛과 매니악이 2배 남짓밖에 차이나지 않는다.
 
     오픈 의지는 루즈함만이 아니라 공격성에도 달렸다.
     같은 폭의 핸드를 봐도 소극적인 사람은 림프하고 공격적인 사람은 올린다.
     """
-    base = {'UTG':.10,'UTG+1':.12,'UTG+2':.135,'LJ':.15,'HJ':.19,'CO':.26,'BTN':.42,'SB':.30,'BB':.30}
+    import gto as _G
+    base = _G.rfi(pos, seats, bb, ante, band)
+    if base <= 0.0:
+        return 0.0
     loose = temper(prof, 'looseness', 5.0)
     aggr  = temper(prof, 'aggression', 5.0)
     drive = max(0.4, 0.70*loose + 0.30*aggr)
-    out = {}
-    for k, v in base.items():
-        e = OPEN_ELASTICITY.get(k, 1.0)
-        out[k] = max(0.02, min(0.92, v * (drive/5.0) ** e))
-    return out
+    e = OPEN_ELASTICITY.get(pos, 1.0)
+    v = base * (drive/5.0) ** e * _G.adapt_mult(prof)
+    return max(0.02, min(0.92, v))
+
 
 def traits_of(prof):
     """preflop.TRAITS 대체."""
