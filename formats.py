@@ -7,6 +7,10 @@
   구조(스택·레벨·블라인드)와 필드(누가 오는가)와 상금(무엇을 위해 치는가)은
   독립이다. 하이퍼터보 하이롤러도 있고 딥스택 저바이인도 있다.
   하나의 '난이도' 축으로 뭉치면 그 조합이 표현되지 않는다.
+
+  라이브/온라인은 축으로 두지 않는다. 실제로 갈리는 것은 구조(스택·속도)와
+  필드 수준이고, 그 둘을 이미 따로 갖고 있다. 플래그를 하나 더 두면
+  같은 것을 두 축으로 표현하게 된다.
 """
 
 # start_bb        스타팅 스택 (bb)
@@ -16,76 +20,69 @@
 # buyin_level     필드 실력 수준 (field_quality 입력)
 # itm_frac        인더머니 비율
 # payout_flat     상금 평탄도 0~1. 1.0 = 전원 동일(위성)
-# live            라이브 여부. 림프·속도·필드 헐거움에 영향
 # reentry         리엔트리 가능 여부. 초반 도박성 상승
-# seats           테이블 인원
+# seats           테이블 인원 (6~9). 포맷 기본값이며 인자로 덮어쓸 수 있다
 
 FORMATS = {
-    # ---------- 라이브 ----------
-    'live_deep': dict(
-        name='라이브 딥스택 (저바이인)',
+    # ---------- 구조 ----------
+    'deep': dict(
+        name='딥스택',
         start_bb=300, hpl=18, blind_mult=0.85, ante_from=3,
-        buyin_level=0.45, itm_frac=0.15, payout_flat=0.0,
-        live=True, reentry=True, seats=9),
-
-    'live_main': dict(
-        name='라이브 메인이벤트',
-        start_bb=250, hpl=16, blind_mult=0.9, ante_from=3,
         buyin_level=1.0, itm_frac=0.15, payout_flat=0.0,
-        live=True, reentry=False, seats=9),
+        reentry=False, seats=8),
 
-    'live_highroller': dict(
-        name='라이브 하이롤러',
-        start_bb=200, hpl=14, blind_mult=1.0, ante_from=2,
-        buyin_level=2.2, itm_frac=0.12, payout_flat=0.0,
-        live=True, reentry=True, seats=8),
-
-    # ---------- 온라인 ----------
-    'online_reg': dict(
-        name='온라인 레귤러',
+    'standard': dict(
+        name='표준',
         start_bb=150, hpl=12, blind_mult=1.0, ante_from=2,
         buyin_level=1.0, itm_frac=0.15, payout_flat=0.0,
-        live=False, reentry=False, seats=8),
+        reentry=False, seats=8),
 
-    'online_turbo': dict(
-        name='온라인 터보',
+    'turbo': dict(
+        name='터보',
         start_bb=100, hpl=7, blind_mult=1.15, ante_from=1,
         buyin_level=0.9, itm_frac=0.15, payout_flat=0.0,
-        live=False, reentry=True, seats=8),
+        reentry=True, seats=8),
 
     'hyper': dict(
         name='하이퍼 터보',
         start_bb=50, hpl=4, blind_mult=1.35, ante_from=1,
-        buyin_level=0.8, itm_frac=0.15, payout_flat=0.0,
-        live=False, reentry=True, seats=8),
+        buyin_level=0.85, itm_frac=0.15, payout_flat=0.0,
+        reentry=True, seats=8),
 
-    'online_deep': dict(
-        name='온라인 딥스택',
-        start_bb=250, hpl=16, blind_mult=0.85, ante_from=2,
-        buyin_level=1.1, itm_frac=0.15, payout_flat=0.0,
-        live=False, reentry=False, seats=8),
+    # ---------- 필드 수준 ----------
+    'lowbuyin': dict(
+        name='저바이인',
+        start_bb=200, hpl=15, blind_mult=0.9, ante_from=3,
+        buyin_level=0.45, itm_frac=0.15, payout_flat=0.0,
+        reentry=True, seats=9),
 
-    # ---------- 상금 구조가 특이한 것 ----------
+    'main': dict(
+        name='메인이벤트',
+        start_bb=250, hpl=16, blind_mult=0.9, ante_from=3,
+        buyin_level=1.0, itm_frac=0.15, payout_flat=0.0,
+        reentry=False, seats=9),
+
+    'highroller': dict(
+        name='하이롤러',
+        start_bb=200, hpl=14, blind_mult=1.0, ante_from=2,
+        buyin_level=2.2, itm_frac=0.12, payout_flat=0.0,
+        reentry=True, seats=8),
+
+    # ---------- 상금 구조 ----------
     'satellite': dict(
         name='위성 (평탄 상금)',
         start_bb=150, hpl=12, blind_mult=1.0, ante_from=2,
         buyin_level=1.1, itm_frac=0.10, payout_flat=1.0,
-        live=False, reentry=False, seats=8),
+        reentry=False, seats=8),
 
     'bounty': dict(
         name='바운티 (녹아웃)',
         start_bb=150, hpl=10, blind_mult=1.05, ante_from=1,
         buyin_level=0.85, itm_frac=0.15, payout_flat=0.35,
-        live=False, reentry=True, seats=8),
-
-    'freezeout': dict(
-        name='프리즈아웃 (표준)',
-        start_bb=150, hpl=12, blind_mult=1.0, ante_from=2,
-        buyin_level=1.0, itm_frac=0.15, payout_flat=0.0,
-        live=False, reentry=False, seats=8),
+        reentry=True, seats=8),
 }
 
-DEFAULT = 'freezeout'
+DEFAULT = 'standard'
 
 
 def get(name=None):
