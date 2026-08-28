@@ -127,6 +127,70 @@ def reraise_mult(level, def_pos):
             3: (2.1 if ip else 2.2),   # 5벳
             }.get(level, 2.1)
 
+def raise_form(prof, stack_bb, target_bb, pot_bb, rng, exploit=None,
+               level=1, n_opp=1, facing_bb=0.0):
+    """레이즈를 논올인으로 칠지 올인으로 갈지 — 형태를 정하는 유일한 지점.
+
+    기존에는 `band in ('micro','short','mid')` 한 줄이었다.
+    스택 24.9bb 와 25.1bb 가 완전히 다른 사람이 되고,
+    같은 20bb 에서 '3벳에 항상 접는 상대'와 '절대 안 접는 상대'가
+    같은 형태로 처리됐다. 그건 판단이 아니라 계단이다.
+
+    세 가지가 형태를 정한다:
+      1. 기하 — 논올인으로 치고 남는 스택이 팟 대비 얕으면 이미 커밋이다
+      2. 폴드에쿼티 — 잘 접는 상대에겐 굳이 다 밀 이유가 없다(싸게 같은 결과)
+                      안 접는 상대에겐 어중간한 3벳이 최악의 SPR 을 만든다
+      3. 상대 4벳 성향 — 4벳을 자주 하는 상대에게 논올인 3벳은 유도다
+    자기 개념(spr)이 낮으면 위 판단을 못 하고 예전 계단으로 물러난다.
+
+    반환: ('shove', stack_bb) 또는 ('raise', target_bb)
+    """
+    if stack_bb is None or target_bb >= stack_bb:
+        return ('shove', stack_bb if stack_bb is not None else target_bb)
+
+    # ---------- 1. 기하: 여기 걸리면 판단 이전에 이미 올인이다 ----------
+    # 콜당했을 때의 팟: 내가 target, 상대가 (target - 이미 넣은 것)을 더 넣는다.
+    # pot_bb 는 내가 치기 전의 팟(블라인드+오픈+콜러)이다.
+    rem = stack_bb - target_bb
+    pot_after = max(1.0, pot_bb + 2.0*target_bb - facing_bb)
+    spr_after = rem / pot_after
+    # 하드 게이트는 '논올인이라는 선택지가 실제로 없는' 구간에만 둔다.
+    # 여기를 넓게 잡으면 아래 판단 층이 통째로 죽는다 —
+    # 실제로 1.15 로 잡았더니 32bb 까지 100% 쇼브, 40bb 0% 인 새 계단이 됐다.
+    if target_bb >= 0.75*stack_bb or spr_after < 0.50:
+        return ('shove', stack_bb)      # 쳐놓고 접을 수 없다 = 형태만 다른 올인
+
+    # ---------- 2. 연속 판단 ----------
+    # 스택 깊이는 bb 가 아니라 '3벳 후 SPR' 로 잰다.
+    # bb 만 보면 오픈 사이즈와 3벳 배수를 무시하게 된다 —
+    # 같은 30bb 라도 2bb 오픈과 3.5bb 오픈은 남는 스택이 다르다.
+    sh = max(0.0, min(1.0, (1.75 - spr_after) / 1.25))
+    if exploit and exploit.get('w', 0) > 0:
+        w = exploit['w']
+        # 이 단계에서 상대가 접는가. 오픈 대면이면 '3벳 대면 폴드율',
+        # 3벳 대면이면 '4벳 대면 폴드율'을 봐야 한다.
+        fe = (exploit.get('f2fb_gap', 0.0) if level >= 2
+              else exploit.get('f2tb_gap', exploit.get('fold_gap', 0.0)))
+        # 잘 접는 상대(+)에게는 논올인으로 충분하다 — 같은 폴드에쿼티를 싸게 산다.
+        # 안 접는 상대(-)에게 어중간한 3벳은 콜당한 뒤 SPR 2 짜리 난제가 된다.
+        sh *= max(0.25, 1.0 - w*1.1*fe)
+        # 4벳을 자주 하는 상대에게 논올인 3벳은 유도가 된다. 쇼브로 그 기회를 없앨 이유가 없다.
+        sh *= max(0.35, 1.0 - w*0.5*max(0.0, exploit.get('fb_gap', 0.0)))
+    if n_opp > 1:
+        sh = min(1.0, sh + 0.20*(n_opp - 1))   # 다인원은 폴드에쿼티가 낮아 쇼브 쪽
+
+    # ---------- 3. 개념 게이트 ----------
+    # 스택 깊이를 못 읽는 사람은 위 판단을 못 한다. 예전 밴드 계단으로 물러난다.
+    aware = 1.0
+    if prof.get('concepts'):
+        aware = max(0.0, min(1.0, (PS.sk(prof, 'spr') - 2.0) / 6.0))
+    crude = 1.0 if depth_band(stack_bb) in ('micro', 'short', 'mid') else 0.0
+    p = crude*(1.0 - aware) + sh*aware
+    if rng.random() < max(0.0, min(1.0, p)):
+        return ('shove', stack_bb)
+    return ('raise', target_bb)
+
+
 HOT_LO, HOT_HI = 12.0, 26.0
 
 def in_hotzone(bb): return HOT_LO <= bb <= HOT_HI
@@ -244,7 +308,15 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
             depth = 1.0 - (r / max(1e-6, rs))          # 0(경계)~1(최상위)
             p_shove = 0.30 + 0.60*depth
             if rng.random() < p_shove:
-                return ('shove', stack_bb)
+                # reshove_range 는 '이 핸드가 짧은 스택 3벳 구간인가'만 정한다.
+                # 형태(올인/논올인)는 raise_form 한 곳에서만 정한다 —
+                # 여기서 바로 shove 를 반환하면 같은 결정을 두 곳에서 하게 된다.
+                _tgt = open_bb*(reraise_mult(1, def_pos) + 1.0*n_callers)
+                _act, _sz = raise_form(prof, stack_bb, _tgt,
+                                       1.5 + open_bb*(1 + n_callers), rng,
+                                       exploit=exploit, level=1,
+                                       n_opp=1 + n_callers, facing_bb=open_bb)
+                return (_act, _sz) if _act == 'shove' else ('3bet', _sz)
     # --- 혼합 전략 ---
     import math
     def logit(x, center, width):
@@ -278,12 +350,14 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     if tot_w <= 0: return ('fold', 0)
     x = rng.random()*tot_w
     if x < w_raise:
-        if band in ('micro','short','mid'): return ('shove', bb)
         mult = reraise_mult(raise_level, def_pos) + 1.0*n_callers
         target = open_bb*mult
-        if stack_bb is not None and (target >= 0.55*stack_bb or stack_bb - target < open_bb*2):
-            return ('shove', stack_bb)
-        return ('3bet', target)
+        pot_bb = 1.5 + open_bb*(1 + n_callers)
+        act, sz = raise_form(prof, stack_bb if stack_bb is not None else bb,
+                             target, pot_bb, rng, exploit=exploit,
+                             level=raise_level, n_opp=1 + n_callers,
+                             facing_bb=open_bb)
+        return (act, sz) if act == 'shove' else ('3bet', sz)
     if x < w_raise + w_call: return ('call', open_bb)
     return ('fold', 0)
 
