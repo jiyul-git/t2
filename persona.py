@@ -13,7 +13,7 @@ EXEC = ['bluff', 'semibluff',
         'blockbet', 'potcontrol', 'trap', 'overbet', 'probe',
         'delayed_cbet', 'equity_denial', 'stackoff', 'reraise']
 # 계산 개념: 공부량에 좌우되는 이론 능력
-CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell']
+CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional']
 # 기질 축: 능력이 아니라 성격
 TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
           'discipline', 'adaptability', 'consistency', 'attention']
@@ -53,6 +53,64 @@ LOADING = {
  'icm':               (0.80,-0.15, 0.30, 3.8),
  'board_texture':     (0.70, 0.05, 0.35, 4.2),
  'sizing_tell':       (0.65, 0.05, 0.40, 4.0),
+ # --- 프리플랍 오픈 레인지 (base/spread 잠정. 개념 일괄 정리 때 재검토) ---
+ 'pf_range':          (0.90, 0.00, 0.25, 4.6),   # 차트를 아는가. 알려졌지만 안 외운 사람이 많다
+ 'positional':        (0.55, 0.10, 0.45, 4.4),   # 포지션 가치를 아는가. 경험으로도 붙는다
+}
+
+# ---------- 개념별 개인 편차 ----------
+# 예전에는 전 개념이 gauss(0, 1.45) 로 같았다. 그건 "모든 개념이 같은 방식으로
+# 퍼진다"는 가정인데 사실이 아니다.
+#
+#   편차 큼(2.0+)  — 알거나 모르거나로 갈리는 것. 차트·표를 외웠나 아닌가.
+#                    중간이 드물다. 봉우리가 둘인 분포에 가깝다.
+#   편차 작음(1.0) — 치다 보면 누구나 어느 정도는 하게 되는 것.
+#                    잘하고 못하고의 차이가 있어도 폭이 좁다.
+#
+# base 는 '평균이 어디냐', spread 는 '얼마나 흩어지냐'. 다른 축이다.
+# 어려운 개념(base↓)이라고 편차가 큰 것도 아니다 —
+# 리버 씬밸류는 어렵지만(base 3.0) 거의 전원이 못해서 편차는 작다.
+DEFAULT_SPREAD = 1.45
+SPREAD = {
+    # 외워서 아는 것 — 갈린다
+    'blocker':          2.20,
+    'icm':              2.10,
+    'spr':              2.00,
+    'overbet':          1.95,
+    'range_read':       1.90,
+    'potodds':          1.85,
+
+    # 습관·기질에 얹혀 퍼지는 것 — 중간
+    'reraise':          1.70,
+    'checkraise_late':  1.65,
+    'delayed_cbet':     1.60,
+    'probe':            1.55,
+    'blockbet':         1.55,
+    'equity_denial':    1.55,
+    'sizing_tell':      1.50,
+    'trap':             1.50,
+
+    # 누구나 어느 정도는 하는 것 — 좁다
+    'cbet_flop':        1.05,
+    'bluff':            1.15,
+    'semibluff':        1.15,
+    'outs':             1.20,
+    'board_texture':    1.25,
+    'checkraise_flop':  1.30,
+    'bluffcatch_early': 1.30,
+    'barrel_turn':      1.35,
+    'potcontrol':       1.35,
+
+    # 거의 전원이 못하는 것 — 어렵지만 편차는 좁다
+    'thin_value_river': 1.10,
+    'barrel_river':     1.20,
+    'bluffcatch_river': 1.25,
+    'thin_value_turn':  1.30,
+    'stackoff':         1.40,
+
+    # 프리플랍 오픈 (잠정)
+    'pf_range':         2.30,   # 외웠나 아닌가로 가장 크게 갈리는 개념
+    'positional':       1.60,   # 공부 없이 경험으로도 붙어서 중간
 }
 
 
@@ -82,7 +140,7 @@ def make_player(rng, field_quality=0.6, pid=None, _depth=0, aggr_bias=0.0, loose
     c = {}
     for k, (ws, wa, we, base) in LOADING.items():
         v = base + ws*(study-5.0)*1.05 + wa*(aggro-5.0)*0.85 + we*(exp-5.0)*0.85
-        v += rng.gauss(0, 1.45)                          # 개념별 개인 편차
+        v += rng.gauss(0, SPREAD.get(k, DEFAULT_SPREAD))  # 개념별 개인 편차
         c[k] = round(_clamp(v), 1)
 
     # 기질 축 — 능력과 부분적으로만 상관
@@ -230,27 +288,45 @@ OPEN_ELASTICITY = {'UTG':0.75,'UTG+1':0.80,'UTG+2':0.85,'LJ':0.90,'HJ':1.00,
                    'CO':1.10,'BTN':1.25,'SB':1.20,'BB':1.10}
 
 def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
-    """실제 오픈 폭 = GTO 기준 × 성향 조정 × 누적 판단.
+    """실제 오픈 폭 = 기준 × (1 + 이탈크기 × 이탈방향).
 
-    기준은 여기서 만들지 않는다. gto.rfi 가 유일한 출처다.
-    예전에는 이 함수 안에 base dict 가 인라인으로 박혀 있었고
-    archetypes.POS_BASE 에 같은 숫자가 또 있었다. 좌석수도 안 봤다.
+    기준은 gto.rfi 하나뿐이다. 레귤러 평균이며 사람과 무관하다.
 
-    성향은 곱셈으로 얹는다. 덧셈형(base + k*loose)이면 상수항이
-    모두를 평균으로 끌어당겨 닛과 매니악이 2배 남짓밖에 차이나지 않는다.
+    **크기와 방향을 나눈다.**
+      크기 ← 개념(pf_range). 낮을수록 기준에서 멀다
+      방향 ← 기질(looseness/aggression). 루즈면 +, 타이트면 −
+    하나로 뭉치면 "루즈한데 잘하는 사람"과 "루즈하고 못하는 사람"이
+    구분되지 않는다. 전자는 기준 근처의 LAG, 후자는 피시다.
 
-    오픈 의지는 루즈함만이 아니라 공격성에도 달렸다.
-    같은 폭의 핸드를 봐도 소극적인 사람은 림프하고 공격적인 사람은 올린다.
+    **포지션 인식은 별도 개념(positional)이다.**
+    이게 낮으면 곡선이 평평해진다 — 얼리에서 너무 넓고 버튼에서 너무 좁다.
+    리크리에이셔널의 특징은 '전체가 넓다'가 아니라 '포지션 구분이 없다'인데,
+    폭 하나만 조절해서는 그 모양이 나오지 않는다.
+    두 개념이 독립이라 네 조합이 다 나온다:
+      높음/높음 레귤러, 낮음/낮음 전형적 피시,
+      낮음/높음 과하게 넓지만 포지션은 아는 LAG 지망생,
+      높음/낮음 총량은 맞는데 어디서 넣을지 모르는 사람.
     """
     import gto as _G
     base = _G.rfi(pos, seats, bb, ante, band)
     if base <= 0.0:
         return 0.0
+
+    # --- 포지션 인식: 낮으면 테이블 평균 쪽으로 눌린다 ---
+    # 상한 0.90 — 가장 잘하는 사람도 기준과 완전히 같지는 않다.
+    # 1.0 을 허용하면 개념 8 이상이 전부 기준과 동일해져서
+    # '실력 있는 LAG' 가 표현되지 않는다(방금 실제로 그랬다).
+    pos_acc = 0.10 + 0.80 * min(1.0, sk(prof, 'positional') / 8.0)
+    flat = (1.0 - pos_acc) * 0.60
+    if flat > 1e-6:
+        base = base*(1.0 - flat) + _G.avg_rfi(seats, bb, ante)*flat
+
+    # --- 폭: 크기 × 방향 ---
+    acc = 0.10 + 0.80 * min(1.0, sk(prof, 'pf_range') / 8.0)
     loose = temper(prof, 'looseness', 5.0)
     aggr  = temper(prof, 'aggression', 5.0)
-    drive = max(0.4, 0.70*loose + 0.30*aggr)
-    e = OPEN_ELASTICITY.get(pos, 1.0)
-    v = base * (drive/5.0) ** e * _G.adapt_mult(prof)
+    direction = max(-1.0, min(1.0, ((0.75*loose + 0.25*aggr) - 5.0) / 4.0))
+    v = base * (1.0 + (1.0 - acc) * direction * 0.95) * _G.adapt_mult(prof)
     return max(0.02, min(0.92, v))
 
 

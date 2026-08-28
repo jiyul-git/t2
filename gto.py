@@ -24,32 +24,62 @@ SB 만 예외다. 뒤에 1명이라는 점은 BTN 다음이지만, 포스트플�
 import table as _TB
 
 # ---------- 1층: 기준 오픈 폭 ----------
-# 뒤에 남은 인원 → RFI 비율.
-# 기준점: 40bb 안테 있음. 다른 조건은 아래 배수로 조정한다.
+# 뒤에 남은 인원 → RFI 비율. 기준점은 40bb 안테 있음.
 #
-# 얼리에서 레이트로 갈수록 넓어지는 곡선은 완만하지 않다.
-# BTN 에서 급격히 벌어지는 것이 실제 솔버 출력의 모양이다.
+# 출처: 솔버 근사 공개 차트 (40bb 1bb안테 8맥스)
+#   UTG 17 / UTG+1 19 / LJ 23 / HJ 28 / CO 36 / BTN 51 / SB 35
+# '뒤에 남은 인원' 색인은 이 자료로 검증된다 —
+# 9맥스 UTG(뒤 8명) 14~17%, 6맥스 첫 자리(뒤 5명) 22~26% 로
+# 8맥스 LJ(뒤 5명, 23%)와 겹친다.
 RFI_BY_BEHIND = {
-    8: 0.14,      # 9맥스 UTG
-    7: 0.16,      # 9맥스 UTG+1 / 8맥스 UTG
-    6: 0.18,
-    5: 0.21,      # 9맥스 LJ / 6맥스 UTG
-    4: 0.25,
-    3: 0.31,      # CO
-    2: 0.46,      # BTN
+    8: 0.15,      # 9맥스 UTG
+    7: 0.17,      # 8맥스 UTG
+    6: 0.19,
+    5: 0.23,      # 9맥스 LJ / 6맥스 UTG
+    4: 0.28,
+    3: 0.36,      # CO
+    2: 0.51,      # BTN
 }
-RFI_SB = 0.42     # SB 는 별도. 콜 옵션 없이 레이즈/폴드
+RFI_SB = 0.35     # SB 는 별도. 콜 옵션 없이 레이즈/폴드
 
 # ---------- 스택 깊이 ----------
-# 얕을수록 넓다. 폴드에쿼티가 커지고 포스트플랍 구간이 짧아지기 때문.
-# preflop.DEPTH_OPEN_MULT 와 같은 역할이지만 여기가 단일 출처다.
-DEPTH_MULT = {'micro': 2.40, 'short': 1.75, 'mid': 1.35,
-              'normal': 1.00, 'deep': 0.95}
+# 40bb 대비 배수. **단조가 아니다.**
+# 40bb 가 정점이고 깊어도 좁아지고 얕아져도 좁아진다.
+#   UTG   100bb 13% / 50bb 15% / 40bb 17% / 30bb 14% / 20bb 12%
+#   CO    100bb 24% / 50bb 33% / 40bb 36% / 30bb 31% / 20bb 32%
+#   BTN   100bb 42% / 50bb 46% / 40bb 51% / 30bb 46% / 20bb 50%
+# 예전 DEPTH_OPEN_MULT(micro 2.40 ~ deep 0.95)은 '얕을수록 넓다'는
+# 단조 증가였다. 방향부터 틀렸다.
+#
+# 그리고 곡선 모양이 포지션마다 다르다. 얕아질 때 얼리는 급격히 좁아지고
+# 레이트는 거의 안 좁아진다(안테 때문에 스틸이 계속 남는다).
+# 그래서 배수를 하나로 둘 수 없고 얼리/레이트 두 곡선을 섞는다.
+_DEPTH_EARLY = [(5, 1.53), (10, 1.00), (15, 0.80), (20, 0.71), (30, 0.85),
+                (40, 1.00), (50, 0.90), (75, 0.80), (100, 0.76), (250, 0.72)]
+_DEPTH_LATE  = [(5, 0.92), (10, 0.76), (15, 0.85), (20, 0.98), (30, 0.90),
+                (40, 1.00), (50, 0.90), (75, 0.85), (100, 0.82), (250, 0.78)]
+
+
+def _interp(tbl, x):
+    if x <= tbl[0][0]: return tbl[0][1]
+    if x >= tbl[-1][0]: return tbl[-1][1]
+    for (x0, y0), (x1, y1) in zip(tbl, tbl[1:]):
+        if x0 <= x <= x1:
+            t = (x - x0) / (x1 - x0)
+            return y0 + t*(y1 - y0)
+    return 1.0
+
+
+def depth_mult(bb, behind):
+    """스택 깊이 배수. 뒤에 남은 인원에 따라 얼리/레이트 곡선을 섞는다."""
+    w = max(0.0, min(1.0, (behind - 2) / 5.0))     # 2(BTN)=레이트, 7+=얼리
+    return _interp(_DEPTH_LATE, bb)*(1.0 - w) + _interp(_DEPTH_EARLY, bb)*w
+
 
 # ---------- 안테 ----------
-# 안테가 있으면 팟이 커져서 스틸 성공 시 이득이 크다. 그래서 넓어진다.
-# 기준표가 '안테 있음'이므로 없을 때를 줄인다.
-ANTE_MULT = {True: 1.00, False: 0.88}
+# 안테가 있으면 팟이 커져 스틸 이득이 크다. 기준표가 '안테 있음'이므로
+# 없을 때를 줄인다. 공개 자료는 포지션당 2~4%p 정도 좁히라고 한다.
+ANTE_MULT = {True: 1.00, False: 0.90}
 
 
 def behind_of(pos, seats=8):
@@ -65,21 +95,21 @@ def behind_of(pos, seats=8):
 
 
 def rfi(pos, seats=8, bb=100.0, ante=True, band=None):
-    """기준 오픈 폭. 성향은 들어가지 않는다.
-
-    band 를 주면 그것을 쓰고, 없으면 bb 로 계산한다.
-    """
+    """기준 오픈 폭. 성향은 들어가지 않는다."""
     b = behind_of(pos, seats)
-    if b < 0:
-        base = RFI_SB
-    elif b == 0:
-        base = 0.0                    # BB 는 RFI 개념이 없다
-    else:
-        base = RFI_BY_BEHIND.get(min(8, max(2, b)), 0.20)
-    if band is None:
-        import preflop as _pf
-        band = _pf.depth_band(bb)
-    return max(0.0, min(0.95, base * DEPTH_MULT.get(band, 1.0) * ANTE_MULT[bool(ante)]))
+    if b == 0:
+        return 0.0                        # BB 는 RFI 개념이 없다
+    base = RFI_SB if b < 0 else RFI_BY_BEHIND.get(min(8, max(2, b)), 0.20)
+    eff_behind = 1 if b < 0 else b        # SB 는 레이트 곡선 쪽
+    return max(0.0, min(0.95,
+        base * depth_mult(float(bb), eff_behind) * ANTE_MULT[bool(ante)]))
+
+
+def avg_rfi(seats=8, bb=100.0, ante=True):
+    """그 좌석수의 포지션 평균 RFI. 포지션 인식이 낮은 사람이 눌리는 지점."""
+    _, pre, _ = _TB.orders(seats)
+    vs = [rfi(p, seats, bb, ante) for p in pre if p != 'BB']
+    return sum(vs)/max(1, len(vs))
 
 
 def table(seats=8, bb=100.0, ante=True):
