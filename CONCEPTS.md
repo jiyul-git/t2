@@ -1,0 +1,180 @@
+# 변수 사전
+
+★ = 오늘(코드 재개 이후) 추가. 나머지는 이전부터 있던 것.
+개념의 `base`/`spread` 는 **전부 잠정값** (`LOADING_PROVISIONAL = True`).
+
+---
+
+## 0. 잠재 요인 3종 — 사람을 만들 때만
+
+`prof['latent']` 에 저장. 판단 시점에는 읽지 않는다.
+
+| 변수 | 뜻 |
+|---|---|
+| `study` | 공부량. 이론·차트·솔버 |
+| `aggro` | 공격 기질 |
+| `exp` | 경험량. 친 판 수 |
+
+이 셋에서 개념 30개와 기질 9개가 파생된다.
+
+---
+
+## 1. 기질 9종 — 성격. 방향을 정한다
+
+```
+값 = gauss(중심, 편차) + 잠재요인 보정
+```
+
+| 변수 | 산정식 | 해석 |
+|---|---|---|
+| `aggression` | `aggro + gauss(0, 0.8)` | 공격성. 거의 aggro 그대로 |
+| `looseness` | `gauss(5.0+loose_bias, 2.2) + 0.25(aggro−4.6) − 0.30(study−4.5)` | 참여 폭. **공부가 좁힌다** |
+| `gamble` | `gauss(5.0+0.6·loose_bias, 2.4) − 0.35(study−4.5) + 0.25(aggro−4.6)` | 도박성. **공부가 깎는다** |
+| `discipline` | `gauss(5.0, 2.2) + 0.35(study−4.5) + 0.20(exp−4.5)` | 안 무너지는 정도 |
+| `tilt_prone` | `gauss(4.8, 2.6) − 0.20(exp−4.5)` | 틸트 나는 빈도 |
+| `tilt_recovery` | `gauss(5.0, 2.2) + 0.25(exp−4.5)` | 틸트에서 회복 |
+| `adaptability` | `gauss(4.6, 2.3) + 0.30(exp−4.5)` | 읽은 걸 실제로 쓰는 의지 |
+| `consistency` | `gauss(5.2, 2.1) + 0.30(study−4.5) + 0.25(exp−4.5)` | 사이즈·라인 일관성 |
+| `attention` | `gauss(5.0, 2.3) + 0.25(exp−4.5)` | 관찰력. 빈도를 세는 능력 |
+
+`loose_bias` 는 필드 등급에서 온다. 싼 대회일수록 +.
+
+---
+
+## 2. 개념 30종 — 능력. 크기를 정한다
+
+```
+값 = base + 0.90·ws·(study−5) + 0.85·wa·(aggro−5) + 0.85·we·(exp−5) + gauss(0, spread)
+```
+
+- `base` 낮을수록 **어렵다** (필드 평균이 낮다)
+- `spread` 클수록 **사람마다 갈린다** (외웠나 아닌가로 나뉘는 개념)
+- 둘은 다른 축이다. 어려운데 편차가 작을 수 있다 (거의 전원이 못하는 것)
+
+| 개념 | base | spread | study/aggro/exp |
+|---|---|---|---|
+| `cbet_flop` | 5.4 | 1.05 | 0.35 / +0.45 / 0.30 |
+| `bluffcatch_early` | 4.6 | 1.30 | 0.50 / +0.10 / 0.30 |
+| `pf_range` ★ | 4.6 | 2.30 | 0.90 / +0.00 / 0.25 |
+| `potcontrol` | 4.5 | 1.35 | 0.55 / -0.25 / 0.35 |
+| `outs` | 4.5 | 1.20 | 0.75 / +0.00 / 0.30 |
+| `semibluff` | 4.4 | 1.15 | 0.45 / +0.40 / 0.25 |
+| `potodds` | 4.4 | 1.85 | 0.80 / -0.05 / 0.30 |
+| `positional` ★ | 4.4 | 1.60 | 0.55 / +0.10 / 0.45 |
+| `bluff` | 4.2 | 1.15 | 0.35 / +0.55 / 0.20 |
+| `checkraise_flop` | 4.2 | 1.30 | 0.45 / +0.35 / 0.30 |
+| `board_texture` | 4.2 | 1.25 | 0.70 / +0.05 / 0.35 |
+| `barrel_turn` | 4.1 | 1.35 | 0.45 / +0.60 / 0.30 |
+| `thin_value_turn` | 4.1 | 1.30 | 0.60 / +0.25 / 0.30 |
+| `spr` | 4.0 | 2.00 | 0.85 / +0.05 / 0.25 |
+| `range_read` | 4.0 | 1.90 | 0.85 / +0.10 / 0.35 |
+| `sizing_tell` | 4.0 | 1.50 | 0.65 / +0.05 / 0.40 |
+| `trap` | 3.8 | 1.50 | 0.25 / -0.10 / 0.40 |
+| `stackoff` | 3.8 | 1.40 | 0.70 / +0.05 / 0.40 |
+| `icm` | 3.8 | 2.10 | 0.80 / -0.15 / 0.30 |
+| `blockbet` | 3.6 | 1.55 | 0.60 / +0.10 / 0.25 |
+| `probe` | 3.6 | 1.55 | 0.55 / +0.35 / 0.25 |
+| `equity_denial` | 3.5 | 1.55 | 0.70 / +0.30 / 0.30 |
+| `blocker` | 3.5 | 2.20 | 0.90 / +0.10 / 0.20 |
+| `delayed_cbet` | 3.4 | 1.60 | 0.60 / +0.25 / 0.35 |
+| `reraise` | 3.4 | 1.70 | 0.55 / +0.50 / 0.35 |
+| `bluffcatch_river` | 3.3 | 1.25 | 0.75 / +0.05 / 0.40 |
+| `barrel_river` | 3.2 | 1.20 | 0.60 / +0.55 / 0.35 |
+| `overbet` | 3.2 | 1.95 | 0.55 / +0.45 / 0.20 |
+| `thin_value_river` | 3.0 | 1.10 | 0.80 / +0.20 / 0.40 |
+| `checkraise_late` | 2.9 | 1.65 | 0.65 / +0.35 / 0.40 |
+---
+
+## 3. 파생 축 — 개념·기질을 조합해 만드는 값
+
+계산 시점에 만들어지며 저장하지 않는다.
+
+| 축 | 산정식 | 해석 |
+|---|---|---|
+| `overall_skill` | 계산 42% + 실행 38% + 규율 20% | 종합 실력 |
+| `aware` | `(0.6·attention + 0.4·range_read)/10` | **자기 실력을 자각하는 능력** |
+| `variance_seek` | 아래 참조 | 분산을 일부러 키우려는 정도 |
+| `icm_signal(bf)` ★ | `(bf − 1)/3` | 버블팩터를 0~1 신호로 |
+| `overpair_love` | `(10−potodds)`, `looseness` 등 | 오버페어 과대평가 |
+| `bluff_fear` | `(10−bluffcatch_river)`, `(10−aggression)` 등 | 큰 벳에 과도하게 접음 |
+| `draw_love` | `(10−outs)`, `gamble` 등 | 드로우 과대평가 |
+| `hero_call` | `bluffcatch_river`, `aggression`, `tilt_prone` | 가볍게 콜 |
+| `sticky` | `(10−discipline)`, `looseness` | 매몰비용. 못 놓음 |
+
+### variance_seek 상세
+
+```python
+aware     = (0.6·attention + 0.4·range_read)/10
+gap       = max(0, field_q·10 − my_skill)/10        # 필드가 나보다 센 정도
+strategic = gap × aware × (0.25 + 0.075·gamble)
+strategic ×= 1 − icm_signal(bf) × max(0.15, icm/10) × 0.90   ★
+emotional = tilt × (1.2 − 0.09·discipline)
+v         = 0.65·strategic + 0.55·emotional
+if bb < 20: v ×= 0.45
+```
+
+**`gap` 이 0에서 잘려 있다.** 내가 필드보다 세면 0이다.
+포스트플랍 엣지는 그 잘린 음수 쪽이다 — 클립만 풀면 같은 값에서 나온다.
+
+```
+edge = (my_skill − field_q·10)/10 × aware      # −1 ~ +1
+gap  = max(0, −edge)
+```
+
+**미결**: `aware` 를 파생이 아니라 독립 개념(`self_assess`)으로 올릴지.
+자각도 공부의 산물이고, "못하는데 모르는 사람"의 분포를 직접 정할 수 있게 된다.
+
+---
+
+## 4. 관찰 축 — read_opponent 산출
+
+상대를 볼 때 만들어진다. 자세한 소비 현황은 `LEDGER.md`.
+
+| 게이트 | 원천 | 읽는 것 |
+|---|---|---|
+| `see_freq` | `attention` | 빈도 |
+| `see_line` | `range_read` | 스트리트 구분, 블러프 |
+| `see_size` | `sizing_tell` | 사이즈의 의미 |
+| `use` | `adaptability` | 알아도 바꿀 의지 |
+
+`w = use × confidence × min(1, n/12)` 가 익스플로잇 전체의 상한.
+
+---
+
+## 5. 레인지 층 ★ — gto.py
+
+```
+실제 = 기준 × (1 + (1−정확도) × 방향)
+```
+
+| 변수 | 뜻 |
+|---|---|
+| `RFI_BY_BEHIND` ★ | 기준 오픈 폭. **뒤에 남은 인원**으로 색인 |
+| `RFI_SB` ★ | SB 별도 (0.35) |
+| `_DEPTH_EARLY` / `_DEPTH_LATE` ★ | 깊이 배수. 40bb 정점, 얼리/레이트 보간 |
+| `ANTE_MULT` ★ | 안테 없으면 0.90 |
+| `avg_rfi` ★ | 포지션 평균. `positional` 낮은 사람이 눌리는 지점 |
+| `adapt_mult` ★ | 3층 누적 판단. **미배선, 항상 1.0** |
+
+`open_pct` 안에서:
+```python
+pos_acc   = 0.10 + 0.80·min(1, positional/8)      # 상한 0.90
+flat      = (1 − pos_acc) × 0.60
+base      = base×(1−flat) + avg_rfi×flat          # 곡선 평탄화
+acc       = 0.10 + 0.80·min(1, pf_range/8)
+direction = ((0.75·looseness + 0.25·aggression) − 5)/4    # −1 ~ +1
+실제      = base × (1 + (1−acc) × direction × 0.95)
+```
+
+---
+
+## 6. 설계 중 — 아직 코드에 없음
+
+| 이름 | 뜻 | 상태 |
+|---|---|---|
+| `depth_feel` | 스택 깊이 인식 0~1 연속 | 곡선 확정, 미구현 |
+| `stack_decay` | 블라인드 침식을 **미리** 보는가 (0~4핸드 앞) | 개념 신설 예정. base 낮고 spread 큼 |
+| `postflop_edge` | 필드 대비 자기 실력 (−1~+1) | `variance_seek` 의 `gap` 클립 해제 |
+| `self_assess` | 자각 능력 | `aware` 를 독립 개념으로 승격할지 미정 |
+| `open_size` | 오픈 사이즈 정확도 | 미신설 |
+| 축적형 분산 | 강자의 도박 | `payout_flat`·`reentry` 가 통로 |
