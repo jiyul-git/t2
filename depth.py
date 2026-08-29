@@ -116,14 +116,13 @@ ICM_GAIN = 0.5
 
 
 def depth_feel(bb, prof=None, field_avg_bb=None, erosion_per_hand=0.0,
-               sk_fn=None, temper_fn=None, edge=0.0, icm_press=0.0):
+               sk_fn=None, temper_fn=None, edge=0.0, icm_press=1.0):
     """스택 깊이 인식 0~1.
 
     edge      : 필드 대비 자기 실력 −1~+1 (자각이 걸린 값)
-    icm_press : ICM **압박** 0~1 = icm_signal(bf) × 개념 가중치.
-                개념 수준만 넘기면 안 된다 — 그러면 버블이 아닐 때도
-                항상 양수로 들어가 edge 를 상쇄한다(실제로 그랬다).
-                신호 × 개념 규약을 지킬 것.
+    icm_press : ICM 압박 **배수**. 평시 1.0, 버블이면 1.x.
+                persona.icm_press(prof, bf) 가 낸다.
+                0~1 로 받으면 평시에도 값이 남아 edge 를 상쇄한다(실제로 그랬다).
     """
     b = float(bb or 0.0)
     if field_avg_bb:
@@ -145,7 +144,7 @@ def depth_feel(bb, prof=None, field_avg_bb=None, erosion_per_hand=0.0,
     #  ICM 인식이 높으면 커밋을 미루려 하므로 깊게 느낀다
     # gamble 은 쓰지 않는다. 그것은 충동이고 이것은 지각이다. 층이 다르다.
     direction = max(-1.0, min(1.0,
-        EDGE_GAIN*edge + ICM_GAIN*max(0.0, icm_press)))
+        EDGE_GAIN*edge + ICM_GAIN*max(0.0, float(icm_press) - 1.0)))
 
     feel += (1.0 - acc) * direction * OFFSET_MAX
     return round(max(0.0, min(1.0, feel)), 4)

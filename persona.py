@@ -424,13 +424,29 @@ def bias(prof, name):
 
 
 def icm_signal(bf):
-    """버블팩터(1.0~4.0)를 0~1 신호로 옮긴다.
-
-    규약: 모든 상황 신호는 0~1 로 낸다. 0 = 압박 없음.
-    그 신호를 읽는 능력(개념)은 별도 0~1 가중치로 따로 곱한다.
-    신호와 능력을 한 값에 섞으면 '신호는 센데 못 읽는 사람'이 표현되지 않는다.
-    """
+    """버블팩터(1.0~4.0)를 0~1 신호로 옮긴다. 0 = 압박 없음."""
     return max(0.0, min(1.0, (float(bf or 1.0) - 1.0) / 3.0))
+
+
+def icm_press(prof, bf, k=1.0):
+    """ICM 압박 **배수**. 평시 정확히 1.0, 버블이면 1.x.
+
+    규약
+      능력    0~1 비율     "얼마나 할 줄 아는가"
+      상황압박 1.0 기준 배수 "평시에는 아무 일도 일어나지 않는다"
+
+    상황 압박을 0~1 로 두면 호출부마다 max(0.15, ...) 같은 하한을 따로 붙여야 하고
+    평시에도 값이 남아 다른 항을 상쇄한다(실제로 depth_feel 에서 그랬다).
+    배수로 두면 신호가 0 일 때 1.0 이 되어 식에서 저절로 사라진다.
+
+    하한 0.15 는 식 안에 들어간다 — icm 개념이 0 이어도 '이번에 죽으면
+    상금을 못 받는다'는 개념이 아니라 상식이다.
+    """
+    sig = icm_signal(bf)
+    if sig <= 0.0:
+        return 1.0
+    aware = 0.15 + 0.85 * min(1.0, sk(prof, 'icm') / 10.0) if prof else 0.15
+    return 1.0 + sig * aware * k
 
 
 def perceived_edge(prof, field_q=0.6):
@@ -485,9 +501,8 @@ def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0):
     # 틸트는 계산이 아니다. 감정 경로에는 걸지 않는다.
     # 하한 0.15 — icm 개념이 0 이어도 '이번에 죽으면 상금을 못 받는다'는
     # 개념이 아니라 상식이다. 아무도 완전히 무시하지는 않는다.
-    icm_p = icm_signal(bf)                              # 상황 신호 0~1
-    icm_w = max(0.15, sk(prof, 'icm') / 10.0)           # 읽는 능력 0~1
-    strategic *= 1.0 - icm_p * icm_w * 0.90
+    # 압박 배수를 억제로 뒤집는다. 평시 배수 1.0 -> 억제 없음.
+    strategic /= icm_press(prof, bf, k=0.90)
     emotional = max(0.0, min(1.0, tilt)) * (1.2 - 0.09*T('discipline'))
     v = 0.65*strategic + 0.55*emotional
     if stack_bb is not None and stack_bb < 20:
