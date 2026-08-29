@@ -13,7 +13,7 @@ EXEC = ['bluff', 'semibluff',
         'blockbet', 'potcontrol', 'trap', 'overbet', 'probe',
         'delayed_cbet', 'equity_denial', 'stackoff', 'reraise']
 # 계산 개념: 공부량에 좌우되는 이론 능력
-CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional']
+CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay']
 # 기질 축: 능력이 아니라 성격
 TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
           'discipline', 'adaptability', 'consistency', 'attention']
@@ -67,6 +67,9 @@ LOADING = {
  # --- 프리플랍 오픈 레인지 (base/spread 잠정. 개념 일괄 정리 때 재검토) ---
  'pf_range':          (0.90, 0.00, 0.25, 4.6),   # 차트를 아는가. 알려졌지만 안 외운 사람이 많다
  'positional':        (0.55, 0.10, 0.45, 4.4),   # 포지션 가치를 아는가. 경험으로도 붙는다
+ # 블라인드 침식을 **미리** 보는가. 레귤러도 대부분 오른 뒤에 다시 짠다 —
+ # 소수만 대비하므로 base 를 낮게, spread 를 크게 둔다 (잠정)
+ 'stack_decay':       (0.85, 0.05, 0.30, 2.6),
 }
 
 # ---------- 개념별 개인 편차 ----------
@@ -122,6 +125,7 @@ SPREAD = {
     # 프리플랍 오픈 (잠정)
     'pf_range':         2.30,   # 외웠나 아닌가로 가장 크게 갈리는 개념
     'positional':       1.60,   # 공부 없이 경험으로도 붙어서 중간
+    'stack_decay':      2.45,   # 소수만 함 — 가장 날카롭게 갈리는 축
 }
 
 
@@ -429,6 +433,27 @@ def icm_signal(bf):
     return max(0.0, min(1.0, (float(bf or 1.0) - 1.0) / 3.0))
 
 
+def perceived_edge(prof, field_q=0.6):
+    """필드 대비 자기 실력, **자각이 걸린 값**. −1 ~ +1.
+
+    variance_seek 의 gap 은 max(0, ...) 으로 잘려 있어 '내가 더 세다'가
+    표현되지 않았다. 클립을 풀면 같은 값에서 양쪽이 다 나온다.
+      edge > 0  내가 필드보다 세다  -> 포스트플랍을 쓰고 싶다
+      edge < 0  필드가 나보다 세다  -> 포스트플랍을 없애고 싶다
+      gap = max(0, -edge)
+
+    aware 는 파생으로 둔다. 자각은 밖에서 관측할 수 없어 값을 정할 근거가
+    없다 — 같은 행동이 다른 원인에서도 나온다. 관측 가능한 축들로 조합한다.
+    자각이 0 이면 edge 도 0 이다: 못하는데 모르는 사람은 자기가 평균이라 느낀다.
+    """
+    if not prof or not prof.get('concepts'):
+        return 0.0
+    aware = min(1.0, (0.6*temper(prof, 'attention', 5.0)
+                      + 0.4*sk(prof, 'range_read')) / 10.0)
+    my = overall_skill(prof)
+    return max(-1.0, min(1.0, ((my - field_q*10.0) / 10.0) * aware))
+
+
 def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0):
     """분산을 일부러 키우려는 성향. 0~1.
 
@@ -451,9 +476,9 @@ def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0):
     T = lambda k: temper(prof, k, 5.0)
     my = overall_skill(prof) if 'overall_skill' in globals() else 5.0
     # 자각: study·attention 이 있어야 격차를 안다
-    aware = min(1.0, (0.6*T('attention') + 0.4*sk(prof, 'range_read'))/10.0)
-    gap = max(0.0, (field_q*10.0 - my)/10.0)          # 필드가 나보다 얼마나 센가
-    strategic = gap * aware * (0.25 + 0.075*T('gamble'))
+    # perceived_edge 와 같은 값을 쓴다. 두 곳에서 따로 계산하지 않는다.
+    gap = max(0.0, -perceived_edge(prof, field_q))    # 필드가 나보다 얼마나 센가
+    strategic = gap * (0.25 + 0.075*T('gamble'))
     # ICM 압박은 전략 경로만 억제한다.
     # '실력 열세를 자각해서 분산으로 간다'는 계산이므로, 같은 계산을 하는 사람은
     # 버블에서 그 계산이 뒤집힌다는 것도 안다.
