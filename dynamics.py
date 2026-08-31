@@ -30,11 +30,29 @@
 회복은 시간이 아니라 결과도 푼다 — 팟을 이기면 즉시 완화된다.
 """
 
-BIG_LOSS_BB = 8.0          # 절대 손실 기준
-BIG_LOSS_REL = 0.18        # 스택 대비 손실 기준
-HIT_BASE = 0.30            # 큰 손실 한 번의 기본 충격
-WIN_RELIEF = 0.10          # 팟을 이기면 즉시 완화
+# ---------- 손실·이득은 절대 bb 가 아니라 스택 대비로 잰다 ----------
+# 15bb 를 잃는 것이 150bb 스택에서는 아무것도 아니고 20bb 스택에서는 치명적이다.
+# 절대 기준(예전 BIG_LOSS_BB = 8)을 두면 딥스택 초반에 사소한 팟마다 틸트가 쌓인다.
+HIT_MIN = 0.15             # 스택의 15% 미만 손실은 안 쌓인다
+HIT_FULL = 0.55            # 스택의 55% 를 잃으면 충격 최대
+HIT_BASE = 0.55            # 최대 충격 한 번의 크기. 0.34 로는 스택 55%%를 잃어도
+                           # 0.34 에 그쳐 심한 배드빗이 표현되지 않았다
+
+# 결과가 푸는 기준도 상대값이다. 대략 더블업(스택 대비 +0.8) 이상이라야
+# 실제로 기분이 풀린다. 작은 팟을 이기는 것으로는 거의 안 풀린다.
+RELIEF_MIN = 0.20          # 이 아래는 거의 효과 없음
+RELIEF_FULL = 0.80         # 더블업 근처에서 최대
+RELIEF_MAX = 0.55          # 한 번에 풀 수 있는 최대치
+
 DECAY_BASE = 0.055         # 핸드당 자연 감쇠
+
+# ---------- 반복 가중 ----------
+# 횟수를 세지 않고 '열기'를 쓴다. 큰 손실마다 1 오르고 핸드마다 식는다.
+# 횟수만 세면 대회 초반의 한 번과 방금 전의 한 번이 같은 무게가 되는데,
+# 실제로는 연달아 맞는 것과 한참 만에 다시 맞는 것이 전혀 다르다.
+HEAT_DECAY = 0.085         # 한 번의 사건이 잊히는 데 약 12핸드
+HEAT_GAIN = 0.32           # tilt_stack 이 이 폭으로 반복을 증폭/감쇠시킨다
+REP_CLAMP = (0.35, 2.60)
 
 
 def _t(prof, key, default=5.0):
@@ -48,51 +66,61 @@ class Tilt:
     """좌석별 틸트 상태. 대회 하나에 한 개."""
 
     def __init__(self):
-        self.state = {}     # seat -> {'level': 0~1, 'episodes': n}
+        self.state = {}     # seat -> {'level': 0~1, 'heat': float}
 
     def _s(self, seat):
-        return self.state.setdefault(str(seat), {'level': 0.0, 'episodes': 0})
+        return self.state.setdefault(str(seat), {'level': 0.0, 'heat': 0.0})
 
     def level(self, seat):
         return self._s(seat)['level']
 
+    def heat(self, seat):
+        return self._s(seat)['heat']
+
     def on_pot(self, seat, prof, delta_bb, stack_bb=None):
-        """핸드 결과 반영. delta_bb 는 그 핸드의 손익(bb)."""
+        """핸드 결과 반영.
+
+        delta_bb  그 핸드의 손익(bb)
+        stack_bb  **핸드 시작 시점**의 스택. 손익을 이것으로 나눠 상대화한다.
+        """
         s = self._s(seat)
-        if delta_bb is None:
+        if delta_bb is None or not stack_bb or stack_bb <= 0:
             return s['level']
-        if delta_bb > 0:
-            s['level'] = max(0.0, s['level'] - WIN_RELIEF*min(2.0, delta_bb/8.0))
-            return s['level']
-        if delta_bb >= 0:
+        rel = float(delta_bb) / float(stack_bb)
+
+        if rel > 0:
+            # 결과가 푼다. 더블업 근처라야 확실히 풀린다.
+            if rel < RELIEF_MIN:
+                return s['level']
+            g = min(1.0, (rel - RELIEF_MIN) / (RELIEF_FULL - RELIEF_MIN))
+            s['level'] = max(0.0, s['level'] - RELIEF_MAX*g)
+            s['heat'] = max(0.0, s['heat'] - 1.2*g)
             return s['level']
 
-        rel = abs(delta_bb) / max(1.0, float(stack_bb or 40.0))
-        if abs(delta_bb) < BIG_LOSS_BB and rel < BIG_LOSS_REL:
+        loss = -rel
+        if loss < HIT_MIN:
             return s['level']                       # 작은 손실은 안 쌓인다
+        size = min(1.0, (loss - HIT_MIN) / (HIT_FULL - HIT_MIN))
 
         prone = _t(prof, 'tilt_prone') / 10.0
-        size = min(1.0, 0.5*rel/BIG_LOSS_REL + 0.5*abs(delta_bb)/(BIG_LOSS_BB*2))
+        stack_axis = (_t(prof, 'tilt_stack') - 5.0) / 5.0        # -1(감쇠) ~ +1(누적)
+        rep = max(REP_CLAMP[0], min(REP_CLAMP[1],
+                                    (1.0 + HEAT_GAIN*stack_axis) ** s['heat']))
 
-        # 반복 가중. tilt_stack 이 높으면 누적되고 낮으면 감쇠한다.
-        stack_axis = (_t(prof, 'tilt_stack') - 5.0) / 5.0        # -1 ~ +1
-        rep = max(0.35, min(2.6, (1.0 + 0.35*stack_axis) ** s['episodes']))
-
-        s['episodes'] += 1
+        s['heat'] += 1.0
         s['level'] = min(1.0, s['level'] + HIT_BASE*prone*size*rep)
         return s['level']
 
     def on_hand_end(self, seat, prof):
-        """핸드마다 자연 감쇠. 회복 속도는 사람마다 다르다."""
+        """핸드마다 감쇠. 회복 속도는 사람마다 다르다."""
         s = self._s(seat)
+        s['heat'] = max(0.0, s['heat'] - HEAT_DECAY)
         if s['level'] <= 0.0:
             return 0.0
         rec = _t(prof, 'tilt_recovery') / 10.0
         s['level'] = max(0.0, s['level'] - DECAY_BASE*(0.4 + 1.2*rec))
         if s['level'] <= 0.02:
             s['level'] = 0.0
-            # 완전히 풀리면 기억도 옅어진다. 아주 사라지지는 않는다.
-            s['episodes'] = max(0, s['episodes'] - 1)
         return s['level']
 
     def decay_all(self, profiles):
