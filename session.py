@@ -520,7 +520,7 @@ class HandRun:
             if k in folded and contrib.get(k, 0) > 0:
                 t.on_fold_after_investing(k, prof, contrib[k]/bb, st0)
             t.on_result(k, prof, won=(d > 0), played=(k in vpip),
-                        contested=(k in vpip))
+                        contested=(k in vpip), showdown=(k in live))
         t.decay_all(h.prof)
 
     def _finish(self, contrib, dead, folded, live, board, how):

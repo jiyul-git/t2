@@ -129,27 +129,35 @@ class Tilt:
     SUNK_MIN = 0.12            # 스택의 이만큼 넣고 폴드하면
     SUNK_K = 0.55              # 같은 크기 손실 대비 충격 비율
 
-    def on_result(self, seat, prof, won, played, contested=None):
+    LOSS_WEIGHT_SHOWDOWN = 1.0     # 끝까지 가서 진 핸드
+    LOSS_WEIGHT_FOLD = 0.6         # 넣었다가 중간에 접은 핸드
+
+    def on_result(self, seat, prof, won, played, contested=None, showdown=False):
         """핸드 하나의 결과 요약. 큰 팟이 아니어도 쌓이는 것들.
 
         won       그 핸드에서 칩이 늘었나
         played    자발적으로 참가했나(VPIP). 블라인드만 낸 것은 참가가 아니다
         contested 팟을 다퉜나. 연속패는 **다툰 핸드**만 센다 —
-                  폴드는 지는 것이 아니다
+                  블라인드만 낸 것은 지는 것이 아니다
+        showdown  끝까지 가서 졌나. 중간에 접은 것보다 무겁게 센다
         """
         s = self._s(seat)
         prone = _t(prof, 'tilt_prone') / 10.0
         if contested is None:
             contested = played
         if won:
-            s['streak'] = 0
+            s['streak'] = 0.0
         elif not contested:
             pass                      # 안 다툰 핸드는 연속패에 안 들어간다
         else:
-            s['streak'] += 1
+            # 무게가 다르다. 쇼다운까지 가서 지는 것과 중간에 접는 것을
+            # 같은 1회로 세면 '잘 접었다'고 넘길 수 있는 핸드가
+            # 배드빗과 같은 무게를 갖게 된다.
+            s['streak'] += self.LOSS_WEIGHT_SHOWDOWN if showdown \
+                else self.LOSS_WEIGHT_FOLD
             if s['streak'] >= self.STREAK_MIN:
-                over = s['streak'] - self.STREAK_MIN + 1
-                s['level'] = min(1.0, s['level'] + self.STREAK_STEP*prone*min(4, over))
+                over = s['streak'] - self.STREAK_MIN + 1.0
+                s['level'] = min(1.0, s['level'] + self.STREAK_STEP*prone*min(4.0, over))
         if played:
             s['dry'] = 0
         else:
