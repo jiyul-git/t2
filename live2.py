@@ -115,7 +115,7 @@ def build_hand(st):
     h.table_id = tb.id
     h.field_remaining = f.remaining(); h.field_itm = f.itm
     import dynamics as DY
-    h.dyn = DY.load()
+    h.dyn = getattr(t, 'tilt', None) or DY.Tilt()
     return f, tb, alive, h, hero_seat
 
 
@@ -181,7 +181,7 @@ def finish(st, f, tb, alive, h, run):
     tb.hands += 1
 
     import dynamics as DY
-    try: DY.save(h.dyn)
+    try: pass   # 틸트는 대회 객체가 들고 있다
     except Exception: pass
 
     # 다른 테이블 진행

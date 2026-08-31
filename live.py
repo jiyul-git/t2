@@ -90,7 +90,7 @@ def build_hand(st):
     h.field_remaining = st['field']['remaining']
     h.field_itm = st['field']['itm']
     import dynamics as _DY
-    h.dyn = _DY.load()
+    h.dyn = getattr(t, 'tilt', None) or _DY.Tilt()
     return h
 
 def step(action=None, amount=0):
@@ -161,7 +161,7 @@ def finish(st, h, run):
     res = run.result or {}
     try:
         import dynamics as _DY
-        _DY.save(h.dyn)
+        pass   # 틸트는 대회 객체가 들고 있다. 파일 저장 안 함
     except Exception: pass
     try: archive_hand(st, h, run, res)
     except Exception as e: pass

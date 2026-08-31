@@ -123,10 +123,17 @@
 |---|---|---|
 | `field.avg_stack_bb` | live, tourney, view | OK |
 | `field_q` | persona, preflop, plan | OK |
-| `dynamics.Tilt` ★ | — | **미배선** (session 이 on_pot/on_hand_end 를 불러야) |
-| `persona.tilt_decay` ★ | — | **미배선** (판단 층이 sk 대신 sk_tilted) |
+| `dynamics.Tilt` ★ | session `_tilt_update`, tourney `self.tilt` | OK |
+| `Tilt.on_pot` / `on_result` / `on_fold_after_investing` ★ | session `_tilt_update` | OK |
+| `Tilt.note_showdown` / `shown` ★ | runner `adjust_range_by_history` | 부분 (기록 호출 필요) |
+| `persona.tilt_decay` / `sk_tilted` ★ | — | **미배선** (판단 층이 sk 대신 sk_tilted 를 써야) |
 | `persona.tilt_direction` ★ | — | **미배선** |
-| ~~table_break / adapt_to_hero / observe_hero~~ | legacy_dynamics.py | 삭제됨 (중복) |
+| ~~table_break / adapt_to_hero / observe_hero~~ | legacy_dynamics.py | 삭제 (중복) |
+
+**정정**: 예전 `dynamics` 는 죽어 있지 않았다. `record_pot`/`decay`/`tilted_profile`
+은 호출되고 있었으나 `try/except Exception: pass` 안에 있었고, `tourney` 가
+`dyn` 을 넘기지 않아 **매 핸드 새 dict 가 만들어져 틸트가 핸드를 넘기지 못했다.**
+live 경로만 JSON 으로 유지됐다. `field_remaining` 과 같은 유형의 누락이다.
 
 ---
 

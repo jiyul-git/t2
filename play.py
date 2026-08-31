@@ -25,7 +25,9 @@ class Hand:
         self.button = button
         self.sb, self.bb = sb, bb; self.hero = hero
         self.payouts = payouts or []
-        self.dyn = dyn or {'seats': {}, 'hero_obs': {}}
+        # 예전에는 dict 였고 tourney 가 안 넘겨서 매 핸드 새로 만들어졌다.
+        # 그래서 틸트가 핸드를 못 넘겼다(live 경로만 JSON 으로 유지됐다).
+        self.dyn = dyn if dyn is not None else DY.Tilt()
         self.log = []; self.plans = {}
         import reads as _RD
         # 장부는 호출자가 소유한다. 주지 않으면 이 핸드 한정 빈 장부를 쓴다.
@@ -70,11 +72,11 @@ class Hand:
         base = dict(p)
         base.setdefault('tilt', 3)
         base.setdefault('goal', 'accum')
-        tp, t = DY.tilted_profile(base, self.dyn, s, base['tilt'])
-        # 틸트는 축 몇 개만 흔든다. 정체성 필드는 원본을 유지한다.
-        for k in ('type', 'value', 'goal', 'concepts', 'temper', 'id', 'label'):
-            if k in base: tp[k] = base[k]
-        return tp, t
+        # 틸트는 성향값을 밀어넣지 않는다. 개념 가중치를 깎는 방식이라
+        # 판단 층이 sk 대신 sk_tilted 를 쓰면 저절로 반영된다.
+        # 여기서는 현재 틸트 수치만 돌려준다.
+        t = self.dyn.level(s) if hasattr(self.dyn, 'level') else 0.0
+        return base, round(t, 2)
 
     def bf(self, s):
         """좌석 s 의 버블팩터. icm.table_bf 가 유일한 계산 지점.

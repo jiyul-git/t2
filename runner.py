@@ -168,10 +168,10 @@ def has_initiative(seat, aggressor):
 # ---------- 쇼다운 히스토리 반영 ----------
 def adjust_range_by_history(base_range, dyn, seat, board, dead=None):
     """그 좌석이 과거에 깐 패가 예상보다 넓었으면 레인지를 넓힌다."""
-    s = dyn['seats'].get(str(seat))
-    if not s or len(s['showdown_shown']) < 2: return base_range, None
+    shown = dyn.shown(seat) if hasattr(dyn, 'shown') else []
+    if len(shown) < 2: return base_range, None
     import statistics
-    pcts = [pf.PCT[pf.cls(h)] for h in s['showdown_shown'][-6:] if isinstance(h, list)]
+    pcts = [pf.PCT[pf.cls(h)] for h in shown[-6:] if isinstance(h, list)]
     if not pcts: return base_range, None
     med = statistics.median(pcts)
     n = len(base_range)

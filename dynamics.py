@@ -66,10 +66,16 @@ class Tilt:
     """좌석별 틸트 상태. 대회 하나에 한 개."""
 
     def __init__(self):
-        self.state = {}     # seat -> {'level': 0~1, 'heat': float}
+        self.state = {}
 
     def _s(self, seat):
-        return self.state.setdefault(str(seat), {'level': 0.0, 'heat': 0.0})
+        return self.state.setdefault(str(seat), {
+            'level': 0.0,        # 현재 틸트 0~1
+            'heat': 0.0,         # 반복 가중용. 핸드마다 식는다
+            'streak': 0,         # 연속으로 진 핸드 수
+            'dry': 0,            # 참가하지 못한 연속 핸드 수
+            'shown': [],         # 이 좌석이 쇼다운에서 깐 패 (레인지 추정용)
+        })
 
     def level(self, seat):
         return self._s(seat)['level']
@@ -110,6 +116,75 @@ class Tilt:
         s['heat'] += 1.0
         s['level'] = min(1.0, s['level'] + HIT_BASE*prone*size*rep)
         return s['level']
+
+    # ---------- 큰 손실 외의 원인들 ----------
+    # 실제 틸트는 팟 크기 하나로 오지 않는다. 아래는 엔진이 이미 아는 정보로
+    # 구현 가능한 것들만 넣었다. 배드빗(에쿼티 우위였는데 짐)이나
+    # '내가 폴드한 뒤 상대가 블러프를 보여줌' 같은 것은 정보가 더 필요해 보류.
+
+    STREAK_MIN = 4             # 이 이상 연속으로 져야 쌓이기 시작
+    STREAK_STEP = 0.045        # 연속 1회 추가당
+    DRY_MIN = 14               # 이 이상 참가 못 하면
+    DRY_STEP = 0.012           # 핸드당. 카드가 안 오는 답답함은 약하지만 길다
+    SUNK_MIN = 0.12            # 스택의 이만큼 넣고 폴드하면
+    SUNK_K = 0.55              # 같은 크기 손실 대비 충격 비율
+
+    def on_result(self, seat, prof, won, played, contested=None):
+        """핸드 하나의 결과 요약. 큰 팟이 아니어도 쌓이는 것들.
+
+        won       그 핸드에서 칩이 늘었나
+        played    자발적으로 참가했나(VPIP). 블라인드만 낸 것은 참가가 아니다
+        contested 팟을 다퉜나. 연속패는 **다툰 핸드**만 센다 —
+                  폴드는 지는 것이 아니다
+        """
+        s = self._s(seat)
+        prone = _t(prof, 'tilt_prone') / 10.0
+        if contested is None:
+            contested = played
+        if won:
+            s['streak'] = 0
+        elif not contested:
+            pass                      # 안 다툰 핸드는 연속패에 안 들어간다
+        else:
+            s['streak'] += 1
+            if s['streak'] >= self.STREAK_MIN:
+                over = s['streak'] - self.STREAK_MIN + 1
+                s['level'] = min(1.0, s['level'] + self.STREAK_STEP*prone*min(4, over))
+        if played:
+            s['dry'] = 0
+        else:
+            s['dry'] += 1
+            if s['dry'] >= self.DRY_MIN:
+                s['level'] = min(1.0, s['level'] + self.DRY_STEP*prone)
+        return s['level']
+
+    def on_fold_after_investing(self, seat, prof, invested_bb, stack_bb):
+        """어려운 팟에서 포기. 같은 크기를 쇼다운에서 잃는 것보다는 덜 아프지만
+        '내가 접었다'는 자책이 붙어 무시할 수 없다."""
+        if not stack_bb or stack_bb <= 0:
+            return self._s(seat)['level']
+        rel = float(invested_bb) / float(stack_bb)
+        if rel < self.SUNK_MIN:
+            return self._s(seat)['level']
+        s = self._s(seat)
+        size = min(1.0, (rel - self.SUNK_MIN) / (HIT_FULL - self.SUNK_MIN))
+        prone = _t(prof, 'tilt_prone') / 10.0
+        stack_axis = (_t(prof, 'tilt_stack') - 5.0) / 5.0
+        rep = max(REP_CLAMP[0], min(REP_CLAMP[1],
+                                    (1.0 + HEAT_GAIN*stack_axis) ** s['heat']))
+        s['heat'] += 0.6
+        s['level'] = min(1.0, s['level'] + HIT_BASE*self.SUNK_K*prone*size*rep)
+        return s['level']
+
+    def note_showdown(self, seat, hand):
+        """쇼다운에서 깐 패. 레인지 추정(runner.adjust_range_by_history)이 쓴다."""
+        s = self._s(seat)
+        s['shown'].append(hand)
+        if len(s['shown']) > 12:
+            s['shown'] = s['shown'][-12:]
+
+    def shown(self, seat):
+        return self._s(seat)['shown']
 
     def on_hand_end(self, seat, prof):
         """핸드마다 감쇠. 회복 속도는 사람마다 다르다."""

@@ -521,7 +521,40 @@ def perceived_edge(prof, field_q=0.6):
     return max(-1.0, min(1.0, ((my - field_q*10.0) / 10.0) * aware))
 
 
-def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0):
+def accum_drive(prof, payout_flat=0.0, reentry=False, progress=0.0):
+    """축적 욕구 0~1. **강자의 도박.**
+
+    열세형과 논리가 정반대다.
+      열세형  포스트플랍에서 진다 -> 그 구간을 없앤다 -> 운으로 간다
+      축적형  칩을 빨리 쌓아 리드한다 -> 그 스택으로 압박한다 -> 큰 상금을 노린다
+              실패하면 리바인한다
+
+    그래서 실력이 억제하지 않는다. 오히려 계산해서 하는 쪽이다.
+
+    payout_flat  상금 평탄도 0~1. 위성(1.0)에서는 쌓을 이유가 없다
+    reentry      리바인 가능 여부. 실패 비용이 반감된다
+    progress     대회 진행도 0(시작)~1(끝). 후반에는 리바인도 못 하고
+                 쌓을 시간도 없다
+    """
+    if not prof or not prof.get('concepts'):
+        return 0.0
+    gradient = 1.0 - max(0.0, min(1.0, float(payout_flat)))   # 상금 경사
+    if gradient <= 0.02:
+        return 0.0
+    early = max(0.0, 1.0 - max(0.0, min(1.0, float(progress))))
+    re_m = 1.0 + (0.35 * early if reentry else 0.0)
+
+    # 실력은 U자다. 잘하는 사람은 계산해서 하고, 못하는 사람은 그냥 한다.
+    # 중간이 가장 안 한다 — 계산은 못 하는데 무모하지도 않다.
+    s = overall_skill(prof) / 10.0
+    u = 0.35 + 0.65 * (abs(s - 0.5) / 0.5) ** 1.4
+
+    g = 0.20 + 0.080 * temper(prof, 'gamble', 5.0)
+    return max(0.0, min(1.0, gradient * early * re_m * u * g))
+
+
+def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0,
+                  payout_flat=0.0, reentry=False, progress=0.0):
     """분산을 일부러 키우려는 성향. 0~1.
 
     실력 열세를 인정한 사람이 쓰는 실제 전략이다. 프리플랍 올인은
@@ -545,7 +578,9 @@ def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0):
     # 자각: study·attention 이 있어야 격차를 안다
     # perceived_edge 와 같은 값을 쓴다. 두 곳에서 따로 계산하지 않는다.
     gap = max(0.0, -perceived_edge(prof, field_q))    # 필드가 나보다 얼마나 센가
-    strategic = gap * (0.25 + 0.075*T('gamble'))
+    weak = gap * (0.25 + 0.075*T('gamble'))          # 열세형 — 약자의 도박
+    accum = accum_drive(prof, payout_flat, reentry, progress)   # 축적형 — 강자의 도박
+    strategic = weak + 0.55*accum
     # ICM 압박은 전략 경로만 억제한다.
     # '실력 열세를 자각해서 분산으로 간다'는 계산이므로, 같은 계산을 하는 사람은
     # 버블에서 그 계산이 뒤집힌다는 것도 안다.

@@ -3,6 +3,7 @@ import random, math
 import play, session as SE, field as F, view as V
 from table import BLINDS, HANDS_PER_LEVEL
 import formats as FM
+import dynamics as DY
 
 import archetypes as A
 
@@ -61,6 +62,8 @@ class Tournament:
         # 상금 구조. 위성처럼 평탄하면 ICM 이 완전히 달라진다.
         self.payouts = FM.payouts(self.field.itm, f['payout_flat'])
         self.ante_from = f['ante_from']
+        # 틸트는 대회 하나 동안 유지된다. 핸드마다 새로 만들면 안 쌓인다.
+        self.tilt = DY.Tilt()
         self.stacks = {s: start_stack for s in self.seats}
         self.profiles = {}
         for s in self.seats:
@@ -114,6 +117,7 @@ class Tournament:
                 if c in alive: self.button = c; break
         h = play.Hand(self.seats, self.profiles, self.stacks, self.button, sb, bb,
                       hero=self.hero, seed=self.rng.randrange(10**9), book=self.book)
+        h.dyn = self.tilt
         h.field_q = self.field_q          # 분산 추구 판단에 필요 (내 실력 vs 필드)
         # ICM 은 필드 상태를 봐야 한다. 이 두 줄이 없으면 play.Hand.bf() 가
         # 항상 1.0(칩EV)을 반환해서 버블·머니점프가 어떤 판단에도 안 들어간다.

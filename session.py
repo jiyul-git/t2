@@ -494,6 +494,35 @@ class HandRun:
         self.result = self._finish(contrib, dead, folded, live, h.board, 'showdown')
         return
 
+    def _tilt_update(self, contrib, folded, live):
+        """핸드 결과를 틸트에 반영. try/except 로 감싸지 않는다 —
+        예전에는 감싸져 있어서 h.dyn 이 없어도 조용히 실패했다."""
+        h = self.h
+        t = getattr(h, 'dyn', None)
+        if t is None or not hasattr(t, 'on_pot'):
+            return
+        bb = max(1, h.bb)
+        # 자발적 참가(VPIP)를 따로 센다. contrib 만 보면 블라인드를 낸 것도
+        # '참가'가 되어, 폴드만 하는 좌석의 연속패가 무한히 늘어난다
+        # (실제로 66연패까지 갔다). 폴드는 지는 것이 아니다.
+        vpip = set()
+        for row in (getattr(self, 'full_log', []) or []):
+            if row[0] == 'preflop' and row[2] in ('call', 'raise', 'allin'):
+                vpip.add(row[1])
+        for k in h.seats:
+            prof = h.prof.get(str(k)) or {}
+            before = self._before.get(k, h.stacks.get(k, 0))
+            d = (h.stacks.get(k, 0) - before) / bb
+            st0 = before / bb
+            if abs(d) >= 0.5:
+                t.on_pot(k, prof, d, st0)
+            # 넣고 접은 팟은 별도로 센다. 같은 크기라도 자책이 붙는다.
+            if k in folded and contrib.get(k, 0) > 0:
+                t.on_fold_after_investing(k, prof, contrib[k]/bb, st0)
+            t.on_result(k, prof, won=(d > 0), played=(k in vpip),
+                        contested=(k in vpip))
+        t.decay_all(h.prof)
+
     def _finish(self, contrib, dead, folded, live, board, how):
         h = self.h
         # 장부 저장은 소유자(드라이버)의 책임. 여기서 전역 파일에 쓰지 않는다.
@@ -506,13 +535,7 @@ class HandRun:
         if len(live) <= 1:
             w = live[0] if live else max(contrib, key=contrib.get)
             h.stacks[w] += pot_total
-            try:
-                for k, v in h.stacks.items():
-                    d = (v - self._before.get(k, v))/max(1, h.bb)
-                    if abs(d) >= 1:
-                        DY.record_pot(h.dyn, k, d, stack_bb=self._before.get(k, 0)/max(1, h.bb))
-                DY.decay(h.dyn)
-            except Exception: pass
+            self._tilt_update(contrib, folded, live)
             return {'how': 'fold', 'winners': [w], 'pot': pot_total, 'showdown': False,
                     'board': board, 'stacks': dict(h.stacks), 'hash': h.hash,
                     'full_log': getattr(self, 'full_log', []),
@@ -538,12 +561,7 @@ class HandRun:
                     'board': board, 'stacks': dict(h.stacks), 'hash': h.hash}
         # dead 는 award_pots 가 메인팟에 얹어 이미 분배했다.
         # 여기서 또 주면 안테가 두 번 지급되어 칩이 늘어난다.
-        try:
-            for k, v in h.stacks.items():
-                d = (v - self._before.get(k, v))/max(1, h.bb)
-                if abs(d) >= 1: DY.record_pot(h.dyn, k, d)
-            DY.decay(h.dyn)
-        except Exception: pass
+        self._tilt_update(contrib, folded, live)
         all_w = sorted({w for d in detail for w in d['winners']})
         return {'how': 'showdown', 'winners': all_w,
                 'main_winners': detail[0]['winners'], 'pot': pot_total,
