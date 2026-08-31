@@ -123,9 +123,10 @@
 |---|---|---|
 | `field.avg_stack_bb` | live, tourney, view | OK |
 | `field_q` | persona, preflop, plan | OK |
-| `dynamics.table_break` | — | **죽음** |
-| `dynamics.adapt_to_hero` | — | **죽음** |
-| `dynamics.observe_hero` | — | **죽음** |
+| `dynamics.Tilt` ★ | — | **미배선** (session 이 on_pot/on_hand_end 를 불러야) |
+| `persona.tilt_decay` ★ | — | **미배선** (판단 층이 sk 대신 sk_tilted) |
+| `persona.tilt_direction` ★ | — | **미배선** |
+| ~~table_break / adapt_to_hero / observe_hero~~ | legacy_dynamics.py | 삭제됨 (중복) |
 
 ---
 

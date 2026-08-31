@@ -36,6 +36,8 @@
 | `adaptability` | `gauss(4.6, 2.3) + 0.30(exp−4.5)` | 읽은 걸 실제로 쓰는 의지 |
 | `consistency` | `gauss(5.2, 2.1) + 0.30(study−4.5) + 0.25(exp−4.5)` | 사이즈·라인 일관성 |
 | `attention` | `gauss(5.0, 2.3) + 0.25(exp−4.5)` | 관찰력. 빈도를 세는 능력 |
+| `tilt_swing` ★ | `gauss(5.0, 2.5)` | 틸트 시 성향 **강화(높음) / 반전(낮음)** |
+| `tilt_stack` ★ | `gauss(5.0, 2.4)` | 틸트 반복 시 **누적(높음) / 감쇠(낮음)** |
 
 `loose_bias` 는 필드 등급에서 온다. 싼 대회일수록 +.
 
@@ -119,6 +121,31 @@ icm_press(prof, bf) = 1.0                              # 평시
 | `draw_love` | `(10−outs)`, `gamble` 등 | 드로우 과대평가 |
 | `hero_call` | `bluffcatch_river`, `aggression`, `tilt_prone` | 가볍게 콜 |
 | `sticky` | `(10−discipline)`, `looseness` | 매몰비용. 못 놓음 |
+| `tilt_decay` ★ | `1 − t·0.55·(0.25+0.75·계산비중)` | 틸트가 그 개념을 얼마나 깎나 |
+| `tilt_direction` ★ | `((aggr−5)/4) × ((swing−5)/5) × 2` | 틸트 방향 −1(위축)~+1(난폭) |
+
+### 틸트
+
+**성향값을 밀어넣지 않는다.** 예전에는 `aggr+3t, bluff+4t, gamble+3t` 였다.
+틸트는 개념을 잊는 것이 아니라 **안 쓰는 것**이므로 개념 가중치를 깎는다.
+그러면 레인지가 흐트러지고 ICM 을 무시하고 포지션 구분이 사라지는 것이
+따로 코딩하지 않아도 나온다.
+
+**계산형이 먼저 무너지고 체화형은 남는다.** 별도 표 없이 `LOADING` 의
+study/exp 적재량 비율에서 뽑는다. 틸트 0.8 에서:
+
+```
+blocker 56%  pf_range 60%  spr 61%   <- 먼저 무너짐
+...
+positional 84%  cbet_flop 85%  trap 89%   <- 남음
+```
+
+**크기와 방향을 나눈다.** 방향을 `aggression` 하나로 정하면
+'공격적인 사람은 난폭해진다'만 나오고 '얻어맞고 위축되는 사람'이 없다.
+`tilt_swing` 이 강화/반전을 정해 네 조합이 다 나온다.
+
+**반복은 `tilt_stack`.** 누적형은 3회에 0.94 까지 가고 감쇠형은 0.54 에 그친다.
+회복은 시간(`tilt_recovery`)과 결과 양쪽이 푼다 — 팟을 이기면 즉시 완화된다.
 
 ### variance_seek 상세
 

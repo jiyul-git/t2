@@ -185,6 +185,12 @@ def make_player(rng, field_quality=0.6, pid=None, _depth=0, aggr_bias=0.0, loose
       'adaptability': round(_clamp(rng.gauss(4.6, 2.3) + 0.30*(exp-4.5)), 1),
       'consistency':  round(_clamp(rng.gauss(5.2, 2.1) + 0.30*(study-4.5) + 0.25*(exp-4.5)), 1),
       'attention':    round(_clamp(rng.gauss(5.0, 2.3) + 0.25*(exp-4.5)), 1),
+      # 틸트가 나면 어느 쪽으로 무너지는가. 높으면 원래 성향이 강화되고
+      # 낮으면 반전된다. 공격적인 사람이 더 난폭해지기도 하고 갑자기
+      # 겁먹기도 한다 — 방향을 성향 하나로 고정하면 그게 표현되지 않는다.
+      'tilt_swing':   round(_clamp(rng.gauss(5.0, 2.5)), 1),
+      # 틸트가 반복될 때. 높으면 누적되어 더 세지고 낮으면 감쇠한다.
+      'tilt_stack':   round(_clamp(rng.gauss(5.0, 2.4)), 1),
     }
 
     p = {'id': pid, 'concepts': c, 'temper': t,
@@ -447,6 +453,51 @@ def icm_press(prof, bf, k=1.0):
         return 1.0
     aware = 0.15 + 0.85 * min(1.0, sk(prof, 'icm') / 10.0) if prof else 0.15
     return 1.0 + sig * aware * k
+
+
+TILT_CONCEPT_K = 0.55       # 틸트 1.0 에서 개념이 최대 얼마나 깎이는가
+
+
+def tilt_decay(prof, key, tilt):
+    """틸트가 그 개념을 얼마나 깎는가. 0~1 배수(1.0 = 온전).
+
+    틸트는 개념을 **잊는 것이 아니라 안 쓰는 것**이다.
+    그래서 성향값을 밀어넣지 않고 개념 가중치를 깎는다. 그러면
+    레인지가 흐트러지고, ICM 을 무시하고, 포지션 구분이 사라지는 것이
+    따로 코딩하지 않아도 저절로 나온다.
+
+    개념마다 버티는 정도가 다르다. **계산이 필요한 것이 먼저 무너지고
+    몸에 밴 것은 남는다.** 취해도 운전은 되지만 암산은 안 되는 것과 같다.
+    별도 표를 만들지 않고 LOADING 의 적재량에서 뽑는다 —
+    study 비중이 크면 계산형, exp 비중이 크면 체화형이다.
+    """
+    t = max(0.0, min(1.0, float(tilt or 0.0)))
+    if t <= 0.0:
+        return 1.0
+    ws, wa, we, _ = LOADING.get(key, (0.5, 0.0, 0.5, 5.0))
+    calc = abs(ws) / max(1e-6, abs(ws) + abs(we))
+    # 실제 적재량에서 calc 는 0.54~0.78 범위에만 들어온다. 그대로 쓰면
+    # 개념 간 저항 차이가 7%p 밖에 안 나 '무너지는 순서'가 드러나지 않는다.
+    calc = max(0.0, min(1.0, (calc - 0.50) / 0.32))     # 0(체화) ~ 1(계산)
+    return max(0.15, 1.0 - t * TILT_CONCEPT_K * (0.25 + 0.75*calc))
+
+
+def sk_tilted(prof, key, tilt=0.0):
+    """틸트를 반영한 개념값. 판단 층은 sk 대신 이것을 쓴다."""
+    return sk(prof, key) * tilt_decay(prof, key, tilt)
+
+
+def tilt_direction(prof):
+    """틸트가 났을 때 어느 쪽으로 무너지는가. −1(위축) ~ +1(난폭).
+
+    자기 성향 × 강화/반전. 두 축이 곱해진다.
+      공격적 + 강화 -> 더 난폭    /  공격적 + 반전 -> 갑자기 위축
+      소극적 + 강화 -> 더 얼어붙음 /  소극적 + 반전 -> 갑자기 난폭
+    성향 하나로 방향을 정하면 앞의 두 가지만 나온다.
+    """
+    base = max(-1.0, min(1.0, (temper(prof, 'aggression', 5.0) - 5.0) / 4.0))
+    swing = (temper(prof, 'tilt_swing', 5.0) - 5.0) / 5.0        # −1(반전) ~ +1(강화)
+    return max(-1.0, min(1.0, base * swing * 2.0))
 
 
 def perceived_edge(prof, field_q=0.6):
