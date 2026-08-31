@@ -550,6 +550,10 @@ class HandRun:
             for sd in live:
                 RD_pct = _pf.PCT[_pf.cls(h.hole[sd])]
                 h.book.observe_showdown(_all, self._pid(sd), RD_pct, sd in aggr_seats)
+                # 깐 패는 틸트 객체에도 남긴다. runner.adjust_range_by_history 가
+                # 이걸 읽어 '이 좌석이 예상보다 넓게 깠다'를 판단한다.
+                if hasattr(h, 'dyn') and hasattr(h.dyn, 'note_showdown'):
+                    h.dyn.note_showdown(sd, list(h.hole[sd]))
         except Exception as _e:
             # 관찰 실패를 조용히 삼키면 장부가 안 쌓이고 리딩이 통째로 죽는다.
             h.book_errors = getattr(h, 'book_errors', [])

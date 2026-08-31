@@ -125,7 +125,7 @@
 | `field_q` | persona, preflop, plan | OK |
 | `dynamics.Tilt` ★ | session `_tilt_update`, tourney `self.tilt` | OK |
 | `Tilt.on_pot` / `on_result` / `on_fold_after_investing` ★ | session `_tilt_update` | OK |
-| `Tilt.note_showdown` / `shown` ★ | runner `adjust_range_by_history` | 부분 (기록 호출 필요) |
+| `Tilt.note_showdown` / `shown` ★ | session 쇼다운 → runner `adjust_range_by_history` | OK |
 | `persona.tilt_decay` / `sk_tilted` ★ | — | **미배선** (판단 층이 sk 대신 sk_tilted 를 써야) |
 | `persona.tilt_direction` ★ | — | **미배선** |
 | ~~table_break / adapt_to_hero / observe_hero~~ | legacy_dynamics.py | 삭제 (중복) |

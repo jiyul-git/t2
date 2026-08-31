@@ -292,5 +292,5 @@ def load_book(path):
     p = path
     if _os.path.exists(p):
         try: bk.d = _json.load(open(p))
-        except Exception: pass
+        except (OSError, ValueError): pass      # 없거나 깨진 파일만 무시
     return bk

@@ -250,9 +250,23 @@ class ChaosHero:
             if r < 0.35: return ('fold', 0)
             if r < 0.65: return ('call', 0)
             if r < 0.90 and st.get('can_raise'):
-                # 극단 사이즈 포함
+                # amount 는 '목표 총액'이지 '추가로 넣을 액수'가 아니다.
+                # 남은 스택으로 cap 하면 이미 넣은 칩이 있을 때 목표가
+                # 최소 레이즈에 못 미쳐 엔진이 정당하게 거부한다 —
+                # 그것을 예외로 세면 도구가 자기 버그를 제품 버그로 보고한다.
+                # contrib 는 좌석별 dict 다. 히어로 자리 것만 꺼낸다.
+                _c = st.get('contrib') or {}
+                _me = st.get('seat', st.get('hero'))
+                mine = _c.get(_me, 0) if isinstance(_c, dict) else 0
+                if not mine and isinstance(_c, dict):
+                    # 좌석 키를 모르면 to_call 로 역산한다 (현재 최고액 − 내 기여)
+                    mine = max(0, max(_c.values() or [0]) - tc)
+                cap = stack + mine
                 mult = self.rng.choice([2, 3, 5, 9, 15])
-                return ('raise', min(stack, max(st.get('min_raise', 0), pot*mult)))
+                tgt = max(st.get('min_raise', 0), int(pot*mult))
+                if tgt >= cap:
+                    return ('allin', 0)
+                return ('raise', tgt)
             return ('allin', 0)
         if r < 0.30: return ('check', 0)
         mult = self.rng.choice([0.2, 0.5, 1.0, 3.0, 9.0, 20.0])
@@ -336,7 +350,8 @@ def run(hands=200, seeds=6):
 
 
 def main():
-    hands = int(sys.argv[1]) if len(sys.argv) > 1 else 150
+    args = [a for a in sys.argv[1:] if not a.startswith('-')]
+    hands = int(args[0]) if args else 150
     seeds = int(sys.argv[2]) if len(sys.argv) > 2 else 4
     v, d = run(hands, seeds)
     if not v:
@@ -349,6 +364,34 @@ def main():
             print('   ', m)
     return 1
 
+# ---------- 필드 총칩 ----------
+# 핸드 안의 보존은 inv_chip_conservation 이 이미 본다.
+# 여기서 보는 것은 필드 전체다 — 총 칩은 언제나 entries x start_stack 이어야 한다.
+# 히어로 테이블만 보면 재조정으로 칩이 드나들어 보존되지 않는 것이 정상이다.
+def check_field_chips(seeds=(7000, 7001), rounds=6, fmt='standard'):
+    import sys as _s, os as _o
+    _s.path.insert(0, _o.path.join(_o.path.dirname(_o.path.abspath(__file__)), '..'))
+    import fieldsim as FS
+    bad_list = []
+    for sd in seeds:
+        f = FS.Field(entries=64, seed=sd, fmt=fmt)
+        want = f.entries * f.start_stack
+        for r in range(rounds):
+            f.step_others()
+            got = sum(p['stack'] for p in f.players.values())
+            if got != want:
+                bad_list.append('시드 %d 라운드 %d: 총칩 %d != %d (%+d)'
+                                % (sd, r, got, want, got - want))
+        if f.errors:
+            bad_list.append('시드 %d: 삼킨 예외 %d건 — %s'
+                            % (sd, len(f.errors), f.errors[0]))
+    return bad_list
+
 
 if __name__ == '__main__':
+    import sys
+    if '--chips' in sys.argv:
+        _b = check_field_chips()
+        print('필드 총칩 이상 없음' if not _b else '\n'.join(_b[:12]))
+        sys.exit(1 if _b else 0)
     sys.exit(main())

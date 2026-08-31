@@ -6,6 +6,8 @@ from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
 MAXSEAT = 8
+# 켜면 핸드 실패를 삼키지 않고 즉시 올린다. 디버깅·검증용.
+STRICT = bool(os.environ.get('T2_STRICT'))
 
 
 class Table:
@@ -57,6 +59,7 @@ class Field:
         self.hero_pid = hero_pid
         self.hero_moves = 0
         self.notes = []
+        self.errors = []          # 삼킨 예외 기록. 비어 있지 않으면 문제가 있다
 
         self._init_runtime(fmt)
         q = self.field_q
@@ -178,7 +181,15 @@ class Field:
             run.start()
             for i in range(len(alive)):
                 alive[i]['stack'] = int(h.stacks.get(i+1, alive[i]['stack']))
-        except Exception:
+        except Exception as e:
+            # 조용히 넘기지 않는다. 예전에는 return None 뿐이라
+            # 봇 로직 버그가 필드 전체에서 핸드를 건너뛰게 하고도 드러나지 않았다.
+            self.errors.append('%s: %s (테이블 %s, 핸드 %d)'
+                               % (type(e).__name__, e, tb.id, self.hand_no))
+            if len(self.errors) <= 3:
+                self.notes.append('⚠ 핸드 실패 — %s: %s' % (type(e).__name__, e))
+            if STRICT:
+                raise
             return None
         tb.button = (tb.button + 1) % max(1, len(alive))
         tb.hands += 1

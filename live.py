@@ -13,7 +13,7 @@ def _clear_history():
         p = os.path.join(D, f)
         if os.path.exists(p):
             try: os.remove(p)
-            except Exception: pass
+            except OSError: pass
 
 def new_game(entries=100, start_stack=30000, hero=7, seed=None, buyin=1.0):
     _clear_history()
@@ -52,7 +52,7 @@ def load():
             with open(p) as f:
                 d = json.load(f)
             if d: return d
-        except Exception:
+        except (OSError, ValueError):
             continue
     raise RuntimeError('상태 파일 복구 실패')
 
@@ -64,7 +64,7 @@ def save(st):
         f.flush(); os.fsync(f.fileno())
     if os.path.exists(ST):
         try: os.replace(ST, ST + '.bak')
-        except Exception: pass
+        except OSError: pass
     os.replace(tmp, ST)
 
 def mkfield(st):

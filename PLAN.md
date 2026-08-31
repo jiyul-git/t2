@@ -133,6 +133,8 @@
 `tools/regress.py`, `tools/invariants.py`, `tools/trace_pf.py`, `audit.py`
 
 - `regress` — 액션 지문 SHA-256. **시드당 30핸드라 익스플로잇 층을 못 본다** (알려진 구멍)
+- `ctxcheck` — 드라이버 4종이 핸드 문맥을 빠짐없이 심는지. 문맥 값 추가 후 필수
+- `invariants --chips` — 필드 총칩 = entries × start_stack, 삼킨 예외 0건
 - `invariants` — 칩 총량, 액션 순서 등. 이미 아는 것만 잡는다
 - `trace_pf` — 좌석별 결정 경로 추적 (`WANT=form|shove`)
 - `audit` — 핸드 단위 점검

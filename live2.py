@@ -35,7 +35,7 @@ def _load_field(d):
     f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
-    f.notes = d.get('notes', [])
+    f.notes = d.get('notes', []); f.errors = []
     f.players = {}
     f._init_runtime(d.get('fmt'), d.get('tilt'))
     for k, v in d['players'].items():
@@ -57,7 +57,7 @@ def save(st):
         fp.flush(); os.fsync(fp.fileno())
     if os.path.exists(ST):
         try: os.replace(ST, ST + '.bak')
-        except Exception: pass
+        except OSError: pass
     os.replace(tmp, ST)
 
 
@@ -67,7 +67,7 @@ def load():
             with open(p) as fp:
                 d = json.load(fp)
             if d: return d
-        except Exception:
+        except (OSError, ValueError):
             continue
     raise RuntimeError('상태 파일 없음')
 
@@ -79,7 +79,7 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
         p = os.path.join(D, fn)
         if os.path.exists(p):
             try: os.remove(p)
-            except Exception: pass
+            except OSError: pass
     f = FS.Field(entries=entries, start_stack=start_stack, hero_pid=0,
                  seed=seed, hands_per_level=hands_per_level, itm_frac=itm_frac)
     st = {'field': _dump(f), 'actions': [], 'decisions': [], 'hand_seed': None,

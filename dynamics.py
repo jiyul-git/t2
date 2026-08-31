@@ -56,10 +56,8 @@ REP_CLAMP = (0.35, 2.60)
 
 
 def _t(prof, key, default=5.0):
-    try:
-        return float((prof or {}).get('temper', {}).get(key, default))
-    except Exception:
-        return default
+    v = (prof or {}).get('temper', {}).get(key, default)
+    return float(v) if isinstance(v, (int, float)) else default
 
 
 class Tilt:
