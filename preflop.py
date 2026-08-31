@@ -1,5 +1,6 @@
 import json, os, random
 import persona as PS
+import depth as _DP
 D = os.path.dirname(os.path.abspath(__file__))
 PCT = json.load(open(os.path.join(D, 'pf_rank.json')))
 RV = {r: i+2 for i, r in enumerate("23456789TJQKA")}
@@ -51,7 +52,23 @@ OPENER_MULT = {'UTG':1.4,'UTG+1':1.5,'UTG+2':1.65,'LJ':1.8,'HJ':2.2,'CO':2.9,'BT
 DEF_POS_MULT = {'BB':1.0,'SB':0.55,'BTN':0.9,'CO':0.7,'HJ':0.6,'LJ':0.5,'UTG+2':0.47,'UTG+1':0.45,'UTG':0.4}
 
 # ---------- 스택 뎁스 ----------
+def feel_of(prof, bb, field_avg_bb=None, erosion=0.0, field_q=0.6, bf=1.0):
+    """깊이 인식 0~1. 프리플랍의 모든 깊이 판단이 여기를 지난다.
+
+    depth_band 계단(8/15/25/60)을 대체한다. 사람마다 다르고 연속이다.
+    prof 가 없으면 기준 곡선만 쓴다(정체 불명 상대의 스택을 볼 때).
+    """
+    if not prof or not prof.get('concepts'):
+        return _DP.base_feel(bb)
+    return _DP.depth_feel(bb, prof, field_avg_bb, erosion,
+                          PS.sk, PS.temper,
+                          PS.perceived_edge(prof, field_q),
+                          PS.icm_press(prof, bf))
+
+
 def depth_band(bb):
+    """**이행용.** 새 코드는 feel_of / depth.base_feel 을 쓸 것.
+    남아 있는 이유는 gto.rfi 와 ranges 가 아직 밴드 문자열을 받기 때문이다."""
     if bb < 8:   return 'micro'     # 순수 푸시/폴드
     if bb < 15:  return 'short'     # 쇼브 위주 + 소수 레이즈
     if bb < 25:  return 'mid'       # 레이즈/쇼브 혼합
@@ -60,26 +77,79 @@ def depth_band(bb):
 
 DEPTH_OPEN_MULT = {'micro':2.40,'short':1.75,'mid':1.35,'normal':1.0,'deep':0.95}
 
-def open_size_bb(band, pos, rng):
-    if band == 'micro':  return 2.0                    # 실제로는 쇼브로 처리됨
-    if band == 'short':  return 2.0                    # 쇼브 아니면 최소 사이즈
-    if band == 'mid':    return rng.choice([2.0, 2.2])
-    if band == 'normal': return rng.choice([2.2, 2.5])
+def open_size_bb(feel, pos, rng):
+    # feel 은 깊이 인식 0~1. 예전에는 밴드 문자열이었다.
+    if feel < 0.05:  return 2.0                        # 실제로는 쇼브로 처리됨
+    if feel < 0.12:  return 2.0                        # 쇼브 아니면 최소 사이즈
+    if feel < 0.20:  return rng.choice([2.0, 2.2])
+    if feel < 0.75:  return rng.choice([2.2, 2.5])
     return rng.choice([2.5, 3.0])
 
-def should_shove(band, hand_pct, traits, pos, bb):
-    """레이즈 대신 오픈 쇼브할지."""
-    if band == 'micro': return True
-    if band == 'short':
-        return hand_pct <= 0.55 or bb < 12
-    if band == 'mid':
-        # 폴드에쿼티가 전부인 경계 핸드만 쇼브
-        return 0.15 < hand_pct <= 0.55 and bb < 22
-    return False
+def crude_edge(prof):
+    """밴드로 생각하는 사람의 '짧다' 기준선. feel 단위.
+
+    전원 공통 문턱(feel<0.20)을 쓰면 그 폴백 자체가 계단이 되어,
+    깊이를 잘 아는 사람의 곡선에도 튐이 남는다(26bb 27% -> 30bb 0%).
+    실제로 밴드로 생각하는 사람들도 각자 다른 선을 갖고 있다 —
+    '20bb 밑이면 쇼브'인 사람과 '25bb 밑'인 사람이 다르다.
+    도박성이 높을수록 그 선이 위로 올라간다.
+    """
+    g = PS.temper(prof, 'gamble', 5.0) if prof else 5.0
+    return 0.13 + 0.014*g          # gamble 0 -> 0.13, 10 -> 0.27
+
+
+def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
+    """오픈을 레이즈로 칠지 쇼브할지 — 형태를 정하는 유일한 지점.
+
+    예전에는 두 곳이 같은 질문에 각자 답했다.
+      should_shove   25bb 미만. `bb<12`, `bb<22`, `hand_pct<=0.55` 계단
+      분산추구 쇼브   25~60bb. band == 'normal' 창
+    스택 25bb 를 경계로 서로 다른 함수가 오픈 형태를 정했고,
+    그 경계에서 사람이 갑자기 바뀌었다.
+    3벳 쪽에서 raise_form 으로 합친 것과 같은 정리다.
+
+    두 항을 더한다. 이유가 다르므로 지우지 않고 합치기만 한다.
+      구조항  스택이 얕아서 쇼브. 정상 플레이
+      성향항  사람이 그래서 쇼브. 의도적으로 나쁜 플레이(분산 추구)
+    핸드 대역도 반대다 — 구조항은 중간 핸드에서 최대, 성향항은 강할수록 크다.
+
+    반환: ('shove', bb) 또는 (None, 0) — 후자면 일반 오픈으로 간다.
+    """
+    t = traits or {}
+    # ---------- 구조항 ----------
+    # feel 0(극단 숏) -> 1.0, feel 0.22 이상 -> 0. 연속이다.
+    struct = max(0.0, min(1.0, (0.22 - feel) / 0.22))
+    # 폴드에쿼티가 전부인 대역에서 최대. 프리미엄은 작게 올려 액션을 받는 게 낫다.
+    if hand_pct <= 0.06:   shape = 0.45
+    elif hand_pct <= 0.55: shape = 1.00
+    else:                  shape = 0.30
+    p_struct = struct * shape
+
+    # ---------- 성향항 ----------
+    # 강할수록 크다. 구조항과 반대 방향이다.
+    p_vs = 0.0
+    if vs > 0.12 and feel < 0.90:
+        p_vs = vs * (0.22 if hand_pct <= 0.10
+                     else 0.12 if hand_pct <= 0.25 else 0.05)
+
+    # ---------- 개념 게이트 ----------
+    # 스택 깊이를 못 읽는 사람은 구조 판단을 못 한다. 예전 계단으로 물러난다.
+    aware = 1.0
+    if prof and prof.get('concepts'):
+        aware = max(0.0, min(1.0, (PS.sk(prof, 'spr') - 2.0) / 6.0))
+    crude = 1.0 if feel < crude_edge(prof) else 0.0
+    p_struct = crude*(1.0 - aware) + p_struct*aware
+
+    p = 1.0 - (1.0 - min(1.0, p_struct)) * (1.0 - min(1.0, p_vs))
+    if rng.random() < max(0.0, min(1.0, p)):
+        return ('shove', bb)
+    return (None, 0)
+
 
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
-                  tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True):
-    band = depth_band(bb)
+                  tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
+                  field_avg_bb=None, erosion=0.0):
+    feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 간다. 포스트플랍이라는 스킬 구간을 없애 결과를
@@ -87,7 +157,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf) if prof.get('concepts') else 0.0
     # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
     thr = _open(prof, pos, seats, bb, ante)
-    thr = min(0.9, thr + t['shove_add'] if band in ('micro','short','mid') else thr)
+    thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
     r = pct(hand)
     if r > thr: return ('fold', 0)
     # 림프는 미들~약한 핸드에 몰린다. 프리미엄은 거의 림프하지 않는다.
@@ -96,19 +166,11 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     elif r <= 0.12: limp_p *= 0.25
     elif r <= 0.25: limp_p *= 0.70
     else:           limp_p *= 1.35          # 약한 핸드일수록 림프 선호
-    if rng.random() < limp_p and band in ('normal','deep') and pos != 'SB':
+    if rng.random() < limp_p and feel >= 0.20 and pos != 'SB':
         return ('limp', 1.0)
-    if should_shove(band, r, t, pos, bb): return ('shove', bb)
-    # 분산 추구 오픈 쇼브.
-    # 스택 상한이 중요하다. 실제로 '스킬 구간을 없애려고' 쇼브하는 건
-    # 대략 60bb 이하에서다. 134bb 에서 AKs 를 쇼브하면 콜 레인지가
-    # AA/KK 뿐이라 분산을 키우는 게 아니라 그냥 최악의 EV 다.
-    # 예전에는 band 조건만 있고 상한이 없어 155bb 쇼브까지 나왔다.
-    if vs > 0.12 and band == 'normal' and bb <= 60:
-        p_sh = vs * (0.22 if r <= 0.10 else 0.12 if r <= 0.25 else 0.05)
-        if rng.random() < p_sh:
-            return ('shove', bb)
-    sz = open_size_bb(band, pos, rng)
+    act, amt = open_form(prof, feel, r, bb, rng, vs, t)
+    if act: return (act, amt)
+    sz = open_size_bb(feel, pos, rng)
     return ('raise', sz if sz else 2.0)
 
 # 레이즈 단계별 레인지 축소 계수 (3벳 대비)
@@ -193,7 +255,7 @@ def raise_form(prof, stack_bb, target_bb, pot_bb, rng, exploit=None,
     aware = 1.0
     if prof.get('concepts'):
         aware = max(0.0, min(1.0, (PS.sk(prof, 'spr') - 2.0) / 6.0))
-    crude = 1.0 if depth_band(stack_bb) in ('micro', 'short', 'mid') else 0.0
+    crude = 1.0 if _DP.base_feel(stack_bb) < crude_edge(prof) else 0.0
     p = crude*(1.0 - aware) + sh*aware
     if rng.random() < max(0.0, min(1.0, p)):
         return ('shove', stack_bb)
@@ -259,7 +321,7 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     loose = _tr_loose(prof)
     mw = max(0.45, min(0.95, 0.48 + 0.048*loose))       # 닛 0.53 / 스테이션 0.87
     cp = min(.85, t['call'] * m * (mw ** n_callers))
-    if depth_band(bb) in ('micro','short','mid'):
+    if _DP.base_feel(bb) < 0.20:
         tp = tp * 1.6; cp *= 0.45                # 짧으면 콜 대신 쇼브/폴드
     tp, tot = _saturate(tp, tp+cp)
     # 포화 '이후'에 단계별 축소를 적용해야 좁아진 값이 되살아나지 않는다
@@ -278,7 +340,6 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
     3벳/콜 구간 자체가 움직인다. 정보가 없으면 w=0 이라 무보정.
     """
-    band = depth_band(bb)
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf) if prof.get('concepts') else 0.0
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
                                 n_callers, raise_level)

@@ -172,10 +172,10 @@ ICM·안테·분산추구가 그 경로에서만 죽어 있었다.
 
 | 열려는 대장 | 먼저 필요한 배선 | 왜 |
 |---|---|---|
-| **4 프리플랍 — 오픈 사이즈** | `depth_feel` | 사이즈가 깊이에 따라 달라진다. 계단이면 사이즈도 계단이 된다 |
-| **4 프리플랍 — 디펜스 레인지** | `depth_feel`, `sk_tilted` | 역치 4곳이 `depth_band` 를 쓴다 |
+| ~~**4 — 오픈 사이즈**~~ | ~~`depth_feel`~~ | 선행 배선 완료. 작업만 남음 |
+| **4 프리플랍 — 디펜스 레인지** | `sk_tilted` | `depth_feel` 은 완료. 틸트만 남음 |
 | **4 — 축적형 분산** | `payout_flat`·`reentry` 판독 | 포맷에 값은 있으나 아무도 안 읽는다 |
-| **4 — 오픈 쇼브 통합** | `depth_feel` | `should_shove` 의 `bb<12`,`bb<22` 를 대체할 값 |
+| ~~**4 — 오픈 쇼브 통합**~~ | — | **완료** (`open_form`) |
 | **판단 층 전반** | `sk_tilted`, `tilt_direction` | 지금 틸트는 수치만 쌓이고 행동에 안 나온다 |
 | **6 관찰과 기억** | `Tilt.note_showdown` 호출 | 기록 함수는 있으나 부르는 곳이 없다 |
 | **6 관찰과 기억** | `gto.adapt_mult` | 3층 누적 판단. 관찰이 정리되어야 붙는다 |
@@ -192,11 +192,11 @@ ICM·안테·분산추구가 그 경로에서만 죽어 있었다.
 
 | 대상 | 있어야 할 자리 |
 |---|---|
-| `depth.depth_feel` | `preflop.depth_band` 소비처 4곳 (82 / 196 / 262 / 281행) |
-| `depth.lookahead_hands` | 침식률을 세션이 넘겨야 함 (`hpl`·`blind_mult` 에서) |
+| ~~`depth.depth_feel`~~ | **배선 완료** — `preflop.feel_of` 가 단일 진입점 |
+| ~~`depth.lookahead_hands`~~ | **배선 완료** — `context.erosion_per_hand` 로 전달 |
 | `gto.adapt_mult` | 3층 누적 판단. 대장 6 의존 |
-| `persona.perceived_edge` | `variance_seek` 만 씀. `depth_feel` 이 아직 안 받음 |
-| `stack_decay` 개념 | `lookahead_hands` 만 씀 (그 자체가 미배선) |
+| ~~`persona.perceived_edge`~~ | **배선 완료** — `feel_of` 가 방향축으로 씀 |
+| ~~`stack_decay` 개념~~ | **배선 완료** — 침식 예측에 사용 |
 
 **배선 시 필요한 값**: `field_avg_bb`, `erosion_per_hand`.
 전자는 `tourney.field_avg_stack / bb`, 후자는 `blind_mult` 와 `hpl` 에서 나온다.

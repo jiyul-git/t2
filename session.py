@@ -191,6 +191,9 @@ class HandRun:
                     tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6),
                     bf=h.bf(s),
                     seats=len(h.seats), ante=(getattr(h, 'ante', h.bb) > 0),
+                    field_avg_bb=((getattr(h, 'field_avg_stack', None) or 0)
+                                  / max(1, h.bb)) or None,
+                    erosion=getattr(h, 'erosion_per_hand', 0.0),
                     opp_est=(RD.perceived_profile(
                         h.book, self._pid(s), self._pid(aggressor), ax,
                         random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
