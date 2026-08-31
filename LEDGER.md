@@ -146,6 +146,20 @@
 
 ## 미배선 목록 (한꺼번에 처리)
 
+### 오늘 새로 만든 것 — 전부 미배선
+
+| 대상 | 있어야 할 자리 |
+|---|---|
+| `depth.depth_feel` | `preflop.depth_band` 소비처 4곳 (82 / 196 / 262 / 281행) |
+| `depth.lookahead_hands` | 침식률을 세션이 넘겨야 함 (`hpl`·`blind_mult` 에서) |
+| `gto.adapt_mult` | 3층 누적 판단. 대장 6 의존 |
+| `persona.perceived_edge` | `variance_seek` 만 씀. `depth_feel` 이 아직 안 받음 |
+| `stack_decay` 개념 | `lookahead_hands` 만 씀 (그 자체가 미배선) |
+
+**배선 시 필요한 값**: `field_avg_bb`, `erosion_per_hand`.
+전자는 `tourney.field_avg_stack / bb`, 후자는 `blind_mult` 와 `hpl` 에서 나온다.
+
+
 1. `size_gap` / `size_big` / `size_river` / `bluff_gap` — 상대 베팅 해석
 2. `station` — `passive` 와 같은 원천인데 한쪽만 배선됨
 3. `icm_pressure` / `required_equity` / `vs_shove` / `calloff_decision` — 올인 받는 쪽
