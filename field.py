@@ -90,7 +90,7 @@ class Field:
             if self.remaining <= 1: break
             rate = self._base_rate(level) * self.aggression * self.structure
             # 버블 근처에서는 급격히 느려진다
-            if self.itm < self.remaining <= self.itm*1.35:
+            if self.in_bubble():
                 rate *= 0.28
             # 파이널 근처 둔화
             if self.remaining <= 12: rate *= 0.45
@@ -109,13 +109,22 @@ class Field:
             self.log.append((self.hand_no, level, self.remaining))
         return out_total
 
+    # 버블 구간의 정의는 여기 하나뿐이다.
+    # 예전에는 field.py 안에서도 1.35 와 1.2 가 따로 쓰였고
+    # fieldsim.py 에 세 번째 사본이 있었다.
+    BUBBLE_HI = 1.20
+
+    def in_bubble(self, remaining=None):
+        r = self.remaining if remaining is None else remaining
+        return self.itm < r <= self.itm * self.BUBBLE_HI
+
     def avg_stack_bb(self, start_stack, bb):
         return (self.entries * start_stack / max(1, self.remaining)) / bb
 
     def status(self):
         return {'entries': self.entries, 'remaining': self.remaining, 'itm': self.itm,
                 'to_itm': max(0, self.remaining - self.itm),
-                'bubble': self.itm < self.remaining <= self.itm*1.2}
+                'bubble': self.in_bubble()}
 
 
 # ---------- 테이블 관리 ----------

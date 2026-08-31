@@ -77,19 +77,23 @@ class Hand:
         return tp, t
 
     def bf(self, s):
-        """필드 전체 기준 ICM. 테이블 인원이 아니라 남은 인원/상금 구조로 판단."""
+        """좌석 s 의 버블팩터. icm.table_bf 가 유일한 계산 지점.
+
+        예전에는 여기서 필드를 9명 모델로 축약하고 상금표를 임의로 잘랐다.
+        그 근사가 버블(61명)을 70명보다 낮게 만들고 9~40명 구간을 평평하게 했다.
+        """
         rem = getattr(self, 'field_remaining', None)
         itm = getattr(self, 'field_itm', None)
-        if not rem or not itm: return 1.0
-        if rem > itm * 3.0: return 1.0            # ITM 3배 이상 남으면 사실상 칩EV
-        # 근사: 내 스택 + 테이블 평균으로 필드를 대표시켜 ICM 계산
-        stacks = [self.stacks[x] for x in self.seats if self.stacks[x] > 0]
-        if len(stacks) < 2: return 1.0
-        avg = sum(stacks)/len(stacks)
-        n_model = min(rem, 9)
-        model = [self.stacks[s]] + [avg]*(n_model-1)
+        if not rem or not itm:
+            return 1.0
+        live = [x for x in self.seats if self.stacks[x] > 0]
+        if len(live) < 2 or s not in live:
+            return 1.0
+        stacks = [self.stacks[x] for x in live]
+        idx = live.index(s)
         pays = getattr(self, 'payouts', None) or [100, 62, 44, 34, 27, 22, 18, 15, 12]
-        k = max(1, min(len(pays), int(round(len(model)*itm/max(1, rem)))))
-        return icm.bubble_factor(model, pays[:k], 0)
+        flat = getattr(self, 'payout_flat', 0.0)
+        favg = getattr(self, 'field_avg_stack', None) or (sum(stacks)/len(stacks))
+        return icm.table_bf(stacks, idx, rem, itm, pays, flat, favg)
 
     # ---------- 프리플랍 ----------

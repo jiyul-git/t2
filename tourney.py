@@ -122,6 +122,12 @@ class Tournament:
         h.ante = bb if self.level >= self.ante_from else 0
         h.field_remaining = self.field.remaining
         h.field_itm = self.field.itm
+        h.payouts = self.payouts
+        h.payout_flat = self.fmt['payout_flat']
+        # 필드 평균 칩 = 전체 칩 / 잔여. 테이블 평균이 아니다 —
+        # 내 테이블만 보면 필드 전체에서 내 위치를 알 수 없다.
+        h.field_avg_stack = (self.entries * self.start_stack
+                             / max(1, self.field.remaining))
         self.hand = h
         self.run = SE.HandRun(h)
         return self.run.start()

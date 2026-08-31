@@ -47,14 +47,27 @@
 | 요소 | 산출 | 소비처 | 상태 |
 |---|---|---|---|
 | `icm.icm_equity` | Malmuth-Harville | bubble_factor 내부 | OK |
-| `icm.bubble_factor` | BF 1.0~4.0 | `play.Hand.bf()` | OK |
+| `icm.bubble_factor` | BF 1.0~4.0 (정확, ≤9명) | `icm.table_bf` | OK |
+| `icm.stage_pressure` | 단계 압박. 버블 정점 | `icm.field_bf` | OK |
+| `icm.stack_pressure` | 스택 위치. 중간이 최대 | `icm.field_bf` | OK |
+| `icm.field_bf` | 곡선 근사 (>9명) | `icm.table_bf` | OK |
+| `icm.table_bf` | **BF 단일 진입점** | `play.Hand.bf()` | OK |
 | `play.Hand.bf(s)` | 좌석별 BF | session → 프리플랍·포스트플랍 | OK |
+| `persona.icm_press` | ICM 압박 **배수** | depth_feel, variance_seek | OK |
+| `field.in_bubble` | 버블 판정 **단일 출처** | field, fieldsim, view | OK |
 | `persona.icm_signal(bf)` | BF → 0~1 신호 | variance_seek | OK |
 | `icm.icm_pressure` | 칩당 상금 한계하락 | — | **죽음** |
 | `icm.required_equity` | BF 반영 필요승률 | — | **죽음** |
 | `preflop.vs_shove` | 올인 대면 판단 | — | **죽음** |
 | `preflop.calloff_decision` | 콜오프 레인지 | — | **죽음** |
 | `field.status()['bubble']` | 버블 플래그 | view | 표시용 |
+
+**해결됨**: 예전 `play.Hand.bf` 는 필드를 9명 모델로 축약하고 상금표를
+`k = round(9·itm/rem)` 로 잘랐다. 근거 없는 축약이었고 결과가 이랬다 —
+`rem>itm*3` 컷오프 계단(181명 1.00 → 180명 1.53), 60자리 상금 대회를
+3자리로 계산, 버블(61명 2.03)이 70명(2.66)보다 낮음, 9~40명 구간 평평.
+지금은 9명 이하 정확 ICM / 그 위 곡선 근사로 나뉘고 경계에서 연속이다
+(10명 2.07 → 9명 2.03). 대회 규모와 무관하다(50~400명 버블 BF 2.47~2.50).
 
 주의: `bf` 를 소비하는 두 곳의 단위가 다르다.
 - `plan.py:625` — BF 단위 그대로 (`1.0 + (bf-1)*icm/6`). 팟오즈 식에 넣어야 해서

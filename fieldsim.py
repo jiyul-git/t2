@@ -112,7 +112,7 @@ class Field:
     def status(self):
         r = self.remaining()
         return {'entries': self.entries, 'remaining': r, 'itm': self.itm,
-                'to_itm': max(0, r - self.itm), 'bubble': self.itm < r <= self.itm*1.2,
+                'to_itm': max(0, r - self.itm), 'bubble': self.itm < r <= self.itm*FLD.Field.BUBBLE_HI,
                 'avg': self.avg_stack(), 'tables': len(self.tables),
                 'level': self.level, 'rank': self.hero_rank(),
                 'leader': self.chip_leader()}
