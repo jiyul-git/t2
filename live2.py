@@ -16,6 +16,8 @@ def _dump(f):
         'hands_per_level': f.hands_per_level,
         'busted_order': f.busted_order, 'hero_moves': f.hero_moves,
         'notes': f.notes,
+        'fmt': f.fmt.get('key', 'standard'),
+        'tilt': f.tilt.state,
         'players': {str(p['pid']): {'prof': p['prof'], 'stack': p['stack'],
                                     'table': p['table'], 'seat': p['seat']}
                     for p in f.players.values()},
@@ -35,6 +37,7 @@ def _load_field(d):
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
     f.notes = d.get('notes', [])
     f.players = {}
+    f._init_runtime(d.get('fmt'), d.get('tilt'))
     for k, v in d['players'].items():
         f.players[int(k)] = {'pid': int(k), 'prof': v['prof'], 'stack': v['stack'],
                              'table': v['table'], 'seat': v['seat']}
@@ -113,9 +116,7 @@ def build_hand(st):
                   seed=st['hand_seed'], book=_bk)
     h.seat_pid = {tb.seat_of(p['pid']): p['pid'] for p in alive}
     h.table_id = tb.id
-    h.field_remaining = f.remaining(); h.field_itm = f.itm
-    import dynamics as DY
-    h.dyn = getattr(t, 'tilt', None) or DY.Tilt()
+    f.stamp(h)
     return f, tb, alive, h, hero_seat
 
 

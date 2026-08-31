@@ -137,18 +137,30 @@ live 경로만 JSON 으로 유지됐다. `field_remaining` 과 같은 유형의 
 
 ---
 
-## G. 경로별 차이 (주의)
+## G. 경로별 차이 — 해결됨
 
-같은 값이 경로마다 채워지기도 하고 안 되기도 한다.
+**`context.py` 가 단일 출처다.** 드라이버는 `h.xxx = ...` 로 직접 심지 않는다.
 
-| 값 | `tourney.py` | `fieldsim.py` | `live.py` |
-|---|---|---|---|
-| `field_q` | O | O | O |
-| `field_remaining` / `field_itm` | O (방금 추가) | O | O |
-| `payouts` | X | ? | ? |
+- `tourney` — `self.ctx.update(...).apply(h, strict=True)`
+- `fieldsim` / `live2` — `Field.stamp(h)`
+- `live` — `_stamp_from_state(st, h)` (JSON 상태 기반이라 별도)
 
-`payouts` 가 없으면 `play.Hand.bf()` 가 기본 상금표를 쓴다.
-실제 상금 구조와 다르면 BF 가 틀린다.
+`tools/ctxcheck.py` 가 네 경로를 실제로 구동해 누락을 잡는다.
+**문맥 값을 추가할 때는 `context.SPEC` 에만 넣고 이 도구를 돌린다.**
+
+해결 전에는 이랬다:
+
+| 값 | tourney | live | live2 | fieldsim |
+|---|---|---|---|---|
+| 심는 값 개수 | 8 | 3 | 4 | 2 |
+
+`live`·`live2`·`fieldsim` 에는 `field_q`·`ante`·`payouts` 가 없어
+ICM·안테·분산추구가 그 경로에서만 죽어 있었다.
+같은 유형으로 세 번 걸렸다 (`field_remaining`, `ante_from`, `dyn`).
+
+`fieldsim.Field._init_runtime()` 도 같은 이유로 만들었다 —
+`live2._load_field` 가 `__new__` 로 만들고 속성을 수동 나열해서,
+새 속성을 추가하면 복원 경로만 빠졌다.
 
 ---
 

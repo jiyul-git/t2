@@ -4,6 +4,7 @@ import play, session as SE, field as F, view as V
 from table import BLINDS, HANDS_PER_LEVEL
 import formats as FM
 import dynamics as DY
+import context as CTX
 
 import archetypes as A
 
@@ -64,6 +65,7 @@ class Tournament:
         self.ante_from = f['ante_from']
         # 틸트는 대회 하나 동안 유지된다. 핸드마다 새로 만들면 안 쌓인다.
         self.tilt = DY.Tilt()
+        self.ctx = CTX.Context()
         self.stacks = {s: start_stack for s in self.seats}
         self.profiles = {}
         for s in self.seats:
@@ -117,21 +119,21 @@ class Tournament:
                 if c in alive: self.button = c; break
         h = play.Hand(self.seats, self.profiles, self.stacks, self.button, sb, bb,
                       hero=self.hero, seed=self.rng.randrange(10**9), book=self.book)
-        h.dyn = self.tilt
-        h.field_q = self.field_q          # 분산 추구 판단에 필요 (내 실력 vs 필드)
-        # ICM 은 필드 상태를 봐야 한다. 이 두 줄이 없으면 play.Hand.bf() 가
-        # 항상 1.0(칩EV)을 반환해서 버블·머니점프가 어떤 판단에도 안 들어간다.
-        # live.py 경로에는 있었고 여기만 빠져 있었다.
-        # 안테 액수. 포맷의 ante_from 레벨부터 1BB 안테.
-        h.ante = bb if self.level >= self.ante_from else 0
-        h.field_remaining = self.field.remaining
-        h.field_itm = self.field.itm
-        h.payouts = self.payouts
-        h.payout_flat = self.fmt['payout_flat']
-        # 필드 평균 칩 = 전체 칩 / 잔여. 테이블 평균이 아니다 —
-        # 내 테이블만 보면 필드 전체에서 내 위치를 알 수 없다.
-        h.field_avg_stack = (self.entries * self.start_stack
-                             / max(1, self.field.remaining))
+        self.ctx.update(
+            field_q=self.field_q,
+            field_remaining=self.field.remaining,
+            field_itm=self.field.itm,
+            # 필드 평균 칩 = 전체 칩 / 잔여. 테이블 평균이 아니다 —
+            # 내 테이블만 보면 필드에서 내 위치를 알 수 없다.
+            field_avg_stack=(self.entries*self.start_stack
+                             / max(1, self.field.remaining)),
+            payouts=self.payouts,
+            payout_flat=self.fmt['payout_flat'],
+            ante=(bb if self.level >= self.ante_from else 0),
+            dyn=self.tilt,
+            erosion_per_hand=CTX.erosion(self.hpl, self.fmt['blind_mult']),
+        )
+        self.ctx.apply(h, strict=True)
         self.hand = h
         self.run = SE.HandRun(h)
         return self.run.start()

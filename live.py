@@ -37,6 +37,7 @@ def new_game(entries=100, start_stack=30000, hero=7, seed=None, buyin=1.0):
           'field': {'remaining': entries, 'itm': f.itm, 'aggression': f.aggression,
                     'structure': f.structure, 'variance': f.variance, 'hand_no': 0,
                     'desc': f.descriptor()},
+          'fmt': 'standard', 'field_q': quality,
           'moves': 0, 'actions': [], 'hand_seed': None, 'notes': [], 'busted': False,
           'empty_since': {}, 'decisions': [],
           # 필드 칩 원장: 전체 칩 - 우리 테이블 칩 = 다른 테이블 칩
@@ -87,10 +88,41 @@ def build_hand(st):
     _bk = _RD2.Book(); _bk.d = dict(st.get('book') or {})
     h = play.Hand(st['seats'], st['profiles'], stacks, st['button'], sb, bb,
                   hero=st['hero'], seed=st['hand_seed'], book=_bk)
-    h.field_remaining = st['field']['remaining']
-    h.field_itm = st['field']['itm']
-    import dynamics as _DY
-    h.dyn = getattr(t, 'tilt', None) or _DY.Tilt()
+    _stamp_from_state(st, h)
+    return h
+
+
+_LIVE_TILT = {}
+
+
+def _stamp_from_state(st, h):
+    """JSON 상태에서 대회 문맥을 만들어 심는다.
+
+    live 는 Field 객체가 아니라 dict 상태로 돌아서 fieldsim.stamp 를 쓸 수 없다.
+    그래도 무엇을 심을지는 context.SPEC 한 곳에서 정한다 — 목록이 갈리면
+    이 경로에서만 기능이 죽는다(예전에 실제로 그랬다).
+    """
+    import context as CTX, formats as FM, dynamics as _DY
+    fmt = FM.get(st.get('fmt'))
+    itm = st['field']['itm']
+    rem = st['field']['remaining']
+    entries = st.get('entries', 100)
+    start = st.get('start_stack', 30000)
+    lvl = level(st)
+    key = st.get('seed')
+    tilt = _LIVE_TILT.setdefault(key, _DY.Tilt())
+    bb = blinds(st)[1]
+    CTX.Context(
+        field_q=st.get('field_q', 0.6),
+        field_remaining=rem,
+        field_itm=itm,
+        field_avg_stack=entries*start/max(1, rem),
+        payouts=FM.payouts(itm, fmt['payout_flat']),
+        payout_flat=fmt['payout_flat'],
+        ante=(bb if lvl >= fmt['ante_from'] else 0),
+        dyn=tilt,
+        erosion_per_hand=CTX.erosion(st.get('hpl', 12), fmt['blind_mult']),
+    ).apply(h, strict=True)
     return h
 
 def step(action=None, amount=0):

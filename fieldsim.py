@@ -1,6 +1,7 @@
 """필드 전체를 실제로 돌린다. 확률 모델 없이 모든 탈락이 실제 파산에서 나온다."""
 import json, os, math, random
 import play, session as SE, persona as PS, reads as RD, field as FLD
+import formats as FM, context as CTX, dynamics as DY
 from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +45,7 @@ class Field:
     """전 테이블을 실제로 굴리는 필드."""
 
     def __init__(self, entries=100, start_stack=30000, hero_pid=0, seed=None,
-                 hands_per_level=12, itm_frac=0.15):
+                 hands_per_level=12, itm_frac=0.15, fmt=None):
         self.rng = random.Random(seed if seed is not None else int.from_bytes(os.urandom(4), 'big'))
         self.entries = entries
         self.start_stack = start_stack
@@ -57,7 +58,8 @@ class Field:
         self.hero_moves = 0
         self.notes = []
 
-        q = FLD.field_quality(entries)
+        self._init_runtime(fmt)
+        q = self.field_q
         self.players = {}
         for pid in range(entries):
             prof = (PS.make_player(self.rng, 0.9, pid) if pid == hero_pid
@@ -79,6 +81,45 @@ class Field:
                 self.players[p]['seat'] = i
 
     # ---------- 조회 ----------
+    def _init_runtime(self, fmt=None, tilt_state=None):
+        """포맷에서 파생되는 실행 상태를 만든다.
+
+        __init__ 과 역직렬화(live2._load_field) 양쪽에서 부른다.
+        복원 쪽이 속성을 수동으로 나열하면 새 속성을 추가할 때마다
+        한쪽만 고쳐져 그 경로에서 터진다(실제로 그랬다).
+        """
+        self.fmt = FM.get(fmt)
+        self.payouts = FM.payouts(self.itm, self.fmt['payout_flat'])
+        self.field_q = FLD.field_quality(self.entries, self.fmt['buyin_level'])
+        self.ctx = CTX.Context()
+        self.tilt = DY.Tilt()
+        if tilt_state:
+            self.tilt.state = dict(tilt_state)
+        return self
+
+    def stamp(self, h):
+        """핸드에 대회 문맥을 심는다. 드라이버가 직접 h.xxx = 하지 않는다.
+
+        live / live2 / fieldsim 이 각자 심다가 목록이 어긋나서
+        경로마다 다른 기능이 죽어 있었다. 여기 하나로 모은다.
+        """
+        bb = self.blinds()[1]
+        self.ctx.update(
+            field_q=self.field_q,
+            field_remaining=self.remaining(),
+            field_itm=self.itm,
+            field_avg_stack=(self.entries*self.start_stack
+                             / max(1, self.remaining())),
+            payouts=self.payouts,
+            payout_flat=self.fmt['payout_flat'],
+            ante=(bb if self.level >= self.fmt['ante_from'] else 0),
+            dyn=self.tilt,
+            erosion_per_hand=CTX.erosion(self.hands_per_level,
+                                         self.fmt['blind_mult']),
+        )
+        self.ctx.apply(h, strict=True)
+        return h
+
     def blinds(self):
         lv = min(self.level, len(BLINDS))
         _, sb, bb = BLINDS[lv-1]
@@ -132,7 +173,7 @@ class Field:
                           seed=self.rng.randrange(10**9))
             h.seat_pid = {i+1: alive[i]['pid'] for i in range(len(alive))}
             h.table_id = tb.id
-            h.field_remaining = self.remaining(); h.field_itm = self.itm
+            self.stamp(h)
             run = SE.HandRun(h)
             run.start()
             for i in range(len(alive)):
