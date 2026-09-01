@@ -36,7 +36,21 @@
 | `size_big` | 극단 사이즈 빈도 | — | **죽음** |
 | `size_river` | 리버 사이즈 | — | **죽음** |
 | `bluff_gap` | 블러프 빈도 | — | **죽음** |
+| `pf_limp` ★ | 림프 빈도 (기회 대비) | — | **죽음** — 관찰만 되고 아직 안 읽힘 |
 | `see_freq/see_line/see_size` | 관측 능력 게이트 | — | 진단용 |
+
+**프리플랍 관찰 소비 (200핸드, 발동률 44.3%)**
+
+| 소비처 | 받는 것 |
+|---|---|
+| `defend_decision` | `tb_gap` `f2tb_gap` `fb_gap` `f2fb_gap` |
+| `raise_form` | 상대 폴드에쿼티 |
+| `open_decision` ★ | `table_pressure(behind_reads)` — 뒤 사람들의 3벳 위협·폴드 성향 |
+| `iso_decision` ★ | `limper_reads` — 림퍼가 약할수록 아이소 확대 |
+
+`table_pressure` 는 **평균이 아니라 최댓값**을 본다. 뒤에 3벳 머신이 한 명만
+있어도 좁혀야 하는데, 평균을 내면 나머지가 신호를 씻어낸다
+(배수가 0.96~1.03 에 머물렀다. 최댓값으로 바꾸니 0.76~1.05).
 
 미배선 4축 실제 발화량 (300핸드): `size_gap` 538, `bluff_gap` 593
 

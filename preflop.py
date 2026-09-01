@@ -183,10 +183,36 @@ def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
     return (None, 0)
 
 
+def table_pressure(behind_reads):
+    """뒤에 남은 사람들이 오픈 폭에 주는 압력. 배수 1.0 기준.
+
+    예전에는 open_decision 이 상대 정보를 **전혀 받지 않았다.**
+    뒤에 3벳 머신이 앉아 있어도 같은 폭으로 열었다.
+    뒤 스택(behind_stacks)은 넘어가는데 뒤 사람의 성향은 안 넘어갔다.
+
+    두 방향이 있다.
+      3벳을 많이 하는 사람이 뒤에 있다 -> 좁힌다
+      블라인드가 잘 접는다             -> 넓힌다(스틸)
+    """
+    if not behind_reads:
+        return 1.0
+    live = [r for r in behind_reads if r and r.get('w', 0) > 0]
+    if not live:
+        return 1.0
+    # **평균이 아니라 최댓값이다.** 뒤에 3벳 머신이 한 명만 있어도 좁혀야 한다.
+    # 평균을 내면 나머지 대여섯 명이 그 신호를 씻어내서 배수가 0.96~1.03 에
+    # 머문다(실제로 그랬다).
+    threat = max((r['w'] * max(0.0, r.get('tb_gap', 0.0)) for r in live), default=0.0)
+    # 스틸 여지는 반대로 전원이 접어야 생긴다. 이쪽은 최솟값을 본다.
+    steal = min((r['w'] * max(0.0, r.get('fold_gap', 0.0)) for r in live), default=0.0)
+    return max(0.55, min(1.45, 1.0 - 0.85*threat + 0.70*steal))
+
+
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
                   field_avg_bb=None, erosion=0.0,
-                  payout_flat=0.0, reentry=False, progress=0.0):
+                  payout_flat=0.0, reentry=False, progress=0.0,
+                  behind_reads=None):
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
@@ -194,7 +220,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     # 카드에 수렴시키는 것이다. 못 이기니까 운으로 가는 것.
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
     # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
-    thr = _open(prof, pos, seats, bb, ante)
+    thr = _open(prof, pos, seats, bb, ante) * table_pressure(behind_reads)
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
     r = pct(hand)
     if r > thr: return ('fold', 0)
@@ -466,9 +492,20 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     if x < w_raise + w_call: return ('call', open_bb)
     return ('fold', 0)
 
-def iso_decision(prof, pos, hand, n_limpers, bb, rng):
+def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None):
     t = _tr(prof)
-    thr = _open(prof, pos) * (1.0 + 0.35*t['iso'])   # iso 는 깊이 미반영(기존 유지)
+    thr = _open(prof, pos) * (1.0 + 0.35*t['iso'])
+    # 림퍼가 약할수록(잘 접고 수동적) 아이소를 넓힌다.
+    # 예전에는 림퍼가 누군지 전혀 보지 않았다.
+    if limper_reads:
+        _lv = [r for r in limper_reads if r and r.get('w', 0) > 0]
+        if _lv:
+            _n = float(len(_lv))
+            _w = sum(r['w'] for r in _lv) / _n
+            _fg = sum(r.get('fold_gap', 0.0) for r in _lv) / _n
+            _ps = sum(r.get('passive', 0.0) for r in _lv) / _n
+            thr *= max(0.70, min(1.60,
+                       1.0 + _w*(0.45*max(0.0, _fg) + 0.25*max(0.0, _ps))))   # iso 는 깊이 미반영(기존 유지)
     r = pct(hand)
     if r <= thr and rng.random() < t['iso']:
         return ('raise', 3.0 + n_limpers)

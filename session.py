@@ -181,6 +181,9 @@ class HandRun:
                            and rnd.order.index(x) > rnd.order.index(s)] \
                     if (aggressor is None and not limpers) else None
                 _obb = (rnd.current/h.bb) if aggressor is not None else 0.0
+                _ordr = list(rnd.order)
+                _behind_seats = ([x for x in _ordr[_ordr.index(s)+1:] if x in rnd.live()]
+                                 if s in _ordr else [])
                 _rlevel = max(1, sum(1 for (_, act, _) in rnd.log
                                      if act in ('raise', 'allin')))
                 a, sz, _seed = PL.preflop_plan(
@@ -194,6 +197,13 @@ class HandRun:
                     field_avg_bb=((getattr(h, 'field_avg_stack', None) or 0)
                                   / max(1, h.bb)) or None,
                     erosion=getattr(h, 'erosion_per_hand', 0.0),
+                    # 뒤에 남은 사람 / 림퍼의 추정치. 예전에는 오픈·아이소가
+                    # 상대 정보를 전혀 안 받았다 — 뒤 스택은 넘어가는데
+                    # 뒤 사람의 성향은 안 넘어갔다.
+                    behind_est=(self._reads_for(s, _behind_seats, ax)
+                                if aggressor is None and not limpers else None),
+                    limper_est=(self._reads_for(s, limpers, ax)
+                                if aggressor is None and limpers else None),
                     payout_flat=getattr(h, 'payout_flat', 0.0),
                     reentry=getattr(h, 'reentry', False),
                     progress=getattr(h, 'progress', 0.0),
@@ -228,11 +238,26 @@ class HandRun:
         for (x, a_, _) in rnd.log:
             acted.setdefault(x, []).append(a_)
         obs_ids = [_pid(x) for x in seats_all]
+        # 림프 판정: 로그를 순서대로 훑어 '아직 레이즈가 없던 시점'을 표시한다.
+        # 기회를 따로 세지 않으면 얼리에서 늘 폴드하는 사람이
+        # '림프 안 하는 사람'으로 잡힌다 — 그건 성향이 아니라 좁은 레인지다.
+        _limped, _limp_chance = set(), set()
+        _seen_raise = False
+        for (x, a_, _amt) in rnd.log:
+            if not _seen_raise and x not in _limp_chance:
+                _limp_chance.add(x)
+                if a_ == 'call':
+                    _limped.add(x)
+            if a_ in ('raise', 'allin'):
+                _seen_raise = True
         for x in seats_all:
             acts = acted.get(x, [])
             vpip = any(a_ in ('call','raise','allin') for a_ in acts)
             pfr = any(a_ in ('raise','allin') for a_ in acts)
-            h.book.observe_preflop(obs_ids, _pid(x), vpip, pfr)
+            # 림프 = 무저항 상태에서 콜. 기회(무저항으로 돌아온 자리)도 같이 센다.
+            _limp = (x in _limped)
+            _lchance = (x in _limp_chance)
+            h.book.observe_preflop(obs_ids, _pid(x), vpip, pfr, _limp, _lchance)
             # 3벳 기회/실행, 3벳 대면/폴드를 따로 센다.
             # '3벳만 많이 치는 사람'은 포스트플랍 공격형과 다른 대응이 필요하다.
             _seq = [(y, b_) for (y, b_, _) in rnd.log]
@@ -499,6 +524,18 @@ class HandRun:
 
         self.result = self._finish(contrib, dead, folded, live, h.board, 'showdown')
         return
+
+    def _reads_for(self, me, seats, ax):
+        """여러 좌석에 대한 추정치 목록. 관찰이 없으면 중립값이 나온다."""
+        h = self.h
+        out = []
+        for x in (seats or []):
+            if x == me:
+                continue
+            out.append(RD.perceived_profile(
+                h.book, self._pid(me), self._pid(x), ax,
+                random.Random(self._dseed(me, 'preflop', 'behind', x))))
+        return out or None
 
     def _tilt_update(self, contrib, folded, live):
         """핸드 결과를 틸트에 반영. try/except 로 감싸지 않는다 —

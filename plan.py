@@ -806,7 +806,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  n_callers=0, n_limpers=0, raise_level=1, behind_stacks=None,
                  tilt=0.0, field_q=0.6, opp_est=None, bf=1.0,
                  seats=8, ante=True, field_avg_bb=None, erosion=0.0,
-                 payout_flat=0.0, reentry=False, progress=0.0):
+                 payout_flat=0.0, reentry=False, progress=0.0,
+                 behind_est=None, limper_est=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -830,11 +831,14 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                                   seats=seats, ante=ante,
                                   field_avg_bb=field_avg_bb, erosion=erosion,
                                   payout_flat=payout_flat, reentry=reentry,
-                                  progress=progress)
+                                  progress=progress,
+                                  behind_reads=[PS.read_opponent(profile, e)
+                                                for e in (behind_est or []) if e])
         role = 'open'
     elif aggressor_pos is None:
-        a, sz = _pf.iso_decision({'type': profile.get('type')}, pos, hand,
-                                 n_limpers, bb, rng)
+        a, sz = _pf.iso_decision(profile, pos, hand, n_limpers, bb, rng,
+                                 limper_reads=[PS.read_opponent(profile, e)
+                                               for e in (limper_est or []) if e])
         role = 'iso'
     else:
         a, sz = _pf.defend_decision(profile, pos, aggressor_pos, hand, bb, open_bb,

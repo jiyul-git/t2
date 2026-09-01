@@ -6,6 +6,7 @@ import math, random
 PRIOR = {'vpip': 0.26, 'pfr': 0.15, 'cbet': 0.55, 'barrel': 0.42,
          'wtsd': 0.28, 'aggr': 5.0, 'bluff': 4.5, 'tight': 5.0,
          'fold_to_bet': 0.52, 'pf_3bet': 0.07, 'pf_fold_to_3bet': 0.55,
+         'pf_limp': 0.06,
          'pf_4bet': 0.04, 'pf_fold_to_4bet': 0.60,
          'sz_mean': 0.62, 'sz_sd': 0.22}
 
@@ -65,6 +66,8 @@ class Book:
             'fb_river': 0, 'f2b_river': 0,
             # 프리플랍 공격성 — 3벳 많이 치는 사람과 포스트플랍 공격형은 다르다
             'pf_3bet_opp': 0, 'pf_3bet': 0,
+            # 림프 — 기회 대비 실행. 방금 구현한 limp_p 의 관찰 쪽 짝이다
+            'limp_opp': 0, 'limp': 0,
             'pf_faced_3bet': 0, 'pf_fold_to_3bet': 0,
             # 4벳 이상. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
             'pf_4bet_opp': 0, 'pf_4bet': 0,
@@ -119,13 +122,20 @@ class Book:
                 r['pf_faced_3bet'] += 1
                 if folded_to_3bet: r['pf_fold_to_3bet'] += 1
 
-    def observe_preflop(self, observers, actor, vpip, pfr):
+    def observe_preflop(self, observers, actor, vpip, pfr, limp=False,
+                        limp_chance=False):
+        """limp_chance — 무저항으로 액션이 돌아온 자리였나(림프가 가능했나).
+        기회를 안 세면 얼리에서 늘 폴드하는 사람이 '림프 안 하는 사람'으로
+        잡히는데, 그건 림프 성향이 아니라 레인지가 좁은 것이다."""
         for i in observers:
             if i == actor: continue
             r = self.rec(i, actor)
             r['hands'] += 1
             r['vpip'] += 1 if vpip else 0
             r['pfr'] += 1 if pfr else 0
+            if limp_chance:
+                r['limp_opp'] += 1
+                if limp: r['limp'] += 1
 
     def observe_postflop(self, observers, actor, action, is_cbet_spot, is_barrel_spot,
                          facing_bet=False, street=None):
@@ -197,6 +207,7 @@ def estimate(book, observer, target, observer_type, rng=None):
     ftb_t = _rate('f2b_turn', 'fb_turn', PRIOR['fold_to_bet'])
     ftb_r = _rate('f2b_river', 'fb_river', PRIOR['fold_to_bet'])
     tb    = _rate('pf_3bet', 'pf_3bet_opp', PRIOR['pf_3bet'])
+    lmp   = _rate('limp', 'limp_opp', PRIOR['pf_limp'])
     f2tb  = _rate('pf_fold_to_3bet', 'pf_faced_3bet', PRIOR['pf_fold_to_3bet'])
     fb    = _rate('pf_4bet', 'pf_4bet_opp', PRIOR['pf_4bet'])
     f2fb  = _rate('pf_fold_to_4bet', 'pf_faced_4bet', PRIOR['pf_fold_to_4bet'])
@@ -247,6 +258,7 @@ def estimate(book, observer, target, observer_type, rng=None):
             'ftb_turn': _sh(ftb_t, 'fb_turn', PRIOR['fold_to_bet']),
             'ftb_river': _sh(ftb_r, 'fb_river', PRIOR['fold_to_bet']),
             'pf_3bet': _sh(tb, 'pf_3bet_opp', PRIOR['pf_3bet']),
+            'pf_limp': _sh(lmp, 'limp_opp', PRIOR['pf_limp']),
             'pf_fold_to_3bet': _sh(f2tb, 'pf_faced_3bet', PRIOR['pf_fold_to_3bet']),
             'pf_4bet': _sh(fb, 'pf_4bet_opp', PRIOR['pf_4bet']),
             'pf_fold_to_4bet': _sh(f2fb, 'pf_faced_4bet', PRIOR['pf_fold_to_4bet']),
@@ -271,6 +283,7 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'ftb_river': e.get('ftb_river'),
             'pf_3bet': e.get('pf_3bet'), 'pf_fold_to_3bet': e.get('pf_fold_to_3bet'),
             'pf_4bet': e.get('pf_4bet'), 'pf_fold_to_4bet': e.get('pf_fold_to_4bet'),
+            'pf_limp': e.get('pf_limp'),
             'sz_mean': e.get('sz_mean'), 'sz_sd': e.get('sz_sd'),
             'sz_big': e.get('sz_big'), 'sz_river': e.get('sz_river'),
             'sz_n': e.get('sz_n'),
