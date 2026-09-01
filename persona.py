@@ -752,6 +752,11 @@ def read_opponent(prof, opp_est):
             'fold_gap_river': fg(g('ftb_river', ftb)) * see_line
                               + fg(ftb) * see_freq * (1.0 - see_line),
             # 프리플랍 공격성 — 빈도만 세면 되므로 see_freq
+            # 기준 대비 오픈 폭. 절대 VPIP 가 아니라 '그 자리 기준의 몇 배'다.
+            # 포지션마다 따로 세지 않아도 되어 같은 표본으로 더 빨리 수렴한다.
+            'open_gap': max(-1.0, min(2.0, float(g('rfi_rel', 1.0) or 1.0) - 1.0)) * see_freq,
+            'limp_gap': max(-0.5, min(1.5,
+                            (float(g('pf_limp', 0.06) or 0.06) - 0.06) * 6.0)) * see_freq,
             'tb_gap':   max(-0.5, min(0.5, g('pf_3bet', 0.07) - 0.07)) * 4.0 * see_freq,
             'f2tb_gap': fg(g('pf_fold_to_3bet', 0.55) + 0.52 - 0.55) * see_freq,
             # 4벳 축. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.

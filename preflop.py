@@ -202,7 +202,9 @@ def table_pressure(behind_reads):
     # **평균이 아니라 최댓값이다.** 뒤에 3벳 머신이 한 명만 있어도 좁혀야 한다.
     # 평균을 내면 나머지 대여섯 명이 그 신호를 씻어내서 배수가 0.96~1.03 에
     # 머문다(실제로 그랬다).
-    threat = max((r['w'] * max(0.0, r.get('tb_gap', 0.0)) for r in live), default=0.0)
+    threat = max((r['w'] * (max(0.0, r.get('tb_gap', 0.0))
+                            + 0.35*max(0.0, r.get('open_gap', 0.0)))
+                  for r in live), default=0.0)
     # 스틸 여지는 반대로 전원이 접어야 생긴다. 이쪽은 최솟값을 본다.
     steal = min((r['w'] * max(0.0, r.get('fold_gap', 0.0)) for r in live), default=0.0)
     return max(0.55, min(1.45, 1.0 - 0.85*threat + 0.70*steal))
@@ -419,6 +421,12 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
         else:
             # 오픈을 마주한 상황: 상대가 3벳에 잘 접으면 3벳을 넓힌다.
             # 포스트플랍 폴드율이 아니라 '3벳 대면 폴드율'을 봐야 한다.
+            # 상대가 기준보다 넓게 열면 그 레인지가 약하다는 뜻이다.
+            # 절대 VPIP 가 아니라 '그 자리 기준의 몇 배'라 포지션 보정이 필요 없다.
+            og = exploit.get('open_gap', 0.0)
+            if abs(og) > 1e-6:
+                tot = max(tot, min(0.95, tot * (1.0 + w*0.55*og)))
+                tp = max(0.0, min(0.9, tp * (1.0 + w*0.45*og)))
             f2tb = exploit.get('f2tb_gap', exploit.get('fold_gap', 0.0))
             tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2tb)))
             tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2tb)))
@@ -504,8 +512,11 @@ def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None):
             _w = sum(r['w'] for r in _lv) / _n
             _fg = sum(r.get('fold_gap', 0.0) for r in _lv) / _n
             _ps = sum(r.get('passive', 0.0) for r in _lv) / _n
+            # 림프를 많이 하는 사람일수록 림프 레인지가 넓고 약하다.
+            _lg = max((r.get('limp_gap', 0.0) for r in _lv), default=0.0)
             thr *= max(0.70, min(1.60,
-                       1.0 + _w*(0.45*max(0.0, _fg) + 0.25*max(0.0, _ps))))   # iso 는 깊이 미반영(기존 유지)
+                       1.0 + _w*(0.45*max(0.0, _fg) + 0.25*max(0.0, _ps))
+                       + 0.30*max(0.0, _lg)))   # iso 는 깊이 미반영(기존 유지)
     r = pct(hand)
     if r <= thr and rng.random() < t['iso']:
         return ('raise', 3.0 + n_limpers)

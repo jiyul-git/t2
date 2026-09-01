@@ -1,7 +1,7 @@
 """제너레이터 기반 재개형 핸드 진행 + 쇼다운/사이드팟 정산 + 토너 세션."""
 import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
-import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD
+import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -257,7 +257,10 @@ class HandRun:
             # 림프 = 무저항 상태에서 콜. 기회(무저항으로 돌아온 자리)도 같이 센다.
             _limp = (x in _limped)
             _lchance = (x in _limp_chance)
-            h.book.observe_preflop(obs_ids, _pid(x), vpip, pfr, _limp, _lchance)
+            # 그 자리의 기준 오픈 폭도 같이 넘긴다. 관찰을 기준 대비로 만든다.
+            _rexp = _GTO.rfi(h.pos.get(x, 'HJ'), len(h.seats), h.bbs(x),
+                             getattr(h, 'ante', h.bb) > 0) if _lchance else None
+            h.book.observe_preflop(obs_ids, _pid(x), vpip, pfr, _limp, _lchance, _rexp)
             # 3벳 기회/실행, 3벳 대면/폴드를 따로 센다.
             # '3벳만 많이 치는 사람'은 포스트플랍 공격형과 다른 대응이 필요하다.
             _seq = [(y, b_) for (y, b_, _) in rnd.log]
