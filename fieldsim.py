@@ -119,6 +119,8 @@ class Field:
             dyn=self.tilt,
             erosion_per_hand=CTX.erosion(self.hands_per_level,
                                          self.fmt['blind_mult']),
+            reentry=self.fmt['reentry'],
+            progress=CTX.progress_of(self.remaining(), self.entries),
         )
         self.ctx.apply(h, strict=True)
         return h

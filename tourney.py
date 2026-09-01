@@ -132,6 +132,8 @@ class Tournament:
             ante=(bb if self.level >= self.ante_from else 0),
             dyn=self.tilt,
             erosion_per_hand=CTX.erosion(self.hpl, self.fmt['blind_mult']),
+            reentry=self.fmt['reentry'],
+            progress=CTX.progress_of(self.field.remaining, self.entries),
         )
         self.ctx.apply(h, strict=True)
         self.hand = h

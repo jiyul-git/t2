@@ -122,6 +122,8 @@ def _stamp_from_state(st, h):
         ante=(bb if lvl >= fmt['ante_from'] else 0),
         dyn=tilt,
         erosion_per_hand=CTX.erosion(st.get('hpl', 12), fmt['blind_mult']),
+        reentry=fmt['reentry'],
+        progress=CTX.progress_of(rem, entries),
     ).apply(h, strict=True)
     return h
 

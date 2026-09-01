@@ -148,13 +148,14 @@ def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
 
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
-                  field_avg_bb=None, erosion=0.0):
+                  field_avg_bb=None, erosion=0.0,
+                  payout_flat=0.0, reentry=False, progress=0.0):
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 간다. 포스트플랍이라는 스킬 구간을 없애 결과를
     # 카드에 수렴시키는 것이다. 못 이기니까 운으로 가는 것.
-    vs = PS.variance_seek(prof, tilt, field_q, bb, bf) if prof.get('concepts') else 0.0
+    vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
     # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
     thr = _open(prof, pos, seats, bb, ante)
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
@@ -334,13 +335,14 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
 
 def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng,
                     raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
-                    exploit=None, bf=1.0):
+                    exploit=None, bf=1.0,
+                    payout_flat=0.0, reentry=False, progress=0.0):
     """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
 
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
     3벳/콜 구간 자체가 움직인다. 정보가 없으면 w=0 이라 무보정.
     """
-    vs = PS.variance_seek(prof, tilt, field_q, bb, bf) if prof.get('concepts') else 0.0
+    vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
                                 n_callers, raise_level)
     if exploit and exploit.get('w', 0) > 0:

@@ -33,9 +33,23 @@ SPEC = {
     'ante':             (None, '이번 핸드의 안테 액수. 0 이면 안 걷는다'),
     'dyn':              (None, '틸트 객체. 대회 단위로 유지되어야 한다'),
     'erosion_per_hand': (0.0,  '핸드당 블라인드 침식률. 깊이 인식이 쓴다'),
+    'reentry':          (False,'리바인 가능 여부. 축적형 분산의 실패 비용을 낮춘다'),
+    'progress':         (0.0,  '대회 진행도 0(시작)~1(끝). 잔여/엔트리로 계산'),
 }
 
 REQUIRED = tuple(k for k, (d, _) in SPEC.items() if d is None)
+
+
+def progress_of(remaining, entries, itm=None):
+    """대회 진행도 0~1. 잔여 인원이 줄수록 1 에 가깝다.
+
+    선형이 아니다. 100명 중 50명 남은 것보다 10명 중 5명 남은 쪽이
+    훨씬 후반이다. 로그 축이 실제 감각에 맞다.
+    """
+    import math
+    e = max(2, int(entries or 2))
+    r = max(1, min(e, int(remaining or e)))
+    return max(0.0, min(1.0, math.log(e / r) / math.log(e)))
 
 
 def erosion(hands_per_level, blind_mult=1.0, base_growth=1.28):
