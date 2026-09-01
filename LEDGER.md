@@ -149,8 +149,14 @@ BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
 | `dynamics.Tilt` ★ | session `_tilt_update`, tourney `self.tilt` | OK |
 | `Tilt.on_pot` / `on_result` / `on_fold_after_investing` ★ | session `_tilt_update` | OK |
 | `Tilt.note_showdown` / `shown` ★ | session 쇼다운 → runner `adjust_range_by_history` | OK |
-| `persona.tilt_decay` / `sk_tilted` ★ | — | **미배선** (판단 층이 sk 대신 sk_tilted 를 써야) |
-| `persona.tilt_direction` ★ | — | **미배선** |
+| `persona.tilted_view` ★ | `play.Hand.axes()` — 판단 층 단일 진입점 | OK |
+| `persona.tilt_decay` / `tilt_direction` ★ | `tilted_view` 내부 | OK |
+| `persona.sk_tilted` | — | 미사용 (tilted_view 로 대체. 남겨둠) |
+
+**틸트를 진입점 한 곳에서 반영한다.** 개별 `sk()` 호출부 27곳을 고치는 대신
+`axes()` 가 개념 벡터 자체를 깎은 사본을 넘긴다. 판단 층 코드는 그대로이고
+새 개념을 추가해도 자동 적용된다. 호출부를 하나 빠뜨리면 그 축만
+틸트에 반응하지 않는데, 그런 누락은 드러나지 않는다.
 | ~~table_break / adapt_to_hero / observe_hero~~ | legacy_dynamics.py | 삭제 (중복) |
 
 **정정**: 예전 `dynamics` 는 죽어 있지 않았다. `record_pot`/`decay`/`tilted_profile`
@@ -199,7 +205,7 @@ ICM·안테·분산추구가 그 경로에서만 죽어 있었다.
 | **4 프리플랍 — 디펜스 레인지** | `sk_tilted` | `depth_feel` 은 완료. 틸트만 남음 |
 | **4 — 축적형 분산** | `payout_flat`·`reentry` 판독 | 포맷에 값은 있으나 아무도 안 읽는다 |
 | ~~**4 — 오픈 쇼브 통합**~~ | — | **완료** (`open_form`) |
-| **판단 층 전반** | `sk_tilted`, `tilt_direction` | 지금 틸트는 수치만 쌓이고 행동에 안 나온다 |
+| ~~**판단 층 전반**~~ | — | **완료** (`tilted_view`) |
 | **6 관찰과 기억** | `Tilt.note_showdown` 호출 | 기록 함수는 있으나 부르는 곳이 없다 |
 | **6 관찰과 기억** | `gto.adapt_mult` | 3층 누적 판단. 관찰이 정리되어야 붙는다 |
 | **6 — 상대 레인지 추정** | 기준표 대비 관측 | `Book` 이 절대값(VPIP 34%)으로 쌓는다. `gto.rfi` 대비 배수로 바꾸면 표본이 훨씬 적게 든다 |

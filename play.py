@@ -3,6 +3,7 @@ import random, json, os, hashlib
 import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU
 
 import table as _TB
+import persona as PS
 from table import SEAT_ORDER as ORDER
 from table import PRE_ORDER as PRE, POST_ORDER as POST   # 단일 출처 재수출 (8맥스 기본)
 
@@ -76,7 +77,8 @@ class Hand:
         # 판단 층이 sk 대신 sk_tilted 를 쓰면 저절로 반영된다.
         # 여기서는 현재 틸트 수치만 돌려준다.
         t = self.dyn.level(s) if hasattr(self.dyn, 'level') else 0.0
-        return base, round(t, 2)
+        # 틸트는 여기 한 곳에서만 반영한다. 판단 층은 그대로 sk()/temper() 를 쓴다.
+        return PS.tilted_view(base, t), round(t, 2)
 
     def bf(self, s):
         """좌석 s 의 버블팩터. icm.table_bf 가 유일한 계산 지점.

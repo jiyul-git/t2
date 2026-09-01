@@ -140,6 +140,16 @@ blocker 56%  pf_range 60%  spr 61%   <- 먼저 무너짐
 positional 84%  cbet_flop 85%  trap 89%   <- 남음
 ```
 
+**진입점은 `persona.tilted_view`** — `play.Hand.axes()` 가 부른다.
+개념은 `tilt_decay` 로 깎이고 기질은 `tilt_direction` 으로 흔들린다.
+규율은 방향과 무관하게 떨어진다.
+
+```
+공격형+강화 틸트0.9   aggr 8.0->10.0  loose 6.1->8.1   (더 난폭)
+공격형+반전 틸트0.9   aggr 8.0-> 5.3  loose 6.1->4.1   (갑자기 위축)
+개념          pf_range 5.9->3.2(계산형)  cbet_flop 4.8->4.0(체화형)
+```
+
 **크기와 방향을 나눈다.** 방향을 `aggression` 하나로 정하면
 '공격적인 사람은 난폭해진다'만 나오고 '얻어맞고 위축되는 사람'이 없다.
 `tilt_swing` 이 강화/반전을 정해 네 조합이 다 나온다.

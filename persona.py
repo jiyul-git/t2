@@ -500,6 +500,53 @@ def tilt_direction(prof):
     return max(-1.0, min(1.0, base * swing * 2.0))
 
 
+_TILT_VIEW_CACHE = {}
+
+
+def tilted_view(prof, tilt):
+    """틸트가 반영된 프로필 사본. **판단 층 진입점에서 한 번만 만든다.**
+
+    개별 sk() 호출부를 전부 sk_tilted 로 바꾸는 대신 여기서 개념 벡터 자체를
+    깎는다. 판단 층은 코드를 하나도 안 바꿔도 되고, 새 개념을 추가해도
+    자동으로 적용된다. 호출부를 27곳 고치면 하나 빠뜨렸을 때 그것만
+    틸트에 반응하지 않는데, 그런 누락은 잘 드러나지 않는다.
+
+    개념은 tilt_decay 로 깎이고(계산형부터 무너진다),
+    기질은 tilt_direction 방향으로 흔들린다(난폭해지거나 위축된다).
+    성향값을 일방적으로 밀어넣던 예전 방식과 다르다.
+    """
+    t = max(0.0, min(1.0, float(tilt or 0.0)))
+    if t <= 0.02 or not prof or not prof.get('concepts'):
+        return prof
+    # 캐시 키는 안정적인 식별자여야 한다. id(prof) 는 안 된다 —
+    # 호출부가 매번 새 dict 를 만들어 캐시가 안 맞고,
+    # 해제된 객체의 id 가 재사용되면 **다른 사람의 뷰를 돌려준다.**
+    pid = prof.get('id')
+    key = (pid, round(t, 2)) if pid is not None else None
+    if key is not None:
+        hit = _TILT_VIEW_CACHE.get(key)
+        if hit is not None:
+            return hit
+    out = dict(prof)
+    out['concepts'] = {k: round(v * tilt_decay(prof, k, t), 2)
+                       for k, v in prof['concepts'].items()}
+    d = tilt_direction(prof)          # −1(위축) ~ +1(난폭)
+    tm = dict(prof.get('temper', {}))
+    if abs(d) > 1e-6:
+        tm['aggression'] = _clamp(tm.get('aggression', 5.0) + 3.0*t*d)
+        tm['looseness'] = _clamp(tm.get('looseness', 5.0) + 2.2*t*d)
+        # 위축형이든 난폭형이든 규율은 떨어진다. 방향과 무관하다.
+        tm['discipline'] = _clamp(tm.get('discipline', 5.0) - 2.0*t)
+    else:
+        tm['discipline'] = _clamp(tm.get('discipline', 5.0) - 2.0*t)
+    out['temper'] = tm
+    if key is not None:
+        if len(_TILT_VIEW_CACHE) > 4000:
+            _TILT_VIEW_CACHE.clear()
+        _TILT_VIEW_CACHE[key] = out
+    return out
+
+
 def perceived_edge(prof, field_q=0.6):
     """필드 대비 자기 실력, **자각이 걸린 값**. −1 ~ +1.
 
