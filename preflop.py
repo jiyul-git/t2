@@ -98,6 +98,43 @@ def crude_edge(prof):
     return 0.13 + 0.014*g          # gamble 0 -> 0.13, 10 -> 0.27
 
 
+def limp_p(prof, feel, hand_pct, pos, traits=None):
+    """오픈 림프 확률. **동기가 둘이고 방향이 반대다.**
+
+    이론적 림프 — 얕을 때만. 20bb 아래에서 성립한다.
+      상대가 내 림프 위로 쇼브해도 오픈레이즈 위로 쇼브하는 것보다 덜 벌고,
+      내가 쇼브당해 접어도 덜 잃는다. 레인지는 좁다(22-88, A2s-A8s 계열).
+      소수만 한다. pf_range 가 높아야 나온다.
+
+    습관적 림프 — 깊이 무관. 라이브 저스테이크의 임플라이드 오즈 심리.
+      "싸게 보고 트립스 이상 맞으면 스택을 딴다". 넓고 약한 핸드 위주.
+      pf_range 가 낮을수록 크다.
+
+    예전 코드는 `feel >= 0.20`(28bb 이상)에서만 림프했다. 이론적 림프를
+    막고 습관적 림프만 남긴 셈인데, 이론과 정반대 방향이다.
+    """
+    t = traits or _tr(prof)
+    acc = 0.10 + 0.80*min(1.0, PS.sk(prof, 'pf_range')/8.0) if prof.get('concepts') else 0.5
+
+    # --- 이론적 림프 ---
+    # feel 0.12(=20bb) 아래에서만. 얕을수록 커진다.
+    theory = max(0.0, min(1.0, (0.12 - feel) / 0.12))
+    if hand_pct <= 0.03 or hand_pct > 0.30:
+        theory *= 0.15          # 레인지가 좁다. 프리미엄도 최약체도 아니다
+    theory *= acc * 0.42        # 아는 사람만 한다
+
+    # --- 습관적 림프 ---
+    habit = t['limp'] * (1.0 - acc) * 2.2
+    if hand_pct <= 0.05:   habit *= 0.10     # 프리미엄은 거의 림프 안 한다
+    elif hand_pct <= 0.12: habit *= 0.30
+    elif hand_pct <= 0.25: habit *= 0.85
+    else:                  habit *= 1.45     # 약할수록 림프 선호
+    # 아주 얕으면 습관형도 림프 대신 쇼브/폴드로 간다
+    habit *= min(1.0, feel / 0.10) if feel < 0.10 else 1.0
+
+    return max(0.0, min(0.85, 1.0 - (1.0-min(1.0, theory))*(1.0-min(1.0, habit))))
+
+
 def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
     """오픈을 레이즈로 칠지 쇼브할지 — 형태를 정하는 유일한 지점.
 
@@ -161,16 +198,12 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
     r = pct(hand)
     if r > thr: return ('fold', 0)
-    # 림프는 미들~약한 핸드에 몰린다. 프리미엄은 거의 림프하지 않는다.
-    limp_p = t['limp']
-    if r <= 0.05:   limp_p *= 0.08          # 상위 5% (AQs+, TT+)
-    elif r <= 0.12: limp_p *= 0.25
-    elif r <= 0.25: limp_p *= 0.70
-    else:           limp_p *= 1.35          # 약한 핸드일수록 림프 선호
-    if rng.random() < limp_p and feel >= 0.20 and pos != 'SB':
-        return ('limp', 1.0)
+    # 쇼브 판정이 먼저다. 10bb 에서 림프를 먼저 물으면 쇼브해야 할 자리에서
+    # 림프가 나온다(실제로 38% 나왔다). 얕으면 쇼브가 선택지를 먹는다.
     act, amt = open_form(prof, feel, r, bb, rng, vs, t)
     if act: return (act, amt)
+    if rng.random() < limp_p(prof, feel, r, pos, t) and pos != 'SB':
+        return ('limp', 1.0)
     sz = open_size_bb(feel, pos, rng)
     return ('raise', sz if sz else 2.0)
 
