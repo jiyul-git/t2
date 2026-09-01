@@ -81,8 +81,9 @@ BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
 | `persona.icm_signal(bf)` | BF → 0~1 신호 | variance_seek | OK |
 | `icm.icm_pressure` | 칩당 상금 한계하락 | — | **죽음** |
 | `icm.required_equity` | BF 반영 필요승률 | — | **죽음** |
-| `preflop.vs_shove` | 올인 대면 판단 | — | **죽음** |
-| `preflop.calloff_decision` | 콜오프 레인지 | — | **죽음** |
+| `preflop.calloff_cap` ★ | 올인 대면 콜 문턱 | `defend_decision` (올인 분기) | OK |
+| `preflop.calloff_decision` | 콜오프 판단 | `defend_decision` | OK |
+| `preflop.vs_shove` | 구형. 에쿼티 함수 필요 | — | 미사용 (calloff_cap 로 대체) |
 | `field.status()['bubble']` | 버블 플래그 | view | 표시용 |
 
 **해결됨**: 예전 `play.Hand.bf` 는 필드를 9명 모델로 축약하고 상금표를
@@ -211,7 +212,7 @@ ICM·안테·분산추구가 그 경로에서만 죽어 있었다.
 | **6 — 상대 레인지 추정** | 기준표 대비 관측 | `Book` 이 절대값(VPIP 34%)으로 쌓는다. `gto.rfi` 대비 배수로 바꾸면 표본이 훨씬 적게 든다 |
 | **7 리뷰** | `perceived_edge`, 판단 로그 | 상대가 왜 그렇게 쳤는지 되짚으려면 판단 시점 값이 남아야 한다 |
 | **포스트플랍 전반** | `size_gap`·`bluff_gap`·`station` | 상대 베팅 해석 축들 |
-| **올인 대면** | `vs_shove`, `calloff_decision`, `required_equity` | 함수는 완성돼 있고 호출부만 없다 |
+| ~~**올인 대면**~~ | — | **완료** (`calloff_cap`) |
 
 ---
 

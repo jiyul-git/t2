@@ -403,6 +403,13 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
     3벳/콜 구간 자체가 움직인다. 정보가 없으면 w=0 이라 무보정.
     """
+    # 올인 대면은 별도 경로다. 포스트플랍이 없으므로 계산이 다르다.
+    _st = stack_bb if stack_bb is not None else bb
+    if open_bb >= _st * 0.92:
+        _a, _cap = calloff_decision(prof, def_pos, hand, bb, raise_level,
+                                    1.5 + open_bb*(1 + n_callers), open_bb,
+                                    bf, opener_pos, open_bb, exploit, n_callers)
+        return _a
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
                                 n_callers, raise_level)
@@ -531,11 +538,47 @@ def vs_shove(prof, hand, bb_risk, pot, tocall, bubble_factor, equity_fn):
     return ('call', tocall) if eq >= need else ('fold', 0)
 
 
-def calloff_decision(prof, def_pos, hand, bb, raise_level, pot, tocall, bubble_factor=1.0):
-    """올인(또는 커밋 사이즈)에 대한 콜 판단. 단계가 깊을수록 극단적으로 좁다."""
-    t = TRAITS[prof['type']]
-    base = (t['threebet'] + t['call']) * OPENER_MULT.get('CO', 2.5) * 0.5
-    cap = base * CALLOFF_TIGHTEN.get(raise_level, 0.07)
-    cap = min(0.85, cap * (1.0/max(1.0, bubble_factor)))
+def calloff_cap(prof, def_pos, opener_pos, bb, open_bb, raise_level,
+                bf=1.0, exploit=None, n_callers=0):
+    """올인 대면 콜 문턱. 일반 디펜스와 **다른 계산이다.**
+
+    포스트플랍이 없다. 그래서
+      - 임플라이드 오즈가 사라진다. 셋마이닝·수티드커넥터의 가치가 크게 준다
+      - 순수 에쿼티 대 팟오즈 문제가 된다
+      - ICM 이 가장 세게 걸린다. 지면 그 자리에서 탈락이다
+
+    예전에는 올인 대면이 일반 레이즈와 같은 경로로 처리됐다
+    (defend_decision 호출의 16.7% 가 올인 대면인데 ICM 이 안 걸렸다).
+    calloff_decision 은 존재했지만 호출부가 없었고, 구형 아키타입 라벨에
+    의존해 개념 벡터를 무시했다.
+    """
+    tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
+                                n_callers, raise_level)
+    # 참가 폭에서 시작해 단계별로 좁힌다. 3벳 올인보다 5벳 올인이 훨씬 좁다.
+    cap = tot * CALLOFF_TIGHTEN.get(raise_level + 1, 0.07) * 2.6
+
+    # 임플라이드 오즈 소멸 — 스택이 깊을수록 잃는 것이 크다.
+    # 얕으면 어차피 셋마이닝이 안 되므로 차이가 없다.
+    cap *= 1.0 - 0.18 * _DP.base_feel(bb)
+
+    # ICM. 여기가 콜오프에서 가장 큰 항이다.
+    cap /= max(1.0, float(bf or 1.0))
+
+    if exploit and exploit.get('w', 0) > 0:
+        w = exploit['w']
+        # 아무 핸드나 쇼브하는 상대에겐 넓게 받는다.
+        og = exploit.get('open_gap', 0.0)
+        tbg = exploit.get('tb_gap', 0.0)
+        cap *= max(0.5, min(2.0, 1.0 + w*(0.45*og + 0.60*max(0.0, tbg))))
+    return max(0.005, min(0.85, cap))
+
+
+def calloff_decision(prof, def_pos, hand, bb, raise_level, pot, tocall,
+                     bubble_factor=1.0, opener_pos='CO', open_bb=None,
+                     exploit=None, n_callers=0):
+    """올인 대면 콜/폴드. 반환: (액션, 문턱)"""
+    cap = calloff_cap(prof, def_pos, opener_pos, bb,
+                      open_bb if open_bb is not None else tocall,
+                      raise_level, bubble_factor, exploit, n_callers)
     r = pct(hand)
-    return ('call', tocall) if r <= cap else ('fold', 0), cap
+    return (('call', tocall) if r <= cap else ('fold', 0)), cap
