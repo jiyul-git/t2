@@ -77,13 +77,78 @@ def depth_band(bb):
 
 DEPTH_OPEN_MULT = {'micro':2.40,'short':1.75,'mid':1.35,'normal':1.0,'deep':0.95}
 
-def open_size_bb(feel, pos, rng):
-    # feel 은 깊이 인식 0~1. 예전에는 밴드 문자열이었다.
-    if feel < 0.05:  return 2.0                        # 실제로는 쇼브로 처리됨
-    if feel < 0.12:  return 2.0                        # 쇼브 아니면 최소 사이즈
-    if feel < 0.20:  return rng.choice([2.0, 2.2])
-    if feel < 0.75:  return rng.choice([2.2, 2.5])
-    return rng.choice([2.5, 3.0])
+def round_unit_bb(bb_chips):
+    """호가 단위를 bb 로 환산. 사람은 33,920 을 부르지 않는다.
+
+    BB 크기에 비례한 자릿수를 쓴다.
+      BB 200 -> 100 단위,  BB 1,000 -> 500 단위,  BB 5,000 -> 1,000 단위
+    별도 기질 축을 만들지 않는다 — 대부분이 라운드값으로 부르기 때문이다.
+    갈리는 것은 '하느냐'가 아니라 '얼마나 딱 맞추느냐'이고, 그것은
+    consistency 가 정한다.
+    """
+    b = max(1.0, float(bb_chips or 1.0))
+    if b < 400:     u = b/2.0
+    elif b < 2000:  u = b/2.0
+    elif b < 20000: u = b/5.0
+    else:           u = b/5.0
+    return max(0.05, u/b)          # bb 단위 호가
+
+
+def open_size_bb(feel, pos, rng, prof=None, ante=True, n_limpers=0,
+                 bb_chips=None, table_soft=0.0):
+    """오픈 사이즈(bb). 축이 셋이다.
+
+    사이즈    상황에 맞는 값을 아는가 (open_size 개념)
+    일관성    매번 같은 사이즈를 치는가 (consistency 기질)
+    반올림    호가 단위에 맞추는가 (위와 같은 기질이 강도만 정함)
+
+    기준값 (공개 자료)
+      온라인 2~2.5bb / 라이브 3~4bb / 안테 전 2.5bb / 안테 후 2~2.2bb
+      SB 3bb (포스트플랍 항상 OOP) / 림퍼당 +1bb
+      깊을수록 크게 — 임플라이드 오즈가 커져 루즈 콜이 유도되므로 상쇄한다
+      안테가 있으면 작게 — 죽은 돈이 이미 있어 스틸 이득이 크다
+
+    **콜러를 줄이려고 크게 친다**는 심리는 정식 논리다. 다만 조건이 붙는다 —
+    사이에 앉은 사람들이 레크리에이셔널이라 큰 레이즈에 실제로 좁혀줄 때만
+    유효하다. 같은 레인지로 3벳하는 상대에겐 오히려 작게 치는 게 낫다.
+    그래서 table_soft(뒤 사람들이 얼마나 물렁한가)가 곱해진다.
+    """
+    # --- 기준 ---
+    base = 2.5 if not ante else 2.15
+    base += 0.35 * max(0.0, feel - 0.40)      # 깊을수록 크게
+    if pos == 'SB':
+        base += 0.6                            # 항상 OOP 라 싸게 주면 안 된다
+    base += 1.0 * max(0, int(n_limpers or 0))  # 림퍼당 +1bb
+
+    if prof is None or not prof.get('concepts'):
+        return round(max(2.0, min(6.0, base)), 2)
+
+    acc = 0.10 + 0.80*min(1.0, PS.sk(prof, 'open_size')/8.0)
+    cons = PS.temper(prof, 'consistency', 5.0)/10.0
+
+    # --- 멀티웨이 회피 ---
+    # 개념이 낮은데 핸드가 강하면 "콜러를 줄이려고" 크게 친다.
+    # 아는 사람은 사이즈로 레인지를 노출하지 않으려고 이러지 않는다.
+    lean = (1.0 - acc) * max(0.0, table_soft)
+    base *= 1.0 + 0.55*lean
+
+    # --- 일관성 ---
+    # 개념도 낮고 일관성도 낮으면 사이즈가 천차만별이 된다.
+    # 이것은 버그가 아니라 재현해야 할 현상이다 — 관찰자에게 정보를 준다
+    # (size_info 축이 그 전제 위에 있다).
+    spread = (1.0 - acc)*0.55 + (1.0 - cons)*0.45
+    if spread > 0.02:
+        base *= 1.0 + rng.uniform(-0.42, 0.42)*spread
+
+    v = max(1.8, min(6.5, base))
+
+    # --- 반올림 ---
+    if bb_chips:
+        u = round_unit_bb(bb_chips)
+        snapped = round(v/u)*u
+        # 일관성이 높을수록 호가에 딱 맞춘다. 낮으면 어중간한 값이 남는다.
+        v = v + (snapped - v)*(0.35 + 0.65*cons)
+    return round(max(1.8, min(6.5, v)), 2)
 
 def crude_edge(prof):
     """밴드로 생각하는 사람의 '짧다' 기준선. feel 단위.
@@ -214,7 +279,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
                   field_avg_bb=None, erosion=0.0,
                   payout_flat=0.0, reentry=False, progress=0.0,
-                  behind_reads=None):
+                  behind_reads=None, bb_chips=None):
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
@@ -232,7 +297,16 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     if act: return (act, amt)
     if rng.random() < limp_p(prof, feel, r, pos, t) and pos != 'SB':
         return ('limp', 1.0)
-    sz = open_size_bb(feel, pos, rng)
+    # 뒤 사람들이 물렁할수록(잘 접고 수동적) 큰 사이즈가 실제로 통한다.
+    _soft = 0.0
+    if behind_reads:
+        _bl = [r for r in behind_reads if r and r.get('w', 0) > 0]
+        if _bl:
+            _soft = min(1.0, max(0.0, sum(r['w']*(0.6*max(0.0, r.get('fold_gap', 0.0))
+                                                  + 0.4*max(0.0, r.get('passive', 0.0)))
+                                          for r in _bl)/len(_bl)))
+    sz = open_size_bb(feel, pos, rng, prof, ante, 0,
+                      bb_chips=bb_chips, table_soft=_soft)
     return ('raise', sz if sz else 2.0)
 
 # 레이즈 단계별 레인지 축소 계수 (3벳 대비)
@@ -362,7 +436,7 @@ def _tr_loose(prof):
 
 
 def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
-                      raise_level=1):
+                      raise_level=1, seats=8, ante=True):
     """디펜스 역치 (tp, tot) 를 내는 유일한 지점.
 
     tp  — 이 값 이하면 3벳 구간
@@ -370,34 +444,58 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
 
     defend_decision(실제 판단)과 ranges.preflop_range(상대 레인지 모델)이
     반드시 같은 구간을 보도록 여기 하나만 쓴다. 절대 복제하지 말 것.
+
+    오픈과 같은 3층이다 — 기준(gto.defend_pct) x 성향 x 누적판단.
+    예전에는 기준이 없고 아키타입 형질(t['threebet'], t['call'])에
+    포지션 배수를 곱했다. 그래서 좌석수·안테·오픈사이즈 보정이
+    gto.rfi 와 따로 놀았다.
     """
-    t = _tr(prof)
-    m = OPENER_MULT.get(opener_pos, 2.0) * DEF_POS_MULT.get(def_pos, 0.7)
-    m *= (2.5 / max(1.5, open_bb)) ** 0.6
-    if def_pos in ('BB','SB'): m *= 1.35      # BB 안테로 팟이 커져 방어 폭 확대
-    tp = min(.85, t['threebet'] * m * (t['sqz'] if n_callers else 1.0) * (0.92 ** n_callers))
-    # 다인원 플랫 축소율을 상수로 두면 안 된다.
-    # 규율 있는 레귤러는 다인원에서 크게 조이지만 콜링 스테이션은 거의 신경 쓰지 않는다.
-    # 상수로 두면 루즈한 필드일수록 다인원이 되어 축소가 세게 걸리고,
+    import gto as _G
+    base_tot = _G.defend_pct(def_pos, opener_pos, seats, bb, ante, open_bb)
+    base_tp = _G.threebet_pct(def_pos, opener_pos, seats, bb, ante, open_bb)
+
+    if not (isinstance(prof, dict) and prof.get('concepts')):
+        tp, tot = _saturate(base_tp, base_tot)
+    else:
+        # 크기 <- 개념, 방향 <- 기질. 상한 0.90 (완벽한 사람은 없다)
+        acc = 0.10 + 0.80*min(1.0, PS.sk(prof, 'pf_defend')/8.0)
+        loose = PS.temper(prof, 'looseness', 5.0)
+        aggr = PS.temper(prof, 'aggression', 5.0)
+        d_call = max(-1.0, min(1.0, (loose - 5.0)/4.0))
+        d_tb = max(-1.0, min(1.0, ((0.45*loose + 0.55*aggr) - 5.0)/4.0))
+        tot = base_tot * (1.0 + (1.0-acc)*d_call*0.95)
+        tp = base_tp * (1.0 + (1.0-acc)*d_tb*1.10)
+        tp, tot = _saturate(tp, max(tp, tot))
+
+    # 다인원. 축소율을 상수로 두면 안 된다 —
+    # 규율 있는 레귤러는 크게 조이지만 콜링 스테이션은 거의 신경 쓰지 않는다.
+    # 상수면 루즈한 필드일수록 다인원이 되어 축소가 세게 걸리고,
     # 결국 필드의 헐거움이 스스로를 상쇄해 어떤 필드든 같은 참여율로 수렴한다.
-    loose = _tr_loose(prof)
-    mw = max(0.45, min(0.95, 0.48 + 0.048*loose))       # 닛 0.53 / 스테이션 0.87
-    cp = min(.85, t['call'] * m * (mw ** n_callers))
+    if n_callers:
+        loose_v = _tr_loose(prof)
+        mw = max(0.45, min(0.95, 0.48 + 0.048*loose_v))
+        tot *= mw ** n_callers
+        tp *= (_tr(prof)['sqz'] if 'sqz' in _tr(prof) else 1.0) * (0.92 ** n_callers)
+        tp = min(tp, tot)
+
+    # 짧으면 콜 대신 쇼브/폴드. 콜 구간이 줄고 3벳 구간이 는다.
     if _DP.base_feel(bb) < 0.20:
-        tp = tp * 1.6; cp *= 0.45                # 짧으면 콜 대신 쇼브/폴드
-    tp, tot = _saturate(tp, tp+cp)
-    # 포화 '이후'에 단계별 축소를 적용해야 좁아진 값이 되살아나지 않는다
+        tp = min(tot, tp * 1.6)
+        tot = max(tp, tot * 0.62)
+
+    # 단계별 축소는 마지막에. 앞에서 하면 이후 곱셈이 좁아진 값을 되살린다.
     if raise_level >= 2:
         lt = LEVEL_TIGHTEN.get(raise_level+1, 0.10)
         tp *= lt
         tot = tp + (tot - tp) * (lt*0.8)
-    return tp, tot
+    return max(0.0, min(0.9, tp)), max(0.0, min(0.95, tot))
 
 
 def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng,
                     raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
                     exploit=None, bf=1.0,
-                    payout_flat=0.0, reentry=False, progress=0.0):
+                    payout_flat=0.0, reentry=False, progress=0.0,
+                    seats=8, ante=True):
     """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
 
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
@@ -412,7 +510,7 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
         return _a
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
-                                n_callers, raise_level)
+                                n_callers, raise_level, seats, ante)
     if exploit and exploit.get('w', 0) > 0:
         w = exploit['w']
         if raise_level >= 2:

@@ -13,7 +13,7 @@ EXEC = ['bluff', 'semibluff',
         'blockbet', 'potcontrol', 'trap', 'overbet', 'probe',
         'delayed_cbet', 'equity_denial', 'stackoff', 'reraise']
 # 계산 개념: 공부량에 좌우되는 이론 능력
-CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay']
+CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay', 'open_size', 'pf_defend']
 # 기질 축: 능력이 아니라 성격
 TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
           'discipline', 'adaptability', 'consistency', 'attention']
@@ -70,6 +70,11 @@ LOADING = {
  # 블라인드 침식을 **미리** 보는가. 레귤러도 대부분 오른 뒤에 다시 짠다 —
  # 소수만 대비하므로 base 를 낮게, spread 를 크게 둔다 (잠정)
  'stack_decay':       (0.85, 0.05, 0.30, 2.6),
+ # 상황에 맞는 오픈 사이즈를 아는가. 표로 외우기 쉬워 알려진 편이다 (잠정)
+ 'open_size':         (0.75, 0.10, 0.35, 4.2),
+ # 디펜스 레인지. 오픈 차트를 아는 것과 별개다 —
+ # 'BB 과다 폴드'는 가장 흔하고 비싼 누수로 꼽힌다 (잠정)
+ 'pf_defend':         (0.85, 0.15, 0.30, 4.0),
 }
 
 # ---------- 개념별 개인 편차 ----------
@@ -126,6 +131,8 @@ SPREAD = {
     'pf_range':         2.30,   # 외웠나 아닌가로 가장 크게 갈리는 개념
     'positional':       1.60,   # 공부 없이 경험으로도 붙어서 중간
     'stack_decay':      2.45,   # 소수만 함 — 가장 날카롭게 갈리는 축
+    'open_size':        1.75,
+    'pf_defend':        2.15,   # 아는 사람과 모르는 사람이 크게 갈린다
 }
 
 

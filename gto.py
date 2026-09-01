@@ -131,3 +131,48 @@ def table(seats=8, bb=100.0, ante=True):
 def adapt_mult(prof, memory=None):
     """누적 판단 배수. 미배선 — 항상 1.0."""
     return 1.0
+
+
+# ---------- 디펜스 기준 ----------
+# 별도 표를 두지 않는다. **디펜스 폭은 상대 오픈 폭의 함수다.**
+# 공개 자료(9맥스, 3x 오픈 대면 BB):
+#   BTN 오픈 51% -> 디펜스 56% / CO 36% -> 48% / HJ 28% -> 40% / UTG 15% -> 30%
+# 이 네 점이 defend = 0.22 + 0.68 x rfi 에 거의 정확히 맞는다.
+# 표를 따로 만들면 rfi 표와 어긋날 수 있고, 좌석수·깊이·안테 보정을
+# 두 곳에서 따로 해야 한다.
+DEF_A, DEF_B = 0.22, 0.68
+
+# SB 오픈만 예외. 오픈 폭은 좁은데 디펜스는 가장 넓다(60%) —
+# 블라인드 대 블라인드라 우리가 액션을 닫고 포스트플랍 포지션을 갖는다.
+DEF_VS_SB = 0.60
+
+# MDF — 오픈 사이즈가 정하는 하한. 위 표는 3x 기준이므로 그 비율로 조정한다.
+_MDF = [(2.0, 0.72), (2.5, 0.62), (3.0, 0.56), (4.0, 0.48), (6.0, 0.38)]
+
+
+def mdf(open_bb):
+    return _interp(_MDF, max(1.5, float(open_bb or 3.0)))
+
+
+# 디펜딩 포지션. BB 가 기준 1.0 — 이미 1bb 를 넣었고 액션을 닫는다.
+DEF_SEAT = {'BB': 1.00, 'SB': 0.62, 'BTN': 0.46, 'CO': 0.34, 'HJ': 0.26,
+            'LJ': 0.21, 'UTG+2': 0.18, 'UTG+1': 0.16, 'UTG': 0.14}
+
+# 3벳이 디펜스에서 차지하는 몫. BB 대 BTN 에서 밸류 8~12%.
+TB_SHARE = 0.18
+
+
+def defend_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
+    """디펜스 기준 폭. 성향은 들어가지 않는다."""
+    if opener_pos == 'SB':
+        base = DEF_VS_SB
+    else:
+        base = DEF_A + DEF_B * rfi(opener_pos, seats, bb, ante)
+    base *= mdf(open_bb) / mdf(3.0)
+    base *= DEF_SEAT.get(def_pos, 0.20)
+    return max(0.02, min(0.92, base))
+
+
+def threebet_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
+    """디펜스 중 3벳 구간의 기준 폭."""
+    return defend_pct(def_pos, opener_pos, seats, bb, ante, open_bb) * TB_SHARE

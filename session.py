@@ -197,6 +197,7 @@ class HandRun:
                     field_avg_bb=((getattr(h, 'field_avg_stack', None) or 0)
                                   / max(1, h.bb)) or None,
                     erosion=getattr(h, 'erosion_per_hand', 0.0),
+                    bb_chips=h.bb,
                     # 뒤에 남은 사람 / 림퍼의 추정치. 예전에는 오픈·아이소가
                     # 상대 정보를 전혀 안 받았다 — 뒤 스택은 넘어가는데
                     # 뒤 사람의 성향은 안 넘어갔다.
