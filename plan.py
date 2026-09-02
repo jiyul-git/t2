@@ -231,26 +231,47 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         v2 += wq * 0.45 * sg
         pcz += wq * 0.30 * sg
     # 블로커는 하드 게이트가 아니라 가중치. 넛 우위가 없으면 블러프 빈도 하락.
-    bluff_ok = (profile['bluff']/12.0) * (0.5 + 1.8*blk) * (0.75 + 0.35*max(0, nut)) \
+    # 0~10 개념은 /10 으로 정규화한다. 예전에는 여기만 /12 여서
+    # 개념 10 인 사람도 0.83 이 최대였고 그 12 에 근거가 없었다.
+    bluff_ok = (profile['bluff']/10.0) * (0.5 + 1.8*blk) * (0.75 + 0.35*max(0, nut)) \
                * (0.35 ** mw) * (0.55 ** min(to_act_behind, 3))
     if rd['w'] > 0:
         # 잘 접는 상대에게 블러프를 늘린다. 그 스트리트 기준으로.
         bluff_ok *= max(0.25, 1.0 + rd['w'] * 1.6 * PS.street_gap(rd, street))
     # 트랩 빈도 = 성향 함수. 저SPR·젖은 보드에서 줄되 0이 되지는 않는다.
-    trap_p = (0.10 + 0.045*profile.get('bluff', 5)) * (1 - 0.55*dang)
+    # 함정은 블러프가 아니다. 예전에는 bluff 로 빈도를 정했는데,
+    # 강한 핸드를 숨기는 것과 약한 핸드로 치는 것은 다른 능력이다.
+    _tr_sk = PS.sk(profile, 'trap') if profile.get('concepts') else 5.0
+    trap_p = (0.06 + 0.050*_tr_sk) * (1 - 0.55*dang)
     if rd['w'] > 0:
         # 함정은 상대가 쳐줘야 성립한다. 수동적인 상대에게는 무료 카드만 준다.
         trap_p *= max(0.15, 1.0 - rd['w'] * 1.2 * max(0.0, rd['passive']))
-    if s < 3.0: trap_p *= 0.45          # 커밋 구간이면 줄지만 남는다
-    if n_opp > 1: trap_p *= 0.5
+    # SPR·인원 보정. 예전에는 s<3.0, n_opp>1 하드 계단이었다 —
+    # SPR 2.9 와 3.1 이 완전히 다르고, 2명과 5명이 같은 배수였다.
+    trap_p *= 0.40 + 0.60*max(0.0, min(1.0, (s - 1.0)/4.0))
+    trap_p *= 0.62 ** max(0, n_opp - 1)
     if profile['value'] == 'xr': trap_p *= 1.8
     trap_ok = rng.random() < max(0.02, min(0.45, trap_p))
 
     # 상대 레인지에 지는 콤보가 많으면 밸류 계획 자체를 강등한다.
     # eq(랜덤/광역 레인지 대비)가 높아도 rel이 낮으면 얇은 밸류다.
-    if rel < 0.45:   v3 += 0.30; v2 += 0.22          # 사실상 밸류 계획 봉쇄
-    elif rel < 0.65: v3 += 0.14; v2 += 0.10
-    elif rel >= 0.92: v3 -= 0.10; v2 -= 0.08         # 넛급은 밸류 문턱 완화
+    # 상대 레인지에 지는 콤보가 많으면 밸류 문턱을 올린다.
+    # 예전에는 0.45 / 0.65 / 0.92 세 계단이라 rel 0.44 와 0.46 이
+    # 완전히 다른 계획으로 갈렸다. 연속 곡선으로 바꾼다.
+    if rel <= 0.45:
+        _pen = 1.0
+    elif rel <= 0.85:
+        _pen = (0.85 - rel) / 0.40                  # 0.45 -> 1.0, 0.85 -> 0.0
+    else:
+        _pen = -min(1.0, (rel - 0.85) / 0.10)       # 넛급은 문턱 완화
+    # 양쪽 폭이 다르다. 약할 때 봉쇄는 강하게, 넛급 완화는 약하게 —
+    # 완화를 크게 하면 밸류 계획이 과하게 열려 3스트리트가 남발된다.
+    if _pen >= 0:
+        v3 += 0.30 * _pen
+        v2 += 0.22 * _pen
+    else:
+        v3 += 0.10 * _pen
+        v2 += 0.08 * _pen
 
     T = profile.get('type')
     if profile.get('concepts'):
@@ -271,9 +292,22 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         else:
             plan = 'value_3street'; why.append('강도 최상위 → 3스트리트 밸류')
     elif eq >= v2:
-        if (dang > 0.35 or s < 2 or mw):
+        # 2스트리트냐 3스트리트냐. 예전에는 `dang > 0.35 or s < 2 or mw` 라는
+        # 결정론적 조건이라 같은 상황이면 전원이 같은 선택을 했다.
+        # 세 가지가 3스트리트를 막는다 — 보드 위험, 얕은 스택, 다인원.
+        # 그리고 3스트리트로 다 넣을 수 있는가(stackoff)와
+        # 얇은 밸류를 뽑을 줄 아는가(thin_value)가 사람마다 다르다.
+        _p2 = (0.55*min(1.0, dang/0.45)
+               + 0.30*max(0.0, min(1.0, (3.0 - s)/2.5))
+               + 0.30*min(1.0, mw))
+        _p2 *= max(0.45, 1.35 - 0.09*PS.sk(profile, 'stackoff')) if profile.get('concepts') else 1.0
+        if profile.get('concepts'):
+            # 얇은 밸류를 아는 사람은 3스트리트로 끌고 갈 여지를 더 본다.
+            _p2 *= max(0.55, 1.25 - 0.07*PS.sk(profile, PS.street_concept('thin_value', street)))
+        if rng.random() < max(0.05, min(0.95, _p2)):
             plan = 'value_2street'
-            why.append('밸류(eq %.2f, rel %.2f)지만 보드위험/다인원 → 2스트리트' % (eq, rel))
+            why.append('밸류(eq %.2f, rel %.2f)지만 위험 %.2f/SPR %.1f/다인원 %d → 2스트리트'
+                       % (eq, rel, dang, s, mw))
         else:
             plan = 'value_3street'; why.append('밸류 → 3스트리트')
     elif eq >= pcz:
@@ -308,7 +342,15 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     elif outs >= 8 and to_act_behind <= 1 and sk('semibluff') >= 0.4 \
          and rng.random() < min(0.95, 0.25 + 0.24*sk('semibluff')):
         plan = 'semibluff'; why.append('드로우 %d아웃 → 세미블러프' % outs)
+    # **쇼다운 가치가 있으면 블러프 계획으로 가지 않는다.**
+    # 예전에는 이 분기가 made 를 확인하지 않아, 세컨페어(made 1, eq 0.38)가
+    # '쇼다운 가치 없음'이라는 이유로 2스트리트 블러프가 됐다.
+    # 아래 else 에만 has_sd 검사가 있어서 메이드 핸드가 먼저 새어나갔다.
+    #
+    # 다만 '가치가 있다/없다'가 이분법이면 안 된다. 약한 페어는 쇼다운 가치가
+    # 얇아서 블러프로 전환할 여지가 있고, 그 판단은 rel 이 정한다.
     elif (eq < 0.42 and sk('bluff') >= 1
+          and (made == 0 or rel < 0.30)
           and rng.random() < bluff_ok * (1 + 0.9*min(1.0, outs/8.0) + 0.6*(eq>=0.30))
                             * (0.45 + 0.28*sk('bluff'))):
         plan = 'bluff_2street'
