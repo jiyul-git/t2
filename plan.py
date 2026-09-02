@@ -470,6 +470,15 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     if plan == 'trap':
         return 0.0, '함정 계획 → 체크'
 
+    # 지연 씨벳 — 플랍을 체크백하고 턴에 치는 것. probe(상대가 체크한 뒤
+    # 내가 먼저 치는 것)와 다르다. 이니셔티브를 갖고도 플랍을 거른 경우다.
+    if (street == 'turn' and initiative and has_c
+            and (plan_state or {}).get('flop_checked')):
+        _dc = PS.sk(profile, 'delayed_cbet')/10.0
+        _dc_boost = 0.55 + 0.90*_dc
+    else:
+        _dc_boost = 1.0
+
     if plan in ('bluff_2street', 'semibluff'):
         if to_act_behind >= 2:
             return 0.0, '뒤에 %d명 → 블러프 포기' % to_act_behind
@@ -498,6 +507,7 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
             if has_c and outs >= 8:
                 supp = max(0.45, supp - 0.035*PS.sk(profile, 'probe'))
             p *= max(0.03, 1.0 - max(0.30, min(0.97, supp)))
+        p *= _dc_boost
         return max(0.02, min(0.95, p)), '블러프 계획 실행(%.0f%%)' % (p*100)
 
     if plan == 'block':
@@ -534,6 +544,12 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
     (shape_size 는 '사람다운 끝자리'만 만드는 표현 계층이므로 집행부에 남긴다.)
     """
     base = SIZING.get(plan, {}).get(street, 0.0)
+    # 에쿼티 부정 — 상대에게 드로우가 많은 보드에서 크게 쳐서 오즈를 안 준다.
+    # 개념이 낮으면 젖은 보드든 마른 보드든 같은 사이즈를 친다.
+    if base > 0 and profile.get('concepts') and street != 'river':
+        _ed = PS.sk(profile, 'equity_denial')/10.0
+        _dg = bot.board_danger(board)
+        base *= 1.0 + 0.55*_ed*_dg
     # 3스트리트 밸류 계획이면 미리 배분한 사이즈를 기준으로 삼는다.
     # stackoff_plan 은 만들어져 있었지만 호출부가 없어, 스트리트마다
     # 즉흥으로 정한 사이즈가 리버에 스택을 어중간하게 남겼다.
@@ -645,6 +661,13 @@ def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0
     """
     a = profile.get('aggr', 5); b = profile.get('bluff', 5)
     base = {'flop': 0.42, 'turn': 0.30, 'river': 0.22}.get(street, 0.30)
+    # 스트리트별 공격 개념. street_concept 에 매핑은 있었으나 'cbet'/'barrel'
+    # 키로 부르는 곳이 없어 cbet_flop/barrel_turn/barrel_river 가 전부 죽어 있었다.
+    # 그래서 '플랍은 잘 치는데 턴에서 멈추는 사람'이 표현되지 않았다 —
+    # 스트리트 구분이 상수표로만 되고 전원 공통이었다.
+    if profile.get('concepts'):
+        _sc = PS.sk(profile, PS.street_concept('cbet', street))
+        base *= max(0.35, min(1.85, 0.45 + 0.11*_sc))
     f = base + 0.035*a + 0.020*b
     # 다인원 축소. 예전에는 0.62 고정이라 **누구나 같은 비율로** 줄였다.
     # 실제로는 제대로 조이는 사람과 헤즈업처럼 치는 사람이 갈린다.
@@ -1066,6 +1089,11 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     """계획은 유지하되 rel/eq/outs/danger 를 현재 보드로 갱신하고,
        근거가 무너지면 계획을 강등한다."""
     st = dict(state)
+    # 플랍을 체크백했는가. 지연 씨벳(delayed_cbet)이 이걸 본다.
+    # 의도 기록에서 읽는다 — 별도 상태를 만들면 두 곳이 어긋난다.
+    if street == 'turn':
+        _fi = intent_of(state, 'flop') or {}
+        st['flop_checked'] = (_fi.get('act') in (None, 'check'))
     rel = relative_strength(hero, board, opp_range)
     eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
     outs = draw_strength(hero, board)

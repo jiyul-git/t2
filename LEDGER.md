@@ -230,6 +230,29 @@ ICM·안테·분산추구가 그 경로에서만 죽어 있었다.
 
 ---
 
+## 개념 소비 현황 — 36개 전부 읽힌다
+
+**동적 키(`persona.street_concept`)로 읽히는 9개는 grep 으로 안 보인다.**
+`sk(profile, PS.street_concept('cbet', street))` 형태라
+`sk(profile, 'barrel_turn')` 을 찾는 정규식에 안 잡힌다.
+`fold_gap_*` 과 같은 함정이다 — 스캔할 때 매핑표를 같이 봐야 한다.
+
+```
+cbet_flop / barrel_turn / barrel_river        cbet_freq
+checkraise_flop / checkraise_late             checkraise_decision
+thin_value_turn / thin_value_river            decide_aggression
+bluffcatch_early / bluffcatch_river           콜다운 문턱
+```
+
+`street_concept` 에 매핑은 있었으나 **`'cbet'`/`'barrel'` 키로 부르는 곳이 없어**
+앞의 셋이 죽어 있었다. 그래서 '플랍은 잘 치는데 턴에서 멈추는 사람'이
+표현되지 않았다 — 스트리트 구분이 상수표로만 되고 전원 공통이었다.
+
+| 개념값 | flop | turn | river |
+|---|---|---|---|
+| 2 | 92% | 80% | 54% |
+| 9 | 95% | 95% | 73% |
+
 ## 미배선 목록 (한꺼번에 처리)
 
 ### 오늘 새로 만든 것 — 전부 미배선
