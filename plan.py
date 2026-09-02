@@ -589,7 +589,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     # giveup 은 제외한다. 그 계획의 사유 자체가 '블러프 개념/조건 미달'이라
     # 여기서 블러프 레이즈를 내면 판단 층이 이미 기각한 것을 집행부가 되살리는 셈이다.
     # 규율이 낮아 뒤집는 경우는 아래 이탈 경로에서 따로 처리한다.
-    if has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff'):
+    if has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'river_bluff'):
         made_sd = plan_state.get('made', 0)
         if made_sd >= 2:
             pass                       # 투페어 이상은 쇼다운 가치가 있다 → 블러프 부적합
@@ -632,7 +632,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                  'why': '규율 %.1f → 포기 계획 뒤집고 블러프 레이즈' % disc})
             return 'raise', 1.0, need, 'DEVIATE:포기 계획 뒤집은 블러프 레이즈'
 
-    if plan in ('bluff_2street', 'giveup'):
+    if plan in ('bluff_2street', 'giveup', 'river_bluff'):
         # 계획은 포기지만 팟오즈가 실제로 맞으면 접으면 안 된다.
         # 부등호를 계획으로 덮어쓰면 eq > need 인데 폴드하는 모순이 생긴다.
         # (계획이 못 미더우면 need 를 올려야지 부등호를 무시하면 안 된다)
@@ -702,7 +702,7 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     else:
         _dc_boost = 1.0
 
-    if plan in ('bluff_2street', 'semibluff'):
+    if plan in ('bluff_2street', 'semibluff', 'river_bluff'):
         if to_act_behind >= 2:
             return 0.0, '뒤에 %d명 → 블러프 포기' % to_act_behind
         p = 0.25 + 0.070*profile.get('bluff', 5) + 0.02*profile.get('gamble', 5)
@@ -787,7 +787,7 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
         base = base*(1.0 - 0.45*_bt2) + _tf*(0.45*_bt2)
     # 블로커 순 효과(밸류 관점). 콜할 콤보를 지웠으면 크게 쳐도 콜을 못 받으므로
     # 사이즈를 줄이고, 접을 콤보를 지웠으면(상대 레인지가 강함) 오히려 키운다.
-    if base > 0 and plan in ('value_3street', 'value_2street', 'trap'):
+    if base > 0 and plan in ('value_3street', 'value_2street', 'trap', 'thin_river'):
         _bn = (stackoff or {}).get('_blk_net') if isinstance(stackoff, dict) else None
         if _bn is None:
             _bn = 0.0
@@ -850,6 +850,14 @@ SIZING = {
     'pot_control':   {'flop':0.30,'turn':0.0, 'river':0.30},
     'semibluff':     {'flop':0.55,'turn':0.65,'river':0.0},
     'bluff_2street': {'flop':0.45,'turn':0.60,'river':0.0},
+    # 리버 전용. bluff_2street 은 이름 그대로 2스트리트라 리버가 0 인데,
+    # river_fix 가 미스한 드로우를 그리로 보내면 **칠 수단이 없어진다.**
+    # '플랍부터 이어온 블러프의 리버'와 '리버에서 새로 시작한 블러프'는
+    # 다른 계획이므로 이름을 나눈다.
+    'river_bluff':   {'flop':0.0, 'turn':0.0, 'river':0.72},
+    # 리버 얇은 밸류. value_2street 도 리버가 0 이라 얇은 밸류를 뽑는
+    # 경로가 아예 없었다.
+    'thin_river':    {'flop':0.0, 'turn':0.0, 'river':0.42},
     'trap':          {'flop':0.0, 'turn':0.65,'river':0.75},
     'giveup':        {'flop':0.0, 'turn':0.0, 'river':0.0},
     'block':         {'flop':0.25,'turn':0.28,'river':0.30},
@@ -878,7 +886,7 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     # 아예 불가능했다. 전부 연속 가중으로 바꾼다 — 조건이 약하면
     # 확률이 낮아질 뿐 선택지에서 사라지지는 않는다.
     value_line = plan in ('value_3street', 'trap')
-    bluff_line = plan in ('bluff_2street', 'semibluff')
+    bluff_line = plan in ('bluff_2street', 'semibluff', 'river_bluff')
     if not (value_line or bluff_line): return None  # 계획 자체가 아니면 제외
 
     # 양극화 정도. 밸류는 rel 이 높을수록, 블러프는 낮을수록 오버벳에 맞는다.
@@ -1092,7 +1100,7 @@ def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, st
         _rdc = PS.read_opponent(profile, opp_est)
         if _rdc.get('w', 0) > 0:
             d = PS.street_gap(_rdc, street)
-            is_bluff = plan in ('semibluff', 'bluff_2street')
+            is_bluff = plan in ('semibluff', 'bluff_2street', 'river_bluff')
             mult = (1.0 + 1.5*d) if is_bluff else (1.0 - 1.0*d)
             p = PS.blend(p, p*max(0.2, mult), _rdc['w'])
     return rng.random() < max(0.0, min(0.90, p))
@@ -1229,6 +1237,24 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None):
     if len(board) < 5: return state
     st = dict(state)
     st['outs'] = 0
+    # 리버 얇은 밸류. value_2street / pot_control 은 리버 사이즈가 0 이라
+    # 리버에서 얇게 뽑는 경로가 아예 없었다.
+    # thin_value_river 개념이 있어야 시도한다 — 얇은 밸류는 배워야 하는 라인이고,
+    # 못 하는 사람은 체크하고 쇼다운을 본다.
+    if st.get('plan') in ('value_2street', 'pot_control', 'block'):
+        rel = st.get('rel', 0.5)
+        made = bot.made_strength(hero, board)
+        if profile and profile.get('concepts') and rng is not None and made >= 1:
+            _tv = PS.sk(profile, 'thin_value_river')/10.0
+            # 이길 여지가 있어야 얇은 밸류다. 너무 강하면 이미 3스트리트고,
+            # 너무 약하면 블러프캐치 대상이다.
+            _band = max(0.0, min(1.0, (rel - 0.48)/0.30)) * max(0.0, min(1.0, (0.92 - rel)/0.20))
+            if rng.random() < 0.75*_tv*_band:
+                st['plan'] = 'thin_river'
+                st['why'] = (st.get('why') or []) + [
+                    '리버: 얇은 밸류(rel %.2f, 개념 %.1f)' % (rel, _tv*10)]
+        return st
+
     if st.get('plan') != 'semibluff':
         return st
     made = bot.made_strength(hero, board)
@@ -1254,9 +1280,9 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None):
         if made >= 1 or rel >= 0.42:
             p_bluff *= 0.15
     if rng is not None and rng.random() < max(0.0, min(0.75, p_bluff)):
-        st['plan'] = 'bluff_2street'
+        st['plan'] = 'river_bluff'
         st['why'] = (st.get('why') or []) + [
-            '리버: 드로우 미스 → 블러프 전환(%.0f%%)' % (p_bluff*100)]
+            '리버: 드로우 미스 → 리버 블러프(%.0f%%)' % (p_bluff*100)]
     else:
         st['plan'] = 'giveup'
         st['why'] = (st.get('why') or []) + ['리버: 드로우 미스 → 포기']
@@ -1296,19 +1322,20 @@ def _allowed(profile, plan, rng=None):
     """
     if profile.get('concepts'):
         need = {'bluff_2street': 'bluff', 'semibluff': 'semibluff', 'trap': 'checkraise',
-                'block': 'blockbet', 'pot_control': 'potcontrol'}
+                'block': 'blockbet', 'pot_control': 'potcontrol',
+                'river_bluff': 'barrel_river', 'thin_river': 'thin_value_river'}
         if plan in need:
             s = PS.sk(profile, need[plan])
-            if s < 1.5: return {'bluff_2street':'giveup','semibluff':'showdown',
-                                'trap':'value_3street','block':'value_2street',
-                                'pot_control':'showdown'}[plan]
+            _down = {'bluff_2street':'giveup','semibluff':'showdown',
+                     'trap':'value_3street','block':'value_2street',
+                     'pot_control':'showdown',
+                     'river_bluff':'giveup','thin_river':'showdown'}
+            if s < 1.5: return _down[plan]
             if s < 3.5:
                 if rng is None:
                     raise ValueError('plan._allowed: rng 필수 (전역 RNG 사용 금지)')
                 if rng.random() > (s-1.5)/2.0:
-                    return {'bluff_2street':'giveup','semibluff':'showdown',
-                            'trap':'value_3street','block':'value_2street',
-                            'pot_control':'showdown'}[plan]
+                    return _down[plan]
         return plan
     T = profile.get('type')
     if T not in A.ARCHETYPES: return plan
@@ -1388,7 +1415,10 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 3배럴은 못 하지만 2스트리트는 가능한 구간이 통째로 없었다.
         st['plan'] = 'value_2street'
         why.append('%s: 상대강도 %.2f → 3스트리트 철회, 2스트리트' % (street, rel))
-    elif old == 'semibluff' and outs < 6:
+    elif old == 'semibluff' and outs < 6 and street != 'river':
+        # 리버는 river_fix 가 맡는다. 여기서 먼저 giveup 으로 내리면
+        # **미스한 드로우의 블러프 전환 경로가 통째로 막힌다** —
+        # 리버는 outs 가 항상 0 이라 이 조건이 무조건 걸렸다.
         st['plan'] = 'value_2street' if rel >= 0.6 else 'giveup'
         why.append('%s: 드로우 소멸(%d아웃) → %s' % (street, outs, st['plan']))
     elif old == 'trap' and st.get('_no_bite', 0) >= 1:
