@@ -32,7 +32,6 @@ SPEC = {
 
     # ---------- 포스트플랍: 계획 ----------
     'potcontrol':    (['make_plan'], '팟 컨트롤 선택'),
-    'blockbet':      (['make_plan'], '블락벳 선택'),
     'trap':          (['make_plan', 'trap_judgment'], '함정 선택'),
     'semibluff':     (['make_plan'], '세미블러프 선택'),
     'bluff':         (['make_plan', 'decide_aggression'], '블러프 선택·실행'),
@@ -44,7 +43,8 @@ SPEC = {
     'barrel_turn':   (['cbet_freq'], '턴 배럴 빈도'),
     'barrel_river':  (['cbet_freq'], '리버 배럴 빈도'),
     'delayed_cbet':  (['decide_aggression'], '플랍 체크백 후 턴'),
-    'probe':         (['decide_aggression'], '상대 체크 후 선제'),
+    'probe':         (['decide_aggression'], '상대가 체크백한 다음 스트리트 선제'),
+    'blockbet':      (['make_plan', 'decide_aggression'], '블락벳 선택·실행'),
     'multiway':      (['cbet_freq', 'decide_aggression'], '다인원 축소'),
     'fold_equity':   (['decide_aggression'], '상대가 접을까'),
     'checkraise_flop': (['checkraise_decision'], '플랍 체크레이즈'),

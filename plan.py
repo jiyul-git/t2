@@ -725,16 +725,27 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         _mw2 = PS.sk(profile, 'multiway')/10.0 if has_c else 0.5
         p *= (1 - (0.12 + 0.20*_mw2)*max(0, n_opp-1))
         if not initiative and oop:
-            # 동크는 정석이 아니다. 수동형일수록 강하게 억제.
+            # 동크(같은 스트리트 선제)는 정석이 아니다. 수동형일수록 강하게 억제.
             supp = 0.92 - 0.05*a - 0.02*profile.get('bluff', 5)
             if has_c and outs >= 8:
-                supp = max(0.45, supp - 0.035*PS.sk(profile, 'probe'))
+                supp = max(0.45, supp - 0.020*PS.sk(profile, 'probe'))
+            # **프로브는 동크가 아니다.** 상대가 이전 스트리트를 체크백했으면
+            # 그 사람 레인지가 약하다는 뜻이라 먼저 치는 것이 정석이다.
+            # 예전에는 probe 개념이 동크 억제에만, 그것도 outs>=8 일 때만
+            # 쓰여서 프로브 스팟 자체가 표현되지 않았다.
+            if has_c and (plan_state or {}).get('opp_checked_prev'):
+                supp *= max(0.25, 1.0 - 0.085*PS.sk(profile, 'probe'))
             p *= max(0.03, 1.0 - max(0.30, min(0.97, supp)))
         p *= _dc_boost
         return max(0.02, min(0.95, p)), '블러프 계획 실행(%.0f%%)' % (p*100)
 
     if plan == 'block':
-        return 0.80, '블락벳 계획'
+        # 상수 0.80 이었다. 블락벳은 개념이 있어야 실행하는 라인인데
+        # 계획만 잡히면 전원이 같은 빈도로 쳤다.
+        _bb = 0.80
+        if has_c:
+            _bb = 0.35 + 0.055*PS.sk(profile, 'blockbet')
+        return max(0.15, min(0.92, _bb)), '블락벳 계획(%.0f%%)' % (_bb*100)
 
     if plan == 'pot_control':
         return max(0.05, min(0.6, 0.18 + 0.035*a)), '팟컨트롤 → 대부분 체크'

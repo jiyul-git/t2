@@ -434,6 +434,13 @@ class HandRun:
                                         'est_bluff': round(est['bluff'],1),
                                         'confidence': est['confidence'], 'n': est['n'],
                                         'barrels': n_barrels, 'read': round(read_val,2)})
+                # 프로브 판정: 직전 스트리트에서 공격권자가 벳하지 않았는가.
+                _prev = {'turn': 'flop', 'river': 'turn'}.get(street)
+                if _prev and h.plans.get(key) is not None:
+                    _rows = [x for x in (getattr(self, 'full_log', []) or [])
+                             if x[0] == _prev and x[1] != s]
+                    h.plans[key]['opp_checked_prev'] = bool(_rows) and all(
+                        x[2] in ('check', 'fold') for x in _rows)
                 a2, eq, need = PL.act_with_plan(h.hole[s], board, ax, h.plans[key], pot_live, tc,
                                                 r2.stacks[s], street,
                                                 initiative=RU.has_initiative(s, aggressor),
