@@ -116,11 +116,26 @@ icm_press(prof, bf) = 1.0                              # 평시
 | `aware` | `(0.6·attention + 0.4·range_read)/10` | **자기 실력을 자각하는 능력** |
 | `variance_seek` | 아래 참조 | 분산을 일부러 키우려는 정도 |
 | `icm_signal(bf)` ★ | `(bf − 1)/3` | 버블팩터를 0~1 신호로 |
-| `overpair_love` | `(10−potodds)`, `looseness` 등 | 오버페어 과대평가 |
+| `overpair_love` | `(10−range_read)`, `(10−potodds)`, `(10−discipline)` | 오버페어·탑페어 과대평가 |
 | `bluff_fear` | `(10−bluffcatch_river)`, `(10−aggression)` 등 | 큰 벳에 과도하게 접음 |
 | `draw_love` | `(10−outs)`, `gamble` 등 | 드로우 과대평가 |
 | `hero_call` | `bluffcatch_river`, `aggression`, `tilt_prone` | 가볍게 콜 |
 | `sticky` | `(10−discipline)`, `looseness` | 매몰비용. 못 놓음 |
+
+**편향 다섯은 `plan.perceived_rel` 이 소비한다.** 예전에는 정의만 있고
+`plan.py` 도 `session.py` 도 읽지 않아 전부 죽어 있었다 —
+`relative_strength` 를 **전원이 정확하게** 계산했다는 뜻이다.
+
+그리고 `overpair_love` 는 **`bias()` 에 아예 없었다.** 모르는 이름이면
+조용히 0.0 을 돌려줘서 호출해도 아무 일이 안 일어났다.
+지금은 `BIAS_NAMES` 에 없으면 예외를 낸다.
+
+| | station | bluff_fear | overpair_love | draw_love | sticky |
+|---|---|---|---|---|---|
+| 레귤러 | −0.37 | −0.42 | −0.60 | −0.37 | −0.44 |
+| 피시 | +0.78 | +0.48 | +0.60 | +0.60 | +0.37 |
+
+피시의 체감: 메이드 0.70→0.78 / 드로우 6아웃 0.35→0.42 / 약패 0.30→0.33.
 | `tilt_decay` ★ | `1 − t·0.55·(0.25+0.75·계산비중)` | 틸트가 그 개념을 얼마나 깎나 |
 | `tilt_direction` ★ | `((aggr−5)/4) × ((swing−5)/5) × 2` | 틸트 방향 −1(위축)~+1(난폭) |
 

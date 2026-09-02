@@ -50,9 +50,16 @@ def relative_strength(hero, board, opp_range=None):
         deck = [c for c in bot.FULLDECK if c not in dead]
         cand = [(deck[i], deck[j]) for i in range(len(deck)) for j in range(i+1, len(deck))]
     if not cand: return 0.5
-    # 상대가 리버에 벳/콜할 만한 상위 절반만 고려 (에어는 어차피 나를 못 이김)
+    # **레인지가 주어지면 다시 좁히지 않는다.**
+    # 예전에는 항상 상위 절반만 봤는데, opp_range 는 이미 perceived_range 로
+    # 액션에 맞게 좁혀진 값이다. 여기서 또 자르면 이중 축소가 된다 —
+    # 상대를 잘 읽을수록 자기 핸드를 과소평가하게 되어 방향이 거꾸로다
+    # (미들페어가 rel 0.60 -> 0.00 까지 떨어졌다).
+    #
+    # opp_range 가 없을 때만 절반으로 자른다. 그 경우 cand 는 덱 전체라
+    # 쓰레기 조합까지 포함되어 아무 페어나 강해 보이기 때문이다.
     ranked = sorted(cand, key=lambda c: bot.eval7(list(c)+board), reverse=True)
-    top = ranked[:max(1, len(ranked)//2)]
+    top = ranked if pool else ranked[:max(1, len(ranked)//2)]
     better = sum(1 for c in top if bot.eval7(list(c)+board) > mine)
     out = 1.0 - better/len(top)
     _RS_CACHE[ck]=out
@@ -60,6 +67,35 @@ def relative_strength(hero, board, opp_range=None):
 
 # draw_strength 는 bot.draw_strength 하나뿐이다 (ranges 도 같이 쓴다).
 draw_strength = bot.draw_strength
+
+
+def perceived_rel(profile, rel, hero, board, outs=0, made=0):
+    """**이 사람이 느끼는** 상대적 강도. 계산값 rel 을 편향으로 흔든다.
+
+    relative_strength 는 전원이 정확하게 계산했다. 그러면 피시도 레귤러와
+    똑같이 자기 핸드 강도를 안다는 뜻인데, 그건 사실이 아니다.
+    persona.bias 의 축 다섯이 이걸 재려고 만들어져 있었으나
+    plan.py 도 session.py 도 읽지 않아 전부 죽어 있었다.
+
+      overpair_love — 오버페어·탑페어를 과대평가
+      draw_love     — 드로우를 과대평가
+      bluff_fear    — 상대가 세면 자기 핸드를 과소평가 (여기서는 미적용,
+                      콜다운 문턱 쪽에서 작동한다)
+    """
+    if not profile or not profile.get('concepts'):
+        return rel
+    adj = 0.0
+    # 오버페어·탑페어 과대평가. 이미 강한 구간에서만 작동한다 —
+    # 에어를 오버페어로 착각하는 것이 아니라 '이기고 있다'를 과신하는 것이다.
+    if made >= 1 and rel >= 0.45:
+        adj += 0.14 * max(0.0, PS.bias(profile, 'overpair_love'))
+    # 드로우 과대평가. 아웃이 있을 때만.
+    if outs >= 4:
+        adj += 0.10 * max(0.0, PS.bias(profile, 'draw_love')) * min(1.0, outs/9.0)
+    # 매몰비용형은 약한 핸드도 놓지 못한다 — 낮은 rel 을 끌어올린다.
+    if rel < 0.45:
+        adj += 0.08 * max(0.0, PS.bias(profile, 'sticky'))
+    return max(0.0, min(1.0, rel + adj))
 
 
 def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None):
@@ -157,7 +193,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 절대 강도 + 상대 레인지 대비 강도
     # 내 카드가 실제로 기여한 강도만 센다 (보드만으로 성립하는 건 내 것이 아니다)
     made = bot.made_strength(hero, board) if board else 0
-    rel = relative_strength(hero, board, opp_range) if board else 0.5
+    rel_true = relative_strength(hero, board, opp_range) if board else 0.5
+    rel = perceived_rel(profile, rel_true, hero, board,
+                        bot.draw_strength(hero, board) if board else 0,
+                        bot.made_strength(hero, board) if board else 0)
     monster = made >= 5                     # 플러시 이상은 다인원 보정 면제
     strong  = made >= 3                     # 트립스 이상
 

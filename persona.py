@@ -409,8 +409,19 @@ def _z(v, mid=5.0, span=5.0):
     return max(-1.0, min(1.0, (v - mid)/span))
 
 
+BIAS_NAMES = ('station', 'bluff_fear', 'overpair_love', 'draw_love',
+              'hero_call', 'sticky')
+
+
 def bias(prof, name):
-    """이 사람의 고정된 행동 편향. 랜덤이 아니다 — 같은 사람은 항상 같은 값."""
+    """이 사람의 고정된 행동 편향. 랜덤이 아니다 — 같은 사람은 항상 같은 값.
+
+    모르는 이름은 예외를 낸다. 예전에는 조용히 0.0 을 돌려줘서
+    overpair_love 가 **정의되지도 않은 채** 호출되고 있었는데
+    아무 일도 안 일어나 드러나지 않았다.
+    """
+    if name not in BIAS_NAMES:
+        raise KeyError('알 수 없는 편향: %s (BIAS_NAMES 에 추가할 것)' % name)
     if not prof or not prof.get('concepts'):
         return 0.0
     T = lambda k: temper(prof, k, 5.0)
@@ -427,6 +438,13 @@ def bias(prof, name):
         # 블러프캐치 개념이 약하고 소극적이며 레인지를 못 읽을수록 심하다.
         return _z(0.40*(10 - S('bluffcatch_river')) + 0.30*(10 - T('aggression'))
                   + 0.30*(10 - S('range_read')))
+
+    if name == 'overpair_love':
+        # 오버페어·탑페어를 과대평가한다. '이기고 있다'를 과신하는 것이지
+        # 약한 핸드를 강하다고 착각하는 것이 아니다.
+        # 레인지를 못 읽고 팟오즈 감각이 없고 규율이 낮을수록 심하다.
+        return _z(0.40*(10 - S('range_read')) + 0.30*(10 - S('potodds'))
+                  + 0.30*(10 - T('discipline')))
 
     if name == 'draw_love':
         # 드로우를 과대평가한다. 아웃 계산이 약하고 도박성이 높을수록.
