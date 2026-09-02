@@ -103,10 +103,16 @@ def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None):
 
     opp_range 는 상대 '한 명분' 추정이므로 인원수만큼 복제해 쓴다.
     """
-    if opp_range and len(opp_range) >= 20:
+    # 예전에는 20콤보 미만이면 레인지를 **버리고** 일반 35% 근사로 갔다.
+    # ranges._MIN_KEEP 이 12 라 축소는 12까지 내려가는데, 그러면
+    # 12~19 구간이 통째로 무시된다 — 상대를 가장 잘 읽은 경우다.
+    # 좁은 레인지는 정보가 적은 게 아니라 많은 것이다.
+    # 시뮬 노이즈가 걱정이면 버릴 게 아니라 sims 를 늘리면 된다.
+    if opp_range and len(opp_range) >= 6:
         # seed 를 넘기지 않는다 → 레인지 내용에서 유도된 고정 seed 를 쓴다.
         # 같은 스팟·같은 레인지면 항상 같은 추정치가 나와야 재현성이 유지된다.
-        return bot.equity_vs_combos(hero, board, [opp_range]*max(1, n_opp), sims=sims)
+        _s = sims if len(opp_range) >= 20 else int(sims*1.8)
+        return bot.equity_vs_combos(hero, board, [opp_range]*max(1, n_opp), sims=_s)
     return bot.equity_vs_range(hero, board, [0.35]*max(1, n_opp), sims=sims, seed=seed)
 
 
@@ -146,10 +152,13 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
     # 상대가 벳해줘야 트랩이 성립한다. 안 치는 상대면 무료 카드만 주는 셈.
     p = tool * (0.35 + 1.30*pbet)
     p *= (1.35 - 0.055*profile.get('aggr', 5))         # 공격적일수록 그냥 친다
-    if spr_now >= 4:   p *= 1.25                       # 딥해야 나중에 받아낼 게 있다
-    elif spr_now < 2:  p *= 0.35                       # 저SPR이면 함정 의미 없음
-    if multiway:       p *= 0.45                       # 다인원 체크는 위험
-    if danger > 0.45:  p *= 0.50                       # 젖은 보드에 무료 카드 금지
+    # 예전에는 SPR 4/2, multiway 유무, danger 0.45 가 전부 하드 계단이었다.
+    # SPR 3.9 와 4.1 이 완전히 다르고, 2명과 5명이 같은 배수였다.
+    _sp = max(0.0, min(1.0, (spr_now - 1.5) / 3.5))    # SPR 1.5 -> 0, 5.0 -> 1
+    p *= 0.35 + 0.90*_sp                               # 딥해야 나중에 받아낼 게 있다
+    _mw = multiway if isinstance(multiway, (int, float)) else (1 if multiway else 0)
+    p *= 0.45 ** min(3, max(0, _mw))                   # 다인원 체크는 위험
+    p *= 1.0 - 0.55*max(0.0, min(1.0, danger/0.65))    # 젖은 보드에 무료 카드 금지
     p *= (1.0 - 0.55*max(0.0, min(1.0, tilt)))         # 틸트나면 인내가 안 된다
     p = max(0.0, min(0.70, p))
     why = '넛급 + 상대 벳확률 %.0f%% → 함정(%.0f%%)' % (pbet*100, p*100)
@@ -179,7 +188,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     outs = int(round(outs))
     # 블로커는 개념이 없으면 아예 못 본다
     blk_true = R.blocker_score(hero, opp_range, board)
-    blk = blk_true * min(1.0, PS.sk(profile, 'blocker')/6.0) if profile.get('concepts') else blk_true
+    # 개념 6 이상이 전부 만점이던 것을 완만하게 편다. 다른 게이트는 /7~/8 인데
+    # 여기만 /6 이라 근거가 없었다.
+    blk = (blk_true * max(0.0, min(1.0, (PS.sk(profile, 'blocker') - 1.0)/7.0))
+           if profile.get('concepts') else blk_true)
     nut = R.nut_advantage(my_range, opp_range, board) if my_range else 0.0
     # 전체 에쿼티 우위. 넛 우위와 다른 축이다 —
     # 전자는 '얼마나 자주 칠까', 후자는 '얼마나 크게 칠까'를 정한다.

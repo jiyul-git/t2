@@ -108,8 +108,11 @@ def nut_advantage(r_a, r_b, board):
 def blocker_score(hero, opp_range, board):
     """내 카드가 상대의 강한 콤보를 얼마나 지우는가. 0~1."""
     if not opp_range or not board: return 0.0
+    # 상위 20% 를 '강한 콤보'로 본다. 레인지가 이미 좁혀졌으면 그 20% 는
+    # 절대 기준으로 더 강한 구간이므로, 좁은 레인지에서 블로커 값이
+    # 과대평가되지 않도록 최소 개수를 둔다.
     strong = sorted(opp_range, key=lambda c: bot.eval7(list(c)+board), reverse=True)
-    strong = strong[:max(1, len(strong)//5)]
+    strong = strong[:max(4, len(strong)//5)]
     return sum(1 for c in strong if c[0] in hero or c[1] in hero)/len(strong)
 
 
