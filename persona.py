@@ -848,6 +848,12 @@ def read_opponent(prof, opp_est):
             'open_gap': max(-1.0, min(2.0, float(g('rfi_rel', 1.0) or 1.0) - 1.0)) * see_freq,
             'limp_gap': max(-0.5, min(1.5,
                             (float(g('pf_limp', 0.06) or 0.06) - 0.06) * 6.0)) * see_freq,
+            # 배럴 빈도가 기준보다 얼마나 넓은가. −1(닛) ~ +1(매니악).
+            # 상대 레인지를 좁힐 때 이 값이 벳 레인지 폭을 정한다 —
+            # 예전에는 고정 상수라 닛과 매니악의 턴 배럴이 같은 폭이었다.
+            # 스트리트를 구분해야 하므로 see_line 게이트다.
+            'barrel_gap': max(-1.0, min(1.0,
+                              (g('barrel', 0.45) - 0.45) / 0.35)) * see_line,
             'tb_gap':   max(-0.5, min(0.5, g('pf_3bet', 0.07) - 0.07)) * 4.0 * see_freq,
             # 3벳 레인지가 얼마나 폴라라이즈됐는가. 0(전부 밸류) ~ 1(대부분 블러프).
             #

@@ -372,7 +372,11 @@ class HandRun:
                     # 관측된 포스트플랍 액션으로 레인지를 좁힌다.
                     # 이걸 빼면 상대가 무슨 행동을 했든 매 스트리트 프리플랍 레인지가 된다.
                     # 상대 레인지는 '이 사람이 인식하는 만큼'만 좁혀진다 (range_read).
-                    orange = R.perceived_range(orange, board, self._acts_of(o), ax)
+                    # 인자가 둘이다. ax 는 **관찰자(나)**, _rdp 는 **행위자(상대)** 읽기.
+                    # 예전에는 ax 하나만 넘겨서 자기 블러프 성향으로
+                    # 상대 레인지를 좁혔다 — 자기 투사였다.
+                    orange = R.perceived_range(orange, board, self._acts_of(o), ax,
+                                               actor_read=_rdp if _oe else None)
                     # 쇼다운 이력이 예상보다 넓/좁았다면 추가 보정
                     orange, _note = RU.adjust_range_by_history(orange, h.dyn, o, board,
                                                               dead=set(h.hole[s])|set(board))

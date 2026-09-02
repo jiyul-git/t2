@@ -134,8 +134,8 @@ BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
 |---|---|---|
 | `texture.texture()` | plan | OK |
 | `texture.size_fraction` | plan | OK |
-| `texture.cbet_multiplier` | — | **죽음** |
-| `texture.turn_card_effect` | — | **죽음** |
+| `texture.cbet_multiplier` | `plan.cbet_freq` | OK |
+| `texture.turn_card_effect` | `plan.decide_aggression` (배럴) | OK |
 
 ---
 
@@ -146,8 +146,11 @@ BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
 | `ranges.preflop_range` | preflop, session | OK |
 | `ranges._call_range` | preflop_range 내부 | OK |
 | `reads.perceived_range` | plan, session | OK |
-| `ranges.range_advantage` | — | **죽음** |
-| `ranges.strong_shares` | — | **죽음** |
+| `ranges.range_advantage` | `plan.make_plan` → `cbet_freq` | OK |
+| ~~`ranges.strong_shares`~~ | `_strong_share` 래퍼 | **제거** (중복) |
+| `ranges.narrow_by_actions` | `perceived_range` | OK. **인자 2개로 분리** |
+| `plan.stackoff_plan` | `make_plan` → `decide_size` | OK |
+| `barrel_gap` ★ | `narrow_by_actions` (벳 레인지 폭) | OK |
 
 ---
 

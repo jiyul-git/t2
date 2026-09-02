@@ -67,7 +67,14 @@ def narrow(r, board, keep_frac, mode='top'):
 
 # betting_range 는 bot.betting_range 하나만 쓴다.
 # (여기 있던 사본은 호출부가 없었고 시그니처·로직이 갈라져 있어 제거)
-def range_advantage(r_a, r_b, board, sims=250, seed=None):
+def range_advantage(r_a, r_b, board, sims=180, seed=None):
+    """전체 에쿼티 우위. −1~1.
+
+    nut_advantage 와 다른 것을 잰다.
+      range_advantage — 레인지 **전체**가 이 보드에서 유리한가 -> 얼마나 자주 칠까
+      nut_advantage   — **최상단** 구간을 누가 더 갖고 있나 -> 얼마나 크게 칠까
+    둘 다 있어야 '자주 작게'와 '드물게 크게'가 구분된다.
+    """
     rng = random.Random(seed)
     if not r_a or not r_b: return 0.0
     w = 0.0; run = 0
@@ -95,9 +102,8 @@ def nut_advantage(r_a, r_b, board):
     s_a, s_b = _strong_share(r_a, board, 3), _strong_share(r_b, board, 3)
     return max(-1.0, min(1.0, (0.5*(t_a-t_b) + 0.5*(s_a-s_b))*6))
 
-def strong_shares(r_a, r_b, board):
-    return {'A_2p+': round(_strong_share(r_a,board,2),3), 'B_2p+': round(_strong_share(r_b,board,2),3),
-            'A_set+': round(_strong_share(r_a,board,3),3), 'B_set+': round(_strong_share(r_b,board,3),3)}
+# strong_shares 는 _strong_share 를 감싼 표시용 래퍼였고 호출부가 없었다.
+# nut_advantage 가 같은 재료를 쓰므로 제거한다.
 
 def blocker_score(hero, opp_range, board):
     """내 카드가 상대의 강한 콤보를 얼마나 지우는가. 0~1."""
@@ -130,11 +136,15 @@ def _damp(frac, d):
     return 1.0 - (1.0 - frac)*d
 
 
-def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0):
+def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
     """벳/레이즈: 양극화. 사이즈가 클수록 밸류가 좁고 블러프 비중이 커진다."""
     ranked = _ranked(r, board)
     n = len(ranked)
+    # **고정 상수였다.** 닛이 턴에 배럴하든 매니악이 하든 같은 상위 30% 로
+    # 좁혀졌다. 실제로는 닛의 턴 배럴이 상위 15%, 매니악이 55% 다.
+    # barrel_gap 은 그 사람의 배럴 빈도가 기준보다 얼마나 넓은가(−1~+1).
     vfrac = {'flop': 0.42, 'turn': 0.30, 'river': 0.22}.get(street, 0.32)
+    vfrac = max(0.08, min(0.85, vfrac * (1.0 + 1.15*barrel)))
     if size_frac >= 1.0:   vfrac *= 0.60          # 오버벳은 극단적으로 양극화
     elif size_frac >= 0.7: vfrac *= 0.78
     elif size_frac <= 0.35: vfrac *= 1.45         # 소액은 넓고 머지드
@@ -175,7 +185,7 @@ def _check_range(r, board, street, cbet_axis, damp=1.0):
     return ranked[drop:] if n - drop >= _MIN_KEEP else ranked
 
 
-def perceived_range(base, board, acts, profile=None):
+def perceived_range(base, board, acts, profile=None, actor_read=None):
     """이 사람이 **실제로 인식하는** 상대 레인지.
 
     개념을 아는 것과 그 정보가 판단에 들어오는 것은 다르다.
@@ -187,11 +197,11 @@ def perceived_range(base, board, acts, profile=None):
     피시도 레귤러와 똑같이 정밀한 상대 레인지를 얻었다.
     """
     if not profile or not profile.get('concepts'):
-        return narrow_by_actions(base, board, acts, profile)
+        return narrow_by_actions(base, board, acts, actor_read, profile)
     rr = PS.sk(profile, 'range_read')
     if rr < 1.5:
         return list(base)                     # 액션을 아예 반영 못 한다
-    full = narrow_by_actions(base, board, acts, profile)
+    full = narrow_by_actions(base, board, acts, actor_read, profile)
     grasp = min(1.0, (rr - 1.5) / 6.0)        # rr 7.5 이상이면 완전 반영
     if grasp >= 0.98 or not full:
         return full
@@ -203,20 +213,35 @@ def perceived_range(base, board, acts, profile=None):
     return full + rest[:n_extra]
 
 
-def narrow_by_actions(base, board, acts, profile=None):
+def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
     """관측된 포스트플랍 액션 경로로 레인지를 순차 축소한다.
 
     acts — [(street, action, size_frac), ...] 관측 순서대로.
            size_frac 은 그 시점 팟 대비 베팅 비율(모르면 0.0).
+
+    **인자가 둘이다. 예전에는 하나였고 그게 뒤섞여 있었다.**
+      actor_read — 레인지의 주인(상대)에 대한 읽기. read_opponent 결과.
+                   블러프 성향·씨벳 성향은 **그 사람의 것**이어야 한다.
+      observer   — 이 축소를 수행하는 사람. 인식 한계는 perceived_range 가 건다.
+
+    예전에는 관찰자 프로필 하나만 받아 거기서 bluff/cbet 을 꺼냈다.
+    그래서 **자기 블러프 성향으로 상대 레인지를 좁혔다** — 자기 투사다.
+    블러프를 많이 하는 사람일수록 상대도 블러프가 많다고 가정했다.
     """
     if not board or not base:
         return base
+    # 기본값은 필드 평균. 읽기가 없으면 상대를 평균으로 가정한다.
     bluff = 5.0
     cbet = 5.0
-    if profile:
-        bluff = profile.get('bluff', 5.0)
-        if profile.get('concepts'):
-            cbet = PS.sk(profile, 'cbet_flop')
+    barrel = 0.0
+    if actor_read and actor_read.get('w', 0) > 0:
+        w = actor_read['w']
+        # bluff_gap −1~+1 을 1~10 축으로 되돌린다.
+        bluff = max(1.0, min(10.0, 5.0 + 5.0*actor_read.get('bluff_gap', 0.0)*w))
+        # 씨벳 성향은 '체크했다'의 정보량을 정한다.
+        # 자주 치는 사람의 체크는 강한 신호, 안 치는 사람의 체크는 정보가 없다.
+        cbet = max(1.0, min(10.0, 5.0 - 5.0*actor_read.get('passive', 0.0)*w))
+        barrel = max(-1.0, min(1.0, actor_read.get('barrel_gap', 0.0)))
     r = list(base)
     floor = max(_MIN_KEEP, int(len(base)*_MIN_FRAC))
     step = 0
@@ -226,7 +251,7 @@ def narrow_by_actions(base, board, acts, profile=None):
         # 연속 액션일수록 추가 정보량이 줄어든다 (축소 누적 폭주 방지)
         d = _DECAY ** step
         if a in ('bet', 'raise', 'allin'):
-            r = _bet_range(r, board, stt, bluff, sz, d)
+            r = _bet_range(r, board, stt, bluff, sz, d, barrel)
         elif a == 'call':
             r = _call_range(r, board, stt, sz, d)
         elif a == 'check':

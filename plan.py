@@ -141,6 +141,13 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     blk_true = R.blocker_score(hero, opp_range, board)
     blk = blk_true * min(1.0, PS.sk(profile, 'blocker')/6.0) if profile.get('concepts') else blk_true
     nut = R.nut_advantage(my_range, opp_range, board) if my_range else 0.0
+    # 전체 에쿼티 우위. 넛 우위와 다른 축이다 —
+    # 전자는 '얼마나 자주 칠까', 후자는 '얼마나 크게 칠까'를 정한다.
+    adv = (R.range_advantage(my_range, opp_range, board, seed=seed)
+           if (my_range and opp_range) else 0.0)
+    # 3스트리트로 스택을 다 넣을 수 있는가. 사이즈를 미리 배분해둔다.
+    # 스트리트마다 즉흥으로 정하면 리버에 스택이 어중간하게 남는다.
+    _so = stackoff_plan(hero, board, profile, pot, stack, street, rng)
     s_true = spr(stack, pot)
     s = s_true * PS.calc_noise(profile, 'spr', rng) if profile.get('concepts') else s_true
     if profile.get('concepts') and PS.sk(profile,'spr') < 2.5:
@@ -267,7 +274,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             plan = 'giveup'; why.append('쇼다운 가치 없고 블러프 개념/조건 미달 → 포기')
     st = {'plan': plan, 'street_made': street, 'streets': [street],
             'eq': round(eq,3), 'danger': round(dang,2), 'outs': outs,
-            'blocker': round(blk,2), 'nut_adv': round(nut,2), 'spr': round(s,1), 'pc': round(pc,2),
+            'blocker': round(blk,2), 'nut_adv': round(nut,2), 'range_adv': round(adv,2),
+            'stackoff': _so, 'spr': round(s,1), 'pc': round(pc,2),
             'n_opp': n_opp, 'behind': to_act_behind, 'rel': round(rel,2), 'made': made,
             'why': why, 'type': T,
             # 내 레인지를 보존한다. 후반 스트리트에서 넛 우위를 다시 계산하려면 필요하다
@@ -288,12 +296,13 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
     rel = st.get('rel', 0.5)
     p_aggr, why_a = decide_aggression(profile, board, street, plan, rel, n_opp,
                                       oop, initiative, to_act_behind, rng,
-                                      opp_est, st.get('outs', 0))
+                                      opp_est, st.get('outs', 0), plan_state=st)
     if rng.random() < p_aggr:
         size = decide_size(profile, hero, board, street, plan, rel,
                            opp_range, my_range, pot, stack, rng, opp_est,
                            st.get('nut_adv', 0.0),
-                           deviating=why_a.startswith('DEVIATE:'))
+                           deviating=why_a.startswith('DEVIATE:'),
+                           stackoff=st.get('stackoff'))
         if size > 0:
             st = set_intent(st, street, mk_intent('bet', size, why_a))
             # 계획과 반대되는 의도는 이탈로 남긴다. 기록이 없으면
@@ -420,7 +429,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
 
 
 def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
-                      to_act_behind, rng, opp_est=None, outs=0):
+                      to_act_behind, rng, opp_est=None, outs=0, plan_state=None):
     """무저항 상황(tocall==0)에서 칠지 체크할지 결정하는 **유일한 지점**.
 
     예전에는 이 판단이 집행부(act_with_plan)에 흩어져 있었다:
@@ -444,7 +453,8 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         # 포기하기로 했는데 치는 것은 **계획 이탈**이다.
         # 계획을 못 지키는 정도는 discipline 의 함수다.
         # 규율 9.7 인 사람과 1.4 인 사람이 같은 빈도로 뒤집으면 성향이 죽는다.
-        cf = cbet_freq(profile, board, n_opp, street, oop, rel, opp_est)
+        cf = cbet_freq(profile, board, n_opp, street, oop, rel, opp_est,
+                       range_adv=(plan_state or {}).get('range_adv', 0.0))
         if has_c:
             disc = PS.temper(profile, 'discipline', 5.0)
             cf *= max(0.05, 1.0 - 0.085*disc)
@@ -457,6 +467,14 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         if to_act_behind >= 2:
             return 0.0, '뒤에 %d명 → 블러프 포기' % to_act_behind
         p = 0.25 + 0.070*profile.get('bluff', 5) + 0.02*profile.get('gamble', 5)
+        # 턴/리버 카드가 누구를 도왔는가. 브릭이면 배럴이 먹히고
+        # 상대를 도운 카드면 멈춰야 한다.
+        # texture.turn_card_effect 가 이걸 재는데 호출부가 없었다.
+        if street in ('turn', 'river') and len(board) >= 4 and has_c:
+            _tce = TX.turn_card_effect(board[:3], board[3] if street == 'turn' else board[-1],
+                                       aggressor_range_high=bool(initiative))
+            _bt = min(1.0, PS.sk(profile, 'board_texture')/7.0)
+            p *= max(0.35, min(1.70, 1.0 + 0.75*_tce*_bt))
         p *= (1 - 0.20*max(0, n_opp-1))
         if not initiative and oop:
             # 동크는 정석이 아니다. 수동형일수록 강하게 억제.
@@ -487,7 +505,8 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
 
 
 def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
-                pot, stack, rng, opp_est=None, nut=0.0, deviating=False):
+                pot, stack, rng, opp_est=None, nut=0.0, deviating=False,
+                stackoff=None):
     """이 스트리트 벳 사이즈(팟 대비)를 정하는 **유일한 지점**.
 
     예전에는 한 사이즈가 네 번 재계산됐다:
@@ -499,6 +518,13 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
     (shape_size 는 '사람다운 끝자리'만 만드는 표현 계층이므로 집행부에 남긴다.)
     """
     base = SIZING.get(plan, {}).get(street, 0.0)
+    # 3스트리트 밸류 계획이면 미리 배분한 사이즈를 기준으로 삼는다.
+    # stackoff_plan 은 만들어져 있었지만 호출부가 없어, 스트리트마다
+    # 즉흥으로 정한 사이즈가 리버에 스택을 어중간하게 남겼다.
+    if base > 0 and stackoff and stackoff.get('ok') and plan == 'value_3street':
+        _sf = stackoff.get(street)
+        if _sf:
+            base = 0.35*base + 0.65*float(_sf)
     if base <= 0:
         # SIZING 표가 0인 계획(giveup/showdown)은 '원래 안 친다'는 뜻이다.
         # 그런데 규율이 낮아 계획을 뒤집고 치기로 한 경우엔 사이즈가 필요하다.
@@ -594,7 +620,7 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     return round(min(2.2, base * rng.uniform(0.92, 1.10)), 2)
 
 
-def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None):
+def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0.0):
     """이니셔티브 보유자의 지속벳 빈도. 핸드 강도와 별개인 구조적 빈도.
 
     opp_est 가 있고 이 사람이 상대를 보는 타입이면(exploit_weight) 조정한다.
@@ -605,9 +631,20 @@ def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None):
     base = {'flop': 0.42, 'turn': 0.30, 'river': 0.22}.get(street, 0.30)
     f = base + 0.035*a + 0.020*b
     f *= (0.62 ** max(0, n_opp-1))          # 다인원일수록 급감
-    f *= (1 - 0.30*bot.board_danger(board)) # 젖은 보드에서 감소
+    # 보드 구조. board_danger(젖은 정도)만 보면 A하이·페어보드처럼
+    # '아무도 못 맞은' 보드에서 쳐야 한다는 것이 안 나온다.
+    # texture.cbet_multiplier 가 그 구조를 이미 갖고 있었는데 호출부가 없었다.
+    _bt = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
+    _cm = TX.cbet_multiplier(board, not oop)
+    f *= 1.0 + (_cm - 1.0) * _bt            # 개념이 낮으면 구조를 못 읽는다
+    f *= (1 - 0.18*bot.board_danger(board)) # 젖은 정도는 남기되 비중을 줄인다
     if oop: f *= 0.88
     f += 0.35*max(0.0, rel-0.6)             # 강할수록 추가
+    # 레인지 우위. 씨벳 빈도의 가장 큰 구조적 근거인데 예전에는 들어가지 않았다.
+    # 개념(board_texture)이 없으면 보드가 누구에게 유리한지 못 읽는다.
+    if range_adv:
+        _ba = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
+        f *= max(0.45, min(1.75, 1.0 + 0.85*range_adv*_ba))
     if opp_est:
         w = PS.exploit_weight(profile, opp_est.get('confidence', 0.0), opp_est.get('n', 0))
         if w > 0.0:
