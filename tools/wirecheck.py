@@ -117,7 +117,28 @@ def reads(fn_name, concept):
     return False
 
 
+# 편향(persona.bias)도 같이 본다. 개념이 아니라 wirecheck 밖에 있었고
+# 그래서 다섯 중 셋이 죽어 있어도 통과했다.
+BIAS_SPEC = {
+    'station':       ['decide_response'],
+    'bluff_fear':    ['decide_response'],
+    'hero_call':     ['decide_response'],
+    'overpair_love': ['perceived_rel'],
+    'draw_love':     ['perceived_rel'],
+    'sticky':        ['perceived_rel'],
+}
+
 miss, nofn, extra = [], [], []
+for b, fns in BIAS_SPEC.items():
+    for fn in fns:
+        r = reads(fn, b)
+        if r is None:
+            nofn.append((b, fn))
+        elif not r:
+            miss.append((b, fn))
+for b in PS.BIAS_NAMES:
+    if b not in BIAS_SPEC:
+        extra.append('bias:' + b)
 for c in sorted(PS.LOADING):
     if c not in SPEC:
         extra.append(c)

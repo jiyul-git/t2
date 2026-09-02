@@ -575,10 +575,22 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
 
     # --- 세미블러프: 레이즈 or 내재오즈 콜 ---
     if plan == 'semibluff' and plan_state.get('outs', 0) >= 8 and street != 'river':
-        if rng.random() < 0.35:
-            return 'raise', 0.95, need, '세미블러프 레이즈'
+        # 예전에는 0.35 고정이라 **전원이 같은 빈도로** 세미블러프 레이즈를 했다.
+        _p_sb = 0.35
+        if has_c:
+            _p_sb = (0.10 + 0.055*PS.sk(profile, 'semibluff')
+                          + 0.030*PS.sk(profile, 'reraise'))
+            _p_sb *= 0.70 + 0.06*PS.temper(profile, 'aggression', 5.0)
+            _p_sb = max(0.03, min(0.80, _p_sb))
+        if rng.random() < _p_sb:
+            return 'raise', 0.95, need, '세미블러프 레이즈(%.0f%%)' % (_p_sb*100)
         if stack > pot:
-            implied = min(0.08, 0.05 * min(1.0, stack/max(1.0, 2.0*pot)))
+            # 내재오즈. 얼마나 벌 수 있는지는 아웃 계산과 팟오즈 감각의 함수다.
+            # 예전에는 0.08 상한 고정이라 개념과 무관했다.
+            _io = 0.05
+            if has_c:
+                _io = 0.02 + 0.008*(0.6*PS.sk(profile, 'outs') + 0.4*PS.sk(profile, 'potodds'))
+            implied = min(0.12, _io * min(1.0, stack/max(1.0, 2.0*pot)))
             need = max(0.02, need - implied)
         act = 'call' if eq >= need else 'fold'
         return act, 0.0, need, '세미블러프 내재오즈 반영'
@@ -603,8 +615,22 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
             return 'call', 0.0, need, '포기 계획이나 팟오즈가 맞음(eq %.3f ≥ need %.3f)' % (eq, need)
         return 'fold', 0.0, need, '포기/블러프 계획 + 팟오즈 미달 → 폴드'
 
-    act = 'call' if eq >= need else 'fold'
-    return act, 0.0, need, 'eq %.3f vs need %.3f' % (eq, need)
+    # --- 인식 편향: 같은 eq/need 여도 사람마다 다르게 결정한다 ---
+    # station / bluff_fear / hero_call 은 전부 이 판단을 재려고 만든 축인데
+    # 아무도 읽지 않아 죽어 있었다. 결과적으로 콜/폴드가 순수 산수였다.
+    need_seen = need
+    if has_c:
+        sz = tocall/max(1.0, float(pot) - tocall)
+        # 스테이션: 문턱을 낮춰 넓게 콜한다.
+        need_seen *= max(0.55, 1.0 - 0.22*max(0.0, PS.bias(profile, 'station')))
+        # 블러프 공포: 큰 벳일수록, 후반 스트리트일수록 문턱을 올린다.
+        _bf_w = min(1.0, sz/0.9) * (1.0 if street == 'river' else 0.65)
+        need_seen *= 1.0 + 0.30*max(0.0, PS.bias(profile, 'bluff_fear'))*_bf_w
+        # 히어로콜: 가볍게 받아준다. 큰 벳에서 더 크게 작동한다.
+        need_seen *= max(0.60, 1.0 - 0.18*max(0.0, PS.bias(profile, 'hero_call'))*_bf_w)
+        need_seen = max(0.02, min(0.97, need_seen))
+    act = 'call' if eq >= need_seen else 'fold'
+    return act, 0.0, need_seen, 'eq %.3f vs 체감 need %.3f (실제 %.3f)' % (eq, need_seen, need)
 
 
 def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,

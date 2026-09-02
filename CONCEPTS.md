@@ -122,6 +122,20 @@ icm_press(prof, bf) = 1.0                              # 평시
 | `hero_call` | `bluffcatch_river`, `aggression`, `tilt_prone` | 가볍게 콜 |
 | `sticky` | `(10−discipline)`, `looseness` | 매몰비용. 못 놓음 |
 
+**편향 여섯의 소비처는 둘로 갈린다.**
+
+| 편향 | 소비처 | 무엇을 바꾸나 |
+|---|---|---|
+| `overpair_love` / `draw_love` / `sticky` | `perceived_rel` | 자기 핸드 강도 체감 |
+| `station` / `bluff_fear` / `hero_call` | `decide_response` | 콜/폴드 문턱 |
+
+앞의 셋은 '내 패가 얼마나 센가'를 흔들고, 뒤의 셋은 '이 벳을 받을까'를 흔든다.
+뒤의 셋은 **큰 벳·리버에서 더 크게 작동한다** — 오버벳 대면에서
+닛은 체감 need 0.378(폴드), 피시는 0.313(콜)로 갈린다.
+
+`tools/wirecheck.py` 가 편향도 함께 점검한다. 개념이 아니라 점검 밖에 있었고
+그래서 여섯 중 셋이 죽어 있어도 통과했다.
+
 **편향 다섯은 `plan.perceived_rel` 이 소비한다.** 예전에는 정의만 있고
 `plan.py` 도 `session.py` 도 읽지 않아 전부 죽어 있었다 —
 `relative_strength` 를 **전원이 정확하게** 계산했다는 뜻이다.
