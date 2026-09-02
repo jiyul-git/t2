@@ -155,6 +155,13 @@ blocker 56%  pf_range 60%  spr 61%   <- 먼저 무너짐
 positional 84%  cbet_flop 85%  trap 89%   <- 남음
 ```
 
+**상위 필드도 함께 갱신한다.** `profile['aggr']`/`['bluff']`/`['icm']` 은
+개념·기질의 **사본**이라, `concepts` 만 깎으면 틸트가 한쪽에만 걸린다.
+상위 필드를 읽는 코드가 17군데였고 `cbet_freq` 도 그중 하나여서
+**틸트가 씨벳 빈도에 전혀 반영되지 않았다.**
+`type`/`id`/`label` 은 정체성이라 제외한다 — 틸트로 바뀌면 아키타입 폴백이
+핸드 중간에 다른 사람으로 갈아탄다.
+
 **진입점은 `persona.tilted_view`** — `play.Hand.axes()` 가 부른다.
 개념은 `tilt_decay` 로 깎이고 기질은 `tilt_direction` 으로 흔들린다.
 규율은 방향과 무관하게 떨어진다.

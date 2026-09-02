@@ -591,6 +591,18 @@ def tilted_view(prof, tilt):
     else:
         tm['discipline'] = _clamp(tm.get('discipline', 5.0) - 2.0*t)
     out['temper'] = tm
+    # 상위 필드(aggr/bluff/icm/...)는 개념·기질의 **사본**이다.
+    # 여기서 다시 파생시키지 않으면 틸트가 한쪽에만 걸린다 —
+    # concepts['bluff'] 는 깎이는데 profile['bluff'] 는 그대로여서,
+    # sk() 를 읽는 코드와 profile.get() 을 읽는 코드가 다른 사람을 본다.
+    # 상위 필드를 읽는 곳이 17군데였고 cbet_freq 도 그중 하나였다
+    # (틸트가 씨벳 빈도에 전혀 반영되지 않았다).
+    _d = derive(out)
+    # type/id/label 은 정체성이다. 틸트로 바뀌면 아키타입 폴백
+    # (FAMILY_LIMP 등)이 핸드 중간에 다른 사람으로 갈아탄다.
+    for _k in ('type', 'id', 'label'):
+        _d.pop(_k, None)
+    out.update(_d)
     if key is not None:
         if len(_TILT_VIEW_CACHE) > 4000:
             _TILT_VIEW_CACHE.clear()

@@ -159,10 +159,12 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
 def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
               seed=None, n_opp=1, to_act_behind=0, oop=False, initiative=True,
               opp_est=None, opp_stack_bb=None, tilt=0.0):
-    """opp_est — reads.perceived_profile() 결과. 진짜 프로필을 넘기면 정보 누출이다.
-       opp_stack_bb — 주 상대의 유효 스택(bb). 트랩·오버벳은 스택 없이는 무의미하다.
-       tilt — 내 틸트 강도 0~1. 틸트 나면 인내가 필요한 계획(트랩)이 줄고 공격이 는다."""
-    """플랍에서 라인을 확정. 상대 수와 뒤에 남은 액션자를 반영."""
+    """플랍에서 라인을 확정. 상대 수와 뒤에 남은 액션자를 반영.
+
+    opp_est — reads.perceived_profile() 결과. 진짜 프로필을 넘기면 정보 누출이다.
+    opp_stack_bb — 주 상대의 유효 스택(bb). 트랩·오버벳은 스택 없이는 무의미하다.
+    tilt — 내 틸트 강도 0~1. 틸트 나면 인내가 필요한 계획(트랩)이 줄고 공격이 는다.
+    """
     rng = random.Random(seed)
     # 추정한 opp_range 를 그대로 쓴다. 고정 35% 가정으로 되돌리지 말 것 —
     # 좁혀놓은 레인지를 버리고 EV 를 판단하면 리딩이 전부 무의미해진다.
@@ -186,8 +188,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     _so = stackoff_plan(hero, board, profile, pot, stack, street, rng)
     s_true = spr(stack, pot)
     s = s_true * PS.calc_noise(profile, 'spr', rng) if profile.get('concepts') else s_true
-    if profile.get('concepts') and PS.sk(profile,'spr') < 2.5:
-        s = 5.0                                   # SPR 개념이 없으면 아예 고려 안 함
+    # SPR 인식. 예전에는 개념 2.5 미만이면 s=5.0 으로 **통째로 무시**했다.
+    # 2.4 와 2.6 이 완전히 다른 사람이 되고, 개념 2.4 인 사람은 SPR 1 이든
+    # 20 이든 같은 판단을 했다. 중립값 쪽으로 끌어당기는 연속 처리로 바꾼다.
+    if profile.get('concepts'):
+        _sa = max(0.0, min(1.0, (PS.sk(profile, 'spr') - 1.0) / 6.0))
+        s = s*_sa + 5.0*(1.0 - _sa)
     pc = max(0.0, min(1.0, (profile['icm'] + (10-profile['gamble']) + (10-profile['aggr']))/30.0))
 
     # 절대 강도 + 상대 레인지 대비 강도
