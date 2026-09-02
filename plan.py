@@ -190,8 +190,15 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     blk_true = R.blocker_score(hero, opp_range, board)
     # 개념 6 이상이 전부 만점이던 것을 완만하게 편다. 다른 게이트는 /7~/8 인데
     # 여기만 /6 이라 근거가 없었다.
-    blk = (blk_true * max(0.0, min(1.0, (PS.sk(profile, 'blocker') - 1.0)/7.0))
-           if profile.get('concepts') else blk_true)
+    _bg = (max(0.0, min(1.0, (PS.sk(profile, 'blocker') - 1.0)/7.0))
+           if profile.get('concepts') else 1.0)
+    blk = blk_true * _bg
+    # 순 효과 — '강한 콤보를 지웠나'가 아니라 '콜할 콤보를 지웠나'.
+    # 접을 콤보를 지우면(언블로커) 상대의 남은 레인지가 강해져 손해다.
+    # 아직 사이즈를 정하기 전이라 스트리트별 표준 사이즈를 가정한다.
+    _typ = {'flop': 0.60, 'turn': 0.70, 'river': 0.78}.get(street, 0.65)
+    blk_net = (R.blocker_effect(hero, opp_range, board, street, _typ, False) * _bg
+               if (opp_range and board) else 0.0)
     nut = R.nut_advantage(my_range, opp_range, board) if my_range else 0.0
     # 전체 에쿼티 우위. 넛 우위와 다른 축이다 —
     # 전자는 '얼마나 자주 칠까', 후자는 '얼마나 크게 칠까'를 정한다.
@@ -249,6 +256,9 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 개념 10 인 사람도 0.83 이 최대였고 그 12 에 근거가 없었다.
     bluff_ok = (profile['bluff']/10.0) * (0.5 + 1.8*blk) * (0.75 + 0.35*max(0, nut)) \
                * (0.35 ** mw) * (0.55 ** min(to_act_behind, 3))
+    # 순 효과를 곱한다. 한 장이 지우는 콤보가 3~4% 수준이라 값이 작으므로
+    # 4배로 편다. 언블로커면 1 미만이 되어 블러프가 줄어든다.
+    bluff_ok *= max(0.45, min(1.65, 1.0 + 4.0*blk_net))
     if rd['w'] > 0:
         # 잘 접는 상대에게 블러프를 늘린다. 그 스트리트 기준으로.
         bluff_ok *= max(0.25, 1.0 + rd['w'] * 1.6 * PS.street_gap(rd, street))
@@ -382,8 +392,9 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             plan = 'giveup'; why.append('쇼다운 가치 없고 블러프 개념/조건 미달 → 포기')
     st = {'plan': plan, 'street_made': street, 'streets': [street],
             'eq': round(eq,3), 'danger': round(dang,2), 'outs': outs,
-            'blocker': round(blk,2), 'nut_adv': round(nut,2), 'range_adv': round(adv,2),
-            'stackoff': _so, 'spr': round(s,1), 'pc': round(pc,2),
+            'blocker': round(blk,2), 'blocker_net': round(blk_net,3),
+            'nut_adv': round(nut,2), 'range_adv': round(adv,2),
+            'stackoff': dict(_so, _blk_net=round(blk_net, 3)) if isinstance(_so, dict) else _so, 'spr': round(s,1), 'pc': round(pc,2),
             'n_opp': n_opp, 'behind': to_act_behind, 'rel': round(rel,2), 'made': made,
             'why': why, 'type': T,
             # 내 레인지를 보존한다. 후반 스트리트에서 넛 우위를 다시 계산하려면 필요하다
@@ -763,6 +774,13 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
         _bt2 = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
         _tf = TX.size_fraction(board, plan, street)
         base = base*(1.0 - 0.45*_bt2) + _tf*(0.45*_bt2)
+    # 블로커 순 효과(밸류 관점). 콜할 콤보를 지웠으면 크게 쳐도 콜을 못 받으므로
+    # 사이즈를 줄이고, 접을 콤보를 지웠으면(상대 레인지가 강함) 오히려 키운다.
+    if base > 0 and plan in ('value_3street', 'value_2street', 'trap'):
+        _bn = (stackoff or {}).get('_blk_net') if isinstance(stackoff, dict) else None
+        if _bn is None:
+            _bn = 0.0
+        base *= max(0.75, min(1.25, 1.0 - 2.0*_bn))
     # 에쿼티 부정 — 상대에게 드로우가 많은 보드에서 크게 쳐서 오즈를 안 준다.
     # 개념이 낮으면 젖은 보드든 마른 보드든 같은 사이즈를 친다.
     if base > 0 and profile.get('concepts') and street != 'river':

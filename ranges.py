@@ -106,14 +106,46 @@ def nut_advantage(r_a, r_b, board):
 # nut_advantage 가 같은 재료를 쓰므로 제거한다.
 
 def blocker_score(hero, opp_range, board):
-    """내 카드가 상대의 강한 콤보를 얼마나 지우는가. 0~1."""
+    """내 카드가 상대의 강한 콤보를 얼마나 지우는가. 0~1.
+
+    **근사값이다.** 정확히는 blocker_effect 를 쓸 것 —
+    강한 콤보를 지우는 것과 '콜할 콤보'를 지우는 것은 다르다.
+    이 함수는 상대 벳 사이즈를 모를 때의 폴백으로 남긴다.
+    """
     if not opp_range or not board: return 0.0
-    # 상위 20% 를 '강한 콤보'로 본다. 레인지가 이미 좁혀졌으면 그 20% 는
-    # 절대 기준으로 더 강한 구간이므로, 좁은 레인지에서 블로커 값이
-    # 과대평가되지 않도록 최소 개수를 둔다.
     strong = sorted(opp_range, key=lambda c: bot.eval7(list(c)+board), reverse=True)
     strong = strong[:max(4, len(strong)//5)]
     return sum(1 for c in strong if c[0] in hero or c[1] in hero)/len(strong)
+
+
+def blocker_effect(hero, opp_range, board, street, size_frac, for_value=False):
+    """블로커의 **순 효과**. -1 ~ +1.
+
+    핵심은 '강한 콤보를 지웠나'가 아니라
+    **'내 벳을 마주하면 콜할 콤보를 지웠나'** 이다.
+
+      블로커   — 상대의 콜 몫을 지운다  -> 블러프가 잘 통한다
+      언블로커 — 상대의 폴드 몫을 지운다 -> 남은 레인지가 더 강해져 손해다
+
+    예: K9 4 2 7 (스페이드 셋) 리버에서 J♠T 로 블러프.
+    J♠ 는 상대의 **약한 플러시**를 지운다. 그건 큰 벳에 접었을 패다.
+    접을 패를 지웠으니 상대의 남은 레인지가 더 강해지고 블러프가 덜 먹힌다.
+    강한 콤보만 세는 방식으로는 이 손해가 보이지 않는다.
+
+    밸류로 칠 때는 부호가 뒤집힌다. 상대가 콜해줘야 벌 수 있으므로
+    콜 몫을 지우는 것이 손해다.
+    """
+    if not opp_range or not board:
+        return 0.0
+    calls = set(_call_range(opp_range, board, street, size_frac))
+    folds = [c for c in opp_range if c not in calls]
+    if not calls or not folds:
+        return 0.0
+    hit = lambda c: (c[0] in hero or c[1] in hero)
+    blocked_call = sum(1 for c in calls if hit(c)) / len(calls)
+    blocked_fold = sum(1 for c in folds if hit(c)) / len(folds)
+    net = blocked_call - blocked_fold
+    return max(-1.0, min(1.0, -net if for_value else net))
 
 
 # ---------- 액션 경로에 따른 레인지 축소 ----------
