@@ -1296,10 +1296,13 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     if street == 'turn':
         _fi = intent_of(state, 'flop') or {}
         st['flop_checked'] = (_fi.get('act') in (None, 'check'))
-    rel = relative_strength(hero, board, opp_range)
-    eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
     outs = draw_strength(hero, board)
     made = bot.made_strength(hero, board)
+    # make_plan 과 같은 편향을 쓴다. 예전에는 여기만 날것이라
+    # **같은 사람이 플랍과 턴에서 자기 핸드를 다르게 평가했다.**
+    rel_true = relative_strength(hero, board, opp_range)
+    rel = perceived_rel(profile, rel_true, hero, board, outs, made)
+    eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
     st.update({'rel': round(rel,2), 'eq': round(eq,3), 'outs': outs,
                'made': made, 'danger': round(bot.board_danger(board),2)})
     why = list(st.get('why') or [])
@@ -1312,18 +1315,40 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     oe = opp_est if opp_est is not None else st.get('opp_est')
     give_thr, ctrl_thr = 0.12, 0.30
     if oe:
-        w = PS.exploit_weight(profile, oe.get('confidence', 0.0), oe.get('n', 0))
+        # read_opponent 경유. oe['ftb'] 날것은 see_freq 게이트를 우회하고
+        # 스트리트 구분도 못 한다 — '플랍은 잘 치는데 턴에서 접는' 사람이
+        # 여기서는 전체 평균으로만 보였다.
+        _rdr = PS.read_opponent(profile, oe)
+        w = _rdr.get('w', 0.0)
         if w > 0.0:
-            d = (oe.get('ftb', 0.52) - 0.52)      # 모집단 평균 대비 폴드 성향
+            d = PS.street_gap(_rdr, street)       # 그 스트리트의 폴드 성향
             give_thr = PS.blend(give_thr, max(0.02, give_thr - 0.35*d), w)
             ctrl_thr = PS.blend(ctrl_thr, max(0.10, ctrl_thr - 0.55*d), w)
             if abs(d) > 0.04:
                 why.append('상대 폴드성향 %+.0f%%p → 포기 문턱 %.2f' % (100*d, ctrl_thr))
 
+    # 턴/리버 카드가 누구를 도왔는가. 상대를 도운 카드면 근거가 더 빨리 무너지고,
+    # 나를 도운 카드면 더 버틴다. turn_card_effect 가 이걸 재는데
+    # decide_aggression 에서만 쓰이고 계획 재평가에는 안 들어갔다.
+    if len(board) >= 4 and profile.get('concepts'):
+        _tce = TX.turn_card_effect(board[:3], board[-1],
+                                   aggressor_range_high=bool(st.get('plan') in
+                                       ('value_3street', 'value_2street', 'trap')))
+        _bt = min(1.0, PS.sk(profile, 'board_texture')/7.0)
+        _shift = 0.45 * _tce * _bt          # +면 내 레인지에 유리
+        give_thr = max(0.02, give_thr * (1.0 - _shift))
+        ctrl_thr = max(0.08, ctrl_thr * (1.0 - _shift))
+
     # 근거 붕괴 판정
     if old in ('value_3street','value_2street') and rel < ctrl_thr and made <= 1:
         st['plan'] = 'giveup' if rel < give_thr else 'pot_control'
         why.append('%s: 상대강도 %.2f로 하락 → %s' % (street, rel, st['plan']))
+    elif old == 'value_3street' and rel < 0.62:
+        # 중간 강등. 예전에는 3스트리트가 pot_control/giveup 으로만 떨어져서,
+        # A 가 떨어져 rel 0.94 -> 0.47 이 되어도 계획이 그대로였다.
+        # 3배럴은 못 하지만 2스트리트는 가능한 구간이 통째로 없었다.
+        st['plan'] = 'value_2street'
+        why.append('%s: 상대강도 %.2f → 3스트리트 철회, 2스트리트' % (street, rel))
     elif old == 'semibluff' and outs < 6:
         st['plan'] = 'value_2street' if rel >= 0.6 else 'giveup'
         why.append('%s: 드로우 소멸(%d아웃) → %s' % (street, outs, st['plan']))
