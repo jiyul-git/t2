@@ -123,6 +123,8 @@ def opp_bet_prob(opp_est, w, street):
     obs = opp_est.get('cbet' if street == 'flop' else 'barrel')
     if obs is None:
         obs = base
+    # aggr 은 관측 추정치라 그대로 쓴다 — 이 함수는 '상대가 칠 확률'을 내는
+    # 모델이지 내가 얼마나 읽는가가 아니다. 인식 한계는 호출부의 w 가 이미 건다.
     obs = 0.65*obs + 0.35*(opp_est.get('aggr', 5.0)/10.0)
     return max(0.05, min(0.92, PS.blend(base, obs, w)))
 
@@ -828,16 +830,25 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     """
     if street == 'flop': return None                # 플랍 오버벳은 다루지 않는다
     ob = PS.sk(profile, 'overbet') if profile.get('concepts') else 2.0
-    if ob < 4.0: return None                        # 개념이 없으면 선택지에 없음
     nut = R.nut_advantage(my_range, opp_range, board) if (my_range and opp_range) else 0.0
-    if nut < 0.10: return None                      # 넛 우위 없이는 치지 않는다
 
-    value_line = plan in ('value_3street', 'trap') and rel >= 0.85
-    bluff_line = plan in ('bluff_2street', 'semibluff') and rel <= 0.25
-    if not (value_line or bluff_line): return None  # 미들레인지는 제외
+    # 예전에는 ob<4.0, nut<0.10, rel>=0.85 / rel<=0.25 네 개가 전부 하드 컷이었다.
+    # 개념 3.9 와 4.1 이 완전히 다른 사람이 되고, rel 0.84 는 오버벳이
+    # 아예 불가능했다. 전부 연속 가중으로 바꾼다 — 조건이 약하면
+    # 확률이 낮아질 뿐 선택지에서 사라지지는 않는다.
+    value_line = plan in ('value_3street', 'trap')
+    bluff_line = plan in ('bluff_2street', 'semibluff')
+    if not (value_line or bluff_line): return None  # 계획 자체가 아니면 제외
 
-    p = 0.10 + 0.075*(ob - 4.0)                     # 개념 숙련도
-    p *= (0.5 + 2.0*min(0.5, nut))                  # 넛 우위에 비례
+    # 양극화 정도. 밸류는 rel 이 높을수록, 블러프는 낮을수록 오버벳에 맞는다.
+    pol = (max(0.0, (rel - 0.62) / 0.30) if value_line
+           else max(0.0, (0.42 - rel) / 0.30))
+    pol = min(1.0, pol)
+    if pol <= 0.02: return None                     # 미들레인지는 제외
+
+    p = 0.16 * max(0.0, min(1.0, (ob - 2.5) / 5.0))  # 개념 숙련도, 연속
+    p *= (0.25 + 1.9*max(0.0, min(0.5, nut)))        # 넛 우위에 비례
+    p *= pol
     p *= (0.75 + 0.05*profile.get('aggr', 5))
     if street == 'river': p *= 1.35                 # 리버가 오버벳의 주 무대
     if bluff_line: p *= 0.65                        # 블러프 오버벳은 더 드물다
@@ -845,11 +856,14 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     # 잘 접는 상대에게 밸류 오버벳은 손해고(콜을 못 받음),
     # 안 접는 상대에게 블러프 오버벳은 자살이다. 방향이 정반대다.
     if opp_est:
-        w = PS.exploit_weight(profile, opp_est.get('confidence', 0.0), opp_est.get('n', 0))
-        if w > 0.0:
-            d = opp_est.get('ftb', 0.52) - 0.52
+        # read_opponent 를 쓴다. 예전에는 opp_est['ftb'] 를 날것으로 읽어
+        # see_freq 게이트를 우회했다 — 빈도를 못 세는 사람도
+        # 상대 폴드율에 완전히 반응했다.
+        _rdo = PS.read_opponent(profile, opp_est)
+        if _rdo.get('w', 0) > 0:
+            d = PS.street_gap(_rdo, street)
             mult = (1.0 - 1.6*d) if value_line else (1.0 + 1.6*d)
-            p = PS.blend(p, p*max(0.25, mult), w)
+            p = PS.blend(p, p*max(0.25, mult), _rdo['w'])
     if rng.random() > max(0.0, min(0.55, p)): return None
 
     # 사이즈: 넛 우위가 클수록 크게
@@ -893,12 +907,13 @@ def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0
         _ba = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
         f *= max(0.45, min(1.75, 1.0 + 0.85*range_adv*_ba))
     if opp_est:
-        w = PS.exploit_weight(profile, opp_est.get('confidence', 0.0), opp_est.get('n', 0))
-        if w > 0.0:
-            ftb = opp_est.get('ftb', 0.52)
-            # 관측된 폴드율이 모집단 평균(0.52)보다 높으면 블러프 빈도를 올린다
-            adj = f * (1.0 + 1.10*(ftb - 0.52))
-            f = PS.blend(f, adj, w)
+        # read_opponent 경유. 예전에는 opp_est['ftb'] 를 날것으로 읽어
+        # see_freq 게이트를 우회했다 — 빈도를 못 세는 사람도
+        # 상대 폴드율에 완전히 반응했다. 그리고 스트리트 구분도 없었다.
+        _rdc = PS.read_opponent(profile, opp_est)
+        if _rdc.get('w', 0) > 0:
+            adj = f * (1.0 + 1.10*PS.street_gap(_rdc, street))
+            f = PS.blend(f, adj, _rdc['w'])
     return max(0.03, min(0.95, f))
 
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
@@ -1017,21 +1032,28 @@ def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, st
     rel = plan_state.get('rel', 0.5)
     outs = plan_state.get('outs', 0)
     p = 0.0
-    if plan == 'trap':               p = 0.55 + 0.12*sk
-    elif rel >= 0.90:                p = 0.10 + 0.11*sk
+    if plan == 'trap':
+        p = 0.55 + 0.12*sk
     elif plan == 'semibluff' and outs >= 8 and street != 'river':
-                                     p = 0.06 + 0.115*sk
-    elif plan == 'bluff_2street':    p = 0.03 + 0.05*sk
+        p = 0.06 + 0.115*sk
+    elif plan == 'bluff_2street':
+        p = 0.03 + 0.05*sk
+    # 강한 핸드의 밸류 체크레이즈. 예전에는 rel>=0.90 하드 컷이라
+    # rel 0.89 는 아예 못 했고, 순서상 trap 다음이라 밸류 계획이
+    # semibluff 분기보다 먼저 잡아채는 문제도 있었다.
+    _val = max(0.0, min(1.0, (rel - 0.72) / 0.22))
+    p = max(p, (0.10 + 0.11*sk) * _val)
     p *= (0.7 + 0.05*profile.get('aggr', 5))
     # 블러프 체크레이즈는 상대가 접어줘야 성립하고,
     # 밸류 체크레이즈는 상대가 콜해줘야 성립한다. 방향이 반대다.
     if opp_est:
-        w = PS.exploit_weight(profile, opp_est.get('confidence', 0.0), opp_est.get('n', 0))
-        if w > 0.0:
-            d = opp_est.get('ftb', 0.52) - 0.52
+        # read_opponent 경유. opp_est['ftb'] 날것은 see_freq 게이트를 우회한다.
+        _rdc = PS.read_opponent(profile, opp_est)
+        if _rdc.get('w', 0) > 0:
+            d = PS.street_gap(_rdc, street)
             is_bluff = plan in ('semibluff', 'bluff_2street')
             mult = (1.0 + 1.5*d) if is_bluff else (1.0 - 1.0*d)
-            p = PS.blend(p, p*max(0.2, mult), w)
+            p = PS.blend(p, p*max(0.2, mult), _rdc['w'])
     return rng.random() < max(0.0, min(0.90, p))
 
 
