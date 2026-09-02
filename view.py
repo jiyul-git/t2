@@ -62,7 +62,11 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
         s = field.status()
         avg_bb = (s['avg']/bb) if 'avg' in s else field.avg_stack_bb(start_stack, bb)
         v['field'] = dict(s, avg_bb=round(avg_bb, 1))
-    if level and blinds: v['level'] = {'n': level, 'sb': blinds[0], 'bb': blinds[1]}
+    if level and blinds:
+        # 안테는 핸드가 실제로 걷은 액수를 쓴다. 예전에는 빅블라인드를
+        # 그대로 찍어서, 안테가 아직 없는 레벨에도 있다고 표시했다.
+        v['level'] = {'n': level, 'sb': blinds[0], 'bb': blinds[1],
+                      'ante': int(getattr(hand, 'ante', 0) or 0)}
     if raw.get('error'): v['error'] = raw['error']
     return v
 
@@ -73,7 +77,9 @@ def render(v):
     hd = 'HAND %s' % v.get('hand_no', '?')
     if v.get('level'):
         lv = v['level']
-        hd += ' | 레벨%d: %s/%s (%s ante)' % (lv['n'], C(lv['sb']), C(lv['bb']), C(lv['bb']))
+        hd += ' | 레벨%d: %s/%s' % (lv['n'], C(lv['sb']), C(lv['bb']))
+        if lv.get('ante'):
+            hd += ' (%s ante)' % C(lv['ante'])
     hd += ' | 🔒%s' % v['hash']
     L.append(hd)
     if v.get('field'):

@@ -74,14 +74,15 @@ def load():
 
 # ---------- 게임 생성 ----------
 def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
-             hands_per_level=12):
+             hands_per_level=12, fmt=None):
     for fn in ('hand_archive2.jsonl', 'book.json', 'dynamics.json'):
         p = os.path.join(D, fn)
         if os.path.exists(p):
             try: os.remove(p)
             except OSError: pass
     f = FS.Field(entries=entries, start_stack=start_stack, hero_pid=0,
-                 seed=seed, hands_per_level=hands_per_level, itm_frac=itm_frac)
+                 seed=seed, hands_per_level=hands_per_level, itm_frac=itm_frac,
+                 fmt=fmt)
     st = {'field': _dump(f), 'actions': [], 'decisions': [], 'hand_seed': None,
           'notes': [], 'busted': False, 'rank': None}
     save(st)
