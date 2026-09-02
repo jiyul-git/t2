@@ -333,6 +333,91 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
 #
 # 집행부는 intent 를 만들지 않는다. 읽고 환산할 뿐이다.
 
+def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
+                  to_act_behind, opp_est, n_opp=1, rng=None, _bf_gated=True):
+    """콜 문턱(need)을 정하는 **유일한 지점**.
+
+    예전에는 이 계산 전체가 act_with_plan(집행부) 안에 인라인으로 있었다.
+    "집행부는 판단 금지, intent 를 칩으로 환산만" 이라는 규약을 어긴다.
+    이름이 없으니 어느 개념이 여기 걸려야 하는지도 점검할 수 없었다
+    (tools/wirecheck.py 가 bluffcatch 를 decide_response 에서 못 찾은 이유).
+
+    팟오즈에서 시작해 순서대로 보정한다.
+      ICM -> 다인원 -> 배팅라인 리딩(bluffcatch/range_read/sizing_tell)
+      -> 상대 블러프 성향(bluff_gap) -> 상·하한
+    """
+    # 팟오즈 × 버블팩터. bf 는 호출부에서 이미 인지 보정된 값이지만,
+    # 보정 없이 들어오는 경로(다른 호출부)도 있으므로 여기서 한 번 더 확인한다.
+    # icm_aware 는 멱등이 아니므로 1.0 초과일 때만, 그리고 원본 bf 를 쓴다.
+    if profile.get('concepts') and bf and bf > 1.0 and not _bf_gated:
+        bf = PS.icm_bf(profile, bf)
+    need_true = (tocall*bf)/max(1.0, float(pot))
+    need = need_true
+    if profile.get('concepts'):
+        # 팟오즈 계산 오차. calc_noise 는 최대 3배까지 곱하는데,
+        # need 는 확률이라 3배를 곱하면 38% 가 100% 가 되어 '더 강해졌는데
+        # 폴드'하는 모순이 나온다. 오차는 오차 범위 안에 있어야 한다.
+        nz = PS.calc_noise(profile, 'potodds', rng)
+        nz = max(0.65, min(1.55, nz))
+        need = need_true * nz
+    if to_act_behind:
+        # 뒤에 남은 사람 리스크. 확률에 상수를 더하지 않고
+        # 남은 팟 지분 기준으로 비례 가산한다.
+        need += (1.0 - need_true) * min(0.18, 0.06*to_act_behind)
+    need = max(0.01, min(0.97, need))
+    # 배팅라인 리딩 — 상대가 블러프일 사전확률만큼 문턱을 낮춘다
+    if read is not None:
+        trust = 0.25 + 0.06*profile.get('aggr', 5)
+        if profile.get('concepts'):
+            bc = PS.sk(profile, PS.street_concept('bluffcatch', street))
+            trust *= min(1.4, (0.6*PS.sk(profile,'range_read') + 0.4*bc)/5.0)    # 리딩을 얼마나 신뢰하는가
+        if A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish': trust *= 0.35
+        # 사이징 텔: 사이즈에서 정보를 읽는 능력. 없으면 큰 벳도 작은 벳도 똑같이 본다.
+        if profile.get('concepts'):
+            stell = PS.sk(profile, 'sizing_tell')
+            sz_now = tocall/max(1.0, float(pot) - tocall)
+            dev = abs(sz_now - 0.6)                      # 표준 사이즈에서 벗어난 정도
+            trust *= (1.0 + 0.10*(stell - 5.0)/5.0 * min(2.0, dev/0.4))
+        need -= trust * (read - 0.35)
+    # 상·하한. 상한은 팟오즈를 배 이상 부풀리지 못하게,
+    # 하한은 팟오즈의 절반 아래로 못 내려가게 한다.
+    # 예전엔 하한이 없어서 상대를 블러프로 크게 읽으면
+    # need 가 실제 팟오즈(32%)보다 낮은 19% 까지 떨어졌다.
+    # 리딩은 문턱을 조정하는 것이지 팟오즈를 뒤집는 게 아니다.
+    need = min(need, need_true*1.75 + 0.05)
+    need = max(need, need_true*0.55)
+    need = max(0.01, min(0.95, need))
+    made_now = bot.made_strength(hero, board) if board else 0
+    # 개인 행동 편향 — 같은 eq·같은 팟오즈라도 사람마다 다른 답을 낸다.
+    # 이게 없으면 성향이 아무리 달라도 콜/폴드는 eq>=need 하나의 문턱으로 수렴해서
+    # '평균은 맞지만 아무도 개성이 없는' 필드가 된다. calc_noise(랜덤 오차)와 달리
+    # 이건 그 사람에게 고정된 방향성 편향이다.
+    if profile.get('concepts') and board:
+        # 실제 사이즈가 아니라 '이 사람이 인식한 사이즈'로 판단한다.
+        # 균형 공식 정의역(2팟) 밖을 못 읽는 사람은 팟오즈를 오독한다.
+        _sz_true = tocall/max(1.0, float(pot) - tocall)
+        # 먼저 '이 상대 기준으로' 정규화하고, 그다음 내 인식 한계를 적용한다.
+        # 순서가 중요하다 — 상대 기준 보정은 관찰이고, size_read 는 내 능력이다.
+        _rdz = PS.read_opponent(profile, opp_est) if opp_est else None
+        _sz_norm = PS.opp_size_norm(_rdz, _sz_true, street)
+        _sz_seen = PS.size_read(profile, _sz_norm)
+        need *= PS.call_bias(profile, street, _sz_seen,
+                             made_now, bot.draw_strength(hero, board))
+        # 오독한 사이즈로 팟오즈를 다시 계산한다 (인식이 곧 판단 근거다)
+        if abs(_sz_seen - _sz_true) > 1e-9:
+            _p0 = float(pot) - tocall
+            need = (_sz_seen*_p0)/max(1.0, _p0 + 2*_sz_seen*_p0)
+        # 상대가 블러프를 많이 하는 사람이면 더 넓게 받아야 한다.
+        # 개인 편향(call_bias)은 '내가 어떤 사람인가', 이건 '상대가 어떤 사람인가'다.
+        if _rdz and _rdz.get('w', 0) > 0:
+            # read_opponent 의 bluff_gap 을 쓴다. 예전에는 opp_est['bluff'] 를
+            # 날것으로 읽어 see_line 게이트를 우회했다 —
+            # 라인을 못 읽는 사람도 상대 블러프 성향에 완전히 반응했다.
+            bl = _rdz.get('bluff_gap', 0.0)
+            need = PS.blend(need, need*max(0.55, 1.0 - 0.35*bl), _rdz['w'])
+        need = max(0.03, min(0.95, need))
+    return max(0.03, min(0.95, need))
+
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                     made_now, opp_range, pot, tocall, stack, committed, rng):
     """저항(tocall>0)을 마주했을 때 폴드/콜/레이즈를 정하는 **유일한 지점**.
@@ -699,10 +784,16 @@ def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   initiative=True, oop=False, opp_range=None, bf=1.0, seed=None,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None):
-    if profile.get('concepts'):
-        # ICM 개념이 없으면 버블팩터를 인지하지 못한다
-        bf = 1.0 + (bf - 1.0) * min(1.0, PS.sk(profile, 'icm')/6.0)
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
+    # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
+    # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
+    #
+    # 그리고 식이 icm_press() 와 달랐다 — 여기만 하한이 없어
+    # icm 개념 0 인 사람이 버블을 **완전히** 무시했다.
+    # '이번에 죽으면 상금을 못 받는다'는 개념이 아니라 상식이다.
+    # 계산을 두 곳에 다르게 두면 이런 차이가 조용히 생긴다.
+    if profile.get('concepts') and bf and bf > 1.0:
+        bf = PS.icm_bf(profile, bf)
     rng = random.Random(seed)
     plan = plan_state['plan']
     if opp_est is None:
@@ -743,71 +834,10 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # pot 은 pot_live 다 — 상대가 방금 낸 벳이 이미 포함돼 있다.
         # 여기서 tocall 을 또 더하면 분모에 콜 비용이 두 번 들어가 need 가
         # 실제보다 훨씬 낮게 나온다 (2,500/8,800=28% 가 6% 로 계산됐다).
-        need_true = (tocall*bf)/max(1.0, float(pot))
-        need = need_true
-        if profile.get('concepts'):
-            # 팟오즈 계산 오차. calc_noise 는 최대 3배까지 곱하는데,
-            # need 는 확률이라 3배를 곱하면 38% 가 100% 가 되어 '더 강해졌는데
-            # 폴드'하는 모순이 나온다. 오차는 오차 범위 안에 있어야 한다.
-            nz = PS.calc_noise(profile, 'potodds', rng)
-            nz = max(0.65, min(1.55, nz))
-            need = need_true * nz
-        if to_act_behind:
-            # 뒤에 남은 사람 리스크. 확률에 상수를 더하지 않고
-            # 남은 팟 지분 기준으로 비례 가산한다.
-            need += (1.0 - need_true) * min(0.18, 0.06*to_act_behind)
-        need = max(0.01, min(0.97, need))
-        # 배팅라인 리딩 — 상대가 블러프일 사전확률만큼 문턱을 낮춘다
-        if read is not None:
-            trust = 0.25 + 0.06*profile.get('aggr', 5)
-            if profile.get('concepts'):
-                bc = PS.sk(profile, PS.street_concept('bluffcatch', street))
-                trust *= min(1.4, (0.6*PS.sk(profile,'range_read') + 0.4*bc)/5.0)    # 리딩을 얼마나 신뢰하는가
-            if A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish': trust *= 0.35
-            # 사이징 텔: 사이즈에서 정보를 읽는 능력. 없으면 큰 벳도 작은 벳도 똑같이 본다.
-            if profile.get('concepts'):
-                stell = PS.sk(profile, 'sizing_tell')
-                sz_now = tocall/max(1.0, float(pot) - tocall)
-                dev = abs(sz_now - 0.6)                      # 표준 사이즈에서 벗어난 정도
-                trust *= (1.0 + 0.10*(stell - 5.0)/5.0 * min(2.0, dev/0.4))
-            need -= trust * (read - 0.35)
-        # 상·하한. 상한은 팟오즈를 배 이상 부풀리지 못하게,
-        # 하한은 팟오즈의 절반 아래로 못 내려가게 한다.
-        # 예전엔 하한이 없어서 상대를 블러프로 크게 읽으면
-        # need 가 실제 팟오즈(32%)보다 낮은 19% 까지 떨어졌다.
-        # 리딩은 문턱을 조정하는 것이지 팟오즈를 뒤집는 게 아니다.
-        need = min(need, need_true*1.75 + 0.05)
-        need = max(need, need_true*0.55)
-        need = max(0.01, min(0.95, need))
+        need = calldown_need(profile, hero, board, street, pot, tocall, bf,
+                             read, to_act_behind, opp_est, n_opp=n_opp, rng=rng)
+        # made_now 계산이 calldown_need 로 딸려 들어갔다. 여기서도 필요하다.
         made_now = bot.made_strength(hero, board) if board else 0
-        # 개인 행동 편향 — 같은 eq·같은 팟오즈라도 사람마다 다른 답을 낸다.
-        # 이게 없으면 성향이 아무리 달라도 콜/폴드는 eq>=need 하나의 문턱으로 수렴해서
-        # '평균은 맞지만 아무도 개성이 없는' 필드가 된다. calc_noise(랜덤 오차)와 달리
-        # 이건 그 사람에게 고정된 방향성 편향이다.
-        if profile.get('concepts') and board:
-            # 실제 사이즈가 아니라 '이 사람이 인식한 사이즈'로 판단한다.
-            # 균형 공식 정의역(2팟) 밖을 못 읽는 사람은 팟오즈를 오독한다.
-            _sz_true = tocall/max(1.0, float(pot) - tocall)
-            # 먼저 '이 상대 기준으로' 정규화하고, 그다음 내 인식 한계를 적용한다.
-            # 순서가 중요하다 — 상대 기준 보정은 관찰이고, size_read 는 내 능력이다.
-            _rdz = PS.read_opponent(profile, opp_est) if opp_est else None
-            _sz_norm = PS.opp_size_norm(_rdz, _sz_true, street)
-            _sz_seen = PS.size_read(profile, _sz_norm)
-            need *= PS.call_bias(profile, street, _sz_seen,
-                                 made_now, bot.draw_strength(hero, board))
-            # 오독한 사이즈로 팟오즈를 다시 계산한다 (인식이 곧 판단 근거다)
-            if abs(_sz_seen - _sz_true) > 1e-9:
-                _p0 = float(pot) - tocall
-                need = (_sz_seen*_p0)/max(1.0, _p0 + 2*_sz_seen*_p0)
-            # 상대가 블러프를 많이 하는 사람이면 더 넓게 받아야 한다.
-            # 개인 편향(call_bias)은 '내가 어떤 사람인가', 이건 '상대가 어떤 사람인가'다.
-            if _rdz and _rdz.get('w', 0) > 0:
-                # read_opponent 의 bluff_gap 을 쓴다. 예전에는 opp_est['bluff'] 를
-                # 날것으로 읽어 see_line 게이트를 우회했다 —
-                # 라인을 못 읽는 사람도 상대 블러프 성향에 완전히 반응했다.
-                bl = _rdz.get('bluff_gap', 0.0)
-                need = PS.blend(need, need*max(0.55, 1.0 - 0.35*bl), _rdz['w'])
-            need = max(0.03, min(0.95, need))
         # ---------- 저항(tocall>0): 순수 집행 ----------
         # 폴드/콜/레이즈 판단은 전부 decide_response(판단 층)가 내린다.
         # 집행부는 그 결과를 칩으로 환산만 한다.

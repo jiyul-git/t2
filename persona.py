@@ -453,6 +453,29 @@ def icm_signal(bf):
     return max(0.0, min(1.0, (float(bf or 1.0) - 1.0) / 3.0))
 
 
+def icm_aware(prof):
+    """ICM 을 얼마나 인지하는가. 0.15 ~ 1.0.
+
+    하한 0.15 — '이번에 죽으면 상금을 못 받는다'는 개념이 아니라 상식이다.
+    인지도는 여기 하나에서만 나온다. 쓰는 쪽이 단위를 정한다.
+    """
+    return 0.15 + 0.85 * min(1.0, sk(prof, 'icm') / 10.0) if prof else 0.15
+
+
+def icm_bf(prof, bf):
+    """**버블팩터 단위** 그대로의 인지값.
+
+    팟오즈 식(need = tocall*bf/pot)은 BF 단위를 요구한다.
+    icm_press 의 0~1 기반 배수를 여기 넣으면 ICM 이 과소반영된다
+    (BF 2.66, icm 5 에서 1.95 여야 할 것이 1.32 가 됐다).
+    같은 인지도를 쓰되 단위가 다르다.
+    """
+    b = float(bf or 1.0)
+    if b <= 1.0:
+        return 1.0
+    return 1.0 + (b - 1.0) * icm_aware(prof)
+
+
 def icm_press(prof, bf, k=1.0):
     """ICM 압박 **배수**. 평시 정확히 1.0, 버블이면 1.x.
 
@@ -470,8 +493,7 @@ def icm_press(prof, bf, k=1.0):
     sig = icm_signal(bf)
     if sig <= 0.0:
         return 1.0
-    aware = 0.15 + 0.85 * min(1.0, sk(prof, 'icm') / 10.0) if prof else 0.15
-    return 1.0 + sig * aware * k
+    return 1.0 + sig * icm_aware(prof) * k
 
 
 TILT_CONCEPT_K = 0.55       # 틸트 1.0 에서 개념이 최대 얼마나 깎이는가
