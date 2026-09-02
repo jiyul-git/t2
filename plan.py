@@ -709,7 +709,11 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             # 실제 사이즈가 아니라 '이 사람이 인식한 사이즈'로 판단한다.
             # 균형 공식 정의역(2팟) 밖을 못 읽는 사람은 팟오즈를 오독한다.
             _sz_true = tocall/max(1.0, float(pot) - tocall)
-            _sz_seen = PS.size_read(profile, _sz_true)
+            # 먼저 '이 상대 기준으로' 정규화하고, 그다음 내 인식 한계를 적용한다.
+            # 순서가 중요하다 — 상대 기준 보정은 관찰이고, size_read 는 내 능력이다.
+            _rdz = PS.read_opponent(profile, opp_est) if opp_est else None
+            _sz_norm = PS.opp_size_norm(_rdz, _sz_true, street)
+            _sz_seen = PS.size_read(profile, _sz_norm)
             need *= PS.call_bias(profile, street, _sz_seen,
                                  made_now, bot.draw_strength(hero, board))
             # 오독한 사이즈로 팟오즈를 다시 계산한다 (인식이 곧 판단 근거다)
@@ -718,12 +722,12 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 need = (_sz_seen*_p0)/max(1.0, _p0 + 2*_sz_seen*_p0)
             # 상대가 블러프를 많이 하는 사람이면 더 넓게 받아야 한다.
             # 개인 편향(call_bias)은 '내가 어떤 사람인가', 이건 '상대가 어떤 사람인가'다.
-            if opp_est:
-                w = PS.exploit_weight(profile, opp_est.get('confidence', 0.0),
-                                      opp_est.get('n', 0))
-                if w > 0.0:
-                    bl = (opp_est.get('bluff', 4.5) - 4.5)/5.0     # -0.9 ~ +1.1
-                    need = PS.blend(need, need*max(0.55, 1.0 - 0.35*bl), w)
+            if _rdz and _rdz.get('w', 0) > 0:
+                # read_opponent 의 bluff_gap 을 쓴다. 예전에는 opp_est['bluff'] 를
+                # 날것으로 읽어 see_line 게이트를 우회했다 —
+                # 라인을 못 읽는 사람도 상대 블러프 성향에 완전히 반응했다.
+                bl = _rdz.get('bluff_gap', 0.0)
+                need = PS.blend(need, need*max(0.55, 1.0 - 0.35*bl), _rdz['w'])
             need = max(0.03, min(0.95, need))
         # ---------- 저항(tocall>0): 순수 집행 ----------
         # 폴드/콜/레이즈 판단은 전부 decide_response(판단 층)가 내린다.

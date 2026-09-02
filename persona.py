@@ -554,6 +554,31 @@ def tilted_view(prof, tilt):
     return out
 
 
+def opp_size_norm(rd, size_frac, street=None):
+    """상대의 **자기 기준** 대비로 사이즈를 정규화한다.
+
+    항상 1.2팟을 치는 사람의 1.2팟은 폴라라이즈가 아니다. 절대 사이즈만 보면
+    그런 사람 앞에서 늘 과다 폴드하게 된다.
+    size_gap / size_big / size_river 는 그걸 재려고 만든 축인데
+    아무도 읽지 않고 있었다.
+    """
+    if not rd or rd.get('w', 0) <= 0:
+        return size_frac
+    w = rd['w']
+    sg = rd.get('size_gap', 0.0)          # +면 평균적으로 크게 침
+    if street == 'river':
+        sr = rd.get('size_river')
+        if sr:
+            sg = 0.5*sg + 0.5*max(-1.0, min(1.0, (float(sr) - 0.62)/0.45))
+    adj = size_frac / (1.0 + w*0.40*max(0.0, sg))
+    if sg < 0:                            # 평소 작게 치는 사람의 큰 벳은 더 무섭다
+        adj = adj * (1.0 + w*0.30*min(1.0, -sg))
+    if size_frac > 1.0:
+        # 오버벳을 자주 하는 사람의 오버벳은 정보가 적다.
+        adj /= (1.0 + w*0.45*max(0.0, rd.get('size_big', 0.0)))
+    return max(0.05, adj)
+
+
 def perceived_edge(prof, field_q=0.6):
     """필드 대비 자기 실력, **자각이 걸린 값**. −1 ~ +1.
 
@@ -743,8 +768,7 @@ def read_opponent(prof, opp_est):
       adaptability— 알아도 자기 전략을 바꿀 의지가 있는가
     어느 하나라도 낮으면 익스플로잇이 약해진다.
     """
-    neutral = {'w': 0.0, 'fold_gap': 0.0, 'bluff_gap': 0.0,
-               'passive': 0.0, 'station': 0.0}
+    neutral = {'w': 0.0, 'fold_gap': 0.0, 'bluff_gap': 0.0, 'passive': 0.0}
     if not prof or not prof.get('concepts') or not opp_est:
         return neutral
     conf = float(opp_est.get('confidence', 0.0) or 0.0)
@@ -833,7 +857,10 @@ def read_opponent(prof, opp_est):
             # passive/station 도 빈도 관찰이다. fold_gap 은 see_freq 로 막아놓고
             # 같은 원천(ftb/aggr)에서 나온 이 둘만 무게이트면 우회로가 된다.
             'passive': max(-1.0, min(1.0, (5.0 - ag)/5.0)) * see_freq,
-            'station': max(-0.5, min(0.5, 0.52 - ftb)) * see_freq}
+            # station 은 fold_gap 의 부호 반전일 뿐이라 별도 축으로 두지 않는다.
+            # 같은 것을 두 이름으로 두면 한쪽만 게이팅되는 사고가 난다
+            # (실제로 예전에 passive/station 이 무게이트로 남아 있었다).
+            }
 
 
 def street_gap(rd, street):

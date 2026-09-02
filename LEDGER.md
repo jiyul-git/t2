@@ -31,11 +31,11 @@
 | `f2fb_gap` | 상대가 4벳에 접는 비율 | preflop (4벳 폭, raise_form) | OK |
 | `size_info` | 사이즈가 레인지를 나누는가 | plan | OK |
 | `passive` | 상대 수동성 | plan (trap_p) | OK |
-| `station` | 안 접는 정도 (= -fold_gap) | — | **죽음** |
-| `size_gap` | 평균적으로 크게 치는가 | — | **죽음** |
-| `size_big` | 극단 사이즈 빈도 | — | **죽음** |
-| `size_river` | 리버 사이즈 | — | **죽음** |
-| `bluff_gap` | 블러프 빈도 | — | **죽음** |
+| ~~`station`~~ | `fold_gap` 의 부호 반전 | — | **제거** (중복 축) |
+| `size_gap` | 평균적으로 크게 치는가 | `persona.opp_size_norm` | OK |
+| `size_big` | 극단 사이즈 빈도 | `persona.opp_size_norm` | OK |
+| `size_river` | 리버 사이즈 | `persona.opp_size_norm` | OK |
+| `bluff_gap` | 블러프 빈도 | `plan` (콜다운 문턱) | OK |
 | `open_gap` ★ | **기준 대비** 오픈 폭 (−1~+2) | defend(역치), table_pressure | OK |
 | `limp_gap` ★ | 림프 빈도 편차 | iso_decision | OK |
 | `see_freq/see_line/see_size` | 관측 능력 게이트 | — | 진단용 |
@@ -61,7 +61,17 @@ BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
 있어도 좁혀야 하는데, 평균을 내면 나머지가 신호를 씻어낸다
 (배수가 0.96~1.03 에 머물렀다. 최댓값으로 바꾸니 0.76~1.05).
 
-미배선 4축 실제 발화량 (300핸드): `size_gap` 538, `bluff_gap` 593
+**해결됨.** `size_gap`/`size_big`/`size_river` 는 `persona.opp_size_norm` 이
+상대의 **자기 기준** 대비로 사이즈를 정규화하는 데 쓴다 —
+항상 1.2팟을 치는 사람의 1.2팟은 폴라라이즈가 아니다.
+절대 사이즈만 보면 그런 사람 앞에서 늘 과다 폴드한다.
+
+`bluff_gap` 은 `plan` 의 콜다운 문턱에 붙는다. 예전에는 `opp_est['bluff']` 를
+날것으로 읽어 **see_line 게이트를 우회**했다 — 라인을 못 읽는 사람도
+상대 블러프 성향에 완전히 반응했다.
+
+`station` 은 `fold_gap` 의 부호 반전일 뿐이라 축을 제거했다.
+같은 것을 두 이름으로 두면 한쪽만 게이팅되는 사고가 난다.
 
 ---
 
@@ -212,7 +222,7 @@ ICM·안테·분산추구가 그 경로에서만 죽어 있었다.
 | **6 관찰과 기억** | `gto.adapt_mult` | 3층 누적 판단. 관찰이 정리되어야 붙는다 |
 | **6 — 상대 레인지 추정** | 기준표 대비 관측 | `Book` 이 절대값(VPIP 34%)으로 쌓는다. `gto.rfi` 대비 배수로 바꾸면 표본이 훨씬 적게 든다 |
 | **7 리뷰** | `perceived_edge`, 판단 로그 | 상대가 왜 그렇게 쳤는지 되짚으려면 판단 시점 값이 남아야 한다 |
-| **포스트플랍 전반** | `size_gap`·`bluff_gap`·`station` | 상대 베팅 해석 축들 |
+| ~~**포스트플랍 전반**~~ | — | **완료** (`opp_size_norm`, `bluff_gap`) |
 | ~~**올인 대면**~~ | — | **완료** (`calloff_cap`) |
 
 ---
