@@ -241,11 +241,18 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             block_p = max(0.0, min(0.42, block_p))
         if sk('blockbet') >= 1 and rng.random() < block_p:
             plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
-        elif sk('potcontrol') >= 1 and rng.random() < min(0.75, pc*0.8 + 0.12 + 0.18*mw):
+        # 머징 — 밸류/블러프 이분법을 넘어 중간 강도로도 친다.
+        # 개념이 낮으면 중간 강도를 전부 팟 컨트롤로 보내고,
+        # 높으면 얇은 밸류로 돌린다. thin_value_* 는 턴·리버 한정이라
+        # 플랍 단계의 이 갈림이 성향과 무관하게 고정돼 있었다.
+        # make_plan 안의 sk() 는 0~3 스케일이다(PS.sk/3.33). 0~10 로 착각하지 말 것.
+        _mg = sk('range_merge')                        # 0~3
+        _pc_p = min(0.75, pc*0.8 + 0.12 + 0.18*mw) * max(0.35, 1.0 - 0.22*_mg)
+        if sk('potcontrol') >= 1 and rng.random() < _pc_p:
             plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
-        elif rel >= 0.45 and made >= 1:
+        elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
             plan = 'value_2street'
-            why.append('중간강도(eq %.2f, rel %.2f) → 얇은 밸류' % (eq, rel))
+            why.append('중간강도(eq %.2f, rel %.2f, 머징 %.1f) → 얇은 밸류' % (eq, rel, _mg))
         else:
             # 폴백이 밸류면 안 된다. rel 0.0 에 made 0 인 완전 미스가
             # '얇은 밸류'로 분류돼, 계획은 밸류인데 실행은 체크하는
@@ -467,6 +474,14 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         if to_act_behind >= 2:
             return 0.0, '뒤에 %d명 → 블러프 포기' % to_act_behind
         p = 0.25 + 0.070*profile.get('bluff', 5) + 0.02*profile.get('gamble', 5)
+        # 상대가 접을 것인가. 아웃 계산(semibluff)과 별개 축이다.
+        # 안 접는 상대에게 세미블러프는 순수 드로우 플레이가 된다.
+        if has_c and opp_est:
+            _fe = PS.sk(profile, 'fold_equity')/10.0
+            _rdf = PS.read_opponent(profile, opp_est)
+            if _rdf.get('w', 0) > 0:
+                _fg = PS.street_gap(_rdf, street)
+                p *= max(0.40, min(1.80, 1.0 + _fe*_rdf['w']*2.2*_fg))
         # 턴/리버 카드가 누구를 도왔는가. 브릭이면 배럴이 먹히고
         # 상대를 도운 카드면 멈춰야 한다.
         # texture.turn_card_effect 가 이걸 재는데 호출부가 없었다.
@@ -475,7 +490,8 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
                                        aggressor_range_high=bool(initiative))
             _bt = min(1.0, PS.sk(profile, 'board_texture')/7.0)
             p *= max(0.35, min(1.70, 1.0 + 0.75*_tce*_bt))
-        p *= (1 - 0.20*max(0, n_opp-1))
+        _mw2 = PS.sk(profile, 'multiway')/10.0 if has_c else 0.5
+        p *= (1 - (0.12 + 0.20*_mw2)*max(0, n_opp-1))
         if not initiative and oop:
             # 동크는 정석이 아니다. 수동형일수록 강하게 억제.
             supp = 0.92 - 0.05*a - 0.02*profile.get('bluff', 5)
@@ -630,7 +646,10 @@ def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0
     a = profile.get('aggr', 5); b = profile.get('bluff', 5)
     base = {'flop': 0.42, 'turn': 0.30, 'river': 0.22}.get(street, 0.30)
     f = base + 0.035*a + 0.020*b
-    f *= (0.62 ** max(0, n_opp-1))          # 다인원일수록 급감
+    # 다인원 축소. 예전에는 0.62 고정이라 **누구나 같은 비율로** 줄였다.
+    # 실제로는 제대로 조이는 사람과 헤즈업처럼 치는 사람이 갈린다.
+    _mw = PS.sk(profile, 'multiway')/10.0 if profile.get('concepts') else 0.5
+    f *= ((0.80 - 0.30*_mw) ** max(0, n_opp-1))
     # 보드 구조. board_danger(젖은 정도)만 보면 A하이·페어보드처럼
     # '아무도 못 맞은' 보드에서 쳐야 한다는 것이 안 나온다.
     # texture.cbet_multiplier 가 그 구조를 이미 갖고 있었는데 호출부가 없었다.

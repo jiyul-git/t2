@@ -13,7 +13,7 @@ EXEC = ['bluff', 'semibluff',
         'blockbet', 'potcontrol', 'trap', 'overbet', 'probe',
         'delayed_cbet', 'equity_denial', 'stackoff', 'reraise']
 # 계산 개념: 공부량에 좌우되는 이론 능력
-CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay', 'open_size', 'pf_defend']
+CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay', 'open_size', 'pf_defend', 'range_merge', 'multiway', 'fold_equity']
 # 기질 축: 능력이 아니라 성격
 TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
           'discipline', 'adaptability', 'consistency', 'attention']
@@ -75,6 +75,15 @@ LOADING = {
  # 디펜스 레인지. 오픈 차트를 아는 것과 별개다 —
  # 'BB 과다 폴드'는 가장 흔하고 비싼 누수로 꼽힌다 (잠정)
  'pf_defend':         (0.85, 0.15, 0.30, 4.0),
+ # --- 포스트플랍 추가 (base/spread 잠정) ---
+ # 밸류/블러프 이분법을 넘어 중간 강도로 씬하게 치는가.
+ # thin_value_* 는 턴·리버 한정이라 전반적 머징이 빠져 있었다
+ 'range_merge':       (0.90, 0.20, 0.30, 3.2),
+ # 다인원 조정. 예전에는 0.62^(n-1) 고정 상수라 누구나 같은 비율로 줄였다.
+ # 실제로는 제대로 조이는 사람과 헤즈업처럼 치는 사람이 갈린다
+ 'multiway':          (0.60, -0.10, 0.45, 4.3),
+ # 이 상대가 접을 것인가. semibluff 는 아웃 계산이고 이건 별개다
+ 'fold_equity':       (0.70, 0.30, 0.40, 4.1),
 }
 
 # ---------- 개념별 개인 편차 ----------
@@ -133,6 +142,9 @@ SPREAD = {
     'stack_decay':      2.45,   # 소수만 함 — 가장 날카롭게 갈리는 축
     'open_size':        1.75,
     'pf_defend':        2.15,   # 아는 사람과 모르는 사람이 크게 갈린다
+    'range_merge':      2.05,   # 배워야만 하는 것. 갈린다
+    'multiway':         1.55,   # 경험으로도 붙어서 중간
+    'fold_equity':      1.70,
 }
 
 

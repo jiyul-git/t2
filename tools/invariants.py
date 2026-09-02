@@ -269,9 +269,14 @@ class ChaosHero:
                 return ('raise', tgt)
             return ('allin', 0)
         if r < 0.30: return ('check', 0)
+        # 최소 벳(= 빅블라인드) 아래는 엔진이 정당하게 거부한다.
+        # 클램프하지 않으면 도구가 자기 버그를 제품 버그로 보고한다.
         mult = self.rng.choice([0.2, 0.5, 1.0, 3.0, 9.0, 20.0])
-        amt = min(stack, int(pot*mult))
-        return ('bet', amt) if amt > 0 else ('check', 0)
+        mn = st.get('min_raise', 0) or 0
+        amt = min(stack, max(mn, int(pot*mult)))
+        if amt <= 0 or amt < mn:
+            return ('check', 0)
+        return ('allin', 0) if amt >= stack else ('bet', amt)
 
 
 # ---------- 실행 ----------
