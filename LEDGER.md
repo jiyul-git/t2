@@ -89,8 +89,14 @@ BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
 | `persona.icm_press` | ICM 압박 **배수** | depth_feel, variance_seek | OK |
 | `field.in_bubble` | 버블 판정 **단일 출처** | field, fieldsim, view | OK |
 | `persona.icm_signal(bf)` | BF → 0~1 신호 | variance_seek | OK |
-| `icm.icm_pressure` | 칩당 상금 한계하락 | — | **죽음** |
-| `icm.required_equity` | BF 반영 필요승률 | — | **죽음** |
+| ~~`icm.icm_pressure`~~ | | | **제거** (bubble_factor 가 비율로 냄) |
+| ~~`icm.required_equity`~~ | | | **제거** (`plan.calldown_need`) |
+| ~~`icm.is_bubble`~~ | | | **제거** (`field.in_bubble`) |
+| ~~`preflop.vs_shove`~~ | | | **제거** (`calloff_cap`) |
+| ~~`preflop.depth_band`~~ | | | **제거** (`feel_of`) |
+| ~~`bot.act`~~ | | | **제거** (`plan.act_with_plan`) |
+| ~~`session.showdown`~~ | | | **제거** (`award_pots`) |
+| ~~`persona.sk_tilted` / `err`~~ | | | **제거** (`tilted_view`) |
 | `preflop.calloff_cap` ★ | 올인 대면 콜 문턱 | `defend_decision` (올인 분기) | OK |
 | `preflop.calloff_decision` | 콜오프 판단 | `defend_decision` | OK |
 | `preflop.vs_shove` | 구형. 에쿼티 함수 필요 | — | 미사용 (calloff_cap 로 대체) |

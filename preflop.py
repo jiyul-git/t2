@@ -66,15 +66,8 @@ def feel_of(prof, bb, field_avg_bb=None, erosion=0.0, field_q=0.6, bf=1.0):
                           PS.icm_press(prof, bf))
 
 
-def depth_band(bb):
-    """**이행용.** 새 코드는 feel_of / depth.base_feel 을 쓸 것.
-    남아 있는 이유는 gto.rfi 와 ranges 가 아직 밴드 문자열을 받기 때문이다."""
-    if bb < 8:   return 'micro'     # 순수 푸시/폴드
-    if bb < 15:  return 'short'     # 쇼브 위주 + 소수 레이즈
-    if bb < 25:  return 'mid'       # 레이즈/쇼브 혼합
-    if bb < 60:  return 'normal'
-    return 'deep'
 
+# depth_band 는 제거했다. feel_of / depth.base_feel 이 대체했다.
 DEPTH_OPEN_MULT = {'micro':2.40,'short':1.75,'mid':1.35,'normal':1.0,'deep':0.95}
 
 def round_unit_bb(bb_chips):
@@ -287,7 +280,11 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     # 카드에 수렴시키는 것이다. 못 이기니까 운으로 가는 것.
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
     # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
-    thr = _open(prof, pos, seats, bb, ante) * table_pressure(behind_reads)
+    # 뒤 사람의 성향(3벳 위협)과 스택(리쇼브 위협)은 다른 압력이다.
+    # 후자는 hotzone_pressure 가 재는데 호출부가 없어 죽어 있었다.
+    thr = (_open(prof, pos, seats, bb, ante)
+           * table_pressure(behind_reads)
+           * hotzone_pressure(prof, pos, bb, behind_stacks or []))
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
     r = pct(hand)
     if r > thr: return ('fold', 0)
@@ -417,15 +414,31 @@ def reshove_range(prof, def_pos, opener_pos, bb, open_bb, n_callers=0):
     return max(0.02, min(0.60, cap))
 
 
+def reshove_weight(stack_bb):
+    """그 스택이 리쇼브 위협인 정도. 0~1 연속.
+
+    예전에는 in_hotzone(12.0 <= bb <= 26.0) 하드 경계였다.
+    11.9bb 는 위협이 아니고 12.1bb 는 위협이 되는 것은 말이 안 된다.
+    깊이 인식 곡선으로 재면 자연스럽게 이어진다 —
+    너무 얕으면 이미 다 넣을 것이고, 너무 깊으면 리쇼브가 아니라 3벳이다.
+    """
+    f = _DP.base_feel(stack_bb)
+    if f <= 0.0 or f >= 0.26:
+        return 0.0
+    return max(0.0, 1.0 - abs(f - 0.09) / 0.17)
+
+
 def hotzone_pressure(prof, pos, bb, behind_stacks):
-    """뒤에 핫존 스택이 있으면 오픈 레인지를 줄인다 (리쇼브 압박)."""
-    n_hot = sum(1 for s in behind_stacks if in_hotzone(s))
-    if not n_hot: return 1.0
+    """뒤에 리쇼브 위협이 있으면 오픈 레인지를 줄인다. 배수 1.0 기준."""
+    if not behind_stacks:
+        return 1.0
+    w = sum(reshove_weight(s) for s in behind_stacks)
+    if w <= 0.01:
+        return 1.0
     aware = 1.0
     if prof.get('concepts'):
-        import persona as _PS
-        aware = min(1.2, _PS.sk(prof, 'spr')/6.0)   # 스택 인식이 낮으면 압박을 모름
-    return max(0.55, 1.0 - 0.13*n_hot*aware)
+        aware = min(1.2, PS.sk(prof, 'spr')/6.0)
+    return max(0.55, 1.0 - 0.15*w*aware)
 
 
 def _tr_loose(prof):
@@ -635,13 +648,9 @@ def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None):
         return ('limp', 1.0)
     return ('fold', 0)
 
-def vs_shove(prof, hand, bb_risk, pot, tocall, bubble_factor, equity_fn):
-    """숏스택 쇼브에 대한 콜오프. ICM 반영."""
-    eq = equity_fn()
-    need = (tocall * bubble_factor) / (pot + tocall)
-    return ('call', tocall) if eq >= need else ('fold', 0)
 
-
+# vs_shove 는 제거했다. 에쿼티 함수를 인자로 받는 구형 인터페이스였고
+# 호출부가 없었다. 올인 대면은 calloff_cap 이 맡는다.
 def calloff_cap(prof, def_pos, opener_pos, bb, open_bb, raise_level,
                 bf=1.0, exploit=None, n_callers=0):
     """올인 대면 콜 문턱. 일반 디펜스와 **다른 계산이다.**

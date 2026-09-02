@@ -19,7 +19,7 @@ CUR = {}
 def open_decision(prof, pos, bb, hand, rng, **kw):
     r = _open_d(prof, pos, bb, hand, rng, **kw)
     CUR['route'] = 'open_decision'
-    CUR['thr'] = round(PF._open(prof, pos) * PF.DEPTH_OPEN_MULT[PF.depth_band(bb)], 4)
+    CUR['thr'] = round(PF._open(prof, pos, bb=bb), 4)
     return r
 
 

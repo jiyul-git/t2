@@ -629,6 +629,13 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
     (shape_size 는 '사람다운 끝자리'만 만드는 표현 계층이므로 집행부에 남긴다.)
     """
     base = SIZING.get(plan, {}).get(street, 0.0)
+    # 보드 구조 사이징. texture.size_fraction 이 마른/연결/페어/모노톤을
+    # 구분하는데 호출부가 없어 죽어 있었다. SIZING 표는 계획별 상수라
+    # 같은 계획이면 어떤 보드든 같은 사이즈가 나왔다.
+    if base > 0:
+        _bt2 = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
+        _tf = TX.size_fraction(board, plan, street)
+        base = base*(1.0 - 0.45*_bt2) + _tf*(0.45*_bt2)
     # 에쿼티 부정 — 상대에게 드로우가 많은 보드에서 크게 쳐서 오즈를 안 준다.
     # 개념이 낮으면 젖은 보드든 마른 보드든 같은 사이즈를 친다.
     if base > 0 and profile.get('concepts') and street != 'river':

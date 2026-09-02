@@ -320,9 +320,6 @@ def temper(prof, key, default=5.0):
     return prof.get({'aggression':'aggr','looseness':'tight','gamble':'gamble',
                      'tilt_prone':'tilt'}.get(key, key), default)
 
-def err(prof):
-    return error_rate(prof) if prof.get('temper') else 0.10
-
 # 개념 숙련도 → 실행 확률 배수 (0에서 0, 5에서 1.0, 10에서 ~1.8)
 def gate(prof, concept, floor=0.0):
     s = sk(prof, concept)
@@ -521,11 +518,6 @@ def tilt_decay(prof, key, tilt):
     # 개념 간 저항 차이가 7%p 밖에 안 나 '무너지는 순서'가 드러나지 않는다.
     calc = max(0.0, min(1.0, (calc - 0.50) / 0.32))     # 0(체화) ~ 1(계산)
     return max(0.15, 1.0 - t * TILT_CONCEPT_K * (0.25 + 0.75*calc))
-
-
-def sk_tilted(prof, key, tilt=0.0):
-    """틸트를 반영한 개념값. 판단 층은 sk 대신 이것을 쓴다."""
-    return sk(prof, key) * tilt_decay(prof, key, tilt)
 
 
 def tilt_direction(prof):
@@ -987,3 +979,8 @@ def profile_card(prof):
     """사람이 읽는 한 줄 요약."""
     code, ko = tier(prof)
     return '%s(%s) 실력 %.1f / 상위 %d%%' % (ko, code, overall_skill(prof), skill_pct(prof))
+
+
+# sk_tilted 는 제거했다. tilted_view 가 판단 층 진입점에서 개념 벡터를
+# 통째로 깎으므로 호출부마다 따로 부를 필요가 없다.
+# err() 는 error_rate 의 한 줄 래퍼였고 호출부가 없었다.

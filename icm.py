@@ -123,17 +123,6 @@ def field_bf(my_stack, avg_stack, remaining, itm, payout_flat=0.0,
     return max(1.0, min(4.0, 1.0 + MAX_PREMIUM * prox * stk * flat))
 
 
-def is_bubble(remaining, itm):
-    """버블 판정 **단일 출처**.
-
-    예전에는 세 곳에 흩어져 있었고 값도 달랐다
-    (field.py 두 곳이 itm*1.35 와 itm*1.2, fieldsim.py 가 itm*1.2).
-    """
-    if not remaining or not itm:
-        return False
-    return itm < remaining <= itm * 1.20
-
-
 # =====================================================================
 # 필드 단위 BF — 정확 ICM 은 9명이 한계다 (10명 2.9초, 11명 30초).
 # 그 위는 곡선으로 근사한다.
@@ -222,3 +211,7 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
         return bubble_factor(list(stacks), pays, seat_idx)
     avg = field_avg if field_avg else (sum(live)/len(live))
     return field_bf(stacks[seat_idx], avg, rem, itm, payout_flat)
+
+
+# is_bubble 은 제거했다. 버블 판정은 field.Field.in_bubble 하나뿐이다
+# (예전에 정의가 세 곳에 서로 다른 값으로 있었다).

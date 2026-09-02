@@ -153,9 +153,6 @@ def depth_feel(bb, prof=None, field_avg_bb=None, erosion_per_hand=0.0,
 # ---------- 하위 호환 ----------
 # 기존 depth_band 소비처를 한 번에 못 바꾸므로 역변환을 둔다.
 # 새 코드는 depth_feel 을 직접 쓸 것. 이 함수는 이행용이다.
-def band_of(feel):
-    if feel < 0.05:  return 'micro'
-    if feel < 0.12:  return 'short'
-    if feel < 0.20:  return 'mid'
-    if feel < 0.75:  return 'normal'
-    return 'deep'
+
+
+# band_of 는 제거했다. 이행용 역변환이었고 소비처가 사라졌다.

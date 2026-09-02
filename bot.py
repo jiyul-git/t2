@@ -69,61 +69,6 @@ def board_danger(board):
     if len(board)<=4 and m==2: d+=0.20
     return min(1.0,d)
 
-def act(hero, board, profile, pot, tocall, stack, street, n_opp=1, seed=None,
-        aggr_range=None, initiative=True, oop=False):
-    """returns ('fold'|'check'|'call'|'bet'|'raise', amount)
-       tocall>0 이면 공격자의 양극화된 벳팅 레인지 상대로 에쿼티 산출"""
-    rng=random.Random(seed)
-    if tocall>0 and board:
-        ar = aggr_range or (0.20, profile.get('bluff',5))
-        callers=[(0.30,5)]*(n_opp-1)
-        eq=equity_vs_betting(hero, board, [ar], callers, street, sims=600, seed=seed)
-    elif board:
-        eq=equity_vs_range(hero, board, [0.30]*n_opp, sims=500, seed=seed)
-    else:
-        eq=equity(hero, board, n_opp, sims=300, seed=seed)
-    g=profile['gamble']; a=profile['aggr']; bl=profile['bluff']; icm=profile['icm']
-    # 팟 컨트롤 성향: 규율 있고 ICM 민감하며 도박성 낮을수록 높다 (0~1)
-    pc = max(0.0, min(1.0, (icm + (10-g) + (10-a)) / 30.0))
-    mid = 0.42 <= eq < 0.62          # 중간 강도 = 팟 컨트롤 대상 구간
-    # ICM / goal tightening
-    tighten = 0.02*(icm-5)/4 + (0.03 if profile['goal']=='survive' else -0.01 if profile['goal']=='accum' else 0)
-    slack = 0.04*(g-5)/4
-    if tocall>0:
-        need = tocall/(pot+tocall)
-        thr = need + tighten - slack
-        if mid and rng.random() < pc:
-            return ('call', tocall) if eq >= need + tighten - slack else ('fold', 0)
-        if eq >= need + 0.22 and a>=6 and rng.random() < (0.35+0.05*a)*(1-0.7*pc):
-            amt=min(stack, int(round((pot+2*tocall)*rng.choice([0.9,1.1,1.3])/100.0))*100)
-            return ('raise', max(amt, tocall*2))
-        if eq >= thr: return ('call', tocall)
-        # bluff-raise only with real bluff tendency and low equity
-        if eq < 0.25 and bl>=7 and rng.random()<0.10:
-            return ('raise', min(stack, int((pot+2*tocall)*1.0)))
-        return ('fold',0)
-    else:
-        if eq >= 0.62:
-            dang = board_danger(board)
-            # 얇은 밸류 + 위험 보드 + 팟컨트롤 성향 → 체크백
-            if eq < 0.75 and street!='river' and rng.random() < pc*(0.30+0.45*dang):
-                return ('check',0)
-            frac = 0.55 if profile['value']=='lead' else rng.choice([0.4,0.6,0.75])
-            if eq < 0.75: frac *= (1-0.35*pc)
-            if profile['value']=='xr' and street!='river' and rng.random()<0.22: return ('check',0)
-            return ('bet', min(stack, int(round(pot*frac/100.0))*100))
-        if mid and initiative and rng.random() < (0.45 if a>=7 else 0.20)*(1-0.85*pc):
-            return ('bet', min(stack, int(round(pot*0.33/100.0))*100))
-        # 블러프: 이니셔티브 없으면(=프리플랍 어그레서가 아니면) 대폭 축소.
-        # OOP에서 어그레서에게 리드하는 동크벳은 더 드물다.
-        bluff_freq = bl/24.0
-        if not initiative: bluff_freq *= 0.30
-        if oop: bluff_freq *= 0.45
-        if n_opp >= 2: bluff_freq *= 0.55
-        if eq<0.35 and rng.random() < bluff_freq:
-            return ('bet', min(stack, int(round(pot*rng.choice([0.4,0.6])/100.0))*100))
-        return ('check',0)
-
 # ---- range-aware equity ----
 def _pf_score(c1,c2):
     a,b=sorted([RV[c1[0]],RV[c2[0]]],reverse=True)
@@ -409,3 +354,7 @@ def equity_vs_betting(hero, board, aggressors, callers, street, sims=600, seed=N
     if len(_EQ_CACHE) > 200000: _EQ_CACHE.clear()      # 장시간 세션 메모리 상한
     _EQ_CACHE[key] = out
     return out
+
+
+# act() 는 제거했다. plan.act_with_plan 이 완전히 대체했고 호출부가 없었다.
+# 두 벌을 남기면 '어느 쪽이 진짜 봇 행동인가'가 불명확해진다.

@@ -11,11 +11,6 @@ def best5(cards): return bot.eval7(cards)
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
-def showdown(hole, board, contenders):
-    """사이드팟 포함 순위 판정. -> [(seat, rank)] 강한 순"""
-    ranked = sorted(contenders, key=lambda s: best5(hole[s]+board), reverse=True)
-    return [(s, best5(hole[s]+board)) for s in ranked]
-
 def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
     """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역
 
@@ -646,3 +641,7 @@ class HandRun:
                 'hole': {s: h.hole[s] for s in live}, 'stacks': dict(h.stacks),
                 'hash': h.hash, 'full_log': getattr(self, 'full_log', []),
                 'pos': {k: v for k, v in h.pos.items()}}
+
+
+# showdown() 은 제거했다. award_pots 가 같은 랭킹을 내부에서 계산하고
+# 사이드팟까지 처리한다. 호출부가 없었다.
