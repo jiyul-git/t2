@@ -1207,7 +1207,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                      n_opp, seed=seed, opp_est=opp_est)
         st.setdefault('refreshed', []).append(street)
 
-    st = river_fix(st, hero, board)
+    st = river_fix(st, hero, board, profile, opp_range, rng)
     st['plan'] = _allowed(profile, st['plan'], rng)
 
     # 의도는 무저항 시점에만, 한 번만 확정한다.
@@ -1218,20 +1218,48 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     return st
 
 
-def river_fix(state, hero, board):
-    """리버 도달 시 드로우 기반 계획은 무효. 메이드 여부로 재분류."""
+def river_fix(state, hero, board, profile=None, opp_range=None, rng=None):
+    """리버 도달 시 드로우 기반 계획은 무효. 메이드 여부로 재분류.
+
+    **미스한 드로우가 전부 giveup 으로 가면 안 된다.** busted 드로우는
+    리버 블러프의 대표 후보다 — 쇼다운 가치가 없어서 체크해도 못 이기고,
+    그 드로우를 구성하던 카드가 상대의 완성 콤보를 지운다.
+    예전에는 그 라인이 통째로 없어서 리버 블러프가 거의 나오지 않았다.
+    """
     if len(board) < 5: return state
     st = dict(state)
     st['outs'] = 0
-    if st.get('plan') == 'semibluff':
-        made = bot.made_strength(hero, board)
-        rel = st.get('rel', 0.5)
-        if made >= 2 or rel >= 0.65:
-            st['plan'] = 'value_2street'
-            st['why'] = (st.get('why') or []) + ['리버: 드로우 완성 → 밸류 전환']
-        else:
-            st['plan'] = 'giveup'
-            st['why'] = (st.get('why') or []) + ['리버: 드로우 미스 → 포기']
+    if st.get('plan') != 'semibluff':
+        return st
+    made = bot.made_strength(hero, board)
+    rel = st.get('rel', 0.5)
+    # 완성 판정. 계단(made>=2 or rel>=0.65)이 아니라 둘을 함께 본다.
+    if made >= 2 or rel >= 0.62:
+        st['plan'] = 'value_2street'
+        st['why'] = (st.get('why') or []) + ['리버: 드로우 완성 → 밸류 전환']
+        return st
+
+    # 미스. 블러프로 갈지 포기할지 — 개념과 블로커가 정한다.
+    p_bluff = 0.0
+    if profile and profile.get('concepts'):
+        _bl = PS.sk(profile, 'bluff')/10.0
+        _br = PS.sk(profile, 'barrel_river')/10.0
+        p_bluff = 0.10 + 0.55*_bl*_br
+        if opp_range:
+            # 콜할 콤보를 지웠으면 블러프가 통한다. 순 효과를 본다.
+            _net = R.blocker_effect(hero, opp_range, board, 'river', 0.75, False)
+            _bg = max(0.0, min(1.0, (PS.sk(profile, 'blocker') - 1.0)/7.0))
+            p_bluff *= max(0.35, min(1.80, 1.0 + 4.0*_net*_bg))
+        # 쇼다운 가치가 조금이라도 있으면 블러프로 쓰면 안 된다.
+        if made >= 1 or rel >= 0.42:
+            p_bluff *= 0.15
+    if rng is not None and rng.random() < max(0.0, min(0.75, p_bluff)):
+        st['plan'] = 'bluff_2street'
+        st['why'] = (st.get('why') or []) + [
+            '리버: 드로우 미스 → 블러프 전환(%.0f%%)' % (p_bluff*100)]
+    else:
+        st['plan'] = 'giveup'
+        st['why'] = (st.get('why') or []) + ['리버: 드로우 미스 → 포기']
     return st
 
 
