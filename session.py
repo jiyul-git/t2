@@ -1,7 +1,7 @@
 """제너레이터 기반 재개형 핸드 진행 + 쇼다운/사이드팟 정산 + 토너 세션."""
 import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
-import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO
+import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -355,10 +355,20 @@ class HandRun:
                 for o in r2.live():
                     if o == s: continue
                     oax, _ = h.axes(o)
-                    orange = R.preflop_range(oax, h.pos[o],
-                                             'open' if o == aggressor else 'call',
+                    # 3벳을 친 상대라면 폴라라이즈 정도를 반영한다.
+                    _act_o = 'open' if o == aggressor else 'call'
+                    _pol = 0.0
+                    _oe = RD.perceived_profile(
+                        h.book, self._pid(s), self._pid(o), ax,
+                        random.Random(self._dseed(s, street, 'polar', o)))
+                    if _oe:
+                        _rdp = PS.read_opponent(ax, _oe)
+                        _pol = _rdp.get('tb_polar', 0.0)
+                        if _rdp.get('w', 0) > 0 and self._was_3bettor(o):
+                            _act_o = '3bet'
+                    orange = R.preflop_range(oax, h.pos[o], _act_o,
                                              h.bbs(o), set(board), opener_pos=h.pos.get(aggressor),
-                                             seats=_seats, ante=_ante)
+                                             seats=_seats, ante=_ante, polar=_pol)
                     # 관측된 포스트플랍 액션으로 레인지를 좁힌다.
                     # 이걸 빼면 상대가 무슨 행동을 했든 매 스트리트 프리플랍 레인지가 된다.
                     # 상대 레인지는 '이 사람이 인식하는 만큼'만 좁혀진다 (range_read).
@@ -528,6 +538,18 @@ class HandRun:
 
         self.result = self._finish(contrib, dead, folded, live, h.board, 'showdown')
         return
+
+    def _was_3bettor(self, seat):
+        """이 좌석이 프리플랍에서 리레이즈(3벳 이상)를 쳤나."""
+        n = 0
+        for row in (getattr(self, 'full_log', []) or []):
+            if row[0] != 'preflop':
+                continue
+            if row[2] in ('raise', 'allin'):
+                n += 1
+                if n >= 2 and row[1] == seat:
+                    return True
+        return False
 
     def _reads_for(self, me, seats, ax):
         """여러 좌석에 대한 추정치 목록. 관찰이 없으면 중립값이 나온다."""

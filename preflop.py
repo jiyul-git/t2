@@ -520,6 +520,12 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
             tot = max(tp, min(0.95, tot * (1.0 + w*0.8*tbg)))
             # 3벳 빈도만으로는 부족하다. '3벳은 자주 하는데 4벳에는 접는' 사람과
             # '4벳도 안 접는' 사람은 4벳 블러프 여부가 정반대다.
+            # 3벳 레인지가 폴라라이즈됐으면 아래 덩어리가 크다는 뜻이다.
+            # 폴드가 아니라 **참여**로 대응한다 — 콜을 넓히고 4벳을 넓힌다.
+            pol = exploit.get('tb_polar', 0.0)
+            if pol > 0.02:
+                tot = max(tot, min(0.95, tot * (1.0 + w*0.85*pol)))
+                tp = max(0.0, min(0.9, tp * (1.0 + w*1.10*pol)))
             f2fb = exploit.get('f2fb_gap', 0.0)
             tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2fb)))
             tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2fb)))

@@ -22,7 +22,7 @@ _base_open = pf._open
 _traits    = pf._tr
 
 def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
-                  opener_pos=None, open_bb=2.5, seats=8, ante=True):
+                  opener_pos=None, open_bb=2.5, seats=8, ante=True, polar=0.0):
     """액션 경로로부터 그 플레이어의 프리플랍 레인지.
        call/3bet은 실제 디펜스 역치와 동일한 구간을 쓴다 (중첩 없음)."""
     base = _base_open(prof_type, pos, seats, bb, ante)
@@ -38,8 +38,26 @@ def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
             lo, hi = (0.0, tp) if action == '3bet' else (tp, tot)
         else:
             hi = t['threebet']*3.0 if action == '3bet' else min(0.85, t['call']*2.4)
+
+    ok = lambda c: c[0] not in dead and c[1] not in dead
+    if action == '3bet' and polar > 0.02:
+        # **폴라라이즈된 3벳 레인지는 상위 N% 슬라이스가 아니다.**
+        # 밸류 덩어리(위)와 블러프 덩어리(아래)가 따로 있고 가운데가 비어 있다.
+        # 슬라이스로 만들면 로우 오프숏이 아예 안 들어가서,
+        # 상대가 그걸로 3벳한다는 것을 플랍 계획이 가정하지 못한다.
+        val_hi = hi * (1.0 - 0.55*polar)                  # 밸류 몫은 줄고
+        blf_lo = min(0.90, hi + 0.10 + 0.25*polar)        # 아래쪽에서 블러프를 뽑는다
+        blf_hi = min(0.95, blf_lo + (hi - val_hi) * 2.2)
+        out = []
+        for c in _SORTED:
+            if not ok(c):
+                continue
+            v = pf.PCT[pf.cls(list(c))]
+            if v <= val_hi or (blf_lo < v <= blf_hi):
+                out.append(c)
+        return out
     return [c for c in _SORTED
-            if lo < pf.PCT[pf.cls(list(c))] <= hi and c[0] not in dead and c[1] not in dead]
+            if lo < pf.PCT[pf.cls(list(c))] <= hi and ok(c)]
 
 def narrow(r, board, keep_frac, mode='top'):
     if not board or not r: return r

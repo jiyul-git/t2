@@ -747,6 +747,19 @@ def exploit_weight(prof, confidence=0.0, n_hands=0):
     return round(max(0.0, min(0.85, trait * data)), 3)
 
 
+def _polar(observed, value_base):
+    """관측 빈도 중 기준(밸류 몫)을 넘는 비율. 0~1.
+
+    기준보다 넓게 치는 만큼이 폴라라이즈된 몫이다.
+    open_gap 과 같은 구조 — 절대 빈도가 아니라 기준 대비로 본다.
+    """
+    o = max(0.0, float(observed or 0.0))
+    v = max(1e-4, float(value_base))
+    if o <= v:
+        return 0.0
+    return max(0.0, min(1.0, (o - v) / o))
+
+
 def read_opponent(prof, opp_est):
     """상대 추정치를 '어떻게 착취할 것인가'로 번역한다. 판단 층의 단일 입구.
 
@@ -836,6 +849,21 @@ def read_opponent(prof, opp_est):
             'limp_gap': max(-0.5, min(1.5,
                             (float(g('pf_limp', 0.06) or 0.06) - 0.06) * 6.0)) * see_freq,
             'tb_gap':   max(-0.5, min(0.5, g('pf_3bet', 0.07) - 0.07)) * 4.0 * see_freq,
+            # 3벳 레인지가 얼마나 폴라라이즈됐는가. 0(전부 밸류) ~ 1(대부분 블러프).
+            #
+            # **이것은 '블러프했다'는 판정이 아니다.** 프리플랍 블러프는 쇼다운까지
+            # 가야 확인되는데 리레이즈에 바로 접는 경우가 많아 표본이 거의 없다.
+            # 그리고 4벳에 접었다고 블러프였던 것도 아니다 — AK 로 3벳하고
+            # 4벳에 접는 것은 밸류 3벳이다.
+            #
+            # 그래서 개별 핸드가 아니라 **레인지 폭**에 대한 진술로 둔다.
+            # "3벳이 잦다 -> 그 안에 로우 오프숏도 있겠다 -> 그걸 가정하고 친다".
+            # 소비처도 판정이 아니라 레인지 추정과 참여 결정이다.
+            #
+            # 빈도만 세면 되는 tb_gap 과 달리 레인지 구성을 읽어야 하므로
+            # see_line 으로 막고 표본 요구도 더 높다(n/28).
+            'tb_polar': _polar(g('pf_3bet', 0.07), 0.055) * see_line
+                        * min(1.0, (opp_est.get('n', 0) or 0) / 28.0),
             'f2tb_gap': fg(g('pf_fold_to_3bet', 0.55) + 0.52 - 0.55) * see_freq,
             # 4벳 축. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
             'fb_gap':   max(-0.5, min(0.5, g('pf_4bet', 0.04) - 0.04)) * 6.0 * see_freq,
