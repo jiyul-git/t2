@@ -6,6 +6,7 @@ from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
 MAXSEAT = 8
+BOT_SUFFIX = '_alt' if os.environ.get('T2_LIVE_STATE') else ''
 # 켜면 핸드 실패를 삼키지 않고 즉시 올린다. 디버깅·검증용.
 STRICT = bool(os.environ.get('T2_STRICT'))
 
@@ -165,6 +166,36 @@ class Field:
                 'leader': self.chip_leader()}
 
     # ---------- 한 핸드 ----------
+    # 봇 테이블 기록. 0=끄기, 1=요약, 2=전체
+    BOT_LOG = int(os.environ.get('T2_BOT_LOG', '1'))
+
+    def _log_bot_hand(self, tb, h, run):
+        """히어로 테이블 밖의 핸드도 남긴다.
+
+        예전에는 히어로가 앉은 테이블만 아카이브했다. 그래서
+        '다른 테이블에서 무슨 일이 있었나'와 봇 행동의 통계 검증이
+        불가능했다. 다만 400명 x 50테이블이면 양이 크므로 기본은 요약이다.
+        """
+        if not self.BOT_LOG:
+            return
+        res = getattr(run, 'result', None) or {}
+        rec = {'hand_no': self.hand_no, 'table': tb.id, 'level': self.level,
+               'blinds': list(self.blinds()),
+               'pids': {str(k): v for k, v in getattr(h, 'seat_pid', {}).items()},
+               'pot': res.get('pot'), 'how': res.get('how'),
+               'winners': res.get('winners'),
+               'board': res.get('board'),
+               'stacks': {str(k): v for k, v in h.stacks.items()}}
+        if self.BOT_LOG >= 2:
+            rec['full_log'] = res.get('full_log', [])
+            rec['intents'] = getattr(h, 'intents', [])
+            rec['hole'] = {str(k): v for k, v in h.hole.items()}
+        try:
+            with open(os.path.join(D, 'bot_hands%s.jsonl' % BOT_SUFFIX), 'a') as fp:
+                fp.write(json.dumps(rec, ensure_ascii=False) + '\n')
+        except OSError:
+            pass
+
     def _play_table(self, tb, fast=True):
         """봇 전용 테이블 한 핸드. 실제로 돌려서 스택을 갱신한다."""
         alive = tb.alive()
@@ -184,6 +215,7 @@ class Field:
             run.start()
             for i in range(len(alive)):
                 alive[i]['stack'] = int(h.stacks.get(i+1, alive[i]['stack']))
+            self._log_bot_hand(tb, h, run)
         except Exception as e:
             # 조용히 넘기지 않는다. 예전에는 return None 뿐이라
             # 봇 로직 버그가 필드 전체에서 핸드를 건너뛰게 하고도 드러나지 않았다.

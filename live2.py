@@ -85,7 +85,7 @@ def load():
 def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
              hands_per_level=12, fmt=None):
     for fn in ('hand_archive2%s.jsonl' % _SUFFIX, 'book%s.json' % _SUFFIX,
-               'dynamics%s.json' % _SUFFIX):
+               'dynamics%s.json' % _SUFFIX, 'bot_hands%s.jsonl' % _SUFFIX):
         p = os.path.join(D, fn)
         if os.path.exists(p):
             try: os.remove(p)

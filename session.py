@@ -413,10 +413,29 @@ class HandRun:
                 _pl = h.plans[key]
                 h.intents = getattr(h, 'intents', [])
                 if not any(i['street'] == street and i['seat'] == s for i in h.intents):
-                    h.intents.append({'street': street, 'seat': s, 'type': ax.get('type'),
-                                  'plan': _pl.get('plan'), 'why': _pl.get('why'),
-                                  'rel': _pl.get('rel'), 'eq': _pl.get('eq'),
-                                  'outs': _pl.get('outs'), 'blocker': _pl.get('blocker')})
+                    # 리뷰가 코드를 고칠 수 있으려면 '무엇을 했나'가 아니라
+                    # **'그 시점에 무엇을 봤나'**가 남아야 한다.
+                    # 오늘 디버깅에서 매번 없어서 막혔던 값들이다.
+                    h.intents.append({
+                        'street': street, 'seat': s, 'type': ax.get('type'),
+                        'plan': _pl.get('plan'), 'why': _pl.get('why'),
+                        'rel': _pl.get('rel'), 'eq': _pl.get('eq'),
+                        'outs': _pl.get('outs'), 'made': _pl.get('made'),
+                        'blocker': _pl.get('blocker'),
+                        'blocker_net': _pl.get('blocker_net'),
+                        'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),
+                        'spr': _pl.get('spr'), 'danger': _pl.get('danger'),
+                        # 계획이 언제 세워졌고 어느 스트리트에서 갱신됐나.
+                        # 'refresh 가 안 돌아서 낡은 rel 로 판단'을 잡으려면 필요하다.
+                        'street_made': _pl.get('street_made'),
+                        'refreshed': list(_pl.get('refreshed') or []),
+                        'deviations': list(_pl.get('deviations') or []),
+                        # 상황 문맥. 같은 판단이 버블에서 달라지는지 본다.
+                        'bf': round(h.bf(s), 3), 'tilt': h.axes(s)[1],
+                        'oop': (h.POST.index(h.pos[s]) < 3),
+                        'init': RU.has_initiative(s, aggressor),
+                        'n_opp': n_opp, 'behind': behind,
+                    })
                 # --- 배팅라인 리딩: 진짜 프로필이 아니라 '내가 관찰한 추정치'로 ---
                 read_val = None
                 est = None
@@ -449,6 +468,12 @@ class HandRun:
                                                 n_opp=n_opp, to_act_behind=behind, read=read_val,
                                                 opp_est=est if tc > 0 and aggressor is not None
                                                         and aggressor != s else None)
+                _tr = (h.plans.get(key) or {}).get('trace')
+                if _tr:
+                    for _i in h.intents:
+                        if _i['street'] == street and _i['seat'] == s and 'trace' not in _i:
+                            _i['trace'] = [x for x in _tr if x.get('street') == street]
+                            break
                 a, amt = a2
                 # 어느 스트리트에서 실제로 공격했는지 기록한다 (지연 씨벳 판단에 필요).
                 if a in ('bet', 'raise', 'allin'):

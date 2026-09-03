@@ -416,7 +416,10 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
     p_aggr, why_a = decide_aggression(profile, board, street, plan, rel, n_opp,
                                       oop, initiative, to_act_behind, rng,
                                       opp_est, st.get('outs', 0), plan_state=st)
-    if rng.random() < p_aggr:
+    _roll = rng.random()
+    _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
+           why=why_a, plan=plan, rel=round(rel, 3))
+    if _roll < p_aggr:
         size = decide_size(profile, hero, board, street, plan, rel,
                            opp_range, my_range, pot, stack, rng, opp_est,
                            st.get('nut_adv', 0.0),
@@ -970,6 +973,23 @@ def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0
             f = PS.blend(f, adj, _rdc['w'])
     return max(0.03, min(0.95, f))
 
+def _trace(st, street, kind, **kw):
+    """판단 흔적. 리뷰가 '왜 그랬는지'를 재구성하는 데 쓴다.
+
+    오늘 디버깅에서 매번 부족했던 것들이다 —
+    확률과 **주사위 눈**을 함께 남겨야 '확률이 낮아서 체크'와
+    '아예 0이라 체크'를 구분할 수 있다.
+    상한을 두어 무한히 쌓이지 않게 한다.
+    """
+    if st is None:
+        return
+    tr = st.setdefault('trace', [])
+    if len(tr) < 40:
+        rec = {'street': street, 'kind': kind}
+        rec.update(kw)
+        tr.append(rec)
+
+
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   initiative=True, oop=False, opp_range=None, bf=1.0, seed=None,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None):
@@ -1030,10 +1050,14 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # ---------- 저항(tocall>0): 순수 집행 ----------
         # 폴드/콜/레이즈 판단은 전부 decide_response(판단 층)가 내린다.
         # 집행부는 그 결과를 칩으로 환산만 한다.
+        _need_in = need
         act, mult, need, why = decide_response(
             profile, hero, board, street, plan, plan_state, eq, need,
             made_now, opp_range, pot, tocall, stack, committed, rng)
         plan_state.setdefault('acts', []).append(why)
+        _trace(plan_state, street, 'response', act=act, need=round(need, 3),
+               need_raw=round(_need_in, 3), eq=round(eq, 3), why=why,
+               plan=plan, tocall=tocall, pot=pot)
         if act == 'raise':
             amt = min(stack, int(round((pot + 2*tocall)*mult/100))*100)
             if amt <= tocall:

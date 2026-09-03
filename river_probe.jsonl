@@ -8,3 +8,7 @@
 {"type": "TAG", "aggr": 4.4, "plan": "pot_control", "rel": 0.04, "made": 0, "eq": 0.01, "refreshed": ["turn", "river"], "street_made": "flop", "p_bet": 0.334, "why": "팟컨트롤 → 대부분 체크", "board": ["Ac", "4c", "Jd", "4h", "As"], "oop": true, "init": false}
 {"ev": "refresh", "plan_in": "pot_control", "plan_out": "pot_control", "rel_in": 0.58, "rel_out": 0.67, "hero": ["6d", "6s"], "board": ["Ac", "4c", "Jd", "4h", "As"]}
 {"type": "TAG_TILTY", "aggr": 2.5, "plan": "pot_control", "rel": 0.67, "made": 0, "eq": 0.62, "refreshed": ["turn", "river"], "street_made": "flop", "p_bet": 0.268, "why": "팟컨트롤 → 대부분 체크", "board": ["Ac", "4c", "Jd", "4h", "As"], "oop": true, "init": true}
+{"ev": "refresh", "plan_in": "pot_control", "plan_out": "pot_control", "rel_in": 0.5, "rel_out": 0.51, "hero": ["Qs", "Qc"], "board": ["Kc", "Th", "6c", "9c", "6d"]}
+{"type": "MANIAC", "aggr": 7.4, "plan": "pot_control", "rel": 0.51, "made": 2, "eq": 0.487, "refreshed": ["river"], "street_made": "turn", "p_bet": 0.439, "why": "팟컨트롤 → 대부분 체크", "board": ["Kc", "Th", "6c", "9c", "6d"], "oop": true, "init": true}
+{"ev": "refresh", "plan_in": "pot_control", "plan_out": "pot_control", "rel_in": 0.31, "rel_out": 0.28, "hero": ["7c", "7h"], "board": ["Kc", "Th", "6c", "9c", "6d"]}
+{"type": "FISH", "aggr": 6.5, "plan": "pot_control", "rel": 0.28, "made": 2, "eq": 0.253, "refreshed": ["river"], "street_made": "turn", "p_bet": 0.04, "why": "팟컨트롤 + 강도 0.28 → 체크", "board": ["Kc", "Th", "6c", "9c", "6d"], "oop": false, "init": false}
