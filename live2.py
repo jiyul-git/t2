@@ -230,8 +230,17 @@ def finish(st, f, tb, alive, h, run):
 
     _archive(st, f, h, res, notes)
     res['hero_seat'] = h.hero
-    return {'done': True, 'result': res, 'notes': notes, 'hand_no': f.hand_no,
-            'busted': busted, 'rank': rank, 'status': f.status()}
+    res.setdefault('pos', {str(k): v for k, v in h.pos.items()})
+    # 결과도 화면으로 렌더한다. 예전에는 raw dict 만 돌려줘서
+    # 무슨 일이 있었는지 읽을 수 없었다(다음 판이 바로 시작됐다).
+    try:
+        view_txt = view.render_result(res, hero=h.hero, hand_no=f.hand_no,
+                                      notes=notes, bb=f.blinds()[1])
+    except Exception as e:
+        view_txt = '결과 렌더 실패: %s: %s' % (type(e).__name__, e)
+    return {'done': True, 'view': view_txt, 'result': res, 'notes': notes,
+            'hand_no': f.hand_no, 'busted': busted, 'rank': rank,
+            'status': f.status()}
 
 
 def _archive(st, f, h, res, notes):
