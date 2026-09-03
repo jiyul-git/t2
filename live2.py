@@ -1,11 +1,16 @@
 """히어로가 직접 치는 실전 진행기. 필드 전체가 실제로 돌아간다."""
 import json, os, random, math
+import zlib as _zlib
 import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
 from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
-ST = os.path.join(D, 'live2_state.json')
-MAXSEAT = 8
+# 상태 파일 경로. 환경변수로 바꿀 수 있다 —
+# 검사 도구가 new_game 을 부르면 **진행 중인 게임이 통째로 날아간다**
+# (아카이브까지 지운다). 도구는 별도 경로를 쓰게 한다.
+ST = os.environ.get('T2_LIVE_STATE') or os.path.join(D, 'live2_state.json')
+_SUFFIX = '_alt' if os.environ.get('T2_LIVE_STATE') else ''
+
 
 
 # ---------- 상태 직렬화 ----------
@@ -17,6 +22,7 @@ def _dump(f):
         'busted_order': f.busted_order, 'hero_moves': f.hero_moves,
         'notes': f.notes,
         'fmt': f.fmt.get('key', 'standard'),
+        'seed': getattr(f, 'seed', None),
         'tilt': f.tilt.state,
         'players': {str(p['pid']): {'prof': p['prof'], 'stack': p['stack'],
                                     'table': p['table'], 'seat': p['seat']}
@@ -30,7 +36,10 @@ def _dump(f):
 
 def _load_field(d):
     f = FS.Field.__new__(FS.Field)
-    f.rng = random.Random()
+    # 시드 없이 새로 만들면 매 step 마다 필드 RNG 가 무작위로 초기화된다.
+    # 기준 시드와 핸드 번호에서 파생해 복원 시점이 같으면 같은 상태가 되게 한다.
+    f.rng = random.Random(_zlib.crc32(
+        ('field|%s|%s' % (d.get('seed'), d.get('hand_no', 0))).encode()))
     f.entries = d['entries']; f.start_stack = d['start_stack']
     f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
@@ -75,7 +84,8 @@ def load():
 # ---------- 게임 생성 ----------
 def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
              hands_per_level=12, fmt=None):
-    for fn in ('hand_archive2.jsonl', 'book.json', 'dynamics.json'):
+    for fn in ('hand_archive2%s.jsonl' % _SUFFIX, 'book%s.json' % _SUFFIX,
+               'dynamics%s.json' % _SUFFIX):
         p = os.path.join(D, fn)
         if os.path.exists(p):
             try: os.remove(p)
@@ -84,6 +94,7 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
                  seed=seed, hands_per_level=hands_per_level, itm_frac=itm_frac,
                  fmt=fmt)
     st = {'field': _dump(f), 'actions': [], 'decisions': [], 'hand_seed': None,
+          'seed': seed,
           'notes': [], 'busted': False, 'rank': None}
     save(st)
     return st
@@ -135,7 +146,13 @@ def step(action=None, amount=0):
         f.advance_level()
         st['notes'] = list(f.notes[-3:]) if f.level != prev_level else []
         f.notes = []
-        st['hand_seed'] = random.randrange(10**9)
+        # 전역 random 을 쓰면 OS 엔트로피로 시드되어 **같은 시드가 재현되지 않는다.**
+        # 실제로 같은 seed 로 new_game 을 세 번 하면 매번 다른 핸드가 나왔다.
+        # 기준 시드와 핸드 번호에서 결정론적으로 파생한다.
+        _base = st.get('seed')
+        if _base is None:
+            _base = random.randrange(10**9); st['seed'] = _base
+        st['hand_seed'] = _zlib.crc32(('%s|%d' % (_base, f.hand_no)).encode()) % (10**9)
         st['actions'] = []; st['decisions'] = []
         st['field'] = _dump(f)
         save(st)
@@ -218,7 +235,7 @@ def finish(st, f, tb, alive, h, run):
 
 
 def _archive(st, f, h, res, notes):
-    path = os.path.join(D, 'hand_archive2.jsonl')
+    path = os.path.join(D, 'hand_archive2%s.jsonl' % _SUFFIX)
     rec = {'hand_no': f.hand_no, 'hash': getattr(h, 'hash', None),
            'level': f.level, 'blinds': list(f.blinds()),
            'button': h.button, 'hero': h.hero,

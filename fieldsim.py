@@ -48,7 +48,8 @@ class Field:
 
     def __init__(self, entries=100, start_stack=30000, hero_pid=0, seed=None,
                  hands_per_level=12, itm_frac=0.15, fmt=None):
-        self.rng = random.Random(seed if seed is not None else int.from_bytes(os.urandom(4), 'big'))
+        self.seed = seed if seed is not None else int.from_bytes(os.urandom(4), 'big')
+        self.rng = random.Random(self.seed)
         self.entries = entries
         self.start_stack = start_stack
         self.hands_per_level = hands_per_level

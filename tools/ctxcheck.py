@@ -8,6 +8,11 @@
 """
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+# **진행 중인 게임을 건드리지 않는다.** live2.new_game 은 상태 파일과
+# 아카이브를 지우므로, 검사는 별도 경로에서 돌린다.
+os.environ.setdefault('T2_LIVE_STATE',
+                      os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   '..', '_ctxcheck_state.json'))
 import context as CTX
 
 FAIL = []

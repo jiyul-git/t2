@@ -1,5 +1,6 @@
 """디스크 상태 기반 실전 진행기. 매 호출마다 상태를 복원해 이어서 진행한다."""
 import sys, json, os, random
+import zlib as _zlib
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import play, session as SE, field as F, view, tourney
 from table import BLINDS
@@ -131,7 +132,13 @@ def step(action=None, amount=0):
     st = load()
     if st['hand_seed'] is None:
         st['hand_no'] += 1
-        st['hand_seed'] = random.randrange(10**9)
+        # 전역 random 을 쓰면 OS 엔트로피로 시드되어 **같은 시드가 재현되지 않는다.**
+        # 실제로 같은 seed 로 new_game 을 세 번 하면 매번 다른 핸드가 나왔다.
+        # 기준 시드와 핸드 번호에서 결정론적으로 파생한다.
+        _base = st.get('seed')
+        if _base is None:
+            _base = random.randrange(10**9); st['seed'] = _base
+        st['hand_seed'] = _zlib.crc32(('%s|%d' % (_base, f.hand_no)).encode()) % (10**9)
         st['actions'] = []
         lv_prev = min(1 + max(0, st['hand_no']-2)//st['hpl'], len(BLINDS))
         st['notes'] = []
