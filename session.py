@@ -544,7 +544,13 @@ class HandRun:
                 # 폴드로 끝났다. **여기서 보드를 더 깔면 레빗헌트다.**
                 # 예전에는 h.board(5장 전부)를 넘겨서, 턴에서 끝난 판에도
                 # 리버 카드가 결과에 찍혔다.
-                self.result = self._finish(contrib, dead, folded, live, board, 'showdown')
+                _r = self._finish(contrib, dead, folded, live, board, 'showdown')
+                # 화면에는 그 시점 보드까지만(레빗헌트 금지).
+                # 남은 카드는 리뷰용으로 별도 키에 담는다 —
+                # '리버가 뭐였으면 이겼나'는 사후 분석에 필요하다.
+                if len(h.board) > len(board):
+                    _r['runout'] = list(h.board)
+                self.result = _r
                 return
 
         # 전원이 올인이든 리버까지 왔든, 여기까지 오면 보드가 다 깔린다.
