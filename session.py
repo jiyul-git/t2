@@ -540,8 +540,14 @@ class HandRun:
                           if x not in folded and h.stacks.get(x, 0) <= 0]
             live = sorted(set(r2.live()) | set(allin_prev))
             prev = board
-            if len(live) <= 1: break
+            if len(live) <= 1:
+                # 폴드로 끝났다. **여기서 보드를 더 깔면 레빗헌트다.**
+                # 예전에는 h.board(5장 전부)를 넘겨서, 턴에서 끝난 판에도
+                # 리버 카드가 결과에 찍혔다.
+                self.result = self._finish(contrib, dead, folded, live, board, 'showdown')
+                return
 
+        # 전원이 올인이든 리버까지 왔든, 여기까지 오면 보드가 다 깔린다.
         self.result = self._finish(contrib, dead, folded, live, h.board, 'showdown')
         return
 

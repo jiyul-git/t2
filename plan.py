@@ -748,6 +748,11 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         return max(0.15, min(0.92, _bb)), '블락벳 계획(%.0f%%)' % (_bb*100)
 
     if plan == 'pot_control':
+        # 팟컨트롤인데 3분의 1 확률로 벳하면 계획과 행동이 어긋난다.
+        # 치기로 했으면 그건 이미 팟컨트롤이 아니다 —
+        # 얇은 밸류라면 river_fix 가 thin_river 로 승격시켰어야 한다.
+        if rel < 0.30:
+            return 0.04, '팟컨트롤 + 강도 %.2f → 체크' % rel
         return max(0.05, min(0.6, 0.18 + 0.035*a)), '팟컨트롤 → 대부분 체크'
 
     # --- 밸류 계획 ---
@@ -1425,6 +1430,14 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 함정을 팠는데 아무도 물지 않았다 → 직접 밸류로 전환
         st['plan'] = 'value_3street' if rel >= 0.85 else 'value_2street'
         why.append('%s: 상대가 벳하지 않음 → 함정 해제, 직접 밸류' % street)
+    elif old == 'giveup' and (rel >= 0.55 or made >= 2):
+        # **포기에서 나오는 길이 없었다.** 승격 분기가 pot_control/block/showdown
+        # 만 다뤄서, rel 이 0.35 -> 0.73 으로 올라도 giveup 에 갇혀
+        # p_bet 0.00 으로 체크했다. 보드가 바뀌어 강도가 올라간 것은
+        # 계획을 다시 세울 근거다.
+        st['plan'] = 'value_2street' if (rel >= 0.72 or made >= 3) else 'showdown'
+        why.append('%s: 포기했으나 강도 상승(rel %.2f, made %d) → %s'
+                   % (street, rel, made, st['plan']))
     elif old in ('pot_control', 'block', 'showdown') and (
             rel >= 0.70 or made >= max(2, st.get('made', 0) + 1)):
         # 승격 조건. 예전에는 rel >= 0.88 하나뿐이라

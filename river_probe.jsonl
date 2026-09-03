@@ -1,0 +1,10 @@
+{"ev": "refresh", "plan_in": "value_3street", "plan_out": "value_3street", "rel_in": 0.97, "rel_out": 0.95, "hero": ["Kh", "As"], "board": ["7h", "Ad", "9d", "2c", "Kc"]}
+{"type": "TAG_TILTY", "aggr": 1.0, "plan": "value_3street", "rel": 0.95, "made": 2, "eq": 0.86, "refreshed": ["turn", "river"], "street_made": "flop", "p_bet": 0.928, "why": "밸류 계획 실행(93%)", "board": ["7h", "Ad", "9d", "2c", "Kc"], "oop": true, "init": false}
+{"ev": "refresh", "plan_in": "giveup", "plan_out": "giveup", "rel_in": 0.35, "rel_out": 0.73, "hero": ["Ks", "Ts"], "board": ["7h", "Ad", "9d", "2c", "Kc"]}
+{"type": "STATION", "aggr": 3.3, "plan": "giveup", "rel": 0.73, "made": 1, "eq": 0.332, "refreshed": ["turn", "river"], "street_made": "flop", "p_bet": 0.0, "why": "포기 계획 + 이니셔티브 없음 → 체크", "board": ["7h", "Ad", "9d", "2c", "Kc"], "oop": true, "init": false}
+{"ev": "refresh", "plan_in": "pot_control", "plan_out": "pot_control", "rel_in": 0.48, "rel_out": 0.1, "hero": ["5h", "5d"], "board": ["7h", "Ad", "9d", "2c", "Kc"]}
+{"type": "STUDIED_LOOSE_REG", "aggr": 5.8, "plan": "pot_control", "rel": 0.1, "made": 1, "eq": 0.0, "refreshed": ["turn", "river"], "street_made": "flop", "p_bet": 0.383, "why": "팟컨트롤 → 대부분 체크", "board": ["7h", "Ad", "9d", "2c", "Kc"], "oop": false, "init": false}
+{"ev": "refresh", "plan_in": "pot_control", "plan_out": "pot_control", "rel_in": 0.25, "rel_out": 0.04, "hero": ["3s", "3h"], "board": ["Ac", "4c", "Jd", "4h", "As"]}
+{"type": "TAG", "aggr": 4.4, "plan": "pot_control", "rel": 0.04, "made": 0, "eq": 0.01, "refreshed": ["turn", "river"], "street_made": "flop", "p_bet": 0.334, "why": "팟컨트롤 → 대부분 체크", "board": ["Ac", "4c", "Jd", "4h", "As"], "oop": true, "init": false}
+{"ev": "refresh", "plan_in": "pot_control", "plan_out": "pot_control", "rel_in": 0.58, "rel_out": 0.67, "hero": ["6d", "6s"], "board": ["Ac", "4c", "Jd", "4h", "As"]}
+{"type": "TAG_TILTY", "aggr": 2.5, "plan": "pot_control", "rel": 0.67, "made": 0, "eq": 0.62, "refreshed": ["turn", "river"], "street_made": "flop", "p_bet": 0.268, "why": "팟컨트롤 → 대부분 체크", "board": ["Ac", "4c", "Jd", "4h", "As"], "oop": true, "init": true}
