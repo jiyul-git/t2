@@ -16,7 +16,8 @@ EXEC = ['bluff', 'semibluff',
 CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay', 'open_size', 'pf_defend', 'range_merge', 'multiway', 'fold_equity']
 # 기질 축: 능력이 아니라 성격
 TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
-          'discipline', 'adaptability', 'consistency', 'attention']
+          'discipline', 'adaptability', 'consistency', 'attention',
+          'slowplay_taste']
 
 ALL_CONCEPTS = EXEC + CALC
 
@@ -204,6 +205,13 @@ def make_player(rng, field_quality=0.6, pid=None, _depth=0, aggr_bias=0.0, loose
       'adaptability': round(_clamp(rng.gauss(4.6, 2.3) + 0.30*(exp-4.5)), 1),
       'consistency':  round(_clamp(rng.gauss(5.2, 2.1) + 0.30*(study-4.5) + 0.25*(exp-4.5)), 1),
       'attention':    round(_clamp(rng.gauss(5.0, 2.3) + 0.25*(exp-4.5)), 1),
+      # 넛급을 들었을 때 숨기는 쪽이 편한가, 바로 뽑는 쪽이 편한가.
+      # **능력이 아니라 취향이다** — 트랩을 아는 것(sk('trap'))과 별개로,
+      # 알면서도 그냥 치는 게 편한 사람이 있다. 이 축이 없으면 숙련도가
+      # 그대로 빈도가 되어 "잘 아는 사람 = 자주 트랩"으로 고정된다.
+      # 공격성과 약한 음의 상관 — 공격적인 사람이 조금 더 바로 뽑는다.
+      # 상관을 0 으로 두면 '공격성 9 인데 항상 트랩'이 흔해져 어색하다.
+      'slowplay_taste': round(_clamp(rng.gauss(5.0, 2.3) - 0.30*(aggro-4.6)), 1),
       # 틸트가 나면 어느 쪽으로 무너지는가. 높으면 원래 성향이 강화되고
       # 낮으면 반전된다. 공격적인 사람이 더 난폭해지기도 하고 갑자기
       # 겁먹기도 한다 — 방향을 성향 하나로 고정하면 그게 표현되지 않는다.

@@ -170,6 +170,10 @@ def adjust_range_by_history(base_range, dyn, seat, board, dead=None):
     """그 좌석이 과거에 깐 패가 예상보다 넓었으면 레인지를 넓힌다."""
     shown = dyn.shown(seat) if hasattr(dyn, 'shown') else []
     if len(shown) < 2: return base_range, None
+    # 상류(perceived_range)가 레인지를 통째로 비울 수 있다. 그 경우 아래
+    # max() 가 빈 시퀀스로 터진다 — 넓힐 기준 자체가 없으므로 그대로 돌려준다.
+    # (잠복 버그였다. 특정 액션 라인에서만 빈 레인지가 나와 드러나지 않았다.)
+    if not base_range: return base_range, None
     import statistics
     pcts = [pf.PCT[pf.cls(h)] for h in shown[-6:] if isinstance(h, list)]
     if not pcts: return base_range, None

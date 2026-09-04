@@ -138,8 +138,17 @@ def opp_bet_prob(opp_est, w, street):
 def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk):
     """트랩을 팔지 판단. 반환 (확률, 사유).
 
-    확률로 남기는 이유는 '가끔 무작위로 트랩한다'가 아니라
-    실행 편차(집중력·일관성) 때문이다. 판단 자체는 아래 조건들이 만든다.
+    축이 셋이다.
+
+      취향   slowplay_taste 가 방향을 정한다. 넛급에서 숨기는 게 편한가,
+             바로 뽑는 게 편한가. **능력이 아니라 성격이다.**
+      수렴   공부(study)가 높을수록 그 취향이 씻겨나가고 상황이 시키는
+             빈도로 끌려간다. 포커에는 GTO 라는 정답이 있어서, 공부할수록
+             개인 취향이 옅어지고 서로 비슷해지는 것이 실제 필드의 모습이다.
+      상황   상대가 쳐줄 사람인가 · 딥한가 · 보드가 안전한가 · 인원.
+
+    예전에는 취향 축이 없어 sk('trap') 이 그대로 빈도가 됐다. 그래서
+    '트랩을 잘 아는데 취향은 속공인 사람'을 표현할 방법이 아예 없었다.
     """
     tool = 0.13*sk('trap') + 0.06*sk('checkraise')     # 도구 보유 정도
     if tool <= 0.05:
@@ -149,19 +158,31 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
     w    = PS.exploit_weight(profile, conf, n)
     pbet = opp_bet_prob(opp_est, w, street)
 
+    # --- 상황이 시키는 빈도 ---
     # 상대가 벳해줘야 트랩이 성립한다. 안 치는 상대면 무료 카드만 주는 셈.
-    p = tool * (0.35 + 1.30*pbet)
-    p *= (1.35 - 0.055*profile.get('aggr', 5))         # 공격적일수록 그냥 친다
-    # 예전에는 SPR 4/2, multiway 유무, danger 0.45 가 전부 하드 계단이었다.
-    # SPR 3.9 와 4.1 이 완전히 다르고, 2명과 5명이 같은 배수였다.
+    situ = 0.35 + 1.30*pbet
     _sp = max(0.0, min(1.0, (spr_now - 1.5) / 3.5))    # SPR 1.5 -> 0, 5.0 -> 1
-    p *= 0.35 + 0.90*_sp                               # 딥해야 나중에 받아낼 게 있다
+    situ *= 0.35 + 0.90*_sp                            # 딥해야 나중에 받아낼 게 있다
     _mw = multiway if isinstance(multiway, (int, float)) else (1 if multiway else 0)
-    p *= 0.45 ** min(3, max(0, _mw))                   # 다인원 체크는 위험
-    p *= 1.0 - 0.55*max(0.0, min(1.0, danger/0.65))    # 젖은 보드에 무료 카드 금지
+    situ *= 0.45 ** min(3, max(0, _mw))                # 다인원 체크는 위험
+    situ *= 1.0 - 0.55*max(0.0, min(1.0, danger/0.65))  # 젖은 보드에 무료 카드 금지
+    situ = max(0.0, min(1.0, situ))
+
+    # --- 취향과 수렴 ---
+    taste = PS.temper(profile, 'slowplay_taste', 5.0)/10.0   # 0 속공 ~ 1 숨김
+    # 아키타입 기반 프로필(기질 벡터가 없는 경우)은 slowplay_taste 가 없어
+    # 기본 5.0 으로 떨어진다. 'xr'(체크레이즈 선호) 표식이 그 자리를 대신한다.
+    if profile.get('value') == 'xr':
+        taste = min(1.0, taste + 0.25)
+    study = (profile.get('latent') or {}).get('study', 4.5)
+    conv = max(0.0, min(1.0, (study - 2.0)/6.0))        # 공부할수록 상황값으로 수렴
+    lean = taste*(1.0 - conv) + situ*conv
+
+    p = tool * lean
     p *= (1.0 - 0.55*max(0.0, min(1.0, tilt)))         # 틸트나면 인내가 안 된다
     p = max(0.0, min(0.70, p))
-    why = '넛급 + 상대 벳확률 %.0f%% → 함정(%.0f%%)' % (pbet*100, p*100)
+    why = ('넛급 + 상대 벳확률 %.0f%% · 취향 %.1f · 수렴 %.0f%% → 함정(%.0f%%)'
+           % (pbet*100, taste*10, conv*100, p*100))
     if w > 0.05:
         why += ' [리딩 %.0f%%]' % (w*100)
     return p, why
@@ -262,20 +283,13 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     if rd['w'] > 0:
         # 잘 접는 상대에게 블러프를 늘린다. 그 스트리트 기준으로.
         bluff_ok *= max(0.25, 1.0 + rd['w'] * 1.6 * PS.street_gap(rd, street))
-    # 트랩 빈도 = 성향 함수. 저SPR·젖은 보드에서 줄되 0이 되지는 않는다.
-    # 함정은 블러프가 아니다. 예전에는 bluff 로 빈도를 정했는데,
-    # 강한 핸드를 숨기는 것과 약한 핸드로 치는 것은 다른 능력이다.
-    _tr_sk = PS.sk(profile, 'trap') if profile.get('concepts') else 5.0
-    trap_p = (0.06 + 0.050*_tr_sk) * (1 - 0.55*dang)
-    if rd['w'] > 0:
-        # 함정은 상대가 쳐줘야 성립한다. 수동적인 상대에게는 무료 카드만 준다.
-        trap_p *= max(0.15, 1.0 - rd['w'] * 1.2 * max(0.0, rd['passive']))
-    # SPR·인원 보정. 예전에는 s<3.0, n_opp>1 하드 계단이었다 —
-    # SPR 2.9 와 3.1 이 완전히 다르고, 2명과 5명이 같은 배수였다.
-    trap_p *= 0.40 + 0.60*max(0.0, min(1.0, (s - 1.0)/4.0))
-    trap_p *= 0.62 ** max(0, n_opp - 1)
-    if profile['value'] == 'xr': trap_p *= 1.8
-    trap_ok = rng.random() < max(0.02, min(0.45, trap_p))
+    # 트랩 판정은 trap_judgment 한 곳에서만 한다.
+    # 예전에는 여기서 trap_p 를 한 번 굴리고(평균 0.27) trap_judgment 에서
+    # 또 굴려서(평균 0.26) 곱해진 실효 확률이 7.8% 였다. 두 판정이 같은 것을
+    # (trap 숙련도 · SPR · 보드 위험 · 인원) 중복해서 봤고, 1차는 상대 성향과
+    # 체크레이즈 능력을 못 보는 열등한 판정인데 앞에 서서 74% 를 미리 잘랐다.
+    # 그래서 넛급의 92% 가 value_3street 로 직행했다.
+    trap_ok = True
 
     # 상대 레인지에 지는 콤보가 많으면 밸류 계획 자체를 강등한다.
     # eq(랜덤/광역 레인지 대비)가 높아도 rel이 낮으면 얇은 밸류다.

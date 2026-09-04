@@ -232,7 +232,14 @@ def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
     aware = 1.0
     if prof and prof.get('concepts'):
         aware = max(0.0, min(1.0, (PS.sk(prof, 'spr') - 2.0) / 6.0))
-    crude = 1.0 if feel < crude_edge(prof) else 0.0
+    # crude 는 예전에 `feel < edge` 의 0/1 계단이었다. struct 를 연속으로
+    # 만들어놓고 여기서 다시 계단을 넣은 셈이라, SPR 개념이 낮은 사람은
+    # **27bb 78% → 28bb 1.5%** 로 1bb 차이에 78%p 가 사라졌다.
+    # 경계 폭(edge 의 40%)에 걸쳐 부드럽게 넘긴다. 이 시뮬레이터의 원칙은
+    # 'BB 절대값 계단이 아니라 연속 함수'다 — 그 원칙이 여기만 빠져 있었다.
+    _edge = crude_edge(prof)
+    _w = max(1e-6, 0.40*_edge)
+    crude = max(0.0, min(1.0, (_edge + _w - feel) / (2.0*_w)))
     p_struct = crude*(1.0 - aware) + p_struct*aware
 
     p = 1.0 - (1.0 - min(1.0, p_struct)) * (1.0 - min(1.0, p_vs))
@@ -486,7 +493,11 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     # 결국 필드의 헐거움이 스스로를 상쇄해 어떤 필드든 같은 참여율로 수렴한다.
     if n_callers:
         loose_v = _tr_loose(prof)
-        mw = max(0.45, min(0.95, 0.48 + 0.048*loose_v))
+        # 계수 근거: 콜러가 늘 때 축소가 거듭제곱으로 들어가 타이트한 퍼소나가
+        # 과도하게 압축됐다. 검토(2026-09-04)에서 하한/기울기를 조정.
+        # 실측: 콜러1명 디펜스율 28.1%->31.5%, 콜러2명 19.9%->24.8%.
+        # 효과는 균일하지 않다 — loose_v 낮을수록 크게 풀린다(+22% vs +1%).
+        mw = max(0.60, min(0.96, 0.60 + 0.040*loose_v))
         tot *= mw ** n_callers
         tp *= (_tr(prof)['sqz'] if 'sqz' in _tr(prof) else 1.0) * (0.92 ** n_callers)
         tp = min(tp, tot)
