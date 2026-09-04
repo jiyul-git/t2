@@ -1,7 +1,12 @@
 """세션 후 복기용 — 아카이브 조회."""
 import json, os
 D = os.path.dirname(os.path.abspath(__file__))
-PATH = os.path.join(D, 'hand_archive.jsonl')
+# live2 가 쓰는 파일과 같은 이름이어야 한다. 예전에는 'hand_archive.jsonl'
+# 을 읽었는데 live2 는 'hand_archive2.jsonl' 에 쓴다 — 그래서 load() 가
+# 늘 빈 리스트를 반환했고, **리뷰 도구가 통째로 죽어 있었다.**
+# T2_LIVE_STATE 를 쓰면 live2 가 _alt 접미사를 붙이므로 그것도 맞춘다.
+_SUFFIX = '_alt' if os.environ.get('T2_LIVE_STATE') else ''
+PATH = os.path.join(D, 'hand_archive2%s.jsonl' % _SUFFIX)
 
 def load():
     if not os.path.exists(PATH): return []

@@ -150,7 +150,10 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
     예전에는 취향 축이 없어 sk('trap') 이 그대로 빈도가 됐다. 그래서
     '트랩을 잘 아는데 취향은 속공인 사람'을 표현할 방법이 아예 없었다.
     """
-    tool = 0.13*sk('trap') + 0.06*sk('checkraise')     # 도구 보유 정도
+    # 스트리트별 개념을 써야 한다. sk('checkraise') 는 ALIAS 가 항상
+    # checkraise_flop 으로 고정 해석하므로, 리버 체크레이즈가 1.0 인 사람도
+    # 플랍 값 9.0 으로 계산됐다 — street 를 인자로 받으면서 쓰지 않았다.
+    tool = 0.13*sk('trap') + 0.06*sk(PS.street_concept('checkraise', street))
     if tool <= 0.05:
         return 0.0, ''
     conf = (opp_est or {}).get('confidence', 0.0)
@@ -410,7 +413,13 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'nut_adv': round(nut,2), 'range_adv': round(adv,2),
             'stackoff': dict(_so, _blk_net=round(blk_net, 3)) if isinstance(_so, dict) else _so, 'spr': round(s,1), 'pc': round(pc,2),
             'n_opp': n_opp, 'behind': to_act_behind, 'rel': round(rel,2), 'made': made,
-            'why': why, 'type': T,
+            # 사유에 어느 스트리트에서 붙은 줄인지 표시한다. why 는 스트리트를
+            # 넘어 누적되는데 표시가 없어서, 리버 기록의 why[0] 이 플랍 때 붙은
+            # '포기' 문자열인 채로 남았다. 계획은 value_2street 인데 사유 첫 줄이
+            # '포기'라 정면으로 모순됐고, 실제로 리뷰 때 오독을 유발했다.
+            'why': ['%s: %s' % (street, w) if not w.startswith(
+                ('flop:', 'turn:', 'river:', '프리플랍')) else w for w in why],
+            'type': T,
             # 내 레인지를 보존한다. 후반 스트리트에서 넛 우위를 다시 계산하려면 필요하다
             # (오버벳 판단이 이걸 쓴다).
             'my_range': my_range,
@@ -1059,7 +1068,9 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     plan = plan_state['plan']
     if opp_est is None:
         opp_est = plan_state.get('opp_est')      # 계획에 실린 추정치를 이어 쓴다
-    frac = SIZING[plan].get(street, 0.0)
+    # (예전에 `frac = SIZING[plan].get(street, 0.0)` 이 여기 있었다. 대입만
+    #  하고 함수 안에서 한 번도 읽지 않는 죽은 줄이었고, SIZING 에 없는
+    #  계획이 오면 KeyError 만 낼 수 있었다. 사이즈는 decide_size 가 정한다.)
     committed = spr(stack, pot) < 1.2          # 커밋 구간
 
     if tocall > 0:
@@ -1481,7 +1492,8 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
             give_thr = PS.blend(give_thr, max(0.02, give_thr - 0.35*d), w)
             ctrl_thr = PS.blend(ctrl_thr, max(0.10, ctrl_thr - 0.55*d), w)
             if abs(d) > 0.04:
-                why.append('상대 폴드성향 %+.0f%%p → 포기 문턱 %.2f' % (100*d, ctrl_thr))
+                why.append('%s: 상대 폴드성향 %+.0f%%p → 포기 문턱 %.2f'
+                           % (street, 100*d, ctrl_thr))
 
     # 턴/리버 카드가 누구를 도왔는가. 상대를 도운 카드면 근거가 더 빨리 무너지고,
     # 나를 도운 카드면 더 버틴다. turn_card_effect 가 이걸 재는데
