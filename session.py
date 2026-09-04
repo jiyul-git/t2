@@ -499,14 +499,25 @@ class HandRun:
                         amt = min(r2.stacks[s] + r2.contrib.get(s, 0), amt + r2.contrib.get(s, 0))
                         h.plans[key].setdefault('acts', []).append('체크레이즈 실행')
                 try:
+                    # 이 액션에 **적용된** 제약을 apply 이전에 잡는다.
+                    # apply 는 self.min_raise/current 를 갱신하므로, 사후에 읽으면
+                    # 다음 사람에게 적용될 값을 보게 된다(무저항 벳 X → 기록 2X).
+                    _cur0 = r2.current
+                    _mr0 = r2.min_raise
                     if a in ('bet', 'raise'):
                         amt = RU.shape_size(
                             amt, ax['type'],
                             random.Random(self._dseed(s, street, 'size', len(r2.log))),
                             pot=pot_live)
-                        r2.apply(s, a, max(amt, r2.current+r2.min_raise) if r2.current else amt)
+                        # 클램프 이후의 값이 **실제로 테이블에 올라간 액수**다.
+                        # 기록이 클램프 앞에서 찍히면 검증할 때 집행값을 못 본다.
+                        _sent = max(amt, r2.current+r2.min_raise) if r2.current else amt
+                        r2.apply(s, a, _sent)
+                        _exec_amt = _sent
                         aggressor = s
-                    else: r2.apply(s, a, amt)
+                    else:
+                        r2.apply(s, a, amt)
+                        _exec_amt = amt
                 except ValueError as _ve:
                     # 사이즈가 규칙에 안 맞아 거부됐다. 폴백하되 그 사실을 남긴다.
                     # 기록이 없으면 '의도는 벳인데 체크가 실행됨'이 원인 불명으로 남는다.
@@ -516,15 +527,27 @@ class HandRun:
                          'why': '사이즈 거부(%s)' % _ve})
                     a = _fb
                     r2.apply(s, a)
+                    _exec_amt = 0
                 if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
                 # 액션이 끝난 뒤 계획을 다시 손대지 않는다.
                 # _allowed(개념 보유 검사)는 update_plan 안에서 이미 적용됐고,
                 # 여기서 또 돌리면 '실행 후 계획 변경' = 사후 수정이 된다.
                 _pl2 = h.plans[key]
+                # 의도와 실행을 **나란히** 남긴다. 예전에는 실행된 action 만 남아서
+                # '계획대로 집행됐는가'를 사후에 검증할 방법이 아예 없었다
+                # (계획이 옳은지와 별개로, 배선이 끊겨도 알 수가 없었다).
+                _it = (_pl2.get('intents') or {}).get(street) or {}
+                _dev = [d for d in (_pl2.get('deviations') or []) if d.get('street') == street]
                 h.intents = getattr(h, 'intents', [])
                 h.intents = [i for i in h.intents if not (i['street'] == street and i['seat'] == s)]
                 h.intents.append({'street': street, 'seat': s, 'type': ax.get('type'),
-                                  'action': a, 'plan': _pl2.get('plan'), 'why': _pl2.get('why'),
+                                  'action': a, 'amt': _exec_amt, 'pre_clamp': amt,
+                                  'plan': _pl2.get('plan'), 'why': _pl2.get('why'),
+                                  'intent_act': _it.get('act'), 'intent_size': _it.get('size'),
+                                  'intent_src': _it.get('src'), 'dev': _dev,
+                                  'tocall': tc, 'pot': pot_live,
+                                  'stack': r2.stacks[s] + r2.contrib.get(s, 0),
+                                  'min_raise': (_cur0 + _mr0) if _cur0 else max(h.bb, _mr0),
                                   'rel': _pl2.get('rel'), 'eq': _pl2.get('eq'),
                                   'outs': _pl2.get('outs'), 'blocker': _pl2.get('blocker')})
             _any_bet = any(_a in ('bet', 'raise', 'allin') for (_, _a, _) in r2.log)
