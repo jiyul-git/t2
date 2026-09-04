@@ -424,7 +424,7 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                            opp_range, my_range, pot, stack, rng, opp_est,
                            st.get('nut_adv', 0.0),
                            deviating=why_a.startswith('DEVIATE:'),
-                           stackoff=st.get('stackoff'))
+                           stackoff=st.get('stackoff'), plan_state=st)
         if size > 0:
             st = set_intent(st, street, mk_intent('bet', size, why_a))
             # 계획과 반대되는 의도는 이탈로 남긴다. 기록이 없으면
@@ -774,7 +774,7 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
 
 def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
                 pot, stack, rng, opp_est=None, nut=0.0, deviating=False,
-                stackoff=None):
+                stackoff=None, plan_state=None):
     """이 스트리트 벳 사이즈(팟 대비)를 정하는 **유일한 지점**.
 
     예전에는 한 사이즈가 네 번 재계산됐다:
@@ -786,6 +786,12 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
     (shape_size 는 '사람다운 끝자리'만 만드는 표현 계층이므로 집행부에 남긴다.)
     """
     base = SIZING.get(plan, {}).get(street, 0.0)
+    # 예산 소진 검사. 이름이 2스트리트인 계획이 3배럴이 되면 안 된다.
+    # 계획을 어기고 치는 경우(deviating)는 규율 문제라 예산 밖이다.
+    if not deviating:
+        _left = budget_left(plan_state, plan, street)
+        if _left is not None and _left <= 0:
+            return 0.0
     # 보드 구조 사이징. texture.size_fraction 이 마른/연결/페어/모노톤을
     # 구분하는데 호출부가 없어 죽어 있었다. SIZING 표는 계획별 상수라
     # 같은 계획이면 어떤 보드든 같은 사이즈가 나왔다.
@@ -852,9 +858,41 @@ def set_intent(state, street, intent):
     return st
 
 
+STREET_ORDER = ['flop', 'turn', 'river']
+
+# 계획 이름이 뜻하는 **예산** — 몇 스트리트를 칠 작정인가.
+# SIZING 표와 분리한 이유: 예전에는 river:0.0 하나가 '예산 소진'과
+# '원래 안 치는 계획'을 동시에 뜻해서, bet_size 의 `base <= 0` 가드가
+# 둘을 구분하지 못했다. 사이즈는 SIZING 이, 예산은 여기가 맡는다.
+# value_3street 은 스트리트가 셋뿐이라 실제로는 걸리지 않는다(명시 목적).
+BUDGET = {'value_2street': 2, 'value_3street': 3}
+
+
+def budget_left(plan_state, plan, street):
+    """이 계획이 앞으로 더 칠 수 있는 스트리트 수. 예산 개념이 없으면 None.
+
+    지출은 bet_streets(실제로 공격한 스트리트)로 세되, 계획을 채택한
+    시점(plan_since) 이후만 센다.
+    """
+    cap = BUDGET.get(plan)
+    if cap is None:
+        return None
+    since = (plan_state or {}).get('plan_since') or 'flop'
+    i0 = STREET_ORDER.index(since) if since in STREET_ORDER else 0
+    spent = sum(1 for s in ((plan_state or {}).get('bet_streets') or [])
+                if s in STREET_ORDER and STREET_ORDER.index(s) >= i0)
+    return cap - spent
+
+
 SIZING = {
     'value_3street': {'flop':0.60,'turn':0.70,'river':0.75},
-    'value_2street': {'flop':0.50,'turn':0.55,'river':0.0},
+    # river 가 0 이면 bet_size 의 `base <= 0` 가드가 '원래 안 치는 계획'으로 읽는다.
+    # 그 0 은 사이즈가 아니라 '예산을 다 썼다'는 뜻이었는데 giveup/showdown 의 0 과
+    # 구분되지 않아서, **턴에서 승격된 value_2street 이 rel 0.93 을 들고도
+    # 리버를 체크했다.** (계획을 어기는 deviating 경로로만 칠 수 있었다)
+    # 예산과 사이즈를 한 표에 겹쳐 담은 것이 원인이고, 예산 카운터 분리는 별건이다.
+    # 여기서는 사이즈만 채운다 — 값은 deviating 폴백이 쓰던 리버 기본값과 같다.
+    'value_2street': {'flop':0.50,'turn':0.55,'river':0.60},
     'pot_control':   {'flop':0.30,'turn':0.0, 'river':0.30},
     'semibluff':     {'flop':0.55,'turn':0.65,'river':0.0},
     'bluff_2street': {'flop':0.45,'turn':0.60,'river':0.0},
@@ -1235,7 +1273,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
 
     # 계획 이력은 라벨과 별개로 이어진다. 새 dict 가 만들어져도 유지한다.
     if prev:
-        for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets'):
+        for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
+                  'plan_since'):
             if prev.get(k) is not None and st.get(k) is None:
                 st[k] = prev[k]
 
@@ -1246,6 +1285,12 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
 
     st = river_fix(st, hero, board, profile, opp_range, rng)
     st['plan'] = _allowed(profile, st['plan'], rng)
+
+    # 이 라벨을 언제 채택했는가. 예산(BUDGET)을 세는 기준점이다.
+    # 플랍에 bluff_2street 으로 치다가 턴에 value_2street 으로 승격한 사람은
+    # 플랍의 벳을 새 계획의 예산에서 까면 안 된다 — 그건 다른 계획의 지출이었다.
+    if not prev or prev.get('plan') != st.get('plan') or not st.get('plan_since'):
+        st['plan_since'] = street
 
     # 의도는 무저항 시점에만, 한 번만 확정한다.
     if intent_of(st, street) is None:
