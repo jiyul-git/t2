@@ -343,6 +343,23 @@ class HandRun:
                     try: r2.apply(s, _cached[1], _cached[2])
                     except ValueError: r2.apply(s, 'call' if tc > 0 else 'check')
                     if _cached[1] in ('bet','raise','allin'): aggressor = s
+                    # 재생 경로도 기록을 남긴다. 예전에는 여기서 바로 continue 해서
+                    # **액션은 실행되는데 intents 에 아무것도 안 남았다.**
+                    # 히어로가 스텝을 밟을 때마다 이전 스트리트가 재생되므로,
+                    # 리뷰 때 '봇 액션은 로그에 있는데 근거가 없는' 스트리트가
+                    # 통째로 생겼다(실측: 스트리트당 3건씩 누락).
+                    # 계획을 재계산하면 캐시의 목적(재현성)이 깨지므로,
+                    # 실행된 사실과 이전에 세운 계획만 남긴다.
+                    _plc = h.plans.get(s) or {}
+                    h.intents = getattr(h, 'intents', [])
+                    if not any(i['street'] == street and i['seat'] == s
+                               for i in h.intents):
+                        h.intents.append({
+                            'street': street, 'seat': s, 'type': ax.get('type'),
+                            'action': _cached[1], 'amt': _cached[2],
+                            'plan': _plc.get('plan'), 'why': _plc.get('why'),
+                            'rel': _plc.get('rel'), 'eq': _plc.get('eq'),
+                            'replayed': True})
                     continue
                 behind = len([x for x in order if x not in r2.acted and x != s and x not in r2.folded])
                 n_opp = len(r2.live())-1

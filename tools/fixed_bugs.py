@@ -119,12 +119,47 @@ def check_empty_range_guard():
         report('빈 레인지에서 안 터진다', False, '%s: %s' % (type(e).__name__, e))
 
 
+def check_replay_records():
+    """재생 경로가 기록을 안 남기던 문제 — 격리 폴더에서 실제 게임을 돌린다."""
+    import subprocess, tempfile, shutil, os as _os
+    src = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..')
+    tmp = tempfile.mkdtemp(prefix='fb_')
+    dst = _os.path.join(tmp, 't2')
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns(
+        '.git', '__pycache__', 'hand_archive2*.jsonl', '*state*.json', 'bak_*'))
+    code = (
+        "import sys,json;sys.path.insert(0,%r);import live2\n"
+        "live2.new_game(entries=40,start_stack=30000,seed=555,hands_per_level=12)\n"
+        "r=live2.step()\n"
+        "if not r.get('done') and '\uBCF4\uB4DC' not in r['view']: r=live2.step('call')\n"
+        "while not r.get('done'): r=live2.step('check')\n"
+        "rows=[json.loads(l) for l in open(%r+'/hand_archive2.jsonl') if l.strip()]\n"
+        "m=t=0\n"
+        "for x in rows:\n"
+        "    rec=set(i['street'] for i in x['intents'])\n"
+        "    for st in ('flop','turn','river'):\n"
+        "        if [e for e in x['full_log'] if e[0]==st and e[1]!=x['hero']]:\n"
+        "            t+=1\n"
+        "            if st not in rec: m+=1\n"
+        "print(t,m)\n" % (dst, dst))
+    try:
+        out = subprocess.run([sys.executable, '-c', code], capture_output=True,
+                             text=True, timeout=300, cwd=dst)
+        tot, miss = out.stdout.strip().split()[:2]
+        report('재생 경로도 기록을 남긴다', int(miss) == 0,
+               '스트리트 %s개 중 누락 %s개' % (tot, miss))
+    except Exception as e:
+        report('재생 경로도 기록을 남긴다', False, '검사 실패 %s' % e)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
     for fn in (check_river_budget, check_open_form_cliff,
                check_allin_no_reraise_mult, check_trap_taste,
-               check_empty_range_guard):
+               check_empty_range_guard, check_replay_records):
         try:
             fn()
         except Exception as e:

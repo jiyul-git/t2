@@ -1,5 +1,5 @@
 """히어로가 직접 치는 실전 진행기. 필드 전체가 실제로 돌아간다."""
-import json, os, random, math
+import json, os, random, math, time
 import zlib as _zlib
 import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
 from table import BLINDS
@@ -84,12 +84,19 @@ def load():
 # ---------- 게임 생성 ----------
 def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
              hands_per_level=12, fmt=None):
+    # 지우지 말고 옮긴다. 예전에는 os.remove 였는데, T2_LIVE_STATE 로 상태
+    # 파일을 다른 경로에 두어도 **아카이브는 여전히 모듈 폴더(D)에 _SUFFIX
+    # 이름으로 쓰인다.** 그래서 격리한 줄 알고 테스트를 돌렸다가 진행 중이던
+    # 세션의 37핸드 기록을 통째로 날렸다. 되돌릴 방법이 없었다.
+    _stamp = time.strftime('%Y%m%d_%H%M%S')
     for fn in ('hand_archive2%s.jsonl' % _SUFFIX, 'book%s.json' % _SUFFIX,
                'dynamics%s.json' % _SUFFIX, 'bot_hands%s.jsonl' % _SUFFIX):
         p = os.path.join(D, fn)
-        if os.path.exists(p):
-            try: os.remove(p)
-            except OSError: pass
+        if os.path.exists(p) and os.path.getsize(p) > 0:
+            try: os.rename(p, os.path.join(D, 'bak_%s_%s' % (_stamp, fn)))
+            except OSError:
+                try: os.remove(p)
+                except OSError: pass
     f = FS.Field(entries=entries, start_stack=start_stack, hero_pid=0,
                  seed=seed, hands_per_level=hands_per_level, itm_frac=itm_frac,
                  fmt=fmt)
