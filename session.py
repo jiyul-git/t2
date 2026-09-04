@@ -193,6 +193,11 @@ class HandRun:
                                   / max(1, h.bb)) or None,
                     erosion=getattr(h, 'erosion_per_hand', 0.0),
                     bb_chips=h.bb,
+                    # 어그레서가 이미 올인이면 리레이즈 대상이 없다.
+                    # 이 정보가 없어서 올인 금액을 '큰 오픈'으로 보고 그 위에
+                    # 3벳 배수를 곱했고, 100bb 가 22bb 상대로 통째로 올인했다.
+                    opener_allin=(aggressor is not None
+                                  and rnd.stacks.get(aggressor, 1) <= 0),
                     # 뒤에 남은 사람 / 림퍼의 추정치. 예전에는 오픈·아이소가
                     # 상대 정보를 전혀 안 받았다 — 뒤 스택은 넘어가는데
                     # 뒤 사람의 성향은 안 넘어갔다.

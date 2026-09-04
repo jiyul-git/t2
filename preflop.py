@@ -519,7 +519,7 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
                     raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
                     exploit=None, bf=1.0,
                     payout_flat=0.0, reentry=False, progress=0.0,
-                    seats=8, ante=True):
+                    seats=8, ante=True, opener_allin=False):
     """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
 
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
@@ -626,6 +626,14 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     if x < w_raise:
         mult = reraise_mult(raise_level, def_pos) + 1.0*n_callers
         target = open_bb*mult
+        # 상대가 이미 올인이면 리레이즈할 대상이 없다. 그런데 open_bb 에
+        # 올인 금액이 그대로 들어와서 '큰 오픈'으로 취급됐고, 거기에 3벳
+        # 배수를 또 곱해 목표가 부풀었다(22bb 올인 -> target 66bb).
+        # 그 목표는 raise_form 의 `spr_after < 0.50`(쳐놓고 접을 수 없다)에
+        # 걸려 100% 쇼브가 됐다 — **100bb 가 22bb 를 상대로 통째로 올인.**
+        # 올인 대면에서는 그 금액을 넘어설 이유가 없으므로 목표를 묶는다.
+        if opener_allin:
+            target = open_bb
         pot_bb = 1.5 + open_bb*(1 + n_callers)
         act, sz = raise_form(prof, stack_bb if stack_bb is not None else bb,
                              target, pot_bb, rng, exploit=exploit,

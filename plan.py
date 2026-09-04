@@ -1192,7 +1192,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  tilt=0.0, field_q=0.6, opp_est=None, bf=1.0,
                  seats=8, ante=True, field_avg_bb=None, erosion=0.0,
                  payout_flat=0.0, reentry=False, progress=0.0,
-                 behind_est=None, limper_est=None, bb_chips=None):
+                 behind_est=None, limper_est=None, bb_chips=None,
+                 opener_allin=False):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -1232,7 +1233,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                                     stack_bb=bb, tilt=tilt, field_q=field_q,
                                     exploit=rd, bf=bf, seats=seats, ante=ante,
                                     payout_flat=payout_flat,
-                                    reentry=reentry, progress=progress)
+                                    reentry=reentry, progress=progress,
+                                    opener_allin=opener_allin)
         role = 'defend'
 
     # 프리플랍에서 확정된 것들 — 포스트플랍 계획이 이걸 물려받는다
