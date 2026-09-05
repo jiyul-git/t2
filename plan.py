@@ -228,9 +228,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 전자는 '얼마나 자주 칠까', 후자는 '얼마나 크게 칠까'를 정한다.
     adv = (R.range_advantage(my_range, opp_range, board, seed=seed)
            if (my_range and opp_range) else 0.0)
-    # 3스트리트로 스택을 다 넣을 수 있는가. 사이즈를 미리 배분해둔다.
-    # 스트리트마다 즉흥으로 정하면 리버에 스택이 어중간하게 남는다.
-    _so = stackoff_plan(hero, board, profile, pot, stack, street, rng)
+    # 사이즈 배분은 rel/made 를 알아야 목표를 정할 수 있어 아래로 옮겼다.
     s_true = spr(stack, pot)
     s = s_true * PS.calc_noise(profile, 'spr', rng) if profile.get('concepts') else s_true
     # SPR 인식. 예전에는 개념 2.5 미만이면 s=5.0 으로 **통째로 무시**했다.
@@ -250,6 +248,14 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                         bot.made_strength(hero, board) if board else 0)
     monster = made >= 5                     # 플러시 이상은 다인원 보정 면제
     strong  = made >= 3                     # 트립스 이상
+
+    # 3스트리트로 목표치를 다 넣을 수 있는가. 사이즈를 미리 배분해둔다.
+    # 스트리트마다 즉흥으로 정하면 리버에 스택이 어중간하게 남는다.
+    # 목표(commit)는 강도가 정하고, 역산 능력은 sk('spr')이 가른다.
+    _commit = target_commit(profile, rel, made, s_true, street,
+                            opp_stack_bb=opp_stack_bb)
+    _so = stackoff_plan(hero, board, profile, pot, stack, street, rng,
+                        commit=_commit)
 
     # 다인원 보정: 밸류 문턱이 올라가고 블러프는 급감한다
     mw = max(0, n_opp - 1)
@@ -590,13 +596,19 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         return 'call', 0.0, need, '넛급이나 콜 선택'
 
     # --- 밸류 계획: 레이즈할 것인가 ---
-    if plan in ('value_3street', 'trap') and eq > need + 0.15:
+    # value_2street 가 빠져 있었다. 그래서 2스트리트 밸류 계획인 봇은 저항이
+    # 오면 이 분기를 못 타고 아래로 흘러가 팟오즈만으로 콜/폴드가 정해졌다.
+    # **밸류 계획의 목적은 팟을 목표까지 키우는 것이므로, 상대 벳이 목표에
+    # 못 미치면 레이즈로 채우는 것이 계획의 일부다.**
+    if plan in ('value_3street', 'value_2street', 'trap') and eq > need + 0.15:
         rr = PS.sk(profile, 'reraise')/10.0 if has_c else 0.5
         so = PS.sk(profile, 'stackoff')/10.0 if has_c else 0.5
         p = 0.20 + 0.55*rr + (0.25 if committed else 0.0)
         p *= (0.7 + 0.06*profile.get('aggr', 5))
         if committed and so < 0.35:
             p *= 0.5
+        if plan == 'value_2street':
+            p *= 0.80                      # 2스트리트 계획은 3스트리트보다 소극적
         if rel_ps >= 0.95:
             floor = 0.38 + 0.42*rr
             if street == 'river': floor *= 0.85
@@ -605,8 +617,17 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
             p = max(p, 0.22 + 0.34*rr)
         p = min(p, 0.93)
         if rng.random() < max(0.05, min(0.92, p)):
-            return 'raise', 1.1, need, '밸류 레이즈(%.0f%%)' % (p*100)
-        return 'call', 0.0, need, '밸류이나 콜 선택'
+            # 레이즈 크기는 **목표 대비 부족분**이 정한다. 고정 배수(1.1)면
+            # 상대가 이미 크게 쳐서 목표를 채워준 경우에도 똑같이 올린다.
+            _so = plan_state.get('stackoff') or {}
+            _cm = _so.get('commit') if isinstance(_so, dict) else None
+            mult = 1.1
+            if _cm and stack > 0:
+                want = stack*float(_cm)            # 넣을 작정인 총액
+                gap = max(0.0, want - tocall) / max(1.0, want)
+                mult = max(0.75, min(1.6, 0.75 + 0.85*gap))
+            return 'raise', mult, need, '밸류 레이즈(%.0f%%, x%.2f)' % (p*100, mult)
+        return 'call', 0.0, need, '밸류이나 콜 선택(상대가 팟을 키워줌)'
 
     # --- 블러프 레이즈: reraise × bluff 개념 ---
     # 계획을 반드시 본다. 예전에는 plan 조건이 없어서 pot_control(팟을 작게
@@ -1576,25 +1597,66 @@ def checkraise_size(profile, pot, tocall, stack, board, street, rng):
     return int(min(stack, max(tocall*2.2, round(target/100)*100)))
 
 
-def stackoff_plan(hero, board, profile, pot, stack, street, rng):
-    """강한 핸드로 리버 올인까지 가는 사이즈 배분.
-       SPR이 낮을수록 유효하고, 딥에서는 사실상 불가능하다."""
+def target_commit(profile, rel, made, s, street, opp_stack_bb=None):
+    """이 핸드로 **스택의 몇 %까지 넣을 작정인가**. 0~1.
+
+    value_Nstreet 의 뜻을 '몇 번 친다'에서 '목표까지 팟을 키운다'로 바꾸는
+    축이다. 횟수로 정의하면 상대가 대신 키워줬을 때 계획이 무너진다 —
+    상대 벳은 내 목표를 대신 채워준 것이므로 콜이 계획의 일부여야 하고,
+    모자라면 레이즈로 채우는 것이 같은 계획의 다른 수단이다.
+
+    **이건 공부한 사람의 개념이다.** 역산을 못 하는 사람은 목표라는 것이
+    없고 습관 사이즈로 친다. 그래서 aware(sk('spr'))로 두 판단을 섞는다.
+    aware 가 0 이면 강도와 무관한 습관값으로 수렴한다.
+    """
+    # 레귤러의 목표: 강도가 높을수록 전액에 가깝다.
+    # rel 0.5 부근에서 급히 오르지 않게 완만한 곡선으로 둔다 —
+    # 계단이면 rel 0.69 와 0.71 이 완전히 다른 사람이 된다.
+    tgt = max(0.12, min(1.0, 0.10 + 1.15*max(0.0, rel - 0.30)))
+    if made >= 5:                      # 셋 이상 — 전액을 목표로
+        tgt = max(tgt, 0.92)
+    # 상대가 못 따라올 목표는 의미가 없다. 상대 스택이 얕으면 그만큼만.
+    if opp_stack_bb and s > 0:
+        tgt = min(1.0, tgt)
+    aware = 1.0
+    if profile.get('concepts'):
+        aware = max(0.0, min(1.0, (PS.sk(profile, 'spr') - 2.0) / 6.0))
+    habit = 0.55                       # 목표 개념이 없는 사람의 습관적 지출
+    return max(0.05, min(1.0, tgt*aware + habit*(1.0 - aware)))
+
+
+def stackoff_plan(hero, board, profile, pot, stack, street, rng,
+                  commit=1.0):
+    """목표까지 팟을 키우는 스트리트별 사이즈 배분.
+
+    commit 은 '스택의 몇 %까지 넣을 작정인가'(target_commit). 1.0 이면
+    예전과 같은 전액 스택오프다. 예전에는 목표가 항상 전액으로 고정이라
+    **강도가 중간인 핸드의 '여기까지만 키운다'를 표현할 수 없었다.**
+    """
     s = spr(stack, pot)
     so = PS.sk(profile, 'stackoff') if profile.get('concepts') else 4.0
-    if s < 1.2:
+    eff = max(1.0, stack*max(0.05, min(1.0, commit)))   # 실제로 넣을 칩
+    s_eff = spr(eff, pot)
+    if s_eff < 1.2:
         return {'ok': True, 'why': 'SPR %.1f — 이미 커밋, 계획 불필요' % s,
+                'commit': round(commit, 2),
                 'flop': 0.75, 'turn': 1.0, 'river': 1.0}
-    if s <= 5.5:
-        # 3스트리트로 정확히 다 넣는 기하급수 사이즈
-        r = (2*stack/pot + 1) ** (1/3)
+    if s_eff <= 5.5:
+        # 3스트리트로 목표치를 정확히 다 넣는 기하급수 사이즈
+        r = (2*eff/pot + 1) ** (1/3)
         frac = (r - 1) / 2
-        return {'ok': True, 'why': 'SPR %.1f — 3스트리트 스택오프 가능' % s,
+        return {'ok': True, 'why': 'SPR %.1f · 목표 %.0f%% — 3스트리트 배분'
+                                   % (s, commit*100),
+                'commit': round(commit, 2),
                 'flop': round(frac, 2), 'turn': round(frac, 2), 'river': round(frac, 2)}
-    if s <= 10 and so >= 6.5:
+    if s_eff <= 10 and so >= 6.5:
         # 오버벳 성향이 강한 사람만 시도
-        r = (2*stack/pot + 1) ** (1/3)
+        r = (2*eff/pot + 1) ** (1/3)
         frac = min(1.6, (r - 1) / 2)
-        return {'ok': True, 'why': 'SPR %.1f — 오버벳으로 스택오프 시도(소수 유형)' % s,
+        return {'ok': True, 'why': 'SPR %.1f · 목표 %.0f%% — 오버벳 배분(소수 유형)'
+                                   % (s, commit*100),
+                'commit': round(commit, 2),
                 'flop': round(frac, 2), 'turn': round(frac, 2), 'river': round(frac, 2)}
     return {'ok': False, 'why': 'SPR %.1f — 딥스택이라 3스트리트로 못 넣음' % s,
+            'commit': round(commit, 2),
             'flop': 0.6, 'turn': 0.65, 'river': 0.7}
