@@ -154,7 +154,11 @@ def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, st
         new['revised'] = True
         # 이전 스트리트들의 의도·이탈 기록은 계획의 이력이다. 새 계획을 세워도 유지한다.
         # (make_plan 이 새 dict 를 반환하므로 명시적으로 옮기지 않으면 사라진다)
-        for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets'):
+        # plan_since 가 빠져 있었다. 보드가 크게 바뀌어 make_plan 이 재호출되면
+        # 계획 시작 시점이 사라져 **예산(budget_left) 기준점이 리셋**된다.
+        # update_plan 의 승계 목록과 동일하게 유지한다.
+        for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
+                  'plan_since'):
             if state.get(k) is not None:
                 new[k] = state[k]
         return new

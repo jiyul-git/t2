@@ -1380,7 +1380,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
 
     if street != st.get('street_made') and street not in (st.get('refreshed') or []):
         st = refresh(st, hero, board, opp_range, profile, pot, stack, street,
-                     n_opp, seed=seed, opp_est=opp_est)
+                     n_opp, seed=seed, opp_est=opp_est, my_range=my_range)
         st.setdefault('refreshed', []).append(street)
 
     st = river_fix(st, hero, board, profile, opp_range, rng)
@@ -1527,9 +1527,24 @@ def _allowed(profile, plan, rng=None):
 
 
 def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1, seed=None,
-            opp_est=None):
-    """계획은 유지하되 rel/eq/outs/danger 를 현재 보드로 갱신하고,
-       근거가 무너지면 계획을 강등한다."""
+            opp_est=None, my_range=None):
+    """계획은 유지하되 **보드 의존 지표를 현재 보드로 한 번에 갱신**하고,
+       근거가 무너지면 계획을 강등한다.
+
+    예전에는 rel/eq/outs/danger 만 갱신하고 nut_adv/range_adv 는 빠져 있었다.
+    그 둘은 make_plan(플랍, 또는 board_changed 시 revise_plan)에서만 계산되어
+    **플랍 값이 턴·리버까지 그대로 승계**됐다. 계측으로 확인한 실제 사례:
+
+        flop  3cTs7d    nut_adv -0.08 range_adv -0.15  (계산 호출 1회)
+        turn  3cTs7dTh  nut_adv -0.08 range_adv -0.15  (계산 호출 **0회**)
+
+    보드도 상대 레인지도 바뀌었는데 함수가 아예 안 불렸다. 그리고 이 값들은
+    로그가 아니라 **판단 입력**이다 — decide_size(483), overbet_frac(763),
+    bluff_mode 의 양극화 조건(1763)이 소비한다. 즉 '칠까 말까'는 최신값
+    (decide_aggression 이 자체 재계산)인데 '얼마나·어떻게'는 낡은 값이었다.
+
+    새 보드 의존 지표를 추가할 때도 여기 한 곳에서 갱신한다.
+    """
     st = dict(state)
     # 플랍을 체크백했는가. 지연 씨벳(delayed_cbet)이 이걸 본다.
     # 의도 기록에서 읽는다 — 별도 상태를 만들면 두 곳이 어긋난다.
@@ -1543,6 +1558,13 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     rel_true = relative_strength(hero, board, opp_range)
     rel = perceived_rel(profile, rel_true, hero, board, outs, made)
     eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
+    # 레인지 우위도 같은 시점에 갱신한다. my_range 가 없으면(구 호출부)
+    # 이전 값을 유지해 동작을 깨지 않는다.
+    _mr = my_range if my_range is not None else st.get('my_range')
+    if _mr and opp_range:
+        st['nut_adv'] = round(R.nut_advantage(_mr, opp_range, board), 2)
+        st['range_adv'] = round(
+            R.range_advantage(_mr, opp_range, board, seed=seed), 2)
     st.update({'rel': round(rel,2), 'eq': round(eq,3), 'outs': outs,
                'made': made, 'danger': round(bot.board_danger(board),2)})
     why = list(st.get('why') or [])

@@ -281,6 +281,40 @@ def check_belief_observer_dependent():
               sharp['concept_belief']['range_read']))
 
 
+
+def check_board_metrics_refresh():
+    """스트리트가 바뀌면 nut_adv/range_adv 가 실제로 재계산되는가.
+
+    값 비교만으로는 우연히 같은 경우를 구분할 수 없어 **호출 자체**를 센다.
+    """
+    import ranges as _R
+    import plan as _PL
+    cnt = {'n': 0, 'a': 0}
+    _n, _a = _R.nut_advantage, _R.range_advantage
+
+    def n2(*x, **k):
+        cnt['n'] += 1
+        return _n(*x, **k)
+
+    def a2(*x, **k):
+        cnt['a'] += 1
+        return _a(*x, **k)
+    _R.nut_advantage = _PL.R.nut_advantage = n2
+    _R.range_advantage = _PL.R.range_advantage = a2
+    try:
+        st = {'plan': 'value_2street', 'rel': 0.6, 'my_range': [('As', 'Kd')],
+              'street_made': 'flop', 'refreshed': ['flop']}
+        _PL.refresh(st, ['As', 'Kd'], ['2c', '7d', '9s', 'Th'],
+                    [('Qh', 'Qs'), ('8c', '8d')], _prof(), 6000, 40000,
+                    'turn', n_opp=1, seed=1, my_range=[('As', 'Kd')])
+    finally:
+        _R.nut_advantage = _PL.R.nut_advantage = _n
+        _R.range_advantage = _PL.R.range_advantage = _a
+    report('refresh 가 레인지 우위를 재계산한다',
+           cnt['n'] >= 1 and cnt['a'] >= 1,
+           'nut %d회 / adv %d회' % (cnt['n'], cnt['a']))
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
@@ -290,7 +324,8 @@ def main():
                check_bluff_disguise, check_commit_by_study,
                check_semibluff_transition, check_fold_equity_sizing,
                check_no_profile_leak, check_archetype_not_driving,
-               check_belief_observer_dependent):
+               check_belief_observer_dependent,
+               check_board_metrics_refresh):
         try:
             fn()
         except Exception as e:
