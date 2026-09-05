@@ -1602,6 +1602,9 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         st['nut_adv'] = round(R.nut_advantage(_mr, opp_range, board), 2)
         st['range_adv'] = round(
             R.range_advantage(_mr, opp_range, board, seed=seed), 2)
+    # 갱신 **전** 값을 잡아둔다. st.update 뒤에는 이전 강도를 알 수 없다.
+    _prev_made = st.get('made') or 0
+    _prev_rel = st.get('rel') or 0.0
     st.update({'rel': round(rel,2), 'eq': round(eq,3), 'outs': outs,
                'made': made, 'danger': round(bot.board_danger(board),2)})
     why = list(st.get('why') or [])
@@ -1691,6 +1694,26 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     elif old == 'bluff_2street' and rel >= 0.75:
         st['plan'] = 'value_2street'
         why.append('%s: 블러프였으나 강도 상승 → 밸류 전환' % street)
+    elif (old == 'value_2street'
+          and made > _prev_made
+          and rel >= max(0.85, _prev_rel)
+          and budget_left(st, 'value_2street', street) is not None
+          and budget_left(st, 'value_2street', street) <= 0):
+        # **예산이 다 떨어졌는데 강도가 더 올라간 경우.**
+        # value_2street 은 '두 스트리트에 걸쳐 밸류를 뽑는다'는 계획이라
+        # 플랍·턴을 치면 리버에 못 친다. 그런데 리버에 완성 강도가 올라가면
+        # (예: 투페어 → 풀하우스) 그 계획의 전제 자체가 바뀐다.
+        # 예전에는 value_2street 에서 올라가는 경로가 없어, 리버에 풀하우스를
+        # 완성하고도(rel 1.00, made 7) 예산 0 때문에 체크했다.
+        #
+        # rel 숫자 하나로 승격시키지 않는다. **완성 강도가 실제로 올라갔고
+        # (made 증가), 상대 레인지 대비도 여전히 최상위이며, 예산이 소진돼
+        # 계획이 더는 유효하지 않을 때**만 올린다. 예산이 남아 있으면 원래
+        # 계획대로 치면 되므로 승격할 이유가 없다.
+        st['plan'] = 'value_3street'
+        st['plan_goal'] = 'value_3street'
+        why.append('%s: 예산 소진 후 강도 상승(rel %.2f, made %d→%d) → 3스트리트 승격'
+                   % (street, rel, _prev_made, made))
     st['plan'] = _allowed(profile, st['plan'],
                           random.Random(_zlib.crc32(repr((hero, board, street)).encode())))
     # why 는 스트리트를 넘어 누적된다. 그대로 두면 턴 로그에 플랍 사유가

@@ -341,6 +341,31 @@ def check_trap_goal_mode():
                                         hit.get('plan_mode')))
 
 
+
+def check_value2_promotion():
+    """예산 소진 후 강도가 오르면 value_3street 로 승격되는가 (핸드 #27)."""
+    import plan as _PL
+    prof = _prof()
+    st = {'plan': 'value_2street', 'plan_goal': 'value_2street',
+          'plan_since': 'flop', 'bet_streets': ['flop', 'turn'],
+          'rel': 0.92, 'made': 3, 'street_made': 'flop',
+          'refreshed': ['flop', 'turn'], 'my_range': [('Kc', 'Kh')],
+          'intents': {}}
+    board = ['Jc', 'As', 'Kd', '2d', 'Ks']
+    opp = [('Ad', 'Qd'), ('Jd', 'Jh')]
+    out = _PL.refresh(dict(st), ['Kc', 'Kh'], board, opp, prof, 32500, 22400,
+                      'river', n_opp=2, seed=1, my_range=[('Kc', 'Kh')])
+    report('예산 소진 후 강도 상승 -> 3스트리트 승격',
+           out.get('plan') == 'value_3street',
+           'value_2street -> %s (made 3->%s)' % (out.get('plan'), out.get('made')))
+    st2 = dict(st, bet_streets=[])
+    out2 = _PL.refresh(dict(st2), ['Kc', 'Kh'], board, opp, prof, 32500, 22400,
+                       'river', n_opp=2, seed=1, my_range=[('Kc', 'Kh')])
+    report('예산이 남아 있으면 승격하지 않는다',
+           out2.get('plan') == 'value_2street',
+           '결과 %s' % out2.get('plan'))
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
@@ -351,7 +376,8 @@ def main():
                check_semibluff_transition, check_fold_equity_sizing,
                check_no_profile_leak, check_archetype_not_driving,
                check_belief_observer_dependent,
-               check_board_metrics_refresh, check_trap_goal_mode):
+               check_board_metrics_refresh, check_trap_goal_mode,
+               check_value2_promotion):
         try:
             fn()
         except Exception as e:
