@@ -430,3 +430,37 @@ turn  value_3street  rel 1.00 eq 0.862 made 3   raise 18,200
 2번은 설계상 `decide_response` 가 별도 판단하므로 값 자체는 정상이나,
 **기록만 보면 의도와 실행이 어긋나 보인다.** 3번은 세 핸드에서 모두
 플랍 값이 그대로라 우연으로 보기 어렵다.
+
+## STEP 5-B — 경계조건 테스트 (12시드 × 45핸드)
+
+고쳤지만 실전에서 밟지 않았던 경로를 의도적으로 찔렀다.
+
+| 경로 | 결과 | 판정 |
+|---|---|---|
+| plan_since 승계 (board_changed → revise_plan) | 257/257 유지, 손실 0 | PASS |
+| _no_bite (트랩 미성립 → 모드 종료) | 6/6, goal=value_3street / mode=None | PASS |
+| 다중 액션 (한 스트리트 2회 이상) | 186건 | **부분 재현** |
+| 예산 소진 + 저항 | 119건, 꼬임 없음 | PASS |
+| board_changed | 257건 | PASS |
+
+`plan_since` 검증이 특히 유효했다. 계획이 `pot_control → value_2street` 로
+**재생성됐는데도** `since=flop` 이 유지됐다 — lifecycle 수정이 실제 경로에서
+작동한다는 뜻.
+
+`intents=[check, check] / resps=[null, call]` 은 STEP 2 가 의도한 구조가
+드러난 것이다. 최초 의도를 대응으로 덮어쓰지 않았다.
+
+### known issue — same-street range refresh (수정하지 않음)
+
+이전 서술("같은 스트리트에서 상대 레인지가 바뀌어도 refresh 가 안 된다")을
+관측에 맞게 정정한다.
+
+> 다중 액션 186건 중 **58건에서 metric 이 동일**하게 유지됐고,
+> **128건에서는 다른 경로를 통해 갱신**됐다. 따라서 `refreshed` 가드만으로
+> '항상 stale' 이라고 볼 수 없으며, 일부 실행 경로에서만 레인지 의존 지표
+> 갱신이 누락될 가능성이 있다.
+
+58건을 곧바로 오류로 판정하면 안 된다. 확인하려면 최소한
+`opp_range` 해시(전/후), 계산 호출 여부, 지표 값(전/후)을 함께 봐야 한다.
+`range_advantage` 는 샘플링 기반이라 입력이 달라도 우연히 같을 수 있고,
+`nut_advantage` 는 더 직접적으로 확인 가능하다.
