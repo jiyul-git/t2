@@ -199,6 +199,21 @@ def check_semibluff_transition():
            '완성 %s / 소멸 %s' % (hit['plan'], dead['plan']))
 
 
+
+def check_fold_equity_sizing():
+    """폴드율 역산이 상대 성향에 반응하고 요구폴드율을 밑도는가."""
+    prof = _prof()
+    lo = PL.barrel_size(0.20, prof)
+    hi = PL.barrel_size(0.65, prof)
+    ok_dir = hi > lo + 0.2
+    report('안 접는 상대엔 작게, 잘 접으면 크게', ok_dir,
+           '폴드20%% -> %.0f%% / 폴드65%% -> %.0f%%' % (lo*100, hi*100))
+    bad = [f for f in (0.20, 0.35, 0.50, 0.65)
+           if PL.breakeven_fold(PL.barrel_size(f, prof)) >= f]
+    report('요구 폴드율이 상대 폴드율을 넘지 않음', not bad,
+           '위반 %d건' % len(bad))
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
@@ -206,7 +221,7 @@ def main():
                check_allin_no_reraise_mult, check_trap_taste,
                check_empty_range_guard, check_replay_records,
                check_bluff_disguise, check_commit_by_study,
-               check_semibluff_transition):
+               check_semibluff_transition, check_fold_equity_sizing):
         try:
             fn()
         except Exception as e:

@@ -395,6 +395,18 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     elif outs >= 8 and to_act_behind <= 1 and sk('semibluff') >= 0.4 \
          and rng.random() < min(0.95, 0.25 + 0.24*sk('semibluff')):
         plan = 'semibluff'; why.append('드로우 %d아웃 → 세미블러프' % outs)
+        # 세미블러프는 이기는 경로가 둘(접거나, 맞추거나)이라 순수 블러프와
+        # 다르다. **위장(merged)은 필요가 적고** — 콜받아도 손해가 아니므로
+        # 밸류인 척할 이유가 약하다 — **포기(probe)는 방향이 반대다** — 미스해도
+        # 아웃츠가 남아 있으면 계속 갈 이유가 있다.
+        # 그래서 폴드율 역산(barrel)만 적용한다.
+        _fe = 0.5
+        if isinstance(opp_est, dict) and opp_est.get('fold') is not None:
+            _fe = float(opp_est['fold'])
+        _bluff_mode = 'barrel'
+        _bluff_mul = barrel_size(_fe, profile, floor=0.35, cap=1.20)
+        why.append('세미블러프 사이즈: 폴드율 %.0f%% 역산 → 팟의 %.0f%%'
+                   % (_fe*100, _bluff_mul*100))
     # **쇼다운 가치가 있으면 블러프 계획으로 가지 않는다.**
     # 예전에는 이 분기가 made 를 확인하지 않아, 세컨페어(made 1, eq 0.38)가
     # '쇼다운 가치 없음'이라는 이유로 2스트리트 블러프가 됐다.
@@ -856,6 +868,9 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
             # **계획명 자체를 밸류로 바꿔** 이후 경로를 통째로 같게 만든다.
             plan = 'value_2street'
             base = SIZING.get(plan, {}).get(street, base)
+        elif _bm == 'barrel':
+            # 폴드율에서 역산한 **절대 사이즈**다(배수가 아니다).
+            base = float((plan_state or {}).get('bluff_mul') or base)
         else:
             base *= float((plan_state or {}).get('bluff_mul') or 1.0)
     # 예산 소진 검사. 이름이 2스트리트인 계획이 3배럴이 되면 안 된다.
@@ -1669,6 +1684,35 @@ def target_commit(profile, rel, made, s, street, opp_stack_bb=None,
     return max(0.05, min(1.0, tgt*aware + habit*(1.0 - aware)))
 
 
+def breakeven_fold(size_frac):
+    """이 사이즈로 블러프할 때 **상대가 몇 % 접어야 본전인가.**
+
+    팟 대비 f 를 걸면 f/(1+f). 팟의 절반이면 33%, 팟만큼이면 50%.
+    사이즈가 커질수록 요구 폴드율이 가파르게 오른다.
+    """
+    f = max(0.01, float(size_frac))
+    return f / (1.0 + f)
+
+
+def barrel_size(fold_est, profile, floor=0.15, cap=1.10):
+    """상대 폴드 성향에서 **역산한** 블러프 사이즈.
+
+    필요 폴드율이 상대의 실제 폴드 확률보다 낮아야 이익이다.
+    그래서 목표 필요폴드율을 상대 폴드율에서 마진만큼 뺀 값으로 두고,
+    거기서 사이즈를 되돌린다 — f = r/(1-r).
+
+    예전에는 barrel 이 고정 배수(1.15/0.85)로 근사했다. 상대가 30% 접는지
+    70% 접는지가 사이즈에 제대로 반영되지 않았다.
+    """
+    r = max(0.05, min(0.75, float(fold_est)))
+    margin = 0.08
+    if profile and profile.get('concepts'):
+        # 폴드에퀴티 개념이 낮으면 마진을 크게 잡지 못하고 대충 친다.
+        margin = 0.03 + 0.010*PS.sk(profile, 'fold_equity')
+    r_t = max(0.05, r - margin)
+    return max(floor, min(cap, r_t / max(0.05, 1.0 - r_t)))
+
+
 def bluff_mode(profile, rel, danger, nut_adv, opp_est, street, s, rng):
     """블러프라는 **큰 전략** 아래 어떤 세부 전략으로 갈 것인가.
 
@@ -1715,8 +1759,12 @@ def bluff_mode(profile, rel, danger, nut_adv, opp_est, street, s, rng):
         return 'polarized', 1.45, '상대가 사이즈를 읽음 + 넛 우위 — 양극화'
     if reads >= 0.55:
         return 'merged', 1.0, '상대가 사이즈를 읽음 — 밸류와 같은 사이즈로 위장'
-    return 'barrel', (1.15 if folds >= 0.5 else 0.85), \
-        '상대가 사이즈를 안 읽음 — 폴드율 위주(상대 폴드 %.0f%%)' % (folds*100)
+    # barrel 은 폴드율에서 사이즈를 **역산한다**. 고정 배수는 상대가 30%
+    # 접는지 70% 접는지를 사이즈에 제대로 싣지 못했다.
+    _bs = barrel_size(folds, profile)
+    return 'barrel', _bs, \
+        '상대가 사이즈를 안 읽음 — 폴드율 %.0f%% 역산(팟의 %.0f%%, 요구 %.0f%%)' \
+        % (folds*100, _bs*100, breakeven_fold(_bs)*100)
 
 
 def spread_curve(profile, danger, opp_est=None):
