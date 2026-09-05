@@ -348,7 +348,25 @@ class HandRun:
                 behind = len([x for x in order if x not in r2.acted and x != s and x not in r2.folded])
                 n_opp = len(r2.live())-1
                 _seats, _ante = len(h.seats), (getattr(h, 'ante', h.bb) > 0)
-                my_r = R.preflop_range(ax, h.pos[s], 'open' if s == aggressor else 'call',
+                # **프리플랍 역할과 포스트플랍 공격자는 다른 개념이다.**
+                # 예전에는 'open' if s == aggressor 로 포스트플랍 공격자에게
+                # 프리플랍 오픈 레인지를 매겼다. BB 가 플랍에서 베팅하면
+                # role='open' 이 되는데, BB 는 프리플랍에 오픈한 적이 없다.
+                # 그 결과 BB/open 호출 70회가 **전부 빈 레인지**를 반환했고,
+                # nut_adv/range_adv 가 0 으로 죽고 opp_r 폴백까지 오염됐다.
+                # 프리플랍 역할은 이미 pf_seed 에 저장돼 있다 — 추정하지 않는다.
+                _pfr = (getattr(h, 'pf_seed', {}) or {}).get(s) or {}
+                # BB 는 예외다. BB 의 iso(림퍼에게 격리 레이즈)는 프리플랍
+                # '오픈'이 아니라 **이미 블라인드로 들어와 있는 상태에서 올린
+                # 것**이라 레인지 기반이 call 쪽이다. BB/open 은 _base_open 이
+                # 사실상 0 이라 pf_range 개념이 8.8 이어도 빈 레인지가 된다.
+                _role = {'open': 'open', 'iso': 'open',
+                         'defend': 'call'}.get(_pfr.get('pf_role'))
+                if h.pos[s] == 'BB' and _role == 'open':
+                    _role = 'call'
+                if _role is None:      # 프리플랍 기록이 없으면 종전 추정
+                    _role = 'open' if s == aggressor else 'call'
+                my_r = R.preflop_range(ax, h.pos[s], _role,
                                        h.bbs(s), set(board), opener_pos=h.pos.get(aggressor),
                                        seats=_seats, ante=_ante)
                 my_r = sorted(set(my_r))      # 순서 확정 (판단이 순서에 의존하면 안 된다)
@@ -357,7 +375,17 @@ class HandRun:
                     if o == s: continue
                     oax, _ = h.axes(o)
                     # 3벳을 친 상대라면 폴라라이즈 정도를 반영한다.
-                    _act_o = 'open' if o == aggressor else 'call'
+                    # 상대 레인지도 같은 문제였다. 포스트플랍 공격자에게
+                    # 프리플랍 오픈 레인지를 매기면 BB 는 빈 레인지가 된다.
+                    # 관찰자는 상대의 pf_seed 를 직접 볼 수 없지만, 상대가
+                    # 프리플랍에 어떤 액션을 했는지는 **공개 정보**다.
+                    _pfo = (getattr(h, 'pf_seed', {}) or {}).get(o) or {}
+                    _act_o = {'open': 'open', 'iso': 'open',
+                              'defend': 'call'}.get(_pfo.get('pf_role'))
+                    if h.pos[o] == 'BB' and _act_o == 'open':
+                        _act_o = 'call'
+                    if _act_o is None:
+                        _act_o = 'open' if o == aggressor else 'call'
                     _pol = 0.0
                     _oe = RD.perceived_profile(
                         h.book, self._pid(s), self._pid(o), ax,
