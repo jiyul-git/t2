@@ -434,9 +434,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         if has_sd and sk('potcontrol') >= 1 and rng.random() < 0.72:
             plan = 'pot_control'; why.append('쇼다운 가치 있음 → 팟 컨트롤')
         elif has_sd:
-            plan = 'showdown'; why.append('쇼다운 가치 있음 → 체크다운')
-        elif has_sd:
-            plan = 'showdown'; why.append('쇼다운 가치만 있음(팟컨트롤 개념 없음) → 체크다운 지향')
+            # 팟컨트롤 개념이 없거나 확률에서 떨어진 경우. 예전에는 같은 조건의
+            # elif 가 하나 더 있어 **세 번째 분기가 도달 불가능**이었다.
+            plan = 'showdown'
+            why.append('쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 %.1f)'
+                       % (sk('potcontrol')*3.33))
         else:
             plan = 'giveup'; why.append('쇼다운 가치 없고 블러프 개념/조건 미달 → 포기')
     st = {'plan': plan, 'street_made': street, 'streets': [street],

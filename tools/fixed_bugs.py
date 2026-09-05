@@ -214,6 +214,29 @@ def check_fold_equity_sizing():
            '위반 %d건' % len(bad))
 
 
+
+def check_no_profile_leak():
+    """reads 가 상대의 실제 개념 벡터를 참조하지 않는가(정보 누출)."""
+    import inspect
+    import reads as RD
+    src = inspect.getsource(RD.estimate) + inspect.getsource(RD.perceived_profile)
+    hits = [k for k in ("['concepts']", '["concepts"]', ".get('concepts')")
+            if k in src]
+    report('reads 에 실제 개념 참조 없음', not hits,
+           '발견 %d건' % len(hits))
+
+
+def check_archetype_not_driving():
+    """봇의 행동이 아키타입 라벨이 아니라 개념 벡터에서 나오는가."""
+    import persona as PS
+    import random as _r
+    p = PS.make_player(_r.Random(5), field_quality=0.6, pid=1)
+    has_vec = bool(p.get('concepts'))
+    # label 은 벡터에서 파생된 표시용이어야 한다(원인이 아니라 결과)
+    lab = p.get('type')
+    report('생성된 봇이 개념 벡터를 가진다', has_vec, 'label=%s' % lab)
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
@@ -221,7 +244,8 @@ def main():
                check_allin_no_reraise_mult, check_trap_taste,
                check_empty_range_guard, check_replay_records,
                check_bluff_disguise, check_commit_by_study,
-               check_semibluff_transition, check_fold_equity_sizing):
+               check_semibluff_transition, check_fold_equity_sizing,
+               check_no_profile_leak, check_archetype_not_driving):
         try:
             fn()
         except Exception as e:

@@ -138,7 +138,10 @@ def step(action=None, amount=0):
         _base = st.get('seed')
         if _base is None:
             _base = random.randrange(10**9); st['seed'] = _base
-        st['hand_seed'] = _zlib.crc32(('%s|%d' % (_base, f.hand_no)).encode()) % (10**9)
+        # f 는 아래에서 만들어지므로 여기서 참조하면 UnboundLocalError 다.
+        # 핸드 번호는 이미 st 에 있다.
+        st['hand_seed'] = _zlib.crc32(
+            ('%s|%d' % (_base, st['hand_no'])).encode()) % (10**9)
         st['actions'] = []
         lv_prev = min(1 + max(0, st['hand_no']-2)//st['hpl'], len(BLINDS))
         st['notes'] = []

@@ -4,8 +4,11 @@
 규칙으로 적었다. 봇 로직을 쓰는 게 아니라 히어로 자리의 내 정책이다.
 """
 import sys, os, re
-sys.path.insert(0, '/home/claude/t2')
-os.environ.setdefault('T2_LIVE_STATE', '/home/claude/t2/claude_state.json')
+# 절대경로를 박으면 테스트 환경에 따라 **다른 복사본의 코드가 실행된다.**
+# 이 파일 위치를 기준으로 프로젝트 루트를 잡는다.
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _ROOT)
+os.environ.setdefault('T2_LIVE_STATE', os.path.join(_ROOT, 'claude_state.json'))
 import live2
 
 R = '23456789TJQKA'
