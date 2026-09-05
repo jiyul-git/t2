@@ -1386,14 +1386,32 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     # 계획 이력은 라벨과 별개로 이어진다. 새 dict 가 만들어져도 유지한다.
     if prev:
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
-                  'plan_since'):
+                  'plan_since', '_rsig'):
             if prev.get(k) is not None and st.get(k) is None:
                 st[k] = prev[k]
 
-    if street != st.get('street_made') and street not in (st.get('refreshed') or []):
+    # 갱신 조건. 예전에는 '스트리트당 한 번'이었는데, **상대 레인지는 같은
+    # 스트리트 안에서도 액션마다 좁혀진다.** 보드 의존 지표에는 그 가드가
+    # 맞지만 레인지 의존 지표(nut_adv/range_adv)에는 맞지 않았다.
+    # 실측: 같은 스트리트 2회차 393건 중 25건이 진짜 stale 이었고,
+    # 상대 레인지가 2배로 늘거나 절반으로 준 상태에서 낡은 값을 썼다
+    # (nut 0.67 → -0.02 처럼 부호가 뒤집히는 폭).
+    # 레인지가 실제로 바뀌었을 때만 다시 갱신한다 — 같으면 재계산하지 않는다.
+    # 길이만 보면 **크기가 같은데 내용이 바뀐 경우**를 놓친다(25→17 로만
+    # 줄었다). 레인지는 콤보 집합이므로 내용 기반 서명을 쓴다.
+    # **내 레인지는 서명에서 뺀다.** 그 스트리트 안에서 내 레인지는 변하지
+    # 않는데 매번 새로 만들어져 서명만 흔들린다(실측 3건이 그 때문에
+    # 변화로 오판됐다). 같은 스트리트에서 실제로 좁혀지는 것은 상대 레인지다.
+    _rsig = 0 if not opp_range else hash(frozenset(map(str, opp_range)))
+    _first = (street != st.get('street_made')
+              and street not in (st.get('refreshed') or []))
+    _range_moved = (st.get('_rsig') is not None and st.get('_rsig') != _rsig)
+    if _first or _range_moved:
         st = refresh(st, hero, board, opp_range, profile, pot, stack, street,
                      n_opp, seed=seed, opp_est=opp_est, my_range=my_range)
-        st.setdefault('refreshed', []).append(street)
+        if _first:
+            st.setdefault('refreshed', []).append(street)
+    st['_rsig'] = _rsig
 
     st = river_fix(st, hero, board, profile, opp_range, rng)
     st['plan'] = _allowed(profile, st['plan'], rng)
