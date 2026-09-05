@@ -1689,6 +1689,20 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 리버에 트립스가 되어 rel 0.05 → 0.76, made 1 → 3 이 됐는데도
         # 계획이 턴의 pot_control 그대로 남아 체크했다.
         # rel 만이 아니라 '내 완성 강도가 올라갔는가'도 승격 근거다.
+        #
+        # **주의 — 이 made 항은 실제로는 죽어 있다.** st.update 가 위에서
+        # st['made'] 를 새 값으로 덮어쓴 뒤라 `made >= max(2, st['made']+1)`
+        # 이 `made >= made+1` 이 되어 모든 값에서 거짓이다. 실질 조건은
+        # rel >= 0.70 단독이다.
+        #
+        # _prev_made 로 고쳐봤으나 **되돌렸다.** made 1→2 가 내가 핸드를
+        # 개선한 경우와 **보드가 페어링된 경우**를 구분하지 못한다. 실측
+        # 신규 승격 11건이 대부분 페어 보드였고, rel 0.00 / eq 0.031 인
+        # 핸드까지 밸류 계획으로 승격됐다.
+        # 즉 단순 stale-variable 버그가 아니라 **made 를 승격 신호로 쓰는
+        # 설계 자체의 한계**다. eq/rel 하한을 새로 박는 방식은 결과에 맞춘
+        # 보정이 되므로 쓰지 않는다. hand-strength transition 을 제대로
+        # 정의하는 별도 설계가 필요하다(known issue E).
         st['plan'] = 'value_3street' if rel >= 0.88 else 'value_2street'
         why.append('%s: 강도 상승(rel %.2f, made %d) → 밸류 전환' % (street, rel, made))
     elif old == 'bluff_2street' and rel >= 0.75:
