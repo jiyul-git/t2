@@ -1,6 +1,7 @@
 """각 플레이어가 각자 관찰한 것만으로 상대 성향을 추정한다.
    진짜 프로필은 절대 참조하지 않는다."""
 import math, random
+import json as _json_mod, os.path as _os_path
 
 # 모집단 사전분포 — 표본이 적을 때 끌려가는 기준점
 PRIOR = {'vpip': 0.26, 'pfr': 0.15, 'cbet': 0.55, 'barrel': 0.42,
@@ -301,6 +302,76 @@ def estimate(book, observer, target, observer_type, rng=None):
             'tight': jitter(tight_axis), 'n': r['hands'], 'confidence': round(conf, 2)}
 
 
+def infer_latent(est):
+    """관찰 가능한 행동 빈도에서 **잠재요인을 추정**한다. (study, aggro, exp)
+
+    관찰자는 상대의 개념 벡터를 볼 수 없다. 볼 수 있는 건 행동뿐이다.
+    그래서 먼저 '이 사람이 어떤 부류로 보이는가'를 잡고, 거기서 개념을
+    역으로 예상한다 — 사람이 실제로 하는 추론 순서다.
+
+    근거로 쓰는 건 전부 관찰 가능한 것이다.
+      림핑 격차(vpip-pfr) — 크면 공부가 덜 된 신호
+      c벳/배럴 빈도       — 공격 기질
+      사이즈 편차(sz_sd)  — 작으면 정형화된 레귤러
+      3벳/4벳 빈도        — 레인지 개념의 대리 지표
+    """
+    vpip = est.get('vpip', PRIOR['vpip'])
+    pfr = est.get('pfr', PRIOR['pfr'])
+    gap = max(0.0, vpip - pfr)
+    sz_sd = est.get('sz_sd') or PRIOR['sz_sd']
+    tb = est.get('pf_3bet') or PRIOR['pf_3bet']
+    cbet = est.get('cbet') or PRIOR['cbet']
+    barrel = est.get('barrel') or PRIOR['barrel']
+
+    # 공부량: 림핑이 적고, 사이즈가 정형화돼 있고, 3벳을 쓸수록 높게 본다.
+    study = 5.0
+    study += -9.0*(gap - 0.10)          # 격차 0.10 을 기준
+    study += -6.0*(sz_sd - 0.22)        # 편차가 작을수록 공부한 티
+    study += 22.0*(tb - 0.07)
+    # 공격 기질: c벳·배럴·PFR 비중
+    aggro = 5.0 + 6.0*(cbet - 0.55) + 5.0*(barrel - 0.42)
+    aggro += 8.0*(pfr - 0.15)
+    # 경험: 공부와 공격의 중간쯤에 두되, 극단은 완화한다.
+    exp = 5.0 + 0.45*(study - 5.0) + 0.20*(aggro - 5.0)
+    _c = lambda v: max(0.0, min(10.0, v))
+    return _c(study), _c(aggro), _c(exp)
+
+
+def estimate_concepts(est, observer_type='TAG', rng=None, keys=None):
+    """추정한 잠재요인으로 **상대의 개념을 예상**한다. {개념: 값} + 불확실성.
+
+    생성에 쓴 것과 같은 LOADING 을 관찰자가 역으로 돌린다. 관찰자는 필드에
+    사람이 어떻게 분포하는지 경험으로 알기 때문에, '레귤러로 보이면 팟오즈는
+    알 테고 블로커는 반반이겠다'는 추론이 가능하다.
+
+    **실제 개념 벡터는 보지 않는다.** est 는 행동 빈도만 담고 있다.
+    표본이 적으면 사전분포(중앙값 5.0) 쪽으로 끌어당긴다 — 모르면 평균으로
+    보는 것이 맞고, 그래야 초반에 과신하지 않는다.
+    """
+    import persona as PS
+    study, aggro, exp = infer_latent(est)
+    n = est.get('n', 0) or 0
+    conf = est.get('confidence', 0.0) or 0.0
+    o = OBSERVER.get(observer_type, DEFAULT_OBS)
+    # 표본이 쌓일수록 추정을 믿는다. 관찰력이 낮으면 덜 믿는다.
+    w = max(0.0, min(0.85, (n / (n + 12.0)) * (0.45 + 0.6*o['skill']) * (0.5 + 0.5*conf)))
+    out, unc = {}, {}
+    for k, (ws, wa, we, base) in PS.LOADING.items():
+        if keys and k not in keys:
+            continue
+        v = base + ws*(study-5.0)*1.05 + wa*(aggro-5.0)*0.85 + we*(exp-5.0)*0.85
+        v = 5.0 + (v - 5.0)*w                    # 표본이 없으면 평균으로 수렴
+        if rng is not None and o['noise']:
+            v += rng.gauss(0, o['noise']*3.0*(1.0 - w))
+        out[k] = round(max(0.0, min(10.0, v)), 1)
+        # 불확실성: 표본이 적을수록, 개념 분산이 클수록 크다.
+        unc[k] = round((1.0 - w) * PS.SPREAD.get(k, PS.DEFAULT_SPREAD), 2)
+    return {'concepts': out, 'uncertainty': unc,
+            'latent': {'study': round(study, 1), 'aggro': round(aggro, 1),
+                       'exp': round(exp, 1)},
+            'weight': round(w, 2), 'n': n}
+
+
 def perceived_profile(book, observer, target, observer_type, rng=None):
     """'내가 관찰한 상대'. 진짜 프로필이 아니다 — 이걸 넘겨야 정보 누출이 없다.
 
@@ -309,6 +380,7 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
     상대를 착취하려면 '얼마나 씨벳하는가', '큰 벳에 접는가'가 오히려 더 중요하다.
     """
     e = estimate(book, observer, target, observer_type, rng)
+    _ec = estimate_concepts(e, observer_type, rng)
     return {'bluff': e['bluff'], 'aggr': e['aggr'], 'tight': e['tight'],
             'vpip': e['vpip'], 'pfr': e['pfr'],
             'cbet': e['cbet'], 'barrel': e['barrel'], 'ftb': e['ftb'],
@@ -321,7 +393,15 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'sz_mean': e.get('sz_mean'), 'sz_sd': e.get('sz_sd'),
             'sz_big': e.get('sz_big'), 'sz_river': e.get('sz_river'),
             'sz_n': e.get('sz_n'),
-            'type': None, 'confidence': e['confidence'], 'n': e['n']}
+            'type': None, 'confidence': e['confidence'], 'n': e['n'],
+            # 관찰된 행동에서 **예상한** 상대 개념. 실제 벡터가 아니다.
+            # 이게 없으면 소비 측(bluff_mode 의 sizing_tell 등)이 늘 기본값
+            # 0.5 로 떨어져 '상대가 사이즈를 읽는가'가 항상 반반이 됐다.
+            'est_concepts': _ec['concepts'], 'est_uncertainty': _ec['uncertainty'],
+            'est_latent': _ec['latent'], 'est_weight': _ec['weight'],
+            'sizing_tell': _ec['concepts'].get('sizing_tell'),
+            'range_read': _ec['concepts'].get('range_read'),
+            'fold': e.get('ftb')}
 
 
 import json as _json, os as _os
@@ -341,3 +421,180 @@ def load_book(path):
         try: bk.d = _json.load(open(p))
         except (OSError, ValueError): pass      # 없거나 깨진 파일만 무시
     return bk
+
+
+# ===================== OpponentBelief =====================
+# 관찰자는 상대의 개념 벡터를 **볼 수 없다.** 볼 수 있는 것은 행동 빈도뿐이다.
+# 그래서 순서가 이렇게 되어야 한다.
+#
+#   관찰 장부 → 행동 성향 추정 → "저 사람은 TAG처럼 보인다"(가설)
+#            → "그러면 range_read 는 높을 가능성이 있다"(개념 belief)
+#
+# 라벨을 확정하고 `if style == 'TAG': range_read = 7` 로 쓰면 그 순간 다시
+# 라벨이 개념의 원인이 된다. 그래서 스타일은 **단일 라벨이 아니라 분포**로 두고,
+# 개념 belief 는 그 분포로 가중 혼합한다. 관찰자마다 표본과 관찰력이 다르므로
+# 같은 상대를 봐도 서로 다른 belief 를 갖는다.
+
+# 스타일별 '이렇게 행동할 것이다'라는 관찰자의 기대치(행동 서명).
+# 개념이 아니라 **관찰 가능한 지표만** 쓴다.
+STYLE_SIG = {
+    'TAG':     {'vpip': 0.22, 'pfr': 0.17, 'aggr': 6.0, 'cbet': 0.62, 'ftb': 0.55},
+    'LAG':     {'vpip': 0.34, 'pfr': 0.27, 'aggr': 7.5, 'cbet': 0.70, 'ftb': 0.42},
+    'NIT':     {'vpip': 0.14, 'pfr': 0.10, 'aggr': 3.5, 'cbet': 0.48, 'ftb': 0.68},
+    'STATION': {'vpip': 0.38, 'pfr': 0.10, 'aggr': 2.5, 'cbet': 0.35, 'ftb': 0.25},
+    'MANIAC':  {'vpip': 0.48, 'pfr': 0.36, 'aggr': 8.5, 'cbet': 0.78, 'ftb': 0.30},
+    'FISH':    {'vpip': 0.34, 'pfr': 0.09, 'aggr': 3.0, 'cbet': 0.38, 'ftb': 0.38},
+    'ROCK':      {'vpip': 0.12, 'pfr': 0.08, 'aggr': 2.6, 'cbet': 0.42, 'ftb': 0.72},
+    'LOOSE_REG': {'vpip': 0.30, 'pfr': 0.20, 'aggr': 5.8, 'cbet': 0.60, 'ftb': 0.48},
+    'TAG_TIGHT': {'vpip': 0.17, 'pfr': 0.14, 'aggr': 5.2, 'cbet': 0.58, 'ftb': 0.60},
+    'TAG_AGGRO': {'vpip': 0.24, 'pfr': 0.20, 'aggr': 7.0, 'cbet': 0.68, 'ftb': 0.48},
+}
+
+# 스타일 가설별 개념 prior 는 **캘리브레이션 파일에서 읽는다.**
+# 손으로 적은 값은 실제 생성 분포와 달랐다(MANIAC range_read 를 4.0 으로
+# 적었으나 실측 2.37, TAG 6.8 -> 5.08). 확신이 높은 관찰자일수록 그 오차를
+# 그대로 받으므로, 추측값을 두면 belief 가 확신할수록 더 틀린다.
+#
+# tools/calibrate.py 가 **생성기를 독립 샘플링**해 만든다 — 게임 중 실제
+# 상대의 개념을 읽지 않는다. '이 필드에서 TAG 는 대체로 이렇더라'는
+# 경험칙이고, 관찰자가 필드 경험으로 알 수 있는 종류의 지식이다.
+# 평균만이 아니라 sd 를 함께 쓴다: 라벨 안의 분산이 크면 스타일을 확신해도
+# 개념은 단정할 수 없어야 한다.
+_PRIOR_PATH = _os_path.join(_os_path.dirname(_os_path.abspath(__file__)),
+                            'style_prior.json')
+STYLE_CONCEPT_PRIOR = {}
+STYLE_CONCEPT_SD = {}
+try:
+    with open(_PRIOR_PATH) as _f:
+        _cal = _json_mod.load(_f)
+    for _st, _cs in (_cal.get('styles') or {}).items():
+        STYLE_CONCEPT_PRIOR[_st] = {k: v['mean'] for k, v in _cs.items()}
+        STYLE_CONCEPT_SD[_st] = {k: v['sd'] for k, v in _cs.items()}
+except Exception:
+    # 캘리브레이션 전이면 비워둔다. 스타일 경로가 죽고 직접 경로만 쓰인다 —
+    # 추측값으로 채우는 것보다 낫다.
+    pass
+
+
+_SIG_SCALE = {'vpip': 0.11, 'pfr': 0.10, 'aggr': 2.2, 'cbet': 0.16, 'ftb': 0.16}
+
+
+def style_hypotheses(est, sharpness=1.0):
+    """관찰된 행동에서 스타일 **분포**를 만든다. 단일 라벨로 확정하지 않는다.
+
+    각 스타일의 행동 서명과 관찰값의 거리로 가능도를 매기고 정규화한다.
+    표본이 적거나 관찰력이 낮으면 sharpness 가 낮아 분포가 평평해진다 —
+    '잘 모르겠다'가 그대로 표현된다.
+    """
+    out = {}
+    for name, sig in STYLE_SIG.items():
+        d = 0.0
+        for k, v in sig.items():
+            obs = est.get(k)
+            if obs is None:
+                continue
+            d += ((float(obs) - v) / _SIG_SCALE[k]) ** 2
+        out[name] = math.exp(-0.5 * d * max(0.05, sharpness))
+    tot = sum(out.values()) or 1.0
+    return {k: v / tot for k, v in sorted(out.items(), key=lambda x: -x[1])}
+
+
+def prior_spread(styles, key):
+    """스타일 혼합에서 그 개념의 분산. 크면 prior 를 덜 믿어야 한다."""
+    v = 0.0
+    for st, p in styles.items():
+        v += p * (STYLE_CONCEPT_SD.get(st, {}).get(key, 2.5) ** 2)
+    return math.sqrt(max(0.01, v))
+
+
+def concept_belief(styles, confidence):
+    """스타일 가설 분포를 가중 혼합해 개념 belief 를 만든다.
+
+    확신이 낮으면 중립값(5.0) 쪽으로 끌어당긴다 — 표본이 없는데 개념을
+    단정하면 그것도 정보 누출과 같은 효과가 난다.
+    """
+    keys = set()
+    for pri in STYLE_CONCEPT_PRIOR.values():
+        keys |= set(pri.keys())
+    w = max(0.0, min(1.0, float(confidence)))
+    out = {}
+    for k in sorted(keys):
+        v = sum(p * STYLE_CONCEPT_PRIOR[s].get(k, 5.0) for s, p in styles.items())
+        out[k] = round(5.0 + (v - 5.0) * (0.25 + 0.75 * w), 2)
+    return out
+
+
+def style_certainty(styles):
+    """스타일 가설이 얼마나 뾰족한가. 평평하면 0(모르겠다), 하나로 쏠리면 1."""
+    if not styles:
+        return 0.0
+    n = len(styles)
+    top = max(styles.values())
+    flat = 1.0 / n
+    return max(0.0, min(1.0, (top - flat) / max(1e-9, 1.0 - flat)))
+
+
+def opponent_belief(book, observer, target, observer_type, rng=None):
+    """관찰자의 내부 상태. **실제 프로필의 복사본이 아니다.**
+
+    두 갈래의 증거를 결합한다. 어느 쪽도 정답이 아니고 **둘 다 관찰에서
+    나온 추정**이므로, 고정 비율이 아니라 각자의 확신도로 가중한다.
+
+      직접 경로  행동 → 잠재요인(study/aggro/exp) → 개념 (estimate_concepts)
+                 연속적이고 정밀하다.
+      스타일 경로 행동 → "TAG 같다"는 가설 분포 → 그 스타일의 개념 prior
+                 사람이 실제로 하는 중간 추론이다.
+
+    둘 다 약하면 중립(5.0)으로 끌린다 — 모르면 평균으로 보는 것이 맞다.
+    """
+    est = perceived_profile(book, observer, target, observer_type, rng)
+    o = OBSERVER.get(observer_type, DEFAULT_OBS)
+    n = est.get('n') or 0
+    conf = est.get('confidence') or 0.0
+
+    # 스타일 가설 — 표본과 관찰력이 분포의 날카로움을 정한다.
+    sharp = max(0.03, (0.15 + 1.20 * conf) * (0.15 + 1.9 * o['skill']) ** 2)
+    styles = style_hypotheses(est, sharp)
+    s_cert = style_certainty(styles)
+
+    # 직접 경로 — 기존 층을 그대로 쓴다(대체하지 않는다).
+    ec = estimate_concepts(est, observer_type, rng)
+    direct, unc, w_direct = ec['concepts'], ec['uncertainty'], ec['weight']
+
+    # 스타일 경로의 개념 prior
+    prior = concept_belief(styles, conf)
+
+    w_style = s_cert * (0.30 + 0.70 * o['skill'])
+    merged, parts = {}, {}
+    for k in sorted(set(direct) | set(prior)):
+        d = direct.get(k)
+        pr = prior.get(k)
+        wd = w_direct if d is not None else 0.0
+        # 라벨 안의 분산이 크면 스타일 prior 를 덜 믿는다. 실측 sd 가 2.4
+        # 안팎이라 'TAG 라고 확신해도 range_read 는 단정 못 한다'가 맞다.
+        ws = 0.0
+        if pr is not None:
+            _sd = prior_spread(styles, k)
+            ws = w_style * (2.0 / (2.0 + _sd))
+        # 둘 다 약하면 중립이 지배한다. 표본 없이 개념을 단정하면
+        # 그 자체가 정보 누출과 같은 효과를 낸다.
+        wn = max(0.15, 1.0 - wd - ws)
+        tot = wd + ws + wn
+        v = (wd * (d if d is not None else 5.0)
+             + ws * (pr if pr is not None else 5.0)
+             + wn * 5.0) / tot
+        merged[k] = round(v, 2)
+        parts[k] = {'direct': d, 'style_prior': pr,
+                    'w_direct': round(wd, 2), 'w_style': round(ws, 2),
+                    'w_neutral': round(wn, 2)}
+
+    return {'observed_behavior': est,
+            'style_belief': styles,
+            'style_top': next(iter(styles)) if styles else None,
+            'style_certainty': round(s_cert, 3),
+            'latent_belief': ec.get('latent'),
+            'concept_belief': merged,
+            'concept_parts': parts,
+            'concept_uncertainty': unc,
+            'confidence': round(conf, 3),
+            'samples': n}

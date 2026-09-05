@@ -216,14 +216,32 @@ def check_fold_equity_sizing():
 
 
 def check_no_profile_leak():
-    """reads 가 상대의 실제 개념 벡터를 참조하지 않는가(정보 누출)."""
-    import inspect
+    """행동이 같으면 실제 개념이 달라도 belief 가 같아야 한다(정보 누출).
+
+    문자열 'concepts' 가 소스에 있는지로 검사하면 안 된다 — 관찰자 자신의
+    개념을 읽는 것은 정상이고, 반환 키 이름이 estimated_concepts 인 것도
+    정상이다. **실제 접근 경로**를 봐야 하므로 행동으로 검사한다.
+    """
     import reads as RD
-    src = inspect.getsource(RD.estimate) + inspect.getsource(RD.perceived_profile)
-    hits = [k for k in ("['concepts']", '["concepts"]', ".get('concepts')")
-            if k in src]
-    report('reads 에 실제 개념 참조 없음', not hits,
-           '발견 %d건' % len(hits))
+    bk = RD.Book()
+    def fill(i, j):
+        r = bk.rec(i, j)
+        r.update({'hands': 60, 'vpip': 13, 'pfr': 10, 'cbet': 12,
+                  'cbet_opp': 20, 'barrel': 5, 'barrel_opp': 12,
+                  'fold_to_bet': 11, 'facing_bet': 20})
+        return r
+    # 행동 장부가 완전히 동일한 두 상대
+    fill('O', 'WEAK'); fill('O', 'STRONG')
+    obs = {'temper': {'attention': 7, 'adaptability': 5, 'consistency': 5},
+           'concepts': {'range_read': 7, 'sizing_tell': 6}}
+    a = RD.opponent_belief(bk, 'O', 'WEAK', obs, random.Random(3))
+    b = RD.opponent_belief(bk, 'O', 'STRONG', obs, random.Random(3))
+    same = (a['concept_belief'] == b['concept_belief']
+            and a['style_belief'] == b['style_belief'])
+    report('행동이 같으면 belief 도 같다(누출 없음)', same,
+           'range_read %.1f vs %.1f'
+           % (a['concept_belief']['range_read'],
+              b['concept_belief']['range_read']))
 
 
 def check_archetype_not_driving():
@@ -237,6 +255,32 @@ def check_archetype_not_driving():
     report('생성된 봇이 개념 벡터를 가진다', has_vec, 'label=%s' % lab)
 
 
+
+def check_belief_observer_dependent():
+    """같은 상대·같은 장부라도 관찰자에 따라 belief 가 달라지는가."""
+    import reads as RD
+    bk = RD.Book()
+    r = bk.rec('A', 'B')
+    r.update({'hands': 60, 'vpip': 13, 'pfr': 10, 'cbet': 12, 'cbet_opp': 20,
+              'barrel': 5, 'barrel_opp': 12, 'fold_to_bet': 11,
+              'facing_bet': 20})
+    def mk(att, rr, stl):
+        return {'temper': {'attention': att, 'adaptability': 5, 'consistency': 5},
+                'concepts': {'range_read': rr, 'sizing_tell': stl}}
+    sharp = RD.opponent_belief(bk, 'A', 'B', mk(9, 9, 9), random.Random(7))
+    dull = RD.opponent_belief(bk, 'A', 'B', mk(1, 1, 1), random.Random(7))
+    top_s = max(sharp['style_belief'].values())
+    top_d = max(dull['style_belief'].values())
+    report('관찰력에 따라 스타일 확신이 다르다', top_s > top_d + 0.15,
+           '예리 %.2f vs 둔감 %.2f' % (top_s, top_d))
+    report('확신이 낮으면 개념 belief 가 중립에 가깝다',
+           abs(dull['concept_belief']['range_read'] - 5.0)
+           < abs(sharp['concept_belief']['range_read'] - 5.0) + 0.01,
+           '둔감 %.1f vs 예리 %.1f'
+           % (dull['concept_belief']['range_read'],
+              sharp['concept_belief']['range_read']))
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
@@ -245,7 +289,8 @@ def main():
                check_empty_range_guard, check_replay_records,
                check_bluff_disguise, check_commit_by_study,
                check_semibluff_transition, check_fold_equity_sizing,
-               check_no_profile_leak, check_archetype_not_driving):
+               check_no_profile_leak, check_archetype_not_driving,
+               check_belief_observer_dependent):
         try:
             fn()
         except Exception as e:

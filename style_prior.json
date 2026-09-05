@@ -1,0 +1,1826 @@
+{
+ "seed": 20260904,
+ "samples": 20000,
+ "styles": {
+  "FISH": {
+   "bluff": {
+    "mean": 3.76,
+    "sd": 1.5,
+    "n": 911
+   },
+   "semibluff": {
+    "mean": 3.59,
+    "sd": 1.45,
+    "n": 911
+   },
+   "cbet_flop": {
+    "mean": 4.95,
+    "sd": 1.41,
+    "n": 911
+   },
+   "barrel_turn": {
+    "mean": 3.49,
+    "sd": 1.69,
+    "n": 911
+   },
+   "barrel_river": {
+    "mean": 2.19,
+    "sd": 1.51,
+    "n": 911
+   },
+   "checkraise_flop": {
+    "mean": 3.4,
+    "sd": 1.61,
+    "n": 911
+   },
+   "checkraise_late": {
+    "mean": 1.89,
+    "sd": 1.61,
+    "n": 911
+   },
+   "bluffcatch_early": {
+    "mean": 3.59,
+    "sd": 1.55,
+    "n": 911
+   },
+   "bluffcatch_river": {
+    "mean": 1.78,
+    "sd": 1.44,
+    "n": 911
+   },
+   "thin_value_turn": {
+    "mean": 2.92,
+    "sd": 1.56,
+    "n": 911
+   },
+   "thin_value_river": {
+    "mean": 1.49,
+    "sd": 1.32,
+    "n": 911
+   },
+   "blockbet": {
+    "mean": 2.27,
+    "sd": 1.55,
+    "n": 911
+   },
+   "potcontrol": {
+    "mean": 3.14,
+    "sd": 1.65,
+    "n": 911
+   },
+   "trap": {
+    "mean": 4.06,
+    "sd": 1.94,
+    "n": 911
+   },
+   "overbet": {
+    "mean": 2.31,
+    "sd": 1.94,
+    "n": 911
+   },
+   "probe": {
+    "mean": 2.73,
+    "sd": 1.69,
+    "n": 911
+   },
+   "delayed_cbet": {
+    "mean": 2.3,
+    "sd": 1.64,
+    "n": 911
+   },
+   "equity_denial": {
+    "mean": 2.25,
+    "sd": 1.65,
+    "n": 911
+   },
+   "stackoff": {
+    "mean": 2.41,
+    "sd": 1.61,
+    "n": 911
+   },
+   "reraise": {
+    "mean": 2.61,
+    "sd": 1.85,
+    "n": 911
+   },
+   "outs": {
+    "mean": 2.78,
+    "sd": 1.46,
+    "n": 911
+   },
+   "potodds": {
+    "mean": 2.6,
+    "sd": 1.82,
+    "n": 911
+   },
+   "spr": {
+    "mean": 2.33,
+    "sd": 1.87,
+    "n": 911
+   },
+   "range_read": {
+    "mean": 2.43,
+    "sd": 1.84,
+    "n": 911
+   },
+   "blocker": {
+    "mean": 1.89,
+    "sd": 1.85,
+    "n": 911
+   },
+   "icm": {
+    "mean": 2.03,
+    "sd": 1.87,
+    "n": 911
+   },
+   "board_texture": {
+    "mean": 2.63,
+    "sd": 1.58,
+    "n": 911
+   },
+   "sizing_tell": {
+    "mean": 2.54,
+    "sd": 1.76,
+    "n": 911
+   },
+   "pf_range": {
+    "mean": 2.84,
+    "sd": 2.23,
+    "n": 911
+   },
+   "positional": {
+    "mean": 3.22,
+    "sd": 1.78,
+    "n": 911
+   },
+   "stack_decay": {
+    "mean": 1.33,
+    "sd": 1.73,
+    "n": 911
+   },
+   "open_size": {
+    "mean": 2.57,
+    "sd": 1.86,
+    "n": 911
+   },
+   "pf_defend": {
+    "mean": 2.33,
+    "sd": 1.98,
+    "n": 911
+   },
+   "range_merge": {
+    "mean": 1.75,
+    "sd": 1.71,
+    "n": 911
+   },
+   "multiway": {
+    "mean": 3.01,
+    "sd": 1.83,
+    "n": 911
+   },
+   "fold_equity": {
+    "mean": 2.76,
+    "sd": 1.93,
+    "n": 911
+   }
+  },
+  "LOOSE_REG": {
+   "bluff": {
+    "mean": 5.37,
+    "sd": 1.69,
+    "n": 2592
+   },
+   "semibluff": {
+    "mean": 5.65,
+    "sd": 1.66,
+    "n": 2592
+   },
+   "cbet_flop": {
+    "mean": 6.58,
+    "sd": 1.57,
+    "n": 2592
+   },
+   "barrel_turn": {
+    "mean": 5.55,
+    "sd": 1.98,
+    "n": 2592
+   },
+   "barrel_river": {
+    "mean": 4.91,
+    "sd": 2.02,
+    "n": 2592
+   },
+   "checkraise_flop": {
+    "mean": 5.47,
+    "sd": 1.78,
+    "n": 2592
+   },
+   "checkraise_late": {
+    "mean": 4.56,
+    "sd": 2.28,
+    "n": 2592
+   },
+   "bluffcatch_early": {
+    "mean": 5.72,
+    "sd": 1.73,
+    "n": 2592
+   },
+   "bluffcatch_river": {
+    "mean": 4.86,
+    "sd": 2.07,
+    "n": 2592
+   },
+   "thin_value_turn": {
+    "mean": 5.48,
+    "sd": 1.91,
+    "n": 2592
+   },
+   "thin_value_river": {
+    "mean": 4.77,
+    "sd": 2.05,
+    "n": 2592
+   },
+   "blockbet": {
+    "mean": 4.81,
+    "sd": 1.95,
+    "n": 2592
+   },
+   "potcontrol": {
+    "mean": 5.49,
+    "sd": 1.86,
+    "n": 2592
+   },
+   "trap": {
+    "mean": 5.26,
+    "sd": 2.04,
+    "n": 2592
+   },
+   "overbet": {
+    "mean": 4.63,
+    "sd": 2.25,
+    "n": 2592
+   },
+   "probe": {
+    "mean": 4.91,
+    "sd": 2.05,
+    "n": 2592
+   },
+   "delayed_cbet": {
+    "mean": 4.85,
+    "sd": 2.1,
+    "n": 2592
+   },
+   "equity_denial": {
+    "mean": 5.1,
+    "sd": 2.13,
+    "n": 2592
+   },
+   "stackoff": {
+    "mean": 5.29,
+    "sd": 2.08,
+    "n": 2592
+   },
+   "reraise": {
+    "mean": 4.99,
+    "sd": 2.23,
+    "n": 2592
+   },
+   "outs": {
+    "mean": 5.94,
+    "sd": 1.87,
+    "n": 2592
+   },
+   "potodds": {
+    "mean": 5.77,
+    "sd": 2.31,
+    "n": 2592
+   },
+   "spr": {
+    "mean": 5.55,
+    "sd": 2.43,
+    "n": 2592
+   },
+   "range_read": {
+    "mean": 5.61,
+    "sd": 2.4,
+    "n": 2592
+   },
+   "blocker": {
+    "mean": 5.08,
+    "sd": 2.59,
+    "n": 2592
+   },
+   "icm": {
+    "mean": 5.18,
+    "sd": 2.47,
+    "n": 2592
+   },
+   "board_texture": {
+    "mean": 5.65,
+    "sd": 1.93,
+    "n": 2592
+   },
+   "sizing_tell": {
+    "mean": 5.43,
+    "sd": 2.07,
+    "n": 2592
+   },
+   "pf_range": {
+    "mean": 6.08,
+    "sd": 2.59,
+    "n": 2592
+   },
+   "positional": {
+    "mean": 5.7,
+    "sd": 2.1,
+    "n": 2592
+   },
+   "stack_decay": {
+    "mean": 4.26,
+    "sd": 2.75,
+    "n": 2592
+   },
+   "open_size": {
+    "mean": 5.68,
+    "sd": 2.29,
+    "n": 2592
+   },
+   "pf_defend": {
+    "mean": 5.63,
+    "sd": 2.55,
+    "n": 2592
+   },
+   "range_merge": {
+    "mean": 5.0,
+    "sd": 2.56,
+    "n": 2592
+   },
+   "multiway": {
+    "mean": 5.58,
+    "sd": 2.11,
+    "n": 2592
+   },
+   "fold_equity": {
+    "mean": 5.69,
+    "sd": 2.27,
+    "n": 2592
+   }
+  },
+  "TAG_TIGHT": {
+   "bluff": {
+    "mean": 5.47,
+    "sd": 1.73,
+    "n": 5750
+   },
+   "semibluff": {
+    "mean": 5.9,
+    "sd": 1.73,
+    "n": 5750
+   },
+   "cbet_flop": {
+    "mean": 6.73,
+    "sd": 1.6,
+    "n": 5750
+   },
+   "barrel_turn": {
+    "mean": 5.7,
+    "sd": 2.04,
+    "n": 5750
+   },
+   "barrel_river": {
+    "mean": 5.26,
+    "sd": 2.07,
+    "n": 5750
+   },
+   "checkraise_flop": {
+    "mean": 5.72,
+    "sd": 1.82,
+    "n": 5750
+   },
+   "checkraise_late": {
+    "mean": 5.04,
+    "sd": 2.31,
+    "n": 5750
+   },
+   "bluffcatch_early": {
+    "mean": 6.17,
+    "sd": 1.76,
+    "n": 5750
+   },
+   "bluffcatch_river": {
+    "mean": 5.56,
+    "sd": 2.11,
+    "n": 5750
+   },
+   "thin_value_turn": {
+    "mean": 5.97,
+    "sd": 1.89,
+    "n": 5750
+   },
+   "thin_value_river": {
+    "mean": 5.46,
+    "sd": 2.11,
+    "n": 5750
+   },
+   "blockbet": {
+    "mean": 5.36,
+    "sd": 2.01,
+    "n": 5750
+   },
+   "potcontrol": {
+    "mean": 6.12,
+    "sd": 1.89,
+    "n": 5750
+   },
+   "trap": {
+    "mean": 5.59,
+    "sd": 2.06,
+    "n": 5750
+   },
+   "overbet": {
+    "mean": 4.89,
+    "sd": 2.35,
+    "n": 5750
+   },
+   "probe": {
+    "mean": 5.37,
+    "sd": 2.03,
+    "n": 5750
+   },
+   "delayed_cbet": {
+    "mean": 5.39,
+    "sd": 2.13,
+    "n": 5750
+   },
+   "equity_denial": {
+    "mean": 5.6,
+    "sd": 2.17,
+    "n": 5750
+   },
+   "stackoff": {
+    "mean": 5.96,
+    "sd": 2.1,
+    "n": 5750
+   },
+   "reraise": {
+    "mean": 5.31,
+    "sd": 2.24,
+    "n": 5750
+   },
+   "outs": {
+    "mean": 6.61,
+    "sd": 1.92,
+    "n": 5750
+   },
+   "potodds": {
+    "mean": 6.55,
+    "sd": 2.28,
+    "n": 5750
+   },
+   "spr": {
+    "mean": 6.26,
+    "sd": 2.42,
+    "n": 5750
+   },
+   "range_read": {
+    "mean": 6.38,
+    "sd": 2.42,
+    "n": 5750
+   },
+   "blocker": {
+    "mean": 5.86,
+    "sd": 2.61,
+    "n": 5750
+   },
+   "icm": {
+    "mean": 5.97,
+    "sd": 2.47,
+    "n": 5750
+   },
+   "board_texture": {
+    "mean": 6.27,
+    "sd": 1.96,
+    "n": 5750
+   },
+   "sizing_tell": {
+    "mean": 6.03,
+    "sd": 2.09,
+    "n": 5750
+   },
+   "pf_range": {
+    "mean": 6.81,
+    "sd": 2.51,
+    "n": 5750
+   },
+   "positional": {
+    "mean": 6.22,
+    "sd": 2.14,
+    "n": 5750
+   },
+   "stack_decay": {
+    "mean": 5.04,
+    "sd": 2.82,
+    "n": 5750
+   },
+   "open_size": {
+    "mean": 6.37,
+    "sd": 2.25,
+    "n": 5750
+   },
+   "pf_defend": {
+    "mean": 6.3,
+    "sd": 2.55,
+    "n": 5750
+   },
+   "range_merge": {
+    "mean": 5.72,
+    "sd": 2.62,
+    "n": 5750
+   },
+   "multiway": {
+    "mean": 6.2,
+    "sd": 2.11,
+    "n": 5750
+   },
+   "fold_equity": {
+    "mean": 6.27,
+    "sd": 2.27,
+    "n": 5750
+   }
+  },
+  "TAG": {
+   "bluff": {
+    "mean": 4.25,
+    "sd": 1.71,
+    "n": 3027
+   },
+   "semibluff": {
+    "mean": 4.72,
+    "sd": 1.81,
+    "n": 3027
+   },
+   "cbet_flop": {
+    "mean": 5.66,
+    "sd": 1.67,
+    "n": 3027
+   },
+   "barrel_turn": {
+    "mean": 4.32,
+    "sd": 2.05,
+    "n": 3027
+   },
+   "barrel_river": {
+    "mean": 3.63,
+    "sd": 2.14,
+    "n": 3027
+   },
+   "checkraise_flop": {
+    "mean": 4.59,
+    "sd": 1.9,
+    "n": 3027
+   },
+   "checkraise_late": {
+    "mean": 3.68,
+    "sd": 2.34,
+    "n": 3027
+   },
+   "bluffcatch_early": {
+    "mean": 5.26,
+    "sd": 1.9,
+    "n": 3027
+   },
+   "bluffcatch_river": {
+    "mean": 4.34,
+    "sd": 2.31,
+    "n": 3027
+   },
+   "thin_value_turn": {
+    "mean": 4.72,
+    "sd": 2.09,
+    "n": 3027
+   },
+   "thin_value_river": {
+    "mean": 3.98,
+    "sd": 2.33,
+    "n": 3027
+   },
+   "blockbet": {
+    "mean": 4.25,
+    "sd": 2.14,
+    "n": 3027
+   },
+   "potcontrol": {
+    "mean": 5.49,
+    "sd": 2.08,
+    "n": 3027
+   },
+   "trap": {
+    "mean": 5.24,
+    "sd": 2.11,
+    "n": 3027
+   },
+   "overbet": {
+    "mean": 3.62,
+    "sd": 2.38,
+    "n": 3027
+   },
+   "probe": {
+    "mean": 4.11,
+    "sd": 2.13,
+    "n": 3027
+   },
+   "delayed_cbet": {
+    "mean": 4.08,
+    "sd": 2.29,
+    "n": 3027
+   },
+   "equity_denial": {
+    "mean": 4.2,
+    "sd": 2.33,
+    "n": 3027
+   },
+   "stackoff": {
+    "mean": 4.78,
+    "sd": 2.37,
+    "n": 3027
+   },
+   "reraise": {
+    "mean": 3.93,
+    "sd": 2.29,
+    "n": 3027
+   },
+   "outs": {
+    "mean": 5.46,
+    "sd": 2.2,
+    "n": 3027
+   },
+   "potodds": {
+    "mean": 5.44,
+    "sd": 2.61,
+    "n": 3027
+   },
+   "spr": {
+    "mean": 4.93,
+    "sd": 2.71,
+    "n": 3027
+   },
+   "range_read": {
+    "mean": 5.08,
+    "sd": 2.77,
+    "n": 3027
+   },
+   "blocker": {
+    "mean": 4.51,
+    "sd": 2.84,
+    "n": 3027
+   },
+   "icm": {
+    "mean": 4.9,
+    "sd": 2.72,
+    "n": 3027
+   },
+   "board_texture": {
+    "mean": 5.1,
+    "sd": 2.21,
+    "n": 3027
+   },
+   "sizing_tell": {
+    "mean": 4.92,
+    "sd": 2.31,
+    "n": 3027
+   },
+   "pf_range": {
+    "mean": 5.49,
+    "sd": 2.88,
+    "n": 3027
+   },
+   "positional": {
+    "mean": 5.18,
+    "sd": 2.28,
+    "n": 3027
+   },
+   "stack_decay": {
+    "mean": 3.78,
+    "sd": 2.8,
+    "n": 3027
+   },
+   "open_size": {
+    "mean": 5.12,
+    "sd": 2.53,
+    "n": 3027
+   },
+   "pf_defend": {
+    "mean": 4.95,
+    "sd": 2.81,
+    "n": 3027
+   },
+   "range_merge": {
+    "mean": 4.2,
+    "sd": 2.78,
+    "n": 3027
+   },
+   "multiway": {
+    "mean": 5.34,
+    "sd": 2.29,
+    "n": 3027
+   },
+   "fold_equity": {
+    "mean": 4.88,
+    "sd": 2.5,
+    "n": 3027
+   }
+  },
+  "TAG_AGGRO": {
+   "bluff": {
+    "mean": 5.97,
+    "sd": 1.59,
+    "n": 1359
+   },
+   "semibluff": {
+    "mean": 6.03,
+    "sd": 1.74,
+    "n": 1359
+   },
+   "cbet_flop": {
+    "mean": 7.05,
+    "sd": 1.55,
+    "n": 1359
+   },
+   "barrel_turn": {
+    "mean": 6.21,
+    "sd": 1.95,
+    "n": 1359
+   },
+   "barrel_river": {
+    "mean": 5.34,
+    "sd": 2.13,
+    "n": 1359
+   },
+   "checkraise_flop": {
+    "mean": 5.76,
+    "sd": 1.83,
+    "n": 1359
+   },
+   "checkraise_late": {
+    "mean": 4.78,
+    "sd": 2.41,
+    "n": 1359
+   },
+   "bluffcatch_early": {
+    "mean": 5.62,
+    "sd": 1.93,
+    "n": 1359
+   },
+   "bluffcatch_river": {
+    "mean": 4.6,
+    "sd": 2.36,
+    "n": 1359
+   },
+   "thin_value_turn": {
+    "mean": 5.55,
+    "sd": 2.12,
+    "n": 1359
+   },
+   "thin_value_river": {
+    "mean": 4.65,
+    "sd": 2.42,
+    "n": 1359
+   },
+   "blockbet": {
+    "mean": 4.69,
+    "sd": 2.2,
+    "n": 1359
+   },
+   "potcontrol": {
+    "mean": 4.79,
+    "sd": 2.06,
+    "n": 1359
+   },
+   "trap": {
+    "mean": 5.0,
+    "sd": 2.08,
+    "n": 1359
+   },
+   "overbet": {
+    "mean": 5.01,
+    "sd": 2.45,
+    "n": 1359
+   },
+   "probe": {
+    "mean": 5.2,
+    "sd": 2.1,
+    "n": 1359
+   },
+   "delayed_cbet": {
+    "mean": 4.92,
+    "sd": 2.26,
+    "n": 1359
+   },
+   "equity_denial": {
+    "mean": 5.2,
+    "sd": 2.39,
+    "n": 1359
+   },
+   "stackoff": {
+    "mean": 5.01,
+    "sd": 2.35,
+    "n": 1359
+   },
+   "reraise": {
+    "mean": 5.35,
+    "sd": 2.33,
+    "n": 1359
+   },
+   "outs": {
+    "mean": 5.54,
+    "sd": 2.26,
+    "n": 1359
+   },
+   "potodds": {
+    "mean": 5.32,
+    "sd": 2.64,
+    "n": 1359
+   },
+   "spr": {
+    "mean": 5.25,
+    "sd": 2.68,
+    "n": 1359
+   },
+   "range_read": {
+    "mean": 5.37,
+    "sd": 2.7,
+    "n": 1359
+   },
+   "blocker": {
+    "mean": 4.95,
+    "sd": 2.85,
+    "n": 1359
+   },
+   "icm": {
+    "mean": 4.66,
+    "sd": 2.78,
+    "n": 1359
+   },
+   "board_texture": {
+    "mean": 5.31,
+    "sd": 2.22,
+    "n": 1359
+   },
+   "sizing_tell": {
+    "mean": 5.09,
+    "sd": 2.34,
+    "n": 1359
+   },
+   "pf_range": {
+    "mean": 5.67,
+    "sd": 2.88,
+    "n": 1359
+   },
+   "positional": {
+    "mean": 5.53,
+    "sd": 2.31,
+    "n": 1359
+   },
+   "stack_decay": {
+    "mean": 4.07,
+    "sd": 2.84,
+    "n": 1359
+   },
+   "open_size": {
+    "mean": 5.53,
+    "sd": 2.47,
+    "n": 1359
+   },
+   "pf_defend": {
+    "mean": 5.43,
+    "sd": 2.77,
+    "n": 1359
+   },
+   "range_merge": {
+    "mean": 4.89,
+    "sd": 2.83,
+    "n": 1359
+   },
+   "multiway": {
+    "mean": 5.06,
+    "sd": 2.39,
+    "n": 1359
+   },
+   "fold_equity": {
+    "mean": 5.83,
+    "sd": 2.48,
+    "n": 1359
+   }
+  },
+  "ROCK": {
+   "bluff": {
+    "mean": 3.86,
+    "sd": 1.66,
+    "n": 2873
+   },
+   "semibluff": {
+    "mean": 4.66,
+    "sd": 1.82,
+    "n": 2873
+   },
+   "cbet_flop": {
+    "mean": 5.43,
+    "sd": 1.65,
+    "n": 2873
+   },
+   "barrel_turn": {
+    "mean": 3.98,
+    "sd": 2.02,
+    "n": 2873
+   },
+   "barrel_river": {
+    "mean": 3.56,
+    "sd": 2.14,
+    "n": 2873
+   },
+   "checkraise_flop": {
+    "mean": 4.61,
+    "sd": 1.95,
+    "n": 2873
+   },
+   "checkraise_late": {
+    "mean": 3.92,
+    "sd": 2.45,
+    "n": 2873
+   },
+   "bluffcatch_early": {
+    "mean": 5.68,
+    "sd": 1.93,
+    "n": 2873
+   },
+   "bluffcatch_river": {
+    "mean": 5.07,
+    "sd": 2.42,
+    "n": 2873
+   },
+   "thin_value_turn": {
+    "mean": 5.04,
+    "sd": 2.16,
+    "n": 2873
+   },
+   "thin_value_river": {
+    "mean": 4.55,
+    "sd": 2.45,
+    "n": 2873
+   },
+   "blockbet": {
+    "mean": 4.83,
+    "sd": 2.26,
+    "n": 2873
+   },
+   "potcontrol": {
+    "mean": 6.5,
+    "sd": 2.06,
+    "n": 2873
+   },
+   "trap": {
+    "mean": 5.69,
+    "sd": 2.1,
+    "n": 2873
+   },
+   "overbet": {
+    "mean": 3.66,
+    "sd": 2.29,
+    "n": 2873
+   },
+   "probe": {
+    "mean": 4.22,
+    "sd": 2.17,
+    "n": 2873
+   },
+   "delayed_cbet": {
+    "mean": 4.45,
+    "sd": 2.34,
+    "n": 2873
+   },
+   "equity_denial": {
+    "mean": 4.48,
+    "sd": 2.41,
+    "n": 2873
+   },
+   "stackoff": {
+    "mean": 5.48,
+    "sd": 2.35,
+    "n": 2873
+   },
+   "reraise": {
+    "mean": 3.81,
+    "sd": 2.3,
+    "n": 2873
+   },
+   "outs": {
+    "mean": 6.25,
+    "sd": 2.25,
+    "n": 2873
+   },
+   "potodds": {
+    "mean": 6.3,
+    "sd": 2.57,
+    "n": 2873
+   },
+   "spr": {
+    "mean": 5.7,
+    "sd": 2.74,
+    "n": 2873
+   },
+   "range_read": {
+    "mean": 5.76,
+    "sd": 2.73,
+    "n": 2873
+   },
+   "blocker": {
+    "mean": 5.16,
+    "sd": 2.89,
+    "n": 2873
+   },
+   "icm": {
+    "mean": 5.88,
+    "sd": 2.73,
+    "n": 2873
+   },
+   "board_texture": {
+    "mean": 5.79,
+    "sd": 2.3,
+    "n": 2873
+   },
+   "sizing_tell": {
+    "mean": 5.54,
+    "sd": 2.34,
+    "n": 2873
+   },
+   "pf_range": {
+    "mean": 6.38,
+    "sd": 2.81,
+    "n": 2873
+   },
+   "positional": {
+    "mean": 5.73,
+    "sd": 2.34,
+    "n": 2873
+   },
+   "stack_decay": {
+    "mean": 4.6,
+    "sd": 2.92,
+    "n": 2873
+   },
+   "open_size": {
+    "mean": 5.75,
+    "sd": 2.53,
+    "n": 2873
+   },
+   "pf_defend": {
+    "mean": 5.59,
+    "sd": 2.8,
+    "n": 2873
+   },
+   "range_merge": {
+    "mean": 4.87,
+    "sd": 2.87,
+    "n": 2873
+   },
+   "multiway": {
+    "mean": 6.13,
+    "sd": 2.35,
+    "n": 2873
+   },
+   "fold_equity": {
+    "mean": 5.23,
+    "sd": 2.54,
+    "n": 2873
+   }
+  },
+  "STATION": {
+   "bluff": {
+    "mean": 3.46,
+    "sd": 1.63,
+    "n": 1268
+   },
+   "semibluff": {
+    "mean": 4.04,
+    "sd": 1.74,
+    "n": 1268
+   },
+   "cbet_flop": {
+    "mean": 4.99,
+    "sd": 1.64,
+    "n": 1268
+   },
+   "barrel_turn": {
+    "mean": 3.45,
+    "sd": 1.96,
+    "n": 1268
+   },
+   "barrel_river": {
+    "mean": 2.76,
+    "sd": 1.97,
+    "n": 1268
+   },
+   "checkraise_flop": {
+    "mean": 3.91,
+    "sd": 1.79,
+    "n": 1268
+   },
+   "checkraise_late": {
+    "mean": 2.84,
+    "sd": 2.18,
+    "n": 1268
+   },
+   "bluffcatch_early": {
+    "mean": 4.66,
+    "sd": 1.85,
+    "n": 1268
+   },
+   "bluffcatch_river": {
+    "mean": 3.58,
+    "sd": 2.32,
+    "n": 1268
+   },
+   "thin_value_turn": {
+    "mean": 3.94,
+    "sd": 2.03,
+    "n": 1268
+   },
+   "thin_value_river": {
+    "mean": 3.1,
+    "sd": 2.25,
+    "n": 1268
+   },
+   "blockbet": {
+    "mean": 3.66,
+    "sd": 2.13,
+    "n": 1268
+   },
+   "potcontrol": {
+    "mean": 5.15,
+    "sd": 2.07,
+    "n": 1268
+   },
+   "trap": {
+    "mean": 5.03,
+    "sd": 2.07,
+    "n": 1268
+   },
+   "overbet": {
+    "mean": 2.86,
+    "sd": 2.14,
+    "n": 1268
+   },
+   "probe": {
+    "mean": 3.3,
+    "sd": 2.03,
+    "n": 1268
+   },
+   "delayed_cbet": {
+    "mean": 3.36,
+    "sd": 2.16,
+    "n": 1268
+   },
+   "equity_denial": {
+    "mean": 3.36,
+    "sd": 2.26,
+    "n": 1268
+   },
+   "stackoff": {
+    "mean": 4.09,
+    "sd": 2.34,
+    "n": 1268
+   },
+   "reraise": {
+    "mean": 3.08,
+    "sd": 2.24,
+    "n": 1268
+   },
+   "outs": {
+    "mean": 4.77,
+    "sd": 2.26,
+    "n": 1268
+   },
+   "potodds": {
+    "mean": 4.73,
+    "sd": 2.61,
+    "n": 1268
+   },
+   "spr": {
+    "mean": 4.26,
+    "sd": 2.68,
+    "n": 1268
+   },
+   "range_read": {
+    "mean": 4.32,
+    "sd": 2.65,
+    "n": 1268
+   },
+   "blocker": {
+    "mean": 3.77,
+    "sd": 2.74,
+    "n": 1268
+   },
+   "icm": {
+    "mean": 4.41,
+    "sd": 2.76,
+    "n": 1268
+   },
+   "board_texture": {
+    "mean": 4.41,
+    "sd": 2.21,
+    "n": 1268
+   },
+   "sizing_tell": {
+    "mean": 4.27,
+    "sd": 2.26,
+    "n": 1268
+   },
+   "pf_range": {
+    "mean": 4.82,
+    "sd": 2.89,
+    "n": 1268
+   },
+   "positional": {
+    "mean": 4.59,
+    "sd": 2.3,
+    "n": 1268
+   },
+   "stack_decay": {
+    "mean": 3.05,
+    "sd": 2.69,
+    "n": 1268
+   },
+   "open_size": {
+    "mean": 4.39,
+    "sd": 2.46,
+    "n": 1268
+   },
+   "pf_defend": {
+    "mean": 4.07,
+    "sd": 2.73,
+    "n": 1268
+   },
+   "range_merge": {
+    "mean": 3.38,
+    "sd": 2.66,
+    "n": 1268
+   },
+   "multiway": {
+    "mean": 4.73,
+    "sd": 2.33,
+    "n": 1268
+   },
+   "fold_equity": {
+    "mean": 4.02,
+    "sd": 2.45,
+    "n": 1268
+   }
+  },
+  "NIT": {
+   "bluff": {
+    "mean": 3.71,
+    "sd": 1.58,
+    "n": 1162
+   },
+   "semibluff": {
+    "mean": 3.72,
+    "sd": 1.56,
+    "n": 1162
+   },
+   "cbet_flop": {
+    "mean": 4.94,
+    "sd": 1.52,
+    "n": 1162
+   },
+   "barrel_turn": {
+    "mean": 3.57,
+    "sd": 1.85,
+    "n": 1162
+   },
+   "barrel_river": {
+    "mean": 2.4,
+    "sd": 1.69,
+    "n": 1162
+   },
+   "checkraise_flop": {
+    "mean": 3.6,
+    "sd": 1.62,
+    "n": 1162
+   },
+   "checkraise_late": {
+    "mean": 2.11,
+    "sd": 1.73,
+    "n": 1162
+   },
+   "bluffcatch_early": {
+    "mean": 3.83,
+    "sd": 1.52,
+    "n": 1162
+   },
+   "bluffcatch_river": {
+    "mean": 2.18,
+    "sd": 1.55,
+    "n": 1162
+   },
+   "thin_value_turn": {
+    "mean": 3.16,
+    "sd": 1.62,
+    "n": 1162
+   },
+   "thin_value_river": {
+    "mean": 1.87,
+    "sd": 1.4,
+    "n": 1162
+   },
+   "blockbet": {
+    "mean": 2.64,
+    "sd": 1.68,
+    "n": 1162
+   },
+   "potcontrol": {
+    "mean": 3.63,
+    "sd": 1.67,
+    "n": 1162
+   },
+   "trap": {
+    "mean": 4.24,
+    "sd": 1.99,
+    "n": 1162
+   },
+   "overbet": {
+    "mean": 2.57,
+    "sd": 1.96,
+    "n": 1162
+   },
+   "probe": {
+    "mean": 2.87,
+    "sd": 1.77,
+    "n": 1162
+   },
+   "delayed_cbet": {
+    "mean": 2.56,
+    "sd": 1.76,
+    "n": 1162
+   },
+   "equity_denial": {
+    "mean": 2.43,
+    "sd": 1.74,
+    "n": 1162
+   },
+   "stackoff": {
+    "mean": 2.74,
+    "sd": 1.77,
+    "n": 1162
+   },
+   "reraise": {
+    "mean": 2.73,
+    "sd": 1.94,
+    "n": 1162
+   },
+   "outs": {
+    "mean": 3.25,
+    "sd": 1.55,
+    "n": 1162
+   },
+   "potodds": {
+    "mean": 3.17,
+    "sd": 1.96,
+    "n": 1162
+   },
+   "spr": {
+    "mean": 2.59,
+    "sd": 2.0,
+    "n": 1162
+   },
+   "range_read": {
+    "mean": 2.85,
+    "sd": 2.05,
+    "n": 1162
+   },
+   "blocker": {
+    "mean": 2.28,
+    "sd": 2.07,
+    "n": 1162
+   },
+   "icm": {
+    "mean": 2.68,
+    "sd": 2.02,
+    "n": 1162
+   },
+   "board_texture": {
+    "mean": 3.11,
+    "sd": 1.67,
+    "n": 1162
+   },
+   "sizing_tell": {
+    "mean": 3.0,
+    "sd": 1.74,
+    "n": 1162
+   },
+   "pf_range": {
+    "mean": 3.18,
+    "sd": 2.33,
+    "n": 1162
+   },
+   "positional": {
+    "mean": 3.56,
+    "sd": 1.83,
+    "n": 1162
+   },
+   "stack_decay": {
+    "mean": 1.79,
+    "sd": 1.9,
+    "n": 1162
+   },
+   "open_size": {
+    "mean": 3.08,
+    "sd": 1.96,
+    "n": 1162
+   },
+   "pf_defend": {
+    "mean": 2.84,
+    "sd": 2.18,
+    "n": 1162
+   },
+   "range_merge": {
+    "mean": 2.04,
+    "sd": 1.91,
+    "n": 1162
+   },
+   "multiway": {
+    "mean": 3.4,
+    "sd": 1.86,
+    "n": 1162
+   },
+   "fold_equity": {
+    "mean": 3.15,
+    "sd": 1.98,
+    "n": 1162
+   }
+  },
+  "LAG": {
+   "bluff": {
+    "mean": 6.37,
+    "sd": 1.52,
+    "n": 718
+   },
+   "semibluff": {
+    "mean": 6.42,
+    "sd": 1.58,
+    "n": 718
+   },
+   "cbet_flop": {
+    "mean": 7.39,
+    "sd": 1.37,
+    "n": 718
+   },
+   "barrel_turn": {
+    "mean": 6.68,
+    "sd": 1.78,
+    "n": 718
+   },
+   "barrel_river": {
+    "mean": 5.86,
+    "sd": 1.8,
+    "n": 718
+   },
+   "checkraise_flop": {
+    "mean": 6.05,
+    "sd": 1.7,
+    "n": 718
+   },
+   "checkraise_late": {
+    "mean": 5.21,
+    "sd": 2.15,
+    "n": 718
+   },
+   "bluffcatch_early": {
+    "mean": 5.94,
+    "sd": 1.68,
+    "n": 718
+   },
+   "bluffcatch_river": {
+    "mean": 4.72,
+    "sd": 2.06,
+    "n": 718
+   },
+   "thin_value_turn": {
+    "mean": 5.99,
+    "sd": 1.75,
+    "n": 718
+   },
+   "thin_value_river": {
+    "mean": 4.94,
+    "sd": 2.0,
+    "n": 718
+   },
+   "blockbet": {
+    "mean": 4.91,
+    "sd": 2.01,
+    "n": 718
+   },
+   "potcontrol": {
+    "mean": 4.81,
+    "sd": 1.83,
+    "n": 718
+   },
+   "trap": {
+    "mean": 4.96,
+    "sd": 2.03,
+    "n": 718
+   },
+   "overbet": {
+    "mean": 5.45,
+    "sd": 2.3,
+    "n": 718
+   },
+   "probe": {
+    "mean": 5.56,
+    "sd": 1.95,
+    "n": 718
+   },
+   "delayed_cbet": {
+    "mean": 5.23,
+    "sd": 2.01,
+    "n": 718
+   },
+   "equity_denial": {
+    "mean": 5.49,
+    "sd": 2.03,
+    "n": 718
+   },
+   "stackoff": {
+    "mean": 5.24,
+    "sd": 2.0,
+    "n": 718
+   },
+   "reraise": {
+    "mean": 5.83,
+    "sd": 2.1,
+    "n": 718
+   },
+   "outs": {
+    "mean": 5.8,
+    "sd": 1.96,
+    "n": 718
+   },
+   "potodds": {
+    "mean": 5.74,
+    "sd": 2.25,
+    "n": 718
+   },
+   "spr": {
+    "mean": 5.34,
+    "sd": 2.44,
+    "n": 718
+   },
+   "range_read": {
+    "mean": 5.66,
+    "sd": 2.37,
+    "n": 718
+   },
+   "blocker": {
+    "mean": 5.13,
+    "sd": 2.68,
+    "n": 718
+   },
+   "icm": {
+    "mean": 4.62,
+    "sd": 2.51,
+    "n": 718
+   },
+   "board_texture": {
+    "mean": 5.54,
+    "sd": 1.91,
+    "n": 718
+   },
+   "sizing_tell": {
+    "mean": 5.31,
+    "sd": 2.06,
+    "n": 718
+   },
+   "pf_range": {
+    "mean": 5.83,
+    "sd": 2.64,
+    "n": 718
+   },
+   "positional": {
+    "mean": 5.81,
+    "sd": 2.05,
+    "n": 718
+   },
+   "stack_decay": {
+    "mean": 4.08,
+    "sd": 2.74,
+    "n": 718
+   },
+   "open_size": {
+    "mean": 5.82,
+    "sd": 2.35,
+    "n": 718
+   },
+   "pf_defend": {
+    "mean": 5.76,
+    "sd": 2.4,
+    "n": 718
+   },
+   "range_merge": {
+    "mean": 5.12,
+    "sd": 2.46,
+    "n": 718
+   },
+   "multiway": {
+    "mean": 5.32,
+    "sd": 2.05,
+    "n": 718
+   },
+   "fold_equity": {
+    "mean": 6.12,
+    "sd": 2.18,
+    "n": 718
+   }
+  },
+  "MANIAC": {
+   "bluff": {
+    "mean": 4.86,
+    "sd": 1.4,
+    "n": 340
+   },
+   "semibluff": {
+    "mean": 4.34,
+    "sd": 1.4,
+    "n": 340
+   },
+   "cbet_flop": {
+    "mean": 5.79,
+    "sd": 1.38,
+    "n": 340
+   },
+   "barrel_turn": {
+    "mean": 4.56,
+    "sd": 1.63,
+    "n": 340
+   },
+   "barrel_river": {
+    "mean": 3.28,
+    "sd": 1.56,
+    "n": 340
+   },
+   "checkraise_flop": {
+    "mean": 4.05,
+    "sd": 1.52,
+    "n": 340
+   },
+   "checkraise_late": {
+    "mean": 2.6,
+    "sd": 1.72,
+    "n": 340
+   },
+   "bluffcatch_early": {
+    "mean": 3.82,
+    "sd": 1.59,
+    "n": 340
+   },
+   "bluffcatch_river": {
+    "mean": 1.83,
+    "sd": 1.37,
+    "n": 340
+   },
+   "thin_value_turn": {
+    "mean": 3.41,
+    "sd": 1.57,
+    "n": 340
+   },
+   "thin_value_river": {
+    "mean": 1.77,
+    "sd": 1.39,
+    "n": 340
+   },
+   "blockbet": {
+    "mean": 2.54,
+    "sd": 1.65,
+    "n": 340
+   },
+   "potcontrol": {
+    "mean": 2.51,
+    "sd": 1.63,
+    "n": 340
+   },
+   "trap": {
+    "mean": 3.95,
+    "sd": 1.97,
+    "n": 340
+   },
+   "overbet": {
+    "mean": 3.35,
+    "sd": 2.02,
+    "n": 340
+   },
+   "probe": {
+    "mean": 3.36,
+    "sd": 1.73,
+    "n": 340
+   },
+   "delayed_cbet": {
+    "mean": 2.69,
+    "sd": 1.74,
+    "n": 340
+   },
+   "equity_denial": {
+    "mean": 2.69,
+    "sd": 1.76,
+    "n": 340
+   },
+   "stackoff": {
+    "mean": 2.41,
+    "sd": 1.72,
+    "n": 340
+   },
+   "reraise": {
+    "mean": 3.47,
+    "sd": 1.96,
+    "n": 340
+   },
+   "outs": {
+    "mean": 2.81,
+    "sd": 1.51,
+    "n": 340
+   },
+   "potodds": {
+    "mean": 2.71,
+    "sd": 1.94,
+    "n": 340
+   },
+   "spr": {
+    "mean": 2.26,
+    "sd": 1.94,
+    "n": 340
+   },
+   "range_read": {
+    "mean": 2.37,
+    "sd": 1.92,
+    "n": 340
+   },
+   "blocker": {
+    "mean": 1.97,
+    "sd": 1.92,
+    "n": 340
+   },
+   "icm": {
+    "mean": 1.87,
+    "sd": 1.82,
+    "n": 340
+   },
+   "board_texture": {
+    "mean": 2.73,
+    "sd": 1.52,
+    "n": 340
+   },
+   "sizing_tell": {
+    "mean": 2.79,
+    "sd": 1.74,
+    "n": 340
+   },
+   "pf_range": {
+    "mean": 2.7,
+    "sd": 2.19,
+    "n": 340
+   },
+   "positional": {
+    "mean": 3.54,
+    "sd": 1.92,
+    "n": 340
+   },
+   "stack_decay": {
+    "mean": 1.47,
+    "sd": 1.8,
+    "n": 340
+   },
+   "open_size": {
+    "mean": 2.91,
+    "sd": 1.84,
+    "n": 340
+   },
+   "pf_defend": {
+    "mean": 2.59,
+    "sd": 2.1,
+    "n": 340
+   },
+   "range_merge": {
+    "mean": 1.94,
+    "sd": 1.89,
+    "n": 340
+   },
+   "multiway": {
+    "mean": 2.72,
+    "sd": 1.82,
+    "n": 340
+   },
+   "fold_equity": {
+    "mean": 3.35,
+    "sd": 2.0,
+    "n": 340
+   }
+  }
+ }
+}
