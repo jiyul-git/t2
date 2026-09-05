@@ -186,13 +186,27 @@ def check_commit_by_study():
            'rel0.2 %.0f%% vs rel0.95 %.0f%%' % (hi[0]*100, hi[1]*100))
 
 
+
+def check_semibluff_transition():
+    """드로우 완성 시 턴에서 밸류로 전환되는가(rel 이 낮아도)."""
+    prof = _prof()
+    st = {'plan': 'semibluff', 'outs': 9, 'rel': 0.45, 'made': 0, 'intents': {}}
+    hit = PL.refresh(dict(st), ['Ah', 'Kh'], ['Qh', '7h', '2c', '5h'], [],
+                     prof, 6000, 40000, 'turn', n_opp=1, seed=1)
+    dead = PL.refresh(dict(st), ['Ah', 'Kh'], ['Qs', '7d', '2c', '5c'], [],
+                      prof, 6000, 40000, 'turn', n_opp=1, seed=1)
+    report('드로우 완성 → 밸류 전환', hit['plan'].startswith('value'),
+           '완성 %s / 소멸 %s' % (hit['plan'], dead['plan']))
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
     for fn in (check_river_budget, check_open_form_cliff,
                check_allin_no_reraise_mult, check_trap_taste,
                check_empty_range_guard, check_replay_records,
-               check_bluff_disguise, check_commit_by_study):
+               check_bluff_disguise, check_commit_by_study,
+               check_semibluff_transition):
         try:
             fn()
         except Exception as e:

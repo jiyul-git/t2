@@ -1571,11 +1571,20 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         st['plan'] = 'value_2street'
         why.append('%s: 상대강도 %.2f → 3스트리트 철회, 2스트리트' % (street, rel))
     elif old == 'semibluff' and outs < 6 and street != 'river':
+        # 드로우가 사라진 경우는 둘이다 — **완성됐거나 죽었거나.**
+        # 둘 다 outs 가 줄어서 같은 분기를 타는데, 예전에는 rel 만 봐서
+        # 플러시를 맞췄어도 rel 0.6 미만이면 giveup 으로 내려갔다.
+        # river_fix 는 (made >= 2 or rel >= 0.62)로 둘을 함께 보는데
+        # 턴만 rel 단독이라 같은 판정이 스트리트마다 달랐다.
+        if made >= 2 or rel >= 0.62:
+            st['plan'] = 'value_2street'
+            why.append('%s: 드로우 완성(made %d) → 밸류 전환' % (street, made))
+        else:
+            st['plan'] = 'giveup'
+            why.append('%s: 드로우 소멸(%d아웃) → 포기' % (street, outs))
         # 리버는 river_fix 가 맡는다. 여기서 먼저 giveup 으로 내리면
         # **미스한 드로우의 블러프 전환 경로가 통째로 막힌다** —
         # 리버는 outs 가 항상 0 이라 이 조건이 무조건 걸렸다.
-        st['plan'] = 'value_2street' if rel >= 0.6 else 'giveup'
-        why.append('%s: 드로우 소멸(%d아웃) → %s' % (street, outs, st['plan']))
     elif old == 'trap' and st.get('_no_bite', 0) >= 1:
         # 함정을 팠는데 아무도 물지 않았다 → 직접 밸류로 전환
         st['plan'] = 'value_3street' if rel >= 0.85 else 'value_2street'
