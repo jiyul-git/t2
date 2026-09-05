@@ -338,29 +338,13 @@ class HandRun:
                     continue
                 ax, _ = h.axes(s)
                 _ck = _cache_key(street, s, len(r2.log))
-                _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
-                if _cached:
-                    try: r2.apply(s, _cached[1], _cached[2])
-                    except ValueError: r2.apply(s, 'call' if tc > 0 else 'check')
-                    if _cached[1] in ('bet','raise','allin'): aggressor = s
-                    # 재생 경로도 기록을 남긴다. 예전에는 여기서 바로 continue 해서
-                    # **액션은 실행되는데 intents 에 아무것도 안 남았다.**
-                    # 히어로가 스텝을 밟을 때마다 이전 스트리트가 재생되므로,
-                    # 리뷰 때 '봇 액션은 로그에 있는데 근거가 없는' 스트리트가
-                    # 통째로 생겼다(실측: 스트리트당 3건씩 누락).
-                    # 계획을 재계산하면 캐시의 목적(재현성)이 깨지므로,
-                    # 실행된 사실과 이전에 세운 계획만 남긴다.
-                    _plc = h.plans.get(s) or {}
-                    h.intents = getattr(h, 'intents', [])
-                    if not any(i['street'] == street and i['seat'] == s
-                               for i in h.intents):
-                        h.intents.append({
-                            'street': street, 'seat': s, 'type': ax.get('type'),
-                            'action': _cached[1], 'amt': _cached[2],
-                            'plan': _plc.get('plan'), 'why': _plc.get('why'),
-                            'rel': _plc.get('rel'), 'eq': _plc.get('eq'),
-                            'replayed': True})
-                    continue
+                _forced = next((d for d in self.REPLAY if d[0] == _ck), None)
+                # 예전에는 여기서 바로 apply 하고 continue 했다. 그러면 계획 수립을
+                # 통째로 건너뛰어서 **액션은 실행되는데 그 근거가 없었다.**
+                # plan=None 기록이 그래서 나왔고, 계획-집행 일치 검사의
+                # 사각지대가 됐다(포스트플랍 기록의 13%).
+                # 이제는 계획을 정상적으로 계산하고, 확정된 액션만 캐시 값으로
+                # 덮어쓴다. 재현성은 그대로고 기록은 완전해진다.
                 behind = len([x for x in order if x not in r2.acted and x != s and x not in r2.folded])
                 n_opp = len(r2.live())-1
                 _seats, _ante = len(h.seats), (getattr(h, 'ante', h.bb) > 0)
@@ -434,12 +418,17 @@ class HandRun:
                 pot_live = pot_now + sum(r2.contrib.values())
                 _pl = h.plans[key]
                 h.intents = getattr(h, 'intents', [])
-                if not any(i['street'] == street and i['seat'] == s for i in h.intents):
+                # 액션 전 관측. 순번을 붙여 매 액션마다 남긴다 —
+                # 한 스트리트에서 여러 번 액션하면 그 사이 판단도 각각 달라진다.
+                _oidx = sum(1 for i in h.intents
+                            if i['street'] == street and i['seat'] == s)
+                if True:
                     # 리뷰가 코드를 고칠 수 있으려면 '무엇을 했나'가 아니라
                     # **'그 시점에 무엇을 봤나'**가 남아야 한다.
                     # 오늘 디버깅에서 매번 없어서 막혔던 값들이다.
                     h.intents.append({
-                        'street': street, 'seat': s, 'type': ax.get('type'),
+                        'street': street, 'seat': s, 'idx': _oidx,
+                        'type': ax.get('type'),
                         'plan': _pl.get('plan'), 'why': _pl.get('why'),
                         'rel': _pl.get('rel'), 'eq': _pl.get('eq'),
                         'outs': _pl.get('outs'), 'made': _pl.get('made'),
@@ -497,6 +486,10 @@ class HandRun:
                             _i['trace'] = [x for x in _tr if x.get('street') == street]
                             break
                 a, amt = a2
+                if _forced:
+                    # 이미 확정된 결정은 그대로 재생한다. 계획은 위에서 정상적으로
+                    # 계산됐으므로 기록에는 근거가 남고, 실행만 고정된다.
+                    a, amt = _forced[1], _forced[2]
                 # 어느 스트리트에서 실제로 공격했는지 기록한다 (지연 씨벳 판단에 필요).
                 if a in ('bet', 'raise', 'allin'):
                     h.plans[key].setdefault('bet_streets', [])
@@ -561,9 +554,24 @@ class HandRun:
                 _it = (_pl2.get('intents') or {}).get(street) or {}
                 _dev = [d for d in (_pl2.get('deviations') or []) if d.get('street') == street]
                 h.intents = getattr(h, 'intents', [])
-                h.intents = [i for i in h.intents if not (i['street'] == street and i['seat'] == s)]
-                h.intents.append({'street': street, 'seat': s, 'type': ax.get('type'),
-                                  'action': a, 'amt': _exec_amt, 'pre_clamp': amt,
+                # **한 스트리트에 한 좌석이 여러 번 액션한다.** 벳 → 3벳 → 재대응이
+                # 그렇다. 예전에는 (스트리트, 좌석) 하나로 덮어써서 마지막 것만
+                # 남았고, 그 사이의 판단이 통째로 사라졌다.
+                # 액션 전 관측 기록(위에서 append)에 실행 결과를 **합친다**.
+                # 따로 append 하면 한 액션이 두 줄이 되어 리뷰가 꼬인다.
+                _slot = None
+                for _i in reversed(h.intents):
+                    if (_i['street'] == street and _i['seat'] == s
+                            and 'action' not in _i):
+                        _slot = _i
+                        break
+                if _slot is None:
+                    _slot = {'street': street, 'seat': s,
+                             'idx': sum(1 for i in h.intents
+                                        if i['street'] == street and i['seat'] == s)}
+                    h.intents.append(_slot)
+                _slot.update({'type': ax.get('type'),
+                              'action': a, 'amt': _exec_amt, 'pre_clamp': amt,
                                   'plan': _pl2.get('plan'), 'why': _pl2.get('why'),
                                   'intent_act': _it.get('act'), 'intent_size': _it.get('size'),
                                   'intent_src': _it.get('src'), 'dev': _dev,
