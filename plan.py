@@ -813,7 +813,10 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
                 supp *= max(0.25, 1.0 - 0.085*PS.sk(profile, 'probe'))
             p *= max(0.03, 1.0 - max(0.30, min(0.97, supp)))
         p *= _dc_boost
-        return max(0.02, min(0.95, p)), '블러프 계획 실행(%.0f%%)' % (p*100)
+        # **clamp 이후 값으로 로그를 만든다.** 예전에는 원본 p 로 문자열을
+        # 만들어 115% 같은 불가능한 확률이 기록됐다(실제 반환은 0.95).
+        _fp = max(0.02, min(0.95, p))
+        return _fp, '블러프 계획 실행(%.0f%%)' % (_fp*100)
 
     if plan == 'block':
         # 상수 0.80 이었다. 블락벳은 개념이 있어야 실행하는 라인인데
@@ -842,7 +845,8 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         p = p + (1.0 - p) * (((rel - 0.65)/0.35) ** 0.8)
     else:
         p *= (0.35 + 0.65 * (rel/0.80) ** 0.8)
-    return max(0.05, min(0.97, p)), '밸류 계획 실행(%.0f%%)' % (p*100)
+    _fp = max(0.05, min(0.97, p))
+    return _fp, '밸류 계획 실행(%.0f%%)' % (_fp*100)
 
 
 def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
@@ -1652,7 +1656,16 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         why.append('%s: 블러프였으나 강도 상승 → 밸류 전환' % street)
     st['plan'] = _allowed(profile, st['plan'],
                           random.Random(_zlib.crc32(repr((hero, board, street)).encode())))
+    # why 는 스트리트를 넘어 누적된다. 그대로 두면 턴 로그에 플랍 사유가
+    # 섞여 리뷰 때 오독을 유발한다(실측 15건). 누적본은 이력으로 남기되,
+    # **현재 스트리트의 사유만 따로** 보관한다. 설명 내용 자체는 바꾸지 않는다.
     st['why'] = why[-4:]
+    _wbs = dict(st.get('why_by_street') or {})
+    # 폴백으로 why[-2:] 를 쓰면 그 스트리트에 새 사유가 없을 때 **이전
+    # 스트리트 사유를 그대로 가져온다**(실측 9건). 없으면 비어 있는 것이
+    # 정확한 기록이다 — 계획이 유지됐다는 뜻이므로.
+    _wbs[street] = [w for w in why if w.startswith(street + ':')]
+    st['why_by_street'] = _wbs
     # 의도는 파이프라인 끝(session)에서 한 번만 붙인다. 여기서 붙이면 낡는다.
     return st
 

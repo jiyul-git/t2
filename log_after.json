@@ -1,0 +1,1078 @@
+{
+ "seed": 26001,
+ "rows": [
+  {
+   "hand": 1,
+   "street": "flop",
+   "seat": 8,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "블러프 계획 실행(85%)",
+   "p": 0.853,
+   "why": [
+    "flop: 드로우 8아웃 → 세미블러프",
+    "flop: 세미블러프 사이즈: 폴드율 52% 역산 → 팟의 77%"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 1,
+   "street": "flop",
+   "seat": 4,
+   "idx": 0,
+   "action": "raise",
+   "tocall": 600,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 1,
+   "street": "flop",
+   "seat": 8,
+   "idx": 1,
+   "action": "raise",
+   "tocall": 4100,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "블러프 계획 실행(85%)",
+   "p": null,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.00/넛우위 0.24 → 블러프 계획",
+    "flop: 블러프 세부: probe — 도중 포기 위험 100% — 최소 비용 탐색"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 1,
+   "street": "flop",
+   "seat": 4,
+   "idx": 1,
+   "action": "call",
+   "tocall": 10700,
+   "intent_act": "bet",
+   "response_act": "call",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": null,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 1,
+   "street": "turn",
+   "seat": 8,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "블러프 계획 실행(69%)",
+   "p": 0.693,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.00/넛우위 0.24 → 블러프 계획",
+    "flop: 블러프 세부: probe — 도중 포기 위험 100% — 최소 비용 탐색"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 1,
+   "street": "turn",
+   "seat": 4,
+   "idx": 0,
+   "action": "call",
+   "tocall": 14100,
+   "intent_act": "bet",
+   "response_act": "call",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 2,
+   "street": "flop",
+   "seat": 3,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "DEVIATE:포기 계획이나 지속벳(66%)",
+   "p": 0.659,
+   "why": [
+    "flop: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 2.7)",
+    "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(66%))"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 2,
+   "street": "flop",
+   "seat": 5,
+   "idx": 0,
+   "action": "call",
+   "tocall": 1000,
+   "intent_act": "check",
+   "response_act": "call",
+   "intent_src": "함정 계획 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 넛급 + 상대 벳확률 45% · 취향 5.4 · 수렴 100% → 함정(36%)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 2,
+   "street": "turn",
+   "seat": 3,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 2.7)",
+    "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(66%))",
+    "turn: 강도 상승(rel 0.72, made 1) → 밸류 전환"
+   ],
+   "why_by_street": [
+    "turn: 강도 상승(rel 0.72, made 1) → 밸류 전환"
+   ]
+  },
+  {
+   "hand": 2,
+   "street": "turn",
+   "seat": 5,
+   "idx": 0,
+   "action": "raise",
+   "tocall": 2600,
+   "intent_act": "check",
+   "response_act": "raise",
+   "intent_src": "함정 계획 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 넛급 + 상대 벳확률 45% · 취향 5.4 · 수렴 100% → 함정(36%)"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 2,
+   "street": "turn",
+   "seat": 3,
+   "idx": 1,
+   "action": "call",
+   "tocall": 9200,
+   "intent_act": "bet",
+   "response_act": "call",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 2.7)",
+    "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(66%))",
+    "turn: 강도 상승(rel 0.72, made 1) → 밸류 전환"
+   ],
+   "why_by_street": [
+    "turn: 강도 상승(rel 0.72, made 1) → 밸류 전환"
+   ]
+  },
+  {
+   "hand": 2,
+   "street": "river",
+   "seat": 3,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "river: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 2.7)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 2,
+   "street": "river",
+   "seat": 5,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "river: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 2,
+   "street": "river",
+   "seat": 3,
+   "idx": 1,
+   "action": "call",
+   "tocall": 16300,
+   "intent_act": "check",
+   "response_act": "call",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": null,
+   "why": [
+    "river: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 2.7)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 6,
+   "street": "flop",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 6,
+   "street": "flop",
+   "seat": 8,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 밸류 → 3스트리트"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 6,
+   "street": "flop",
+   "seat": 5,
+   "idx": 0,
+   "action": "raise",
+   "tocall": 1000,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "밸류 계획 실행(89%)",
+   "p": 0.892,
+   "why": [
+    "flop: 중간강도(eq 0.57, rel 0.91, 머징 2.5) → 얇은 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 6,
+   "street": "flop",
+   "seat": 6,
+   "idx": 1,
+   "action": "fold",
+   "tocall": 7600,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": null,
+   "why": [
+    "flop: 드로우 17아웃 → 세미블러프",
+    "flop: 세미블러프 사이즈: 폴드율 45% 역산 → 팟의 58%"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 6,
+   "street": "flop",
+   "seat": 8,
+   "idx": 1,
+   "action": "raise",
+   "tocall": 6600,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": null,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 6,
+   "street": "flop",
+   "seat": 5,
+   "idx": 1,
+   "action": "raise",
+   "tocall": 20400,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "밸류 계획 실행(89%)",
+   "p": null,
+   "why": [
+    "flop: 밸류 → 3스트리트"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 6,
+   "street": "flop",
+   "seat": 8,
+   "idx": 2,
+   "action": "call",
+   "tocall": 1400,
+   "intent_act": "bet",
+   "response_act": "call",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": null,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 7,
+   "street": "flop",
+   "seat": 2,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(96%)",
+   "p": 0.963,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 7,
+   "street": "flop",
+   "seat": 4,
+   "idx": 0,
+   "action": "call",
+   "tocall": 700,
+   "intent_act": "check",
+   "response_act": "call",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 7,
+   "street": "turn",
+   "seat": 2,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(94%)",
+   "p": 0.944,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류",
+    "turn: 상대 폴드성향 -6%p → 포기 문턱 0.30"
+   ],
+   "why_by_street": [
+    "turn: 상대 폴드성향 -6%p → 포기 문턱 0.30"
+   ]
+  },
+  {
+   "hand": 7,
+   "street": "turn",
+   "seat": 4,
+   "idx": 0,
+   "action": "fold",
+   "tocall": 1600,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 10,
+   "street": "flop",
+   "seat": 6,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "팟컨트롤 → 대부분 체크",
+   "p": 0.53,
+   "why": [
+    "flop: OOP 중간강도 → 블락벳으로 가격 통제",
+    "flop: 중간강도(eq 0.57, rel 0.32) → 팟 컨트롤"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 10,
+   "street": "flop",
+   "seat": 4,
+   "idx": 0,
+   "action": "fold",
+   "tocall": 600,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 15,
+   "street": "flop",
+   "seat": 1,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 15,
+   "street": "flop",
+   "seat": 3,
+   "idx": 0,
+   "action": "fold",
+   "tocall": 800,
+   "intent_act": "bet",
+   "response_act": "fold",
+   "intent_src": "블러프 계획 실행(88%)",
+   "p": 0.876,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.10/넛우위 -0.08 → 블러프 계획",
+    "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 52% 역산(팟의 75%, 요구 43%)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 16,
+   "street": "flop",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "블러프 계획 실행(55%)",
+   "p": 0.55,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.08/넛우위 -0.08 → 블러프 계획",
+    "flop: 블러프 세부: merged — 상대가 사이즈를 읽음 — 밸류와 같은 사이즈로 위장"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 16,
+   "street": "flop",
+   "seat": 3,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 중간강도(eq 0.56, rel 0.79, 머징 1.2) → 얇은 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 16,
+   "street": "flop",
+   "seat": 6,
+   "idx": 1,
+   "action": "call",
+   "tocall": 1300,
+   "intent_act": "check",
+   "response_act": "call",
+   "intent_src": "블러프 계획 실행(55%)",
+   "p": null,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 16,
+   "street": "turn",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 16,
+   "street": "turn",
+   "seat": 3,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 중간강도(eq 0.56, rel 0.79, 머징 1.2) → 얇은 밸류"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 16,
+   "street": "turn",
+   "seat": 6,
+   "idx": 1,
+   "action": "fold",
+   "tocall": 2700,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 19,
+   "street": "flop",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 19,
+   "street": "flop",
+   "seat": 4,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 19,
+   "street": "flop",
+   "seat": 6,
+   "idx": 1,
+   "action": "raise",
+   "tocall": 1500,
+   "intent_act": "check",
+   "response_act": "raise",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": null,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.04/넛우위 -0.20 → 블러프 계획",
+    "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 46% 역산(팟의 61%, 요구 38%)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 19,
+   "street": "flop",
+   "seat": 4,
+   "idx": 1,
+   "action": "raise",
+   "tocall": 4700,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": null,
+   "why": [
+    "flop: 넛급 + 상대 벳확률 45% · 취향 5.0 · 수렴 42% → 함정(19%)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 19,
+   "street": "flop",
+   "seat": 6,
+   "idx": 2,
+   "action": "fold",
+   "tocall": 19500,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": null,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 8,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 밸류 → 3스트리트"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 3,
+   "idx": 0,
+   "action": "fold",
+   "tocall": 1300,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 2.7)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 5,
+   "idx": 0,
+   "action": "raise",
+   "tocall": 1300,
+   "intent_act": "check",
+   "response_act": "raise",
+   "intent_src": "함정 계획 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 넛급 + 상대 벳확률 59% · 취향 5.4 · 수렴 100% → 함정(29%) [리딩 74%]"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 6,
+   "idx": 1,
+   "action": "fold",
+   "tocall": 11300,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": null,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 8,
+   "idx": 1,
+   "action": "raise",
+   "tocall": 10000,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": null,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 5,
+   "idx": 1,
+   "action": "raise",
+   "tocall": 15300,
+   "intent_act": "check",
+   "response_act": "raise",
+   "intent_src": "함정 계획 → 체크",
+   "p": null,
+   "why": [
+    "flop: 밸류 → 3스트리트"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 20,
+   "street": "flop",
+   "seat": 8,
+   "idx": 2,
+   "action": "call",
+   "tocall": 2700,
+   "intent_act": "bet",
+   "response_act": "call",
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": null,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 21,
+   "street": "flop",
+   "seat": 2,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "DEVIATE:포기 계획이나 지속벳(42%)",
+   "p": 0.418,
+   "why": [
+    "flop: 중간강도이나 상대레인지 열세(rel 0.23, made 0) → giveup"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 21,
+   "street": "flop",
+   "seat": 4,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 1.7)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 21,
+   "street": "turn",
+   "seat": 2,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "DEVIATE:포기 계획이나 지속벳(39%)",
+   "p": 0.388,
+   "why": [
+    "flop: 중간강도이나 상대레인지 열세(rel 0.23, made 0) → giveup"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 21,
+   "street": "turn",
+   "seat": 4,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 1.7)"
+   ],
+   "why_by_street": []
+  },
+  {
+   "hand": 21,
+   "street": "river",
+   "seat": 2,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "팟컨트롤 → 대부분 체크",
+   "p": 0.425,
+   "why": [
+    "river: 쇼다운 가치 있음 → 팟 컨트롤"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 21,
+   "street": "river",
+   "seat": 4,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(43%)",
+   "p": 0.434,
+   "why": [
+    "river: 중간강도(eq 0.55, rel 0.57, 머징 0.4) → 얇은 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 28,
+   "street": "flop",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "flop: OOP 중간강도 → 블락벳으로 가격 통제",
+    "flop: 중간강도이나 상대레인지 열세(rel 0.60, made 0) → giveup"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 28,
+   "street": "flop",
+   "seat": 3,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "flop: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 28,
+   "street": "flop",
+   "seat": 6,
+   "idx": 1,
+   "action": "call",
+   "tocall": 1400,
+   "intent_act": "check",
+   "response_act": "call",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": null,
+   "why": [
+    "flop: 중간강도이나 상대레인지 열세(rel 0.60, made 0) → giveup"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 28,
+   "street": "turn",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": 0.0,
+   "why": [
+    "turn: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 28,
+   "street": "turn",
+   "seat": 3,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "밸류 계획 실행(97%)",
+   "p": 0.97,
+   "why": [
+    "turn: 강도 최상위 → 3스트리트 밸류"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 28,
+   "street": "turn",
+   "seat": 6,
+   "idx": 1,
+   "action": "fold",
+   "tocall": 4400,
+   "intent_act": "check",
+   "response_act": "fold",
+   "intent_src": "포기 계획 + 이니셔티브 없음 → 체크",
+   "p": null,
+   "why": [
+    "turn: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 29,
+   "street": "flop",
+   "seat": 6,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "블러프 계획 실행(52%)",
+   "p": 0.518,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.04/넛우위 -1.00 → 블러프 계획",
+    "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 43% 역산(팟의 55%, 요구 36%)"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 29,
+   "street": "flop",
+   "seat": 4,
+   "idx": 0,
+   "action": "check",
+   "tocall": 0,
+   "intent_act": "check",
+   "response_act": null,
+   "intent_src": "DEVIATE:포기 계획이나 지속벳(62%)",
+   "p": 0.62,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기"
+   ],
+   "why_by_street": null
+  },
+  {
+   "hand": 29,
+   "street": "turn",
+   "seat": 6,
+   "idx": 0,
+   "action": "bet",
+   "tocall": 0,
+   "intent_act": "bet",
+   "response_act": null,
+   "intent_src": "블러프 계획 실행(46%)",
+   "p": 0.46,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.04/넛우위 -1.00 → 블러프 계획",
+    "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 43% 역산(팟의 55%, 요구 36%)",
+    "turn: 상대 폴드성향 -4%p → 포기 문턱 0.32"
+   ],
+   "why_by_street": [
+    "turn: 상대 폴드성향 -4%p → 포기 문턱 0.32"
+   ]
+  },
+  {
+   "hand": 29,
+   "street": "turn",
+   "seat": 4,
+   "idx": 0,
+   "action": "raise",
+   "tocall": 1300,
+   "intent_act": "bet",
+   "response_act": "raise",
+   "intent_src": "밸류 계획 실행(88%)",
+   "p": 0.882,
+   "why": [
+    "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기",
+    "turn: 포기했으나 강도 상승(rel 0.84, made 2) → value_2street"
+   ],
+   "why_by_street": [
+    "turn: 포기했으나 강도 상승(rel 0.84, made 2) → value_2street"
+   ]
+  },
+  {
+   "hand": 29,
+   "street": "turn",
+   "seat": 6,
+   "idx": 1,
+   "action": "fold",
+   "tocall": 7800,
+   "intent_act": "bet",
+   "response_act": "fold",
+   "intent_src": "블러프 계획 실행(46%)",
+   "p": 0.46,
+   "why": [
+    "flop: 쇼다운 가치 없음 + 블로커 0.04/넛우위 -1.00 → 블러프 계획",
+    "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 43% 역산(팟의 55%, 요구 36%)",
+    "turn: 상대 폴드성향 -4%p → 포기 문턱 0.32"
+   ],
+   "why_by_street": [
+    "turn: 상대 폴드성향 -4%p → 포기 문턱 0.32"
+   ]
+  }
+ ]
+}

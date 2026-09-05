@@ -549,6 +549,12 @@ class HandRun:
                 # _allowed(개념 보유 검사)는 update_plan 안에서 이미 적용됐고,
                 # 여기서 또 돌리면 '실행 후 계획 변경' = 사후 수정이 된다.
                 _pl2 = h.plans[key]
+                # 대응 사유는 계획의 trace 에 kind='response' 로 남아 있다.
+                _rsrc = None
+                for _t in reversed(_pl2.get('trace') or []):
+                    if _t.get('kind') == 'response' and _t.get('street') == street:
+                        _rsrc = _t.get('why')
+                        break
                 # 의도와 실행을 **나란히** 남긴다. 예전에는 실행된 action 만 남아서
                 # '계획대로 집행됐는가'를 사후에 검증할 방법이 아예 없었다
                 # (계획이 옳은지와 별개로, 배선이 끊겨도 알 수가 없었다).
@@ -576,6 +582,17 @@ class HandRun:
                                   'plan': _pl2.get('plan'), 'why': _pl2.get('why'),
                                   'intent_act': _it.get('act'), 'intent_size': _it.get('size'),
                                   'intent_src': _it.get('src'), 'dev': _dev,
+                                  # 저항이 있으면 decide_response 가 별도로
+                                  # 판단한다. **intent_act 를 덮어쓰지 않고**
+                                  # 대응 행동을 따로 남긴다 — 그래야 로그에서
+                                  # '원래 계획은 check 였고, 상대가 쳐서 call 로
+                                  # 대응했다'가 보존된다. 덮어쓰면 최초 의도가
+                                  # 사라지고, 그대로 두면 의도와 실행이 어긋나
+                                  # 보인다(실측 32건).
+                                  'response_act': (a if tc > 0 else None),
+                                  'response_src': (_rsrc if tc > 0 else None),
+                                  'why_by_street': (_pl2.get('why_by_street') or {}
+                                                    ).get(street),
                                   'tocall': tc, 'pot': pot_live,
                                   'stack': r2.stacks[s] + r2.contrib.get(s, 0),
                                   'min_raise': (_cur0 + _mr0) if _cur0 else max(h.bb, _mr0),
