@@ -411,7 +411,8 @@ class HandRun:
                     h.POST.index(h.pos[s]) < 3, s == aggressor,
                     opp_est=_est, opp_stack_bb=_ostk, tilt=h.axes(s)[1],
                     first=(key not in h.plans or street == 'flop'),
-                    pf_seed=getattr(h, 'pf_seed', {}).get(s))
+                    pf_seed=getattr(h, 'pf_seed', {}).get(s),
+                    bb_chips=h.bb)
                 # 실제 팟은 스트리트 시작 팟 + 이번 스트리트에 들어온 칩이다.
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.

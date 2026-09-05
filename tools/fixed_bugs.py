@@ -154,12 +154,45 @@ def check_replay_records():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+
+def check_bluff_disguise():
+    """위장형 블러프가 밸류와 같은 사이즈로 나가는가."""
+    prof = _prof()
+    board = ['Kd', '9c', '4h']
+    st = {'plan': 'bluff_2street', 'bluff_mode': 'merged', 'bluff_mul': 1.0}
+    b = [PL.decide_size(prof, ['Qs', 'Js'], board, 'flop', 'bluff_2street', 0.15,
+                        [], [], 6000, 40000, random.Random(i), plan_state=st)
+         for i in range(60)]
+    v = [PL.decide_size(prof, ['Ks', 'Kh'], board, 'flop', 'value_2street', 0.90,
+                        [], [], 6000, 40000, random.Random(i),
+                        plan_state={'plan': 'value_2street'})
+         for i in range(60)]
+    bm, vm = sum(b)/len(b), sum(v)/len(v)
+    report('위장 블러프가 밸류와 같은 사이즈', abs(bm - vm) < 0.03,
+           '블러프 %.0f%% vs 밸류 %.0f%%' % (bm*100, vm*100))
+
+
+def check_commit_by_study():
+    """목표 커밋이 공부에 따라 갈리는가(초보는 강도 무관 습관값)."""
+    def mk(sk):
+        p = dict(_prof()); p['concepts'] = dict(p['concepts'])
+        p['concepts']['spr'] = sk
+        return p
+    lo = [PL.target_commit(mk(2.0), r, 1, 5.0, 'flop') for r in (0.2, 0.95)]
+    hi = [PL.target_commit(mk(9.0), r, 1, 5.0, 'flop') for r in (0.2, 0.95)]
+    report('초보는 강도와 무관한 습관 목표', abs(lo[0]-lo[1]) < 0.02,
+           'rel0.2 %.0f%% vs rel0.95 %.0f%%' % (lo[0]*100, lo[1]*100))
+    report('레귤러는 강도를 따라간다', hi[1] - hi[0] > 0.4,
+           'rel0.2 %.0f%% vs rel0.95 %.0f%%' % (hi[0]*100, hi[1]*100))
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
     for fn in (check_river_budget, check_open_form_cliff,
                check_allin_no_reraise_mult, check_trap_taste,
-               check_empty_range_guard, check_replay_records):
+               check_empty_range_guard, check_replay_records,
+               check_bluff_disguise, check_commit_by_study):
         try:
             fn()
         except Exception as e:

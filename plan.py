@@ -193,7 +193,7 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
 
 def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
               seed=None, n_opp=1, to_act_behind=0, oop=False, initiative=True,
-              opp_est=None, opp_stack_bb=None, tilt=0.0):
+              opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None):
     """플랍에서 라인을 확정. 상대 수와 뒤에 남은 액션자를 반영.
 
     opp_est — reads.perceived_profile() 결과. 진짜 프로필을 넘기면 정보 누출이다.
@@ -246,16 +246,22 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     rel = perceived_rel(profile, rel_true, hero, board,
                         bot.draw_strength(hero, board) if board else 0,
                         bot.made_strength(hero, board) if board else 0)
+    _bluff_mode, _bluff_mul = None, 1.0      # 블러프 세부 전략(아래에서 확정)
     monster = made >= 5                     # 플러시 이상은 다인원 보정 면제
     strong  = made >= 3                     # 트립스 이상
 
     # 3스트리트로 목표치를 다 넣을 수 있는가. 사이즈를 미리 배분해둔다.
     # 스트리트마다 즉흥으로 정하면 리버에 스택이 어중간하게 남는다.
     # 목표(commit)는 강도가 정하고, 역산 능력은 sk('spr')이 가른다.
+    # 상대 유효 스택 비율(내 스택 대비). 상대가 못 따라올 목표는 무의미하다.
+    _opp_eff = None
+    if opp_stack_bb and bb_chips and stack > 0:
+        _opp_eff = min(1.0, (float(opp_stack_bb) * float(bb_chips)) / float(stack))
     _commit = target_commit(profile, rel, made, s_true, street,
-                            opp_stack_bb=opp_stack_bb)
+                            opp_stack_bb=opp_stack_bb,
+                            opp_eff=_opp_eff)
     _so = stackoff_plan(hero, board, profile, pot, stack, street, rng,
-                        commit=_commit)
+                        commit=_commit, danger=dang, opp_est=opp_est)
 
     # 다인원 보정: 밸류 문턱이 올라가고 블러프는 급감한다
     mw = max(0, n_opp - 1)
@@ -402,6 +408,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                             * (0.45 + 0.28*sk('bluff'))):
         plan = 'bluff_2street'
         why.append('쇼다운 가치 없음 + 블로커 %.2f/넛우위 %.2f → 블러프 계획' % (blk, nut))
+        # 큰 전략(블러프) 아래 세부 전략을 고른다. 사이즈는 여기서 갈린다.
+        _bm, _bmul, _bwhy = bluff_mode(profile, rel, dang, nut, opp_est,
+                                       street, s, rng)
+        _bluff_mode, _bluff_mul = _bm, _bmul
+        why.append('블러프 세부: %s — %s' % (_bm, _bwhy))
     else:
         # giveup은 '쇼다운 가치 없음'일 때만. 메이드 핸드는 팟컨트롤로 간다.
         has_sd = made >= 1 or eq >= 0.42 + 0.05*mw
@@ -417,7 +428,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'eq': round(eq,3), 'danger': round(dang,2), 'outs': outs,
             'blocker': round(blk,2), 'blocker_net': round(blk_net,3),
             'nut_adv': round(nut,2), 'range_adv': round(adv,2),
-            'stackoff': dict(_so, _blk_net=round(blk_net, 3)) if isinstance(_so, dict) else _so, 'spr': round(s,1), 'pc': round(pc,2),
+            'stackoff': dict(_so, _blk_net=round(blk_net, 3)) if isinstance(_so, dict) else _so,
+            'bluff_mode': _bluff_mode, 'bluff_mul': round(_bluff_mul, 2), 'spr': round(s,1), 'pc': round(pc,2),
             'n_opp': n_opp, 'behind': to_act_behind, 'rel': round(rel,2), 'made': made,
             # 사유에 어느 스트리트에서 붙은 줄인지 표시한다. why 는 스트리트를
             # 넘어 누적되는데 표시가 없어서, 리버 기록의 why[0] 이 플랍 때 붙은
@@ -830,6 +842,22 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
     (shape_size 는 '사람다운 끝자리'만 만드는 표현 계층이므로 집행부에 남긴다.)
     """
     base = SIZING.get(plan, {}).get(street, 0.0)
+    # 블러프 세부 전략이 사이즈를 바꾼다(bluff_mode). 예전에는 계획이
+    # bluff_2street 이면 상대가 누구든 보드가 뭐든 고정값(0.45/0.60)이었다.
+    #   merged    — 같은 상황의 **밸류 사이즈를 그대로** 쓴다. 위장의 핵심이라
+    #               배수가 아니라 표 자체를 바꿔야 구분이 불가능해진다.
+    #   polarized — 오버벳
+    #   probe     — 최소 비용
+    _bm = (plan_state or {}).get('bluff_mode')
+    if _bm and base > 0:
+        if _bm == 'merged':
+            # base 만 바꾸면 뒤따르는 보정(텍스처·aggr·오버벳)이 여전히
+            # 블러프 계획 기준으로 걸려 사이즈가 어긋난다. 위장이 목적이므로
+            # **계획명 자체를 밸류로 바꿔** 이후 경로를 통째로 같게 만든다.
+            plan = 'value_2street'
+            base = SIZING.get(plan, {}).get(street, base)
+        else:
+            base *= float((plan_state or {}).get('bluff_mul') or 1.0)
     # 예산 소진 검사. 이름이 2스트리트인 계획이 3배럴이 되면 안 된다.
     # 계획을 어기고 치는 경우(deviating)는 규율 문제라 예산 밖이다.
     if not deviating:
@@ -876,8 +904,11 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
                            TX.size_fraction, plan, street)
         base = 0.45*base + 0.55*tex
     base *= (0.85 + 0.05*profile.get('aggr', 5))
-    if rel < 0.45:
-        base *= 0.80                       # 약할수록 작게
+    if rel < 0.45 and _bm != 'merged':
+        # 약할수록 작게. **이 감쇠가 곧 사이즈에서 강도가 새는 통로다** —
+        # 블러프는 정의상 약한 패라 항상 이 감쇠를 받고, 사이즈를 읽는
+        # 상대에게는 그대로 노출된다. 위장형(merged)은 그래서 면제한다.
+        base *= 0.80
     # 오버벳: 개념·넛우위·양극화가 갖춰졌을 때만. 판단 층에서 결정된다.
     ob = overbet_frac(profile, hero, board, opp_range, my_range, street, plan,
                       rel, rng, opp_est)
@@ -1286,7 +1317,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
 def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                 street, seed, n_opp, behind, prev_board, oop, initiative,
                 opp_est=None, opp_stack_bb=None, tilt=0.0, first=False,
-                pf_seed=None):
+                pf_seed=None, bb_chips=None):
     """계획 갱신의 **유일한 진입점**.
 
     예전에는 session 이 make_plan / revise_plan / refresh / river_fix / _allowed 를
@@ -1307,7 +1338,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
         st = make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                        seed=seed, n_opp=n_opp, to_act_behind=behind,
                        oop=oop, initiative=initiative,
-                       opp_est=opp_est, opp_stack_bb=opp_stack_bb, tilt=tilt)
+                       opp_est=opp_est, opp_stack_bb=opp_stack_bb, tilt=tilt,
+                       bb_chips=bb_chips)
         # 프리플랍에서 확정된 것을 물려받는다. 이게 없으면 포스트플랍 계획이
         # 매번 백지에서 시작하고, '왜 3벳했는가'가 플랍 판단과 무관해진다.
         if pf_seed:
@@ -1597,7 +1629,8 @@ def checkraise_size(profile, pot, tocall, stack, board, street, rng):
     return int(min(stack, max(tocall*2.2, round(target/100)*100)))
 
 
-def target_commit(profile, rel, made, s, street, opp_stack_bb=None):
+def target_commit(profile, rel, made, s, street, opp_stack_bb=None,
+                  opp_eff=None):
     """이 핸드로 **스택의 몇 %까지 넣을 작정인가**. 0~1.
 
     value_Nstreet 의 뜻을 '몇 번 친다'에서 '목표까지 팟을 키운다'로 바꾸는
@@ -1615,9 +1648,11 @@ def target_commit(profile, rel, made, s, street, opp_stack_bb=None):
     tgt = max(0.12, min(1.0, 0.10 + 1.15*max(0.0, rel - 0.30)))
     if made >= 5:                      # 셋 이상 — 전액을 목표로
         tgt = max(tgt, 0.92)
-    # 상대가 못 따라올 목표는 의미가 없다. 상대 스택이 얕으면 그만큼만.
-    if opp_stack_bb and s > 0:
-        tgt = min(1.0, tgt)
+    # 상대가 못 따라올 목표는 의미가 없다. 내가 40bb 를 넣을 작정이어도
+    # 상대에게 15bb 밖에 없으면 실제로 들어가는 건 15bb 다. 그 이상을
+    # 목표로 잡으면 사이즈만 부풀고 폴드만 유도한다.
+    if opp_eff and opp_eff > 0:
+        tgt = min(tgt, max(0.05, float(opp_eff)))
     aware = 1.0
     if profile.get('concepts'):
         aware = max(0.0, min(1.0, (PS.sk(profile, 'spr') - 2.0) / 6.0))
@@ -1625,8 +1660,92 @@ def target_commit(profile, rel, made, s, street, opp_stack_bb=None):
     return max(0.05, min(1.0, tgt*aware + habit*(1.0 - aware)))
 
 
+def bluff_mode(profile, rel, danger, nut_adv, opp_est, street, s, rng):
+    """블러프라는 **큰 전략** 아래 어떤 세부 전략으로 갈 것인가.
+
+    밸류는 목표가 하나('팟을 키운다')지만 블러프는 목표끼리 충돌한다.
+      중간에 접을 생각이면 최소한만 걸어야 손실이 작다.
+      그런데 작게 걸면 상대가 안 접어서 애초의 목적을 못 이룬다.
+      레귤러 상대로는 밸류벳과 똑같이 보여야 하는데, 밸류 사이즈는 크다.
+
+    그래서 세부 전략을 나눈다. 반환 (모드, 사이즈배수, 사유).
+
+      merged     위장형 — 같은 상황의 내 밸류 사이즈와 일치시킨다.
+                 상대가 사이즈를 읽을 때만 의미가 있다.
+      polarized  양극화 — 오버벳으로 '넛 아니면 블러프'만 남긴다.
+                 내 레인지에 넛이 있어야(nut_adv) 성립한다.
+      barrel     지속형 — 폴드율 위주. 상대가 사이즈를 안 읽을 때.
+      probe      저비용 — 중간에 접을 생각. 반응만 보고 손실을 줄인다.
+
+    **이건 레귤러의 개념이다.** 상대의 읽기 능력을 고려해 사이즈를 바꾸는 것
+    자체가 공부의 산물이다. 못 하는 사람은 늘 같은 크기로 친다.
+    """
+    aware = 1.0
+    if profile.get('concepts'):
+        aware = max(0.0, min(1.0,
+                             (0.5*PS.sk(profile, 'sizing_tell')
+                              + 0.5*PS.sk(profile, 'fold_equity') - 2.0) / 6.0))
+    if aware < 0.15:
+        return 'habit', 1.0, '사이즈로 속인다는 개념 없음 — 습관 사이즈'
+
+    # 상대가 사이즈에서 정보를 읽는가. 읽는 상대에게만 위장이 값을 한다.
+    reads = 0.5
+    folds = 0.5
+    if isinstance(opp_est, dict):
+        if opp_est.get('sizing_tell') is not None:
+            reads = float(opp_est['sizing_tell'])/10.0
+        if opp_est.get('fold') is not None:
+            folds = float(opp_est['fold'])
+
+    # 끝까지 갈 생각인가. 딥할수록·젖을수록 도중 포기 가능성이 크다.
+    risk = max(0.0, min(1.0, 0.25 + 0.45*max(0.0, min(1.0, danger/0.65))
+                        + 0.05*max(0.0, s - 4.0)))
+    if risk > 0.62 and rng.random() < 0.55*aware:
+        return 'probe', 0.55, '도중 포기 위험 %.0f%% — 최소 비용 탐색' % (risk*100)
+    if reads >= 0.55 and nut_adv >= 0.55 and rng.random() < 0.45*aware:
+        return 'polarized', 1.45, '상대가 사이즈를 읽음 + 넛 우위 — 양극화'
+    if reads >= 0.55:
+        return 'merged', 1.0, '상대가 사이즈를 읽음 — 밸류와 같은 사이즈로 위장'
+    return 'barrel', (1.15 if folds >= 0.5 else 0.85), \
+        '상대가 사이즈를 안 읽음 — 폴드율 위주(상대 폴드 %.0f%%)' % (folds*100)
+
+
+def spread_curve(profile, danger, opp_est=None):
+    """목표를 세 스트리트에 **어떻게 나눠 실을 것인가**. (플랍, 턴, 리버) 가중치.
+
+    같은 목표라도 배분이 다르다.
+      앞에 싣기  — 젖은 보드. 드로우에 값을 물리고 폴드에쿼티도 크다.
+      뒤로 미루기 — 마른 보드 + 잘 안 접는 상대. 약한 패로 따라오게 두었다가
+                   마지막에 뽑는다.
+    예전에는 기하급수 균등 배분 하나뿐이라 보드도 상대도 성향도 반영되지 않았다.
+
+    **이것도 레귤러의 개념이다.** 배분을 계획하려면 남은 스트리트를 내다봐야
+    하는데, 그게 안 되는 사람은 매 스트리트 같은 비율로 친다.
+    """
+    front = 0.0
+    front += 0.55*max(0.0, min(1.0, danger/0.65))       # 젖을수록 앞에
+    if opp_est:
+        # 잘 접는 상대면 앞에서 끝내는 게 이득, 안 접으면 뒤로 미뤄 뽑는다.
+        _f = opp_est.get('fold') if isinstance(opp_est, dict) else None
+        if _f is not None:
+            front += 0.35*(float(_f) - 0.5)
+    a = profile.get('aggr', 5)
+    if profile.get('temper'):
+        a = PS.temper(profile, 'aggression', 5.0)
+        front -= 0.030*(PS.temper(profile, 'slowplay_taste', 5.0) - 5.0)
+    front += 0.025*(a - 5.0)
+    front = max(-0.45, min(0.55, front))
+    w = [1.0 + front, 1.0, 1.0 - 0.55*front]
+    aware = 1.0
+    if profile.get('concepts'):
+        aware = max(0.0, min(1.0, (PS.sk(profile, 'spr') - 2.0) / 6.0))
+    w = [1.0 + (x - 1.0)*aware for x in w]              # 못 보는 사람은 균등
+    tot = sum(w)
+    return [x*3.0/tot for x in w]                       # 평균 1.0 로 정규화
+
+
 def stackoff_plan(hero, board, profile, pot, stack, street, rng,
-                  commit=1.0):
+                  commit=1.0, danger=0.0, opp_est=None):
     """목표까지 팟을 키우는 스트리트별 사이즈 배분.
 
     commit 은 '스택의 몇 %까지 넣을 작정인가'(target_commit). 1.0 이면
@@ -1645,10 +1764,12 @@ def stackoff_plan(hero, board, profile, pot, stack, street, rng,
         # 3스트리트로 목표치를 정확히 다 넣는 기하급수 사이즈
         r = (2*eff/pot + 1) ** (1/3)
         frac = (r - 1) / 2
-        return {'ok': True, 'why': 'SPR %.1f · 목표 %.0f%% — 3스트리트 배분'
-                                   % (s, commit*100),
-                'commit': round(commit, 2),
-                'flop': round(frac, 2), 'turn': round(frac, 2), 'river': round(frac, 2)}
+        w = spread_curve(profile, danger, opp_est)
+        return {'ok': True, 'why': 'SPR %.1f · 목표 %.0f%% — 3스트리트 배분(%.2f/%.2f/%.2f)'
+                                   % (s, commit*100, w[0], w[1], w[2]),
+                'commit': round(commit, 2), 'spread': [round(x,2) for x in w],
+                'flop': round(frac*w[0], 2), 'turn': round(frac*w[1], 2),
+                'river': round(frac*w[2], 2)}
     if s_eff <= 10 and so >= 6.5:
         # 오버벳 성향이 강한 사람만 시도
         r = (2*eff/pot + 1) ** (1/3)
