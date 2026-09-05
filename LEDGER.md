@@ -464,3 +464,67 @@ turn  value_3street  rel 1.00 eq 0.862 made 3   raise 18,200
 `opp_range` 해시(전/후), 계산 호출 여부, 지표 값(전/후)을 함께 봐야 한다.
 `range_advantage` 는 샘플링 기반이라 입력이 달라도 우연히 같을 수 있고,
 `nut_advantage` 는 더 직접적으로 확인 가능하다.
+
+## STEP 5-A — 새 시드 회귀 (8시드 × 40핸드 = 320핸드)
+
+```
+true stale                 0 / 144
+  unavailable(my_range=[])   1     별개 이슈 C
+  refresh skipped(가드)       4     설계대로
+probability mismatch       0 / 330
+response missing           0 / 230
+why contamination          0 / 68
+trap goal discontinuity    0 / 11
+```
+판정 **PASS**. 26001 단독(분모 47/38/6)보다 검사력이 크게 올라간 상태에서 0건.
+
+### 이 과정에서 잡은 실제 버그
+
+첫 실행은 FAIL(9/144)이었고, 그중 상당수가 진짜였다.
+
+```python
+_mr = my_range if my_range is not None else st.get('my_range')
+```
+
+**빈 리스트가 들어오면 폴백을 타지 않는다**(`[]` 는 `None` 이 아니다).
+계획 상태에 레인지가 남아 있는데도 재계산이 통째로 건너뛰어졌다.
+`if my_range` 로 수정.
+
+### known issue C — my_range 가 빈 계획이 존재한다
+
+`my_range=[]` 이고 계획 상태에도 비어 있어 `nut_adv`/`range_adv` 가 처음부터
+0 인 사례가 있다. **stale 이 아니라 '계산 불가'다.** 다만 그것이 정상적인
+초기화인지, 레인지가 있어야 하는데 생성 과정에서 사라진 것인지는 아직 모른다.
+`if my_range` 계열 조건이 `make_plan`·`refresh` 양쪽에 영향을 주므로
+별도 조사 대상. 지금은 수정하지 않는다.
+
+
+## STEP 5-A — 새 시드 회귀 (8시드 x 40핸드 = 320핸드)
+
+    true stale                 0 / 144
+      unavailable(my_range=[])   1     별개 이슈 C
+      refresh skipped(가드)       4     설계대로
+    probability mismatch       0 / 330
+    response missing           0 / 230
+    why contamination          0 / 68
+    trap goal discontinuity    0 / 11
+
+판정 **PASS**. 26001 단독(분모 47/38/6)보다 검사력이 크게 올라간 상태에서 0건.
+
+### 이 과정에서 잡은 실제 버그
+
+첫 실행은 FAIL(9/144)이었고 그중 상당수가 진짜였다.
+
+    _mr = my_range if my_range is not None else st.get('my_range')
+
+**빈 리스트가 들어오면 폴백을 타지 않는다**([] 는 None 이 아니다).
+계획 상태에 레인지(524개)가 남아 있는데도 재계산이 통째로 건너뛰어졌다.
+`if my_range` 로 수정.
+
+### known issue C — my_range 가 빈 계획이 존재한다
+
+my_range=[] 이고 계획 상태에도 비어 있어 nut_adv/range_adv 가 처음부터 0 인
+사례가 있다. **stale 이 아니라 '계산 불가'다.** 다만 그것이 정상적인
+초기화인지, 레인지가 있어야 하는데 생성 과정에서 사라진 것인지는 아직 모른다.
+`if my_range` 계열 조건이 make_plan/refresh 양쪽에 영향을 주므로 별도 조사.
+지금은 수정하지 않는다.

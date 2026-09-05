@@ -21,13 +21,32 @@ import plan as PL     # noqa: E402
 import tourney as T   # noqa: E402
 
 SEED, HANDS = 26001, 40
+# 다중 시드 회귀에 재사용한다: python3 tools/step4_verify.py 41001 41002 ...
+if len(sys.argv) > 1:
+    SEEDS_ARG = [int(x) for x in sys.argv[1:]]
+else:
+    SEEDS_ARG = [SEED]
 PCT = re.compile(r'\((\d+)%\)')
 CALLS = collections.Counter()
+STALE_CASES = []
+REF = []
 
 
 def install():
     _n, _a, _up = R.nut_advantage, R.range_advantage, PL.update_plan
+    _ref = PL.refresh
     ROWS = []
+
+    # refresh 안에서 레인지 상태를 직접 본다. 밖에서는 '계산 불가'와
+    # '진짜 stale' 을 구분할 수 없다.
+    def ref(state, hero, board, opp_range, profile, pot, stack, street,
+            n_opp=1, seed=None, opp_est=None, my_range=None):
+        _mr = my_range if my_range else (state or {}).get('my_range')
+        REF.append({'street': street, 'board': ''.join(board or []),
+                    'my_n': len(_mr or []), 'opp_n': len(opp_range or [])})
+        return _ref(state, hero, board, opp_range, profile, pot, stack, street,
+                    n_opp, seed, opp_est, my_range)
+    PL.refresh = ref
 
     def n2(*x, **k):
         CALLS['nut'] += 1
@@ -60,31 +79,52 @@ def install():
 def main():
     rows = install()
     intents = []
-    t = T.Tournament(entries=40, seed=SEED, fmt='standard', hero_seat=7)
     n = 0
-    while n < HANDS:
-        if sum(1 for s in t.seats if t.stacks[s] > 0) < 3:
-            break
-        st = t.next_hand()
-        g = 0
-        while st and not st.get('done') and g < 250:
-            st = t.submit('fold')
-            g += 1
-        n += 1
-        h = getattr(t.run, 'h', None)
-        for i in (getattr(h, 'intents', None) or []):
-            if i.get('street') != 'preflop':
-                intents.append(i)
+    for _sd in SEEDS_ARG:
+        t = T.Tournament(entries=40, seed=_sd, fmt='standard', hero_seat=7)
+        k = 0
+        while k < HANDS:
+            if sum(1 for s in t.seats if t.stacks[s] > 0) < 3:
+                break
+            st = t.next_hand()
+            g = 0
+            while st and not st.get('done') and g < 250:
+                st = t.submit('fold')
+                g += 1
+            k += 1; n += 1
+            h = getattr(t.run, 'h', None)
+            for i in (getattr(h, 'intents', None) or []):
+                if i.get('street') != 'preflop':
+                    intents.append(i)
 
-    # 1) stale board metric — 보드가 커졌는데 첫 갱신인데도 호출 0
-    stale = tot_stale = 0
+    # 1) 보드가 커졌는데 지표가 갱신되지 않은 경우를 **셋으로 분리**한다.
+    #    nut_adv=0 을 곧바로 stale 로 잡으면 안 된다 — 레인지가 비어 애초에
+    #    계산이 불가능한 경우가 섞인다.
+    ref_by = {}
+    for r in REF:
+        ref_by.setdefault((r['street'], r['board']), r)
+    true_stale = unavailable = skipped = tot_stale = 0
     prev = None
     for r in rows:
         if prev and len(r['board']) > len(prev['board']):
             tot_stale += 1
-            if r['first'] and r['calls_nut'] == 0 and r['calls_adv'] == 0:
-                stale += 1
+            if not (r['first'] and r['calls_nut'] == 0 and r['calls_adv'] == 0):
+                prev = r
+                continue
+            info = ref_by.get((r['street'], r['board']))
+            if info is None:
+                skipped += 1            # refresh 자체를 안 탔다(가드 등)
+            elif info['my_n'] == 0 or info['opp_n'] == 0:
+                unavailable += 1        # 레인지가 없어 계산 불가
+            else:
+                true_stale += 1
+                if len(STALE_CASES) < 8:
+                    STALE_CASES.append({'prev': prev['board'], 'cur': r['board'],
+                                        'street': r['street'],
+                                        'nut': r['nut_adv'], 'adv': r['range_adv'],
+                                        'my_n': info['my_n'], 'opp_n': info['opp_n']})
         prev = r
+    stale = true_stale
 
     # 2) 확률 표시
     bad = tot_p = 0
@@ -119,14 +159,24 @@ def main():
     bad_goal = sum(1 for i in trap
                    if not (i.get('plan_goal') or '').startswith('value'))
 
-    print('seed %d / %d핸드 / 포스트플랍 기록 %d건' % (SEED, n, len(intents)))
+    print('시드 %s / %d핸드 / 포스트플랍 기록 %d건'
+          % (','.join(map(str, SEEDS_ARG))[:60], n, len(intents)))
     print()
-    print('  %-28s %s' % ('stale board metric', '%d / %d' % (stale, tot_stale)))
+    print('  %-28s %s' % ('true stale', '%d / %d' % (true_stale, tot_stale)))
+    print('  %-28s %s' % ('  unavailable(my_range=[])', '%d' % unavailable))
+    print('  %-28s %s' % ('  refresh skipped(가드)', '%d' % skipped))
     print('  %-28s %s' % ('probability mismatch', '%d / %d' % (bad, tot_p)))
     print('  %-28s %s' % ('response missing', '%d / %d' % (miss, len(resp))))
     print('  %-28s %s' % ('why contamination', '%d / %d' % (mix, tot_w)))
     print('  %-28s %s' % ('trap goal discontinuity',
                           '%d / %d' % (bad_goal, len(trap))))
+    if STALE_CASES:
+        print()
+        print('  stale 사례')
+        for c in STALE_CASES:
+            print('    %-6s %s → %s  nut=%s adv=%s  my=%d opp=%d'
+                  % (c['street'], c['prev'], c['cur'], c['nut'], c['adv'],
+                     c['my_n'], c['opp_n']))
     print()
     ok = (stale == 0 and bad == 0 and miss == 0 and mix == 0 and bad_goal == 0)
     print('  판정: %s' % ('PASS' if ok else 'FAIL'))

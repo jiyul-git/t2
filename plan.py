@@ -1575,7 +1575,11 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
     # 레인지 우위도 같은 시점에 갱신한다. my_range 가 없으면(구 호출부)
     # 이전 값을 유지해 동작을 깨지 않는다.
-    _mr = my_range if my_range is not None else st.get('my_range')
+    # `my_range if my_range is not None` 로 쓰면 **빈 리스트가 들어올 때
+    # 폴백을 안 탄다**([] 는 None 이 아니다). 그러면 계획 상태에 레인지가
+    # 남아 있는데도 재계산이 통째로 건너뛰어진다(실측: 새 시드 320핸드에서
+    # stale 9건, 전부 이 경로). 값이 비었으면 상태의 것을 쓴다.
+    _mr = my_range if my_range else st.get('my_range')
     if _mr and opp_range:
         st['nut_adv'] = round(R.nut_advantage(_mr, opp_range, board), 2)
         st['range_adv'] = round(
