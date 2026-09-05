@@ -153,7 +153,10 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
     # 스트리트별 개념을 써야 한다. sk('checkraise') 는 ALIAS 가 항상
     # checkraise_flop 으로 고정 해석하므로, 리버 체크레이즈가 1.0 인 사람도
     # 플랍 값 9.0 으로 계산됐다 — street 를 인자로 받으면서 쓰지 않았다.
-    tool = 0.13*sk('trap') + 0.06*sk(PS.street_concept('checkraise', street))
+    # 발상(trap)보다 **실행(checkraise)**에 무게를 둔다. 숨긴다는 생각은
+    # 누구나 하지만, 숨겨서 실제로 밸류를 뽑아내는 것이 실력을 가른다.
+    # 예전에는 0.13/0.06 으로 발상 쪽이 2배 넘게 실렸다.
+    tool = 0.07*sk('trap') + 0.12*sk(PS.street_concept('checkraise', street))
     if tool <= 0.05:
         return 0.0, ''
     conf = (opp_est or {}).get('confidence', 0.0)
