@@ -40,6 +40,12 @@ def _load_field(d):
     # 기준 시드와 핸드 번호에서 파생해 복원 시점이 같으면 같은 상태가 되게 한다.
     f.rng = random.Random(_zlib.crc32(
         ('field|%s|%s' % (d.get('seed'), d.get('hand_no', 0))).encode()))
+    # **시드를 객체에 되돌려 놓아야 한다.** 예전에는 d 에서 읽어 RNG 파생에만
+    # 쓰고 f.seed 를 복원하지 않았다. 그러면 다음 save() 에서 _dump 의
+    # getattr(f,'seed',None) 이 None 을 저장하고, 그 뒤로 영구히 None 이 된다.
+    # 결과: (1) 실험 재현 불가 (2) crc32('field|None|n') 로 파생되어
+    # **어떤 시드로 시작하든 두 번째 핸드부터 같은 필드 RNG 를 쓴다.**
+    f.seed = d.get('seed')
     f.entries = d['entries']; f.start_stack = d['start_stack']
     f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
