@@ -315,6 +315,32 @@ def check_board_metrics_refresh():
            'nut %d회 / adv %d회' % (cnt['n'], cnt['a']))
 
 
+
+def check_trap_goal_mode():
+    """트랩이 목적(goal)과 실행 방식(mode)으로 분리 기록되는가."""
+    import plan as _PL
+    prof = _prof()
+    prof['concepts'] = dict(prof['concepts'])
+    prof['concepts']['trap'] = 9.0
+    prof['concepts']['checkraise_flop'] = 9.0
+    hit = None
+    for sd in range(80):
+        st = _PL.make_plan(['As', 'Ah'], ['Ad', '7c', '2d'], [('As', 'Ah')],
+                           [('Kh', 'Kd'), ('Qs', 'Qc')], prof, 6000, 40000,
+                           'flop', seed=sd, n_opp=1)
+        if st.get('plan') == 'trap':
+            hit = st
+            break
+    if hit is None:
+        report('트랩이 goal/mode 로 분리된다', False, '트랩 표본 없음')
+        return
+    ok = (hit.get('plan_mode') == 'trap'
+          and hit.get('plan_goal', '').startswith('value'))
+    report('트랩이 goal/mode 로 분리된다', ok,
+           'plan=%s goal=%s mode=%s' % (hit.get('plan'), hit.get('plan_goal'),
+                                        hit.get('plan_mode')))
+
+
 def main():
     print('고친 버그 재발 검사 (각 %d회, 실제 함수 호출)' % N)
     print()
@@ -325,7 +351,7 @@ def main():
                check_semibluff_transition, check_fold_equity_sizing,
                check_no_profile_leak, check_archetype_not_driving,
                check_belief_observer_dependent,
-               check_board_metrics_refresh):
+               check_board_metrics_refresh, check_trap_goal_mode):
         try:
             fn()
         except Exception as e:

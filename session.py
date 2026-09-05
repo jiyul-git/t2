@@ -589,6 +589,8 @@ class HandRun:
                                   # 대응했다'가 보존된다. 덮어쓰면 최초 의도가
                                   # 사라지고, 그대로 두면 의도와 실행이 어긋나
                                   # 보인다(실측 32건).
+                                  'plan_goal': _pl2.get('plan_goal'),
+                                  'plan_mode': _pl2.get('plan_mode'),
                                   'response_act': (a if tc > 0 else None),
                                   'response_src': (_rsrc if tc > 0 else None),
                                   'why_by_street': (_pl2.get('why_by_street') or {}

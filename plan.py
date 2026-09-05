@@ -250,6 +250,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                         bot.draw_strength(hero, board) if board else 0,
                         bot.made_strength(hero, board) if board else 0)
     _bluff_mode, _bluff_mul = None, 1.0      # 블러프 세부 전략(아래에서 확정)
+    _goal, _mode = None, None                # 계획의 목적 / 실행 방식
     monster = made >= 5                     # 플러시 이상은 다인원 보정 면제
     strong  = made >= 3                     # 트립스 이상
 
@@ -345,6 +346,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                                          street, tilt, sk)
         if trap_ok and rng.random() < p_trap:
             plan = 'trap'; why.append(trap_why)
+            # trap 은 **목적이 아니라 실행 방식**이다. 목적은 밸류 추출이고,
+            # 그것을 '숨겼다가 상대가 치면 올린다'는 방식으로 실행하는 것.
+            # 예전에는 계획명이 trap → value_3street 로 바뀌어, 로그만 보면
+            # 목적이 달라진 것처럼 보였다(실제로는 같은 계획의 2단계).
+            # plan 문자열은 기존 분기를 위해 유지하고 goal/mode 를 병기한다.
+            _goal, _mode = 'value_3street', 'trap'
         else:
             plan = 'value_3street'; why.append('강도 최상위 → 3스트리트 밸류')
     elif eq >= v2:
@@ -446,7 +453,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'blocker': round(blk,2), 'blocker_net': round(blk_net,3),
             'nut_adv': round(nut,2), 'range_adv': round(adv,2),
             'stackoff': dict(_so, _blk_net=round(blk_net, 3)) if isinstance(_so, dict) else _so,
-            'bluff_mode': _bluff_mode, 'bluff_mul': round(_bluff_mul, 2), 'spr': round(s,1), 'pc': round(pc,2),
+            'bluff_mode': _bluff_mode, 'bluff_mul': round(_bluff_mul, 2),
+            'plan_goal': _goal or plan, 'plan_mode': _mode, 'spr': round(s,1), 'pc': round(pc,2),
             'n_opp': n_opp, 'behind': to_act_behind, 'rel': round(rel,2), 'made': made,
             # 사유에 어느 스트리트에서 붙은 줄인지 표시한다. why 는 스트리트를
             # 넘어 누적되는데 표시가 없어서, 리버 기록의 why[0] 이 플랍 때 붙은
@@ -1550,6 +1558,9 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     새 보드 의존 지표를 추가할 때도 여기 한 곳에서 갱신한다.
     """
     st = dict(state)
+    # goal/mode 는 계획의 이력이다. 없으면 현재 계획명을 목적으로 본다.
+    st.setdefault('plan_goal', st.get('plan'))
+    st.setdefault('plan_mode', None)
     # 플랍을 체크백했는가. 지연 씨벳(delayed_cbet)이 이걸 본다.
     # 의도 기록에서 읽는다 — 별도 상태를 만들면 두 곳이 어긋난다.
     if street == 'turn':
@@ -1632,8 +1643,12 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # **미스한 드로우의 블러프 전환 경로가 통째로 막힌다** —
         # 리버는 outs 가 항상 0 이라 이 조건이 무조건 걸렸다.
     elif old == 'trap' and st.get('_no_bite', 0) >= 1:
-        # 함정을 팠는데 아무도 물지 않았다 → 직접 밸류로 전환
+        # 함정을 팠는데 아무도 물지 않았다 → 직접 밸류로 전환.
+        # **목적(goal)은 바뀌지 않는다.** 처음부터 밸류 추출이었고, 숨기는
+        # 방식이 안 통해서 직접 치는 방식으로 바꾼 것이다. 모드만 종료한다.
         st['plan'] = 'value_3street' if rel >= 0.85 else 'value_2street'
+        st['plan_goal'] = st.get('plan_goal') or st['plan']
+        st['plan_mode'] = None
         why.append('%s: 상대가 벳하지 않음 → 함정 해제, 직접 밸류' % street)
     elif old == 'giveup' and (rel >= 0.55 or made >= 2):
         # **포기에서 나오는 길이 없었다.** 승격 분기가 pot_control/block/showdown
