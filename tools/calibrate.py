@@ -95,12 +95,12 @@ if __name__ == '__main__':
 #
 # **게임 시드와 분리된 캘리브레이션 시드**를 쓴다. 테스트에 쓸 상대를
 # 캘리브레이션에 넣으면 그 상대를 미리 본 셈이 된다.
-CALIB_GAME_SEEDS = tuple(range(900001, 900001 + 60))
+CALIB_GAME_SEEDS = tuple(range(900001, 900001 + 34))
 SIG_OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        '..', 'style_sig.json')
 
 
-def calibrate_behavior(hands_per=70):
+def calibrate_behavior(hands_per=42):
     import tourney as T
     import statistics as _st
     rows = collections.defaultdict(lambda: collections.defaultdict(list))

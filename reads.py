@@ -437,18 +437,24 @@ def load_book(path):
 
 # 스타일별 '이렇게 행동할 것이다'라는 관찰자의 기대치(행동 서명).
 # 개념이 아니라 **관찰 가능한 지표만** 쓴다.
-STYLE_SIG = {
-    'TAG':     {'vpip': 0.22, 'pfr': 0.17, 'aggr': 6.0, 'cbet': 0.62, 'ftb': 0.55},
-    'LAG':     {'vpip': 0.34, 'pfr': 0.27, 'aggr': 7.5, 'cbet': 0.70, 'ftb': 0.42},
-    'NIT':     {'vpip': 0.14, 'pfr': 0.10, 'aggr': 3.5, 'cbet': 0.48, 'ftb': 0.68},
-    'STATION': {'vpip': 0.38, 'pfr': 0.10, 'aggr': 2.5, 'cbet': 0.35, 'ftb': 0.25},
-    'MANIAC':  {'vpip': 0.48, 'pfr': 0.36, 'aggr': 8.5, 'cbet': 0.78, 'ftb': 0.30},
-    'FISH':    {'vpip': 0.34, 'pfr': 0.09, 'aggr': 3.0, 'cbet': 0.38, 'ftb': 0.38},
-    'ROCK':      {'vpip': 0.12, 'pfr': 0.08, 'aggr': 2.6, 'cbet': 0.42, 'ftb': 0.72},
-    'LOOSE_REG': {'vpip': 0.30, 'pfr': 0.20, 'aggr': 5.8, 'cbet': 0.60, 'ftb': 0.48},
-    'TAG_TIGHT': {'vpip': 0.17, 'pfr': 0.14, 'aggr': 5.2, 'cbet': 0.58, 'ftb': 0.60},
-    'TAG_AGGRO': {'vpip': 0.24, 'pfr': 0.20, 'aggr': 7.0, 'cbet': 0.68, 'ftb': 0.48},
-}
+# 라벨별 행동 서명도 **실측**에서 읽는다(tools/calibrate.calibrate_behavior).
+# 손으로 적은 값은 실제와 크게 달랐다: TAG 를 vpip 0.22/pfr 0.17/aggr 6.0 으로
+# 적었으나 실측은 0.213/0.117/3.25 였다. 스타일 판정 기준이 틀리면 스타일을
+# 못 맞히고, 그 위에 정확한 개념 prior 를 얹어도 소용이 없다.
+# 파일이 없으면 스타일 경로가 죽고 직접 경로만 쓰인다 — 추측값보다 낫다.
+_SIG_PATH = _os_path.join(_os_path.dirname(_os_path.abspath(__file__)),
+                          'style_sig.json')
+STYLE_SIG = {}
+STYLE_SIG_SD = {}
+try:
+    with open(_SIG_PATH) as _f:
+        _cs = _json_mod.load(_f)
+    for _st, _d in (_cs.get('styles') or {}).items():
+        STYLE_SIG[_st] = {k: v['mean'] for k, v in _d.items()}
+        STYLE_SIG_SD[_st] = {k: v['sd'] for k, v in _d.items()}
+except Exception:
+    pass
+
 
 # 스타일 가설별 개념 prior 는 **캘리브레이션 파일에서 읽는다.**
 # 손으로 적은 값은 실제 생성 분포와 달랐다(MANIAC range_read 를 4.0 으로
@@ -476,7 +482,12 @@ except Exception:
     pass
 
 
-_SIG_SCALE = {'vpip': 0.11, 'pfr': 0.10, 'aggr': 2.2, 'cbet': 0.16, 'ftb': 0.16}
+# 거리 척도도 실측 sd 를 쓴다. 고정 척도면 지표마다 실제 분산이 달라
+# 어떤 지표는 과대, 어떤 지표는 과소 반영된다.
+_SIG_SCALE = {'vpip': 0.06, 'pfr': 0.05, 'aggr': 0.9, 'cbet': 0.14, 'ftb': 0.14}
+def _sig_scale(style, key):
+    sd = STYLE_SIG_SD.get(style, {}).get(key)
+    return max(0.02, sd) if sd else _SIG_SCALE.get(key, 0.15)
 
 
 def style_hypotheses(est, sharpness=1.0):
@@ -493,7 +504,7 @@ def style_hypotheses(est, sharpness=1.0):
             obs = est.get(k)
             if obs is None:
                 continue
-            d += ((float(obs) - v) / _SIG_SCALE[k]) ** 2
+            d += ((float(obs) - v) / _sig_scale(name, k)) ** 2
         out[name] = math.exp(-0.5 * d * max(0.05, sharpness))
     tot = sum(out.values()) or 1.0
     return {k: v / tot for k, v in sorted(out.items(), key=lambda x: -x[1])}
