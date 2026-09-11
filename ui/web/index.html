@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1412">
+<title>t2 포커</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="barrow">
+      <span id="lvl">—</span>
+      <span id="handno"></span>
+    </div>
+    <div class="barrow"><span id="fieldline"></span></div>
+    <div id="notes"></div>
+  </header>
+
+  <div id="loghead">
+    <span class="line" id="logline"></span>
+    <button type="button" id="bLog">기록</button>
+  </div>
+
+  <main id="tablewrap">
+    <div id="felt"></div>
+    <div id="seats"></div>
+    <div id="chips"></div>
+    <div id="board"></div>
+    <div id="potline"><span id="pot"></span><span id="potsub"></span></div>
+    <div id="status" hidden>
+      <div class="spin"></div>
+      <div class="msg"></div>
+      <div class="el"></div>
+      <div class="hint"></div>
+    </div>
+  </main>
+
+  <div id="hero" hidden>
+    <div id="heroinfo"><div class="pos"></div><div class="stack"></div></div>
+    <div id="herocards"></div>
+  </div>
+
+  <footer id="actionbar">
+    <div id="mainrow"></div>
+    <div id="raisepanel" hidden>
+      <div id="ramt"><span id="ramtval"></span><span id="rrange"></span></div>
+      <input type="range" id="rslider">
+      <div id="rpresets"></div>
+      <div id="rconfirm">
+        <input type="number" id="rnum" inputmode="numeric">
+        <button type="button" id="rok">확인</button>
+        <button type="button" id="rcancel">취소</button>
+      </div>
+    </div>
+  </footer>
+
+  <div id="overlay" hidden></div>
+  <div id="toast" hidden></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -17,6 +17,7 @@
   6 legal 일치   legal 이 허용한 액션이 error 없이 통과하는가
   7 워크 핸드    딜 직후 곧바로 result 가 오는 경우를 처리하는가
   8 지연         진행 중 / 핸드 종료 각각의 중앙값과 최대값
+  9 정적 파일    GET / 가 web/index.html 을 주는가, ../ 로 폴더를 벗어날 수 있는가
 """
 import argparse, json, os, random, shutil, subprocess, sys, tempfile, time
 import urllib.error, urllib.request
@@ -67,6 +68,41 @@ class Client:
         return c, r
 
 
+def check_static(base):
+    """2단계에서 추가한 정적 파일 제공. web/ 밖으로는 절대 나가면 안 된다."""
+    fail = []
+
+    def raw(path):
+        try:
+            with urllib.request.urlopen(base + path, timeout=20) as f:
+                return f.status, f.headers.get('Content-Type', ''), f.read()
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers.get('Content-Type', ''), e.read()
+
+    code, ctype, body = raw('/')
+    if code != 200:
+        fail.append('GET / 가 %d' % code)
+    elif b'<div id="app">' not in body:
+        fail.append('GET / 가 index.html 이 아님')
+    elif 'text/html' not in ctype:
+        fail.append('GET / 의 Content-Type 이 %r' % ctype)
+
+    code, ctype, body = raw('/app.js')
+    if code != 200:
+        fail.append('GET /app.js 가 %d' % code)
+    elif 'javascript' not in ctype:
+        fail.append('GET /app.js 의 Content-Type 이 %r' % ctype)
+
+    for p in ('/../ui_server.py', '/%2e%2e/ui_server.py', '/../../etc/passwd'):
+        code, ctype, body = raw(p)
+        if code == 200:
+            fail.append('폴더 밖 파일이 열림: %s' % p)
+    code, _, _ = raw('/nope.js')
+    if code != 404:
+        fail.append('없는 파일이 404 가 아니라 %d' % code)
+    return fail
+
+
 def med(xs):
     if not xs: return None
     xs = sorted(xs)
@@ -94,6 +130,8 @@ def run(args):
                 time.sleep(0.2)
         else:
             return ['서버 응답 없음'], note, {}
+
+        fail += check_static('http://127.0.0.1:%d' % args.port)
 
         rng = random.Random(args.seed)
         stats = dict(hands=0, decisions=0, walks=0, chip_checks=0, chip_bad=0,
