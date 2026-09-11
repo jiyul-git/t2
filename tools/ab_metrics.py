@@ -49,13 +49,19 @@ def metrics(path):
             plans[i.get('plan')] += 1
             if i.get('action'):
                 acts[i['action']] += 1
+            # **발화와 생존은 같은 분모에서 세야 한다.** block 은 플랍에서만
+            # 태어나는데 살아남으면 턴·리버 intent 에도 같은 라벨로 남는다.
+            # 전 스트리트에서 세면 생존이 발화보다 커져 생존율이 1 을 넘는다
+            # (실측 36 발화 vs 48 생존).
+            if i.get('street') != 'flop':
+                continue
             if any('블락벳으로 가격 통제' in x for x in street_why(i)):
                 nblock_fire += 1
             if i.get('plan') == 'block':
                 nblock_live += 1
     m['intent'] = intents
-    m['block 발화'] = nblock_fire
-    m['block 생존'] = nblock_live
+    m['block 발화(플랍)'] = nblock_fire
+    m['block 생존(플랍)'] = nblock_live
     m['block 생존율'] = (nblock_live / nblock_fire) if nblock_fire else float('nan')
     for k in ('value_3street', 'value_2street', 'pot_control', 'block',
               'semibluff', 'bluff_2street', 'showdown', 'giveup', 'trap',
