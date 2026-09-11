@@ -461,6 +461,16 @@ class HandRun:
                         'plan': _pl.get('plan'), 'why': _pl.get('why'),
                         'rel': _pl.get('rel'), 'eq': _pl.get('eq'),
                         'outs': _pl.get('outs'), 'made': _pl.get('made'),
+                        # 기록 전용 provenance. 판단에는 안 쓰인다.
+                        # eq 가 현재 강도인지 미래 개선분인지 사후 복원용.
+                        'eq_current': _pl.get('eq_current'),
+                        'eq_delta': _pl.get('eq_delta'),
+                        'eq_sims': _pl.get('eq_sims'), 'eq_seed': _pl.get('eq_seed'),
+                        'outs_true': _pl.get('outs_true'),
+                        'my_range_n': _pl.get('my_range_n'),
+                        'my_range_sig': _pl.get('my_range_sig'),
+                        'opp_range_n': _pl.get('opp_range_n'),
+                        'opp_range_sig': _pl.get('opp_range_sig'),
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),

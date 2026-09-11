@@ -1,0 +1,5 @@
+
+# 분석 데이터 — 용량이 커서 저장소에 넣지 않는다. tools/collect.py 로 재생성 가능
+collected*.jsonl
+c2_*.jsonl
+eq_decomp.json

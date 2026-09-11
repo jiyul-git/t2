@@ -1,4 +1,4 @@
-import random, zlib as _zlib
+import random, zlib as _zlib, hashlib as _hashlib
 import bot, ranges as R, preflop as pf, archetypes as A, persona as PS, texture as TX
 
 PLANS = ['value_3street','value_2street','pot_control','semibluff','bluff_2street',
@@ -96,6 +96,65 @@ def perceived_rel(profile, rel, hero, board, outs=0, made=0):
     if rel < 0.45:
         adj += 0.08 * max(0.0, PS.bias(profile, 'sticky'))
     return max(0.0, min(1.0, rel + adj))
+
+
+def _range_sig(combos):
+    """레인지의 재현용 서명. **기록 전용** — 판단에 쓰지 않는다.
+
+    파이썬 내장 hash 는 프로세스마다 달라져 아카이브 ID 로 못 쓴다.
+    정렬 후 sha256 으로 고정한다. 앞으로 이 정규화를 바꾸지 말 것 —
+    바꾸면 과거 아카이브와 대조가 끊긴다.
+    """
+    if not combos:
+        return None
+    payload = '\n'.join(sorted(str(tuple(c)) for c in combos))
+    return _hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None):
+    """**보드를 돌리지 않은** 에쿼티. 지금 쇼다운했다면 얼마나 이기는가.
+
+    기록 전용이다. 계획 판단에 쓰지 않는다.
+
+    _eq_vs 와 같은 레인지·같은 인원·같은 evaluator 를 쓴다. 유일한 차이는
+    남은 보드를 뽑지 않는다는 것 하나뿐이어야 한다. 그래야
+    eq - eq_current 가 '계산 방식의 차이'가 아니라 '미래 카드가 만드는 차이'가 된다.
+
+    bot.equity_vs_pools 를 복제하지 않고 pool 구성만 같은 규칙으로 맞춘 뒤
+    루프를 따로 돈다. bot.py 를 건드리지 않기 위해서다.
+    """
+    if not board:
+        return None
+    dead = set(hero) | set(board)
+    if opp_range and len(opp_range) >= 6:
+        pool = sorted(c for c in opp_range if c[0] not in dead and c[1] not in dead)
+        pools = [pool] * max(1, n_opp)
+        if seed is None:
+            seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
+    else:
+        pools = [bot.range_combos(0.35, dead) for _ in range(max(1, n_opp))]
+    pools = [p for p in pools if p]
+    if not pools:
+        return None
+    rng = random.Random(seed)
+    hs = bot.eval7(hero + board)
+    win = tie = run = 0
+    for _ in range(sims):
+        used = set(dead); opps = []; ok = True
+        for pool in pools:
+            for _t in range(40):
+                c = rng.choice(pool)
+                if c[0] not in used and c[1] not in used:
+                    used.add(c[0]); used.add(c[1]); opps.append(list(c)); break
+            else:
+                ok = False; break
+        if not ok:
+            continue
+        run += 1
+        best = max(bot.eval7(o + board) for o in opps)
+        if hs > best: win += 1
+        elif hs == best: tie += 1
+    return (win + tie*0.5) / max(1, run)
 
 
 def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None):
@@ -207,6 +266,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 추정한 opp_range 를 그대로 쓴다. 고정 35% 가정으로 되돌리지 말 것 —
     # 좁혀놓은 레인지를 버리고 EV 를 판단하면 리딩이 전부 무의미해진다.
     eq = _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=seed)
+    # 기록 전용. 같은 레인지·같은 인원으로 '보드를 안 돌린' 값을 같이 남긴다.
+    # eq 하나만 남기면 나중에 0.535 를 보고 '지금 강한 건가, 드로우 때문인가'를
+    # 구분할 수 없다. 판단에는 절대 쓰지 않는다 — 쓰려면 먼저 검증이 필요하다.
+    eq_cur = _eq_current(hero, board, opp_range, n_opp, sims=400, seed=seed)
     dang = bot.board_danger(board)
     if profile.get('concepts'):
         dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)   # 텍스처를 못 읽으면 위험을 모름
@@ -456,6 +519,17 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'bluff_mode': _bluff_mode, 'bluff_mul': round(_bluff_mul, 2),
             'plan_goal': _goal or plan, 'plan_mode': _mode, 'spr': round(s,1), 'pc': round(pc,2),
             'n_opp': n_opp, 'behind': to_act_behind, 'rel': round(rel,2), 'made': made,
+            # ---- 기록 전용 provenance. 판단에 쓰지 않는다 ----
+            # eq 가 '현재 강도'인지 '미래 개선분'인지 나중에 복원하기 위한 값들.
+            # outs 는 calc_noise 를 거친 체감값이라 물리값(outs_true)을 따로 남긴다.
+            'eq_current': (None if eq_cur is None else round(eq_cur, 3)),
+            'eq_delta': (None if eq_cur is None else round(eq - eq_cur, 3)),
+            'eq_sims': 400, 'eq_seed': seed,
+            'outs_true': outs_true,
+            'my_range_n': len(my_range) if my_range else 0,
+            'my_range_sig': _range_sig(my_range),
+            'opp_range_n': len(opp_range) if opp_range else 0,
+            'opp_range_sig': _range_sig(opp_range),
             # 사유에 어느 스트리트에서 붙은 줄인지 표시한다. why 는 스트리트를
             # 넘어 누적되는데 표시가 없어서, 리버 기록의 why[0] 이 플랍 때 붙은
             # '포기' 문자열인 채로 남았다. 계획은 value_2street 인데 사유 첫 줄이
@@ -1607,6 +1681,17 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     _prev_rel = st.get('rel') or 0.0
     st.update({'rel': round(rel,2), 'eq': round(eq,3), 'outs': outs,
                'made': made, 'danger': round(bot.board_danger(board),2)})
+    # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
+    # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
+    _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed)
+    st.update({'eq_current': (None if _eqc is None else round(_eqc, 3)),
+               'eq_delta': (None if _eqc is None else round(eq - _eqc, 3)),
+               'eq_sims': 300, 'eq_seed': seed,
+               'outs_true': outs,
+               'opp_range_n': len(opp_range) if opp_range else 0,
+               'opp_range_sig': _range_sig(opp_range),
+               'my_range_n': len(_mr) if _mr else 0,
+               'my_range_sig': _range_sig(_mr)})
     why = list(st.get('why') or [])
     old = st.get('plan')
 
