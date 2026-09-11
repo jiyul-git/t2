@@ -192,5 +192,6 @@ if __name__ == '__main__':
         port = int(sys.argv[sys.argv.index('--port') + 1])
     print('상태 파일: %s' % L.ST)
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
-    print('http://0.0.0.0:%d  (에뮬레이터: 10.0.2.2, 실기기: PC의 LAN IP)' % port)
+    print('폰에서 직접: http://127.0.0.1:%d' % port)
+    print('다른 기기에서: http://<이 기기의 LAN IP>:%d' % port)
     HTTPServer(('0.0.0.0', port), H).serve_forever()
