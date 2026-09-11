@@ -79,6 +79,89 @@ def now_aggr(i):
     return None
 
 
+
+def texture(board):
+    """보드 구조를 한 단어로. bot.board_danger 와 별개 축(구조 자체)."""
+    if len(board) < 3:
+        return '-'
+    import collections as _c
+    su = _c.Counter(c[1] for c in board)
+    rk = _c.Counter(c[0] for c in board)
+    tags = []
+    if max(rk.values()) >= 3:
+        tags.append('트립스보드')
+    elif max(rk.values()) == 2:
+        tags.append('페어보드')
+    if max(su.values()) >= 3:
+        tags.append('모노')
+    elif max(su.values()) == 2:
+        tags.append('투톤')
+    else:
+        tags.append('레인보우')
+    import bot as _b
+    vs = sorted(_b.RV[c[0]] for c in board)
+    if vs[-1] - vs[0] <= 4:
+        tags.append('연결')
+    return '·'.join(tags)
+
+
+def section6(unres):
+    """value_2street 14건을 A/B/C 로 나눈다.
+
+    임계값을 새로 만들지 않는다. A/B 의 경계는 plan.py 가 이미 쓰는 값이다 —
+    decide_aggression 의 밸류 분기(918~929)가 rel 0.65 에서 곡선을 바꾼다.
+
+        rel >= 0.65 :  p = p + (1-p) * ((rel-0.65)/0.35)**0.8      (볼록 가속)
+        rel <  0.65 :  p *= (0.35 + 0.65*(rel/0.80)**0.8)          (감쇠)
+
+    즉 코드 자신이 rel 0.65 를 "강한 밸류 / 얇은 밸류"의 경계로 쓰고 있다.
+
+    C(둘 다 큰 차이 없음)는 **별도 집단이 아니다**. 그것은 Δp 가 작다는
+    뜻이고, Δp 에 임의 문턱을 세우면 없는 경계를 만드는 셈이다.
+    그래서 C 를 따로 세지 않고 Δp 를 그대로 싣는다.
+    """
+    import collections as _c
+    print('=' * 118)
+    print('6. value_2street → block 건별 — 가장 큰 부작용 후보')
+    print('=' * 118)
+    v2 = [i for i in unres if i['plan'] == 'value_2street']
+    print('   n=%d   A/B 경계는 rel 0.65 — decide_aggression 밸류 분기가 이미 쓰는 값이다' % len(v2))
+    print()
+    h = ('   %-6s %6s %5s %4s %6s %4s %-18s %7s %7s %7s  %-6s %s'
+         % ('hand', 'eq', 'rel', 'made', 'danger', 'pos', '보드 구조',
+            '현재p', 'CF p', 'Δp', '실제', '분류'))
+    print(h); print('   ' + '-' * (len(h)-3))
+    grp = _c.Counter(); gd = _c.Counter()
+    for i in sorted(v2, key=lambda x: -x['rel']):
+        bd = board_at(i['_board'], i['street'])
+        g = 'B 강한 밸류' if i['rel'] >= 0.65 else 'A 얇은 밸류'
+        grp[g] += 1; gd[g] += i['_d']
+        print('   h%-5d %6.3f %5.2f %4d %6.2f %4s %-18s %7.2f %7.2f %7.2f  %-6s %s'
+              % (i['_hand'], i['eq'], i['rel'], i.get('made', 0),
+                 i.get('danger') or 0.0, 'OOP' if i.get('oop') else 'IP',
+                 texture(bd), i['_now'], i['_cf'], i['_d'], i.get('action'), g))
+    print()
+    for g in sorted(grp):
+        print('   %-12s n=%-3d  Σ Δp = %.2f  (건당 %.2f)'
+              % (g, grp[g], gd[g], gd[g]/grp[g]))
+    print()
+    print('   → B(강한 밸류)가 block 으로 내려가면 손해 후보다.')
+    print('     A(얇은 밸류)는 block 이 오히려 자연스러운 라인이다.')
+    print('     C 는 따로 세지 않았다 — Δp 가 작다는 뜻일 뿐 별도 집단이 아니다.')
+    print()
+    g2 = [i for i in unres if i['plan'] == 'giveup']
+    if g2:
+        print('   대조 — giveup → block %d건' % len(g2))
+        for i in g2:
+            bd = board_at(i['_board'], i['street'])
+            print('     h%-5d eq %.3f rel %.2f made %d danger %.2f %-16s  %.2f → %.2f (Δ%.2f)  실제 %s'
+                  % (i['_hand'], i['eq'], i['rel'], i.get('made', 0),
+                     i.get('danger') or 0.0, texture(bd), i['_now'], i['_cf'],
+                     i['_d'], i.get('action')))
+        print('     방향은 직관적이다(p 0.00 → 0.71). 다만 그 행동이 좋은지는 별개 문제다.')
+    print()
+
+
 def main():
     paths = sys.argv[1:] or sorted(glob.glob(os.path.join(D, 'collected_p*.jsonl')))
     pure = load(paths)
@@ -222,6 +305,8 @@ def main():
         print('     value_2street → block : 밸류 레이즈 기회를 잃는다 (eq > need+0.15 일 때만)')
         print('     giveup        → block : 순수 팟오즈 조기 return(793) 대신 calldown 경로')
     print()
+
+    section6(unres)
 
     # ---------- 결론 ----------
     print('=' * 112)

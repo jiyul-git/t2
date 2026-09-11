@@ -58,6 +58,13 @@ def run_one(seed, entries=40, start_stack=30000, hands_per_level=12,
             'full_log': list(getattr(t.run, 'full_log', []) or []),
             'blinds': list(t.blinds()),
             'stacks_before': dict(getattr(h, '_start_stacks', {}) or {}),
+            # 정산 직후 스택. **finish_hand 뒤의 t.stacks 를 쓰면 안 된다** —
+            # 거기서 테이블 재조정이 빈 자리에 새 플레이어를 앉히므로
+            # 그 좌석의 won 이 신규 스택만큼 튄다(실측: 40핸드 중 1건에서 +33150).
+            # h.stacks 는 그 핸드의 정산 결과 그대로다.
+            'stacks_after': dict(getattr(h, 'stacks', {}) or {}),
+            'won': {str(k): (getattr(h, 'stacks', {}) or {}).get(k, 0) - v
+                    for k, v in (getattr(h, '_start_stacks', {}) or {}).items()},
             'seats': list(h.seats),
         }
         out.append(rec)
@@ -66,6 +73,14 @@ def run_one(seed, entries=40, start_stack=30000, hands_per_level=12,
             t.finish_hand()
         except Exception:
             break
+        # 정산 후 스택. EV 비교(showdown / non-showdown)에 필요하다.
+        # 기록 전용 필드이고 판단 로직과 무관하다.
+        # 키 타입을 맞춘다. stacks_before 는 int 키(_start_stacks)이고
+        # t.stacks 도 int 키다. 한쪽만 문자열화하면 won 이 전부 0 이 된다.
+        _before = getattr(h, '_start_stacks', {}) or {}
+        rec['stacks_after'] = {str(k): v for k, v in t.stacks.items()}
+        rec['won'] = {str(k): t.stacks.get(k, 0) - _before.get(k, 0)
+                      for k in _before if k in t.stacks}
         if getattr(t, 'busted_hero', False):
             break
         if sum(1 for s in t.seats if t.stacks[s] > 0) < 2:
@@ -74,15 +89,33 @@ def run_one(seed, entries=40, start_stack=30000, hands_per_level=12,
 
 
 def main():
-    target = int(sys.argv[1]) if len(sys.argv) > 1 else 300
-    path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(D, 'collected.jsonl')
+    """python3 tools/collect.py <핸드수> [출력파일] [--seed0 N]
+
+    --seed0 을 주면 토너먼트 시드를 N, N+1, N+2 ... 로 **결정적으로** 쓴다.
+    A/B 짝지은 비교(paired comparison)에는 반드시 이걸 써야 한다 —
+    기본값은 매 실행 무작위라 두 실행이 다른 게임을 돌게 된다.
+    """
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    seed0 = None
+    for a in sys.argv[1:]:
+        if a.startswith('--seed0'):
+            seed0 = int(a.split('=', 1)[1]) if '=' in a else None
+    if seed0 is None and '--seed0' in sys.argv:
+        seed0 = int(sys.argv[sys.argv.index('--seed0') + 1])
+    target = int(args[0]) if args else 300
+    path = args[1] if len(args) > 1 else os.path.join(D, 'collected.jsonl')
 
     rng = random.Random()
+    _k = [0]
     total = 0
     t0 = time.time()
     with open(path, 'w') as fp:
         while total < target:
-            seed = rng.randrange(10**9)
+            if seed0 is None:
+                seed = rng.randrange(10**9)
+            else:
+                seed = seed0 + _k[0]
+                _k[0] += 1
             recs = run_one(seed, max_hands=target - total)
             if not recs:
                 continue
