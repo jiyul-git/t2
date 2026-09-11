@@ -3,3 +3,7 @@
 collected*.jsonl
 c2_*.jsonl
 eq_decomp.json
+
+# 파이썬 바이트코드. 인터프리터 버전마다 파일명이 달라져 계속 쌓인다.
+# (이미 커밋된 .pyc 는 추적 상태 그대로 둔다 — 여기서 지우지 않는다)
+__pycache__/
