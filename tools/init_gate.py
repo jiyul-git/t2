@@ -147,6 +147,67 @@ def main():
           % (len(pop) - len(inpcz)))
     print()
 
+
+    # ---------- 2-0. block 은 도달 가능한가 ----------
+    print('=' * 104)
+    print('2-0. [B] block 이 make_plan 을 살아서 나오는가')
+    print('=' * 104)
+    print('   plan.py:447 은 **독립된 if** 다. elif 체인의 일부가 아니다.')
+    print('       447  if sk(blockbet) >= 1 and rng.random() < block_p:')
+    print("       448      plan = 'block'; why.append('OOP 중간강도 → 블락벳으로...')")
+    print('       449~455  (주석과 _mg/_pc_p 계산)')
+    print('       456  if sk(potcontrol) >= 1 and rng.random() < _pc_p:')
+    print("       457      plan = 'pot_control'")
+    print('       458  elif rel >= ... and made >= 1:')
+    print("       459      plan = 'value_2street'")
+    print('       461  else:')
+    print("       465      plan = 'showdown' if made >= 1 else 'giveup'")
+    print('   456~467 의 if/elif/else 는 **무조건 실행되고 무조건 plan 을 재할당**한다.')
+    print('   따라서 448 의 plan = "block" 은 항상 덮인다.')
+    print()
+    # 전수 확인 — 정제 전 원본으로 본다(발화 자체는 refresh 와 무관하다)
+    allr = load(paths, pure=False)
+    nfire = nboth = nraw = 0
+    over = collections.Counter()
+    final = collections.Counter()
+    for i in allr:
+        wall = i['why'] if isinstance(i['why'], list) else [i['why']]
+        if any('블락벳으로 가격 통제' in x for x in wall):
+            nraw += 1
+        pre = '%s: ' % i['street']
+        w = [x[len(pre):] for x in
+             (i['why'] if isinstance(i['why'], list) else [i['why']])
+             if x.startswith(pre)]
+        if not any('블락벳으로 가격 통제' in x for x in w):
+            continue
+        nfire += 1
+        final[i['plan']] += 1
+        ch = [x for x in w if x.startswith(('중간강도(', '중간강도이나'))]
+        if ch:
+            nboth += 1
+            over[ch[0].split('→')[-1].strip()] += 1
+    nb = sum(1 for i in allr if i['plan'] == 'block')
+    print('   전 intent %d건 (정제 전)' % len(allr))
+    print('   block 발화(그 스트리트 why 기준)            %d건' % nfire)
+    print('   그중 같은 스트리트에 456 체인 why 가 함께 붙음 %d건 (%.0f%%)'
+          % (nboth, 100*nboth/max(1, nfire)))
+    print('   덮어쓴 결과 %s' % dict(over.most_common()))
+    print('   최종 plan 분포 %s' % dict(final.most_common()))
+    print('   **전 표본에서 plan == "block" 인 intent: %d건**' % nb)
+    print()
+    if nb == 0 and nfire > 0:
+        print('   → block 은 도달 불가 분기다. PLANS·SIZING·_allowed·decide_aggression 에')
+        print('     각각 전용 처리가 있지만 make_plan 을 살아서 나오지 못한다.')
+        print('     "확률이 작아서 안 나온다"가 아니라 **나왔다가 지워진다**.')
+        print('     이 집단(oop·not initiative·중간강도)을 위해 만든 분기가')
+        print('     그 집단에서 한 번도 실행되지 않는다.')
+    print()
+    print('   주의 — 위 집계는 반드시 스트리트 접두사로 걸러야 한다.')
+    print('     걸르지 않으면 block why 가 다음 스트리트 기록에 승계돼')
+    print('     발화 건수가 부풀려진다 (같은 입력에서 미필터 %d건 vs 필터 %d건).'
+          % (nraw, nfire))
+    print()
+
     # ---------- 2. block 관문 ----------
     print('=' * 104)
     print('2. [B] block — 진입 조건이 `oop and not initiative` 라 이 집단을 위한 분기다')
@@ -180,7 +241,10 @@ def main():
             q = 1.0
             for x in ps:
                 q *= (1 - x)
-            print('   Σp %.2f 에서 %d건이 나올 확률: 0건이면 %.3f' % (sum(ps), got, q))
+            print('   0건이 나올 확률 = ∏(1-p_i) = %.3f' % q)
+            print('     (Σp 만으로 포아송 근사하면 %.3f 이 나온다. 개별 p 가 다르므로'
+                  % math.exp(-sum(ps)))
+            print('      정확값은 위의 곱이다. 아래 2-0 을 보면 이 계산 자체가 무의미하다)')
     print()
 
     # ---------- 3. pot_control 관문 ----------
