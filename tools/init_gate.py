@@ -46,19 +46,31 @@ from tag_draws import board_at
 
 
 
-def fired(i):
-    """eq>=pcz 분기 **안에서** 어느 관문이 실제로 발화했는지 why 로 읽는다.
-
-    최종 plan 으로 세면 안 된다 — _allowed(plan.py:1491)가 뒤에서
-    block → value_2street, pot_control → showdown 으로 강등할 수 있어서
-    발화한 관문이 최종 라벨에서 사라진다.
-    """
+def _street_why(i):
     pre = '%s: ' % i['street']
-    w = [x[len(pre):] for x in (i['why'] if isinstance(i['why'], list) else [i['why']])
-         if x.startswith(pre)]
-    for x in w:
-        if '블락벳으로 가격 통제' in x:
-            return 'block'
+    return [x[len(pre):] for x in
+            (i['why'] if isinstance(i['why'], list) else [i['why']])
+            if x.startswith(pre)]
+
+
+def block_fired(i):
+    """447 줄의 block 이 발화했는가. **발화 != 채택** 이다 —
+       456~467 이 뒤에서 plan 을 무조건 덮는다(2-0 참조)."""
+    return any('블락벳으로 가격 통제' in x for x in _street_why(i))
+
+
+def fired(i):
+    """eq>=pcz 분기에서 **plan 을 실제로 확정한** 관문.
+
+    456~467 의 if/elif/else 가 마지막 결정자이므로 그것만 본다.
+    block 은 덮이므로 여기서 세지 않는다 — block_fired() 로 따로 본다.
+    (예전에는 block 을 먼저 반환해서, 같은 스팟에서 뒤이어 발화한
+     pot_control 이 가려졌다. 실측 h48 이 그 경우였다)
+
+    최종 plan 으로 세면 안 된다 — _allowed(1491)가 뒤에서
+    pot_control → showdown, block → value_2street 으로 강등할 수 있다.
+    """
+    for x in _street_why(i):
         if x.startswith('중간강도(') and '팟 컨트롤' in x:
             return 'pot_control'
         if x.startswith('중간강도(') and '얇은 밸류' in x:
@@ -233,18 +245,20 @@ def main():
             print('   그 %d건의 block_p  중앙 %.3f  최소 %.3f  최대 %.3f  (상한 0.42)'
                   % (len(ps), ps[len(ps)//2], ps[0], ps[-1]))
             print('   기대 발동 건수 Σp = %.2f / %d' % (sum(ps), len(gate)))
-            got = sum(1 for i in gate if fired(i) == 'block')
+            got = sum(1 for i in gate if block_fired(i))
             fin = sum(1 for i in gate if i['plan'] == 'block')
-            print('   실측 block 발화 %d건 (최종 라벨이 block 인 것은 %d건 —'
-                  % (got, fin))
-            print('     차이가 나면 _allowed 가 value_2street 으로 강등한 것이다)')
-            q = 1.0
-            for x in ps:
-                q *= (1 - x)
-            print('   0건이 나올 확률 = ∏(1-p_i) = %.3f' % q)
-            print('     (Σp 만으로 포아송 근사하면 %.3f 이 나온다. 개별 p 가 다르므로'
+            print('   실측 block **발화** %d건 / 그중 살아남은 것 %d건' % (got, fin))
+            print('     발화해도 456~467 이 덮으므로 채택은 구조적으로 0 이다 (2-0 참조)')
+            var = sum(x*(1-x) for x in ps)
+            z = (got - sum(ps)) / math.sqrt(var) if var > 0 else 0.0
+            print('   주사위 자체는 정상 범위다: 기대 %.2f vs 발화 %d, z = %+.2f'
+                  % (sum(ps), got, z))
+            print('     (0건이 나올 확률은 ∏(1-p_i) = %.4f. 개별 p 가 다르므로'
+                  % math.prod(1-x for x in ps))
+            print('      Σp 만으로 포아송 근사한 %.4f 가 아니라 이 곱이 정확값이다.'
                   % math.exp(-sum(ps)))
-            print('      정확값은 위의 곱이다. 아래 2-0 을 보면 이 계산 자체가 무의미하다)')
+            print('      다만 2-0 을 보면 이 확률 계산이 답할 질문 자체가 없다 —')
+            print('      block 은 발화해도 채택되지 않기 때문이다)')
     print()
 
     # ---------- 3. pot_control 관문 ----------
@@ -304,6 +318,22 @@ def main():
                                        sum(1 for i in hit if not i.get('oop'))))
         print('     probe 개념(원개념) 중앙 %.2f'
               % sorted(PS.sk(i['_prof'], 'probe') for i in hit)[len(hit)//2])
+        src = collections.Counter()
+        for i in hit:
+            w = _street_why(i)
+            if any(x.startswith('중간강도이나') for x in w):
+                src['402 폴백 (eq >= pcz 안)'] += 1
+            elif any(x.startswith('쇼다운 가치 있음') for x in w):
+                src['최종 else — 쇼다운 가치 있음'] += 1
+            elif any(x.startswith('쇼다운 가치 없고') for x in w):
+                src['최종 else — 포기'] += 1
+            else:
+                src['기타 / revise'] += 1
+        print('     출처 분해')
+        for k, v in src.most_common():
+            print('       %-30s %2d (%.0f%%)' % (k, v, 100*v/len(hit)))
+        print('       → 과반이 eq < pcz 인 최종 else 에서 온다. 이 게이트 인구는')
+        print('         (가) 402 집단과 같지 않다')
         cf = sorted(cf_no_gate(i) for i in hit)
         print()
         print('   반사실 CF-I1: `if not initiative: return 0.0` 만 제거했다면')
@@ -323,8 +353,10 @@ def main():
     acct = collections.Counter()
     for i in inpcz:
         f = fired(i)
-        if f == 'block':
-            acct['[B] block 발화'] += 1
+        if block_fired(i) and f == 'fallback402':
+            acct['[B] block 발화 → 402 가 덮음'] += 1
+        elif block_fired(i):
+            acct['[B] block 발화 → %s 가 덮음' % f] += 1
         elif f == 'pot_control':
             acct['[P] pot_control 발화'] += 1
         elif f == 'thin_value':
@@ -347,12 +379,12 @@ def main():
     for k, v in acct.most_common():
         print('   %-42s %3d (%4.1f%%)' % (k, v, 100*v/max(1, tot)))
     print()
-    dg = [i for i in inpcz if fired(i) and fired(i) != 'fallback402'
-          and i['plan'] != {'block': 'block', 'pot_control': 'pot_control',
+    dg = [i for i in inpcz if fired(i) in ('pot_control', 'thin_value')
+          and i['plan'] != {'pot_control': 'pot_control',
                             'thin_value': 'value_2street'}[fired(i)]]
-    print('   _allowed 강등 실측: 발화한 관문과 최종 라벨이 다른 건 %d' % len(dg))
+    print('   _allowed 강등 실측 (456 체인이 확정한 라벨이 뒤에서 바뀐 건) %d' % len(dg))
     for i in dg:
-        print('      h%-5d %-5s %s 발화 → 최종 %s' % (i['_hand'], i['street'],
+        print('      h%-5d %-5s %s 확정 → 최종 %s' % (i['_hand'], i['street'],
                                                    fired(i), i['plan']))
     print()
     print('   → 개념을 갖고도 확률에서 떨어진 것과, 개념 자체가 없는 것은')
