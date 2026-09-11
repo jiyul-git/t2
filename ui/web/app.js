@@ -19,7 +19,11 @@ const S = {
   last: null, view: null, token: null, busy: false,
   handNo: null, stage: null, logLen: 0, boardLen: 0,
   timers: [], busyTimer: null, toastTimer: null,
+  prevBets: null,          // 직전에 그린 좌석별 이번 스트리트 투입액
+  replayDone: null,        // 재생 중이면 마지막 프레임을 그리는 함수
 };
+
+const STEP_MS = 200;       // 봇 액션 한 건을 보여주는 간격
 
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
@@ -164,6 +168,7 @@ function renderHero(v) {
 /* ---------------- 말풍선 ---------------- */
 function clearBubbles() {
   S.timers.forEach(clearTimeout); S.timers = [];
+  S.replayDone = null;
   document.querySelectorAll('.bubble').forEach((b) => b.remove());
 }
 function actionText(e) {
@@ -171,21 +176,94 @@ function actionText(e) {
   return (e.action === 'bet' || e.action === 'raise') && e.amount
     ? `${t} ${fmt(e.amount)}` : t;
 }
-function showBubbles(entries, v) {
-  let i = 0;
-  entries.forEach((e) => {
-    if (e.seat === v.hero_seat) return;
-    const delay = i * 380; i++;
-    S.timers.push(setTimeout(() => {
-      const pod = document.querySelector(`.pod[data-slot="${e.seat}"]`);
-      if (!pod) return;
-      const b = document.createElement('div');
-      b.className = 'bubble' + (e.action === 'fold' ? ' fold' : '');
-      b.textContent = actionText(e);
-      pod.appendChild(b);
-      setTimeout(() => b.remove(), 1700);
-    }, delay));
+function bubbleAt(seat, e) {
+  const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
+  if (!pod) return;
+  const b = document.createElement('div');
+  b.className = 'bubble' + (e.action === 'fold' ? ' fold' : '');
+  b.textContent = actionText(e);
+  pod.appendChild(b);
+}
+
+/* ---------------- 봇 액션 순차 재생 ----------------
+ * 규칙을 다시 계산하지 않는다. 중간 프레임은 서버가 준 숫자들의 산술일 뿐이다.
+ *   로그의 amount = 그 액션 뒤 그 좌석의 '이번 스트리트 총 투입액' (runner.py:122-126)
+ *   한 스트리트 안에서 stack + bet 는 보존되므로  stack_i = 최종stack + 최종bet - bet_i
+ *   pot_i = pot_center + Σ bet_i        (pot_center 는 스트리트 안에서 불변)
+ * 마지막에는 반드시 서버 응답 그대로 다시 그린다. 중간은 연출, 최종은 진실.
+ */
+function baseBets(v, hasPrev) {
+  const b = {};
+  (v.seats || []).forEach((s) => { b[s.seat] = s.bet || 0; });
+  if (hasPrev && S.prevBets) {
+    Object.keys(S.prevBets).forEach((k) => { b[k] = S.prevBets[k]; });
+    return b;
+  }
+  // 새 핸드/새 스트리트: 이번에 액션한 좌석만 액션 전 값으로 되돌린다.
+  // 프리플랍은 블라인드가 로그보다 먼저 들어가 있으므로 그 값, 그 외는 0.
+  const lv = v.level || {};
+  (v.log || []).forEach((e) => {
+    const st = (v.seats || []).find((x) => x.seat === e.seat);
+    const pos = st ? st.pos : null;
+    b[e.seat] = (v.stage === 'preflop')
+      ? (pos === 'SB' ? (lv.sb || 0) : pos === 'BB' ? (lv.bb || 0) : 0)
+      : 0;
   });
+  return b;
+}
+
+function drawFrame(v, bets, folded) {
+  const seats = (v.seats || []).map((s) => Object.assign({}, s, {
+    bet: bets[s.seat] || 0,
+    in_hand: !folded[s.seat],
+    stack: s.stack + (s.bet || 0) - (bets[s.seat] || 0),
+  }));
+  const sum = seats.reduce((a, s) => a + (s.bet || 0), 0);
+  const fv = Object.assign({}, v, { seats: seats,
+                                    pot_total: (v.pot_center || 0) + sum });
+  renderSeats(fv); renderChips(fv, false); renderPot(fv); renderHero(fv);
+}
+
+function finalFrame(v) {
+  S.timers.forEach(clearTimeout); S.timers = [];
+  S.replayDone = null;
+  document.querySelectorAll('.bubble').forEach((b) => b.remove());
+  renderSeats(v); renderPot(v); renderHero(v);
+  const bets = {};
+  (v.seats || []).forEach((s) => { bets[s.seat] = s.bet || 0; });
+  S.prevBets = bets;
+}
+
+function playSequence(v, entries, streetChanged) {
+  const bets = baseBets(v, !streetChanged && S.handNo === v.hand_no);
+  const folded = {};
+  (v.seats || []).forEach((s) => { if (!s.in_hand) folded[s.seat] = 1; });
+  entries.forEach((e) => { if (e.action === 'fold') delete folded[e.seat]; });
+
+  // 히어로 자신의 액션은 이미 본 것이다. 거기까지는 즉시 반영하고 그 뒤부터 재생한다.
+  let from = 0;
+  entries.forEach((e, i) => { if (e.seat === v.hero_seat) from = i + 1; });
+  for (let i = 0; i < from; i++) {
+    const e = entries[i];
+    if (e.action === 'fold') folded[e.seat] = 1;
+    else if (e.action !== 'check') bets[e.seat] = e.amount || bets[e.seat] || 0;
+  }
+
+  const rest = entries.slice(from).filter((e) => e.seat !== v.hero_seat);
+  if (!rest.length) { finalFrame(v); return; }
+
+  drawFrame(v, bets, folded);
+  S.replayDone = () => finalFrame(v);
+  let i = 0;
+  (function next() {
+    if (i >= rest.length) { finalFrame(v); return; }
+    const e = rest[i++];
+    if (e.action === 'fold') folded[e.seat] = 1;
+    else if (e.action !== 'check') bets[e.seat] = e.amount || bets[e.seat] || 0;
+    drawFrame(v, bets, folded);
+    bubbleAt(e.seat, e);
+    S.timers.push(setTimeout(next, STEP_MS));
+  })();
 }
 
 /* ---------------- 액션 로그 한 줄 ---------------- */
@@ -525,18 +603,15 @@ function apply(resp) {
   const streetChanged = !freshHand && S.stage !== v.stage;
   const newLog = (freshHand || streetChanged) ? (v.log || [])
                                               : (v.log || []).slice(S.logLen);
-  if (freshHand) { clearBubbles(); S.boardLen = 0; }
+  if (freshHand) { clearBubbles(); S.boardLen = 0; S.prevBets = null; }
 
   hideOverlay();
   renderTop(v);
-  renderSeats(v);
-  renderChips(v, streetChanged);
+  renderChips(v, streetChanged);     // 스트리트가 끝났으면 칩을 팟으로 보낸다
   renderBoard(v);
-  renderPot(v);
-  renderHero(v);
-  renderActions(v);
+  renderActions(v);                  // 버튼은 바로 쓸 수 있다. 재생을 기다리지 않는다
   renderLogLine(v);
-  showBubbles(newLog, v);
+  playSequence(v, newLog, freshHand || streetChanged);
 
   S.handNo = v.hand_no; S.stage = v.stage; S.logLen = (v.log || []).length;
   if (v.error) toast(v.error);
@@ -544,6 +619,10 @@ function apply(resp) {
 
 /* ---------------- 시작 ---------------- */
 $('#bLog').addEventListener('click', showLog);
+// 기다리기 싫으면 테이블을 한 번 누르면 재생을 건너뛴다
+$('#tablewrap').addEventListener('pointerdown', () => {
+  if (S.replayDone) S.replayDone();
+});
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideOverlay();
 });
