@@ -81,20 +81,50 @@ def wilson(k, n):
     return (max(0.0, c-h), min(1.0, c+h))
 
 
-def load(paths):
-    rows = []
+def load(paths, pure=True):
+    """intent 를 읽는다.
+
+    pure=True 면 `eq_sims == 400` 인 레코드만 남긴다. **이 필터가 없으면
+    분석이 조용히 오염된다.**
+
+    refresh(plan.py:1682) 는 같은 스트리트에서 `eq`·`rel`·`outs`·`made` 를
+    덮어쓰면서 make_plan 이 남긴 `why` 는 그대로 둔다. 그래서 why 로 분기를
+    식별하면 make_plan 의 판단이 맞게 잡히지만, 그 옆에 붙은 숫자는 **판단
+    이후의 값**이다. 임계값(eq vs pcz)이나 게이트(outs>=8)를 그 숫자로
+    되짚으면 존재하지 않은 판단을 재구성하게 된다.
+
+    두 경로는 sims 로 구분된다 — make_plan 400, refresh 300.
+    덮인 레코드는 `outs` 가 calc_noise 를 안 거친 날것이라 항상
+    outs == outs_true 가 되고, 체감/물리 괴리가 인위적으로 0 이 된다.
+
+    실측: 정제 전 후보 114건 중 51건(45%)이 덮인 레코드였다.
+    """
+    rows, dropped, rec = [], 0, 0
     for path in paths:
         for line in open(path):
             r = json.loads(line)
+            rec += 1
             for i in r.get('intents', []):
                 prof = r['profiles'].get(str(i['seat'])) or {}
                 if not prof.get('concepts'):
                     continue                 # 개념 없는 봇은 sk() 경로가 다르다
+                if pure and i.get('eq_sims') != 400:
+                    dropped += 1
+                    continue
                 i['_prof'] = prof
                 i['_hand'] = r['hand_no']
                 i['_hole'] = r['hole'].get(str(i['seat']))
                 i['_src'] = os.path.basename(path)
+                # 핸드 단위 맥락은 **여기서 붙인다**. 나중에 (파일, hand_no) 로
+                # 조인하면 안 된다 — 합본 파일은 토너먼트마다 hand_no 가 1 부터
+                # 다시 시작해서 키가 충돌하고, 조용히 남의 보드가 붙는다.
+                # (실측: 4x250 합본에서 전수표의 보드·드로우 태그가 통째로 틀렸다)
+                i['_rec'] = rec
+                i['_board'] = list(r.get('board') or [])
+                i['_full_log'] = [tuple(x) for x in (r.get('full_log') or [])]
+                i['_blinds'] = tuple(r.get('blinds') or (0, 0))
                 rows.append(i)
+    load.dropped = dropped
     return rows
 
 
@@ -106,7 +136,8 @@ def main():
         i['_sk'] = PS.sk(i['_prof'], 'semibluff') / 3.33
 
     mp = [i for i in rows if i['_branch']]
-    print('intent 총 %d건 · make_plan 분기 식별 %d건' % (len(rows), len(mp)))
+    print('intent %d건 (refresh 가 덮은 %d건 제외) · make_plan 분기 식별 %d건'
+          % (len(rows), getattr(load, 'dropped', 0), len(mp)))
     c = collections.Counter(i['_branch'] for i in mp)
     for k in ('above', 'semibluff', 'bluff', 'else'):
         print('   %-10s %4d (%4.1f%%)' % (k, c[k], 100*c[k]/max(1, len(mp))))
@@ -155,16 +186,19 @@ def main():
     print('=' * 78)
     print('3. outs(객관적 드로우 강도) 축 — 식에 들어가지 않는 축')
     print('=' * 78)
-    print('%-7s %5s %8s %8s %9s %10s' % ('outs', 'n', '예측p', '실측p', '차이', '완성확률'))
+    # 완성확률은 여기 붙이지 않는다. 이 축은 **체감** outs 라서
+    # 물리적 완성확률을 갖다 붙이면 존재하지 않는 확률이 된다.
+    # 물리 기준 완성확률은 아래 10번(스트리트로 나눈 표)에 있다.
+    print('%-7s %5s %8s %8s %9s %10s' % ('체감outs', 'n', '예측p', '실측p', '차이', '물리outs'))
     print('-' * 78)
     for o in sorted(set(i['outs'] for i in rolled)):
         sub = [i for i in rolled if i['outs'] == o]
         pe = sum(p_formula(i['_sk']) for i in sub) / len(sub)
         k = sum(1 for i in sub if i['_branch'] == 'semibluff')
         po = k / len(sub)
-        ro = sum(river_odds(o, i['street']) for i in sub) / len(sub)
-        print('%-7d %5d %8.3f %8.3f %+9.3f %9.1f%%'
-              % (o, len(sub), pe, po, po - pe, ro*100))
+        ot = sum(i['outs_true'] for i in sub) / len(sub)
+        print('%-7d %5d %8.3f %8.3f %+9.3f %10.1f'
+              % (o, len(sub), pe, po, po - pe, ot))
     print()
 
     # ---- 4. 선택압 검정 ----
