@@ -3,3 +3,7 @@
 collected*.jsonl
 c2_*.jsonl
 eq_decomp.json
+
+# 파이썬 바이트코드 캐시 — 스크립트를 돌리면 생긴다
+__pycache__/
+*.py[co]
