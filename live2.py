@@ -1,5 +1,5 @@
 """히어로가 직접 치는 실전 진행기. 필드 전체가 실제로 돌아간다."""
-import json, os, random, math, time
+import copy, json, os, random, math, time
 import zlib as _zlib
 import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
 from table import BLINDS
@@ -148,16 +148,87 @@ def build_hand(st):
 def level_of(f): return f.level
 
 
+# ---------- 밀린 '다른 테이블 진행' ----------
+# finish 가 defer_others=True 로 불리면 step_others 를 건너뛰고 상태에
+# others_pending 표시만 남긴다. 실제 계산은 밖에서(워커 프로세스) 하고,
+# 결과를 다음 step() 에 넘겨준다. 넘겨받지 못했으면 여기서 직접 돌린다.
+#
+# **워커는 상태 파일을 쓰지 않는다.** compute_others 는 필드 덤프를 받아
+# 필드 덤프를 돌려줄 뿐이고, 파일 쓰기는 전부 기존 메인 경로(resume_others →
+# save)가 한다. 그래야 쓰기가 한 곳으로 직렬화된다.
+def compute_others(field_dump):
+    """다른 테이블을 진행시킨다. 순수 함수 — 파일을 읽지도 쓰지도 않는다.
+
+    finish 의 원래 순서를 그대로 재현한다. step_others() 가 끝에서
+    _collect_busts/_balance 를 부르고, finish 가 그 뒤에 한 번 더 부른다.
+    호출 횟수까지 같아야 결과가 같다(tools/verify_settle_split.py 로 확인함).
+
+    _load_field 는 프로필 dict 를 넘겨받은 덤프와 그대로 공유하므로
+    (live2.py 의 _load_field 참고) 반드시 깊은 복사로 넘긴다.
+    """
+    f = _load_field(copy.deepcopy(field_dump))
+    f.notes = []
+    f.step_others()
+    f._collect_busts(); f._balance()
+    return {'field': _dump(f), 'notes': list(f.notes),
+            'key': _others_key(field_dump)}
+
+
+def _others_key(field_dump):
+    """어느 시점의 필드로 계산했는지 못박는 지문."""
+    return _zlib.crc32(json.dumps(field_dump, sort_keys=True,
+                                  separators=(',', ':')).encode())
+
+
+def resume_others(st, others=None):
+    """밀린 다른 테이블 진행을 마무리하고 상태에 반영한다.
+
+    others 가 주어지고 지문이 맞으면 그 결과를 쓰고(hit), 아니면 여기서
+    직접 계산한다(fallback). 지문이 어긋나면 **버린다.** 성능 때문에
+    상태의 정확성을 희생하지 않는다.
+    """
+    if not st.get('others_pending'):
+        return None
+    want = _others_key(st['field'])
+    how = 'hit'
+    if others is None:
+        how = 'fallback'
+    elif others.get('key') != want:
+        how = 'mismatch'
+    if how != 'hit':
+        others = compute_others(st['field'])
+    st['field'] = others['field']
+    _new_notes = list(others.get('notes') or [])
+    if _new_notes:
+        st['pending_notes'] = list(st.get('pending_notes') or []) + _new_notes
+    rec = st.pop('pending_archive', None)
+    if rec is not None:
+        # 정산이 끝났으니 비워둔 자리를 채운다. 키 순서는 그대로다.
+        rec['field'] = _load_field(copy.deepcopy(others['field'])).status()
+        rec['notes'] = list(rec.get('notes') or []) + _new_notes
+        _archive_write(rec)
+    st.pop('others_pending', None)
+    save(st)
+    return how
+
+
 # ---------- 진행 ----------
-def step(action=None, amount=0):
+def step(action=None, amount=0, defer_others=False, others=None):
     st = load()
+    # 밀린 진행이 있으면 **다음 핸드를 딜하기 전에** 반드시 끝낸다.
+    # 서버가 죽어도 상태 파일의 others_pending 이 남아 여기서 복구된다.
+    if st.get('others_pending'):
+        resume_others(st, others)
     f = _load_field(st['field'])
 
     if st['hand_seed'] is None:
+        # 미뤄둔 진행이 남긴 알림(테이블 브레이크·자리 이동)을 여기서 붙인다.
+        # defer 를 안 쓰면 pending_notes 가 아예 없어 기존과 동일하다.
+        _pending_notes = list(st.pop('pending_notes', None) or [])
         f.hand_no += 1
         prev_level = f.level
         f.advance_level()
-        st['notes'] = list(f.notes[-3:]) if f.level != prev_level else []
+        st['notes'] = _pending_notes + (list(f.notes[-3:]) if f.level != prev_level else [])
         f.notes = []
         # 전역 random 을 쓰면 OS 엔트로피로 시드되어 **같은 시드가 재현되지 않는다.**
         # 실제로 같은 seed 로 new_game 을 세 번 하면 매번 다른 핸드가 나왔다.
@@ -187,7 +258,7 @@ def step(action=None, amount=0):
         raw = raw2
 
     if isinstance(raw, dict) and raw.get('done'):
-        return finish(st, f, tb, alive, h, run)
+        return finish(st, f, tb, alive, h, run, defer_others=defer_others)
     return {'view': _render(raw, f, h, st), 'done': False, 'raw': raw}
 
 
@@ -203,7 +274,7 @@ def _render(raw, f, h, st):
     return view.render(v)
 
 
-def finish(st, f, tb, alive, h, run):
+def finish(st, f, tb, alive, h, run, defer_others=False):
     res = run.result or {}
     # 히어로 테이블 스택 반영
     for p in alive:
@@ -216,9 +287,16 @@ def finish(st, f, tb, alive, h, run):
     try: pass   # 틸트는 대회 객체가 들고 있다
     except Exception: pass
 
-    # 다른 테이블 진행
-    f.step_others()
-    f._collect_busts(); f._balance()
+    # 다른 테이블 진행.
+    # defer_others 면 여기서 건너뛰고 표시만 남긴다. 다음 step() 이 딜 전에
+    # 반드시 처리한다. 단 **히어로가 터진 핸드는 미루지 않는다** — rank 가
+    # f.remaining() 과 busted_order 에 달려 있어 전부 정산돼야 확정된다.
+    _hero_busted_now = f.players[f.hero_pid]['stack'] <= 0
+    if defer_others and not _hero_busted_now:
+        st['others_pending'] = True
+    else:
+        f.step_others()
+        f._collect_busts(); f._balance()
 
     notes = list(f.notes); f.notes = []
     hero = f.players[f.hero_pid]
@@ -241,7 +319,11 @@ def finish(st, f, tb, alive, h, run):
     st['busted'] = busted; st['rank'] = rank
     save(st)
 
-    _archive(st, f, h, res, notes)
+    _archive(st, f, h, res, notes, defer=bool(st.get('others_pending')))
+    if st.get('pending_archive'):
+        # _archive 는 save() 뒤에 불린다. 미뤄둔 기록은 따로 한 번 더 저장해야
+        # 다음 step() 이 디스크에서 읽을 수 있다.
+        save(st)
     res['hero_seat'] = h.hero
     res.setdefault('pos', {str(k): v for k, v in h.pos.items()})
     # 결과도 화면으로 렌더한다. 예전에는 raw dict 만 돌려줘서
@@ -256,8 +338,20 @@ def finish(st, f, tb, alive, h, run):
             'status': f.status()}
 
 
-def _archive(st, f, h, res, notes):
+def _archive_write(rec):
     path = os.path.join(D, 'hand_archive2%s.jsonl' % _SUFFIX)
+    with open(path, 'a') as fp:
+        fp.write(json.dumps(rec, ensure_ascii=False, default=str) + '\n')
+
+
+def _archive(st, f, h, res, notes, defer=False):
+    """핸드 기록. defer 면 파일에 쓰지 않고 상태에 넣어둔다.
+
+    기록의 'field'(f.status())와 'notes' 는 다른 테이블까지 정산돼야 확정된다.
+    그래서 지연 중에는 자리만 비워 두고, resume_others 가 채워서 쓴다.
+    자리를 **미리 만들어 두는 것**이 중요하다 — 나중에 키를 새로 추가하면
+    JSON 키 순서가 달라져 기존 파일과 바이트가 안 맞는다.
+    """
     rec = {'hand_no': f.hand_no, 'hash': getattr(h, 'hash', None),
            'level': f.level, 'blinds': list(f.blinds()),
            'button': h.button, 'hero': h.hero,
@@ -269,7 +363,11 @@ def _archive(st, f, h, res, notes):
            'intents': getattr(h, 'intents', []),
            'reads': getattr(h, 'reads_log', []),
            'result': {k: v for k, v in res.items() if k != 'full_log'},
-           'field': f.status(), 'notes': notes,
+           'field': (None if defer else f.status()), 'notes': list(notes),
            'profiles': {str(s): h.prof.get(str(s), {}) for s in h.seats}}
-    with open(path, 'a') as fp:
-        fp.write(json.dumps(rec, ensure_ascii=False, default=str) + '\n')
+    if defer:
+        # save() 는 default=str 를 안 쓰므로 여기서 미리 JSON 안전하게 만든다.
+        st['pending_archive'] = json.loads(
+            json.dumps(rec, ensure_ascii=False, default=str))
+        return
+    _archive_write(rec)
