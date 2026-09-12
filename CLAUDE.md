@@ -10,15 +10,32 @@
 
 ### 1. 지금은 원인 규명 단계다. `plan.py` 판단 로직을 수정하지 마라.
 
-수정과 검증이 섞이면 원인을 잃는다. 현재 계측 전후의 행동 지문이
-동일함을 검증해둔 상태다:
+수정과 검증이 섞이면 원인을 잃는다.
+
+**현재 baseline: `8dc14d3`** (2026-09-12). 행동 지문:
+
+```
+python3 tools/fingerprint.py --seeds 3000-3005 --hands 30   # 격리 폴더에서
+1dd5d83f7a638d174636d7dc44d39f1c2250ce35a1d674d5789ff90b57935e59
+```
+
+레시피는 `tools/fingerprint.py` docstring 에 박혀 있다. 바꾸면 과거와
+대조가 끊긴다.
+
+**historical reference — 아래는 `f7e03ac` 시절의 지문이다.**
 
 ```
 seeds 3000-3005 × 30핸드 full_log SHA-256
 8f02a035d46af7e7ad929843f509cf6362a94221f6d00db75028d63e530c8eaa
 ```
 
-`plan.py`의 판단 분기를 건드리면 이 지문이 깨지고, 지금까지의 분석이
+계측 확장 전후가 동일함을 보인 기록이다(`INSTRUMENTATION_BASELINE.md`).
+**현재 엔진의 지문이 아니고 위 값과 비교 대상도 아니다** — 그때의
+레시피(엔트리 수·히어로 정책)가 기록되지 않아 재현할 수 없다.
+지우지 말 것. 그 시점의 분석이 어느 코드에 대한 것이었는지 가리키는
+유일한 표식이다.
+
+`plan.py`의 판단 분기를 건드리면 현재 지문이 깨지고, 지금까지의 분석이
 어느 코드에 대한 것이었는지 추적 불가능해진다.
 
 **허용:** `tools/` 아래 읽기 전용 분석 스크립트 추가, 기록 전용 계측 필드 추가
@@ -49,6 +66,33 @@ seeds 3000-3005 × 30핸드 full_log SHA-256
 특정 스트리트의 판정만 세려면 `'{street}: '` 접두사로 걸러야 한다.
 이걸 놓쳐서 402줄 발동 건수를 39건으로 잘못 셌고(실제 22건),
 최종 else giveup을 383건으로 잘못 셌다(실제 270건).
+
+---
+
+## baseline 이력
+
+플레이어 식별 문제를 잡은 두 커밋이다. 둘 다 `plan.py` 무수정이다.
+
+```
+f7e03ac  seat-key contamination
+   │     Tilt.state 의 키가 str(seat) 였다. 테이블마다 좌석 번호가 겹쳐
+   │     서로 다른 사람이 틸트와 shown(쇼다운에 깐 패)을 공유했다.
+   │     **"조금 다른 구현"이 아니라 오염된 구현으로 취급한다.**
+   ↓
+a247f7f  seat → pid 격리
+   │     변환 규칙은 play.Hand.pid_of 하나. 새 식별자는 만들지 않았다.
+   │     f7e03ac 대비 400핸드 divergence 395/398, 탈락 순서·최종 생존자 변경.
+   │     → 전략이 바뀐 것이 아니라 기존 엔진이 틀린 상대 정보로 판단하고
+   │       있었던 것이다. 두 엔진의 행동을 전략 비교로 읽지 말 것.
+   ↓
+8dc14d3  decay_all 프로필 격리          ← **현재 baseline**
+         Tilt 감쇠가 그 사람 자신의 프로필을 쓴다 (context.pid_prof).
+         a247f7f 대비 400핸드에서 액션·칩·탈락순서·최종생존자 전부 동일,
+         다른 것은 한 테이블-핸드의 확률 0.284 → 0.283 하나뿐.
+```
+
+`f7e03ac` / `a247f7f` 를 새 실험의 비교군으로 쓰지 마라. 특히 prefetch 같은
+성능 최적화의 의미 보존 검증은 **같은 baseline 의 ON/OFF 로만** 비교한다.
 
 ---
 
@@ -162,6 +206,22 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 
 ---
 
+## 후속 조사 대상 (지금 건드리지 않는다)
+
+- **틸트가 거의 작동하지 않는다.** entries 100 / 30핸드에서 감쇠 호출
+  32,292건 중 `level > 0` 인 것은 **271건(0.84%)** 뿐이다.
+  `tools/verify_decay_profile.py` 의 `calls_active` 로 잰다.
+  틸트 강도·`DECAY_BASE`·회복 계수·`level` 반올림은 **지금 수정하지 않는다.**
+  calibration 을 건드리면 baseline 지문이 깨진다.
+- **25% 생존 지점이 빨라졌을 가능성.** `f7e03ac` → `a247f7f` 10시드 페어
+  대조에서 75/50/25/ITM 네 지점의 부호가 전부 음수(새 엔진이 빠름)였고,
+  25% 지점만 유의했다(핸드 t −3.77, 레벨 t −5.01). 50%·ITM 은 노이즈 범위,
+  ITM 평균스택 28.7bb → 31.3bb (t +1.33). 30시드 확인은 보류한다 —
+  고친 것이 전략 파라미터가 아니라 state ownership 이라 calibration 문제로
+  볼 근거가 아직 없다.
+
+---
+
 ## 기타 확인된 이슈 (수정 안 함, 기록만)
 
 - `session.py:475` `oop = (h.POST.index(h.pos[s]) < 3)` — 절대 포지션이라
@@ -193,6 +253,11 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/implied.py` | full_log 로 팟·콜비용 재구성, 가격 분석 |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
+| `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |
+| `tools/verify_tilt_isolation.py` | 틸트 pid 격리 (single/repeat/leak/struct) |
+| `tools/verify_tilt_divergence.py` | 엔진 두 벌의 divergence·필드 페이스 대조 |
+| `tools/verify_decay_profile.py` | 감쇠가 자기 프로필을 쓰는지 (객체 동일성) |
+| `tools/verify_defer.py` | prefetch 의미 보존 (off/inline/worker/http) |
 | `cli.py` | 히어로 직접 플레이. `python3 cli.py` |
 
 수집 시 주의: 명령 하나가 300초를 넘으면 안 되는 환경이었다면
