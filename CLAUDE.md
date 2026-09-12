@@ -18,6 +18,13 @@ seeds 3000-3005 × 30핸드 full_log SHA-256
 8f02a035d46af7e7ad929843f509cf6362a94221f6d00db75028d63e530c8eaa
 ```
 
+> **이 지문은 커밋 `cf6db3c` 로 무효가 됐다.** `plan.py:447` 의 block 이
+> 후속 분기에 덮어써지던 제어흐름 결함을 고쳤고, 그 결과 block 발화 건의
+> 계획이 바뀐다(실측 6,000핸드당 36건 발화 · 34건 생존).
+> 새 지문 산출은 보류 중이다 — `persona._TILT_VIEW_CACHE` 오염이
+> 미수정 상태라 지금 기준선을 박으면 오염된 상태가 baseline 이 된다.
+> 순서: 캐시 결정 → 재현성 검증 → 새 지문 → 이 문단 갱신.
+
 `plan.py`의 판단 분기를 건드리면 이 지문이 깨지고, 지금까지의 분석이
 어느 코드에 대한 것이었는지 추적 불가능해진다.
 
@@ -176,6 +183,18 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 - `refresh`의 outs 는 `draw_strength` 날것, `make_plan`의 outs 는
   `calc_noise`를 거친 체감값. 불일치 (rel 은 이미 고쳤으나 outs 는 누락)
 - `audit.py:171` 이 설계상 허용된 이탈까지 전부 "포기계획인데 벳" 경보
+- `persona._TILT_VIEW_CACHE` 는 키가 `(prof['id'], round(tilt,2))` 인데
+  `prof['id']` 가 **좌석 번호**다(`tourney:199` 가 `pid=s` 를 넘긴다).
+  그래서 서로 다른 프로필이 같은 좌석·tilt 버킷에서 캐시를 공유할 수 있다.
+  `len > 4000` clear 는 키 공간이 8 × (tilt 2자리) ≈ 400 이라 절대 실행되지 않는다.
+  실측(491핸드 ON/OFF 반사실): 오염 8건 · 그중 판단 프로필에 들어간 것 4건 ·
+  **행동 차이 0건**. 별도 장기 비교(block A/B 6,000핸드)에서 약 6,000핸드당
+  1건의 출력 차이가 관측됐다.
+  `id(prof)` 로 바꾸는 땜질은 안 된다 — `play.py:72` 가 매 호출 새 dict 를
+  만들어 적중률이 0 이 되고, docstring 이 경고한 id 재사용 문제도 부활한다.
+  프로필에 생성 시점 고유 식별자가 없어 identity 도입 없이는 안전한 수정이
+  어렵다. **현재 baseline 에서는 미수정.**
+  도구: `tools/tilt_impact.py`, 원문: `results/tilt_cache_impact.md`
 
 ---
 
