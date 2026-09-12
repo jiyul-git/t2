@@ -75,10 +75,17 @@ def call(action, amount=0):
 
 L.new_game(entries=ENTRIES, start_stack=30000, seed=SEED)
 r = call(None); n = 0
+BUSTED = {'at': None}
 while n < HANDS:
     v = r.get('view') or {}
     if r.get('done'):
         n += 1
+        # 히어로가 터지면 여기서 멈춘다. 탈락 후 step() 은 크래시한다
+        # (build_hand -> tb 가 None). 엔진의 기존 결함이고 이번 검증 대상이
+        # 아니다. 어느 핸드에서 터졌는지는 모드 간 대조 항목으로 남긴다.
+        if r.get('busted'):
+            BUSTED['at'] = n
+            break
         if n >= HANDS: break
         r = call(None); continue
     if v.get('type') != 'decision': break
@@ -110,9 +117,34 @@ def integrity(p):
             'truncated': not raw.endswith(b'\n') if raw else False,
             'dup': len(ls) - len(set(ls))}
 
+def hero_actions(p):
+    """히어로가 실제로 낸 액션 시퀀스. 아카이브의 full_log 에서 히어로 좌석만.
+    아카이브 해시에 이미 포함되지만, 어긋났을 때 무엇이 어긋났는지 보려면
+    따로 뽑아둬야 한다."""
+    out = []
+    if not os.path.exists(p):
+        return out
+    for line in open(p):
+        if not line.strip(): continue
+        rec = json.loads(line)
+        # hero 와 full_log 는 레코드 **최상위**다 (rec['result'] 안이 아니다)
+        hs = rec.get('hero')
+        for e in (rec.get('full_log') or []):
+            if hs is not None and e[1] == hs:
+                out.append([rec.get('hand_no'), e[0], e[2], e[3]])
+    return out
+
+def survivors(fd):
+    """칩이 남은 사람. 좌석이 아니라 pid 기준."""
+    return sorted(int(k) for k, v in (fd.get('players') or {}).items()
+                  if v.get('stack', 0) > 0)
+
 st = L.load()
 print(json.dumps({
   'archive': h('hand_archive2.jsonl'), 'bots': h('bot_hands.jsonl'),
+  'hero_actions': hero_actions('hand_archive2.jsonl'),
+  'hands_played': n, 'busted_at': BUSTED['at'],
+  'survivors': survivors(st['field']),
   'field': hashlib.sha256(json.dumps(st['field'], sort_keys=True).encode()).hexdigest(),
   'rank': st.get('rank'), 'busted': st.get('busted'),
   'busted_order': st['field'].get('busted_order'),
@@ -161,11 +193,15 @@ for _ in range(200):
     except Exception: time.sleep(0.2)
 c, r = call('/api/new', {'entries': ENTRIES, 'seed': SEED, 'start_stack': 30000})
 n = 0
+BUSTED = {'at': None}
 while n < HANDS:
     v = r.get('view') or {}
     if r.get('game_over'): break
     if r.get('done'):
         n += 1
+        if r.get('busted'):               # 히어로 탈락 — CHILD 와 같은 규칙
+            BUSTED['at'] = n
+            break
         if n >= HANDS: break
         if not FAST: time.sleep(1.2)      # 결과 화면을 읽는 시간
         c, r = call('/api/step', {'action': None, 'amount': 0, 'token': r['token']})
@@ -177,8 +213,26 @@ while n < HANDS:
     c, r = call('/api/step', {'action': a, 'amount': 0, 'token': r['token']})
     if c != 200: break
 c, stats = call('/api/stats')
-print(json.dumps({'stats': stats, 'hands': n}))
+print(json.dumps({'stats': stats, 'hands': n,
+                  'hands_played': n, 'busted_at': BUSTED['at']}))
 """
+
+
+def _hero_actions(path):
+    """히어로 액션 시퀀스. CHILD 안의 hero_actions 와 같은 규칙이다
+    (자식은 별도 프로세스라 함수를 공유할 수 없다. 고칠 때 둘 다 고칠 것)."""
+    out = []
+    if not os.path.exists(path):
+        return out
+    for line in open(path):
+        if not line.strip(): continue
+        rec = json.loads(line)
+        # hero 와 full_log 는 레코드 **최상위**다 (rec['result'] 안이 아니다)
+        hs = rec.get('hero')
+        for e in (rec.get('full_log') or []):
+            if hs is not None and e[1] == hs:
+                out.append([rec.get('hand_no'), e[0], e[2], e[3]])
+    return out
 
 
 def run_http(entries, hands, seed, fast, keep):
@@ -237,6 +291,10 @@ def run_http(entries, hands, seed, fast, keep):
                                                        sort_keys=True).encode()).hexdigest(),
                     'rank': stf.get('rank'), 'busted': stf.get('busted'),
                     'busted_order': stf['field'].get('busted_order'),
+                    'hero_actions': _hero_actions(os.path.join(tmp, 'hand_archive2.jsonl')),
+                    'survivors': sorted(int(k) for k, v
+                                        in (stf['field'].get('players') or {}).items()
+                                        if v.get('stack', 0) > 0),
                     'arch_int': integ('hand_archive2.jsonl'),
                     'bots_int': integ('bot_hands.jsonl'),
                     'residue': {'others_pending': bool(stf.get('others_pending')),
@@ -265,7 +323,8 @@ def main():
             return 1
 
     print('entries %d, seed %d, %d핸드\n' % (a.entries, a.seed, a.hands))
-    keys = ('archive', 'bots', 'field', 'rank', 'busted', 'busted_order')
+    keys = ('archive', 'bots', 'field', 'rank', 'busted', 'busted_order',
+            'hero_actions', 'survivors', 'hands_played', 'busted_at')
     print('%-8s %-18s %-18s %-18s %-6s %s' % ('mode', 'archive', 'bot_hands', 'field', 'rank', 'busted'))
     for m in ('off', 'inline', 'worker'):
         r = res[m]
