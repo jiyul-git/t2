@@ -30,7 +30,7 @@ C. 캐시 ON/OFF 반사실
     4000개 초과 시 clear 하는데 키 공간이 8 × (tilt 2자리) ≈ 400 이라
     **실제로는 한 번도 비워지지 않는다**.
 """
-import os, sys, json, collections
+import os, sys, json, collections, traceback
 
 D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if D not in sys.path:
@@ -65,6 +65,8 @@ def stage_ab(n_per):
     stat = collections.Counter()
     diffs = []
     seat_tilt = collections.Counter()
+    site = collections.Counter()
+    site_poll = collections.Counter()
 
     def wrapped(prof, tilt):
         got = orig(prof, tilt)
@@ -74,6 +76,14 @@ def stage_ab(n_per):
             stat['캐시 비관여'] += 1
             return got
         stat['캐시 관여 호출'] += 1
+        # 어느 호출부인가. session.py 의 axes() 사용처마다 의미가 다르다 —
+        # 어떤 곳은 프로필을 판단에 쓰고, 어떤 곳은 tilt 숫자만 쓰고 버린다.
+        caller = 'other'
+        for fr in reversed(traceback.extract_stack()):
+            if fr.filename.endswith('session.py'):
+                caller = 'session.py:%d' % fr.lineno
+                break
+        site[caller] += 1
         save = PS._TILT_VIEW_CACHE
         PS._TILT_VIEW_CACHE = NoCache()
         try:
@@ -82,6 +92,7 @@ def stage_ab(n_per):
             PS._TILT_VIEW_CACHE = save
         if fingerprint(got) != fingerprint(fresh):
             stat['**오염된 반환**'] += 1
+            site_poll[caller] += 1
             seat_tilt[(prof.get('id'), round(t, 2))] += 1
             same_type = (got.get('type') == prof.get('type'))
             stat['  그중 type 은 같음(기존 검출로는 안 잡힘)' if same_type
@@ -123,6 +134,25 @@ def stage_ab(n_per):
         print('   오염이 몰린 (좌석, tilt) 키 상위')
         for (pid, t), n in seat_tilt.most_common(6):
             print('     좌석 %s · tilt %.2f  — %d회' % (pid, t, n))
+    print()
+    print('B. 오염이 실제 판단까지 갔는가 — 호출부 귀속')
+    print('-' * 88)
+    USE = {'session.py:161': '프리플랍 판단 프로필 (ax, _ = h.axes(s))  ← 판단에 쓰인다',
+           'session.py:339': '포스트플랍 판단 프로필 (ax, _ = h.axes(s)) ← 판단에 쓰인다',
+           'session.py:376': '상대 프로필 (oax) ← 판단에 쓰인다',
+           'session.py:189': 'h.axes(s)[1] — **tilt 숫자만 쓰고 프로필은 버린다**',
+           'session.py:440': 'h.axes(s)[1] — 프로필 버림',
+           'session.py:484': 'h.axes(s)[1] — 프로필 버림'}
+    print('   %-18s %8s %8s   %s' % ('호출부', '캐시관여', '오염', '용도'))
+    real = 0
+    for k, v in site.most_common():
+        pv = site_poll[k]
+        if pv and '버림' not in USE.get(k, ''):
+            real += pv
+        print('   %-18s %8d %8d   %s' % (k, v, pv, USE.get(k, '?')))
+    print()
+    print('   → 오염 %d 중 **실제 판단에 흘러간 것 %d**. 나머지는 프로필이 버려진다.'
+          % (stat['**오염된 반환**'], real))
     print()
     print('   주의 — 이 수치는 **캐시가 관여한 호출 대비** 비율이다.')
     print('   tilt<=0.02 인 호출은 애초에 캐시를 타지 않으므로 분모에서 뺐다.')
