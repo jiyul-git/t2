@@ -174,8 +174,9 @@ def main():
     print("       459      plan = 'value_2street'")
     print('       461  else:')
     print("       465      plan = 'showdown' if made >= 1 else 'giveup'")
-    print('   456~467 의 if/elif/else 는 **무조건 실행되고 무조건 plan 을 재할당**한다.')
-    print('   따라서 448 의 plan = "block" 은 항상 덮인다.')
+    print('   원래 456~467 의 if/elif/else 가 무조건 plan 을 재할당해서')
+    print('   448 의 plan="block" 이 항상 덮였다. 커밋 cf6db3c 에서 고쳤다.')
+    print('   아래는 **현재 코드가 실제로 어떤지**를 표본으로 확인한 것이다.')
     print()
     # 전수 확인 — 정제 전 원본으로 본다(발화 자체는 refresh 와 무관하다)
     allr = load(paths, pure=False)
@@ -198,21 +199,32 @@ def main():
         if ch:
             nboth += 1
             over[ch[0].split('→')[-1].strip()] += 1
-    nb = sum(1 for i in allr if i['plan'] == 'block')
+    # **발화와 생존은 같은 분모여야 한다.** block 은 플랍에서만 태어나는데
+    # 살아남으면 턴·리버 intent 에도 같은 라벨로 남는다. 전 스트리트에서 세면
+    # 생존이 발화보다 커져 생존율이 1 을 넘는다(실측 36 발화 vs 48).
+    # 발화한 그 건들의 최종 라벨(final)로 센다.
+    nb = final.get('block', 0)
+    nb_all = sum(1 for i in allr if i['plan'] == 'block')
     print('   전 intent %d건 (정제 전)' % len(allr))
     print('   block 발화(그 스트리트 why 기준)            %d건' % nfire)
     print('   그중 같은 스트리트에 456 체인 why 가 함께 붙음 %d건 (%.0f%%)'
           % (nboth, 100*nboth/max(1, nfire)))
     print('   덮어쓴 결과 %s' % dict(over.most_common()))
     print('   최종 plan 분포 %s' % dict(final.most_common()))
-    print('   **전 표본에서 plan == "block" 인 intent: %d건**' % nb)
+    print('   발화한 %d건의 생존: %d건 (참고: 전 스트리트 plan=="block" intent 는 %d건 —'
+          % (nfire, nb, nb_all))
+    print('     살아남으면 턴·리버에도 같은 라벨이 남으므로 분모가 다르다)')
     print()
-    if nb == 0 and nfire > 0:
-        print('   → block 은 도달 불가 분기다. PLANS·SIZING·_allowed·decide_aggression 에')
-        print('     각각 전용 처리가 있지만 make_plan 을 살아서 나오지 못한다.')
-        print('     "확률이 작아서 안 나온다"가 아니라 **나왔다가 지워진다**.')
-        print('     이 집단(oop·not initiative·중간강도)을 위해 만든 분기가')
-        print('     그 집단에서 한 번도 실행되지 않는다.')
+    if nfire == 0:
+        print('   → 이 표본에서는 block 이 한 번도 발화하지 않았다. 판정 불가.')
+    elif nb == 0:
+        print('   → block 은 도달 불가다. 발화해도 전부 덮인다 (수정 전 상태).')
+    else:
+        print('   → block 이 살아서 나온다. 발화 %d · 생존 %d (%.0f%%).'
+              % (nfire, nb, 100*nb/nfire))
+        if nb < nfire:
+            print('     차이는 _allowed(1491) 의 blockbet 강등이다')
+            print('     (원개념 s<1.5 무조건 / 1.5<=s<3.5 확률 (s-1.5)/2).')
     print()
     print('   주의 — 위 집계는 반드시 스트리트 접두사로 걸러야 한다.')
     print('     걸르지 않으면 block why 가 다음 스트리트 기록에 승계돼')
@@ -248,7 +260,6 @@ def main():
             got = sum(1 for i in gate if block_fired(i))
             fin = sum(1 for i in gate if i['plan'] == 'block')
             print('   실측 block **발화** %d건 / 그중 살아남은 것 %d건' % (got, fin))
-            print('     발화해도 456~467 이 덮으므로 채택은 구조적으로 0 이다 (2-0 참조)')
             var = sum(x*(1-x) for x in ps)
             z = (got - sum(ps)) / math.sqrt(var) if var > 0 else 0.0
             print('   주사위 자체는 정상 범위다: 기대 %.2f vs 발화 %d, z = %+.2f'
@@ -257,8 +268,7 @@ def main():
                   % math.prod(1-x for x in ps))
             print('      Σp 만으로 포아송 근사한 %.4f 가 아니라 이 곱이 정확값이다.'
                   % math.exp(-sum(ps)))
-            print('      다만 2-0 을 보면 이 확률 계산이 답할 질문 자체가 없다 —')
-            print('      block 은 발화해도 채택되지 않기 때문이다)')
+            print('      2-0 에서 생존 여부를 따로 본다)')
     print()
 
     # ---------- 3. pot_control 관문 ----------
@@ -353,8 +363,9 @@ def main():
     acct = collections.Counter()
     for i in inpcz:
         f = fired(i)
-        if block_fired(i) and f == 'fallback402':
-            acct['[B] block 발화 → 402 가 덮음'] += 1
+        if block_fired(i) and f is None:
+            # 456 체인이 아무것도 확정하지 않았다 = block 이 살아남았다
+            acct['[B] block 발화 → 생존'] += 1
         elif block_fired(i):
             acct['[B] block 발화 → %s 가 덮음' % f] += 1
         elif f == 'pot_control':
