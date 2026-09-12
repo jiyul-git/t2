@@ -24,6 +24,10 @@ def _dump(f):
         'fmt': f.fmt.get('key', 'standard'),
         'seed': getattr(f, 'seed', None),
         'tilt': f.tilt.state,
+        # 틸트 키가 좌석에서 사람(pid)으로 바뀌었다. 이 표시가 없는 저장본은
+        # 좌석 키('1'..'8')라서 pid 1..8 과 그대로 충돌한다 — 3번 자리의
+        # 누적 틸트가 pid 3 인 사람에게 붙는다. 그런 상태는 버린다.
+        'tilt_key': 'pid',
         'players': {str(p['pid']): {'prof': p['prof'], 'stack': p['stack'],
                                     'table': p['table'], 'seat': p['seat']}
                     for p in f.players.values()},
@@ -52,7 +56,8 @@ def _load_field(d):
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
     f.notes = d.get('notes', []); f.errors = []
     f.players = {}
-    f._init_runtime(d.get('fmt'), d.get('tilt'))
+    f._init_runtime(d.get('fmt'),
+                    d.get('tilt') if d.get('tilt_key') == 'pid' else None)
     for k, v in d['players'].items():
         f.players[int(k)] = {'pid': int(k), 'prof': v['prof'], 'stack': v['stack'],
                              'table': v['table'], 'seat': v['seat']}

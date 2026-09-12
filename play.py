@@ -42,8 +42,20 @@ class Hand:
         self.pos = {self.seats[(i+k) % n]: order[k] for k in range(n)}
         self.seat_of = {v: k for k, v in self.pos.items()}
         self._start_stacks = dict(self.stacks)
-        self.seat_pid = {}          # 좌석번호 → 플레이어 고유 ID (없으면 좌석번호)
+        self.seat_pid = {}          # 좌석번호 → 플레이어 고유 ID (드라이버가 채운다)
         self.deal()
+
+    def pid_of(self, s):
+        """좌석 → 플레이어 식별자. **대회 단위로 유지되는 상태의 유일한 키다.**
+
+        좌석 번호는 테이블마다 1..8 로 겹친다. 그걸 키로 쓰면 서로 다른
+        테이블의 다른 사람이 같은 상태를 공유한다 (틸트·쇼다운 기록이 실제로
+        그랬다). 리딩 장부는 이미 이 변환을 거치고 있었고 틸트만 빠져 있었다.
+
+        seat_pid 를 안 채우는 단일 테이블 드라이버는 테이블 id 를 섞어
+        적어도 테이블끼리는 겹치지 않게 한다.
+        """
+        return self.seat_pid.get(s, 'T%s_%s' % (getattr(self, 'table_id', 0), s))
 
     def deal(self):
         deck = [r+s for r in "23456789TJQKA" for s in "cdhs"]
@@ -76,7 +88,7 @@ class Hand:
         # 틸트는 성향값을 밀어넣지 않는다. 개념 가중치를 깎는 방식이라
         # 판단 층이 sk 대신 sk_tilted 를 쓰면 저절로 반영된다.
         # 여기서는 현재 틸트 수치만 돌려준다.
-        t = self.dyn.level(s) if hasattr(self.dyn, 'level') else 0.0
+        t = self.dyn.level(self.pid_of(s)) if hasattr(self.dyn, 'level') else 0.0
         # 틸트는 여기 한 곳에서만 반영한다. 판단 층은 그대로 sk()/temper() 를 쓴다.
         return PS.tilted_view(base, t), round(t, 2)
 

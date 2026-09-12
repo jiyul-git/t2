@@ -73,13 +73,14 @@ class HandRun:
 
     # ---------- 내부 ----------
     def _pid(self, seat):
-        """관찰 장부의 키. 좌석 번호가 아니라 사람 식별자여야 테이블 간 오염이 없다.
+        """관찰 장부와 틸트의 키. 좌석이 아니라 사람이어야 테이블 간 오염이 없다.
 
         _run 안의 지역 람다로 두면 _finish 에서 NameError 가 나고,
         그게 except: pass 에 삼켜져 쇼다운 관찰이 통째로 유실된다. (실제로 그랬다)
+
+        변환 규칙은 play.Hand.pid_of 하나뿐이다. 여기에 사본을 두지 않는다.
         """
-        h = self.h
-        return h.seat_pid.get(seat, 'T%s_%s' % (getattr(h, 'table_id', 0), seat))
+        return self.h.pid_of(seat)
 
     def _dseed(self, seat, street, tag, extra=0):
         """결정 하나에 쓸 시드. 공유 rng 에서 뽑지 않고 상황에서 유도한다.
@@ -407,7 +408,8 @@ class HandRun:
                     orange = R.perceived_range(orange, board, self._acts_of(o), ax,
                                                actor_read=_rdp if _oe else None)
                     # 쇼다운 이력이 예상보다 넓/좁았다면 추가 보정
-                    orange, _note = RU.adjust_range_by_history(orange, h.dyn, o, board,
+                    orange, _note = RU.adjust_range_by_history(orange, h.dyn,
+                                                              self._pid(o), board,
                                                               dead=set(h.hole[s])|set(board))
                     opp_r.extend(orange)
                 # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
@@ -732,19 +734,25 @@ class HandRun:
         for row in (getattr(self, 'full_log', []) or []):
             if row[0] == 'preflop' and row[2] in ('call', 'raise', 'allin'):
                 vpip.add(row[1])
+        # 틸트 상태의 키는 좌석이 아니라 사람이다. 좌석 번호는 테이블마다
+        # 겹쳐서, 그대로 쓰면 다른 테이블의 다른 사람과 상태를 공유하게 된다.
+        _pp = {}
         for k in h.seats:
             prof = h.prof.get(str(k)) or {}
+            pid = self._pid(k)
+            _pp[str(pid)] = prof
             before = self._before.get(k, h.stacks.get(k, 0))
             d = (h.stacks.get(k, 0) - before) / bb
             st0 = before / bb
             if abs(d) >= 0.5:
-                t.on_pot(k, prof, d, st0)
+                t.on_pot(pid, prof, d, st0)
             # 넣고 접은 팟은 별도로 센다. 같은 크기라도 자책이 붙는다.
             if k in folded and contrib.get(k, 0) > 0:
-                t.on_fold_after_investing(k, prof, contrib[k]/bb, st0)
-            t.on_result(k, prof, won=(d > 0), played=(k in vpip),
+                t.on_fold_after_investing(pid, prof, contrib[k]/bb, st0)
+            t.on_result(pid, prof, won=(d > 0), played=(k in vpip),
                         contested=(k in vpip), showdown=(k in live))
-        t.decay_all(h.prof)
+        # decay_all 은 상태에 있는 모든 키를 훑는다. 프로필도 같은 키로 준다.
+        t.decay_all(_pp)
 
     def _finish(self, contrib, dead, folded, live, board, how):
         h = self.h
@@ -774,9 +782,9 @@ class HandRun:
                 RD_pct = _pf.PCT[_pf.cls(h.hole[sd])]
                 h.book.observe_showdown(_all, self._pid(sd), RD_pct, sd in aggr_seats)
                 # 깐 패는 틸트 객체에도 남긴다. runner.adjust_range_by_history 가
-                # 이걸 읽어 '이 좌석이 예상보다 넓게 깠다'를 판단한다.
+                # 이걸 읽어 '이 사람이 예상보다 넓게 깠다'를 판단한다. 키는 pid 다.
                 if hasattr(h, 'dyn') and hasattr(h.dyn, 'note_showdown'):
-                    h.dyn.note_showdown(sd, list(h.hole[sd]))
+                    h.dyn.note_showdown(self._pid(sd), list(h.hole[sd]))
         except Exception as _e:
             # 관찰 실패를 조용히 삼키면 장부가 안 쌓이고 리딩이 통째로 죽는다.
             h.book_errors = getattr(h, 'book_errors', [])
