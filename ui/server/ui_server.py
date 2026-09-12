@@ -13,12 +13,14 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓰고, T2_LIVE_STATE 
   GET  /<경로>                web/ 아래 정적 파일. 같은 출처라 CORS 가 필요 없다.
   GET  /api/state             마지막 응답 (없으면 현재 상태를 재생해서 만든다)
   POST /api/new   {entries?, seed?, fmt?, start_stack?}
+  GET  /api/stats             정산 지연 카운터 (attempt/hit/mismatch/fallback…)
   POST /api/step  {action, amount, token}
        action: fold/check/call/bet/raise/allin, 또는 null(다음 핸드 딜)
        amount: 이번 스트리트 총 투입 목표(raise-to)
        token : 직전 응답의 token. 다르면 409 — 재전송으로 액션이 두 번 들어가는 것을 막는다.
 """
-import json, mimetypes, os, posixpath, sys, threading, traceback, urllib.parse
+import json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse
+from concurrent.futures import ProcessPoolExecutor
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +37,104 @@ import live2 as L
 LOCK = threading.Lock()
 _last = None
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
+
+# ---------- 다른 테이블 정산을 결과 반환 뒤로 미룬다 ----------
+# 핸드 종료 요청 시간의 75% 가 live2.finish 안의 step_others 다(실측).
+# 히어로 결과를 먼저 돌려주고, 사용자가 결과 화면을 보는 동안 워커가 계산한다.
+# 다음 요청에서 join 해 그 결과를 live2 에 넘긴다. 못 받았으면 live2 가
+# 딜 직전에 직접 돌린다 — 그때가 지금과 같은 속도이고, 더 느려지지 않는다.
+#
+# **워커는 상태 파일을 쓰지 않는다.** compute_others 는 필드 덤프를 받아
+# 필드 덤프를 돌려줄 뿐이고, 파일 쓰기는 전부 이 락 안의 메인 스레드가 한다.
+#
+# 스레드가 아니라 프로세스인 이유
+#   1) GIL — 스레드면 히어로 테이블 봇 판단과 CPU 를 다툰다
+#   2) live2._load_field 가 프로필 dict 를 덤프와 공유한다. 프로세스면
+#      pickle 왕복이 자동으로 깊은 복사가 된다
+DEFER = os.environ.get('T2_UI_DEFER', '1') != '0'
+POOL = None
+PENDING = {'future': None}
+COUNT = {'attempt': 0, 'hit': 0, 'mismatch': 0, 'fallback': 0,
+         'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
+         # 워커가 아직 안 끝나서 실제로 기다린 시간. 최악의 경우의 비용이다.
+         'worker_wait_ms': 0, 'worker_wait_max_ms': 0}
+
+
+def _count_resume():
+    """live2.resume_others 의 판정을 센다. 엔진은 고치지 않는다."""
+    _orig = L.resume_others
+    def wrapped(st, others=None):
+        how = _orig(st, others)
+        if how:
+            COUNT[how] = COUNT.get(how, 0) + 1
+        return how
+    L.resume_others = wrapped
+
+
+_count_resume()          # 정의 직후에 건다. import 지점에서는 아직 없다.
+
+
+def _pool():
+    global POOL
+    if not DEFER:
+        return None
+    if POOL is None:
+        try:
+            POOL = ProcessPoolExecutor(max_workers=1)
+        except Exception:
+            COUNT['pool_unavailable'] += 1
+            return None
+    return POOL
+
+
+def _take_others():
+    """직전에 던져둔 워커 결과를 회수한다. 아직이면 여기서 기다린다."""
+    fut = PENDING.pop('future', None)
+    PENDING['future'] = None
+    if fut is None:
+        return None
+    COUNT['worker_join'] += 1
+    _t = time.time()
+    try:
+        r = fut.result()
+        _ms = int((time.time() - _t) * 1000)
+        COUNT['worker_wait_ms'] += _ms
+        COUNT['worker_wait_max_ms'] = max(COUNT['worker_wait_max_ms'], _ms)
+        return r
+    except Exception:
+        COUNT['worker_exception'] += 1
+        traceback.print_exc()
+        return None
+
+
+def _kick_worker():
+    """상태에 밀린 진행이 남아 있으면 워커에 던진다."""
+    if not DEFER:
+        return
+    try:
+        st = L.load()
+    except Exception:
+        return
+    if not st.get('others_pending'):
+        return
+    COUNT['attempt'] += 1
+    p = _pool()
+    if p is None:
+        return
+    try:
+        PENDING['future'] = p.submit(L.compute_others, st['field'])
+    except Exception:
+        COUNT['worker_exception'] += 1
+        PENDING['future'] = None
+
+
+def _step(action=None, amount=0):
+    """live2.step 호출을 한 곳으로 모은다. 회수 → 진행 → 던지기."""
+    others = _take_others()
+    kw = {'defer_others': True, 'others': others} if DEFER else {}
+    r = L.step(action, amount, **kw) if action is not None else L.step(**kw)
+    _kick_worker()
+    return r
 
 WEB = os.path.join(D, 'web')          # setup_run_dir.sh 가 ui/web 을 여기로 복사한다
 # 확장자별 타입. mimetypes 에 없거나 OS 마다 다른 것만 직접 못박는다.
@@ -124,6 +224,8 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         global _last
         path = self.path.split('?', 1)[0]
+        if path == '/api/stats':
+            return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
         if path != '/api/state':
             return self._serve_static(path)
         with LOCK:
@@ -134,7 +236,7 @@ class H(BaseHTTPRequestHandler):
                     if L.load().get('busted'):
                         _last = _game_over()
                     else:
-                        _last = _wrap(L.step())
+                        _last = _wrap(_step())
                 return self._send(200, _last)
             except Exception as e:
                 traceback.print_exc()
@@ -151,8 +253,9 @@ class H(BaseHTTPRequestHandler):
                 if self.path == '/api/new':
                     kw = {k: body[k] for k in ('entries', 'seed', 'fmt', 'start_stack')
                           if body.get(k) is not None}
+                    PENDING['future'] = None      # 새 게임이면 밀린 것도 버린다
                     L.new_game(**kw)
-                    _last = _wrap(L.step())
+                    _last = _wrap(_step())
                     return self._send(200, _last)
                 if self.path == '/api/step':
                     if not os.path.exists(L.ST):
@@ -166,7 +269,7 @@ class H(BaseHTTPRequestHandler):
                     if a is not None and a not in ACTIONS:
                         return self._send(400, {'error': '알 수 없는 액션: %s' % a})
                     amt = int(body.get('amount') or 0)
-                    r = L.step(a, amt) if a is not None else L.step()
+                    r = _step(a, amt) if a is not None else _step()
                     v = r.get('view') or {}
                     if (not r.get('done') and v.get('error') and _last
                             and (_last.get('view') or {}).get('type') == 'decision'):
@@ -190,6 +293,11 @@ if __name__ == '__main__':
     port = 8765
     if '--port' in sys.argv:
         port = int(sys.argv[sys.argv.index('--port') + 1])
+    # 워커는 **소켓을 열기 전에** 미리 띄운다. 서버가 돈 뒤에 fork 하면
+    # 자식이 듣기 소켓을 물려받는다.
+    if DEFER and _pool() is None:
+        print('경고: 워커 프로세스를 못 만들었습니다. 정산 지연이 꺼진 것과 같게 동작합니다.')
+    print('정산 지연: %s  (끄려면 T2_UI_DEFER=0)' % ('켬' if DEFER else '끔'))
     print('상태 파일: %s' % L.ST)
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
     print('폰에서 직접: http://127.0.0.1:%d' % port)

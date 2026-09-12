@@ -168,9 +168,27 @@ def compute_others(field_dump):
     """
     f = _load_field(copy.deepcopy(field_dump))
     f.notes = []
-    f.step_others()
-    f._collect_busts(); f._balance()
-    return {'field': _dump(f), 'notes': list(f.notes),
+    # 봇 핸드 기록은 fieldsim._log_bot_hand 가 모듈 폴더에 직접 append 한다.
+    # 워커에서 그대로 두면 (1) 결과를 버리고 다시 계산할 때 줄이 중복되고
+    # (2) 워커가 쓰기 도중 죽으면 줄이 잘린다. 실제로 둘 다 관측했다.
+    # 그래서 워커에서는 임시 접미사로 빼두고, 파일에 붙이는 일은
+    # resume_others(= 메인 경로) 가 한다. 쓰기는 한 곳으로 모은다.
+    _suf = FS.BOT_SUFFIX
+    _tmp = '%s_pending_%d' % (_suf, os.getpid())
+    FS.BOT_SUFFIX = _tmp
+    try:
+        f.step_others()
+        f._collect_busts(); f._balance()
+    finally:
+        FS.BOT_SUFFIX = _suf
+    _p = os.path.join(D, 'bot_hands%s.jsonl' % _tmp)
+    _bot_log = ''
+    if os.path.exists(_p):
+        with open(_p) as fp:
+            _bot_log = fp.read()
+        try: os.remove(_p)
+        except OSError: pass
+    return {'field': _dump(f), 'notes': list(f.notes), 'bot_log': _bot_log,
             'key': _others_key(field_dump)}
 
 
@@ -198,6 +216,9 @@ def resume_others(st, others=None):
     if how != 'hit':
         others = compute_others(st['field'])
     st['field'] = others['field']
+    if others.get('bot_log'):          # 워커가 모아둔 봇 핸드 기록을 여기서 붙인다
+        with open(os.path.join(D, 'bot_hands%s.jsonl' % FS.BOT_SUFFIX), 'a') as fp:
+            fp.write(others['bot_log'])
     _new_notes = list(others.get('notes') or [])
     if _new_notes:
         st['pending_notes'] = list(st.get('pending_notes') or []) + _new_notes

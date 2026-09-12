@@ -178,6 +178,15 @@ def run_http(entries, hands, seed, fast, keep):
     srv.terminate()
     try: srv.wait(timeout=10)
     except Exception: srv.kill()
+    # 세션이 끝난 시점에 밀린 정산이 남아 있으면 **다음 접속 때** 처리된다
+    # (live2.step 진입부). 비교하려면 그 '다음 접속'을 여기서 대신 해준다.
+    # 이걸 안 하면 마지막 한 핸드만큼 적게 진행된 상태와 비교하게 된다.
+    subprocess.run([sys.executable, '-c',
+                    "import sys; sys.path.insert(0,'.');\n"
+                    "import ui_view, live2 as L; sys.modules['view']=ui_view;\n"
+                    "st=L.load();\n"
+                    "L.resume_others(st) if st.get('others_pending') else None"],
+                   cwd=tmp, env=env, capture_output=True)
     out = {}
     if p.returncode == 0 and p.stdout.strip():
         out = json.loads(p.stdout.strip().splitlines()[-1])
