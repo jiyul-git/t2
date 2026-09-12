@@ -58,7 +58,11 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
         bet = inv.get(s, 0)
         # 원본 view 의 stack 은 hand.stacks(스트리트 시작값)라 투입분이 빠지지 않았다
         stack_now = cur[s] if cur and s in cur else r['stack'] - bet
-        seats.append({'seat': s, 'pos': r['pos'], 'stack': stack_now, 'bet': bet,
+        # pid 는 좌석과 달리 사람을 따라간다. 테이블 밸런싱으로 좌석 번호는
+        # 주인이 바뀌므로, UI 메모 같은 걸 좌석에 묶으면 엉뚱한 사람에게 붙는다.
+        # live2.build_hand 가 h.seat_pid 를 만들어 둔다.
+        seats.append({'seat': s, 'pid': (getattr(hand, 'seat_pid', None) or {}).get(s),
+                      'pos': r['pos'], 'stack': stack_now, 'bet': bet,
                       'in_hand': r['live'], 'allin': r['allin'], 'hero': r['hero']})
     btn = next((r['seat'] for r in v['seats'] if r['pos'] == 'BTN'), None)
     hero_inv = inv.get(hand.hero, 0)

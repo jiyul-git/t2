@@ -181,6 +181,14 @@ def _game_over():
 
 
 class H(BaseHTTPRequestHandler):
+    def handle(self):
+        # 브라우저가 응답 도중 탭을 닫거나 새로고침하면 BrokenPipe 가 난다.
+        # 정상적인 잡음이라 트레이스백을 찍지 않는다.
+        try:
+            BaseHTTPRequestHandler.handle(self)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def _send(self, code, obj):
         b = json.dumps(obj, ensure_ascii=False, default=str).encode()
         self.send_response(code)
@@ -195,7 +203,11 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         # 개발 중에 index.html 을 고쳐도 바로 반영되게 한다.
         self.send_header('Cache-Control', 'no-cache')
-        self.end_headers(); self.wfile.write(body)
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def _serve_static(self, path):
         full = _resolve(path)
@@ -302,4 +314,16 @@ if __name__ == '__main__':
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
     print('폰에서 직접: http://127.0.0.1:%d' % port)
     print('다른 기기에서: http://<이 기기의 LAN IP>:%d' % port)
-    HTTPServer(('0.0.0.0', port), H).serve_forever()
+    srv = HTTPServer(('0.0.0.0', port), H)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        print('\n종료 중…')
+    finally:
+        # 워커가 계산 중이어도 기다리지 않는다. 기다리면 Ctrl+C 후에도
+        # 30초쯤 포트를 붙들고 있어 바로 다시 켤 수 없다.
+        srv.server_close()
+        if POOL is not None:
+            try: POOL.shutdown(wait=False, cancel_futures=True)
+            except TypeError: POOL.shutdown(wait=False)   # 파이썬 3.8 이하
+        os._exit(0)

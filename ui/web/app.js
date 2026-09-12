@@ -69,7 +69,7 @@ function openMemo(pid, label) {
     memoSet(pid, ta.value.trim());
     hideOverlay();
     if (S.view && S.view.type === 'decision') renderSeats(S.view);
-    toast(ta.value.trim() ? '메모를 저장했습니다' : '메모를 지웠습니다');
+    toast(ta.value.trim() ? '메모를 저장했습니다' : '메모를 지웠습니다', true);
   });
   $('#memoClose').addEventListener('click', hideOverlay);
 }
@@ -508,6 +508,7 @@ function finishResult(v) {
   S.prevBets = null; S.view0 = null;
   // 결과를 잠깐 보여주고 자동으로 다음 핸드로 간다. 이 시간 동안 서버 워커가
   // 다른 테이블 정산을 마저 돌린다 — 기다림이 여기에 겹친다.
+  if (!autoOn()) return;              // 자동 진행을 꺼두면 직접 누를 때까지 기다린다
   let left = Math.round(RESULT_MS / 1000);
   const tick = () => {
     const b = $('#bDeal');
@@ -575,6 +576,14 @@ function renderResult(v) {
  * 쇼다운하지 않은 좌석의 홀카드가 들어 있다. 이미 화면에 나왔던 결과 뷰만
  * 그대로 쌓는다. 쇼다운 좌석 외의 카드는 애초에 들어 있지 않다.
  */
+const AUTO_KEY = 't2auto';
+function autoOn() {
+  try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; }
+}
+function autoSet(on) {
+  try { localStorage.setItem(AUTO_KEY, on ? '1' : '0'); } catch (e) {}
+}
+
 const HIST_KEY = 't2hands';
 const HIST_MAX = 40;
 
@@ -623,6 +632,30 @@ function showHistory() {
   document.querySelectorAll('#overlay .row.hist').forEach((el) => {
     el.addEventListener('click', () => showHandDetail(list[Number(el.dataset.i)]));
   });
+}
+
+function showMenu() {
+  clearTimeout(S.autoTimer); S.autoTimer = null;
+  const on = autoOn();
+  showOverlay('<h2>설정</h2>' +
+    `<div class="row"><span class="who">자동 진행</span>` +
+    `<span class="amt">${on ? '켬 · 결과 5초 뒤 다음 핸드' : '끔 · 직접 누르기'}</span></div>` +
+    `<button type="button" id="mAuto">${on ? '자동 진행 끄기' : '자동 진행 켜기'}</button>` +
+    '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
+    ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
+    '<button type="button" id="mNew">새 게임</button>' +
+    '<div class="actions"><button type="button" id="mClose">닫기</button></div>');
+  $('#mAuto').addEventListener('click', () => { autoSet(!on); showMenu(); });
+  $('#mNew').addEventListener('click', () => {
+    showOverlay('<h2>새 게임을 시작할까요?</h2>' +
+      '<div class="sub">진행 중인 대회는 끝납니다. 되돌릴 수 없습니다.</div>' +
+      newGameFormHTML() +
+      '<div class="actions"><button type="button" id="bNew">시작</button>' +
+      '<button type="button" id="mBack">취소</button></div>');
+    $('#bNew').addEventListener('click', startNew);
+    $('#mBack').addEventListener('click', showMenu);
+  });
+  $('#mClose').addEventListener('click', hideOverlay);
 }
 
 function showHandDetail(v) {
@@ -701,9 +734,10 @@ function hideOverlay() { $('#overlay').hidden = true; }
 
 /* ---------------- 기록 보기 ---------------- */
 /* ---------------- 토스트 ---------------- */
-function toast(msg) {
+function toast(msg, ok) {
   const t = $('#toast');
   t.textContent = msg; t.hidden = false;
+  t.classList.toggle('ok', !!ok);
   clearTimeout(S.toastTimer);
   S.toastTimer = setTimeout(() => { t.hidden = true; }, 4200);
 }
@@ -817,6 +851,7 @@ function apply(resp) {
 
 /* ---------------- 시작 ---------------- */
 $('#bLog').addEventListener('click', showHistory);
+$('#bMenu').addEventListener('click', showMenu);
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
   if (!b) return;
