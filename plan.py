@@ -444,7 +444,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             block_p *= (1 + 0.4*dang)          # 젖은 보드일수록 가격 통제 욕구↑
             if A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish': block_p *= 0.25
             block_p = max(0.0, min(0.42, block_p))
-        if sk('blockbet') >= 1 and rng.random() < block_p:
+        _blocked = (sk('blockbet') >= 1 and rng.random() < block_p)
+        if _blocked:
             plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
         # 머징 — 밸류/블러프 이분법을 넘어 중간 강도로도 친다.
         # 개념이 낮으면 중간 강도를 전부 팟 컨트롤로 보내고,
@@ -453,7 +454,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # make_plan 안의 sk() 는 0~3 스케일이다(PS.sk/3.33). 0~10 로 착각하지 말 것.
         _mg = sk('range_merge')                        # 0~3
         _pc_p = min(0.75, pc*0.8 + 0.12 + 0.18*mw) * max(0.35, 1.0 - 0.22*_mg)
-        if sk('potcontrol') >= 1 and rng.random() < _pc_p:
+        _pc_hit = (sk('potcontrol') >= 1 and rng.random() < _pc_p)
+        if _blocked:
+            pass                                   # block 을 덮지 않는다
+        elif _pc_hit:
             plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
         elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
             plan = 'value_2street'
