@@ -22,13 +22,26 @@ const S = {
   prevBets: null,          // 직전에 그린 좌석별 이번 스트리트 투입액
   replayDone: null,        // 재생 중이면 마지막 프레임을 그리는 함수
   view0: null,             // 마지막 decision 뷰. 관전 재생의 출발점
+  folding: {},             // 방금 폴드해서 카드가 사라지는 중인 좌석
   autoTimer: null,         // 결과 화면 자동 진행
 };
 
-// 봇 액션 한 건을 보여주는 간격. **표시 속도일 뿐이고 계산과 무관하다.**
-// 엔진과 워커에는 sleep 을 넣지 않는다 — 다른 테이블은 계속 최고 속도로 돈다.
-const STEP_MS = 1200;
-const RESULT_MS = 5000;    // 결과 화면을 보여주는 시간. 지나면 다음 핸드로
+// 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
+// 다른 테이블은 계속 최고 속도로 돈다.
+//
+// 주의: 핸드 '진행 중'의 텀은 다음 핸드 대기를 줄이지 못한다. 서버 워커는
+// 핸드가 끝나야 시작하므로, 겹칠 수 있는 건 관전 재생과 결과 화면뿐이다.
+const STEP_CHOICES = [1000, 1500, 2000, 2600];
+const RESULT_CHOICES = [3000, 5000, 8000, 12000, 20000];
+function numPref(key, def, allowed) {
+  try {
+    const v = Number(localStorage.getItem(key));
+    return allowed.indexOf(v) >= 0 ? v : def;
+  } catch (e) { return def; }
+}
+const stepMs = () => numPref('t2step', 1500, STEP_CHOICES);
+const resultMs = () => numPref('t2result', 5000, RESULT_CHOICES);
+function setPref(key, v) { try { localStorage.setItem(key, String(v)); } catch (e) {} }
 
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
@@ -135,12 +148,15 @@ function renderSeats(v) {
               `</div></div>`;
       continue;
     }
-    const cls = 'pod' + (d.in_hand ? '' : ' folded');
+    const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded');
+    // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
+    const backs = d.in_hand ? `<div class="backs">${backHTML('mini')}${backHTML('mini')}</div>`
+      : (S.folding[slot] ? `<div class="backs out">${backHTML('mini')}${backHTML('mini')}</div>` : '');
     const memo = (d.pid === undefined || d.pid === null) ? ''
       : `<button type="button" class="memo${memoGet(d.pid) ? ' has' : ''}" ` +
         `data-pid="${d.pid}" data-label="${slot}번(${d.pos || ''})">✎</button>`;
     html += `<div class="${cls}" data-slot="${slot}" style="${style}">` + memo +
-            (d.in_hand ? `<div class="backs">${backHTML('mini')}${backHTML('mini')}</div>` : '') +
+            backs +
             `<div class="avatar">${slot}</div>` +
             (d.allin ? `<div class="tag">ALL-IN</div>` : '') +
             (v.button_seat === slot ? `<div class="dealer">D</div>` : '') +
@@ -225,6 +241,12 @@ function actionText(e) {
   return (e.action === 'bet' || e.action === 'raise') && e.amount
     ? `${t} ${fmt(e.amount)}` : t;
 }
+function markFold(seat) {
+  S.folding[seat] = 1;
+  // 모션이 끝나면 목록에서 뺀다. 다음 프레임부터는 카드를 아예 안 그린다.
+  S.timers.push(setTimeout(() => { delete S.folding[seat]; }, 700));
+}
+
 function bubbleAt(seat, e) {
   const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
   if (!pod) return;
@@ -307,11 +329,11 @@ function playSequence(v, entries, streetChanged) {
   (function next() {
     if (i >= rest.length) { finalFrame(v); return; }
     const e = rest[i++];
-    if (e.action === 'fold') folded[e.seat] = 1;
+    if (e.action === 'fold') { folded[e.seat] = 1; markFold(e.seat); }
     else if (e.action !== 'check') bets[e.seat] = e.amount || bets[e.seat] || 0;
     drawFrame(v, bets, folded);
     bubbleAt(e.seat, e);
-    S.timers.push(setTimeout(next, STEP_MS));
+    S.timers.push(setTimeout(next, stepMs()));
   })();
 }
 
@@ -382,11 +404,12 @@ function spectateTail(res) {
     if (i >= tail.length) { finishResult(res); return; }
     const e = tail[i++];
     const streetChange = e.street && e.street !== ss.stage;
+    if (e.action === 'fold') markFold(e.seat);
     applyEntry(ss, e);
     renderSpectate(base, res, ss);
     if (e.seat !== res.hero_seat) bubbleAt(e.seat, e);
     // 스트리트가 바뀐 직후에는 카드가 깔리는 걸 볼 시간을 조금 더 준다
-    S.timers.push(setTimeout(next, streetChange ? STEP_MS + 500 : STEP_MS));
+    S.timers.push(setTimeout(next, streetChange ? stepMs() + 500 : stepMs()));
   })();
   return true;
 }
@@ -508,15 +531,34 @@ function finishResult(v) {
   S.prevBets = null; S.view0 = null;
   // 결과를 잠깐 보여주고 자동으로 다음 핸드로 간다. 이 시간 동안 서버 워커가
   // 다른 테이블 정산을 마저 돌린다 — 기다림이 여기에 겹친다.
-  if (!autoOn()) return;              // 자동 진행을 꺼두면 직접 누를 때까지 기다린다
-  let left = Math.round(RESULT_MS / 1000);
-  const tick = () => {
+  // 서버 워커가 다른 테이블을 다 돌릴 때까지는 넘어가지 않는다.
+  // 넘어가 봐야 서버가 거기서 기다리게 되고, 사용자는 빈 로딩 화면만 본다.
+  // 같은 시간이라면 결과를 보면서 기다리는 편이 낫다.
+  const STEP = 500;
+  let waited = 0;
+  const auto = autoOn();
+  const tick = async () => {
     const b = $('#bDeal');
-    if (!b) return;
-    if (left <= 0) { S.autoTimer = null; send(null, 0); return; }
-    b.innerHTML = '다음 핸드 <span class="sub">' + left + '</span>';
-    left -= 1;
-    S.autoTimer = setTimeout(tick, 1000);
+    if (!b) { S.autoTimer = null; return; }
+    let working = false;
+    try {
+      const r = await fetch('/api/ready');
+      working = !!(await r.json()).working;
+    } catch (e) { /* 못 물어봤으면 그냥 시간만 센다 */ }
+    waited += STEP;
+    const left = Math.max(0, Math.ceil((resultMs() - waited) / 1000));
+    if (working) {
+      b.innerHTML = '다음 핸드 <span class="sub">다른 테이블 정산 중… ' +
+        Math.round(waited / 1000) + '초</span>';
+    } else if (!auto) {
+      b.innerHTML = '다음 핸드';
+      S.autoTimer = null; return;          // 자동이 꺼져 있으면 여기서 멈춘다
+    } else if (left > 0) {
+      b.innerHTML = '다음 핸드 <span class="sub">' + left + '</span>';
+    } else {
+      S.autoTimer = null; send(null, 0); return;
+    }
+    S.autoTimer = setTimeout(tick, STEP);
   };
   tick();
 }
@@ -637,14 +679,32 @@ function showHistory() {
 function showMenu() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
   const on = autoOn();
+  const sm = stepMs(), rm = resultMs();
   showOverlay('<h2>설정</h2>' +
-    `<div class="row"><span class="who">자동 진행</span>` +
-    `<span class="amt">${on ? '켬 · 결과 5초 뒤 다음 핸드' : '끔 · 직접 누르기'}</span></div>` +
+    `<div class="row"><span class="who">봇 액션 간격</span>` +
+    `<span class="amt">${(sm / 1000).toFixed(1)}초</span></div>` +
+    `<button type="button" id="mStep">간격 바꾸기</button>` +
+    `<div class="row" style="margin-top:14px"><span class="who">결과 화면</span>` +
+    `<span class="amt">${on ? (rm / 1000) + '초 뒤 자동' : '자동 안 넘김'}</span></div>` +
+    `<button type="button" id="mResult">결과 시간 바꾸기</button>` +
     `<button type="button" id="mAuto">${on ? '자동 진행 끄기' : '자동 진행 켜기'}</button>` +
+    '<div class="potline" style="margin-top:8px">다음 핸드가 오래 걸리면 결과 시간을' +
+    ' 늘려 보세요. 그 시간 동안 서버가 다른 테이블을 정산합니다. 핸드 진행 중의' +
+    ' 간격은 정산과 겹치지 않아 대기 시간을 줄이지 못합니다.</div>' +
     '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
     ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
     '<button type="button" id="mNew">새 게임</button>' +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>');
+  $('#mStep').addEventListener('click', () => {
+    const i = STEP_CHOICES.indexOf(sm);
+    setPref('t2step', STEP_CHOICES[(i + 1) % STEP_CHOICES.length]);
+    showMenu();
+  });
+  $('#mResult').addEventListener('click', () => {
+    const i = RESULT_CHOICES.indexOf(rm);
+    setPref('t2result', RESULT_CHOICES[(i + 1) % RESULT_CHOICES.length]);
+    showMenu();
+  });
   $('#mAuto').addEventListener('click', () => { autoSet(!on); showMenu(); });
   $('#mNew').addEventListener('click', () => {
     showOverlay('<h2>새 게임을 시작할까요?</h2>' +
@@ -835,7 +895,7 @@ function apply(resp) {
   const streetChanged = !freshHand && S.stage !== v.stage;
   const newLog = (freshHand || streetChanged) ? (v.log || [])
                                               : (v.log || []).slice(S.logLen);
-  if (freshHand) { clearBubbles(); S.boardLen = 0; S.prevBets = null; }
+  if (freshHand) { clearBubbles(); S.boardLen = 0; S.prevBets = null; S.folding = {}; }
 
   hideOverlay();
   renderTop(v);

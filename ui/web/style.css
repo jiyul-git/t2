@@ -104,6 +104,12 @@ html, body {
 .pod .backs { position: absolute; left: 50%; top: -22px; transform: translateX(-50%);
               display: flex; gap: 2px; z-index: 0; }
 .pod.folded .backs { display: none; }
+/* 폴드 모션 — 카드가 테이블 안쪽으로 빠지면서 사라진다 */
+.pod .backs.out { display: flex; animation: foldout .55s ease-in forwards; }
+@keyframes foldout {
+  0%   { transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(26px) scale(.55) rotate(-14deg); opacity: 0; }
+}
 .pod .tag {
   position: absolute; left: 50%; transform: translateX(-50%); top: 26px;
   font-size: 9px; font-weight: 700; letter-spacing: .4px;

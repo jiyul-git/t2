@@ -240,6 +240,12 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         global _last
         path = self.path.split('?', 1)[0]
+        if path == '/api/ready':
+            # 워커가 아직 다른 테이블을 돌리는 중인가. 결과 화면이 이걸 보고
+            # 정산이 끝난 뒤에 다음 핸드로 넘어간다 — 빈 로딩 화면을 없앤다.
+            # LOCK 을 잡지 않는다. 잡으면 진행 중인 요청 뒤에 줄을 서게 된다.
+            fut = PENDING.get('future')
+            return self._send(200, {'working': bool(fut and not fut.done())})
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
         if path != '/api/state':
