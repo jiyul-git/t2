@@ -94,11 +94,33 @@ if st.get('others_pending'):
 
 h = lambda p: (hashlib.sha256(open(p,'rb').read()).hexdigest()
                if os.path.exists(p) else 'none')
+
+def integrity(p):
+    """줄 수 / 전부 JSON 으로 읽히는가 / 마지막 줄이 잘렸는가 / 중복 줄."""
+    if not os.path.exists(p):
+        return {'lines': 0, 'bad': 0, 'truncated': None, 'dup': 0}
+    raw = open(p, 'rb').read()
+    txt = raw.decode('utf-8', 'replace')
+    ls = [x for x in txt.split('\n') if x.strip()]
+    bad = 0
+    for x in ls:
+        try: json.loads(x)
+        except Exception: bad += 1
+    return {'lines': len(ls), 'bad': bad,
+            'truncated': not raw.endswith(b'\n') if raw else False,
+            'dup': len(ls) - len(set(ls))}
+
 st = L.load()
 print(json.dumps({
   'archive': h('hand_archive2.jsonl'), 'bots': h('bot_hands.jsonl'),
   'field': hashlib.sha256(json.dumps(st['field'], sort_keys=True).encode()).hexdigest(),
   'rank': st.get('rank'), 'busted': st.get('busted'),
+  'busted_order': st['field'].get('busted_order'),
+  'arch_int': integrity('hand_archive2.jsonl'),
+  'bots_int': integrity('bot_hands.jsonl'),
+  'residue': {'others_pending': bool(st.get('others_pending')),
+              'pending_archive': bool(st.get('pending_archive')),
+              'pending_notes': bool(st.get('pending_notes'))},
   'counters': C}))
 '''
 
@@ -197,10 +219,29 @@ def run_http(entries, hands, seed, fast, keep):
                    if os.path.exists(os.path.join(tmp, f)) else 'none')
     if 'error' not in out:
         stf = json.load(open(os.path.join(tmp, 'live2_state.json')))
+        def integ(name):
+            fp = os.path.join(tmp, name)
+            if not os.path.exists(fp):
+                return {'lines': 0, 'bad': 0, 'truncated': None, 'dup': 0}
+            raw = open(fp, 'rb').read()
+            ls = [x for x in raw.decode('utf-8', 'replace').split('\n') if x.strip()]
+            bad = 0
+            for x in ls:
+                try: json.loads(x)
+                except Exception: bad += 1
+            return {'lines': len(ls), 'bad': bad,
+                    'truncated': not raw.endswith(b'\n') if raw else False,
+                    'dup': len(ls) - len(set(ls))}
         out.update({'archive': h('hand_archive2.jsonl'), 'bots': h('bot_hands.jsonl'),
                     'field': hashlib.sha256(json.dumps(stf['field'],
                                                        sort_keys=True).encode()).hexdigest(),
-                    'rank': stf.get('rank'), 'busted': stf.get('busted')})
+                    'rank': stf.get('rank'), 'busted': stf.get('busted'),
+                    'busted_order': stf['field'].get('busted_order'),
+                    'arch_int': integ('hand_archive2.jsonl'),
+                    'bots_int': integ('bot_hands.jsonl'),
+                    'residue': {'others_pending': bool(stf.get('others_pending')),
+                                'pending_archive': bool(stf.get('pending_archive')),
+                                'pending_notes': bool(stf.get('pending_notes'))}})
     if not keep:
         shutil.rmtree(tmp, ignore_errors=True)
     return out
@@ -224,7 +265,7 @@ def main():
             return 1
 
     print('entries %d, seed %d, %d핸드\n' % (a.entries, a.seed, a.hands))
-    keys = ('archive', 'bots', 'field', 'rank', 'busted')
+    keys = ('archive', 'bots', 'field', 'rank', 'busted', 'busted_order')
     print('%-8s %-18s %-18s %-18s %-6s %s' % ('mode', 'archive', 'bot_hands', 'field', 'rank', 'busted'))
     for m in ('off', 'inline', 'worker'):
         r = res[m]
@@ -254,8 +295,28 @@ def main():
                 for k in keys:
                     if hr[k] != res['off'][k]:
                         print('     [%s] off=%s  %s=%s' % (k, res['off'][k], label, hr[k]))
+            print('     로그: archive %d줄(깨짐 %d, 중복 %d, 잘림 %s)  bot_hands %d줄(깨짐 %d, 중복 %d, 잘림 %s)  잔여 %s'
+                  % (hr['arch_int']['lines'], hr['arch_int']['bad'], hr['arch_int']['dup'],
+                     hr['arch_int']['truncated'], hr['bots_int']['lines'], hr['bots_int']['bad'],
+                     hr['bots_int']['dup'], hr['bots_int']['truncated'],
+                     {k: v for k, v in hr['residue'].items() if v} or '없음'))
+            if hr['arch_int']['bad'] or hr['bots_int']['bad'] or hr['arch_int']['truncated'] \
+               or hr['bots_int']['truncated'] or any(hr['residue'].values()):
+                ok = False
             if hr['stats']['counters'].get('hit', 0) == 0 and not fast:
                 print('     ★ hit 가 0 이다 — 워커가 실제로 쓰이지 않았다'); ok = False
+    print()
+    print('  로그 무결성 / pending 잔여')
+    for m in ('off', 'inline', 'worker'):
+        r = res[m]
+        print('    [%-6s] archive %d줄(깨짐 %d, 중복 %d, 잘림 %s)  bot_hands %d줄(깨짐 %d, 중복 %d, 잘림 %s)  잔여 %s'
+              % (m, r['arch_int']['lines'], r['arch_int']['bad'], r['arch_int']['dup'],
+                 r['arch_int']['truncated'], r['bots_int']['lines'], r['bots_int']['bad'],
+                 r['bots_int']['dup'], r['bots_int']['truncated'],
+                 {k: v for k, v in r['residue'].items() if v} or '없음'))
+        if r['arch_int']['bad'] or r['bots_int']['bad'] or r['arch_int']['truncated'] \
+           or r['bots_int']['truncated'] or any(r['residue'].values()):
+            ok = False
     print()
     for m in ('off', 'inline', 'worker'):
         print('  [%s] %s' % (m, res[m]['counters']))
