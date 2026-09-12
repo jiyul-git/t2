@@ -21,12 +21,58 @@ const S = {
   timers: [], busyTimer: null, toastTimer: null,
   prevBets: null,          // 직전에 그린 좌석별 이번 스트리트 투입액
   replayDone: null,        // 재생 중이면 마지막 프레임을 그리는 함수
+  view0: null,             // 마지막 decision 뷰. 관전 재생의 출발점
+  autoTimer: null,         // 결과 화면 자동 진행
 };
 
-const STEP_MS = 200;       // 봇 액션 한 건을 보여주는 간격
+// 봇 액션 한 건을 보여주는 간격. **표시 속도일 뿐이고 계산과 무관하다.**
+// 엔진과 워커에는 sleep 을 넣지 않는다 — 다른 테이블은 계속 최고 속도로 돈다.
+const STEP_MS = 1200;
+const RESULT_MS = 5000;    // 결과 화면을 보여주는 시간. 지나면 다음 핸드로
 
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
+
+/* ---------------- 봇 메모 ----------------
+ * 좌석 번호(1~8 슬롯)는 테이블 밸런싱으로 사람이 바뀌므로 쓰지 않는다.
+ * 엔진의 pid 를 쓴다 — live2.build_hand 가 h.seat_pid 로 들고 있고
+ * ui_view 가 좌석마다 실어 보낸다. pid 가 없는 응답이면 메모 버튼을 감춘다.
+ *
+ * 저장은 브라우저 localStorage 다. 서버·엔진·상태 파일에 닿지 않으므로
+ * 봇 판단에 영향을 줄 수 없다. 순수한 사용자 메모다.
+ */
+const memoKey = (pid) => 't2memo:' + pid;
+function memoGet(pid) {
+  try { return localStorage.getItem(memoKey(pid)) || ''; } catch (e) { return ''; }
+}
+function memoSet(pid, txt) {
+  try {
+    if (txt) localStorage.setItem(memoKey(pid), txt);
+    else localStorage.removeItem(memoKey(pid));
+  } catch (e) { toast('메모를 저장하지 못했습니다'); }
+}
+const esc = (t) => String(t).replace(/[&<>"]/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function openMemo(pid, label) {
+  clearTimeout(S.autoTimer); S.autoTimer = null;
+  showOverlay(`<h2>${esc(label)} 메모</h2>` +
+    `<div class="sub">플레이어 #${esc(pid)} — 자리를 옮겨도 따라갑니다. ` +
+    `이 메모는 이 브라우저에만 저장되고 봇 판단에는 쓰이지 않습니다.</div>` +
+    `<textarea id="memoText" rows="7" placeholder="예: 플랍 체크레이즈 자주, 리버 오버벳은 거의 밸류"` +
+    `>${esc(memoGet(pid))}</textarea>` +
+    `<div class="actions"><button type="button" id="memoSave">저장</button>` +
+    `<button type="button" id="memoClose">닫기</button></div>`);
+  const ta = $('#memoText');
+  ta.focus();
+  $('#memoSave').addEventListener('click', () => {
+    memoSet(pid, ta.value.trim());
+    hideOverlay();
+    if (S.view && S.view.type === 'decision') renderSeats(S.view);
+    toast(ta.value.trim() ? '메모를 저장했습니다' : '메모를 지웠습니다');
+  });
+  $('#memoClose').addEventListener('click', hideOverlay);
+}
 
 /* ---------------- 카드 ---------------- */
 function cardHTML(code, cls) {
@@ -90,7 +136,10 @@ function renderSeats(v) {
       continue;
     }
     const cls = 'pod' + (d.in_hand ? '' : ' folded');
-    html += `<div class="${cls}" data-slot="${slot}" style="${style}">` +
+    const memo = (d.pid === undefined || d.pid === null) ? ''
+      : `<button type="button" class="memo${memoGet(d.pid) ? ' has' : ''}" ` +
+        `data-pid="${d.pid}" data-label="${slot}번(${d.pos || ''})">✎</button>`;
+    html += `<div class="${cls}" data-slot="${slot}" style="${style}">` + memo +
             (d.in_hand ? `<div class="backs">${backHTML('mini')}${backHTML('mini')}</div>` : '') +
             `<div class="avatar">${slot}</div>` +
             (d.allin ? `<div class="tag">ALL-IN</div>` : '') +
@@ -266,6 +315,82 @@ function playSequence(v, entries, streetChanged) {
   })();
 }
 
+/* ---------------- 관전 재생 ----------------
+ * 히어로가 폴드하면 서버는 남은 진행을 한 번에 끝내고 결과만 돌려준다.
+ * 그 결과의 log 가 핸드 전체 기록(full_log: street/seat/action/amount)이므로,
+ * 아직 화면에 안 나온 뒷부분을 여기서 순서대로 재생한다.
+ * **엔진을 다시 돌리지 않는다.** 서버가 준 숫자만 산술로 전개한다.
+ *
+ * 이미 보여준 개수 = 마지막 decision 뷰의 prior_log + log 길이.
+ * prior_log 는 '완료된 스트리트'만 담고 현재 스트리트는 log 에 있어 겹치지 않는다
+ * (session.py:234,325,669).
+ */
+const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
+
+function applyEntry(ss, e) {
+  if (e.street && e.street !== ss.stage) {
+    // 스트리트가 끝났다 — 칩을 팟으로 넣고 베팅을 접는다
+    ss.potCenter += ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
+    ss.seats.forEach((x) => { x.bet = 0; });
+    ss.stage = e.street;
+    if (BOARD_AT[e.street] !== undefined) ss.boardShown = BOARD_AT[e.street];
+  }
+  const st = ss.seats.find((x) => x.seat === e.seat);
+  if (!st) return;
+  if (e.action === 'fold') { st.in_hand = false; return; }
+  if (e.action === 'check') return;
+  // 로그의 amount = 그 액션 뒤 그 좌석의 '이번 스트리트 총 투입액' (runner.py:122-126)
+  const add = Math.max(0, (e.amount || 0) - (st.bet || 0));
+  st.stack = Math.max(0, (st.stack || 0) - add);
+  st.bet = e.amount || 0;
+  if (st.stack === 0) st.allin = true;
+}
+
+function renderSpectate(base, res, ss) {
+  const bets = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
+  const fv = Object.assign({}, base, {
+    seats: ss.seats, stage: ss.stage,
+    board: (res.board || []).slice(0, ss.boardShown),
+    pot_center: ss.potCenter, pot_total: ss.potCenter + bets,
+  });
+  renderSeats(fv); renderChips(fv, false); renderBoard(fv);
+  renderPot(fv); renderHero(fv);
+  $('#logline').innerHTML = '<span class="cur">' +
+    (STREET[ss.stage] || ss.stage) + '</span> 관전 중';
+}
+
+function spectateTail(res) {
+  const base = S.view0;
+  if (!base || base.type !== 'decision' || base.hand_no !== res.hand_no) return false;
+  const shown = (base.prior_log || []).length + (base.log || []).length;
+  const tail = (res.log || []).slice(shown);
+  if (!tail.length) return false;
+
+  const ss = {
+    seats: (base.seats || []).map((x) => Object.assign({}, x)),
+    potCenter: base.pot_center || 0,
+    stage: base.stage,
+    boardShown: (base.board || []).length,
+  };
+  $('#mainrow').innerHTML = '<div class="wait">관전 중 — 화면을 누르면 건너뜁니다</div>';
+  closeRaise();
+  clearBubbles();
+
+  let i = 0;
+  S.replayDone = () => { finishResult(res); };
+  (function next() {
+    if (i >= tail.length) { finishResult(res); return; }
+    const e = tail[i++];
+    const streetChange = e.street && e.street !== ss.stage;
+    applyEntry(ss, e);
+    renderSpectate(base, res, ss);
+    if (e.seat !== res.hero_seat) bubbleAt(e.seat, e);
+    // 스트리트가 바뀐 직후에는 카드가 깔리는 걸 볼 시간을 조금 더 준다
+    S.timers.push(setTimeout(next, streetChange ? STEP_MS + 500 : STEP_MS));
+  })();
+  return true;
+}
+
 /* ---------------- 액션 로그 한 줄 ---------------- */
 function renderLogLine(v) {
   const txt = (v.log || []).map((e) => {
@@ -375,8 +500,26 @@ function seatName(v, s) {
   return (me ? '나' : s + '번') + (p ? `(${p})` : '');
 }
 
-function renderResult(v) {
+function finishResult(v) {
   clearBubbles();
+  renderResult(v);
+  S.handNo = null; S.stage = null; S.logLen = 0; S.boardLen = 0;
+  S.prevBets = null; S.view0 = null;
+  // 결과를 잠깐 보여주고 자동으로 다음 핸드로 간다. 이 시간 동안 서버 워커가
+  // 다른 테이블 정산을 마저 돌린다 — 기다림이 여기에 겹친다.
+  let left = Math.round(RESULT_MS / 1000);
+  const tick = () => {
+    const b = $('#bDeal');
+    if (!b) return;
+    if (left <= 0) { S.autoTimer = null; send(null, 0); return; }
+    b.innerHTML = '다음 핸드 <span class="sub">' + left + '</span>';
+    left -= 1;
+    S.autoTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+function renderResult(v) {
   $('#mainrow').innerHTML = '<div class="wait">핸드 종료</div>';
   closeRaise();
   const win = (v.main_winners && v.main_winners.length ? v.main_winners : v.winners) || [];
@@ -407,22 +550,19 @@ function renderResult(v) {
       `<span class="amt">${fmt(p.amount)}</span></div>`).join('');
   }
 
-  const st = v.stacks || {};
-  const stacksHTML = '<div class="potline">스택</div><div class="grid">' +
-    Object.keys(st).sort((a, b) => a - b).map((s) =>
-      `<div class="row"><span class="who">${seatName(v, s)}</span>` +
-      `<span class="amt">${fmt(st[s])}</span></div>`).join('') + '</div>';
-
   const how = { fold: '폴드로 종료', showdown: '쇼다운', void: '무효' }[v.how] || v.how;
   showOverlay(
     `<h2>HAND ${v.hand_no ?? ''} 결과</h2>` +
     `<div class="sub">${how} · 팟 ${fmt(v.pot)}</div>` +
     `<div class="boardrow">${(v.board || []).length ? cardsHTML(v.board) : '<span class="sub">보드 없음</span>'}</div>` +
-    rows + potsHTML + stacksHTML +
+    rows + potsHTML +
     logBoxHTML(v.log, v) +
     (v.notes || []).map((n) => `<div class="potline">${n}</div>`).join('') +
     `<div class="actions"><button type="button" id="bDeal">다음 핸드</button></div>`);
-  $('#bDeal').addEventListener('click', () => send(null, 0));
+  $('#bDeal').addEventListener('click', () => {
+    clearTimeout(S.autoTimer); S.autoTimer = null;
+    send(null, 0);
+  });
 }
 
 function logBoxHTML(log, v) {
@@ -442,6 +582,7 @@ function logBoxHTML(log, v) {
 
 function showGameOver(resp) {
   clearBubbles();
+  clearTimeout(S.autoTimer); S.autoTimer = null;
   $('#mainrow').innerHTML = '<div class="wait">토너먼트 종료</div>';
   closeRaise();
   showOverlay(
@@ -472,6 +613,7 @@ function newGameFormHTML() {
 }
 
 function startNew() {
+  clearTimeout(S.autoTimer); S.autoTimer = null;
   const body = {};
   const e = Number($('#fEntries') && $('#fEntries').value);
   const s = $('#fSeed') && $('#fSeed').value;
@@ -587,6 +729,7 @@ function sync() { call('/api/state', null, '상태를 받는 중…'); }
 function apply(resp) {
   S.last = resp;
   S.token = resp.token;
+  clearTimeout(S.autoTimer); S.autoTimer = null;
   if (resp.no_game) { showNewGame(); return; }
   if (resp.game_over) { showGameOver(resp); return; }
   const v = resp.view;
@@ -594,10 +737,11 @@ function apply(resp) {
   S.view = v;
 
   if (v.type === 'result') {
-    renderResult(v);
-    S.handNo = null; S.stage = null; S.logLen = 0; S.boardLen = 0;
+    // 히어로가 폴드했어도 남은 액션이 있으면 먼저 보여준 뒤 결과를 띄운다
+    if (!spectateTail(v)) finishResult(v);
     return;
   }
+  S.view0 = v;
 
   const freshHand = S.handNo !== v.hand_no;
   const streetChanged = !freshHand && S.stage !== v.stage;
@@ -619,7 +763,16 @@ function apply(resp) {
 
 /* ---------------- 시작 ---------------- */
 $('#bLog').addEventListener('click', showLog);
-// 기다리기 싫으면 테이블을 한 번 누르면 재생을 건너뛴다
+$('#seats').addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('button.memo');
+  if (!b) return;
+  e.stopPropagation();
+  openMemo(b.dataset.pid, b.dataset.label);
+});
+$('#seats').addEventListener('pointerdown', (e) => {
+  if (e.target.closest && e.target.closest('button.memo')) e.stopPropagation();
+}, true);
+// 기다리기 싫으면 빈 곳을 한 번 누르면 재생을 건너뛴다
 $('#tablewrap').addEventListener('pointerdown', () => {
   if (S.replayDone) S.replayDone();
 });
