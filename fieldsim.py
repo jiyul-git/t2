@@ -230,8 +230,18 @@ class Field:
         tb.hands += 1
         return True
 
-    def step_others(self):
-        """히어로 테이블 외 전 테이블을 한 핸드씩(인원 비례로 가감) 돌린다."""
+    def step_others(self, settle=True):
+        """히어로 테이블 외 전 테이블을 한 핸드씩(인원 비례로 가감) 돌린다.
+
+        settle=False 면 테이블만 돌리고 탈락 수거·밸런싱은 하지 않는다.
+        이 둘은 **히어로 테이블의 최종 결과를 알아야** 한다.
+          _collect_busts  busted_order 의 순서가 곧 순위다(rank_of). 다른 테이블
+                          탈락을 먼저 넣으면 순위가 바뀐다.
+          _balance        히어로를 다른 테이블로 옮길 수 있다. 핸드 진행 중에
+                          돌면 그 핸드가 깨진다.
+        그래서 '다른 테이블을 미리 돌려두는' 최적화를 하려면 이 둘만 떼어내야 한다.
+        기본값은 기존 동작이다. 인자를 안 쓰면 아무것도 바뀌지 않는다.
+        """
         ht = self.players[self.hero_pid]['table']
         for tid, tb in list(self.tables.items()):
             if tid == ht: continue
@@ -244,8 +254,9 @@ class Field:
             for _ in range(k):
                 if tb.n() < 2: break
                 self._play_table(tb)
-        self._collect_busts()
-        self._balance()
+        if settle:
+            self._collect_busts()
+            self._balance()
 
     # ---------- 파산·밸런싱 ----------
     def _collect_busts(self):

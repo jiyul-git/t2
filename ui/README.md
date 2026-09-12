@@ -170,9 +170,11 @@ python3 ui/tools/verify_ui.py --hands 12 --entries 100
   (타 테이블 진행)이고, entries 에 비례한다. 단축하려면 `live2` 수정이 필요하다
   → 승인 사항. UI 는 로딩 상태로 대응한다.
 
-## 승인 대기 (엔진 수정이 필요한 것)
+## 정산 시간 단축 — 진행 상태
 
-아직 손대지 않았다. 승인 전까지 엔진은 동결이다.
+**① step_others(settle=False) 분리 — 완료, 검증됨.**
+**② 동작 보존 검증 — 통과.**
+**③ 프리페치 배선 — 미착수. 승인 대기.**
 
 **정산 시간 단축 — 다른 테이블 미리 계산**
 
@@ -203,7 +205,20 @@ python3 ui/tools/verify_ui.py --hands 12 --entries 100
 +            self._balance()
 ```
 
-기본값이 기존 동작이라 안 쓰면 아무것도 안 바뀐다.
+기본값이 기존 동작이라 안 쓰면 아무것도 안 바뀐다. **적용 완료.**
+
+검증 결과 (tools/verify_settle_split.py, 그리고 live2 아카이브 대조)
+
+  A. 기본 경로 불변 — entries 100, 시드 777, 12핸드, T2_BOT_LOG=2
+     변경 전(HEAD 의 fieldsim.py)과 변경 후를 각각 별도 폴더에서 돌려 대조
+       hand_archive2.jsonl  37c88afd3624abcf…  동일
+       bot_hands.jsonl      bde3a10330ac761e…  동일
+       최종 필드 덤프        67f6b14e00f8f09f…  동일
+
+  B. 분할 경로 동등 — entries 100, 시드 4242, 40핸드
+     step_others() 와 step_others(settle=False) + 명시 호출의
+     핸드별 필드 서명(busted_order 순서 포함) 해시
+       4b022496fa1909cc19bf9b406eabc27dba31061266e6bc775c1ff4f7b6457734  양쪽 동일
 
 한계: 계산량이 줄지는 않는다. 히어로가 생각하는 시간에 겹칠 뿐이다. 핸드 N+1 은
 핸드 N 의 탈락·밸런싱을 알아야 해서 두 핸드 앞서 갈 수 없다.
