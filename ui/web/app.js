@@ -502,6 +502,7 @@ function seatName(v, s) {
 
 function finishResult(v) {
   clearBubbles();
+  histPush(v);
   renderResult(v);
   S.handNo = null; S.stage = null; S.logLen = 0; S.boardLen = 0;
   S.prevBets = null; S.view0 = null;
@@ -519,9 +520,7 @@ function finishResult(v) {
   tick();
 }
 
-function renderResult(v) {
-  $('#mainrow').innerHTML = '<div class="wait">핸드 종료</div>';
-  closeRaise();
+function resultBodyHTML(v) {
   const win = (v.main_winners && v.main_winners.length ? v.main_winners : v.winners) || [];
   const winSet = {};
   win.forEach((w) => { winSet[String(w)] = 1; });
@@ -551,18 +550,85 @@ function renderResult(v) {
   }
 
   const how = { fold: '폴드로 종료', showdown: '쇼다운', void: '무효' }[v.how] || v.how;
-  showOverlay(
-    `<h2>HAND ${v.hand_no ?? ''} 결과</h2>` +
+  return `<h2>HAND ${v.hand_no ?? ''} 결과</h2>` +
     `<div class="sub">${how} · 팟 ${fmt(v.pot)}</div>` +
     `<div class="boardrow">${(v.board || []).length ? cardsHTML(v.board) : '<span class="sub">보드 없음</span>'}</div>` +
     rows + potsHTML +
     logBoxHTML(v.log, v) +
-    (v.notes || []).map((n) => `<div class="potline">${n}</div>`).join('') +
+    (v.notes || []).map((n) => `<div class="potline">${n}</div>`).join('');
+}
+
+function renderResult(v) {
+  $('#mainrow').innerHTML = '<div class="wait">핸드 종료</div>';
+  closeRaise();
+  showOverlay(resultBodyHTML(v) +
     `<div class="actions"><button type="button" id="bDeal">다음 핸드</button></div>`);
   $('#bDeal').addEventListener('click', () => {
     clearTimeout(S.autoTimer); S.autoTimer = null;
     send(null, 0);
   });
+}
+
+/* ---------------- 지난 핸드 기록 ----------------
+ * 진행 중인 핸드는 화면으로 직접 본다(관전 재생). 그래서 '기록'은 **지난 핸드**를
+ * 보여준다. 서버 아카이브(hand_archive2.jsonl)를 읽지 않는다 — 거기에는
+ * 쇼다운하지 않은 좌석의 홀카드가 들어 있다. 이미 화면에 나왔던 결과 뷰만
+ * 그대로 쌓는다. 쇼다운 좌석 외의 카드는 애초에 들어 있지 않다.
+ */
+const HIST_KEY = 't2hands';
+const HIST_MAX = 40;
+
+function histLoad() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]') || []; }
+  catch (e) { return []; }
+}
+function histSave(list) {
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(list)); }
+  catch (e) {
+    // 용량이 차면 오래된 것부터 버린다
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, 10))); }
+    catch (e2) { /* 저장 못 해도 게임은 계속된다 */ }
+  }
+}
+function histPush(v) {
+  if (!v || v.type !== 'result') return;
+  const list = histLoad().filter((x) => x.hand_no !== v.hand_no);
+  list.unshift(v);
+  histSave(list.slice(0, HIST_MAX));
+}
+function histClear() { try { localStorage.removeItem(HIST_KEY); } catch (e) {} }
+
+function showHistory() {
+  const list = histLoad();
+  if (!list.length) {
+    showOverlay('<h2>지난 핸드</h2><div class="sub">아직 끝난 핸드가 없습니다.</div>' +
+      '<div class="actions"><button type="button" id="bClose">닫기</button></div>');
+    $('#bClose').addEventListener('click', hideOverlay);
+    return;
+  }
+  const rows = list.map((v, i) => {
+    const win = (v.main_winners && v.main_winners.length ? v.main_winners : v.winners) || [];
+    const mine = win.some((w) => String(w) === String(v.hero_seat));
+    const how = { fold: '폴드로 종료', showdown: '쇼다운', void: '무효' }[v.how] || v.how;
+    return `<div class="row hist${mine ? ' win' : ''}" data-i="${i}">` +
+      `<span class="who">HAND ${v.hand_no ?? '?'}</span>` +
+      `<span class="cards">${cardsHTML((v.board || []).slice(0, 5), 'mini')}</span>` +
+      `<span class="amt">${mine ? '승 ' : ''}${fmt(v.pot)}</span>` +
+      `<div class="histsub">${how}</div></div>`;
+  }).join('');
+  showOverlay(`<h2>지난 핸드</h2><div class="sub">${list.length}개 · 눌러서 자세히</div>` +
+    rows +
+    '<div class="actions"><button type="button" id="bClose">닫기</button></div>');
+  $('#bClose').addEventListener('click', hideOverlay);
+  document.querySelectorAll('#overlay .row.hist').forEach((el) => {
+    el.addEventListener('click', () => showHandDetail(list[Number(el.dataset.i)]));
+  });
+}
+
+function showHandDetail(v) {
+  showOverlay(resultBodyHTML(v) +
+    '<div class="actions"><button type="button" id="bBack">목록으로</button></div>');
+  $('#bBack').addEventListener('click', showHistory);
 }
 
 function logBoxHTML(log, v) {
@@ -614,6 +680,7 @@ function newGameFormHTML() {
 
 function startNew() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
+  histClear();                       // 핸드 번호가 1부터 다시 시작한다
   const body = {};
   const e = Number($('#fEntries') && $('#fEntries').value);
   const s = $('#fSeed') && $('#fSeed').value;
@@ -633,19 +700,6 @@ function showOverlay(html) {
 function hideOverlay() { $('#overlay').hidden = true; }
 
 /* ---------------- 기록 보기 ---------------- */
-function showLog() {
-  const v = S.view;
-  if (!v) return;
-  const all = (v.prior_log || []).concat(
-    (v.log || []).map((e) => ({ street: v.stage, seat: e.seat,
-                                action: e.action, amount: e.amount })));
-  showOverlay(`<h2>HAND ${v.hand_no ?? ''} 기록</h2>` +
-    `<div class="boardrow">${(v.board || []).length ? cardsHTML(v.board) : '<span class="sub">보드 없음</span>'}</div>` +
-    (all.length ? logBoxHTML(all, v) : '<div class="sub">아직 액션이 없습니다.</div>') +
-    `<div class="actions"><button type="button" id="bClose">닫기</button></div>`);
-  $('#bClose').addEventListener('click', hideOverlay);
-}
-
 /* ---------------- 토스트 ---------------- */
 function toast(msg) {
   const t = $('#toast');
@@ -762,7 +816,7 @@ function apply(resp) {
 }
 
 /* ---------------- 시작 ---------------- */
-$('#bLog').addEventListener('click', showLog);
+$('#bLog').addEventListener('click', showHistory);
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
   if (!b) return;
