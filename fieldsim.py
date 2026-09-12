@@ -102,6 +102,23 @@ class Field:
             self.tilt.state = dict(tilt_state)
         return self
 
+    def pid_profiles(self):
+        """pid → 프로필. **대회 전체**다.
+
+        틸트 감쇠(dynamics.Tilt.decay_all)는 상태에 있는 모든 pid 를 훑는데
+        한 핸드가 아는 프로필은 그 테이블 8명분뿐이다. 나머지는 프로필을
+        못 찾아 기본 temper 로 감쇠했다 — 사람마다 다른 회복 속도가 죽는다.
+
+        players 의 구성은 대회 중 바뀌지 않고(탈락자도 stack 0 으로 남는다)
+        prof 객체도 그대로라 한 번만 만들면 된다. 길이가 달라지면(역직렬화로
+        새로 채워진 경우) 다시 만든다.
+        """
+        m = getattr(self, '_pid_prof', None)
+        if m is None or len(m) != len(self.players):
+            m = self._pid_prof = {str(p['pid']): p['prof']
+                                  for p in self.players.values()}
+        return m
+
     def stamp(self, h):
         """핸드에 대회 문맥을 심는다. 드라이버가 직접 h.xxx = 하지 않는다.
 
@@ -119,6 +136,7 @@ class Field:
             payout_flat=self.fmt['payout_flat'],
             ante=(bb if self.level >= self.fmt['ante_from'] else 0),
             dyn=self.tilt,
+            pid_prof=self.pid_profiles(),
             erosion_per_hand=CTX.erosion(self.hands_per_level,
                                          self.fmt['blind_mult']),
             reentry=self.fmt['reentry'],

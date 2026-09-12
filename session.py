@@ -736,11 +736,17 @@ class HandRun:
                 vpip.add(row[1])
         # 틸트 상태의 키는 좌석이 아니라 사람이다. 좌석 번호는 테이블마다
         # 겹쳐서, 그대로 쓰면 다른 테이블의 다른 사람과 상태를 공유하게 된다.
-        _pp = {}
+        #
+        # decay_all 은 상태에 있는 **모든** pid 를 훑는다. 이 핸드가 아는
+        # 프로필은 테이블 8명분뿐이라 나머지는 기본 temper 로 감쇠했다.
+        # 대회 전체 맵(context.pid_prof)을 바닥에 깔고, 그게 없는 단일 테이블
+        # 드라이버에서는 이 테이블 것만 남아 예전과 똑같이 돈다.
+        # 문맥의 맵은 읽기 전용이라 복사해서 쓴다.
+        _pp = dict(getattr(h, 'pid_prof', None) or {})
         for k in h.seats:
             prof = h.prof.get(str(k)) or {}
             pid = self._pid(k)
-            _pp[str(pid)] = prof
+            _pp.setdefault(str(pid), prof)
             before = self._before.get(k, h.stacks.get(k, 0))
             d = (h.stacks.get(k, 0) - before) / bb
             st0 = before / bb

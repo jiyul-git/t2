@@ -216,9 +216,13 @@ class Tilt:
     def decay_all(self, profiles):
         """핸드마다 감쇠. profiles 는 **pid 키**여야 한다 (session 이 그렇게 만든다).
 
-        상태에 있는 모든 키를 훑는다. 이 테이블에 없는 사람은 프로필을 못 찾아
-        기본값으로 감쇠한다 — 예전에는 좌석 키라서 남의 프로필을 끌어다 썼다.
-        훑는 범위 자체는 이번에 바꾸지 않았다. 이번 변경은 키 하나뿐이다.
+        상태에 있는 모든 키를 훑으므로 profiles 도 **대회 전체**여야 한다.
+        여기에 한 테이블분만 오면 나머지 사람은 프로필을 못 찾아 기본
+        temper 로 감쇠한다 — 사람마다 다른 회복 속도(tilt_recovery)가 죽는다.
+        그래서 session 은 context.pid_prof(필드 전체 맵)를 바닥에 깔아 넘긴다.
+
+        못 찾으면 여전히 기본값으로 돈다. 필드 없이 도는 단일 테이블
+        드라이버는 자기 테이블 것만 넘기고, 그 경우 상태에도 그 사람들뿐이다.
         """
         for pid in list(self.state):
             p = profiles.get(str(pid)) or profiles.get(pid) or {}
