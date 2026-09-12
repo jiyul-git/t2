@@ -28,25 +28,27 @@ import argparse, json, os, statistics as st, sys, time
 sys.path.insert(0, os.getcwd())
 
 ACC = {}
-DEPTH = {}
+DEPTH = [0]
 def _acc(name, dt):
     a = ACC.setdefault(name, [0.0, 0]); a[0] += dt; a[1] += 1
 
 def wrap(obj, name, label):
-    """바깥쪽 호출만 센다.
+    """**가장 바깥 계측 호출만** 센다. 깊이는 라벨별이 아니라 전역이다.
 
-    step_others 안의 _play_table 이 SE.HandRun.start 를 다시 부르므로,
-    재진입을 막지 않으면 봇 테이블 시간이 run_start 로도 잡혀 이중 계상된다.
+    라벨별로 막으면 안 된다. step_others 안의 _play_table 이 SE.HandRun.start 를
+    부르는데, 라벨이 달라서 그 시간이 run_start 로도 잡힌다. 실제로 예비 측정에서
+    run_start 중앙값이 step_others 중앙값과 소수점까지 같게 나왔다.
+    전역 깊이로 막으면 각 구간이 배타적이 되어 합이 요청 시간을 넘지 않는다.
     """
     orig = getattr(obj, name)
     def w(*a, **k):
-        if DEPTH.get(label):                 # 중첩 호출은 바깥 것에 이미 포함
+        if DEPTH[0]:                         # 이미 다른 계측 구간 안이다
             return orig(*a, **k)
-        DEPTH[label] = 1
+        DEPTH[0] = 1
         t = time.perf_counter()
         try: return orig(*a, **k)
         finally:
-            DEPTH[label] = 0
+            DEPTH[0] = 0
             _acc(label, time.perf_counter() - t)
     setattr(obj, name, w)
     return orig
@@ -81,7 +83,7 @@ def main():
 
     recs = []
     def call(action, amount=0):
-        ACC.clear(); DEPTH.clear()
+        ACC.clear(); DEPTH[0] = 0
         t = time.perf_counter()
         r = L.step(action, amount) if action is not None else L.step()
         tot = time.perf_counter() - t
@@ -130,6 +132,9 @@ def main():
                   % (p, med(vs), max(vs),
                      100 * med(vs) / max(1e-9, med([x['total'] for x in g]))))
         print('      %-14s 중앙 %d회' % ('run_send 횟수', med([x['sends'] for x in g])))
+        un = [x['total'] - sum(x.get(p, 0.0) for p in PHASES) for x in g]
+        print('      %-14s 중앙 %6.3f초   최대 %6.3f초   (계측 안 붙은 나머지)'
+              % ('미분류', med(un), max(un)))
         print()
 
     end = [x for x in recs if x['kind'] == 'end']
