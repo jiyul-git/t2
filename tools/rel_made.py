@@ -54,7 +54,7 @@ import persona as PS
 from sb_calib import load, branch_of
 from sb_114 import thresholds
 from cf_402 import is_402
-from tag_draws import board_at
+from tag_draws import board_at, tag as draw_tag
 
 CAT = {0: '하이카드', 1: '원페어', 2: '투페어', 3: '트립스', 4: '스트레이트',
        5: '플러시', 6: '풀하우스', 7: '쿼드', 8: '스트플'}
@@ -330,6 +330,110 @@ def main():
     print('     레인지가 넓게 추정됐다면 A-high 의 rel 이 그만큼 부풀려진다.')
     print('     이 도구는 그 추정의 타당성까지는 검증하지 않았다.')
 
+
+
+
+
+    # ---------- 6. 판별자 신뢰 census ----------
+    print()
+    print('=' * 112)
+    print('6. 코드는 made 와 rel 중 무엇을 이미 신뢰하는가 (plan.py 전수)')
+    print('=' * 112)
+    print('   made 와 rel 이 **OR 로 묶인** 판정 — 둘을 대체 가능한 것으로 본다')
+    print()
+    print('   1545 river_fix      `made >= 2 or rel >= 0.62`')
+    print('        주석: "완성 판정. 계단이 아니라 둘을 함께 본다"')
+    print('   1562 river_bluff    `made >= 1 or rel >= 0.42`')
+    print('        주석: "**쇼다운 가치가 조금이라도 있으면** 블러프로 쓰면 안 된다"')
+    print('        → 쇼다운 가치 판정에 made 또는 rel 둘 중 하나면 충분하다고 명시')
+    print('   1750 revise(semibluff 소멸)  `made >= 2 or rel >= 0.62`')
+    print('        주석: "river_fix 는 둘을 함께 보는데 **턴만 rel 단독이라**')
+    print('               같은 판정이 스트리트마다 달랐다"')
+    print('        → 같은 종류의 불일치를 이미 한 번 발견해서 고친 이력이다')
+    print('   1767 revise(giveup 탈출)     `rel >= 0.55 or made >= 2`')
+    print('        주석: "**포기에서 나오는 길이 없었다** ... rel 이 0.35→0.73 으로')
+    print('               올라도 giveup 에 갇혀 p_bet 0.00 으로 체크했다"')
+    print('        → rel 단독으로 giveup 을 탈출시키는 경로가 이미 존재한다')
+    print()
+    print('   made 가 **단독**으로 쓰이는 판정')
+    print('   465(402)  `plan = "showdown" if made >= 1 else "giveup"`   ← 조사 대상')
+    print('   462       `rel >= max(0.28, ...) and made >= 1`  (얇은 밸류, AND)')
+    print('             — 이쪽의 made 는 정당하다. "밸류벳을 할 것인가"를 묻는다')
+    print()
+    print('   → 402 는 "쇼다운 가치가 있는가"를 묻는데, 그 질문에 대해')
+    print('     코드의 다른 네 곳은 전부 made **또는** rel 로 답한다.')
+    print('     402 만 made 단독이다.')
+    print('   → 새 임계값을 만들 필요가 없다. 같은 질문에 쓰이는 값이 이미 있다:')
+    print('     1562 의 rel >= 0.42 (쇼다운 가치) · 1767 의 rel >= 0.55 (giveup 탈출)')
+    print()
+
+    # ---------- 7. 대상 분해 ----------
+    print('=' * 112)
+    print('7. 대상 %d건 분해 — 하나의 결함인가, 여러 현상이 섞였는가' % len(ga))
+    print('=' * 112)
+    import collections as _c
+    def hi_class(hole, bd):
+        if not hole:
+            return '?'
+        rv = {c: i for i, c in enumerate(bot.RANKS)}
+        hr = sorted((rv[c[0]] for c in hole), reverse=True)
+        br = [rv[c[0]] for c in bd]
+        top = max(br) if br else -1
+        if hr[0] <= top:
+            return '보드 이하'
+        return {12: 'A-high', 11: 'K-high', 10: 'Q-high'}.get(hr[0], '기타 high')
+    rows2 = []
+    for i in ga:
+        bd = board_at(i['_board'], i['street'])
+        if not i['_hole'] or len(bd) < 3:
+            continue
+        tg = draw_tag(i['_hole'], bd)
+        mg = PS.sk(i['_prof'], 'range_merge') / 3.33
+        rows2.append({
+            'i': i, 'bd': bd,
+            'hi': hi_class(i['_hole'], bd),
+            'bd_draw': ('백도어만' if any('백도어' in x for x in tg)
+                        else ('드로우 있음' if any(x in ('플러시드로우', '오픈엔드', '검샷')
+                                                 for x in tg) else '없음')),
+            'tex': texture_of(bd),
+            'pos': 'OOP' if i.get('oop') else 'IP',
+            'init': 'ini' if i.get('init') else 'no-ini',
+            'relbin': ('0.42 미만' if i['rel'] < 0.42 else
+                       ('0.42~0.55' if i['rel'] < 0.55 else
+                        ('0.55~0.70' if i['rel'] < 0.70 else '0.70 이상'))),
+            'thr_ok': i['rel'] >= max(0.28, 0.52 - 0.080*mg),
+            'street': i['street'],
+        })
+    for key, lab in (('hi', '홀카드 최고 랭크'), ('bd_draw', '드로우 존재'),
+                     ('tex', '보드 구조'), ('pos', '포지션'),
+                     ('init', '이니셔티브'), ('relbin', 'rel 구간'),
+                     ('street', '스트리트')):
+        c = _c.Counter(r[key] for r in rows2)
+        print('   %-16s %s' % (lab, '  '.join('%s %d(%.0f%%)' % (k, v, 100*v/len(rows2))
+                                              for k, v in c.most_common())))
+    print()
+    n_ok = sum(1 for r in rows2 if r['thr_ok'])
+    print('   얇은 밸류 게이트의 rel 조건 통과 %d/%d (%.0f%%) — made 로만 막힌 건'
+          % (n_ok, len(rows2), 100*n_ok/len(rows2)))
+    print()
+    print('   두 개 이상의 축이 한쪽으로 완전히 쏠리면 단일 현상,')
+    print('   섞여 있으면 여러 현상이 겹친 것이다.')
+
+
+def texture_of(board):
+    import collections as _c
+    su = _c.Counter(c[1] for c in board)
+    rk = _c.Counter(c[0] for c in board)
+    t = []
+    if max(rk.values()) >= 3:
+        t.append('트립스보드')
+    elif max(rk.values()) == 2:
+        t.append('페어보드')
+    else:
+        t.append('언페어')
+    t.append('모노' if max(su.values()) >= 3 else
+             ('투톤' if max(su.values()) == 2 else '레인보우'))
+    return '·'.join(t)
 
 
 if __name__ == '__main__':
