@@ -3,6 +3,37 @@
 포커 엔진에 HTTP 래퍼를 씌워 그래픽 테이블 UI 를 붙이기 위한 폴더다.
 엔진 파일은 하나도 건드리지 않는다.
 
+## 엔진과의 경계
+
+**이 브랜치는 엔진 파일을 한 글자도 고치지 않았다.** 새 코드는 전부 `ui/` 아래에 있고,
+엔진 조사용 측정 도구만 기존 규칙대로 `tools/` 아래에 있다.
+
+| | 위치 | 성격 |
+|---|---|---|
+| 엔진 본체 | 저장소 루트의 `.py` 22개 (`live2` `session` `plan` `view` `fieldsim` `runner` `bot` `play` `preflop` …) | **동결.** 이 브랜치에서 변경 0 |
+| UI | `ui/server` `ui/web` `ui/tools` | 이 브랜치에서 추가 |
+| 측정 도구 | `tools/field_pace.py`, `tools/field_pace_results.json` | 읽기 전용 분석. 엔진을 호출만 한다 |
+
+직접 확인하는 법 — 엔진 조사 마지막 커밋(`3f42b1f`)과 대조한다.
+
+```sh
+# ui/ 와 tools/ 를 뺀 나머지에서 바뀐 파일. .gitignore 한 줄 외에는 없어야 한다
+git diff --name-only 3f42b1f HEAD -- . ':!ui/**' ':!tools/**'
+
+# 핵심 엔진 파일의 내용 해시 대조
+for f in live2.py session.py plan.py view.py fieldsim.py runner.py bot.py; do
+  [ "$(git rev-parse 3f42b1f:$f)" = "$(git rev-parse HEAD:$f)" ] \
+    && echo "동일  $f" || echo "★변경 $f"
+done
+```
+
+실행 폴더도 분리되어 있다. `setup_run_dir.sh` 가 엔진을 **복사**해서 별도 폴더를 만들고,
+서버는 그 폴더에 `UI_SERVER_DIR` 표시 파일이 없으면 시작을 거부한다. 그래서 UI 를 돌려도
+저장소의 엔진 폴더와 `cli.py` 세션의 상태·아카이브에 닿지 않는다.
+
+엔진 수정이 필요하다고 판단되면 이유와 diff 초안만 보고하고 승인을 기다린다.
+(현재 대기 중인 승인 항목은 이 파일 맨 아래 '승인 대기' 참고)
+
 ## 절대 규칙
 
 1. **엔진 파일을 수정하지 않는다.** `live2.py`, `session.py`, `plan.py`,
@@ -138,3 +169,46 @@ python3 ui/tools/verify_ui.py --hands 12 --entries 100
 - 핸드를 끝내는 액션은 오래 걸린다. 대부분 `finish()` 안의 `step_others()`
   (타 테이블 진행)이고, entries 에 비례한다. 단축하려면 `live2` 수정이 필요하다
   → 승인 사항. UI 는 로딩 상태로 대응한다.
+
+## 승인 대기 (엔진 수정이 필요한 것)
+
+아직 손대지 않았다. 승인 전까지 엔진은 동결이다.
+
+**정산 시간 단축 — 다른 테이블 미리 계산**
+
+핸드가 끝날 때 `live2.finish()` 안의 `f.step_others()` 가 다른 테이블을 전부 한 핸드씩
+실제로 돌린다. 이게 정산 시간의 **92%** 다 (엔트리 100 기준 컨테이너 5.35초, 폰 약 30초).
+
+다른 테이블은 히어로 테이블을 읽지 않으므로(`fieldsim.py:236`), 핸드가 딜된 직후
+별도 프로세스에서 미리 돌려둘 수 있다. 난수도 안전하다 — `f.rng` 는 `step()` 마다
+`crc32('field|시드|핸드번호')` 로 새로 파생되고(`live2.py:41-42`), 핸드 도중 아무도
+소비하지 않는다(사용처는 `fieldsim.py:210,242-243` 뿐).
+
+막는 것은 `step_others()` 가 끝에서 부르는 두 가지다.
+- `_collect_busts()` — `busted_order` 의 순서가 곧 순위다(`rank_of`). 미리 돌리면
+  다른 테이블 탈락이 먼저 들어가 **순위가 바뀐다.**
+- `_balance()` — 히어로를 다른 테이블로 옮길 수 있다(`fieldsim.py:277,289`).
+  핸드 진행 중에 돌면 판이 깨진다.
+
+필요한 수정은 이 둘을 떼어낼 수 있게 하는 것뿐이다.
+
+```python
+-    def step_others(self):
++    def step_others(self, settle=True):
+         ...
+-        self._collect_busts()
+-        self._balance()
++        if settle:
++            self._collect_busts()
++            self._balance()
+```
+
+기본값이 기존 동작이라 안 쓰면 아무것도 안 바뀐다.
+
+한계: 계산량이 줄지는 않는다. 히어로가 생각하는 시간에 겹칠 뿐이다. 핸드 N+1 은
+핸드 N 의 탈락·밸런싱을 알아야 해서 두 핸드 앞서 갈 수 없다.
+
+검증: 같은 시드로 N핸드를 돌려 `hand_archive2.jsonl` 전체 해시가 기존과 같은지 대조한다.
+
+**엔트리 축소는 대안이 아니다.** `tools/field_pace.py` 실측 결과, ITM 시점 평균 스택이
+100명 25bb / 45명 33bb / 18명 50bb 로 갈린다. 성능 설정이 아니라 다른 대회가 된다.
