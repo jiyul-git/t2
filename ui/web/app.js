@@ -27,6 +27,7 @@ const S = {
   spectating: false,       // 히어로가 접어서 남은 진행을 구경하는 중인가
   dealt: null,             // 딜링 모션 중이면 카드를 받은 좌석 집합. null = 전부
   foldTimers: [],          // 폴드 모션 정리 타이머. 재생 타이머와 수명이 다르다
+  heroSig: null,           // 히어로 카드가 지금 무엇을 그리고 있는지
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -162,7 +163,9 @@ function renderSeats(v) {
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
     const got = dealtYet(slot);
     const backs = (d.in_hand && got)
-      ? `<div class="backs${S.dealt ? ' in' : ''}">${backHTML('mini')}${backHTML('mini')}</div>`
+      ? `<div class="backs${S.dealt ? ' in' : ''}"${S.dealt
+           ? ` style="animation-delay:${dealDelay(S.dealt[slot])}"` : ''}>` +
+        `${backHTML('mini')}${backHTML('mini')}</div>`
       : (S.folding[slot]
          ? `<div class="backs out" style="animation-delay:${foldDelay(S.folding[slot])}">` +
            `${backHTML('mini')}${backHTML('mini')}</div>` : '');
@@ -241,8 +244,17 @@ function renderHero(v) {
   $('#heroinfo .pos').textContent = (me ? (me.pos || '') : '') + d +
     (me && me.allin ? ' · ALL-IN' : '');
   $('#heroinfo .stack').textContent = me ? fmt(me.stack) : '';
-  $('#herocards').innerHTML = dealtYet(v.hero_seat)
-    ? cardsHTML(v.hero_hole, S.dealt ? 'deal' : '') : '';
+  // **내용이 같으면 다시 그리지 않는다.**
+  // renderHero 는 프레임마다 불린다. innerHTML 을 매번 새로 넣으면 카드
+  // 엘리먼트가 매번 새로 만들어지고 deal 애니메이션이 그때마다 다시 시작한다.
+  // 딜링 한 바퀴 동안 여러 번 되감기고, 끝나면서 클래스가 빠져 툭 하고
+  // 자리잡는다 — '두 번쯤 버벅이다 나오는' 증상이 이것이었다.
+  const sig = dealtYet(v.hero_seat)
+    ? (v.hand_no + '|' + (v.hero_hole || []).join(',')) : '';
+  if (S.heroSig !== sig) {
+    S.heroSig = sig;
+    $('#herocards').innerHTML = sig ? cardsHTML(v.hero_hole, 'deal') : '';
+  }
 }
 
 /* ---------------- 딜링 모션 ----------------
@@ -258,8 +270,16 @@ function renderHero(v) {
 const DEAL_DIV = 8;
 const dealMs = () => Math.round(stepMs() / DEAL_DIV);
 
+const DEAL_ANIM = 240;           // style.css 의 dealin 길이와 같아야 한다
 function dealtYet(slot) {
   return !S.dealt || !!S.dealt[slot];
+}
+/* 폴드 모션과 같은 이유로 경과분을 건너뛴다. renderSeats 가 프레임마다
+ * #seats 를 통째로 다시 그리므로, 이미 카드를 받은 좌석은 딜링이 한 바퀴
+ * 도는 동안 애니메이션을 계속 처음부터 다시 시작하고 있었다. */
+function dealDelay(t0) {
+  const el = Math.min(DEAL_ANIM, Math.max(0, performance.now() - t0));
+  return (-el).toFixed(0) + 'ms';
 }
 
 function dealOrder(v) {
@@ -289,7 +309,7 @@ function dealThen(v, done) {
       done();
       return;
     }
-    S.dealt[order[i++]] = 1;
+    S.dealt[order[i++]] = Math.max(1, performance.now());
     renderSeats(v); renderHero(v);
     S.timers.push(setTimeout(next, dealMs()));
   })();
@@ -813,6 +833,14 @@ function showHistory() {
   });
 }
 
+/* index.html 이 app.js 를 ?v=N 으로 불러온다. 그 N 을 그대로 보여준다.
+ * 브라우저가 옛 파일을 캐시하고 있으면 여기 숫자도 옛것이라 바로 드러난다. */
+function buildTag() {
+  const el = document.querySelector('script[src*="app.js"]');
+  const m = el && /[?&]v=([^&]*)/.exec(el.getAttribute('src') || '');
+  return m ? m[1] : '?';
+}
+
 function showMenu() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
   const on = autoOn();
@@ -831,6 +859,9 @@ function showMenu() {
     '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
     ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
     '<button type="button" id="mNew">새 게임</button>' +
+    // 어느 빌드가 떠 있는지 확인할 수단이 없어서, 이미 고친 것을 두고
+    // '아직도 그대로다' 를 서로 확인하는 데 시간을 썼다.
+    `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>');
   $('#mStep').addEventListener('click', () => {
     const i = STEP_CHOICES.indexOf(sm);
@@ -910,6 +941,7 @@ function newGameFormHTML() {
 
 function startNew() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
+  S.heroSig = null;
   histClear();                       // 핸드 번호가 1부터 다시 시작한다
   const body = {};
   const e = Number($('#fEntries') && $('#fEntries').value);
