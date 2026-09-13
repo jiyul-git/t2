@@ -648,6 +648,29 @@ function finishResult(v) {
   tick();
 }
 
+/* 사이드팟은 **올인한 사람 때문에 자격이 갈릴 때만** 생기는 개념이다.
+ * 엔진은 기여액이 다른 구간마다 팟을 쪼개는데(session.award_pots), 프리플랍에
+ * 블라인드·안테만 넣고 접은 사람들 때문에 구간이 생긴다. 돈 계산은 그게 맞지만
+ * 화면에 '사이드1' 이라고 쓰면 아무도 올인하지 않은 핸드에 사이드팟이 뜬다.
+ *
+ * 자격자(살아서 다툰 사람)가 같은 구간은 하나로 합쳐서 보여준다. 올인이 없으면
+ * 자격자가 내내 같으므로 팟이 하나가 되고, 올인이 있으면 자격자가 달라져 그대로
+ * 갈린다. **표시만 합친다** — 금액과 분배는 엔진이 준 그대로다.
+ */
+function mergePots(pots) {
+  const out = [];
+  (pots || []).forEach((p) => {
+    const key = (p.eligible || []).slice().sort().join(',');
+    const last = out.length ? out[out.length - 1] : null;
+    if (last && last._key === key) {
+      last.amount = (last.amount || 0) + (p.amount || 0);
+      return;
+    }
+    out.push({ _key: key, amount: p.amount, eligible: p.eligible, winners: p.winners });
+  });
+  return out;
+}
+
 /* withLog — 라인 기록을 붙일지. 방금 끝난 핸드의 결과 화면에는 붙이지 않는다.
  * 그 화면은 방금 눈으로 본 것을 다시 글로 읽게 하고 5초 안에 지나간다.
  * 지난 핸드 상세('기록')에서는 그게 유일한 내용이라 붙인다. */
@@ -672,7 +695,7 @@ function resultBodyHTML(v, withLog) {
   }
 
   let potsHTML = '';
-  const pots = v.pots || [];
+  const pots = mergePots(v.pots);
   if (pots.length > 1) {
     potsHTML = '<div class="potline">팟 분배</div>' + pots.map((p, i) =>
       `<div class="row"><span class="who">${i === 0 ? '메인' : '사이드' + i}</span>` +
