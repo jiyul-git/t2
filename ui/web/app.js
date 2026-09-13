@@ -24,6 +24,8 @@ const S = {
   view0: null,             // 마지막 decision 뷰. 관전 재생의 출발점
   folding: {},             // 방금 폴드해서 카드가 사라지는 중인 좌석
   autoTimer: null,         // 결과 화면 자동 진행
+  spectating: false,       // 히어로가 접어서 남은 진행을 구경하는 중인가
+  dealt: null,             // 딜링 모션 중이면 카드를 받은 좌석 집합. null = 전부
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -39,7 +41,14 @@ function numPref(key, def, allowed) {
     return allowed.indexOf(v) >= 0 ? v : def;
   } catch (e) { return def; }
 }
-const stepMs = () => numPref('t2step', 1500, STEP_CHOICES);
+const stepMs = () => numPref('t2step', 1000, STEP_CHOICES);
+// 폴드는 정보가 거의 없다. 프리플랍에서 3~5명이 연달아 접는 것이 핸드당 봇 액션
+// 수의 대부분이고(실측 중앙 9개), 그걸 벳과 같은 간격으로 띄우면 핸드당 연출만
+// 13.5초가 된다. 독립된 상수를 새로 두지 않고 stepMs 하나에서 파생시킨다 —
+// 사용자가 간격을 바꾸면 둘이 같이 움직여야 한다.
+const FOLD_DIV = 3;
+const paceMs = (e) => (e && e.action === 'fold'
+  ? Math.round(stepMs() / FOLD_DIV) : stepMs());
 const resultMs = () => numPref('t2result', 5000, RESULT_CHOICES);
 function setPref(key, v) { try { localStorage.setItem(key, String(v)); } catch (e) {} }
 
@@ -150,7 +159,9 @@ function renderSeats(v) {
     }
     const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded');
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
-    const backs = d.in_hand ? `<div class="backs">${backHTML('mini')}${backHTML('mini')}</div>`
+    const got = dealtYet(slot);
+    const backs = (d.in_hand && got)
+      ? `<div class="backs${S.dealt ? ' in' : ''}">${backHTML('mini')}${backHTML('mini')}</div>`
       : (S.folding[slot] ? `<div class="backs out">${backHTML('mini')}${backHTML('mini')}</div>` : '');
     const memo = (d.pid === undefined || d.pid === null) ? ''
       : `<button type="button" class="memo${memoGet(d.pid) ? ' has' : ''}" ` +
@@ -227,13 +238,80 @@ function renderHero(v) {
   $('#heroinfo .pos').textContent = (me ? (me.pos || '') : '') + d +
     (me && me.allin ? ' · ALL-IN' : '');
   $('#heroinfo .stack').textContent = me ? fmt(me.stack) : '';
-  $('#herocards').innerHTML = cardsHTML(v.hero_hole);
+  $('#herocards').innerHTML = dealtYet(v.hero_seat)
+    ? cardsHTML(v.hero_hole, S.dealt ? 'deal' : '') : '';
+}
+
+/* ---------------- 딜링 모션 ----------------
+ * 핸드가 시작되면 SB 부터 딜러까지 한 바퀴 카드를 돌린 뒤에 액션을 재생한다.
+ * 예전에는 핸드가 바뀌는 순간 이미 UTG 가 액션한 화면이 떠 있었다.
+ *
+ * **순전히 표시다.** 서버에 아무것도 묻지 않고, 이미 받은 뷰의 좌석 목록을
+ * 순서대로 공개하는 것뿐이다. 엔진은 이 동안에도 계속 돌고 있다.
+ *
+ * 속도는 stepMs 하나에서 파생시킨다. 슬롯이 8개라 8로 나눠 한 바퀴가
+ * 액션 하나 간격 정도에 끝나게 둔다.
+ */
+const DEAL_DIV = 8;
+const dealMs = () => Math.round(stepMs() / DEAL_DIV);
+
+function dealtYet(slot) {
+  return !S.dealt || !!S.dealt[slot];
+}
+
+function dealOrder(v) {
+  // 버튼 다음 자리부터 시계방향 = SB, BB, ... , 마지막이 버튼이다.
+  const n = v.n_slots || 8;
+  const have = {};
+  (v.seats || []).forEach((s) => { if (s.in_hand) have[s.seat] = 1; });
+  const btn = v.button_seat || n;
+  const out = [];
+  for (let k = 1; k <= n; k++) {
+    const slot = ((btn - 1 + k) % n) + 1;
+    if (have[slot]) out.push(slot);
+  }
+  return out;
+}
+
+function dealThen(v, done) {
+  const order = dealOrder(v);
+  if (!order.length) { S.dealt = null; done(); return; }
+  S.dealt = {};
+  renderSeats(v); renderHero(v);
+  let i = 0;
+  (function next() {
+    if (i >= order.length) {
+      S.dealt = null;
+      renderSeats(v); renderHero(v);
+      done();
+      return;
+    }
+    S.dealt[order[i++]] = 1;
+    renderSeats(v); renderHero(v);
+    S.timers.push(setTimeout(next, dealMs()));
+  })();
 }
 
 /* ---------------- 말풍선 ---------------- */
-function clearBubbles() {
+/* 진행 중인 연출을 끊는다. **응답이 올 때마다 반드시 먼저 불러야 한다.**
+ *
+ * 예전에는 핸드 번호가 바뀔 때만(clearBubbles) 타이머를 정리했다. 그래서
+ * 봇 액션 재생이 끝나기 전에 히어로가 액션을 누르면 새 응답의 재생 체인과
+ * 예전 체인이 **동시에** 돌았다. 둘이 각자의 bets/folded 를 들고 drawFrame 을
+ * 불러서 칩과 말풍선이 뒤섞였다. 화면이 깨지는 원인이 이것이었다.
+ *
+ * folding 도 같이 비운다. 폴드 모션을 지우는 타이머가 S.timers 에 있어서
+ * 그것까지 취소되면 그 좌석이 영구히 '사라지는 중' 상태로 남는다.
+ */
+function stopReplay() {
   S.timers.forEach(clearTimeout); S.timers = [];
   S.replayDone = null;
+  S.folding = {};
+  S.dealt = null;          // 딜링 중에 끊겼으면 카드를 전부 보이는 상태로 되돌린다
+}
+
+function clearBubbles() {
+  stopReplay();
   document.querySelectorAll('.bubble').forEach((b) => b.remove());
 }
 function actionText(e) {
@@ -296,9 +374,7 @@ function drawFrame(v, bets, folded) {
 }
 
 function finalFrame(v) {
-  S.timers.forEach(clearTimeout); S.timers = [];
-  S.replayDone = null;
-  document.querySelectorAll('.bubble').forEach((b) => b.remove());
+  clearBubbles();
   renderSeats(v); renderPot(v); renderHero(v);
   const bets = {};
   (v.seats || []).forEach((s) => { bets[s.seat] = s.bet || 0; });
@@ -333,7 +409,7 @@ function playSequence(v, entries, streetChanged) {
     else if (e.action !== 'check') bets[e.seat] = e.amount || bets[e.seat] || 0;
     drawFrame(v, bets, folded);
     bubbleAt(e.seat, e);
-    S.timers.push(setTimeout(next, stepMs()));
+    S.timers.push(setTimeout(next, paceMs(e)));
   })();
 }
 
@@ -377,8 +453,10 @@ function renderSpectate(base, res, ss) {
   });
   renderSeats(fv); renderChips(fv, false); renderBoard(fv);
   renderPot(fv); renderHero(fv);
+  // '관전 중' 은 히어로가 접었을 때만 쓴다. 히어로가 아직 핸드에 남아 있는데
+  // 이 표기가 뜨면 재생이 시작되기도 전에 '봇들이 다 접어서 끝났다'가 드러난다.
   $('#logline').innerHTML = '<span class="cur">' +
-    (STREET[ss.stage] || ss.stage) + '</span> 관전 중';
+    (STREET[ss.stage] || ss.stage) + '</span>' + (S.spectating ? ' 관전 중' : '');
 }
 
 function spectateTail(res) {
@@ -394,7 +472,14 @@ function spectateTail(res) {
     stage: base.stage,
     boardShown: (base.board || []).length,
   };
-  $('#mainrow').innerHTML = '<div class="wait">관전 중 — 화면을 누르면 건너뜁니다</div>';
+  // 히어로가 접어서 남은 진행을 구경하는 것인지, 아니면 히어로가 아직 핸드에
+  // 남아 있는데 상대가 접어서 끝난 것인지 구분한다. 뒤쪽에서 '관전' 이라고
+  // 쓰면 연출 전에 결과가 노출된다.
+  const mine = (res.log || []).filter((e) => e.seat === res.hero_seat);
+  S.spectating = mine.length > 0 && mine[mine.length - 1].action === 'fold';
+  $('#mainrow').innerHTML = '<div class="wait">' +
+    (S.spectating ? '관전 중 — 화면을 누르면 건너뜁니다'
+                  : '진행 중 — 화면을 누르면 건너뜁니다') + '</div>';
   closeRaise();
   clearBubbles();
 
@@ -403,13 +488,13 @@ function spectateTail(res) {
   (function next() {
     if (i >= tail.length) { finishResult(res); return; }
     const e = tail[i++];
-    const streetChange = e.street && e.street !== ss.stage;
     if (e.action === 'fold') markFold(e.seat);
     applyEntry(ss, e);
     renderSpectate(base, res, ss);
     if (e.seat !== res.hero_seat) bubbleAt(e.seat, e);
-    // 스트리트가 바뀐 직후에는 카드가 깔리는 걸 볼 시간을 조금 더 준다
-    S.timers.push(setTimeout(next, streetChange ? stepMs() + 500 : stepMs()));
+    // 스트리트 전환에 간격을 더 주던 것을 뺐다. 보드 카드 애니메이션은 CSS 가
+    // 이미 하고 있어서, 그 500ms 는 다음 액션을 더 미루기만 했다.
+    S.timers.push(setTimeout(next, paceMs(e)));
   })();
   return true;
 }
@@ -563,7 +648,10 @@ function finishResult(v) {
   tick();
 }
 
-function resultBodyHTML(v) {
+/* withLog — 라인 기록을 붙일지. 방금 끝난 핸드의 결과 화면에는 붙이지 않는다.
+ * 그 화면은 방금 눈으로 본 것을 다시 글로 읽게 하고 5초 안에 지나간다.
+ * 지난 핸드 상세('기록')에서는 그게 유일한 내용이라 붙인다. */
+function resultBodyHTML(v, withLog) {
   const win = (v.main_winners && v.main_winners.length ? v.main_winners : v.winners) || [];
   const winSet = {};
   win.forEach((w) => { winSet[String(w)] = 1; });
@@ -597,7 +685,7 @@ function resultBodyHTML(v) {
     `<div class="sub">${how} · 팟 ${fmt(v.pot)}</div>` +
     `<div class="boardrow">${(v.board || []).length ? cardsHTML(v.board) : '<span class="sub">보드 없음</span>'}</div>` +
     rows + potsHTML +
-    logBoxHTML(v.log, v) +
+    (withLog ? logBoxHTML(v.log, v) : '') +
     (v.notes || []).map((n) => `<div class="potline">${n}</div>`).join('');
 }
 
@@ -719,7 +807,7 @@ function showMenu() {
 }
 
 function showHandDetail(v) {
-  showOverlay(resultBodyHTML(v) +
+  showOverlay(resultBodyHTML(v, true) +
     '<div class="actions"><button type="button" id="bBack">목록으로</button></div>');
   $('#bBack').addEventListener('click', showHistory);
 }
@@ -883,6 +971,9 @@ function apply(resp) {
   const v = resp.view;
   if (!v) { showNewGame('상태를 읽지 못했습니다.'); return; }
   S.view = v;
+  // 새 응답은 이전 연출을 무효로 만든다. 말풍선은 남겨 둔다 — 그 스트리트에서
+  // 누가 뭘 했는지 보여주는 기록이라, 히어로가 액션할 때마다 지울 것이 아니다.
+  stopReplay();
 
   if (v.type === 'result') {
     // 히어로가 폴드했어도 남은 액션이 있으면 먼저 보여준 뒤 결과를 띄운다
@@ -903,7 +994,13 @@ function apply(resp) {
   renderBoard(v);
   renderActions(v);                  // 버튼은 바로 쓸 수 있다. 재생을 기다리지 않는다
   renderLogLine(v);
-  playSequence(v, newLog, freshHand || streetChanged);
+  if (freshHand) {
+    // 카드를 다 돌린 뒤에 액션을 재생한다. 액션 버튼은 이미 살아 있으므로
+    // 기다리기 싫으면 바로 눌러도 된다 (stopReplay 가 정리한다).
+    dealThen(v, () => playSequence(v, newLog, true));
+  } else {
+    playSequence(v, newLog, streetChanged);
+  }
 
   S.handNo = v.hand_no; S.stage = v.stage; S.logLen = (v.log || []).length;
   if (v.error) toast(v.error);

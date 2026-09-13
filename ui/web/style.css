@@ -345,3 +345,9 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
   border-radius: 8px; background: #1a2622; font-weight: 600;
 }
 #loghead #bMenu { padding: 2px 10px; font-size: 16px; line-height: 1; }
+
+/* 딜링 모션 — 카드가 테이블 중앙에서 좌석으로 들어온다 (app.js dealThen) */
+.pod .backs.in { animation: dealin .24s ease-out backwards; }
+@keyframes dealin {
+  from { transform: translateX(-50%) translateY(30px) scale(.5); opacity: 0; }
+}
