@@ -141,7 +141,14 @@ def build_hand(st):
     sb, bb = f.blinds()
     # 리딩 장부는 이 대회 상태 안에 산다. 전역 book.json 을 쓰면
     # 대회끼리 관찰이 섞이고 같은 시드가 재현되지 않는다.
-    _bk = RD.Book(); _bk.d = dict(st.get('book') or {})
+    # **깊은 복사여야 한다.** dict() 는 겉 매핑만 복사하고 Book.rec() 가
+    # 돌려주는 안쪽 카운터 dict 는 st['book'] 과 그대로 공유된다.
+    # 그러면 핸드를 진행하는 동안 쌓인 관측이 st 에 그대로 새고,
+    # step() 의 save(st) 가 그걸 **핸드 도중에** 파일에 박는다.
+    # 결과: (1) 다음 요청이 재생할 때 장부가 이미 이번 핸드 관측을 품고 있어
+    # 봇의 프리플랍 판단이 라이브와 달라지고(= 기록된 히어로 액션이 불법이 됨),
+    # (2) 요청마다 같은 관측이 다시 누적돼 리딩이 몇 배로 부풀려진다.
+    _bk = RD.Book(); _bk.d = copy.deepcopy(st.get('book') or {})
     h = play.Hand(seats, profs, stacks, btn, sb, bb, hero=hero_seat,
                   seed=st['hand_seed'], book=_bk)
     h.seat_pid = {tb.seat_of(p['pid']): p['pid'] for p in alive}
@@ -271,8 +278,17 @@ def step(action=None, amount=0, defer_others=False, others=None):
     run = SE.HandRun(h, decisions=st.get('decisions'))
     raw = run.start()
     for (a, amt) in st['actions']:
-        if isinstance(raw, dict) and raw.get('done'): break
+        if isinstance(raw, dict) and (raw.get('done') or raw.get('error')): break
         raw = run.send(a, amt)
+
+    # 재생 중 기록된 액션이 불법이 됐으면 여기서 멈추고 정상 오류 응답으로 돌려준다.
+    # 예전에는 오류 프레임에 **다음 기록 액션**을 그대로 먹였다. session 의
+    # 히어로 재적용(프리플랍 157 · 포스트플랍 337)은 try 밖이라 ValueError 가
+    # 서버까지 올라가 500 이 됐고, 상태가 저장되지 않아 다시 눌러도 같은 벽이었다
+    # (= 그 핸드 영구 차단). 원인(재생 재지터)은 session 쪽에서 없앴지만
+    # 안전망으로 남긴다.
+    if isinstance(raw, dict) and raw.get('error'):
+        return {'view': _render(raw, f, h, st), 'done': False, 'raw': raw}
 
     if action is not None and not (isinstance(raw, dict) and raw.get('done')):
         raw2 = run.send(action, amount)

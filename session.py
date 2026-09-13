@@ -560,11 +560,23 @@ class HandRun:
                     # 다음 사람에게 적용될 값을 보게 된다(무저항 벳 X → 기록 2X).
                     _cur0 = r2.current
                     _mr0 = r2.min_raise
-                    if a in ('bet', 'raise'):
+                    # 재생값을 **다시 shape 하지 않는다.** _forced[2] 는 아래
+                    # 587줄이 r2.log 에서 꺼내 기록한 집행값이라 이미 shape 를
+                    # 거쳤다. 두 번 먹이면 같은 상황을 재생했는데 다른 금액이
+                    # 나온다(실측: river bet 3100 → 재생 3200). shape_size 는
+                    # rng.uniform 지터를 곱하므로 멱등이 아니다.
+                    # 그러면 이후 tocall 이 어긋나 히어로의 기록된 액션이 불법이
+                    # 되고, 그 핸드가 영구히 막힌다.
+                    # amt 가 아직 재생값 그대로일 때만 건너뛴다 — 위 체크레이즈
+                    # 분기가 amt 를 새로 계산했다면 그건 라이브와 같은 경로이므로
+                    # 라이브처럼 shape 를 먹여야 한다.
+                    _replayed = bool(_forced) and a == _forced[1] and amt == _forced[2]
+                    if a in ('bet', 'raise') and not _replayed:
                         amt = RU.shape_size(
                             amt, ax['type'],
                             random.Random(self._dseed(s, street, 'size', len(r2.log))),
                             pot=pot_live)
+                    if a in ('bet', 'raise'):
                         # 클램프 이후의 값이 **실제로 테이블에 올라간 액수**다.
                         # 기록이 클램프 앞에서 찍히면 검증할 때 집행값을 못 본다.
                         _sent = max(amt, r2.current+r2.min_raise) if r2.current else amt
