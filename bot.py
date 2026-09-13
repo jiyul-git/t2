@@ -4,17 +4,41 @@ RV={r:i+2 for i,r in enumerate(RANKS)}
 FULLDECK=[r+s for r in RANKS for s in SUITS]
 
 def eval5(cs):
-    vs=sorted([RV[c[0]] for c in cs],reverse=True)
-    ss=[c[1] for c in cs]
-    flush=len(set(ss))==1
-    u=sorted(set(vs),reverse=True)
+    """5장 평가. 반환 튜플은 바꾸지 않는다 — 비교에 그대로 쓰인다.
+    아래는 같은 값을 더 적은 일로 구하는 것뿐이고, 전수 검증으로 확인한다
+    (C(52,5)=2,598,960 전 조합을 예전 구현과 대조).
+
+    예전에 하던 낭비
+      - 무늬 리스트를 따로 만들고 set 으로 플러시 판정 (그냥 4번 비교하면 된다)
+      - sorted(set(vs)) 로 중복 제거 (vs 가 이미 내림차순이라 한 번 훑으면 된다)
+      - {v: vs.count(v)} 로 개수 세기 (5장에 O(n^2) + set 생성)
+      - sorted(..., key=lambda) 로 그룹 정렬 (람다가 핸드 정산 한 번에 177만번
+        불렸다. (개수, 끗수) 튜플을 그냥 내림차순 정렬하면 같은 순서다)
+    """
+    vs = sorted((RV[c[0]] for c in cs), reverse=True)
+    s0 = cs[0][1]
+    flush = (cs[1][1] == s0 and cs[2][1] == s0
+             and cs[3][1] == s0 and cs[4][1] == s0)
+    # vs 가 내림차순이므로 한 번 훑어 (개수, 끗수) 그룹을 만든다.
+    # 이 시점의 pairs 는 끗수 내림차순이라 u 를 여기서 뽑는다.
+    pairs = []
+    prev = None; n = 0
+    for v in vs:
+        if v == prev:
+            n += 1
+        else:
+            if prev is not None:
+                pairs.append((n, prev))
+            prev = v; n = 1
+    pairs.append((n, prev))
+    u = [p[1] for p in pairs]
     straight=0
     if len(u)==5:
         if u[0]-u[4]==4: straight=u[0]
         elif u==[14,5,4,3,2]: straight=5
-    cnt={v:vs.count(v) for v in set(vs)}
-    groups=sorted(cnt.items(), key=lambda kv:(-kv[1],-kv[0]))
-    shape=[g[1] for g in groups]; ordered=[g[0] for g in groups]
+    # (개수, 끗수) 내림차순 = 예전의 key=(-개수, -끗수) 와 같은 순서
+    pairs.sort(reverse=True)
+    shape=[p[0] for p in pairs]; ordered=[p[1] for p in pairs]
     if straight and flush: return (8,straight)
     if shape[0]==4: return (7,ordered[0],ordered[1])
     if shape[:2]==[3,2]: return (6,ordered[0],ordered[1])
