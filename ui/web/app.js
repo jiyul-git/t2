@@ -26,6 +26,7 @@ const S = {
   autoTimer: null,         // 결과 화면 자동 진행
   spectating: false,       // 히어로가 접어서 남은 진행을 구경하는 중인가
   dealt: null,             // 딜링 모션 중이면 카드를 받은 좌석 집합. null = 전부
+  foldTimers: [],          // 폴드 모션 정리 타이머. 재생 타이머와 수명이 다르다
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -41,12 +42,12 @@ function numPref(key, def, allowed) {
     return allowed.indexOf(v) >= 0 ? v : def;
   } catch (e) { return def; }
 }
-const stepMs = () => numPref('t2step', 1000, STEP_CHOICES);
+const stepMs = () => numPref('t2step', 1500, STEP_CHOICES);
 // 폴드는 정보가 거의 없다. 프리플랍에서 3~5명이 연달아 접는 것이 핸드당 봇 액션
-// 수의 대부분이고(실측 중앙 9개), 그걸 벳과 같은 간격으로 띄우면 핸드당 연출만
-// 13.5초가 된다. 독립된 상수를 새로 두지 않고 stepMs 하나에서 파생시킨다 —
-// 사용자가 간격을 바꾸면 둘이 같이 움직여야 한다.
-const FOLD_DIV = 3;
+// 수의 대부분이고(실측 중앙 9개 중 58%), 그걸 벳과 같은 간격으로 띄우면 연출만
+// 핸드당 13.5초가 된다. 다만 1/3 은 너무 빨랐다 — 접는 것도 보여야 한다.
+// 독립된 상수를 새로 두지 않고 stepMs 하나에서 파생시킨다.
+const FOLD_DIV = 2;
 const paceMs = (e) => (e && e.action === 'fold'
   ? Math.round(stepMs() / FOLD_DIV) : stepMs());
 const resultMs = () => numPref('t2result', 5000, RESULT_CHOICES);
@@ -162,7 +163,9 @@ function renderSeats(v) {
     const got = dealtYet(slot);
     const backs = (d.in_hand && got)
       ? `<div class="backs${S.dealt ? ' in' : ''}">${backHTML('mini')}${backHTML('mini')}</div>`
-      : (S.folding[slot] ? `<div class="backs out">${backHTML('mini')}${backHTML('mini')}</div>` : '');
+      : (S.folding[slot]
+         ? `<div class="backs out" style="animation-delay:${foldDelay(S.folding[slot])}">` +
+           `${backHTML('mini')}${backHTML('mini')}</div>` : '');
     const memo = (d.pid === undefined || d.pid === null) ? ''
       : `<button type="button" class="memo${memoGet(d.pid) ? ' has' : ''}" ` +
         `data-pid="${d.pid}" data-label="${slot}번(${d.pos || ''})">✎</button>`;
@@ -306,8 +309,9 @@ function dealThen(v, done) {
 function stopReplay() {
   S.timers.forEach(clearTimeout); S.timers = [];
   S.replayDone = null;
-  S.folding = {};
   S.dealt = null;          // 딜링 중에 끊겼으면 카드를 전부 보이는 상태로 되돌린다
+  // folding 은 건드리지 않는다. 진행 중인 폴드 모션은 응답이 와도 끝까지 간다
+  // (정리 타이머가 S.foldTimers 에 따로 있어서 취소되지 않는다).
 }
 
 function clearBubbles() {
@@ -319,10 +323,32 @@ function actionText(e) {
   return (e.action === 'bet' || e.action === 'raise') && e.amount
     ? `${t} ${fmt(e.amount)}` : t;
 }
+/* 폴드 모션.
+ *
+ * renderSeats 는 프레임마다 #seats 를 통째로 다시 그린다. 그래서 .backs.out
+ * 엘리먼트가 매번 새로 만들어지고, **CSS 애니메이션이 그때마다 처음부터
+ * 다시 시작한다.** 그게 '버벅이다 사라지는' 증상이었다. 액션 간격이 짧아질수록
+ * 다시 그리는 횟수가 늘어 더 눈에 띈다.
+ *
+ * 시작 시각을 들고 있다가 음수 animation-delay 로 경과분만큼 건너뛴다.
+ * 엘리먼트가 새로 만들어져도 모션은 이어진 자리에서 계속된다.
+ *
+ * 정리 타이머는 S.timers 가 아니라 따로 둔다. stopReplay 가 재생 타이머를
+ * 취소할 때 같이 취소되면 그 좌석이 영구히 '사라지는 중' 으로 남는다.
+ */
+const FOLD_ANIM = 550;          // style.css 의 foldout 길이와 같아야 한다
+function foldDelay(t0) {
+  const el = Math.min(FOLD_ANIM, Math.max(0, performance.now() - t0));
+  return (-el).toFixed(0) + 'ms';
+}
 function markFold(seat) {
-  S.folding[seat] = 1;
-  // 모션이 끝나면 목록에서 뺀다. 다음 프레임부터는 카드를 아예 안 그린다.
-  S.timers.push(setTimeout(() => { delete S.folding[seat]; }, 700));
+  if (S.folding[seat]) return;            // 이미 도는 모션을 되감지 않는다
+  S.folding[seat] = performance.now();
+  S.foldTimers.push(setTimeout(() => { delete S.folding[seat]; }, FOLD_ANIM + 150));
+}
+function resetFolding() {
+  S.foldTimers.forEach(clearTimeout); S.foldTimers = [];
+  S.folding = {};
 }
 
 function bubbleAt(seat, e) {
@@ -1009,7 +1035,7 @@ function apply(resp) {
   const streetChanged = !freshHand && S.stage !== v.stage;
   const newLog = (freshHand || streetChanged) ? (v.log || [])
                                               : (v.log || []).slice(S.logLen);
-  if (freshHand) { clearBubbles(); S.boardLen = 0; S.prevBets = null; S.folding = {}; }
+  if (freshHand) { clearBubbles(); resetFolding(); S.boardLen = 0; S.prevBets = null; }
 
   hideOverlay();
   renderTop(v);
