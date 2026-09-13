@@ -28,6 +28,7 @@ const S = {
   dealt: null,             // 딜링 모션 중이면 카드를 받은 좌석 집합. null = 전부
   foldTimers: [],          // 폴드 모션 정리 타이머. 재생 타이머와 수명이 다르다
   heroSig: null,           // 히어로 카드가 지금 무엇을 그리고 있는지
+  queuedNew: null,         // 요청 처리 중에 눌러둔 새 게임
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -1010,7 +1011,21 @@ async function req(path, body) {
 }
 
 async function call(path, body, msg) {
-  if (S.busy) return null;
+  if (S.busy) {
+    // 조용히 무시하면 버튼이 고장난 것처럼 보인다. 실제로 '새 게임 시작이
+    // 안 먹는다'는 신고가 여기서 나왔다 — 다른 테이블 정산이 30~50초 걸리는
+    // 동안 눌러도 아무 일도 일어나지 않았고 아무 표시도 없었다.
+    // (액션바 버튼은 setBusy 가 비활성화하지만 오버레이 시트의 버튼은 아니다.)
+    if (path === '/api/new') {
+      // 새 게임만 예약해 둔다. 게임 액션을 예약하면 안 된다 — 직전 응답을
+      // 보지 못한 채로 다음 액션을 미리 잡아두는 셈이 된다.
+      S.queuedNew = { body: body, msg: msg };
+      toast('정산이 끝나면 새 게임을 시작합니다');
+    } else {
+      toast('앞선 요청을 처리하는 중입니다 — 끝나면 다시 눌러 주세요');
+    }
+    return null;
+  }
   setBusy(true, msg);
   try {
     const r = await req(path, body);
@@ -1031,6 +1046,11 @@ async function call(path, body, msg) {
     return null;
   } finally {
     setBusy(false);
+    if (S.queuedNew) {                 // 기다리는 동안 눌러둔 새 게임
+      const q = S.queuedNew; S.queuedNew = null;
+      clearTimeout(S.autoTimer); S.autoTimer = null;
+      call('/api/new', q.body, q.msg);
+    }
   }
 }
 
