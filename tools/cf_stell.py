@@ -13,7 +13,8 @@
   4. need 를 절대값으로 얼마나 움직이는가
   5. potodds·range_read 와 충돌하면 누가 이기는가 (2×2 요인)
 
-변종은 `tools/cf_szseen.py` 의 것을 그대로 쓴다 (① 덮어쓰기 / ③ 체인보존).
+변종은 `tools/cf_szseen.py` 가 만든 것을 그대로 쓴다
+(① 예전 덮어쓰기 = BASE_REV 원문 / ③ 현재 = 입력 교체).
 plan.py 는 건드리지 않는다.
 """
 import argparse, copy, os, random, sys, statistics as ST
@@ -26,8 +27,8 @@ sys.path.insert(0, os.path.join(D, 'tools'))
 import bot, plan as PL, persona as PS
 import cf_szseen as SZ
 
-TAGS = ['① 덮어쓰기', '③ 체인보존']
-REPL = {'① 덮어쓰기': None, '③ 체인보존': SZ.PRESERVE}
+# ① 예전(덮어쓰기) 과 ③ 현재(입력 교체) 만 본다. ② 는 cf_szseen 이 맡는다.
+TAGS = [SZ.TAGS[0], SZ.TAGS[2]]
 
 
 def bucket(sz):
@@ -44,7 +45,8 @@ def main():
     ap.add_argument('--seed', type=int, default=20260914)
     a = ap.parse_args()
 
-    fns = {t: SZ.build('st_v%d' % i, REPL[t]) for i, t in enumerate(TAGS)}
+    _all = SZ.build_all()
+    fns = {t: _all[t] for t in TAGS}
     cur = PL.calldown_need
 
     rng = random.Random(a.seed)

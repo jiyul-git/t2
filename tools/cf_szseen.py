@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
-"""`_sz_seen` 덮어쓰기(FIX_PLAN 2-A) 재측정. **읽기 전용이다.**
+"""`_sz_seen` 덮어쓰기(FIX_PLAN 2-A) 분해. **읽기 전용이다.**
 
   python3 tools/cf_szseen.py --n 400 --street flop
   python3 tools/cf_szseen.py --n 400 --street river --no-axes
 
-baseline 은 `6574360` (1-A 적용, 지문 44da00bf…).
+세 변종을 같은 상황·같은 seed 로 비교한다.
 
-`calldown_need` 안의 이 블록을 세 가지로 갈라 같은 상황·같은 seed 로 비교한다.
+  ① 예전(덮어쓰기)   need = 인지팟오즈  ← 통째로 대입 (6574360 의 코드)
+  ② 제거             그 블록만 삭제
+  ③ 현재(입력 교체)   인지 사이즈를 need_true 의 입력으로 (FIX_PLAN 2-A (나))
 
-  ① 현재       need = (_sz_seen*_p0)/(_p0 + 2*_sz_seen*_p0)      ← 통째로 대입
-  ② 제거       그 블록을 없앤다
-  ③ 체인보존   need *= 인지팟오즈/실제팟오즈                      ← 비율로 곱한다
+**변종을 어디서 가져오는가 — 방향이 뒤집혔다.**
+2-A 적용 전에는 현재 소스에서 덮어쓰기를 지워 ②·③ 을 만들었다. 적용 후에는
+그 블록이 아예 없으므로 반대로 간다: `git show <BASE>:plan.py` 에서
+`calldown_need` 원문을 꺼내 ① 을 복원하고, 거기서 블록을 지워 ② 를 만든다.
+문자열 수술이 아니라 **커밋에 박힌 원문**을 쓰므로 표류하지 않는다.
+BASE 기본값은 2-A 직전인 `6574360` (1-A 적용, 지문 44da00bf…).
 
-③ 의 근거: 덮어쓰기 식 `sz/(1+2sz)` 는 1-A 로 고친 `need_true` 와 **같은 식**이다
-(다른 건 sz 가 실제냐 인지냐 뿐). 그래서 그 비율만 곱하면 "인지한 사이즈로
-팟오즈를 다시 본다"는 목적은 그대로 두면서, 앞에서 쌓은 calc_noise·뒤 사람
-위험·리딩·클램프·call_bias 가 살아남는다. **새 임계값을 만들지 않는다** —
-이미 그 자리에 있는 두 값의 비다.
-
-변종은 `inspect.getsource` → 문자열 교체 → `exec` 로 메모리에만 만든다.
+가져온 원문은 `PL.__dict__` 에서 exec 하므로 모듈 전역(PS·bot 등)을 그대로 쓴다.
 plan.py 는 건드리지 않는다.
 
 위약: 같은 코드를 두 번 돌려 0.0% 가 나오는지(결정성), 그리고 성향 반사실에서
 `tilt_swing`·`tilt_stack`(plan.py 가 읽지 않는 축) 이 0.0% 인지.
+**가장 강한 관문은 비발동군 변화 0.0%** — ③ 은 `_sz_seen == _sz_true` 일 때
+① 의 `need_true` 와 비트까지 같아야 한다.
 """
-import argparse, copy, inspect, os, random, sys, textwrap
+import argparse, copy, inspect, os, random, subprocess, sys, textwrap
 from collections import Counter, defaultdict
 
 D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,35 +41,53 @@ AXES = ['sizing_tell', 'range_read', 'potodds', 'aggression',
         'looseness', 'discipline', 'reraise']
 PLACEBO = ['tilt_swing', 'tilt_stack']
 
+BASE_REV = '6574360'
+
 OVERWRITE = """        if abs(_sz_seen - _sz_true) > 1e-9:
             _p0 = float(pot) - tocall
             need = (_sz_seen*_p0)/max(1.0, _p0 + 2*_sz_seen*_p0)
 """
-# ③ 체인보존. 곱하는 값은 (인지 팟오즈)/(실제 팟오즈) 하나뿐이다.
-PRESERVE = """        if abs(_sz_seen - _sz_true) > 1e-9:
-            _p0 = float(pot) - tocall
-            _po_seen = (_sz_seen*_p0)/max(1.0, _p0 + 2*_sz_seen*_p0)
-            _po_true = (_sz_true*_p0)/max(1.0, _p0 + 2*_sz_true*_p0)
-            if _po_true > 0:
-                need *= _po_seen/_po_true
-"""
 
-VARIANTS = {'① 현재(덮어쓰기)': None,
-            '② 제거': '',
-            '③ 체인보존(비율)': PRESERVE}
+TAGS = ['① 예전(덮어쓰기)', '② 제거', '③ 현재(입력 교체)']
 
 
-def build(name, repl):
-    """repl 이 None 이면 현재 소스 그대로."""
-    src = inspect.getsource(PL.calldown_need)
+def _func_src(text, name):
+    """모듈 원문에서 함수 하나의 소스를 잘라낸다. 들여쓰기로 끝을 찾는다."""
+    head = 'def %s(' % name
+    i = text.index(head)
+    lines = text[i:].splitlines(True)
+    out = [lines[0]]
+    for ln in lines[1:]:
+        if ln.strip() and not ln[:1].isspace():
+            break
+        out.append(ln)
+    return ''.join(out)
+
+
+def from_base(name, drop_overwrite=False):
+    """BASE_REV 의 calldown_need 를 복원한다. 커밋 원문을 쓴다."""
+    txt = subprocess.run(['git', 'show', '%s:plan.py' % BASE_REV],
+                         cwd=D, capture_output=True, text=True, check=True).stdout
+    src = _func_src(txt, 'calldown_need')
     if OVERWRITE not in src:
-        raise SystemExit('덮어쓰기 블록을 소스에서 못 찾았다 — plan.py 가 바뀌었는지 확인할 것')
-    if repl is not None:
-        src = src.replace(OVERWRITE, repl, 1)
+        raise SystemExit('%s 의 calldown_need 에 덮어쓰기 블록이 없다 — BASE_REV 확인'
+                         % BASE_REV)
+    if drop_overwrite:
+        src = src.replace(OVERWRITE, '', 1)
     src = src.replace('def calldown_need(', 'def %s(' % name, 1)
     ns = PL.__dict__
     exec(compile(textwrap.dedent(src), '<변종:%s>' % name, 'exec'), ns)
     return ns[name]
+
+
+def build_all():
+    """세 변종. ③ 은 현재 살아 있는 함수 그대로다."""
+    cur = PL.calldown_need
+    if OVERWRITE in inspect.getsource(cur):
+        raise SystemExit('현재 plan.py 에 덮어쓰기가 남아 있다 — 2-A 가 적용됐는지 확인할 것')
+    return {TAGS[0]: from_base('cn_old'),
+            TAGS[1]: from_base('cn_del', drop_overwrite=True),
+            TAGS[2]: cur}
 
 
 def perturb(prof, axis, val):
@@ -132,11 +151,9 @@ def main():
     ap.add_argument('--seed', type=int, default=20260914)
     a = ap.parse_args()
 
-    fns = {}
-    for i, (tag, repl) in enumerate(VARIANTS.items()):
-        fns[tag] = build('cn_v%d' % i, repl)
+    fns = build_all()
     cur_fn = PL.calldown_need
-    tags = list(VARIANTS)
+    tags = list(TAGS)
 
     # ---- 상황을 먼저 다 만든다. 변종마다 난수 스트림이 어긋나면 안 된다 ----
     rng = random.Random(a.seed)
@@ -206,9 +223,9 @@ def main():
 
     import statistics as ST
     n = max(1, done)
-    print('# `_sz_seen` 덮어쓰기 재측정 — %s, 상황 %d개, bf=%.1f'
+    print('# `_sz_seen` 덮어쓰기 분해 — %s, 상황 %d개, bf=%.1f'
           % (a.street, done, a.bf))
-    print('# baseline 6574360 (1-A 적용)\n')
+    print('# ①② 는 %s 원문에서 복원. ③ 은 현재 plan.py\n' % BASE_REV)
     print('결정성 확인(같은 코드 두 번): 불일치 %d건  %s'
           % (det, '← 0 이어야 한다' if det == 0 else '← 문제!'))
     print('덮어쓰기 발동 %d / %d = %.1f%%'

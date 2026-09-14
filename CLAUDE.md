@@ -111,14 +111,30 @@ a247f7f  seat → pid 격리
      부작용: sizing_tell 의 플랍 영향이 21.2% → 14.8%. 리딩 조정의
      하한 need_true*0.55 가 need_true 에 비례해 같이 좁아진다.
      하한 계수는 건드리지 않았다 (FIX_PLAN 1-A 참조).
+
+   ↓
+2-A  _sz_seen 이 need 를 통째로 재대입하던 구조를 없앤다 (plan.py:609-633).
+     인지 사이즈를 need_true 의 **입력**으로 올리고, 재대입 네 줄을 삭제.
+     **지문이 바뀐다** — 44da00bf… → d8e9271e…, 6시드 중 5개.
+     비발동군(_sz_seen == _sz_true)은 **비트까지 동일**해서 변화 0/200.
+     발동군 행동 변화 flop 17.1% / turn 12.1% / river 7.9%.
+     살아난 것: potodds 1.8% → 11.0%, aggression 6.5% → 13.2%,
+       looseness 1.2% → 5.5%, discipline 1.0% → 3.8% (플랍 기준)
+     줄어든 것: sizing_tell 14.8% → 2.2%, range_read(리버) 40.5% → 29.8%.
+       둘 다 need 재대입 레버를 타고 있었다 — 레버가 없어졌다.
+     계수는 하나도 안 건드렸다. size_river 게이트 우회도 그대로 남아 있다.
+     근거: FIX_PLAN.md 2-A / TRACE_SZSEEN.md / TRACE_STELL.md
 ```
 
-**1-A 이후 baseline 지문**
+**현재 baseline 지문 (2-A 적용)**
 
 ```
 python3 tools/fingerprint.py --seeds 3000-3005 --hands 30   # 격리 폴더에서
-44da00bfccd58820da549a7ef91125814467ef2edc7b3ddd074929d4959c15d4
+d8e9271ec730c01d80c801550bf0e5b50fabc5fa3533ea3f43200046afb832cc
 ```
+
+1-A 시점 지문은 `44da00bf…` 였다. `tools/cf_szseen.py` 가 그 시점 코드를
+`git show 6574360:plan.py` 로 복원해 비교하므로 BASE_REV 를 바꾸지 말 것.
 
 `f7e03ac` / `a247f7f` 를 새 실험의 비교군으로 쓰지 마라. 특히 prefetch 같은
 성능 최적화의 의미 보존 검증은 **같은 baseline 의 ON/OFF 로만** 비교한다.
@@ -268,10 +284,13 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 - `audit.py:171` 이 설계상 허용된 이탈까지 전부 "포기계획인데 벳" 경보
 - `persona.py:755` `size_read` 는 2.0팟 이하에서 항등이다. 아카이브 648건에서
   포스트플랍 sz 최대 0.915 — **한 번도 동작한 적이 없다.** `sizing_tell` 이
-  실제로 닿는 곳은 `see_size → size_gap → opp_size_norm` 이고, 거기서
-  `_sz_seen` 덮어쓰기의 on/off 스위치로 작동한다 (`TRACE_STELL.md`)
+  실제로 닿는 곳은 `see_size → size_gap → opp_size_norm` 이다 (`TRACE_STELL.md`)
 - `persona.py:955` `size_river` 만 `see_size` 게이트가 빠져 있다. 리버에서는
-  사이즈를 못 읽는 사람도 `_sz_norm` 이 어긋나 덮어쓰기가 걸린다
+  사이즈를 못 읽는 사람도 `_sz_norm` 이 어긋난다. 2-A 로 덮어쓰기가 없어져
+  피해는 줄었지만 게이트 누락 자체는 그대로다
+- `calldown_need` 의 `trust` 블록은 `dev` 를 **실제 사이즈**(`_sz_true`)로 잰다.
+  2-A 로 팟오즈는 인지 사이즈를 쓰게 됐는데 이쪽은 아직 실제 사이즈다.
+  같이 바꾸면 2-A 효과와 섞이므로 이번에는 두었다
 
 ---
 

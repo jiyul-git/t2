@@ -606,14 +606,31 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     # icm_aware 는 멱등이 아니므로 1.0 초과일 때만, 그리고 원본 bf 를 쓴다.
     if profile.get('concepts') and bf and bf > 1.0 and not _bf_gated:
         bf = PS.icm_bf(profile, bf)
+    # 상대 벳을 '이 사람이 인식한 크기'로 바꾼 뒤 팟오즈를 낸다.
+    # 예전에는 이 인식이 아래쪽에서 need 를 **통째로 재대입**해서, 이미 쌓은
+    # 오차·뒤사람 위험·리딩·클램프·call_bias 를 전부 지웠다. 인식은 판단
+    # 근거의 **입력**이지 쌓은 판단을 지우는 사건이 아니다. 그래서 여기로 올린다.
+    #   균형 공식 정의역 밖(2팟 초과)을 못 읽는 사람은 팟오즈를 오독한다.
+    #   순서가 중요하다 — opp_size_norm 은 '상대 기준 보정'(관찰),
+    #   size_read 는 '내 인식 한계'(능력)다.
+    # 난수는 건드리지 않는다 (read_opponent·opp_size_norm·size_read 전부 무작위 없음).
+    _p0 = max(1.0, float(pot) - float(tocall))       # 상대 벳이 나가기 전 팟
+    _sz_true = float(tocall)/_p0
+    _rdz = None
+    _sz_seen = _sz_true
+    _tocall_seen = float(tocall)
+    if profile.get('concepts') and board:
+        _rdz = PS.read_opponent(profile, opp_est) if opp_est else None
+        _sz_seen = PS.size_read(profile, PS.opp_size_norm(_rdz, _sz_true, street))
+        _tocall_seen = _sz_seen * _p0
     # pot 은 pot_live 다 — 상대가 방금 낸 벳은 들어 있고 **내 콜은 아직
     # 아니다**(session.py:449 의 pot_now + sum(r2.contrib)). 콜하면 내 칩도
-    # 팟에 들어가므로 분모에 tocall 을 더해야 한다.
-    #   필요승률 = tocall / (벳전팟 + 상대벳 + 내콜) = tocall/(pot_live + tocall)
-    # 아래 670줄의 sz/(1+2sz) 가 대수적으로 같은 값이다 — 올바른 식이
-    # 이미 코드 안에 있었는데 여기만 분모가 부족했다.
-    # 과대율은 (1+2sz)/(1+sz) 배다 (0.5팟 1.33x, 1팟 1.50x, 2팟 1.67x).
-    need_true = (tocall*bf)/max(1.0, float(pot) + float(tocall))
+    # 팟에 들어가므로 분모에 내 콜을 더해야 한다.
+    #   필요승률 = 벳 / (벳전팟 + 상대벳 + 내콜) = sz/(1+2sz)
+    # _sz_seen == _sz_true 일 때 (tocall*bf)/(pot + tocall) 과 **비트까지 같다**
+    # (정수 칩이라 (pot-tocall) + 2*tocall 이 pot + tocall 과 정확히 일치한다).
+    # 50만 조합 대조에서 불일치 0건. 비발동군 무변화 관문이 이것에 걸려 있다.
+    need_true = (_tocall_seen*bf)/max(1.0, _p0 + 2.0*_tocall_seen)
     need = need_true
     if profile.get('concepts'):
         # 팟오즈 계산 오차. calc_noise 는 최대 3배까지 곱하는데,
@@ -655,20 +672,15 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     # '평균은 맞지만 아무도 개성이 없는' 필드가 된다. calc_noise(랜덤 오차)와 달리
     # 이건 그 사람에게 고정된 방향성 편향이다.
     if profile.get('concepts') and board:
-        # 실제 사이즈가 아니라 '이 사람이 인식한 사이즈'로 판단한다.
-        # 균형 공식 정의역(2팟) 밖을 못 읽는 사람은 팟오즈를 오독한다.
-        _sz_true = tocall/max(1.0, float(pot) - tocall)
-        # 먼저 '이 상대 기준으로' 정규화하고, 그다음 내 인식 한계를 적용한다.
-        # 순서가 중요하다 — 상대 기준 보정은 관찰이고, size_read 는 내 능력이다.
-        _rdz = PS.read_opponent(profile, opp_est) if opp_est else None
-        _sz_norm = PS.opp_size_norm(_rdz, _sz_true, street)
-        _sz_seen = PS.size_read(profile, _sz_norm)
+        # _sz_seen / _rdz 는 위에서 이미 만들었다 (need_true 자리).
+        # 여기서 다시 계산하지 않는다 — 같은 값을 두 번 만들면 언젠가 갈린다.
         need *= PS.call_bias(profile, street, _sz_seen,
                              made_now, bot.draw_strength(hero, board))
-        # 오독한 사이즈로 팟오즈를 다시 계산한다 (인식이 곧 판단 근거다)
-        if abs(_sz_seen - _sz_true) > 1e-9:
-            _p0 = float(pot) - tocall
-            need = (_sz_seen*_p0)/max(1.0, _p0 + 2*_sz_seen*_p0)
+        # 예전에는 여기서 `if abs(_sz_seen - _sz_true) > 1e-9: need = …` 로
+        # need 를 통째로 재대입했다. 0.2% 오독에도 발동해서(실측 발동률 80~89%,
+        # 오독 중앙 1.5%) 앞의 체인이 전부 지워졌다. 인지 사이즈는 이제
+        # need_true 의 입력으로 들어간다 — 같은 정보를 안 지우고 반영한다.
+        # 근거: FIX_PLAN.md 2-A / TRACE_SZSEEN.md / TRACE_STELL.md
         # 상대가 블러프를 많이 하는 사람이면 더 넓게 받아야 한다.
         # 개인 편향(call_bias)은 '내가 어떤 사람인가', 이건 '상대가 어떤 사람인가'다.
         if _rdz and _rdz.get('w', 0) > 0:
