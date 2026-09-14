@@ -266,6 +266,12 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
   (`claude/fix-calc-nks1k7`, FIX_PLAN.md 1-C). `perceived_rel` 에는
   여전히 날것을 넘긴다 — `make_plan:312-314` 와 같게 유지하기 위해서다
 - `audit.py:171` 이 설계상 허용된 이탈까지 전부 "포기계획인데 벳" 경보
+- `persona.py:755` `size_read` 는 2.0팟 이하에서 항등이다. 아카이브 648건에서
+  포스트플랍 sz 최대 0.915 — **한 번도 동작한 적이 없다.** `sizing_tell` 이
+  실제로 닿는 곳은 `see_size → size_gap → opp_size_norm` 이고, 거기서
+  `_sz_seen` 덮어쓰기의 on/off 스위치로 작동한다 (`TRACE_STELL.md`)
+- `persona.py:955` `size_river` 만 `see_size` 게이트가 빠져 있다. 리버에서는
+  사이즈를 못 읽는 사람도 `_sz_norm` 이 어긋나 덮어쓰기가 걸린다
 
 ---
 
@@ -284,6 +290,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/implied.py` | full_log 로 팟·콜비용 재구성, 가격 분석 |
 | `tools/cf_potodds.py` | 팟오즈 식 수정(FIX_PLAN 1-A)의 행동 영향 |
 | `tools/cf_szseen.py` | `_sz_seen` 덮어쓰기(FIX_PLAN 2-A) 3변종 분해 |
+| `tools/cf_stell.py` | `sizing_tell` 해부 (방향·크기·2×2 충돌) |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
 | `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |
