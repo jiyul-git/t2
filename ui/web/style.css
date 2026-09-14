@@ -346,8 +346,34 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 }
 #loghead #bMenu { padding: 2px 10px; font-size: 16px; line-height: 1; }
 
-/* 딜링 모션 — 카드가 테이블 중앙에서 좌석으로 들어온다 (app.js dealThen) */
-.pod .backs.in { animation: dealin .24s ease-out backwards; }
+
+/* ---------- 가운데 덱 (app.js deckShow/deckHide) ----------
+   카드가 허공에서 생기는 대신 가운데에서 섞이고 한 장씩 날아간다.
+   slotPos 의 세로 중심이 44% 라 덱도 거기에 맞춘다. */
+#deck {
+  position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%);
+  display: flex; z-index: 1; pointer-events: none;
+}
+#deck .card { position: absolute; left: 0; top: 0; }
+#deck .card:nth-child(1) { transform: translate(-1px, -2px) rotate(-3deg); }
+#deck .card:nth-child(2) { transform: translate(0, 0) rotate(1deg); }
+#deck .card:nth-child(3) { transform: translate(1px, 2px) rotate(4deg); }
+#deck.shuffle .card:nth-child(1) { animation: sh1 .23s ease-in-out 3; }
+#deck.shuffle .card:nth-child(3) { animation: sh3 .23s ease-in-out 3; }
+@keyframes sh1 {
+  50% { transform: translate(-9px, -2px) rotate(-10deg); }
+}
+@keyframes sh3 {
+  50% { transform: translate(9px, 2px) rotate(11deg); }
+}
+
+/* 카드가 덱에서 좌석으로 날아온다. --dx/--dy 는 renderSeats 가 심는다. */
+.pod .backs.in {
+  animation: dealin .30s cubic-bezier(.22,.7,.3,1) backwards;
+}
 @keyframes dealin {
-  from { transform: translateX(-50%) translateY(30px) scale(.5); opacity: 0; }
+  from {
+    transform: translateX(-50%) translate(var(--dx, 0px), var(--dy, 0px)) scale(.4);
+    opacity: .25;
+  }
 }

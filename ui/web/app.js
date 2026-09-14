@@ -148,6 +148,11 @@ function renderTop(v) {
 function renderSeats(v) {
   const n = v.n_slots || 8;
   const box = $('#seats');
+  // 카드가 가운데 덱에서 날아오게 하려면 '가운데 → 이 자리' 를 픽셀로 알아야
+  // 한다. 좌석은 %로 배치되는데 CSS transform 의 %는 자기 박스 기준이라
+  // 그대로 못 쓴다. 테이블 크기를 한 번 재서 환산한다.
+  const wrap = $('#tablewrap');
+  const W = wrap ? wrap.clientWidth : 0, H = wrap ? wrap.clientHeight : 0;
   const by = {};
   (v.seats || []).forEach((s) => { by[s.seat] = s; });
   let html = '';
@@ -166,9 +171,12 @@ function renderSeats(v) {
     const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded');
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
     const got = dealtYet(slot);
+    const dx = Math.round((50 - p.x) / 100 * W);
+    const dy = Math.round((44 - p.y) / 100 * H);   // 44 = slotPos 의 세로 중심
     const backs = (d.in_hand && got)
       ? `<div class="backs${S.dealt ? ' in' : ''}"${S.dealt
-           ? ` style="animation-delay:${dealDelay(S.dealt[slot])}"` : ''}>` +
+           ? ` style="--dx:${dx}px;--dy:${dy}px;animation-delay:${dealDelay(S.dealt[slot])}"`
+           : ''}>` +
         `${backHTML('mini')}${backHTML('mini')}</div>`
       : (S.folding[slot]
          ? `<div class="backs out" style="animation-delay:${foldDelay(S.folding[slot])}">` +
@@ -273,8 +281,9 @@ function renderHero(v) {
  */
 // 카드 돌리는 데 걸리는 총 시간. 좌석 수로 나눠 한 장씩 뿌린다.
 // 8명이든 3명이든 한 바퀴가 같은 시간에 끝나 리듬이 일정하다.
-const DEAL_TOTAL = 3000;
-const dealMs = (n) => Math.round(DEAL_TOTAL / Math.max(1, n));
+const DEAL_TOTAL = 3000;      // 셔플 + 배분을 합친 총 시간
+const SHUFFLE_MS = 700;       // 가운데 덱이 섞이는 구간
+const dealMs = (n) => Math.round((DEAL_TOTAL - SHUFFLE_MS) / Math.max(1, n));
 
 const DEAL_ANIM = 240;           // style.css 의 dealin 길이와 같아야 한다
 function dealtYet(slot) {
@@ -309,7 +318,7 @@ function dealOrder(v) {
 
 function dealThen(v, done) {
   const order = dealOrder(v);
-  if (!order.length) { S.dealt = null; done(); return; }
+  if (!order.length) { S.dealt = null; deckHide(); done(); return; }
   // 딜링 중에는 아무도 아직 접지 않았다. 뷰의 in_hand/allin 은 재생이 끝난
   // 뒤의 상태라 그대로 쓰면 접은 자리가 처음부터 회색으로 보인다.
   const fv = Object.assign({}, v, {
@@ -318,18 +327,48 @@ function dealThen(v, done) {
   });
   S.dealt = {};
   renderSeats(fv); renderHero(fv);
-  let i = 0;
-  (function next() {
-    if (i >= order.length) {
-      S.dealt = null;
-      renderSeats(v); renderHero(v);
-      done();
-      return;
-    }
+  deckShow();
+  let i = 0, ended = false;
+  // **딜링 중에도 재생 중이다.** 여기에 replayDone 을 안 걸어둬서, 카드를
+  // 돌리는 동안 폴드를 누르면 예약되지 않고 바로 전송됐다 — 그러면 응답이
+  // 와서 stopReplay 가 딜링과 뒤이을 봇 액션 재생을 통째로 끊는다.
+  // 딜링을 3초로 늘리면서 이 구멍이 더 잘 드러났다.
+  const finish = () => {
+    if (ended) return;
+    ended = true;
+    S.timers.forEach(clearTimeout); S.timers = [];
+    S.dealt = null; S.replayDone = null;
+    deckHide();
+    renderSeats(v); renderHero(v);
+    done();
+  };
+  S.replayDone = finish;
+  const next = () => {
+    if (i >= order.length) { finish(); return; }
     S.dealt[order[i++]] = Math.max(1, performance.now());
     renderSeats(fv); renderHero(fv);
     S.timers.push(setTimeout(next, dealMs(order.length)));
-  })();
+  };
+  S.timers.push(setTimeout(next, SHUFFLE_MS));   // 섞고 나서 돌린다
+}
+
+/* ---------------- 가운데 덱 ----------------
+ * 카드가 허공에서 생기는 대신, 가운데 덱에서 한 장씩 날아가게 한다.
+ * 덱은 표시 전용 엘리먼트다 — 상태도 엔진도 건드리지 않는다.
+ */
+function deckShow() {
+  const d = $('#deck');
+  if (!d) return;
+  d.innerHTML = backHTML('mini') + backHTML('mini') + backHTML('mini');
+  d.hidden = false;
+  d.classList.remove('shuffle');
+  void d.offsetWidth;              // 애니메이션 재시작
+  d.classList.add('shuffle');
+}
+function deckHide() {
+  const d = $('#deck');
+  if (!d) return;
+  d.hidden = true; d.classList.remove('shuffle');
 }
 
 /* ---------------- 말풍선 ---------------- */
