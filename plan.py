@@ -1658,12 +1658,23 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     if street == 'turn':
         _fi = intent_of(state, 'flop') or {}
         st['flop_checked'] = (_fi.get('act') in (None, 'check'))
-    outs = draw_strength(hero, board)
+    outs_true = draw_strength(hero, board)
+    # make_plan:277 과 같은 체감 보정을 건다. 여기만 날것이라 **같은 사람이
+    # 플랍과 턴에서 자기 아웃츠를 다르게 셌다.** 아래 rel 은 이미 고쳐져
+    # 있었는데 outs 만 그 수정에서 빠져 있었다.
+    # refresh 에는 rng 가 없다 — seed 로 새로 만든다. 이 함수의 다른 난수는
+    # _allowed 가 자기 random.Random(crc32(...)) 를 따로 만들어 쓰므로
+    # 스트림이 겹치지 않는다.
+    outs = (int(round(outs_true * PS.calc_noise(profile, 'outs',
+                                                random.Random(seed))))
+            if profile.get('concepts') else outs_true)
     made = bot.made_strength(hero, board)
     # make_plan 과 같은 편향을 쓴다. 예전에는 여기만 날것이라
     # **같은 사람이 플랍과 턴에서 자기 핸드를 다르게 평가했다.**
     rel_true = relative_strength(hero, board, opp_range)
-    rel = perceived_rel(profile, rel_true, hero, board, outs, made)
+    # perceived_rel 에는 **날것**을 넘긴다 (make_plan:312-314 와 같게).
+    # 체감값을 넘기면 노이즈가 두 번 먹혀 새 불일치가 생긴다.
+    rel = perceived_rel(profile, rel_true, hero, board, outs_true, made)
     eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
     # 레인지 우위도 같은 시점에 갱신한다. my_range 가 없으면(구 호출부)
     # 이전 값을 유지해 동작을 깨지 않는다.
@@ -1687,7 +1698,7 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     st.update({'eq_current': (None if _eqc is None else round(_eqc, 3)),
                'eq_delta': (None if _eqc is None else round(eq - _eqc, 3)),
                'eq_sims': 300, 'eq_seed': seed,
-               'outs_true': outs,
+               'outs_true': outs_true,
                'opp_range_n': len(opp_range) if opp_range else 0,
                'opp_range_sig': _range_sig(opp_range),
                'my_range_n': len(_mr) if _mr else 0,

@@ -91,6 +91,18 @@ a247f7f  seat → pid 격리
          다른 것은 한 테이블-핸드의 확률 0.284 → 0.283 하나뿐.
 ```
 
+계산 일관성 수정 (`claude/fix-calc-nks1k7` 브랜치). **지문을 깨지 않았다.**
+
+```
+1-C  refresh 의 outs 를 make_plan 과 같은 체감값으로
+     (plan.py:1661). 지문 1dd5d83f… 유지.
+     안 깨진 이유: outs 소비처가 전부 게이트(8 또는 6)인데,
+     6시드×30핸드에서 턴·리버에 semibluff/bluff_2street/river_bluff
+     계획이 0건이라 그 게이트를 탄 상황이 없었다.
+     영향이 없다는 뜻이 아니다 — tools/cf_refresh.py 에서 outs 축
+     뒤집힘이 1.7% → 2.6% 로 오르고 전환이 semibluff → giveup 으로 바뀐다.
+```
+
 `f7e03ac` / `a247f7f` 를 새 실험의 비교군으로 쓰지 마라. 특히 prefetch 같은
 성능 최적화의 의미 보존 검증은 **같은 baseline 의 ON/OFF 로만** 비교한다.
 
@@ -233,8 +245,9 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
   별도 폴더에서 실행할 것
 - 히어로 탈락 후 `step()` 호출 시 `'NoneType' object has no attribute 'alive'`
   로 크래시. 깔끔한 종료 메시지가 없다
-- `refresh`의 outs 는 `draw_strength` 날것, `make_plan`의 outs 는
-  `calc_noise`를 거친 체감값. 불일치 (rel 은 이미 고쳤으나 outs 는 누락)
+- ~~`refresh`의 outs 는 `draw_strength` 날것~~ → **고쳤다**
+  (`claude/fix-calc-nks1k7`, FIX_PLAN.md 1-C). `perceived_rel` 에는
+  여전히 날것을 넘긴다 — `make_plan:312-314` 와 같게 유지하기 위해서다
 - `audit.py:171` 이 설계상 허용된 이탈까지 전부 "포기계획인데 벳" 경보
 
 ---
