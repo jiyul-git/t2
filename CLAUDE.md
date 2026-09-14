@@ -283,6 +283,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/delta_var.py` | eq_delta 의 몬테카를로 분산 측정 |
 | `tools/implied.py` | full_log 로 팟·콜비용 재구성, 가격 분석 |
 | `tools/cf_potodds.py` | 팟오즈 식 수정(FIX_PLAN 1-A)의 행동 영향 |
+| `tools/cf_szseen.py` | `_sz_seen` 덮어쓰기(FIX_PLAN 2-A) 3변종 분해 |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
 | `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |
