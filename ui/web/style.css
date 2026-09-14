@@ -17,6 +17,11 @@
   --green: #3fae6d;
   --card-w: 34px;
   --card-h: 48px;
+  /* 모션 길이. **JS 가 이 값을 읽어간다** (app.js animMs).
+     예전에는 같은 숫자를 app.js 에도 따로 적어뒀는데, CSS 만 고치고 JS 를
+     안 고쳐서 이미 받은 카드가 프레임마다 다시 날아갔다. 출처를 하나로 둔다. */
+  --deal-anim: 500ms;
+  --fold-anim: 550ms;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -105,7 +110,7 @@ html, body {
               display: flex; gap: 2px; z-index: 0; }
 .pod.folded .backs { display: none; }
 /* 폴드 모션 — 카드가 테이블 안쪽으로 빠지면서 사라진다 */
-.pod .backs.out { display: flex; animation: foldout .55s ease-in forwards; }
+.pod .backs.out { display: flex; animation: foldout var(--fold-anim) ease-in forwards; }
 @keyframes foldout {
   0%   { transform: translateX(-50%) translateY(0) scale(1) rotate(0deg); opacity: 1; }
   100% { transform: translateX(-50%) translateY(26px) scale(.55) rotate(-14deg); opacity: 0; }
@@ -372,7 +377,7 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
    움직였다. 비행 시간은 폴드 모션(.55s)과 비슷하게 길게 둔다 — 간격은
    짧아도 카드 하나하나는 천천히 난다. */
 .pod .backs .card.fly {
-  animation: dealin .5s cubic-bezier(.2,.75,.3,1) backwards;
+  animation: dealin var(--deal-anim) cubic-bezier(.2,.75,.3,1) backwards;
 }
 @keyframes dealin {
   from {

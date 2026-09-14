@@ -294,7 +294,20 @@ const SHUFFLE_MS = 700;       // 가운데 덱이 섞이는 구간
 // 카드 하나하나는 천천히 도는 것과 같은 그림이다.
 const dealMs = () => Math.round(paceMs({ action: 'fold' }) / 3);
 
-const DEAL_ANIM = 240;           // style.css 의 dealin 길이와 같아야 한다
+/* 모션 길이는 style.css 의 :root 에서 읽는다. 같은 숫자를 두 곳에 적어두면
+ * 한쪽만 고쳐진다 — 실제로 CSS 를 .24s 에서 .5s 로 늘리면서 여기 240 을
+ * 그대로 둬서, 이미 받은 카드가 매 프레임 '남은 52%' 를 다시 날았다.
+ * (renderSeats 가 프레임마다 카드를 새로 만들기 때문에, 음수 지연이
+ *  애니메이션 길이보다 짧으면 그만큼 다시 재생된다.) */
+function animMs(name, fallback) {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+    const n = parseFloat(v);
+    if (!isNaN(n)) return /\ds\s*$/.test(v.trim()) ? n * 1000 : n;
+  } catch (e) { /* 못 읽으면 기본값 */ }
+  return fallback;
+}
+const DEAL_ANIM = animMs('--deal-anim', 500);
 function dealtCount(slot) {
   if (!S.dealt) return 2;                 // 딜링이 끝났으면 두 장 다
   return (S.dealt[slot] || []).length;
@@ -430,7 +443,7 @@ function actionText(e) {
  * 정리 타이머는 S.timers 가 아니라 따로 둔다. stopReplay 가 재생 타이머를
  * 취소할 때 같이 취소되면 그 좌석이 영구히 '사라지는 중' 으로 남는다.
  */
-const FOLD_ANIM = 550;          // style.css 의 foldout 길이와 같아야 한다
+const FOLD_ANIM = animMs('--fold-anim', 550);
 function foldDelay(t0) {
   const el = Math.min(FOLD_ANIM, Math.max(0, performance.now() - t0));
   return (-el).toFixed(0) + 'ms';
