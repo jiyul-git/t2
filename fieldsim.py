@@ -102,6 +102,23 @@ class Field:
             self.tilt.state = dict(tilt_state)
         return self
 
+    def pid_profiles(self):
+        """pid → 프로필. **대회 전체**다.
+
+        틸트 감쇠(dynamics.Tilt.decay_all)는 상태에 있는 모든 pid 를 훑는데
+        한 핸드가 아는 프로필은 그 테이블 8명분뿐이다. 나머지는 프로필을
+        못 찾아 기본 temper 로 감쇠했다 — 사람마다 다른 회복 속도가 죽는다.
+
+        players 의 구성은 대회 중 바뀌지 않고(탈락자도 stack 0 으로 남는다)
+        prof 객체도 그대로라 한 번만 만들면 된다. 길이가 달라지면(역직렬화로
+        새로 채워진 경우) 다시 만든다.
+        """
+        m = getattr(self, '_pid_prof', None)
+        if m is None or len(m) != len(self.players):
+            m = self._pid_prof = {str(p['pid']): p['prof']
+                                  for p in self.players.values()}
+        return m
+
     def stamp(self, h):
         """핸드에 대회 문맥을 심는다. 드라이버가 직접 h.xxx = 하지 않는다.
 
@@ -119,6 +136,7 @@ class Field:
             payout_flat=self.fmt['payout_flat'],
             ante=(bb if self.level >= self.fmt['ante_from'] else 0),
             dyn=self.tilt,
+            pid_prof=self.pid_profiles(),
             erosion_per_hand=CTX.erosion(self.hands_per_level,
                                          self.fmt['blind_mult']),
             reentry=self.fmt['reentry'],
@@ -191,7 +209,8 @@ class Field:
             rec['intents'] = getattr(h, 'intents', [])
             rec['hole'] = {str(k): v for k, v in h.hole.items()}
         try:
-            with open(os.path.join(D, 'bot_hands%s.jsonl' % BOT_SUFFIX), 'a') as fp:
+            with open(os.path.join(D, 'bot_hands%s.jsonl' % BOT_SUFFIX), 'a',
+                      encoding='utf-8') as fp:
                 fp.write(json.dumps(rec, ensure_ascii=False) + '\n')
         except OSError:
             pass
@@ -230,8 +249,18 @@ class Field:
         tb.hands += 1
         return True
 
-    def step_others(self):
-        """히어로 테이블 외 전 테이블을 한 핸드씩(인원 비례로 가감) 돌린다."""
+    def step_others(self, settle=True):
+        """히어로 테이블 외 전 테이블을 한 핸드씩(인원 비례로 가감) 돌린다.
+
+        settle=False 면 테이블만 돌리고 탈락 수거·밸런싱은 하지 않는다.
+        이 둘은 **히어로 테이블의 최종 결과를 알아야** 한다.
+          _collect_busts  busted_order 의 순서가 곧 순위다(rank_of). 다른 테이블
+                          탈락을 먼저 넣으면 순위가 바뀐다.
+          _balance        히어로를 다른 테이블로 옮길 수 있다. 핸드 진행 중에
+                          돌면 그 핸드가 깨진다.
+        그래서 '다른 테이블을 미리 돌려두는' 최적화를 하려면 이 둘만 떼어내야 한다.
+        기본값은 기존 동작이다. 인자를 안 쓰면 아무것도 바뀌지 않는다.
+        """
         ht = self.players[self.hero_pid]['table']
         for tid, tb in list(self.tables.items()):
             if tid == ht: continue
@@ -244,8 +273,9 @@ class Field:
             for _ in range(k):
                 if tb.n() < 2: break
                 self._play_table(tb)
-        self._collect_busts()
-        self._balance()
+        if settle:
+            self._collect_busts()
+            self._balance()
 
     # ---------- 파산·밸런싱 ----------
     def _collect_busts(self):

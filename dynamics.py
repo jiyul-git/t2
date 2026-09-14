@@ -61,33 +61,39 @@ def _t(prof, key, default=5.0):
 
 
 class Tilt:
-    """좌석별 틸트 상태. 대회 하나에 한 개."""
+    """**플레이어별** 틸트 상태. 대회 하나에 한 개.
+
+    키는 좌석이 아니라 사람(play.Hand.pid_of)이다. 좌석 번호는 테이블마다
+    1..8 로 겹치므로, 좌석을 키로 쓰면 서로 다른 테이블의 다른 사람이 같은
+    상태를 공유한다. 예전에 그랬고 shown 까지 섞여서, 한 테이블의 쇼다운이
+    다른 테이블 봇의 레인지 추정에 들어갔다. 여기로 좌석 번호를 넘기지 말 것.
+    """
 
     def __init__(self):
         self.state = {}
 
-    def _s(self, seat):
-        return self.state.setdefault(str(seat), {
+    def _s(self, pid):
+        return self.state.setdefault(str(pid), {
             'level': 0.0,        # 현재 틸트 0~1
             'heat': 0.0,         # 반복 가중용. 핸드마다 식는다
             'streak': 0,         # 연속으로 진 핸드 수
             'dry': 0,            # 참가하지 못한 연속 핸드 수
-            'shown': [],         # 이 좌석이 쇼다운에서 깐 패 (레인지 추정용)
+            'shown': [],         # 이 사람이 쇼다운에서 깐 패 (레인지 추정용)
         })
 
-    def level(self, seat):
-        return self._s(seat)['level']
+    def level(self, pid):
+        return self._s(pid)['level']
 
-    def heat(self, seat):
-        return self._s(seat)['heat']
+    def heat(self, pid):
+        return self._s(pid)['heat']
 
-    def on_pot(self, seat, prof, delta_bb, stack_bb=None):
+    def on_pot(self, pid, prof, delta_bb, stack_bb=None):
         """핸드 결과 반영.
 
         delta_bb  그 핸드의 손익(bb)
         stack_bb  **핸드 시작 시점**의 스택. 손익을 이것으로 나눠 상대화한다.
         """
-        s = self._s(seat)
+        s = self._s(pid)
         if delta_bb is None or not stack_bb or stack_bb <= 0:
             return s['level']
         rel = float(delta_bb) / float(stack_bb)
@@ -130,7 +136,7 @@ class Tilt:
     LOSS_WEIGHT_SHOWDOWN = 1.0     # 끝까지 가서 진 핸드
     LOSS_WEIGHT_FOLD = 0.6         # 넣었다가 중간에 접은 핸드
 
-    def on_result(self, seat, prof, won, played, contested=None, showdown=False):
+    def on_result(self, pid, prof, won, played, contested=None, showdown=False):
         """핸드 하나의 결과 요약. 큰 팟이 아니어도 쌓이는 것들.
 
         won       그 핸드에서 칩이 늘었나
@@ -139,7 +145,7 @@ class Tilt:
                   블라인드만 낸 것은 지는 것이 아니다
         showdown  끝까지 가서 졌나. 중간에 접은 것보다 무겁게 센다
         """
-        s = self._s(seat)
+        s = self._s(pid)
         prone = _t(prof, 'tilt_prone') / 10.0
         if contested is None:
             contested = played
@@ -164,15 +170,15 @@ class Tilt:
                 s['level'] = min(1.0, s['level'] + self.DRY_STEP*prone)
         return s['level']
 
-    def on_fold_after_investing(self, seat, prof, invested_bb, stack_bb):
+    def on_fold_after_investing(self, pid, prof, invested_bb, stack_bb):
         """어려운 팟에서 포기. 같은 크기를 쇼다운에서 잃는 것보다는 덜 아프지만
         '내가 접었다'는 자책이 붙어 무시할 수 없다."""
         if not stack_bb or stack_bb <= 0:
-            return self._s(seat)['level']
+            return self._s(pid)['level']
         rel = float(invested_bb) / float(stack_bb)
         if rel < self.SUNK_MIN:
-            return self._s(seat)['level']
-        s = self._s(seat)
+            return self._s(pid)['level']
+        s = self._s(pid)
         size = min(1.0, (rel - self.SUNK_MIN) / (HIT_FULL - self.SUNK_MIN))
         prone = _t(prof, 'tilt_prone') / 10.0
         stack_axis = (_t(prof, 'tilt_stack') - 5.0) / 5.0
@@ -182,19 +188,22 @@ class Tilt:
         s['level'] = min(1.0, s['level'] + HIT_BASE*self.SUNK_K*prone*size*rep)
         return s['level']
 
-    def note_showdown(self, seat, hand):
-        """쇼다운에서 깐 패. 레인지 추정(runner.adjust_range_by_history)이 쓴다."""
-        s = self._s(seat)
+    def note_showdown(self, pid, hand):
+        """쇼다운에서 깐 패. 레인지 추정(runner.adjust_range_by_history)이 쓴다.
+
+        pid 기준이다. 좌석으로 넣으면 테이블끼리 섞인다.
+        """
+        s = self._s(pid)
         s['shown'].append(hand)
         if len(s['shown']) > 12:
             s['shown'] = s['shown'][-12:]
 
-    def shown(self, seat):
-        return self._s(seat)['shown']
+    def shown(self, pid):
+        return self._s(pid)['shown']
 
-    def on_hand_end(self, seat, prof):
+    def on_hand_end(self, pid, prof):
         """핸드마다 감쇠. 회복 속도는 사람마다 다르다."""
-        s = self._s(seat)
+        s = self._s(pid)
         s['heat'] = max(0.0, s['heat'] - HEAT_DECAY)
         if s['level'] <= 0.0:
             return 0.0
@@ -205,6 +214,16 @@ class Tilt:
         return s['level']
 
     def decay_all(self, profiles):
-        for seat in list(self.state):
-            p = profiles.get(str(seat)) or profiles.get(seat) or {}
-            self.on_hand_end(seat, p)
+        """핸드마다 감쇠. profiles 는 **pid 키**여야 한다 (session 이 그렇게 만든다).
+
+        상태에 있는 모든 키를 훑으므로 profiles 도 **대회 전체**여야 한다.
+        여기에 한 테이블분만 오면 나머지 사람은 프로필을 못 찾아 기본
+        temper 로 감쇠한다 — 사람마다 다른 회복 속도(tilt_recovery)가 죽는다.
+        그래서 session 은 context.pid_prof(필드 전체 맵)를 바닥에 깔아 넘긴다.
+
+        못 찾으면 여전히 기본값으로 돈다. 필드 없이 도는 단일 테이블
+        드라이버는 자기 테이블 것만 넘기고, 그 경우 상태에도 그 사람들뿐이다.
+        """
+        for pid in list(self.state):
+            p = profiles.get(str(pid)) or profiles.get(pid) or {}
+            self.on_hand_end(pid, p)

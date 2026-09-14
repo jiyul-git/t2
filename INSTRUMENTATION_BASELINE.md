@@ -15,6 +15,11 @@
       method: 전체 full_log 이어붙여 SHA-256
       sha256: 8f02a035d46af7e7ad929843f509cf6362a94221f6d00db75028d63e530c8eaa
 
+    ※ historical reference. 이 지문은 f7e03ac 시절의 것이고 현재 baseline
+      (8dc14d3)의 지문이 아니다. 레시피(엔트리 수·히어로 정책)가 기록되지
+      않아 재현할 수 없어 현재 값과 비교 대상도 아니다.
+      현재 지문은 CLAUDE.md 와 tools/fingerprint.py 를 볼 것.
+
     변경 전 백업 코드와 변경 후 코드가 위 지문에서 완전 일치.
     _eq_current 는 자체 random.Random 을 쓰므로 make_plan 의 rng 소비 순서를
     건드리지 않는다.

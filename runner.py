@@ -170,9 +170,14 @@ def has_initiative(seat, aggressor):
     return aggressor is not None and seat == aggressor
 
 # ---------- 쇼다운 히스토리 반영 ----------
-def adjust_range_by_history(base_range, dyn, seat, board, dead=None):
-    """그 좌석이 과거에 깐 패가 예상보다 넓었으면 레인지를 넓힌다."""
-    shown = dyn.shown(seat) if hasattr(dyn, 'shown') else []
+def adjust_range_by_history(base_range, dyn, pid, board, dead=None):
+    """그 **사람**이 과거에 깐 패가 예상보다 넓었으면 레인지를 넓힌다.
+
+    키는 좌석이 아니라 플레이어 식별자다(play.Hand.pid_of). 좌석 번호는
+    테이블마다 겹쳐서, 그걸로 조회하면 다른 테이블에서 깐 패를 자기가 본
+    것처럼 쓰게 된다.
+    """
+    shown = dyn.shown(pid) if hasattr(dyn, 'shown') else []
     if len(shown) < 2: return base_range, None
     # 상류(perceived_range)가 레인지를 통째로 비울 수 있다. 그 경우 아래
     # max() 가 빈 시퀀스로 터진다 — 넓힐 기준 자체가 없으므로 그대로 돌려준다.

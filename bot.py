@@ -4,17 +4,41 @@ RV={r:i+2 for i,r in enumerate(RANKS)}
 FULLDECK=[r+s for r in RANKS for s in SUITS]
 
 def eval5(cs):
-    vs=sorted([RV[c[0]] for c in cs],reverse=True)
-    ss=[c[1] for c in cs]
-    flush=len(set(ss))==1
-    u=sorted(set(vs),reverse=True)
+    """5장 평가. 반환 튜플은 바꾸지 않는다 — 비교에 그대로 쓰인다.
+    아래는 같은 값을 더 적은 일로 구하는 것뿐이고, 전수 검증으로 확인한다
+    (C(52,5)=2,598,960 전 조합을 예전 구현과 대조).
+
+    예전에 하던 낭비
+      - 무늬 리스트를 따로 만들고 set 으로 플러시 판정 (그냥 4번 비교하면 된다)
+      - sorted(set(vs)) 로 중복 제거 (vs 가 이미 내림차순이라 한 번 훑으면 된다)
+      - {v: vs.count(v)} 로 개수 세기 (5장에 O(n^2) + set 생성)
+      - sorted(..., key=lambda) 로 그룹 정렬 (람다가 핸드 정산 한 번에 177만번
+        불렸다. (개수, 끗수) 튜플을 그냥 내림차순 정렬하면 같은 순서다)
+    """
+    vs = sorted((RV[c[0]] for c in cs), reverse=True)
+    s0 = cs[0][1]
+    flush = (cs[1][1] == s0 and cs[2][1] == s0
+             and cs[3][1] == s0 and cs[4][1] == s0)
+    # vs 가 내림차순이므로 한 번 훑어 (개수, 끗수) 그룹을 만든다.
+    # 이 시점의 pairs 는 끗수 내림차순이라 u 를 여기서 뽑는다.
+    pairs = []
+    prev = None; n = 0
+    for v in vs:
+        if v == prev:
+            n += 1
+        else:
+            if prev is not None:
+                pairs.append((n, prev))
+            prev = v; n = 1
+    pairs.append((n, prev))
+    u = [p[1] for p in pairs]
     straight=0
     if len(u)==5:
         if u[0]-u[4]==4: straight=u[0]
         elif u==[14,5,4,3,2]: straight=5
-    cnt={v:vs.count(v) for v in set(vs)}
-    groups=sorted(cnt.items(), key=lambda kv:(-kv[1],-kv[0]))
-    shape=[g[1] for g in groups]; ordered=[g[0] for g in groups]
+    # (개수, 끗수) 내림차순 = 예전의 key=(-개수, -끗수) 와 같은 순서
+    pairs.sort(reverse=True)
+    shape=[p[0] for p in pairs]; ordered=[p[1] for p in pairs]
     if straight and flush: return (8,straight)
     if shape[0]==4: return (7,ordered[0],ordered[1])
     if shape[:2]==[3,2]: return (6,ordered[0],ordered[1])
@@ -25,8 +49,36 @@ def eval5(cs):
     if shape[0]==2: return (1,ordered[0],*ordered[1:])
     return (0,*vs)
 
+# ---------- 핸드 평가 캐시 ----------
+# eval7 은 순수 함수다. 같은 카드 집합이면 언제 불러도 같은 튜플을 돌려준다
+# (eval5 가 입력을 정렬해서 쓰고, 바깥 상태를 읽지 않는다). 그래서 캐시가
+# **결과를 바꿀 수 없다** — 같은 입력에 같은 값을 돌려줄 뿐이다.
+# 행동 지문으로 확인할 것: tools/fingerprint.py 값이 달라지면 이 전제가
+# 깨진 것이므로 되돌린다.
+#
+# 왜 필요한가. 한 핸드의 정산에서 eval7 호출의 83~92% 가 **완전히 같은 카드
+# 집합**의 반복이다 (실측: step_others 1회에 145,023회 호출 / 고유 24,348개,
+# 한 조합이 1,231회 반복). 몬테카를로가 같은 보드에 상대 콤보만 바꿔가며
+# 돌고, 레인지 정렬(ranges._ranked)과 넛 점유율(ranges._strong_share)이
+# 같은 레인지×보드를 반복해서 훑기 때문이다.
+# 실측 효과: 정산 3.3배, 히어로 테이블 7.0배, 값 불일치 0.
+_E7 = {}
+# 항목 하나가 약 226바이트다(실측). 정산 한 번의 고유 조합이 2.4만개이므로
+# 6만이면 한 정산이 중간에 비워지는 일이 거의 없고 메모리는 14MB 안쪽이다.
+# 비우는 것은 언제 해도 안전하다 — 순수 함수라 다시 계산하면 같은 값이 나온다.
+_E7_MAX = 60000
+
+
 def eval7(cs):
-    return max(eval5(list(c)) for c in itertools.combinations(cs,5))
+    k = tuple(sorted(cs))
+    v = _E7.get(k)
+    if v is None:
+        if len(_E7) >= _E7_MAX:
+            _E7.clear()
+        # 정렬된 k 로 조합을 만들어도 부분집합의 **집합**은 같다.
+        # eval5 는 순서에 의존하지 않으므로 max 값도 같다.
+        v = _E7[k] = max(eval5(list(c)) for c in itertools.combinations(k, 5))
+    return v
 
 def equity(hero, board, n_opp, sims=500, seed=None):
     rng=random.Random(seed)

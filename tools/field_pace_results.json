@@ -1,0 +1,410 @@
+{
+ "note": "tools/field_pace.py 실측. hands_per_level 12, start_stack 30000, itm_frac 0.15. 히어로도 봇으로 침.",
+ "runs": [
+  {
+   "entries": 100,
+   "seed": 1,
+   "itm": 15,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 67,
+     "level": 6,
+     "remaining": 72
+    },
+    "50%": {
+     "hand": 88,
+     "level": 8,
+     "remaining": 50
+    },
+    "25%": {
+     "hand": 149,
+     "level": 13,
+     "remaining": 25
+    },
+    "ITM": {
+     "hand": 173,
+     "level": 15,
+     "remaining": 15
+    },
+    "최종1명": {
+     "hand": 410,
+     "level": 20,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 38,
+    "level": 4,
+    "rank": 95
+   },
+   "end_hand": 410,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 4.02,
+   "errors": 0,
+   "secs": 560.4
+  },
+  {
+   "entries": 100,
+   "seed": 2,
+   "itm": 15,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 66,
+     "level": 6,
+     "remaining": 74
+    },
+    "50%": {
+     "hand": 100,
+     "level": 9,
+     "remaining": 49
+    },
+    "25%": {
+     "hand": 148,
+     "level": 13,
+     "remaining": 25
+    },
+    "ITM": {
+     "hand": 167,
+     "level": 14,
+     "remaining": 14
+    },
+    "최종1명": {
+     "hand": 308,
+     "level": 20,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 137,
+    "level": 12,
+    "rank": 33
+   },
+   "end_hand": 308,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 5.09,
+   "errors": 0,
+   "secs": 645.8
+  },
+  {
+   "entries": 100,
+   "seed": 3,
+   "itm": 15,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 61,
+     "level": 6,
+     "remaining": 75
+    },
+    "50%": {
+     "hand": 108,
+     "level": 10,
+     "remaining": 50
+    },
+    "25%": {
+     "hand": 147,
+     "level": 13,
+     "remaining": 25
+    },
+    "ITM": {
+     "hand": 183,
+     "level": 16,
+     "remaining": 15
+    },
+    "최종1명": {
+     "hand": 265,
+     "level": 20,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 68,
+    "level": 6,
+    "rank": 72
+   },
+   "end_hand": 265,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 5.73,
+   "errors": 0,
+   "secs": 638.1
+  },
+  {
+   "entries": 18,
+   "seed": 1,
+   "itm": 3,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 67,
+     "level": 6,
+     "remaining": 13
+    },
+    "50%": {
+     "hand": 81,
+     "level": 7,
+     "remaining": 9
+    },
+    "25%": {
+     "hand": 122,
+     "level": 11,
+     "remaining": 4
+    },
+    "ITM": {
+     "hand": 131,
+     "level": 11,
+     "remaining": 3
+    },
+    "최종1명": {
+     "hand": 206,
+     "level": 18,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 46,
+    "level": 4,
+    "rank": 17
+   },
+   "end_hand": 206,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 1.69,
+   "errors": 0,
+   "secs": 129.1
+  },
+  {
+   "entries": 18,
+   "seed": 2,
+   "itm": 3,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 36,
+     "level": 4,
+     "remaining": 13
+    },
+    "50%": {
+     "hand": 67,
+     "level": 6,
+     "remaining": 8
+    },
+    "25%": {
+     "hand": 141,
+     "level": 12,
+     "remaining": 4
+    },
+    "ITM": {
+     "hand": 143,
+     "level": 12,
+     "remaining": 3
+    },
+    "최종1명": {
+     "hand": 247,
+     "level": 20,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 30,
+    "level": 3,
+    "rank": 17
+   },
+   "end_hand": 247,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 1.39,
+   "errors": 0,
+   "secs": 101.2
+  },
+  {
+   "entries": 18,
+   "seed": 3,
+   "itm": 3,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 50,
+     "level": 5,
+     "remaining": 14
+    },
+    "50%": {
+     "hand": 88,
+     "level": 8,
+     "remaining": 9
+    },
+    "25%": {
+     "hand": 133,
+     "level": 12,
+     "remaining": 4
+    },
+    "ITM": {
+     "hand": 148,
+     "level": 13,
+     "remaining": 3
+    },
+    "최종1명": {
+     "hand": 172,
+     "level": 15,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 79,
+    "level": 7,
+    "rank": 11
+   },
+   "end_hand": 172,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 1.8,
+   "errors": 0,
+   "secs": 137.7
+  },
+  {
+   "entries": 45,
+   "seed": 1,
+   "itm": 7,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 79,
+     "level": 7,
+     "remaining": 34
+    },
+    "50%": {
+     "hand": 102,
+     "level": 9,
+     "remaining": 22
+    },
+    "25%": {
+     "hand": 125,
+     "level": 11,
+     "remaining": 11
+    },
+    "ITM": {
+     "hand": 167,
+     "level": 14,
+     "remaining": 7
+    },
+    "최종1명": {
+     "hand": 225,
+     "level": 19,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 73,
+    "level": 7,
+    "rank": 39
+   },
+   "end_hand": 225,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 3.23,
+   "errors": 0,
+   "secs": 307.8
+  },
+  {
+   "entries": 45,
+   "seed": 2,
+   "itm": 7,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 63,
+     "level": 6,
+     "remaining": 32
+    },
+    "50%": {
+     "hand": 83,
+     "level": 7,
+     "remaining": 22
+    },
+    "25%": {
+     "hand": 116,
+     "level": 10,
+     "remaining": 9
+    },
+    "ITM": {
+     "hand": 128,
+     "level": 11,
+     "remaining": 7
+    },
+    "최종1명": {
+     "hand": 202,
+     "level": 17,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 16,
+    "level": 2,
+    "rank": 45
+   },
+   "end_hand": 202,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 3.0,
+   "errors": 0,
+   "secs": 310.2
+  },
+  {
+   "entries": 45,
+   "seed": 3,
+   "itm": 7,
+   "hands_per_level": 12,
+   "marks": {
+    "75%": {
+     "hand": 51,
+     "level": 5,
+     "remaining": 34
+    },
+    "50%": {
+     "hand": 93,
+     "level": 8,
+     "remaining": 22
+    },
+    "25%": {
+     "hand": 147,
+     "level": 13,
+     "remaining": 10
+    },
+    "ITM": {
+     "hand": 169,
+     "level": 15,
+     "remaining": 7
+    },
+    "최종1명": {
+     "hand": 218,
+     "level": 19,
+     "remaining": 1
+    }
+   },
+   "hero_out": {
+    "hand": 169,
+    "level": 15,
+    "rank": 8
+   },
+   "end_hand": 218,
+   "end_remaining": 1,
+   "capped": false,
+   "timed_out": false,
+   "avg_tables": 3.14,
+   "errors": 0,
+   "secs": 269.8
+  }
+ ]
+}

@@ -412,13 +412,13 @@ import json as _json, os as _os
 # 장부는 그것을 소유한 대회 상태에 저장한다. 경로를 쓰려면 반드시 명시할 것.
 
 def save_book(bk, path):
-    _json.dump(bk.d, open(path, 'w'))
+    _json.dump(bk.d, open(path, 'w', encoding='utf-8'))
 
 def load_book(path):
     bk = Book()
     p = path
     if _os.path.exists(p):
-        try: bk.d = _json.load(open(p))
+        try: bk.d = _json.load(open(p, encoding='utf-8'))
         except (OSError, ValueError): pass      # 없거나 깨진 파일만 무시
     return bk
 
@@ -447,7 +447,7 @@ _SIG_PATH = _os_path.join(_os_path.dirname(_os_path.abspath(__file__)),
 STYLE_SIG = {}
 STYLE_SIG_SD = {}
 try:
-    with open(_SIG_PATH) as _f:
+    with open(_SIG_PATH, encoding='utf-8') as _f:
         _cs = _json_mod.load(_f)
     for _st, _d in (_cs.get('styles') or {}).items():
         STYLE_SIG[_st] = {k: v['mean'] for k, v in _d.items()}
@@ -471,7 +471,7 @@ _PRIOR_PATH = _os_path.join(_os_path.dirname(_os_path.abspath(__file__)),
 STYLE_CONCEPT_PRIOR = {}
 STYLE_CONCEPT_SD = {}
 try:
-    with open(_PRIOR_PATH) as _f:
+    with open(_PRIOR_PATH, encoding='utf-8') as _f:
         _cal = _json_mod.load(_f)
     for _st, _cs in (_cal.get('styles') or {}).items():
         STYLE_CONCEPT_PRIOR[_st] = {k: v['mean'] for k, v in _cs.items()}
