@@ -860,6 +860,18 @@ function finishResult(v) {
  * 자격자가 내내 같으므로 팟이 하나가 되고, 올인이 있으면 자격자가 달라져 그대로
  * 갈린다. **표시만 합친다** — 금액과 분배는 엔진이 준 그대로다.
  */
+/* 엔진의 pots 는 '투입 단계'별로 쪼갠 것이지 사이드팟이 아니다.
+ *
+ *  - 자격자가 같은 칸이 연달아 나오면 한 팟이다. 단계가 나뉜 것은
+ *    누가 언제 얼마를 넣었냐일 뿐 나눠 줄 대상이 같다.
+ *  - **자격자가 한 명인 칸은 팟이 아니다.** 상대가 다 콜하지 못한
+ *    초과분이 그대로 돌아가는 것이다. 헤즈업 올인에서 항상 생긴다 —
+ *    이걸 '사이드1' 로 찍어서, 둘이 치는 판에 사이드팟이 있는 것처럼
+ *    보였다. view.py 도 이미 이걸 '반환' 으로 부른다.
+ *
+ * 사이드팟은 올인한 사람을 두고 **나머지가 계속 칠 때** 생긴다.
+ * 그래서 자격자 2명 이상인 칸이 둘 이상일 때만 팟이 나뉜 것이다.
+ */
 function mergePots(pots) {
   const out = [];
   (pots || []).forEach((p) => {
@@ -872,6 +884,15 @@ function mergePots(pots) {
     out.push({ _key: key, amount: p.amount, eligible: p.eligible, winners: p.winners });
   });
   return out;
+}
+
+/* 실제로 겨룬 팟과, 콜되지 않아 돌아간 몫을 가른다. */
+function splitPots(pots) {
+  const all = mergePots(pots);
+  const real = all.filter((p) => (p.eligible || []).length > 1);
+  const back = all.filter((p) => (p.eligible || []).length <= 1);
+  return { real: real, back: back,
+           backAmt: back.reduce((a, p) => a + (p.amount || 0), 0) };
 }
 
 /* withLog — 라인 기록을 붙일지. 방금 끝난 핸드의 결과 화면에는 붙이지 않는다.
@@ -898,12 +919,18 @@ function resultBodyHTML(v, withLog) {
   }
 
   let potsHTML = '';
-  const pots = mergePots(v.pots);
-  if (pots.length > 1) {
-    potsHTML = '<div class="potline">팟 분배</div>' + pots.map((p, i) =>
-      `<div class="row"><span class="who">${i === 0 ? '메인' : '사이드' + i}</span>` +
-      `<span>${(p.winners || []).map((w) => seatName(v, w)).join(', ') || '-'}</span>` +
-      `<span class="amt">${fmt(p.amount)}</span></div>`).join('');
+  const sp = splitPots(v.pots);
+  if (sp.real.length > 1) {
+    // 반환분도 같이 적어야 금액이 맞아떨어진다.
+    potsHTML = '<div class="potline">팟 분배</div>' +
+      sp.real.map((p, i) =>
+        `<div class="row"><span class="who">${i === 0 ? '메인' : '사이드' + i}</span>` +
+        `<span>${(p.winners || []).map((w) => seatName(v, w)).join(', ') || '-'}</span>` +
+        `<span class="amt">${fmt(p.amount)}</span></div>`).join('') +
+      sp.back.map((p) =>
+        `<div class="row"><span class="who">반환</span>` +
+        `<span>${(p.eligible || []).map((w) => seatName(v, w)).join(', ') || '-'}</span>` +
+        `<span class="amt">${fmt(p.amount)}</span></div>`).join('');
   }
 
   const how = { fold: '폴드로 종료', showdown: '쇼다운', void: '무효' }[v.how] || v.how;
