@@ -367,13 +367,16 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
   50% { transform: translate(9px, 2px) rotate(11deg); }
 }
 
-/* 카드가 덱에서 좌석으로 날아온다. --dx/--dy 는 renderSeats 가 심는다. */
-.pod .backs.in {
-  animation: dealin .30s cubic-bezier(.22,.7,.3,1) backwards;
+/* 카드가 덱에서 좌석으로 날아온다. --dx/--dy 는 renderSeats 가 심는다.
+   **카드 한 장이 단위다.** 예전에는 두 장을 감싼 상자에 걸어서 둘이 같이
+   움직였다. 비행 시간은 폴드 모션(.55s)과 비슷하게 길게 둔다 — 간격은
+   짧아도 카드 하나하나는 천천히 난다. */
+.pod .backs .card.fly {
+  animation: dealin .5s cubic-bezier(.2,.75,.3,1) backwards;
 }
 @keyframes dealin {
   from {
-    transform: translateX(-50%) translate(var(--dx, 0px), var(--dy, 0px)) scale(.4);
-    opacity: .25;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(.4) rotate(-12deg);
+    opacity: .2;
   }
 }

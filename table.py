@@ -33,7 +33,7 @@ SEAT_ORDER, PRE_ORDER, POST_ORDER = orders(8)   # 기본값(하위호환)
 class Table:
     def __init__(self, path='table_state.json'):
         self.path = P(path)
-        self.s = json.load(open(self.path)) if os.path.exists(self.path) else None
+        self.s = json.load(open(self.path, encoding='utf-8')) if os.path.exists(self.path) else None
 
     def new(self, seats, hero, start_stack, button, hand_no=1, level=1, field=None):
         self.s = {'seats': list(seats), 'hero': hero,
@@ -43,7 +43,7 @@ class Table:
                   'busted': [], 'history': []}
         self.save(); return self.s
 
-    def save(self): json.dump(self.s, open(self.path, 'w'), indent=1)
+    def save(self): json.dump(self.s, open(self.path, 'w', encoding='utf-8'), indent=1)
 
     # --- 블라인드 ---
     def blinds(self):

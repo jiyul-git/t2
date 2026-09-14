@@ -70,9 +70,12 @@ def _load_field(d):
     return f
 
 
+# 인코딩을 적지 않으면 파이썬이 OS 기본값을 쓴다. 리눅스·안드로이드는
+# UTF-8 이라 문제가 없지만 한글 윈도우는 cp949 라, 알림에 이모지가
+# 하나 들어가는 순간 기록이 통째로 터진다(실제로 그랬다).
 def save(st):
     tmp = ST + '.tmp'
-    with open(tmp, 'w') as fp:
+    with open(tmp, 'w', encoding='utf-8') as fp:
         json.dump(st, fp)
         fp.flush(); os.fsync(fp.fileno())
     if os.path.exists(ST):
@@ -84,7 +87,7 @@ def save(st):
 def load():
     for p in (ST, ST + '.bak'):
         try:
-            with open(p) as fp:
+            with open(p, encoding='utf-8') as fp:
                 d = json.load(fp)
             if d: return d
         except (OSError, ValueError):
@@ -196,7 +199,7 @@ def compute_others(field_dump):
     _p = os.path.join(D, 'bot_hands%s.jsonl' % _tmp)
     _bot_log = ''
     if os.path.exists(_p):
-        with open(_p) as fp:
+        with open(_p, encoding='utf-8') as fp:
             _bot_log = fp.read()
         try: os.remove(_p)
         except OSError: pass
@@ -229,7 +232,8 @@ def resume_others(st, others=None):
         others = compute_others(st['field'])
     st['field'] = others['field']
     if others.get('bot_log'):          # 워커가 모아둔 봇 핸드 기록을 여기서 붙인다
-        with open(os.path.join(D, 'bot_hands%s.jsonl' % FS.BOT_SUFFIX), 'a') as fp:
+        with open(os.path.join(D, 'bot_hands%s.jsonl' % FS.BOT_SUFFIX), 'a',
+                  encoding='utf-8') as fp:
             fp.write(others['bot_log'])
     _new_notes = list(others.get('notes') or [])
     if _new_notes:
@@ -382,7 +386,7 @@ def finish(st, f, tb, alive, h, run, defer_others=False):
 
 def _archive_write(rec):
     path = os.path.join(D, 'hand_archive2%s.jsonl' % _SUFFIX)
-    with open(path, 'a') as fp:
+    with open(path, 'a', encoding='utf-8') as fp:
         fp.write(json.dumps(rec, ensure_ascii=False, default=str) + '\n')
 
 

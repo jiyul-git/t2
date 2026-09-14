@@ -2,7 +2,7 @@ import json, os, random
 import persona as PS
 import depth as _DP
 D = os.path.dirname(os.path.abspath(__file__))
-PCT = json.load(open(os.path.join(D, 'pf_rank.json')))
+PCT = json.load(open(os.path.join(D, 'pf_rank.json'), encoding='utf-8'))
 RV = {r: i+2 for i, r in enumerate("23456789TJQKA")}
 
 def cls(c):

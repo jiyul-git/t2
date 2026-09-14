@@ -40,7 +40,6 @@ const S = {
 // 주의: 핸드 '진행 중'의 텀은 다음 핸드 대기를 줄이지 못한다. 서버 워커는
 // 핸드가 끝나야 시작하므로, 겹칠 수 있는 건 관전 재생과 결과 화면뿐이다.
 const STEP_CHOICES = [1000, 1500, 2000, 2600];
-const RESULT_CHOICES = [3000, 5000, 8000, 12000, 20000];
 function numPref(key, def, allowed) {
   try {
     const v = Number(localStorage.getItem(key));
@@ -55,7 +54,6 @@ const stepMs = () => numPref('t2step', 1500, STEP_CHOICES);
 const FOLD_DIV = 2;
 const paceMs = (e) => (e && e.action === 'fold'
   ? Math.round(stepMs() / FOLD_DIV) : stepMs());
-const resultMs = () => numPref('t2result', 5000, RESULT_CHOICES);
 function setPref(key, v) { try { localStorage.setItem(key, String(v)); } catch (e) {} }
 
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
@@ -170,14 +168,20 @@ function renderSeats(v) {
     }
     const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded');
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
-    const got = dealtYet(slot);
     const dx = Math.round((50 - p.x) / 100 * W);
     const dy = Math.round((44 - p.y) / 100 * H);   // 44 = slotPos 의 세로 중심
-    const backs = (d.in_hand && got)
-      ? `<div class="backs${S.dealt ? ' in' : ''}"${S.dealt
-           ? ` style="--dx:${dx}px;--dy:${dy}px;animation-delay:${dealDelay(S.dealt[slot])}"`
-           : ''}>` +
-        `${backHTML('mini')}${backHTML('mini')}</div>`
+    const nc = dealtCount(slot);
+    // 카드마다 자기 시각으로 지연을 계산한다. 한 장씩 들어오므로 두 장의
+    // 비행 시점이 다르고, 프레임을 다시 그려도 각자 이어서 난다.
+    const cards = [];
+    for (let ci = 0; ci < nc; ci++) {
+      const st0 = S.dealt ? (S.dealt[slot] || [])[ci] : null;
+      cards.push(`<div class="card back mini${S.dealt ? ' fly' : ''}"` +
+        (st0 ? ` style="--dx:${dx}px;--dy:${dy}px;animation-delay:${dealDelay(st0)}"` : '') +
+        '></div>');
+    }
+    const backs = (d.in_hand && nc)
+      ? `<div class="backs">${cards.join('')}</div>`
       : (S.folding[slot]
          ? `<div class="backs out" style="animation-delay:${foldDelay(S.folding[slot])}">` +
            `${backHTML('mini')}${backHTML('mini')}</div>` : '');
@@ -261,11 +265,12 @@ function renderHero(v) {
   // 엘리먼트가 매번 새로 만들어지고 deal 애니메이션이 그때마다 다시 시작한다.
   // 딜링 한 바퀴 동안 여러 번 되감기고, 끝나면서 클래스가 빠져 툭 하고
   // 자리잡는다 — '두 번쯤 버벅이다 나오는' 증상이 이것이었다.
-  const sig = dealtYet(v.hero_seat)
-    ? (v.hand_no + '|' + (v.hero_hole || []).join(',')) : '';
+  const nc = dealtCount(v.hero_seat);
+  const sig = nc ? (v.hand_no + '|' + nc + '|' + (v.hero_hole || []).join(',')) : '';
   if (S.heroSig !== sig) {
     S.heroSig = sig;
-    $('#herocards').innerHTML = sig ? cardsHTML(v.hero_hole, 'deal') : '';
+    $('#herocards').innerHTML = nc
+      ? cardsHTML((v.hero_hole || []).slice(0, nc), 'deal') : '';
   }
 }
 
@@ -281,13 +286,21 @@ function renderHero(v) {
  */
 // 카드 돌리는 데 걸리는 총 시간. 좌석 수로 나눠 한 장씩 뿌린다.
 // 8명이든 3명이든 한 바퀴가 같은 시간에 끝나 리듬이 일정하다.
-const DEAL_TOTAL = 3000;      // 셔플 + 배분을 합친 총 시간
 const SHUFFLE_MS = 700;       // 가운데 덱이 섞이는 구간
-const dealMs = (n) => Math.round((DEAL_TOTAL - SHUFFLE_MS) / Math.max(1, n));
+// 실제 딜처럼 **한 장씩 두 바퀴** 돌린다. 한 장 간격은 폴드 연출과 같은
+// 빠르기로 맞추되, 8인 테이블이면 카드가 16장이라 그대로 쓰면 12초가 된다.
+// 그래서 간격은 그 1/3 로 두고, 대신 카드 한 장의 **비행 시간**을 폴드
+// 모션만큼 길게 잡아 서로 겹쳐 날아가게 한다 — 딜러가 빠르게 튕겨도
+// 카드 하나하나는 천천히 도는 것과 같은 그림이다.
+const dealMs = () => Math.round(paceMs({ action: 'fold' }) / 3);
 
 const DEAL_ANIM = 240;           // style.css 의 dealin 길이와 같아야 한다
+function dealtCount(slot) {
+  if (!S.dealt) return 2;                 // 딜링이 끝났으면 두 장 다
+  return (S.dealt[slot] || []).length;
+}
 function dealtYet(slot) {
-  return !S.dealt || !!S.dealt[slot];
+  return dealtCount(slot) > 0;
 }
 /* 폴드 모션과 같은 이유로 경과분을 건너뛴다. renderSeats 가 프레임마다
  * #seats 를 통째로 다시 그리므로, 이미 카드를 받은 좌석은 딜링이 한 바퀴
@@ -326,6 +339,8 @@ function dealThen(v, done) {
   // 올인을 그 프레임 기준으로 다시 계산하고, folded 가 비었으니 전원 참가다.
   const bets0 = baseBets(v, false);
   const draw0 = () => drawFrame(v, bets0, {});
+  // 한 장씩 두 바퀴. S.dealt[좌석] 은 '받은 카드들의 시각' 배열이다.
+  const seq = order.concat(order);
   S.dealt = {};
   draw0();
   deckShow();
@@ -345,10 +360,11 @@ function dealThen(v, done) {
   };
   S.replayDone = finish;
   const next = () => {
-    if (i >= order.length) { finish(); return; }
-    S.dealt[order[i++]] = Math.max(1, performance.now());
+    if (i >= seq.length) { finish(); return; }
+    const slot = seq[i++];
+    (S.dealt[slot] = S.dealt[slot] || []).push(Math.max(1, performance.now()));
     draw0();
-    S.timers.push(setTimeout(next, dealMs(order.length)));
+    S.timers.push(setTimeout(next, dealMs()));
   };
   S.timers.push(setTimeout(next, SHUFFLE_MS));   // 섞고 나서 돌린다
 }
@@ -750,16 +766,16 @@ function finishResult(v) {
       working = !!(await r.json()).working;
     } catch (e) { /* 못 물어봤으면 그냥 시간만 센다 */ }
     waited += STEP;
-    const left = Math.max(0, Math.ceil((resultMs() - waited) / 1000));
     if (working) {
       b.innerHTML = '다음 핸드 <span class="sub">다른 테이블 정산 중… ' +
         Math.round(waited / 1000) + '초</span>';
     } else if (!auto) {
       b.innerHTML = '다음 핸드';
       S.autoTimer = null; return;          // 자동이 꺼져 있으면 여기서 멈춘다
-    } else if (left > 0) {
-      b.innerHTML = '다음 핸드 <span class="sub">' + left + '</span>';
     } else {
+      // 정산이 끝났으면 **기다리지 않는다.** 예전에는 여기서 결과 화면을
+      // 몇 초 더 띄웠는데, 그 시간은 워커를 가리려고 둔 것이었다.
+      // 정산이 빨라진 지금은 그냥 지연일 뿐이다.
       S.autoTimer = null; send(null, 0); return;
     }
     S.autoTimer = setTimeout(tick, STEP);
@@ -917,18 +933,18 @@ function buildTag() {
 function showMenu() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
   const on = autoOn();
-  const sm = stepMs(), rm = resultMs();
+  const sm = stepMs();
   showOverlay('<h2>설정</h2>' +
     `<div class="row"><span class="who">봇 액션 간격</span>` +
     `<span class="amt">${(sm / 1000).toFixed(1)}초</span></div>` +
     `<button type="button" id="mStep">간격 바꾸기</button>` +
+    '<div class="potline" style="margin-top:8px">딜링 속도도 이 값을 따라갑니다.</div>' +
     `<div class="row" style="margin-top:14px"><span class="who">결과 화면</span>` +
-    `<span class="amt">${on ? (rm / 1000) + '초 뒤 자동' : '자동 안 넘김'}</span></div>` +
-    `<button type="button" id="mResult">결과 시간 바꾸기</button>` +
+    `<span class="amt">${on ? '정산 끝나면 바로' : '자동 안 넘김'}</span></div>` +
     `<button type="button" id="mAuto">${on ? '자동 진행 끄기' : '자동 진행 켜기'}</button>` +
-    '<div class="potline" style="margin-top:8px">다음 핸드가 오래 걸리면 결과 시간을' +
-    ' 늘려 보세요. 그 시간 동안 서버가 다른 테이블을 정산합니다. 핸드 진행 중의' +
-    ' 간격은 정산과 겹치지 않아 대기 시간을 줄이지 못합니다.</div>' +
+    '<div class="potline" style="margin-top:8px">자동 진행이면 다른 테이블 정산이' +
+    ' 끝나는 즉시 다음 핸드로 갑니다. 카운트다운은 없앴습니다 — 그 대기는' +
+    ' 정산을 가리려고 두었던 것인데, 정산이 빨라진 지금은 지연일 뿐입니다.</div>' +
     '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
     ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
     '<button type="button" id="mNew">새 게임</button>' +
@@ -939,11 +955,6 @@ function showMenu() {
   $('#mStep').addEventListener('click', () => {
     const i = STEP_CHOICES.indexOf(sm);
     setPref('t2step', STEP_CHOICES[(i + 1) % STEP_CHOICES.length]);
-    showMenu();
-  });
-  $('#mResult').addEventListener('click', () => {
-    const i = RESULT_CHOICES.indexOf(rm);
-    setPref('t2result', RESULT_CHOICES[(i + 1) % RESULT_CHOICES.length]);
     showMenu();
   });
   $('#mAuto').addEventListener('click', () => { autoSet(!on); showMenu(); });

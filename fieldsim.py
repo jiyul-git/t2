@@ -209,7 +209,8 @@ class Field:
             rec['intents'] = getattr(h, 'intents', [])
             rec['hole'] = {str(k): v for k, v in h.hole.items()}
         try:
-            with open(os.path.join(D, 'bot_hands%s.jsonl' % BOT_SUFFIX), 'a') as fp:
+            with open(os.path.join(D, 'bot_hands%s.jsonl' % BOT_SUFFIX), 'a',
+                      encoding='utf-8') as fp:
                 fp.write(json.dumps(rec, ensure_ascii=False) + '\n')
         except OSError:
             pass
