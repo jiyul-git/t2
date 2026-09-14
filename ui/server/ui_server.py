@@ -170,6 +170,18 @@ def _wrap(r):
     out = {'done': bool(r.get('done')), 'view': r.get('view')}
     if r.get('done'):
         out['busted'] = bool(r.get('busted')); out['rank'] = r.get('rank')
+        # 엔진은 **히어로 탈락만** 신호한다(live2.finish 는 busted 일 때만
+        # rank 를 채운다). 히어로가 우승하면 아무 표시가 없어서 화면이
+        # 다음 핸드를 계속 기다렸다. 남은 인원을 같이 실어 UI 가 판정하게 한다.
+        # 정산을 미뤘으면 이 수는 아직 줄기 전이라 **실제보다 크다** —
+        # 그래서 우승을 늦게 알릴 수는 있어도 틀리게 알리지는 않는다.
+        try:
+            fd = L.load().get('field') or {}
+            out['remaining'] = sum(1 for p in (fd.get('players') or {}).values()
+                                   if (p.get('stack') or 0) > 0)
+            out['entries'] = len(fd.get('players') or {})
+        except Exception:
+            pass
     out['token'] = _token()
     return out
 

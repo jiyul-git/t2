@@ -29,6 +29,9 @@ const S = {
   foldTimers: [],          // 폴드 모션 정리 타이머. 재생 타이머와 수명이 다르다
   heroSig: null,           // 히어로 카드가 지금 무엇을 그리고 있는지
   queuedNew: null,         // 요청 처리 중에 눌러둔 새 게임
+  queuedAction: null,      // 재생 중에 눌러둔 히어로 액션
+  won: false,              // 히어로가 대회를 우승했나
+  entries: null,           // 총 엔트리 (우승 화면 표시용)
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -268,8 +271,10 @@ function renderHero(v) {
  * 속도는 stepMs 하나에서 파생시킨다. 슬롯이 8개라 8로 나눠 한 바퀴가
  * 액션 하나 간격 정도에 끝나게 둔다.
  */
-const DEAL_DIV = 8;
-const dealMs = () => Math.round(stepMs() / DEAL_DIV);
+// 카드 돌리는 데 걸리는 총 시간. 좌석 수로 나눠 한 장씩 뿌린다.
+// 8명이든 3명이든 한 바퀴가 같은 시간에 끝나 리듬이 일정하다.
+const DEAL_TOTAL = 3000;
+const dealMs = (n) => Math.round(DEAL_TOTAL / Math.max(1, n));
 
 const DEAL_ANIM = 240;           // style.css 의 dealin 길이와 같아야 한다
 function dealtYet(slot) {
@@ -285,9 +290,14 @@ function dealDelay(t0) {
 
 function dealOrder(v) {
   // 버튼 다음 자리부터 시계방향 = SB, BB, ... , 마지막이 버튼이다.
+  //
+  // **앉아 있는 사람 전원**에게 돌린다. in_hand 로 거르면 안 된다 — 화면에
+  // 온 뷰는 이미 프리플랍 액션이 끝난 시점이라 접은 사람이 빠져 있고,
+  // 그러면 그 자리만 카드를 못 받다가 재생이 시작되는 순간 불쑥 생긴다.
+  // 실제로도 카드는 전원에게 돌리고 그 다음에 접는다.
   const n = v.n_slots || 8;
   const have = {};
-  (v.seats || []).forEach((s) => { if (s.in_hand) have[s.seat] = 1; });
+  (v.seats || []).forEach((s) => { have[s.seat] = 1; });
   const btn = v.button_seat || n;
   const out = [];
   for (let k = 1; k <= n; k++) {
@@ -300,8 +310,14 @@ function dealOrder(v) {
 function dealThen(v, done) {
   const order = dealOrder(v);
   if (!order.length) { S.dealt = null; done(); return; }
+  // 딜링 중에는 아무도 아직 접지 않았다. 뷰의 in_hand/allin 은 재생이 끝난
+  // 뒤의 상태라 그대로 쓰면 접은 자리가 처음부터 회색으로 보인다.
+  const fv = Object.assign({}, v, {
+    seats: (v.seats || []).map((x) => Object.assign({}, x,
+      { in_hand: true, allin: false })),
+  });
   S.dealt = {};
-  renderSeats(v); renderHero(v);
+  renderSeats(fv); renderHero(fv);
   let i = 0;
   (function next() {
     if (i >= order.length) {
@@ -311,8 +327,8 @@ function dealThen(v, done) {
       return;
     }
     S.dealt[order[i++]] = Math.max(1, performance.now());
-    renderSeats(v); renderHero(v);
-    S.timers.push(setTimeout(next, dealMs()));
+    renderSeats(fv); renderHero(fv);
+    S.timers.push(setTimeout(next, dealMs(order.length)));
   })();
 }
 
@@ -330,6 +346,7 @@ function dealThen(v, done) {
 function stopReplay() {
   S.timers.forEach(clearTimeout); S.timers = [];
   S.replayDone = null;
+  S.queuedAction = null;   // 응답이 왔으면 그 예약은 이미 의미가 없다
   S.dealt = null;          // 딜링 중에 끊겼으면 카드를 전부 보이는 상태로 되돌린다
   // folding 은 건드리지 않는다. 진행 중인 폴드 모션은 응답이 와도 끝까지 간다
   // (정리 타이머가 S.foldTimers 에 따로 있어서 취소되지 않는다).
@@ -409,11 +426,18 @@ function baseBets(v, hasPrev) {
 }
 
 function drawFrame(v, bets, folded) {
-  const seats = (v.seats || []).map((s) => Object.assign({}, s, {
-    bet: bets[s.seat] || 0,
-    in_hand: !folded[s.seat],
-    stack: s.stack + (s.bet || 0) - (bets[s.seat] || 0),
-  }));
+  // allin 도 그 프레임 기준으로 다시 판정한다. v.seats 의 allin 은 **재생이 다
+  // 끝난 뒤**의 상태라, 그대로 쓰면 아직 올인하지 않은 좌석에 ALL-IN 배지가
+  // 미리 떴다 (칩과 폴드는 이미 프레임 기준으로 다시 계산하고 있었다).
+  const seats = (v.seats || []).map((s) => {
+    const st = s.stack + (s.bet || 0) - (bets[s.seat] || 0);
+    return Object.assign({}, s, {
+      bet: bets[s.seat] || 0,
+      in_hand: !folded[s.seat],
+      stack: st,
+      allin: st <= 0 && !folded[s.seat] && (bets[s.seat] || 0) > 0,
+    });
+  });
   const sum = seats.reduce((a, s) => a + (s.bet || 0), 0);
   const fv = Object.assign({}, v, { seats: seats,
                                     pot_total: (v.pot_center || 0) + sum });
@@ -421,11 +445,17 @@ function drawFrame(v, bets, folded) {
 }
 
 function finalFrame(v) {
+  // clearBubbles -> stopReplay 가 예약을 지우므로 먼저 챙겨둔다.
+  // stopReplay 가 지우는 이유는 '응답이 왔을 때' 를 위한 것이고,
+  // 여기는 '재생이 끝났을 때' 라 의미가 반대다.
+  const q = S.queuedAction;
   clearBubbles();
   renderSeats(v); renderPot(v); renderHero(v);
   const bets = {};
   (v.seats || []).forEach((s) => { bets[s.seat] = s.bet || 0; });
   S.prevBets = bets;
+  S.queuedAction = q;
+  flushQueued();                 // 재생 중에 눌러둔 히어로 액션
 }
 
 function playSequence(v, entries, streetChanged) {
@@ -658,6 +688,7 @@ function seatName(v, s) {
 function finishResult(v) {
   clearBubbles();
   histPush(v);
+  if (S.won) { showWin(v); return; }
   renderResult(v);
   S.handNo = null; S.stage = null; S.logLen = 0; S.boardLen = 0;
   S.prevBets = null; S.view0 = null;
@@ -908,6 +939,23 @@ function logBoxHTML(log, v) {
   return out + '</div></div>';
 }
 
+/* 우승 화면. 마지막 핸드 결과를 그대로 보여주고 그 위에 우승을 얹는다.
+ * 여기서 멈춘다 — 다음 핸드를 부르지 않는다. 한 명 남은 대회에 딜을 걸면
+ * 엔진이 테이블을 못 찾는다. */
+function showWin(v) {
+  clearTimeout(S.autoTimer); S.autoTimer = null;
+  $('#mainrow').innerHTML = '<div class="wait">대회 종료</div>';
+  closeRaise();
+  showOverlay('<h2>🏆 우승</h2>' +
+    `<div class="sub">${S.entries ? S.entries + '명 중 ' : ''}1위</div>` +
+    resultBodyHTML(v, true) +
+    newGameFormHTML() +
+    '<div class="actions"><button type="button" id="bNew">새 게임</button>' +
+    '<button type="button" id="bClose">닫기</button></div>');
+  $('#bNew').addEventListener('click', startNew);
+  $('#bClose').addEventListener('click', hideOverlay);
+}
+
 function showGameOver(resp) {
   clearBubbles();
   clearTimeout(S.autoTimer); S.autoTimer = null;
@@ -942,7 +990,7 @@ function newGameFormHTML() {
 
 function startNew() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
-  S.heroSig = null;
+  S.heroSig = null; S.won = false;
   histClear();                       // 핸드 번호가 1부터 다시 시작한다
   const body = {};
   const e = Number($('#fEntries') && $('#fEntries').value);
@@ -1054,10 +1102,42 @@ async function call(path, body, msg) {
   }
 }
 
+/* 재생이 도는 중이면 히어로 액션을 **예약**한다.
+ *
+ * 예전에는 바로 보냈고, 그러면 응답이 와서 stopReplay 가 남은 봇 액션 재생을
+ * 끊어버렸다 — 앞사람들이 뭘 했는지 못 보고 화면이 건너뛰었다.
+ * 이제는 재생이 끝나는 순간(finalFrame)에 보낸다. 화면을 누르면 재생을
+ * 건너뛸 수 있으므로, 급하면 두 번 누르면 바로 진행된다.
+ *
+ * '다음 핸드'(action === null)는 예약하지 않는다. 그건 결과 화면에서 누르는
+ * 것이라 재생 중일 수가 없다.
+ */
 function send(action, amount) {
   if (S.token === null || S.token === undefined) { sync(); return; }
+  if (action !== null && S.replayDone) {
+    S.queuedAction = { action: action, amount: amount | 0 };
+    markQueued(action);
+    return;
+  }
   call('/api/step', { action, amount: amount | 0, token: S.token },
        action === null ? '다음 핸드 준비 중…' : '진행 중…');
+}
+
+function markQueued(action) {
+  const row = $('#mainrow');
+  if (row) {
+    row.innerHTML = '<div class="wait">' + (ACT[action] || action) +
+      ' 예약됨 — 앞사람 액션이 끝나면 진행합니다 (화면을 누르면 바로)</div>';
+  }
+  closeRaise();
+}
+
+function flushQueued() {
+  if (!S.queuedAction) return false;
+  const q = S.queuedAction; S.queuedAction = null;
+  call('/api/step', { action: q.action, amount: q.amount, token: S.token },
+       '진행 중…');
+  return true;
 }
 
 function sync() { call('/api/state', null, '상태를 받는 중…'); }
@@ -1077,6 +1157,10 @@ function apply(resp) {
   stopReplay();
 
   if (v.type === 'result') {
+    // 우승 판정. 엔진은 탈락만 신호하므로 남은 인원으로 여기서 가른다.
+    // (ui_server._wrap 이 remaining 을 실어 보낸다)
+    S.won = (resp.remaining === 1 && !resp.busted);
+    S.entries = resp.entries || S.entries;
     // 히어로가 폴드했어도 남은 액션이 있으면 먼저 보여준 뒤 결과를 띄운다
     if (!spectateTail(v)) finishResult(v);
     return;
