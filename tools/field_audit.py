@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """필드 감사 — 성향이 행동에 닿는가, 분포가 의도대로인가. **읽기 전용이다.**
 
+  python3 tools/field_audit.py review_2.jsonl --chain     성향 → 계획 → 집행 (3단 분리)
+  python3 tools/field_audit.py review_2.jsonl --bbdef     BB 폴드가 팟오즈상 맞았나
   python3 tools/field_audit.py review_2.jsonl --traits    성향 → 행동 상관
   python3 tools/field_audit.py review_2.jsonl --defend    BB 방어
   python3 tools/field_audit.py review_2.jsonl --stage     단계별(버블·ITM) 변화
@@ -126,6 +128,204 @@ def cmd_traits(rows, min_n=25):
     for k in sorted(b, key=lambda x: int(x.split('~')[0])):
         n, v = b[k]
         if n >= 20: print('  looseness %-6s n=%-4d VPIP %.0f%%' % (k, n, 100*v/n))
+
+
+AGGR_PLAN = {'value_2street', 'value_3street', 'bluff_2street',
+             'semibluff', 'thin_river', 'block'}
+
+
+def cmd_chain(rows, min_n=8):
+    """성향 → 계획 → 집행을 **세 단계로 나눠** 본다.
+
+    최종 행동만 보면 어디가 끊겼는지 알 수 없다. 성향이 높은 봇이 실제로
+    공격적이었다는 것만으로는 '계획이 성향을 따랐다'가 증명되지 않는다.
+    """
+    prof = {}; st = defaultdict(lambda: defaultdict(float))
+    for r in rows:
+        hero = r.get('hero')
+        pid = {int(s): p.get('id') for s, p in (r.get('profiles') or {}).items()}
+        for s, p in (r.get('profiles') or {}).items():
+            if int(s) != hero: prof.setdefault(p.get('id'), p)
+        for i in r.get('intents') or []:
+            if i['seat'] == hero or i['seat'] not in pid: continue
+            d = st[pid[i['seat']]]; d['n'] += 1
+            if i['plan'] in AGGR_PLAN: d['aggr_plan'] += 1
+            if i.get('response_act') is None:          # 계획이 스스로 정한 자리
+                d['free'] += 1
+                if i.get('intent_act') == 'bet': d['free_bet'] += 1
+                if i.get('action') == i.get('intent_act'): d['exec_ok'] += 1
+    keep = [p for p in st if st[p]['n'] >= min_n and p in prof]
+    T = lambda p, k: (prof[p].get('temper') or {}).get(k)
+    C = lambda p, k: (prof[p].get('concepts') or {}).get(k)
+
+    def rep(name, fx, fy):
+        pts = [(fx(p), fy(p)) for p in keep if fx(p) is not None]
+        if len(pts) < 8: print('  %-32s 표본부족 %d' % (name, len(pts))); return
+        rho = spearman([x for x, _ in pts], [y for _, y in pts]); n = len(pts)
+        t = rho*math.sqrt((n-2)/max(1e-9, 1-rho*rho))
+        mark = '강함' if abs(rho) >= 0.6 else ('있음' if abs(rho) >= 0.35 else
+               ('약함' if abs(rho) >= 0.2 else '없음'))
+        print('  %-32s rho %+.2f n=%-3d t=%+.2f  %s' % (name, rho, n, t, mark))
+
+    print('포스트플랍 intent %d회 이상 본 봇 %d명' % (min_n, len(keep)))
+    print('\n[A] 성향 → 계획')
+    rep('aggression → 공격 계획 비율', lambda p: T(p, 'aggression'),
+        lambda p: st[p]['aggr_plan']/st[p]['n'])
+    rep('bluff      → 공격 계획 비율', lambda p: C(p, 'bluff'),
+        lambda p: st[p]['aggr_plan']/st[p]['n'])
+    rep('aggression → 계획이 벳을 고름', lambda p: T(p, 'aggression'),
+        lambda p: st[p]['free_bet']/max(1, st[p]['free']))
+    rep('cbet_flop  → 계획이 벳을 고름', lambda p: C(p, 'cbet_flop'),
+        lambda p: st[p]['free_bet']/max(1, st[p]['free']))
+
+    print('\n[B] 계획 → 집행')
+    ok = sum(st[p]['exec_ok'] for p in st); fr = sum(st[p]['free'] for p in st)
+    print('  무저항 %d건 중 의도대로 %d건 (%.1f%%)' % (fr, ok, 100*ok/max(1, fr)))
+
+    # 봇 단위는 표본이 작다. 결정 단위로 다시 센다.
+    print('\n[참고] 결정 단위 — aggression 구간별')
+    b = defaultdict(lambda: [0, 0, 0])
+    for r in rows:
+        hero = r.get('hero')
+        for i in r.get('intents') or []:
+            if i['seat'] == hero: continue
+            ag = (((r.get('profiles') or {}).get(str(i['seat'])) or {})
+                  .get('temper') or {}).get('aggression')
+            if ag is None: continue
+            k = '%d~%d' % (int(ag//2)*2, int(ag//2)*2+2)
+            b[k][0] += 1
+            if i['plan'] in AGGR_PLAN: b[k][1] += 1
+            if i.get('response_act') is None and i.get('intent_act') == 'bet': b[k][2] += 1
+    print('  %-12s %6s %12s %16s' % ('aggression', 'n', '공격 계획', '계획이 벳 선택'))
+    for k in sorted(b, key=lambda x: int(x.split('~')[0])):
+        n, a, c = b[k]
+        if n >= 25: print('  %-12s %6d %11.0f%% %15.0f%%' % (k, n, 100*a/n, 100*c/n))
+
+    print('\n[참고] 계획 라벨은 무엇을 따르는가 — 핸드 강도(rel)로 갈라본다')
+    c2 = defaultdict(lambda: [0, 0])
+    for r in rows:
+        hero = r.get('hero')
+        for i in r.get('intents') or []:
+            if i['seat'] == hero: continue
+            rel = i.get('rel') or 0
+            k = 'rel %.1f~%.1f' % (int(rel*5)/5.0, int(rel*5)/5.0+0.2)
+            c2[k][0] += 1
+            if i['plan'] in AGGR_PLAN: c2[k][1] += 1
+    for k in sorted(c2):
+        n, a = c2[k]
+        if n >= 20: print('  %-14s n=%-4d 공격 계획 %.0f%%' % (k, n, 100*a/n))
+
+    print('\n[참고] 응답 단계 — 상대 벳에 직면했을 때')
+    b3 = defaultdict(lambda: defaultdict(int))
+    for r in rows:
+        hero = r.get('hero')
+        for i in r.get('intents') or []:
+            if i['seat'] == hero or i.get('response_act') is None: continue
+            ag = (((r.get('profiles') or {}).get(str(i['seat'])) or {})
+                  .get('temper') or {}).get('aggression')
+            if ag is None: continue
+            d = b3['%d~%d' % (int(ag//2)*2, int(ag//2)*2+2)]
+            d['n'] += 1; d[i['response_act']] += 1
+    print('  %-12s %5s %9s %9s %9s' % ('aggression', 'n', '레이즈', '콜', '폴드'))
+    for k in sorted(b3, key=lambda x: int(x.split('~')[0])):
+        d = b3[k]
+        if d['n'] < 15: continue
+        print('  %-12s %5d %8.0f%% %8.0f%% %8.0f%%' % (k, d['n'],
+              100*(d['raise']+d['allin'])/d['n'], 100*d['call']/d['n'], 100*d['fold']/d['n']))
+
+
+def _bb_spots(rows):
+    """BB 가 단일 레이즈에 직면한 자리. 안테는 결과 팟에서 역산한다."""
+    out = []
+    for r in rows:
+        hero = r.get('hero'); pos = r.get('pos') or {}; sb, bb = r['blinds']
+        per = {}
+        for (stt, seat, a, amt) in r['full_log']:
+            per.setdefault(stt, {})
+            per[stt][seat] = max(per[stt].get(seat, 0), amt or 0)
+        dead = max(0, (r['result']['pot'] or 0) - sum(sum(v.values()) for v in per.values()))
+        contrib = {}
+        for k, v in pos.items():
+            if v == 'SB': contrib[int(k)] = sb
+            if v == 'BB': contrib[int(k)] = bb
+        cur = bb; raises = 0
+        for (stt, seat, a, amt) in r['full_log']:
+            if stt != 'preflop': break
+            if pos.get(str(seat)) == 'BB' and raises == 1 and seat != hero:
+                tocall = cur - contrib.get(seat, 0)
+                if tocall > 0:
+                    p = (r.get('profiles') or {}).get(str(seat)) or {}
+                    out.append({'h': r['hand_no'], 'seat': seat, 'act': a,
+                                'hole': (r.get('hole') or {}).get(str(seat)),
+                                'tocall': tocall, 'pot': dead + sum(contrib.values()),
+                                'raise_bb': cur/bb,
+                                'stack': float((r.get('stacks_before') or {}).get(str(seat), 0))/bb,
+                                'prof': p})
+            if a in ('bet', 'raise'): cur = max(cur, amt or cur); contrib[seat] = amt or 0
+            elif a == 'allin':
+                if amt: cur = max(cur, amt)
+                contrib[seat] = max(contrib.get(seat, 0), amt or 0)
+            elif a == 'call': contrib[seat] = cur
+            if a in ('raise', 'allin'): raises += 1
+    return out
+
+
+def cmd_bbdef(rows, open_pct=0.25):
+    """BB 폴드가 팟오즈상 맞았는지 실제로 계산한다.
+
+    **순수 팟오즈다.** 포지션(OOP)·승률 실현·멀티웨이는 들어가지 않는다.
+    경계선 근처 폴드는 실현율을 감안하면 정상일 수 있다. 크게 넘긴 것만
+    문제로 볼 것.
+    """
+    import statistics as ST
+    try:
+        import bot
+    except Exception as e:
+        print('bot 모듈을 못 불러왔다: %s' % e); return
+    spots = _bb_spots(rows)
+    if not spots: print('표본 없음'); return
+    need = [s['tocall']/(s['pot']+s['tocall']) for s in spots]
+    print('BB 가 단일 레이즈에 직면 %d회' % len(spots))
+    print('  필요 승률(순수 팟오즈)  중앙 %.1f%%  (%.1f ~ %.1f%%)'
+          % (100*ST.median(need), 100*min(need), 100*max(need)))
+    print('  직면한 오픈 크기        중앙 %.1fbb' % ST.median([s['raise_bb'] for s in spots]))
+    print('  → 실제 방어율 %.0f%%' % (100*sum(1 for s in spots if s['act'] != 'fold')/len(spots)))
+    folds = [s for s in spots if s['act'] == 'fold' and s['hole']]
+    print('\n폴드 %d건의 승률을 상위 %d%% 레인지 대비로 계산' % (len(folds), int(open_pct*100)))
+    rows_ = []
+    for s in folds:
+        combos = bot.range_combos(open_pct, list(s['hole']))
+        eq = bot.equity_vs_combos(list(s['hole']), [], [combos], sims=600,
+                                  seed=s['h']*100+s['seat'])
+        rows_.append((eq, s['tocall']/(s['pot']+s['tocall']), s))
+    over = sum(1 for eq, nd, _ in rows_ if eq >= nd)
+    marg = sum(1 for eq, nd, _ in rows_ if 0 <= eq-nd < 0.05)
+    big = sum(1 for eq, nd, _ in rows_ if eq-nd >= 0.15)
+    print('  필요 승률을 넘었는데 폴드: %d건 (%.0f%%)' % (over, 100*over/max(1, len(folds))))
+    print('    그중 경계선(0~5%%p) %d건 / 15%%p 이상 크게 넘긴 것 %d건' % (marg, big))
+    rows_.sort(key=lambda x: x[1]-x[0])
+    print('  가장 크게 넘긴 8건')
+    for eq, nd, s in rows_[:8]:
+        print('    h%-4s %s번 %-5s eq %.3f 필요 %.3f (+%.3f) 오픈 %.1fbb 스택 %.0fbb'
+              % (s['h'], s['seat'], ''.join(s['hole']), eq, nd, eq-nd,
+                 s['raise_bb'], s['stack']))
+    # 개념이 방어에 닿는가 — 표준 오픈·충분한 스택으로 통제한다
+    cl = [s for s in spots if s['raise_bb'] <= 3.0 and s['stack'] >= 20]
+    print('\n표준오픈(≤3bb)·스택≥20bb 로 좁히면 %d회, 방어율 %.0f%%'
+          % (len(cl), 100*sum(1 for s in cl if s['act'] != 'fold')/max(1, len(cl))))
+    for key, grp, name in (('pf_defend', 'concepts', 'pf_defend'),
+                           ('pf_range', 'concepts', 'pf_range'),
+                           ('potodds', 'concepts', 'potodds'),
+                           ('looseness', 'temper', 'looseness')):
+        g = lambda s: (s['prof'].get(grp) or {}).get(key)
+        lo = [s for s in cl if g(s) is not None and g(s) < 4]
+        hi = [s for s in cl if g(s) is not None and g(s) > 6]
+        if len(lo) < 10 or len(hi) < 10:
+            print('  %-11s 표본부족' % name); continue
+        a = 100*sum(1 for s in lo if s['act'] != 'fold')/len(lo)
+        b = 100*sum(1 for s in hi if s['act'] != 'fold')/len(hi)
+        print('  %-11s  <4: n=%-3d 방어 %2.0f%%   >6: n=%-3d 방어 %2.0f%%   차이 %+.0f%%p'
+              % (name, len(lo), a, len(hi), b, b-a))
 
 
 def cmd_defend(rows):
@@ -347,7 +547,8 @@ def cmd_formats(n=2500, entries=100):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('file', nargs='?')
-    for f in ('traits', 'defend', 'stage', 'exploit', 'plan', 'dist', 'formats'):
+    for f in ('chain', 'bbdef', 'traits', 'defend', 'stage', 'exploit', 'plan',
+              'dist', 'formats'):
         ap.add_argument('--'+f, action='store_true')
     ap.add_argument('--buyin', type=float, default=1.0)
     ap.add_argument('--entries', type=int, default=100)
@@ -358,14 +559,15 @@ def main():
     rows = load(a.file)
     print('# %s — %d핸드 (히어로 테이블만)\n' % (os.path.basename(a.file), len(rows)))
     any_ = False
-    for name, fn in (('traits', cmd_traits), ('defend', cmd_defend), ('stage', cmd_stage),
-                     ('exploit', cmd_exploit), ('plan', cmd_plan)):
+    ORDER = (('chain', cmd_chain), ('bbdef', cmd_bbdef), ('traits', cmd_traits),
+             ('defend', cmd_defend), ('stage', cmd_stage), ('exploit', cmd_exploit),
+             ('plan', cmd_plan))
+    for name, fn in ORDER:
         if getattr(a, name):
             any_ = True
             print('## %s' % name); fn(rows); print()
     if not any_:
-        for name, fn in (('traits', cmd_traits), ('defend', cmd_defend), ('stage', cmd_stage),
-                         ('exploit', cmd_exploit), ('plan', cmd_plan)):
+        for name, fn in ORDER:
             print('## %s' % name); fn(rows); print()
 
 
