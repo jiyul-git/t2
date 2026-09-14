@@ -91,16 +91,33 @@ a247f7f  seat → pid 격리
          다른 것은 한 테이블-핸드의 확률 0.284 → 0.283 하나뿐.
 ```
 
-계산 일관성 수정 (`claude/fix-calc-nks1k7` 브랜치). **지문을 깨지 않았다.**
+계산 일관성 수정 (`claude/fix-calc-nks1k7` 브랜치).
 
 ```
 1-C  refresh 의 outs 를 make_plan 과 같은 체감값으로
-     (plan.py:1661). 지문 1dd5d83f… 유지.
+     (plan.py:1661). **지문을 깨지 않았다** — 1dd5d83f… 유지.
      안 깨진 이유: outs 소비처가 전부 게이트(8 또는 6)인데,
      6시드×30핸드에서 턴·리버에 semibluff/bluff_2street/river_bluff
      계획이 0건이라 그 게이트를 탄 상황이 없었다.
      영향이 없다는 뜻이 아니다 — tools/cf_refresh.py 에서 outs 축
      뒤집힘이 1.7% → 2.6% 로 오르고 전환이 semibluff → giveup 으로 바뀐다.
+   ↓
+1-A  need_true 팟오즈 분모에 내 콜을 더한다 (plan.py:616).
+     **지문이 바뀐다** — 1dd5d83f… → 44da00bf…, 6시드 전부.
+     tocall/(pot_live + tocall). 예전 식은 필요승률을 (1+2sz)/(1+sz) 배
+     부풀렸다. 뒤집힘 69건이 전부 한 방향(fold→call 65, call→raise 4).
+     _sz_seen 덮어쓰기(FIX_PLAN 2-A)가 80~89% 를 가리고 있어 전체 대비
+     2.5% 로 보이지만, 덮어쓰기가 안 걸린 자리만 보면 12.8% 다.
+     부작용: sizing_tell 의 플랍 영향이 21.2% → 14.8%. 리딩 조정의
+     하한 need_true*0.55 가 need_true 에 비례해 같이 좁아진다.
+     하한 계수는 건드리지 않았다 (FIX_PLAN 1-A 참조).
+```
+
+**1-A 이후 baseline 지문**
+
+```
+python3 tools/fingerprint.py --seeds 3000-3005 --hands 30   # 격리 폴더에서
+44da00bfccd58820da549a7ef91125814467ef2edc7b3ddd074929d4959c15d4
 ```
 
 `f7e03ac` / `a247f7f` 를 새 실험의 비교군으로 쓰지 마라. 특히 prefetch 같은
@@ -265,6 +282,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/tag_draws.py` | 홀카드+보드로 드로우 유형 태깅 |
 | `tools/delta_var.py` | eq_delta 의 몬테카를로 분산 측정 |
 | `tools/implied.py` | full_log 로 팟·콜비용 재구성, 가격 분석 |
+| `tools/cf_potodds.py` | 팟오즈 식 수정(FIX_PLAN 1-A)의 행동 영향 |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
 | `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |

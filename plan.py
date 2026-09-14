@@ -606,7 +606,14 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     # icm_aware 는 멱등이 아니므로 1.0 초과일 때만, 그리고 원본 bf 를 쓴다.
     if profile.get('concepts') and bf and bf > 1.0 and not _bf_gated:
         bf = PS.icm_bf(profile, bf)
-    need_true = (tocall*bf)/max(1.0, float(pot))
+    # pot 은 pot_live 다 — 상대가 방금 낸 벳은 들어 있고 **내 콜은 아직
+    # 아니다**(session.py:449 의 pot_now + sum(r2.contrib)). 콜하면 내 칩도
+    # 팟에 들어가므로 분모에 tocall 을 더해야 한다.
+    #   필요승률 = tocall / (벳전팟 + 상대벳 + 내콜) = tocall/(pot_live + tocall)
+    # 아래 670줄의 sz/(1+2sz) 가 대수적으로 같은 값이다 — 올바른 식이
+    # 이미 코드 안에 있었는데 여기만 분모가 부족했다.
+    # 과대율은 (1+2sz)/(1+sz) 배다 (0.5팟 1.33x, 1팟 1.50x, 2팟 1.67x).
+    need_true = (tocall*bf)/max(1.0, float(pot) + float(tocall))
     need = need_true
     if profile.get('concepts'):
         # 팟오즈 계산 오차. calc_noise 는 최대 3배까지 곱하는데,
@@ -1261,9 +1268,11 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         else:
             eq = bot.equity_vs_betting(hero, board, [(0.22, profile['bluff'])], callers,
                                        street, sims=600, seed=seed)
-        # pot 은 pot_live 다 — 상대가 방금 낸 벳이 이미 포함돼 있다.
-        # 여기서 tocall 을 또 더하면 분모에 콜 비용이 두 번 들어가 need 가
-        # 실제보다 훨씬 낮게 나온다 (2,500/8,800=28% 가 6% 로 계산됐다).
+        # pot 은 pot_live 다 — 상대가 방금 낸 벳이 이미 포함돼 있고
+        # **내 콜은 아직 아니다.** 팟오즈 분모에는 내 콜도 들어가야 하므로
+        # calldown_need 가 tocall 을 한 번 더한다 (거기 주석 참조).
+        # 예전에 여기 "두 번 들어가면 안 된다"고 적혀 있었는데 틀렸다 —
+        # 한 번은 상대 벳으로, 한 번은 내 콜로 들어가는 것이 맞다.
         need = calldown_need(profile, hero, board, street, pot, tocall, bf,
                              read, to_act_behind, opp_est, n_opp=n_opp, rng=rng)
         # made_now 계산이 calldown_need 로 딸려 들어갔다. 여기서도 필요하다.
