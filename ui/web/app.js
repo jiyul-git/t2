@@ -319,14 +319,15 @@ function dealOrder(v) {
 function dealThen(v, done) {
   const order = dealOrder(v);
   if (!order.length) { S.dealt = null; deckHide(); done(); return; }
-  // 딜링 중에는 아무도 아직 접지 않았다. 뷰의 in_hand/allin 은 재생이 끝난
-  // 뒤의 상태라 그대로 쓰면 접은 자리가 처음부터 회색으로 보인다.
-  const fv = Object.assign({}, v, {
-    seats: (v.seats || []).map((x) => Object.assign({}, x,
-      { in_hand: true, allin: false })),
-  });
+  // 딜링 중에는 아직 아무 액션도 없었다. 뷰는 재생이 끝난 뒤의 상태라
+  // 그대로 그리면 **프리플랍 액션이 전부 이미 벌어진 화면**이 된다 —
+  // 접은 자리가 회색이고, 칩과 올인 표시까지 미리 나와 있었다.
+  // 액션 전 상태(블라인드만 들어간 상태)로 그린다. drawFrame 이 칩·스택·
+  // 올인을 그 프레임 기준으로 다시 계산하고, folded 가 비었으니 전원 참가다.
+  const bets0 = baseBets(v, false);
+  const draw0 = () => drawFrame(v, bets0, {});
   S.dealt = {};
-  renderSeats(fv); renderHero(fv);
+  draw0();
   deckShow();
   let i = 0, ended = false;
   // **딜링 중에도 재생 중이다.** 여기에 replayDone 을 안 걸어둬서, 카드를
@@ -346,7 +347,7 @@ function dealThen(v, done) {
   const next = () => {
     if (i >= order.length) { finish(); return; }
     S.dealt[order[i++]] = Math.max(1, performance.now());
-    renderSeats(fv); renderHero(fv);
+    draw0();
     S.timers.push(setTimeout(next, dealMs(order.length)));
   };
   S.timers.push(setTimeout(next, SHUFFLE_MS));   // 섞고 나서 돌린다
@@ -493,6 +494,7 @@ function finalFrame(v) {
   const bets = {};
   (v.seats || []).forEach((s) => { bets[s.seat] = s.bet || 0; });
   S.prevBets = bets;
+  renderLogLine(v);              // 재생이 끝났으니 이제 글로도 보여준다
   S.queuedAction = q;
   flushQueued();                 // 재생 중에 눌러둔 히어로 액션
 }
@@ -1217,7 +1219,12 @@ function apply(resp) {
   renderChips(v, streetChanged);     // 스트리트가 끝났으면 칩을 팟으로 보낸다
   renderBoard(v);
   renderActions(v);                  // 버튼은 바로 쓸 수 있다. 재생을 기다리지 않는다
-  renderLogLine(v);
+  // 액션 한 줄도 재생이 끝난 뒤에 채운다. 먼저 채우면 '누가 뭘 했는지' 가
+  // 연출보다 먼저 글로 나와버린다.
+  if (freshHand || streetChanged) {
+    $('#logline').innerHTML = '<span class="cur">' +
+      (STREET[v.stage] || v.stage) + '</span> —';
+  } else renderLogLine(v);
   if (freshHand) {
     // 카드를 다 돌린 뒤에 액션을 재생한다. 액션 버튼은 이미 살아 있으므로
     // 기다리기 싫으면 바로 눌러도 된다 (stopReplay 가 정리한다).
