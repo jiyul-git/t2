@@ -498,6 +498,107 @@ python3 tools/collect.py 250 out.jsonl && python3 tools/review.py out.jsonl --fl
 기존 14.5% 를 유지하려고 `trust` 계수를 조정하는 것도 **둘 다 금지**다
 (작업원칙 2). 버그 수정이 아니라 밸런스 재설계가 된다.
 
+### 2-A 수정안 — **아직 적용하지 않았다. 승인 대기.**
+
+목표를 한 줄로: **인식은 판단 근거의 '입력'이지, 이미 쌓은 판단을 지우는
+사건이 아니다.** 따라서 인지 사이즈를 체인 앞쪽에 넣거나 체인 위에 곱하되,
+체인을 삭제하지 않는다.
+
+```
+목표                                   현재(하면 안 되는 것)
+  need_true                              sizing_tell ↑
+    ↓                                      ↓
+  기존 응답 체인                            덮어쓰기 발동 ↑
+    ↓                                      ↓
+  인지 사이즈도 그 체인 안에서 반영            기존 성향 영향 ↓
+    ↓
+  최종 need
+```
+
+후보는 둘이다. **둘 다 새 임계값을 만들지 않는다.**
+
+#### (나) 입력 교체 — `need_true` 자체를 인지 사이즈로 만든다
+
+```python
+# plan.py:609 앞 (need_true 계산 자리)
+_sz_true = tocall/max(1.0, float(pot) - tocall)
+_rdz = PS.read_opponent(profile, opp_est) if opp_est else None
+_sz_seen = _sz_true
+if profile.get('concepts') and board:
+    _sz_seen = PS.size_read(profile, PS.opp_size_norm(_rdz, _sz_true, street))
+# 필요승률 = tocall/(pot_live + tocall) = sz/(1+2sz)  (벳 전 팟 기준)
+need_true = (_sz_seen*bf)/max(1e-9, 1.0 + 2.0*_sz_seen)
+```
+
+그리고 `plan.py:668-671` 의 `if abs(_sz_seen - _sz_true) > 1e-9: need = …`
+**네 줄을 삭제한다.** 아래 블록은 위에서 만든 `_rdz`·`_sz_seen` 을 재사용한다.
+
+대수적 근거: `sz = tocall/p0` 일 때
+`tocall/(pot_live + tocall) = tocall/(p0 + 2·tocall) = sz/(1+2sz)`.
+**`_sz_seen == _sz_true` 면 1-A 의 식과 같은 값이다** — 비발동군은 변화 0 이어야 한다.
+이건 검증 관문으로 쓴다(아래 3번).
+
+장점
+- `1e-9` 발동 문턱이 **사라진다.** 조건 자체가 없어지므로 "0.2% 오독으로
+  전부 날림" 문제가 원천적으로 없어진다
+- 상·하한 클램프(`need_true*0.55`, `need_true*1.75+0.05`)가 **인지 팟오즈**에
+  묶인다. 함수 안에 팟오즈 개념이 하나만 남는다
+- `_sz_seen` 을 두 번 계산하던 것이 한 번이 된다
+
+위험
+- 클램프의 기준점이 바뀌는 것은 "삭제를 없앤다"를 넘어서는 의미 변화다.
+  ③ 보다 영향이 커질 수 있다 — 측정으로 확인해야 한다
+- `max(1.0, …)` 가드가 두 식에서 다른 자리에 있다. 팟이 1 미만인 극단에서
+  값이 갈릴 수 있다 (칩 단위상 실전에서는 없지만 관문 3 이 잡아준다)
+
+#### (다) 비율로 곱한다 — 이미 측정된 ③ 그대로
+
+```python
+if abs(_sz_seen - _sz_true) > 1e-9:
+    _p0 = float(pot) - tocall
+    _po_seen = (_sz_seen*_p0)/max(1.0, _p0 + 2*_sz_seen*_p0)
+    _po_true = (_sz_true*_p0)/max(1.0, _p0 + 2*_sz_true*_p0)
+    if _po_true > 0:
+        need *= _po_seen/_po_true
+```
+
+장점 — 변경 4줄. **이미 n=400×3스트리트로 측정된 변종이다**(②와 1건 차이).
+위험 — `1e-9` 문턱이 남는다. 클램프는 실제 팟오즈에, 최종 need 는 인지
+팟오즈에 묶여 **함수 안에 팟오즈 개념이 둘 남는다.** 곱셈이 클램프 뒤에
+오므로 클램프 밖으로 나갈 수도 있다(오독이 1.5% 뿐이라 실제로는 미미).
+
+#### 권고: **(나)**
+
+`1e-9` 문턱을 없애는 것이 이번 건의 핵심이기 때문이다. (다)는 체인은
+살리지만 "아주 작은 차이가 특별한 사건이 된다"는 구조를 그대로 남긴다.
+diff 는 (다)가 작지만, (나)가 남기는 코드가 더 작다(조건문 하나가 사라진다).
+
+**두 안 모두 `sizing_tell` 의 영향력을 새로 정하지 않는다.** 스위치가
+사라지므로 `sizing_tell` 은 `_sz_seen`(중앙 0.002)과 `trust` 블록으로만
+남는다. ③ 측정 기준 1.8% 다. 이 숫자가 적정한지는 **별도 설계 문제**이고
+이번 수정에서 계수를 건드리지 않는다.
+
+#### 검증 절차 — 관문이 깨지면 멈추고 보고한다
+
+```
+0) 수정 전 지문  44da00bf…                       ← 이미 기록돼 있다
+1) tools/wirecheck.py                            36/36
+2) 위약 바닥값                                    전부 0.0% 유지
+3) **비발동군 변화 0.0%**                          ← (나)의 대수 동치 관문.
+   0 이 아니면 need_true 교체가 등가가 아니라는 뜻이므로 커밋 전에 원인 규명
+4) tools/cf_szseen.py                            수정 후 ① 변종을 소스에서
+   만들 수 없게 된다(블록이 사라짐). cf_potodds 처럼 **예전 코드를 되돌리는
+   변종**으로 방향을 뒤집어 같은 비교를 재현한다
+5) tools/cf_stell.py                             발동률 0%↔89% 스위치 소멸,
+   potodds 뒤집힘이 st=9 에서 2.2% → 8~9% 로 회복되는지
+6) tools/cf_response.py --read --reads           potodds·aggression·
+   looseness·discipline 상승, sizing_tell 하락 확인
+7) 새 지문 측정 → CLAUDE.md baseline 이력에 기록 → **별도 커밋**
+```
+
+`size_river` 게이트 우회(`persona.py:955`)는 **이 수정과 같이 고치지 않는다.**
+같은 줄을 통해 나타나므로 함께 바꾸면 어느 변경이 결과를 바꿨는지 분리할 수 없다.
+
 ## 2-B. 성향이 `_allowed` 게이트 하나로 수렴한다
 
 | | |
