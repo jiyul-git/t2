@@ -166,7 +166,7 @@ def sizes(rows):
                     if add > 0:
                         vals.append((add / r['pot_before'], rec['hand_no'],
                                      sp['street'], r['seat'], add, r['pot_before'],
-                                     r['act']))
+                                     r['act'], r['seat'] == rec.get('hero')))
                     cur = max(cur, r['amt'])
     return vals
 
@@ -290,14 +290,16 @@ def show_flags(rows):
             print('    ... 외 %d건' % (len(items) - 5))
 
 
-def show_sizes(rows):
-    vals = sizes(rows)
+def show_sizes(rows, hero=None):
+    vals = [v for v in sizes(rows)
+            if hero is None or v[7] == hero]   # hero=False 면 봇만
     if not vals:
         print('포스트플랍 벳/레이즈가 없다'); return
     vals.sort()
     n = len(vals)
     def q(p): return vals[min(n - 1, int(n * p))][0]
-    print('포스트플랍 벳/레이즈 %d건 — 팟 대비 (판정 아님, 분포만)' % n)
+    print('포스트플랍 벳/레이즈 %d건 — 팟 대비 (판정 아님, 분포만)%s' % (
+        n, '' if hero is None else ('  [나만]' if hero else '  [봇만]')))
     print('  최소 %.0f%%   25%% %.0f%%   중앙 %.0f%%   75%% %.0f%%   최대 %.0f%%'
           % (vals[0][0]*100, q(.25)*100, q(.5)*100, q(.75)*100, vals[-1][0]*100))
     band = [('~50%', 0, .5), ('50~75%', .5, .75), ('75~100%', .75, 1.0),
@@ -306,9 +308,10 @@ def show_sizes(rows):
         k = sum(1 for v in vals if lo <= v[0] < hi)
         print('  %-9s %4d건  %5.1f%%  %s' % (name, k, k / n * 100, '█' * int(k / n * 40)))
     print('\n가장 큰 10건')
-    for (r, h, st, seat, add, pot, act) in vals[-10:][::-1]:
-        print('  h%-4s %-8s %s번  %-6s %s / 팟 %s = %.0f%%'
-              % (h, KR.get(st, st), seat, ACT.get(act, act), C(add), C(pot), r * 100))
+    for (r, h, st, seat, add, pot, act, me) in vals[-10:][::-1]:
+        print('  h%-4s %-8s %s번%-3s %-6s %s / 팟 %s = %.0f%%'
+              % (h, KR.get(st, st), seat, '←나' if me else '',
+                 ACT.get(act, act), C(add), C(pot), r * 100))
 
 
 def show_pid(rows, pid, memos):
@@ -347,6 +350,8 @@ def main():
     ap.add_argument('--flags', action='store_true')
     ap.add_argument('--pid', type=int)
     ap.add_argument('--sizes', action='store_true')
+    ap.add_argument('--bots', action='store_true', help='나를 빼고 봇만')
+    ap.add_argument('--me', action='store_true', help='내 액션만')
     ap.add_argument('--memos')
     a = ap.parse_args()
     rows = load(a.file)
@@ -364,7 +369,7 @@ def main():
     elif a.pid is not None:
         show_pid(rows, a.pid, memos)
     elif a.sizes:
-        show_sizes(rows)
+        show_sizes(rows, True if a.me else (False if a.bots else None))
     elif a.flags:
         show_flags(rows)
     else:

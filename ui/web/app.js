@@ -30,6 +30,8 @@ const S = {
   heroSig: null,           // 히어로 카드가 지금 무엇을 그리고 있는지
   queuedNew: null,         // 요청 처리 중에 눌러둔 새 게임
   queuedAction: null,      // 재생 중에 눌러둔 히어로 액션
+  reveal: null,            // 쇼다운 공개 중이면 {좌석: 카드들}
+  winners: null,           // 쇼다운 공개 중 강조할 좌석 집합
   won: false,              // 히어로가 대회를 우승했나
   entries: null,           // 총 엔트리 (우승 화면 표시용)
 };
@@ -171,7 +173,8 @@ function renderSeats(v) {
               `</div></div>`;
       continue;
     }
-    const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded');
+    const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded') +
+                (S.winners && S.winners[slot] ? ' won' : '');
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
     const nc = dealtCount(slot);
     // 카드마다 자기 시각으로 지연을 계산한다. 한 장씩 들어오므로 두 장의
@@ -185,7 +188,13 @@ function renderSeats(v) {
         (st0 ? ` style="animation-delay:${dealDelay(st0)}"` : '') +
         '></div>');
     }
-    const backs = (d.in_hand && nc)
+    // 쇼다운 공개 — 뒷면을 앞면으로 뒤집는다. 카드마다 순서대로 지연을 준다.
+    const rv = S.reveal ? S.reveal[slot] : null;
+    const backs = (rv && rv.length)
+      ? `<div class="backs reveal">${rv.map((c, ci) =>
+           `<div class="flip" style="animation-delay:${revealDelay(slot, ci)}">` +
+           cardHTML(c, 'mini') + backHTML('mini') + '</div>').join('')}</div>`
+      : (d.in_hand && nc)
       ? `<div class="backs">${cards.join('')}</div>`
       : (S.folding[slot]
          ? `<div class="backs out" style="animation-delay:${foldDelay(S.folding[slot])}">` +
@@ -249,8 +258,74 @@ function renderBoard(v) {
   S.boardLen = b.length;
 }
 
+/* 가운데 팟을 메인/사이드로 나눈다.
+ *
+ * **완료된 스트리트만 센다.** 실제 딜러도 베팅 라운드가 끝나야 사이드팟을
+ * 만든다. 이번 스트리트 투입분은 아직 좌석 앞 칩으로 보이고 있다 —
+ * 그게 곧 v.pot_center 의 정의라 숫자가 저절로 맞는다.
+ *
+ * 서버에 묻지 않는다. 로그의 amount 는 '그 액션 뒤 그 좌석의 이번 스트리트
+ * 총 투입액'이라(runner.py:122-126), 스트리트마다 최댓값을 더하면 총 기여가
+ * 나온다. 폴드·체크는 amount 0 이라 최댓값을 쓰면 알아서 무시된다.
+ *
+ * 쪼개는 방식은 session.award_pots 와 같다. 기여액 단계마다 한 칸씩 만들고,
+ * 안테 같은 데드머니는 메인에만 얹는다. 그래야 합이 pot_center 와 같다.
+ */
+function potParts(v) {
+  const pc = v.pot_center || 0;
+  const live = {};
+  (v.seats || []).forEach((x) => { if (x.in_hand) live[x.seat] = 1; });
+  const per = {};                       // {스트리트: {좌석: 그 스트리트 투입}}
+  (v.prior_log || []).forEach((e) => {
+    const k = e.street || '?';
+    const m = per[k] || (per[k] = {});
+    m[e.seat] = Math.max(m[e.seat] || 0, e.amount || 0);
+  });
+  const total = {};
+  Object.keys(per).forEach((k) => {
+    const m = per[k];
+    Object.keys(m).forEach((sd) => { total[sd] = (total[sd] || 0) + m[sd]; });
+  });
+  const vals = Object.keys(total).map((k) => total[k]).filter((x) => x > 0);
+  if (!vals.length) return [{ amount: pc, eligible: Object.keys(live).map(Number) }];
+
+  const levels = Array.from(new Set(vals)).sort((a, b) => a - b);
+  const parts = [];
+  let prev = 0;
+  levels.forEach((lv) => {
+    const at = Object.keys(total).filter((k) => total[k] >= lv);
+    parts.push({ amount: (lv - prev) * at.length,
+                 eligible: at.map(Number).filter((x) => live[x]) });
+    prev = lv;
+  });
+  // 안테·데드머니는 재구성에 안 잡힌다. 차액을 메인에 얹어 합을 맞춘다.
+  const sum = parts.reduce((a, p) => a + p.amount, 0);
+  if (parts.length) parts[0].amount += pc - sum;
+
+  // 자격자가 같은 칸은 한 팟이다. 자격자가 1명 이하인 칸은 겨룰 상대가 없어
+  // 따로 세울 이유가 없으므로 앞 칸에 합친다 (합계는 그대로 유지된다).
+  const out = [];
+  parts.forEach((p) => {
+    const key = p.eligible.slice().sort((a, b) => a - b).join(',');
+    const last = out.length ? out[out.length - 1] : null;
+    if (last && (last._key === key || p.eligible.length <= 1)) {
+      last.amount += p.amount;
+      return;
+    }
+    out.push({ _key: key, amount: p.amount, eligible: p.eligible });
+  });
+  return out;
+}
+
 function renderPot(v) {
   $('#pot').textContent = '팟 ' + fmt(v.pot_total);
+  const parts = potParts(v);
+  if (parts.length > 1) {
+    // 올인 때문에 자격이 갈렸다 — 나눠서 보여준다
+    $('#potsub').textContent = parts.map((p, i) =>
+      (i === 0 ? '메인 ' : '사이드' + i + ' ') + fmt(p.amount)).join(' · ');
+    return;
+  }
   $('#potsub').textContent = (v.pot_center && v.pot_center !== v.pot_total)
     ? '중앙 ' + fmt(v.pot_center) : '';
 }
@@ -277,6 +352,93 @@ function renderHero(v) {
     $('#herocards').innerHTML = nc
       ? cardsHTML((v.hero_hole || []).slice(0, nc), 'deal') : '';
   }
+}
+
+/* ---------------- 쇼다운 공개 ----------------
+ * 결과 창을 읽어야 누가 이겼는지 알 수 있던 것을, 테이블에서 바로 보이게 한다.
+ * 카드를 한 장씩 뒤집고 이긴 자리를 강조한 뒤에 결과 창을 띄운다.
+ *
+ * **표시 전용이다.** 서버에 아무것도 묻지 않고, 결과 뷰가 이미 준 shown
+ * (쇼다운에 깐 패)만 쓴다. 접은 사람의 패는 애초에 거기 없다.
+ */
+const REVEAL_STEP = 170;      // 카드 한 장 간격
+const REVEAL_ANIM = animMs('--flip-anim', 520);
+const REVEAL_HOLD = 900;      // 다 뒤집고 나서 결과 창까지의 여유
+
+function revealDelay(slot, ci) {
+  const t0 = S.reveal && S.reveal._t0;
+  const n = (S.reveal && S.reveal._order ? S.reveal._order.indexOf(slot) : 0);
+  const start = (n < 0 ? 0 : n) * 2 * REVEAL_STEP + ci * REVEAL_STEP;
+  // 프레임마다 다시 그려도 이어서 뒤집히게 한다 (딜링·폴드와 같은 이유).
+  const el = t0 ? Math.min(start + REVEAL_ANIM, Math.max(0, performance.now() - t0)) : 0;
+  return (start - el).toFixed(0) + 'ms';
+}
+
+/* 결과 뷰에는 seats 가 없다 (render_result 가 stacks/pos 만 준다).
+ * 마지막 decision 뷰를 바탕으로 공개용 프레임을 만든다. */
+function revealView(res) {
+  const base = S.view0 || S.view;
+  if (!base || !base.seats || !base.seats.length) return null;
+  const folded = {};
+  (res.log || []).forEach((e) => { if (e.action === 'fold') folded[e.seat] = 1; });
+  const st = res.stacks || {};
+  const seats = base.seats.map((x) => Object.assign({}, x, {
+    bet: 0,
+    in_hand: !folded[x.seat],
+    stack: st[String(x.seat)] !== undefined ? Number(st[String(x.seat)]) : x.stack,
+    allin: false,
+  }));
+  return Object.assign({}, base, {
+    seats: seats, stage: 'river',
+    board: res.board || [],
+    // 로그도 결과 것으로 바꾼다. decision 뷰의 log 는 히어로 차례까지라
+    // 그대로 두면 공개 화면에 반쪽짜리 줄이 남는다.
+    log: res.log || base.log || [],
+    pot_center: res.pot || 0, pot_total: res.pot || 0,
+  });
+}
+
+/* 쇼다운이면 공개 연출을 하고 done() 을 부른다. 아니면 바로 done(). */
+function revealShowdown(res, done) {
+  const shown = res.shown || {};
+  // 히어로는 좌석 pod 이 없다 (하단 바에 이미 앞면으로 떠 있다). 공개 순서에
+  // 넣으면 아무것도 안 보이는 빈 차례가 생긴다.
+  const seats = Object.keys(shown).map(Number)
+    .filter((s) => (shown[String(s)] || []).length && s !== res.hero_seat);
+  const fv = res.showdown && seats.length ? revealView(res) : null;
+  if (!fv) { done(); return; }
+
+  // 공개 순서는 좌석 번호가 아니라 **마지막 공격자부터** 여야 실제 쇼다운과
+  // 같다. 로그를 거꾸로 훑어 마지막으로 친 사람을 찾는다.
+  const last = (res.log || []).filter((e) => ['bet', 'raise', 'allin'].indexOf(e.action) >= 0);
+  const first = last.length ? last[last.length - 1].seat : seats[0];
+  const k = seats.indexOf(first);
+  const order = k > 0 ? seats.slice(k).concat(seats.slice(0, k)) : seats;
+
+  S.reveal = { _t0: performance.now(), _order: order };
+  order.forEach((s) => { S.reveal[s] = shown[String(s)]; });
+  S.winners = {};
+  ((res.main_winners && res.main_winners.length ? res.main_winners : res.winners) || [])
+    .forEach((w) => { S.winners[Number(w)] = 1; });
+
+  $('#mainrow').innerHTML = '<div class="wait">쇼다운</div>';
+  closeRaise();
+  renderSeats(fv); renderChips(fv, false); renderBoard(fv); renderPot(fv); renderHero(fv);
+  renderLogLine(fv);
+
+  let ended = false;
+  const finish = () => {
+    if (ended) return;
+    ended = true;
+    S.timers.forEach(clearTimeout); S.timers = [];
+    S.reveal = null; S.winners = null; S.replayDone = null;
+    done();
+  };
+  // 공개 중에 액션을 예약하면 건너뛰고 바로 결과로 간다. 타이머가 지워져도
+  // 결과로 못 가고 멈추는 일이 없어야 한다.
+  S.replayDone = finish;
+  const total = (order.length * 2 - 1) * REVEAL_STEP + REVEAL_ANIM + REVEAL_HOLD;
+  S.timers.push(setTimeout(finish, total));
 }
 
 /* ---------------- 딜링 모션 ----------------
@@ -813,6 +975,12 @@ function seatName(v, s) {
 function finishResult(v) {
   clearBubbles();
   histPush(v);
+  // 쇼다운이면 테이블에서 카드를 먼저 연다. 결과 창은 그다음이다 —
+  // 창이 바로 덮어버리면 연출을 넣은 뜻이 없다.
+  revealShowdown(v, () => finishResult2(v));
+}
+
+function finishResult2(v) {
   if (S.won) { showWin(v); return; }
   renderResult(v);
   S.handNo = null; S.stage = null; S.logLen = 0; S.boardLen = 0;
