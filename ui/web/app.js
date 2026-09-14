@@ -158,7 +158,12 @@ function renderSeats(v) {
     if (slot === v.hero_seat) continue;           // 히어로는 하단 바에 그린다
     const p = slotPos(slot, v.hero_seat, n, 1, 1);
     const d = by[slot];
-    const style = `left:${p.x}%;top:${p.y}%`;
+    // '가운데 → 이 자리' 를 좌석 자신에 심는다. 커스텀 속성은 상속되므로
+    // 카드가 var(--dx)/var(--dy) 를 그대로 받는다. 카드마다 style 을 따로
+    // 찍지 않아야 딜링 중에 카드 한 장만 DOM 에 끼워 넣을 수 있다.
+    const dx = Math.round((50 - p.x) / 100 * W);
+    const dy = Math.round((44 - p.y) / 100 * H);   // 44 = slotPos 의 세로 중심
+    const style = `left:${p.x}%;top:${p.y}%;--dx:${dx}px;--dy:${dy}px`;
     if (!d) {
       html += `<div class="pod empty" data-slot="${slot}" style="${style}">` +
               `<div class="avatar">·</div><div class="meta">` +
@@ -168,16 +173,16 @@ function renderSeats(v) {
     }
     const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded');
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
-    const dx = Math.round((50 - p.x) / 100 * W);
-    const dy = Math.round((44 - p.y) / 100 * H);   // 44 = slotPos 의 세로 중심
     const nc = dealtCount(slot);
     // 카드마다 자기 시각으로 지연을 계산한다. 한 장씩 들어오므로 두 장의
     // 비행 시점이 다르고, 프레임을 다시 그려도 각자 이어서 난다.
+    // (딜링 중 정상 경로는 dealAppend 다. 여기는 딜링 도중 다른 이유로
+    //  좌석을 통째로 다시 그리게 됐을 때의 복구용이다.)
     const cards = [];
     for (let ci = 0; ci < nc; ci++) {
       const st0 = S.dealt ? (S.dealt[slot] || [])[ci] : null;
       cards.push(`<div class="card back mini${S.dealt ? ' fly' : ''}"` +
-        (st0 ? ` style="--dx:${dx}px;--dy:${dy}px;animation-delay:${dealDelay(st0)}"` : '') +
+        (st0 ? ` style="animation-delay:${dealDelay(st0)}"` : '') +
         '></div>');
     }
     const backs = (d.in_hand && nc)
@@ -342,6 +347,32 @@ function dealOrder(v) {
   return out;
 }
 
+/* 딜링 중에는 좌석을 통째로 다시 그리지 않는다.
+ *
+ * #seats 를 innerHTML 로 다시 만들면 날고 있는 카드가 전부 지워졌다 새로
+ * 생긴다. 음수 지연으로 진행률은 맞출 수 있어도, 250ms 마다 좌석 7개분
+ * 레이아웃이 다시 잡히는 것까지는 못 없앤다 — 그게 '살짝 끊기는' 느낌이다.
+ * 새로 받은 카드 한 장만 끼워 넣으면 나머지 카드는 건드려지지 않는다.
+ *
+ * 붙이는 위치는 화면에 영향이 없다. .backs 는 z-index 0, .avatar 는 1,
+ * .memo 는 3 으로 전부 정해져 있어서 DOM 순서로 겹침이 정해지지 않는다.
+ */
+function dealAppend(slot) {
+  const pod = $(`#seats .pod[data-slot="${slot}"]`);
+  if (!pod || pod.classList.contains('empty')) return false;
+  let backs = pod.querySelector('.backs');
+  if (!backs) {
+    backs = document.createElement('div');
+    backs.className = 'backs';
+    pod.appendChild(backs);
+  }
+  const c = document.createElement('div');
+  // 지금 만들어졌으니 지연이 필요 없다. 처음부터 날면 된다.
+  c.className = 'card back mini fly';
+  backs.appendChild(c);
+  return true;
+}
+
 function dealThen(v, done) {
   const order = dealOrder(v);
   if (!order.length) { S.dealt = null; deckHide(); done(); return; }
@@ -350,8 +381,11 @@ function dealThen(v, done) {
   // 접은 자리가 회색이고, 칩과 올인 표시까지 미리 나와 있었다.
   // 액션 전 상태(블라인드만 들어간 상태)로 그린다. drawFrame 이 칩·스택·
   // 올인을 그 프레임 기준으로 다시 계산하고, folded 가 비었으니 전원 참가다.
-  const bets0 = baseBets(v, false);
-  const draw0 = () => drawFrame(v, bets0, {});
+  // 딜링 동안 프레임은 내내 같다 (액션이 아직 없다). 한 번만 만들어 쓴다.
+  const fv0 = frameView(v, baseBets(v, false), {});
+  const draw0 = () => {
+    renderSeats(fv0); renderChips(fv0, false); renderPot(fv0); renderHero(fv0);
+  };
   // 한 장씩 두 바퀴. S.dealt[좌석] 은 '받은 카드들의 시각' 배열이다.
   const seq = order.concat(order);
   S.dealt = {};
@@ -376,7 +410,13 @@ function dealThen(v, done) {
     if (i >= seq.length) { finish(); return; }
     const slot = seq[i++];
     (S.dealt[slot] = S.dealt[slot] || []).push(Math.max(1, performance.now()));
-    draw0();
+    // 좌석은 카드 한 장만 끼워 넣는다.
+    // **히어로는 좌석 pod 이 없다** — renderSeats 가 건너뛰고 하단 바에
+    // 그린다. 그래서 dealAppend 가 못 찾아 draw0 으로 떨어졌고, 히어로
+    // 차례 두 번에 좌석 전체가 다시 만들어지고 있었다. 그 두 번이
+    // 딜링 도중 눈에 띄게 끊기는 지점이었다.
+    if (slot === fv0.hero_seat) renderHero(fv0);
+    else if (!dealAppend(slot)) draw0();
     S.timers.push(setTimeout(next, dealMs()));
   };
   S.timers.push(setTimeout(next, SHUFFLE_MS));   // 섞고 나서 돌린다
@@ -494,7 +534,9 @@ function baseBets(v, hasPrev) {
   return b;
 }
 
-function drawFrame(v, bets, folded) {
+/* 이 프레임 시점의 뷰를 만든다. 그리지는 않는다 —
+ * 딜링은 프레임이 내내 같아서 한 번만 만들어 재사용한다. */
+function frameView(v, bets, folded) {
   // allin 도 그 프레임 기준으로 다시 판정한다. v.seats 의 allin 은 **재생이 다
   // 끝난 뒤**의 상태라, 그대로 쓰면 아직 올인하지 않은 좌석에 ALL-IN 배지가
   // 미리 떴다 (칩과 폴드는 이미 프레임 기준으로 다시 계산하고 있었다).
@@ -508,8 +550,12 @@ function drawFrame(v, bets, folded) {
     });
   });
   const sum = seats.reduce((a, s) => a + (s.bet || 0), 0);
-  const fv = Object.assign({}, v, { seats: seats,
-                                    pot_total: (v.pot_center || 0) + sum });
+  return Object.assign({}, v, { seats: seats,
+                                pot_total: (v.pot_center || 0) + sum });
+}
+
+function drawFrame(v, bets, folded) {
+  const fv = frameView(v, bets, folded);
   renderSeats(fv); renderChips(fv, false); renderPot(fv); renderHero(fv);
 }
 
@@ -736,12 +782,21 @@ function openRaise(v) {
     pres.appendChild(btn('', label, fmt(val), () => set(val)));
   });
 
-  $('#rok').onclick = () => {
+  const confirm = () => {
     closeRaise();
     // 상한이면 'allin' 으로 보낸다. 엔진이 스스로 올인 목표를 계산하므로
     // 반올림 때문에 1칩이 어긋날 일이 없다.
     if (cur >= rz.max_to) send('allin', 0);
     else send(rz.kind, cur);
+  };
+  $('#rok').onclick = confirm;
+  // 금액 칸에서 엔터 = 확인. onblur 를 기다리면 값이 확정되기 전에 나가므로
+  // 여기서 먼저 확정한다. 패널은 confirm 이 닫는다.
+  $('#rnum').onkeydown = (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    set(Number($('#rnum').value) || rz.min_to);
+    confirm();
   };
   $('#rcancel').onclick = closeRaise;
   set(rz.min_to);
@@ -805,6 +860,18 @@ function finishResult(v) {
  * 자격자가 내내 같으므로 팟이 하나가 되고, 올인이 있으면 자격자가 달라져 그대로
  * 갈린다. **표시만 합친다** — 금액과 분배는 엔진이 준 그대로다.
  */
+/* 엔진의 pots 는 '투입 단계'별로 쪼갠 것이지 사이드팟이 아니다.
+ *
+ *  - 자격자가 같은 칸이 연달아 나오면 한 팟이다. 단계가 나뉜 것은
+ *    누가 언제 얼마를 넣었냐일 뿐 나눠 줄 대상이 같다.
+ *  - **자격자가 한 명인 칸은 팟이 아니다.** 상대가 다 콜하지 못한
+ *    초과분이 그대로 돌아가는 것이다. 헤즈업 올인에서 항상 생긴다 —
+ *    이걸 '사이드1' 로 찍어서, 둘이 치는 판에 사이드팟이 있는 것처럼
+ *    보였다. view.py 도 이미 이걸 '반환' 으로 부른다.
+ *
+ * 사이드팟은 올인한 사람을 두고 **나머지가 계속 칠 때** 생긴다.
+ * 그래서 자격자 2명 이상인 칸이 둘 이상일 때만 팟이 나뉜 것이다.
+ */
 function mergePots(pots) {
   const out = [];
   (pots || []).forEach((p) => {
@@ -817,6 +884,15 @@ function mergePots(pots) {
     out.push({ _key: key, amount: p.amount, eligible: p.eligible, winners: p.winners });
   });
   return out;
+}
+
+/* 실제로 겨룬 팟과, 콜되지 않아 돌아간 몫을 가른다. */
+function splitPots(pots) {
+  const all = mergePots(pots);
+  const real = all.filter((p) => (p.eligible || []).length > 1);
+  const back = all.filter((p) => (p.eligible || []).length <= 1);
+  return { real: real, back: back,
+           backAmt: back.reduce((a, p) => a + (p.amount || 0), 0) };
 }
 
 /* withLog — 라인 기록을 붙일지. 방금 끝난 핸드의 결과 화면에는 붙이지 않는다.
@@ -843,12 +919,18 @@ function resultBodyHTML(v, withLog) {
   }
 
   let potsHTML = '';
-  const pots = mergePots(v.pots);
-  if (pots.length > 1) {
-    potsHTML = '<div class="potline">팟 분배</div>' + pots.map((p, i) =>
-      `<div class="row"><span class="who">${i === 0 ? '메인' : '사이드' + i}</span>` +
-      `<span>${(p.winners || []).map((w) => seatName(v, w)).join(', ') || '-'}</span>` +
-      `<span class="amt">${fmt(p.amount)}</span></div>`).join('');
+  const sp = splitPots(v.pots);
+  if (sp.real.length > 1) {
+    // 반환분도 같이 적어야 금액이 맞아떨어진다.
+    potsHTML = '<div class="potline">팟 분배</div>' +
+      sp.real.map((p, i) =>
+        `<div class="row"><span class="who">${i === 0 ? '메인' : '사이드' + i}</span>` +
+        `<span>${(p.winners || []).map((w) => seatName(v, w)).join(', ') || '-'}</span>` +
+        `<span class="amt">${fmt(p.amount)}</span></div>`).join('') +
+      sp.back.map((p) =>
+        `<div class="row"><span class="who">반환</span>` +
+        `<span>${(p.eligible || []).map((w) => seatName(v, w)).join(', ') || '-'}</span>` +
+        `<span class="amt">${fmt(p.amount)}</span></div>`).join('');
   }
 
   const how = { fold: '폴드로 종료', showdown: '쇼다운', void: '무효' }[v.how] || v.how;

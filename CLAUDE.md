@@ -245,6 +245,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 
 | 파일 | 용도 |
 |---|---|
+| `tools/review.py` | 토너 한 판 되짚기. `--list` / `--hand N` / `--flags` / `--sizes` / `--pid N` |
 | `tools/collect.py` | 히어로 없이 봇끼리 돌려 intent 수집. `python3 tools/collect.py 250 out.jsonl` |
 | `tools/cf_B.py` | 402줄에서 아래 체인으로 흘려보냈을 때의 반사실 |
 | `tools/cf_hassd.py` | 최종 has_sd 블록 해부 + 4분할 |
