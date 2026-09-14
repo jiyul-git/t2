@@ -111,6 +111,8 @@ def main():
     ap.add_argument('--n', type=int, default=400)
     ap.add_argument('--street', default='flop', choices=list(BOARD_N))
     ap.add_argument('--seed', type=int, default=20260914)
+    ap.add_argument('--dump', type=int, default=0,
+                    help='C 에서 뒤집힌 상황을 이 개수만큼 표로 찍는다')
     a = ap.parse_args()
 
     noov = variant(PL.calldown_need, OVERWRITE, 'calldown_need_noov')
@@ -127,6 +129,7 @@ def main():
     need_gap = []
     done = 0
     hi_station = {'n': 0, 'flipB': 0}
+    rowsC = []
 
     for i in range(a.n):
         sit = situation(rng, a.street)
@@ -151,22 +154,33 @@ def main():
                 initiative=sit['initiative'], oop=sit['oop'],
                 opp_range=sit['opp_range'], seed=s, n_opp=1,
                 to_act_behind=sit['to_act_behind'], opp_est=est, read=rv)
-            return act, need
+            return act, need, _eq
 
         try:
             PL.calldown_need, PL.decide_response = orig_cn, orig_dr
-            base, need0 = run()
+            base, need0, _eqv = run()
             PL.calldown_need = noov
-            av, needA = run()
+            av, needA, _ = run()
             PL.calldown_need = fixed
-            cv, needC = run()
+            cv, needC, _ = run()
             PL.calldown_need = orig_cn
             PL.decide_response = single
-            bv, _ = run()
+            bv, _, _ = run()
         except Exception:
             continue
         finally:
             PL.calldown_need, PL.decide_response = orig_cn, orig_dr
+
+        # --- C 뒤집힘 분해용 중간값. persona 함수는 순수라 바깥에서 같은 값이 나온다 ---
+        _sz_true = sit['tocall']/max(1.0, float(sit['pot']) - sit['tocall'])
+        _rd = PS.read_opponent(prof, est)
+        _sz_norm = PS.opp_size_norm(_rd, _sz_true, sit['street'])
+        _sz_seen = PS.size_read(prof, _sz_norm)
+        _made = bot.made_strength(sit['hero'], sit['board'])
+        _draw = bot.draw_strength(sit['hero'], sit['board'])
+        _cb = PS.call_bias(prof, sit['street'], _sz_seen, _made, _draw)
+        _nt_old = sit['tocall']/max(1.0, float(sit['pot']))
+        _nt_new = sit['tocall']/max(1.0, float(sit['pot']) + float(sit['tocall']))
 
         done += 1
         acts['현재'][base] += 1
@@ -176,6 +190,13 @@ def main():
         if base != cv:
             flip['C'] += 1; trans['C']['%s → %s' % (base, cv)] += 1
             by_plan['C'][ps['plan']] += 1
+            rowsC.append(dict(street=sit['street'], plan=ps['plan'],
+                              pot=sit['pot'], tocall=sit['tocall'],
+                              sz=_sz_true, sz_seen=_sz_seen, cb=_cb,
+                              nt_old=_nt_old, nt_new=_nt_new,
+                              need0=need0, needC=needC, eq=_eqv,
+                              fired=abs(_sz_seen - _sz_true) > 1e-9,
+                              a0=base, aC=cv))
         if need0 is not None and needA is not None:
             need_gap.append(abs(needA - need0))
         if base != av:
@@ -215,6 +236,60 @@ def main():
         need_gap.sort()
         print('A: need 자체가 얼마나 달라지나  중앙 %.3f  95%% %.3f  최대 %.3f'
               % (ST.median(need_gap), need_gap[int(len(need_gap)*.95)], need_gap[-1]))
+    if rowsC:
+        print()
+        print('=== C 뒤집힘 분해 (%d건) ===' % len(rowsC))
+        f2c = [r for r in rowsC if r['a0'] == 'fold' and r['aC'] == 'call']
+        c2f = [r for r in rowsC if r['a0'] == 'call' and r['aC'] == 'fold']
+        # 핵심 검증: call_bias 가 뒤집힘 방향을 예측하는가
+        # call_bias < 1 = 넓게 콜하는 사람, > 1 = 과잉 폴드하는 사람
+        def share(rs):
+            if not rs: return '-'
+            lo = sum(1 for r in rs if r['cb'] < 1.0)
+            return '%d/%d (%.0f%%)' % (lo, len(rs), 100*lo/len(rs))
+        print('  call_bias < 1 (넓게 콜하는 성향) 의 비율')
+        print('    폴드 → 콜 로 뒤집힌 건  %s' % share(f2c))
+        print('    콜 → 폴드 로 뒤집힌 건  %s' % share(c2f))
+        allr = [r for r in rowsC if r['cb'] is not None]
+        base_lo = sum(1 for r in allr if r['cb'] < 1.0)
+        print('    (뒤집힌 전체에서는 %d/%d = %.0f%%)'
+              % (base_lo, len(allr), 100*base_lo/max(1, len(allr))))
+        # 덮어쓰기가 발동했는가로 가른다. 발동했으면 C 의 차이는 '체인 복원',
+        # 안 했으면 '산수 교정' 이다. 둘은 성격이 다르다.
+        fr = [r for r in rowsC if r['fired']]
+        nf = [r for r in rowsC if not r['fired']]
+        print()
+        print('  덮어쓰기가 발동했던 상황  %d건 (%.0f%%)  → C 의 차이 = 체인 복원'
+              % (len(fr), 100*len(fr)/max(1, len(rowsC))))
+        print('  발동 안 했던 상황        %d건 (%.0f%%)  → C 의 차이 = 산수 교정'
+              % (len(nf), 100*len(nf)/max(1, len(rowsC))))
+        for nm, rs in (('  체인 복원', fr), ('  산수 교정', nf)):
+            if not rs: continue
+            _f2c = sum(1 for r in rs if r['a0'] == 'fold' and r['aC'] == 'call')
+            _c2f = sum(1 for r in rs if r['a0'] == 'call' and r['aC'] == 'fold')
+            _d = sum((r['needC'] or 0) - (r['need0'] or 0) for r in rs)/len(rs)
+            print('%-12s 폴드→콜 %2d  콜→폴드 %2d   need 평균 변화 %+.3f'
+                  % (nm, _f2c, _c2f, _d))
+        print()
+        print('  %-14s %8s %8s %8s %8s %8s %8s' %
+              ('', 'sz', 'sz_seen', 'call_bias', 'need 현재', 'need C', 'eq'))
+        for name, rs in (('폴드 → 콜', f2c), ('콜 → 폴드', c2f)):
+            if not rs: continue
+            g = lambda k: sum(r[k] for r in rs if r[k] is not None)/max(1, len(rs))
+            print('  %-14s %8.2f %8.2f %8.2f %8.3f %8.3f %8.3f'
+                  % (name + ' 평균', g('sz'), g('sz_seen'), g('cb'),
+                     g('need0'), g('needC'), g('eq')))
+        if a.dump:
+            print()
+            print('  %-6s %-14s %6s %6s %6s %7s %7s %7s %7s %6s %6s' %
+                  ('스트','계획','sz','seen','c_bias','nt_old','nt_new','need0','needC','eq','전환'))
+            for r in rowsC[:a.dump]:
+                print('  %-6s %-14s %6.2f %6.2f %6.2f %7.3f %7.3f %7.3f %7.3f %6.3f  %s→%s'
+                      % (r['street'], r['plan'], r['sz'], r['sz_seen'], r['cb'],
+                         r['nt_old'], r['nt_new'], r['need0'] or 0, r['needC'] or 0,
+                         r['eq'] or 0, r['a0'], r['aC']))
+        print()
+        print('  주의: 이 조건은 bf(버블팩터) = 1.0 고정이다. ICM 은 들어가지 않았다.')
     if hi_station['n']:
         print('B: station 편향 0.3 초과인 %d명만 보면 행동 변화 %.1f%%'
               % (hi_station['n'], 100*hi_station['flipB']/hi_station['n']))
