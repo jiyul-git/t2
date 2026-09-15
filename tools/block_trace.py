@@ -194,18 +194,23 @@ def main():
         print('  블락벳 메시지가 남은 %d건의 make_plan 반환 plan:' % len(s4), dict(ow.most_common()))
     print()
 
-    # block 이 덮어쓰기에서 살아남을 수 있는 자리인가
-    # 생존 조건: pot_control 미발동 AND NOT(rel >= max(0.28, 0.52-0.080*_mg) and made>=1)
-    if s3:
-        surv = [r for r in s3
-                if r['rel'] is not None and
-                (r['made'] == 0 or r['rel'] < max(0.28, 0.52 - 0.080*(r['mg'] or 0)))]
-        print('## 덮어쓰기 생존 가능 자리')
-        print('  block opportunity %d건 중 value_2street 를 피할 수 있는 자리 %d건 (%.1f%%)'
-              % (len(s3), len(surv), pc(len(surv), len(s3))))
-        print('  (rel < max(0.28, 0.52-0.080*range_merge) 이거나 made==0)')
-        print('  그 위에 pot_control 미발동까지 필요하다 — potcontrol 게이트 통과자 %.1f%%'
-              % (100*sum(1 for r in s3 if r['pc_sk'] >= 3.33)/len(s3)))
+    # 생존 가능 경로가 있는가 — 없다.
+    # plan.py:456/458/461 은 완전한 if/elif/else 이고 세 갈래 전부 plan 을
+    # 대입한다. 448 의 block 이 살아남는 경로가 하나도 없다.
+    #
+    # 처음에 "rel < max(0.28, 0.52-0.080*_mg) 이거나 made==0 이면 생존" 으로
+    # 계산해 26% 라는 숫자를 냈는데 **틀렸다** — 그 조건은 else 로 가는
+    # 조건이고 else 도 showdown/giveup 을 대입한다. value_2street 를 피하는
+    # 것과 block 이 살아남는 것을 같은 것으로 봤다.
+    if s4:
+        dest = collections.Counter(r['plan'] for r in s4)
+        print('## 생존 경로 검사')
+        print('  plan.py:456/458/461 은 완전한 if/elif/else 이고 세 갈래 전부')
+        print('  plan 을 대입한다 → 448 의 block 이 생존하는 경로는 없다.')
+        print('  실측: 블락벳 메시지 %d건의 목적지가 %d종류로 전부 나왔다 —'
+              % (len(s4), len(dest)))
+        print('        %s' % dict(dest.most_common()))
+        print('  네 목적지가 모두 관측된 것이 "빠짐없이 덮어쓴다"의 직접 증거다.')
         print()
 
     # 인당 opportunity 분포
@@ -218,14 +223,14 @@ def main():
              100*sum(1 for c in counts if c == 0)/len(counts),
              sum(1 for c in counts if c >= 4)))
     print()
-    # 기대 빈도
+    # 기대 빈도 — block 에는 의미가 없다
     if s3:
-        print('## 기대 빈도 추정')
-        print('  S3 %d건 × S4/S3 %.3f = 블락벳 굴림 통과 기대 %.1f건'
-              % (len(s3), len(s4)/len(s3), len(s3)*len(s4)/len(s3)))
-        if s4:
-            print('  그중 덮어쓰기 생존율 %.3f → 최종 기대 %.1f건'
-                  % (len(s5)/len(s4), len(s5)))
+        print('## 기대 빈도')
+        print('  block 진입 시도 기대: S3 %d건 × %.3f = %.1f건'
+              % (len(s3), len(s4)/len(s3), len(s4)))
+        print('  최종 기대: **0건**. 확률이 낮아서가 아니라 경로가 닫혀 있어서다.')
+        print('  river_bluff(기대 0.45건, 경로는 열림)와 성격이 다르다 —')
+        print('  여기서는 기대 빈도 계산 자체가 의미가 없다.')
 
 
 if __name__ == '__main__':

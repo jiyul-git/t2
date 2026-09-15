@@ -128,3 +128,82 @@ bluff        +0.678  → +0.571
 정상이었고, 그 항목에서 세 번 틀렸다. **`block` 의 기대 빈도는 아직
 구하지 않았다.** 파이프라인을 계측하기 전에는 버그로도 정상으로도
 읽지 않는다.
+
+---
+
+## 6. `block` 계획은 드문 것이 아니라 **도달 불가능**하다
+
+`tools/block_trace.py`, `entries=24 hpl=12`, 시드 8개, `make_plan` 3,631건.
+
+```
+S0 포스트플랍 make_plan                   3631
+S1 block_p>0 조건 (oop·무이니·0.25<=rel<=0.80)  535  (14.7%)
+S2 eq>=pcz 분기 진입                       587  (16.2%)
+S3 S1 ∩ S2   ← block opportunity          169  ( 4.7%)
+S4 블락벳 메시지 (게이트+굴림 통과)          18  (10.7% of S3)
+S5 make_plan 반환 plan==block                0  ( 0.0% of S4)
+S6 attach_intent 시점 plan==block            0
+```
+
+### 코드가 확정한다 — 통계가 아니다
+
+```
+447   if sk('blockbet') >= 1 and rng.random() < block_p:
+448       plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
+      ...
+456   if sk('potcontrol') >= 1 and rng.random() < _pc_p:
+457       plan = 'pot_control'
+458   elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
+459       plan = 'value_2street'
+461   else:
+465       plan = 'showdown' if made >= 1 else 'giveup'
+```
+
+**456/458/461 은 완전한 `if/elif/else` 이고 세 갈래 전부 `plan` 을 대입한다.**
+448 을 통과한 `block` 이 살아남는 경로가 **하나도 없다.**
+`plan = 'block'` 은 코드 전체에서 448 한 곳뿐이다.
+
+실측이 일치한다. 블락벳 메시지가 남은 18건의 목적지:
+
+```
+value_2street 12 · giveup 3 · pot_control 2 · showdown 1    합 18, block 0
+```
+
+**네 목적지가 전부 나왔다** — 빠짐없이 덮어쓴다는 직접 증거다.
+
+### 내 진단 정정 — "생존 가능 자리 26%" 는 틀렸다
+
+`rel < max(0.28, 0.52−0.080·_mg)` 이거나 `made == 0` 이면 살아남는다고
+계산했는데, **그 조건은 `else` 로 가는 조건**이고 `else` 도
+`showdown`/`giveup` 을 대입한다. `value_2street` 를 피하는 것과 `block` 이
+살아남는 것을 같은 것으로 봤다. **생존 가능 자리는 0% 다.**
+
+### `river_bluff` 와 성격이 다르다
+
+```
+river_bluff   경로가 열려 있고 기대 빈도가 0.45건이었다   → 통계 문제
+block         경로가 닫혀 있다                            → 구조 문제
+```
+
+`block` 은 기대 빈도 계산 자체가 의미가 없다.
+
+### 연쇄적으로 죽은 코드
+
+```
+plan.py:448   plan = 'block'            유일한 생성 지점 — 도달 불가
+plan.py:922   if plan == 'block':       decide_aggression 의 block 분기
+plan.py:1109  SIZING['block']           flop 0.25 / turn 0.28 / river 0.30
+plan.py:1624  _allowed 의 'block': 'blockbet'
+persona       blockbet 축               소비처가 위 둘뿐이다
+```
+
+`blockbet` 게이트는 병목이 아니다 — 평균 3.73 sd 1.97 이고 `make_plan`
+게이트(`PS.sk >= 3.33`)를 **59.4%** 가 통과한다.
+
+**`blockbet` 축은 약한 것이 아니라 관측 불가능하다.** ④에서 제외하되
+이유는 "표본 부족"이 아니라 "유일한 소비처가 도달 불가" 다.
+
+### 지금 고치지 않는다
+
+이번 연구 목적은 축의 관측 가능성 평가다. 수정하면 지문이 깨지고
+지금까지의 분석 대조가 끊긴다. 기록만 하고 수정 여부는 별도로 결정한다.
