@@ -117,6 +117,9 @@ potcontrol       _allowed · make_plan               없음
 bluff            _allowed · line_bluff_prior ·      derive:bluff→(같은 넷)
                  make_plan · river_fix
 thin_value_turn  make_plan                          없음
+                 ※ plan.py:432·941 이 PS.street_concept('thin_value', street)
+                   로 부른다. 문자열 지도에서 사라졌던 이유이고,
+                   axis_dataflow.py 가 별칭을 풀어 잡는다
 aggression       **없음**                            derive:aggr→make_plan
                                                     derive:aggr→checkraise_decision
                                                     derive:value→trap_judgment
@@ -188,8 +191,40 @@ ReplayRandom   개입 팔에 같은 순서로 먹인다
 (`plan.py:265`). 밖에서 래퍼를 끼울 수 없으므로 `plan.random` 을
 shim 으로 교체해 `Random(seed)` 가 기록·재생 객체를 돌려주게 한다.
 
-**게이트 축은 `rng_shifted` 비율이 높을 것으로 예상한다.** 정렬 비율이
-너무 낮으면 **그 축은 Level 2 로 측정 불가**라고 기록한다.
+**게이트 축은 `rng_shifted` 비율이 높을 것으로 예상한다.**
+
+### 측정 적격 기준 — 측정 **전에** 고정한다
+
+```
+alignment_rate < 0.50   →  Level 2 측정 불가
+                           그 팔의 효과 해석·결론을 내지 않는다
+alignment_rate ≥ 0.50   →  측정 가능
+                           단 **실제 정렬률을 결과표에 그대로 보고**한다
+```
+
+**이것은 효과가 유의미한지 판단하는 기준이 아니다.** 동일한 확률
+실현(stochastic realization)을 충분히 유지한 채 비교할 수 있는지에 대한
+**측정 가능성 기준**이다.
+
+**0.50 에 통계적 의미를 부여하지 않는다.**
+
+```
+틀린 표현   "50% 이상이면 신뢰도가 충분하다"
+맞는 표현   "사전에 정한 operational measurement-eligibility criterion 으로
+             0.50 을 쓴다"
+```
+
+정렬률 51% 가 49% 보다 갑자기 과학적으로 신뢰할 만해지는 것이 아니다.
+분석 가능/불가능을 **사전에** 가르기 위한 보수적 실무 기준이다.
+
+`potcontrol`·`bluff` 의 85~86% 는 통과한다. 다만 **10,000건 넘게
+shifted 라는 사실을 숨기지 않고 그대로 보여준다.**
+
+결과표 형식:
+
+```
+axis | arm | total | aligned | shifted | alignment_rate | status
+```
 
 ### `rng_shifted` 가 많은 것을 효과로 읽지 않는다
 

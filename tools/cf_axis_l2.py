@@ -275,8 +275,12 @@ def main():
     print('  T=D+M 가산성을 가정하지 않는다. 네 팔을 독립적으로 재고 경로를 비교한다.')
     print()
 
-    hdr = ('%-16s %-4s %7s %8s %9s %10s %11s %11s %11s'
-           % ('축', '팔', 'total', 'aligned', 'shifted', 'align%',
+    # 측정 적격 기준 — CF_DESIGN_LEVEL2 3절. 측정 전에 고정했다.
+    # 효과 유의성 기준이 아니라 동일 확률실현 유지 여부의 측정 가능성 기준이다.
+    # 0.50 에 통계적 의미는 없다 — 보수적 실무 경계다.
+    ELIG = 0.50
+    hdr = ('%-16s %-4s %7s %8s %9s %8s %-6s %11s %11s %11s'
+           % ('축', '팔', 'total', 'aligned', 'shifted', 'align%', 'status',
               'plan=,act≠', 'plan≠,act=', 'plan≠,act≠'))
     print(hdr); print('-'*len(hdr))
     for ax in axes:
@@ -301,9 +305,15 @@ def main():
                     elif pf_ and not af: c_pA += 1
                     elif pf_ and af: c_PA += 1
             pct = lambda n: (100.0*n/al) if al else 0.0
-            print('%-16s %-4s %7d %8d %9d %9.0f%% %10.1f%% %10.1f%% %10.1f%%'
+            rate = al/max(1, tot)
+            ok = rate >= ELIG
+            print('%-16s %-4s %7d %8d %9d %7.1f%% %-6s %10.1f%% %10.1f%% %10.1f%%'
                   % (ax if arm == 'D' else '', arm, tot, al, sh,
-                     100.0*al/max(1, tot), pct(c_pa), pct(c_pA), pct(c_PA)))
+                     100.0*rate, 'OK' if ok else '측정불가',
+                     pct(c_pa), pct(c_pA), pct(c_PA)))
+            if not ok:
+                print('%-16s %-4s   ** alignment_rate %.2f < %.2f — 이 팔의 효과를 '
+                      '해석하지 않는다 **' % ('', '', rate, ELIG))
             if invbad:
                 print('%-16s %-4s   ** 불변량 위반 %d건 — 해석 금지 **'
                       % ('', '', invbad))
@@ -312,6 +322,9 @@ def main():
     print('  plan≠,act= : 계획은 바뀌었는데 실행층이 흡수했다 → 전달 실패')
     print('  plan≠,act≠ : 둘이 섞여 있다. **인과 분해하지 않는다**')
     print('  shifted    : 난수 소비가 어긋난 쌍. 효과가 아니라 **측정 가능성 문제**다')
+    print('  status     : alignment_rate >= %.2f 이면 OK. 사전에 정한 operational' % ELIG)
+    print('               measurement-eligibility criterion 이고 0.50 에 통계적')
+    print('               의미는 없다 — 분석 가능/불가능을 사전에 가르는 실무 경계다')
     print()
 
     if all(x.startswith('_rand') for x in axes):
