@@ -65,6 +65,12 @@ class RandomShim:
     def start_replay(self):
         self.mode = 'replay'; self.idx = 0; self.shifted = False
         self._made = []          # 이번 팔에서 만든 ReplayRandom 들
+    def consumed(self):
+        """지금까지 뽑은 총 난수 개수 (재생 팔 기준)."""
+        return sum(rp.n for rp, _ in getattr(self, '_made', []))
+    def recorded_upto(self, k):
+        """기록 팔에서 처음 k 개 로그의 길이 합."""
+        return sum(len(l) for l in self.logs[:k])
     def misaligned(self):
         """난수 소비가 원본과 어긋났는가.
 
@@ -111,6 +117,16 @@ def run_one(args):
     # ---- 함수별 프로필 치환 shim ----
     # 각 함수를 감싸 "현재 팔이 이 함수에서 축을 바꾸라고 했으면" 프로필을
     # 갈아끼운다. 그래야 M 팔에서 계획층만, D 팔에서 실행층만 바뀐다.
+    # attach_intent 진입 시점의 난수 소비량을 표시한다.
+    #
+    # **정렬 검사를 계획 구축 구간으로 한정해야 한다.**
+    # plan.py:562 `if _roll < p_aggr: decide_size(... rng ...)` 때문에
+    # **행동이 flip 하면 반드시 난수 소비가 달라진다.** 그래서 처음
+    # 구현처럼 update_plan 전체로 정렬을 재면 rng_shifted 와 "행동이
+    # 바뀜" 이 구조적으로 교락돼, 제외 규칙이 재려던 케이스를 전부 지운다.
+    # Level 1 은 attach_intent 를 재호출하지 않고 기록된 roll 과 반사실 p
+    # 로 직접 행동을 계산해서 이 문제가 없었다.
+    mark = {'o_logs': 0, 'o_draws': 0, 'arm_draws': None, 'p': None, 'roll': None}
     orig = {}
     def make_shim(mod, name, pos):
         fn = getattr(mod, name, None)
@@ -139,6 +155,18 @@ def run_one(args):
     for nm, ps in POS.items():
         make_shim(PL, nm, ps)
 
+    # attach_intent 진입 순간을 표시하는 래퍼
+    _oai0 = PL.attach_intent
+    def mark_ai(*a, **k):
+        if shim_rng.mode == 'record':
+            mark['o_logs'] = len(shim_rng.logs)
+            mark['o_draws'] = sum(len(l) for l in shim_rng.logs)
+        elif shim_rng.mode == 'replay':
+            mark['arm_draws'] = shim_rng.consumed()
+            mark['arm_logs'] = shim_rng.idx
+        return _oai0(*a, **k)
+    PL.attach_intent = mark_ai
+
     shim_rng = RandomShim(PL.random)
     PL.random = shim_rng
     RU.random = shim_rng
@@ -149,6 +177,7 @@ def run_one(args):
                 **kw):
         # --- O 팔: 난수 기록 ---
         state.update({'axis': None, 'val': None, 'funcs': ()})
+        mark['o_draws'] = 0; mark['o_logs'] = 0; mark['arm_draws'] = None
         shim_rng.start_record()
         out0 = _oup(st, hero, board, my_range, opp_range, profile, pot, stack_,
                     street, seed_, n_opp, behind, prev_board, oop, initiative, **kw)
@@ -168,6 +197,7 @@ def run_one(args):
                     state.update({'axis': ax, 'val': val, 'funcs': ARMS[arm]})
                     shim_rng.logs = base_logs
                     shim_rng.start_replay()
+                    mark['arm_draws'] = None; mark['arm_logs'] = None
                     try:
                         o = _oup(dict(st) if st else st, hero, board, my_range,
                                  opp_range, profile, pot, stack_, street, seed_,
@@ -185,7 +215,13 @@ def run_one(args):
                     rec['plan_%s_%s' % (arm, tag)] = pl
                     rec['act_%s_%s' % (arm, tag)] = ac
                     rec['inv_%s_%s' % (arm, tag)] = (len(bad) == 0)
-                    rec['shift_%s_%s' % (arm, tag)] = shim_rng.misaligned()
+                    # 계획 구축 구간만 비교한다 (attach_intent 진입 전까지)
+                    if mark['arm_draws'] is None:
+                        shifted = shim_rng.misaligned()
+                    else:
+                        shifted = (mark['arm_draws'] != mark['o_draws']
+                                   or mark.get('arm_logs') != mark['o_logs'])
+                    rec['shift_%s_%s' % (arm, tag)] = shifted
             rows.append(rec)
         state.update({'axis': None, 'val': None, 'funcs': ()})
         return out0
@@ -201,6 +237,7 @@ def run_one(args):
             f._collect_busts(); f._balance(); f.notes = []
     finally:
         PL.update_plan = _oup
+        PL.attach_intent = _oai0
         for (mod, name, fn) in orig.values():
             setattr(mod, name, fn)
         PL.random = shim_rng._base
