@@ -44,6 +44,14 @@ BLUFF = {'bluff_2street', 'river_bluff', 'semibluff'}
 # 처음에 그렇게 해서 '블로커 무의미 72%' 같은 숫자를 만들 뻔했다. 같은 측정을
 # 밸류 벳에도 하고 **두 집단을 나란히 놓는다.**
 VALUE = {'value_2street', 'value_3street', 'trap', 'thin_river'}
+# **이탈 블러프는 별도 그룹이다.** `make_plan` 이 "이 핸드로 블러프한다"고
+# 판단한 것이 아니라, 포기/쇼다운 계획을 실행 단계가 확률적으로 뒤집은 것이다
+# (`decide_aggression:857` 지속벳, `decide_response:800` 블러프 레이즈).
+# 계획 블러프와 섞으면 원인 분석이 흐려진다.
+# `pot_control` 은 넣지 않는다. SIZING['pot_control'] 이 flop 0.30 / river 0.30
+# 이라 **계획대로 치는 것**이지 이탈이 아니다. 처음에 넣었다가 168건이
+# 이탈로 잘못 세어졌다.
+DEVIATE = {'giveup', 'showdown'}
 EXEC = {'bet', 'raise'}
 NB = {'flop': 3, 'turn': 4, 'river': 5}
 
@@ -179,12 +187,16 @@ def analyse(rec, it):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--show', type=int, default=0, help='개별 케이스 N건 출력')
+    ap.add_argument('--files', nargs='*', default=None,
+                    help='아카이브 경로. 없으면 저장소의 기본 목록')
     a = ap.parse_args()
+    paths = a.files if a.files else files()
 
-    grp = {'블러프': [], '밸류': []}
+    grp = {'계획 블러프': [], '밸류(대조)': [], '이탈 블러프': []}
     hands = 0
     plans = Counter()
-    for path in files():
+    seen = set()
+    for path in paths:
         for line in open(path, encoding='utf-8'):
             line = line.strip()
             if not line:
@@ -198,14 +210,21 @@ def main():
                 plans[it.get('plan')] += 1
                 if it.get('action') not in EXEC:
                     continue
-                key = ('블러프' if it.get('plan') in BLUFF else
-                       '밸류' if it.get('plan') in VALUE else None)
+                key = ('계획 블러프' if it.get('plan') in BLUFF else
+                       '밸류(대조)' if it.get('plan') in VALUE else
+                       '이탈 블러프' if it.get('plan') in DEVIATE else None)
                 if key is None:
                     continue
+                # 아카이브 파일들이 서로 겹친다. 같은 핸드를 여러 번 세지 않는다.
+                uid = (rec.get('hand_no'), it.get('seat'), it.get('street'),
+                       tuple(rec.get('board') or []), it.get('amt'))
+                if uid in seen:
+                    continue
+                seen.add(uid)
                 c = analyse(rec, it)
                 if c:
                     grp[key].append(c)
-    cases = grp['블러프']
+    cases = grp['계획 블러프']
 
     def med(rows, key):
         v = sorted(x[key] for x in rows if x.get(key) is not None)
@@ -213,8 +232,8 @@ def main():
 
     print('# 블러프 라인·레인지 일관성')
     print('# 아카이브 %d핸드, intent %d건' % (hands, sum(plans.values())))
-    print('# 블러프 실행 %d건 · 밸류 실행 %d건(대조군)\n'
-          % (len(cases), len(grp['밸류'])))
+    print('# 계획 블러프 %d건 · 밸류 %d건(대조) · 이탈 블러프 %d건\n'
+          % (len(cases), len(grp['밸류(대조)']), len(grp['이탈 블러프'])))
     print('참고: `river_bluff` 계획은 아카이브 전체에서 %d건이다.'
           % plans.get('river_bluff', 0))
     print()
@@ -222,14 +241,21 @@ def main():
         print('분석 가능한 케이스가 없다.')
         return
 
-    print('## 계획·스트리트별 (블러프)')
+    print('## 집단 × 스트리트')
+    for g in ('계획 블러프', '밸류(대조)', '이탈 블러프'):
+        cs = Counter(c['street'] for c in grp[g])
+        print('  %-12s %s' % (g, '  '.join('%s %d' % kv for kv in
+                                           sorted(cs.items()))))
+    print()
+
+    print('## 계획·스트리트별 (계획 블러프)')
     for k, v in Counter('%s / %s' % (c['plan'], c['street'])
                         for c in cases).most_common():
         print('  %-28s %3d' % (k, v))
     print()
 
-    print('## 두 집단 비교 — 중앙값을 나란히. 임계값은 두지 않는다')
-    print('  %-28s %10s %10s %10s' % ('', '블러프', '밸류', '차이'))
+    print('## 세 집단 비교 — 중앙값을 나란히. 임계값은 두지 않는다')
+    print('  %-28s %12s %12s %12s' % ('', '계획 블러프', '밸류(대조)', '이탈 블러프'))
     M = [('복원 레인지 크기(콤보)', 'rng_n', '%.0f'),
          ('내 핸드 강도 백분위 %', 'my_pctile', '%.0f'),
          ('레인지의 밸류 콤보 %', 'value_pct', '%.0f'),
@@ -241,15 +267,30 @@ def main():
          ('outs_true', 'outs_true', '%.0f'),
          ('eq', 'eq', '%.3f')]
     for label, key, fmt in M:
-        x, y = med(cases, key), med(grp['밸류'], key)
-        d = x - y
-        print('  %-28s %10s %10s %10s'
-              % (label, fmt % x, fmt % y, ('%+.3f' % d).rstrip('0').rstrip('.')))
+        print('  %-28s %12s %12s %12s'
+              % (label, fmt % med(cases, key), fmt % med(grp['밸류(대조)'], key),
+                 fmt % med(grp['이탈 블러프'], key)))
+    def inr(rows):
+        return 100.0*sum(1 for c in rows if c['in_range'])/max(1, len(rows))
+    print('  %-28s %11.0f%% %11.0f%% %11.0f%%'
+          % ('복원 레인지 안에 있음', inr(cases), inr(grp['밸류(대조)']),
+             inr(grp['이탈 블러프'])))
     print()
-    ib = 100.0*sum(1 for c in cases if c['in_range'])/max(1, len(cases))
-    iv = 100.0*sum(1 for c in grp['밸류'] if c['in_range'])/max(1, len(grp['밸류']))
-    print('  %-28s %9.0f%% %9.0f%% %9.0f%%p'
-          % ('복원 레인지 안에 있음', ib, iv, ib-iv))
+
+    print('## 분포 (10 / 25 / 50 / 75 / 90 분위) — 임계값 대신 분포를 본다')
+    def dec(rows, key):
+        v = sorted(x[key] for x in rows if x.get(key) is not None)
+        if len(v) < 5:
+            return None
+        return [v[int(q*(len(v)-1))] for q in (.1, .25, .5, .75, .9)]
+    for label, key, fmt in M:
+        print('  %s' % label)
+        for g in ('계획 블러프', '밸류(대조)', '이탈 블러프'):
+            d = dec(grp[g], key)
+            if d is None:
+                print('    %-12s (표본 부족)' % g)
+            else:
+                print('    %-12s %s' % (g, '  '.join(fmt % x for x in d)))
 
     if a.show:
         print('\n## 개별 케이스 (앞 %d건)' % a.show)
