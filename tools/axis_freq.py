@@ -120,7 +120,13 @@ def L_bias(sits, prof):
 
 
 def L_plan(sits, prof):
-    lab = Counter(); pcs = []; eqs = []
+    """계획 라벨 분포 + **기준(레벨 5) 대비 뒤집힘 수.**
+
+    집계 %만 보면 0 으로 보이는데 상황별로는 뒤집히는 경우가 있다 —
+    한쪽으로 간 건수와 반대쪽으로 온 건수가 우연히 맞으면 표가 안 움직인다.
+    실제로 `stackoff` 에서 그랬다. `resist_flip` 과 같은 이유로 전환을 센다.
+    """
+    lab = Counter(); pcs = []; eqs = []; flip = 0
     for s in sits:
         try:
             ps = PL.make_plan(s['hero'], s['board'], s['my_range'], s['opp_range'],
@@ -131,6 +137,8 @@ def L_plan(sits, prof):
         except Exception:
             continue
         lab[ps['plan']] += 1
+        if s.get('base_plan') is not None and ps['plan'] != s['base_plan']:
+            flip += 1
         if ps.get('pc') is not None: pcs.append(ps['pc'])
         if ps.get('eq') is not None: eqs.append(ps['eq'])
     n = max(1, sum(lab.values()))
@@ -139,6 +147,7 @@ def L_plan(sits, prof):
             'semibluff', 'trap', 'showdown', 'giveup', 'river_bluff', 'block')
            if lab[k]}
     out['pc 중간값'] = ST.median(pcs) if pcs else float('nan')
+    out['라벨 뒤집힘 (vs lv5)'] = flip
     return out
 
 
@@ -254,6 +263,118 @@ def L_resist_flip(sits, prof):
     return out
 
 
+def L_noresist_size(sits, prof):
+    """무저항 실행 — **빈도와 크기를 분리해서 낸다.**
+
+    '벳을 더 자주 치는가'와 '칠 때 더 크게 치는가'는 다른 질문이다.
+    한 숫자로 뭉치면 `overbet` 처럼 빈도가 아니라 크기만 바꾸는 축을
+    '약한 축'으로 오독한다.
+    """
+    acts = Counter(); sizes = []
+    for s in sits:
+        ps = s['plan_fixed']
+        if ps is None: continue
+        ps = copy.deepcopy(ps); ps.pop('intents', None)
+        try:
+            ps = PL.attach_intent(ps, s['hero'], s['board'], s['my_range'],
+                                  s['opp_range'], prof, s['pot'], s['stack'],
+                                  s['street'], random.Random(s['seed']),
+                                  1, s['to_act_behind'], s['oop'],
+                                  s['initiative'], s['est'])
+            (a_, amt), _e, _n = PL.act_with_plan(
+                s['hero'], s['board'], prof, copy.deepcopy(ps),
+                s['pot'], 0, s['stack'], s['street'],
+                initiative=s['initiative'], oop=s['oop'],
+                opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                to_act_behind=s['to_act_behind'], opp_est=s['est'],
+                read=s['read'])
+        except Exception:
+            continue
+        acts[a_] += 1
+        if a_ == 'bet' and amt:
+            sizes.append(amt/float(s['pot']))
+    n = max(1, sum(acts.values()))
+    nb = max(1, len(sizes))
+    ob = [x for x in sizes if x > 1.0]
+    return {'벳 %': 100*acts['bet']/n,
+            '벳 사이즈 중앙(팟배수)': ST.median(sizes) if sizes else float('nan'),
+            '벳 중 오버벳(>1팟) %': 100*len(ob)/nb,
+            '오버벳 사이즈 중앙': ST.median(ob) if ob else float('nan')}
+
+
+def L_stackoff_path(sits, prof):
+    """커밋 구간(SPR<1.2)의 저항 대응 + **어느 경로에서 나왔는가.**
+
+    `decide_response` 가 돌려주는 why 문자열로 분류한다. 빈도만 세면
+    '밸류 레이즈로 커밋'과 '팟오즈로 콜'이 한 칸에 들어간다.
+    """
+    acts = Counter(); path = Counter(); n = 0
+    for s in sits:
+        ps = s['plan_fixed']
+        if ps is None: continue
+        ps = copy.deepcopy(ps)
+        try:
+            (a_, _amt), _e, _nd = PL.act_with_plan(
+                s['hero'], s['board'], prof, ps,
+                s['pot'], s['tocall'], s['stack_commit'], s['street'],
+                initiative=s['initiative'], oop=s['oop'],
+                opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                to_act_behind=s['to_act_behind'], opp_est=s['est'],
+                read=s['read'])
+        except Exception:
+            continue
+        n += 1; acts[a_] += 1
+        for w in (ps.get('acts') or [])[-1:]:
+            k = ('넛급' if '넛급' in w else
+                 '밸류' if '밸류' in w else
+                 '세미블러프' if '세미블러프' in w else
+                 '이탈' if 'DEVIATE' in w else
+                 '포기/블러프계획' if '포기' in w or '블러프 계획' in w else
+                 '팟오즈 산수')
+            path['  경로:' + k] += 1
+    n = max(1, n)
+    out = {'폴드 %': 100*acts['fold']/n, '콜 %': 100*acts['call']/n,
+           '레이즈 %': 100*acts['raise']/n}
+    for k, v in path.most_common():
+        out[k] = 100.0*v/n
+    return out
+
+
+def L_overbet(sits, prof, _K=20):
+    """`overbet` 은 실현 빈도로 재면 안 된다 — 게이트가 곱으로 셋이다.
+
+    `plan.py:1120` 이 `if street == 'flop': return None` 이라 **플랍은 도메인
+    밖**이고, 리버에서도 `p = 0.16*개념 × (0.25+1.9*넛우위) × 양극화 × 공격성`
+    이 전부 곱이라 실현 발동이 100건에 2건 수준이다. 그 표본으로 축을 재면
+    분산이 효과보다 크다.
+
+    그래서 상황마다 rng 를 `_K` 번 바꿔 **발동 확률 자체**를 추정한다.
+    병목이 어느 게이트인지도 같이 낸다 (실측: 넛 우위가 병목, 중앙 0.005).
+    """
+    QUAL = ('value_3street', 'trap', 'bluff_2street', 'semibluff', 'river_bluff')
+    qual = 0; nut_pos = 0; hits = 0; trials = 0; szs = []
+    for s in sits:
+        ps = s['plan_fixed']
+        if ps is None or ps.get('plan') not in QUAL: continue
+        qual += 1
+        if (ps.get('nut_adv') or 0) > 0: nut_pos += 1
+        for k in range(_K):
+            try:
+                ob = PL.overbet_frac(prof, s['hero'], s['board'], s['opp_range'],
+                                     s['my_range'], s['street'], ps['plan'],
+                                     ps.get('rel', 0.5), random.Random(s['seed'] + k),
+                                     s['est'])
+            except Exception:
+                continue
+            trials += 1
+            if ob: hits += 1; szs.append(ob)
+    n = max(1, len(sits))
+    return {'계획 자격 %': 100*qual/n,
+            '  그중 넛우위>0 %': 100*nut_pos/max(1, qual),
+            '발동 확률 %%, 반복 %d회' % _K: 100*hits/max(1, trials),
+            '발동 시 사이즈 중앙': ST.median(szs) if szs else float('nan')}
+
+
 LAYER = OrderedDict([
     ('open',     (L_open,     '프리플랍 오픈 폭')),
     ('defend',   (L_defend,   '프리플랍 방어 구간')),
@@ -264,6 +385,9 @@ LAYER = OrderedDict([
     ('resist',   (L_resist,   '저항 대응 (계획 고정)')),
     ('bias_resp', (L_bias_resp, '응답 편향 중간값 (날것 / clamp 후)')),
     ('resist_flip', (L_resist_flip, '저항 대응 + 전환표 (기준 = 레벨 5)')),
+    ('noresist_size', (L_noresist_size, '무저항 실행 — 빈도와 크기를 분리')),
+    ('stackoff_path', (L_stackoff_path, '커밋 구간(SPR<1.2) 저항 + 경로')),
+    ('overbet', (L_overbet, '오버벳 — 실현 빈도가 아니라 발동 확률')),
 ])
 
 # AXIS_FREQ_PLAN.md 2-1/2-2 의 표를 그대로 옮긴 것이다. 고정축을 바꾸려면
@@ -325,6 +449,42 @@ AXES = OrderedDict([
         layers=['bias_resp', 'resist_flip'],
         hold={'bluffcatch_early': 5, 'range_read': 5, 'aggression': 5,
               'tilt_prone': 5, 'potodds': 5, 'reraise': 5})),
+    # ---- 4단계: 실행 축 ----
+    # 스트리트 축은 --street 를 그 스트리트로 줘야 한다. cbet_flop 을 턴에서
+    # 재면 street_concept 가 barrel_turn 을 읽어 다른 축을 재게 된다.
+    ('cbet_flop', dict(
+        layers=['noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'board_texture': 5, 'multiway': 5,
+              'barrel_turn': 5, 'barrel_river': 5, 'equity_denial': 5})),
+    ('barrel_turn', dict(
+        layers=['noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'board_texture': 5, 'multiway': 5,
+              'cbet_flop': 5, 'barrel_river': 5, 'equity_denial': 5})),
+    ('barrel_river', dict(
+        layers=['noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'board_texture': 5, 'multiway': 5,
+              'cbet_flop': 5, 'barrel_turn': 5, 'equity_denial': 5})),
+    ('overbet', dict(
+        layers=['overbet', 'noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'board_texture': 5,
+              'equity_denial': 5, 'blocker': 5, 'checkraise_flop': 5})),
+    ('equity_denial', dict(
+        layers=['noresist_size'],
+        hold={'aggression': 5, 'board_texture': 5, 'overbet': 5, 'bluff': 5})),
+    ('probe', dict(
+        layers=['noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'delayed_cbet': 5, 'outs': 5})),
+    ('delayed_cbet', dict(
+        layers=['noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'probe': 5, 'cbet_flop': 5})),
+    ('thin_value_turn', dict(
+        layers=['plan', 'noresist_size'],
+        hold={'stackoff': 5, 'aggression': 5, 'range_merge': 5,
+              'thin_value_river': 5})),
+    ('stackoff', dict(
+        layers=['plan', 'stackoff_path'],
+        hold={'thin_value_turn': 5, 'thin_value_river': 5, 'reraise': 5,
+              'aggression': 5, 'gamble': 5})),
     # trap 의 짝. trap_judgment:218 은 tool = 0.07*trap + 0.12*checkraise 라
     # 실행 쪽 무게가 1.7배다. trap 만 흔들어 작게 나온 것이 '층이 죽어서'가
     # 아님을 보이려면 이쪽을 같이 재야 한다.
@@ -362,11 +522,25 @@ def main():
         s['pos'] = rng.choice(POS); s['seats'] = rng.choice([6, 8, 9])
         s['def_pos'] = rng.choice(['BB', 'SB', 'BTN'])
         s['bb'] = rng.uniform(15, 60); s['open_bb'] = rng.choice([2.0, 2.5, 3.0])
+        # 커밋 구간용 스택. spr(stack, pot) < 1.2 라야 committed 가 켜진다.
+        s['stack_commit'] = int(s['pot']*rng.uniform(0.4, 1.1))
         sits.append(s)
 
     # 실행 층은 **계획을 고정**한다 (기준 프로필로 한 번만 만든다).
+    if 'plan' in spec['layers']:
+        _p5 = build(base, a.axis, 5, spec['hold'])
+        for s in sits:
+            try:
+                s['base_plan'] = PL.make_plan(
+                    s['hero'], s['board'], s['my_range'], s['opp_range'], _p5,
+                    s['pot'], s['stack'], s['street'], seed=s['seed'], n_opp=1,
+                    to_act_behind=s['to_act_behind'], oop=s['oop'],
+                    initiative=s['initiative'], opp_est=s['est'])['plan']
+            except Exception:
+                s['base_plan'] = None
     need_exec = any(l in spec['layers']
-                    for l in ('noresist', 'resist', 'resist_flip'))
+                    for l in ('noresist', 'resist', 'resist_flip',
+                              'noresist_size', 'stackoff_path'))
     if need_exec:
         p0 = build(base, a.axis, 5, spec['hold'])
         for s in sits:
