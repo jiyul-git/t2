@@ -315,6 +315,18 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 - **계획 층도 집계 %가 아니라 전환 수를 세야 한다.** `stackoff` 에서 집계표는
   전 레벨 동일인데 상황별로는 뒤집힘이 있었다 — 양방향 건수가 맞으면 표가
   안 움직인다
+- **`river_bluff` 라벨이 975핸드에서 0건이다.** `river_fix` 가
+  `if plan != 'semibluff': return st` 로 시작하는데, `plan.py:1505` 의
+  `refresh` 가 `river_fix`(1511)보다 **먼저** 돌면서 미스한 드로우를
+  `giveup` 으로 보낸다. 플랍/턴에 semibluff 였다가 리버 도달한 9건의 리버
+  계획이 giveup 5 · bluff_2street 3 · trap 1 · **river_bluff 0** 이다.
+  `river_fix` docstring 이 되살리려던 그 경로가 자기보다 먼저 돈다
+  (`TRACE_BLUFF.md`)
+- **블러프 품질을 잴 때 밸류 벳을 대조군으로 두지 않으면 임계값 artifact 가
+  나온다.** `blocker_net <= 0` 같은 컷은 그 값의 중앙이 0 근처라 절반이
+  자동으로 걸린다. 실제로 '블로커 무의미 72%' 를 만들 뻔했는데 밸류 벳도
+  −0.000 이었다. 그리고 강도 백분위를 `made_strength` 버킷으로 재면
+  `made == 0` 일 때 0 으로 고정된다 — `eval7` 연속값을 쓸 것
 - **`bluff_fear` 와 `hero_call` 은 거의 완전한 거울상이다.** 둘 다 `persona.bias`
   파생값이고 `bluffcatch_river`·`aggression` 을 **반대 부호로** 공유한다
   (bcr 1→9 에서 0.554→−0.086 vs −0.559→0.161). 독립적으로 흔들 수 없다 —
@@ -362,6 +374,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/axis_accuracy.py` | 인식 정확도 축의 호출 지점 오차 (축 1/3/5/7/9) |
 | `tools/axis_sites.py` | 성향 축 사용처 전수 (별칭·지역 lambda·street_concept 포함) |
 | `tools/axis_freq.py` | 빈도 축의 **층별** 변화. 교락 축 고정, 중간값 같이 기록 |
+| `tools/bluff_coherence.py` | 블러프 라인·레인지 일관성. 밸류 벳이 대조군 |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
 | `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |
