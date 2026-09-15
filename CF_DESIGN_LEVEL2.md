@@ -84,43 +84,73 @@ attach_intent(...)                  ← Level 1 이 덮은 곳
 **개입 대상**: `make_plan` · `revise_plan` · `refresh` · `river_fix` ·
 `_allowed`. 즉 `attach_intent` **직전까지**.
 
-### `SITE_L2` — 전수 확인 결과 (`plan.py` 안의 소비 함수)
+### `SITE_L2` — **정정됨.** 문자열 검색으로 만든 첫 표는 틀렸다
+
+처음에 `plan.py` 안에서 축 이름을 문자열로 찾아 표를 만들었다.
+**같은 실수를 세 번 했다.**
 
 ```
-축                 L2 계획층                                    L1 실행층
-potcontrol        _allowed×2 · make_plan×3                     **없음**
-bluff             _allowed×2 · line_bluff_prior ·               cbet_freq · decide_aggression×2
-                  make_plan×4 · river_fix                       · decide_response×2
-aggression        checkraise_decision · make_plan×2             8곳
-thin_value_turn   make_plan×1                                  decide_aggression×1
-cbet_flop         **없음**                                      cbet_freq×1
-discipline        **없음**                                      decide_aggression · decide_response
-looseness         **없음**                                      **없음** (plan.py 안에)
+1차  aggression → persona.open_pct 누락        (CF_RESULT_LEVEL1 0절)
+2차  discipline → persona.bias → perceived_rel → make_plan 누락
+     "discipline 은 계획층 소비처가 없다" 고 단정했는데 실측에서
+     make_plan 의 rel 이 246건/101건 바뀌었다
+3차  thin_value_turn·cbet_flop 이 표에서 통째로 사라졌다
+     plan.py 가 PS.street_concept('thin_value', street) 로 부르므로
+     'thin_value_turn' 문자열이 소스에 없다
 ```
 
-**이것이 Level 2 의 범위를 결정한다.**
+**축이 자기 이름으로 읽히지 않아도 파생값을 거쳐 계획에 도달한다.**
 
 ```
-Level 2 가 의미 있는 축   potcontrol · bluff · aggression · thin_value_turn
-M = 0 이 구조적으로 확정   cbet_flop · discipline   (계획층 소비처가 없다)
-Level 2 대상 아님          looseness (plan.py 안에 소비처가 없다.
-                          소비처는 persona·preflop·reads 이고 Level 1 이 덮었다)
+축 → persona.derive → aggr·bluff·gamble·icm·value·…  → plan.py
+축 → persona.bias   → draw_love·overpair_love·sticky → plan.perceived_rel
+                                                      → make_plan 의 rel
+축 → persona.street_concept 별칭                       → plan.py
 ```
 
-### Level 1 의 `potcontrol` 0.0% 가 구조로 설명된다
+`tools/axis_dataflow.py` 가 세 경로를 모두 따라가 직접/간접을 구분한다.
+**문자열 검색으로 소비처를 세지 않는다.**
 
-`potcontrol` 은 **실행층 소비처가 하나도 없다.** Level 1 에서 POST 0.0% ·
-응답 0.0% 가 나온 것은 표본 문제도 효과 없음도 아니라 **구조적으로 그럴
-수밖에 없는 것**이었다. 소비처 5곳이 전부 `make_plan`(3) 과
-`_allowed`(2) 다.
+```
+축                직접 계획층(L2)                     간접 계획층 경로
+potcontrol       _allowed · make_plan               없음
+bluff            _allowed · line_bluff_prior ·      derive:bluff→(같은 넷)
+                 make_plan · river_fix
+thin_value_turn  make_plan                          없음
+aggression       **없음**                            derive:aggr→make_plan
+                                                    derive:aggr→checkraise_decision
+                                                    derive:value→trap_judgment
+discipline       **없음**                            bias:overpair_love→perceived_rel
+                                                    bias:sticky→perceived_rel
+looseness        **없음**                            bias:draw_love→perceived_rel
+                                                    bias:sticky→perceived_rel
+cbet_flop        **없음**                            **없음**
+```
 
-`tools/axis_sites.py` 만 봤을 때는 "plan:make_plan×3" 으로 보여서 실행
-층에도 뭔가 있을 것처럼 읽었다. 함수 단위로 L1/L2 를 갈라야 드러난다.
+### 정정 내용
 
-**Level 1 에서 `aggression → open_pct` 를 빠뜨린 것과 같은 실수를
-반복하지 않으려고 전수 확인했고, 실제로 범위가 바뀌었다.**
+```
+discipline   기존: M=0 구조적 확정
+             정정: persona.bias → perceived_rel → make_plan 경로 존재
+                   실측 M 0.3/0.5/0.2% 는 **누출이 아니라 실제 효과**다
 
----
+looseness    기존: Level 2 대상 아님 (plan.py 안에 소비처 없음)
+             정정: bias:draw_love/sticky → perceived_rel 경로로 **대상이다**
+                   격리 검증에서 rel 변화 101/72건, plan 변화 1건
+
+cbet_flop    유지: 직접·간접 둘 다 없다 — M=0 이 구조적으로 확정된다
+                   격리 검증에서 변화 0건, 55시드 실측도 0.0%
+```
+
+**이 발견은 "누출" 이 아니라 "구조 지도 불완전" 이다.** 개입 코드의
+격리는 정상이었고, 내가 소비처를 잘못 세었다.
+
+### Level 2 대상 (정정)
+
+```
+대상       potcontrol · bluff · aggression · thin_value_turn · discipline · looseness
+M=0 검사   cbet_flop  (유일하게 살아남은 구조적 타당성 검사)
+```
 
 ## 3. RNG — Level 1 보다 훨씬 어렵다
 
