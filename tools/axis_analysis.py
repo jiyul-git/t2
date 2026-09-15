@@ -251,13 +251,24 @@ def analyse(name, axis, xs, ys, keys, ctrl_axes, AX, situ_tab,
           if any(k in situ_tab[s] for k in keys)]
     res['p_situ'] = partial(xs, ys, (ca if ctrl_axes else lat) + sv) if sv else None
 
-    # split-half
+    # split-half — 두 가지를 구분해서 낸다.
+    #
+    # r_out : 결과변수의 신뢰도. **축과 무관하다** — 같은 결과변수면
+    #         위약이든 실제 축이든 값이 같다. 관측 가능한 ρ 의 상한(√r)을
+    #         정하는 값이지 축-결과 연관의 재현성이 아니다.
+    # ρ 반분 : 기회를 홀/짝으로 나눠 **각 반쪽에서 ρ 를 따로** 낸다.
+    #         이것이 ANALYSIS_PLAN 4절 ④ 가 요구하는 축-결과 연관의
+    #         재현성이다. 처음에 r_out 만 내서 ④ 를 판정할 수 없었다.
     hk = [k for k in keys if k in half_tab]
     if len(hk) >= 4:
         res['r'] = spearman([half_tab[k][0] for k in hk], [half_tab[k][1] for k in hk])
         res['r_n'] = len(hk)
+        hx = [AX[k].get(axis, 5.0) for k in hk]
+        res['rho_h1'] = spearman(hx, [half_tab[k][0] for k in hk])
+        res['rho_h2'] = spearman(hx, [half_tab[k][1] for k in hk])
     else:
         res['r'], res['r_n'] = None, len(hk)
+        res['rho_h1'] = res['rho_h2'] = None
     return res
 
 
@@ -340,10 +351,17 @@ def main():
               % (r['axis'], r['outcome'], r['n'], f(r['rho']), ci, adj,
                  'O' if rej else '-', f(r['p_lat']), f(r['p_ax']), f(r['p_situ'])))
     print()
-    print('%-16s %-12s %8s %6s' % ('축', '결과변수', 'split-r', 'n'))
-    print('-'*46)
+    print('%-16s %-12s %9s %9s %9s %6s'
+          % ('축', '결과변수', 'ρ 홀', 'ρ 짝', 'r(결과)', 'n'))
+    print('-'*66)
     for r in out:
-        print('%-16s %-12s %8s %6d' % (r['axis'], r['outcome'], f(r['r']), r['r_n']))
+        print('%-16s %-12s %9s %9s %9s %6d'
+              % (r['axis'], r['outcome'], f(r.get('rho_h1')), f(r.get('rho_h2')),
+                 f(r['r']), r['r_n']))
+    print()
+    print('ρ 홀/짝 : 기회를 반으로 나눠 각각에서 낸 축-결과 상관 — ④ 재현성.')
+    print('r(결과) : 결과변수 자체의 신뢰도. **축과 무관하다** — 같은 결과변수면')
+    print('          위약이든 실제 축이든 같다. ρ 의 상한(√r)을 정할 뿐이다.')
     print()
     if a.placebo:
         sig = [r for r in out if hp[(r['axis'], r['outcome'])][1]]
@@ -354,6 +372,15 @@ def main():
         print('  ③ CI 가 0 을 포함 안 함 : %d건  %s' % (len(ci0), '← 통과' if not ci0 else '← 실패'))
         big = [r for r in out if r['rho'] is not None and abs(r['rho']) >= 0.4]
         print('  |ρ| >= 0.4 : %d건  %s' % (len(big), '← 통과' if not big else '← 도구 조사'))
+        rep = [r for r in out
+               if r.get('rho_h1') is not None and r.get('rho_h2') is not None
+               and abs(r['rho_h1']) >= 0.2 and abs(r['rho_h2']) >= 0.2
+               and r['rho_h1']*r['rho_h2'] > 0]
+        print('  ④ 양 반쪽에서 |ρ|>=0.2 이고 방향 일치 : %d건  %s'
+              % (len(rep), '← 통과' if not rep else '← 도구 조사'))
+        d1 = [r for r in out if r.get('rho_h1') is not None
+              and r['rho']*r['rho_h1'] > 0 and r['rho']*r['rho_h2'] > 0]
+        print('  ① 전체·홀·짝 방향이 모두 일치 : %d건 (일관성 낮을수록 좋다)' % len(d1))
         print()
         print('  ρ=.08 같은 값으로 분석기를 폐기하지 않는다. 위 셋이 통과면 진행.')
     else:
