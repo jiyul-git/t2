@@ -229,46 +229,80 @@ def main():
     print('%-18s %12d %12d   ← 병목' % (worst[0], worst[1], worst[2]))
     print()
 
-    # ---- 클러스터 부트스트랩 교차검증 ----
-    print('## 클러스터 부트스트랩 교차검증 (시드 단위 복원추출, %d회)' % a.boot)
-    print('   축값은 실측 그대로 쓰고, 결과변수를 목표 ρ=%.2f 로 합성한다.' % a.rho)
-    print('   시드 수준 랜덤절편으로 실측 ICC 를 재현해 군집 구조를 보존한다.')
+    # ---- 클러스터 부트스트랩: 필요 시드를 직접 탐색한다 ----
+    #
+    # **이론식 DEFF 는 결정에 쓰지 않는다.** DEFF = 1+(m-1)*ICC 는 군집
+    # **평균**에 대한 공식인데, 여기서는 예측변수(축 값)가 군집 **안에서**
+    # 변한다. within-cluster 예측변수에는 과보정이다. 위 표의 DEFF 열은
+    # 참고용이고, 결정은 부트스트랩이 한다.
+    #
+    # 합성식:
+    #   y = ρ·z(x) + sqrt(1-ρ²)·( sqrt(ICC)·b0 + sqrt(1-ICC)·ε )
+    # z(x) 는 **그 축의 실측 평균·sd** 로 표준화한다. 앞서 (x-5.0)/2.2 로
+    # 고정 상수를 박아 축마다 주입 상관이 달라졌다 — 검출력 순서가 축 sd
+    # 순서와 정확히 일치해서 드러났다.
+    # var(y)=1 이고 corr(x,y)=ρ 가 되도록 계수를 맞춘다.
+    print('## 클러스터 부트스트랩 — 필요 시드 직접 탐색 (%d회/후보)' % a.boot)
+    print('   시드 단위 복원추출. 축값은 실측 그대로, 결과변수만 목표 ρ=%.2f 로 합성.'
+          % a.rho)
+    print('   축 표준화는 그 축의 실측 평균·sd 를 쓴다.')
     print()
-    print('%-18s %8s %9s %9s' % ('축', '시드', '검출력', '이론 대비'))
-    print('-'*48)
+    print('%-18s %10s %10s %12s' % ('축', 'power80', 'power90', '이론(DEFF 미적용)'))
+    print('-'*54)
     rng = random.Random(12345)
-    for ax, per_seed, deff, rho in rows:
+    crit = ndtri(1-alpha_adj/2.0)
+    base = math.ceil(need80)
+    out_rows = []
+    for ax, per_seed, deff, rho_obs in rows:
         d = data[ax]
-        s80 = math.ceil(need80*deff/per_seed)
         by = collections.defaultdict(list)
-        for si, pid, xv, yv, nb in d: by[si].append((xv, yv))
+        for si, pid, xv, yv, nb in d: by[si].append(xv)
         ks = list(by)
-        g = {k: [y for _x, y in by[k]] for k in ks}
-        icc = icc_by_seed(g)
-        sd_all = stat.pstdev([y for k in ks for y in g[k]]) or 1.0
-        sd_b = sd_all*math.sqrt(max(0.0, icc))
-        sd_w = sd_all*math.sqrt(max(1e-9, 1.0-icc))
-        crit = ndtri(1-alpha_adj/2.0)
-        hit = 0
-        for _ in range(a.boot):
-            xs, ys = [], []
-            for _s in range(s80):
-                k = rng.choice(ks)
-                b0 = rng.gauss(0.0, sd_b)
-                for xv, _yv in by[k]:
-                    xs.append(xv + rng.gauss(0, 1e-9))
-                    ys.append(a.rho*(xv-5.0)/2.2*sd_w + b0
-                              + rng.gauss(0, sd_w*math.sqrt(max(0.0, 1-a.rho**2))))
-            r = spearman(xs, ys)
-            if r is None: continue
-            z = math.atanh(max(-0.999999, min(0.999999, r)))*math.sqrt(len(xs)-3)
-            if abs(z) > crit: hit += 1
-        print('%-18s %8d %8.1f%% %9s' % (ax, s80, 100.0*hit/a.boot,
-                                         '80% 목표'))
+        g = {k: [y for _si, _p, _x, y, _n in d if _si == k] for k in ks}
+        icc = max(0.0, min(0.95, icc_by_seed(g)))
+        xs_all = [x[2] for x in d]
+        mx = stat.mean(xs_all); sx = stat.pstdev(xs_all) or 1.0
+        cb = math.sqrt(1.0-a.rho**2)
+
+        def power_at(S, target_n=None):
+            hit = 0
+            for _ in range(a.boot):
+                xs, ys = [], []
+                for _s in range(S):
+                    k = rng.choice(ks)
+                    b0 = rng.gauss(0, 1)
+                    for xv in by[k]:
+                        z = (xv-mx)/sx
+                        e = rng.gauss(0, 1)
+                        xs.append(xv)
+                        ys.append(a.rho*z + cb*(math.sqrt(icc)*b0
+                                                + math.sqrt(1-icc)*e))
+                r = spearman(xs, ys)
+                if r is None: continue
+                zz = math.atanh(max(-0.999999, min(0.999999, r)))*math.sqrt(len(xs)-3)
+                if abs(zz) > crit: hit += 1
+            return hit/float(a.boot)
+
+        def search(target):
+            lo_, hi_ = 2, 8
+            while power_at(hi_) < target and hi_ < 4000:
+                lo_, hi_ = hi_, hi_*2
+            while lo_ + 1 < hi_:
+                mid = (lo_+hi_)//2
+                if power_at(mid) >= target: hi_ = mid
+                else: lo_ = mid
+            return hi_
+
+        s80 = search(0.80)
+        s90 = search(0.90)
+        theo = math.ceil(need80/per_seed)
+        out_rows.append((ax, s80, s90, theo))
+        print('%-18s %10d %10d %12d' % (ax, s80, s90, theo))
+    print('-'*54)
+    w80 = max(out_rows, key=lambda r: r[1])
+    w90 = max(out_rows, key=lambda r: r[2])
+    print('병목  power80 : %s %d시드     power90 : %s %d시드'
+          % (w80[0], w80[1], w90[0], w90[2]))
     print()
-    print('부트스트랩이 80% 를 크게 밑돌면 군집 구조가 이론식보다 불리한 것이다.')
-    print('그 경우 DEFF 보정으로 부족하므로 시드를 더 늘려야 한다.')
-
-
-if __name__ == '__main__':
-    main()
+    print('시드당 테이블핸드 378 기준 → power80 약 %d 테이블핸드 (4코어 %.0f분)'
+          % (w80[1]*378, w80[1]*378*0.10/4/60))
