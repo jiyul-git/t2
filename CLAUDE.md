@@ -301,6 +301,20 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
   `looseness` 는 날것이 −0.36→+0.36 로 완전 선형인데 clamp 후 하위 절반이 0,
   `discipline` 은 상위 절반이 0. 빈도만 보면 '무반응'으로 오독한다 —
   **중간값(날것/clamp 후)을 반드시 같이 기록할 것** (`TRACE_AXIS_FREQ.md`)
+- **`overbet` 은 플랍에서 아예 `return None` 이다** (`plan.py:1120`). 리버에서도
+  게이트가 곱으로 셋이라 실현 발동이 102건 중 2건 — **실현 빈도가 아니라 발동
+  확률로 재야 한다.** 병목은 `nut_advantage`(중앙 0.005, 50%가 ≤0)이지
+  양극화가 아니다 (`TRACE_AXIS_FREQ.md` 4단계)
+- **`equity_denial` 은 두 번 희석된다.** `plan.py:1009` 의 배수 뒤에
+  `plan.py:1030` 의 45/55 텍스처 블렌드가 와서 명목 +7.5% 가 +0.8% 로 깎이고,
+  `plan.py:1317` 의 100칩 반올림이 11.0%p 를 더 지운다. 실제 칩 금액이
+  달라지는 것은 26.2% 뿐이라 중앙값으로는 안 보인다
+- **`probe`·`delayed_cbet` 은 단일 스트리트 harness 로 잴 수 없다.**
+  `plan_state` 의 `opp_checked_prev`·`flop_checked` 라인 이력을 요구한다.
+  전 레벨 동일하게 나오는 것은 축이 죽어서가 아니라 조건이 성립한 적이 없어서다
+- **계획 층도 집계 %가 아니라 전환 수를 세야 한다.** `stackoff` 에서 집계표는
+  전 레벨 동일인데 상황별로는 뒤집힘이 있었다 — 양방향 건수가 맞으면 표가
+  안 움직인다
 - **`bluff_fear` 와 `hero_call` 은 거의 완전한 거울상이다.** 둘 다 `persona.bias`
   파생값이고 `bluffcatch_river`·`aggression` 을 **반대 부호로** 공유한다
   (bcr 1→9 에서 0.554→−0.086 vs −0.559→0.161). 독립적으로 흔들 수 없다 —
