@@ -59,6 +59,10 @@ def run_one(seed, entries=40, start_stack=30000, hands_per_level=12,
             'blinds': list(t.blinds()),
             'stacks_before': dict(getattr(h, '_start_stacks', {}) or {}),
             'seats': list(h.seats),
+            # 손익 분석용. session.Run.result 가 핸드 결과다 (live2 도 같은 것을
+            # 읽는다: live2.py:324). stacks_before 와 합치면 좌석별 칩 증감이 나온다.
+            # **기록 전용이다** — 판단 로직과 무관하다.
+            'result': getattr(t.run, 'result', None),
         }
         out.append(rec)
         n += 1
