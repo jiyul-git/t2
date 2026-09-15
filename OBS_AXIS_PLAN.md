@@ -48,8 +48,10 @@ plan.calldown_need 의 trust 블록
    섰던 횟수로 나눈다. 핸드 수로 나누면 참가율이 섞인다.
 2. **공동 구동축을 축마다 명시한다.** 단변량 ρ 는 공동 구동축의
    분산에 희석된다. 희석을 오독하지 않으려면 목록이 먼저 있어야 한다.
-3. **축-축 상관행렬을 먼저 찍는다.** 생성 단계에서 얽힌 쌍이 있다
-   (`slowplay_taste` ← `aggro`). X 의 ρ 가 Y 에서 왔는지 구별해야 한다.
+3. **`concepts` 는 독립 축이 아니다 — 3인자 모형이다.** `persona.py:195`
+   의 `LOADING` 이 36개 개념을 `study`·`aggro`·`exp` 의 선형결합 + 개별
+   노이즈로 만든다. 단변량 ρ 만으로 축에 효과를 귀속시키면 안 된다.
+   **4절 (0) 의 3단 분해를 쓴다.**
 4. **중간값을 같이 기록한다.** `max(0.0, bias(...))` 로 축의 절반이
    잘리는 자리가 있다 (`looseness` 하위 절반, `discipline` 상위 절반).
    최종 빈도만 보면 '무반응'으로 오독한다.
@@ -81,24 +83,58 @@ plan.calldown_need 의 trust 블록
 `defend_thresholds` 는 `(tp, tot)` 를 낸다. `aggression` 은 `tp`(3벳 구간),
 `looseness` 는 `tot`(참가 구간)에만 걸린다. **둘 다 기록한다.**
 
-### 3.2 이니셔티브 공격 (`cbet_freq` 계열)
+### 3.2 포스트플랍 공격 — `decide_aggression` 의 분기부터 본다
 
-분모는 전부 **"그 스트리트에 이니셔티브를 쥐고 액션 차례가 왔다"** 이다.
+**`plan.py:838` `decide_aggression` 이 벳 확률을 정하는 유일한 지점이고,
+계획 라벨에 따라 분기가 완전히 갈린다.** 분기를 무시하고 "c-bet 빈도"
+하나로 재면 축이 없는 경로까지 분모에 들어간다.
+
+```
+giveup / showdown + 이니셔티브   → cbet_freq(...) × max(0.05, 1−0.085·discipline)
+trap                             → 0.0
+bluff_2street/semibluff/river_bluff
+                                 → 0.25 + 0.070·bluff + 0.02·gamble
+                                    × fold_equity · board_texture · multiway
+                                    · probe(동크 억제) · delayed_cbet
+block                            → 0.35 + 0.055·blockbet
+pot_control                      → 0.18 + 0.035·aggression   (rel<0.30 이면 0.04)
+밸류 계획                         → 0.30 + 0.058·aggression + 0.018·gamble
+                                    × (0.55 + 0.09·thin_value_{street})   ← rel<0.85
+                                    × value 스타일(xr 0.68 / lead 1.12) × rel 곡선
+```
+
+**`cbet_freq` 호출부는 `plan.py:863` 하나뿐이고 그 자리는 `giveup`/`showdown`
+분기다.** 즉 `cbet_flop`·`barrel_turn`·`barrel_river` 가 사는 곳은
+**이탈 지속벳 자리 하나**이지 c-bet 일반이 아니다. 실제 c-bet 의 대부분은
+밸류·블러프 분기에서 나오고 그 경로에 이 세 축은 등장하지 않는다.
+
+`tools/axis_sites.py` 가 `cbet_flop 1건 → plan:cbet_freq` 로 이미 찍어줬는데,
+그 1건이 **어느 분기 안인지**를 연결하지 않아 분모를 잘못 잡을 뻔했다.
 
 | 축 | 관측 지표 | 분모 | 기대 | 공동 구동축 |
 |---|---|---|---|---|
-| `cbet_flop` | 플랍 c-bet | 프리플랍 이니셔티브 + 플랍 첫 액션 | ↑ | `aggression`·`bluff`·`multiway`·`board_texture` |
-| `barrel_turn` | 턴 배럴 | 플랍 벳 후 턴 이니셔티브 유지 | ↑ | 같음 |
-| `barrel_river` | 리버 배럴 | 턴 벳 후 리버 이니셔티브 유지 | ↑ | 같음 + `river_fix` |
-| `multiway` | n_opp 1→2→3 에서 c-bet 감소 **기울기** | 위 분모를 n_opp 로 층화 | ⇄ | 같음 |
-| `board_texture` | 건조/젖은 보드 c-bet **차이** | 위 분모를 텍스처로 층화 | ⇄ | 같음 |
+| `cbet_flop` | 플랍 벳 | 플랍 이니셔티브 **+ 계획 `giveup`/`showdown`** | ↑ | `aggression`·`bluff`·`multiway`·`board_texture`·`discipline` |
+| `barrel_turn` | 턴 벳 | 턴에서 같은 조건 | ↑ | 같음 |
+| `barrel_river` | 리버 벳 | 리버에서 같은 조건 + `river_fix` 경로 | ↑ | 같음 |
+| `discipline` | 위 분모에서의 벳 | 같은 분모 | ↓ | `cbet_freq` 전체 |
+| `multiway` | n_opp 1→2→3 감소 **기울기** | 위 분모 + 블러프 분기, n_opp 로 층화 | ⇄ | 같음 |
+| `board_texture` | 건조/젖은 보드 **차이** | 같음, 텍스처로 층화 | ⇄ | 같음 |
+| `bluff` | 블러프 계획에서의 벳 | 계획이 `bluff_2street`/`semibluff`/`river_bluff` | ↑ | `gamble`·`fold_equity`·`probe`·`delayed_cbet` |
+| `blockbet` | 벳 | 계획이 `block` | ↑ | 없음 — 단독 축 |
+| `thin_value_turn` | 벳 | **플랍·턴** 밸류 계획 + `rel < 0.85` | ↑ | `aggression`·`gamble`·`value` 스타일 |
+| `thin_value_river` | 벳 | 리버 밸류 계획 + `rel < 0.85` | ↑ | 같음 |
+| `aggression` | 벳 | 밸류 계획 전체 / `pot_control` 계획 | ↑ | `gamble`·`thin_value_*` |
+
+`street_concept` 이 `('thin_value','flop') → 'thin_value_turn'` 으로 보낸다
+(`persona.py`). **`thin_value_turn` 은 턴 전용이 아니라 플랍+턴 전체**이고
+배수가 `0.55 + 0.09·sk` 라 축 0→9 에서 2.6배 스윙이다 — 셋 중 표본이 가장 넉넉하다.
 
 `multiway`·`board_texture` 는 절대 빈도가 아니라 **층 간 차이**다.
-`f *= (0.80 − 0.30·multiway)^(n_opp−1)` 이므로 축이 커지면
-다인원에서 더 많이 줄어야 한다. 빈도 하나로는 안 보인다.
+`f *= (0.80 − 0.30·multiway)^(n_opp−1)` 이므로 축이 커지면 다인원에서
+더 많이 줄어야 한다. 빈도 하나로는 안 보인다.
 
-중간값으로 `cbet_freq` 의 반환값 `f` 자체를 같이 기록한다
-(행동은 그 확률의 베르누이 실현이라, 빈도보다 `f` 가 표본 효율이 훨씬 높다).
+**각 분기의 반환 확률 `f` 를 그 자리에서 같이 기록한다** (4절 (0-b)).
+`barrel_river` 는 분모가 토너당 한 자릿수라 실현 행동으로는 영구히 못 잰다.
 
 ### 3.3 응답
 
@@ -114,11 +150,11 @@ plan.calldown_need 의 trust 블록
 
 | 축 | 관측 지표 | 분모 | 기대 | 비고 |
 |---|---|---|---|---|
-| `bluff` | 블러프 계획 공격 / 전체 공격 | 포스트플랍 공격 | ↑ | 블러프 계획 = `giveup`·`semibluff`·`bluff_2street`·`river_bluff` 에서의 bet/raise |
+| `bluff` | — | — | — | **3.2 로 옮겼다.** `giveup` 은 블러프 분기가 아니라 `cbet_freq` 분기다 |
 | `semibluff` | `semibluff` 계획 비율 | 드로우 보유 포스트플랍 계획 | ↑ | 드로우 강도(`outs`)를 층화해야 한다 — 확률식이 `0.25 + 0.24×개념` 이라 8아웃과 13아웃이 같이 굴려진다 |
 | `potcontrol` | `pot_control` 계획 비율 | 포스트플랍 계획 | ⌐ | **단조 아님.** PS.sk 3.33 아래 0 / 위 평탄. 1–3 vs 4–9 계단으로 본다 |
 | `trap`·`checkraise_flop` | 체크레이즈 비율 | 플랍에서 체크 후 벳 직면 | ↑ | `trap_judgment` 공유 |
-| `thin_value_turn` | 턴 밸류 벳 | 턴 이니셔티브 + `rel` 중간대 | ↑ | **조작적 정의 미확정** — `make_plan`×2·`decide_aggression`×2 를 읽고 `rel` 구간을 코드에서 가져온다. 새로 발명하지 않는다 |
+| `thin_value_turn` | — | — | — | **3.2 로 옮겼다.** `rel < 0.85` 가 코드의 구간이다 (`plan.py:940`). 새로 발명하지 않았다 |
 
 ### 3.5 실행 층
 
@@ -151,7 +187,56 @@ opp_size_norm` 이다 (`TRACE_STELL.md`).
 
 ## 4. 판정 통계
 
-셋을 **같이** 본다. 하나만으로 끝내지 않는다.
+### (0) 귀속 — 3단 분해 (모든 `concepts` 축에 적용)
+
+```
+단변량 Spearman ρ        축 값 그대로 대 관측치
+잠재3 통제 편상관          study·aggro·exp 를 회귀로 뺀 잔차끼리
+축 고유 분산 1 − R²       그 축에서 잠재요인이 아닌 몫
+```
+
+세 번째가 두 번째의 상한을 정한다. 고유 분산이 작으면 편상관이 작게
+나오는 것이 정상이며, **그것은 축이 행동을 못 만든다는 뜻이 아니다.**
+
+```
+t:aggression   고유 0.107   ← temper['aggression'] = aggro + gauss(0, 0.8)
+```
+
+`aggression` 의 편상관이 0 에 가깝게 나오면 결론은 **"`aggression` 이라는
+이름의 축이 사실상 잠재요인 `aggro` 를 측정한다"** 이다. 결함이 아니라
+현재 생성 모델의 구조적 사실이고, 그대로 기록한다.
+
+`temper` 는 `aggression` 을 빼면 고유 분산 0.88~1.00 이라 단변량으로 족하다.
+
+---
+
+### (0-b) 층 분리 — 판단 확률 `f` 와 실현 행동
+
+축의 효과를 **두 층으로 나눠 싣는다.** `f` 를 실현 행동의 대체값으로
+쓰지 않는다.
+
+```
+판단층   축 → cbet_freq / barrel 확률 / sizing 확률      (연속값, 고표본)
+   ↓
+실행층   실제 bet / check / fold / raise                  (베르누이, 저표본)
+```
+
+둘이 갈리는 것 자체가 결과다.
+
+| `f` | 실현 행동 | 판정 |
+|---|---|---|
+| 갈린다 | 갈린다 | 축이 행동까지 도달한다 |
+| 갈린다 | 안 갈린다 | **전달은 됐고 실행 표본이 부족하다.** 축이 죽은 게 아니다 |
+| 안 갈린다 | — | 축이 판단에 도달하지 못한다 ← 구조 후보 |
+
+`barrel_river` 는 토너 하나에서 기회가 총 2건이라 실현 행동으로는
+영구히 잴 수 없다. `f` 층이 없으면 "측정 불가"와 "축이 죽었다"를
+구별할 방법이 없다.
+
+나중에 **"aggression 9 인데 실제 벳이 별로 안 많다"** 가 나왔을 때
+축 문제인지 판단→실행 희석인지 이 표로 바로 갈린다.
+
+---
 
 ### (1) 방향성 — Spearman ρ
 
@@ -189,27 +274,73 @@ opp_size_norm` 이다 (`TRACE_STELL.md`).
 
 ---
 
-## 5. 파일럿이 결정할 것 (지금 정하지 않는다)
+## 5. 측정조건 calibration
 
-`entries` / `hands_per_level` / `start_stack` 은 표본 크기 손잡이가 아니다.
+**목표는 최대 표본이 아니라 교란이 최소인 측정조건 결정이다.**
+
+두 손잡이가 서로 다른 것을 산다 (파일럿 실측, 시드 1개):
 
 ```
-entries           → 필드 구성·상대 수·field_quality
-hands_per_level   → 관측 기간 (블라인드 상승 속도)
-start_stack       → 스택 깊이 = 전략 환경 자체
+hpl     12→40   토너 221→447핸드   플레이어당 핸드 ↑  → split-half 신뢰도 r
+entries 24→48   토너 447→451핸드   플레이어 수 ↑      → Spearman ρ 의 점 개수
+                테이블핸드 653→1346, 플레이어당은 그대로
 ```
 
-측정 조건이 실험변수가 되면 안 되므로, **파일럿으로 먼저 잰다.**
+`start_stack` 은 **고정한다.** 표본량 손잡이가 아니라 스택 깊이라는
+전략 환경 자체다.
 
-1. `fieldsim` 기본 설정에서 플레이어당 실제 관측 핸드 수 분포
-2. **지표별 기회 수** (핸드 수가 아니라 이게 실제 표본이다 —
-   c-bet 기회는 핸드 수의 일부에 불과하다)
-3. `hands_per_level` 이 토너 종료 시점을 실제로 제어하는 구조인지
-4. `opp_est` 누적 여부 (3.6 의 축들을 이번에 넣을지 결정)
-5. 축-축 상관행렬
+### 도달률 하나만 보지 않는다
 
-그 다음에 세 변수 중 **무엇이 표본 확보에 가장 적은 교란을 일으키는지**
-결정한다.
+손잡이를 돌릴 때 같이 움직이는 것을 전부 싣는다.
+
+```
+필드 구성    field_q, 잠재요인(study/aggro/exp) 평균·sd, 주요 축 평균·sd
+스택 깊이    관측 시점 유효 스택(bb) — 포스트플랍 성격을 정하는 값
+블라인드     종료 레벨, 관측 핸드의 레벨 분포
+생존 시간    플레이어당 관측 핸드
+기회율       스트리트별 도달률, 플레이어당 지표 기회 수
+```
+
+### `entries` 는 필드 구성을 직접 바꾼다 — 코드 확인
+
+```
+field.py:field_quality   q = 0.35 + 0.65 · min(1, log₁₀(max(10,entries))/3) · buyin
+persona.py:make_player   study ~ N(2.6 + 4.2q, 2.1)
+                         exp   ~ N(3.0 + 3.8q, 2.2)
+persona.py:skill_bounds  lo = max(0.5, −0.6 + 4.2q)   hi = min(10, 5.6 + 3.4q)
+```
+
+| entries | field_q | study 평균 | exp 평균 | skill 범위 |
+|---|---|---|---|---|
+| 24 | 0.649 | 5.33 | 5.47 | 2.13~7.81 |
+| 48 | 0.714 | 5.60 | 5.71 | 2.40~8.03 |
+| 100 | 0.783 | 5.89 | 5.98 | 2.69~8.26 |
+| 250 | 0.870 | 6.25 | 6.30 | 3.05~8.56 |
+
+**`entries` 를 올리면 36개 개념의 평균이 전부 같이 올라가고 `skill_bounds`
+기각표집이 범위를 좁힌다.** 범위가 좁아지면 상관이 감쇠한다 —
+`entries` 는 ρ 의 점 개수를 사는 대신 ρ 자체를 깎을 수 있다.
+
+`hpl` 은 `field_quality` 를 건드리지 않는다. 이 축에서는 깨끗하다.
+
+`fieldsim` 은 `make_player(rng, q, pid)` 를 `aggr_bias`·`loose_bias` 없이
+부른다(`fieldsim.py:69`). `tourney` 와 달리 필드 난폭도·헐거움 편향이
+없다 — 교란이 하나 적은 대신 필드 다양성도 없다. 기록해 둔다.
+
+### 실험
+
+```
+seed 여러 개
+   ├─ hpl 변화
+   ├─ entries 변화
+   └─ start_stack 고정
+          ↓
+   위 다섯 묶음을 전부 측정
+          ↓
+   교란이 가장 평평한 조건 선택
+```
+
+`tools/cond_calib.py` 가 이것을 돌린다.
 
 ---
 
@@ -218,8 +349,8 @@ start_stack       → 스택 깊이 = 전략 환경 자체
 ```
 ① 관측 지표 정의        ← 이 문서
 ② fieldsim 구조 확인
-③ 작은 파일럿  → 플레이어당 핸드 수·지표별 기회 수
-④ entries / hands_per_level / start_stack 결정
+③ 작은 파일럿  → 플레이어당 핸드 수·지표별 기회 수      (완료)
+④ 측정조건 calibration → 교란이 최소인 조건 결정
 ⑤ 본 측정
 ⑥ permutation null + split-half
 ⑦ 방향성·분리도 평가
