@@ -284,7 +284,14 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 - `audit.py:171` 이 설계상 허용된 이탈까지 전부 "포기계획인데 벳" 경보
 - `persona.py:755` `size_read` 는 2.0팟 이하에서 항등이다. 아카이브 648건에서
   포스트플랍 sz 최대 0.915 — **한 번도 동작한 적이 없다.** `sizing_tell` 이
-  실제로 닿는 곳은 `see_size → size_gap → opp_size_norm` 이다 (`TRACE_STELL.md`)
+  실제로 닿는 곳은 `see_size → size_gap → opp_size_norm` 이다 (`TRACE_STELL.md`).
+  **죽은 축이 아니라 도달 불가능한 축이다** — 정의역 밖(2.5~9팟)에서는 오차가
+  2.000 → 0.000 으로 정확히 작동한다 (`TRACE_AXIS_ACC.md`)
+- `ranges.blocker_score` 를 잴 때 상대 레인지를 `hero+board` dead 로 만들면
+  **구조적으로 항상 0** 이다. 엔진은 dead 가 `set(board)` 뿐이다(`session.py:370`).
+  이걸로 "blocker 가 죽었다"는 잘못된 결론을 한 번 냈다. 도구 만들 때 주의
+- `persona.open_pct` 에는 축이 셋 섞여 있다 — `pf_range`(폭)·`positional`(곡선)·
+  `_G.adapt_mult`. 하나를 재려면 나머지를 9 로 고정해야 한다
 - `persona.py:955` `size_river` 만 `see_size` 게이트가 빠져 있다. 리버에서는
   사이즈를 못 읽는 사람도 `_sz_norm` 이 어긋난다. 2-A 로 덮어쓰기가 없어져
   피해는 줄었지만 게이트 누락 자체는 그대로다
@@ -310,6 +317,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/cf_potodds.py` | 팟오즈 식 수정(FIX_PLAN 1-A)의 행동 영향 |
 | `tools/cf_szseen.py` | `_sz_seen` 덮어쓰기(FIX_PLAN 2-A) 3변종 분해 |
 | `tools/cf_stell.py` | `sizing_tell` 해부 (방향·크기·2×2 충돌) |
+| `tools/axis_accuracy.py` | 인식 정확도 축의 호출 지점 오차 (축 1/3/5/7/9) |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
 | `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |
