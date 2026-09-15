@@ -53,8 +53,15 @@ def build(base, axis, v, hold):
     return p
 
 
-def fake_est(rng):
-    ftb = rng.uniform(0.30, 0.75)
+def fake_est(rng, kind='mixed'):
+    """상대 추정치. kind 로 **폴드 성향**을 가른다.
+
+    `fold_equity` 는 `_fg = street_gap(rd, street)` 의 **부호**에 따라 방향이
+    뒤집힌다(`plan.py:892`). 잘 접는 상대와 안 접는 상대를 섞어 재면
+    두 방향이 서로 지워져 '무반응'으로 보인다.
+    """
+    ftb = {'folder': rng.uniform(0.72, 0.88),
+           'station': rng.uniform(0.22, 0.38)}.get(kind, rng.uniform(0.30, 0.75))
     return {'confidence': rng.uniform(0.4, 0.9), 'n': rng.randint(15, 60),
             'ftb': ftb, 'fold': ftb, 'bluff': rng.uniform(2, 8),
             'aggr': rng.uniform(2, 8), 'ftb_flop': ftb, 'ftb_turn': ftb,
@@ -64,7 +71,7 @@ def fake_est(rng):
             'sz_big': rng.uniform(0, .4), 'type': None}
 
 
-def post_sit(rng, street='flop'):
+def post_sit(rng, street='flop', n_opp=1, est_kind='mixed'):
     nb = {'flop': 3, 'turn': 4, 'river': 5}[street]
     d = DECK[:]; rng.shuffle(d)
     hero, board = d[:2], d[2:2+nb]
@@ -77,8 +84,8 @@ def post_sit(rng, street='flop'):
                 stack=int(pot*rng.choice([1.0, 2.0, 3.5, 6.0, 12.0])),
                 to_act_behind=rng.choice([0, 0, 1]),
                 oop=rng.random() < .5, initiative=rng.random() < .5,
-                est=fake_est(rng), read=rng.uniform(.10, .70),
-                seed=rng.randrange(1 << 30))
+                est=fake_est(rng, est_kind), read=rng.uniform(.10, .70),
+                n_opp=n_opp, seed=rng.randrange(1 << 30))
 
 
 # ---------------------------------------------------------------- 층
@@ -131,7 +138,7 @@ def L_plan(sits, prof):
         try:
             ps = PL.make_plan(s['hero'], s['board'], s['my_range'], s['opp_range'],
                               prof, s['pot'], s['stack'], s['street'],
-                              seed=s['seed'], n_opp=1,
+                              seed=s['seed'], n_opp=s['n_opp'],
                               to_act_behind=s['to_act_behind'], oop=s['oop'],
                               initiative=s['initiative'], opp_est=s['est'])
         except Exception:
@@ -173,7 +180,7 @@ def _exec(sits, prof, resist):
                 ps = PL.attach_intent(ps, s['hero'], s['board'], s['my_range'],
                                       s['opp_range'], prof, s['pot'], s['stack'],
                                       s['street'], random.Random(s['seed']),
-                                      1, s['to_act_behind'], s['oop'],
+                                      s['n_opp'], s['to_act_behind'], s['oop'],
                                       s['initiative'], s['est'])
             except Exception:
                 continue
@@ -182,7 +189,7 @@ def _exec(sits, prof, resist):
                 s['hero'], s['board'], prof, copy.deepcopy(ps),
                 s['pot'], s['tocall'] if resist else 0, s['stack'], s['street'],
                 initiative=s['initiative'], oop=s['oop'],
-                opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
         except Exception:
@@ -237,7 +244,7 @@ def L_resist_flip(sits, prof):
                 s['hero'], s['board'], prof, copy.deepcopy(ps),
                 s['pot'], s['tocall'], s['stack'], s['street'],
                 initiative=s['initiative'], oop=s['oop'],
-                opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
         except Exception:
@@ -279,13 +286,13 @@ def L_noresist_size(sits, prof):
             ps = PL.attach_intent(ps, s['hero'], s['board'], s['my_range'],
                                   s['opp_range'], prof, s['pot'], s['stack'],
                                   s['street'], random.Random(s['seed']),
-                                  1, s['to_act_behind'], s['oop'],
+                                  s['n_opp'], s['to_act_behind'], s['oop'],
                                   s['initiative'], s['est'])
             (a_, amt), _e, _n = PL.act_with_plan(
                 s['hero'], s['board'], prof, copy.deepcopy(ps),
                 s['pot'], 0, s['stack'], s['street'],
                 initiative=s['initiative'], oop=s['oop'],
-                opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
         except Exception:
@@ -318,7 +325,7 @@ def L_stackoff_path(sits, prof):
                 s['hero'], s['board'], prof, ps,
                 s['pot'], s['tocall'], s['stack_commit'], s['street'],
                 initiative=s['initiative'], oop=s['oop'],
-                opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
         except Exception:
@@ -375,6 +382,25 @@ def L_overbet(sits, prof, _K=20):
             '발동 시 사이즈 중앙': ST.median(szs) if szs else float('nan')}
 
 
+def L_read_w(sits, prof):
+    """`fold_equity` 게이트의 재료. 축이 아니라 **도메인 기록**이다.
+
+    `plan.py:889-892` 는 `opp_est` 가 있고 `read_opponent` 의 `w > 0` 일 때만
+    걸리고, 그 뒤 `_fg`(폴드 성향 갭)의 **부호로 방향이 뒤집힌다.**
+    표본이 이 조건을 만족하는지 먼저 보여야 판정이 가능하다.
+    """
+    ws, fgs = [], []
+    for s in sits:
+        rd = PS.read_opponent(prof, s['est'])
+        ws.append(rd.get('w', 0.0))
+        fgs.append(PS.street_gap(rd, s['street']))
+    n = max(1, len(ws))
+    return {'exploit w 중앙': ST.median(ws),
+            '  w > 0 비율 %': 100*sum(1 for x in ws if x > 0)/n,
+            'fold_gap 중앙': ST.median(fgs),
+            '  fold_gap > 0 비율 %': 100*sum(1 for x in fgs if x > 0)/n}
+
+
 LAYER = OrderedDict([
     ('open',     (L_open,     '프리플랍 오픈 폭')),
     ('defend',   (L_defend,   '프리플랍 방어 구간')),
@@ -388,6 +414,7 @@ LAYER = OrderedDict([
     ('noresist_size', (L_noresist_size, '무저항 실행 — 빈도와 크기를 분리')),
     ('stackoff_path', (L_stackoff_path, '커밋 구간(SPR<1.2) 저항 + 경로')),
     ('overbet', (L_overbet, '오버벳 — 실현 빈도가 아니라 발동 확률')),
+    ('read_w', (L_read_w, 'fold_equity 게이트 재료 (w · fold_gap)')),
 ])
 
 # AXIS_FREQ_PLAN.md 2-1/2-2 의 표를 그대로 옮긴 것이다. 고정축을 바꾸려면
@@ -485,6 +512,19 @@ AXES = OrderedDict([
         layers=['plan', 'stackoff_path'],
         hold={'thin_value_turn': 5, 'thin_value_river': 5, 'reraise': 5,
               'aggression': 5, 'gamble': 5})),
+    # ---- 조건부 축: 정의역 조건이 측정 설계의 일부다 ----
+    # multiway  → --nopp 로 n_opp 를 준다. HU(1) 를 대조군으로 같이 돌릴 것.
+    # fold_equity → --esttype folder / station 으로 상대 유형을 갈라야 한다.
+    #               섞으면 두 방향이 서로 지워진다.
+    ('multiway', dict(
+        layers=['noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'cbet_flop': 5, 'board_texture': 5,
+              'fold_equity': 5, 'probe': 5})),
+    ('fold_equity', dict(
+        layers=['read_w', 'noresist_size'],
+        hold={'aggression': 5, 'bluff': 5, 'board_texture': 5, 'multiway': 5,
+              'attention': 5, 'adaptability': 5, 'range_read': 5,
+              'cbet_flop': 5, 'probe': 5})),
     # trap 의 짝. trap_judgment:218 은 tool = 0.07*trap + 0.12*checkraise 라
     # 실행 쪽 무게가 1.7배다. trap 만 흔들어 작게 나온 것이 '층이 죽어서'가
     # 아님을 보이려면 이쪽을 같이 재야 한다.
@@ -501,6 +541,16 @@ def main():
     ap.add_argument('--n', type=int, default=250)
     ap.add_argument('--street', default='flop', choices=['flop', 'turn', 'river'])
     ap.add_argument('--seed', type=int, default=20260915)
+    ap.add_argument('--nopp', type=int, default=1,
+                    help='상대 수. multiway 는 >=2 라야 계수가 0 이 아니다')
+    ap.add_argument('--esttype', default='mixed',
+                    choices=['mixed', 'folder', 'station'],
+                    help='상대 폴드 성향. fold_equity 는 이걸 갈라야 한다')
+    ap.add_argument('--line', default='none',
+                    choices=['none', 'flop_checked', 'opp_checked', 'both'],
+                    help='라인 이력을 심는다. probe·delayed_cbet 전용')
+    ap.add_argument('--force', default='',
+                    help="포지션 강제. 'oop_nonitiative' 면 probe 경로 조건")
     ap.add_argument('--list', action='store_true')
     a = ap.parse_args()
     if a.list:
@@ -518,12 +568,19 @@ def main():
     rng = random.Random(a.seed)
     sits = []
     for _ in range(a.n):
-        s = post_sit(rng, a.street)
+        s = post_sit(rng, a.street, n_opp=a.nopp, est_kind=a.esttype)
         s['pos'] = rng.choice(POS); s['seats'] = rng.choice([6, 8, 9])
         s['def_pos'] = rng.choice(['BB', 'SB', 'BTN'])
         s['bb'] = rng.uniform(15, 60); s['open_bb'] = rng.choice([2.0, 2.5, 3.0])
         # 커밋 구간용 스택. spr(stack, pot) < 1.2 라야 committed 가 켜진다.
         s['stack_commit'] = int(s['pot']*rng.uniform(0.4, 1.1))
+        # 라인 이력 강제. **엔진이 세우는 것과 같은 값이다** —
+        #   flop_checked      plan.py:1681  내 플랍 의도가 check/None 이었는가
+        #   opp_checked_prev  session.py:513 직전 스트리트에 상대가 벳 안 했는가
+        # 둘 다 관측 가능한 라인 사실에서 나오는 불리언이라, 여기서 심는 것은
+        # 값을 지어내는 것이 아니라 그 라인을 재현하는 것이다.
+        if a.force == 'oop_noninitiative':
+            s['oop'] = True; s['initiative'] = False
         sits.append(s)
 
     # 실행 층은 **계획을 고정**한다 (기준 프로필로 한 번만 만든다).
@@ -533,7 +590,8 @@ def main():
             try:
                 s['base_plan'] = PL.make_plan(
                     s['hero'], s['board'], s['my_range'], s['opp_range'], _p5,
-                    s['pot'], s['stack'], s['street'], seed=s['seed'], n_opp=1,
+                    s['pot'], s['stack'], s['street'], seed=s['seed'],
+                    n_opp=s['n_opp'],
                     to_act_behind=s['to_act_behind'], oop=s['oop'],
                     initiative=s['initiative'], opp_est=s['est'])['plan']
             except Exception:
@@ -547,11 +605,17 @@ def main():
             try:
                 s['plan_fixed'] = PL.make_plan(
                     s['hero'], s['board'], s['my_range'], s['opp_range'], p0,
-                    s['pot'], s['stack'], s['street'], seed=s['seed'], n_opp=1,
+                    s['pot'], s['stack'], s['street'], seed=s['seed'],
+                    n_opp=s['n_opp'],
                     to_act_behind=s['to_act_behind'], oop=s['oop'],
                     initiative=s['initiative'], opp_est=s['est'])
             except Exception:
                 s['plan_fixed'] = None
+            if s['plan_fixed'] is not None and a.line != 'none':
+                if a.line in ('flop_checked', 'both'):
+                    s['plan_fixed']['flop_checked'] = True
+                if a.line in ('opp_checked', 'both'):
+                    s['plan_fixed']['opp_checked_prev'] = True
         # 전환표의 기준선. 레벨 5 의 행동을 상황마다 박아 둔다.
         if 'resist_flip' in spec['layers']:
             for s in sits:
@@ -562,14 +626,17 @@ def main():
                         s['hero'], s['board'], p0, copy.deepcopy(s['plan_fixed']),
                         s['pot'], s['tocall'], s['stack'], s['street'],
                         initiative=s['initiative'], oop=s['oop'],
-                        opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                        opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                         to_act_behind=s['to_act_behind'], opp_est=s['est'],
                         read=s['read'])
                     s['base_act'] = a_
                 except Exception:
                     pass
 
-    print('# %s — 층별 빈도. n=%d, %s' % (a.axis, len(sits), a.street))
+    print('# %s — 층별 빈도. n=%d, %s, n_opp=%d, 상대=%s%s%s'
+          % (a.axis, len(sits), a.street, a.nopp, a.esttype,
+             ', 라인=%s' % a.line if a.line != 'none' else '',
+             ', 강제=%s' % a.force if a.force else ''))
     print('# 고정: %s' % ', '.join('%s=%g' % kv for kv in sorted(spec['hold'].items())))
     print('# 레벨: %s%s\n' % (levels,
           '   (게이트 의심 → 문턱 근처 촘촘히)' if a.axis in GATE_LEVELS else ''))
