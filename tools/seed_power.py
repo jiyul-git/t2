@@ -306,3 +306,105 @@ def main():
     print()
     print('시드당 테이블핸드 378 기준 → power80 약 %d 테이블핸드 (4코어 %.0f분)'
           % (w80[1]*378, w80[1]*378*0.10/4/60))
+
+    # ---- 실제 Holm 절차 결합 시뮬레이션 ----
+    #
+    # 위 탐색은 축마다 **독립적으로** α/m 을 적용한다. power planning 의
+    # 보수적 근사로는 맞지만 **실제 Holm 은 그렇게 동작하지 않는다** —
+    # 검정별 문턱이 α/(m-rank+1) 로 달라진다. p 가 작은 축이 먼저 기각되면
+    # 뒤 축의 문턱이 느슨해지므로, 약한 축의 실제 검정력은 α/m 가정보다
+    # 높다.
+    #
+    # 그래서 7축을 **한 데이터셋에서 동시에** 재고 Holm 을 그대로 적용한다.
+    # 같은 시드 표본 안에서 축마다 자기 eligible 부분집합을 쓴다 — 실제
+    # 본 측정과 같은 구조다. 설계 가정대로 7축 전부에 ρ=0.20 을 주입한다.
+    print()
+    print('## 실제 Holm 절차 결합 시뮬레이션')
+    print('   7축을 한 데이터셋에서 동시에 재고 Holm(α=%.2f)을 그대로 적용한다.' % a.alpha)
+    print('   위 표는 축마다 α/m 을 독립 적용한 보수적 근사다 — 실제 Holm 은')
+    print('   문턱이 α/(m-rank+1) 로 달라져 약한 축의 검정력이 더 높다.')
+    print()
+
+    def norm_sf2(z):
+        """양측 p-value. erfc 로 구한다."""
+        return math.erfc(abs(z)/math.sqrt(2.0))
+
+    prep = []
+    for ax, per_seed, deff, rho_obs in rows:
+        d = data[ax]
+        by = collections.defaultdict(list)
+        for si, pid, xv, yv, nb in d: by[si].append(xv)
+        g = collections.defaultdict(list)
+        for si, pid, xv, yv, nb in d: g[si].append(yv)
+        icc = max(0.0, min(0.95, icc_by_seed(g)))
+        xs_all = [x[2] for x in d]
+        prep.append((ax, by, list(by), icc,
+                     stat.mean(xs_all), stat.pstdev(xs_all) or 1.0))
+
+    allks = sorted({k for _a, _b, ks, _i, _m, _s in prep for k in ks})
+
+    def holm_power(S):
+        """S 시드에서 7축 각각의 Holm 기각률."""
+        cnt = collections.Counter()
+        cb = math.sqrt(1.0-a.rho**2)
+        for _ in range(a.boot):
+            picked = [rng.choice(allks) for _ in range(S)]
+            pv = []
+            for ax, by, ks, icc, mx, sx in prep:
+                xs, ys = [], []
+                for k in picked:
+                    if k not in by: continue
+                    b0 = rng.gauss(0, 1)
+                    for xv in by[k]:
+                        e = rng.gauss(0, 1)
+                        xs.append(xv)
+                        ys.append(a.rho*(xv-mx)/sx
+                                  + cb*(math.sqrt(icc)*b0 + math.sqrt(1-icc)*e))
+                r = spearman(xs, ys)
+                if r is None or len(xs) < 5:
+                    pv.append((1.0, ax)); continue
+                zz = math.atanh(max(-0.999999, min(0.999999, r)))*math.sqrt(len(xs)-3)
+                pv.append((norm_sf2(zz), ax))
+            # Holm step-down
+            pv.sort()
+            mm = len(pv)
+            for i, (pval, ax) in enumerate(pv):
+                if pval <= a.alpha/(mm-i):
+                    cnt[ax] += 1
+                else:
+                    break
+        return {ax: cnt[ax]/float(a.boot) for _ax, _b, _k, _i, _m, _s in prep
+                for ax in [_ax]}
+
+    # 결합 절차에서 전 축이 80% 를 넘는 최소 시드
+    lo_, hi_ = 2, 8
+    while min(holm_power(hi_).values()) < 0.80 and hi_ < 4000:
+        lo_, hi_ = hi_, hi_*2
+    while lo_ + 1 < hi_:
+        mid = (lo_+hi_)//2
+        if min(holm_power(mid).values()) >= 0.80: hi_ = mid
+        else: lo_ = mid
+    S80 = hi_
+    pw = holm_power(S80)
+    print('%-18s %14s %14s' % ('축', 'Holm 검정력', '독립 α/m 시드'))
+    print('-'*48)
+    ind = {r[0]: r[1] for r in out_rows}
+    for ax in [r[0] for r in rows]:
+        print('%-18s %13.1f%% %14d' % (ax, 100*pw.get(ax, 0.0), ind.get(ax, 0)))
+    print('-'*48)
+    print('결합 Holm 에서 전 축 power>=80%% 인 최소 시드 : **%d**' % S80)
+    print('독립 α/m 근사의 병목 : %d 시드' % max(ind.values()))
+    print()
+    # 그 시드에서의 실제 규모
+    print('## %d 시드에서의 예상 규모' % S80)
+    print('%-18s %12s %12s' % ('축', '예상 player', 'eligible'))
+    print('-'*44)
+    for ax, per_seed, deff, rho_obs in rows:
+        print('%-18s %12d %12d' % (ax, S80*24, int(round(S80*per_seed))))
+    print('-'*44)
+    print('테이블핸드 %d (시드당 378)   4코어 약 %.0f분'
+          % (S80*378, S80*378*0.10/4/60))
+
+
+if __name__ == '__main__':
+    main()
