@@ -55,19 +55,29 @@ def branch_of(why):
 
 
 # 축마다 (분기, 스트리트 조건). None 이면 스트리트 무관.
+# (분기, 스트리트, rel 상한). rel 상한은 코드에 이미 있는 값만 쓴다 —
+# plan.py:940 `if has_c and rel < 0.85` 가 thin_value 배수의 적용 구간이고,
+# plan.py:945 `if rel >= 0.65` 부터 천장 곡선이 f 를 0.97 로 밀어올린다.
 AXES = {
-    'cbet_flop':        ('cbet_dev', 'flop'),
-    'barrel_turn':      ('cbet_dev', 'turn'),
-    'barrel_river':     ('cbet_dev', 'river'),
-    'bluff':            ('bluff',    None),
-    'blockbet':         ('block',    None),
-    'potcontrol':       ('potcontrol', None),
-    'thin_value_turn':  ('value',    ('flop', 'turn')),
-    'thin_value_river': ('value',    'river'),
-    'aggression':       ('value',    None),
-    'discipline':       ('cbet_dev', None),
+    'cbet_flop':        ('cbet_dev', 'flop', None),
+    'barrel_turn':      ('cbet_dev', 'turn', None),
+    'barrel_river':     ('cbet_dev', 'river', None),
+    'bluff':            ('bluff',    None, None),
+    'blockbet':         ('block',    None, None),
+    'thin_value_turn':  ('value',    ('flop', 'turn'), 0.85),
+    'thin_value_turn<65': ('value',  ('flop', 'turn'), 0.65),
+    'thin_value_river': ('value',    'river', 0.85),
+    'aggression':       ('value',    None, None),
+    'discipline':       ('cbet_dev', None, None),
 }
-TEMPER = {'aggression', 'discipline'}
+# 축 이름이 지표 이름과 다른 경우
+AXIS_KEY = {'thin_value_turn<65': 'thin_value_turn'}
+
+# potcontrol 은 분기 안 f 로 재면 안 된다. pot_control 분기의 확률식은
+#   rel<0.30 → 0.04,  아니면 0.18 + 0.035*aggr
+# 로 **축이 아예 들어가지 않는다** (CLAUDE.md: 확률식 _pc_p 에 축이 없다).
+# 축이 하는 일은 그 계획으로 **라우팅**하는 것이므로 라우팅 비율로 잰다.
+ROUTING = {'potcontrol': 'pot_control'}
 
 
 def run_one(args):
@@ -194,50 +204,78 @@ def main():
     print('분기 분포:', dict(bc.most_common()))
     print()
 
-    hdr = ('%-18s %7s %8s %8s %8s %8s | %8s %8s %7s | %8s %6s'
-           % ('축', '총기회', '인당중앙', '인당0%', 'f중앙', 'fIQR',
-              '축→f ρ', 'n', '벳률', 'split r', 'n'))
+    hdr = ('%-20s %7s %7s %6s %7s %7s | %8s %5s | %8s %5s %8s | %7s %5s'
+           % ('축', '총기회', '인당중앙', '0%', 'f중앙', 'fIQR',
+              'ρ(전원)', 'n', 'ρ(≥%d)' % a.half_min, 'n', '벳률ρ',
+              'split r', 'n'))
     print(hdr); print('-'*len(hdr))
 
-    for ax, (br, stt) in AXES.items():
+    for ax, (br, stt, relmax) in AXES.items():
+        key = AXIS_KEY.get(ax, ax)
         sel = [r for r in rows if r['branch'] == br and
                (stt is None or (r['street'] == stt if isinstance(stt, str)
-                                else r['street'] in stt))]
+                                else r['street'] in stt)) and
+               (relmax is None or (r['rel'] is not None and r['rel'] < relmax))]
         per = collections.defaultdict(list)
         for r in sel: per[r['key']].append(r)
-        # 분모 분포는 **모든 플레이어** 기준이다 (기회 0 도 센다)
         counts = [len(per.get(k, [])) for k in AX]
         n0 = 100.0*sum(1 for c in counts if c == 0)/max(1, len(counts))
         med = stat.median(counts) if counts else 0
         if not sel:
-            print('%-18s %7d %8.1f %7.0f%% %8s %8s | %8s %8s %7s | %8s %6s'
-                  % (ax, 0, med, n0, '-', '-', '-', '-', '-', '-', '-'))
+            print('%-20s %7d %7.1f %5.0f%% %7s %7s | %8s %5s | %8s %5s %8s | %7s %5s'
+                  % (ax, 0, med, n0, '-', '-', '-', '-', '-', '-', '-', '-', '-'))
             continue
         fs = [r['f'] for r in sel]
-        # 축 → f (플레이어 평균 f)
         ks = [k for k in per if per[k]]
-        xv = [AX[k][ax] for k in ks]
-        yv = [stat.mean(x['f'] for x in per[k]) for k in ks]
-        rho = spearman(xv, yv)
-        bv = [stat.mean(x['bet'] for x in per[k]) for k in ks]
-        rho_b = spearman(xv, bv)
-        # split-half (홀/짝)
+        fmt = lambda v: ('%+.3f' % v) if v is not None else '  -  '
+
+        def rho_on(subset):
+            if len(subset) < 4: return None, len(subset)
+            x = [AX[k][key] for k in subset]
+            y = [stat.mean(z['f'] for z in per[k]) for k in subset]
+            return spearman(x, y), len(subset)
+
+        rho_all, n_all = rho_on(ks)
         hk = [k for k in ks if len(per[k]) >= a.half_min]
+        rho_h, n_h = rho_on(hk)
+        # 벳률은 신뢰도와 같은 집단에서 낸다
         if len(hk) >= 4:
-            h1 = [stat.mean(x['f'] for x in per[k][0::2]) for k in hk]
-            h2 = [stat.mean(x['f'] for x in per[k][1::2]) for k in hk]
+            rb = spearman([AX[k][key] for k in hk],
+                          [stat.mean(z['bet'] for z in per[k]) for k in hk])
+            h1 = [stat.mean(z['f'] for z in per[k][0::2]) for k in hk]
+            h2 = [stat.mean(z['f'] for z in per[k][1::2]) for k in hk]
             rh = spearman(h1, h2)
         else:
-            rh = None
-        fmt = lambda v: ('%+.3f' % v) if v is not None else '  -  '
-        print('%-18s %7d %8.1f %7.0f%% %8.3f %8.3f | %8s %8d %7s | %8s %6d'
+            rb = rh = None
+        print('%-20s %7d %7.1f %5.0f%% %7.3f %7.3f | %8s %5d | %8s %5d %8s | %7s %5d'
               % (ax, len(sel), med, n0, stat.median(fs), iqr(fs),
-                 fmt(rho), len(ks), fmt(rho_b), fmt(rh), len(hk)))
+                 fmt(rho_all), n_all, fmt(rho_h), n_h, fmt(rb), fmt(rh), len(hk)))
+
+    # ---- 라우팅 축 ----
+    print()
+    print('## 라우팅 축 — 분기 안 f 가 아니라 "그 계획으로 가는 비율"')
+    post = collections.defaultdict(list)
+    for r in rows:
+        if r['branch'] != 'giveup_noinit':
+            post[r['key']].append(r)
+        else:
+            post[r['key']].append(r)
+    for ax, planname in ROUTING.items():
+        ks = [k for k in post if len(post[k]) >= a.half_min]
+        if len(ks) < 4:
+            print('  %-16s 표본 부족' % ax); continue
+        x = [AX[k][ax] for k in ks]
+        y = [sum(1 for z in post[k] if z['plan'] == planname)/len(post[k]) for k in ks]
+        h1 = [sum(1 for z in post[k][0::2] if z['plan'] == planname)/max(1, len(post[k][0::2])) for k in ks]
+        h2 = [sum(1 for z in post[k][1::2] if z['plan'] == planname)/max(1, len(post[k][1::2])) for k in ks]
+        print('  %-16s 라우팅률 중앙 %.3f   축→라우팅 ρ %+0.3f (n=%d)   split r %s'
+              % (ax, stat.median(y), spearman(x, y) or 0.0, len(ks),
+                 fmt(spearman(h1, h2))))
 
     print()
-    print('축→f ρ : 플레이어 평균 f 대 축 값 (Spearman).  벳률 : 같은 분모의 실현 벳')
-    print('split r: 인당 기회 >= %d 인 플레이어에서 홀/짝 반분 신뢰도.' % a.half_min)
-    print('         관측 가능한 ρ 의 상한은 대략 sqrt(r) 이다.')
+    print('ρ(전원)  : 기회 >= 1 인 전원. 1건짜리가 많으면 상황 노이즈가 ρ 를 누른다')
+    print('ρ(>=%d)  : split-half 와 **같은 집단**. 두 숫자는 이쪽끼리 비교해야 한다' % a.half_min)
+    print('split r : 홀/짝 반분 신뢰도. 관측 가능한 ρ 의 상한은 대략 sqrt(r)')
 
 
 if __name__ == '__main__':
