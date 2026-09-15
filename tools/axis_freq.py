@@ -196,6 +196,64 @@ def L_resist(sits, prof):
             '레이즈 %': 100*acts['raise']/n}
 
 
+def L_bias_resp(sits, prof):
+    """decide_response:827-832 가 읽는 편향 셋. 날것과 clamp 후를 둘 다.
+
+    **이 셋은 직접 설정할 수 없는 파생 축이다.** persona.bias 가 기질·개념에서
+    계산한다. 특히 bluff_fear 와 hero_call 은 bluffcatch_river·aggression 을
+    **반대 부호로** 공유해서 서로 독립적으로 흔들 수 없다 — 하나를 올리면
+    다른 하나가 내려간다. 그래서 '축'이 아니라 **중간값**으로 기록한다.
+    """
+    out = {}
+    for nm in ('station', 'bluff_fear', 'hero_call'):
+        raw = PS.bias(prof, nm)
+        out['%s 날것' % nm] = raw
+        out['%s clamp후' % nm] = max(0.0, raw)
+    return out
+
+
+def L_resist_flip(sits, prof):
+    """저항 대응 — 분포와 **행동 질량이 어디로 옮겨갔는지**를 같이 낸다.
+
+    폴드율 하나만 보면 해석이 갈린다. range_read 를 올려 폴드가 늘었을 때
+    그게 '상대를 세게 읽어 접었다'인지 '레이즈·콜이 줄어든 결과'인지
+    전환표 없이는 구분할 수 없다. 기준은 레벨 5 다.
+    """
+    acts = Counter(); flips = Counter(); n = 0; needs = []
+    for s in sits:
+        ps = s['plan_fixed']
+        if ps is None or s.get('base_act') is None: continue
+        try:
+            (a_, _amt), _eq, _nd = PL.act_with_plan(
+                s['hero'], s['board'], prof, copy.deepcopy(ps),
+                s['pot'], s['tocall'], s['stack'], s['street'],
+                initiative=s['initiative'], oop=s['oop'],
+                opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                to_act_behind=s['to_act_behind'], opp_est=s['est'],
+                read=s['read'])
+        except Exception:
+            continue
+        n += 1; acts[a_] += 1
+        # 체감 need 를 같이 낸다. 행동이 안 바뀌어도 문턱은 움직일 수 있다 —
+        # 그 둘을 구분해야 '축이 죽었다'와 '계수가 작다'가 갈린다.
+        if _nd is not None: needs.append(_nd)
+        if a_ != s['base_act']:
+            flips['%s→%s' % (s['base_act'], a_)] += 1
+    n = max(1, n)
+    out = {'폴드 %': 100*acts['fold']/n, '콜 %': 100*acts['call']/n,
+           '레이즈 %': 100*acts['raise']/n,
+           '체감 need 중앙': ST.median(needs) if needs else float('nan'),
+           # 중앙값만 보면 분산 변화를 놓친다. calc_noise 의 σ 는 개념이
+           # 낮을수록 크므로, 중앙이 같아도 양끝으로 퍼져 행동이 갈릴 수 있다.
+           '체감 need 사분위폭': ((sorted(needs)[int(.75*len(needs))]
+                              - sorted(needs)[int(.25*len(needs))])
+                             if len(needs) > 4 else float('nan'))}
+    for k in ('fold→call', 'fold→raise', 'call→fold', 'call→raise',
+              'raise→fold', 'raise→call'):
+        out['  ' + k] = flips[k]
+    return out
+
+
 LAYER = OrderedDict([
     ('open',     (L_open,     '프리플랍 오픈 폭')),
     ('defend',   (L_defend,   '프리플랍 방어 구간')),
@@ -204,6 +262,8 @@ LAYER = OrderedDict([
     ('plan',     (L_plan,     '계획 라벨 분포 + pc 중간값')),
     ('noresist', (L_noresist, '무저항 실행 (계획 고정)')),
     ('resist',   (L_resist,   '저항 대응 (계획 고정)')),
+    ('bias_resp', (L_bias_resp, '응답 편향 중간값 (날것 / clamp 후)')),
+    ('resist_flip', (L_resist_flip, '저항 대응 + 전환표 (기준 = 레벨 5)')),
 ])
 
 # AXIS_FREQ_PLAN.md 2-1/2-2 의 표를 그대로 옮긴 것이다. 고정축을 바꾸려면
@@ -241,6 +301,30 @@ AXES = OrderedDict([
         layers=['plan'],
         hold={'checkraise_flop': 5, 'checkraise_late': 5, 'slowplay_taste': 5,
               'overbet': 5})),
+    # ---- 3단계: 응답 축 ----
+    # station·bluff_fear·hero_call 은 여기 없다. 파생 축이라 직접 못 흔든다.
+    # bias_resp 층이 중간값으로 기록한다.
+    ('reraise', dict(
+        layers=['resist_flip'],
+        hold={'aggression': 5, 'bluff': 5, 'stackoff': 5, 'semibluff': 5,
+              'gamble': 5, 'discipline': 5})),
+    ('potodds', dict(
+        layers=['bias_resp', 'resist_flip'],
+        hold={'looseness': 5, 'gamble': 5, 'discipline': 5, 'outs': 5,
+              'range_read': 5, 'reraise': 5})),
+    ('range_read', dict(
+        layers=['bias_resp', 'resist_flip'],
+        hold={'sizing_tell': 5, 'attention': 5, 'adaptability': 5,
+              'bluffcatch_river': 5, 'bluffcatch_early': 5, 'aggression': 5,
+              'discipline': 5, 'potodds': 5, 'reraise': 5})),
+    ('bluffcatch_early', dict(
+        layers=['bias_resp', 'resist_flip'],
+        hold={'bluffcatch_river': 5, 'range_read': 5, 'aggression': 5,
+              'potodds': 5, 'reraise': 5})),
+    ('bluffcatch_river', dict(
+        layers=['bias_resp', 'resist_flip'],
+        hold={'bluffcatch_early': 5, 'range_read': 5, 'aggression': 5,
+              'tilt_prone': 5, 'potodds': 5, 'reraise': 5})),
     # trap 의 짝. trap_judgment:218 은 tool = 0.07*trap + 0.12*checkraise 라
     # 실행 쪽 무게가 1.7배다. trap 만 흔들어 작게 나온 것이 '층이 죽어서'가
     # 아님을 보이려면 이쪽을 같이 재야 한다.
@@ -281,7 +365,8 @@ def main():
         sits.append(s)
 
     # 실행 층은 **계획을 고정**한다 (기준 프로필로 한 번만 만든다).
-    need_exec = any(l in spec['layers'] for l in ('noresist', 'resist'))
+    need_exec = any(l in spec['layers']
+                    for l in ('noresist', 'resist', 'resist_flip'))
     if need_exec:
         p0 = build(base, a.axis, 5, spec['hold'])
         for s in sits:
@@ -293,6 +378,22 @@ def main():
                     initiative=s['initiative'], opp_est=s['est'])
             except Exception:
                 s['plan_fixed'] = None
+        # 전환표의 기준선. 레벨 5 의 행동을 상황마다 박아 둔다.
+        if 'resist_flip' in spec['layers']:
+            for s in sits:
+                s['base_act'] = None
+                if s['plan_fixed'] is None: continue
+                try:
+                    (a_, _m), _e, _n = PL.act_with_plan(
+                        s['hero'], s['board'], p0, copy.deepcopy(s['plan_fixed']),
+                        s['pot'], s['tocall'], s['stack'], s['street'],
+                        initiative=s['initiative'], oop=s['oop'],
+                        opp_range=s['opp_range'], seed=s['seed'], n_opp=1, bf=1.0,
+                        to_act_behind=s['to_act_behind'], opp_est=s['est'],
+                        read=s['read'])
+                    s['base_act'] = a_
+                except Exception:
+                    pass
 
     print('# %s — 층별 빈도. n=%d, %s' % (a.axis, len(sits), a.street))
     print('# 고정: %s' % ', '.join('%s=%g' % kv for kv in sorted(spec['hold'].items())))
