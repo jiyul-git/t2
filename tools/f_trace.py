@@ -140,6 +140,10 @@ def run_one(args):
     for pid, pr in prof.items():
         axv[pid] = dict(pr['concepts'])
         axv[pid].update({k: v for k, v in pr['temper'].items()})
+        # 잠재요인. 편상관 통제에 필요하다 (ANALYSIS_PLAN 2절).
+        # 접두사를 붙여 축 이름과 충돌하지 않게 한다.
+        for _k, _v in (pr.get('latent') or {}).items():
+            axv[pid]['_lat_' + _k] = _v
     return rec, axv, len(f.errors)
 
 
