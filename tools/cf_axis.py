@@ -39,7 +39,9 @@ SITE = {
     'pf_range':        ('PRE',  'open_pct'),
     'positional':      ('PRE',  'open_pct'),
     'pf_defend':       ('PRE',  'defend_tp', 'defend_tot'),
-    'aggression':      ('BOTH', 'defend_tp'),      # 프리플랍 tp + 포스트플랍 밸류
+    # aggression 은 persona.open_pct 에도 들어간다 (axis_sites 22곳 중 하나).
+    # 처음에 defend_tp 만 넣어 PRE 효과를 일부 놓쳤다 — CF_RESULT_LEVEL1 0절.
+    'aggression':      ('BOTH', 'defend_tp', 'open_pct'),
     'discipline':      ('POST',),
     'bluff':           ('POST',),
     'potcontrol':      ('POST',),
@@ -58,6 +60,62 @@ INVAR_EXEMPT = {
     'draw_love':     ('rel',), 'overpair_love': ('rel',),
     'outs':          ('outs',),
 }
+
+
+class RecordRandom:
+    """원본 호출이 뽑은 난수를 순서대로 기록한다."""
+    def __init__(self, base):
+        self._r = base
+        self.log = []
+    def _c(self, name, *a, **k):
+        v = getattr(self._r, name)(*a, **k)
+        self.log.append((name, a, v))
+        return v
+    def random(self):            return self._c('random')
+    def gauss(self, m, s):       return self._c('gauss', m, s)
+    def uniform(self, a, b):     return self._c('uniform', a, b)
+    def randrange(self, *a):     return self._c('randrange', *a)
+    def randint(self, a, b):     return self._c('randint', a, b)
+    def choice(self, s):         return self._c('choice', s)
+    def shuffle(self, s):        return self._c('shuffle', s)
+    def sample(self, p, k):      return self._c('sample', p, k)
+    def betavariate(self, a, b): return self._c('betavariate', a, b)
+
+
+class ReplayRandom:
+    """기록된 난수를 **같은 순서로** 돌려준다. 다 쓰면 예비 RNG 로 넘어간다.
+
+    decide_response 는 rng 를 5곳에서 쓰고 조기 반환이 많다(plan.py:724·
+    749·775·787·806). 축을 바꾸면 분기가 달라져 소비 횟수가 어긋나므로
+    CRN 이 구조적으로 보장되지 않는다. 같은 난수열을 먹여야
+    "행동이 달라진 것이 축 때문인가 주사위 때문인가" 를 가를 수 있다.
+
+    소비 횟수가 원본과 다르면 rng_shifted 로 분류한다 (CF_DESIGN 2-3).
+    """
+    def __init__(self, log, spare_seed=0):
+        self._log = log
+        self._i = 0
+        self._spare = random.Random(spare_seed)
+        self.n = 0
+        self.overrun = 0
+    def _next(self, name, *a):
+        self.n += 1
+        if self._i < len(self._log):
+            nm, la, v = self._log[self._i]
+            self._i += 1
+            if nm == name:
+                return v
+        self.overrun += 1
+        return getattr(self._spare, name)(*a)
+    def random(self):            return self._next('random')
+    def gauss(self, m, s):       return self._next('gauss', m, s)
+    def uniform(self, a, b):     return self._next('uniform', a, b)
+    def randrange(self, *a):     return self._next('randrange', *a)
+    def randint(self, a, b):     return self._next('randint', a, b)
+    def choice(self, s):         return self._next('choice', s)
+    def shuffle(self, s):        return self._next('shuffle', s)
+    def sample(self, p, k):      return self._next('sample', p, k)
+    def betavariate(self, a, b): return self._next('betavariate', a, b)
 
 
 class CountRandom:
@@ -157,6 +215,37 @@ def run_one(args):
 
     PL.attach_intent = wrap_ai
 
+    # ---- 응답 층 개입 지점 (decide_response) ----
+    # discipline·bluff·aggression 이 여기에도 들어간다. Level 1 초판이
+    # decide_aggression 만 덮어 이 경로를 통째로 놓쳤다.
+    resp = []
+    _odr = PL.decide_response
+    def wrap_dr(profile, hero, board, street, plan, plan_state, eq, need,
+                made_now, opp_range, pot, tocall, stack_, committed, rng):
+        rec_rng = RecordRandom(rng)
+        out = _odr(profile, hero, board, street, plan, plan_state, eq, need,
+                   made_now, opp_range, pot, tocall, stack_, committed, rec_rng)
+        base_act = out[0] if isinstance(out, tuple) else None
+        n0 = len(rec_rng.log)
+        for ax in post_axes:
+            r = {'pid': profile.get('id'), 'street': street, 'axis': ax,
+                 'plan': plan, 'act0': base_act, 'n0': n0}
+            for tag, val in (('lo', LO), ('hi', HI)):
+                rp = ReplayRandom(rec_rng.log, spare_seed=1234)
+                try:
+                    o2 = _odr(swap(profile, ax, val), hero, board, street, plan,
+                              plan_state, eq, need, made_now, opp_range, pot,
+                              tocall, stack_, committed, rp)
+                    r['act_'+tag] = o2[0] if isinstance(o2, tuple) else None
+                    r['need_'+tag] = o2[2] if isinstance(o2, tuple) and len(o2) > 2 else None
+                except Exception:
+                    r['act_'+tag] = None; r['need_'+tag] = None
+                r['n_'+tag] = rp.n
+                r['over_'+tag] = rp.overrun
+            resp.append(r)
+        return out
+    PL.decide_response = wrap_dr
+
     # ---- 프리플랍 개입 지점 ----
     import persona as PS
     import preflop as PF
@@ -211,9 +300,10 @@ def run_one(args):
             f.notes = []
     finally:
         PL.attach_intent = _oai
+        PL.decide_response = _odr
         PS.open_pct = _op
         PF.defend_thresholds = _dt
-    return rows, da_rng_used[0], len(f.errors), pre
+    return rows, da_rng_used[0], len(f.errors), pre, resp
 
 
 def main():
@@ -238,6 +328,7 @@ def main():
     da_rng = max(o[1] for o in out) if out else 0
     errs = sum(o[2] for o in out)
     pre = [r for o in out for r in o[3]]
+    resp = [r for o in out for r in o[4]]
 
     print('# ⑤ 반사실 개입 (Level 1, 주지표=action flip)')
     print('  entries=%d hpl=%d stack=%d  시드 %d개  축 %s'
@@ -283,6 +374,29 @@ def main():
         print('  %-16s 중앙 %+0.4f   5%% %+0.4f   95%% %+0.4f   |Δ|>0.01 인 비율 %.1f%%'
               % (ax, stat.median(d), g(0.05), g(0.95),
                  100.0*sum(1 for x in d if abs(x) > 0.01)/len(d)))
+    if resp:
+        print()
+        print('## 응답 층 (decide_response) — fold/call/raise')
+        print('%-16s %8s %10s %10s %10s %10s'
+              % ('축', '호출', 'act flip', 'RNG정렬', 'shifted', '주요 전환'))
+        print('-'*70)
+        for ax in axes:
+            sel = [r for r in resp if r['axis'] == ax and r.get('act_lo')
+                   and r.get('act_hi')]
+            if not sel: continue
+            al = [r for r in sel if r['n_lo'] == r['n0'] and r['n_hi'] == r['n0']
+                  and r['over_lo'] == 0 and r['over_hi'] == 0]
+            sh = len(sel) - len(al)
+            fl = [r for r in al if r['act_lo'] != r['act_hi']]
+            tr = collections.Counter('%s→%s' % (r['act_lo'], r['act_hi']) for r in fl)
+            print('%-16s %8d %9.1f%% %9.0f%% %10d  %s'
+                  % (ax, len(sel), 100.0*len(fl)/max(1, len(al)),
+                     100.0*len(al)/len(sel), sh,
+                     ' '.join('%s×%d' % (k, v) for k, v in tr.most_common(3))))
+        print()
+        print('  RNG정렬 : 원본과 소비 횟수가 같은 비율. shifted 는 집계에서 제외했다')
+        print('  decide_response 는 조기 반환이 많아 CRN 이 구조적으로 보장되지 않는다')
+
     if pre:
         print()
         print('## 프리플랍 층 (open_pct / defend_thresholds)')
@@ -308,9 +422,11 @@ def main():
             nz = sum(1 for r in sel if abs(r['f_hi']-r['f_lo']) > 1e-12)
             fl = sum(1 for r in sel if r['act_lo'] != r['act_hi'])
             pz = sum(1 for r in pre if r['axis'] == ax and abs(r['hi']-r['lo']) > 1e-12)
-            print('  %-12s f 변화 %d건 / action flip %d건 / %d결정 | 프리플랍 변화 %d건'
-                  % (ax, nz, fl, len(sel), pz))
-            if nz or fl or pz: ok = False
+            rz = sum(1 for r in resp if r['axis'] == ax
+                     and r.get('act_lo') != r.get('act_hi'))
+            print('  %-12s f변화 %d / action flip %d / %d결정 | PRE %d | 응답 flip %d'
+                  % (ax, nz, fl, len(sel), pz, rz))
+            if nz or fl or pz or rz: ok = False
         print()
         print('  ⑤의 위약은 **결정론적**이다. 정확히 0 이어야 하고 표본 변동을')
         print('  허용하지 않는다. 0 이 아니면 개입 코드가 프로필 사본을 잘못')
