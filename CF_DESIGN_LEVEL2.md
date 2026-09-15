@@ -51,8 +51,14 @@ T > D + M          상호작용이 있다 (계획과 실행이 같은 방향으�
 T < D + M          상쇄가 있다
 ```
 
-`T = D + M` 이 성립하지 않을 수 있다는 것을 **미리 적어둔다.**
-비선형 경로이므로 가산성을 가정하지 않는다.
+**위 판정은 해석 규칙이지 수학적 검정식이 아니다.**
+`T ≈ D` 의 `≈` 에 임계값을 정하지 않는다 — 네 팔의 수치를 그대로 싣고
+경로를 비교한다.
+
+`T = D + M` 가산성을 가정하지 않는다. `make_plan` 에서 계획이 바뀌면
+**이후 실행 경로 자체가 달라지고 난수 소비량도 달라질 수 있어서**,
+단순 가산 분해가 성립한다고 볼 근거가 없다. 네 팔을 **독립적으로
+측정한 뒤 경로를 비교**하는 것이 가장 안전하다.
 
 ---
 
@@ -78,9 +84,41 @@ attach_intent(...)                  ← Level 1 이 덮은 곳
 **개입 대상**: `make_plan` · `revise_plan` · `refresh` · `river_fix` ·
 `_allowed`. 즉 `attach_intent` **직전까지**.
 
-축별로 어느 함수를 타는지는 `tools/axis_sites.py` 로 전수 확인한 뒤
-`SITE_L2` 표에 박는다. **Level 1 에서 `aggression → open_pct` 를
-빠뜨린 것과 같은 실수를 반복하지 않는다.**
+### `SITE_L2` — 전수 확인 결과 (`plan.py` 안의 소비 함수)
+
+```
+축                 L2 계획층                                    L1 실행층
+potcontrol        _allowed×2 · make_plan×3                     **없음**
+bluff             _allowed×2 · line_bluff_prior ·               cbet_freq · decide_aggression×2
+                  make_plan×4 · river_fix                       · decide_response×2
+aggression        checkraise_decision · make_plan×2             8곳
+thin_value_turn   make_plan×1                                  decide_aggression×1
+cbet_flop         **없음**                                      cbet_freq×1
+discipline        **없음**                                      decide_aggression · decide_response
+looseness         **없음**                                      **없음** (plan.py 안에)
+```
+
+**이것이 Level 2 의 범위를 결정한다.**
+
+```
+Level 2 가 의미 있는 축   potcontrol · bluff · aggression · thin_value_turn
+M = 0 이 구조적으로 확정   cbet_flop · discipline   (계획층 소비처가 없다)
+Level 2 대상 아님          looseness (plan.py 안에 소비처가 없다.
+                          소비처는 persona·preflop·reads 이고 Level 1 이 덮었다)
+```
+
+### Level 1 의 `potcontrol` 0.0% 가 구조로 설명된다
+
+`potcontrol` 은 **실행층 소비처가 하나도 없다.** Level 1 에서 POST 0.0% ·
+응답 0.0% 가 나온 것은 표본 문제도 효과 없음도 아니라 **구조적으로 그럴
+수밖에 없는 것**이었다. 소비처 5곳이 전부 `make_plan`(3) 과
+`_allowed`(2) 다.
+
+`tools/axis_sites.py` 만 봤을 때는 "plan:make_plan×3" 으로 보여서 실행
+층에도 뭔가 있을 것처럼 읽었다. 함수 단위로 L1/L2 를 갈라야 드러난다.
+
+**Level 1 에서 `aggression → open_pct` 를 빠뜨린 것과 같은 실수를
+반복하지 않으려고 전수 확인했고, 실제로 범위가 바뀌었다.**
 
 ---
 
@@ -120,9 +158,24 @@ ReplayRandom   개입 팔에 같은 순서로 먹인다
 (`plan.py:265`). 밖에서 래퍼를 끼울 수 없으므로 `plan.random` 을
 shim 으로 교체해 `Random(seed)` 가 기록·재생 객체를 돌려주게 한다.
 
-**게이트 축은 `rng_shifted` 비율이 높을 것으로 예상한다.** 그 비율 자체를
-결과로 보고하고, 정렬된 부분집합에서만 효과를 낸다. 정렬 비율이 너무
-낮으면 **그 축은 Level 2 로 측정 불가**라고 기록한다.
+**게이트 축은 `rng_shifted` 비율이 높을 것으로 예상한다.** 정렬 비율이
+너무 낮으면 **그 축은 Level 2 로 측정 불가**라고 기록한다.
+
+### `rng_shifted` 가 많은 것을 효과로 읽지 않는다
+
+`rng_shifted` 비율이 높다는 것은 **그 축의 효과가 크다는 뜻이 아니다.**
+반사실 쌍을 동일한 확률 실현으로 비교할 수 없다는 **측정 가능성 문제**다.
+
+축마다 넷을 함께 싣는다.
+
+```
+total   aligned   rng_shifted   alignment_rate
+```
+
+`potcontrol` 은
+`축 교란 → PS.sk 변화 → _allowed/make_plan 게이트 → 난수 소비 여부 변화
+→ 이후 분기` 경로를 타므로, **같은 seed 를 넣었다고 CRN 이 유지되는 것이
+아니다.**
 
 ---
 
@@ -165,8 +218,25 @@ rng_aligned          정렬 비율
 invariant pass       불변량 통과 비율
 ```
 
-`plan≠ & action=` 과 `plan= & action≠` 의 **두 칸이 이번 실험의 핵심
-출력**이다. 0절 질문에 직접 답한다.
+**세 칸이 이번 실험의 핵심 출력**이다.
+
+```
+plan= & action≠     계획은 같은데 행동이 바뀌었다        → 직접 효과
+plan≠ & action=     계획은 바뀌었는데 실행 층이 흡수했다  → 전달 실패
+plan≠ & action≠     계획도 행동도 바뀌었다               → 아래 주의
+```
+
+`plan≠ & action≠` 이 Level 2 에서 오히려 중요하다. 이 칸에는 두 가지가
+섞여 있다.
+
+```
+계획 매개 효과가 최종 행동까지 전달된 경우
+계획 변화와 **별도의** 실행 효과가 동시에 존재하는 경우
+```
+
+**이 칸을 인과적으로 분해해 "이 변화 중 X% 는 계획 때문" 이라고
+계산하지 않는다.** 가산성을 가정하지 않기로 했으므로 경로별 관찰
+결과로만 남긴다. 팔 M 과 팔 D 의 수치를 나란히 두고 읽는다.
 
 ---
 
@@ -191,8 +261,9 @@ entries=24 · hpl=12 · start_stack=30000    ④·⑤ Level 1 과 동일
 시드          5000–5054 (55개). 같은 궤적 위에서 개입
 개입 값        1 과 9
 축            potcontrol · aggression 을 먼저 (0절 질문의 두 후보)
-             그 다음 discipline · bluff · thin_value_turn · cbet_flop
-             looseness 는 make_plan 소비처가 없으므로 제외 — 확인 후 결정
+             그 다음 bluff · thin_value_turn
+             cbet_flop · discipline 은 M=0 타당성 검사로만
+             looseness 는 **제외** — plan.py 안에 소비처가 없다 (확인 완료)
 ```
 
 ---
@@ -203,15 +274,23 @@ Level 1 에서 예측 둘이 다 틀렸다. 그래도 적어둔다 — 적어두
 결과를 보고 설명을 만들게 된다.
 
 ```
-potcontrol    D ≈ 0 (Level 1 에서 이미 0), M 이 크게 나올 것
-              → "계획을 바꿔서 행동을 바꾼다" 의 사례
+potcontrol    D = 0 (구조적으로 확정. 실행층 소비처 없음)
+              M 이 크게 나올 것 → "계획을 바꿔서 행동을 바꾼다" 의 사례
 aggression    D 가 크고 M 도 0 이 아닐 것
-              → make_plan×2 소비처가 있으므로 계획 경로도 있다
-cbet_flop     D 작음(1.0%). M 은 모른다 — 예측하지 않는다
-rng_shifted   potcontrol 에서 가장 높을 것 (게이트 축)
+              → make_plan×2 · checkraise_decision 소비처가 있다
+bluff         D 와 M 이 둘 다 있을 것. make_plan×4 로 계획층 소비처가
+              가장 많은 축이다
+rng_shifted   potcontrol 에서 가장 높을 것 (게이트 축, _allowed×2)
+cbet_flop     M = 0 (구조적으로 확정. 계획층 소비처 없음)
+discipline    M = 0 (구조적으로 확정. 계획층 소비처 없음)
+thin_value_turn   예측하지 않는다 — make_plan×1 뿐이라 근거가 약하다
 ```
 
-**`cbet_flop` 의 M 은 근거가 없어 예측하지 않는다.** 근거 없는 예측을
+**구조적으로 확정된 것(`potcontrol` D=0, `cbet_flop`·`discipline` M=0)은
+예측이 아니라 타당성 검사다.** 실험에서 0 이 안 나오면 개입 코드가
+틀린 것이다 — 위약과 같은 역할이다.
+
+`thin_value_turn` 의 M 은 근거가 약해 예측하지 않는다. 근거 없는 예측을
 적으면 맞아도 우연이고 틀려도 배울 게 없다.
 
 ---
