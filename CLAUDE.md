@@ -301,6 +301,19 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
   `looseness` 는 날것이 −0.36→+0.36 로 완전 선형인데 clamp 후 하위 절반이 0,
   `discipline` 은 상위 절반이 0. 빈도만 보면 '무반응'으로 오독한다 —
   **중간값(날것/clamp 후)을 반드시 같이 기록할 것** (`TRACE_AXIS_FREQ.md`)
+- **`bluff_fear` 와 `hero_call` 은 거의 완전한 거울상이다.** 둘 다 `persona.bias`
+  파생값이고 `bluffcatch_river`·`aggression` 을 **반대 부호로** 공유한다
+  (bcr 1→9 에서 0.554→−0.086 vs −0.559→0.161). 독립적으로 흔들 수 없다 —
+  축이 아니라 중간값으로 다룰 것
+- **`potodds` 는 `station` 과 고정으로 분리할 수 없다.** `station` 식이
+  `potodds` 를 −0.30 가중으로 직접 읽는다. 그래서 `potodds` 를 흔들면 `station`
+  이 필연적으로 움직인다. 실측에서 폴드율이 ∩ 모양으로 나오는 원인 중 하나다
+  (체감 need 는 중앙·분산 둘 다 단조 감소인데 행동은 ∩)
+- `bluffcatch_early` 는 플랍·턴, `bluffcatch_river` 는 리버 축이다. **그 스트리트
+  에서 재야 한다** — 리버 축을 플랍에서 재서 ◐ 로 잘못 볼 뻔했다.
+  그리고 `decide_response:827-832` 의 계수가 비대칭이다: `bluff_fear` 0.30(하위
+  절반) vs `hero_call` 0.18(상위 절반). `bluffcatch_river` 는 아래쪽으로만
+  실질 작동한다 (`TRACE_AXIS_FREQ.md` 3단계)
 - `preflop.defend_thresholds` 는 `(tp, tot)` 를 낸다. `aggression` 은 `tp`
   (3벳 구간)에만, `looseness` 는 `tot`(참가 구간)에만 걸린다. 하나만 보면
   다른 축이 무반응으로 보인다
