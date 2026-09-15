@@ -292,6 +292,21 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
   이걸로 "blocker 가 죽었다"는 잘못된 결론을 한 번 냈다. 도구 만들 때 주의
 - `persona.open_pct` 에는 축이 셋 섞여 있다 — `pf_range`(폭)·`positional`(곡선)·
   `_G.adapt_mult`. 하나를 재려면 나머지를 9 로 고정해야 한다
+- `plan.py:398` `make_plan` 안의 `sk()` 는 **0~3 스케일**이다 (`PS.sk/3.33`).
+  `sk('potcontrol') >= 1` 은 실제로 PS.sk ≥ **3.33** 이다. 실측 게이트가
+  3.3→3.4 사이에서 열린다 (`bluff`·`potcontrol` 3.33, `semibluff` 1.33)
+- **`potcontrol` 은 빈도 축이 아니라 스위치다.** 게이트 위에서 기울기가 0
+  (PS.sk 3.4~9 전부 `pot_control` 14.4%). 확률식 `_pc_p` 에 축이 안 들어간다
+- **`persona.call_bias` 의 `max(0.0, bias(...))` 가 축의 절반을 차단한다.**
+  `looseness` 는 날것이 −0.36→+0.36 로 완전 선형인데 clamp 후 하위 절반이 0,
+  `discipline` 은 상위 절반이 0. 빈도만 보면 '무반응'으로 오독한다 —
+  **중간값(날것/clamp 후)을 반드시 같이 기록할 것** (`TRACE_AXIS_FREQ.md`)
+- `preflop.defend_thresholds` 는 `(tp, tot)` 를 낸다. `aggression` 은 `tp`
+  (3벳 구간)에만, `looseness` 는 `tot`(참가 구간)에만 걸린다. 하나만 보면
+  다른 축이 무반응으로 보인다
+- `act_with_plan` 은 **무저항에서 판단하지 않는다**(`plan.py:1315`). 의도는
+  `attach_intent`(→`decide_aggression`)가 붙인다. 도구에서 `make_plan` 만
+  부르고 `act_with_plan` 을 호출하면 `intent` 가 None 이라 **전부 체크**가 된다
 - `persona.py:955` `size_river` 만 `see_size` 게이트가 빠져 있다. 리버에서는
   사이즈를 못 읽는 사람도 `_sz_norm` 이 어긋난다. 2-A 로 덮어쓰기가 없어져
   피해는 줄었지만 게이트 누락 자체는 그대로다
@@ -318,6 +333,8 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/cf_szseen.py` | `_sz_seen` 덮어쓰기(FIX_PLAN 2-A) 3변종 분해 |
 | `tools/cf_stell.py` | `sizing_tell` 해부 (방향·크기·2×2 충돌) |
 | `tools/axis_accuracy.py` | 인식 정확도 축의 호출 지점 오차 (축 1/3/5/7/9) |
+| `tools/axis_sites.py` | 성향 축 사용처 전수 (별칭·지역 lambda·street_concept 포함) |
+| `tools/axis_freq.py` | 빈도 축의 **층별** 변화. 교락 축 고정, 중간값 같이 기록 |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
 | `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |
