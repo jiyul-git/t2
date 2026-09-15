@@ -177,6 +177,8 @@ def main():
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--half-min', type=int, default=4,
                     help='split-half 를 낼 최소 기회 수')
+    ap.add_argument('--sens', action='store_true',
+                    help='최소 기회 기준 2~6 민감도 곡선을 낸다')
     a = ap.parse_args()
 
     lo, hi = (a.seeds.split('-') + [None])[:2]
@@ -271,6 +273,48 @@ def main():
         print('  %-16s 라우팅률 중앙 %.3f   축→라우팅 ρ %+0.3f (n=%d)   split r %s'
               % (ax, stat.median(y), spearman(x, y) or 0.0, len(ks),
                  fmt(spearman(h1, h2))))
+
+    if a.sens:
+        print()
+        print('## 최소 기회 기준 민감도 — 정보량과 신뢰도의 trade-off')
+        print()
+        print('split-half 는 **홀/짝 교대**다 (앞/뒤 절반이 아니다). 시간 추세')
+        print('(레벨 상승 → 스택 감소)가 두 반쪽에 균등히 들어가게 한 것이다.')
+        print('순서는 플레이어별 시간순. 홀수 관측은 불균등하다 (n=3 → 2건/1건).')
+        print('**기준을 축마다 다르게 쓰지 않는다** — 전 축에 같은 기준을 걸고')
+        print('민감도로 함께 제시한다. 한 축을 살리려고 낮추면 선택 편향이다.')
+        print()
+        thr = [2, 3, 4, 5, 6]
+        h = '%-20s' % '축'
+        for t in thr: h += '  %-18s' % ('>=%d' % t)
+        print(h)
+        print('%-20s' % '' + ''.join('  %5s %5s %6s' % ('n', '관측', 'r') for _ in thr))
+        print('-'*(20 + 20*len(thr)))
+        for ax, (br, stt, relmax) in AXES.items():
+            key = AXIS_KEY.get(ax, ax)
+            sel = [r for r in rows if r['branch'] == br and
+                   (stt is None or (r['street'] == stt if isinstance(stt, str)
+                                    else r['street'] in stt)) and
+                   (relmax is None or (r['rel'] is not None and r['rel'] < relmax))]
+            per = collections.defaultdict(list)
+            for r in sel: per[r['key']].append(r)
+            line = '%-20s' % ax
+            for t in thr:
+                hk = [k for k in per if len(per[k]) >= t]
+                if len(hk) < 4:
+                    line += '  %5d %5s %6s' % (len(hk), '-', '-')
+                    continue
+                # 반쪽당 관측 수 중앙값 (작은 쪽)
+                ob = stat.median([min(len(per[k][0::2]), len(per[k][1::2])) for k in hk])
+                h1 = [stat.mean(z['f'] for z in per[k][0::2]) for k in hk]
+                h2 = [stat.mean(z['f'] for z in per[k][1::2]) for k in hk]
+                rr = spearman(h1, h2)
+                line += '  %5d %5.1f %6s' % (len(hk), ob,
+                                             ('%+.3f' % rr) if rr is not None else '-')
+            print(line)
+        print()
+        print('n    : 그 기준을 넘는 플레이어 수   관측 : 반쪽당 관측 수 중앙값(작은 쪽)')
+        print('n < 4 이면 r 을 내지 않는다. n < 20 인 r 은 부호가 뒤집힐 수 있다.')
 
     print()
     print('ρ(전원)  : 기회 >= 1 인 전원. 1건짜리가 많으면 상황 노이즈가 ρ 를 누른다')
