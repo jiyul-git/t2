@@ -137,7 +137,14 @@ def run_one(args):
                         'need': float(need), 'need_true': need_true,
                         'tocall': float(tocall), 'p0': _p0, 'bf': float(_bf),
                         'sz_true': _sz_true, 'sz_seen': _sz_seen,
-                        'fired': fired, 'verify': ok})
+                        'fired': fired, 'verify': ok,
+                        # 코드가 실제로 걸었는가 — 새 cutoff 를 만들지 않고
+                        # plan.py 의 절대 clamp 값(0.03 / 0.95)을 그대로 쓴다.
+                        # need_ratio 최대 9.034 는 작은 need_true 가 절대
+                        # 상한에 걸려 생긴다. 상관이 clamp 로 만들어졌는지
+                        # 이 플래그로 가른다.
+                        'clamped': (abs(float(need) - 0.95) < 1e-12
+                                    or abs(float(need) - 0.03) < 1e-12)})
         except Exception:
             pass
         return out
@@ -244,7 +251,11 @@ def main():
     if rr:
         rs = sorted(rr)
         g = lambda f: rs[min(len(rs)-1, int(f*len(rs)))]
+        cl = [r for r in rows if r['metric'].startswith('ratio_') and r.get('clamped')]
+        tot = [r for r in rows if r['metric'].startswith('ratio_')]
         print('## need_ratio 분포 (코드 클램프는 0.55 ~ 1.75+0.05/need_true)')
+        print('  절대 clamp(0.03/0.95) 발동 %d/%d = %.1f%%'
+              % (len(cl), len(tot), 100.0*len(cl)/max(1, len(tot))))
         print('  중앙 %.3f   5%% %.3f   25%% %.3f   75%% %.3f   95%% %.3f   최소 %.3f 최대 %.3f'
               % (stat.median(rs), g(0.05), g(0.25), g(0.75), g(0.95), rs[0], rs[-1]))
         print()
