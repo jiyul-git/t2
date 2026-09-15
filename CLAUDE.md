@@ -315,16 +315,22 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 - **계획 층도 집계 %가 아니라 전환 수를 세야 한다.** `stackoff` 에서 집계표는
   전 레벨 동일인데 상황별로는 뒤집힘이 있었다 — 양방향 건수가 맞으면 표가
   안 움직인다
-- **`river_bluff` 라벨이 975핸드에서 0건이다. 원인은 아직 미확정이다.**
-  리버에 벳 사이즈가 있는 블러프 계획은 `river_bluff`(0.72) 하나뿐이고
-  (`semibluff`·`bluff_2street`·`giveup` 의 river 는 전부 0.0),
-  `river_bluff` 를 만드는 곳은 `river_fix` 하나다. 실측:
-  리버 `bluff_2street` 12건은 전부 check/fold(칠 수단이 없다),
-  리버에서 실제로 친 블러프성 액션 5건(중복 제거)은 **전부 계획 이탈**이다.
-  **처음에 "refresh 가 먼저 돌아 막는다"고 적었는데 틀렸다** —
-  `plan.py:1772` 에 이미 `street != 'river'` 가드가 있다. 그리고 문제의
-  3건은 `why` 에 `'river: '` 로 시작하는 줄이 **하나도 없어서** 어디서
-  라벨이 바뀌었는지 특정되지 않았다 (`TRACE_BLUFF.md`)
+- **`river_bluff` 0건은 버그가 아니다 — 기대 빈도가 0.45건이다.**
+  `tools/river_trace.py` 로 파이프라인을 계측하니(300핸드) 리버 판정 82건 중
+  `river_fix` 가 `semibluff` 를 받은 것이 **1회**, 그것도 드로우가 완성돼
+  `value_2street` 로 갔다. `p_bluff` 굴림에 도달한 적이 0회다.
+  필드 중앙값으로 `p_bluff = 0.10 + 0.55×0.50×0.41 = 0.212`, 아카이브 리버
+  intent 351건 기준 기대 **0.45건**. Poisson λ=0.45 에서 P(0)=0.64 다.
+  **"975핸드 0건"을 구조적 신호로 읽은 것이 처음부터 잘못이었다** —
+  이 항목에서 세 번 틀렸다(`TRACE_BLUFF.md` 1절에 과정을 남겼다)
+- **`river_fix` 는 `street` 를 인자로 받지 않는다.** `plan.py:1529` 의
+  `if len(board) < 5: return state` 로 스스로 막는다. 그래서 플랍·턴에서도
+  호출되고 즉시 반환한다 — 호출 횟수를 셀 때 **보드 길이로 갈라야 한다.**
+  no-op 4회를 진입으로 세서 "5회 받았다"는 틀린 숫자를 냈다
+- **`SIZING` 에서 리버에 벳 사이즈가 있는 블러프 계획은 `river_bluff`(0.72)
+  하나뿐이다** (`semibluff`·`bluff_2street`·`giveup` 의 river 는 전부 0.0).
+  그래서 리버 `bluff_2street` 계획 12건은 전부 check/fold 였다 — 칠 수단이 없다.
+  설계이지만, 리버 블러프 공급이 기대 0.45건짜리 한 경로에만 걸려 있다
 - **아카이브 파일들은 서로 겹친다.** `review_*.jsonl` 과 `bak_*` 를 함께
   읽으면 같은 핸드가 여러 번 세어진다. `(hand_no, seat, board)` 로 중복을
   제거할 것 — 안 하면 9건이 실제로는 6건이다
@@ -381,6 +387,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/axis_sites.py` | 성향 축 사용처 전수 (별칭·지역 lambda·street_concept 포함) |
 | `tools/axis_freq.py` | 빈도 축의 **층별** 변화. 교락 축 고정, 중간값 같이 기록 |
 | `tools/bluff_coherence.py` | 블러프 라인·레인지 일관성. 밸류 벳이 대조군 |
+| `tools/river_trace.py` | 리버 파이프라인 계측. 반환 state 의 plan 으로 판정 |
 | `tools/ctx_bonly.py` | 행동 맥락(포지션·SPR·레인지우위) 비교 |
 | `tools/wirecheck.py` | 개념 배선 검사 (36/36 나와야 정상) |
 | `tools/fingerprint.py` | 행동 지문. 레시피가 docstring 에 박혀 있다 |

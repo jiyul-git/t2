@@ -66,86 +66,91 @@ A 라인-레인지 불일치                         12건 (24%)
 
 ---
 
-## 1. `river_bluff` 가 975핸드에서 **0건**이다 — 그리고 내 첫 설명은 틀렸다
+## 1. `river_bluff` 0건 — **버그가 아니다. 기대 빈도가 0.45건이다.**
 
-### 먼저 정정 — "refresh 가 먼저 돌아 막는다"는 **사실이 아니다**
+이 절은 세 번 고쳤다. 앞의 두 판이 전부 틀렸으므로 그 과정을 남긴다.
 
-이 문서의 앞선 판(`8442b34`)과 `CLAUDE.md` 에 이렇게 적었다.
+### 1차 결론(틀림) — "refresh 가 먼저 돌아 막는다"
 
-> `plan.py:1505` 의 `refresh` 가 `river_fix`(1511)보다 먼저 돌면서 미스한
-> 드로우를 `giveup` 으로 보낸다.
-
-**코드가 직접 반박한다.** `refresh` 의 semibluff 강등 분기에는 이미 가드가 있다.
+`plan.py:1772` 에 **이미 `street != 'river'` 가드가 있다.**
 
 ```python
-plan.py:1772   elif old == 'semibluff' and outs < 6 and street != 'river':
-                   ...
-               # 리버는 river_fix 가 맡는다. 여기서 먼저 giveup 으로 내리면
-               # **미스한 드로우의 블러프 전환 경로가 통째로 막힌다** —
-               # 리버는 outs 가 항상 0 이라 이 조건이 무조건 걸렸다.
+elif old == 'semibluff' and outs < 6 and street != 'river':
+    ...
+# 리버는 river_fix 가 맡는다. 여기서 먼저 giveup 으로 내리면
+# **미스한 드로우의 블러프 전환 경로가 통째로 막힌다**
 ```
 
-**누군가 이 문제를 이미 발견하고 막아 놨다.** 내가 그 가드를 안 읽고
-"순서 때문에 막힌다"고 단정했다. 통계(9/9)만 보고 인과를 지어낸 것이다 —
-`CLAUDE.md` 작업원칙 4 를 어겼다.
+누군가 이미 발견해 막아 놓은 것을, 그 가드를 안 읽고 통계(9/9)만 보고
+인과를 지어냈다. 작업원칙 4 위반이다.
 
-### 실제로 확인된 사실만
+### 2차 결론(틀림) — "경로가 막혀 있어 표본을 늘려도 안 늘어난다"
 
-중복을 제거하니(같은 핸드가 여러 아카이브 파일에 있다) 숫자도 달라진다.
+경로는 **열려 있다.** 아래 계측이 보여준다.
 
-```
-턴에 semibluff 였고 리버 도달 (중복 제거)      5건
-  turn=semibluff → river=giveup               3
-  turn=semibluff → river=bluff_2street        1
-  turn=semibluff → river=trap                 1
-  river_bluff                                 0
-```
+### 3차 — 파이프라인을 계측했다
 
-그 3건의 `why` 에서 `'river: '` 로 시작하는 줄을 걸러 보면 **한 줄도 없다.**
+아카이브에는 중간 상태가 없다. 그래서 `tools/river_trace.py` 로 파이프라인
+함수들을 **메모리에서 감싸고**(plan.py 무수정) 봇 대전을 돌렸다.
+`why` 가 아니라 **반환된 state 의 `plan` 값**으로 판정했다.
 
-```
-h36  seat5  턴 semibluff → 리버 giveup     (river: 로 시작하는 why 없음)
-h113 seat1  턴 semibluff → 리버 giveup     (없음)
-h6   seat5  턴 semibluff → 리버 giveup     (없음)
-```
-
-`river_fix` 가 확률에서 떨어졌다면 `'리버: 드로우 미스 → 포기'` 가,
-`refresh` 가 강등했다면 `'river: 드로우 소멸(N아웃) → 포기'` 가 남아야 한다.
-**둘 다 없다.** 반면 `river_bluff` 가 아닌 다른 라벨로 간 두 건은 기록이 있다.
-
-```
-h14  턴 semibluff → 리버 bluff_2street
-     river: 쇼다운 가치 없음 + 블로커 0.51/넛우위 0.48 → 블러프 계획   ← make_plan 의 문구
-h61  턴 semibluff → 리버 trap
-     river: 넛급 + 상대 벳확률 30% · 취향 3.4 · 수렴 45% → 함정(10%)
-```
-
-**그 3건이 어디서 `giveup` 이 됐는지는 특정하지 못했다.** 여기서 멈춘다.
-
-### 확정된 것 — 리버에 벳 사이즈가 있는 블러프 계획은 하나뿐이다
+여기서도 한 번 더 틀렸다. `river_fix` 가 `semibluff` 를 5회 받았다고 찍혔는데,
 
 ```python
-SIZING['semibluff']['river']      = 0.0
-SIZING['bluff_2street']['river']  = 0.0     # 이름 그대로 2스트리트
-SIZING['giveup']['river']         = 0.0
-SIZING['river_bluff']['river']    = 0.72    # ← 유일
+plan.py:1529   if len(board) < 5: return state
 ```
 
-그리고 `river_bluff` 를 만드는 곳은 `river_fix` 하나, 그 입구는
-`if st.get('plan') != 'semibluff': return st` 다.
+`river_fix` 는 `street` 를 인자로 받지 않고 **보드 길이로 스스로 막는다.**
+그래서 플랍·턴에서도 호출되고 즉시 반환한다. 그 no-op 4회를 같이 센 것이다.
 
-실측과 맞물리면:
+**harness 건전성 카운터를 넣고 다시 재니** (300핸드):
 
 ```
-리버 bluff_2street 계획 12건  →  실제 행동 check 8 · fold 4 · 벳 0
-                                  (SIZING river = 0.0 이라 칠 수단이 없다)
-리버 river_bluff 계획          →  0건
-리버에서 실제로 친 블러프성 액션 →  5건 (중복 제거), **전부 계획 이탈**
-                                  giveup/bet · giveup/raise
+make_plan 호출                200
+river_fix 호출(보드 5장)        82      ← 실제 리버 판정
+river_fix 호출(보드 <5장)      252      ← no-op
+핸드                          300
+
+river_fix 가 리버에서 semibluff 를 받은 횟수   1회
+  → value_2street  1   (드로우가 완성돼 밸류 전환)
+  → river_bluff    0
+  → giveup         0
 ```
 
-**975핸드에서 계획된 리버 블러프는 0건이고, 나온 것은 전부 규율 실패다.**
-이건 확정된 관찰이다. 다만 **왜** 0건인지는 위에서 적었듯 미확정이다.
+**`p_bluff` 블러프 굴림에 도달한 적이 0회다.** 경로가 막힌 것이 아니라
+**거기까지 오는 표본이 없다.**
+
+### 기대 빈도
+
+필드 프로필 70명의 중앙값으로 계산한다.
+
+```
+bluff 중앙 5.0 · barrel_river 중앙 4.1
+p_bluff = 0.10 + 0.55 × (5.0/10) × (4.1/10) = 0.212      (블로커·쇼다운 보정 전)
+
+리버 판정 중 semibluff 진입 비율        1/82 = 1.2%
+아카이브 리버 intent                    351건
+  → river_fix 에 semibluff 로 진입 기대   4.3건
+  그중 미스라야 굴림 대상 (절반으로 잡으면)  2.1건
+  × p_bluff 0.212                      → **0.45건**
+```
+
+**기대 0.45건에 관측 0건이다.** Poisson λ=0.45 에서 P(0) = 0.64 —
+완전히 정상 범위다.
+
+**`river_bluff` 0건은 버그의 증거가 아니다.** "975핸드에서 0건"이라는
+숫자만 보고 구조적 신호로 읽은 것이 처음부터 잘못이었다.
+
+### 그래도 남는 사실 하나
+
+`SIZING` 에서 리버에 벳 사이즈가 있는 블러프 계획은 `river_bluff`(0.72)
+하나뿐이다(`semibluff`·`bluff_2street`·`giveup` 의 river 는 전부 0.0).
+그래서 리버 `bluff_2street` 계획 12건은 **전부 check/fold** 였다 — 칠 수단이 없다.
+
+이건 설계다(주석이 "이름 그대로 2스트리트"라고 적고 있다). 다만
+**리버 블러프의 공급이 희소한 한 경로에만 걸려 있다**는 것은 기록해 둘 만하다.
+기대 0.45건이면 실전에서 리버 블러프는 사실상 안 나온다.
+그것이 의도인지는 별개 질문이고, **여기서 답하지 않는다.**
 
 ## 2. 리버 이탈 공격 5건 — 대조군을 놓으면 이상하다는 증거가 없다
 
