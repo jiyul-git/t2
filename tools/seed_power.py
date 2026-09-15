@@ -175,6 +175,9 @@ def main():
     ap.add_argument('--rho', type=float, default=0.20)
     ap.add_argument('--alpha', type=float, default=0.05)
     ap.add_argument('--boot', type=int, default=2000)
+    ap.add_argument('--holm-scan', default='',
+                    help='쉼표 구분 시드 후보. 이분 탐색 대신 고정 후보에서 '
+                         'Holm 검정력을 높은 반복수로 잰다 (경계 노이즈 회피)')
     a = ap.parse_args()
 
     lo, hi = (a.seeds.split('-') + [None])[:2]
@@ -385,6 +388,25 @@ def main():
                     break
         return {ax: cnt[ax]/float(a.boot) for _ax, _b, _k, _i, _m, _s in prep
                 for ax in [_ax]}
+
+    if a.holm_scan:
+        cands = [int(x) for x in a.holm_scan.split(',')]
+        se = lambda pw: math.sqrt(max(1e-9, pw*(1-pw))/a.boot)
+        print('반복 %d회 → 검정력 0.80 근처 표준오차 %.3f' % (a.boot, se(0.80)))
+        print()
+        hdr = '%-18s' + '%10s'*len(cands)
+        print(hdr % tuple(['축'] + ['S=%d' % c for c in cands]))
+        print('-'*(18+10*len(cands)))
+        tab = {c: holm_power(c) for c in cands}
+        for ax in [r[0] for r in rows]:
+            print(hdr % tuple([ax] + ['%.1f%%' % (100*tab[c].get(ax, 0.0))
+                                      for c in cands]))
+        print('-'*(18+10*len(cands)))
+        print(hdr % tuple(['최소(병목)'] + ['%.1f%%' % (100*min(tab[c].values()))
+                                            for c in cands]))
+        print()
+        print('표준오차 %.1f%%p 를 고려해 여유를 두고 고른다.' % (100*se(0.80)))
+        return
 
     # 결합 절차에서 전 축이 80% 를 넘는 최소 시드
     lo_, hi_ = 2, 8
