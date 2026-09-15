@@ -315,13 +315,19 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 - **계획 층도 집계 %가 아니라 전환 수를 세야 한다.** `stackoff` 에서 집계표는
   전 레벨 동일인데 상황별로는 뒤집힘이 있었다 — 양방향 건수가 맞으면 표가
   안 움직인다
-- **`river_bluff` 라벨이 975핸드에서 0건이다.** `river_fix` 가
-  `if plan != 'semibluff': return st` 로 시작하는데, `plan.py:1505` 의
-  `refresh` 가 `river_fix`(1511)보다 **먼저** 돌면서 미스한 드로우를
-  `giveup` 으로 보낸다. 플랍/턴에 semibluff 였다가 리버 도달한 9건의 리버
-  계획이 giveup 5 · bluff_2street 3 · trap 1 · **river_bluff 0** 이다.
-  `river_fix` docstring 이 되살리려던 그 경로가 자기보다 먼저 돈다
-  (`TRACE_BLUFF.md`)
+- **`river_bluff` 라벨이 975핸드에서 0건이다. 원인은 아직 미확정이다.**
+  리버에 벳 사이즈가 있는 블러프 계획은 `river_bluff`(0.72) 하나뿐이고
+  (`semibluff`·`bluff_2street`·`giveup` 의 river 는 전부 0.0),
+  `river_bluff` 를 만드는 곳은 `river_fix` 하나다. 실측:
+  리버 `bluff_2street` 12건은 전부 check/fold(칠 수단이 없다),
+  리버에서 실제로 친 블러프성 액션 5건(중복 제거)은 **전부 계획 이탈**이다.
+  **처음에 "refresh 가 먼저 돌아 막는다"고 적었는데 틀렸다** —
+  `plan.py:1772` 에 이미 `street != 'river'` 가드가 있다. 그리고 문제의
+  3건은 `why` 에 `'river: '` 로 시작하는 줄이 **하나도 없어서** 어디서
+  라벨이 바뀌었는지 특정되지 않았다 (`TRACE_BLUFF.md`)
+- **아카이브 파일들은 서로 겹친다.** `review_*.jsonl` 과 `bak_*` 를 함께
+  읽으면 같은 핸드가 여러 번 세어진다. `(hand_no, seat, board)` 로 중복을
+  제거할 것 — 안 하면 9건이 실제로는 6건이다
 - **블러프 품질을 잴 때 밸류 벳을 대조군으로 두지 않으면 임계값 artifact 가
   나온다.** `blocker_net <= 0` 같은 컷은 그 값의 중앙이 0 근처라 절반이
   자동으로 걸린다. 실제로 '블로커 무의미 72%' 를 만들 뻔했는데 밸류 벳도
