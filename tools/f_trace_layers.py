@@ -42,12 +42,16 @@ METRICS = {
     'defend_tp':     [('aggression', +1), ('pf_defend', +1)],
     'defend_tot':    [('looseness', +1), ('pf_defend', +1)],
     'open_size':     [('open_size', +1), ('consistency', +1)],
-    # need 는 낮을수록 잘 콜한다 → '잘 콜하는' 축은 −1
-    'need_flop':     [('potodds', -1), ('bluffcatch_early', -1), ('station', -1),
-                      ('sticky', -1), ('hero_call', -1), ('bluff_fear', +1)],
-    'need_turn':     [('potodds', -1), ('bluffcatch_early', -1)],
-    'need_river':    [('potodds', -1), ('bluffcatch_river', -1),
+    # need_ratio = need / need_true. 낮을수록 잘 콜한다 → '잘 콜하는' 축은 −1.
+    # need_true 는 코드가 만든 상황 기준선이다(plan.py:633) — 팟오즈와 bf 가
+    # 그 안에 있으므로 나누면 상황·ICM 성분이 같이 빠진다. 새 정규화가 아니다.
+    'ratio_flop':    [('potodds', -1), ('bluffcatch_early', -1), ('station', -1),
+                      ('sticky', -1), ('hero_call', -1), ('bluff_fear', +1),
+                      ('range_read', -1), ('sizing_tell', -1)],
+    'ratio_turn':    [('potodds', -1), ('bluffcatch_early', -1), ('station', -1),
                       ('hero_call', -1), ('bluff_fear', +1)],
+    'ratio_river':   [('potodds', -1), ('bluffcatch_river', -1),
+                      ('station', -1), ('hero_call', -1), ('bluff_fear', +1)],
 }
 
 
@@ -100,8 +104,40 @@ def run_one(args):
         out = _cn(profile, hero, board, street, pot, tocall, bf, read,
                   to_act_behind, opp_est, n_opp, rng, _bf_gated)
         need = out[0] if isinstance(out, tuple) else out
+        # --- plan.py:607-633 을 그대로 복제한다. 줄 대응을 주석으로 박는다. ---
         try:
-            push(profile.get('id'), 'need_%s' % street, float(need))
+            _bf = bf
+            if profile.get('concepts') and _bf and _bf > 1.0 and not _bf_gated:   # 607
+                _bf = PS.icm_bf(profile, _bf)                                     # 608
+            _p0 = max(1.0, float(pot) - float(tocall))                            # 617
+            _sz_true = float(tocall)/_p0                                          # 618
+            _sz_seen = _sz_true                                                   # 620
+            if profile.get('concepts') and board:                                 # 622
+                _rdz = PS.read_opponent(profile, opp_est) if opp_est else None    # 623
+                _sz_seen = PS.size_read(profile,
+                                        PS.opp_size_norm(_rdz, _sz_true, street)) # 624
+            _tocall_seen = _sz_seen * _p0                                         # 625
+            need_true = (_tocall_seen*_bf)/max(1.0, _p0 + 2.0*_tocall_seen)       # 633
+            # 자체 검증: 비발동군에서 (tocall*bf)/(pot+tocall) 과 맞는지 본다.
+            #
+            # **비트 동일성으로 재면 안 된다.** plan.py:630 주석이 "비트까지
+            # 같다" 고 하는데 정확하지 않다 — 괄호가 설명하는 분모는 실제로
+            # 50만 조합 전부 비트 일치하지만, 분자 _tocall_seen = _sz_seen*_p0
+            # 가 (tocall/p0)*p0 왕복이라 5.77% 에서 1~2 ULP 어긋난다.
+            # 엔진도 같은 왕복을 하므로(plan.py:625) 복제는 맞고 주장이 과하다.
+            # 상대오차로 잰다 — 인자 순서나 p0 오류 같은 진짜 버그는 O(1) 로
+            # 어긋나므로 1e-12 로도 충분히 잡힌다.
+            fired = abs(_sz_seen - _sz_true) > 1e-12
+            ok = None
+            if not fired:
+                alt = (float(tocall)*_bf)/max(1.0, float(pot) + float(tocall))
+                ok = abs(need_true - alt) <= 1e-12*max(abs(need_true), abs(alt), 1e-30)
+            rec.append({'pid': profile.get('id'), 'metric': 'ratio_%s' % street,
+                        'v': float(need)/need_true if need_true > 0 else None,
+                        'need': float(need), 'need_true': need_true,
+                        'tocall': float(tocall), 'p0': _p0, 'bf': float(_bf),
+                        'sz_true': _sz_true, 'sz_seen': _sz_seen,
+                        'fired': fired, 'verify': ok})
         except Exception:
             pass
         return out
@@ -186,12 +222,38 @@ def main():
     mc = collections.Counter(r['metric'] for r in rows)
     print('지표별 총 관측:', dict(mc.most_common()))
     print()
+    # --- 복제 검증 관문 ---
+    vr = [r for r in rows if r.get('verify') is not None]
+    bad = [r for r in vr if r['verify'] is False]
+    fired = [r for r in rows if r.get('fired') is True]
+    nonf = [r for r in rows if r.get('fired') is False]
+    print('## need_true 복제 검증')
+    print('  비발동군(_sz_seen == _sz_true) %d건 중 불일치 **%d건** (상대오차 1e-12 기준)'
+          % (len(vr), len(bad)))
+    print('  발동군(인지 사이즈 != 실제) %d건 — 이쪽은 교차검증 수단이 없다 (%.1f%%)'
+          % (len(fired), 100.0*len(fired)/max(1, len(fired)+len(nonf))))
+    if bad:
+        print()
+        print('  ** 불일치가 있다. 결과를 해석하지 않는다 — 도구를 먼저 고친다. **')
+        for r in bad[:3]:
+            print('     need_true=%r  tocall=%r p0=%r bf=%r' %
+                  (r['need_true'], r['tocall'], r['p0'], r['bf']))
+        return
+    print()
+    rr = [r['v'] for r in rows if r['metric'].startswith('ratio_') and r.get('v')]
+    if rr:
+        rs = sorted(rr)
+        g = lambda f: rs[min(len(rs)-1, int(f*len(rs)))]
+        print('## need_ratio 분포 (코드 클램프는 0.55 ~ 1.75+0.05/need_true)')
+        print('  중앙 %.3f   5%% %.3f   25%% %.3f   75%% %.3f   95%% %.3f   최소 %.3f 최대 %.3f'
+              % (stat.median(rs), g(0.05), g(0.25), g(0.75), g(0.95), rs[0], rs[-1]))
+        print()
 
     hdr = '%-18s %-18s %5s %7s %8s %8s %8s | %7s %6s'
     print(hdr % ('지표', '축', '기대', '총관측', 'f중앙', 'ρ(전원)', 'n', 'split r', 'n'))
     print('-'*100)
     for metric, pairs in METRICS.items():
-        sel = [r for r in rows if r['metric'] == metric]
+        sel = [r for r in rows if r['metric'] == metric and r.get('v') is not None]
         if not sel:
             print(hdr % (metric, '(관측 0)', '', 0, '-', '-', '-', '-', '-'))
             continue
