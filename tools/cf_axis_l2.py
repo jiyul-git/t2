@@ -279,7 +279,7 @@ def main():
     # 효과 유의성 기준이 아니라 동일 확률실현 유지 여부의 측정 가능성 기준이다.
     # 0.50 에 통계적 의미는 없다 — 보수적 실무 경계다.
     ELIG = 0.50
-    hdr = ('%-16s %-4s %7s %8s %9s %8s %-6s %11s %11s %11s'
+    hdr = ('%-16s %-4s %7s %8s %9s %8s %-6s %14s %14s %14s'
            % ('축', '팔', 'total', 'aligned', 'shifted', 'align%', 'status',
               'plan=,act≠', 'plan≠,act=', 'plan≠,act≠'))
     print(hdr); print('-'*len(hdr))
@@ -307,10 +307,11 @@ def main():
             pct = lambda n: (100.0*n/al) if al else 0.0
             rate = al/max(1, tot)
             ok = rate >= ELIG
-            print('%-16s %-4s %7d %8d %9d %7.1f%% %-6s %10.1f%% %10.1f%% %10.1f%%'
+            cell = lambda n: '%5d/%6.3f%%' % (n, pct(n))
+            print('%-16s %-4s %7d %8d %9d %7.1f%% %-6s %14s %14s %14s'
                   % (ax if arm == 'D' else '', arm, tot, al, sh,
                      100.0*rate, 'OK' if ok else '측정불가',
-                     pct(c_pa), pct(c_pA), pct(c_PA)))
+                     cell(c_pa), cell(c_pA), cell(c_PA)))
             if not ok:
                 print('%-16s %-4s   ** alignment_rate %.2f < %.2f — 이 팔의 효과를 '
                       '해석하지 않는다 **' % ('', '', rate, ELIG))
