@@ -38,12 +38,16 @@ import f_trace as FT
 import f_trace_layers as FL
 
 # 축당 하나의 주가설. (축, 어느 도구, 지표키, 기대부호)
+# **AXIS_INVENTORY.md 의 지표 정의와 반드시 일치해야 한다.**
+# thin_value_turn 에 rel<0.85 를 빼먹어 eligible 163명 / ρ +0.130 이 나왔다.
+# 인벤토리 정의(rel<0.85)로는 62명 / ρ +0.476 이다 — 필터 없이 집계하면
+# 천장 포화 구간이 섞여 ρ 가 눌리고 시드 요구도 과소평가된다.
 PRIMARY = [
     ('looseness',       'lay',  ['open_pct', 'defend_tot'], +1),
     ('aggression',      'lay',  ['defend_tp'],              +1),
     ('discipline',      'post', ['cbet_dev'],               -1),
     ('bluff',           'post', ['bluff'],                  +1),
-    ('thin_value_turn', 'post', ['value'],                  +1),
+    ('thin_value_turn', 'post', ['value_rel85'],            +1),
     ('potcontrol',      'post', ['ROUTING'],                +1),
     ('cbet_flop',       'post', ['cbet_dev_flop'],          +1),
 ]
@@ -128,6 +132,12 @@ def collect(entries, hpl, stack, seeds, jobs, half_min):
             allpost[r['pid']].append(r)
             if r['branch'] == 'cbet_dev' and r['street'] == 'flop':
                 per['cbet_dev_flop'][r['pid']].append(r)
+            # thin_value_turn — plan.py:940 의 rel<0.85 가 배수 적용 구간이다.
+            # street_concept 이 ('thin_value','flop') 을 이 축으로 보내므로
+            # 플랍+턴이 대상이다 (AXIS_INVENTORY 3.2).
+            if (r['branch'] == 'value' and r['street'] in ('flop', 'turn')
+                    and r.get('rel') is not None and r['rel'] < 0.85):
+                per['value_rel85'][r['pid']].append(r)
         for ax, src, keys, _sg in PRIMARY:
             if src != 'post': continue
             k = keys[0]
