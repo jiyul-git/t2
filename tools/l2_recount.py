@@ -44,7 +44,9 @@ def main():
     # (c)(d) 용. ② (attached_O) 안에서만, 양쪽 tag 가 정렬된 쌍만 센다.
     G = collections.defaultdict(lambda: collections.defaultdict(
         lambda: {'pairs': 0, 'l1eq_flip': 0, 'l2_flip': 0,
-                 'size0_lo': 0, 'size0_hi': 0, 'cross_ne': 0, 'pdiff': []}))
+                 'size0_lo': 0, 'size0_hi': 0, 'cross_ne': 0, 'pdiff': [],
+                 # 2x2 — 순차(L1등가 − L2실제)가 두 방향을 가린다
+                 'xx': 0, 'xe': 0, 'ex': 0, 'ee': 0}))
     HAVE_DG = None
     axes = []
     n = 0
@@ -101,11 +103,14 @@ def main():
                     sc = r.get('src_%s_%s' % (arm, t))
                     cr[t] = (a == 'bet') or (sc == SIZE0)
                     if sc == SIZE0: g['size0_' + t] += 1
-                if cr['lo'] != cr['hi']:
+                cx = (cr['lo'] != cr['hi'])
+                af = (r.get('act_%s_lo' % arm) != r.get('act_%s_hi' % arm))
+                if cx:
                     g['cross_ne'] += 1
                     g['l1eq_flip'] += 1
-                if r.get('act_%s_lo' % arm) != r.get('act_%s_hi' % arm):
+                if af:
                     g['l2_flip'] += 1
+                g['xx' if (cx and af) else 'xe' if cx else 'ex' if af else 'ee'] += 1
 
     print('# L2 원자료 재집계 — %s' % path)
     print('  레코드 %d행   축 %d개' % (n, len(axes)))
@@ -200,6 +205,35 @@ def main():
     print()
     print('  crossed≠ 는 L1 등가 정의의 flip 과 정확히 같은 사건이다')
     print('  p차 = |p_hi − p_lo|. 개입이 확률을 얼마나 움직였는가')
+    print()
+    print('## (e) 2x2 — crossed 판정 x 최종 act')
+    print()
+    print('  **(c) 의 "차" 는 순효과다.** 두 방향이 동시에 존재한다 —')
+    print('  cx≠·act= 는 size 단계가 flip 을 지운 것, cx=·act≠ 는 만든 것이다.')
+    print()
+    h = ('%-16s %-3s %8s %9s %9s %9s %10s   %8s %8s'
+         % ('축', '팔', '쌍', 'cx≠·act≠', 'cx≠·act=', 'cx=·act≠', 'cx=·act=',
+            'L1등가', 'L2실제'))
+    print(h); print('-'*len(h))
+    bad = 0
+    for ax in axes:
+        for arm in ARMS:
+            g = G[ax][arm]
+            if not g['pairs']:
+                print('%-16s %-3s %8d   (표본 없음)' % (ax if arm == 'D' else '', arm, 0))
+                continue
+            # 자체 검사 — 2x2 가 (b)(c) 의 합과 맞아야 한다
+            if (g['xx'] + g['xe'] != g['l1eq_flip']
+                    or g['xx'] + g['ex'] != g['l2_flip']
+                    or g['xx'] + g['xe'] + g['ex'] + g['ee'] != g['pairs']):
+                bad += 1
+            print('%-16s %-3s %8d %9d %9d %9d %10d   %8d %8d'
+                  % (ax if arm == 'D' else '', arm, g['pairs'],
+                     g['xx'], g['xe'], g['ex'], g['ee'],
+                     g['l1eq_flip'], g['l2_flip']))
+    print()
+    print('  L1등가 = cx≠ 합 (xx+xe)   ·   L2실제 = act≠ 합 (xx+ex)')
+    print('  2x2 합계 불일치 %d칸%s' % (bad, '' if bad == 0 else '   ** 해석 금지 **'))
 
 
 if __name__ == '__main__':
