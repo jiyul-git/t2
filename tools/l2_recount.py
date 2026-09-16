@@ -46,7 +46,8 @@ def main():
         lambda: {'pairs': 0, 'l1eq_flip': 0, 'l2_flip': 0,
                  'size0_lo': 0, 'size0_hi': 0, 'cross_ne': 0, 'pdiff': [],
                  # 2x2 — 순차(L1등가 − L2실제)가 두 방향을 가린다
-                 'xx': 0, 'xe': 0, 'ex': 0, 'ee': 0}))
+                 'xx': 0, 'xe': 0, 'ex': 0, 'ee': 0,
+                 'dsign': [], 'up': 0, 'dn': 0, 'zero': 0}))
     HAVE_DG = None
     axes = []
     n = 0
@@ -96,7 +97,10 @@ def main():
                 if p_lo is None or p_hi is None: continue
                 g = G[r['axis']][arm]
                 g['pairs'] += 1
-                g['pdiff'].append(abs(float(p_hi) - float(p_lo)))
+                _d = float(p_hi) - float(p_lo)
+                g['pdiff'].append(abs(_d))
+                g['dsign'].append(_d)
+                g['up' if _d > 0 else 'dn' if _d < 0 else 'zero'] += 1
                 cr = {}
                 for t in ('lo', 'hi'):
                     a = r.get('act_%s_%s' % (arm, t))
@@ -205,6 +209,34 @@ def main():
     print()
     print('  crossed≠ 는 L1 등가 정의의 flip 과 정확히 같은 사건이다')
     print('  p차 = |p_hi − p_lo|. 개입이 확률을 얼마나 움직였는가')
+    print()
+    print('## (f) H5-B — decision quantity = p  (설계 CF_DESIGN_ORDER 4-9)')
+    print()
+    print('  Δp = p_hi − p_lo.  1차 지표는 median(|Δp|) 다 —')
+    print('  Δp 는 방향이 상쇄되므로 절대값의 중앙값을 쓴다.')
+    print('  **H5-A 와 결합하지 않는다.** Δp/잔차sd 같은 식을 만들지 않는다.')
+    print()
+    h = ('%-16s %-3s %8s %10s %11s %10s %9s %13s'
+         % ('축', '팔', 'N', 'med(Δp)', 'med(|Δp|)', 'mean(|Δp|)',
+            'Δp≠0', '↑ / ↓'))
+    print(h); print('-'*len(h))
+    for ax in axes:
+        for arm in ARMS:
+            g = G[ax][arm]
+            n = g['pairs']
+            if not n:
+                print('%-16s %-3s %8d   (표본 없음)' % (ax if arm == 'D' else '', arm, 0))
+                continue
+            aa = sorted(g['pdiff']); ss = sorted(g['dsign'])
+            med = lambda xs: xs[len(xs)//2]
+            nz = n - g['zero']
+            print('%-16s %-3s %8d %10.4f %11.4f %10.4f %8.1f%% %13s'
+                  % (ax if arm == 'D' else '', arm, n, med(ss), med(aa),
+                     sum(aa)/len(aa), 100.0*nz/n, '%d / %d' % (g['up'], g['dn'])))
+    print()
+    print('  Δp≠0  개입이 p 에 닿기라도 하는가')
+    print('  ↑ / ↓  p_hi > p_lo 건수 / p_hi < p_lo 건수')
+
     print()
     print('## (e) 2x2 — crossed 판정 x 최종 act')
     print()
