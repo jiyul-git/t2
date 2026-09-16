@@ -236,17 +236,35 @@ def report(pairs, nh, exc, tags):
     if not pairs:
         print('  주 모집단 0 — 보고할 것이 없다'); return
 
-    print('## 3  팔별 집계')
-    print('    %-10s %6s %8s %8s %10s %10s' %
-          ('팔', 'pair', 'act동일', 'act상이', 'ΔEV≠0', 'ΔEV평균'))
+    print('## 3  팔별 집계   **평균은 소수의 pair 가 좌우한다. 분포를 같이 본다**')
+    print('    %-10s %6s %7s %7s %6s %9s %7s %11s %9s %9s' %
+          ('팔', 'pair', 'act동일', 'act상이', 'ΔEV≠0', 'ΔEV평균', '중앙',
+           '≠0만 평균', '최소', '최대'))
     D_ = {}
     for tag in tags:
         dv = [r[tag]['d'] - r['O']['d'] for r in pairs]
         D_[tag] = dv
+        nz = [v for v in dv if v != 0]
         same = sum(1 for r in pairs if r[tag]['acts'] == r['O']['acts'])
-        print('    %-10s %6d %8d %8d %10d %10.1f'
-              % (tag, len(pairs), same, len(pairs)-same,
-                 sum(1 for v in dv if v != 0), statistics.fmean(dv)))
+        print('    %-10s %6d %7d %7d %6d %9.1f %7.1f %11s %9d %9d'
+              % (tag, len(pairs), same, len(pairs)-same, len(nz),
+                 statistics.fmean(dv), statistics.median(dv),
+                 ('%.1f' % statistics.fmean(nz)) if nz else '-',
+                 min(dv), max(dv)))
+    print()
+    print('    부호 분포 (ΔEV≠0 만)')
+    for tag in tags:
+        nz = [v for v in D_[tag] if v != 0]
+        print('    %-10s 양 %3d / 음 %3d' % (tag, sum(1 for v in nz if v > 0),
+                                             sum(1 for v in nz if v < 0)))
+    print()
+
+    print('## 3-1  PM 이 P 와 같은가 — pair 단위 확인')
+    for p_ in P_ARMS:
+        for m_ in M_ARMS:
+            k = '%s+%s' % (p_, m_)
+            ne = sum(1 for i in range(len(pairs)) if D_[k][i] != D_[p_][i])
+            print('    %-10s ΔEV_PM != ΔEV_P 인 pair %d건' % (k, ne))
     print()
 
     print('## 4  상호작용   Interaction = ΔEV_PM - ΔEV_P - ΔEV_M')
@@ -273,24 +291,23 @@ def report(pairs, nh, exc, tags):
         print('    %-10s A %4d   B %4d   C %4d' % (tag, a, b, c))
     print()
 
-    print('## 5-1  refresh 승격이 갈린 페어 (B·C) 원자료')
+    print('## 5-1  refresh 승격이 갈린 pair — **pair 당 한 번만** 찍는다')
     shown = 0
     for r in pairs:
-        for tag in tags:
-            if r[tag]['tr']['pro'] == r['O']['tr']['pro']:
-                continue
-            shown += 1
-            if shown > 12:
-                break
-            print('    hash %s seat %s %s  %s  ΔEV %+d'
-                  % (str(r['hash'])[:8], r['seat'], r['street'], tag,
-                     r[tag]['d'] - r['O']['d']))
-            print('        O   라벨 %s' % (r['O']['tr']['lab'],))
-            print('            승격 %s' % (r['O']['tr']['pro'] or '없음',))
-            print('        CF  라벨 %s' % (r[tag]['tr']['lab'],))
-            print('            승격 %s' % (r[tag]['tr']['pro'] or '없음',))
-        if shown > 12:
+        dif = [t for t in tags if r[t]['tr']['pro'] != r['O']['tr']['pro']]
+        if not dif:
+            continue
+        shown += 1
+        if shown > 8:
             break
+        print('    hash %s seat %s %s   갈린 팔 %s'
+              % (str(r['hash'])[:8], r['seat'], r['street'], ','.join(dif)))
+        print('        O    라벨 %s' % (r['O']['tr']['lab'],))
+        print('             승격 %s' % (r['O']['tr']['pro'] or '없음',))
+        for t in dif:
+            print('        %-8s 라벨 %s  ΔEV %+d'
+                  % (t, r[t]['tr']['lab'], r[t]['d'] - r['O']['d']))
+            print('             승격 %s' % (r[t]['tr']['pro'] or '없음',))
     print()
 
     print('## 6  사전등록 판정')
@@ -308,14 +325,33 @@ def report(pairs, nh, exc, tags):
     print('    V4  부호·우열은 사전등록하지 않았다')
 
 
+def save(pairs, tags, path):
+    import json, gzip
+    op = gzip.open if path.endswith('.gz') else open
+    with op(path, 'wt', encoding='utf-8') as fh:
+        for r in pairs:
+            row = {'hash': r['hash'], 'seat': r['seat'], 'street': r['street'],
+                   'O': r['O']['d']}
+            for t in tags:
+                row[t] = r[t]['d']
+                row[t + '_act'] = (r[t]['acts'] != r['O']['acts'])
+                row[t + '_pro'] = (r[t]['tr']['pro'] != r['O']['tr']['pro'])
+            fh.write(json.dumps(row, ensure_ascii=False) + '\n')
+    print('  원자료 %d행 → %s' % (len(pairs), path))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--seeds', default='7000-7099')
     ap.add_argument('--hands', type=int, default=10000)
+    ap.add_argument('--rows', default=None, help='pair 원자료 저장 경로')
     a = ap.parse_args()
     lo, hi = (a.seeds.split('-') + [None])[:2]
     seeds = list(range(int(lo), int(hi)+1)) if hi else [int(lo)]
-    report(*run(seeds, a.hands))
+    pairs, nh, exc, tags = run(seeds, a.hands)
+    if a.rows:
+        save(pairs, tags, a.rows)
+    report(pairs, nh, exc, tags)
 
 
 if __name__ == '__main__':
