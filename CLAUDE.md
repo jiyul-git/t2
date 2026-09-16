@@ -205,6 +205,31 @@ D   make_plan 이 barrel_size·bluff_mode 를, trap_judgment 가 opp_bet_prob �
 
 ## 현재 조사 — `make_plan` 의 계획 라벨 생성
 
+### eq ↔ rel 추적과 반사실 (문서 묶음)
+
+```
+TRACE_EQREL.md         진입은 eq, pcz 내부 심사는 rel AND made. 발생 지점 특정
+TRACE_EQREL_COUNT.md   건수 — 관측 1,689 → pcz 진입 183 → 465 탈락 36 → giveup 31
+                       **다수 사례의 병목은 rel 이 아니라 made 다** (36 중 25가 rel>=0.52)
+TRACE_MADE.md          made 전수 추적. 값 교체는 게이트 15곳에 퍼져 깨끗하지 않다
+CF_RESULT_PCZ.md       pcz 에 _pen 적용. C1~C5 충족. **최대 효과는 밸류 강등**이지
+                       giveup 구제가 아니다
+CF_RESULT_MADE.md      465 술어 교체. D1~D6 충족. ARM-S 는 giveup 을 41/41 없앤다
+CF_RESULT_EV.md        칩 효과. **28쌍 전부 ΔEV=0.** V3 불충족
+그림                   docs/EQREL_V1.png (tools/draw_eqrel.py)
+```
+
+**"eq 로 들어와 rel 로 giveup" 이라는 표현은 폐기됐다** (`TRACE_EQREL` 7절).
+**`eq ∈ [0.50, 0.88)` 을 대상 집합의 정의로 쓰지 마라** — `street_gap` 이
+음수면 `pcz` 가 0.50 밑으로 내려간다. 실측 giveup 의 `eq` 최소가 0.448 이다.
+
+**`refresh` 의 승격 사다리가 출발 라벨에 따라 갈린다** (`CF_RESULT_EV` 3-1).
+`giveup` 은 문턱 0.55 / 갈림 0.72 로 `{showdown, value_2street}` 까지만 가고,
+`showdown` 은 문턱 0.70 / 갈림 0.88 로 `value_3street` 까지 간다.
+**단일 refresh 단계에서 giveup 은 value_3street 로 승격되지 못한다.**
+
+EV 는 **28쌍에서 0** 이다. 표본이 작다 — 무효과로 일반화하지 마라.
+
 ### 핵심 구조 문제
 
 `eq`는 **all-in equity**(리버까지 돌린 승률)이고 `rel`은 **현재 보드만**
