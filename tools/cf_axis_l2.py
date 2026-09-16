@@ -131,6 +131,10 @@ def run_one(args):
     # 로 직접 행동을 계산해서 이 문제가 없었다.
     mark = {'o_logs': 0, 'o_draws': 0, 'arm_draws': None, 'p': None, 'roll': None,
             'attached': False}
+    # 진단용 포획. decide_aggression·decide_size 는 attach_intent 안에서
+    # 각각 **한 번만** 불린다(plan.py:556·563 — 저장소 전체 호출부가 그 둘뿐).
+    # 그래서 호출 하나에 값 하나가 대응하고 모호함이 없다.
+    cap = {'p': None, 'size': None}
     orig = {}
     def make_shim(mod, name, pos):
         fn = getattr(mod, name, None)
@@ -146,7 +150,14 @@ def run_one(args):
                 elif 'prof' in k and isinstance(k['prof'], dict):
                     k['prof'] = swap(k['prof'], state['axis'], state['val'])
                 a = tuple(a)
-            return fn(*a, **k)
+            out = fn(*a, **k)
+            if name == 'decide_aggression':
+                try: cap['p'] = float(out[0])
+                except Exception: pass
+            elif name == 'decide_size':
+                try: cap['size'] = float(out)
+                except Exception: pass
+            return out
         setattr(mod, name, shim)
 
     # profile 인자 위치 (plan.py 시그니처 기준)
@@ -186,6 +197,7 @@ def run_one(args):
         state.update({'axis': None, 'val': None, 'funcs': ()})
         mark['o_draws'] = 0; mark['o_logs'] = 0; mark['arm_draws'] = None
         mark['attached'] = False          # O 팔에 대해서만 기록한다
+        cap['p'] = cap['size'] = None
         shim_rng.start_record()
         out0 = _oup(st, hero, board, my_range, opp_range, profile, pot, stack_,
                     street, seed_, n_opp, behind, prev_board, oop, initiative, **kw)
@@ -194,6 +206,7 @@ def run_one(args):
         p0 = (out0 or {}).get('plan')
         i0 = ((out0 or {}).get('intents') or {}).get(street) or {}
         a0 = i0.get('act')
+        p_0, sz_0, src_0 = cap['p'], cap['size'], i0.get('src')
         inv0 = {k: (out0 or {}).get(k) for k in
                 ('eq', 'eq_current', 'outs_true', 'made', 'nut_adv', 'range_adv')}
         _attached = bool(mark.get('attached'))
@@ -207,29 +220,34 @@ def run_one(args):
             rec = {'seed': seed, 'hand': cur['hand'], 'table': cur['table'],
                    'pid': profile.get('id'), 'street': street, 'axis': ax,
                    'attached_O': _attached, 'call_seq': _seq,
-                   'plan_O': p0, 'act_O': a0}
+                   'plan_O': p0, 'act_O': a0,
+                   'p_O': p_0, 'size_O': sz_0, 'src_O': src_0}
             for arm in ('D', 'M', 'T'):
                 for tag, val in (('lo', LO), ('hi', HI)):
                     state.update({'axis': ax, 'val': val, 'funcs': ARMS[arm]})
                     shim_rng.logs = base_logs
                     shim_rng.start_replay()
                     mark['arm_draws'] = None; mark['arm_logs'] = None
+                    cap['p'] = cap['size'] = None
                     try:
                         o = _oup(dict(st) if st else st, hero, board, my_range,
                                  opp_range, profile, pot, stack_, street, seed_,
                                  n_opp, behind, prev_board, oop, initiative, **kw)
                         pl = (o or {}).get('plan')
                         it = ((o or {}).get('intents') or {}).get(street) or {}
-                        ac = it.get('act')
+                        ac = it.get('act'); _src = it.get('src')
                         inv = {k: (o or {}).get(k) for k in inv0}
                         bad = [k for k in inv0
                                if inv0[k] is not None and inv[k] is not None
                                and abs(float(inv0[k]) - float(inv[k])) > 1e-9]
                     except Exception:
-                        pl = ac = None; bad = ['EXC']
+                        pl = ac = _src = None; bad = ['EXC']
                     shim_rng.stop()
                     rec['plan_%s_%s' % (arm, tag)] = pl
                     rec['act_%s_%s' % (arm, tag)] = ac
+                    rec['p_%s_%s' % (arm, tag)] = cap['p']
+                    rec['size_%s_%s' % (arm, tag)] = cap['size']
+                    rec['src_%s_%s' % (arm, tag)] = _src
                     rec['inv_%s_%s' % (arm, tag)] = (len(bad) == 0)
                     # 계획 구축 구간만 비교한다 (attach_intent 진입 전까지)
                     if mark['arm_draws'] is None:
