@@ -131,10 +131,12 @@ def run_one(args):
     # 로 직접 행동을 계산해서 이 문제가 없었다.
     mark = {'o_logs': 0, 'o_draws': 0, 'arm_draws': None, 'p': None, 'roll': None,
             'attached': False}
-    # 진단용 포획. decide_aggression·decide_size 는 attach_intent 안에서
+    # 진단용 포획. **이름을 cap 으로 쓰면 run_one 의 인자 cap(핸드 상한)을
+    # 가린다** — 처음에 그렇게 썼다가 TypeError 로 죽었다.
+    # decide_aggression·decide_size 는 attach_intent 안에서
     # 각각 **한 번만** 불린다(plan.py:556·563 — 저장소 전체 호출부가 그 둘뿐).
     # 그래서 호출 하나에 값 하나가 대응하고 모호함이 없다.
-    cap = {'p': None, 'size': None}
+    dg = {'p': None, 'size': None}
     orig = {}
     def make_shim(mod, name, pos):
         fn = getattr(mod, name, None)
@@ -152,10 +154,10 @@ def run_one(args):
                 a = tuple(a)
             out = fn(*a, **k)
             if name == 'decide_aggression':
-                try: cap['p'] = float(out[0])
+                try: dg['p'] = float(out[0])
                 except Exception: pass
             elif name == 'decide_size':
-                try: cap['size'] = float(out)
+                try: dg['size'] = float(out)
                 except Exception: pass
             return out
         setattr(mod, name, shim)
@@ -197,7 +199,7 @@ def run_one(args):
         state.update({'axis': None, 'val': None, 'funcs': ()})
         mark['o_draws'] = 0; mark['o_logs'] = 0; mark['arm_draws'] = None
         mark['attached'] = False          # O 팔에 대해서만 기록한다
-        cap['p'] = cap['size'] = None
+        dg['p'] = dg['size'] = None
         shim_rng.start_record()
         out0 = _oup(st, hero, board, my_range, opp_range, profile, pot, stack_,
                     street, seed_, n_opp, behind, prev_board, oop, initiative, **kw)
@@ -206,7 +208,7 @@ def run_one(args):
         p0 = (out0 or {}).get('plan')
         i0 = ((out0 or {}).get('intents') or {}).get(street) or {}
         a0 = i0.get('act')
-        p_0, sz_0, src_0 = cap['p'], cap['size'], i0.get('src')
+        p_0, sz_0, src_0 = dg['p'], dg['size'], i0.get('src')
         inv0 = {k: (out0 or {}).get(k) for k in
                 ('eq', 'eq_current', 'outs_true', 'made', 'nut_adv', 'range_adv')}
         _attached = bool(mark.get('attached'))
@@ -228,7 +230,7 @@ def run_one(args):
                     shim_rng.logs = base_logs
                     shim_rng.start_replay()
                     mark['arm_draws'] = None; mark['arm_logs'] = None
-                    cap['p'] = cap['size'] = None
+                    dg['p'] = dg['size'] = None
                     try:
                         o = _oup(dict(st) if st else st, hero, board, my_range,
                                  opp_range, profile, pot, stack_, street, seed_,
@@ -245,8 +247,8 @@ def run_one(args):
                     shim_rng.stop()
                     rec['plan_%s_%s' % (arm, tag)] = pl
                     rec['act_%s_%s' % (arm, tag)] = ac
-                    rec['p_%s_%s' % (arm, tag)] = cap['p']
-                    rec['size_%s_%s' % (arm, tag)] = cap['size']
+                    rec['p_%s_%s' % (arm, tag)] = dg['p']
+                    rec['size_%s_%s' % (arm, tag)] = dg['size']
                     rec['src_%s_%s' % (arm, tag)] = _src
                     rec['inv_%s_%s' % (arm, tag)] = (len(bad) == 0)
                     # 계획 구축 구간만 비교한다 (attach_intent 진입 전까지)
