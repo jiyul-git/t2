@@ -202,6 +202,49 @@ thin_value_turn · cbet_flop   M 에서 Δp≠0 = 0
 
 ---
 
+## 8-1. 사후 관측 — **예측으로 쓸 수 없다**
+
+측정이 끝난 뒤에 본 것이다. **confirmatory hypothesis 의 예측으로 쓰지
+않는다.** 여기 봉인해두고, 쓰려면 새 자료에서 사전 등록해야 한다.
+
+`DEVIATE` 분기 안에서 네 축은 **서로 다른 산술 위치**로 들어간다.
+
+```python
+# plan.py:861-868  DEVIATE 분기
+cf = cbet_freq(profile, board, n_opp, street, oop, rel, opp_est, range_adv=…)
+if has_c:
+    disc = PS.temper(profile, 'discipline', 5.0)
+    cf *= max(0.05, 1.0 - 0.085*disc)          # discipline — cbet_freq 밖에서 곱
+return max(0.0, min(0.9, cf)), 'DEVIATE:…'
+
+# cbet_freq 안 (plan.py:1183-1187)
+base *= max(0.35, min(1.85, 0.45 + 0.11*sk(cbet_flop)))   # cbet_flop — base 에 곱
+f = base + 0.035*a + 0.020*b                              # aggression·bluff — 더함
+```
+
+```
+위치                                    S
+discipline   cbet_freq 밖에서 전체에 곱    0.32004
+cbet_flop    cbet_freq 안에서 base 에 곱   0.14582
+aggression   base 에 더함 (계수 0.035)     0.10685
+bluff        base 에 더함 (계수 0.020)     0.06111
+```
+
+네 위치의 구분이 `S` 서열과 같은 순서다.
+
+**이것을 H3 의 부활로 쓰지 않는다.** 두 질문은 다르다.
+
+```
+H3 (기각됨)   계수·배율 크기로 **전체 flip 서열**을 설명하는 설명 체계
+⑩ 후보        **한 분기 안에서** 같은 코드 경로를 공유하는 축들이 어느 산술
+              연산 위치에서 서로 다른 Δp 를 만드는가 — 구조 탐색이다
+```
+
+비슷해 보이지만 논리적으로 다른 질문이고, **경계가 얇다.** ⑩ 설계에서
+이 구분을 먼저 박지 않으면 기각된 가설을 되살리는 것이 된다.
+
+---
+
 ## 9. 재현
 
 ```
