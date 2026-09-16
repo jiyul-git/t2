@@ -106,6 +106,9 @@ H5-B  함수공간 정규화   그 필드 차이가 최종 p 또는 관련 decis
 
 ### 3-1. 분모 분해 — 세 단계로 내려간다
 
+> **수행 완료.** 결과는 `CF_RESULT_NORM.md` 에 있다. 구조도는
+> `docs/ARCH_V1.png`(생성: `tools/draw_arch.py`).
+
 단순한 분모 비교로 끝내지 않는다. **각 단계의 N 과 flip rate 를 따로
 기록한다.**
 
@@ -432,6 +435,8 @@ plan.py 를 수정하지 않는다
 H1 의 실행층 도달 범위 — axis_dataflow.py 가 L1F 를 쓰도록 해야 낼 수 있다
 H5-B 의 "decision quantity" 를 무엇으로 잡을지 미정
 L1 harness 의 trace 40 상한이 31,236 을 깎았는지 — 미검증
+potcontrol M 의 crossed≠ 198건 / p 차 중앙 0.0000 — 실행층 소비처가 없는
+  축인데 crossed 가 갈렸다. 원인 미확인 (CF_RESULT_NORM.md 6절)
 사전등록 예측은 설계 확정 후에 쓴다 — 아직 쓰지 않았다
 ```
 
