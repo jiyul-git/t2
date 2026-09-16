@@ -104,6 +104,29 @@ def analyse(recs):
     print('          └ plan == giveup         %6d   %s' % (len(gv_band), pct(len(gv_band), len(rej_band))))
     print()
 
+    # --- 추가 내역. 첫 집계를 본 뒤 붙였다. 채점이 아니라 규모 파악용이다 ---
+    d8 = [i for i in enter if (i.get('outs') or 0) >= 8]
+    d8r = [i for i in d8 if any(REJECT in w for w in lines(i))]
+    all8 = [i for i in obs if (i.get('outs') or 0) >= 8]
+    sb8 = [i for i in all8 if i.get('plan') == 'semibluff']
+    print('  [추가] 드로우(outs>=8) 규모')
+    print('    전체 관측 중 outs>=8            %6d' % len(all8))
+    print('      ├ plan == semibluff           %6d   %s' % (len(sb8), pct(len(sb8), len(all8))))
+    print('      └ pcz 진입 (plan.py:468 도달 불가) %4d   %s' % (len(d8), pct(len(d8), len(all8))))
+    print('          └ 465 탈락                %6d' % len(d8r))
+    print()
+    # 465 의 else 는 rel 과 made 두 조건의 논리곱이 깨진 것이다.
+    # made 는 기록돼 있고 458 의 rel 문턱은 max(0.28, 0.52-0.080*_mg) 라
+    # _mg(기록 없음)에 따라 [0.28, 0.52] 사이다. 그래서 세 구간으로만 가른다.
+    print('  [추가] 465 로 온 %d건을 rel 로 가른다 (made 분포는 아래)' % len(rej))
+    for lab, sel in (('rel <  0.28          ', [i for i in rej if i['rel'] < 0.28]),
+                     ('0.28 <= rel <  0.52  ', [i for i in rej if 0.28 <= i['rel'] < 0.52]),
+                     ('rel >= 0.52          ', [i for i in rej if i['rel'] >= 0.52])):
+        print('    %s %6d' % (lab, len(sel)))
+    print('    → rel >= 0.52 는 458 의 rel 문턱을 확실히 넘는다.')
+    print('      그 건들을 막은 것은 rel 이 아니라 made >= 1 이다')
+    print()
+
     st = collections.Counter(i['street'] for i in rej)
     print('  rel 탈락의 스트리트 분포   %s' % dict(st))
     pl = collections.Counter(i.get('plan') for i in rej)
