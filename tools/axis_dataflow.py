@@ -38,6 +38,15 @@ L2F = {'make_plan', 'refresh', 'river_fix', '_allowed', 'revise_plan',
 L1F = {'decide_aggression', 'decide_response', 'cbet_freq', 'calldown_need',
        'decide_size', 'overbet_frac', 'barrel_size', 'bluff_mode',
        'opp_bet_prob', 'attach_intent', 'act_with_plan'}
+# **cf_axis_l2.py 의 D 팔이 실제로 교체하는 집합은 이보다 작다** — 아래 둘이
+# 빠진다. 어떤 축이 이 둘에서만 읽히면 D 팔 개입이 그 축에 닿지 않는다.
+L1_ONLY_HERE = {'attach_intent', 'act_with_plan'}
+L1_D = L1F - L1_ONLY_HERE
+
+# 계획층 안에서 호출되는 실행층 함수 (CF_DESIGN_LEVEL2 5-2).
+# 이 함수들에서 읽힌 축은 **계획 구축 중에도** 읽힌다.
+L1_IN_L2 = {'barrel_size': 'make_plan:480', 'bluff_mode': 'make_plan:497',
+            'opp_bet_prob': 'trap_judgment:224'}
 
 
 def fn_index(path):
@@ -167,6 +176,61 @@ def main():
                      ' '.join(sorted(set(ind))) or '없음'))
     print()
     print('직접·간접 **둘 다 없는** 축만 Level 2 에서 M=0 이 구조적으로 확정된다.')
+
+    # ---------- 실행층(L1) ----------
+    print()
+    print('=' * 84)
+    print()
+    print('# 실행층(L1) 함수에서 읽히는 축')
+    print()
+    print('**이것은 "호출 지점 분류" 이지 "런타임 도달 범위" 가 아니다.** 두 가지')
+    print('이유로 이름 기준 분류가 실제 도달과 어긋난다.')
+    print()
+    print('  5-2  make_plan 이 barrel_size(480)·bluff_mode(497) 를,')
+    print('       trap_judgment 가 opp_bet_prob(224) 을 부른다.')
+    print('       → 이 셋에서 읽힌 축은 **계획 구축 중에도** 읽힌다')
+    print('  5-1  perceived_rel(계획층)이 만든 rel 을 실행층이 읽는다.')
+    print('       → 계획층에서만 읽히는 축도 행동에 닿을 수 있다')
+    print()
+    print('  또 attach_intent·act_with_plan 은 이 표의 L1F 에는 있지만')
+    print('  cf_axis_l2.py 의 D 팔 개입 집합에는 **없다**. 그 둘에서만 읽히는')
+    print('  축은 D 팔이 건드리지 못한다 — 아래에서 (D팔밖) 으로 표시한다.')
+    print()
+    print('  **이 표는 호출 그래프가 아니라 읽기 지점 표다.** 실행층 안의 중첩')
+    print('  호출은 드러나지 않는다 — cbet_freq 는 decide_aggression:863 안에서,')
+    print('  overbet_frac 는 decide_size:1038 안에서, barrel_size 는')
+    print('  bluff_mode:1995 안에서 불린다. 그래서 cbet_flop 처럼 cbet_freq 에서만')
+    print('  읽히는 축도 decide_aggression 개입에 실제로는 닿는다')
+    print('  (L1 POST flip 1.0% 가 그 경우다).')
+    print()
+    h2 = '%-18s %-34s %-30s'
+    print(h2 % ('축', '직접 실행층(L1)', '간접 실행층 경로'))
+    print('-' * 84)
+    nothing = []
+    for ax in axes:
+        def mark(k):
+            t = k
+            if k in L1_IN_L2: t += '(계획층내:%s)' % L1_IN_L2[k].split(':')[0]
+            if k in L1_ONLY_HERE: t += '(D팔밖)'
+            return t
+        direct = sorted(k for k in pl_ax.get(ax, {}) if k in L1F)
+        ind = []
+        for f, d in bi.items():
+            if 't:' + ax in d or 'c:' + ax in d:
+                for k in pl_dv.get(f, {}):
+                    if k in L1F: ind.append('bias:%s→%s' % (f, mark(k)))
+        for f, d in dv.items():
+            if ax in d:
+                for k in pl_dv.get(f, {}):
+                    if k in L1F: ind.append('derive:%s→%s' % (f, mark(k)))
+        if not direct and not ind:
+            nothing.append(ax); continue
+        print(h2 % (ax, ' '.join(mark(k) for k in direct) or '**없음**',
+                    ' '.join(sorted(set(ind))) or '없음'))
+    print()
+    print('실행층 함수에서 전혀 읽히지 않는 축 (%d개)' % len(nothing))
+    for i in range(0, len(nothing), 4):
+        print('   ' + '  '.join('%-18s' % x for x in nothing[i:i+4]))
 
 
 if __name__ == '__main__':

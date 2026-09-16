@@ -406,6 +406,62 @@ H5-B  decision quantity 를 정의하기 전까지 보류한다
 사라진다. 그래서 **"discipline 의 1↔9 변화량은 8 이다" 라고 비교하는 것
 자체가 함수상의 실제 개입 크기를 표현하지 않는다.**
 
+### 4-7. H1 — 실행층 함수에서 읽히는 축
+
+`axis_dataflow.py` 가 `L1F` 를 실제로 쓰게 했다. 기존 계획층 표는
+**바이트 단위로 그대로**이고 아래 표가 뒤에 붙는다.
+
+```
+축                 직접 실행층(L1)                     간접 실행층 경로
+cbet_flop         cbet_freq                          없음
+thin_value_turn   decide_aggression                  없음
+discipline        decide_aggression decide_response   bias:station→decide_response
+aggression        attach_intent(D팔밖) decide_response  derive:aggr→{calldown_need,
+                                                     cbet_freq, decide_aggression,
+                                                     decide_response, decide_size,
+                                                     overbet_frac, opp_bet_prob}
+                                                     derive:value→decide_aggression
+                                                     bias:{bluff_fear,hero_call}→decide_response
+bluff             cbet_freq decide_aggression         derive:bluff→(같은 넷)
+                  decide_response act_with_plan(D팔밖)
+looseness         **없음**                             bias:station→decide_response
+potcontrol        (실행층 함수에서 전혀 읽히지 않는 18축 중 하나)
+```
+
+**세 가지 한계. "실행층 도달 범위가 확인됐다" 라고 쓰지 않는다.**
+
+```
+1  5-2  make_plan 이 barrel_size(480)·bluff_mode(497) 를, trap_judgment 가
+        opp_bet_prob(224) 을 부른다. 이 셋에서 읽힌 축은 계획 구축 중에도
+        읽힌다 → 표에 (계획층내:…) 로 표시한다
+2  5-1  perceived_rel(계획층)이 만든 rel 을 실행층이 읽는다. 계획층에서만
+        읽히는 축도 행동에 닿을 수 있다
+3       이 표는 **호출 그래프가 아니라 읽기 지점 표다.** 실행층 안의 중첩
+        호출이 안 보인다 — cbet_freq 는 decide_aggression:863, overbet_frac 는
+        decide_size:1038, barrel_size 는 bluff_mode:1995 안에서 불린다
+```
+
+또 `attach_intent`·`act_with_plan` 은 이 도구의 `L1F` 에는 있지만
+`cf_axis_l2.py` 의 D 팔 개입 집합에는 **없다**. 표에 `(D팔밖)` 으로 적는다.
+
+**타당성 검사.** L1 POST 는 `decide_aggression` 에서만 개입한다. 그 도달
+여부가 실측 flip 과 맞는지 본다.
+
+```
+축                 L1 POST   지도상 decide_aggression 도달
+aggression           9.2%    derive:aggr→ · derive:value→
+discipline           4.3%    직접 (plan.py:866)
+bluff                3.5%    직접 · derive:bluff→
+thin_value_turn      2.7%    직접 (plan.py:941)
+cbet_flop            1.0%    cbet_freq — decide_aggression:863 안 (한계 3)
+potcontrol           0.0%    없음
+looseness              —     없음 (bias:station→decide_response 뿐)
+```
+
+**도달 없음 두 축이 실측 0 이고, 도달 있는 다섯 축이 실측 비 0 이다.**
+다만 `cbet_flop` 은 한계 3 때문에 표만 보면 도달이 없어 보인다 — 순위나
+크기를 이 표로 설명하지 않는다.
+
 ### 4-6. 현재 경계
 
 | 항목 | 상태 |
@@ -413,7 +469,7 @@ H5-B  decision quantity 를 정의하기 전까지 보류한다
 | H2 기저 빈도 | **구조적으로 확인 완료** — archive 로 산출 가능 |
 | H3 계수 크기 | **구조적으로 확인 완료** — 전수표 위 |
 | H4 게이트·클램프 | **구조적으로 확인 완료** — 닿는 클램프는 `bluff` 상한 하나 |
-| H1 도달 범위 | **도구의 한계 확인 완료, 실제 비교 미완료.** `axis_dataflow.py` 는 계획층 도달 범위만 낸다. `L1F` 미사용은 확정됐지만 그것이 H1 의 실행층 결과는 아니다 |
+| H1 도달 범위 | **실행층 표 산출 완료 (4-7).** `axis_dataflow.py` 가 `L1F` 를 쓰게 했다. 다만 **호출 지점 분류이지 런타임 도달 범위가 아니다** — 세 가지 한계가 있다 |
 | ② subset | **확정 — 31,189** (4-3). `attached_O` = `attach_intent` 실행. 원자료가 직접 셌다 |
 | ③ 대응 unit | **확정 — 31,189.** L1 과 동일한 (hand, seat, street) decision-unit 정의 |
 | H5-A | 방법만 확정. 미실행 |
@@ -438,7 +494,6 @@ plan.py 를 수정하지 않는다
 ## 6. 열린 항목
 
 ```
-H1 의 실행층 도달 범위 — axis_dataflow.py 가 L1F 를 쓰도록 해야 낼 수 있다
 H5-B 의 "decision quantity" 를 무엇으로 잡을지 미정
 L1 harness 의 trace 40 상한이 31,236 을 깎았는지 — 미검증
 사전등록 예측은 설계 확정 후에 쓴다 — 아직 쓰지 않았다
