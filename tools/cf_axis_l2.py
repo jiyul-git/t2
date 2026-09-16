@@ -105,6 +105,9 @@ class RandomShim:
 
 def run_one(args):
     entries, hpl, stack, seed, cap, axes = args
+    # 현재 핸드 표시 — 파일 I/O 는 하지 않는다. 진단용 호출 순번(call_seq)에만 쓴다.
+    cur = {'hand': 0, 'table': None}
+    seqs = collections.Counter()
     import fieldsim as FS
     import plan as PL
     import runner as RU
@@ -126,7 +129,8 @@ def run_one(args):
     # 바뀜" 이 구조적으로 교락돼, 제외 규칙이 재려던 케이스를 전부 지운다.
     # Level 1 은 attach_intent 를 재호출하지 않고 기록된 roll 과 반사실 p
     # 로 직접 행동을 계산해서 이 문제가 없었다.
-    mark = {'o_logs': 0, 'o_draws': 0, 'arm_draws': None, 'p': None, 'roll': None}
+    mark = {'o_logs': 0, 'o_draws': 0, 'arm_draws': None, 'p': None, 'roll': None,
+            'attached': False}
     orig = {}
     def make_shim(mod, name, pos):
         fn = getattr(mod, name, None)
@@ -158,6 +162,9 @@ def run_one(args):
     # attach_intent 진입 순간을 표시하는 래퍼
     _oai0 = PL.attach_intent
     def mark_ai(*a, **k):
+        # attach_intent 진입 표시. plan.py:1521 의 게이트가 열렸다는 **직접 관측**이다.
+        # O 팔 호출 직전에만 리셋하므로, 반사실 팔의 진입은 이 값을 덮지 않는다.
+        mark['attached'] = True
         if shim_rng.mode == 'record':
             mark['o_logs'] = len(shim_rng.logs)
             mark['o_draws'] = sum(len(l) for l in shim_rng.logs)
@@ -178,6 +185,7 @@ def run_one(args):
         # --- O 팔: 난수 기록 ---
         state.update({'axis': None, 'val': None, 'funcs': ()})
         mark['o_draws'] = 0; mark['o_logs'] = 0; mark['arm_draws'] = None
+        mark['attached'] = False          # O 팔에 대해서만 기록한다
         shim_rng.start_record()
         out0 = _oup(st, hero, board, my_range, opp_range, profile, pot, stack_,
                     street, seed_, n_opp, behind, prev_board, oop, initiative, **kw)
@@ -188,9 +196,17 @@ def run_one(args):
         a0 = i0.get('act')
         inv0 = {k: (out0 or {}).get(k) for k in
                 ('eq', 'eq_current', 'outs_true', 'made', 'nut_adv', 'range_adv')}
+        _attached = bool(mark.get('attached'))
+        # **보조 진단값.** session.py:454 의 idx 를 재구현한 것이 아니다 —
+        # harness 가 본 update_plan 호출의 독립적인 순번일 뿐이다.
+        # 최초 decision unit 의 기준은 attached_O 하나다.
+        _skey = (cur['hand'], cur['table'], profile.get('id'), street)
+        _seq = seqs[_skey]; seqs[_skey] += 1
 
         for ax in axes:
-            rec = {'pid': profile.get('id'), 'street': street, 'axis': ax,
+            rec = {'seed': seed, 'hand': cur['hand'], 'table': cur['table'],
+                   'pid': profile.get('id'), 'street': street, 'axis': ax,
+                   'attached_O': _attached, 'call_seq': _seq,
                    'plan_O': p0, 'act_O': a0}
             for arm in ('D', 'M', 'T'):
                 for tag, val in (('lo', LO), ('hi', HI)):
@@ -233,6 +249,7 @@ def run_one(args):
             f.advance_level()
             for tid, tb in list(f.tables.items()):
                 if tb.n() >= 2:
+                    cur['hand'] = f.hand_no; cur['table'] = tid
                     f._play_table(tb)
             f._collect_busts(); f._balance(); f.notes = []
     finally:
@@ -254,6 +271,8 @@ def main():
     ap.add_argument('--cap', type=int, default=3000)
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--axes', default='_rand_A')
+    ap.add_argument('--rows', default=None,
+                    help='rec 전체를 JSONL.gz 로 저장할 경로. 집계에는 영향 없다')
     a = ap.parse_args()
 
     lo, hi = (a.seeds.split('-') + [None])[:2]
@@ -265,6 +284,18 @@ def main():
                                  for s in seeds])
     rows = [r for o in out for r in o[0]]
     errs = sum(o[1] for o in out)
+
+    # 원자료 저장. **pool.map 이 끝난 뒤에만** 쓴다 — 측정 경로에 I/O 를 끼우지 않는다.
+    if a.rows:
+        import gzip, json
+        _op = gzip.open if a.rows.endswith('.gz') else open
+        with _op(a.rows, 'wt', encoding='utf-8') as fh:
+            for r in rows:
+                fh.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + '\n')
+        print('  원자료 %d행 → %s' % (len(rows), a.rows))
+        _bad = sum(1 for r in rows
+                   if bool(r.get('attached_O')) != (r.get('call_seq') == 0))
+        print('  attached_O 와 call_seq==0 불일치 %d행' % _bad)
 
     print('# ⑤ Level 2 반사실 (네 팔: O / D=실행층 / M=계획층 / T=전체)')
     print('  entries=%d hpl=%d stack=%d  시드 %d개  축 %s'
