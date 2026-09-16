@@ -129,10 +129,12 @@ def main():
     print('## 잠재 3요인이 설명하는 몫')
     print()
     print('  축 분산의 상당 부분은 study·aggro·exp 공유분이다. 반사실 스왑은')
-    print('  잠재를 그대로 두고 축만 1 또는 9 로 바꾸므로, **잠재와 어긋난')
-    print('  조합**(예: aggro 3 인데 aggression 9)을 만든다. 필드에 실재하는')
-    print('  조합이 아니다. 잔차 sd 는 잠재를 고정했을 때 그 축이 실제로')
-    print('  흔들리는 폭이다.')
+    print('  잠재를 그대로 두고 축만 1 또는 9 로 바꾸므로, **생성분포에서 매우')
+    print('  희귀한 조합**(예: aggro 3 인데 aggression 9)이 나올 수 있다.')
+    print('  생성식상 불가능한 값은 아니다 — aggression = aggro + gauss(0,0.8)')
+    print('  이므로 확률이 0 이 아니다. 다만 r=0.938 이라 실제 필드에서')
+    print('  대표적이지 않은 반사실 조합이다. 잔차 sd 는 잠재를 고정했을 때')
+    print('  그 축이 실제로 흔들리는 폭이다.')
     print()
     L = [lat['study'], lat['aggro'], lat['exp']]
     h2 = '%-18s %7s %7s %7s %7s %8s %9s   %9s' % (
