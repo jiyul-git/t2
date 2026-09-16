@@ -146,11 +146,193 @@ H5-B  함수공간 정규화   그 필드 차이가 최종 p 또는 관련 decis
 
 **새 측정을 설계하기 전에, 이미 가진 것으로 무엇을 확정할 수 있는지부터
 확인한다.** `tools/axis_dataflow.py`, 기존 archive, 기존 로그를 실제로
-뒤진다. 지금 이 문서는 그 확인 **전**의 가설 문서다.
+뒤진다. → **4절에서 수행했다.** 3-2~3-6 중 어디가 확정됐고 어디가 추가
+계측을 요구하는지는 4-6 의 표를 본다.
 
 ---
 
-## 4. 이 실험이 답하지 않을 것 (미리 적는다)
+## 4. 기존 자료 재고 조사 결과 (2026-09-16)
+
+**이번 조사는 기존 자료의 정보량을 확인한 것이며 새로운 측정 결과가 아니다.**
+시뮬레이션·사전등록을 하지 않았고 `plan.py` 도 읽기만 했다.
+
+조사 대상: `tools/axis_dataflow.py`, `/tmp/bl2/collected.jsonl`(4,000핸드),
+저장소의 `review_*`·`hand_archive2*`·`bak_*`, `plan.py`, `persona.py`.
+
+### 4-1. 기존 자료로 확정된 것
+
+**H2 기저 빈도 — 기존 archive 로 산출 가능.** `collected.jsonl` 에서
+`(hand_no, seat, board, street)` 중복 제거 후 포스트플랍 intent 7,064건.
+`plan` 라벨과 `trace.why` 로 분기 실행 빈도가 그대로 나온다. 추가 측정
+불필요.
+
+```
+plan 라벨                             aggression 분기 why
+  giveup         2540  36.0%           포기 계획 + 이니셔티브 없음 → 체크   2317
+  pot_control    1208  17.1%           밸류 계획 실행(N%)                  1949
+  value_3street  1031  14.6%           DEVIATE:포기 계획이나 지속벳(N%)    1055
+  value_2street   885  12.5%           팟컨트롤 → 대부분 체크               905
+  showdown        832  11.8%           블러프 계획 실행(N%)                 428
+  bluff_2street   280   4.0%           함정 계획 → 체크                     105
+  semibluff       146   2.1%         response 판정 1,144건
+  trap            105   1.5%
+  thin_river       33   0.5%         ※ '팟컨트롤 + 강도 0.NN' 은 강도값마다
+  river_bluff       4   0.1%            갈려 있다. 합치면 262건 — 정규화 필요
+```
+
+**기저 빈도가 높으므로 flip 이 크다 같은 인과 해석은 하지 않는다.**
+
+**H3 계수 크기 — 소스 전수 추적으로 확정.** 파생 변환부터.
+
+```
+aggr  = temper['aggression']        ← 항등
+bluff = concepts['bluff']           ← 항등
+tight = 10 − temper['looseness']
+value = 'xr' if checkraise_flop ≥ 6.5 else ('lead' if aggression ≤ 4 else 'mixed')
+goal  = 'survive' if icm ≥ 7 else ('spot' if discipline ≤ 3.5 else 'accum')
+bias  = _z(가중합),  _z(v) = clamp((v−5)/5, −1, +1)
+```
+
+실행층 소비처 전수 (축 1→9, 교락축 5.0 고정):
+
+```
+-- aggression
+   decide_aggression 밸류       p = 0.30+0.058·a+0.018·gamble      0.448 → 0.912  ×2.04
+   decide_aggression 팟컨트롤     max(.05,min(.6, 0.18+0.035·a))     0.215 → 0.495  ×2.30
+   cbet_freq                  f = base+0.035·a+0.020·b           0.555 → 0.835  ×1.50
+-- bluff
+   decide_aggression 블러프계획    p = 0.25+0.070·b+0.02·gamble       0.420 → 0.980  ×2.33
+   cbet_freq                  +0.020·b                           0.615 → 0.775  ×1.26
+-- thin_value_turn
+   decide_aggression 밸류       p ×= (0.55+0.09·sk)                0.640 → 1.360  ×2.12
+-- cbet_flop
+   cbet_freq                  base ×= (0.45+0.11·sk)             0.560 → 1.440  ×2.57
+-- discipline
+   decide_aggression:866       cf ×= max(.05, 1−0.085·disc)       0.915 → 0.235  ×0.26
+   decide_response:805         p_dev ×= max(.05, 1−0.085·disc)    0.915 → 0.235  ×0.26
+   calldown_need station       need ×= max(.55, 1−0.22·station)   0.965 → 1.000  ×1.04
+   call_bias sticky            m ×= 1−0.12·sticky                 0.947 → 1.000  ×1.06
+-- looseness
+   calldown_need station       need ×= max(.55, 1−0.22·station)   1.000 → 0.921  ×0.92
+   call_bias draw_love         m ×= 1−0.18·draw_love              1.000 → 0.978  ×0.98
+   call_bias sticky            m ×= 1−0.12·sticky                 1.000 → 0.976  ×0.98
+-- potcontrol
+   실행층 소비처 **없음**
+```
+
+`discipline` 의 실행층 진입점은 `cbet_freq` 안이 아니라 그 **바깥**
+(`plan.py:866-867`)이다. `cbet_freq` 자체는 `discipline` 을 읽지 않는다.
+
+**H4 게이트·클램프·포화 — 위치와 접촉 여부 확정.**
+
+`max(0.0, bias(...))` 가 정의역 절반을 차단한다 (교락축 5.0 고정):
+
+```
+                    축1      축9    max(0,·) 후      가동 구간
+station(looseness)  −0.360  +0.360  0.000 → 0.360   상반만
+station(discipline) +0.160  −0.160  0.160 → 0.000   하반만
+sticky(discipline)  +0.440  −0.440  0.440 → 0.000   하반만
+sticky(looseness)   −0.200  +0.200  0.000 → 0.200   상반만
+draw_love(looseness)−0.120  +0.120  0.000 → 0.120   상반만
+```
+
+**`discipline` 과 `looseness` 는 정확히 반대쪽 절반에서만 작동한다.**
+
+이산 게이트:
+
+```
+plan.py:456·504  sk('potcontrol') >= 1   → PS.sk ≥ 3.33   계획층. 위에서 기울기 0
+plan.py:490      sk('bluff') >= 1        → PS.sk ≥ 3.33
+plan.py:468      sk('semibluff') >= 0.4  → PS.sk ≥ 1.33
+plan.py:940      has_c and rel < 0.85    → thin_value 계수의 진입 조건
+persona.derive   aggression ≤ 4 → value='lead' → p ×= 1.12    **계단**
+persona.derive   discipline ≤ 3.5 → goal='spot'
+```
+
+`make_plan` 안의 `sk()` 는 `PS.sk/3.33`(0~3), `decide_aggression`·
+`cbet_freq` 의 `PS.sk(...)` 는 0~10 날것이다. **두 스케일이 같은 파일에
+섞여 있다.**
+
+**1↔9 범위에서 실제로 닿는 클램프는 하나뿐이다** — `bluff` 축 9 에서
+`p = 0.980 > 0.95` 라 `decide_aggression` 블러프 상한에 잘린다. 나머지
+(`0.6` 팟컨트롤 상한, `0.55` station 하한, `0.05` disc 하한, `cbet_flop`
+`[0.35,1.85]`)는 전부 미접촉이다.
+
+`rel >= 0.65` 의 `p = p + (1−p)·((rel−0.65)/0.35)^0.8` 은 `p` 를 1 쪽으로
+밀어 **그 앞의 축 계수를 압축한다.** ④ 에서 `thin_value` 를 `rel < 0.85`
+로 제한하니 ρ 가 +0.130 → +0.391 로 올랐던 자리와 같다.
+
+**`potcontrol` 은 실행층 소비처가 없다.** `decide_aggression` 의
+`pot_control` 분기는 `0.18 + 0.035·a` 로 `aggression` 만 읽는다. 계획층
+에서도 게이트 두 번뿐이고 `_pc_p` 산식에 축이 없다. **이름 때문에 실행층
+행동 확률을 조절하는 축처럼 보이지만 아니다.** 반대로 `bluff` 는 `p` 에
+직접 들어가고 상한에 실제로 닿는다. **"축이 존재한다 → 실행층 flip 에
+영향을 준다" 로 취급하면 안 된다.**
+
+**`tools/axis_dataflow.py` 의 `L1F` 는 정의만 되고 사용되지 않는다.**
+`L1F` 출현 1회(38줄), `L2F` 출현 6회(35·139·145·153·159·164줄).
+
+### 4-2. 기존 자료로 확정할 수 없는 것
+
+```
+②  L2 전체 74,848 중 action-decision subset 의 N
+③  따라서 ② 에 의존하는 L1 대응 decision unit 의 N
+H5-B  함수공간 변화량
+```
+
+### 4-3. ② 에 추가 계측이 필요한 이유
+
+archive 는 **intent 생성 이후의 레코드만** 담는다. `collected.jsonl` 의
+포스트플랍 intent 7,064건은 `trace` 가 빈 것이 **한 건도 없다** — 기록
+단위가 이미 "행동 결정이 일어난 자리"이고, 우리가 세려는 필터의 하류다.
+
+따라서 `update_plan` 호출 중 intent 가 생성되지 않은 경우를 archive 로
+복원할 수 없다. ② 를 구하려면 **`update_plan` 호출과 intent 생성 여부를
+동일 실행에서 연결해 기록**해야 한다.
+
+**계측 위치와 비용은 아직 확정하지 않는다.**
+
+### 4-4. 결합식은 만들지 않는다
+
+H3 배율만으로는 관측 서열이 설명되지 않는다. `cbet_flop` 의 배율이
+×2.57 로 가장 큰데 L1 POST flip 은 1.0% 로 뒤에서 두 번째다. `bluff` 도
+배율(×2.33)이 `aggression`(×2.04)보다 큰데 flip 은 작다.
+
+**배율 × 빈도 × gate 를 사후적으로 결합해 결과를 설명하는 식을 만들지
+않는다.** 지금 만들면 결과를 보고 모형을 맞춘 것이 된다. 현재 결과는
+**구조적 후보를 확인한 것으로만 기록한다.**
+
+### 4-5. H5-A · H5-B
+
+```
+H5-A  persona 생성기 호출로 산출 가능하다는 사실만 기록한다. 아직 실행하지 않는다
+H5-B  decision quantity 를 정의하기 전까지 보류한다
+```
+
+`max(0.0, bias(...))` 구조가 H5-A·H5-B 분리를 소스 수준에서 뒷받침한다.
+`discipline` 은 한 방향에서만 효과가 나고 반대 방향에서는 클램프로
+사라진다. 그래서 **"discipline 의 1↔9 변화량은 8 이다" 라고 비교하는 것
+자체가 함수상의 실제 개입 크기를 표현하지 않는다.**
+
+### 4-6. 현재 경계
+
+| 항목 | 상태 |
+|---|---|
+| H2 기저 빈도 | **구조적으로 확인 완료** — archive 로 산출 가능 |
+| H3 계수 크기 | **구조적으로 확인 완료** — 전수표 위 |
+| H4 게이트·클램프 | **구조적으로 확인 완료** — 닿는 클램프는 `bluff` 상한 하나 |
+| H1 도달 범위 | **도구의 한계 확인 완료, 실제 비교 미완료.** `axis_dataflow.py` 는 계획층 도달 범위만 낸다. `L1F` 미사용은 확정됐지만 그것이 H1 의 실행층 결과는 아니다 |
+| ② subset | **기존 자료로 불가능하다는 정보 한계 확인 완료** |
+| ③ 대응 unit | ② 때문에 보류 |
+| H5-A | 방법만 확정. 미실행 |
+| H5-B | 정의부터 보류 |
+
+**Level 1·2 의 기존 숫자는 이 조사에서 어느 것도 수정하지 않았고, 앞으로도
+수정하지 않는다.**
+
+---
+
+## 5. 이 실험이 답하지 않을 것 (미리 적는다)
 
 ```
 축의 "중요도" 순위를 매기지 않는다
@@ -161,14 +343,19 @@ plan.py 를 수정하지 않는다
 
 ---
 
-## 5. 열린 항목
+## 6. 열린 항목
 
 ```
-분모 분해(3-1)의 ②·③ 을 기존 로그로 낼 수 있는지, 새 계측이 필요한지 미정
-H2 기저 빈도를 archive 로 낼 수 있는지 미정 — 확인이 먼저다
+② 를 위한 최소 계측이 정확히 어디에 들어가야 하는가 — 코드 추적 미완료
+   (4-3 에서 "동일 실행에서 연결해 기록해야 한다" 까지만 확정했다)
+③ 은 ② 가 나온 뒤에야 정의된다
+H1 의 실행층 도달 범위 — axis_dataflow.py 가 L1F 를 쓰도록 해야 낼 수 있다
 H5-B 의 "decision quantity" 를 무엇으로 잡을지 미정
 사전등록 예측은 설계 확정 후에 쓴다 — 아직 쓰지 않았다
 ```
+
+4절에서 해소된 항목: H2 산출 가능 여부, H3, H4, `potcontrol` 실행층 부재,
+`L1F` 미사용.
 
 **이 수정 후에도 새 측정과 사전등록 예측은 시작하지 않는다.** 설계 문서의
 논리적 누락이 없는지 다시 검토한다.
