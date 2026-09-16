@@ -149,7 +149,18 @@ d8e9271ec730c01d80c801550bf0e5b50fabc5fa3533ea3f43200046afb832cc
 ```
 Level 1  실행층 개입          CF_RESULT_LEVEL1.md · CF_RESULT_LEVEL1_EXT.md
 Level 2  네 팔 매개 분해       CF_RESULT_LEVEL2.md   ← 기준점 8be8b4e
+⑥-3-1   L1↔L2 정규화         CF_RESULT_NORM.md     ← 0.37~0.42 비교는 폐기됐다
+⑥       축 서열의 원인 가설    CF_RESULT_ORDER.md    ← 다섯 후보 전부 단독 설명 불가
+구조도                        docs/ARCH_V1.png (tools/draw_arch.py)
 ```
+
+**`0.37~0.42` 로 L1 과 L2 를 비교하지 마라.** 분모(31,189 vs 74,848)와
+정의(`act_lo != act_hi` vs 각 tag 를 O 와 비교)가 둘 다 달랐다. 맞추면
+두 층이 거의 겹친다 (`CF_RESULT_NORM.md`).
+
+**축 서열을 설명하는 식을 만들지 마라.** 도달 범위·기저 빈도·계수 크기·
+게이트·입력 sd·함수 공간 여섯을 각각 쟀고 **단독으로 설명하는 것이
+하나도 없다.** 사후 결합식은 금지다 (`CF_RESULT_ORDER.md` 4절).
 
 Level 2 에서 설계 진술 두 개가 정정됐다. **D=실행층 / M=계획층 이분법을
 그대로 쓰지 마라** (`CF_DESIGN_LEVEL2.md` 5-1·5-2).
