@@ -151,7 +151,7 @@ Level 1  실행층 개입          CF_RESULT_LEVEL1.md · CF_RESULT_LEVEL1_EXT.m
 Level 2  네 팔 매개 분해       CF_RESULT_LEVEL2.md   ← 기준점 8be8b4e
 ⑥-3-1   L1↔L2 정규화         CF_RESULT_NORM.md     ← 0.37~0.42 비교는 폐기됐다
 ⑥       축 서열의 원인 가설    CF_RESULT_ORDER.md    ← 다섯 후보 전부 단독 설명 불가
-⑦       경로 단계별 판별       CF_RESULT_PATH.md     ← 네 가설 전부 기각
+⑦       경로 단계별 판별       CF_RESULT_PATH.md     ← 기준점 e1f3370. 네 가설 전부 기각
 구조도                        docs/ARCH_V1.png (tools/draw_arch.py)
 ```
 
@@ -159,9 +159,14 @@ Level 2  네 팔 매개 분해       CF_RESULT_LEVEL2.md   ← 기준점 8be8b4e
 정의(`act_lo != act_hi` vs 각 tag 를 O 와 비교)가 둘 다 달랐다. 맞추면
 두 층이 거의 겹친다 (`CF_RESULT_NORM.md`).
 
-**축 서열을 설명하는 식을 만들지 마라.** 도달 범위·기저 빈도·계수 크기·
-게이트·입력 sd·함수 공간 여섯을 각각 쟀고 **단독으로 설명하는 것이
-하나도 없다.** 사후 결합식은 금지다 (`CF_RESULT_ORDER.md` 4절).
+**축 서열을 설명하는 식을 만들지 마라.** ⑥ 이 후보 원인 여섯을(도달 범위·
+기저 빈도·계수 크기·게이트·입력 sd·함수 공간), ⑦ 이 경로 단계 넷을
+(도달률·조건부 크기·분기 다양성·하류 전달률) 각각 쟀고 **단독으로 설명하는
+것이 하나도 없다.** 사후 결합식은 금지다 (`CF_RESULT_ORDER.md` 4절,
+`CF_RESULT_PATH.md` 5절).
+
+**이것을 "경로가 서열과 무관하다" 로 읽지 마라.** 기각된 것은 각 가설이
+**단독으로** 서열을 재현한다는 주장이다 (`CF_RESULT_PATH.md` 6-1).
 
 Level 2 에서 설계 진술 두 개가 정정됐다. **D=실행층 / M=계획층 이분법을
 그대로 쓰지 마라** (`CF_DESIGN_LEVEL2.md` 5-1·5-2).
