@@ -275,22 +275,105 @@ persona.derive   discipline ≤ 3.5 → goal='spot'
 ### 4-2. 기존 자료로 확정할 수 없는 것
 
 ```
-②  L2 전체 74,848 중 action-decision subset 의 N
-③  따라서 ② 에 의존하는 L1 대응 decision unit 의 N
 H5-B  함수공간 변화량
 ```
 
-### 4-3. ② 에 추가 계측이 필요한 이유
+②·③ 은 이 목록에서 **삭제됐다.** 소스 추적으로 확정됐다 — 4-3 을 본다.
 
-archive 는 **intent 생성 이후의 레코드만** 담는다. `collected.jsonl` 의
-포스트플랍 intent 7,064건은 `trace` 가 빈 것이 **한 건도 없다** — 기록
-단위가 이미 "행동 결정이 일어난 자리"이고, 우리가 세려는 필터의 하류다.
+### 4-3. ②·③ — 추가 계측 불필요. 소스 추적으로 확정
 
-따라서 `update_plan` 호출 중 intent 가 생성되지 않은 경우를 archive 로
-복원할 수 없다. ② 를 구하려면 **`update_plan` 호출과 intent 생성 여부를
-동일 실행에서 연결해 기록**해야 한다.
+**앞선 판이 틀렸다.** "archive 는 intent 생성 이후의 레코드만 담는다"고
+적었는데 아니다. `session.py:456` 은 `if True:` 이고 `session.py:460` 의
+기록은 `update_plan` 호출마다 무조건 남는다. 그때 `trace` 가 빈 레코드가
+0건으로 보인 것은, 내가 archive 를 `(hand_no, seat, board, street)` 로
+중복 제거해 **반복 호출을 스스로 지웠기** 때문이고, `hand_no` 는 실행 간
+중복돼 고유키도 아니었다(고유키는 레코드 최상위 `hash`).
 
-**계측 위치와 비용은 아직 확정하지 않는다.**
+**`trace` 는 이 목적에 쓸 수 없다.** `plan.py:1483` 의 승계 목록
+(`intents`·`deviations`·`streets`·`refreshed`·`bet_streets`·`plan_since`·
+`_rsig`)에 `'trace'` 가 없다. 플랍은 `session.py:443` 의
+`first=(key not in h.plans or street == 'flop')` 때문에 매 호출
+`make_plan` 이 새 dict 를 만들고 그때 `trace` 가 사라진다. 실측에서
+3스트리트를 간 (핸드, 좌석) 중 605건의 마지막 레코드에 aggression trace 가
+0개였다.
+
+**대응 단위 — `idx == 0`**
+
+```
+session.py:454   _oidx = sum(1 for i in h.intents
+                             if i['street']==street and i['seat']==s)
+plan.py:1521     if intent_of(st, street) is None:
+plan.py:1522         st = attach_intent(...)
+```
+
+`attach_intent` 는 세 경로 전부에서 `set_intent` 를 부른다
+(`plan.py:569`·`575`·`577`). 한 번 돌면 `intent_of` 가 영구히 non-None 이
+되고 `intents` 는 승계 목록에 있어 유지된다. 따라서
+
+```
+idx == 0  ⟺  그 (좌석, 스트리트)의 첫 update_plan  ⟺  attach_intent 실행
+```
+
+archive 실측에서 `(hash, seat, street)` 고유 조합 7,064 와 `idx==0` 건수
+7,064 가 **정확히 일치**하고, 그 7,064건 전부에 `intent_act` 가 있다.
+
+**호출 경로 — L2 분모는 `session.py:436` 의 postflop 호출이다**
+
+```
+tools/cf_axis_l2.py:228  PL.update_plan = wrap_up        ← 세는 대상
+fieldsim.Field._play_table → play.Hand(..., hero=None) → SE.HandRun(h)
+  → run.start()  session.py:66 → HandRun._run()  session.py:113
+  → session.py:306  for street, nc in [('flop',3),('turn',4),('river',5)]:
+  → session.py:315    while True:
+  → session.py:436      h.plans[key] = PL.update_plan(...)
+```
+
+프리플랍은 포함되지 않는다. 저장소 전체에서 프로덕션 호출부는
+`session.py:436` 하나뿐이다. `_run` 의 `yield` 네 곳
+(`session.py:141`·`151`·`321`·`331`)이 전부 `s == h.hero` 로 가드돼 있어
+`hero=None` 이면 한 번도 yield 하지 않고 핸드를 끝까지 돈다.
+
+**L1 분모 — `attach_intent` 호출 단위**
+
+```
+tools/cf_axis.py:216  PL.attach_intent = wrap_ai
+tools/cf_axis.py:213    rows.append(rec)                  ← 축마다 한 행
+tools/cf_axis.py:336  print('  결정 %d건' % (len(rows)//len(axes)))
+```
+
+**L1 과 L2 는 실행 조건이 같다** — `entries=24 · hpl=12 · stack=30000 ·
+시드 5000–5054`. 두 harness 모두 원본 함수를 먼저 부르고 그 결과를 그대로
+반환한다(`cf_axis.py:180→214`, `cf_axis_l2.py:177→227`) — 비개입 wrapper 다.
+
+**확정값**
+
+```
+①  L2 전체 update_plan            37,424      (× 2 = 74,848 비교쌍)
+②  action-decision 대응 단위        31,236
+①→② 반복 호출 제거                 6,188
+②/①                              83.47%
+③  L1 대응 decision unit           31,236
+```
+
+L2 의 action-decision 대응 단위는 `idx == 0` 인 (hand, seat, street) 최초
+`update_plan` 호출이며, 이는 L1 의 `attach_intent` 호출 단위와 대응한다.
+기존 L1 결과의 결정 수가 31,236건이므로 ② 의 대응 N 은 31,236건으로
+정의된다. **다만 L1 harness 의 `trace` 40개 상한(`plan.py:_trace`)에 따른
+결과 행 누락 여부는 별도 측정하지 않았으므로, 31,236 은 기존 L1 결과가
+산출한 결정 수이며 상한 영향은 미검증 상태다**
+(`tools/cf_axis.py:186` 이 `p`·`roll` 없는 경우 행을 만들지 않는다).
+
+독립 archive(4,000핸드, 다른 설정)의 `idx==0` 비율은 83.29% 로 위
+83.47% 와 0.18%p 차이다. **참고값이지 검증이 아니다** — 실행 조건이 다르다.
+
+**83.47% 를 "flip 을 설명하는 비율" 로 읽지 않는다.** 이 수는 L2 전체 호출
+분모에서 최초 decision unit 이 차지하는 비율일 뿐이고, denominator/path
+decomposition 을 가능하게 하는 값이다.
+
+`idx == 0` 과 L1 decision unit 의 대응은 **소스 구조와 기존 결과로 정의한
+것이며, 새로운 측정·시뮬레이션은 하지 않았다.** 두 harness 가 핸드별로
+1:1 동일한 시퀀스를 만든다는 것까지는 증명하지 않았다 — 동일 시드·동일
+`entries/hpl/stack`·비개입 wrapper 라는 소스 확인까지가 현재 근거다.
 
 ### 4-4. 결합식은 만들지 않는다
 
@@ -322,8 +405,8 @@ H5-B  decision quantity 를 정의하기 전까지 보류한다
 | H3 계수 크기 | **구조적으로 확인 완료** — 전수표 위 |
 | H4 게이트·클램프 | **구조적으로 확인 완료** — 닿는 클램프는 `bluff` 상한 하나 |
 | H1 도달 범위 | **도구의 한계 확인 완료, 실제 비교 미완료.** `axis_dataflow.py` 는 계획층 도달 범위만 낸다. `L1F` 미사용은 확정됐지만 그것이 H1 의 실행층 결과는 아니다 |
-| ② subset | **기존 자료로 불가능하다는 정보 한계 확인 완료** |
-| ③ 대응 unit | ② 때문에 보류 |
+| ② subset | **확정 — 31,236** (4-3). `idx==0` = `attach_intent` 실행. 추가 계측 불필요. `trace` 40 상한 영향은 미검증 |
+| ③ 대응 unit | **확정 — 31,236.** L1 과 동일한 (hand, seat, street) decision-unit 정의 |
 | H5-A | 방법만 확정. 미실행 |
 | H5-B | 정의부터 보류 |
 
@@ -346,16 +429,14 @@ plan.py 를 수정하지 않는다
 ## 6. 열린 항목
 
 ```
-② 를 위한 최소 계측이 정확히 어디에 들어가야 하는가 — 코드 추적 미완료
-   (4-3 에서 "동일 실행에서 연결해 기록해야 한다" 까지만 확정했다)
-③ 은 ② 가 나온 뒤에야 정의된다
 H1 의 실행층 도달 범위 — axis_dataflow.py 가 L1F 를 쓰도록 해야 낼 수 있다
 H5-B 의 "decision quantity" 를 무엇으로 잡을지 미정
+L1 harness 의 trace 40 상한이 31,236 을 깎았는지 — 미검증
 사전등록 예측은 설계 확정 후에 쓴다 — 아직 쓰지 않았다
 ```
 
 4절에서 해소된 항목: H2 산출 가능 여부, H3, H4, `potcontrol` 실행층 부재,
-`L1F` 미사용.
+`L1F` 미사용, **②(31,236)**, **③(31,236)**.
 
 **이 수정 후에도 새 측정과 사전등록 예측은 시작하지 않는다.** 설계 문서의
 논리적 누락이 없는지 다시 검토한다.
