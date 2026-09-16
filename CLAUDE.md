@@ -154,6 +154,7 @@ Level 2  네 팔 매개 분해       CF_RESULT_LEVEL2.md   ← 기준점 8be8b4e
 ⑦       경로 단계별 판별       CF_RESULT_PATH.md     ← 기준점 e1f3370. 네 가설 전부 기각
 ⑧       축별 경로 분화         CF_RESULT_DIVERGE.md  ← 분화형. 같은 분기 안에서도 축끼리 다르다
 ⑨       표본 밖 재현          CF_RESULT_REPLICATE.md ← 기준점 8f57eab. E1~E4 전부 충족
+⑩       DEVIATE 산술 위치      CF_RESULT_ARITH.md    ← A5·A6 충족. A1~A4 는 해석적 확정
 구조도                        docs/ARCH_V1.png (tools/draw_arch.py)
 ```
 
@@ -181,6 +182,12 @@ D   make_plan 이 barrel_size·bluff_mode 를, trap_judgment 가 opp_bet_prob �
 ```
 
 `plan≠,act≠` 는 분해하지 않는다. `plan≠,act=` 를 효과 크기로 읽지 않는다.
+
+**⑥~⑩ 메타 조사는 닫혔다** (`CF_RESULT_ARITH.md` 7절). 확보한 것은 하나다 —
+반사실 축들이 하나의 실행축으로 환원된다는 설명은 지지되지 않았고, 표본
+밖에서도 재현되며, 차이가 생기는 산술 위치와 비선형 경계(클램프)가 코드에서
+확인됐다. **역추론 연구의 전제는 확보됐다. 이 줄기를 더 파지 않는다.**
+다음은 아래 **현재 조사** 이고 `eq` ↔ `rel` 모순부터 본다.
 
 ## 계층 구조
 
