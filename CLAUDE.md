@@ -141,6 +141,28 @@ d8e9271ec730c01d80c801550bf0e5b50fabc5fa3533ea3f43200046afb832cc
 
 ---
 
+## 반사실 실험 기준점
+
+`plan.py` 무수정 실험 두 건. 결과 문서는 **수정하지 않는다** — 결과를
+바꾸려면 새 측정과 새 문서를 만든다.
+
+```
+Level 1  실행층 개입          CF_RESULT_LEVEL1.md · CF_RESULT_LEVEL1_EXT.md
+Level 2  네 팔 매개 분해       CF_RESULT_LEVEL2.md   ← 기준점 8be8b4e
+```
+
+Level 2 에서 설계 진술 두 개가 정정됐다. **D=실행층 / M=계획층 이분법을
+그대로 쓰지 마라** (`CF_DESIGN_LEVEL2.md` 5-1·5-2).
+
+```
+M   계획층이 만든 비-label state(rel, 일부 stackoff)를 실행층이 읽는다
+    → 같은 plan label 에서도 act 가 달라진다. 격리 위반이 아니다
+D   make_plan 이 barrel_size·bluff_mode 를, trap_judgment 가 opp_bet_prob 을
+    호출한다 → 구조적 결합은 있다. 다만 D 의 plan≠ 는 7축 전부 0 이었다
+```
+
+`plan≠,act≠` 는 분해하지 않는다. `plan≠,act=` 를 효과 크기로 읽지 않는다.
+
 ## 계층 구조
 
 | 대장 | 모듈 | 상태 |
