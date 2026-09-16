@@ -210,6 +210,12 @@ def report(pairs, nh, multi, zero):
         if tr:
             print('    V3  첫 갈림 전환  %s'
                   % '  '.join('%s→%s %d' % (a, b, c) for (a, b), c in tr.most_common()))
+        for r, x in diff:
+            # 액션이 달라진 페어는 전부 찍는다. 기전을 추측하지 않기 위해서다
+            print('    [갈림] hash %s seat %s street %s  ΔEV %+d'
+                  % (str(r['hash'])[:8], r['seat'], r['street'], x['d'] - r['base']))
+            print('        기준 %s' % (r['base_acts'],))
+            print('        %-5s %s' % (tag, x['acts']))
         print()
 
 
