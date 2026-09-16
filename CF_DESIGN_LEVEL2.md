@@ -276,7 +276,7 @@ Level 2 는 `make_plan` 이 상황 지표를 **내부에서 계산**하므로 �
 plan flip            계획 라벨이 바뀌었는가 (전환 행렬)
 action flip          최종 행동이 바뀌었는가 (전환 행렬)
 plan≠ & action=      계획은 바뀌었는데 실행 층이 흡수했다
-plan= & action≠      계획은 같은데 행동이 바뀌었다 (= 직접 효과)
+plan= & action≠      계획은 같은데 행동이 바뀌었다 (해석은 5-1 참조)
 direction            높은 축이 어느 방향으로
 magnitude            f 변화량
 rng_aligned          정렬 비율
@@ -286,7 +286,7 @@ invariant pass       불변량 통과 비율
 **세 칸이 이번 실험의 핵심 출력**이다.
 
 ```
-plan= & action≠     계획은 같은데 행동이 바뀌었다        → 직접 효과
+plan= & action≠     계획은 같은데 행동이 바뀌었다        → 팔마다 뜻이 다르다 (5-1)
 plan≠ & action=     계획은 바뀌었는데 실행 층이 흡수했다  → 전달 실패
 plan≠ & action≠     계획도 행동도 바뀌었다               → 아래 주의
 ```
@@ -302,6 +302,43 @@ plan≠ & action≠     계획도 행동도 바뀌었다               → 아�
 **이 칸을 인과적으로 분해해 "이 변화 중 X% 는 계획 때문" 이라고
 계산하지 않는다.** 가산성을 가정하지 않기로 했으므로 경로별 관찰
 결과로만 남긴다. 팔 M 과 팔 D 의 수치를 나란히 두고 읽는다.
+
+### 5-1. `plan=,act≠` 의 뜻은 팔마다 다르다 — **정정됨**
+
+본측정 후 M 팔에서 `plan=,act≠` 가 `discipline` 0.3% / `looseness` 0.026%
+남았다. M 격리가 실행층으로 새는 것인지 확인했고, 아니었다.
+
+M arm 에서 `plan=,act≠` 가 발생할 수 있음은 M 격리 위반을 의미하지 않는다.
+M intervention 은 실행층 함수를 직접 호출하거나 실행층에서 축을 재참조하지
+않으며, 계획층에서 생성된 비-label state(`rel`, 경우에 따라 `stackoff` 등)가
+실행층으로 전달되어 동일한 plan label 에서도 action 이 달라질 수 있다.
+따라서 M arm 의 `plan=,act≠` 는 실행층 직접 효과로 해석하지 않는다.
+`rel` 은 해당 사례 전체에서 변화했지만, 일부 사례에서는 `stackoff` 도 함께
+변화하므로 두 산출물의 개별 기여는 본 측정만으로 분리하지 않는다.
+
+| 팔 | `plan=,act≠` 해석 |
+|---|---|
+| D | 실행층이 개입 축을 직접 소비하여 행동이 달라진 경우. **실행층 경로 효과** |
+| M | 계획층에서 생성된 비-label 산출물이 실행층으로 전달되어 행동이 달라진 경우. **계획층 산출물 전달 효과.** 직접 실행층 효과로 해석하지 않음 |
+| T | 계획층과 실행층의 소비가 모두 가능하므로 `plan=,act≠` 만으로 둘을 분해하지 않음 |
+
+D 를 "직접 효과" 라고 쓰지 않는다. **실행층 소비 경로에서의 효과**다.
+세 칸을 나중에 인과효과처럼 과도하게 읽는 것을 막기 위해서다.
+
+**근거 (`tools/diag_mleak.py`, 4시드 19건)**
+
+```
+AST 전수 호출 지점   L2 함수가 실행층 함수 안에서 호출되는 자리 0
+난수 정렬            roll 동일, p 만 이동 (0.596 → 0.533 등)
+반환 state 전수 diff  rel 19/19, stackoff 5/19, why·why_by_street 은 기록 전용
+실행층 참조 지점      rel      attach_intent:555   decide_response:707
+                     stackoff attach_intent:567   decide_response:752
+축별                 discipline 18 / looseness 1 / 나머지 5축 0
+```
+
+5축이 0 인 것은 `perceived_rel` 이 읽는 `persona.bias` 세 식
+(`overpair_love`·`draw_love`·`sticky`)에 그 축들이 등장하지 않기 때문이다.
+측정 7축 중 거기 있는 것은 `discipline` 과 `looseness` 둘뿐이다.
 
 ---
 
