@@ -153,6 +153,7 @@ Level 2  네 팔 매개 분해       CF_RESULT_LEVEL2.md   ← 기준점 8be8b4e
 ⑥       축 서열의 원인 가설    CF_RESULT_ORDER.md    ← 다섯 후보 전부 단독 설명 불가
 ⑦       경로 단계별 판별       CF_RESULT_PATH.md     ← 기준점 e1f3370. 네 가설 전부 기각
 ⑧       축별 경로 분화         CF_RESULT_DIVERGE.md  ← 분화형. 같은 분기 안에서도 축끼리 다르다
+⑨       표본 밖 재현          CF_RESULT_REPLICATE.md ← 기준점 8f57eab. E1~E4 전부 충족
 구조도                        docs/ARCH_V1.png (tools/draw_arch.py)
 ```
 
