@@ -184,6 +184,29 @@ def report(rows):
                   % (rl[len(rl)//2], ot[len(ot)//2], eq[len(eq)//2]))
 
 
+def extra(rows):
+    """첫 집계를 본 뒤 붙인 내역. **채점이 아니라 상보성 확인용이다.**
+
+    465 도달 호출을 rel >= 0.42 (ARM-R 의 술어) x outs >= 8 (ARM-D 의 술어)
+    로 가른다. 술어는 설계에 이미 박힌 것이고 새 값을 만들지 않았다.
+    """
+    sel = [r['O'] for r in rows if r['O'] is not None and has(r['O'], REJECT)]
+    q = collections.Counter()
+    for s in sel:
+        q[(bool((s.get('rel') or 0) >= 0.42), bool((s.get('outs') or 0) >= 8))] += 1
+    print()
+    print('## [추가] 465 도달 %d건을 두 술어로 가른다 (채점 아님)' % len(sel))
+    print('    %-22s %10s %10s' % ('', 'outs >= 8', 'outs < 8'))
+    for rl in (True, False):
+        print('    %-22s %10d %10d'
+              % ('rel >= 0.42' if rl else 'rel <  0.42',
+                 q[(rl, True)], q[(rl, False)]))
+    both = q[(True, True)]
+    nei = q[(False, False)]
+    print('    둘 다 참 %d건 · 둘 다 거짓 %d건' % (both, nei))
+    print('    둘 다 거짓이 0 이면 rel 과 outs 가 이 41건을 남김없이 덮는다')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--seeds', default='7000-7019')
@@ -191,7 +214,9 @@ def main():
     a = ap.parse_args()
     lo, hi = (a.seeds.split('-') + [None])[:2]
     seeds = list(range(int(lo), int(hi)+1)) if hi else [int(lo)]
-    report(run(seeds, a.hands))
+    rows = run(seeds, a.hands)
+    report(rows)
+    extra(rows)
 
 
 if __name__ == '__main__':
