@@ -11,8 +11,10 @@
   P3  M 팔에서 plan·src **전이 행렬** 원자료
       요약 통계로 압축하지 않는다
 
-  P2 는 이 도구에서 내지 않는다. 설계 6절에 따라 P1 을 보고 판별 기준을
-  별도 커밋으로 고정한 뒤에 한다.
+  P2  분기 안에서 축끼리 다른가. **기준은 caf7160 에서 측정 전에 고정했다**
+      채점은 S·T 로만 한다 — R 은 N_b 가 축마다 같아 P1 의 건수 비와
+      같으므로 새 정보가 없다 (설계 3-1-2)
+      주 채점 분기는 DEVIATE 하나. 3축 이상 겹치는 유일한 분기다
 
 분기 = normalize(src) = re.sub(r'\\(\\d+%\\)', '(N%)', src)
 """
@@ -32,11 +34,20 @@ def aligned(r, arm):
                for t in ('lo', 'hi'))
 
 
+# 설계 3-1-3 / 3-1-4 에서 측정 전에 고정 (caf7160)
+SCORE_BR = 'DEVIATE:포기 계획이나 지속벳(N%)'
+REPORT_BR = ['밸류 계획 실행(N%)', '블러프 계획 실행(N%)', '사이즈 0 → 체크']
+TH_S, TH_T = 2.0, 1.5          # ⑦ d6fae23 의 값을 재사용
+
+
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else 'rows55b.jsonl.gz'
     op = gzip.open if path.endswith('.gz') else open
 
     occ = collections.defaultdict(collections.Counter)      # P1: axis -> branch -> n
+    den = collections.Counter()                             # branch -> N_b (축 무관)
+    P2 = collections.defaultdict(lambda: collections.defaultdict(
+        lambda: {'nz': 0, 'absum': 0.0, 'actne': 0}))       # axis -> branch -> …
     nz = collections.Counter()                              # axis -> Δp≠0 수
     srcdiff = collections.Counter()                         # D 팔 src_lo != src_hi
     srcpair = collections.defaultdict(collections.Counter)  # 그때의 (lo, hi)
@@ -51,10 +62,18 @@ def main():
         ax = r['axis']
         # ---- P1 (D 팔) ----
         if aligned(r, 'D'):
+            br0 = norm(r['src_O'])
+            if ax == A[0]:
+                den[br0] += 1
             lo, hi = r['p_D_lo'], r['p_D_hi']
             if lo is not None and hi is not None and float(hi) - float(lo) != 0.0:
                 nz[ax] += 1
-                occ[ax][norm(r['src_O'])] += 1
+                occ[ax][br0] += 1
+                q = P2[ax][br0]
+                q['nz'] += 1
+                q['absum'] += abs(float(hi) - float(lo))
+                if r['act_D_lo'] != r['act_D_hi']:
+                    q['actne'] += 1
                 a, b = norm(r['src_D_lo']), norm(r['src_D_hi'])
                 if a != b:
                     srcdiff[ax] += 1
@@ -140,6 +159,66 @@ def main():
             print('        (비대각 없음)')
         print()
     print('  **flip 서열 채점에 M 팔을 쓰지 않는다** (설계 1-2·5절).')
+
+    # ================= P2 =================
+    print()
+    print('## P2 — 분기 안에서 축끼리 다른가 (D 팔)')
+    print()
+    print('  기준은 caf7160 에서 측정 전에 고정했다. 채점은 S·T 로만 한다.')
+    print('  R 은 N_b 가 축마다 같아 P1 의 건수 비와 같으므로 참고 표기다.')
+    print()
+
+    def block(br, scoring):
+        n_b = den[br]
+        axes_in = [a for a in A if P2[a].get(br, {}).get('nz')]
+        print('%s  (N_b = %d, 겹치는 축 %d)%s'
+              % (br, n_b, len(axes_in), '   ← 주 채점' if scoring else '   (보고만)'))
+        if not axes_in:
+            print('    (해당 축 없음)'); print(); return None, None
+        h = '    %-18s %8s %8s %10s %9s' % ('축', 'Δp≠0', 'R(참고)', 'S', 'T')
+        print(h)
+        S = {}; T = {}
+        for a in axes_in:
+            q = P2[a][br]
+            S[a] = q['absum']/q['nz']
+            T[a] = q['actne']/q['nz']
+            print('    %-18s %8d %7.1f%% %10.5f %9.3f'
+                  % (a, q['nz'], 100.0*q['nz']/n_b, S[a], T[a]))
+        if len(axes_in) < 2:
+            print('    축이 하나라 비를 낼 수 없다'); print(); return None, None
+        rs = max(S.values())/min(S.values()) if min(S.values()) else float('inf')
+        rt = max(T.values())/min(T.values()) if min(T.values()) else float('inf')
+        print('    S 비 %.3f    T 비 %.3f' % (rs, rt))
+        print()
+        return rs, rt
+
+    rs, rt = block(SCORE_BR, True)
+    for br in REPORT_BR:
+        block(br, False)
+
+    print('## P2 판정 — 설계 3-1-5 의 세 갈래')
+    print()
+    if rs is None:
+        print('  주 채점 분기에서 비를 낼 수 없다')
+    else:
+        s_lo, t_lo = rs < TH_S, rt < TH_T
+        if s_lo and t_lo:
+            verdict = '점유형'
+        elif (not s_lo) and (not t_lo):
+            verdict = '분화형'
+        else:
+            verdict = '혼합'
+        print('  분기      %s' % SCORE_BR)
+        print('  S 비 %.3f  (문턱 %.1f)  →  %s' % (rs, TH_S, '미만' if s_lo else '이상'))
+        print('  T 비 %.3f  (문턱 %.1f)  →  %s' % (rt, TH_T, '미만' if t_lo else '이상'))
+        print()
+        print('  판정   **%s**' % verdict)
+        if verdict == '혼합':
+            print('         둘 중 하나로 판정하지 않는다. 어느 통계량이 갈리고')
+            print('         어느 쪽이 안 갈리는지 위 표에 그대로 있다')
+    print()
+    print('  보조 분기(2축)는 채점하지 않았다 — max/min 이 곧 두 값의 비라')
+    print('  "축끼리 비슷한가" 를 가르는 힘이 약하다 (설계 3-1-3)')
 
 
 if __name__ == '__main__':
