@@ -90,13 +90,29 @@ def run(seeds, hands):
     rows = []
     state = {'on': None}
 
+    def snap(st):
+        """make_plan 반환 시점의 사본.
+
+        **참조로 담으면 안 된다.** update_plan 의 뒷 단계(refresh ·
+        river_fix · _allowed · attach_intent)가 같은 dict 를 그대로
+        변형하므로, 참조를 담으면 O 만 파이프라인 통과 후 라벨이 되고
+        반사실 팔은 make_plan 원출력이 되어 비교가 성립하지 않는다.
+        실제로 _allowed 가 semibluff 를 showdown 으로 강등한 건을
+        '패치 부작용' 으로 잘못 셌다.
+        """
+        if st is None:
+            return None
+        c = dict(st)
+        c['why'] = list(st.get('why') or [])
+        return c
+
     def wrap(*a, **k):
         base = _orig(*a, **k)
         if state['on'] is not None:
-            state['on'].append(base)
+            state['on'].append(snap(base))
             for t, fn in variants.items():
                 try:
-                    state['alt'][t].append(fn(*a, **k))
+                    state['alt'][t].append(snap(fn(*a, **k)))
                 except Exception:
                     state['alt'][t].append(None)
         return base
@@ -135,6 +151,8 @@ def report(rows):
     print()
     print('# pcz 반사실 — 라벨 전이   설계 0fec146')
     print('  make_plan 호출 %d건. EV 는 재지 않는다' % len(rows))
+    print('  비교 단위는 **make_plan 반환 시점의 라벨**이다 —')
+    print('  update_plan 의 뒷 단계(_allowed·refresh·river_fix)를 통과하기 전이다')
     print()
 
     # 건전성 (설계 4절)
@@ -151,6 +169,29 @@ def report(rows):
                 if o.get('plan') != a.get('plan'):
                     bad += 1
         print('  건전성 %s  분기 동일 %d건 중 라벨 불일치 %d건' % (t, same_br, bad))
+        if bad:
+            shown = 0
+            for r in rows:
+                o, a = r['O'], r[t]
+                if a is None:
+                    continue
+                if any(ENTER in w for w in why_lines(o)) != any(ENTER in w for w in why_lines(a)):
+                    continue
+                if o.get('plan') == a.get('plan'):
+                    continue
+                shown += 1
+                if shown > 6:
+                    break
+                print('     [%d] %s → %s   eq O %.3f / %s %.3f   rel %.2f / %.2f'
+                      '   made %s/%s  outs %s/%s  street %s'
+                      % (shown, o.get('plan'), a.get('plan'),
+                         o.get('eq'), t, a.get('eq'), o.get('rel'), a.get('rel'),
+                         o.get('made'), a.get('made'), o.get('outs'), a.get('outs'),
+                         o.get('street_made')))
+                for w in why_lines(o):
+                    print('          O   %s' % w)
+                for w in why_lines(a):
+                    print('          %-5s %s' % (t, w))
     print('    분기가 안 갈렸는데 라벨이 다르면 패치가 의도 밖을 건드린 것이다')
     print()
 
