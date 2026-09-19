@@ -64,7 +64,8 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
         seats.append({'seat': s, 'pid': (getattr(hand, 'seat_pid', None) or {}).get(s),
                       'pos': r['pos'], 'stack': stack_now, 'bet': bet,
                       'in_hand': r['live'], 'allin': r['allin'], 'hero': r['hero']})
-    btn = next((r['seat'] for r in v['seats'] if r['pos'] == 'BTN'), None)
+    # 헤즈업은 BTN과 SB가 같은 자리라 pos 문자열만 보고 버튼을 찾으면 안 된다.
+    btn = getattr(hand, 'button', None)
     hero_inv = inv.get(hand.hero, 0)
     pot = raw['pot']
     out = {'schema': SCHEMA, 'type': 'decision',
@@ -97,7 +98,8 @@ def render_result(res, hero=None, hand_no=None, notes=None, bb=None):
     hero = res.get('hero_seat', hero)
     shown = {}
     if res.get('showdown'):
-        shown = {str(s): list(hl) for s, hl in (res.get('hole') or {}).items()}
+        src = res.get('shown_hole') or res.get('hole') or {}
+        shown = {str(s): list(hl) for s, hl in src.items()}
     return {'schema': SCHEMA, 'type': 'result', 'hand_no': hand_no,
             'hero_seat': hero, 'how': res.get('how'),
             'board': list(res.get('board') or []), 'pot': res.get('pot', 0),
@@ -108,6 +110,8 @@ def render_result(res, hero=None, hand_no=None, notes=None, bb=None):
                       'winners': list(p.get('winners') or [])}
                      for p in (res.get('pots') or [])],
             'shown': shown,
+            'hero_hole': list(res.get('hero_hole') or []),
+            'best_five': {str(k): list(v) for k, v in (res.get('best_five') or {}).items()},
             'stacks': {str(k): v for k, v in (res.get('stacks') or {}).items()},
             'pos': {str(k): v for k, v in (res.get('pos') or {}).items()},
             'log': [{'street': e[0], 'seat': e[1], 'action': e[2], 'amount': e[3]}

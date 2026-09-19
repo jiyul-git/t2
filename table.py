@@ -15,6 +15,7 @@ HANDS_PER_LEVEL = 12
 # 온라인은 8맥스, 6맥스도 있다. 8맥스만 가정하면 9인 테이블에서
 # 인덱스가 넘쳐 IndexError 가 난다 (실제로 그랬다).
 _PRE = {
+    2: ['SB','BB'],
     6: ['UTG','HJ','CO','BTN','SB','BB'],
     7: ['UTG','LJ','HJ','CO','BTN','SB','BB'],
     8: ['UTG','UTG+1','LJ','HJ','CO','BTN','SB','BB'],
@@ -23,6 +24,10 @@ _PRE = {
 
 def orders(n=8):
     """좌석 수 n 의 (SEAT_ORDER, PRE_ORDER, POST_ORDER)."""
+    if n == 2:
+        # 헤즈업: 버튼 = SB.
+        # 프리플랍은 버튼/SB 선액션, 포스트플랍은 BB 선액션.
+        return ['SB','BB'], ['SB','BB'], ['BB','SB']
     pre = _PRE.get(n) or _PRE[8]
     post = pre[-2:] + pre[:-2]              # SB, BB 가 먼저
     seat = ['BTN','SB','BB'] + [x for x in pre if x not in ('BTN','SB','BB')]
@@ -62,11 +67,12 @@ class Table:
     def posmap(self):
         a = self.alive(); n = len(a)
         i = a.index(self.s['button'])
-        order = self.ORDER[:n] if n < 8 else self.ORDER
+        order, _, _ = orders(n)
         return {a[(i+k) % n]: order[k] for k in range(n)}
 
     def street_order(self, live_positions):
-        return [p for p in self.POST if p in live_positions]
+        _, _, post = orders(len(self.alive()))
+        return [p for p in post if p in live_positions]
 
     def rotate_button(self):
         a = self.alive()

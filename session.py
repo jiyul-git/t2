@@ -115,8 +115,10 @@ class HandRun:
         self._before = dict(h.stacks)
         rnd = RU.Round(None, [h.seat_of[p] for p in h.PRE if p in h.seat_of], h.stacks, h.bb)
         sb_s, bb_s = h.seat_of.get('SB'), h.seat_of.get('BB')
-        if sb_s: 
+        if sb_s:
             pay = min(h.sb, rnd.stacks[sb_s]); rnd.stacks[sb_s] -= pay; rnd.contrib[sb_s] = pay
+            if rnd.stacks[sb_s] <= 0:
+                rnd.allin.add(sb_s)
         ante_pot = 0
         # 안테는 포맷이 정한 레벨부터 걷는다.
         # 예전에는 ante_from 이 저장만 되고 무조건 1레벨부터 걷혔다.
@@ -126,6 +128,8 @@ class HandRun:
             pay = min(h.bb, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= pay; rnd.contrib[bb_s] = pay
             if _ante > 0:
                 a = min(_ante, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= a; ante_pot = a
+            if rnd.stacks[bb_s] <= 0:
+                rnd.allin.add(bb_s)
         rnd.current = h.bb; rnd.min_raise = h.bb
         aggressor = None; limpers = []; callers = 0
 
@@ -787,6 +791,7 @@ class HandRun:
             self._tilt_update(contrib, folded, live)
             return {'how': 'fold', 'winners': [w], 'pot': pot_total, 'showdown': False,
                     'board': board, 'stacks': dict(h.stacks), 'hash': h.hash,
+                    'hero_hole': list(h.hole.get(h.hero, [])) if h.hero is not None else [],
                     'full_log': getattr(self, 'full_log', []),
                     'pos': {k: v for k, v in h.pos.items()}}
         c2 = dict(contrib)          # 기여분은 그대로 둔다 (안테는 award_pots 에서 처리)
@@ -807,6 +812,8 @@ class HandRun:
             # 관찰 실패를 조용히 삼키면 장부가 안 쌓이고 리딩이 통째로 죽는다.
             h.book_errors = getattr(h, 'book_errors', [])
             h.book_errors.append('showdown: %r' % (_e,))
+        # 정산 전 0스택은 올인 쇼다운이므로 공개 의무가 있다.
+        allin_show = {s for s in live if h.stacks.get(s, 0) <= 0}
         won, detail = award_pots(c2, h.hole, h.board, folded, h.stacks, dead,
                                  unit=getattr(h, 'sb', 0) or 1)
         if not detail:
@@ -816,10 +823,39 @@ class HandRun:
         # 여기서 또 주면 안테가 두 번 지급되어 칩이 늘어난다.
         self._tilt_update(contrib, folded, live)
         all_w = sorted({w for d in detail for w in d['winners']})
+
+        # UI에 공개할 패만 따로 만든다.
+        # 올인 쇼다운이면 생존 패 전부 공개, 일반 쇼다운이면 마지막 공격자와
+        # 실제 승자만 공개하고 나머지 패는 muck 처리한다.
+        if allin_show:
+            shown_seats = set(live)
+        else:
+            last_aggr = next(
+                (x for (_, x, a_, _) in reversed(getattr(self, 'full_log', []) or [])
+                 if x in live and a_ in ('bet', 'raise', 'allin')),
+                None)
+            if last_aggr is None:
+                last_aggr = next(
+                    (h.seat_of[p] for p in h.POST
+                     if p in h.seat_of and h.seat_of[p] in live),
+                    live[0] if live else None)
+            shown_seats = set(all_w)
+            if last_aggr is not None:
+                shown_seats.add(last_aggr)
+
+        best_five = {}
+        for s in all_w:
+            combos = itertools.combinations(h.hole[s] + h.board, 5)
+            best_five[s] = list(max(combos, key=lambda cs: best5(list(cs))))
+
         return {'how': 'showdown', 'winners': all_w,
                 'main_winners': detail[0]['winners'], 'pot': pot_total,
                 'showdown': True, 'board': h.board, 'pots': detail,
-                'hole': {s: h.hole[s] for s in live}, 'stacks': dict(h.stacks),
+                'hole': {s: h.hole[s] for s in live},
+                'shown_hole': {s: h.hole[s] for s in shown_seats},
+                'hero_hole': list(h.hole.get(h.hero, [])) if h.hero is not None else [],
+                'best_five': best_five,
+                'stacks': dict(h.stacks),
                 'hash': h.hash, 'full_log': getattr(self, 'full_log', []),
                 'pos': {k: v for k, v in h.pos.items()}}
 

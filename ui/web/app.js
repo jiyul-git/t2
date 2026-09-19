@@ -32,6 +32,7 @@ const S = {
   queuedAction: null,      // 재생 중에 눌러둔 히어로 액션
   reveal: null,            // 쇼다운 공개 중이면 {좌석: 카드들}
   winners: null,           // 쇼다운 공개 중 강조할 좌석 집합
+  bestFive: null,            // 승자의 실제 5장 조합
   won: false,              // 히어로가 대회를 우승했나
   entries: null,           // 총 엔트리 (우승 화면 표시용)
   overlayPinned: false,     // 기록/설정은 사용자가 닫기 전까지 유지
@@ -126,6 +127,18 @@ function cardHTML(code, cls) {
 const backHTML = (cls) => `<div class="card back ${cls || ''}"></div>`;
 const cardsHTML = (arr, cls) => (arr || []).map((c) => cardHTML(c, cls)).join('');
 
+function winFive(seat) {
+  return (S.bestFive && S.bestFive[String(seat)]) || [];
+}
+function isWinCard(seat, code) {
+  return winFive(seat).indexOf(code) >= 0;
+}
+function boardWinCard(code) {
+  if (!S.winners || !S.bestFive) return false;
+  return Object.keys(S.winners).some((s) =>
+    S.winners[s] && ((S.bestFive[String(s)] || []).indexOf(code) >= 0));
+}
+
 /* ---------------- 좌석 좌표 ----------------
  * 히어로 슬롯이 항상 하단 중앙이 되도록 회전한다. 히어로 자신은 타원 위가
  * 아니라 하단 바(#hero)에 그리므로, 타원에는 나머지 슬롯만 놓인다.
@@ -204,7 +217,8 @@ function renderSeats(v) {
     const backs = (rv && rv.length)
       ? `<div class="backs reveal">${rv.map((c, ci) =>
            `<div class="flip" style="animation-delay:${revealDelay(slot, ci)}">` +
-           cardHTML(c, 'mini') + backHTML('mini') + '</div>').join('')}</div>`
+           cardHTML(c, 'mini' + (isWinCard(slot, c) ? ' win5' : '')) +
+           backHTML('mini') + '</div>').join('')}</div>`
       : (d.in_hand && nc)
       ? `<div class="backs">${cards.join('')}</div>`
       : (S.folding[slot]
@@ -216,6 +230,7 @@ function renderSeats(v) {
     html += `<div class="${cls}" data-slot="${slot}" style="${style}">` + memo +
             backs +
             `<div class="avatar">${slot}</div>` +
+            (S.winners && S.winners[slot] ? `<div class="winlabel">WON</div>` : '') +
             (d.allin ? `<div class="tag">ALL-IN</div>` : '') +
             (v.button_seat === slot ? `<div class="dealer">D</div>` : '') +
             `<div class="meta"><span class="pos">${d.pos || ''}</span>` +
@@ -258,8 +273,14 @@ function renderBoard(v) {
   let html = '';
   for (let i = 0; i < 5; i++) {
     // 새로 깔린 카드에만 딜 애니메이션을 준다 (지연은 아래에서 스타일로)
-    html += (i < b.length) ? cardHTML(b[i], i >= known ? 'deal' : '')
-                           : cardHTML(null);
+    if (i < b.length) {
+      const cls = [];
+      if (i >= known) cls.push('deal');
+      if (boardWinCard(b[i])) cls.push('win5');
+      html += cardHTML(b[i], cls.join(' '));
+    } else {
+      html += cardHTML(null);
+    }
   }
   const box = $('#board');
   box.innerHTML = html;
@@ -348,8 +369,9 @@ function renderHero(v) {
   box.hidden = false;
   box.classList.toggle('folded', !!me && !me.in_hand);
   const d = v.button_seat === v.hero_seat ? ' · D' : '';
+  const won = !!(S.winners && S.winners[v.hero_seat]);
   $('#heroinfo .pos').textContent = (me ? (me.pos || '') : '') + d +
-    (me && me.allin ? ' · ALL-IN' : '');
+    (me && me.allin ? ' · ALL-IN' : '') + (won ? ' · WON' : '');
   $('#heroinfo .stack').textContent = me ? fmt(me.stack) : '';
   // **내용이 같으면 다시 그리지 않는다.**
   // renderHero 는 프레임마다 불린다. innerHTML 을 매번 새로 넣으면 카드
@@ -357,13 +379,16 @@ function renderHero(v) {
   // 딜링 한 바퀴 동안 여러 번 되감기고, 끝나면서 클래스가 빠져 툭 하고
   // 자리잡는다 — '두 번쯤 버벅이다 나오는' 증상이 이것이었다.
   const nc = dealtCount(v.hero_seat);
-  const sig = nc ? (v.hand_no + '|' + nc + '|' + (v.hero_hole || []).join(',')) : '';
+  const sig = nc ? (v.hand_no + '|' + nc + '|' + (v.hero_hole || []).join(',') +
+    '|' + (won ? 'W' : '-') + '|' + winFive(v.hero_seat).join(',')) : '';
   if (S.heroSig !== sig) {
     S.heroSig = sig;
     const h = v.hero_hole || [];
+    const c0 = h[0] ? cardHTML(h[0], 'deal' + (isWinCard(v.hero_seat, h[0]) ? ' win5' : '')) : '';
+    const c1 = h[1] ? cardHTML(h[1], 'deal' + (isWinCard(v.hero_seat, h[1]) ? ' win5' : '')) : '';
     $('#herocards').innerHTML = nc === 1
-      ? '<div class="card hero-ghost"></div>' + cardHTML(h[0], 'deal')
-      : (nc >= 2 ? cardHTML(h[1], 'deal') + cardHTML(h[0], 'deal') : '');
+      ? '<div class="card hero-ghost"></div>' + c0
+      : (nc >= 2 ? c1 + c0 : '');
   }
 }
 
@@ -444,7 +469,7 @@ function revealShowdown(res, done) {
     if (ended) return;
     ended = true;
     S.timers.forEach(clearTimeout); S.timers = [];
-    S.reveal = null; S.winners = null; S.replayDone = null;
+    S.replayDone = null;
     done();
   };
   // 공개 중에 액션을 예약하면 건너뛰고 바로 결과로 간다. 타이머가 지워져도
@@ -985,51 +1010,110 @@ function seatName(v, s) {
   return (me ? '나' : s + '번') + (p ? `(${p})` : '');
 }
 
+const RUNOUT_HOLD = 2000;
+const RESULT_HOLD = 2000;
+
+function runoutThen(res, done) {
+  if (!res.showdown || !(res.board || []).length) { done(); return; }
+
+  const fv = revealView(res);
+  if (!fv) { done(); return; }
+
+  const target = Math.min(5, (res.board || []).length);
+  let shown = Math.min(target, S.boardLen || ((S.view0 && S.view0.board) || []).length);
+  const seq = [];
+
+  if (shown < 3 && target >= 3) seq.push(3);
+  if (shown < 4 && target >= 4) seq.push(4);
+  if (shown < 5 && target >= 5) seq.push(5);
+
+  if (!seq.length) { done(); return; }
+
+  let i = 0;
+  const showNext = () => {
+    const n = seq[i++];
+    const v2 = Object.assign({}, fv, { board: (res.board || []).slice(0, n) });
+    renderSeats(v2); renderChips(v2, false); renderBoard(v2);
+    renderPot(v2); renderHero(v2);
+    $('#mainrow').innerHTML = '<div class="wait">올인 런아웃…</div>';
+
+    if (i >= seq.length) {
+      S.timers.push(setTimeout(done, RUNOUT_HOLD));
+    } else {
+      S.timers.push(setTimeout(showNext, RUNOUT_HOLD));
+    }
+  };
+
+  // 프리플랍 올인이면 플랍은 바로 보여주고 2초씩 진행.
+  // 이미 플랍/턴까지 본 뒤 올인이면 다음 카드 전에 2초 기다린다.
+  if (shown === 0) showNext();
+  else S.timers.push(setTimeout(showNext, RUNOUT_HOLD));
+}
+
 function finishResult(v) {
   clearBubbles();
   histPush(v);
-  // 쇼다운이면 테이블에서 카드를 먼저 연다. 결과 창은 그다음이다 —
-  // 창이 바로 덮어버리면 연출을 넣은 뜻이 없다.
-  revealShowdown(v, () => finishResult2(v));
+
+  S.winners = {};
+  ((v.main_winners && v.main_winners.length ? v.main_winners : v.winners) || [])
+    .forEach((w) => { S.winners[Number(w)] = 1; });
+  S.bestFive = v.best_five || {};
+
+  runoutThen(v, () => revealShowdown(v, () => finishResult2(v)));
 }
 
 function finishResult2(v) {
-  if (S.won) { showWin(v); return; }
   renderResult(v);
-  S.handNo = null; S.stage = null; S.logLen = 0; S.boardLen = 0;
-  S.prevBets = null; S.view0 = null;
-  // 결과를 잠깐 보여주고 자동으로 다음 핸드로 간다. 이 시간 동안 서버 워커가
-  // 다른 테이블 정산을 마저 돌린다 — 기다림이 여기에 겹친다.
-  // 서버 워커가 다른 테이블을 다 돌릴 때까지는 넘어가지 않는다.
-  // 넘어가 봐야 서버가 거기서 기다리게 되고, 사용자는 빈 로딩 화면만 본다.
-  // 같은 시간이라면 결과를 보면서 기다리는 편이 낫다.
-  const STEP = 500;
-  let waited = 0;
-  const auto = autoOn();
-  const tick = async () => {
-    const b = $('#bDeal');
-    let working = false;
-    try {
-      const r = await fetch('/api/ready');
-      working = !!(await r.json()).working;
-    } catch (e) { /* 못 물어봤으면 그냥 시간만 센다 */ }
-    waited += STEP;
-    if (working) {
-      if (b) b.innerHTML = '다음 핸드 <span class="sub">다른 테이블 정산 중… ' +
-        Math.round(waited / 1000) + '초</span>';
-    } else if (!auto) {
-      if (b) b.innerHTML = '다음 핸드';
-      S.autoTimer = null; return;          // 자동이 꺼져 있으면 여기서 멈춘다
-    } else {
-      // 정산이 끝났으면 **기다리지 않는다.** 예전에는 여기서 결과 화면을
-      // 몇 초 더 띄웠는데, 그 시간은 워커를 가리려고 둔 것이었다.
-      // 정산이 빨라진 지금은 그냥 지연일 뿐이다.
-      S.autoTimer = null; send(null, 0); return;
+
+  const handWon = ((v.main_winners && v.main_winners.length
+    ? v.main_winners : v.winners) || [])
+    .some((w) => String(w) === String(v.hero_seat));
+
+  S.handNo = null; S.stage = null; S.logLen = 0;
+  S.prevBets = null;
+
+  const afterHold = () => {
+    if (S.won) {
+      showWin(v);
+      return;
     }
-    S.autoTimer = setTimeout(tick, STEP);
+
+    if (!autoOn()) {
+      $('#mainrow').innerHTML =
+        '<button type="button" id="bDeal">다음 핸드</button>';
+      $('#bDeal').addEventListener('click', () => {
+        clearTimeout(S.autoTimer); S.autoTimer = null;
+        send(null, 0);
+      });
+      return;
+    }
+
+    const waitReady = async () => {
+      let working = false;
+      try {
+        const r = await fetch('/api/ready');
+        working = !!(await r.json()).working;
+      } catch (e) {}
+
+      if (working) {
+        $('#mainrow').innerHTML =
+          '<div class="wait">다른 테이블 정산 중…</div>';
+        S.autoTimer = setTimeout(waitReady, 500);
+        return;
+      }
+
+      S.autoTimer = null;
+      send(null, 0);
+    };
+    waitReady();
   };
-  tick();
+
+  $('#mainrow').innerHTML = '<div class="wait resultmsg">' +
+    (handWon ? 'WON' : '핸드 종료') + ' · 팟 ' + fmt(v.pot) + '</div>';
+
+  S.autoTimer = setTimeout(afterHold, RESULT_HOLD);
 }
+
 
 /* 사이드팟은 **올인한 사람 때문에 자격이 갈릴 때만** 생기는 개념이다.
  * 엔진은 기여액이 다른 구간마다 팟을 쪼개는데(session.award_pots), 프리플랍에
@@ -1091,6 +1175,20 @@ function resultBodyHTML(v, withLog) {
         `<span class="cards">${cardsHTML(v.shown[s], 'mini')}</span>` +
         `${winSet[s] ? '<span class="amt">승</span>' : ''}</div>`;
     });
+    const hk = String(v.hero_seat);
+    if ((v.hero_hole || []).length && !(v.shown || {})[hk]) {
+      rows += `<div class="row${winSet[hk] ? ' win' : ''}">` +
+        `<span class="who">나</span>` +
+        `<span class="cards">${cardsHTML(v.hero_hole, 'mini')}</span>` +
+        `${winSet[hk] ? '<span class="amt">승</span>' : ''}</div>`;
+    }
+  } else if ((v.hero_hole || []).length) {
+    const w = win.length ? win[0] : null;
+    rows += `<div class="row"><span class="who">내 패</span>` +
+      `<span class="cards">${cardsHTML(v.hero_hole, 'mini')}</span></div>` +
+      `<div class="row win"><span class="who">` +
+      (w === null ? '?' : seatName(v, w)) +
+      `</span><span class="amt">팟 획득 · 쇼다운 없음</span></div>`;
   } else {
     const w = win.length ? win[0] : null;
     rows += `<div class="row win"><span class="who">` +
@@ -1123,16 +1221,19 @@ function resultBodyHTML(v, withLog) {
 }
 
 function renderResult(v) {
-  $('#mainrow').innerHTML = '<div class="wait">핸드 종료</div>';
   closeRaise();
-  if (S.overlayPinned) return;
-  showOverlay(resultBodyHTML(v) +
-    `<div class="actions"><button type="button" id="bDeal">다음 핸드</button></div>`);
-  $('#bDeal').addEventListener('click', () => {
-    clearTimeout(S.autoTimer); S.autoTimer = null;
-    send(null, 0);
-  });
+
+  const fv = revealView(v);
+  if (fv) {
+    renderSeats(fv);
+    renderChips(fv, false);
+    renderBoard(fv);
+    renderPot(fv);
+    renderHero(fv);
+    renderLogLine(fv);
+  }
 }
+
 
 /* ---------------- 지난 핸드 기록 ----------------
  * 진행 중인 핸드는 화면으로 직접 본다(관전 재생). 그래서 '기록'은 **지난 핸드**를
@@ -1509,7 +1610,12 @@ function apply(resp) {
   const streetChanged = !freshHand && S.stage !== v.stage;
   const newLog = (freshHand || streetChanged) ? (v.log || [])
                                               : (v.log || []).slice(S.logLen);
-  if (freshHand) { clearBubbles(); resetFolding(); S.boardLen = 0; S.prevBets = null; }
+  if (freshHand) {
+    clearBubbles(); resetFolding();
+    S.boardLen = 0; S.prevBets = null;
+    S.reveal = null; S.winners = null; S.bestFive = null;
+    S.heroSig = null;
+  }
 
   if (!S.overlayPinned) hideOverlay();
   renderTop(v);

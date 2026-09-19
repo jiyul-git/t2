@@ -133,6 +133,13 @@ html, body {
                                               0 0 18px rgba(232,196,106,.45); }
 .pod.won .meta { border-color: var(--gold); }
 .pod.won { opacity: 1; }
+
+.pod .winlabel {
+  position: absolute; left: 50%; top: -54px; transform: translateX(-50%);
+  z-index: 8; padding: 2px 7px; border-radius: 999px;
+  background: var(--gold); color: #16191a;
+  font-size: 10px; font-weight: 900; letter-spacing: .5px;
+}
 .pod.folded .backs { display: none; }
 /* 폴드 모션 — 카드가 테이블 안쪽으로 빠지면서 사라진다 */
 .pod .backs.out { display: flex; animation: foldout var(--fold-anim) ease-in forwards; }
@@ -221,6 +228,11 @@ html, body {
   gap: 1px;
 }
 .card.red { color: #c62f2a; }
+
+.card.win5 {
+  transform: translateY(-6px);
+  box-shadow: 0 0 0 2px var(--gold), 0 5px 12px rgba(0,0,0,.55);
+}
 .card .r { font-size: 1em; }
 .card .s { font-size: .95em; }
 .card.back {
