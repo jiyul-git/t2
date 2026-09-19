@@ -19,7 +19,7 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓰고, T2_LIVE_STATE 
        amount: 이번 스트리트 총 투입 목표(raise-to)
        token : 직전 응답의 token. 다르면 409 — 재전송으로 액션이 두 번 들어가는 것을 막는다.
 """
-import json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse
+import hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket
 from concurrent.futures import ProcessPoolExecutor
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -37,6 +37,36 @@ import live2 as L
 LOCK = threading.Lock()
 _last = None
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
+
+PLAY_KEY_FILE = os.path.join(D, '.play_key')
+
+def _play_key():
+    key = os.environ.get('T2_PLAY_KEY')
+    if key:
+        return key.strip()
+
+    try:
+        with open(PLAY_KEY_FILE, encoding='utf-8') as fp:
+            key = fp.read().strip()
+        if key:
+            return key
+    except OSError:
+        pass
+
+    key = secrets.token_urlsafe(24)
+
+    with open(PLAY_KEY_FILE, 'w', encoding='utf-8') as fp:
+        fp.write(key)
+
+    try:
+        os.chmod(PLAY_KEY_FILE, 0o600)
+    except OSError:
+        pass
+
+    return key
+
+PLAY_KEY = _play_key()
+
 
 # ---------- 다른 테이블 정산을 결과 반환 뒤로 미룬다 ----------
 # 핸드 종료 요청 시간의 75% 가 live2.finish 안의 step_others 다(실측).
@@ -244,6 +274,24 @@ class H(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def _can_play(self):
+        # 기존 헤더 방식도 호환용으로 남긴다.
+        supplied = self.headers.get('X-T2-Play-Key') or ''
+        if supplied and hmac.compare_digest(supplied, PLAY_KEY):
+            return True
+
+        # /play?k=... 로 최초 인증하면 서버가 이 쿠키를 발급한다.
+        # 이후 액션 요청에는 브라우저가 자동으로 쿠키를 붙인다.
+        raw = self.headers.get('Cookie') or ''
+        for part in raw.split(';'):
+            if '=' not in part:
+                continue
+            name, value = part.strip().split('=', 1)
+            if name == 't2_play' and hmac.compare_digest(value, PLAY_KEY):
+                return True
+
+        return False
+
     def _send(self, code, obj):
         b = json.dumps(obj, ensure_ascii=False, default=str).encode()
         self.send_response(code)
@@ -252,10 +300,12 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers(); self.wfile.write(b)
 
-    def _send_bytes(self, code, body, ctype):
+    def _send_bytes(self, code, body, ctype, extra_headers=None):
         self.send_response(code)
         self.send_header('Content-Type', ctype)
         self.send_header('Content-Length', str(len(body)))
+        for k, v in (extra_headers or {}).items():
+            self.send_header(k, v)
         # 개발 중에 고친 파일이 바로 반영되게 한다.
         # no-cache 는 '검증 후 재사용'이라 검증자(ETag 등)가 없으면 브라우저가
         # 옛 파일을 계속 쓰는 경우가 있었다. no-store 는 저장 자체를 막는다.
@@ -268,7 +318,7 @@ class H(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def _serve_static(self, path):
+    def _serve_static(self, path, extra_headers=None):
         full = _resolve(path)
         if full is None:
             return self._send(404, {'error': 'not found'})
@@ -279,7 +329,7 @@ class H(BaseHTTPRequestHandler):
                 body = fp.read()
         except OSError as e:
             return self._send(500, {'error': str(e)})
-        return self._send_bytes(200, body, ctype)
+        return self._send_bytes(200, body, ctype, extra_headers)
 
     def _body(self):
         n = int(self.headers.get('Content-Length') or 0)
@@ -303,6 +353,35 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {'working': bool(fut and not fut.done())})
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
+        if path.startswith('/play/'):
+            supplied = urllib.parse.unquote(
+                path[len('/play/'):]
+            ).strip('/')
+
+            if supplied and hmac.compare_digest(supplied, PLAY_KEY):
+                # 인증 주소에서는 UI를 직접 띄우지 않는다.
+                # 쿠키를 발급한 뒤 /play 로 보내야 CSS/JS 상대경로가 정상이다.
+                self.send_response(302)
+                self.send_header('Location', '/play')
+                self.send_header(
+                    'Set-Cookie',
+                    't2_play=%s; Path=/; Max-Age=2592000; '
+                    'Secure; HttpOnly; SameSite=Lax'
+                    % PLAY_KEY
+                )
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return
+
+            return self._send(403, {'error': '잘못된 플레이 주소'})
+
+        if path == '/play':
+            return self._serve_static('/index.html')
+
+        if path == '/watch':
+            return self._serve_static('/index.html')
+        if path in ('/play', '/watch'):
+            return self._serve_static('/index.html')
         if path != '/api/state':
             return self._serve_static(path)
         with LOCK:
@@ -327,6 +406,9 @@ class H(BaseHTTPRequestHandler):
             body = self._body()
         except ValueError:
             return self._send(400, {'error': 'JSON 파싱 실패'})
+        if self.path in ('/api/new', '/api/step') and not self._can_play():
+            return self._send(403, {'error': '관전 모드에서는 게임을 조작할 수 없습니다'})
+
         with LOCK:
             try:
                 if self.path == '/api/new':
@@ -340,6 +422,11 @@ class H(BaseHTTPRequestHandler):
                     if not os.path.exists(L.ST):
                         return self._send(409, {'error': '진행 중인 게임 없음'})
                     if body.get('token') != _token():
+                        # 결과 화면에서 '다음 핸드'(action=null)가 중복 도착한 경우:
+                        # 첫 요청이 이미 새 핸드를 만들었다면 두 번째 요청으로
+                        # 또 한 핸드를 넘기지 않는다. 현재 화면만 다시 돌려준다.
+                        if body.get('action') is None and _last is not None:
+                            return self._send(200, _last)
                         return self._send(409, {'error': 'token 불일치 (중복 또는 오래된 요청)',
                                                 'current': _last})
                     _st = L.load()
@@ -371,7 +458,8 @@ class H(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    port = 8765
+    host = os.environ.get('IP', '0.0.0.0')
+    port = int(os.environ.get('PORT', '8765'))
     if '--port' in sys.argv:
         port = int(sys.argv[sys.argv.index('--port') + 1])
     # 워커는 **소켓을 열기 전에** 미리 띄운다. 서버가 돈 뒤에 fork 하면
@@ -383,7 +471,12 @@ if __name__ == '__main__':
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
     print('폰에서 직접: http://127.0.0.1:%d' % port)
     print('다른 기기에서: http://<이 기기의 LAN IP>:%d' % port)
-    srv = HTTPServer(('0.0.0.0', port), H)
+    if ':' in host:
+        class _HTTPServer6(HTTPServer):
+            address_family = socket.AF_INET6
+        srv = _HTTPServer6((host, port), H)
+    else:
+        srv = HTTPServer((host, port), H)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
