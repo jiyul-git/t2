@@ -236,6 +236,35 @@ def resume_others(st, others=None):
                   encoding='utf-8') as fp:
             fp.write(others['bot_log'])
     _new_notes = list(others.get('notes') or [])
+
+    if st.pop('bust_pending', False):
+        _f2 = _load_field(
+            copy.deepcopy(st['field'])
+        )
+
+        _hero = _f2.players.get(_f2.hero_pid)
+
+        if _hero and _hero.get('stack', 0) <= 0:
+            if _f2.hero_pid in _f2.busted_order:
+                after = (
+                    len(_f2.busted_order)
+                    - _f2.busted_order.index(_f2.hero_pid)
+                    - 1
+                )
+                rank = _f2.remaining() + 1 + after
+            else:
+                rank = _f2.remaining() + 1
+
+            st['busted'] = True
+            st['rank'] = rank
+
+            itm = ' (ITM!)' if rank <= _f2.itm else ''
+
+            _new_notes.append(
+                '💀 탈락 — %d명 중 %d위%s'
+                % (_f2.entries, rank, itm)
+            )
+
     if _new_notes:
         st['pending_notes'] = list(st.get('pending_notes') or []) + _new_notes
     rec = st.pop('pending_archive', None)
@@ -257,6 +286,45 @@ def step(action=None, amount=0, defer_others=False, others=None):
     if st.get('others_pending'):
         resume_others(st, others)
     f = _load_field(st['field'])
+
+    # worker 정산에서 히어로 탈락이 확정됐으면
+    # 새 핸드를 만들지 않고 최종 순위만 돌려준다.
+    if st.get('busted'):
+        return {
+            'done': True,
+            'game_over': True,
+            'won': False,
+            'busted': True,
+            'rank': st.get('rank'),
+            'remaining': f.remaining(),
+            'entries': f.entries,
+            'view': None,
+            'status': f.status(),
+        }
+
+    # 대회가 이미 끝났다면 새 핸드를 절대 만들지 않는다.
+    # 정상 플레이에서는 서버가 먼저 막지만, live2.step() 자체도 안전해야 한다.
+    # 특히 우승 후 브라우저 새로고침/직접 호출 때문에 1명 남은 필드에
+    # 새 핸드를 딜하려던 경로를 여기서 최종 차단한다.
+    if f.remaining() <= 1:
+        hero = f.players.get(f.hero_pid)
+        won = bool(hero and hero.get('stack', 0) > 0 and f.remaining() == 1)
+        rank = 1 if won else st.get('rank')
+        st['busted'] = not won
+        st['rank'] = rank
+        st['field'] = _dump(f)
+        save(st)
+        return {
+            'done': True,
+            'game_over': True,
+            'won': won,
+            'busted': not won,
+            'rank': rank,
+            'remaining': f.remaining(),
+            'entries': f.entries,
+            'view': None,
+            'status': f.status(),
+        }
 
     if st['hand_seed'] is None:
         # 미뤄둔 진행이 남긴 알림(테이블 브레이크·자리 이동)을 여기서 붙인다.
@@ -320,8 +388,83 @@ def _render(raw, f, h, st):
     return view.render(v)
 
 
+
+def _opening_raw(h, run):
+    """히어로 액션 없이 끝난 핸드도 UI가 처음부터 재생할 수 있게
+    '카드 배분 후, 액션 전' 상태를 복원한다."""
+
+    stacks = dict(
+        getattr(run, '_before', None)
+        or getattr(h, '_start_stacks', None)
+        or h.stacks
+    )
+
+    contrib = {}
+    allin = set()
+
+    sb_s = h.seat_of.get('SB')
+    bb_s = h.seat_of.get('BB')
+
+    if sb_s is not None:
+        pay = min(h.sb, stacks.get(sb_s, 0))
+        stacks[sb_s] = stacks.get(sb_s, 0) - pay
+        contrib[sb_s] = pay
+
+        if stacks[sb_s] <= 0:
+            allin.add(sb_s)
+
+    ante_pot = 0
+
+    if bb_s is not None:
+        pay = min(h.bb, stacks.get(bb_s, 0))
+        stacks[bb_s] = stacks.get(bb_s, 0) - pay
+        contrib[bb_s] = pay
+
+        _ante = getattr(h, 'ante', None)
+        if _ante is None:
+            _ante = h.bb
+
+        if _ante > 0:
+            a = min(_ante, stacks.get(bb_s, 0))
+            stacks[bb_s] = stacks.get(bb_s, 0) - a
+            ante_pot = a
+
+        if stacks[bb_s] <= 0:
+            allin.add(bb_s)
+
+    hero = h.hero
+    hero_contrib = contrib.get(hero, 0)
+    tocall = max(0, h.bb - hero_contrib)
+
+    return {
+        'stage': 'preflop',
+        'pos': h.pos.get(hero, ''),
+        'hole': list(h.hole.get(hero, [])),
+        'stacks': dict(stacks),
+        'contrib': dict(contrib),
+        'pot': sum(contrib.values()) + ante_pot,
+        'tocall': tocall,
+        'stack': stacks.get(hero, 0),
+        'min_raise': h.bb * 2,
+        'can_raise': stacks.get(hero, 0) > tocall,
+        'log': [],
+        'live': list(h.seats),
+        'allin': sorted(allin),
+        'hash': h.hash,
+    }
+
+
 def finish(st, f, tb, alive, h, run, defer_others=False):
     res = run.result or {}
+
+    try:
+        opening_view = _render(
+            _opening_raw(h, run),
+            f, h, st
+        )
+    except Exception:
+        opening_view = None
+
     # 히어로 테이블 스택 반영
     for p in alive:
         s = tb.seat_of(p['pid'])
@@ -334,29 +477,57 @@ def finish(st, f, tb, alive, h, run, defer_others=False):
     except Exception: pass
 
     # 다른 테이블 진행.
-    # defer_others 면 여기서 건너뛰고 표시만 남긴다. 다음 step() 이 딜 전에
-    # 반드시 처리한다. 단 **히어로가 터진 핸드는 미루지 않는다** — rank 가
-    # f.remaining() 과 busted_order 에 달려 있어 전부 정산돼야 확정된다.
-    _hero_busted_now = f.players[f.hero_pid]['stack'] <= 0
-    if defer_others and not _hero_busted_now:
+    #
+    # V29까지는 히어로가 탈락한 순간만 defer를 끄고 여기서 모든 테이블을
+    # 동기적으로 계산했다. 그래서 올인콜 후 패배하면 브라우저는 결과도
+    # 못 받은 채 수십 초 멈출 수 있었다.
+    #
+    # 이제 탈락 여부와 관계없이 먼저 hero-table 결과를 반환하고,
+    # 다른 테이블은 worker에서 정산한다.
+    _hero_busted_now = (
+        f.players[f.hero_pid]['stack'] <= 0
+    )
+
+    if defer_others:
         st['others_pending'] = True
+
+        if _hero_busted_now:
+            st['bust_pending'] = True
+
     else:
         f.step_others()
-        f._collect_busts(); f._balance()
+        f._collect_busts()
+        f._balance()
 
-    notes = list(f.notes); f.notes = []
+    notes = list(f.notes)
+    f.notes = []
+
     hero = f.players[f.hero_pid]
-    busted = hero['stack'] <= 0
+    busted_now = hero['stack'] <= 0
+    pending = bool(st.get('others_pending'))
+
+    # worker 정산 전에는 정확한 탈락 순위가 아직 없다.
+    # 그동안은 busted=False로 저장해 UI가 쇼다운/결과를 정상 재생하게 한다.
+    busted = bool(busted_now and not pending)
     rank = None
+
     if busted:
-        # 히어로가 이미 busted_order 에 들어갔으므로 그 위치로 순위를 계산
         if f.hero_pid in f.busted_order:
-            after = len(f.busted_order) - f.busted_order.index(f.hero_pid) - 1
+            after = (
+                len(f.busted_order)
+                - f.busted_order.index(f.hero_pid)
+                - 1
+            )
             rank = f.remaining() + 1 + after
         else:
             rank = f.remaining() + 1
+
         itm = ' (ITM!)' if rank <= f.itm else ''
-        notes.append('💀 탈락 — %d명 중 %d위%s' % (f.entries, rank, itm))
+
+        notes.append(
+            '💀 탈락 — %d명 중 %d위%s'
+            % (f.entries, rank, itm)
+        )
 
     st['field'] = _dump(f)
     st['book'] = h.book.d                      # 이 대회의 리딩 누적을 함께 저장
@@ -381,6 +552,8 @@ def finish(st, f, tb, alive, h, run, defer_others=False):
         view_txt = '결과 렌더 실패: %s: %s' % (type(e).__name__, e)
     return {'done': True, 'view': view_txt, 'result': res, 'notes': notes,
             'hand_no': f.hand_no, 'busted': busted, 'rank': rank,
+            'bust_pending': bool(st.get('bust_pending')),
+            'opening_view': opening_view,
             'status': f.status()}
 
 

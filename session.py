@@ -824,24 +824,112 @@ class HandRun:
         self._tilt_update(contrib, folded, live)
         all_w = sorted({w for d in detail for w in d['winners']})
 
-        # UI에 공개할 패만 따로 만든다.
-        # 올인 쇼다운이면 생존 패 전부 공개, 일반 쇼다운이면 마지막 공격자와
-        # 실제 승자만 공개하고 나머지 패는 muck 처리한다.
+        # UI에 공개할 패와 공개 순서를 결정한다.
+        #
+        # 일반 쇼다운:
+        #   마지막 betting street의 공격자(콜 받은 사람)는 반드시 먼저 SHOW.
+        #   뒤 플레이어는 현재 공개된 최고 패보다 지고, 어떤 팟의 승자도 아니면 MUCK.
+        #
+        # 마지막 street에 bet/raise가 없으면 버튼 왼쪽부터 공개한다.
+        #
+        # 올인 쇼다운:
+        #   생존자 전원 SHOW. MUCK 없음.
+        full_log = list(getattr(self, 'full_log', []) or [])
+        live_set = set(live)
+
+        def _left_of_button_order():
+            ring = list(h.seats or [])
+            if not ring:
+                return list(live)
+
+            btn = getattr(h, 'button', None)
+            if btn in ring:
+                i = ring.index(btn)
+                ring = ring[i + 1:] + ring[:i + 1]
+
+            return [s for s in ring if s in live_set]
+
+        def _rotate_to(seats_, first_):
+            seats_ = list(seats_)
+            if first_ not in seats_:
+                return seats_
+
+            i = seats_.index(first_)
+            return seats_[i:] + seats_[:i]
+
+        base_order = _left_of_button_order()
+
+        last_street = (
+            full_log[-1][0]
+            if full_log
+            else None
+        )
+
+        last_aggr = next(
+            (
+                x
+                for (stt, x, a_, _) in reversed(full_log)
+                if stt == last_street
+                and x in live_set
+                and a_ in ('bet', 'raise', 'allin')
+            ),
+            None
+        )
+
+        if last_aggr is not None:
+            show_order = _rotate_to(
+                base_order,
+                last_aggr
+            )
+        else:
+            show_order = base_order
+
+        # 혹시 ring 정보가 빠졌어도 생존자를 누락하지 않는다.
+        for s in live:
+            if s not in show_order:
+                show_order.append(s)
+
         if allin_show:
             shown_seats = set(live)
+            mucked = []
+
         else:
-            last_aggr = next(
-                (x for (_, x, a_, _) in reversed(getattr(self, 'full_log', []) or [])
-                 if x in live and a_ in ('bet', 'raise', 'allin')),
-                None)
-            if last_aggr is None:
-                last_aggr = next(
-                    (h.seat_of[p] for p in h.POST
-                     if p in h.seat_of and h.seat_of[p] in live),
-                    live[0] if live else None)
-            shown_seats = set(all_w)
-            if last_aggr is not None:
-                shown_seats.add(last_aggr)
+            ranks = {}
+
+            for s in live:
+                ranks[s] = max(
+                    (
+                        best5(list(cs))
+                        for cs in itertools.combinations(
+                            h.hole[s] + h.board,
+                            5
+                        )
+                    )
+                )
+
+            shown_seats = set()
+            mucked = []
+            best_seen = None
+
+            for s in show_order:
+                rnk = ranks[s]
+
+                # 첫 공개자는 무조건 SHOW.
+                # 이후에는 팟 승자이거나 현재 공개 최고패 이상이면 SHOW.
+                must_show = (
+                    not shown_seats
+                    or s in all_w
+                    or best_seen is None
+                    or rnk >= best_seen
+                )
+
+                if must_show:
+                    shown_seats.add(s)
+
+                    if best_seen is None or rnk > best_seen:
+                        best_seen = rnk
+                else:
+                    mucked.append(s)
 
         best_five = {}
         for s in all_w:
@@ -853,6 +941,9 @@ class HandRun:
                 'showdown': True, 'board': h.board, 'pots': detail,
                 'hole': {s: h.hole[s] for s in live},
                 'shown_hole': {s: h.hole[s] for s in shown_seats},
+                'show_order': list(show_order),
+                'mucked': list(mucked),
+                'allin_show': bool(allin_show),
                 'hero_hole': list(h.hole.get(h.hero, [])) if h.hero is not None else [],
                 'best_five': best_five,
                 'stacks': dict(h.stacks),

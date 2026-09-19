@@ -166,30 +166,73 @@ def _token():
 
 
 def _wrap(r):
-    """step()/finish() 반환값에서 화이트리스트만 내보낸다 ('raw', 'result' 는 버린다)."""
-    out = {'done': bool(r.get('done')), 'view': r.get('view')}
+    """step()/finish() 반환값 중 UI에 필요한 값만 내보낸다."""
+    out = {
+        'done': bool(r.get('done')),
+        'view': r.get('view')
+    }
+
+    if r.get('opening_view') is not None:
+        out['opening_view'] = r.get('opening_view')
+
     if r.get('done'):
-        out['busted'] = bool(r.get('busted')); out['rank'] = r.get('rank')
-        # 엔진은 **히어로 탈락만** 신호한다(live2.finish 는 busted 일 때만
-        # rank 를 채운다). 히어로가 우승하면 아무 표시가 없어서 화면이
-        # 다음 핸드를 계속 기다렸다. 남은 인원을 같이 실어 UI 가 판정하게 한다.
-        # 정산을 미뤘으면 이 수는 아직 줄기 전이라 **실제보다 크다** —
-        # 그래서 우승을 늦게 알릴 수는 있어도 틀리게 알리지는 않는다.
+        out['busted'] = bool(r.get('busted'))
+        out['rank'] = r.get('rank')
+        out['bust_pending'] = bool(
+            r.get('bust_pending')
+        )
+
         try:
             fd = L.load().get('field') or {}
-            out['remaining'] = sum(1 for p in (fd.get('players') or {}).values()
-                                   if (p.get('stack') or 0) > 0)
-            out['entries'] = len(fd.get('players') or {})
+
+            out['remaining'] = sum(
+                1
+                for p in (fd.get('players') or {}).values()
+                if (p.get('stack') or 0) > 0
+            )
+
+            out['entries'] = len(
+                fd.get('players') or {}
+            )
+
         except Exception:
             pass
+
+    if r.get('game_over'):
+        out['game_over'] = True
+        out['won'] = bool(r.get('won'))
+        out['busted'] = bool(r.get('busted'))
+        out['rank'] = r.get('rank')
+
+        if r.get('remaining') is not None:
+            out['remaining'] = r.get('remaining')
+
+        if r.get('entries') is not None:
+            out['entries'] = r.get('entries')
+
     out['token'] = _token()
     return out
 
 
 def _game_over():
     st = L.load()
-    return {'done': True, 'game_over': True, 'rank': st.get('rank'), 'view': None,
-            'token': _token()}
+    f = L._load_field(st['field'])
+    remaining = f.remaining()
+    hero = f.players.get(f.hero_pid)
+    busted = bool(st.get('busted')) or not hero or hero.get('stack', 0) <= 0
+    won = bool(not busted and remaining <= 1)
+    rank = 1 if won else st.get('rank')
+    return {
+        'done': True,
+        'game_over': True,
+        'won': won,
+        'busted': busted,
+        'rank': rank,
+        'remaining': remaining,
+        'entries': f.entries,
+        'view': None,
+        'token': _token(),
+    }
 
 
 class H(BaseHTTPRequestHandler):
@@ -267,7 +310,9 @@ class H(BaseHTTPRequestHandler):
                 if _last is None:
                     if not os.path.exists(L.ST):
                         return self._send(200, {'no_game': True})
-                    if L.load().get('busted'):
+                    _st = L.load()
+                    _f = L._load_field(_st['field'])
+                    if _st.get('busted') or _f.remaining() <= 1:
                         _last = _game_over()
                     else:
                         _last = _wrap(_step())
@@ -297,7 +342,9 @@ class H(BaseHTTPRequestHandler):
                     if body.get('token') != _token():
                         return self._send(409, {'error': 'token 불일치 (중복 또는 오래된 요청)',
                                                 'current': _last})
-                    if L.load().get('busted'):
+                    _st = L.load()
+                    _f = L._load_field(_st['field'])
+                    if _st.get('busted') or _f.remaining() <= 1:
                         _last = _game_over(); return self._send(200, _last)
                     a = body.get('action')
                     if a is not None and a not in ACTIONS:
