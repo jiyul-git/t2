@@ -1482,8 +1482,13 @@ function clearBubbles() {
 }
 function actionText(e) {
   const t = ACT[e.action] || e.action;
-  return (e.action === 'bet' || e.action === 'raise') && e.amount
-    ? `${t} ${fmt(e.amount)}` : t;
+  return (
+    e.action === 'bet' ||
+    e.action === 'raise' ||
+    e.action === 'allin'
+  ) && e.amount
+    ? `${t} ${fmt(e.amount)}`
+    : t;
 }
 /* 폴드 모션.
  *
@@ -2849,33 +2854,108 @@ function histPush(v) {
 }
 function histClear() { try { localStorage.removeItem(HIST_KEY); } catch (e) {} }
 
-function showHistory() {
-  const list = histLoad();
+function renderHistoryList(list, fallbackNote) {
+  list = Array.isArray(list) ? list : [];
+
+  list.sort((a, b) =>
+    Number(b && b.hand_no || 0) -
+    Number(a && a.hand_no || 0)
+  );
+
   if (!list.length) {
-    showOverlayPersistent('<h2>지난 핸드</h2><div class="sub">아직 끝난 핸드가 없습니다.</div>' +
-      '<div class="actions"><button type="button" id="bClose">닫기</button></div>');
+    showOverlayPersistent(
+      '<h2>지난 핸드</h2>' +
+      '<div class="sub">아직 끝난 핸드가 없습니다.</div>' +
+      '<div class="actions">' +
+      '<button type="button" id="bClose">닫기</button>' +
+      '</div>'
+    );
+
     $('#bClose').addEventListener('click', hideOverlay);
     return;
   }
+
   const rows = list.map((v, i) => {
     const amap = potAwards(v);
     const mineLabel = awardLabelFor(amap, v.hero_seat);
     const mine = !!mineLabel;
     const mineSolo = awardHasSolo(amap, v.hero_seat);
-    const how = { fold: '폴드로 종료', showdown: '쇼다운', void: '무효' }[v.how] || v.how;
-    return `<div class="row hist${mineSolo ? ' win' : ''}" data-i="${i}">` +
+
+    const how = {
+      fold: '폴드로 종료',
+      showdown: '쇼다운',
+      void: '무효'
+    }[v.how] || v.how;
+
+    return (
+      `<div class="row hist${mineSolo ? ' win' : ''}" data-i="${i}">` +
       `<span class="who">HAND ${v.hand_no ?? '?'}</span>` +
-      `<span class="cards">${cardsHTML((v.board || []).slice(0, 5), 'mini')}</span>` +
-      `<span class="amt">${mine ? esc(mineLabel) + ' ' : ''}${fmt(v.pot)}</span>` +
-      `<div class="histsub">${how}</div></div>`;
+      `<span class="cards">${
+        cardsHTML((v.board || []).slice(0, 5), 'mini')
+      }</span>` +
+      `<span class="amt">${
+        mine ? esc(mineLabel) + ' ' : ''
+      }${fmt(v.pot)}</span>` +
+      `<div class="histsub">${how || ''}</div>` +
+      `</div>`
+    );
   }).join('');
-  showOverlayPersistent(`<h2>지난 핸드</h2><div class="sub">${list.length}개 · 눌러서 자세히</div>` +
+
+  const note = fallbackNote
+    ? `<div class="potline">${esc(fallbackNote)}</div>`
+    : '';
+
+  showOverlayPersistent(
+    `<h2>지난 핸드</h2>` +
+    `<div class="sub">${list.length}개 · 눌러서 자세히</div>` +
+    note +
     rows +
-    '<div class="actions"><button type="button" id="bClose">닫기</button></div>');
+    '<div class="actions">' +
+    '<button type="button" id="bClose">닫기</button>' +
+    '</div>'
+  );
+
   $('#bClose').addEventListener('click', hideOverlay);
-  document.querySelectorAll('#overlay .row.hist').forEach((el) => {
-    el.addEventListener('click', () => showHandDetail(list[Number(el.dataset.i)]));
-  });
+
+  document
+    .querySelectorAll('#overlay .row.hist')
+    .forEach((el) => {
+      el.addEventListener('click', () =>
+        showHandDetail(list[Number(el.dataset.i)])
+      );
+    });
+}
+
+async function showHistory() {
+  showOverlayPersistent(
+    '<h2>지난 핸드</h2>' +
+    '<div class="sub">서버 기록 불러오는 중…</div>'
+  );
+
+  try {
+    const res = await fetch('/api/history', {
+      cache: 'no-store'
+    });
+
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
+
+    const data = await res.json();
+    const hands = Array.isArray(data.hands)
+      ? data.hands
+      : [];
+
+    renderHistoryList(hands, '');
+    return;
+
+  } catch (e) {
+    // 서버 기록을 못 읽을 때만 기존 브라우저 기록을 비상용으로 사용한다.
+    renderHistoryList(
+      histLoad(),
+      '서버 기록을 불러오지 못해 이 기기의 임시 기록을 표시합니다.'
+    );
+  }
 }
 
 /* index.html 이 app.js 를 ?v=N 으로 불러온다. 그 N 을 그대로 보여준다.
@@ -2935,14 +3015,38 @@ function logBoxHTML(log, v) {
   if (!log || !log.length) return '';
   let out = '<div class="logbox">';
   let cur = null;
-  log.forEach((e) => {
+
+  log.forEach((raw) => {
+    // 실시간 UI 로그는 object,
+    // hand_archive2.jsonl의 full_log는
+    // [street, seat, action, amount] 배열이다.
+    // 둘 다 같은 렌더러에서 처리한다.
+    const e = Array.isArray(raw)
+      ? {
+          street: raw[0],
+          seat: raw[1],
+          action: raw[2],
+          amount: raw[3]
+        }
+      : raw;
+
+    if (!e) return;
+
     if (e.street !== cur) {
       cur = e.street;
       out += `<div><span class="st">${STREET[cur] || cur}</span>`;
-    } else out += ' · ';
-    const who = String(e.seat) === String(v.hero_seat) ? '나' : e.seat + '번';
+    } else {
+      out += ' · ';
+    }
+
+    const who =
+      String(e.seat) === String(v.hero_seat)
+        ? '나'
+        : e.seat + '번';
+
     out += `${who} ${actionText(e)}`;
   });
+
   return out + '</div></div>';
 }
 

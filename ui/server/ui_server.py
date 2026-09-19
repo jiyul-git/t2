@@ -187,6 +187,106 @@ def _resolve(path):
     return full if os.path.isfile(full) else None
 
 
+
+def _public_history():
+    """현재 토너먼트의 완료 핸드를 UI용으로 안전하게 반환한다.
+
+    중요:
+    - hero 홀카드는 항상 허용
+    - 상대 카드는 실제 shown_hole 만 허용
+    - archive 의 top-level/result hole 전체는 절대 반환하지 않는다
+    """
+    fn = os.path.join(D, 'hand_archive2.jsonl')
+
+    if not os.path.exists(fn):
+        return []
+
+    out = []
+
+    with open(fn, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                h = json.loads(line)
+            except Exception:
+                # 쓰는 순간의 마지막 불완전 행 등은 건너뛴다.
+                continue
+
+            r = h.get('result') or {}
+            hand_no = h.get('hand_no')
+
+            if hand_no is None or not isinstance(r, dict):
+                continue
+
+            hero = h.get('hero')
+
+            # 실제 공개된 카드만 상대 카드로 전달한다.
+            raw_shown = r.get('shown_hole') or {}
+            shown = {}
+
+            if isinstance(raw_shown, dict):
+                for seat, cards in raw_shown.items():
+                    if isinstance(cards, (list, tuple)):
+                        shown[str(seat)] = list(cards)
+
+            # hero_hole 이 결과에 없을 때만 내부 hole 에서
+            # 'hero 자신의 카드만' 복구한다.
+            hero_hole = r.get('hero_hole') or []
+
+            if not hero_hole and hero is not None:
+                raw_hole = h.get('hole') or {}
+
+                if isinstance(raw_hole, dict):
+                    hero_hole = (
+                        raw_hole.get(str(hero))
+                        or raw_hole.get(hero)
+                        or []
+                    )
+
+            out.append({
+                'type': 'result',
+                'hand_no': hand_no,
+                'hash': r.get('hash') or h.get('hash'),
+
+                'hero_seat': hero,
+                'hero_hole': list(hero_hole or []),
+
+                'board': r.get('board') or h.get('board') or [],
+                'pot': r.get('pot') or 0,
+                'pots': r.get('pots') or [],
+
+                'how': r.get('how'),
+                'showdown': bool(r.get('showdown')),
+                'allin_show': bool(r.get('allin_show')),
+
+                'shown': shown,
+                'show_order': r.get('show_order') or [],
+                'mucked': r.get('mucked') or [],
+
+                'winners': r.get('winners') or [],
+                'main_winners': r.get('main_winners') or [],
+                'best_five': r.get('best_five') or {},
+
+                'pos': r.get('pos') or h.get('pos') or {},
+                'stacks': r.get('stacks') or {},
+
+                # UI 상세 기록에서 사용하는 필드
+                'log': h.get('full_log') or [],
+                'notes': h.get('notes') or []
+            })
+
+    def hand_key(x):
+        try:
+            return int(x.get('hand_no'))
+        except Exception:
+            return -1
+
+    out.sort(key=hand_key, reverse=True)
+    return out
+
 def _token():
     try:
         st = L.load()
@@ -353,6 +453,11 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {'working': bool(fut and not fut.done())})
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
+
+        if path == '/api/history':
+            # 공개 관전 화면에서도 읽을 수 있는 sanitized 완료 핸드 기록.
+            # 숨은 상대 hole / profiles / reads / intents 는 포함하지 않는다.
+            return self._send(200, {'hands': _public_history()})
         if path.startswith('/play/'):
             supplied = urllib.parse.unquote(
                 path[len('/play/'):]
