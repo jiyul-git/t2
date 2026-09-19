@@ -646,7 +646,7 @@ const SHUFFLE_MS = 700;       // 가운데 덱이 섞이는 구간
 // 모션만큼 길게 잡아 서로 겹쳐 날아가게 한다 — 딜러가 빠르게 튕겨도
 // 카드 하나하나는 천천히 도는 것과 같은 그림이다.
 const dealMs = () => Math.round(paceMs({ action:'fold' }) / 3);
-const FORCED_POST_MS = 1500;  // SB/BB/ante: 일반 액션 속도와 동일
+const FORCED_POST_MS = 500;  // SB/BB/ante 표시 간격
 
 /* 모션 길이는 style.css 의 :root 에서 읽는다. 같은 숫자를 두 곳에 적어두면
  * 한쪽만 고쳐진다 — 실제로 CSS 를 .24s 에서 .5s 로 늘리면서 여기 240 을
@@ -971,20 +971,9 @@ function postBlindsThen(v, done, epoch) {
     }
 
     /*
-     * 기존 스트리트 종료 칩 수거와 같은 방식:
-     * left/top -> 중앙
-     * + .toPot opacity
-     *
-     * CSS .chips transition(.35s)을 그대로 쓴다.
+     * 평소 BET과 동일하게 좌석 앞 칩을 유지한다.
+     * 별도의 70ms -> 중앙 이동 모션은 사용하지 않는다.
      */
-    epochTimer(() => {
-      if (!epochAlive(epoch)) return;
-
-      chip.style.left = '50%';
-      chip.style.top = '50%';
-      chip.classList.add('toPot');
-    }, 70, epoch);
-
     epochTimer(() => {
       if (!epochAlive(epoch)) return;
 
