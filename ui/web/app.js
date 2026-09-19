@@ -34,6 +34,7 @@ const S = {
   winners: null,           // 쇼다운 공개 중 강조할 좌석 집합
   won: false,              // 히어로가 대회를 우승했나
   entries: null,           // 총 엔트리 (우승 화면 표시용)
+  overlayPinned: false,     // 기록/설정은 사용자가 닫기 전까지 유지
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -78,6 +79,16 @@ function memoSet(pid, txt) {
     if (txt) localStorage.setItem(memoKey(pid), txt);
     else localStorage.removeItem(memoKey(pid));
   } catch (e) { toast('메모를 저장하지 못했습니다'); }
+}
+function memoClearAll() {
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('t2memo:')) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch (e) {}
 }
 const esc = (t) => String(t).replace(/[&<>"]/g,
   (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -349,8 +360,10 @@ function renderHero(v) {
   const sig = nc ? (v.hand_no + '|' + nc + '|' + (v.hero_hole || []).join(',')) : '';
   if (S.heroSig !== sig) {
     S.heroSig = sig;
-    $('#herocards').innerHTML = nc
-      ? cardsHTML((v.hero_hole || []).slice(0, nc), 'deal') : '';
+    const h = v.hero_hole || [];
+    $('#herocards').innerHTML = nc === 1
+      ? '<div class="card hero-ghost"></div>' + cardHTML(h[0], 'deal')
+      : (nc >= 2 ? cardHTML(h[1], 'deal') + cardHTML(h[0], 'deal') : '');
   }
 }
 
@@ -722,6 +735,7 @@ function drawFrame(v, bets, folded) {
 }
 
 function finalFrame(v) {
+  renderActions(v);
   // clearBubbles -> stopReplay 가 예약을 지우므로 먼저 챙겨둔다.
   // stopReplay 가 지우는 이유는 '응답이 왔을 때' 를 위한 것이고,
   // 여기는 '재생이 끝났을 때' 라 의미가 반대다.
@@ -833,8 +847,7 @@ function spectateTail(res) {
   const mine = (res.log || []).filter((e) => e.seat === res.hero_seat);
   S.spectating = mine.length > 0 && mine[mine.length - 1].action === 'fold';
   $('#mainrow').innerHTML = '<div class="wait">' +
-    (S.spectating ? '관전 중 — 화면을 누르면 건너뜁니다'
-                  : '진행 중 — 화면을 누르면 건너뜁니다') + '</div>';
+    (S.spectating ? '관전 중…' : '진행 중…') + '</div>';
   closeRaise();
   clearBubbles();
 
@@ -995,7 +1008,6 @@ function finishResult2(v) {
   const auto = autoOn();
   const tick = async () => {
     const b = $('#bDeal');
-    if (!b) { S.autoTimer = null; return; }
     let working = false;
     try {
       const r = await fetch('/api/ready');
@@ -1003,10 +1015,10 @@ function finishResult2(v) {
     } catch (e) { /* 못 물어봤으면 그냥 시간만 센다 */ }
     waited += STEP;
     if (working) {
-      b.innerHTML = '다음 핸드 <span class="sub">다른 테이블 정산 중… ' +
+      if (b) b.innerHTML = '다음 핸드 <span class="sub">다른 테이블 정산 중… ' +
         Math.round(waited / 1000) + '초</span>';
     } else if (!auto) {
-      b.innerHTML = '다음 핸드';
+      if (b) b.innerHTML = '다음 핸드';
       S.autoTimer = null; return;          // 자동이 꺼져 있으면 여기서 멈춘다
     } else {
       // 정산이 끝났으면 **기다리지 않는다.** 예전에는 여기서 결과 화면을
@@ -1113,6 +1125,7 @@ function resultBodyHTML(v, withLog) {
 function renderResult(v) {
   $('#mainrow').innerHTML = '<div class="wait">핸드 종료</div>';
   closeRaise();
+  if (S.overlayPinned) return;
   showOverlay(resultBodyHTML(v) +
     `<div class="actions"><button type="button" id="bDeal">다음 핸드</button></div>`);
   $('#bDeal').addEventListener('click', () => {
@@ -1161,7 +1174,7 @@ function histClear() { try { localStorage.removeItem(HIST_KEY); } catch (e) {} }
 function showHistory() {
   const list = histLoad();
   if (!list.length) {
-    showOverlay('<h2>지난 핸드</h2><div class="sub">아직 끝난 핸드가 없습니다.</div>' +
+    showOverlayPersistent('<h2>지난 핸드</h2><div class="sub">아직 끝난 핸드가 없습니다.</div>' +
       '<div class="actions"><button type="button" id="bClose">닫기</button></div>');
     $('#bClose').addEventListener('click', hideOverlay);
     return;
@@ -1176,7 +1189,7 @@ function showHistory() {
       `<span class="amt">${mine ? '승 ' : ''}${fmt(v.pot)}</span>` +
       `<div class="histsub">${how}</div></div>`;
   }).join('');
-  showOverlay(`<h2>지난 핸드</h2><div class="sub">${list.length}개 · 눌러서 자세히</div>` +
+  showOverlayPersistent(`<h2>지난 핸드</h2><div class="sub">${list.length}개 · 눌러서 자세히</div>` +
     rows +
     '<div class="actions"><button type="button" id="bClose">닫기</button></div>');
   $('#bClose').addEventListener('click', hideOverlay);
@@ -1194,10 +1207,9 @@ function buildTag() {
 }
 
 function showMenu() {
-  clearTimeout(S.autoTimer); S.autoTimer = null;
   const on = autoOn();
   const sm = stepMs();
-  showOverlay('<h2>설정</h2>' +
+  showOverlayPersistent('<h2>설정</h2>' +
     `<div class="row"><span class="who">봇 액션 간격</span>` +
     `<span class="amt">${(sm / 1000).toFixed(1)}초</span></div>` +
     `<button type="button" id="mStep">간격 바꾸기</button>` +
@@ -1222,7 +1234,7 @@ function showMenu() {
   });
   $('#mAuto').addEventListener('click', () => { autoSet(!on); showMenu(); });
   $('#mNew').addEventListener('click', () => {
-    showOverlay('<h2>새 게임을 시작할까요?</h2>' +
+    showOverlayPersistent('<h2>새 게임을 시작할까요?</h2>' +
       '<div class="sub">진행 중인 대회는 끝납니다. 되돌릴 수 없습니다.</div>' +
       newGameFormHTML() +
       '<div class="actions"><button type="button" id="bNew">시작</button>' +
@@ -1234,7 +1246,7 @@ function showMenu() {
 }
 
 function showHandDetail(v) {
-  showOverlay(resultBodyHTML(v, true) +
+  showOverlayPersistent(resultBodyHTML(v, true) +
     '<div class="actions"><button type="button" id="bBack">목록으로</button></div>');
   $('#bBack').addEventListener('click', showHistory);
 }
@@ -1306,6 +1318,7 @@ function newGameFormHTML() {
 function startNew() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
   S.heroSig = null; S.won = false;
+  memoClearAll();                    // 새 게임이면 봇 메모도 완전히 초기화
   histClear();                       // 핸드 번호가 1부터 다시 시작한다
   const body = {};
   const e = Number($('#fEntries') && $('#fEntries').value);
@@ -1318,12 +1331,22 @@ function startNew() {
   call('/api/new', body, '새 게임을 만드는 중…');
 }
 
-function showOverlay(html) {
+function showOverlay(html, pinned) {
   const o = $('#overlay');
-  o.innerHTML = `<div class="sheet">${html}</div>`;
+  S.overlayPinned = !!pinned;
+  const close = pinned
+    ? '<button type="button" class="sheetClose" aria-label="닫기">×</button>'
+    : '';
+  o.innerHTML = `<div class="sheet">${close}${html}</div>`;
   o.hidden = false;
+  const x = o.querySelector('.sheetClose');
+  if (x) x.addEventListener('click', hideOverlay);
 }
-function hideOverlay() { $('#overlay').hidden = true; }
+function showOverlayPersistent(html) { showOverlay(html, true); }
+function hideOverlay() {
+  $('#overlay').hidden = true;
+  S.overlayPinned = false;
+}
 
 /* ---------------- 기록 보기 ---------------- */
 /* ---------------- 토스트 ---------------- */
@@ -1442,7 +1465,7 @@ function markQueued(action) {
   const row = $('#mainrow');
   if (row) {
     row.innerHTML = '<div class="wait">' + (ACT[action] || action) +
-      ' 예약됨 — 앞사람 액션이 끝나면 진행합니다 (화면을 누르면 바로)</div>';
+      ' 예약됨 — 앞사람 액션이 끝나면 진행합니다</div>';
   }
   closeRaise();
 }
@@ -1488,11 +1511,14 @@ function apply(resp) {
                                               : (v.log || []).slice(S.logLen);
   if (freshHand) { clearBubbles(); resetFolding(); S.boardLen = 0; S.prevBets = null; }
 
-  hideOverlay();
+  if (!S.overlayPinned) hideOverlay();
   renderTop(v);
   renderChips(v, streetChanged);     // 스트리트가 끝났으면 칩을 팟으로 보낸다
   renderBoard(v);
-  renderActions(v);                  // 버튼은 바로 쓸 수 있다. 재생을 기다리지 않는다
+  closeRaise();
+  $('#mainrow').hidden = false;
+  $('#mainrow').innerHTML = '<div class="wait">진행 중…</div>';
+  // 봇 액션이 끝난 뒤에만 다음 액션 메뉴를 보여준다.
   // 액션 한 줄도 재생이 끝난 뒤에 채운다. 먼저 채우면 '누가 뭘 했는지' 가
   // 연출보다 먼저 글로 나와버린다.
   if (freshHand || streetChanged) {
@@ -1523,10 +1549,6 @@ $('#seats').addEventListener('click', (e) => {
 $('#seats').addEventListener('pointerdown', (e) => {
   if (e.target.closest && e.target.closest('button.memo')) e.stopPropagation();
 }, true);
-// 기다리기 싫으면 빈 곳을 한 번 누르면 재생을 건너뛴다
-$('#tablewrap').addEventListener('pointerdown', () => {
-  if (S.replayDone) S.replayDone();
-});
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideOverlay();
 });
