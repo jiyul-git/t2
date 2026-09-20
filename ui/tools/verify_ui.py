@@ -18,6 +18,7 @@
   7 워크 핸드    딜 직후 곧바로 result 가 오는 경우를 처리하는가
   8 지연         진행 중 / 핸드 종료 각각의 중앙값과 최대값
   9 정적 파일    GET / 가 web/index.html 을 주는가, ../ 로 폴더를 벗어날 수 있는가
+ 10 플레이 권한   인증된 플레이 모드는 조작 가능하고 watch 모드는 같은 키가 있어도 403 인가
 """
 import argparse, json, os, random, shutil, subprocess, sys, tempfile, time
 import urllib.error, urllib.request
@@ -31,20 +32,31 @@ FORBIDDEN = ('"plan"', '"eq"', '"why"', '"rel"', '"outs"', '"profile"',
 
 
 class Client:
-    def __init__(self, base):
+    def __init__(self, base, play_key):
         self.base = base
+        self.play_key = play_key
         self.lat_mid = []      # 진행 중 액션
         self.lat_end = []      # 핸드를 끝낸 액션
         self.bodies = []       # 원문. 내부값 누출 검사용
 
-    def _call(self, path, obj=None):
+    def _call(self, path, obj=None, mode='play'):
         t = time.time()
+        headers = {
+            'X-T2-Play-Key': self.play_key,
+            'X-T2-Client-Mode': mode,
+        }
         if obj is None:
-            req = urllib.request.Request(self.base + path)
-        else:
             req = urllib.request.Request(
-                self.base + path, data=json.dumps(obj).encode(),
-                headers={'Content-Type': 'application/json'})
+                self.base + path,
+                headers=headers
+            )
+        else:
+            headers['Content-Type'] = 'application/json'
+            req = urllib.request.Request(
+                self.base + path,
+                data=json.dumps(obj).encode(),
+                headers=headers
+            )
         try:
             with urllib.request.urlopen(req, timeout=120) as f:
                 code, raw = f.status, f.read().decode()
@@ -55,6 +67,10 @@ class Client:
 
     def new(self, **kw):
         c, r, dt = self._call('/api/new', kw)
+        return c, r
+
+    def watch_new(self, **kw):
+        c, r, dt = self._call('/api/new', kw, mode='watch')
         return c, r
 
     def state(self):
@@ -116,10 +132,16 @@ def run(args):
     try:
         subprocess.run(['sh', os.path.join(HERE, 'setup_run_dir.sh'), tmp],
                        check=True, stdout=subprocess.DEVNULL)
-        srv = subprocess.Popen([sys.executable, 'ui_server.py', '--port', str(args.port)],
-                               cwd=tmp, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.PIPE)
-        cli = Client('http://127.0.0.1:%d' % args.port)
+        test_key = 'verify-ui-play-key'
+        env = dict(os.environ, T2_PLAY_KEY=test_key)
+        srv = subprocess.Popen(
+            [sys.executable, 'ui_server.py', '--port', str(args.port)],
+            cwd=tmp,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            env=env
+        )
+        cli = Client('http://127.0.0.1:%d' % args.port, test_key)
         for _ in range(100):
             if srv.poll() is not None:
                 return ['서버가 뜨지 않았습니다: %s'
@@ -133,9 +155,22 @@ def run(args):
 
         fail += check_static('http://127.0.0.1:%d' % args.port)
 
+        # 같은 유효 플레이 키를 가지고 있어도 현재 페이지가 watch 모드라면
+        # 상태 변경은 서버가 거부해야 한다. 쿠키가 남은 관전자 탭 회귀 검사.
+        cw, rw = cli.watch_new(
+            entries=args.entries,
+            seed=args.seed,
+            start_stack=30000
+        )
+        if cw != 403:
+            fail.append(
+                'watch 모드 /api/new 가 403 이 아니라 %d' % cw
+            )
+
         rng = random.Random(args.seed)
         stats = dict(hands=0, decisions=0, walks=0, chip_checks=0, chip_bad=0,
-                     legal_violations=0, err_checked=0, results=0, showdowns=0)
+                     legal_violations=0, err_checked=0, results=0, showdowns=0,
+                     watch_blocked=(cw == 403))
         pot_of = {}            # hand_no -> Σstack + pot_total
         exposed = {}           # hand_no -> 화면에 나온 카드 집합
         shown_seats = {}       # hand_no -> 쇼다운으로 공개된 좌석
