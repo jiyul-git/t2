@@ -105,6 +105,50 @@ def main():
         if rr:
             summarize(rr, pos)
 
+    print('\n[decision class]')
+    for kind in ('unopened','vs_limp','vs_raise','free_action','facing_bet'):
+        rr=[r for r in near if r.get('decision_kind')==kind]
+        if rr:
+            summarize(rr, kind)
+
+    print('\n[preflop unopened x position]')
+    pf_open=[r for r in near
+             if r.get('street')=='preflop' and r.get('decision_kind')=='unopened']
+    for pos in ('UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN','SB','BB'):
+        rr=[r for r in pf_open if r.get('pos')==pos]
+        if rr:
+            summarize(rr, pos)
+
+    print('\n[preflop vs raise: cover relation]')
+    pf_raise=[r for r in near
+              if r.get('street')=='preflop' and r.get('decision_kind')=='vs_raise']
+    summarize([r for r in pf_raise if r.get('facing_target') and
+               r['facing_target'].get('covers_me')],
+              'vs covering raiser')
+    summarize([r for r in pf_raise if r.get('facing_target') and
+               r['facing_target'].get('i_cover')],
+              'vs covered raiser')
+
+    print('\n[waiting-cost diagnostics]')
+    wc=[r for r in near if r.get('forced_cost_share_of_stack') is not None]
+    if wc:
+        vals=sorted(r['forced_cost_share_of_stack'] for r in wc)
+        def qq(p):
+            return vals[min(len(vals)-1, int((len(vals)-1)*p))]
+        print(' forced_cost_share_of_stack p10/p50/p90 = %.3f / %.3f / %.3f' %
+              (qq(.10), qq(.50), qq(.90)))
+        stranded=[r for r in wc if (r.get('stack_after_next_bb_if_fold_all') or 0) <= 0]
+        summarize(stranded, 'cannot survive to next BB')
+        for r in sorted(stranded,
+                        key=lambda x:(x.get('stack_behind_bb',9999),
+                                      x.get('hands_to_next_bb',9999)))[:10]:
+            print('   H%s %s %s rem=%s/%s stack=%sbb afterNextBB=%s handsToBB=%s S/J=%s kind=%s act=%s' %
+                  (r.get('hand_no'), r.get('street'), r.get('pos'),
+                   r.get('remaining'), r.get('itm'), r.get('stack_behind_bb'),
+                   r.get('stack_after_next_bb_if_fold_all'),
+                   r.get('hands_to_next_bb'), r.get('shorter_to_needed_ratio'),
+                   r.get('decision_kind'), r.get('action')))
+
     print('\n[target topology]')
     summarize([r for r in near if (r.get('covered_by_yet_to_act') or 0)>0],
               'covering stack still behind')
