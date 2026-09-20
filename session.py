@@ -1,7 +1,7 @@
 """제너레이터 기반 재개형 핸드 진행 + 쇼다운/사이드팟 정산 + 토너 세션."""
 import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
-import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS
+import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS, money_pressure as MP
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -10,6 +10,267 @@ def best5(cards): return bot.eval7(cards)
 
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
+
+def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
+                        facing_seat=None, decision_context=None,
+                        facing_read=None):
+    """행동을 바꾸지 않고 머니점프/스택/자리의 공개 상태만 기록한다."""
+    bb = max(1, getattr(h, 'bb', 1) or 1)
+    mj = dict(getattr(h, 'money_jump', None) or {})
+    field = [float(x) for x in (getattr(h, 'field_stacks', ()) or ()) if x > 0]
+    start = float((getattr(h, '_start_stacks', {}) or {}).get(
+        seat, rnd.stacks.get(seat, 0) + rnd.contrib.get(seat, 0)))
+    behind = float(rnd.stacks.get(seat, 0))
+
+    shorter = sorted(x for x in field if x < start)
+    n_others = max(0, len(field) - 1)
+    nearest_shorter = max(shorter) if shorter else None
+    shortest = min(shorter) if shorter else None
+    median_shorter = (shorter[len(shorter)//2] if shorter else None)
+
+    order = list(rnd.order)
+    decision_context = dict(decision_context or {})
+    pos = (getattr(h, 'pos', {}) or {}).get(seat)
+    pre_order = list(getattr(h, 'PRE', []) or [])
+    n_seats = len(getattr(h, 'seats', []) or pre_order)
+    if pos in pre_order and 'BB' in pre_order:
+        if pos == 'BB':
+            hands_to_next_bb = n_seats
+        else:
+            hands_to_next_bb = pre_order.index('BB') - pre_order.index(pos)
+            if hands_to_next_bb <= 0:
+                hands_to_next_bb += n_seats
+    else:
+        hands_to_next_bb = None
+
+    ante_on = (getattr(h, 'ante', 0) or 0) > 0
+    orbit_cost_bb = 1.5 + (1.0 if ante_on else 0.0)
+    # 현재 SB/BB의 강제 납부는 rnd.stacks에 이미 반영됐다. 지금부터 다음 BB까지
+    # 추가로 버틸 비용을 본다. SB만 다음 핸드 BB라 이미 낸 SB 0.5BB를 제외한다.
+    forced_to_next_bb = ((1.0 + (1.0 if ante_on else 0.0))
+                         if pos == 'SB' else orbit_cost_bb)
+
+    pending = []
+    if seat in order:
+        i = order.index(seat)
+        cyc = order[i+1:] + order[:i]
+        for x in cyc:
+            if x == seat or x in rnd.folded or x in rnd.allin:
+                continue
+            if x not in rnd.acted or rnd.to_call(x) > 0:
+                pending.append(x)
+
+    start_stacks = getattr(h, '_start_stacks', {}) or {}
+    targets = []
+    for x in pending:
+        xs = float(start_stacks.get(
+            x, rnd.stacks.get(x, 0) + rnd.contrib.get(x, 0)))
+        xb = float(rnd.stacks.get(x, 0))
+        _ts = sorted(v for v in field if v < xs)
+        _tm = (_ts[len(_ts)//2] if _ts else None)
+        _tpos = (getattr(h, 'pos', {}) or {}).get(x)
+        _tforced = ((1.0 + (1.0 if ante_on else 0.0))
+                    if _tpos == 'SB' else orbit_cost_bb)
+        _tbb = xs / bb
+        targets.append({
+            'seat': x,
+            'pid': (getattr(h, 'seat_pid', {}) or {}).get(x),
+            'pos': _tpos,
+            'stack_bb': round(_tbb, 3),
+            'stack_behind_bb': round(xb / bb, 3),
+            'stack_ratio_to_me': round(xs / max(1.0, start), 4),
+            'i_cover': bool(start > xs),
+            'covers_me': bool(xs > start),
+            'n_shorter': len(_ts),
+            'median_shorter_ratio': (
+                round(_tm / max(1.0, xs), 4) if _tm is not None else None),
+            'forced_cost_to_next_bb': round(_tforced, 3),
+            'stack_after_next_bb_if_fold_all': round(
+                max(0.0, xb / bb - _tforced), 3),
+            'forced_cost_share_of_stack': round(
+                _tforced / max(0.001, xb / bb), 4),
+            'bf': round(h.bf(x), 4) if hasattr(h, 'bf') else 1.0,
+        })
+
+    live_opp = [x for x in rnd.live() if x != seat]
+    live_stacks = [float(start_stacks.get(
+        x, rnd.stacks.get(x, 0) + rnd.contrib.get(x, 0))) for x in live_opp]
+
+    facing = None
+    if facing_seat is not None and facing_seat != seat:
+        facing = next((dict(t) for t in targets if t['seat'] == facing_seat), None)
+        if facing is None:
+            xs = float(start_stacks.get(
+                facing_seat,
+                rnd.stacks.get(facing_seat, 0) + rnd.contrib.get(facing_seat, 0)))
+            xb = float(rnd.stacks.get(facing_seat, 0))
+            _ts = sorted(v for v in field if v < xs)
+            _tm = (_ts[len(_ts)//2] if _ts else None)
+            _tpos = (getattr(h, 'pos', {}) or {}).get(facing_seat)
+            _tforced = ((1.0 + (1.0 if ante_on else 0.0))
+                        if _tpos == 'SB' else orbit_cost_bb)
+            _tbb = xs / bb
+            facing = {
+                'seat': facing_seat,
+                'pid': (getattr(h, 'seat_pid', {}) or {}).get(facing_seat),
+                'pos': _tpos,
+                'stack_bb': round(_tbb, 3),
+                'stack_behind_bb': round(xb / bb, 3),
+                'stack_ratio_to_me': round(xs / max(1.0, start), 4),
+                'i_cover': bool(start > xs),
+                'covers_me': bool(xs > start),
+                'n_shorter': len(_ts),
+                'median_shorter_ratio': (
+                    round(_tm / max(1.0, xs), 4) if _tm is not None else None),
+                'forced_cost_to_next_bb': round(_tforced, 3),
+                'stack_after_next_bb_if_fold_all': round(
+                    max(0.0, xb / bb - _tforced), 3),
+                'forced_cost_share_of_stack': round(
+                    _tforced / max(0.001, xb / bb), 4),
+                'bf': round(h.bf(facing_seat), 4) if hasattr(h, 'bf') else 1.0,
+            }
+
+    obs = {
+        'street': street,
+        'seat': seat,
+        'pid': (getattr(h, 'seat_pid', {}) or {}).get(seat),
+        'pos': pos,
+        'decision_kind': decision_context.get('kind'),
+        'n_limpers': decision_context.get('n_limpers'),
+        'n_callers': decision_context.get('n_callers'),
+        'remaining': getattr(h, 'field_remaining', None),
+        'itm': getattr(h, 'field_itm', None),
+        'current_prize': mj.get('current_prize', 0.0),
+        'next_prize': mj.get('next_prize', 0.0),
+        'next_jump': mj.get('next_jump', 0.0),
+        'players_to_jump': mj.get('players_to_jump', 0),
+        'min_cash': mj.get('min_cash', 0.0),
+        'jump_vs_mincash': mj.get('jump_vs_mincash', 0.0),
+        'jump_frac_next': mj.get('jump_frac_next', 0.0),
+        'distance_frac_itm': mj.get('distance_frac_itm', 0.0),
+        'distance_frac_remaining': mj.get('distance_frac_remaining', 0.0),
+        'money_jump_skill': PS.sk(profile, 'money_jump', 3.0),
+        'icm_skill': PS.sk(profile, 'icm', 3.0),
+        'stack_decay_skill': PS.sk(profile, 'stack_decay', 3.0),
+        'pf_range_skill': PS.sk(profile, 'pf_range', 3.0),
+        'open_size_skill': PS.sk(profile, 'open_size', 3.0),
+        'positional_skill': PS.sk(profile, 'positional', 3.0),
+        'bf': round(h.bf(seat), 4) if hasattr(h, 'bf') else 1.0,
+        'stack_start_bb': round(start / bb, 3),
+        'stack_behind_bb': round(behind / bb, 3),
+        'field_avg_bb': round(float(getattr(h, 'field_avg_stack', 0) or 0) / bb, 3),
+        'table_n': n_seats,
+        'hands_to_next_bb': hands_to_next_bb,
+        'orbit_cost_bb': round(orbit_cost_bb, 3),
+        'forced_cost_to_next_bb': round(forced_to_next_bb, 3),
+        'stack_after_next_bb_if_fold_all': round(
+            max(0.0, behind / bb - forced_to_next_bb), 3),
+        'forced_cost_share_of_stack': round(
+            forced_to_next_bb / max(0.001, behind / bb), 4),
+        'n_shorter': len(shorter),
+        'shorter_frac': round(len(shorter) / max(1, n_others), 4),
+        'nearest_shorter_ratio': (round(nearest_shorter / max(1.0, start), 4)
+                                  if nearest_shorter is not None else None),
+        'median_shorter_ratio': (round(median_shorter / max(1.0, start), 4)
+                                 if median_shorter is not None else None),
+        'shortest_ratio': (round(shortest / max(1.0, start), 4)
+                           if shortest is not None else None),
+        'shorter_minus_needed': (
+            len(shorter) - int(mj.get('players_to_jump') or 0)
+            if (mj.get('players_to_jump') or 0) > 0 else None),
+        'shorter_to_needed_ratio': (
+            round(len(shorter) / float(mj.get('players_to_jump')), 4)
+            if (mj.get('players_to_jump') or 0) > 0 else None),
+        'table_cover_count': sum(1 for x in live_stacks if start > x),
+        'table_covered_by_count': sum(1 for x in live_stacks if x > start),
+        'players_yet_to_act': len(pending),
+        'players_yet_to_act_frac': round(
+            len(pending) / max(1, len(live_opp)), 4),
+        'covers_yet_to_act': sum(1 for t in targets if t['i_cover']),
+        'covered_by_yet_to_act': sum(1 for t in targets if t['covers_me']),
+        'blind_targets_yet_to_act': sum(
+            1 for t in targets if t['pos'] in ('SB', 'BB')),
+        'targets_yet_to_act': targets,
+        'facing_target': facing,
+        'to_call_bb': round(float(to_call or 0) / bb, 3),
+        'pot_bb': round(float(pot or 0) / bb, 3),
+    }
+
+    _actor = MP.actor_from_profile(profile, PS.sk, PS.temper)
+    obs['money_signals'] = MP.signals(obs, _actor)
+
+    def _target_state(t):
+        if not t:
+            return None
+        d = dict(obs)
+        d.update({
+            'stack_start_bb': t.get('stack_bb', 0.0),
+            'stack_behind_bb': t.get('stack_behind_bb', t.get('stack_bb', 0.0)),
+            'n_shorter': t.get('n_shorter', 0),
+            'median_shorter_ratio': t.get('median_shorter_ratio'),
+            'forced_cost_to_next_bb': t.get('forced_cost_to_next_bb', 0.0),
+            'stack_after_next_bb_if_fold_all': t.get(
+                'stack_after_next_bb_if_fold_all', 0.0),
+            'forced_cost_share_of_stack': t.get(
+                'forced_cost_share_of_stack', 0.0),
+            'bf': t.get('bf', 1.0),
+        })
+        return d
+
+    _target_signals = []
+    for _t in targets:
+        _ts = _target_state(_t)
+        _pr = MP.pressure_opportunity(obs, _ts, _actor, read=None)
+        _u = dict(_t)
+        _u['pressure'] = _pr
+        _target_signals.append(_u)
+    obs['target_signals'] = _target_signals
+
+    _fstate = _target_state(facing)
+    if _fstate is not None:
+        _fread = PS.read_opponent(profile, facing_read) if facing_read else None
+        _rch = ('preflop_3bet'
+                if decision_context.get('kind') == 'vs_raise' else 'generic')
+        obs['facing_pressure'] = MP.pressure_opportunity(
+            obs, _fstate, _actor, read=_fread, read_channel=_rch)
+        _pressure = obs['facing_pressure']['pressure_opportunity']
+    else:
+        obs['facing_pressure'] = None
+        _pressure = max(
+            (x['pressure']['pressure_opportunity'] for x in _target_signals),
+            default=0.0)
+    obs['low_commit_pressure'] = round(
+        MP.low_commit_pressure(_pressure, obs, _actor), 6)
+    obs['unopened_modifiers'] = (
+        MP.unopened_modifiers(obs)
+        if decision_context.get('kind') == 'unopened' else None)
+
+    h.money_jump_obs = getattr(h, 'money_jump_obs', [])
+    h.money_jump_obs.append(obs)
+    return obs
+
+
+def _money_jump_attach_action(obs, rnd):
+    if obs is None or not rnd.log:
+        return
+    _s, _a, _amt = rnd.log[-1]
+    obs['action'] = _a
+    obs['amount'] = _amt
+
+    # 미오픈 raise의 실제 적용 금액은 open_size_bb 뒤에 shape_size와
+    # 최소레이즈 규칙을 모두 통과한 값이다. sizing shadow는 이 최종값을
+    # 기준으로 계산해야 한다. 행동 자체는 아직 바꾸지 않는다.
+    _m = obs.get('unopened_modifiers') or {}
+    if (obs.get('street') == 'preflop'
+            and obs.get('decision_kind') == 'unopened'
+            and _a == 'raise' and _s not in rnd.allin and _m):
+        _base_bb = float(_amt) / max(1.0, float(rnd.bb))
+        _sf = max(0.0, min(1.0, float(_m.get('size_factor_shadow', 1.0))))
+        _m['applied_open_size_bb'] = round(_base_bb, 3)
+        # unopened NLH에서 BB가 1BB 게시된 상태의 최소 raise-to는 2BB.
+        _m['applied_money_size_bb_shadow'] = round(
+            max(2.0, _base_bb * _sf), 3)
+
 
 def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
     """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역
@@ -164,6 +425,21 @@ class HandRun:
                 elif a == 'call': limpers.append(s)
                 continue
             ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
+            _opp_est_pf = (RD.perceived_profile(
+                h.book, self._pid(s), self._pid(aggressor), ax,
+                random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
+                if aggressor is not None and aggressor != s else None)
+            _mj_obs = _money_jump_observe(
+                h, s, rnd, 'preflop', ax, tc,
+                sum(rnd.contrib.values()) + ante_pot,
+                facing_seat=aggressor,
+                decision_context={
+                    'kind': ('vs_raise' if aggressor is not None else
+                             'vs_limp' if limpers else 'unopened'),
+                    'n_limpers': len(limpers),
+                    'n_callers': callers,
+                },
+                facing_read=_opp_est_pf)
             _ck = _cache_key('pre', s, len(rnd.log))
             _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
             if _cached:
@@ -171,6 +447,7 @@ class HandRun:
                 except ValueError: rnd.apply(s, 'call' if tc > 0 else 'check')
                 if _cached[1] in ('raise','allin'): aggressor = s; callers = 0
                 elif _cached[1] == 'call' and aggressor: callers += 1
+                _money_jump_attach_action(_mj_obs, rnd)
                 continue
             _pre_len = len(rnd.log)
             try:
@@ -213,10 +490,9 @@ class HandRun:
                     payout_flat=getattr(h, 'payout_flat', 0.0),
                     reentry=getattr(h, 'reentry', False),
                     progress=getattr(h, 'progress', 0.0),
-                    opp_est=(RD.perceived_profile(
-                        h.book, self._pid(s), self._pid(aggressor), ax,
-                        random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
-                        if aggressor is not None and aggressor != s else None))
+                    opp_est=_opp_est_pf,
+                    money_open=(_mj_obs.get('unopened_modifiers')
+                                if _mj_obs else None))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _seed
                 if a == 'fold':
@@ -235,6 +511,7 @@ class HandRun:
                     if _seed['pf_role'] == 'defend': callers = 0
             except ValueError:
                 rnd.apply(s, 'call' if tc > 0 else 'check')
+            _money_jump_attach_action(_mj_obs, rnd)
 
         self.full_log = [('preflop', x, a, amt) for (x, a, amt) in rnd.log]
         # 프리플랍 관찰 기록
@@ -451,6 +728,13 @@ class HandRun:
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
                 pot_live = pot_now + sum(r2.contrib.values())
+                _mj_obs = _money_jump_observe(
+                    h, s, r2, street, ax, tc, pot_live,
+                    facing_seat=(aggressor if tc > 0 else None),
+                    decision_context={
+                        'kind': ('facing_bet' if tc > 0 else 'free_action'),
+                    },
+                    facing_read=(_est if tc > 0 and aggressor == _main else None))
                 _pl = h.plans[key]
                 h.intents = getattr(h, 'intents', [])
                 # 액션 전 관측. 순번을 붙여 매 액션마다 남긴다 —
@@ -601,6 +885,7 @@ class HandRun:
                     r2.apply(s, a)
                     _exec_amt = 0
                 if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
+                _money_jump_attach_action(_mj_obs, r2)
                 # 액션이 끝난 뒤 계획을 다시 손대지 않는다.
                 # _allowed(개념 보유 검사)는 update_plan 안에서 이미 적용됐고,
                 # 여기서 또 돌리면 '실행 후 계획 변경' = 사후 수정이 된다.

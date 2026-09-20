@@ -598,6 +598,7 @@ def _archive(st, f, h, res, notes, defer=False):
            'stacks_before': {str(k): v for k, v in getattr(h, '_start_stacks', {}).items()},
            'full_log': res.get('full_log', []),
            'intents': getattr(h, 'intents', []),
+           'money_jump_obs': getattr(h, 'money_jump_obs', []),
            'reads': getattr(h, 'reads_log', []),
            'result': {k: v for k, v in res.items() if k != 'full_log'},
            'field': (None if defer else f.status()), 'notes': list(notes),

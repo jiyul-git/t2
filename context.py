@@ -28,6 +28,7 @@ SPEC = {
     'field_remaining':  (None, '필드 잔여 인원. ICM 전체가 이것에 달렸다'),
     'field_itm':        (None, '인더머니 인원. 같음'),
     'field_avg_stack':  (None, '필드 평균 칩. 테이블 평균이 아니다'),
+    'field_stacks':     ((),   '핸드 시작 시 생존자 스택 분포. 머니점프 관측 전용'),
     'payouts':          (None, '상금 구조. 없으면 표준표로 대체된다'),
     'payout_flat':      (0.0,  '상금 평탄도. 위성은 1.0'),
     'ante':             (None, '이번 핸드의 안테 액수. 0 이면 안 걷는다'),
@@ -35,6 +36,7 @@ SPEC = {
     'erosion_per_hand': (0.0,  '핸드당 블라인드 침식률. 깊이 인식이 쓴다'),
     'reentry':          (False,'리바인 가능 여부. 축적형 분산의 실패 비용을 낮춘다'),
     'progress':         (0.0,  '대회 진행도 0(시작)~1(끝). 잔여/엔트리로 계산'),
+    'money_jump':       ({},   '현재 보장 상금과 다음 상금 점프 문맥. 판단 로직에는 아직 미사용'),
     'pid_prof':         ({},   '대회 전체 pid → 프로필. 틸트 감쇠가 자기 프로필을 '
                                '쓰려면 한 테이블분으로는 모자란다'),
 }
@@ -55,6 +57,102 @@ def progress_of(remaining, entries, itm=None):
     e = max(2, int(entries or 2))
     r = max(1, min(e, int(remaining or e)))
     return max(0.0, min(1.0, math.log(e / r) / math.log(e)))
+
+
+def money_jump_context(remaining, itm, payouts):
+    """현재 보장 상금과 다음 실제 상금 점프를 계산한다.
+
+    payouts 는 1위부터의 상금 비율(합계 100)이다. 통화 단위가 아니라
+    구조만 표현한다. 같은 금액이 여러 등수에 걸쳐 있으면 그 구간을 건너
+    실제로 상금이 커지는 다음 순위를 찾는다.
+
+    반환값
+      in_money        이미 ITM 인가
+      current_rank    현재 생존자 수 기준 보장 등수(ITM 전에는 None)
+      current_prize   지금 탈락해도 보장되는 상금 비율
+      next_rank       다음으로 상금이 증가하는 생존자 수 / 없으면 None
+      next_prize      그때 보장되는 상금 비율
+      next_jump       next_prize - current_prize
+      players_to_jump 그 점프까지 필요한 추가 탈락자 수
+    """
+    rem = max(1, int(remaining or 1))
+    paid = max(0, int(itm or 0))
+    pays = [float(x) for x in (payouts or [])]
+
+    # 상금표 길이와 itm 이 어긋나면 실제 표가 있는 만큼만 신뢰한다.
+    paid = min(paid, len(pays)) if pays else 0
+    in_money = bool(paid and rem <= paid)
+
+    if not paid:
+        return {
+            'in_money': False,
+            'current_rank': None,
+            'current_prize': 0.0,
+            'next_rank': None,
+            'next_prize': 0.0,
+            'next_jump': 0.0,
+            'players_to_jump': 0,
+            'min_cash': 0.0,
+            'jump_vs_mincash': 0.0,
+            'jump_frac_next': 0.0,
+            'distance_frac_itm': 0.0,
+            'distance_frac_remaining': 0.0,
+        }
+
+    if not in_money:
+        nxt_rank = paid
+        nxt_prize = pays[paid - 1]
+        j = max(0, rem - paid)
+        min_cash = pays[paid - 1]
+        return {
+            'in_money': False,
+            'current_rank': None,
+            'current_prize': 0.0,
+            'next_rank': nxt_rank,
+            'next_prize': nxt_prize,
+            'next_jump': nxt_prize,
+            'players_to_jump': j,
+            'min_cash': min_cash,
+            'jump_vs_mincash': (nxt_prize / min_cash if min_cash > 0 else 0.0),
+            'jump_frac_next': (nxt_prize / nxt_prize if nxt_prize > 0 else 0.0),
+            'distance_frac_itm': j / float(max(1, paid)),
+            'distance_frac_remaining': j / float(max(1, rem)),
+        }
+
+    current_rank = rem
+    current_prize = pays[current_rank - 1]
+
+    # 바로 위 등수가 같은 상금이면 실제 점프가 있는 곳까지 건너뛴다.
+    next_rank = None
+    next_prize = current_prize
+    for rank in range(current_rank - 1, 0, -1):
+        prize = pays[rank - 1]
+        if prize > current_prize + 1e-12:
+            next_rank = rank
+            next_prize = prize
+            break
+
+    if next_rank is None:
+        players_to_jump = 0
+    else:
+        players_to_jump = current_rank - next_rank
+
+    jump = max(0.0, next_prize - current_prize)
+    min_cash = pays[paid - 1]
+    return {
+        'in_money': True,
+        'current_rank': current_rank,
+        'current_prize': current_prize,
+        'next_rank': next_rank,
+        'next_prize': next_prize,
+        'next_jump': jump,
+        'players_to_jump': players_to_jump,
+        'min_cash': min_cash,
+        'jump_vs_mincash': (jump / min_cash if min_cash > 0 else 0.0),
+        'jump_frac_next': (jump / next_prize if next_prize > 0 else 0.0),
+        'distance_frac_itm': players_to_jump / float(max(1, paid)),
+        'distance_frac_remaining': players_to_jump / float(max(1, rem)),
+    }
 
 
 def erosion(hands_per_level, blind_mult=1.0, base_growth=1.28):

@@ -1,7 +1,7 @@
 """플레이어를 '종'으로 뽑지 않는다.
    개념별 숙련도 벡터를 상관구조에 따라 굴려서 개인을 만든다.
    같은 필드에 100명이면 100명이 전부 다르다."""
-import random, math
+import random, math, zlib
 
 # ---------- 개념 목록 ----------
 # 실행 개념: 실제 액션을 만들어내는 능력
@@ -14,12 +14,14 @@ EXEC = ['bluff', 'semibluff',
         'delayed_cbet', 'equity_denial', 'stackoff', 'reraise']
 # 계산 개념: 공부량에 좌우되는 이론 능력
 CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay', 'open_size', 'pf_defend', 'range_merge', 'multiway', 'fold_equity']
+# 관측/인지 개념. 아직 행동에는 연결하지 않고 자연상태 측정에만 쓴다.
+PERCEPTION = ['money_jump']
 # 기질 축: 능력이 아니라 성격
 TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
           'discipline', 'adaptability', 'consistency', 'attention',
           'slowplay_taste']
 
-ALL_CONCEPTS = EXEC + CALC
+ALL_CONCEPTS = EXEC + CALC + PERCEPTION
 
 # ---------- 개념 난이도/편차: 전부 잠정값 ----------
 # 아래 LOADING 의 base 와 SPREAD 의 값은 **아직 검토되지 않았다.**
@@ -172,6 +174,18 @@ def dump_loading():
 
 def _clamp(x, lo=0.0, hi=10.0): return max(lo, min(hi, x))
 
+# money_jump은 기존 프로필의 난수열을 밀면 안 된다. 행동 전후 비교를 위해
+# 공유 rng를 소비하지 않는 별도 결정적 난수를 쓴다. CALC에도 아직 넣지 않아
+# overall_skill/재추첨 판정과 기존 전략을 바꾸지 않는다.
+def _money_jump_skill(study, aggro, exp, pid):
+    ws, wa, we, base = (0.78, -0.12, 0.40, 3.6)  # 전부 잠정값
+    key = 'money_jump|%s|%.8f|%.8f|%.8f' % (pid, study, aggro, exp)
+    rr = random.Random(zlib.crc32(key.encode()))
+    v = base + ws*(study-5.0)*1.05 + wa*(aggro-5.0)*0.85 + we*(exp-5.0)*0.85
+    v += rr.gauss(0, 2.20)
+    return round(_clamp(v), 1)
+
+
 def skill_bounds(q):
     """대회 등급(q)에 따른 실력 하한/상한.
        저가 대회는 초짜가 흔하고 엘리트가 드물다. 하이롤러는 반대."""
@@ -198,6 +212,10 @@ def make_player(rng, field_quality=0.6, pid=None, _depth=0, aggr_bias=0.0, loose
         v = base + ws*(study-5.0)*1.05 + wa*(aggro-5.0)*0.85 + we*(exp-5.0)*0.85
         v += rng.gauss(0, SPREAD.get(k, DEFAULT_SPREAD))  # 개념별 개인 편차
         c[k] = round(_clamp(v), 1)
+
+    # 행동에는 아직 쓰지 않는 머니점프 인지 개념. 별도 결정적 난수이므로
+    # 이 한 줄을 추가해도 아래 temper 생성의 공유 rng 상태는 변하지 않는다.
+    c['money_jump'] = _money_jump_skill(study, aggro, exp, pid)
 
     # 기질 축 — 능력과 부분적으로만 상관
     t = {

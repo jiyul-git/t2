@@ -279,7 +279,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
                   field_avg_bb=None, erosion=0.0,
                   payout_flat=0.0, reentry=False, progress=0.0,
-                  behind_reads=None, bb_chips=None):
+                  behind_reads=None, bb_chips=None, money_open=None):
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
@@ -294,12 +294,50 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
            * hotzone_pressure(prof, pos, bb, behind_stacks or []))
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
     r = pct(hand)
+    # 같은 결정 상태에서 "머니점프가 없었다면"과 "있다면"을 정확히 비교하기
+    # 위한 로컬 반사실. 진입 여부는 threshold 하나로 결정되므로 RNG 재생 없이
+    # widen_entry / narrow_fold를 판정할 수 있다.
+    _base_thr = thr
+    # 머니점프 첫 행동 개입. 기준 레인지 자체를 새로 만들지 않고,
+    # 기존 open threshold에 연속 factor만 곱한다.
+    if money_open:
+        try:
+            thr *= max(0.0, float(money_open.get('range_factor', 1.0)))
+        except (TypeError, ValueError):
+            pass
+        thr = max(0.0, min(0.9, thr))
+        money_open['base_threshold'] = round(_base_thr, 6)
+        money_open['money_threshold'] = round(thr, 6)
+        money_open['hand_pct'] = round(r, 6)
+        _base_in = (r <= _base_thr)
+        _money_in = (r <= thr)
+        money_open['range_cf'] = (
+            'widen_entry' if (not _base_in and _money_in) else
+            'narrow_fold' if (_base_in and not _money_in) else
+            'unchanged')
     if r > thr: return ('fold', 0)
     # 쇼브 판정이 먼저다. 10bb 에서 림프를 먼저 물으면 쇼브해야 할 자리에서
     # 림프가 나온다(실제로 38% 나왔다). 얕으면 쇼브가 선택지를 먹는다.
     act, amt = open_form(prof, feel, r, bb, rng, vs, t)
     if act: return (act, amt)
-    if rng.random() < limp_p(prof, feel, r, pos, t) and pos != 'SB':
+
+    _base_limp_p = limp_p(prof, feel, r, pos, t)
+    _limp_roll = rng.random()
+    if money_open is not None:
+        _pull = max(0.0, min(1.0, float(money_open.get('limp_pull_shadow', 0.0))))
+        _limp_shadow = 1.0 - (1.0 - _base_limp_p) * (1.0 - _pull)
+        _limp_shadow = max(0.0, min(1.0, _limp_shadow))
+        money_open['base_limp_p'] = round(_base_limp_p, 6)
+        money_open['money_limp_p_shadow'] = round(_limp_shadow, 6)
+        money_open['limp_roll'] = round(_limp_roll, 6)
+        money_open['limp_cf'] = (
+            'add_limp' if (_limp_roll >= _base_limp_p and
+                           _limp_roll < _limp_shadow) else
+            'base_limp' if _limp_roll < _base_limp_p else
+            'unchanged_raise')
+        money_open['sb_limp_currently_blocked'] = bool(pos == 'SB')
+
+    if _limp_roll < _base_limp_p and pos != 'SB':
         return ('limp', 1.0)
     # 뒤 사람들이 물렁할수록(잘 접고 수동적) 큰 사이즈가 실제로 통한다.
     _soft = 0.0
@@ -311,6 +349,10 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                                           for r in _bl)/len(_bl)))
     sz = open_size_bb(feel, pos, rng, prof, ante, 0,
                       bb_chips=bb_chips, table_soft=_soft)
+    if money_open is not None:
+        # open_size_bb()는 runner.shape_size와 규칙상 최소레이즈 적용 전 값이다.
+        # 실제 sizing shadow는 session에서 최종 적용 금액을 본 뒤 계산한다.
+        money_open['raw_open_size_bb'] = round(float(sz if sz else 2.0), 3)
     return ('raise', sz if sz else 2.0)
 
 # 레이즈 단계별 레인지 축소 계수 (3벳 대비)
