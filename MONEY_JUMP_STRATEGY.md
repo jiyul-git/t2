@@ -150,13 +150,23 @@ If reads show that the target is actually overfolding, pressure can be amplified
 If the target has resisted pressure or calls too wide, the adjustment should be
 suppressed even when structural pressure is high.
 
-Therefore:
+Therefore the split is:
+
+    theory_pressure
+      = structural_pressure
+        × money-jump/ICM perception
+        × adaptability/fold-equity realization
+        × topology safety
+
+    read_adjustment
+      = opponent-specific deviation learned through the existing reads system
 
     pressure_opportunity
-      = structural_pressure
-        × money-jump perception
-        × exploit realization
-        × topology safety
+      = theory_pressure adjusted up/down by read_adjustment
+
+This avoids a failure mode where zero hand history would make
+pressure_opportunity zero.  A strong tournament player can infer structural ICM
+pressure immediately; actual reads then modify that prior rather than create it.
 
 Do not add a new generic "exploit" temperament unless the existing
 attention/range_read/adaptability/fold_equity structure demonstrably fails.
