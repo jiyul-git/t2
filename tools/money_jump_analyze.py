@@ -87,6 +87,44 @@ def exposure_shadow_cf(r):
     return 'unchanged'
 
 
+def topology_shadow_factor(r):
+    """미오픈용 대체식.
+
+    - 압박: 뒤 모든 상대 pressure의 평균. 한 명만 취약한 UTG와 두 블라인드가
+      모두 취약한 BTN을 같은 'max'로 취급하지 않는다.
+    - 보존: 나를 커버하는 뒤 상대의 비율. money-jump의 즉시 탈락 위험만
+      여기서 맡고, 일반 chip-risk/BF는 기존 엔진에 남긴다.
+    """
+    ms=r.get('money_signals') or {}
+    try:
+        preserve=max(0.0,min(1.0,float(ms.get('self_preservation',0.0))))
+        urgency=max(0.0,min(1.0,float(ms.get('urgency',0.0))))
+    except (TypeError, ValueError):
+        return 1.0
+    ps=[p for p,_ in target_pressures(r)]
+    pressure=(sum(ps)/len(ps)) if ps else 0.0
+    n=max(0,int(r.get('players_yet_to_act') or 0))
+    danger=max(0,int(r.get('covered_by_yet_to_act') or 0))
+    danger_frac=(danger/float(n)) if n else 0.0
+    drive=1.0-(1.0-pressure)*(1.0-urgency)
+    brake=preserve*(1.0-urgency)*danger_frac
+    return (1.0+drive)/(1.0+brake)
+
+
+def topology_shadow_cf(r):
+    m=r.get('unopened_modifiers') or {}
+    try:
+        base=float(m.get('base_threshold'))
+        hand=float(m.get('hand_pct'))
+    except (TypeError, ValueError):
+        return None
+    thr=max(0.0,min(0.9,base*topology_shadow_factor(r)))
+    b=(hand <= base); s=(hand <= thr)
+    if not b and s: return 'widen_entry'
+    if b and not s: return 'narrow_fold'
+    return 'unchanged'
+
+
 def stage(r):
     rem, itm = r.get('remaining'), r.get('itm')
     if not rem or not itm:
@@ -301,6 +339,62 @@ def main():
                    exposure_shadow_cf(r),
                    float(m.get('range_factor') or 1.0),
                    exposure_shadow_factor(r)))
+
+    print('\n[topology-weighted unopened shadow]')
+    _tw=[r for r in rows if r.get('street')=='preflop'
+         and r.get('decision_kind')=='unopened'
+         and (r.get('unopened_modifiers') or {}).get('base_threshold') is not None]
+    for st in ('pre','approach','bubble','itm','final9'):
+        rr=[r for r in _tw if stage(r)==st]
+        if not rr: continue
+        fs=[topology_shadow_factor(r) for r in rr]
+        cc=collections.Counter(topology_shadow_cf(r) for r in rr)
+        print(' %-10s n=%-4d factor p10/p50/p90=%.3f/%.3f/%.3f'
+              ' widen=%d narrow=%d' %
+              (st,len(rr),quant(fs,.10),quant(fs,.50),quant(fs,.90),
+               cc['widen_entry'],cc['narrow_fold']))
+
+    _near_tw=[r for r in _tw if stage(r) in ('approach','bubble','itm','final9')]
+    for label,filt in (
+        ('safe/no-covering-stack-behind',
+         lambda r:(r.get('covered_by_yet_to_act') or 0)==0),
+        ('covering-stack-behind',
+         lambda r:(r.get('covered_by_yet_to_act') or 0)>0),
+    ):
+        rr=[r for r in _near_tw if filt(r)]
+        if rr:
+            cc=collections.Counter(topology_shadow_cf(r) for r in rr)
+            ps=[]
+            for r in rr:
+                tp=[p for p,_ in target_pressures(r)]
+                ps.append(sum(tp)/len(tp) if tp else 0.0)
+            danger=[(float(r.get('covered_by_yet_to_act') or 0)/
+                     max(1.0,float(r.get('players_yet_to_act') or 0))) for r in rr]
+            print(' %-30s n=%-4d widen=%d narrow=%d'
+                  ' meanPressure p50/p90=%.3f/%.3f dangerFrac p50/p90=%.3f/%.3f' %
+                  (label,len(rr),cc['widen_entry'],cc['narrow_fold'],
+                   quant(ps,.50),quant(ps,.90),quant(danger,.50),quant(danger,.90)))
+
+    _diff=[r for r in _near_tw
+           if topology_shadow_cf(r) !=
+              (r.get('unopened_modifiers') or {}).get('range_cf')]
+    if _diff:
+        print('\n[topology-shadow differs from current examples]')
+        for r in _diff[:16]:
+            m=r.get('unopened_modifiers') or {}
+            ms=r.get('money_signals') or {}
+            tp=[p for p,_ in target_pressures(r)]
+            pmean=sum(tp)/len(tp) if tp else 0.0
+            print(' H%s %s %s stack=%sbb preserve=%.3f urgency=%.3f'
+                  ' pMean=%.3f danger=%s/%s current=%s shadow=%s'
+                  ' factor=%.3f->%.3f' %
+                  (r.get('hand_no'),stage(r),r.get('pos'),r.get('stack_start_bb'),
+                   float(ms.get('self_preservation') or 0.0),
+                   float(ms.get('urgency') or 0.0),pmean,
+                   r.get('covered_by_yet_to_act'),r.get('players_yet_to_act'),
+                   m.get('range_cf'),topology_shadow_cf(r),
+                   float(m.get('range_factor') or 1.0),
+                   topology_shadow_factor(r)))
 
     print('\n[unopened modifier diagnostics]')
     _uo=[r for r in rows if r.get('street')=='preflop'
