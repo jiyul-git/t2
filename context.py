@@ -92,11 +92,18 @@ def money_jump_context(remaining, itm, payouts):
             'next_prize': 0.0,
             'next_jump': 0.0,
             'players_to_jump': 0,
+            'min_cash': 0.0,
+            'jump_vs_mincash': 0.0,
+            'jump_frac_next': 0.0,
+            'distance_frac_itm': 0.0,
+            'distance_frac_remaining': 0.0,
         }
 
     if not in_money:
         nxt_rank = paid
         nxt_prize = pays[paid - 1]
+        j = max(0, rem - paid)
+        min_cash = pays[paid - 1]
         return {
             'in_money': False,
             'current_rank': None,
@@ -104,7 +111,12 @@ def money_jump_context(remaining, itm, payouts):
             'next_rank': nxt_rank,
             'next_prize': nxt_prize,
             'next_jump': nxt_prize,
-            'players_to_jump': max(0, rem - paid),
+            'players_to_jump': j,
+            'min_cash': min_cash,
+            'jump_vs_mincash': (nxt_prize / min_cash if min_cash > 0 else 0.0),
+            'jump_frac_next': (nxt_prize / nxt_prize if nxt_prize > 0 else 0.0),
+            'distance_frac_itm': j / float(max(1, paid)),
+            'distance_frac_remaining': j / float(max(1, rem)),
         }
 
     current_rank = rem
@@ -125,14 +137,21 @@ def money_jump_context(remaining, itm, payouts):
     else:
         players_to_jump = current_rank - next_rank
 
+    jump = max(0.0, next_prize - current_prize)
+    min_cash = pays[paid - 1]
     return {
         'in_money': True,
         'current_rank': current_rank,
         'current_prize': current_prize,
         'next_rank': next_rank,
         'next_prize': next_prize,
-        'next_jump': max(0.0, next_prize - current_prize),
+        'next_jump': jump,
         'players_to_jump': players_to_jump,
+        'min_cash': min_cash,
+        'jump_vs_mincash': (jump / min_cash if min_cash > 0 else 0.0),
+        'jump_frac_next': (jump / next_prize if next_prize > 0 else 0.0),
+        'distance_frac_itm': players_to_jump / float(max(1, paid)),
+        'distance_frac_remaining': players_to_jump / float(max(1, rem)),
     }
 
 

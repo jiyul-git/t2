@@ -23,6 +23,8 @@ Raw money-jump facts:
 - `next_prize`
 - `next_jump`
 - `players_to_jump`
+- normalized jump size: jump / min-cash, jump / next-prize
+- normalized distance: players-to-jump / ITM, players-to-jump / remaining
 - hero stack, BB, field-average stack
 - number/fraction of surviving stacks below hero
 - nearest shorter stacks and nearest larger stacks
@@ -34,6 +36,11 @@ stack-distribution facts are a later context extension.
 No thresholds may be hard-coded as "100-entry tournament => N players".  Rank
 and stage signals must scale with the actual field, ITM fraction and payout
 table.
+
+Raw payout points are kept for audit, but strategy must not compare them across
+different field sizes/formats without normalized versions.  A 1.0-point jump in
+a 10-paid event is not automatically equivalent to a 1.0-point jump in a
+100-paid event.
 
 ## 2. Money jump is a concept
 
