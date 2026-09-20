@@ -128,4 +128,24 @@ assert m_urgent['range_factor'] > m_danger_pres['range_factor']
 assert m_safe_pres['size_factor_shadow'] < m_neutral['size_factor_shadow']
 assert m_two_targets['size_factor_shadow'] < m_neutral['size_factor_shadow']
 
+# form shadow: 같은 restraint면 늦은 포지션/높은 개념이 림프 전환을 더 잘 쓴다.
+def form_state(behind, table_n=8, pf_skill=8.0, pos_skill=8.0, size_skill=8.0):
+    d=open_state(0.6, 0.0, [0.2]*max(1,behind), covering=0, behind=behind)
+    d.update({
+        'table_n': table_n,
+        'pf_range_skill': pf_skill,
+        'positional_skill': pos_skill,
+        'open_size_skill': size_skill,
+    })
+    return d
+
+early=MP.unopened_modifiers(form_state(7))
+late=MP.unopened_modifiers(form_state(1))
+weak_form=MP.unopened_modifiers(form_state(1,pf_skill=1.0,pos_skill=1.0))
+weak_size=MP.unopened_modifiers(form_state(1,size_skill=1.0))
+strong_size=MP.unopened_modifiers(form_state(1,size_skill=9.0))
+assert late['limp_pull_shadow'] > early['limp_pull_shadow']
+assert late['limp_pull_shadow'] > weak_form['limp_pull_shadow']
+assert strong_size['size_factor_shadow'] < weak_size['size_factor_shadow']
+
 print('OK money-pressure monotonic signals')

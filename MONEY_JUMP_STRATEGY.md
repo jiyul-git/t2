@@ -407,6 +407,13 @@ Behavior code is added in this order only:
    - generic chip-loss caution remains in the separate pot-growth/sizing shadow;
      the range layer does not duplicate it
    - sizing and limp effects remain shadow-only until range effect is measured
+   - sizing shadow pulls the existing size toward the legal 2BB minimum; it does
+     not invent a new tournament-specific target size
+   - limp shadow adds a tournament-pressure channel on top of the existing limp
+     probability, weighted continuously by players-behind/table-size and the
+     existing pf_range/positional concepts
+   - SB open-limp is measured in shadow even though the current action path still
+     blocks SB limps; this must be evaluated before changing the action path
    - every unopened decision logs a same-state local counterfactual:
      `base_threshold`, `money_threshold`, `hand_pct`,
      and `range_cf = widen_entry/narrow_fold/unchanged`

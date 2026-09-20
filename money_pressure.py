@@ -274,11 +274,27 @@ def unopened_modifiers(state):
     range_factor = (1.0 + drive) / (1.0 + range_brake)
 
     # 사이즈/림프는 아직 shadow. 여기서는 '탈락 가능 여부'만이 아니라
-    # 칩을 잃는 비용도 여전히 중요하므로 일반 preservation을 유지한다.
+    # 칩을 잃는 비용도 중요하므로 일반 preservation을 유지한다.
     pot_brake = preserve * (1.0 - urgency)
     restraint = union01(pot_brake, pressure) * (1.0 - urgency)
-    size_factor = inv1p(restraint)
-    limp_pull = clamp01(restraint)
+
+    # sizing을 아는 사람일수록 tournament pressure를 실제 사이즈 변화로 옮긴다.
+    size_awareness = skill01(state.get('open_size_skill', 5.0))
+    size_factor = inv1p(restraint * size_awareness)
+
+    # 오픈 림프는 뒤에 사람이 적을수록 전략적으로 실행하기 쉽다.
+    # table_n / players_yet_to_act라는 기존 변수만 써서 연속 late-position 값을 만든다.
+    try:
+        table_n = max(2.0, float(state.get('table_n', 2.0) or 2.0))
+        n_behind = max(0.0, float(state.get('players_yet_to_act', 0.0) or 0.0))
+    except (TypeError, ValueError):
+        table_n, n_behind = 2.0, 0.0
+    late_fraction = clamp01(1.0 - n_behind / max(1.0, table_n - 1.0))
+    form_awareness = mean01(
+        skill01(state.get('pf_range_skill', 5.0)),
+        skill01(state.get('positional_skill', 5.0)),
+    )
+    limp_pull = clamp01(restraint * late_fraction * form_awareness)
 
     return {
         'pressure': round(pressure, 6),
@@ -287,6 +303,10 @@ def unopened_modifiers(state):
         'drive': round(drive, 6),
         'brake': round(range_brake, 6),
         'pot_brake_shadow': round(pot_brake, 6),
+        'restraint_shadow': round(restraint, 6),
+        'late_fraction_shadow': round(late_fraction, 6),
+        'size_awareness_shadow': round(size_awareness, 6),
+        'form_awareness_shadow': round(form_awareness, 6),
         'range_factor': round(range_factor, 6),
         'size_factor_shadow': round(size_factor, 6),
         'limp_pull_shadow': round(limp_pull, 6),

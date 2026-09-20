@@ -320,7 +320,17 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     # 림프가 나온다(실제로 38% 나왔다). 얕으면 쇼브가 선택지를 먹는다.
     act, amt = open_form(prof, feel, r, bb, rng, vs, t)
     if act: return (act, amt)
-    if rng.random() < limp_p(prof, feel, r, pos, t) and pos != 'SB':
+
+    _base_limp_p = limp_p(prof, feel, r, pos, t)
+    if money_open is not None:
+        _pull = max(0.0, min(1.0, float(money_open.get('limp_pull_shadow', 0.0))))
+        _limp_shadow = 1.0 - (1.0 - _base_limp_p) * (1.0 - _pull)
+        money_open['base_limp_p'] = round(_base_limp_p, 6)
+        money_open['money_limp_p_shadow'] = round(
+            max(0.0, min(1.0, _limp_shadow)), 6)
+        money_open['sb_limp_currently_blocked'] = bool(pos == 'SB')
+
+    if rng.random() < _base_limp_p and pos != 'SB':
         return ('limp', 1.0)
     # 뒤 사람들이 물렁할수록(잘 접고 수동적) 큰 사이즈가 실제로 통한다.
     _soft = 0.0
@@ -332,6 +342,14 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                                           for r in _bl)/len(_bl)))
     sz = open_size_bb(feel, pos, rng, prof, ante, 0,
                       bb_chips=bb_chips, table_soft=_soft)
+    if money_open is not None:
+        _base_sz = float(sz if sz else 2.0)
+        _sf = max(0.0, min(1.0, float(
+            money_open.get('size_factor_shadow', 1.0))))
+        # 2BB는 미오픈 NLH의 규칙상 최소 레이즈 목표. 보정 상수가 아니다.
+        _shadow_sz = max(2.0, _base_sz * _sf)
+        money_open['base_open_size_bb'] = round(_base_sz, 3)
+        money_open['money_open_size_bb_shadow'] = round(_shadow_sz, 3)
     return ('raise', sz if sz else 2.0)
 
 # 레이즈 단계별 레인지 축소 계수 (3벳 대비)
