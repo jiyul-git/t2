@@ -12,7 +12,7 @@ def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
 def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
-                        facing_seat=None):
+                        facing_seat=None, decision_context=None):
     """행동을 바꾸지 않고 머니점프/스택/자리의 공개 상태만 기록한다."""
     bb = max(1, getattr(h, 'bb', 1) or 1)
     mj = dict(getattr(h, 'money_jump', None) or {})
@@ -28,6 +28,27 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
     median_shorter = (shorter[len(shorter)//2] if shorter else None)
 
     order = list(rnd.order)
+    decision_context = dict(decision_context or {})
+    pos = (getattr(h, 'pos', {}) or {}).get(seat)
+    pre_order = list(getattr(h, 'PRE', []) or [])
+    n_seats = len(getattr(h, 'seats', []) or pre_order)
+    if pos in pre_order and 'BB' in pre_order:
+        if pos == 'BB':
+            hands_to_next_bb = n_seats
+        else:
+            hands_to_next_bb = pre_order.index('BB') - pre_order.index(pos)
+            if hands_to_next_bb <= 0:
+                hands_to_next_bb += n_seats
+    else:
+        hands_to_next_bb = None
+
+    ante_on = (getattr(h, 'ante', 0) or 0) > 0
+    orbit_cost_bb = 1.5 + (1.0 if ante_on else 0.0)
+    # 현재 SB/BB의 강제 납부는 rnd.stacks에 이미 반영됐다. 지금부터 다음 BB까지
+    # 추가로 버틸 비용을 본다. SB만 다음 핸드 BB라 이미 낸 SB 0.5BB를 제외한다.
+    forced_to_next_bb = ((1.0 + (1.0 if ante_on else 0.0))
+                         if pos == 'SB' else orbit_cost_bb)
+
     pending = []
     if seat in order:
         i = order.index(seat)
@@ -76,7 +97,10 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
         'street': street,
         'seat': seat,
         'pid': (getattr(h, 'seat_pid', {}) or {}).get(seat),
-        'pos': (getattr(h, 'pos', {}) or {}).get(seat),
+        'pos': pos,
+        'decision_kind': decision_context.get('kind'),
+        'n_limpers': decision_context.get('n_limpers'),
+        'n_callers': decision_context.get('n_callers'),
         'remaining': getattr(h, 'field_remaining', None),
         'itm': getattr(h, 'field_itm', None),
         'current_prize': mj.get('current_prize', 0.0),
@@ -94,6 +118,14 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
         'stack_start_bb': round(start / bb, 3),
         'stack_behind_bb': round(behind / bb, 3),
         'field_avg_bb': round(float(getattr(h, 'field_avg_stack', 0) or 0) / bb, 3),
+        'table_n': n_seats,
+        'hands_to_next_bb': hands_to_next_bb,
+        'orbit_cost_bb': round(orbit_cost_bb, 3),
+        'forced_cost_to_next_bb': round(forced_to_next_bb, 3),
+        'stack_after_next_bb_if_fold_all': round(
+            max(0.0, behind / bb - forced_to_next_bb), 3),
+        'forced_cost_share_of_stack': round(
+            forced_to_next_bb / max(0.001, behind / bb), 4),
         'n_shorter': len(shorter),
         'shorter_frac': round(len(shorter) / max(1, n_others), 4),
         'nearest_shorter_ratio': (round(nearest_shorter / max(1.0, start), 4)
@@ -291,7 +323,13 @@ class HandRun:
             _mj_obs = _money_jump_observe(
                 h, s, rnd, 'preflop', ax, tc,
                 sum(rnd.contrib.values()) + ante_pot,
-                facing_seat=aggressor)
+                facing_seat=aggressor,
+                decision_context={
+                    'kind': ('vs_raise' if aggressor is not None else
+                             'vs_limp' if limpers else 'unopened'),
+                    'n_limpers': len(limpers),
+                    'n_callers': callers,
+                })
             _ck = _cache_key('pre', s, len(rnd.log))
             _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
             if _cached:
@@ -583,7 +621,10 @@ class HandRun:
                 pot_live = pot_now + sum(r2.contrib.values())
                 _mj_obs = _money_jump_observe(
                     h, s, r2, street, ax, tc, pot_live,
-                    facing_seat=(aggressor if tc > 0 else None))
+                    facing_seat=(aggressor if tc > 0 else None),
+                    decision_context={
+                        'kind': ('facing_bet' if tc > 0 else 'free_action'),
+                    })
                 _pl = h.plans[key]
                 h.intents = getattr(h, 'intents', [])
                 # 액션 전 관측. 순번을 붙여 매 액션마다 남긴다 —

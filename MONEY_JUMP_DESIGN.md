@@ -201,7 +201,39 @@ Money-jump strategy therefore depends on:
 Position is not another global multiplier.  It changes which target is
 available, who can resist, and how costly waiting is.
 
-## 7. Personality decides *how* the same state is played
+## 7. Waiting feasibility: ladder buffer is not enough
+
+A large number of shorter stacks does not automatically mean a player can
+profitably wait.  The player must also be able to survive the forced costs that
+arrive before those eliminations are likely to happen.
+
+Seat position therefore affects laddering through *time to the next blinds*.
+
+Observation inputs should include:
+
+- hands until the player's next BB
+- stack remaining after already-posted blinds
+- forced cost to the next BB
+- full-orbit forced cost in BB (SB + BB + BBA when active)
+- forced cost as a fraction of the remaining stack
+
+This is especially important for the shortest stacks.  The first natural-state
+run contained repeated folds with roughly 0.7--1.1 BB and no shorter stack
+buffer.  That does **not** by itself prove the baseline action was wrong because
+cards/action context were uncontrolled, but it proves that a future
+money-jump/ladder rule must have an urgency counterforce.  "Short = lock" is not
+an acceptable rule.
+
+Conceptually:
+
+    ladder buffer  = can other players bust before me?
+    waiting budget = can my stack survive long enough to benefit?
+    urgency        = waiting cost versus the available ladder buffer
+
+The strategy layer should only tighten for a ladder when both payout value and
+waiting feasibility support it.
+
+## 12. Personality decides *how* the same state is played
 
 Do not create a new temperament unless existing axes fail to explain observed
 variation.

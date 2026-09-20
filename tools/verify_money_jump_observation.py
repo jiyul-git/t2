@@ -32,10 +32,13 @@ profile = {
 }
 r = RU.Round(None, [1, 2, 3, 4], dict(H._start_stacks), H.bb)
 r.last_idx = -1
-obs = SE._money_jump_observe(H(), 1, r, 'preflop', profile, 500, 1500,
-                             facing_seat=2)
+obs = SE._money_jump_observe(
+    H(), 1, r, 'preflop', profile, 500, 1500,
+    facing_seat=2,
+    decision_context={'kind': 'vs_raise', 'n_limpers': 0, 'n_callers': 0})
 
 assert obs['pos'] == 'CO', obs
+assert obs['decision_kind'] == 'vs_raise', obs
 assert obs['players_to_jump'] == 1, obs
 assert obs['money_jump_skill'] == 8.0, obs
 assert obs['n_shorter'] == 3, obs
@@ -48,6 +51,11 @@ assert obs['facing_target']['seat'] == 2, obs
 assert obs['facing_target']['covers_me'] is True, obs
 assert obs['shorter_minus_needed'] == 2, obs
 assert obs['shorter_to_needed_ratio'] == 3.0, obs
+assert obs['table_n'] == 4, obs
+assert obs['hands_to_next_bb'] == 3, obs
+assert obs['orbit_cost_bb'] == 1.5, obs
+assert obs['forced_cost_to_next_bb'] == 1.5, obs
+assert obs['stack_after_next_bb_if_fold_all'] == 18.5, obs
 
 r.apply(1, 'raise', 2500)
 SE._money_jump_attach_action(obs, r)
