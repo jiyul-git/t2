@@ -41,6 +41,52 @@ def max_target_pressure(r):
     return max((x[0] for x in xs), default=0.0)
 
 
+def elimination_exposure(r):
+    """미오픈 시 한 상대에게 잃을 수 있는 시작스택 비율의 최대값.
+
+    1이면 뒤에 나를 커버하는 상대가 있고, 0.3이면 가장 큰 상대도 내
+    스택의 30%만 갖는다. 행동에는 아직 쓰지 않는 shadow 진단이다.
+    """
+    vals=[]
+    for t in (r.get('target_signals') or []):
+        try:
+            vals.append(max(0.0, min(1.0, float(t.get('stack_ratio_to_me', 0.0)))))
+        except (TypeError, ValueError):
+            pass
+    return max(vals, default=0.0)
+
+
+def exposure_shadow_factor(r):
+    """self-preservation을 실제 제거 위험에만 걸어본 대체 range factor."""
+    m=r.get('unopened_modifiers') or {}
+    ms=r.get('money_signals') or {}
+    try:
+        drive=max(0.0, min(1.0, float(m.get('drive', 0.0))))
+        preserve=max(0.0, min(1.0, float(ms.get('self_preservation', 0.0))))
+        urgency=max(0.0, min(1.0, float(ms.get('urgency', 0.0))))
+    except (TypeError, ValueError):
+        return 1.0
+    brake=preserve*(1.0-urgency)*elimination_exposure(r)
+    return (1.0+drive)/(1.0+brake)
+
+
+def exposure_shadow_cf(r):
+    m=r.get('unopened_modifiers') or {}
+    try:
+        base=float(m.get('base_threshold'))
+        hand=float(m.get('hand_pct'))
+    except (TypeError, ValueError):
+        return None
+    thr=max(0.0, min(0.9, base*exposure_shadow_factor(r)))
+    base_in=hand <= base
+    shadow_in=hand <= thr
+    if not base_in and shadow_in:
+        return 'widen_entry'
+    if base_in and not shadow_in:
+        return 'narrow_fold'
+    return 'unchanged'
+
+
 def stage(r):
     rem, itm = r.get('remaining'), r.get('itm')
     if not rem or not itm:
@@ -198,6 +244,63 @@ def main():
                    float(m.get('base_threshold') or 0.0),
                    float(m.get('money_threshold') or 0.0),
                    float(m.get('range_factor') or 1.0), r.get('action')))
+
+    print('\n[exposure-weighted brake shadow]')
+    _ex=[r for r in rows if r.get('street')=='preflop'
+         and r.get('decision_kind')=='unopened'
+         and (r.get('unopened_modifiers') or {}).get('base_threshold') is not None]
+    for st in ('pre','approach','bubble','itm','final9'):
+        rr=[r for r in _ex if stage(r)==st]
+        if not rr:
+            continue
+        ef=[elimination_exposure(r) for r in rr]
+        rf=[exposure_shadow_factor(r) for r in rr]
+        cc=collections.Counter(exposure_shadow_cf(r) for r in rr)
+        print(' %-10s n=%-4d exposure p50/p90=%.3f/%.3f'
+              ' shadowFactor p10/p50/p90=%.3f/%.3f/%.3f'
+              ' widen=%d narrow=%d' %
+              (st, len(rr), quant(ef,.50), quant(ef,.90),
+               quant(rf,.10), quant(rf,.50), quant(rf,.90),
+               cc['widen_entry'], cc['narrow_fold']))
+
+    _near=[r for r in _ex if stage(r) in ('approach','bubble','itm','final9')]
+    for label, filt in (
+        ('safe/no-covering-stack-behind',
+         lambda r: (r.get('covered_by_yet_to_act') or 0)==0),
+        ('covering-stack-behind',
+         lambda r: (r.get('covered_by_yet_to_act') or 0)>0),
+    ):
+        rr=[r for r in _near if filt(r)]
+        if rr:
+            now=collections.Counter((r.get('unopened_modifiers') or {}).get('range_cf')
+                                    for r in rr)
+            sh=collections.Counter(exposure_shadow_cf(r) for r in rr)
+            print(' %-30s n=%-4d current(w/n)=%d/%d shadow(w/n)=%d/%d'
+                  ' exposure p50=%.3f' %
+                  (label, len(rr), now['widen_entry'], now['narrow_fold'],
+                   sh['widen_entry'], sh['narrow_fold'],
+                   quant([elimination_exposure(r) for r in rr],.50)))
+
+    _shadow_changed=[r for r in _near
+                     if exposure_shadow_cf(r) !=
+                        (r.get('unopened_modifiers') or {}).get('range_cf')]
+    if _shadow_changed:
+        print('\n[exposure-shadow differs from current examples]')
+        for r in _shadow_changed[:16]:
+            m=r.get('unopened_modifiers') or {}
+            ms=r.get('money_signals') or {}
+            print(' H%s %s %s stack=%sbb preserve=%.3f urgency=%.3f'
+                  ' pressure=%.3f exposure=%.3f current=%s shadow=%s'
+                  ' factor=%.3f->%.3f' %
+                  (r.get('hand_no'), stage(r), r.get('pos'),
+                   r.get('stack_start_bb'),
+                   float(ms.get('self_preservation') or 0.0),
+                   float(ms.get('urgency') or 0.0),
+                   float(m.get('pressure') or 0.0),
+                   elimination_exposure(r), m.get('range_cf'),
+                   exposure_shadow_cf(r),
+                   float(m.get('range_factor') or 1.0),
+                   exposure_shadow_factor(r)))
 
     print('\n[unopened modifier diagnostics]')
     _uo=[r for r in rows if r.get('street')=='preflop'
