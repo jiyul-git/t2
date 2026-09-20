@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """머니점프 미오픈 sizing/limp shadow 전용 요약."""
-import argparse, json
+import argparse, collections, json
 
 def load(path):
     out=[]
@@ -37,58 +37,73 @@ rr=[r for r in rows if r.get('street')=='preflop'
 print('=== money-open form shadow ===')
 print('rows',len(rows),'unopened',len(rr))
 
-print('\n[limp probability shadow by stage]')
+print('\n[limp same-roll counterfactual by stage]')
 for st in ('approach','bubble','itm','final9'):
     x=[r for r in rr if stage(r)==st
-       and r['unopened_modifiers'].get('base_limp_p') is not None]
+       and r['unopened_modifiers'].get('limp_cf') is not None]
     if not x: continue
+    c=collections.Counter(r['unopened_modifiers']['limp_cf'] for r in x)
     b=[r['unopened_modifiers']['base_limp_p'] for r in x]
     m=[r['unopened_modifiers']['money_limp_p_shadow'] for r in x]
-    pull=[r['unopened_modifiers'].get('limp_pull_shadow',0.0) for r in x]
-    print('%-9s n=%-4d base p50/p90=%.3f/%.3f shadow=%.3f/%.3f pull=%.3f/%.3f' %
-          (st,len(x),q(b,.5),q(b,.9),q(m,.5),q(m,.9),q(pull,.5),q(pull,.9)))
+    print('%-9s n=%-4d add=%-3d baseLimp=%-3d unchangedRaise=%-3d'
+          ' base p50/p90=%.3f/%.3f shadow=%.3f/%.3f' %
+          (st,len(x),c['add_limp'],c['base_limp'],c['unchanged_raise'],
+           q(b,.5),q(b,.9),q(m,.5),q(m,.9)))
 
-print('\n[limp shadow by position near ladder]')
 near=[r for r in rr if stage(r) in ('approach','bubble','itm','final9')
-      and r['unopened_modifiers'].get('base_limp_p') is not None]
+      and r['unopened_modifiers'].get('limp_cf') is not None]
+print('\n[limp same-roll by position near ladder]')
 for pos in ('UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN','SB'):
     x=[r for r in near if r.get('pos')==pos]
     if not x: continue
-    b=[r['unopened_modifiers']['base_limp_p'] for r in x]
+    c=collections.Counter(r['unopened_modifiers']['limp_cf'] for r in x)
     m=[r['unopened_modifiers']['money_limp_p_shadow'] for r in x]
-    late=[r['unopened_modifiers'].get('late_fraction_shadow',0.0) for r in x]
-    print('%-6s n=%-4d base p50=%.3f shadow p50/p90=%.3f/%.3f late=%.3f' %
-          (pos,len(x),q(b,.5),q(m,.5),q(m,.9),q(late,.5)))
+    print('%-6s n=%-4d add=%-3d base=%-3d shadowP p50/p90=%.3f/%.3f' %
+          (pos,len(x),c['add_limp'],c['base_limp'],q(m,.5),q(m,.9)))
 
-print('\n[raise-size shadow by stage]')
+print('\n[actual legal raise-size shadow by stage]')
 for st in ('approach','bubble','itm','final9'):
     x=[r for r in rr if stage(r)==st
-       and r['unopened_modifiers'].get('base_open_size_bb') is not None]
+       and r['unopened_modifiers'].get('applied_open_size_bb') is not None]
     if not x: continue
-    b=[r['unopened_modifiers']['base_open_size_bb'] for r in x]
-    m=[r['unopened_modifiers']['money_open_size_bb_shadow'] for r in x]
+    b=[r['unopened_modifiers']['applied_open_size_bb'] for r in x]
+    m=[r['unopened_modifiers']['applied_money_size_bb_shadow'] for r in x]
+    changed=sum(1 for a,bv in zip(b,m) if abs(a-bv)>1e-9)
     atmin=sum(1 for v in m if abs(float(v)-2.0)<1e-9)
-    print('%-9s raises=%-4d base p50/p90=%.2f/%.2f shadow=%.2f/%.2f at2bb=%d(%.1f%%)' %
+    print('%-9s raises=%-4d base p50/p90=%.2f/%.2f shadow=%.2f/%.2f'
+          ' changed=%d(%.1f%%) at2bb=%d(%.1f%%)' %
           (st,len(x),q(b,.5),q(b,.9),q(m,.5),q(m,.9),
-           atmin,100.0*atmin/len(x)))
+           changed,100.0*changed/len(x),atmin,100.0*atmin/len(x)))
 
-print('\n[raise-size shadow by position near ladder]')
+print('\n[actual legal raise-size shadow by position near ladder]')
 for pos in ('UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN','SB'):
     x=[r for r in near if r.get('pos')==pos
-       and r['unopened_modifiers'].get('base_open_size_bb') is not None]
+       and r['unopened_modifiers'].get('applied_open_size_bb') is not None]
     if not x: continue
-    b=[r['unopened_modifiers']['base_open_size_bb'] for r in x]
-    m=[r['unopened_modifiers']['money_open_size_bb_shadow'] for r in x]
-    print('%-6s raises=%-3d base p50=%.2f shadow p50/p90=%.2f/%.2f' %
-          (pos,len(x),q(b,.5),q(m,.5),q(m,.9)))
+    b=[r['unopened_modifiers']['applied_open_size_bb'] for r in x]
+    m=[r['unopened_modifiers']['applied_money_size_bb_shadow'] for r in x]
+    print('%-6s raises=%-3d base p50/p90=%.2f/%.2f shadow=%.2f/%.2f' %
+          (pos,len(x),q(b,.5),q(b,.9),q(m,.5),q(m,.9)))
 
 print('\n[SB limp shadow]')
-sb=[r for r in near if r.get('pos')=='SB'
-    and r['unopened_modifiers'].get('base_limp_p') is not None]
+sb=[r for r in near if r.get('pos')=='SB']
 if sb:
-    b=[r['unopened_modifiers']['base_limp_p'] for r in sb]
-    m=[r['unopened_modifiers']['money_limp_p_shadow'] for r in sb]
-    print('n=%d base p50/p90=%.3f/%.3f shadow p50/p90=%.3f/%.3f'
-          ' currentSBBlock=%d' %
-          (len(sb),q(b,.5),q(b,.9),q(m,.5),q(m,.9),
-           sum(1 for r in sb if r['unopened_modifiers'].get('sb_limp_currently_blocked'))))
+    c=collections.Counter(r['unopened_modifiers'].get('limp_cf') for r in sb)
+    b=[r['unopened_modifiers'].get('base_limp_p') for r in sb]
+    m=[r['unopened_modifiers'].get('money_limp_p_shadow') for r in sb]
+    print('n=%d add=%d base=%d shadowP p50/p90=%.3f/%.3f currentSBBlock=%d' %
+          (len(sb),c['add_limp'],c['base_limp'],q(m,.5),q(m,.9),
+           sum(1 for r in sb
+               if r['unopened_modifiers'].get('sb_limp_currently_blocked'))))
+
+print('\n[added-limp examples]')
+for r in [r for r in near if
+          r['unopened_modifiers'].get('limp_cf')=='add_limp'][:16]:
+    m=r['unopened_modifiers']
+    print('H%s %-8s %-5s stack=%sbb baseP=%.3f shadowP=%.3f roll=%.3f'
+          ' pressure=%.3f act=%s%s' %
+          (r.get('hand_no'),stage(r),r.get('pos'),r.get('stack_start_bb'),
+           float(m.get('base_limp_p') or 0.0),
+           float(m.get('money_limp_p_shadow') or 0.0),
+           float(m.get('limp_roll') or 0.0),float(m.get('pressure') or 0.0),
+           r.get('action'),' [SB blocked]' if r.get('pos')=='SB' else ''))

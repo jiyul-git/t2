@@ -257,6 +257,20 @@ def _money_jump_attach_action(obs, rnd):
     obs['action'] = _a
     obs['amount'] = _amt
 
+    # 미오픈 raise의 실제 적용 금액은 open_size_bb 뒤에 shape_size와
+    # 최소레이즈 규칙을 모두 통과한 값이다. sizing shadow는 이 최종값을
+    # 기준으로 계산해야 한다. 행동 자체는 아직 바꾸지 않는다.
+    _m = obs.get('unopened_modifiers') or {}
+    if (obs.get('street') == 'preflop'
+            and obs.get('decision_kind') == 'unopened'
+            and _a == 'raise' and _s not in rnd.allin and _m):
+        _base_bb = float(_amt) / max(1.0, float(rnd.bb))
+        _sf = max(0.0, min(1.0, float(_m.get('size_factor_shadow', 1.0))))
+        _m['applied_open_size_bb'] = round(_base_bb, 3)
+        # unopened NLH에서 BB가 1BB 게시된 상태의 최소 raise-to는 2BB.
+        _m['applied_money_size_bb_shadow'] = round(
+            max(2.0, _base_bb * _sf), 3)
+
 
 def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
     """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역

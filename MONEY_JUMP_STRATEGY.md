@@ -414,6 +414,11 @@ Behavior code is added in this order only:
      existing pf_range/positional concepts
    - SB open-limp is measured in shadow even though the current action path still
      blocks SB limps; this must be evaluated before changing the action path
+   - limp promotion requires a same-RNG-roll counterfactual, not probability
+     comparison alone
+   - sizing promotion uses the actual legal raise target after archetype
+     shape_size and minimum-raise enforcement; raw open_size output is not used
+     as the baseline
    - every unopened decision logs a same-state local counterfactual:
      `base_threshold`, `money_threshold`, `hand_pct`,
      and `range_cf = widen_entry/narrow_fold/unchanged`
