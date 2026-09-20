@@ -141,6 +141,8 @@ class Field:
                                          self.fmt['blind_mult']),
             reentry=self.fmt['reentry'],
             progress=CTX.progress_of(self.remaining(), self.entries),
+            money_jump=CTX.money_jump_context(
+                self.remaining(), self.itm, self.payouts),
         )
         self.ctx.apply(h, strict=True)
         return h
