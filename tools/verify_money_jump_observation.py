@@ -11,6 +11,9 @@ import session as SE
 
 class H:
     bb = 1000
+    ante = 0
+    seats = [1, 2, 3, 4]
+    PRE = ['CO', 'BTN', 'SB', 'BB']
     pos = {1: 'CO', 2: 'BTN', 3: 'SB', 4: 'BB'}
     seat_pid = {1: 10, 2: 20, 3: 30, 4: 40}
     _start_stacks = {1: 20000, 2: 30000, 3: 8000, 4: 15000}
