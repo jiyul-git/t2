@@ -137,7 +137,64 @@ Important consequence: "short stack = lock" is not universally correct.
 A protected short stack may lock strongly; the actual shortest stack can be
 forced to attack because blind erosion makes waiting worse than taking a spot.
 
-## 6. Personality decides *how* the same state is played
+## 6. Table position and seat topology are part of money-jump strategy
+
+Nominal poker position matters:
+
+- UTG/HJ/CO/BTN/SB/BB change how many players remain behind.
+- Late position creates lower-risk pressure opportunities because fewer players
+  can wake up with resistance.
+- Blinds are structurally different because waiting costs chips immediately.
+  A short BB close to a money jump cannot be treated like the same stack on BTN.
+- SB/BB also change whether folding preserves a meaningful stack for another
+  orbit or simply accelerates blind erosion.
+
+But nominal position alone is not enough.  The *relative seating of stack sizes*
+also matters.
+
+Examples:
+
+- a chip leader with two medium stacks immediately to the left has a different
+  pressure opportunity from a chip leader with another covering big stack on
+  the left.
+- a medium stack with the table chip leader directly behind should defend and
+  open differently from the same stack when the covering stack has already
+  folded.
+- a protected short stack in BTN can wait more cheaply than the same stack in
+  the blinds.
+- a big stack on BTN with vulnerable medium stacks in SB/BB has a natural
+  steal/pressure target.
+
+Therefore the future context/decision layer should expose public seat-topology
+facts such as:
+
+- hero nominal position
+- number of players yet to act
+- stack ratios of players yet to act
+- number of players behind who cover hero
+- number of players behind hero covers
+- nearest covering stack on the left / right
+- vulnerable medium stacks in the blinds
+- critical short stacks in the blinds
+- whether the main pressure target has position on hero
+
+This must be recomputed per decision, not once per hand.  After folds, the same
+seat layout can create a completely different pressure opportunity.
+
+Money-jump strategy therefore depends on:
+
+    payout state
+    + own stack role
+    + field stack buffer
+    + opponent stack role
+    + table position
+    + relative seat topology
+    + personality/concept perception
+
+Position is not another global multiplier.  It changes which target is
+available, who can resist, and how costly waiting is.
+
+## 7. Personality decides *how* the same state is played
 
 Do not create a new temperament unless existing axes fail to explain observed
 variation.
@@ -161,7 +218,7 @@ Thus two chip leaders can diverge naturally:
 one attacks pressured medium stacks, another preserves the lead and selects only
 low-risk spots.
 
-## 7. Strategy should be target-specific
+## 8. Strategy should be target-specific
 
 Money-jump response must not be implemented as one global aggression multiplier.
 
@@ -187,7 +244,7 @@ Postflop:
 The same player can tighten against a covering big stack while attacking a
 covered medium stack in the same orbit.
 
-## 8. Interaction with ICM
+## 9. Interaction with ICM
 
 Money jump and ICM must not double-count the same risk.
 
@@ -200,7 +257,7 @@ Proposed responsibility split:
 Before implementation, trace every current BF use so a money-jump modifier is
 not multiplied into a path that already contains the same payout information.
 
-## 9. First measurement plan before behavior code
+## 10. First measurement plan before behavior code
 
 Before changing decisions, instrument only the derived context and collect:
 
@@ -210,6 +267,10 @@ Before changing decisions, instrument only the derived context and collect:
 - n_shorter and shorter fraction
 - nearest shorter stack ratios
 - cover counts at the table
+- hero position and number of players yet to act
+- cover/covered counts among players yet to act
+- stack ratios of players yet to act
+- short/medium stacks in SB/BB and whether they are pressure targets
 - BF
 - perceived money-jump strength by profile
 - eventual action from the unchanged baseline engine
@@ -227,7 +288,7 @@ Then inspect representative states:
 Only after those signals behave monotonically and sensibly should strategy
 interventions be preregistered.
 
-## 10. Invariants
+## 11. Invariants
 
 - no absolute "100 entrants => N players" strategy thresholds
 - no hidden-card information in money-jump state
@@ -236,5 +297,7 @@ interventions be preregistered.
 - exact same public state can produce different bot strategies through concepts
   and temperament
 - same bot can attack one opponent and avoid another in the same state
+- nominal position and relative seat topology must be explicit inputs, not inferred from entry count
+- seat-topology signals are recomputed after action/folds because the set of players behind changes
 - money-jump intervention must never be silently counted twice with BF/ICM
 - behavior changes require a frozen measurement/design document first
