@@ -158,6 +158,47 @@ def main():
             print(' p10/p50/p90 %.3f / %.3f / %.3f' %
                   (quant(lcp,.10), quant(lcp,.50), quant(lcp,.90)))
 
+    print('\n[unopened local range counterfactual]')
+    _cf=[r for r in rows if r.get('street')=='preflop'
+         and r.get('decision_kind')=='unopened'
+         and (r.get('unopened_modifiers') or {}).get('range_cf')]
+    for st in ('pre','approach','bubble','itm','final9'):
+        rr=[r for r in _cf if stage(r)==st]
+        if not rr:
+            continue
+        cc=collections.Counter((r.get('unopened_modifiers') or {}).get('range_cf')
+                               for r in rr)
+        print(' %-10s n=%-4d widen=%-3d (%5s) narrow=%-3d (%5s) unchanged=%-4d' %
+              (st, len(rr), cc['widen_entry'], pct(cc['widen_entry']/len(rr)),
+               cc['narrow_fold'], pct(cc['narrow_fold']/len(rr)),
+               cc['unchanged']))
+
+    near_cf=[r for r in _cf if stage(r) in ('approach','bubble','itm','final9')]
+    if near_cf:
+        print('\n[near-ladder local CF by position]')
+        for pos in ('UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN','SB'):
+            rr=[r for r in near_cf if r.get('pos')==pos]
+            if not rr:
+                continue
+            cc=collections.Counter((r.get('unopened_modifiers') or {}).get('range_cf')
+                                   for r in rr)
+            print(' %-6s n=%-3d widen=%-3d narrow=%-3d unchanged=%-3d' %
+                  (pos, len(rr), cc['widen_entry'], cc['narrow_fold'], cc['unchanged']))
+
+        changed=[r for r in near_cf
+                 if (r.get('unopened_modifiers') or {}).get('range_cf') != 'unchanged']
+        print('\n[near-ladder local CF changed examples]')
+        for r in changed[:16]:
+            m=r.get('unopened_modifiers') or {}
+            print(' H%s %s %s rem=%s/%s stack=%sbb cf=%s'
+                  ' hand=%.4f baseThr=%.4f moneyThr=%.4f factor=%.3f act=%s' %
+                  (r.get('hand_no'), stage(r), r.get('pos'),
+                   r.get('remaining'), r.get('itm'), r.get('stack_start_bb'),
+                   m.get('range_cf'), float(m.get('hand_pct') or 0.0),
+                   float(m.get('base_threshold') or 0.0),
+                   float(m.get('money_threshold') or 0.0),
+                   float(m.get('range_factor') or 1.0), r.get('action')))
+
     print('\n[unopened modifier diagnostics]')
     _uo=[r for r in rows if r.get('street')=='preflop'
          and r.get('decision_kind')=='unopened'

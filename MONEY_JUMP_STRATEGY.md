@@ -401,6 +401,11 @@ Behavior code is added in this order only:
 3. preflop unopened intervention — RANGE ONLY enabled first
    - existing open threshold × continuous `range_factor`
    - sizing and limp effects remain shadow-only until range effect is measured
+   - every unopened decision logs a same-state local counterfactual:
+     `base_threshold`, `money_threshold`, `hand_pct`,
+     and `range_cf = widen_entry/narrow_fold/unchanged`
+   - aggregate before/after action rates are not sufficient because one changed
+     elimination alters the rest of the tournament trajectory
 4. preflop versus raise intervention
 5. postflop free-action intervention
 6. postflop facing-bet intervention

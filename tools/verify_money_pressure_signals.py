@@ -108,5 +108,8 @@ assert m_pres['range_factor'] < m_neutral['range_factor']
 assert m_press['range_factor'] > m_neutral['range_factor']
 assert m_urgent['range_factor'] > m_pres['range_factor']
 assert m_press['size_factor_shadow'] < m_neutral['size_factor_shadow']
+# range factor is a ratio around 1; widening/narrowing is continuous, no new hand bucket.
+assert m_press['range_factor'] > 1.0
+assert m_pres['range_factor'] < 1.0
 
 print('OK money-pressure monotonic signals')

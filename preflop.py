@@ -293,6 +293,11 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
            * table_pressure(behind_reads)
            * hotzone_pressure(prof, pos, bb, behind_stacks or []))
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
+    r = pct(hand)
+    # 같은 결정 상태에서 "머니점프가 없었다면"과 "있다면"을 정확히 비교하기
+    # 위한 로컬 반사실. 진입 여부는 threshold 하나로 결정되므로 RNG 재생 없이
+    # widen_entry / narrow_fold를 판정할 수 있다.
+    _base_thr = thr
     # 머니점프 첫 행동 개입. 기준 레인지 자체를 새로 만들지 않고,
     # 기존 open threshold에 연속 factor만 곱한다.
     if money_open:
@@ -301,7 +306,15 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
         except (TypeError, ValueError):
             pass
         thr = max(0.0, min(0.9, thr))
-    r = pct(hand)
+        money_open['base_threshold'] = round(_base_thr, 6)
+        money_open['money_threshold'] = round(thr, 6)
+        money_open['hand_pct'] = round(r, 6)
+        _base_in = (r <= _base_thr)
+        _money_in = (r <= thr)
+        money_open['range_cf'] = (
+            'widen_entry' if (not _base_in and _money_in) else
+            'narrow_fold' if (_base_in and not _money_in) else
+            'unchanged')
     if r > thr: return ('fold', 0)
     # 쇼브 판정이 먼저다. 10bb 에서 림프를 먼저 물으면 쇼브해야 할 자리에서
     # 림프가 나온다(실제로 38% 나왔다). 얕으면 쇼브가 선택지를 먹는다.
