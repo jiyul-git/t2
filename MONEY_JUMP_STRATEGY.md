@@ -175,7 +175,7 @@ This preserves an important distinction:
 - a strong player can infer an ICM-vulnerable target before observing many hands
 - a strong exploiter can then update that prior from actual opponent behavior
 
-## 12. Pot-growth geometry: range choice and action form are separate
+## 4. Pot-growth geometry: range choice and action form are separate
 
 Money-jump/ICM pressure may change not only *which hands* are played, but also
 *how much pot growth a player is willing to create*.
@@ -234,7 +234,7 @@ opening size itself does not currently consume money-jump state directly, so a
 systematic payout-ladder-specific sizing shift should not be expected to emerge
 without an explicit pot-growth hook.
 
-## 11. Role is derived from the three outputs
+## 5. Role is derived from the three outputs
 
 No fixed entry-count buckets.
 
@@ -258,7 +258,7 @@ Descriptive roles:
 
 These labels are explanatory outputs only.  Strategy uses the continuous signals.
 
-## 4. Position/topology interaction
+## 6. Position/topology interaction
 
 The existing positional engine remains the base.
 
@@ -280,7 +280,7 @@ Topology is recomputed every decision:
 
 A static "seat strength" multiplier is prohibited.
 
-## 5. Decision-class interventions
+## 7. Decision-class interventions
 
 Money-jump is not applied identically to all decisions.
 
@@ -334,7 +334,7 @@ direction automatically.
 - cover relation modifies the target-specific response, not the base equity
   calculation directly
 
-## 6. Personality mapping
+## 8. Personality mapping
 
 Do not add a new temperament axis yet.
 
@@ -354,7 +354,7 @@ Expected natural differences:
 Money-jump awareness changes the **strength of the response**, not the objective
 tournament facts.
 
-## 7. ICM responsibility split
+## 9. ICM responsibility split
 
 Avoid double counting.
 
@@ -366,12 +366,36 @@ Avoid double counting.
 Money-jump must not multiply BF again inside a path that already consumed BF.
 Implementation must trace each hook before coding.
 
-## 8. Implementation order
+## 10. Implementation order
+
+### Minimal-constant rule
+
+The signal layer should use the smallest possible set of fixed numbers.
+
+Prefer variables that already have a natural scale:
+
+- concepts/temperaments: existing 0..10 profile scale
+- stacks: BB and stack ratios
+- payout: jump/next-prize and jump/min-cash
+- distance: players-to-jump/ITM and players-to-jump/remaining
+- ladder buffer: S/(S+J)
+- waiting cost: forced-cost/current-stack
+- cover: relative stack difference
+- exploit: existing read confidence and fold-gap
+
+The first signal layer therefore uses generic continuous transforms only:
+`x/(1+x)`, `1/(1+x)`, arithmetic mean, multiplication and bounded union.
+It adds no new behavioral thresholds such as "15bb", "top 20%" or "three
+players from a jump".
+
+If a future poker mechanism cannot be represented without a fixed coefficient,
+that coefficient must be named, documented and measured separately rather than
+being buried in a decision formula.
 
 Behavior code is added in this order only:
 
-1. objective signal calculator: self-preservation ingredients / target
-   opportunity ingredients / urgency ingredients
+1. objective signal calculator: self-preservation / target opportunity /
+   urgency / commitment budget
 2. pure diagnostic output, no behavior change
 3. preflop unopened intervention
 4. preflop versus raise intervention
@@ -380,7 +404,7 @@ Behavior code is added in this order only:
 
 Each step receives a counterfactual/regression test before the next is enabled.
 
-## 9. Required monotonic checks before promotion
+## 11. Required monotonic checks before promotion
 
 Without fixing numerical coefficients yet, the following directions must hold:
 
@@ -397,7 +421,7 @@ Without fixing numerical coefficients yet, the following directions must hold:
 
 These are structural tests, not empirical poker-optimality claims.
 
-## 10. Prohibited shortcuts
+## 12. Prohibited shortcuts
 
 - no absolute "100 entries => N players" thresholds
 - no global money-jump aggression multiplier
