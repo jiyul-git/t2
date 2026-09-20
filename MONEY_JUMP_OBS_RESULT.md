@@ -94,3 +94,42 @@ Before behavioral intervention, analysis must split at least:
 and then condition on position, stack percentile, S/J and cover relation.
 
 No money-jump strategy coefficient is selected from this first run.
+
+## Decision-class split from the completed run
+
+Near-ladder observations were split by decision class before any strategy
+coefficient was selected:
+
+- unopened: n=380, fold 71.6%, aggression 28.4%
+- versus raise: n=389, fold 77.1%, aggression 3.3%
+- postflop free action: n=152, aggression 30.3%
+- postflop facing bet: n=57, fold 77.2%
+
+Unopened preflop showed the expected existing position gradient:
+
+- UTG aggression 20.3%
+- CO aggression 33.3%
+- BTN aggression 63.3%
+- SB aggression 44.4%
+
+Thus money-jump does not need to invent positional awareness; it should adjust
+the existing positional decision only when payout/stack/topology context calls
+for it.
+
+Preflop versus raise showed nearly identical raw folds by cover direction:
+
+- raiser covers hero: fold 77.2%, aggression 4.8% (n=189)
+- hero covers raiser: fold 77.0%, aggression 2.0% (n=200)
+
+These are not causal comparisons because cards and opener ranges are not held
+fixed.  They motivate a controlled counterfactual rather than a direct tuning
+rule.
+
+Waiting-cost diagnostics:
+
+- forced-cost share p10/p50/p90 = 0.039 / 0.066 / 0.147
+- cannot survive to next BB under the diagnostic approximation: n=15
+- those rows include repeated 0.68--1.08 BB decisions with S/J=0
+
+This locks the design requirement that urgency/waiting feasibility must be an
+independent counterforce to ladder preservation.
