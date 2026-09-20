@@ -132,6 +132,9 @@ class Field:
             field_itm=self.itm,
             field_avg_stack=(self.entries*self.start_stack
                              / max(1, self.remaining())),
+            field_stacks=tuple(
+                p['stack'] for p in self.players.values()
+                if p['stack'] > 0),
             payouts=self.payouts,
             payout_flat=self.fmt['payout_flat'],
             ante=(bb if self.level >= self.fmt['ante_from'] else 0),
@@ -209,6 +212,7 @@ class Field:
         if self.BOT_LOG >= 2:
             rec['full_log'] = res.get('full_log', [])
             rec['intents'] = getattr(h, 'intents', [])
+            rec['money_jump_obs'] = getattr(h, 'money_jump_obs', [])
             rec['hole'] = {str(k): v for k, v in h.hole.items()}
         try:
             with open(os.path.join(D, 'bot_hands%s.jsonl' % BOT_SUFFIX), 'a',

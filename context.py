@@ -28,6 +28,7 @@ SPEC = {
     'field_remaining':  (None, '필드 잔여 인원. ICM 전체가 이것에 달렸다'),
     'field_itm':        (None, '인더머니 인원. 같음'),
     'field_avg_stack':  (None, '필드 평균 칩. 테이블 평균이 아니다'),
+    'field_stacks':     ((),   '핸드 시작 시 생존자 스택 분포. 머니점프 관측 전용'),
     'payouts':          (None, '상금 구조. 없으면 표준표로 대체된다'),
     'payout_flat':      (0.0,  '상금 평탄도. 위성은 1.0'),
     'ante':             (None, '이번 핸드의 안테 액수. 0 이면 안 걷는다'),

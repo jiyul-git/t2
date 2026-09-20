@@ -11,6 +11,97 @@ def best5(cards): return bot.eval7(cards)
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
+def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0):
+    """행동을 바꾸지 않고 머니점프/스택/자리의 공개 상태만 기록한다."""
+    bb = max(1, getattr(h, 'bb', 1) or 1)
+    mj = dict(getattr(h, 'money_jump', None) or {})
+    field = [float(x) for x in (getattr(h, 'field_stacks', ()) or ()) if x > 0]
+    start = float((getattr(h, '_start_stacks', {}) or {}).get(
+        seat, rnd.stacks.get(seat, 0) + rnd.contrib.get(seat, 0)))
+    behind = float(rnd.stacks.get(seat, 0))
+
+    shorter = sorted(x for x in field if x < start)
+    n_others = max(0, len(field) - 1)
+    nearest_shorter = max(shorter) if shorter else None
+    shortest = min(shorter) if shorter else None
+
+    order = list(rnd.order)
+    pending = []
+    if seat in order:
+        i = order.index(seat)
+        cyc = order[i+1:] + order[:i]
+        for x in cyc:
+            if x == seat or x in rnd.folded or x in rnd.allin:
+                continue
+            if x not in rnd.acted or rnd.to_call(x) > 0:
+                pending.append(x)
+
+    start_stacks = getattr(h, '_start_stacks', {}) or {}
+    targets = []
+    for x in pending:
+        xs = float(start_stacks.get(
+            x, rnd.stacks.get(x, 0) + rnd.contrib.get(x, 0)))
+        targets.append({
+            'seat': x,
+            'pid': (getattr(h, 'seat_pid', {}) or {}).get(x),
+            'pos': (getattr(h, 'pos', {}) or {}).get(x),
+            'stack_bb': round(xs / bb, 3),
+            'stack_ratio_to_me': round(xs / max(1.0, start), 4),
+            'i_cover': bool(start > xs),
+            'covers_me': bool(xs > start),
+        })
+
+    live_opp = [x for x in rnd.live() if x != seat]
+    live_stacks = [float(start_stacks.get(
+        x, rnd.stacks.get(x, 0) + rnd.contrib.get(x, 0))) for x in live_opp]
+
+    obs = {
+        'street': street,
+        'seat': seat,
+        'pid': (getattr(h, 'seat_pid', {}) or {}).get(seat),
+        'pos': (getattr(h, 'pos', {}) or {}).get(seat),
+        'remaining': getattr(h, 'field_remaining', None),
+        'itm': getattr(h, 'field_itm', None),
+        'current_prize': mj.get('current_prize', 0.0),
+        'next_prize': mj.get('next_prize', 0.0),
+        'next_jump': mj.get('next_jump', 0.0),
+        'players_to_jump': mj.get('players_to_jump', 0),
+        'money_jump_skill': PS.sk(profile, 'money_jump', 3.0),
+        'icm_skill': PS.sk(profile, 'icm', 3.0),
+        'stack_decay_skill': PS.sk(profile, 'stack_decay', 3.0),
+        'stack_start_bb': round(start / bb, 3),
+        'stack_behind_bb': round(behind / bb, 3),
+        'field_avg_bb': round(float(getattr(h, 'field_avg_stack', 0) or 0) / bb, 3),
+        'n_shorter': len(shorter),
+        'shorter_frac': round(len(shorter) / max(1, n_others), 4),
+        'nearest_shorter_ratio': (round(nearest_shorter / max(1.0, start), 4)
+                                  if nearest_shorter is not None else None),
+        'shortest_ratio': (round(shortest / max(1.0, start), 4)
+                           if shortest is not None else None),
+        'table_cover_count': sum(1 for x in live_stacks if start > x),
+        'table_covered_by_count': sum(1 for x in live_stacks if x > start),
+        'players_yet_to_act': len(pending),
+        'covers_yet_to_act': sum(1 for t in targets if t['i_cover']),
+        'covered_by_yet_to_act': sum(1 for t in targets if t['covers_me']),
+        'blind_targets_yet_to_act': sum(
+            1 for t in targets if t['pos'] in ('SB', 'BB')),
+        'targets_yet_to_act': targets,
+        'to_call_bb': round(float(to_call or 0) / bb, 3),
+        'pot_bb': round(float(pot or 0) / bb, 3),
+    }
+    h.money_jump_obs = getattr(h, 'money_jump_obs', [])
+    h.money_jump_obs.append(obs)
+    return obs
+
+
+def _money_jump_attach_action(obs, rnd):
+    if obs is None or not rnd.log:
+        return
+    _s, _a, _amt = rnd.log[-1]
+    obs['action'] = _a
+    obs['amount'] = _amt
+
+
 def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
     """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역
 
@@ -164,6 +255,9 @@ class HandRun:
                 elif a == 'call': limpers.append(s)
                 continue
             ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
+            _mj_obs = _money_jump_observe(
+                h, s, rnd, 'preflop', ax, tc,
+                sum(rnd.contrib.values()) + ante_pot)
             _ck = _cache_key('pre', s, len(rnd.log))
             _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
             if _cached:
@@ -171,6 +265,7 @@ class HandRun:
                 except ValueError: rnd.apply(s, 'call' if tc > 0 else 'check')
                 if _cached[1] in ('raise','allin'): aggressor = s; callers = 0
                 elif _cached[1] == 'call' and aggressor: callers += 1
+                _money_jump_attach_action(_mj_obs, rnd)
                 continue
             _pre_len = len(rnd.log)
             try:
@@ -235,6 +330,7 @@ class HandRun:
                     if _seed['pf_role'] == 'defend': callers = 0
             except ValueError:
                 rnd.apply(s, 'call' if tc > 0 else 'check')
+            _money_jump_attach_action(_mj_obs, rnd)
 
         self.full_log = [('preflop', x, a, amt) for (x, a, amt) in rnd.log]
         # 프리플랍 관찰 기록
@@ -451,6 +547,8 @@ class HandRun:
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
                 pot_live = pot_now + sum(r2.contrib.values())
+                _mj_obs = _money_jump_observe(
+                    h, s, r2, street, ax, tc, pot_live)
                 _pl = h.plans[key]
                 h.intents = getattr(h, 'intents', [])
                 # 액션 전 관측. 순번을 붙여 매 액션마다 남긴다 —
@@ -601,6 +699,7 @@ class HandRun:
                     r2.apply(s, a)
                     _exec_amt = 0
                 if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
+                _money_jump_attach_action(_mj_obs, r2)
                 # 액션이 끝난 뒤 계획을 다시 손대지 않는다.
                 # _allowed(개념 보유 검사)는 update_plan 안에서 이미 적용됐고,
                 # 여기서 또 돌리면 '실행 후 계획 변경' = 사후 수정이 된다.
