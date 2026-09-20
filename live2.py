@@ -116,6 +116,9 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
                  fmt=fmt)
     st = {'field': _dump(f), 'actions': [], 'decisions': [], 'hand_seed': None,
           'seed': seed,
+          # 히어로가 직접 적은 봇 메모. pid 기준이라 자리 이동 뒤에도 같은
+          # 플레이어를 따라간다. 봇 판단에는 읽히지 않고 기록용으로만 쓴다.
+          'hero_memos': {},
           'notes': [], 'busted': False, 'rank': None}
     save(st)
     return st
@@ -571,10 +574,25 @@ def _archive(st, f, h, res, notes, defer=False):
     자리를 **미리 만들어 두는 것**이 중요하다 — 나중에 키를 새로 추가하면
     JSON 키 순서가 달라져 기존 파일과 바이트가 안 맞는다.
     """
+    # 좌석은 테이블 밸런싱 때 사람이 바뀐다. 사용자 메모는 pid 기준으로
+    # 저장하고, 이 핸드에서 seat↔pid 관계도 같이 남겨 나중 분석이 가능하게 한다.
+    seat_pid = {
+        str(seat): int(pid)
+        for seat, pid in (getattr(h, 'seat_pid', {}) or {}).items()
+    }
+    all_memos = st.get('hero_memos') or {}
+    hand_memos = {}
+    for pid in seat_pid.values():
+        memo = all_memos.get(str(pid), all_memos.get(pid, ''))
+        if memo:
+            hand_memos[str(pid)] = str(memo)
+
     rec = {'hand_no': f.hand_no, 'hash': getattr(h, 'hash', None),
            'level': f.level, 'blinds': list(f.blinds()),
            'button': h.button, 'hero': h.hero,
            'pos': {str(k): v for k, v in h.pos.items()},
+           'seat_pid': seat_pid,
+           'hero_memos': hand_memos,
            'hole': {str(k): v for k, v in h.hole.items()},
            'board': h.board,
            'stacks_before': {str(k): v for k, v in getattr(h, '_start_stacks', {}).items()},

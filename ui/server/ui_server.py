@@ -14,6 +14,8 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓰고, T2_LIVE_STATE 
   GET  /api/state             마지막 응답 (없으면 현재 상태를 재생해서 만든다)
   POST /api/new   {entries?, seed?, fmt?, start_stack?}
   GET  /api/stats             정산 지연 카운터 (attempt/hit/mismatch/fallback…)
+  GET  /api/memos             플레이어 전용 봇 메모 조회
+  POST /api/memo  {pid, memo}  플레이어 전용 봇 메모 저장
   POST /api/step  {action, amount, token}
        action: fold/check/call/bet/raise/allin, 또는 null(다음 핸드 딜)
        amount: 이번 스트리트 총 투입 목표(raise-to)
@@ -287,6 +289,66 @@ def _public_history():
     out.sort(key=hand_key, reverse=True)
     return out
 
+def _hero_memos():
+    """현재 대회의 사용자 봇 메모. 공개 관전 API에는 절대 섞지 않는다."""
+    if not os.path.exists(L.ST):
+        return {}
+
+    st = L.load()
+    raw = st.get('hero_memos') or {}
+    out = {}
+
+    if isinstance(raw, dict):
+        for pid, memo in raw.items():
+            txt = str(memo or '').strip()
+            if txt:
+                out[str(pid)] = txt
+
+    return out
+
+
+def _save_hero_memo(pid, memo):
+    """pid 메모를 상태 파일에 저장하고, 아직 쓰기 전인 핸드 기록에도 반영한다."""
+    if not os.path.exists(L.ST):
+        raise RuntimeError('진행 중인 게임 없음')
+
+    st = L.load()
+    players = ((st.get('field') or {}).get('players') or {})
+    key = str(pid)
+
+    if key not in players:
+        raise ValueError('현재 대회에 없는 플레이어 pid: %s' % key)
+
+    memos = dict(st.get('hero_memos') or {})
+
+    if memo:
+        memos[key] = memo
+    else:
+        memos.pop(key, None)
+
+    st['hero_memos'] = memos
+
+    # 핸드 종료 직후 worker 정산을 기다리는 동안 메모를 고쳤다면,
+    # pending_archive도 같은 값으로 맞춰야 방금 끝난 핸드에 최신 메모가 남는다.
+    rec = st.get('pending_archive')
+    if isinstance(rec, dict):
+        seated = {
+            str(v)
+            for v in (rec.get('seat_pid') or {}).values()
+        }
+
+        if key in seated:
+            hm = dict(rec.get('hero_memos') or {})
+            if memo:
+                hm[key] = memo
+            else:
+                hm.pop(key, None)
+            rec['hero_memos'] = hm
+
+    L.save(st)
+    return dict(memos)
+
+
 def _token():
     try:
         st = L.load()
@@ -454,6 +516,16 @@ class H(BaseHTTPRequestHandler):
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
 
+        if path == '/api/memos':
+            if not self._can_play():
+                return self._send(403, {'error': '플레이어만 메모를 볼 수 있습니다'})
+            with LOCK:
+                try:
+                    return self._send(200, {'memos': _hero_memos()})
+                except Exception as e:
+                    traceback.print_exc()
+                    return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
+
         if path == '/api/history':
             # 공개 관전 화면에서도 읽을 수 있는 sanitized 완료 핸드 기록.
             # 숨은 상대 hole / profiles / reads / intents 는 포함하지 않는다.
@@ -511,11 +583,42 @@ class H(BaseHTTPRequestHandler):
             body = self._body()
         except ValueError:
             return self._send(400, {'error': 'JSON 파싱 실패'})
-        if self.path in ('/api/new', '/api/step') and not self._can_play():
+        if self.path in ('/api/new', '/api/step', '/api/memo') and not self._can_play():
             return self._send(403, {'error': '관전 모드에서는 게임을 조작할 수 없습니다'})
 
         with LOCK:
             try:
+                if self.path == '/api/memo':
+                    if not os.path.exists(L.ST):
+                        return self._send(409, {'error': '진행 중인 게임 없음'})
+
+                    try:
+                        pid = int(body.get('pid'))
+                    except (TypeError, ValueError):
+                        return self._send(400, {'error': 'pid가 올바르지 않습니다'})
+
+                    memo = body.get('memo', '')
+                    if memo is None:
+                        memo = ''
+                    if not isinstance(memo, str):
+                        return self._send(400, {'error': 'memo는 문자열이어야 합니다'})
+
+                    memo = memo.strip()
+                    if len(memo) > 2000:
+                        return self._send(400, {'error': '메모는 2000자 이하만 저장할 수 있습니다'})
+
+                    try:
+                        memos = _save_hero_memo(pid, memo)
+                    except ValueError as e:
+                        return self._send(400, {'error': str(e)})
+
+                    return self._send(200, {
+                        'ok': True,
+                        'pid': pid,
+                        'memo': memo,
+                        'memos': memos
+                    })
+
                 if self.path == '/api/new':
                     kw = {k: body[k] for k in ('entries', 'seed', 'fmt', 'start_stack')
                           if body.get(k) is not None}

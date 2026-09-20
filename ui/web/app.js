@@ -73,6 +73,7 @@ const S = {
   entries: null,           // 총 엔트리 (우승 화면 표시용)
   overlayPinned: false,     // 기록/설정은 사용자가 닫기 전까지 유지
   pendingMoveNote: null,   // 엔진이 알려준 HERO 테이블 이동
+  memos: {},                 // pid → 사용자 메모. 서버가 원본, localStorage는 캐시
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -101,24 +102,122 @@ const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
 
 /* ---------------- 봇 메모 ----------------
- * 좌석 번호(1~8 슬롯)는 테이블 밸런싱으로 사람이 바뀌므로 쓰지 않는다.
- * 엔진의 pid 를 쓴다 — live2.build_hand 가 h.seat_pid 로 들고 있고
- * ui_view 가 좌석마다 실어 보낸다. pid 가 없는 응답이면 메모 버튼을 감춘다.
+ * 좌석 번호는 테이블 밸런싱으로 사람이 바뀌므로 pid 기준으로 저장한다.
+ * 서버 live2_state.json의 hero_memos가 원본이고, 완료 핸드에는 그 핸드에
+ * 앉아 있던 pid의 메모 스냅샷이 hand_archive2.jsonl에 함께 들어간다.
  *
- * 저장은 브라우저 localStorage 다. 서버·엔진·상태 파일에 닿지 않으므로
- * 봇 판단에 영향을 줄 수 없다. 순수한 사용자 메모다.
+ * localStorage는 화면 반응/연결 실패용 캐시일 뿐 원본이 아니다.
+ * 메모는 봇 판단 로직에서 읽지 않는다.
  */
 const memoKey = (pid) => 't2memo:' + pid;
-function memoGet(pid) {
-  try { return localStorage.getItem(memoKey(pid)) || ''; } catch (e) { return ''; }
+
+function memoLocalGet(pid) {
+  try { return localStorage.getItem(memoKey(pid)) || ''; }
+  catch (e) { return ''; }
 }
-function memoSet(pid, txt) {
+
+function memoGet(pid) {
+  const k = String(pid);
+
+  if (
+    S.memos &&
+    Object.prototype.hasOwnProperty.call(S.memos, k)
+  ) {
+    return S.memos[k] || '';
+  }
+
+  return memoLocalGet(pid);
+}
+
+function memoLocalSet(pid, txt) {
   try {
     if (txt) localStorage.setItem(memoKey(pid), txt);
     else localStorage.removeItem(memoKey(pid));
-  } catch (e) { toast('메모를 저장하지 못했습니다'); }
+  } catch (e) {}
 }
+
+async function memoLoad() {
+  if (WATCH_MODE) return;
+
+  try {
+    const headers = PLAY_KEY
+      ? { 'X-T2-Play-Key': PLAY_KEY }
+      : {};
+
+    const res = await fetch('/api/memos', {
+      cache: 'no-store',
+      headers: headers
+    });
+
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    const data = await res.json();
+    const raw = data && data.memos && typeof data.memos === 'object'
+      ? data.memos
+      : {};
+
+    S.memos = {};
+
+    Object.keys(raw).forEach((pid) => {
+      const txt = String(raw[pid] || '');
+      if (!txt) return;
+      S.memos[String(pid)] = txt;
+      memoLocalSet(pid, txt);
+    });
+
+    if (S.view && S.view.type === 'decision') {
+      renderSeats(S.view);
+    }
+
+  } catch (e) {
+    // 서버를 못 읽었을 때만 기존 브라우저 캐시를 그대로 사용한다.
+  }
+}
+
+function memoSet(pid, txt) {
+  if (WATCH_MODE) return;
+
+  const k = String(pid);
+  const val = String(txt || '').trim();
+
+  if (val) S.memos[k] = val;
+  else delete S.memos[k];
+
+  memoLocalSet(k, val);
+
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (PLAY_KEY) headers['X-T2-Play-Key'] = PLAY_KEY;
+
+  fetch('/api/memo', {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      pid: Number(pid),
+      memo: val
+    })
+  }).then(async (res) => {
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+
+    if (!res.ok) {
+      throw new Error(
+        (data && data.error) || ('HTTP ' + res.status)
+      );
+    }
+
+    if (data && data.memos && typeof data.memos === 'object') {
+      S.memos = Object.assign({}, data.memos);
+    }
+  }).catch((e) => {
+    toast('서버 메모 저장 실패: ' + e.message);
+  });
+}
+
 function memoClearAll() {
+  S.memos = {};
+
   try {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -135,7 +234,7 @@ function openMemo(pid, label) {
   clearTimeout(S.autoTimer); S.autoTimer = null;
   showOverlay(`<h2>${esc(label)} 메모</h2>` +
     `<div class="sub">플레이어 #${esc(pid)} — 자리를 옮겨도 따라갑니다. ` +
-    `이 메모는 이 브라우저에만 저장되고 봇 판단에는 쓰이지 않습니다.</div>` +
+    `서버와 핸드 기록에 함께 저장되며 봇 판단에는 쓰이지 않습니다.</div>` +
     `<textarea id="memoText" rows="7" placeholder="예: 플랍 체크레이즈 자주, 리버 오버벳은 거의 밸류"` +
     `>${esc(memoGet(pid))}</textarea>` +
     `<div class="actions"><button type="button" id="memoSave">저장</button>` +
@@ -442,7 +541,7 @@ function renderSeats(v) {
       : (S.folding[slot]
          ? `<div class="backs out" style="animation-delay:${foldDelay(S.folding[slot])}">` +
            `${backHTML('mini')}${backHTML('mini')}</div>` : '');
-    const memo = (d.pid === undefined || d.pid === null) ? ''
+    const memo = (WATCH_MODE || d.pid === undefined || d.pid === null) ? ''
       : `<button type="button" class="memo${memoGet(d.pid) ? ' has' : ''}" ` +
         `data-pid="${d.pid}" data-label="${slot}번(${d.pos || ''})">✎</button>`;
     const botNo =
@@ -3627,7 +3726,11 @@ $('#seats').addEventListener('pointerdown', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideOverlay();
 });
-sync();
+if (WATCH_MODE) {
+  sync();
+} else {
+  memoLoad().finally(sync);
+}
 
 if (WATCH_MODE) {
   setInterval(async () => {
