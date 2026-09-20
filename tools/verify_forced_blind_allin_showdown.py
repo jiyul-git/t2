@@ -7,6 +7,11 @@
 - 히어로 액션 yield 없이 핸드가 끝나야 한다.
 - HERO가 져도 board 5장, showdown/allin_show, 양쪽 공개 카드가 남아야 한다.
 """
+import os, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 import session as SE
 
 

@@ -5,6 +5,9 @@ set -eu
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 
+# tools/*.py 직접 실행 시 repo root를 import 경로에 넣는다.
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+
 echo "=== syntax ==="
 python3 -m py_compile   live2.py session.py view.py   ui/server/ui_view.py ui/server/ui_server.py
 

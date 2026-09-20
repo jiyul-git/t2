@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 """강제 블라인드 올인 좌석이 UI 뷰에서 폴드처럼 사라지지 않는지 검증한다."""
+import os, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 import view
 
 
