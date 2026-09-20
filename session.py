@@ -238,6 +238,9 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
             default=0.0)
     obs['low_commit_pressure'] = round(
         MP.low_commit_pressure(_pressure, obs, _actor), 6)
+    obs['unopened_modifiers'] = (
+        MP.unopened_modifiers(obs)
+        if decision_context.get('kind') == 'unopened' else None)
 
     h.money_jump_obs = getattr(h, 'money_jump_obs', [])
     h.money_jump_obs.append(obs)
@@ -470,7 +473,9 @@ class HandRun:
                     payout_flat=getattr(h, 'payout_flat', 0.0),
                     reentry=getattr(h, 'reentry', False),
                     progress=getattr(h, 'progress', 0.0),
-                    opp_est=_opp_est_pf)
+                    opp_est=_opp_est_pf,
+                    money_open=(_mj_obs.get('unopened_modifiers')
+                                if _mj_obs else None))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _seed
                 if a == 'fold':

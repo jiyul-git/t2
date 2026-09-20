@@ -396,9 +396,11 @@ being buried in a decision formula.
 Behavior code is added in this order only:
 
 1. objective signal calculator: self-preservation / target opportunity /
-   urgency / commitment budget
-2. pure diagnostic output, no behavior change
-3. preflop unopened intervention
+   urgency / commitment budget — DONE
+2. pure diagnostic output, no behavior change — DONE
+3. preflop unopened intervention — RANGE ONLY enabled first
+   - existing open threshold × continuous `range_factor`
+   - sizing and limp effects remain shadow-only until range effect is measured
 4. preflop versus raise intervention
 5. postflop free-action intervention
 6. postflop facing-bet intervention

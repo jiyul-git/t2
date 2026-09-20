@@ -88,4 +88,25 @@ low_pres = dict(ACTOR, money_jump=0.0, icm=0.0, discipline=0.0, gamble=10.0)
 assert MP.commitment_budget(base, high_pres) <= MP.commitment_budget(base, low_pres)
 assert MP.commitment_budget(desperate, hi_sd) >= MP.commitment_budget(base, hi_sd)
 
+def open_state(preserve, urgency, pressure):
+    return {
+        'money_signals': {
+            'self_preservation': preserve,
+            'urgency': urgency,
+        },
+        'target_signals': [{
+            'pressure': {'pressure_opportunity': pressure},
+        }],
+    }
+
+m_neutral = MP.unopened_modifiers(open_state(0.0, 0.0, 0.0))
+m_pres = MP.unopened_modifiers(open_state(0.7, 0.0, 0.0))
+m_press = MP.unopened_modifiers(open_state(0.0, 0.0, 0.7))
+m_urgent = MP.unopened_modifiers(open_state(0.7, 0.8, 0.0))
+assert abs(m_neutral['range_factor'] - 1.0) < 1e-9
+assert m_pres['range_factor'] < m_neutral['range_factor']
+assert m_press['range_factor'] > m_neutral['range_factor']
+assert m_urgent['range_factor'] > m_pres['range_factor']
+assert m_press['size_factor_shadow'] < m_neutral['size_factor_shadow']
+
 print('OK money-pressure monotonic signals')

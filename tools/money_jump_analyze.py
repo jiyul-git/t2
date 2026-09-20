@@ -158,6 +158,22 @@ def main():
             print(' p10/p50/p90 %.3f / %.3f / %.3f' %
                   (quant(lcp,.10), quant(lcp,.50), quant(lcp,.90)))
 
+    print('\n[unopened modifier diagnostics]')
+    _uo=[r for r in rows if r.get('street')=='preflop'
+         and r.get('decision_kind')=='unopened'
+         and r.get('unopened_modifiers')]
+    for st in ('pre','approach','bubble','itm','final9'):
+        rr=[r for r in _uo if stage(r)==st]
+        if not rr:
+            continue
+        rf=[r['unopened_modifiers'].get('range_factor',1.0) for r in rr]
+        sf=[r['unopened_modifiers'].get('size_factor_shadow',1.0) for r in rr]
+        lp=[r['unopened_modifiers'].get('limp_pull_shadow',0.0) for r in rr]
+        print(' %-10s n=%-4d rangeFactor p10/p50/p90=%.3f/%.3f/%.3f'
+              ' sizeShadow p50/p90=%.3f/%.3f limpShadow p50/p90=%.3f/%.3f' %
+              (st, len(rr), quant(rf,.10), quant(rf,.50), quant(rf,.90),
+               quant(sf,.50), quant(sf,.90), quant(lp,.50), quant(lp,.90)))
+
     print('\n[unopened target-pressure diagnostics]')
     unopened=[r for r in rows
               if r.get('street')=='preflop'

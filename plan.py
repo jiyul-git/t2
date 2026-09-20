@@ -1383,7 +1383,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  seats=8, ante=True, field_avg_bb=None, erosion=0.0,
                  payout_flat=0.0, reentry=False, progress=0.0,
                  behind_est=None, limper_est=None, bb_chips=None,
-                 opener_allin=False):
+                 opener_allin=False, money_open=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -1410,7 +1410,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                                   progress=progress,
                                   behind_reads=[PS.read_opponent(profile, e)
                                                 for e in (behind_est or []) if e],
-                                  bb_chips=bb_chips)
+                                  bb_chips=bb_chips,
+                                  money_open=money_open)
         role = 'open'
     elif aggressor_pos is None:
         a, sz = _pf.iso_decision(profile, pos, hand, n_limpers, bb, rng,
@@ -1437,6 +1438,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         'pf_initiative': a in ('raise', '3bet', 'shove'),
         'pf_multiway': (n_callers + n_limpers) >= 2,
         'pf_hand_pct': _pf.pct(hand),
+        'money_open': dict(money_open or {}) if role == 'open' else None,
     }
     return a, sz, seed_info
 

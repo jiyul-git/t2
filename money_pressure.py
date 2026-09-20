@@ -237,6 +237,43 @@ def low_commit_pressure(pressure, state, actor):
     return clamp01(float(pressure or 0.0) * (1.0 - commitment_budget(state, actor)))
 
 
+def unopened_modifiers(state):
+    """미오픈 프리플랍의 첫 행동 개입용 연속 보정.
+
+    range_factor만 현재 행동에 연결한다.
+    size_factor/limp_pull은 다음 단계용 shadow 신호다.
+
+    새 BB/인원 문턱은 없다. drive(압박+긴급)와 brake(보존)를 같은 0..1
+    공간에서 경쟁시킨 뒤, 기준 1의 비율로 바꾼다.
+    """
+    ms = state.get('money_signals') or {}
+    preserve = clamp01(ms.get('self_preservation', 0.0))
+    urgency = clamp01(ms.get('urgency', 0.0))
+    pressure = max(
+        ((t.get('pressure') or {}).get('pressure_opportunity', 0.0)
+         for t in (state.get('target_signals') or [])),
+        default=0.0)
+    pressure = clamp01(pressure)
+
+    drive = union01(pressure, urgency)
+    brake = preserve * (1.0 - urgency)
+    range_factor = (1.0 + drive) / (1.0 + brake)
+
+    # pot-growth restraint는 아직 행동에 연결하지 않는다.
+    restraint = union01(brake, pressure) * (1.0 - urgency)
+    size_factor = inv1p(restraint)
+    limp_pull = clamp01(restraint)
+
+    return {
+        'pressure': round(pressure, 6),
+        'drive': round(drive, 6),
+        'brake': round(brake, 6),
+        'range_factor': round(range_factor, 6),
+        'size_factor_shadow': round(size_factor, 6),
+        'limp_pull_shadow': round(limp_pull, 6),
+    }
+
+
 def actor_from_profile(profile, sk_fn, temper_fn):
     return {
         'money_jump': sk_fn(profile, 'money_jump'),

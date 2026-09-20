@@ -279,7 +279,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
                   field_avg_bb=None, erosion=0.0,
                   payout_flat=0.0, reentry=False, progress=0.0,
-                  behind_reads=None, bb_chips=None):
+                  behind_reads=None, bb_chips=None, money_open=None):
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
@@ -293,6 +293,14 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
            * table_pressure(behind_reads)
            * hotzone_pressure(prof, pos, bb, behind_stacks or []))
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
+    # 머니점프 첫 행동 개입. 기준 레인지 자체를 새로 만들지 않고,
+    # 기존 open threshold에 연속 factor만 곱한다.
+    if money_open:
+        try:
+            thr *= max(0.0, float(money_open.get('range_factor', 1.0)))
+        except (TypeError, ValueError):
+            pass
+        thr = max(0.0, min(0.9, thr))
     r = pct(hand)
     if r > thr: return ('fold', 0)
     # 쇼브 판정이 먼저다. 10bb 에서 림프를 먼저 물으면 쇼브해야 할 자리에서
