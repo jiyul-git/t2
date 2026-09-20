@@ -400,6 +400,12 @@ Behavior code is added in this order only:
 2. pure diagnostic output, no behavior change — DONE
 3. preflop unopened intervention — RANGE ONLY enabled first
    - existing open threshold × continuous `range_factor`
+   - range pressure uses the **mean** pressure across players still to act
+     rather than one target's maximum
+   - self-preservation becomes a range brake only in proportion to the fraction
+     of players still to act who cover hero
+   - generic chip-loss caution remains in the separate pot-growth/sizing shadow;
+     the range layer does not duplicate it
    - sizing and limp effects remain shadow-only until range effect is measured
    - every unopened decision logs a same-state local counterfactual:
      `base_threshold`, `money_threshold`, `hand_pct`,

@@ -238,36 +238,55 @@ def low_commit_pressure(pressure, state, actor):
 
 
 def unopened_modifiers(state):
-    """미오픈 프리플랍의 첫 행동 개입용 연속 보정.
+    """미오픈 프리플랍의 연속 머니점프 보정.
 
-    range_factor만 현재 행동에 연결한다.
-    size_factor/limp_pull은 다음 단계용 shadow 신호다.
+    range_factor는 실제 오픈 레인지에 연결된다.
+    size_factor/limp_pull은 아직 shadow 신호다.
 
-    새 BB/인원 문턱은 없다. drive(압박+긴급)와 brake(보존)를 같은 0..1
-    공간에서 경쟁시킨 뒤, 기준 1의 비율로 바꾼다.
+    역할 분리:
+    - range pressure: 뒤 상대 전체가 얼마나 압박받는지(평균)
+    - range brake: 이번 오픈에서 나를 탈락시킬 수 있는 뒤 상대의 비율
+    - pot restraint: 칩을 잃는 비용 자체. sizing/form 단계용 shadow
+
+    새 BB/인원 문턱이나 포지션별 상수는 없다.
     """
     ms = state.get('money_signals') or {}
     preserve = clamp01(ms.get('self_preservation', 0.0))
     urgency = clamp01(ms.get('urgency', 0.0))
-    pressure = max(
-        ((t.get('pressure') or {}).get('pressure_opportunity', 0.0)
-         for t in (state.get('target_signals') or [])),
-        default=0.0)
-    pressure = clamp01(pressure)
+
+    _pressures = [
+        clamp01((t.get('pressure') or {}).get('pressure_opportunity', 0.0))
+        for t in (state.get('target_signals') or [])
+    ]
+    pressure = (sum(_pressures) / len(_pressures)) if _pressures else 0.0
+    max_pressure = max(_pressures, default=0.0)
+
+    try:
+        n_behind = max(0.0, float(state.get('players_yet_to_act', 0.0) or 0.0))
+        n_covering = max(
+            0.0, float(state.get('covered_by_yet_to_act', 0.0) or 0.0))
+    except (TypeError, ValueError):
+        n_behind, n_covering = 0.0, 0.0
+    danger_frac = clamp01(n_covering / n_behind) if n_behind > 0 else 0.0
 
     drive = union01(pressure, urgency)
-    brake = preserve * (1.0 - urgency)
-    range_factor = (1.0 + drive) / (1.0 + brake)
+    range_brake = preserve * (1.0 - urgency) * danger_frac
+    range_factor = (1.0 + drive) / (1.0 + range_brake)
 
-    # pot-growth restraint는 아직 행동에 연결하지 않는다.
-    restraint = union01(brake, pressure) * (1.0 - urgency)
+    # 사이즈/림프는 아직 shadow. 여기서는 '탈락 가능 여부'만이 아니라
+    # 칩을 잃는 비용도 여전히 중요하므로 일반 preservation을 유지한다.
+    pot_brake = preserve * (1.0 - urgency)
+    restraint = union01(pot_brake, pressure) * (1.0 - urgency)
     size_factor = inv1p(restraint)
     limp_pull = clamp01(restraint)
 
     return {
         'pressure': round(pressure, 6),
+        'max_pressure': round(max_pressure, 6),
+        'danger_fraction': round(danger_frac, 6),
         'drive': round(drive, 6),
-        'brake': round(brake, 6),
+        'brake': round(range_brake, 6),
+        'pot_brake_shadow': round(pot_brake, 6),
         'range_factor': round(range_factor, 6),
         'size_factor_shadow': round(size_factor, 6),
         'limp_pull_shadow': round(limp_pull, 6),

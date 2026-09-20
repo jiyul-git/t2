@@ -88,28 +88,44 @@ low_pres = dict(ACTOR, money_jump=0.0, icm=0.0, discipline=0.0, gamble=10.0)
 assert MP.commitment_budget(base, high_pres) <= MP.commitment_budget(base, low_pres)
 assert MP.commitment_budget(desperate, hi_sd) >= MP.commitment_budget(base, hi_sd)
 
-def open_state(preserve, urgency, pressure):
+def open_state(preserve, urgency, pressures, covering=0, behind=None):
+    pressures = list(pressures)
+    if behind is None:
+        behind = len(pressures)
     return {
         'money_signals': {
             'self_preservation': preserve,
             'urgency': urgency,
         },
-        'target_signals': [{
-            'pressure': {'pressure_opportunity': pressure},
-        }],
+        'players_yet_to_act': behind,
+        'covered_by_yet_to_act': covering,
+        'target_signals': [
+            {'pressure': {'pressure_opportunity': p}} for p in pressures
+        ],
     }
 
-m_neutral = MP.unopened_modifiers(open_state(0.0, 0.0, 0.0))
-m_pres = MP.unopened_modifiers(open_state(0.7, 0.0, 0.0))
-m_press = MP.unopened_modifiers(open_state(0.0, 0.0, 0.7))
-m_urgent = MP.unopened_modifiers(open_state(0.7, 0.8, 0.0))
+m_neutral = MP.unopened_modifiers(open_state(0.0, 0.0, [0.0, 0.0]))
+m_safe_pres = MP.unopened_modifiers(
+    open_state(0.7, 0.0, [0.0, 0.0], covering=0))
+m_danger_pres = MP.unopened_modifiers(
+    open_state(0.7, 0.0, [0.0, 0.0], covering=2))
+m_one_target = MP.unopened_modifiers(
+    open_state(0.0, 0.0, [0.7, 0.0], covering=0))
+m_two_targets = MP.unopened_modifiers(
+    open_state(0.0, 0.0, [0.7, 0.7], covering=0))
+m_urgent = MP.unopened_modifiers(
+    open_state(0.7, 0.8, [0.0, 0.0], covering=2))
+
 assert abs(m_neutral['range_factor'] - 1.0) < 1e-9
-assert m_pres['range_factor'] < m_neutral['range_factor']
-assert m_press['range_factor'] > m_neutral['range_factor']
-assert m_urgent['range_factor'] > m_pres['range_factor']
-assert m_press['size_factor_shadow'] < m_neutral['size_factor_shadow']
-# range factor is a ratio around 1; widening/narrowing is continuous, no new hand bucket.
-assert m_press['range_factor'] > 1.0
-assert m_pres['range_factor'] < 1.0
+# 자기보존은 실제로 나를 탈락시킬 수 있는 상대가 뒤에 있을 때 range brake가 된다.
+assert m_safe_pres['range_factor'] == m_neutral['range_factor']
+assert m_danger_pres['range_factor'] < m_neutral['range_factor']
+# 취약 상대 한 명보다 뒤 상대 전부가 압박받을 때 오픈 확대가 더 크다.
+assert m_two_targets['range_factor'] > m_one_target['range_factor'] > 1.0
+# 절박함은 danger가 있어도 보존 brake를 약화한다.
+assert m_urgent['range_factor'] > m_danger_pres['range_factor']
+# pot-growth shadow는 range danger와 별도로 preservation/pressure를 본다.
+assert m_safe_pres['size_factor_shadow'] < m_neutral['size_factor_shadow']
+assert m_two_targets['size_factor_shadow'] < m_neutral['size_factor_shadow']
 
 print('OK money-pressure monotonic signals')
