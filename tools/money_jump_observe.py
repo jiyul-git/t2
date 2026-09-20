@@ -45,8 +45,10 @@ def stage_key(r):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--entries', type=int, default=100)
-    ap.add_argument('--rounds', type=int, default=120,
-                    help='필드 전체가 한 번씩 도는 라운드 수')
+    ap.add_argument('--rounds', type=int, default=260,
+                    help='최대 필드 라운드 수')
+    ap.add_argument('--until-remaining', type=int, default=8,
+                    help='이 잔여 인원 이하가 되면 측정 종료')
     ap.add_argument('--seed', type=int, default=92020)
     ap.add_argument('--fmt', default='standard')
     ap.add_argument('--out', default='money_jump_obs.jsonl')
@@ -66,7 +68,7 @@ def main():
     f._log_bot_hand = capture
 
     for _ in range(args.rounds):
-        if f.remaining() <= 1:
+        if f.remaining() <= max(1, args.until_remaining):
             break
         f.hand_no += 1
         f.advance_level()
@@ -104,6 +106,10 @@ def main():
         'players_yet_to_act': [r['players_yet_to_act'] for r in rows],
         'covers_yet_to_act': [r['covers_yet_to_act'] for r in rows],
         'covered_by_yet_to_act': [r['covered_by_yet_to_act'] for r in rows],
+        'shorter_to_needed_ratio': [
+            r['shorter_to_needed_ratio'] for r in rows
+            if r.get('shorter_to_needed_ratio') is not None
+        ],
     }
     print('\n[quantiles p10 / p50 / p90]')
     for k, xs in vals.items():
@@ -113,10 +119,11 @@ def main():
 
     # 머니점프가 실제로 존재하는 관측만 대표 상황을 뽑는다.
     jump = [r for r in rows if (r.get('next_jump') or 0) > 0]
-    print('\n[jump observations]', len(jump))
+    near = [r for r in jump if r.get('players_to_jump', 999) <= max(3, int((r.get('itm') or 1)*0.20))]
+    print('\n[jump observations]', len(jump), 'near-ladder', len(near))
     if jump:
         close = sorted(
-            jump,
+            near or jump,
             key=lambda r: (
                 r.get('players_to_jump', 999),
                 -r.get('shorter_frac', 0),
@@ -128,7 +135,7 @@ def main():
                 ' H%(hand_no)s T%(table)s %(street)s %(pos)s'
                 ' rem=%(remaining)s/%(itm)s jump=%(next_jump)s'
                 ' J=%(players_to_jump)s below=%(n_shorter)s'
-                ' frac=%(shorter_frac)s stack=%(stack_start_bb)sbb'
+                ' S/J=%(shorter_to_needed_ratio)s stack=%(stack_start_bb)sbb'
                 ' behind=%(players_yet_to_act)s'
                 ' cover=%(covers_yet_to_act)s/%(covered_by_yet_to_act)s'
                 ' skill=%(money_jump_skill)s act=%(action)s' % r

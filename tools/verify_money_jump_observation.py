@@ -32,7 +32,8 @@ profile = {
 }
 r = RU.Round(None, [1, 2, 3, 4], dict(H._start_stacks), H.bb)
 r.last_idx = -1
-obs = SE._money_jump_observe(H(), 1, r, 'preflop', profile, 0, 1500)
+obs = SE._money_jump_observe(H(), 1, r, 'preflop', profile, 500, 1500,
+                             facing_seat=2)
 
 assert obs['pos'] == 'CO', obs
 assert obs['players_to_jump'] == 1, obs
@@ -43,6 +44,10 @@ assert obs['covers_yet_to_act'] == 2, obs
 assert obs['covered_by_yet_to_act'] == 1, obs
 assert obs['blind_targets_yet_to_act'] == 2, obs
 assert [x['pos'] for x in obs['targets_yet_to_act']] == ['BTN', 'SB', 'BB'], obs
+assert obs['facing_target']['seat'] == 2, obs
+assert obs['facing_target']['covers_me'] is True, obs
+assert obs['shorter_minus_needed'] == 2, obs
+assert obs['shorter_to_needed_ratio'] == 3.0, obs
 
 r.apply(1, 'raise', 2500)
 SE._money_jump_attach_action(obs, r)

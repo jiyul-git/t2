@@ -11,7 +11,8 @@ def best5(cards): return bot.eval7(cards)
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
-def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0):
+def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
+                        facing_seat=None):
     """행동을 바꾸지 않고 머니점프/스택/자리의 공개 상태만 기록한다."""
     bb = max(1, getattr(h, 'bb', 1) or 1)
     mj = dict(getattr(h, 'money_jump', None) or {})
@@ -24,6 +25,7 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0):
     n_others = max(0, len(field) - 1)
     nearest_shorter = max(shorter) if shorter else None
     shortest = min(shorter) if shorter else None
+    median_shorter = (shorter[len(shorter)//2] if shorter else None)
 
     order = list(rnd.order)
     pending = []
@@ -55,6 +57,21 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0):
     live_stacks = [float(start_stacks.get(
         x, rnd.stacks.get(x, 0) + rnd.contrib.get(x, 0))) for x in live_opp]
 
+    facing = None
+    if facing_seat is not None and facing_seat != seat:
+        xs = float(start_stacks.get(
+            facing_seat,
+            rnd.stacks.get(facing_seat, 0) + rnd.contrib.get(facing_seat, 0)))
+        facing = {
+            'seat': facing_seat,
+            'pid': (getattr(h, 'seat_pid', {}) or {}).get(facing_seat),
+            'pos': (getattr(h, 'pos', {}) or {}).get(facing_seat),
+            'stack_bb': round(xs / bb, 3),
+            'stack_ratio_to_me': round(xs / max(1.0, start), 4),
+            'i_cover': bool(start > xs),
+            'covers_me': bool(xs > start),
+        }
+
     obs = {
         'street': street,
         'seat': seat,
@@ -76,8 +93,16 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0):
         'shorter_frac': round(len(shorter) / max(1, n_others), 4),
         'nearest_shorter_ratio': (round(nearest_shorter / max(1.0, start), 4)
                                   if nearest_shorter is not None else None),
+        'median_shorter_ratio': (round(median_shorter / max(1.0, start), 4)
+                                 if median_shorter is not None else None),
         'shortest_ratio': (round(shortest / max(1.0, start), 4)
                            if shortest is not None else None),
+        'shorter_minus_needed': (
+            len(shorter) - int(mj.get('players_to_jump') or 0)
+            if (mj.get('players_to_jump') or 0) > 0 else None),
+        'shorter_to_needed_ratio': (
+            round(len(shorter) / float(mj.get('players_to_jump')), 4)
+            if (mj.get('players_to_jump') or 0) > 0 else None),
         'table_cover_count': sum(1 for x in live_stacks if start > x),
         'table_covered_by_count': sum(1 for x in live_stacks if x > start),
         'players_yet_to_act': len(pending),
@@ -86,6 +111,7 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0):
         'blind_targets_yet_to_act': sum(
             1 for t in targets if t['pos'] in ('SB', 'BB')),
         'targets_yet_to_act': targets,
+        'facing_target': facing,
         'to_call_bb': round(float(to_call or 0) / bb, 3),
         'pot_bb': round(float(pot or 0) / bb, 3),
     }
@@ -257,7 +283,8 @@ class HandRun:
             ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
             _mj_obs = _money_jump_observe(
                 h, s, rnd, 'preflop', ax, tc,
-                sum(rnd.contrib.values()) + ante_pot)
+                sum(rnd.contrib.values()) + ante_pot,
+                facing_seat=aggressor)
             _ck = _cache_key('pre', s, len(rnd.log))
             _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
             if _cached:
@@ -548,7 +575,8 @@ class HandRun:
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
                 pot_live = pot_now + sum(r2.contrib.values())
                 _mj_obs = _money_jump_observe(
-                    h, s, r2, street, ax, tc, pot_live)
+                    h, s, r2, street, ax, tc, pot_live,
+                    facing_seat=(aggressor if tc > 0 else None))
                 _pl = h.plans[key]
                 h.intents = getattr(h, 'intents', [])
                 # 액션 전 관측. 순번을 붙여 매 액션마다 남긴다 —
