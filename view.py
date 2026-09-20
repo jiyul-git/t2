@@ -54,7 +54,11 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
         if p is None: continue
         sk = hand.stacks.get(s, 0)
         rows.append({'seat': s, 'pos': p, 'stack': sk, 'bb': bbs(sk, bb),
-                     'live': (s in live and sk > 0), 'hero': s == hero,
+                     # 0스택이어도 폴드하지 않은 올인 플레이어는 여전히
+                     # 핸드에 살아 있다. 특히 SB/BB 강제 올인은 액션 로그가
+                     # 없어도 쇼다운 대상이므로 stack>0 으로 live 를 자르면
+                     # UI opening_view 에서 폴드한 것처럼 사라진다.
+                     'live': (s in live), 'hero': s == hero,
                      'allin': s in allin,
                      'inv': inv.get(s, 0),
                      'eff': bbs(min(sk, raw['stack']), bb) if sk > raw['stack'] else None})
