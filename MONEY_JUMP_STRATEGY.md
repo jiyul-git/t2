@@ -111,7 +111,120 @@ Direction:
 
 This is the key guard against the invalid rule "short = lock".
 
-## 3. Role is derived from the three outputs
+## 3. Structural pressure and exploit realization are separate
+
+`pressure_opportunity(target)` must not bypass the existing exploit system.
+
+There are two layers:
+
+### structural_pressure(target)
+
+A public-state prior.  It asks whether this opponent is *theoretically exposed*
+to payout/stack pressure before any personal read is available.
+
+Inputs:
+- target stack role
+- target ladder buffer / waiting budget
+- payout jump and distance
+- whether hero covers target
+- whether another stack covers hero
+- target position and forced blind cost
+- action class
+
+This exists even with zero history.
+
+### exploit_realization(target)
+
+How strongly this bot recognizes and acts on that pressure.
+
+Use the existing exploit architecture:
+- `attention`
+- `range_read`
+- `adaptability`
+- `fold_equity`
+- `reads.perceived_profile()`
+- `persona.read_opponent()`
+- read confidence / sample size
+
+If reads show that the target is actually overfolding, pressure can be amplified.
+If the target has resisted pressure or calls too wide, the adjustment should be
+suppressed even when structural pressure is high.
+
+Therefore:
+
+    pressure_opportunity
+      = structural_pressure
+        × money-jump perception
+        × exploit realization
+        × topology safety
+
+Do not add a new generic "exploit" temperament unless the existing
+attention/range_read/adaptability/fold_equity structure demonstrably fails.
+
+This preserves an important distinction:
+- a strong player can infer an ICM-vulnerable target before observing many hands
+- a strong exploiter can then update that prior from actual opponent behavior
+
+## 12. Pot-growth geometry: range choice and action form are separate
+
+Money-jump/ICM pressure may change not only *which hands* are played, but also
+*how much pot growth a player is willing to create*.
+
+Do not hard-code "large money jump => smaller size" or "large money jump =>
+more limps".  Both have real counterexamples.
+
+Instead derive a continuous **pot_growth_budget** from:
+- self_preservation
+- pressure_opportunity
+- urgency
+- position
+- effective stack
+- cover relation
+- opponent response tendency
+- pot / SPR / board context
+
+Interpretation:
+
+- high self_preservation + low urgency:
+  prefer lower-commitment lines when strategically available
+  (more checking, calling, selected limping, smaller raises/bets)
+- high pressure_opportunity + low own risk:
+  may attack frequently, but size is target-dependent
+  (small frequent pressure in some spots; larger leverage sizing in others)
+- high urgency:
+  small-pot preservation can disappear and shove/fold forms become more likely
+- high self_preservation + high pressure from a covering opponent:
+  reduce voluntary pot growth strongly
+
+The existing engine already separates several relevant mechanisms:
+- `open_decision` chooses whether to enter
+- `open_form` chooses raise versus shove
+- `limp_p` chooses open-limp mixes
+- `open_size_bb` chooses opening size
+- postflop planning separates action choice from bet sizing
+
+Money-jump should therefore feed **action form and sizing as separate hooks**
+rather than one global range multiplier.
+
+### Why this should be partly emergent, not manually scripted
+
+The intended implementation is "engineered incentives, emergent frequency":
+
+1. compute public tournament pressure
+2. let personality determine perception
+3. let exploit determine target response
+4. let pot_growth_budget choose among already-valid strategic forms
+5. measure the resulting limp/min-open/small-bet/shove frequencies
+
+The target output frequencies should not be typed in directly.
+
+The current engine can already produce some of this indirectly through
+stack depth and BF/ICM affecting perceived depth and shove/limp form.  However,
+opening size itself does not currently consume money-jump state directly, so a
+systematic payout-ladder-specific sizing shift should not be expected to emerge
+without an explicit pot-growth hook.
+
+## 11. Role is derived from the three outputs
 
 No fixed entry-count buckets.
 
