@@ -384,7 +384,8 @@ Prefer variables that already have a natural scale:
 - exploit: existing read confidence and fold-gap
 
 The first signal layer therefore uses generic continuous transforms only:
-`x/(1+x)`, `1/(1+x)`, arithmetic mean, multiplication and bounded union.
+`x/(1+x)`, `1/(1+x)`, arithmetic mean, multiplication, bounded union and
+bottleneck `min(a,b)`.
 It adds no new behavioral thresholds such as "15bb", "top 20%" or "three
 players from a jump".
 

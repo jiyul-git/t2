@@ -59,12 +59,29 @@ lo_sd = dict(ACTOR, stack_decay=1.0)
 hi_sd = dict(ACTOR, stack_decay=9.0)
 assert MP.perceived_urgency(desperate, hi_sd) >= MP.perceived_urgency(desperate, lo_sd)
 
+near = state(distance_frac_itm=0.05, distance_frac_remaining=0.05)
+far = state(distance_frac_itm=5.0, distance_frac_remaining=0.8)
+assert MP.payout_importance(near) >= MP.payout_importance(far)
+
+low_aggr = dict(ACTOR, aggression=1.0)
+high_aggr = dict(ACTOR, aggression=9.0)
+assert MP.pressure_opportunity(hero, target, high_aggr)['theory_pressure'] >= \
+       MP.pressure_opportunity(hero, target, low_aggr)['theory_pressure']
+
 neutral = MP.pressure_opportunity(hero, target, ACTOR, None)['pressure_opportunity']
 over = MP.pressure_opportunity(
     hero, target, ACTOR, {'w': 1.0, 'fold_gap': 0.4})['pressure_opportunity']
 station = MP.pressure_opportunity(
     hero, target, ACTOR, {'w': 1.0, 'fold_gap': -0.4})['pressure_opportunity']
 assert over >= neutral >= station
+
+pre_over = MP.pressure_opportunity(
+    hero, target, ACTOR, {'w': 1.0, 'fold_gap': -0.4, 'f2tb_gap': 0.4},
+    read_channel='preflop_3bet')['pressure_opportunity']
+pre_station = MP.pressure_opportunity(
+    hero, target, ACTOR, {'w': 1.0, 'fold_gap': 0.4, 'f2tb_gap': -0.4},
+    read_channel='preflop_3bet')['pressure_opportunity']
+assert pre_over >= pre_station
 
 high_pres = dict(ACTOR, money_jump=10.0, icm=10.0, discipline=10.0, gamble=0.0)
 low_pres = dict(ACTOR, money_jump=0.0, icm=0.0, discipline=0.0, gamble=10.0)

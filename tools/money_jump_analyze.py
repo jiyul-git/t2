@@ -132,6 +132,10 @@ def main():
                 if xs:
                     print(' %-30s %.3f / %.3f / %.3f' %
                           (k, quant(xs,.10), quant(xs,.50), quant(xs,.90)))
+            adj=[r['facing_pressure'].get('read_adjustment',1.0) for r in face]
+            non=sum(1 for x in adj if abs(float(x)-1.0) > 1e-9)
+            print(' read-adjustment nonneutral   %d/%d  min=%.4f max=%.4f' %
+                  (non, len(adj), min(adj), max(adj)))
 
         lcp=[r.get('low_commit_pressure') for r in rows
              if r.get('low_commit_pressure') is not None]

@@ -65,6 +65,7 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
     for x in pending:
         xs = float(start_stacks.get(
             x, rnd.stacks.get(x, 0) + rnd.contrib.get(x, 0)))
+        xb = float(rnd.stacks.get(x, 0))
         _ts = sorted(v for v in field if v < xs)
         _tm = (_ts[len(_ts)//2] if _ts else None)
         _tpos = (getattr(h, 'pos', {}) or {}).get(x)
@@ -76,6 +77,7 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
             'pid': (getattr(h, 'seat_pid', {}) or {}).get(x),
             'pos': _tpos,
             'stack_bb': round(_tbb, 3),
+            'stack_behind_bb': round(xb / bb, 3),
             'stack_ratio_to_me': round(xs / max(1.0, start), 4),
             'i_cover': bool(start > xs),
             'covers_me': bool(xs > start),
@@ -84,9 +86,9 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                 round(_tm / max(1.0, xs), 4) if _tm is not None else None),
             'forced_cost_to_next_bb': round(_tforced, 3),
             'stack_after_next_bb_if_fold_all': round(
-                max(0.0, _tbb - _tforced), 3),
+                max(0.0, xb / bb - _tforced), 3),
             'forced_cost_share_of_stack': round(
-                _tforced / max(0.001, _tbb), 4),
+                _tforced / max(0.001, xb / bb), 4),
             'bf': round(h.bf(x), 4) if hasattr(h, 'bf') else 1.0,
         })
 
@@ -101,6 +103,7 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
             xs = float(start_stacks.get(
                 facing_seat,
                 rnd.stacks.get(facing_seat, 0) + rnd.contrib.get(facing_seat, 0)))
+            xb = float(rnd.stacks.get(facing_seat, 0))
             _ts = sorted(v for v in field if v < xs)
             _tm = (_ts[len(_ts)//2] if _ts else None)
             _tpos = (getattr(h, 'pos', {}) or {}).get(facing_seat)
@@ -112,6 +115,7 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                 'pid': (getattr(h, 'seat_pid', {}) or {}).get(facing_seat),
                 'pos': _tpos,
                 'stack_bb': round(_tbb, 3),
+                'stack_behind_bb': round(xb / bb, 3),
                 'stack_ratio_to_me': round(xs / max(1.0, start), 4),
                 'i_cover': bool(start > xs),
                 'covers_me': bool(xs > start),
@@ -120,9 +124,9 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                     round(_tm / max(1.0, xs), 4) if _tm is not None else None),
                 'forced_cost_to_next_bb': round(_tforced, 3),
                 'stack_after_next_bb_if_fold_all': round(
-                    max(0.0, _tbb - _tforced), 3),
+                    max(0.0, xb / bb - _tforced), 3),
                 'forced_cost_share_of_stack': round(
-                    _tforced / max(0.001, _tbb), 4),
+                    _tforced / max(0.001, xb / bb), 4),
                 'bf': round(h.bf(facing_seat), 4) if hasattr(h, 'bf') else 1.0,
             }
 
@@ -198,7 +202,7 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
         d = dict(obs)
         d.update({
             'stack_start_bb': t.get('stack_bb', 0.0),
-            'stack_behind_bb': t.get('stack_bb', 0.0),
+            'stack_behind_bb': t.get('stack_behind_bb', t.get('stack_bb', 0.0)),
             'n_shorter': t.get('n_shorter', 0),
             'median_shorter_ratio': t.get('median_shorter_ratio'),
             'forced_cost_to_next_bb': t.get('forced_cost_to_next_bb', 0.0),
@@ -222,8 +226,10 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
     _fstate = _target_state(facing)
     if _fstate is not None:
         _fread = PS.read_opponent(profile, facing_read) if facing_read else None
+        _rch = ('preflop_3bet'
+                if decision_context.get('kind') == 'vs_raise' else 'generic')
         obs['facing_pressure'] = MP.pressure_opportunity(
-            obs, _fstate, _actor, read=_fread)
+            obs, _fstate, _actor, read=_fread, read_channel=_rch)
         _pressure = obs['facing_pressure']['pressure_opportunity']
     else:
         obs['facing_pressure'] = None

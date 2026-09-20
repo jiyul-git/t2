@@ -61,10 +61,11 @@ def payout_importance(state):
         state.get('jump_frac_next', 0.0),
         sat(state.get('jump_vs_mincash', 0.0)),
     )
-    closeness = mean01(
-        inv1p(state.get('distance_frac_itm', 0.0)),
-        inv1p(state.get('distance_frac_remaining', 0.0)),
-    )
+    # 두 거리 중 하나만 가까워도 높은 값이 되는 평균 대신, 거리 자체를 합쳐
+    # 하나의 연속 감쇠로 본다. 별도 버블 문턱은 없다.
+    distance = (max(0.0, float(state.get('distance_frac_itm', 0.0) or 0.0))
+                + max(0.0, float(state.get('distance_frac_remaining', 0.0) or 0.0)))
+    closeness = inv1p(distance)
     return clamp01(size * closeness)
 
 
@@ -170,6 +171,7 @@ def exploit_realization(actor):
         skill01(actor.get('range_read')),
         skill01(actor.get('attention')),
         skill01(actor.get('adaptability')),
+        skill01(actor.get('aggression')),
     )
 
 
@@ -180,25 +182,36 @@ def structural_pressure(hero_state, target_state):
         hero_state.get('stack_start_bb', 0.0),
         target_state.get('stack_start_bb', 0.0),
     )
-    return clamp01(vulnerable * cover * topology_safety(hero_state))
+    # vulnerability와 cover는 둘 다 필요한 게이트다. 둘을 곱하면 중간값끼리도
+    # 제곱처럼 작아져 자연상태에서 신호가 거의 0으로 붕괴했다.
+    # 약한 쪽이 병목이라는 의미의 min은 새 계수 없이 두 조건을 동시에 요구한다.
+    bottleneck = min(vulnerable, cover)
+    return clamp01(bottleneck * topology_safety(hero_state))
 
 
-def read_adjustment(read):
-    """기존 exploit read가 구조 prior를 위/아래로 보정하는 배수."""
+def read_adjustment(read, channel='generic'):
+    """기존 exploit read가 구조 prior를 위/아래로 보정하는 배수.
+
+    채널별로 이미 존재하는 상대 통계를 쓴다. 새 상대 성향을 만들지 않는다.
+    """
     if not read:
         return 1.0
     try:
         w = clamp01(read.get('w', 0.0))
-        gap = float(read.get('fold_gap', 0.0) or 0.0)
+        if channel == 'preflop_3bet':
+            gap = float(read.get('f2tb_gap', read.get('fold_gap', 0.0)) or 0.0)
+        else:
+            gap = float(read.get('fold_gap', 0.0) or 0.0)
     except (TypeError, ValueError):
         return 1.0
     return max(0.0, 1.0 + w * gap)
 
 
-def pressure_opportunity(hero_state, target_state, actor, read=None):
+def pressure_opportunity(hero_state, target_state, actor, read=None,
+                         read_channel='generic'):
     prior = structural_pressure(hero_state, target_state)
     theory = clamp01(prior * exploit_realization(actor))
-    adjust = read_adjustment(read)
+    adjust = read_adjustment(read, read_channel)
     final = clamp01(theory * adjust)
     return {
         'structural_pressure': round(prior, 6),
