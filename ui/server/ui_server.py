@@ -500,7 +500,10 @@ class H(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header(
+            'Access-Control-Allow-Headers',
+            'Content-Type, X-T2-Play-Key, X-T2-Client-Mode'
+        )
         self.send_header('Access-Control-Allow-Methods', 'GET, POST')
         self.end_headers()
 
@@ -530,6 +533,13 @@ class H(BaseHTTPRequestHandler):
             # 공개 관전 화면에서도 읽을 수 있는 sanitized 완료 핸드 기록.
             # 숨은 상대 hole / profiles / reads / intents 는 포함하지 않는다.
             return self._send(200, {'hands': _public_history()})
+        if path == '/play/':
+            self.send_response(302)
+            self.send_header('Location', '/play')
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
+
         if path.startswith('/play/'):
             supplied = urllib.parse.unquote(
                 path[len('/play/'):]
@@ -583,8 +593,19 @@ class H(BaseHTTPRequestHandler):
             body = self._body()
         except ValueError:
             return self._send(400, {'error': 'JSON 파싱 실패'})
-        if self.path in ('/api/new', '/api/step', '/api/memo') and not self._can_play():
-            return self._send(403, {'error': '관전 모드에서는 게임을 조작할 수 없습니다'})
+        mutating = self.path in ('/api/new', '/api/step', '/api/memo')
+
+        # 같은 브라우저가 예전에 /play 인증을 받아 t2_play 쿠키를 가지고 있어도
+        # /watch 페이지에서는 절대 상태 변경 API를 실행하지 못하게 한다.
+        # 쿠키는 "누가 플레이어인가", 이 헤더는 "현재 어느 UI 모드인가"를 가른다.
+        if mutating and self.headers.get('X-T2-Client-Mode') != 'play':
+            return self._send(
+                403,
+                {'error': '관전 페이지에서는 게임을 조작할 수 없습니다'}
+            )
+
+        if mutating and not self._can_play():
+            return self._send(403, {'error': '플레이어 인증이 필요합니다'})
 
         with LOCK:
             try:

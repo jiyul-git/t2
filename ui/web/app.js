@@ -186,7 +186,8 @@ function memoSet(pid, txt) {
   memoLocalSet(k, val);
 
   const headers = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'X-T2-Client-Mode': WATCH_MODE ? 'watch' : 'play'
   };
   if (PLAY_KEY) headers['X-T2-Play-Key'] = PLAY_KEY;
 
@@ -3210,6 +3211,11 @@ function newGameFormHTML() {
 }
 
 function startNew() {
+  if (WATCH_MODE) {
+    toast('관전 모드에서는 새 게임을 시작할 수 없습니다');
+    return;
+  }
+
   // 새 게임 시작을 확정하면 설정/확인 창부터 닫는다.
   hideOverlay();
   clearTimeout(S.autoTimer); S.autoTimer = null;
@@ -3307,7 +3313,8 @@ async function req(path, body) {
     ? { method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-T2-Play-Key': PLAY_KEY
+          'X-T2-Play-Key': PLAY_KEY,
+          'X-T2-Client-Mode': WATCH_MODE ? 'watch' : 'play'
         },
         body: JSON.stringify(body) }
     : {};
@@ -3365,8 +3372,8 @@ async function call(path, body, msg) {
  *
  * 예전에는 바로 보냈고, 그러면 응답이 와서 stopReplay 가 남은 봇 액션 재생을
  * 끊어버렸다 — 앞사람들이 뭘 했는지 못 보고 화면이 건너뛰었다.
- * 이제는 재생이 끝나는 순간(finalFrame)에 보낸다. 화면을 누르면 재생을
- * 건너뛸 수 있으므로, 급하면 두 번 누르면 바로 진행된다.
+ * 이제는 재생이 끝나는 순간(finalFrame)에 보낸다. 테이블 터치로 재생을
+ * 건너뛰는 동작은 두지 않는다.
  *
  * '다음 핸드'(action === null)는 예약하지 않는다. 그건 결과 화면에서 누르는
  * 것이라 재생 중일 수가 없다.
