@@ -15,6 +15,18 @@ def pct(x):
     return '%.1f%%' % (100*x)
 
 
+def quant(xs, p):
+    xs = sorted(x for x in xs if x is not None)
+    if not xs:
+        return None
+    i = min(len(xs)-1, max(0, int((len(xs)-1)*p)))
+    return xs[i]
+
+
+def sig(r, key):
+    return (r.get('money_signals') or {}).get(key)
+
+
 def stage(r):
     rem, itm = r.get('remaining'), r.get('itm')
     if not rem or not itm:
@@ -87,6 +99,47 @@ def main():
     rows = load(args.path)
 
     print('rows', len(rows))
+
+    if any(r.get('money_signals') for r in rows):
+        print('\n[money-pressure signal quantiles p10 / p50 / p90]')
+        for k in ('payout_importance', 'ladder_buffer', 'waiting_feasibility',
+                  'self_preservation_objective', 'self_preservation',
+                  'urgency_objective', 'urgency', 'commitment_budget'):
+            xs=[sig(r,k) for r in rows if sig(r,k) is not None]
+            if xs:
+                print(' %-30s %.3f / %.3f / %.3f' %
+                      (k, quant(xs,.10), quant(xs,.50), quant(xs,.90)))
+
+        print('\n[signals by stage: means]')
+        for st in ('pre','approach','bubble','itm','final9'):
+            rr=[r for r in rows if stage(r)==st and r.get('money_signals')]
+            if not rr:
+                continue
+            def avg(k):
+                xs=[sig(r,k) for r in rr if sig(r,k) is not None]
+                return sum(xs)/len(xs) if xs else 0.0
+            print(' %-10s n=%-5d preserve=%.3f urgency=%.3f commit=%.3f' %
+                  (st, len(rr), avg('self_preservation'),
+                   avg('urgency'), avg('commitment_budget')))
+
+        face=[r for r in rows if r.get('facing_pressure')]
+        if face:
+            print('\n[facing pressure quantiles]')
+            for k in ('structural_pressure','theory_pressure',
+                      'read_adjustment','pressure_opportunity'):
+                xs=[r['facing_pressure'].get(k) for r in face
+                    if r['facing_pressure'].get(k) is not None]
+                if xs:
+                    print(' %-30s %.3f / %.3f / %.3f' %
+                          (k, quant(xs,.10), quant(xs,.50), quant(xs,.90)))
+
+        lcp=[r.get('low_commit_pressure') for r in rows
+             if r.get('low_commit_pressure') is not None]
+        if lcp:
+            print('\n[low-commit pressure]')
+            print(' p10/p50/p90 %.3f / %.3f / %.3f' %
+                  (quant(lcp,.10), quant(lcp,.50), quant(lcp,.90)))
+
     print('\n[stage x stack percentile]')
     for st in ('approach', 'bubble', 'itm', 'final9'):
         for sb in ('top20%', 'upper-mid', 'lower-mid', 'bottom20%'):
