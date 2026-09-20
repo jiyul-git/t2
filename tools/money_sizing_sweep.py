@@ -158,6 +158,8 @@ def main():
             fp.write(json.dumps(r, ensure_ascii=False) + '\n')
 
     violations = []
+    if not all_rows:
+        violations.append('no near-ladder sizing rows were collected')
     skill_strict = 0
     skill_equal = 0
     skill_deltas = []
