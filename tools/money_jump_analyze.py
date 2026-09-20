@@ -27,6 +27,20 @@ def sig(r, key):
     return (r.get('money_signals') or {}).get(key)
 
 
+def target_pressures(r):
+    out=[]
+    for t in (r.get('target_signals') or []):
+        p=(t.get('pressure') or {}).get('pressure_opportunity')
+        if p is not None:
+            out.append((float(p), t))
+    return out
+
+
+def max_target_pressure(r):
+    xs=target_pressures(r)
+    return max((x[0] for x in xs), default=0.0)
+
+
 def stage(r):
     rem, itm = r.get('remaining'), r.get('itm')
     if not rem or not itm:
@@ -143,6 +157,64 @@ def main():
             print('\n[low-commit pressure]')
             print(' p10/p50/p90 %.3f / %.3f / %.3f' %
                   (quant(lcp,.10), quant(lcp,.50), quant(lcp,.90)))
+
+    print('\n[unopened target-pressure diagnostics]')
+    unopened=[r for r in rows
+              if r.get('street')=='preflop'
+              and r.get('decision_kind')=='unopened'
+              and r.get('target_signals')]
+    for st in ('pre','approach','bubble','itm','final9'):
+        rr=[r for r in unopened if stage(r)==st]
+        if not rr:
+            continue
+        ps=[max_target_pressure(r) for r in rr]
+        lcp=[float(r.get('low_commit_pressure') or 0.0) for r in rr]
+        cov=[r for r in rr if any(t.get('i_cover') for _,t in target_pressures(r))]
+        safe=[r for r in cov if (r.get('covered_by_yet_to_act') or 0)==0]
+        def _avg(xs):
+            return sum(xs)/len(xs) if xs else 0.0
+        print(' %-10s n=%-4d maxTarget p50/p90=%.3f/%.3f'
+              ' lowCommit p50/p90=%.3f/%.3f coverAny=%d safeCover=%d' %
+              (st, len(rr), quant(ps,.50), quant(ps,.90),
+               quant(lcp,.50), quant(lcp,.90), len(cov), len(safe)))
+
+    near_open=[r for r in unopened
+               if stage(r) in ('approach','bubble','itm','final9')]
+    if near_open:
+        print('\n[near-ladder unopened pressure examples]')
+        ranked=sorted(near_open, key=max_target_pressure, reverse=True)[:12]
+        for r in ranked:
+            pts=sorted(target_pressures(r), key=lambda x:x[0], reverse=True)
+            p,t=pts[0] if pts else (0.0,{})
+            ms=r.get('money_signals') or {}
+            print(' H%s %s %s rem=%s/%s stack=%sbb'
+                  ' preserve=%.3f urgency=%.3f commit=%.3f'
+                  ' target=%s:%sbb cover=%s p=%.3f lowCommit=%.3f act=%s' %
+                  (r.get('hand_no'), r.get('street'), r.get('pos'),
+                   r.get('remaining'), r.get('itm'), r.get('stack_start_bb'),
+                   float(ms.get('self_preservation') or 0.0),
+                   float(ms.get('urgency') or 0.0),
+                   float(ms.get('commitment_budget') or 0.0),
+                   t.get('pos'), t.get('stack_bb'), t.get('i_cover'),
+                   p, float(r.get('low_commit_pressure') or 0.0),
+                   r.get('action')))
+
+    print('\n[facing-pressure conditioned]')
+    faced=[r for r in rows if r.get('facing_pressure')]
+    for name, filt in (
+        ('hero covers aggressor', lambda r: (r.get('facing_target') or {}).get('i_cover')),
+        ('aggressor covers hero', lambda r: (r.get('facing_target') or {}).get('covers_me')),
+    ):
+        rr=[r for r in faced if filt(r)]
+        if rr:
+            ps=[float((r.get('facing_pressure') or {}).get('pressure_opportunity') or 0.0)
+                for r in rr]
+            ad=[float((r.get('facing_pressure') or {}).get('read_adjustment') or 1.0)
+                for r in rr]
+            print(' %-24s n=%-5d pressure p50/p90=%.3f/%.3f'
+                  ' readAdj min/max=%.4f/%.4f' %
+                  (name, len(rr), quant(ps,.50), quant(ps,.90),
+                   min(ad), max(ad)))
 
     print('\n[stage x stack percentile]')
     for st in ('approach', 'bubble', 'itm', 'final9'):
