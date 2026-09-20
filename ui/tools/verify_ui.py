@@ -342,7 +342,7 @@ def main():
           % (args.entries, args.seed, time.time() - t0))
     for k in ('hands', 'results', 'decisions', 'walks', 'showdowns',
               'chip_checks', 'chip_bad', 'leak_hands_checked',
-              'legal_violations', 'err_checked'):
+              'legal_violations', 'err_checked', 'watch_blocked'):
         if k in stats: print('  %-18s %s' % (k, stats[k]))
     print('  %-18s 중앙 %s / 최대 %s 초'
           % ('지연(진행 중)', stats.get('lat_mid_med'), stats.get('lat_mid_max')))
