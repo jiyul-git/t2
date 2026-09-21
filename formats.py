@@ -35,7 +35,7 @@ FORMATS = {
         name='표준',
         start_bb=150, hpl=12, blind_mult=1.0, ante_from=2,
         buyin_level=1.0, itm_frac=0.15, payout_flat=0.0,
-        reentry=False, seats=8),
+        reentry=False, seats=9),
 
     'turbo': dict(
         name='터보',
