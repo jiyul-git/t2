@@ -23,7 +23,7 @@
   ① 방향 불일치  ② Holm 후 유의 없음  ③ CI 가 0 포함  ④ split-half 미재현
 """
 import os, sys, argparse, math, random, statistics as stat, collections, json
-from logkeys import oop_of
+from logkeys import oop_field_of
 import multiprocessing as mp
 
 D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -172,7 +172,8 @@ def build(entries, hpl, stack, seeds, jobs, half_min):
             obs['_ALL'][k].append(1.0 if r['plan'] == 'pot_control' else 0.0)
             # 상황 공변량 (플레이어별 평균)
             situ['n_opp'][k].append(float(r.get('n_opp') or 1))
-            _oopv = oop_of(r)
+            # f_trace 레코드의 포지션은 update_plan 이 받은 field 식이다.
+            _oopv = oop_field_of(r)
             if _oopv is not None: situ['oop'][k].append(1.0 if _oopv else 0.0)
             if r.get('rel') is not None: situ['rel'][k].append(float(r['rel']))
 

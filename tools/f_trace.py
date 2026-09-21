@@ -116,7 +116,9 @@ def run_one(args):
             'f': tr.get('p'),
             'roll': tr.get('roll'),
             'bet': 1 if it.get('act') == 'bet' else 0,
-            'n_opp': n_opp, 'oop': bool(oop), 'init': bool(initiative),
+            # 키 이름이 의미다. attach_intent 의 이 인자는 session 이 넘긴
+            # oop_field 이고, 아카이브의 `oop`(절대식)와 **다른 값**이다.
+            'n_opp': n_opp, 'oop_field': bool(oop), 'init': bool(initiative),
             'rel': tr.get('rel'),
         })
         return out
