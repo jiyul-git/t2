@@ -55,6 +55,10 @@ def check_format_capacity():
     assert f.max_seat == 9, f.max_seat
     assert len(f.tables) == math.ceil(100 / 9), len(f.tables)
     assert all(len(tb.seats) == 9 for tb in f.tables.values())
+    sizes = sorted(tb.n() for tb in f.tables.values())
+    assert sizes[0] >= 2, sizes
+    assert sizes[-1] - sizes[0] <= 1, sizes
+    assert sum(sizes) == 100, sizes
     assert all(tb.n() <= 9 for tb in f.tables.values())
 
     main = FS.Field(entries=100, seed=99002, fmt='main')
@@ -65,6 +69,13 @@ def check_format_capacity():
     assert deep.max_seat == 8
     assert len(deep.tables) == math.ceil(17 / 8)
     assert all(len(tb.seats) == 8 for tb in deep.tables.values())
+
+
+def check_balance_boundary():
+    f = FS.Field(entries=10, seed=99006, fmt='standard')
+    active = [tb.n() for tb in f.tables.values() if tb.n() > 0]
+    assert len(active) == 2, active
+    assert max(active) - min(active) <= 1, active
 
 
 def check_final_table_break():
@@ -120,16 +131,35 @@ def check_live_roundtrip():
     assert all(tb.max_seat == 9 for tb in f2.tables.values())
     assert all(len(tb.seats) == 9 for tb in f2.tables.values())
 
+    # Legacy dump: old standard games had eight physical seat slots and no
+    # max_seat key.  Restoring them must not silently convert them to 9-max.
+    legacy = live2._dump(FS.Field(entries=16, seed=99007, fmt='deep'))
+    legacy.pop('max_seat', None)
+    for tv in legacy['tables'].values():
+        tv['seats'] = list(tv['seats'][:8])
+    old = live2._load_field(legacy)
+    assert old.max_seat == 8
+    assert all(tb.max_seat == 8 for tb in old.tables.values())
+    assert all(len(tb.seats) == 8 for tb in old.tables.values())
+
+    # Current 8-max formats must also round-trip without being widened.
+    deep = FS.Field(entries=16, seed=99008, fmt='deep')
+    deep2 = live2._load_field(live2._dump(deep))
+    assert deep2.max_seat == 8
+    assert all(tb.max_seat == 8 for tb in deep2.tables.values())
+    assert all(len(tb.seats) == 8 for tb in deep2.tables.values())
+
 
 def main():
     check_orders()
     check_format_capacity()
+    check_balance_boundary()
     check_final_table_break()
     check_one_hand_each_n()
     check_live_roundtrip()
     print('PASS 9-max structural verification')
-    print('standard=9, main=9, deep=8; final 9 -> one table; positions 2..9 explicit')
-    print('one bot hand completed without engine errors for every table size 2..9')
+    print('standard=9, main=9, deep=8; initial fields balanced; final 9 -> one table')
+    print('positions 2..9 explicit; one bot hand completed for every size; legacy 8-slot restore PASS')
     return 0
 
 
