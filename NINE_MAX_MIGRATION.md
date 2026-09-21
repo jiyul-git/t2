@@ -62,11 +62,14 @@ prevents cases such as 100 entries at 9-max from producing an initial
 ## Initial balance scope
 
 The pre-first-hand balance pass applies to every format, not only 9-max.
-Its purpose is format-independent: a remainder table with one player must not
-skip the first hand.  Therefore alternate 8-max formats can also have a
-different initial table distribution than the historical behavior (for example,
-17 entries no longer start as 8/8/1).  This is intentional and should be treated
-as a behavioral baseline change for those formats as well.
+Its purpose is format-independent: the field should begin already balanced
+(maximum table-size difference at most one), rather than waiting until after the
+first hand.  This both prevents lone remainder tables from skipping a hand and
+also redistributes less-extreme remainders.  Therefore alternate 8-max formats
+can also have a different initial table distribution than the historical
+behavior (for example, 17 entries no longer start as 8/8/1, and other uneven
+starts can also be equalised).  This is intentional and should be treated as a
+behavioral baseline change for those formats as well.
 
 Initial equalisation is setup, not an in-tournament table move.  It must not
 increment `hero_moves` or emit a table-move note.
