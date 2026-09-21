@@ -32,6 +32,10 @@ Fresh seeds: **93000..93019** inclusive.
 
 Tool: `tools/money_sizing_batch.py`.
 
+Locked invocation includes `--require-position UTG+2`; absence of a qualifying
+UTG+2 row is therefore a nonzero structural failure, not a manual post-hoc
+inspection.
+
 Required mechanical conditions:
 1. zero engine errors / child failures;
 2. at least one qualifying row;
@@ -62,8 +66,10 @@ Required harness conditions on every changed row:
 1. same preflop log prefix before intervention;
 2. same baseline proposed raise-to target;
 3. same RNG state immediately before the intercepted apply;
-4. identical dealt cards / hand hash in baseline and counterfactual;
-5. intervention pinned to the original preflop Round only;
+4. immutable dealt-card/hash signature captured before replay is unchanged
+   through the counterfactual replay;
+5. the first betting Round must have the exact expected preflop seat order,
+   and intervention is pinned to that Round object only;
 6. interception used exactly once;
 7. counterfactual log records exactly the registered raise-to target;
 8. table chips conserved in baseline and counterfactual;
@@ -104,7 +110,14 @@ Uncertainty:
 - use the tool's fixed 10,000-replicate seed-level percentile bootstrap;
 - report the number of seed clusters and the interval.
 
-Interpretation is locked:
+Validity is checked before interpretation.  **Any** engine error, batch child
+failure, global harness error, or row-level harness error in Phase C invalidates
+the entire confirmatory run.  In that case any printed means or bootstrap
+intervals are diagnostic only and must not be interpreted for promotion; the
+tool prints `INVALID` and exits nonzero.  The confirmatory seeds may be rerun
+only after the harness defect is fixed and independently reviewed.
+
+If and only if the run is valid, interpretation is locked:
 - interval wholly below 0: evidence against sizing promotion;
 - interval wholly above 0: chip-EV evidence supporting promotion;
 - interval overlapping 0: **INCONCLUSIVE**, not evidence of no effect.
@@ -133,3 +146,26 @@ measurement using `icm.icm_equity` on the **entire remaining field stack
 vector**, never `table_bf` on a partial table.
 
 No 10+ player $EV proxy formula will be invented.
+
+
+## Locked commands
+
+Structural Phase S:
+
+    python3 -u tools/money_sizing_batch.py \
+      --entries 100 --rounds 260 --until-remaining 8 --fmt standard \
+      --seed-start 93000 --seeds 20 --workers 2 \
+      --require-position UTG+2 \
+      --workdir money_sizing_9max_struct_93000 \
+      --out money_sizing_9max_struct.jsonl
+
+Pilot Phase P uses 93050..93053 only.  Running one pilot seed first is allowed
+because all pilot seeds are excluded from Phase C.
+
+Confirmatory Phase C:
+
+    python3 -u tools/money_sizing_cf_batch.py \
+      --entries 100 --rounds 260 --until-remaining 8 --fmt standard \
+      --seed-start 93100 --seeds 40 --workers 2 \
+      --workdir money_sizing_9max_cf_93100 \
+      --out money_sizing_9max_cf_all.jsonl
