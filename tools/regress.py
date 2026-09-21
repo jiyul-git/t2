@@ -10,7 +10,7 @@ import sys, os, json, hashlib, collections
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import tourney as T
 
-BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'baseline.json')
+BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'baseline_9max.json')
 SEEDS = list(range(3000, 3006))
 HANDS = 30
 
