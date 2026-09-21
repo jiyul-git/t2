@@ -80,6 +80,15 @@ def main():
                                         if p9.index(x) > p9.index('BB')]) is False,
        '뒤가 전원 올인')
     ok('A10', SE.oop_field(p9, 'BTN') is False, 'BTN 은 항상 IP')
+    # edge: 액션 불가 좌석이 뒤에 있어도 '뒤에 액션할 사람'이 아니다
+    ok('A11', SE.oop_field(p2, 'BB', (), ('SB',)) is False,
+       '헤즈업에서 뒤 한 명이 올인')
+    ok('A12', SE.oop_field(p9, 'HJ', ('CO',), ('BTN',)) is False,
+       '뒤는 폴드·올인뿐, 앞에만 행동 가능한 상대')
+    ok('A13', SE.oop_field(p9, 'SB', keep({'SB', 'BB'}), ('BB',)) is False,
+       'actor 자신이 마지막 행동 가능자')
+    ok('A14', SE.oop_field(p9, 'SB', keep({'SB', 'BB'})) is True,
+       '같은 상황에서 뒤가 올인이 아니면 True (A13 대조군)')
 
     print('=== C. 불변식 ===')
     ok('C1', all(SE.oop_field(POST(n), POST(n)[-1]) is False for n in range(2, 10)),
@@ -107,6 +116,12 @@ def main():
             ctx = {'field': SE.oop_field(order, s, r2.folded, r2.allin),
                    'vs_aggr': SE.oop_vs(order, s, ag) if live_ag else None,
                    'legacy': h.POST.index(h.pos[s]) < 3}
+            # 어그레서가 폴드했거나 올인이면 '그보다 먼저 액션하는가'는 성립하지
+            # 않는다 — 그때 vs_aggr 이 None 인지를 실제 엔진 상태로 확인한다.
+            if ag is not None and ag != s and ag in order:
+                ctx['ag_dead'] = (ag in r2.folded or ag in r2.allin)
+            else:
+                ctx['ag_dead'] = None
         rec.append({'a': copy.deepcopy(a), 'k': copy.deepcopy(k), 'ctx': ctx})
         return orig(*a, **k)
 
@@ -162,6 +177,9 @@ def main():
                 unexplained += 1
         if (o_n != n_n) and not outd:
             cnt_only += 1
+    dead = [r['ctx'] for r in rec if r['ctx'] and r['ctx'].get('ag_dead')]
+    ok('A15', all(c['vs_aggr'] is None for c in dead),
+       '어그레서가 폴드·올인인 실제 결정 %d건에서 vs_aggr 이 None' % len(dead))
     ok('B1a', pairs > 0, '재생한 결정 %d건' % pairs)
     ok('B1b', diffs > 0, '출력이 달라진 결정 %d건' % diffs)
     ok('B1c', unexplained == 0, '바뀐 플래그 없이 출력만 달라진 건 %d' % unexplained)
