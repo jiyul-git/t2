@@ -134,6 +134,7 @@ def check_live_roundtrip():
     # Legacy dump: old standard games had eight physical seat slots and no
     # max_seat key.  Restoring them must not silently convert them to 9-max.
     legacy = live2._dump(FS.Field(entries=16, seed=99007, fmt='deep'))
+    legacy['fmt'] = 'standard'   # old standard was 8-max; current standard is 9-max
     legacy.pop('max_seat', None)
     for tv in legacy['tables'].values():
         tv['seats'] = list(tv['seats'][:8])
