@@ -26,7 +26,7 @@ migration 하지 않고 원본을 고치지 않는다.
 보증하지 않는다. `tools/reachability.py` 의 selfcheck, `verify_tool_contracts`
 의 selftest 와 같은 원칙이다.
 """
-import argparse, ast, collections, glob, json, os, sys
+import argparse, ast, collections, glob, hashlib, json, os, shutil, sys, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -258,16 +258,152 @@ def scan_archives(patterns, limit=4000):
     return rows
 
 
+# ---------------------------------------------------------------- G · scratch
+
+# 고정 시드 목록. **결과를 본 뒤에 고르지 않는다.** 순서대로 훑어
+# 처음으로 G3 intent 가 나오는 시드에서 멈춘다. 다 실패하면 실패로 보고한다.
+SCRATCH_SEEDS = (770001, 770002, 770003, 770004, 770005)
+SCRATCH_HANDS = 6
+SCRATCH_ENTRIES = 18
+
+
+def check_generations():
+    """G0/G1/G2/G3 분류기 음성 대조."""
+    print('=== G. 세대 분류기 (G0/G1/G2/G3) ===')
+    cases = [
+        ('G0-빈', {}, 'G0'),
+        ('G0-최소', {'plan': 'giveup', 'rel': 0.3, 'why': []}, 'G0'),
+        ('G1-실행', {'plan': 'giveup', 'amt': 100}, 'G1'),
+        ('G1-retired', {'intent_act': 'bet', 'replayed': True}, 'G1'),
+        ('G2-legacy', {'oop': True}, 'G2'),
+        ('G2-실행있음', {'oop': False, 'amt': 1}, 'G2'),
+        ('G3-field', {'oop_field': False}, 'G3'),
+        ('G3-None값', {'oop_vs_aggr': None}, 'G3'),
+        ('G3-혼재', {'oop': True, 'oop_legacy_abs': True}, 'G3'),
+    ]
+    for name, rec, want in cases:
+        ok(name, LK.archive_generation(rec) == want,
+           '%s' % LK.archive_generation(rec))
+    # G0/G1 에서 포지션을 복원하면 안 된다
+    ok('G0 복원 없음', LK.position_recoverable({'plan': 'x'}) == ())
+    ok('G1 복원 없음', LK.position_recoverable({'amt': 1}) == ())
+    ok('G2 복원=절대식', LK.position_recoverable({'oop': True})
+       == ('oop_legacy_abs',))
+    ok('retired 등록', set(LK.RETIRED_KEYS) == {'replayed', 'oop'},
+       '%s' % sorted(LK.RETIRED_KEYS))
+    ok('retired 탐지', LK.retired_in({'replayed': 1, 'oop': True})
+       == ('oop', 'replayed'))
+
+
+def check_scratch_g3():
+    """현재 producer → 파일 → reader 를 scratch 에서 한 번 통과시킨다.
+
+    live2 는 쓰지 않는다 — `_SUFFIX` 격리 문제 때문에 저장소 아카이브에
+    섞일 수 있다 (A9-W). `collect.run_one` 을 임시 디렉터리에만 쓴다.
+    """
+    print('=== G3. 현재 세대 end-to-end (scratch) ===')
+    before = _archive_digest()
+    sys.path.insert(0, os.path.join(ROOT, 'tools'))
+    import collect as CO
+
+    tmp = tempfile.mkdtemp(prefix='t2_g3_')
+    try:
+        used = None
+        recs = []
+        for sd in SCRATCH_SEEDS:
+            try:
+                recs = CO.run_one(sd, entries=SCRATCH_ENTRIES,
+                                  max_hands=SCRATCH_HANDS)
+            except Exception as e:
+                print('  시드 %d: 실행 실패 %s' % (sd, type(e).__name__))
+                continue
+            has = any(LK.archive_generation(it) == 'G3'
+                      for r in recs for it in (r.get('intents') or []))
+            print('  시드 %d: 핸드 %d, G3 intent %s'
+                  % (sd, len(recs), '있음' if has else '없음'))
+            if has:
+                used = sd
+                break
+        ok('G3 시드 발견', used is not None,
+           '고정 목록 %s 중 %s' % (list(SCRATCH_SEEDS), used))
+        if used is None:
+            return
+
+        path = os.path.join(tmp, 'scratch_current.jsonl')
+        with open(path, 'w', encoding='utf-8') as fh:
+            for r in recs:
+                fh.write(json.dumps(r, ensure_ascii=False, default=str) + '\n')
+
+        # --- 읽어 되돌린다 ---
+        back = [json.loads(l) for l in open(path, encoding='utf-8') if l.strip()]
+        its = [it for r in back for it in (r.get('intents') or [])
+               if isinstance(it, dict)]
+        gens = collections.Counter(LK.archive_generation(it) for it in its)
+        g3 = [it for it in its if LK.archive_generation(it) == 'G3']
+        ok('write→read 세대', gens.get('G3', 0) > 0, '%s' % dict(gens))
+        ok('legacy oop 미발명', not any(LK.has_key(it, 'oop') for it in its),
+           '현재 producer 는 `oop` 를 쓰지 않는다')
+
+        # 세 값이 보존되는가. False / None / True 가 각각 있어야 의미가 있다.
+        f_vals = collections.Counter(repr(LK.oop_field_of(it)) for it in g3)
+        v_vals = collections.Counter(repr(LK.oop_vs_aggr_of(it)) for it in g3)
+        l_vals = collections.Counter(repr(LK.oop_legacy_abs_of(it)) for it in g3)
+        print('  oop_field      %s' % dict(f_vals))
+        print('  oop_vs_aggr    %s' % dict(v_vals))
+        print('  oop_legacy_abs %s' % dict(l_vals))
+        ok('False 보존', 'False' in f_vals or 'False' in l_vals)
+        ok('True 보존', 'True' in f_vals or 'True' in l_vals)
+        ok('None 보존', 'None' in v_vals,
+           'oop_vs_aggr 은 어그레서가 없으면 None 이다')
+        ok('field 는 bool', all(LK.oop_field_of(it) in (True, False)
+                                for it in g3))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    after = _archive_digest()
+    ok('저장소 아카이브 불변', before == after,
+       '%d파일' % len(before))
+
+
+def _archive_digest():
+    """저장소의 jsonl 을 (경로, 크기, sha256) 로 찍는다."""
+    out = {}
+    for f in sorted(glob.glob(os.path.join(ROOT, '*.jsonl'))):
+        h = hashlib.sha256()
+        with open(f, 'rb') as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b''):
+                h.update(chunk)
+        out[os.path.basename(f)] = (os.path.getsize(f), h.hexdigest())
+    return out
+
+
+# collected.jsonl 의 성질. producer 계약은 이번에 바꾸지 않는다.
+COLLECTED_NOTE = {
+    'producer': 'tools/collect.py:86  mode=\'w\' — 실행마다 **덮어쓴다**',
+    'status': 'scratch dataset. canonical archive 가 아니다',
+    'consumers': ('tools/ctx_bonly.py', 'tools/cf_B.py', 'tools/cf_hassd.py',
+                  'tools/tag_draws.py', 'tools/delta_var.py',
+                  'tools/deviate_ev.py', 'tools/money_sizing_batch.py',
+                  'tools/money_sizing_sweep.py'),
+    'collected2.jsonl': 'tools/implied.py:57 이 읽지만 **producer 가 없다**. '
+                        '임의로 만들거나 alias 하지 않는다',
+}
+
+
 # ---------------------------------------------------------------- main
 
 def main():
     ap = argparse.ArgumentParser(description='결정 기록 스키마 계약 검사 (A7)')
     ap.add_argument('--archives', action='append', default=None,
                     help='아카이브 glob. 여러 번 줄 수 있다')
+    ap.add_argument('--no-scratch', action='store_true',
+                    help='G3 end-to-end scratch 검증을 건너뛴다')
     a = ap.parse_args()
     pats = a.archives or ['*.jsonl']
 
     check_accessors()
+    print()
+    check_generations()
     print()
     print('=== C. 저장소 안의 generic 접근자 ===')
     check_no_generic_callers()
@@ -324,6 +460,18 @@ def main():
           ' 과거에 기록된 적이 없다')
 
     print()
+    print('=== collected.jsonl (계약 변경 없음, 기록만) ===')
+    for k in ('producer', 'status', 'collected2.jsonl'):
+        print('  %-18s %s' % (k, COLLECTED_NOTE[k]))
+    print('  %-18s %d개' % ('consumers', len(COLLECTED_NOTE['consumers'])))
+    for c in COLLECTED_NOTE['consumers']:
+        print('      %s' % c)
+
+    print()
+    if not a.no_scratch:
+        check_scratch_g3()
+        print()
+
     if FAILS:
         print('FAIL %d : %s' % (len(FAILS), ', '.join(FAILS)))
         return 1
