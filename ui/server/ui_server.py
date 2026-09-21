@@ -202,7 +202,12 @@ def _public_history():
     # 엔진 상태의 namespace 를 그대로 따른다. UI 전용 아카이브를 만들지
     # 않는다. 예전에는 접미사 없는 이름을 고정으로 읽어서, T2_LIVE_STATE 를
     # 쓰는 세션을 띄우면 **다른 상태의 아카이브**를 보고 있었다.
-    fn, _src = _SP.resolve_read('archive')
+    # 엔진 상태의 namespace 를 그대로 따른다. 옛 공유 `_alt` 는 **쓰지
+    # 않는다** — 과거에는 모든 custom state 가 그 한 파일에 썼으므로 다른
+    # 세션의 핸드가 섞여 있을 수 있다. 현재 핸드 기록에 섞어 보여주면
+    # 화면상 구분이 불가능해진다.
+    _r = _SP.resolve_read('archive')
+    fn = _r['path']
 
     if not fn:
         return []

@@ -182,15 +182,20 @@ def check_ui_and_legacy():
         leg = SP.legacy_path('archive')
         open(leg, 'w').write('{}\n')
         before = os.path.getsize(leg), os.path.getmtime(leg)
-        p, src_kind = SP.resolve_read('archive', st)
-        ok('legacy 발견', p == leg and src_kind == 'legacy_alt',
-           '%s / %s' % (_base(p or ''), src_kind))
+        r = SP.resolve_read('archive', st)
+        ok('legacy 발견', r['legacy_path'] == leg
+           and r['source'] == SP.SRC_LEGACY_AMBIGUOUS, r['source'])
+        ok('opt-in 없이 path 없음', r['path'] is None and not r['usable'],
+           '주인을 단정하지 않는다')
+        r_in = SP.resolve_read('archive', st, allow_legacy_alt=True)
+        ok('opt-in 시 읽기 허용', r_in['path'] == leg and r_in['usable'])
         w = SP.sidecar_path('archive', st)
         ok('쓰기는 hashed', SP.LEGACY_SUFFIX not in _base(w), _base(w))
         # hashed 가 생기면 그쪽이 current
         open(w, 'w').write('{}\n')
-        p2, k2 = SP.resolve_read('archive', st)
-        ok('hashed 우선', p2 == w and k2 == 'current', k2)
+        r2 = SP.resolve_read('archive', st)
+        ok('hashed 우선', r2['path'] == w and r2['source'] == SP.SRC_CURRENT,
+           r2['source'])
         ok('legacy 불변', (os.path.getsize(leg), os.path.getmtime(leg)) == before,
            'rename/copy/migrate 하지 않는다')
 
@@ -210,6 +215,81 @@ def check_ui_and_legacy():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def check_ambiguous_ownership():
+    """K·L·M. 옛 공유 `_alt` 는 **주인을 알 수 없다.**
+
+    과거에는 custom state 가 무엇이든 전부 같은 `_alt` 에 썼다. A 에
+    hashed 가 없다는 이유로 그 파일을 A 의 과거 기록으로 읽으면 **B 의
+    기록을 A 의 것으로** 제시하게 된다.
+    """
+    print('=== K·L·M. 공유 legacy 의 소유권 모호성 ===')
+    tmp = tempfile.mkdtemp(prefix='t2_amb_')
+    old_d, old_def = SP.D, SP.DEFAULT_STATE
+    try:
+        SP.D = tmp
+        SP.DEFAULT_STATE = os.path.join(tmp, 'live2_state.json')
+        a = os.path.join(tmp, 'A', 'state.json')
+        b = os.path.join(tmp, 'B', 'state.json')
+        leg = SP.legacy_path('archive')
+        open(leg, 'w').write('{"hand_no": 1}\n')
+        snap = (os.path.getsize(leg), os.path.getmtime(leg))
+
+        # K — 둘 다 모호로 분류되고, 둘 다 자동으로 읽지 않는다
+        ra, rb = SP.resolve_read('archive', a), SP.resolve_read('archive', b)
+        ok('K: A 모호', ra['source'] == SP.SRC_LEGACY_AMBIGUOUS, ra['source'])
+        ok('K: B 모호', rb['source'] == SP.SRC_LEGACY_AMBIGUOUS, rb['source'])
+        ok('K: 자동 소비 없음', ra['path'] is None and rb['path'] is None)
+        ok('K: 존재는 노출', ra['legacy_path'] == leg == rb['legacy_path'])
+        ok('K: 설명 있음', bool(ra['note']))
+
+        # L — opt-in 을 명시해야만 읽힌다
+        ia = SP.resolve_read('archive', a, allow_legacy_alt=True)
+        ok('L: opt-in 허용', ia['path'] == leg and ia['usable'])
+        ok('L: 기본은 불가', SP.read_path('archive', a) is None)
+        ok('L: legacy 불변',
+           (os.path.getsize(leg), os.path.getmtime(leg)) == snap)
+
+        # M — A 만 hashed 를 만들면 B 는 여전히 모호하고 A 것을 못 읽는다
+        wa = SP.sidecar_path('archive', a)
+        open(wa, 'w').write('{"hand_no": 9}\n')
+        ra2, rb2 = SP.resolve_read('archive', a), SP.resolve_read('archive', b)
+        ok('M: A 는 current', ra2['path'] == wa
+           and ra2['source'] == SP.SRC_CURRENT, ra2['source'])
+        ok('M: B 는 여전히 모호', rb2['source'] == SP.SRC_LEGACY_AMBIGUOUS,
+           rb2['source'])
+        ok('M: B 가 A 를 안 읽음', rb2['path'] != wa
+           and SP.resolve_read('archive', b, allow_legacy_alt=True)['path'] != wa)
+    finally:
+        SP.D, SP.DEFAULT_STATE = old_d, old_def
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# `resolve_read` 결과에서 출처를 보지 않고 경로만 쓰는 호출부가 없어야 한다.
+READERS = ('review.py', 'audit.py', os.path.join('ui', 'server', 'ui_server.py'))
+
+
+def check_callers_read_source():
+    print('=== 호출부가 출처를 보는가 ===')
+    import re
+    for rel in READERS:
+        src = open(os.path.join(ROOT, rel), encoding='utf-8').read()
+        calls = re.findall(r'resolve_read\([^)]*\)', src)
+        if not calls:
+            ok(_base(rel), True, '호출 없음')
+            continue
+        # 튜플 언패킹(`a, b = resolve_read(...)`)은 옛 API 다
+        bad = re.search(r'\w+\s*,\s*\w+\s*=\s*_?SP\.resolve_read', src)
+        ok(_base(rel), not bad,
+           '매핑을 받는다' if not bad else '옛 튜플 언패킹이 남아 있다')
+    # ui 는 ambiguous 를 소비하지 않아야 한다
+    ui = open(os.path.join(ROOT, 'ui', 'server', 'ui_server.py'),
+              encoding='utf-8').read()
+    ok('UI opt-in 안 함', 'allow_legacy_alt=True' not in ui,
+       'UI 는 모호한 legacy 를 현재 기록에 섞지 않는다')
+    au = open(os.path.join(ROOT, 'audit.py'), encoding='utf-8').read()
+    ok('audit 기본 False', 'ALLOW_LEGACY_ALT = False' in au)
+
+
 def main():
     repo_before = _repo_sidecars()
     check_rules()
@@ -217,6 +297,10 @@ def main():
     check_isolation()
     print()
     check_ui_and_legacy()
+    print()
+    check_ambiguous_ownership()
+    print()
+    check_callers_read_source()
     print()
     after = _repo_sidecars()
     moved = sorted(set(repo_before) ^ set(after)) + \

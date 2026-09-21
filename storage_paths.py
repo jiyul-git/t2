@@ -18,17 +18,24 @@
 해시는 **stable** 해야 한다 — `hash()` 는 `PYTHONHASHSEED` 를 타므로
 프로세스마다 이름이 달라진다. sha256 을 쓴다.
 
-legacy `_alt`
--------------
-과거 사용자 상태 실행은 전부 `_alt` 에 썼다. 그 데이터는 잃지 않는다.
+legacy `_alt` 는 **주인을 알 수 없다**
+-------------------------------------
+과거에는 사용자 상태가 **무엇이든** 전부 같은 `_alt` 에 썼다. 그래서
+`/tmp/a/state.json` 과 `/tmp/b/state.json` 의 기록이 한 파일에 섞여 있다.
+
+따라서 A 에 hashed 파일이 없다는 이유만으로 `_alt` 를 A 의 과거 기록이라고
+읽으면 **B 의 기록을 A 의 것으로 제시**하게 된다. 그것이 조용히 일어나면
+분석도 감사도 틀린 대상을 본다.
 
   읽기  새 namespace 파일이 있으면 **그것만** current
-        없고 `_alt` 만 있으면 **읽기 전용** legacy 로 발견
+        없고 `_alt` 만 있으면 **발견은 하되 주인을 단정하지 않는다** —
+        출처가 `legacy_alt_ambiguous` 이고, 명시적 opt-in 없이는
+        **쓸 수 있는 경로를 돌려주지 않는다**
   쓰기  사용자 상태는 **항상** 새 namespace. `_alt` 로 새로 쓰지 않는다
   이동  `_alt` 를 rename/copy/migrate 하지 **않는다**
 
-읽기가 legacy 로 내려가면 호출부가 그 사실을 표시할 수 있게
-`resolve_read` 가 출처를 같이 돌려준다.
+`resolve_read` 는 경로만 주지 않고 출처 분류를 함께 준다. 호출부가 출처를
+무시하고 경로만 쓰는 형태가 되지 않게, 반환은 매핑이다.
 """
 import hashlib, os
 
@@ -128,21 +135,49 @@ def legacy_path(kind):
     return os.path.join(D, _name(kind, LEGACY_SUFFIX))
 
 
-def resolve_read(kind, path=None, env=None):
-    """읽을 파일과 그 출처. 없으면 (None, 'missing').
+SRC_CURRENT = 'current'
+SRC_DEFAULT = 'default'
+SRC_LEGACY_AMBIGUOUS = 'legacy_alt_ambiguous'
+SRC_MISSING = 'missing'
 
-    출처는 'current' / 'legacy_alt' / 'missing'. legacy 로 내려간 사실을
-    호출부가 숨기지 못하게 값으로 돌려준다.
+AMBIGUOUS_NOTE = ('옛 공유 아카이브가 있으나 어느 상태의 기록인지 알 수 없다 '
+                  '— 과거에는 모든 custom state 가 이 한 파일에 썼다')
+
+
+def resolve_read(kind, path=None, env=None, allow_legacy_alt=False):
+    """읽을 파일과 **출처 분류**. 반환은 매핑이다.
+
+      path         쓸 수 있는 경로. 모호한 legacy 는 opt-in 없이는 None
+      source       current / default / legacy_alt_ambiguous / missing
+      legacy_path  옛 공유 파일의 위치 (존재를 알리기 위해)
+      usable       path 를 그대로 읽어도 되는가
+      note         모호할 때의 설명
+
+    `legacy_alt_ambiguous` 에서 `path` 를 비워 두는 것이 요점이다. 출처를
+    무시하고 경로만 쓰는 호출부가 **남의 기록을 자기 것으로** 읽는 일을
+    구조적으로 막는다.
     """
-    cur = sidecar_path(kind, path, env)
-    if os.path.exists(cur):
-        return cur, 'current'
     st = _norm(path) if path else state_path(env)
+    cur = sidecar_path(kind, st)
+    if os.path.exists(cur):
+        return {'path': cur,
+                'source': SRC_DEFAULT if is_default(st) else SRC_CURRENT,
+                'legacy_path': None, 'usable': True, 'note': None}
     if not is_default(st):
         leg = legacy_path(kind)
         if os.path.exists(leg):
-            return leg, 'legacy_alt'
-    return None, 'missing'
+            return {'path': leg if allow_legacy_alt else None,
+                    'source': SRC_LEGACY_AMBIGUOUS,
+                    'legacy_path': leg,
+                    'usable': bool(allow_legacy_alt),
+                    'note': AMBIGUOUS_NOTE}
+    return {'path': None, 'source': SRC_MISSING,
+            'legacy_path': None, 'usable': False, 'note': None}
+
+
+def read_path(kind, path=None, env=None, allow_legacy_alt=False):
+    """쓸 수 있는 경로만. 모호한 legacy 는 opt-in 없이는 None 이다."""
+    return resolve_read(kind, path, env, allow_legacy_alt)['path']
 
 
 def describe(path=None, env=None):
@@ -151,8 +186,9 @@ def describe(path=None, env=None):
     ns = namespace_for_state(st)
     rows = {}
     for kind in sorted(KINDS):
-        p, src = resolve_read(kind, st)
+        r = resolve_read(kind, st)
         rows[kind] = {'write': sidecar_path(kind, st),
-                      'read': p, 'source': src}
+                      'read': r['path'], 'source': r['source'],
+                      'legacy_path': r['legacy_path']}
     return {'state': st, 'default': is_default(st),
             'namespace': ns or '(없음)', 'kinds': rows}

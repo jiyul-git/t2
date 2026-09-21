@@ -43,6 +43,10 @@ def orders_for_labels(labels):
 # current 가 깨져서 stale 로 내려갔는데 정상 감사처럼 보이면 안 된다.
 import storage_paths as _SP
 
+# 옛 공유 `_alt` 아카이브를 감사 대상으로 삼을 것인가.
+# 기본은 아니다 — 어느 상태의 기록인지 알 수 없다.
+ALLOW_LEGACY_ALT = False
+
 SOURCES = []
 
 
@@ -60,9 +64,17 @@ def _load():
     # 이 상태의 namespace 아카이브를 먼저 본다. 접미사 없는 이름을 고정으로
     # 읽으면 T2_LIVE_STATE 세션에서 **다른 상태의 아카이브**를 감사하게 된다.
     cands = []
-    _cur, _src = _SP.resolve_read('archive')
-    if _cur:
-        cands.append((_cur, 'legacy _alt' if _src == 'legacy_alt' else ''))
+    _r = _SP.resolve_read('archive', allow_legacy_alt=ALLOW_LEGACY_ALT)
+    if _r['path']:
+        cands.append((_r['path'],
+                      'legacy 공유 _alt — 주인 불명' if _r['source']
+                      == _SP.SRC_LEGACY_AMBIGUOUS else ''))
+    elif _r['source'] == _SP.SRC_LEGACY_AMBIGUOUS:
+        # 발견은 알리되 **쓰지 않는다.** 이 파일에는 다른 상태의 기록이
+        # 섞여 있을 수 있다 — 그것을 이 상태의 감사 대상으로 삼으면 안 된다.
+        _note('archive-ambiguous',
+              '%s 가 있으나 %s'
+              % (os.path.basename(_r['legacy_path']), _r['note']))
     cands.append((os.path.join(D, 'hand_archive.jsonl'), 'legacy 포맷'))
     for p, kind in cands:
         fn = os.path.basename(p)
@@ -308,7 +320,8 @@ def check(hand_no):
         kind = src.split(':', 1)[0]
         if kind.endswith('error'):
             flag('출처오류', src)
-        elif kind.endswith('fallback') or kind.endswith('miss'):
+        elif (kind.endswith('fallback') or kind.endswith('miss')
+              or kind.endswith('ambiguous')):
             flag('출처경고', src)
     return out
 

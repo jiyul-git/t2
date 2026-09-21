@@ -11,9 +11,14 @@ _SUFFIX = _SP.namespace()
 PATH = _SP.sidecar_path('archive')
 
 
-def resolve():
-    """(읽을 경로, 출처). 출처가 'legacy_alt' 면 옛 `_alt` 파일이다."""
-    return _SP.resolve_read('archive')
+def resolve(allow_legacy_alt=False):
+    """읽을 경로와 출처 분류 (`storage_paths.resolve_read` 그대로).
+
+    출처가 `legacy_alt_ambiguous` 면 `path` 는 **None** 이다 — 옛 공유
+    `_alt` 는 어느 상태의 기록인지 알 수 없어서, 이 상태의 기록인 것처럼
+    읽지 않는다. 정말 읽어야 하면 `allow_legacy_alt=True` 로 명시한다.
+    """
+    return _SP.resolve_read('archive', allow_legacy_alt=allow_legacy_alt)
 
 def load():
     if not os.path.exists(PATH): return []
