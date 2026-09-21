@@ -472,19 +472,37 @@ def _paired(rows, key):
     return vals
 
 
-def bootstrap_seed_ci(rows, reps=10000, rng_seed=922002026):
+def bootstrap_cluster_ci(rows, reps=10000, rng_seed=922002026):
+    """Cluster bootstrap for the row-level ITT mean.
+
+    The preregistered primary estimand is the equal-weight mean over
+    qualifying rows ("intention-to-treat over qualifying rows").  The
+    tournament seed is the RESAMPLING unit, not the averaging unit: one
+    replicate draws whole seed clusters with replacement and keeps every
+    qualifying row of each drawn cluster, so a seed drawn twice contributes
+    its rows twice.  The replicate statistic is the row-level mean of all
+    sampled rows -- the same functional as the observed point estimate.
+    """
     by = {}
     for r in rows:
         by.setdefault(int(r['seed']), []).append(float(r['paired_chip_delta_bb']))
-    seed_means = [statistics.mean(v) for _, v in sorted(by.items()) if v]
-    if len(seed_means) < 2:
-        return seed_means, None, None
+    clusters = [v for _, v in sorted(by.items()) if v]
+    if len(clusters) < 2:
+        return clusters, None, None
+    sums = [math.fsum(v) for v in clusters]
+    counts = [len(v) for v in clusters]
     rng = random.Random(rng_seed)
     boots = []
-    n = len(seed_means)
+    n = len(clusters)
     for _ in range(reps):
-        boots.append(statistics.mean(rng.choice(seed_means) for _ in range(n)))
-    return seed_means, q(boots, .025), q(boots, .975)
+        tot = 0.0
+        cnt = 0
+        for _ in range(n):
+            j = rng.randrange(n)
+            tot += sums[j]
+            cnt += counts[j]
+        boots.append(tot / cnt)
+    return clusters, q(boots, .025), q(boots, .975)
 
 
 def summarize(rows, engine_errors=None, harness_errors=None):
@@ -492,18 +510,19 @@ def summarize(rows, engine_errors=None, harness_errors=None):
     harness_errors = list(harness_errors or [])
     row_errs = [e for r in rows for e in (r.get('harness_errors') or [])]
     deltas = [float(r['paired_chip_delta_bb']) for r in rows]
-    seed_means, lo, hi = bootstrap_seed_ci(rows)
+    clusters, lo, hi = bootstrap_cluster_ci(rows)
 
     print('\n=== money sizing behavioral CF ===')
     print('rows=%d changed_size=%d engine_errors=%d harness_errors=%d' %
           (len(rows), sum(bool(r.get('changed_size')) for r in rows),
            len(engine_errors), len(harness_errors) + len(row_errs)))
 
-    print('\n[primary opener paired chip delta, BB]')
-    print('mean=%s median=%s p10/p90=%s/%s seed_means=%d bootstrap95=%s..%s' %
-          (fmt(_mean(deltas), 4), fmt(q(deltas, .5), 4),
-           fmt(q(deltas, .1), 4), fmt(q(deltas, .9), 4),
-           len(seed_means), fmt(lo, 4), fmt(hi, 4)))
+    print('\n[primary: ITT mean of paired chip delta over qualifying rows, BB]')
+    print('primary_row_mean=%s seed_clusters=%d bootstrap95=%s..%s' %
+          (fmt(_mean(deltas), 4), len(clusters), fmt(lo, 4), fmt(hi, 4)))
+    print('descriptive only: rows=%d median=%s p10/p90=%s/%s' %
+          (len(deltas), fmt(q(deltas, .5), 4),
+           fmt(q(deltas, .1), 4), fmt(q(deltas, .9), 4)))
     invalid = bool(engine_errors or harness_errors or row_errs)
     if invalid:
         verdict = ('INVALID harness/engine failure; ignore primary estimate '
