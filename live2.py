@@ -22,6 +22,7 @@ def _dump(f):
         'busted_order': f.busted_order, 'hero_moves': f.hero_moves,
         'notes': f.notes,
         'fmt': f.fmt.get('key', 'standard'),
+        'max_seat': getattr(f, 'max_seat', FS.MAXSEAT),
         'seed': getattr(f, 'seed', None),
         'tilt': f.tilt.state,
         # 틸트 키가 좌석에서 사람(pid)으로 바뀌었다. 이 표시가 없는 저장본은
@@ -58,14 +59,30 @@ def _load_field(d):
     f.players = {}
     f._init_runtime(d.get('fmt'),
                     d.get('tilt') if d.get('tilt_key') == 'pid' else None)
+    # 새 저장본은 max_seat 를 명시한다. 구 저장본은 저장된 좌석 슬롯 길이로
+    # 추론해 진행 중인 8-max 세션이 standard=9 변경 때문에 중간에 변하지 않게 한다.
+    _saved_max = d.get('max_seat')
+    if _saved_max is None:
+        _lens = [len(v.get('seats') or []) for v in (d.get('tables') or {}).values()
+                 if v.get('seats')]
+        _saved_max = max(_lens) if _lens else None
+    if _saved_max is not None:
+        f.max_seat = int(_saved_max)
     for k, v in d['players'].items():
         f.players[int(k)] = {'pid': int(k), 'prof': v['prof'], 'stack': v['stack'],
                              'table': v['table'], 'seat': v['seat']}
     f.tables = {}
     for k, v in d['tables'].items():
-        tb = FS.Table(int(k), [f.players[p] for p in v['pids']], button=v['button'])
+        tb = FS.Table(int(k), [f.players[p] for p in v['pids']], button=v['button'],
+                      max_seat=f.max_seat)
         tb.hands = v['hands']
-        if v.get('seats'): tb.seats = list(v['seats'])
+        if v.get('seats'):
+            tb.seats = list(v['seats'])
+            if len(tb.seats) < tb.max_seat:
+                tb.seats.extend([None] * (tb.max_seat - len(tb.seats)))
+            elif len(tb.seats) > tb.max_seat:
+                tb.max_seat = len(tb.seats)
+                f.max_seat = max(f.max_seat, tb.max_seat)
         f.tables[int(k)] = tb
     return f
 
@@ -159,6 +176,7 @@ def build_hand(st):
                   seed=st['hand_seed'], book=_bk)
     h.seat_pid = {tb.seat_of(p['pid']): p['pid'] for p in alive}
     h.table_id = tb.id
+    h.table_max_seat = getattr(tb, 'max_seat', len(tb.seats))
     f.stamp(h)
     return f, tb, alive, h, hero_seat
 
