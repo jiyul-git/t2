@@ -141,6 +141,20 @@ def _metrics(template, initial_stacks, run, opener, open_index):
     }
 
 
+def _deal_sig(hand):
+    """Immutable signature captured before replay; catches any deal mutation."""
+    holes = getattr(hand, 'hole', None) or {}
+    return (
+        getattr(hand, 'hash', None),
+        tuple(sorted((str(s), tuple(cards)) for s, cards in holes.items())),
+        tuple(getattr(hand, 'board', None) or ()),
+    )
+
+
+def _preflop_order(hand):
+    return [hand.seat_of[p] for p in hand.PRE if p in hand.seat_of]
+
+
 def _same_prefix(got, expected):
     if len(got) != len(expected):
         return False
@@ -157,10 +171,12 @@ def _same_prefix(got, expected):
 
 
 def _run_cf(snapshot, opener, baseline_pre, open_index, base_target, cf_target,
-            baseline_rng_state=None):
+            baseline_rng_state=None, expected_deal_sig=None):
     expected_prefix = baseline_pre[:open_index]
+    expected_order = _preflop_order(snapshot)
     state = {'used': 0, 'errors': [], 'proposed': None,
-             'preflop_round': None, 'rng_checked': False}
+             'preflop_round': None, 'rng_checked': False,
+             'preflop_order_checked': False}
 
     def patched_apply(rnd, seat, action, amount=0):
         # The first betting Round reached by HandRun is preflop.  Pin the
@@ -168,6 +184,10 @@ def _run_cf(snapshot, opener, baseline_pre, open_index, base_target, cf_target,
         # re-arm on a later street's fresh Round.
         if state['preflop_round'] is None:
             state['preflop_round'] = rnd
+            state['preflop_order_checked'] = True
+            if list(rnd.order) != expected_order:
+                state['errors'].append(
+                    'first betting Round order differs expected preflop order')
         is_preflop_round = rnd is state['preflop_round']
         if (is_preflop_round and seat == opener and action == 'raise'
                 and state['used'] == 0
@@ -199,6 +219,8 @@ def _run_cf(snapshot, opener, baseline_pre, open_index, base_target, cf_target,
         run.start()
     finally:
         RU.Round.apply = ORIG_APPLY
+    if expected_deal_sig is not None and _deal_sig(run.h) != expected_deal_sig:
+        state['errors'].append('counterfactual deal signature changed during replay')
     return run, state
 
 
@@ -227,11 +249,12 @@ def _row_from_pair(seed, hand_no, table_id, snapshot, base_run, obs,
     if abs(cf_target - expected) > 1.000001:
         errs.append('cf target differs registered formula by >1 chip')
 
-    # The replay must start from exactly the same dealt hand.
-    if (getattr(snapshot, 'hash', None) != getattr(base_run.h, 'hash', None)
-            or getattr(snapshot, 'hole', None) != getattr(base_run.h, 'hole', None)
-            or getattr(snapshot, 'board', None) != getattr(base_run.h, 'board', None)):
-        errs.append('baseline cards/hash differ from pre-hand snapshot')
+    # Capture an immutable signature before replay.  The CF HandRun owns the
+    # snapshot object directly, so comparing cf_run.h to snapshot after replay
+    # would be a self-comparison and could never catch mutation.
+    expected_deal_sig = _deal_sig(snapshot)
+    if _deal_sig(base_run.h) != expected_deal_sig:
+        errs.append('baseline deal signature differs from pre-hand snapshot')
 
     if abs(float(pre[oi][2]) - base_target) > 1e-9:
         errs.append('baseline log open target differs observed base target')
@@ -256,15 +279,15 @@ def _row_from_pair(seed, hand_no, table_id, snapshot, base_run, obs,
 
     changed = abs(cf_target - base_target) > 1e-9
     if changed:
-        cf_run, state = _run_cf(snapshot, opener, pre, oi, base_target, cf_target,
-                                baseline_rng_state=baseline_rng_state)
+        cf_run, state = _run_cf(
+            snapshot, opener, pre, oi, base_target, cf_target,
+            baseline_rng_state=baseline_rng_state,
+            expected_deal_sig=expected_deal_sig)
         errs.extend(state['errors'])
         if state['used'] != 1:
             errs.append('sizing interception used %d times' % state['used'])
-        if (getattr(cf_run.h, 'hash', None) != getattr(snapshot, 'hash', None)
-                or getattr(cf_run.h, 'hole', None) != getattr(snapshot, 'hole', None)
-                or getattr(cf_run.h, 'board', None) != getattr(snapshot, 'board', None)):
-            errs.append('counterfactual cards/hash differ from snapshot')
+        if not state.get('preflop_order_checked'):
+            errs.append('counterfactual preflop Round order was not checked')
         if not state.get('rng_checked'):
             errs.append('counterfactual RNG state was not checked at intervention')
         cf_pre = _preflop_rows(cf_run)
@@ -341,10 +364,16 @@ def simulate(seed, args):
 
         def start(self):
             baseline_probe = {'preflop_round': None, 'open': None}
+            expected_order = _preflop_order(self.h)
 
             def baseline_apply(rnd, seat, action, amount=0):
                 if baseline_probe['preflop_round'] is None:
                     baseline_probe['preflop_round'] = rnd
+                    if list(rnd.order) != expected_order:
+                        harness_errors.append(
+                            'baseline first betting Round order differs expected '
+                            'preflop order H%s T%s'
+                            % (f.hand_no, getattr(self.h, 'table_id', '?')))
                 if (rnd is baseline_probe['preflop_round']
                         and baseline_probe['open'] is None
                         and action == 'raise'
@@ -475,7 +504,11 @@ def summarize(rows, engine_errors=None, harness_errors=None):
           (fmt(_mean(deltas), 4), fmt(q(deltas, .5), 4),
            fmt(q(deltas, .1), 4), fmt(q(deltas, .9), 4),
            len(seed_means), fmt(lo, 4), fmt(hi, 4)))
-    if lo is None or hi is None:
+    invalid = bool(engine_errors or harness_errors or row_errs)
+    if invalid:
+        verdict = ('INVALID harness/engine failure; ignore primary estimate '
+                   'and bootstrap interval')
+    elif lo is None or hi is None:
         verdict = 'INCONCLUSIVE insufficient seed clusters'
     elif hi < 0:
         verdict = 'AGAINST_PROMOTION bootstrap interval wholly below 0'
