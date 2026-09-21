@@ -156,18 +156,34 @@ def _same_prefix(got, expected):
     return True
 
 
-def _run_cf(snapshot, opener, baseline_pre, open_index, base_target, cf_target):
+def _run_cf(snapshot, opener, baseline_pre, open_index, base_target, cf_target,
+            baseline_rng_state=None):
     expected_prefix = baseline_pre[:open_index]
-    state = {'used': 0, 'errors': [], 'proposed': None}
+    state = {'used': 0, 'errors': [], 'proposed': None,
+             'preflop_round': None, 'rng_checked': False}
 
     def patched_apply(rnd, seat, action, amount=0):
-        if (seat == opener and action == 'raise' and state['used'] == 0
+        # The first betting Round reached by HandRun is preflop.  Pin the
+        # intervention to that object so a failed interception can never
+        # re-arm on a later street's fresh Round.
+        if state['preflop_round'] is None:
+            state['preflop_round'] = rnd
+        is_preflop_round = rnd is state['preflop_round']
+        if (is_preflop_round and seat == opener and action == 'raise'
+                and state['used'] == 0
                 and not any(a in ('raise', 'allin') for _, a, _ in rnd.log)):
             got_prefix = list(rnd.log)
             if not _same_prefix(got_prefix, expected_prefix):
                 state['errors'].append('counterfactual prefix differs before intervention')
                 return ORIG_APPLY(rnd, seat, action, amount)
             state['proposed'] = float(amount)
+            if baseline_rng_state is None:
+                state['errors'].append('baseline RNG state missing at intervention')
+            else:
+                state['rng_checked'] = True
+                if snapshot.rng.getstate() != baseline_rng_state:
+                    state['errors'].append(
+                        'counterfactual RNG state differs before intervention')
             if abs(float(amount) - float(base_target)) > 1e-9:
                 state['errors'].append(
                     'unmodified target differs base: proposed=%s base=%s'
@@ -186,7 +202,8 @@ def _run_cf(snapshot, opener, baseline_pre, open_index, base_target, cf_target):
     return run, state
 
 
-def _row_from_pair(seed, hand_no, table_id, snapshot, base_run, obs):
+def _row_from_pair(seed, hand_no, table_id, snapshot, base_run, obs,
+                   baseline_open=None):
     errs = []
     m = obs.get('unopened_modifiers') or {}
     opener = obs.get('seat')
@@ -210,6 +227,25 @@ def _row_from_pair(seed, hand_no, table_id, snapshot, base_run, obs):
     if abs(cf_target - expected) > 1.000001:
         errs.append('cf target differs registered formula by >1 chip')
 
+    # The replay must start from exactly the same dealt hand.
+    if (getattr(snapshot, 'hash', None) != getattr(base_run.h, 'hash', None)
+            or getattr(snapshot, 'hole', None) != getattr(base_run.h, 'hole', None)
+            or getattr(snapshot, 'board', None) != getattr(base_run.h, 'board', None)):
+        errs.append('baseline cards/hash differ from pre-hand snapshot')
+
+    if abs(float(pre[oi][2]) - base_target) > 1e-9:
+        errs.append('baseline log open target differs observed base target')
+
+    baseline_rng_state = None
+    if baseline_open is None:
+        errs.append('baseline intervention capture missing')
+    else:
+        if baseline_open.get('seat') != opener:
+            errs.append('baseline captured opener differs observed opener')
+        if abs(float(baseline_open.get('amount', 0)) - base_target) > 1e-9:
+            errs.append('baseline captured target differs observed base target')
+        baseline_rng_state = baseline_open.get('rng_state')
+
     initial = dict(snapshot.stacks)
     base_metrics = _metrics(snapshot, initial, base_run, opener, oi)
     initial_total = sum(float(x) for x in initial.values())
@@ -220,15 +256,24 @@ def _row_from_pair(seed, hand_no, table_id, snapshot, base_run, obs):
 
     changed = abs(cf_target - base_target) > 1e-9
     if changed:
-        cf_run, state = _run_cf(snapshot, opener, pre, oi, base_target, cf_target)
+        cf_run, state = _run_cf(snapshot, opener, pre, oi, base_target, cf_target,
+                                baseline_rng_state=baseline_rng_state)
         errs.extend(state['errors'])
         if state['used'] != 1:
             errs.append('sizing interception used %d times' % state['used'])
+        if (getattr(cf_run.h, 'hash', None) != getattr(snapshot, 'hash', None)
+                or getattr(cf_run.h, 'hole', None) != getattr(snapshot, 'hole', None)
+                or getattr(cf_run.h, 'board', None) != getattr(snapshot, 'board', None)):
+            errs.append('counterfactual cards/hash differ from snapshot')
+        if not state.get('rng_checked'):
+            errs.append('counterfactual RNG state was not checked at intervention')
         cf_pre = _preflop_rows(cf_run)
         cf_oi = _first_open_index(cf_pre, opener)
         if cf_oi is None:
             errs.append('cannot locate counterfactual open')
             cf_oi = oi
+        elif abs(float(cf_pre[cf_oi][2]) - cf_target) > 1e-9:
+            errs.append('counterfactual log target is not registered raise-to target')
         cf_metrics = _metrics(snapshot, initial, cf_run, opener, cf_oi)
         cf_total = sum(float(x) for x in cf_run.h.stacks.values())
         if abs(cf_total - initial_total) > 1e-6:
@@ -273,6 +318,7 @@ def simulate(seed, args):
     f = FS.Field(entries=args.entries, seed=seed, fmt=args.fmt)
     rows = []
     harness_errors = []
+    row_keys = set()
 
     class ProbeHandRun:
         def __init__(self, hand, decisions=None):
@@ -294,7 +340,31 @@ def simulate(seed, args):
             return getattr(self.inner, name)
 
         def start(self):
-            out = self.inner.start()
+            baseline_probe = {'preflop_round': None, 'open': None}
+
+            def baseline_apply(rnd, seat, action, amount=0):
+                if baseline_probe['preflop_round'] is None:
+                    baseline_probe['preflop_round'] = rnd
+                if (rnd is baseline_probe['preflop_round']
+                        and baseline_probe['open'] is None
+                        and action == 'raise'
+                        and not any(a in ('raise', 'allin')
+                                    for _, a, _ in rnd.log)):
+                    baseline_probe['open'] = {
+                        'seat': seat,
+                        'amount': float(amount),
+                        'prefix': list(rnd.log),
+                        'rng_state': copy.deepcopy(self.h.rng.getstate()),
+                    }
+                return ORIG_APPLY(rnd, seat, action, amount)
+
+            if self.snapshot is not None:
+                RU.Round.apply = baseline_apply
+            try:
+                out = self.inner.start()
+            finally:
+                if self.snapshot is not None:
+                    RU.Round.apply = ORIG_APPLY
             self.result = self.inner.result
             if self.snapshot is not None:
                 candidates = []
@@ -314,11 +384,21 @@ def simulate(seed, args):
                         'multiple qualifying opens H%s T%s: %d'
                         % (f.hand_no, getattr(self.h, 'table_id', '?'),
                            len(candidates)))
+                    candidates = []
                 for obs in candidates:
                     try:
+                        table_id = getattr(self.h, 'table_id', None)
+                        key = (seed, f.hand_no, table_id)
+                        if key in row_keys:
+                            harness_errors.append(
+                                'duplicate qualifying row H%s T%s'
+                                % (f.hand_no, table_id))
+                            continue
                         row = _row_from_pair(
-                            seed, f.hand_no, getattr(self.h, 'table_id', None),
-                            self.snapshot, self.inner, obs)
+                            seed, f.hand_no, table_id,
+                            self.snapshot, self.inner, obs,
+                            baseline_open=baseline_probe.get('open'))
+                        row_keys.add(key)
                         rows.append(row)
                     except Exception as e:
                         harness_errors.append(
