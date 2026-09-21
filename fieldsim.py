@@ -90,7 +90,7 @@ class Field:
         # ceil(entries/max_seat) 로 마지막 테이블이 1명만 남을 수 있다
         # (예: 100명 9-max = 9x11 + 1). 첫 핸드 전에 균등화하지 않으면
         # 그 한 명만 블라인드를 내지 않고 한 핸드를 쉬게 된다.
-        self._balance()
+        self._balance(notify=False)
 
     # ---------- 조회 ----------
     def _init_runtime(self, fmt=None, tilt_state=None):
@@ -303,8 +303,12 @@ class Field:
                 p['table'] = None
                 self.busted_order.append(p['pid'])
 
-    def _balance(self):
-        """TDA식 밸런싱: 테이블 간 인원차 1 이하. 필요시 테이블 브레이크."""
+    def _balance(self, notify=True):
+        """TDA식 밸런싱: 테이블 간 인원차 1 이하. 필요시 테이블 브레이크.
+
+        초기 배치 직후의 균등화는 아직 플레이 중 이동이 아니므로
+        notify=False 로 hero 이동 횟수/노트를 만들지 않는다.
+        """
         act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
         if not act: return
         need_tables = max(1, math.ceil(self.remaining()/self.max_seat))
@@ -319,7 +323,7 @@ class Field:
                 tgt = min(act.values(), key=lambda x: x.n())
                 small.stand(m['pid'])
                 tgt.players.append(m); tgt.sit(m); m['table'] = tgt.id
-                if m['pid'] == self.hero_pid:
+                if notify and m['pid'] == self.hero_pid:
                     self.hero_moves += 1
                     self.notes.append('🔄 테이블 브레이크 — 너 자리 이동 (%d번째)' % self.hero_moves)
             act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
@@ -333,7 +337,7 @@ class Field:
             mover = big.players[(big.button + 2) % len(big.players)]
             big.players.remove(mover); big.stand(mover['pid'])
             small.players.append(mover); small.sit(mover); mover['table'] = small.id
-            if mover['pid'] == self.hero_pid:
+            if notify and mover['pid'] == self.hero_pid:
                 self.hero_moves += 1
                 self.notes.append('🔄 테이블 밸런싱 — 너 자리 이동 (%d번째)' % self.hero_moves)
 
