@@ -17,7 +17,7 @@ _V = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_V)
 
 SCHEMA = 1
-N_SLOTS = 8          # fieldsim.MAXSEAT. live2 경로의 테이블은 8 슬롯 고정
+N_SLOTS_FALLBACK = 8
 
 
 def _log(entries):
@@ -68,9 +68,12 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
     btn = getattr(hand, 'button', None)
     hero_inv = inv.get(hand.hero, 0)
     pot = raw['pot']
+    _n_slots = int(getattr(hand, 'table_max_seat', 0)
+                   or len(getattr(hand, 'all_seats', []) or [])
+                   or N_SLOTS_FALLBACK)
     out = {'schema': SCHEMA, 'type': 'decision',
            'hand_no': hand_no, 'stage': raw['stage'], 'hash': raw['hash'],
-           'n_slots': N_SLOTS, 'hero_seat': hand.hero, 'button_seat': btn,
+           'n_slots': _n_slots, 'hero_seat': hand.hero, 'button_seat': btn,
            'hero_hole': list(raw['hole']), 'board': list(raw.get('board') or []),
            'seats': seats,
            'pot_total': pot, 'pot_center': pot - sum(inv.values()),
