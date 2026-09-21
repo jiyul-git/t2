@@ -320,10 +320,6 @@ def simulate(seed, args):
                             seed, f.hand_no, getattr(self.h, 'table_id', None),
                             self.snapshot, self.inner, obs)
                         rows.append(row)
-                        for e in row.get('harness_errors') or []:
-                            harness_errors.append(
-                                'H%s T%s %s' %
-                                (f.hand_no, getattr(self.h, 'table_id', '?'), e))
                     except Exception as e:
                         harness_errors.append(
                             'CF H%s T%s: %s: %s'
