@@ -6,7 +6,9 @@ from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
 MAXSEAT = 8  # legacy fallback; Field instances use fmt['seats']
-BOT_SUFFIX = '_alt' if os.environ.get('T2_LIVE_STATE') else ''
+import storage_paths as _SP
+# 상태 경로에서 나온다. live2 가 워커용으로 잠시 덮어쓰므로 모듈 전역이다.
+BOT_SUFFIX = _SP.namespace()
 # 켜면 핸드 실패를 삼키지 않고 즉시 올린다. 디버깅·검증용.
 STRICT = bool(os.environ.get('T2_STRICT'))
 
@@ -225,7 +227,7 @@ class Field:
             rec['money_jump_obs'] = getattr(h, 'money_jump_obs', [])
             rec['hole'] = {str(k): v for k, v in h.hole.items()}
         try:
-            with open(os.path.join(D, 'bot_hands%s.jsonl' % BOT_SUFFIX), 'a',
+            with open(_SP.path_for('bot_log', BOT_SUFFIX, D), 'a',
                       encoding='utf-8') as fp:
                 fp.write(json.dumps(rec, ensure_ascii=False) + '\n')
         except OSError:

@@ -41,6 +41,8 @@ def orders_for_labels(labels):
 
 # 어느 파일·어느 상태에서 읽었는지. 감사 결과에 같이 찍는다 —
 # current 가 깨져서 stale 로 내려갔는데 정상 감사처럼 보이면 안 된다.
+import storage_paths as _SP
+
 SOURCES = []
 
 
@@ -55,8 +57,15 @@ def _load():
     내려갔다면 그 사실을 숨기지 않는다.
     """
     del SOURCES[:]
-    for fn in ('hand_archive2.jsonl', 'hand_archive.jsonl'):
-        p = os.path.join(D, fn)
+    # 이 상태의 namespace 아카이브를 먼저 본다. 접미사 없는 이름을 고정으로
+    # 읽으면 T2_LIVE_STATE 세션에서 **다른 상태의 아카이브**를 감사하게 된다.
+    cands = []
+    _cur, _src = _SP.resolve_read('archive')
+    if _cur:
+        cands.append((_cur, 'legacy _alt' if _src == 'legacy_alt' else ''))
+    cands.append((os.path.join(D, 'hand_archive.jsonl'), 'legacy 포맷'))
+    for p, kind in cands:
+        fn = os.path.basename(p)
         if not os.path.exists(p):
             continue
         rows, bad = [], []
@@ -67,17 +76,19 @@ def _load():
                 rows.append(json.loads(l))
             except Exception as e:
                 bad.append((i, type(e).__name__))
-        legacy = ' (legacy 포맷)' if fn == 'hand_archive.jsonl' else ''
-        _note('archive', '%s%s — %d핸드' % (fn, legacy, len(rows)))
+        _note('archive', '%s%s — %d핸드'
+              % (fn, (' (%s)' % kind) if kind else '', len(rows)))
         if bad:
             _note('archive-error',
                   '%s 깨진 줄 %d (%s)' % (fn, len(bad),
                                          ', '.join('%d:%s' % b for b in bad[:5])))
-        if fn == 'hand_archive.jsonl':
+        if kind:
             _note('archive-fallback',
-                  'hand_archive2.jsonl 이 없어 구형 파일로 내려갔다')
+                  '%s 로 내려갔다 — 이 상태의 아카이브(%s)가 없다'
+                  % (kind, os.path.basename(_SP.sidecar_path('archive'))))
         return rows
-    _note('archive', '없음 — hand_archive2.jsonl / hand_archive.jsonl 둘 다 없다')
+    _note('archive', '없음 — %s / hand_archive.jsonl 둘 다 없다'
+          % os.path.basename(_SP.sidecar_path('archive')))
     return []
 
 def check(hand_no):

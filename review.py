@@ -5,8 +5,15 @@ D = os.path.dirname(os.path.abspath(__file__))
 # 을 읽었는데 live2 는 'hand_archive2.jsonl' 에 쓴다 — 그래서 load() 가
 # 늘 빈 리스트를 반환했고, **리뷰 도구가 통째로 죽어 있었다.**
 # T2_LIVE_STATE 를 쓰면 live2 가 _alt 접미사를 붙이므로 그것도 맞춘다.
-_SUFFIX = '_alt' if os.environ.get('T2_LIVE_STATE') else ''
-PATH = os.path.join(D, 'hand_archive2%s.jsonl' % _SUFFIX)
+import storage_paths as _SP
+_SUFFIX = _SP.namespace()
+# 쓰기 경로. 읽을 때는 아래 resolve() 로 legacy 를 찾을 수 있다.
+PATH = _SP.sidecar_path('archive')
+
+
+def resolve():
+    """(읽을 경로, 출처). 출처가 'legacy_alt' 면 옛 `_alt` 파일이다."""
+    return _SP.resolve_read('archive')
 
 def load():
     if not os.path.exists(PATH): return []

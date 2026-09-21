@@ -9,8 +9,12 @@ D = os.path.dirname(os.path.abspath(__file__))
 # 상태 파일 경로. 환경변수로 바꿀 수 있다 —
 # 검사 도구가 new_game 을 부르면 **진행 중인 게임이 통째로 날아간다**
 # (아카이브까지 지운다). 도구는 별도 경로를 쓰게 한다.
+import storage_paths as SP
 ST = os.environ.get('T2_LIVE_STATE') or os.path.join(D, 'live2_state.json')
-_SUFFIX = '_alt' if os.environ.get('T2_LIVE_STATE') else ''
+# sidecar 이름은 **상태 파일 경로에서** 나온다. 예전에는 T2_LIVE_STATE 가
+# 설정돼 있기만 하면 경로와 무관하게 '_alt' 하나였고, 그래서 서로 다른
+# 상태를 쓰는 두 실행이 같은 아카이브에 섞여 썼다 (아래 new_game 주석).
+_SUFFIX = SP.namespace()
 
 
 
@@ -124,9 +128,9 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
     # 이름으로 쓰인다.** 그래서 격리한 줄 알고 테스트를 돌렸다가 진행 중이던
     # 세션의 37핸드 기록을 통째로 날렸다. 되돌릴 방법이 없었다.
     _stamp = time.strftime('%Y%m%d_%H%M%S')
-    for fn in ('hand_archive2%s.jsonl' % _SUFFIX, 'book%s.json' % _SUFFIX,
-               'dynamics%s.json' % _SUFFIX, 'bot_hands%s.jsonl' % _SUFFIX):
-        p = os.path.join(D, fn)
+    # **이 상태의 namespace 파일만** 건드린다. 다른 상태나 legacy '_alt' 를
+    # 백업 대상에 넣으면 남의 기록을 치우게 된다.
+    for p in [SP.sidecar_path(k) for k in SP.BACKUP_KINDS]:
         if os.path.exists(p) and os.path.getsize(p) > 0:
             try: os.rename(p, os.path.join(D, 'bak_%s_%s' % (_stamp, fn)))
             except OSError:
@@ -214,14 +218,14 @@ def compute_others(field_dump):
     # 그래서 워커에서는 임시 접미사로 빼두고, 파일에 붙이는 일은
     # resume_others(= 메인 경로) 가 한다. 쓰기는 한 곳으로 모은다.
     _suf = FS.BOT_SUFFIX
-    _tmp = '%s_pending_%d' % (_suf, os.getpid())
+    _tmp = SP.pending_suffix(_suf, os.getpid())
     FS.BOT_SUFFIX = _tmp
     try:
         f.step_others()
         f._collect_busts(); f._balance()
     finally:
         FS.BOT_SUFFIX = _suf
-    _p = os.path.join(D, 'bot_hands%s.jsonl' % _tmp)
+    _p = SP.path_for('bot_log', _tmp, D)
     _bot_log = ''
     if os.path.exists(_p):
         with open(_p, encoding='utf-8') as fp:
@@ -257,8 +261,7 @@ def resume_others(st, others=None):
         others = compute_others(st['field'])
     st['field'] = others['field']
     if others.get('bot_log'):          # 워커가 모아둔 봇 핸드 기록을 여기서 붙인다
-        with open(os.path.join(D, 'bot_hands%s.jsonl' % FS.BOT_SUFFIX), 'a',
-                  encoding='utf-8') as fp:
+        with open(SP.sidecar_path('bot_log'), 'a', encoding='utf-8') as fp:
             fp.write(others['bot_log'])
     _new_notes = list(others.get('notes') or [])
 
@@ -583,7 +586,7 @@ def finish(st, f, tb, alive, h, run, defer_others=False):
 
 
 def _archive_write(rec):
-    path = os.path.join(D, 'hand_archive2%s.jsonl' % _SUFFIX)
+    path = SP.sidecar_path('archive')
     with open(path, 'a', encoding='utf-8') as fp:
         fp.write(json.dumps(rec, ensure_ascii=False, default=str) + '\n')
 
