@@ -97,7 +97,7 @@ def main():
     done = 0
     seed = a.seed
     while done < a.hands:
-        t = T.Tournament(entries=40, start_stack=30000, hero_seat=7, seats=8,
+        t = T.Tournament(entries=40, start_stack=30000, hero_seat=7,
                          seed=seed, hands_per_level=12)
         seed += 1
         while done < a.hands:
