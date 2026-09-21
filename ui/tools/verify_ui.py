@@ -170,6 +170,7 @@ def run(args):
         rng = random.Random(args.seed)
         stats = dict(hands=0, decisions=0, walks=0, chip_checks=0, chip_bad=0,
                      legal_violations=0, err_checked=0, results=0, showdowns=0,
+                     slot_checks=0, slot_bad=0,
                      watch_blocked=(cw == 403))
         pot_of = {}            # hand_no -> Σstack + pot_total
         exposed = {}           # hand_no -> 화면에 나온 카드 집합
@@ -217,6 +218,11 @@ def run(args):
 
             hn = v['hand_no']
             stats['decisions'] += 1
+            stats['slot_checks'] += 1
+            if v.get('n_slots') != args.expected_slots:
+                stats['slot_bad'] += 1
+                fail.append('핸드 %s n_slots=%r (기대 %d)'
+                            % (hn, v.get('n_slots'), args.expected_slots))
             exposed.setdefault(hn, set()).update(v.get('hero_hole') or [])
             exposed[hn].update(v.get('board') or [])
 
@@ -333,6 +339,7 @@ def main():
     ap.add_argument('--entries', type=int, default=100)
     ap.add_argument('--seed', type=int, default=20260911)
     ap.add_argument('--port', type=int, default=8799)
+    ap.add_argument('--expected-slots', type=int, default=9)
     ap.add_argument('--keep', action='store_true')
     args = ap.parse_args()
 
