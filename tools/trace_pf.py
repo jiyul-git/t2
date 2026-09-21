@@ -85,7 +85,7 @@ PL.preflop_plan = preflop_plan
 seed = int(sys.argv[1]) if len(sys.argv) > 1 else 4100
 n = int(sys.argv[2]) if len(sys.argv) > 2 else 1
 
-t = T.Tournament(entries=100, start_stack=30000, hero_seat=7, seats=8,
+t = T.Tournament(entries=100, start_stack=30000, hero_seat=7,
                  seed=seed, hands_per_level=int(os.environ.get('HPL','40')))
 shown = 0
 while shown < n:
