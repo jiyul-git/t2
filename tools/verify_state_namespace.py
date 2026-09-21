@@ -290,6 +290,128 @@ def check_callers_read_source():
     ok('audit 기본 False', 'ALLOW_LEGACY_ALT = False' in au)
 
 
+def _load_ui_server(run_dir):
+    """지원되는 레이아웃에서 `ui_server` 를 적재한다.
+
+    `ui_server.py` 는 모듈 폴더에 `UI_SERVER_DIR` 표시 파일이 없으면
+    `sys.exit` 한다 — cli 세션과 파일을 공유하는 사고를 막는 의도적 가드다.
+    저장소에 그 파일을 만들면 가드가 무의미해지므로, `setup_run_dir.sh` 로
+    **실제 실행 폴더**를 임시로 만들어 그 안에서 읽는다. 가드를 우회하지
+    않고 충족시킨다.
+
+    실패하면 (None, 사유) 를 돌려준다. 조용히 건너뛰지 않는다.
+    """
+    import subprocess
+    sh = os.path.join(ROOT, 'ui', 'tools', 'setup_run_dir.sh')
+    r = subprocess.run(['sh', sh, run_dir], capture_output=True, text=True,
+                       timeout=180)
+    if r.returncode != 0:
+        return None, 'setup_run_dir.sh rc=%d %s' % (r.returncode,
+                                                    (r.stderr or '')[:120])
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'ui_server_probe', os.path.join(run_dir, 'ui_server.py'))
+    mod = importlib.util.module_from_spec(spec)
+    old_path = list(sys.path)
+    sys.path.insert(0, run_dir)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException as e:
+        return None, '%s: %s' % (type(e).__name__, e)
+    finally:
+        sys.path[:] = old_path
+    return mod, None
+
+
+def check_visibility():
+    """N·O. '없음'과 '모호'가 사용자 쪽에서 구분되는가.
+
+    빈 목록 하나로 접으면 "기록이 없다"와 "옛 공유 기록이 있는데 이 세션
+    것인지 증명할 수 없어 안 쓴다"를 구분할 수 없다. 두 번째는 데이터가
+    어딘가에 있다는 뜻이라 대응이 완전히 다르다.
+    """
+    print('=== N·O. ambiguous vs missing 가시성 ===')
+    sys.path.insert(0, os.path.join(ROOT, 'ui', 'server'))
+    import review as RV
+    tmp = tempfile.mkdtemp(prefix='t2_vis_')
+    old_d, old_def, old_env = SP.D, SP.DEFAULT_STATE, os.environ.get(SP.ENV)
+    try:
+        SP.D = tmp
+        SP.DEFAULT_STATE = os.path.join(tmp, 'live2_state.json')
+        a = os.path.join(tmp, 'A', 'state.json')
+        b = os.path.join(tmp, 'B', 'state.json')
+        os.environ[SP.ENV] = a
+        RV.PATH = SP.sidecar_path('archive', a)
+
+        # --- case 1: 아무것도 없다 ---
+        r1 = SP.resolve_read('archive', a)
+        ok('N1 source=missing', r1['source'] == SP.SRC_MISSING, r1['source'])
+        s1 = RV.status()
+        ok('N1 review 문구', s1 and '없습니다' in s1, (s1 or '')[:40])
+
+        # --- case 2: 공유 _alt 만 있다 ---
+        leg = SP.legacy_path('archive')
+        open(leg, 'w', encoding='utf-8').write(
+            json.dumps({'hand_no': 777, 'hero': 7, 'board': ['As'],
+                        'pos': {}, 'hole': {}, 'profiles': {},
+                        'full_log': [], 'result': {}, 'level': 1,
+                        'blinds': [1, 2], 'hash': 'x'}) + '\n')
+        r2 = SP.resolve_read('archive', a)
+        ok('N2 source=ambiguous', r2['source'] == SP.SRC_LEGACY_AMBIGUOUS,
+           r2['source'])
+        s2 = RV.status()
+        ok('N2 review 문구', s2 and '모호' not in (s1 or '') and s2 != s1,
+           (s2 or '')[:52])
+        ok('N: 두 문구가 다르다', s1 != s2)
+        ok('N2 review 비어 있음', RV.load() == [], '자동으로 읽지 않는다')
+        ok('N2 summary 가 설명', RV.summary() == s2)
+        ok('N2 history 가 설명', RV.history() == s2)
+
+        # --- case 3: opt-in ---
+        rows = RV.load(allow_legacy_alt=True)
+        ok('N3 opt-in 읽힘', len(rows) == 1 and rows[0]['hand_no'] == 777,
+           '%d행' % len(rows))
+        ok('N3 opt-in 시 status 없음', RV.status(allow_legacy_alt=True) is None)
+
+        # --- O: UI 가 공유 아카이브 내용을 반환하지 않는가 ---
+        run_dir = os.path.join(tmp, 'uirun')
+        UI, why = _load_ui_server(run_dir)
+        ok('O UI 적재', UI is not None, why or '')
+        if UI is None:
+            return
+        # 실행 폴더가 모듈 폴더이므로 sidecar 도 거기서 찾게 맞춘다.
+        UI._SP.D = tmp
+        UI._SP.DEFAULT_STATE = os.path.join(tmp, 'live2_state.json')
+        leaked = []
+        for st in (a, b):
+            os.environ[SP.ENV] = st
+            meta = UI._archive_status()
+            hands = UI._public_history()
+            ok('O UI(%s) 목록 비어 있음' % os.path.basename(os.path.dirname(st)),
+               hands == [], '%d건' % len(hands))
+            ok('O UI(%s) 출처 노출' % os.path.basename(os.path.dirname(st)),
+               meta['archive_source'] == SP.SRC_LEGACY_AMBIGUOUS
+               and bool(meta['archive_warning'])
+               and meta['legacy_archive'] == os.path.basename(leg),
+               meta['archive_source'])
+            leaked += [h for h in hands if h.get('hand_no') == 777]
+        ok('O: 유출 없음', not leaked)
+        # missing 일 때는 경고가 없어야 한다 (두 상태를 구분)
+        os.remove(leg)
+        os.environ[SP.ENV] = a
+        m0 = UI._archive_status()
+        ok('O: missing 은 경고 없음',
+           m0['archive_source'] == SP.SRC_MISSING
+           and m0['archive_warning'] is None, m0['archive_source'])
+    finally:
+        SP.D, SP.DEFAULT_STATE = old_d, old_def
+        if old_env is None:
+            os.environ.pop(SP.ENV, None)
+        else:
+            os.environ[SP.ENV] = old_env
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main():
     repo_before = _repo_sidecars()
     check_rules()
@@ -301,6 +423,8 @@ def main():
     check_ambiguous_ownership()
     print()
     check_callers_read_source()
+    print()
+    check_visibility()
     print()
     after = _repo_sidecars()
     moved = sorted(set(repo_before) ^ set(after)) + \

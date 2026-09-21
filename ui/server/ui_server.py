@@ -4,8 +4,9 @@
   python ui_server.py [--port 8765]
 
 반드시 엔진을 **별도 폴더에 복사**해서 그 폴더에서 실행한다.
-live2 는 아카이브·리딩 장부를 모듈 폴더에 쓰고, T2_LIVE_STATE 를 쓰면 경로와
-무관하게 접미사가 '_alt' 하나라서 cli.py 세션과 같은 폴더면 파일을 공유한다.
+live2 는 아카이브·리딩 장부를 모듈 폴더에 쓴다. sidecar 이름은 이제 상태
+파일 경로에서 나오므로(`storage_paths`) 상태가 다르면 파일도 갈리지만,
+같은 폴더에서 같은 상태로 돌리면 여전히 겹친다.
 그래서 이 폴더에 UI_SERVER_DIR 표시 파일이 없으면 시작하지 않는다.
 
 엔드포인트
@@ -189,6 +190,25 @@ def _resolve(path):
         return None                    # ../ 로 폴더를 빠져나가려는 요청
     return full if os.path.isfile(full) else None
 
+
+
+def _archive_status():
+    """아카이브 출처 metadata. **'없음'과 '모호'를 가른다.**
+
+    빈 목록 하나로 접으면 사용자가 "기록이 없다"와 "옛 공유 기록이 있는데
+    이 세션 것인지 증명할 수 없어 안 쓴다"를 구분할 수 없다. 두 번째는
+    데이터가 어딘가에 있다는 뜻이라 대응이 완전히 다르다.
+    """
+    r = _SP.resolve_read('archive')
+    out = {'archive_source': r['source'], 'archive_warning': None,
+           'legacy_archive': None}
+    if r['source'] == _SP.SRC_LEGACY_AMBIGUOUS:
+        out['legacy_archive'] = os.path.basename(r['legacy_path'] or '')
+        out['archive_warning'] = (
+            '옛 공유 아카이브(%s)가 있으나 이 상태의 기록인지 증명할 수 없어 '
+            '사용하지 않았습니다. 과거에는 모든 custom state 가 이 한 파일에 '
+            '썼습니다.' % out['legacy_archive'])
+    return out
 
 
 def _public_history():
@@ -541,7 +561,11 @@ class H(BaseHTTPRequestHandler):
         if path == '/api/history':
             # 공개 관전 화면에서도 읽을 수 있는 sanitized 완료 핸드 기록.
             # 숨은 상대 hole / profiles / reads / intents 는 포함하지 않는다.
-            return self._send(200, {'hands': _public_history()})
+            # 목록과 **출처 metadata** 를 함께 준다. 'hands' 키는 그대로라
+            # 기존 클라이언트가 깨지지 않는다.
+            _h = {'hands': _public_history()}
+            _h.update(_archive_status())
+            return self._send(200, _h)
         if path == '/play/':
             self.send_response(302)
             self.send_header('Location', '/play')
