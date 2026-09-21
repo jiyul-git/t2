@@ -15,7 +15,7 @@ def load():
     except Exception: return []
 
 def replay(acts):
-    t = T.Tournament(entries=100, start_stack=30000, hero_seat=7, seats=8,
+    t = T.Tournament(entries=100, start_stack=30000, hero_seat=7,
                      seed=SEED, hands_per_level=12)
     i = 0
     st = t.next_hand()
