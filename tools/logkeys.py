@@ -102,6 +102,64 @@ def generation_of(rec):
     return 'legacy' if has_key(rec, 'oop') else 'unknown'
 
 
+# ---------------------------------------------------------------- 세대
+
+# 아카이브 세대. `generation_of` 의 세 라벨로는 G0 과 G1 이 뭉친다.
+#
+#   G0  최소 intent schema. 포지션 키 없음, 실행 필드도 없음
+#   G1  실행 필드 있음. 포지션 키 없음. 일부 파일에 retired `replayed`
+#   G2  legacy `oop` (절대식)
+#   G3  현재. oop_field / oop_vs_aggr / oop_legacy_abs
+#
+# **G0/G1 을 "legacy OOP 세대"로 읽으면 안 된다.** 그 세대에는 포지션이
+# 기록된 적이 **없다**. legacy 로 접으면 "절대식이 있다"는 거짓이 된다.
+
+G3_KEYS = ('oop_field', 'oop_vs_aggr', 'oop_legacy_abs')
+G2_KEYS = ('oop',)
+
+# G1 을 G0 과 가르는 표식. 실행(액션 집행) 단계가 기록되기 시작한 세대다.
+G1_MARKERS = ('intent_act', 'intent_size', 'intent_src',
+              'amt', 'pre_clamp', 'min_raise', 'tocall')
+
+# 현재 producer 가 더 이상 쓰지 않는데 과거 파일에는 있는 키.
+# **삭제·migration 대상이 아니다.** 미지의 키 경보와 구분하기 위해 등록한다.
+RETIRED_KEYS = {
+    'replayed': 'G1 한 파일에만 있다. 강제 액션 재생 여부. '
+                'ab06165/959f40a 시절 기록. 현재 producer 0',
+    'oop': 'G2 의 절대식. 현재는 oop_legacy_abs 로 이름이 바뀌었다',
+}
+
+
+def archive_generation(rec):
+    """레코드의 세대. 'G0' / 'G1' / 'G2' / 'G3'.
+
+    포지션 키가 있으면 그것이 세대를 정하고, 없으면 실행 필드 유무로 가른다.
+    """
+    if any(has_key(rec, k) for k in G3_KEYS):
+        return 'G3'
+    if any(has_key(rec, k) for k in G2_KEYS):
+        return 'G2'
+    return 'G1' if any(has_key(rec, k) for k in G1_MARKERS) else 'G0'
+
+
+def position_recoverable(rec):
+    """이 레코드에서 **복원 가능한** 포지션 의미. 없으면 빈 튜플.
+
+    복원 불가능한 의미를 호출부가 0/False 로 지어내지 않게 하려고 둔다.
+    """
+    g = archive_generation(rec)
+    if g == 'G3':
+        return tuple(k for k in G3_KEYS if has_key(rec, k))
+    if g == 'G2':
+        return ('oop_legacy_abs',)
+    return ()
+
+
+def retired_in(rec):
+    """이 레코드에 있는 retired 키. 경보가 아니라 기록용이다."""
+    return tuple(k for k in sorted(RETIRED_KEYS) if has_key(rec, k))
+
+
 def oop_field_label(rec, missing='?'):
     """표시용 'OOP' / 'IP' / missing. field 식 기준."""
     v = oop_field_of(rec)

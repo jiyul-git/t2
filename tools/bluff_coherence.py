@@ -37,6 +37,8 @@ D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, D)
 
 import bot, plan as PL, ranges as R
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import logkeys as LK
 
 ORDER = ['preflop', 'flop', 'turn', 'river']
 BLUFF = {'bluff_2street', 'river_bluff', 'semibluff'}
@@ -128,18 +130,28 @@ def line_acts(rows, seat, upto):
 
 
 def analyse(rec, it):
+    """(결과, drop 사유) 를 돌려준다.
+
+    예전에는 어느 경우든 `None` 하나였다. 그러면 **표본에서 조용히 사라지고**
+    남은 건수만 보고 "그 상황이 없었다"로 읽힌다 — 도달성 판정을 통째로
+    뒤집는 오독이다. 사유를 갈라 집계한다.
+    """
     st = it['street']
     seat = it['seat']
     board = (rec.get('board') or [])[:NB[st]]
     hole = (rec.get('hole') or {}).get(str(seat))
     prof = (rec.get('profiles') or {}).get(str(seat))
-    if not board or not hole or not prof:
-        return None
+    if not board:
+        return None, 'missing_board'
+    if not hole:
+        return None, 'missing_hole'
+    if not prof:
+        return None, 'missing_profile'
     sb, bb = (rec.get('blinds') or [0, 0])[:2]
     rows = walk_pots(rec.get('full_log') or [], sb, bb)
     act, opener = pf_action(rows, seat)
     if act is None:
-        return None
+        return None, 'no_preflop_action'
     pos = (rec.get('pos') or {}).get(str(seat))
     bbs = (rec.get('stacks_before') or {}).get(str(seat), 0) / float(bb or 1)
     try:
@@ -147,10 +159,11 @@ def analyse(rec, it):
                                opener_pos=(rec.get('pos') or {}).get(str(opener)),
                                seats=len(rec.get('pos') or {}) or 8)
         rng = R.narrow_by_actions(base, board, line_acts(rows, seat, st), None, None)
-    except Exception:
-        return None
+    except Exception as e:
+        # 계약 오류와 '이 상황은 분석 불가'를 구분한다. 예외 종류를 남긴다.
+        return None, 'range_error:%s' % type(e).__name__
     if not rng:
-        return None
+        return None, 'empty_range'
 
     mine = tuple(sorted(hole))
     in_range = any(tuple(sorted(c)) == mine for c in rng)
@@ -164,13 +177,18 @@ def analyse(rec, it):
     # 강도 백분위는 **연속값(eval7)** 으로 낸다. made_strength 버킷으로 세면
     # 에어끼리 전부 동률이라 made==0 인 순간 백분위가 0 으로 고정된다 —
     # '레인지에서 제일 약하다'와 '다른 에어와 같다'가 구분되지 않는다.
+    degraded = None
     try:
         my_rank = bot.eval7(list(hole) + list(board))
         ranks = [bot.eval7(list(c) + list(board)) for c in rng]
         weaker = sum(1 for x in ranks if x < my_rank)
-    except Exception:
+    except Exception as e:
+        # 버림이 아니라 **품질 저하**다. 버킷 백분위로 내려간다 —
+        # made==0 끼리 동률이 되어 백분위가 0 으로 고정된다.
+        degraded = 'eval7_fallback:%s' % type(e).__name__
         weaker = sum(1 for x in strengths if x < my_made)
     return dict(
+        _degraded=degraded,
         hand=rec.get('hand_no'), street=st, seat=seat, pos=pos,
         plan=it.get('plan'), action=it.get('action'), amt=it.get('amt'),
         hole=hole, board=board, line=line_acts(rows, seat, st), pf=act,
@@ -181,7 +199,20 @@ def analyse(rec, it):
         outs_true=it.get('outs_true', my_outs),
         nut_adv=it.get('nut_adv'), range_adv=it.get('range_adv'),
         blocker=it.get('blocker'), blocker_net=it.get('blocker_net'),
-        eq=it.get('eq'))
+        eq=it.get('eq')), None
+
+
+def _finish(malformed, allow):
+    """깨진 줄이 있으면 기본적으로 nonzero 로 끝낸다."""
+    if not malformed:
+        return 0
+    if allow:
+        print('NOTE 깨진 줄 %d — --allow-malformed 로 계속했다' % len(malformed))
+        return 0
+    print('FAIL 깨진 JSON 줄 %d. 분석 표본에서 조용히 빠졌다.' % len(malformed))
+    print('  과거 파일에 실제로 깨진 줄이 있어 계속해야 한다면 '
+          '--allow-malformed 를 명시할 것')
+    return 1
 
 
 def main():
@@ -189,6 +220,9 @@ def main():
     ap.add_argument('--show', type=int, default=0, help='개별 케이스 N건 출력')
     ap.add_argument('--files', nargs='*', default=None,
                     help='아카이브 경로. 없으면 저장소의 기본 목록')
+    ap.add_argument('--allow-malformed', action='store_true',
+                    help='깨진 JSON 줄이 있어도 분석을 계속하고 rc 0 으로 끝낸다. '
+                         '기본은 건수를 보고하고 rc 1 이다')
     a = ap.parse_args()
     paths = a.files if a.files else files()
 
@@ -196,15 +230,35 @@ def main():
     hands = 0
     plans = Counter()
     seen = set()
+    gens = Counter()                 # 세대별 intent 수
+    per_file = {}                    # 파일 -> {세대, 핸드, intent, 깨진 줄}
+    malformed = []                   # (파일, 줄번호)
+    drops = Counter()                # 사유별 탈락
+    degraded = Counter()
     for path in paths:
-        for line in open(path, encoding='utf-8'):
+        info = {'gens': Counter(), 'hands': 0, 'intents': 0, 'bad': 0,
+                'retired': Counter()}
+        per_file[os.path.basename(path)] = info
+        for lineno, line in enumerate(open(path, encoding='utf-8'), 1):
             line = line.strip()
             if not line:
                 continue
             try:
                 rec = json.loads(line)
             except Exception:
+                # **조용히 넘기지 않는다.** 깨진 줄이 표본에서 사라지면
+                # 남은 건수만 보고 "그 상황이 없었다"로 읽힌다.
+                info['bad'] += 1
+                malformed.append((os.path.basename(path), lineno))
                 continue
+            info['hands'] += 1
+            for _it in (rec.get('intents') or []):
+                if isinstance(_it, dict):
+                    g = LK.archive_generation(_it)
+                    gens[g] += 1
+                    info['gens'][g] += 1
+                    info['intents'] += 1
+                    info['retired'].update(LK.retired_in(_it))
             hands += 1
             for it in (rec.get('intents') or []):
                 plans[it.get('plan')] += 1
@@ -221,10 +275,50 @@ def main():
                 if uid in seen:
                     continue
                 seen.add(uid)
-                c = analyse(rec, it)
+                c, why = analyse(rec, it)
                 if c:
                     grp[key].append(c)
+                    if c.get('_degraded'):
+                        degraded[c['_degraded']] += 1
+                else:
+                    drops[why or 'unknown'] += 1
     cases = grp['계획 블러프']
+
+    # ---- 입력의 성질을 먼저 낸다. 결과 숫자보다 위에 온다 ----
+    print('=== 입력 파일 · 세대 ===')
+    print('%-46s %-22s %7s %8s %6s' % ('file', 'generation', 'hands', 'intents', 'bad'))
+    for fn in sorted(per_file):
+        i = per_file[fn]
+        gs = ' '.join('%s:%d' % (k, v) for k, v in sorted(i['gens'].items())) or '-'
+        print('%-46s %-22s %7d %8d %6d' % (fn[:46], gs, i['hands'], i['intents'], i['bad']))
+        if i['retired']:
+            print('%-46s   retired: %s' % ('', dict(i['retired'])))
+    print('-' * 92)
+    print('세대 합계: %s  (총 intent %d)'
+          % (' '.join('%s=%d' % (k, gens[k]) for k in ('G0', 'G1', 'G2', 'G3')),
+             sum(gens.values())))
+    print('  G0/G1 에는 포지션이 **기록된 적이 없다**. legacy OOP 세대가 아니다.')
+    print()
+    print('=== 깨진 JSON 줄 ===')
+    if not malformed:
+        print('  없음')
+    else:
+        print('  %d줄' % len(malformed))
+        for fn, ln in malformed[:20]:
+            print('    %s:%d' % (fn, ln))
+        if len(malformed) > 20:
+            print('    ... 외 %d줄' % (len(malformed) - 20))
+    print()
+    print('=== 분석 탈락 사유 (조용히 사라지지 않게) ===')
+    if not drops:
+        print('  없음')
+    for k, v in drops.most_common():
+        print('  %-28s %d' % (k, v))
+    if degraded:
+        print('  -- 품질 저하(버리지 않음) --')
+        for k, v in degraded.most_common():
+            print('  %-28s %d' % (k, v))
+    print()
 
     def med(rows, key):
         v = sorted(x[key] for x in rows if x.get(key) is not None)
@@ -307,6 +401,8 @@ def main():
                   % (c['made'], c['outs_true'], c['rel'], c['range_adv'],
                      c['blocker_net']))
 
+    return _finish(malformed, a.allow_malformed)
+
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

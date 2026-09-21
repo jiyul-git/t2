@@ -39,11 +39,45 @@ def orders_for_labels(labels):
         return pre, post
     return None, None
 
+# 어느 파일·어느 상태에서 읽었는지. 감사 결과에 같이 찍는다 —
+# current 가 깨져서 stale 로 내려갔는데 정상 감사처럼 보이면 안 된다.
+SOURCES = []
+
+
+def _note(kind, detail):
+    SOURCES.append('%s: %s' % (kind, detail))
+
+
 def _load():
+    """핸드 아카이브. 어느 파일을 썼는지 SOURCES 에 남긴다.
+
+    `hand_archive.jsonl` 은 `live.py` 시절의 **구형 포맷**이다. 그쪽으로
+    내려갔다면 그 사실을 숨기지 않는다.
+    """
+    del SOURCES[:]
     for fn in ('hand_archive2.jsonl', 'hand_archive.jsonl'):
         p = os.path.join(D, fn)
-        if os.path.exists(p):
-            return [json.loads(l) for l in open(p) if l.strip()]
+        if not os.path.exists(p):
+            continue
+        rows, bad = [], []
+        for i, l in enumerate(open(p, encoding='utf-8'), 1):
+            if not l.strip():
+                continue
+            try:
+                rows.append(json.loads(l))
+            except Exception as e:
+                bad.append((i, type(e).__name__))
+        legacy = ' (legacy 포맷)' if fn == 'hand_archive.jsonl' else ''
+        _note('archive', '%s%s — %d핸드' % (fn, legacy, len(rows)))
+        if bad:
+            _note('archive-error',
+                  '%s 깨진 줄 %d (%s)' % (fn, len(bad),
+                                         ', '.join('%d:%s' % b for b in bad[:5])))
+        if fn == 'hand_archive.jsonl':
+            _note('archive-fallback',
+                  'hand_archive2.jsonl 이 없어 구형 파일로 내려갔다')
+        return rows
+    _note('archive', '없음 — hand_archive2.jsonl / hand_archive.jsonl 둘 다 없다')
     return []
 
 def check(hand_no):
@@ -58,6 +92,12 @@ def check(hand_no):
     if not st['profiles'] and os.path.exists(p2):
         try:
             d = json.load(open(p2))
+        except Exception as e:
+            d = None
+            _note('state-error',
+                  'live2_state.json 파싱 실패 (%s) — 프로필 없이 간다'
+                  % type(e).__name__)
+        if d is not None:
             # pid 기반 → 좌석 기반 매핑
             fl = d.get('field', {})
             hero_pid = fl.get('hero_pid', 0)
@@ -74,12 +114,22 @@ def check(hand_no):
                              if fl['players'][str(pid)]['stack'] > 0]
                     st['profiles'] = {str(i+1): fl['players'][str(pid)]['prof']
                                       for i, pid in enumerate(alive)}
-        except Exception: pass
+            if st['profiles']:
+                _note('profiles', 'live2_state.json')
+            else:
+                _note('profiles-miss',
+                      'live2_state.json 에서 이 핸드의 테이블을 찾지 못했다')
     if not st['profiles']:
         sp = os.path.join(D, 'live_state.json')
         if os.path.exists(sp):
-            try: st = json.load(open(sp))
-            except Exception: pass
+            try:
+                st = json.load(open(sp))
+                _note('profiles', 'live_state.json (stale fallback)')
+            except Exception as e:
+                _note('state-error',
+                      'live_state.json 파싱 실패 (%s)' % type(e).__name__)
+    if st.get('profiles') and not any(x.startswith('profiles:') for x in SOURCES):
+        _note('profiles', '아카이브 레코드 자체')
     out = []
     def flag(cat, msg): out.append('[%s] %s' % (cat, msg))
 
@@ -241,10 +291,28 @@ def check(hand_no):
     for s,v in (rec.get('stacks_before') or {}).items():
         if float(v)<=0 and s in pos: flag('구조','%s번 스택0인데 참여'%s)
     if len(set(pos.values()))!=len(pos): flag('구조','포지션 중복')
+    # 출처를 결과에 실어 보낸다. 깨진 상태 때문에 다른 상태로 내려갔는데
+    # 정상 감사처럼 보이는 것을 막는다.
+    for src in SOURCES:
+        kind = src.split(':', 1)[0]
+        if kind.endswith('error'):
+            flag('출처오류', src)
+        elif kind.endswith('fallback') or kind.endswith('miss'):
+            flag('출처경고', src)
     return out
+
+
+def sources():
+    """직전 `_load()` 가 무엇을 읽었는지. 비어 있으면 아직 안 읽었다."""
+    return list(SOURCES)
+
 
 def sweep(verbose=True):
     recs=_load(); total=0; bycat=defaultdict(int)
+    if verbose:
+        print('출처:')
+        for x in (SOURCES or ['(없음)']):
+            print('   ', x)
     for r in recs:
         iss=check(r['hand_no'])
         for x in iss: bycat[x.split(']')[0][1:]]+=1
