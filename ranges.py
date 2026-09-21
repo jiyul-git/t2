@@ -6,14 +6,14 @@ ALL = bot._ALLCOMBOS
 _SORTED = sorted(ALL, key=lambda c: pf.PCT[pf.cls(list(c))])
 
 def _def_thresholds(prof_type, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
-                    raise_level=1):
+                    raise_level=1, seats=8, ante=True):
     """역치 계산은 preflop.defend_thresholds 하나뿐이다. 여기서 복제하지 않는다.
 
     이렇게 해야 '봇이 실제로 어떻게 방어하는가'와
     '상대 레인지를 어떻게 추정하는가'가 영원히 같은 값을 본다.
     """
     return pf.defend_thresholds(prof_type, def_pos, opener_pos, bb, open_bb,
-                                n_callers, raise_level)
+                                n_callers, raise_level, seats, ante)
 
 import persona as PS
 
@@ -34,7 +34,8 @@ def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
         hi = min(0.85, base * 2.6)
     elif action in ('call','3bet'):
         if opener_pos:
-            tp, tot = _def_thresholds(prof_type, pos, opener_pos, bb, open_bb, n_callers)
+            tp, tot = _def_thresholds(prof_type, pos, opener_pos, bb, open_bb,
+                                      n_callers, seats=seats, ante=ante)
             lo, hi = (0.0, tp) if action == '3bet' else (tp, tot)
         else:
             hi = t['threebet']*3.0 if action == '3bet' else min(0.85, t['call']*2.4)
