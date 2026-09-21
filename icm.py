@@ -1,22 +1,28 @@
 from functools import lru_cache
 
-def icm_equity(stacks, payouts):
-    """Malmuth-Harville. stacks: list[float], payouts: list[float] (1위부터).
-       반환: 각 스택의 기대 상금."""
+_ICM_PRUNE = 1e-9
+
+
+def _icm_equity_reference(stacks, payouts):
+    """Historical recursive Malmuth-Harville implementation.
+
+    Kept as a compatibility fallback and as the oracle for verification.
+    """
     n = len(stacks)
     k = min(len(payouts), n)
     total = float(sum(stacks))
-    if total <= 0: return [0.0]*n
-    res = [0.0]*n
+    if total <= 0:
+        return [0.0] * n
+    res = [0.0] * n
 
     def rec(remaining_idx, remaining_sum, place, prob, acc):
-        if place >= k or prob < 1e-9:
+        if place >= k or prob < _ICM_PRUNE:
             return
         for i in remaining_idx:
             if remaining_sum > 0:
                 p = prob * (stacks[i] / remaining_sum)
             else:
-                p = prob / len(remaining_idx)   # 전원 0칩이면 균등 분배
+                p = prob / len(remaining_idx)
             res[i] += p * payouts[place]
             if place + 1 < k:
                 nxt = [j for j in remaining_idx if j != i]
@@ -24,6 +30,103 @@ def icm_equity(stacks, payouts):
 
     rec(list(range(n)), total, 0, 1.0, None)
     return res
+
+
+def _subset_path_prune_safe(stacks, k):
+    """True when the historical 1e-9 path prune cannot remove a positive path.
+
+    Subset DP combines different finishing orders that reach the same subset.
+    That is equivalent to the historical recursion only when no positive path
+    would have been individually pruned.  Zero-probability paths are harmless.
+    """
+    n = len(stacks)
+    total = float(sum(stacks))
+    if total <= 0 or k <= 1:
+        return True
+
+    size = 1 << n
+    sums = [0.0] * size
+    for mask in range(1, size):
+        bit = mask & -mask
+        i = bit.bit_length() - 1
+        sums[mask] = sums[mask ^ bit] + float(stacks[i])
+
+    mins = {0: 1.0}
+    for place in range(min(k - 1, n - 1)):
+        nxt = {}
+        for mask, prob in mins.items():
+            remaining_sum = total - sums[mask]
+            remaining_count = n - mask.bit_count()
+            for i, w in enumerate(stacks):
+                if mask & (1 << i):
+                    continue
+                if remaining_sum > 0:
+                    p = prob * (float(w) / remaining_sum)
+                else:
+                    p = prob / remaining_count
+                if p == 0.0:
+                    continue
+                if p < _ICM_PRUNE:
+                    return False
+                nm = mask | (1 << i)
+                old = nxt.get(nm)
+                if old is None or p < old:
+                    nxt[nm] = p
+        mins = nxt
+        if not mins:
+            break
+    return True
+
+
+def _icm_equity_subset(stacks, payouts):
+    """Exact subset-DP form of Malmuth-Harville: O(n * 2^n)."""
+    n = len(stacks)
+    k = min(len(payouts), n)
+    total = float(sum(stacks))
+    if total <= 0:
+        return [0.0] * n
+    res = [0.0] * n
+
+    size = 1 << n
+    sums = [0.0] * size
+    for mask in range(1, size):
+        bit = mask & -mask
+        i = bit.bit_length() - 1
+        sums[mask] = sums[mask ^ bit] + float(stacks[i])
+
+    probs = {0: 1.0}
+    for place in range(k):
+        nxt = {}
+        for mask, prob in probs.items():
+            remaining_sum = total - sums[mask]
+            remaining_count = n - mask.bit_count()
+            for i, w in enumerate(stacks):
+                if mask & (1 << i):
+                    continue
+                if remaining_sum > 0:
+                    p = prob * (float(w) / remaining_sum)
+                else:
+                    p = prob / remaining_count
+                res[i] += p * payouts[place]
+                if place + 1 < k and p:
+                    nm = mask | (1 << i)
+                    nxt[nm] = nxt.get(nm, 0.0) + p
+        probs = nxt
+    return res
+
+
+def icm_equity(stacks, payouts):
+    """Malmuth-Harville expected prize.
+
+    Nine-player exact ICM is the production hot path after the 9-max migration.
+    Use subset DP when it is provably unaffected by the historical path-prune;
+    otherwise fall back to the historical recursion unchanged.
+    """
+    n = len(stacks)
+    k = min(len(payouts), n)
+    if n == 9 and _subset_path_prune_safe(stacks, k):
+        return _icm_equity_subset(stacks, payouts)
+    return _icm_equity_reference(stacks, payouts)
 
 def icm_pressure(stacks, payouts, seat_idx):
     """0~1. 높을수록 그 스택은 리스크 회피(생존 가치)가 커야 한다.
