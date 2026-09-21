@@ -5,7 +5,39 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import preflop as pf, bot
 
 D = os.path.dirname(os.path.abspath(__file__))
-from table import PRE_ORDER, POST_ORDER
+import table as _TB
+
+# 9맥스 사다리가 8맥스 사다리의 상위집합이다 (UTG+2 만 끼어든다).
+# 구 아카이브처럼 현재 사다리와 라벨 집합이 다른 기록은 이 상위집합에서
+# 추려야 예전과 같은 순서가 나온다.
+_CANON_PRE, _CANON_POST = _TB.orders(9)[1], _TB.orders(9)[2]
+
+
+def orders_for_labels(labels):
+    """그 핸드에 실제로 있었던 포지션 집합의 (PRE, POST).
+
+    8맥스 상수를 고정으로 쓰면 9인 핸드의 UTG+2 가 기대 순서에서 빠져
+    정상 핸드에 거짓 '순서' 경보가 난다. 좌석 수가 매 핸드 달라지므로
+    사다리도 그 핸드에서 도출해야 한다.
+
+    1) 그 인원수의 orders(n) 라벨 집합이 기록과 같으면 그것을 쓴다.
+       헤즈업 포스트플랍([BB, SB])처럼 규칙이 다른 경우까지 여기서 걸린다.
+    2) 다르면(구 아카이브) 9맥스 상위집합에서 추린다 — 예전 8맥스 상수로
+       추린 것과 같은 결과가 나온다.
+    3) 둘 다 아니면 모르는 규약이다. **억지로 정렬하지 않는다.**
+    """
+    labs = set(labels)
+    try:
+        _, pre, post = _TB.orders(len(labs))
+        if set(pre) == labs:
+            return list(pre), list(post)
+    except ValueError:
+        pass
+    pre = [p for p in _CANON_PRE if p in labs]
+    post = [p for p in _CANON_POST if p in labs]
+    if set(pre) == labs:
+        return pre, post
+    return None, None
 
 def _load():
     for fn in ('hand_archive2.jsonl', 'hand_archive.jsonl'):
@@ -72,6 +104,13 @@ def check(hand_no):
     stacks0 = {int(k): float(v) for k, v in (rec.get('stacks_before') or {}).items()}
     folded_g = set(); allin_g = set()
     spent = defaultdict(float)      # 이전 스트리트까지 누적 투입
+    # 사다리는 핸드마다 한 번만 도출한다. 스트리트마다 부르면 모르는 규약일 때
+    # 같은 생략 기록이 네 번 쌓인다.
+    _pre_o, _post_o = orders_for_labels(pos.values())
+    if _pre_o is None:
+        # 모르는 포지션 규약이다. 임의 사다리로 정렬하면 거짓 경보가 된다.
+        flag('생략', '순서검사 생략 — 알 수 없는 포지션 집합 %s'
+             % sorted(set(pos.values())))
     for stt in ('preflop','flop','turn','river'):
         acts = streets.get(stt, [])
         if not acts: continue
@@ -109,14 +148,15 @@ def check(hand_no):
             elif act == 'fold': folded_g.add(seat)
             acted.append(seat)
         for k, v in contrib.items(): spent[k] += v
-        order = PRE_ORDER if stt == 'preflop' else POST_ORDER
-        expect = [seat_of[p] for p in order if p in seat_of]
-        first = []
-        for s_ in acted:
-            if s_ in first: break
-            first.append(s_)
-        sub = [s_ for s_ in expect if s_ in first]
-        if first != sub: flag('순서', '%s 순서 %s / 정규 %s' % (stt, first, sub))
+        if _pre_o is not None:
+            order = _pre_o if stt == 'preflop' else _post_o
+            expect = [seat_of[p] for p in order if p in seat_of]
+            first = []
+            for s_ in acted:
+                if s_ in first: break
+                first.append(s_)
+            sub = [s_ for s_ in expect if s_ in first]
+            if first != sub: flag('순서', '%s 순서 %s / 정규 %s' % (stt, first, sub))
 
     # C. 정산
     res = rec['result']
