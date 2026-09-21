@@ -77,6 +77,15 @@ def check_balance_boundary():
     assert len(active) == 2, active
     assert max(active) - min(active) <= 1, active
 
+    # Initial equalisation must not be reported as a real in-tournament move.
+    # Use several seeds because whether the hero is selected as a mover depends
+    # on the shuffled initial assignment.
+    for sd in range(40):
+        x = FS.Field(entries=100, seed=sd, fmt='standard')
+        assert x.hero_moves == 0, (sd, x.hero_moves, x.notes)
+        assert not any('테이블 밸런싱' in n or '테이블 브레이크' in n for n in x.notes), (
+            sd, x.notes)
+
 
 def check_final_table_break():
     f = FS.Field(entries=100, seed=99004, fmt='standard')
