@@ -139,6 +139,36 @@ d8e9271ec730c01d80c801550bf0e5b50fabc5fa3533ea3f43200046afb832cc
 `f7e03ac` / `a247f7f` 를 새 실험의 비교군으로 쓰지 마라. 특히 prefetch 같은
 성능 최적화의 의미 보존 검증은 **같은 baseline 의 ON/OFF 로만** 비교한다.
 
+### `tools/regress.py` 의 기준선은 **둘**이다
+
+| 이름 | 파일 | 무엇인가 |
+|---|---|---|
+| `historical` | `tools/baseline_9max.json` | **pre-OOP.** `7e40ba0` 에 동결. 봉인된 money-sizing Phase C(`024ab5b`, INCONCLUSIVE)가 서 있던 행동 |
+| `current` | `tools/baseline_9max_post_oop.json` | **post-OOP.** `0d202c5` 이후의 현재 행동. `60e16d8` 에서 동결 |
+
+```
+python3 tools/regress.py check                        # current — 회귀 판정은 이것
+python3 tools/regress.py check --baseline historical   # 과거 대조 (3003·3004 불일치가 정상)
+python3 tools/regress.py list
+```
+
+**`historical` 을 덮어쓰지 마라.** `save --baseline historical` 은 거부된다.
+덮어쓰면 Phase C 결과가 어느 코드에 대한 것이었는지 가리키는 표식이 사라진다.
+
+**3003·3004 불일치는 결함이 아니다.** 귀속을 실측으로 확정했다.
+
+```
+7e40ba0 ──▶ 024ab5b(Phase C 봉인) ──▶ 0d202c5(OOP 수정) ──▶ 60e16d8(HEAD)
+             │                          │
+             │ 7d084bd(직전)            │ 이후 production diff 0
+             │ historical 대조 6/6 일치  │ (95624b0·72969a4·3e27b44·60e16d8 은 test·docs)
+             └──────────────────────────┘
+                 변화는 0d202c5 단독 귀속. 추가 변화 없음
+```
+
+`72ac16c` 는 `audit.py` 만 고쳤고 **엔진이 `audit.py` 를 import 하지 않는다.**
+`7d084bd` 는 죽은 `oop=` 인자 제거뿐이고, 그 시점 지문이 historical 과 일치한다.
+
 ---
 
 ## 반사실 실험 기준점
@@ -480,6 +510,7 @@ eq_current  seed=seed 넘김        → make_plan 의 seed 그대로, sims = 400
 | `tools/verify_tilt_divergence.py` | 엔진 두 벌의 divergence·필드 페이스 대조 |
 | `tools/verify_decay_profile.py` | 감쇠가 자기 프로필을 쓰는지 (객체 동일성) |
 | `tools/verify_defer.py` | prefetch 의미 보존 (off/inline/worker/http) |
+| `tools/regress.py` | 행동 지문 회귀. `--baseline current`(기본)/`historical`/파일 |
 | `cli.py` | 히어로 직접 플레이. `python3 cli.py` |
 
 수집 시 주의: 명령 하나가 300초를 넘으면 안 되는 환경이었다면
