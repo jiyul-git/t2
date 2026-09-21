@@ -188,7 +188,7 @@ def _exec(sits, prof, resist):
             (a, amt), _eq, _nd = PL.act_with_plan(
                 s['hero'], s['board'], prof, copy.deepcopy(ps),
                 s['pot'], s['tocall'] if resist else 0, s['stack'], s['street'],
-                initiative=s['initiative'], oop=s['oop'],
+                initiative=s['initiative'],
                 opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
@@ -243,7 +243,7 @@ def L_resist_flip(sits, prof):
             (a_, _amt), _eq, _nd = PL.act_with_plan(
                 s['hero'], s['board'], prof, copy.deepcopy(ps),
                 s['pot'], s['tocall'], s['stack'], s['street'],
-                initiative=s['initiative'], oop=s['oop'],
+                initiative=s['initiative'],
                 opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
@@ -291,7 +291,7 @@ def L_noresist_size(sits, prof):
             (a_, amt), _e, _n = PL.act_with_plan(
                 s['hero'], s['board'], prof, copy.deepcopy(ps),
                 s['pot'], 0, s['stack'], s['street'],
-                initiative=s['initiative'], oop=s['oop'],
+                initiative=s['initiative'],
                 opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
@@ -324,7 +324,7 @@ def L_stackoff_path(sits, prof):
             (a_, _amt), _e, _nd = PL.act_with_plan(
                 s['hero'], s['board'], prof, ps,
                 s['pot'], s['tocall'], s['stack_commit'], s['street'],
-                initiative=s['initiative'], oop=s['oop'],
+                initiative=s['initiative'],
                 opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                 to_act_behind=s['to_act_behind'], opp_est=s['est'],
                 read=s['read'])
@@ -625,7 +625,7 @@ def main():
                     (a_, _m), _e, _n = PL.act_with_plan(
                         s['hero'], s['board'], p0, copy.deepcopy(s['plan_fixed']),
                         s['pot'], s['tocall'], s['stack'], s['street'],
-                        initiative=s['initiative'], oop=s['oop'],
+                        initiative=s['initiative'],
                         opp_range=s['opp_range'], seed=s['seed'], n_opp=s['n_opp'], bf=1.0,
                         to_act_behind=s['to_act_behind'], opp_est=s['est'],
                         read=s['read'])

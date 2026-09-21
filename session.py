@@ -803,7 +803,7 @@ class HandRun:
                 a2, eq, need = PL.act_with_plan(h.hole[s], board, ax, h.plans[key], pot_live, tc,
                                                 r2.stacks[s], street,
                                                 initiative=RU.has_initiative(s, aggressor),
-                                                oop=(h.POST.index(h.pos[s]) < 3), opp_range=opp_r,
+ opp_range=opp_r,
                                                 bf=h.bf(s), seed=self._dseed(s, street, 'act', len(r2.log)),
                                                 n_opp=n_opp, to_act_behind=behind, read=read_val,
                                                 opp_est=est if tc > 0 and aggressor is not None

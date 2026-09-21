@@ -1229,7 +1229,7 @@ def _trace(st, street, kind, **kw):
 
 
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
-                  initiative=True, oop=False, opp_range=None, bf=1.0, seed=None,
+                  initiative=True, opp_range=None, bf=1.0, seed=None,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서

@@ -119,7 +119,7 @@ def main():
             (act, _amt), _eq, _need = PL.act_with_plan(
                 sit['hero'], sit['board'], p, copy.deepcopy(ps),
                 sit['pot'], sit['tocall'], sit['stack'], sit['street'],
-                initiative=sit['initiative'], oop=sit['oop'],
+                initiative=sit['initiative'],
                 opp_range=sit['opp_range'], seed=s, n_opp=1,
                 to_act_behind=sit['to_act_behind'], opp_est=est, read=rv)
             return act
