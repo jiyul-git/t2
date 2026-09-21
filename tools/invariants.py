@@ -301,7 +301,7 @@ def run(hands=200, seeds=6):
 
     for si in range(seeds):
         chaos = ChaosHero(9000 + si)
-        t = T.Tournament(entries=100, start_stack=30000, hero_seat=7, seats=8,
+        t = T.Tournament(entries=100, start_stack=30000, hero_seat=7,
                          seed=5000 + si, hands_per_level=12)
         for hi in range(hands):
             if sum(1 for s in t.seats if t.stacks[s] > 0) < 3:
