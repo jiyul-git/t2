@@ -18,7 +18,7 @@ HANDS = 30
 def fingerprint():
     per_seed, stats = {}, collections.Counter()
     for sd in SEEDS:
-        t = T.Tournament(entries=100, start_stack=30000, hero_seat=7, seats=8,
+        t = T.Tournament(entries=100, start_stack=30000, hero_seat=7,
                          seed=sd, hands_per_level=200)
         rows = ['q=%.3f|a=%.2f' % (t.field_q, t.aggr_bias)]
         for _ in range(HANDS):
