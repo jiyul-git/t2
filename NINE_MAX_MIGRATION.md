@@ -38,3 +38,22 @@ logic were wrong.
 
 Run `tools/verify_9max.py` first.  Only after it passes should money-sizing
 structural and behavioral counterfactual measurements be rerun on 9-max.
+
+
+## Tool policy
+
+Current-baseline tools follow the selected format seat count.  With the default
+standard format they therefore run 9-max.  Historical preregistered
+counterfactual tools whose published results were produced at 8-max remain
+explicitly locked to 8 seats for reproducibility; their outputs are not used as
+new 9-max evidence.
+
+The old regression baseline remains in `tools/baseline.json`.  New baseline
+fingerprints use `tools/baseline_9max.json` so the intentional 9-max migration
+does not overwrite the historical 8-max reference.
+
+## Initial table balance
+
+Field construction performs one balance pass before the first hand.  This
+prevents cases such as 100 entries at 9-max from producing an initial
+9x11 + 1 layout in which the lone player would otherwise skip the first hand.
