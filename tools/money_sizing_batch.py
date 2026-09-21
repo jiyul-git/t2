@@ -84,7 +84,7 @@ def load_rows(path):
     return out
 
 
-def aggregate(seeds, workdir, out_path):
+def aggregate(seeds, workdir, out_path, require_position=None):
     rows = []
     failed = []
     for seed in seeds:
@@ -107,6 +107,9 @@ def aggregate(seeds, workdir, out_path):
     skill_deltas = []
     if not rows:
         violations.append('no near-ladder sizing rows were collected')
+    if require_position and not any(r.get('pos') == require_position for r in rows):
+        violations.append('required position absent from aggregate sample: %s'
+                          % require_position)
 
     for r in rows:
         b, s, sf, expected = MS.size_values(r)
@@ -171,6 +174,8 @@ def main():
     ap.add_argument('--heartbeat', type=int, default=30)
     ap.add_argument('--workdir', default='money_sizing_seeds')
     ap.add_argument('--out', default='money_sizing_sweep.jsonl')
+    ap.add_argument('--require-position', default=None,
+                    help='fail aggregate if no qualifying row has this position')
     args = ap.parse_args()
     if args.seeds < 1 or args.workers < 1:
         ap.error('--seeds and --workers must be >= 1')
@@ -212,7 +217,7 @@ def main():
         print('INCOMPLETE:', ','.join(map(str, incomplete)), flush=True)
         print('rerun the same command; completed seeds will be skipped', flush=True)
         return 2
-    return aggregate(seeds, workdir, args.out)
+    return aggregate(seeds, workdir, args.out, args.require_position)
 
 
 if __name__ == '__main__':
