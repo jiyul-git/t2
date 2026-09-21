@@ -57,3 +57,16 @@ does not overwrite the historical 8-max reference.
 Field construction performs one balance pass before the first hand.  This
 prevents cases such as 100 entries at 9-max from producing an initial
 9x11 + 1 layout in which the lone player would otherwise skip the first hand.
+
+
+## Initial balance scope
+
+The pre-first-hand balance pass applies to every format, not only 9-max.
+Its purpose is format-independent: a remainder table with one player must not
+skip the first hand.  Therefore alternate 8-max formats can also have a
+different initial table distribution than the historical behavior (for example,
+17 entries no longer start as 8/8/1).  This is intentional and should be treated
+as a behavioral baseline change for those formats as well.
+
+Initial equalisation is setup, not an in-tournament table move.  It must not
+increment `hero_moves` or emit a table-move note.
