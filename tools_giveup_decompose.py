@@ -4,7 +4,7 @@ import json, os, sys
 from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tools'))
-from logkeys import oop_of
+from logkeys import oop_legacy_abs_of
 
 # hand_archive2.jsonl 은 구형 포맷 — n_opp/made/range_adv/nut_adv 가 없어 제외
 FILES = ['hand_archive2_alt.jsonl']
@@ -41,7 +41,9 @@ for f in FILES:
                 danger=it.get('danger') or 0.0, outs=it.get('outs') or 0,
                 blk=blk, blkn=blkn, spr=it.get('spr'),
                 n_opp=it.get('n_opp'), init=bool(it.get('init')),
-                oop=oop_of(it), tocall=it.get('tocall') or 0,
+                # hand_archive2_alt.jsonl 은 legacy 세대다 — `oop` 는 절대식이고
+                # field 식은 기록된 적이 없다. 복원 가능한 의미만 읽는다.
+                oop_abs=oop_legacy_abs_of(it), tocall=it.get('tocall') or 0,
                 act=it.get('action'), has_sd=has_sd, bluff_ok=bo,
                 why=' | '.join(it.get('why') or [])))
 
@@ -111,7 +113,8 @@ table('7. bluff_ok (리딩 보정 제외)',
       ['bo <.05', 'bo .05~.15', 'bo .15~.30', 'bo .30~.50', 'bo >=.50'])
 table('8. n_opp', lambda x: 'n_opp %s' % x['n_opp'])
 table('9. initiative', lambda x: 'init %s' % x['init'])
-table('10. oop 플래그', lambda x: 'oop %s' % ('없음' if x['oop'] is None else x['oop']))
+table('10. oop 플래그 (절대식)',
+      lambda x: 'oop_legacy_abs %s' % ('없음' if x['oop_abs'] is None else x['oop_abs']))
 table('부록. 생성 경로', lambda x: (
     '① eq>=pcz made 폴백' if '중간강도이나' in x['why'] else
     '③ 드로우 소멸/미스' if ('드로우 소멸' in x['why'] or '드로우 미스' in x['why']) else
