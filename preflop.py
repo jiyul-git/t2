@@ -572,7 +572,8 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     if open_bb >= _st * 0.92:
         _a, _cap = calloff_decision(prof, def_pos, hand, bb, raise_level,
                                     1.5 + open_bb*(1 + n_callers), open_bb,
-                                    bf, opener_pos, open_bb, exploit, n_callers)
+                                    bf, opener_pos, open_bb, exploit, n_callers,
+                                    seats, ante)
         return _a
     vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
@@ -713,7 +714,7 @@ def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None):
 # vs_shove 는 제거했다. 에쿼티 함수를 인자로 받는 구형 인터페이스였고
 # 호출부가 없었다. 올인 대면은 calloff_cap 이 맡는다.
 def calloff_cap(prof, def_pos, opener_pos, bb, open_bb, raise_level,
-                bf=1.0, exploit=None, n_callers=0):
+                bf=1.0, exploit=None, n_callers=0, seats=8, ante=True):
     """올인 대면 콜 문턱. 일반 디펜스와 **다른 계산이다.**
 
     포스트플랍이 없다. 그래서
@@ -727,7 +728,7 @@ def calloff_cap(prof, def_pos, opener_pos, bb, open_bb, raise_level,
     의존해 개념 벡터를 무시했다.
     """
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
-                                n_callers, raise_level)
+                                n_callers, raise_level, seats, ante)
     # 참가 폭에서 시작해 단계별로 좁힌다. 3벳 올인보다 5벳 올인이 훨씬 좁다.
     cap = tot * CALLOFF_TIGHTEN.get(raise_level + 1, 0.07) * 2.6
 
@@ -749,10 +750,11 @@ def calloff_cap(prof, def_pos, opener_pos, bb, open_bb, raise_level,
 
 def calloff_decision(prof, def_pos, hand, bb, raise_level, pot, tocall,
                      bubble_factor=1.0, opener_pos='CO', open_bb=None,
-                     exploit=None, n_callers=0):
+                     exploit=None, n_callers=0, seats=8, ante=True):
     """올인 대면 콜/폴드. 반환: (액션, 문턱)"""
     cap = calloff_cap(prof, def_pos, opener_pos, bb,
                       open_bb if open_bb is not None else tocall,
-                      raise_level, bubble_factor, exploit, n_callers)
+                      raise_level, bubble_factor, exploit, n_callers,
+                      seats, ante)
     r = pct(hand)
     return (('call', tocall) if r <= cap else ('fold', 0)), cap
