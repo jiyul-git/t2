@@ -17,9 +17,13 @@ import os, shutil, sys
 
 # live2 가 전이적으로 import 하는 모듈 전부. view.py 는 ui_view 가
 # view_text 라는 이름으로 직접 로드하므로 반드시 포함한다.
+# storage_paths 는 fieldsim/live2 가 import 한다 — 빠지면 실행 폴더가
+# ModuleNotFoundError 로 죽는다.
+# setup_run_dir.sh 의 목록과 **같아야 한다.** 예전에는 money_pressure 가
+# .sh 에만 있어 둘이 어긋나 있었다.
 MODULES = """archetypes bot context depth dynamics field fieldsim formats gto icm
-             live2 persona plan play preflop ranges reads runner session table
-             texture view""".split()
+             live2 money_pressure persona plan play preflop ranges reads runner
+             session storage_paths table texture view""".split()
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json']
@@ -59,8 +63,8 @@ def main():
     print('실행 폴더: %s' % dst)
     print('  모듈 %d개, 데이터 %d개' % (len(MODULES), len(DATA)))
     print('  실행: cd "%s" && python ui_server.py' % dst)
-    print('  주의: T2_LIVE_STATE 를 설정하지 마세요. 설정하면 접미사가 _alt 로')
-    print('        고정되어 cli.py 세션과 아카이브를 공유하게 됩니다.')
+    print('  참고: sidecar 이름은 이제 상태 파일 경로에서 나옵니다 —')
+    print('        T2_LIVE_STATE 가 다르면 아카이브도 갈립니다 (storage_paths).')
 
 
 if __name__ == '__main__':

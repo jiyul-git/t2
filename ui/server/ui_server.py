@@ -35,6 +35,7 @@ if not os.path.exists(os.path.join(D, 'UI_SERVER_DIR')):
 import ui_view
 sys.modules['view'] = ui_view          # live2 가 import 하기 전에 주입
 import live2 as L
+import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver 를 쓴다
 
 LOCK = threading.Lock()
 _last = None
@@ -198,9 +199,12 @@ def _public_history():
     - 상대 카드는 실제 shown_hole 만 허용
     - archive 의 top-level/result hole 전체는 절대 반환하지 않는다
     """
-    fn = os.path.join(D, 'hand_archive2.jsonl')
+    # 엔진 상태의 namespace 를 그대로 따른다. UI 전용 아카이브를 만들지
+    # 않는다. 예전에는 접미사 없는 이름을 고정으로 읽어서, T2_LIVE_STATE 를
+    # 쓰는 세션을 띄우면 **다른 상태의 아카이브**를 보고 있었다.
+    fn, _src = _SP.resolve_read('archive')
 
-    if not os.path.exists(fn):
+    if not fn:
         return []
 
     out = []
