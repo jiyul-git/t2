@@ -5,21 +5,22 @@ import formats as FM, context as CTX, dynamics as DY
 from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
-MAXSEAT = 8
+MAXSEAT = 8  # legacy fallback; Field instances use fmt['seats']
 BOT_SUFFIX = '_alt' if os.environ.get('T2_LIVE_STATE') else ''
 # 켜면 핸드 실패를 삼키지 않고 즉시 올린다. 디버깅·검증용.
 STRICT = bool(os.environ.get('T2_STRICT'))
 
 
 class Table:
-    def __init__(self, tid, players, button=None):
+    def __init__(self, tid, players, button=None, max_seat=MAXSEAT):
         self.id = tid
         self.players = players          # [{'pid','prof','stack'}]
         self.button = button if button is not None else 0
         self.hands = 0
-        # 고정 좌석 슬롯: 1~8번 자리. 비면 None.
-        self.seats = [None]*MAXSEAT
-        for i, p in enumerate(players[:MAXSEAT]):
+        self.max_seat = int(max_seat or MAXSEAT)
+        # 고정 좌석 슬롯. 포맷의 최대 테이블 인원을 따른다.
+        self.seats = [None]*self.max_seat
+        for i, p in enumerate(players[:self.max_seat]):
             self.seats[i] = p['pid']
 
     def seat_of(self, pid):
@@ -27,10 +28,10 @@ class Table:
 
     def sit(self, p):
         """빈 자리에 앉힌다."""
-        for i in range(MAXSEAT):
+        for i in range(self.max_seat):
             if self.seats[i] is None:
                 self.seats[i] = p['pid']; return i+1
-        self.seats.append(p['pid']); return len(self.seats)
+        raise ValueError('테이블 좌석 초과: max_seat=%d' % self.max_seat)
 
     def stand(self, pid):
         if pid in self.seats:
@@ -74,12 +75,13 @@ class Field:
         # 테이블 배치
         ids = list(self.players)
         self.rng.shuffle(ids)
-        ntab = math.ceil(entries / MAXSEAT)
+        ntab = math.ceil(entries / self.max_seat)
         self.tables = {}
         for t in range(ntab):
-            chunk = ids[t*MAXSEAT:(t+1)*MAXSEAT]
+            chunk = ids[t*self.max_seat:(t+1)*self.max_seat]
             if not chunk: continue
-            tb = Table(t, [self.players[p] for p in chunk], button=0)
+            tb = Table(t, [self.players[p] for p in chunk], button=0,
+                       max_seat=self.max_seat)
             self.tables[t] = tb
             for i, p in enumerate(chunk):
                 self.players[p]['table'] = t
@@ -94,6 +96,9 @@ class Field:
         한쪽만 고쳐져 그 경로에서 터진다(실제로 그랬다).
         """
         self.fmt = FM.get(fmt)
+        self.max_seat = int(self.fmt.get('seats', MAXSEAT))
+        if not (2 <= self.max_seat <= FM.MAX_SEATS):
+            raise ValueError('잘못된 테이블 좌석 수: %s' % self.max_seat)
         self.payouts = FM.payouts(self.itm, self.fmt['payout_flat'])
         self.field_q = FLD.field_quality(self.entries, self.fmt['buyin_level'])
         self.ctx = CTX.Context()
@@ -186,7 +191,7 @@ class Field:
                 'to_itm': max(0, r - self.itm), 'bubble': self.itm < r <= self.itm*FLD.Field.BUBBLE_HI,
                 'avg': self.avg_stack(), 'tables': len(self.tables),
                 'level': self.level, 'rank': self.hero_rank(),
-                'leader': self.chip_leader()}
+                'leader': self.chip_leader(), 'max_seat': self.max_seat}
 
     # ---------- 한 핸드 ----------
     # 봇 테이블 기록. 0=끄기, 1=요약, 2=전체
@@ -297,7 +302,7 @@ class Field:
         """TDA식 밸런싱: 테이블 간 인원차 1 이하. 필요시 테이블 브레이크."""
         act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
         if not act: return
-        need_tables = max(1, math.ceil(self.remaining()/MAXSEAT))
+        need_tables = max(1, math.ceil(self.remaining()/self.max_seat))
         # 테이블 브레이크
         while len(act) > need_tables:
             small = min(act.values(), key=lambda x: x.n())
