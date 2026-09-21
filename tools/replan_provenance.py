@@ -336,6 +336,67 @@ def analyze(events):
                     'diff': list(dk),
                 })
 
+    # interaction attribution. 단독 합보다 all-current가 크면 어떤 조합에서
+    # 새 divergence가 생기는지 arm별 event set으로 분해한다.
+    arms = OrderedDict([
+        ('bb+opp_est', ('bb_chips', 'opp_est')),
+        ('bb+opp_stack', ('bb_chips', 'opp_stack_bb')),
+        ('opp_est+opp_stack', ('opp_est', 'opp_stack_bb')),
+        ('context_core3', ('bb_chips', 'opp_est', 'opp_stack_bb')),
+        ('core+initiative', ('bb_chips', 'opp_est', 'initiative')),
+        ('core+oop_vs', ('bb_chips', 'opp_est', 'oop_vs_aggr')),
+        ('core+oop_legacy', ('bb_chips', 'opp_est', 'oop_legacy_abs')),
+        ('core+position', ('bb_chips', 'opp_est', 'oop_vs_aggr',
+                           'oop_legacy_abs', 'initiative')),
+        ('all7', FIELDS),
+    ])
+    arm_out = OrderedDict()
+    arm_sets = {}
+    for name, selected in arms.items():
+        changed_idx = []
+        kinds = Counter()
+        for i, ev in enumerate(events):
+            alt = _replay(ev, selected)
+            a = _intent_sig(base_out[i], ev['street'])
+            b = _intent_sig(alt, ev['street'])
+            dk = _diff_kind(a, b)
+            if dk:
+                changed_idx.append(i)
+                kinds['+'.join(dk)] += 1
+        arm_sets[name] = set(changed_idx)
+        arm_out[name] = {
+            'fields': list(selected),
+            'changed': len(changed_idx),
+            'event_ids': changed_idx,
+            'diff_kinds': dict(kinds),
+        }
+
+    # leave-one-out from all7. all7에서 한 필드를 빼서 변화 수/사건이 줄면
+    # 그 필드는 단독 효과가 0이어도 interaction에는 기여한다.
+    loo = OrderedDict()
+    allset = arm_sets['all7']
+    for field in FIELDS:
+        selected = tuple(x for x in FIELDS if x != field)
+        changed_idx = []
+        kinds = Counter()
+        for i, ev in enumerate(events):
+            alt = _replay(ev, selected)
+            a = _intent_sig(base_out[i], ev['street'])
+            b = _intent_sig(alt, ev['street'])
+            dk = _diff_kind(a, b)
+            if dk:
+                changed_idx.append(i)
+                kinds['+'.join(dk)] += 1
+        aset = set(changed_idx)
+        loo[field] = {
+            'all_without_changed': len(changed_idx),
+            'removed_from_all': len(allset - aset),
+            'added_vs_all': len(aset - allset),
+            'removed_event_ids': sorted(allset - aset),
+            'added_event_ids': sorted(aset - allset),
+            'diff_kinds': dict(kinds),
+        }
+
     return {
         'provenance': prov,
         'impact': impact,
@@ -345,6 +406,8 @@ def analyze(events):
             'diff_kinds': dict(all_kinds),
             'samples': all_samples,
         },
+        'interaction_arms': arm_out,
+        'leave_one_out': loo,
     }
 
 
@@ -383,6 +446,24 @@ def human(events, counts, result):
     print('  changed %d / %d = %.3f%%   %s'
           % (a['changed'], a['total'],
              100.0*a['changed']/max(1, a['total']), a['diff_kinds']))
+    print()
+
+    print('## 4. interaction arms')
+    for name, r in result['interaction_arms'].items():
+        print('  %-20s changed=%3d  events=%s'
+              % (name, r['changed'], r['event_ids']))
+    print()
+
+    print('## 5. leave-one-out from all7')
+    print('  %-18s %12s %12s %10s'
+          % ('field', 'without', 'removed', 'added'))
+    for field, r in result['leave_one_out'].items():
+        print('  %-18s %12d %12d %10d'
+              % (field, r['all_without_changed'],
+                 r['removed_from_all'], r['added_vs_all']))
+        if r['removed_event_ids'] or r['added_event_ids']:
+            print('    removed=%s added=%s'
+                  % (r['removed_event_ids'], r['added_event_ids']))
     print()
 
     # 행동이 실제로 바뀐 샘플만 짧게.
