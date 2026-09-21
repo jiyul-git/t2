@@ -47,7 +47,7 @@ def check_orders():
     assert gto.behind_of('CO', 5) == 3
     assert gto.behind_of('BTN', 5) == 2
     assert gto.behind_of('UTG', 5) == 4
-    assert gto.behind_of('UTG+1', 5) == 4  # unknown label fallback; must not occur in orders(5)
+    assert 'UTG+1' not in TB.orders(5)[1]
 
 
 def check_format_capacity():
@@ -93,6 +93,24 @@ def check_final_table_break():
     assert TB.orders(5)[1] == EXPECTED_PRE[5]
 
 
+def check_one_hand_each_n():
+    old_log = FS.Field.BOT_LOG
+    old_strict = FS.STRICT
+    FS.Field.BOT_LOG = 0
+    FS.STRICT = True
+    try:
+        for n in range(2, 10):
+            f = FS.Field(entries=n, seed=99100 + n, fmt='standard')
+            tb = next(iter(f.tables.values()))
+            assert tb.n() == n, (n, tb.n())
+            ok = f._play_table(tb)
+            assert ok is True, (n, f.errors)
+            assert not f.errors, (n, f.errors)
+    finally:
+        FS.Field.BOT_LOG = old_log
+        FS.STRICT = old_strict
+
+
 def check_live_roundtrip():
     f = FS.Field(entries=18, seed=99005, fmt='standard')
     d = live2._dump(f)
@@ -107,9 +125,11 @@ def main():
     check_orders()
     check_format_capacity()
     check_final_table_break()
+    check_one_hand_each_n()
     check_live_roundtrip()
     print('PASS 9-max structural verification')
     print('standard=9, main=9, deep=8; final 9 -> one table; positions 2..9 explicit')
+    print('one bot hand completed without engine errors for every table size 2..9')
     return 0
 
 
