@@ -105,10 +105,15 @@ Primary outcome:
         CF opener final-stack change
         - baseline opener final-stack change
 
-Uncertainty:
-- cluster unit = tournament seed;
-- use the tool's fixed 10,000-replicate seed-level percentile bootstrap;
-- report the number of seed clusters and the interval.
+Uncertainty (see Amendment A1 below):
+- the primary point estimate is the equal-weight mean over qualifying rows;
+- the tournament seed is the RESAMPLING unit, not the averaging unit;
+- use the tool's fixed 10,000-replicate whole-cluster percentile bootstrap:
+  each replicate draws N seed clusters with replacement from the N observed
+  clusters and keeps every qualifying row inside each drawn cluster, so the
+  replicate statistic is the row-level mean of all sampled rows;
+- report the number of seed clusters and the interval;
+- row-level median / p10 / p90 are descriptive only.
 
 Validity is checked before interpretation.  **Any** engine error, batch child
 failure, global harness error, or row-level harness error in Phase C invalidates
@@ -146,6 +151,48 @@ measurement using `icm.icm_equity` on the **entire remaining field stack
 vector**, never `table_bf` on a partial table.
 
 No 10+ player $EV proxy formula will be invented.
+
+
+## Amendment A1 — estimand/uncertainty alignment (before any Phase C seed ran)
+
+Recorded 2026-09-21, before `93100..93139` were touched.  This amendment does
+not change any acceptance threshold and was not written after observing a
+confirmatory result.
+
+What was found.  At the Phase 4 pre-run integrity gate, using **pilot-only**
+data (seeds 93050/93051, which are excluded from the primary sample), the tool
+printed a row-equal-weight point estimate next to an interval produced by a
+bootstrap over seed **means**.  Those are two different estimands whenever
+clusters hold unequal row counts: on that pilot data the row-level mean was
+0.041090 while the seed-equal-weight centre was 0.033621.
+
+State of the confirmatory sample.  None of the primary seeds `93100..93139`
+had been run; no checkpoint, row file, or output existed for any of them.
+
+What is preserved.  The originally locked estimand stands unchanged: the
+primary quantity is the **intention-to-treat mean over qualifying rows**,
+with zero-intervention rows retained at paired delta 0.  The point estimate
+remains the row-equal-weight mean.
+
+What is corrected.  Only the uncertainty calculation.  The bootstrap now
+resamples whole tournament-seed clusters and keeps every qualifying row inside
+a drawn cluster (a cluster drawn twice contributes its rows twice), so each
+replicate statistic is the row-level mean of the sampled rows -- the same
+functional as the observed point estimate.  `reps = 10000` and
+`rng_seed = 922002026` are unchanged.  Unequal cluster sizes therefore enter
+the interval exactly as they enter the point estimate.
+
+Reporting.  `primary_row_mean`, `seed_clusters` and `bootstrap95` are the
+primary line.  Row-level median / p10 / p90 are printed separately and labelled
+descriptive only.  `primary_interpretation` uses the cluster-bootstrap interval
+and nothing else, after the validity gate.
+
+Why this is a clarification and not a post-hoc rule change.  "cluster unit =
+tournament seed" was always a statement about dependence between observations
+inside one tournament, i.e. about the resampling unit; it was never a
+redefinition of the estimand, which the same document had already locked as
+ITT over qualifying rows.  The implementation contradicted that lock, and the
+contradiction was fixed before the confirmatory data existed.
 
 
 ## Locked commands
