@@ -2,6 +2,7 @@
 import copy, json, os, random, math, time
 import zlib as _zlib
 import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
+import formats as FM
 from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -67,7 +68,10 @@ def _load_field(d):
                  if v.get('seats')]
         _saved_max = max(_lens) if _lens else None
     if _saved_max is not None:
-        f.max_seat = int(_saved_max)
+        _saved_max = int(_saved_max)
+        if not (2 <= _saved_max <= FM.MAX_SEATS):
+            raise ValueError('저장본 좌석 수가 범위를 벗어남: %s' % _saved_max)
+        f.max_seat = _saved_max
     for k, v in d['players'].items():
         f.players[int(k)] = {'pid': int(k), 'prof': v['prof'], 'stack': v['stack'],
                              'table': v['table'], 'seat': v['seat']}
@@ -81,8 +85,8 @@ def _load_field(d):
             if len(tb.seats) < tb.max_seat:
                 tb.seats.extend([None] * (tb.max_seat - len(tb.seats)))
             elif len(tb.seats) > tb.max_seat:
-                tb.max_seat = len(tb.seats)
-                f.max_seat = max(f.max_seat, tb.max_seat)
+                raise ValueError('저장본 테이블 슬롯이 max_seat보다 큼: %d > %d'
+                                 % (len(tb.seats), tb.max_seat))
         f.tables[int(k)] = tb
     return f
 
