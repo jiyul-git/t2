@@ -1,0 +1,28 @@
+{
+ "fp": {
+  "3000": "65378bc3b1235dfd",
+  "3001": "f090ec58b359f412",
+  "3002": "f34a5099c689c83c",
+  "3003": "7804df1ee8d53d53",
+  "3004": "91dc80039cce055b",
+  "3005": "43bf858690bca625"
+ },
+ "stats": {
+  "n": 1390,
+  "hands": 180,
+  "vpip": 265,
+  "pfr": 158,
+  "flop": 80
+ },
+ "rev": "60e16d8",
+ "note": "post-0d202c5 postflop position semantics; historical=baseline_9max.json (7e40ba0, sealed Phase C 024ab5b)",
+ "seeds": [
+  3000,
+  3001,
+  3002,
+  3003,
+  3004,
+  3005
+ ],
+ "hands": 30
+}
