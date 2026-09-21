@@ -6,6 +6,7 @@
   range_adv / danger / bf / tilt / type
 """
 import os, sys, json, statistics as S, collections
+from logkeys import oop_of, oop_label
 D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if D not in sys.path: sys.path.insert(0, D)
 
@@ -50,7 +51,7 @@ def main():
     for i in sorted(bo, key=lambda x: -x['eq_delta']):
         print('%-6s %-4s %-7s %-13s %+7.3f %5s %5d %6.1f %5s %6.2f %+7.2f %+7.2f %6.2f' % (
             'h%d'%i['_h'], i['_pos'] or '?', ' '.join(i['_hole']), ' '.join(i['_bd']),
-            i['eq_delta'], 'OOP' if i.get('oop') else 'IP', i.get('behind',0),
+            i['eq_delta'], oop_label(i), i.get('behind',0),
             i.get('spr',0), '있음' if i.get('init') else '-',
             i.get('danger',0), i['range_adv'], i['nut_adv'], i.get('blocker',0)))
 
@@ -73,7 +74,7 @@ def main():
                        ('bf','bf'), ('뒤 액션자','behind')):
         print('%-22s %12.3f %12.3f' % (label, stat(bo,key), stat(ct,key)))
     print('-' * 78)
-    print('%-22s %11.0f%% %11.0f%%' % ('OOP 비율', frac(bo,lambda i:i.get('oop')), frac(ct,lambda i:i.get('oop'))))
+    print('%-22s %11.0f%% %11.0f%%' % ('OOP 비율', frac(bo,oop_of), frac(ct,oop_of)))
     print('%-22s %11.0f%% %11.0f%%' % ('선제권 보유', frac(bo,lambda i:i.get('init')), frac(ct,lambda i:i.get('init'))))
     print('%-22s %11.0f%% %11.0f%%' % ('헤즈업', frac(bo,lambda i:i.get('n_opp',1)<2), frac(ct,lambda i:i.get('n_opp',1)<2)))
     print('%-22s %11.0f%% %11.0f%%' % ('뒤 액션자 0명', frac(bo,lambda i:i.get('behind',0)==0), frac(ct,lambda i:i.get('behind',0)==0)))

@@ -8,6 +8,29 @@ D = os.path.dirname(os.path.abspath(__file__))
 
 def best5(cards): return bot.eval7(cards)
 
+
+def oop_field(order, seat, folded=(), allin=()):
+    """그 스트리트 액션 순서에서 **내 뒤에 아직 액션할 상대가 남아 있는가.**
+
+    = last to act 가 아닌가. 포지션 라벨 목록이든 좌석 번호 목록이든 같다.
+    폴드·올인은 더 이상 액션하지 않으므로 뒤에 있어도 세지 않는다.
+
+    예전에는 h.POST 의 **절대** 인덱스 < 3 이었다. 그러면 CO 가 BTN 만
+    상대해도 IP 로 세고, 헤즈업 포스트플랍에서는 BB·SB 가 **둘 다** OOP 가
+    된다(POST 가 [BB, SB] 인데 길이가 2 라 둘 다 3 미만이다).
+    """
+    if seat not in order:
+        return False
+    i = order.index(seat)
+    return any(x not in folded and x not in allin for x in order[i+1:])
+
+
+def oop_vs(order, seat, other):
+    """order 상에서 seat 이 other 보다 **먼저** 액션하는가."""
+    if seat not in order or other not in order:
+        return False
+    return order.index(seat) < order.index(other)
+
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
@@ -629,6 +652,20 @@ class HandRun:
                 # 덮어쓴다. 재현성은 그대로고 기록은 완전해진다.
                 behind = len([x for x in order if x not in r2.acted and x != s and x not in r2.folded])
                 n_opp = len(r2.live())-1
+                # 포지션은 '이 스트리트 액션 순서에서 누구 뒤인가'다.
+                # 소비처마다 기준이 다르다:
+                #   cbet_freq(plan.py:1194,1197) 는 필드 전체(= last to act 인가)
+                #   blockbet(442) / donk(904) 는 **어그레서 한 명** 기준
+                _oop_f = oop_field(order, s, r2.folded, r2.allin)
+                _oop_a = (oop_vs(order, s, aggressor)
+                          if (aggressor is not None and aggressor != s
+                              and aggressor in order
+                              and aggressor not in r2.folded
+                              and aggressor not in r2.allin)
+                          else None)
+                # 어그레서가 없으면 442/904 의 의미가 정해지지 않는다.
+                # 그 경우에만 쓰는 legacy 절대식 — _oop_a 에는 넣지 않는다.
+                _oop_legacy = (h.POST.index(h.pos[s]) < 3)
                 _seats, _ante = len(h.seats), (getattr(h, 'ante', h.bb) > 0)
                 # **프리플랍 역할과 포스트플랍 공격자는 다른 개념이다.**
                 # 예전에는 'open' if s == aggressor 로 포스트플랍 공격자에게
@@ -719,8 +756,9 @@ class HandRun:
                     pot_now, r2.stacks[s], street,
                     self._dseed(s, street, 'plan', len(r2.log)),
                     n_opp, behind, prev,
-                    h.POST.index(h.pos[s]) < 3, s == aggressor,
+                    _oop_f, s == aggressor,
                     opp_est=_est, opp_stack_bb=_ostk, tilt=h.axes(s)[1],
+                    oop_vs_aggr=_oop_a, oop_legacy_abs=_oop_legacy,
                     first=(key not in h.plans or street == 'flop'),
                     pf_seed=getattr(h, 'pf_seed', {}).get(s),
                     bb_chips=h.bb)
@@ -772,7 +810,11 @@ class HandRun:
                         'deviations': list(_pl.get('deviations') or []),
                         # 상황 문맥. 같은 판단이 버블에서 달라지는지 본다.
                         'bf': round(h.bf(s), 3), 'tilt': h.axes(s)[1],
-                        'oop': (h.POST.index(h.pos[s]) < 3),
+                        # 소비처별로 기준이 달라 하나로 못 적는다.
+                        # oop_vs_aggr 은 어그레서가 없으면 None 이다.
+                        'oop_field': _oop_f,
+                        'oop_vs_aggr': _oop_a,
+                        'oop_legacy_abs': _oop_legacy,
                         'init': RU.has_initiative(s, aggressor),
                         'n_opp': n_opp, 'behind': behind,
                     })
@@ -786,8 +828,10 @@ class HandRun:
                                     if x == aggressor and act in ('bet', 'raise'))
                     n_barrels = max(1, n_barrels)
                     sz_frac = tc/max(1, pot_live)
+                    # '어그레서가 **나보다 먼저** 액션하는 자리에서 리드했는가'다.
+                    # 절대 인덱스로 재면 상대가 누구든 같은 값이 나온다.
                     read_val = PL.line_bluff_prior(est, street, n_barrels, sz_frac, board,
-                                                  h.POST.index(h.pos[aggressor]) < 3)
+                                                  oop_vs(order, aggressor, s))
                     h.reads_log = getattr(h, 'reads_log', [])
                     h.reads_log.append({'street': street, 'observer': s, 'target': aggressor,
                                         'est_bluff': round(est['bluff'],1),

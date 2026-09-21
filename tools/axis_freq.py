@@ -139,7 +139,7 @@ def L_plan(sits, prof):
             ps = PL.make_plan(s['hero'], s['board'], s['my_range'], s['opp_range'],
                               prof, s['pot'], s['stack'], s['street'],
                               seed=s['seed'], n_opp=s['n_opp'],
-                              to_act_behind=s['to_act_behind'], oop=s['oop'],
+                              to_act_behind=s['to_act_behind'], oop_vs_aggr=s['oop'],
                               initiative=s['initiative'], opp_est=s['est'])
         except Exception:
             continue
@@ -592,7 +592,7 @@ def main():
                     s['hero'], s['board'], s['my_range'], s['opp_range'], _p5,
                     s['pot'], s['stack'], s['street'], seed=s['seed'],
                     n_opp=s['n_opp'],
-                    to_act_behind=s['to_act_behind'], oop=s['oop'],
+                    to_act_behind=s['to_act_behind'], oop_vs_aggr=s['oop'],
                     initiative=s['initiative'], opp_est=s['est'])['plan']
             except Exception:
                 s['base_plan'] = None
@@ -607,7 +607,7 @@ def main():
                     s['hero'], s['board'], s['my_range'], s['opp_range'], p0,
                     s['pot'], s['stack'], s['street'], seed=s['seed'],
                     n_opp=s['n_opp'],
-                    to_act_behind=s['to_act_behind'], oop=s['oop'],
+                    to_act_behind=s['to_act_behind'], oop_vs_aggr=s['oop'],
                     initiative=s['initiative'], opp_est=s['est'])
             except Exception:
                 s['plan_fixed'] = None

@@ -254,8 +254,10 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
 
 
 def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
-              seed=None, n_opp=1, to_act_behind=0, oop=False, initiative=True,
-              opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None):
+              seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=None,
+              initiative=True,
+              opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None,
+              oop_legacy_abs=None):
     """플랍에서 라인을 확정. 상대 수와 뒤에 남은 액션자를 반영.
 
     opp_est — reads.perceived_profile() 결과. 진짜 프로필을 넘기면 정보 누출이다.
@@ -439,7 +441,13 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     elif eq >= pcz:
         # 블락벳: OOP + 이니셔티브 없음 + 쇼다운은 되는 중간 강도
         block_p = 0.0
-        if oop and not initiative and 0.25 <= rel <= 0.80:
+        # 블락벳은 '어그레서가 치기 전에 내가 가격을 고정'하는 수다.
+        # 기준은 필드 전체가 아니라 그 어그레서 한 명이다.
+        # TODO/F: aggressor 없는 pot 에서 blockbet(442)/donk(904) semantics 미확정
+        #         — 별도 검증 필요. 그때까지는 옛 절대식을 legacy 경로로만 써서
+        #         기존 행동을 보존한다. oop_vs_aggr 에 legacy 값을 넣지 않는다.
+        _oop_a = oop_vs_aggr if oop_vs_aggr is not None else bool(oop_legacy_abs)
+        if _oop_a and not initiative and 0.25 <= rel <= 0.80:
             block_p = 0.12 + 0.05*profile['aggr'] - 0.03*profile.get('bluff', 5)
             block_p *= (1 + 0.4*dang)          # 젖은 보드일수록 가격 통제 욕구↑
             if A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish': block_p *= 0.25
@@ -549,13 +557,16 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
 
 
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
-                  street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None):
+                  street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
+                  oop_vs_aggr=None, oop_legacy_abs=None):
     """계획에 이 스트리트의 의도를 붙인다. 판단 층의 마지막 단계."""
     plan = st.get('plan')
     rel = st.get('rel', 0.5)
     p_aggr, why_a = decide_aggression(profile, board, street, plan, rel, n_opp,
                                       oop, initiative, to_act_behind, rng,
-                                      opp_est, st.get('outs', 0), plan_state=st)
+                                      opp_est, st.get('outs', 0), plan_state=st,
+                                      oop_vs_aggr=oop_vs_aggr,
+                                      oop_legacy_abs=oop_legacy_abs)
     _roll = rng.random()
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
            why=why_a, plan=plan, rel=round(rel, 3))
@@ -836,7 +847,8 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
 
 
 def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
-                      to_act_behind, rng, opp_est=None, outs=0, plan_state=None):
+                      to_act_behind, rng, opp_est=None, outs=0, plan_state=None,
+                      oop_vs_aggr=None, oop_legacy_abs=None):
     """무저항 상황(tocall==0)에서 칠지 체크할지 결정하는 **유일한 지점**.
 
     예전에는 이 판단이 집행부(act_with_plan)에 흩어져 있었다:
@@ -901,7 +913,12 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
             p *= max(0.35, min(1.70, 1.0 + 0.75*_tce*_bt))
         _mw2 = PS.sk(profile, 'multiway')/10.0 if has_c else 0.5
         p *= (1 - (0.12 + 0.20*_mw2)*max(0, n_opp-1))
-        if not initiative and oop:
+        # 동크는 '직전 스트리트 어그레서보다 먼저 친다'는 뜻이다.
+        # TODO/F: aggressor 없는 pot 에서 blockbet(442)/donk(904) semantics 미확정
+        #         — 별도 검증 필요. 그때까지는 옛 절대식을 legacy 경로로만 써서
+        #         기존 행동을 보존한다. oop_vs_aggr 에 legacy 값을 넣지 않는다.
+        _oop_a = oop_vs_aggr if oop_vs_aggr is not None else bool(oop_legacy_abs)
+        if not initiative and _oop_a:
             # 동크(같은 스트리트 선제)는 정석이 아니다. 수동형일수록 강하게 억제.
             supp = 0.92 - 0.05*a - 0.02*profile.get('bluff', 5)
             if has_c and outs >= 8:
@@ -1446,7 +1463,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
 def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                 street, seed, n_opp, behind, prev_board, oop, initiative,
                 opp_est=None, opp_stack_bb=None, tilt=0.0, first=False,
-                pf_seed=None, bb_chips=None):
+                pf_seed=None, bb_chips=None,
+                oop_vs_aggr=None, oop_legacy_abs=None):
     """계획 갱신의 **유일한 진입점**.
 
     예전에는 session 이 make_plan / revise_plan / refresh / river_fix / _allowed 를
@@ -1466,9 +1484,9 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     if first or state is None:
         st = make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                        seed=seed, n_opp=n_opp, to_act_behind=behind,
-                       oop=oop, initiative=initiative,
+                       oop_vs_aggr=oop_vs_aggr, initiative=initiative,
                        opp_est=opp_est, opp_stack_bb=opp_stack_bb, tilt=tilt,
-                       bb_chips=bb_chips)
+                       bb_chips=bb_chips, oop_legacy_abs=oop_legacy_abs)
         # 프리플랍에서 확정된 것을 물려받는다. 이게 없으면 포스트플랍 계획이
         # 매번 백지에서 시작하고, '왜 3벳했는가'가 플랍 판단과 무관해진다.
         if pf_seed:
@@ -1523,7 +1541,9 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     if intent_of(st, street) is None:
         st = attach_intent(st, hero, board, my_range, opp_range, profile,
                            pot, stack, street, rng, n_opp, behind,
-                           oop, initiative, opp_est)
+                           oop, initiative, opp_est,
+                           oop_vs_aggr=oop_vs_aggr,
+                           oop_legacy_abs=oop_legacy_abs)
     return st
 
 

@@ -195,7 +195,7 @@ def main():
                               sit['opp_range'], prof, sit['pot'], sit['stack'],
                               sit['street'], seed=s, n_opp=1,
                               to_act_behind=sit['to_act_behind'],
-                              oop=sit['oop'], initiative=sit['initiative'],
+                              oop_vs_aggr=sit['oop'], initiative=sit['initiative'],
                               opp_est=est)
         except Exception:
             plans.append(None); continue

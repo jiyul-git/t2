@@ -64,11 +64,11 @@ def run_one(args):
 
     _omk = PL.make_plan
     def wrap_mk(hero, board, my_range, opp_range, profile, pot, stack_, street,
-                seed=None, n_opp=1, to_act_behind=0, oop=False, initiative=True,
+                seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=False, initiative=True,
                 opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None):
         st = _omk(hero, board, my_range, opp_range, profile, pot, stack_, street,
                   seed=seed, n_opp=n_opp, to_act_behind=to_act_behind,
-                  oop=oop, initiative=initiative, opp_est=opp_est,
+                  oop_vs_aggr=oop_vs_aggr, initiative=initiative, opp_est=opp_est,
                   opp_stack_bb=opp_stack_bb, tilt=tilt, bb_chips=bb_chips)
         w = ' | '.join(st.get('why') or [])
         rel = st.get('rel')
