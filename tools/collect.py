@@ -27,7 +27,7 @@ def run_one(seed, entries=40, start_stack=30000, hands_per_level=12,
     # 실제 좌석을 주고, 그 좌석은 아래 루프에서 항상 체크/폴드로 넘긴다.
     # 히어로는 계획을 세우지 않으므로 intent 수집에는 영향이 없다.
     t = T.Tournament(entries=entries, start_stack=start_stack,
-                     hero_seat=7, seats=8, seed=seed,
+                     hero_seat=7, seed=seed,
                      hands_per_level=hands_per_level)
     out = []
     n = 0
