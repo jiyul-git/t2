@@ -16,6 +16,9 @@ HANDS_PER_LEVEL = 12
 # 인덱스가 넘쳐 IndexError 가 난다 (실제로 그랬다).
 _PRE = {
     2: ['SB','BB'],
+    3: ['BTN','SB','BB'],
+    4: ['UTG','BTN','SB','BB'],
+    5: ['UTG','CO','BTN','SB','BB'],
     6: ['UTG','HJ','CO','BTN','SB','BB'],
     7: ['UTG','LJ','HJ','CO','BTN','SB','BB'],
     8: ['UTG','UTG+1','LJ','HJ','CO','BTN','SB','BB'],
@@ -28,7 +31,9 @@ def orders(n=8):
         # 헤즈업: 버튼 = SB.
         # 프리플랍은 버튼/SB 선액션, 포스트플랍은 BB 선액션.
         return ['SB','BB'], ['SB','BB'], ['BB','SB']
-    pre = _PRE.get(n) or _PRE[8]
+    if n not in _PRE:
+        raise ValueError('지원하지 않는 좌석 수: %s (2~9만 가능)' % n)
+    pre = _PRE[n]
     post = pre[-2:] + pre[:-2]              # SB, BB 가 먼저
     seat = ['BTN','SB','BB'] + [x for x in pre if x not in ('BTN','SB','BB')]
     return seat, list(pre), post
