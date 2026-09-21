@@ -107,10 +107,14 @@ def aggregate(seeds, workdir, out_path):
             fp.write(json.dumps(r, ensure_ascii=False) + '\n')
     os.replace(tmp, out_path)
 
+    if child_nonzero:
+        harness_errors.extend(
+            'seed=%d child process returned nonzero rc=%s' % (seed, rc)
+            for seed, rc in child_nonzero
+        )
     rc = MSCF.summarize(rows, engine_errors, harness_errors)
     if child_nonzero:
         print('\nchild_nonzero:', child_nonzero)
-        rc = 1
     print('\nWROTE', out_path)
     return rc
 
