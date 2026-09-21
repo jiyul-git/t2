@@ -87,6 +87,11 @@ class Field:
                 self.players[p]['table'] = t
                 self.players[p]['seat'] = i
 
+        # ceil(entries/max_seat) 로 마지막 테이블이 1명만 남을 수 있다
+        # (예: 100명 9-max = 9x11 + 1). 첫 핸드 전에 균등화하지 않으면
+        # 그 한 명만 블라인드를 내지 않고 한 핸드를 쉬게 된다.
+        self._balance()
+
     # ---------- 조회 ----------
     def _init_runtime(self, fmt=None, tilt_state=None):
         """포맷에서 파생되는 실행 상태를 만든다.
