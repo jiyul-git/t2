@@ -28,7 +28,9 @@ Production 코드를 바꾸지 않고 "있다"와 "실제로 살아 있다"를 �
   field_4x22
     fieldsim, entries=100, fmt=standard,
     seeds=5150,9001,4242,7301, 각 22 global hands.
-    blockbet / sk fallback의 역사 기지값을 재현한다.
+    blockbet / sk fallback의 **현재 기준점(3cc75a9)** reachability를 고정한다.
+    과거 조사에서 나온 다른 분모의 숫자는 provenance 참고값일 뿐 acceptance로
+    재사용하지 않는다.
 
   synth_river_250
     tools/axis_freq.py의 post_sit 생성기를 그대로 사용.
@@ -70,28 +72,47 @@ OVERBET_SEED = 20260915
 OVERBET_N = 250
 OVERBET_K = 20
 
-# 현재 코드(3cc75a9 계열)의 acceptance reference.
-# historical 8/771은 OOP 교정 전 민감도이며 현재 acceptance가 아니다.
+# 3cc75a9에서 **이 파일의 정확한 fixture 정의로** 동결한 acceptance reference.
+# 서로 다른 fixture/코드 세대의 숫자를 섞지 않는다.
+# - 과거 OOP 8/771: pre-0d202c5 역사적 민감도. 현재 acceptance 아님.
+# - 과거 sk fallback 0/1190: 다른 모집단. 현재 field_4x22 분모와 비교 금지.
+# - 과거 overbet 2/102: 다른 실행 표본. 현재 synth_river_250과 비교 금지.
 EXPECTED = {
     'blockbet': {
-        'eligible': 2800,
+        'eligible': 2815,
+        'entered': 1773,
+        'gate_true': 49,
+        'taken': 13,
         'changed': 0,
+        'mid_branch': 301,
+        'block_condition': 61,
+        'engine_errors': 0,
     },
     'sk_fallback': {
-        'eligible': 1190,
+        'eligible': 1773,
         'entered': 0,
+        'engine_errors': 0,
     },
     'overbet': {
-        'entered': 102,   # 실제 무저항 bet 수
-        'taken': 2,       # 그중 >1pot
+        'eligible': 250,
+        'entered': 95,    # 현재 fixture의 실제 무저항 bet 수
+        'gate_true': 56,  # overbet-eligible plan family
+        'taken': 1,       # 그중 최종 >1pot
+        'changed': 1,
         'qualifying_plans': 56,
+        'polarization_gate': 55,
+        'k20_hits': 33,
+        'k20_trials': 1120,
         'k20_rate_pct': 2.95,
+        'execution_errors': 0,
     },
     'oop_sensitive': {
         'eligible': 586,
-        'entered': 120,   # old/new positional semantics가 다른 결정
+        'entered': 120,
+        'taken': 120,
         'changed': 1,
         'unexplained': 0,
+        'engine_errors': 0,
     },
 }
 
@@ -535,26 +556,28 @@ def _check_row(row):
     exp = EXPECTED[name]
     mismatches = []
 
-    for key in ('eligible', 'entered', 'changed', 'taken'):
+    for key in ('eligible', 'entered', 'gate_true', 'taken', 'changed'):
         if key in exp and row.get(key) != exp[key]:
             mismatches.append('%s expected=%r got=%r' % (
                 key, exp[key], row.get(key)))
 
+    # fixture-specific funnel/meta도 현재 기준점에 같이 잠근다. 이 값이 바뀌면
+    # 단순 최종 count만 보지 말고 어느 단계에서 reachability가 움직였는지 본다.
+    for key in ('mid_branch', 'block_condition', 'engine_errors',
+                'qualifying_plans', 'polarization_gate',
+                'k20_hits', 'k20_trials', 'execution_errors',
+                'unexplained'):
+        if key in exp:
+            got = row.get('meta', {}).get(key)
+            if got != exp[key]:
+                mismatches.append('%s expected=%r got=%r' % (
+                    key, exp[key], got))
+
     if name == 'overbet':
-        q = row['meta'].get('qualifying_plans')
-        if q != exp['qualifying_plans']:
-            mismatches.append('qualifying_plans expected=%r got=%r' % (
-                exp['qualifying_plans'], q))
         got = row['meta'].get('k20_rate_pct')
         if got is None or abs(got - exp['k20_rate_pct']) > 0.06:
             mismatches.append('k20_rate_pct expected~=%r got=%r' % (
                 exp['k20_rate_pct'], got))
-
-    if name == 'oop_sensitive':
-        u = row['meta'].get('unexplained')
-        if u != exp['unexplained']:
-            mismatches.append('unexplained expected=%r got=%r' % (
-                exp['unexplained'], u))
 
     return mismatches
 
