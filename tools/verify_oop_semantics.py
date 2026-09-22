@@ -161,18 +161,18 @@ def main():
         if c is None or len(r['a']) <= OI:
             continue
         street = r['a'][8]
-        o_out, o_n = run(r, c['legacy'], None, c['legacy'])       # 옛 팔
+        # F-1 이후 None은 'live aggressor 없음'이라는 독립 의미다. FX-2의
+        # 옛 절대-OOP 팔을 재현하려면 상대기준 입력도 legacy 값으로 명시해야
+        # 한다. None으로 지우면 F-1 효과까지 섞여 다른 실험이 된다.
+        o_out, o_n = run(r, c['legacy'], c['legacy'], c['legacy'])  # 옛 절대 팔
         n_out, n_n = run(r, c['field'], c['vs_aggr'], c['legacy'])  # 새 팔
         io = PL.intent_of(o_out, street) or {}
         inn = PL.intent_of(n_out, street) or {}
         outd = (o_out.get('plan') != n_out.get('plan')
                 or io.get('act') != inn.get('act')
                 or round(io.get('size', 0) or 0, 6) != round(inn.get('size', 0) or 0, 6))
-        # F-1 이후 None 은 더 이상 legacy 절대 OOP의 별칭이 아니다.
-        # 옛 팔은 oop_vs_aggr 를 항상 None 으로 지우고, 새 팔은 live
-        # aggressor가 있으면 그 관계를 명시한다. 따라서 vs_aggr의 존재
-        # 자체가 입력 의미의 변화다(True/False가 legacy와 우연히 같아도).
-        flagd = (c['field'] != c['legacy'] or c['vs_aggr'] is not None)
+        flagd = (c['field'] != c['legacy']
+                 or (c['vs_aggr'] is not None and c['vs_aggr'] != c['legacy']))
         pairs += 1
         if outd:
             diffs += 1
