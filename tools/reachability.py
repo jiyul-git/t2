@@ -22,7 +22,17 @@ Production 코드를 바꾸지 않고 "있다"와 "실제로 살아 있다"를 �
 기본 실행:
   python3 tools/reachability.py
   python3 tools/reachability.py --json
-  python3 tools/reachability.py --check
+  python3 tools/reachability.py --check                          # post-blockbet
+  python3 tools/reachability.py --check --reference pre-blockbet # 보존용 historical
+
+acceptance reference 는 코드 세대로 나뉜다. PRE_BLOCKBET 은 blockbet 제어흐름
+수정 이전의 관측이고 숫자를 보존한다 — 현재 production 에 대고 돌리면
+mismatch 가 나는 것이 정상이다. POST_BLOCKBET 이 현재 기준이다.
+
+숫자와 별개로 구조 invariant 를 항상 검사한다:
+  blockbet changed == taken
+굴림을 통과한 block 이 뒤 머지 분기에 다시 덮이면 taken > 0, changed == 0 이
+되므로 모집단 총수와 무관하게 FAIL 이다.
 
 현재 고정 fixture:
   field_4x22
@@ -72,12 +82,16 @@ OVERBET_SEED = 20260915
 OVERBET_N = 250
 OVERBET_K = 20
 
-# 3cc75a9에서 **이 파일의 정확한 fixture 정의로** 동결한 acceptance reference.
-# 서로 다른 fixture/코드 세대의 숫자를 섞지 않는다.
+# acceptance reference는 **코드 세대별로** 나눠 둔다. 서로 다른 fixture/코드
+# 세대의 숫자를 섞지 않는다.
 # - 과거 OOP 8/771: pre-0d202c5 역사적 민감도. 현재 acceptance 아님.
 # - 과거 sk fallback 0/1190: 다른 모집단. 현재 field_4x22 분모와 비교 금지.
 # - 과거 overbet 2/102: 다른 실행 표본. 현재 synth_river_250과 비교 금지.
-EXPECTED = {
+#
+# PRE_BLOCKBET — 3cc75a9/02393f0에서 **이 파일의 정확한 fixture 정의로** 동결한
+# 값이다. blockbet 제어흐름 수정 **이전**의 관측이고 숫자는 그대로 보존한다.
+# 현재 production에 대고 돌리면 mismatch가 나는 것이 정상이다 (아래 CLI 참조).
+PRE_BLOCKBET = {
     'blockbet': {
         'eligible': 2815,
         'entered': 1773,
@@ -115,6 +129,66 @@ EXPECTED = {
         'engine_errors': 0,
     },
 }
+
+# POST_BLOCKBET — blockbet 제어흐름 수정 이후, **같은 canonical fixture**에서
+# 다시 측정한 값이다. PRE_BLOCKBET을 덮어쓴 것이 아니라 세대를 나눈 것이다.
+#
+# blockbet: 굴림을 통과한 12건이 전부 최종 반환까지 살아남는다(changed 12).
+#   수정 전에는 13건이 통과하고 0건이 살아남았다. eligible/mid/condition/gate/
+#   taken이 1~13 움직인 것은 수정이 live 진행 자체를 바꿔 같은 seed에서도
+#   결정 트리가 달라지기 때문이다. 분모가 고정된 재생이 아니다.
+#
+# overbet: entered 95 -> 96. **overbet 정책이 바뀐 것이 아니다.**
+#   production 차이는 plan.py의 blockbet 제어흐름 하나뿐인 controlled A/B이고,
+#   gate_true/taken/changed는 56/1/1로 그대로다. 상류 make_plan의 plan 하나가
+#   달라지면서 synthetic fixture의 entered 모집단이 한 건 이동한 downstream
+#   consequence로 기록한다. 이 숫자를 근거로 overbet을 튜닝하지 않는다.
+#
+# sk_fallback / oop_sensitive: 수정 전후 동일. 그대로 기록한다.
+POST_BLOCKBET = {
+    'blockbet': {
+        'eligible': 2803,
+        'entered': 1773,
+        'gate_true': 48,
+        'taken': 12,
+        'changed': 12,
+        'mid_branch': 300,
+        'block_condition': 60,
+        'engine_errors': 0,
+    },
+    'sk_fallback': {
+        'eligible': 1773,
+        'entered': 0,
+        'engine_errors': 0,
+    },
+    'overbet': {
+        'eligible': 250,
+        'entered': 96,    # 95 -> 96, blockbet 수정의 downstream consequence
+        'gate_true': 56,
+        'taken': 1,
+        'changed': 1,
+        'qualifying_plans': 56,
+        'polarization_gate': 55,
+        'k20_hits': 33,
+        'k20_trials': 1120,
+        'k20_rate_pct': 2.95,
+        'execution_errors': 0,
+    },
+    'oop_sensitive': {
+        'eligible': 586,
+        'entered': 120,
+        'taken': 120,
+        'changed': 1,
+        'unexplained': 0,
+        'engine_errors': 0,
+    },
+}
+
+REFERENCES = {
+    'post-blockbet': POST_BLOCKBET,
+    'pre-blockbet': PRE_BLOCKBET,
+}
+CURRENT_REFERENCE = 'post-blockbet'
 
 
 def _rate(num, den):
@@ -551,9 +625,9 @@ def collect():
     return rows
 
 
-def _check_row(row):
+def _check_row(row, reference=CURRENT_REFERENCE):
     name = row['concept']
-    exp = EXPECTED[name]
+    exp = REFERENCES[reference][name]
     mismatches = []
 
     for key in ('eligible', 'entered', 'gate_true', 'taken', 'changed'):
@@ -582,7 +656,31 @@ def _check_row(row):
     return mismatches
 
 
-def _human(rows, check=False):
+def _invariants(rows):
+    """reference 숫자와 **별개로** 성립해야 하는 구조 성질.
+
+    blockbet: 선택된 block 이 뒤 머지 분기에 다시 덮이지 않는다.
+      taken   = block 분기가 선택됨 (굴림 통과가 기록됨)
+      changed = make_plan 최종 반환에서도 plan == 'block'
+    둘이 같아야 한다. 특히 taken > 0 인데 changed == 0 이면 덮어쓰기가
+    살아 있다는 뜻이므로 모집단 총수와 무관하게 FAIL 이다.
+    """
+    bad = []
+    for r in rows:
+        if r['concept'] != 'blockbet':
+            continue
+        taken, changed = r.get('taken'), r.get('changed')
+        if taken is None or changed is None:
+            bad.append('blockbet: taken/changed 가 None')
+        elif taken > 0 and changed == 0:
+            bad.append('blockbet: taken=%d 인데 changed=0 — 선택된 block 이 '
+                       'merge fallback 에 덮이고 있다' % taken)
+        elif changed != taken:
+            bad.append('blockbet: changed(%r) != taken(%r)' % (changed, taken))
+    return bad
+
+
+def _human(rows, check=False, reference=CURRENT_REFERENCE):
     print('A5 reachability — production diff 0')
     print()
     for r in rows:
@@ -613,7 +711,7 @@ def _human(rows, check=False):
                      r['meta']['historical_reference']))
 
         if check:
-            mm = _check_row(r)
+            mm = _check_row(r, reference)
             print('  %s%s' % ('PASS' if not mm else 'MISMATCH',
                               '' if not mm else ' — ' + '; '.join(mm)))
         print()
@@ -624,25 +722,44 @@ def main():
     ap.add_argument('--json', action='store_true',
                     help='사람용 표 대신 JSON 출력')
     ap.add_argument('--check', action='store_true',
-                    help='현재 acceptance reference와 대조하고 mismatch면 rc=1')
+                    help='acceptance reference와 대조하고 mismatch면 rc=1')
+    ap.add_argument('--reference', choices=sorted(REFERENCES),
+                    default=CURRENT_REFERENCE,
+                    help='대조할 reference 세대 (기본 %s). pre-blockbet 은 '
+                         '보존용 historical 이다' % CURRENT_REFERENCE)
     a = ap.parse_args()
 
     rows = collect()
     if a.json:
-        print(json.dumps(rows, ensure_ascii=False, indent=2, sort_keys=True))
+        print(json.dumps({'reference': a.reference, 'rows': rows},
+                         ensure_ascii=False, indent=2, sort_keys=True))
     else:
-        _human(rows, check=a.check)
+        _human(rows, check=a.check, reference=a.reference)
 
+    inv = _invariants(rows)
+    if inv:
+        print('FAIL 구조 invariant')
+        for m in inv:
+            print('  ' + m)
+    else:
+        print('PASS 구조 invariant (blockbet changed == taken)')
+
+    rc = 1 if inv else 0
     if a.check:
-        bad = [(r['concept'], _check_row(r)) for r in rows]
+        print('reference: %s' % a.reference)
+        if a.reference != CURRENT_REFERENCE:
+            print('  주의: 이것은 보존용 historical reference 다. 현재 '
+                  'production 에 대고 돌리면 mismatch 가 나는 것이 정상이고, '
+                  '그 불일치는 blockbet 제어흐름 수정에 의한 의도된 것이다.')
+        bad = [(r['concept'], _check_row(r, a.reference)) for r in rows]
         bad = [(n, m) for n, m in bad if m]
         if bad:
-            print('FAIL reachability mismatch')
+            print('FAIL reachability mismatch (%s)' % a.reference)
             for name, mm in bad:
                 print('  %s: %s' % (name, '; '.join(mm)))
             return 1
-        print('PASS reachability references')
-    return 0
+        print('PASS reachability references (%s)' % a.reference)
+    return rc
 
 
 if __name__ == '__main__':
