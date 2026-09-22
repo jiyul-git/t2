@@ -3,26 +3,34 @@
 같은 시드로 토너를 돌려 모든 액션을 이어붙인 뒤 SHA-256 지문을 낸다.
 리팩터가 동작을 바꾸지 않았다면 지문이 완전히 같아야 한다.
 
-  python3 tools/regress.py check                        # 현재 기준선과 대조
-  python3 tools/regress.py check --baseline historical   # 과거 기준선과 대조
+  python3 tools/regress.py check                          # 현재 기준선과 대조
+  python3 tools/regress.py check --baseline post-oop      # 직전 세대와 대조
+  python3 tools/regress.py check --baseline historical    # 가장 오래된 기준과 대조
   python3 tools/regress.py check --baseline <파일경로>
-  python3 tools/regress.py save                          # 현재 기준선 갱신
-  python3 tools/regress.py list                          # 기준선 목록
+  python3 tools/regress.py save                           # 현재 기준선 갱신
+  python3 tools/regress.py list                           # 기준선 목록
 
-기준선이 둘인 이유
+기준선이 셋인 이유
 ------------------
-`baseline_9max.json` 은 `7e40ba0` 에 동결된 **역사적** 기준이고, 봉인된
-money-sizing Phase C(`024ab5b`, INCONCLUSIVE)가 서 있던 행동이다.
-그 뒤 `0d202c5` 가 포스트플랍 포지션 술어를 **의도적으로** 고쳐 행동이
-바뀌었다(시드 3003·3004). 즉 지금의 불일치는 결함이 아니라 의도된 변경이고,
-낡은 것은 엔진이 아니라 기준선이다.
+의도적으로 행동을 바꾼 수정이 있을 때마다 **세대를 나눈다.** 덮어쓰지
+않는다 — 덮어썼다면 과거 분석이 어느 행동 위에서 나온 결과인지 가리키는
+표식이 사라진다. `save` 는 옛 세대를 **거부**한다.
 
-그래서 역사적 기준선을 덮어쓰지 않고 **분리**한다. 덮어썼다면 Phase C 가
-어느 행동 위에서 나온 결과인지 가리키는 유일한 표식이 사라진다.
-`save` 는 `historical` 을 **거부**한다 — 조용히 과거 기준을 잃지 않기 위해서다.
+  historical  baseline_9max.json
+              pre-OOP / Phase-C 기준 (7e40ba0 동결). 봉인된 money-sizing
+              Phase C(024ab5b, INCONCLUSIVE)가 서 있던 행동이다.
 
-  baseline_9max.json           pre-OOP / Phase-C historical  (7e40ba0, 고정)
-  baseline_9max_post_oop.json  post-OOP current behaviour    (0d202c5 이후)
+  post-oop    baseline_9max_post_oop.json
+              0d202c5 가 포스트플랍 포지션 술어를 의도적으로 고친 뒤의
+              기준. replan-context 수정 **이전**이다.
+
+  current     baseline_9max_post_replan_context.json
+              revise_plan 이 현재 결정 맥락 7개를 전달하게 된 뒤의 기준.
+              시드 3004 가 post-oop 와 다르고, 그 차이는 opp_est 단독으로
+              귀속됐다 (REPLAN_CONTEXT_RESULT.md).
+
+옛 세대와의 불일치는 결함이 아니라 의도된 변경이다. 회귀 판정에는 항상
+기본값(current)을 쓴다.
 """
 import sys, os, json, hashlib, collections, argparse
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -32,11 +40,22 @@ _D = os.path.dirname(os.path.abspath(__file__))
 
 # 이름 -> (파일, 설명, 쓰기 가능한가)
 BASELINES = collections.OrderedDict((
-    ('current', (os.path.join(_D, 'baseline_9max_post_oop.json'),
-                 'post-OOP 현재 행동 (0d202c5 이후)', True)),
+    ('current', (os.path.join(_D, 'baseline_9max_post_replan_context.json'),
+                 'replan-context 전달 이후 현재 행동', True)),
+    ('post-oop', (os.path.join(_D, 'baseline_9max_post_oop.json'),
+                  'OOP 수정 이후 / replan-context 이전 (0d202c5) — 덮어쓰기 금지',
+                  False)),
     ('historical', (os.path.join(_D, 'baseline_9max.json'),
                     'pre-OOP / Phase-C 역사 기준 (7e40ba0 동결) — 덮어쓰기 금지', False)),
 ))
+
+# 옛 세대와의 불일치가 예상되는 이유. check 출력에서 설명으로 쓴다.
+EXPECTED_MISMATCH = {
+    'post-oop': ('revise_plan 이 현재 결정 맥락 7개를 전달하게 됐다. '
+                 '시드 3004 의 차이는 opp_est 단독으로 귀속됐다.'),
+    'historical': ('0d202c5 의 포스트플랍 포지션 술어 수정 + '
+                   'replan-context 전달. 둘 다 의도된 변경이다.'),
+}
 DEFAULT = 'current'
 
 # 하위호환. 과거 코드가 이 이름을 참조한다.
@@ -108,13 +127,19 @@ def head_rev():
 
 
 def show_list():
-    print('기준선')
-    for name, (path, desc, writable) in BASELINES.items():
+    print('기준선 세대 (오래된 것 -> 현재)')
+    order = ['historical', 'post-oop', 'current']
+    for name in order:
+        path, desc, writable = BASELINES[name]
         mark = ' ' if writable else '*'
         exists = '있음' if os.path.exists(path) else '없음'
-        print('  %s%-11s %-30s %-4s %s'
-              % (mark, name, os.path.basename(path), exists, desc))
-    print('  * = save 로 덮어쓸 수 없다')
+        print('  %s%-11s %-42s %-4s' % (mark, name, os.path.basename(path), exists))
+        print('   %-11s %s' % ('', desc))
+        if name in EXPECTED_MISMATCH:
+            print('   %-11s 현재 production 과의 불일치는 예상된 것: %s'
+                  % ('', EXPECTED_MISMATCH[name]))
+    print()
+    print('  * = save 로 덮어쓸 수 없다. 회귀 판정에는 current 를 쓴다.')
     return 0
 
 
@@ -123,7 +148,8 @@ def main():
     ap.add_argument('cmd', nargs='?', default='check',
                     choices=['check', 'save', 'list'])
     ap.add_argument('--baseline', default=DEFAULT,
-                    help="'current' / 'historical' / 파일 경로 (기본 current)")
+                    help="'current' / 'post-oop' / 'historical' / 파일 경로 "
+                         "(기본 current)")
     ap.add_argument('--note', default=None, help='save 에 남길 한 줄 메모')
     a = ap.parse_args()
 
@@ -136,8 +162,9 @@ def main():
     if a.cmd == 'save':
         if not writable:
             print('거부 — 이 기준선은 덮어쓸 수 없다.')
-            print('  %s 은 봉인된 Phase C(024ab5b)가 서 있던 행동이다.' % os.path.basename(path))
-            print('  덮어쓰면 그 결과가 어느 코드에 대한 것이었는지 알 수 없게 된다.')
+            print('  %s 은 지난 세대의 행동을 동결한 파일이다.'
+                  % os.path.basename(path))
+            print('  덮어쓰면 과거 분석이 어느 코드에 대한 것이었는지 알 수 없게 된다.')
             print('  현재 행동을 갱신하려면: tools/regress.py save --baseline current')
             return 2
         fp, stats = fingerprint()
@@ -163,9 +190,9 @@ def main():
     print('현재   : %s  (rev %s)' % (summarize(stats), head_rev() or '-'))
     if bad:
         print('불일치 시드: %s  → 동작이 바뀌었습니다.' % bad)
-        if a.baseline == 'historical':
-            print('  historical 대조에서의 불일치는 **예상된 것**이다 —')
-            print('  0d202c5 가 포스트플랍 포지션 술어를 의도적으로 고쳤다.')
+        if a.baseline in EXPECTED_MISMATCH:
+            print('  %s 대조에서의 불일치는 **예상된 것**이다 —' % a.baseline)
+            print('  %s' % EXPECTED_MISMATCH[a.baseline])
             print('  회귀 판정에는 --baseline current 를 쓸 것.')
         return 1
     print('전 시드 지문 일치 — 동작 보존 확인.')
