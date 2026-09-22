@@ -195,6 +195,8 @@ def main():
     ap.add_argument('--seeds', default='3000,3001,3002,3003,3004')
     ap.add_argument('--hands', type=int, default=6)
     ap.add_argument('--selftest', action='store_true')
+    ap.add_argument('--verify', action='store_true',
+                    help='CONTROL/RETRY 동등성을 invariant 로 검사한다. 하나라도 다르면 rc=1')
     ap.add_argument('--heartbeat', type=float, default=10.0)
     a = ap.parse_args()
     seeds = tuple(int(x) for x in a.seeds.split(','))
@@ -261,6 +263,22 @@ def main():
               '첫 요청이 불법이 아니었다' % [r['seed'] for r in bad_meta])
         return 2
     print('  경과 %.1fs' % (time.time() - t0))
+
+    if a.verify:
+        # invariant: 거부된 첫 요청은 그 뒤 무엇도 바꾸지 않는다.
+        exercised = sum(1 for r in rows if r['error_seen'] > 0)
+        bad = [r for r in rows if r['class'] != 'none']
+        print()
+        print('  invariant  ValueError 경로를 실제로 밟은 시드 %d / %d'
+              % (exercised, len(rows)))
+        if not exercised:
+            print('  FAIL 주입이 한 번도 불법이 아니었다 — 시험이 비어 있다')
+            return 1
+        if bad:
+            print('  FAIL CONTROL != RETRY: %s'
+                  % [(r['seed'], r['class']) for r in bad])
+            return 1
+        print('  PASS 전 시드에서 CONTROL == RETRY')
     return 0
 
 
