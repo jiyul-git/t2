@@ -1,0 +1,30 @@
+name: f1-regression-only
+
+on:
+  push:
+    branches:
+      - chatgpt/f1-no-aggressor-semantics
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python3 -m compileall -q .
+      - name: OOP semantics
+        run: python3 tools/verify_oop_semantics.py
+      - name: Blockbet selftest
+        run: python3 tools/selftest_blockbet.py
+      - name: Reachability
+        run: python3 tools/reachability.py --check
+      - name: Current regression
+        run: python3 tools/regress.py check --baseline current
