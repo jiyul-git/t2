@@ -187,13 +187,14 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 
 ### F-1  어그레서 없는 팟의 blockbet / donk semantics
 - **개념명** 선제 억제의 기준 대상
-- **파일:라인** `plan.py:446-450` · `915-919` (TODO/F 주석 있음)
-- **현재 역할** 어그레서가 없으면 옛 절대식을 legacy 경로로만 써서 기존 행동을 보존한다. `oop_vs_aggr` 에는 절대 legacy 값을 넣지 않는다
-- **production 도달** 있음 — 전체 결정의 33.1% (926/2,800)
-- **행동 영향** 3팔 차이 A vs B = **926건 중 1건**
-- **동적 검증** OLD/A/B 3팔 + 게이트 진입 계측. A 에서 442 게이트 33회·904 억제 9회 통과, B 에서 0회. 그러나 `block` 계획 채택은 **세 팔 모두 0건**
-- **상태** `EXPERIMENT_LATER`
-- **다음 조치** 개념 논증은 B(어그레서 없으면 미적용) 쪽이다 — `plan.py:921-924` 가 스스로 "**프로브는 동크가 아니다**"라고 예외를 단다. 그러나 표본 1건으로 확정하지 않는다. F-2 가 먼저 풀려야 442 쪽을 관측할 수 있다
+- **파일:라인** `plan.py:442-451` · `930-941`
+- **결정한 의미** blockbet 과 donk suppression 은 둘 다 **살아 있는 특정 aggressor 상대의 선행 행동**이다. live aggressor 가 없으면 둘 다 적용하지 않는다. limped pot·이전 스트리트 무어그레서 상태의 선제 베팅은 blockbet/donk 로 재해석하지 않고, 필요하면 별도의 probe/lead 개념으로 다룬다
+- **과거 상태(pre-fix)** `oop_vs_aggr is None` 일 때 `oop_legacy_abs`(옛 절대 위치)로 대체했다. 서로 다른 개념을 fallback 으로 섞었다
+- **동적 검증(pre-fix)** 6시드 고정 fixture에서 update_plan 3,817회, no-live-aggressor 1,313회. current vs strict에서 세미블러프 aggression 확률 차이 3건을 격리했다. 그 표본에서는 plan/act/size 최종 출력 차이는 0건이었다. blockbet 최종 plan 차이도 0건이었다
+- **추가 검증** 14개 고정 시드를 병렬로 돌려 strict 의미를 확인했고 전 job PASS, engine error 0. 후보 수정 후 OOP semantics · blockbet selftest · reachability · current regression 모두 PASS
+- **수정** `_oop_a = bool(oop_vs_aggr)`. generic `oop_field` 나 `oop_legacy_abs` 를 blockbet/donk 판단에 섞지 않는다. `_oop_legacy` 는 과거 로그·대조용 진단값으로만 남긴다
+- **상태** `FIXED`
+- **설계 메모** probe/lead 는 별도 전략 개념이다. 이번 F-1 수정은 그 새 라인을 배선하지 않는다
 
 ### F-2  `blockbet` 실현 0 / 2,800
 - **개념명** 블락벳 계획의 실현 가능성
@@ -404,7 +405,7 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 [position semantics]
   session.oop_field:12 / oop_vs:28  (session.py:659-668 에서 계산)
      oop_field      → cbet_freq (plan.py:1211, 1214)
-     oop_vs_aggr    → blockbet 449 · donk 919      (어그레서 없으면 legacy, F-1)
+     oop_vs_aggr    → blockbet · donk suppression  (live aggressor 없으면 미적용, F-1 FIXED)
                         blockbet 은 F-2 FIXED 이후 실제로 채택된다
      aggressor_pos_oop → session.py:834 line_bluff_prior
         ▼
