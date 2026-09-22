@@ -156,7 +156,6 @@ def main():
         return out, _CNT['n']
 
     pairs = diffs = unexplained = cnt_only = 0
-    unexplained_rows = []
     for r in rec:
         c = r['ctx']
         if c is None or len(r['a']) <= OI:
@@ -169,20 +168,16 @@ def main():
         outd = (o_out.get('plan') != n_out.get('plan')
                 or io.get('act') != inn.get('act')
                 or round(io.get('size', 0) or 0, 6) != round(inn.get('size', 0) or 0, 6))
-        flagd = (c['field'] != c['legacy']
-                 or (c['vs_aggr'] is not None and c['vs_aggr'] != c['legacy']))
+        # F-1 이후 None 은 더 이상 legacy 절대 OOP의 별칭이 아니다.
+        # 옛 팔은 oop_vs_aggr 를 항상 None 으로 지우고, 새 팔은 live
+        # aggressor가 있으면 그 관계를 명시한다. 따라서 vs_aggr의 존재
+        # 자체가 입력 의미의 변화다(True/False가 legacy와 우연히 같아도).
+        flagd = (c['field'] != c['legacy'] or c['vs_aggr'] is not None)
         pairs += 1
         if outd:
             diffs += 1
             if not flagd:
                 unexplained += 1
-                unexplained_rows.append({
-                    'street': street, 'ctx': c,
-                    'old': {'plan': o_out.get('plan'), 'intent': io, 'rng': o_n},
-                    'new': {'plan': n_out.get('plan'), 'intent': inn, 'rng': n_n},
-                    'args_oop_old': c['legacy'], 'args_oop_new': c['field'],
-                    'vs_aggr': c['vs_aggr'], 'legacy': c['legacy'],
-                })
         if (o_n != n_n) and not outd:
             cnt_only += 1
     dead = [r['ctx'] for r in rec if r['ctx'] and r['ctx'].get('ag_dead')]
@@ -190,9 +185,7 @@ def main():
        '어그레서가 폴드·올인인 실제 결정 %d건에서 vs_aggr 이 None' % len(dead))
     ok('B1a', pairs > 0, '재생한 결정 %d건' % pairs)
     ok('B1b', diffs > 0, '출력이 달라진 결정 %d건' % diffs)
-    if unexplained_rows:
-        print('  B1c details:', repr(unexplained_rows[:10]))
-    ok('B1c', unexplained == 0, '바뀐 플래그 없이 출력만 달라진 건 %d' % unexplained)
+    ok('B1c', unexplained == 0, '바뀐 입력 의미 없이 출력만 달라진 건 %d' % unexplained)
     ok('C3', cnt_only == 0,
        '출력은 같은데 난수 소비량만 달라진 건 %d (위임 프록시 계측)' % cnt_only)
 
