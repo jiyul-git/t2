@@ -128,7 +128,7 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 
 ---
 
-## 3. E — 재현된 버그 (E-1 · E-2 · E-3 전부 FIXED)
+## 3. E — 재현된 버그 (E-1 · E-2 · E-3 · E-4 전부 FIXED)
 
 ### E-1  `revise_plan` 이 `bb_chips` 를 넘기지 않는다
 - **분류** E → **FIXED** (`12d7c7e`)
@@ -163,6 +163,23 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 - **행동 영향** **있음.** 폴백 조회의 20.3%(고유 16/79)가 어긋나고 방향은 전부 `internal 'call'` vs `public 'open'`. 하류에서 레인지 54건이 달라지고 plan 4 · size 2 · chips 2 가 바뀐다. 최소 사례 `seed 3005 river 600칩 → 500칩`, `seed 4242 flop giveup → bluff_2street`
 - **동적 검증** `tools/f6_q4b_fallback.py`. Tier 1 레인지 층 / Tier 2 결정 층 / `update_plan` 에 실제로 들어간 `opp_range` 까지 센다. 수정 후 사이트 0 · 결정 차이 0
 - **수정** 관찰자 경로가 `pf_seed` 를 읽지 않고 실제 적용된 프리플랍 로그에서 재구성한다. 한 번도 행동하지 않은 좌석만 종전 추정을 쓴다. 기록이 있는 정상 사건에서도 helper 를 우선 쓴다 — 두 값이 같다는 것은 따로 쟀고(1,575/1,575), 그래야 관찰자 판단이 남의 기록에 의존하지 않는다
+
+### E-4  persistent HandRun 이 반복 불법 입력에서 generator 를 종료시킨다
+- **분류** E → **FIXED** (`2aa7e9d`)
+- **개념명** 히어로 액션 입력 검증의 재시도 계약
+- **파일:라인** `session.py:468-489`(프리플랍) · `676-692`(포스트플랍)
+- **현재 역할** 합법 액션이 적용될 때까지 error frame 을 yield 하며 기다린다. 불법마다 제어가 호출자로 돌아가므로 내부 busy-loop 가 아니고, 재시도 횟수 상한도 두지 않는다
+- **과거 관측(pre-fix)** 재시도가 한 번뿐이었다.
+  - 1차 불법 → 정상 error frame
+  - **2차 불법 → `ValueError` 가 generator 밖으로 탈출**
+  - 그 예외로 generator 가 종료
+  - 이후 합법 send → `{'done': True, 'result': None}` — `StopIteration` 이 `done` 으로 둔갑해 호출자가 '핸드 정상 종료' 로 오독한다
+  - **Round state mutation 은 0** (`Round.apply` 가 이 예외 경로에서 상태를 안 건드린다)
+  - direct HandRun · tourney.submit, 프리플랍·포스트플랍 **네 조합 전부 재현**
+- **PRIMARY USER PATH SHIELDED** — **`live2` / `cli` / `ui_server` 는 요청마다 `HandRun` 을 재구성하고 invalid 를 persistent action history 에 저장하지 않는다**(`live2.py:377-399`). 그래서 **현재 사용자 세션에서는 이 결함이 발현하지 않았다.** "live2/UI 가 깨진다" 로 읽지 말 것. 이 항목은 persistent HandRun **API 계약**의 결함이다
+- **fix 후 검증** `tools/f9_invalid_retry.py --verify`. 4층 x 4시나리오(불법 0/1/2/3회) 16조합 전부 PASS — error frame 전건, 탈출 0, false done 0, 복구 정상, invalid 중 Round 지문 불변. live2 shield 도 같이 본다(invalid 3회에서 `actions` 증가 0, 상태 해시 불변, legal 에서 +1). CLI/ui_server 가 persistent HandRun 을 안 가진다는 정적 계약도 확인
+- **행동 보존** 합법 액션만으로 돈 full_log 가 수정 전후 exact match (18 엔트리, 같은 해시)
+- **범위 밖** REPLAY `pre|` latent path(E-2 참조). `game.py` / `auto.py` 의 무가드 replay 루프는 **별도 조사 없이 새 ID 를 만들지 않는다** — 이 항목과 섞지 않는다
 
 ---
 
