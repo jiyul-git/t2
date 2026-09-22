@@ -1,31 +1,38 @@
-name: f1-no-aggressor-experiment
+name: f1-prefx-action-search
 
 on:
   push:
     branches:
-      - chatgpt/f1-no-aggressor-semantics
-  workflow_dispatch:
+      - chatgpt/f1-prefx-action-search
 
 permissions:
   contents: read
 
 jobs:
-  measure:
+  search:
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        seed: [3000,3001,3002,3003,3004,3005,3010,3011,3012,3013,4242,5150,7301,9001,93000,93001,93002,93003,93004,93005]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Compile probe
-        run: python3 -m py_compile tools/f1_no_aggressor.py
-      - name: Run historical-compatible fixture
+      - name: Run pre-fix F-1 probe
         run: |
-          python3 tools/f1_no_aggressor.py --seeds 5150,9001,4242,7301,3004,3005 --hands 20 --json | tee f1_result.json
-      - name: Upload result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: f1-result
-          path: f1_result.json
+          python3 tools/f1_no_aggressor.py --seeds ${{ matrix.seed }} --hands 20 --json | tee f1_${{ matrix.seed }}.json
+          python3 - <<'PY'
+          import glob,json
+          p=glob.glob('f1_*.json')[0]
+          d=json.load(open(p))
+          s=d.get('summary',{})
+          print('SEED_RESULT', d['fixture']['seeds'][0],
+                'p_diff',s.get('intent_current_vs_strict_p_diff',0),
+                'action_diff',s.get('intent_projected_action_diff',0),
+                'make_diff',s.get('make_current_vs_strict_plan_diff',0),
+                'update_diff',s.get('update_output_diff',0))
+          PY
