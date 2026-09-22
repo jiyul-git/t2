@@ -1,0 +1,31 @@
+name: a5-blockbet-verify
+
+on:
+  push:
+    branches:
+      - claude/a5-blockbet-fix
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax
+        run: python3 -m py_compile plan.py tools/block_trace.py tools/replan_provenance.py tools/verify_replan_contract.py
+      - name: Replan contract unchanged
+        run: python3 tools/verify_replan_contract.py
+      - name: Block plan reachability
+        run: python3 tools/block_trace.py --seeds 5000-5007 --jobs 4
+      - name: Current regression (informational)
+        shell: bash
+        run: |
+          set +e
+          python3 tools/regress.py check --baseline current
+          code=$?
+          echo "REGRESSION_EXIT=$code"
+          exit 0
