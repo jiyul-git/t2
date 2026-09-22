@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`block` 계획 파이프라인 계측 — 0건이 구조인가 표본인가.
+"""`block` 계획 파이프라인 계측 — 선택된 block이 make_plan 밖까지 살아남는지 검증.
 
   python3 tools/block_trace.py --seeds 5000-5007
 
@@ -16,13 +16,14 @@
             block_p *= (1 + 0.4*dang);  fish 면 ×0.25;  [0, 0.42] clamp
         if sk('blockbet') >= 1 and rng.random() < block_p:
             plan = 'block'
-        # ← elif 가 아니다. 아래 if/elif 가 plan 을 **덮어쓴다**
-        if sk('potcontrol') >= 1 and rng.random() < _pc_p:
-            plan = 'pot_control'
-        elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
-            plan = 'value_2street'
         else:
-            plan = 'showdown' if made >= 1 else 'giveup'
+            # block을 선택하지 않았을 때만 머징/팟컨트롤 폴백을 평가한다.
+            if sk('potcontrol') >= 1 and rng.random() < _pc_p:
+                plan = 'pot_control'
+            elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
+                plan = 'value_2street'
+            else:
+                plan = 'showdown' if made >= 1 else 'giveup'
 
 그래서 깔때기를 단계별로 센다. `why` 에 블락벳 메시지가 남았는데 최종
 plan 이 `block` 이 아니면 **덮어쓰기**다.
@@ -32,7 +33,7 @@ plan 이 `block` 이 아니면 **덮어쓰기**다.
   S2 eq >= pcz 분기 진입 ('중간강도' 메시지)
   S3 S1 ∩ S2                      ← block opportunity
   S4 블락벳 메시지 (굴림 통과)
-  S5 make_plan 반환 plan == 'block'  (덮어쓰기 생존)
+  S5 make_plan 반환 plan == 'block'  (S4 선택 보존)
   S6 attach_intent 시점 plan == 'block'  (_allowed 생존)
   S7 block 분기의 f
   S8 실제 벳
@@ -185,32 +186,23 @@ def main():
               % (sum(r['bet'] for r in s6), pc(sum(r['bet'] for r in s6), len(s6))))
     print()
 
-    if s4 and not s5:
-        print('  ** S4 → S5 에서 전부 사라진다 = 덮어쓰기다.')
-        ow = collections.Counter(r['plan'] for r in s4)
-        print('     블락벳 메시지가 남은 %d건의 최종 plan:' % len(s4), dict(ow.most_common()))
-    elif s4:
+    if s4:
+        kept = [r for r in s4 if r['plan'] == 'block']
         ow = collections.Counter(r['plan'] for r in s4)
         print('  블락벳 메시지가 남은 %d건의 make_plan 반환 plan:' % len(s4), dict(ow.most_common()))
+        print('  S4 → S5 block 보존: %d/%d (%.1f%%)'
+              % (len(kept), len(s4), pc(len(kept), len(s4))))
+        if len(kept) == len(s4):
+            print('  ** PASS: make_plan 안에서 선택된 block을 뒤 머징 분기가 덮어쓰지 않는다.')
+        else:
+            print('  ** FAIL: 선택된 block %d건이 make_plan 안에서 다시 덮어써졌다.'
+                  % (len(s4) - len(kept)))
     print()
 
-    # 생존 가능 경로가 있는가 — 없다.
-    # plan.py:456/458/461 은 완전한 if/elif/else 이고 세 갈래 전부 plan 을
-    # 대입한다. 448 의 block 이 살아남는 경로가 하나도 없다.
-    #
-    # 처음에 "rel < max(0.28, 0.52-0.080*_mg) 이거나 made==0 이면 생존" 으로
-    # 계산해 26% 라는 숫자를 냈는데 **틀렸다** — 그 조건은 else 로 가는
-    # 조건이고 else 도 showdown/giveup 을 대입한다. value_2street 를 피하는
-    # 것과 block 이 살아남는 것을 같은 것으로 봤다.
     if s4:
-        dest = collections.Counter(r['plan'] for r in s4)
-        print('## 생존 경로 검사')
-        print('  plan.py:456/458/461 은 완전한 if/elif/else 이고 세 갈래 전부')
-        print('  plan 을 대입한다 → 448 의 block 이 생존하는 경로는 없다.')
-        print('  실측: 블락벳 메시지 %d건의 목적지가 %d종류로 전부 나왔다 —'
-              % (len(s4), len(dest)))
-        print('        %s' % dict(dest.most_common()))
-        print('  네 목적지가 모두 관측된 것이 "빠짐없이 덮어쓴다"의 직접 증거다.')
+        print('## 제어흐름 회귀 관문')
+        print('  기대 불변식: S4(블락벳 선택) == S5(make_plan 반환 block).')
+        print('  S6 이후 감소는 river_fix/_allowed 같은 후속 단계와 분리해서 해석한다.')
         print()
 
     # 인당 opportunity 분포
