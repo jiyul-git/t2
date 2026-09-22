@@ -101,9 +101,16 @@ def probe_generator(label, make, n_invalid):
         out['recover'] = {'ok': False,
                           'exc': '%s: %s' % (type(e).__name__, str(e)[:60])}
     out['state_after'] = state()
-    out['state_unchanged_by_invalid'] = (out['state_before'] == out['state_after']
-                                         if not out.get('recover', {}).get('ok')
-                                         else None)
+    # invalid 를 처리하는 동안 Round 지문이 움직였는가 (복구 전까지)
+    out['fp_unchanged_during_invalid'] = all(
+        st.get('state') == out['state_before'] for st in out['steps'])
+    out['escaped'] = any(st.get('escaped') for st in out['steps'])
+    out['all_error_frames'] = all(
+        st.get('error_frame') for st in out['steps']) if out['steps'] else True
+    rec = out.get('recover') or {}
+    out['false_done'] = bool(rec.get('ok') and rec.get('done')
+                             and rec.get('result_none'))
+    out['recovered'] = bool(rec.get('ok') and not rec.get('done'))
     return out
 
 
@@ -222,7 +229,95 @@ def show(r):
                  '동일' if same else '변화'))
 
 
+def legal_only_log(session_path=None):
+    """음성 대조용 — 합법 액션만으로 한 핸드를 돌린 full_log."""
+    t = TOURNEY.Tournament(entries=40, start_stack=30000, hero_seat=7,
+                           seed=SEED, hands_per_level=200)
+    raw = t.next_hand()
+    g = 0
+    while isinstance(raw, dict) and not raw.get('done') and g < 400:
+        g += 1
+        raw = t.submit(*legal_for(raw))
+    return list(getattr(t.run, 'full_log', []) or [])
+
+
+def verify():
+    """4층 x 4시나리오. 숫자를 강제하지 않고 계약을 invariant 로 본다."""
+    fails = []
+    layers = (
+        ('A direct preflop',  lambda: make_direct(False)),
+        ('A direct postflop', lambda: make_direct(True)),
+        ('B tourney preflop',  lambda: make_tourney(False)),
+        ('B tourney postflop', lambda: make_tourney(True)),
+    )
+    print('=== E-4 verifier  (persistent HandRun) ===')
+    print('  %-22s %-3s %-9s %-7s %-9s %-7s %s'
+          % ('layer', 'inv', 'err frame', 'escape', 'false done', '복구', 'fp 불변'))
+    for label, mk in layers:
+        for n in (0, 1, 2, 3):
+            r = probe_generator(label, mk, n)
+            if r.get('setup_error'):
+                fails.append('%s inv%d setup %s' % (label, n, r['setup_error']))
+                continue
+            ok = (r['all_error_frames'] and not r['escaped']
+                  and not r['false_done'] and r['recovered']
+                  and r['fp_unchanged_during_invalid'])
+            print('  %-22s %-3d %-9s %-7s %-9s %-7s %s   %s'
+                  % (label, n, r['all_error_frames'], r['escaped'],
+                     r['false_done'], r['recovered'],
+                     r['fp_unchanged_during_invalid'],
+                     'PASS' if ok else 'FAIL'))
+            if not ok:
+                fails.append('%s inv%d' % (label, n))
+    print()
+    print('=== live2 / UI shield ===')
+    r = probe_live2(3)
+    errs = [st.get('error_frame') for st in r['steps']]
+    esc = any(st.get('escaped') for st in r['steps'])
+    a0 = r['state_before']['actions']
+    amid = r['steps'][-1]['state']['actions'] if r['steps'] else a0
+    h0 = r['state_before']['hash']
+    hmid = r['steps'][-1]['state']['hash'] if r['steps'] else h0
+    a1 = r['state_after']['actions']
+    shield = (all(errs) and not esc and amid == a0 and hmid == h0
+              and a1 == a0 + 1)
+    print('  invalid 3회 error frame %s / 탈출 %s' % (all(errs), esc))
+    print('  actions  before %d -> invalid 중 %d -> legal 뒤 %d' % (a0, amid, a1))
+    print('  state hash  before %s -> invalid 중 %s  %s'
+          % (h0, hmid, '불변' if h0 == hmid else '변화'))
+    print('  %s' % ('PASS' if shield else 'FAIL'))
+    if not shield:
+        fails.append('live2 shield')
+
+    print()
+    print('=== 정적 계약: CLI / UI 는 persistent HandRun 을 안 가진다 ===')
+    for f in ('cli.py', 'ui/server/ui_server.py'):
+        fp = os.path.join(ROOT, f)
+        if not os.path.exists(fp):
+            print('  %-26s 없음' % f); continue
+        src = open(fp, encoding='utf-8').read()
+        holds = 'HandRun(' in src
+        uses = 'live2' in src
+        print('  %-26s HandRun 직접 보유 %s / live2 경유 %s  %s'
+              % (f, holds, uses, 'PASS' if (uses and not holds) else 'FAIL'))
+        if holds or not uses:
+            fails.append('static %s' % f)
+
+    print()
+    if fails:
+        print('FAIL %d : %s' % (len(fails), ', '.join(fails)))
+        return 1
+    print('PASS  불법 요청을 몇 번 보내도 generator 가 살아 있고, '
+          'Round 상태는 불변이며, 합법 액션으로 정상 복구된다')
+    return 0
+
+
 def main():
+    if '--verify' in sys.argv:
+        return verify()
+    if '--legal-log' in sys.argv:
+        print(json.dumps(legal_only_log(), ensure_ascii=False, default=str))
+        return 0
     print('F-9  두 번째 불법 액션의 경계  (seed %d, 불법 요청 %r)'
           % (SEED, ILLEGAL))
     print()
