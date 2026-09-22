@@ -22,12 +22,16 @@ Production 코드를 바꾸지 않고 "있다"와 "실제로 살아 있다"를 �
 기본 실행:
   python3 tools/reachability.py
   python3 tools/reachability.py --json
-  python3 tools/reachability.py --check                          # post-blockbet
-  python3 tools/reachability.py --check --reference pre-blockbet # 보존용 historical
+  python3 tools/reachability.py --check                              # 현재 기준
+  python3 tools/reachability.py --check --reference post-blockbet    # 보존용
+  python3 tools/reachability.py --check --reference pre-blockbet     # 보존용
 
-acceptance reference 는 코드 세대로 나뉜다. PRE_BLOCKBET 은 blockbet 제어흐름
-수정 이전의 관측이고 숫자를 보존한다 — 현재 production 에 대고 돌리면
-mismatch 가 나는 것이 정상이다. POST_BLOCKBET 이 현재 기준이다.
+acceptance reference 는 코드 세대로 나뉜다. 옛 세대는 숫자를 그대로 보존하고
+덮어쓰지 않는다 — 현재 production 에 대고 돌리면 mismatch 가 나는 것이 정상이다.
+
+  pre-blockbet         blockbet 제어흐름 수정 이전
+  post-blockbet        그 수정 이후 / replan-context 전달 이전
+  post-replan-context  revise_plan 이 현재 맥락 7개를 전달하는 지금 (기본)
 
 숫자와 별개로 구조 invariant 를 항상 검사한다:
   blockbet changed == taken
@@ -184,11 +188,72 @@ POST_BLOCKBET = {
     },
 }
 
+# POST_REPLAN_CONTEXT — revise_plan 이 현재 결정 맥락 7개를 전달하게 된 뒤,
+# 같은 canonical fixture 에서 다시 측정한 값이다. 앞 두 세대를 덮어쓰지 않는다.
+#
+# blockbet: taken/changed 는 12/12 로 그대로인데 **게이트가 더 자주 열린다**
+#   (block_condition 60 -> 81, gate_true 48 -> 63). oop_vs_aggr 와 initiative 가
+#   이제 replan 경로의 make_plan 에도 도달하기 때문이다. 모집단(eligible 2803
+#   -> 2747 등)이 같이 움직인 것은 수정이 live 진행을 바꾸기 때문이고, 분모
+#   고정 재생이 아니다.
+# overbet: POST_BLOCKBET 과 전 항목 동일.
+# sk_fallback / oop_sensitive: 분모만 이동, 분자는 동일.
+#
+# 전부 tools/reachability.py --json 실제 출력에서 옮겼다. 추정값이 없다.
+POST_REPLAN_CONTEXT = {
+    'blockbet': {
+        'eligible': 2747,
+        'entered': 1740,
+        'gate_true': 63,
+        'taken': 12,
+        'changed': 12,
+        'mid_branch': 296,
+        'block_condition': 81,
+        'engine_errors': 0,
+    },
+    'sk_fallback': {
+        'eligible': 1740,
+        'entered': 0,
+        'engine_errors': 0,
+    },
+    'overbet': {
+        'eligible': 250,
+        'entered': 96,
+        'gate_true': 56,
+        'taken': 1,
+        'changed': 1,
+        'qualifying_plans': 56,
+        'polarization_gate': 55,
+        'k20_hits': 33,
+        'k20_trials': 1120,
+        'k20_rate_pct': 2.95,
+        'execution_errors': 0,
+    },
+    'oop_sensitive': {
+        'eligible': 584,
+        'entered': 120,
+        'taken': 120,
+        'changed': 1,
+        'unexplained': 0,
+        'engine_errors': 0,
+    },
+}
+
 REFERENCES = {
+    'post-replan-context': POST_REPLAN_CONTEXT,
     'post-blockbet': POST_BLOCKBET,
     'pre-blockbet': PRE_BLOCKBET,
 }
-CURRENT_REFERENCE = 'post-blockbet'
+CURRENT_REFERENCE = 'post-replan-context'
+
+# 옛 세대를 현재 production 에 대면 불일치가 나는 것이 정상이다. 그 이유.
+HISTORICAL_NOTE = {
+    'post-blockbet': ('revise_plan 이 현재 결정 맥락 7개를 전달하게 됐다. '
+                      'oop_vs_aggr/initiative 가 replan 경로에 도달해 blockbet '
+                      '게이트가 더 자주 열린다.'),
+    'pre-blockbet': ('blockbet 제어흐름 수정 이전이다. 그때는 굴림을 통과한 '
+                     'block 이 뒤 머지 분기에 덮여 changed 가 0 이었다.'),
+}
 
 
 def _rate(num, den):
@@ -730,13 +795,22 @@ def main():
     a = ap.parse_args()
 
     rows = collect()
-    if a.json:
-        print(json.dumps({'reference': a.reference, 'rows': rows},
-                         ensure_ascii=False, indent=2, sort_keys=True))
-    else:
-        _human(rows, check=a.check, reference=a.reference)
-
     inv = _invariants(rows)
+    bad = []
+    if a.check:
+        bad = [(r['concept'], _check_row(r, a.reference)) for r in rows]
+        bad = [(n, m) for n, m in bad if m]
+
+    if a.json:
+        # stdout 은 **JSON 만** 나간다. 예전에는 invariant 줄이 뒤에 붙어
+        # 출력이 파싱되지 않았다.
+        print(json.dumps({'reference': a.reference, 'rows': rows,
+                          'invariant_violations': inv,
+                          'mismatches': {n: m for n, m in bad}},
+                         ensure_ascii=False, indent=2, sort_keys=True))
+        return 1 if (inv or bad) else 0
+
+    _human(rows, check=a.check, reference=a.reference)
     if inv:
         print('FAIL 구조 invariant')
         for m in inv:
@@ -749,10 +823,8 @@ def main():
         print('reference: %s' % a.reference)
         if a.reference != CURRENT_REFERENCE:
             print('  주의: 이것은 보존용 historical reference 다. 현재 '
-                  'production 에 대고 돌리면 mismatch 가 나는 것이 정상이고, '
-                  '그 불일치는 blockbet 제어흐름 수정에 의한 의도된 것이다.')
-        bad = [(r['concept'], _check_row(r, a.reference)) for r in rows]
-        bad = [(n, m) for n, m in bad if m]
+                  'production 에 대고 돌리면 mismatch 가 나는 것이 정상이다.')
+            print('  %s' % HISTORICAL_NOTE.get(a.reference, ''))
         if bad:
             print('FAIL reachability mismatch (%s)' % a.reference)
             for name, mm in bad:
