@@ -1,0 +1,31 @@
+name: f1-no-aggressor-experiment
+
+on:
+  push:
+    branches:
+      - chatgpt/f1-no-aggressor-semantics
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile probe
+        run: python3 -m py_compile tools/f1_no_aggressor.py
+      - name: Run historical-compatible fixture
+        run: |
+          python3 tools/f1_no_aggressor.py --seeds 5150,9001,4242 --hands 20 --json | tee f1_result.json
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-result
+          path: f1_result.json
