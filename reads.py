@@ -423,6 +423,154 @@ def load_book(path):
     return bk
 
 
+
+# ===================== STYLE_MODEL_V1 SHADOW =====================
+# 행동 스타일 6종. **판단에는 쓰지 않는다.**
+# STYLE_MODEL_V1.md 에 사전등록한 L/A/X + modifier 를 그대로 계산한다.
+# 실제 상대 프로필/개념 벡터를 읽지 않고 perceived_profile 의 공개행동 추정치만 쓴다.
+STYLE_V1_NAMES = ('NIT', 'TAG', 'LAG', 'LOOSE_PASSIVE', 'TIGHT_PASSIVE', 'MANIAC')
+STYLE_V1_CENTERS = {
+    'NIT':           (1.8, 4.6, 1.5),
+    'TAG':           (3.8, 6.3, 2.2),
+    'LAG':           (7.0, 7.3, 4.0),
+    'LOOSE_PASSIVE': (7.3, 2.8, 1.5),
+    'TIGHT_PASSIVE': (2.8, 2.7, 1.3),
+    'MANIAC':        (8.6, 9.0, 8.0),
+}
+
+
+def _style_v1_num(est, key, default):
+    """None/결측을 모집단 prior 로 되돌린다. SHADOW 전용."""
+    if not est:
+        return float(default)
+    v = est.get(key)
+    return float(default if v is None else v)
+
+
+def _style_v1_z(x, center, scale):
+    return math.tanh((float(x) - center) / max(1e-9, float(scale)))
+
+
+def _style_v1_hi(x, center, scale):
+    return max(0.0, _style_v1_z(x, center, scale))
+
+
+def _style_v1_lo(x, center, scale):
+    return max(0.0, -_style_v1_z(x, center, scale))
+
+
+def _style_v1_clamp(x, lo=0.0, hi=10.0):
+    return max(lo, min(hi, float(x)))
+
+
+def style_shadow(est):
+    """STYLE_MODEL_V1 의 행동 스타일 SHADOW 추정.
+
+    입력은 perceived_profile 결과뿐이다. 반환값은 기록/검증 전용이며
+    plan/range/sizing/read_opponent 의 입력으로 쓰지 않는다.
+
+    표본이 0이면 6개 스타일은 정확히 균등분포, certainty=0 이다.
+    """
+    e = est or {}
+    vpip = _style_v1_num(e, 'vpip', PRIOR['vpip'])
+    pfr = _style_v1_num(e, 'pfr', PRIOR['pfr'])
+    rfi_rel = _style_v1_num(e, 'rfi_rel', 1.0)
+    pf_limp = _style_v1_num(e, 'pf_limp', PRIOR['pf_limp'])
+    pf_3bet = _style_v1_num(e, 'pf_3bet', PRIOR['pf_3bet'])
+    pf_4bet = _style_v1_num(e, 'pf_4bet', PRIOR['pf_4bet'])
+    aggr = _style_v1_num(e, 'aggr', 4.2)
+    cbet = _style_v1_num(e, 'cbet', PRIOR['cbet'])
+    barrel = _style_v1_num(e, 'barrel', PRIOR['barrel'])
+    ftb = _style_v1_num(e, 'ftb', PRIOR['fold_to_bet'])
+    bluff = _style_v1_num(e, 'bluff', PRIOR['bluff'])
+    sz_mean = _style_v1_num(e, 'sz_mean', PRIOR['sz_mean'])
+    sz_sd = _style_v1_num(e, 'sz_sd', PRIOR['sz_sd'])
+    sz_big = _style_v1_num(e, 'sz_big', 0.15)
+
+    # 1) looseness
+    L = _style_v1_clamp(
+        5.0
+        + 2.4 * _style_v1_z(vpip, 0.26, 0.10)
+        + 1.4 * _style_v1_z(rfi_rel, 1.00, 0.45)
+        + 0.9 * _style_v1_z(pf_limp, 0.06, 0.12)
+    )
+
+    # 2) aggression
+    pfr_ratio = pfr / max(vpip, 0.08)
+    A = _style_v1_clamp(
+        5.0
+        + 1.3 * _style_v1_z(pfr_ratio, 0.58, 0.20)
+        + 1.2 * _style_v1_z(pf_3bet, 0.07, 0.05)
+        + 1.5 * _style_v1_z(aggr, 4.20, 1.70)
+        + 0.7 * _style_v1_z(cbet, 0.55, 0.18)
+        + 0.9 * _style_v1_z(barrel, 0.42, 0.18)
+    )
+
+    # 3) pressure extremeness
+    X = _style_v1_clamp(
+        1.0 + 9.0 * (
+            0.22 * _style_v1_hi(pf_3bet, 0.09, 0.06)
+            + 0.16 * _style_v1_hi(pf_4bet, 0.055, 0.04)
+            + 0.20 * _style_v1_hi(barrel, 0.52, 0.20)
+            + 0.18 * _style_v1_hi(aggr, 5.20, 1.80)
+            + 0.14 * _style_v1_hi(sz_big, 0.22, 0.18)
+            + 0.10 * _style_v1_hi(sz_sd, 0.28, 0.20)
+        )
+    )
+
+    conf = max(0.0, min(1.0, _style_v1_num(e, 'confidence', 0.0)))
+    n = max(0.0, _style_v1_num(e, 'n', 0.0))
+    q = math.sqrt(conf * min(1.0, n / 24.0))
+
+    raw = {}
+    for name in STYLE_V1_NAMES:
+        lc, ac, xc = STYLE_V1_CENTERS[name]
+        d2 = ((L - lc) / 1.7) ** 2 + ((A - ac) / 1.7) ** 2 + ((X - xc) / 2.2) ** 2
+        raw[name] = math.exp(-0.5 * q * d2)
+    tot = sum(raw.values()) or 1.0
+    probs = {name: raw[name] / tot for name in STYLE_V1_NAMES}
+    top = max(STYLE_V1_NAMES, key=lambda k: probs[k])
+
+    H = -sum(p * math.log(max(p, 1e-300)) for p in probs.values())
+    certainty = q * (1.0 - H / math.log(len(STYLE_V1_NAMES)))
+    certainty = max(0.0, min(1.0, certainty))
+
+    mods = {
+        'sticky': q * (
+            0.55 * _style_v1_lo(ftb, 0.42, 0.15)
+            + 0.25 * _style_v1_hi(vpip, 0.30, 0.10)
+            + 0.20 * _style_v1_lo(aggr, 4.00, 1.50)
+        ),
+        'overfold': q * _style_v1_hi(ftb, 0.62, 0.15),
+        'bluffy': q * (
+            0.45 * _style_v1_hi(bluff, 5.5, 1.8)
+            + 0.35 * _style_v1_hi(barrel, 0.52, 0.18)
+            + 0.20 * _style_v1_hi(sz_big, 0.22, 0.18)
+        ),
+        'limp_heavy': q * _style_v1_hi(pf_limp, 0.12, 0.10),
+        'threebet_heavy': q * _style_v1_hi(pf_3bet, 0.10, 0.07),
+        'big_sizer': q * (
+            0.60 * _style_v1_hi(sz_mean, 0.72, 0.25)
+            + 0.40 * _style_v1_hi(sz_big, 0.22, 0.18)
+        ),
+        'size_volatile': q * _style_v1_hi(sz_sd, 0.30, 0.20),
+    }
+    mods = {k: round(max(0.0, min(1.0, v)), 4) for k, v in mods.items()}
+
+    return {
+        'probs': {k: round(probs[k], 6) for k in STYLE_V1_NAMES},
+        'top': top,
+        'certainty': round(certainty, 6),
+        'L': round(L, 6),
+        'A': round(A, 6),
+        'X': round(X, 6),
+        'q': round(q, 6),
+        'modifiers': mods,
+        'n': int(n),
+        'confidence': round(conf, 6),
+    }
+
+
 # ===================== OpponentBelief =====================
 # 관찰자는 상대의 개념 벡터를 **볼 수 없다.** 볼 수 있는 것은 행동 빈도뿐이다.
 # 그래서 순서가 이렇게 되어야 한다.
