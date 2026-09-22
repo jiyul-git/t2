@@ -22,7 +22,7 @@ jobs:
         run: python3 -m py_compile tools/f1_no_aggressor.py
       - name: Run historical-compatible fixture
         run: |
-          python3 tools/f1_no_aggressor.py --seeds 5150,9001,4242 --hands 20 --json | tee f1_result.json
+          python3 tools/f1_no_aggressor.py --seeds 5150,9001,4242,7301,3004,3005 --hands 20 --json | tee f1_result.json
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
