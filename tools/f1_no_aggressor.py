@@ -542,10 +542,37 @@ def main():
     ap.add_argument('--seeds', default='5150,9001,4242')
     ap.add_argument('--hands', type=int, default=20)
     ap.add_argument('--json', action='store_true')
+    ap.add_argument('--verify', action='store_true')
     a = ap.parse_args()
 
     seeds = [int(x) for x in a.seeds.split(',') if x.strip()]
     out = run(seeds, a.hands)
+
+    if a.verify:
+        sm = out['summary']
+        checks = {
+            'engine_errors': out['engine_errors'] == 0,
+            'population': sm.get('update_no_live_aggressor', 0) > 0,
+            'update_output': sm.get('update_output_diff', 0) == 0,
+            'update_plan': sm.get('update_plan_diff', 0) == 0,
+            'update_act': sm.get('update_act_diff', 0) == 0,
+            'update_size': sm.get('update_size_diff', 0) == 0,
+            'update_aggr_p': sm.get('update_aggr_p_diff', 0) == 0,
+            'update_rng': sm.get('update_rng_count_diff', 0) == 0,
+            'make_plan': sm.get('make_current_vs_strict_plan_diff', 0) == 0,
+            'make_block_msg': sm.get('make_current_vs_strict_block_msg_diff', 0) == 0,
+            'make_block_survival': sm.get('make_current_vs_strict_block_survival_diff', 0) == 0,
+            'intent_p': sm.get('intent_current_vs_strict_p_diff', 0) == 0,
+            'intent_action': sm.get('intent_projected_action_diff', 0) == 0,
+            'make_replay': sm.get('make_current_replay_mismatch', 0) == 0,
+            'intent_replay': sm.get('intent_current_replay_mismatch', 0) == 0,
+        }
+        for name, ok in checks.items():
+            print('%-24s %s' % (name, 'PASS' if ok else 'FAIL'))
+        if not all(checks.values()):
+            return 1
+        print('PASS F-1 strict no-live-aggressor semantics')
+        return 0
 
     if a.json:
         print(json.dumps(out, indent=2, ensure_ascii=False, sort_keys=True))
