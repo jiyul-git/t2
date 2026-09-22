@@ -20,6 +20,23 @@
 **"이상해 보인다 = 삭제" 로 처리하지 않는다.** 재현되지 않은 의심은 E 로
 올리지 않고 F 로 내린다. 실제로 이 조사에서 E 후보 5건 중 3건이 강등됐다.
 
+**FIXED 항목은 과거 관측을 지우지 않는다.** 각 항목에 `현재 상태` 와
+`과거 관측(pre-fix)` 을 나눠 적는다. 과거 숫자가 어느 코드 위에서 나온
+것인지 잃으면 그 시점의 분석을 다시 읽을 수 없다.
+
+수정 provenance (integration `c05679d` 기준):
+
+```
+951939e  (비채택 — RNG 스트림 이동. origin/claude/a5-blockbet-fix 에 남아 있다)
+b1fe8ad  blockbet 제어흐름: 채택된 block 을 뒤 머지 분기가 덮어쓰지 않는다
+12d7c7e  revise_plan 이 현재 결정 맥락 7개를 전달한다
+5b6c546  tools/verify_replan_context.py — 전달 계약 동적 검증
+462bd90  tools/replan_context_paired.py — paired 행동 특성화
+c716a40  baseline 3세대 분리
+7553538  reachability reference 3세대 분리
+c05679d  REPLAN_CONTEXT_RESULT.md
+```
+
 ---
 
 ## 1. A — 구현돼 있으나 문서화되지 않은 개념
@@ -111,18 +128,18 @@
 
 ---
 
-## 3. E — 재현된 버그 (미수정)
+## 3. E — 재현된 버그 (E-1 은 FIXED)
 
 ### E-1  `revise_plan` 이 `bb_chips` 를 넘기지 않는다
-- **분류** E
+- **분류** E → **FIXED** (`12d7c7e`)
 - **개념명** 보드변화 재계획의 상대 유효스택 인식
-- **파일:라인** `runner.py:150-153` (누락) → `plan.py:327-328 _opp_eff` → `target_commit(opp_eff=…)`
-- **현재 역할** `_opp_eff = opp_stack_bb × bb_chips / stack`. `bb_chips` 가 없으면 `_opp_eff` 가 `None` 이 되어 커밋 목표가 상대 스택을 못 본다
-- **production 도달** 있음 — 턴·리버 재계획 810건
-- **행동 영향** **있음** — 810건 중 2건(0.25%)에서 사이즈 변화
-- **동적 검증** 5팔 반사실. `CF-bb` 단독으로 2건 재현. 최소 사례 `standard seed4242 h14 t5 river LJ: value_3street bet 0.892 → 0.885` (RNG 소비 동일 2827→2827)
-- **상태** `UNRESOLVED`
-- **다음 조치** 구조정리 때 다섯 인자를 **한 번에** 넘기고 `runner.py:148` 의 틀린 주석도 같이 고친다. 고치면 `tools/verify_replan_contract.py` 의 `KNOWN_MISSING` 을 줄여야 한다
+- **파일:라인** `runner.py:175-215 revise_plan` → `plan.py:328 _opp_eff` → `target_commit(opp_eff=…)`
+- **현재 역할** `_opp_eff = opp_stack_bb × bb_chips / stack`. `bb_chips` 가 없으면 `_opp_eff` 가 `None` 이 되어 커밋 목표가 상대 스택을 못 본다. **`bb_chips` 와 `opp_stack_bb` 는 AND 게이트다** — `plan.py:327` 이 둘 다 있어야 계산한다
+- **현재 상태** `bb_chips` 는 현재 맥락으로 전달된다 (`12d7c7e`)
+- **과거 관측(pre-fix)** production 도달 810건, 그중 **2건(0.25%)** 에서 사이즈 변화. 5팔 반사실에서 `CF-bb` 단독으로 2건 재현. 최소 사례 `standard seed4242 h14 t5 river LJ: value_3street bet 0.892 → 0.885` (RNG 소비 동일 2827→2827)
+- **fix 후 검증** `tools/verify_replan_context.py` 계약 A/F PASS (`bb_chips` 52/52 도달). paired 비교(237 event)에서 사이즈 변화 7건·실제 칩 변화 6건, 그중 `bb_chips` 단독 효과와 `bb_chips × opp_stack_bb` 상호작용은 A6 에서 각각 2건·6건으로 이미 분해돼 있다 (`A6_REPLAN_PROVENANCE_RESULT.md`)
+- **상태** `FIXED`
+- **근거** `12d7c7e` + `verify_replan_context` + paired behavior. `tools/verify_replan_contract.py` 의 `KNOWN_MISSING` 은 비었고 옛 목록은 `HISTORICAL_MISSING` 으로 보존
 
 ---
 
@@ -140,33 +157,34 @@
 
 ### F-2  `blockbet` 실현 0 / 2,800
 - **개념명** 블락벳 계획의 실현 가능성
-- **파일:라인** `plan.py:451-456` (`sk('blockbet') >= 1 and rng.random() < block_p`)
-- **현재 역할** 게이트 통과 뒤 개념 문턱과 확률 굴림을 더 통과해야 `plan='block'` 이 된다
-- **production 도달** 게이트는 열린다 (A팔 33회)
-- **행동 영향** **실현 0건** — 2,800 결정에서 `block` 계획이 한 번도 채택되지 않았다
-- **동적 검증** 3팔 반사실에서 세 팔 모두 0
-- **상태** `EXPERIMENT_LATER`
-- **다음 조치** `sk()` 가 0~3 스케일이라 `>= 1` 은 `PS.sk >= 3.33` 이다. `block_p` 상한은 0.42. 최소 프로필로 한 번이라도 실현 가능한지부터 확인한다. **이번 단계에서는 하지 않는다**
+- **파일:라인** `plan.py:455-457` (`_block_taken`) · `464-492` (머지 분기)
+- **원인** 확률이 아니라 **제어흐름**이었다. `plan = 'block'` 직후의 `if/elif/else` 가 조건과 무관하게 `plan` 을 재대입해, 굴림을 통과해도 `block` 이 밖으로 나가지 못했다. `sk()` 문턱(`PS.sk >= 3.33`)이나 `block_p` 상한 0.42 는 원인이 아니었다
+- **현재 상태** 덮어쓰기만 막았다 (`b1fe8ad`). 분기를 `else` 로 옮기지 않았다 — 옮기면 potcontrol 굴림이 소비되지 않아 RNG 스트림이 밀린다
+- **현재 관측** canonical `tools/reachability.py` (`POST_REPLAN_CONTEXT`, fixture `field_4x22`): `gate_true 63 / taken 12 / changed 12`. 구조 invariant `changed == taken` PASS
+- **과거 관측(pre-fix)** 실현 **0건 / 2,800 결정**. 3팔 반사실 세 팔 모두 0. canonical `PRE_BLOCKBET` 세대에서는 `taken 13 / changed 0`. 이 관측은 `PRE_BLOCKBET` 에 숫자 그대로 보존돼 있다
+- **동적 검증** `tools/selftest_blockbet.py` — 게이트 거짓 / 굴림 실패 / 굴림 통과 세 경우를 수정 전후로 대조. 굴림 통과 28건 전부 `plan == 'block'` 이 되고 RNG 호출열·최종 state·나머지 state 키는 전부 동일. 순진한 `else` 이동 변형은 28건 전부에서 FAIL (음성 대조)
+- **상태** `FIXED`
+- **주의** `EXPERIMENT_LATER` 로 남겨뒀던 "최소 프로필로 실현 가능한가" 는 더 이상 질문이 아니다. 실현을 막던 것은 확률이 아니라 대입 순서였다
 
 ### F-3  `revise_plan` 의 `oop_vs_aggr` / `oop_legacy_abs` / `initiative` 누락
 - **개념명** 재계획 시점의 포지션·공격권
-- **파일:라인** `runner.py:150-153`
-- **현재 역할** 기본값으로 떨어진다 — `oop_vs_aggr=None`, `oop_legacy_abs=None`, `initiative=True`
-- **production 도달** 있음 — 810건
-- **행동 영향** **없음 (0/810)**. `initiative=True` 기본값이 `not initiative` 를 막아 442 게이트가 어차피 닫힌다. 포지션만 고쳐도 0, initiative 만 고쳐도 0
-- **동적 검증** CF-pos 0/810, CF-init 0/810. 실제 값과 기본값은 다르다 — `oop_field` 478/810(59.0%), `oop_vs_aggr` 315/810(38.9%)
-- **상태** `UNRESOLVED`
-- **다음 조치** E-1 과 함께 고친다. 단독으로는 행동이 안 바뀌므로 E 로 올리지 않는다
+- **파일:라인** `runner.py:175-215 revise_plan` · 소비 `plan.py:449-450` (블락벳 게이트)
+- **현재 상태** 셋 다 현재 맥락으로 전달된다 (`12d7c7e`)
+- **과거 관측(pre-fix)** 행동 영향 **0/810**. 이유는 "효과가 없어서" 가 아니라 **AND 게이트** 때문이다 — `_oop_a and not initiative`. `initiative` 기본값 `True` 가 `not initiative` 를 막고, `oop_vs_aggr` 기본값 `None` 이 `_oop_a` 를 막는다. 그래서 **한 필드만 고쳐서는 절대 열리지 않는다**. CF-pos 0/810, CF-init 0/810 은 그 귀결이다. 실제 값과 기본값은 달랐다 — `oop_field` 478/810(59.0%), `oop_vs_aggr` 315/810(38.9%)
+- **fix 후 검증** `tools/replan_oop_probe.py` (237 replan event): 단독 3 arm 전부 0, **짝** `oop_vs+initiative` 1건 · `oop_legacy+initiative` 1건 · `all3` 1건, 전부 `plan == 'block'`. 예측(게이트 식에서 도출)과 실측이 일치한다. 수정 전 트리에서는 짝도 0 이었다
+- **상태** `FIXED`
+- **근거** current forwarding 계약(`12d7c7e`) + blockbet 제어흐름 수정(`b1fe8ad`). 둘 다 있어야 도달한다 — 전달만 해도, 덮어쓰기만 막아도 `block` 은 안 나온다
+- **읽는 법** 이 항목의 `0/810` 을 "포지션·공격권은 재계획에서 중요하지 않다" 로 읽지 말 것. 단독 효과가 0 인 것은 AND 게이트의 성질이지 축의 성질이 아니다
 
 ### F-4  `revise_plan` 의 `tilt` 누락
 - **개념명** 재계획 시점의 틸트
-- **파일:라인** `runner.py:148` 주석 vs `150-153` 코드 · 소비 `plan.py:411 trap_judgment(…, tilt, …)`
-- **현재 역할** 주석은 *"상대 추정치·**틸트**를 그대로 넘긴다"* 라고 적혀 있으나 실제로 넘기는 것은 `opp_est`·`opp_stack_bb` 뿐이다. `tilt` 는 기본값 0.0
-- **production 도달** 있음 — 810건
-- **행동 영향** **없음 (0/810)**
-- **동적 검증** CF-tilt 0/810. 틸트 `level > 0` 자체가 0.84% 라 표본에서 효과가 관측되지 않는다
-- **상태** `UNRESOLVED`
-- **다음 조치** 의미상 전달 대상이다(주석이 그렇게 약속한다). E-1 과 함께 고치고 주석을 코드에 맞춘다
+- **파일:라인** `runner.py:175-215 revise_plan` · 소비 `plan.py:411 trap_judgment(…, tilt, …)`
+- **현재 상태** 전달된다 (`12d7c7e`). 주석과 코드가 일치한다 — 예전 주석은 *"상대 추정치·**틸트**를 그대로 넘긴다"* 라고 약속하면서 실제로는 `opp_est`·`opp_stack_bb` 만 넘겼다
+- **과거 관측(pre-fix)** 행동 영향 **0/810**. CF-tilt 0/810
+- **행동 효과 크기** **여전히 미측정이다.** 이 fixture 에서 `tilt` 의 현재값이 전 event 0.0 이라(A6 810건에서 mismatch 0, PHASE 2 237건에서도 0) 전달 전후로 값이 달라지는 사건 자체가 없다. 틸트 `level > 0` 이 0.84% 인 것과 같은 방향이다
+- **fix 후 검증** 계약만 검증했다 — `tools/verify_replan_context.py` 계약 G 가 합성 `tilt=0.37` 을 주입해 그대로 도착하는지 확인(PASS). 계약 D 의 omit/snapshot 훼손은 이 fixture 에서 `tilt` 를 구분할 수 없어 N/A 로 분리했고, 모든 필드에 필수인 `wrong` 모드는 22건 검출
+- **상태** `FIXED` (계약 기준). 효과 크기는 열려 있다
+- **읽는 법** "틸트가 재계획 행동에 영향이 없다" 는 결론을 내리지 말 것. 이 fixture 가 틸트를 거의 발생시키지 않을 뿐이다
 
 ### F-5  `_rsig` 프로세스 salt
 - **개념명** 상대 레인지 변동 감지 서명
@@ -200,13 +218,19 @@
 
 ### F-8  `revise_plan` 입력 계약 불일치 (구조적 항목)
 - **개념명** 같은 함수의 두 생성 경로가 서로 다른 전제를 쓴다
-- **파일:라인** `plan.py:1483-1489`(최초) vs `runner.py:150-153`(재계획)
-- **현재 역할** `update_plan` 은 계획을 두 경로로 만든다. 최초는 상황 입력 10개, 재계획은 5개. 재계획은 **완전한 새 dict 생성**이고 이력 7키만 승계한다 — 부분 갱신이 아니다
-- **production 도달** 있음 — 재계획 경로 2,580/4,736(54.5%), 그중 `make_plan` 도달 810(17.1%)
-- **행동 영향** E-1 참조 (bb_chips 경유 2건). 나머지 넷은 F-3·F-4
-- **동적 검증** `tools/verify_replan_contract.py` 가 누락 5개를 고정
-- **상태** `DOCUMENT`
-- **다음 조치** **이 항목은 개별 동적 판정(E-1/F-3/F-4)과 분리해 읽는다.** 개별 인자의 행동 영향과 무관하게, 완전 재생성 함수가 현재 상황 대신 기본값을 받는 것 자체가 구조 문제다
+- **파일:라인** `plan.py:1502-1506`(최초) vs `plan.py:1517-1524` → `runner.py:175-215`(재계획)
+- **현재 상태** 두 경로가 **같은 상황 입력 10개**를 받는다. 재계획이 받는 현재 결정 맥락 7필드:
+
+  ```
+  oop_vs_aggr  oop_legacy_abs  initiative  tilt  bb_chips  opp_est  opp_stack_bb
+  ```
+
+  나머지 셋(`seed`·`n_opp`·`to_act_behind`)은 예전에도 전달됐다. 재계획이 **완전한 새 dict 생성**이고 이력 7키만 승계한다는 구조 자체는 그대로다 — 부분 갱신이 아니다
+- **None ≠ 생략** `runner._MISSING` sentinel 로 가른다. `oop_vs_aggr=None` 은 '지금 어그레서가 없다' 라는 관측이지 '모른다' 가 아니므로 `if x is None: fallback` 을 쓰지 않는다. 7개를 **생략한** 옛 직접 호출자는 예전 semantics(스냅샷 + `make_plan` 기본값) 그대로 간다
+- **과거 관측(pre-fix)** 최초 10개 / 재계획 5개. 재계획 경로 2,580/4,736(54.5%), 그중 `make_plan` 도달 810(17.1%). 누락 5개는 `tools/verify_replan_contract.py` 가 `KNOWN_MISSING` 으로 고정하고 있었다
+- **동적 검증** `tools/verify_replan_contract.py` (정적, 누락 0) + `tools/verify_replan_context.py` (동적, 계약 A~G PASS)
+- **상태** `FIXED`
+- **행동 결과** paired 비교 237 event 에서 plan 1 / act 0 / normalized size 7 / 실제 칩 6 / 반올림에 묻힌 1. regress 는 시드 3004 하나만 바뀌었고 **`opp_est` 단독으로 귀속**됐다. 상세는 `REPLAN_CONTEXT_RESULT.md`
 
 ---
 
@@ -330,14 +354,16 @@
 [plan]
   session.py:754 PL.update_plan:1463   ← 유일한 진입점
      first/flop     → make_plan:256                        (상황 입력 10개)
-     turn/river     → runner.revise_plan:145
-                        board_changed 면 make_plan (상황 입력 5개)  ← F-8
+     turn/river     → runner.revise_plan:175
+                        board_changed 면 make_plan (상황 입력 10개, F-8 FIXED)
+                        현재 맥락 7필드 전달 · None ≠ 생략 (_MISSING sentinel)
      → refresh:1676 → river_fix:1550 → _allowed:1636 → attach_intent:559
         ▼
 [position semantics]
   session.oop_field:12 / oop_vs:28  (session.py:659-668 에서 계산)
      oop_field      → cbet_freq (plan.py:1211, 1214)
      oop_vs_aggr    → blockbet 449 · donk 919      (어그레서 없으면 legacy, F-1)
+                        blockbet 은 F-2 FIXED 이후 실제로 채택된다
      aggressor_pos_oop → session.py:834 line_bluff_prior
         ▼
 [action / response / sizing]
@@ -397,7 +423,7 @@ style      reads.style_hypotheses:493 / concept_belief:521 / opponent_belief:548
 | ICM 가지 | `Hand.bf → table_bf → calldown_need` 한 점으로 수축한다는 사실이 없다 |
 | money 가지 | 프리플랍에만 들어가고 포스트플랍은 관측 전용이라는 비대칭이 없다 |
 | style belief | 미배선 분기가 코드에는 있고 그림에는 없다 |
-| 재계획 두 경로 | `make_plan` 직접 vs `revise_plan` 경유가 서로 다른 입력을 받는다(F-8) |
+| 재계획 두 경로 | ~~서로 다른 입력을 받는다~~ → **F-8 FIXED**. 지금은 같은 10개를 받는다. 그림에는 두 경로가 하나의 계약을 공유한다는 것이 나와야 한다 |
 | 포지션 세 술어 | `oop_field` / `oop_vs_aggr` / `aggressor_pos_oop` 의 소비처가 다르다 |
 | 줄 번호 | `session.HandRun _run (113)` · `while True (315)` 로 적혀 있으나 실제는 `_run` 397, 스트리트 루프 610 |
 | 관측·표시 층 | `audit.py` · `ui/`(5,112줄) · `tools/`(103파일) |
@@ -413,7 +439,7 @@ style      reads.style_hypotheses:493 / concept_belief:521 / opponent_belief:548
 7. reads: style belief 갈래 (점선 = 미배선)
 8. persona / archetype / tilted_view
 9. read_opponent (exploit 해석)
-10. update_plan 5단 파이프라인 + **재계획 분기(입력 5개 누락 표시)**
+10. update_plan 5단 파이프라인 + **재계획 분기(현재 맥락 7필드 전달 표시)**
 11. position semantics 3술어와 각자의 소비처
 12. act_with_plan 두 갈래 (무저항 / 저항)
 13. Round.apply + shape_size (RNG 소비 지점)
@@ -428,4 +454,5 @@ style      reads.style_hypotheses:493 / concept_belief:521 / opponent_belief:548
 - money pressure 의 프리플랍 단방향성
 - ICM 이 한 점으로 수축한다는 것
 - 되먹임 고리가 핸드 경계를 넘는다는 것
-- 재계획 경로의 입력 누락 5개
+- 재계획 경로가 최초 경로와 **같은 상황 입력 10개**를 받는다는 것
+  (현재 맥락 7필드. 과거의 "누락 5개" 표기는 pre-fix 상태다)
