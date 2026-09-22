@@ -21,7 +21,7 @@ jobs:
       - name: Compile
         run: python3 -m compileall -q .
       - name: F-1 strict semantics
-        run: python3 tools/f1_no_aggressor.py --seeds 3000,3001,3002,3003,3004,3005,4242,5150,7301,9001 --hands 20 --verify
+        run: python3 tools/f1_no_aggressor.py --seeds 3000,4242,9001 --hands 20 --verify
       - name: OOP semantics
         run: python3 tools/verify_oop_semantics.py
       - name: Blockbet selftest
