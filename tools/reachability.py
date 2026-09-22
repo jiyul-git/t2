@@ -633,7 +633,10 @@ def probe_oop_sensitive():
         if ctx is None or len(rec['a']) <= oop_i:
             continue
 
-        old, street = run_arm(rec, ctx['legacy'], None, ctx['legacy'])
+        # F-1 이후 None은 no-live-aggressor 의미다. 이 probe는 FX-2의
+        # historical old-vs-new 위치 의미만 재므로 옛 팔의 상대기준도
+        # legacy 값으로 명시해 F-1 효과를 섞지 않는다.
+        old, street = run_arm(rec, ctx['legacy'], ctx['legacy'], ctx['legacy'])
         new, street2 = run_arm(rec, ctx['field'], ctx['vs_aggr'], ctx['legacy'])
         if street is None:
             street = street2
