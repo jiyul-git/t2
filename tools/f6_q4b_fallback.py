@@ -155,6 +155,9 @@ def main():
     ap.add_argument('--seeds', default='3000,3001,3002')
     ap.add_argument('--hands', type=int, default=20)
     ap.add_argument('--heartbeat', type=float, default=10.0)
+    ap.add_argument('--verify', action='store_true',
+                    help='production 이 소비하는 role == 공개 재구성 을 '
+                         'invariant 로 검사한다. 어긋나면 rc=1')
     a = ap.parse_args()
     seeds = tuple(int(x) for x in a.seeds.split(','))
     t0 = time.time()
@@ -219,6 +222,20 @@ def main():
         print('  seed %d  %s' % (r['seed'], r['counts'] or '차이 없음'))
     print()
     print('경과 %.1fs' % (time.time() - t0))
+
+    if a.verify:
+        # invariant: 소비 지점이 받는 role 이 공개 재구성과 항상 같아야 한다.
+        # tier1 사이트는 "production role != public" 인 호출만 기록된다.
+        print()
+        print('  invariant  production role != public 인 소비 사이트 %d' % len(tier1))
+        dec = sum(r['counts'].get('plan', 0) + r['counts'].get('act', 0)
+                  + r['counts'].get('size', 0) + r['counts'].get('chips', 0)
+                  for r in rows)
+        print('  invariant  INTERNAL/PUBLIC 결정 차이 합 %d' % dec)
+        if tier1 or dec:
+            print('  FAIL')
+            return 1
+        print('  PASS production == public reconstruction')
     return 0
 
 

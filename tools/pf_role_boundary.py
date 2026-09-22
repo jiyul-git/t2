@@ -30,6 +30,13 @@
 "포스트플랍 공격자에게 프리플랍 오픈 레인지를 매기면 안 된다" 고 적어둔 바로
 그 경로가 폴백에는 남아 있다.
 
+**세대 주의.** 이 도구의 소비 지점 matrix 는 E-3 **이전**의 소비 로직
+(`pf_seed` 를 읽고 없으면 `'open' if o == aggressor else 'call'`)을 재현한다.
+E-3 이후 production 은 공개 로그로 직접 재구성하므로, 수정 후 트리에서 이
+matrix 가 내는 mismatch 는 "그때 그 로직이었다면" 의 수치다. 현재
+production 이 실제로 무엇을 소비하는지는 tools/f6_q4b_fallback.py --verify
+가 본다. 기록 수준 비교(pf_seed vs public)는 두 세대 모두에서 뜻이 같다.
+
 읽기 전용. production 을 수정하지 않는다.
 """
 from __future__ import print_function
