@@ -721,8 +721,8 @@ class HandRun:
                               and aggressor not in r2.folded
                               and aggressor not in r2.allin)
                           else None)
-                # 어그레서가 없으면 442/904 의 의미가 정해지지 않는다.
-                # 그 경우에만 쓰는 legacy 절대식 — _oop_a 에는 넣지 않는다.
+                # live aggressor가 없으면 blockbet/donk의 상대 기준은 없다.
+                # _oop_legacy는 과거 로그/대조용으로만 남기고 판단에는 쓰지 않는다.
                 _oop_legacy = (h.POST.index(h.pos[s]) < 3)
                 _seats, _ante = len(h.seats), (getattr(h, 'ante', h.bb) > 0)
                 # **프리플랍 역할과 포스트플랍 공격자는 다른 개념이다.**
