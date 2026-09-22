@@ -8,7 +8,7 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Python
@@ -21,11 +21,7 @@ jobs:
         run: python3 tools/verify_replan_contract.py
       - name: Block plan reachability
         run: python3 tools/block_trace.py --seeds 5000-5007 --jobs 4
-      - name: Current regression (informational)
-        shell: bash
-        run: |
-          set +e
-          python3 tools/regress.py check --baseline current
-          code=$?
-          echo "REGRESSION_EXIT=$code"
-          exit 0
+      - name: Current regression
+        run: python3 tools/regress.py check --baseline current
+      - name: A6 full fixture after A5
+        run: python3 tools/replan_provenance.py
