@@ -1,0 +1,31 @@
+name: style-natural-v1
+
+on:
+  push:
+    branches:
+      - chatgpt/style-natural-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        seed: [810001,810002,810003,810004,810005,810006,810007,810008,810009,810010,810011,810012]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python3 -m py_compile tools/style_shadow_natural.py
+      - name: Natural-state style measurement
+        run: python3 tools/style_shadow_natural.py --seed ${{ matrix.seed }} --rounds 40 --entries 100
