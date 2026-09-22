@@ -13,9 +13,13 @@ plan.update_plan 은 계획을 두 경로로 만든다.
 기본값은 중립이 아니라 특정 주장이다 — initiative=True 는 '내가 공격권을
 갖고 있다', oop_vs_aggr=None 은 '어그레서 대비 관계가 없다' 이다.
 
-이것은 **고쳐지지 않은 알려진 불일치**다. 저장소를 깨뜨리지 않기 위해
-실패로 만들지 않고, 차이를 **정확히 고정**한다. 하나라도 전달되기
-시작하면 이 테스트가 실패하므로, 고칠 때 이 목록도 같이 줄여야 한다.
+**이 불일치는 고쳐졌다** (revise_plan current-context contract).
+update_plan 이 7개를 전부 명시 키워드로 넘기고, revise_plan 이 그대로
+make_plan 에 전달한다. 그래서 알려진 누락 목록은 이제 비어 있다.
+하나라도 다시 빠지면 C4 가 실패한다.
+
+고치기 전의 누락 목록은 HISTORICAL_MISSING 으로 남긴다 — 어느 시점의
+분석이 어떤 계약 위에서 나온 것인지 가리키는 표식이므로 지우지 않는다.
 
 측정 근거 (seed 5150/9001/4242 x standard/deep/turbo x 16핸드):
   update_plan 4,736 호출 중 revise 경로 2,580, 그중 make_plan 도달 810.
@@ -32,8 +36,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# 현재 알려진 불일치. 하나라도 revise 쪽에 추가되면 여기서 빼야 한다.
-KNOWN_MISSING = {'oop_vs_aggr', 'oop_legacy_abs', 'initiative', 'tilt', 'bb_chips'}
+# 고치기 전의 누락 목록. 보존용 — 이 숫자로 대조하지 않는다.
+HISTORICAL_MISSING = {'oop_vs_aggr', 'oop_legacy_abs', 'initiative',
+                      'tilt', 'bb_chips'}
+
+# 현재 알려진 불일치. 이제 없다. 하나라도 다시 빠지면 C4 가 실패한다.
+KNOWN_MISSING = set()
 
 FAILS = []
 
@@ -90,9 +98,13 @@ def main():
     print()
     print('  %-18s %-8s %-8s' % ('상황 입력', '최초', '재계획'))
     for p in params[n_required:]:
+        mark = ''
+        if p in KNOWN_MISSING:
+            mark = '   <= 알려진 누락'
+        elif p in HISTORICAL_MISSING:
+            mark = '   <= 예전에 누락이던 것 (지금은 전달)'
         print('  %-18s %-8s %-8s%s' % (
-            p, 'O' if p in up_kw else '-', 'O' if p in rv_kw else '-',
-            '   <= 알려진 누락' if p in KNOWN_MISSING else ''))
+            p, 'O' if p in up_kw else '-', 'O' if p in rv_kw else '-', mark))
     print()
     ok('C4', missing == KNOWN_MISSING,
        '재계획이 빠뜨리는 인자 = %s' % sorted(missing))
@@ -112,7 +124,8 @@ def main():
         print('FAIL %d : %s' % (len(FAILS), ', '.join(FAILS)))
         print('계약이 바뀌었다. 고의로 고쳤다면 KNOWN_MISSING 을 갱신할 것.')
         return 1
-    print('PASS 재계획 입력 계약 (알려진 누락 %d개 고정)' % len(KNOWN_MISSING))
+    print('PASS 재계획 입력 계약 (알려진 누락 %d개, 예전 누락 %d개는 전달됨)'
+          % (len(KNOWN_MISSING), len(HISTORICAL_MISSING)))
     return 0
 
 

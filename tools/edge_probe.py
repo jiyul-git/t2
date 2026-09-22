@@ -28,11 +28,13 @@ CASES = collections.defaultdict(list)
 def install():
     _rev = RU.revise_plan
 
+    # revise_plan 은 이제 현재 결정 맥락 7개를 키워드로 받는다. 여기서는
+    # 계측만 하므로 **해석하지 않고 그대로 넘긴다.** 빼면 계약이 끊긴다.
     def rev(state, hero, board, my_range, opp_range, profile, pot, stack,
-            street, seed, n_opp, behind, prev_board):
+            street, seed, n_opp, behind, prev_board, **ctx):
         changed = RU.board_changed(prev_board, board)
         st = _rev(state, hero, board, my_range, opp_range, profile, pot, stack,
-                  street, seed, n_opp, behind, prev_board)
+                  street, seed, n_opp, behind, prev_board, **ctx)
         if changed:
             HIT['board_changed'] += 1
             keep = st.get('plan_since')

@@ -126,7 +126,11 @@ def capture(seeds, fmts, hands, entries):
 
 def _candidate(current, selected):
     def cand(state, hero, board, my_range, opp_range, profile, pot, stack,
-             street, seed, n_opp, behind, prev_board):
+             street, seed, n_opp, behind, prev_board, **_ctx):
+        # **_ctx 는 production 이 넘기는 현재 맥락이다. 이 probe 는 옛
+        # semantics(스냅샷 + make_plan 기본값)를 baseline 으로 고정해 재는 것이
+        # 목적이므로 여기서는 쓰지 않는다. 받아서 버리는 것이 의도다 —
+        # 안 받으면 TypeError 로 죽는다.
         if not RU.board_changed(prev_board, board):
             return state
         kw = {'seed': seed, 'n_opp': n_opp, 'to_act_behind': behind,
@@ -147,10 +151,16 @@ def _candidate(current, selected):
 
 
 def replay(event, selected=()):
+    """baseline arm 도 **옛 semantics 를 명시적으로 설치해서** 잰다.
+
+    production 의 revise_plan 계약이 바뀌어도 이 probe 의 baseline 은 흔들리지
+    않는다. 예전에는 selected 가 비면 production revise_plan 을 그대로 썼는데,
+    current-context 전달이 들어간 뒤로는 그게 더 이상 '옛 semantics' 가 아니다.
+    두 계약을 한 표에 섞지 않기 위해 baseline 을 고정한다.
+    """
     orig = RU.revise_plan
     try:
-        if selected:
-            RU.revise_plan = _candidate(event['current'], set(selected))
+        RU.revise_plan = _candidate(event['current'], set(selected))
         return PL.update_plan(*copy.deepcopy(event['args']),
                               **copy.deepcopy(event['kwargs']))
     finally:
@@ -221,7 +231,7 @@ def main():
     print('replan events %d  (capture %.1fs)' % (len(events), t_cap))
     print()
     print('provenance different: %s' % prov)
-    print('production replan 의 plan == block: %d' % base_blocks)
+    print('옛 semantics baseline 의 plan == block: %d' % base_blocks)
     print()
     print('  %-24s %8s %12s  %s' % ('arm', 'changed', 'plan=block', 'diff_kinds'))
     for name, r in out.items():

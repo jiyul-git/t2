@@ -142,15 +142,73 @@ def board_changed(prev_board, board):
     flush_before = max(su0.values()) >= 3 if prev_board else False
     return (flush_now and not flush_before) or (d1 - d0) >= 0.30
 
+# 인자가 **아예 생략됨** 과 **명시적으로 None 이 전달됨** 을 구분하는 표지.
+# None 은 실제 현재값일 수 있다 — oop_vs_aggr=None 은 '지금 어그레서가 없다'
+# 라는 관측이지 '모른다' 가 아니다. `if x is None: fallback` 로 쓰면 그
+# 관측이 조용히 기본값으로 바뀐다.
+_MISSING = object()
+
+
+def _read_mk_defaults():
+    """make_plan 의 실제 기본값을 시그니처에서 읽는다.
+
+    여기에 숫자를 새로 적지 않는다. 적으면 make_plan 쪽이 바뀌었을 때
+    두 곳이 조용히 어긋난다.
+
+    **import 시점에 한 번만** 읽는다. 지연시키면 도구가 PL.make_plan 을
+    monkeypatch 한 뒤에 처음 불릴 수 있고, 그러면 래퍼의 (*a, **k) 시그니처를
+    기본값으로 캐시해 버린다. 실제로 그렇게 깨졌다.
+    """
+    import inspect
+    return {k: v.default
+            for k, v in inspect.signature(PL.make_plan).parameters.items()
+            if v.default is not inspect.Parameter.empty}
+
+
+_MK_DEFAULTS = _read_mk_defaults()
+
+
+def _mk_default(name):
+    return _MK_DEFAULTS[name]
+
+
 def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, street,
-                seed, n_opp, behind, prev_board):
+                seed, n_opp, behind, prev_board,
+                oop_vs_aggr=_MISSING, oop_legacy_abs=_MISSING,
+                initiative=_MISSING, tilt=_MISSING, bb_chips=_MISSING,
+                opp_est=_MISSING, opp_stack_bb=_MISSING):
+    """보드가 바뀌면 계획을 다시 세운다.
+
+    **현재 결정 맥락 7개를 update_plan 과 똑같이 받는다.** 예전에는
+    opp_est/opp_stack_bb 를 state 스냅샷에서 꺼내 쓰고 나머지 다섯은 아예
+    안 넘겨서 make_plan 기본값으로 떨어뜨렸다. 기본값은 중립이 아니라
+    주장이다 — initiative=True 는 '내가 공격권을 갖고 있다',
+    oop_vs_aggr=None 은 '어그레서 대비 관계가 없다' 이다.
+
+    생략과 None 을 구분한다. 인자를 **생략한** 옛 직접 호출자는 예전
+    semantics 그대로 간다(스냅샷 / make_plan 기본값). update_plan 정상
+    경로는 7개를 전부 명시로 넘기며, 그 값이 None 이면 None 이 간다.
+    """
     if board_changed(prev_board, board):
-        # 상대 추정치·틸트를 그대로 넘긴다. 예전에는 안 넘겨서
-        # 보드가 바뀌는 순간 익스플로잇이 통째로 끊겼다.
+        # 생략된 것만 옛 semantics 로 떨어진다. None 은 생략이 아니다.
+        _opp_est = (state.get('opp_est') if opp_est is _MISSING else opp_est)
+        _opp_stack_bb = (state.get('opp_stack_bb')
+                         if opp_stack_bb is _MISSING else opp_stack_bb)
+        _oop_vs_aggr = (_mk_default('oop_vs_aggr')
+                        if oop_vs_aggr is _MISSING else oop_vs_aggr)
+        _oop_legacy_abs = (_mk_default('oop_legacy_abs')
+                           if oop_legacy_abs is _MISSING else oop_legacy_abs)
+        _initiative = (_mk_default('initiative')
+                       if initiative is _MISSING else initiative)
+        _tilt = _mk_default('tilt') if tilt is _MISSING else tilt
+        _bb_chips = _mk_default('bb_chips') if bb_chips is _MISSING else bb_chips
+        # 7개를 전부 **명시 키워드**로 넘긴다. 조건부로 빼면
+        # tools/verify_replan_contract.py 의 정적 대조가 계약을 볼 수 없다.
         new = PL.make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                            seed=seed, n_opp=n_opp, to_act_behind=behind,
-                           opp_est=state.get('opp_est'),
-                           opp_stack_bb=state.get('opp_stack_bb'))
+                           oop_vs_aggr=_oop_vs_aggr, initiative=_initiative,
+                           opp_est=_opp_est, opp_stack_bb=_opp_stack_bb, tilt=_tilt,
+                           bb_chips=_bb_chips, oop_legacy_abs=_oop_legacy_abs)
         new['revised'] = True
         # 이전 스트리트들의 의도·이탈 기록은 계획의 이력이다. 새 계획을 세워도 유지한다.
         # (make_plan 이 새 dict 를 반환하므로 명시적으로 옮기지 않으면 사라진다)
