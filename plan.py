@@ -452,27 +452,44 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             block_p *= (1 + 0.4*dang)          # 젖은 보드일수록 가격 통제 욕구↑
             if A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish': block_p *= 0.25
             block_p = max(0.0, min(0.42, block_p))
+        _block_taken = False
         if sk('blockbet') >= 1 and rng.random() < block_p:
             plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
+            _block_taken = True
         # 머징 — 밸류/블러프 이분법을 넘어 중간 강도로도 친다.
         # 개념이 낮으면 중간 강도를 전부 팟 컨트롤로 보내고,
         # 높으면 얇은 밸류로 돌린다. thin_value_* 는 턴·리버 한정이라
         # 플랍 단계의 이 갈림이 성향과 무관하게 고정돼 있었다.
         # make_plan 안의 sk() 는 0~3 스케일이다(PS.sk/3.33). 0~10 로 착각하지 말 것.
+        #
+        # **아래 if/elif/else 는 조건 평가를 그대로 하되, 블락벳이 채택된
+        # 경우에는 plan 을 덮어쓰지 않는다.** 예전에는 `plan = 'block'` 직후
+        # 이 분기가 무조건 실행돼 블락벳이 한 번도 밖으로 나가지 못했다
+        # (A5 계측: gate_true 8 / roll 통과 1 / taken 0).
+        #
+        # 덮어쓰기만 막고 **분기 자체를 else 로 옮기지 않는다.** 옮기면
+        # potcontrol 굴림이 소비되지 않아 rng 스트림이 통째로 밀린다.
+        # 굴림은 기존과 같은 조건(sk('potcontrol') >= 1)에서 같은 순서로
+        # 소비되고, 달라지는 것은 그 결과를 plan 에 쓰는지 여부뿐이다.
+        # why 도 같이 막는다 — 최종 plan 이 block 인데 '팟 컨트롤' 사유가
+        # 남으면 계획과 사유가 모순된다.
         _mg = sk('range_merge')                        # 0~3
         _pc_p = min(0.75, pc*0.8 + 0.12 + 0.18*mw) * max(0.35, 1.0 - 0.22*_mg)
         if sk('potcontrol') >= 1 and rng.random() < _pc_p:
-            plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
+            if not _block_taken:
+                plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
         elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
-            plan = 'value_2street'
-            why.append('중간강도(eq %.2f, rel %.2f, 머징 %.1f) → 얇은 밸류' % (eq, rel, _mg))
+            if not _block_taken:
+                plan = 'value_2street'
+                why.append('중간강도(eq %.2f, rel %.2f, 머징 %.1f) → 얇은 밸류' % (eq, rel, _mg))
         else:
             # 폴백이 밸류면 안 된다. rel 0.0 에 made 0 인 완전 미스가
             # '얇은 밸류'로 분류돼, 계획은 밸류인데 실행은 체크하는
             # 모순이 생겼다 (decide_aggression 이 rel 을 보므로).
-            plan = 'showdown' if made >= 1 else 'giveup'
-            why.append('중간강도이나 상대레인지 열세(rel %.2f, made %d) → %s'
-                       % (rel, made, plan))
+            if not _block_taken:
+                plan = 'showdown' if made >= 1 else 'giveup'
+                why.append('중간강도이나 상대레인지 열세(rel %.2f, made %d) → %s'
+                           % (rel, made, plan))
     elif outs >= 8 and to_act_behind <= 1 and sk('semibluff') >= 0.4 \
          and rng.random() < min(0.95, 0.25 + 0.24*sk('semibluff')):
         plan = 'semibluff'; why.append('드로우 %d아웃 → 세미블러프' % outs)
