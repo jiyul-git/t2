@@ -103,10 +103,16 @@ def run_one(args):
             if t.get('kind') == 'aggression' and t.get('street') == street:
                 tr = t; break
         it = ((out or {}).get('intents') or {}).get(street) or {}
+        _why_now = list((out or {}).get('why') or [])
+        _blk_now = any(BLOCK_MSG in str(x) and str(x).startswith(street + ': ')
+                       for x in _why_now)
+        _thin_river = any('리버: 얇은 밸류' in str(x) for x in _why_now)
         ai.append({'pid': profile.get('id'), 'street': street,
                    'plan': (out or {}).get('plan'),
                    'f': (tr or {}).get('p'),
-                   'bet': 1 if it.get('act') == 'bet' else 0})
+                   'bet': 1 if it.get('act') == 'bet' else 0,
+                   'blkmsg_current': _blk_now,
+                   'thin_river': _thin_river})
         return out
 
     PL.make_plan = wrap_mk
@@ -194,6 +200,7 @@ def main():
               % (sum(r['bet'] for r in s6), pc(sum(r['bet'] for r in s6), len(s6))))
     print()
 
+    block_preserve_fail = False
     if s4:
         kept = [r for r in s4 if r['plan'] == 'block']
         ow = collections.Counter(r['plan'] for r in s4)
@@ -203,6 +210,7 @@ def main():
         if len(kept) == len(s4):
             print('  ** PASS: make_plan 안에서 선택된 block을 뒤 머징 분기가 덮어쓰지 않는다.')
         else:
+            block_preserve_fail = True
             print('  ** FAIL: 선택된 block %d건이 make_plan 안에서 다시 덮어써졌다.'
                   % (len(s4) - len(kept)))
     print()
@@ -210,7 +218,18 @@ def main():
     if s4:
         print('## 제어흐름 회귀 관문')
         print('  기대 불변식: S4(블락벳 선택) == S5(make_plan 반환 block).')
-        print('  S6 이후 감소는 river_fix/_allowed 같은 후속 단계와 분리해서 해석한다.')
+        post = [r for r in AI if r.get('blkmsg_current')]
+        dest = collections.Counter(r.get('plan') for r in post)
+        print('  현재 스트리트 block 선택 흔적을 가진 attach_intent 입력: %d  %s'
+              % (len(post), dict(dest.most_common())))
+        lost = [r for r in post if r.get('plan') != 'block']
+        if lost:
+            river = sum(1 for r in lost if r.get('thin_river'))
+            allowed = len(lost) - river
+            print('  S5 이후 block 이탈 %d건: river_fix(thin_river) %d / '
+                  '_allowed 추정 %d' % (len(lost), river, allowed))
+        else:
+            print('  S5 이후 block 이탈 0건')
         print()
 
     # 인당 opportunity 분포
@@ -233,7 +252,7 @@ def main():
         print('  여기서는 기대 빈도 계산 자체가 의미가 없다.')
 
 
-    return 0
+    return 1 if block_preserve_fail else 0
 
 
 if __name__ == '__main__':
