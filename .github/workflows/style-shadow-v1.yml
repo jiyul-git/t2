@@ -1,0 +1,32 @@
+name: style-shadow-v1
+
+on:
+  push:
+    branches:
+      - chatgpt/style-shadow-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python3 -m compileall -q reads.py session.py tools/verify_style_shadow.py
+      - name: Style shadow contract
+        run: python3 tools/verify_style_shadow.py
+      - name: OOP semantics
+        run: python3 tools/verify_oop_semantics.py
+      - name: Blockbet selftest
+        run: python3 tools/selftest_blockbet.py
+      - name: Replan context
+        run: python3 tools/verify_replan_context.py
+      - name: Current regression
+        run: python3 tools/regress.py check --baseline current
