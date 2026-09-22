@@ -442,11 +442,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # 블락벳: OOP + 이니셔티브 없음 + 쇼다운은 되는 중간 강도
         block_p = 0.0
         # 블락벳은 '어그레서가 치기 전에 내가 가격을 고정'하는 수다.
-        # 기준은 필드 전체가 아니라 그 어그레서 한 명이다.
-        # TODO/F: aggressor 없는 pot 에서 blockbet(442)/donk(904) semantics 미확정
-        #         — 별도 검증 필요. 그때까지는 옛 절대식을 legacy 경로로만 써서
-        #         기존 행동을 보존한다. oop_vs_aggr 에 legacy 값을 넣지 않는다.
-        _oop_a = oop_vs_aggr if oop_vs_aggr is not None else bool(oop_legacy_abs)
+        # 기준은 필드 전체가 아니라 그 어그레서 한 명이다. live aggressor가
+        # 없으면 선점할 상대의 벳 자체가 없으므로 blockbet 조건은 거짓이다.
+        # oop_field/legacy 절대 위치를 여기 섞지 않는다.
+        _oop_a = bool(oop_vs_aggr)
         if _oop_a and not initiative and 0.25 <= rel <= 0.80:
             block_p = 0.12 + 0.05*profile['aggr'] - 0.03*profile.get('bluff', 5)
             block_p *= (1 + 0.4*dang)          # 젖은 보드일수록 가격 통제 욕구↑
@@ -931,10 +930,9 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         _mw2 = PS.sk(profile, 'multiway')/10.0 if has_c else 0.5
         p *= (1 - (0.12 + 0.20*_mw2)*max(0, n_opp-1))
         # 동크는 '직전 스트리트 어그레서보다 먼저 친다'는 뜻이다.
-        # TODO/F: aggressor 없는 pot 에서 blockbet(442)/donk(904) semantics 미확정
-        #         — 별도 검증 필요. 그때까지는 옛 절대식을 legacy 경로로만 써서
-        #         기존 행동을 보존한다. oop_vs_aggr 에 legacy 값을 넣지 않는다.
-        _oop_a = oop_vs_aggr if oop_vs_aggr is not None else bool(oop_legacy_abs)
+        # live aggressor가 없으면 동크도 정의되지 않는다. generic oop_field나
+        # 옛 절대 위치로 대체하면 '누구보다 먼저인가'라는 의미가 바뀐다.
+        _oop_a = bool(oop_vs_aggr)
         if not initiative and _oop_a:
             # 동크(같은 스트리트 선제)는 정석이 아니다. 수동형일수록 강하게 억제.
             supp = 0.92 - 0.05*a - 0.02*profile.get('bluff', 5)
