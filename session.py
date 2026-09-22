@@ -442,7 +442,18 @@ class HandRun:
                                  'min_raise': rnd.current+rnd.min_raise,
                                  'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
                                  'hash': h.hash}
-                    rnd.apply(s, act[0], act[1])
+                    # **거부된 첫 요청이 아니라 실제로 적용된 액션으로 상태를
+                    # 갱신한다.** 예전에는 a 가 첫 요청을 가리킨 채였다. 그래서
+                    # 불법 raise 를 냈다가 call 로 고치면 로그에는 call 이
+                    # 남는데 aggressor 는 히어로가 됐다 — 레이즈가 없는데
+                    # 공격자가 있는 상태(open_bb 1.0 에 aggressor_pos 존재)다.
+                    # 뒤 봇들이 그 유령 공격자를 보고 defend 경로를 탔다.
+                    # 포스트플랍 경로(session.py:641-642)는 이미 두 번째 act 를
+                    # 쓴다 — 프리플랍만 어긋나 있었다.
+                    # Round.apply 는 이 예외 경로에서 상태를 건드리지 않는다
+                    # (체크 불가 / 최소 레이즈 미달 둘 다 mutation 전에 raise).
+                    a, amt = act
+                    rnd.apply(s, a, amt)
                 if a in ('raise', 'allin'): aggressor = s; callers = 0
                 elif a == 'call' and aggressor: callers += 1
                 elif a == 'call': limpers.append(s)
