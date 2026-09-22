@@ -161,7 +161,10 @@ def main():
         if c is None or len(r['a']) <= OI:
             continue
         street = r['a'][8]
-        o_out, o_n = run(r, c['legacy'], None, c['legacy'])       # 옛 팔
+        # F-1 이후 None은 'live aggressor 없음'이라는 독립 의미다. FX-2의
+        # 옛 절대-OOP 팔을 재현하려면 상대기준 입력도 legacy 값으로 명시해야
+        # 한다. None으로 지우면 F-1 효과까지 섞여 다른 실험이 된다.
+        o_out, o_n = run(r, c['legacy'], c['legacy'], c['legacy'])  # 옛 절대 팔
         n_out, n_n = run(r, c['field'], c['vs_aggr'], c['legacy'])  # 새 팔
         io = PL.intent_of(o_out, street) or {}
         inn = PL.intent_of(n_out, street) or {}
@@ -182,7 +185,7 @@ def main():
        '어그레서가 폴드·올인인 실제 결정 %d건에서 vs_aggr 이 None' % len(dead))
     ok('B1a', pairs > 0, '재생한 결정 %d건' % pairs)
     ok('B1b', diffs > 0, '출력이 달라진 결정 %d건' % diffs)
-    ok('B1c', unexplained == 0, '바뀐 플래그 없이 출력만 달라진 건 %d' % unexplained)
+    ok('B1c', unexplained == 0, '바뀐 입력 의미 없이 출력만 달라진 건 %d' % unexplained)
     ok('C3', cnt_only == 0,
        '출력은 같은데 난수 소비량만 달라진 건 %d (위임 프록시 계측)' % cnt_only)
 
