@@ -65,17 +65,20 @@ def run_one(args):
 
     _omk = PL.make_plan
     def wrap_mk(hero, board, my_range, opp_range, profile, pot, stack_, street,
-                seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=False, initiative=True,
-                opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None):
+                seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=None, initiative=True,
+                opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None,
+                oop_legacy_abs=None):
         st = _omk(hero, board, my_range, opp_range, profile, pot, stack_, street,
                   seed=seed, n_opp=n_opp, to_act_behind=to_act_behind,
                   oop_vs_aggr=oop_vs_aggr, initiative=initiative, opp_est=opp_est,
-                  opp_stack_bb=opp_stack_bb, tilt=tilt, bb_chips=bb_chips)
+                  opp_stack_bb=opp_stack_bb, tilt=tilt, bb_chips=bb_chips,
+                  oop_legacy_abs=oop_legacy_abs)
         w = ' | '.join(st.get('why') or [])
         rel = st.get('rel')
+        _oop_a = oop_vs_aggr if oop_vs_aggr is not None else bool(oop_legacy_abs)
         mk.append({
             'pid': profile.get('id'), 'street': street,
-            'oop': bool(oop), 'init': bool(initiative),
+            'oop': bool(_oop_a), 'init': bool(initiative),
             'rel': rel, 'made': st.get('made'),
             'plan': st.get('plan'),
             'blk_sk': PS.sk(profile, 'blockbet'),
@@ -83,16 +86,18 @@ def run_one(args):
             'pc_sk': PS.sk(profile, 'potcontrol'),
             'mid': MID_MSG in w,
             'blkmsg': BLOCK_MSG in w,
-            'cond': bool(oop) and not bool(initiative)
+            'cond': bool(_oop_a) and not bool(initiative)
                     and rel is not None and 0.25 <= rel <= 0.80,
         })
         return st
 
     _oai = PL.attach_intent
     def wrap_ai(st, hero, board, my_range, opp_range, profile, pot, stack_,
-                street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None):
+                street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
+                oop_vs_aggr=None, oop_legacy_abs=None):
         out = _oai(st, hero, board, my_range, opp_range, profile, pot, stack_,
-                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est)
+                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est,
+                   oop_vs_aggr=oop_vs_aggr, oop_legacy_abs=oop_legacy_abs)
         tr = None
         for t in reversed((out or {}).get('trace') or []):
             if t.get('kind') == 'aggression' and t.get('street') == street:
@@ -152,6 +157,9 @@ def main():
     print('플레이어 %d명   make_plan %d건   attach_intent %d건   오류 %d건'
           % (len(BLK), len(MK), len(AI), errs))
     print()
+    if errs:
+        print('ENGINE ERRORS %d — 결과 무효. wrapper/production 계약부터 확인할 것.' % errs)
+        return 1
 
     v = sorted(BLK.values())
     print('blockbet 축   평균 %.2f  sd %.2f  중앙 %.1f' % (
@@ -225,5 +233,8 @@ def main():
         print('  여기서는 기대 빈도 계산 자체가 의미가 없다.')
 
 
+    return 0
+
+
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
