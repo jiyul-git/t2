@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""F-1: aggressor 없는 팟에서 blockbet / donk 의미를 같은 결정 입력으로 비교한다.
+"""F-1: aggressor 없는 팟에서 blockbet / donk 의미를 같은 결정 입력으로 비교.
 
-Production 코드는 바꾸지 않는다. fieldsim 기준 궤적에서 PL.update_plan 호출을
-캡처한 뒤 같은 입력을 세 팔로 재생한다.
+Production 코드는 바꾸지 않는다. fieldsim 기준 궤적에서 세 층을 캡처한다.
 
+  1) make_plan          blockbet 생성 의미
+  2) attach_intent      donk 억제 확률 의미
+  3) update_plan        두 효과가 합쳐진 최종 plan/intent
+
+팔:
   current  현재 production: oop_vs_aggr is None 이면 oop_legacy_abs fallback
-  strict   live aggressor가 없으면 blockbet/donk의 aggressor-relative OOP=False
-  field    진단용: live aggressor가 없으면 generic oop_field 를 fallback으로 사용
+  strict   live aggressor가 없으면 aggressor-relative OOP=False
+  field    진단용: live aggressor가 없으면 generic oop_field fallback
 
-주 비교는 current vs strict 다. field arm은 "어그레서는 없지만 필드 기준 OOP"
-라는 별도 해석의 크기만 보기 위한 진단이다.
+주 비교는 current vs strict. field는 "어그레서는 없지만 필드 기준 OOP"라는
+별도 해석의 크기를 보기 위한 진단이다.
 
 같은 입력 재생이라 trajectory 전파는 측정하지 않는다.
 """
@@ -32,6 +36,8 @@ if ROOT not in sys.path:
 import fieldsim as FS
 import plan as PL
 import session as SE
+
+BLOCK_MSG = '블락벳으로 가격 통제'
 
 _BASE_RANDOM = random.Random
 _COUNTED = (
@@ -68,10 +74,14 @@ def _set_arg(args, kwargs, sig_names, name, value):
     return a, k
 
 
-def _get_arg(args, kwargs, sig, name):
+def _bound(args, kwargs, sig):
     b = sig.bind_partial(*args, **kwargs)
     b.apply_defaults()
-    return b.arguments.get(name)
+    return b.arguments
+
+
+def _get_arg(args, kwargs, sig, name):
+    return _bound(args, kwargs, sig).get(name)
 
 
 def _aggr_trace(st, street):
@@ -85,7 +95,7 @@ def _aggr_trace(st, street):
     return {'p': None, 'roll': None, 'why': None}
 
 
-def _view(st, street):
+def _update_view(st, street):
     it = PL.intent_of(st, street) or {}
     tr = _aggr_trace(st, street)
     return {
@@ -101,15 +111,22 @@ def _view(st, street):
     }
 
 
-def _sig(v):
-    return (
-        v.get('plan'),
-        v.get('act'),
-        v.get('size'),
-    )
+def _make_view(st):
+    why = list((st or {}).get('why') or [])
+    return {
+        'plan': (st or {}).get('plan'),
+        'rel': (st or {}).get('rel'),
+        'made': (st or {}).get('made'),
+        'block_msg': any(BLOCK_MSG in str(x) for x in why),
+        'why': why,
+    }
 
 
-def _run_arm(orig, args, kwargs, sig, sig_names, arm, ctx):
+def _out_sig(v):
+    return (v.get('plan'), v.get('act'), v.get('size'))
+
+
+def _run_update_arm(orig, args, kwargs, sig, sig_names, arm):
     a = copy.deepcopy(args)
     k = copy.deepcopy(kwargs)
 
@@ -129,33 +146,88 @@ def _run_arm(orig, args, kwargs, sig, sig_names, arm, ctx):
         random.Random = _BASE_RANDOM
 
     street = _get_arg(a, k, sig, 'street')
-    return _view(out, street), _RNG_COUNT['n']
+    return _update_view(out, street), _RNG_COUNT['n']
+
+
+def _run_make_arm(orig, args, kwargs, sig, sig_names, arm):
+    a = copy.deepcopy(args)
+    k = copy.deepcopy(kwargs)
+    if arm == 'strict':
+        a, k = _set_arg(a, k, sig_names, 'oop_legacy_abs', False)
+    elif arm == 'field':
+        # make_plan에는 generic oop 인자가 없다. field arm 값은 캡처 시
+        # caller update_plan의 oop_field를 따로 저장해 넣는다.
+        raise RuntimeError('field arm requires explicit legacy value')
+    elif arm != 'current':
+        raise ValueError(arm)
+    out = orig(*a, **k)
+    return _make_view(out)
+
+
+def _run_make_with_legacy(orig, args, kwargs, sig_names, legacy_value):
+    a = copy.deepcopy(args)
+    k = copy.deepcopy(kwargs)
+    a, k = _set_arg(a, k, sig_names, 'oop_legacy_abs', bool(legacy_value))
+    return _make_view(orig(*a, **k))
+
+
+def _aggr_p(orig_da, rec, legacy_value):
+    return orig_da(
+        copy.deepcopy(rec['profile']),
+        copy.deepcopy(rec['board']),
+        rec['street'],
+        rec['plan'],
+        rec['rel'],
+        rec['n_opp'],
+        rec['oop'],
+        rec['initiative'],
+        rec['behind'],
+        random.Random(0),
+        copy.deepcopy(rec['opp_est']),
+        rec['outs'],
+        copy.deepcopy(rec['plan_state']),
+        oop_vs_aggr=None,
+        oop_legacy_abs=bool(legacy_value),
+    )[0]
 
 
 def capture_seed(seed, hands):
     FS.Field.BOT_LOG = 0
-    orig = PL.update_plan
-    rec = []
-    call_no = {'n': 0}
 
-    def probe(*args, **kwargs):
+    orig_update = PL.update_plan
+    orig_make = PL.make_plan
+    orig_attach = PL.attach_intent
+    orig_da = PL.decide_aggression
+
+    update_sig = inspect.signature(orig_update)
+    make_sig = inspect.signature(orig_make)
+    attach_sig = inspect.signature(orig_attach)
+
+    update_rec = []
+    make_rec = []
+    intent_rec = []
+    call_no = {'update': 0, 'make': 0, 'intent': 0}
+
+    # update_plan wrapper: caller frame에서 실제 aggressor 상태까지 기록.
+    def wrap_update(*args, **kwargs):
         fr = sys._getframe(1).f_locals
         h = fr.get('h')
         s = fr.get('s')
         r2 = fr.get('r2')
         ag = fr.get('aggressor')
 
-        call_no['n'] += 1
+        call_no['update'] += 1
+        b = _bound(args, kwargs, update_sig)
         ctx = {
             'seed': seed,
-            'call_no': call_no['n'],
+            'call_no': call_no['update'],
             'seat': s,
             'pos': (h.pos.get(s) if h is not None and s is not None else None),
             'hand_hash': getattr(h, 'hash', None),
             'reason': 'unknown',
-            'legacy_abs': None,
-            'field_oop': None,
-            'vs_aggr': None,
+            'legacy_abs': b.get('oop_legacy_abs'),
+            'field_oop': b.get('oop'),
+            'vs_aggr': b.get('oop_vs_aggr'),
         }
 
         if h is not None and s is not None and r2 is not None and s in r2.order:
@@ -179,7 +251,6 @@ def capture_seed(seed, hands):
                 reason = 'allin'
             else:
                 reason = 'live'
-
             ctx.update({
                 'reason': reason,
                 'legacy_abs': bool(h.POST.index(h.pos[s]) < 3),
@@ -187,14 +258,68 @@ def capture_seed(seed, hands):
                 'vs_aggr': (SE.oop_vs(order, s, ag) if live_aggr else None),
             })
 
-        rec.append({
+        update_rec.append({
             'args': copy.deepcopy(args),
             'kwargs': copy.deepcopy(kwargs),
             'ctx': ctx,
         })
-        return orig(*args, **kwargs)
+        return orig_update(*args, **kwargs)
 
-    PL.update_plan = probe
+    # make_plan wrapper: blockbet consumer를 직접 격리.
+    def wrap_make(*args, **kwargs):
+        call_no['make'] += 1
+        b = _bound(args, kwargs, make_sig)
+        out = orig_make(*args, **kwargs)
+        if b.get('oop_vs_aggr') is None:
+            # update_plan caller의 generic oop을 직접 알 수 없으므로 같은 stack
+            # 안에서 wrap_update의 현재 호출 context를 사용한다.
+            field_oop = None
+            if update_rec:
+                field_oop = update_rec[-1]['ctx'].get('field_oop')
+            make_rec.append({
+                'seed': seed,
+                'call_no': call_no['make'],
+                'args': copy.deepcopy(args),
+                'kwargs': copy.deepcopy(kwargs),
+                'field_oop': bool(field_oop),
+                'current_actual': _make_view(out),
+            })
+        return out
+
+    # attach_intent wrapper: donk suppression consumer를 현재 plan 고정 상태에서 격리.
+    def wrap_attach(*args, **kwargs):
+        call_no['intent'] += 1
+        b = _bound(args, kwargs, attach_sig)
+        out = orig_attach(*args, **kwargs)
+        if b.get('oop_vs_aggr') is None:
+            st = b['st']
+            street = b['street']
+            tr = _aggr_trace(out, street)
+            if tr.get('roll') is not None:
+                intent_rec.append({
+                    'seed': seed,
+                    'call_no': call_no['intent'],
+                    'profile': copy.deepcopy(b['profile']),
+                    'board': copy.deepcopy(b['board']),
+                    'street': street,
+                    'plan': st.get('plan'),
+                    'rel': st.get('rel', 0.5),
+                    'n_opp': b['n_opp'],
+                    'oop': bool(b['oop']),
+                    'initiative': bool(b['initiative']),
+                    'behind': b['to_act_behind'],
+                    'opp_est': copy.deepcopy(b.get('opp_est')),
+                    'outs': st.get('outs', 0),
+                    'plan_state': copy.deepcopy(st),
+                    'legacy_abs': bool(b.get('oop_legacy_abs')),
+                    'roll': float(tr['roll']),
+                    'current_trace_p': tr.get('p'),
+                })
+        return out
+
+    PL.update_plan = wrap_update
+    PL.make_plan = wrap_make
+    PL.attach_intent = wrap_attach
     try:
         f = FS.Field(entries=100, seed=seed, fmt='standard')
         for _ in range(hands):
@@ -210,101 +335,186 @@ def capture_seed(seed, hands):
             f.notes = []
         errors = len(f.errors)
     finally:
-        PL.update_plan = orig
+        PL.update_plan = orig_update
+        PL.make_plan = orig_make
+        PL.attach_intent = orig_attach
 
-    return rec, errors
+    return update_rec, make_rec, intent_rec, errors
 
 
 def run(seeds, hands):
-    orig = PL.update_plan
-    sig = inspect.signature(orig)
-    sig_names = list(sig.parameters)
+    orig_update = PL.update_plan
+    orig_make = PL.make_plan
+    orig_da = PL.decide_aggression
 
-    records = []
+    update_sig = inspect.signature(orig_update)
+    update_names = list(update_sig.parameters)
+    make_sig = inspect.signature(orig_make)
+    make_names = list(make_sig.parameters)
+
+    updates = []
+    makes = []
+    intents = []
     engine_errors = 0
     for seed in seeds:
-        rr, ee = capture_seed(seed, hands)
-        records.extend(rr)
+        ur, mr, ir, ee = capture_seed(seed, hands)
+        updates.extend(ur)
+        makes.extend(mr)
+        intents.extend(ir)
         engine_errors += ee
 
     summary = collections.Counter()
-    by_reason = collections.Counter()
-    divergences = []
+    reason_counts = collections.Counter()
+    update_div = []
+    make_div = []
+    intent_div = []
 
-    for r in records:
+    # ---------- final update_plan level ----------
+    for r in updates:
         c = r['ctx']
-        summary['captured'] += 1
-        by_reason[c['reason']] += 1
-
-        # F-1 모집단: live aggressor가 없어서 oop_vs_aggr가 None인 결정.
+        summary['update_captured'] += 1
+        reason_counts[c['reason']] += 1
         if c['vs_aggr'] is not None:
             continue
 
-        summary['no_live_aggressor'] += 1
+        summary['update_no_live_aggressor'] += 1
         if c['reason'] == 'none':
-            summary['aggressor_none'] += 1
+            summary['update_aggressor_none'] += 1
         if c['legacy_abs']:
-            summary['legacy_true'] += 1
+            summary['update_legacy_true'] += 1
         if c['field_oop']:
-            summary['field_oop_true'] += 1
-        if c['legacy_abs'] != c['field_oop']:
-            summary['legacy_field_disagree'] += 1
+            summary['update_field_oop_true'] += 1
+        if bool(c['legacy_abs']) != bool(c['field_oop']):
+            summary['update_legacy_field_disagree'] += 1
 
-        cur, cur_rng = _run_arm(orig, r['args'], r['kwargs'], sig, sig_names, 'current', c)
-        strict, strict_rng = _run_arm(orig, r['args'], r['kwargs'], sig, sig_names, 'strict', c)
-        field, field_rng = _run_arm(orig, r['args'], r['kwargs'], sig, sig_names, 'field', c)
+        cur, cur_rng = _run_update_arm(
+            orig_update, r['args'], r['kwargs'], update_sig, update_names, 'current')
+        strict, strict_rng = _run_update_arm(
+            orig_update, r['args'], r['kwargs'], update_sig, update_names, 'strict')
+
+        out_diff = _out_sig(cur) != _out_sig(strict)
+        p_diff = cur.get('aggr_p') != strict.get('aggr_p')
+        if out_diff:
+            summary['update_output_diff'] += 1
+        if cur['plan'] != strict['plan']:
+            summary['update_plan_diff'] += 1
+        if cur['act'] != strict['act']:
+            summary['update_act_diff'] += 1
+        if cur['size'] != strict['size']:
+            summary['update_size_diff'] += 1
+        if p_diff:
+            summary['update_aggr_p_diff'] += 1
+        if cur_rng != strict_rng:
+            summary['update_rng_count_diff'] += 1
+        if (not out_diff) and cur_rng != strict_rng:
+            summary['update_same_output_rng_count_diff'] += 1
+        if cur['plan'] == 'block':
+            summary['update_current_block'] += 1
+        if strict['plan'] == 'block':
+            summary['update_strict_block'] += 1
+
+        if out_diff or p_diff:
+            update_div.append({
+                'ctx': c,
+                'current': cur,
+                'strict': strict,
+                'rng_current': cur_rng,
+                'rng_strict': strict_rng,
+            })
+
+    # ---------- make_plan / blockbet isolation ----------
+    for r in makes:
+        summary['make_no_relative_aggressor'] += 1
+        b = _bound(r['args'], r['kwargs'], make_sig)
+        legacy = bool(b.get('oop_legacy_abs'))
+        field_oop = bool(r.get('field_oop'))
+        if legacy:
+            summary['make_legacy_true'] += 1
+        if field_oop:
+            summary['make_field_oop_true'] += 1
+
+        cur = _run_make_arm(orig_make, r['args'], r['kwargs'], make_sig, make_names, 'current')
+        strict = _run_make_with_legacy(orig_make, r['args'], r['kwargs'], make_names, False)
+        field = _run_make_with_legacy(orig_make, r['args'], r['kwargs'], make_names, field_oop)
+
+        if cur != r['current_actual']:
+            summary['make_current_replay_mismatch'] += 1
 
         for name, v in [('current', cur), ('strict', strict), ('field', field)]:
             if v['plan'] == 'block':
-                summary[name + '_block'] += 1
-            if v['act'] == 'bet':
-                summary[name + '_bet'] += 1
+                summary['make_' + name + '_block'] += 1
+            if v['block_msg']:
+                summary['make_' + name + '_block_msg'] += 1
 
-        cur_strict = _sig(cur) != _sig(strict)
-        cur_field = _sig(cur) != _sig(field)
-        if cur_strict:
-            summary['current_vs_strict_output_diff'] += 1
         if cur['plan'] != strict['plan']:
-            summary['current_vs_strict_plan_diff'] += 1
-        if cur['act'] != strict['act']:
-            summary['current_vs_strict_act_diff'] += 1
-        if cur['size'] != strict['size']:
-            summary['current_vs_strict_size_diff'] += 1
-        if cur.get('aggr_p') != strict.get('aggr_p'):
-            summary['current_vs_strict_aggr_p_diff'] += 1
-        if cur_rng != strict_rng:
-            summary['current_vs_strict_rng_count_diff'] += 1
-        if (not cur_strict) and cur_rng != strict_rng:
-            summary['same_output_rng_count_diff'] += 1
+            summary['make_current_vs_strict_plan_diff'] += 1
+        if cur['block_msg'] != strict['block_msg']:
+            summary['make_current_vs_strict_block_msg_diff'] += 1
+        if (cur['plan'] == 'block') != (strict['plan'] == 'block'):
+            summary['make_current_vs_strict_block_survival_diff'] += 1
+        if cur['plan'] != field['plan']:
+            summary['make_current_vs_field_plan_diff'] += 1
 
-        if cur_field:
-            summary['current_vs_field_output_diff'] += 1
-
-        if cur_strict or cur.get('aggr_p') != strict.get('aggr_p'):
-            block_related = (cur['plan'] == 'block' or strict['plan'] == 'block')
-            p_only = (
-                cur['plan'] == strict['plan']
-                and cur.get('aggr_p') != strict.get('aggr_p')
-            )
-            if block_related:
-                summary['diff_block_related'] += 1
-            if p_only:
-                summary['diff_donk_probability_only'] += 1
-            divergences.append({
-                'seed': c['seed'],
-                'call_no': c['call_no'],
-                'hand_hash': c['hand_hash'],
-                'seat': c['seat'],
-                'pos': c['pos'],
-                'reason': c['reason'],
-                'legacy_abs': c['legacy_abs'],
-                'field_oop': c['field_oop'],
+        if (cur['plan'] != strict['plan']
+                or cur['block_msg'] != strict['block_msg']):
+            make_div.append({
+                'seed': r['seed'],
+                'call_no': r['call_no'],
+                'legacy_abs': legacy,
+                'field_oop': field_oop,
                 'current': cur,
                 'strict': strict,
                 'field': field,
-                'rng_current': cur_rng,
-                'rng_strict': strict_rng,
-                'rng_field': field_rng,
+            })
+
+    # ---------- decide_aggression / donk suppression isolation ----------
+    by_plan = collections.Counter()
+    for r in intents:
+        summary['intent_no_relative_aggressor'] += 1
+        if r['legacy_abs']:
+            summary['intent_legacy_true'] += 1
+        if r['oop']:
+            summary['intent_field_oop_true'] += 1
+
+        p_cur = _aggr_p(orig_da, r, r['legacy_abs'])
+        p_strict = _aggr_p(orig_da, r, False)
+        p_field = _aggr_p(orig_da, r, r['oop'])
+
+        # trace p는 3자리 반올림이므로 0.001 허용.
+        if r['current_trace_p'] is not None and abs(
+                float(r['current_trace_p']) - float(p_cur)) > 0.0011:
+            summary['intent_current_replay_mismatch'] += 1
+
+        cur_bet = r['roll'] < p_cur
+        strict_bet = r['roll'] < p_strict
+        field_bet = r['roll'] < p_field
+
+        if abs(p_cur - p_strict) > 1e-12:
+            summary['intent_current_vs_strict_p_diff'] += 1
+            by_plan[r['plan']] += 1
+        if cur_bet != strict_bet:
+            summary['intent_projected_action_diff'] += 1
+        if abs(p_cur - p_field) > 1e-12:
+            summary['intent_current_vs_field_p_diff'] += 1
+
+        if abs(p_cur - p_strict) > 1e-12:
+            intent_div.append({
+                'seed': r['seed'],
+                'call_no': r['call_no'],
+                'street': r['street'],
+                'plan': r['plan'],
+                'rel': r['rel'],
+                'oop_field': r['oop'],
+                'legacy_abs': r['legacy_abs'],
+                'initiative': r['initiative'],
+                'outs': r['outs'],
+                'roll': r['roll'],
+                'p_current': round(p_cur, 6),
+                'p_strict': round(p_strict, 6),
+                'p_field': round(p_field, 6),
+                'bet_current': cur_bet,
+                'bet_strict': strict_bet,
+                'bet_field': field_bet,
             })
 
     return {
@@ -315,10 +525,15 @@ def run(seeds, hands):
             'fmt': 'standard',
         },
         'engine_errors': engine_errors,
-        'reason_counts_all_captured': dict(by_reason),
+        'reason_counts_all_update_calls': dict(reason_counts),
         'summary': dict(summary),
-        'divergences': divergences[:100],
-        'divergence_count': len(divergences),
+        'intent_p_diff_by_plan': dict(by_plan),
+        'update_divergence_count': len(update_div),
+        'make_divergence_count': len(make_div),
+        'intent_divergence_count': len(intent_div),
+        'update_divergences': update_div[:100],
+        'make_divergences': make_div[:100],
+        'intent_divergences': intent_div[:100],
     }
 
 
@@ -339,12 +554,13 @@ def main():
     print('F-1 no-aggressor semantics')
     print('fixture:', out['fixture'])
     print('engine_errors:', out['engine_errors'])
-    print('reasons:', out['reason_counts_all_captured'])
+    print('reasons:', out['reason_counts_all_update_calls'])
+    print('intent p-diff by plan:', out['intent_p_diff_by_plan'])
     for k in sorted(out['summary']):
-        print('  %-38s %s' % (k, out['summary'][k]))
-    print('divergences:', out['divergence_count'])
-    for d in out['divergences'][:20]:
-        print(json.dumps(d, ensure_ascii=False, sort_keys=True))
+        print('  %-46s %s' % (k, out['summary'][k]))
+    print('update divergences:', out['update_divergence_count'])
+    print('make divergences:', out['make_divergence_count'])
+    print('intent divergences:', out['intent_divergence_count'])
     return 0
 
 
