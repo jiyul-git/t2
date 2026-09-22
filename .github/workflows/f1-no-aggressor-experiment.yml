@@ -11,8 +11,13 @@ permissions:
 
 jobs:
   measure:
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        seed: [3000,3001,3002,3003,3004,3005,3010,3011,3012,3013,4242,5150,7301,9001]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,12 +25,12 @@ jobs:
           python-version: '3.12'
       - name: Compile probe
         run: python3 -m py_compile tools/f1_no_aggressor.py
-      - name: Run historical-compatible fixture
+      - name: Run fixed-seed fixture
         run: |
-          python3 tools/f1_no_aggressor.py --seeds 5150,9001,4242,7301,3004,3005 --hands 20 --json | tee f1_result.json
+          python3 tools/f1_no_aggressor.py --seeds ${{ matrix.seed }} --hands 20 --json | tee f1_result_${{ matrix.seed }}.json
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: f1-result
-          path: f1_result.json
+          name: f1-result-${{ matrix.seed }}
+          path: f1_result_${{ matrix.seed }}.json
