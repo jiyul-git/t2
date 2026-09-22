@@ -128,7 +128,7 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 
 ---
 
-## 3. E — 재현된 버그 (E-1 은 FIXED)
+## 3. E — 재현된 버그 (E-1 · E-2 · E-3 전부 FIXED)
 
 ### E-1  `revise_plan` 이 `bb_chips` 를 넘기지 않는다
 - **분류** E → **FIXED** (`12d7c7e`)
@@ -140,6 +140,29 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 - **fix 후 검증** `tools/verify_replan_context.py` 계약 A/F PASS (`bb_chips` 52/52 도달). paired 비교(237 event)에서 사이즈 변화 7건·실제 칩 변화 6건, 그중 `bb_chips` 단독 효과와 `bb_chips × opp_stack_bb` 상호작용은 A6 에서 각각 2건·6건으로 이미 분해돼 있다 (`A6_REPLAN_PROVENANCE_RESULT.md`)
 - **상태** `FIXED`
 - **근거** `12d7c7e` + `verify_replan_context` + paired behavior. `tools/verify_replan_contract.py` 의 `KNOWN_MISSING` 은 비었고 옛 목록은 `HISTORICAL_MISSING` 으로 보존
+
+---
+
+### E-2  거부된 히어로 액션이 runtime preflop state 를 오염시킨다
+- **분류** E → **FIXED** (`2de8212`)
+- **개념명** 적용된 액션과 런타임 프리플랍 상태의 일치
+- **파일:라인** `session.py:436-448` (수정 전). 포스트플랍 대응 경로 `641-642` 는 이미 옳았다
+- **현재 역할** 히어로가 불법 액션을 냈다가 고치면 두 번째 act 가 적용되는데, `aggressor`/`limpers`/`callers` 갱신은 **첫 요청**을 봤다. 레이즈가 없는데 공격자가 있는 상태(`open_bb=1.0` 인데 `aggressor_pos` 존재)가 생기고, 히어로의 실제 림프가 `n_limpers` 에서 빠졌다
+- **production 도달** 있음 — 사람이 불법 액션을 내고 고치는 것은 `live2`/`cli` 에서 일상적이다
+- **행동 영향** **있음.** CONTROL/RETRY paired 단일 핸드 10시드에서 깨끗한 C2 6건. 히어로 최종 적용 액션이 동일한데 뒤 봇의 실제 행동이 뒤집혔다 — `fold↔call`, `raise↔3bet`, `(9,'raise',800)↔(9,'call',200)`
+- **동적 검증** `tools/f6_q4c_live.py`. 음성 대조(CONTROL vs CONTROL exact match), 첫 요청이 실제 ValueError 였는지 `state['error']` 로 확인, 히어로 적용 액션 동일성 검사. 수정 후 전 시드 `none`
+- **수정** 두 번째 act 로 `a, amt` 를 재대입하는 것 하나. `Round.apply` 가 이 예외 경로에서 상태를 건드리지 않음을 코드와 단위 시험으로 확인했다
+- **남은 것** REPLAY 캐시 경로(`session.py:469-472`)가 같은 모양이지만 `pre|` 키를 만드는 production driver 가 없다 — latent / dead compatibility edge 로 분리한다. producer 가 생기면 즉시 같은 버그가 발현한다. 두 번째 제출도 불법이면 `rnd.apply` 가 감싸여 있지 않은 것도 그대로다
+
+### E-3  히어로 pf_seed coverage / 관찰자 폴백 semantics 불일치
+- **분류** E → **FIXED** (`022dc66`)
+- **개념명** 관찰자가 보는 상대 프리플랍 역할의 출처
+- **파일:라인** `session.py:712-718` (수정 전) · 새 helper `session.public_pf_role`
+- **현재 역할** 기록이 없으면 `'open' if o == aggressor else 'call'` 로 떨어졌다. 이건 `pf_role` 과 **다른 술어**이고 그 `aggressor` 는 그 순간의 공격자라 포스트플랍 공격자일 수 있다 — `session.py:670-675` 주석이 스스로 하면 안 된다고 적어둔 경로다. 히어로는 구조적으로 기록이 없다(히어로 분기가 기록 전에 `continue`)
+- **production 도달** 있음 — 사람이 플레이하면 상대 봇이 히어로에 대해 **항상** 폴백을 탄다
+- **행동 영향** **있음.** 폴백 조회의 20.3%(고유 16/79)가 어긋나고 방향은 전부 `internal 'call'` vs `public 'open'`. 하류에서 레인지 54건이 달라지고 plan 4 · size 2 · chips 2 가 바뀐다. 최소 사례 `seed 3005 river 600칩 → 500칩`, `seed 4242 flop giveup → bluff_2street`
+- **동적 검증** `tools/f6_q4b_fallback.py`. Tier 1 레인지 층 / Tier 2 결정 층 / `update_plan` 에 실제로 들어간 `opp_range` 까지 센다. 수정 후 사이트 0 · 결정 차이 0
+- **수정** 관찰자 경로가 `pf_seed` 를 읽지 않고 실제 적용된 프리플랍 로그에서 재구성한다. 한 번도 행동하지 않은 좌석만 종전 추정을 쓴다. 기록이 있는 정상 사건에서도 helper 를 우선 쓴다 — 두 값이 같다는 것은 따로 쟀고(1,575/1,575), 그래야 관찰자 판단이 남의 기록에 의존하지 않는다
 
 ---
 
@@ -203,8 +226,10 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 - **production 도달** 있음
 - **행동 영향** 미측정
 - **동적 검증** 안 함
-- **상태** `EXPERIMENT_LATER`
-- **다음 조치** 공개 로그만으로 `pf_role` 을 복원했을 때와 결과가 같은지 반사실로 잰다. 같으면 B, 다르면 정보 누출
+- **현재 상태** 측정 완료. **원래 가설은 기각됐다** — `pf_role` 은 `aggressor_pos`·`n_limpers` 두 공개 입력만의 함수이고, 기록 수준 대조에서 1,575/1,575 가 공개 로그로 재구성된다. 비공개 의도 노출은 지지되지 않는다
+- **후속** 조사 중 드러난 behavioral bug 두 개는 **E-2 / E-3 으로 옮겼다.** F-6 자체는 더 파지 않는다
+- **상태** `DOCUMENT` — privacy leak hypothesis rejected; follow-on behavioral bugs moved to E-2/E-3
+- **근거 문서** `F6_PF_ROLE_RESULT.md`
 
 ### F-7  `sk` fallback 의 미래 도달 위험
 - **개념명** 개념 벡터가 없는 프로필의 기본 숙련도
