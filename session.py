@@ -34,6 +34,38 @@ def oop_vs(order, seat, other):
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
+
+# 관찰자가 상대의 프리플랍 역할을 볼 때 쓰는 **공개 정보 전용** 재구성기.
+# 인자는 실제 적용된 프리플랍 로그와 좌석->포지션 둘뿐이다. pf_seed 를
+# 받지 않고, 받을 수도 없다 — 관찰자 판단이 남의 플래너 기록에, 그리고
+# 그 기록이 비거나 오염된 상태에 의존하지 않게 하기 위해서다.
+#
+# 규칙은 make_plan 쪽 pf_role 정의와 같은 것을 공개 로그로 표현한 것이다.
+#   그 좌석의 **마지막 실제 행동** 직전까지 raise/allin 이 있었는가
+#     없었다 -> 'open'   (pf_role 의 open/iso 가 소비 지점에서 합쳐진 값)
+#     있었다 -> 'call'   (pf_role 의 defend)
+#   그 뒤 BB 의 'open' 은 'call' 로 내린다 (BB 는 프리플랍에 오픈한 적이 없다)
+#
+# 한 번도 행동하지 않은 좌석은 **None** 을 돌려준다. 그 경우에만 호출부가
+# 종전 추정을 쓴다 — 그 예외는 호출부에 명시해 둔다.
+def public_pf_role(preflop_log, seat, pos_by_seat):
+    raised_before = False
+    seen = False
+    last = False
+    for row in preflop_log or ():
+        x, act = row[0], row[1]
+        if x == seat:
+            seen = True
+            last = raised_before
+        if act in ('raise', 'allin'):
+            raised_before = True
+    if not seen:
+        return None
+    role = 'call' if last else 'open'
+    if pos_by_seat.get(seat) == 'BB' and role == 'open':
+        role = 'call'
+    return role
+
 def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                         facing_seat=None, decision_context=None,
                         facing_read=None):
@@ -700,6 +732,10 @@ class HandRun:
                                        h.bbs(s), set(board), opener_pos=h.pos.get(aggressor),
                                        seats=_seats, ante=_ante)
                 my_r = sorted(set(my_r))      # 순서 확정 (판단이 순서에 의존하면 안 된다)
+                # 관찰자가 볼 수 있는 것 — 실제 적용된 프리플랍 액션 순서.
+                _pre_log = [(r[1], r[2], r[3])
+                            for r in (getattr(self, 'full_log', []) or [])
+                            if r[0] == 'preflop']
                 opp_r = []
                 for o in r2.live():
                     if o == s: continue
@@ -707,14 +743,23 @@ class HandRun:
                     # 3벳을 친 상대라면 폴라라이즈 정도를 반영한다.
                     # 상대 레인지도 같은 문제였다. 포스트플랍 공격자에게
                     # 프리플랍 오픈 레인지를 매기면 BB 는 빈 레인지가 된다.
-                    # 관찰자는 상대의 pf_seed 를 직접 볼 수 없지만, 상대가
-                    # 프리플랍에 어떤 액션을 했는지는 **공개 정보**다.
-                    _pfo = (getattr(h, 'pf_seed', {}) or {}).get(o) or {}
-                    _act_o = {'open': 'open', 'iso': 'open',
-                              'defend': 'call'}.get(_pfo.get('pf_role'))
-                    if h.pos[o] == 'BB' and _act_o == 'open':
-                        _act_o = 'call'
+                    #
+                    # **상대의 pf_seed 를 읽지 않는다.** 상대가 프리플랍에 어떤
+                    # 액션을 했는지는 공개 정보이므로 그 로그에서 직접 재구성한다.
+                    # 예전에는 pf_seed 를 읽고, 없으면
+                    #   'open' if o == aggressor else 'call'
+                    # 로 떨어졌는데 그건 pf_role 과 **다른 술어**였다. 그 aggressor
+                    # 는 그 순간의 공격자라 포스트플랍 공격자일 수 있다 — 바로 위
+                    # 주석이 하면 안 된다고 적어둔 그 경로다. 히어로는 구조적으로
+                    # pf_seed 가 없어서(히어로 분기가 기록 전에 continue) 항상 그
+                    # 폴백을 탔고, 실측에서 폴백 조회의 20.3% 가 어긋났다.
+                    #
+                    # 기록이 있는 정상 사건에서 두 값이 같다는 것은 따로 쟀다
+                    # (기록 수준 1,575/1,575 일치, F6_PF_ROLE_RESULT.md).
+                    _act_o = public_pf_role(_pre_log, o, h.pos)
                     if _act_o is None:
+                        # 그 좌석이 프리플랍에 **한 번도 행동하지 않은** 경우에만
+                        # 종전 추정을 쓴다. 그 외에는 공개 로그가 답을 준다.
                         _act_o = 'open' if o == aggressor else 'call'
                     _pol = 0.0
                     _oe = RD.perceived_profile(
