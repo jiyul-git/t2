@@ -465,27 +465,34 @@ class HandRun:
                              'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
                              'contrib': dict(rnd.contrib), 'live': list(rnd.live()),
                              'allin': list(rnd.allin), 'hash': h.hash}
-                a, amt = act
-                try: rnd.apply(s, a, amt)
-                except ValueError as e:
-                    act = yield {'stage': 'preflop', 'error': str(e), 'pos': pos,
-                                 'hole': h.hole[s], 'pot': sum(rnd.contrib.values())+ante_pot,
-                                 'tocall': tc, 'stack': rnd.stacks[s],
-                                 'min_raise': rnd.current+rnd.min_raise,
-                                 'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
-                                 'hash': h.hash}
-                    # **거부된 첫 요청이 아니라 실제로 적용된 액션으로 상태를
-                    # 갱신한다.** 예전에는 a 가 첫 요청을 가리킨 채였다. 그래서
-                    # 불법 raise 를 냈다가 call 로 고치면 로그에는 call 이
-                    # 남는데 aggressor 는 히어로가 됐다 — 레이즈가 없는데
-                    # 공격자가 있는 상태(open_bb 1.0 에 aggressor_pos 존재)다.
-                    # 뒤 봇들이 그 유령 공격자를 보고 defend 경로를 탔다.
-                    # 포스트플랍 경로(session.py:641-642)는 이미 두 번째 act 를
-                    # 쓴다 — 프리플랍만 어긋나 있었다.
-                    # Round.apply 는 이 예외 경로에서 상태를 건드리지 않는다
-                    # (체크 불가 / 최소 레이즈 미달 둘 다 mutation 전에 raise).
+                # **합법 액션이 적용될 때까지** error frame 을 내고 기다린다.
+                # 내부 busy-loop 가 아니다 — 불법마다 yield 로 제어를 호출자에게
+                # 돌려주므로 다음 send 가 올 때까지 멈춰 있다.
+                #
+                # 예전에는 재시도가 한 번뿐이라, 두 번째 요청도 불법이면
+                # ValueError 가 generator 밖으로 나가고 generator 가 죽었다.
+                # 그 뒤 합법 액션을 보내면 예외가 아니라
+                # {'done': True, 'result': None} 이 돌아와서 호출자가 '핸드가
+                # 끝났다' 로 오독했다 (StopIteration 이 done 으로 둔갑).
+                #
+                # 상태 갱신은 **실제로 적용된 액션**으로만 한다. `a` 는 apply 가
+                # 성공한 뒤에야 break 되므로 항상 적용된 값이다 — E-2 계약이다.
+                # Round.apply 는 이 예외 경로에서 상태를 건드리지 않는다
+                # (체크 불가 / 최소 레이즈 미달 둘 다 mutation 전에 raise).
+                while True:
                     a, amt = act
-                    rnd.apply(s, a, amt)
+                    try:
+                        rnd.apply(s, a, amt)
+                        break
+                    except ValueError as e:
+                        act = yield {'stage': 'preflop', 'error': str(e), 'pos': pos,
+                                     'hole': h.hole[s],
+                                     'pot': sum(rnd.contrib.values())+ante_pot,
+                                     'tocall': tc, 'stack': rnd.stacks[s],
+                                     'min_raise': rnd.current+rnd.min_raise,
+                                     'can_raise': rnd.can_raise(s),
+                                     'log': list(rnd.log),
+                                     'hash': h.hash}
                 if a in ('raise', 'allin'): aggressor = s; callers = 0
                 elif a == 'call' and aggressor: callers += 1
                 elif a == 'call': limpers.append(s)
@@ -673,15 +680,23 @@ class HandRun:
                                  'prior_log': list(getattr(self, 'full_log', [])),
                                  'live': r2.live(), 'contrib': dict(r2.contrib),
                                  'allin': list(r2.allin), 'hash': h.hash}
-                    try: r2.apply(s, act[0], act[1])
-                    except ValueError as e:
-                        act = yield {'stage': street, 'error': str(e), 'board': board,
-                                     'hole': h.hole[s], 'pot': pot_now+sum(r2.contrib.values()),
-                                     'tocall': tc, 'stack': r2.stacks[s],
-                                     'min_raise': r2.current+r2.min_raise,
-                                     'can_raise': r2.can_raise(s), 'log': list(r2.log),
-                                     'live': r2.live(), 'hash': h.hash}
-                        r2.apply(s, act[0], act[1])
+                    # 프리플랍과 같은 계약 — 합법 액션이 적용될 때까지
+                    # error frame 을 내고 호출자의 다음 send 를 기다린다.
+                    # 재시도가 한 번뿐이면 두 번째 불법에서 generator 가 죽고,
+                    # 그 뒤 합법 send 가 {'done': True, 'result': None} 로 둔갑한다.
+                    while True:
+                        try:
+                            r2.apply(s, act[0], act[1])
+                            break
+                        except ValueError as e:
+                            act = yield {'stage': street, 'error': str(e),
+                                         'board': board, 'hole': h.hole[s],
+                                         'pot': pot_now+sum(r2.contrib.values()),
+                                         'tocall': tc, 'stack': r2.stacks[s],
+                                         'min_raise': r2.current+r2.min_raise,
+                                         'can_raise': r2.can_raise(s),
+                                         'log': list(r2.log),
+                                         'live': r2.live(), 'hash': h.hash}
                     if act[0] in ('bet', 'raise', 'allin'): aggressor = s
                     continue
                 ax, _ = h.axes(s)
