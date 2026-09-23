@@ -1,0 +1,150 @@
+name: style-calib-v2
+
+# STYLE_CALIB_V2_PREREG.md 의 측정 실행기.
+# 시드 단위로 병렬화하고 job/step 양쪽에 timeout 을 건다.
+# calibration 과 holdout 은 **서로 다른 dispatch** 로만 돈다 (freeze 순서 강제).
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'calib | holdout_a | holdout_b'
+        required: true
+        default: 'calib'
+      rounds:
+        description: 'field rounds'
+        required: false
+        default: '40'
+      entries:
+        description: 'field entries'
+        required: false
+        default: '100'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: style-calib-v2-${{ github.ref }}-${{ inputs.phase }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      seeds: ${{ steps.mk.outputs.seeds }}
+    steps:
+      - id: mk
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          sets = {
+              'calib':     list(range(820001, 820001 + 24)),
+              'holdout_a': list(range(830001, 830001 + 12)),
+              'holdout_b': list(range(840001, 840001 + 12)),
+          }
+          phase = os.environ['PHASE']
+          if phase not in sets:
+              raise SystemExit('unknown phase %r' % phase)
+          print('seeds=' + json.dumps(sets[phase]))
+          PY
+        env:
+          PHASE: ${{ inputs.phase }}
+
+  dump:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        seed: ${{ fromJson(needs.prepare.outputs.seeds) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dump seed ${{ matrix.seed }}
+        timeout-minutes: 20
+        run: |
+          mkdir -p dumps
+          timeout 1140 python3 tools/style_dump_v2.py \
+            --seed ${{ matrix.seed }} \
+            --rounds ${{ inputs.rounds }} \
+            --entries ${{ inputs.entries }} \
+            --out dumps/d${{ matrix.seed }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dump-${{ inputs.phase }}-${{ matrix.seed }}
+          path: dumps/d${{ matrix.seed }}.json
+          retention-days: 30
+
+  aggregate:
+    needs: [prepare, dump]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install --quiet numpy
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dump-${{ inputs.phase }}-*
+          merge-multiple: true
+          path: dumps
+      - name: Inventory
+        run: |
+          ls -la dumps | head -40
+          python3 - <<'PY'
+          import glob, json
+          tot = 0
+          for p in sorted(glob.glob('dumps/*.json')):
+              d = json.load(open(p))
+              tot += d.get('engine_errors', 0)
+              print('%s seed=%s pairs=%d rounds=%d errors=%d %.0fs'
+                    % (p, d['seed'], len(d['pairs']), d['rounds_done'],
+                       d.get('engine_errors', 0), d.get('elapsed_sec', 0)))
+          print('TOTAL_ENGINE_ERRORS=%d' % tot)
+          PY
+      - name: Fit (calibration only)
+        if: ${{ inputs.phase == 'calib' }}
+        timeout-minutes: 10
+        run: |
+          timeout 540 python3 tools/style_fit_v2.py \
+            --dumps 'dumps/*.json' \
+            --out style_params_v2.json \
+            --diag style_calib_v2_diag.json
+          echo '===STYLE_PARAMS_V2_BEGIN==='
+          cat style_params_v2.json
+          echo '===STYLE_PARAMS_V2_END==='
+          echo '===STYLE_DIAG_BEGIN==='
+          cat style_calib_v2_diag.json
+          echo '===STYLE_DIAG_END==='
+      - name: Evaluate (holdout only)
+        if: ${{ inputs.phase != 'calib' }}
+        timeout-minutes: 10
+        run: |
+          test -f style_params_v2.json || { echo 'frozen params missing'; exit 1; }
+          timeout 540 python3 tools/style_eval_v2.py \
+            --dumps 'dumps/*.json' \
+            --params style_params_v2.json \
+            --label ${{ inputs.phase }} \
+            --out style_calib_v2_${{ inputs.phase }}.json
+          echo '===STYLE_EVAL_BEGIN==='
+          cat style_calib_v2_${{ inputs.phase }}.json
+          echo '===STYLE_EVAL_END==='
+      - name: Commit results
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A style_params_v2.json style_calib_v2_diag.json \
+                     style_calib_v2_holdout_a.json style_calib_v2_holdout_b.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo 'nothing to commit'
+          else
+            git commit -m "measure: style-calib-v2 ${{ inputs.phase }} (run ${{ github.run_id }})"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
