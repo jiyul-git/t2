@@ -847,6 +847,31 @@ def _polar(observed, value_base):
     return max(0.0, min(1.0, (o - v) / o))
 
 
+def read_resolution(prof):
+    """상대 읽기 해상도. reads V4와 production read_opponent의 공통 진입점.
+
+    반환값은 연속 0~1이고 반올림하지 않는다. production 수치가 이 helper의
+    표현용 반올림 때문에 달라지지 않게 한다.
+    """
+    if not prof or not prof.get('concepts'):
+        return {
+            'see_freq': 0.0,
+            'see_line': 0.0,
+            'see_size': 0.0,
+            'use': 0.0,
+        }
+
+    def _see(v):
+        return max(0.0, min(1.0, (float(v) - 2.0) / 6.0))
+
+    return {
+        'see_freq': _see(temper(prof, 'attention', 5.0)),
+        'see_line': _see(sk(prof, 'range_read')),
+        'see_size': _see(sk(prof, 'sizing_tell')),
+        'use': _see(temper(prof, 'adaptability', 5.0)),
+    }
+
+
 def read_opponent(prof, opp_est):
     """상대 추정치를 '어떻게 착취할 것인가'로 번역한다. 판단 층의 단일 입구.
 
@@ -876,29 +901,14 @@ def read_opponent(prof, opp_est):
     if conf <= 0.0 or n <= 0:
         return neutral                      # 정보가 없다 = 내 전략대로
 
-    att = temper(prof, 'attention', 5.0)
-    adp = temper(prof, 'adaptability', 5.0)
-    rr  = sk(prof, 'range_read')
-    stl = sk(prof, 'sizing_tell')
-
     # ---------- 축별 독립 게이트 ----------
-    # 능력을 하나로 곱해 뭉치면 안 된다.
-    # '빈도는 못 세는데 사이즈에서 이상함을 느끼는' 사람이 실제로 있고,
-    # 그런 조합이 표현되지 않으면 성향이 죽는다.
-    # 각 축은 자기 능력에만 걸리고, 서로 독립이다.
-    #
-    # 계단식(문턱 넘으면 1, 아니면 0)도 안 된다. 3.9와 4.1 이 완전히
-    # 다른 사람이 되어버린다. 하한만 두고 그 위로는 연속 감쇠한다.
-    #   2 미만 → 0 (아예 못 봄) / 8 이상 → 1 (완전히 봄) / 사이는 선형
-    def _see(v):
-        return max(0.0, min(1.0, (v - 2.0) / 6.0))
-
-    see_freq = _see(att)      # 빈도(몇 % 로 치는가/접는가) — 세기만 하면 된다
-    see_line = _see(rr)       # 스트리트 구분·블러프 성향 — 레인지와 대조해야 안다
-    see_size = _see(stl)      # 사이즈의 의미 — 사이즈에 주목해야 안다
-
-    # 쓸 의지는 별개다. 볼 줄 알아도 자기 전략을 안 바꾸는 사람이 있다.
-    use = _see(adp)
+    # 같은 의미를 reads V4와 따로 계산하면 관찰 깊이가 서로 어긋날 수 있다.
+    # read_resolution() 하나를 공통 원천으로 쓴다.
+    _res = read_resolution(prof)
+    see_freq = _res['see_freq']   # 빈도(몇 % 로 치는가/접는가)
+    see_line = _res['see_line']   # 스트리트 구분·블러프 성향
+    see_size = _res['see_size']   # 사이즈 의미
+    use = _res['use']             # 알아도 실제 전략을 바꿀 의지
     if use <= 0.0:
         return neutral                      # 알아도 안 바꾸는 사람
 
