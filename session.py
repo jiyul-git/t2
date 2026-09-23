@@ -825,6 +825,10 @@ class HandRun:
                 # 구체 공개행동 추정. 기록만 하고 판단 인자에는 전달하지 않는다.
                 _style_hierarchy_v3 = (RD.hierarchical_belief_v3(_est)
                                        if _est is not None else None)
+                # V4 SHADOW: 같은 상대모델이라도 관찰자 자신의 읽기 능력에 따라
+                # coarse / trait / detail 접근 깊이가 달라진다.
+                _style_hierarchy_v4 = (RD.hierarchical_belief_v4(_est, ax)
+                                       if _est is not None else None)
                 _ostk = (r2.stacks.get(_main, 0)/h.bb) if _main is not None else None
                 # 계획 갱신은 update_plan 하나로 들어간다.
                 # (예전에는 make/revise/refresh/river_fix/_allowed/attach 를
@@ -900,6 +904,7 @@ class HandRun:
                         'style_target_pid': (_pid(_main) if _main is not None else None),
                         'style_shadow': _style_shadow,
                         'style_hierarchy_v3': _style_hierarchy_v3,
+                        'style_hierarchy_v4': _style_hierarchy_v4,
                     })
                 # --- 배팅라인 리딩: 진짜 프로필이 아니라 '내가 관찰한 추정치'로 ---
                 read_val = None
