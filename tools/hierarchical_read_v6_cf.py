@@ -29,13 +29,20 @@ def _hash_hands(hands):
 
 def _inner(seed, arm):
     orig = PS.read_opponent
-    stats = {
-        'calls': 0, 'w_positive': 0,
-        'bins': {'LOW':0, 'MID':0, 'HIGH':0},
-        'axis': {
+    def _axis_zero():
+        return {
             'freq': {'coarse':0.0,'trait':0.0,'detail':0.0},
             'line': {'coarse':0.0,'trait':0.0,'detail':0.0},
             'size': {'coarse':0.0,'trait':0.0,'detail':0.0},
+        }
+    stats = {
+        'calls': 0, 'w_positive': 0,
+        'bins': {'LOW':0, 'MID':0, 'HIGH':0},
+        'axis': _axis_zero(),
+        'by_bin': {
+            'LOW': {'calls':0, 'w_positive':0, 'axis':_axis_zero()},
+            'MID': {'calls':0, 'w_positive':0, 'axis':_axis_zero()},
+            'HIGH': {'calls':0, 'w_positive':0, 'axis':_axis_zero()},
         },
     }
 
@@ -47,13 +54,17 @@ def _inner(seed, arm):
             b = 'LOW' if da < .34 else ('MID' if da < .67 else 'HIGH')
             stats['calls'] += 1
             stats['bins'][b] += 1
+            stats['by_bin'][b]['calls'] += 1
             if out.get('w', 0.0) > 0:
                 stats['w_positive'] += 1
+                stats['by_bin'][b]['w_positive'] += 1
             sw = out.get('source_weights') or {}
             for axis in ('freq','line','size'):
                 q = sw.get(axis) or {}
                 for layer in ('coarse','trait','detail'):
-                    stats['axis'][axis][layer] += float(q.get(layer,0.0))
+                    v = float(q.get(layer,0.0))
+                    stats['axis'][axis][layer] += v
+                    stats['by_bin'][b]['axis'][axis][layer] += v
             return out
         PS.read_opponent = wrapped
 
@@ -87,6 +98,12 @@ def _inner(seed, arm):
         for axis in ('freq','line','size'):
             for layer in ('coarse','trait','detail'):
                 stats['axis'][axis][layer] /= stats['calls']
+    for b in ('LOW','MID','HIGH'):
+        bc = stats['by_bin'][b]['calls']
+        if bc:
+            for axis in ('freq','line','size'):
+                for layer in ('coarse','trait','detail'):
+                    stats['by_bin'][b]['axis'][axis][layer] /= bc
 
     return {
         'seed': seed, 'arm': arm, 'hands_n': len(hands),
