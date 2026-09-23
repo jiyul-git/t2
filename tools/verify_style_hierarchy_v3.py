@@ -74,10 +74,13 @@ def main():
     assert close(m['detail']['pf_4bet']['delta'], 0.0)
 
     # 무표본에서는 coarse가 균등이고 certainty=0.
-    z = RD.hierarchical_belief_v3(est(confidence=0.0, n=0))
+    z0 = est(confidence=0.0, n=0)
+    zv1 = RD.style_shadow(z0)
+    z = RD.hierarchical_belief_v3(z0)
     ps = list(z['coarse']['probs'].values())
     assert max(ps) - min(ps) <= 1e-6, z['coarse']
     assert z['coarse']['certainty'] == 0.0
+    assert z['coarse']['top'] == zv1['top'], (z['coarse'], zv1)
 
     # MANIAC 정보를 억지로 만들지 않는다. 극단 합성점에서만 자연스럽게 커진다.
     extreme = RD.hierarchical_belief_v3(est(
