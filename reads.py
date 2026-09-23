@@ -664,6 +664,98 @@ def hierarchical_belief_v3(est):
     }
 
 
+# ===================== STYLE_OBSERVER_DEPTH_V4 SHADOW =====================
+# 같은 상대모델을 보더라도 관찰자 자신의 읽기 능력에 따라
+# "큰 분류만 보는가 / 성향까지 보는가 / 구체 통계까지 보는가"가 달라진다.
+# 이 층은 관찰 해상도만 기록하며 production action에는 아직 연결하지 않는다.
+def _style_v4_see(v):
+    """persona.read_opponent 의 관찰축 게이트와 같은 0~1 변환."""
+    return max(0.0, min(1.0, (float(v) - 2.0) / 6.0))
+
+
+def observer_resolution_v4(observer_prof):
+    """관찰자 자신의 능력으로 상대 읽기의 해상도를 계산한다.
+
+    coarse 는 항상 볼 수 있다. 다만 coarse 자체의 정확도는 이미
+    perceived_profile 의 observer skill/noise/memory 를 통해 낮아질 수 있다.
+
+    traits/detail access 는 '무엇을 볼 수 있나'이고,
+    apply_willingness 는 '봐도 전략을 바꿀 의지가 있나'다.
+    둘을 분리한다.
+    """
+    if not observer_prof or not observer_prof.get('concepts'):
+        return {
+            'coarse_access': 1.0,
+            'trait_access': 0.0,
+            'detail_access': 0.0,
+            'see_freq': 0.0,
+            'see_line': 0.0,
+            'see_size': 0.0,
+            'apply_willingness': 0.0,
+        }
+
+    import persona as _PS
+    att = _PS.temper(observer_prof, 'attention', 5.0)
+    adp = _PS.temper(observer_prof, 'adaptability', 5.0)
+    rr = _PS.sk(observer_prof, 'range_read')
+    st = _PS.sk(observer_prof, 'sizing_tell')
+
+    see_freq = _style_v4_see(att)
+    see_line = _style_v4_see(rr)
+    see_size = _style_v4_see(st)
+    use = _style_v4_see(adp)
+
+    # 중간층은 "빈도나 라인 중 하나라도 읽을 수 있으면" 일부 접근 가능.
+    # 세부층은 빈도/라인/사이즈를 함께 읽을수록 올라간다.
+    trait_access = max(see_freq, see_line)
+    detail_access = 0.30*see_freq + 0.45*see_line + 0.25*see_size
+
+    return {
+        'coarse_access': 1.0,
+        'trait_access': round(max(0.0, min(1.0, trait_access)), 3),
+        'detail_access': round(max(0.0, min(1.0, detail_access)), 3),
+        'see_freq': round(see_freq, 3),
+        'see_line': round(see_line, 3),
+        'see_size': round(see_size, 3),
+        'apply_willingness': round(use, 3),
+    }
+
+
+def hierarchical_belief_v4(est, observer_prof):
+    """STYLE_OBSERVER_DEPTH_V4 SHADOW.
+
+    V3의 세 층 정보는 그대로 보존하고, 관찰자 자신의 능력에서
+    각 층을 얼마나 읽을 수 있는지만 덧붙인다.
+
+    약한 관찰자:
+        coarse 가설은 유지되지만 trait/detail access가 낮다.
+    강한 관찰자:
+        같은 coarse 가설 위에 trait/detail access가 높아진다.
+
+    실제 action rule은 아직 바꾸지 않는다.
+    """
+    base = hierarchical_belief_v3(est)
+    depth = observer_resolution_v4(observer_prof)
+
+    # 표시/분석용 요약. 경계는 action gate가 아니다.
+    if depth['detail_access'] >= 0.67:
+        mode = 'DETAIL'
+    elif depth['trait_access'] >= 0.34:
+        mode = 'TRAIT'
+    else:
+        mode = 'COARSE'
+
+    return {
+        'version': 'STYLE_OBSERVER_DEPTH_V4',
+        'mode': mode,
+        'observer_depth': depth,
+        'coarse': base['coarse'],
+        'traits': base['traits'],
+        'detail': base['detail'],
+        'evidence': base['evidence'],
+    }
+
+
 # ===================== OpponentBelief =====================
 # 관찰자는 상대의 개념 벡터를 **볼 수 없다.** 볼 수 있는 것은 행동 빈도뿐이다.
 # 그래서 순서가 이렇게 되어야 한다.
