@@ -1,0 +1,55 @@
+name: hierarchical-read-v6
+
+on:
+  push:
+    branches:
+      - chatgpt/hierarchical-read-v6
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python3 -m compileall -q reads.py persona.py session.py tools/verify_hierarchical_read_v6.py tools/hierarchical_read_v6_cf.py
+      - name: V6 contract
+        run: python3 tools/verify_hierarchical_read_v6.py
+      - name: Shared read resolution v5
+        run: python3 tools/verify_read_resolution_unify_v5.py
+      - name: Observer depth v4
+        run: python3 tools/verify_style_observer_depth_v4.py
+      - name: Hierarchy v3
+        run: python3 tools/verify_style_hierarchy_v3.py
+      - name: Style v1
+        run: python3 tools/verify_style_shadow.py
+      - name: Current regression
+        run: python3 tools/regress.py check --baseline current
+
+  cf:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        seed: [850001,850002,850003,850004,850005,850006,850007,850008,850009,850010,850011,850012]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Paired CF
+        run: timeout 900 python3 tools/hierarchical_read_v6_cf.py --seed ${{ matrix.seed }}
