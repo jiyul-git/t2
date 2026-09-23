@@ -592,7 +592,7 @@ _STYLE_V3_DETAIL_PRIOR = {
 }
 
 
-def hierarchical_belief_v3(est):
+def hierarchical_belief_v3(est, style_base=None):
     """STYLE_HIERARCHY_V3 SHADOW.
 
     Layer 1: 6개 coarse style hypothesis
@@ -603,7 +603,9 @@ def hierarchical_belief_v3(est):
     반환값은 기록/검증 전용이다.
     """
     e = est or {}
-    sh = style_shadow(e)
+    # 호출자가 같은 decision에서 이미 style_shadow를 계산했다면 재사용한다.
+    # 기록층 추가 때문에 동일 계산을 여러 번 반복하지 않는다.
+    sh = style_base if style_base is not None else style_shadow(e)
 
     _ord = {name: i for i, name in enumerate(STYLE_V1_NAMES)}
     ranked = sorted(sh['probs'].items(), key=lambda kv: (-kv[1], _ord[kv[0]]))
@@ -721,7 +723,7 @@ def observer_resolution_v4(observer_prof):
     }
 
 
-def hierarchical_belief_v4(est, observer_prof):
+def hierarchical_belief_v4(est, observer_prof, hierarchy_base=None):
     """STYLE_OBSERVER_DEPTH_V4 SHADOW.
 
     V3의 세 층 정보는 그대로 보존하고, 관찰자 자신의 능력에서
@@ -734,7 +736,7 @@ def hierarchical_belief_v4(est, observer_prof):
 
     실제 action rule은 아직 바꾸지 않는다.
     """
-    base = hierarchical_belief_v3(est)
+    base = hierarchy_base if hierarchy_base is not None else hierarchical_belief_v3(est)
     depth = observer_resolution_v4(observer_prof)
 
     # 표시/분석용 요약. 경계는 action gate가 아니다.
