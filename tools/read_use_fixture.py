@@ -211,17 +211,24 @@ def est_for_arm(state, prof, seed, a):
         return state.est_for(prof, random.Random(seed))
 
 
-def act_for_arm(state, prof, est, seed, u):
-    """수비 채널 한 결정. est 는 R arm 에서 이미 고정된 값이다."""
+def decide(state, prof, est, seed, u):
+    """수비 채널 한 결정. est 는 R arm 에서 이미 고정된 값이다.
+
+    **use_arm(u) 안에서 불러야 한다.** 호출부가 컨텍스트를 들고 있게 한 것은
+    상태 240개마다 patch 를 걸고 푸는 비용을 피하기 위해서다.
+    """
     rv = PL.line_bluff_prior(est, 'turn', 1, state.sz, state.board, False)
     rv_u = 0.35 + u * (rv - 0.35)          # trust *= u 와 대수적으로 동일
-    with use_arm(u):
-        need = float(PL.calldown_need(
-            prof, state.hero, state.board, 'turn', state.pot_live,
-            state.tocall, 1.0, rv_u, 0, est, n_opp=1,
-            rng=random.Random(seed)))
+    need = float(PL.calldown_need(
+        prof, state.hero, state.board, 'turn', state.pot_live,
+        state.tocall, 1.0, rv_u, 0, est, n_opp=1, rng=random.Random(seed)))
     eq = state.b_true * state.eq_blf + (1.0 - state.b_true) * state.eq_val
     return ('call' if eq >= need else 'fold'), need, rv
+
+
+def act_for_arm(state, prof, est, seed, u):
+    with use_arm(u):
+        return decide(state, prof, est, seed, u)
 
 
 def seeds_for(pi, sid):
