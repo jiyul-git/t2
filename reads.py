@@ -571,6 +571,98 @@ def style_shadow(est):
     }
 
 
+# ===================== STYLE_HIERARCHY_V3 SHADOW =====================
+# 사람식 "큰 가설 -> 세부 성향 -> 구체 행동" 표현층.
+# 판단 로직에는 연결하지 않는다. Layer 1 이 Layer 2/3 을 덮어쓰지 않는다.
+_STYLE_V3_DETAIL_PRIOR = {
+    'vpip': PRIOR['vpip'],
+    'pfr': PRIOR['pfr'],
+    'rfi_rel': 1.0,
+    'pf_limp': PRIOR['pf_limp'],
+    'pf_3bet': PRIOR['pf_3bet'],
+    'pf_4bet': PRIOR['pf_4bet'],
+    'cbet': PRIOR['cbet'],
+    'barrel': PRIOR['barrel'],
+    'ftb': PRIOR['fold_to_bet'],
+    'aggr': PRIOR['aggr'],
+    'bluff': PRIOR['bluff'],
+    'sz_mean': PRIOR['sz_mean'],
+    'sz_sd': PRIOR['sz_sd'],
+    'sz_big': 0.15,
+}
+
+
+def hierarchical_belief_v3(est):
+    """STYLE_HIERARCHY_V3 SHADOW.
+
+    Layer 1: 6개 coarse style hypothesis
+    Layer 2: L/A/X + modifier + top-style 중심에서의 잔차
+    Layer 3: 공개행동별 현재 추정치 / population prior / delta
+
+    입력은 perceived_profile 결과뿐이며 실제 상대 profile/concepts 를 읽지 않는다.
+    반환값은 기록/검증 전용이다.
+    """
+    e = est or {}
+    sh = style_shadow(e)
+
+    ranked = sorted(sh['probs'].items(), key=lambda kv: (-kv[1], kv[0]))
+    top = ranked[0][0] if ranked else None
+    second = ranked[1][0] if len(ranked) > 1 else None
+    top_p = ranked[0][1] if ranked else 0.0
+    second_p = ranked[1][1] if len(ranked) > 1 else 0.0
+
+    center = STYLE_V1_CENTERS.get(top) if top else None
+    if center is None:
+        residual = {'L': 0.0, 'A': 0.0, 'X': 0.0}
+        residual_scaled = {'L': 0.0, 'A': 0.0, 'X': 0.0}
+        center_out = None
+    else:
+        rv = (sh['L'] - center[0], sh['A'] - center[1], sh['X'] - center[2])
+        residual = {'L': round(rv[0], 6), 'A': round(rv[1], 6), 'X': round(rv[2], 6)}
+        residual_scaled = {
+            'L': round(rv[0] / 1.7, 6),
+            'A': round(rv[1] / 1.7, 6),
+            'X': round(rv[2] / 2.2, 6),
+        }
+        center_out = {'L': center[0], 'A': center[1], 'X': center[2]}
+
+    detail = {}
+    for key, prior in _STYLE_V3_DETAIL_PRIOR.items():
+        raw = e.get(key)
+        value = float(prior if raw is None else raw)
+        detail[key] = {
+            'value': round(value, 6),
+            'prior': round(float(prior), 6),
+            'delta': round(value - float(prior), 6),
+        }
+
+    return {
+        'version': 'STYLE_HIERARCHY_V3',
+        'evidence': {
+            'n': sh['n'],
+            'confidence': sh['confidence'],
+            'q': sh['q'],
+        },
+        'coarse': {
+            'probs': dict(sh['probs']),
+            'top': top,
+            'second': second,
+            'margin': round(top_p - second_p, 6),
+            'certainty': sh['certainty'],
+        },
+        'traits': {
+            'L': sh['L'],
+            'A': sh['A'],
+            'X': sh['X'],
+            'modifiers': dict(sh['modifiers']),
+            'top_center': center_out,
+            'residual_from_top': residual,
+            'residual_scaled': residual_scaled,
+        },
+        'detail': detail,
+    }
+
+
 # ===================== OpponentBelief =====================
 # 관찰자는 상대의 개념 벡터를 **볼 수 없다.** 볼 수 있는 것은 행동 빈도뿐이다.
 # 그래서 순서가 이렇게 되어야 한다.
