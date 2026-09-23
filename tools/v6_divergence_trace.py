@@ -104,10 +104,14 @@ def _inner(seed, arm, probe):
         run = getattr(ctx['t'], 'run', None)
         h = getattr(run, 'h', None)
         profs = getattr(h, 'prof', None) or {}
-        for k, v in profs.items():
-            if v is prof:
-                return k
-        return None
+        hits = [k for k, v in profs.items() if v is prof]
+        if not hits:
+            # tourney 는 같은 dict 객체를 넘기지 않는다. 내용 동일로 찾는다.
+            try:
+                hits = [k for k, v in profs.items() if v == prof]
+            except Exception:
+                hits = []
+        return hits[0] if len(hits) == 1 else (hits or None)
 
     def _loglen():
         run = getattr(ctx['t'], 'run', None)
