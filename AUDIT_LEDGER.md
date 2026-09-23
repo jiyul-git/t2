@@ -48,11 +48,12 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 - **V2 calibration 결과** 별도 `claude/style-calib-v2` 브랜치에 보존. unconstrained k-means는 MANIAC을 tight-aggressive cluster에, TAG를 NIT보다 낮은 aggression cluster에 배정해 의미를 깨뜨렸고 holdout A/B 모두 G1 FAIL. posterior는 더 날카로워졌지만 empirical population mean보다 예측이 나빠 overconfidence로 판정했다. V2 params는 integration에 넣지 않는다
 - **V3 SHADOW** `reads.hierarchical_belief_v3`: Layer1=coarse 6-style hypothesis, Layer2=L/A/X+modifier+top-center residual, Layer3=구체 공개행동 estimate/prior/delta. 상위 label이 하위 숫자를 덮어쓰지 않는다
 - **V4 SHADOW** `reads.observer_resolution_v4 / hierarchical_belief_v4`: 같은 V3 상대모델을 관찰자 자신의 attention·range_read·sizing_tell·adaptability에 따라 COARSE→TRAIT→DETAIL 해상도로 읽는다. mode는 로그/UI 요약일 뿐 action hard-switch에 쓰지 않는다
-- **production 도달** 기록층에는 있음 — `session.py` intent snapshot에 `style_shadow/style_hierarchy_v3/style_hierarchy_v4`를 남긴다. plan/range/sizing/read_opponent 입력에는 전달하지 않는다
-- **행동 영향** 0. V4 검증에서 current regression 전 시드 fingerprint 일치
-- **동적 검증** observer-depth + hierarchy-v3 + style-v1 contracts, OOP semantics, blockbet, replan context, current regression 전부 PASS. 상세 `STYLE_OBSERVER_DEPTH_V4_RESULT.md`
-- **상태** `DOCUMENT` — 관찰자 능력별 계층형 SHADOW wired, LIVE는 아님
-- **다음 조치** LIVE 연결 전 기존 `persona.read_opponent`의 see_freq/see_line/see_size/use와 V4 access를 하나의 공통 소비 경로로 합쳐 이중 게이팅을 막는다. 낮은 관찰자는 coarse 비중, 높은 관찰자는 trait/detail 비중을 연속 weight로 늘리는 실험을 별도 사전등록한다
+- **V5 공통화** `persona.read_resolution`을 추가해 production `read_opponent`와 V4 SHADOW가 같은 `attention→see_freq / range_read→see_line / sizing_tell→see_size / adaptability→use` 원천을 사용한다. 기존 0~1 변환과 downstream 식은 그대로라 이중 의미 분기를 제거했지만 행동은 바꾸지 않았다
+- **production 도달** 기록층에는 `session.py` intent snapshot의 `style_shadow/style_hierarchy_v3/style_hierarchy_v4`; 기존 `persona.read_opponent`는 LIVE이며 V5부터 같은 read-resolution helper를 공유한다. 새 coarse/trait/detail 값 자체는 아직 action에 전달하지 않는다
+- **행동 영향** V3/V4 추가 영향 0, V5 refactor 영향 0. current regression 전 시드 fingerprint 일치
+- **동적 검증** shared-resolution 1,375경계조합 exact match + observer-depth + hierarchy-v3 + style-v1 contracts, OOP semantics, blockbet, replan context, current regression 전부 PASS. 상세 `READ_RESOLUTION_UNIFY_V5_RESULT.md`
+- **상태** `DOCUMENT` — 관찰 해상도 원천까지 production/SHADOW 공통화, 계층형 style 정보 자체는 LIVE 미배선
+- **다음 조치** 낮은 관찰자는 coarse 비중, 높은 관찰자는 trait/detail 비중을 연속 weight로 늘리는 LIVE 후보를 별도 사전등록·반사실 측정한다. mode 문자열 hard-switch와 같은 행동의 중복 계상은 금지한다
 
 ### A-2  money pressure 서브시스템
 - **파일:라인** `money_pressure.py` 전체 · 생산 `session.py:37 _money_jump_observe` · 소비 `session.py:489 PL.preflop_plan(money_open=…)` → `preflop.py:305 thr *= range_factor`
