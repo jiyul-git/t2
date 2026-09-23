@@ -738,6 +738,228 @@ def hierarchical_belief_v4(est, observer_prof, hierarchy_base=None):
     }
 
 
+# ===================== HIERARCHICAL_READ_V6 CANDIDATE =====================
+# LIVE 미배선. 약한 관찰자는 coarse, 중간은 trait, 강한 관찰자는 detail에
+# 가까워지도록 같은 action-facing 채널을 **합산하지 않고 보간**한다.
+_STYLE_V6_COARSE = {
+    'NIT':           {'fold_gap': 0.10, 'open_gap': -0.55, 'barrel_gap': -0.35,
+                      'bluff_gap': -0.35, 'passive': 0.25, 'tb_gap': -0.10},
+    'TAG':           {'fold_gap': 0.00, 'open_gap': -0.15, 'barrel_gap': 0.10,
+                      'bluff_gap': 0.00, 'passive': -0.10, 'tb_gap': 0.05},
+    'LAG':           {'fold_gap': -0.05, 'open_gap': 0.55, 'barrel_gap': 0.45,
+                      'bluff_gap': 0.40, 'passive': -0.45, 'tb_gap': 0.20},
+    'LOOSE_PASSIVE': {'fold_gap': -0.15, 'open_gap': 0.55, 'barrel_gap': -0.45,
+                      'bluff_gap': -0.40, 'passive': 0.55, 'tb_gap': -0.10},
+    'TIGHT_PASSIVE': {'fold_gap': 0.10, 'open_gap': -0.45, 'barrel_gap': -0.45,
+                      'bluff_gap': -0.40, 'passive': 0.55, 'tb_gap': -0.15},
+    'MANIAC':        {'fold_gap': -0.20, 'open_gap': 0.80, 'barrel_gap': 0.75,
+                      'bluff_gap': 0.80, 'passive': -0.80, 'tb_gap': 0.35},
+}
+
+
+def _style_v6_clip(x, lo, hi):
+    return max(float(lo), min(float(hi), float(x)))
+
+
+def _style_v6_mix(c, t, d, a):
+    """2차 Bernstein mix. weight 합은 정확히 1."""
+    a = _style_v6_clip(a, 0.0, 1.0)
+    wc = (1.0 - a) ** 2
+    wt = 2.0 * a * (1.0 - a)
+    wd = a ** 2
+    return wc*float(c) + wt*float(t) + wd*float(d)
+
+
+def _style_v6_weights(a):
+    a = _style_v6_clip(a, 0.0, 1.0)
+    return {
+        'coarse': round((1.0 - a) ** 2, 6),
+        'trait': round(2.0*a*(1.0 - a), 6),
+        'detail': round(a ** 2, 6),
+    }
+
+
+def _style_v6_polar(observed, value_base):
+    o = max(0.0, float(observed or 0.0))
+    v = max(1e-4, float(value_base))
+    if o <= v:
+        return 0.0
+    return _style_v6_clip((o - v) / o, 0.0, 1.0)
+
+
+def hierarchical_read_v6(observer_prof, opp_est, belief_base=None):
+    """HIERARCHICAL_READ_V6 action-facing SHADOW candidate.
+
+    target hidden profile/concepts는 읽지 않는다. 입력은 observer 자신의 profile과
+    perceived_profile(opp_est)뿐이다. production read_opponent를 아직 대체하지 않는다.
+    """
+    neutral = {
+        'w': 0.0,
+        'see_freq': 0.0, 'see_line': 0.0, 'see_size': 0.0,
+        'fold_gap': 0.0, 'fold_gap_flop': 0.0, 'fold_gap_turn': 0.0,
+        'fold_gap_river': 0.0, 'open_gap': 0.0, 'limp_gap': 0.0,
+        'barrel_gap': 0.0, 'tb_gap': 0.0, 'tb_polar': 0.0,
+        'f2tb_gap': 0.0, 'fb_gap': 0.0, 'f2fb_gap': 0.0,
+        'size_gap': 0.0, 'size_info': 0.0, 'size_big': 0.0,
+        'size_river': 0.62, 'bluff_gap': 0.0, 'passive': 0.0,
+        'coarse_top': None, 'coarse_probs': {},
+        'source_weights': {
+            'freq': {'coarse': 1.0, 'trait': 0.0, 'detail': 0.0},
+            'line': {'coarse': 1.0, 'trait': 0.0, 'detail': 0.0},
+            'size': {'coarse': 1.0, 'trait': 0.0, 'detail': 0.0},
+        },
+        'layer_sources': {},
+    }
+    if not observer_prof or not observer_prof.get('concepts') or not opp_est:
+        return neutral
+
+    import persona as _PS
+    res = _PS.read_resolution(observer_prof)
+    sf = float(res['see_freq'])
+    sl = float(res['see_line'])
+    ss = float(res['see_size'])
+    use = float(res['use'])
+    conf = _style_v6_clip(opp_est.get('confidence', 0.0) or 0.0, 0.0, 1.0)
+    n = max(0.0, float(opp_est.get('n', 0) or 0))
+    if conf <= 0.0 or n <= 0.0 or use <= 0.0:
+        z = dict(neutral)
+        z['see_freq'] = round(sf, 3); z['see_line'] = round(sl, 3); z['see_size'] = round(ss, 3)
+        return z
+
+    data = conf * min(1.0, n / 12.0)
+    w = _style_v6_clip(use * data, 0.0, 0.85)
+
+    # ---------- Layer 1: coarse style hypothesis ----------
+    hb = belief_base if belief_base is not None else hierarchical_belief_v3(opp_est)
+    probs = hb['coarse']['probs']
+    coarse = {}
+    for key in ('fold_gap', 'open_gap', 'barrel_gap', 'bluff_gap', 'passive', 'tb_gap'):
+        coarse[key] = sum(float(probs.get(st, 0.0)) * _STYLE_V6_COARSE[st][key]
+                          for st in STYLE_V1_NAMES)
+
+    # coarse에서 모르는 정밀 채널은 중립.
+    coarse.update({
+        'limp_gap': 0.0, 'tb_polar': 0.0, 'f2tb_gap': 0.0,
+        'fb_gap': 0.0, 'f2fb_gap': 0.0,
+        'size_gap': 0.0, 'size_info': 0.0, 'size_big': 0.0,
+        'size_river': 0.62,
+    })
+
+    # ---------- Layer 2: continuous traits ----------
+    tr = hb['traits']
+    mods = tr.get('modifiers') or {}
+    ln = _style_v6_clip((float(tr['L']) - 5.0) / 5.0, -1.0, 1.0)
+    an = _style_v6_clip((float(tr['A']) - 5.0) / 5.0, -1.0, 1.0)
+    xn = _style_v6_clip((float(tr['X']) - 2.0) / 6.0, -1.0, 1.0)
+    sticky = float(mods.get('sticky', 0.0) or 0.0)
+    overfold = float(mods.get('overfold', 0.0) or 0.0)
+    bluffy = float(mods.get('bluffy', 0.0) or 0.0)
+    tbh = float(mods.get('threebet_heavy', 0.0) or 0.0)
+    big = float(mods.get('big_sizer', 0.0) or 0.0)
+    vol = float(mods.get('size_volatile', 0.0) or 0.0)
+    trait = {
+        'fold_gap': _style_v6_clip(0.25*(overfold - sticky), -0.5, 0.5),
+        'open_gap': ln,
+        'barrel_gap': an,
+        'bluff_gap': _style_v6_clip(0.60*an + 0.40*xn + 0.25*bluffy, -1.0, 1.0),
+        'passive': -an,
+        'tb_gap': _style_v6_clip(0.25*an + 0.50*tbh, -0.5, 1.0),
+        'tb_polar': _style_v6_clip(0.50*max(0.0, xn) + 0.50*bluffy, 0.0, 1.0),
+        'limp_gap': 0.0, 'f2tb_gap': 0.0, 'fb_gap': 0.0, 'f2fb_gap': 0.0,
+        'size_gap': _style_v6_clip(0.70*big, 0.0, 1.0),
+        'size_info': _style_v6_clip(vol, 0.0, 1.0),
+        'size_big': _style_v6_clip(0.35*big, 0.0, 1.0),
+        'size_river': 0.62,
+    }
+
+    # ---------- Layer 3: direct observable detail (ungated raw signals) ----------
+    def g(k, d):
+        v = opp_est.get(k)
+        return float(d if v is None else v)
+
+    ftb = g('ftb', 0.52)
+    fg = lambda v: _style_v6_clip(float(v) - 0.52, -0.5, 0.5)
+    p3 = g('pf_3bet', 0.07)
+    p4 = g('pf_4bet', 0.04)
+    szm = g('sz_mean', 0.62)
+    szsd = g('sz_sd', 0.22)
+    szn = max(0.0, g('sz_n', 0.0))
+    detail = {
+        'fold_gap': fg(ftb),
+        'fold_gap_flop': fg(g('ftb_flop', ftb)),
+        'fold_gap_turn': fg(g('ftb_turn', ftb)),
+        'fold_gap_river': fg(g('ftb_river', ftb)),
+        'open_gap': _style_v6_clip((g('rfi_rel', 1.0) or 1.0) - 1.0, -1.0, 2.0),
+        'limp_gap': _style_v6_clip((g('pf_limp', 0.06) - 0.06)*6.0, -0.5, 1.5),
+        'barrel_gap': _style_v6_clip((g('barrel', 0.45) - 0.45)/0.35, -1.0, 1.0),
+        'tb_gap': _style_v6_clip(p3 - 0.07, -0.5, 0.5)*4.0,
+        'tb_polar': _style_v6_polar(p3, 0.055) * min(1.0, n/28.0),
+        'f2tb_gap': fg(g('pf_fold_to_3bet', 0.55) + 0.52 - 0.55),
+        'fb_gap': _style_v6_clip(p4 - 0.04, -0.5, 0.5)*6.0,
+        'f2fb_gap': fg(g('pf_fold_to_4bet', 0.60) + 0.52 - 0.60),
+        'size_gap': _style_v6_clip((szm - 0.62)/0.45, -1.0, 1.0),
+        'size_info': (_style_v6_clip((szsd - 0.08)/0.35, 0.0, 1.0)
+                      * min(1.0, szn/8.0)),
+        'size_big': _style_v6_clip(g('sz_big', 0.15), 0.0, 1.0),
+        'size_river': g('sz_river', szm),
+        'bluff_gap': _style_v6_clip((g('bluff', 4.5) - 4.5)/4.5, -1.0, 1.0),
+        'passive': _style_v6_clip((5.0 - g('aggr', 5.0))/5.0, -1.0, 1.0),
+    }
+
+    # generic fold coarse/trait을 street별 coarse/trait에도 사용한다.
+    for k in ('fold_gap_flop', 'fold_gap_turn', 'fold_gap_river'):
+        coarse[k] = coarse['fold_gap']
+        trait[k] = trait['fold_gap']
+
+    freq_keys = (
+        'fold_gap', 'fold_gap_flop', 'fold_gap_turn', 'fold_gap_river',
+        'open_gap', 'limp_gap', 'tb_gap', 'f2tb_gap', 'fb_gap', 'f2fb_gap',
+        'passive',
+    )
+    line_keys = ('barrel_gap', 'tb_polar', 'bluff_gap')
+    size_keys = ('size_gap', 'size_info', 'size_big', 'size_river')
+
+    out = {
+        'w': round(w, 3),
+        'see_freq': round(sf, 3), 'see_line': round(sl, 3), 'see_size': round(ss, 3),
+    }
+    for k in freq_keys:
+        out[k] = _style_v6_mix(coarse[k], trait[k], detail[k], sf)
+    for k in line_keys:
+        out[k] = _style_v6_mix(coarse[k], trait[k], detail[k], sl)
+    for k in size_keys:
+        out[k] = _style_v6_mix(coarse[k], trait[k], detail[k], ss)
+
+    # 기존 read_opponent 출력의 일반 범위를 보존한다.
+    out['fold_gap'] = _style_v6_clip(out['fold_gap'], -0.5, 0.5)
+    for k in ('fold_gap_flop', 'fold_gap_turn', 'fold_gap_river',
+              'f2tb_gap', 'f2fb_gap'):
+        out[k] = _style_v6_clip(out[k], -0.5, 0.5)
+    out['open_gap'] = _style_v6_clip(out['open_gap'], -1.0, 2.0)
+    out['limp_gap'] = _style_v6_clip(out['limp_gap'], -0.5, 1.5)
+    for k in ('barrel_gap', 'bluff_gap', 'passive', 'size_gap'):
+        out[k] = _style_v6_clip(out[k], -1.0, 1.0)
+    out['tb_gap'] = _style_v6_clip(out['tb_gap'], -2.0, 2.0)
+    out['fb_gap'] = _style_v6_clip(out['fb_gap'], -3.0, 3.0)
+    for k in ('tb_polar', 'size_info', 'size_big'):
+        out[k] = _style_v6_clip(out[k], 0.0, 1.0)
+    out['size_river'] = max(0.0, float(out['size_river']))
+
+    out['coarse_top'] = hb['coarse']['top']
+    out['coarse_probs'] = dict(probs)
+    out['source_weights'] = {
+        'freq': _style_v6_weights(sf),
+        'line': _style_v6_weights(sl),
+        'size': _style_v6_weights(ss),
+    }
+    out['layer_sources'] = {
+        'coarse': {k: round(float(v), 6) for k, v in coarse.items()},
+        'trait': {k: round(float(v), 6) for k, v in trait.items()},
+        'detail': {k: round(float(v), 6) for k, v in detail.items()},
+    }
+    return out
+
+
 # ===================== OpponentBelief =====================
 # 관찰자는 상대의 개념 벡터를 **볼 수 없다.** 볼 수 있는 것은 행동 빈도뿐이다.
 # 그래서 순서가 이렇게 되어야 한다.
