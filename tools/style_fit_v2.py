@@ -128,7 +128,7 @@ def assign_names(Cz):
     return out
 
 
-def consistency(centers, sizes, total):
+def consistency(centers, sizes, total, pop):
     c = centers
     checks = [
         ('C1 L(NIT)<L(TAG)<L(LAG)',
@@ -141,6 +141,9 @@ def consistency(centers, sizes, total):
          all(c['MANIAC'][2] >= c[n][2] for n in NAMES)),
         ('C5 every cluster >=1% of samples',
          all(sizes[n] >= 0.01 * total for n in NAMES)),
+        # Amendment A1. 보고 전용 — 깨져도 배정을 고치지 않는다.
+        ('C6 MANIAC center above population mean on L and A',
+         c['MANIAC'][0] >= pop[0] and c['MANIAC'][1] >= pop[1]),
     ]
     return [{'check': k, 'ok': bool(v)} for k, v in checks]
 
@@ -252,7 +255,7 @@ def main():
     within = np.sqrt((resid ** 2).mean(axis=0))
     scales = tuple(float(max(SCALE_FLOOR, x)) for x in within)
 
-    checks = consistency(centers, sizes, P.shape[0])
+    checks = consistency(centers, sizes, P.shape[0], pop)
     diag = maniac_diag(P, ests, centers, scales)
 
     params = {

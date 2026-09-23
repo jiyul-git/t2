@@ -4,6 +4,10 @@ name: style-calib-v2
 # 시드 단위로 병렬화하고 job/step 양쪽에 timeout 을 건다.
 # calibration 과 holdout 은 **서로 다른 dispatch** 로만 돈다 (freeze 순서 강제).
 
+# 실행 방법 두 가지. 둘 중 무엇으로 돌아도 phase 해석은 같다.
+#   1) workflow_dispatch 로 phase 입력
+#   2) claude/style-calib-v2-run-<phase> 브랜치에 push
+#      (workflow_dispatch 는 기본 브랜치에 파일이 있어야 뜨므로 대비 경로다)
 on:
   workflow_dispatch:
     inputs:
@@ -19,12 +23,15 @@ on:
         description: 'field entries'
         required: false
         default: '100'
+  push:
+    branches:
+      - 'claude/style-calib-v2-run-*'
 
 permissions:
   contents: write
 
 concurrency:
-  group: style-calib-v2-${{ github.ref }}-${{ inputs.phase }}
+  group: style-calib-v2-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -33,6 +40,9 @@ jobs:
     timeout-minutes: 5
     outputs:
       seeds: ${{ steps.mk.outputs.seeds }}
+      phase: ${{ steps.mk.outputs.phase }}
+      rounds: ${{ steps.mk.outputs.rounds }}
+      entries: ${{ steps.mk.outputs.entries }}
     steps:
       - id: mk
         run: |
@@ -43,13 +53,23 @@ jobs:
               'holdout_a': list(range(830001, 830001 + 12)),
               'holdout_b': list(range(840001, 840001 + 12)),
           }
-          phase = os.environ['PHASE']
+          phase = (os.environ.get('PHASE') or '').strip()
+          if not phase:
+              ref = os.environ.get('REF', '')
+              marker = '-run-'
+              phase = ref.rsplit(marker, 1)[-1] if marker in ref else ''
           if phase not in sets:
-              raise SystemExit('unknown phase %r' % phase)
+              raise SystemExit('unknown phase %r (ref=%r)' % (phase, os.environ.get('REF')))
+          print('phase=' + phase)
+          print('rounds=' + ((os.environ.get('ROUNDS') or '').strip() or '40'))
+          print('entries=' + ((os.environ.get('ENTRIES') or '').strip() or '100'))
           print('seeds=' + json.dumps(sets[phase]))
           PY
         env:
           PHASE: ${{ inputs.phase }}
+          ROUNDS: ${{ inputs.rounds }}
+          ENTRIES: ${{ inputs.entries }}
+          REF: ${{ github.ref_name }}
 
   dump:
     needs: prepare
@@ -71,12 +91,12 @@ jobs:
           mkdir -p dumps
           timeout 1140 python3 tools/style_dump_v2.py \
             --seed ${{ matrix.seed }} \
-            --rounds ${{ inputs.rounds }} \
-            --entries ${{ inputs.entries }} \
+            --rounds ${{ needs.prepare.outputs.rounds }} \
+            --entries ${{ needs.prepare.outputs.entries }} \
             --out dumps/d${{ matrix.seed }}.json
       - uses: actions/upload-artifact@v4
         with:
-          name: dump-${{ inputs.phase }}-${{ matrix.seed }}
+          name: dump-${{ needs.prepare.outputs.phase }}-${{ matrix.seed }}
           path: dumps/d${{ matrix.seed }}.json
           retention-days: 30
 
@@ -92,7 +112,7 @@ jobs:
       - run: python3 -m pip install --quiet numpy
       - uses: actions/download-artifact@v4
         with:
-          pattern: dump-${{ inputs.phase }}-*
+          pattern: dump-${{ needs.prepare.outputs.phase }}-*
           merge-multiple: true
           path: dumps
       - name: Inventory
@@ -110,7 +130,7 @@ jobs:
           print('TOTAL_ENGINE_ERRORS=%d' % tot)
           PY
       - name: Fit (calibration only)
-        if: ${{ inputs.phase == 'calib' }}
+        if: ${{ needs.prepare.outputs.phase == 'calib' }}
         timeout-minutes: 10
         run: |
           timeout 540 python3 tools/style_fit_v2.py \
@@ -124,19 +144,20 @@ jobs:
           cat style_calib_v2_diag.json
           echo '===STYLE_DIAG_END==='
       - name: Evaluate (holdout only)
-        if: ${{ inputs.phase != 'calib' }}
+        if: ${{ needs.prepare.outputs.phase != 'calib' }}
         timeout-minutes: 10
         run: |
           test -f style_params_v2.json || { echo 'frozen params missing'; exit 1; }
           timeout 540 python3 tools/style_eval_v2.py \
             --dumps 'dumps/*.json' \
             --params style_params_v2.json \
-            --label ${{ inputs.phase }} \
-            --out style_calib_v2_${{ inputs.phase }}.json
+            --label ${{ needs.prepare.outputs.phase }} \
+            --out style_calib_v2_${{ needs.prepare.outputs.phase }}.json
           echo '===STYLE_EVAL_BEGIN==='
-          cat style_calib_v2_${{ inputs.phase }}.json
+          cat style_calib_v2_${{ needs.prepare.outputs.phase }}.json
           echo '===STYLE_EVAL_END==='
       - name: Commit results
+        continue-on-error: true
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -145,6 +166,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'nothing to commit'
           else
-            git commit -m "measure: style-calib-v2 ${{ inputs.phase }} (run ${{ github.run_id }})"
+            git commit -m "measure: style-calib-v2 ${{ needs.prepare.outputs.phase }} (run ${{ github.run_id }}) [skip ci]"
             git push origin HEAD:${{ github.ref_name }}
           fi
