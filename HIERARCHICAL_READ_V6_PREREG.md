@@ -54,11 +54,14 @@ trait   = L/A/X + modifier에서 나온 중간 해상도
 detail  = opp_est의 구체 행동 빈도
 ```
 
-보간은 한 번만 한다.
+보간은 채널당 한 번의 **2차 Bernstein 혼합**으로 한다.
 
 ```
-mid   = coarse * (1-a) + trait * a
-final = mid    * (1-a) + detail * a
+wc = (1-a)^2
+wt = 2*a*(1-a)
+wd = a^2
+
+final = wc*coarse + wt*trait + wd*detail
 ```
 
 여기서 `a`는 채널별 관찰 능력이다.
@@ -72,6 +75,7 @@ final = mid    * (1-a) + detail * a
 - a=0.5 → coarse 25% / trait 50% / detail 25%
 - a=1 → detail 100%
 
+세 weight의 합은 항상 1이다. 같은 신호를 더해서 증폭하지 않는다.
 trait는 중간 능력에서 가장 많이 쓰인다.
 
 ---
@@ -236,3 +240,17 @@ V6:      reads.hierarchical_read_v6
 
 다음 단계에서 행동 차이와 방향을 검토한 뒤,
 사용자와 전략 의미를 확인하고 별도 promotion 여부를 정한다.
+
+
+---
+
+## Amendment A1 — 구현 전 수식 점검
+
+작성 시점: V6 candidate 코드/반사실 측정 **전**.
+
+초안의 prose는 a=0.5에서 25/50/25라고 적었지만,
+처음 적은 연속 lerp 식은 실제로 25/25/50이 된다.
+측정 전에 모순을 발견해 prose의 의도와 일치하도록
+2차 Bernstein weight `(1-a)^2, 2a(1-a), a^2`로 고정했다.
+
+그 외 table, trait 식, seed, 성공 조건은 바꾸지 않았다.
