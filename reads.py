@@ -605,7 +605,8 @@ def hierarchical_belief_v3(est):
     e = est or {}
     sh = style_shadow(e)
 
-    ranked = sorted(sh['probs'].items(), key=lambda kv: (-kv[1], kv[0]))
+    _ord = {name: i for i, name in enumerate(STYLE_V1_NAMES)}
+    ranked = sorted(sh['probs'].items(), key=lambda kv: (-kv[1], _ord[kv[0]]))
     top = ranked[0][0] if ranked else None
     second = ranked[1][0] if len(ranked) > 1 else None
     top_p = ranked[0][1] if ranked else 0.0
