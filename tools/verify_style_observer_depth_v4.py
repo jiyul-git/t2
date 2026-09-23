@@ -47,6 +47,13 @@ def main():
     m = RD.hierarchical_belief_v4(e, mid)
     r = RD.hierarchical_belief_v4(e, reg)
 
+    # session이 쓰는 재사용 경로도 독립 계산과 정확히 같아야 한다.
+    sh = RD.style_shadow(e)
+    h3 = RD.hierarchical_belief_v3(e, style_base=sh)
+    rr = RD.hierarchical_belief_v4(e, reg, hierarchy_base=h3)
+    assert h3 == RD.hierarchical_belief_v3(e)
+    assert rr == r
+
     assert e == before, 'input mutated'
 
     # 같은 상대 관찰이면 coarse/traits/detail 원자료는 관찰자 depth 때문에
