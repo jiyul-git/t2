@@ -1022,6 +1022,169 @@ def exploit_tier_v7(observer_prof, c5=None):
             'see_freq': sf, 'see_line': sl, 'see_size': ss}
 
 
+# ---------- V7 읽기 함수 (LIVE 미배선) ----------
+# 사전등록 HIERARCHICAL_READ_V7_PREREG.md 5절 + Amendment A1-2.
+# 층(coarse/trait/detail)의 **정의는 V6 것을 그대로 쓴다** — hierarchical_read_v6 를
+# 호출해 layer_sources 를 받아온다. 같은 정의를 두 벌 두지 않기 위해서다
+# (layer_sources 는 6자리 반올림이다).
+V7_FREQ_KEYS = ('fold_gap', 'fold_gap_flop', 'fold_gap_turn', 'fold_gap_river',
+                'open_gap', 'limp_gap', 'tb_gap', 'f2tb_gap', 'fb_gap',
+                'f2fb_gap', 'passive')
+V7_LINE_KEYS = ('barrel_gap', 'tb_polar', 'bluff_gap')
+V7_SIZE_KEYS = ('size_gap', 'size_info', 'size_big', 'size_river')
+V7_ALL_KEYS = V7_FREQ_KEYS + V7_LINE_KEYS + V7_SIZE_KEYS
+
+# coarse 표가 직접 정의하는 6채널.
+V7_COARSE6 = ('fold_gap', 'open_gap', 'barrel_gap', 'bluff_gap', 'passive', 'tb_gap')
+# 스트리트별 fold 는 V6 와 같이 generic fold_gap 의 복제다. 새 정보가 아니다.
+V7_COARSE_COPY = ('fold_gap_flop', 'fold_gap_turn', 'fold_gap_river')
+V7_COARSE_DEFINED = V7_COARSE6 + V7_COARSE_COPY
+# coarse 가 정의하지 않는 정밀 채널. 1~3단계에서 구조적으로 중립이어야 한다.
+V7_PRECISE = ('limp_gap', 'tb_polar', 'f2tb_gap', 'fb_gap', 'f2fb_gap',
+              'size_gap', 'size_info', 'size_big', 'size_river')
+# 2단계가 쓰는 큰 인상 두 개.
+V7_IMPRESSION = ('open_gap', 'passive')
+
+V7_NEUTRAL_SIZE_RIVER = 0.62
+
+# 각 채널의 V6 최종 clamp 범위. 4단계 정성 양자화의 격자가 여기서 나온다.
+V7_RANGES = {
+    'fold_gap': (-0.5, 0.5), 'fold_gap_flop': (-0.5, 0.5),
+    'fold_gap_turn': (-0.5, 0.5), 'fold_gap_river': (-0.5, 0.5),
+    'f2tb_gap': (-0.5, 0.5), 'f2fb_gap': (-0.5, 0.5),
+    'open_gap': (-1.0, 2.0), 'limp_gap': (-0.5, 1.5),
+    'barrel_gap': (-1.0, 1.0), 'bluff_gap': (-1.0, 1.0),
+    'passive': (-1.0, 1.0), 'size_gap': (-1.0, 1.0),
+    'tb_gap': (-2.0, 2.0), 'fb_gap': (-3.0, 3.0),
+    'tb_polar': (0.0, 1.0), 'size_info': (0.0, 1.0), 'size_big': (0.0, 1.0),
+    'size_river': (0.0, 2.0),
+}
+V7_QUAL_STEPS = 5          # 정성 격자의 점 개수. 방향 + 대략의 크기만 남긴다.
+
+
+def _v7_axis_of(k):
+    if k in V7_SIZE_KEYS:
+        return 'size'
+    if k in V7_LINE_KEYS:
+        return 'line'
+    return 'freq'
+
+
+def v7_qual(x, k):
+    """채널의 clamp 범위 위 5점 격자로 양자화. 정확한 빈도를 지운다."""
+    lo, hi = V7_RANGES[k]
+    x = max(lo, min(hi, float(x)))
+    step = (hi - lo) / float(V7_QUAL_STEPS - 1)
+    return lo + round((x - lo) / step) * step
+
+
+def _v7_neutral():
+    out = {'w': 0.0, 'see_freq': 0.0, 'see_line': 0.0, 'see_size': 0.0,
+           'tier': 1, 'tier_name': TIER_V7_NAMES[0], 'E': 0.0, 'Q': 0.0,
+           's': 0.0, 'data': 0.0, 'coarse_top': None, 'coarse_probs': {},
+           'layer_sources': {}, 'prior': {}, 'evidence': {}}
+    for k in V7_ALL_KEYS:
+        out[k] = 0.0
+    out['size_river'] = V7_NEUTRAL_SIZE_RIVER
+    return out
+
+
+def hierarchical_read_v7(observer_prof, opp_est, belief_base=None):
+    """HIERARCHICAL_READ_V7 action-facing SHADOW candidate.
+
+    target 의 hidden profile/concepts 는 읽지 않는다. 입력은 observer 자신의
+    profile 과 perceived_profile(opp_est) 뿐이다. production read_opponent 를
+    대체하지 않는다. LIVE 미배선.
+    """
+    out = _v7_neutral()
+    if not observer_prof or not observer_prof.get('concepts') or not opp_est:
+        return out
+
+    import persona as _PS
+    tinfo = exploit_tier_v7(observer_prof)
+    tier = tinfo['tier']
+    res = _PS.read_resolution(observer_prof)
+    sf, sl, ss = res['see_freq'], res['see_line'], res['see_size']
+    use = float(res['use'])
+    out['see_freq'] = round(sf, 3)
+    out['see_line'] = round(sl, 3)
+    out['see_size'] = round(ss, 3)
+    out['tier'] = tier
+    out['tier_name'] = tinfo['name']
+    out['E'] = round(tinfo['E'], 6)
+    out['Q'] = round(tinfo['Q'], 6)
+
+    conf = max(0.0, min(1.0, float(opp_est.get('confidence', 0.0) or 0.0)))
+    n = max(0.0, float(opp_est.get('n', 0) or 0))
+    if tier <= 1 or conf <= 0.0 or n <= 0.0 or use <= 0.0:
+        # 1단계는 w 까지 0 이다. 상대별 조정이 구조적으로 없다.
+        return out
+
+    data = conf * min(1.0, n / 12.0)
+    w = max(0.0, min(0.85, use * data))
+    s = max(0.0, min(1.0, float(tinfo['E'])))
+    out['w'] = round(w, 3)
+    out['s'] = round(s, 6)
+    out['data'] = round(data, 6)
+
+    v6 = hierarchical_read_v6(observer_prof, opp_est, belief_base=belief_base)
+    ls = v6.get('layer_sources') or {}
+    coarse, trait, detail = ls.get('coarse') or {}, ls.get('trait') or {}, ls.get('detail') or {}
+    if not coarse:
+        return out
+    out['coarse_top'] = v6.get('coarse_top')
+    out['coarse_probs'] = dict(v6.get('coarse_probs') or {})
+    out['layer_sources'] = {'coarse': dict(coarse), 'trait': dict(trait),
+                            'detail': dict(detail)}
+
+    a_of = {'freq': sf, 'line': sl, 'size': ss}
+    data_eff = data if tier >= 4 else 0.0
+    prior_rec, evid_rec = {}, {}
+
+    for k in V7_ALL_KEYS:
+        a = a_of[_v7_axis_of(k)]
+        # ---- prior ----
+        if tier == 2:
+            prior = coarse.get(k, 0.0) if k in V7_IMPRESSION else 0.0
+        elif tier == 3:
+            prior = coarse.get(k, 0.0) if k in V7_COARSE_DEFINED else 0.0
+        elif tier == 4:
+            prior = ((1.0 - a) * coarse.get(k, 0.0) + a * trait.get(k, 0.0)
+                     if k in V7_COARSE_DEFINED else 0.0)
+        else:
+            if k in V7_COARSE_DEFINED:
+                prior = (1.0 - a) * coarse.get(k, 0.0) + a * trait.get(k, 0.0)
+            else:
+                prior = trait.get(k, 0.0)
+        # ---- evidence ----
+        if tier >= 5:
+            evid = detail.get(k, 0.0)
+        elif tier == 4:
+            evid = v7_qual(detail.get(k, 0.0), k)
+        else:
+            evid = 0.0
+        prior_rec[k] = prior
+        evid_rec[k] = evid
+
+        if k == 'size_river':
+            # 상대 사이즈의 절대값. gap 이 아니므로 s 를 곱하지 않는다.
+            base = prior if tier >= 5 else V7_NEUTRAL_SIZE_RIVER
+            out[k] = (1.0 - data_eff) * base + data_eff * evid
+        else:
+            out[k] = (1.0 - data_eff) * s * prior + data_eff * evid
+
+    out['prior'] = {k: round(float(v), 6) for k, v in prior_rec.items()}
+    out['evidence'] = {k: round(float(v), 6) for k, v in evid_rec.items()}
+
+    # V6 와 같은 범위 보존.
+    for k, (lo, hi) in V7_RANGES.items():
+        if k == 'size_river':
+            out[k] = max(0.0, float(out[k]))
+        else:
+            out[k] = max(lo, min(hi, float(out[k])))
+    return out
+
+
 # ===================== OpponentBelief =====================
 # 관찰자는 상대의 개념 벡터를 **볼 수 없다.** 볼 수 있는 것은 행동 빈도뿐이다.
 # 그래서 순서가 이렇게 되어야 한다.
