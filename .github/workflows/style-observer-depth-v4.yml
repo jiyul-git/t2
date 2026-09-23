@@ -1,0 +1,38 @@
+name: style-observer-depth-v4
+
+on:
+  push:
+    branches:
+      - chatgpt/style-observer-depth-v4
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python3 -m compileall -q reads.py session.py tools/verify_style_observer_depth_v4.py
+      - name: Observer depth contract
+        run: python3 tools/verify_style_observer_depth_v4.py
+      - name: Hierarchy v3 contract
+        run: python3 tools/verify_style_hierarchy_v3.py
+      - name: Style v1 contract
+        run: python3 tools/verify_style_shadow.py
+      - name: OOP semantics
+        run: python3 tools/verify_oop_semantics.py
+      - name: Blockbet selftest
+        run: python3 tools/selftest_blockbet.py
+      - name: Replan context
+        run: python3 tools/verify_replan_context.py
+      - name: Current regression
+        run: python3 tools/regress.py check --baseline current
