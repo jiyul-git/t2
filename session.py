@@ -823,11 +823,14 @@ class HandRun:
                 _style_shadow = RD.style_shadow(_est) if _est is not None else None
                 # STYLE_HIERARCHY_V3 SHADOW: 큰 스타일 가설 -> 연속 성향 ->
                 # 구체 공개행동 추정. 기록만 하고 판단 인자에는 전달하지 않는다.
-                _style_hierarchy_v3 = (RD.hierarchical_belief_v3(_est)
+                _style_hierarchy_v3 = (RD.hierarchical_belief_v3(
+                                            _est, style_base=_style_shadow)
                                        if _est is not None else None)
                 # V4 SHADOW: 같은 상대모델이라도 관찰자 자신의 읽기 능력에 따라
                 # coarse / trait / detail 접근 깊이가 달라진다.
-                _style_hierarchy_v4 = (RD.hierarchical_belief_v4(_est, ax)
+                _style_hierarchy_v4 = (RD.hierarchical_belief_v4(
+                                            _est, ax,
+                                            hierarchy_base=_style_hierarchy_v3)
                                        if _est is not None else None)
                 _ostk = (r2.stacks.get(_main, 0)/h.bb) if _main is not None else None
                 # 계획 갱신은 update_plan 하나로 들어간다.
