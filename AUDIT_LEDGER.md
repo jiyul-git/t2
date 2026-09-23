@@ -41,15 +41,17 @@ c05679d  REPLAN_CONTEXT_RESULT.md
 
 ## 1. A — 구현돼 있으나 문서화되지 않은 개념
 
-### A-1  style belief / STYLE_MODEL_V1
-- **기존 경로** `style_hypotheses → concept_belief → opponent_belief` 와 `style_sig.json/style_prior.json` 은 남아 있으나 production 의사결정에는 여전히 미배선이다. 같은 행동을 direct 경로와 style 경로에서 이중 계상할 위험 때문에 바로 LIVE 하지 않는다
-- **새 SHADOW 경로** `STYLE_MODEL_V1.md` 사전등록에 따라 `reads.style_shadow` 가 공개행동 추정치만으로 L/A/X, 6개 스타일 확률, entropy certainty, modifier를 계산한다
-- **기본 스타일** NIT · TAG · LAG · LOOSE_PASSIVE · TIGHT_PASSIVE · MANIAC. STATION/BLUFFY/LIMP_HEAVY 등은 modifier로 분리한다
-- **production 도달** 기록층에는 있음 — `session.py` intent snapshot에 `style_target/style_target_pid/style_shadow`를 남긴다. plan/range/sizing/read_opponent 입력에는 전달하지 않는다
-- **행동 영향** 0. current regression 전 시드 fingerprint 일치, VPIP 19.1 / PFR 11.4 / flop 44.4 동일
-- **동적 검증** `tools/verify_style_shadow.py` + OOP semantics + blockbet + replan context + current regression 전부 PASS. 상세 `STYLE_SHADOW_V1_RESULT.md`
-- **상태** `DOCUMENT` — SHADOW wired, LIVE는 아님
-- **다음 조치** 자연상태 posterior 안정성·holdout 미래행동 예측력을 먼저 측정한다. style→concept/exploit 연결은 그 결과를 본 뒤 별도 승격한다
+### A-1  style belief / hierarchical opponent model
+- **기존 latent 경로** `style_hypotheses → concept_belief → opponent_belief` 와 `style_sig.json/style_prior.json` 은 production 의사결정에는 여전히 미배선이다. 같은 행동을 direct와 style 경로에서 이중 계상할 위험 때문에 LIVE 하지 않는다
+- **V1 SHADOW** `reads.style_shadow` 가 공개행동 추정치만으로 L/A/X, NIT·TAG·LAG·LOOSE_PASSIVE·TIGHT_PASSIVE·MANIAC 6개 확률, entropy certainty, modifier를 계산한다
+- **V1 자연상태 결과** certainty 상승·entropy/flip 감소는 재현됐으나, empirical population baseline을 쓰기 전의 임의 `(5,5,1)` 기준에서조차 사전등록 10% 개선 gate는 못 넘었다. MANIAC top1은 0이었다
+- **V2 calibration 결과** 별도 `claude/style-calib-v2` 브랜치에 보존. unconstrained k-means는 MANIAC을 tight-aggressive cluster에, TAG를 NIT보다 낮은 aggression cluster에 배정해 의미를 깨뜨렸고 holdout A/B 모두 G1 FAIL. posterior는 더 날카로워졌지만 empirical population mean보다 예측이 나빠 overconfidence로 판정했다. V2 params는 integration에 넣지 않는다
+- **V3 SHADOW** `STYLE_HIERARCHY_V3.md`에 따라 `reads.hierarchical_belief_v3`를 추가. Layer1=coarse 6-style hypothesis, Layer2=L/A/X+modifier+top-center residual, Layer3=구체 공개행동 estimate/prior/delta. 상위 label이 하위 숫자를 덮어쓰지 않는다
+- **production 도달** 기록층에는 있음 — `session.py` intent snapshot에 `style_shadow`와 `style_hierarchy_v3`를 남긴다. plan/range/sizing/read_opponent 입력에는 전달하지 않는다
+- **행동 영향** 0. V3 검증에서 current regression 전 시드 fingerprint 일치, VPIP 19.1 / PFR 11.4 / flop 44.4 동일
+- **동적 검증** hierarchy contract + V1 style contract + OOP semantics + blockbet + replan context + current regression 전부 PASS. 상세 `STYLE_HIERARCHY_V3_RESULT.md`
+- **상태** `DOCUMENT` — 계층형 SHADOW wired, LIVE는 아님
+- **다음 조치** 실제 판단 연결은 Layer3 특정 행동 예측력 → Layer2 추가정보 순서로 검증한다. coarse style 문자열을 action rule에 직접 넣지 않는다
 
 ### A-2  money pressure 서브시스템
 - **파일:라인** `money_pressure.py` 전체 · 생산 `session.py:37 _money_jump_observe` · 소비 `session.py:489 PL.preflop_plan(money_open=…)` → `preflop.py:305 thr *= range_factor`
