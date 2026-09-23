@@ -40,8 +40,8 @@ def pear(x, y):
     return float(np.corrcoef(x, y)[0, 1])
 
 
-def partial(x, y, ctrl):
-    X = np.column_stack([np.asarray(ctrl, float), np.ones(len(x))])
+def partial(x, y, *ctrls):
+    X = np.column_stack([np.asarray(c, float) for c in ctrls] + [np.ones(len(x))])
     def res(v):
         v = np.asarray(v, float)
         b, *_ = np.linalg.lstsq(X, v, rcond=None)
@@ -52,12 +52,14 @@ def partial(x, y, ctrl):
 def profile_row(prof, states, evs):
     reg = {c: [] for c in CELLS}
     reg_n = {'small': [], 'large': []}
+    rates = []
     for s in states:
         mix, _ = FX.bot_action(s, prof, random.Random(FX.FIX_SEED + s.sid))
         r = FX.regret_of(s, mix, evs[s.sid])
         reg[(s.group, s.channel)].append(r)
         if s.group == 'READ':
             reg_n['small' if s.n_obs <= 6 else 'large'].append(r)
+            rates.append(mix.get('call', mix.get('bet', 0.0)))
     row = {c[0] + '_' + c[1]: float(np.mean(v)) for c, v in reg.items()}
     row['READ_all'] = float(np.mean(reg[('READ', 'D')] + reg[('READ', 'A')]))
     row['GEN_all'] = float(np.mean(reg[('GEN', 'D')] + reg[('GEN', 'A')]))
@@ -66,6 +68,7 @@ def profile_row(prof, states, evs):
     row['QX_E'] = B.evaluate(prof)['QX_E']
     row['QX_S'] = ES.evaluate(prof)['QX_S']
     row['overall'] = float(np.mean([PS.sk(prof, c) for c in PS.CALC]))
+    row['act_rate'] = float(np.mean(rates))      # READ 에서의 콜/벳 빈도
     return row
 
 
@@ -76,6 +79,10 @@ def collect(seeds, entries, n, states, evs):
 
 def report_set(rows, label):
     print('\n=== %s (n=%d) ===' % (label, len(rows)))
+    print('READ 콜/벳 빈도 평균 %.4f   regret~빈도 r %+.4f'
+          % (float(np.mean([r['act_rate'] for r in rows])),
+             pear([r['act_rate'] for r in rows],
+                  [-r['READ_all'] for r in rows])))
     print('regret (팟 대비) 평균  ' + '  '.join(
         '%s %.4f' % (k, float(np.mean([r[k] for r in rows])))
         for k in ('READ_all', 'GEN_all', 'READ_smalln', 'READ_largen')))
@@ -90,16 +97,21 @@ def report_set(rows, label):
             vals[k] = pear(x, [-r[k] for r in rows])
         pr = partial(x, [-r['READ_all'] for r in rows], ctrl)
         vals['partial_READ'] = pr
+        # 잔여 행동빈도 편향(Amendment A1-1)까지 통제한 것도 같이 본다
+        vals['partial_READ_act'] = partial(
+            x, [-r['READ_all'] for r in rows], ctrl,
+            [r['act_rate'] for r in rows])
         vals['READ_smalln'] = pear(x, [-r['READ_smalln'] for r in rows])
         vals['READ_largen'] = pear(x, [-r['READ_largen'] for r in rows])
         out[qx] = vals
         print('%-10s %+10.4f %+10.4f %+10.4f %+10.4f %+10.4f'
               % (qx, vals['READ_all'], vals['READ_D'], vals['READ_A'],
                  vals['GEN_all'], pr))
-    print('%-10s %10s %10s' % ('', 'READ n=6', 'READ n=40'))
+    print('%-10s %10s %10s %14s' % ('', 'READ n=6', 'READ n=40', 'partial+actrate'))
     for qx in ('QX_E', 'QX_S'):
-        print('%-10s %+10.4f %+10.4f'
-              % (qx, out[qx]['READ_smalln'], out[qx]['READ_largen']))
+        print('%-10s %+10.4f %+10.4f %+14.4f'
+              % (qx, out[qx]['READ_smalln'], out[qx]['READ_largen'],
+                 out[qx]['partial_READ_act']))
     # 사분위 분할
     for qx in ('QX_E', 'QX_S'):
         x = np.asarray([r[qx] for r in rows])

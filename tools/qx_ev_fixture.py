@@ -16,6 +16,7 @@ import math
 import os
 import random
 import sys
+import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, 'tools')
@@ -30,10 +31,11 @@ import ranges as R
 import reads as RD
 
 FIX_SEED = 20260925
-MC = 240                 # 상태당 연속구간 표본
+MC = 1200               # 상태당 연속구간 표본 (뒤집힘점 탐색이 MC 노이즈에 흔들리지 않게)
 EQ_SIMS = 400
 
-HERO_HANDS = (['Ah', 'Jd'], ['Qs', 'Qc'], ['9h', '8h'])
+HERO_HANDS = (['Ah', 'Jd'], ['Qs', 'Qc'], ['9h', '8h'],
+              ['7h', '6c'], ['Ad', '3c'], ['Kh', 'Qd'])
 BOARDS = (['Kc', '7d', '2s', '5h'], ['Jh', 'Th', '4c', '2d'])
 POT = 1000.0
 STACK = 6000.0
@@ -147,8 +149,16 @@ class State(object):
 
     def ev_actions(self):
         """후보 행동별 EV (팟 대비 비율). common random numbers."""
+        # 시드는 **상태 내용**에서 유도한다. sid 로 잡으면 뒤집힘점 탐색용
+        # 프로브(sid=-1)와 실제 상태가 서로 다른 표본을 보게 되어 탐색 결과가
+        # 실제 EV 와 어긋난다. 내용 기반이라 같은 상태는 항상 같은 표본이다.
+        key = (tuple(sorted(self.hero)), tuple(self.board), round(self.sz, 4),
+               round(self.b_true, 4), self.channel, round(self.barrel_true, 4),
+               round(self.f_bluff, 4), round(self.f_value, 4),
+               round(self.sz_river, 4))
         draws = []
-        rng = random.Random(FIX_SEED * 7919 + self.sid)
+        rng = random.Random((FIX_SEED * 7919
+                             + zlib.crc32(repr(key).encode())) & 0x7fffffff)
         for _ in range(MC):
             draws.append((rng.random(), rng.random(), rng.random(), rng.random()))
 
@@ -179,24 +189,89 @@ class State(object):
         return {'check': run('check'), 'bet': run('bet')}
 
 
+READ_B = (0.15, 0.35, 0.55, 0.75)
+SZ_GRID = (0.35, 0.50, 0.66, 0.85, 1.10, 1.40, 1.80)
+AGGR = {'D': 'call', 'A': 'bet'}
+
+
+B_SCAN = tuple(0.05 + 0.05 * i for i in range(18))      # 0.05 ~ 0.90
+
+
+def _flip_point(ch, hero, board, sz):
+    """최적 행동이 공격 -> 수비(또는 반대)로 바뀌는 b_true. 없으면 None."""
+    prev = None
+    for b in B_SCAN:
+        ev = State(-1, ch, 'READ', hero, board, sz, b, 40).ev_actions()
+        cur = (max(ev, key=lambda a: ev[a]) == AGGR[ch])
+        if prev is not None and cur != prev:
+            return b
+        prev = cur
+    return None
+
+
+def _pick_read_cells(ch, board, k=3):
+    """뒤집힘점이 (0.35, 0.55) 안에 드는 (핸드, 가격) 조합을 최대 k개 고른다.
+    그 구간 안이면 READ_B 4수준 중 정확히 2개가 공격 최적이 되어 균형이 잡힌다."""
+    cand = []
+    for hero in HERO_HANDS:
+        for sz in SZ_GRID:
+            bstar = _flip_point(ch, hero, board, sz)
+            if bstar is not None and 0.35 < bstar < 0.55:
+                cand.append((abs(bstar - 0.45), tuple(hero), sz, bstar))
+    cand.sort()
+    if not cand:
+        h, z, bs = _pick_read_cell(ch, board)
+        return [(list(h) if isinstance(h, tuple) else h, z, bs)]
+    seen, out = set(), []
+    for _, hero, sz, bstar in cand:
+        if hero in seen:
+            continue
+        seen.add(hero)
+        out.append((list(hero), sz, bstar))
+        if len(out) >= k:
+            break
+    return out
+
+
+def _pick_read_cell(ch, board):
+    """Amendment A1-1 — 최적 행동의 뒤집힘점이 b_true 격자 한가운데 오도록
+    (히어로 핸드, 가격)을 고른다. 그래야 4개 수준 중 2개가 공격 최적이 되어
+    주변 분포가 균형을 이루고, b_true 를 읽는 것 말고 이길 방법이 없다.
+    가격만 흔들어서는 패 강도가 지배해 균형이 안 잡힌다(첫 시도 실패).
+    """
+    best = None
+    for hero in HERO_HANDS:
+        for sz in SZ_GRID:
+            bstar = _flip_point(ch, hero, board, sz)
+            if bstar is None:
+                continue
+            key = (abs(bstar - 0.45), abs(sz - 0.66))
+            if best is None or key < best[0]:
+                best = (key, hero, sz, bstar)
+    if best is None:
+        return HERO_HANDS[0], 0.66, None
+    return best[1], best[2], best[3]
+
+
 def build_states():
     """GEN / READ x D / A."""
     out = []
     sid = 0
     prior_b = RD.PRIOR['bluff'] / 10.0
     for ch in ('D', 'A'):
-        for hero in HERO_HANDS:
-            for board in BOARDS:
-                # GEN — 상대는 모집단 기준, 가격만 흔든다
+        for board in BOARDS:
+            # GEN — 상대는 모집단 기준, 가격과 패 강도만 흔든다
+            for hero in HERO_HANDS:
                 for sz in (0.30, 0.60, 1.00):
                     out.append(State(sid, ch, 'GEN', hero, board, sz,
                                      prior_b, 40))
                     sid += 1
-                # READ — 가격 고정, 진짜 블러프 비율을 극단으로
-                for b in (0.15, 0.35, 0.55, 0.75):
+            # READ — 뒤집힘점이 (0.35, 0.55) 안에 드는 조합들
+            for hero_r, sz_r, _bs in _pick_read_cells(ch, board, k=3):
+                for b in READ_B:
                     for n in (6, 40):
-                        out.append(State(sid, ch, 'READ', hero, board, 0.66,
-                                         b, n))
+                        out.append(State(sid, ch, 'READ', hero_r, board,
+                                         sz_r, b, n))
                         sid += 1
     return out
 
@@ -213,9 +288,14 @@ def bot_action(state, prof, rng):
                    + (1.0 - state.b_true) * state.eq_val)
         return {'call': 1.0 if eq_true >= need else 0.0,
                 'fold': 0.0 if eq_true >= need else 1.0}, need
-    p, _ = PL.decide_aggression(prof, state.board, 'turn', 'giveup', 0.20, 1,
-                                False, True, 0, rng, opp_est=est, outs=0)
-    p = max(0.0, min(1.0, float(p)))
+    # Amendment A1-2: giveup 만 부르면 cbet_freq 이탈 경로만 타고
+    # fold_equity 블록에 도달하지 못한다. QX_E 의 A 계열과 같이 두 경로 평균.
+    tot = 0.0
+    for pl, outs in (('giveup', 0), ('semibluff', 9)):
+        q, _ = PL.decide_aggression(prof, state.board, 'turn', pl, 0.20, 1,
+                                    False, True, 0, rng, opp_est=est, outs=outs)
+        tot += float(q)
+    p = max(0.0, min(1.0, tot / 2.0))
     return {'bet': p, 'check': 1.0 - p}, p
 
 
