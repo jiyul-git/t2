@@ -960,6 +960,68 @@ def hierarchical_read_v6(observer_prof, opp_est, belief_base=None):
     return out
 
 
+# ===================== HIERARCHICAL_READ_V7 — 익스플로잇 능력 구간 =====================
+# LIVE 미배선. 사전등록: HIERARCHICAL_READ_V7_PREREG.md 2·3절.
+# 관찰(attention/range_read/sizing_tell)과 적용(adaptability)을 분리하고
+# 곱과 최솟값으로 묶는다. 한 축만 높은 사람은 위 구간으로 못 간다.
+TIER_V7_NAMES = ('NO_EXPLOIT', 'IMPRESSION', 'STYLE_EXPLOIT',
+                 'QUALITATIVE_REG', 'QUANTITATIVE_EXPERT')
+
+# 경계는 read_resolution 의 _see(v)=clamp((v-2)/6,0,1) 앵커에서 유도했다.
+# 네 축이 전부 개념 레벨 v 면 E = _see(v)^2 이다. v = 4 / 5 / 6.
+TIER_V7_CUTS = (1.0/9.0, 1.0/4.0, 4.0/9.0)
+
+# 5단계 컷. **유일한 적합 파라미터.** 400인 필드에서 3~4명을 겨냥해
+# tools/v7_tier_population.py 로 적합한다. 적합 전에는 None 이고 그때는
+# 5단계가 나오지 않는다 (구간 4 가 상한).
+TIER_V7_C5 = 0.7087277777777778   # 적합값 — tools/v7_tier_population.py, 860001..860050
+
+# persona.CALC 안에서 빈도·확률·레인지를 수로 다루는 개념만 고른 것.
+TIER_V7_NUMERIC = ('range_read', 'potodds', 'spr', 'blocker',
+                   'fold_equity', 'board_texture')
+
+
+def exploit_tier_v7(observer_prof, c5=None):
+    """관찰자의 익스플로잇 능력 구간. 상대 정보를 전혀 읽지 않는다.
+
+    입력은 관찰자 자신의 프로필뿐이다. 반환값은 기록/검증 전용이며
+    이 함수 단독으로는 어떤 판단에도 들어가지 않는다.
+    """
+    import persona as _PS
+    if not observer_prof or not observer_prof.get('concepts'):
+        return {'tier': 1, 'name': TIER_V7_NAMES[0], 'E': 0.0, 'Q': 0.0,
+                'obs_mean': 0.0, 'obs_min': 0.0, 'app': 0.0, 'num': 0.0,
+                'see_freq': 0.0, 'see_line': 0.0, 'see_size': 0.0}
+
+    res = _PS.read_resolution(observer_prof)
+    sf, sl, ss = res['see_freq'], res['see_line'], res['see_size']
+    app = res['use']
+    obs_mean = (sf + sl + ss) / 3.0
+    obs_min = min(sf, sl, ss)
+    E = app * (0.5 * obs_mean + 0.5 * obs_min)
+
+    num = sum(_PS.sk(observer_prof, c) for c in TIER_V7_NUMERIC)
+    num = max(0.0, min(1.0, num / (10.0 * len(TIER_V7_NUMERIC))))
+    Q = E * num
+
+    cut5 = TIER_V7_C5 if c5 is None else c5
+    c1, c2, c3 = TIER_V7_CUTS
+    if cut5 is not None and Q >= cut5:
+        t = 5
+    elif E >= c3:
+        t = 4
+    elif E >= c2:
+        t = 3
+    elif E >= c1:
+        t = 2
+    else:
+        t = 1
+    return {'tier': t, 'name': TIER_V7_NAMES[t - 1],
+            'E': E, 'Q': Q, 'obs_mean': obs_mean, 'obs_min': obs_min,
+            'app': app, 'num': num,
+            'see_freq': sf, 'see_line': sl, 'see_size': ss}
+
+
 # ===================== OpponentBelief =====================
 # 관찰자는 상대의 개념 벡터를 **볼 수 없다.** 볼 수 있는 것은 행동 빈도뿐이다.
 # 그래서 순서가 이렇게 되어야 한다.
