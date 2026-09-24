@@ -219,6 +219,81 @@ D   make_plan 이 barrel_size·bluff_mode 를, trap_judgment 가 opp_bet_prob �
 확인됐다. **역추론 연구의 전제는 확보됐다. 이 줄기를 더 파지 않는다.**
 다음은 아래 **현재 조사** 이고 `eq` ↔ `rel` 모순부터 본다.
 
+## 상대 읽기 / 익스플로잇 연구 묶음 — 닫혔다 (근거 지위)
+
+`plan.py` 무수정. production 무수정. 새 축 없음. 다섯 단계가 한 줄로 이어진다.
+
+```
+READ_USE_SEPARATION      읽기 정확도(R)와 조정 강도(U)를 2×2 로 인과 분리
+   │                     u 고정에서 R 만 올려도 수비 regret −15%. 깨끗한 설계
+   ↓
+SYNTH_CHANNEL_SPLIT      QX_EV 의 PIPE_ONLY null 은 채널 간 상쇄였다
+   │                     (24×(+0.00527) + 48×(−0.00200))/72 = +0.00042
+   │                     그리고 공격의 음수는 fixture 배선 오류였다
+   ↓
+ATTACK_FIXTURE_FIX       ftb 를 b_true 와 독립 파라미터로 분리해 재측정
+   │                     n=40 에서 ΔR +0.0029/+0.0026 (FLOOR 통과)
+   ↓
+READ_SAMPLE_CURVE        n 8~40 곡선. 공격 문턱은 (24, 40] 구간
+                         공격 Spearman(n, ΔR) = +1.000, 수비는 전 구간 FLOOR 위
+```
+
+### 근거에서 내려놓은 것
+
+**`PIPE_ONLY` / `CALC_ONLY` 합성 arm 기반의 "능력" 해석을 쓰지 마라.**
+(`QX_EV_VALIDATION` 1-4 절, `SYNTH_CHANNEL_SPLIT` 의 arm 해석)
+
+`tier5_axis_validate.make_arms` 의 두 arm 은 읽기 파이프라인만 다른 것이
+아니라 `PS.CALC` 에서 `range_read`·`sizing_tell` 을 뺀 **APPLY 개념 ~20개가
+통째로 반대**다. 그리고 `decide_aggression`·`cbet_freq` 는 그것들을 상대
+추정치 없이 직접 읽는다. 실측으로 확정됐다 — `n_obs = 6` 에서 `w ≈ 0.11` 로
+읽기 조정이 거의 없는데도 두 arm 의 벳 확률이 이미 **−0.016** 벌어져 있다
+(`ATTACK_FIXTURE_FIX` Amendment D1).
+
+**`SYNTH_CHANNEL_SPLIT` 의 채널 상쇄 산술은 그대로 유효하다** — 같은 수치를
+다시 묶은 것이므로. 바뀌는 것은 arm 에 붙인 능력 이름뿐이다.
+
+### 주 근거로 유지하는 것
+
+**`READ_USE_SEPARATION` 계열의 R 축.** 실제 프로필의 **믿음만**
+(`reads.estimate` 반환값) 모집단 사전분포로 블렌드하고 나머지를 비트까지
+고정한다. `n`·`confidence` 를 블렌드에서 빼므로 `w` 가 불변이고 난수 소비도
+같다. `ATTACK_FIXTURE_FIX` 보조 분석과 `READ_SAMPLE_CURVE` 가 같은 설계다.
+
+**조작 점검에 상관을 쓰지 마라.** R 축 개입이 양의 아핀 변환이라 피어슨
+상관은 **불변**이다. 기울기와 sd 로 잰다 — 이론 비율 `A_HI/A_LO = 5.0`
+(`ATTACK_FIXTURE_FIX` Amendment D2).
+
+### 확정된 수치 (FLOOR = 0.002 팟, 묶음 전체 공통)
+
+```
+수비   n = 8 부터 이미 FLOOR 위. +0.0015 ~ +0.0082. 단조가 아니다(원인 미상)
+공격   n 에 대해 완전 단조(+1.000). +0.00012 ~ +0.0029. 문턱은 (24, 40]
+비율   수비/공격이 n=8 에서 35~43배, n=40 에서 2.6~3.2배로 좁혀진다
+```
+
+**`stat_read` 를 단일 스칼라로 넣지 마라.** 같은 축이 두 채널에 같은 크기로
+작용하면 표본이 적은 국면에서 공격 쪽을 한 자릿수 배수로 과대 반영한다.
+채널별 분리가 선행되어야 한다. 구현한다면 **pid 유도 독립 RNG** 여야 한다 —
+`persona.LOADING` 순회에 키를 추가하면 `rng.gauss` 순서가 밀려 지문·baseline
+3세대·V7 `c5` 가 전부 무효가 된다.
+
+**기전을 추측해서 적지 마라.** 이 묶음에서 기전 예측을 세 번 했고
+(리버 블러프 0건은 앞선 기록, 공격 `n=6` 손해의 위치, 수비 곡선의 진동)
+**뒤의 둘은 데이터가 기각했다.** 수비 진동의 원인은 미상으로 남긴다.
+
+```
+문서   READ_USE_SEPARATION_{PREREG,RESULT}.md   docs/READ_USE_SEPARATION.png
+       SYNTH_CHANNEL_SPLIT_{PREREG,RESULT}.md   docs/AGGR_INFO_PATH.png
+       ATTACK_FIXTURE_FIX_{PREREG,RESULT}.md    docs/ATTACK_FIXTURE_FIX.png
+       READ_SAMPLE_CURVE_{PREREG,RESULT}.md     docs/READ_SAMPLE_CURVE.png
+도구   tools/read_use_{fixture,check,2x2}.py · tools/synth_channel_split.py
+       tools/aggr_info_path.py · tools/attack_{fixture,read_measure,read_aux}.py
+       tools/read_sample_curve.py
+```
+
+**다음은 A5 blockbet → `revise_plan` context 계약이다. 이 줄기를 더 파지 않는다.**
+
 ## 계층 구조
 
 | 대장 | 모듈 | 상태 |
