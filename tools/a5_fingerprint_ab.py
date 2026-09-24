@@ -61,7 +61,24 @@ def fingerprint():
     import tourney as T
     import plan as PL
     cnt = collections.Counter()
+    ev = []                    # block 이 걸린 자리의 최종 의도
     _omk = PL.make_plan
+    _oai = PL.attach_intent
+
+    def wrap_ai(st, hero, board, my_range, opp_range, profile, pot, stack,
+                street, rng, n_opp, to_act_behind, oop, initiative,
+                opp_est=None, **kw):
+        out = _oai(st, hero, board, my_range, opp_range, profile, pot, stack,
+                   street, rng, n_opp, to_act_behind, oop, initiative,
+                   opp_est, **kw)
+        why = list((out or {}).get('why') or [])
+        if any('블락벳으로 가격 통제' in str(x) and str(x).startswith(street + ': ')
+               for x in why):
+            it = ((out or {}).get('intents') or {}).get(street) or {}
+            ev.append({'street': street, 'plan': (out or {}).get('plan'),
+                       'act': it.get('act'), 'size': it.get('size'),
+                       'pid': profile.get('id')})
+        return out
 
     def wrap(hero, board, my_range, opp_range, profile, pot, stack, street,
              **kw):
@@ -73,6 +90,7 @@ def fingerprint():
             cnt['plan_block'] += 1
         return st
     PL.make_plan = wrap
+    PL.attach_intent = wrap_ai
     per_seed = {}
     try:
         for sd in SEEDS:
@@ -94,7 +112,8 @@ def fingerprint():
                 '\n'.join(rows).encode()).hexdigest()[:16]
     finally:
         PL.make_plan = _omk
-    return per_seed, dict(cnt)
+        PL.attach_intent = _oai
+    return per_seed, dict(cnt), ev
 
 
 def main():
@@ -105,8 +124,8 @@ def main():
 
     if a.variant:                         # 자식 프로세스
         import json
-        ps, cnt = fingerprint()
-        print('@@RESULT@@' + json.dumps({'seeds': ps, 'cnt': cnt}))
+        ps, cnt, ev = fingerprint()
+        print('@@RESULT@@' + json.dumps({'seeds': ps, 'cnt': cnt, 'ev': ev}))
         return 0
 
     import json
@@ -142,6 +161,15 @@ def main():
             c = out[k]['cnt']
             print('    %-4s  block_msg %d   plan_block %d'
                   % (k, c.get('block_msg', 0), c.get('plan_block', 0)))
+        print('\n  block 이 걸린 자리의 최종 의도')
+        for k in ('cur', 'pre'):
+            e = out[k].get('ev') or []
+            if not e:
+                print('    %-4s  (attach_intent 에서 현재 스트리트 block 흔적 없음)' % k)
+            for r in e:
+                print('    %-4s  pid %s  %s  plan=%s  act=%s  size=%s'
+                      % (k, r['pid'], r['street'], r['plan'], r['act'],
+                         r['size']))
         print('\n  시드별 지문')
         diff = []
         for sd in map(str, SEEDS):
