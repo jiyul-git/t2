@@ -179,3 +179,95 @@ B  채널별 분리 또는 개념 재검토   V2 또는 V3
 - `docs/ATTACK_FIXTURE_FIX.png`
 - production 무수정 / regression 지문 **전 시드 일치** / 실험 프로세스 0 /
   worktree clean / local=remote 확인
+
+---
+
+# Amendment D1 — 깨끗한 읽기 대조를 보조 분석으로 추가
+
+## D1-0. 공개 — 이 amendment 는 주 결과를 본 뒤에 쓴다
+
+§4 의 주 판정(`d_A` 기반)은 이미 측정했고 수치를 봤다. 주 판정과 그 규칙은
+**바꾸지 않는다.** 여기서 추가하는 것은 **별도 통계량의 보조 분석**이고,
+그 규칙을 돌리기 전에 고정한다.
+
+## D1-1. 왜 필요한가 — 주 통계량이 교락돼 있다
+
+`tier5_axis_validate.make_arms` 는
+
+```python
+PIPE_CONCEPTS   = ('range_read', 'sizing_tell')
+PIPE_TEMPER     = ('attention', 'adaptability', 'consistency')
+APPLY_ONLY_CALC = PS.CALC 에서 PIPE_CONCEPTS 를 뺀 나머지 전부
+HI, LO = 9.0, 2.0
+```
+
+로 두 arm 을 만든다. 즉 `CALC_ONLY` 와 `PIPE_ONLY` 는 **읽기 파이프라인만
+다른 것이 아니라 `fold_equity`·`board_texture`·`multiway`·`potodds`·`spr`·
+`blocker` 등 APPLY 쪽 개념 다발이 통째로 반대**다. 그리고 그 개념들은
+`decide_aggression` 과 `cbet_freq` 가 **상대 추정치 없이 직접** 읽는다.
+
+실측이 이것을 확인한다.
+
+```
+CALC  n_obs=6  p_bet 0.5322     n_obs=40  p_bet 0.5322    차이 +0.00000  (안 읽으니 당연)
+PIPE  n_obs=6  p_bet 0.5159     n_obs=40  p_bet 0.5116
+PIPE − CALC    n_obs=6  −0.01628      n_obs=40  −0.02059
+```
+
+`n_obs = 6` 에서 `w ≈ 0.110` 이라 읽기 조정이 거의 없는데도 두 arm 의 벳
+확률이 이미 **−0.016** 벌어져 있다. 읽기가 만든 차이가 아니다.
+
+`make_arms` 는 `TIER5_AXIS_DESIGN` 에서 **배터리 음성 대조**(QX_E 가 두 종류의
+능력을 구분하는가)로 만들어진 것이다. 그것을 "읽기 정확도의 EV 효과" 측정에
+쓴 것은 내 사전등록의 통계량 선택 실수다. 이 결함은 `QX_EV_VALIDATION` 의
+합성 대조와 `SYNTH_CHANNEL_SPLIT` 의 채널 분리에도 **똑같이** 있다.
+(채널 분리의 산술은 그대로 유효하다 — 같은 수치를 다시 묶은 것이므로.)
+
+## D1-2. 보조 분석 — READ_USE 의 R 축을 공격 채널에 적용
+
+`READ_USE_SEPARATION` 이 이미 검증한 깨끗한 개입을 그대로 쓴다.
+`tools/read_use_fixture.read_arm(a)` — `reads.estimate` 반환값을 모집단
+사전분포로 블렌드한다. `n`·`confidence` 를 제외하므로 `w` 가 비트까지 같고,
+난수 소비 횟수도 같다.
+
+- `LOW_READ  a = 0.20` / `HIGH_READ a = 1.00` — READ_USE 와 같은 수준
+- `u` 는 조작하지 않는다. production 값(= 개입 없음)이다
+- arm 합성 프로필을 쓰지 않는다 — **실제 필드 프로필** 그대로다.
+  그래서 개념 다발 교락이 원리적으로 없다 (같은 프로필의 믿음만 바꾼다)
+
+```
+ΔR_A = mean regret(LOW_READ, 공격) − mean regret(HIGH_READ, 공격)   > 0 이면 읽기가 이득
+```
+
+- 표본: SET_A `940001-940010`, SET_B `950001-950010`, 각 `[:150]`
+- 프로필 단위 클러스터 부트스트랩 4000회, 시드 `v7_num_battery.SEED`
+- `FLOOR = 0.002` — 묶음 전체에서 동일
+
+### 보조 판정 (돌리기 전에 고정)
+
+```
+W0  AUX_INCONCLUSIVE   조작 점검 실패
+                       (HIGH_READ 의 r(ftb_true, 믿는 ftb) 가 LOW_READ 보다 크지 않다)
+W1  AUX_READ_HELPS     ΔR_A >= FLOOR 이고 95%CI 가 0 배제, SET_A·SET_B 둘 다
+W2  AUX_READ_HURTS     ΔR_A <= −FLOOR 이고 95%CI 가 0 배제, SET_A·SET_B 둘 다
+W3  AUX_READ_NULL      그 외
+```
+
+`n_obs` 6 / 40 분리도 같이 보고한다. 게이트는 아니다.
+
+## D1-3. 사용자 결정 지점 재대응
+
+주 판정(`d_A`)이 교락돼 있으므로 A/B 판단의 1차 근거를 **보조 분석**으로
+옮긴다. 이 대응도 돌리기 전에 고정한다.
+
+```
+A  stat_read 설계 진입 가능     W1 (공격에서도 읽기 정확도가 EV 개선)
+B  채널별 분리 또는 개념 재검토   W2 또는 W3
+```
+
+주 판정은 그대로 보고하되, 교락 사실과 함께 읽는다.
+
+## D1-4. 바뀌지 않는 것
+
+`FLOOR`, 게이트 G1~G6, 주 판정 규칙 V0~V3, 격자, `D = 0.28`, 상태 집합,
+`qx_ev_fixture.py` 동결 — 전부 그대로다. 주 판정 결과도 그대로 보고한다.
