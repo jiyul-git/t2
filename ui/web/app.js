@@ -447,10 +447,15 @@ function renderChips(v, streetChanged) {
     const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
     const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
     const side = sideSeatClass(seatP);
-    // 3/9 o'clock chips need to clear the outer board cards, but pushing them
-    // down to 59% collides with the lower-diagonal seat's chips. Keep them just
-    // below the board lane instead.
-    if (side) p.y = Math.max(p.y, 51);
+    // Marked UI target: side-seat chips sit between the side seat and pot lane,
+    // above the lower-diagonal chip lane. Keep left/right mirrored.
+    if (side === ' side-left') {
+      p.x = 27;
+      p.y = 46;
+    } else if (side === ' side-right') {
+      p.x = 73;
+      p.y = 46;
+    }
     const el = document.createElement('div');
     el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
