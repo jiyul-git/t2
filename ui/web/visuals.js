@@ -7,8 +7,12 @@
     {crop:[439,0,396,440], eyes:[[557,282],[694,282]]},
     {crop:[855,0,390,440], eyes:[[976,282],[1112,282]]},
     {crop:[15,440,405,390], eyes:[[145,651],[296,651]]},
-    {crop:[444,440,370,390], eyes:[[553,667],[696,667]]},
-    {crop:[867,440,358,390], eyes:[[975,676],[1111,676]]},
+    // Row-2 animal cells contain a thin strip of the row above at y=440.
+    // Start these two crops below that bleed and keep the same bottom edge.
+    // Their old eye centers were also ~50 source px too high, placing pupils
+    // above the white eye area in profile/table renders.
+    {crop:[444,462,370,368], eyes:[[553,721],[696,721]]},
+    {crop:[867,462,358,368], eyes:[[975,723],[1111,723]]},
     {crop:[15,828,405,382], eyes:[[137,1012],[305,1012]]},
     {crop:[431,828,395,382], eyes:[[550,1038],[702,1038]]},
     {crop:[855,828,382,382], eyes:[[957,1024],[1126,1024]]}
@@ -27,7 +31,7 @@
     const index = portraitIndex(pid), p = portraits[index];
     const [x,y,w,h] = p.crop;
     const eyes = p.eyes.map(([ex,ey]) =>
-      '<i class="portrait-pupil" style="left:'+((ex-x)/w*100)+'%;top:'+((ey-y)/h*100)+'%;width:'+(28/w*100)+'%;height:'+(32/h*100)+'%"></i>'
+      '<i class="portrait-pupil" style="left:'+((ex-x)/w*100)+'%;top:'+((ey-y)/h*100)+'%;width:'+(24/w*100)+'%;height:'+(24/h*100)+'%"></i>'
     ).join('');
     return '<span class="portrait" data-portrait="'+index+'" aria-hidden="true" style="aspect-ratio:'+w+'/'+h+'">'+
       '<img draggable="false" alt="" src="assets/portraits.png" style="width:'+(1254/w*100)+'%;left:'+(-x/w*100)+'%;top:'+(-y/h*100)+'%">'+eyes+'</span>';
