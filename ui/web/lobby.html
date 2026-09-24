@@ -6,14 +6,14 @@
 <meta name="theme-color" content="#0b1514">
 <title>T2 Poker Lobby</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="lobby.css?v=2">
+<link rel="stylesheet" href="lobby.css?v=3">
 </head>
 <body>
 <div id="lobby">
   <header class="top">
     <div>
       <div class="brand">T2 <span>POKER</span></div>
-      <div class="strap">TOURNAMENT LOBBY</div>
+      <div class="strap">INTERNATIONAL TERMINAL</div>
     </div>
   </header>
 
@@ -79,56 +79,66 @@
 
   <div id="profileSheet" class="sheetWrap" hidden>
     <div class="sheet profileSheet">
-      <button id="profileClose" class="close" type="button" aria-label="닫기">×</button>
-      <div class="profileHead">
-        <div id="profilePreview" class="profilePreview"></div>
-        <div><div class="kicker">MY PROFILE</div><h2>프로필 · 설정</h2>
-        <p>내 캐릭터와 테이블 표시를 설정합니다.</p></div>
+      <div class="sheetHeader">
+        <div>
+          <div class="kicker">PROFILE</div>
+          <h2>내 프로필</h2>
+        </div>
+        <button id="profileClose" class="close" type="button" aria-label="닫기">×</button>
       </div>
 
-      <label class="inputLabel">닉네임
-        <input id="nickname" type="text" maxlength="16" placeholder="플레이어">
-      </label>
-
-      <div class="profileLabel">내 캐릭터</div>
-      <div id="avatarChoices" class="avatarChoices"></div>
-
-      <div class="profileLabel">공항 테마</div>
-      <div id="timeThemeChoices" class="timeThemeChoices">
-        <button type="button" data-time-theme="day">
-          <span class="themePreview day"><i></i></span>
-          <b>낮</b><small>DAY TERMINAL</small>
-        </button>
-        <button type="button" data-time-theme="night">
-          <span class="themePreview night"><i></i></span>
-          <b>밤</b><small>NIGHT TERMINAL</small>
-        </button>
-      </div>
-
-      <div class="profileLabel">카드 뒷면</div>
-      <div id="deckChoices" class="deckChoices">
-        <button type="button" data-deck="jade"><span class="deckSample jade"></span><b>비취</b></button>
-        <button type="button" data-deck="navy"><span class="deckSample navy"></span><b>남청</b></button>
-        <button type="button" data-deck="burgundy"><span class="deckSample burgundy"></span><b>자주</b></button>
-        <button type="button" data-deck="ivory"><span class="deckSample ivory"></span><b>백자</b></button>
-      </div>
-
-      <div class="settingsGrid">
-        <label>봇 액션 속도
-          <select id="profileSpeed">
-            <option value="1000">빠르게 · 1.0초</option>
-            <option value="1500">보통 · 1.5초</option>
-            <option value="2000">천천히 · 2.0초</option>
-            <option value="2600">매우 천천히 · 2.6초</option>
-          </select>
-        </label>
-        <label class="toggleRow">결과 자동진행
-          <input id="profileAuto" type="checkbox">
+      <div class="profileIdentity">
+        <div id="profilePreview" class="profilePreview" aria-hidden="true"></div>
+        <label class="nicknameField">
+          <span>닉네임</span>
+          <input id="nickname" type="text" maxlength="16" placeholder="플레이어">
         </label>
       </div>
 
-      <button id="profileHistory" class="secondaryAction" type="button">핸드 기록 보기</button>
-      <button id="profileSave" class="join" type="button">저장</button>
+      <div class="settingList">
+        <button id="pickAvatar" class="settingRow" type="button">
+          <span class="settingText"><b>내 캐릭터</b><small>테이블에 표시되는 캐릭터</small></span>
+          <span class="settingValue"><span id="avatarMini" class="avatarMini"></span><span id="avatarValue">캐릭터 1</span><i>›</i></span>
+        </button>
+
+        <button id="pickTheme" class="settingRow" type="button">
+          <span class="settingText"><b>공항 테마</b><small>로비의 시간대</small></span>
+          <span class="settingValue"><span id="themeValue">밤</span><i>›</i></span>
+        </button>
+
+        <button id="pickDeck" class="settingRow" type="button">
+          <span class="settingText"><b>카드 뒷면</b><small>테이블 카드덱 디자인</small></span>
+          <span class="settingValue"><span id="deckMini" class="deckMini"></span><span id="deckValue">비취</span><i>›</i></span>
+        </button>
+
+        <button id="pickSpeed" class="settingRow" type="button">
+          <span class="settingText"><b>게임 진행 속도</b><small>봇 액션과 딜링 간격</small></span>
+          <span class="settingValue"><span id="speedValue">보통 · 1.5초</span><i>›</i></span>
+        </button>
+
+        <label class="settingRow toggleSetting">
+          <span class="settingText"><b>결과 자동진행</b><small>정산 뒤 다음 핸드로 자동 이동</small></span>
+          <span class="switch"><input id="profileAuto" type="checkbox"><i></i></span>
+        </label>
+
+        <button id="profileHistory" class="settingRow" type="button">
+          <span class="settingText"><b>핸드 기록</b><small>완료된 핸드 다시 보기</small></span>
+          <span class="settingValue"><i>›</i></span>
+        </button>
+      </div>
+
+      <button id="profileSave" class="primaryAction" type="button">저장</button>
+    </div>
+  </div>
+
+  <div id="pickerSheet" class="sheetWrap pickerWrap" hidden>
+    <div class="sheet pickerSheet">
+      <div class="sheetHeader pickerHeader">
+        <button id="pickerBack" class="backButton" type="button" aria-label="뒤로">‹</button>
+        <div><div class="kicker">SELECT</div><h2 id="pickerTitle">선택</h2></div>
+        <button id="pickerClose" class="close" type="button" aria-label="닫기">×</button>
+      </div>
+      <div id="pickerBody" class="pickerBody"></div>
     </div>
   </div>
 
@@ -141,6 +151,6 @@
   </nav>
 </div>
 <script src="visuals.js?v=1"></script>
-<script src="lobby.js?v=2"></script>
+<script src="lobby.js?v=3"></script>
 </body>
 </html>
