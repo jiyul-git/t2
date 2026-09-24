@@ -159,7 +159,8 @@ $('#continueNav').addEventListener('click',()=>location.href='/play');
 
 const PROFILE_KEYS = {
   nickname: 't2profile_nickname',
-  avatar: 't2profile_avatar',
+  avatarLegacy: 't2profile_avatar',
+  avatarV2: 't2profile_avatar_v2',
   deck: 't2profile_deck',
   timeTheme: 't2profile_airport_theme'
 };
@@ -176,8 +177,19 @@ const SPEEDS = {
   '2000':'천천히 · 2.0초',
   '2600':'매우 천천히 · 2.6초'
 };
+const AVATAR_PARTS = [
+  ['base','기본 캐릭터'],
+  ['tone','피부·털 톤'],
+  ['eyes','눈'],
+  ['hair','헤어'],
+  ['hat','모자'],
+  ['beard','수염'],
+  ['outfit','의상'],
+  ['accessory','액세서리']
+];
 
 let profileDraft = null;
+let pickerBackHandler = null;
 
 function storageGet(key, fallback){
   try {
@@ -191,10 +203,19 @@ function profileGet(key, fallback){
 function profileSet(key, value){
   try { localStorage.setItem(PROFILE_KEYS[key], String(value)); } catch(e){}
 }
+function readAvatarProfile(){
+  try {
+    const raw=localStorage.getItem(PROFILE_KEYS.avatarV2);
+    if(raw) return AvatarSystem.normalize(JSON.parse(raw));
+  } catch(e){}
+  // One-time migration from the old fixed 0..8 portrait selection.
+  const legacy=Number(storageGet(PROFILE_KEYS.avatarLegacy,'0'))||0;
+  return AvatarSystem.legacyPreset(legacy);
+}
 function storedProfile(){
   return {
     nickname: profileGet('nickname','플레이어'),
-    avatar: Math.max(0,Math.min(8,Number(profileGet('avatar','0'))||0)),
+    avatar: readAvatarProfile(),
     deck: DECKS[profileGet('deck','jade')] ? profileGet('deck','jade') : 'jade',
     timeTheme: profileGet('timeTheme','night') === 'day' ? 'day' : 'night',
     speed: SPEEDS[storageGet('t2step','1500')] ? storageGet('t2step','1500') : '1500',
@@ -221,9 +242,10 @@ function deckSample(deck, cls){
 }
 function renderProfileSummary(){
   if(!profileDraft) return;
-  $('#profilePreview').innerHTML=PokerVisuals.avatarHTML(profileDraft.avatar);
-  $('#avatarMini').innerHTML=PokerVisuals.avatarHTML(profileDraft.avatar);
-  $('#avatarValue').textContent='캐릭터 '+(profileDraft.avatar+1);
+  $('#profilePreview').innerHTML=AvatarSystem.render(profileDraft.avatar);
+  $('#avatarMini').innerHTML=AvatarSystem.render(profileDraft.avatar);
+  $('#avatarValue').textContent=
+    AvatarSystem.label('base',profileDraft.avatar.base)+' · 꾸미기';
   $('#themeValue').textContent=profileDraft.timeTheme==='day'?'낮':'밤';
   $('#deckValue').textContent=DECKS[profileDraft.deck].label;
   const dm=$('#deckMini');
@@ -245,6 +267,7 @@ function closeProfile(){
   const saved=storedProfile();
   applyAirportTheme(saved.timeTheme);
   applyDeckTheme(saved.deck);
+  pickerBackHandler=null;
   syncModalLock();
 }
 function saveProfile(){
@@ -252,7 +275,9 @@ function saveProfile(){
   profileDraft.nickname=(($('#nickname').value||'플레이어').trim().slice(0,16)||'플레이어');
   profileDraft.auto=!!$('#profileAuto').checked;
   profileSet('nickname',profileDraft.nickname);
-  profileSet('avatar',profileDraft.avatar);
+  try {
+    localStorage.setItem(PROFILE_KEYS.avatarV2,JSON.stringify(AvatarSystem.normalize(profileDraft.avatar)));
+  } catch(e){}
   profileSet('deck',profileDraft.deck);
   profileSet('timeTheme',profileDraft.timeTheme);
   try {
@@ -264,31 +289,51 @@ function saveProfile(){
   $('#profileSheet').hidden=true;
   $('#pickerSheet').hidden=true;
   profileDraft=null;
+  pickerBackHandler=null;
   syncModalLock();
   toast('프로필을 저장했습니다');
 }
 
-function pickerOpen(title, html){
+function pickerOpen(title, html, backHandler){
   $('#pickerTitle').textContent=title;
   $('#pickerBody').innerHTML=html;
+  pickerBackHandler=backHandler||null;
   $('#pickerSheet').hidden=false;
   syncModalLock();
 }
 function pickerClose(){
   $('#pickerSheet').hidden=true;
+  pickerBackHandler=null;
   syncModalLock();
 }
-function pickAvatar(){
-  const html='<div class="characterGrid">'+
-    Array.from({length:9},(_,i)=>
-      '<button type="button" class="characterOption '+(profileDraft.avatar===i?'active':'')+'" data-avatar="'+i+'">'+
-      PokerVisuals.avatarHTML(i)+'<em>0'+(i+1)+'</em></button>'
-    ).join('')+'</div>';
-  pickerOpen('내 캐릭터',html);
-  $('#pickerBody').querySelectorAll('[data-avatar]').forEach(b=>b.addEventListener('click',()=>{
-    profileDraft.avatar=Number(b.dataset.avatar);
+function avatarEditorHTML(){
+  const a=profileDraft.avatar;
+  const rows=AVATAR_PARTS.map(([part,title])=>
+    '<button type="button" class="avatar-part-row" data-avatar-part="'+part+'">'+
+    '<b>'+title+'</b><span>'+escapeHtml(AvatarSystem.label(part,a[part]))+' &nbsp;›</span></button>'
+  ).join('');
+  return '<div class="avatar-editor-preview">'+AvatarSystem.render(a)+'</div>'+
+    '<div class="avatar-editor-list">'+rows+'</div>';
+}
+function openAvatarEditor(){
+  pickerOpen('캐릭터 꾸미기',avatarEditorHTML(),null);
+  $('#pickerBody').querySelectorAll('[data-avatar-part]').forEach(b=>
+    b.addEventListener('click',()=>openAvatarPart(b.dataset.avatarPart))
+  );
+}
+function openAvatarPart(part){
+  const items=AvatarSystem.optionsFor(profileDraft.avatar.base,part);
+  const current=profileDraft.avatar[part];
+  const html='<div class="part-grid">'+items.map(item=>{
+    const cfg=AvatarSystem.normalize(Object.assign({},profileDraft.avatar,{[part]:item.id}));
+    return '<button type="button" class="part-option '+(current===item.id?'active':'')+'" data-part-value="'+escapeHtml(item.id)+'">'+
+      '<span class="part-avatar">'+AvatarSystem.render(cfg)+'</span><b>'+escapeHtml(item.label)+'</b></button>';
+  }).join('')+'</div>';
+  pickerOpen(AVATAR_PARTS.find(x=>x[0]===part)?.[1]||'캐릭터',html,openAvatarEditor);
+  $('#pickerBody').querySelectorAll('[data-part-value]').forEach(b=>b.addEventListener('click',()=>{
+    profileDraft.avatar=AvatarSystem.normalize(Object.assign({},profileDraft.avatar,{[part]:b.dataset.partValue}));
     renderProfileSummary();
-    pickerClose();
+    openAvatarEditor();
   }));
 }
 function themePreviewHTML(kind){
@@ -301,7 +346,7 @@ function pickTheme(){
     '<button type="button" class="themePickerOption '+(profileDraft.timeTheme==='night'?'active':'')+'" data-theme="night">'+
       themePreviewHTML('night')+'<b>밤</b><small>NIGHT TERMINAL · 야간 조명</small></button>'+
     '</div>';
-  pickerOpen('공항 테마',html);
+  pickerOpen('공항 테마',html,null);
   $('#pickerBody').querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=>{
     profileDraft.timeTheme=b.dataset.theme;
     applyAirportTheme(profileDraft.timeTheme);
@@ -315,7 +360,7 @@ function pickDeck(){
       '<button type="button" class="deckPickerOption '+(profileDraft.deck===k?'active':'')+'" data-deck="'+k+'">'+
       deckSample(k,'deckSample')+'<b>'+DECKS[k].label+'</b></button>'
     ).join('')+'</div>';
-  pickerOpen('카드 뒷면',html);
+  pickerOpen('카드 뒷면',html,null);
   $('#pickerBody').querySelectorAll('[data-deck]').forEach(b=>b.addEventListener('click',()=>{
     profileDraft.deck=b.dataset.deck;
     applyDeckTheme(profileDraft.deck);
@@ -328,7 +373,7 @@ function pickSpeed(){
     '<button type="button" class="pickerOption '+(profileDraft.speed===k?'active':'')+'" data-speed="'+k+'">'+
     '<span><b>'+SPEEDS[k]+'</b><small>봇 액션과 딜링 표시 간격</small></span><span class="check">✓</span></button>'
   ).join('')+'</div>';
-  pickerOpen('게임 진행 속도',html);
+  pickerOpen('게임 진행 속도',html,null);
   $('#pickerBody').querySelectorAll('[data-speed]').forEach(b=>b.addEventListener('click',()=>{
     profileDraft.speed=b.dataset.speed;
     renderProfileSummary();
@@ -342,11 +387,19 @@ $('#profileSheet').addEventListener('click',(e)=>{if(e.target===$('#profileSheet
 $('#profileSave').addEventListener('click',saveProfile);
 $('#profileAuto').addEventListener('change',()=>{if(profileDraft)profileDraft.auto=$('#profileAuto').checked;});
 $('#profileHistory').addEventListener('click',()=>{location.href='/play#history';});
-$('#pickAvatar').addEventListener('click',pickAvatar);
+$('#pickAvatar').addEventListener('click',openAvatarEditor);
 $('#pickTheme').addEventListener('click',pickTheme);
 $('#pickDeck').addEventListener('click',pickDeck);
 $('#pickSpeed').addEventListener('click',pickSpeed);
-$('#pickerBack').addEventListener('click',pickerClose);
+$('#pickerBack').addEventListener('click',()=>{
+  if(pickerBackHandler){
+    const fn=pickerBackHandler;
+    pickerBackHandler=null;
+    fn();
+  } else {
+    pickerClose();
+  }
+});
 $('#pickerClose').addEventListener('click',pickerClose);
 $('#pickerSheet').addEventListener('click',(e)=>{if(e.target===$('#pickerSheet'))pickerClose();});
 
