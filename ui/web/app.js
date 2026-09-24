@@ -311,6 +311,15 @@ function slotPos(slot, heroSlot, n, rfx, rfy) {
   return { x: 50 + 39 * rfx * Math.cos(th), y: 44 + 36 * rfy * Math.sin(th) };
 }
 
+function sideSeatClass(p) {
+  // 8/9-handed layouts have one seat almost exactly at 3 and 9 o'clock.
+  // Tag only those near-horizontal seats; diagonals keep the normal layout.
+  if (!p || p.y < 34 || p.y > 58) return '';
+  if (p.x >= 84) return ' side-right';
+  if (p.x <= 16) return ' side-left';
+  return '';
+}
+
 /* ---------------- 상단 바 ---------------- */
 function renderTop(v) {
   const lv = v.level;
@@ -366,7 +375,8 @@ function renderSeats(v) {
       continue;
     }
     const award = awardLabel(slot);
-    const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded') +
+    const cls = 'pod' + sideSeatClass(p) +
+                (d.in_hand || S.folding[slot] ? '' : ' folded') +
                 (award && !awardSplitOnly(slot) ? ' won' : '');
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
     const nc = dealtCount(slot);
@@ -432,9 +442,14 @@ function renderChips(v, streetChanged) {
   const n = v.n_slots || 8;
   (v.seats || []).forEach((s) => {
     if (!s.bet) return;
+    const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
     const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
+    const side = sideSeatClass(seatP);
+    // 3/9 o'clock chips used to land on the outside board cards.
+    // Keep their normal inward x position, but drop them below the board/pot lane.
+    if (side) p.y = Math.max(p.y, 59);
     const el = document.createElement('div');
-    el.className = 'chips';
+    el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
     el.style.left = p.x + '%'; el.style.top = p.y + '%';
     el.innerHTML = `<span class="disc"></span>${fmt(s.bet)}`;
