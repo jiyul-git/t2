@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0d1412">
 <title>t2 포커</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="style.css?v=41">
+<link rel="stylesheet" href="style.css?v=42">
 <link rel="stylesheet" href="theme.css?v=2">
 </head>
 <body>
@@ -17,15 +17,16 @@
       <span id="lvl">—</span>
       <span id="handno"></span>
     </div>
-    <div class="barrow"><span id="fieldline"></span></div>
+    <div class="barrow topsub">
+      <span id="fieldline"></span>
+      <span class="topactions">
+        <button type="button" id="bLog">기록</button>
+        <button type="button" id="bMenu" aria-label="설정">⋯</button>
+      </span>
+    </div>
+    <span id="logline" hidden></span>
     <div id="notes"></div>
   </header>
-
-  <div id="loghead">
-    <span class="line" id="logline"></span>
-    <button type="button" id="bLog">기록</button>
-    <button type="button" id="bMenu">⋯</button>
-  </div>
 
   <main id="tablewrap">
     <div id="felt"></div>
@@ -66,7 +67,7 @@
   <div id="toast" hidden></div>
 </div>
 <script src="visuals.js?v=3"></script>
-<script src="app.js?v=52"></script>
+<script src="app.js?v=53"></script>
 </body>
 </html>
 
