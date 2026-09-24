@@ -36,6 +36,8 @@ if not os.path.exists(os.path.join(D, 'UI_SERVER_DIR')):
 import ui_view
 sys.modules['view'] = ui_view          # live2 가 import 하기 전에 주입
 import live2 as L
+import formats as FM
+from table import BLINDS
 import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver 를 쓴다
 
 LOCK = threading.Lock()
@@ -70,6 +72,55 @@ def _play_key():
     return key
 
 PLAY_KEY = _play_key()
+
+
+def _lobby_payload(can_play=False):
+    """로비가 그릴 토너 카탈로그와 현재 대회 요약.
+
+    포맷 수치는 formats.py 를 단일 출처로 사용한다. 로비가 규칙을 복제하지 않는다.
+    """
+    bb0 = int(BLINDS[0][2]) if BLINDS else 200
+    tournaments = []
+    for key in FM.names():
+        f = FM.get(key)
+        tournaments.append({
+            'key': key,
+            'name': f['name'],
+            'start_bb': int(f['start_bb']),
+            'start_stack': int(f['start_bb']) * bb0,
+            'hands_per_level': int(f['hpl']),
+            'seats': int(f['seats']),
+            'itm_frac': float(f['itm_frac']),
+            'reentry': bool(f['reentry']),
+            'buyin_level': float(f['buyin_level']),
+            'payout_flat': float(f['payout_flat']),
+        })
+
+    current = None
+    if os.path.exists(L.ST):
+        try:
+            st = L.load()
+            f = L._load_field(st['field'])
+            hero = f.players.get(f.hero_pid)
+            current = {
+                'fmt': f.fmt.get('key', FM.DEFAULT),
+                'name': f.fmt.get('name', FM.get().get('name')),
+                'entries': int(f.entries),
+                'remaining': int(f.remaining()),
+                'hand_no': int(f.hand_no),
+                'level': int(f.level),
+                'stack': int((hero or {}).get('stack', 0)),
+                'busted': bool(st.get('busted')),
+                'rank': st.get('rank'),
+            }
+        except Exception:
+            current = {'error': 'current_state_unreadable'}
+
+    return {
+        'tournaments': tournaments,
+        'current': current,
+        'can_play': bool(can_play),
+    }
 
 
 # ---------- 다른 테이블 정산을 결과 반환 뒤로 미룬다 ----------
@@ -539,6 +590,8 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         global _last
         path = self.path.split('?', 1)[0]
+        if path == '/api/lobby':
+            return self._send(200, _lobby_payload(self._can_play()))
         if path == '/api/ready':
             # 워커가 아직 다른 테이블을 돌리는 중인가. 결과 화면이 이걸 보고
             # 정산이 끝난 뒤에 다음 핸드로 넘어간다 — 빈 로딩 화면을 없앤다.
@@ -566,23 +619,22 @@ class H(BaseHTTPRequestHandler):
             _h = {'hands': _public_history()}
             _h.update(_archive_status())
             return self._send(200, _h)
-        if path == '/play/':
+        if path in ('/play/', '/lobby/'):
+            dest = '/play' if path == '/play/' else '/'
             self.send_response(302)
-            self.send_header('Location', '/play')
+            self.send_header('Location', dest)
             self.send_header('Content-Length', '0')
             self.end_headers()
             return
 
-        if path.startswith('/play/'):
-            supplied = urllib.parse.unquote(
-                path[len('/play/'):]
-            ).strip('/')
+        if path.startswith('/play/') or path.startswith('/lobby/'):
+            prefix = '/play/' if path.startswith('/play/') else '/lobby/'
+            supplied = urllib.parse.unquote(path[len(prefix):]).strip('/')
 
             if supplied and hmac.compare_digest(supplied, PLAY_KEY):
-                # 인증 주소에서는 UI를 직접 띄우지 않는다.
-                # 쿠키를 발급한 뒤 /play 로 보내야 CSS/JS 상대경로가 정상이다.
+                dest = '/play' if prefix == '/play/' else '/'
                 self.send_response(302)
-                self.send_header('Location', '/play')
+                self.send_header('Location', dest)
                 self.send_header(
                     'Set-Cookie',
                     't2_play=%s; Path=/; Max-Age=2592000; '
@@ -595,12 +647,13 @@ class H(BaseHTTPRequestHandler):
 
             return self._send(403, {'error': '잘못된 플레이 주소'})
 
+        if path == '/':
+            return self._serve_static('/lobby.html')
+        if path == '/lobby':
+            return self._serve_static('/lobby.html')
         if path == '/play':
             return self._serve_static('/index.html')
-
         if path == '/watch':
-            return self._serve_static('/index.html')
-        if path in ('/play', '/watch'):
             return self._serve_static('/index.html')
         if path != '/api/state':
             return self._serve_static(path)
