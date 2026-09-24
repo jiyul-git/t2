@@ -44,6 +44,29 @@ const PLAY_KEY =
  */
 
 const $ = (s) => document.querySelector(s);
+
+function profileStorage(key, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v;
+  } catch (e) { return fallback; }
+}
+function heroProfileAvatar() {
+  const n = Number(profileStorage('t2profile_avatar', '0'));
+  return Math.max(0, Math.min(8, Number.isFinite(n) ? Math.trunc(n) : 0));
+}
+function heroProfileNickname() {
+  return String(profileStorage('t2profile_nickname', '플레이어') || '플레이어')
+    .trim().slice(0, 16) || '플레이어';
+}
+function applyProfileDeck() {
+  const allowed = ['jade', 'navy', 'burgundy', 'ivory'];
+  const deck = profileStorage('t2profile_deck', 'jade');
+  document.documentElement.dataset.deck =
+    allowed.indexOf(deck) >= 0 ? deck : 'jade';
+}
+applyProfileDeck();
+
 const SUIT = { s: '♠', h: '♥', d: '♦', c: '♣' };
 const RED = { h: 1, d: 1 };
 const ACT = { fold: '폴드', check: '체크', call: '콜', bet: '벳',
@@ -573,7 +596,9 @@ function renderHero(v) {
 
   box.hidden = false;
   const portrait = $('#heroavatar');
-  const portraitId = PokerVisuals.portraitIndex(me ? me.pid : 0);
+  const portraitId = WATCH_MODE
+    ? PokerVisuals.portraitIndex(me ? me.pid : 0)
+    : heroProfileAvatar();
   if (portrait.dataset.portraitId !== String(portraitId)) {
     portrait.innerHTML = PokerVisuals.avatarHTML(portraitId);
     portrait.dataset.portraitId = String(portraitId);
@@ -584,7 +609,9 @@ function renderHero(v) {
   const d = v.button_seat === v.hero_seat ? ' · D' : '';
   const award = awardLabel(v.hero_seat);
 
+  const heroName = WATCH_MODE ? '' : heroProfileNickname();
   $('#heroinfo .pos').textContent =
+    (heroName ? heroName + (me && me.pos ? ' · ' : '') : '') +
     (me ? (me.pos || '') : '') +
     d +
     (me && me.allin ? ' · ALL-IN' : '') +
@@ -3575,6 +3602,10 @@ if (WATCH_MODE) {
   sync();
 } else {
   memoLoad().finally(sync);
+}
+
+if (location.hash === '#history') {
+  setTimeout(showHistory, 250);
 }
 
 if (WATCH_MODE) {
