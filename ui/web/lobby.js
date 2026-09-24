@@ -104,9 +104,14 @@ function openJoin(key){
   ].map(x=>'<span>'+escapeHtml(x)+'</span>').join('');
   $('#joinHint').textContent='';
   $('#joinSheet').hidden=false;
+  syncModalLock();
 }
 
-function closeJoin(){ $('#joinSheet').hidden=true; selected=null; }
+function closeJoin(){
+  $('#joinSheet').hidden=true;
+  selected=null;
+  syncModalLock();
+}
 
 async function join(){
   if(!selected){
@@ -159,86 +164,194 @@ const PROFILE_KEYS = {
   timeTheme: 't2profile_airport_theme'
 };
 
+const DECKS = {
+  jade: {label:'비취'},
+  navy: {label:'남청'},
+  burgundy: {label:'자주'},
+  ivory: {label:'백자'}
+};
+const SPEEDS = {
+  '1000':'빠르게 · 1.0초',
+  '1500':'보통 · 1.5초',
+  '2000':'천천히 · 2.0초',
+  '2600':'매우 천천히 · 2.6초'
+};
+
+let profileDraft = null;
+
+function storageGet(key, fallback){
+  try {
+    const v=localStorage.getItem(key);
+    return v===null ? fallback : v;
+  } catch(e){ return fallback; }
+}
 function profileGet(key, fallback){
-  try { const v=localStorage.getItem(PROFILE_KEYS[key]); return v===null?fallback:v; }
-  catch(e){ return fallback; }
+  return storageGet(PROFILE_KEYS[key], fallback);
 }
 function profileSet(key, value){
   try { localStorage.setItem(PROFILE_KEYS[key], String(value)); } catch(e){}
 }
+function storedProfile(){
+  return {
+    nickname: profileGet('nickname','플레이어'),
+    avatar: Math.max(0,Math.min(8,Number(profileGet('avatar','0'))||0)),
+    deck: DECKS[profileGet('deck','jade')] ? profileGet('deck','jade') : 'jade',
+    timeTheme: profileGet('timeTheme','night') === 'day' ? 'day' : 'night',
+    speed: SPEEDS[storageGet('t2step','1500')] ? storageGet('t2step','1500') : '1500',
+    auto: storageGet('t2auto','1') !== '0'
+  };
+}
 function applyDeckTheme(deck){
-  document.documentElement.dataset.deck = deck || 'jade';
+  document.documentElement.dataset.deck = DECKS[deck] ? deck : 'jade';
 }
 function applyAirportTheme(theme){
   const v = theme === 'day' ? 'day' : 'night';
   document.documentElement.dataset.airportTheme = v;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if(meta) meta.setAttribute('content', v === 'day' ? '#e4edf2' : '#07111d');
+  if(meta) meta.setAttribute('content', v === 'day' ? '#edf1f4' : '#090e15');
 }
-function renderProfileChoices(){
-  const currentAvatar = Math.max(0, Math.min(8, Number(profileGet('avatar','0')) || 0));
-  const box = $('#avatarChoices');
-  box.innerHTML = Array.from({length:9},(_,i)=>
-    '<button type="button" data-avatar="'+i+'" class="'+(i===currentAvatar?'active':'')+'">'+
-    PokerVisuals.avatarHTML(i)+'</button>'
-  ).join('');
-  box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
-    box.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
-    $('#profilePreview').innerHTML=PokerVisuals.avatarHTML(Number(b.dataset.avatar));
-    PokerVisuals.scheduleGaze();
-  }));
-
-  const airportTheme = profileGet('timeTheme','night');
-  $('#timeThemeChoices').querySelectorAll('button').forEach(b=>{
-    b.classList.toggle('active', b.dataset.timeTheme===airportTheme);
-    b.addEventListener('click',()=>{
-      $('#timeThemeChoices').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
-      applyAirportTheme(b.dataset.timeTheme);
-    });
-  });
-
-  const deck = profileGet('deck','jade');
-  $('#deckChoices').querySelectorAll('button').forEach(b=>{
-    b.classList.toggle('active',b.dataset.deck===deck);
-    b.addEventListener('click',()=>{
-      $('#deckChoices').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
-      applyDeckTheme(b.dataset.deck);
-    });
-  });
-  $('#profilePreview').innerHTML=PokerVisuals.avatarHTML(currentAvatar);
-  PokerVisuals.scheduleGaze();
+function syncModalLock(){
+  const open = Array.from(document.querySelectorAll('.sheetWrap'))
+    .some((x)=>!x.hidden);
+  document.documentElement.classList.toggle('modal-open',open);
+  document.body.classList.toggle('modal-open',open);
+}
+function deckSample(deck, cls){
+  return '<span class="'+(cls||'deckSample')+' '+escapeHtml(deck)+'"></span>';
+}
+function renderProfileSummary(){
+  if(!profileDraft) return;
+  $('#profilePreview').innerHTML=PokerVisuals.avatarHTML(profileDraft.avatar);
+  $('#avatarMini').innerHTML=PokerVisuals.avatarHTML(profileDraft.avatar);
+  $('#avatarValue').textContent='캐릭터 '+(profileDraft.avatar+1);
+  $('#themeValue').textContent=profileDraft.timeTheme==='day'?'낮':'밤';
+  $('#deckValue').textContent=DECKS[profileDraft.deck].label;
+  const dm=$('#deckMini');
+  dm.className='deckMini '+profileDraft.deck;
+  $('#speedValue').textContent=SPEEDS[profileDraft.speed];
+  $('#profileAuto').checked=!!profileDraft.auto;
 }
 function openProfile(){
-  $('#nickname').value = profileGet('nickname','플레이어');
-  $('#profileSpeed').value = (()=>{ try{return localStorage.getItem('t2step')||'1500';}catch(e){return '1500';} })();
-  $('#profileAuto').checked = (()=>{ try{return localStorage.getItem('t2auto')!=='0';}catch(e){return true;} })();
-  renderProfileChoices();
+  profileDraft=storedProfile();
+  $('#nickname').value=profileDraft.nickname;
+  renderProfileSummary();
   $('#profileSheet').hidden=false;
+  syncModalLock();
 }
-function closeProfile(){ $('#profileSheet').hidden=true; }
+function closeProfile(){
+  $('#profileSheet').hidden=true;
+  $('#pickerSheet').hidden=true;
+  profileDraft=null;
+  const saved=storedProfile();
+  applyAirportTheme(saved.timeTheme);
+  applyDeckTheme(saved.deck);
+  syncModalLock();
+}
 function saveProfile(){
-  const nick = ($('#nickname').value || '플레이어').trim().slice(0,16) || '플레이어';
-  const av = $('#avatarChoices button.active');
-  const dk = $('#deckChoices button.active');
-  const tt = $('#timeThemeChoices button.active');
-  profileSet('nickname',nick);
-  profileSet('avatar',av?av.dataset.avatar:'0');
-  profileSet('deck',dk?dk.dataset.deck:'jade');
-  profileSet('timeTheme',tt?tt.dataset.timeTheme:'night');
+  if(!profileDraft) return;
+  profileDraft.nickname=(($('#nickname').value||'플레이어').trim().slice(0,16)||'플레이어');
+  profileDraft.auto=!!$('#profileAuto').checked;
+  profileSet('nickname',profileDraft.nickname);
+  profileSet('avatar',profileDraft.avatar);
+  profileSet('deck',profileDraft.deck);
+  profileSet('timeTheme',profileDraft.timeTheme);
   try {
-    localStorage.setItem('t2step',$('#profileSpeed').value);
-    localStorage.setItem('t2auto',$('#profileAuto').checked?'1':'0');
+    localStorage.setItem('t2step',profileDraft.speed);
+    localStorage.setItem('t2auto',profileDraft.auto?'1':'0');
   } catch(e){}
-  applyDeckTheme(profileGet('deck','jade'));
-  closeProfile(); toast('프로필을 저장했습니다');
+  applyAirportTheme(profileDraft.timeTheme);
+  applyDeckTheme(profileDraft.deck);
+  $('#profileSheet').hidden=true;
+  $('#pickerSheet').hidden=true;
+  profileDraft=null;
+  syncModalLock();
+  toast('프로필을 저장했습니다');
+}
+
+function pickerOpen(title, html){
+  $('#pickerTitle').textContent=title;
+  $('#pickerBody').innerHTML=html;
+  $('#pickerSheet').hidden=false;
+  syncModalLock();
+}
+function pickerClose(){
+  $('#pickerSheet').hidden=true;
+  syncModalLock();
+}
+function pickAvatar(){
+  const html='<div class="characterGrid">'+
+    Array.from({length:9},(_,i)=>
+      '<button type="button" class="characterOption '+(profileDraft.avatar===i?'active':'')+'" data-avatar="'+i+'">'+
+      PokerVisuals.avatarHTML(i)+'<em>0'+(i+1)+'</em></button>'
+    ).join('')+'</div>';
+  pickerOpen('내 캐릭터',html);
+  $('#pickerBody').querySelectorAll('[data-avatar]').forEach(b=>b.addEventListener('click',()=>{
+    profileDraft.avatar=Number(b.dataset.avatar);
+    renderProfileSummary();
+    pickerClose();
+  }));
+}
+function themePreviewHTML(kind){
+  return '<span class="themePreview '+kind+'"><i></i></span>';
+}
+function pickTheme(){
+  const html='<div class="themePickerGrid">'+
+    '<button type="button" class="themePickerOption '+(profileDraft.timeTheme==='day'?'active':'')+'" data-theme="day">'+
+      themePreviewHTML('day')+'<b>낮</b><small>DAY TERMINAL · 자연광</small></button>'+
+    '<button type="button" class="themePickerOption '+(profileDraft.timeTheme==='night'?'active':'')+'" data-theme="night">'+
+      themePreviewHTML('night')+'<b>밤</b><small>NIGHT TERMINAL · 야간 조명</small></button>'+
+    '</div>';
+  pickerOpen('공항 테마',html);
+  $('#pickerBody').querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=>{
+    profileDraft.timeTheme=b.dataset.theme;
+    applyAirportTheme(profileDraft.timeTheme);
+    renderProfileSummary();
+    pickerClose();
+  }));
+}
+function pickDeck(){
+  const html='<div class="deckPickerGrid">'+
+    Object.keys(DECKS).map(k=>
+      '<button type="button" class="deckPickerOption '+(profileDraft.deck===k?'active':'')+'" data-deck="'+k+'">'+
+      deckSample(k,'deckSample')+'<b>'+DECKS[k].label+'</b></button>'
+    ).join('')+'</div>';
+  pickerOpen('카드 뒷면',html);
+  $('#pickerBody').querySelectorAll('[data-deck]').forEach(b=>b.addEventListener('click',()=>{
+    profileDraft.deck=b.dataset.deck;
+    applyDeckTheme(profileDraft.deck);
+    renderProfileSummary();
+    pickerClose();
+  }));
+}
+function pickSpeed(){
+  const html='<div class="pickerList">'+Object.keys(SPEEDS).map(k=>
+    '<button type="button" class="pickerOption '+(profileDraft.speed===k?'active':'')+'" data-speed="'+k+'">'+
+    '<span><b>'+SPEEDS[k]+'</b><small>봇 액션과 딜링 표시 간격</small></span><span class="check">✓</span></button>'
+  ).join('')+'</div>';
+  pickerOpen('게임 진행 속도',html);
+  $('#pickerBody').querySelectorAll('[data-speed]').forEach(b=>b.addEventListener('click',()=>{
+    profileDraft.speed=b.dataset.speed;
+    renderProfileSummary();
+    pickerClose();
+  }));
 }
 
 $('#profileNav').addEventListener('click',openProfile);
 $('#profileClose').addEventListener('click',closeProfile);
 $('#profileSheet').addEventListener('click',(e)=>{if(e.target===$('#profileSheet'))closeProfile();});
 $('#profileSave').addEventListener('click',saveProfile);
+$('#profileAuto').addEventListener('change',()=>{if(profileDraft)profileDraft.auto=$('#profileAuto').checked;});
 $('#profileHistory').addEventListener('click',()=>{location.href='/play#history';});
-applyDeckTheme(profileGet('deck','jade'));
-applyAirportTheme(profileGet('timeTheme','night'));
+$('#pickAvatar').addEventListener('click',pickAvatar);
+$('#pickTheme').addEventListener('click',pickTheme);
+$('#pickDeck').addEventListener('click',pickDeck);
+$('#pickSpeed').addEventListener('click',pickSpeed);
+$('#pickerBack').addEventListener('click',pickerClose);
+$('#pickerClose').addEventListener('click',pickerClose);
+$('#pickerSheet').addEventListener('click',(e)=>{if(e.target===$('#pickerSheet'))pickerClose();});
+
+const initialProfile=storedProfile();
+applyDeckTheme(initialProfile.deck);
+applyAirportTheme(initialProfile.timeTheme);
 
 loadLobby();
