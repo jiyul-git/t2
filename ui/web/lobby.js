@@ -142,7 +142,6 @@ $('#tabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>
   $('#tabs').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
   filter=b.dataset.filter; renderCards();
 }));
-$('#refresh').addEventListener('click',()=>{loadLobby();toast('로비를 새로고침했습니다');});
 $('#sheetClose').addEventListener('click',closeJoin);
 $('#joinSheet').addEventListener('click',(e)=>{if(e.target===$('#joinSheet'))closeJoin();});
 $('#join').addEventListener('click',join);
@@ -152,6 +151,75 @@ $('#quickEntries').querySelectorAll('button').forEach(b=>b.addEventListener('cli
 }));
 $('#entries').addEventListener('input',()=>$('#quickEntries').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x.dataset.n===$('#entries').value)));
 $('#continueNav').addEventListener('click',()=>location.href='/play');
-$('#historyNav').addEventListener('click',()=>{location.href='/play#history';});
+
+const PROFILE_KEYS = {
+  nickname: 't2profile_nickname',
+  avatar: 't2profile_avatar',
+  deck: 't2profile_deck'
+};
+
+function profileGet(key, fallback){
+  try { const v=localStorage.getItem(PROFILE_KEYS[key]); return v===null?fallback:v; }
+  catch(e){ return fallback; }
+}
+function profileSet(key, value){
+  try { localStorage.setItem(PROFILE_KEYS[key], String(value)); } catch(e){}
+}
+function applyDeckTheme(deck){
+  document.documentElement.dataset.deck = deck || 'jade';
+}
+function renderProfileChoices(){
+  const currentAvatar = Math.max(0, Math.min(8, Number(profileGet('avatar','0')) || 0));
+  const box = $('#avatarChoices');
+  box.innerHTML = Array.from({length:9},(_,i)=>
+    '<button type="button" data-avatar="'+i+'" class="'+(i===currentAvatar?'active':'')+'">'+
+    PokerVisuals.avatarHTML(i)+'</button>'
+  ).join('');
+  box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    box.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+    $('#profilePreview').innerHTML=PokerVisuals.avatarHTML(Number(b.dataset.avatar));
+    PokerVisuals.scheduleGaze();
+  }));
+
+  const deck = profileGet('deck','jade');
+  $('#deckChoices').querySelectorAll('button').forEach(b=>{
+    b.classList.toggle('active',b.dataset.deck===deck);
+    b.addEventListener('click',()=>{
+      $('#deckChoices').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+      applyDeckTheme(b.dataset.deck);
+    });
+  });
+  $('#profilePreview').innerHTML=PokerVisuals.avatarHTML(currentAvatar);
+  PokerVisuals.scheduleGaze();
+}
+function openProfile(){
+  $('#nickname').value = profileGet('nickname','플레이어');
+  $('#profileSpeed').value = (()=>{ try{return localStorage.getItem('t2step')||'1500';}catch(e){return '1500';} })();
+  $('#profileAuto').checked = (()=>{ try{return localStorage.getItem('t2auto')!=='0';}catch(e){return true;} })();
+  renderProfileChoices();
+  $('#profileSheet').hidden=false;
+}
+function closeProfile(){ $('#profileSheet').hidden=true; }
+function saveProfile(){
+  const nick = ($('#nickname').value || '플레이어').trim().slice(0,16) || '플레이어';
+  const av = $('#avatarChoices button.active');
+  const dk = $('#deckChoices button.active');
+  profileSet('nickname',nick);
+  profileSet('avatar',av?av.dataset.avatar:'0');
+  profileSet('deck',dk?dk.dataset.deck:'jade');
+  try {
+    localStorage.setItem('t2step',$('#profileSpeed').value);
+    localStorage.setItem('t2auto',$('#profileAuto').checked?'1':'0');
+  } catch(e){}
+  applyDeckTheme(profileGet('deck','jade'));
+  closeProfile(); toast('프로필을 저장했습니다');
+}
+
+$('#profileNav').addEventListener('click',openProfile);
+$('#profileClose').addEventListener('click',closeProfile);
+$('#profileSheet').addEventListener('click',(e)=>{if(e.target===$('#profileSheet'))closeProfile();});
+$('#profileSave').addEventListener('click',saveProfile);
+$('#profileHistory').addEventListener('click',()=>{location.href='/play#history';});
+applyDeckTheme(profileGet('deck','jade'));
 
 loadLobby();
