@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b1514">
 <title>T2 Poker Lobby</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="lobby.css?v=1">
+<link rel="stylesheet" href="lobby.css?v=2">
 </head>
 <body>
 <div id="lobby">
@@ -92,6 +92,18 @@
 
       <div class="profileLabel">내 캐릭터</div>
       <div id="avatarChoices" class="avatarChoices"></div>
+
+      <div class="profileLabel">공항 테마</div>
+      <div id="timeThemeChoices" class="timeThemeChoices">
+        <button type="button" data-time-theme="day">
+          <span class="themePreview day"><i></i></span>
+          <b>낮</b><small>DAY TERMINAL</small>
+        </button>
+        <button type="button" data-time-theme="night">
+          <span class="themePreview night"><i></i></span>
+          <b>밤</b><small>NIGHT TERMINAL</small>
+        </button>
+      </div>
 
       <div class="profileLabel">카드 뒷면</div>
       <div id="deckChoices" class="deckChoices">
