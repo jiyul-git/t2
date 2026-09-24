@@ -322,7 +322,7 @@ function openAvatarEditor(){
   );
 }
 function openAvatarPart(part){
-  const items=AvatarSystem.CATALOG[part]||[];
+  const items=AvatarSystem.optionsFor(profileDraft.avatar.base,part);
   const current=profileDraft.avatar[part];
   const html='<div class="part-grid">'+items.map(item=>{
     const cfg=AvatarSystem.normalize(Object.assign({},profileDraft.avatar,{[part]:item.id}));
