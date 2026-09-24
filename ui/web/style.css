@@ -49,7 +49,12 @@ html, body {
 .topsub { min-height: 25px; }
 .topactions { display:flex; align-items:center; gap:4px; flex:0 0 auto; }
 .topactions button {
-  min-width: 42px; height: 25px; padding: 0 8px;
+  flex: 0 0 auto;
+  min-width: 42px;
+  width: auto;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
   border-radius: 7px;
   border: 1px solid var(--line);
   background: rgba(26,38,34,.92);
