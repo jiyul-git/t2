@@ -11,8 +11,8 @@
     // Start these two crops below that bleed and keep the same bottom edge.
     // Their old eye centers were also ~50 source px too high, placing pupils
     // above the white eye area in profile/table renders.
-    {crop:[444,462,370,368], eyes:[[553,721],[696,721]]},
-    {crop:[867,462,358,368], eyes:[[975,723],[1111,723]]},
+    {crop:[444,462,370,368], eyes:[[553,667],[696,667]]},
+    {crop:[867,462,358,368], eyes:[[975,676],[1111,676]]},
     {crop:[15,828,405,382], eyes:[[137,1012],[305,1012]]},
     {crop:[431,828,395,382], eyes:[[550,1038],[702,1038]]},
     {crop:[855,828,382,382], eyes:[[957,1024],[1126,1024]]}
