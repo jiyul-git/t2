@@ -109,7 +109,10 @@ function openJoin(key){
 function closeJoin(){ $('#joinSheet').hidden=true; selected=null; }
 
 async function join(){
-  if(!selected) return;
+  if(!selected){
+    toast('먼저 참가할 토너먼트를 선택하세요');
+    return;
+  }
   const can=$('#joinHint').dataset.canPlay==='1' || !!playKey();
   if(!can){
     $('#joinHint').textContent='플레이 인증 후 참가할 수 있습니다.';
