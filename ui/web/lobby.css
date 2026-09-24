@@ -674,3 +674,30 @@ html[data-airport-theme="night"] .sheetWrap{
 .deckMini.navy{background:#243a64}.deckMini.navy::after{border-color:#d8c58f}
 .deckMini.burgundy{background:#672b34}.deckMini.burgundy::after{border-color:#ddc58a}
 .deckMini.ivory{background:#d9d1ba;border-color:#506a62}.deckMini.ivory::after{border-color:#45665b}
+
+
+/* Preserve each atlas crop's own aspect ratio in profile/picker surfaces.
+   Forcing portraits to square containers leaks neighboring atlas rows. */
+.profilePreview,
+.avatarMini,
+.characterOption{
+  display:grid;
+  place-items:center;
+}
+.profilePreview .portrait,
+.avatarMini .portrait,
+.characterOption .portrait{
+  width:100%;
+  height:auto;
+  max-height:100%;
+  margin:auto;
+}
+.characterOption{
+  padding:6px;
+}
+.characterOption em{
+  z-index:2;
+  background:var(--airport-surface);
+  padding:1px 3px;
+  border-radius:4px;
+}
