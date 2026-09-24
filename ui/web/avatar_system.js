@@ -175,7 +175,7 @@
   }
 
   function hair(c){
-    if(c.hair==='none' || c.base!=='human') return '';
+    if(c.hair==='none') return '';
     if(c.hair==='bun') return '<circle cx="155" cy="58" r="27" fill="#3a2923" stroke="#2b2623" stroke-width="6"/><path d="M61 101 Q68 50 119 48 Q168 48 180 101 Q152 78 121 79 Q90 77 61 101" fill="#3a2923"/>';
     if(c.hair==='bob') return '<path d="M55 111 Q57 47 120 45 Q183 48 185 111 L170 153 Q159 132 160 87 Q120 69 80 87 Q81 132 70 153Z" fill="#3c2a24" stroke="#2b2623" stroke-width="6"/>';
     if(c.hair==='side') return '<path d="M58 103 Q65 48 121 47 Q172 48 181 96 Q137 75 98 88 Q80 94 58 103Z" fill="#302522" stroke="#2b2623" stroke-width="6"/>';
