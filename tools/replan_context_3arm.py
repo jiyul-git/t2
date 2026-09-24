@@ -26,6 +26,14 @@ For each captured board_changed event:
              forwarded into make_plan
 
 Primary comparison stays identical to A6: plan / intent act / intent size.
+The block gate is conjunctive: (_oop_a AND not initiative). Therefore the
+three single-field arms are insufficient by construction when replay starts
+from A6 defaults (oop=None, legacy=None, initiative=True). This revision keeps
+the singles for continuity and adds:
+  oop_vs_aggr + initiative
+  oop_legacy_abs + initiative
+  all three position fields together
+
 An extra chip_target_changed count is also reported. It is the raw
 act_with_plan bet target implied by pot*intent_size rounded to 100 and capped by
 stack; it is NOT the later runner.shape_size result.
@@ -60,6 +68,16 @@ PL = RP.PL
 RU = RP.RU
 
 FIELDS = ('oop_vs_aggr', 'oop_legacy_abs', 'initiative')
+ARMS = OrderedDict([
+    ('oop_vs_aggr', ('oop_vs_aggr',)),
+    ('oop_legacy_abs', ('oop_legacy_abs',)),
+    ('initiative', ('initiative',)),
+    ('oop_vs+initiative', ('oop_vs_aggr', 'initiative')),
+    ('legacy+initiative', ('oop_legacy_abs', 'initiative')),
+    ('position3', ('oop_vs_aggr', 'oop_legacy_abs', 'initiative')),
+])
+BLOCK_MSG = '블락벳으로 가격 통제'
+
 OLD_A6 = {
     'oop_vs_aggr': {'different': 520, 'changed': 0},
     'oop_legacy_abs': {'different': 810, 'changed': 0},
@@ -186,6 +204,24 @@ def chip_target(st, ev):
     return min(stack, int(round(pot * size / 100.0)) * 100)
 
 
+def _arm_context(ev, selected):
+    """make_plan에서 이 arm이 실제로 보게 되는 세 context 값."""
+    ctx = {
+        'oop_vs_aggr': RP.BASELINE_DEFAULT['oop_vs_aggr'],
+        'oop_legacy_abs': RP.BASELINE_DEFAULT['oop_legacy_abs'],
+        'initiative': RP.BASELINE_DEFAULT['initiative'],
+    }
+    for field in selected:
+        ctx[field] = ev['current'][field]
+    return ctx
+
+
+def _block_gate(ctx):
+    oop_a = (ctx['oop_vs_aggr'] if ctx['oop_vs_aggr'] is not None
+             else bool(ctx['oop_legacy_abs']))
+    return bool(oop_a) and not bool(ctx['initiative'])
+
+
 def analyze(events, hb=None):
     out = OrderedDict()
     baseline = []
@@ -195,29 +231,39 @@ def analyze(events, hb=None):
         if hb is not None:
             hb.hit('baseline replay %d/%d' % (i + 1, len(events)))
 
-    for field in FIELDS:
-        different = 0
+    for arm_name, selected in ARMS.items():
+        effective = 0
+        gate_true = 0
         changed = 0
         chip_changed = 0
+        plan_block = 0
+        block_msg = 0
         kinds = Counter()
         samples = []
 
         for i, ev in enumerate(events):
-            cur = ev['current'][field]
-            base_ctx = RP._effective_baseline(ev, field)
-            if RP._same(cur, base_ctx):
-                continue
+            if any(not RP._same(ev['current'][f],
+                                RP._effective_baseline(ev, f))
+                   for f in selected):
+                effective += 1
 
-            different += 1
-            alt = RP._replay(ev, (field,))
+            ctx = _arm_context(ev, selected)
+            if _block_gate(ctx):
+                gate_true += 1
+
+            alt = RP._replay(ev, selected)
             a = RP._intent_sig(baseline[i], ev['street'])
             b = RP._intent_sig(alt, ev['street'])
             dk = RP._diff_kind(a, b)
 
+            if (alt or {}).get('plan') == 'block':
+                plan_block += 1
+            if any(BLOCK_MSG in str(x) for x in ((alt or {}).get('why') or [])):
+                block_msg += 1
+
             ca = chip_target(baseline[i], ev)
             cb = chip_target(alt, ev)
-            chip_diff = (ca != cb)
-            if chip_diff:
+            if ca != cb:
                 chip_changed += 1
 
             if dk:
@@ -227,8 +273,8 @@ def analyze(events, hb=None):
                     samples.append({
                         'event': i,
                         'street': ev['street'],
-                        'baseline_context': RP._sample_value(base_ctx),
-                        'current_context': RP._sample_value(cur),
+                        'selected': list(selected),
+                        'arm_context': ctx,
                         'baseline_output': a,
                         'current_output': b,
                         'baseline_chip_target': ca,
@@ -238,12 +284,16 @@ def analyze(events, hb=None):
 
             if hb is not None:
                 hb.hit('%s replay event %d/%d'
-                       % (field, i + 1, len(events)))
+                       % (arm_name, i + 1, len(events)))
 
-        out[field] = {
-            'different': different,
+        out[arm_name] = {
+            'selected': list(selected),
+            'effective_events': effective,
+            'block_gate_true': gate_true,
             'changed': changed,
             'chip_target_changed': chip_changed,
+            'plan_block': plan_block,
+            'block_msg': block_msg,
             'diff_kinds': dict(kinds),
             'samples': samples,
         }
@@ -263,34 +313,39 @@ def print_mode(name, events, counts, errors, result):
             print('  %s' % e)
         return
 
-    print('%-22s %12s %10s %12s  %s'
-          % ('field', 'different', 'changed', 'chip_target', 'diff_kinds'))
-    for field in FIELDS:
-        r = result[field]
-        print('%-22s %12d %10d %12d  %s'
-              % (field, r['different'], r['changed'],
-                 r['chip_target_changed'], r['diff_kinds']))
+    print('%-22s %9s %8s %8s %8s %8s %8s  %s'
+          % ('arm', 'effective', 'gate', 'changed', 'chip', 'block', 'blkmsg',
+             'diff_kinds'))
+    for arm_name in ARMS:
+        r = result[arm_name]
+        print('%-22s %9d %8d %8d %8d %8d %8d  %s'
+              % (arm_name, r['effective_events'], r['block_gate_true'],
+                 r['changed'], r['chip_target_changed'], r['plan_block'],
+                 r['block_msg'], r['diff_kinds']))
 
     print()
     print('samples:')
-    for field in FIELDS:
-        ss = result[field]['samples']
+    for arm_name in ARMS:
+        ss = result[arm_name]['samples']
         if not ss:
-            print('  %s: none' % field)
+            print('  %s: none' % arm_name)
             continue
-        print('  %s:' % field)
+        print('  %s:' % arm_name)
         for s in ss:
-            print('    event %(event)d %(street)s  ctx %(baseline_context)r -> '
-                  '%(current_context)r  out %(baseline_output)r -> '
+            print('    event %(event)d %(street)s selected=%(selected)r '
+                  'ctx=%(arm_context)r  out %(baseline_output)r -> '
                   '%(current_output)r  chip %(baseline_chip_target)r -> '
                   '%(current_chip_target)r  diff=%(diff)r' % s)
 
 
 def verdict_line(r):
     return (
-        r['different'],
+        r['effective_events'],
+        r['block_gate_true'],
         r['changed'],
         r['chip_target_changed'],
+        r['plan_block'],
+        r['block_msg'],
         tuple(sorted(r['diff_kinds'].items())),
     )
 
@@ -306,7 +361,10 @@ def main():
     print('fixture: entries=%d hands=%d seeds=%s fmts=%s'
           % (RP.ENTRIES, RP.HANDS, list(RP.SEEDS), list(RP.FMTS)))
     print('fields:', ', '.join(FIELDS))
+    print('arms:', ', '.join(ARMS))
     print('primary diff = plan/intent act/intent size (same as A6)')
+    print('IMPORTANT: block gate is (_oop_a AND not initiative), so single-field')
+    print('arms cannot activate it from A6 defaults; pair/position3 arms are required.')
     print('chip_target = raw pre-shape bet target only')
     print()
 
@@ -341,11 +399,11 @@ def main():
         if r1[2] or r2[2]:
             print('engine error가 있어 판정 보류')
         else:
-            for field in FIELDS:
-                a1 = verdict_line(r1[3][field])
-                a2 = verdict_line(r2[3][field])
+            for arm_name in ARMS:
+                a1 = verdict_line(r1[3][arm_name])
+                a2 = verdict_line(r2[3][arm_name])
                 print('  %-22s %s'
-                      % (field, 'SAME' if a1 == a2 else 'DIFFERENT'))
+                      % (arm_name, 'SAME' if a1 == a2 else 'DIFFERENT'))
             print('SAME이면 cache-clean 여부와 무관하게 같은 aggregate 결론.')
             print('DIFFERENT이면 cache contamination 영향을 명시하고 계약 판정 보류.')
 
