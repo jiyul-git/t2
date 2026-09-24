@@ -80,6 +80,50 @@
    * head/ear geometry. Fine placement belongs here instead of inside art data.
    * Values are SVG transforms and can be tuned without changing configs.
    */
+  /* Reasonable compatibility defaults. The user can describe the vibe;
+   * concrete collision/fit policy lives here and is owned by the renderer.
+   */
+  const COMPAT = {
+    human: {
+      hair:['none','short','side','bob','bun'],
+      beard:['none','moustache','goatee','full'],
+      hat:['none','gat','fedora','cap','beanie'],
+      accessory:['none','round_glasses','square_glasses','sunglasses','flower','earring']
+    },
+    fox: {
+      hair:['none','short','side'],
+      beard:['none','moustache'],
+      hat:['none','fedora','cap','beanie'],
+      accessory:['none','round_glasses','square_glasses','sunglasses','earring']
+    },
+    rabbit: {
+      hair:['none','short','bob'],
+      beard:['none','moustache'],
+      hat:['none','cap','beanie'],
+      accessory:['none','round_glasses','square_glasses','sunglasses','flower','earring']
+    },
+    bear: {
+      hair:['none','short','side'],
+      beard:['none','moustache','goatee','full'],
+      hat:['none','fedora','cap','beanie'],
+      accessory:['none','round_glasses','square_glasses','sunglasses','earring']
+    },
+    turtle: {
+      hair:['none'],
+      beard:['none'],
+      hat:['none','fedora','cap','beanie'],
+      accessory:['none','round_glasses','square_glasses','sunglasses']
+    }
+  };
+
+  function allowed(base,part,id){
+    const b=COMPAT[base]||COMPAT.human;
+    return !b[part] || b[part].indexOf(id)>=0;
+  }
+  function optionsFor(base,part){
+    return (CATALOG[part]||[]).filter(x=>allowed(base,part,x.id));
+  }
+
   const LAYER_LAYOUT = {
     human: {
       outfit:{x:0,y:0,s:1},
@@ -153,6 +197,12 @@
   function normalize(raw){
     const o=Object.assign({},DEFAULT,raw||{});
     Object.keys(DEFAULT).forEach(k=>{ if(!has(k,o[k])) o[k]=DEFAULT[k]; });
+    ['hair','beard','hat','accessory'].forEach(part=>{
+      if(!allowed(o.base,part,o[part])){
+        const first=optionsFor(o.base,part)[0];
+        o[part]=first?first.id:'none';
+      }
+    });
     return o;
   }
   function label(part,id){
@@ -311,7 +361,7 @@
       '</svg></span>';
   }
 
-  const api={CATALOG,DEFAULT,LAYER_LAYOUT,layerLayout,normalize,label,botConfig,legacyPreset,render,clone};
+  const api={CATALOG,DEFAULT,COMPAT,LAYER_LAYOUT,allowed,optionsFor,layerLayout,normalize,label,botConfig,legacyPreset,render,clone};
   root.AvatarSystem=api;
   if(typeof module!=='undefined'&&module.exports) module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
