@@ -1,0 +1,51 @@
+/* Hanok table. One shared card back for deck, seats, hero and showdown. */
+:root { --bg:#191b17; --felt-1:#24625c; --felt-2:#123e3c; --gold:#dfbd79; --dim:#c4c8b8; --pod:rgba(20,32,30,.94); }
+#app { max-width:520px; margin:auto; height:100dvh; background:linear-gradient(#111b1729,#151b1766),url("assets/hanok.png") center/cover; }
+#topbar { background:#152320ed; border-bottom-color:#cfa66a40; }
+#loghead { background:#172520ed; }
+#tablewrap { margin:22px 0 0; }
+#felt { inset:20px 28px 52px; border-radius:46% / 35%; border:2px solid #ccb17a;
+  background:radial-gradient(ellipse at 45% 30%,#347a70 0,#245e59 45%,#174642 100%);
+  box-shadow:0 0 0 6px #3e3026,0 0 0 9px #a17d4f,0 0 0 12px #33281f,inset 0 0 28px #082c2d80,0 20px 32px #0008; }
+#felt::after { inset:10px; border-radius:inherit; border:1px solid #d9d0ac40; }
+#felt::before { content:''; position:absolute; inset:22px; border:1px solid #c6d4bb12; border-radius:inherit; }
+.pod .avatar.botavatar { width:54px; height:56px; border:2px solid transparent; border-radius:13px; background:transparent; }
+.portrait { display:block; position:relative; width:100%; overflow:hidden; flex-shrink:0; }
+.portrait img { position:absolute; height:auto; max-width:none; pointer-events:none; }
+.portrait-pupil { position:absolute; display:block; background:#282c2a; border-radius:45%;
+  transform:translate(calc(-50% + var(--gaze-x,0px)),calc(-50% + var(--gaze-y,0px))); }
+.pod .seatno { position:static; transform:none; display:inline-block; margin-top:1px; padding:0 4px; background:#182a25ee; color:#cbd2bf; font-size:8px; }
+.pod .meta { margin-top:2px; border-color:#c1b08650; border-radius:6px; }
+.pod .backs { top:-24px; }
+.pod .backs.reveal { top:-29px; }
+.pod .memo { z-index:7; }
+.pod .tag { right:0; }
+.pod.folded { opacity:.48; }
+#hero { gap:10px; background:linear-gradient(transparent,#182821ed 60%); padding-left:10px; padding-right:10px; }
+#heroavatar { width:58px; flex:0 0 58px; }
+#heroinfo { min-width:72px; }
+#actionbar { background:#14231ff5; border-color:#bea16b50; }
+#pot { background:#102f2ee8; border-color:#c5ad7955; color:#f4dfad; }
+#board { top:43%; }
+#potline { top:56%; }
+.card.back { border:2px solid #eee3c7; background-color:#215a59;
+  background-image:repeating-linear-gradient(0deg,transparent 0 7px,#c7b98770 7px 8px),repeating-linear-gradient(90deg,transparent 0 7px,#c7b98770 7px 8px);
+  background-position:center; box-shadow:0 2px 5px #0007,inset 0 0 0 1px #1a3c3d; }
+.card.back::after { content:''; position:absolute; width:38%; aspect-ratio:1; left:50%; top:50%;
+  transform:translate(-50%,-50%) rotate(45deg); background:#d3bc85; border:2px solid #254e4b; box-shadow:0 0 0 1px #d3bc85; }
+@media (max-height:700px) {
+  #tablewrap { margin-top:15px; }
+  .pod .avatar.botavatar { width:45px; height:46px; }
+  .pod .meta { padding:1px 3px; }
+  .pod .meta { display:flex; align-items:center; justify-content:space-between; gap:2px; }
+  .pod .pos { font-size:8px; letter-spacing:0; }
+  .pod .stack { font-size:10px; }
+  #heroavatar { width:48px; flex-basis:48px; }
+}
+@media (max-width:359px) {
+  .pod { width:64px; margin-left:-32px; }
+  .pod .avatar.botavatar { width:46px; height:48px; }
+  #hero { gap:7px; }
+  #board { gap:4px; }
+  #board .card { --card-w:30px; --card-h:43px; }
+}

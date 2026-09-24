@@ -54,7 +54,9 @@ def main():
         os.makedirs(web_dst, exist_ok=True)
         for fn in os.listdir(web_src):
             p = os.path.join(web_src, fn)
-            if os.path.isfile(p):
+            if os.path.isdir(p):
+                shutil.copytree(p, os.path.join(web_dst, fn), dirs_exist_ok=True)
+            elif os.path.isfile(p):
                 shutil.copy2(p, os.path.join(web_dst, fn))
 
     # 이 표시 파일이 없으면 ui_server 가 시작을 거부한다.
@@ -69,3 +71,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
