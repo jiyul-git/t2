@@ -669,3 +669,8 @@ html[data-airport-theme="night"] .sheetWrap{
   .sheet{padding-left:14px;padding-right:14px}
   .sheetHeader{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}
 }
+
+.deckMini.jade{background:#215a59}.deckMini.jade::after{border-color:#d3bc85}
+.deckMini.navy{background:#243a64}.deckMini.navy::after{border-color:#d8c58f}
+.deckMini.burgundy{background:#672b34}.deckMini.burgundy::after{border-color:#ddc58a}
+.deckMini.ivory{background:#d9d1ba;border-color:#506a62}.deckMini.ivory::after{border-color:#45665b}
