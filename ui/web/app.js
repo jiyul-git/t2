@@ -308,7 +308,9 @@ function boardWinCard(code) {
 function slotPos(slot, heroSlot, n, rfx, rfy) {
   const off = (((slot - heroSlot) % n) + n) % n;
   const th = (90 - off * (360 / n)) * Math.PI / 180;
-  return { x: 50 + 39 * rfx * Math.cos(th), y: 44 + 36 * rfy * Math.sin(th) };
+  // Seat centers ride just outside the table rail rather than inside the felt.
+  // Chips still pass rfx/rfy < 1, so betting markers remain inside the table.
+  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + 39 * rfy * Math.sin(th) };
 }
 
 function sideSeatClass(p) {
