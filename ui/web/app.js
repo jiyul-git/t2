@@ -2952,35 +2952,6 @@ function buildTag() {
   return m ? m[1] : '?';
 }
 
-function fullscreenActive() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement);
-}
-
-async function toggleFullscreen() {
-  if (fullscreenActive()) {
-    const exit = document.exitFullscreen || document.webkitExitFullscreen;
-    if (exit) {
-      try { await exit.call(document); } catch (e) {}
-    }
-    return;
-  }
-
-  const el = document.documentElement;
-  const enter = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (!enter) {
-    toast('이 브라우저는 웹 전체화면을 지원하지 않습니다');
-    return;
-  }
-
-  try {
-    // Android Chromium 계열은 navigationUI:'hide'를 지원하면 주소/탭 UI까지 숨긴다.
-    await enter.call(el, { navigationUI: 'hide' });
-  } catch (e) {
-    try { await enter.call(el); }
-    catch (e2) { toast('전체화면 전환을 사용할 수 없습니다'); }
-  }
-}
-
 function showMenu() {
   const on = autoOn();
   const sm = stepMs();
@@ -2997,9 +2968,6 @@ function showMenu() {
     ' 정산을 가리려고 두었던 것인데, 정산이 빨라진 지금은 지연일 뿐입니다.</div>' +
     '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
     ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
-    '<button type="button" id="mFull">' +
-    (fullscreenActive() ? '전체화면 끄기' : '전체화면 켜기') + '</button>' +
-    '<div class="potline" style="margin-top:8px">브라우저 주소창 때문에 세로 공간이 부족하면 전체화면을 사용합니다.</div>' +
     '<button type="button" id="mNew">새 게임</button>' +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
     // 어느 빌드가 떠 있는지 확인할 수단이 없어서, 이미 고친 것을 두고
@@ -3012,10 +2980,6 @@ function showMenu() {
     showMenu();
   });
   $('#mAuto').addEventListener('click', () => { autoSet(!on); showMenu(); });
-  $('#mFull').addEventListener('click', () => {
-    hideOverlay();
-    toggleFullscreen();
-  });
   $('#mNew').addEventListener('click', () => {
     showOverlayPersistent('<h2>새 게임을 시작할까요?</h2>' +
       '<div class="sub">진행 중인 대회는 끝납니다. 되돌릴 수 없습니다.</div>' +
