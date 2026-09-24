@@ -18,4 +18,21 @@ assert.equal(portraitIndex(-1),8);
 assert.equal(portraitIndex('?'),0);
 assert.ok(!avatarHTML('<script>').includes('<script>'));
 console.log('PASS: bounded gaze, all directions, coincident centers, stable portrait mapping, safe markup');
-
+const {createTableAllocator} = require('../web/visuals.js');
+const assign = createTableAllocator();
+const roster = Array.from({length:9},(_,i)=>({seat:i+1,pid:i*9,hero:i===0}));
+const first = assign(roster);
+assert.equal(new Set(first.values()).size,9,'colliding pids including hero must have nine distinct portraits');
+assert.deepEqual(assign([...roster].reverse()),first,'render order does not change portraits');
+const moved = roster.map(s=>({...s,seat:s.seat%9+1}));
+const afterMove = assign(moved);
+for(let i=0;i<9;i++) assert.equal(afterMove.get(moved[i].seat),first.get(roster[i].seat));
+const replacement = moved.map((s,i)=>i===4?{...s,pid:999}:s);
+const afterReplacement = assign(replacement);
+assert.equal(new Set(afterReplacement.values()).size,9);
+for(let i=0;i<9;i++) if(i!==4) assert.equal(afterReplacement.get(moved[i].seat),afterMove.get(moved[i].seat));
+for(const n of [8,6,9]) {
+  const seats=Array.from({length:n},(_,i)=>({seat:i+1,pid:null,hero:i===0}));
+  assert.equal(new Set(assign(seats).values()).size,n,'unknown pids are unique too');
+}
+console.log('PASS: unique table portraits, hero included, seat moves, replacements, missing ids and 6/8/9 tables');

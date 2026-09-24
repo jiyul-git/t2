@@ -315,6 +315,7 @@ function botAvatarHTML(pid) {
 
 function renderSeats(v) {
   const n = v.n_slots || 8;
+  const portraits = PokerVisuals.tablePortraits(v.seats || []);
   const box = $('#seats');
   // 카드가 가운데 덱에서 날아오게 하려면 '가운데 → 이 자리' 를 픽셀로 알아야
   // 한다. 좌석은 %로 배치되는데 CSS transform 의 %는 자기 박스 기준이라
@@ -380,7 +381,7 @@ function renderSeats(v) {
 
     html += `<div class="${cls}" data-slot="${slot}" style="${style}">` + memo +
             backs +
-            `<div class="avatar botavatar">${botAvatarHTML(botNo)}</div>` +
+            `<div class="avatar botavatar">${botAvatarHTML(portraits.get(slot))}</div>` +
             `<div class="seatno">B${esc(botNo)} · S${slot}</div>` +
             (award ? `<div class="winlabel">${esc(award)}</div>` : '') +
             (d.allin ? `<div class="tag">ALL-IN</div>` : '') +
@@ -573,7 +574,7 @@ function renderHero(v) {
 
   box.hidden = false;
   const portrait = $('#heroavatar');
-  const portraitId = PokerVisuals.portraitIndex(me ? me.pid : 0);
+  const portraitId = PokerVisuals.tablePortraits(v.seats || []).get(me ? me.seat : v.hero_seat) ?? 0;
   if (portrait.dataset.portraitId !== String(portraitId)) {
     portrait.innerHTML = PokerVisuals.avatarHTML(portraitId);
     portrait.dataset.portraitId = String(portraitId);

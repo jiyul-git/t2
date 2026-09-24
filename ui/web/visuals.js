@@ -23,6 +23,31 @@
     const scale = distance ? Math.min(1, distance / 120) * radius / distance : 0;
     return {x: dx * scale, y: dy * scale};
   }
+  // Keep continuing players' portraits and assign newcomers an unused portrait.
+  // Hero participates in the same pool; missing pid falls back to the seat.
+  function createTableAllocator() {
+    let previous = new Map();
+    const key = s => s.hero ? 'hero' : s.pid != null ? 'pid:'+s.pid : 'seat:'+s.seat;
+    return function tablePortraits(seats) {
+      const roster = [...seats].sort((a,b) => Number(b.hero)-Number(a.hero) || a.seat-b.seat);
+      const next = new Map(), used = new Set(), result = new Map();
+      for (const s of roster) {
+        const id = previous.get(key(s));
+        if (id !== undefined && !used.has(id)) {
+          next.set(key(s), id); used.add(id); result.set(s.seat, id);
+        }
+      }
+      for (const s of roster) {
+        if (result.has(s.seat)) continue;
+        let id = portraitIndex(s.pid);
+        for (let count=0; count<portraits.length && used.has(id); count++) id=(id+1)%portraits.length;
+        next.set(key(s), id); used.add(id); result.set(s.seat, id);
+      }
+      previous = next;
+      return result;
+    };
+  }
+  const tablePortraits = createTableAllocator();
   function avatarHTML(pid) {
     const index = portraitIndex(pid), p = portraits[index];
     const [x,y,w,h] = p.crop;
@@ -51,7 +76,7 @@
     queued = true;
     requestAnimationFrame(() => { queued = false; updateGaze(); });
   }
-  const api = {avatarHTML, portraitIndex, gazeOffset, scheduleGaze};
+  const api = {avatarHTML, portraitIndex, gazeOffset, scheduleGaze, tablePortraits, createTableAllocator};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.PokerVisuals = api;
   if (typeof document !== 'undefined') {
@@ -65,4 +90,3 @@
     else start();
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this);
-

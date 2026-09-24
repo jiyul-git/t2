@@ -13,7 +13,7 @@ const view = {
  legal:{fold:true,check:false,call:300,raise:{kind:'raise',min_to:600,max_to:18000,allin_only:false}},
  level:{n:3,sb:100,bb:200,ante:200},field:{entries:180,remaining:126,itm:27,rank:42,tables:14},
  notes:[],log:[],prior_log:[],
- seats:Array.from({length:9},(_,i)=>({seat:i+1,pid:i,pos:['BB','UTG','UTG+1','MP','LJ','HJ','CO','BTN','SB'][i],stack:18000+i*1250,bet:i===2?600:0,in_hand:true,allin:false,hero:i===0}))
+ seats:Array.from({length:9},(_,i)=>({seat:i+1,pid:i*9,pos:['BB','UTG','UTG+1','MP','LJ','HJ','CO','BTN','SB'][i],stack:18000+i*1250,bet:i===2?600:0,in_hand:true,allin:false,hero:i===0}))
 };
 const response={token:'fixture-1',view};
 const server=http.createServer((req,res)=>{
@@ -41,6 +41,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await page.locator('#seats .pod').count(),8);
  assert.equal(await page.locator('.portrait').count(),9);
  assert.equal(await page.locator('.portrait-pupil').count(),18);
+ assert.equal(await page.locator('.portrait').evaluateAll(els=>new Set(els.map(el=>el.dataset.portrait)).size),9,'hero and eight bots must be distinct');
  await page.waitForFunction(()=>[...document.images].every(i=>i.complete && i.naturalWidth>0));
  await page.screenshot({path:path.join(out,'9max-390.png')});
  const gaze = await page.evaluate(()=>{
@@ -70,4 +71,3 @@ const server=http.createServer((req,res)=>{
  console.log('PASS: 9 seats, images, gaze directions, resize, hero card stability, raise controls, 8/6 compatibility; no browser errors');
  } finally {await browser.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});
-
