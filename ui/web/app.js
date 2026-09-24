@@ -447,9 +447,10 @@ function renderChips(v, streetChanged) {
     const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
     const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
     const side = sideSeatClass(seatP);
-    // 3/9 o'clock chips used to land on the outside board cards.
-    // Keep their normal inward x position, but drop them below the board/pot lane.
-    if (side) p.y = Math.max(p.y, 59);
+    // 3/9 o'clock chips need to clear the outer board cards, but pushing them
+    // down to 59% collides with the lower-diagonal seat's chips. Keep them just
+    // below the board lane instead.
+    if (side) p.y = Math.max(p.y, 51);
     const el = document.createElement('div');
     el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
