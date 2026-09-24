@@ -1501,8 +1501,12 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                 # 3벳 이상으로 들어온 팟은 내 레인지가 강하게 대표된다
                 st['why'] = (st.get('why') or []) + ['프리플랍 3벳 팟 → 레인지 우위']
     else:
-        st = _RU.revise_plan(state, hero, board, my_range, opp_range, profile,
-                             pot, stack, street, seed, n_opp, behind, prev_board)
+        st = _RU.revise_plan(
+            state, hero, board, my_range, opp_range, profile,
+            pot, stack, street, seed, n_opp, behind, prev_board,
+            oop_vs_aggr=oop_vs_aggr,
+            oop_legacy_abs=oop_legacy_abs,
+            initiative=initiative)
 
     # 계획 이력은 라벨과 별개로 이어진다. 새 dict 가 만들어져도 유지한다.
     if prev:
