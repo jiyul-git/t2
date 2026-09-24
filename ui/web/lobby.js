@@ -155,7 +155,8 @@ $('#continueNav').addEventListener('click',()=>location.href='/play');
 const PROFILE_KEYS = {
   nickname: 't2profile_nickname',
   avatar: 't2profile_avatar',
-  deck: 't2profile_deck'
+  deck: 't2profile_deck',
+  timeTheme: 't2profile_airport_theme'
 };
 
 function profileGet(key, fallback){
@@ -167,6 +168,12 @@ function profileSet(key, value){
 }
 function applyDeckTheme(deck){
   document.documentElement.dataset.deck = deck || 'jade';
+}
+function applyAirportTheme(theme){
+  const v = theme === 'day' ? 'day' : 'night';
+  document.documentElement.dataset.airportTheme = v;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', v === 'day' ? '#e4edf2' : '#07111d');
 }
 function renderProfileChoices(){
   const currentAvatar = Math.max(0, Math.min(8, Number(profileGet('avatar','0')) || 0));
@@ -180,6 +187,15 @@ function renderProfileChoices(){
     $('#profilePreview').innerHTML=PokerVisuals.avatarHTML(Number(b.dataset.avatar));
     PokerVisuals.scheduleGaze();
   }));
+
+  const airportTheme = profileGet('timeTheme','night');
+  $('#timeThemeChoices').querySelectorAll('button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.timeTheme===airportTheme);
+    b.addEventListener('click',()=>{
+      $('#timeThemeChoices').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
+      applyAirportTheme(b.dataset.timeTheme);
+    });
+  });
 
   const deck = profileGet('deck','jade');
   $('#deckChoices').querySelectorAll('button').forEach(b=>{
@@ -204,9 +220,11 @@ function saveProfile(){
   const nick = ($('#nickname').value || '플레이어').trim().slice(0,16) || '플레이어';
   const av = $('#avatarChoices button.active');
   const dk = $('#deckChoices button.active');
+  const tt = $('#timeThemeChoices button.active');
   profileSet('nickname',nick);
   profileSet('avatar',av?av.dataset.avatar:'0');
   profileSet('deck',dk?dk.dataset.deck:'jade');
+  profileSet('timeTheme',tt?tt.dataset.timeTheme:'night');
   try {
     localStorage.setItem('t2step',$('#profileSpeed').value);
     localStorage.setItem('t2auto',$('#profileAuto').checked?'1':'0');
@@ -221,5 +239,6 @@ $('#profileSheet').addEventListener('click',(e)=>{if(e.target===$('#profileSheet
 $('#profileSave').addEventListener('click',saveProfile);
 $('#profileHistory').addEventListener('click',()=>{location.href='/play#history';});
 applyDeckTheme(profileGet('deck','jade'));
+applyAirportTheme(profileGet('timeTheme','night'));
 
 loadLobby();
