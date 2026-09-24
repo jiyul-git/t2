@@ -51,9 +51,15 @@ function profileStorage(key, fallback) {
     return v === null ? fallback : v;
   } catch (e) { return fallback; }
 }
-function heroProfileAvatar() {
+function heroProfileAvatarConfig() {
+  try {
+    const raw = localStorage.getItem('t2profile_avatar_v2');
+    if (raw) return AvatarSystem.normalize(JSON.parse(raw));
+  } catch (e) {}
   const n = Number(profileStorage('t2profile_avatar', '0'));
-  return Math.max(0, Math.min(8, Number.isFinite(n) ? Math.trunc(n) : 0));
+  return AvatarSystem.legacyPreset(
+    Math.max(0, Math.min(8, Number.isFinite(n) ? Math.trunc(n) : 0))
+  );
 }
 function heroProfileNickname() {
   return String(profileStorage('t2profile_nickname', '플레이어') || '플레이어')
@@ -331,9 +337,10 @@ function renderTop(v) {
 
 /* ---------------- 좌석 ---------------- */
 
-// First integrated portrait set. Identity follows pid when a player changes seats.
+// Avatar identity follows pid when a player changes seats.
+// This is presentation-only and never consumes game RNG.
 function botAvatarHTML(pid) {
-  return PokerVisuals.avatarHTML(pid);
+  return AvatarSystem.render(AvatarSystem.botConfig(pid));
 }
 
 function renderSeats(v) {
@@ -596,14 +603,14 @@ function renderHero(v) {
 
   box.hidden = false;
   const portrait = $('#heroavatar');
-  const portraitId = WATCH_MODE
-    ? PokerVisuals.portraitIndex(me ? me.pid : 0)
-    : heroProfileAvatar();
-  if (portrait.dataset.portraitId !== String(portraitId)) {
-    portrait.innerHTML = PokerVisuals.avatarHTML(portraitId);
-    portrait.dataset.portraitId = String(portraitId);
+  const avatarCfg = WATCH_MODE
+    ? AvatarSystem.botConfig(me ? me.pid : 0)
+    : heroProfileAvatarConfig();
+  const avatarSig = JSON.stringify(avatarCfg);
+  if (portrait.dataset.avatarSig !== avatarSig) {
+    portrait.innerHTML = AvatarSystem.render(avatarCfg);
+    portrait.dataset.avatarSig = avatarSig;
   }
-  PokerVisuals.scheduleGaze();
   box.classList.toggle('folded', !!me && !me.in_hand);
 
   const d = v.button_seat === v.hero_seat ? ' · D' : '';
