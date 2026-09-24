@@ -132,7 +132,7 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
     # 백업 대상에 넣으면 남의 기록을 치우게 된다.
     for p in [SP.sidecar_path(k) for k in SP.BACKUP_KINDS]:
         if os.path.exists(p) and os.path.getsize(p) > 0:
-            try: os.rename(p, os.path.join(D, 'bak_%s_%s' % (_stamp, fn)))
+            try: os.rename(p, os.path.join(D, 'bak_%s_%s' % (_stamp, os.path.basename(p))))
             except OSError:
                 try: os.remove(p)
                 except OSError: pass
