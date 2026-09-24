@@ -74,6 +74,80 @@
     deep:{skin:'#865b46', shadow:'#67402f'}
   };
 
+
+  /* Per-base calibration matrix.
+   * Every layer stays in the shared 240x260 canvas, but species have different
+   * head/ear geometry. Fine placement belongs here instead of inside art data.
+   * Values are SVG transforms and can be tuned without changing configs.
+   */
+  const LAYER_LAYOUT = {
+    human: {
+      outfit:{x:0,y:0,s:1},
+      base:{x:0,y:0,s:1},
+      hair:{x:0,y:0,s:1},
+      eyes:{x:0,y:0,s:1},
+      mouth:{x:0,y:0,s:1},
+      beard:{x:0,y:0,s:1},
+      hat:{x:0,y:0,s:1},
+      accessory:{x:0,y:0,s:1}
+    },
+    fox: {
+      outfit:{x:0,y:0,s:1},
+      base:{x:0,y:0,s:1},
+      hair:{x:0,y:-7,s:.96},
+      eyes:{x:0,y:1,s:1},
+      mouth:{x:0,y:0,s:1},
+      beard:{x:0,y:-2,s:.96},
+      hat:{x:0,y:-11,s:.92},
+      accessory:{x:0,y:0,s:.98}
+    },
+    rabbit: {
+      outfit:{x:0,y:0,s:1},
+      base:{x:0,y:0,s:1},
+      hair:{x:0,y:-15,s:.92},
+      eyes:{x:0,y:3,s:.98},
+      mouth:{x:0,y:2,s:1},
+      beard:{x:0,y:-1,s:.94},
+      hat:{x:0,y:-22,s:.88},
+      accessory:{x:0,y:2,s:.98}
+    },
+    bear: {
+      outfit:{x:0,y:1,s:1.02},
+      base:{x:0,y:0,s:1},
+      hair:{x:0,y:-5,s:.98},
+      eyes:{x:0,y:1,s:1},
+      mouth:{x:0,y:0,s:1},
+      beard:{x:0,y:0,s:1},
+      hat:{x:0,y:-7,s:.95},
+      accessory:{x:0,y:1,s:1}
+    },
+    turtle: {
+      outfit:{x:0,y:3,s:1.04},
+      base:{x:0,y:0,s:1},
+      hair:{x:0,y:-2,s:.96},
+      eyes:{x:0,y:4,s:.96},
+      mouth:{x:0,y:3,s:1},
+      beard:{x:0,y:3,s:.95},
+      hat:{x:0,y:-2,s:.96},
+      accessory:{x:0,y:4,s:.96}
+    }
+  };
+
+  function layerLayout(base,layer){
+    const b=LAYER_LAYOUT[base]||LAYER_LAYOUT.human;
+    return b[layer]||{x:0,y:0,s:1};
+  }
+  function layerTransform(base,layer){
+    const a=layerLayout(base,layer);
+    const s=Number(a.s||1), x=Number(a.x||0), y=Number(a.y||0);
+    // Scale around the canvas center so offsets remain intuitive.
+    const ox=120*(1-s), oy=130*(1-s);
+    return 'translate('+(x+ox)+' '+(y+oy)+') scale('+s+')';
+  }
+  function layerGroup(base,layer,html){
+    return '<g data-layer="'+layer+'" transform="'+layerTransform(base,layer)+'">'+html+'</g>';
+  }
+
   function clone(x){ return JSON.parse(JSON.stringify(x)); }
   function has(part,id){ return (CATALOG[part]||[]).some(x=>x.id===id); }
   function normalize(raw){
@@ -226,18 +300,18 @@
     const title=o.title?'<title>'+esc(o.title)+'</title>':'';
     return '<span class="layer-avatar" data-base="'+esc(c.base)+'">'+
       '<svg viewBox="0 0 240 260" role="img" aria-hidden="'+(o.decorative!==false?'true':'false')+'">'+title+
-      '<g data-layer="outfit">'+outfit(c)+'</g>'+
-      '<g data-layer="base">'+faceBase(c)+'</g>'+
-      '<g data-layer="hair">'+hair(c)+'</g>'+
-      '<g data-layer="eyes">'+eyes(c)+'</g>'+
-      '<g data-layer="mouth">'+mouth(c)+'</g>'+
-      '<g data-layer="beard">'+beard(c)+'</g>'+
-      '<g data-layer="hat">'+hat(c)+'</g>'+
-      '<g data-layer="accessory">'+accessory(c)+'</g>'+
+      layerGroup(c.base,'outfit',outfit(c))+
+      layerGroup(c.base,'base',faceBase(c))+
+      layerGroup(c.base,'hair',hair(c))+
+      layerGroup(c.base,'eyes',eyes(c))+
+      layerGroup(c.base,'mouth',mouth(c))+
+      layerGroup(c.base,'beard',beard(c))+
+      layerGroup(c.base,'hat',hat(c))+
+      layerGroup(c.base,'accessory',accessory(c))+
       '</svg></span>';
   }
 
-  const api={CATALOG,DEFAULT,normalize,label,botConfig,legacyPreset,render,clone};
+  const api={CATALOG,DEFAULT,LAYER_LAYOUT,layerLayout,normalize,label,botConfig,legacyPreset,render,clone};
   root.AvatarSystem=api;
   if(typeof module!=='undefined'&&module.exports) module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
