@@ -2920,6 +2920,7 @@ function showMenu() {
     '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
     ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
     '<button type="button" id="mNew">새 게임</button>' +
+    '<button type="button" id="mLobby">로비로 나가기</button>' +
     // 어느 빌드가 떠 있는지 확인할 수단이 없어서, 이미 고친 것을 두고
     // '아직도 그대로다' 를 서로 확인하는 데 시간을 썼다.
     `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
@@ -2939,6 +2940,7 @@ function showMenu() {
     $('#bNew').addEventListener('click', startNew);
     $('#mBack').addEventListener('click', showMenu);
   });
+  $('#mLobby').addEventListener('click', () => { location.href = '/'; });
   $('#mClose').addEventListener('click', hideOverlay);
 }
 

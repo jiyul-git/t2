@@ -1,0 +1,671 @@
+:root{
+  --bg:#091311;--panel:#10211e;--panel2:#162b27;--line:#31534b;
+  --felt:#1c5c54;--gold:#d5b574;--text:#f3f0e7;--muted:#9fb2aa;
+  --danger:#e98272;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%;background:#07100f;color:var(--text);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input{font:inherit}
+button{color:inherit}
+body{background:
+  linear-gradient(#06100ed9,#07100ff0),
+  url("assets/hanok.png") center top/cover fixed}
+#lobby{width:min(100%,560px);min-height:100dvh;margin:auto;padding-bottom:78px;
+  background:linear-gradient(180deg,#0b1715e8,#07100ff5 52%,#07100f)}
+.top{height:72px;padding:15px 18px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:20;background:#0b1715ee;border-bottom:1px solid #ab925037;
+  backdrop-filter:blur(16px)}
+.brand{font-size:20px;font-weight:900;letter-spacing:.08em}.brand span{color:var(--gold)}
+.strap{font-size:9px;color:var(--muted);letter-spacing:.26em;margin-top:2px}
+main{padding:0 14px 22px}
+.hero{margin:12px 0 18px;padding:28px 20px;border-radius:22px;min-height:188px;
+  background:radial-gradient(circle at 88% 0,#32746b70,transparent 42%),
+    linear-gradient(135deg,#173b36,#102622 58%,#191d18);
+  border:1px solid #c8a96b44;box-shadow:0 12px 30px #0006,inset 0 0 30px #183e3855}
+.eyebrow{font-size:10px;font-weight:800;letter-spacing:.22em;color:var(--gold)}
+.hero h1{font-size:31px;line-height:1.09;margin:9px 0 10px;letter-spacing:-.04em}
+.hero p{margin:0;color:#bfd0c9;font-size:13px;line-height:1.55;max-width:360px}
+.current{margin:14px 0 0;padding:15px;border-radius:17px;
+  background:linear-gradient(135deg,#27351f,#15342f);border:1px solid #d5b57466;
+  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.current .kicker{font-size:9px;color:var(--gold);font-weight:800;letter-spacing:.18em}
+.current h3{margin:4px 0 3px;font-size:17px}
+.current p{margin:0;color:var(--muted);font-size:11px}
+.current button{border:0;border-radius:11px;padding:11px 13px;background:var(--gold);color:#18201b;font-weight:900}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:-5px 0 20px}
+.mode{min-height:78px;text-align:left;border:1px solid #2f4b43;border-radius:14px;padding:10px;background:#0e1b18;color:#8ea29b}
+.mode b,.mode small{display:block}.mode b{font-size:12px;margin-top:4px}.mode small{font-size:8px;margin-top:2px;color:#6e827b}.modeIcon{font-size:18px}
+.mode.active{background:linear-gradient(145deg,#204b43,#16352f);border-color:#b89c5d7a;color:#fff;box-shadow:inset 0 0 20px #2d6b5f33}.mode.active small{color:#d7c28d}.mode:disabled{opacity:.55}
+.section{margin-top:6px}.sectionHead{display:flex;gap:10px;justify-content:space-between;align-items:flex-end;margin-bottom:11px}
+.section h2{font-size:20px;margin:0}.sectionHead p{font-size:10px;color:var(--muted);margin:3px 0 0}
+.tabs{display:flex;gap:4px;overflow:auto;max-width:62%;scrollbar-width:none}
+.tabs button{white-space:nowrap;border:1px solid #335149;border-radius:999px;background:#0e1b19;padding:6px 9px;font-size:9px;color:#9fb2aa}
+.tabs button.active{background:#234b44;border-color:#5d8378;color:#fff}
+.tournaments{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{position:relative;overflow:hidden;min-height:188px;border-radius:17px;padding:14px;
+  border:1px solid #314b45;background:linear-gradient(145deg,#142824,#0e1917);
+  box-shadow:0 8px 20px #0004;cursor:pointer}
+.card::after{content:"";position:absolute;width:100px;height:100px;right:-32px;top:-32px;
+  border:18px solid #4e817347;border-radius:50%}
+.card.featured{grid-column:span 2;min-height:166px;
+  background:radial-gradient(circle at 88% 18%,#b18d4052,transparent 35%),
+  linear-gradient(135deg,#173d36,#12241f)}
+.card .tag{display:inline-block;font-size:8px;font-weight:900;letter-spacing:.12em;
+  color:#191d18;background:var(--gold);padding:4px 6px;border-radius:6px}
+.card h3{margin:12px 0 4px;font-size:18px}.card .desc{font-size:10px;color:var(--muted);line-height:1.4;min-height:28px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:12px}
+.fact{border-top:1px solid #355249;padding-top:6px}.fact b{display:block;font-size:12px}.fact span{font-size:8px;color:#81968f}
+.card .enter{margin-top:10px;font-size:10px;color:#e7d3a5;font-weight:800}
+.sheetWrap{position:fixed;inset:0;z-index:50;background:#000a;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(100%,560px);padding:24px 18px calc(18px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;
+  background:#10201d;border-top:1px solid #d5b57466;box-shadow:0 -20px 50px #0009;position:relative}
+.close{position:absolute;right:15px;top:12px;width:35px;height:35px;border-radius:50%;border:1px solid #375149;background:#162924;font-size:22px}
+.joinTitle h2{margin:0 0 4px;font-size:23px}.joinTitle p{margin:0;color:var(--muted);font-size:11px}
+.joinFacts{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
+.joinFacts span{font-size:9px;padding:6px 8px;border:1px solid #3a574f;border-radius:8px;background:#142622;color:#cbd8d3}
+.inputLabel{display:block;margin-top:12px;font-size:11px;color:#b7c5c0}.inputLabel span{float:right;color:#758a83}
+.inputLabel input{display:block;width:100%;margin-top:6px;padding:12px;border-radius:11px;border:1px solid #355149;background:#091411;color:#fff;outline:none}
+.quick{display:flex;gap:6px;margin-top:7px}.quick button{flex:1;border:1px solid #355149;background:#12221f;border-radius:9px;padding:8px;font-size:10px}
+.quick button.active{border-color:var(--gold);color:var(--gold)}
+.join{width:100%;margin-top:18px;border:0;border-radius:12px;padding:14px;background:linear-gradient(90deg,#cda95f,#e1c786);color:#17201b;font-weight:950}
+.join:disabled{opacity:.45}.joinHint{text-align:center;min-height:18px;margin-top:8px;color:var(--danger);font-size:10px}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:80;background:#243631;border:1px solid #5b756d;border-radius:999px;padding:9px 14px;font-size:11px}
+.bottom{position:fixed;z-index:30;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,560px);
+  height:66px;padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(3,1fr);
+  background:#0a1513f2;border-top:1px solid #8a754537;backdrop-filter:blur(14px)}
+.bottom button{border:0;background:transparent;color:#738982;font-size:9px}.bottom button span{display:block;font-size:17px;margin-bottom:3px}
+.bottom button.active{color:var(--gold)}
+.emptyState{grid-column:1/-1;padding:30px;text-align:center;color:var(--muted);border:1px dashed #355149;border-radius:16px}
+@media(max-width:360px){.hero h1{font-size:27px}.card{padding:12px}.tabs{max-width:58%}}
+
+.profileHead{display:flex;align-items:center;gap:14px;margin-bottom:8px;padding-right:42px}
+.profileHead h2{margin:2px 0 3px;font-size:22px}.profileHead p{margin:0;color:var(--muted);font-size:10px}
+.profilePreview{width:64px;height:68px;flex:0 0 64px;border:1px solid #416157;border-radius:15px;overflow:hidden;background:#142723;padding:2px}
+.profilePreview .portrait{width:100%;height:100%}
+.profileLabel{font-size:11px;color:#b7c5c0;margin-top:14px;margin-bottom:7px}
+.avatarChoices{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.avatarChoices button{aspect-ratio:1;border:1px solid #335149;border-radius:11px;background:#0c1715;padding:2px;overflow:hidden}
+.avatarChoices button.active{border-color:var(--gold);box-shadow:0 0 0 1px #d5b57480}
+.avatarChoices .portrait{width:100%;height:100%}
+.deckChoices{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.deckChoices button{border:1px solid #335149;background:#0d1917;border-radius:11px;padding:8px 4px 7px;color:#9db0aa}
+.deckChoices button.active{border-color:var(--gold);color:#ead89f}
+.deckChoices b{display:block;font-size:9px;margin-top:5px}
+.deckSample{display:block;width:30px;height:42px;margin:auto;border-radius:5px;border:2px solid #eee3c7;position:relative;box-shadow:0 2px 5px #0007}
+.deckSample::after{content:"";position:absolute;width:12px;height:12px;left:50%;top:50%;transform:translate(-50%,-50%) rotate(45deg);border:2px solid currentColor}
+.deckSample.jade{background:#215a59;color:#d3bc85}.deckSample.navy{background:#263b67;color:#d7c38c}
+.deckSample.burgundy{background:#6a2830;color:#dfc38b}.deckSample.ivory{background:#d9d0b8;color:#37594f;border-color:#48665f}
+.settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.settingsGrid label{font-size:10px;color:#aebfb8}
+.settingsGrid select{display:block;width:100%;margin-top:6px;padding:11px 8px;border:1px solid #355149;border-radius:10px;background:#091411;color:#fff}
+.toggleRow{display:flex!important;flex-direction:column;justify-content:center;border:1px solid #355149;border-radius:10px;padding:9px 10px;background:#0b1715}
+.toggleRow input{width:20px;height:20px;margin-top:7px;accent-color:#d5b574}
+.secondaryAction{width:100%;margin-top:12px;border:1px solid #45655c;border-radius:11px;padding:11px;background:#142622;color:#d9e2de;font-weight:800}
+
+
+/* ---------- Airport shell: shared structure, day/night palette ---------- */
+:root{
+  --airport-bg:#07111d;
+  --airport-surface:#0e1a28;
+  --airport-surface-2:#132336;
+  --airport-line:#294057;
+  --airport-text:#f4f7fb;
+  --airport-muted:#8fa2b6;
+  --airport-accent:#e6b95f;
+  --airport-board:#111d2a;
+  --airport-glass:rgba(9,20,33,.86);
+  --airport-glow:rgba(71,145,220,.18);
+}
+html[data-airport-theme="day"]{
+  --airport-bg:#dfe8ee;
+  --airport-surface:#f4f7f9;
+  --airport-surface-2:#e7eef3;
+  --airport-line:#b8c8d3;
+  --airport-text:#17212b;
+  --airport-muted:#607383;
+  --airport-accent:#bf8b2d;
+  --airport-board:#eff4f7;
+  --airport-glass:rgba(246,249,251,.88);
+  --airport-glow:rgba(102,164,208,.22);
+}
+html[data-airport-theme="night"]{
+  --airport-bg:#07111d;
+  --airport-surface:#0e1a28;
+  --airport-surface-2:#132336;
+  --airport-line:#294057;
+  --airport-text:#f4f7fb;
+  --airport-muted:#8fa2b6;
+  --airport-accent:#e6b95f;
+  --airport-board:#111d2a;
+  --airport-glass:rgba(9,20,33,.88);
+  --airport-glow:rgba(71,145,220,.18);
+}
+html,body{background:var(--airport-bg);color:var(--airport-text)}
+body{
+  background-image:
+    linear-gradient(180deg,var(--airport-glass),var(--airport-bg)),
+    linear-gradient(115deg,transparent 0 44%,rgba(255,255,255,.035) 44% 45%,transparent 45% 100%);
+}
+#lobby{
+  background:
+    radial-gradient(circle at 85% 3%,var(--airport-glow),transparent 28%),
+    linear-gradient(180deg,var(--airport-glass),var(--airport-bg) 58%);
+}
+.top{
+  background:var(--airport-glass);
+  border-bottom-color:var(--airport-line);
+}
+.brand{letter-spacing:.11em}.brand span{color:var(--airport-accent)}
+.strap{color:var(--airport-muted)}
+.hero{
+  position:relative;
+  overflow:hidden;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.035),transparent),
+    var(--airport-surface);
+  border-color:var(--airport-line);
+  box-shadow:0 16px 32px rgba(0,0,0,.18);
+}
+.hero::after{
+  content:"GATE  T2";
+  position:absolute;
+  right:18px;bottom:15px;
+  font-size:11px;font-weight:900;letter-spacing:.22em;
+  color:var(--airport-muted);opacity:.65;
+}
+.eyebrow,.current .kicker{color:var(--airport-accent)}
+.hero p,.sectionHead p,.current p{color:var(--airport-muted)}
+.current{
+  background:linear-gradient(135deg,var(--airport-surface-2),var(--airport-surface));
+  border-color:var(--airport-line);
+}
+.current button,.join{background:var(--airport-accent);color:#17212b}
+.mode,.card,.sheet,.quick button,.deckChoices button,.avatarChoices button,.secondaryAction,.toggleRow{
+  background:var(--airport-surface);
+  border-color:var(--airport-line);
+}
+.mode.active{
+  background:linear-gradient(145deg,var(--airport-surface-2),var(--airport-surface));
+  border-color:var(--airport-accent);
+  box-shadow:inset 0 0 24px var(--airport-glow);
+}
+.tabs button{
+  background:var(--airport-surface);
+  border-color:var(--airport-line);
+  color:var(--airport-muted);
+}
+.tabs button.active{
+  background:var(--airport-surface-2);
+  border-color:var(--airport-accent);
+  color:var(--airport-text);
+}
+.card{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.025),transparent 35%),
+    var(--airport-board);
+  border-color:var(--airport-line);
+}
+.card::before{
+  content:"DEPARTURE";
+  position:absolute;right:12px;top:12px;
+  font-size:7px;letter-spacing:.18em;font-weight:900;color:var(--airport-muted);
+}
+.card::after{
+  border-color:var(--airport-glow);
+}
+.card.featured{
+  background:
+    radial-gradient(circle at 88% 18%,var(--airport-glow),transparent 34%),
+    var(--airport-board);
+}
+.card .tag{background:var(--airport-accent);color:#17212b}
+.card .desc,.fact span,.inputLabel,.settingsGrid label,.profileLabel{color:var(--airport-muted)}
+.fact{border-top-color:var(--airport-line)}
+.card .enter{color:var(--airport-accent)}
+.sheetWrap{background:rgba(1,8,15,.66);backdrop-filter:blur(6px)}
+.sheet{
+  background:var(--airport-surface);
+  border-top-color:var(--airport-line);
+}
+.close,.inputLabel input,.settingsGrid select{
+  background:var(--airport-bg);
+  border-color:var(--airport-line);
+  color:var(--airport-text);
+}
+.bottom{
+  background:var(--airport-glass);
+  border-top-color:var(--airport-line);
+}
+.bottom button{color:var(--airport-muted)}
+.bottom button.active{color:var(--airport-accent)}
+.profilePreview{background:var(--airport-surface-2);border-color:var(--airport-line)}
+.toast{background:var(--airport-surface-2);border-color:var(--airport-line);color:var(--airport-text)}
+
+/* Day terminal adds daylight/glass without changing the app layout. */
+html[data-airport-theme="day"] body{
+  background-image:
+    radial-gradient(circle at 50% -15%,rgba(255,255,255,.95),transparent 42%),
+    linear-gradient(180deg,#eef4f7,#dce7ed 58%,#cfdae1);
+}
+html[data-airport-theme="day"] #lobby{
+  box-shadow:0 0 60px rgba(49,92,120,.12);
+}
+html[data-airport-theme="day"] .top,
+html[data-airport-theme="day"] .bottom{
+  box-shadow:0 1px 14px rgba(55,80,96,.09);
+}
+html[data-airport-theme="day"] .hero{
+  background:
+    linear-gradient(125deg,rgba(255,255,255,.86),rgba(226,237,244,.78)),
+    var(--airport-surface);
+}
+html[data-airport-theme="day"] .sheetWrap{background:rgba(58,76,88,.38)}
+
+/* Profile airport-time selector */
+.timeThemeChoices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.timeThemeChoices button{
+  border:1px solid var(--airport-line);
+  border-radius:12px;
+  padding:8px;
+  background:var(--airport-surface);
+  color:var(--airport-text);
+  text-align:left;
+}
+.timeThemeChoices button.active{
+  border-color:var(--airport-accent);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--airport-accent) 42%,transparent);
+}
+.timeThemeChoices b,.timeThemeChoices small{display:block}
+.timeThemeChoices b{font-size:11px;margin-top:6px}
+.timeThemeChoices small{font-size:7px;letter-spacing:.12em;color:var(--airport-muted);margin-top:2px}
+.themePreview{
+  height:54px;
+  display:block;
+  position:relative;
+  overflow:hidden;
+  border-radius:8px;
+  border:1px solid rgba(140,160,175,.35);
+}
+.themePreview::before{
+  content:"";
+  position:absolute;left:0;right:0;bottom:0;height:18px;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.15) 0 12px,transparent 12px 17px);
+}
+.themePreview::after{
+  content:"T2  GATE";
+  position:absolute;right:6px;top:6px;
+  font-size:7px;font-weight:900;letter-spacing:.1em;
+}
+.themePreview.day{
+  background:linear-gradient(180deg,#cbe7f6 0 55%,#eef2f2 55%);
+  color:#355367;
+}
+.themePreview.night{
+  background:linear-gradient(180deg,#071426 0 58%,#172636 58%);
+  color:#f3c66b;
+}
+.themePreview i{
+  position:absolute;width:36px;height:36px;border-radius:50%;right:10px;top:8px;
+}
+.themePreview.day i{background:#fff8cf;box-shadow:0 0 18px #fff3ae}
+.themePreview.night i{width:24px;height:24px;background:#e8eff8;box-shadow:-7px 0 0 #071426}
+
+
+/* ---------- Premium terminal pass ---------- */
+html.modal-open,body.modal-open{overflow:hidden;height:100%}
+body{
+  letter-spacing:-.012em;
+  background-image:none;
+}
+#lobby{box-shadow:0 0 0 1px rgba(130,150,166,.08)}
+.top{
+  height:76px;
+  padding:17px 22px;
+  border-bottom:1px solid var(--airport-line);
+  box-shadow:none!important;
+}
+.brand{font-size:18px;letter-spacing:.14em}
+.strap{font-size:8px;letter-spacing:.3em;margin-top:4px}
+main{padding:0 18px 26px}
+.current{
+  margin-top:18px;
+  padding:17px 18px;
+  border-radius:14px;
+  box-shadow:none;
+}
+.current button{
+  border-radius:9px;
+  padding:12px 16px;
+  font-size:12px;
+  letter-spacing:-.02em;
+}
+.hero{
+  min-height:174px;
+  margin:14px 0 16px;
+  padding:27px 22px;
+  border-radius:16px;
+  box-shadow:none;
+}
+.hero::after{display:none}
+.hero h1{font-size:30px;font-weight:760;letter-spacing:-.055em}
+.hero p{font-size:12px;max-width:330px}
+.modes{gap:7px;margin:0 0 24px}
+.mode{
+  min-height:72px;
+  padding:11px 12px;
+  border-radius:11px;
+  box-shadow:none!important;
+}
+.modeIcon{font-size:15px}.mode b{font-size:11px}.mode small{font-size:8px}
+.sectionHead{margin-bottom:12px}
+.section h2{font-size:19px;letter-spacing:-.035em}
+.tabs{gap:5px}
+.tabs button{padding:6px 10px;border-radius:7px;font-size:9px}
+.tournaments{gap:9px}
+.card,.card.featured{
+  min-height:166px;
+  border-radius:12px;
+  padding:14px;
+  box-shadow:0 5px 14px rgba(5,12,20,.09);
+  background:var(--airport-board);
+}
+.card::before,.card::after{display:none}
+.card .tag{
+  background:transparent;
+  color:var(--airport-accent);
+  padding:0;
+  border-radius:0;
+  font-size:8px;
+  letter-spacing:.16em;
+}
+.card h3{margin:9px 0 4px;font-size:17px}
+.card .desc{font-size:9px;min-height:27px}
+.fact{padding-top:7px}.fact b{font-size:11px}
+.card .enter{font-size:9px}
+.bottom{
+  height:68px;
+  box-shadow:0 -8px 24px rgba(5,12,20,.05)!important;
+}
+.bottom button{font-size:8px}
+.bottom button span{font-size:14px}
+
+/* Modal scrolling is isolated from the lobby page. */
+.sheetWrap{
+  overflow:hidden;
+  overscroll-behavior:none;
+  align-items:flex-end;
+}
+.sheet{
+  width:min(100%,560px);
+  max-height:calc(100dvh - 18px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scroll-behavior:auto;
+  scrollbar-width:none;
+  padding:0 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius:20px 20px 0 0;
+  box-shadow:0 -14px 40px rgba(0,0,0,.2);
+}
+.sheet::-webkit-scrollbar{display:none}
+.sheetHeader{
+  min-height:72px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:5;
+  margin:0 -18px 6px;
+  padding:14px 18px 10px;
+  background:var(--airport-surface);
+  border-bottom:1px solid var(--airport-line);
+}
+.sheetHeader>div{flex:1}
+.sheetHeader h2{margin:2px 0 0;font-size:21px;letter-spacing:-.045em}
+.kicker{font-size:8px;font-weight:800;letter-spacing:.18em;color:var(--airport-accent)}
+.close,.backButton{
+  position:static;
+  flex:0 0 36px;
+  width:36px;height:36px;
+  display:grid;place-items:center;
+  border-radius:50%;
+  border:1px solid var(--airport-line);
+  background:transparent;
+  color:var(--airport-text);
+  font-size:21px;
+}
+.backButton{font-size:27px}
+
+/* Portrait crop rules are shared here too; without these every picker tile shows atlas #0. */
+.portrait{display:block;position:relative;width:100%;height:100%;overflow:hidden;flex-shrink:0}
+.portrait img{position:absolute;height:auto;max-width:none;pointer-events:none;user-select:none}
+.portrait-pupil{
+  position:absolute;display:block;background:#282c2a;border-radius:45%;
+  transform:translate(calc(-50% + var(--gaze-x,0px)),calc(-50% + var(--gaze-y,0px)));
+  pointer-events:none;
+}
+
+.profileIdentity{
+  display:grid;
+  grid-template-columns:68px 1fr;
+  gap:14px;
+  align-items:center;
+  padding:12px 0 18px;
+}
+.profilePreview{
+  width:68px;height:72px;
+  border-radius:14px;
+  overflow:hidden;
+  padding:2px;
+}
+.nicknameField{font-size:9px;color:var(--airport-muted)}
+.nicknameField span{display:block;margin-bottom:6px}
+.nicknameField input{
+  width:100%;
+  height:42px;
+  padding:0 12px;
+  border:1px solid var(--airport-line);
+  border-radius:9px;
+  background:var(--airport-bg);
+  color:var(--airport-text);
+  outline:none;
+}
+.settingList{
+  border:1px solid var(--airport-line);
+  border-radius:13px;
+  overflow:hidden;
+  background:var(--airport-surface);
+}
+.settingRow{
+  width:100%;
+  min-height:64px;
+  border:0;
+  border-bottom:1px solid var(--airport-line);
+  background:transparent;
+  color:var(--airport-text);
+  padding:10px 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  text-align:left;
+}
+.settingRow:last-child{border-bottom:0}
+.settingText{min-width:0}
+.settingText b{display:block;font-size:12px;font-weight:700}
+.settingText small{display:block;margin-top:3px;color:var(--airport-muted);font-size:8px}
+.settingValue{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--airport-muted);
+  font-size:10px;
+}
+.settingValue i{font-style:normal;font-size:20px;color:var(--airport-muted)}
+.avatarMini{
+  width:34px;height:36px;
+  display:block;overflow:hidden;border-radius:8px;
+}
+.deckMini{
+  width:24px;height:32px;display:block;border-radius:4px;
+  border:1px solid rgba(240,240,230,.75);
+  background:#215a59;
+  position:relative;
+}
+.deckMini::after{
+  content:"";position:absolute;width:8px;height:8px;left:50%;top:50%;
+  transform:translate(-50%,-50%) rotate(45deg);border:1px solid #d3bc85;
+}
+.toggleSetting{cursor:pointer}
+.switch{width:42px;height:24px;position:relative;flex:0 0 42px}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch i{
+  position:absolute;inset:0;border-radius:999px;background:#70808d55;
+  border:1px solid var(--airport-line);transition:.16s ease;
+}
+.switch i::after{
+  content:"";position:absolute;width:18px;height:18px;left:2px;top:2px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 4px #0003;transition:.16s ease;
+}
+.switch input:checked+i{background:var(--airport-accent)}
+.switch input:checked+i::after{transform:translateX(18px)}
+.primaryAction{
+  width:100%;
+  height:48px;
+  margin-top:14px;
+  border:0;
+  border-radius:10px;
+  background:var(--airport-accent);
+  color:#18212a;
+  font-weight:800;
+  font-size:12px;
+}
+
+/* Drill-down pickers */
+.pickerWrap{z-index:70}
+.pickerBody{padding:8px 0 8px}
+.characterGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.characterOption{
+  position:relative;
+  aspect-ratio:1;
+  overflow:hidden;
+  border:1px solid var(--airport-line);
+  border-radius:13px;
+  background:var(--airport-bg);
+  padding:7px;
+}
+.characterOption.active{
+  border-color:var(--airport-accent);
+  box-shadow:inset 0 0 0 1px var(--airport-accent);
+}
+.characterOption .portrait{width:100%;height:100%}
+.characterOption em{
+  position:absolute;left:7px;bottom:6px;
+  font-style:normal;font-size:8px;color:var(--airport-muted);
+}
+.pickerList{
+  border:1px solid var(--airport-line);
+  border-radius:12px;
+  overflow:hidden;
+}
+.pickerOption{
+  min-height:58px;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 13px;
+  border:0;
+  border-bottom:1px solid var(--airport-line);
+  background:var(--airport-surface);
+  color:var(--airport-text);
+  text-align:left;
+}
+.pickerOption:last-child{border-bottom:0}
+.pickerOption b{font-size:12px}.pickerOption small{display:block;margin-top:3px;color:var(--airport-muted);font-size:8px}
+.pickerOption .check{font-size:16px;color:transparent}
+.pickerOption.active .check{color:var(--airport-accent)}
+.themePickerGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.themePickerOption{
+  border:1px solid var(--airport-line);
+  border-radius:13px;
+  padding:9px;
+  background:var(--airport-surface);
+  color:var(--airport-text);
+  text-align:left;
+}
+.themePickerOption.active{border-color:var(--airport-accent)}
+.themePickerOption b,.themePickerOption small{display:block}
+.themePickerOption b{margin-top:8px;font-size:12px}
+.themePickerOption small{margin-top:3px;font-size:8px;color:var(--airport-muted)}
+.deckPickerGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.deckPickerOption{
+  border:1px solid var(--airport-line);
+  border-radius:13px;
+  padding:14px 10px;
+  background:var(--airport-surface);
+  color:var(--airport-text);
+}
+.deckPickerOption.active{border-color:var(--airport-accent)}
+.deckPickerOption .deckSample{width:42px;height:58px}
+.deckPickerOption b{display:block;margin-top:8px;font-size:10px}
+
+/* Refined terminal palettes */
+html[data-airport-theme="day"]{
+  --airport-bg:#edf1f4;
+  --airport-surface:#fbfcfd;
+  --airport-surface-2:#f4f7f9;
+  --airport-line:#ced7de;
+  --airport-text:#18232c;
+  --airport-muted:#6e7d89;
+  --airport-accent:#b68a42;
+  --airport-board:#ffffff;
+  --airport-glass:rgba(250,252,253,.96);
+  --airport-glow:rgba(75,128,164,.10);
+}
+html[data-airport-theme="night"]{
+  --airport-bg:#090e15;
+  --airport-surface:#101720;
+  --airport-surface-2:#151e29;
+  --airport-line:#283544;
+  --airport-text:#f0f3f6;
+  --airport-muted:#8795a4;
+  --airport-accent:#c9a25c;
+  --airport-board:#111923;
+  --airport-glass:rgba(10,15,22,.96);
+  --airport-glow:rgba(76,128,172,.10);
+}
+html[data-airport-theme="day"] body{
+  background:linear-gradient(180deg,#f5f7f9,#e8edf1 62%,#e3e8ec);
+}
+html[data-airport-theme="day"] #lobby,
+html[data-airport-theme="night"] #lobby{
+  background:linear-gradient(180deg,var(--airport-bg),var(--airport-bg));
+  box-shadow:none;
+}
+html[data-airport-theme="day"] .hero,
+html[data-airport-theme="night"] .hero{
+  background:var(--airport-surface);
+}
+html[data-airport-theme="day"] .sheetWrap,
+html[data-airport-theme="night"] .sheetWrap{
+  backdrop-filter:none;
+}
+
+/* Preview tiles retained only inside the drill-down theme picker. */
+.themePreview{height:92px;border-radius:9px}
+.themePreview.day{background:linear-gradient(180deg,#d9edf8 0 54%,#f5f6f4 54%)}
+.themePreview.night{background:linear-gradient(180deg,#07111f 0 56%,#182433 56%)}
+
+@media(max-width:360px){
+  main{padding-left:14px;padding-right:14px}
+  .sheet{padding-left:14px;padding-right:14px}
+  .sheetHeader{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}
+}
