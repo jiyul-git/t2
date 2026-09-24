@@ -230,12 +230,20 @@ html, body {
 .bubble.fold::after { border-top-color: #46524d; }
 @keyframes pop { from { transform: translate(-50%, 6px) scale(.9); opacity: 0; } }
 
+/* 3/9시 좌석은 홀카드가 말풍선 바로 아래를 차지한다.
+   옆 좌석만 말풍선을 한 단계 위로 띄워 카드와 시각적으로 분리한다. */
+.pod.side-left .bubble,
+.pod.side-right .bubble {
+  top: -60px;
+}
+
 /* 좌석 앞 칩 */
 .chips {
   position: absolute; margin-left: -30px; margin-top: -11px; width: 60px;
   text-align: center; font-size: 11px; font-weight: 700;
   font-variant-numeric: tabular-nums;
   transition: left .35s ease-in, top .35s ease-in, opacity .35s;
+  z-index: 5;
 }
 .chips .disc {
   display: inline-block; width: 11px; height: 11px; border-radius: 50%;
