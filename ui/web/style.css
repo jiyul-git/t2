@@ -28,23 +28,34 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {
-  margin: 0; height: 100%; overflow: hidden;
+  margin: 0; height: 100%; min-height: 100dvh; overflow: hidden;
   background: var(--bg); color: var(--ink);
   font: 14px/1.35 -apple-system, "Noto Sans KR", "Segoe UI", Roboto, sans-serif;
   user-select: none;
 }
 
-#app { display: flex; flex-direction: column; height: 100%; }
+#app { display: flex; flex-direction: column; height: 100dvh; min-height: 0; }
 
 /* ---------- 상단 바 ---------- */
 #topbar {
-  flex: 0 0 auto; padding: 8px 12px calc(8px + env(safe-area-inset-top)) 12px;
-  padding-top: calc(8px + env(safe-area-inset-top));
+  flex: 0 0 auto;
+  padding: calc(7px + env(safe-area-inset-top)) 10px 6px;
   background: linear-gradient(#16211d, #101a17);
   border-bottom: 1px solid var(--line);
 }
-.barrow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.barrow + .barrow { margin-top: 3px; }
+.barrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.barrow + .barrow { margin-top: 2px; }
+.topsub { min-height: 30px; }
+.topactions { display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+.topactions button {
+  min-width: 46px; height: 30px; padding: 0 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(26,38,34,.92);
+  color: var(--ink);
+  font-size: 11px; font-weight: 700;
+}
+.topactions #bMenu { min-width: 38px; padding: 0 8px; font-size: 18px; line-height: 1; }
 #lvl { font-weight: 600; letter-spacing: .2px; }
 #lvl .ante { color: var(--dim); font-weight: 400; }
 #handno { color: var(--dim); font-variant-numeric: tabular-nums; font-size: 12px; }
@@ -481,18 +492,9 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 #toast.ok { background: #1d3a2c; border-color: #2f5f47; color: #dff1e6; }
 #toast[hidden] { display: none; }
 
-/* ---------- 액션 로그 ---------- */
-#loghead { display: flex; gap: 8px; align-items: center; padding: 5px 12px 0;
-           font-size: 12px; color: var(--dim); }
-#loghead .cur { color: var(--ink); }
-#loghead .line { flex: 1 1 0; overflow: hidden; text-overflow: ellipsis;
-                 white-space: nowrap; }
-#loghead button {
-  flex: 0 0 auto; min-height: 34px; padding: 2px 12px; font-size: 12px;
-  border-radius: 8px; background: #1a2622; font-weight: 600;
-}
-#loghead #bMenu { padding: 2px 10px; font-size: 16px; line-height: 1; }
-
+/* 실시간 진행 문구는 기록 화면에서만 확인한다.
+   별도 loghead 행은 제거해 테이블 세로 공간을 확보한다. */
+#logline[hidden] { display:none !important; }
 
 /* ---------- 가운데 덱 (app.js deckShow/deckHide) ----------
    카드가 허공에서 생기는 대신 가운데에서 섞이고 한 장씩 날아간다.
