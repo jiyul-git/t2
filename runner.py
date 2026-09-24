@@ -143,14 +143,21 @@ def board_changed(prev_board, board):
     return (flush_now and not flush_before) or (d1 - d0) >= 0.30
 
 def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, street,
-                seed, n_opp, behind, prev_board):
+                seed, n_opp, behind, prev_board,
+                oop_vs_aggr=None, oop_legacy_abs=None, initiative=True):
     if board_changed(prev_board, board):
-        # 상대 추정치·틸트를 그대로 넘긴다. 예전에는 안 넘겨서
-        # 보드가 바뀌는 순간 익스플로잇이 통째로 끊겼다.
+        # 보드 변화로 계획을 다시 세워도 **현재 의사결정 문맥**을 잃으면 안 된다.
+        # opp_* 는 이전 계획 snapshot에서 이어지고, 위치/initiative 세 값은
+        # 현재 액션 순서에서 계산된 값을 호출자가 넘긴다.
+        # blockbet은 (_oop_a and not initiative) AND gate라 둘 중 하나만 빠져도
+        # 재계획 시 경로가 닫힌다 (A5 4-B paired replay에서 실제 영향 확인).
         new = PL.make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                            seed=seed, n_opp=n_opp, to_act_behind=behind,
                            opp_est=state.get('opp_est'),
-                           opp_stack_bb=state.get('opp_stack_bb'))
+                           opp_stack_bb=state.get('opp_stack_bb'),
+                           oop_vs_aggr=oop_vs_aggr,
+                           oop_legacy_abs=oop_legacy_abs,
+                           initiative=initiative)
         new['revised'] = True
         # 이전 스트리트들의 의도·이탈 기록은 계획의 이력이다. 새 계획을 세워도 유지한다.
         # (make_plan 이 새 dict 를 반환하므로 명시적으로 옮기지 않으면 사라진다)
