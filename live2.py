@@ -121,12 +121,21 @@ def load():
 
 
 # ---------- 게임 생성 ----------
-def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
-             hands_per_level=12, fmt=None):
+def new_game(entries=100, start_stack=None, seed=None, itm_frac=None,
+             hands_per_level=None, fmt=None):
     # 지우지 말고 옮긴다. 예전에는 os.remove 였는데, T2_LIVE_STATE 로 상태
     # 파일을 다른 경로에 두어도 **아카이브는 여전히 모듈 폴더(D)에 _SUFFIX
     # 이름으로 쓰인다.** 그래서 격리한 줄 알고 테스트를 돌렸다가 진행 중이던
     # 세션의 37핸드 기록을 통째로 날렸다. 되돌릴 방법이 없었다.
+    spec = FM.get(fmt)
+    bb0 = int(BLINDS[0][2]) if BLINDS else 200
+    if start_stack is None:
+        start_stack = int(spec['start_bb']) * bb0
+    if itm_frac is None:
+        itm_frac = float(spec['itm_frac'])
+    if hands_per_level is None:
+        hands_per_level = int(spec['hpl'])
+
     _stamp = time.strftime('%Y%m%d_%H%M%S')
     # **이 상태의 namespace 파일만** 건드린다. 다른 상태나 legacy '_alt' 를
     # 백업 대상에 넣으면 남의 기록을 치우게 된다.
