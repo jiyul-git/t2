@@ -1,6 +1,6 @@
 # Sequential audit — P5 caller faces squeeze / back-action
 
-Status: CLEAR EVENT-CLASSIFICATION DEFECTS FIXED; strategy refactor remains.
+Status: CLEAR EVENT-CLASSIFICATION DEFECTS CLOSED (user-validated); strategy refactor remains.
 
 Reference model: judgment -> plan -> action.
 
@@ -237,3 +237,8 @@ The current function still directly returns an action.
 4. caller backraise is a separate observation class;
 5. old read records hydrate new keys;
 6. closed raise rights remove raise plans.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_p5_backaction.py` reported `6/6 P5 structural checks passed`.
