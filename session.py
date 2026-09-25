@@ -1388,8 +1388,14 @@ class HandRun:
                 # 첫 베팅 기회를 얻는 것. barrel 표본과 섞지 않는다.
                 is_delayed = (street == 'turn' and opp_spot and _prev_checked_through
                               and not _prev_aggr_bet)
+                # 관측 의미는 UI 문자열이 아니라 규칙 사건이다.
+                # allin call은 call, allin raise는 raise로 학습해야 한다.
+                _obs_action = (
+                    'raise' if m.get('raised') else
+                    'call' if m.get('allin_call') else
+                    a_)
                 h.book.observe_postflop(
-                    _ord, _pid(x), a_, is_cbet, is_barrel,
+                    _ord, _pid(x), _obs_action, is_cbet, is_barrel,
                     facing_bet=_bet_seen, street=street,
                     is_delayed_cbet_spot=is_delayed)
                 # sizing tell은 target/street-start-pot이 아니라
