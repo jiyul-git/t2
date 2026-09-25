@@ -293,3 +293,8 @@ These are global V2 refactors.
 4. bet-facing and raise-facing fold reads are separated;
 5. current-street facing sequence is classified correctly;
 6. hero bet/raise -> opponent raise is preserved as `aggressor_backaction`.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_f5_backaction.py` reported `6/6 F5 structural checks passed`.
