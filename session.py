@@ -56,6 +56,83 @@ def _merge_pf_seed(prev, new):
         'pf_origin_act', prev.get('pf_act', out.get('pf_act')))
     return out
 
+def _update_pf_state_after_apply(rnd, seat, aggressor, callers, limpers):
+    """방금 적용된 실제 규칙 사건으로 preflop 상태를 갱신한다.
+
+    문자열 'allin'만 보고 aggressor로 만들면 all-in call도 raise로 오인된다.
+    """
+    m = rnd.action_meta[-1]
+    if m.get('raised'):
+        return seat, 0, limpers
+    a = m.get('action')
+    if a == 'call' or m.get('allin_call'):
+        if aggressor is not None:
+            callers += 1
+        elif seat not in limpers:
+            limpers.append(seat)
+    return aggressor, callers, limpers
+
+
+def _pf_observation_flags(action_meta, seat):
+    """공개 프리플랍 사건을 역할별 관측으로 분해한다.
+
+    opener의 fold-to-3bet/4bet과 caller의 squeeze 대응을 섞지 않는다.
+    """
+    full_before = 0
+    first_raiser = None
+    second_raiser = None
+    prior = []
+    called_first_raise = False
+    out = {
+        'threebet_chance': False, 'did_threebet': False,
+        'faced_threebet_as_opener': False, 'folded_to_threebet_as_opener': False,
+        'fourbet_chance_as_opener': False, 'did_fourbet_as_opener': False,
+        'faced_fourbet_as_threebettor': False, 'folded_to_fourbet_as_threebettor': False,
+        'backraise_chance_as_caller': False, 'did_backraise': False,
+        'folded_to_squeeze_after_call': False,
+    }
+
+    for m in action_meta:
+        x = m.get('seat')
+        if x == seat:
+            a = m.get('action')
+            # 아직 자발적 액션이 없고 첫 full raise를 맞은 자리 = 3bet 기회.
+            if full_before == 1 and not prior:
+                out['threebet_chance'] = True
+                out['did_threebet'] = bool(m.get('full_raise'))
+
+            # 첫 raiser가 두 번째 full raise를 맞으면 opener vs 3bet.
+            if seat == first_raiser and full_before == 2:
+                out['faced_threebet_as_opener'] = True
+                out['folded_to_threebet_as_opener'] = (a == 'fold')
+                out['fourbet_chance_as_opener'] = True
+                out['did_fourbet_as_opener'] = bool(m.get('full_raise'))
+
+            # 두 번째 raiser가 세 번째 full raise를 맞으면 3bettor vs 4bet.
+            if seat == second_raiser and full_before == 3:
+                out['faced_fourbet_as_threebettor'] = True
+                out['folded_to_fourbet_as_threebettor'] = (a == 'fold')
+
+            # 첫 raise를 콜한 뒤 두 번째 full raise(squeeze)가 돌아온 상태.
+            if called_first_raise and full_before == 2:
+                out['backraise_chance_as_caller'] = True
+                out['did_backraise'] = bool(m.get('full_raise'))
+                out['folded_to_squeeze_after_call'] = (a == 'fold')
+
+            if full_before == 1 and a == 'call' and not m.get('raised'):
+                called_first_raise = True
+            prior.append(m)
+
+        if m.get('full_raise'):
+            full_before += 1
+            if full_before == 1:
+                first_raiser = x
+            elif full_before == 2:
+                second_raiser = x
+
+    return out
+
+
 def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                         facing_seat=None, decision_context=None,
                         facing_read=None):
@@ -520,9 +597,8 @@ class HandRun:
                                  'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
                                  'hash': h.hash}
                     rnd.apply(s, act[0], act[1])
-                if a in ('raise', 'allin'): aggressor = s; callers = 0
-                elif a == 'call' and aggressor: callers += 1
-                elif a == 'call': limpers.append(s)
+                aggressor, callers, limpers = _update_pf_state_after_apply(
+                    rnd, s, aggressor, callers, limpers)
                 continue
             ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
             _opp_est_pf = (RD.perceived_profile(
@@ -545,8 +621,8 @@ class HandRun:
             if _cached:
                 try: rnd.apply(s, _cached[1], _cached[2])
                 except ValueError: rnd.apply(s, 'call' if tc > 0 else 'check')
-                if _cached[1] in ('raise','allin'): aggressor = s; callers = 0
-                elif _cached[1] == 'call' and aggressor: callers += 1
+                aggressor, callers, limpers = _update_pf_state_after_apply(
+                    rnd, s, aggressor, callers, limpers)
                 _money_jump_attach_action(_mj_obs, rnd)
                 continue
             _pre_len = len(rnd.log)
@@ -561,8 +637,7 @@ class HandRun:
                 _ordr = list(rnd.order)
                 _behind_seats = ([x for x in _ordr[_ordr.index(s)+1:] if x in rnd.live()]
                                  if s in _ordr else [])
-                _rlevel = max(1, sum(1 for (_, act, _) in rnd.log
-                                     if act in ('raise', 'allin')))
+                _rlevel = max(1, int(getattr(rnd, 'full_raise_count', 0) or 0))
                 a, sz, _seed = PL.preflop_plan(
                     ax, pos, hand, bbs, h.rng,
                     aggressor_pos=(h.pos[aggressor] if aggressor is not None else None),
@@ -602,19 +677,19 @@ class HandRun:
                 elif a == 'check':
                     rnd.apply(s, 'check')
                 elif a == 'limp':
-                    rnd.apply(s, 'call'); limpers.append(s)
+                    rnd.apply(s, 'call')
                 elif a == 'call':
-                    rnd.apply(s, 'call'); callers += 1
+                    rnd.apply(s, 'call')
                 elif a == 'shove':
-                    rnd.apply(s, 'allin'); aggressor = s
+                    rnd.apply(s, 'allin')
                 else:
                     rnd.apply(s, 'raise',
                               max(RU.shape_size(h.bb*sz, ax['type'], h.rng),
                                   rnd.current + rnd.min_raise))
-                    aggressor = s
-                    if _seed['pf_role'] == 'defend': callers = 0
             except ValueError:
                 rnd.apply(s, 'call' if tc > 0 else 'check')
+            aggressor, callers, limpers = _update_pf_state_after_apply(
+                rnd, s, aggressor, callers, limpers)
             _money_jump_attach_action(_mj_obs, rnd)
 
         _pf_uncalled = rnd.settle_uncalled()
@@ -636,18 +711,22 @@ class HandRun:
         _limped, _limp_chance = set(), set()
         _limp_idx = {}
         _seen_raise = False
-        for _idx, (x, a_, _amt) in enumerate(rnd.log):
+        for _idx, m in enumerate(rnd.action_meta):
+            x, a_ = m.get('seat'), m.get('action')
             if not _seen_raise and x not in _limp_chance:
                 _limp_chance.add(x)
-                if a_ == 'call':
+                if a_ == 'call' and not m.get('raised'):
                     _limped.add(x)
                     _limp_idx.setdefault(x, _idx)
-            if a_ in ('raise', 'allin'):
+            # all-in call은 unopened 상태를 끝내지 않는다. 실제 가격 상승만 본다.
+            if m.get('raised'):
                 _seen_raise = True
         for x in seats_all:
             acts = acted.get(x, [])
-            vpip = any(a_ in ('call','raise','allin') for a_ in acts)
-            pfr = any(a_ in ('raise','allin') for a_ in acts)
+            _mx = [m for m in rnd.action_meta if m.get('seat') == x]
+            vpip = any((m.get('action') == 'call') or m.get('raised')
+                       or m.get('allin_call') for m in _mx)
+            pfr = any(m.get('raised') for m in _mx)
             # 림프 = 무저항 상태에서 콜. 기회(무저항으로 돌아온 자리)도 같이 센다.
             _limp = (x in _limped)
             _lchance = (x in _limp_chance)
@@ -663,44 +742,35 @@ class HandRun:
             _li = _limp_idx.get(x)
             if _li is not None:
                 _rb_lr = 0
-                for (y, b_, _amt2) in rnd.log[_li+1:]:
-                    if y == x:
+                for m in rnd.action_meta[_li+1:]:
+                    if m.get('seat') == x:
                         if _rb_lr == 1:
                             _faced_lr = True
-                            _folded_lr = (b_ == 'fold')
+                            _folded_lr = (m.get('action') == 'fold')
                         break
-                    if b_ in ('raise', 'allin'):
+                    if m.get('full_raise'):
                         _rb_lr += 1
             h.book.observe_limp_raise(obs_ids, _pid(x), _faced_lr, _folded_lr)
 
-            # 3벳 기회/실행, 3벳 대면/폴드를 따로 센다.
-            # '3벳만 많이 치는 사람'은 포스트플랍 공격형과 다른 대응이 필요하다.
-            _seq = [(y, b_) for (y, b_, _) in rnd.log]
-            _raises_before = 0
-            _chance = _did = _faced = _folded = False
-            for (y, b_) in _seq:
-                if y == x:
-                    if _raises_before == 1:
-                        _chance = True
-                        if b_ in ('raise', 'allin'): _did = True
-                    elif _raises_before >= 2:
-                        _faced = True
-                        if b_ == 'fold': _folded = True
-                if b_ in ('raise', 'allin'):
-                    _raises_before += 1
-            h.book.observe_3bet(obs_ids, _pid(x), _chance, _did, _faced, _folded)
-            # 4벳 이상: 레이즈가 2회 있은 뒤의 액션
-            _rb = 0; _c4 = _d4 = _f4 = _fd4 = False
-            for (y, b_) in _seq:
-                if y == x:
-                    if _rb == 2:
-                        _c4 = True
-                        if b_ in ('raise', 'allin'): _d4 = True
-                    elif _rb >= 3:
-                        _f4 = True
-                        if b_ == 'fold': _fd4 = True
-                if b_ in ('raise', 'allin'): _rb += 1
-            h.book.observe_4bet(obs_ids, _pid(x), _c4, _d4, _f4, _fd4)
+            # 역할을 섞지 않는다:
+            # opener의 fold-to-3bet / 4bet과 caller의 squeeze 대응은 별개다.
+            _pfobs = _pf_observation_flags(rnd.action_meta, x)
+            h.book.observe_3bet(
+                obs_ids, _pid(x),
+                _pfobs['threebet_chance'], _pfobs['did_threebet'],
+                _pfobs['faced_threebet_as_opener'],
+                _pfobs['folded_to_threebet_as_opener'])
+            h.book.observe_4bet(
+                obs_ids, _pid(x),
+                _pfobs['fourbet_chance_as_opener'],
+                _pfobs['did_fourbet_as_opener'],
+                _pfobs['faced_fourbet_as_threebettor'],
+                _pfobs['folded_to_fourbet_as_threebettor'])
+            h.book.observe_backraise(
+                obs_ids, _pid(x),
+                _pfobs['backraise_chance_as_caller'],
+                _pfobs['did_backraise'],
+                _pfobs['folded_to_squeeze_after_call'])
         contrib = dict(rnd.contrib)
         if bb_s: contrib[bb_s] = contrib.get(bb_s, 0)          # 안테는 별도
         for k in rnd.stacks: h.stacks[k] = rnd.stacks[k]
