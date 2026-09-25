@@ -475,7 +475,9 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         if _oop_a and not initiative and 0.25 <= rel <= 0.80:
             block_p = 0.12 + 0.05*profile['aggr'] - 0.03*profile.get('bluff', 5)
             block_p *= (1 + 0.4*dang)          # 젖은 보드일수록 가격 통제 욕구↑
-            if A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish': block_p *= 0.25
+            if (not profile.get('concepts')
+                    and A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish'):
+                block_p *= 0.25
             block_p = max(0.0, min(0.42, block_p))
         if sk('blockbet') >= 1 and rng.random() < block_p:
             plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
@@ -990,8 +992,10 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     p = 0.30 + 0.058*a + 0.018*profile.get('gamble', 5)
     if has_c and rel < 0.85:
         p *= (0.55 + 0.09*PS.sk(profile, PS.street_concept('thin_value', street)))
-    if profile.get('value') == 'xr':   p *= 0.68
-    if profile.get('value') == 'lead': p *= 1.12
+    # derive()['value'] 는 구형 호환/설명 필드다.
+    # checkraise_flop 에서 만든 'xr' 라벨이 일반 밸류벳 빈도를 줄이면
+    # 플랍 XR 숙련도가 턴/리버 밸류벳까지 새는 도메인 누수가 된다.
+    # trap/induce 는 line-plan 단계가 이미 직접 결정한다.
     if street == 'river': p *= 0.92
     if rel >= 0.65:
         p = p + (1.0 - p) * (((rel - 0.65)/0.35) ** 0.8)
@@ -1961,8 +1965,9 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         st['plan_goal'] = 'value_3street'
         why.append('%s: 예산 소진 후 강도 상승(rel %.2f, made %d→%d) → 3스트리트 승격'
                    % (street, rel, _prev_made, made))
-    st['plan'] = _allowed(profile, st['plan'],
-                          random.Random(_zlib.crc32(repr((hero, board, street)).encode())))
+    # 개념 보유/허용 판정은 update_plan 파이프라인 끝에서 **한 번만** 한다.
+    # 여기서도 _allowed 를 굴리면 낮은 숙련도의 stochastic gate가
+    # refresh 1회 + update_plan 1회로 곱해진다.
     # why 는 스트리트를 넘어 누적된다. 그대로 두면 턴 로그에 플랍 사유가
     # 섞여 리뷰 때 오독을 유발한다(실측 15건). 누적본은 이력으로 남기되,
     # **현재 스트리트의 사유만 따로** 보관한다. 설명 내용 자체는 바꾸지 않는다.
