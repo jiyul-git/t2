@@ -612,43 +612,79 @@ class HandRun:
         key = '%s|%s|%s|%s|%s' % (getattr(h, 'hash', ''), seat, street, tag, extra)
         return _zlib.crc32(key.encode())
 
-    def _acts_of(self, seat, upto_street=None, current_street=None, current_log=None):
+    def _acts_of(self, seat, upto_street=None, current_street=None,
+                     current_log=None, current_meta=None):
         """그 좌석의 공개 포스트플랍 액션 [(street, action, size_frac), ...].
 
-        full_log 는 **완료된 스트리트만** 들어 있다. 현재 스트리트는 r2.log 에
-        따로 쌓이다가 스트리트 종료 때 full_log 로 합쳐지므로, 예전에는
-        'A bet -> B call -> 내 차례'에서 A/B의 이번 스트리트 액션이 레인지
-        축소에 들어가지 않았다.
+        size_frac 은 항상 **그 액션에서 새로 넣은 칩 / 액션 직전 팟**이다.
 
-        current_street/current_log 를 받으면 아직 끝나지 않은 스트리트도 이어 붙인다.
-        현재 스트리트의 size_frac 은 그 액션 직전 팟을 r2.log 로 재구성해 계산한다.
+        완료된 스트리트는 full_action_meta 를 우선한다. full_log 의 amount 는
+        bet/raise target 좌표라, 다음 스트리트에서 target/street-start-pot 으로
+        읽으면 액션 크기가 부풀 수 있다.
+
+        raw 'allin' 문자열도 그대로 쓰지 않는다. all-in call은 call,
+        가격을 올린 all-in은 raise로 정규화해야 상대 레인지가 맞게 좁혀진다.
         """
         out = []
-        for (stt, x, a, amt) in (getattr(self, 'full_log', []) or []):
-            if stt == 'preflop' or x != seat:
-                continue
-            if upto_street is not None:
-                _ord = {'flop': 0, 'turn': 1, 'river': 2}
-                if stt in _ord and upto_street in _ord and _ord[stt] > _ord[upto_street]:
-                    continue
-            pot = (self._pot_at or {}).get(stt, 0)
-            sz = (amt/pot) if (pot and amt) else 0.0
-            out.append((stt, a, sz))
+        _ord = {'flop': 0, 'turn': 1, 'river': 2}
 
-        if current_street and current_log:
-            contrib = {}
-            pot0 = float((self._pot_at or {}).get(current_street, 0) or 0)
-            for x, a, amt in current_log:
-                before = pot0 + sum(contrib.values())
-                prev = contrib.get(x, 0.0)
-                target = prev
-                if a in ('bet', 'raise', 'allin', 'call'):
-                    target = max(prev, float(amt or 0))
-                inc = max(0.0, target - prev)
-                if x == seat:
-                    sz = (inc / max(1.0, before)) if inc > 0 else 0.0
-                    out.append((current_street, a, sz))
-                contrib[x] = target
+        full_meta = list(getattr(self, 'full_action_meta', []) or [])
+        if full_meta:
+            added = {}
+            for m in full_meta:
+                stt = m.get('street')
+                if stt not in _ord:
+                    continue
+                if (upto_street is not None and upto_street in _ord
+                        and _ord[stt] > _ord[upto_street]):
+                    continue
+                inc = float(m.get('increment', 0) or 0)
+                before = (float((self._pot_at or {}).get(stt, 0) or 0)
+                          + added.get(stt, 0.0))
+                if m.get('seat') == seat:
+                    a = _observed_postflop_action(m)
+                    sz = inc / max(1.0, before) if inc > 0 else 0.0
+                    out.append((stt, a, sz))
+                added[stt] = added.get(stt, 0.0) + inc
+        else:
+            # 구형/외부 기록 폴백.
+            for (stt, x, a, amt) in (getattr(self, 'full_log', []) or []):
+                if stt == 'preflop' or x != seat:
+                    continue
+                if (upto_street is not None and stt in _ord and upto_street in _ord
+                        and _ord[stt] > _ord[upto_street]):
+                    continue
+                pot = (self._pot_at or {}).get(stt, 0)
+                sz = (amt/pot) if (pot and amt) else 0.0
+                out.append((stt, a, sz))
+
+        if current_street:
+            if current_meta:
+                added = 0.0
+                pot0 = float((self._pot_at or {}).get(current_street, 0) or 0)
+                for m in current_meta:
+                    inc = float(m.get('increment', 0) or 0)
+                    before = pot0 + added
+                    if m.get('seat') == seat:
+                        a = _observed_postflop_action(m)
+                        sz = inc / max(1.0, before) if inc > 0 else 0.0
+                        out.append((current_street, a, sz))
+                    added += inc
+            elif current_log:
+                # meta가 없는 외부 호출용 폴백.
+                contrib = {}
+                pot0 = float((self._pot_at or {}).get(current_street, 0) or 0)
+                for x, a, amt in current_log:
+                    before = pot0 + sum(contrib.values())
+                    prev = contrib.get(x, 0.0)
+                    target = prev
+                    if a in ('bet', 'raise', 'allin', 'call'):
+                        target = max(prev, float(amt or 0))
+                    inc = max(0.0, target - prev)
+                    if x == seat:
+                        sz = (inc / max(1.0, before)) if inc > 0 else 0.0
+                        out.append((current_street, a, sz))
+                    contrib[x] = target
         return out
 
     def _pf_range_action(self, seat, aggressor=None):
@@ -1037,7 +1073,9 @@ class HandRun:
                     # 상대 레인지를 좁혔다 — 자기 투사였다.
                     orange = R.perceived_range(
                         orange, board,
-                        self._acts_of(o, current_street=street, current_log=r2.log),
+                        self._acts_of(
+                            o, current_street=street, current_log=r2.log,
+                            current_meta=r2.action_meta),
                         ax, actor_read=_rdp if _oe else None)
                     # 쇼다운 이력이 예상보다 넓/좁았다면 추가 보정
                     orange, _note = RU.adjust_range_by_history(
