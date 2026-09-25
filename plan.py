@@ -1442,7 +1442,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  payout_flat=0.0, reentry=False, progress=0.0,
                  behind_est=None, limper_est=None, bb_chips=None,
                  opener_allin=False, money_open=None, can_check=False,
-                 can_raise=True, pot_bb=None, to_call_bb=None):
+                 can_raise=True, pot_bb=None, to_call_bb=None,
+                 prior_pf=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -1495,10 +1496,28 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                                     pot_bb=pot_bb, to_call_bb=to_call_bb)
         role = 'defend'
 
+    # 현재 판단 사건의 종류. 행동 결과만 남기면
+    # cold 4bet / opener 4bet / caller backraise 가 모두 'defend'로 뭉개진다.
+    _prev = dict(prior_pf or {})
+    _prev_act = _prev.get('pf_act')
+    _prev_role = _prev.get('pf_role')
+    if aggressor_pos is None:
+        _decision_kind = 'limped_unopened' if n_limpers else 'unopened'
+    elif not _prev:
+        _decision_kind = ('face_first_open' if raise_level <= 1
+                          else 'cold_vs_reraise')
+    elif _prev_act in ('call', 'limp', 'check'):
+        _decision_kind = 'caller_backaction'
+    elif _prev_role == 'open':
+        _decision_kind = 'opener_backaction'
+    else:
+        _decision_kind = 'reraiser_backaction'
+
     # 프리플랍에서 확정된 것들 — 포스트플랍 계획이 이걸 물려받는다
     seed_info = {
         'pf_role': role,                       # open / iso / defend
         'pf_act': a,                           # raise / call / limp / shove / fold
+        'pf_decision_kind': _decision_kind,
         'pf_pos': pos,
         'pf_vs': aggressor_pos,
         'pf_level': raise_level,
