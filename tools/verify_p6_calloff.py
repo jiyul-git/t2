@@ -95,10 +95,22 @@ def test_contestable_sidepot_cap():
                  current_bet=50, min_raise=10,
                  contrib={1:10,2:50,3:50})
     r.allin.update({2,3})
-    # hero cap = 10 already in + 10 left = 20; each opponent contributes at most 20
-    assert r.contestable_contrib(1) == 60, r.contestable_contrib(1)
-    assert r.to_call(1) == 10, r.to_call(1)
-    return r.contestable_contrib(1), r.to_call(1)
+
+    # contestable_contrib() is the contestable pot **before hero acts**.
+    # hero currently has 10 in; with 10 behind, hero can reach 20 total.
+    # Therefore pre-action contestable pot:
+    #   hero 10 + opp2 capped 20 + opp3 capped 20 = 50.
+    # The pending 10 call is NOT in the pot yet.
+    pre = r.contestable_contrib(1)
+    tc = r.to_call(1)
+    assert pre == 50, pre
+    assert tc == 10, tc
+
+    # After the all-in call, the contestable pot becomes 60.
+    r.apply(1, 'call')
+    post = r.contestable_contrib(1)
+    assert post == 60, post
+    return pre, tc, post
 
 
 def test_p6_context_fields_in_seed():
@@ -118,7 +130,7 @@ def main():
     print("PASS stack-exhausting call is all-in call", a)
     print("PASS short shove/no responder routes calloff with exact price", b)
     print("PASS live responder preserves non-calloff-only branch", c)
-    print("PASS contestable pot excludes unreachable side-pot chips", d)
+    print("PASS contestable pot excludes unreachable side-pot chips (pre/call/post)", d)
     print("PASS P6 context survives in plan seed", e)
     print("5/5 P6 structural checks passed")
 
