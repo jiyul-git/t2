@@ -122,6 +122,8 @@ def main():
         ('n shorter', 'money_n_shorter'),
         ('forced cost share', 'money_forced_cost_share_of_stack'),
         ('stack after next BB', 'money_stack_after_next_bb_if_fold_all'),
+        ('cycle remaining drift', 'cycle_remaining_drift'),
+        ('cycle n-shorter drift', 'cycle_n_shorter_drift'),
     ]
     for label, key in metrics:
         vals = [num(r.get(key)) if not key.startswith('_') else r.get(key)
@@ -140,7 +142,8 @@ def main():
             'commit=%s postSPR=%s preRemain=%sBB '
             'BF=%s pay=%s ladder=%s sev=%s wait=%s ladderComp=%s '
             'preserve=%s urgency=%s budget=%s P-U=%s '
-            'jump=%s shorter=%s forced=%s nextBB=%s pos=%s'
+            'jump=%s cycleJump=%s rem=%s cycleRem=%s dRem=%s '
+            'shorter=%s cycleShort=%s dShort=%s forced=%s nextBB=%s pos=%s'
             % (
                 r.get('seed'), r.get('hand_no'), r.get('street'), r.get('action'),
                 r.get('money_decision_kind'), r.get('plan'),
@@ -158,7 +161,13 @@ def main():
                 fmt(num(r.get('money_commitment_budget'))),
                 fmt(r['_preserve_minus_urgency']),
                 fmt(num(r.get('money_players_to_jump'))),
+                fmt(num(r.get('cycle_players_to_jump_start'))),
+                fmt(num(r.get('money_remaining'))),
+                fmt(num(r.get('cycle_remaining_start'))),
+                fmt(num(r.get('cycle_remaining_drift'))),
                 fmt(num(r.get('money_n_shorter'))),
+                fmt(num(r.get('cycle_n_shorter_start'))),
+                fmt(num(r.get('cycle_n_shorter_drift'))),
                 fmt(num(r.get('money_forced_cost_share_of_stack'))),
                 fmt(num(r.get('money_stack_after_next_bb_if_fold_all'))),
                 r.get('money_pos') or '-',
