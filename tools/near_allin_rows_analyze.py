@@ -172,22 +172,38 @@ def main():
             def _yes(v):
                 return str(v).strip().lower() in ('1', 'true', 'yes')
             applied = [r for r in rows if _yes(r.get('effective_allin_applied'))]
+            promoted = []
+            already_full = []
+            for r in applied:
+                pre = num(r.get('pre_effective_target'))
+                actor = num(r.get('actor_cap'))
+                if pre is not None and actor is not None and pre < actor - 1e-9:
+                    promoted.append(r)
+                else:
+                    already_full.append(r)
+
             print()
             print('## effective-all-in v1 applied')
-            print('  applied shoves: %d' % len(applied))
-            if applied:
-                by_street = collections.Counter(r.get('street') for r in applied)
-                by_plan = collections.Counter(r.get('plan') for r in applied)
-                print('  street: ' + ' / '.join('%s=%d' % (k, v)
-                                                 for k, v in sorted(by_street.items())))
-                print('  plan: ' + ' / '.join('%s=%d' % (k, v)
-                                               for k, v in sorted(by_plan.items())))
-                for r in applied[:20]:
-                    print('    seed %s H%s %s %s plan=%s pre=%s exec=%s commit=%s postSPR=%s mode=%s'
+            print('  classifier hits/applied : %d' % len(applied))
+            print('  promoted near-all-in    : %d' % len(promoted))
+            print('  already exact/full      : %d' % len(already_full))
+            if promoted:
+                by_street = collections.Counter(r.get('street') for r in promoted)
+                by_plan = collections.Counter(r.get('plan') for r in promoted)
+                print('  promoted street: ' + ' / '.join('%s=%d' % (k, v)
+                                                          for k, v in sorted(by_street.items())))
+                print('  promoted plan: ' + ' / '.join('%s=%d' % (k, v)
+                                                        for k, v in sorted(by_plan.items())))
+                print('  promoted rows:')
+                for r in promoted:
+                    pre = num(r.get('pre_effective_target'))
+                    actor = num(r.get('actor_cap'))
+                    added = (actor - pre) if pre is not None and actor is not None else None
+                    print('    seed %s H%s %s %s plan=%s pre=%s actor=%s add=%s commit=%s postSPR=%s mode=%s'
                           % (r.get('seed'), r.get('hand_no'), r.get('street'),
                              r.get('action'), r.get('plan'),
-                             r.get('pre_effective_target'), r.get('committed'),
-                             r.get('effective_allin_commit'),
+                             r.get('pre_effective_target'), r.get('actor_cap'),
+                             f(added), r.get('effective_allin_commit'),
                              r.get('effective_allin_post_spr'),
                              r.get('allin_execution_mode')))
 
