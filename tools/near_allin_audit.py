@@ -109,6 +109,16 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
                 'residual_pot': (residual / pot) if pot > 0 else None,
                 'pre_clamp': it.get('pre_clamp'),
                 'type': it.get('type'),
+                'contrib_before': it.get('contrib_before'),
+                'actor_cap': it.get('actor_cap'),
+                'opp_cap_max': it.get('opp_cap_max'),
+                'effective_cap': it.get('effective_cap'),
+                'increment': it.get('increment'),
+                'pot_after': it.get('pot_after'),
+                'own_residual_post': it.get('own_residual_post'),
+                'effective_gap': it.get('effective_gap'),
+                'post_spr_own': it.get('post_spr_own'),
+                'post_spr_effective': it.get('post_spr_effective'),
             })
 
     clear_tilt_cache()
@@ -159,6 +169,9 @@ def write_rows(path, rows):
         'pot', 'tocall', 'bb', 'stack', 'raw_amt', 'committed',
         'commit_frac', 'residual', 'residual_bb', 'residual_pot',
         'pre_clamp', 'type',
+        'contrib_before', 'actor_cap', 'opp_cap_max', 'effective_cap',
+        'increment', 'pot_after', 'own_residual_post', 'effective_gap',
+        'post_spr_own', 'post_spr_effective',
     ]
     parent = os.path.dirname(os.path.abspath(path))
     if parent and not os.path.isdir(parent):
@@ -270,6 +283,37 @@ def main():
              if r['residual_pot'] is not None and r['residual_pot'] <= x]
         print('  <=%2d%% pot %6d' % (int(x*100), len(q)))
 
+    have_eff = any(r.get('effective_cap') is not None for r in nonallin)
+    if have_eff:
+        print()
+        print('## final legal target 기준 effective-stack 진단')
+        for t in (0.90, 0.95, 0.98):
+            q = []
+            for r in nonallin:
+                cap = r.get('effective_cap')
+                if cap is None:
+                    continue
+                cap = float(cap or 0)
+                if cap <= 0:
+                    continue
+                eff_frac = min(float(r['committed']), cap) / cap
+                if eff_frac >= t:
+                    q.append(r)
+            print('  effective commit >=%2d%% : %6d'
+                  % (int(t*100), len(q)))
+        print('  post-action effective SPR:')
+        for x in (0.02, 0.05, 0.10, 0.20):
+            n = sum(1 for r in nonallin
+                    if r.get('post_spr_effective') is not None
+                    and float(r['post_spr_effective']) <= x)
+            print('    <= %.2f : %6d' % (x, n))
+        print('  own-stack post-action SPR:')
+        for x in (0.02, 0.05, 0.10, 0.20):
+            n = sum(1 for r in nonallin
+                    if r.get('post_spr_own') is not None
+                    and float(r['post_spr_own']) <= x)
+            print('    <= %.2f : %6d' % (x, n))
+
     print()
     print('## >=80%% 사례의 street')
     for k, n in collections.Counter(r['street'] for r in cand80).most_common():
@@ -293,7 +337,8 @@ def main():
             '%(street)s %(action)s plan=%(plan)s  '
             'stack=%(stack)s amt=%(committed)s remain=%(residual)s '
             'commit=%(commit)s remainBB=%(rbb)s remain/pot=%(rpot)s '
-            'pot=%(pot)s tocall=%(tocall)s intent=%(intent)s pre=%(pre)s'
+            'pot=%(pot)s tocall=%(tocall)s intent=%(intent)s pre=%(pre)s '
+            'effcap=%(effcap)s effgap=%(effgap)s postSPR=%(postspr)s'
             % {
                 'seed': r['seed'], 'hand_no': r['hand_no'], 'table': r['table'],
                 'seat': r['seat'], 'street': r['street'], 'action': r['action'],
@@ -303,6 +348,9 @@ def main():
                 'rbb': fnum(r['residual_bb']), 'rpot': fnum(r['residual_pot']),
                 'pot': fnum(r['pot']), 'tocall': fnum(r['tocall']),
                 'intent': fnum(r['intent_size']), 'pre': fnum(r['pre_clamp']),
+                'effcap': fnum(r.get('effective_cap')),
+                'effgap': fnum(r.get('effective_gap')),
+                'postspr': fnum(r.get('post_spr_effective')),
             })
 
     if a.rows:
