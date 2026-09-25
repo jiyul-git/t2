@@ -892,6 +892,20 @@ class HandRun:
                     # 다음 사람에게 적용될 값을 보게 된다(무저항 벳 X → 기록 2X).
                     _cur0 = r2.current
                     _mr0 = r2.min_raise
+                    # near-all-in 분석용 provenance. 판단에는 쓰지 않는다.
+                    # target은 이번 street 총 기여액 좌표이므로 actor/opp 모두
+                    # (remaining stack + current contribution)으로 맞춘다.
+                    _contrib_before = r2.contrib.get(s, 0)
+                    _actor_cap = r2.stacks[s] + _contrib_before
+                    _opp_caps = [
+                        r2.stacks[x] + r2.contrib.get(x, 0)
+                        for x in r2.live() if x != s
+                    ]
+                    # multiway에는 상대별 effective stack이 따로 있지만,
+                    # 여기서는 "적어도 한 명이 끝까지 contest할 수 있는 최대치"를
+                    # diagnostic scalar로 쓴다.
+                    _opp_cap_max = max(_opp_caps) if _opp_caps else _actor_cap
+                    _effective_cap = min(_actor_cap, _opp_cap_max)
                     # 재생값을 **다시 shape 하지 않는다.** _forced[2] 는 아래
                     # 587줄이 r2.log 에서 꺼내 기록한 집행값이라 이미 shape 를
                     # 거쳤다. 두 번 먹이면 같은 상황을 재생했는데 다른 금액이
@@ -920,6 +934,16 @@ class HandRun:
                         # 클램프 이후의 값이 **실제로 테이블에 올라간 액수**다.
                         # 기록이 클램프 앞에서 찍히면 검증할 때 집행값을 못 본다.
                         _sent = max(amt, r2.current+r2.min_raise) if r2.current else amt
+                        _target_capped = min(_actor_cap, _sent)
+                        _increment = max(0, _target_capped - _contrib_before)
+                        _pot_after = pot_live + _increment
+                        _own_residual_post = max(0, _actor_cap - _target_capped)
+                        _effective_gap = max(
+                            0, _effective_cap - min(_effective_cap, _sent))
+                        _post_spr_own = (
+                            _own_residual_post / max(1.0, _pot_after))
+                        _post_spr_effective = (
+                            _effective_gap / max(1.0, _pot_after))
                         r2.apply(s, a, _sent)
                         _exec_amt = _sent
                         aggressor = s
@@ -986,6 +1010,27 @@ class HandRun:
                                   'plan_mode': _pl2.get('plan_mode'),
                                   'response_act': (a if tc > 0 else None),
                                   'response_src': (_rsrc if tc > 0 else None),
+                                  # 기록 전용: near-all-in / effective-stack 분석.
+                                  'contrib_before': (_contrib_before
+                                                     if a in ('bet', 'raise') else None),
+                                  'actor_cap': (_actor_cap
+                                                if a in ('bet', 'raise') else None),
+                                  'opp_cap_max': (_opp_cap_max
+                                                  if a in ('bet', 'raise') else None),
+                                  'effective_cap': (_effective_cap
+                                                    if a in ('bet', 'raise') else None),
+                                  'increment': (_increment
+                                                if a in ('bet', 'raise') else None),
+                                  'pot_after': (_pot_after
+                                                if a in ('bet', 'raise') else None),
+                                  'own_residual_post': (_own_residual_post
+                                                        if a in ('bet', 'raise') else None),
+                                  'effective_gap': (_effective_gap
+                                                    if a in ('bet', 'raise') else None),
+                                  'post_spr_own': (_post_spr_own
+                                                   if a in ('bet', 'raise') else None),
+                                  'post_spr_effective': (_post_spr_effective
+                                                         if a in ('bet', 'raise') else None),
                                   'why_by_street': (_pl2.get('why_by_street') or {}
                                                     ).get(street),
                                   'tocall': tc, 'pot': pot_live,
