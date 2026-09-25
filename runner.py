@@ -182,6 +182,7 @@ class Round:
         tc = self.to_call(seat); st = self.stacks[seat]
         _pre_current = self.current
         _pre_min_raise = self.min_raise
+        _pre_contrib = self.contrib.get(seat, 0)
         _input_action = action
         _raised = False
         _full_raise = False
@@ -247,6 +248,9 @@ class Round:
             'input_action': _input_action,
             'action': action,
             'amount': rec_amt,
+            'pre_contrib': _pre_contrib,
+            'post_contrib': self.contrib.get(seat, 0),
+            'increment': max(0, self.contrib.get(seat, 0) - _pre_contrib),
             'pre_current': _pre_current,
             'post_current': self.current,
             'pre_min_raise': _pre_min_raise,
