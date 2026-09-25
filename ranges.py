@@ -22,7 +22,8 @@ _base_open = pf._open
 _traits    = pf._tr
 
 def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
-                  opener_pos=None, open_bb=2.5, seats=8, ante=True, polar=0.0):
+                  opener_pos=None, open_bb=2.5, seats=8, ante=True, polar=0.0,
+                  raise_level=1):
     """액션 경로로부터 그 플레이어의 프리플랍 레인지.
        call/3bet은 실제 디펜스 역치와 동일한 구간을 쓴다 (중첩 없음)."""
     base = _base_open(prof_type, pos, seats, bb, ante)
@@ -39,7 +40,8 @@ def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
     elif action in ('call','3bet'):
         if opener_pos:
             tp, tot = _def_thresholds(prof_type, pos, opener_pos, bb, open_bb,
-                                      n_callers, seats=seats, ante=ante)
+                                      n_callers, raise_level=raise_level,
+                                      seats=seats, ante=ante)
             lo, hi = (0.0, tp) if action == '3bet' else (tp, tot)
         else:
             hi = t['threebet']*3.0 if action == '3bet' else min(0.85, t['call']*2.4)
