@@ -10,20 +10,29 @@ if ROOT not in sys.path:
 
 import preflop as PF
 import plan as PL
+import persona as PS
 
 
 def prof():
+    """Production-shaped profile.
+
+    persona.overall_skill() expects both EXEC and CALC concept families to be
+    represented.  The previous verifier used a tiny partial dict, so it failed
+    inside statistics.mean before reaching the behavior under test.
+    """
+    concepts = {k: 5.0 for k in PS.ALL_CONCEPTS}
+    concepts.update({
+        'pf_range': 6.0,
+        'pf_defend': 6.0,
+        'spr': 6.0,
+        'open_size': 6.0,
+        'icm': 5.0,
+    })
+    temper = {k: 5.0 for k in PS.TEMPER}
     return {
-        'type':'TAG',
-        'concepts': {
-            'pf_range':6.0, 'pf_defend':6.0, 'spr':6.0,
-            'open_size':6.0, 'icm':5.0,
-        },
-        'temper': {
-            'aggression':5.0, 'looseness':5.0, 'gamble':5.0,
-            'discipline':5.0, 'consistency':5.0,
-            'slowplay_taste':5.0,
-        }
+        'type': 'TAG',
+        'concepts': concepts,
+        'temper': temper,
     }
 
 
