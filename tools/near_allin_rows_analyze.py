@@ -168,6 +168,29 @@ def main():
             if actor > opp + 1e-9 and committed > opp + 1e-9:
                 overshoot.append((committed - opp, r))
 
+        if rows and 'effective_allin_applied' in rows[0]:
+            def _yes(v):
+                return str(v).strip().lower() in ('1', 'true', 'yes')
+            applied = [r for r in rows if _yes(r.get('effective_allin_applied'))]
+            print()
+            print('## effective-all-in v1 applied')
+            print('  applied shoves: %d' % len(applied))
+            if applied:
+                by_street = collections.Counter(r.get('street') for r in applied)
+                by_plan = collections.Counter(r.get('plan') for r in applied)
+                print('  street: ' + ' / '.join('%s=%d' % (k, v)
+                                                 for k, v in sorted(by_street.items())))
+                print('  plan: ' + ' / '.join('%s=%d' % (k, v)
+                                               for k, v in sorted(by_plan.items())))
+                for r in applied[:20]:
+                    print('    seed %s H%s %s %s plan=%s pre=%s exec=%s commit=%s postSPR=%s mode=%s'
+                          % (r.get('seed'), r.get('hand_no'), r.get('street'),
+                             r.get('action'), r.get('plan'),
+                             r.get('pre_effective_target'), r.get('committed'),
+                             r.get('effective_allin_commit'),
+                             r.get('effective_allin_post_spr'),
+                             r.get('allin_execution_mode')))
+
         print()
         print('## actor-effective candidate grid')
         actor_rows = []
