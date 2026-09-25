@@ -1043,14 +1043,20 @@ class HandRun:
                 # 만들어내는지 확인하려면 act_with_plan 호출 전에 체크 이력이 필요하다.
                 _already_checked = bool(
                     tc > 0 and any(x == s and act == 'check' for (x, act, _) in r2.log))
-                a2, eq, need = PL.act_with_plan(h.hole[s], board, ax, h.plans[key], pot_live, tc,
-                                                r2.stacks[s], street,
-                                                initiative=RU.has_initiative(s, aggressor),
- opp_range=opp_r, opp_ranges=opp_ranges, facing_seat=aggressor,
-                                                bf=h.bf(s), seed=self._dseed(s, street, 'act', len(r2.log)),
-                                                n_opp=n_opp, to_act_behind=behind, read=read_val,
-                                                opp_est=est if tc > 0 and aggressor is not None
-                                                        and aggressor != s else None)
+                a2, eq, need = PL.act_with_plan(
+                    h.hole[s], board, ax, h.plans[key], pot_live, tc,
+                    r2.stacks[s], street,
+                    initiative=RU.has_initiative(s, aggressor),
+                    opp_range=opp_r, opp_ranges=opp_ranges, facing_seat=aggressor,
+                    bf=h.bf(s), seed=self._dseed(s, street, 'act', len(r2.log)),
+                    n_opp=n_opp, to_act_behind=behind, read=read_val,
+                    opp_est=(est if tc > 0 and aggressor is not None
+                             and aggressor != s else None),
+                    checked_before=_already_checked,
+                    can_raise=r2.can_raise(s),
+                    checkraise_seed=self._dseed(s, street, 'ckr', len(r2.log)),
+                    checkraise_size_seed=self._dseed(
+                        s, street, 'ckrsz', len(r2.log)))
                 _tr = (h.plans.get(key) or {}).get('trace')
                 if _tr:
                     for _i in h.intents:
@@ -1067,40 +1073,13 @@ class HandRun:
                     h.plans[key].setdefault('bet_streets', [])
                     if street not in h.plans[key]['bet_streets']:
                         h.plans[key]['bet_streets'].append(street)
-                # 체크 후 벳을 맞은 상황이면 체크레이즈 판정.
-                # r2.acted 는 풀레이즈가 나오면 {레이저} 로 초기화되므로
-                # 's in r2.acted' 로 판정하면 이 분기가 절대 성립하지 않는다.
-                # 이번 스트리트에 실제로 체크한 기록(r2.log)이 유일하게 옳은 근거다.
-                _ckr_gate_called = False
-                _ckr_gate_taken = False
-                _pre_ckr_act = a
-                if tc > 0 and a in ('call', 'fold') and _already_checked:
-                    _ckr_gate_called = True
-                    _ckr_gate_taken = PL.checkraise_decision(
-                            h.hole[s], board, ax, h.plans[key], pot_live, tc,
-                            r2.stacks[s], street,
-                            seed=self._dseed(s, street, 'ckr', len(r2.log)),
-                            opp_est=_est)
-                    if _ckr_gate_taken:
-                        a = 'raise'
-                        amt = PL.checkraise_size(ax, pot_live, tc, r2.stacks[s],
-                                                 board, street,
-                                                 random.Random(self._dseed(s, street, 'ckrsz',
-                                                                           len(r2.log))))
-                        amt = min(r2.stacks[s] + r2.contrib.get(s, 0), amt + r2.contrib.get(s, 0))
-                        h.plans[key].setdefault('acts', []).append('체크레이즈 실행')
-
-                # read-only provenance: 실제 check-then-face-bet 상황에서 레이즈가
-                # generic response에서 이미 나왔는지, 전용 gate가 올렸는지 분리한다.
+                # 체크레이즈는 act_with_plan 내부의 response-plan 단계에서만
+                # 결정된다. session 은 더 이상 액션을 사후에 덮어쓰지 않고
+                # provenance 만 기록한다.
                 if _already_checked:
-                    if _forced:
-                        _ckr_source = 'forced_replay'
-                    elif a2[0] == 'raise':
-                        _ckr_source = 'generic_response_raise'
-                    elif _ckr_gate_taken:
-                        _ckr_source = 'checkraise_gate'
-                    else:
-                        _ckr_source = 'no_raise'
+                    _ckr_source = ('forced_replay' if _forced else
+                                   (h.plans.get(key) or {}).get(
+                                       '_last_response_source', 'unknown'))
                     h.checkraise_audit = getattr(h, 'checkraise_audit', [])
                     h.checkraise_audit.append({
                         'street': street,
@@ -1108,10 +1087,9 @@ class HandRun:
                         'plan': (h.plans.get(key) or {}).get('plan'),
                         'source': _ckr_source,
                         'response_act': a2[0],
-                        'pre_gate_act': _pre_ckr_act,
                         'final_act': a,
-                        'gate_called': _ckr_gate_called,
-                        'gate_taken': _ckr_gate_taken,
+                        'gate_called': (not _forced),
+                        'gate_taken': (_ckr_source == 'checkraise_gate'),
                         'checkraise_skill': PS.sk(
                             ax, PS.street_concept('checkraise', street))
                             if ax.get('concepts') else None,
