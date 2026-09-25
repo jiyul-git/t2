@@ -54,8 +54,9 @@ def case_post_spr_false():
 def case_contrib_coordinate():
     x = RU.effective_allin_v1(
         target=1000, actor_cap=1100, opp_cap_max=1500,
-        contrib_before=200, pot_before=1000)
+        contrib_before=200, pot_before=1200)
     # actor has already put 200 in this street; target 1000 means only 800 more.
+    # pot_before=1200 makes the post-action SPR exactly 100/2000 = 0.05.
     expect(abs(x['increment'] - 800) < 1e-9, 'increment must use target coordinate')
     expect(abs(x['residual'] - 100) < 1e-9, 'residual must use actor cap coordinate')
     expect(x['effective'], 'target-coordinate fixture should classify')
