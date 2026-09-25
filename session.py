@@ -193,10 +193,20 @@ def _postflop_facing_contexts(action_meta):
 
 
 def _postflop_response_context(rnd, seat):
-    """현재 seat의 재판단 사건을 공개 액션 이력으로 분류한다."""
+    """현재 seat의 재판단 사건을 공개 액션 이력으로 분류한다.
+
+    caller_backaction 하나만 남기면
+      bet -> call -> raise
+    와
+      bet -> raise -> call -> re-raise
+    가 같은 사건으로 뭉개진다. 마지막 hero action이 **어떤 가격을
+    마주하고 나온 것인지**와 현재 raise depth도 함께 보존한다.
+    """
     metas = list(getattr(rnd, 'action_meta', None) or [])
-    hero_rows = [m for m in metas if m.get('seat') == seat]
-    last_hero = hero_rows[-1] if hero_rows else None
+    facing_before = _postflop_facing_contexts(metas)
+    hero_idx = [i for i, m in enumerate(metas) if m.get('seat') == seat]
+    last_idx = hero_idx[-1] if hero_idx else None
+    last_hero = metas[last_idx] if last_idx is not None else None
     latest_aggr = next((m for m in reversed(metas) if m.get('raised')), None)
 
     facing_kind = None
@@ -214,6 +224,9 @@ def _postflop_response_context(rnd, seat):
     else:
         prior_action = last_hero.get('action') if last_hero else None
     prior_aggressive = bool(last_hero and last_hero.get('raised'))
+    prior_facing_kind = (
+        facing_before[last_idx] if last_idx is not None and last_idx < len(facing_before)
+        else None)
 
     if facing_kind == 'raise' and prior_aggressive:
         kind = 'aggressor_backaction'
@@ -233,6 +246,12 @@ def _postflop_response_context(rnd, seat):
         'facing_kind': facing_kind,
         'prior_action': prior_action,
         'prior_aggressive': prior_aggressive,
+        'prior_facing_kind': prior_facing_kind,
+        'raise_depth_full': sum(1 for m in metas if m.get('full_raise')),
+        'raise_depth_any': sum(1 for m in metas if m.get('raised')),
+        'facing_full_raise': bool(latest_aggr and latest_aggr.get('full_raise')),
+        'facing_incomplete_raise': bool(
+            latest_aggr and latest_aggr.get('incomplete_raise')),
         'hero_contrib': float(getattr(rnd, 'contrib', {}).get(seat, 0) or 0),
     }
 
@@ -1137,6 +1156,10 @@ class HandRun:
                         'response_kind': _resp_ctx.get('kind'),
                         'facing_kind': _resp_ctx.get('facing_kind'),
                         'prior_action': _resp_ctx.get('prior_action'),
+                        'prior_facing_kind': _resp_ctx.get('prior_facing_kind'),
+                        'raise_depth_full': _resp_ctx.get('raise_depth_full'),
+                        'facing_full_raise': _resp_ctx.get('facing_full_raise'),
+                        'facing_incomplete_raise': _resp_ctx.get('facing_incomplete_raise'),
                         'hero_contrib': _resp_ctx.get('hero_contrib'),
                     })
                 # --- 배팅라인 리딩: 진짜 프로필이 아니라 '내가 관찰한 추정치'로 ---
@@ -1188,7 +1211,8 @@ class HandRun:
                         (_facing_ctx or {}).get('size_frac')
                         if _facing_ctx else None),
                     hero_contrib=r2.contrib.get(s, 0),
-                    response_kind=_resp_ctx.get('kind'))
+                    response_kind=_resp_ctx.get('kind'),
+                    response_context=_resp_ctx)
                 _tr = (h.plans.get(key) or {}).get('trace')
                 if _tr:
                     for _i in h.intents:
