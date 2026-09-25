@@ -300,7 +300,7 @@ def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, st
         # 계획 시작 시점이 사라져 **예산(budget_left) 기준점이 리셋**된다.
         # update_plan 의 승계 목록과 동일하게 유지한다.
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
-                  'plan_since', '_rsig', '_opps_sig'):
+                  'executed_actions', 'plan_since', '_rsig', '_opps_sig'):
             if state.get(k) is not None:
                 new[k] = state[k]
         return new
