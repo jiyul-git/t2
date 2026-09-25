@@ -1441,7 +1441,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  seats=8, ante=True, field_avg_bb=None, erosion=0.0,
                  payout_flat=0.0, reentry=False, progress=0.0,
                  behind_est=None, limper_est=None, bb_chips=None,
-                 opener_allin=False, money_open=None, can_check=False):
+                 opener_allin=False, money_open=None, can_check=False,
+                 can_raise=True):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -1490,7 +1491,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                                     exploit=rd, bf=bf, seats=seats, ante=ante,
                                     payout_flat=payout_flat,
                                     reentry=reentry, progress=progress,
-                                    opener_allin=opener_allin)
+                                    opener_allin=opener_allin, can_raise=can_raise)
         role = 'defend'
 
     # 프리플랍에서 확정된 것들 — 포스트플랍 계획이 이걸 물려받는다
@@ -1503,6 +1504,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         'pf_open_bb': float(open_bb or 0.0),
         'pf_n_callers': int(n_callers or 0),
         'pf_n_limpers': int(n_limpers or 0),
+        'pf_can_raise': bool(can_raise),
         'pf_initiative': a in ('raise', '3bet', 'shove'),
         'pf_multiway': (n_callers + n_limpers) >= 2,
         'pf_hand_pct': _pf.pct(hand),
