@@ -173,6 +173,63 @@ def _observed_postflop_action(meta):
     return meta.get('action')
 
 
+def _postflop_facing_contexts(action_meta):
+    """각 액션 직전에 actor가 무엇을 마주했는지 분류한다.
+
+    반환 원소: None | 'bet' | 'raise'
+
+    첫 가격 생성은 bet, 이미 가격이 있는데 다시 올린 사건은 raise다.
+    incomplete all-in raise도 다음 actor 입장에서는 'raise를 맞은 것'이다.
+    """
+    out = []
+    facing = None
+    for m in (action_meta or []):
+        out.append(facing)
+        if m.get('raised'):
+            facing = ('raise'
+                      if float(m.get('pre_current', 0) or 0) > 0
+                      else 'bet')
+    return out
+
+
+def _postflop_response_context(rnd, seat):
+    """현재 seat의 재판단 사건을 공개 액션 이력으로 분류한다."""
+    metas = list(getattr(rnd, 'action_meta', None) or [])
+    hero_rows = [m for m in metas if m.get('seat') == seat]
+    last_hero = hero_rows[-1] if hero_rows else None
+    latest_aggr = next((m for m in reversed(metas) if m.get('raised')), None)
+
+    facing_kind = None
+    if latest_aggr is not None:
+        facing_kind = ('raise'
+                       if float(latest_aggr.get('pre_current', 0) or 0) > 0
+                       else 'bet')
+
+    prior_action = (_observed_postflop_action(last_hero) if last_hero else None)
+    prior_aggressive = bool(last_hero and last_hero.get('raised'))
+
+    if facing_kind == 'raise' and prior_aggressive:
+        kind = 'aggressor_backaction'
+    elif facing_kind == 'raise' and prior_action == 'call':
+        kind = 'caller_backaction'
+    elif facing_kind == 'raise':
+        kind = 'cold_facing_raise'
+    elif facing_kind == 'bet' and prior_action == 'check':
+        kind = 'check_then_face_bet'
+    elif facing_kind == 'bet':
+        kind = 'face_bet'
+    else:
+        kind = 'free_action'
+
+    return {
+        'kind': kind,
+        'facing_kind': facing_kind,
+        'prior_action': prior_action,
+        'prior_aggressive': prior_aggressive,
+        'hero_contrib': float(getattr(rnd, 'contrib', {}).get(seat, 0) or 0),
+    }
+
+
 def _barrel_count(full_meta, current_meta, seat, current_street):
     """상대가 공격한 **postflop street 수**. 현재 street도 포함."""
     streets = {
@@ -1018,12 +1075,11 @@ class HandRun:
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
                 pot_live = pot_now + r2.contestable_contrib(s)
+                _resp_ctx = _postflop_response_context(r2, s)
                 _mj_obs = _money_jump_observe(
                     h, s, r2, street, ax, tc, pot_live,
                     facing_seat=(aggressor if tc > 0 else None),
-                    decision_context={
-                        'kind': ('facing_bet' if tc > 0 else 'free_action'),
-                    },
+                    decision_context={'kind': _resp_ctx['kind']},
                     facing_read=(_est if tc > 0 and aggressor == _main else None))
                 _pl = h.plans[key]
                 h.intents = getattr(h, 'intents', [])
@@ -1071,6 +1127,10 @@ class HandRun:
                         'oop_legacy_abs': _oop_legacy,
                         'init': RU.has_initiative(s, aggressor),
                         'n_opp': n_opp, 'behind': behind,
+                        'response_kind': _resp_ctx.get('kind'),
+                        'facing_kind': _resp_ctx.get('facing_kind'),
+                        'prior_action': _resp_ctx.get('prior_action'),
+                        'hero_contrib': _resp_ctx.get('hero_contrib'),
                     })
                 # --- 배팅라인 리딩: 진짜 프로필이 아니라 '내가 관찰한 추정치'로 ---
                 read_val = None
@@ -1119,7 +1179,9 @@ class HandRun:
                         s, street, 'ckrsz', len(r2.log)),
                     facing_size_frac=(
                         (_facing_ctx or {}).get('size_frac')
-                        if _facing_ctx else None))
+                        if _facing_ctx else None),
+                    hero_contrib=r2.contrib.get(s, 0),
+                    response_kind=_resp_ctx.get('kind'))
                 _tr = (h.plans.get(key) or {}).get('trace')
                 if _tr:
                     for _i in h.intents:
@@ -1306,6 +1368,10 @@ class HandRun:
                                   'plan_mode': _pl2.get('plan_mode'),
                                   'response_act': (a if tc > 0 else None),
                                   'response_src': (_rsrc if tc > 0 else None),
+                                  'response_kind': (_resp_ctx.get('kind')
+                                                    if tc > 0 else None),
+                                  'facing_kind': (_resp_ctx.get('facing_kind')
+                                                  if tc > 0 else None),
                                   # 기록 전용: near-all-in / effective-stack 분석.
                                   'contrib_before': (_contrib_before
                                                      if a in ('bet', 'raise') else None),
@@ -1392,7 +1458,8 @@ class HandRun:
                 any(z[2] in ('bet', 'raise') for z in _prev_rows))
 
             _pot_before_action = float(self._pot_at.get(street, 0) or 0)
-            for m in r2.action_meta:
+            _facing_seq = _postflop_facing_contexts(r2.action_meta)
+            for _obs_i, m in enumerate(r2.action_meta):
                 x = m.get('seat')
                 a_ = m.get('action')
                 opp_spot = (x == street_aggr and x not in _acted_once and not _bet_seen)
@@ -1406,9 +1473,12 @@ class HandRun:
                 # 관측 의미는 UI 문자열이 아니라 규칙 사건이다.
                 # allin call은 call, allin raise는 raise로 학습해야 한다.
                 _obs_action = _observed_postflop_action(m)
+                _fk = _facing_seq[_obs_i] if _obs_i < len(_facing_seq) else None
                 h.book.observe_postflop(
                     _ord, _pid(x), _obs_action, is_cbet, is_barrel,
-                    facing_bet=_bet_seen, street=street,
+                    facing_bet=(_fk == 'bet'),
+                    facing_raise=(_fk == 'raise'),
+                    street=street,
                     is_delayed_cbet_spot=is_delayed)
                 # sizing tell은 target/street-start-pot이 아니라
                 # **이번 액션에 새로 낸 칩 / 액션 직전 팟**을 본다.
