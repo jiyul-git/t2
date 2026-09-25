@@ -63,3 +63,25 @@ The harness signature was updated in commit
 A fast static/runtime-source contract check was added as
 `tools/replan_context_contract_check.py` so the multi-hour tournament capture
 does not need to be repeated merely to verify the forwarding contract.
+
+
+## Final contract check
+
+Termux post-fix check:
+
+```
+PASS revise_plan position-context contract
+  plan.update_plan -> runner.revise_plan: oop_vs_aggr, oop_legacy_abs, initiative
+  runner.revise_plan -> plan.make_plan: oop_vs_aggr, oop_legacy_abs, initiative
+  defaults preserved: None / None / True
+```
+
+Combined closure evidence:
+- pre-fix 4-A live path: block selection reached actual bet (S8)
+- pre-fix 4-B paired joint replay: position context changed 7 plans and 3 raw chip targets
+- R1/R2 gave the same aggregate result
+- production fix is only context forwarding
+- frozen regression fingerprints all matched after the fix
+- post-fix contract check confirms both forwarding links and defaults
+
+A5/A6 position-context item is closed.
