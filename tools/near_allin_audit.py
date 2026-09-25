@@ -255,6 +255,22 @@ def main():
 
     cand80 = [r for r in nonallin if r['commit_frac'] >= 0.80]
     print()
+    print('## 잔여 BB 단독 분포 — commit 비율과 무관하게 본다')
+    for b in (0.5, 1.0, 2.0, 3.0, 5.0):
+        q = [r for r in nonallin
+             if r['residual_bb'] is not None and r['residual_bb'] <= b]
+        q80 = sum(1 for r in q if r['commit_frac'] >= 0.80)
+        print('  <=%3.1fBB   %6d   (그중 commit>=80%%: %d)'
+              % (b, len(q), q80))
+
+    print()
+    print('## 잔여/pot 단독 분포')
+    for x in (0.02, 0.05, 0.10, 0.20):
+        q = [r for r in nonallin
+             if r['residual_pot'] is not None and r['residual_pot'] <= x]
+        print('  <=%2d%% pot %6d' % (int(x*100), len(q)))
+
+    print()
     print('## >=80%% 사례의 street')
     for k, n in collections.Counter(r['street'] for r in cand80).most_common():
         print('  %-8s %6d' % (str(k), n))
@@ -277,7 +293,7 @@ def main():
             '%(street)s %(action)s plan=%(plan)s  '
             'stack=%(stack)s amt=%(committed)s remain=%(residual)s '
             'commit=%(commit)s remainBB=%(rbb)s remain/pot=%(rpot)s '
-            'pot=%(pot)s tocall=%(tocall)s'
+            'pot=%(pot)s tocall=%(tocall)s intent=%(intent)s pre=%(pre)s'
             % {
                 'seed': r['seed'], 'hand_no': r['hand_no'], 'table': r['table'],
                 'seat': r['seat'], 'street': r['street'], 'action': r['action'],
@@ -286,6 +302,7 @@ def main():
                 'commit': '%.1f%%' % (100 * r['commit_frac']),
                 'rbb': fnum(r['residual_bb']), 'rpot': fnum(r['residual_pot']),
                 'pot': fnum(r['pot']), 'tocall': fnum(r['tocall']),
+                'intent': fnum(r['intent_size']), 'pre': fnum(r['pre_clamp']),
             })
 
     if a.rows:
