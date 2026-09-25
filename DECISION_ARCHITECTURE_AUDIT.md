@@ -227,3 +227,36 @@ Only after this grid is complete should a row be marked:
 9. only then calibrate LOADING/SPREAD.
 
 No production strategic coefficients are changed by this audit.
+
+
+## 6. Emotion boundary — newly locked rule
+
+User design decision:
+
+> Emotional state may influence **plan / re-plan selection only**.  Once a plan or response-plan
+> is chosen, execution must follow it except for legality/chip conversion.
+
+The current implementation does **not** yet respect this boundary.
+
+`play.Hand.axes()` currently returns `PS.tilted_view(base, t)`, and that tilted profile is
+then passed broadly through preflop and postflop logic, including functions that choose responses
+and sizes.  Therefore tilt can currently alter concept/temper values outside a clearly bounded
+planning stage.
+
+Required future architecture:
+
+```
+base_profile
+   |
+   +--> planning_view(base_profile, emotion_state)
+   |       -> choose/revise plan or response-plan
+   |
+   +--> execution_view(base_profile)
+           -> execute stored intent; legality/chip conversion only
+```
+
+A reactive event (for example, check -> opponent river bet) is itself a new planning event.
+Emotion may bias the newly selected response-plan there, but may not subsequently rewrite the
+selected fold/call/raise or strategic size during execution.
+
+Status: ARCHITECTURE MISMATCH / defer behavior change until situation-to-code mapping is complete.
