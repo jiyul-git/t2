@@ -253,7 +253,10 @@ class Round:
             'raised': bool(_raised),
             'full_raise': bool(_full_raise),
             'incomplete_raise': bool(_incomplete_raise),
-            'allin_call': bool(_input_action == 'allin' and not _raised),
+            # 'call' 자체가 남은 스택을 전부 소모해도 all-in call 이다.
+            # 입력 문자열이 allin 인 경우만 세면 봇의 call-off가 누락된다.
+            'allin_call': bool(
+                not _raised and action in ('call', 'allin') and seat in self.allin),
             'full_raise_count': self.full_raise_count,
         })
         return self
