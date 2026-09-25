@@ -9,6 +9,23 @@ The existing code is not the source of truth for this document.
 
 # 0. Audit rules
 
+## 0.0 Mandatory action cycle
+
+Every voluntary action is specified as:
+
+```
+judgment -> plan -> action
+```
+
+and the cycle repeats whenever new information arrives.
+
+A multi-street plan may survive across later nodes, but it never suppresses the next judgment.
+At each new node the player judges the new state, then explicitly keeps/revises/replaces the plan,
+then acts.
+
+Emotion may bias only the plan choice/revision.
+
+
 ## 0.1 One sequential story
 
 A hand is inspected in actual order:
