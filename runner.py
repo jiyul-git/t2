@@ -32,6 +32,48 @@ def shape_size(amount, ptype, rng, pot=None):
     r = sig['round_to']
     return max(r, int(round(a / r)) * r)
 
+
+def effective_allin_v1(target, actor_cap, opp_cap_max, contrib_before, pot_before):
+    """final legal target이 actor 기준 사실상 올인인지 분류한다.
+
+    **분류만** 한다. shove / leave-behind 같은 실행 방식은 호출부가 고른다.
+    opponent-effective(상대가 더 짧은) 상황은 actor shove 판정에서 제외한다.
+
+    v1 잠금:
+      actor-effective
+      commit >= 90%
+      action 후 own SPR <= 0.05
+    """
+    actor_cap = max(0.0, float(actor_cap or 0))
+    opp_cap_max = max(0.0, float(opp_cap_max or 0))
+    contrib_before = max(0.0, float(contrib_before or 0))
+    pot_before = max(0.0, float(pot_before or 0))
+    target = max(0.0, float(target or 0))
+
+    capped = min(actor_cap, target) if actor_cap > 0 else 0.0
+    increment = max(0.0, capped - contrib_before)
+    pot_after = pot_before + increment
+    residual = max(0.0, actor_cap - capped)
+    commit_frac = (capped / actor_cap) if actor_cap > 0 else 0.0
+    post_spr = residual / max(1.0, pot_after)
+    actor_effective = (actor_cap > 0 and opp_cap_max > 0
+                       and actor_cap <= opp_cap_max + 1e-9)
+    effective = (actor_effective
+                 and commit_frac >= 0.90 - 1e-12
+                 and post_spr <= 0.05 + 1e-12)
+
+    return {
+        'effective': bool(effective),
+        'actor_effective': bool(actor_effective),
+        'target_capped': capped,
+        'increment': increment,
+        'pot_after': pot_after,
+        'residual': residual,
+        'commit_frac': commit_frac,
+        'post_spr': post_spr,
+    }
+
+
 # ---------- 베팅 라운드 ----------
 class Round:
     """재레이즈·최소레이즈·올인·사이드팟을 처리하는 베팅 라운드."""
