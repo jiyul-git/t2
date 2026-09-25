@@ -156,8 +156,21 @@ class Round:
         return bool(self.incomplete)
 
     def can_raise(self, seat):
-        """불완전 올인만 개입한 경우 이미 액션한 좌석은 레이즈 불가."""
-        if seat not in self.acted: return True
+        """이 좌석의 레이즈에 실제로 응답할 수 있는 상대가 있고 권리가 열려 있는가."""
+        # 나머지 live 좌석이 전부 올인이면 추가 레이즈는 누구에게도
+        # 콜될 수 없다. HU에서 상대 shove 뒤 covering stack이 더 얹는
+        # 'dead raise'를 허용하면 로그/리딩/난수 경로만 오염된다.
+        responder = any(
+            x != seat
+            and x not in self.folded
+            and x not in self.allin
+            and self.stacks.get(x, 0) > 0
+            for x in self.order
+        )
+        if not responder:
+            return False
+        if seat not in self.acted:
+            return True
         return not self.incomplete
 
     def apply(self, seat, action, amount=0):
@@ -178,8 +191,12 @@ class Round:
         elif action in ('bet', 'raise', 'allin'):
             target = amount if action != 'allin' else self.contrib.get(seat, 0) + st
             total_needed = target - self.contrib.get(seat, 0)
-            if action in ('bet','raise') and not self.can_raise(seat):
-                raise ValueError('레이즈 불가: 불완전 올인은 액션을 재개시키지 않음 (콜/폴드만)')
+            # allin도 current를 넘으면 규칙상 'raise'다. 반대로 숏스택의
+            # all-in call(target <= current)은 raise 권리가 없어도 허용해야 한다.
+            if target > self.current and not self.can_raise(seat):
+                raise ValueError(
+                    '레이즈 불가: 응답 가능한 상대가 없거나 불완전 올인으로 권리가 닫힘 '
+                    '(콜/폴드만)')
             if total_needed >= st:                       # 올인
                 target = self.contrib.get(seat, 0) + st
                 total_needed = st
