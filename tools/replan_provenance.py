@@ -249,7 +249,12 @@ def _effective_baseline(event, field):
 def _candidate_revise_factory(current, selected):
     """선택한 필드만 current context를 쓰는 revise_plan."""
     def candidate(state, hero, board, my_range, opp_range, profile, pot, stack, street,
-                  seed, n_opp, behind, prev_board):
+                  seed, n_opp, behind, prev_board,
+                  oop_vs_aggr=None, oop_legacy_abs=None, initiative=True):
+        # Post-A5 production revise_plan now accepts the three position-context
+        # kwargs.  The counterfactual candidate intentionally ignores the
+        # call-time values here and reconstructs the requested arm from the
+        # captured event/current context below.
         if not RU.board_changed(prev_board, board):
             return state
 
