@@ -900,33 +900,33 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     a = profile.get('aggr', 5)
     has_c = bool(profile.get('concepts'))
 
-    # --- 포기 계획은 원칙적으로 체크한다 ---
-    # 다만 이니셔티브가 있으면 '지속벳'이라는 별개 동기가 존재한다.
-    # 그 동기의 크기는 블러프 개념과 규율에서 나온다.
-    if plan in ('giveup', 'showdown'):
-        if not initiative:
-            return 0.0, '포기 계획 + 이니셔티브 없음 → 체크'
-        # 포기하기로 했는데 치는 것은 **계획 이탈**이다.
-        # 계획을 못 지키는 정도는 discipline 의 함수다.
-        # 규율 9.7 인 사람과 1.4 인 사람이 같은 빈도로 뒤집으면 성향이 죽는다.
-        cf = cbet_freq(profile, board, n_opp, street, oop, rel, opp_est,
-                       range_adv=(plan_state or {}).get('range_adv', 0.0))
-        if has_c:
-            disc = PS.temper(profile, 'discipline', 5.0)
-            cf *= max(0.05, 1.0 - 0.085*disc)
-        return max(0.0, min(0.9, cf)), 'DEVIATE:포기 계획이나 지속벳(%.0f%%)' % (cf*100)
-
-    if plan == 'trap':
-        return 0.0, '함정 계획 → 체크'
-
-    # 지연 씨벳 — 플랍을 체크백하고 턴에 치는 것. probe(상대가 체크한 뒤
-    # 내가 먼저 치는 것)와 다르다. 이니셔티브를 갖고도 플랍을 거른 경우다.
+    # 지연 씨벳 — 플랍을 실제로 체크하고 턴에 다시 공격권을 쓰는 것.
+    # probe(상대가 체크한 뒤 내가 공격하는 것)와 다르다.
+    # 이 값을 포기/showdown 분기보다 먼저 만든다. 예전에는 그 분기가 먼저
+    # return 해서 delayed_cbet 개념이 정작 대표적인 delayed-cbet 후보에서 죽어 있었다.
     if (street == 'turn' and initiative and has_c
             and (plan_state or {}).get('flop_checked')):
         _dc = PS.sk(profile, 'delayed_cbet')/10.0
         _dc_boost = 0.55 + 0.90*_dc
     else:
         _dc_boost = 1.0
+
+    # --- 포기 계획은 원칙적으로 체크한다 ---
+    # 다만 이니셔티브가 있으면 지속벳/지연씨벳이라는 별개 동기가 존재한다.
+    if plan in ('giveup', 'showdown'):
+        if not initiative:
+            return 0.0, '포기 계획 + 이니셔티브 없음 → 체크'
+        cf = cbet_freq(profile, board, n_opp, street, oop, rel, opp_est,
+                       range_adv=(plan_state or {}).get('range_adv', 0.0))
+        cf *= _dc_boost
+        if has_c:
+            disc = PS.temper(profile, 'discipline', 5.0)
+            cf *= max(0.05, 1.0 - 0.085*disc)
+        _kind = '지연씨벳' if _dc_boost != 1.0 else '지속벳'
+        return max(0.0, min(0.9, cf)), 'DEVIATE:포기 계획이나 %s(%.0f%%)' % (_kind, cf*100)
+
+    if plan == 'trap':
+        return 0.0, '함정 계획 → 체크'
 
     if plan in ('bluff_2street', 'semibluff', 'river_bluff'):
         if to_act_behind >= 2:
@@ -1544,7 +1544,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                 street, seed, n_opp, behind, prev_board, oop, initiative,
                 opp_est=None, opp_stack_bb=None, tilt=0.0, first=False,
                 pf_seed=None, bb_chips=None,
-                oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None):
+                oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None,
+                opp_checked_prev=None):
     """계획 갱신의 **유일한 진입점**.
 
     예전에는 session 이 make_plan / revise_plan / refresh / river_fix / _allowed 를
@@ -1588,7 +1589,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     # 계획 이력은 라벨과 별개로 이어진다. 새 dict 가 만들어져도 유지한다.
     if prev:
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
-                  'plan_since', '_rsig', '_opps_sig'):
+                  'executed_actions', 'plan_since', '_rsig', '_opps_sig'):
             if prev.get(k) is not None and st.get(k) is None:
                 st[k] = prev[k]
 
@@ -1621,6 +1622,13 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     st['_opps_sig'] = _opps_sig
 
     st = river_fix(st, hero, board, profile, opp_range, rng)
+
+    # F2/probe context must exist **before** attach_intent.
+    # Session used to write this after update_plan returned, so the already-frozen
+    # current-action intent could not react to the previous aggressor checking.
+    if opp_checked_prev is not None:
+        st['opp_checked_prev'] = bool(opp_checked_prev)
+
     st['plan'] = _allowed(profile, st['plan'], rng)
 
     # 이 라벨을 언제 채택했는가. 예산(BUDGET)을 세는 기준점이다.
@@ -1791,8 +1799,15 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # 플랍을 체크백했는가. 지연 씨벳(delayed_cbet)이 이걸 본다.
     # 의도 기록에서 읽는다 — 별도 상태를 만들면 두 곳이 어긋난다.
     if street == 'turn':
-        _fi = intent_of(state, 'flop') or {}
-        st['flop_checked'] = (_fi.get('act') in (None, 'check'))
+        _fx = ((state.get('executed_actions') or {}).get('flop') or [])
+        if _fx:
+            # delayed cbet means the player actually checked the flop through.
+            # A planned check that later became call/raise is not a delayed-cbet line.
+            st['flop_checked'] = all(a == 'check' for a in _fx)
+        else:
+            # Legacy/replay states without execution provenance fall back to intent.
+            _fi = intent_of(state, 'flop') or {}
+            st['flop_checked'] = (_fi.get('act') in (None, 'check'))
     outs_true = draw_strength(hero, board)
     # make_plan:277 과 같은 체감 보정을 건다. 여기만 날것이라 **같은 사람이
     # 플랍과 턴에서 자기 아웃츠를 다르게 셌다.** 아래 rel 은 이미 고쳐져
