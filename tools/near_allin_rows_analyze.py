@@ -68,6 +68,8 @@ def classify(r):
 def f(x, nd=2):
     if x is None:
         return '-'
+    if nd == 0:
+        return str(int(round(x)))
     return ('%.*f' % (nd, x)).rstrip('0').rstrip('.')
 
 
@@ -123,12 +125,11 @@ def main():
             print('  commit>=%.0f%% AND residual<=%.0f%%pot : %d'
                   % (100*cf, 100*rp, n))
 
-    have_eff = any(num(r.get('effective_cap')) for r in nonall)
+    have_eff = any(num(r.get('effective_cap')) for r in rows)
     if have_eff:
         print()
-        print('## effective-stack side split')
+        print('## effective-stack side split (non-all-in only)')
         sides = collections.Counter()
-        overshoot = []
         for r in nonall:
             actor = num(r.get('actor_cap'))
             opp = num(r.get('opp_cap_max'))
@@ -143,9 +144,6 @@ def main():
             for t in (.90, .95, .98, 1.0):
                 if eff_frac >= t - 1e-12:
                     sides[(side, t)] += 1
-            if actor > opp + 1e-9 and committed > opp + 1e-9:
-                over = committed - opp
-                overshoot.append((over, r))
 
         print('%-20s %7s %7s %7s %7s %7s'
               % ('side', 'all', '>=90', '>=95', '>=98', '>=100'))
@@ -158,9 +156,24 @@ def main():
                      sides[(side, .98)],
                      sides[(side, 1.0)]))
 
+        # Unmatched excess is a round-accounting question, not a near-all-in-only
+        # question, so count it over every aggressive row, including physical all-ins.
+        overshoot = []
+        for r in rows:
+            actor = num(r.get('actor_cap'))
+            opp = num(r.get('opp_cap_max'))
+            committed = num(r.get('committed')) or 0.0
+            if not actor or not opp:
+                continue
+            if actor > opp + 1e-9 and committed > opp + 1e-9:
+                overshoot.append((committed - opp, r))
+
         print()
-        print('## target beyond deepest opponent cap')
-        print('  count: %d' % len(overshoot))
+        print('## target beyond deepest opponent cap (all aggressive actions)')
+        n_allin = sum((num(r.get('commit_frac')) or 0.0) >= 1.0 - 1e-12
+                      for _, r in overshoot)
+        print('  count: %d  (physical all-in %d / non-all-in %d)'
+              % (len(overshoot), n_allin, len(overshoot) - n_allin))
         if overshoot:
             print('  total excess chips: %d'
                   % int(round(sum(x[0] for x in overshoot))))
