@@ -111,31 +111,63 @@ def _range_sig(combos):
     return _hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
-def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None):
-    """**보드를 돌리지 않은** 에쿼티. 지금 쇼다운했다면 얼마나 이기는가.
+def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
+    """상대별 레인지를 잃지 않고 equity 계산용 pool 목록으로 정규화한다.
 
-    기록 전용이다. 계획 판단에 쓰지 않는다.
+    opp_range 는 과거 단일/합집합 인터페이스 호환용이다.
+    opp_ranges 는 {seat: range} 또는 [range, ...] 이다.
+    """
+    pools = []
+    if isinstance(opp_ranges, dict):
+        for k in sorted(opp_ranges, key=lambda x: str(x)):
+            r = opp_ranges.get(k) or []
+            if r:
+                pools.append(list(r))
+    elif isinstance(opp_ranges, (list, tuple)):
+        for r in opp_ranges:
+            if r:
+                pools.append(list(r))
 
-    _eq_vs 와 같은 레인지·같은 인원·같은 evaluator 를 쓴다. 유일한 차이는
-    남은 보드를 뽑지 않는다는 것 하나뿐이어야 한다. 그래야
-    eq - eq_current 가 '계산 방식의 차이'가 아니라 '미래 카드가 만드는 차이'가 된다.
+    if pools:
+        # 호출부가 일부 상대 레인지만 만들었어도 상대 수를 조용히 줄이면 안 된다.
+        fallback = list(opp_range or pools[-1])
+        while len(pools) < max(1, n_opp):
+            pools.append(fallback)
+        return pools[:max(1, n_opp)]
 
-    bot.equity_vs_pools 를 복제하지 않고 pool 구성만 같은 규칙으로 맞춘 뒤
-    루프를 따로 돈다. bot.py 를 건드리지 않기 위해서다.
+    if opp_range:
+        return [list(opp_range)] * max(1, n_opp)
+    return []
+
+
+def _opp_ranges_signature(opp_ranges):
+    if isinstance(opp_ranges, dict):
+        return tuple((str(k), _range_sig(v)) for k, v in
+                     sorted(opp_ranges.items(), key=lambda kv: str(kv[0])))
+    if isinstance(opp_ranges, (list, tuple)):
+        return tuple((str(i), _range_sig(v)) for i, v in enumerate(opp_ranges))
+    return ()
+
+
+def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
+    """**보드를 돌리지 않은** 에쿼티. 상대별 레인지를 각각 보존한다.
+
+    기록 전용이다. 계획 판단에는 쓰지 않는다.
     """
     if not board:
         return None
     dead = set(hero) | set(board)
-    if opp_range and len(opp_range) >= 6:
-        pool = sorted(c for c in opp_range if c[0] not in dead and c[1] not in dead)
-        pools = [pool] * max(1, n_opp)
-        if seed is None:
-            seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
+    pools0 = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
+    if pools0:
+        pools = [sorted(c for c in p if c[0] not in dead and c[1] not in dead)
+                 for p in pools0]
     else:
         pools = [bot.range_combos(0.35, dead) for _ in range(max(1, n_opp))]
     pools = [p for p in pools if p]
     if not pools:
         return None
+    if seed is None:
+        seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
     rng = random.Random(seed)
     hs = bot.eval7(hero + board)
     win = tie = run = 0
@@ -143,9 +175,9 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None):
         used = set(dead); opps = []; ok = True
         for pool in pools:
             for _t in range(40):
-                c = rng.choice(pool)
-                if c[0] not in used and c[1] not in used:
-                    used.add(c[0]); used.add(c[1]); opps.append(list(c)); break
+                cc = rng.choice(pool)
+                if cc[0] not in used and cc[1] not in used:
+                    used.add(cc[0]); used.add(cc[1]); opps.append(list(cc)); break
             else:
                 ok = False; break
         if not ok:
@@ -157,21 +189,14 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None):
     return (win + tie*0.5) / max(1, run)
 
 
-def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None):
-    """추정 레인지 기준 에쿼티. 레인지가 없거나 너무 얇으면 비율 근사로 물러난다.
-
-    opp_range 는 상대 '한 명분' 추정이므로 인원수만큼 복제해 쓴다.
-    """
-    # 예전에는 20콤보 미만이면 레인지를 **버리고** 일반 35% 근사로 갔다.
-    # ranges._MIN_KEEP 이 12 라 축소는 12까지 내려가는데, 그러면
-    # 12~19 구간이 통째로 무시된다 — 상대를 가장 잘 읽은 경우다.
-    # 좁은 레인지는 정보가 적은 게 아니라 많은 것이다.
-    # 시뮬 노이즈가 걱정이면 버릴 게 아니라 sims 를 늘리면 된다.
-    if opp_range and len(opp_range) >= 6:
-        # seed 를 넘기지 않는다 → 레인지 내용에서 유도된 고정 seed 를 쓴다.
-        # 같은 스팟·같은 레인지면 항상 같은 추정치가 나와야 재현성이 유지된다.
-        _s = sims if len(opp_range) >= 20 else int(sims*1.8)
-        return bot.equity_vs_combos(hero, board, [opp_range]*max(1, n_opp), sims=_s)
+def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
+    """추정 레인지 기준 에쿼티. 멀티웨이는 상대별 pool을 각각 사용한다."""
+    pools = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
+    if pools:
+        # 좁은 레인지는 정보가 많은 것이다. 표본만 늘린다.
+        _s = sims if min(len(p) for p in pools if p) >= 20 else int(sims*1.8)
+        # seed=None 이면 bot 쪽이 실제 pool 내용에서 고정 seed 를 유도한다.
+        return bot.equity_vs_combos(hero, board, pools, sims=_s)
     return bot.equity_vs_range(hero, board, [0.35]*max(1, n_opp), sims=sims, seed=seed)
 
 
@@ -257,7 +282,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
               seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=None,
               initiative=True,
               opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None,
-              oop_legacy_abs=None):
+              oop_legacy_abs=None, opp_ranges=None):
     """플랍에서 라인을 확정. 상대 수와 뒤에 남은 액션자를 반영.
 
     opp_est — reads.perceived_profile() 결과. 진짜 프로필을 넘기면 정보 누출이다.
@@ -267,11 +292,13 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     rng = random.Random(seed)
     # 추정한 opp_range 를 그대로 쓴다. 고정 35% 가정으로 되돌리지 말 것 —
     # 좁혀놓은 레인지를 버리고 EV 를 판단하면 리딩이 전부 무의미해진다.
-    eq = _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=seed)
+    eq = _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=seed,
+                opp_ranges=opp_ranges)
     # 기록 전용. 같은 레인지·같은 인원으로 '보드를 안 돌린' 값을 같이 남긴다.
     # eq 하나만 남기면 나중에 0.535 를 보고 '지금 강한 건가, 드로우 때문인가'를
     # 구분할 수 없다. 판단에는 절대 쓰지 않는다 — 쓰려면 먼저 검증이 필요하다.
-    eq_cur = _eq_current(hero, board, opp_range, n_opp, sims=400, seed=seed)
+    eq_cur = _eq_current(hero, board, opp_range, n_opp, sims=400, seed=seed,
+                         opp_ranges=opp_ranges)
     dang = bot.board_danger(board)
     if profile.get('concepts'):
         dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)   # 텍스처를 못 읽으면 위험을 모름
@@ -542,6 +569,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'my_range_sig': _range_sig(my_range),
             'opp_range_n': len(opp_range) if opp_range else 0,
             'opp_range_sig': _range_sig(opp_range),
+            'opp_ranges_n': ({str(k): len(v) for k, v in opp_ranges.items()}
+                             if isinstance(opp_ranges, dict) else None),
+            'opp_ranges_sig': ({str(k): _range_sig(v) for k, v in opp_ranges.items()}
+                               if isinstance(opp_ranges, dict) else None),
             # 사유에 어느 스트리트에서 붙은 줄인지 표시한다. why 는 스트리트를
             # 넘어 누적되는데 표시가 없어서, 리버 기록의 why[0] 이 플랍 때 붙은
             # '포기' 문자열인 채로 남았다. 계획은 value_2street 인데 사유 첫 줄이
@@ -1250,7 +1281,8 @@ def _trace(st, street, kind, **kw):
 
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   initiative=True, opp_range=None, bf=1.0, seed=None,
-                  n_opp=1, to_act_behind=0, read=None, opp_est=None):
+                  n_opp=1, to_act_behind=0, read=None, opp_est=None,
+                  opp_ranges=None, facing_seat=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
@@ -1272,7 +1304,13 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
 
     if tocall > 0:
         callers = [(0.30, 5)]*max(0, n_opp-1)
-        if opp_range and len(opp_range) >= 20:
+        _pools = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
+        if _pools:
+            # session 이 현재 스트리트의 bet/call/raise까지 상대별로 이미
+            # perceived_range 에 반영해 넘긴다. 다시 bettor 액션을 한 번 더
+            # 먹이면 같은 벳을 중복 관측하게 된다.
+            eq = bot.equity_vs_combos(hero, board, _pools, sims=600)
+        elif opp_range and len(opp_range) >= 20:
             # 상대가 실제로 밟아온 액션 경로로 좁혀진 레인지가 있으면 그것을 쓴다.
             # 여기서 다시 22% 고정 가정으로 돌아가면 콜/폴드 판단만 리딩을 못 받는다.
             sz = tocall/max(1.0, float(pot))
@@ -1467,7 +1505,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                 street, seed, n_opp, behind, prev_board, oop, initiative,
                 opp_est=None, opp_stack_bb=None, tilt=0.0, first=False,
                 pf_seed=None, bb_chips=None,
-                oop_vs_aggr=None, oop_legacy_abs=None):
+                oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None):
     """계획 갱신의 **유일한 진입점**.
 
     예전에는 session 이 make_plan / revise_plan / refresh / river_fix / _allowed 를
@@ -1489,7 +1527,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                        seed=seed, n_opp=n_opp, to_act_behind=behind,
                        oop_vs_aggr=oop_vs_aggr, initiative=initiative,
                        opp_est=opp_est, opp_stack_bb=opp_stack_bb, tilt=tilt,
-                       bb_chips=bb_chips, oop_legacy_abs=oop_legacy_abs)
+                       bb_chips=bb_chips, oop_legacy_abs=oop_legacy_abs,
+                       opp_ranges=opp_ranges)
         # 프리플랍에서 확정된 것을 물려받는다. 이게 없으면 포스트플랍 계획이
         # 매번 백지에서 시작하고, '왜 3벳했는가'가 플랍 판단과 무관해진다.
         if pf_seed:
@@ -1503,12 +1542,12 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
             pot, stack, street, seed, n_opp, behind, prev_board,
             oop_vs_aggr=oop_vs_aggr,
             oop_legacy_abs=oop_legacy_abs,
-            initiative=initiative)
+            initiative=initiative, opp_ranges=opp_ranges)
 
     # 계획 이력은 라벨과 별개로 이어진다. 새 dict 가 만들어져도 유지한다.
     if prev:
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
-                  'plan_since', '_rsig'):
+                  'plan_since', '_rsig', '_opps_sig'):
             if prev.get(k) is not None and st.get(k) is None:
                 st[k] = prev[k]
 
@@ -1527,13 +1566,18 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     _rsig = 0 if not opp_range else hash(frozenset(map(str, opp_range)))
     _first = (street != st.get('street_made')
               and street not in (st.get('refreshed') or []))
+    _opps_sig = _opp_ranges_signature(opp_ranges)
     _range_moved = (st.get('_rsig') is not None and st.get('_rsig') != _rsig)
-    if _first or _range_moved:
+    _pools_moved = (bool(_opps_sig) and st.get('_opps_sig') is not None
+                    and st.get('_opps_sig') != _opps_sig)
+    if _first or _range_moved or _pools_moved:
         st = refresh(st, hero, board, opp_range, profile, pot, stack, street,
-                     n_opp, seed=seed, opp_est=opp_est, my_range=my_range)
+                     n_opp, seed=seed, opp_est=opp_est, my_range=my_range,
+                     opp_ranges=opp_ranges)
         if _first:
             st.setdefault('refreshed', []).append(street)
     st['_rsig'] = _rsig
+    st['_opps_sig'] = _opps_sig
 
     st = river_fix(st, hero, board, profile, opp_range, rng)
     st['plan'] = _allowed(profile, st['plan'], rng)
@@ -1681,7 +1725,7 @@ def _allowed(profile, plan, rng=None):
 
 
 def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1, seed=None,
-            opp_est=None, my_range=None):
+            opp_est=None, my_range=None, opp_ranges=None):
     """계획은 유지하되 **보드 의존 지표를 현재 보드로 한 번에 갱신**하고,
        근거가 무너지면 계획을 강등한다.
 
@@ -1725,7 +1769,8 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # perceived_rel 에는 **날것**을 넘긴다 (make_plan:312-314 와 같게).
     # 체감값을 넘기면 노이즈가 두 번 먹혀 새 불일치가 생긴다.
     rel = perceived_rel(profile, rel_true, hero, board, outs_true, made)
-    eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed)
+    eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed,
+                 opp_ranges=opp_ranges)
     # 레인지 우위도 같은 시점에 갱신한다. my_range 가 없으면(구 호출부)
     # 이전 값을 유지해 동작을 깨지 않는다.
     # `my_range if my_range is not None` 로 쓰면 **빈 리스트가 들어올 때
@@ -1744,13 +1789,18 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
                'made': made, 'danger': round(bot.board_danger(board),2)})
     # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
     # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
-    _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed)
+    _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed,
+                       opp_ranges=opp_ranges)
     st.update({'eq_current': (None if _eqc is None else round(_eqc, 3)),
                'eq_delta': (None if _eqc is None else round(eq - _eqc, 3)),
                'eq_sims': 300, 'eq_seed': seed,
                'outs_true': outs_true,
                'opp_range_n': len(opp_range) if opp_range else 0,
                'opp_range_sig': _range_sig(opp_range),
+               'opp_ranges_n': ({str(k): len(v) for k, v in opp_ranges.items()}
+                                if isinstance(opp_ranges, dict) else None),
+               'opp_ranges_sig': ({str(k): _range_sig(v) for k, v in opp_ranges.items()}
+                                  if isinstance(opp_ranges, dict) else None),
                'my_range_n': len(_mr) if _mr else 0,
                'my_range_sig': _range_sig(_mr)})
     why = list(st.get('why') or [])
