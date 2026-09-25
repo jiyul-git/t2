@@ -109,3 +109,70 @@ rows and remains visible in OOS audit output.
 
 A shadow selector is now locked in `LEAVE_BEHIND_SHADOW_DESIGN.md` before seeds
 6200-6215 are observed.  Production behavior remains unchanged.
+
+
+## Confirmatory OOS — seeds 6200-6215
+
+This sample was not used to choose the shadow selector.
+
+Run summary:
+
+- tournaments: 16
+- field hands: 3,496
+- aggressive postflop actions: 2,885
+- engine errors: 0
+- effective-all-in promotions: 15
+- money-observation join missing: 0
+- decision classes: facing_bet 11 / free_action 4
+- locked shadow leave-behind candidates: **0 / 15**
+
+Cycle timing remained stable for the population:
+
+- cycle remaining drift: 0 on all 15 promotions
+- cycle shorter-stack drift: -1 to +1
+
+The strongest OOS facing-bet survival-looking row was seed 6202 H89:
+
+- pre-v1 residual: 0.5 BB
+- BF: 1.261
+- payout importance: 0.295
+- ladder buffer: 0.417
+- shorter severity: 0.492
+- waiting feasibility: 0.929
+- objective ladder component: 0.056
+- perceived self-preservation: 0.031
+- perceived urgency: 0.024
+- recovered awareness: 0.292
+- BF-free perceived ladder option: about 0.016
+- cycle remaining drift: 0
+- cycle shorter-stack drift: 0
+
+This row is useful because total perceived self-preservation exceeds urgency
+(0.031 > 0.024), but the preregistered BF-free ladder option does not
+(about 0.016 < 0.024).  Therefore using total self-preservation in the execution
+selector would have counted upstream BF risk a second time and would have produced a
+different decision.
+
+The locked selector produced no OOS candidates.  Per the preregistration, zero candidates
+is a valid result; it indicates that the candidate leave-behind behavior is rarer than
+the exploratory 6100-6107 sample suggested.
+
+## Decision
+
+Do **not** enable intentional leave-behind in production from this evidence.
+
+Effective-all-in v1 remains:
+
+- classify actor-effective near-all-in;
+- execute as physical shove.
+
+The leave-behind architecture remains documented as a future optional execution mode, but
+there is not enough confirmatory evidence to activate it now.  In particular:
+
+- do not add a 1BB residue constant;
+- do not relax the locked selector after seeing OOS;
+- do not substitute total BF-containing self-preservation for the BF-free ladder option;
+- do not change the frozen regression baseline for leave-behind.
+
+If this feature is revisited later, collect a larger preregistered sample or test a
+mechanistically different hypothesis before changing the selector.
