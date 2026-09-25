@@ -249,3 +249,8 @@ Still global:
 4. incomplete raise is explicitly preserved;
 5. caller back-action creates a persistent response-plan object;
 6. the response plan carries the complete response context.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_f6_caller_backaction.py` reported `4/4 F6 structural checks passed`.
