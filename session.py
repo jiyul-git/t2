@@ -43,6 +43,7 @@ def _merge_pf_seed(prev, new):
     line.append({
         'role': out.get('pf_role'),
         'act': out.get('pf_act'),
+        'kind': out.get('pf_decision_kind'),
         'vs': out.get('pf_vs'),
         'level': out.get('pf_level'),
         'open_bb': out.get('pf_open_bb'),
@@ -675,7 +676,8 @@ class HandRun:
                     can_check=(tc <= 0),
                     can_raise=rnd.can_raise(s),
                     pot_bb=((rnd.contestable_contrib(s) + ante_pot) / max(1, h.bb)),
-                    to_call_bb=(tc / max(1, h.bb)))
+                    to_call_bb=(tc / max(1, h.bb)),
+                    prior_pf=((getattr(h, 'pf_seed', {}) or {}).get(s)))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
