@@ -65,12 +65,19 @@ def clear_tilt_cache():
 
 def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
     rows = []
+    returns = []
     old_logger = FS.Field._log_bot_hand
     old_bot_log = getattr(FS.Field, 'BOT_LOG', None)
 
     def capture(field, tb, h, run):
         bb = float(getattr(h, 'bb', 0) or 0)
         pids = getattr(h, 'seat_pid', {}) or {}
+        for rr in (getattr(h, 'uncalled_returns', None) or []):
+            x = dict(rr)
+            x['seed'] = seed
+            x['hand_no'] = int(getattr(field, 'hand_no', 0) or 0)
+            x['table'] = getattr(tb, 'id', None)
+            returns.append(x)
         for it in (getattr(h, 'intents', None) or []):
             action = it.get('action')
             if action not in ('bet', 'raise', 'allin'):
@@ -143,7 +150,7 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
             f._balance()
             f.notes = []
 
-        return rows, list(getattr(f, 'errors', ()) or []), int(f.hand_no)
+        return rows, returns, list(getattr(f, 'errors', ()) or []), int(f.hand_no)
     finally:
         FS.Field._log_bot_hand = old_logger
         if old_bot_log is not None:
@@ -196,6 +203,7 @@ def main():
 
     seeds = parse_seeds(a.seeds)
     all_rows = []
+    all_returns = []
     errors = []
     hands = 0
 
@@ -206,13 +214,14 @@ def main():
     print()
 
     for idx, seed in enumerate(seeds, 1):
-        rows, errs, hn = collect_tournament(
+        rows, rets, errs, hn = collect_tournament(
             seed, a.entries, a.hpl, a.stack, a.cap, a.fmt)
         all_rows.extend(rows)
+        all_returns.extend(rets)
         errors.extend((seed, x) for x in errs)
         hands += hn
-        print('[%d/%d] seed %d  hands %d  aggressive actions %d  errors %d'
-              % (idx, len(seeds), seed, hn, len(rows), len(errs)), flush=True)
+        print('[%d/%d] seed %d  hands %d  aggressive actions %d  uncalled returns %d  errors %d'
+              % (idx, len(seeds), seed, hn, len(rows), len(rets), len(errs)), flush=True)
 
     print()
     print('## sanity')
@@ -223,6 +232,16 @@ def main():
         for seed, e in errors[:10]:
             print('  seed %d: %s' % (seed, e))
         return 1
+
+    print()
+    print('## uncalled return')
+    by_street = collections.Counter(str(x.get('street')) for x in all_returns)
+    total_ret = sum(float(x.get('amount') or 0) for x in all_returns)
+    print('returns %d  total chips %s' % (len(all_returns), fnum(total_ret)))
+    for st, n in sorted(by_street.items()):
+        amt = sum(float(x.get('amount') or 0) for x in all_returns
+                  if str(x.get('street')) == st)
+        print('  %-8s %6d  chips %s' % (st, n, fnum(amt)))
 
     actual_allin = [r for r in all_rows if r['commit_frac'] >= 1.0 - 1e-12]
     nonallin = [r for r in all_rows if r['commit_frac'] < 1.0 - 1e-12]
