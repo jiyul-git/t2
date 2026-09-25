@@ -126,3 +126,8 @@ The important prerequisite is complete:
 the engine can now tell **which strategic situation occurred**.
 The later preflop judgment/plan refactor can branch on that situation without reconstructing it
 from lossy final actions.
+
+
+## Closure validation
+
+User validation (Termux, 2026-09-26): `tools/verify_preflop_closure.py` reported `4/4 preflop closure checks passed`.
