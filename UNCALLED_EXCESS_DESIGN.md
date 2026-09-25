@@ -89,3 +89,18 @@ Therefore the frozen regression's seed-3001 mismatch is inherited from the earli
 planned-allin preservation change, not introduced by the uncalled-excess accounting
 correction.  The frozen baseline remains unchanged pending completion of the whole
 near-all-in/effective-all-in workstream.
+
+
+## Regression isolation result
+
+Fresh-process A/B on the frozen regression fixture:
+
+- OLD = current branch with only the uncalled-excess semantics monkeypatched out
+- NEW = current branch as implemented
+- changed seeds: none
+- all six seed fingerprints identical
+- aggregate stats identical
+
+Therefore the frozen regression mismatch at seed 3001 is entirely inherited from the
+earlier planned-allin preservation change.  The uncalled-excess accounting correction
+introduces no additional divergence in that fixture.
