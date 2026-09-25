@@ -1500,6 +1500,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         'pf_pos': pos,
         'pf_vs': aggressor_pos,
         'pf_level': raise_level,
+        'pf_open_bb': float(open_bb or 0.0),
+        'pf_n_callers': int(n_callers or 0),
+        'pf_n_limpers': int(n_limpers or 0),
         'pf_initiative': a in ('raise', '3bet', 'shove'),
         'pf_multiway': (n_callers + n_limpers) >= 2,
         'pf_hand_pct': _pf.pct(hand),
@@ -1540,9 +1543,11 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
         # 매번 백지에서 시작하고, '왜 3벳했는가'가 플랍 판단과 무관해진다.
         if pf_seed:
             st.update({k: v for k, v in pf_seed.items()})
-            if pf_seed.get('pf_role') == 'defend' and pf_seed.get('pf_act') == 'raise':
-                # 3벳 이상으로 들어온 팟은 내 레인지가 강하게 대표된다
-                st['why'] = (st.get('why') or []) + ['프리플랍 3벳 팟 → 레인지 우위']
+            if pf_seed.get('pf_role') == 'defend' and pf_seed.get('pf_initiative'):
+                # 3벳 이상으로 들어온 팟은 내 레인지가 강하게 대표된다.
+                # defend_decision 은 공격 액션을 '3bet'/'shove'로 반환하므로
+                # 예전 pf_act=='raise' 조건은 실제로 영원히 닫혀 있었다.
+                st['why'] = (st.get('why') or []) + ['프리플랍 3벳+ 팟 → 레인지 우위']
     else:
         st = _RU.revise_plan(
             state, hero, board, my_range, opp_range, profile,
