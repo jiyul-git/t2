@@ -1,0 +1,303 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Near-all-in sizing audit (read-only).
+
+목적:
+  계산된 bet/raise가 올인은 아니지만 스택 대부분을 넣고 작은 잔여만 남기는
+  사례를 먼저 계측한다. production 행동은 바꾸지 않는다.
+
+예:
+  python3 tools/near_allin_audit.py --seeds 6000-6007
+  python3 tools/near_allin_audit.py --seeds 6000-6015 --rows /sdcard/Download/near_allin.csv
+
+기록값:
+  commit_frac   이 스트리트 시작 가용 스택 중 실제 target으로 커밋한 비율
+  residual      액션 뒤 남는 칩
+  residual_bb   남는 칩 / 현재 BB
+  residual_pot  남는 칩 / 액션 직전 live pot
+
+주의:
+- session.HandRun이 이미 남기는 h.intents를 읽기만 한다.
+- stack은 액션 뒤 remaining stack + current-street contribution이라,
+  같은 스트리트에서 재액션해도 그 스트리트 시작 가용 스택을 복원한다.
+- amt는 실행 target이다. Round.apply 내부에서 올인 clamp가 걸릴 수 있으므로
+  분석에서는 min(amt, stack)을 실제 커밋액으로 사용한다.
+- persona._TILT_VIEW_CACHE의 대회 간 오염이 확인돼 있으므로 각 tournament
+  시작 전에 이 캐시만 계측 도구에서 비운다. production 코드는 수정하지 않는다.
+- multiprocessing을 쓰지 않는다.
+"""
+from __future__ import print_function
+
+import argparse
+import collections
+import csv
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+import fieldsim as FS
+import persona as PS
+
+RATIO_THRESHOLDS = (0.80, 0.85, 0.90, 0.95)
+BB_LIMITS = (1.0, 2.0, 3.0, 5.0)
+
+
+def parse_seeds(spec):
+    spec = str(spec).strip()
+    if ',' in spec:
+        return [int(x.strip()) for x in spec.split(',') if x.strip()]
+    if '-' in spec:
+        lo, hi = spec.split('-', 1)
+        return list(range(int(lo), int(hi) + 1))
+    return [int(spec)]
+
+
+def clear_tilt_cache():
+    c = getattr(PS, '_TILT_VIEW_CACHE', None)
+    if hasattr(c, 'clear'):
+        c.clear()
+        return True
+    return False
+
+
+def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
+    rows = []
+    old_logger = FS.Field._log_bot_hand
+    old_bot_log = getattr(FS.Field, 'BOT_LOG', None)
+
+    def capture(field, tb, h, run):
+        bb = float(getattr(h, 'bb', 0) or 0)
+        pids = getattr(h, 'seat_pid', {}) or {}
+        for it in (getattr(h, 'intents', None) or []):
+            action = it.get('action')
+            if action not in ('bet', 'raise', 'allin'):
+                continue
+
+            stack = float(it.get('stack') or 0)
+            raw_amt = float(it.get('amt') or 0)
+            if stack <= 0 or raw_amt <= 0:
+                continue
+
+            committed = min(stack, raw_amt)
+            residual = max(0.0, stack - committed)
+            pot = float(it.get('pot') or 0)
+            seat = it.get('seat')
+            rows.append({
+                'seed': seed,
+                'hand_no': int(getattr(field, 'hand_no', 0) or 0),
+                'table': getattr(tb, 'id', None),
+                'seat': seat,
+                'pid': pids.get(seat),
+                'street': it.get('street'),
+                'action': action,
+                'plan': it.get('plan'),
+                'plan_goal': it.get('plan_goal'),
+                'intent_act': it.get('intent_act'),
+                'intent_size': it.get('intent_size'),
+                'pot': pot,
+                'tocall': float(it.get('tocall') or 0),
+                'bb': bb,
+                'stack': stack,
+                'raw_amt': raw_amt,
+                'committed': committed,
+                'commit_frac': committed / stack,
+                'residual': residual,
+                'residual_bb': (residual / bb) if bb > 0 else None,
+                'residual_pot': (residual / pot) if pot > 0 else None,
+                'pre_clamp': it.get('pre_clamp'),
+                'type': it.get('type'),
+            })
+
+    clear_tilt_cache()
+    FS.Field._log_bot_hand = capture
+    if old_bot_log is not None:
+        FS.Field.BOT_LOG = 0
+
+    try:
+        kw = dict(entries=entries, start_stack=start_stack, hero_pid=0,
+                  seed=seed, hands_per_level=hpl)
+        if fmt:
+            kw['fmt'] = fmt
+        f = FS.Field(**kw)
+
+        while f.remaining() > 1 and f.hand_no < cap:
+            f.hand_no += 1
+            f.advance_level()
+            for _tid, tb in list(f.tables.items()):
+                if tb.n() >= 2:
+                    f._play_table(tb)
+            f._collect_busts()
+            f._balance()
+            f.notes = []
+
+        return rows, list(getattr(f, 'errors', ()) or []), int(f.hand_no)
+    finally:
+        FS.Field._log_bot_hand = old_logger
+        if old_bot_log is not None:
+            FS.Field.BOT_LOG = old_bot_log
+
+
+def pct(n, d):
+    return 100.0 * n / d if d else 0.0
+
+
+def fnum(x):
+    if x is None:
+        return '-'
+    if abs(float(x) - round(float(x))) < 1e-9:
+        return str(int(round(float(x))))
+    return ('%.2f' % float(x)).rstrip('0').rstrip('.')
+
+
+def write_rows(path, rows):
+    fields = [
+        'seed', 'hand_no', 'table', 'seat', 'pid', 'street', 'action',
+        'plan', 'plan_goal', 'intent_act', 'intent_size',
+        'pot', 'tocall', 'bb', 'stack', 'raw_amt', 'committed',
+        'commit_frac', 'residual', 'residual_bb', 'residual_pot',
+        'pre_clamp', 'type',
+    ]
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent and not os.path.isdir(parent):
+        os.makedirs(parent)
+    with open(path, 'w', newline='', encoding='utf-8') as fp:
+        w = csv.DictWriter(fp, fieldnames=fields)
+        w.writeheader()
+        w.writerows(rows)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--entries', type=int, default=24)
+    ap.add_argument('--hpl', type=int, default=12)
+    ap.add_argument('--stack', type=int, default=30000)
+    ap.add_argument('--seeds', default='6000-6007')
+    ap.add_argument('--cap', type=int, default=3000)
+    ap.add_argument('--fmt', default='standard')
+    ap.add_argument('--top', type=int, default=30)
+    ap.add_argument('--rows', default='')
+    a = ap.parse_args()
+
+    seeds = parse_seeds(a.seeds)
+    all_rows = []
+    errors = []
+    hands = 0
+
+    print('# near-all-in sizing audit')
+    print('entries=%d hpl=%d start_stack=%d fmt=%s seeds=%s cap=%d'
+          % (a.entries, a.hpl, a.stack, a.fmt, a.seeds, a.cap))
+    print('single-process / tournament마다 _TILT_VIEW_CACHE clear / production 무수정')
+    print()
+
+    for idx, seed in enumerate(seeds, 1):
+        rows, errs, hn = collect_tournament(
+            seed, a.entries, a.hpl, a.stack, a.cap, a.fmt)
+        all_rows.extend(rows)
+        errors.extend((seed, x) for x in errs)
+        hands += hn
+        print('[%d/%d] seed %d  hands %d  aggressive actions %d  errors %d'
+              % (idx, len(seeds), seed, hn, len(rows), len(errs)), flush=True)
+
+    print()
+    print('## sanity')
+    print('tournaments %d  field hands %d  aggressive postflop actions %d  engine errors %d'
+          % (len(seeds), hands, len(all_rows), len(errors)))
+    if errors:
+        print('ENGINE ERRORS — 결과 무효')
+        for seed, e in errors[:10]:
+            print('  seed %d: %s' % (seed, e))
+        return 1
+
+    actual_allin = [r for r in all_rows if r['commit_frac'] >= 1.0 - 1e-12]
+    nonallin = [r for r in all_rows if r['commit_frac'] < 1.0 - 1e-12]
+
+    print()
+    print('## 전체')
+    print('actual all-in/clamped %d (%.2f%% of aggressive)'
+          % (len(actual_allin), pct(len(actual_allin), len(all_rows))))
+    print('non-all-in aggressive %d' % len(nonallin))
+
+    print()
+    print('## commit 비율 누적 — 최종 기준을 정하지 않고 분포만 본다')
+    for t in RATIO_THRESHOLDS:
+        q = [r for r in nonallin if r['commit_frac'] >= t]
+        print('  >= %2d%%   %6d   %.2f%% of non-all-in / %.2f%% of all aggressive'
+              % (int(t * 100), len(q), pct(len(q), len(nonallin)),
+                 pct(len(q), len(all_rows))))
+
+    print()
+    print('## commit 비율 구간')
+    cuts = (0.0,) + RATIO_THRESHOLDS + (1.0,)
+    for lo, hi in zip(cuts[:-1], cuts[1:]):
+        if lo == 0.0:
+            q = [r for r in nonallin if r['commit_frac'] < hi]
+            lab = '<%d%%' % int(hi * 100)
+        else:
+            q = [r for r in nonallin if lo <= r['commit_frac'] < hi]
+            lab = '%d-%d%%' % (int(lo * 100), int(hi * 100))
+        print('  %-8s %6d' % (lab, len(q)))
+
+    print()
+    print('## near-all-in 교차표 — commit 비율 × 남는 BB')
+    head = 'commit'.ljust(10) + ''.join(('<=%.0fBB' % b).rjust(10) for b in BB_LIMITS)
+    print(head)
+    for t in RATIO_THRESHOLDS:
+        q = [r for r in nonallin if r['commit_frac'] >= t]
+        vals = []
+        for b in BB_LIMITS:
+            vals.append(sum(1 for r in q
+                            if r['residual_bb'] is not None and r['residual_bb'] <= b))
+        print(('>=%d%%' % int(t * 100)).ljust(10)
+              + ''.join(str(x).rjust(10) for x in vals))
+
+    cand80 = [r for r in nonallin if r['commit_frac'] >= 0.80]
+    print()
+    print('## >=80%% 사례의 street')
+    for k, n in collections.Counter(r['street'] for r in cand80).most_common():
+        print('  %-8s %6d' % (str(k), n))
+
+    print()
+    print('## >=80%% 사례의 plan')
+    for k, n in collections.Counter(r['plan'] for r in cand80).most_common(20):
+        print('  %-22s %6d' % (str(k), n))
+
+    print()
+    print('## 가장 극단적인 non-all-in 사례')
+    ranked = sorted(
+        nonallin,
+        key=lambda r: (r['commit_frac'],
+                       -(r['residual_bb'] if r['residual_bb'] is not None else 1e9)),
+        reverse=True)
+    for r in ranked[:max(0, a.top)]:
+        print(
+            '  seed %(seed)s H%(hand_no)s T%(table)s S%(seat)s '
+            '%(street)s %(action)s plan=%(plan)s  '
+            'stack=%(stack)s amt=%(committed)s remain=%(residual)s '
+            'commit=%(commit)s remainBB=%(rbb)s remain/pot=%(rpot)s '
+            'pot=%(pot)s tocall=%(tocall)s'
+            % {
+                'seed': r['seed'], 'hand_no': r['hand_no'], 'table': r['table'],
+                'seat': r['seat'], 'street': r['street'], 'action': r['action'],
+                'plan': r['plan'], 'stack': fnum(r['stack']),
+                'committed': fnum(r['committed']), 'residual': fnum(r['residual']),
+                'commit': '%.1f%%' % (100 * r['commit_frac']),
+                'rbb': fnum(r['residual_bb']), 'rpot': fnum(r['residual_pot']),
+                'pot': fnum(r['pot']), 'tocall': fnum(r['tocall']),
+            })
+
+    if a.rows:
+        write_rows(a.rows, all_rows)
+        print()
+        print('rows: %s' % a.rows)
+
+    print()
+    print('판정은 아직 하지 않는다. 이 출력으로 80/85/90/95%% 구간과')
+    print('잔여 1/2/3/5BB가 실제로 얼마나 겹치는지 본 뒤 shove 보정 설계를 잠근다.')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
