@@ -51,7 +51,51 @@ class Round:
         return [s for s in self.order if s not in self.folded]
 
     def to_call(self, seat):
-        return max(0, self.current - self.contrib.get(seat, 0))
+        """이 좌석이 실제로 더 낼 수 있는 콜 금액.
+
+        current 가 상대의 스택을 초과해도 숏스택은 자기 남은 스택까지만
+        콜할 수 있다. 판단층에 '낼 수도 없는 금액'을 넘기지 않는다.
+        """
+        raw = max(0, self.current - self.contrib.get(seat, 0))
+        return min(raw, max(0, self.stacks.get(seat, 0)))
+
+    def contestable_contrib(self, seat):
+        """현재 street contrib 중 seat가 실제로 이길 수 있는 부분의 합.
+
+        각 상대 기여분은 이 좌석의 현재 street 최대 도달 target
+        (이미 낸 칩 + 남은 스택)까지만 side-pot eligibility가 있다.
+        prior-street pot은 호출부가 별도로 더한다.
+        """
+        cap = self.contrib.get(seat, 0) + max(0, self.stacks.get(seat, 0))
+        return sum(min(v, cap) for v in self.contrib.values())
+
+    def settle_uncalled(self):
+        """베팅 라운드 종료 후 유일한 최고 기여자의 미콜 초과분을 반환한다.
+
+        folded 좌석의 이미 들어간 칩도 '상대가 실제로 낸 금액'이므로
+        second-highest 계산에 포함한다. 반환된 칩 때문에 더는 물리적
+        올인이 아니면 allin 표식도 해제한다.
+
+        반환값: {'seat','amount','from','to'} 또는 None.
+        """
+        if not self.contrib:
+            return None
+        top = max(self.contrib.values())
+        leaders = [s for s, v in self.contrib.items() if v == top]
+        if len(leaders) != 1:
+            return None
+        s = leaders[0]
+        others = [v for x, v in self.contrib.items() if x != s]
+        matched = max(others) if others else 0
+        refund = top - matched
+        if refund <= 0:
+            return None
+        self.contrib[s] = matched
+        self.stacks[s] = self.stacks.get(s, 0) + refund
+        if self.stacks[s] > 0:
+            self.allin.discard(s)
+        self.current = max(self.contrib.values()) if self.contrib else 0
+        return {'seat': s, 'amount': refund, 'from': top, 'to': matched}
 
     def needs_action(self):
         """마지막 액션자 다음 자리부터 시계방향으로 훑는다."""
