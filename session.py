@@ -418,6 +418,37 @@ class HandRun:
                 contrib[x] = target
         return out
 
+    def _pf_range_action(self, seat, aggressor=None):
+        """pf_seed 의 실제 액션을 포스트플랍 레인지 역할로 바꾼다.
+
+        역할(open/iso/defend)만 보면 iso 뒤 체크/오버림프도 open 으로
+        오인된다. 실제 공개 액션을 우선한다.
+        """
+        h = self.h
+        st = (getattr(h, 'pf_seed', {}) or {}).get(seat) or {}
+        act = st.get('pf_act')
+        role = st.get('pf_role')
+
+        if act == 'check':
+            return 'check'
+        if act == 'limp':
+            return 'limp'
+        if act == 'call':
+            return 'call'
+        if act == '3bet':
+            return '3bet'
+        if act in ('raise', 'shove'):
+            if role == 'defend':
+                return '3bet'
+            # BB의 iso raise는 RFI가 아니어서 open 모델이 0이 된다.
+            # 전용 iso-range 모델을 만들기 전까지 기존 call 근사를 유지한다.
+            if h.pos.get(seat) == 'BB' and role == 'iso':
+                return 'call'
+            return 'open'
+
+        # seed가 없는 구형/외부 경로만 기존 추정으로 물러난다.
+        return 'open' if seat == aggressor else 'call'
+
     def _run(self):
         h = self.h
         self._before = dict(h.stacks)
@@ -503,7 +534,7 @@ class HandRun:
                 _behind = [rnd.stacks[x]/h.bb for x in rnd.order
                            if x != s and x not in rnd.folded
                            and rnd.order.index(x) > rnd.order.index(s)] \
-                    if (aggressor is None and not limpers) else None
+                    if aggressor is None else None
                 _obb = (rnd.current/h.bb) if aggressor is not None else 0.0
                 _ordr = list(rnd.order)
                 _behind_seats = ([x for x in _ordr[_ordr.index(s)+1:] if x in rnd.live()]
@@ -531,7 +562,7 @@ class HandRun:
                     # 상대 정보를 전혀 안 받았다 — 뒤 스택은 넘어가는데
                     # 뒤 사람의 성향은 안 넘어갔다.
                     behind_est=(self._reads_for(s, _behind_seats, ax)
-                                if aggressor is None and not limpers else None),
+                                if aggressor is None else None),
                     limper_est=(self._reads_for(s, limpers, ax)
                                 if aggressor is None and limpers else None),
                     payout_flat=getattr(h, 'payout_flat', 0.0),
@@ -539,11 +570,14 @@ class HandRun:
                     progress=getattr(h, 'progress', 0.0),
                     opp_est=_opp_est_pf,
                     money_open=(_mj_obs.get('unopened_modifiers')
-                                if _mj_obs else None))
+                                if _mj_obs else None),
+                    can_check=(tc <= 0))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _seed
                 if a == 'fold':
                     rnd.apply(s, 'fold' if tc > 0 else 'check')
+                elif a == 'check':
+                    rnd.apply(s, 'check')
                 elif a == 'limp':
                     rnd.apply(s, 'call'); limpers.append(s)
                 elif a == 'call':
@@ -577,12 +611,14 @@ class HandRun:
         # 기회를 따로 세지 않으면 얼리에서 늘 폴드하는 사람이
         # '림프 안 하는 사람'으로 잡힌다 — 그건 성향이 아니라 좁은 레인지다.
         _limped, _limp_chance = set(), set()
+        _limp_idx = {}
         _seen_raise = False
-        for (x, a_, _amt) in rnd.log:
+        for _idx, (x, a_, _amt) in enumerate(rnd.log):
             if not _seen_raise and x not in _limp_chance:
                 _limp_chance.add(x)
                 if a_ == 'call':
                     _limped.add(x)
+                    _limp_idx.setdefault(x, _idx)
             if a_ in ('raise', 'allin'):
                 _seen_raise = True
         for x in seats_all:
@@ -596,6 +632,24 @@ class HandRun:
             _rexp = _GTO.rfi(h.pos.get(x, 'HJ'), len(h.seats), h.bbs(x),
                              getattr(h, 'ante', h.bb) > 0) if _lchance else None
             h.book.observe_preflop(obs_ids, _pid(x), vpip, pfr, _limp, _lchance, _rexp)
+
+            # 림프 후 **첫 레이즈 하나만** 돌아온 경우의 반응.
+            # 두 번째 레이즈까지 들어오면 이미 squeeze/3bet 대응이라
+            # 아이소 폴드 성향 표본에 섞지 않는다.
+            _faced_lr = _folded_lr = False
+            _li = _limp_idx.get(x)
+            if _li is not None:
+                _rb_lr = 0
+                for (y, b_, _amt2) in rnd.log[_li+1:]:
+                    if y == x:
+                        if _rb_lr == 1:
+                            _faced_lr = True
+                            _folded_lr = (b_ == 'fold')
+                        break
+                    if b_ in ('raise', 'allin'):
+                        _rb_lr += 1
+            h.book.observe_limp_raise(obs_ids, _pid(x), _faced_lr, _folded_lr)
+
             # 3벳 기회/실행, 3벳 대면/폴드를 따로 센다.
             # '3벳만 많이 치는 사람'은 포스트플랍 공격형과 다른 대응이 필요하다.
             _seq = [(y, b_) for (y, b_, _) in rnd.log]
@@ -704,16 +758,7 @@ class HandRun:
                 # nut_adv/range_adv 가 0 으로 죽고 opp_r 폴백까지 오염됐다.
                 # 프리플랍 역할은 이미 pf_seed 에 저장돼 있다 — 추정하지 않는다.
                 _pfr = (getattr(h, 'pf_seed', {}) or {}).get(s) or {}
-                # BB 는 예외다. BB 의 iso(림퍼에게 격리 레이즈)는 프리플랍
-                # '오픈'이 아니라 **이미 블라인드로 들어와 있는 상태에서 올린
-                # 것**이라 레인지 기반이 call 쪽이다. BB/open 은 _base_open 이
-                # 사실상 0 이라 pf_range 개념이 8.8 이어도 빈 레인지가 된다.
-                _role = {'open': 'open', 'iso': 'open',
-                         'defend': 'call'}.get(_pfr.get('pf_role'))
-                if h.pos[s] == 'BB' and _role == 'open':
-                    _role = 'call'
-                if _role is None:      # 프리플랍 기록이 없으면 종전 추정
-                    _role = 'open' if s == aggressor else 'call'
+                _role = self._pf_range_action(s, aggressor)
                 my_r = R.preflop_range(ax, h.pos[s], _role,
                                        h.bbs(s), set(board), opener_pos=h.pos.get(aggressor),
                                        seats=_seats, ante=_ante)
@@ -729,12 +774,7 @@ class HandRun:
                     # 관찰자는 상대의 pf_seed 를 직접 볼 수 없지만, 상대가
                     # 프리플랍에 어떤 액션을 했는지는 **공개 정보**다.
                     _pfo = (getattr(h, 'pf_seed', {}) or {}).get(o) or {}
-                    _act_o = {'open': 'open', 'iso': 'open',
-                              'defend': 'call'}.get(_pfo.get('pf_role'))
-                    if h.pos[o] == 'BB' and _act_o == 'open':
-                        _act_o = 'call'
-                    if _act_o is None:
-                        _act_o = 'open' if o == aggressor else 'call'
+                    _act_o = self._pf_range_action(o, aggressor)
                     _pol = 0.0
                     _oe = RD.perceived_profile(
                         h.book, self._pid(s), self._pid(o), ax,
