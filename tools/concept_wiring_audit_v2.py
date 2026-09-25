@@ -65,8 +65,12 @@ class Scan(ast.NodeVisitor):
         if attr in ('sk','skill','has','gate','calc_noise') and len(node.args)>1:
             c=lit(node.args[1])
             if c: self.add(c,node,'accessor',fn)
-        elif name in ('sk','S','_sk','skill','has','gate') and node.args:
+        elif name in ('sk','S','_sk','skill','has','gate','calc_noise') and node.args:
+            # Wrapper lambdas such as S('outs') take the concept first,
+            # while persona's own helpers are called as sk(prof, 'outs').
             c=lit(node.args[0])
+            if c is None and len(node.args)>1:
+                c=lit(node.args[1])
             if c: self.add(c,node,'local_accessor',name)
         if attr=='street_concept' or name=='street_concept':
             if node.args:
