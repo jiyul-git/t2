@@ -698,7 +698,9 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
         if profile.get('concepts'):
             bc = PS.sk(profile, PS.street_concept('bluffcatch', street))
             trust *= min(1.4, (0.6*PS.sk(profile,'range_read') + 0.4*bc)/5.0)    # 리딩을 얼마나 신뢰하는가
-        if A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish': trust *= 0.35
+        if (not profile.get('concepts')
+                and A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish'):
+            trust *= 0.35
         # 사이징 텔: 사이즈에서 정보를 읽는 능력. 없으면 큰 벳도 작은 벳도 똑같이 본다.
         if profile.get('concepts'):
             stell = PS.sk(profile, 'sizing_tell')
@@ -741,7 +743,8 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     return max(0.03, min(0.95, need))
 
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
-                    made_now, opp_range, pot, tocall, stack, committed, rng):
+                    made_now, opp_range, pot, tocall, stack, committed, rng,
+                    allow_raise=True):
     """저항(tocall>0)을 마주했을 때 폴드/콜/레이즈를 정하는 **유일한 지점**.
 
     예전에는 이 판단이 집행부에 흩어져 p_raise 를 네 곳에서 각자 굴렸다.
@@ -769,7 +772,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
             if rel >= 0.95:
                 p = max(p, 0.32 + 0.40*rr)
         p = max(0.05, min(0.95, p))
-        if rng.random() < p:
+        if allow_raise and rng.random() < p:
             return 'raise', 1.0, need, '넛급 레이즈(%.0f%%)' % (p*100)
         return 'call', 0.0, need, '넛급이나 콜 선택'
 
@@ -794,7 +797,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         elif rel_ps >= 0.88:
             p = max(p, 0.22 + 0.34*rr)
         p = min(p, 0.93)
-        if rng.random() < max(0.05, min(0.92, p)):
+        if allow_raise and rng.random() < max(0.05, min(0.92, p)):
             # 레이즈 크기는 **목표 대비 부족분**이 정한다. 고정 배수(1.1)면
             # 상대가 이미 크게 쳐서 목표를 채워준 경우에도 똑같이 올린다.
             _so = plan_state.get('stackoff') or {}
@@ -814,7 +817,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     # giveup 은 제외한다. 그 계획의 사유 자체가 '블러프 개념/조건 미달'이라
     # 여기서 블러프 레이즈를 내면 판단 층이 이미 기각한 것을 집행부가 되살리는 셈이다.
     # 규율이 낮아 뒤집는 경우는 아래 이탈 경로에서 따로 처리한다.
-    if has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'river_bluff'):
+    if allow_raise and has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'river_bluff'):
         made_sd = plan_state.get('made', 0)
         if made_sd >= 2:
             pass                       # 투페어 이상은 쇼다운 가치가 있다 → 블러프 부적합
@@ -832,7 +835,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                           + 0.030*PS.sk(profile, 'reraise'))
             _p_sb *= 0.70 + 0.06*PS.temper(profile, 'aggression', 5.0)
             _p_sb = max(0.03, min(0.80, _p_sb))
-        if rng.random() < _p_sb:
+        if allow_raise and rng.random() < _p_sb:
             return 'raise', 0.95, need, '세미블러프 레이즈(%.0f%%)' % (_p_sb*100)
         if stack > pot:
             # 내재오즈. 얼마나 벌 수 있는지는 아웃 계산과 팟오즈 감각의 함수다.
@@ -851,7 +854,7 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         disc = PS.temper(profile, 'discipline', 5.0)
         blr = (PS.sk(profile, 'reraise')/10.0) * (PS.sk(profile, 'bluff')/10.0)
         p_dev = blr * 0.28 * max(0.05, 1.0 - 0.085*disc)
-        if plan_state.get('made', 0) < 2 and rng.random() < p_dev:
+        if allow_raise and plan_state.get('made', 0) < 2 and rng.random() < p_dev:
             plan_state.setdefault('deviations', []).append(
                 {'street': street, 'planned': 'fold', 'executed': 'raise',
                  'why': '규율 %.1f → 포기 계획 뒤집고 블러프 레이즈' % disc})
@@ -875,9 +878,9 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         need_seen *= max(0.55, 1.0 - 0.22*max(0.0, PS.bias(profile, 'station')))
         # 블러프 공포: 큰 벳일수록, 후반 스트리트일수록 문턱을 올린다.
         _bf_w = min(1.0, sz/0.9) * (1.0 if street == 'river' else 0.65)
-        need_seen *= 1.0 + 0.30*max(0.0, PS.bias(profile, 'bluff_fear'))*_bf_w
+        need_seen *= 1.0 + 0.30*max(0.0, PS.bias(profile, 'bluff_fear', street))*_bf_w
         # 히어로콜: 가볍게 받아준다. 큰 벳에서 더 크게 작동한다.
-        need_seen *= max(0.60, 1.0 - 0.18*max(0.0, PS.bias(profile, 'hero_call'))*_bf_w)
+        need_seen *= max(0.60, 1.0 - 0.18*max(0.0, PS.bias(profile, 'hero_call', street))*_bf_w)
         need_seen = max(0.02, min(0.97, need_seen))
     act = 'call' if eq >= need_seen else 'fold'
     return act, 0.0, need_seen, 'eq %.3f vs 체감 need %.3f (실제 %.3f)' % (eq, need_seen, need)
@@ -1291,7 +1294,8 @@ def _trace(st, street, kind, **kw):
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   initiative=True, opp_range=None, bf=1.0, seed=None,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None,
-                  opp_ranges=None, facing_seat=None):
+                  opp_ranges=None, facing_seat=None, checked_before=False,
+                  can_raise=True, checkraise_seed=None, checkraise_size_seed=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
@@ -1356,17 +1360,45 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                              read, to_act_behind, opp_est, n_opp=n_opp, rng=rng)
         # made_now 계산이 calldown_need 로 딸려 들어갔다. 여기서도 필요하다.
         made_now = bot.made_strength(hero, board) if board else 0
-        # ---------- 저항(tocall>0): 순수 집행 ----------
-        # 폴드/콜/레이즈 판단은 전부 decide_response(판단 층)가 내린다.
-        # 집행부는 그 결과를 칩으로 환산만 한다.
+        # ---------- 저항(tocall>0): 판단 -> response plan -> 집행 ----------
+        # 체크 후 벳을 맞은 경우의 raise 는 checkraise_decision 한 곳만 만든다.
+        # 예전에는 generic decide_response 가 먼저 raise 를 만들 수 있었고,
+        # call/fold 일 때만 session 의 checkraise gate가 한 번 더 돌아
+        # checkraise_flop/late 숙련도를 우회하는 중복 producer 였다.
         _need_in = need
+        if checked_before and can_raise:
+            _ckr = checkraise_decision(
+                hero, board, profile, plan_state, pot, tocall, stack, street,
+                seed=(checkraise_seed if checkraise_seed is not None else seed),
+                opp_est=opp_est)
+            if _ckr:
+                _ckr_rng = random.Random(
+                    checkraise_size_seed if checkraise_size_seed is not None else seed)
+                _amt = checkraise_size(
+                    profile, pot, tocall, stack, board, street, _ckr_rng)
+                plan_state['_last_response_source'] = 'checkraise_gate'
+                why = '체크 후 새 판단 → 체크레이즈 실행'
+                plan_state.setdefault('acts', []).append(why)
+                _trace(plan_state, street, 'response', act='raise',
+                       source='checkraise_gate', need=round(need, 3),
+                       need_raw=round(_need_in, 3), eq=round(eq, 3), why=why,
+                       plan=plan, tocall=tocall, pot=pot)
+                return ('raise', _amt), eq, need
+
+        # 체크레이즈 gate가 거절했거나, 아직 체크하지 않은 일반 facing-bet 상태.
+        # checked_before=True 이면 generic reraise/bluff raise는 금지한다.
+        # raise 권리가 닫힌 incomplete-allin 상태도 계획 단계에서 raise를 제거한다.
+        _direct_raise = bool(can_raise and not checked_before)
         act, mult, need, why = decide_response(
             profile, hero, board, street, plan, plan_state, eq, need,
-            made_now, opp_range, pot, tocall, stack, committed, rng)
+            made_now, opp_range, pot, tocall, stack, committed, rng,
+            allow_raise=_direct_raise)
+        _source = ('checkraise_declined' if checked_before else 'generic_response')
+        plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
-        _trace(plan_state, street, 'response', act=act, need=round(need, 3),
-               need_raw=round(_need_in, 3), eq=round(eq, 3), why=why,
-               plan=plan, tocall=tocall, pot=pot)
+        _trace(plan_state, street, 'response', act=act, source=_source,
+               need=round(need, 3), need_raw=round(_need_in, 3),
+               eq=round(eq, 3), why=why, plan=plan, tocall=tocall, pot=pot)
         if act == 'raise':
             amt = min(stack, int(round((pot + 2*tocall)*mult/100))*100)
             if amt <= tocall:
