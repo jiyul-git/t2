@@ -72,6 +72,19 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
     def capture(field, tb, h, run):
         bb = float(getattr(h, 'bb', 0) or 0)
         pids = getattr(h, 'seat_pid', {}) or {}
+        for ur in (getattr(h, 'uncalled_returns', None) or []):
+            returns.append({
+                'seed': seed,
+                'hand_no': int(getattr(field, 'hand_no', 0) or 0),
+                'table': getattr(tb, 'id', None),
+                'street': ur.get('street'),
+                'seat': ur.get('seat'),
+                'pid': pids.get(ur.get('seat')),
+                'amount': float(ur.get('amount') or 0),
+                'from': float(ur.get('from') or 0),
+                'to': float(ur.get('to') or 0),
+                'bb': bb,
+            })
         for rr in (getattr(h, 'uncalled_returns', None) or []):
             x = dict(rr)
             x['seed'] = seed
@@ -243,6 +256,24 @@ def main():
                   if str(x.get('street')) == st)
         print('  %-8s %6d  chips %s' % (st, n, fnum(amt)))
 
+    print()
+    print('## uncalled return')
+    print('returns %d  total chips %s'
+          % (len(all_returns), fnum(sum(r['amount'] for r in all_returns))))
+    if all_returns:
+        by_street = collections.Counter(r['street'] for r in all_returns)
+        print('by street: ' + ' / '.join('%s=%d' % (k, v)
+                                         for k, v in sorted(by_street.items())))
+        print('largest:')
+        for r in sorted(all_returns, key=lambda x: x['amount'], reverse=True)[:10]:
+            print('  seed %(seed)s H%(hand)s T%(table)s %(street)s S%(seat)s '
+                  'return=%(amount)s from=%(from_)s to=%(to)s (%(bb)sBB)'
+                  % {'seed': r['seed'], 'hand': r['hand_no'], 'table': r['table'],
+                     'street': r['street'], 'seat': r['seat'],
+                     'amount': fnum(r['amount']), 'from_': fnum(r['from']),
+                     'to': fnum(r['to']),
+                     'bb': fnum(r['amount']/r['bb']) if r['bb'] else '-'})
+
     actual_allin = [r for r in all_rows if r['commit_frac'] >= 1.0 - 1e-12]
     nonallin = [r for r in all_rows if r['commit_frac'] < 1.0 - 1e-12]
 
@@ -332,6 +363,24 @@ def main():
                     if r.get('post_spr_own') is not None
                     and float(r['post_spr_own']) <= x)
             print('    <= %.2f : %6d' % (x, n))
+
+    have_caps = any(r.get('opp_cap_max') is not None for r in all_rows)
+    if have_caps:
+        overs = []
+        for r in all_rows:
+            opp = r.get('opp_cap_max')
+            if opp is None:
+                continue
+            excess = max(0.0, float(r['committed']) - float(opp))
+            if excess > 0:
+                overs.append((excess, r))
+        print()
+        print('## action-time guaranteed unmatchable excess')
+        print('actions %d  total lower-bound chips %s'
+              % (len(overs), fnum(sum(x[0] for x in overs))))
+        print('round-end returned / action-time lower bound: %s / %s'
+              % (fnum(sum(r['amount'] for r in all_returns)),
+                 fnum(sum(x[0] for x in overs))))
 
     print()
     print('## >=80%% 사례의 street')
