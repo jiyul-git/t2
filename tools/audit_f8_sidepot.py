@@ -142,11 +142,92 @@ def check_d1_provenance():
     return layers, pending
 
 
+
+def check_d2_locked_range_preservation():
+    from types import SimpleNamespace
+
+    hr = object.__new__(SE.HandRun)
+    hr.h = SimpleNamespace(
+        pf_seed={1: {
+            'pf_act': 'call', 'pf_role': 'defend', 'pf_vs': 'BTN',
+            'pf_level': 1, 'pf_open_bb': 2.5, 'pf_n_callers': 0,
+            'pf_stack_bb': 23.5,
+        }},
+        _start_stacks={1: 5000},
+        bb=100,
+        pos={1: 'BB', 2: 'BTN'},
+        book=object(),
+        dyn=object(),
+        hole={2: ['Ah', 'Kd']},
+    )
+    hr._pid = lambda s: s
+    hr._dseed = lambda *a, **k: 123
+    hr._was_3bettor = lambda s: False
+    hr._acts_of = lambda *a, **k: [('flop', 'raise', 0.75)]
+
+    seen = {}
+    old_pp = SE.RD.perceived_profile
+    old_rp = SE.RD.range_profile
+    old_ro = SE.PS.read_opponent
+    old_pf = SE.R.preflop_range
+    old_pr = SE.R.perceived_range
+    old_adj = SE.RU.adjust_range_by_history
+    try:
+        SE.RD.perceived_profile = lambda *a, **k: {'x': 1}
+        SE.RD.range_profile = lambda est: {'type': 'TAG'}
+        SE.PS.read_opponent = lambda *a, **k: {'tb_polar': 0.0, 'w': 0.0}
+
+        def fake_pf(profile, pos, action, stack_bb, dead, **kw):
+            seen['stack_bb'] = stack_bb
+            seen['action'] = action
+            return [('As', 'Ks'), ('Qh', 'Qd')]
+
+        def fake_perceived(base, board, acts, profile=None, actor_read=None):
+            seen['acts'] = list(acts)
+            return list(base)
+
+        SE.R.preflop_range = fake_pf
+        SE.R.perceived_range = fake_perceived
+        SE.RU.adjust_range_by_history = (
+            lambda orange, dyn, pid, board, dead=None: (orange, None))
+
+        rnd = SimpleNamespace(log=[], action_meta=[])
+        out, meta = SE.HandRun._locked_postflop_range(
+            hr, 2, 1, {'type': 'TAG'}, ['2c', '7d', 'Jh'], 'turn',
+            rnd, 2, 2, True)
+    finally:
+        SE.RD.perceived_profile = old_pp
+        SE.RD.range_profile = old_rp
+        SE.PS.read_opponent = old_ro
+        SE.R.preflop_range = old_pf
+        SE.R.perceived_range = old_pr
+        SE.RU.adjust_range_by_history = old_adj
+
+    assert seen['stack_bb'] == 23.5, seen
+    assert seen['acts'] == [('flop', 'raise', 0.75)], seen
+    assert out == [('As', 'Ks'), ('Qh', 'Qd')], out
+    assert meta['stack_bb'] == 23.5, meta
+
+    src = inspect.getsource(SE.HandRun._run)
+    assert "locked_opp_ranges = {}" in src
+    assert "locked_opp_ranges[o] = _lr" in src
+    assert "opp_r.extend(_lr)" not in src
+    assert "opp_ranges[o] = _lr" not in src
+
+    return {
+        'stack_bb': meta['stack_bb'],
+        'acts': meta['acts'],
+        'range_n': len(out),
+        'strategy_merge': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
     gap = check_postflop_locked_opponent_gap()
     d1, pending = check_d1_provenance()
+    d2 = check_d2_locked_range_preservation()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -155,9 +236,10 @@ def main():
     print("     while current postflop opponent pools exclude that seat", gap)
     print("PASS F8-D1 decision-time pot-layer provenance is wired", d1)
     print("     pending upper layer keeps hero ineligible before call", pending[-1])
-    print("4/4 F8 diagnostic checks passed")
+    print("PASS F8-D2 locked all-in opponent range is reconstructed", d2)
+    print("5/5 F8 diagnostic checks passed")
     print("NOTE: the gap reproduction PASS confirms the architecture defect;")
-    print("      D1 only records pot layers and does not change strategy.")
+    print("      D1/D2 only preserve provenance and do not change strategy.")
 
 
 if __name__ == '__main__':

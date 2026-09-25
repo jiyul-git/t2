@@ -329,3 +329,81 @@ Acceptance requires:
 
 D1 does **not** claim the F8 strategy gap is fixed.  D2 is still required to preserve/reconstruct
 the locked all-in opponent's range before layer equity can be computed.
+
+
+---
+
+# F8-D2 implementation — locked all-in opponent range preservation
+
+Status: **IMPLEMENTED; pending user validation. No strategy consumer added.**
+
+D1 can now identify a previous-street all-in opponent in a pot layer, but the current
+postflop strategy pools still contain only current `Round.live()` seats.
+
+D2 reconstructs a separate `locked_opp_ranges` map for seats that:
+
+- remain eligible in at least one current decision-time pot layer;
+- have zero remaining stack;
+- are not the current actor.
+
+## Preflop stack-depth provenance
+
+A direct reconstruction using `h.bbs(target)` is invalid after the target is all-in because that
+value is now 0bb.
+
+D2 therefore records `pf_stack_bb` in each normal preflop plan seed: the actor's stack depth at
+that exact preflop decision before the action is applied.
+
+Locked-opponent reconstruction uses:
+
+1. final/current `pf_seed['pf_stack_bb']` when available;
+2. hand-start stack / BB only as a compatibility fallback for old/replay seeds.
+
+This new field is provenance only.
+
+## Public-story reconstruction
+
+`HandRun._locked_postflop_range` uses the same public information family as the active-opponent
+range path:
+
+- stored preflop role/action/raise level;
+- observer-specific perceived profile;
+- public postflop action story from `_acts_of`;
+- showdown-history adjustment;
+- observer range-read limits.
+
+It never reads the target's true persona/tilt.
+
+## Isolation rule
+
+The reconstructed locked ranges are intentionally **not** merged into:
+
+- legacy union `opp_r`;
+- active `opp_ranges`;
+- `n_opp`;
+- `update_plan`;
+- `act_with_plan`;
+- any equity calculation.
+
+Intent provenance records only:
+
+- `locked_opp_ranges_n`;
+- `locked_opp_ranges_sig`;
+- `locked_opp_range_stack_bb`.
+
+D3 will be the first stage that computes layer-specific equity from active + locked range maps,
+and D3 still will not alter actions.
+
+## D2 acceptance
+
+`tools/audit_f8_sidepot.py` checks that:
+
+- locked reconstruction uses stored 23.5bb rather than current 0bb;
+- the prior public postflop action story reaches range narrowing;
+- the range is stored separately;
+- production source does not merge the locked pool into current strategy pools.
+
+Acceptance requires:
+
+- F8 diagnostic: 5/5;
+- frozen regression remains exactly equal to baseline rev `2a53584`.

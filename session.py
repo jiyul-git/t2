@@ -53,6 +53,7 @@ def _merge_pf_seed(prev, new):
         'facing_allin': out.get('pf_facing_allin'),
         'pot_bb': out.get('pf_pot_bb'),
         'to_call_bb': out.get('pf_to_call_bb'),
+        'stack_bb': out.get('pf_stack_bb'),
     })
     out['pf_line'] = line
     out['pf_origin_role'] = prev.get(
@@ -848,6 +849,61 @@ class HandRun:
         # seed가 없는 구형/외부 경로만 기존 추정으로 물러난다.
         return 'open' if seat == aggressor else 'call'
 
+    def _locked_postflop_range(self, observer, target, observer_profile,
+                               board, street, rnd, aggressor, seats, ante):
+        """이전 street에서 이미 올인한 상대의 공개 range를 재구성한다.
+
+        target은 현재 Round.order/rnd.live()에는 없지만 main-pot eligibility는
+        남아 있다. 전략에는 아직 사용하지 않고 F8-D2 provenance로만 보존한다.
+
+        현재 stack은 0이므로 preflop range stack input으로 쓰면 안 된다.
+        마지막 preflop 판단 당시 pf_stack_bb를 우선하고, 구형/REPLAY seed에는
+        hand-start stack depth로 물러난다.
+        """
+        h = self.h
+        pfo = (getattr(h, 'pf_seed', {}) or {}).get(target) or {}
+        act_o = self._pf_range_action(target, aggressor)
+        oe = RD.perceived_profile(
+            h.book, self._pid(observer), self._pid(target), observer_profile,
+            random.Random(self._dseed(observer, street, 'polar', target)))
+        opp_view = RD.range_profile(oe)
+        rdp = None
+        pol = 0.0
+        if oe:
+            rdp = PS.read_opponent(observer_profile, oe)
+            pol = rdp.get('tb_polar', 0.0)
+            if rdp.get('w', 0) > 0 and self._was_3bettor(target):
+                act_o = '3bet'
+
+        stack_bb = pfo.get('pf_stack_bb')
+        if stack_bb is None:
+            stack_bb = (
+                float((getattr(h, '_start_stacks', {}) or {}).get(target, 0))
+                / max(1.0, float(h.bb)))
+        pf_vs_o = pfo.get('pf_vs') or h.pos.get(aggressor)
+        orange = R.preflop_range(
+            opp_view, h.pos[target], act_o, float(stack_bb or 0.0), set(board),
+            n_callers=int(pfo.get('pf_n_callers', 0) or 0),
+            opener_pos=pf_vs_o,
+            open_bb=float(pfo.get('pf_open_bb', 2.5) or 2.5),
+            seats=seats, ante=ante, polar=pol,
+            raise_level=int(pfo.get('pf_level', 1) or 1))
+
+        acts = self._acts_of(
+            target, current_street=street, current_log=rnd.log,
+            current_meta=rnd.action_meta)
+        orange = R.perceived_range(
+            orange, board, acts, observer_profile,
+            actor_read=rdp if oe else None)
+        orange, _note = RU.adjust_range_by_history(
+            orange, h.dyn, self._pid(target), board,
+            dead=set(h.hole[observer]) | set(board))
+        return sorted(set(orange)), {
+            'stack_bb': float(stack_bb or 0.0),
+            'acts': list(acts),
+        }
+
+
     def _run(self):
         h = self.h
         self._before = dict(h.stacks)
@@ -1221,6 +1277,24 @@ class HandRun:
                     orange = sorted(set(orange))
                     opp_ranges[o] = orange
                     opp_r.extend(orange)
+
+                # F8-D2: 이전 street에서 이미 올인해 현재 Round에서 빠진 상대도
+                # pot layer에는 남아 있다. 그 공개 range를 별도 map으로 복원한다.
+                # 아직 opp_r/opp_ranges에는 합치지 않는다 — D3까지 전략 무영향.
+                locked_opp_ranges = {}
+                locked_opp_range_meta = {}
+                _locked_opps = sorted({
+                    o
+                    for layer in (_pot_layers or [])
+                    for o in (layer.get('locked_allin_opponents') or [])
+                    if o != s
+                }, key=lambda x: str(x))
+                for o in _locked_opps:
+                    _lr, _lm = self._locked_postflop_range(
+                        s, o, ax, board, street, r2, aggressor, _seats, _ante)
+                    locked_opp_ranges[o] = _lr
+                    locked_opp_range_meta[o] = _lm
+
                 # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
                 # 흔들려도 판단이 바뀌면 안 되므로 여기서 순서를 확정한다.
                 # 이걸 빼면 같은 시드가 재현되지 않는다 (rng.choice 가 순서에 의존).
@@ -1310,6 +1384,15 @@ class HandRun:
                         'opp_range_sig': _pl.get('opp_range_sig'),
                         'opp_ranges_n': _pl.get('opp_ranges_n'),
                         'opp_ranges_sig': _pl.get('opp_ranges_sig'),
+                        # F8-D2 provenance only; active strategy pools remain unchanged.
+                        'locked_opp_ranges_n': {
+                            str(k): len(v) for k, v in locked_opp_ranges.items()},
+                        'locked_opp_ranges_sig': {
+                            str(k): PL._range_sig(v)
+                            for k, v in locked_opp_ranges.items()},
+                        'locked_opp_range_stack_bb': {
+                            str(k): locked_opp_range_meta[k].get('stack_bb')
+                            for k in locked_opp_ranges},
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),

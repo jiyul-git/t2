@@ -1645,6 +1645,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         'pf_facing_allin': bool(opener_allin),
         'pf_pot_bb': (float(pot_bb) if pot_bb is not None else None),
         'pf_to_call_bb': (float(to_call_bb) if to_call_bb is not None else None),
+        # D2 provenance: later streets must not rebuild an all-in player's
+        # preflop range from current stack=0.
+        'pf_stack_bb': float(bb or 0.0),
         'pf_initiative': a in ('raise', '3bet', 'shove'),
         'pf_multiway': (n_callers + n_limpers) >= 2,
         'pf_hand_pct': _pf.pct(hand),
