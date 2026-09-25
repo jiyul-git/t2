@@ -1,6 +1,6 @@
 # Sequential audit — F1 flop, no wager yet
 
-Status: CLEAR F1 SEMANTIC/DUPLICATE-GATE DEFECTS FIXED; multiway and emotion architecture remain open.
+Status: CLEAR F1 SEMANTIC/DUPLICATE-GATE DEFECTS CLOSED (user-validated); multiway and emotion architecture remain open.
 
 Reference model: judgment -> plan -> action.
 
@@ -289,3 +289,8 @@ Before F1 can be considered strategically complete, the larger architecture must
 
 Targeted verifier:
 `tools/verify_f1_free_action.py`.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_f1_free_action.py` reported `4/4 F1 structural checks passed`.
