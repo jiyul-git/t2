@@ -331,7 +331,9 @@ def street_concept(base, street):
       ('checkraise','river'):'checkraise_late',
       ('bluffcatch','flop'):'bluffcatch_early', ('bluffcatch','turn'):'bluffcatch_early',
       ('bluffcatch','river'):'bluffcatch_river',
-      ('thin_value','flop'):'thin_value_turn', ('thin_value','turn'):'thin_value_turn',
+      # 플랍의 중간강도 밸류/머징은 range_merge가 맡는다.
+      # thin_value_turn을 재사용하면 턴 숙련도가 플랍 판단을 바꾼다.
+      ('thin_value','flop'):'range_merge', ('thin_value','turn'):'thin_value_turn',
       ('thin_value','river'):'thin_value_river',
     }
     return m.get((base, street), ALIAS.get(base, base))
