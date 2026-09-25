@@ -7,7 +7,8 @@ import json as _json_mod, os.path as _os_path
 PRIOR = {'vpip': 0.26, 'pfr': 0.15, 'cbet': 0.55, 'barrel': 0.42,
          'wtsd': 0.28, 'aggr': 5.0, 'bluff': 4.5, 'tight': 5.0,
          'fold_to_bet': 0.52, 'pf_3bet': 0.07, 'pf_fold_to_3bet': 0.55,
-         'pf_limp': 0.06, 'rfi_rel': 1.0, 'rfi_rel': 1.0,
+         'pf_limp': 0.06, 'rfi_rel': 1.0,
+         'pf_fold_after_limp_raise': 0.48,
          'pf_4bet': 0.04, 'pf_fold_to_4bet': 0.60,
          'sz_mean': 0.62, 'sz_sd': 0.22}
 
@@ -74,11 +75,9 @@ class Book:
             # 그 자리의 기준 오픈 폭을 같이 누적하면 한 축으로 합쳐진다 —
             # BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
             'rfi_opp': 0, 'rfi_did': 0, 'rfi_exp': 0.0,
-            # 기준 대비 관찰. 절대 빈도(VPIP 34%)만 세면 포지션을 구분하려고
-            # 자리마다 따로 세야 하고 표본이 그만큼 쪼개진다.
-            # 그 자리의 기준 오픈 폭을 같이 누적해두면 한 축으로 합쳐진다 —
-            # BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
-            'rfi_opp': 0, 'rfi_did': 0, 'rfi_exp': 0.0,
+            # 림프 후 첫 레이즈를 다시 마주했을 때의 반응.
+            # 포스트플랍 fold_to_bet 과 섞으면 안 된다.
+            'pf_faced_limp_raise': 0, 'pf_fold_after_limp_raise': 0,
             'pf_faced_3bet': 0, 'pf_fold_to_3bet': 0,
             # 4벳 이상. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
             'pf_4bet_opp': 0, 'pf_4bet': 0,
@@ -133,6 +132,21 @@ class Book:
                 r['pf_faced_3bet'] += 1
                 if folded_to_3bet: r['pf_fold_to_3bet'] += 1
 
+    def observe_limp_raise(self, observers, actor, faced, folded):
+        """림프한 뒤 첫 레이즈가 돌아왔을 때의 반응을 센다.
+
+        이 축은 포스트플랍 fold_to_bet 과 다르다. 아이소 판단에서
+        '이 림퍼가 레이즈에 실제로 접는가'를 보려면 전용 관측이 필요하다.
+        """
+        if not faced:
+            return
+        for i in observers:
+            if i == actor: continue
+            r = self.rec(i, actor)
+            r['pf_faced_limp_raise'] += 1
+            if folded:
+                r['pf_fold_after_limp_raise'] += 1
+
     def observe_preflop(self, observers, actor, vpip, pfr, limp=False,
                         limp_chance=False, rfi_exp=None):
         """limp_chance — 무저항으로 액션이 돌아온 자리였나(림프가 가능했나).
@@ -147,12 +161,6 @@ class Book:
             if limp_chance:
                 r['limp_opp'] += 1
                 if limp: r['limp'] += 1
-            # 무저항으로 돌아온 자리에서만 오픈 기대치를 센다.
-            # 이미 레이즈가 있었으면 그건 오픈이 아니라 디펜스다.
-            if limp_chance and rfi_exp is not None:
-                r['rfi_opp'] += 1
-                r['rfi_exp'] += float(rfi_exp)
-                if pfr: r['rfi_did'] += 1
             # 무저항으로 돌아온 자리에서만 오픈 기대치를 센다.
             # 이미 레이즈가 있었으면 그건 오픈이 아니라 디펜스다.
             if limp_chance and rfi_exp is not None:
@@ -231,6 +239,8 @@ def estimate(book, observer, target, observer_type, rng=None):
     ftb_r = _rate('f2b_river', 'fb_river', PRIOR['fold_to_bet'])
     tb    = _rate('pf_3bet', 'pf_3bet_opp', PRIOR['pf_3bet'])
     lmp   = _rate('limp', 'limp_opp', PRIOR['pf_limp'])
+    flr   = _rate('pf_fold_after_limp_raise', 'pf_faced_limp_raise',
+                  PRIOR['pf_fold_after_limp_raise'])
     # 기준 대비 오픈 폭. 1.0 = 기준대로, 1.5 = 50% 넓게.
     rfi_rel = (r['rfi_did'] / r['rfi_exp']) if r.get('rfi_exp', 0.0) > 0.02 else 1.0
     # 기준 대비 오픈 폭. 1.0 = 기준대로, 1.5 = 50% 넓게.
@@ -289,8 +299,9 @@ def estimate(book, observer, target, observer_type, rng=None):
             'ftb_river': _sh(ftb_r, 'fb_river', PRIOR['fold_to_bet']),
             'pf_3bet': _sh(tb, 'pf_3bet_opp', PRIOR['pf_3bet']),
             'pf_limp': _sh(lmp, 'limp_opp', PRIOR['pf_limp']),
-            'rfi_rel': _sh(rfi_rel, 'rfi_opp', 1.0),
-            'rfi_n': r.get('rfi_opp', 0),
+            'pf_fold_after_limp_raise': _sh(
+                flr, 'pf_faced_limp_raise', PRIOR['pf_fold_after_limp_raise']),
+            'pf_limp_raise_n': r.get('pf_faced_limp_raise', 0),
             'rfi_rel': _sh(rfi_rel, 'rfi_opp', 1.0),
             'rfi_n': r.get('rfi_opp', 0),
             'pf_fold_to_3bet': _sh(f2tb, 'pf_faced_3bet', PRIOR['pf_fold_to_3bet']),
@@ -389,6 +400,8 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'pf_3bet': e.get('pf_3bet'), 'pf_fold_to_3bet': e.get('pf_fold_to_3bet'),
             'pf_4bet': e.get('pf_4bet'), 'pf_fold_to_4bet': e.get('pf_fold_to_4bet'),
             'pf_limp': e.get('pf_limp'),
+            'pf_fold_after_limp_raise': e.get('pf_fold_after_limp_raise'),
+            'pf_limp_raise_n': e.get('pf_limp_raise_n'),
             'rfi_rel': e.get('rfi_rel'), 'rfi_n': e.get('rfi_n'),
             'sz_mean': e.get('sz_mean'), 'sz_sd': e.get('sz_sd'),
             'sz_big': e.get('sz_big'), 'sz_river': e.get('sz_river'),
