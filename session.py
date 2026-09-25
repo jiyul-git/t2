@@ -205,7 +205,14 @@ def _postflop_response_context(rnd, seat):
                        if float(latest_aggr.get('pre_current', 0) or 0) > 0
                        else 'bet')
 
-    prior_action = (_observed_postflop_action(last_hero) if last_hero else None)
+    if last_hero and last_hero.get('raised'):
+        prior_action = ('raise'
+                        if float(last_hero.get('pre_current', 0) or 0) > 0
+                        else 'bet')
+    elif last_hero and last_hero.get('allin_call'):
+        prior_action = 'call'
+    else:
+        prior_action = last_hero.get('action') if last_hero else None
     prior_aggressive = bool(last_hero and last_hero.get('raised'))
 
     if facing_kind == 'raise' and prior_aggressive:
