@@ -123,6 +123,55 @@ def main():
             print('  commit>=%.0f%% AND residual<=%.0f%%pot : %d'
                   % (100*cf, 100*rp, n))
 
+    have_eff = any(num(r.get('effective_cap')) for r in nonall)
+    if have_eff:
+        print()
+        print('## effective-stack side split')
+        sides = collections.Counter()
+        overshoot = []
+        for r in nonall:
+            actor = num(r.get('actor_cap'))
+            opp = num(r.get('opp_cap_max'))
+            eff = num(r.get('effective_cap'))
+            committed = num(r.get('committed')) or 0.0
+            if not actor or not opp or not eff:
+                continue
+            side = ('actor_effective' if actor <= opp + 1e-9
+                    else 'opponent_effective')
+            eff_frac = min(committed, eff) / eff
+            sides[(side, 'all')] += 1
+            for t in (.90, .95, .98, 1.0):
+                if eff_frac >= t - 1e-12:
+                    sides[(side, t)] += 1
+            if actor > opp + 1e-9 and committed > opp + 1e-9:
+                over = committed - opp
+                overshoot.append((over, r))
+
+        print('%-20s %7s %7s %7s %7s %7s'
+              % ('side', 'all', '>=90', '>=95', '>=98', '>=100'))
+        for side in ('actor_effective', 'opponent_effective'):
+            print('%-20s %7d %7d %7d %7d %7d'
+                  % (side,
+                     sides[(side, 'all')],
+                     sides[(side, .90)],
+                     sides[(side, .95)],
+                     sides[(side, .98)],
+                     sides[(side, 1.0)]))
+
+        print()
+        print('## target beyond deepest opponent cap')
+        print('  count: %d' % len(overshoot))
+        if overshoot:
+            print('  total excess chips: %d'
+                  % int(round(sum(x[0] for x in overshoot))))
+            print('  largest examples:')
+            for over, r in sorted(overshoot, key=lambda x: x[0], reverse=True)[:10]:
+                print('    seed %s H%s %s %s plan=%s actor=%s oppmax=%s '
+                      'target=%s excess=%s'
+                      % (r.get('seed'), r.get('hand_no'), r.get('street'),
+                         r.get('action'), r.get('plan'), r.get('actor_cap'),
+                         r.get('opp_cap_max'), r.get('committed'), f(over, 0)))
+
     print()
     print('## remaining tail')
     ranked = sorted(tail, key=lambda r: r['_commit'], reverse=True)
