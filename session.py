@@ -48,6 +48,7 @@ def _merge_pf_seed(prev, new):
         'open_bb': out.get('pf_open_bb'),
         'n_callers': out.get('pf_n_callers'),
         'n_limpers': out.get('pf_n_limpers'),
+        'can_raise': out.get('pf_can_raise'),
     })
     out['pf_line'] = line
     out['pf_origin_role'] = prev.get(
