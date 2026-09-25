@@ -577,7 +577,8 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
                                     bf, opener_pos, open_bb, exploit, n_callers,
                                     seats, ante)
         return _a
-    vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
+    # V2: 현재 감정은 plan selector에서만 소비한다.
+    # 여기 있던 variance_seek 계산은 결과에 사용되지 않는 dead value 였다.
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
                                 n_callers, raise_level, seats, ante)
     if exploit and exploit.get('w', 0) > 0:
