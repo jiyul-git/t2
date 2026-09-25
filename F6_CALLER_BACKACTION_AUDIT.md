@@ -1,6 +1,6 @@
 # Sequential audit — F6 caller back-action after a later raise
 
-Status: INFORMATION-PRESERVATION / RESPONSE-PLAN STRUCTURE FIXED IN BRANCH; strategy model remains incomplete.
+Status: INFORMATION-PRESERVATION / RESPONSE-PLAN STRUCTURE CLOSED (user-validated); strategy model remains incomplete.
 
 Reference model: judgment -> response plan -> action.
 
