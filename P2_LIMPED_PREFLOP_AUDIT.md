@@ -1,6 +1,6 @@
 # Sequential audit — P2 limpers, no raise
 
-Status: LOCAL DEFECTS FIXED IN BRANCH; architecture refactor still open.
+Status: LOCAL DEFECTS CLOSED (user-validated); architecture refactor still open.
 
 Reference model: judgment -> plan -> action.
 
@@ -212,3 +212,8 @@ That global problem is deferred to the judgment/plan separation refactor.
 4. actual seats/stack/ante reach the base range lookup;
 5. BB free option is an explicit check;
 6. actual pf action drives postflop range role.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_p2_limped_pot.py` reported `5/5 P2 structural checks passed`.
