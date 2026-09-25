@@ -379,19 +379,43 @@ class HandRun:
         key = '%s|%s|%s|%s|%s' % (getattr(h, 'hash', ''), seat, street, tag, extra)
         return _zlib.crc32(key.encode())
 
-    def _acts_of(self, seat, upto_street=None):
-        """그 좌석의 포스트플랍 관측 액션 [(street, action, size_frac), ...].
+    def _acts_of(self, seat, upto_street=None, current_street=None, current_log=None):
+        """그 좌석의 공개 포스트플랍 액션 [(street, action, size_frac), ...].
 
-        size_frac 은 그 액션 시점의 팟 대비 비율. 팟 추적이 없으면 0.0(모름)으로 둔다.
-        프리플랍은 preflop_range 가 이미 반영하므로 제외한다.
+        full_log 는 **완료된 스트리트만** 들어 있다. 현재 스트리트는 r2.log 에
+        따로 쌓이다가 스트리트 종료 때 full_log 로 합쳐지므로, 예전에는
+        'A bet -> B call -> 내 차례'에서 A/B의 이번 스트리트 액션이 레인지
+        축소에 들어가지 않았다.
+
+        current_street/current_log 를 받으면 아직 끝나지 않은 스트리트도 이어 붙인다.
+        현재 스트리트의 size_frac 은 그 액션 직전 팟을 r2.log 로 재구성해 계산한다.
         """
         out = []
         for (stt, x, a, amt) in (getattr(self, 'full_log', []) or []):
             if stt == 'preflop' or x != seat:
                 continue
+            if upto_street is not None:
+                _ord = {'flop': 0, 'turn': 1, 'river': 2}
+                if stt in _ord and upto_street in _ord and _ord[stt] > _ord[upto_street]:
+                    continue
             pot = (self._pot_at or {}).get(stt, 0)
             sz = (amt/pot) if (pot and amt) else 0.0
             out.append((stt, a, sz))
+
+        if current_street and current_log:
+            contrib = {}
+            pot0 = float((self._pot_at or {}).get(current_street, 0) or 0)
+            for x, a, amt in current_log:
+                before = pot0 + sum(contrib.values())
+                prev = contrib.get(x, 0.0)
+                target = prev
+                if a in ('bet', 'raise', 'allin', 'call'):
+                    target = max(prev, float(amt or 0))
+                inc = max(0.0, target - prev)
+                if x == seat:
+                    sz = (inc / max(1.0, before)) if inc > 0 else 0.0
+                    out.append((current_street, a, sz))
+                contrib[x] = target
         return out
 
     def _run(self):
@@ -695,6 +719,7 @@ class HandRun:
                                        seats=_seats, ante=_ante)
                 my_r = sorted(set(my_r))      # 순서 확정 (판단이 순서에 의존하면 안 된다)
                 opp_r = []
+                opp_ranges = {}
                 for o in r2.live():
                     if o == s: continue
                     oax, _ = h.axes(o)
@@ -728,12 +753,16 @@ class HandRun:
                     # 인자가 둘이다. ax 는 **관찰자(나)**, _rdp 는 **행위자(상대)** 읽기.
                     # 예전에는 ax 하나만 넘겨서 자기 블러프 성향으로
                     # 상대 레인지를 좁혔다 — 자기 투사였다.
-                    orange = R.perceived_range(orange, board, self._acts_of(o), ax,
-                                               actor_read=_rdp if _oe else None)
+                    orange = R.perceived_range(
+                        orange, board,
+                        self._acts_of(o, current_street=street, current_log=r2.log),
+                        ax, actor_read=_rdp if _oe else None)
                     # 쇼다운 이력이 예상보다 넓/좁았다면 추가 보정
-                    orange, _note = RU.adjust_range_by_history(orange, h.dyn,
-                                                              self._pid(o), board,
-                                                              dead=set(h.hole[s])|set(board))
+                    orange, _note = RU.adjust_range_by_history(
+                        orange, h.dyn, self._pid(o), board,
+                        dead=set(h.hole[s])|set(board))
+                    orange = sorted(set(orange))
+                    opp_ranges[o] = orange
                     opp_r.extend(orange)
                 # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
                 # 흔들려도 판단이 바뀌면 안 되므로 여기서 순서를 확정한다.
@@ -766,7 +795,7 @@ class HandRun:
                     oop_vs_aggr=_oop_a, oop_legacy_abs=_oop_legacy,
                     first=(key not in h.plans or street == 'flop'),
                     pf_seed=getattr(h, 'pf_seed', {}).get(s),
-                    bb_chips=h.bb)
+                    bb_chips=h.bb, opp_ranges=opp_ranges)
                 # 실제 팟은 스트리트 시작 팟 + 이번 스트리트에 들어온 칩이다.
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
@@ -804,6 +833,8 @@ class HandRun:
                         'my_range_sig': _pl.get('my_range_sig'),
                         'opp_range_n': _pl.get('opp_range_n'),
                         'opp_range_sig': _pl.get('opp_range_sig'),
+                        'opp_ranges_n': _pl.get('opp_ranges_n'),
+                        'opp_ranges_sig': _pl.get('opp_ranges_sig'),
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),
@@ -857,7 +888,7 @@ class HandRun:
                 a2, eq, need = PL.act_with_plan(h.hole[s], board, ax, h.plans[key], pot_live, tc,
                                                 r2.stacks[s], street,
                                                 initiative=RU.has_initiative(s, aggressor),
- opp_range=opp_r,
+ opp_range=opp_r, opp_ranges=opp_ranges, facing_seat=aggressor,
                                                 bf=h.bf(s), seed=self._dseed(s, street, 'act', len(r2.log)),
                                                 n_opp=n_opp, to_act_behind=behind, read=read_val,
                                                 opp_est=est if tc > 0 and aggressor is not None
