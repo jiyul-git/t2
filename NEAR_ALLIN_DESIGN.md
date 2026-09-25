@@ -67,3 +67,17 @@ This is a semantic-preservation fix, not a new shove threshold.
    - extreme examples
 4. inspect the remaining tail before deciding whether any second-stage
    near-all-in normalization is justified.
+
+
+## Regression note after first correction
+
+After commit `931d793`, frozen regression reports only seed 3001 as changed while aggregate
+VPIP/PFR/flop rates remain the same. Comparing the design-lock commit `492874c` to
+`931d793` shows that the only production file changed is `session.py`, and the only
+behavioral change is preserving an exact pre-shape all-in target instead of passing it
+through `shape_size`.
+
+Therefore this fingerprint change is expected in principle, but the frozen baseline is
+not updated yet. The same near-all-in audit must be rerun first to confirm that the
+changed behavior lands in the intended all-in tail rather than introducing an unrelated
+side effect.
