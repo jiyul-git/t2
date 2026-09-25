@@ -904,10 +904,18 @@ class HandRun:
                     # 라이브처럼 shape 를 먹여야 한다.
                     _replayed = bool(_forced) and a == _forced[1] and amt == _forced[2]
                     if a in ('bet', 'raise') and not _replayed:
-                        amt = RU.shape_size(
-                            amt, ax['type'],
-                            random.Random(self._dseed(s, street, 'size', len(r2.log))),
-                            pot=pot_live)
+                        # 판단층이 이미 정확히 올인을 선택했다면 타입별 sizing jitter가
+                        # 그 결정을 다시 줄여 작은 잔여 스택을 만들면 안 된다.
+                        # target은 이번 스트리트 총 기여액 기준이므로 현재 contrib까지
+                        # 포함한 최대 target과 비교한다.
+                        _max_target = r2.stacks[s] + r2.contrib.get(s, 0)
+                        if amt < _max_target:
+                            amt = RU.shape_size(
+                                amt, ax['type'],
+                                random.Random(self._dseed(s, street, 'size', len(r2.log))),
+                                pot=pot_live)
+                        else:
+                            amt = _max_target
                     if a in ('bet', 'raise'):
                         # 클램프 이후의 값이 **실제로 테이블에 올라간 액수**다.
                         # 기록이 클램프 앞에서 찍히면 검증할 때 집행값을 못 본다.
