@@ -1463,16 +1463,12 @@ def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, st
     _val = max(0.0, min(1.0, (rel - 0.72) / 0.22))
     p = max(p, (0.10 + 0.11*sk) * _val)
     p *= (0.7 + 0.05*profile.get('aggr', 5))
-    # 블러프 체크레이즈는 상대가 접어줘야 성립하고,
-    # 밸류 체크레이즈는 상대가 콜해줘야 성립한다. 방향이 반대다.
-    if opp_est:
-        # read_opponent 경유. opp_est['ftb'] 날것은 see_freq 게이트를 우회한다.
-        _rdc = PS.read_opponent(profile, opp_est)
-        if _rdc.get('w', 0) > 0:
-            d = PS.street_gap(_rdc, street)
-            is_bluff = plan in ('semibluff', 'bluff_2street', 'river_bluff')
-            mult = (1.0 + 1.5*d) if is_bluff else (1.0 - 1.0*d)
-            p = PS.blend(p, p*max(0.2, mult), _rdc['w'])
+    # 블러프 체크레이즈는 '상대가 **벳한 뒤 레이즈에 접는가**'를 봐야 한다.
+    # 예전에는 street_gap = fold-to-bet 을 재사용했는데, 그건 전혀 다른 사건이다:
+    #   fold-to-bet: 내가 벳을 맞고 접는가
+    #   fold-to-raise: 내가 먼저 벳한 뒤 레이즈를 맞고 접는가
+    # 전용 postflop fold-to-raise read가 아직 없으므로, 잘못된 신호를 쓰지 않는다.
+    # opp_est 인자는 향후 그 전용 관측을 연결할 자리로 유지한다.
     return rng.random() < max(0.0, min(0.90, p))
 
 
