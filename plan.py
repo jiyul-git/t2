@@ -1306,7 +1306,7 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None,
                   opp_ranges=None, facing_seat=None, checked_before=False,
                   can_raise=True, checkraise_seed=None, checkraise_size_seed=None,
-                  facing_size_frac=None):
+                  facing_size_frac=None, hero_contrib=0, response_kind=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
@@ -1325,6 +1325,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     #  하고 함수 안에서 한 번도 읽지 않는 죽은 줄이었고, SIZING 에 없는
     #  계획이 오면 KeyError 만 낼 수 있었다. 사이즈는 decide_size 가 정한다.)
     committed = spr(stack, pot) < 1.2          # 커밋 구간
+    if response_kind is not None:
+        plan_state['_last_response_kind'] = response_kind
 
     if tocall > 0:
         callers = [(0.30, 5)]*max(0, n_opp-1)
@@ -1393,7 +1395,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 why = '체크 후 새 판단 → 체크레이즈 실행'
                 plan_state.setdefault('acts', []).append(why)
                 _trace(plan_state, street, 'response', act='raise',
-                       source='checkraise_gate', need=round(need, 3),
+                       source='checkraise_gate', response_kind=response_kind,
+                       need=round(need, 3),
                        need_raw=round(_need_in, 3), eq=round(eq, 3), why=why,
                        plan=plan, tocall=tocall, pot=pot)
                 return ('raise', _amt), eq, need
@@ -1410,13 +1413,30 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
         _trace(plan_state, street, 'response', act=act, source=_source,
+               response_kind=response_kind,
                need=round(need, 3), need_raw=round(_need_in, 3),
                eq=round(eq, 3), why=why, plan=plan, tocall=tocall, pot=pot)
         if act == 'raise':
-            amt = min(stack, int(round((pot + 2*tocall)*mult/100))*100)
-            if amt <= tocall:
+            # 반환 amt 는 Round.apply 가 기대하는 **street 총 contribution target**이다.
+            #
+            # 첫 액션(hero_contrib=0)에서는 종전 식과 동일하다.
+            # hero가 이미 bet/raise 한 뒤 재레이즈를 맞은 경우에는
+            # 현재까지 넣은 칩을 target 좌표에 다시 더해야 한다.
+            #
+            # 예:
+            #   pot_live 300, hero contrib 50, tocall 100, mult 1.0
+            #   pot-size re-raise target = 50 + 300 + 200 = 550
+            # 종전 식은 500으로 50을 누락했다.
+            _hc = max(0.0, float(hero_contrib or 0))
+            _base = int(round((pot + 2*tocall)*mult/100))*100
+            _max_target = float(stack) + _hc
+            amt = min(_max_target, _hc + _base)
+            # call target도 street 총 contribution 좌표다.
+            # amt를 단순 tocall과 비교하면 이미 넣은 칩만큼 좌표가 어긋난다.
+            _call_target = _hc + float(tocall)
+            if amt <= _call_target:
                 return ('call', tocall), eq, need
-            return ('raise', amt), eq, need
+            return ('raise', int(amt)), eq, need
         if act == 'call':
             return ('call', tocall), eq, need
         return ('fold', 0), eq, need
