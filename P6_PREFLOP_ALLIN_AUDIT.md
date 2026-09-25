@@ -120,7 +120,8 @@ This keeps strategic event classification independent of the UI/action spelling.
 ## P6-4 KEEP — contestable contribution already caps unreachable side-pot chips
 
 `Round.contestable_contrib(seat)` caps every opponent's current-street contribution by the
-maximum amount this seat can reach.
+maximum amount this seat can reach.  It is the **contestable pot before the actor's pending call
+is added**; the incremental call is supplied separately by `Round.to_call(seat)`.
 
 That is the correct legal foundation for:
 - short-stack call prices;
