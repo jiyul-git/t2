@@ -3,6 +3,7 @@
 import os
 import sys
 import inspect
+import ast
 import random
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -122,10 +123,23 @@ def test_bluffcatch_bias_is_street_aware():
 
 
 def test_checkraise_no_longer_uses_fold_to_bet_read():
+    # Source-text substring checks are too broad: the production function
+    # intentionally documents the removed bug in comments, including the words
+    # "street_gap" / "read_opponent".  Inspect actual AST calls instead.
     src = inspect.getsource(PL.checkraise_decision)
-    assert "street_gap" not in src, src
-    assert "read_opponent" not in src, src
-    return True
+    tree = ast.parse(src)
+    called = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        if isinstance(fn, ast.Attribute):
+            called.add(fn.attr)
+        elif isinstance(fn, ast.Name):
+            called.add(fn.id)
+    assert "street_gap" not in called, called
+    assert "read_opponent" not in called, called
+    return sorted(called)
 
 
 def main():
