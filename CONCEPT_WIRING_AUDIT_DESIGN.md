@@ -73,3 +73,39 @@ counterfactual test before code is changed.
 4. direct accessor bypasses;
 5. only then concept-prior calibration;
 6. global balance validation comes after these are closed or explicitly deferred.
+
+
+## First static scan: interpretation correction
+
+The first scan completed without parse errors and found no declared concept with zero
+references.  However its consumer counts are **not yet final** for two reasons:
+
+1. it excluded all of `persona.py`, even though `persona.open_pct`, bias helpers,
+   ICM helpers and variance helpers are real decision-time consumers;
+2. it counted root diagnostic helpers such as `tools_pcz_semibluff.py` and legacy
+   modules as if they were production consumers.
+
+Therefore low-coverage findings from v1 must not be treated as missing wiring yet.
+
+Examples:
+
+- `positional` appeared to have only the money-jump observation consumer, but
+  `persona.open_pct` directly uses `sk(prof, 'positional')` to flatten or preserve
+  positional RFI differences.  It is behaviorally wired.
+- top-level reads such as `profile['bluff']` and `profile['icm']` are not
+  automatically stale under tilt: `persona.tilted_view` rebuilds the compatibility
+  fields through `derive()` after tilting the concept vector.
+- a single central consumer can be intentional; e.g. street-specific c-bet concepts are
+  funneled through `cbet_freq`.
+
+`tools/concept_wiring_audit_v2.py` corrects the inventory scope by including
+`persona.py` behavioral helpers and excluding root diagnostics / legacy dynamics from
+core-runtime consumer counts.
+
+The structural issues that remain independently confirmed before v2 are:
+
+- money-jump is partially wired: unopened range is live, open-size and limp-form remain
+  shadow-only;
+- blockbet/donk semantics without an aggressor remain explicitly unresolved in
+  `plan.py`;
+- concept generation priors/loadings remain explicitly provisional.
