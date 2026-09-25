@@ -30,6 +30,10 @@ def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
     lo, hi = 0.0, 0.35
     if action == 'open':
         hi = base            # 깊이는 _open 안에서 이미 반영됨
+    elif action == 'check':
+        # BB가 림프 팟에서 무료 체크한 경우. 자발적 참가 레인지가 아니라
+        # 강제 블라인드로 이미 들어와 있어 사실상 any two다.
+        hi = 1.0
     elif action == 'limp':
         hi = min(0.85, base * 2.6)
     elif action in ('call','3bet'):
