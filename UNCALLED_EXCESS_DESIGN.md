@@ -60,3 +60,32 @@ python3 tools/regress.py check --baseline current
 A frozen regression mismatch is expected because this is an intentional engine-accounting
 correction; do not update the baseline yet.  After targeted verification, rerun the
 near-all-in/effective-stack audit before designing effective-all-in execution modes.
+
+
+## Verification result so far
+
+Targeted verifier passed all five locked cases:
+
+- heads-up overbet versus short-stack call
+- legitimate multiway side pot with no refund
+- raise then fold with uncalled return
+- short-stack multiway contestable-pot view
+- tied top contributions with no refund
+
+Fresh-process regression A/B then isolated this accounting change from the earlier
+planned-allin preservation fix.  Both arms used the same current branch; the OLD arm
+monkeypatched out only the new `to_call`, contestable-pot, and uncalled-return
+semantics.
+
+Result:
+
+```
+changed seeds: []
+old stats: {'flop': 80, 'hands': 180, 'n': 1390, 'pfr': 158, 'vpip': 265}
+new stats: {'flop': 80, 'hands': 180, 'n': 1390, 'pfr': 158, 'vpip': 265}
+```
+
+Therefore the frozen regression's seed-3001 mismatch is inherited from the earlier
+planned-allin preservation change, not introduced by the uncalled-excess accounting
+correction.  The frozen baseline remains unchanged pending completion of the whole
+near-all-in/effective-all-in workstream.
