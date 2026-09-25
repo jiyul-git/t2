@@ -63,10 +63,17 @@ class Book:
             'delayed_cbet_opp': 0, 'delayed_cbet': 0,
             'showdowns': 0, 'sd_strong': 0, 'sd_weak': 0,
             'facing_bet': 0, 'fold_to_bet': 0,
-            # 스트리트별 폴드 — '플랍은 잘 치는데 턴에서 멈추는' 사람을 구분한다
+            # bet 대면과 raise 대면은 다른 사건이다.
+            # F3/F5 이전에는 둘 다 fold_to_bet 으로 섞여 bluff XR/raise
+            # 익스플로잇의 근거를 만들 수 없었다.
+            'facing_raise': 0, 'fold_to_raise': 0,
+            # 스트리트별 폴드 — bet/raise를 각각 분리한다.
             'fb_flop': 0, 'f2b_flop': 0,
             'fb_turn': 0, 'f2b_turn': 0,
             'fb_river': 0, 'f2b_river': 0,
+            'fr_flop': 0, 'f2r_flop': 0,
+            'fr_turn': 0, 'f2r_turn': 0,
+            'fr_river': 0, 'f2r_river': 0,
             # 프리플랍 공격성 — 3벳 많이 치는 사람과 포스트플랍 공격형은 다르다
             'pf_3bet_opp': 0, 'pf_3bet': 0,
             # 림프 — 기회 대비 실행. limp_p 의 관찰 쪽 짝이다
@@ -198,7 +205,8 @@ class Book:
                 if pfr: r['rfi_did'] += 1
 
     def observe_postflop(self, observers, actor, action, is_cbet_spot, is_barrel_spot,
-                         facing_bet=False, street=None, is_delayed_cbet_spot=False):
+                         facing_bet=False, facing_raise=False, street=None,
+                         is_delayed_cbet_spot=False):
         for i in observers:
             if i == actor: continue
             r = self.rec(i, actor)
@@ -208,6 +216,12 @@ class Book:
                 if street in ('flop', 'turn', 'river'):
                     r['fb_' + street] += 1
                     if action == 'fold': r['f2b_' + street] += 1
+            if facing_raise:
+                r['facing_raise'] += 1
+                if action == 'fold': r['fold_to_raise'] += 1
+                if street in ('flop', 'turn', 'river'):
+                    r['fr_' + street] += 1
+                    if action == 'fold': r['f2r_' + street] += 1
             if is_cbet_spot:
                 r['cbet_opp'] += 1
                 if action in ('bet', 'raise'): r['cbet'] += 1
@@ -254,6 +268,10 @@ def estimate(book, observer, target, observer_type, rng=None):
         est['ftb'] = PRIOR['fold_to_bet']
         for _k in ('ftb_flop', 'ftb_turn', 'ftb_river'):
             est[_k] = PRIOR['fold_to_bet']
+        est['fold_to_raise'] = None
+        est['fold_to_raise_n'] = 0
+        for _k in ('ftr_flop', 'ftr_turn', 'ftr_river'):
+            est[_k] = None
         est['sz_big'] = 0.15; est['sz_river'] = PRIOR['sz_mean']; est['sz_n'] = 0
         est['n'] = 0; est['confidence'] = 0.0
         return est
@@ -271,6 +289,14 @@ def estimate(book, observer, target, observer_type, rng=None):
     ftb_f = _rate('f2b_flop', 'fb_flop', PRIOR['fold_to_bet'])
     ftb_t = _rate('f2b_turn', 'fb_turn', PRIOR['fold_to_bet'])
     ftb_r = _rate('f2b_river', 'fb_river', PRIOR['fold_to_bet'])
+    # fold-to-raise 는 아직 전략 소비 전 SHADOW 관측이다.
+    # 모집단 prior를 임의로 발명하지 않고, 표본이 있을 때만 raw rate를 노출한다.
+    _raw = lambda num, den: (
+        r.get(num, 0)/float(r.get(den, 0)) if r.get(den, 0) else None)
+    ftr = _raw('fold_to_raise', 'facing_raise')
+    ftr_f = _raw('f2r_flop', 'fr_flop')
+    ftr_t = _raw('f2r_turn', 'fr_turn')
+    ftr_r = _raw('f2r_river', 'fr_river')
     tb    = _rate('pf_3bet', 'pf_3bet_opp', PRIOR['pf_3bet'])
     lmp   = _rate('limp', 'limp_opp', PRIOR['pf_limp'])
     flr   = _rate('pf_fold_after_limp_raise', 'pf_faced_limp_raise',
@@ -338,6 +364,9 @@ def estimate(book, observer, target, observer_type, rng=None):
             'ftb_flop': _sh(ftb_f, 'fb_flop', PRIOR['fold_to_bet']),
             'ftb_turn': _sh(ftb_t, 'fb_turn', PRIOR['fold_to_bet']),
             'ftb_river': _sh(ftb_r, 'fb_river', PRIOR['fold_to_bet']),
+            'fold_to_raise': ftr,
+            'fold_to_raise_n': r.get('facing_raise', 0),
+            'ftr_flop': ftr_f, 'ftr_turn': ftr_t, 'ftr_river': ftr_r,
             'pf_3bet': _sh(tb, 'pf_3bet_opp', PRIOR['pf_3bet']),
             'pf_limp': _sh(lmp, 'limp_opp', PRIOR['pf_limp']),
             'pf_fold_after_limp_raise': _sh(
@@ -446,6 +475,10 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'ftb': e['ftb'],
             'ftb_flop': e.get('ftb_flop'), 'ftb_turn': e.get('ftb_turn'),
             'ftb_river': e.get('ftb_river'),
+            'fold_to_raise': e.get('fold_to_raise'),
+            'fold_to_raise_n': e.get('fold_to_raise_n'),
+            'ftr_flop': e.get('ftr_flop'), 'ftr_turn': e.get('ftr_turn'),
+            'ftr_river': e.get('ftr_river'),
             'pf_3bet': e.get('pf_3bet'), 'pf_fold_to_3bet': e.get('pf_fold_to_3bet'),
             'pf_4bet': e.get('pf_4bet'), 'pf_fold_to_4bet': e.get('pf_fold_to_4bet'),
             'pf_backraise': e.get('pf_backraise'),
