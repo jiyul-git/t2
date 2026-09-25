@@ -1,6 +1,6 @@
 # Sequential audit — P4 hero opened, then faces a 3bet
 
-Status: CLEAR INFORMATION-FLOW DEFECTS FIXED; strategy refactor remains.
+Status: CLEAR INFORMATION-FLOW DEFECTS CLOSED (user-validated); strategy refactor remains.
 
 Reference model: judgment -> plan -> action.
 
@@ -207,3 +207,8 @@ private planning record.
 3. observed range profile is built from perceived data;
 4. session no longer calls opponent true axes in the opponent range loop;
 5. P3/P4 response context fields survive in the seed.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_p4_vs_3bet.py` reported `5/5 P4 structural checks passed`.
