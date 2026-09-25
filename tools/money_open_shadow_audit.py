@@ -35,11 +35,14 @@ def q(xs,p):
 def stage(r):
     rem,itm=r.get('remaining'),r.get('itm')
     if not rem or not itm: return 'na'
-    if rem<=9: return 'final9'
+    # Ladder stages must win over the overlapping final-table bucket.
+    # With 24 entries / 4 paid, checking final9 first collapses ITM/bubble/
+    # approach into one label and hides the exact money-jump region.
     if rem<=itm: return 'itm'
     x=float(rem)/float(itm)
     if x<=1.2: return 'bubble'
     if x<=1.5: return 'approach'
+    if rem<=9: return 'final9'
     return 'pre'
 
 
@@ -132,12 +135,17 @@ def main():
 
     changed=[r for r in size if abs(r['_reduction'])>1e-9]
     at2=[r for r in size if abs(r['_shadow']-2.0)<1e-9]
+    newly_at2=[r for r in changed
+               if r['_base']>2.0+1e-9 and abs(r['_shadow']-2.0)<1e-9]
 
     print()
     print('## open-size shadow')
     print('legal unopened raises:',len(size))
     print('changed: %d (%.1f%%)'%(len(changed),pct(len(changed),len(size))))
     print('shadow at legal 2BB floor: %d (%.1f%%)'%(len(at2),pct(len(at2),len(size))))
+    print('newly pulled to 2BB floor: %d (%.1f%% of raises / %.1f%% of changed)'
+          %(len(newly_at2),pct(len(newly_at2),len(size)),
+            pct(len(newly_at2),len(changed))))
     dist('base size BB',[r['_base'] for r in size])
     dist('shadow size BB',[r['_shadow'] for r in size])
     dist('base-shadow reduction',[r['_reduction'] for r in changed])
@@ -149,9 +157,11 @@ def main():
         if not x: continue
         ch=[r for r in x if abs(r['_reduction'])>1e-9]
         fl=sum(1 for r in x if abs(r['_shadow']-2.0)<1e-9)
-        print('  %-9s n=%-4d changed=%-4d(%5.1f%%) base_med=%.2f shadow_med=%.2f at2=%d'
+        nfl=sum(1 for r in x
+                if r['_base']>2.0+1e-9 and abs(r['_shadow']-2.0)<1e-9)
+        print('  %-9s n=%-4d changed=%-4d(%5.1f%%) base_med=%.2f shadow_med=%.2f at2=%d new2=%d'
               %(st,len(x),len(ch),pct(len(ch),len(x)),
-                q([r['_base'] for r in x],.5),q([r['_shadow'] for r in x],.5),fl))
+                q([r['_base'] for r in x],.5),q([r['_shadow'] for r in x],.5),fl,nfl))
 
     near=[r for r in size if stage(r) in ('approach','bubble','itm','final9')]
     print()
