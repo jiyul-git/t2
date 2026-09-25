@@ -229,3 +229,8 @@ Fix:
 - outside the raise range, a player may limp if the limp plan wins, otherwise fold.
 
 No new coefficient was invented; this makes the existing limp model reachable.
+
+
+## Closure validation
+
+User validation (Termux, 2026-09-26): `tools/verify_preflop_closure.py` reported `4/4 preflop closure checks passed`.
