@@ -256,6 +256,56 @@ def _postflop_response_context(rnd, seat):
     }
 
 
+def _postflop_street_outcome(action_meta):
+    """완료된 스트리트의 POST-F 결과를 규칙 사건으로 요약한다.
+
+    전략 판단은 원본 action_meta 를 그대로 볼 수 있어야 하고, 이 요약은
+    provenance/다음 단계 감사용이다. raw 'allin' 문자열은 쓰지 않는다.
+    """
+    metas = list(action_meta or [])
+    aggr_idx = [i for i, m in enumerate(metas) if m.get('raised')]
+    if not aggr_idx:
+        return {
+            'kind': 'checkthrough',
+            'last_aggressor': None,
+            'callers': [],
+            'allin_callers': [],
+            'raise_depth_full': 0,
+            'raise_depth_any': 0,
+        }
+
+    j = aggr_idx[-1]
+    last = metas[j]
+    callers = []
+    allin_callers = []
+    for m in metas[j+1:]:
+        a = _observed_postflop_action(m)
+        if a == 'call':
+            callers.append(m.get('seat'))
+            if m.get('allin_call'):
+                allin_callers.append(m.get('seat'))
+
+    if not callers:
+        kind = 'all_fold'
+    elif len(callers) == 1 and allin_callers:
+        kind = 'one_allin_call'
+    elif len(callers) == 1:
+        kind = 'one_call'
+    elif allin_callers:
+        kind = 'multi_call_with_allin'
+    else:
+        kind = 'multi_call'
+
+    return {
+        'kind': kind,
+        'last_aggressor': last.get('seat'),
+        'callers': callers,
+        'allin_callers': allin_callers,
+        'raise_depth_full': sum(1 for m in metas if m.get('full_raise')),
+        'raise_depth_any': sum(1 for m in metas if m.get('raised')),
+    }
+
+
 def _barrel_count(full_meta, current_meta, seat, current_street):
     """상대가 공격한 **postflop street 수**. 현재 street도 포함."""
     streets = {
@@ -1493,6 +1543,13 @@ class HandRun:
             if _st_uncalled:
                 h.uncalled_returns = getattr(h, 'uncalled_returns', [])
                 h.uncalled_returns.append(dict(_st_uncalled, street=street))
+
+            # POST-F: no-raise closure / caller composition을 명시적으로 보존한다.
+            # 다음 스트리트 전략은 여전히 원본 공개 액션에서 재판단하며,
+            # 이 요약은 상황 클래스가 소실되지 않았는지 검증하는 provenance다.
+            h.street_outcomes = getattr(h, 'street_outcomes', {})
+            h.street_outcomes[street] = _postflop_street_outcome(r2.action_meta)
+
             _any_bet = any(m.get('raised') for m in r2.action_meta)
             if not _any_bet:
                 for k, v in list(h.plans.items()):
