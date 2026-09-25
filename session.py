@@ -49,6 +49,9 @@ def _merge_pf_seed(prev, new):
         'n_callers': out.get('pf_n_callers'),
         'n_limpers': out.get('pf_n_limpers'),
         'can_raise': out.get('pf_can_raise'),
+        'facing_allin': out.get('pf_facing_allin'),
+        'pot_bb': out.get('pf_pot_bb'),
+        'to_call_bb': out.get('pf_to_call_bb'),
     })
     out['pf_line'] = line
     out['pf_origin_role'] = prev.get(
@@ -670,7 +673,9 @@ class HandRun:
                     money_open=(_mj_obs.get('unopened_modifiers')
                                 if _mj_obs else None),
                     can_check=(tc <= 0),
-                    can_raise=rnd.can_raise(s))
+                    can_raise=rnd.can_raise(s),
+                    pot_bb=((rnd.contestable_contrib(s) + ante_pot) / max(1, h.bb)),
+                    to_call_bb=(tc / max(1, h.bb)))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
