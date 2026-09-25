@@ -936,6 +936,11 @@ def read_opponent(prof, opp_est):
             'open_gap': max(-1.0, min(2.0, float(g('rfi_rel', 1.0) or 1.0) - 1.0)) * see_freq,
             'limp_gap': max(-0.5, min(1.5,
                             (float(g('pf_limp', 0.06) or 0.06) - 0.06) * 6.0)) * see_freq,
+            # 림프 후 첫 레이즈에 얼마나 잘 접는가. 아이소레이즈 전용 축이다.
+            # 포스트플랍 fold_gap 을 이 자리에 쓰면 전혀 다른 행동을 섞게 된다.
+            'f2iso_gap': max(-0.48, min(0.52,
+                              float(g('pf_fold_after_limp_raise', 0.48) or 0.48) - 0.48))
+                          * see_freq,
             # 배럴 빈도가 기준보다 얼마나 넓은가. −1(닛) ~ +1(매니악).
             # 상대 레인지를 좁힐 때 이 값이 벳 레인지 폭을 정한다 —
             # 예전에는 고정 상수라 닛과 매니악의 턴 배럴이 같은 폭이었다.
