@@ -849,6 +849,11 @@ class HandRun:
                              if x[0] == _prev and x[1] != s]
                     h.plans[key]['opp_checked_prev'] = bool(_rows) and all(
                         x[2] in ('check', 'fold') for x in _rows)
+                # 체크레이즈 라우팅 감사용: 판단에는 쓰지 않는 provenance.
+                # generic facing-bet response가 checkraise 전용 gate보다 먼저 raise를
+                # 만들어내는지 확인하려면 act_with_plan 호출 전에 체크 이력이 필요하다.
+                _already_checked = bool(
+                    tc > 0 and any(x == s and act == 'check' for (x, act, _) in r2.log))
                 a2, eq, need = PL.act_with_plan(h.hole[s], board, ax, h.plans[key], pot_live, tc,
                                                 r2.stacks[s], street,
                                                 initiative=RU.has_initiative(s, aggressor),
@@ -877,13 +882,17 @@ class HandRun:
                 # r2.acted 는 풀레이즈가 나오면 {레이저} 로 초기화되므로
                 # 's in r2.acted' 로 판정하면 이 분기가 절대 성립하지 않는다.
                 # 이번 스트리트에 실제로 체크한 기록(r2.log)이 유일하게 옳은 근거다.
-                if tc > 0 and a in ('call', 'fold'):
-                    already_checked = any(x == s and act == 'check' for (x, act, _) in r2.log)
-                    if already_checked and PL.checkraise_decision(
+                _ckr_gate_called = False
+                _ckr_gate_taken = False
+                _pre_ckr_act = a
+                if tc > 0 and a in ('call', 'fold') and _already_checked:
+                    _ckr_gate_called = True
+                    _ckr_gate_taken = PL.checkraise_decision(
                             h.hole[s], board, ax, h.plans[key], pot_live, tc,
                             r2.stacks[s], street,
                             seed=self._dseed(s, street, 'ckr', len(r2.log)),
-                            opp_est=_est):
+                            opp_est=_est)
+                    if _ckr_gate_taken:
                         a = 'raise'
                         amt = PL.checkraise_size(ax, pot_live, tc, r2.stacks[s],
                                                  board, street,
@@ -891,6 +900,38 @@ class HandRun:
                                                                            len(r2.log))))
                         amt = min(r2.stacks[s] + r2.contrib.get(s, 0), amt + r2.contrib.get(s, 0))
                         h.plans[key].setdefault('acts', []).append('체크레이즈 실행')
+
+                # read-only provenance: 실제 check-then-face-bet 상황에서 레이즈가
+                # generic response에서 이미 나왔는지, 전용 gate가 올렸는지 분리한다.
+                if _already_checked:
+                    if _forced:
+                        _ckr_source = 'forced_replay'
+                    elif a2[0] == 'raise':
+                        _ckr_source = 'generic_response_raise'
+                    elif _ckr_gate_taken:
+                        _ckr_source = 'checkraise_gate'
+                    else:
+                        _ckr_source = 'no_raise'
+                    h.checkraise_audit = getattr(h, 'checkraise_audit', [])
+                    h.checkraise_audit.append({
+                        'street': street,
+                        'seat': s,
+                        'plan': (h.plans.get(key) or {}).get('plan'),
+                        'source': _ckr_source,
+                        'response_act': a2[0],
+                        'pre_gate_act': _pre_ckr_act,
+                        'final_act': a,
+                        'gate_called': _ckr_gate_called,
+                        'gate_taken': _ckr_gate_taken,
+                        'checkraise_skill': PS.sk(
+                            ax, PS.street_concept('checkraise', street))
+                            if ax.get('concepts') else None,
+                        'reraise_skill': PS.sk(ax, 'reraise') if ax.get('concepts') else None,
+                        'bluff_skill': PS.sk(ax, 'bluff') if ax.get('concepts') else None,
+                        'semibluff_skill': PS.sk(ax, 'semibluff') if ax.get('concepts') else None,
+                        'rel': (h.plans.get(key) or {}).get('rel'),
+                        'outs': (h.plans.get(key) or {}).get('outs'),
+                    })
                 try:
                     # 이 액션에 **적용된** 제약을 apply 이전에 잡는다.
                     # apply 는 self.min_raise/current 를 갱신하므로, 사후에 읽으면
