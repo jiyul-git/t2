@@ -169,6 +169,47 @@ def main():
                 overshoot.append((committed - opp, r))
 
         print()
+        print('## actor-effective candidate grid')
+        actor_rows = []
+        for r in nonall:
+            actor = num(r.get('actor_cap'))
+            opp = num(r.get('opp_cap_max'))
+            if not actor or not opp or actor > opp + 1e-9:
+                continue
+            actor_rows.append(r)
+
+        print('  actor-effective non-all-in rows: %d' % len(actor_rows))
+        print('  commit threshold x post-action own SPR')
+        print('%-10s %8s %8s %8s %8s'
+              % ('commit', '<=0.02', '<=0.03', '<=0.05', '<=0.10'))
+        for cf in (.85, .90, .95):
+            vals = []
+            for sp in (.02, .03, .05, .10):
+                vals.append(sum(
+                    r['_commit'] >= cf
+                    and num(r.get('post_spr_own')) is not None
+                    and num(r.get('post_spr_own')) <= sp + 1e-12
+                    for r in actor_rows))
+            print('%-10s %8d %8d %8d %8d'
+                  % ('>=%d%%' % int(cf*100), vals[0], vals[1], vals[2], vals[3]))
+
+        print()
+        print('  candidate rows: actor-effective, commit>=85%, postSPR<=0.10')
+        cand = [r for r in actor_rows
+                if r['_commit'] >= .85
+                and num(r.get('post_spr_own')) is not None
+                and num(r.get('post_spr_own')) <= .10 + 1e-12]
+        cand.sort(key=lambda r: (num(r.get('post_spr_own')) or 999,
+                                 -r['_commit']))
+        for r in cand:
+            print('    seed %s H%s %s %s plan=%s source=%s '
+                  'commit=%.1f%% remain=%sBB postSPR=%s stack=%s target=%s'
+                  % (r.get('seed'), r.get('hand_no'), r.get('street'),
+                     r.get('action'), r.get('plan'), r.get('_source'),
+                     100*r['_commit'], f(r['_rbb']), f(num(r.get('post_spr_own'))),
+                     r.get('stack'), r.get('committed')))
+
+        print()
         print('## target beyond deepest opponent cap (all aggressive actions)')
         n_allin = sum((num(r.get('commit_frac')) or 0.0) >= 1.0 - 1e-12
                       for _, r in overshoot)
