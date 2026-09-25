@@ -306,6 +306,86 @@ def _postflop_street_outcome(action_meta):
     }
 
 
+def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
+                         hero=None, dead=0):
+    """판단 시점 누적 기여를 main/side-pot contribution layer로 보존한다.
+
+    기록/감사용 read-only provenance다. 전략 함수에는 넘기지 않는다.
+
+    - prior_contrib: 완료된 이전 street까지의 누적 기여
+    - street_contrib: 현재 street에서 지금까지의 기여
+    - folded: 이미 폴드한 좌석. 칩은 pot amount에 남지만 eligibility에서는 빠진다.
+    - stacks: 현재 남은 스택. eligible seat 중 0이면 locked all-in,
+      양수면 아직 행동 가능한 active seat로 분류한다.
+    - dead: ante 등 개인 contribution이 아닌 dead money. 첫/main layer에만 더한다.
+
+    아직 콜되지 않은 현재 wager도 contribution level로 보존한다. 그 upper layer에서
+    hero_eligible=False일 수 있으며, 이후 F8 EV 단계가 '콜하면 새로 contest하게 되는
+    금액'을 계산할 때 이 차이를 사용한다.
+    """
+    prior = dict(prior_contrib or {})
+    street = dict(street_contrib or {})
+    folded = set(folded or ())
+    stacks = dict(stacks or {})
+
+    seats = sorted(
+        set(prior) | set(street) | set(stacks),
+        key=lambda x: str(x))
+    total = {
+        s: float(prior.get(s, 0) or 0) + float(street.get(s, 0) or 0)
+        for s in seats
+    }
+    levels = sorted(set(v for v in total.values() if v > 0))
+
+    # 일반 게임에서는 blind/contribution level이 항상 있으나, dead-only 상태도
+    # provenance 합계가 보존되도록 명시적으로 다룬다.
+    if not levels:
+        if float(dead or 0) <= 0:
+            return []
+        elig = [s for s in seats if s not in folded]
+        locked = [s for s in elig if float(stacks.get(s, 0) or 0) <= 0]
+        active = [s for s in elig if float(stacks.get(s, 0) or 0) > 0]
+        return [{
+            'level': 0.0,
+            'amount': float(dead),
+            'contributors': [],
+            'eligible_seats': elig,
+            'hero_eligible': (hero in elig) if hero is not None else None,
+            'locked_allin_seats': locked,
+            'active_seats': active,
+            'locked_allin_opponents': [s for s in locked if s != hero],
+            'active_opponents': [s for s in active if s != hero],
+        }]
+
+    out = []
+    prev = 0.0
+    first = True
+    for lv in levels:
+        contributors = [s for s in seats if total.get(s, 0) >= lv]
+        amount = (lv - prev) * len(contributors)
+        if first:
+            amount += float(dead or 0)
+            first = False
+        eligible = [s for s in contributors if s not in folded]
+        locked = [
+            s for s in eligible if float(stacks.get(s, 0) or 0) <= 0]
+        active = [
+            s for s in eligible if float(stacks.get(s, 0) or 0) > 0]
+        out.append({
+            'level': float(lv),
+            'amount': float(amount),
+            'contributors': contributors,
+            'eligible_seats': eligible,
+            'hero_eligible': (hero in eligible) if hero is not None else None,
+            'locked_allin_seats': locked,
+            'active_seats': active,
+            'locked_allin_opponents': [s for s in locked if s != hero],
+            'active_opponents': [s for s in active if s != hero],
+        })
+        prev = lv
+    return out
+
+
 def _barrel_count(full_meta, current_meta, seat, current_street):
     """상대가 공격한 **postflop street 수**. 현재 street도 포함."""
     streets = {
@@ -1021,6 +1101,12 @@ class HandRun:
                 s = r2.needs_action()
                 if s is None: break
                 tc = r2.to_call(s)
+                # F8-D1: 판단 시점 pot geometry를 전략과 분리해 기록한다.
+                # 이전 street 누적 + 현재 street 기여를 합치므로, 이전 street
+                # all-in의 main-pot eligibility와 현재 side-pot 상태가 동시에 보인다.
+                _pot_layers = _decision_pot_layers(
+                    contrib, r2.contrib, folded | set(r2.folded), r2.stacks,
+                    hero=s, dead=dead)
                 if s == h.hero:
                     act = yield {'stage': street, 'board': board, 'hole': h.hole[s],
                                  'stacks': dict(r2.stacks), 'contrib': dict(r2.contrib),
@@ -1029,7 +1115,8 @@ class HandRun:
                                  'can_raise': r2.can_raise(s), 'log': list(r2.log),
                                  'prior_log': list(getattr(self, 'full_log', [])),
                                  'live': r2.live(), 'contrib': dict(r2.contrib),
-                                 'allin': list(r2.allin), 'hash': h.hash}
+                                 'allin': list(r2.allin),
+                                 'pot_layers': _pot_layers, 'hash': h.hash}
                     try: r2.apply(s, act[0], act[1])
                     except ValueError as e:
                         act = yield {'stage': street, 'error': str(e), 'board': board,
@@ -1249,6 +1336,8 @@ class HandRun:
                         'facing_full_raise': _resp_ctx.get('facing_full_raise'),
                         'facing_incomplete_raise': _resp_ctx.get('facing_incomplete_raise'),
                         'hero_contrib': _resp_ctx.get('hero_contrib'),
+                        # F8-D1 provenance only. update_plan/act_with_plan에는 넘기지 않는다.
+                        'pot_layers': _pot_layers,
                     })
                 # --- 배팅라인 리딩: 진짜 프로필이 아니라 '내가 관찰한 추정치'로 ---
                 read_val = None

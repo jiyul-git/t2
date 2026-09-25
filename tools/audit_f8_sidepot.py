@@ -93,19 +93,71 @@ def check_postflop_locked_opponent_gap():
     }
 
 
+def check_d1_provenance():
+    # Previous street: all three reached 20, seat 1 is locked all-in.
+    # Current street: seats 2/3 each reached 50 total. Dead money belongs to main only.
+    prior = {1: 20, 2: 20, 3: 20}
+    current = {2: 30, 3: 30}
+    stacks = {1: 0, 2: 100, 3: 100}
+    layers = SE._decision_pot_layers(
+        prior, current, folded=set(), stacks=stacks, hero=2, dead=5)
+
+    assert layers == [
+        {
+            'level': 20.0,
+            'amount': 65.0,
+            'contributors': [1, 2, 3],
+            'eligible_seats': [1, 2, 3],
+            'hero_eligible': True,
+            'locked_allin_seats': [1],
+            'active_seats': [2, 3],
+            'locked_allin_opponents': [1],
+            'active_opponents': [3],
+        },
+        {
+            'level': 50.0,
+            'amount': 60.0,
+            'contributors': [2, 3],
+            'eligible_seats': [2, 3],
+            'hero_eligible': True,
+            'locked_allin_seats': [],
+            'active_seats': [2, 3],
+            'locked_allin_opponents': [],
+            'active_opponents': [3],
+        },
+    ], layers
+
+    # Facing an unmatched current-street wager, the upper contribution layer exists
+    # before hero acts but hero is not yet eligible for it.  D1 must preserve that.
+    pending = SE._decision_pot_layers(
+        prior, {3: 30}, folded=set(), stacks=stacks, hero=2, dead=0)
+    assert pending[-1]['amount'] == 30.0, pending
+    assert pending[-1]['eligible_seats'] == [3], pending
+    assert pending[-1]['hero_eligible'] is False, pending
+
+    src = inspect.getsource(SE.HandRun._run)
+    assert "_pot_layers = _decision_pot_layers(" in src
+    assert "'pot_layers': _pot_layers" in src
+
+    return layers, pending
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
     gap = check_postflop_locked_opponent_gap()
+    d1, pending = check_d1_provenance()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
           {'to_call': tc, 'contestable_contrib': contestable})
     print("PASS F8 gap reproduced: cumulative pot includes locked all-in chips")
     print("     while current postflop opponent pools exclude that seat", gap)
-    print("3/3 F8 diagnostic checks passed")
-    print("NOTE: the last PASS confirms the presence of the architecture gap;")
-    print("      it does not mean side-pot decision strategy is correct.")
+    print("PASS F8-D1 decision-time pot-layer provenance is wired", d1)
+    print("     pending upper layer keeps hero ineligible before call", pending[-1])
+    print("4/4 F8 diagnostic checks passed")
+    print("NOTE: the gap reproduction PASS confirms the architecture defect;")
+    print("      D1 only records pot layers and does not change strategy.")
 
 
 if __name__ == '__main__':

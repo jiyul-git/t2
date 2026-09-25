@@ -254,3 +254,78 @@ conversion.
    regression before accepting any behavior change.
 
 No production strategic coefficient is changed in F8-D0 through F8-D3.
+
+
+---
+
+# F8-D1 implementation — decision-time pot-layer provenance
+
+Status: **IMPLEMENTED; pending user validation. No strategy consumer added.**
+
+A new `session._decision_pot_layers(...)` helper derives read-only pot geometry from:
+
+- completed-street cumulative contributions;
+- current-street contributions before the actor acts;
+- cumulative/current folds;
+- current stacks;
+- dead money.
+
+Each layer records:
+
+- `level`;
+- `amount`;
+- `contributors`;
+- `eligible_seats`;
+- `hero_eligible`;
+- `locked_allin_seats`;
+- `active_seats`;
+- `locked_allin_opponents`;
+- `active_opponents`.
+
+Dead money is added only to the first/main layer, matching `award_pots` settlement geometry.
+Folded players' chips still contribute to the amount but the folded seats are removed from
+eligibility.
+
+The helper intentionally preserves an unmatched current-street upper contribution layer before
+the facing player acts.  In that layer `hero_eligible=False` until the hero actually matches the
+price.  This is necessary for later D4 EV work; silently deleting the unmatched wager would make
+the decision-time state impossible to reconstruct.
+
+## Wiring
+
+At every postflop action opportunity, session computes `_pot_layers` before the actor acts.
+
+The value is exposed only as provenance:
+
+- human-yield state: `pot_layers`;
+- bot intent/audit row: `pot_layers`.
+
+It is **not** passed to:
+
+- `update_plan`;
+- `act_with_plan`;
+- any sizing function;
+- any equity function.
+
+Therefore D1 must preserve the frozen F7 behavioral fingerprint exactly.
+
+## D1 verification
+
+`tools/audit_f8_sidepot.py` now checks:
+
+1. settlement geometry still separates main/side layers;
+2. current-street contestable cap remains sound;
+3. the original locked-all-in opponent-set gap is still reproduced;
+4. production D1 provenance records:
+   - main layer with locked all-in opponent;
+   - side layer with active opponent only;
+   - pending unmatched upper layer with `hero_eligible=False`;
+   - live `HandRun._run` wiring.
+
+Acceptance requires:
+
+- F8 diagnostic: 4/4;
+- frozen regression: exact fingerprint match to baseline rev `2a53584`.
+
+D1 does **not** claim the F8 strategy gap is fixed.  D2 is still required to preserve/reconstruct
+the locked all-in opponent's range before layer equity can be computed.
