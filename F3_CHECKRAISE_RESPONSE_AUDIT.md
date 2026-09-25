@@ -1,6 +1,6 @@
 # Sequential audit — F3 checked, then faces a bet
 
-Status: CLEAR CHECKRAISE/RESPONSE-ROUTING DEFECTS FIXED; broader response architecture remains open.
+Status: CLEAR F3 CHECK-RAISE ROUTING/READ-SEMANTIC DEFECTS CLOSED (user-validated); deeper response-plan architecture remains open.
 
 Reference model: new information -> judgment -> plan -> action.
 
@@ -210,3 +210,8 @@ channel and include it in the later opponent-read architecture.
 
 Targeted verifier:
 `tools/verify_f3_checkraise_response.py`.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): `tools/verify_f3_checkraise_response.py` reported `6/6 F3 structural checks passed`.
