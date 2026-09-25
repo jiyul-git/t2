@@ -428,7 +428,7 @@ class HandRun:
             if s == h.hero:
                 act = yield {'stage': 'preflop', 'pos': pos, 'hole': h.hole[s],
                              'stacks': dict(rnd.stacks), 'contrib': dict(rnd.contrib),
-                             'pot': sum(rnd.contrib.values())+ante_pot, 'tocall': tc,
+                             'pot': rnd.contestable_contrib(s)+ante_pot, 'tocall': tc,
                              'stack': rnd.stacks[s], 'min_raise': rnd.current+rnd.min_raise,
                              'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
                              'contrib': dict(rnd.contrib), 'live': list(rnd.live()),
@@ -437,7 +437,7 @@ class HandRun:
                 try: rnd.apply(s, a, amt)
                 except ValueError as e:
                     act = yield {'stage': 'preflop', 'error': str(e), 'pos': pos,
-                                 'hole': h.hole[s], 'pot': sum(rnd.contrib.values())+ante_pot,
+                                 'hole': h.hole[s], 'pot': rnd.contestable_contrib(s)+ante_pot,
                                  'tocall': tc, 'stack': rnd.stacks[s],
                                  'min_raise': rnd.current+rnd.min_raise,
                                  'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
@@ -454,7 +454,7 @@ class HandRun:
                 if aggressor is not None and aggressor != s else None)
             _mj_obs = _money_jump_observe(
                 h, s, rnd, 'preflop', ax, tc,
-                sum(rnd.contrib.values()) + ante_pot,
+                rnd.contestable_contrib(s) + ante_pot,
                 facing_seat=aggressor,
                 decision_context={
                     'kind': ('vs_raise' if aggressor is not None else
@@ -535,6 +535,11 @@ class HandRun:
             except ValueError:
                 rnd.apply(s, 'call' if tc > 0 else 'check')
             _money_jump_attach_action(_mj_obs, rnd)
+
+        _pf_uncalled = rnd.settle_uncalled()
+        if _pf_uncalled:
+            h.uncalled_returns = getattr(h, 'uncalled_returns', [])
+            h.uncalled_returns.append(dict(_pf_uncalled, street='preflop'))
 
         self.full_log = [('preflop', x, a, amt) for (x, a, amt) in rnd.log]
         # 프리플랍 관찰 기록
@@ -624,7 +629,7 @@ class HandRun:
                 if s == h.hero:
                     act = yield {'stage': street, 'board': board, 'hole': h.hole[s],
                                  'stacks': dict(r2.stacks), 'contrib': dict(r2.contrib),
-                                 'pot': pot_now + sum(r2.contrib.values()), 'tocall': tc,
+                                 'pot': pot_now + r2.contestable_contrib(s), 'tocall': tc,
                                  'stack': r2.stacks[s], 'min_raise': r2.current+r2.min_raise,
                                  'can_raise': r2.can_raise(s), 'log': list(r2.log),
                                  'prior_log': list(getattr(self, 'full_log', [])),
@@ -633,7 +638,7 @@ class HandRun:
                     try: r2.apply(s, act[0], act[1])
                     except ValueError as e:
                         act = yield {'stage': street, 'error': str(e), 'board': board,
-                                     'hole': h.hole[s], 'pot': pot_now+sum(r2.contrib.values()),
+                                     'hole': h.hole[s], 'pot': pot_now+r2.contestable_contrib(s),
                                      'tocall': tc, 'stack': r2.stacks[s],
                                      'min_raise': r2.current+r2.min_raise,
                                      'can_raise': r2.can_raise(s), 'log': list(r2.log),
@@ -765,7 +770,7 @@ class HandRun:
                 # 실제 팟은 스트리트 시작 팟 + 이번 스트리트에 들어온 칩이다.
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
-                pot_live = pot_now + sum(r2.contrib.values())
+                pot_live = pot_now + r2.contestable_contrib(s)
                 _mj_obs = _money_jump_observe(
                     h, s, r2, street, ax, tc, pot_live,
                     facing_seat=(aggressor if tc > 0 else None),
@@ -1038,6 +1043,10 @@ class HandRun:
                                   'min_raise': (_cur0 + _mr0) if _cur0 else max(h.bb, _mr0),
                                   'rel': _pl2.get('rel'), 'eq': _pl2.get('eq'),
                                   'outs': _pl2.get('outs'), 'blocker': _pl2.get('blocker')})
+            _st_uncalled = r2.settle_uncalled()
+            if _st_uncalled:
+                h.uncalled_returns = getattr(h, 'uncalled_returns', [])
+                h.uncalled_returns.append(dict(_st_uncalled, street=street))
             _any_bet = any(_a in ('bet', 'raise', 'allin') for (_, _a, _) in r2.log)
             if not _any_bet:
                 for k, v in list(h.plans.items()):
