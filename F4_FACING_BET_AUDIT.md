@@ -252,3 +252,8 @@ Those remain global V2 refactors.
 4. barrel count includes the current street exactly once;
 5. all-in call/raise normalize to passive/aggressive observation semantics;
 6. session aggressor update is rule-event based.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_f4_facing_bet.py` reported `6/6 F4 structural checks passed`.
