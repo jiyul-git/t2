@@ -447,7 +447,7 @@ BIAS_NAMES = ('station', 'bluff_fear', 'overpair_love', 'draw_love',
               'hero_call', 'sticky')
 
 
-def bias(prof, name):
+def bias(prof, name, street=None):
     """이 사람의 고정된 행동 편향. 랜덤이 아니다 — 같은 사람은 항상 같은 값.
 
     모르는 이름은 예외를 낸다. 예전에는 조용히 0.0 을 돌려줘서
@@ -469,8 +469,10 @@ def bias(prof, name):
 
     if name == 'bluff_fear':
         # 큰 벳·후반 스트리트에서 과도하게 접는다.
-        # 블러프캐치 개념이 약하고 소극적이며 레인지를 못 읽을수록 심하다.
-        return _z(0.40*(10 - S('bluffcatch_river')) + 0.30*(10 - T('aggression'))
+        # 스트리트별 블러프캐치 숙련도를 써야 한다. 예전에는 항상
+        # bluffcatch_river 를 읽어 플랍/턴 콜 판단까지 리버 숙련도가 바꿨다.
+        _bc = street_concept('bluffcatch', street) if street else 'bluffcatch_river'
+        return _z(0.40*(10 - S(_bc)) + 0.30*(10 - T('aggression'))
                   + 0.30*(10 - S('range_read')))
 
     if name == 'overpair_love':
@@ -486,8 +488,10 @@ def bias(prof, name):
 
     if name == 'hero_call':
         # 상대를 블러프로 몰아 가볍게 콜한다. 공격적이고 블러프캐치를 좋아할수록.
-        # 틸트 성향이 높을수록 "안 믿는다"며 가볍게 콜한다
-        return _z(0.45*S('bluffcatch_river') + 0.35*T('aggression')
+        # 이것도 스트리트별 숙련도를 쓴다. 리버 능력이 플랍 히어로콜을
+        # 직접 바꾸는 도메인 누수를 막는다.
+        _bc = street_concept('bluffcatch', street) if street else 'bluffcatch_river'
+        return _z(0.45*S(_bc) + 0.35*T('aggression')
                   + 0.20*T('tilt_prone'))
 
     if name == 'sticky':
@@ -797,7 +801,7 @@ def call_bias(prof, street, size_frac, made, outs):
     m = 1.0
     m *= 1.0 - 0.22*max(0.0, bias(prof, 'station'))          # 스테이션: 넓게 콜
     # 블러프 공포는 사이즈와 스트리트에 비례해 커진다
-    bf = max(0.0, bias(prof, 'bluff_fear'))
+    bf = max(0.0, bias(prof, 'bluff_fear', street))
     if bf:
         w = {'flop': 0.35, 'turn': 0.75, 'river': 1.0}.get(street, 0.6)
         m *= 1.0 + 0.30*bf*w*min(1.5, max(0.5, size_frac/0.6))
