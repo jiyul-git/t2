@@ -936,9 +936,22 @@ class HandRun:
                         else:
                             amt = _max_target
                     if a in ('bet', 'raise'):
-                        # 클램프 이후의 값이 **실제로 테이블에 올라간 액수**다.
-                        # 기록이 클램프 앞에서 찍히면 검증할 때 집행값을 못 본다.
+                        # 클램프 이후의 final legal target을 먼저 만든다.
                         _sent = max(amt, r2.current+r2.min_raise) if r2.current else amt
+                        _pre_effective_target = _sent
+                        _ea = RU.effective_allin_v1(
+                            _sent, _actor_cap, _opp_cap_max,
+                            _contrib_before, pot_live)
+                        _ea_applied = bool(_ea['effective'] and not _replayed)
+                        _allin_execution_mode = (
+                            'shove' if _ea_applied else
+                            'replay' if _replayed else
+                            'none')
+                        # v1 실행 모드는 shove 하나뿐이다. 미래의 intentional
+                        # leave-behind는 이 **분류 이후** 별도 실행 모드로 들어온다.
+                        if _ea_applied:
+                            _sent = _actor_cap
+
                         _target_capped = min(_actor_cap, _sent)
                         _increment = max(0, _target_capped - _contrib_before)
                         _pot_after = pot_live + _increment
@@ -1036,6 +1049,26 @@ class HandRun:
                                                    if a in ('bet', 'raise') else None),
                                   'post_spr_effective': (_post_spr_effective
                                                          if a in ('bet', 'raise') else None),
+                                  # effective-all-in v1 provenance.
+                                  'pre_effective_target': (_pre_effective_target
+                                                           if a in ('bet', 'raise') else None),
+                                  'effective_allin_candidate': (
+                                      _ea.get('effective')
+                                      if a in ('bet', 'raise') else None),
+                                  'effective_allin_actor': (
+                                      _ea.get('actor_effective')
+                                      if a in ('bet', 'raise') else None),
+                                  'effective_allin_commit': (
+                                      _ea.get('commit_frac')
+                                      if a in ('bet', 'raise') else None),
+                                  'effective_allin_post_spr': (
+                                      _ea.get('post_spr')
+                                      if a in ('bet', 'raise') else None),
+                                  'effective_allin_applied': (
+                                      _ea_applied if a in ('bet', 'raise') else None),
+                                  'allin_execution_mode': (
+                                      _allin_execution_mode
+                                      if a in ('bet', 'raise') else None),
                                   'why_by_street': (_pl2.get('why_by_street') or {}
                                                     ).get(street),
                                   'tocall': tc, 'pot': pot_live,
