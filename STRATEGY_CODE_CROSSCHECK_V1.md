@@ -210,3 +210,27 @@ permutation.  Full raises are recursive; multiway folds/calls/raises are state u
 The current engine's largest gap is **not legal action coverage**.  `Round` is already strong.
 The gap is preservation of opponent-specific strategic information from the public action story
 into judgment and response planning.
+
+
+# Per-opponent range preservation fix — implemented, pending runtime verification
+
+Implemented on this audit branch:
+
+- current-street `r2.log` actions are now included when narrowing each opponent's range;
+- ranges are preserved as `opp_ranges[seat]` instead of only being unioned;
+- multiway equity uses distinct opponent pools through `bot.equity_vs_combos`;
+- `make_plan`, `refresh`, board-change replan, and facing-bet equity can receive those pools;
+- per-opponent signatures detect redistribution even when the union of combos is unchanged;
+- legacy union `opp_range` remains temporarily for consumers not yet redesigned.
+
+Important remaining scope:
+
+- several exploit/plan consumers still intentionally use one `_main` opponent estimate;
+- blocker/nut/range-advantage formulas still use the legacy union where their correct multiway
+  aggregation semantics have not yet been specified;
+- side-pot-specific strategic weighting is not solved by this patch.
+
+Those are **not** silently marked fixed.  The patch fixes the information-loss boundary first so
+later strategy work can consume opponent-specific state without reconstructing it.
+
+Targeted verifier: `tools/verify_multiway_range_preservation.py`.
