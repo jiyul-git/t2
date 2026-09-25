@@ -247,7 +247,8 @@ def board_changed(prev_board, board):
 
 def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, street,
                 seed, n_opp, behind, prev_board,
-                oop_vs_aggr=None, oop_legacy_abs=None, initiative=True):
+                oop_vs_aggr=None, oop_legacy_abs=None, initiative=True,
+                opp_ranges=None):
     if board_changed(prev_board, board):
         # 보드 변화로 계획을 다시 세워도 **현재 의사결정 문맥**을 잃으면 안 된다.
         # opp_* 는 이전 계획 snapshot에서 이어지고, 위치/initiative 세 값은
@@ -260,7 +261,7 @@ def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, st
                            opp_stack_bb=state.get('opp_stack_bb'),
                            oop_vs_aggr=oop_vs_aggr,
                            oop_legacy_abs=oop_legacy_abs,
-                           initiative=initiative)
+                           initiative=initiative, opp_ranges=opp_ranges)
         new['revised'] = True
         # 이전 스트리트들의 의도·이탈 기록은 계획의 이력이다. 새 계획을 세워도 유지한다.
         # (make_plan 이 새 dict 를 반환하므로 명시적으로 옮기지 않으면 사라진다)
@@ -268,7 +269,7 @@ def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, st
         # 계획 시작 시점이 사라져 **예산(budget_left) 기준점이 리셋**된다.
         # update_plan 의 승계 목록과 동일하게 유지한다.
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
-                  'plan_since', '_rsig'):
+                  'plan_since', '_rsig', '_opps_sig'):
             if state.get(k) is not None:
                 new[k] = state[k]
         return new
