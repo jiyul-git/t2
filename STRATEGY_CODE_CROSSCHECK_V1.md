@@ -65,3 +65,148 @@ base profile
 Facing a new bet/raise is a new planning event, not an execution override.
 
 No production strategic behavior changed by this document.
+
+
+# Opponent-action pass
+
+Compared against `OPPONENT_ACTION_COVERAGE_V1.md`.
+
+## What the current engine already preserves well
+
+### Legal betting-round recursion: KEEP
+
+`runner.Round` already represents the legal action loop rather than assuming one action per street.
+
+It preserves:
+
+- repeated full raises;
+- minimum raise amount;
+- action reopening after a full raise;
+- incomplete all-in raises that do not reopen closed raise rights;
+- all-in calls;
+- no dead raise when every other live player is all-in;
+- action order;
+- uncalled excess return;
+- contestable contribution for unequal stacks/side pots.
+
+This is a strong execution foundation.  The strategic layer does not need to recreate poker legality.
+
+### Per-actor public action history exists: KEEP
+
+`session.HandRun._acts_of(seat)` can recover each opponent's observed postflop sequence
+with street/action/size.  `ranges.perceived_range` receives that per-actor history before the
+ranges are combined.
+
+So the raw public story is not absent.
+
+## Structural losses after the story is observed
+
+### MULTIWAY-1: opponent-specific ranges are flattened before core plan/equity
+
+In `session`, each live opponent is first assigned and narrowed an individual range, but the
+combos are then appended into one `opp_r` union.
+
+`plan._eq_vs(hero, board, opp_range, n_opp)` explicitly treats `opp_range` as
+**one opponent's range** and duplicates that same pool `n_opp` times.
+
+Therefore a spot such as:
+
+```
+tight player bets
+loose player calls
+hero acts
+```
+
+does not remain as two distinct opponent pools inside the core plan equity calculation.
+It becomes one combined pool copied for both opponents.
+
+Status: ARCH_MISMATCH / multiway information collapse.
+
+Required target:
+`opp_ranges = {pid/seat -> perceived range}` or an ordered list of distinct pools, preserved
+through judgment/equity instead of flattening to one union.
+
+### MULTIWAY-2: one "main opponent" drives several exploit inputs
+
+For planning, `session` chooses one `_main` opponent:
+
+- current aggressor if available;
+- otherwise the deepest remaining opponent.
+
+`opp_est` and `opp_stack_bb` are then mainly taken from this one player.
+
+That is insufficient for multiway stories where:
+
+- bettor is loose but caller is very strong;
+- one opponent is short all-in while another has a live side-pot stack;
+- a player behind can still raise;
+- different opponents have opposite fold/call tendencies.
+
+Status: ARCH_MISMATCH / single-opponent reduction.
+
+### MULTIWAY-3: facing-bet equity applies bettor update to an aggregated pool
+
+Inside `act_with_plan`, when facing a bet:
+
+`bet_r = perceived_range(opp_range, [(street,'bet',sz)], profile)`
+
+is applied to the already aggregated `opp_range`, then equity uses:
+
+`[bet_r] + [opp_range] * (n_opp-1)`.
+
+This distinguishes "one bettor + other opponents" only syntactically; the underlying pools are
+not tied to the actual bettor/callers' separate ranges.
+
+Status: ARCH_MISMATCH.
+
+### MULTIWAY-4: observed call/raise sequence is not yet a first-class response-plan input
+
+The full per-seat history exists, but `calldown_need/decide_response` mostly receives:
+
+- one aggregated opponent range;
+- one main opponent estimate;
+- number of opponents / players behind;
+- current to-call and line bluff prior.
+
+Thus strategic distinctions such as:
+
+- bet -> call -> hero;
+- bet -> raise -> hero;
+- check -> bet -> call -> hero;
+- hero call -> later raise -> hero;
+
+are not represented as explicit **sequence classes** in the response-plan object because there is
+no explicit response-plan object yet.
+
+Status: ARCH_MISMATCH / target for response-plan redesign.
+
+## Opponent actions and fresh re-planning
+
+There is an important partial success:
+
+- every time action returns to a bot, `session` recomputes current perceived opponent ranges;
+- `update_plan` runs again;
+- if the opponent-range signature moved, `refresh` can update range-dependent state;
+- if facing a wager, `act_with_plan -> calldown_need -> decide_response` makes a fresh response.
+
+So later opponent bets/raises are not simply ignored.
+
+However, under the V2 invariant the fresh response should be represented explicitly as:
+
+```
+new opponent event
+-> judgment
+-> response-plan
+-> action
+```
+
+rather than judgment and action being fused inside `decide_response`.
+
+## Opponent-action audit result
+
+Canonical strategic event classes can be covered without enumerating every literal hand
+permutation.  Full raises are recursive; multiway folds/calls/raises are state updates.
+
+The current engine's largest gap is **not legal action coverage**.  `Round` is already strong.
+The gap is preservation of opponent-specific strategic information from the public action story
+into judgment and response planning.
