@@ -227,3 +227,8 @@ Same unresolved V2 sizing-boundary problem as F1.
 3. delayed-cbet skill also affects delayed value range;
 4. delayed-cbet observation does not increment barrel counters;
 5. actual execution provenance is wired and preserved across plan revision.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_f2_checkthrough.py` reported `4/4 F2 structural checks passed`.
