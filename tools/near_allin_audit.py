@@ -107,6 +107,13 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
             _obs_list = _mj_groups.get((it.get('street'), seat), [])
             _mj = _obs_list[_idx] if 0 <= _idx < len(_obs_list) else {}
             _ms = (_mj.get('money_signals') or {}) if _mj else {}
+            _snap = getattr(field, '_near_cycle_snapshot', {}) or {}
+            _snap_stacks = list(_snap.get('stacks') or [])
+            _actor_start = (
+                float(_mj.get('stack_start_bb') or 0) * bb if _mj else 0.0)
+            _snap_shorter = sorted(x for x in _snap_stacks if x < _actor_start)
+            _snap_med = (
+                _snap_shorter[len(_snap_shorter)//2] if _snap_shorter else None)
             rows.append({
                 'seed': seed,
                 'hand_no': int(getattr(field, 'hand_no', 0) or 0),
@@ -176,6 +183,21 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
                 'money_urgency_objective': _ms.get('urgency_objective'),
                 'money_urgency': _ms.get('urgency'),
                 'money_commitment_budget': _ms.get('commitment_budget'),
+                # 같은 field-hand cycle 시작 시점의 스냅샷. 테이블 순서에 따라
+                # money-jump 상태가 달라지는지 계측하기 위한 audit-only 값.
+                'cycle_remaining_start': _snap.get('remaining'),
+                'cycle_players_to_jump_start': _snap.get('players_to_jump'),
+                'cycle_remaining_drift': (
+                    (_snap.get('remaining') - _mj.get('remaining'))
+                    if _mj and _snap.get('remaining') is not None
+                    and _mj.get('remaining') is not None else None),
+                'cycle_n_shorter_start': len(_snap_shorter) if _mj else None,
+                'cycle_n_shorter_drift': (
+                    len(_snap_shorter) - int(_mj.get('n_shorter') or 0)
+                    if _mj else None),
+                'cycle_median_shorter_ratio_start': (
+                    _snap_med / max(1.0, _actor_start)
+                    if _mj and _snap_med is not None and _actor_start > 0 else None),
             })
 
     clear_tilt_cache()
@@ -193,6 +215,14 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
         while f.remaining() > 1 and f.hand_no < cap:
             f.hand_no += 1
             f.advance_level()
+            _rem0 = f.remaining()
+            _mj0 = FS.CTX.money_jump_context(_rem0, f.itm, f.payouts)
+            f._near_cycle_snapshot = {
+                'remaining': _rem0,
+                'players_to_jump': _mj0.get('players_to_jump'),
+                'stacks': tuple(
+                    p['stack'] for p in f.players.values() if p['stack'] > 0),
+            }
             for _tid, tb in list(f.tables.items()):
                 if tb.n() >= 2:
                     f._play_table(tb)
@@ -244,6 +274,9 @@ def write_rows(path, rows):
         'money_ladder_buffer', 'money_waiting_feasibility',
         'money_self_preservation_objective', 'money_self_preservation',
         'money_urgency_objective', 'money_urgency', 'money_commitment_budget',
+        'cycle_remaining_start', 'cycle_players_to_jump_start',
+        'cycle_remaining_drift', 'cycle_n_shorter_start',
+        'cycle_n_shorter_drift', 'cycle_median_shorter_ratio_start',
     ]
     parent = os.path.dirname(os.path.abspath(path))
     if parent and not os.path.isdir(parent):
