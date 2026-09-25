@@ -1,6 +1,6 @@
 # Sequential audit — P6 preflop all-in / call-off / overcall / side-pot
 
-Status: CLEAR ALL-IN ROUTING/PROVENANCE DEFECTS FIXED; strategy model remains incomplete.
+Status: CLEAR ALL-IN ROUTING/PROVENANCE DEFECTS CLOSED (user-validated); strategy model remains incomplete.
 
 Reference model: judgment -> plan -> action.
 
@@ -250,3 +250,8 @@ until P6-B/P6-C/P6-D are implemented.
 4. short all-in with a live responder does not incorrectly force fold/call-only routing;
 5. contestable contribution excludes unreachable side-pot chips;
 6. P6 context survives in preflop provenance.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): `tools/verify_p6_calloff.py` reported `5/5 P6 structural checks passed` after correcting the verifier's pre-action contestable-pot expectation.
