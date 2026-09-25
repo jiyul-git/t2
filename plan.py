@@ -1131,6 +1131,18 @@ def set_intent(state, street, intent):
     return st
 
 
+def record_response_plan(state, street, response):
+    """상대 액션 뒤 새 judgment가 만든 **현재 액션 계획**을 보존한다.
+
+    line plan(value_2street 등)과 별개다. 같은 스트리트에서
+    bet -> call -> raise처럼 새 정보가 들어오면 response plan도 새로 생긴다.
+    """
+    rows = state.setdefault('response_plans', {})
+    rows.setdefault(street, []).append(dict(response))
+    state['_last_response_plan'] = dict(response)
+    return response
+
+
 STREET_ORDER = ['flop', 'turn', 'river']
 
 # 계획 이름이 뜻하는 **예산** — 몇 스트리트를 칠 작정인가.
@@ -1306,7 +1318,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None,
                   opp_ranges=None, facing_seat=None, checked_before=False,
                   can_raise=True, checkraise_seed=None, checkraise_size_seed=None,
-                  facing_size_frac=None, hero_contrib=0, response_kind=None):
+                  facing_size_frac=None, hero_contrib=0, response_kind=None,
+                  response_context=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
@@ -1327,6 +1340,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     committed = spr(stack, pot) < 1.2          # 커밋 구간
     if response_kind is not None:
         plan_state['_last_response_kind'] = response_kind
+    if response_context is not None:
+        plan_state['_last_response_context'] = dict(response_context)
 
     if tocall > 0:
         callers = [(0.30, 5)]*max(0, n_opp-1)
@@ -1394,6 +1409,17 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 plan_state['_last_response_source'] = 'checkraise_gate'
                 why = '체크 후 새 판단 → 체크레이즈 실행'
                 plan_state.setdefault('acts', []).append(why)
+                record_response_plan(plan_state, street, {
+                    'response_kind': response_kind,
+                    'context': dict(response_context or {}),
+                    'act': 'raise',
+                    'target': _amt,
+                    'size_mult': None,
+                    'need': round(need, 4),
+                    'eq': round(eq, 4),
+                    'source': 'checkraise_gate',
+                    'why': why,
+                })
                 _trace(plan_state, street, 'response', act='raise',
                        source='checkraise_gate', response_kind=response_kind,
                        need=round(need, 3),
@@ -1412,6 +1438,17 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         _source = ('checkraise_declined' if checked_before else 'generic_response')
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
+        _rp = {
+            'response_kind': response_kind,
+            'context': dict(response_context or {}),
+            'act': act,
+            'target': None,
+            'size_mult': (round(float(mult), 4) if act == 'raise' else None),
+            'need': round(need, 4),
+            'eq': round(eq, 4),
+            'source': _source,
+            'why': why,
+        }
         _trace(plan_state, street, 'response', act=act, source=_source,
                response_kind=response_kind,
                need=round(need, 3), need_raw=round(_need_in, 3),
@@ -1435,10 +1472,20 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             # amt를 단순 tocall과 비교하면 이미 넣은 칩만큼 좌표가 어긋난다.
             _call_target = _hc + float(tocall)
             if amt <= _call_target:
+                _rp['act'] = 'call'
+                _rp['target'] = float(_call_target)
+                _rp['why'] = _rp['why'] + ' | raise target <= call target → call'
+                record_response_plan(plan_state, street, _rp)
                 return ('call', tocall), eq, need
+            _rp['target'] = int(amt)
+            record_response_plan(plan_state, street, _rp)
             return ('raise', int(amt)), eq, need
         if act == 'call':
+            _rp['target'] = float(hero_contrib or 0) + float(tocall)
+            record_response_plan(plan_state, street, _rp)
             return ('call', tocall), eq, need
+        _rp['target'] = float(hero_contrib or 0)
+        record_response_plan(plan_state, street, _rp)
         return ('fold', 0), eq, need
 
     # ---------- 무저항(tocall==0): 순수 집행 ----------
