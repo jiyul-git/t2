@@ -42,3 +42,24 @@ python3 tools/regress.py check --baseline current
 이 regression은 기존 고정 fixture의 전 시드 지문이 보존됐음을 뜻한다.
 A5 4-B에서 확인한 rare board_changed/block interaction 자체를 다시 검증하는 것은
 별도 focused post-fix check로 닫는다.
+
+
+## Post-fix focused check note
+
+Full R2 clean capture on the fixed production code reached all 789 board_changed events.
+The process then failed during counterfactual replay, not during engine capture:
+
+```
+TypeError: _candidate_revise_factory.<locals>.candidate()
+got an unexpected keyword argument 'oop_vs_aggr'
+```
+
+Cause: analysis harness `tools/replan_provenance.py` still monkeypatched the old
+`runner.revise_plan` signature after production added the three context kwargs.
+This is a tooling compatibility bug, not a production engine error.
+
+The harness signature was updated in commit
+`b61fd688a607b29cd1d6e5536b13f846c955a6ce`.
+A fast static/runtime-source contract check was added as
+`tools/replan_context_contract_check.py` so the multi-hour tournament capture
+does not need to be repeated merely to verify the forwarding contract.
