@@ -60,6 +60,7 @@ class Book:
             'hands': 0, 'vpip': 0, 'pfr': 0,
             'cbet_opp': 0, 'cbet': 0,
             'barrel_opp': 0, 'barrel': 0,
+            'delayed_cbet_opp': 0, 'delayed_cbet': 0,
             'showdowns': 0, 'sd_strong': 0, 'sd_weak': 0,
             'facing_bet': 0, 'fold_to_bet': 0,
             # 스트리트별 폴드 — '플랍은 잘 치는데 턴에서 멈추는' 사람을 구분한다
@@ -197,7 +198,7 @@ class Book:
                 if pfr: r['rfi_did'] += 1
 
     def observe_postflop(self, observers, actor, action, is_cbet_spot, is_barrel_spot,
-                         facing_bet=False, street=None):
+                         facing_bet=False, street=None, is_delayed_cbet_spot=False):
         for i in observers:
             if i == actor: continue
             r = self.rec(i, actor)
@@ -213,6 +214,9 @@ class Book:
             if is_barrel_spot:
                 r['barrel_opp'] += 1
                 if action in ('bet', 'raise'): r['barrel'] += 1
+            if is_delayed_cbet_spot:
+                r['delayed_cbet_opp'] += 1
+                if action in ('bet', 'raise'): r['delayed_cbet'] += 1
             if action in ('bet', 'raise'): r['agg_actions'] += 1
             elif action in ('check', 'call'): r['passive_actions'] += 1
 
@@ -258,6 +262,8 @@ def estimate(book, observer, target, observer_type, rng=None):
     pfr = r['pfr']/max(1, r['hands'])
     cbet = r['cbet']/max(1, r['cbet_opp']) if r['cbet_opp'] else PRIOR['cbet']
     barrel = r['barrel']/max(1, r['barrel_opp']) if r['barrel_opp'] else PRIOR['barrel']
+    delayed = (r['delayed_cbet']/max(1, r['delayed_cbet_opp'])
+               if r.get('delayed_cbet_opp') else PRIOR['barrel'])
     agg = r['agg_actions']/max(1, r['agg_actions']+r['passive_actions'])
     ftb = (r['fold_to_bet']/r['facing_bet']) if r.get('facing_bet') else PRIOR['fold_to_bet']
     def _rate(num, den, prior):
@@ -295,10 +301,12 @@ def estimate(book, observer, target, observer_type, rng=None):
     cap = o['memory']                      # 기억 한계는 기회 횟수에도 적용
     n_cb = min(r['cbet_opp'], cap)
     n_br = min(r['barrel_opp'], cap)
+    n_dc = min(r.get('delayed_cbet_opp', 0), cap)
     vpip_e = _shrink(vpip, n, PRIOR['vpip'], o['skill'], o['overconf'])
     pfr_e  = _shrink(pfr,  n, PRIOR['pfr'],  o['skill'], o['overconf'])
     cbet_e = _shrink(cbet, n_cb, PRIOR['cbet'], o['skill'], o['overconf'])
     bar_e  = _shrink(barrel, n_br, PRIOR['barrel'], o['skill'], o['overconf'])
+    delayed_e = _shrink(delayed, n_dc, PRIOR['barrel'], o['skill'], o['overconf'])
     agg_e  = _shrink(agg, n, 0.35, o['skill'], o['overconf'])
     ftb_e  = _shrink(ftb, min(r.get('facing_bet', 0), cap), PRIOR['fold_to_bet'],
                      o['skill'], o['overconf'])
@@ -323,7 +331,10 @@ def estimate(book, observer, target, observer_type, rng=None):
     jitter = lambda x: max(1.0, min(10.0, x*(1 + rng.uniform(-ns, ns))))
     conf = min(1.0, (n*o['skill'])/25.0)
     _sh = lambda v, d, pr: _shrink(v, min(r.get(d, 0), cap), pr, o['skill'], o['overconf'])
-    return {'vpip': vpip_e, 'pfr': pfr_e, 'cbet': cbet_e, 'barrel': bar_e, 'ftb': ftb_e,
+    return {'vpip': vpip_e, 'pfr': pfr_e, 'cbet': cbet_e, 'barrel': bar_e,
+            'delayed_cbet': delayed_e,
+            'delayed_cbet_n': r.get('delayed_cbet_opp', 0),
+            'ftb': ftb_e,
             'ftb_flop': _sh(ftb_f, 'fb_flop', PRIOR['fold_to_bet']),
             'ftb_turn': _sh(ftb_t, 'fb_turn', PRIOR['fold_to_bet']),
             'ftb_river': _sh(ftb_r, 'fb_river', PRIOR['fold_to_bet']),
@@ -429,7 +440,10 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
     _ec = estimate_concepts(e, observer_type, rng)
     return {'bluff': e['bluff'], 'aggr': e['aggr'], 'tight': e['tight'],
             'vpip': e['vpip'], 'pfr': e['pfr'],
-            'cbet': e['cbet'], 'barrel': e['barrel'], 'ftb': e['ftb'],
+            'cbet': e['cbet'], 'barrel': e['barrel'],
+            'delayed_cbet': e.get('delayed_cbet'),
+            'delayed_cbet_n': e.get('delayed_cbet_n'),
+            'ftb': e['ftb'],
             'ftb_flop': e.get('ftb_flop'), 'ftb_turn': e.get('ftb_turn'),
             'ftb_river': e.get('ftb_river'),
             'pf_3bet': e.get('pf_3bet'), 'pf_fold_to_3bet': e.get('pf_fold_to_3bet'),
