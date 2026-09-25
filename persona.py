@@ -14,7 +14,8 @@ EXEC = ['bluff', 'semibluff',
         'delayed_cbet', 'equity_denial', 'stackoff', 'reraise']
 # 계산 개념: 공부량에 좌우되는 이론 능력
 CALC = ['outs', 'potodds', 'spr', 'range_read', 'blocker', 'icm', 'board_texture', 'sizing_tell', 'pf_range', 'positional', 'stack_decay', 'open_size', 'pf_defend', 'range_merge', 'multiway', 'fold_equity']
-# 관측/인지 개념. 아직 행동에는 연결하지 않고 자연상태 측정에만 쓴다.
+# 관측/인지 개념. money_jump은 오픈 레인지에는 연결됐고,
+# 오픈 사이즈/림프 형태는 아직 shadow라 현재는 부분 배선 상태다.
 PERCEPTION = ['money_jump']
 # 기질 축: 능력이 아니라 성격
 TEMPER = ['aggression', 'looseness', 'gamble', 'tilt_prone', 'tilt_recovery',
