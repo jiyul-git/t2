@@ -990,6 +990,11 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
 
     # --- 밸류 계획 ---
     p = 0.30 + 0.058*a + 0.018*profile.get('gamble', 5)
+    # 지연 씨벳은 블러프만의 기술이 아니다. 플랍 체크 범위에는 밸류도
+    # 포함돼야 하므로, 실제 플랍 체크 후 턴 밸류벳에도 같은 delayed-cbet
+    # 숙련도 배수를 적용한다. 한쪽에만 걸면 턴 delayed range가 블러프 쪽으로
+    # 비정상적으로 기운다.
+    p *= _dc_boost
     if has_c and rel < 0.85:
         p *= (0.55 + 0.09*PS.sk(profile, PS.street_concept('thin_value', street)))
     # derive()['value'] 는 구형 호환/설명 필드다.
