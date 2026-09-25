@@ -164,6 +164,26 @@ def _facing_wager_context(rnd, aggressor, pot_start):
     return latest
 
 
+def _observed_postflop_action(meta):
+    """행동 문자열이 아니라 규칙 의미로 postflop read 액션을 정규화."""
+    if meta.get('raised'):
+        return 'raise'
+    if meta.get('allin_call'):
+        return 'call'
+    return meta.get('action')
+
+
+def _barrel_count(full_meta, current_meta, seat, current_street):
+    """상대가 공격한 **postflop street 수**. 현재 street도 포함."""
+    streets = {
+        m.get('street') for m in (full_meta or [])
+        if m.get('seat') == seat and m.get('raised') and m.get('street')
+    }
+    if any(m.get('seat') == seat and m.get('raised') for m in (current_meta or [])):
+        streets.add(current_street)
+    return max(1, len(streets))
+
+
 def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                         facing_seat=None, decision_context=None,
                         facing_read=None):
@@ -1062,14 +1082,9 @@ class HandRun:
                                                random.Random(self._dseed(s, street, 'est2', aggressor)))
                     # 배럴 수는 액션 문자열 개수가 아니라 **공격한 스트리트 수**다.
                     # 현재 스트리트 액션도 full_log 에 아직 안 들어갔으므로 포함한다.
-                    _aggr_streets = {
-                        m.get('street') for m in (getattr(self, 'full_action_meta', []) or [])
-                        if m.get('seat') == aggressor and m.get('raised')
-                    }
-                    if any(m.get('seat') == aggressor and m.get('raised')
-                           for m in r2.action_meta):
-                        _aggr_streets.add(street)
-                    n_barrels = max(1, len([x for x in _aggr_streets if x]))
+                    n_barrels = _barrel_count(
+                        getattr(self, 'full_action_meta', []),
+                        r2.action_meta, aggressor, street)
                     sz_frac = ((_facing_ctx or {}).get('size_frac')
                                if _facing_ctx else None)
                     if sz_frac is None:
@@ -1390,10 +1405,7 @@ class HandRun:
                               and not _prev_aggr_bet)
                 # 관측 의미는 UI 문자열이 아니라 규칙 사건이다.
                 # allin call은 call, allin raise는 raise로 학습해야 한다.
-                _obs_action = (
-                    'raise' if m.get('raised') else
-                    'call' if m.get('allin_call') else
-                    a_)
+                _obs_action = _observed_postflop_action(m)
                 h.book.observe_postflop(
                     _ord, _pid(x), _obs_action, is_cbet, is_barrel,
                     facing_bet=_bet_seen, street=street,
