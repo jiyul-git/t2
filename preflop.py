@@ -563,7 +563,8 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
                     raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
                     exploit=None, bf=1.0,
                     payout_flat=0.0, reentry=False, progress=0.0,
-                    seats=8, ante=True, opener_allin=False, can_raise=True):
+                    seats=8, ante=True, opener_allin=False, can_raise=True,
+                    pot_bb=None, to_call_bb=None):
     """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
 
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
@@ -571,11 +572,23 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     """
     # 올인 대면은 별도 경로다. 포스트플랍이 없으므로 계산이 다르다.
     _st = stack_bb if stack_bb is not None else bb
-    if open_bb >= _st * 0.92:
-        _a, _cap = calloff_decision(prof, def_pos, hand, bb, raise_level,
-                                    1.5 + open_bb*(1 + n_callers), open_bb,
-                                    bf, opener_pos, open_bb, exploit, n_callers,
-                                    seats, ante)
+    # 두 종류를 구분한다.
+    # 1) 내가 현재 가격을 받으면 사실상 내 스택이 전부 들어가는 call-off.
+    # 2) 상대가 짧게 all-in이고, 더 이상 응답 가능한 live stack이 없어
+    #    전략적으로 fold/call만 가능한 순수 call-off.
+    #
+    # 예전에는 (1)만 봐서 hero 100bb vs villain 20bb shove 같은 HU 상황이
+    # 일반 defend 경로로 흘렀다.
+    _hero_calloff = open_bb >= _st * 0.92
+    _pure_short_shove = bool(opener_allin and not can_raise)
+    if _hero_calloff or _pure_short_shove:
+        _pot = float(pot_bb if pot_bb is not None
+                     else 1.5 + open_bb*(1 + n_callers))
+        _tc = float(to_call_bb if to_call_bb is not None else open_bb)
+        _a, _cap = calloff_decision(
+            prof, def_pos, hand, bb, raise_level,
+            _pot, _tc, bf, opener_pos, open_bb, exploit, n_callers,
+            seats, ante)
         return _a
     # V2: 현재 감정은 plan selector에서만 소비한다.
     # 여기 있던 variance_seek 계산은 결과에 사용되지 않는 dead value 였다.
@@ -797,7 +810,12 @@ def calloff_cap(prof, def_pos, opener_pos, bb, open_bb, raise_level,
 def calloff_decision(prof, def_pos, hand, bb, raise_level, pot, tocall,
                      bubble_factor=1.0, opener_pos='CO', open_bb=None,
                      exploit=None, n_callers=0, seats=8, ante=True):
-    """올인 대면 콜/폴드. 반환: (액션, 문턱)"""
+    """올인 대면 콜/폴드. 반환: (액션, 문턱)
+
+    현재 cap 모델은 아직 percentile 기반이며 pot/tocall을 전략식에 직접
+    사용하지 않는다. 두 값은 호출 문맥을 정확히 보존하기 위해 받는다.
+    pot-odds/equity 직접 비교는 P6 전략 리팩터링의 남은 항목이다.
+    """
     cap = calloff_cap(prof, def_pos, opener_pos, bb,
                       open_bb if open_bb is not None else tocall,
                       raise_level, bubble_factor, exploit, n_callers,
