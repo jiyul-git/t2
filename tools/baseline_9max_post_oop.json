@@ -1,21 +1,21 @@
 {
  "fp": {
-  "3000": "65378bc3b1235dfd",
-  "3001": "f090ec58b359f412",
-  "3002": "f34a5099c689c83c",
-  "3003": "7804df1ee8d53d53",
-  "3004": "91dc80039cce055b",
-  "3005": "43bf858690bca625"
+  "3000": "e049b88cbd9158c6",
+  "3001": "77a7d20543886a5c",
+  "3002": "aed27043185cb777",
+  "3003": "fb927a83de13dedf",
+  "3004": "f70f4052baacfa8c",
+  "3005": "78b02d8020790589"
  },
  "stats": {
-  "n": 1390,
+  "n": 1366,
+  "vpip": 283,
   "hands": 180,
-  "vpip": 265,
-  "pfr": 158,
-  "flop": 80
+  "flop": 85,
+  "pfr": 164
  },
- "rev": "60e16d8",
- "note": "post-0d202c5 postflop position semantics; historical=baseline_9max.json (7e40ba0, sealed Phase C 024ab5b)",
+ "rev": "2a53584",
+ "note": "decision architecture through F7; intentional behavior changes attributed through 2a53584",
  "seeds": [
   3000,
   3001,
