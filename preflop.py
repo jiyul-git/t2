@@ -285,7 +285,9 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 간다. 포스트플랍이라는 스킬 구간을 없애 결과를
     # 카드에 수렴시키는 것이다. 못 이기니까 운으로 가는 것.
-    vs = PS.variance_seek(prof, tilt, field_q, bb, bf, payout_flat, reentry, progress) if prof.get('concepts') else 0.0
+    # 현재 emotion/tilt 는 V2에서 PLAN 선택 단계에만 들어가야 한다.
+    # 이 함수의 기존 variance_seek 계산은 결과에 한 번도 쓰이지 않는 dead value 였다.
+    # 전역 judgment/plan 분리 전까지 여기서 가짜 감정 경로를 유지하지 않는다.
     # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
     # 뒤 사람의 성향(3벳 위협)과 스택(리쇼브 위협)은 다른 압력이다.
     # 후자는 hotzone_pressure 가 재는데 호출부가 없어 죽어 있었다.
@@ -643,15 +645,26 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     w_raise = logit(r, tp, max(0.015, tp*0.35))
     w_raise *= (0.35 + 0.65*max(0.0, 1.0 - r/max(1e-6, tp)))   # tp 안에서 강도 비례
     w_raise *= (0.55 + 0.085*a)
-    if (prof.get('concepts') and PS.sk(prof,'thin_value') < 3.5 and prof['temper']['aggression'] < 4.5) or \
-       (not prof.get('concepts') and A.ARCHETYPES.get(prof.get('type'), (0,)*7+('reg',))[6] == 'fish'):
-        w_raise *= (0.30 + 0.5*min(1.0, r/0.10))   # 수동형은 강할수록 오히려 덜 올림
+
+    # 프리플랍 프리미엄 플랫/슬로우플레이 성향.
+    # 예전에는 여기서 postflop thin_value 개념을 읽었다. 그 결과
+    # thin_value_turn 숙련도가 프리플랍 3벳/콜 구성을 바꾸는 도메인 누수가 있었다.
+    # 프리미엄을 숨기는 것은 현재 도메인에 이미 있는 stable preference
+    # slowplay_taste 와 aggression 으로 표현한다.
+    _pf_slow = 0.0
+    if prof.get('concepts'):
+        _taste = PS.temper(prof, 'slowplay_taste', 5.0) / 10.0
+        _passive = max(0.0, min(1.0, (5.0 - a) / 5.0))
+        _premium = max(0.0, min(1.0, (0.10 - r) / 0.10))
+        _pf_slow = _passive * (0.35 + 0.65*_taste) * _premium
+    elif A.ARCHETYPES.get(prof.get('type'), (0,)*7+('reg',))[6] == 'fish':
+        _pf_slow = max(0.0, min(1.0, (0.10 - r) / 0.10)) * 0.55
+    w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)
+
     # 계속 참가 가중치
     w_cont = logit(r, tot, max(0.02, (tot-tp)*0.35))
     w_call = max(0.0, w_cont - w_raise*0.6) * (1.5 - 0.055*a)
-    if (prof.get('concepts') and PS.sk(prof,'thin_value') < 3.5 and prof['temper']['aggression'] < 4.5) or \
-       (not prof.get('concepts') and A.ARCHETYPES.get(prof.get('type'), (0,)*7+('reg',))[6] == 'fish'):
-        w_call *= 1.9                              # 수동형은 콜로 받는다
+    w_call *= 1.0 + 0.90*_pf_slow
     w_fold = max(0.0, 1.0 - w_cont)
     # 경계 절단: 프리미엄은 폴드 없음, 쓰레기는 3벳 없음
     if r <= 0.03:  w_fold = 0.0                 # AA/KK급은 폴드 없음
