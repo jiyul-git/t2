@@ -18,7 +18,8 @@
 9맥스 UTG 와 6맥스 UTG 가 같은 폭이었다.
 
 SB 만 예외다. 뒤에 1명이라는 점은 BTN 다음이지만, 포스트플랍이 항상
-아웃오브포지션이고 콜 옵션이 없다(리스틸 대상). 별도 값을 둔다.
+아웃오브포지션이고 unopened pot에서 raise/fold뿐 아니라 complete(림프)도 가능하다.
+RFI 기준값은 raise 레인지의 기준이므로 SB는 별도 값을 둔다.
 """
 
 import table as _TB
