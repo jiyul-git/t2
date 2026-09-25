@@ -60,3 +60,34 @@ semantic correction in `plan.py`.
 
 Run the frozen regression without updating its baseline.  Any mismatch must be traced to
 one of the two corrected semantic paths before acceptance.
+
+
+## Frozen regression closure
+
+Frozen regression was run without updating the baseline.
+
+```
+baseline: VPIP 19.1% / PFR 11.4% / flop 44.4%
+current : VPIP 19.1% / PFR 11.4% / flop 44.4%
+mismatch seeds: [3001, 3002]
+```
+
+This mismatch set is exactly the already-documented inherited set:
+
+- seed 3001: planned-allin preservation change;
+- seed 3002: effective-allin v1 change.
+
+`EFFECTIVE_ALLIN_V1_RESULT.md` explicitly isolated v1 fresh A/B to seed 3002 while
+seed 3001 remained inherited.  `UNCALLED_EXCESS_RESULT.md` separately documents seed
+3001 as pre-existing.
+
+Therefore the blockbet/donk semantic correction adds **no new frozen-fixture mismatch**.
+The frozen baseline remains unchanged.
+
+## Closure
+
+Accepted.
+
+The no-aggressor legacy fallback is removed from blockbet eligibility and donk
+suppression, while historical provenance remains available.  No further work is required
+for this item unless a new semantic failure appears.
