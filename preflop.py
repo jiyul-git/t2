@@ -283,11 +283,14 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
-    # 프리플랍 쇼브로 간다. 포스트플랍이라는 스킬 구간을 없애 결과를
-    # 카드에 수렴시키는 것이다. 못 이기니까 운으로 가는 것.
-    # 현재 emotion/tilt 는 V2에서 PLAN 선택 단계에만 들어가야 한다.
-    # 이 함수의 기존 variance_seek 계산은 결과에 한 번도 쓰이지 않는 dead value 였다.
-    # 전역 judgment/plan 분리 전까지 여기서 가짜 감정 경로를 유지하지 않는다.
+    # 프리플랍 쇼브로 갈 수 있다. 이것은 open_form 의 **계획 선택** 입력이다.
+    # P3/P4의 defend_decision 에 있던 variance_seek 는 dead value 였지만,
+    # 여기 값은 실제로 open_form(vs=...) 이 소비한다. 제거하면 NameError가 난다.
+    # V2 기준으로도 emotion이 PLAN 선택에 들어가는 위치 자체는 맞다.
+    # (단, profile 자체가 tilted_view 인 전역 문제는 별도 리팩터링 대상.)
+    vs = (PS.variance_seek(prof, tilt, field_q, bb, bf,
+                           payout_flat, reentry, progress)
+          if prof.get('concepts') else 0.0)
     # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
     # 뒤 사람의 성향(3벳 위협)과 스택(리쇼브 위협)은 다른 압력이다.
     # 후자는 hotzone_pressure 가 재는데 호출부가 없어 죽어 있었다.
