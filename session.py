@@ -1735,8 +1735,17 @@ class HandRun:
         # 쇼다운 관찰: 깐 패의 강도와 공격 여부
         try:
             import preflop as _pf
-            aggr_seats = {x for (_, x, a_, _) in getattr(self, 'full_log', [])
-                          if a_ in ('bet', 'raise')}
+            # postflop 공격성은 raw action 문자열이 아니라 규칙 사건으로 본다.
+            # all-in raise는 공격이고 all-in call은 공격이 아니다.
+            aggr_seats = {
+                m.get('seat') for m in (getattr(self, 'full_action_meta', []) or [])
+                if m.get('raised')
+            }
+            # preflop meta는 아직 별도 보존하지 않으므로 기존 공개 raise만 합친다.
+            aggr_seats |= {
+                x for (stt, x, a_, _) in (getattr(self, 'full_log', []) or [])
+                if stt == 'preflop' and a_ == 'raise'
+            }
             _all = [self._pid(x) for x in h.seats]
             for sd in live:
                 RD_pct = _pf.PCT[_pf.cls(h.hole[sd])]
@@ -1802,16 +1811,27 @@ class HandRun:
             else None
         )
 
-        last_aggr = next(
-            (
-                x
-                for (stt, x, a_, _) in reversed(full_log)
-                if stt == last_street
-                and x in live_set
-                and a_ in ('bet', 'raise', 'allin')
-            ),
-            None
-        )
+        _last_meta = [
+            m for m in (getattr(self, 'full_action_meta', []) or [])
+            if m.get('street') == last_street
+        ]
+        if _last_meta:
+            last_aggr = next(
+                (m.get('seat') for m in reversed(_last_meta)
+                 if m.get('seat') in live_set and m.get('raised')),
+                None)
+        else:
+            # 구형/프리플랍-only 폴백. postflop은 action_meta가 정본이다.
+            last_aggr = next(
+                (
+                    x
+                    for (stt, x, a_, _) in reversed(full_log)
+                    if stt == last_street
+                    and x in live_set
+                    and a_ in ('bet', 'raise', 'allin')
+                ),
+                None
+            )
 
         if last_aggr is not None:
             show_order = _rotate_to(
