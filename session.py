@@ -932,6 +932,20 @@ class HandRun:
                                              random.Random(self._dseed(s, street, 'est', _main)))
                         if _main is not None else None)
                 _ostk = (r2.stacks.get(_main, 0)/h.bb) if _main is not None else None
+
+                # F2/probe context. 이전 스트리트의 알려진 공격자가 실제로
+                # 체크했고 그 스트리트가 베팅 없이 끝났는지를 **현재 intent를
+                # 만들기 전에** 계산한다.
+                _prev_street = {'turn': 'flop', 'river': 'turn'}.get(street)
+                _opp_checked_prev = None
+                if (_prev_street and aggressor is not None and aggressor != s):
+                    _pr = [x for x in (getattr(self, 'full_log', []) or [])
+                           if x[0] == _prev_street]
+                    _prev_any_bet = any(x[2] in ('bet', 'raise', 'allin') for x in _pr)
+                    _aggr_checked = any(
+                        x[1] == aggressor and x[2] == 'check' for x in _pr)
+                    _opp_checked_prev = bool(_pr) and _aggr_checked and not _prev_any_bet
+
                 # 계획 갱신은 update_plan 하나로 들어간다.
                 # (예전에는 make/revise/refresh/river_fix/_allowed/attach 를
                 #  여기서 직접 순서대로 불렀고, 그 순서 의존이 이력 유실을 만들었다)
@@ -945,7 +959,8 @@ class HandRun:
                     oop_vs_aggr=_oop_a, oop_legacy_abs=_oop_legacy,
                     first=(key not in h.plans or street == 'flop'),
                     pf_seed=getattr(h, 'pf_seed', {}).get(s),
-                    bb_chips=h.bb, opp_ranges=opp_ranges)
+                    bb_chips=h.bb, opp_ranges=opp_ranges,
+                    opp_checked_prev=_opp_checked_prev)
                 # 실제 팟은 스트리트 시작 팟 + 이번 스트리트에 들어온 칩이다.
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
@@ -1023,13 +1038,6 @@ class HandRun:
                                         'est_bluff': round(est['bluff'],1),
                                         'confidence': est['confidence'], 'n': est['n'],
                                         'barrels': n_barrels, 'read': round(read_val,2)})
-                # 프로브 판정: 직전 스트리트에서 공격권자가 벳하지 않았는가.
-                _prev = {'turn': 'flop', 'river': 'turn'}.get(street)
-                if _prev and h.plans.get(key) is not None:
-                    _rows = [x for x in (getattr(self, 'full_log', []) or [])
-                             if x[0] == _prev and x[1] != s]
-                    h.plans[key]['opp_checked_prev'] = bool(_rows) and all(
-                        x[2] in ('check', 'fold') for x in _rows)
                 # 체크레이즈 라우팅 감사용: 판단에는 쓰지 않는 provenance.
                 # generic facing-bet response가 checkraise 전용 gate보다 먼저 raise를
                 # 만들어내는지 확인하려면 act_with_plan 호출 전에 체크 이력이 필요하다.
@@ -1201,6 +1209,12 @@ class HandRun:
                     r2.apply(s, a)
                     _exec_amt = 0
                 if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
+
+                # 실제 실행 이력. delayed-cbet/probe 같은 다음 스트리트 판단은
+                # 계획했던 행동이 아니라 테이블에서 실제로 일어난 행동을 봐야 한다.
+                _ea_hist = h.plans[key].setdefault('executed_actions', {})
+                _ea_hist.setdefault(street, []).append(a)
+
                 _money_jump_attach_action(_mj_obs, r2)
                 # 액션이 끝난 뒤 계획을 다시 손대지 않는다.
                 # _allowed(개념 보유 검사)는 update_plan 안에서 이미 적용됐고,
@@ -1318,12 +1332,29 @@ class HandRun:
             _ord = [_pid(x) for x in h.seats]
             _acted_once = set()
             _bet_seen = False
+            _prev_st = {'turn': 'flop', 'river': 'turn'}.get(street)
+            _prev_rows = [z for z in (getattr(self, 'full_log', []) or [])
+                          if _prev_st and z[0] == _prev_st]
+            _prev_aggr_bet = (
+                street_aggr is not None and any(
+                    z[1] == street_aggr and z[2] in ('bet', 'raise', 'allin')
+                    for z in _prev_rows))
+            _prev_checked_through = bool(_prev_rows) and not any(
+                z[2] in ('bet', 'raise', 'allin') for z in _prev_rows)
+
             for (x, a_, amt) in r2.log:
                 opp_spot = (x == street_aggr and x not in _acted_once and not _bet_seen)
                 is_cbet = (street == 'flop' and opp_spot)
-                is_barrel = (street in ('turn', 'river') and opp_spot)
-                h.book.observe_postflop(_ord, _pid(x), a_, is_cbet, is_barrel,
-                                        facing_bet=_bet_seen, street=street)
+                # barrel = 직전 스트리트에도 공격했던 사람이 다시 치는 것.
+                is_barrel = (street in ('turn', 'river') and opp_spot and _prev_aggr_bet)
+                # delayed cbet = 플랍이 체크스루된 뒤 프리플랍 공격자가 턴에 다시
+                # 첫 베팅 기회를 얻는 것. barrel 표본과 섞지 않는다.
+                is_delayed = (street == 'turn' and opp_spot and _prev_checked_through
+                              and not _prev_aggr_bet)
+                h.book.observe_postflop(
+                    _ord, _pid(x), a_, is_cbet, is_barrel,
+                    facing_bet=_bet_seen, street=street,
+                    is_delayed_cbet_spot=is_delayed)
                 if a_ in ('bet', 'raise', 'allin'):
                     _p0 = self._pot_at.get(street, 0)
                     h.book.observe_size(_ord, _pid(x),
