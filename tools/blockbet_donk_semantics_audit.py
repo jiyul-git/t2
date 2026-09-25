@@ -73,19 +73,36 @@ def main():
         ova = d.get('oop_vs_aggr')
         ola = bool(d.get('oop_legacy_abs'))
         if ova is None and ola:
-            cf = dict(d)
-            cf['oop_legacy_abs'] = False
-            out_cf = call_from_bound(orig_make, cf)
-            block_rows.append({
-                'street': d.get('street'),
-                'initiative': bool(d.get('initiative')),
-                'actual': out.get('plan'),
-                'cf': out_cf.get('plan'),
-                'actual_why': ' / '.join(out.get('why') or []),
-                'cf_why': ' / '.join(out_cf.get('why') or []),
-                'actual_block': out.get('plan') == 'block',
-                'cf_block': out_cf.get('plan') == 'block',
-            })
+            # Removing the legacy fallback can only REMOVE block eligibility; it
+            # cannot create a block plan.  Replaying every fallback call is very
+            # expensive because make_plan runs equity simulations.  Therefore
+            # only replay actual block outcomes, which are the only rows whose
+            # block membership can change under this one-way intervention.
+            if out.get('plan') == 'block':
+                cf = dict(d)
+                cf['oop_legacy_abs'] = False
+                out_cf = call_from_bound(orig_make, cf)
+                block_rows.append({
+                    'street': d.get('street'),
+                    'initiative': bool(d.get('initiative')),
+                    'actual': out.get('plan'),
+                    'cf': out_cf.get('plan'),
+                    'actual_why': ' / '.join(out.get('why') or []),
+                    'cf_why': ' / '.join(out_cf.get('why') or []),
+                    'actual_block': True,
+                    'cf_block': out_cf.get('plan') == 'block',
+                })
+            else:
+                block_rows.append({
+                    'street': d.get('street'),
+                    'initiative': bool(d.get('initiative')),
+                    'actual': out.get('plan'),
+                    'cf': out.get('plan'),
+                    'actual_why': ' / '.join(out.get('why') or []),
+                    'cf_why': '(not replayed: removing fallback cannot create block)',
+                    'actual_block': False,
+                    'cf_block': False,
+                })
         return out
 
     def aggr_wrap(*args, **kwargs):
@@ -143,6 +160,7 @@ def main():
 
     try:
         for i, seed in enumerate(seeds, 1):
+            print('[%d/%d] seed %d start' % (i, len(seeds), seed), flush=True)
             clear_tilt_cache()
             kw = dict(entries=a.entries, start_stack=a.start_stack,
                       hero_pid=0, seed=seed, hands_per_level=a.hpl)
