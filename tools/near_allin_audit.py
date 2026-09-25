@@ -85,12 +85,6 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
                 'to': float(ur.get('to') or 0),
                 'bb': bb,
             })
-        for rr in (getattr(h, 'uncalled_returns', None) or []):
-            x = dict(rr)
-            x['seed'] = seed
-            x['hand_no'] = int(getattr(field, 'hand_no', 0) or 0)
-            x['table'] = getattr(tb, 'id', None)
-            returns.append(x)
         for it in (getattr(h, 'intents', None) or []):
             action = it.get('action')
             if action not in ('bet', 'raise', 'allin'):
@@ -245,16 +239,6 @@ def main():
         for seed, e in errors[:10]:
             print('  seed %d: %s' % (seed, e))
         return 1
-
-    print()
-    print('## uncalled return')
-    by_street = collections.Counter(str(x.get('street')) for x in all_returns)
-    total_ret = sum(float(x.get('amount') or 0) for x in all_returns)
-    print('returns %d  total chips %s' % (len(all_returns), fnum(total_ret)))
-    for st, n in sorted(by_street.items()):
-        amt = sum(float(x.get('amount') or 0) for x in all_returns
-                  if str(x.get('street')) == st)
-        print('  %-8s %6d  chips %s' % (st, n, fnum(amt)))
 
     print()
     print('## uncalled return')
