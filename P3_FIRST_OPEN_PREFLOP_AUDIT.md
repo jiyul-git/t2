@@ -1,6 +1,6 @@
 # Sequential audit — P3 facing first open raise
 
-Status: CLEAR DOMAIN LEAK FIXED; strategic architecture gaps remain.
+Status: CLEAR DOMAIN LEAK CLOSED (user-validated); strategic architecture gaps remain.
 
 Reference model: judgment -> plan -> action.
 
@@ -317,3 +317,8 @@ of hidden multipliers.
 
 Targeted verifier:
 `tools/verify_p3_first_open.py`.
+
+
+## Validation
+
+User validation (Termux, 2026-09-26): compile succeeded and `tools/verify_p3_first_open.py` reported `3/3 P3 structural checks passed`.
