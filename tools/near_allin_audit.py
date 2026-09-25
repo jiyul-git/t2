@@ -133,6 +133,13 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
                 'effective_gap': it.get('effective_gap'),
                 'post_spr_own': it.get('post_spr_own'),
                 'post_spr_effective': it.get('post_spr_effective'),
+                'pre_effective_target': it.get('pre_effective_target'),
+                'effective_allin_candidate': it.get('effective_allin_candidate'),
+                'effective_allin_actor': it.get('effective_allin_actor'),
+                'effective_allin_commit': it.get('effective_allin_commit'),
+                'effective_allin_post_spr': it.get('effective_allin_post_spr'),
+                'effective_allin_applied': it.get('effective_allin_applied'),
+                'allin_execution_mode': it.get('allin_execution_mode'),
             })
 
     clear_tilt_cache()
@@ -186,6 +193,10 @@ def write_rows(path, rows):
         'contrib_before', 'actor_cap', 'opp_cap_max', 'effective_cap',
         'increment', 'pot_after', 'own_residual_post', 'effective_gap',
         'post_spr_own', 'post_spr_effective',
+        'pre_effective_target', 'effective_allin_candidate',
+        'effective_allin_actor', 'effective_allin_commit',
+        'effective_allin_post_spr', 'effective_allin_applied',
+        'allin_execution_mode',
     ]
     parent = os.path.dirname(os.path.abspath(path))
     if parent and not os.path.isdir(parent):
