@@ -260,3 +260,50 @@ Emotion may bias the newly selected response-plan there, but may not subsequentl
 selected fold/call/raise or strategic size during execution.
 
 Status: ARCHITECTURE MISMATCH / defer behavior change until situation-to-code mapping is complete.
+
+
+## 7. Locked decision-cycle invariant
+
+Every voluntary poker action must be produced by the same conceptual cycle:
+
+```
+JUDGMENT
+-> PLAN
+-> ACTION
+-> new information/event
+-> JUDGMENT
+-> PLAN
+-> ACTION
+-> ...
+```
+
+Definitions:
+
+- **Judgment** = interpret the currently available state: hand/range strength, board, position,
+  stack geometry, opponent model, tournament context, previous action story, and perception limits.
+- **Plan** = choose the strategic intention for the next decision horizon.  The horizon may be
+  multi-street (for example value_3street / bluff_2street / trap) or immediate/reactive
+  (for example bluff-catch call, value raise, river bluff check-raise).
+- **Action** = execute the already chosen plan as fold/check/call/bet/raise/shove with its strategic
+  size.  Execution may apply only legality/chip conversion; it must not invent a new strategy.
+
+A long-horizon plan is context, not an instruction that skips later judgment.  New information
+(board card, opponent bet/raise/check, player elimination/ICM change, stack change, etc.) creates
+a new judgment event, which may preserve, revise, or replace the prior plan.
+
+Emotion/tilt belongs only in the **PLAN selection/revision step**.  It may bias which candidate
+plan wins, but it does not independently mutate ACTION after the plan has been selected.
+
+### Current-code mismatch against this invariant
+
+The current engine only partially follows this cycle:
+
+- proactive postflop play has a plan state and stored street intent;
+- facing-bet responses are selected separately inside `act_with_plan -> decide_response` rather
+  than being represented as a new explicit response-plan;
+- same-street stored intent is not re-created merely because an opponent later bet/raised;
+- check-raise can be produced by both the generic response path and a later checkraise-specific gate;
+- preflop decisions return actions directly rather than a uniform explicit plan object;
+- the tilted profile is passed broadly, so emotion is not currently confined to plan selection.
+
+These are architecture findings, not yet behavior changes.
