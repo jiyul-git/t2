@@ -686,27 +686,55 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     if x < w_raise + w_call: return ('call', open_bb)
     return ('fold', 0)
 
-def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None):
+def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
+                 behind_stacks=None, behind_reads=None, seats=8, ante=True,
+                 field_avg_bb=None, erosion=0.0, field_q=0.6, bf=1.0,
+                 can_check=False):
+    """림퍼만 있는 팟에서의 판단.
+
+    iso 성향은 **레인지 폭**을 정한다. 같은 iso 성향으로 레인지를 넓힌 뒤
+    rng<t['iso'] 를 다시 걸면 같은 판단을 두 번 적용하게 되고, 그 롤에서
+    떨어진 TAG 가 AA까지 폴드할 수 있었다.
+
+    뒤 사람의 3벳/리쇼브 위협과 실제 좌석수·안테·스택도 unopened 와 같은
+    공개정보이므로 그대로 반영한다.
+    """
     t = _tr(prof)
-    thr = _open(prof, pos) * (1.0 + 0.35*t['iso'])
-    # 림퍼가 약할수록(잘 접고 수동적) 아이소를 넓힌다.
-    # 예전에는 림퍼가 누군지 전혀 보지 않았다.
+    feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
+    thr = (_open(prof, pos, seats, bb, ante)
+           * (1.0 + 0.35*t['iso'])
+           * table_pressure(behind_reads)
+           * hotzone_pressure(prof, pos, bb, behind_stacks or []))
+
+    # 림퍼가 약할수록 아이소를 넓힌다.
+    # '레이즈에 접는가'는 포스트플랍 fold_to_bet 이 아니라
+    # 림프 후 첫 프리플랍 레이즈에 실제로 접었는지를 본다.
     if limper_reads:
         _lv = [r for r in limper_reads if r and r.get('w', 0) > 0]
         if _lv:
             _n = float(len(_lv))
             _w = sum(r['w'] for r in _lv) / _n
-            _fg = sum(r.get('fold_gap', 0.0) for r in _lv) / _n
+            _fg = sum(r.get('f2iso_gap', 0.0) for r in _lv) / _n
             _ps = sum(r.get('passive', 0.0) for r in _lv) / _n
             # 림프를 많이 하는 사람일수록 림프 레인지가 넓고 약하다.
             _lg = max((r.get('limp_gap', 0.0) for r in _lv), default=0.0)
             thr *= max(0.70, min(1.60,
                        1.0 + _w*(0.45*max(0.0, _fg) + 0.25*max(0.0, _ps))
-                       + 0.30*max(0.0, _lg)))   # iso 는 깊이 미반영(기존 유지)
+                       + 0.30*max(0.0, _lg)))
+
     r = pct(hand)
-    if r <= thr and rng.random() < t['iso']:
+    if r <= thr:
         return ('raise', 3.0 + n_limpers)
-    if r <= thr * 2.2 and prof['type'] in ('FISH','STATION'):
+
+    # BB option: 추가 비용이 없으면 '폴드'나 '오버림프'가 아니라 체크다.
+    if can_check:
+        return ('check', 0)
+
+    # 오버림프는 표시용 type 라벨(FISH/STATION)로 결정하지 않는다.
+    # 같은 플레이어도 STUDIED_FISH / *_TILTY 라벨이 붙으면 행동이 바뀌는
+    # 문제가 있었다. 기존 limp 동기(이론형+습관형)를 그대로 재사용한다.
+    _lp = limp_p(prof, feel, r, pos, t)
+    if r <= min(0.95, thr * 2.2) and rng.random() < _lp:
         return ('limp', 1.0)
     return ('fold', 0)
 
