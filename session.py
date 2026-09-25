@@ -138,6 +138,32 @@ def _pf_observation_flags(action_meta, seat):
     return out
 
 
+def _facing_wager_context(rnd, aggressor, pot_start):
+    """현재 hero가 마주한 마지막 공격 액션의 실제 wager 문맥.
+
+    size_frac = 그 공격자가 **그 액션에서 새로 넣은 칩** / 액션 직전 팟.
+    hero의 to_call 이나 street 시작 팟으로 대신 계산하면
+    bet->call->hero / raise->hero에서 사이즈가 왜곡된다.
+    """
+    if aggressor is None:
+        return None
+    pot_before = float(pot_start or 0)
+    latest = None
+    for m in (getattr(rnd, 'action_meta', None) or []):
+        inc = float(m.get('increment', 0) or 0)
+        if m.get('seat') == aggressor and m.get('raised'):
+            latest = {
+                'seat': aggressor,
+                'increment': inc,
+                'pot_before': pot_before,
+                'size_frac': inc / max(1.0, pot_before),
+                'full_raise': bool(m.get('full_raise')),
+                'incomplete_raise': bool(m.get('incomplete_raise')),
+            }
+        pot_before += inc
+    return latest
+
+
 def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                         facing_seat=None, decision_context=None,
                         facing_read=None):
@@ -824,7 +850,10 @@ class HandRun:
                                      'can_raise': r2.can_raise(s), 'log': list(r2.log),
                                      'live': r2.live(), 'hash': h.hash}
                         r2.apply(s, act[0], act[1])
-                    if act[0] in ('bet', 'raise', 'allin'): aggressor = s
+                    # allin 문자열은 call일 수도 있다. 실제 가격을 올린 사건만
+                    # 새 aggressor가 된다.
+                    if r2.action_meta and r2.action_meta[-1].get('raised'):
+                        aggressor = s
                     continue
                 ax, _ = h.axes(s)
                 _ck = _cache_key(street, s, len(r2.log))
@@ -941,7 +970,11 @@ class HandRun:
                 if (_prev_street and aggressor is not None and aggressor != s):
                     _pr = [x for x in (getattr(self, 'full_log', []) or [])
                            if x[0] == _prev_street]
-                    _prev_any_bet = any(x[2] in ('bet', 'raise', 'allin') for x in _pr)
+                    _pm = [m for m in (getattr(self, 'full_action_meta', []) or [])
+                           if m.get('street') == _prev_street]
+                    _prev_any_bet = (any(m.get('raised') for m in _pm)
+                                     if _pm else
+                                     any(x[2] in ('bet', 'raise') for x in _pr))
                     _aggr_checked = any(
                         x[1] == aggressor and x[2] == 'check' for x in _pr)
                     _opp_checked_prev = bool(_pr) and _aggr_checked and not _prev_any_bet
@@ -1022,13 +1055,25 @@ class HandRun:
                 # --- 배팅라인 리딩: 진짜 프로필이 아니라 '내가 관찰한 추정치'로 ---
                 read_val = None
                 est = None
+                _facing_ctx = (_facing_wager_context(r2, aggressor, pot_now)
+                               if tc > 0 else None)
                 if tc > 0 and aggressor is not None and aggressor != s:
                     est = RD.perceived_profile(h.book, _pid(s), _pid(aggressor), ax,
                                                random.Random(self._dseed(s, street, 'est2', aggressor)))
-                    n_barrels = sum(1 for (stt, x, act, _) in getattr(self, 'full_log', [])
-                                    if x == aggressor and act in ('bet', 'raise'))
-                    n_barrels = max(1, n_barrels)
-                    sz_frac = tc/max(1, pot_live)
+                    # 배럴 수는 액션 문자열 개수가 아니라 **공격한 스트리트 수**다.
+                    # 현재 스트리트 액션도 full_log 에 아직 안 들어갔으므로 포함한다.
+                    _aggr_streets = {
+                        m.get('street') for m in (getattr(self, 'full_action_meta', []) or [])
+                        if m.get('seat') == aggressor and m.get('raised')
+                    }
+                    if any(m.get('seat') == aggressor and m.get('raised')
+                           for m in r2.action_meta):
+                        _aggr_streets.add(street)
+                    n_barrels = max(1, len([x for x in _aggr_streets if x]))
+                    sz_frac = ((_facing_ctx or {}).get('size_frac')
+                               if _facing_ctx else None)
+                    if sz_frac is None:
+                        sz_frac = tc/max(1, pot_live)
                     # '어그레서가 **나보다 먼저** 액션하는 자리에서 리드했는가'다.
                     # 절대 인덱스로 재면 상대가 누구든 같은 값이 나온다.
                     read_val = PL.line_bluff_prior(est, street, n_barrels, sz_frac, board,
@@ -1056,7 +1101,10 @@ class HandRun:
                     can_raise=r2.can_raise(s),
                     checkraise_seed=self._dseed(s, street, 'ckr', len(r2.log)),
                     checkraise_size_seed=self._dseed(
-                        s, street, 'ckrsz', len(r2.log)))
+                        s, street, 'ckrsz', len(r2.log)),
+                    facing_size_frac=(
+                        (_facing_ctx or {}).get('size_frac')
+                        if _facing_ctx else None))
                 _tr = (h.plans.get(key) or {}).get('trace')
                 if _tr:
                     for _i in h.intents:
@@ -1172,7 +1220,6 @@ class HandRun:
                             _effective_gap / max(1.0, _pot_after))
                         r2.apply(s, a, _sent)
                         _exec_amt = _sent
-                        aggressor = s
                     else:
                         r2.apply(s, a, amt)
                         _exec_amt = amt
@@ -1186,6 +1233,8 @@ class HandRun:
                     a = _fb
                     r2.apply(s, a)
                     _exec_amt = 0
+                if r2.action_meta and r2.action_meta[-1].get('raised'):
+                    aggressor = s
                 if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
 
                 # 실제 실행 이력. delayed-cbet/probe 같은 다음 스트리트 판단은
@@ -1294,7 +1343,7 @@ class HandRun:
             if _st_uncalled:
                 h.uncalled_returns = getattr(h, 'uncalled_returns', [])
                 h.uncalled_returns.append(dict(_st_uncalled, street=street))
-            _any_bet = any(_a in ('bet', 'raise', 'allin') for (_, _a, _) in r2.log)
+            _any_bet = any(m.get('raised') for m in r2.action_meta)
             if not _any_bet:
                 for k, v in list(h.plans.items()):
                     if v.get('plan') == 'trap':
@@ -1313,14 +1362,24 @@ class HandRun:
             _prev_st = {'turn': 'flop', 'river': 'turn'}.get(street)
             _prev_rows = [z for z in (getattr(self, 'full_log', []) or [])
                           if _prev_st and z[0] == _prev_st]
+            _prev_meta = [m for m in (getattr(self, 'full_action_meta', []) or [])
+                          if _prev_st and m.get('street') == _prev_st]
             _prev_aggr_bet = (
-                street_aggr is not None and any(
-                    z[1] == street_aggr and z[2] in ('bet', 'raise', 'allin')
-                    for z in _prev_rows))
-            _prev_checked_through = bool(_prev_rows) and not any(
-                z[2] in ('bet', 'raise', 'allin') for z in _prev_rows)
+                street_aggr is not None and (
+                    any(m.get('seat') == street_aggr and m.get('raised')
+                        for m in _prev_meta)
+                    if _prev_meta else
+                    any(z[1] == street_aggr and z[2] in ('bet', 'raise')
+                        for z in _prev_rows)))
+            _prev_checked_through = bool(_prev_rows) and not (
+                any(m.get('raised') for m in _prev_meta)
+                if _prev_meta else
+                any(z[2] in ('bet', 'raise') for z in _prev_rows))
 
-            for (x, a_, amt) in r2.log:
+            _pot_before_action = float(self._pot_at.get(street, 0) or 0)
+            for m in r2.action_meta:
+                x = m.get('seat')
+                a_ = m.get('action')
                 opp_spot = (x == street_aggr and x not in _acted_once and not _bet_seen)
                 is_cbet = (street == 'flop' and opp_spot)
                 # barrel = 직전 스트리트에도 공격했던 사람이 다시 치는 것.
@@ -1333,13 +1392,22 @@ class HandRun:
                     _ord, _pid(x), a_, is_cbet, is_barrel,
                     facing_bet=_bet_seen, street=street,
                     is_delayed_cbet_spot=is_delayed)
-                if a_ in ('bet', 'raise', 'allin'):
-                    _p0 = self._pot_at.get(street, 0)
-                    h.book.observe_size(_ord, _pid(x),
-                                        (amt/_p0) if _p0 else 0.0, street)
+                # sizing tell은 target/street-start-pot이 아니라
+                # **이번 액션에 새로 낸 칩 / 액션 직전 팟**을 본다.
+                if m.get('raised'):
+                    _inc = float(m.get('increment', 0) or 0)
+                    h.book.observe_size(
+                        _ord, _pid(x),
+                        _inc/max(1.0, _pot_before_action), street)
                 _acted_once.add(x)
-                if a_ in ('bet', 'raise', 'allin'): _bet_seen = True
+                if m.get('raised'):
+                    _bet_seen = True
+                _pot_before_action += float(m.get('increment', 0) or 0)
+
             self.full_log.extend(('%s' % street, x, a, amt) for (x, a, amt) in r2.log)
+            self.full_action_meta = getattr(self, 'full_action_meta', [])
+            self.full_action_meta.extend(
+                dict(m, street=street) for m in r2.action_meta)
             for k, v in r2.contrib.items():
                 contrib[k] = contrib.get(k, 0)+v
             for k in r2.stacks: h.stacks[k] = r2.stacks[k]
