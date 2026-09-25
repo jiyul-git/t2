@@ -1,6 +1,6 @@
 # Sequential audit — F5 hero aggressed, then faces a raise/re-raise
 
-Status: CLEAR BACK-ACTION COORDINATE/READ-CLASSIFICATION DEFECTS FIXED; strategy model remains incomplete.
+Status: CLEAR BACK-ACTION COORDINATE/READ-CLASSIFICATION DEFECTS CLOSED (user-validated); strategy model remains incomplete.
 
 Reference model: judgment -> response plan -> action.
 
