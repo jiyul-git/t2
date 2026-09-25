@@ -668,7 +668,8 @@ class HandRun:
                     opp_est=_opp_est_pf,
                     money_open=(_mj_obs.get('unopened_modifiers')
                                 if _mj_obs else None),
-                    can_check=(tc <= 0))
+                    can_check=(tc <= 0),
+                    can_raise=rnd.can_raise(s))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
