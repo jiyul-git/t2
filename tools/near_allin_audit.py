@@ -85,6 +85,10 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
                 'to': float(ur.get('to') or 0),
                 'bb': bb,
             })
+        _mj_groups = collections.defaultdict(list)
+        for _ob in (getattr(h, 'money_jump_obs', None) or []):
+            _mj_groups[(_ob.get('street'), _ob.get('seat'))].append(_ob)
+
         for it in (getattr(h, 'intents', None) or []):
             action = it.get('action')
             if action not in ('bet', 'raise', 'allin'):
@@ -99,6 +103,10 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
             residual = max(0.0, stack - committed)
             pot = float(it.get('pot') or 0)
             seat = it.get('seat')
+            _idx = int(it.get('idx') or 0)
+            _obs_list = _mj_groups.get((it.get('street'), seat), [])
+            _mj = _obs_list[_idx] if 0 <= _idx < len(_obs_list) else {}
+            _ms = (_mj.get('money_signals') or {}) if _mj else {}
             rows.append({
                 'seed': seed,
                 'hand_no': int(getattr(field, 'hand_no', 0) or 0),
@@ -140,6 +148,34 @@ def collect_tournament(seed, entries, hpl, start_stack, cap, fmt):
                 'effective_allin_post_spr': it.get('effective_allin_post_spr'),
                 'effective_allin_applied': it.get('effective_allin_applied'),
                 'allin_execution_mode': it.get('allin_execution_mode'),
+                # leave-behind 설계용 money-jump provenance. 판단에는 쓰지 않는다.
+                'money_decision_kind': _mj.get('decision_kind') if _mj else None,
+                'money_bf': _mj.get('bf') if _mj else None,
+                'money_remaining': _mj.get('remaining') if _mj else None,
+                'money_itm': _mj.get('itm') if _mj else None,
+                'money_pos': _mj.get('pos') if _mj else None,
+                'money_players_to_jump': _mj.get('players_to_jump') if _mj else None,
+                'money_current_prize': _mj.get('current_prize') if _mj else None,
+                'money_next_prize': _mj.get('next_prize') if _mj else None,
+                'money_jump_frac_next': _mj.get('jump_frac_next') if _mj else None,
+                'money_jump_vs_mincash': _mj.get('jump_vs_mincash') if _mj else None,
+                'money_distance_frac_itm': _mj.get('distance_frac_itm') if _mj else None,
+                'money_distance_frac_remaining': _mj.get('distance_frac_remaining') if _mj else None,
+                'money_stack_behind_bb': _mj.get('stack_behind_bb') if _mj else None,
+                'money_hands_to_next_bb': _mj.get('hands_to_next_bb') if _mj else None,
+                'money_forced_cost_to_next_bb': _mj.get('forced_cost_to_next_bb') if _mj else None,
+                'money_forced_cost_share_of_stack': _mj.get('forced_cost_share_of_stack') if _mj else None,
+                'money_stack_after_next_bb_if_fold_all': _mj.get('stack_after_next_bb_if_fold_all') if _mj else None,
+                'money_n_shorter': _mj.get('n_shorter') if _mj else None,
+                'money_median_shorter_ratio': _mj.get('median_shorter_ratio') if _mj else None,
+                'money_payout_importance': _ms.get('payout_importance'),
+                'money_ladder_buffer': _ms.get('ladder_buffer'),
+                'money_waiting_feasibility': _ms.get('waiting_feasibility'),
+                'money_self_preservation_objective': _ms.get('self_preservation_objective'),
+                'money_self_preservation': _ms.get('self_preservation'),
+                'money_urgency_objective': _ms.get('urgency_objective'),
+                'money_urgency': _ms.get('urgency'),
+                'money_commitment_budget': _ms.get('commitment_budget'),
             })
 
     clear_tilt_cache()
@@ -197,6 +233,17 @@ def write_rows(path, rows):
         'effective_allin_actor', 'effective_allin_commit',
         'effective_allin_post_spr', 'effective_allin_applied',
         'allin_execution_mode',
+        'money_decision_kind', 'money_bf', 'money_remaining', 'money_itm',
+        'money_pos', 'money_players_to_jump', 'money_current_prize',
+        'money_next_prize', 'money_jump_frac_next', 'money_jump_vs_mincash',
+        'money_distance_frac_itm', 'money_distance_frac_remaining',
+        'money_stack_behind_bb', 'money_hands_to_next_bb',
+        'money_forced_cost_to_next_bb', 'money_forced_cost_share_of_stack',
+        'money_stack_after_next_bb_if_fold_all', 'money_n_shorter',
+        'money_median_shorter_ratio', 'money_payout_importance',
+        'money_ladder_buffer', 'money_waiting_feasibility',
+        'money_self_preservation_objective', 'money_self_preservation',
+        'money_urgency_objective', 'money_urgency', 'money_commitment_budget',
     ]
     parent = os.path.dirname(os.path.abspath(path))
     if parent and not os.path.isdir(parent):
