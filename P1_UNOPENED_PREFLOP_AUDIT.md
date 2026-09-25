@@ -186,3 +186,46 @@ Required before closing P1:
 5. resolve SB limp semantics with a targeted legality/strategy check;
 6. preserve existing frozen behavior where the refactor is meant to be structural only, then
    separately measure intended semantic changes.
+
+
+## Follow-up fixes found during preflop closure pass
+
+### P1-8 FIXED — live variance-seek input was accidentally removed during the audit
+
+During the P3/P4 cleanup, the unused `variance_seek` value in `defend_decision` was correctly
+removed, but the similarly named value in `open_decision` was also removed even though
+`open_form(..., vs=...)` consumes it.
+
+That would cause an unopened in-range hand to hit an undefined `vs`.
+
+Fix:
+restore the explicit variance-seek value in `open_decision`.
+
+Architecturally this is a PLAN-selection input, so its location is compatible with V2.
+The broader problem that `profile` itself is still a tilted view remains open.
+
+### P1-9 FIXED — SB complete was globally impossible
+
+Old code required `pos != 'SB'` for any open limp.
+
+That excluded a normal tournament action family:
+`folded to SB -> complete`.
+
+Fix:
+SB can now use the same limp-plan mechanism.
+
+### P1-10 FIXED — habitual weak-hand limp branch was unreachable
+
+`limp_p` is explicitly designed so habitual limpers can limp wider/weaker hands.
+
+But `open_decision` returned fold immediately when the hand was outside the raise threshold,
+before `limp_p` was evaluated.
+
+So the documented "weak habitual limp" logic could not occur.
+
+Fix:
+- raise/shove eligibility still uses the open threshold;
+- limp is evaluated separately;
+- outside the raise range, a player may limp if the limp plan wins, otherwise fold.
+
+No new coefficient was invented; this makes the existing limp model reachable.
