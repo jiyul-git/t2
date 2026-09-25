@@ -86,3 +86,26 @@ No production behavior is changed.
 
 Next: rerun the same 6100-6107 audit with cycle-snapshot fields and determine whether the
 strong candidate and any secondary candidates survive the ordering-sensitivity check.
+
+
+## Cycle-order follow-up
+
+The same seeds were rerun with a field-cycle-start snapshot.
+
+Across all 15 promotions:
+
+- cycle remaining drift: 0 for every row;
+- cycle shorter-stack drift: 0 or 1;
+- the strongest candidate, seed 6107 H120, had:
+  - remaining 8 / cycle-start remaining 8;
+  - players-to-jump 4 / cycle-start players-to-jump 4;
+  - shorter stacks 5 / cycle-start shorter stacks 5;
+  - remaining drift 0;
+  - shorter-stack drift 0.
+
+Therefore the strongest exploratory survival signal is not an artifact of within-cycle
+table execution order.  Minor one-stack shorter-count drift exists on some secondary
+rows and remains visible in OOS audit output.
+
+A shadow selector is now locked in `LEAVE_BEHIND_SHADOW_DESIGN.md` before seeds
+6200-6215 are observed.  Production behavior remains unchanged.
