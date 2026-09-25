@@ -88,6 +88,10 @@ class Round:
         self.incomplete = set()      # 불완전 올인을 낸 좌석
         self.last_idx = -1           # 마지막으로 액션한 좌석의 인덱스
         self.log = []
+        # 전략층이 문자열 'allin'을 raise로 오인하지 않도록 규칙 판정 메타를
+        # 별도로 보존한다. all-in call과 full/incomplete raise는 다른 사건이다.
+        self.full_raise_count = 0
+        self.action_meta = []
 
     def live(self):
         return [s for s in self.order if s not in self.folded]
@@ -176,6 +180,12 @@ class Round:
     def apply(self, seat, action, amount=0):
         """action: fold/check/call/bet/raise/allin. 규칙 검증 포함."""
         tc = self.to_call(seat); st = self.stacks[seat]
+        _pre_current = self.current
+        _pre_min_raise = self.min_raise
+        _input_action = action
+        _raised = False
+        _full_raise = False
+        _incomplete_raise = False
         if action == 'fold':
             if tc <= 0:
                 # 콜 비용이 없으면 폴드할 이유가 없다. 체크로 처리.
@@ -209,7 +219,11 @@ class Round:
             if target > self.current:
                 inc = target - self.current
                 full = inc >= self.min_raise            # 풀 레이즈인가
+                _raised = True
+                _full_raise = bool(full)
+                _incomplete_raise = not full
                 if full:
+                    self.full_raise_count += 1
                     self.min_raise = inc                # 최소증분 갱신은 풀레이즈만
                     self.acted = {seat}                 # 액션 재개도 풀레이즈만
                     self.incomplete.clear()             # 풀레이즈가 나오면 권리 회복
@@ -228,6 +242,20 @@ class Round:
         elif action == 'call':
             rec_amt = self.contrib.get(seat, 0)
         self.log.append((seat, action, rec_amt))
+        self.action_meta.append({
+            'seat': seat,
+            'input_action': _input_action,
+            'action': action,
+            'amount': rec_amt,
+            'pre_current': _pre_current,
+            'post_current': self.current,
+            'pre_min_raise': _pre_min_raise,
+            'raised': bool(_raised),
+            'full_raise': bool(_full_raise),
+            'incomplete_raise': bool(_incomplete_raise),
+            'allin_call': bool(_input_action == 'allin' and not _raised),
+            'full_raise_count': self.full_raise_count,
+        })
         return self
 
     def pot_contrib(self): return dict(self.contrib)
