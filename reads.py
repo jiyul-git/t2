@@ -417,6 +417,42 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'fold': e.get('ftb')}
 
 
+def range_profile(perceived):
+    """공개 관측만으로 만든 상대 프리플랍 레인지용 profile.
+
+    상대의 실제 persona/temper 를 읽으면 관찰자가 알 수 없는 정보를
+    레인지 추정에 섞게 된다. perceived_profile 의 행동 기반 추정치만
+    persona 인터페이스 모양으로 바꾼다.
+
+    직접 관측하기 어려운 기질은 모집단 중립값 5로 둔다.
+    """
+    p = perceived or {}
+    c = dict(p.get('est_concepts') or {})
+    # estimate_concepts 가 비어 있는 외부/구형 호출도 평균값으로 안전하게.
+    if not c:
+        try:
+            import persona as _PS
+            c = {k: 5.0 for k in _PS.ALL_CONCEPTS}
+        except Exception:
+            c = {}
+    ag = max(0.0, min(10.0, float(p.get('aggr', 5.0) or 5.0)))
+    tight = max(0.0, min(10.0, float(p.get('tight', 5.0) or 5.0)))
+    return {
+        'type': 'PERCEIVED',
+        'concepts': c,
+        'temper': {
+            'aggression': ag,
+            'looseness': 10.0 - tight,
+            'gamble': 5.0,
+            'discipline': 5.0,
+            'adaptability': 5.0,
+            'consistency': 5.0,
+            'attention': 5.0,
+            'slowplay_taste': 5.0,
+        },
+    }
+
+
 import json as _json, os as _os
 
 # 전역 기본 경로는 두지 않는다.
