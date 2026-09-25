@@ -320,12 +320,17 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
             'widen_entry' if (not _base_in and _money_in) else
             'narrow_fold' if (_base_in and not _money_in) else
             'unchanged')
-    if r > thr: return ('fold', 0)
-    # 쇼브 판정이 먼저다. 10bb 에서 림프를 먼저 물으면 쇼브해야 할 자리에서
-    # 림프가 나온다(실제로 38% 나왔다). 얕으면 쇼브가 선택지를 먹는다.
-    act, amt = open_form(prof, feel, r, bb, rng, vs, t)
-    if act: return (act, amt)
+    _in_raise_range = (r <= thr)
+    # 쇼브 판정은 **raise/open range 안**에서 먼저다. 10bb 에서 림프를 먼저
+    # 물으면 쇼브해야 할 자리에서 림프가 나온다.
+    if _in_raise_range:
+        act, amt = open_form(prof, feel, r, bb, rng, vs, t)
+        if act: return (act, amt)
 
+    # limp_p 자체는 "이론형은 좁고, 습관형은 약한 핸드에서 넓다"고 설계돼 있다.
+    # 그런데 예전에는 r>thr 를 여기보다 먼저 fold 시켜서, 약한 핸드일수록
+    # limp 확률을 높인 habit 분기가 사실상 도달 불가능했다.
+    # SB complete도 포커의 정상 선택지인데 pos!='SB'로 전역 차단돼 있었다.
     _base_limp_p = limp_p(prof, feel, r, pos, t)
     _limp_roll = rng.random()
     if money_open is not None:
@@ -340,10 +345,13 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                            _limp_roll < _limp_shadow) else
             'base_limp' if _limp_roll < _base_limp_p else
             'unchanged_raise')
-        money_open['sb_limp_currently_blocked'] = bool(pos == 'SB')
+        money_open['sb_limp_currently_blocked'] = False
 
-    if _limp_roll < _base_limp_p and pos != 'SB':
+    if _limp_roll < _base_limp_p:
         return ('limp', 1.0)
+    if not _in_raise_range:
+        return ('fold', 0)
+
     # 뒤 사람들이 물렁할수록(잘 접고 수동적) 큰 사이즈가 실제로 통한다.
     _soft = 0.0
     if behind_reads:
