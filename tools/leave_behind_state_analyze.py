@@ -89,6 +89,17 @@ def main():
         r['_preserve_minus_urgency'] = (
             (num(r.get('money_self_preservation')) or 0.0)
             - (num(r.get('money_urgency')) or 0.0))
+
+        _obj = num(r.get('money_self_preservation_objective')) or 0.0
+        _per = num(r.get('money_self_preservation')) or 0.0
+        _aware = max(0.0, min(1.0, (_per / _obj))) if _obj > 0 else 0.0
+        r['_awareness_recovered'] = _aware
+        r['_ladder_option_perceived'] = (
+            r['_ladder_survival_component'] * _aware)
+        r['_shadow_leave_candidate'] = bool(
+            r.get('money_decision_kind') == 'facing_bet'
+            and r['_ladder_option_perceived']
+                > (num(r.get('money_urgency')) or 0.0) + 1e-12)
         promoted.append(r)
 
     print('# leave-behind state audit')
@@ -118,6 +129,8 @@ def main():
         ('urgency perceived', 'money_urgency'),
         ('commitment budget', 'money_commitment_budget'),
         ('preservation - urgency', '_preserve_minus_urgency'),
+        ('recovered awareness', '_awareness_recovered'),
+        ('ladder option perceived', '_ladder_option_perceived'),
         ('players to jump', 'money_players_to_jump'),
         ('n shorter', 'money_n_shorter'),
         ('forced cost share', 'money_forced_cost_share_of_stack'),
@@ -129,6 +142,28 @@ def main():
         vals = [num(r.get(key)) if not key.startswith('_') else r.get(key)
                 for r in promoted]
         stat_line(label, vals)
+
+    shadow = [r for r in promoted if r.get('_shadow_leave_candidate')]
+    print()
+    print('## locked shadow leave-behind selector')
+    print('  candidates: %d / %d promotions' % (len(shadow), len(promoted)))
+    for r in shadow:
+        print(
+            '    seed %s H%s %s %s kind=%s plan=%s '
+            'ladderPerceived=%s urgency=%s preRemain=%sBB '
+            'BF=%s jump=%s shorter=%s dRem=%s dShort=%s'
+            % (
+                r.get('seed'), r.get('hand_no'), r.get('street'), r.get('action'),
+                r.get('money_decision_kind'), r.get('plan'),
+                fmt(r.get('_ladder_option_perceived')),
+                fmt(num(r.get('money_urgency'))),
+                fmt(r.get('_pre_resid_bb')),
+                fmt(num(r.get('money_bf'))),
+                fmt(num(r.get('money_players_to_jump'))),
+                fmt(num(r.get('money_n_shorter'))),
+                fmt(num(r.get('cycle_remaining_drift'))),
+                fmt(num(r.get('cycle_n_shorter_drift'))),
+            ))
 
     print()
     print('## promoted rows — ladder/survival component descending')
