@@ -563,7 +563,7 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
                     raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
                     exploit=None, bf=1.0,
                     payout_flat=0.0, reentry=False, progress=0.0,
-                    seats=8, ante=True, opener_allin=False):
+                    seats=8, ante=True, opener_allin=False, can_raise=True):
     """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
 
     exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
@@ -621,7 +621,7 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
                 tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))
     r = pct(hand)
     # --- 핫존 리쇼브: 콜 대신 3벳 올인 (혼합) ---
-    if stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:
+    if can_raise and stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:
         rs = reshove_range(prof, def_pos, opener_pos, stack_bb, open_bb, n_callers)
         if r <= rs:
             # 역치 안쪽일수록 쇼브 비중이 높고, 경계에서는 콜/폴드와 섞인다
@@ -666,6 +666,10 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     w_cont = logit(r, tot, max(0.02, (tot-tp)*0.35))
     w_call = max(0.0, w_cont - w_raise*0.6) * (1.5 - 0.055*a)
     w_call *= 1.0 + 0.90*_pf_slow
+    # 불완전 올인으로 raise 권리가 닫혔다면 계획 단계에서 raise 후보를 제거한다.
+    # 실행부 ValueError -> 자동 call 로 바꾸는 것은 JUDGMENT->PLAN->ACTION 원칙 위반이다.
+    if not can_raise:
+        w_raise = 0.0
     w_fold = max(0.0, 1.0 - w_cont)
     # 경계 절단: 프리미엄은 폴드 없음, 쓰레기는 3벳 없음
     if r <= 0.03:  w_fold = 0.0                 # AA/KK급은 폴드 없음
