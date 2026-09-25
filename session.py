@@ -34,6 +34,28 @@ def oop_vs(order, seat, other):
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
+
+def _merge_pf_seed(prev, new):
+    """한 좌석의 프리플랍 판단/액션 스토리를 덮어쓰지 않고 이어 붙인다."""
+    prev = dict(prev or {})
+    out = dict(new or {})
+    line = list(prev.get('pf_line') or [])
+    line.append({
+        'role': out.get('pf_role'),
+        'act': out.get('pf_act'),
+        'vs': out.get('pf_vs'),
+        'level': out.get('pf_level'),
+        'open_bb': out.get('pf_open_bb'),
+        'n_callers': out.get('pf_n_callers'),
+        'n_limpers': out.get('pf_n_limpers'),
+    })
+    out['pf_line'] = line
+    out['pf_origin_role'] = prev.get(
+        'pf_origin_role', prev.get('pf_role', out.get('pf_role')))
+    out['pf_origin_act'] = prev.get(
+        'pf_origin_act', prev.get('pf_act', out.get('pf_act')))
+    return out
+
 def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
                         facing_seat=None, decision_context=None,
                         facing_read=None):
@@ -573,23 +595,8 @@ class HandRun:
                                 if _mj_obs else None),
                     can_check=(tc <= 0))
                 h.pf_seed = getattr(h, 'pf_seed', {})
-                _prev_pf = h.pf_seed.get(s) or {}
-                _line = list(_prev_pf.get('pf_line') or [])
-                _line.append({
-                    'role': _seed.get('pf_role'),
-                    'act': _seed.get('pf_act'),
-                    'vs': _seed.get('pf_vs'),
-                    'level': _seed.get('pf_level'),
-                    'open_bb': _seed.get('pf_open_bb'),
-                    'n_callers': _seed.get('pf_n_callers'),
-                    'n_limpers': _seed.get('pf_n_limpers'),
-                })
-                _seed['pf_line'] = _line
-                _seed['pf_origin_role'] = _prev_pf.get(
-                    'pf_origin_role', _prev_pf.get('pf_role', _seed.get('pf_role')))
-                _seed['pf_origin_act'] = _prev_pf.get(
-                    'pf_origin_act', _prev_pf.get('pf_act', _seed.get('pf_act')))
-                h.pf_seed[s] = _seed
+                h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
+                _seed = h.pf_seed[s]
                 if a == 'fold':
                     rnd.apply(s, 'fold' if tc > 0 else 'check')
                 elif a == 'check':
