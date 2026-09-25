@@ -56,7 +56,7 @@ class Book:
     def _k(self, i, j): return '%s>%s' % (i, j)
 
     def rec(self, i, j):
-        return self.d.setdefault(self._k(i, j), {
+        defaults = {
             'hands': 0, 'vpip': 0, 'pfr': 0,
             'cbet_opp': 0, 'cbet': 0,
             'barrel_opp': 0, 'barrel': 0,
@@ -88,7 +88,17 @@ class Book:
             'sz_n': 0, 'sz_sum': 0.0, 'sz_sq': 0.0,
             'sz_big': 0, 'sz_small': 0,          # 100%+ / 40%-
             'szr_n': 0, 'szr_sum': 0.0,          # 리버 사이즈만 따로
-            'agg_actions': 0, 'passive_actions': 0})
+            'agg_actions': 0, 'passive_actions': 0,
+            # 콜 후 squeeze를 맞은 상태는 opener의 fold-to-3bet/4bet과 다르다.
+            'pf_backraise_opp': 0, 'pf_backraise': 0,
+            'pf_call_faced_squeeze': 0, 'pf_fold_after_call_squeeze': 0,
+        }
+        key = self._k(i, j)
+        r = self.d.setdefault(key, {})
+        # 과거 저장 장부에도 새 필드를 안전하게 채운다.
+        for k, v in defaults.items():
+            r.setdefault(k, v)
+        return r
 
     def observe_size(self, observers, actor, size_frac, street=None):
         """베팅 사이즈 관측. 평균·분산·극단 빈도를 함께 센다."""
@@ -131,6 +141,24 @@ class Book:
             if faced_3bet:
                 r['pf_faced_3bet'] += 1
                 if folded_to_3bet: r['pf_fold_to_3bet'] += 1
+
+    def observe_backraise(self, observers, actor, had_chance, did_backraise,
+                          folded_to_squeeze=False):
+        """첫 오픈을 콜한 뒤 squeeze/3bet이 돌아왔을 때의 반응.
+
+        opener의 fold-to-3bet / 4bet 빈도와 섞지 않는다.
+        """
+        if not had_chance:
+            return
+        for i in observers:
+            if i == actor: continue
+            r = self.rec(i, actor)
+            r['pf_backraise_opp'] += 1
+            if did_backraise:
+                r['pf_backraise'] += 1
+            r['pf_call_faced_squeeze'] += 1
+            if folded_to_squeeze:
+                r['pf_fold_after_call_squeeze'] += 1
 
     def observe_limp_raise(self, observers, actor, faced, folded):
         """림프한 뒤 첫 레이즈가 돌아왔을 때의 반응을 센다.
@@ -251,6 +279,8 @@ def estimate(book, observer, target, observer_type, rng=None):
     f2tb  = _rate('pf_fold_to_3bet', 'pf_faced_3bet', PRIOR['pf_fold_to_3bet'])
     fb    = _rate('pf_4bet', 'pf_4bet_opp', PRIOR['pf_4bet'])
     f2fb  = _rate('pf_fold_to_4bet', 'pf_faced_4bet', PRIOR['pf_fold_to_4bet'])
+    backr = _rate('pf_backraise', 'pf_backraise_opp', 0.0)
+    fcsq  = _rate('pf_fold_after_call_squeeze', 'pf_call_faced_squeeze', 0.0)
     # 사이즈: 평균과 표준편차. 분산이 낮으면 사이즈에서 정보가 안 나온다.
     _sn = r.get('sz_n', 0)
     if _sn >= 2:
@@ -307,6 +337,11 @@ def estimate(book, observer, target, observer_type, rng=None):
             'pf_fold_to_3bet': _sh(f2tb, 'pf_faced_3bet', PRIOR['pf_fold_to_3bet']),
             'pf_4bet': _sh(fb, 'pf_4bet_opp', PRIOR['pf_4bet']),
             'pf_fold_to_4bet': _sh(f2fb, 'pf_faced_4bet', PRIOR['pf_fold_to_4bet']),
+            # backraise/fold-to-squeeze는 아직 전략 소비 전 SHADOW 관측이다.
+            'pf_backraise': backr,
+            'pf_backraise_n': r.get('pf_backraise_opp', 0),
+            'pf_fold_after_call_squeeze': fcsq,
+            'pf_call_faced_squeeze_n': r.get('pf_call_faced_squeeze', 0),
             'sz_mean': sz_mean, 'sz_sd': sz_sd,
             'sz_big': sz_big, 'sz_river': sz_riv, 'sz_n': _sn,
             'aggr': jitter(aggr_axis), 'bluff': jitter(bluff_axis),
@@ -399,6 +434,10 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'ftb_river': e.get('ftb_river'),
             'pf_3bet': e.get('pf_3bet'), 'pf_fold_to_3bet': e.get('pf_fold_to_3bet'),
             'pf_4bet': e.get('pf_4bet'), 'pf_fold_to_4bet': e.get('pf_fold_to_4bet'),
+            'pf_backraise': e.get('pf_backraise'),
+            'pf_backraise_n': e.get('pf_backraise_n'),
+            'pf_fold_after_call_squeeze': e.get('pf_fold_after_call_squeeze'),
+            'pf_call_faced_squeeze_n': e.get('pf_call_faced_squeeze_n'),
             'pf_limp': e.get('pf_limp'),
             'pf_fold_after_limp_raise': e.get('pf_fold_after_limp_raise'),
             'pf_limp_raise_n': e.get('pf_limp_raise_n'),
