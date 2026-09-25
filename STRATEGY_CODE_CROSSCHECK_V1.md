@@ -212,7 +212,7 @@ The gap is preservation of opponent-specific strategic information from the publ
 into judgment and response planning.
 
 
-# Per-opponent range preservation fix — implemented, pending runtime verification
+# Per-opponent range preservation fix — CLOSED (user-validated)
 
 Implemented on this audit branch:
 
@@ -234,3 +234,5 @@ Those are **not** silently marked fixed.  The patch fixes the information-loss b
 later strategy work can consume opponent-specific state without reconstructing it.
 
 Targeted verifier: `tools/verify_multiway_range_preservation.py`.
+
+User validation (Termux, 2026-09-26): compile succeeded and verifier reported `3/3 structural checks passed`.
