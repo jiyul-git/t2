@@ -637,7 +637,8 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
 # 집행부는 intent 를 만들지 않는다. 읽고 환산할 뿐이다.
 
 def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
-                  to_act_behind, opp_est, n_opp=1, rng=None, _bf_gated=True):
+                  to_act_behind, opp_est, n_opp=1, rng=None, _bf_gated=True,
+                  facing_size_frac=None):
     """콜 문턱(need)을 정하는 **유일한 지점**.
 
     예전에는 이 계산 전체가 act_with_plan(집행부) 안에 인라인으로 있었다.
@@ -662,15 +663,24 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     #   순서가 중요하다 — opp_size_norm 은 '상대 기준 보정'(관찰),
     #   size_read 는 '내 인식 한계'(능력)다.
     # 난수는 건드리지 않는다 (read_opponent·opp_size_norm·size_read 전부 무작위 없음).
-    _p0 = max(1.0, float(pot) - float(tocall))       # 상대 벳이 나가기 전 팟
-    _sz_true = float(tocall)/_p0
+    # 현재 hero가 받는 가격과 상대의 마지막 공격 사이즈는 같은 양이 아니다.
+    # tc/(pot-tc)는 첫 HU bet에서만 우연히 상대의 pot-fraction과 일치한다.
+    # bet->call->hero / raise->hero에서는 callers/이전 기여분이 섞여 틀어진다.
+    _p0 = max(1.0, float(pot) - float(tocall))
+    _sz_fallback = float(tocall)/_p0
+    _sz_true = (float(facing_size_frac)
+                if facing_size_frac is not None and facing_size_frac > 0
+                else _sz_fallback)
     _rdz = None
     _sz_seen = _sz_true
     _tocall_seen = float(tocall)
     if profile.get('concepts') and board:
         _rdz = PS.read_opponent(profile, opp_est) if opp_est else None
         _sz_seen = PS.size_read(profile, PS.opp_size_norm(_rdz, _sz_true, street))
-        _tocall_seen = _sz_seen * _p0
+        # 사이즈 오독은 실제 call price에 비례 적용한다.
+        # callers의 칩을 상대 bet으로 재해석하지 않는다.
+        if _sz_true > 1e-9:
+            _tocall_seen = float(tocall) * (_sz_seen / _sz_true)
     # pot 은 pot_live 다 — 상대가 방금 낸 벳은 들어 있고 **내 콜은 아직
     # 아니다**(session.py:449 의 pot_now + sum(r2.contrib)). 콜하면 내 칩도
     # 팟에 들어가므로 분모에 내 콜을 더해야 한다.
@@ -1295,7 +1305,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   initiative=True, opp_range=None, bf=1.0, seed=None,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None,
                   opp_ranges=None, facing_seat=None, checked_before=False,
-                  can_raise=True, checkraise_seed=None, checkraise_size_seed=None):
+                  can_raise=True, checkraise_seed=None, checkraise_size_seed=None,
+                  facing_size_frac=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
@@ -1356,8 +1367,10 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # calldown_need 가 tocall 을 한 번 더한다 (거기 주석 참조).
         # 예전에 여기 "두 번 들어가면 안 된다"고 적혀 있었는데 틀렸다 —
         # 한 번은 상대 벳으로, 한 번은 내 콜로 들어가는 것이 맞다.
-        need = calldown_need(profile, hero, board, street, pot, tocall, bf,
-                             read, to_act_behind, opp_est, n_opp=n_opp, rng=rng)
+        need = calldown_need(
+            profile, hero, board, street, pot, tocall, bf,
+            read, to_act_behind, opp_est, n_opp=n_opp, rng=rng,
+            facing_size_frac=facing_size_frac)
         # made_now 계산이 calldown_need 로 딸려 들어갔다. 여기서도 필요하다.
         made_now = bot.made_strength(hero, board) if board else 0
         # ---------- 저항(tocall>0): 판단 -> response plan -> 집행 ----------
