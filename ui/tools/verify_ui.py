@@ -17,8 +17,8 @@
   6 legal 일치   legal 이 허용한 액션이 error 없이 통과하는가
   7 워크 핸드    딜 직후 곧바로 result 가 오는 경우를 처리하는가
   8 지연         진행 중 / 핸드 종료 각각의 중앙값과 최대값
-  9 정적 파일    GET / 가 web/index.html 을 주는가, ../ 로 폴더를 벗어날 수 있는가
- 10 플레이 권한   인증된 플레이 모드는 조작 가능하고 watch 모드는 같은 키가 있어도 403 인가
+  9 정적 파일    GET / 는 lobby, GET /play 는 table UI 인가, ../ 로 벗어날 수 없는가
+ 10 관전 제거     GET /watch 가 404 인가
 """
 import argparse, json, os, random, shutil, subprocess, sys, tempfile, time
 import urllib.error, urllib.request
@@ -145,10 +145,20 @@ def check_static(base):
     code, ctype, body = raw('/')
     if code != 200:
         fail.append('GET / 가 %d' % code)
-    elif b'<div id="app">' not in body:
-        fail.append('GET / 가 index.html 이 아님')
+    elif b'<div id="lobby">' not in body:
+        fail.append('GET / 가 lobby.html 이 아님')
     elif 'text/html' not in ctype:
         fail.append('GET / 의 Content-Type 이 %r' % ctype)
+
+    code, ctype, body = raw('/play')
+    if code != 200:
+        fail.append('GET /play 가 %d' % code)
+    elif b'<div id="app">' not in body:
+        fail.append('GET /play 가 table index.html 이 아님')
+
+    code, _, _ = raw('/watch')
+    if code != 404:
+        fail.append('제거된 /watch 가 404 가 아니라 %d' % code)
 
     code, ctype, body = raw('/app.js')
     if code != 200:
@@ -202,23 +212,12 @@ def run(args):
 
         fail += check_static('http://127.0.0.1:%d' % args.port)
 
-        # 같은 유효 플레이 키를 가지고 있어도 현재 페이지가 watch 모드라면
-        # 상태 변경은 서버가 거부해야 한다. 쿠키가 남은 관전자 탭 회귀 검사.
-        cw, rw = cli.watch_new(
-            entries=args.entries,
-            seed=args.seed,
-            start_stack=30000
-        )
-        if cw != 403:
-            fail.append(
-                'watch 모드 /api/new 가 403 이 아니라 %d' % cw
-            )
-
+        # 관전 모드는 제거됐다. /watch 404는 check_static에서 검증한다.
         rng = random.Random(args.seed)
         stats = dict(hands=0, decisions=0, walks=0, chip_checks=0, chip_bad=0,
                      legal_violations=0, err_checked=0, results=0, showdowns=0,
                      slot_checks=0, slot_bad=0,
-                     watch_blocked=(cw == 403),
+                     watch_removed=True,
                      stream_steps=0, stream_events=0)
         pot_of = {}            # hand_no -> Σstack + pot_total
         exposed = {}           # hand_no -> 화면에 나온 카드 집합
@@ -346,6 +345,17 @@ def run(args):
                             % (a, amt, r['view']['error']))
                 r = dict(r, token=r.get('token'))
 
+        # 실제 UI 서버 orchestration이 round-start worker를 띄웠는지 확인.
+        cs, rs, _ = cli._call('/api/stats')
+        pc = (rs.get('counters') or {}) if cs == 200 else {}
+        stats['parallel_round_start'] = int(pc.get('round_start') or 0)
+        stats['parallel_restarts'] = int(pc.get('round_restart') or 0)
+        stats['parallel_wait_ms'] = int(pc.get('worker_wait_ms') or 0)
+        if cs != 200:
+            fail.append('/api/stats 가 %d' % cs)
+        elif stats['decisions'] and stats['parallel_round_start'] <= 0:
+            fail.append('핸드를 진행했는데 round-start worker가 시작되지 않음')
+
         srv.terminate(); srv.wait(timeout=10)
 
         # --- 2 누출: 아카이브의 홀카드와 대조 ---
@@ -405,7 +415,8 @@ def main():
     for k in ('hands', 'results', 'decisions', 'walks', 'showdowns',
               'chip_checks', 'chip_bad', 'slot_checks', 'slot_bad',
               'leak_hands_checked', 'legal_violations', 'err_checked',
-              'watch_blocked', 'stream_steps', 'stream_events'):
+              'watch_removed', 'stream_steps', 'stream_events',
+              'parallel_round_start', 'parallel_restarts', 'parallel_wait_ms'):
         if k in stats: print('  %-18s %s' % (k, stats[k]))
     print('  %-18s 중앙 %s / 최대 %s 초'
           % ('지연(진행 중)', stats.get('lat_mid_med'), stats.get('lat_mid_max')))
