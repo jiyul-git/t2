@@ -66,3 +66,16 @@ When that phase begins it must be announced explicitly as: **“이제부터 튜
 - Tool classification: `tools/README.md`
 
 Historical result/design markdown files remain for evidence. Their presence does **not** mean they are current work.
+
+
+## Branch hygiene
+
+Branch lifecycle is part of the project plan, not an afterthought.
+
+- Engine active line: `chatgpt/decision-architecture-audit-20260926`
+- UI active line: `chatgpt/ui-recovery-20260927`
+- New branches require an explicit reason and exit condition.
+- Temporary branches must be merged/cherry-picked/abandoned and then cleaned up.
+- Every major phase closes with code + verification + docs + branch cleanup.
+
+See `BRANCH_POLICY.md`.

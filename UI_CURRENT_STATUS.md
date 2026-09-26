@@ -99,3 +99,17 @@ This is not a pure visual change. Compare against current `live2.py` before deci
 
 A UI commit is not "latest" merely because its branch name is newer.
 `UI_CURRENT_STATUS.md` + `chatgpt/ui-recovery-20260927` define the current UI integration line.
+
+
+## Branch discipline
+
+This UI line is the only active UI integration branch.
+
+- active: `chatgpt/ui-recovery-20260927`
+- historical UI branches are read-only evidence/source material;
+- do not branch again for each individual UI fix;
+- recover multiple related UI fixes as commits on this branch;
+- after verification, port the verified UI result back to the engine line;
+- then mark historical UI branches as deletion candidates.
+
+See `BRANCH_POLICY.md`.
