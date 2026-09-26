@@ -54,8 +54,11 @@ def main():
         os.makedirs(web_dst, exist_ok=True)
         for fn in os.listdir(web_src):
             p = os.path.join(web_src, fn)
-            if os.path.isfile(p):
-                shutil.copy2(p, os.path.join(web_dst, fn))
+            target = os.path.join(web_dst, fn)
+            if os.path.isdir(p):
+                shutil.copytree(p, target, dirs_exist_ok=True)
+            elif os.path.isfile(p):
+                shutil.copy2(p, target)
 
     # 이 표시 파일이 없으면 ui_server 가 시작을 거부한다.
     open(os.path.join(dst, 'UI_SERVER_DIR'), 'w').close()

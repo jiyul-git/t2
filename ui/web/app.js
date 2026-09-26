@@ -276,176 +276,14 @@ function renderTop(v) {
  *
  * 이미지 파일이 아니라 inline SVG라 네트워크 요청도 없다.
  */
-const BOT_PALETTES = [
-  ['#ffd6a5','#ff9f68','#7a4433','#fff4dc','#ef476f'],
-  ['#bde0fe','#669bbc','#24435b','#f7fbff','#ffca3a'],
-  ['#caffbf','#70b77e','#285943','#f1ffe9','#ff7b54'],
-  ['#e2c2ff','#9d79bc','#4e3563','#fbf3ff','#ff8fab'],
-  ['#ffe5ec','#e88eac','#673747','#fff8fa','#5dd6c0']
-];
-
-function botAvatarSVG(pid) {
-  const raw = Math.trunc(Number(pid) || 0);
-  const id = ((raw % 400) + 400) % 400;
-
-  const face = id % 10;
-  const pal = Math.floor(id / 10) % 5;
-  const acc = Math.floor(id / 50) % 8;
-
-  const c = BOT_PALETTES[pal];
-  const skin = c[0];
-  const dark = c[1];
-  const line = c[2];
-  const light = c[3];
-  const accent = c[4];
-
-  const ears = [
-    `<path d="M15 24 L18 7 L29 19 Z M49 24 L46 7 L35 19 Z"
-       fill="${dark}" stroke="${line}" stroke-width="3"/>`,
-
-    `<circle cx="17" cy="17" r="8" fill="${dark}" stroke="${line}" stroke-width="3"/>
-     <circle cx="47" cy="17" r="8" fill="${dark}" stroke="${line}" stroke-width="3"/>`,
-
-    `<ellipse cx="21" cy="10" rx="7" ry="14" fill="${dark}" stroke="${line}" stroke-width="3"/>
-     <ellipse cx="43" cy="10" rx="7" ry="14" fill="${dark}" stroke="${line}" stroke-width="3"/>`,
-
-    `<path d="M13 24 L20 5 L29 21 Z M51 24 L44 5 L35 21 Z"
-       fill="${dark}" stroke="${line}" stroke-width="3"/>`,
-
-    `<circle cx="20" cy="14" r="7" fill="${skin}" stroke="${line}" stroke-width="3"/>
-     <circle cx="44" cy="14" r="7" fill="${skin}" stroke="${line}" stroke-width="3"/>`,
-
-    `<path d="M14 21 Q14 8 26 13 L27 23 Z M50 21 Q50 8 38 13 L37 23 Z"
-       fill="${dark}" stroke="${line}" stroke-width="3"/>`,
-
-    `<path d="M14 20 L21 8 L27 21 M50 20 L43 8 L37 21"
-       fill="${dark}" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-
-    `<circle cx="18" cy="19" r="7" fill="${dark}" stroke="${line}" stroke-width="3"/>
-     <circle cx="46" cy="19" r="7" fill="${dark}" stroke="${line}" stroke-width="3"/>`,
-
-    `<path d="M32 13 C26 6 38 4 37 12"
-       fill="none" stroke="${line}" stroke-width="3" stroke-linecap="round"/>
-     <circle cx="38" cy="10" r="4" fill="${accent}" stroke="${line}" stroke-width="2"/>`,
-
-    `<rect x="17" y="10" width="30" height="14" rx="5"
-       fill="${dark}" stroke="${line}" stroke-width="3"/>
-     <circle cx="24" cy="10" r="4" fill="${accent}"/>
-     <circle cx="40" cy="10" r="4" fill="${accent}"/>`
-  ][face];
-
-  const markings = [
-    `<path d="M22 28 L28 31 M42 28 L36 31" stroke="${dark}" stroke-width="3"/>`,
-    `<circle cx="23" cy="29" r="5" fill="${dark}" opacity=".35"/>
-     <circle cx="41" cy="29" r="5" fill="${dark}" opacity=".35"/>`,
-    `<path d="M26 21 L32 27 L38 21" fill="${light}" opacity=".8"/>`,
-    `<path d="M18 33 Q32 20 46 33" fill="${dark}" opacity=".25"/>`,
-    `<circle cx="32" cy="20" r="5" fill="${accent}" opacity=".6"/>`,
-    `<path d="M20 25 Q32 17 44 25" fill="none" stroke="${dark}" stroke-width="3"/>`,
-    `<path d="M18 38 L25 33 M46 38 L39 33" stroke="${dark}" stroke-width="3"/>`,
-    `<path d="M16 32 Q22 23 28 31 Q36 23 48 32"
-       fill="${dark}" opacity=".28"/>`,
-    `<circle cx="19" cy="35" r="4" fill="${accent}" opacity=".55"/>
-     <circle cx="45" cy="35" r="4" fill="${accent}" opacity=".55"/>`,
-    `<path d="M20 23 H44 V39 H20 Z"
-       fill="${dark}" opacity=".16"/>`
-  ][face];
-
-  const eyes = [
-    `<circle cx="24" cy="32" r="3" fill="${line}"/>
-     <circle cx="40" cy="32" r="3" fill="${line}"/>`,
-
-    `<path d="M20 32 Q24 27 28 32 M36 32 Q40 27 44 32"
-       fill="none" stroke="${line}" stroke-width="3" stroke-linecap="round"/>`,
-
-    `<ellipse cx="24" cy="31" rx="3" ry="5" fill="${line}"/>
-     <ellipse cx="40" cy="31" rx="3" ry="5" fill="${line}"/>`,
-
-    `<path d="M20 29 L28 33 M44 29 L36 33"
-       stroke="${line}" stroke-width="3" stroke-linecap="round"/>`,
-
-    `<circle cx="24" cy="32" r="5" fill="${light}" stroke="${line}" stroke-width="2"/>
-     <circle cx="40" cy="32" r="5" fill="${light}" stroke="${line}" stroke-width="2"/>
-     <circle cx="24" cy="32" r="2" fill="${line}"/>
-     <circle cx="40" cy="32" r="2" fill="${line}"/>`
-  ][face % 5];
-
-  const mouth = [
-    `<path d="M27 43 Q32 47 37 43"
-       fill="none" stroke="${line}" stroke-width="2.5" stroke-linecap="round"/>`,
-
-    `<path d="M25 42 Q32 51 39 42"
-       fill="${accent}" stroke="${line}" stroke-width="2"/>`,
-
-    `<path d="M27 45 H37"
-       stroke="${line}" stroke-width="3" stroke-linecap="round"/>`,
-
-    `<circle cx="32" cy="44" r="4" fill="${accent}" stroke="${line}" stroke-width="2"/>`,
-
-    `<path d="M25 43 Q32 39 39 43"
-       fill="none" stroke="${line}" stroke-width="2.5" stroke-linecap="round"/>`
-  ][face % 5];
-
-  const accessory = [
-    /* cap */
-    `<path d="M17 20 Q32 7 47 20 L44 24 H20 Z"
-       fill="${accent}" stroke="${line}" stroke-width="2"/>
-     <path d="M42 21 H54" stroke="${line}" stroke-width="4" stroke-linecap="round"/>`,
-
-    /* crown */
-    `<path d="M20 18 L23 7 L31 15 L38 6 L44 18 Z"
-       fill="${accent}" stroke="${line}" stroke-width="2"/>`,
-
-    /* headphones */
-    `<path d="M13 31 Q13 12 32 12 Q51 12 51 31"
-       fill="none" stroke="${accent}" stroke-width="5"/>
-     <rect x="10" y="28" width="7" height="15" rx="3" fill="${line}"/>
-     <rect x="47" y="28" width="7" height="15" rx="3" fill="${line}"/>`,
-
-    /* glasses */
-    `<circle cx="23" cy="32" r="7" fill="none" stroke="${accent}" stroke-width="3"/>
-     <circle cx="41" cy="32" r="7" fill="none" stroke="${accent}" stroke-width="3"/>
-     <path d="M30 32 H34" stroke="${accent}" stroke-width="3"/>`,
-
-    /* bandana */
-    `<path d="M14 22 Q32 16 50 22 L48 28 Q32 23 16 28 Z"
-       fill="${accent}" stroke="${line}" stroke-width="2"/>
-     <path d="M48 25 L58 19 L54 32 Z" fill="${accent}" stroke="${line}" stroke-width="2"/>`,
-
-    /* sprout */
-    `<path d="M32 16 Q29 7 21 8 Q22 16 32 17
-             M32 16 Q37 7 45 9 Q43 17 32 17"
-       fill="${accent}" stroke="${line}" stroke-width="2"/>`,
-
-    /* star pin */
-    `<path d="M49 18 L51 23 L57 23 L52 27 L54 33 L49 29 L44 33 L46 27 L41 23 L47 23 Z"
-       fill="${accent}" stroke="${line}" stroke-width="2"/>`,
-
-    /* bow tie */
-    `<path d="M22 49 L31 45 L31 54 L22 58 Z
-             M42 49 L33 45 L33 54 L42 58 Z"
-       fill="${accent}" stroke="${line}" stroke-width="2"/>
-     <circle cx="32" cy="51" r="4" fill="${line}"/>`
-  ][acc];
-
-  return `
-    <svg class="bot-svg" viewBox="0 0 64 64"
-         role="img" aria-label="봇 ${raw}">
-      ${ears}
-      <circle cx="32" cy="34" r="22"
-              fill="${skin}" stroke="${line}" stroke-width="3"/>
-      ${markings}
-      ${eyes}
-      <path d="M29 38 Q32 40 35 38"
-            fill="none" stroke="${line}" stroke-width="2"
-            stroke-linecap="round"/>
-      ${mouth}
-      ${accessory}
-    </svg>`;
+// Approved portrait layer restored from integration/ui-v49-money-jump-20260920.
+function botAvatarHTML(id) {
+  return PokerVisuals.avatarHTML(id);
 }
 
 function renderSeats(v) {
   const n = v.n_slots || 8;
+  const portraits = PokerVisuals.tablePortraits(v.seats || []);
   const box = $('#seats');
   // 카드가 가운데 덱에서 날아오게 하려면 '가운데 → 이 자리' 를 픽셀로 알아야
   // 한다. 좌석은 %로 배치되는데 CSS transform 의 %는 자기 박스 기준이라
@@ -511,7 +349,7 @@ function renderSeats(v) {
 
     html += `<div class="${cls}" data-slot="${slot}" style="${style}">` + memo +
             backs +
-            `<div class="avatar botavatar">${botAvatarSVG(botNo)}</div>` +
+            `<div class="avatar botavatar">${botAvatarHTML(portraits.get(slot))}</div>` +
             `<div class="seatno">B${esc(botNo)} · S${slot}</div>` +
             (award ? `<div class="winlabel">${esc(award)}</div>` : '') +
             (d.allin ? `<div class="tag">ALL-IN</div>` : '') +
@@ -520,6 +358,7 @@ function renderSeats(v) {
             `<span class="stack">${fmt(d.stack)}</span></div></div>`;
   }
   box.innerHTML = html;
+  PokerVisuals.scheduleGaze();
 }
 
 /* ---------------- 좌석 앞 칩 ---------------- */
@@ -702,6 +541,15 @@ function renderHero(v) {
   const box = $('#hero');
 
   box.hidden = false;
+  const portrait = $('#heroavatar');
+  const portraitId = PokerVisuals.tablePortraits(v.seats || []).get(
+    me ? me.seat : v.hero_seat
+  ) ?? 0;
+  if (portrait && portrait.dataset.portraitId !== String(portraitId)) {
+    portrait.innerHTML = PokerVisuals.avatarHTML(portraitId);
+    portrait.dataset.portraitId = String(portraitId);
+  }
+  PokerVisuals.scheduleGaze();
   box.classList.toggle('folded', !!me && !me.in_hand);
 
   const d = v.button_seat === v.hero_seat ? ' · D' : '';
