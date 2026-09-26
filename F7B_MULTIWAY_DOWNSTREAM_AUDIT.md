@@ -1657,3 +1657,129 @@ The corrected B1D5 therefore reconstructs two fresh tournaments from the same se
 replays **production only** through the preceding hand, verifies the pre-hand core state matches,
 then enables the overlap candidate for the target hand in only one copy. No candidate state is fed
 forward and no Tournament deepcopy is used.
+
+
+---
+
+## F7-B1D5 result — overlap fallback is a direct strategy change
+
+User validation on local commit `f66e08a`:
+
+- preregistered target hands: 6;
+- pre-hand state mismatches: **0**;
+- candidate empty calls: **15**;
+- candidate recovered calls: **15**;
+- direct changed hands: **3 / 6**.
+
+Direct differences on identical pre-hand tournament states:
+
+- seed 3000 hand 25: flop seat 8 bet **7300 -> 9100**;
+- seed 3002 hand 36: preflop seat 3 **call 31900 -> fold**;
+- seed 3004 hand 25: flop seat 3 **check -> bet 6900**.
+
+The other preregistered targets (3002:37, 3002:48, 3004:46) had no direct
+difference; in those target-hand replays the overlap candidate was not invoked.
+
+Therefore the B1D4 percentile-bin overlap fallback is **not** a
+behavior-preserving representation cleanup. It may still be a strategically
+better model, but promotion would be an intentional policy change and needs
+semantics/attribution of its own.
+
+The stochastic-policy posterior mismatch remains open.
+
+---
+
+## F7-B1D6 — stochastic preflop posterior representation preregistration
+
+### Question
+
+The current observer range is an unweighted unique-combo list.
+
+But `defend_decision` is a mixed policy: even at a fixed public state, different
+hand classes have different probabilities of producing the observed call/3bet.
+
+The correct observer quantity is therefore proportional to:
+
+```
+P(hand combo | observed action, public model)
+  ∝ P(observed action | hand combo, public model)
+    * P(hand combo | legal cards)
+```
+
+A hard percentile slice, including the B1D4 overlap fallback, represents only a
+support set. It does not represent those unequal posterior weights.
+
+### Diagnostic scope
+
+`tools/measure_f7b_empty_range_posterior.py` runs the same default fixture:
+
+```
+seeds 3000-3011
+50 hands per seed
+```
+
+It changes no production behavior.
+
+For each live HU empty-seat update it recovers the exact `preflop_range` inputs
+used by the observer and evaluates the 3bet-category likelihood of every legal
+starting-hand class under the current mixed-policy equations.
+
+The observer-model likelihood intentionally uses only information available to
+the current range API:
+
+- perceived/range profile passed to `preflop_range`;
+- position;
+- stack depth supplied to the range reconstruction;
+- opener position and open size;
+- caller count;
+- raise level;
+- seats / ante.
+
+It does **not** import hidden actor state.
+
+Because `preflop_range` does not currently receive the actor's private exploit
+read, `can_raise`, or `opener_allin`, the first diagnostic model fixes those
+missing inputs to the ordinary defend baseline:
+
+```
+exploit       = None
+can_raise     = True
+opener_allin  = False
+```
+
+That limitation is part of the audit result, not something to hide by reading
+the actual opponent persona.
+
+### Quantities reported
+
+For each empty live reconstruction:
+
+- whether the observed 3bet has positive model-implied posterior mass;
+- number of hand classes / combos with nonzero action likelihood;
+- number of top classes needed for 50%, 90%, and 95% posterior mass;
+- B1D4 overlap candidate combo count;
+- posterior mass retained by the overlap candidate;
+- posterior mass outside the overlap candidate;
+- minimum and maximum nonzero action likelihood;
+- max/min likelihood ratio;
+- top posterior-mass hand classes;
+- whether a unique unweighted combo list could exactly represent the posterior.
+
+### Exact representability rule
+
+No arbitrary support cutoff is introduced.
+
+An unweighted unique-combo list can exactly represent this posterior only if all
+legal combos with nonzero action likelihood have the **same likelihood**.
+
+If the likelihoods differ, assigning each included combo equal downstream
+sampling probability is structurally incapable of representing the stochastic
+posterior. In that case B1D cannot be closed by another hard-slice patch; it
+requires a separate weighted-range representation design.
+
+Likewise, the overlap fallback is an exact representation only if:
+
+1. its support equals the full nonzero posterior support; and
+2. those nonzero likelihoods are equal.
+
+No production consumer is activated in B1D6.
