@@ -738,156 +738,67 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
                     payout_flat=0.0, reentry=False, progress=0.0,
                     seats=8, ante=True, opener_allin=False, can_raise=True,
                     pot_bb=None, to_call_bb=None):
-    """오픈(또는 오픈+콜러)에 대한 대응. 중첩 없는 연속 구간.
+    """오픈(또는 오픈+콜러)에 대한 대응.
 
-    exploit — persona.read_opponent() 결과. 상대 정보가 쌓이면
-    3벳/콜 구간 자체가 움직인다. 정보가 없으면 w=0 이라 무보정.
+    액션 확률 의미는 defend_action_likelihoods 한 곳에서 계산한다.
+    이 함수는 그 확률을 기존과 동일한 RNG 순서로 실행하고, 공격이 선택됐을
+    때 raise_form 으로 형태/사이즈를 정하는 실행 계층만 맡는다.
+
+    tilt/field_q/payout_flat/reentry/progress 는 V2 plan selector 경계 호환 인자다.
+    현재 defend 확률식에는 들어가지 않는다.
     """
-    # 올인 대면은 별도 경로다. 포스트플랍이 없으므로 계산이 다르다.
-    _st = stack_bb if stack_bb is not None else bb
-    # 두 종류를 구분한다.
-    # 1) 내가 현재 가격을 받으면 사실상 내 스택이 전부 들어가는 call-off.
-    # 2) 상대가 짧게 all-in이고, 더 이상 응답 가능한 live stack이 없어
-    #    전략적으로 fold/call만 가능한 순수 call-off.
-    #
-    # 예전에는 (1)만 봐서 hero 100bb vs villain 20bb shove 같은 HU 상황이
-    # 일반 defend 경로로 흘렀다.
-    _hero_calloff = open_bb >= _st * 0.92
-    _pure_short_shove = bool(opener_allin and not can_raise)
-    if _hero_calloff or _pure_short_shove:
-        _pot = float(pot_bb if pot_bb is not None
-                     else 1.5 + open_bb*(1 + n_callers))
-        _tc = float(to_call_bb if to_call_bb is not None else open_bb)
-        _a, _cap = calloff_decision(
-            prof, def_pos, hand, bb, raise_level,
-            _pot, _tc, bf, opener_pos, open_bb, exploit, n_callers,
-            seats, ante)
-        return _a
-    # V2: 현재 감정은 plan selector에서만 소비한다.
-    # 여기 있던 variance_seek 계산은 결과에 사용되지 않는 dead value 였다.
-    tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
-                                n_callers, raise_level, seats, ante)
-    if exploit and exploit.get('w', 0) > 0:
-        w = exploit['w']
-        if raise_level >= 2:
-            # 3벳을 마주한 상황: 상대가 3벳을 남발하면 4벳/콜을 넓힌다.
-            tbg = exploit.get('tb_gap', 0.0)
-            tp = max(0.0, min(0.9, tp * (1.0 + w*1.3*tbg)))
-            tot = max(tp, min(0.95, tot * (1.0 + w*0.8*tbg)))
-            # 3벳 빈도만으로는 부족하다. '3벳은 자주 하는데 4벳에는 접는' 사람과
-            # '4벳도 안 접는' 사람은 4벳 블러프 여부가 정반대다.
-            # 3벳 레인지가 폴라라이즈됐으면 아래 덩어리가 크다는 뜻이다.
-            # 폴드가 아니라 **참여**로 대응한다 — 콜을 넓히고 4벳을 넓힌다.
-            pol = exploit.get('tb_polar', 0.0)
-            if pol > 0.02:
-                tot = max(tot, min(0.95, tot * (1.0 + w*0.85*pol)))
-                tp = max(0.0, min(0.9, tp * (1.0 + w*1.10*pol)))
-            f2fb = exploit.get('f2fb_gap', 0.0)
-            tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2fb)))
-            tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2fb)))
-        else:
-            # 오픈을 마주한 상황: 상대가 3벳에 잘 접으면 3벳을 넓힌다.
-            # 포스트플랍 폴드율이 아니라 '3벳 대면 폴드율'을 봐야 한다.
-            # 상대가 기준보다 넓게 열면 그 레인지가 약하다는 뜻이다.
-            # 절대 VPIP 가 아니라 '그 자리 기준의 몇 배'라 포지션 보정이 필요 없다.
-            og = exploit.get('open_gap', 0.0)
-            if abs(og) > 1e-6:
-                tot = max(tot, min(0.95, tot * (1.0 + w*0.55*og)))
-                tp = max(0.0, min(0.9, tp * (1.0 + w*0.45*og)))
-            f2tb = exploit.get('f2tb_gap', exploit.get('fold_gap', 0.0))
-            tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2tb)))
-            tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2tb)))
-            # 4벳을 자주 하는 상대에게 라이트 3벳은 손해다. 3벳 구간만 줄이고
-            # 참가 폭(tot)은 유지한다 — 3벳 대신 콜로 흡수되어야 한다.
-            fbg = exploit.get('fb_gap', 0.0)
-            if fbg > 0:
-                # 줄어드는 건 라이트 3벳이다. 4벳 머신을 상대로도 밸류 3벳은
-                # 오히려 늘어야 하므로 상위 6%(밸류 코어)는 바닥으로 남긴다.
-                # 하한이 없으면 fb_gap 이 커질 때 3벳 자체가 사라진다.
-                tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))
-    r = pct(hand)
-    # --- 핫존 리쇼브: 콜 대신 3벳 올인 (혼합) ---
-    if can_raise and stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:
-        rs = reshove_range(prof, def_pos, opener_pos, stack_bb, open_bb, n_callers)
-        if r <= rs:
-            # 역치 안쪽일수록 쇼브 비중이 높고, 경계에서는 콜/폴드와 섞인다
-            depth = 1.0 - (r / max(1e-6, rs))          # 0(경계)~1(최상위)
-            p_shove = 0.30 + 0.60*depth
-            if rng.random() < p_shove:
-                # reshove_range 는 '이 핸드가 짧은 스택 3벳 구간인가'만 정한다.
-                # 형태(올인/논올인)는 raise_form 한 곳에서만 정한다 —
-                # 여기서 바로 shove 를 반환하면 같은 결정을 두 곳에서 하게 된다.
-                _tgt = open_bb*(reraise_mult(1, def_pos) + 1.0*n_callers)
-                _act, _sz = raise_form(prof, stack_bb, _tgt,
-                                       1.5 + open_bb*(1 + n_callers), rng,
-                                       exploit=exploit, level=1,
-                                       n_opp=1 + n_callers, facing_bb=open_bb)
-                return (_act, _sz) if _act == 'shove' else ('3bet', _sz)
-    # --- 혼합 전략 ---
-    import math
-    def logit(x, center, width):
-        return 1.0/(1.0+math.exp((x-center)/max(1e-6, width)))
-    a = prof_aggr(prof)
-    # 3벳 가중치: 역치 안에서도 핸드가 약할수록 단조 감소
-    w_raise = logit(r, tp, max(0.015, tp*0.35))
-    w_raise *= (0.35 + 0.65*max(0.0, 1.0 - r/max(1e-6, tp)))   # tp 안에서 강도 비례
-    w_raise *= (0.55 + 0.085*a)
+    lik = defend_action_likelihoods(
+        prof, def_pos, opener_pos, hand, bb, open_bb, n_callers,
+        raise_level=raise_level, stack_bb=stack_bb,
+        exploit=exploit, bf=bf, seats=seats, ante=ante,
+        opener_allin=opener_allin, can_raise=can_raise,
+        pot_bb=pot_bb, to_call_bb=to_call_bb)
 
-    # 프리플랍 프리미엄 플랫/슬로우플레이 성향.
-    # 예전에는 여기서 postflop thin_value 개념을 읽었다. 그 결과
-    # thin_value_turn 숙련도가 프리플랍 3벳/콜 구성을 바꾸는 도메인 누수가 있었다.
-    # 프리미엄을 숨기는 것은 현재 도메인에 이미 있는 stable preference
-    # slowplay_taste 와 aggression 으로 표현한다.
-    _pf_slow = 0.0
-    if prof.get('concepts'):
-        _taste = PS.temper(prof, 'slowplay_taste', 5.0) / 10.0
-        _passive = max(0.0, min(1.0, (5.0 - a) / 5.0))
-        _premium = max(0.0, min(1.0, (0.10 - r) / 0.10))
-        _pf_slow = _passive * (0.35 + 0.65*_taste) * _premium
-    elif A.ARCHETYPES.get(prof.get('type'), (0,)*7+('reg',))[6] == 'fish':
-        _pf_slow = max(0.0, min(1.0, (0.10 - r) / 0.10)) * 0.55
-    w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)
+    # 올인 대면 call-off는 원래부터 RNG가 없는 결정이다.
+    if lik['calloff']:
+        if lik['call'] >= 1.0:
+            _tc = float(to_call_bb if to_call_bb is not None else open_bb)
+            return ('call', _tc)
+        return ('fold', 0)
 
-    # 계속 참가 가중치
-    w_cont = logit(r, tot, max(0.02, (tot-tp)*0.35))
-    w_call = max(0.0, w_cont - w_raise*0.6) * (1.5 - 0.055*a)
-    w_call *= 1.0 + 0.90*_pf_slow
-    # 불완전 올인으로 raise 권리가 닫혔다면 계획 단계에서 raise 후보를 제거한다.
-    # 실행부 ValueError -> 자동 call 로 바꾸는 것은 JUDGMENT->PLAN->ACTION 원칙 위반이다.
-    if not can_raise:
-        w_raise = 0.0
-    w_fold = max(0.0, 1.0 - w_cont)
-    # 경계 절단: 프리미엄은 폴드 없음, 쓰레기는 3벳 없음
-    if r <= 0.03:  w_fold = 0.0                 # AA/KK급은 폴드 없음
-    if r <= 0.015: w_call *= 0.16               # 최상위 플랫은 드물게
-    elif r <= 0.04: w_call *= 0.35
-    # 어떤 액션도 100%가 되지 않도록 슬로우플레이 하한을 둔다
-    slow = 0.04 + 0.012*(10-a)                  # 수동형일수록 슬로우플레이↑
-    if w_raise > 0 and w_call >= 0:
-        w_call = max(w_call, w_raise*slow)
-    if r > tot*1.35: w_raise = 0.0              # 레인지 밖은 3벳 금지
-    if r > tot:     w_call *= 0.15              # 레인지 밖 콜은 극히 드물게
-    tot_w = w_raise + w_call + w_fold
-    if tot_w <= 0: return ('fold', 0)
+    # 핫존 리쇼브는 기존과 똑같이 mixed roll보다 먼저 RNG를 한 번 소비한다.
+    # 실패한 경우에만 아래 일반 mixed policy로 내려간다.
+    p_hot = lik['hot_attack']
+    if p_hot > 0.0 and rng.random() < p_hot:
+        _tgt = open_bb*(reraise_mult(1, def_pos) + 1.0*n_callers)
+        _act, _sz = raise_form(
+            prof, stack_bb, _tgt,
+            1.5 + open_bb*(1 + n_callers), rng,
+            exploit=exploit, level=1,
+            n_opp=1 + n_callers, facing_bb=open_bb)
+        return (_act, _sz) if _act == 'shove' else ('3bet', _sz)
+
+    w_raise = lik['w_raise']
+    w_call = lik['w_call']
+    w_fold = lik['w_fold']
+    tot_w = lik['total_weight']
+    if tot_w <= 0:
+        return ('fold', 0)
+
     x = rng.random()*tot_w
     if x < w_raise:
         mult = reraise_mult(raise_level, def_pos) + 1.0*n_callers
         target = open_bb*mult
-        # 상대가 이미 올인이면 리레이즈할 대상이 없다. 그런데 open_bb 에
-        # 올인 금액이 그대로 들어와서 '큰 오픈'으로 취급됐고, 거기에 3벳
-        # 배수를 또 곱해 목표가 부풀었다(22bb 올인 -> target 66bb).
-        # 그 목표는 raise_form 의 `spr_after < 0.50`(쳐놓고 접을 수 없다)에
-        # 걸려 100% 쇼브가 됐다 — **100bb 가 22bb 를 상대로 통째로 올인.**
-        # 올인 대면에서는 그 금액을 넘어설 이유가 없으므로 목표를 묶는다.
+
+        # 상대가 이미 올인이면 리레이즈 목표를 올인 금액 위로 부풀리지 않는다.
         if opener_allin:
             target = open_bb
-        pot_bb = 1.5 + open_bb*(1 + n_callers)
-        act, sz = raise_form(prof, stack_bb if stack_bb is not None else bb,
-                             target, pot_bb, rng, exploit=exploit,
-                             level=raise_level, n_opp=1 + n_callers,
-                             facing_bb=open_bb)
+
+        _raise_pot = 1.5 + open_bb*(1 + n_callers)
+        act, sz = raise_form(
+            prof, stack_bb if stack_bb is not None else bb,
+            target, _raise_pot, rng, exploit=exploit,
+            level=raise_level, n_opp=1 + n_callers,
+            facing_bb=open_bb)
         return (act, sz) if act == 'shove' else ('3bet', sz)
-    if x < w_raise + w_call: return ('call', open_bb)
+
+    if x < w_raise + w_call:
+        return ('call', open_bb)
     return ('fold', 0)
 
 def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
