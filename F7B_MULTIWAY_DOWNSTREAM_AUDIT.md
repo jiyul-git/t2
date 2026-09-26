@@ -1415,3 +1415,45 @@ per-seed fingerprints are preregistered as the **expected activation target**.
 
 After the production wiring patch, the new engine should match those candidate fingerprints exactly.
 The old post-B1A baseline must remain untouched as the pre-activation checkpoint.
+
+
+---
+
+## F7-B1C12 — production activation: blocker effect judgment lifecycle
+
+Status: **IMPLEMENTED; verification pending.**
+
+B1C10 direct attribution and B1C11 full trajectory preregistered the structure-only candidate.
+
+The production patch intentionally preserves the existing approximate `blocker_score` bluff
+frequency factor and every consumer coefficient.
+
+Activated changes:
+
+1. `_decision_blocker_effect` is the single factual response-specific blocker judgment;
+2. heads-up delegates to legacy `R.blocker_effect` exactly;
+3. complete multiway seat pools use same-scale `R.joint_blocker_effect`;
+4. incomplete multiway pools retain the current union fallback for now (partial-pool semantics stay
+   open as a separate item);
+5. `make_plan` stores `blocker_net_raw` and provenance;
+6. `refresh` recomputes the current blocker judgment from current board/current ranges and updates
+   both `blocker_net` and `stackoff['_blk_net']`;
+7. `river_fix` consumes the shared current raw judgment instead of silently recomputing its own
+   union blocker. Legacy replay states without provenance keep a compatibility fallback.
+
+The pre-activation post-B1A baseline remains immutable.
+
+Acceptance target was frozen before this patch in B1C11:
+
+```
+3000  12c2daefd7c87cbb
+3001  8b83f668c038d002
+3002  0badaa6a21474fd3
+3003  3aebdd1942b57229
+3004  d4295da0aace11ca
+3005  2c50d0b71bd16614
+```
+
+`tools/verify_f7b_blocker_activation.py` must match all six exactly.
+The old post-B1A regression is expected to differ on the five preregistered seeds and must **not**
+be overwritten.

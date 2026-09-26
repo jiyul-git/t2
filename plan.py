@@ -221,6 +221,47 @@ def _decision_range_advantage(my_range, board, opp_range, n_opp=1,
     }
 
 
+def _decision_blocker_effect(hero, board, opp_range, street, size_frac,
+                             n_opp=1, opp_ranges=None, seed=None, tag='blocker'):
+    """판단용 blocker_effect + provenance.
+
+    HU 는 legacy blocker_effect 그대로.
+    MW complete seat pools 은 same-scale joint_blocker_effect.
+    불완전한 seat 정보는 현재 union 의미로 fallback 한다. 이 fallback 자체는
+    partial-pool audit 의 별도 미해결 항목이며 여기서 상대 range 를 발명하지 않는다.
+    """
+    legacy = (R.blocker_effect(
+        hero, opp_range, board, street, size_frac, False)
+        if (opp_range and board) else 0.0)
+
+    if int(n_opp or 1) <= 1:
+        return legacy, {
+            'source': 'legacy_hu',
+            'union': legacy,
+            'joint': legacy,
+            'complete': True,
+        }
+
+    _jseed = (_zlib.crc32(('%s|%s' % (seed, tag)).encode())
+              if seed is not None else None)
+    joint = R.joint_blocker_effect(
+        hero, opp_ranges, board, street, size_frac,
+        n_opp=n_opp, sims=1200, seed=_jseed, for_value=False)
+    if joint is None:
+        return legacy, {
+            'source': 'union_fallback_incomplete',
+            'union': legacy,
+            'joint': None,
+            'complete': False,
+        }
+    return joint, {
+        'source': 'joint_seat_pools',
+        'union': legacy,
+        'joint': joint,
+        'complete': True,
+    }
+
+
 # draw_strength 는 bot.draw_strength 하나뿐이다 (ranges 도 같이 쓴다).
 draw_strength = bot.draw_strength
 
@@ -485,8 +526,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 접을 콤보를 지우면(언블로커) 상대의 남은 레인지가 강해져 손해다.
     # 아직 사이즈를 정하기 전이라 스트리트별 표준 사이즈를 가정한다.
     _typ = {'flop': 0.60, 'turn': 0.70, 'river': 0.78}.get(street, 0.65)
-    blk_net = (R.blocker_effect(hero, opp_range, board, street, _typ, False) * _bg
-               if (opp_range and board) else 0.0)
+    _blk_raw, _blk_meta = _decision_blocker_effect(
+        hero, board, opp_range, street, _typ,
+        n_opp=n_opp, opp_ranges=opp_ranges, seed=seed, tag='make')
+    blk_net = _blk_raw * _bg
     nut = R.nut_advantage(my_range, opp_range, board) if my_range else 0.0
     # 전체 에쿼티 우위. 넛 우위와 다른 축이다 —
     # 전자는 '얼마나 자주 칠까', 후자는 '얼마나 크게 칠까'를 정한다.
@@ -732,6 +775,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     st = {'plan': plan, 'street_made': street, 'streets': [street],
             'eq': round(eq,3), 'danger': round(dang,2), 'outs': outs,
             'blocker': round(blk,2), 'blocker_net': round(blk_net,3),
+            'blocker_net_raw': float(_blk_raw),
+            'blocker_source': _blk_meta.get('source'),
             'nut_adv': round(nut,2), 'nut_adv_raw': float(nut),
             'range_adv': round(adv,2),
             'range_adv_union': (round(float(_adv_meta.get('union')), 6)
@@ -2189,10 +2234,15 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None):
         _br = PS.sk(profile, 'barrel_river')/10.0
         p_bluff = 0.10 + 0.55*_bl*_br
         if opp_range:
-            # 콜할 콤보를 지웠으면 블러프가 통한다. 순 효과를 본다.
-            _net = R.blocker_effect(hero, opp_range, board, 'river', 0.75, False)
+            # 현재 street 판단층이 계산한 동일 blocker judgment 를 소비한다.
+            # 오래된 replay/state 에 raw provenance 가 없을 때만 legacy union 으로
+            # 호환 fallback 한다. 여기서 별도 전략 판단을 다시 만들지 않는다.
+            _net = st.get('blocker_net_raw')
+            if _net is None:
+                _net = R.blocker_effect(
+                    hero, opp_range, board, 'river', 0.75, False)
             _bg = max(0.0, min(1.0, (PS.sk(profile, 'blocker') - 1.0)/7.0))
-            p_bluff *= max(0.35, min(1.80, 1.0 + 4.0*_net*_bg))
+            p_bluff *= max(0.35, min(1.80, 1.0 + 4.0*float(_net)*_bg))
         # 쇼다운 가치가 조금이라도 있으면 블러프로 쓰면 안 된다.
         if made >= 1 or rel >= 0.42:
             p_bluff *= 0.15
@@ -2352,6 +2402,26 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
             round(float(_adv_meta.get('joint')), 6)
             if _adv_meta.get('joint') is not None else None)
         st['range_adv_source'] = _adv_meta.get('source')
+
+    # blocker 도 board/range 의존 판단이다. 플랍 값을 턴/리버 sizing 에
+    # 재사용하지 않고 현재 board + 현재 perceived ranges 로 갱신한다.
+    if opp_range and board:
+        _blk_typ = {'flop': 0.60, 'turn': 0.70, 'river': 0.78}.get(street, 0.65)
+        _blk_raw, _blk_meta = _decision_blocker_effect(
+            hero, board, opp_range, street, _blk_typ,
+            n_opp=n_opp, opp_ranges=opp_ranges, seed=seed, tag='refresh')
+        _blk_bg = (max(0.0, min(1.0, (PS.sk(profile, 'blocker') - 1.0)/7.0))
+                   if profile.get('concepts') else 1.0)
+        _blk_net = float(_blk_raw) * _blk_bg
+        st['blocker'] = round(R.blocker_score(hero, opp_range, board) * _blk_bg, 2)
+        st['blocker_net'] = round(_blk_net, 3)
+        st['blocker_net_raw'] = float(_blk_raw)
+        st['blocker_source'] = _blk_meta.get('source')
+        if isinstance(st.get('stackoff'), dict):
+            _so = dict(st['stackoff'])
+            _so['_blk_net'] = round(_blk_net, 3)
+            st['stackoff'] = _so
+
     # 갱신 **전** 값을 잡아둔다. st.update 뒤에는 이전 강도를 알 수 없다.
     _prev_made = st.get('made') or 0
     _prev_rel = st.get('rel') or 0.0

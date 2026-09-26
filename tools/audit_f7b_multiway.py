@@ -161,21 +161,20 @@ def check_downstream_source_map():
     assert "_decision_range_advantage(" in msrc
     assert "_eq_vs(hero, board, opp_range" in rsrc
 
-    # Strategy metrics still consume the union.
-    for needle in (
-        "R.blocker_score(hero, opp_range, board)",
-        "R.blocker_effect(hero, opp_range",
-        "R.nut_advantage(my_range, opp_range, board)",
-    ):
-        assert needle in msrc, needle
+    # blocker_score frequency calibration is intentionally still union-based;
+    # response-specific blocker_effect is now one seat-aware judgment lifecycle.
+    assert "R.blocker_score(hero, opp_range, board)" in msrc
+    assert "_decision_blocker_effect(" in msrc
+    assert "R.nut_advantage(my_range, opp_range, board)" in msrc
 
     assert "_decision_relative_strength(" in rsrc
     assert "R.nut_advantage(_mr, opp_range, board)" in rsrc
     assert "_decision_range_advantage(" in rsrc
+    assert "_decision_blocker_effect(" in rsrc
     assert "R.nut_advantage(my_range, opp_range, board)" not in osrc
     assert "nut = float(nut or 0.0)" in osrc
     assert "nut=nut" in inspect.getsource(PL.decide_size)
-    assert "R.blocker_effect(hero, opp_range" in rvsrc
+    assert "st.get('blocker_net_raw')" in rvsrc
 
     # Multiway planning still chooses one representative read/stack.
     assert "_main = aggressor if" in ssrc
@@ -189,9 +188,13 @@ def check_downstream_source_map():
             'range provenance',
         ],
         'union_strategy_consumers': [
-            'blocker_score/effect',
+            'blocker_score frequency calibration',
             'nut_advantage',
-            'river blocker',
+        ],
+        'seat_aware_blocker_consumers': [
+            'make_plan blocker_effect',
+            'refresh value-sizing blocker',
+            'river blocker via shared judgment',
         ],
         'single_main_opponent_consumers': [
             'fold/read adjustment',
@@ -199,7 +202,7 @@ def check_downstream_source_map():
             'overbet response read',
             'effective-stack planning',
         ],
-        'strategy_fixed_in_this_patch': False,
+        'strategy_fixed_in_this_patch': 'blocker_effect lifecycle',
     }
 
 
@@ -362,6 +365,50 @@ def check_blocker_consumer_wiring():
     }
 
 
+
+def check_blocker_judgment_activation():
+    hero, board, tight, weak, union = _fixture()
+
+    hu, hm = PL._decision_blocker_effect(
+        hero, board, weak, 'flop', 0.60,
+        n_opp=1, opp_ranges={3: weak}, seed=17, tag='audit')
+    legacy = R.blocker_effect(hero, weak, board, 'flop', 0.60, False)
+    assert abs(hu - legacy) < 1e-12, (hu, legacy)
+    assert hm['source'] == 'legacy_hu', hm
+
+    joint, jm = PL._decision_blocker_effect(
+        hero, board, union, 'flop', 0.60,
+        n_opp=2, opp_ranges={2: tight, 3: weak}, seed=17, tag='audit')
+    assert jm['source'] == 'joint_seat_pools', jm
+    assert joint is not None
+
+    fallback, fm = PL._decision_blocker_effect(
+        hero, board, union, 'flop', 0.60,
+        n_opp=2, opp_ranges={2: tight, 3: []}, seed=17, tag='audit')
+    legacy_union = R.blocker_effect(hero, union, board, 'flop', 0.60, False)
+    assert abs(fallback - legacy_union) < 1e-12
+    assert fm['source'] == 'union_fallback_incomplete', fm
+
+    msrc = inspect.getsource(PL.make_plan)
+    rsrc = inspect.getsource(PL.refresh)
+    rvsrc = inspect.getsource(PL.river_fix)
+    assert "_decision_blocker_effect(" in msrc
+    assert "'blocker_net_raw': float(_blk_raw)" in msrc
+    assert "_decision_blocker_effect(" in rsrc
+    assert "st['blocker_net_raw'] = float(_blk_raw)" in rsrc
+    assert "_so['_blk_net'] = round(_blk_net, 3)" in rsrc
+    assert "st.get('blocker_net_raw')" in rvsrc
+
+    return {
+        'heads_up_legacy_parity': True,
+        'multiway_joint_source': jm['source'],
+        'incomplete_fallback_source': fm['source'],
+        'refresh_updates_raw_and_stackoff': True,
+        'river_consumes_shared_judgment': True,
+        'score_frequency_factor_unchanged': True,
+    }
+
+
 def main():
     a = check_union_relative_strength_distortion()
     b = check_union_range_advantage_weighting()
@@ -372,6 +419,7 @@ def main():
     g = check_joint_range_advantage_consumer()
     h = check_nut_judgment_wiring()
     i = check_blocker_consumer_wiring()
+    j = check_blocker_judgment_activation()
 
     print("PASS F7-B1 union relative-strength distortion reproduced", a)
     print("PASS F7-B1 union range-advantage weighting distortion reproduced", b)
@@ -382,8 +430,9 @@ def main():
     print("PASS F7-B1B joint range-advantage consumer is isolated", g)
     print("PASS F7-B1B3 nut judgment-to-sizing wiring is explicit", h)
     print("PASS F7-B1C4 blocker bluff factors are isolated without behavior change", i)
-    print("9/9 F7-B diagnostic checks passed")
-    print("NOTE: nut semantics remain union-based; blocker/read and multiway nut semantics remain audited.")
+    print("PASS F7-B1C12 blocker effect judgment lifecycle is activated", j)
+    print("10/10 F7-B diagnostic checks passed")
+    print("NOTE: blocker_score calibration, nut semantics, partial-pool fallback, and single-main reads remain separate audit items.")
 
 
 if __name__ == '__main__':
