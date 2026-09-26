@@ -379,12 +379,16 @@ def step(action=None, amount=0, defer_others=False, others=None,
         save(st)
 
     f, tb, alive, h, hero_seat = build_hand(st)
-    run = SE.HandRun(
-        h, decisions=st.get('decisions'), on_bot_action=on_bot_action)
+    # 저장된 HERO 액션을 재생하는 동안은 UI 진행 콜백을 끈다.
+    # 그렇지 않으면 과거 봇 액션을 현재 액션처럼 다시 스트리밍한다.
+    run = SE.HandRun(h, decisions=st.get('decisions'))
     raw = run.start()
     for (a, amt) in st['actions']:
         if isinstance(raw, dict) and (raw.get('done') or raw.get('error')): break
         raw = run.send(a, amt)
+
+    # 여기부터가 이번 요청에서 처음 계산되는 구간이다.
+    run.on_bot_action = on_bot_action
 
     # 재생 중 기록된 액션이 불법이 됐으면 여기서 멈추고 정상 오류 응답으로 돌려준다.
     # 예전에는 오류 프레임에 **다음 기록 액션**을 그대로 먹였다. session 의
