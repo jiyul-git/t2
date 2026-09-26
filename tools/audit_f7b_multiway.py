@@ -154,9 +154,11 @@ def check_downstream_source_map():
     assert "opp_r.extend(orange)" in ssrc
     assert "opp_ranges=opp_ranges" in ssrc
 
-    # Equity already has a seat-keyed consumer.
+    # Equity and the two repaired field-strength metrics are seat-aware.
     assert "_eq_vs(hero, board, opp_range" in msrc
     assert "opp_ranges=opp_ranges" in msrc
+    assert "_decision_relative_strength(" in msrc
+    assert "_decision_range_advantage(" in msrc
     assert "_eq_vs(hero, board, opp_range" in rsrc
 
     # Strategy metrics still consume the union.
@@ -164,13 +166,12 @@ def check_downstream_source_map():
         "R.blocker_score(hero, opp_range, board)",
         "R.blocker_effect(hero, opp_range",
         "R.nut_advantage(my_range, opp_range, board)",
-        "R.range_advantage(my_range, opp_range, board",
     ):
         assert needle in msrc, needle
 
     assert "_decision_relative_strength(" in rsrc
     assert "R.nut_advantage(_mr, opp_range, board)" in rsrc
-    assert "R.range_advantage(_mr, opp_range, board" in rsrc
+    assert "_decision_range_advantage(" in rsrc
     assert "R.nut_advantage(my_range, opp_range, board)" in osrc
     assert "R.blocker_effect(hero, opp_range" in rvsrc
 

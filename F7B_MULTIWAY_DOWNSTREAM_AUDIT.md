@@ -1,6 +1,6 @@
 # F7-B — Multiway downstream semantics audit
 
-Status: **B1-A CLOSED; B1-B RANGE-ADV CONSUMER IMPLEMENTED; NUT SHADOW HELD.**
+Status: **B1-A CLOSED; B1-B1 RANGE-ADV CLOSED; B1-B2 NUT SHADOW HELD.**
 
 F8 established seat-keyed opponent ranges and pot-layer equity.  The next global question is
 whether downstream planning preserves that identity or collapses it again.
@@ -658,3 +658,29 @@ Attribution uses the frozen `tools/baseline_9max_post_b1a.json`, not post-F8.
 `tools/attribute_f7b_range_adv.py` disables only `_decision_range_advantage` while leaving B1-A
 active.  Every forced-union fingerprint must restore the post-B1A checkpoint before this consumer
 can close.
+
+
+---
+
+## B1-B1 closure
+
+User validation at `c0e6b22`:
+
+- production modules compiled;
+- post-B1A frozen regression: **all six fingerprints identical**;
+- B1-B1 attribution: changed seeds **[]**;
+- forcing only the range-advantage consumer back to legacy union also produced
+  **forced-union mismatches []**.
+
+Therefore the joint field range-advantage consumer is behavior-preserving on the frozen six-seed
+fixture while repairing the live multiway factual input for future/reachable states.
+
+The first targeted run failed only because `check_downstream_source_map()` still asserted that
+the old union `R.range_advantage(... opp_range ...)` call existed in `make_plan` / `refresh`.
+That assertion described the defect that B1-B1 intentionally removed.  Production behavior and
+the attribution check both passed.
+
+The verifier now requires `_decision_range_advantage` in both `make_plan` and `refresh` and
+continues to require the still-unrepaired union consumers for nut advantage and blockers.
+
+B1-B1 is **CLOSED**.  Nut advantage remains shadow-only.
