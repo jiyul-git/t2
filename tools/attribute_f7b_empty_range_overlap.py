@@ -2,10 +2,12 @@
 """F7-B1D5 direct attribution for percentile-bin empty-range fallback.
 
 Runs production sequentially to preserve the real baseline trajectory.
-Before each hand it deep-copies the exact pre-hand tournament state, then runs
-the candidate on that snapshot only. Candidate results are never fed into the
-next hand, so any mismatch is a direct within-hand effect, not cross-hand
-cascade.
+B1D4 already preregistered six sequentially changed hands. For each target,
+this tool creates two fresh deterministic tournaments with the same seed,
+replays production only up to the exact pre-hand state, then enables the
+candidate for that one target hand in only one copy. Candidate results are
+never fed forward, so any mismatch is a direct within-hand effect, not a
+cross-hand cascade. No Tournament deepcopy is used.
 
 The candidate is exactly the B1D4 overlap fallback:
 - existing non-empty preflop ranges are untouched;
@@ -13,7 +15,6 @@ The candidate is exactly the B1D4 overlap fallback:
 - no coefficients or action-generation logic are changed.
 """
 import argparse
-import copy
 import json
 import os
 import sys
@@ -109,13 +110,13 @@ def play_one(t):
         st=t.submit('fold')
         guard+=1
     log=list(getattr(t.run,'full_log',[]) or [])
+    t.finish_hand()
     result={
         'log':[list(x) for x in log],
         'guard':guard,
         'remaining':sum(1 for x in t.seats if t.stacks[x]>0),
         'hero_stack':t.stacks.get(t.hero),
     }
-    t.finish_hand()
     return result
 
 
@@ -146,65 +147,122 @@ def first_diff(a,b):
     return None
 
 
-def run(seeds,hands):
+DEFAULT_TARGETS = [
+    (3000, 25),
+    (3002, 36),
+    (3002, 37),
+    (3002, 48),
+    (3004, 25),
+    (3004, 46),
+]
+
+
+def parse_targets(s):
+    if not s:
+        return list(DEFAULT_TARGETS)
+    out=[]
+    for item in str(s).split(','):
+        item=item.strip()
+        if not item:
+            continue
+        sd,h=item.split(':',1)
+        out.append((int(sd),int(h)))
+    return out
+
+
+def pre_state(t):
+    return {
+        'hand_no': t.hand_no,
+        'button': t.button,
+        'stacks': dict(t.stacks),
+        'field_remaining': t.field.remaining,
+        'rng_state': repr(t.rng.getstate()),
+    }
+
+
+def make_tourney(seed):
+    return T.Tournament(
+        entries=100,start_stack=30000,hero_seat=7,
+        seed=seed,hands_per_level=200)
+
+
+def replay_before(seed,target_hand):
+    t=make_tourney(seed)
+    for _ in range(1,target_hand):
+        if sum(1 for x in t.seats if t.stacks[x]>0)<3:
+            raise RuntimeError(
+                'seed %s ended before target hand %s' % (seed,target_hand))
+        play_one(t)
+    return t
+
+
+def run(targets):
     direct=[]
-    checked=0
     recovery={'empty':0,'recovered':0}
+    pre_state_mismatches=[]
 
-    for sd in seeds:
-        prod=T.Tournament(
-            entries=100,start_stack=30000,hero_seat=7,
-            seed=sd,hands_per_level=200)
+    for sd,hand_no in targets:
+        prod=replay_before(sd,hand_no)
+        cand=replay_before(sd,hand_no)
 
-        for hand_no in range(1,hands+1):
-            if sum(1 for x in prod.seats if prod.stacks[x]>0)<3:
-                break
+        ps=pre_state(prod)
+        cs=pre_state(cand)
+        if ps != cs:
+            pre_state_mismatches.append({
+                'seed':sd,'hand':hand_no,
+                'production':ps,'candidate':cs,
+            })
+            continue
 
-            snap=copy.deepcopy(prod)
-            p=play_one(prod)
+        p=play_one(prod)
 
-            cand=copy.deepcopy(snap)
-            cwrap=Candidate(); cwrap.on()
-            try:
-                c=play_one(cand)
-            finally:
-                cwrap.off()
+        cwrap=Candidate(); cwrap.on()
+        try:
+            c=play_one(cand)
+        finally:
+            cwrap.off()
 
-            recovery['empty']+=cwrap.empty
-            recovery['recovered']+=cwrap.recovered
-            checked+=1
+        recovery['empty']+=cwrap.empty
+        recovery['recovered']+=cwrap.recovered
 
-            d=first_diff(p,c)
-            if d is not None:
-                direct.append({
-                    'seed':sd,
-                    'hand':hand_no,
-                    'first_diff':d,
-                })
+        d=first_diff(p,c)
+        direct.append({
+            'seed':sd,
+            'hand':hand_no,
+            'candidate_empty_calls':cwrap.empty,
+            'candidate_recovered_calls':cwrap.recovered,
+            'direct_changed':d is not None,
+            'first_diff':d,
+        })
 
     return {
-        'hands_checked':checked,
+        'targets':[{'seed':s,'hand':h} for s,h in targets],
+        'pre_state_mismatches':pre_state_mismatches,
         'candidate_empty_calls':recovery['empty'],
         'candidate_recovered_calls':recovery['recovered'],
-        'direct_changed_hands_total':len(direct),
+        'direct_changed_hands_total':sum(
+            1 for x in direct if x['direct_changed']),
         'direct_changes':direct,
     }
 
 
 def main():
     ap=argparse.ArgumentParser()
-    ap.add_argument('--seeds',default='3000-3011')
-    ap.add_argument('--hands',type=int,default=50)
+    ap.add_argument(
+        '--targets',
+        default='',
+        help='comma-separated seed:hand list; default is B1D4 six changed hands')
     a=ap.parse_args()
+    targets=parse_targets(a.targets)
 
     print('PASS F7-B1D5 direct-pair fixture', {
         'AA_endpoint':PF.PCT['AA'],
         'candidate_only_on_empty':True,
         'candidate_not_fed_forward':True,
+        'no_tournament_deepcopy':True,
+        'targets':targets,
     })
-    print(json.dumps(
-        run(parse_seeds(a.seeds),a.hands),
-        indent=2,sort_keys=True))
+    print(json.dumps(run(targets),indent=2,sort_keys=True))
     print()
     print('PASS F7-B1D5 direct attribution completed')
     print('NOTE: stochastic-policy posterior semantics remain OPEN.')

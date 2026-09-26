@@ -1639,3 +1639,21 @@ Interpretation:
   pre-hand state and therefore cannot be promoted as a behavior-preserving cleanup;
 - regardless of this result, the stochastic `defend_decision` vs hard-slice observer posterior
   mismatch remains open and must be resolved before B1D is fully closed.
+
+
+### B1D5 diagnostic implementation correction
+
+The first B1D5 implementation attempted `copy.deepcopy(Tournament)`.
+That is invalid because the tournament object graph contains a generator and therefore cannot be
+pickled/deep-copied. This was a **diagnostic implementation bug**, not a production failure.
+
+B1D4 already fixed the sequentially changed target set to six hands:
+
+- 3000:25
+- 3002:36,37,48
+- 3004:25,46
+
+The corrected B1D5 therefore reconstructs two fresh tournaments from the same seed for each target,
+replays **production only** through the preceding hand, verifies the pre-hand core state matches,
+then enables the overlap candidate for the target hand in only one copy. No candidate state is fed
+forward and no Tournament deepcopy is used.
