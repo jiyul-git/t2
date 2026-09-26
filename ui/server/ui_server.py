@@ -42,36 +42,6 @@ LOCK = threading.Lock()
 _last = None
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
 
-PLAY_KEY_FILE = os.path.join(D, '.play_key')
-
-def _play_key():
-    key = os.environ.get('T2_PLAY_KEY')
-    if key:
-        return key.strip()
-
-    try:
-        with open(PLAY_KEY_FILE, encoding='utf-8') as fp:
-            key = fp.read().strip()
-        if key:
-            return key
-    except OSError:
-        pass
-
-    key = secrets.token_urlsafe(24)
-
-    with open(PLAY_KEY_FILE, 'w', encoding='utf-8') as fp:
-        fp.write(key)
-
-    try:
-        os.chmod(PLAY_KEY_FILE, 0o600)
-    except OSError:
-        pass
-
-    return key
-
-PLAY_KEY = _play_key()
-
-
 # ---------- 다른 테이블 정산을 결과 반환 뒤로 미룬다 ----------
 # 핸드 종료 요청 시간의 75% 가 live2.finish 안의 step_others 다(실측).
 # 히어로 결과를 먼저 돌려주고, 사용자가 결과 화면을 보는 동안 워커가 계산한다.
@@ -465,44 +435,6 @@ class H(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def _can_play(self):
-        # 기존 헤더 방식도 호환용으로 남긴다.
-        supplied = self.headers.get('X-T2-Play-Key') or ''
-        if supplied and hmac.compare_digest(supplied, PLAY_KEY):
-            return True
-
-        # /play?k=... 로 최초 인증하면 서버가 이 쿠키를 발급한다.
-        # 이후 액션 요청에는 브라우저가 자동으로 쿠키를 붙인다.
-        raw = self.headers.get('Cookie') or ''
-        for part in raw.split(';'):
-            if '=' not in part:
-                continue
-            name, value = part.strip().split('=', 1)
-            if name == 't2_play' and hmac.compare_digest(value, PLAY_KEY):
-                return True
-
-        return False
-
-    def _grant_play_cookie(self):
-        """Validate done by caller; persist player auth and redirect to /play.
-
-        Local Termux uses plain HTTP, so Secure must not be forced there.
-        Reverse proxies can signal HTTPS with X-Forwarded-Proto, or deployment can
-        force it with T2_COOKIE_SECURE=1.
-        """
-        proto = (self.headers.get('X-Forwarded-Proto') or '').split(',')[0].strip().lower()
-        force_secure = os.environ.get('T2_COOKIE_SECURE', '').strip().lower() in ('1','true','yes','on')
-        secure = (proto == 'https' or force_secure)
-        cookie = (
-            't2_play=%s; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax%s'
-            % (PLAY_KEY, '; Secure' if secure else '')
-        )
-        self.send_response(302)
-        self.send_header('Location', '/play')
-        self.send_header('Set-Cookie', cookie)
-        self.send_header('Content-Length', '0')
-        self.end_headers()
-
     def _send(self, code, obj):
         b = json.dumps(obj, ensure_ascii=False, default=str).encode()
         self.send_response(code)
@@ -551,7 +483,7 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header(
             'Access-Control-Allow-Headers',
-            'Content-Type, X-T2-Play-Key, X-T2-Client-Mode'
+            'Content-Type'
         )
         self.send_header('Access-Control-Allow-Methods', 'GET, POST')
         self.end_headers()
@@ -571,8 +503,6 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
 
         if path == '/api/memos':
-            if not self._can_play():
-                return self._send(403, {'error': '플레이어만 메모를 볼 수 있습니다'})
             with LOCK:
                 try:
                     return self._send(200, {'memos': _hero_memos()})
@@ -588,34 +518,19 @@ class H(BaseHTTPRequestHandler):
             _h = {'hands': _public_history()}
             _h.update(_archive_status())
             return self._send(200, _h)
-        if path == '/play/':
+        if path in ('/play', '/play/'):
             self.send_response(302)
-            self.send_header('Location', '/play')
+            self.send_header('Location', '/')
             self.send_header('Content-Length', '0')
             self.end_headers()
             return
 
-        if path.startswith('/play/'):
-            supplied = urllib.parse.unquote(path[len('/play/'):]).strip('/')
-            if supplied and hmac.compare_digest(supplied, PLAY_KEY):
-                return self._grant_play_cookie()
-            return self._send(403, {'error': '잘못된 플레이 주소'})
+        if path == '/watch' or path.startswith('/watch/'):
+            return self._send(404, {'error': '관전 모드는 제거되었습니다'})
 
-        if path == '/play':
-            # /play?k=<key>도 서버가 직접 검증한다. 예전에는 프론트 JS만 키를
-            # 읽어서 로컬스토리지에 보관했기 때문에 브라우저/캐시 상황에 따라
-            # "플레이어 인증이 필요합니다"가 반복될 수 있었다.
-            supplied = ((query.get('k') or [''])[0] or '').strip()
-            if supplied:
-                if hmac.compare_digest(supplied, PLAY_KEY):
-                    return self._grant_play_cookie()
-                return self._send(403, {'error': '잘못된 플레이 주소'})
+        if path == '/':
             return self._serve_static('/index.html')
 
-        if path == '/watch':
-            return self._serve_static('/index.html')
-        if path in ('/play', '/watch'):
-            return self._serve_static('/index.html')
         if path != '/api/state':
             return self._serve_static(path)
         with LOCK:
@@ -640,20 +555,6 @@ class H(BaseHTTPRequestHandler):
             body = self._body()
         except ValueError:
             return self._send(400, {'error': 'JSON 파싱 실패'})
-        mutating = self.path in ('/api/new', '/api/step', '/api/memo')
-
-        # 같은 브라우저가 예전에 /play 인증을 받아 t2_play 쿠키를 가지고 있어도
-        # /watch 페이지에서는 절대 상태 변경 API를 실행하지 못하게 한다.
-        # 쿠키는 "누가 플레이어인가", 이 헤더는 "현재 어느 UI 모드인가"를 가른다.
-        if mutating and self.headers.get('X-T2-Client-Mode') != 'play':
-            return self._send(
-                403,
-                {'error': '관전 페이지에서는 게임을 조작할 수 없습니다'}
-            )
-
-        if mutating and not self._can_play():
-            return self._send(403, {'error': '플레이어 인증이 필요합니다'})
-
         with LOCK:
             try:
                 if self.path == '/api/memo':
@@ -745,11 +646,8 @@ if __name__ == '__main__':
     print('정산 지연: %s  (끄려면 T2_UI_DEFER=0)' % ('켬' if DEFER else '끔'))
     print('상태 파일: %s' % L.ST)
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
-    print('관전 전용: http://127.0.0.1:%d/watch' % port)
-    print('플레이 최초 인증: http://127.0.0.1:%d/play/%s' %
-          (port, urllib.parse.quote(PLAY_KEY, safe='')))
-    print('플레이 재접속: http://127.0.0.1:%d/play' % port)
-    print('다른 기기 관전: http://<이 기기의 LAN IP>:%d/watch' % port)
+    print('플레이 주소: http://127.0.0.1:%d' % port)
+    print('다른 기기: http://<이 기기의 LAN IP>:%d' % port)
     if ':' in host:
         class _HTTPServer6(HTTPServer):
             address_family = socket.AF_INET6

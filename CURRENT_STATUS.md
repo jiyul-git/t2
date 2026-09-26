@@ -62,7 +62,7 @@ When that phase begins it must be announced explicitly as: **“이제부터 튜
 - Current structural map: `DECISION_ARCHITECTURE_AUDIT.md`
 - Current F7-B work: `F7B_MULTIWAY_DOWNSTREAM_AUDIT.md`
 - Dead/duplicate ledger: `AUDIT_LEDGER.md`
-- UI current guide: `ui/README.md`
+- UI current guide: `ui/README.md` (play-only; no watch mode / no play key)
 - Tool classification: `tools/README.md`
 
 Historical result/design markdown files remain for evidence. Their presence does **not** mean they are current work.

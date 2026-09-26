@@ -1,38 +1,6 @@
 'use strict';
-const CLEAN_PATH =
-  location.pathname.replace(/\/+$/, '');
-
-const PLAY_PATH =
-  CLEAN_PATH === '/play' ||
-  CLEAN_PATH.startsWith('/play/');
-
-let URL_PLAY_KEY =
-  new URLSearchParams(location.search).get('k') ||
-  new URLSearchParams(location.hash.slice(1)).get('k') ||
-  '';
-
-if (PLAY_PATH && URL_PLAY_KEY) {
-  try {
-    localStorage.setItem('t2_play_key', URL_PLAY_KEY);
-  } catch (e) {}
-}
-
-let SAVED_PLAY_KEY = '';
-try {
-  SAVED_PLAY_KEY = localStorage.getItem('t2_play_key') || '';
-} catch (e) {}
-
-const WATCH_PATH =
-  location.pathname.replace(/\/+$/, '') === '/watch';
-
-const WATCH_MODE =
-  WATCH_PATH ||
-  (!PLAY_PATH && !URL_PLAY_KEY);
-
-const PLAY_KEY =
-  WATCH_MODE
-    ? ''
-    : (URL_PLAY_KEY || SAVED_PLAY_KEY);
+const WATCH_MODE = false;
+const PLAY_KEY = '';
 
 /* t2 포커 테이블 UI.
  *
@@ -137,16 +105,10 @@ function memoLocalSet(pid, txt) {
 }
 
 async function memoLoad() {
-  if (WATCH_MODE) return;
 
   try {
-    const headers = PLAY_KEY
-      ? { 'X-T2-Play-Key': PLAY_KEY }
-      : {};
-
     const res = await fetch('/api/memos', {
-      cache: 'no-store',
-      headers: headers
+      cache: 'no-store'
     });
 
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -175,7 +137,6 @@ async function memoLoad() {
 }
 
 function memoSet(pid, txt) {
-  if (WATCH_MODE) return;
 
   const k = String(pid);
   const val = String(txt || '').trim();
@@ -186,10 +147,8 @@ function memoSet(pid, txt) {
   memoLocalSet(k, val);
 
   const headers = {
-    'Content-Type': 'application/json',
-    'X-T2-Client-Mode': WATCH_MODE ? 'watch' : 'play'
+    'Content-Type': 'application/json'
   };
-  if (PLAY_KEY) headers['X-T2-Play-Key'] = PLAY_KEY;
 
   fetch('/api/memo', {
     method: 'POST',
@@ -2200,12 +2159,6 @@ function btn(id, label, sub, fn) {
 function renderActions(v) {
   closeRaise();
 
-  if (WATCH_MODE) {
-    const row = $('#mainrow');
-    row.hidden = false;
-    row.innerHTML = '<div class="wait">관전 중…</div>';
-    return;
-  }
   const row = $('#mainrow');
   row.innerHTML = '';
   const lg = v.legal || {};
@@ -2539,12 +2492,6 @@ function finishResult2(v) {
 
   const afterHold = () => {
     if (!epochAlive(epoch)) return;
-
-    if (WATCH_MODE) {
-      $('#mainrow').innerHTML =
-        '<div class="wait">다음 핸드 대기 중…</div>';
-      return;
-    }
 
     if (S.pendingMoveNote) {
       const note = S.pendingMoveNote;
@@ -3211,11 +3158,6 @@ function newGameFormHTML() {
 }
 
 function startNew() {
-  if (WATCH_MODE) {
-    toast('관전 모드에서는 새 게임을 시작할 수 없습니다');
-    return;
-  }
-
   // 새 게임 시작을 확정하면 설정/확인 창부터 닫는다.
   hideOverlay();
   clearTimeout(S.autoTimer); S.autoTimer = null;
@@ -3312,9 +3254,7 @@ async function req(path, body) {
   const init = body
     ? { method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-T2-Play-Key': PLAY_KEY,
-          'X-T2-Client-Mode': WATCH_MODE ? 'watch' : 'play'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(body) }
     : {};
@@ -3443,11 +3383,6 @@ function previewHeroAction(action, amount) {
 }
 
 function send(action, amount) {
-  if (WATCH_MODE) {
-    toast('관전 모드입니다');
-    return;
-  }
-
   if (S.token === null || S.token === undefined) {
     sync();
     return;
@@ -3733,31 +3668,4 @@ $('#seats').addEventListener('pointerdown', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideOverlay();
 });
-if (WATCH_MODE) {
-  sync();
-} else {
-  memoLoad().finally(sync);
-}
-
-if (WATCH_MODE) {
-  setInterval(async () => {
-    if (S.busy) return;
-
-    try {
-      const r = await req('/api/state', null);
-
-      if (r.status !== 200 || !r.json)
-        return;
-
-      if (r.json.no_game) {
-        if (S.last && S.last.no_game) return;
-        apply(r.json);
-        return;
-      }
-
-      if (r.json.token !== S.token)
-        apply(r.json);
-
-    } catch (e) {}
-  }, 1000);
-}
+memoLoad().finally(sync);
