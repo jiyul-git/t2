@@ -1545,3 +1545,43 @@ It also records street and `first` status to distinguish initial range construct
 later postflop narrowing-to-empty.
 
 No production behavior changes in this step.
+
+
+---
+
+## F7-B1D3 — empty HU range construction stage
+
+B1D2 confirms the inconsistent representation on all 11 observed HU empty-seat calls:
+
+```
+opp_ranges[only_opponent] = []
+opp_range                  = my_range
+```
+
+Nine calls therefore use the hero's own non-empty range as the legacy opponent union; two calls have
+both ranges empty.
+
+The 11 calls split into:
+
+- 6 first-plan flop states;
+- 5 later turn refresh states.
+
+Source inspection further narrows the origin:
+
+- `perceived_range` keeps the base range when narrowing would collapse it;
+- `narrow_by_actions` explicitly returns the base if its result becomes empty;
+- `adjust_range_by_history` returns an empty input unchanged.
+
+Therefore the next audit instruments:
+
+```
+preflop_range -> perceived_range -> adjust_range_by_history
+```
+
+For every HU empty-seat update it records the preflop action/position/stack context, all three stage
+sizes, and `defend_thresholds` for call/3bet roles.
+
+If `preflop_n == 0` in every case, the downstream self-range fallback is only masking an
+action-model incompatibility upstream. The repair must then define how an observed action is
+represented when the profile model assigns that action an empty range; copying the hero range is
+not a valid semantic fallback.
