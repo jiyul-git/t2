@@ -41,9 +41,10 @@ Current finding:
 - overlap fallback was exact in **0/11** cases and omitted as much as **89.813%** of posterior mass.
 
 Conclusion: another hard-slice/bin patch cannot close B1D. B1D7 is active.
-Step A (RNG-free defend-action likelihood shadow) is implemented; local scripted-branch verification is pending.
-After that, production defend generation may be rewired to the shared helper only if behavior is preserved,
-then weighted-range representation/consumer migration proceeds. Production ranges remain unweighted for now.
+Step A (RNG-free defend-action likelihood shadow) passed locally with 164,444 scripted branch checks and 0 mismatches.
+Step B rewires production defend execution to that shared helper while preserving the legacy RNG order;
+exact action+sizing+RNG-state parity against checkpoint 5eb848c is pending.
+Weighted-range representation/consumer migration starts only after Step B passes. Production ranges remain unweighted for now.
 
 ### OPEN after B1D
 
