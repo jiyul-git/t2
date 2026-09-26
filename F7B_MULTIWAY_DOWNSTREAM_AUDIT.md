@@ -1146,3 +1146,67 @@ untouched.
 
 This replaces B1C3/B1C4 for strategy attribution.  Their measurements remain useful historical
 diagnostics but are not sufficient for consumer-removal decisions.
+
+
+---
+
+## F7-B1C6 — same-scale joint blocker-effect candidate
+
+B1C5 gives exact consumer attribution:
+
+- neutralizing the approximate score factor alone changes 1 / 60 multiway
+  `make_plan` decisions;
+- neutralizing the response-specific net factor alone changes 1 / 60;
+- neutralizing both changes 3 / 60.
+
+So both current factors are behaviorally live.
+
+The next question is semantic, not tuning.
+
+The earlier direct field metric measured a **change in whole-field fold probability**.  That exposed
+direction errors in the union collapse, but its magnitude is not on the same scale as legacy
+`blocker_effect`.  Feeding it into the existing `1 + 4*effect` consumer would silently change
+the meaning of that coefficient.
+
+### Same-scale generalization
+
+Legacy heads-up `blocker_effect` is:
+
+```
+fraction of CALL combos blocked by hero
+-
+fraction of FOLD combos blocked by hero
+```
+
+The multiway generalization replaces a single opponent combo with a compatible **joint field
+configuration**:
+
+```
+continue configuration = at least one opponent is in that seat's call range
+fold configuration     = every opponent is in that seat's fold range
+
+joint blocker effect =
+    fraction of CONTINUE configurations blocked by hero
+  - fraction of ALL-FOLD configurations blocked by hero
+```
+
+This preserves:
+
+- exact heads-up parity;
+- the legacy `[-1, +1]` scale;
+- positive = hero removes continuing configurations more than folding configurations;
+- negative = hero removes folding configurations more than continuing configurations.
+
+It also enforces cross-opponent card compatibility and returns `None` for incomplete seat pools
+instead of inventing the missing opponent from the union.
+
+`ranges.joint_blocker_effect` is added as an unused semantic helper in this step.
+
+`tools/measure_f7b_blocker_joint.py` compares current union effect with the same-scale joint
+effect and shadows the structurally clean candidate:
+
+1. approximate `blocker_score` strategy factor neutralized to exactly 1.0;
+2. response-specific `blocker_effect` replaced with `joint_blocker_effect`;
+3. all existing coefficients, blocker awareness and RNG streams unchanged.
+
+Production output is always returned.  Activation requires the measured behavior attribution first.

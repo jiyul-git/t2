@@ -1,4 +1,5 @@
 import random
+import zlib as _zlib
 import bot
 import preflop as pf
 
@@ -247,6 +248,107 @@ def blocker_effect(hero, opp_range, board, street, size_frac, for_value=False):
     blocked_fold = sum(1 for c in folds if hit(c)) / len(folds)
     net = blocked_call - blocked_fold
     return max(-1.0, min(1.0, -net if for_value else net))
+
+
+def joint_blocker_effect(hero, opp_ranges, board, street, size_frac,
+                         n_opp=None, sims=1200, seed=None, for_value=False):
+    """Seat-keyed multiway generalization of blocker_effect.
+
+    Heads-up is EXACT legacy blocker_effect.
+
+    Multiway uses the same semantic unit as the legacy function, but the
+    elementary outcome is now a compatible joint opponent configuration:
+
+      continue configuration = at least one opponent is in that seat's call range
+      fold configuration     = every opponent is in that seat's fold range
+
+    We sample the counterfactual world where board cards are dead but hero's
+    hole cards are still allowed in opponent pools.  A configuration is
+    "blocked" when any opponent combo overlaps hero.
+
+    net =
+        P(configuration blocked | field continues)
+      - P(configuration blocked | field folds)
+
+    Positive therefore means hero removes continuing field configurations more
+    often than all-fold configurations, exactly matching blocker_effect's
+    single-opponent interpretation and [-1, +1] scale.
+
+    Returns None when the seat-keyed pools are incomplete.  Callers must keep
+    that unknown distinct from a measured zero.
+    """
+    if not hero or not board or not isinstance(opp_ranges, dict):
+        return None
+    items = sorted(opp_ranges.items(), key=lambda kv: str(kv[0]))
+    want = int(n_opp if n_opp is not None else len(items))
+    if want <= 0 or len(items) != want or any(not r for _, r in items):
+        return None
+
+    if want == 1:
+        return blocker_effect(
+            hero, items[0][1], board, street, size_frac, for_value)
+
+    board_dead = set(board)
+    prepared = []
+    for seat, pool in items:
+        # Board collisions are impossible in both worlds.  Hero collisions are
+        # intentionally preserved: they ARE the blocker counterfactual.
+        clean = sorted(c for c in pool
+                       if c[0] not in board_dead and c[1] not in board_dead)
+        if not clean:
+            return None
+        calls = set(_call_range(clean, board, street, size_frac))
+        prepared.append((seat, clean, calls))
+
+    if seed is None:
+        seed = _zlib.crc32(repr((
+            tuple(sorted(hero)), tuple(board), street, float(size_frac),
+            tuple((str(s), tuple(pool)) for s, pool, _ in prepared),
+            int(sims), 'joint_blocker_effect')).encode())
+    rng = random.Random(seed)
+
+    hero_cards = set(hero)
+    continue_n = fold_n = blocked_continue = blocked_fold = 0
+    for _ in range(max(1, int(sims))):
+        used = set(board_dead)
+        picks = []
+        ok = True
+        for _seat, pool, calls in prepared:
+            pick = None
+            for _try in range(80):
+                c = rng.choice(pool)
+                if c[0] not in used and c[1] not in used:
+                    pick = c
+                    used.add(c[0]); used.add(c[1])
+                    break
+            if pick is None:
+                ok = False
+                break
+            picks.append((pick, calls))
+        if not ok:
+            continue
+
+        field_continues = any(c in calls for c, calls in picks)
+        is_blocked = any(c[0] in hero_cards or c[1] in hero_cards
+                         for c, _calls in picks)
+        if field_continues:
+            continue_n += 1
+            if is_blocked:
+                blocked_continue += 1
+        else:
+            fold_n += 1
+            if is_blocked:
+                blocked_fold += 1
+
+    # Same convention as legacy blocker_effect: if one side of the response
+    # partition does not exist, there is no meaningful call-vs-fold contrast.
+    if not continue_n or not fold_n:
+        return 0.0
+
+    net = (blocked_continue / float(continue_n)
+           - blocked_fold / float(fold_n))
+    net = max(-1.0, min(1.0, net))
+    return -net if for_value else net
 
 
 # ---------- 액션 경로에 따른 레인지 축소 ----------
