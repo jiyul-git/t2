@@ -2015,3 +2015,47 @@ Acceptance:
 Only after this verifier passes may the production action generator itself be
 rewired to consume the shared helper. Weighted-range representation remains the
 next step after that behavior-preserving wiring.
+
+
+### B1D7-B implementation — production defend rewired to the shared likelihood
+
+Status: **IMPLEMENTED / exact behavior+RNG parity pending.**
+
+After B1D7-A passed locally with:
+
+```
+probability_invariants   97,344
+scripted_branch_checks  164,444
+calloff_checks              676
+hotzone_positive_states    2,598
+mismatches                     0
+```
+
+`preflop.defend_decision` was structurally reduced to an execution layer.
+
+It now:
+
+1. calls `defend_action_likelihoods(...)` once;
+2. preserves the legacy hot-zone RNG roll before the mixed-policy roll;
+3. consumes the helper's raw `w_raise / w_call / w_fold` values rather than
+   recomputing threshold/exploit/slowplay math locally;
+4. invokes `raise_form` only after attack selection, as before;
+5. keeps call-off RNG-free.
+
+No policy coefficient, threshold, sizing formula or action category was changed.
+
+`tools/verify_f7b_defend_rewire.py` compares the rewired implementation against
+the user-validated pre-rewire checkpoint `5eb848c`.
+
+For every sampled state it requires exact equality of:
+
+- returned action tuple, including attack sizing;
+- final `random.Random` state.
+
+A mismatch in either is a wiring regression.
+
+B1D7-B may close only after:
+
+- `tools/verify_f7b_defend_likelihood.py` still passes;
+- `tools/verify_f7b_defend_rewire.py` reports zero action/RNG mismatches;
+- working tree is clean.
