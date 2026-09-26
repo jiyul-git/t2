@@ -768,3 +768,44 @@ Decision rule after measurement:
 - any-field collision will not replace ownership merely because it is more conservative;
 - `overbet_frac` remains blocked until the ownership/collision split and B2 multi-opponent response
   semantics are jointly understood.
+
+
+---
+
+## B1-B2C — actual bluff-mode reachability
+
+The ownership/collision measurement shows:
+
+- worst-seat ownership stays materially closer to the original ownership scale than any-field
+  collision;
+- any-field increasingly saturates negative as opponent count grows, confirming that it is a
+  field-collision quantity rather than a drop-in ownership replacement;
+- union versus worst-seat crosses the existing `0.55` threshold only 5 times in 112 multiway
+  planning states.
+
+A threshold crossing alone is insufficient evidence for a consumer change because `bluff_mode`
+is not called in every planning state.
+
+`tools/measure_f7b_nut_bluffmode.py` therefore shadows the **actual consumer**.
+
+For every production `bluff_mode` call it:
+
+1. runs the current union-nut call from the real RNG state;
+2. saves the exact post-call RNG state;
+3. restores the pre-call state;
+4. replays the same call with worst-seat ownership;
+5. restores the production post-call RNG state;
+6. returns the original union result.
+
+It reports:
+
+- how many multiway states actually call `bluff_mode`;
+- how many of those have complete seat pools;
+- threshold crossings **at the consumer**;
+- actual mode changes under identical random rolls;
+- transitions to/from `polarized`.
+
+Production behavior and production RNG consumption remain unchanged.
+
+Worst-seat ownership will only be approved for `bluff_mode` if the consumer-level shadow supports
+the semantic replacement.  `overbet_frac` remains blocked.
