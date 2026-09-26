@@ -57,15 +57,29 @@
 1. verifier/regression 통과
 2. 결과 문서 갱신
 3. active branch에 필요한 commit 반영
-4. 임시 branch가 더 필요한지 판정
-5. 불필요한 branch 목록을 삭제 후보로 기록
-6. 삭제 전 merge/cherry-pick 누락 여부 확인
+4. **containment proof** 수행: 임시 branch -> canonical branch 비교에서 canonical이 임시 branch의 모든 commit을 포함하는지 확인
+5. diverged면 unique commit을 먼저 열어보고 merge/cherry-pick/보존 중 하나를 결정
+6. canonical status 문서에 실제로 합쳐진 기능명과 merge/head commit을 기록
+7. 임시 branch를 즉시 deletion candidate로 전환하고 그 branch에는 더 이상 commit하지 않음
+8. local/runtime source가 canonical branch만 추적하는지 확인
+9. 그 다음에만 local/remote branch 삭제
 
-즉 **기능 완료 = 코드 완료 + 검증 완료 + 문서 완료 + branch 정리 완료**다.
+즉 **기능 완료 = 코드 완료 + 검증 완료 + canonical 반영 확인 + 문서 완료 + branch 정리 완료**다.
+
+### 절대 금지
+
+- branch 이름만 보고 "옛날 것"이라 판단해 삭제하지 않는다.
+- current branch에 코드가 안 보인다는 이유만으로 "구현 안 됨"이라고 결론내리지 않는다.
+- 이미 구현한 기능을 다시 설계하기 전에 historical branch/commit 검색과 containment 확인을 먼저 한다.
+- runtime 폴더(`t2_ui_beta`)를 source-of-truth로 취급하지 않는다.
+
+이번 parallel-table 사례처럼 구현이 side branch에 남은 채 canonical UI가 따로 전진하면,
+기능 자체가 사라진 것처럼 보일 수 있다. 그래서 **merge 확인과 old-branch 폐기를 같은 작업으로 묶는다.**
 
 ## Planned cleanup
 
 `chatgpt/ui-recovery-20260927`은 `ui-bot-pipeline`에 완전히 포함되어 삭제 대상으로 확정했다.
+`chatgpt/parallel-tables-20260927`도 merge `13505d64` 이후 `ui-bot-pipeline`에 완전히 포함되어 삭제 대상이다.
 과거 UI 전용 브랜치는 더 이상 source of truth로 유지하지 않는다.
 
 엔진 구조 감사가 끝나면 과거 audit/experiment 브랜치도 같은 방식으로 정리한다.
