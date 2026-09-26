@@ -1262,3 +1262,43 @@ because the same factual concept is stale in one consumer and silently recompute
 - river states where the union and joint judgments disagree.
 
 No production behavior changes in this diagnostic.
+
+
+---
+
+## F7-B1C8 — full paired replay of unified blocker judgment
+
+B1C7 confirms the stale path is material in the frozen fixture:
+
+- 55 / 63 multiway refreshes have a stored blocker net different from the current-board union value;
+- 17 / 63 reverse sign;
+- the value-sizing multiplier would differ by at least 0.02 in 33 / 63 states;
+- maximum multiplier difference is 0.418;
+- current union vs same-scale joint blocker also continues to disagree, including river sign reversals.
+
+This is no longer just a multiway aggregation issue.  It is a broken factual-judgment lifecycle.
+
+### Unified candidate
+
+Before production activation, `tools/measure_f7b_blocker_unified_candidate.py` performs a full
+paired replay of the frozen 9-max fixture.
+
+Production and candidate both start from identical tournament seeds.
+
+The candidate changes no tuning coefficients.  It only changes blocker wiring/semantics:
+
+1. the approximate `blocker_score` bluff multiplier is neutralized to 1.0;
+2. the response-specific blocker judgment uses `joint_blocker_effect`
+   (HU exact legacy parity; multiway seat-keyed);
+3. `refresh` recomputes that judgment on current board/current ranges;
+4. `stackoff['_blk_net']` is refreshed from the same judgment before value sizing;
+5. `river_fix` receives the same joint factual judgment rather than independently using union
+   `blocker_effect`;
+6. incomplete multiway seat pools yield a neutral blocker contribution rather than inventing a
+   missing opponent from the union.
+
+The script compares full action fingerprints, every hand log, VPIP/PFR/flop summaries, first
+divergence points and candidate joint-judgment coverage.
+
+This is the activation gate.  A production blocker rewrite should not be committed until the paired
+behavior change is measured and attributable.
