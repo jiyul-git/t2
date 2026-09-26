@@ -1105,3 +1105,44 @@ Production output is always returned.
 
 This diagnostic must be interpreted before any blocker consumer is removed or any field-level
 replacement is activated.
+
+
+---
+
+## F7-B1C5 — exact consumer-factor isolation
+
+B1C4 revealed a second diagnostic error.  The attempted algebraic neutralization used the raw
+`blocker_score`, but production first applies blocker awareness:
+
+```
+blk = blocker_score * blocker_awareness
+factor = 0.5 + 1.8 * blk
+```
+
+Therefore setting raw `blocker_score=5/18` only produces factor 1.0 when awareness is exactly
+1.0.  The live output itself exposed this: the observed score factor averaged about 0.596.
+
+To stop reverse-engineering internal inputs, production is refactored **without changing either
+formula** into two explicit helpers:
+
+```
+_blocker_score_bluff_factor(blk)     -> 0.5 + 1.8*blk
+_blocker_net_bluff_factor(blk_net)   -> clamp(1 + 4*blk_net, 0.45, 1.65)
+```
+
+`make_plan` calls those helpers at the exact old locations.
+
+This is a behavior-preserving wiring change only.  It creates a clean audit seam.
+
+`tools/measure_f7b_blocker_factor_attribution.py` then replays multiway `make_plan` calls with
+identical inputs/seeds and neutralizes the **consumer factor itself** to 1.0:
+
+- score factor neutral, net factor production;
+- net factor neutral, score factor production;
+- both neutral.
+
+Raw blocker values, blocker skill/awareness, all coefficients, and production output remain
+untouched.
+
+This replaces B1C3/B1C4 for strategy attribution.  Their measurements remain useful historical
+diagnostics but are not sufficient for consumer-removal decisions.

@@ -433,6 +433,20 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
     return p, why
 
 
+def _blocker_score_bluff_factor(blk):
+    """make_plan blocker_score contribution to bluff_ok.
+
+    Isolated so the approximate strong-combo proxy can be audited separately
+    from blocker_effect without changing production behavior.
+    """
+    return 0.5 + 1.8*blk
+
+
+def _blocker_net_bluff_factor(blk_net):
+    """make_plan blocker_effect contribution to bluff_ok."""
+    return max(0.45, min(1.65, 1.0 + 4.0*blk_net))
+
+
 def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
               seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=None,
               initiative=True,
@@ -548,11 +562,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 블로커는 하드 게이트가 아니라 가중치. 넛 우위가 없으면 블러프 빈도 하락.
     # 0~10 개념은 /10 으로 정규화한다. 예전에는 여기만 /12 여서
     # 개념 10 인 사람도 0.83 이 최대였고 그 12 에 근거가 없었다.
-    bluff_ok = (profile['bluff']/10.0) * (0.5 + 1.8*blk) * (0.75 + 0.35*max(0, nut)) \
+    bluff_ok = (profile['bluff']/10.0) * _blocker_score_bluff_factor(blk) \
+               * (0.75 + 0.35*max(0, nut)) \
                * (0.35 ** mw) * (0.55 ** min(to_act_behind, 3))
     # 순 효과를 곱한다. 한 장이 지우는 콤보가 3~4% 수준이라 값이 작으므로
     # 4배로 편다. 언블로커면 1 미만이 되어 블러프가 줄어든다.
-    bluff_ok *= max(0.45, min(1.65, 1.0 + 4.0*blk_net))
+    bluff_ok *= _blocker_net_bluff_factor(blk_net)
     if rd['w'] > 0:
         # 잘 접는 상대에게 블러프를 늘린다. 그 스트리트 기준으로.
         bluff_ok *= max(0.25, 1.0 + rd['w'] * 1.6 * PS.street_gap(rd, street))

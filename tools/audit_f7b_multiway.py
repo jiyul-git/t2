@@ -341,6 +341,27 @@ def check_nut_judgment_wiring():
     }
 
 
+
+def check_blocker_consumer_wiring():
+    ssrc = inspect.getsource(PL._blocker_score_bluff_factor)
+    nsrc = inspect.getsource(PL._blocker_net_bluff_factor)
+    msrc = inspect.getsource(PL.make_plan)
+
+    assert "0.5 + 1.8*blk" in ssrc
+    assert "max(0.45, min(1.65, 1.0 + 4.0*blk_net))" in nsrc
+    assert "_blocker_score_bluff_factor(blk)" in msrc
+    assert "_blocker_net_bluff_factor(blk_net)" in msrc
+    assert "(0.5 + 1.8*blk)" not in msrc
+    assert "max(0.45, min(1.65, 1.0 + 4.0*blk_net))" not in msrc
+
+    return {
+        'score_factor_isolated': True,
+        'net_factor_isolated': True,
+        'formulas_preserved_exactly': True,
+        'strategy_semantics_changed': False,
+    }
+
+
 def main():
     a = check_union_relative_strength_distortion()
     b = check_union_range_advantage_weighting()
@@ -350,6 +371,7 @@ def main():
     f = check_joint_relative_strength_consumer()
     g = check_joint_range_advantage_consumer()
     h = check_nut_judgment_wiring()
+    i = check_blocker_consumer_wiring()
 
     print("PASS F7-B1 union relative-strength distortion reproduced", a)
     print("PASS F7-B1 union range-advantage weighting distortion reproduced", b)
@@ -359,7 +381,8 @@ def main():
     print("PASS F7-B1A joint relative-strength consumer is isolated", f)
     print("PASS F7-B1B joint range-advantage consumer is isolated", g)
     print("PASS F7-B1B3 nut judgment-to-sizing wiring is explicit", h)
-    print("8/8 F7-B diagnostic checks passed")
+    print("PASS F7-B1C4 blocker bluff factors are isolated without behavior change", i)
+    print("9/9 F7-B diagnostic checks passed")
     print("NOTE: nut semantics remain union-based; blocker/read and multiway nut semantics remain audited.")
 
 
