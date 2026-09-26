@@ -1462,6 +1462,17 @@ class HandRun:
                     call_ev_shadow['layer_equities'] = _call_layer_eq
                     call_ev_shadow['to_act_behind'] = behind
 
+                # D4 first activation population is preregistered:
+                # locked-allin + complete layer summary + no active player behind.
+                _layer_call_value = None
+                if (call_ev_shadow and call_ev_shadow.get('complete')
+                        and not call_ev_shadow.get('to_act_behind')):
+                    _layer_call_value = {
+                        'effective_equity': call_ev_shadow.get('effective_equity'),
+                        'breakeven_equity': call_ev_shadow.get('breakeven_equity'),
+                        'call_chip_ev': call_ev_shadow.get('call_chip_ev'),
+                    }
+
                 # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
                 # 흔들려도 판단이 바뀌면 안 되므로 여기서 순서를 확정한다.
                 # 이걸 빼면 같은 시드가 재현되지 않는다 (rng.choice 가 순서에 의존).
@@ -1562,8 +1573,9 @@ class HandRun:
                             for k in locked_opp_ranges},
                         # F8-D3 provenance only. Layer equity is not a strategy input.
                         'layer_equities': layer_equities,
-                        # F8-D4 prereg shadow only. No response consumer yet.
+                        # F8-D4 objective layer call value + activation provenance.
                         'call_ev_shadow': call_ev_shadow,
+                        'layer_call_active': bool(_layer_call_value),
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),
@@ -1643,7 +1655,8 @@ class HandRun:
                         if _facing_ctx else None),
                     hero_contrib=r2.contrib.get(s, 0),
                     response_kind=_resp_ctx.get('kind'),
-                    response_context=_resp_ctx)
+                    response_context=_resp_ctx,
+                    call_value=_layer_call_value)
                 _tr = (h.plans.get(key) or {}).get('trace')
                 if _tr:
                     for _i in h.intents:

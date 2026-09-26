@@ -638,7 +638,7 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
 
 def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
                   to_act_behind, opp_est, n_opp=1, rng=None, _bf_gated=True,
-                  facing_size_frac=None):
+                  facing_size_frac=None, objective_breakeven=None):
     """콜 문턱(need)을 정하는 **유일한 지점**.
 
     예전에는 이 계산 전체가 act_with_plan(집행부) 안에 인라인으로 있었다.
@@ -689,7 +689,21 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     # (정수 칩이라 (pot-tocall) + 2*tocall 이 pot + tocall 과 정확히 일치한다).
     # 50만 조합 대조에서 불일치 0건. 비발동군 무변화 관문이 이것에 걸려 있다.
     need_true = (_tocall_seen*bf)/max(1.0, _p0 + 2.0*_tocall_seen)
+
+    # F8-D4: layer-aware call price는 legacy response eq/need를 덮지 않는다.
+    # objective_breakeven은 실제 pot-layer geometry의 객관적 break-even equity다.
+    # size_read 오독은 기존 scalar pot-odds 체인에서 생기는 비율만큼만 같은 방향으로
+    # 옮긴다. 새 side-pot 계수는 만들지 않는다.
+    call_need_true = None
+    if objective_breakeven is not None:
+        _base_scalar = float(tocall) / max(1.0, _p0 + 2.0*float(tocall))
+        _seen_scalar = _tocall_seen / max(1.0, _p0 + 2.0*_tocall_seen)
+        _size_ratio = (_seen_scalar / _base_scalar) if _base_scalar > 1e-12 else 1.0
+        call_need_true = max(
+            0.0, float(objective_breakeven) * float(bf) * _size_ratio)
+
     need = need_true
+    call_need = call_need_true
     if profile.get('concepts'):
         # 팟오즈 계산 오차. calc_noise 는 최대 3배까지 곱하는데,
         # need 는 확률이라 3배를 곱하면 38% 가 100% 가 되어 '더 강해졌는데
@@ -697,11 +711,18 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
         nz = PS.calc_noise(profile, 'potodds', rng)
         nz = max(0.65, min(1.55, nz))
         need = need_true * nz
+        if call_need is not None:
+            call_need = call_need_true * nz
     if to_act_behind:
         # 뒤에 남은 사람 리스크. 확률에 상수를 더하지 않고
         # 남은 팟 지분 기준으로 비례 가산한다.
-        need += (1.0 - need_true) * min(0.18, 0.06*to_act_behind)
+        _behind_add = min(0.18, 0.06*to_act_behind)
+        need += (1.0 - need_true) * _behind_add
+        if call_need is not None:
+            call_need += (1.0 - call_need_true) * _behind_add
     need = max(0.01, min(0.97, need))
+    if call_need is not None:
+        call_need = max(0.01, min(0.97, call_need))
     # 배팅라인 리딩 — 상대가 블러프일 사전확률만큼 문턱을 낮춘다
     if read is not None:
         trust = 0.25 + 0.06*profile.get('aggr', 5)
@@ -717,7 +738,10 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
             sz_now = tocall/max(1.0, float(pot) - tocall)
             dev = abs(sz_now - 0.6)                      # 표준 사이즈에서 벗어난 정도
             trust *= (1.0 + 0.10*(stell - 5.0)/5.0 * min(2.0, dev/0.4))
-        need -= trust * (read - 0.35)
+        _read_adj = trust * (read - 0.35)
+        need -= _read_adj
+        if call_need is not None:
+            call_need -= _read_adj
     # 상·하한. 상한은 팟오즈를 배 이상 부풀리지 못하게,
     # 하한은 팟오즈의 절반 아래로 못 내려가게 한다.
     # 예전엔 하한이 없어서 상대를 블러프로 크게 읽으면
@@ -726,6 +750,10 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     need = min(need, need_true*1.75 + 0.05)
     need = max(need, need_true*0.55)
     need = max(0.01, min(0.95, need))
+    if call_need is not None:
+        call_need = min(call_need, call_need_true*1.75 + 0.05)
+        call_need = max(call_need, call_need_true*0.55)
+        call_need = max(0.01, min(0.95, call_need))
     made_now = bot.made_strength(hero, board) if board else 0
     # 개인 행동 편향 — 같은 eq·같은 팟오즈라도 사람마다 다른 답을 낸다.
     # 이게 없으면 성향이 아무리 달라도 콜/폴드는 eq>=need 하나의 문턱으로 수렴해서
@@ -734,8 +762,11 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     if profile.get('concepts') and board:
         # _sz_seen / _rdz 는 위에서 이미 만들었다 (need_true 자리).
         # 여기서 다시 계산하지 않는다 — 같은 값을 두 번 만들면 언젠가 갈린다.
-        need *= PS.call_bias(profile, street, _sz_seen,
-                             made_now, bot.draw_strength(hero, board))
+        _cbias = PS.call_bias(profile, street, _sz_seen,
+                              made_now, bot.draw_strength(hero, board))
+        need *= _cbias
+        if call_need is not None:
+            call_need *= _cbias
         # 예전에는 여기서 `if abs(_sz_seen - _sz_true) > 1e-9: need = …` 로
         # need 를 통째로 재대입했다. 0.2% 오독에도 발동해서(실측 발동률 80~89%,
         # 오독 중앙 1.5%) 앞의 체인이 전부 지워졌다. 인지 사이즈는 이제
@@ -748,13 +779,22 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
             # 날것으로 읽어 see_line 게이트를 우회했다 —
             # 라인을 못 읽는 사람도 상대 블러프 성향에 완전히 반응했다.
             bl = _rdz.get('bluff_gap', 0.0)
-            need = PS.blend(need, need*max(0.55, 1.0 - 0.35*bl), _rdz['w'])
+            _bl_mult = max(0.55, 1.0 - 0.35*bl)
+            need = PS.blend(need, need*_bl_mult, _rdz['w'])
+            if call_need is not None:
+                call_need = PS.blend(
+                    call_need, call_need*_bl_mult, _rdz['w'])
         need = max(0.03, min(0.95, need))
-    return max(0.03, min(0.95, need))
+        if call_need is not None:
+            call_need = max(0.03, min(0.95, call_need))
+    need = max(0.03, min(0.95, need))
+    if call_need is None:
+        return need
+    return need, max(0.03, min(0.95, call_need))
 
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                     made_now, opp_range, pot, tocall, stack, committed, rng,
-                    allow_raise=True):
+                    allow_raise=True, call_eq=None, call_need=None):
     """저항(tocall>0)을 마주했을 때 폴드/콜/레이즈를 정하는 **유일한 지점**.
 
     예전에는 이 판단이 집행부에 흩어져 p_raise 를 네 곳에서 각자 굴렸다.
@@ -767,6 +807,12 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     """
     rel_ps = plan_state.get('rel', 0.5)
     has_c = bool(profile.get('concepts'))
+
+    # F8-D4: raise eligibility keeps legacy eq/need.  These two values are used
+    # only when the response has reached an actual call-vs-fold choice.
+    _layer_call = (call_eq is not None and call_need is not None)
+    _cf_eq = float(call_eq) if _layer_call else eq
+    _cf_need = float(call_need) if _layer_call else need
 
     # --- 넛급 메이드: 레이즈할 것인가 ---
     if made_now >= 5 and eq > need + 0.10:
@@ -784,7 +830,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         p = max(0.05, min(0.95, p))
         if allow_raise and rng.random() < p:
             return 'raise', 1.0, need, '넛급 레이즈(%.0f%%)' % (p*100)
-        return 'call', 0.0, need, '넛급이나 콜 선택'
+        if _layer_call and _cf_eq < _cf_need:
+            return 'fold', 0.0, _cf_need, (
+                '넛급 레이즈 미선택 + layer call EV 미달(%.3f < %.3f)'
+                % (_cf_eq, _cf_need))
+        return 'call', 0.0, (_cf_need if _layer_call else need), '넛급이나 콜 선택'
 
     # --- 밸류 계획: 레이즈할 것인가 ---
     # value_2street 가 빠져 있었다. 그래서 2스트리트 밸류 계획인 봇은 저항이
@@ -818,7 +868,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                 gap = max(0.0, want - tocall) / max(1.0, want)
                 mult = max(0.75, min(1.6, 0.75 + 0.85*gap))
             return 'raise', mult, need, '밸류 레이즈(%.0f%%, x%.2f)' % (p*100, mult)
-        return 'call', 0.0, need, '밸류이나 콜 선택(상대가 팟을 키워줌)'
+        if _layer_call and _cf_eq < _cf_need:
+            return 'fold', 0.0, _cf_need, (
+                '밸류 레이즈 미선택 + layer call EV 미달(%.3f < %.3f)'
+                % (_cf_eq, _cf_need))
+        return 'call', 0.0, (_cf_need if _layer_call else need), '밸류이나 콜 선택(상대가 팟을 키워줌)'
 
     # --- 블러프 레이즈: reraise × bluff 개념 ---
     # 계획을 반드시 본다. 예전에는 plan 조건이 없어서 pot_control(팟을 작게
@@ -855,8 +909,14 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                 _io = 0.02 + 0.008*(0.6*PS.sk(profile, 'outs') + 0.4*PS.sk(profile, 'potodds'))
             implied = min(0.12, _io * min(1.0, stack/max(1.0, 2.0*pot)))
             need = max(0.02, need - implied)
-        act = 'call' if eq >= need else 'fold'
-        return act, 0.0, need, '세미블러프 내재오즈 반영'
+            if _layer_call:
+                _cf_need = max(0.02, _cf_need - implied)
+        _use_eq = _cf_eq if _layer_call else eq
+        _use_need = _cf_need if _layer_call else need
+        act = 'call' if _use_eq >= _use_need else 'fold'
+        return act, 0.0, _use_need, (
+            '세미블러프 내재오즈 반영%s'
+            % (' + layer call EV' if _layer_call else ''))
 
     if plan == 'giveup' and has_c and eq < need - 0.05:
         # 포기 계획을 뒤집는 블러프 레이즈. 규율이 낮을수록 자주 나온다.
@@ -874,14 +934,21 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         # 계획은 포기지만 팟오즈가 실제로 맞으면 접으면 안 된다.
         # 부등호를 계획으로 덮어쓰면 eq > need 인데 폴드하는 모순이 생긴다.
         # (계획이 못 미더우면 need 를 올려야지 부등호를 무시하면 안 된다)
-        if eq >= need:
-            return 'call', 0.0, need, '포기 계획이나 팟오즈가 맞음(eq %.3f ≥ need %.3f)' % (eq, need)
-        return 'fold', 0.0, need, '포기/블러프 계획 + 팟오즈 미달 → 폴드'
+        _use_eq = _cf_eq if _layer_call else eq
+        _use_need = _cf_need if _layer_call else need
+        if _use_eq >= _use_need:
+            return 'call', 0.0, _use_need, (
+                '포기 계획이나 팟오즈가 맞음%s(eq %.3f ≥ need %.3f)'
+                % (' [layer]' if _layer_call else '', _use_eq, _use_need))
+        return 'fold', 0.0, _use_need, (
+            '포기/블러프 계획 + 팟오즈 미달%s → 폴드'
+            % (' [layer]' if _layer_call else ''))
 
     # --- 인식 편향: 같은 eq/need 여도 사람마다 다르게 결정한다 ---
     # station / bluff_fear / hero_call 은 전부 이 판단을 재려고 만든 축인데
     # 아무도 읽지 않아 죽어 있었다. 결과적으로 콜/폴드가 순수 산수였다.
-    need_seen = need
+    need_seen = _cf_need if _layer_call else need
+    _eq_seen = _cf_eq if _layer_call else eq
     if has_c:
         sz = tocall/max(1.0, float(pot) - tocall)
         # 스테이션: 문턱을 낮춰 넓게 콜한다.
@@ -892,8 +959,10 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         # 히어로콜: 가볍게 받아준다. 큰 벳에서 더 크게 작동한다.
         need_seen *= max(0.60, 1.0 - 0.18*max(0.0, PS.bias(profile, 'hero_call', street))*_bf_w)
         need_seen = max(0.02, min(0.97, need_seen))
-    act = 'call' if eq >= need_seen else 'fold'
-    return act, 0.0, need_seen, 'eq %.3f vs 체감 need %.3f (실제 %.3f)' % (eq, need_seen, need)
+    act = 'call' if _eq_seen >= need_seen else 'fold'
+    return act, 0.0, need_seen, (
+        'eq %.3f vs 체감 need %.3f (실제 %.3f)%s'
+        % (_eq_seen, need_seen, need, ' [layer-call]' if _layer_call else ''))
 
 
 def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
@@ -1319,7 +1388,7 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   opp_ranges=None, facing_seat=None, checked_before=False,
                   can_raise=True, checkraise_seed=None, checkraise_size_seed=None,
                   facing_size_frac=None, hero_contrib=0, response_kind=None,
-                  response_context=None):
+                  response_context=None, call_value=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
@@ -1384,10 +1453,22 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # calldown_need 가 tocall 을 한 번 더한다 (거기 주석 참조).
         # 예전에 여기 "두 번 들어가면 안 된다"고 적혀 있었는데 틀렸다 —
         # 한 번은 상대 벳으로, 한 번은 내 콜로 들어가는 것이 맞다.
-        need = calldown_need(
+        _objective_be = (
+            float(call_value.get('breakeven_equity'))
+            if (call_value and call_value.get('breakeven_equity') is not None)
+            else None)
+        _need_out = calldown_need(
             profile, hero, board, street, pot, tocall, bf,
             read, to_act_behind, opp_est, n_opp=n_opp, rng=rng,
-            facing_size_frac=facing_size_frac)
+            facing_size_frac=facing_size_frac,
+            objective_breakeven=_objective_be)
+        if _objective_be is None:
+            need = _need_out
+            _call_need = None
+            _call_eq = None
+        else:
+            need, _call_need = _need_out
+            _call_eq = float(call_value.get('effective_equity'))
         # made_now 계산이 calldown_need 로 딸려 들어갔다. 여기서도 필요하다.
         made_now = bot.made_strength(hero, board) if board else 0
         # ---------- 저항(tocall>0): 판단 -> response plan -> 집행 ----------
@@ -1434,7 +1515,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         act, mult, need, why = decide_response(
             profile, hero, board, street, plan, plan_state, eq, need,
             made_now, opp_range, pot, tocall, stack, committed, rng,
-            allow_raise=_direct_raise)
+            allow_raise=_direct_raise,
+            call_eq=_call_eq, call_need=_call_need)
         _source = ('checkraise_declined' if checked_before else 'generic_response')
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
@@ -1446,6 +1528,9 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             'size_mult': (round(float(mult), 4) if act == 'raise' else None),
             'need': round(need, 4),
             'eq': round(eq, 4),
+            'call_eq': (round(_call_eq, 4) if _call_eq is not None else None),
+            'call_need': (round(_call_need, 4) if _call_need is not None else None),
+            'layer_call_used': bool(_call_eq is not None and _call_need is not None),
             'source': _source,
             'why': why,
         }

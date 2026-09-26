@@ -343,9 +343,53 @@ def check_d4_call_ev_shadow():
     src = inspect.getsource(SE.HandRun._run)
     assert "call_ev_shadow = _layer_call_summary(" in src
     assert "'call_ev_shadow': call_ev_shadow" in src
-    # Prereg/shadow only: response path must not consume it yet.
-    assert "call_ev_shadow=" not in src
-    assert "call_ev_shadow['call_chip_ev']" not in src
+    assert "_layer_call_value = None" in src
+    assert "call_value=_layer_call_value" in src
+
+    # Objective break-even enters the existing perception chain without altering
+    # the legacy scalar need.  Neutral/no-concept profile keeps it exact.
+    neutral = {'type': 'TAG', 'aggr': 5, 'gamble': 5, 'bluff': 5}
+    n0, cn0 = SE.PL.calldown_need(
+        neutral, ['Ah', 'Kd'], ['2c', '7d', 'Jh'], 'flop',
+        310, 10, 1.0, None, 0, None, n_opp=1,
+        rng=__import__('random').Random(1),
+        objective_breakeven=summary['breakeven_equity'])
+    assert round(cn0, 6) == 0.03125, (n0, cn0)
+    assert round(n0, 6) == round(10/320, 6), (n0, cn0)
+
+    # Same active-only eq would call under legacy scalar price, but layer call value folds.
+    ps = {'plan': 'giveup', 'made': 0, 'rel': 0.2, 'outs': 0}
+    act_layer = SE.PL.decide_response(
+        neutral, ['Ah', 'Kd'], ['2c', '7d', 'Jh'], 'flop',
+        'giveup', dict(ps), 0.20, 0.03125, 0, [],
+        310, 10, 100, False, __import__('random').Random(2),
+        allow_raise=False, call_eq=0.0125, call_need=0.03125)
+    act_legacy = SE.PL.decide_response(
+        neutral, ['Ah', 'Kd'], ['2c', '7d', 'Jh'], 'flop',
+        'giveup', dict(ps), 0.20, 0.03125, 0, [],
+        310, 10, 100, False, __import__('random').Random(2),
+        allow_raise=False)
+    assert act_layer[0] == 'fold', (act_layer, act_legacy)
+    assert act_legacy[0] == 'call', (act_layer, act_legacy)
+
+    # Raise producer still uses legacy eq/need: a deterministic zero roll must raise
+    # even when layer call value itself would fold.
+    class ZeroRng:
+        def random(self): return 0.0
+    value_state = {'plan': 'value_3street', 'made': 5, 'rel': 0.99,
+                   'outs': 0, 'stackoff': {}}
+    raised = SE.PL.decide_response(
+        neutral, ['Jh', 'Jd'], ['Jc', '7d', '2c'], 'flop',
+        'value_3street', value_state, 0.90, 0.20, 5, [],
+        200, 20, 100, False, ZeroRng(),
+        allow_raise=True, call_eq=0.01, call_need=0.20)
+    fallback = SE.PL.decide_response(
+        neutral, ['Jh', 'Jd'], ['Jc', '7d', '2c'], 'flop',
+        'value_3street', dict(value_state), 0.90, 0.20, 5, [],
+        200, 20, 100, False, ZeroRng(),
+        allow_raise=False, call_eq=0.01, call_need=0.20)
+    assert raised[0] == 'raise', (raised, fallback)
+    assert fallback[0] == 'fold', (raised, fallback)
 
     return {
         'call_cost': summary['call_cost'],
@@ -355,7 +399,11 @@ def check_d4_call_ev_shadow():
         'effective_equity': summary['effective_equity'],
         'breakeven_equity': summary['breakeven_equity'],
         'incomplete_stays_unknown': incomplete['call_chip_ev'] is None,
-        'strategy_consumer': False,
+        'legacy_same_spot': act_legacy[0],
+        'layer_same_spot': act_layer[0],
+        'raise_with_bad_call_ev': raised[0],
+        'raise_declined_bad_call_ev': fallback[0],
+        'strategy_consumer': True,
     }
 
 
@@ -377,10 +425,10 @@ def main():
     print("     pending upper layer keeps hero ineligible before call", pending[-1])
     print("PASS F8-D2 locked all-in opponent range is reconstructed", d2)
     print("PASS F8-D3 layer-specific equity diagnostics are separated", d3)
-    print("PASS F8-D4 prereg call-EV shadow is layer-weighted", d4)
+    print("PASS F8-D4 layer-aware call/fold consumer is isolated from raises", d4)
     print("7/7 F8 diagnostic checks passed")
-    print("NOTE: the gap reproduction PASS confirms the architecture defect;")
-    print("      D1-D4 shadow only preserve/compute diagnostics and do not change strategy.")
+    print("NOTE: D4 now changes call/fold only in the preregistered locked-allin population;")
+    print("      raise eligibility still uses the legacy response eq/need.")
 
 
 if __name__ == '__main__':

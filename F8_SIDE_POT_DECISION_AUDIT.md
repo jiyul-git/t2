@@ -510,7 +510,7 @@ Acceptance requires:
 
 # F8-D4 preregistration — layer-aware call/fold EV
 
-Status: **PREREGISTERED SHADOW; no strategy consumer yet.**
+Status: **SHADOW USER-VALIDATED; STRATEGY CONSUMER IMPLEMENTED, pending behavior validation.**
 
 D3 proves that main and side equity can differ.  D4 must therefore avoid replacing the current
 response `eq` with one layer equity or with an unweighted average.
@@ -663,3 +663,64 @@ Acceptance requires:
 
 Only after those pass may the D4 strategy-consumer patch be designed against the frozen
 preregistration above.
+
+
+## D4 strategy consumer implementation
+
+The preregistered shadow is now consumed only when all first-activation gates hold:
+
+- at least one locked all-in opponent is present;
+- the projected layer summary is complete;
+- `to_act_behind == 0`.
+
+Session passes a separate `call_value` object into `act_with_plan` containing only:
+
+- layer-weighted `effective_equity`;
+- objective `breakeven_equity`;
+- raw `call_chip_ev` for provenance.
+
+### Perception-chain mapping
+
+`calldown_need` keeps its legacy scalar `need` unchanged.
+
+When an objective layer break-even is supplied, it derives a separate `call_need`.
+The same existing perception chain is applied in parallel:
+
+- ICM bubble factor;
+- sizing-read distortion, mapped by the ratio of perceived scalar pot odds to true scalar pot odds;
+- pot-odds calculation noise;
+- players-behind penalty (although first activation excludes behind players);
+- line/bluff read adjustment;
+- existing upper/lower clamps;
+- personal call bias;
+- perceived opponent bluff tendency.
+
+No new side-pot tuning coefficient is introduced.
+
+### Raise isolation
+
+`decide_response` receives both pairs:
+
+```
+legacy eq / need       -> raise eligibility and raise probabilities
+call_eq / call_need    -> only when response reaches call versus fold
+```
+
+This means:
+
+- nut/value raise gates remain on legacy response equity;
+- semibluff/bluff raise gates remain on legacy response equity;
+- checkraise production remains unchanged;
+- if a raise is not selected, the fallback call can become a fold from layer EV;
+- giveup / semibluff / generic bluffcatch call-vs-fold use layer values.
+
+### Behavior validation rule
+
+Unlike D1-D3 and D4-shadow, this patch is allowed to change behavior, but only inside the
+preregistered locked-allin/no-behind population.
+
+Therefore frozen-baseline mismatch after this commit is **not automatically a failure**.
+If a fingerprint moves, the next step is attribution against parent `720cc40`, and every changed
+decision must have `layer_call_active=True`.
+
+Any changed decision outside that population rejects the implementation.
