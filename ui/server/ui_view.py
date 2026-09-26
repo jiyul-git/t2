@@ -67,7 +67,9 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
     # 헤즈업은 BTN과 SB가 같은 자리라 pos 문자열만 보고 버튼을 찾으면 안 된다.
     btn = getattr(hand, 'button', None)
     hero_inv = inv.get(hand.hero, 0)
-    pot = raw['pot']
+    # 전략층 raw['pot']은 HERO가 contest 가능한 팟일 수 있다.
+    # UI 총칩 표시는 사이드팟/폴드 기여까지 포함한 전체 테이블 팟을 쓴다.
+    pot = raw.get('pot_total', raw['pot'])
     _n_slots = int(getattr(hand, 'table_max_seat', 0)
                    or len(getattr(hand, 'all_seats', []) or [])
                    or N_SLOTS_FALLBACK)
