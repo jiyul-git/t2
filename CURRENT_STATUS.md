@@ -83,3 +83,27 @@ Branch lifecycle is part of the project plan, not an afterthought.
 - Every major phase closes with code + verification + docs + branch cleanup.
 
 See `BRANCH_POLICY.md`.
+
+
+## Tournament button / blind rotation hotfix — pending local verification
+
+User observed consecutive SB in HAND 50 -> HAND 51 without evidence of a full table break.
+
+Source audit found a real structural defect in the live field path:
+
+- `fieldsim.Table.button` was stored as an index into a compressed alive-player list;
+- table busts / balancing can change that list between hands;
+- the same integer index can therefore point at a different physical seat on the next hand;
+- `_play_table` also used `tb.players` append order while the hero path used physical-seat order,
+  so the same button index had inconsistent meaning after player movement.
+
+Fix on the active engine branch:
+
+- persist a physical `button_seat` while retaining legacy `button` index for old saves;
+- order live players by fixed seat;
+- advance dealer by physical seat, not compressed-array index;
+- use the same physical dealer in `live2` build/finish;
+- choose the balancing source mover from physical button order;
+- regression tool: `tools/verify_button_rotation.py`.
+
+Production promotion is pending the local verifier result.
