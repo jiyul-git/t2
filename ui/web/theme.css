@@ -48,3 +48,31 @@
   #board { gap:4px; }
   #board .card { --card-w:30px; --card-h:43px; }
 }
+
+
+/* Player-selected card-back variants. Portrait/character layer is untouched. */
+html[data-deck="jade"] .card.back{
+  background-color:#215a59;
+  background-image:repeating-linear-gradient(0deg,transparent 0 7px,#c7b98770 7px 8px),
+    repeating-linear-gradient(90deg,transparent 0 7px,#c7b98770 7px 8px);
+}
+html[data-deck="jade"] .card.back::after{background:#d3bc85;border-color:#254e4b;box-shadow:0 0 0 1px #d3bc85}
+html[data-deck="navy"] .card.back{
+  background-color:#243a64;
+  background-image:repeating-linear-gradient(45deg,transparent 0 8px,#d6c58c38 8px 9px),
+    repeating-linear-gradient(-45deg,transparent 0 8px,#d6c58c24 8px 9px);
+}
+html[data-deck="navy"] .card.back::after{background:#d8c58f;border-color:#314769;box-shadow:0 0 0 1px #d8c58f}
+html[data-deck="burgundy"] .card.back{
+  background-color:#672b34;
+  background-image:repeating-linear-gradient(0deg,transparent 0 6px,#e0c98c30 6px 7px),
+    repeating-linear-gradient(90deg,transparent 0 6px,#e0c98c30 6px 7px);
+}
+html[data-deck="burgundy"] .card.back::after{background:#ddc58a;border-color:#6c3540;box-shadow:0 0 0 1px #ddc58a}
+html[data-deck="ivory"] .card.back{
+  border-color:#506a62;
+  background-color:#d9d1ba;
+  background-image:repeating-linear-gradient(45deg,transparent 0 9px,#46665a24 9px 10px);
+}
+html[data-deck="ivory"] .card.back::after{background:#45665b;border-color:#e2d9c0;box-shadow:0 0 0 1px #45665b}
+#heroinfo .pos{max-width:128px;white-space:normal;line-height:1.2}
