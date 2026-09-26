@@ -7,7 +7,7 @@ UI는 엔진 감사와 별도 최신선으로 관리한다.
 - Engine / architecture source of truth:
   `chatgpt/decision-architecture-audit-20260926`
 - UI recovery / integration branch:
-  `chatgpt/ui-recovery-20260927`
+  `chatgpt/ui-bot-pipeline-20260927`
 - Richest historical UI lineage to recover from:
   `chatgpt/fix-side-seat-overlay-20260924` @ `18e68ce`
 - Earlier visual integration:
@@ -98,12 +98,12 @@ This is not a pure visual change. Compare against current `live2.py` before deci
 ## Rule
 
 A UI commit is not "latest" merely because its branch name is newer.
-`UI_CURRENT_STATUS.md` + `chatgpt/ui-recovery-20260927` define the current UI integration line.
+`UI_CURRENT_STATUS.md` + `chatgpt/ui-bot-pipeline-20260927` define the current UI integration line.
 
 
 ## UI recovery candidate — user verification pending
 
-Recovered on `chatgpt/ui-recovery-20260927`:
+Recovered on `chatgpt/ui-bot-pipeline-20260927`:
 
 - tournament lobby at `/`;
 - table at `/play`;
@@ -126,3 +126,14 @@ This candidate intentionally leaves the approved character layer untouched:
 - portrait assignment logic.
 
 Profile/avatar/theme customization from later historical branches is excluded.
+
+
+## Streamed-play checkpoint
+
+Current playable line: `chatgpt/ui-bot-pipeline-20260927`.
+
+This line contains the full former UI recovery branch plus streamed bot actions,
+transport/error hardening, board-first street transitions, overlapping 1.5s action pacing,
+and short presentation pauses after hero/street transitions.
+
+The former `ui-recovery` line is obsolete and may be deleted.
