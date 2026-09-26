@@ -1048,6 +1048,85 @@ def check_f8r_deterministic_layer_equity():
     }
 
 
+
+def check_d6d2_personal_layer_ev_consumer():
+    base_concepts = {k: 10.0 for k in SE.PS.ALL_CONCEPTS}
+    base_temper = {k: 5.0 for k in SE.PS.TEMPER}
+
+    good = {
+        'type': 'TAG',
+        'concepts': dict(base_concepts),
+        'temper': dict(base_temper),
+        'aggr': 5.0, 'gamble': 5.0, 'bluff': 5.0, 'icm': 10.0,
+    }
+    sh_call = {
+        'pure_calloff': True, 'complete': True,
+        'call_cost': 10.0, 'contestable_after_call': 60.0,
+        'effective_equity': 0.40,
+        'breakeven_equity': round(10.0/60.0, 6),
+    }
+    j_call = SE.pf.calloff_layer_judgment(
+        good, sh_call, bubble_factor=1.0, seed=777)
+    assert j_call['gate_pass'] is True, j_call
+    assert j_call['layer_action'] == 'call', j_call
+    assert j_call['perceived_required_equity'] < 0.40, j_call
+
+    sh_fold = dict(sh_call)
+    sh_fold['effective_equity'] = 0.05
+    j_fold = SE.pf.calloff_layer_judgment(
+        good, sh_fold, bubble_factor=1.0, seed=777)
+    assert j_fold['gate_pass'] is True, j_fold
+    assert j_fold['layer_action'] == 'fold', j_fold
+
+    # Low ICM skill sees only part of an objective BF=2 risk premium.
+    low_icm = dict(good)
+    low_icm['concepts'] = dict(base_concepts)
+    low_icm['concepts']['icm'] = 0.0
+    j_icm = SE.pf.calloff_layer_judgment(
+        low_icm, {**sh_call, 'effective_equity': 0.24},
+        bubble_factor=2.0, seed=888)
+    assert j_icm['perceived_bubble_factor'] < 2.0, j_icm
+    assert j_icm['perceived_bubble_factor'] > 1.0, j_icm
+
+    # No pf_defend skill -> precise layer judgment exists but is not applied.
+    no_def = dict(good)
+    no_def['concepts'] = dict(base_concepts)
+    no_def['concepts']['pf_defend'] = 0.0
+    j_gate = SE.pf.calloff_layer_judgment(
+        no_def, sh_call, bubble_factor=1.0, seed=999)
+    assert j_gate['pf_defend_gate_p'] == 0.0, j_gate
+    assert j_gate['gate_pass'] is False, j_gate
+
+    # Same seed must reproduce both calculation error and gate roll.
+    j_again = SE.pf.calloff_layer_judgment(
+        good, sh_call, bubble_factor=1.0, seed=777)
+    assert j_again == j_call, (j_call, j_again)
+
+    psrc = inspect.getsource(SE.PL.preflop_plan)
+    for needle in (
+        "_pf.calloff_layer_judgment(",
+        "if _layer_j.get('gate_pass')",
+        "'pf_calloff_consumer'",
+    ):
+        assert needle in psrc, needle
+    ssrc = inspect.getsource(SE.HandRun._run)
+    assert "'f8_d6d2'" in ssrc
+
+    # The rule/execution layer still receives only the final plan action.
+    rsrc = inspect.getsource(SE.RU.Round.apply)
+    assert "calloff_layer_judgment" not in rsrc
+
+    return {
+        'high_skill_positive_ev': j_call['layer_action'],
+        'high_skill_negative_ev': j_fold['layer_action'],
+        'low_icm_seen_bf_at_true_2': j_icm['perceived_bubble_factor'],
+        'zero_pf_defend_gate_pass': j_gate['gate_pass'],
+        'same_seed_same_judgment': True,
+        'execution_override': False,
+        'strategy_consumer': True,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -1067,6 +1146,7 @@ def main():
     d6c = check_d6c_preflop_layer_equity_call_shadow()
     d6d = check_d6d1_calloff_shadow_comparison()
     f8r = check_f8r_deterministic_layer_equity()
+    d6d2 = check_d6d2_personal_layer_ev_consumer()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -1089,8 +1169,9 @@ def main():
     print("PASS F8-D6-C preflop pure-calloff layer equity/EV stays shadow-only", d6c)
     print("PASS F8-D6-D1 legacy calloff and layer-EV+ICM are compared in shadow", d6d)
     print("PASS F8-R layer Monte Carlo is decision-seeded and reproducible", f8r)
-    print("18/18 F8 diagnostic checks passed")
-    print("NOTE: F8-R changes no policy formula; D6-D2 remains pending.")
+    print("PASS F8-D6-D2 pure-calloff layer EV consumer preserves personal skill", d6d2)
+    print("19/19 F8 diagnostic checks passed")
+    print("NOTE: D6-D2 changes only complete pure-calloff states whose pf_defend gate passes.")
 
 
 if __name__ == '__main__':

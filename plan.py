@@ -1682,7 +1682,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  opener_allin=False, money_open=None, can_check=False,
                  can_raise=True, pot_bb=None, to_call_bb=None,
                  prior_pf=None, pot_layers=None, opp_ranges=None,
-                 opp_range_meta=None, call_ev_shadow=None):
+                 opp_range_meta=None, call_ev_shadow=None,
+                 calloff_decision_seed=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -1694,6 +1695,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     """
     import preflop as _pf
     _calloff_compare = None
+    _calloff_consumer = None
     # 상대 정보가 프리플랍 레인지부터 움직인다.
     # 예전에는 preflop_plan 이 opp_est 를 아예 안 받아서,
     # 상대가 3벳에 과하게 접는 걸 알아도 3벳 레인지가 안 넓어졌다.
@@ -1749,6 +1751,32 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         _calloff_compare = _pf.calloff_ev_comparison(
             hand, a, _legacy_cap, call_ev_shadow, bubble_factor=bf)
 
+        _layer_j = _pf.calloff_layer_judgment(
+            profile, call_ev_shadow, bubble_factor=bf,
+            seed=calloff_decision_seed)
+        if _layer_j is not None:
+            _legacy_act = a
+            _legacy_sz = sz
+            _selected_act = a
+            _selected_sz = sz
+            if _layer_j.get('gate_pass'):
+                _selected_act = _layer_j.get('layer_action')
+                _selected_sz = (
+                    float(to_call_bb or 0.0)
+                    if _selected_act == 'call' else 0.0)
+                a, sz = _selected_act, _selected_sz
+            _calloff_consumer = dict(_layer_j)
+            _calloff_consumer.update({
+                'eligible': True,
+                'legacy_action': _legacy_act,
+                'legacy_size_bb': float(_legacy_sz or 0.0),
+                'selected_action': _selected_act,
+                'selected_size_bb': float(_selected_sz or 0.0),
+                'changed': bool(
+                    _selected_act != _legacy_act),
+                'strategy_consumer': bool(_layer_j.get('gate_pass')),
+            })
+
     # 현재 판단 사건의 종류. 행동 결과만 남기면
     # cold 4bet / opener 4bet / caller backraise 가 모두 'defend'로 뭉개진다.
     _prev = dict(prior_pf or {})
@@ -1795,6 +1823,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             dict(call_ev_shadow) if call_ev_shadow is not None else None),
         'pf_calloff_compare': (
             dict(_calloff_compare) if _calloff_compare is not None else None),
+        'pf_calloff_consumer': (
+            dict(_calloff_consumer) if _calloff_consumer is not None else None),
         # D2 provenance: later streets must not rebuild an all-in player's
         # preflop range from current stack=0.
         'pf_stack_bb': float(bb or 0.0),

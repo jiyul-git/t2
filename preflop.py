@@ -1,4 +1,4 @@
-import json, os, random
+import json, os, random, zlib
 import persona as PS
 import depth as _DP
 import icm as _ICM
@@ -851,6 +851,73 @@ def calloff_ev_comparison(hand, legacy_action, legacy_cap, call_ev_shadow,
         'layer_ev_action': ev_action,
         'agree': bool(legacy == ev_action),
         'strategy_consumer': False,
+    }
+
+
+def calloff_layer_judgment(prof, call_ev_shadow, bubble_factor=1.0,
+                           seed=None):
+    """F8-D6-D2: pure-calloff layer equity를 개인이 실제로 적용한 판단.
+
+    factual input:
+      - observer-perceived seat ranges
+      - exact layer equity / exact call price
+
+    personal application:
+      - icm_bf: 객관 BF를 이 사람이 인식한 BF로
+      - potodds calc_noise: 계산 정확도
+      - pf_defend gate: 이 정확한 프리플랍 디펜스 계산을 실제로 실행하는가
+
+    새 side-pot 계수나 새 성향 축은 만들지 않는다.
+    """
+    sh = dict(call_ev_shadow or {})
+    if not sh.get('pure_calloff') or not sh.get('complete'):
+        return None
+    eq = sh.get('effective_equity')
+    cost = sh.get('call_cost')
+    total_after = sh.get('contestable_after_call')
+    if eq is None or cost is None or total_after is None:
+        return None
+
+    cost = float(cost)
+    total_after = float(total_after)
+    pot_before = max(0.0, total_after - cost)
+    bf_true = max(1.0, float(bubble_factor or 1.0))
+    bf_seen = (
+        PS.icm_bf(prof, bf_true)
+        if isinstance(prof, dict) and prof.get('concepts')
+        else bf_true)
+    need_base = _ICM.required_equity(pot_before, cost, bf_seen)
+
+    # New consumer must not consume the shared decision RNG.
+    base_seed = int(seed or 0)
+    noise_seed = zlib.crc32(('%s|potodds' % base_seed).encode())
+    gate_seed = zlib.crc32(('%s|pf_defend_gate' % base_seed).encode())
+    noise = 1.0
+    gate_p = 1.0
+    if isinstance(prof, dict) and prof.get('concepts'):
+        noise = PS.calc_noise(
+            prof, 'potodds', random.Random(noise_seed))
+        noise = max(0.65, min(1.55, float(noise)))
+        gate_p = max(0.0, min(1.0, float(PS.gate(prof, 'pf_defend'))))
+
+    need_seen = max(0.01, min(0.95, float(need_base) * noise))
+    layer_action = 'call' if float(eq) >= need_seen else 'fold'
+    gate_roll = random.Random(gate_seed).random()
+    gate_pass = bool(gate_roll < gate_p)
+
+    return {
+        'layer_effective_equity': round(float(eq), 6),
+        'objective_bubble_factor': round(bf_true, 6),
+        'perceived_bubble_factor': round(float(bf_seen), 6),
+        'icm_required_equity_before_calc_error': round(float(need_base), 6),
+        'potodds_noise': round(float(noise), 6),
+        'perceived_required_equity': round(float(need_seen), 6),
+        'layer_action': layer_action,
+        'pf_defend_gate_p': round(float(gate_p), 6),
+        'pf_defend_gate_roll': round(float(gate_roll), 6),
+        'gate_pass': gate_pass,
+        'noise_seed': int(noise_seed),
+        'gate_seed': int(gate_seed),
     }
 
 

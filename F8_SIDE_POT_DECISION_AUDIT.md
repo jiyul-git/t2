@@ -1653,7 +1653,7 @@ Only after D6-D1 validation should a D6-D2 consumer be considered.
 
 # F8-R prerequisite — deterministic layer-equity Monte Carlo
 
-Status: **IMPLEMENTED; pending user validation. No policy-formula change.**
+Status: **USER-VALIDATED. Frozen regression unchanged.**
 
 Before D6-D2 can consume preflop layer equity, the common layer-equity Monte Carlo must be
 decision-reproducible.
@@ -1697,3 +1697,135 @@ The verifier requires:
 
 If regression moves, baseline is not updated automatically.  Any movement must first be attributed
 to previously unseeded F8 strategy-active states.
+
+
+---
+
+# F8-D6-D2 — personal pure-calloff layer-EV consumer
+
+Status: **IMPLEMENTED; pending targeted + behavior validation.**
+
+D6-D2 is the first preflop strategy consumer of the D6 layer system.
+
+It is intentionally limited to the D6-C population:
+
+- aggressor already all-in;
+- no legal raise responder remains;
+- positive call price;
+- D6-C range/equity summary is complete.
+
+All other preflop decisions continue through the legacy policy unchanged.
+
+## What the new judgment replaces
+
+The historical `calloff_cap` combined many proxies into a hand-percentile threshold:
+
+- opener position / size;
+- raise level;
+- caller count;
+- stack depth;
+- exploit widening;
+- ICM.
+
+In the D6-C population, most of those facts are now represented more directly:
+
+- opener/caller/raise history -> seat-keyed perceived ranges;
+- multiway structure -> exact pot layers;
+- stack depth/price -> exact incremental call cost;
+- exploit information -> observer-specific perceived ranges;
+- ICM -> existing bubble factor.
+
+Reapplying the old cap on top of exact layer EV would double-count the same information.
+
+The cap is therefore retained as fallback/provenance, not multiplied into layer EV.
+
+## Personal skill is preserved without a new side-pot concept
+
+The layer geometry/equity itself is factual.  Player differences enter through existing concepts:
+
+1. **range_read / public reads**
+   - already shape each opponent's perceived range before equity is computed;
+
+2. **icm**
+   - objective BF is converted with existing `PS.icm_bf(profile, bf)`;
+
+3. **potodds**
+   - existing `PS.calc_noise(profile, 'potodds', ...)` perturbs the required-equity calculation;
+
+4. **pf_defend**
+   - existing `PS.gate(profile, 'pf_defend')` decides whether this player actually applies the
+     precise preflop defense calculation.
+
+No new coefficient, personality axis, or side-pot skill is introduced.
+
+If the gate fails, the legacy action remains unchanged.
+
+## Determinism
+
+D6-D2 receives a dedicated `HandRun._dseed(..., 'f8_d6d2', ...)`.
+
+Two child seeds are derived:
+
+- pot-odds calculation error;
+- pf_defend application gate.
+
+The shared `h.rng` is never consumed.
+
+## Judgment formula
+
+For a complete shadow:
+
+```
+E = layer-weighted perceived equity
+C = incremental call cost
+T = contestable amount after call
+P = T - C
+
+BF_seen = PS.icm_bf(profile, objective_BF)
+need_base = icm.required_equity(P, C, BF_seen)
+need_seen = clamp(need_base * potodds_calc_noise)
+
+layer_action = call if E >= need_seen else fold
+```
+
+If the `pf_defend` gate passes, `preflop_plan` replaces only the current pure-calloff
+`a/sz` with that layer action.
+
+This happens in the judgment layer before `Round.apply`; the execution/rules layer has no F8
+knowledge.
+
+## Provenance
+
+`pf_calloff_consumer` records:
+
+- effective equity;
+- objective and perceived BF;
+- ICM threshold before calculation error;
+- pot-odds noise;
+- perceived required equity;
+- layer action;
+- pf_defend gate probability/roll;
+- legacy action;
+- selected action;
+- whether behavior changed.
+
+## Acceptance
+
+Targeted verifier requires:
+
+- high-skill positive-EV fixture -> call;
+- high-skill negative-EV fixture -> fold;
+- low ICM skill perceives BF=2 as between 1 and 2;
+- zero pf_defend skill never applies the precise judgment;
+- same seed reproduces judgment exactly;
+- execution layer contains no override.
+
+This is an intentional behavior-change patch.  If frozen fingerprints move, the baseline is not
+updated until every changed decision is attributed to:
+
+```
+pure_calloff
+AND complete D6-C shadow
+AND pf_defend gate passed
+AND selected layer action != legacy action
+```

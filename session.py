@@ -59,6 +59,10 @@ def _merge_pf_seed(prev, new):
         'opp_range_meta': dict(out.get('pf_opp_range_meta') or {}),
         'call_ev_shadow': dict(out.get('pf_call_ev_shadow') or {})
                           if out.get('pf_call_ev_shadow') is not None else None,
+        'calloff_compare': dict(out.get('pf_calloff_compare') or {})
+                           if out.get('pf_calloff_compare') is not None else None,
+        'calloff_consumer': dict(out.get('pf_calloff_consumer') or {})
+                            if out.get('pf_calloff_consumer') is not None else None,
         'stack_bb': out.get('pf_stack_bb'),
     })
     out['pf_line'] = line
@@ -1511,7 +1515,9 @@ class HandRun:
                     pot_layers=_pf_pot_layers,
                     opp_ranges=_pf_opp_ranges,
                     opp_range_meta=_pf_opp_range_meta,
-                    call_ev_shadow=_pf_call_ev_shadow)
+                    call_ev_shadow=_pf_call_ev_shadow,
+                    calloff_decision_seed=self._dseed(
+                        s, 'preflop', 'f8_d6d2', len(rnd.log)))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
