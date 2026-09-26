@@ -504,3 +504,162 @@ Acceptance requires:
 
 - F8 diagnostic: 6/6;
 - frozen regression: exact fingerprint match to baseline rev `2a53584`.
+
+
+---
+
+# F8-D4 preregistration — layer-aware call/fold EV
+
+Status: **PREREGISTERED SHADOW; no strategy consumer yet.**
+
+D3 proves that main and side equity can differ.  D4 must therefore avoid replacing the current
+response `eq` with one layer equity or with an unweighted average.
+
+## Why the existing response `eq` cannot simply be replaced
+
+`act_with_plan` / `decide_response` use the current scalar `eq` for more than call/fold:
+
+- nut/value re-raise eligibility;
+- semibluff raise logic;
+- bluff raise logic;
+- final call/fold.
+
+If a new layer-weighted number is substituted globally, a side-pot call fix would silently alter
+raise strategy.  That belongs to D5, not D4.
+
+D4 therefore defines the call value separately.
+
+## Hypothetical call state
+
+For a facing wager, `_project_call_layers`:
+
+1. adds only the actual incremental `tocall` to hero's current-street contribution;
+2. subtracts the same amount from hero's remaining stack;
+3. rebuilds D1 contribution layers;
+4. leaves unreachable/unmatched upper layers explicitly hero-ineligible.
+
+No action is executed and no production state is mutated.
+
+## Objective chip-EV definition
+
+For projected post-call layers where hero is eligible:
+
+```
+gross_return
+    = sum(layer_amount * layer_equity)
+
+call_chip_ev
+    = gross_return - incremental_call_cost
+
+contestable_after_call
+    = sum(layer_amount for hero-eligible layers)
+
+effective_equity
+    = gross_return / contestable_after_call
+
+breakeven_equity
+    = incremental_call_cost / contestable_after_call
+```
+
+Prior hero contributions are sunk costs.  Fold is therefore the zero future-cashflow reference
+point for this incremental chip-EV calculation.
+
+This is equivalent to ordinary pot odds in a one-layer pot, but remains correct when different
+layers have different opponent sets/equities.
+
+## Locked-main failure fixture
+
+Preregistered geometry:
+
+```
+before new wager:
+    A locked all-in 100
+    hero          100
+    C             100
+
+C bets 10, hero faces call 10
+
+after hypothetical call:
+    main = 300, A/hero/C
+    side = 20, hero/C
+```
+
+Synthetic equities:
+
+```
+main equity = 0.00
+side equity = 0.20
+```
+
+Expected:
+
+```
+gross_return = 300*0.00 + 20*0.20 = 4
+call_chip_ev = 4 - 10 = -6
+effective_equity = 4/320 = 0.0125
+breakeven_equity = 10/320 = 0.03125
+=> objective call is losing
+```
+
+This captures the exact bug class: active-only side equity can look adequate against a tiny price
+created by a large locked main pot, even though the hero has almost no claim on that main pot.
+
+## Unknowns stay unknown
+
+If any hero-eligible projected layer lacks an opponent range/equity, D4 returns:
+
+```
+complete = False
+call_chip_ev = None
+```
+
+No population-range fallback or copied opponent pool is invented.
+
+## Strategy integration boundary — locked before implementation
+
+D4 strategy wiring, when implemented, must obey all of these:
+
+1. **Do not overwrite the existing response `eq`.**
+   Raise logic continues to see the current active-opponent response equity until D5.
+2. Add separate `call_eq` / `call_need` (or equivalent explicit call-value object).
+3. Layer-aware values may affect only the eventual **call vs fold** choice.
+4. If a raise is selected, D4 does not veto/approve it; D5 owns raise EV.
+5. Do not consume incomplete layer summaries.
+6. First activation population is locked-all-in side-pot states only.
+7. For multi-active-player states with `to_act_behind > 0`, keep the layer call value shadow-only
+   until continuation/behind-player semantics are separately specified.
+8. Existing ICM/personality/read adjustments are not deleted.  Before strategy wiring, map the
+   objective layer breakeven/effective equity into the existing `calldown_need` perception chain
+   rather than adding a new hand-tuned side-pot multiplier.
+
+## Current shadow wiring
+
+When a locked all-in opponent exists and `tocall > 0`, session records:
+
+- projected post-call layers;
+- projected layer equities;
+- raw layer call summary;
+- `to_act_behind`.
+
+This is stored under intent provenance `call_ev_shadow` only.
+
+No argument named `call_ev_shadow` reaches `update_plan`, `act_with_plan`,
+`decide_response`, sizing, or execution.
+
+## D4 shadow acceptance
+
+`tools/audit_f8_sidepot.py` requires:
+
+- the locked-main fixture above gives call chip-EV = -6;
+- effective equity = 0.0125;
+- breakeven = 0.03125;
+- missing main equity leaves the result unknown;
+- source scan confirms no strategy consumer.
+
+Acceptance requires:
+
+- F8 diagnostic: 7/7;
+- frozen regression still exactly matches baseline rev `2a53584`.
+
+Only after those pass may the D4 strategy-consumer patch be designed against the frozen
+preregistration above.

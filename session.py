@@ -451,6 +451,84 @@ def _diagnostic_layer_equities(hero_seat, hero_cards, board, pot_layers,
     return out
 
 
+def _project_call_layers(prior_contrib, street_contrib, folded, stacks,
+                         hero, tocall, dead=0):
+    """F8-D4 shadow: hero가 현재 가격을 콜한 직후의 pot geometry.
+
+    전략에는 사용하지 않는다. 현재 street hero contribution에 실제 incremental
+    call만 더하고, hero remaining stack도 같은 금액만 줄인 뒤 D1 layer builder를
+    다시 호출한다.
+
+    상대의 아직 매칭되지 않은 초과분은 별도 ineligible upper layer로 남을 수 있다.
+    이후 EV summary는 hero_eligible layer만 합산하므로 uncalled excess를 이길 수 있는
+    돈으로 오인하지 않는다.
+    """
+    street2 = dict(street_contrib or {})
+    stacks2 = dict(stacks or {})
+    cost = max(0.0, min(float(tocall or 0), float(stacks2.get(hero, 0) or 0)))
+    street2[hero] = float(street2.get(hero, 0) or 0) + cost
+    stacks2[hero] = max(0.0, float(stacks2.get(hero, 0) or 0) - cost)
+    layers = _decision_pot_layers(
+        prior_contrib, street2, folded, stacks2, hero=hero, dead=dead)
+    return layers, cost
+
+
+def _layer_call_summary(call_cost, projected_layers, projected_equities):
+    """F8-D4 shadow: layer별 showdown return을 incremental call chip-EV로 합친다.
+
+    fold의 미래 현금흐름을 0으로 두고 이미 넣은 칩은 sunk cost로 취급한다.
+
+      gross_return = Σ equity(layer) * amount(layer), hero-eligible layers only
+      call_chip_ev = gross_return - incremental_call_cost
+      effective_equity = gross_return / contestable_after_call
+      breakeven_equity = call_cost / contestable_after_call
+
+    하나라도 필요한 layer equity가 unknown이면 숫자를 발명하지 않고 incomplete로
+    반환한다. 이 summary 역시 아직 행동에 연결하지 않는다.
+    """
+    rows = {int(r.get('idx')): r for r in (projected_equities or [])}
+    contestable = 0.0
+    gross = 0.0
+    missing = []
+
+    for idx, layer in enumerate(projected_layers or []):
+        if not layer.get('hero_eligible'):
+            continue
+        amount = float(layer.get('amount', 0) or 0)
+        contestable += amount
+        row = rows.get(idx)
+        if not row or not row.get('complete') or row.get('equity') is None:
+            missing.append(idx)
+            continue
+        gross += amount * float(row['equity'])
+
+    cost = max(0.0, float(call_cost or 0))
+    complete = (not missing and contestable > 0)
+    if not complete:
+        return {
+            'complete': False,
+            'call_cost': cost,
+            'contestable_after_call': contestable,
+            'gross_return': None,
+            'call_chip_ev': None,
+            'effective_equity': None,
+            'breakeven_equity': (
+                round(cost / contestable, 6) if contestable > 0 else None),
+            'missing_equity_layers': missing,
+        }
+
+    return {
+        'complete': True,
+        'call_cost': cost,
+        'contestable_after_call': contestable,
+        'gross_return': round(gross, 6),
+        'call_chip_ev': round(gross - cost, 6),
+        'effective_equity': round(gross / contestable, 6),
+        'breakeven_equity': round(cost / contestable, 6),
+        'missing_equity_layers': [],
+    }
+
+
 def _barrel_count(full_meta, current_meta, seat, current_street):
     """상대가 공격한 **postflop street 수**. 현재 street도 포함."""
     streets = {
@@ -1368,6 +1446,22 @@ class HandRun:
                         opp_ranges, locked_opp_ranges, sims=600)
                     if locked_opp_ranges else [])
 
+                # F8-D4 prereg shadow: 실제 콜을 했다고 가정한 pot geometry와
+                # layer별 gross return/chip-EV. 아직 response 판단에는 사용하지 않는다.
+                call_ev_shadow = None
+                if locked_opp_ranges and tc > 0:
+                    _call_layers, _call_cost = _project_call_layers(
+                        contrib, r2.contrib, folded | set(r2.folded), r2.stacks,
+                        s, tc, dead=dead)
+                    _call_layer_eq = _diagnostic_layer_equities(
+                        s, h.hole[s], board, _call_layers,
+                        opp_ranges, locked_opp_ranges, sims=600)
+                    call_ev_shadow = _layer_call_summary(
+                        _call_cost, _call_layers, _call_layer_eq)
+                    call_ev_shadow['layers'] = _call_layers
+                    call_ev_shadow['layer_equities'] = _call_layer_eq
+                    call_ev_shadow['to_act_behind'] = behind
+
                 # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
                 # 흔들려도 판단이 바뀌면 안 되므로 여기서 순서를 확정한다.
                 # 이걸 빼면 같은 시드가 재현되지 않는다 (rng.choice 가 순서에 의존).
@@ -1468,6 +1562,8 @@ class HandRun:
                             for k in locked_opp_ranges},
                         # F8-D3 provenance only. Layer equity is not a strategy input.
                         'layer_equities': layer_equities,
+                        # F8-D4 prereg shadow only. No response consumer yet.
+                        'call_ev_shadow': call_ev_shadow,
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),

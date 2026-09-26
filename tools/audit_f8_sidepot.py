@@ -286,6 +286,79 @@ def check_d3_layer_equities():
     }
 
 
+
+def check_d4_call_ev_shadow():
+    # Locked main pot is large, new side-pot wager is small.
+    #
+    # Before call:
+    #   A locked all-in 100, hero 100, C 110 (C bet 10 this street)
+    # After hero calls 10:
+    #   main 300 (A/H/C), side 20 (H/C)
+    #
+    # Synthetic equities:
+    #   main = 0.00, side = 0.20
+    # Gross return = 300*0 + 20*.20 = 4
+    # Incremental call cost = 10 -> chip EV = -6.
+    #
+    # This is the failure class scalar active-only equity can hide:
+    # a huge locked main pot must not be priced using only side opponent equity.
+    prior = {1: 100, 2: 100, 3: 100}
+    current = {3: 10}
+    stacks = {1: 0, 2: 100, 3: 90}
+
+    call_layers, cost = SE._project_call_layers(
+        prior, current, folded=set(), stacks=stacks,
+        hero=2, tocall=10, dead=0)
+
+    assert cost == 10.0, (call_layers, cost)
+    assert [
+        (x['amount'], x['eligible_seats'], x['hero_eligible'])
+        for x in call_layers
+    ] == [
+        (300.0, [1, 2, 3], True),
+        (20.0, [2, 3], True),
+    ], call_layers
+
+    synthetic_eq = [
+        {'idx': 0, 'complete': True, 'equity': 0.0},
+        {'idx': 1, 'complete': True, 'equity': 0.20},
+    ]
+    summary = SE._layer_call_summary(cost, call_layers, synthetic_eq)
+    assert summary['complete'] is True, summary
+    assert summary['contestable_after_call'] == 320.0, summary
+    assert summary['gross_return'] == 4.0, summary
+    assert summary['call_chip_ev'] == -6.0, summary
+    assert summary['effective_equity'] == 0.0125, summary
+    assert summary['breakeven_equity'] == 0.03125, summary
+
+    # Unknown main equity must make the whole call summary unknown.
+    incomplete = SE._layer_call_summary(
+        cost, call_layers,
+        [{'idx': 0, 'complete': False, 'equity': None},
+         {'idx': 1, 'complete': True, 'equity': 0.20}])
+    assert incomplete['complete'] is False, incomplete
+    assert incomplete['call_chip_ev'] is None, incomplete
+    assert incomplete['missing_equity_layers'] == [0], incomplete
+
+    src = inspect.getsource(SE.HandRun._run)
+    assert "call_ev_shadow = _layer_call_summary(" in src
+    assert "'call_ev_shadow': call_ev_shadow" in src
+    # Prereg/shadow only: response path must not consume it yet.
+    assert "call_ev_shadow=" not in src
+    assert "call_ev_shadow['call_chip_ev']" not in src
+
+    return {
+        'call_cost': summary['call_cost'],
+        'contestable_after_call': summary['contestable_after_call'],
+        'gross_return': summary['gross_return'],
+        'call_chip_ev': summary['call_chip_ev'],
+        'effective_equity': summary['effective_equity'],
+        'breakeven_equity': summary['breakeven_equity'],
+        'incomplete_stays_unknown': incomplete['call_chip_ev'] is None,
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -293,6 +366,7 @@ def main():
     d1, pending = check_d1_provenance()
     d2 = check_d2_locked_range_preservation()
     d3 = check_d3_layer_equities()
+    d4 = check_d4_call_ev_shadow()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -303,9 +377,10 @@ def main():
     print("     pending upper layer keeps hero ineligible before call", pending[-1])
     print("PASS F8-D2 locked all-in opponent range is reconstructed", d2)
     print("PASS F8-D3 layer-specific equity diagnostics are separated", d3)
-    print("6/6 F8 diagnostic checks passed")
+    print("PASS F8-D4 prereg call-EV shadow is layer-weighted", d4)
+    print("7/7 F8 diagnostic checks passed")
     print("NOTE: the gap reproduction PASS confirms the architecture defect;")
-    print("      D1-D3 only preserve/compute diagnostics and do not change strategy.")
+    print("      D1-D4 shadow only preserve/compute diagnostics and do not change strategy.")
 
 
 if __name__ == '__main__':
