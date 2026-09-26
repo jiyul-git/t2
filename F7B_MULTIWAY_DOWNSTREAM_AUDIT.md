@@ -237,3 +237,59 @@ No pass/fail magnitude threshold is invented before seeing the data.  The tool r
 mean, p50, p90, p99, maximum, and largest examples.
 
 Repair formulas will be designed only after this measurement.
+
+
+---
+
+## B1-A candidate semantics — joint current-board relative strength
+
+The live B1 measurement confirms union collapse is material:
+
+- 493 total plan-update calls;
+- 96 multiway calls (**19.5%**);
+- all 96 had at least two non-empty seat pools;
+- all 96 had unequal pool sizes;
+- pool-size ratio mean 1.94, p90 2.99, max 8.29.
+
+Observed union-versus-equal-seat diagnostic deltas:
+
+- relative strength: mean 0.042, p90 0.085, max 0.349;
+- range advantage: mean 0.105, p90 0.202, max 0.673;
+- nut advantage: mean 0.110, p90 0.218, max 0.595;
+- blocker effect: mean 0.041, p90 0.097, max 0.273.
+
+So B1 is a live strategy issue, not only a synthetic fixture.
+
+### Relative strength has a natural multiway extension
+
+The existing heads-up `relative_strength` means:
+
+> among the opponent's perceived current-board combos, what fraction does **not strictly beat**
+> hero?
+
+Ties therefore count as "not behind".
+
+For multiway the direct extension is:
+
+> sample one compatible combo from every seat-specific perceived range; what is the probability
+> that **no opponent strictly beats hero** on the current board?
+
+This preserves opponent identity and preserves the heads-up definition exactly.
+
+It is intentionally distinct from showdown pot share:
+
+- `joint_not_behind`: ties count as 1 because the question is "am I currently behind?";
+- `joint_current_share`: ties split by exact pot share and is reported alongside it.
+
+`tools/measure_f7b_joint_rel.py` preregisters this as a **shadow metric only**.
+
+Acceptance before any consumer change:
+
+- fixed distortion fixture: union relative strength > 0.90 but joint not-behind = 0;
+- one-opponent case exactly matches current `relative_strength`;
+- missing seat pool => unknown, never copied from another opponent;
+- default 3000-3005/30-hand fixture reports joint-vs-union delta and threshold-band crossings;
+- production continues to consume the union until the shadow results are reviewed.
+
+This does **not** choose replacements yet for range advantage, nut advantage, or blocker logic.
+Those metrics have different strategic meanings and need separate aggregation rules.
