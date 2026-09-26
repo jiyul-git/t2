@@ -14,16 +14,20 @@ STRICT = bool(os.environ.get('T2_STRICT'))
 
 
 class Table:
-    def __init__(self, tid, players, button=None, max_seat=MAXSEAT):
+    def __init__(self, tid, players, button=None, max_seat=MAXSEAT, button_seat=None):
         self.id = tid
         self.players = players          # [{'pid','prof','stack'}]
-        self.button = button if button is not None else 0
+        # button 은 구 저장본 호환용 '생존자 배열 index'다.
+        # 실제 진행 기준은 고정 좌석번호 button_seat 로 보존한다.
+        self.button = int(button or 0)
+        self.button_seat = button_seat
         self.hands = 0
         self.max_seat = int(max_seat or MAXSEAT)
         # 고정 좌석 슬롯. 포맷의 최대 테이블 인원을 따른다.
         self.seats = [None]*self.max_seat
         for i, p in enumerate(players[:self.max_seat]):
             self.seats[i] = p['pid']
+        self.restore_button(self.button, button_seat)
 
     def seat_of(self, pid):
         return self.seats.index(pid)+1 if pid in self.seats else None
@@ -41,6 +45,73 @@ class Table:
 
     def alive(self):
         return [p for p in self.players if p['stack'] > 0]
+
+    def ordered_alive(self):
+        """고정 좌석의 시계방향 순서로 생존자를 반환한다."""
+        return sorted(
+            (p for p in self.alive() if self.seat_of(p['pid']) is not None),
+            key=lambda p: self.seat_of(p['pid'])
+        )
+
+    def _live_seats(self):
+        return [self.seat_of(p['pid']) for p in self.ordered_alive()]
+
+    def restore_button(self, button=None, button_seat=None):
+        """구 index 저장본을 고정 좌석 버튼으로 1회 변환하고 index도 동기화한다."""
+        live = self._live_seats()
+        if not live:
+            self.button = 0
+            self.button_seat = button_seat
+            return None
+        if button_seat in live:
+            seat = int(button_seat)
+        else:
+            seat = live[int(button or 0) % len(live)]
+        self.button_seat = seat
+        self.button = live.index(seat)
+        return seat
+
+    def dealer_seat(self):
+        """현재 딜러 좌석. 버튼 좌석이 비었으면 다음 생존 좌석으로 넘긴다."""
+        live = self._live_seats()
+        if not live:
+            return None
+        if self.button_seat not in live:
+            start = int(self.button_seat or live[0])
+            seat = None
+            for d in range(1, self.max_seat + 1):
+                cand = ((start - 1 + d) % self.max_seat) + 1
+                if cand in live:
+                    seat = cand
+                    break
+            self.button_seat = seat if seat is not None else live[0]
+        self.button = live.index(self.button_seat)
+        return self.button_seat
+
+    def advance_button(self):
+        """좌석 추가/삭제와 무관하게 물리 좌석 기준으로 버튼을 한 명 전진시킨다."""
+        live = self._live_seats()
+        if not live:
+            self.button = 0
+            return None
+        cur = self.dealer_seat()
+        for d in range(1, self.max_seat + 1):
+            cand = ((cur - 1 + d) % self.max_seat) + 1
+            if cand in live:
+                self.button_seat = cand
+                self.button = live.index(cand)
+                return cand
+        return cur
+
+    def player_after_button(self, offset):
+        """현재 버튼에서 생존자 기준 offset명 뒤 플레이어."""
+        alive = self.ordered_alive()
+        if not alive:
+            return None
+        live = [self.seat_of(p['pid']) for p in alive]
+        dealer = self.dealer_seat()
+        i = live.index(dealer)
+        return alive[(i + int(offset)) % len(alive)]
 
     def n(self): return len(self.alive())
 
@@ -235,12 +306,14 @@ class Field:
 
     def _play_table(self, tb, fast=True):
         """봇 전용 테이블 한 핸드. 실제로 돌려서 스택을 갱신한다."""
-        alive = tb.alive()
+        # players append 순서가 아니라 고정 좌석 순서여야 button 의미가 유지된다.
+        alive = tb.ordered_alive()
         if len(alive) < 2: return None
         seats = list(range(1, len(alive)+1))
         profs = {str(i+1): alive[i]['prof'] for i in range(len(alive))}
         stacks = {i+1: alive[i]['stack'] for i in range(len(alive))}
-        btn = seats[tb.button % len(seats)]
+        physical = [tb.seat_of(p['pid']) for p in alive]
+        btn = seats[physical.index(tb.dealer_seat())]
         sb, bb = self.blinds()
         try:
             h = play.Hand(seats, profs, stacks, btn, sb, bb, hero=None,
@@ -263,7 +336,7 @@ class Field:
             if STRICT:
                 raise
             return None
-        tb.button = (tb.button + 1) % max(1, len(alive))
+        tb.advance_button()
         tb.hands += 1
         return True
 
@@ -336,7 +409,11 @@ class Field:
             big = max(act.values(), key=lambda x: x.n())
             small = min(act.values(), key=lambda x: x.n())
             if big.n() - small.n() <= 1: break
-            mover = big.players[(big.button + 2) % len(big.players)]
+            # 다음 핸드의 BB 예정자를 이동시킨다. players append 순서를
+            # button index로 해석하면 밸런싱 뒤 버튼/블라인드가 순간이동한다.
+            mover = big.player_after_button(2)
+            if mover is None:
+                break
             big.players.remove(mover); big.stand(mover['pid'])
             small.players.append(mover); small.sit(mover); mover['table'] = small.id
             if notify and mover['pid'] == self.hero_pid:
