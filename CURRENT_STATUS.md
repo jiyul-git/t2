@@ -33,12 +33,16 @@ Current finding:
 - live incomplete examples observed so far were heads-up, not true multiway partial pools;
 - 11/11 HU empty-seat cases originated at `preflop_range`;
 - all 11 were reconstructed as 3bet;
-- continuous 3bet interval was positive but narrower than the discrete AA percentile bin;
-- current downstream fallback can replace missing opponent union with hero's own range;
-- `tools/measure_f7b_empty_range_overlap_candidate.py` is the current shadow experiment.
+- B1D5 proved the percentile-bin overlap fallback is **not behavior-preserving**:
+  3/6 preregistered target hands changed directly on identical pre-hand state;
+- B1D6 posterior audit: 11/11 observed actions had positive model-implied posterior mass;
+- 9/11 cannot be represented exactly by a unique unweighted combo list;
+- the other 2/11 are one-class AA posteriors, but the overlap fallback still has the wrong support;
+- overlap fallback was exact in **0/11** cases and omitted as much as **89.813%** of posterior mass.
 
-Separate open question: actual `defend_decision` uses stochastic mixed action probabilities while
-`ranges.preflop_range` reconstructs a hard slice. That posterior-semantics mismatch is **not closed** by the bin-overlap shadow.
+Conclusion: another hard-slice/bin patch cannot close B1D. The active next step is B1D7:
+shared RNG-free defend-action likelihood semantics + a weighted-range consumer contract.
+Production ranges remain unweighted until that contract is verified.
 
 ### OPEN after B1D
 
