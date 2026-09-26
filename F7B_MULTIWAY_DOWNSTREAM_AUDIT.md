@@ -1612,3 +1612,30 @@ representation defect:
 
 This is diagnostic only. The stochastic-policy posterior mismatch remains open
 regardless of the result.
+
+
+---
+
+## F7-B1D5 — direct attribution of B1D4 overlap fallback
+
+B1D4 recovered every observed empty reconstruction in its 600-hand shadow:
+
+- 28 empty `preflop_range` calls;
+- 28 recovered;
+- aggregate VPIP/PFR/flop percentages unchanged;
+- full sequential fingerprints changed in six hands.
+
+Those six sequential changes are not yet enough to call the candidate a direct strategy change,
+because one changed hand can alter stacks/state and create later cascade.
+
+`tools/attribute_f7b_empty_range_overlap.py` therefore runs production sequentially, but before
+each hand deep-copies the exact pre-hand tournament state and runs the overlap candidate on that
+snapshot only. Candidate state is never fed into the following hand.
+
+Interpretation:
+
+- `direct_changed_hands_total == 0`: B1D4 sequential mismatches were cascade only;
+- nonzero: the representation candidate directly changes at least one action/amount on an identical
+  pre-hand state and therefore cannot be promoted as a behavior-preserving cleanup;
+- regardless of this result, the stochastic `defend_decision` vs hard-slice observer posterior
+  mismatch remains open and must be resolved before B1D is fully closed.
