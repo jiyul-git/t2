@@ -3241,6 +3241,39 @@ async function callStepStream(body, msg) {
     const e = queue.shift();
     const oldStage = ss ? ss.stage : null;
 
+    if (ss && e.kind === 'street') {
+      // 보드 전환은 다음 봇 판단과 독립이다. 직전 HERO 액션이 스트리트를
+      // 닫았으면 이 이벤트가 먼저 오므로, 봇 계산을 기다리지 않고 카드를 깐다.
+      ss.potCenter += ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
+      ss.seats.forEach((x) => { x.bet = 0; });
+      ss.stage = e.street || ss.stage;
+      if (Array.isArray(e.board)) ss.board = e.board.slice();
+      if (BOARD_AT[ss.stage] !== undefined) ss.boardShown = BOARD_AT[ss.stage];
+
+      const sum = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
+      const fv = Object.assign({}, base, {
+        seats: ss.seats,
+        stage: ss.stage,
+        board: ss.board.slice(0, ss.boardShown),
+        pot_center: ss.potCenter,
+        pot_total: ss.potCenter + sum
+      });
+      renderSeats(fv);
+      renderChips(fv, true);
+      renderBoard(fv);
+      renderPot(fv);
+      renderHero(fv);
+      $('#logline').innerHTML =
+        '<span class="cur">' + (STREET[ss.stage] || ss.stage) + '</span> —';
+      publishPrev();
+
+      setTimeout(() => {
+        playing = false;
+        playNext();
+      }, 360);
+      return;
+    }
+
     if (ss) {
       if (Array.isArray(e.board)) ss.board = e.board.slice();
       if (e.action === 'fold' && e.seat !== (base && base.hero_seat)) {
