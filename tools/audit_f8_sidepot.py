@@ -577,6 +577,53 @@ def check_d5c_response_conditioning_and_check_benchmark():
     }
 
 
+
+def check_d5_size_unit_boundary():
+    # Strategic sizing contract is a pot fraction: 0.60 means 60% pot.
+    # The execution path currently divides that fraction by 100 again.
+    state = {
+        'plan': 'value_3street',
+        'intents': {
+            'river': PL.mk_intent('bet', 0.60, 'fixture')
+        }
+    }
+    prof = {
+        'type': 'TAG',
+        'aggr': 5.0,
+        'bluff': 5.0,
+        'gamble': 5.0,
+    }
+    act, _eq, _need = PL.act_with_plan(
+        ['Ah', 'Ad'], ['2c', '7d', 'Jh', '4s', '3c'],
+        prof, state, pot=10000, tocall=0, stack=20000, street='river',
+        initiative=True, opp_range=[], bf=1.0, seed=1,
+        n_opp=1, to_act_behind=0)
+
+    # Current execution result under the observed code path.
+    current_amount = act[1]
+    strategic_amount = int(round(10000 * 0.60 / 100.0)) * 100
+
+    assert PL.intent_of(state, 'river')['size'] == 0.60, state
+    assert strategic_amount == 6000, strategic_amount
+    assert current_amount == 100, act
+    assert current_amount != strategic_amount, (current_amount, strategic_amount)
+
+    src = inspect.getsource(PL.act_with_plan)
+    assert "pot*it['size']/100" in src
+
+    return {
+        'intent_size': 0.60,
+        'contract': 'pot_fraction',
+        'pot': 10000,
+        'strategic_amount': strategic_amount,
+        'current_execution_amount': current_amount,
+        'ratio_current_to_intended': round(
+            current_amount / float(strategic_amount), 6),
+        'defect_confirmed': True,
+        'strategy_fix_applied': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -588,6 +635,7 @@ def main():
     d5 = check_d5_bet_outcome_shadow()
     d5b = check_d5b_fold_probability_and_exhaustive_ev()
     d5c = check_d5c_response_conditioning_and_check_benchmark()
+    d5u = check_d5_size_unit_boundary()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -602,8 +650,9 @@ def main():
     print("PASS F8-D5-A proactive bet fold/call outcomes are layer-separated", d5)
     print("PASS F8-D5-B existing fold read combines EV only when raise is impossible", d5b)
     print("PASS F8-D5-C1 response-conditioned continue range and terminal check benchmark", d5c)
-    print("10/10 F8 diagnostic checks passed")
-    print("NOTE: D5-C1 remains shadow-only; strategy consumption is still disabled.")
+    print("PASS F8-D5-U sizing-unit defect is reproduced", d5u)
+    print("11/11 F8 diagnostic checks passed")
+    print("NOTE: D5-C2 is BLOCKED until the sizing-unit boundary is repaired and attributed.")
 
 
 if __name__ == '__main__':

@@ -965,7 +965,7 @@ Frozen regression must remain unchanged.
 
 # F8-D5-C1 preregistration — response-conditioned continuation range and check benchmark
 
-Status: **IMPLEMENTED SHADOW; pending user validation. No strategy consumer.**
+Status: **USER-VALIDATED SHADOW. No strategy consumer.**
 
 D5-B still cannot be consumed safely for two reasons discovered during the consumer audit.
 
@@ -1049,3 +1049,72 @@ The verifier requires:
 - no strategy consumer.
 
 Frozen regression must remain unchanged.
+
+
+---
+
+# F8-D5-U blocker — strategic sizing unit versus execution unit
+
+Status: **MAJOR GLOBAL DEFECT CONFIRMED IN SOURCE; diagnostic added, no production fix yet.**
+
+D5-C2 strategy consumption is blocked by an upstream unit mismatch.
+
+## Strategic contract
+
+`decide_size` explicitly returns a **pot fraction**:
+
+```
+0.60 = 60% pot
+0.75 = 75% pot
+1.00 = pot
+1.50 = 1.5x pot
+```
+
+`mk_intent` stores this value unchanged.
+
+The sizing tables and comments use the same contract.
+
+## Current execution conversion
+
+The no-wager execution path in `act_with_plan` currently does:
+
+```
+amt = round(pot * intent_size / 100)
+```
+
+That interprets `0.60` as 0.60%, not 60%.
+
+Fixed diagnostic fixture:
+
+```
+pot = 10,000
+intent size = 0.60
+
+strategic contract -> 6,000 chips
+current execution -> 100 chips after chip-unit rounding
+```
+
+So the live execution value is not merely presentation jitter; it is a unit mismatch at the
+judgment -> action boundary.
+
+## Why D5-C2 stops here
+
+D5-A/B/C1 compute candidate bet EV from the plan intent.  A strategy consumer must not compare
+bet/check EV under one sizing unit while actual execution uses another.
+
+Repairing this globally may change a large fraction of postflop bet amounts and downstream
+trajectories.  Therefore it must not be folded into the side-pot consumer patch.
+
+Required order:
+
+1. reproduce the unit mismatch with the diagnostic fixture;
+2. freeze the pre-fix behavior checkpoint already available at `d755709`;
+3. preregister the unit repair:
+   - strategy output remains pot fraction;
+   - execution converts by `pot * fraction`, not `/100`;
+   - presentation/rounding is separate;
+4. targeted sizing verifier;
+5. full frozen regression + behavior attribution;
+6. only then return to D5-C2.
+
+No production sizing behavior is changed in the diagnostic commit.
