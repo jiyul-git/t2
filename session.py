@@ -387,7 +387,7 @@ def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
     return out
 
 
-def _diagnostic_layer_equities(hero, board, pot_layers,
+def _diagnostic_layer_equities(hero_seat, hero_cards, board, pot_layers,
                                   active_ranges, locked_ranges, sims=600):
     """F8-D3: 현재 참가 가능한 pot layer별 showdown equity 진단.
 
@@ -404,7 +404,7 @@ def _diagnostic_layer_equities(hero, board, pot_layers,
 
     for idx, layer in enumerate(pot_layers or []):
         eligible = list(layer.get('eligible_seats') or [])
-        opps = sorted((x for x in eligible if x != hero), key=lambda x: str(x))
+        opps = sorted((x for x in eligible if x != hero_seat), key=lambda x: str(x))
         missing = []
         pools = []
         sources = {}
@@ -444,7 +444,7 @@ def _diagnostic_layer_equities(hero, board, pot_layers,
             row['complete'] = True
             row['equity'] = round(
                 float(bot.equity_vs_combos(
-                    hero, board, pools, sims=int(sims))), 6)
+                    hero_cards, board, pools, sims=int(sims))), 6)
             row['reason'] = 'computed'
         out.append(row)
 
@@ -1364,7 +1364,7 @@ class HandRun:
                 # 이 결과는 아래 intent에만 기록되고 전략 함수에는 전달되지 않는다.
                 layer_equities = (
                     _diagnostic_layer_equities(
-                        h.hole[s], board, _pot_layers,
+                        s, h.hole[s], board, _pot_layers,
                         opp_ranges, locked_opp_ranges, sims=600)
                     if locked_opp_ranges else [])
 

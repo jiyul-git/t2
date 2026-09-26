@@ -238,7 +238,7 @@ def check_d3_layer_equities():
     active = {3: [('9s', '8s')]}
     locked = {1: [('Jc', 'Jd')]}
     eqs = SE._diagnostic_layer_equities(
-        hero, board, layers, active, locked, sims=40)
+        2, hero, board, layers, active, locked, sims=40)
 
     assert len(eqs) == 2, eqs
     assert eqs[0]['opponents'] == [1, 3], eqs
@@ -254,7 +254,7 @@ def check_d3_layer_equities():
 
     # Missing range must stay explicitly unknown; never invent a fallback pool.
     missing = SE._diagnostic_layer_equities(
-        hero, board, [layers[0]], active, {}, sims=40)
+        2, hero, board, [layers[0]], active, {}, sims=40)
     assert missing[0]['complete'] is False, missing
     assert missing[0]['equity'] is None, missing
     assert missing[0]['missing_ranges'] == [1], missing
@@ -264,7 +264,7 @@ def check_d3_layer_equities():
         {1: 20, 2: 20, 3: 20}, {3: 30}, folded=set(),
         stacks={1: 0, 2: 100, 3: 100}, hero=2, dead=0)
     pending_eq = SE._diagnostic_layer_equities(
-        hero, board, pending, active, locked, sims=40)
+        2, hero, board, pending, active, locked, sims=40)
     assert pending_eq[-1]['hero_eligible'] is False, pending_eq
     assert pending_eq[-1]['equity'] is None, pending_eq
     assert pending_eq[-1]['reason'] == 'hero_not_currently_eligible', pending_eq
