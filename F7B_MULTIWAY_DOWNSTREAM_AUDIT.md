@@ -684,3 +684,87 @@ The verifier now requires `_decision_range_advantage` in both `make_plan` and `r
 continues to require the still-unrepaired union consumers for nut advantage and blockers.
 
 B1-B1 is **CLOSED**.  Nut advantage remains shadow-only.
+
+
+---
+
+## B1-B2 — separate nut ownership from field collision
+
+Status: **DIAGNOSTIC ONLY.**
+
+The first multiway nut shadow used:
+
+> probability that at least one opponent occupies the strong band.
+
+That quantity is real, but it combines two effects:
+
+1. **range ownership** — whether hero's range has more top-end than an opponent range;
+2. **field collision** — with more opponents, the probability that somebody has a strong hand rises
+   even if every seat has the same distribution.
+
+The existing heads-up `nut_advantage` was designed as an ownership comparison, while current
+consumers use it for two different tasks:
+
+- `bluff_mode`: `nut_adv >= 0.55` allows a polarized bluff mode;
+- `overbet_frac`: recomputes union nut advantage and uses it in both overbet probability and
+  overbet size.
+
+Those two consumers need not want the same multiway quantity.
+
+### Candidate A — worst-seat ownership
+
+Compute the existing heads-up `R.nut_advantage(my_range, seat_range, board)` independently for
+every active opponent and take the **minimum**.
+
+Meaning:
+
+> does hero own the top-end even against the opponent range with the strongest top-end claim?
+
+Properties:
+
+- exact heads-up parity;
+- no combo-count weighting;
+- no artificial player-count penalty;
+- no synthetic "average opponent";
+- preserves the existing nut-advantage scale and its 0.55 threshold meaning better than
+  any-opponent occupancy.
+
+This is the leading candidate for `bluff_mode`.
+
+### Candidate B — any-field collision
+
+Keep the first shadow definition:
+
+> probability that at least one compatible opponent combo lies in the strong bands.
+
+This intentionally becomes more adverse as the number of opponents grows.
+
+It is not pure nut ownership.  It may still be relevant to **overbet risk**, where the chance that
+somebody can continue strongly genuinely rises with field size.
+
+### Measurement
+
+`tools/measure_f7b_nut_semantics.py` compares, on the same live states:
+
+- current union nut advantage;
+- worst-seat ownership;
+- any-field collision.
+
+It reports:
+
+- sign flips;
+- `0.55` threshold crossings;
+- disagreements between worst-seat and any-field at 0.55;
+- absolute deltas;
+- breakdown by number of opponents;
+- the existing overbet nut multiplier under all three definitions.
+
+No production consumer changes in this step.
+
+Decision rule after measurement:
+
+- if worst-seat ownership is stable enough and materially differs from union in live states, it may
+  replace the `bluff_mode` ownership input;
+- any-field collision will not replace ownership merely because it is more conservative;
+- `overbet_frac` remains blocked until the ownership/collision split and B2 multi-opponent response
+  semantics are jointly understood.
