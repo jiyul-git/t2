@@ -1,0 +1,28 @@
+{
+ "fp": {
+  "3000": "e049b88cbd9158c6",
+  "3001": "77a7d20543886a5c",
+  "3002": "aed27043185cb777",
+  "3003": "fb927a83de13dedf",
+  "3004": "f70f4052baacfa8c",
+  "3005": "0a9bed2efdb7e7e3"
+ },
+ "stats": {
+  "n": 1368,
+  "vpip": 283,
+  "hands": 180,
+  "flop": 85,
+  "pfr": 165
+ },
+ "rev": "be4a903",
+ "note": "F8 closed and attributed; F7-B diagnostic only, no strategy change",
+ "seeds": [
+  3000,
+  3001,
+  3002,
+  3003,
+  3004,
+  3005
+ ],
+ "hands": 30
+}
