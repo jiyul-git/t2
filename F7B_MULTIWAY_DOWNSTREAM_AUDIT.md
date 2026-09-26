@@ -870,3 +870,56 @@ No production behavior changes in this diagnostic.
 The next structural repair, if supported by reachability results, should remove the hidden union
 recomputation from sizing and pass explicit judgment quantities forward rather than merely replacing
 one scalar inside `overbet_frac`.
+
+
+---
+
+## B1-B3A — repair nut judgment-to-sizing wiring
+
+Status: **IMPLEMENTED; behavior-preservation validation pending.**
+
+The all-consumer shadow established:
+
+- 60 / 60 multiway `make_plan` states had complete worst-seat ownership;
+- replacing union ownership with worst-seat ownership changed **0 plan labels**;
+- changed **0 bluff modes**;
+- 11 multiway overbet calls were complete;
+- neither worst-seat nor any-field changed overbet selection;
+- one turn value overbet changed size only:
+  - current union: **1.60 pot**
+  - worst-seat: **1.55 pot**
+  - any-field: **1.52 pot**.
+
+The structural defect is independent of which multiway nut definition is ultimately chosen:
+`overbet_frac` was recomputing a factual union-range judgment inside sizing even though
+`refresh` already maintained `nut_adv`.
+
+This repair deliberately does **not** change nut semantics yet.
+
+### Wiring after repair
+
+Judgment state stores both:
+
+- `nut_adv` — rounded display/legacy value;
+- `nut_adv_raw` — exact production union value.
+
+`attach_intent` forwards `nut_adv_raw` to `decide_size`.
+
+`decide_size` forwards that value explicitly to `overbet_frac`.
+
+`overbet_frac` no longer calls `R.nut_advantage` and therefore cannot silently rebuild a
+collapsed union judgment inside the sizing layer.
+
+### Expected behavior
+
+Because `nut_adv_raw` preserves the exact pre-repair union value, this is intended to be a
+strict behavior-preserving architecture correction.
+
+Acceptance requires:
+
+1. F7-B targeted verifier **8/8**;
+2. exact equality with frozen `baseline_9max_post_b1a.json`;
+3. no new baseline save.
+
+Worst-seat ownership and any-field collision remain shadow semantics.  They are not activated by
+this patch.

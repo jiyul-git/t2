@@ -2035,6 +2035,8 @@ class HandRun:
                         'range_adv_union': _pl.get('range_adv_union'),
                         'range_adv_joint': _pl.get('range_adv_joint'),
                         'range_adv_source': _pl.get('range_adv_source'),
+                        'nut_adv': _pl.get('nut_adv'),
+                        'nut_adv_raw': _pl.get('nut_adv_raw'),
                         'eq': _pl.get('eq'),
                         'outs': _pl.get('outs'), 'made': _pl.get('made'),
                         # 기록 전용 provenance. 판단에는 안 쓰인다.
@@ -2069,7 +2071,7 @@ class HandRun:
                             _pl.get('layer_bet_ev_judgments') or []),
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
-                        'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),
+                        'range_adv': _pl.get('range_adv'),
                         'spr': _pl.get('spr'), 'danger': _pl.get('danger'),
                         # 계획이 언제 세워졌고 어느 스트리트에서 갱신됐나.
                         # 'refresh 가 안 돌아서 낡은 rel 로 판단'을 잡으려면 필요하다.

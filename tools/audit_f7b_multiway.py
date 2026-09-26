@@ -172,7 +172,9 @@ def check_downstream_source_map():
     assert "_decision_relative_strength(" in rsrc
     assert "R.nut_advantage(_mr, opp_range, board)" in rsrc
     assert "_decision_range_advantage(" in rsrc
-    assert "R.nut_advantage(my_range, opp_range, board)" in osrc
+    assert "R.nut_advantage(my_range, opp_range, board)" not in osrc
+    assert "nut = float(nut or 0.0)" in osrc
+    assert "nut=nut" in inspect.getsource(PL.decide_size)
     assert "R.blocker_effect(hero, opp_range" in rvsrc
 
     # Multiway planning still chooses one representative read/stack.
@@ -190,7 +192,6 @@ def check_downstream_source_map():
             'blocker_score/effect',
             'nut_advantage',
             'river blocker',
-            'overbet nut advantage',
         ],
         'single_main_opponent_consumers': [
             'fold/read adjustment',
@@ -315,6 +316,31 @@ def check_joint_range_advantage_consumer():
     }
 
 
+
+def check_nut_judgment_wiring():
+    msrc = inspect.getsource(PL.make_plan)
+    rsrc = inspect.getsource(PL.refresh)
+    asrc = inspect.getsource(PL.attach_intent)
+    dsrc = inspect.getsource(PL.decide_size)
+    osrc = inspect.getsource(PL.overbet_frac)
+
+    assert "'nut_adv_raw': float(nut)" in msrc
+    assert "st['nut_adv_raw'] = float(_nut_raw)" in rsrc
+    assert "st.get('nut_adv_raw', st.get('nut_adv', 0.0))" in asrc
+    assert "nut=nut" in dsrc
+    assert "R.nut_advantage(my_range, opp_range, board)" not in osrc
+    assert "nut = float(nut or 0.0)" in osrc
+
+    return {
+        'make_plan_produces_raw_nut': True,
+        'refresh_updates_raw_nut': True,
+        'attach_forwards_raw_nut': True,
+        'decide_size_forwards_nut': True,
+        'overbet_recompute_removed': True,
+        'nut_semantics_changed': False,
+    }
+
+
 def main():
     a = check_union_relative_strength_distortion()
     b = check_union_range_advantage_weighting()
@@ -323,6 +349,7 @@ def main():
     e = check_downstream_source_map()
     f = check_joint_relative_strength_consumer()
     g = check_joint_range_advantage_consumer()
+    h = check_nut_judgment_wiring()
 
     print("PASS F7-B1 union relative-strength distortion reproduced", a)
     print("PASS F7-B1 union range-advantage weighting distortion reproduced", b)
@@ -331,8 +358,9 @@ def main():
     print("PASS F7-B downstream source map classified", e)
     print("PASS F7-B1A joint relative-strength consumer is isolated", f)
     print("PASS F7-B1B joint range-advantage consumer is isolated", g)
-    print("7/7 F7-B diagnostic checks passed")
-    print("NOTE: relative_strength + range_adv are repaired; nut/blocker/read remain audited.")
+    print("PASS F7-B1B3 nut judgment-to-sizing wiring is explicit", h)
+    print("8/8 F7-B diagnostic checks passed")
+    print("NOTE: nut semantics remain union-based; blocker/read and multiway nut semantics remain audited.")
 
 
 if __name__ == '__main__':

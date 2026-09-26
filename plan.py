@@ -717,7 +717,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     st = {'plan': plan, 'street_made': street, 'streets': [street],
             'eq': round(eq,3), 'danger': round(dang,2), 'outs': outs,
             'blocker': round(blk,2), 'blocker_net': round(blk_net,3),
-            'nut_adv': round(nut,2), 'range_adv': round(adv,2),
+            'nut_adv': round(nut,2), 'nut_adv_raw': float(nut),
+            'range_adv': round(adv,2),
             'range_adv_union': (round(float(_adv_meta.get('union')), 6)
                                 if _adv_meta.get('union') is not None else None),
             'range_adv_joint': (round(float(_adv_meta.get('joint')), 6)
@@ -783,7 +784,7 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
     if _roll < p_aggr:
         size = decide_size(profile, hero, board, street, plan, rel,
                            opp_range, my_range, pot, stack, rng, opp_est,
-                           st.get('nut_adv', 0.0),
+                           st.get('nut_adv_raw', st.get('nut_adv', 0.0)),
                            deviating=why_a.startswith('DEVIATE:'),
                            stackoff=st.get('stackoff'), plan_state=st)
         if size > 0:
@@ -1357,7 +1358,7 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
         base *= 0.80
     # 오버벳: 개념·넛우위·양극화가 갖춰졌을 때만. 판단 층에서 결정된다.
     ob = overbet_frac(profile, hero, board, opp_range, my_range, street, plan,
-                      rel, rng, opp_est)
+                      rel, rng, opp_est, nut=nut)
     if ob:
         return ob
     return max(0.15, min(1.0, base))
@@ -1480,7 +1481,7 @@ SIZING = {
 }
 
 def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, rng,
-                 opp_est=None):
+                 opp_est=None, nut=0.0):
     """오버벳(팟 초과) 사이즈를 낼지, 낸다면 얼마나. 안 내면 None.
 
     오버벳은 아무나 치는 게 아니다. 세 가지가 동시에 필요하다:
@@ -1494,7 +1495,9 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     """
     if street == 'flop': return None                # 플랍 오버벳은 다루지 않는다
     ob = PS.sk(profile, 'overbet') if profile.get('concepts') else 2.0
-    nut = R.nut_advantage(my_range, opp_range, board) if (my_range and opp_range) else 0.0
+    # factual nut metric is produced by judgment/refresh and forwarded here.
+    # Sizing must not silently rebuild a collapsed opponent range judgment.
+    nut = float(nut or 0.0)
 
     # 예전에는 ob<4.0, nut<0.10, rel>=0.85 / rel<=0.25 네 개가 전부 하드 컷이었다.
     # 개념 3.9 와 4.1 이 완전히 다른 사람이 되고, rel 0.84 는 오버벳이
@@ -2317,7 +2320,9 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # stale 9건, 전부 이 경로). 값이 비었으면 상태의 것을 쓴다.
     _mr = my_range if my_range else st.get('my_range')
     if _mr and opp_range:
-        st['nut_adv'] = round(R.nut_advantage(_mr, opp_range, board), 2)
+        _nut_raw = R.nut_advantage(_mr, opp_range, board)
+        st['nut_adv_raw'] = float(_nut_raw)
+        st['nut_adv'] = round(_nut_raw, 2)
         _adv_joint_seed = (_zlib.crc32(
             ('%s|f7b_range_adv_refresh' % seed).encode())
             if seed is not None else None)
