@@ -692,6 +692,58 @@ def check_d5c2_terminal_bet_ev_consumer():
     }
 
 
+
+def check_d6a_preflop_layer_provenance():
+    # Same-street preflop geometry:
+    # hero seat 1 has 10 in + 40 behind; seat 2 is all-in for 20;
+    # seat 3 has raised to 50.  Dead BB ante 5 belongs only to first layer.
+    layers = SE._decision_pot_layers(
+        {}, {1: 10, 2: 20, 3: 50}, folded=set(),
+        stacks={1: 40, 2: 0, 3: 50}, hero=1, dead=5)
+
+    got = [
+        (x['level'], x['amount'], x['eligible_seats'],
+         x['hero_eligible'], x['locked_allin_seats'])
+        for x in layers
+    ]
+    assert got == [
+        (10.0, 35.0, [1, 2, 3], True, [2]),
+        (20.0, 20.0, [2, 3], False, [2]),
+        (50.0, 30.0, [3], False, []),
+    ], got
+
+    # Legal scalar cap and layer provenance describe the same reachable price
+    # but layers preserve who owns each piece.
+    r = SE.RU.Round(
+        None, [1, 2, 3], {1: 40, 2: 0, 3: 50}, 10,
+        current_bet=50, min_raise=30,
+        contrib={1: 10, 2: 20, 3: 50})
+    r.allin.add(2)
+    assert r.to_call(1) == 40, r.to_call(1)
+    assert r.contestable_contrib(1) == 80, r.contestable_contrib(1)
+
+    psrc = inspect.getsource(SE.PL.preflop_plan)
+    assert "'pf_pot_layers'" in psrc
+    assert "pot_layers=None" in psrc
+    ssrc = inspect.getsource(SE.HandRun._run)
+    assert "_pf_pot_layers = _decision_pot_layers(" in ssrc
+    assert "pot_layers=_pf_pot_layers" in ssrc
+
+    # D6-A is provenance only: preflop strategy functions do not consume layers.
+    dsrc = inspect.getsource(SE.pf.defend_decision)
+    csrc = inspect.getsource(SE.pf.calloff_decision)
+    assert "pot_layers" not in dsrc
+    assert "pot_layers" not in csrc
+
+    return {
+        'layers': got,
+        'to_call': 40,
+        'contestable_scalar': 80,
+        'schema_reused_from_postflop': True,
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -705,6 +757,7 @@ def main():
     d5c = check_d5c_response_conditioning_and_check_benchmark()
     d5u = check_d5_size_unit_boundary()
     d5c2 = check_d5c2_terminal_bet_ev_consumer()
+    d6a = check_d6a_preflop_layer_provenance()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -721,8 +774,9 @@ def main():
     print("PASS F8-D5-C1 response-conditioned continue range and terminal check benchmark", d5c)
     print("PASS F8-D5-U sizing-unit boundary is consistent", d5u)
     print("PASS F8-D5-C2 terminal bet/check consumer stays in judgment layer", d5c2)
-    print("12/12 F8 diagnostic checks passed")
-    print("NOTE: D5-C2 changes only the preregistered terminal exhaustive population.")
+    print("PASS F8-D6-A preflop reuses decision-time pot-layer provenance", d6a)
+    print("13/13 F8 diagnostic checks passed")
+    print("NOTE: D6-A is provenance-only; preflop calloff strategy is still scalar.")
 
 
 if __name__ == '__main__':

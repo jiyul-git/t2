@@ -53,6 +53,7 @@ def _merge_pf_seed(prev, new):
         'facing_allin': out.get('pf_facing_allin'),
         'pot_bb': out.get('pf_pot_bb'),
         'to_call_bb': out.get('pf_to_call_bb'),
+        'pot_layers': [dict(x) for x in (out.get('pf_pot_layers') or [])],
         'stack_bb': out.get('pf_stack_bb'),
     })
     out['pf_line'] = line
@@ -1206,6 +1207,11 @@ class HandRun:
             s = rnd.needs_action()
             if s is None: break
             pos = h.pos[s]; tc = rnd.to_call(s)
+            # F8-D6-A: preflop도 postflop과 같은 contribution-layer schema를 쓴다.
+            # 안테는 dead money로 first/main layer에만 들어간다.
+            _pf_pot_layers = _decision_pot_layers(
+                {}, rnd.contrib, set(rnd.folded), rnd.stacks,
+                hero=s, dead=ante_pot)
             if s == h.hero:
                 act = yield {'stage': 'preflop', 'pos': pos, 'hole': h.hole[s],
                              'stacks': dict(rnd.stacks), 'contrib': dict(rnd.contrib),
@@ -1213,7 +1219,9 @@ class HandRun:
                              'stack': rnd.stacks[s], 'min_raise': rnd.current+rnd.min_raise,
                              'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
                              'contrib': dict(rnd.contrib), 'live': list(rnd.live()),
-                             'allin': list(rnd.allin), 'hash': h.hash}
+                             'allin': list(rnd.allin),
+                             'pot_layers': _pf_pot_layers,
+                             'hash': h.hash}
                 a, amt = act
                 try: rnd.apply(s, a, amt)
                 except ValueError as e:
@@ -1299,7 +1307,8 @@ class HandRun:
                     can_raise=rnd.can_raise(s),
                     pot_bb=((rnd.contestable_contrib(s) + ante_pot) / max(1, h.bb)),
                     to_call_bb=(tc / max(1, h.bb)),
-                    prior_pf=((getattr(h, 'pf_seed', {}) or {}).get(s)))
+                    prior_pf=((getattr(h, 'pf_seed', {}) or {}).get(s)),
+                    pot_layers=_pf_pot_layers)
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]

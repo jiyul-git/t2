@@ -1103,7 +1103,7 @@ D5-C2 may proceed.
 
 # F8-D5-C2 implementation — terminal proactive bet/check consumer
 
-Status: **IMPLEMENTED; pending targeted + behavior validation.**
+Status: **USER-VALIDATED. Frozen regression unchanged.**
 
 After C1, proactive bet EV is complete only in a deliberately narrow terminal population.
 
@@ -1204,3 +1204,83 @@ Targeted verifier requires:
 This is an intentional behavior-change patch.  Frozen regression mismatch is allowed only if every
 changed action is attributable to the D5-C2 activation population.  The frozen baseline must not be
 updated before attribution.
+
+
+---
+
+# F8-D6-A — preflop decision-time pot-layer provenance
+
+Status: **IMPLEMENTED; pending user validation. No preflop strategy consumer.**
+
+P6 already had sound legal scalars:
+
+- exact incremental `to_call`;
+- `Round.contestable_contrib(hero)`;
+- raise-right semantics;
+- all-in-call normalization.
+
+But those scalars do not preserve which seats are eligible for each portion of a multiway
+preflop pot.
+
+D6-A reuses the exact same `_decision_pot_layers` schema already established for postflop.
+
+For every preflop decision:
+
+```
+prior_contrib = {}
+street_contrib = Round.contrib
+folded = Round.folded
+stacks = Round.stacks
+dead = BB ante / dead money
+```
+
+The resulting layers are:
+
+- exposed to the human preflop state as `pot_layers`;
+- passed through `preflop_plan` as provenance only;
+- stored in `pf_seed['pf_pot_layers']`;
+- appended to each `pf_line` decision record.
+
+No preflop action function consumes them yet.
+
+## Fixed geometry fixture
+
+Before hero acts:
+
+```
+hero: 10 contributed, 40 behind
+A:    20 contributed, all-in
+B:    50 contributed, 50 behind
+dead ante: 5
+```
+
+Expected decision-time layers:
+
+```
+level 10: amount 35, eligible H/A/B, hero eligible, A locked
+level 20: amount 20, eligible A/B,   hero not yet eligible, A locked
+level 50: amount 30, eligible B,     hero not yet eligible
+```
+
+The legal scalar view remains:
+
+```
+to_call(hero) = 40
+contestable_contrib(hero) = 80
+```
+
+Those values are not wrong; they simply cannot encode the opponent eligibility split by
+themselves.
+
+## D6-A acceptance
+
+Verifier requires:
+
+- exact layer geometry above;
+- exact P6 legal scalar values remain unchanged;
+- same F8 layer schema is used preflop;
+- `defend_decision` and `calloff_decision` still have no pot-layer consumer;
+- frozen regression remains unchanged.
+
+After D6-A, D6-B will preserve **seat-keyed perceived preflop ranges** for all eligible opponents
+already in the pot, rather than using only `n_callers`.
