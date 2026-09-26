@@ -1783,3 +1783,193 @@ Likewise, the overlap fallback is an exact representation only if:
 2. those nonzero likelihoods are equal.
 
 No production consumer is activated in B1D6.
+
+
+---
+
+## F7-B1D6 result — unweighted hard-slice representation is insufficient
+
+User validation on local commit `46d796a` completed the preregistered
+`3000-3011 × 50 hands` fixture with a clean working tree.
+
+Observed live HU empty-seat updates:
+
+```
+hu_empty_updates              11
+posterior_evaluated           11
+posterior_positive            11
+unweighted_exact_impossible    9
+unweighted_exact_possible      2
+overlap_not_exact             11
+```
+
+The B1D4 overlap candidate retained between **10.187% and 100%** of the
+observer-model posterior mass. Therefore the omitted posterior mass ranged from
+**0% to 89.813%**.
+
+Representative unequal action likelihoods within a single observed 3bet
+posterior included:
+
+- 0.2028 -> 0.6043 (max/min 2.98x);
+- 0.3538 -> 0.7731 (2.18x);
+- 0.3538 -> 0.6066 (1.71x);
+- 0.5508 -> 0.8840 (1.60x).
+
+Those probabilities are not equal, so a unique unweighted combo list would
+sample the support with the wrong conditional distribution.
+
+The two `unweighted_exact_possible` observations were degenerate one-class
+posteriors: only AA had positive likelihood. Even there, the B1D4 overlap
+candidate was **not** exact: the true live support was 6 AA combos while the
+overlap candidate contained 10 combos. Hence `overlap_not_exact == 11/11`.
+
+### B1D6 conclusion
+
+The empty-range symptom is not only a percentile endpoint discretization bug.
+It exposes a deeper mismatch:
+
+```
+action generator: stochastic mixed policy
+observer range:   deterministic hard slice + uniform combo sampling
+```
+
+Therefore:
+
+- the B1D4 percentile-overlap fallback is rejected as a cleanup repair;
+- another hard cutoff/support patch cannot close B1D;
+- the correct repair direction requires action-likelihood weights;
+- production must not receive those weights until the likelihood source and
+  downstream weighted-range contract are defined and verified.
+
+The B1D6 diagnostic used the current observer API's available information and
+therefore fixed `exploit=None`, `can_raise=True`, and
+`opener_allin=False`. That limitation does **not** justify reading hidden actor
+state. Public context such as legal raise rights and facing-all-in state should
+instead be propagated explicitly in the observer model.
+
+---
+
+## F7-B1D7 — shared policy likelihood + weighted-range contract
+
+B1D7 is a design/consumer audit. No production strategy change is allowed.
+
+### A. One stochastic policy source
+
+The mixed-action equations currently live inside `preflop.defend_decision`.
+The observer posterior must not keep a second copied version of those formulas.
+
+The target architecture is a deterministic, RNG-free helper that returns the
+action-category likelihoods for a supplied hand and decision context.
+
+At minimum it must expose the probability mass for:
+
+```
+fold
+call
+attack   # 3bet / raise-form shove, because postflop role reconstruction maps both to 3bet
+```
+
+The helper must share the exact threshold/mixed-policy semantics used by
+`defend_decision`. Wiring it into production action generation is a later
+behavior-preservation step; B1D7 itself does not change RNG consumption.
+
+The observer version may use only its modeled profile plus public decision
+context. It must not inspect the target player's hidden read book/persona.
+
+Public context already recorded in `pf_seed`, but not currently propagated
+through `preflop_range`, includes:
+
+- `pf_can_raise`;
+- `pf_facing_allin`;
+- `pf_pot_bb`;
+- `pf_to_call_bb`.
+
+Those fields are eligible observer inputs because they are public game-state
+facts. A target player's private `exploit` read is not.
+
+### B. Weighted range representation requirement
+
+A weighted range must preserve a nonnegative weight per legal combo. Relative
+weights are sufficient; normalization may be lazy.
+
+It must provide deterministic semantics for:
+
+- support iteration;
+- support cardinality;
+- total mass;
+- combo lookup;
+- weighted sampling;
+- dead-card filtering;
+- subset/filter transforms while retaining weights;
+- deterministic content signature that includes weights.
+
+A legacy plain combo list is equivalent to a weighted range with equal weights.
+
+### C. Current consumers that would silently destroy weights
+
+Static source audit identified four classes.
+
+**1. Uniform samplers — must become weight-aware**
+
+- `bot.equity_vs_pools`;
+- `ranges.range_advantage`;
+- `ranges.joint_range_advantage`;
+- `plan.joint_relative_strength`;
+- `plan._eq_current`;
+- the downstream `bot.equity_vs_combos` path.
+
+All currently use `rng.choice(pool)` after converting the range to a plain
+list.
+
+**2. Aggregate metrics — counts must become weighted mass**
+
+- `plan.relative_strength`;
+- `ranges._strong_share` / `nut_advantage`;
+- `ranges.blocker_score`;
+- `ranges.blocker_effect`;
+- `ranges.joint_blocker_effect`.
+
+These currently treat each combo as one equal observation.
+
+**3. Postflop range transforms — must preserve inherited weights**
+
+- `ranges._ranked`;
+- `_bet_range`;
+- `_continue_range`;
+- `_call_range`;
+- `_check_range`;
+- `perceived_range`;
+- `narrow_by_actions`;
+- `runner.adjust_range_by_history`.
+
+A subset operation may remove combos, but surviving posterior weights must not
+silently reset to uniform.
+
+**4. Representation/provenance sites — must stop collapsing to sets/lists**
+
+- `session.py: sorted(set(orange))`;
+- locked-range `sorted(set(...))`;
+- `plan._normalize_opp_pools: list(r)`;
+- `plan._range_sig` and opponent-pool signatures;
+- all archive fields that currently record only `len(range)`.
+
+For weighted ranges, records must distinguish at least support size from
+weighted content signature. A set/list conversion that discards weights is a
+hard error, not an allowed compatibility path.
+
+### D. Migration rule
+
+Do not replace every list in one patch.
+
+The safe order is:
+
+1. define/test the RNG-free defend likelihood helper in shadow mode;
+2. define the weighted-range data contract and legacy-uniform adapter;
+3. make signatures/filtering weight-preserving;
+4. convert equity/relative-strength samplers;
+5. convert nut/blocker aggregate metrics;
+6. convert postflop narrowing/history transforms;
+7. only then let observed preflop actions construct weighted posterior ranges;
+8. run direct paired attribution before any production promotion.
+
+Until step 7, production ranges remain the existing unweighted lists.
