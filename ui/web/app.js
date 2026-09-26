@@ -3206,10 +3206,8 @@ async function callStepStream(body, msg) {
   let finalPayload = null;
   let settled = false;
   let resolveDrain = null;
-  let rejectDrain = null;
-  const drained = new Promise((resolve, reject) => {
+  const drained = new Promise((resolve) => {
     resolveDrain = resolve;
-    rejectDrain = reject;
   });
 
   const publishPrev = () => {
@@ -3260,7 +3258,7 @@ async function callStepStream(body, msg) {
           pot_total: ss.potCenter + sum
         });
         renderSeats(fv);
-        renderChips(fv, oldStage !== ss.stage);
+        renderChips(fv, false);
         renderBoard(fv);
         renderPot(fv);
         renderHero(fv);
@@ -3379,7 +3377,7 @@ async function callStepStream(body, msg) {
   } catch (e) {
     if (!settled) {
       settled = true;
-      rejectDrain(e);
+      resolveDrain(null);
     }
     toast('연결 실패: ' + e.message);
     try {
