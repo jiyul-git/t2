@@ -967,3 +967,60 @@ It then measures whether that history-widening path is reached in the frozen liv
 often blocker signal differs from a board-only-dead counterfactual expansion.
 
 No multiway blocker aggregation will be activated until this representation prerequisite is closed.
+
+
+---
+
+## F7-B1C2 — field-level multiway blocker shadow
+
+The blocker concept already exists in production and already affects bluffing:
+
+- `blocker_score` changes initial `bluff_ok`;
+- `blocker_effect` changes initial `bluff_ok` again using call-vs-fold composition;
+- `river_fix` uses `blocker_effect` to promote missed hands into `river_bluff`;
+- value sizing flips the same net effect because blocking calls hurts value extraction.
+
+The remaining problem is multiway aggregation: all seat ranges are collapsed into one union before
+those metrics are computed.
+
+A simple seat average is not adopted because blocker value is a **field event**.
+
+### Direct field counterfactual
+
+`tools/measure_f7b_blocker_field.py` samples compatible combos from every seat-specific perceived
+range in two worlds:
+
+1. board cards dead, but hero hole cards not dead — counterfactual "hero does not hold these
+   blockers";
+2. board + hero cards dead — actual world.
+
+It measures two events:
+
+#### Strong-presence blocker
+
+```
+P(any opponent is in that seat's top current-board strength band)
+before hero blockers
+-
+same probability after hero blockers
+```
+
+Positive means hero removes strong field configurations.
+
+#### Fold-field blocker
+
+```
+P(all opponents fold to the nominal bet | hero cards dead)
+-
+P(all opponents fold | hero cards not dead)
+```
+
+Positive means hero's cards directly improve whole-field fold probability.
+
+Sampling enforces card compatibility between different opponents in both worlds, so this is not an
+independent-seat product approximation.
+
+The diagnostic compares these field quantities with the current union
+`blocker_score` / `blocker_effect`, including sign reversals and largest live discrepancies.
+
+No production strategy changes in this step.
