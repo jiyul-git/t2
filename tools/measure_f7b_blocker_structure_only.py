@@ -241,7 +241,7 @@ def run(seeds,hands,sims):
 
         flags={
             'plan_changes': pp!=ap,
-            'intent_act_changes': ((pi or {}).get('act')!=(ai or {}).get('act'),
+            'intent_act_changes': ((pi or {}).get('act')!=(ai or {}).get('act')),
             'intent_size_changes': _size_changed(pi,ai),
             'bluff_mode_changes': (
                 prod.get('bluff_mode')!=alt.get('bluff_mode')
