@@ -571,6 +571,167 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     return max(0.0, min(0.9, tp)), max(0.0, min(0.95, tot))
 
 
+def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
+                              n_callers, raise_level=1, stack_bb=None,
+                              exploit=None, bf=1.0, seats=8, ante=True,
+                              opener_allin=False, can_raise=True,
+                              pot_bb=None, to_call_bb=None):
+    """RNG를 소비하지 않는 defend 액션 범주 확률.
+
+    반환 범주는 관찰자 레인지가 구분할 수 있는 세 가지다.
+
+      attack  3bet / raise-form shove
+      call    flat / call-off
+      fold
+
+    현재 defend_decision의 혼합정책 수학을 그대로 계산하지만 실제 액션
+    또는 사이즈를 뽑지 않는다. B1D weighted-posterior가 actor의 비공개 RNG를
+    재생하지 않고 P(observed action | hand, model)을 계산하기 위한 단일 의미
+    계약이다.
+
+    exploit는 actor 쪽에서는 실제 read를 받을 수 있지만 observer는 자신의
+    공개/추정 모델만 넣어야 한다. 이 helper 자체는 hidden state를 조회하지 않는다.
+    """
+    _st = stack_bb if stack_bb is not None else bb
+    _hero_calloff = open_bb >= _st * 0.92
+    _pure_short_shove = bool(opener_allin and not can_raise)
+    if _hero_calloff or _pure_short_shove:
+        _pot = float(pot_bb if pot_bb is not None
+                     else 1.5 + open_bb*(1 + n_callers))
+        _tc = float(to_call_bb if to_call_bb is not None else open_bb)
+        _a, _cap = calloff_decision(
+            prof, def_pos, hand, bb, raise_level,
+            _pot, _tc, bf, opener_pos, open_bb, exploit, n_callers,
+            seats, ante)
+        _kind = _a[0]
+        return {
+            'attack': 0.0,
+            'call': 1.0 if _kind == 'call' else 0.0,
+            'fold': 1.0 if _kind == 'fold' else 0.0,
+            'hot_attack': 0.0,
+            'mixed_attack': 0.0,
+            'mixed_call': 1.0 if _kind == 'call' else 0.0,
+            'mixed_fold': 1.0 if _kind == 'fold' else 0.0,
+            'w_raise': 0.0,
+            'w_call': 1.0 if _kind == 'call' else 0.0,
+            'w_fold': 1.0 if _kind == 'fold' else 0.0,
+            'total_weight': 1.0,
+            'calloff': True,
+            'calloff_cap': _cap,
+            'tp': None,
+            'tot': None,
+            'hand_pct': pct(hand),
+        }
+
+    tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
+                                n_callers, raise_level, seats, ante)
+    if exploit and exploit.get('w', 0) > 0:
+        w = exploit['w']
+        if raise_level >= 2:
+            tbg = exploit.get('tb_gap', 0.0)
+            tp = max(0.0, min(0.9, tp * (1.0 + w*1.3*tbg)))
+            tot = max(tp, min(0.95, tot * (1.0 + w*0.8*tbg)))
+            pol = exploit.get('tb_polar', 0.0)
+            if pol > 0.02:
+                tot = max(tot, min(0.95, tot * (1.0 + w*0.85*pol)))
+                tp = max(0.0, min(0.9, tp * (1.0 + w*1.10*pol)))
+            f2fb = exploit.get('f2fb_gap', 0.0)
+            tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2fb)))
+            tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2fb)))
+        else:
+            og = exploit.get('open_gap', 0.0)
+            if abs(og) > 1e-6:
+                tot = max(tot, min(0.95, tot * (1.0 + w*0.55*og)))
+                tp = max(0.0, min(0.9, tp * (1.0 + w*0.45*og)))
+            f2tb = exploit.get('f2tb_gap', exploit.get('fold_gap', 0.0))
+            tp = max(0.0, min(0.9, tp * (1.0 + w*1.5*f2tb)))
+            tot = max(tp, min(0.95, tot * (1.0 - w*0.5*f2tb)))
+            fbg = exploit.get('fb_gap', 0.0)
+            if fbg > 0:
+                tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))
+
+    r = pct(hand)
+
+    p_hot = 0.0
+    if can_raise and stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:
+        rs = reshove_range(prof, def_pos, opener_pos, stack_bb, open_bb, n_callers)
+        if r <= rs:
+            depth = 1.0 - (r / max(1e-6, rs))
+            p_hot = max(0.0, min(1.0, 0.30 + 0.60*depth))
+
+    import math
+    def _logit(x, center, width):
+        return 1.0/(1.0+math.exp((x-center)/max(1e-6, width)))
+
+    a = prof_aggr(prof)
+    w_raise = _logit(r, tp, max(0.015, tp*0.35))
+    w_raise *= (0.35 + 0.65*max(0.0, 1.0 - r/max(1e-6, tp)))
+    w_raise *= (0.55 + 0.085*a)
+
+    _pf_slow = 0.0
+    if prof.get('concepts'):
+        _taste = PS.temper(prof, 'slowplay_taste', 5.0) / 10.0
+        _passive = max(0.0, min(1.0, (5.0 - a) / 5.0))
+        _premium = max(0.0, min(1.0, (0.10 - r) / 0.10))
+        _pf_slow = _passive * (0.35 + 0.65*_taste) * _premium
+    elif A.ARCHETYPES.get(prof.get('type'), (0,)*7+('reg',))[6] == 'fish':
+        _pf_slow = max(0.0, min(1.0, (0.10 - r) / 0.10)) * 0.55
+    w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)
+
+    w_cont = _logit(r, tot, max(0.02, (tot-tp)*0.35))
+    w_call = max(0.0, w_cont - w_raise*0.6) * (1.5 - 0.055*a)
+    w_call *= 1.0 + 0.90*_pf_slow
+    if not can_raise:
+        w_raise = 0.0
+    w_fold = max(0.0, 1.0 - w_cont)
+    if r <= 0.03:
+        w_fold = 0.0
+    if r <= 0.015:
+        w_call *= 0.16
+    elif r <= 0.04:
+        w_call *= 0.35
+    slow = 0.04 + 0.012*(10-a)
+    if w_raise > 0 and w_call >= 0:
+        w_call = max(w_call, w_raise*slow)
+    if r > tot*1.35:
+        w_raise = 0.0
+    if r > tot:
+        w_call *= 0.15
+
+    total = w_raise + w_call + w_fold
+    if total <= 0:
+        m_raise, m_call, m_fold = 0.0, 0.0, 1.0
+    else:
+        m_raise = w_raise / total
+        m_call = w_call / total
+        m_fold = w_fold / total
+
+    attack = p_hot + (1.0-p_hot)*m_raise
+    call = (1.0-p_hot)*m_call
+    fold = (1.0-p_hot)*m_fold
+    z = attack + call + fold
+    if z > 0:
+        attack, call, fold = attack/z, call/z, fold/z
+
+    return {
+        'attack': attack,
+        'call': call,
+        'fold': fold,
+        'hot_attack': p_hot,
+        'mixed_attack': m_raise,
+        'mixed_call': m_call,
+        'mixed_fold': m_fold,
+        'w_raise': w_raise,
+        'w_call': w_call,
+        'w_fold': w_fold,
+        'total_weight': total,
+        'calloff': False,
+        'calloff_cap': None,
+        'tp': tp,
+        'tot': tot,
+        'hand_pct': r,
+    }
+
 def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng,
                     raise_level=1, stack_bb=None, tilt=0.0, field_q=0.6,
                     exploit=None, bf=1.0,
