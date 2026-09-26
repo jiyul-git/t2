@@ -346,6 +346,17 @@ def run(args):
                             % (a, amt, r['view']['error']))
                 r = dict(r, token=r.get('token'))
 
+        # 실제 UI 서버 orchestration이 round-start worker를 띄웠는지 확인.
+        cs, rs, _ = cli._call('/api/stats')
+        pc = (rs.get('counters') or {}) if cs == 200 else {}
+        stats['parallel_round_start'] = int(pc.get('round_start') or 0)
+        stats['parallel_restarts'] = int(pc.get('round_restart') or 0)
+        stats['parallel_wait_ms'] = int(pc.get('worker_wait_ms') or 0)
+        if cs != 200:
+            fail.append('/api/stats 가 %d' % cs)
+        elif stats['decisions'] and stats['parallel_round_start'] <= 0:
+            fail.append('핸드를 진행했는데 round-start worker가 시작되지 않음')
+
         srv.terminate(); srv.wait(timeout=10)
 
         # --- 2 누출: 아카이브의 홀카드와 대조 ---
@@ -405,7 +416,8 @@ def main():
     for k in ('hands', 'results', 'decisions', 'walks', 'showdowns',
               'chip_checks', 'chip_bad', 'slot_checks', 'slot_bad',
               'leak_hands_checked', 'legal_violations', 'err_checked',
-              'watch_blocked', 'stream_steps', 'stream_events'):
+              'watch_blocked', 'stream_steps', 'stream_events',
+              'parallel_round_start', 'parallel_restarts', 'parallel_wait_ms'):
         if k in stats: print('  %-18s %s' % (k, stats[k]))
     print('  %-18s 중앙 %s / 최대 %s 초'
           % ('지연(진행 중)', stats.get('lat_mid_med'), stats.get('lat_mid_max')))
