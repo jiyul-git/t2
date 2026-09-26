@@ -6,12 +6,14 @@
 
 - Repository: `jiyul-git/t2`
 - Active branch: `chatgpt/decision-architecture-audit-20260926`
-- 개발 원본 폴더: `~/t2`
-- 실제 플레이 실행폴더: `~/t2_play`
-- `~/t2_play_src` 같은 추가 clone은 사용하지 않는다.
+- 엔진/배선 감사 원본: `~/t2`
+- UI 소스 원본: `~/t2_ui_src`
+- 실제 플레이 실행본: `~/t2_ui_beta`
+- 임시 clone(`~/t2_ui_stream_test`, `~/t2_play_src` 등)은 사용하지 않는다.
 
-Git 커밋 해시는 계속 바뀌므로 **브랜치 HEAD가 최신 원본**이다. 플레이할 때는 `~/t2`를 pull한 뒤
-`ui/tools/setup_run_dir.sh ~/t2_play`로 실행폴더만 갱신한다.
+브랜치 역할을 섞지 않는다.
+`~/t2`는 엔진 감사 브랜치에 고정하고, UI 작업은 `~/t2_ui_src`에서만 한다.
+플레이할 때는 UI 소스에서 `ui/tools/setup_run_dir.sh "$HOME/t2_ui_beta"`로 실행본을 갱신한다.
 
 ## Architecture audit
 
@@ -79,7 +81,7 @@ Historical result/design markdown files remain for evidence. Their presence does
 Branch lifecycle is part of the project plan, not an afterthought.
 
 - Engine active line: `chatgpt/decision-architecture-audit-20260926`
-- UI active line: `chatgpt/ui-recovery-20260927`
+- UI active line: `chatgpt/ui-bot-pipeline-20260927`
 - New branches require an explicit reason and exit condition.
 - Temporary branches must be merged/cherry-picked/abandoned and then cleaned up.
 - Every major phase closes with code + verification + docs + branch cleanup.
@@ -109,3 +111,25 @@ Fix on the active engine branch:
 - regression tool: `tools/verify_button_rotation.py`.
 
 Production promotion is pending the local verifier result.
+
+
+## Latest playable checkpoint
+
+As of 2026-09-27 the canonical playable/UI line is:
+
+```
+chatgpt/ui-bot-pipeline-20260927 @ f9a4ed2
+```
+
+It contains the full `ui-recovery` lineage plus:
+
+- new-game sidecar backup `fn` hotfix;
+- physical dealer/button-seat persistence used by the live UI;
+- side-seat chip/bubble fixes;
+- bot-action server streaming;
+- streamed transport/error hardening;
+- new-street board reveal while the next bot computes;
+- 1.5s action pacing overlap;
+- short hero-action/new-street breathing pauses.
+
+`chatgpt/ui-recovery-20260927` is fully contained in this line and is obsolete.
