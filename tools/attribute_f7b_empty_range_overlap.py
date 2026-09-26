@@ -113,7 +113,7 @@ def play_one(t):
         'log':[list(x) for x in log],
         'guard':guard,
         'remaining':sum(1 for x in t.seats if t.stacks[x]>0),
-        'hero_stack':t.stacks.get(t.hero_seat),
+        'hero_stack':t.stacks.get(t.hero),
     }
     t.finish_hand()
     return result
