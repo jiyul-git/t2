@@ -1,6 +1,6 @@
 # F7-B — Multiway downstream semantics audit
 
-Status: **B1/B2 DIAGNOSTIC IMPLEMENTED; strategy repair not started.**
+Status: **B1-A RELATIVE-STRENGTH CONSUMER IMPLEMENTED; validation pending.**
 
 F8 established seat-keyed opponent ranges and pot-layer equity.  The next global question is
 whether downstream planning preserves that identity or collapses it again.
@@ -293,3 +293,105 @@ Acceptance before any consumer change:
 
 This does **not** choose replacements yet for range advantage, nut advantage, or blocker logic.
 Those metrics have different strategic meanings and need separate aggregation rules.
+
+
+---
+
+## B1-A consumer — joint relative strength
+
+Status: **IMPLEMENTED; targeted/regression validation pending.**
+
+The shadow result was decisive:
+
+- 96 / 96 live multiway decisions had complete seat-keyed pools;
+- union versus joint absolute delta mean **0.189**;
+- p90 **0.353**;
+- max **0.818**;
+- **59 / 96 (61.5%)** crossed at least one existing relative-strength strategy band;
+- the three largest examples had union rel 0.738-0.818 while joint rel was exactly 0.
+
+Therefore B1-A now replaces only the live `relative_strength` factual input.
+
+### Activation
+
+Heads-up:
+
+```
+relative_strength(hero, board, single_range)
+```
+
+is unchanged.
+
+Multiway:
+
+```
+joint_relative_strength(hero, board, seat_ranges)
+```
+
+is used only when every active opponent has a non-empty seat-keyed range.
+
+If any required seat range is missing, the joint value is **unknown** and the decision temporarily
+falls back to the legacy union metric.  No missing opponent is synthesized from another range.
+
+### Consumers changed
+
+Exactly three relative-strength consumers are wired:
+
+1. `make_plan` initial factual relative strength;
+2. `refresh` factual relative strength after board/range changes;
+3. the nut-hand re-raise probability inside `decide_response`, which previously recomputed a
+   fresh union relative strength after the plan had already become seat-aware.
+
+The response path receives the existing `opp_ranges` and `n_opp`; no new range model is built.
+
+### Determinism
+
+Each decision uses a separate child seed:
+
+- `f7b_rel_make`;
+- `f7b_rel_refresh`;
+- `f7b_rel_response`.
+
+If no seed is supplied in a direct/helper call, the helper derives one from hero, board, pool
+contents, and simulation count.
+
+The shared hand RNG is not consumed.
+
+### Provenance
+
+Plan state records:
+
+- `rel_true`;
+- `rel_union`;
+- `rel_joint`;
+- `rel_source` = `heads_up`, `joint_seat_pools`, or `union_fallback_incomplete`.
+
+The response-only recomputation records corresponding `_last_response_rel_*` fields.
+
+### Deliberately unchanged
+
+This patch does **not** alter:
+
+- range advantage;
+- nut advantage;
+- blocker score/effect;
+- river blocker logic;
+- overbet nut metric;
+- single-main-opponent reads/stacks.
+
+Those remain separate F7-B work items.
+
+### Validation rule
+
+This is an intentional strategy change.
+
+The frozen post-F8 baseline must not be overwritten if fingerprints move.  Any movement must first
+be attributed to states where:
+
+```
+n_opp > 1
+AND rel_source == joint_seat_pools
+AND rel_joint != rel_union
+```
+
+Only after attribution may B1-A be closed.

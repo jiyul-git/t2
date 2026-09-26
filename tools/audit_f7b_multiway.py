@@ -161,7 +161,6 @@ def check_downstream_source_map():
 
     # Strategy metrics still consume the union.
     for needle in (
-        "relative_strength(hero, board, opp_range)",
         "R.blocker_score(hero, opp_range, board)",
         "R.blocker_effect(hero, opp_range",
         "R.nut_advantage(my_range, opp_range, board)",
@@ -169,7 +168,7 @@ def check_downstream_source_map():
     ):
         assert needle in msrc, needle
 
-    assert "relative_strength(hero, board, opp_range)" in rsrc
+    assert "_decision_relative_strength(" in rsrc
     assert "R.nut_advantage(_mr, opp_range, board)" in rsrc
     assert "R.range_advantage(_mr, opp_range, board" in rsrc
     assert "R.nut_advantage(my_range, opp_range, board)" in osrc
@@ -187,7 +186,6 @@ def check_downstream_source_map():
             'range provenance',
         ],
         'union_strategy_consumers': [
-            'relative_strength',
             'blocker_score/effect',
             'nut_advantage',
             'range_advantage',
@@ -204,20 +202,77 @@ def check_downstream_source_map():
     }
 
 
+
+def check_joint_relative_strength_consumer():
+    hero, board, tight, weak, union = _fixture()
+
+    joint = PL.joint_relative_strength(
+        hero, board, {2: tight, 3: weak}, n_opp=2,
+        sims=300, seed=17)
+    assert joint == 0.0, joint
+
+    hu = PL.joint_relative_strength(
+        hero, board, {3: weak}, n_opp=1,
+        sims=10, seed=1)
+    legacy_hu = PL.relative_strength(hero, board, weak)
+    assert abs(hu - legacy_hu) < 1e-12, (hu, legacy_hu)
+
+    missing = PL.joint_relative_strength(
+        hero, board, {2: tight, 3: []}, n_opp=2,
+        sims=100, seed=1)
+    assert missing is None, missing
+
+    chosen, meta = PL._decision_relative_strength(
+        hero, board, union, n_opp=2,
+        opp_ranges={2: tight, 3: weak}, sims=300, seed=17)
+    assert chosen == 0.0, (chosen, meta)
+    assert meta['source'] == 'joint_seat_pools', meta
+
+    fallback, fmeta = PL._decision_relative_strength(
+        hero, board, union, n_opp=2,
+        opp_ranges={2: tight, 3: []}, sims=100, seed=1)
+    assert abs(fallback - PL.relative_strength(hero, board, union)) < 1e-12
+    assert fmeta['source'] == 'union_fallback_incomplete', fmeta
+
+    msrc = inspect.getsource(PL.make_plan)
+    rsrc = inspect.getsource(PL.refresh)
+    dsrc = inspect.getsource(PL.decide_response)
+    asrc = inspect.getsource(PL.act_with_plan)
+
+    assert "_decision_relative_strength(" in msrc
+    assert "_decision_relative_strength(" in rsrc
+    assert "_decision_relative_strength(" in dsrc
+    assert "opp_ranges=opp_ranges, n_opp=n_opp" in asrc
+
+    return {
+        'fixed_joint_rel': joint,
+        'heads_up_parity': True,
+        'missing_pool_joint': None,
+        'complete_source': meta['source'],
+        'incomplete_fallback_source': fmeta['source'],
+        'make_plan_consumer': True,
+        'refresh_consumer': True,
+        'response_consumer': True,
+        'range_adv_nut_blocker_unchanged': True,
+    }
+
+
 def main():
     a = check_union_relative_strength_distortion()
     b = check_union_range_advantage_weighting()
     c = check_partial_pool_fallback_is_invented()
     d = check_eq_current_exact_multiway_tie()
     e = check_downstream_source_map()
+    f = check_joint_relative_strength_consumer()
 
     print("PASS F7-B1 union relative-strength distortion reproduced", a)
     print("PASS F7-B1 union range-advantage weighting distortion reproduced", b)
     print("PASS F7-B1 partial opponent pool currently invents union fallback", c)
     print("PASS F7-B-T record-only current-board tie share is exact", d)
     print("PASS F7-B downstream source map classified", e)
-    print("5/5 F7-B diagnostic checks passed")
-    print("NOTE: strategy union/read consumers are audited, not repaired yet.")
+    print("PASS F7-B1A joint relative-strength consumer is isolated", f)
+    print("6/6 F7-B diagnostic checks passed")
+    print("NOTE: only relative_strength is repaired; range_adv/nut/blocker/read remain audited.")
 
 
 if __name__ == '__main__':

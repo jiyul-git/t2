@@ -65,6 +65,117 @@ def relative_strength(hero, board, opp_range=None):
     _RS_CACHE[ck]=out
     return out
 
+
+def joint_relative_strength(hero, board, opp_ranges, n_opp=None, sims=600, seed=None):
+    """멀티웨이용 현재 보드 상대강도.
+
+    기존 relative_strength 의 heads-up 의미를 그대로 확장한다:
+    각 상대의 seat-keyed perceived range 에서 호환 가능한 한 콤보씩 뽑았을 때
+    **어느 상대에게도 엄밀히 뒤지지 않을 확률**.
+
+    - tie 는 기존 relative_strength 와 마찬가지로 '뒤지지 않음'이므로 1로 센다.
+    - 한 좌석이라도 range 가 없으면 None. 다른 상대 range 를 복제하지 않는다.
+    - heads-up(한 pool)은 기존 relative_strength 와 정확히 같은 값을 반환한다.
+    - Monte Carlo 는 별도 deterministic seed 를 써 shared RNG 를 소비하지 않는다.
+    """
+    if len(board) < 3:
+        return 0.5 if (n_opp in (None, 1)) else None
+
+    pools = []
+    if isinstance(opp_ranges, dict):
+        items = sorted(opp_ranges.items(), key=lambda kv: str(kv[0]))
+        if n_opp is not None and len(items) != int(n_opp):
+            return None
+        for _, r in items:
+            if not r:
+                return None
+            pools.append(list(r))
+    elif isinstance(opp_ranges, (list, tuple)):
+        if n_opp is not None and len(opp_ranges) != int(n_opp):
+            return None
+        for r in opp_ranges:
+            if not r:
+                return None
+            pools.append(list(r))
+    else:
+        return None
+
+    if not pools:
+        return None
+
+    dead = set(hero) | set(board)
+    clean = []
+    for r in pools:
+        rr = sorted(c for c in r if c[0] not in dead and c[1] not in dead)
+        if not rr:
+            return None
+        clean.append(rr)
+
+    if len(clean) == 1:
+        return relative_strength(hero, board, clean[0])
+
+    if seed is None:
+        seed = _zlib.crc32(
+            repr((tuple(sorted(hero)), tuple(board),
+                  tuple(tuple(r) for r in clean), int(sims))).encode())
+    rng = random.Random(seed)
+    mine = bot.eval7(hero + board)
+    not_behind = 0
+    run = 0
+    for _ in range(int(sims)):
+        used = set(dead)
+        scores = []
+        ok = True
+        for pool in clean:
+            for _try in range(60):
+                c = rng.choice(pool)
+                if c[0] not in used and c[1] not in used:
+                    used.add(c[0]); used.add(c[1])
+                    scores.append(bot.eval7(list(c) + board))
+                    break
+            else:
+                ok = False
+                break
+        if not ok:
+            continue
+        run += 1
+        if mine >= max(scores):
+            not_behind += 1
+    return (not_behind / run) if run else None
+
+
+def _decision_relative_strength(hero, board, opp_range, n_opp=1,
+                                opp_ranges=None, sims=600, seed=None):
+    """판단용 상대강도 + provenance.
+
+    HU 는 legacy relative_strength 그대로.
+    MW 는 complete seat pools 일 때 joint metric, 불완전하면 legacy union fallback.
+    """
+    legacy = relative_strength(hero, board, opp_range) if board else 0.5
+    if int(n_opp or 1) <= 1:
+        return legacy, {
+            'source': 'heads_up',
+            'union': legacy,
+            'joint': legacy,
+            'complete': True,
+        }
+
+    joint = joint_relative_strength(
+        hero, board, opp_ranges, n_opp=n_opp, sims=sims, seed=seed)
+    if joint is None:
+        return legacy, {
+            'source': 'union_fallback_incomplete',
+            'union': legacy,
+            'joint': None,
+            'complete': False,
+        }
+    return joint, {
+        'source': 'joint_seat_pools',
+        'union': legacy,
+        'joint': joint,
+        'complete': True,
+    }
+
 # draw_strength 는 bot.draw_strength 하나뿐이다 (ranges 도 같이 쓴다).
 draw_strength = bot.draw_strength
 
@@ -336,7 +447,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 절대 강도 + 상대 레인지 대비 강도
     # 내 카드가 실제로 기여한 강도만 센다 (보드만으로 성립하는 건 내 것이 아니다)
     made = bot.made_strength(hero, board) if board else 0
-    rel_true = relative_strength(hero, board, opp_range) if board else 0.5
+    _rel_seed = (_zlib.crc32(('%s|f7b_rel_make' % seed).encode())
+                 if seed is not None else None)
+    rel_true, _rel_meta = _decision_relative_strength(
+        hero, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+        sims=600, seed=_rel_seed)
     rel = perceived_rel(profile, rel_true, hero, board,
                         bot.draw_strength(hero, board) if board else 0,
                         bot.made_strength(hero, board) if board else 0)
@@ -559,6 +674,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'bluff_mode': _bluff_mode, 'bluff_mul': round(_bluff_mul, 2),
             'plan_goal': _goal or plan, 'plan_mode': _mode, 'spr': round(s,1), 'pc': round(pc,2),
             'n_opp': n_opp, 'behind': to_act_behind, 'rel': round(rel,2), 'made': made,
+            'rel_true': round(rel_true, 6),
+            'rel_union': round(float(_rel_meta.get('union')), 6)
+                         if _rel_meta.get('union') is not None else None,
+            'rel_joint': round(float(_rel_meta.get('joint')), 6)
+                         if _rel_meta.get('joint') is not None else None,
+            'rel_source': _rel_meta.get('source'),
             # ---- 기록 전용 provenance. 판단에 쓰지 않는다 ----
             # eq 가 '현재 강도'인지 '미래 개선분'인지 나중에 복원하기 위한 값들.
             # outs 는 calc_noise 를 거친 체감값이라 물리값(outs_true)을 따로 남긴다.
@@ -793,7 +914,8 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
 
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                     made_now, opp_range, pot, tocall, stack, committed, rng,
-                    allow_raise=True, call_eq=None, call_need=None):
+                    allow_raise=True, call_eq=None, call_need=None,
+                    opp_ranges=None, n_opp=1, rel_seed=None):
     """저항(tocall>0)을 마주했을 때 폴드/콜/레이즈를 정하는 **유일한 지점**.
 
     예전에는 이 판단이 집행부에 흩어져 p_raise 를 네 곳에서 각자 굴렸다.
@@ -815,7 +937,12 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
 
     # --- 넛급 메이드: 레이즈할 것인가 ---
     if made_now >= 5 and eq > need + 0.10:
-        rel = relative_strength(hero, board, opp_range)
+        rel, _resp_rel_meta = _decision_relative_strength(
+            hero, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+            sims=600, seed=rel_seed)
+        plan_state['_last_response_rel_source'] = _resp_rel_meta.get('source')
+        plan_state['_last_response_rel_union'] = _resp_rel_meta.get('union')
+        plan_state['_last_response_rel_joint'] = _resp_rel_meta.get('joint')
         paired = board_paired(board)
         p = 0.30 + 0.45*rel
         p *= (0.55 if paired and made_now == 5 else 1.0)
@@ -1551,7 +1678,10 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             profile, hero, board, street, plan, plan_state, eq, need,
             made_now, opp_range, pot, tocall, stack, committed, rng,
             allow_raise=_direct_raise,
-            call_eq=_call_eq, call_need=_call_need)
+            call_eq=_call_eq, call_need=_call_need,
+            opp_ranges=opp_ranges, n_opp=n_opp,
+            rel_seed=(_zlib.crc32(('%s|f7b_rel_response' % seed).encode())
+                      if seed is not None else None))
         _source = ('checkraise_declined' if checked_before else 'generic_response')
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
@@ -2116,8 +2246,12 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     made = bot.made_strength(hero, board)
     # make_plan 과 같은 편향을 쓴다. 예전에는 여기만 날것이라
     # **같은 사람이 플랍과 턴에서 자기 핸드를 다르게 평가했다.**
-    rel_true = relative_strength(hero, board, opp_range)
-    # perceived_rel 에는 **날것**을 넘긴다 (make_plan:312-314 와 같게).
+    _rel_seed = (_zlib.crc32(('%s|f7b_rel_refresh' % seed).encode())
+                 if seed is not None else None)
+    rel_true, _rel_meta = _decision_relative_strength(
+        hero, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+        sims=600, seed=_rel_seed)
+    # perceived_rel 에는 **날것**을 넘긴다 (make_plan 과 같게).
     # 체감값을 넘기면 노이즈가 두 번 먹혀 새 불일치가 생긴다.
     rel = perceived_rel(profile, rel_true, hero, board, outs_true, made)
     eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed,
@@ -2136,8 +2270,16 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # 갱신 **전** 값을 잡아둔다. st.update 뒤에는 이전 강도를 알 수 없다.
     _prev_made = st.get('made') or 0
     _prev_rel = st.get('rel') or 0.0
-    st.update({'rel': round(rel,2), 'eq': round(eq,3), 'outs': outs,
-               'made': made, 'danger': round(bot.board_danger(board),2)})
+    st.update({
+        'rel': round(rel, 2),
+        'rel_true': round(rel_true, 6),
+        'rel_union': (round(float(_rel_meta.get('union')), 6)
+                      if _rel_meta.get('union') is not None else None),
+        'rel_joint': (round(float(_rel_meta.get('joint')), 6)
+                      if _rel_meta.get('joint') is not None else None),
+        'rel_source': _rel_meta.get('source'),
+        'eq': round(eq, 3), 'outs': outs,
+        'made': made, 'danger': round(bot.board_danger(board), 2)})
     # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
     # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
     _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed,
