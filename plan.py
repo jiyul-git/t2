@@ -1681,7 +1681,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  behind_est=None, limper_est=None, bb_chips=None,
                  opener_allin=False, money_open=None, can_check=False,
                  can_raise=True, pot_bb=None, to_call_bb=None,
-                 prior_pf=None, pot_layers=None):
+                 prior_pf=None, pot_layers=None, opp_ranges=None,
+                 opp_range_meta=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -1768,6 +1769,13 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         'pf_to_call_bb': (float(to_call_bb) if to_call_bb is not None else None),
         # F8-D6-A provenance only. Same layer schema as postflop; no strategy use yet.
         'pf_pot_layers': [dict(x) for x in (pot_layers or [])],
+        # F8-D6-B provenance: full combo maps stay transient; seed stores compact seat-keyed proof.
+        'pf_opp_ranges_n': {
+            str(k): len(v) for k, v in (opp_ranges or {}).items()},
+        'pf_opp_ranges_sig': {
+            str(k): _range_sig(v) for k, v in (opp_ranges or {}).items()},
+        'pf_opp_range_meta': {
+            str(k): dict(v) for k, v in (opp_range_meta or {}).items()},
         # D2 provenance: later streets must not rebuild an all-in player's
         # preflop range from current stack=0.
         'pf_stack_bb': float(bb or 0.0),

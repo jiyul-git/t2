@@ -1210,7 +1210,7 @@ updated before attribution.
 
 # F8-D6-A — preflop decision-time pot-layer provenance
 
-Status: **IMPLEMENTED; pending user validation. No preflop strategy consumer.**
+Status: **USER-VALIDATED. No preflop strategy consumer.**
 
 P6 already had sound legal scalars:
 
@@ -1284,3 +1284,81 @@ Verifier requires:
 
 After D6-A, D6-B will preserve **seat-keyed perceived preflop ranges** for all eligible opponents
 already in the pot, rather than using only `n_callers`.
+
+
+---
+
+# F8-D6-B — seat-keyed perceived preflop ranges
+
+Status: **IMPLEMENTED; pending user validation. No equity/action consumer.**
+
+D6-A supplies preflop pot layers.  D6-B supplies the missing seat-specific opponent ranges needed
+to value those layers.
+
+## Information boundary
+
+For every opponent currently eligible in a contributed preflop layer, the observer reconstructs a
+range from public information only:
+
+```
+observer Book
+    -> perceived_profile(observer, target)
+    -> range_profile(perceived target)
+    -> R.preflop_range(...)
+```
+
+The target's true persona, concepts, temper, tilt, or private cards are never used.
+
+## Action source
+
+If the target has a bot `pf_seed`, its latest public judgment/action context is used because it
+preserves:
+
+- role;
+- actual action;
+- facing position;
+- facing price;
+- caller count;
+- raise level;
+- decision-time stack depth.
+
+For seats without a seed (human/external paths), D6-B reconstructs the same public role from
+`Round.action_meta`:
+
+- no action -> unacted / any-two prior;
+- call before a raise -> limp;
+- first price increase -> open;
+- call after a raise -> call;
+- later price increase -> 3bet+ range model;
+- check -> check/any-two BB-style path.
+
+No hidden player state is consulted.
+
+## Storage
+
+The full combo lists are transient and seat-keyed at the decision point.
+
+They are **not** serialized into `pf_seed`, because repeatedly storing hundreds of combos per
+seat would bloat tournament state.
+
+Compact provenance is stored instead:
+
+- `pf_opp_ranges_n[seat]`;
+- `pf_opp_ranges_sig[seat]`;
+- `pf_opp_range_meta[seat]`.
+
+The same compact fields are appended to `pf_line`.
+
+## D6-B acceptance
+
+Verifier requires:
+
+- open / call / 3bet public events classify separately;
+- observer-specific public range reconstruction returns non-empty seat-keyed pools;
+- at least two distinct action paths produce distinct range signatures;
+- compact provenance is present in `preflop_plan`;
+- `calloff_decision` still has no range consumer;
+- frozen regression remains unchanged.
+
+D6-C may then reuse `bot.equity_vs_combos(hero, board=[], pools)` to compute preflop layer equity
+without introducing a second equity engine.

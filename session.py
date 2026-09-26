@@ -54,6 +54,9 @@ def _merge_pf_seed(prev, new):
         'pot_bb': out.get('pf_pot_bb'),
         'to_call_bb': out.get('pf_to_call_bb'),
         'pot_layers': [dict(x) for x in (out.get('pf_pot_layers') or [])],
+        'opp_ranges_n': dict(out.get('pf_opp_ranges_n') or {}),
+        'opp_ranges_sig': dict(out.get('pf_opp_ranges_sig') or {}),
+        'opp_range_meta': dict(out.get('pf_opp_range_meta') or {}),
         'stack_bb': out.get('pf_stack_bb'),
     })
     out['pf_line'] = line
@@ -138,6 +141,58 @@ def _pf_observation_flags(action_meta, seat):
                 second_raiser = x
 
     return out
+
+
+def _preflop_public_action_context(action_meta, target, bb):
+    """F8-D6-B: pf_seed가 없는 좌석의 공개 preflop 행동을 range 역할로 복원.
+
+    실제 persona는 보지 않는다. action_meta의 규칙 사건만 사용한다.
+    """
+    metas = list(action_meta or [])
+    idxs = [i for i, m in enumerate(metas) if m.get('seat') == target]
+    if not idxs:
+        return {
+            'action': 'unacted', 'opener_seat': None,
+            'open_bb': 2.5, 'n_callers': 0, 'raise_level': 1,
+        }
+
+    i = idxs[-1]
+    m = metas[i]
+    before = metas[:i]
+    full_before = [x for x in before if x.get('full_raise')]
+    last_raiser = full_before[-1].get('seat') if full_before else None
+
+    if m.get('raised'):
+        action = 'open' if not full_before else '3bet'
+    elif m.get('allin_call') or m.get('action') == 'call':
+        action = 'call' if full_before else 'limp'
+    elif m.get('action') == 'check':
+        action = 'check'
+    else:
+        action = m.get('action') or 'unacted'
+
+    # 현재 response가 마주한 가격은 action 직전 current target.
+    open_bb = (
+        float(m.get('pre_current', 0) or 0) / max(1.0, float(bb or 1))
+        if full_before else 2.5)
+
+    # 마지막 raise 뒤 target보다 먼저 콜한 좌석 수.
+    n_callers = 0
+    if full_before:
+        last_raise_idx = max(
+            j for j, x in enumerate(before) if x.get('full_raise'))
+        for x in before[last_raise_idx+1:]:
+            if x.get('allin_call') or (
+                    x.get('action') == 'call' and not x.get('raised')):
+                n_callers += 1
+
+    return {
+        'action': action,
+        'opener_seat': last_raiser,
+        'open_bb': float(open_bb),
+        'n_callers': int(n_callers),
+        'raise_level': max(1, len(full_before)),
+    }
 
 
 def _facing_wager_context(rnd, aggressor, pot_start):
@@ -1121,6 +1176,79 @@ class HandRun:
         # seed가 없는 구형/외부 경로만 기존 추정으로 물러난다.
         return 'open' if seat == aggressor else 'call'
 
+    def _preflop_perceived_range(self, observer, target, observer_profile,
+                                 rnd, aggressor, seats, ante):
+        """F8-D6-B: 현재 preflop 공개정보로 target의 seat-keyed range를 복원.
+
+        실제 target persona/tilt는 읽지 않는다. observer의 Book에서 만든
+        perceived_profile만 range_profile로 변환해 사용한다.
+        """
+        h = self.h
+        pfo = (getattr(h, 'pf_seed', {}) or {}).get(target) or {}
+        public = _preflop_public_action_context(
+            getattr(rnd, 'action_meta', None), target, h.bb)
+
+        # Bot seed가 있으면 실제 judgment 경로가 더 정확하다.
+        act = self._pf_range_action(target, aggressor) if pfo else public['action']
+        if act == 'unacted':
+            dead = set(h.hole[observer])
+            rr = sorted(c for c in R.ALL
+                        if c[0] not in dead and c[1] not in dead)
+            return rr, {
+                'source': 'public_unacted',
+                'action': 'unacted',
+                'stack_bb': (
+                    float((getattr(h, '_start_stacks', {}) or {}).get(target, 0))
+                    / max(1.0, float(h.bb))),
+            }
+
+        oe = RD.perceived_profile(
+            h.book, self._pid(observer), self._pid(target), observer_profile,
+            random.Random(self._dseed(
+                observer, 'preflop', 'pf_range', target)))
+        opp_view = RD.range_profile(oe)
+        rd = PS.read_opponent(observer_profile, oe) if oe else {}
+        pol = float(rd.get('tb_polar', 0.0) or 0.0)
+
+        stack_bb = pfo.get('pf_stack_bb')
+        if stack_bb is None:
+            stack_bb = (
+                float((getattr(h, '_start_stacks', {}) or {}).get(target, 0))
+                / max(1.0, float(h.bb)))
+
+        opener_pos = (
+            pfo.get('pf_vs')
+            if pfo else
+            h.pos.get(public.get('opener_seat')))
+        open_bb = (
+            float(pfo.get('pf_open_bb', 2.5) or 2.5)
+            if pfo else float(public.get('open_bb', 2.5) or 2.5))
+        n_callers = (
+            int(pfo.get('pf_n_callers', 0) or 0)
+            if pfo else int(public.get('n_callers', 0) or 0))
+        raise_level = (
+            int(pfo.get('pf_level', 1) or 1)
+            if pfo else int(public.get('raise_level', 1) or 1))
+
+        rr = R.preflop_range(
+            opp_view, h.pos[target], act, float(stack_bb or 0.0),
+            set(h.hole[observer]),
+            n_callers=n_callers,
+            opener_pos=opener_pos,
+            open_bb=open_bb,
+            seats=seats, ante=ante, polar=pol,
+            raise_level=raise_level)
+        return sorted(set(rr)), {
+            'source': 'pf_seed' if pfo else 'public_action_meta',
+            'action': act,
+            'stack_bb': float(stack_bb or 0.0),
+            'opener_pos': opener_pos,
+            'open_bb': float(open_bb),
+            'n_callers': int(n_callers),
+            'raise_level': int(raise_level),
+        }
+
+
     def _locked_postflop_range(self, observer, target, observer_profile,
                                board, street, rnd, aggressor, seats, ante):
         """이전 street에서 이미 올인한 상대의 공개 range를 재구성한다.
@@ -1236,6 +1364,24 @@ class HandRun:
                     rnd, s, aggressor, callers, limpers)
                 continue
             ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
+
+            # F8-D6-B: only opponents currently eligible for contributed pot layers.
+            _pf_range_seats = sorted({
+                x
+                for layer in _pf_pot_layers
+                for x in (layer.get('eligible_seats') or [])
+                if x != s
+            }, key=lambda x: str(x))
+            _pf_opp_ranges = {}
+            _pf_opp_range_meta = {}
+            for _o in _pf_range_seats:
+                _rr, _rm = self._preflop_perceived_range(
+                    s, _o, ax, rnd, aggressor, len(h.seats),
+                    (getattr(h, 'ante', h.bb) > 0))
+                if _rr:
+                    _pf_opp_ranges[_o] = _rr
+                    _pf_opp_range_meta[_o] = _rm
+
             _opp_est_pf = (RD.perceived_profile(
                 h.book, self._pid(s), self._pid(aggressor), ax,
                 random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
@@ -1308,7 +1454,9 @@ class HandRun:
                     pot_bb=((rnd.contestable_contrib(s) + ante_pot) / max(1, h.bb)),
                     to_call_bb=(tc / max(1, h.bb)),
                     prior_pf=((getattr(h, 'pf_seed', {}) or {}).get(s)),
-                    pot_layers=_pf_pot_layers)
+                    pot_layers=_pf_pot_layers,
+                    opp_ranges=_pf_opp_ranges,
+                    opp_range_meta=_pf_opp_range_meta)
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]

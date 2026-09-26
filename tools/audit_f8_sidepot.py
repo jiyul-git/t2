@@ -744,6 +744,91 @@ def check_d6a_preflop_layer_provenance():
     }
 
 
+
+def check_d6b_seat_keyed_preflop_ranges():
+    # Public action classifier: open -> call -> 3bet are distinct rule events.
+    r = SE.RU.Round(
+        None, [1, 2, 3, 4], {1: 100, 2: 100, 3: 100, 4: 100}, 10)
+    r.contrib = {1: 5, 2: 10}
+    r.current = 10
+    r.min_raise = 10
+    r.apply(2, 'raise', 30)
+    r.apply(3, 'call')
+    r.apply(4, 'raise', 90)
+
+    c2 = SE._preflop_public_action_context(r.action_meta, 2, 10)
+    c3 = SE._preflop_public_action_context(r.action_meta, 3, 10)
+    c4 = SE._preflop_public_action_context(r.action_meta, 4, 10)
+    assert c2['action'] == 'open', c2
+    assert c3['action'] == 'call' and c3['opener_seat'] == 2, c3
+    assert c4['action'] == '3bet' and c4['opener_seat'] == 2, c4
+    assert c4['raise_level'] == 1, c4
+
+    # Observer-specific range path uses existing public range model.
+    class H: pass
+    h = H()
+    h.bb = 10
+    h.pos = {1: 'BB', 2: 'CO', 3: 'BTN', 4: 'SB'}
+    h.hole = {1: ['Ah', 'Kd']}
+    h.pf_seed = {}
+    h._start_stacks = {1: 100, 2: 100, 3: 100, 4: 100}
+    h.book = SE.RD.Book()
+
+    hr = object.__new__(SE.HandRun)
+    hr.h = h
+    hr._pid = lambda x: x
+    hr._dseed = lambda *args: 12345
+
+    prof = {
+        'type': 'TAG',
+        'concepts': {k: 5.0 for k in SE.PS.ALL_CONCEPTS},
+        'temper': {k: 5.0 for k in SE.PS.TEMPER},
+        'aggr': 5.0, 'bluff': 5.0, 'gamble': 5.0,
+    }
+
+    rr2, m2 = hr._preflop_perceived_range(
+        1, 2, prof, r, 4, 4, True)
+    rr3, m3 = hr._preflop_perceived_range(
+        1, 3, prof, r, 4, 4, True)
+    rr4, m4 = hr._preflop_perceived_range(
+        1, 4, prof, r, 4, 4, True)
+
+    assert rr2 and rr3 and rr4, (len(rr2), len(rr3), len(rr4))
+    assert m2['source'] == m3['source'] == m4['source'] == 'public_action_meta'
+    assert m2['action'] == 'open', m2
+    assert m3['action'] == 'call', m3
+    assert m4['action'] == '3bet', m4
+    sigs = {
+        SE.PL._range_sig(rr2),
+        SE.PL._range_sig(rr3),
+        SE.PL._range_sig(rr4),
+    }
+    assert len(sigs) >= 2, sigs
+
+    psrc = inspect.getsource(SE.PL.preflop_plan)
+    for needle in (
+        "'pf_opp_ranges_n'",
+        "'pf_opp_ranges_sig'",
+        "'pf_opp_range_meta'",
+    ):
+        assert needle in psrc, needle
+    ssrc = inspect.getsource(SE.HandRun._run)
+    assert "_pf_opp_ranges = {}" in ssrc
+    assert "opp_ranges=_pf_opp_ranges" in ssrc
+
+    # D6-B is range provenance only; no equity/action consumer yet.
+    csrc = inspect.getsource(SE.pf.calloff_decision)
+    assert "opp_ranges" not in csrc
+
+    return {
+        'actions': {2: m2['action'], 3: m3['action'], 4: m4['action']},
+        'range_n': {2: len(rr2), 3: len(rr3), 4: len(rr4)},
+        'seat_keyed': True,
+        'observer_public_only': True,
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -758,6 +843,7 @@ def main():
     d5u = check_d5_size_unit_boundary()
     d5c2 = check_d5c2_terminal_bet_ev_consumer()
     d6a = check_d6a_preflop_layer_provenance()
+    d6b = check_d6b_seat_keyed_preflop_ranges()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -775,8 +861,9 @@ def main():
     print("PASS F8-D5-U sizing-unit boundary is consistent", d5u)
     print("PASS F8-D5-C2 terminal bet/check consumer stays in judgment layer", d5c2)
     print("PASS F8-D6-A preflop reuses decision-time pot-layer provenance", d6a)
-    print("13/13 F8 diagnostic checks passed")
-    print("NOTE: D6-A is provenance-only; preflop calloff strategy is still scalar.")
+    print("PASS F8-D6-B preflop preserves seat-keyed perceived ranges", d6b)
+    print("14/14 F8 diagnostic checks passed")
+    print("NOTE: D6-B is provenance-only; no preflop equity/action consumer yet.")
 
 
 if __name__ == '__main__':
