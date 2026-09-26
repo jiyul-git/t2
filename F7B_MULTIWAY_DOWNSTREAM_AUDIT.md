@@ -201,3 +201,39 @@ No live multiway strategy consumer is changed in B1/B2 diagnostic.
 
 Broad balance tuning remains blocked until B1/B2 and the remaining emotion/execution boundaries
 are closed.
+
+
+---
+
+## B1 measurement preregistration
+
+`tools/measure_f7b_multiway.py` measures the live exposure without patching strategy.
+
+Default fixture:
+
+```
+seeds 3000-3005
+30 hands per seed
+```
+
+It wraps `plan.update_plan` only for observation and records every multiway call where at least
+two non-empty seat-keyed opponent pools exist.
+
+For each such decision it measures:
+
+- opponent pool size imbalance;
+- union relative strength versus the equal-seat mean of per-seat relative strengths;
+- union range advantage versus equal-seat mean;
+- union nut advantage versus equal-seat mean;
+- union blocker score versus equal-seat mean;
+- union blocker-effect value versus equal-seat mean;
+- partial/empty pool frequency.
+
+The equal-seat mean is **not preregistered as the final replacement formula**.  It is only a
+diagnostic comparator that removes union's combo-count weighting and therefore quantifies whether
+the collapse matters in live states.
+
+No pass/fail magnitude threshold is invented before seeing the data.  The tool reports raw counts,
+mean, p50, p90, p99, maximum, and largest examples.
+
+Repair formulas will be designed only after this measurement.
