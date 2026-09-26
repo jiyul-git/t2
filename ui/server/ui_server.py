@@ -87,24 +87,20 @@ def _lobby_payload():
 
 
 # ---------- 다른 테이블 정산을 결과 반환 뒤로 미룬다 ----------
-# 핸드 종료 요청 시간의 75% 가 live2.finish 안의 step_others 다(실측).
-# 히어로 결과를 먼저 돌려주고, 사용자가 결과 화면을 보는 동안 워커가 계산한다.
-# 다음 요청에서 join 해 그 결과를 live2 에 넘긴다. 못 받았으면 live2 가
-# 딜 직전에 직접 돌린다 — 그때가 지금과 같은 속도이고, 더 느려지지 않는다.
+# 비-HERO 테이블은 HERO 핸드가 끝난 뒤가 아니라 **같은 라운드 시작 시점**에
+# 별도 프로세스에서 시작한다. 워커는 비-HERO 테이블만 진행하고
+# bust 수거/밸런싱은 하지 않는다. 두 쪽 결과가 합쳐진 뒤 메인에서 한 번만 한다.
 #
-# **워커는 상태 파일을 쓰지 않는다.** compute_others 는 필드 덤프를 받아
-# 필드 덤프를 돌려줄 뿐이고, 파일 쓰기는 전부 이 락 안의 메인 스레드가 한다.
-#
-# 스레드가 아니라 프로세스인 이유
-#   1) GIL — 스레드면 히어로 테이블 봇 판단과 CPU 를 다툰다
-#   2) live2._load_field 가 프로필 dict 를 덤프와 공유한다. 프로세스면
-#      pickle 왕복이 자동으로 깊은 복사가 된다
+# 다른 테이블들끼리는 기존 step_others 순서를 그대로 유지한다. 병렬화 경계는
+# HERO table vs all other tables 두 갈래뿐이다.
 DEFER = os.environ.get('T2_UI_DEFER', '1') != '0'
 POOL = None
-PENDING = {'future': None}
+PENDING = {'future': None, 'base_key': None}
 COUNT = {'attempt': 0, 'hit': 0, 'mismatch': 0, 'fallback': 0,
          'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
-         # 워커가 아직 안 끝나서 실제로 기다린 시간. 최악의 경우의 비용이다.
+         'round_start': 0, 'round_restart': 0,
+         'round_ready_before_finish': 0, 'round_ready_after_finish': 0,
+         # 다음 라운드 직전까지도 worker가 안 끝나 실제로 기다린 시간.
          'worker_wait_ms': 0, 'worker_wait_max_ms': 0}
 
 
@@ -119,7 +115,7 @@ def _count_resume():
     L.resume_others = wrapped
 
 
-_count_resume()          # 정의 직후에 건다. import 지점에서는 아직 없다.
+_count_resume()
 
 
 def _pool():
@@ -135,11 +131,58 @@ def _pool():
     return POOL
 
 
-def _take_others():
-    """직전에 던져둔 워커 결과를 회수한다. 아직이면 여기서 기다린다."""
-    fut = PENDING.pop('future', None)
+def _clear_worker():
     PENDING['future'] = None
+    PENDING['base_key'] = None
+
+
+def _submit_parallel(field_dump, restart=False):
+    """라운드 시작 스냅샷으로 비-HERO worker를 한 번만 시작한다."""
+    if not DEFER:
+        return
+    key = L._others_key(field_dump)
+    fut = PENDING.get('future')
+    if fut is not None and PENDING.get('base_key') == key:
+        return
+    if fut is not None:
+        # 서로 다른 라운드 worker가 겹치면 상태를 섞지 않는다.
+        if not fut.done():
+            return
+        _clear_worker()
+
+    p = _pool()
+    if p is None:
+        return
+    COUNT['attempt'] += 1
+    COUNT['round_restart' if restart else 'round_start'] += 1
+    try:
+        PENDING['future'] = p.submit(L.compute_others_parallel, field_dump)
+        PENDING['base_key'] = key
+    except Exception:
+        COUNT['worker_exception'] += 1
+        _clear_worker()
+
+
+def _peek_others():
+    """완료됐을 때만 결과를 본다. 아직 진행 중이면 절대 기다리지 않는다."""
+    fut = PENDING.get('future')
+    if fut is None or not fut.done():
+        return None
+    try:
+        return fut.result()
+    except Exception:
+        COUNT['worker_exception'] += 1
+        traceback.print_exc()
+        _clear_worker()
+        return None
+
+
+def _take_others(wait):
+    """다음 라운드 직전에는 필요하면 join하고, 그 외에는 non-blocking."""
+    fut = PENDING.get('future')
     if fut is None:
+        return None
+    if not wait and not fut.done():
         return None
     COUNT['worker_join'] += 1
     _t = time.time()
@@ -153,11 +196,23 @@ def _take_others():
         COUNT['worker_exception'] += 1
         traceback.print_exc()
         return None
+    finally:
+        _clear_worker()
 
 
-def _kick_worker():
-    """상태에 밀린 진행이 남아 있으면 워커에 던진다."""
-    if not DEFER:
+def _ensure_round_worker(st):
+    """서버가 핸드 중간에 재시작됐어도 현재 round worker를 복구한다."""
+    if not DEFER or not st or st.get('others_pending'):
+        return
+    if st.get('hand_seed') is None:
+        return
+    if PENDING.get('future') is None:
+        _submit_parallel(st['field'], restart=True)
+
+
+def _kick_pending_worker():
+    """HERO 결과가 먼저 끝났는데 worker가 없을 때의 crash/fallback 안전망."""
+    if not DEFER or PENDING.get('future') is not None:
         return
     try:
         st = L.load()
@@ -165,25 +220,72 @@ def _kick_worker():
         return
     if not st.get('others_pending'):
         return
-    COUNT['attempt'] += 1
+    base = st.get('others_base')
+    if st.get('others_mode') == L.PARALLEL_TABLES_MODE and base:
+        _submit_parallel(base, restart=True)
+        return
     p = _pool()
     if p is None:
         return
+    COUNT['attempt'] += 1
     try:
         PENDING['future'] = p.submit(L.compute_others, st['field'])
+        PENDING['base_key'] = L._others_key(st['field'])
     except Exception:
         COUNT['worker_exception'] += 1
-        PENDING['future'] = None
+        _clear_worker()
 
 
 def _step(action=None, amount=0, on_bot_action=None):
-    """live2.step 호출을 한 곳으로 모은다. 회수 → 진행 → 던지기."""
-    others = _take_others()
+    """HERO 진행과 비-HERO round worker를 병렬로 조정한다."""
+    st0 = None
+    try:
+        if os.path.exists(L.ST):
+            st0 = L.load()
+    except Exception:
+        st0 = None
+
+    others = None
+    if DEFER and st0 is not None:
+        if st0.get('others_pending'):
+            # 다음 라운드는 settlement 전에는 시작하지 않는다.
+            others = _take_others(wait=True)
+        else:
+            _ensure_round_worker(st0)
+            # 완료된 결과는 넘기되 Future는 유지한다. 이번 HERO 액션이
+            # 핸드를 끝내지 않아도 같은 결과를 다음 요청에 다시 쓸 수 있다.
+            others = _peek_others()
+
     kw = {'defer_others': True, 'others': others} if DEFER else {}
+    if DEFER:
+        kw['on_round_start'] = _submit_parallel
     if on_bot_action is not None:
         kw['on_bot_action'] = on_bot_action
+
     r = L.step(action, amount, **kw) if action is not None else L.step(**kw)
-    _kick_worker()
+
+    if DEFER:
+        try:
+            st1 = L.load()
+        except Exception:
+            st1 = None
+
+        if r.get('done') and st1 is not None:
+            if st1.get('others_pending'):
+                # final action 계산 중 worker가 끝났다면 결과 화면을 막지 않고
+                # 지금 즉시 merge한다. 아직이면 worker는 그대로 계속 돈다.
+                ready = _peek_others()
+                if ready is not None:
+                    L.resume_others(st1, ready)
+                    COUNT['round_ready_after_finish'] += 1
+                    _clear_worker()
+                else:
+                    _kick_pending_worker()
+            else:
+                if others is not None:
+                    COUNT['round_ready_before_finish'] += 1
+                _clear_worker()
+
     return r
 
 WEB = os.path.join(D, 'web')          # setup_run_dir.sh 가 ui/web 을 여기로 복사한다
