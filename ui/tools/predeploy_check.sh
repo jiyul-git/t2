@@ -23,6 +23,10 @@ python3 tools/verify_forced_blind_allin_view.py
 python3 tools/verify_forced_blind_allin_showdown.py
 
 echo
+echo "=== parallel table round ==="
+python3 tools/verify_parallel_tables.py
+
+echo
 echo "=== UI server regression ==="
 python3 ui/tools/verify_ui.py --hands 20 --entries 100 --seed 20260920
 
