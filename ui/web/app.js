@@ -12,6 +12,25 @@ const PLAY_KEY = '';
  */
 
 const $ = (s) => document.querySelector(s);
+
+function profileStorage(key, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v;
+  } catch (e) { return fallback; }
+}
+function heroProfileNickname() {
+  return String(profileStorage('t2profile_nickname', '플레이어') || '플레이어')
+    .trim().slice(0, 16) || '플레이어';
+}
+function applyProfileDeck() {
+  const allowed = ['jade', 'navy', 'burgundy', 'ivory'];
+  const deck = profileStorage('t2profile_deck', 'jade');
+  document.documentElement.dataset.deck =
+    allowed.indexOf(deck) >= 0 ? deck : 'jade';
+}
+applyProfileDeck();
+
 const SUIT = { s: '♠', h: '♥', d: '♦', c: '♣' };
 const RED = { h: 1, d: 1 };
 const ACT = { fold: '폴드', check: '체크', call: '콜', bet: '벳',
@@ -570,7 +589,9 @@ function renderHero(v) {
   const d = v.button_seat === v.hero_seat ? ' · D' : '';
   const award = awardLabel(v.hero_seat);
 
+  const heroName = WATCH_MODE ? '' : heroProfileNickname();
   $('#heroinfo .pos').textContent =
+    (heroName ? heroName + (me && me.pos ? ' · ' : '') : '') +
     (me ? (me.pos || '') : '') +
     d +
     (me && me.allin ? ' · ALL-IN' : '') +
@@ -3534,3 +3555,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hideOverlay();
 });
 memoLoad().finally(sync);
+
+if (location.hash === '#history') {
+  setTimeout(showHistory, 250);
+}
