@@ -923,3 +923,47 @@ Acceptance requires:
 
 Worst-seat ownership and any-field collision remain shadow semantics.  They are not activated by
 this patch.
+
+
+---
+
+## F7-B1C — blocker representation prerequisite
+
+Status: **DIAGNOSTIC ONLY.**
+
+Before choosing a multiway blocker aggregation, source tracing found a lower-level representation
+inconsistency.
+
+Normal postflop perceived ranges are initially built with only board cards dead, so combos containing
+the observer's own hole cards can remain in the counterfactual range.  That is exactly what
+`blocker_score` / `blocker_effect` need: they ask which opponent combos hero's cards remove.
+
+However, the showdown-history **range expansion** branch in
+`runner.adjust_range_by_history()` explicitly removes:
+
+```
+hero hole cards + board
+```
+
+from the widened range.
+
+Therefore the same strategic range can expose blocker information or erase it solely because its
+provenance passed through history widening.
+
+This is not required for equity safety.  `bot.equity_vs_combos()` independently filters every
+opponent pool against `hero + board` before simulation.
+
+So there are two distinct concepts that should not be conflated:
+
+1. **counterfactual perceived range** — may contain hero-blocked combos so blocker effects are
+   measurable;
+2. **feasible showdown pool** — must remove hero/board conflicts before equity sampling.
+
+`tools/measure_f7b_blocker_representation.py` first proves in a fixed fixture that preserving
+hero-blocked combos leaves equity identical because the equity consumer filters them itself, while
+the current history-widening path collapses blocker signal to zero.
+
+It then measures whether that history-widening path is reached in the frozen live fixture and how
+often blocker signal differs from a board-only-dead counterfactual expansion.
+
+No multiway blocker aggregation will be activated until this representation prerequisite is closed.
