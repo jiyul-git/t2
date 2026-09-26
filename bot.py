@@ -80,25 +80,39 @@ def eval7(cs):
         v = _E7[k] = max(eval5(list(c)) for c in itertools.combinations(k, 5))
     return v
 
+def _showdown_share(hero_score, opp_scores):
+    """Hero의 showdown pot share.
+
+    heads-up tie = 1/2, 3-way tie = 1/3처럼 공동 1등 인원수로 정확히 나눈다.
+    """
+    opp_scores = list(opp_scores or [])
+    if not opp_scores:
+        return 1.0
+    best = max(opp_scores)
+    if hero_score > best:
+        return 1.0
+    if hero_score < best:
+        return 0.0
+    tied_opp = sum(1 for x in opp_scores if x == hero_score)
+    return 1.0 / float(1 + tied_opp)
+
+
 def equity(hero, board, n_opp, sims=500, seed=None):
     rng=random.Random(seed)
     dead=set(hero)|set(board)
     deck=[c for c in FULLDECK if c not in dead]
     need=5-len(board)
-    win=tie=0
+    share=0.0
     for _ in range(sims):
         d=rng.sample(deck, need+2*n_opp)
         b=board+d[:need]
         hs=eval7(hero+b)
-        best=None; nbest=0
+        opp_scores=[]
         for i in range(n_opp):
             o=d[need+2*i:need+2*i+2]
-            e=eval7(o+b)
-            if best is None or e>best: best=e; nbest=1
-            elif e==best: nbest+=1
-        if hs>best: win+=1
-        elif hs==best: tie+=1
-    return (win+tie*0.5)/sims
+            opp_scores.append(eval7(o+b))
+        share += _showdown_share(hs, opp_scores)
+    return share/max(1, sims)
 
 def board_danger(board):
     """0~1. 플러시/스트레이트 완성 위협이 클수록 높다."""
@@ -149,7 +163,7 @@ def equity_vs_pools(hero, board, pools, sims=500, seed=None):
     rng = random.Random(seed)
     dead = set(hero) | set(board)
     need = 5 - len(board)
-    win = tie = run = 0
+    share = 0.0; run = 0
     for _ in range(sims):
         used = set(dead); opps = []; ok = True
         for pool in pools:
@@ -164,10 +178,9 @@ def equity_vs_pools(hero, board, pools, sims=500, seed=None):
         deck = [c for c in FULLDECK if c not in used]
         bd = board + rng.sample(deck, need)
         hs = eval7(hero + bd)
-        best = max(eval7(o + bd) for o in opps)
-        if hs > best: win += 1
-        elif hs == best: tie += 1
-    return (win + tie*0.5) / max(1, run)
+        opp_scores = [eval7(o + bd) for o in opps]
+        share += _showdown_share(hs, opp_scores)
+    return share / max(1, run)
 
 
 def equity_vs_range(hero, board, opp_pcts, sims=500, seed=None):

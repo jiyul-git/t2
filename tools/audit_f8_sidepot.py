@@ -829,6 +829,47 @@ def check_d6b_seat_keyed_preflop_ranges():
     }
 
 
+
+def check_d6t_multiway_tie_share():
+    board = ['As', 'Ks', 'Qs', 'Js', 'Ts']
+    hero = ['2c', '3d']
+
+    # Board royal flush: every legal opponent ties exactly.
+    hu = SE.bot.equity_vs_combos(
+        hero, board, [[('4c', '5d')]], sims=10, seed=1)
+    three_way = SE.bot.equity_vs_combos(
+        hero, board,
+        [[('4c', '5d')], [('6c', '7d')]],
+        sims=10, seed=1)
+    four_way = SE.bot.equity_vs_combos(
+        hero, board,
+        [[('4c', '5d')], [('6c', '7d')], [('8c', '9d')]],
+        sims=10, seed=1)
+
+    assert hu == 0.5, hu
+    assert abs(three_way - (1.0/3.0)) < 1e-12, three_way
+    assert abs(four_way - 0.25) < 1e-12, four_way
+
+    # The generic n_opp entrypoint must share the same tie semantics.
+    generic = SE.bot.equity(hero, board, 2, sims=10, seed=7)
+    assert abs(generic - (1.0/3.0)) < 1e-12, generic
+
+    bsrc = inspect.getsource(SE.bot.equity_vs_pools)
+    esrc = inspect.getsource(SE.bot.equity)
+    assert "_showdown_share" in bsrc
+    assert "_showdown_share" in esrc
+    assert "tie*0.5" not in bsrc.replace(" ", "")
+    assert "tie*0.5" not in esrc.replace(" ", "")
+
+    return {
+        'heads_up_tie_share': hu,
+        'three_way_tie_share': round(three_way, 6),
+        'four_way_tie_share': four_way,
+        'generic_three_way_share': round(generic, 6),
+        'canonical_share_rule': True,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -844,6 +885,7 @@ def main():
     d5c2 = check_d5c2_terminal_bet_ev_consumer()
     d6a = check_d6a_preflop_layer_provenance()
     d6b = check_d6b_seat_keyed_preflop_ranges()
+    d6t = check_d6t_multiway_tie_share()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -862,8 +904,9 @@ def main():
     print("PASS F8-D5-C2 terminal bet/check consumer stays in judgment layer", d5c2)
     print("PASS F8-D6-A preflop reuses decision-time pot-layer provenance", d6a)
     print("PASS F8-D6-B preflop preserves seat-keyed perceived ranges", d6b)
-    print("14/14 F8 diagnostic checks passed")
-    print("NOTE: D6-B is provenance-only; no preflop equity/action consumer yet.")
+    print("PASS F8-D6-T multiway ties use exact showdown pot share", d6t)
+    print("15/15 F8 diagnostic checks passed")
+    print("NOTE: D6-T changes only multiway tie equity accounting; D6-C is still shadow-only next.")
 
 
 if __name__ == '__main__':

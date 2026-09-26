@@ -1290,7 +1290,7 @@ already in the pot, rather than using only `n_callers`.
 
 # F8-D6-B — seat-keyed perceived preflop ranges
 
-Status: **IMPLEMENTED; pending user validation. No equity/action consumer.**
+Status: **USER-VALIDATED. No equity/action consumer.**
 
 D6-A supplies preflop pot layers.  D6-B supplies the missing seat-specific opponent ranges needed
 to value those layers.
@@ -1362,3 +1362,62 @@ Verifier requires:
 
 D6-C may then reuse `bot.equity_vs_combos(hero, board=[], pools)` to compute preflop layer equity
 without introducing a second equity engine.
+
+
+---
+
+# F8-D6-T prerequisite — exact multiway showdown share
+
+Status: **IMPLEMENTED; pending targeted + regression validation.**
+
+Before D6-C could use the shared equity engine for multiway preflop layers, an existing global
+equity defect was found.
+
+Both `bot.equity` and canonical `bot.equity_vs_pools` used:
+
+```
+win + 0.5 * tie
+```
+
+for every tie.
+
+That is correct heads-up but wrong when more than one opponent ties hero for first:
+
+- hero + 1 opponent tie -> hero share 1/2;
+- hero + 2 opponents tie -> hero share 1/3;
+- hero + 3 opponents tie -> hero share 1/4.
+
+## Repair
+
+A single canonical helper now computes showdown share:
+
+```
+hero wins outright        -> 1.0
+hero loses                -> 0.0
+hero ties N opponents     -> 1 / (N + 1)
+```
+
+Both equity entrypoints use the same helper.  No range, strategy, or threshold parameter changes.
+
+## Fixed fixture
+
+A royal flush entirely on the board forces every legal hand to tie.
+
+Required exact values:
+
+```
+heads-up           0.500000
+3-way              0.333333...
+4-way              0.250000
+```
+
+The generic `equity(..., n_opp=2)` entrypoint must also return exactly 1/3 on the same board.
+
+## Behavior policy
+
+This is a factual pot-share correction, but it is global.  Frozen regression is therefore checked.
+
+If fingerprints move, the baseline is not updated automatically.  Changes must first be attributed
+to decisions whose equity sample contains a multiway first-place tie.
+
+D6-C does not proceed until D6-T targeted verification passes.
