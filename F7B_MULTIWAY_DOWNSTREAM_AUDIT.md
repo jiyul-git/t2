@@ -1302,3 +1302,38 @@ divergence points and candidate joint-judgment coverage.
 
 This is the activation gate.  A production blocker rewrite should not be committed until the paired
 behavior change is measured and attributable.
+
+
+---
+
+## F7-B1C9 — direct attribution without tournament cascade
+
+B1C8 proves that the unified blocker candidate can alter tournament trajectories, but the raw
+33 changed hands are **not** 33 direct blocker decisions.
+
+Once an early postflop action changes, stacks, busts, button order and later dealt seats diverge.
+Later preflop differences are therefore downstream state divergence, not direct evidence that the
+blocker touched preflop logic.
+
+`tools/measure_f7b_blocker_unified_direct.py` removes that confound.
+
+For every production `update_plan` call it:
+
+1. deep-copies the exact pre-decision arguments/state;
+2. runs production normally and returns that result to the tournament;
+3. replays the copied state through the B1C8 unified blocker candidate;
+4. compares only the two outputs for that exact decision.
+
+The real tournament always follows production, so candidate differences can never cascade into later
+states.
+
+It attributes separately for heads-up and multiway:
+
+- plan-label changes;
+- current-street intent action changes;
+- current-street intent size changes;
+- bluff-mode changes;
+- blocker state / stackoff blocker changes.
+
+This is the direct activation gate. Full paired replay remains useful for downstream impact, but
+production activation should be justified by this non-cascading attribution.
