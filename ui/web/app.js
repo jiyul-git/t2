@@ -3354,6 +3354,8 @@ async function callStepStream(body, msg) {
         } else if (obj.type === 'final') {
           finalPayload = obj.payload;
           maybeFinish();
+        } else if (obj.type === 'error') {
+          throw new Error(obj.error || '서버 스트림 오류');
         }
       }
       if (part.done) break;
@@ -3366,6 +3368,8 @@ async function callStepStream(body, msg) {
       else if (obj.type === 'final') {
         finalPayload = obj.payload;
         maybeFinish();
+      } else if (obj.type === 'error') {
+        throw new Error(obj.error || '서버 스트림 오류');
       }
     }
 
