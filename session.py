@@ -446,7 +446,8 @@ def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
 
 
 def _diagnostic_layer_equities(hero_seat, hero_cards, board, pot_layers,
-                                  active_ranges, locked_ranges, sims=600):
+                                  active_ranges, locked_ranges, sims=600,
+                                  seed=None):
     """F8-D3: 현재 참가 가능한 pot layer별 showdown equity 진단.
 
     기록 전용이다. 결과를 plan/action/sizing에 넘기지 않는다.
@@ -500,9 +501,17 @@ def _diagnostic_layer_equities(hero_seat, hero_cards, board, pot_layers,
             row['reason'] = 'sole_eligible'
         else:
             row['complete'] = True
+            _eq_seed = None
+            if seed is not None:
+                _eq_seed = _zlib.crc32(
+                    ('%s|%s|%s' % (
+                        int(seed), idx,
+                        ','.join(str(x) for x in opps))).encode())
+            row['seed'] = _eq_seed
             row['equity'] = round(
                 float(bot.equity_vs_combos(
-                    hero_cards, board, pools, sims=int(sims))), 6)
+                    hero_cards, board, pools, sims=int(sims),
+                    seed=_eq_seed)), 6)
             row['reason'] = 'computed'
         out.append(row)
 
@@ -1405,7 +1414,9 @@ class HandRun:
                     if float(rnd.stacks.get(o, 0) or 0) > 0}
                 _pf_call_layer_eq = _diagnostic_layer_equities(
                     s, h.hole[s], [], _pf_call_layers,
-                    _pf_active_ranges, _pf_locked_ranges, sims=800)
+                    _pf_active_ranges, _pf_locked_ranges, sims=800,
+                    seed=self._dseed(
+                        s, 'preflop', 'f8_d6c', len(rnd.log)))
                 _pf_call_sum = _layer_call_summary(
                     _pf_call_cost, _pf_call_layers, _pf_call_layer_eq)
                 _pf_call_ev_shadow = {
@@ -1773,7 +1784,9 @@ class HandRun:
                 layer_equities = (
                     _diagnostic_layer_equities(
                         s, h.hole[s], board, _pot_layers,
-                        opp_ranges, locked_opp_ranges, sims=600)
+                        opp_ranges, locked_opp_ranges, sims=600,
+                        seed=self._dseed(
+                            s, street, 'f8_d3', len(r2.log)))
                     if locked_opp_ranges else [])
 
                 # F8-D4 prereg shadow: 실제 콜을 했다고 가정한 pot geometry와
@@ -1785,7 +1798,9 @@ class HandRun:
                         s, tc, dead=dead)
                     _call_layer_eq = _diagnostic_layer_equities(
                         s, h.hole[s], board, _call_layers,
-                        opp_ranges, locked_opp_ranges, sims=600)
+                        opp_ranges, locked_opp_ranges, sims=600,
+                        seed=self._dseed(
+                            s, street, 'f8_d4_call', len(r2.log)))
                     call_ev_shadow = _layer_call_summary(
                         _call_cost, _call_layers, _call_layer_eq)
                     call_ev_shadow['layers'] = _call_layers
@@ -1890,7 +1905,9 @@ class HandRun:
                                 s, _target, _bet_cost, 'call', dead=dead))
                         _fold_eq = _diagnostic_layer_equities(
                             s, h.hole[s], board, _fold_layers,
-                            opp_ranges, locked_opp_ranges, sims=600)
+                            opp_ranges, locked_opp_ranges, sims=600,
+                            seed=self._dseed(
+                                s, street, 'f8_d5_fold', len(r2.log)))
                         # target가 call price를 낸 뒤 칩이 남으면 raise branch가 존재한다.
                         _target_stack_before = float(r2.stacks.get(_target, 0) or 0)
                         _raise_possible = (_target_stack_before - _target_call_cost) > 0
@@ -1913,7 +1930,9 @@ class HandRun:
 
                         _call_eq_b = _diagnostic_layer_equities(
                             s, h.hole[s], board, _call_layers_b,
-                            _call_opp_ranges, locked_opp_ranges, sims=600)
+                            _call_opp_ranges, locked_opp_ranges, sims=600,
+                            seed=self._dseed(
+                                s, street, 'f8_d5_call', len(r2.log)))
                         _fold_sum = _layer_investment_summary(
                             _hero_bet_cost, _fold_layers, _fold_eq)
                         _call_sum_b = _layer_investment_summary(

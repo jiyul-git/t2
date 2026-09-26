@@ -1008,6 +1008,46 @@ def check_d6d1_calloff_shadow_comparison():
     }
 
 
+
+def check_f8r_deterministic_layer_equity():
+    layers = SE._decision_pot_layers(
+        {}, {1: 20, 2: 20, 3: 20}, set(),
+        {1: 30, 2: 0, 3: 30}, hero=1, dead=0)
+    hero = ['As', 'Kd']
+    active = {
+        3: [('Qh','Qs'), ('Jh','Js'), ('Tc','Td'), ('9c','9d')],
+    }
+    locked = {
+        2: [('Ah','Qd'), ('Kh','Qd'), ('8c','8d'), ('7c','7d')],
+    }
+
+    a = SE._diagnostic_layer_equities(
+        1, hero, [], layers, active, locked, sims=73, seed=123456)
+    b = SE._diagnostic_layer_equities(
+        1, hero, [], layers, active, locked, sims=73, seed=123456)
+    assert a == b, (a, b)
+    assert a[0]['complete'] is True, a
+    assert a[0].get('seed') is not None, a
+
+    src = inspect.getsource(SE.HandRun._run)
+    for tag in (
+        "'f8_d6c'",
+        "'f8_d3'",
+        "'f8_d4_call'",
+        "'f8_d5_fold'",
+        "'f8_d5_call'",
+    ):
+        assert tag in src, tag
+
+    return {
+        'same_seed_same_rows': True,
+        'derived_layer_seed': a[0].get('seed'),
+        'equity': a[0].get('equity'),
+        'strategy_paths_seeded': [
+            'D3', 'D4-call', 'D5-fold', 'D5-call', 'D6-C'],
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -1026,6 +1066,7 @@ def main():
     d6t = check_d6t_multiway_tie_share()
     d6c = check_d6c_preflop_layer_equity_call_shadow()
     d6d = check_d6d1_calloff_shadow_comparison()
+    f8r = check_f8r_deterministic_layer_equity()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -1047,8 +1088,9 @@ def main():
     print("PASS F8-D6-T multiway ties use exact showdown pot share", d6t)
     print("PASS F8-D6-C preflop pure-calloff layer equity/EV stays shadow-only", d6c)
     print("PASS F8-D6-D1 legacy calloff and layer-EV+ICM are compared in shadow", d6d)
-    print("17/17 F8 diagnostic checks passed")
-    print("NOTE: D6-D1 is comparison-only; legacy calloff_cap still owns action.")
+    print("PASS F8-R layer Monte Carlo is decision-seeded and reproducible", f8r)
+    print("18/18 F8 diagnostic checks passed")
+    print("NOTE: F8-R changes no policy formula; D6-D2 remains pending.")
 
 
 if __name__ == '__main__':

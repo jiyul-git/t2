@@ -1548,7 +1548,7 @@ calloff judgment before any action is changed.
 
 # F8-D6-D1 — legacy percentile versus layer-EV+ICM shadow comparison
 
-Status: **IMPLEMENTED; pending user validation. No strategy consumer.**
+Status: **USER-VALIDATED. No strategy consumer.**
 
 D6-C gives an objective, perception-limited chip-equity estimate for pure short-shove calloffs.
 D6-D1 does not replace the historical percentile policy yet.  It records both judgments side by
@@ -1647,3 +1647,53 @@ D6-D1 requires:
 - frozen regression remains unchanged.
 
 Only after D6-D1 validation should a D6-D2 consumer be considered.
+
+
+---
+
+# F8-R prerequisite — deterministic layer-equity Monte Carlo
+
+Status: **IMPLEMENTED; pending user validation. No policy-formula change.**
+
+Before D6-D2 can consume preflop layer equity, the common layer-equity Monte Carlo must be
+decision-reproducible.
+
+Previously `_diagnostic_layer_equities` called `bot.equity_vs_combos` without a seed.  That was
+acceptable only while values were diagnostic.  D4/D5 already have narrow strategy consumers, and
+D6-D2 will add another; an unseeded Monte Carlo value must not decide an action.
+
+## Repair
+
+`_diagnostic_layer_equities(..., seed=...)` now accepts a deterministic decision seed.
+
+Each layer derives its own child seed from:
+
+```
+base decision seed + layer index + eligible opponent seats
+```
+
+The production paths use `HandRun._dseed`, which is already the project's canonical
+same-state/same-decision seed source and does not consume shared `h.rng`.
+
+Distinct tags are used for:
+
+- D3 current layer equity;
+- D4 hypothetical call;
+- D5 hypothetical fold;
+- D5 hypothetical call;
+- D6-C preflop pure calloff.
+
+Thus adding/removing one branch cannot shift another decision's random stream.
+
+## Acceptance
+
+The verifier requires:
+
+- identical inputs + identical seed produce byte-equal layer-equity rows;
+- a derived layer seed is recorded;
+- every strategy-relevant live F8 equity path supplies a named `_dseed` tag;
+- P6 stays 5/5;
+- frozen regression is checked before D6-D2.
+
+If regression moves, baseline is not updated automatically.  Any movement must first be attributed
+to previously unseeded F8 strategy-active states.
