@@ -408,12 +408,13 @@ function renderChips(v, streetChanged) {
     const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
     const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
     const side = sideSeatClass(seatP);
-    // 3/9 o'clock gets its own horizontal lane.
-    // Keep y between the upper/lower diagonal chip lanes; move only outward.
+    // 3/9 o'clock gets its own chip lane.
+    // x stays clear of the side-seat cards; y is lowered enough for wider
+    // chip labels while remaining between the upper/lower diagonal lanes.
     if (side === ' side-left') {
-      p.x = 22; p.y = 46;
+      p.x = 22; p.y = 51;
     } else if (side === ' side-right') {
-      p.x = 78; p.y = 46;
+      p.x = 78; p.y = 51;
     }
     const el = document.createElement('div');
     el.className = 'chips' + side;
