@@ -474,7 +474,9 @@ def check_d5_bet_outcome_shadow():
     assert "bet_ev_shadow = None" in src
     assert "'bet_ev_shadow': bet_ev_shadow" in src
     assert "'strategy_consumer': False" in src
-    assert "fold_probability_modeled': False" in src
+    # D5-A owns conditional geometry only.  D5-B, added later, now attaches
+    # a fold probability to the same shadow, so this check must not assert
+    # the historical D5-A-only value False.
 
     return {
         'fold_layers': [(x['amount'], x['eligible_seats']) for x in fold_layers],
@@ -482,7 +484,7 @@ def check_d5_bet_outcome_shadow():
         'call_layers': [(x['amount'], x['eligible_seats']) for x in call_layers],
         'call_chip_ev': call_sum['chip_ev'],
         'fold_does_not_win_locked_main': True,
-        'fold_probability_modeled': False,
+        'conditional_geometry_only': True,
         'raise_branch_modeled': False,
         'strategy_consumer': False,
     }
@@ -518,6 +520,7 @@ def check_d5b_fold_probability_and_exhaustive_ev():
     src = inspect.getsource(SE.HandRun._run)
     assert "_perceived_fold_to_bet_probability(" in src
     assert "_combine_fold_call_ev(" in src
+    assert "'fold_probability_modeled': True" in src
     assert "'strategy_consumer': False" in src
 
     return {
