@@ -1024,3 +1024,43 @@ The diagnostic compares these field quantities with the current union
 `blocker_score` / `blocker_effect`, including sign reversals and largest live discrepancies.
 
 No production strategy changes in this step.
+
+
+---
+
+## F7-B1C3 — blocker duplicate-consumer decomposition
+
+The field shadow shows the union blocker is not merely mis-scaled in multiway pots:
+
+- union `blocker_effect` vs direct whole-field fold effect reverses sign in **32 / 112**
+  multiway states;
+- union `blocker_score > 0` while the direct field strong-presence effect is negative in
+  **54 / 112** states.
+
+Before activating any field replacement, another source-level issue must be separated.
+
+`ranges.blocker_score` explicitly describes itself as an approximate **fallback** for when the
+bet size is unknown.  `ranges.blocker_effect` is the more specific call-vs-fold net effect.
+
+But `make_plan` has a nominal street size and consumes both simultaneously:
+
+```
+bluff_ok *= (0.5 + 1.8 * blocker_score)
+bluff_ok *= (1 + 4 * blocker_effect * awareness)
+```
+
+So the same blocker concept contributes twice: once through the approximate strong-combo proxy and
+again through the response-specific net effect.
+
+`tools/measure_f7b_blocker_consumers.py` replays only multiway `make_plan` calls from the
+identical seed in four modes:
+
+- production: score + effect;
+- effect-only: `blocker_score=0`, which leaves the formula's existing base factor `0.5`;
+- score-only: `blocker_effect=0`;
+- neither.
+
+No new constants are introduced.  The production result is always returned.
+
+The purpose is attribution, not tuning: if removing the approximate score changes strategy, that
+change must be understood before replacing union aggregation with a field-level blocker metric.
