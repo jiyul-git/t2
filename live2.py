@@ -37,7 +37,9 @@ def _dump(f):
         'players': {str(p['pid']): {'prof': p['prof'], 'stack': p['stack'],
                                     'table': p['table'], 'seat': p['seat']}
                     for p in f.players.values()},
-        'tables': {str(t): {'button': tb.button, 'hands': tb.hands,
+        'tables': {str(t): {'button': tb.button,
+                            'button_seat': tb.dealer_seat(),
+                            'hands': tb.hands,
                             'pids': [p['pid'] for p in tb.players],
                             'seats': list(tb.seats)}
                    for t, tb in f.tables.items()},
@@ -82,7 +84,7 @@ def _load_field(d):
     f.tables = {}
     for k, v in d['tables'].items():
         tb = FS.Table(int(k), [f.players[p] for p in v['pids']], button=v['button'],
-                      max_seat=f.max_seat)
+                      max_seat=f.max_seat, button_seat=v.get('button_seat'))
         tb.hands = v['hands']
         if v.get('seats'):
             tb.seats = list(v['seats'])
@@ -91,6 +93,9 @@ def _load_field(d):
             elif len(tb.seats) > tb.max_seat:
                 raise ValueError('저장본 테이블 슬롯이 max_seat보다 큼: %d > %d'
                                  % (len(tb.seats), tb.max_seat))
+        # 구 저장본에는 button_seat 가 없다. 실제 고정 좌석을 복원한 뒤
+        # legacy index를 한 번만 변환하고 이후부터는 button_seat를 저장한다.
+        tb.restore_button(v.get('button', 0), v.get('button_seat'))
         f.tables[int(k)] = tb
     return f
 
@@ -162,7 +167,7 @@ def _hero_table_setup(f):
         s = tb.seat_of(p['pid'])
         profs[str(s)] = p['prof']; stacks[s] = p['stack']
         if p['pid'] == f.hero_pid: hero_seat = s
-    btn = seats[tb.button % len(seats)]
+    btn = tb.dealer_seat()
     return tb, alive, seats, profs, stacks, btn, hero_seat
 
 
@@ -497,7 +502,9 @@ def finish(st, f, tb, alive, h, run, defer_others=False):
     for p in alive:
         s = tb.seat_of(p['pid'])
         if s: p['stack'] = int(h.stacks.get(s, p['stack']))
-    tb.button = (tb.button + 1) % max(1, len(alive))
+    # 고정 좌석 기준으로 다음 딜러를 정한다. 배열 index +1은
+    # 이 뒤 탈락/밸런싱으로 좌석이 바뀔 때 BTN/SB/BB를 건너뛸 수 있다.
+    tb.advance_button()
     tb.hands += 1
 
     import dynamics as DY
