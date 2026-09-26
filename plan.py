@@ -176,6 +176,51 @@ def _decision_relative_strength(hero, board, opp_range, n_opp=1,
         'complete': True,
     }
 
+def _decision_range_advantage(my_range, board, opp_range, n_opp=1,
+                              opp_ranges=None, sims=600, seed=None,
+                              joint_seed=None):
+    """판단용 range advantage + provenance.
+
+    HU 는 legacy R.range_advantage 그대로.
+    MW complete seat pools 은 R.joint_range_advantage.
+    불완전한 seat 정보는 legacy union 으로만 fallback 하며 range 를 발명하지 않는다.
+    """
+    if not my_range or not opp_range or not board:
+        return 0.0, {
+            'source': 'unavailable',
+            'union': 0.0,
+            'joint': None,
+            'complete': False,
+        }
+
+    legacy = R.range_advantage(
+        my_range, opp_range, board, sims=sims, seed=seed)
+    if int(n_opp or 1) <= 1:
+        return legacy, {
+            'source': 'heads_up',
+            'union': legacy,
+            'joint': legacy,
+            'complete': True,
+        }
+
+    joint = R.joint_range_advantage(
+        my_range, opp_ranges, board, n_opp=n_opp,
+        sims=sims, seed=joint_seed)
+    if joint is None:
+        return legacy, {
+            'source': 'union_fallback_incomplete',
+            'union': legacy,
+            'joint': None,
+            'complete': False,
+        }
+    return joint, {
+        'source': 'joint_seat_pools',
+        'union': legacy,
+        'joint': joint,
+        'complete': True,
+    }
+
+
 # draw_strength 는 bot.draw_strength 하나뿐이다 (ranges 도 같이 쓴다).
 draw_strength = bot.draw_strength
 
@@ -431,8 +476,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     nut = R.nut_advantage(my_range, opp_range, board) if my_range else 0.0
     # 전체 에쿼티 우위. 넛 우위와 다른 축이다 —
     # 전자는 '얼마나 자주 칠까', 후자는 '얼마나 크게 칠까'를 정한다.
-    adv = (R.range_advantage(my_range, opp_range, board, seed=seed)
-           if (my_range and opp_range) else 0.0)
+    _adv_joint_seed = (_zlib.crc32(('%s|f7b_range_adv_make' % seed).encode())
+                       if seed is not None else None)
+    adv, _adv_meta = _decision_range_advantage(
+        my_range, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+        sims=600, seed=seed, joint_seed=_adv_joint_seed)
     # 사이즈 배분은 rel/made 를 알아야 목표를 정할 수 있어 아래로 옮겼다.
     s_true = spr(stack, pot)
     s = s_true * PS.calc_noise(profile, 'spr', rng) if profile.get('concepts') else s_true
@@ -670,6 +718,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'eq': round(eq,3), 'danger': round(dang,2), 'outs': outs,
             'blocker': round(blk,2), 'blocker_net': round(blk_net,3),
             'nut_adv': round(nut,2), 'range_adv': round(adv,2),
+            'range_adv_union': (round(float(_adv_meta.get('union')), 6)
+                                if _adv_meta.get('union') is not None else None),
+            'range_adv_joint': (round(float(_adv_meta.get('joint')), 6)
+                                if _adv_meta.get('joint') is not None else None),
+            'range_adv_source': _adv_meta.get('source'),
             'stackoff': dict(_so, _blk_net=round(blk_net, 3)) if isinstance(_so, dict) else _so,
             'bluff_mode': _bluff_mode, 'bluff_mul': round(_bluff_mul, 2),
             'plan_goal': _goal or plan, 'plan_mode': _mode, 'spr': round(s,1), 'pc': round(pc,2),
@@ -2265,8 +2318,20 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     _mr = my_range if my_range else st.get('my_range')
     if _mr and opp_range:
         st['nut_adv'] = round(R.nut_advantage(_mr, opp_range, board), 2)
-        st['range_adv'] = round(
-            R.range_advantage(_mr, opp_range, board, seed=seed), 2)
+        _adv_joint_seed = (_zlib.crc32(
+            ('%s|f7b_range_adv_refresh' % seed).encode())
+            if seed is not None else None)
+        _adv, _adv_meta = _decision_range_advantage(
+            _mr, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+            sims=600, seed=seed, joint_seed=_adv_joint_seed)
+        st['range_adv'] = round(_adv, 2)
+        st['range_adv_union'] = (
+            round(float(_adv_meta.get('union')), 6)
+            if _adv_meta.get('union') is not None else None)
+        st['range_adv_joint'] = (
+            round(float(_adv_meta.get('joint')), 6)
+            if _adv_meta.get('joint') is not None else None)
+        st['range_adv_source'] = _adv_meta.get('source')
     # 갱신 **전** 값을 잡아둔다. st.update 뒤에는 이전 강도를 알 수 없다.
     _prev_made = st.get('made') or 0
     _prev_rel = st.get('rel') or 0.0

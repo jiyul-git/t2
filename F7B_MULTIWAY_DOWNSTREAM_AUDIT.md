@@ -1,6 +1,6 @@
 # F7-B — Multiway downstream semantics audit
 
-Status: **B1-A CLOSED; B1-B RANGE/NUT SHADOW IMPLEMENTED.**
+Status: **B1-A CLOSED; B1-B RANGE-ADV CONSUMER IMPLEMENTED; NUT SHADOW HELD.**
 
 F8 established seat-keyed opponent ranges and pot-layer equity.  The next global question is
 whether downstream planning preserves that identity or collapses it again.
@@ -597,3 +597,64 @@ not B1-B.
 
 A new B1-A checkpoint must be frozen before the range-advantage consumer is activated so the next
 behavior delta remains singly attributable.
+
+
+---
+
+## B1-B1 consumer — joint range advantage
+
+Status: **IMPLEMENTED; validation pending.**
+
+The shadow result approved range advantage separately from nut advantage.
+
+### Consumer semantics
+
+Heads-up is unchanged and calls existing `R.range_advantage`.
+
+For complete multiway seat pools, `R.joint_range_advantage` samples one compatible combo from
+hero's range and one from every opponent seat range, computes exact current-board showdown pot
+share, and normalizes around fair field share `1/(N+1)`.
+
+The scale therefore remains:
+
+- always lose = -1;
+- fair field share = 0;
+- always win = +1;
+- heads-up = existing `2*equity-1` behavior.
+
+If any required opponent range is missing, the metric is unknown and the decision falls back to
+the legacy union range advantage.  No range is synthesized.
+
+### Live consumers changed
+
+Only:
+
+1. `make_plan` initial `range_adv`;
+2. `refresh` updated `range_adv`.
+
+The downstream `cbet_freq` formula is unchanged and simply receives the corrected field metric.
+
+### Provenance
+
+Plan/intent state records:
+
+- `range_adv`;
+- `range_adv_union`;
+- `range_adv_joint`;
+- `range_adv_source`.
+
+### Deliberately unchanged
+
+- nut advantage;
+- blocker score/effect;
+- overbet nut logic;
+- river blocker logic;
+- single-main-opponent reads/stacks.
+
+### Behavior baseline
+
+Attribution uses the frozen `tools/baseline_9max_post_b1a.json`, not post-F8.
+
+`tools/attribute_f7b_range_adv.py` disables only `_decision_range_advantage` while leaving B1-A
+active.  Every forced-union fingerprint must restore the post-B1A checkpoint before this consumer
+can close.

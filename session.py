@@ -2031,6 +2031,10 @@ class HandRun:
                         'rel_union': _pl.get('rel_union'),
                         'rel_joint': _pl.get('rel_joint'),
                         'rel_source': _pl.get('rel_source'),
+                        'range_adv': _pl.get('range_adv'),
+                        'range_adv_union': _pl.get('range_adv_union'),
+                        'range_adv_joint': _pl.get('range_adv_joint'),
+                        'range_adv_source': _pl.get('range_adv_source'),
                         'eq': _pl.get('eq'),
                         'outs': _pl.get('outs'), 'made': _pl.get('made'),
                         # 기록 전용 provenance. 판단에는 안 쓰인다.

@@ -93,6 +93,100 @@ def range_advantage(r_a, r_b, board, sims=180, seed=None):
         w += 1 if ea > eb else (0.5 if ea == eb else 0)
     return 0.0 if run == 0 else (w/run - 0.5)*2
 
+def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
+                          sims=600, seed=None):
+    """멀티웨이 전체 레인지 우위. -1~1.
+
+    hero range 에서 한 콤보, 각 상대의 seat-keyed perceived range 에서 한 콤보씩
+    호환되게 뽑아 **현재 보드** showdown pot share 를 계산한다.
+
+    fair = 1/(N+1) 을 0 으로 놓고, 항상 지면 -1 / 항상 이기면 +1 로 정규화한다.
+    상대가 한 명이면 기존 range_advantage 와 정확히 같은 함수를 호출한다.
+
+    한 seat 라도 range 가 없으면 None 이다. 다른 상대 range 를 복제하지 않는다.
+    """
+    if not board or not r_a:
+        return None
+
+    pools = []
+    if isinstance(opp_ranges, dict):
+        items = sorted(opp_ranges.items(), key=lambda kv: str(kv[0]))
+        if n_opp is not None and len(items) != int(n_opp):
+            return None
+        for _, r in items:
+            if not r:
+                return None
+            pools.append(list(r))
+    elif isinstance(opp_ranges, (list, tuple)):
+        if n_opp is not None and len(opp_ranges) != int(n_opp):
+            return None
+        for r in opp_ranges:
+            if not r:
+                return None
+            pools.append(list(r))
+    else:
+        return None
+
+    if not pools:
+        return None
+    if len(pools) == 1:
+        return range_advantage(r_a, pools[0], board, sims=sims, seed=seed)
+
+    dead = set(board)
+    mine = sorted(c for c in r_a
+                  if c[0] not in dead and c[1] not in dead)
+    clean = []
+    for r in pools:
+        rr = sorted(c for c in r
+                    if c[0] not in dead and c[1] not in dead)
+        if not rr:
+            return None
+        clean.append(rr)
+    if not mine:
+        return None
+
+    rng = random.Random(seed)
+    share = 0.0
+    run = 0
+    for _ in range(int(sims)):
+        used = set(dead)
+        for _try in range(60):
+            h = rng.choice(mine)
+            if h[0] not in used and h[1] not in used:
+                used.add(h[0]); used.add(h[1])
+                break
+        else:
+            continue
+
+        hs = bot.eval7(list(h) + board)
+        scores = []
+        ok = True
+        for pool in clean:
+            for _try in range(60):
+                c = rng.choice(pool)
+                if c[0] not in used and c[1] not in used:
+                    used.add(c[0]); used.add(c[1])
+                    scores.append(bot.eval7(list(c) + board))
+                    break
+            else:
+                ok = False
+                break
+        if not ok:
+            continue
+        run += 1
+        share += bot._showdown_share(hs, scores)
+
+    if not run:
+        return None
+    eq = share / run
+    fair = 1.0 / (len(clean) + 1.0)
+    if eq >= fair:
+        out = (eq - fair) / max(1e-12, 1.0 - fair)
+    else:
+        out = (eq - fair) / max(1e-12, fair)
+    return max(-1.0, min(1.0, out))
+
+
 def _strong_share(r, board, cutoff=2):
     if not r: return 0.0
     n = ok = 0

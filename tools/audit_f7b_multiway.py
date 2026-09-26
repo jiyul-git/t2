@@ -188,7 +188,6 @@ def check_downstream_source_map():
         'union_strategy_consumers': [
             'blocker_score/effect',
             'nut_advantage',
-            'range_advantage',
             'river blocker',
             'overbet nut advantage',
         ],
@@ -257,6 +256,64 @@ def check_joint_relative_strength_consumer():
     }
 
 
+
+def check_joint_range_advantage_consumer():
+    hero, board, tight, weak, union = _fixture()
+    my_range = [tuple(hero)]
+
+    joint = R.joint_range_advantage(
+        my_range, {2: tight, 3: weak}, board,
+        n_opp=2, sims=500, seed=1)
+    assert joint == -1.0, joint
+
+    hu = R.joint_range_advantage(
+        my_range, {3: weak}, board,
+        n_opp=1, sims=400, seed=9)
+    hu0 = R.range_advantage(
+        my_range, weak, board, sims=400, seed=9)
+    assert abs(hu - hu0) < 1e-12, (hu, hu0)
+
+    missing = R.joint_range_advantage(
+        my_range, {2: tight, 3: []}, board,
+        n_opp=2, sims=100, seed=1)
+    assert missing is None, missing
+
+    chosen, meta = PL._decision_range_advantage(
+        my_range, board, union, n_opp=2,
+        opp_ranges={2: tight, 3: weak},
+        sims=500, seed=1, joint_seed=1)
+    assert chosen == -1.0, (chosen, meta)
+    assert meta['source'] == 'joint_seat_pools', meta
+
+    fallback, fmeta = PL._decision_range_advantage(
+        my_range, board, union, n_opp=2,
+        opp_ranges={2: tight, 3: []},
+        sims=100, seed=1, joint_seed=1)
+    legacy = R.range_advantage(
+        my_range, union, board, sims=100, seed=1)
+    assert abs(fallback - legacy) < 1e-12, (fallback, legacy)
+    assert fmeta['source'] == 'union_fallback_incomplete', fmeta
+
+    msrc = inspect.getsource(PL.make_plan)
+    rsrc = inspect.getsource(PL.refresh)
+    assert "_decision_range_advantage(" in msrc
+    assert "_decision_range_advantage(" in rsrc
+    assert "R.nut_advantage(my_range, opp_range, board)" in msrc
+    assert "R.nut_advantage(_mr, opp_range, board)" in rsrc
+
+    return {
+        'fixed_joint_range_adv': joint,
+        'heads_up_parity': True,
+        'missing_pool_joint': None,
+        'complete_source': meta['source'],
+        'incomplete_fallback_source': fmeta['source'],
+        'make_plan_consumer': True,
+        'refresh_consumer': True,
+        'nut_adv_unchanged': True,
+        'blocker_unchanged': True,
+    }
+
+
 def main():
     a = check_union_relative_strength_distortion()
     b = check_union_range_advantage_weighting()
@@ -264,6 +321,7 @@ def main():
     d = check_eq_current_exact_multiway_tie()
     e = check_downstream_source_map()
     f = check_joint_relative_strength_consumer()
+    g = check_joint_range_advantage_consumer()
 
     print("PASS F7-B1 union relative-strength distortion reproduced", a)
     print("PASS F7-B1 union range-advantage weighting distortion reproduced", b)
@@ -271,8 +329,9 @@ def main():
     print("PASS F7-B-T record-only current-board tie share is exact", d)
     print("PASS F7-B downstream source map classified", e)
     print("PASS F7-B1A joint relative-strength consumer is isolated", f)
-    print("6/6 F7-B diagnostic checks passed")
-    print("NOTE: only relative_strength is repaired; range_adv/nut/blocker/read remain audited.")
+    print("PASS F7-B1B joint range-advantage consumer is isolated", g)
+    print("7/7 F7-B diagnostic checks passed")
+    print("NOTE: relative_strength + range_adv are repaired; nut/blocker/read remain audited.")
 
 
 if __name__ == '__main__':
