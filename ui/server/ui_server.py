@@ -483,6 +483,26 @@ class H(BaseHTTPRequestHandler):
 
         return False
 
+    def _grant_play_cookie(self):
+        """Validate done by caller; persist player auth and redirect to /play.
+
+        Local Termux uses plain HTTP, so Secure must not be forced there.
+        Reverse proxies can signal HTTPS with X-Forwarded-Proto, or deployment can
+        force it with T2_COOKIE_SECURE=1.
+        """
+        proto = (self.headers.get('X-Forwarded-Proto') or '').split(',')[0].strip().lower()
+        force_secure = os.environ.get('T2_COOKIE_SECURE', '').strip().lower() in ('1','true','yes','on')
+        secure = (proto == 'https' or force_secure)
+        cookie = (
+            't2_play=%s; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax%s'
+            % (PLAY_KEY, '; Secure' if secure else '')
+        )
+        self.send_response(302)
+        self.send_header('Location', '/play')
+        self.send_header('Set-Cookie', cookie)
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def _send(self, code, obj):
         b = json.dumps(obj, ensure_ascii=False, default=str).encode()
         self.send_response(code)
@@ -538,7 +558,9 @@ class H(BaseHTTPRequestHandler):
 
     def do_GET(self):
         global _last
-        path = self.path.split('?', 1)[0]
+        parsed = urllib.parse.urlsplit(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
         if path == '/api/ready':
             # 워커가 아직 다른 테이블을 돌리는 중인가. 결과 화면이 이걸 보고
             # 정산이 끝난 뒤에 다음 핸드로 넘어간다 — 빈 로딩 화면을 없앤다.
@@ -574,28 +596,20 @@ class H(BaseHTTPRequestHandler):
             return
 
         if path.startswith('/play/'):
-            supplied = urllib.parse.unquote(
-                path[len('/play/'):]
-            ).strip('/')
-
+            supplied = urllib.parse.unquote(path[len('/play/'):]).strip('/')
             if supplied and hmac.compare_digest(supplied, PLAY_KEY):
-                # 인증 주소에서는 UI를 직접 띄우지 않는다.
-                # 쿠키를 발급한 뒤 /play 로 보내야 CSS/JS 상대경로가 정상이다.
-                self.send_response(302)
-                self.send_header('Location', '/play')
-                self.send_header(
-                    'Set-Cookie',
-                    't2_play=%s; Path=/; Max-Age=2592000; '
-                    'Secure; HttpOnly; SameSite=Lax'
-                    % PLAY_KEY
-                )
-                self.send_header('Content-Length', '0')
-                self.end_headers()
-                return
-
+                return self._grant_play_cookie()
             return self._send(403, {'error': '잘못된 플레이 주소'})
 
         if path == '/play':
+            # /play?k=<key>도 서버가 직접 검증한다. 예전에는 프론트 JS만 키를
+            # 읽어서 로컬스토리지에 보관했기 때문에 브라우저/캐시 상황에 따라
+            # "플레이어 인증이 필요합니다"가 반복될 수 있었다.
+            supplied = ((query.get('k') or [''])[0] or '').strip()
+            if supplied:
+                if hmac.compare_digest(supplied, PLAY_KEY):
+                    return self._grant_play_cookie()
+                return self._send(403, {'error': '잘못된 플레이 주소'})
             return self._serve_static('/index.html')
 
         if path == '/watch':
@@ -731,8 +745,11 @@ if __name__ == '__main__':
     print('정산 지연: %s  (끄려면 T2_UI_DEFER=0)' % ('켬' if DEFER else '끔'))
     print('상태 파일: %s' % L.ST)
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
-    print('폰에서 직접: http://127.0.0.1:%d' % port)
-    print('다른 기기에서: http://<이 기기의 LAN IP>:%d' % port)
+    print('관전 전용: http://127.0.0.1:%d/watch' % port)
+    print('플레이 최초 인증: http://127.0.0.1:%d/play/%s' %
+          (port, urllib.parse.quote(PLAY_KEY, safe='')))
+    print('플레이 재접속: http://127.0.0.1:%d/play' % port)
+    print('다른 기기 관전: http://<이 기기의 LAN IP>:%d/watch' % port)
     if ':' in host:
         class _HTTPServer6(HTTPServer):
             address_family = socket.AF_INET6

@@ -1,229 +1,72 @@
-# 그래픽 UI (1단계)
+# UI — 현재 실행 가이드
 
-포커 엔진에 HTTP 래퍼를 씌워 그래픽 테이블 UI 를 붙이기 위한 폴더다.
-엔진 파일은 하나도 건드리지 않는다.
+이 문서는 **현재 코드 기준**이다. 과거 브랜치 단계 설명은 신뢰하지 않는다.
 
-## 엔진과의 경계
+## 폴더 역할
 
-**이 브랜치는 엔진 파일을 한 글자도 고치지 않았다.** 새 코드는 전부 `ui/` 아래에 있고,
-엔진 조사용 측정 도구만 기존 규칙대로 `tools/` 아래에 있다.
+- 저장소/개발 원본: `~/t2`
+- 플레이 실행폴더: `~/t2_play`
+- 실행폴더에는 게임 상태와 아카이브가 생긴다. Git 원본과 섞지 않는다.
+- 별도 `t2_play_src` clone은 필요 없다.
 
-| | 위치 | 성격 |
-|---|---|---|
-| 엔진 본체 | 저장소 루트의 `.py` 22개 (`live2` `session` `plan` `view` `fieldsim` `runner` `bot` `play` `preflop` …) | **동결.** 이 브랜치에서 변경 0 |
-| UI | `ui/server` `ui/web` `ui/tools` | 이 브랜치에서 추가 |
-| 측정 도구 | `tools/field_pace.py`, `tools/field_pace_results.json` | 읽기 전용 분석. 엔진을 호출만 한다 |
-
-직접 확인하는 법 — 엔진 조사 마지막 커밋(`3f42b1f`)과 대조한다.
+## 최신 코드를 플레이 폴더에 반영
 
 ```sh
-# ui/ 와 tools/ 를 뺀 나머지에서 바뀐 파일. .gitignore 한 줄 외에는 없어야 한다
-git diff --name-only 3f42b1f HEAD -- . ':!ui/**' ':!tools/**'
-
-# 핵심 엔진 파일의 내용 해시 대조
-for f in live2.py session.py plan.py view.py fieldsim.py runner.py bot.py; do
-  [ "$(git rev-parse 3f42b1f:$f)" = "$(git rev-parse HEAD:$f)" ] \
-    && echo "동일  $f" || echo "★변경 $f"
-done
+cd ~/t2
+git pull --ff-only
+sh ui/tools/setup_run_dir.sh ~/t2_play
+cd ~/t2_play
+python3 ui_server.py
 ```
 
-실행 폴더도 분리되어 있다. `setup_run_dir.sh` 가 엔진을 **복사**해서 별도 폴더를 만들고,
-서버는 그 폴더에 `UI_SERVER_DIR` 표시 파일이 없으면 시작을 거부한다. 그래서 UI 를 돌려도
-저장소의 엔진 폴더와 `cli.py` 세션의 상태·아카이브에 닿지 않는다.
+`setup_run_dir.sh`는 코드/필수 데이터만 허용목록으로 복사한다. 기존 `~/t2_play`의
+게임 상태와 아카이브는 유지한다.
 
-엔진 수정이 필요하다고 판단되면 이유와 diff 초안만 보고하고 승인을 기다린다.
-(현재 대기 중인 승인 항목은 이 파일 맨 아래 '승인 대기' 참고)
+## URL과 권한
 
-## 절대 규칙
+서버 시작 시 현재 키를 사용한 주소를 직접 출력한다.
 
-1. **엔진 파일을 수정하지 않는다.** `live2.py`, `session.py`, `plan.py`,
-   `view.py`, `fieldsim.py` 등 기존 파일 전부 해당한다. 새 파일은 `ui/` 아래에만 만든다.
-   엔진 수정이 필요하면 이유와 diff 초안만 보고하고 승인을 기다린다.
-2. **메인 엔진 폴더에서 `live2.new_game()` 을 부르지 않는다.** 진행 중인 게임을
-   덮어쓰고 아카이브를 옮긴다.
-3. **라이브 화면에 봇 내부값(plan, eq, why, rel, outs, profile)을 노출하지 않는다.**
-4. 상대 홀카드는 쇼다운까지 간 좌석만 공개한다.
-5. 화면에는 팟과 콜 비용만 표시한다. 팟 오즈·에쿼티·추천 액션은 넣지 않는다.
-6. UI 작업은 엔진 연구와 별도 브랜치에서 한다.
+- `/watch` — 관전 전용. 상태 변경 API를 호출할 수 없다.
+- `/play/<PLAY_KEY>` — 최초 플레이 인증. 쿠키를 발급한 뒤 `/play`로 이동한다.
+- `/play?k=<PLAY_KEY>` — 동일한 최초 인증 방식의 호환 주소.
+- `/play` — 이미 인증된 브라우저의 재접속 주소.
 
-## 구성
+로컬 Termux의 `http://127.0.0.1`에서는 Secure 없는 HttpOnly 쿠키를 사용한다.
+HTTPS reverse proxy에서는 `X-Forwarded-Proto: https` 또는 `T2_COOKIE_SECURE=1`일 때
+Secure 쿠키를 사용한다.
 
-```
-ui/
-  server/ui_view.py      live2 가 import 하는 view 를 대체한다. 원본 view.build()
-                         를 그대로 부르고 결과를 화이트리스트 JSON 으로 바꾼다.
-  server/ui_server.py    표준 라이브러리 http.server 기반 래퍼 + 정적 파일 제공.
-  tools/setup_run_dir.sh 실행 폴더를 만든다 (허용 목록 복사).
-  tools/verify_ui.py     자동 검증.
-  web/index.html         테이블 UI. 프레임워크·빌드 단계 없음.
-  web/style.css
-  web/app.js
-```
+플레이 키 파일은 실행폴더의 `.play_key`이다. 이 파일은 Git에 넣지 않는다.
 
-## 화면 (2단계)
+## API 경계
 
-`http://<서버>:8765/` 를 열면 같은 출처에서 `web/index.html` 이 뜬다. CORS 가 필요 없다.
-세로 360-412px 기준, 터치 영역 44px 이상, hover 에 의존하지 않는다.
+읽기:
 
-- **테이블** — 8슬롯을 타원 둘레에 놓되 히어로 슬롯이 항상 하단 중앙에 오도록
-  회전한다. 빈 슬롯은 점선 자리로 남는다. 폴드한 좌석은 반투명, 올인은 ALL-IN 배지,
-  딜러는 D 칩.
-- **카드** — CSS 로 직접 그린다. 히어로 홀카드는 하단에 크게, 핸드에 남은 봇은 뒷면 2장,
-  보드는 5칸. 새로 깔린 보드 카드에만 딜 애니메이션이 붙는다.
-- **칩** — 좌석 앞에 `bet`, 중앙에 팟. 스트리트가 끝나면 칩이 중앙으로 이동한다.
-- **액션 바** — 버튼 노출은 **`legal` 만 보고** 정한다. 레이즈는 슬라이더 + 프리셋
-  (최소·½팟·팟·올인) + 숫자 입력이고 전부 raise-to 단위, `[min_to, max_to]` 로 제한한다.
-  `allin_only` 면 ALL-IN 버튼 하나만 둔다.
-- **연출** — 직전 `log` 와 비교해 새로 생긴 봇 액션만 좌석별 말풍선으로 순서대로 띄운다.
-- **로딩** — 요청 중에는 버튼을 끄고 경과 시간을 보여준다. 4초를 넘기면
-  '핸드 정산 중… 다른 테이블도 함께 진행됩니다' 로 바뀐다. 실측 최대 13초였다.
-- **결과** — 승자 강조, 쇼다운 좌석의 카드만 공개, 팟별 분배, 스택, 라인 기록,
-  하단 고정 '다음 핸드' 버튼.
-- **오류** — `error` 는 토스트로 띄우고 화면은 유지한다. 409 를 받으면
-  `GET /api/state` 로 다시 맞춘다.
+- `GET /api/state`
+- `GET /api/history`
+- `GET /api/stats`
 
-### 클라이언트 원칙
+플레이어 전용:
 
-**마지막 JSON 응답이 유일한 진실이다.** 프론트엔드는 규칙을 다시 계산하지 않는다.
-최소 레이즈를 여기서 다시 구현하면 엔진과 어긋나는 순간 화면과 서버가 따로 논다.
-`ui_view.py` 가 사실상 API 계약서다 — `legal.raise.min_to/max_to` 를 그대로 쓴다.
+- `GET /api/memos`
+- `POST /api/new`
+- `POST /api/step`
+- `POST /api/memo`
 
-### 보안 범위
+상태 변경 요청은 **플레이 인증 + `X-T2-Client-Mode: play`** 둘 다 필요하다.
 
-현재 CORS 는 `*` 이고 인증이 없다. 목적이 로컬 또는 같은 LAN 의 클라이언트 검증이라
-이번 단계에서는 손대지 않았다. **인터넷에 노출할 거라면 별도 보안 단계가 필요하다.**
+## 원칙
 
-## 실행
-
-```sh
-sh ui/tools/setup_run_dir.sh ~/t2_ui_run
-cd ~/t2_ui_run && python3 ui_server.py            # 기본 8765 포트
-```
-
-### 왜 별도 폴더인가
-
-`live2` 는 아카이브(`hand_archive2*.jsonl`, `book*`, `dynamics*`, `bot_hands*`)를
-**모듈 폴더**에 쓴다. 또 `T2_LIVE_STATE` 를 설정하면 경로와 무관하게 접미사가
-`_alt` 하나로 고정되어(`live2.py:12`), `cli.py` 세션과 같은 폴더면 파일을 공유하게 된다.
-그래서 실행 폴더에 `UI_SERVER_DIR` 표시 파일이 없으면 서버가 시작을 거부한다.
-
-**`ui_server.py` 에 `T2_LIVE_STATE` 를 추가하지 말 것.** 설정하지 않아야
-접미사가 비고, 상태·아카이브가 실행 폴더 안의 무접미사 이름으로 격리된다.
-
-### 복사 대상
-
-`setup_run_dir.sh` 는 **허용 목록 방식**이다. 제외 목록으로 짜면 안 된다 —
-`live2_state.json`, `claude_state.json`, `hand_archive2*.jsonl`,
-`bot_hands*.jsonl` 이 전부 git 에 커밋되어 있어서 `cp *.json` 이나 clone 으로는
-진행 중인 게임이 실행 폴더로 딸려 들어간다.
-
-- 모듈 22개: live2 가 전이적으로 import 하는 전부. `view.py` 는 `ui_view` 가
-  `view_text` 라는 이름으로 직접 로드하므로 반드시 포함한다.
-- 데이터 3개: `pf_rank.json`(없으면 `preflop.py` import 실패),
-  `style_sig.json`, `style_prior.json`(없으면 스타일 추정 경로가 꺼진다).
-
-이미 있는 폴더에 다시 돌려도 된다. 코드만 덮어쓰고 상태·아카이브는 건드리지 않는다.
-
-## API
-
-| | |
-|---|---|
-| `GET /api/state` | 캐시된 마지막 응답. 없으면 현재 상태를 재생해서 만든다 |
-| `POST /api/new` | `{entries?, seed?, fmt?, start_stack?}` |
-| `POST /api/step` | `{action, amount, token}` |
-
-- `action`: `fold/check/call/bet/raise/allin`, 또는 `null`(다음 핸드 딜)
-- `amount`: **이번 스트리트 총 투입 목표(raise-to)**. 증분이 아니다.
-- `token`: 직전 응답의 값. 다르면 409 — 재전송으로 액션이 두 번 들어가는 것을 막는다.
-- 응답: `{done, view, token}`. 종료 시 `busted`, `rank`. 탈락 후에는 `game_over`.
-  엔진의 `raw`/`result` 원본은 내보내지 않는다.
+1. UI는 서버 응답을 유일한 진실로 본다.
+2. 플레이 실행폴더에서만 게임 상태를 생성한다.
+3. 저장소 루트의 상태/아카이브 파일을 플레이에 재사용하지 않는다.
+4. 상대 홀카드는 실제 공개 규칙에 맞는 경우만 표시한다.
+5. UI 변경과 엔진 판단 변경은 같은 항목으로 취급하지 않는다.
 
 ## 검증
 
 ```sh
+cd ~/t2
 python3 ui/tools/verify_ui.py --hands 12 --entries 100
 ```
 
-**항상 임시 폴더를 새로 만들어서 거기서 검사한다.** `/api/new` 를 부르기 때문에
-실제 실행 폴더에서 돌리면 진행 중인 게임이 날아간다. 그래서 대상 폴더를 인자로 받지 않는다.
-
-검사 항목: 칩 보존, 홀카드 누출(아카이브 대조), 내부값 키 누출, 오래된 token → 409,
-최소 미달 레이즈 → error + token 불변, `legal` 과 `Round.apply` 의 일치,
-워크 핸드, 지연 시간, 정적 파일 제공(`GET /` 와 `../` 차단).
-
-## 알려진 사항
-
-- **엔진의 오류 응답에는 `stacks`/`contrib` 가 빠져 있다**(`session.py:150,330`).
-  그래서 좌석 값이 틀린다. 서버가 직전 정상 화면에 `error` 만 붙여 돌려준다
-  (token 불변, `ui_server.py:127-133`).
-- 원본 `view` 의 좌석 stack 은 **스트리트 시작값**이다. `ui_view` 가 raw 의
-  현재값으로 바꿔 넣는다.
-- 원본 `view.py:45` 의 레이즈 상한 표시(`mn ~ st`)는 단위 버그다. 실제 상한은
-  `st + 이미 투입한 금액`이다. `ui_view` 의 `max_to` 는 올바르게 계산한다.
-  원본 수정은 승인 사항이라 손대지 않았다.
-- 히어로가 액션하지 않고 끝나는 핸드(워크)가 있다. 딜 직후 곧바로
-  `type: result` 가 올 수 있다(`session.py:131-136`).
-- 핸드 사이의 `step(None)` 은 다음 핸드를 딜한다. 부작용이 있는 호출이다.
-- 테이블은 8슬롯 고정이다(`fieldsim.MAXSEAT = 8`). 슬롯 번호는 고정이고
-  빈 슬롯이 생긴다 — `seats` 배열의 길이는 8보다 작을 수 있다.
-- 핸드를 끝내는 액션은 오래 걸린다. 대부분 `finish()` 안의 `step_others()`
-  (타 테이블 진행)이고, entries 에 비례한다. 단축하려면 `live2` 수정이 필요하다
-  → 승인 사항. UI 는 로딩 상태로 대응한다.
-
-## 정산 시간 단축 — 진행 상태
-
-**① step_others(settle=False) 분리 — 완료, 검증됨.**
-**② 동작 보존 검증 — 통과.**
-**③ 프리페치 배선 — 미착수. 승인 대기.**
-
-**정산 시간 단축 — 다른 테이블 미리 계산**
-
-핸드가 끝날 때 `live2.finish()` 안의 `f.step_others()` 가 다른 테이블을 전부 한 핸드씩
-실제로 돌린다. 이게 정산 시간의 **92%** 다 (엔트리 100 기준 컨테이너 5.35초, 폰 약 30초).
-
-다른 테이블은 히어로 테이블을 읽지 않으므로(`fieldsim.py:236`), 핸드가 딜된 직후
-별도 프로세스에서 미리 돌려둘 수 있다. 난수도 안전하다 — `f.rng` 는 `step()` 마다
-`crc32('field|시드|핸드번호')` 로 새로 파생되고(`live2.py:41-42`), 핸드 도중 아무도
-소비하지 않는다(사용처는 `fieldsim.py:210,242-243` 뿐).
-
-막는 것은 `step_others()` 가 끝에서 부르는 두 가지다.
-- `_collect_busts()` — `busted_order` 의 순서가 곧 순위다(`rank_of`). 미리 돌리면
-  다른 테이블 탈락이 먼저 들어가 **순위가 바뀐다.**
-- `_balance()` — 히어로를 다른 테이블로 옮길 수 있다(`fieldsim.py:277,289`).
-  핸드 진행 중에 돌면 판이 깨진다.
-
-필요한 수정은 이 둘을 떼어낼 수 있게 하는 것뿐이다.
-
-```python
--    def step_others(self):
-+    def step_others(self, settle=True):
-         ...
--        self._collect_busts()
--        self._balance()
-+        if settle:
-+            self._collect_busts()
-+            self._balance()
-```
-
-기본값이 기존 동작이라 안 쓰면 아무것도 안 바뀐다. **적용 완료.**
-
-검증 결과 (tools/verify_settle_split.py, 그리고 live2 아카이브 대조)
-
-  A. 기본 경로 불변 — entries 100, 시드 777, 12핸드, T2_BOT_LOG=2
-     변경 전(HEAD 의 fieldsim.py)과 변경 후를 각각 별도 폴더에서 돌려 대조
-       hand_archive2.jsonl  37c88afd3624abcf…  동일
-       bot_hands.jsonl      bde3a10330ac761e…  동일
-       최종 필드 덤프        67f6b14e00f8f09f…  동일
-
-  B. 분할 경로 동등 — entries 100, 시드 4242, 40핸드
-     step_others() 와 step_others(settle=False) + 명시 호출의
-     핸드별 필드 서명(busted_order 순서 포함) 해시
-       4b022496fa1909cc19bf9b406eabc27dba31061266e6bc775c1ff4f7b6457734  양쪽 동일
-
-한계: 계산량이 줄지는 않는다. 히어로가 생각하는 시간에 겹칠 뿐이다. 핸드 N+1 은
-핸드 N 의 탈락·밸런싱을 알아야 해서 두 핸드 앞서 갈 수 없다.
-
-검증: 같은 시드로 N핸드를 돌려 `hand_archive2.jsonl` 전체 해시가 기존과 같은지 대조한다.
-
-**엔트리 축소는 대안이 아니다.** `tools/field_pace.py` 실측 결과, ITM 시점 평균 스택이
-100명 25bb / 45명 33bb / 18명 50bb 로 갈린다. 성능 설정이 아니라 다른 대회가 된다.
+검증기는 실제 `~/t2_play` 상태를 덮어쓰지 않는 임시 실행 환경을 사용해야 한다.

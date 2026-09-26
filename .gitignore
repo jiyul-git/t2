@@ -8,3 +8,17 @@ eq_decomp.json
 # 파이썬 바이트코드. 인터프리터 버전마다 파일명이 달라져 계속 쌓인다.
 # (이미 커밋된 .pyc 는 추적 상태 그대로 둔다 — 여기서 지우지 않는다)
 __pycache__/
+
+# Runtime/UI state — source tree must stay stateless
+.play_key
+live2_state*.json
+live_state*.json
+claude_state*.json
+_ctxcheck_state*.json
+live.pkl
+bot_hands*.jsonl
+hand_archive2*.jsonl
+bak_*bot_hands*.jsonl
+bak_*hand_archive2*.jsonl
+bak_testgame*.jsonl
+*.pyc
