@@ -373,6 +373,71 @@ def _others_key(field_dump):
                                   separators=(',', ':')).encode())
 
 
+def _resume_parallel_others(st, others=None):
+    """병렬 라운드의 비-HERO 결과를 HERO 결과 field와 합친 뒤 settle 한다."""
+    base = st.get('others_base')
+    if not base:
+        # 구/손상 상태의 안전망. HERO 결과를 보존한 채 예전 순차 경로로 끝낸다.
+        legacy = compute_others(st['field'])
+        st['field'] = legacy['field']
+        _append_bot_log(legacy.get('bot_log'))
+        _new_notes = list(legacy.get('notes') or [])
+        how = 'fallback'
+        merged_f = _load_field(copy.deepcopy(st['field']))
+    else:
+        want = _others_key(base)
+        how = 'hit'
+        if others is None:
+            how = 'fallback'
+        elif (others.get('mode') != PARALLEL_TABLES_MODE
+              or others.get('base_key') != want):
+            how = 'mismatch'
+        if how != 'hit':
+            others = compute_others_parallel(base)
+
+        main_f = _load_field(copy.deepcopy(st['field']))
+        merged_f, _new_notes = _merge_parallel_field(
+            main_f, base, others)
+        st['field'] = _dump(merged_f)
+        _append_bot_log(others.get('bot_log'))
+
+    if st.pop('bust_pending', False):
+        _hero = merged_f.players.get(merged_f.hero_pid)
+        if _hero and _hero.get('stack', 0) <= 0:
+            if merged_f.hero_pid in merged_f.busted_order:
+                after = (
+                    len(merged_f.busted_order)
+                    - merged_f.busted_order.index(merged_f.hero_pid)
+                    - 1
+                )
+                rank = merged_f.remaining() + 1 + after
+            else:
+                rank = merged_f.remaining() + 1
+
+            st['busted'] = True
+            st['rank'] = rank
+            itm = ' (ITM!)' if rank <= merged_f.itm else ''
+            _new_notes.append(
+                '💀 탈락 — %d명 중 %d위%s'
+                % (merged_f.entries, rank, itm)
+            )
+
+    if _new_notes:
+        st['pending_notes'] = list(st.get('pending_notes') or []) + _new_notes
+
+    rec = st.pop('pending_archive', None)
+    if rec is not None:
+        rec['field'] = merged_f.status()
+        rec['notes'] = list(rec.get('notes') or []) + _new_notes
+        _archive_write(rec)
+
+    st.pop('others_pending', None)
+    st.pop('others_mode', None)
+    st.pop('others_base', None)
+    save(st)
+    return how
+
+
 def resume_others(st, others=None):
     """밀린 다른 테이블 진행을 마무리하고 상태에 반영한다.
 
@@ -382,6 +447,8 @@ def resume_others(st, others=None):
     """
     if not st.get('others_pending'):
         return None
+    if st.get('others_mode') == PARALLEL_TABLES_MODE:
+        return _resume_parallel_others(st, others)
     want = _others_key(st['field'])
     how = 'hit'
     if others is None:
