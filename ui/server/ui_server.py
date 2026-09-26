@@ -530,6 +530,7 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Content-Type', 'application/x-ndjson; charset=utf-8')
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('X-Accel-Buffering', 'no')
         self.end_headers()
 
     def _stream_line(self, obj):
@@ -697,8 +698,17 @@ class H(BaseHTTPRequestHandler):
                                     'event': event,
                                 })
 
-                        r = (_step(a, amt, on_bot_action=_emit_bot)
-                             if a is not None else _step())
+                        try:
+                            r = (_step(a, amt, on_bot_action=_emit_bot)
+                                 if a is not None else _step())
+                        except Exception as e:
+                            traceback.print_exc()
+                            if alive[0]:
+                                self._stream_line({
+                                    'type': 'error',
+                                    'error': '%s: %s' % (type(e).__name__, e),
+                                })
+                            return
                         v = r.get('view') or {}
                         if (not r.get('done') and v.get('error') and _last
                                 and (_last.get('view') or {}).get('type') == 'decision'):
