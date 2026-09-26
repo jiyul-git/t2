@@ -11,9 +11,9 @@
    - 현재 F7-B1D 포함 구조 감사 진행
    - balance tuning 전까지 엔진 주 작업선
 
-2. `chatgpt/ui-recovery-20260927`
-   - UI 복구/통합 전용
-   - 과거 UI 브랜치에서 검증된 UI 변경만 현재 엔진 위로 이식
+2. `chatgpt/ui-bot-pipeline-20260927`
+   - 현재 플레이/UI source of truth
+   - `ui-recovery` 전체를 포함하고 bot-action streaming까지 통합
    - 엔진 판단 로직은 여기서 임의 수정하지 않음
 
 ## Do not create branches casually
@@ -65,8 +65,8 @@
 
 ## Planned cleanup
 
-현재는 안전을 위해 기존 브랜치를 즉시 삭제하지 않는다.
-먼저 UI recovery가 끝난 뒤 과거 UI 브랜치들의 누락 commit이 없는지 확인하고 삭제 후보를 확정한다.
+`chatgpt/ui-recovery-20260927`은 `ui-bot-pipeline`에 완전히 포함되어 삭제 대상으로 확정했다.
+과거 UI 전용 브랜치는 더 이상 source of truth로 유지하지 않는다.
 
 엔진 구조 감사가 끝나면 과거 audit/experiment 브랜치도 같은 방식으로 정리한다.
 
