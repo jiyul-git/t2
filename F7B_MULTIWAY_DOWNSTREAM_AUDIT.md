@@ -1973,3 +1973,45 @@ The safe order is:
 8. run direct paired attribution before any production promotion.
 
 Until step 7, production ranges remain the existing unweighted lists.
+
+
+### B1D7-A implementation — RNG-free likelihood shadow
+
+Status: **IMPLEMENTED / local verification pending.**
+
+Added `preflop.defend_action_likelihoods(...)`.
+
+Properties:
+
+- consumes no RNG;
+- returns normalized `attack / call / fold` probabilities;
+- treats hot-zone reshove as an attack probability that precedes the ordinary mixed policy;
+- keeps call-off as a deterministic one-hot call/fold category;
+- accepts actor-side `exploit` explicitly but does not read any hidden/global opponent state;
+- exposes raw mixed weights and hot-attack probability for exact branch verification;
+- does not change `defend_decision` control flow or RNG consumption in this step.
+
+Added `tools/verify_f7b_defend_likelihood.py`.
+
+The verifier compares the shadow contract against the current live
+`defend_decision` branch semantics using scripted RNG rolls across:
+
+- every preflop hand class;
+- multiple generated personas;
+- multiple defender/opener positions;
+- hot-zone / normal / deep stacks;
+- raise levels 1 and 2;
+- caller counts 0 and 1;
+- positive/negative/no exploit contexts;
+- explicit call-off and pure-short-shove contexts.
+
+Acceptance:
+
+- all returned probabilities finite, nonnegative and sum to 1;
+- every scripted live action category matches the helper boundary;
+- call-off category parity is exact;
+- production `defend_decision` remains unchanged.
+
+Only after this verifier passes may the production action generator itself be
+rewired to consume the shared helper. Weighted-range representation remains the
+next step after that behavior-preserving wiring.
