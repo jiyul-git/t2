@@ -76,6 +76,19 @@ def main():
     tb.stand(victim['pid'])
     assert tb.dealer_seat() == 7, (tb.dealer_seat(), tb.seats)
 
+    # Persistence shape used by live2: constructor first, fixed slots restored,
+    # then restore_button() with saved physical button seat.
+    saved_seats = list(tb.seats)
+    saved_button = tb.button
+    saved_button_seat = tb.button_seat
+    live_players = list(tb.players)
+    tb2 = FS.Table(0, live_players, button=saved_button, max_seat=9,
+                   button_seat=saved_button_seat)
+    tb2.seats = saved_seats
+    tb2.restore_button(saved_button, saved_button_seat)
+    assert tb2.dealer_seat() == 7, (tb2.dealer_seat(), tb2.seats)
+    assert posmap(tb2)[7] == posmap(tb)[7]
+
     print('PASS button seat anchor')
     print({'dealer_seat': tb.dealer_seat(),
            'hero_seat': 7,
