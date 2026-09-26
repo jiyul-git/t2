@@ -473,18 +473,12 @@ def _project_call_layers(prior_contrib, street_contrib, folded, stacks,
     return layers, cost
 
 
-def _layer_call_summary(call_cost, projected_layers, projected_equities):
-    """F8-D4 shadow: layer별 showdown return을 incremental call chip-EV로 합친다.
+def _layer_investment_summary(incremental_cost, projected_layers, projected_equities):
+    """Pot-layer 결과의 incremental chip-EV 공통 계산.
 
-    fold의 미래 현금흐름을 0으로 두고 이미 넣은 칩은 sunk cost로 취급한다.
-
-      gross_return = Σ equity(layer) * amount(layer), hero-eligible layers only
-      call_chip_ev = gross_return - incremental_call_cost
-      effective_equity = gross_return / contestable_after_call
-      breakeven_equity = call_cost / contestable_after_call
-
-    하나라도 필요한 layer equity가 unknown이면 숫자를 발명하지 않고 incomplete로
-    반환한다. 이 summary 역시 아직 행동에 연결하지 않는다.
+    hero가 현재 시점부터 새로 넣는 cost만 비용으로 센다. 이전 기여분은 sunk cost다.
+    hero-eligible layer의 showdown return만 합산하며, 필요한 equity가 하나라도 없으면
+    incomplete로 남긴다.
     """
     rows = {int(r.get('idx')): r for r in (projected_equities or [])}
     contestable = 0.0
@@ -502,15 +496,15 @@ def _layer_call_summary(call_cost, projected_layers, projected_equities):
             continue
         gross += amount * float(row['equity'])
 
-    cost = max(0.0, float(call_cost or 0))
+    cost = max(0.0, float(incremental_cost or 0))
     complete = (not missing and contestable > 0)
     if not complete:
         return {
             'complete': False,
-            'call_cost': cost,
-            'contestable_after_call': contestable,
+            'incremental_cost': cost,
+            'contestable_after_action': contestable,
             'gross_return': None,
-            'call_chip_ev': None,
+            'chip_ev': None,
             'effective_equity': None,
             'breakeven_equity': (
                 round(cost / contestable, 6) if contestable > 0 else None),
@@ -519,14 +513,86 @@ def _layer_call_summary(call_cost, projected_layers, projected_equities):
 
     return {
         'complete': True,
-        'call_cost': cost,
-        'contestable_after_call': contestable,
+        'incremental_cost': cost,
+        'contestable_after_action': contestable,
         'gross_return': round(gross, 6),
-        'call_chip_ev': round(gross - cost, 6),
+        'chip_ev': round(gross - cost, 6),
         'effective_equity': round(gross / contestable, 6),
         'breakeven_equity': round(cost / contestable, 6),
         'missing_equity_layers': [],
     }
+
+
+def _layer_call_summary(call_cost, projected_layers, projected_equities):
+    """F8-D4 shadow: layer별 showdown return을 incremental call chip-EV로 합친다.
+
+    fold의 미래 현금흐름을 0으로 두고 이미 넣은 칩은 sunk cost로 취급한다.
+
+      gross_return = Σ equity(layer) * amount(layer), hero-eligible layers only
+      call_chip_ev = gross_return - incremental_call_cost
+      effective_equity = gross_return / contestable_after_call
+      breakeven_equity = call_cost / contestable_after_call
+
+    하나라도 필요한 layer equity가 unknown이면 숫자를 발명하지 않고 incomplete로
+    반환한다. 이 summary 역시 아직 행동에 연결하지 않는다.
+    """
+    base = _layer_investment_summary(
+        call_cost, projected_layers, projected_equities)
+    return {
+        'complete': base['complete'],
+        'call_cost': base['incremental_cost'],
+        'contestable_after_call': base['contestable_after_action'],
+        'gross_return': base['gross_return'],
+        'call_chip_ev': base['chip_ev'],
+        'effective_equity': base['effective_equity'],
+        'breakeven_equity': base['breakeven_equity'],
+        'missing_equity_layers': base['missing_equity_layers'],
+    }
+
+
+def _project_bet_outcome_layers(prior_contrib, street_contrib, folded, stacks,
+                                hero, target, bet_increment, target_action,
+                                dead=0):
+    """F8-D5-A shadow: hero bet 뒤 target fold/call의 pot geometry.
+
+    첫 단계는 단일 active target의 두 조건부 결과만 모델링한다.
+    raise는 별도 분기라 여기서 섞지 않는다.
+
+    target_action:
+      fold -> target은 모든 layer eligibility를 잃는다.
+      call -> target이 hero의 현재-street target까지 가능한 만큼 매칭한다.
+
+    hero/target의 unmatched excess는 contribution layer로 남고, sole-eligible layer는
+    equity=1로 계산되어 사실상 uncalled return으로 상쇄된다.
+    """
+    if target_action not in ('fold', 'call'):
+        raise ValueError('target_action must be fold/call')
+
+    street2 = dict(street_contrib or {})
+    stacks2 = dict(stacks or {})
+    folded2 = set(folded or ())
+
+    hero_cost = max(
+        0.0, min(float(bet_increment or 0), float(stacks2.get(hero, 0) or 0)))
+    street2[hero] = float(street2.get(hero, 0) or 0) + hero_cost
+    stacks2[hero] = max(0.0, float(stacks2.get(hero, 0) or 0) - hero_cost)
+
+    target_cost = 0.0
+    if target_action == 'fold':
+        folded2.add(target)
+    else:
+        need = max(
+            0.0,
+            float(street2.get(hero, 0) or 0)
+            - float(street2.get(target, 0) or 0))
+        target_cost = min(need, float(stacks2.get(target, 0) or 0))
+        street2[target] = float(street2.get(target, 0) or 0) + target_cost
+        stacks2[target] = max(
+            0.0, float(stacks2.get(target, 0) or 0) - target_cost)
+
+    layers = _decision_pot_layers(
+        prior_contrib, street2, folded2, stacks2, hero=hero, dead=dead)
+    return layers, hero_cost, target_cost
 
 
 def _barrel_count(full_meta, current_meta, seat, current_street):
@@ -1535,6 +1601,58 @@ class HandRun:
                     decision_context={'kind': _resp_ctx['kind']},
                     facing_read=(_est if tc > 0 and aggressor == _main else None))
                 _pl = h.plans[key]
+
+                # F8-D5-A shadow: locked main + exactly one active opponent에서,
+                # 실제 전략 intent가 bet이면 target fold/call 조건부 EV를 분리해 기록한다.
+                # fold probability/raise branch를 아직 합치지 않으므로 전략 소비 금지.
+                bet_ev_shadow = None
+                _planned = PL.intent_of(_pl, street)
+                if (locked_opp_ranges and tc <= 0 and len(_others) == 1
+                        and _planned and _planned.get('act') == 'bet'
+                        and float(_planned.get('size', 0) or 0) > 0):
+                    _target = _others[0]
+                    _bet_cost = min(
+                        float(r2.stacks.get(s, 0) or 0),
+                        float(int(round(
+                            pot_live * float(_planned.get('size', 0) or 0) / 100
+                        )) * 100))
+                    if _bet_cost > 0:
+                        _fold_layers, _hero_bet_cost, _ = _project_bet_outcome_layers(
+                            contrib, r2.contrib, folded | set(r2.folded), r2.stacks,
+                            s, _target, _bet_cost, 'fold', dead=dead)
+                        _call_layers_b, _hero_bet_cost2, _target_call_cost = (
+                            _project_bet_outcome_layers(
+                                contrib, r2.contrib, folded | set(r2.folded), r2.stacks,
+                                s, _target, _bet_cost, 'call', dead=dead))
+                        _fold_eq = _diagnostic_layer_equities(
+                            s, h.hole[s], board, _fold_layers,
+                            opp_ranges, locked_opp_ranges, sims=600)
+                        _call_eq_b = _diagnostic_layer_equities(
+                            s, h.hole[s], board, _call_layers_b,
+                            opp_ranges, locked_opp_ranges, sims=600)
+                        _fold_sum = _layer_investment_summary(
+                            _hero_bet_cost, _fold_layers, _fold_eq)
+                        _call_sum_b = _layer_investment_summary(
+                            _hero_bet_cost2, _call_layers_b, _call_eq_b)
+                        bet_ev_shadow = {
+                            'target': _target,
+                            'bet_cost': _hero_bet_cost,
+                            'target_call_cost': _target_call_cost,
+                            'fold': {
+                                'layers': _fold_layers,
+                                'layer_equities': _fold_eq,
+                                'summary': _fold_sum,
+                            },
+                            'call': {
+                                'layers': _call_layers_b,
+                                'layer_equities': _call_eq_b,
+                                'summary': _call_sum_b,
+                            },
+                            'raise_branch_modeled': False,
+                            'fold_probability_modeled': False,
+                            'strategy_consumer': False,
+                        }
+
                 h.intents = getattr(h, 'intents', [])
                 # 액션 전 관측. 순번을 붙여 매 액션마다 남긴다 —
                 # 한 스트리트에서 여러 번 액션하면 그 사이 판단도 각각 달라진다.
@@ -1576,6 +1694,8 @@ class HandRun:
                         # F8-D4 objective layer call value + activation provenance.
                         'call_ev_shadow': call_ev_shadow,
                         'layer_call_active': bool(_layer_call_value),
+                        # F8-D5-A conditional fold/call outcome shadow only.
+                        'bet_ev_shadow': bet_ev_shadow,
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),

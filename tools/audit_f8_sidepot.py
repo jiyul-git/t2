@@ -407,6 +407,87 @@ def check_d4_call_ev_shadow():
     }
 
 
+
+def check_d5_bet_outcome_shadow():
+    # Locked A, hero H, active C each have 100 in the main pot.
+    # Hero bets 20 into C.
+    #
+    # Full-board exact fixture:
+    #   hero loses to locked A, but beats active C.
+    #
+    # If C folds:
+    #   main 300 -> A/H only, hero equity 0
+    #   hero's unmatched 20 -> sole-eligible return
+    #   gross 20 - bet cost 20 = EV 0
+    #
+    # If C calls:
+    #   main 300 -> A/H/C, hero equity 0
+    #   side 40 -> H/C, hero equity 1
+    #   gross 40 - bet cost 20 = EV +20
+    #
+    # This proves "C folds" does NOT mean hero wins the locked main pot.
+    hero = ['Ah', 'Kd']
+    board = ['2c', '7d', 'Jh', '4s', '3c']
+    prior = {1: 100, 2: 100, 3: 100}
+    current = {}
+    stacks = {1: 0, 2: 100, 3: 100}
+    active = {3: [('9s', '8s')]}
+    locked = {1: [('Jc', 'Jd')]}
+
+    fold_layers, hcost_f, tcost_f = SE._project_bet_outcome_layers(
+        prior, current, set(), stacks, 2, 3, 20, 'fold')
+    call_layers, hcost_c, tcost_c = SE._project_bet_outcome_layers(
+        prior, current, set(), stacks, 2, 3, 20, 'call')
+
+    assert hcost_f == 20.0 and hcost_c == 20.0, (hcost_f, hcost_c)
+    assert tcost_f == 0.0 and tcost_c == 20.0, (tcost_f, tcost_c)
+
+    assert [(x['amount'], x['eligible_seats']) for x in fold_layers] == [
+        (300.0, [1, 2]), (20.0, [2])
+    ], fold_layers
+    assert [(x['amount'], x['eligible_seats']) for x in call_layers] == [
+        (300.0, [1, 2, 3]), (40.0, [2, 3])
+    ], call_layers
+
+    fold_eq = SE._diagnostic_layer_equities(
+        2, hero, board, fold_layers, active, locked, sims=40)
+    call_eq = SE._diagnostic_layer_equities(
+        2, hero, board, call_layers, active, locked, sims=40)
+
+    fold_sum = SE._layer_investment_summary(hcost_f, fold_layers, fold_eq)
+    call_sum = SE._layer_investment_summary(hcost_c, call_layers, call_eq)
+
+    assert fold_eq[0]['equity'] == 0.0, fold_eq
+    assert fold_eq[1]['equity'] == 1.0, fold_eq
+    assert fold_sum['chip_ev'] == 0.0, fold_sum
+
+    assert call_eq[0]['equity'] == 0.0, call_eq
+    assert call_eq[1]['equity'] == 1.0, call_eq
+    assert call_sum['chip_ev'] == 20.0, call_sum
+
+    # Naive "fold wins current 300 pot" interpretation would be +300 before bet cost
+    # and is explicitly not the layer result.
+    assert fold_sum['gross_return'] == 20.0, fold_sum
+    assert fold_sum['gross_return'] != 320.0, fold_sum
+
+    src = inspect.getsource(SE.HandRun._run)
+    assert "bet_ev_shadow = None" in src
+    assert "'bet_ev_shadow': bet_ev_shadow" in src
+    assert "'strategy_consumer': False" in src
+    assert "fold_probability_modeled': False" in src
+
+    return {
+        'fold_layers': [(x['amount'], x['eligible_seats']) for x in fold_layers],
+        'fold_chip_ev': fold_sum['chip_ev'],
+        'call_layers': [(x['amount'], x['eligible_seats']) for x in call_layers],
+        'call_chip_ev': call_sum['chip_ev'],
+        'fold_does_not_win_locked_main': True,
+        'fold_probability_modeled': False,
+        'raise_branch_modeled': False,
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -415,6 +496,7 @@ def main():
     d2 = check_d2_locked_range_preservation()
     d3 = check_d3_layer_equities()
     d4 = check_d4_call_ev_shadow()
+    d5 = check_d5_bet_outcome_shadow()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -426,9 +508,9 @@ def main():
     print("PASS F8-D2 locked all-in opponent range is reconstructed", d2)
     print("PASS F8-D3 layer-specific equity diagnostics are separated", d3)
     print("PASS F8-D4 layer-aware call/fold consumer is isolated from raises", d4)
-    print("7/7 F8 diagnostic checks passed")
-    print("NOTE: D4 now changes call/fold only in the preregistered locked-allin population;")
-    print("      raise eligibility still uses the legacy response eq/need.")
+    print("PASS F8-D5-A proactive bet fold/call outcomes are layer-separated", d5)
+    print("8/8 F8 diagnostic checks passed")
+    print("NOTE: D5-A is shadow only: fold probability and raise continuation are not yet modeled.")
 
 
 if __name__ == '__main__':

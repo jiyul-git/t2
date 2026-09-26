@@ -510,7 +510,7 @@ Acceptance requires:
 
 # F8-D4 preregistration — layer-aware call/fold EV
 
-Status: **SHADOW USER-VALIDATED; STRATEGY CONSUMER IMPLEMENTED, pending behavior validation.**
+Status: **USER-VALIDATED STRATEGY CONSUMER.**
 
 D3 proves that main and side equity can differ.  D4 must therefore avoid replacing the current
 response `eq` with one layer equity or with an unweighted average.
@@ -724,3 +724,133 @@ If a fingerprint moves, the next step is attribution against parent `720cc40`, a
 decision must have `layer_call_active=True`.
 
 Any changed decision outside that population rejects the implementation.
+
+
+---
+
+# F8-D5-A preregistration — proactive bet conditional outcomes
+
+Status: **IMPLEMENTED SHADOW; pending user validation. No strategy consumer.**
+
+D4 fixed the response side of a locked-main / live-side-pot state.  Proactive betting has a
+different failure mode.
+
+The live opponent is the only player who can fold to a new bet, but a fold does **not** award the
+locked main pot automatically.  The hero must still beat every locked all-in opponent eligible for
+that layer.
+
+Therefore the ordinary bluff identity
+
+```
+opponent folds -> hero wins the whole existing pot
+```
+
+is false in this state.
+
+## D5-A first scope
+
+D5-A intentionally models only:
+
+- one locked-all-in-or-more main-pot opponent(s);
+- exactly one active opponent;
+- hero faces no wager and has a planned bet;
+- two conditional target outcomes: **fold** and **call**.
+
+It does **not** yet assign a fold probability and does **not** model the target raise branch.
+
+Thus D5-A cannot alter strategy.
+
+## Conditional geometry
+
+`_project_bet_outcome_layers` applies the hero's incremental planned bet to a copied state.
+
+For target fold:
+
+- target's prior chips remain in layer amounts;
+- target is removed from eligibility in every layer;
+- hero's unmatched bet excess remains a sole-eligible upper layer, which is equivalent to an
+  uncalled-chip return.
+
+For target call:
+
+- target matches the hero's current-street contribution as far as its stack allows;
+- main and side layers are rebuilt from the resulting cumulative contributions;
+- any unmatched excess remains separately visible.
+
+Both outcomes are then valued with the same D3 seat-specific range pools and generic
+`_layer_investment_summary`.
+
+## Locked-main fixture
+
+Before the bet:
+
+```
+A locked all-in 100
+hero            100
+C active         100
+```
+
+Hero bets 20.  On an exact river fixture:
+
+- hero loses to A;
+- hero beats C.
+
+If C folds:
+
+```
+main 300 -> A/hero        hero equity 0
+uncalled 20 -> hero       hero equity 1
+
+gross return = 20
+bet cost     = 20
+conditional chip EV = 0
+```
+
+If C calls:
+
+```
+main 300 -> A/hero/C      hero equity 0
+side 40  -> hero/C        hero equity 1
+
+gross return = 40
+bet cost     = 20
+conditional chip EV = +20
+```
+
+The important invariant is that **C folding does not produce +300 from the locked main pot**.
+
+## Live shadow wiring
+
+After `update_plan` has produced the actual strategic intent, session computes D5-A only when:
+
+- a locked all-in range exists;
+- `tocall == 0`;
+- exactly one active opponent remains;
+- the current intent is a positive-size bet.
+
+The candidate bet cost uses the strategic intent size converted to chips before later execution
+presentation shaping.
+
+Intent provenance stores `bet_ev_shadow` with:
+
+- target seat;
+- hero bet cost;
+- target call cost;
+- fold projected layers/equities/summary;
+- call projected layers/equities/summary;
+- explicit flags that fold probability and raise branch are not modeled;
+- `strategy_consumer=False`.
+
+## D5-A acceptance
+
+`tools/audit_f8_sidepot.py` requires:
+
+- fold geometry = main A/H + sole-hero uncalled return;
+- call geometry = main A/H/C + side H/C;
+- fold conditional chip-EV = 0 in the locked-main fixture;
+- call conditional chip-EV = +20;
+- no fold probability;
+- no raise branch;
+- no strategy consumer.
+
+Acceptance also requires the frozen regression to remain exactly unchanged.
