@@ -225,12 +225,74 @@ def check_d2_locked_range_preservation():
     }
 
 
+
+def check_d3_layer_equities():
+    # Full board makes the fixture exact rather than Monte-Carlo noisy.
+    # Hero (seat 2) beats active seat 3 but loses to locked all-in seat 1.
+    hero = ['Ah', 'Kd']
+    board = ['2c', '7d', 'Jh', '4s', '3c']
+    layers = SE._decision_pot_layers(
+        {1: 20, 2: 50, 3: 50}, {}, folded=set(),
+        stacks={1: 0, 2: 100, 3: 100}, hero=2, dead=0)
+
+    active = {3: [('9s', '8s')]}
+    locked = {1: [('Jc', 'Jd')]}
+    eqs = SE._diagnostic_layer_equities(
+        hero, board, layers, active, locked, sims=40)
+
+    assert len(eqs) == 2, eqs
+    assert eqs[0]['opponents'] == [1, 3], eqs
+    assert eqs[0]['range_sources'] == {
+        '1': 'locked_allin', '3': 'active'}, eqs
+    assert eqs[0]['complete'] is True, eqs
+    assert eqs[0]['equity'] == 0.0, eqs
+
+    assert eqs[1]['opponents'] == [3], eqs
+    assert eqs[1]['range_sources'] == {'3': 'active'}, eqs
+    assert eqs[1]['complete'] is True, eqs
+    assert eqs[1]['equity'] == 1.0, eqs
+
+    # Missing range must stay explicitly unknown; never invent a fallback pool.
+    missing = SE._diagnostic_layer_equities(
+        hero, board, [layers[0]], active, {}, sims=40)
+    assert missing[0]['complete'] is False, missing
+    assert missing[0]['equity'] is None, missing
+    assert missing[0]['missing_ranges'] == [1], missing
+
+    # An unmatched upper layer before a call is not a current hero equity layer.
+    pending = SE._decision_pot_layers(
+        {1: 20, 2: 20, 3: 20}, {3: 30}, folded=set(),
+        stacks={1: 0, 2: 100, 3: 100}, hero=2, dead=0)
+    pending_eq = SE._diagnostic_layer_equities(
+        hero, board, pending, active, locked, sims=40)
+    assert pending_eq[-1]['hero_eligible'] is False, pending_eq
+    assert pending_eq[-1]['equity'] is None, pending_eq
+    assert pending_eq[-1]['reason'] == 'hero_not_currently_eligible', pending_eq
+
+    src = inspect.getsource(SE.HandRun._run)
+    assert "layer_equities = (" in src
+    assert "'layer_equities': layer_equities" in src
+    # D3 must not become a plan/action argument.
+    assert "layer_equities=layer_equities" not in src
+    assert "layer_equities = _pl" not in src
+
+    return {
+        'main_equity': eqs[0]['equity'],
+        'main_opponents': eqs[0]['opponents'],
+        'side_equity': eqs[1]['equity'],
+        'side_opponents': eqs[1]['opponents'],
+        'missing_is_unknown': missing[0]['equity'] is None,
+        'pending_is_unknown': pending_eq[-1]['equity'] is None,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
     gap = check_postflop_locked_opponent_gap()
     d1, pending = check_d1_provenance()
     d2 = check_d2_locked_range_preservation()
+    d3 = check_d3_layer_equities()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -240,9 +302,10 @@ def main():
     print("PASS F8-D1 decision-time pot-layer provenance is wired", d1)
     print("     pending upper layer keeps hero ineligible before call", pending[-1])
     print("PASS F8-D2 locked all-in opponent range is reconstructed", d2)
-    print("5/5 F8 diagnostic checks passed")
+    print("PASS F8-D3 layer-specific equity diagnostics are separated", d3)
+    print("6/6 F8 diagnostic checks passed")
     print("NOTE: the gap reproduction PASS confirms the architecture defect;")
-    print("      D1/D2 only preserve provenance and do not change strategy.")
+    print("      D1-D3 only preserve/compute diagnostics and do not change strategy.")
 
 
 if __name__ == '__main__':

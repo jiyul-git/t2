@@ -260,7 +260,7 @@ No production strategic coefficient is changed in F8-D0 through F8-D3.
 
 # F8-D1 implementation — decision-time pot-layer provenance
 
-Status: **IMPLEMENTED; pending user validation. No strategy consumer added.**
+Status: **USER-VALIDATED. No strategy consumer added.**
 
 A new `session._decision_pot_layers(...)` helper derives read-only pot geometry from:
 
@@ -335,7 +335,7 @@ the locked all-in opponent's range before layer equity can be computed.
 
 # F8-D2 implementation — locked all-in opponent range preservation
 
-Status: **IMPLEMENTED; pending user validation. No strategy consumer added.**
+Status: **USER-VALIDATED. No strategy consumer added.**
 
 D1 can now identify a previous-street all-in opponent in a pot layer, but the current
 postflop strategy pools still contain only current `Round.live()` seats.
@@ -407,3 +407,100 @@ Acceptance requires:
 
 - F8 diagnostic: 5/5;
 - frozen regression remains exactly equal to baseline rev `2a53584`.
+
+
+---
+
+# F8-D3 implementation — layer-specific equity diagnostics
+
+Status: **IMPLEMENTED; pending user validation. No strategy consumer added.**
+
+D3 combines the two information structures established earlier:
+
+- D1 pot layers and eligibility;
+- D2 seat-keyed active and locked-all-in opponent range pools.
+
+`session._diagnostic_layer_equities` computes a separate showdown equity for each layer in which
+the hero is **currently eligible**.
+
+For each diagnostic layer it records:
+
+- layer index/level/amount;
+- exact opponent seat set;
+- whether each range came from the active or locked-all-in map;
+- missing range seats;
+- completeness;
+- equity and simulation count.
+
+## No invented fallback
+
+If any eligible opponent range is missing, D3 records:
+
+```
+complete = False
+equity = None
+reason = missing_opponent_range
+```
+
+It does not substitute a population 35% range or duplicate another opponent's pool.
+
+## Pending unmatched wagers
+
+A decision-time upper layer created by an unmatched wager can have
+`hero_eligible=False`.
+
+D3 deliberately records no equity for that layer.  Treating the current upper layer as though the
+hero had already called would confuse current-state provenance with a hypothetical action.
+
+D4 will build explicit fold/call hypothetical states before EV is calculated.
+
+## Diagnostic example
+
+With:
+
+- main layer opponents = locked A + active C;
+- side layer opponent = active C;
+- hero currently eligible for both;
+
+D3 calls the existing canonical `bot.equity_vs_combos` implementation with separate pools:
+
+```
+main equity = hero vs [range(A), range(C)]
+side equity = hero vs [range(C)]
+```
+
+No union range is used for this diagnostic.
+
+## Isolation
+
+D3 runs only when a locked all-in opponent is present, so ordinary pots incur no additional
+simulation work.
+
+The result is written only to intent provenance as `layer_equities`.
+
+It is not passed to:
+
+- `update_plan`;
+- `act_with_plan`;
+- response thresholds;
+- sizing;
+- execution.
+
+## D3 acceptance
+
+`tools/audit_f8_sidepot.py` adds an exact full-board fixture where:
+
+- hero loses the main pot to the locked all-in range;
+- hero beats the active opponent in the side pot.
+
+Expected diagnostics:
+
+- main equity = 0.0 vs seats [locked, active];
+- side equity = 1.0 vs [active];
+- missing opponent range -> equity None;
+- current unmatched/ineligible layer -> equity None.
+
+Acceptance requires:
+
+- F8 diagnostic: 6/6;
+- frozen regression: exact fingerprint match to baseline rev `2a53584`.

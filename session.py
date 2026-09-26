@@ -387,6 +387,70 @@ def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
     return out
 
 
+def _diagnostic_layer_equities(hero, board, pot_layers,
+                                  active_ranges, locked_ranges, sims=600):
+    """F8-D3: 현재 참가 가능한 pot layer별 showdown equity 진단.
+
+    기록 전용이다. 결과를 plan/action/sizing에 넘기지 않는다.
+
+    range가 하나라도 없으면 임의 fallback을 만들지 않고 complete=False,
+    equity=None 으로 남긴다. hero_eligible=False인 pending wager layer도
+    현재 상태의 equity로 해석하지 않는다. D4가 fold/call 가상 상태를
+    따로 구성할 때 처리한다.
+    """
+    active_ranges = dict(active_ranges or {})
+    locked_ranges = dict(locked_ranges or {})
+    out = []
+
+    for idx, layer in enumerate(pot_layers or []):
+        eligible = list(layer.get('eligible_seats') or [])
+        opps = sorted((x for x in eligible if x != hero), key=lambda x: str(x))
+        missing = []
+        pools = []
+        sources = {}
+
+        for o in opps:
+            if o in active_ranges and active_ranges.get(o):
+                pools.append(list(active_ranges[o]))
+                sources[str(o)] = 'active'
+            elif o in locked_ranges and locked_ranges.get(o):
+                pools.append(list(locked_ranges[o]))
+                sources[str(o)] = 'locked_allin'
+            else:
+                missing.append(o)
+
+        row = {
+            'idx': idx,
+            'level': layer.get('level'),
+            'amount': layer.get('amount'),
+            'hero_eligible': bool(layer.get('hero_eligible')),
+            'opponents': opps,
+            'range_sources': sources,
+            'missing_ranges': missing,
+            'complete': False,
+            'equity': None,
+            'sims': int(sims),
+        }
+
+        if not row['hero_eligible']:
+            row['reason'] = 'hero_not_currently_eligible'
+        elif missing:
+            row['reason'] = 'missing_opponent_range'
+        elif not opps:
+            row['complete'] = True
+            row['equity'] = 1.0
+            row['reason'] = 'sole_eligible'
+        else:
+            row['complete'] = True
+            row['equity'] = round(
+                float(bot.equity_vs_combos(
+                    hero, board, pools, sims=int(sims))), 6)
+            row['reason'] = 'computed'
+        out.append(row)
+
+    return out
+
+
 def _barrel_count(full_meta, current_meta, seat, current_street):
     """상대가 공격한 **postflop street 수**. 현재 street도 포함."""
     streets = {
@@ -1295,6 +1359,15 @@ class HandRun:
                     locked_opp_ranges[o] = _lr
                     locked_opp_range_meta[o] = _lm
 
+                # F8-D3: main/side layer별 equity를 진단값으로만 계산한다.
+                # locked opponent가 없는 일반 팟에서는 비용조차 추가하지 않는다.
+                # 이 결과는 아래 intent에만 기록되고 전략 함수에는 전달되지 않는다.
+                layer_equities = (
+                    _diagnostic_layer_equities(
+                        h.hole[s], board, _pot_layers,
+                        opp_ranges, locked_opp_ranges, sims=600)
+                    if locked_opp_ranges else [])
+
                 # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
                 # 흔들려도 판단이 바뀌면 안 되므로 여기서 순서를 확정한다.
                 # 이걸 빼면 같은 시드가 재현되지 않는다 (rng.choice 가 순서에 의존).
@@ -1393,6 +1466,8 @@ class HandRun:
                         'locked_opp_range_stack_bb': {
                             str(k): locked_opp_range_meta[k].get('stack_bb')
                             for k in locked_opp_ranges},
+                        # F8-D3 provenance only. Layer equity is not a strategy input.
+                        'layer_equities': layer_equities,
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),
