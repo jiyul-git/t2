@@ -9,7 +9,7 @@ UI는 엔진 감사와 별도 최신선으로 관리한다.
 - **Only active UI line / current playable UI:**
   `chatgpt/ui-bot-pipeline-20260927`
 - Current verified UI head at this checkpoint:
-  `f9a4ed2`
+  `9230929`
 
 The user has designated this UI line as the latest version.
 Do not recover older UI branches again unless a specific regression requires historical comparison.
@@ -38,8 +38,8 @@ Character/portrait assets and assignment logic remain frozen unless the user exp
 
 Current active values after the latest user-visible adjustment:
 
-- 9 o'clock chip lane: `x=22%, y=46%`;
-- 3 o'clock chip lane: `x=78%, y=46%`;
+- 9 o'clock chip lane: `x=22%, y=51%`;
+- 3 o'clock chip lane: `x=78%, y=51%`;
 - side action bubbles retain their dedicated side-seat vertical rule;
 - bubble triangle tail overlaps the body by 1px more than before to avoid a visible gap.
 
