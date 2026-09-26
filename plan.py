@@ -170,7 +170,7 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
         seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
     rng = random.Random(seed)
     hs = bot.eval7(hero + board)
-    win = tie = run = 0
+    share = 0.0; run = 0
     for _ in range(sims):
         used = set(dead); opps = []; ok = True
         for pool in pools:
@@ -183,10 +183,9 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
         if not ok:
             continue
         run += 1
-        best = max(bot.eval7(o + board) for o in opps)
-        if hs > best: win += 1
-        elif hs == best: tie += 1
-    return (win + tie*0.5) / max(1, run)
+        opp_scores = [bot.eval7(o + board) for o in opps]
+        share += bot._showdown_share(hs, opp_scores)
+    return share / max(1, run)
 
 
 def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
