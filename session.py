@@ -550,6 +550,69 @@ def _layer_call_summary(call_cost, projected_layers, projected_equities):
     }
 
 
+def _perceived_fold_to_bet_probability(profile, opp_est, street):
+    """F8-D5-B shadow: 기존 read 체계로부터 target fold-to-bet 확률을 복원.
+
+    새 prior/계수를 만들지 않는다.
+      baseline = reads.PRIOR['fold_to_bet']
+      exploit = baseline + street_gap(read_opponent(...), street)
+      final    = blend(baseline, exploit, read_weight)
+
+    read_opponent 내부의 attention/range_read/adaptability/data 게이트를 그대로 쓴다.
+    """
+    base = float(RD.PRIOR.get('fold_to_bet', 0.52))
+    if not opp_est:
+        return round(base, 6), {
+            'baseline': base, 'read_weight': 0.0, 'street_gap': 0.0}
+    rd = PS.read_opponent(profile, opp_est)
+    w = float(rd.get('w', 0.0) or 0.0)
+    gap = float(PS.street_gap(rd, street) or 0.0)
+    seen = max(0.0, min(1.0, base + gap))
+    p = PS.blend(base, seen, w) if w > 0 else base
+    return round(max(0.0, min(1.0, p)), 6), {
+        'baseline': base,
+        'read_weight': round(w, 6),
+        'street_gap': round(gap, 6),
+        'seen_probability': round(seen, 6),
+    }
+
+
+def _combine_fold_call_ev(p_fold, fold_summary, call_summary, raise_possible):
+    """F8-D5-B shadow expected EV.
+
+    fold/call가 exhaustive일 때만 합친다. raise가 가능한 스팟은 incomplete로
+    남긴다 — 현재 코드에는 'bet을 맞고 raise하는 빈도' 전용 관측이 없으므로
+    aggression/fold-to-raise 등 다른 사건으로 대체하지 않는다.
+    """
+    pf = max(0.0, min(1.0, float(p_fold or 0)))
+    if raise_possible:
+        return {
+            'complete': False,
+            'reason': 'raise_branch_unmodeled',
+            'p_fold': round(pf, 6),
+            'p_call': None,
+            'expected_chip_ev': None,
+        }
+    if not (fold_summary and call_summary
+            and fold_summary.get('complete') and call_summary.get('complete')):
+        return {
+            'complete': False,
+            'reason': 'conditional_ev_incomplete',
+            'p_fold': round(pf, 6),
+            'p_call': round(1.0 - pf, 6),
+            'expected_chip_ev': None,
+        }
+    ev = (pf * float(fold_summary['chip_ev'])
+          + (1.0 - pf) * float(call_summary['chip_ev']))
+    return {
+        'complete': True,
+        'reason': 'fold_call_exhaustive',
+        'p_fold': round(pf, 6),
+        'p_call': round(1.0 - pf, 6),
+        'expected_chip_ev': round(ev, 6),
+    }
+
+
 def _project_bet_outcome_layers(prior_contrib, street_contrib, folded, stacks,
                                 hero, target, bet_increment, target_action,
                                 dead=0):
@@ -1634,6 +1697,13 @@ class HandRun:
                             _hero_bet_cost, _fold_layers, _fold_eq)
                         _call_sum_b = _layer_investment_summary(
                             _hero_bet_cost2, _call_layers_b, _call_eq_b)
+                        _pfold, _pfold_meta = _perceived_fold_to_bet_probability(
+                            ax, _est, street)
+                        # target가 call price를 낸 뒤 칩이 남으면 raise branch가 존재한다.
+                        _target_stack_before = float(r2.stacks.get(_target, 0) or 0)
+                        _raise_possible = (_target_stack_before - _target_call_cost) > 0
+                        _bet_expected = _combine_fold_call_ev(
+                            _pfold, _fold_sum, _call_sum_b, _raise_possible)
                         bet_ev_shadow = {
                             'target': _target,
                             'bet_cost': _hero_bet_cost,
@@ -1648,8 +1718,12 @@ class HandRun:
                                 'layer_equities': _call_eq_b,
                                 'summary': _call_sum_b,
                             },
+                            'fold_probability': _pfold,
+                            'fold_probability_meta': _pfold_meta,
+                            'raise_possible': bool(_raise_possible),
+                            'expected': _bet_expected,
                             'raise_branch_modeled': False,
-                            'fold_probability_modeled': False,
+                            'fold_probability_modeled': True,
                             'strategy_consumer': False,
                         }
 

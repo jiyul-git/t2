@@ -730,7 +730,7 @@ Any changed decision outside that population rejects the implementation.
 
 # F8-D5-A preregistration — proactive bet conditional outcomes
 
-Status: **IMPLEMENTED SHADOW; pending user validation. No strategy consumer.**
+Status: **USER-VALIDATED SHADOW. No strategy consumer.**
 
 D4 fixed the response side of a locked-main / live-side-pot state.  Proactive betting has a
 different failure mode.
@@ -854,3 +854,108 @@ Intent provenance stores `bet_ev_shadow` with:
 - no strategy consumer.
 
 Acceptance also requires the frozen regression to remain exactly unchanged.
+
+
+---
+
+# F8-D5-B preregistration — perceived fold probability and exhaustive bet EV
+
+Status: **IMPLEMENTED SHADOW; pending user validation. No strategy consumer.**
+
+D5-A provides `EV | fold` and `EV | call`.  D5-B determines when those two branches can be
+combined without inventing an unobserved raise model.
+
+## Fold probability source
+
+No new prior or tuning coefficient is introduced.
+
+D5-B reuses the existing opponent-read architecture:
+
+```
+baseline = reads.PRIOR['fold_to_bet']        # currently 0.52
+read     = read_opponent(profile, opp_est)
+seen     = baseline + street_gap(read, street)
+p_fold   = blend(baseline, seen, read['w'])
+```
+
+`read_opponent` already gates information through observation/data/use and street-specific
+frequency perception.  If no usable opponent estimate exists, the result is exactly the existing
+population prior.
+
+This is the same event being modeled: **target faces a bet and folds**.
+
+D5-B deliberately does not use:
+
+- fold-to-raise;
+- generic aggression;
+- bluff frequency;
+
+as substitutes for a target raise probability.
+
+## Raise branch boundary
+
+The codebase currently has no dedicated postflop statistic for:
+
+```
+target faces bet -> target raises
+```
+
+Therefore D5-B does not invent one.
+
+For the first complete population, target continuation must be call-only because matching the
+planned bet exhausts its remaining stack.  Then:
+
+```
+P(call) = 1 - P(fold)
+EV(bet) = P(fold) * EV|fold + P(call) * EV|call
+```
+
+If target would retain any chips after matching the bet, a raise branch remains possible and
+expected bet EV is explicitly:
+
+```
+complete = False
+reason = raise_branch_unmodeled
+expected_chip_ev = None
+```
+
+## Fixed arithmetic fixture
+
+Using D5-A conditional results:
+
+```
+EV|fold = 0
+EV|call = +20
+population fold prior = 0.52
+```
+
+and a call-only/all-in continuation:
+
+```
+EV(bet) = 0.52*0 + 0.48*20 = +9.6
+```
+
+The same fixture with chips remaining behind must return unknown, not +9.6.
+
+## Live shadow
+
+For every D5-A eligible live state, provenance now also records:
+
+- perceived fold probability + source metadata;
+- whether target can still raise after matching;
+- combined expected EV when fold/call are exhaustive;
+- explicit incomplete reason otherwise.
+
+Still no strategy function consumes this value.
+
+## D5-B acceptance
+
+`tools/audit_f8_sidepot.py` requires:
+
+- no-read fold probability equals the existing 0.52 prior exactly;
+- exhaustive all-in continuation yields expected EV +9.6 in the fixed fixture;
+- raise-capable continuation stays unknown;
+- no invented raise frequency;
+- no strategy consumer.
+
+Frozen regression must remain unchanged.

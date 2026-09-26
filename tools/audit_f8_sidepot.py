@@ -488,6 +488,47 @@ def check_d5_bet_outcome_shadow():
     }
 
 
+
+def check_d5b_fold_probability_and_exhaustive_ev():
+    # No estimate -> exact existing population prior.
+    neutral = {'type': 'TAG', 'aggr': 5, 'gamble': 5, 'bluff': 5}
+    p0, meta0 = SE._perceived_fold_to_bet_probability(
+        neutral, None, 'river')
+    assert p0 == SE.RD.PRIOR['fold_to_bet'] == 0.52, (p0, meta0)
+
+    # Reuse the already-preregistered D5-A conditional values:
+    # fold EV 0, call EV +20.
+    fs = {'complete': True, 'chip_ev': 0.0}
+    cs = {'complete': True, 'chip_ev': 20.0}
+
+    # If continuation is all-in/call-only, fold/call are exhaustive.
+    ex = SE._combine_fold_call_ev(p0, fs, cs, raise_possible=False)
+    assert ex['complete'] is True, ex
+    assert ex['p_fold'] == 0.52, ex
+    assert ex['p_call'] == 0.48, ex
+    assert ex['expected_chip_ev'] == 9.6, ex
+
+    # If target has chips to raise, do not invent a raise frequency from aggression
+    # or fold-to-raise.  Expected EV must remain unknown.
+    blocked = SE._combine_fold_call_ev(p0, fs, cs, raise_possible=True)
+    assert blocked['complete'] is False, blocked
+    assert blocked['reason'] == 'raise_branch_unmodeled', blocked
+    assert blocked['expected_chip_ev'] is None, blocked
+
+    src = inspect.getsource(SE.HandRun._run)
+    assert "_perceived_fold_to_bet_probability(" in src
+    assert "_combine_fold_call_ev(" in src
+    assert "'strategy_consumer': False" in src
+
+    return {
+        'population_prior_fold': p0,
+        'allin_continue_expected_ev': ex['expected_chip_ev'],
+        'raise_possible_is_unknown': blocked['expected_chip_ev'] is None,
+        'raise_frequency_invented': False,
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -497,6 +538,7 @@ def main():
     d3 = check_d3_layer_equities()
     d4 = check_d4_call_ev_shadow()
     d5 = check_d5_bet_outcome_shadow()
+    d5b = check_d5b_fold_probability_and_exhaustive_ev()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -509,8 +551,9 @@ def main():
     print("PASS F8-D3 layer-specific equity diagnostics are separated", d3)
     print("PASS F8-D4 layer-aware call/fold consumer is isolated from raises", d4)
     print("PASS F8-D5-A proactive bet fold/call outcomes are layer-separated", d5)
-    print("8/8 F8 diagnostic checks passed")
-    print("NOTE: D5-A is shadow only: fold probability and raise continuation are not yet modeled.")
+    print("PASS F8-D5-B existing fold read combines EV only when raise is impossible", d5b)
+    print("9/9 F8 diagnostic checks passed")
+    print("NOTE: D5-B remains shadow-only; raise-capable spots stay incomplete.")
 
 
 if __name__ == '__main__':
