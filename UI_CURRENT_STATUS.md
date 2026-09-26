@@ -6,110 +6,65 @@ UI는 엔진 감사와 별도 최신선으로 관리한다.
 
 - Engine / architecture source of truth:
   `chatgpt/decision-architecture-audit-20260926`
-- UI recovery / integration branch:
+- **Only active UI line / current playable UI:**
   `chatgpt/ui-recovery-20260927`
-- Richest historical UI lineage to recover from:
-  `chatgpt/fix-side-seat-overlay-20260924` @ `18e68ce`
-- Earlier visual integration:
-  `integration/ui-v49-money-jump-20260920`
-- Old snapshot only:
-  `ui-v33-snapshot-20260920`
+- Current verified UI head at this checkpoint:
+  `9b764b0`
 
-Do **not** treat the historical UI branch as the engine source of truth.
-It contains older engine/session commits. UI changes must be ported onto the current engine branch.
+The user has designated this UI line as the latest version.
+Do not recover older UI branches again unless a specific regression requires historical comparison.
 
-## Current UI already present on engine branch
+## Current UI state
 
-- play-only local server at `http://127.0.0.1:8765`
-- no play key / no watch mode
-- current action/history/gameplay fixes on the audit branch
-- hanok background
-- teal felt / changsal card-back visual layer
-- 9 portrait atlas
-- portrait gaze
-- hero portrait
-- recursive web asset copy into the run directory
+Already integrated on the active UI line:
 
-## Historical UI changes still missing or needing reconciliation
+- lobby/profile/history flow;
+- play-only local table UI;
+- current new-game flow;
+- compact top status controls;
+- reduced table viewport;
+- 9-max fixed-seat presentation;
+- hanok/background/card-back layer;
+- approved portrait/character layer;
+- side-seat chip separation logic;
+- side-seat action-bubble separation logic;
+- action-bubble tail connection fix;
+- no fullscreen restore;
+- no watch-mode restore.
 
-### A. Side-seat/table layout — RECOVER
+Character/portrait assets and assignment logic remain frozen unless the user explicitly asks to change them.
 
-Historical commits include:
+## Side-seat checkpoint
 
-- `98c1ea7` separate side-seat chips from board cards
-- `9c43c1c` keep side-seat action bubbles clear of cards
-- `7860961` move bot seats onto outside rail
-- `4ad5516` / `7a99aa7` refine side-seat chip placement
-- `eaa8a3f` shrink table inward along marked arrows
+Current active values after the latest user-visible adjustment:
 
-These are user-visible layout fixes and must be checked against the current 9-max screen before porting.
+- 9 o'clock chip lane: `x=22%, y=46%`;
+- 3 o'clock chip lane: `x=78%, y=46%`;
+- side action bubbles retain their dedicated side-seat vertical rule;
+- bubble triangle tail overlaps the body by 1px more than before to avoid a visible gap.
 
-### B. Header/history/table viewport — RECOVER / VERIFY
+Further chip/bubble movement should be based on an actual frame where the relevant
+3/9 o'clock action is visible. Do not infer action bubbles from seat labels or stack text.
 
-- `9f49e43` fold history controls into top bar
-- `cf234ca` remove log strip and use dynamic viewport height
-- `eac1a95` compact top status bar
-- `002676e` compact top controls
-- final asset/layout bumps through `c2c7939`
+## Historical UI branches — deletion candidates
 
-Current branch still has older top/log layout, so this lineage is not fully integrated.
+The following branches are no longer active UI sources after the user confirmed
+`chatgpt/ui-recovery-20260927` as latest:
 
-### C. Lobby / tournament selection — SEPARATE FEATURE SET
+- `chatgpt/fix-side-seat-overlay-20260924`
+- `chatgpt/lobby-shell-20260924`
+- `chatgpt/avatar-layer-system-v1-20260924`
+- `chatgpt/fix-newgame-fn-20260924`
+- `codex/hanok-9max-visuals-20260924`
+- `integration/ui-v49-money-jump-20260920`
+- `ui-v33-snapshot-20260920`
 
-- `66aaca8` lobby route and tournament catalog API
-- `777e221` lobby shell
-- `b4bd8b9` / `d7bdc7f` tournament lobby and selection
-- `1be3df7` return-to-lobby action
-
-This changes routing/server behavior and must be recovered separately from table-only visual fixes.
-
-### D. Profile / deck / theme preferences — SEPARATE FEATURE SET
-
-- profile/settings lineage: `239705d` through `6be1ee5`
-- card-back themes: `5a0dfa1`, `8687239`
-- airport day/night themes: `4f7b62a`, `b0b14c2`, `eb12698`
-- portrait crop/eye fixes: `b3e594e`, `50bb142`
-
-The current branch restored the earlier 9-portrait layer but not all later corrections/preferences.
-
-### E. Fullscreen — DO NOT RECOVER
-
-- `aa64cb6` added fullscreen
-- `932d93e` removed fullscreen
-
-The historical lineage ends with fullscreen removed. Do not resurrect it.
-
-### F. New-game hotfix — ENGINE/API, VERIFY BEFORE PORT
-
-- `89a46a4` avoids undefined function in new-game sidecar backup
-
-This is not a pure visual change. Compare against current `live2.py` before deciding whether it is still needed.
-
-## Recovery order
-
-1. lock current engine HEAD;
-2. recover table-only layout fixes A+B on the UI recovery branch;
-3. visual regression / mobile 9-max check;
-4. recover portrait corrections and preference features D;
-5. decide separately whether lobby C is still desired;
-6. verify new-game hotfix F against current engine;
-7. only after UI verification, port the verified UI commit(s) back to the engine branch.
+Their useful history is already represented by commits and the current recovery line.
+Do not create replacement UI branches for small fixes.
 
 ## Rule
 
-A UI commit is not "latest" merely because its branch name is newer.
-`UI_CURRENT_STATUS.md` + `chatgpt/ui-recovery-20260927` define the current UI integration line.
-
-
-## Branch discipline
-
-This UI line is the only active UI integration branch.
-
-- active: `chatgpt/ui-recovery-20260927`
-- historical UI branches are read-only evidence/source material;
-- do not branch again for each individual UI fix;
-- recover multiple related UI fixes as commits on this branch;
-- after verification, port the verified UI result back to the engine line;
-- then mark historical UI branches as deletion candidates.
-
-See `BRANCH_POLICY.md`.
+- Active engine line: `chatgpt/decision-architecture-audit-20260926`
+- Active UI line: `chatgpt/ui-recovery-20260927`
+- Branch cleanup is part of phase closure.
+- Historical branches are not to be used as runtime source-of-truth.
