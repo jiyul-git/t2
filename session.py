@@ -57,6 +57,8 @@ def _merge_pf_seed(prev, new):
         'opp_ranges_n': dict(out.get('pf_opp_ranges_n') or {}),
         'opp_ranges_sig': dict(out.get('pf_opp_ranges_sig') or {}),
         'opp_range_meta': dict(out.get('pf_opp_range_meta') or {}),
+        'call_ev_shadow': dict(out.get('pf_call_ev_shadow') or {})
+                          if out.get('pf_call_ev_shadow') is not None else None,
         'stack_bb': out.get('pf_stack_bb'),
     })
     out['pf_line'] = line
@@ -1382,6 +1384,47 @@ class HandRun:
                     _pf_opp_ranges[_o] = _rr
                     _pf_opp_range_meta[_o] = _rm
 
+            # F8-D6-C: objective call-EV shadow only for the same pure short-shove
+            # population that P6 already routes to calloff_decision:
+            # aggressor all-in + no legal raise responder + positive call price.
+            _pf_call_ev_shadow = None
+            _pf_pure_calloff = bool(
+                aggressor is not None
+                and rnd.stacks.get(aggressor, 1) <= 0
+                and not rnd.can_raise(s)
+                and tc > 0)
+            if _pf_pure_calloff and _pf_opp_ranges:
+                _pf_call_layers, _pf_call_cost = _project_call_layers(
+                    {}, rnd.contrib, set(rnd.folded), rnd.stacks,
+                    s, tc, dead=ante_pot)
+                _pf_locked_ranges = {
+                    o: rr for o, rr in _pf_opp_ranges.items()
+                    if float(rnd.stacks.get(o, 0) or 0) <= 0}
+                _pf_active_ranges = {
+                    o: rr for o, rr in _pf_opp_ranges.items()
+                    if float(rnd.stacks.get(o, 0) or 0) > 0}
+                _pf_call_layer_eq = _diagnostic_layer_equities(
+                    s, h.hole[s], [], _pf_call_layers,
+                    _pf_active_ranges, _pf_locked_ranges, sims=800)
+                _pf_call_sum = _layer_call_summary(
+                    _pf_call_cost, _pf_call_layers, _pf_call_layer_eq)
+                _pf_call_ev_shadow = {
+                    'pure_calloff': True,
+                    'complete': bool(_pf_call_sum.get('complete')),
+                    'call_cost': _pf_call_sum.get('call_cost'),
+                    'contestable_after_call': _pf_call_sum.get(
+                        'contestable_after_call'),
+                    'gross_return': _pf_call_sum.get('gross_return'),
+                    'call_chip_ev': _pf_call_sum.get('call_chip_ev'),
+                    'effective_equity': _pf_call_sum.get('effective_equity'),
+                    'breakeven_equity': _pf_call_sum.get('breakeven_equity'),
+                    'missing_equity_layers': list(
+                        _pf_call_sum.get('missing_equity_layers') or []),
+                    'layers': _pf_call_layers,
+                    'layer_equities': _pf_call_layer_eq,
+                    'strategy_consumer': False,
+                }
+
             _opp_est_pf = (RD.perceived_profile(
                 h.book, self._pid(s), self._pid(aggressor), ax,
                 random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
@@ -1456,7 +1499,8 @@ class HandRun:
                     prior_pf=((getattr(h, 'pf_seed', {}) or {}).get(s)),
                     pot_layers=_pf_pot_layers,
                     opp_ranges=_pf_opp_ranges,
-                    opp_range_meta=_pf_opp_range_meta)
+                    opp_range_meta=_pf_opp_range_meta,
+                    call_ev_shadow=_pf_call_ev_shadow)
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]

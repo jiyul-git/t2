@@ -1682,7 +1682,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  opener_allin=False, money_open=None, can_check=False,
                  can_raise=True, pot_bb=None, to_call_bb=None,
                  prior_pf=None, pot_layers=None, opp_ranges=None,
-                 opp_range_meta=None):
+                 opp_range_meta=None, call_ev_shadow=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -1776,6 +1776,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             str(k): _range_sig(v) for k, v in (opp_ranges or {}).items()},
         'pf_opp_range_meta': {
             str(k): dict(v) for k, v in (opp_range_meta or {}).items()},
+        # F8-D6-C objective preflop call-EV shadow. No action consumer yet.
+        'pf_call_ev_shadow': (
+            dict(call_ev_shadow) if call_ev_shadow is not None else None),
         # D2 provenance: later streets must not rebuild an all-in player's
         # preflop range from current stack=0.
         'pf_stack_bb': float(bb or 0.0),

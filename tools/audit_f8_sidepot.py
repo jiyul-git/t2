@@ -870,6 +870,87 @@ def check_d6t_multiway_tie_share():
     }
 
 
+
+def check_d6c_preflop_layer_equity_call_shadow():
+    # Pure calloff geometry: hero can reach 20 total; two opponents are already
+    # all-in at 20 and 50.  Opponent excess above hero's reach is a sole-eligible
+    # upper layer and cannot improve hero call EV.
+    before = SE._decision_pot_layers(
+        {}, {1: 10, 2: 20, 3: 50}, set(),
+        {1: 10, 2: 0, 3: 0}, hero=1, dead=0)
+    call_layers, cost = SE._project_call_layers(
+        {}, {1: 10, 2: 20, 3: 50}, set(),
+        {1: 10, 2: 0, 3: 0}, 1, 10, dead=0)
+
+    assert cost == 10.0, cost
+    assert [(x['amount'], x['eligible_seats'], x['hero_eligible'])
+            for x in call_layers] == [
+        (60.0, [1, 2, 3], True),
+        (30.0, [3], False),
+    ], call_layers
+
+    # Exact seat-keyed singleton ranges; empty board exercises the real preflop
+    # Monte Carlo path, not a postflop shortcut.
+    hero = ['As', 'Ah']
+    locked = {
+        2: [('Ks', 'Kh')],
+        3: [('Qs', 'Qh')],
+    }
+    eqs = SE._diagnostic_layer_equities(
+        1, hero, [], call_layers, {}, locked, sims=1200)
+    assert eqs[0]['complete'] is True, eqs
+    assert eqs[0]['opponents'] == [2, 3], eqs
+    assert 0.0 < eqs[0]['equity'] < 1.0, eqs
+    assert eqs[1]['hero_eligible'] is False, eqs
+    assert eqs[1]['equity'] is None, eqs
+
+    summary = SE._layer_call_summary(cost, call_layers, eqs)
+    assert summary['complete'] is True, summary
+    assert summary['contestable_after_call'] == 60.0, summary
+    assert abs(
+        summary['breakeven_equity'] - (10.0/60.0)) < 1e-6, summary
+    assert abs(
+        summary['gross_return']
+        - 60.0 * eqs[0]['equity']) < 1e-5, (summary, eqs)
+
+    psrc = inspect.getsource(SE.PL.preflop_plan)
+    assert "'pf_call_ev_shadow'" in psrc
+    ssrc = inspect.getsource(SE.HandRun._run)
+    for needle in (
+        "_pf_pure_calloff = bool(",
+        "and not rnd.can_raise(s)",
+        "_project_call_layers(",
+        "_diagnostic_layer_equities(",
+        "_layer_call_summary(",
+        "'strategy_consumer': False",
+        "call_ev_shadow=_pf_call_ev_shadow",
+    ):
+        assert needle in ssrc, needle
+
+    # Still no action consumer in preflop policy.
+    csrc = inspect.getsource(SE.pf.calloff_decision)
+    assert "call_ev" not in csrc
+    assert "effective_equity" not in csrc
+    assert "breakeven_equity" not in csrc
+
+    return {
+        'pre_action_layers': [
+            (x['amount'], x['eligible_seats'], x['hero_eligible'])
+            for x in before],
+        'post_call_layers': [
+            (x['amount'], x['eligible_seats'], x['hero_eligible'])
+            for x in call_layers],
+        'main_opponents': eqs[0]['opponents'],
+        'main_equity': eqs[0]['equity'],
+        'call_cost': cost,
+        'contestable_after_call': summary['contestable_after_call'],
+        'breakeven_equity': summary['breakeven_equity'],
+        'call_chip_ev': summary['call_chip_ev'],
+        'empty_board_equity_engine': True,
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -886,6 +967,7 @@ def main():
     d6a = check_d6a_preflop_layer_provenance()
     d6b = check_d6b_seat_keyed_preflop_ranges()
     d6t = check_d6t_multiway_tie_share()
+    d6c = check_d6c_preflop_layer_equity_call_shadow()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -905,8 +987,9 @@ def main():
     print("PASS F8-D6-A preflop reuses decision-time pot-layer provenance", d6a)
     print("PASS F8-D6-B preflop preserves seat-keyed perceived ranges", d6b)
     print("PASS F8-D6-T multiway ties use exact showdown pot share", d6t)
-    print("15/15 F8 diagnostic checks passed")
-    print("NOTE: D6-T changes only multiway tie equity accounting; D6-C is still shadow-only next.")
+    print("PASS F8-D6-C preflop pure-calloff layer equity/EV stays shadow-only", d6c)
+    print("16/16 F8 diagnostic checks passed")
+    print("NOTE: D6-C computes objective chip-EV only; calloff_cap still owns action.")
 
 
 if __name__ == '__main__':

@@ -1368,7 +1368,7 @@ without introducing a second equity engine.
 
 # F8-D6-T prerequisite — exact multiway showdown share
 
-Status: **IMPLEMENTED; pending targeted + regression validation.**
+Status: **USER-VALIDATED. Frozen regression unchanged.**
 
 Before D6-C could use the shared equity engine for multiway preflop layers, an existing global
 equity defect was found.
@@ -1421,3 +1421,124 @@ If fingerprints move, the baseline is not updated automatically.  Changes must f
 to decisions whose equity sample contains a multiway first-place tie.
 
 D6-C does not proceed until D6-T targeted verification passes.
+
+
+---
+
+# F8-D6-C — preflop layer equity and pure-calloff EV shadow
+
+Status: **IMPLEMENTED; pending user validation. No strategy consumer.**
+
+D6-C combines the two previously validated inputs:
+
+- D6-A pot-layer geometry;
+- D6-B seat-keyed perceived preflop ranges.
+
+The canonical D6-T equity engine is used with `board=[]`, so the remaining five board cards are
+Monte Carlo sampled normally.
+
+## First scope: pure short-shove calloff only
+
+D6-C deliberately does **not** value every preflop call.
+
+Its live shadow activates only when the same P6 conditions identify a terminal short-shove
+calloff:
+
+```
+aggressor exists
+aggressor stack == 0
+Round.can_raise(hero) == False
+to_call > 0
+```
+
+In this state there is no live responder capable of creating a later preflop side action.  The
+decision tree is fold versus call, so immediate showdown layer EV is meaningful.
+
+Hero-stack-exhausting calls with other live responders remain outside D6-C even though the old
+`calloff_cap` may handle them.  Their main-pot equity can change when those responders later fold
+or continue, so they need a separate continuation model.
+
+## Calculation
+
+D6-C projects the exact call with the shared `_project_call_layers`.
+
+Then opponent ranges are split only for provenance:
+
+- stack == 0 -> locked range;
+- stack > 0 -> active range.
+
+`_diagnostic_layer_equities(hero, board=[], ...)` computes equity separately for every
+hero-eligible layer.
+
+The shared `_layer_call_summary` then records:
+
+```
+call_cost
+contestable_after_call
+gross_return = Σ layer_amount * layer_equity
+call_chip_ev = gross_return - call_cost
+effective_equity
+breakeven_equity = call_cost / contestable_after_call
+```
+
+Any missing required range/equity leaves the shadow incomplete.  No fallback range or scalar
+`n_callers` approximation is invented.
+
+## Fixed fixture
+
+```
+hero: 10 in + 10 behind
+A:    20 all-in
+B:    50 all-in
+```
+
+After hero calls 10:
+
+```
+main: 60, eligible H/A/B
+upper: 30, eligible B only
+```
+
+Only the 60-chip main layer enters hero call EV.
+
+Therefore:
+
+```
+call_cost = 10
+contestable_after_call = 60
+breakeven_equity = 10/60 = 1/6
+```
+
+The upper 30 cannot improve hero's price.
+
+## Storage and architecture
+
+Full range combo lists remain transient.
+
+`pf_call_ev_shadow` stores only:
+
+- projected layers;
+- layer equity rows;
+- objective summary numbers;
+- `strategy_consumer=False`.
+
+It is copied into the current preflop seed/line for auditability.
+
+`calloff_decision` still receives none of these values and remains percentile-cap based.
+
+## D6-C acceptance
+
+Verifier requires:
+
+- exact main/upper post-call layer geometry;
+- empty-board multiway equity calculation completes;
+- upper hero-ineligible layer has no equity value;
+- break-even equals 1/6 in the fixed fixture;
+- gross return equals layer amount × layer equity;
+- live source is gated to pure short-shove/no-responder states;
+- `calloff_decision` has no layer-EV consumer;
+- P6 structural verifier stays 5/5;
+- frozen regression remains unchanged.
+
+After D6-C, D6-D can preregister how objective layer EV interacts with existing ICM/personality
+calloff judgment before any action is changed.
