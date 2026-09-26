@@ -762,7 +762,7 @@ class H(BaseHTTPRequestHandler):
                 if self.path == '/api/new':
                     kw = {k: body[k] for k in ('entries', 'seed', 'fmt', 'start_stack')
                           if body.get(k) is not None}
-                    PENDING['future'] = None      # 새 게임이면 밀린 것도 버린다
+                    _clear_worker()             # 새 게임이면 밀린 것도 버린다
                     L.new_game(**kw)
                     _last = _wrap(_step())
                     return self._send(200, _last)
