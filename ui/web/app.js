@@ -1811,6 +1811,7 @@ const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
 /* 새 스트리트 보드를 본 뒤 첫 봇 액션까지의 호흡.
  * 계산은 이 시간에도 계속 진행되므로 체감만 완화하고 엔진 속도는 늦추지 않는다. */
 const STREET_OPEN_PAUSE = 800;
+const HERO_ACTION_PAUSE = 800;
 
 function applyEntry(ss, e) {
   if (e.street && e.street !== ss.stage) {
@@ -3207,6 +3208,7 @@ async function callStepStream(body, msg) {
 
   let queue = [];
   let playing = false;
+  let heroPauseUntil = Date.now() + HERO_ACTION_PAUSE;
   let finalPayload = null;
   let settled = false;
   let resolveDrain = null;
@@ -3241,6 +3243,23 @@ async function callStepStream(body, msg) {
       maybeFinish();
       return;
     }
+
+    const head = queue[0];
+
+    /*
+     * HERO 액션 직후 같은 스트리트의 첫 봇 액션에는 짧은 호흡을 둔다.
+     * 단, HERO가 스트리트를 닫았다면 street 이벤트는 막지 않는다 —
+     * 보드는 즉시 공개하고, 새 스트리트 쪽 pause가 첫 봇 액션을 늦춘다.
+     */
+    if (head && head.kind !== 'street' && Date.now() < heroPauseUntil) {
+      playing = true;
+      setTimeout(() => {
+        playing = false;
+        playNext();
+      }, Math.max(0, heroPauseUntil - Date.now()));
+      return;
+    }
+
     playing = true;
     const e = queue.shift();
     const oldStage = ss ? ss.stage : null;
@@ -3271,6 +3290,8 @@ async function callStepStream(body, msg) {
         '<span class="cur">' + (STREET[ss.stage] || ss.stage) + '</span> —';
       publishPrev();
 
+      // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
+      heroPauseUntil = 0;
       setTimeout(() => {
         playing = false;
         playNext();
