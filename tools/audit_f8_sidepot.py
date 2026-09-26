@@ -211,8 +211,11 @@ def check_d2_locked_range_preservation():
     src = inspect.getsource(SE.HandRun._run)
     assert "locked_opp_ranges = {}" in src
     assert "locked_opp_ranges[o] = _lr" in src
-    assert "opp_r.extend(_lr)" not in src
-    assert "opp_ranges[o] = _lr" not in src
+    # Exact stripped source lines only.  A raw substring test here falsely matched
+    # "locked_opp_ranges[o] = _lr" as if it were "opp_ranges[o] = _lr".
+    src_lines = {line.strip() for line in src.splitlines()}
+    assert "opp_r.extend(_lr)" not in src_lines
+    assert "opp_ranges[o] = _lr" not in src_lines
 
     return {
         'stack_bb': meta['stack_bb'],
