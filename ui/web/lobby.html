@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b1514">
 <title>T2 Poker Lobby</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="lobby.css?v=1">
+<link rel="stylesheet" href="lobby.css?v=2">
 </head>
 <body>
 <div id="lobby">
@@ -15,7 +15,6 @@
       <div class="brand">T2 <span>POKER</span></div>
       <div class="strap">TOURNAMENT LOBBY</div>
     </div>
-    <button id="refresh" type="button" aria-label="새로고침">↻</button>
   </header>
 
   <main>
@@ -66,14 +65,55 @@
     </div>
   </div>
 
+  <div id="profileSheet" class="sheetWrap" hidden>
+    <div class="sheet profileSheet">
+      <div class="sheetHeader">
+        <div>
+          <div class="kicker">PROFILE</div>
+          <h2>내 프로필</h2>
+        </div>
+        <button id="profileClose" class="close" type="button" aria-label="닫기">×</button>
+      </div>
+
+      <label class="inputLabel">닉네임
+        <input id="nickname" type="text" maxlength="16" placeholder="플레이어">
+      </label>
+
+      <div class="profileLabel">카드 뒷면</div>
+      <div id="deckChoices" class="deckChoices">
+        <button type="button" data-deck="jade"><span class="deckSample jade"></span><b>비취</b></button>
+        <button type="button" data-deck="navy"><span class="deckSample navy"></span><b>남청</b></button>
+        <button type="button" data-deck="burgundy"><span class="deckSample burgundy"></span><b>자주</b></button>
+        <button type="button" data-deck="ivory"><span class="deckSample ivory"></span><b>백자</b></button>
+      </div>
+
+      <div class="settingsGrid">
+        <label>게임 진행 속도
+          <select id="profileSpeed">
+            <option value="1000">빠르게 · 1.0초</option>
+            <option value="1500">보통 · 1.5초</option>
+            <option value="2000">천천히 · 2.0초</option>
+            <option value="2600">매우 천천히 · 2.6초</option>
+          </select>
+        </label>
+        <label class="toggleRow">결과 자동진행
+          <input id="profileAuto" type="checkbox">
+        </label>
+      </div>
+
+      <button id="profileHistory" class="secondaryAction" type="button">핸드 기록 보기</button>
+      <button id="profileSave" class="join" type="button">저장</button>
+    </div>
+  </div>
+
   <div id="toast" class="toast" hidden></div>
 
   <nav class="bottom">
     <button class="active" type="button"><span>♠</span>로비</button>
     <button id="continueNav" type="button"><span>▶</span>테이블</button>
-    <button id="historyNav" type="button"><span>☰</span>기록</button>
+    <button id="profileNav" type="button"><span>●</span>프로필</button>
   </nav>
 </div>
-<script src="lobby.js?v=1"></script>
+<script src="lobby.js?v=2"></script>
 </body>
 </html>
