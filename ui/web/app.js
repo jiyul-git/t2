@@ -1827,6 +1827,33 @@ function applyEntry(ss, e) {
   if (st.stack === 0) st.allin = true;
 }
 
+function heroRequestEntry(v, action, amount) {
+  if (!v || v.type !== 'decision' || action === null) return null;
+  const me = (v.seats || []).find((x) => x.seat === v.hero_seat);
+  if (!me) return null;
+
+  let target = me.bet || 0;
+  if (action === 'call') {
+    target += Number((v.legal || {}).call || 0);
+  } else if (action === 'bet' || action === 'raise') {
+    target = Number(amount || target);
+  } else if (action === 'allin') {
+    const rz = (v.legal || {}).raise;
+    target = rz && rz.max_to !== undefined
+      ? Number(rz.max_to)
+      : (me.bet || 0) + (me.stack || 0);
+  } else if (action === 'fold' || action === 'check') {
+    target = 0;
+  }
+
+  return {
+    street: v.stage,
+    seat: v.hero_seat,
+    action: action,
+    amount: Math.max(0, Number(target || 0))
+  };
+}
+
 function renderSpectate(base, res, ss) {
   const bets = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
   const fv = Object.assign({}, base, {
@@ -3152,6 +3179,224 @@ async function req(path, body) {
   return { status: res.status, json };
 }
 
+async function callStepStream(body, msg) {
+  if (S.busy) {
+    toast('앞선 요청을 처리하는 중입니다 — 끝나면 다시 눌러 주세요');
+    return null;
+  }
+
+  const base = (S.view0 && S.view0.type === 'decision') ? S.view0 : S.view;
+  const heroEntry = heroRequestEntry(base, body.action, body.amount);
+  const ss = base && base.type === 'decision' ? {
+    seats: (base.seats || []).map((x) => Object.assign({}, x)),
+    potCenter: base.pot_center || 0,
+    stage: base.stage,
+    boardShown: (base.board || []).length,
+    board: (base.board || []).slice()
+  } : null;
+  const shownLog = base ? fullActionLog(base).slice() : [];
+
+  if (ss && heroEntry) {
+    applyEntry(ss, heroEntry);
+    shownLog.push(heroEntry);
+  }
+
+  let queue = [];
+  let playing = false;
+  let finalPayload = null;
+  let settled = false;
+  let resolveDrain = null;
+  let rejectDrain = null;
+  const drained = new Promise((resolve, reject) => {
+    resolveDrain = resolve;
+    rejectDrain = reject;
+  });
+
+  const publishPrev = () => {
+    if (!base || !ss) return;
+    const sum = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
+    S.view0 = Object.assign({}, base, {
+      seats: ss.seats.map((x) => Object.assign({}, x)),
+      stage: ss.stage,
+      board: ss.board.slice(0, ss.boardShown),
+      pot_center: ss.potCenter,
+      pot_total: ss.potCenter + sum,
+      prior_log: [],
+      log: shownLog.slice()
+    });
+  };
+
+  const maybeFinish = () => {
+    if (settled || playing || queue.length || !finalPayload) return;
+    settled = true;
+    const payload = finalPayload;
+    apply(payload);
+    resolveDrain(payload);
+  };
+
+  const playNext = () => {
+    if (playing || !queue.length) {
+      maybeFinish();
+      return;
+    }
+    playing = true;
+    const e = queue.shift();
+    const oldStage = ss ? ss.stage : null;
+
+    if (ss) {
+      if (Array.isArray(e.board)) ss.board = e.board.slice();
+      if (e.action === 'fold' && e.seat !== (base && base.hero_seat)) {
+        markFold(e.seat);
+      }
+      applyEntry(ss, e);
+
+      const renderOne = () => {
+        const sum = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
+        const fv = Object.assign({}, base, {
+          seats: ss.seats,
+          stage: ss.stage,
+          board: ss.board.slice(0, ss.boardShown),
+          pot_center: ss.potCenter,
+          pot_total: ss.potCenter + sum
+        });
+        renderSeats(fv);
+        renderChips(fv, oldStage !== ss.stage);
+        renderBoard(fv);
+        renderPot(fv);
+        renderHero(fv);
+        bubbleAt(e.seat, e);
+        $('#logline').innerHTML =
+          '<span class="cur">' + (STREET[ss.stage] || ss.stage) + '</span> —';
+
+        shownLog.push({
+          street: e.street || ss.stage,
+          seat: e.seat,
+          action: e.action,
+          amount: e.amount || 0
+        });
+        publishPrev();
+
+        setTimeout(() => {
+          playing = false;
+          playNext();
+        }, paceMs(e));
+      };
+
+      // 새 스트리트는 기존 재생과 똑같이 보드를 먼저 확인한 뒤 첫 액션을 보여준다.
+      if (oldStage !== ss.stage) {
+        const sum = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
+        const boardView = Object.assign({}, base, {
+          seats: ss.seats,
+          stage: ss.stage,
+          board: ss.board.slice(0, ss.boardShown),
+          pot_center: ss.potCenter,
+          pot_total: ss.potCenter + sum
+        });
+        renderSeats(boardView);
+        renderChips(boardView, true);
+        renderBoard(boardView);
+        renderPot(boardView);
+        renderHero(boardView);
+        setTimeout(renderOne, 360);
+      } else {
+        renderOne();
+      }
+      return;
+    }
+
+    playing = false;
+    playNext();
+  };
+
+  const pushEvent = (e) => {
+    if (!e || settled) return;
+    queue.push(e);
+    playNext();
+  };
+
+  setBusy(true, msg, true);
+  try {
+    const res = await fetch('/api/step-stream', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      let j = null;
+      try { j = await res.json(); } catch (e) {}
+      if (res.status === 409) {
+        toast((j && j.error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
+        const cur = await req('/api/state', null);
+        if (cur.status === 200 && cur.json) apply(cur.json);
+        return null;
+      }
+      throw new Error((j && j.error) || ('서버 오류 ' + res.status));
+    }
+
+    if (!res.body || !res.body.getReader) {
+      throw new Error('이 브라우저가 스트리밍 응답을 지원하지 않습니다');
+    }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const part = await reader.read();
+      buf += dec.decode(part.value || new Uint8Array(), {stream: !part.done});
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (!line) continue;
+        const obj = JSON.parse(line);
+        if (obj.type === 'bot_action') {
+          pushEvent(obj.event);
+        } else if (obj.type === 'final') {
+          finalPayload = obj.payload;
+          maybeFinish();
+        }
+      }
+      if (part.done) break;
+    }
+
+    const tail = buf.trim();
+    if (tail) {
+      const obj = JSON.parse(tail);
+      if (obj.type === 'bot_action') pushEvent(obj.event);
+      else if (obj.type === 'final') {
+        finalPayload = obj.payload;
+        maybeFinish();
+      }
+    }
+
+    if (!finalPayload && !settled) {
+      throw new Error('서버 스트림이 최종 상태 없이 종료됐습니다');
+    }
+
+    return await drained;
+  } catch (e) {
+    if (!settled) {
+      settled = true;
+      rejectDrain(e);
+    }
+    toast('연결 실패: ' + e.message);
+    try {
+      const cur = await req('/api/state', null);
+      if (cur.status === 200 && cur.json) apply(cur.json);
+    } catch (_) {}
+    return null;
+  } finally {
+    setBusy(false);
+    if (S.queuedNew) {
+      const q = S.queuedNew; S.queuedNew = null;
+      clearTimeout(S.autoTimer); S.autoTimer = null;
+      call('/api/new', q.body, q.msg);
+    }
+  }
+}
+
 async function call(path, body, msg) {
   if (S.busy) {
     // 조용히 무시하면 버튼이 고장난 것처럼 보인다. 실제로 '새 게임 시작이
@@ -3288,15 +3533,17 @@ function send(action, amount) {
   // 클릭 즉시 내 액션을 먼저 보여준다.
   previewHeroAction(action, amount);
 
-  call(
-    '/api/step',
-    {
-      action: action,
-      amount: amount | 0,
-      token: S.token
-    },
-    action === null ? '다음 핸드 준비 중…' : '진행 중…'
-  );
+  const payload = {
+    action: action,
+    amount: amount | 0,
+    token: S.token
+  };
+
+  if (action === null) {
+    call('/api/step', payload, '다음 핸드 준비 중…');
+  } else {
+    callStepStream(payload, '진행 중…');
+  }
 }
 
 function markQueued(action) {
@@ -3316,8 +3563,7 @@ function flushQueued() {
 
   previewHeroAction(q.action, q.amount);
 
-  call(
-    '/api/step',
+  callStepStream(
     {
       action: q.action,
       amount: q.amount,
