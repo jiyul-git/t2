@@ -584,7 +584,7 @@ def check_d5_size_unit_boundary():
     state = {
         'plan': 'value_3street',
         'intents': {
-            'river': PL.mk_intent('bet', 0.60, 'fixture')
+            'river': SE.PL.mk_intent('bet', 0.60, 'fixture')
         }
     }
     prof = {
@@ -593,7 +593,7 @@ def check_d5_size_unit_boundary():
         'bluff': 5.0,
         'gamble': 5.0,
     }
-    act, _eq, _need = PL.act_with_plan(
+    act, _eq, _need = SE.PL.act_with_plan(
         ['Ah', 'Ad'], ['2c', '7d', 'Jh', '4s', '3c'],
         prof, state, pot=10000, tocall=0, stack=20000, street='river',
         initiative=True, opp_range=[], bf=1.0, seed=1,
@@ -603,12 +603,12 @@ def check_d5_size_unit_boundary():
     current_amount = act[1]
     strategic_amount = int(round(10000 * 0.60 / 100.0)) * 100
 
-    assert PL.intent_of(state, 'river')['size'] == 0.60, state
+    assert SE.PL.intent_of(state, 'river')['size'] == 0.60, state
     assert strategic_amount == 6000, strategic_amount
     assert current_amount == 100, act
     assert current_amount != strategic_amount, (current_amount, strategic_amount)
 
-    src = inspect.getsource(PL.act_with_plan)
+    src = inspect.getsource(SE.PL.act_with_plan)
     assert "pot*it['size']/100" in src
 
     return {
