@@ -1386,3 +1386,32 @@ decision states, so no candidate effect can cascade into later tournament state.
 
 This is the appropriate activation gate for the blocker wiring repair before any bluff-frequency
 calibration is revisited.
+
+
+---
+
+## F7-B1C11 — full trajectory for the structure-only candidate
+
+B1C10 direct attribution is clean:
+
+- **0 plan changes**;
+- **0 intent-action changes**;
+- **0 bluff-mode changes**;
+- 27 intent-size changes only;
+- 22 of those are heads-up stale-judgment repairs;
+- 5 are multiway stale/joint-judgment repairs.
+
+That is sufficient to separate architecture repair from bluff-frequency tuning, but sizing changes can
+still alter later tournament state.
+
+Before production activation, `tools/measure_f7b_blocker_structure_full.py` runs a full paired
+trajectory:
+
+- production;
+- the exact B1C10 structure-only candidate.
+
+The candidate preserves `blocker_score` frequency calibration and all coefficients. Its resulting
+per-seed fingerprints are preregistered as the **expected activation target**.
+
+After the production wiring patch, the new engine should match those candidate fingerprints exactly.
+The old post-B1A baseline must remain untouched as the pre-activation checkpoint.
