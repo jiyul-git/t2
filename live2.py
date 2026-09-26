@@ -273,8 +273,8 @@ def compute_others_parallel(field_dump):
     }
 
 
-def _merge_parallel_field(main_field, base_dump, others):
-    """HERO 결과 field에 비-HERO worker 소유 영역을 합치고 1회 settle 한다."""
+def _overlay_parallel_dump(main_dump, base_dump, others):
+    """두 병렬 branch의 소유 영역만 합친다. 아직 bust/balance는 하지 않는다."""
     if not isinstance(others, dict) or others.get('mode') != PARALLEL_TABLES_MODE:
         raise ValueError('parallel worker result mode mismatch')
     want = _others_key(base_dump)
@@ -292,7 +292,7 @@ def _merge_parallel_field(main_field, base_dump, others):
     if set((others.get('players') or {}).keys()) != expected_players:
         raise ValueError('parallel worker player ownership mismatch')
 
-    merged = _dump(main_field)
+    merged = copy.deepcopy(main_dump)
     for pid, row in (others.get('players') or {}).items():
         merged['players'][str(pid)] = copy.deepcopy(row)
     for tid, row in (others.get('tables') or {}).items():
@@ -306,7 +306,12 @@ def _merge_parallel_field(main_field, base_dump, others):
         mt.pop(pid, None)
         if pid in wt:
             mt[pid] = copy.deepcopy(wt[pid])
+    return merged
 
+
+def _merge_parallel_field(main_field, base_dump, others):
+    """HERO 결과 field에 비-HERO worker 소유 영역을 합치고 1회 settle 한다."""
+    merged = _overlay_parallel_dump(_dump(main_field), base_dump, others)
     f2 = _load_field(merged)
     f2.notes = []
     f2._collect_busts()
