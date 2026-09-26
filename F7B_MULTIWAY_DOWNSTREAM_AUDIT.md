@@ -523,3 +523,77 @@ No magnitude threshold is invented in advance.  Results decide whether each metr
 consumer separately.
 
 Blocker aggregation and B2 single-main-opponent reads remain outside this step.
+
+
+---
+
+## B1-B shadow result
+
+User validation on the 3000-3005 / 30-hand fixture:
+
+```
+multiway_seen = 112
+complete      = 112
+unknown       = 0
+```
+
+### Range advantage
+
+```
+sign flips      20 / 112  (17.9%)
+abs delta mean  0.123
+p90             0.255
+max             1.075
+```
+
+The largest live example moved from:
+
+```
+union  +0.6325
+joint  -0.4425
+```
+
+so the field-level conclusion reverses.
+
+The candidate has exact heads-up parity and an explicit fair-share zero point
+`1/(N+1)`.  Therefore **range advantage is approved to proceed to a separate consumer step**
+after a B1-A behavior checkpoint is frozen.
+
+### Nut advantage
+
+```
+sign flips          38 / 112
+abs delta mean      0.559
+p90                 1.002
+max                 1.433
+live 0.55 crossings 5
+```
+
+The candidate frequently saturates near `-1` because "any opponent in a strong band" becomes
+increasingly likely as the field grows.
+
+This may be strategically appropriate for some large-sizing decisions, but the movement is much
+larger than range advantage and the existing `nut_advantage` scale was calibrated for heads-up
+strong-share differences.
+
+Therefore **nut advantage is NOT approved as a consumer yet**.
+
+Before activation it needs one more semantics check:
+
+- separate the field-size effect from true distributional nut ownership;
+- inspect the five live `0.55` threshold crossings;
+- decide whether current overbet/polarized-bluff consumers want
+  "any opponent strong", "strongest opponent range", or another explicitly derived field quantity.
+
+No coefficient will be tuned to make the values look similar to the union metric.
+
+### Regression interpretation
+
+The shadow patch itself changes no production strategy.
+
+The persistent mismatch against `baseline_9max_post_f8.json` at seeds
+3000, 3001, 3002, 3004, and 3005 is the already-attributed B1-A joint-relative consumer,
+not B1-B.
+
+A new B1-A checkpoint must be frozen before the range-advantage consumer is activated so the next
+behavior delta remains singly attributable.
