@@ -7,9 +7,9 @@ UI는 엔진 감사와 별도 최신선으로 관리한다.
 - Engine / architecture source of truth:
   `chatgpt/decision-architecture-audit-20260926`
 - **Only active UI line / current playable UI:**
-  `chatgpt/ui-recovery-20260927`
+  `chatgpt/ui-bot-pipeline-20260927`
 - Current verified UI head at this checkpoint:
-  `9b764b0`
+  `f9a4ed2`
 
 The user has designated this UI line as the latest version.
 Do not recover older UI branches again unless a specific regression requires historical comparison.
@@ -46,8 +46,13 @@ Current active values after the latest user-visible adjustment:
 Further chip/bubble movement should be based on an actual frame where the relevant
 3/9 o'clock action is visible. Do not infer action bubbles from seat labels or stack text.
 
+## Current streamed-play additions
+
+The active UI line additionally includes server-driven bot-action streaming and playback hardening. Bot calculation overlaps the existing 1.5s action pacing; board transitions can render before the next bot finishes computing; short presentation pauses are UI-only and do not sleep the engine.
+
 ## Historical UI branches — deletion candidates
 
+- `chatgpt/ui-recovery-20260927` — fully contained in `ui-bot-pipeline`
 The following branches are no longer active UI sources after the user confirmed
 `chatgpt/ui-recovery-20260927` as latest:
 
