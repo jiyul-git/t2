@@ -176,10 +176,12 @@ def _kick_worker():
         PENDING['future'] = None
 
 
-def _step(action=None, amount=0):
+def _step(action=None, amount=0, on_bot_action=None):
     """live2.step 호출을 한 곳으로 모은다. 회수 → 진행 → 던지기."""
     others = _take_others()
     kw = {'defer_others': True, 'others': others} if DEFER else {}
+    if on_bot_action is not None:
+        kw['on_bot_action'] = on_bot_action
     r = L.step(action, amount, **kw) if action is not None else L.step(**kw)
     _kick_worker()
     return r
@@ -522,6 +524,24 @@ class H(BaseHTTPRequestHandler):
         n = int(self.headers.get('Content-Length') or 0)
         return json.loads(self.rfile.read(n) or b'{}') if n else {}
 
+    def _stream_start(self):
+        """봇 진행 이벤트를 계산 즉시 NDJSON으로 흘려보낸다."""
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/x-ndjson; charset=utf-8')
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
+    def _stream_line(self, obj):
+        try:
+            b = (json.dumps(obj, ensure_ascii=False, default=str) + '\n').encode()
+            self.wfile.write(b)
+            self.wfile.flush()
+            return True
+        except (BrokenPipeError, ConnectionResetError):
+            # 클라이언트가 사라져도 엔진 계산/저장은 중단하지 않는다.
+            return False
+
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -643,7 +663,8 @@ class H(BaseHTTPRequestHandler):
                     L.new_game(**kw)
                     _last = _wrap(_step())
                     return self._send(200, _last)
-                if self.path == '/api/step':
+                if self.path in ('/api/step', '/api/step-stream'):
+                    stream = self.path == '/api/step-stream'
                     if not os.path.exists(L.ST):
                         return self._send(409, {'error': '진행 중인 게임 없음'})
                     if body.get('token') != _token():
@@ -662,6 +683,38 @@ class H(BaseHTTPRequestHandler):
                     if a is not None and a not in ACTIONS:
                         return self._send(400, {'error': '알 수 없는 액션: %s' % a})
                     amt = int(body.get('amount') or 0)
+
+                    # 일반 /api/step 은 기존 호환 경로. 실제 플레이 액션만
+                    # 스트림 경로를 쓰며, 1.5초 모션 템포는 프론트가 그대로 유지한다.
+                    if stream:
+                        self._stream_start()
+                        alive = [True]
+
+                        def _emit_bot(event):
+                            if alive[0]:
+                                alive[0] = self._stream_line({
+                                    'type': 'bot_action',
+                                    'event': event,
+                                })
+
+                        r = (_step(a, amt, on_bot_action=_emit_bot)
+                             if a is not None else _step())
+                        v = r.get('view') or {}
+                        if (not r.get('done') and v.get('error') and _last
+                                and (_last.get('view') or {}).get('type') == 'decision'):
+                            out = dict(_last)
+                            out['view'] = dict(_last['view'], error=v['error'])
+                            out['token'] = _token()
+                            _last = out
+                        else:
+                            _last = _wrap(r)
+                        if alive[0]:
+                            self._stream_line({
+                                'type': 'final',
+                                'payload': _last,
+                            })
+                        return
+
                     r = _step(a, amt) if a is not None else _step()
                     v = r.get('view') or {}
                     if (not r.get('done') and v.get('error') and _last
