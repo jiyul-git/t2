@@ -244,7 +244,14 @@ function boardWinCard(code) {
 function slotPos(slot, heroSlot, n, rfx, rfy) {
   const off = (((slot - heroSlot) % n) + n) % n;
   const th = (90 - off * (360 / n)) * Math.PI / 180;
-  return { x: 50 + 39 * rfx * Math.cos(th), y: 44 + 36 * rfy * Math.sin(th) };
+  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + 39 * rfy * Math.sin(th) };
+}
+
+function sideSeatClass(p) {
+  if (!p || p.y < 34 || p.y > 58) return '';
+  if (p.x >= 84) return ' side-right';
+  if (p.x <= 16) return ' side-left';
+  return '';
 }
 
 /* ---------------- 상단 바 ---------------- */
@@ -312,7 +319,8 @@ function renderSeats(v) {
       continue;
     }
     const award = awardLabel(slot);
-    const cls = 'pod' + (d.in_hand || S.folding[slot] ? '' : ' folded') +
+    const cls = 'pod' + sideSeatClass(p) +
+                (d.in_hand || S.folding[slot] ? '' : ' folded') +
                 (award && !awardSplitOnly(slot) ? ' won' : '');
     // 방금 폴드한 좌석은 카드를 한 번 더 그려서 사라지는 모션을 보여준다
     const nc = dealtCount(slot);
@@ -378,9 +386,16 @@ function renderChips(v, streetChanged) {
   const n = v.n_slots || 8;
   (v.seats || []).forEach((s) => {
     if (!s.bet) return;
-    const p = slotPos(s.seat, v.hero_seat, n, 0.62, 0.62);
+    const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
+    const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
+    const side = sideSeatClass(seatP);
+    if (side === ' side-left') {
+      p.x = 27; p.y = 46;
+    } else if (side === ' side-right') {
+      p.x = 73; p.y = 46;
+    }
     const el = document.createElement('div');
-    el.className = 'chips';
+    el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
     el.style.left = p.x + '%'; el.style.top = p.y + '%';
     el.innerHTML = `<span class="disc"></span>${fmt(s.bet)}`;
@@ -2878,6 +2893,7 @@ function showMenu() {
     '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
     ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
     '<button type="button" id="mNew">새 게임</button>' +
+    '<button type="button" id="mLobby">로비로 나가기</button>' +
     // 어느 빌드가 떠 있는지 확인할 수단이 없어서, 이미 고친 것을 두고
     // '아직도 그대로다' 를 서로 확인하는 데 시간을 썼다.
     `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
@@ -2897,6 +2913,7 @@ function showMenu() {
     $('#bNew').addEventListener('click', startNew);
     $('#mBack').addEventListener('click', showMenu);
   });
+  $('#mLobby').addEventListener('click', () => { location.href = '/'; });
   $('#mClose').addEventListener('click', hideOverlay);
 }
 

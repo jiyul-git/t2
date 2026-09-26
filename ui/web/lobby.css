@@ -1,0 +1,77 @@
+:root{
+  --bg:#091311;--panel:#10211e;--panel2:#162b27;--line:#31534b;
+  --felt:#1c5c54;--gold:#d5b574;--text:#f3f0e7;--muted:#9fb2aa;
+  --danger:#e98272;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#07100f;color:var(--text);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input{font:inherit}
+button{color:inherit}
+body{background:
+  linear-gradient(#06100ed9,#07100ff0),
+  url("assets/hanok.png") center top/cover fixed}
+#lobby{width:min(100%,560px);min-height:100dvh;margin:auto;padding-bottom:78px;
+  background:linear-gradient(180deg,#0b1715e8,#07100ff5 52%,#07100f)}
+.top{height:72px;padding:15px 18px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:20;background:#0b1715ee;border-bottom:1px solid #ab925037;
+  backdrop-filter:blur(16px)}
+.brand{font-size:20px;font-weight:900;letter-spacing:.08em}.brand span{color:var(--gold)}
+.strap{font-size:9px;color:var(--muted);letter-spacing:.26em;margin-top:2px}
+#refresh{width:38px;height:38px;border-radius:50%;border:1px solid #a88f554d;background:#16231f;font-size:22px}
+main{padding:0 14px 22px}
+.hero{margin:12px 0 18px;padding:28px 20px;border-radius:22px;min-height:188px;
+  background:radial-gradient(circle at 88% 0,#32746b70,transparent 42%),
+    linear-gradient(135deg,#173b36,#102622 58%,#191d18);
+  border:1px solid #c8a96b44;box-shadow:0 12px 30px #0006,inset 0 0 30px #183e3855}
+.eyebrow{font-size:10px;font-weight:800;letter-spacing:.22em;color:var(--gold)}
+.hero h1{font-size:31px;line-height:1.09;margin:9px 0 10px;letter-spacing:-.04em}
+.hero p{margin:0;color:#bfd0c9;font-size:13px;line-height:1.55;max-width:360px}
+.current{margin:14px 0 0;padding:15px;border-radius:17px;
+  background:linear-gradient(135deg,#27351f,#15342f);border:1px solid #d5b57466;
+  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.current .kicker{font-size:9px;color:var(--gold);font-weight:800;letter-spacing:.18em}
+.current h3{margin:4px 0 3px;font-size:17px}
+.current p{margin:0;color:var(--muted);font-size:11px}
+.current button{border:0;border-radius:11px;padding:11px 13px;background:var(--gold);color:#18201b;font-weight:900}
+.section{margin-top:6px}.sectionHead{display:flex;gap:10px;justify-content:space-between;align-items:flex-end;margin-bottom:11px}
+.section h2{font-size:20px;margin:0}.sectionHead p{font-size:10px;color:var(--muted);margin:3px 0 0}
+.tabs{display:flex;gap:4px;overflow:auto;max-width:62%;scrollbar-width:none}
+.tabs button{white-space:nowrap;border:1px solid #335149;border-radius:999px;background:#0e1b19;padding:6px 9px;font-size:9px;color:#9fb2aa}
+.tabs button.active{background:#234b44;border-color:#5d8378;color:#fff}
+.tournaments{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{position:relative;overflow:hidden;min-height:188px;border-radius:17px;padding:14px;
+  border:1px solid #314b45;background:linear-gradient(145deg,#142824,#0e1917);
+  box-shadow:0 8px 20px #0004;cursor:pointer}
+.card::after{content:"";position:absolute;width:100px;height:100px;right:-32px;top:-32px;
+  border:18px solid #4e817347;border-radius:50%}
+.card.featured{grid-column:span 2;min-height:166px;
+  background:radial-gradient(circle at 88% 18%,#b18d4052,transparent 35%),
+  linear-gradient(135deg,#173d36,#12241f)}
+.card .tag{display:inline-block;font-size:8px;font-weight:900;letter-spacing:.12em;
+  color:#191d18;background:var(--gold);padding:4px 6px;border-radius:6px}
+.card h3{margin:12px 0 4px;font-size:18px}.card .desc{font-size:10px;color:var(--muted);line-height:1.4;min-height:28px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:12px}
+.fact{border-top:1px solid #355249;padding-top:6px}.fact b{display:block;font-size:12px}.fact span{font-size:8px;color:#81968f}
+.card .enter{margin-top:10px;font-size:10px;color:#e7d3a5;font-weight:800}
+.sheetWrap{position:fixed;inset:0;z-index:50;background:#000a;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(100%,560px);padding:24px 18px calc(18px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;
+  background:#10201d;border-top:1px solid #d5b57466;box-shadow:0 -20px 50px #0009;position:relative}
+.close{position:absolute;right:15px;top:12px;width:35px;height:35px;border-radius:50%;border:1px solid #375149;background:#162924;font-size:22px}
+.joinTitle h2{margin:0 0 4px;font-size:23px}.joinTitle p{margin:0;color:var(--muted);font-size:11px}
+.joinFacts{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
+.joinFacts span{font-size:9px;padding:6px 8px;border:1px solid #3a574f;border-radius:8px;background:#142622;color:#cbd8d3}
+.inputLabel{display:block;margin-top:12px;font-size:11px;color:#b7c5c0}.inputLabel span{float:right;color:#758a83}
+.inputLabel input{display:block;width:100%;margin-top:6px;padding:12px;border-radius:11px;border:1px solid #355149;background:#091411;color:#fff;outline:none}
+.quick{display:flex;gap:6px;margin-top:7px}.quick button{flex:1;border:1px solid #355149;background:#12221f;border-radius:9px;padding:8px;font-size:10px}
+.quick button.active{border-color:var(--gold);color:var(--gold)}
+.join{width:100%;margin-top:18px;border:0;border-radius:12px;padding:14px;background:linear-gradient(90deg,#cda95f,#e1c786);color:#17201b;font-weight:950}
+.join:disabled{opacity:.45}.joinHint{text-align:center;min-height:18px;margin-top:8px;color:var(--danger);font-size:10px}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:80;background:#243631;border:1px solid #5b756d;border-radius:999px;padding:9px 14px;font-size:11px}
+.bottom{position:fixed;z-index:30;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,560px);
+  height:66px;padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(3,1fr);
+  background:#0a1513f2;border-top:1px solid #8a754537;backdrop-filter:blur(14px)}
+.bottom button{border:0;background:transparent;color:#738982;font-size:9px}.bottom button span{display:block;font-size:17px;margin-bottom:3px}
+.bottom button.active{color:var(--gold)}
+.emptyState{grid-column:1/-1;padding:30px;text-align:center;color:var(--muted);border:1px dashed #355149;border-radius:16px}
+@media(max-width:360px){.hero h1{font-size:27px}.card{padding:12px}.tabs{max-width:58%}}

@@ -36,11 +36,55 @@ if not os.path.exists(os.path.join(D, 'UI_SERVER_DIR')):
 import ui_view
 sys.modules['view'] = ui_view          # live2 가 import 하기 전에 주입
 import live2 as L
+import formats as FM
+from table import BLINDS
 import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver 를 쓴다
 
 LOCK = threading.Lock()
 _last = None
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
+
+def _lobby_payload():
+    """UI-only tournament catalog; formats.py remains the rules source."""
+    bb0 = int(BLINDS[0][2]) if BLINDS else 200
+    tournaments = []
+    for key in FM.names():
+        f = FM.get(key)
+        tournaments.append({
+            'key': key,
+            'name': f['name'],
+            'start_bb': int(f['start_bb']),
+            'start_stack': int(f['start_bb']) * bb0,
+            'hands_per_level': int(f['hpl']),
+            'seats': int(f['seats']),
+            'itm_frac': float(f['itm_frac']),
+            'reentry': bool(f['reentry']),
+            'buyin_level': float(f['buyin_level']),
+            'payout_flat': float(f['payout_flat']),
+        })
+
+    current = None
+    if os.path.exists(L.ST):
+        try:
+            st = L.load()
+            f = L._load_field(st['field'])
+            hero = f.players.get(f.hero_pid)
+            fmt = getattr(f, 'fmt', {}) or {}
+            current = {
+                'fmt': fmt.get('key', FM.DEFAULT),
+                'name': fmt.get('name', FM.get().get('name')),
+                'entries': int(f.entries),
+                'remaining': int(f.remaining()),
+                'hand_no': int(f.hand_no),
+                'level': int(f.level),
+                'stack': int((hero or {}).get('stack', 0)),
+                'busted': bool(st.get('busted')),
+                'rank': st.get('rank'),
+            }
+        except Exception:
+            current = {'error': 'current_state_unreadable'}
+    return {'tournaments': tournaments, 'current': current, 'can_play': True}
+
 
 # ---------- 다른 테이블 정산을 결과 반환 뒤로 미룬다 ----------
 # 핸드 종료 요청 시간의 75% 가 live2.finish 안의 step_others 다(실측).
@@ -501,6 +545,8 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {'working': bool(fut and not fut.done())})
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
+        if path == '/api/lobby':
+            return self._send(200, _lobby_payload())
 
         if path == '/api/memos':
             with LOCK:
@@ -518,9 +564,9 @@ class H(BaseHTTPRequestHandler):
             _h = {'hands': _public_history()}
             _h.update(_archive_status())
             return self._send(200, _h)
-        if path in ('/play', '/play/'):
+        if path == '/play/':
             self.send_response(302)
-            self.send_header('Location', '/')
+            self.send_header('Location', '/play')
             self.send_header('Content-Length', '0')
             self.end_headers()
             return
@@ -528,7 +574,9 @@ class H(BaseHTTPRequestHandler):
         if path == '/watch' or path.startswith('/watch/'):
             return self._send(404, {'error': '관전 모드는 제거되었습니다'})
 
-        if path == '/':
+        if path in ('/', '/lobby'):
+            return self._serve_static('/lobby.html')
+        if path == '/play':
             return self._serve_static('/index.html')
 
         if path != '/api/state':
@@ -646,7 +694,8 @@ if __name__ == '__main__':
     print('정산 지연: %s  (끄려면 T2_UI_DEFER=0)' % ('켬' if DEFER else '끔'))
     print('상태 파일: %s' % L.ST)
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
-    print('플레이 주소: http://127.0.0.1:%d' % port)
+    print('로비 주소: http://127.0.0.1:%d' % port)
+    print('테이블 주소: http://127.0.0.1:%d/play' % port)
     print('다른 기기: http://<이 기기의 LAN IP>:%d' % port)
     if ':' in host:
         class _HTTPServer6(HTTPServer):

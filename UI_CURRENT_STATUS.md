@@ -99,3 +99,30 @@ This is not a pure visual change. Compare against current `live2.py` before deci
 
 A UI commit is not "latest" merely because its branch name is newer.
 `UI_CURRENT_STATUS.md` + `chatgpt/ui-recovery-20260927` define the current UI integration line.
+
+
+## UI recovery candidate — user verification pending
+
+Recovered on `chatgpt/ui-recovery-20260927`:
+
+- tournament lobby at `/`;
+- table at `/play`;
+- top history/menu controls folded into the status bar;
+- standalone live log strip removed;
+- mobile viewport changed to `100dvh`;
+- felt/table shrunk inward;
+- bot seats moved to the outer rail;
+- 3/9-o'clock action bubbles raised;
+- 3/9-o'clock chip positions restored to the marked targets;
+- table menu adds "로비로 나가기".
+
+### Character freeze
+
+This candidate intentionally leaves the approved character layer untouched:
+
+- `ui/web/assets/portraits.png`;
+- `ui/web/visuals.js`;
+- portrait crop/eye/gaze definitions;
+- portrait assignment logic.
+
+Profile/avatar/theme customization from later historical branches is excluded.

@@ -2,9 +2,8 @@
 :root { --bg:#191b17; --felt-1:#24625c; --felt-2:#123e3c; --gold:#dfbd79; --dim:#c4c8b8; --pod:rgba(20,32,30,.94); }
 #app { max-width:520px; margin:auto; height:100dvh; background:linear-gradient(#111b1729,#151b1766),url("assets/hanok.png") center/cover; }
 #topbar { background:#152320ed; border-bottom-color:#cfa66a40; }
-#loghead { background:#172520ed; }
 #tablewrap { margin:22px 0 0; }
-#felt { inset:20px 28px 52px; border-radius:46% / 35%; border:2px solid #ccb17a;
+#felt { inset:44px 50px 82px; border-radius:46% / 35%; border:2px solid #ccb17a;
   background:radial-gradient(ellipse at 45% 30%,#347a70 0,#245e59 45%,#174642 100%);
   box-shadow:0 0 0 6px #3e3026,0 0 0 9px #a17d4f,0 0 0 12px #33281f,inset 0 0 28px #082c2d80,0 20px 32px #0008; }
 #felt::after { inset:10px; border-radius:inherit; border:1px solid #d9d0ac40; }
