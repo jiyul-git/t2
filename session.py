@@ -1059,6 +1059,7 @@ class HandRun:
         if self.on_bot_action is None:
             return
         event = {
+            'kind': 'bot_action',
             'street': street,
             'seat': int(seat),
             'action': action,
@@ -1069,6 +1070,19 @@ class HandRun:
             self.on_bot_action(event)
         except Exception:
             # 화면 연결이 끊겨도 핸드 계산과 저장은 끝까지 진행한다.
+            pass
+
+    def _emit_street(self, street, board):
+        """새 스트리트 보드는 첫 봇 판단 전에 UI에 먼저 알린다."""
+        if self.on_bot_action is None:
+            return
+        try:
+            self.on_bot_action({
+                'kind': 'street',
+                'street': street,
+                'board': list(board or []),
+            })
+        except Exception:
             pass
 
     def start(self):
@@ -1660,6 +1674,10 @@ class HandRun:
             board = h.board[:nc]
             active = [x for x in live if h.stacks[x] > 0]
             if len(active) < 2: break
+            # 스트리트가 열렸다는 사실은 첫 봇 계산보다 먼저 UI에 전달한다.
+            # 그래야 HERO가 직전 스트리트 마지막 액션이었을 때 보드가
+            # 다음 봇의 판단시간만큼 늦게 까지지 않는다.
+            self._emit_street(street, board)
             order = [h.seat_of[p] for p in h.POST if p in h.seat_of and h.seat_of[p] in active]
             r2 = RU.Round(None, order, h.stacks, h.bb)
             street_aggr = aggressor          # 이 스트리트에 들어올 때의 공격자(루프 중 갱신되므로 스냅샷)
