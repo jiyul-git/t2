@@ -1053,68 +1053,47 @@ Frozen regression must remain unchanged.
 
 ---
 
-# F8-D5-U blocker — strategic sizing unit versus execution unit
+# F8-D5-U check — strategic sizing unit versus execution unit
 
-Status: **MAJOR GLOBAL DEFECT CONFIRMED IN SOURCE; diagnostic added, no production fix yet.**
+Status: **CLEARED — NO DEFECT.**
 
-D5-C2 strategy consumption is blocked by an upstream unit mismatch.
-
-## Strategic contract
-
-`decide_size` explicitly returns a **pot fraction**:
+A diagnostic was added because the execution expression contains `/100`:
 
 ```
-0.60 = 60% pot
-0.75 = 75% pot
-1.00 = pot
-1.50 = 1.5x pot
+int(round(pot * intent_size / 100)) * 100
 ```
 
-`mk_intent` stores this value unchanged.
+Reading the division in isolation suggested a percent/fraction mismatch.  The executable fixture
+shows that interpretation was wrong.
 
-The sizing tables and comments use the same contract.
-
-## Current execution conversion
-
-The no-wager execution path in `act_with_plan` currently does:
+The expression is a 100-chip rounding transform:
 
 ```
-amt = round(pot * intent_size / 100)
+round((pot * fraction) / chip_unit) * chip_unit
 ```
 
-That interprets `0.60` as 0.60%, not 60%.
-
-Fixed diagnostic fixture:
+For:
 
 ```
 pot = 10,000
 intent size = 0.60
-
-strategic contract -> 6,000 chips
-current execution -> 100 chips after chip-unit rounding
+chip unit = 100
 ```
 
-So the live execution value is not merely presentation jitter; it is a unit mismatch at the
-judgment -> action boundary.
+both the strategic contract and execution produce:
 
-## Why D5-C2 stops here
+```
+6,000 chips
+```
 
-D5-A/B/C1 compute candidate bet EV from the plan intent.  A strategy consumer must not compare
-bet/check EV under one sizing unit while actual execution uses another.
+Therefore:
 
-Repairing this globally may change a large fraction of postflop bet amounts and downstream
-trajectories.  Therefore it must not be folded into the side-pot consumer patch.
+- `decide_size` / `mk_intent` correctly use pot fractions;
+- `act_with_plan` preserves that unit;
+- D5 shadow uses the same 100-chip rounding convention;
+- no production sizing repair is required.
 
-Required order:
+The failed diagnostic at commit `40f9a05` was an **audit expectation error**, not a production
+behavior defect.  Frozen regression remained unchanged, consistent with that conclusion.
 
-1. reproduce the unit mismatch with the diagnostic fixture;
-2. freeze the pre-fix behavior checkpoint already available at `d755709`;
-3. preregister the unit repair:
-   - strategy output remains pot fraction;
-   - execution converts by `pot * fraction`, not `/100`;
-   - presentation/rounding is separate;
-4. targeted sizing verifier;
-5. full frozen regression + behavior attribution;
-6. only then return to D5-C2.
-
-No production sizing behavior is changed in the diagnostic commit.
+D5-C2 may proceed.
