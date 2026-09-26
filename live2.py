@@ -64,8 +64,11 @@ def _load_field(d):
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
     f.notes = d.get('notes', []); f.errors = []
     f.players = {}
-    f._init_runtime(d.get('fmt'),
-                    d.get('tilt') if d.get('tilt_key') == 'pid' else None)
+    # tilt 내부 pid 상태도 중첩 dict다. 얕은 복사면 HandRun이 f.tilt를
+    # 갱신할 때 입력 field_dump 자체가 변해 round-start fingerprint가 흔들린다.
+    _tilt_in = (copy.deepcopy(d.get('tilt'))
+                if d.get('tilt_key') == 'pid' else None)
+    f._init_runtime(d.get('fmt'), _tilt_in)
     # 새 저장본은 max_seat 를 명시한다. 구 저장본은 저장된 좌석 슬롯 길이로
     # 추론해 진행 중인 8-max 세션이 standard=9 변경 때문에 중간에 변하지 않게 한다.
     _saved_max = d.get('max_seat')
@@ -586,6 +589,9 @@ def step(action=None, amount=0, defer_others=False, others=None,
             except Exception:
                 pass
 
+    # build_hand/HandRun이 내부 상태를 바꿔도 worker 기준점은
+    # 반드시 라운드 시작 field 그대로여야 한다.
+    _round_base = copy.deepcopy(st['field'])
     f, tb, alive, h, hero_seat = build_hand(st)
     # 저장된 HERO 액션을 재생하는 동안은 UI 진행 콜백을 끈다.
     # 그렇지 않으면 과거 봇 액션을 현재 액션처럼 다시 스트리밍한다.
@@ -618,7 +624,7 @@ def step(action=None, amount=0, defer_others=False, others=None,
 
     if isinstance(raw, dict) and raw.get('done'):
         return finish(st, f, tb, alive, h, run, defer_others=defer_others,
-                      parallel_others=others)
+                      parallel_others=others, round_base=_round_base)
     return {'view': _render(raw, f, h, st), 'done': False, 'raw': raw}
 
 
@@ -701,7 +707,7 @@ def _opening_raw(h, run):
 
 
 def finish(st, f, tb, alive, h, run, defer_others=False,
-           parallel_others=None):
+           parallel_others=None, round_base=None):
     res = run.result or {}
 
     try:
@@ -734,7 +740,8 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     )
     _hero_notes = list(f.notes)
     _parallel_notes = []
-    _round_base = copy.deepcopy(st.get('field') or {})
+    _round_base = copy.deepcopy(round_base if round_base is not None
+                                else (st.get('field') or {}))
 
     if defer_others and parallel_others is not None:
         try:
