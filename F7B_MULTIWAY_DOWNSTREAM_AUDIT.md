@@ -809,3 +809,64 @@ Production behavior and production RNG consumption remain unchanged.
 
 Worst-seat ownership will only be approved for `bluff_mode` if the consumer-level shadow supports
 the semantic replacement.  `overbet_frac` remains blocked.
+
+
+---
+
+## B1-B3 — all live nut consumers and wiring defect
+
+The actual `bluff_mode` shadow found only **2 multiway bluff-mode calls** in the frozen fixture.
+One call crossed the 0.55 threshold (union 0.809 vs worst-seat -0.571), but both inputs produced
+the same `barrel` result under the identical RNG state.  Therefore worst-seat ownership causes
+**0 bluff-mode behavior changes** in this fixture.
+
+That does not close nut semantics because source inspection shows three distinct consumers:
+
+1. `make_plan` continuous `bluff_ok` multiplier;
+2. `bluff_mode` polarized/merged/barrel/probe selection;
+3. `overbet_frac` probability and size.
+
+There is also a wiring defect:
+
+- `refresh` updates `st['nut_adv']`;
+- `attach_intent` passes that value as `decide_size(..., nut=...)`;
+- `decide_size` does not actually use the `nut` argument;
+- `overbet_frac` instead recomputes `R.nut_advantage(my_range, opp_range, board)` from the
+  collapsed union.
+
+So the current implementation violates the intended judgment/plan boundary: a factual range metric
+is recomputed inside sizing instead of consuming the already-established judgment state.
+
+`tools/measure_f7b_nut_consumers.py` now shadows all live nut consumers separately:
+
+### make_plan shadow
+
+Re-runs `make_plan` with identical inputs and seed while replacing only nut ownership with
+worst-seat ownership.  It reports:
+
+- plan-label changes, including to/from `bluff_2street`;
+- bluff-mode/multiplier changes.
+
+Because `make_plan` owns a local deterministic RNG, the production run is returned unchanged.
+
+### overbet shadow
+
+For each actual multiway `overbet_frac` call:
+
+- runs production union input;
+- restores the exact pre-call RNG state;
+- replays with worst-seat ownership;
+- restores pre-call state again;
+- replays with any-field collision;
+- finally restores the production post-call RNG state and returns production output.
+
+It distinguishes:
+
+- overbet selection changes (None vs size);
+- size-only changes when both select an overbet.
+
+No production behavior changes in this diagnostic.
+
+The next structural repair, if supported by reachability results, should remove the hidden union
+recomputation from sizing and pass explicit judgment quantities forward rather than merely replacing
+one scalar inside `overbet_frac`.
