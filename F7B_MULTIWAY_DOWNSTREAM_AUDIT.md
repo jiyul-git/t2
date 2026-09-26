@@ -1421,7 +1421,15 @@ The old post-B1A baseline must remain untouched as the pre-activation checkpoint
 
 ## F7-B1C12 — production activation: blocker effect judgment lifecycle
 
-Status: **IMPLEMENTED; verification pending.**
+Status: **CLOSED / VERIFIED at b21c974.**
+
+Verification:
+- targeted F7-B audit: **10/10 PASS**;
+- production matched all six preregistered B1C11 fingerprints exactly;
+- VPIP/PFR/flop aggregate remained 20.7 / 12.1 / 47.2;
+- old post-B1A baseline differed only on the five preregistered seeds
+  3000/3001/3002/3003/3005, as expected;
+- blocker_score frequency calibration remained unchanged.
 
 B1C10 direct attribution and B1C11 full trajectory preregistered the structure-only candidate.
 
@@ -1457,3 +1465,39 @@ Acceptance target was frozen before this patch in B1C11:
 `tools/verify_f7b_blocker_activation.py` must match all six exactly.
 The old post-B1A regression is expected to differ on the five preregistered seeds and must **not**
 be overwritten.
+
+
+---
+
+## F7-B1D — partial opponent-pool reachability
+
+Status: **DIAGNOSTIC ONLY.**
+
+The remaining seat-identity defect is `_normalize_opp_pools`.
+
+Today it silently converts unknown opponent information into apparently complete information:
+
+- a partial seat-keyed map is padded with the union or last known range;
+- a multiway call with only `opp_range` duplicates that same union once per opponent.
+
+This feeds three consumers:
+
+1. `_eq_current` — record-only current-board equity;
+2. `_eq_vs` — planning equity;
+3. `act_with_plan` when facing a bet — call/response equity.
+
+The structural rule should be: **unknown is not another copy of a known opponent**.
+
+Before changing policy, `tools/measure_f7b_partial_pools.py` records every live normalization call
+and classifies whether its input is:
+
+- complete seat-keyed;
+- partial seat-keyed;
+- union-only multiway;
+- missing.
+
+The tournament always follows current production.
+
+If strategy-relevant incomplete calls are zero in a broad live fixture, the silent padding can be
+removed as a behavior-preserving architecture cleanup. If they are nonzero, a separate explicit
+unknown-range policy must be designed and attributed before activation.
