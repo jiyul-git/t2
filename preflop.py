@@ -1,6 +1,7 @@
 import json, os, random
 import persona as PS
 import depth as _DP
+import icm as _ICM
 D = os.path.dirname(os.path.abspath(__file__))
 PCT = json.load(open(os.path.join(D, 'pf_rank.json'), encoding='utf-8'))
 RV = {r: i+2 for i, r in enumerate("23456789TJQKA")}
@@ -816,6 +817,41 @@ def calloff_cap(prof, def_pos, opener_pos, bb, open_bb, raise_level,
         tbg = exploit.get('tb_gap', 0.0)
         cap *= max(0.5, min(2.0, 1.0 + w*(0.45*og + 0.60*max(0.0, tbg))))
     return max(0.005, min(0.85, cap))
+
+
+def calloff_ev_comparison(hand, legacy_action, legacy_cap, call_ev_shadow,
+                          bubble_factor=1.0):
+    """F8-D6-D1 shadow: percentile calloff와 layer-EV+ICM 판단을 나란히 비교.
+
+    실제 action을 바꾸지 않는다.
+    """
+    sh = dict(call_ev_shadow or {})
+    if not sh.get('pure_calloff') or not sh.get('complete'):
+        return None
+    eq = sh.get('effective_equity')
+    cost = sh.get('call_cost')
+    total_after = sh.get('contestable_after_call')
+    if eq is None or cost is None or total_after is None:
+        return None
+    cost = float(cost)
+    total_after = float(total_after)
+    pot_before = max(0.0, total_after - cost)
+    need = _ICM.required_equity(
+        pot_before, cost, max(1.0, float(bubble_factor or 1.0)))
+    ev_action = 'call' if float(eq) >= float(need) else 'fold'
+    legacy = legacy_action[0] if isinstance(legacy_action, tuple) else legacy_action
+    return {
+        'hand_pct': round(float(pct(hand)), 6),
+        'legacy_action': legacy,
+        'legacy_cap': round(float(legacy_cap), 6),
+        'layer_effective_equity': round(float(eq), 6),
+        'chip_breakeven_equity': sh.get('breakeven_equity'),
+        'bubble_factor': round(max(1.0, float(bubble_factor or 1.0)), 6),
+        'icm_required_equity': round(float(need), 6),
+        'layer_ev_action': ev_action,
+        'agree': bool(legacy == ev_action),
+        'strategy_consumer': False,
+    }
 
 
 def calloff_decision(prof, def_pos, hand, bb, raise_level, pot, tocall,

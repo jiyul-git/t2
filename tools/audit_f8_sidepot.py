@@ -951,6 +951,63 @@ def check_d6c_preflop_layer_equity_call_shadow():
     }
 
 
+
+def check_d6d1_calloff_shadow_comparison():
+    # Fixed complete pure-calloff shadow: chip break-even 1/6.
+    sh = {
+        'pure_calloff': True,
+        'complete': True,
+        'call_cost': 10.0,
+        'contestable_after_call': 60.0,
+        'effective_equity': 0.24,
+        'breakeven_equity': round(10.0/60.0, 6),
+    }
+
+    # At BF=1, 24% beats 16.67% -> layer action calls.
+    c1 = SE.pf.calloff_ev_comparison(
+        ['As','Kd'], ('fold', 0), 0.10, sh, bubble_factor=1.0)
+    assert c1['layer_ev_action'] == 'call', c1
+    assert c1['legacy_action'] == 'fold', c1
+    assert c1['agree'] is False, c1
+    assert abs(c1['icm_required_equity'] - (1.0/6.0)) < 1e-6, c1
+
+    # Same chip equity at BF=2 requires 20/(50+20)=2/7 ~= 28.57%, so fold.
+    c2 = SE.pf.calloff_ev_comparison(
+        ['As','Kd'], ('fold', 0), 0.10, sh, bubble_factor=2.0)
+    assert c2['layer_ev_action'] == 'fold', c2
+    assert abs(c2['icm_required_equity'] - (2.0/7.0)) < 1e-6, c2
+    assert c2['agree'] is True, c2
+
+    # Incomplete shadows remain unknown rather than falling back.
+    bad = dict(sh); bad['complete'] = False
+    assert SE.pf.calloff_ev_comparison(
+        ['As','Kd'], ('call', 10), 0.50, bad, 1.0) is None
+
+    psrc = inspect.getsource(SE.PL.preflop_plan)
+    assert "_pf.calloff_ev_comparison(" in psrc
+    assert "'pf_calloff_compare'" in psrc
+    csrc = inspect.getsource(SE.pf.calloff_decision)
+    assert "calloff_ev_comparison" not in csrc
+
+    return {
+        'bf1': {
+            'legacy': c1['legacy_action'],
+            'layer_ev': c1['layer_ev_action'],
+            'required': c1['icm_required_equity'],
+            'agree': c1['agree'],
+        },
+        'bf2': {
+            'legacy': c2['legacy_action'],
+            'layer_ev': c2['layer_ev_action'],
+            'required': c2['icm_required_equity'],
+            'agree': c2['agree'],
+        },
+        'uses_existing_icm_required_equity': True,
+        'incomplete_stays_unknown': True,
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -968,6 +1025,7 @@ def main():
     d6b = check_d6b_seat_keyed_preflop_ranges()
     d6t = check_d6t_multiway_tie_share()
     d6c = check_d6c_preflop_layer_equity_call_shadow()
+    d6d = check_d6d1_calloff_shadow_comparison()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -988,8 +1046,9 @@ def main():
     print("PASS F8-D6-B preflop preserves seat-keyed perceived ranges", d6b)
     print("PASS F8-D6-T multiway ties use exact showdown pot share", d6t)
     print("PASS F8-D6-C preflop pure-calloff layer equity/EV stays shadow-only", d6c)
-    print("16/16 F8 diagnostic checks passed")
-    print("NOTE: D6-C computes objective chip-EV only; calloff_cap still owns action.")
+    print("PASS F8-D6-D1 legacy calloff and layer-EV+ICM are compared in shadow", d6d)
+    print("17/17 F8 diagnostic checks passed")
+    print("NOTE: D6-D1 is comparison-only; legacy calloff_cap still owns action.")
 
 
 if __name__ == '__main__':

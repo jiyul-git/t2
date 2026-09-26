@@ -1693,6 +1693,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
       plan_seed 는 포스트플랍 계획의 출발점이 되는 사전 정보다.
     """
     import preflop as _pf
+    _calloff_compare = None
     # 상대 정보가 프리플랍 레인지부터 움직인다.
     # 예전에는 preflop_plan 이 opp_est 를 아예 안 받아서,
     # 상대가 3벳에 과하게 접는 걸 알아도 3벳 레인지가 안 넓어졌다.
@@ -1734,6 +1735,19 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                                     opener_allin=opener_allin, can_raise=can_raise,
                                     pot_bb=pot_bb, to_call_bb=to_call_bb)
         role = 'defend'
+
+    # F8-D6-D1: pure calloff에서 legacy percentile 판단과 layer-EV+ICM 판단을
+    # 나란히 기록한다. 실제 action은 여전히 defend_decision/calloff_cap 소유다.
+    _calloff_compare = None
+    if (role == 'defend' and call_ev_shadow
+            and call_ev_shadow.get('pure_calloff')
+            and call_ev_shadow.get('complete')):
+        _legacy_cap = _pf.calloff_cap(
+            profile, pos, aggressor_pos, bb, open_bb, raise_level,
+            bf=bf, exploit=rd, n_callers=n_callers,
+            seats=seats, ante=ante)
+        _calloff_compare = _pf.calloff_ev_comparison(
+            hand, a, _legacy_cap, call_ev_shadow, bubble_factor=bf)
 
     # 현재 판단 사건의 종류. 행동 결과만 남기면
     # cold 4bet / opener 4bet / caller backraise 가 모두 'defend'로 뭉개진다.
@@ -1779,6 +1793,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         # F8-D6-C objective preflop call-EV shadow. No action consumer yet.
         'pf_call_ev_shadow': (
             dict(call_ev_shadow) if call_ev_shadow is not None else None),
+        'pf_calloff_compare': (
+            dict(_calloff_compare) if _calloff_compare is not None else None),
         # D2 provenance: later streets must not rebuild an all-in player's
         # preflop range from current stack=0.
         'pf_stack_bb': float(bb or 0.0),

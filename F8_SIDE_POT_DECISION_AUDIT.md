@@ -1427,7 +1427,7 @@ D6-C does not proceed until D6-T targeted verification passes.
 
 # F8-D6-C — preflop layer equity and pure-calloff EV shadow
 
-Status: **IMPLEMENTED; pending user validation. No strategy consumer.**
+Status: **USER-VALIDATED. No strategy consumer.**
 
 D6-C combines the two previously validated inputs:
 
@@ -1542,3 +1542,108 @@ Verifier requires:
 
 After D6-C, D6-D can preregister how objective layer EV interacts with existing ICM/personality
 calloff judgment before any action is changed.
+
+
+---
+
+# F8-D6-D1 — legacy percentile versus layer-EV+ICM shadow comparison
+
+Status: **IMPLEMENTED; pending user validation. No strategy consumer.**
+
+D6-C gives an objective, perception-limited chip-equity estimate for pure short-shove calloffs.
+D6-D1 does not replace the historical percentile policy yet.  It records both judgments side by
+side.
+
+## ICM threshold
+
+No new risk-premium formula is introduced.
+
+D6-D1 reuses `icm.required_equity(pot_before_call, call_cost, bubble_factor)`.
+
+Given:
+
+```
+contestable_after_call = T
+call_cost = C
+pot_before_call = T - C
+```
+
+the existing function gives:
+
+```
+required = C * BF / ((T - C) + C * BF)
+```
+
+At `BF=1` this reduces exactly to chip-EV break-even `C/T`.
+
+This is intentionally different from multiplying `C/T` by BF directly.
+
+## What is compared
+
+For a complete D6-C pure-calloff shadow, D6-D1 records:
+
+- hand percentile;
+- legacy action;
+- legacy `calloff_cap`;
+- layer-weighted effective equity;
+- chip-EV break-even equity;
+- bubble factor;
+- ICM-required equity;
+- layer-EV action (call/fold);
+- whether legacy and layer-EV judgments agree.
+
+The legacy action is still returned unchanged.
+
+## Fixed fixture
+
+With:
+
+```
+call cost = 10
+contestable after call = 60
+effective equity = 24%
+```
+
+then:
+
+At BF 1:
+
+```
+required = 10/60 = 16.67%
+layer EV -> call
+```
+
+At BF 2:
+
+```
+required = 20/(50+20) = 28.57%
+layer EV -> fold
+```
+
+The verifier intentionally supplies a legacy fold in both cases so that BF=1 demonstrates a
+disagreement and BF=2 demonstrates agreement.
+
+Incomplete D6-C shadows remain unknown; no fallback EV judgment is generated.
+
+## Architecture
+
+The comparison is created inside `preflop_plan` after the existing defend/calloff policy has
+returned its action.
+
+`calloff_decision` itself is unchanged and does not consume the shadow.
+
+Compact comparison provenance is stored as `pf_calloff_compare`.
+
+## Acceptance
+
+D6-D1 requires:
+
+- BF=1 exact required equity = 1/6;
+- BF=2 exact required equity = 2/7;
+- deterministic disagreement/agreement fixture above;
+- incomplete shadow remains unknown;
+- `calloff_decision` has no EV consumer;
+- P6 remains 5/5;
+- frozen regression remains unchanged.
+
+Only after D6-D1 validation should a D6-D2 consumer be considered.
