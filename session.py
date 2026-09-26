@@ -1698,9 +1698,14 @@ class HandRun:
                         # response.  If call exhausts the stack, strong hands that would
                         # normally raise remain in the continue range.
                         _base_target_range = list(opp_ranges.get(_target) or [])
+                        # target가 실제로 부담 가능한 incremental call / action-time pot.
+                        # Hero의 nominal intent가 target stack을 초과하면 nominal size로
+                        # continue range를 과도하게 좁히면 안 된다.
+                        _response_size_frac = (
+                            float(_target_call_cost) / max(1.0, float(pot_live)))
                         _call_target_range = R.perceived_facing_bet_response(
                             _base_target_range, board, street,
-                            float(_planned.get('size', 0) or 0),
+                            _response_size_frac,
                             profile=ax, raise_possible=_raise_possible)
                         _call_opp_ranges = dict(opp_ranges)
                         _call_opp_ranges[_target] = _call_target_range
@@ -1751,6 +1756,7 @@ class HandRun:
                             'call_range_before_n': len(_base_target_range),
                             'call_range_after_n': len(_call_target_range),
                             'call_range_after_sig': PL._range_sig(_call_target_range),
+                            'response_size_frac': round(_response_size_frac, 6),
                             'expected': _bet_expected,
                             'check_terminal': _check_terminal,
                             'check_summary': _check_sum,
@@ -1760,6 +1766,26 @@ class HandRun:
                             'response_range_conditioned': True,
                             'strategy_consumer': False,
                         }
+
+                        # F8-D5-C2 first consumer scope:
+                        # river + action closes + fold/call exhaustive + all EV complete.
+                        # Judgment layer revises the intent; execution remains pure conversion.
+                        _c2_eligible = bool(
+                            street == 'river'
+                            and behind == 0
+                            and not _raise_possible
+                            and _bet_expected.get('complete')
+                            and _check_sum
+                            and _check_sum.get('complete')
+                            and _bet_vs_check is not None)
+                        _c2_veto = False
+                        if _c2_eligible:
+                            h.plans[key], _c2_veto = PL.apply_layer_bet_ev_judgment(
+                                h.plans[key], street, _bet_vs_check)
+                            _pl = h.plans[key]
+                        bet_ev_shadow['strategy_consumer'] = bool(_c2_eligible)
+                        bet_ev_shadow['consumer_eligible'] = bool(_c2_eligible)
+                        bet_ev_shadow['bet_vetoed_to_check'] = bool(_c2_veto)
 
                 h.intents = getattr(h, 'intents', [])
                 # 액션 전 관측. 순번을 붙여 매 액션마다 남긴다 —
@@ -1804,6 +1830,8 @@ class HandRun:
                         'layer_call_active': bool(_layer_call_value),
                         # F8-D5-A conditional fold/call outcome shadow only.
                         'bet_ev_shadow': bet_ev_shadow,
+                        'layer_bet_ev_judgments': list(
+                            _pl.get('layer_bet_ev_judgments') or []),
                         'blocker': _pl.get('blocker'),
                         'blocker_net': _pl.get('blocker_net'),
                         'nut_adv': _pl.get('nut_adv'), 'range_adv': _pl.get('range_adv'),

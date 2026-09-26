@@ -1200,6 +1200,42 @@ def set_intent(state, street, intent):
     return st
 
 
+def apply_layer_bet_ev_judgment(state, street, bet_minus_check_ev):
+    """F8-D5-C2: terminal side-pot bet/check EV를 즉시 intent에 반영.
+
+    실행부 override가 아니다. 판단층 intent를 새 정보로 갱신한다.
+    delta < 0 인 기존 bet만 check로 내린다. check를 bet으로 승격시키거나
+    line plan 자체를 바꾸지 않는다.
+    """
+    it = intent_of(state, street)
+    delta = (None if bet_minus_check_ev is None
+             else float(bet_minus_check_ev))
+    if not it or it.get('act') != 'bet' or delta is None:
+        return state, False
+    if delta >= 0:
+        return state, False
+
+    st = set_intent(
+        state, street,
+        mk_intent('check', 0.0,
+                  'F8 layer EV: bet-check %.1f < 0 → 체크' % delta))
+    st['layer_bet_ev_judgments'] = list(
+        st.get('layer_bet_ev_judgments') or [])
+    st['layer_bet_ev_judgments'].append({
+        'street': street,
+        'prior_act': 'bet',
+        'new_act': 'check',
+        'bet_minus_check_ev': round(delta, 6),
+        'reason': 'terminal_layer_ev_negative',
+    })
+    st['why'] = list(st.get('why') or []) + [
+        '%s: F8 side-pot terminal EV %.1f → bet 철회, check'
+        % (street, delta)]
+    _trace(st, street, 'layer_bet_ev',
+           prior='bet', act='check', delta=round(delta, 3))
+    return st, True
+
+
 def record_response_plan(state, street, response):
     """상대 액션 뒤 새 judgment가 만든 **현재 액션 계획**을 보존한다.
 

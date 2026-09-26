@@ -543,6 +543,8 @@ def check_d5c_response_conditioning_and_check_benchmark():
         base, board, 'river', 0.50, profile=None, raise_possible=True)
     allin_continue = SE.R.perceived_facing_bet_response(
         base, board, 'river', 0.50, profile=None, raise_possible=False)
+    short_allin_continue = SE.R.perceived_facing_bet_response(
+        base, board, 'river', 0.20, profile=None, raise_possible=False)
 
     # A strong combo in the ordinary top-raise slice must be absent from the
     # call-only branch but present when raise is impossible.
@@ -551,6 +553,8 @@ def check_d5c_response_conditioning_and_check_benchmark():
     assert probe in allin_continue, (probe, len(allin_continue))
     assert len(allin_continue) > len(normal_call), (
         len(normal_call), len(allin_continue))
+    assert len(short_allin_continue) > len(allin_continue), (
+        len(short_allin_continue), len(allin_continue))
 
     # Bet EV must be compared to a terminal-check EV, not zero.
     check = {'complete': True, 'chip_ev': 15.0}
@@ -560,6 +564,8 @@ def check_d5c_response_conditioning_and_check_benchmark():
 
     src = inspect.getsource(SE.HandRun._run)
     assert "R.perceived_facing_bet_response(" in src
+    assert "_response_size_frac = (" in src
+    assert "float(_target_call_cost) / max(1.0, float(pot_live))" in src
     assert "_check_terminal = bool(street == 'river' and behind == 0)" in src
     assert "'bet_minus_check_ev': _bet_vs_check" in src
     assert "'response_range_conditioned': True" in src
@@ -568,6 +574,8 @@ def check_d5c_response_conditioning_and_check_benchmark():
     return {
         'normal_call_n': len(normal_call),
         'allin_continue_n': len(allin_continue),
+        'short_allin_continue_n': len(short_allin_continue),
+        'effective_call_price_widens_short_allin_range': True,
         'top_raise_slice_restored_when_raise_impossible': True,
         'example_bet_ev': 9.6,
         'example_check_ev': 15.0,
@@ -625,6 +633,65 @@ def check_d5_size_unit_boundary():
     }
 
 
+
+def check_d5c2_terminal_bet_ev_consumer():
+    st = {
+        'plan': 'value_3street',
+        'why': [],
+        'intents': {'river': SE.PL.mk_intent('bet', 0.60, 'fixture')},
+    }
+
+    # Negative incremental value: judgment layer must revise bet -> check.
+    out, changed = SE.PL.apply_layer_bet_ev_judgment(st, 'river', -5.4)
+    assert changed is True, out
+    assert SE.PL.intent_of(out, 'river')['act'] == 'check', out
+    assert st['intents']['river']['act'] == 'bet', st
+    assert out['layer_bet_ev_judgments'][-1]['reason'] == (
+        'terminal_layer_ev_negative'), out
+
+    # Non-negative value keeps the original strategy intent.
+    keep, changed2 = SE.PL.apply_layer_bet_ev_judgment(
+        st, 'river', 3.25)
+    assert changed2 is False, keep
+    assert SE.PL.intent_of(keep, 'river')['act'] == 'bet', keep
+
+    # Unknown stays unchanged.
+    unknown, changed3 = SE.PL.apply_layer_bet_ev_judgment(
+        st, 'river', None)
+    assert changed3 is False, unknown
+    assert SE.PL.intent_of(unknown, 'river')['act'] == 'bet', unknown
+
+    psrc = inspect.getsource(SE.PL.apply_layer_bet_ev_judgment)
+    assert "delta < 0" in psrc
+    assert "mk_intent('check'" in psrc
+
+    src = inspect.getsource(SE.HandRun._run)
+    for needle in (
+        "street == 'river'",
+        "behind == 0",
+        "not _raise_possible",
+        "_bet_expected.get('complete')",
+        "_check_sum.get('complete')",
+        "PL.apply_layer_bet_ev_judgment(",
+        "bet_ev_shadow['bet_vetoed_to_check']",
+    ):
+        assert needle in src, needle
+
+    # Execution layer must not know bet_minus_check_ev.
+    asrc = inspect.getsource(SE.PL.act_with_plan)
+    assert "bet_minus_check_ev" not in asrc
+
+    return {
+        'negative_delta': 'bet->check',
+        'positive_delta': 'bet-kept',
+        'unknown_delta': 'bet-kept',
+        'activation_scope': (
+            'river, behind0, locked-main, one-active, raise-impossible, complete'),
+        'execution_override': False,
+        'strategy_consumer': True,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -637,6 +704,7 @@ def main():
     d5b = check_d5b_fold_probability_and_exhaustive_ev()
     d5c = check_d5c_response_conditioning_and_check_benchmark()
     d5u = check_d5_size_unit_boundary()
+    d5c2 = check_d5c2_terminal_bet_ev_consumer()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -652,8 +720,9 @@ def main():
     print("PASS F8-D5-B existing fold read combines EV only when raise is impossible", d5b)
     print("PASS F8-D5-C1 response-conditioned continue range and terminal check benchmark", d5c)
     print("PASS F8-D5-U sizing-unit boundary is consistent", d5u)
-    print("11/11 F8 diagnostic checks passed")
-    print("NOTE: D5-U cleared; D5-C2 is no longer blocked by sizing units.")
+    print("PASS F8-D5-C2 terminal bet/check consumer stays in judgment layer", d5c2)
+    print("12/12 F8 diagnostic checks passed")
+    print("NOTE: D5-C2 changes only the preregistered terminal exhaustive population.")
 
 
 if __name__ == '__main__':

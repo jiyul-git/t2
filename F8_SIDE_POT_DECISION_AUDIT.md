@@ -965,7 +965,7 @@ Frozen regression must remain unchanged.
 
 # F8-D5-C1 preregistration — response-conditioned continuation range and check benchmark
 
-Status: **USER-VALIDATED SHADOW. No strategy consumer.**
+Status: **REVISED: effective response price fixed; pending validation with C2.**
 
 D5-B still cannot be consumed safely for two reasons discovered during the consumer audit.
 
@@ -1097,3 +1097,110 @@ The failed diagnostic at commit `40f9a05` was an **audit expectation error**, no
 behavior defect.  Frozen regression remained unchanged, consistent with that conclusion.
 
 D5-C2 may proceed.
+
+
+---
+
+# F8-D5-C2 implementation — terminal proactive bet/check consumer
+
+Status: **IMPLEMENTED; pending targeted + behavior validation.**
+
+After C1, proactive bet EV is complete only in a deliberately narrow terminal population.
+
+## Effective response price correction
+
+When the active target is shorter than the nominal bet, the target does not face the hero's full
+nominal fraction.
+
+The response-conditioned continue range now uses:
+
+```
+response_size_frac = target_call_cost / action_time_pot
+```
+
+rather than the hero's nominal intent fraction.
+
+Thus a target with only 0.20 pot left is conditioned on a 0.20-pot all-in decision even if hero's
+nominal bet was 1.00 pot.
+
+No new range-width coefficient is introduced; the existing size-dependent continue model is reused.
+
+## Consumer activation
+
+D5-C2 can revise an existing bet intent only when all of these are true:
+
+- locked-all-in range exists (D5 shadow prerequisite);
+- exactly one active opponent;
+- hero faces no wager;
+- existing judgment intent is a bet;
+- river;
+- `behind == 0`, so check is terminal;
+- target cannot raise after matching (`raise_possible=False`);
+- conditional fold/call bet EV is complete;
+- terminal check EV is complete;
+- `bet_minus_check_ev` is known.
+
+## Decision rule
+
+No fitted threshold is introduced.
+
+```
+if EV(bet) - EV(check) < 0:
+    bet intent -> check intent
+else:
+    preserve existing bet intent
+```
+
+D5-C2 does **not** create bets from checks.  It is a negative-EV veto on an already selected bet.
+
+The line plan label is preserved.  Only the current-street intent is revised because the new
+pot-layer judgment invalidates that immediate action, not the longer-lived strategic goal.
+
+## Architecture boundary
+
+The revision is implemented in `plan.apply_layer_bet_ev_judgment`.
+
+Session supplies the new judgment information and stores provenance, but does not overwrite the
+executed action.
+
+`act_with_plan` remains unaware of `bet_minus_check_ev` and simply executes the final intent.
+
+This preserves:
+
+```
+judgment -> plan/intent -> action
+```
+
+instead of:
+
+```
+judgment -> action -> session override
+```
+
+## Skill/persona treatment
+
+No new side-pot skill coefficient is added.
+
+The EV inputs are already perception-limited by existing architecture:
+
+- active range perception -> `range_read`;
+- target fold tendency -> existing fold-frequency read/use gate;
+- action sizing -> actual effective response price;
+- locked opponent range -> observer-specific reconstructed perceived range.
+
+The pot-layer accounting itself is treated as factual game-state geometry rather than a new
+personality trait.
+
+## Validation
+
+Targeted verifier requires:
+
+- negative delta changes bet -> check;
+- positive delta preserves bet;
+- unknown delta preserves bet;
+- activation source contains every preregistered gate;
+- execution layer contains no D5 EV override.
+
+This is an intentional behavior-change patch.  Frozen regression mismatch is allowed only if every
+changed action is attributable to the D5-C2 activation population.  The frozen baseline must not be
+updated before attribution.
