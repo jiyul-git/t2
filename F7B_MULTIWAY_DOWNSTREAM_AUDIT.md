@@ -1585,3 +1585,30 @@ If `preflop_n == 0` in every case, the downstream self-range fallback is only ma
 action-model incompatibility upstream. The repair must then define how an observed action is
 represented when the profile model assigns that action an empty range; copying the hero range is
 not a valid semantic fallback.
+
+
+---
+
+## F7-B1D4 — percentile-bin empty-range shadow
+
+B1D3 closed the immediate provenance question: all 11 observed empty HU opponent
+ranges are already empty at preflop_range, all are reconstructed as 3bet, and
+their continuous threebet_top intervals are positive.
+
+The strongest discrete class AA ends at percentile 0.0045, while the observed
+threebet_top values are about 0.0009–0.0033. Endpoint-only selection therefore
+cannot represent those positive intervals.
+
+A separate deeper issue remains open: defend_decision is stochastic around the
+thresholds, while preflop_range is a hard-slice observer model.
+
+tools/measure_f7b_empty_range_overlap_candidate.py shadows only the narrower
+representation defect:
+- keep every existing non-empty range exactly;
+- only for an empty call/3bet reconstruction, include hand classes whose
+  percentile bin overlaps the intended continuous interval;
+- preserve the existing polar value/bluff intervals;
+- do not change preflop action generation or any coefficients.
+
+This is diagnostic only. The stochastic-policy posterior mismatch remains open
+regardless of the result.
