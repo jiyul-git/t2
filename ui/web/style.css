@@ -239,8 +239,13 @@ html, body {
 .bubble.fold::after { border-top-color: #46524d; }
 @keyframes pop { from { transform: translate(-50%, 6px) scale(.9); opacity: 0; } }
 
-.pod.side-left .bubble,
-.pod.side-right .bubble { top:-60px; }
+/* Side seats moved outward after the original bubble fix.
+   Keep the bubble above the hole cards, but pull it toward table center so
+   it is not clipped by the viewport or visually stacked on the cards. */
+.pod.side-left .bubble { top:-60px; left:calc(50% + 24px); }
+.pod.side-right .bubble { top:-60px; left:calc(50% - 24px); }
+.pod.side-left .bubble::after { left:calc(50% - 24px); }
+.pod.side-right .bubble::after { left:calc(50% + 24px); }
 
 /* 좌석 앞 칩 */
 .chips {
