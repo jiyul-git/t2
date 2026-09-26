@@ -1390,7 +1390,9 @@ class HandRun:
             if s == h.hero:
                 act = yield {'stage': 'preflop', 'pos': pos, 'hole': h.hole[s],
                              'stacks': dict(rnd.stacks), 'contrib': dict(rnd.contrib),
-                             'pot': rnd.contestable_contrib(s)+ante_pot, 'tocall': tc,
+                             'pot': rnd.contestable_contrib(s)+ante_pot,
+                             'pot_total': sum(rnd.contrib.values()) + ante_pot,
+                             'tocall': tc,
                              'stack': rnd.stacks[s], 'min_raise': rnd.current+rnd.min_raise,
                              'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
                              'contrib': dict(rnd.contrib), 'live': list(rnd.live()),
@@ -1401,7 +1403,9 @@ class HandRun:
                 try: rnd.apply(s, a, amt)
                 except ValueError as e:
                     act = yield {'stage': 'preflop', 'error': str(e), 'pos': pos,
-                                 'hole': h.hole[s], 'pot': rnd.contestable_contrib(s)+ante_pot,
+                                 'hole': h.hole[s],
+                                 'pot': rnd.contestable_contrib(s)+ante_pot,
+                                 'pot_total': sum(rnd.contrib.values()) + ante_pot,
                                  'tocall': tc, 'stack': rnd.stacks[s],
                                  'min_raise': rnd.current+rnd.min_raise,
                                  'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
@@ -1697,7 +1701,9 @@ class HandRun:
                 if s == h.hero:
                     act = yield {'stage': street, 'board': board, 'hole': h.hole[s],
                                  'stacks': dict(r2.stacks), 'contrib': dict(r2.contrib),
-                                 'pot': pot_now + r2.contestable_contrib(s), 'tocall': tc,
+                                 'pot': pot_now + r2.contestable_contrib(s),
+                                 'pot_total': pot_now + sum(r2.contrib.values()),
+                                 'tocall': tc,
                                  'stack': r2.stacks[s], 'min_raise': r2.current+r2.min_raise,
                                  'can_raise': r2.can_raise(s), 'log': list(r2.log),
                                  'prior_log': list(getattr(self, 'full_log', [])),
@@ -1707,7 +1713,9 @@ class HandRun:
                     try: r2.apply(s, act[0], act[1])
                     except ValueError as e:
                         act = yield {'stage': street, 'error': str(e), 'board': board,
-                                     'hole': h.hole[s], 'pot': pot_now+r2.contestable_contrib(s),
+                                     'hole': h.hole[s],
+                                     'pot': pot_now+r2.contestable_contrib(s),
+                                     'pot_total': pot_now + sum(r2.contrib.values()),
                                      'tocall': tc, 'stack': r2.stacks[s],
                                      'min_raise': r2.current+r2.min_raise,
                                      'can_raise': r2.can_raise(s), 'log': list(r2.log),
