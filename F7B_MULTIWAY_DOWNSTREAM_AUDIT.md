@@ -1501,3 +1501,47 @@ The tournament always follows current production.
 If strategy-relevant incomplete calls are zero in a broad live fixture, the silent padding can be
 removed as a behavior-preserving architecture cleanup. If they are nonzero, a separate explicit
 unknown-range policy must be designed and attributed before activation.
+
+
+---
+
+## F7-B1D2 — heads-up empty-range provenance
+
+B1D live measurement changed the diagnosis.
+
+Across 12 seeds x 50 hands:
+
+- 4,390 normalization calls;
+- 26 incomplete calls;
+- 15 strategy-relevant incomplete calls;
+- **every incomplete example was heads-up (`n_opp=1`)**;
+- no live multiway partial/union-only case was observed.
+
+So the currently observed defect is not a missing multiway seat being copied from another seat.
+
+The upstream session path contains a more suspicious fallback:
+
+```
+opp_r = sorted(set(opp_r))
+if not opp_r:
+    opp_r = sorted(set(my_r))
+```
+
+while `opp_ranges` still preserves the opponent seat as an empty list.
+
+That can create the inconsistent representation:
+
+```
+opp_ranges[opponent] = []
+opp_range             = hero's own range
+```
+
+and downstream normalization then appears to "recover" the missing opponent from the union.
+
+`tools/measure_f7b_empty_hu_range.py` records every heads-up update where the sole seat-keyed
+opponent range is empty and compares the downstream `opp_range` directly with `my_range`.
+
+It also records street and `first` status to distinguish initial range construction failure from
+later postflop narrowing-to-empty.
+
+No production behavior changes in this step.
