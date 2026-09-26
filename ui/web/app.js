@@ -408,10 +408,13 @@ function renderChips(v, streetChanged) {
     const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
     const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
     const side = sideSeatClass(seatP);
+    // The marked 3/9 o'clock targets were tuned before the felt was
+    // shrunk from 28px horizontal inset to 50px. Re-map the same visual
+    // target into the smaller felt instead of keeping the stale 27/73%.
     if (side === ' side-left') {
-      p.x = 27; p.y = 46;
+      p.x = 30; p.y = 46;
     } else if (side === ' side-right') {
-      p.x = 73; p.y = 46;
+      p.x = 70; p.y = 46;
     }
     const el = document.createElement('div');
     el.className = 'chips' + side;
