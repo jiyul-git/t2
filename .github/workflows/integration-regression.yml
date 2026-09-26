@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - integration/ui-v49-money-jump-20260920
-      - chatgpt/parallel-tables-20260927
 
 jobs:
   regression:
