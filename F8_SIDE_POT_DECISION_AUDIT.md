@@ -1829,3 +1829,46 @@ AND complete D6-C shadow
 AND pf_defend gate passed
 AND selected layer action != legacy action
 ```
+
+
+---
+
+# F8-D6-D2 behavior attribution
+
+Status: **TARGETED STRUCTURE PASS; frozen regression changed only at seed 3005. Attribution tool added.**
+
+User validation at commit `708576f`:
+
+- F8 diagnostic: 19/19;
+- P6: 5/5;
+- preflop closure: 4/4;
+- regression aggregates: VPIP 20.7%, PFR 12.1%, flop 47.2%;
+- only seed 3005 fingerprint changed.
+
+The frozen baseline is intentionally **not** updated.
+
+`tools/attribute_f8_d6d2.py` isolates only the D6-D2 action consumer while leaving D6-A through
+D6-C, D6-T, and F8-R active.
+
+It runs the exact seed-3005/30-hand regression tournament twice:
+
+1. current D6-D2 behavior;
+2. identical current code, but `calloff_layer_judgment` is wrapped so only `gate_pass=False`
+   is forced.
+
+Acceptance requires all of the following:
+
+- current seed-3005 fingerprint differs from the frozen fingerprint;
+- disabling only D6-D2 restores the frozen fingerprint exactly;
+- the first divergent full-log action is preflop and belongs to a
+  `pf_calloff_consumer.changed=True` event;
+- that event has:
+  - `pure_calloff=True`;
+  - complete D6-C shadow;
+  - `gate_pass=True`;
+  - selected action different from legacy action;
+- the current first divergent action equals `selected_action`;
+- the consumer-off first divergent action equals `legacy_action`.
+
+Only if all checks pass may the seed-3005 regression movement be attributed to the preregistered
+D6-D2 population. The baseline remains frozen until the F8 closure decision is documented.
