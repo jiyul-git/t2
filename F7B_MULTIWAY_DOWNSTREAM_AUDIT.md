@@ -1064,3 +1064,44 @@ No new constants are introduced.  The production result is always returned.
 
 The purpose is attribution, not tuning: if removing the approximate score changes strategy, that
 change must be understood before replacing union aggregation with a field-level blocker metric.
+
+
+---
+
+## F7-B1C4 — correction: exact neutralization of blocker_score
+
+B1C3 exposed that removing `blocker_effect` changes one multiway plan in the frozen fixture, while
+forcing `blocker_score=0` changes none.
+
+That result does **not** yet mean the approximate score can simply be removed.
+
+The reason is algebraic:
+
+```
+score factor = 0.5 + 1.8 * blocker_score
+```
+
+so `blocker_score=0` leaves a factor of **0.5**, not the neutral multiplicative factor 1.0.
+The previous B1C3 label `effect_only` was therefore imprecise: it meant "effect active with
+score value zero", not "score contribution removed".
+
+The exact score value that cancels the existing factor is:
+
+```
+blocker_score = (1.0 - 0.5) / 1.8 = 5/18
+```
+
+This is **not a proposed poker constant** and is not tuning.  It is only the algebraic value that
+makes the existing score factor equal exactly 1.0.
+
+`tools/measure_f7b_blocker_neutral.py` replays each multiway `make_plan` under identical seeds:
+
+- production;
+- score factor neutralized exactly to 1.0, effect retained;
+- effect zeroed, score retained;
+- both blocker influences removed (score factor 1.0, effect zero).
+
+Production output is always returned.
+
+This diagnostic must be interpreted before any blocker consumer is removed or any field-level
+replacement is activated.
