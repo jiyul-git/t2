@@ -1,0 +1,28 @@
+{
+ "fp": {
+  "3000": "fe1fe74e2f54353c",
+  "3001": "78f433f6a3cfed04",
+  "3002": "f3c143337c02598b",
+  "3003": "fb927a83de13dedf",
+  "3004": "d4295da0aace11ca",
+  "3005": "04afb3eef9132561"
+ },
+ "stats": {
+  "n": 1368,
+  "vpip": 283,
+  "hands": 180,
+  "flop": 85,
+  "pfr": 165
+ },
+ "rev": "473d51f",
+ "note": "F7-B1A joint multiway relative strength closed and fully attributed",
+ "seeds": [
+  3000,
+  3001,
+  3002,
+  3003,
+  3004,
+  3005
+ ],
+ "hands": 30
+}
