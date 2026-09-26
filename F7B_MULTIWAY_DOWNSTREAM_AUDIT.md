@@ -1210,3 +1210,55 @@ effect and shadows the structurally clean candidate:
 3. all existing coefficients, blocker awareness and RNG streams unchanged.
 
 Production output is always returned.  Activation requires the measured behavior attribution first.
+
+
+---
+
+## F7-B1C7 — stale blocker judgment and split consumers
+
+After the same-scale joint candidate passed exact heads-up parity, source tracing exposed a separate
+architecture defect that must be closed before activation.
+
+### Current split
+
+`make_plan` computes and stores:
+
+```
+blocker
+blocker_net
+stackoff['_blk_net']
+```
+
+But `refresh()` updates rel / equity / outs / nut advantage / range advantage and **does not
+refresh either blocker metric**.
+
+That stale copy is behaviorally live: `decide_size()` reads
+`stackoff['_blk_net']` for value sizing on later streets.
+
+Meanwhile `river_fix()` does not consume the stored judgment.  It independently recomputes
+`R.blocker_effect(...)` from the current **union** range on the river.
+
+So blocker judgment currently has three different paths:
+
+1. make-plan bluff probability;
+2. stale make-plan copy inside later-street value sizing;
+3. fresh but union-collapsed recomputation inside river busted-draw bluffing.
+
+This violates the target architecture:
+
+```
+judgment -> plan -> action
+```
+
+because the same factual concept is stale in one consumer and silently recomputed inside another.
+
+`tools/measure_f7b_blocker_stale.py` measures, on every multiway refresh:
+
+- stored blocker net vs current-board union blocker net;
+- stored stackoff copy vs current union;
+- current union vs same-scale joint blocker;
+- sign reversals;
+- the implied change in the existing value-sizing multiplier;
+- river states where the union and joint judgments disagree.
+
+No production behavior changes in this diagnostic.
