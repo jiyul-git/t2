@@ -310,7 +310,8 @@ def resume_others(st, others=None):
 
 
 # ---------- 진행 ----------
-def step(action=None, amount=0, defer_others=False, others=None):
+def step(action=None, amount=0, defer_others=False, others=None,
+         on_bot_action=None):
     st = load()
     # 밀린 진행이 있으면 **다음 핸드를 딜하기 전에** 반드시 끝낸다.
     # 서버가 죽어도 상태 파일의 others_pending 이 남아 여기서 복구된다.
@@ -378,7 +379,8 @@ def step(action=None, amount=0, defer_others=False, others=None):
         save(st)
 
     f, tb, alive, h, hero_seat = build_hand(st)
-    run = SE.HandRun(h, decisions=st.get('decisions'))
+    run = SE.HandRun(
+        h, decisions=st.get('decisions'), on_bot_action=on_bot_action)
     raw = run.start()
     for (a, amt) in st['actions']:
         if isinstance(raw, dict) and (raw.get('done') or raw.get('error')): break
