@@ -1337,3 +1337,52 @@ It attributes separately for heads-up and multiway:
 
 This is the direct activation gate. Full paired replay remains useful for downstream impact, but
 production activation should be justified by this non-cascading attribution.
+
+
+---
+
+## F7-B1C10 — structure-only blocker candidate
+
+B1C9 shows the previous unified candidate mixed two different changes.
+
+Direct, non-cascading attribution across 498 production update calls:
+
+- 13 plan changes, all `giveup -> bluff_2street`;
+- 11 / 13 of those plan changes are heads-up;
+- 34 intent-size changes, 29 heads-up;
+- only 2 multiway plan changes.
+
+The heads-up plan changes are not evidence for joint multiway semantics. They come from neutralizing
+the existing approximate `blocker_score` factor:
+
+```
+0.5 + 1.8 * blk
+```
+
+When `blk=0`, production currently multiplies bluff probability by 0.5. Replacing that whole
+factor by 1.0 therefore removes an embedded bluff-frequency suppression. Whatever its conceptual
+history, changing it now would mix architecture repair with balance tuning.
+
+That violates the audit order: wiring/semantics first, frequency tuning last.
+
+### B1C10 candidate
+
+The next candidate therefore **preserves the score factor exactly** and changes only structural
+blocker behavior:
+
+1. production `blocker_score` multiplier remains untouched;
+2. heads-up `blocker_effect` remains exact legacy;
+3. complete multiway seat pools use same-scale `joint_blocker_effect`;
+4. `refresh` updates blocker judgment on current board/current ranges;
+5. `stackoff['_blk_net']` is refreshed from that same judgment;
+6. `river_fix` consumes the shared state judgment instead of independently recomputing union
+   blocker effect.
+
+Incomplete multiway pools deliberately keep production union fallback **in this diagnostic only** so
+partial-pool semantics remain isolated as a separate F7-B item.
+
+`tools/measure_f7b_blocker_structure_only.py` performs direct attribution on copied production
+decision states, so no candidate effect can cascade into later tournament state.
+
+This is the appropriate activation gate for the blocker wiring repair before any bluff-frequency
+calibration is revisited.
