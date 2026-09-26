@@ -27,6 +27,12 @@ class Book:
     def observe_4bet(self, *args, **kwargs):
         pass
 
+    def observe_backraise(self, *args, **kwargs):
+        pass
+
+    def observe_limp_raise(self, *args, **kwargs):
+        pass
+
     def observe_showdown(self, *args, **kwargs):
         pass
 
