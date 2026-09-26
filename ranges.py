@@ -198,6 +198,21 @@ def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
     return value + bot.pick_bluffs(ranked, board, street, nb)
 
 
+def _continue_range(r, board, street, size_frac, damp=1.0):
+    """벳을 맞고 fold하지 않은 전체 continue range.
+
+    _call_range와 같은 size별 continue 폭을 쓰되, raise가 불가능한 경우에는
+    최상단 강한 핸드를 '원래 raise했을 것'이라며 제거하지 않는다.
+    """
+    ranked = _ranked(r, board)
+    n = len(ranked)
+    keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
+    keep = _damp(keep * (1.25 - 0.45*min(1.5, size_frac)), damp)
+    k = max(1, int(n*min(0.95, keep)))
+    out = ranked[:k]
+    return out if len(out) >= _MIN_KEEP else ranked[:_MIN_KEEP] or ranked
+
+
 def _call_range(r, board, street, size_frac, damp=1.0):
     """콜: 최상위 일부는 올렸을 것이고, 최하위는 접었을 것이다. 가운데가 남는다."""
     ranked = _ranked(r, board)
@@ -225,6 +240,35 @@ def _check_range(r, board, street, cbet_axis, damp=1.0):
     n = len(ranked)
     drop = int(n*0.10*min(1.0, cbet_axis/6.0)*damp)     # c-bet 성향이 높을수록 더 깎인다
     return ranked[drop:] if n - drop >= _MIN_KEEP else ranked
+
+
+def perceived_facing_bet_response(base, board, street, size_frac,
+                                  profile=None, raise_possible=True):
+    """현재 base range에서 '내 벳을 맞은 뒤 계속한 상대'의 체감 레인지.
+
+    raise_possible=True  -> 실제 call branch: 기존 _call_range 사용.
+    raise_possible=False -> call이 곧 all-in continuation이라 최상단도 남기는
+                            _continue_range 사용.
+
+    observer의 range_read 한계는 perceived_range와 같은 방식으로 적용한다.
+    """
+    if not base or not board:
+        return list(base or [])
+    full = (_call_range(base, board, street, size_frac)
+            if raise_possible else
+            _continue_range(base, board, street, size_frac))
+    if not profile or not profile.get('concepts'):
+        return full
+    rr = PS.sk(profile, 'range_read')
+    if rr < 1.5:
+        return list(base)
+    grasp = min(1.0, (rr - 1.5) / 6.0)
+    if grasp >= 0.98 or not full:
+        return full
+    keep = set(full)
+    rest = [c for c in base if c not in keep]
+    n_extra = int(len(rest) * (1.0 - grasp))
+    return full + rest[:n_extra]
 
 
 def perceived_range(base, board, acts, profile=None, actor_read=None):

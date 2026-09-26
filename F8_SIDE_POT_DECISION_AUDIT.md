@@ -860,7 +860,7 @@ Acceptance also requires the frozen regression to remain exactly unchanged.
 
 # F8-D5-B preregistration — perceived fold probability and exhaustive bet EV
 
-Status: **IMPLEMENTED SHADOW; pending user validation. No strategy consumer.**
+Status: **USER-VALIDATED SHADOW. No strategy consumer.**
 
 D5-A provides `EV | fold` and `EV | call`.  D5-B determines when those two branches can be
 combined without inventing an unobserved raise model.
@@ -956,6 +956,96 @@ Still no strategy function consumes this value.
 - exhaustive all-in continuation yields expected EV +9.6 in the fixed fixture;
 - raise-capable continuation stays unknown;
 - no invented raise frequency;
+- no strategy consumer.
+
+Frozen regression must remain unchanged.
+
+
+---
+
+# F8-D5-C1 preregistration — response-conditioned continuation range and check benchmark
+
+Status: **IMPLEMENTED SHADOW; pending user validation. No strategy consumer.**
+
+D5-B still cannot be consumed safely for two reasons discovered during the consumer audit.
+
+## 1. EV|call must condition the opponent range on actually continuing
+
+D5-A/B initially valued the call branch using the opponent's range **before** it faced the new
+bet.  That misses selection: weak hands fold and the continuing range is stronger.
+
+D5-C1 therefore applies one hypothetical facing-bet response to the active target range.
+
+The existing size-dependent call/continue model is reused; no new cutoff coefficient is added.
+
+### Raise-capable call
+
+If the target retains chips after matching, ordinary `_call_range` remains appropriate for the
+conditional **call** branch: much of the strongest slice is absent because those hands would often
+raise.
+
+### Call exhausts stack
+
+If matching the bet exhausts the target's stack, raise is impossible.  The existing continue-width
+formula is reused but the top-raise cut is removed:
+
+```
+continue range = strongest existing keep-fraction
+```
+
+This preserves strong hands that cannot legally choose the raise branch.
+
+Observer `range_read` limitations are applied in the same style as `perceived_range`.
+
+## 2. Bet EV must be compared with check EV, not zero
+
+A locked-main state can give the hero positive showdown value even without investing another chip.
+
+Therefore:
+
+```
+bet EV > 0
+```
+
+does not imply betting is better than checking.
+
+The strategic comparison is:
+
+```
+bet_minus_check_ev = EV(bet) - EV(check)
+```
+
+But a simple showdown check value is valid only when check terminates the decision tree.
+
+D5-C1 therefore computes a check benchmark only for the first safe scope:
+
+- river;
+- current actor closes action (`behind == 0`).
+
+For flop/turn, or river with an opponent still to act after a check, `check_summary` remains
+unknown because future actions have value.
+
+## Live shadow
+
+D5 shadow provenance now also records:
+
+- target range size before hypothetical response;
+- response-conditioned call/continue range size/signature;
+- whether check is terminal;
+- terminal check summary when valid;
+- `bet_minus_check_ev` only when both expected bet EV and check EV are complete;
+- `response_range_conditioned=True`;
+- `strategy_consumer=False`.
+
+## D5-C1 acceptance
+
+The verifier requires:
+
+- ordinary call range excludes a strong top-raise slice;
+- all-in continue range restores that slice when raise is impossible;
+- all-in continue range is wider than ordinary call range;
+- a fixed example with bet EV 9.6 and check EV 15 yields delta -5.4;
+- terminal-check scope is river + behind=0 only;
 - no strategy consumer.
 
 Frozen regression must remain unchanged.

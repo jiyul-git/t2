@@ -1690,20 +1690,47 @@ class HandRun:
                         _fold_eq = _diagnostic_layer_equities(
                             s, h.hole[s], board, _fold_layers,
                             opp_ranges, locked_opp_ranges, sims=600)
+                        # target가 call price를 낸 뒤 칩이 남으면 raise branch가 존재한다.
+                        _target_stack_before = float(r2.stacks.get(_target, 0) or 0)
+                        _raise_possible = (_target_stack_before - _target_call_cost) > 0
+
+                        # D5-C1: hypothetical call must condition target range on the
+                        # response.  If call exhausts the stack, strong hands that would
+                        # normally raise remain in the continue range.
+                        _base_target_range = list(opp_ranges.get(_target) or [])
+                        _call_target_range = R.perceived_facing_bet_response(
+                            _base_target_range, board, street,
+                            float(_planned.get('size', 0) or 0),
+                            profile=ax, raise_possible=_raise_possible)
+                        _call_opp_ranges = dict(opp_ranges)
+                        _call_opp_ranges[_target] = _call_target_range
+
                         _call_eq_b = _diagnostic_layer_equities(
                             s, h.hole[s], board, _call_layers_b,
-                            opp_ranges, locked_opp_ranges, sims=600)
+                            _call_opp_ranges, locked_opp_ranges, sims=600)
                         _fold_sum = _layer_investment_summary(
                             _hero_bet_cost, _fold_layers, _fold_eq)
                         _call_sum_b = _layer_investment_summary(
                             _hero_bet_cost2, _call_layers_b, _call_eq_b)
                         _pfold, _pfold_meta = _perceived_fold_to_bet_probability(
                             ax, _est, street)
-                        # target가 call price를 낸 뒤 칩이 남으면 raise branch가 존재한다.
-                        _target_stack_before = float(r2.stacks.get(_target, 0) or 0)
-                        _raise_possible = (_target_stack_before - _target_call_cost) > 0
                         _bet_expected = _combine_fold_call_ev(
                             _pfold, _fold_sum, _call_sum_b, _raise_possible)
+
+                        # A check is a terminal alternative only on the river when this
+                        # actor closes action.  Else future betting/streets make simple
+                        # showdown equity an invalid check EV.
+                        _check_terminal = bool(street == 'river' and behind == 0)
+                        _check_sum = (
+                            _layer_investment_summary(
+                                0.0, _pot_layers, layer_equities)
+                            if _check_terminal else None)
+                        _bet_vs_check = None
+                        if (_check_sum and _check_sum.get('complete')
+                                and _bet_expected.get('complete')):
+                            _bet_vs_check = round(
+                                float(_bet_expected['expected_chip_ev'])
+                                - float(_check_sum['chip_ev']), 6)
                         bet_ev_shadow = {
                             'target': _target,
                             'bet_cost': _hero_bet_cost,
@@ -1721,9 +1748,16 @@ class HandRun:
                             'fold_probability': _pfold,
                             'fold_probability_meta': _pfold_meta,
                             'raise_possible': bool(_raise_possible),
+                            'call_range_before_n': len(_base_target_range),
+                            'call_range_after_n': len(_call_target_range),
+                            'call_range_after_sig': PL._range_sig(_call_target_range),
                             'expected': _bet_expected,
+                            'check_terminal': _check_terminal,
+                            'check_summary': _check_sum,
+                            'bet_minus_check_ev': _bet_vs_check,
                             'raise_branch_modeled': False,
                             'fold_probability_modeled': True,
+                            'response_range_conditioned': True,
                             'strategy_consumer': False,
                         }
 

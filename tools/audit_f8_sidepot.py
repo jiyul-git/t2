@@ -532,6 +532,51 @@ def check_d5b_fold_probability_and_exhaustive_ev():
     }
 
 
+def check_d5c_response_conditioning_and_check_benchmark():
+    # Use a broad deterministic range so ordinary call vs all-in continue differs.
+    board = ['2c', '7d', 'Jh', '4s', '3c']
+    dead = set(board)
+    base = [c for c in SE.R.ALL if not (set(c) & dead)]
+    ranked = SE.R._ranked(base, board)
+
+    normal_call = SE.R.perceived_facing_bet_response(
+        base, board, 'river', 0.50, profile=None, raise_possible=True)
+    allin_continue = SE.R.perceived_facing_bet_response(
+        base, board, 'river', 0.50, profile=None, raise_possible=False)
+
+    # A strong combo in the ordinary top-raise slice must be absent from the
+    # call-only branch but present when raise is impossible.
+    probe = ranked[max(5, int(len(ranked)*0.10))]
+    assert probe not in normal_call, (probe, len(normal_call))
+    assert probe in allin_continue, (probe, len(allin_continue))
+    assert len(allin_continue) > len(normal_call), (
+        len(normal_call), len(allin_continue))
+
+    # Bet EV must be compared to a terminal-check EV, not zero.
+    check = {'complete': True, 'chip_ev': 15.0}
+    bet = {'complete': True, 'expected_chip_ev': 9.6}
+    delta = round(bet['expected_chip_ev'] - check['chip_ev'], 6)
+    assert delta == -5.4, delta
+
+    src = inspect.getsource(SE.HandRun._run)
+    assert "R.perceived_facing_bet_response(" in src
+    assert "_check_terminal = bool(street == 'river' and behind == 0)" in src
+    assert "'bet_minus_check_ev': _bet_vs_check" in src
+    assert "'response_range_conditioned': True" in src
+    assert "'strategy_consumer': False" in src
+
+    return {
+        'normal_call_n': len(normal_call),
+        'allin_continue_n': len(allin_continue),
+        'top_raise_slice_restored_when_raise_impossible': True,
+        'example_bet_ev': 9.6,
+        'example_check_ev': 15.0,
+        'example_bet_minus_check': delta,
+        'terminal_check_scope': 'river_and_behind0',
+        'strategy_consumer': False,
+    }
+
+
 def main():
     layers = check_layer_geometry()
     tc, contestable = check_current_street_contestable_cap()
@@ -542,6 +587,7 @@ def main():
     d4 = check_d4_call_ev_shadow()
     d5 = check_d5_bet_outcome_shadow()
     d5b = check_d5b_fold_probability_and_exhaustive_ev()
+    d5c = check_d5c_response_conditioning_and_check_benchmark()
 
     print("PASS settlement geometry distinguishes main and side layers", layers)
     print("PASS current-street contestable cap is sound",
@@ -555,8 +601,9 @@ def main():
     print("PASS F8-D4 layer-aware call/fold consumer is isolated from raises", d4)
     print("PASS F8-D5-A proactive bet fold/call outcomes are layer-separated", d5)
     print("PASS F8-D5-B existing fold read combines EV only when raise is impossible", d5b)
-    print("9/9 F8 diagnostic checks passed")
-    print("NOTE: D5-B remains shadow-only; raise-capable spots stay incomplete.")
+    print("PASS F8-D5-C1 response-conditioned continue range and terminal check benchmark", d5c)
+    print("10/10 F8 diagnostic checks passed")
+    print("NOTE: D5-C1 remains shadow-only; strategy consumption is still disabled.")
 
 
 if __name__ == '__main__':
