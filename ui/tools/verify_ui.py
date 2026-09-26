@@ -83,6 +83,53 @@ class Client:
         (self.lat_end if r.get('done') else self.lat_mid).append(dt)
         return c, r
 
+    def step_stream(self, action, amount, token):
+        """NDJSON 진행 이벤트와 마지막 payload를 함께 검증한다."""
+        t = time.time()
+        headers = {
+            'X-T2-Play-Key': self.play_key,
+            'X-T2-Client-Mode': 'play',
+            'Content-Type': 'application/json',
+        }
+        req = urllib.request.Request(
+            self.base + '/api/step-stream',
+            data=json.dumps({
+                'action': action, 'amount': amount, 'token': token
+            }).encode(),
+            headers=headers
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as f:
+                code, raw = f.status, f.read().decode()
+        except urllib.error.HTTPError as e:
+            code, raw = e.code, e.read().decode()
+
+        self.bodies.append(raw)
+        dt = time.time() - t
+        if code != 200:
+            try:
+                return code, json.loads(raw), []
+            except Exception:
+                return code, {'error': raw[-300:]}, []
+
+        events = []
+        final = None
+        for line in raw.splitlines():
+            if not line.strip():
+                continue
+            obj = json.loads(line)
+            if obj.get('type') == 'bot_action':
+                events.append(obj.get('event') or {})
+            elif obj.get('type') == 'final':
+                final = obj.get('payload')
+            elif obj.get('type') == 'error':
+                final = {'error': obj.get('error') or 'stream error'}
+
+        if final is None:
+            final = {'error': 'stream final payload missing'}
+        (self.lat_end if final.get('done') else self.lat_mid).append(dt)
+        return code, final, events
+
 
 def check_static(base):
     """2단계에서 추가한 정적 파일 제공. web/ 밖으로는 절대 나가면 안 된다."""
@@ -171,7 +218,8 @@ def run(args):
         stats = dict(hands=0, decisions=0, walks=0, chip_checks=0, chip_bad=0,
                      legal_violations=0, err_checked=0, results=0, showdowns=0,
                      slot_checks=0, slot_bad=0,
-                     watch_blocked=(cw == 403))
+                     watch_blocked=(cw == 403),
+                     stream_steps=0, stream_events=0)
         pot_of = {}            # hand_no -> Σstack + pot_total
         exposed = {}           # hand_no -> 화면에 나온 카드 집합
         shown_seats = {}       # hand_no -> 쇼다운으로 공개된 좌석
@@ -282,9 +330,16 @@ def run(args):
             else:
                 a, amt = 'fold', 0
 
-            c, r = cli.step(a, amt, r['token'])
+            if stats['stream_steps'] < 3:
+                c, r, evs = cli.step_stream(a, amt, r['token'])
+                stats['stream_steps'] += 1
+                stats['stream_events'] += len(evs)
+            else:
+                c, r = cli.step(a, amt, r['token'])
             if c != 200:
                 fail.append('%s %s 가 HTTP %d: %s' % (a, amt, c, r.get('error'))); break
+            if r.get('error') and not (r.get('view') or {}).get('error'):
+                fail.append('stream/final 응답 오류: %s' % r.get('error')); break
             if (r.get('view') or {}).get('error'):
                 stats['legal_violations'] += 1
                 fail.append('legal 이 허용한 %s %s 가 거부됨: %s'
@@ -350,7 +405,7 @@ def main():
     for k in ('hands', 'results', 'decisions', 'walks', 'showdowns',
               'chip_checks', 'chip_bad', 'slot_checks', 'slot_bad',
               'leak_hands_checked', 'legal_violations', 'err_checked',
-              'watch_blocked'):
+              'watch_blocked', 'stream_steps', 'stream_events'):
         if k in stats: print('  %-18s %s' % (k, stats[k]))
     print('  %-18s 중앙 %s / 최대 %s 초'
           % ('지연(진행 중)', stats.get('lat_mid_med'), stats.get('lat_mid_max')))
