@@ -1808,6 +1808,10 @@ function playSequence(v, entries, streetChanged) {
  */
 const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
 
+/* 새 스트리트 보드를 본 뒤 첫 봇 액션까지의 호흡.
+ * 계산은 이 시간에도 계속 진행되므로 체감만 완화하고 엔진 속도는 늦추지 않는다. */
+const STREET_OPEN_PAUSE = 800;
+
 function applyEntry(ss, e) {
   if (e.street && e.street !== ss.stage) {
     // 스트리트가 끝났다 — 칩을 팟으로 넣고 베팅을 접는다
@@ -3270,7 +3274,7 @@ async function callStepStream(body, msg) {
       setTimeout(() => {
         playing = false;
         playNext();
-      }, 360);
+      }, 360 + STREET_OPEN_PAUSE);
       return;
     }
 
