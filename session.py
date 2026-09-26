@@ -2026,7 +2026,12 @@ class HandRun:
                         'street': street, 'seat': s, 'idx': _oidx,
                         'type': ax.get('type'),
                         'plan': _pl.get('plan'), 'why': _pl.get('why'),
-                        'rel': _pl.get('rel'), 'eq': _pl.get('eq'),
+                        'rel': _pl.get('rel'),
+                        'rel_true': _pl.get('rel_true'),
+                        'rel_union': _pl.get('rel_union'),
+                        'rel_joint': _pl.get('rel_joint'),
+                        'rel_source': _pl.get('rel_source'),
+                        'eq': _pl.get('eq'),
                         'outs': _pl.get('outs'), 'made': _pl.get('made'),
                         # 기록 전용 provenance. 판단에는 안 쓰인다.
                         # eq 가 현재 강도인지 미래 개선분인지 사후 복원용.

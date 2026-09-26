@@ -395,3 +395,26 @@ AND rel_joint != rel_union
 ```
 
 Only after attribution may B1-A be closed.
+
+
+---
+
+## B1-A behavior attribution tool
+
+`tools/attribute_f7b_rel.py` isolates only the newly activated relative-strength consumer.
+
+It requires the frozen local `baseline_9max_post_f8.json` and runs the canonical
+3000-3005 / 30-hand regression twice:
+
+1. current joint-relative behavior;
+2. identical code with only `_decision_relative_strength` forced back to the legacy union value.
+
+Acceptance:
+
+- any current fingerprint movement is allowed at this intentional behavior-change step;
+- **every** forced-union fingerprint must match the frozen post-F8 baseline exactly.
+
+If forced-union does not restore every fingerprint, B1-A cannot be closed and the unexplained
+movement must be isolated before proceeding.
+
+Intent provenance now also records `rel_true`, `rel_union`, `rel_joint`, and `rel_source`.
