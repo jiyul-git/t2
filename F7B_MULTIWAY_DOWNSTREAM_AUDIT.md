@@ -1,6 +1,6 @@
 # F7-B — Multiway downstream semantics audit
 
-Status: **B1-A RELATIVE-STRENGTH CONSUMER IMPLEMENTED; validation pending.**
+Status: **B1-A CLOSED; B1-B RANGE/NUT SHADOW IMPLEMENTED.**
 
 F8 established seat-keyed opponent ranges and pot-layer equity.  The next global question is
 whether downstream planning preserves that identity or collapses it again.
@@ -418,3 +418,108 @@ If forced-union does not restore every fingerprint, B1-A cannot be closed and th
 movement must be isolated before proceeding.
 
 Intent provenance now also records `rel_true`, `rel_union`, `rel_joint`, and `rel_source`.
+
+
+---
+
+## B1-A closure
+
+User validation at local commit `43d2a6f`:
+
+- targeted F7-B: **6/6**;
+- post-F8 regression changed seeds: **3000, 3001, 3002, 3004, 3005**;
+- `tools/attribute_f7b_rel.py` forced only the B1-A consumer back to union;
+- forced-union mismatches: **[]**.
+
+Therefore every frozen-fixture behavior change is fully attributed to the preregistered
+joint-relative consumer.  B1-A is closed.
+
+---
+
+## B1-B shadow — range advantage and nut advantage
+
+Status: **SHADOW ONLY. No production consumer changed.**
+
+These two metrics answer different strategic questions and therefore do not share one generic
+"multiway average".
+
+### Range advantage candidate
+
+Existing heads-up meaning:
+
+> If a random combo from my range and a random combo from the opponent range reach this board,
+> which range has more current-board showdown equity?
+
+For multiway the direct extension samples:
+
+- one compatible combo from my range;
+- one compatible combo from every seat-specific opponent range.
+
+Let `E` be hero's exact current-board showdown pot share and:
+
+```
+fair = 1 / (number_of_opponents + 1)
+```
+
+The candidate is normalized around fair share:
+
+```
+if E >= fair:
+    adv = (E - fair) / (1 - fair)
+else:
+    adv = (E - fair) / fair
+```
+
+This has three required invariants:
+
+- always lose -> -1;
+- equal/fair field share -> 0;
+- always win -> +1.
+
+With one opponent `fair=0.5`, so it reduces exactly to the existing
+`2*equity - 1` scale.
+
+This is a factual field-level equity-distribution metric suitable for the current c-bet-frequency
+meaning of `range_advantage`.
+
+### Nut advantage candidate
+
+Existing code does not measure literal nuts; it compares two "strong occupancy" bands:
+
+- made category >= 2;
+- made category >= 3.
+
+The hero side remains the existing exact share of `my_range` in those bands.
+
+For a multiway field, averaging opponent seats is not the right question for large sizing.
+The relevant field event is:
+
+> does **at least one** remaining opponent occupy that strong region?
+
+The shadow therefore samples one compatible combo from each opponent seat and measures:
+
+```
+P(any opponent category >= 2)
+P(any opponent category >= 3)
+```
+
+then plugs those field probabilities into the existing weighted/scaled nut-advantage formula.
+
+With one opponent this falls back exactly to existing `R.nut_advantage`.
+
+### Preregistered measurement
+
+`tools/measure_f7b_range_nut.py` runs the same 3000-3005 / 30-hand fixture and reports:
+
+- complete/unknown multiway states;
+- range-advantage absolute delta;
+- range-advantage sign flips;
+- nut-advantage absolute delta;
+- nut-advantage sign flips;
+- crossings of the live `nut_adv >= 0.55` polarized-bluff threshold;
+- largest examples.
+
+No magnitude threshold is invented in advance.  Results decide whether each metric proceeds to a
+consumer separately.
+
+Blocker aggregation and B2 single-main-opponent reads remain outside this step.
