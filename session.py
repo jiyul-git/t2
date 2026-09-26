@@ -1558,12 +1558,10 @@ class HandRun:
             aggressor, callers, limpers = _update_pf_state_after_apply(
                 rnd, s, aggressor, callers, limpers)
             _money_jump_attach_action(_mj_obs, rnd)
-            # 새로 계산한 프리플랍 봇 액션도 재생 캐시에 남긴다.
-            # 이전에는 _pre_len만 만들고 recorded에 넣지 않아, 같은 핸드를
-            # 재구성할 때 이미 끝난 프리플랍 판단을 다시 계산할 수 있었다.
+            # 이번 진행에서 새로 계산된 봇 액션만 UI로 보낸다.
+            # preflop REPLAY 캐시의 의미는 별도 검증 없이 바꾸지 않는다.
             if len(rnd.log) > _pre_len:
                 _row = rnd.log[-1]
-                self.recorded.append((_ck, _row[1], _row[2]))
                 self._emit_bot_action(
                     'preflop', _row[0], _row[1], _row[2], [])
 
