@@ -40,9 +40,10 @@ Current finding:
 - the other 2/11 are one-class AA posteriors, but the overlap fallback still has the wrong support;
 - overlap fallback was exact in **0/11** cases and omitted as much as **89.813%** of posterior mass.
 
-Conclusion: another hard-slice/bin patch cannot close B1D. The active next step is B1D7:
-shared RNG-free defend-action likelihood semantics + a weighted-range consumer contract.
-Production ranges remain unweighted until that contract is verified.
+Conclusion: another hard-slice/bin patch cannot close B1D. B1D7 is active.
+Step A (RNG-free defend-action likelihood shadow) is implemented; local scripted-branch verification is pending.
+After that, production defend generation may be rewired to the shared helper only if behavior is preserved,
+then weighted-range representation/consumer migration proceeds. Production ranges remain unweighted for now.
 
 ### OPEN after B1D
 
