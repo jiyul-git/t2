@@ -1044,14 +1044,32 @@ def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
 class HandRun:
     """히어로 차례에 yield하고 send()로 재개하는 핸드 진행기.
        REPLAY: 이미 확정된 봇 결정은 재계산하지 않고 그대로 재생한다."""
-    def __init__(self, hand, decisions=None):
+    def __init__(self, hand, decisions=None, on_bot_action=None):
         self.h = hand
         self.REPLAY = list(decisions or [])
         self.recorded = []
         self._didx = 0
+        self.on_bot_action = on_bot_action
         self.gen = self._run()
         self.result = None
         self._pot_at = {}          # street -> 스트리트 시작 시점 팟
+
+    def _emit_bot_action(self, street, seat, action, amount, board=None):
+        """UI 진행 콜백. 전략/난수에는 관여하지 않고 관측만 전달한다."""
+        if self.on_bot_action is None:
+            return
+        event = {
+            'street': street,
+            'seat': int(seat),
+            'action': action,
+            'amount': int(amount or 0),
+            'board': list(board or []),
+        }
+        try:
+            self.on_bot_action(event)
+        except Exception:
+            # 화면 연결이 끊겨도 핸드 계산과 저장은 끝까지 진행한다.
+            pass
 
     def start(self):
         try: return next(self.gen)
@@ -1540,6 +1558,14 @@ class HandRun:
             aggressor, callers, limpers = _update_pf_state_after_apply(
                 rnd, s, aggressor, callers, limpers)
             _money_jump_attach_action(_mj_obs, rnd)
+            # 새로 계산한 프리플랍 봇 액션도 재생 캐시에 남긴다.
+            # 이전에는 _pre_len만 만들고 recorded에 넣지 않아, 같은 핸드를
+            # 재구성할 때 이미 끝난 프리플랍 판단을 다시 계산할 수 있었다.
+            if len(rnd.log) > _pre_len:
+                _row = rnd.log[-1]
+                self.recorded.append((_ck, _row[1], _row[2]))
+                self._emit_bot_action(
+                    'preflop', _row[0], _row[1], _row[2], [])
 
         _pf_uncalled = rnd.settle_uncalled()
         if _pf_uncalled:
@@ -2280,7 +2306,11 @@ class HandRun:
                     _exec_amt = 0
                 if r2.action_meta and r2.action_meta[-1].get('raised'):
                     aggressor = s
-                if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
+                if r2.log:
+                    _row = r2.log[-1]
+                    self.recorded.append((_ck, _row[1], _row[2]))
+                    self._emit_bot_action(
+                        street, _row[0], _row[1], _row[2], board)
 
                 # 실제 실행 이력. delayed-cbet/probe 같은 다음 스트리트 판단은
                 # 계획했던 행동이 아니라 테이블에서 실제로 일어난 행동을 봐야 한다.
