@@ -1703,7 +1703,7 @@ to previously unseeded F8 strategy-active states.
 
 # F8-D6-D2 — personal pure-calloff layer-EV consumer
 
-Status: **IMPLEMENTED; pending targeted + behavior validation.**
+Status: **USER-VALIDATED AND BEHAVIOR-ATTRIBUTED.**
 
 D6-D2 is the first preflop strategy consumer of the D6 layer system.
 
@@ -1872,3 +1872,121 @@ Acceptance requires all of the following:
 
 Only if all checks pass may the seed-3005 regression movement be attributed to the preregistered
 D6-D2 population. The baseline remains frozen until the F8 closure decision is documented.
+
+
+---
+
+# F8 closure
+
+Status: **CLOSED.**
+
+F8 began from a concrete decision-layer defect:
+
+- locked all-in chips remained in the pot;
+- locked all-in opponents disappeared from the active postflop equity pool;
+- a whole-pot scalar therefore mixed money hero could contest under different opponent sets.
+
+The closure now has one consistent model across postflop and the first safe preflop calloff scope.
+
+## Closed components
+
+- D1: decision-time main/side pot-layer provenance;
+- D2: observer-specific locked-all-in opponent range preservation;
+- D3: layer-specific equity with explicit unknown states;
+- D4: layer-aware postflop call/fold consumer, isolated from raise EV;
+- D5: proactive terminal bet/check EV with response-conditioned range and effective call price;
+- D6-A/B/C: preflop layer provenance, seat-keyed perceived ranges, pure-calloff layer EV;
+- D6-T: exact multiway tie pot share;
+- D6-D1: legacy-versus-layer-EV shadow comparison;
+- F8-R: deterministic decision-seeded layer Monte Carlo;
+- D6-D2: personal pure-calloff consumer using existing range_read / icm / potodds / pf_defend concepts.
+
+No side-pot-specific tuning coefficient or personality axis was introduced.
+
+## Final targeted validation
+
+At `708576f`:
+
+- F8 diagnostics: **19/19**;
+- P6 structural: **5/5**;
+- preflop closure: **4/4**.
+
+The first behavior change appeared only at regression seed 3005.
+
+Attribution at `b56d67b` proved:
+
+```
+current fingerprint      0a9bed2efdb7e7e3
+pre-F8 frozen fingerprint 78b02d8020790589
+D6-D2 forced off          78b02d8020790589
+```
+
+Therefore disabling only D6-D2 restores the frozen behavior exactly.
+
+The first divergent event is:
+
+```
+seed       3005
+hand       29
+seat       6 (BB)
+hand hash  aded8844b5aa
+
+legacy     call 9400
+D6-D2      fold
+
+pure_calloff                  True
+complete                      True
+call_cost                     9200
+contestable_after_call        18900
+layer_effective_equity        0.547421
+perceived_required_equity     0.590070
+objective_bubble_factor       1.020714
+perceived_bubble_factor       1.009974
+pf_defend_gate_p              0.862258
+pf_defend_gate_roll           0.395636
+gate_pass                     True
+```
+
+This exactly matches the preregistered activation rule:
+
+```
+pure_calloff
+AND complete
+AND pf_defend gate passes
+AND selected layer action != legacy action
+```
+
+The regression movement is therefore intentional and fully attributed.
+
+## Baseline policy after closure
+
+The pre-F8 baseline at `tools/baseline_9max_post_oop.json` remains frozen as `pre_f8`.
+
+A new file, `tools/baseline_9max_post_f8.json`, becomes the writable `current` baseline.
+
+This preserves both sides of the intentional F8 behavior boundary instead of overwriting
+`2a53584`.
+
+The new current baseline must be generated from the validated post-F8 code before the next global
+audit begins.
+
+## Next audit
+
+F8 is not the end of the full decision-architecture audit.
+
+The remaining global items return to the queue in this order:
+
+1. **F7-B multiway downstream semantics**
+   - identify consumers that still collapse seat-keyed ranges into a union or scalar opponent count;
+   - separate places where union is mathematically valid from places where it destroys opponent
+     identity or layer/position semantics;
+
+2. **emotion boundary**
+   - audit `tilted_view` and confirm factual judgment is not modified upstream by emotion;
+   - emotion may affect plan selection/revision, not factual state interpretation;
+
+3. **execution sizing boundary**
+   - audit `shape_size` and every final chip-conversion path;
+   - execution may enforce legality/rounding, but must not silently reshape strategic size.
+
+Only after those global boundaries close should broad balance validation/tuning resume.

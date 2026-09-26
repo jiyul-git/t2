@@ -32,8 +32,10 @@ _D = os.path.dirname(os.path.abspath(__file__))
 
 # 이름 -> (파일, 설명, 쓰기 가능한가)
 BASELINES = collections.OrderedDict((
-    ('current', (os.path.join(_D, 'baseline_9max_post_oop.json'),
-                 'post-OOP 현재 행동 (0d202c5 이후)', True)),
+    ('current', (os.path.join(_D, 'baseline_9max_post_f8.json'),
+                 'post-F8 현재 행동 — side-pot/calloff architecture closure 이후', True)),
+    ('pre_f8', (os.path.join(_D, 'baseline_9max_post_oop.json'),
+                'pre-F8 decision-audit checkpoint (2a53584) — 덮어쓰기 금지', False)),
     ('historical', (os.path.join(_D, 'baseline_9max.json'),
                     'pre-OOP / Phase-C 역사 기준 (7e40ba0 동결) — 덮어쓰기 금지', False)),
 ))
@@ -123,7 +125,7 @@ def main():
     ap.add_argument('cmd', nargs='?', default='check',
                     choices=['check', 'save', 'list'])
     ap.add_argument('--baseline', default=DEFAULT,
-                    help="'current' / 'historical' / 파일 경로 (기본 current)")
+                    help="'current' / 'pre_f8' / 'historical' / 파일 경로 (기본 current)")
     ap.add_argument('--note', default=None, help='save 에 남길 한 줄 메모')
     a = ap.parse_args()
 
@@ -136,8 +138,11 @@ def main():
     if a.cmd == 'save':
         if not writable:
             print('거부 — 이 기준선은 덮어쓸 수 없다.')
-            print('  %s 은 봉인된 Phase C(024ab5b)가 서 있던 행동이다.' % os.path.basename(path))
-            print('  덮어쓰면 그 결과가 어느 코드에 대한 것이었는지 알 수 없게 된다.')
+            if a.baseline == 'historical':
+                print('  %s 은 봉인된 Phase C(024ab5b)가 서 있던 행동이다.' % os.path.basename(path))
+            elif a.baseline == 'pre_f8':
+                print('  %s 은 F8 이전 decision-audit checkpoint(2a53584)다.' % os.path.basename(path))
+            print('  덮어쓰면 의도적 구조 변경 전후를 비교할 기준을 잃는다.')
             print('  현재 행동을 갱신하려면: tools/regress.py save --baseline current')
             return 2
         fp, stats = fingerprint()
