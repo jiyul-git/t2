@@ -60,7 +60,7 @@ This is intentional. Once a true posterior exists, an old consumer must not sile
 ## 4. Migration order
 
 ### W0 — representation + adapter
-Current step.
+Implemented; local gate pending.
 
 - add canonical helper API;
 - no production consumer receives non-uniform weights;
@@ -68,7 +68,11 @@ Current step.
 
 ### W1 — weighted sampling consumers
 
-Convert only sampling, preserving existing seeds and deterministic ordering:
+Implemented; local gate pending. Legacy list input still takes the exact old
+`rng.choice(list)` path. Uniform weighted dicts take the same choice path over
+stable support; only genuinely non-uniform weights use cumulative weighted draws.
+
+Converted sampling consumers:
 
 - `bot.equity_vs_pools`;
 - `bot.equity_vs_combos`;
@@ -134,11 +138,12 @@ Only after all downstream paths are weight-safe:
 6. Weighting changes are attributed separately from multiway semantics, ICM, exploit, and sizing changes.
 7. No VPIP/PFR/bluff coefficient tuning in this phase.
 
-## 6. Current gate
+## 6. Current gates
 
-`tools/verify_weighted_range_adapter.py`
+- `tools/verify_weighted_range_adapter.py`
+- `tools/verify_weighted_sampling.py`
 
-W0 closes only when:
+W0/W1 close only when:
 
 - helper validation passes;
 - legacy -> weighted -> legacy round-trip is exact for production-style unique ranges;
@@ -146,4 +151,4 @@ W0 closes only when:
 - non-uniform weighted flattening is rejected;
 - current regression baseline remains unchanged.
 
-After W0, proceed to W1 one consumer family at a time.
+After W0/W1 pass together with the frozen regression, proceed to W2/W3 weight-preserving aggregate/transform consumers.
