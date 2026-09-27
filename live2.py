@@ -758,6 +758,9 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     _round_base = copy.deepcopy(round_base if round_base is not None
                                 else (st.get('field') or {}))
 
+    _hero_tid, _other_tids, _other_pids = _round_owners(_round_base)
+    _single_table_round = not _other_tids
+
     if defer_others and parallel_others is not None:
         try:
             f, _parallel_notes = _merge_parallel_field(
@@ -767,7 +770,13 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             # 잘못된/다른 라운드 결과는 절대 합치지 않는다.
             parallel_others = None
 
-    if defer_others and parallel_others is None:
+    if defer_others and _single_table_round:
+        # 파이널테이블: 다른 테이블이 없으므로 worker/pending을 만들 이유가 없다.
+        # HERO 핸드 결과만으로 bust 정리/좌석 reconcile을 즉시 끝낸다.
+        f._collect_busts()
+        f._balance()
+
+    elif defer_others and parallel_others is None:
         st['others_pending'] = True
         st['others_mode'] = PARALLEL_TABLES_MODE
         # 서버가 worker 완료 전에 죽어도 같은 라운드 스냅샷에서 재계산한다.
