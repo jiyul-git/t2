@@ -19,13 +19,16 @@ t2는 9-max NLH 토너먼트 봇을 인간의 의사결정처럼 모델링하는
 
 Repository: `jiyul-git/t2`
 
-Stable code baseline:
+Stable canonical:
 - `chatgpt/decision-architecture-audit-20260926`
-- 문서 통합 전 기준 HEAD: `4cfbfc3c88578a4e862e44496a5a6d7b173a50da`
+- 마지막 architecture code checkpoint: `9330c4f7fc5acb09775f39f7f9174183299cc7fc`
+- 이후 canonical 변경은 문서 정리만 포함한다.
 
-문서 통합 작업:
-- `chatgpt/docs-consolidation-20260928`
-- 코드 변경 없음. 문서 구조만 정리한다.
+Documentation consolidation:
+- root Markdown **125 -> 10**
+- consolidation commit: `f6da7936a8e6b2afde01a0d839c598a9d94162b8`
+- compare 검증상 non-Markdown 변경: **0**
+- `chatgpt/docs-consolidation-20260928`은 canonical 반영 완료 후 deletion candidate다.
 
 Active engine / live hand-review line:
 - `chatgpt/logic-tuning-20260927`
