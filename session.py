@@ -1001,7 +1001,8 @@ def _money_jump_attach_action(obs, rnd):
             max(2.0, _base_bb * _sf), 3)
 
 
-def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
+def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
+               odd_order=None):
     """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역
 
     dead(안테 등 데드머니)는 **메인팟에만** 얹는다.
@@ -1033,9 +1034,27 @@ def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1):
         # 150 씩 갖는 일은 없다 — 나눌 수 없는 칩은 한 명에게 간다.
         u = max(1, int(unit))
         share = (amount // len(winners) // u) * u
-        rem = amount - share*len(winners)
-        for i, w in enumerate(winners):
-            won[w] += share + (rem if i == 0 else 0)
+        rem = amount - share * len(winners)
+
+        # TDA Rule 21-A: board games의 odd chip은 BTN 왼쪽 첫 승자부터.
+        # rem 전체를 winners[0]에게 몰아주지 않고 최소 칩 단위로 한 개씩 준다.
+        order = [s for s in (odd_order or []) if s in winners]
+        for s in winners:
+            if s not in order:
+                order.append(s)
+
+        for w in winners:
+            won[w] += share
+
+        i = 0
+        while rem >= u and order:
+            won[order[i % len(order)]] += u
+            rem -= u
+            i += 1
+        if rem and order:
+            # 스택/데드머니가 칩 단위와 어긋난 구 저장본 안전망.
+            won[order[0]] += rem
+
         detail.append({'amount': amount, 'eligible': elig, 'winners': winners})
     for s, v in won.items(): stacks[s] += v
     return won, detail
@@ -2663,8 +2682,10 @@ class HandRun:
             h.book_errors.append('showdown: %r' % (_e,))
         # 정산 전 0스택은 올인 쇼다운이므로 공개 의무가 있다.
         allin_show = {s for s in live if h.stacks.get(s, 0) <= 0}
-        won, detail = award_pots(c2, h.hole, h.board, folded, h.stacks, dead,
-                                 unit=getattr(h, 'sb', 0) or 1)
+        won, detail = award_pots(
+            c2, h.hole, h.board, folded, h.stacks, dead,
+            unit=getattr(h, 'sb', 0) or 1,
+            odd_order=getattr(h, 'post_seats', None))
         if not detail:
             return {'how': 'void', 'winners': [], 'pot': 0, 'showdown': False,
                     'board': board, 'stacks': dict(h.stacks), 'hash': h.hash}
@@ -2687,15 +2708,24 @@ class HandRun:
         live_set = set(live)
 
         def _left_of_button_order():
+            # TDA dead button에서는 h.button이 빈 물리 좌석일 수 있다.
+            # Hand가 이미 계산해 둔 실제 포스트플랍 액션 순서가
+            # '버튼 왼쪽 첫 생존자부터'의 단일 출처다.
+            ordered = [
+                s for s in (getattr(h, 'post_seats', None) or [])
+                if s in live_set
+            ]
+            if ordered:
+                return ordered
+
+            # legacy 단일테이블 폴백.
             ring = list(h.seats or [])
             if not ring:
                 return list(live)
-
             btn = getattr(h, 'button', None)
             if btn in ring:
                 i = ring.index(btn)
                 ring = ring[i + 1:] + ring[:i + 1]
-
             return [s for s in ring if s in live_set]
 
         def _rotate_to(seats_, first_):

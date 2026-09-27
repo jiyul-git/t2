@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0d1412">
 <title>t2 포커</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="style.css?v=48">
+<link rel="stylesheet" href="style.css?v=49">
 <link rel="stylesheet" href="theme.css?v=5">
 </head>
 <body>
@@ -64,9 +64,23 @@
   </footer>
 
   <div id="overlay" hidden></div>
+
+  <div id="rankScrim" hidden></div>
+  <aside id="rankDrawer" aria-hidden="true">
+    <div class="rankhead">
+      <div>
+        <strong>전체 순위</strong>
+        <span id="rankMeta"></span>
+      </div>
+      <button type="button" id="rankClose" aria-label="순위 닫기">×</button>
+    </div>
+    <div id="rankSummary"></div>
+    <div id="rankList"></div>
+  </aside>
+
   <div id="toast" hidden></div>
 </div>
 <script src="visuals.js?v=2"></script>
-<script src="app.js?v=64"></script>
+<script src="app.js?v=65"></script>
 </body>
 </html>

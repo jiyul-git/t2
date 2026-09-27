@@ -15,6 +15,7 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓴다. sidecar 이름
   GET  /api/state             마지막 응답 (없으면 현재 상태를 재생해서 만든다)
   POST /api/new   {entries?, seed?, fmt?, start_stack?}
   GET  /api/stats             정산 지연 카운터 (attempt/hit/mismatch/fallback…)
+  GET  /api/tournament        대회 정보 / 전체 스택 순위
   GET  /api/memos             플레이어 전용 봇 메모 조회
   POST /api/memo  {pid, memo}  플레이어 전용 봇 메모 저장
   POST /api/step  {action, amount, token}
@@ -37,6 +38,7 @@ import ui_view
 sys.modules['view'] = ui_view          # live2 가 import 하기 전에 주입
 import live2 as L
 import formats as FM
+import context as CTX
 from table import BLINDS
 import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver 를 쓴다
 
@@ -84,6 +86,124 @@ def _lobby_payload():
         except Exception:
             current = {'error': 'current_state_unreadable'}
     return {'tournaments': tournaments, 'current': current, 'can_play': True}
+
+
+def _tournament_payload():
+    """현재 대회 공개 정보 + 전체 스택 순위.
+
+    전략용 hidden persona/read/hand 정보는 절대 내보내지 않는다.
+    """
+    if not os.path.exists(L.ST):
+        return {'no_game': True}
+
+    st = L.load()
+    f = L._load_field(st['field'])
+    status = f.status()
+    sb, bb = f.blinds()
+    fmt = getattr(f, 'fmt', {}) or {}
+    hero = f.players.get(f.hero_pid) or {}
+    mj = CTX.money_jump_context(f.remaining(), f.itm, f.payouts)
+
+    # 다음 실제 상금 변화들. 같은 상금 구간은 context 함수가 건너뛴다.
+    jumps = []
+    probe = int(f.remaining())
+    seen = set()
+    for _ in range(8):
+        row = CTX.money_jump_context(probe, f.itm, f.payouts)
+        nr = row.get('next_rank')
+        if nr is None or nr in seen:
+            break
+        seen.add(nr)
+        jumps.append({
+            'rank': int(nr),
+            'prize_pct': float(row.get('next_prize') or 0.0),
+            'jump_pct': float(row.get('next_jump') or 0.0),
+            'players_to_jump': int(row.get('players_to_jump') or 0),
+        })
+        probe = int(nr)
+
+    # 각 테이블의 '다음 핸드 기준' 포지션. dead BTN/SB도 같은 엔진에서 나온다.
+    pos_by_pid = {}
+    for tb in f.tables.values():
+        if tb.n() < 2:
+            continue
+        try:
+            lay = tb.hand_layout()
+        except Exception:
+            continue
+        for seat, pos in (lay.get('pos') or {}).items():
+            p = tb.player_at(seat)
+            if p is not None:
+                pos_by_pid[p['pid']] = pos
+
+    alive = sorted(
+        (p for p in f.players.values() if p.get('stack', 0) > 0),
+        key=lambda p: (-int(p.get('stack', 0)), int(p['pid'])))
+    alive_rank = {p['pid']: i + 1 for i, p in enumerate(alive)}
+
+    rows = []
+    for p in f.players.values():
+        pid = int(p['pid'])
+        stack = int(p.get('stack', 0) or 0)
+        live = stack > 0
+        finish_rank = None
+        if not live and pid in f.busted_order:
+            finish_rank = int(f.rank_of(pid))
+        table_id = p.get('table')
+        seat = None
+        if table_id is not None and table_id in f.tables:
+            seat = f.tables[table_id].seat_of(pid)
+        rows.append({
+            'pid': pid,
+            'hero': pid == f.hero_pid,
+            'alive': live,
+            'chip_rank': alive_rank.get(pid),
+            'finish_rank': finish_rank,
+            'stack': stack,
+            'bb': round(stack / max(1.0, float(bb)), 1),
+            'table': table_id,
+            'seat': seat,
+            'pos': pos_by_pid.get(pid),
+        })
+
+    rows.sort(key=lambda x: (
+        0 if x['alive'] else 1,
+        x['chip_rank'] if x['chip_rank'] is not None else 10**9,
+        x['finish_rank'] if x['finish_rank'] is not None else 10**9,
+        x['pid']))
+
+    ante = bb if int(f.level) >= int(fmt.get('ante_from', 10**9)) else 0
+
+    return {
+        'format': fmt.get('name') or fmt.get('key') or '대회',
+        'format_key': fmt.get('key'),
+        'entries': int(f.entries),
+        'remaining': int(f.remaining()),
+        'itm': int(f.itm),
+        'to_itm': int(status.get('to_itm') or 0),
+        'bubble': bool(status.get('bubble')),
+        'hand_no': int(f.hand_no),
+        'level': int(f.level),
+        'sb': int(sb),
+        'bb': int(bb),
+        'ante': int(ante),
+        'tables': int(len(f.tables)),
+        'avg_stack': int(round(float(status.get('avg') or 0))),
+        'avg_bb': round(float(status.get('avg') or 0) / max(1.0, float(bb)), 1),
+        'leader': int(status.get('leader') or 0),
+        'hero_pid': int(f.hero_pid),
+        'hero_rank': status.get('rank'),
+        'hero_stack': int(hero.get('stack', 0) or 0),
+        'hero_bb': round(float(hero.get('stack', 0) or 0) / max(1.0, float(bb)), 1),
+        'in_money': bool(mj.get('in_money')),
+        'current_prize_pct': float(mj.get('current_prize') or 0.0),
+        'next_rank': mj.get('next_rank'),
+        'next_prize_pct': float(mj.get('next_prize') or 0.0),
+        'next_jump_pct': float(mj.get('next_jump') or 0.0),
+        'players_to_jump': int(mj.get('players_to_jump') or 0),
+        'money_jumps': jumps,
+        'standings': rows,
+    }
 
 
 # ---------- 다른 테이블 정산을 결과 반환 뒤로 미룬다 ----------
@@ -670,6 +790,15 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
         if path == '/api/lobby':
             return self._send(200, _lobby_payload())
+
+        if path == '/api/tournament':
+            with LOCK:
+                try:
+                    return self._send(200, _tournament_payload())
+                except Exception as e:
+                    traceback.print_exc()
+                    return self._send(
+                        500, {'error': '%s: %s' % (type(e).__name__, e)})
 
         if path == '/api/memos':
             with LOCK:

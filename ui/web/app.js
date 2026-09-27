@@ -61,6 +61,8 @@ const S = {
   overlayPinned: false,     // 기록/설정은 사용자가 닫기 전까지 유지
   pendingMoveNote: null,   // 엔진이 알려준 HERO 테이블 이동
   memos: {},                 // pid → 사용자 메모. 서버가 원본, localStorage는 캐시
+  tournament: null,          // 공개 대회 정보 / 전체 스택 순위
+  rankOpen: false,           // 전체 순위 drawer
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -68,22 +70,14 @@ const S = {
 //
 // 주의: 핸드 '진행 중'의 텀은 다음 핸드 대기를 줄이지 못한다. 서버 워커는
 // 핸드가 끝나야 시작하므로, 겹칠 수 있는 건 관전 재생과 결과 화면뿐이다.
-const STEP_CHOICES = [1000, 1500, 2000, 2600];
-function numPref(key, def, allowed) {
-  try {
-    const v = Number(localStorage.getItem(key));
-    return allowed.indexOf(v) >= 0 ? v : def;
-  } catch (e) { return def; }
-}
-const stepMs = () => numPref('t2step', 1500, STEP_CHOICES);
-// 폴드는 정보가 거의 없다. 프리플랍에서 3~5명이 연달아 접는 것이 핸드당 봇 액션
-// 수의 대부분이고(실측 중앙 9개 중 58%), 그걸 벳과 같은 간격으로 띄우면 연출만
-// 핸드당 13.5초가 된다. 다만 1/3 은 너무 빨랐다 — 접는 것도 보여야 한다.
-// 독립된 상수를 새로 두지 않고 stepMs 하나에서 파생시킨다.
+// 표시 템포는 UI 고정값이다. 설정 메뉴에서 바꾸지 않는다.
+// 엔진/다른 테이블 worker 계산 속도에는 관여하지 않는다.
+const STEP_MS = 1500;
+const stepMs = () => STEP_MS;
+// 폴드는 정보량이 적어 일반 액션의 절반 간격으로 재생한다.
 const FOLD_DIV = 2;
 const paceMs = (e) => (e && e.action === 'fold'
   ? Math.round(stepMs() / FOLD_DIV) : stepMs());
-function setPref(key, v) { try { localStorage.setItem(key, String(v)); } catch (e) {} }
 
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
@@ -281,13 +275,8 @@ function renderTop(v) {
       (lv.ante ? ` <span class="ante">ante ${fmt(lv.ante)}</span>` : '')
     : '—';
   $('#handno').textContent = v.hand_no ? `HAND ${v.hand_no}` : '';
-  const f = v.field || {};
-  const bits = [];
-  if (f.entries !== undefined) bits.push(`${f.entries}명 중 ${f.remaining}명`);
-  if (f.itm !== undefined) bits.push(`ITM ${f.itm}위`);
-  if (f.rank) bits.push(`내 순위 ${f.rank}위`);
-  $('#fieldline').innerHTML = bits.join(' · ') +
-    (f.bubble ? ' <span class="bubblewarn">버블</span>' : '');
+  // 필드/ITM/내 순위는 ⋯ 대회 정보로 이동했다.
+  $('#fieldline').textContent = '';
   $('#notes').textContent = (v.notes || []).join('  ');
 }
 
@@ -331,10 +320,14 @@ function renderSeats(v) {
     const dy = Math.round(dp.y - (p.y / 100 * H));   // 44 = slotPos 의 세로 중심
     const style = `left:${p.x}%;top:${p.y}%;--dx:${dx}px;--dy:${dy}px`;
     if (!d) {
+      const deadSB = String(v.sb_seat) === String(slot);
+      const deadBTN = String(v.button_seat) === String(slot);
+      const emptyLabel = deadSB ? 'SB · DEAD' : '빈자리';
       html += `<div class="pod empty" data-slot="${slot}" style="${style}">` +
-              `<div class="avatar">·</div><div class="meta">` +
-              `<span class="pos">빈자리</span><span class="stack">&nbsp;</span>` +
-              `</div></div>`;
+              `<div class="avatar">·</div>` +
+              (deadBTN ? `<div class="dealer">D</div>` : '') +
+              `<div class="meta"><span class="pos">${emptyLabel}</span>` +
+              `<span class="stack">&nbsp;</span></div></div>`;
       continue;
     }
     const award = awardLabel(slot);
@@ -2789,13 +2782,9 @@ function renderResult(v) {
  * 쇼다운하지 않은 좌석의 홀카드가 들어 있다. 이미 화면에 나왔던 결과 뷰만
  * 그대로 쌓는다. 쇼다운 좌석 외의 카드는 애초에 들어 있지 않다.
  */
-const AUTO_KEY = 't2auto';
-function autoOn() {
-  try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; }
-}
-function autoSet(on) {
-  try { localStorage.setItem(AUTO_KEY, on ? '1' : '0'); } catch (e) {}
-}
+// 결과 후 다음 핸드는 정산 완료 즉시 진행한다.
+// 사용자 설정을 없애 hidden localStorage 상태 때문에 멈추는 일을 막는다.
+function autoOn() { return true; }
 
 const HIST_KEY = 't2hands';
 const HIST_MAX = 40;
@@ -2932,34 +2921,151 @@ function buildTag() {
   return m ? m[1] : '?';
 }
 
-function showMenu() {
-  const on = autoOn();
-  const sm = stepMs();
-  showOverlayPersistent('<h2>설정</h2>' +
-    `<div class="row"><span class="who">봇 액션 간격</span>` +
-    `<span class="amt">${(sm / 1000).toFixed(1)}초</span></div>` +
-    `<button type="button" id="mStep">간격 바꾸기</button>` +
-    '<div class="potline" style="margin-top:8px">딜링 속도도 이 값을 따라갑니다.</div>' +
-    `<div class="row" style="margin-top:14px"><span class="who">결과 화면</span>` +
-    `<span class="amt">${on ? '정산 끝나면 바로' : '자동 안 넘김'}</span></div>` +
-    `<button type="button" id="mAuto">${on ? '자동 진행 끄기' : '자동 진행 켜기'}</button>` +
-    '<div class="potline" style="margin-top:8px">자동 진행이면 다른 테이블 정산이' +
-    ' 끝나는 즉시 다음 핸드로 갑니다. 카운트다운은 없앴습니다 — 그 대기는' +
-    ' 정산을 가리려고 두었던 것인데, 정산이 빨라진 지금은 지연일 뿐입니다.</div>' +
-    '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다.' +
-    ' 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
+async function tournamentLoad(force) {
+  if (!force && S.tournament) return S.tournament;
+  const res = await fetch('/api/tournament', { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (data && data.error) throw new Error(data.error);
+  S.tournament = data;
+  return data;
+}
+
+function pct(v) {
+  const n = Number(v || 0);
+  if (!isFinite(n)) return '-';
+  return (Math.round(n * 1000) / 1000).toString() + '%';
+}
+
+function tournamentInfoHTML(t) {
+  if (!t || t.no_game) {
+    return '<div class="sub">진행 중인 대회가 없습니다.</div>';
+  }
+
+  const money = t.in_money
+    ? `<div class="row win"><span class="who">인더머니</span><span class="amt">보장 ${pct(t.current_prize_pct)}</span></div>`
+    : `<div class="row"><span class="who">ITM까지</span><span class="amt">${fmt(t.players_to_jump)}명 탈락</span></div>`;
+
+  const jump = t.next_rank
+    ? `<div class="row"><span class="who">다음 머니점프</span><span class="amt">${fmt(t.next_rank)}위 · ${pct(t.next_prize_pct)}</span></div>` +
+      `<div class="potline">현재에서 ${fmt(t.players_to_jump)}명 더 탈락 · 점프 +${pct(t.next_jump_pct)}</div>`
+    : '<div class="row"><span class="who">다음 머니점프</span><span class="amt">1위 구간</span></div>';
+
+  const jumps = (t.money_jumps || []).slice(0, 5);
+  const jumpLine = jumps.length
+    ? '<div class="potline">구간 · ' + jumps.map((j) =>
+        `${fmt(j.rank)}위 ${pct(j.prize_pct)}`).join(' → ') + '</div>'
+    : '';
+
+  return (
+    `<div class="sub">${esc(t.format || '대회')} · HAND ${fmt(t.hand_no)}</div>` +
+    '<div class="grid">' +
+      `<div class="row"><span class="who">필드</span><span class="amt">${fmt(t.entries)} → ${fmt(t.remaining)}</span></div>` +
+      `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
+      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)}</span></div>` +
+      `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
+      `<div class="row"><span class="who">내 칩순위</span><span class="amt">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
+      `<div class="row"><span class="who">내 스택</span><span class="amt">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
+      `<div class="row"><span class="who">평균</span><span class="amt">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
+      `<div class="row"><span class="who">칩리더</span><span class="amt">${fmt(t.leader)}</span></div>` +
+      `<div class="row"><span class="who">테이블</span><span class="amt">${fmt(t.tables)}개</span></div>` +
+      `<div class="row"><span class="who">버블</span><span class="amt">${t.bubble ? '진입' : '아님'}</span></div>` +
+    '</div>' +
+    money + jump + jumpLine
+  );
+}
+
+function renderRankDrawer(t) {
+  const rows = Array.isArray(t && t.standings) ? t.standings : [];
+  $('#rankMeta').textContent = t && !t.no_game
+    ? `${fmt(t.remaining)}/${fmt(t.entries)} · ITM ${fmt(t.itm)}위`
+    : '진행 중인 대회 없음';
+
+  $('#rankSummary').innerHTML = t && !t.no_game
+    ? `<div class="cell"><span class="k">내 칩순위</span><span class="v">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
+      `<div class="cell"><span class="k">내 스택</span><span class="v">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
+      `<div class="cell"><span class="k">평균 스택</span><span class="v">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
+      `<div class="cell"><span class="k">${t.in_money ? '보장 상금' : 'ITM까지'}</span><span class="v">${t.in_money ? pct(t.current_prize_pct) : fmt(t.players_to_jump) + '명'}</span></div>` +
+      `<div class="cell"><span class="k">다음 머니점프</span><span class="v">${t.next_rank ? fmt(t.next_rank) + '위 · ' + pct(t.next_prize_pct) : '최종 구간'}</span></div>` +
+      `<div class="cell"><span class="k">블라인드</span><span class="v">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' A' + fmt(t.ante) : ''}</span></div>`
+    : '';
+
+  $('#rankList').innerHTML = rows.length
+    ? rows.map((p) => {
+        const rank = p.alive
+          ? (p.chip_rank ? fmt(p.chip_rank) : '-')
+          : (p.finish_rank ? '#' + fmt(p.finish_rank) : 'OUT');
+        const who = p.hero ? '나 · B' + p.pid : 'B' + p.pid;
+        const loc = p.alive
+          ? ('T' + (p.table ?? '-') + ' S' + (p.seat ?? '-') + (p.pos ? ' · ' + p.pos : ''))
+          : '탈락';
+        return `<div class="rankrow${p.hero ? ' hero' : ''}${p.alive ? '' : ' busted'}">` +
+          `<span class="rk">${rank}</span>` +
+          `<span class="bot">${esc(who)}</span>` +
+          `<span class="stk">${fmt(p.stack)}</span>` +
+          `<span class="bb">${p.alive ? p.bb + 'BB' : ''}</span>` +
+          `<span class="seat">${esc(loc)}</span>` +
+          '</div>';
+      }).join('')
+    : '<div class="rankempty">순위 정보가 없습니다.</div>';
+}
+
+async function openRankDrawer() {
+  if (S.rankOpen) return;
+  S.rankOpen = true;
+  $('#rankScrim').hidden = false;
+  $('#rankDrawer').classList.add('open');
+  $('#rankDrawer').setAttribute('aria-hidden', 'false');
+  $('#rankList').innerHTML = '<div class="rankempty">전체 순위 불러오는 중…</div>';
+  try {
+    const t = await tournamentLoad(true);
+    renderRankDrawer(t);
+  } catch (e) {
+    $('#rankList').innerHTML =
+      `<div class="rankempty">순위를 불러오지 못했습니다.<br>${esc(e.message || e)}</div>`;
+  }
+}
+
+function closeRankDrawer() {
+  if (!S.rankOpen) return;
+  S.rankOpen = false;
+  $('#rankDrawer').classList.remove('open');
+  $('#rankDrawer').setAttribute('aria-hidden', 'true');
+  setTimeout(() => {
+    if (!S.rankOpen) $('#rankScrim').hidden = true;
+  }, 250);
+}
+
+async function showMenu() {
+  showOverlayPersistent(
+    '<h2>대회 정보</h2><div class="sub">현재 상태 불러오는 중…</div>'
+  );
+
+  let t = null;
+  let err = '';
+  try {
+    t = await tournamentLoad(true);
+  } catch (e) {
+    err = e.message || String(e);
+  }
+
+  showOverlayPersistent(
+    '<h2>대회 정보</h2>' +
+    (err
+      ? `<div class="sub">대회 정보를 불러오지 못했습니다: ${esc(err)}</div>`
+      : tournamentInfoHTML(t)) +
+    '<button type="button" id="mRanks">전체 봇 스택 순위</button>' +
+    '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다. 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
     '<button type="button" id="mNew">새 게임</button>' +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
-    // 어느 빌드가 떠 있는지 확인할 수단이 없어서, 이미 고친 것을 두고
-    // '아직도 그대로다' 를 서로 확인하는 데 시간을 썼다.
     `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
-    '<div class="actions"><button type="button" id="mClose">닫기</button></div>');
-  $('#mStep').addEventListener('click', () => {
-    const i = STEP_CHOICES.indexOf(sm);
-    setPref('t2step', STEP_CHOICES[(i + 1) % STEP_CHOICES.length]);
-    showMenu();
+    '<div class="actions"><button type="button" id="mClose">닫기</button></div>'
+  );
+
+  $('#mRanks').addEventListener('click', () => {
+    hideOverlay();
+    openRankDrawer();
   });
-  $('#mAuto').addEventListener('click', () => { autoSet(!on); showMenu(); });
   $('#mNew').addEventListener('click', () => {
     showOverlayPersistent('<h2>새 게임을 시작할까요?</h2>' +
       '<div class="sub">진행 중인 대회는 끝납니다. 되돌릴 수 없습니다.</div>' +
@@ -3851,6 +3957,38 @@ function apply(resp) {
 /* ---------------- 시작 ---------------- */
 $('#bLog').addEventListener('click', showHistory);
 $('#bMenu').addEventListener('click', showMenu);
+$('#rankClose').addEventListener('click', closeRankDrawer);
+$('#rankScrim').addEventListener('click', closeRankDrawer);
+
+// 오른쪽 스와이프 = 전체 스택 순위. 단순 탭/세로 스크롤과 섞이지 않게
+// 수평 이동 80px + 세로 48px 이내일 때만 연다.
+let _swipe = null;
+$('#tablewrap').addEventListener('pointerdown', (e) => {
+  if (S.rankOpen || !$('#overlay').hidden) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  _swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+}, { passive: true });
+$('#tablewrap').addEventListener('pointerup', (e) => {
+  if (!_swipe || _swipe.id !== e.pointerId) return;
+  const dx = e.clientX - _swipe.x;
+  const dy = e.clientY - _swipe.y;
+  _swipe = null;
+  if (dx >= 80 && Math.abs(dy) <= 48) openRankDrawer();
+}, { passive: true });
+$('#tablewrap').addEventListener('pointercancel', () => { _swipe = null; }, { passive: true });
+
+let _rankSwipe = null;
+$('#rankDrawer').addEventListener('pointerdown', (e) => {
+  _rankSwipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+}, { passive: true });
+$('#rankDrawer').addEventListener('pointerup', (e) => {
+  if (!_rankSwipe || _rankSwipe.id !== e.pointerId) return;
+  const dx = e.clientX - _rankSwipe.x;
+  const dy = e.clientY - _rankSwipe.y;
+  _rankSwipe = null;
+  if (dx <= -70 && Math.abs(dy) <= 50) closeRankDrawer();
+}, { passive: true });
+
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
   if (!b) return;
@@ -3861,7 +3999,9 @@ $('#seats').addEventListener('pointerdown', (e) => {
   if (e.target.closest && e.target.closest('button.memo')) e.stopPropagation();
 }, true);
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') hideOverlay();
+  if (e.key !== 'Escape') return;
+  if (S.rankOpen) closeRankDrawer();
+  else hideOverlay();
 });
 memoLoad().finally(sync);
 

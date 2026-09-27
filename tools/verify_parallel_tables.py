@@ -6,7 +6,13 @@ HERO 테이블과 나머지 테이블이 같은 round-start snapshot에서 갈�
 """
 import copy
 import os
+import sys
 import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 # import 전에 로그를 끈다. 검증은 사용자 sidecar를 쓰면 안 된다.
 os.environ.setdefault('T2_BOT_LOG', '0')
