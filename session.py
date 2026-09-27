@@ -1798,7 +1798,10 @@ class HandRun:
                     # 상대의 실제 persona/tilt 는 관찰자가 알 수 없다.
                     # 공개 행동에서 만든 perceived_profile 만으로 프리플랍 레인지를 만든다.
                     _pfo = (getattr(h, 'pf_seed', {}) or {}).get(o) or {}
-                    _act_o = self._pf_range_action(o, aggressor)
+                    _public_pf = _preflop_public_action_context(
+                        getattr(self, 'preflop_action_meta', []), o, h.bb)
+                    _act_o = (self._pf_range_action(o, aggressor)
+                              if _pfo else _public_pf['action'])
                     _pol = 0.0
                     _oe = RD.perceived_profile(
                         h.book, self._pid(s), self._pid(o), ax,
@@ -1807,17 +1810,29 @@ class HandRun:
                     if _oe:
                         _rdp = PS.read_opponent(ax, _oe)
                         _pol = _rdp.get('tb_polar', 0.0)
-                        if _rdp.get('w', 0) > 0 and self._was_3bettor(o):
+                        if (_pfo and _rdp.get('w', 0) > 0
+                                and self._was_3bettor(o)):
                             _act_o = '3bet'
-                    _pf_vs_o = _pfo.get('pf_vs') or h.pos.get(aggressor)
+                    _pf_vs_o = (
+                        _pfo.get('pf_vs')
+                        if _pfo else h.pos.get(_public_pf.get('opener_seat')))
+                    _open_bb_o = (
+                        float(_pfo.get('pf_open_bb', 2.5) or 2.5)
+                        if _pfo else float(_public_pf.get('open_bb', 2.5) or 2.5))
+                    _n_callers_o = (
+                        int(_pfo.get('pf_n_callers', 0) or 0)
+                        if _pfo else int(_public_pf.get('n_callers', 0) or 0))
+                    _raise_level_o = (
+                        int(_pfo.get('pf_level', 1) or 1)
+                        if _pfo else int(_public_pf.get('raise_level', 1) or 1))
                     orange = R.preflop_range(
                         _opp_view, h.pos[o], _act_o,
                         h.bbs(o), set(board),
-                        n_callers=int(_pfo.get('pf_n_callers', 0) or 0),
+                        n_callers=_n_callers_o,
                         opener_pos=_pf_vs_o,
-                        open_bb=float(_pfo.get('pf_open_bb', 2.5) or 2.5),
+                        open_bb=_open_bb_o,
                         seats=_seats, ante=_ante, polar=_pol,
-                        raise_level=int(_pfo.get('pf_level', 1) or 1))
+                        raise_level=_raise_level_o)
                     # 관측된 포스트플랍 액션으로 레인지를 좁힌다.
                     # 이걸 빼면 상대가 무슨 행동을 했든 매 스트리트 프리플랍 레인지가 된다.
                     # 상대 레인지는 '이 사람이 인식하는 만큼'만 좁혀진다 (range_read).
