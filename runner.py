@@ -333,9 +333,10 @@ def adjust_range_by_history(base_range, dyn, pid, board, dead=None):
     pcts = [pf.PCT[pf.cls(h)] for h in shown[-6:] if isinstance(h, list)]
     if not pcts: return base_range, None
     med = statistics.median(pcts)
-    n = len(base_range)
+    support = R.range_support(base_range)
+    n = len(support)
     if med > 0.55:
-        cap = min(0.9, max(pf.PCT[pf.cls(list(c))] for c in base_range) * 1.5)
+        cap = min(0.9, max(pf.PCT[pf.cls(list(c))] for c in support) * 1.5)
         # dead(히어로 홀카드 + 보드)를 걸러야 한다. 안 그러면 상대가 내 카드를
         # 들고 있는 콤보가 레인지에 들어가 에쿼티가 왜곡된다.
         # 주의: base_range 의 카드를 dead 로 넣으면 안 된다 — 그건 상대가 가질 수
@@ -344,8 +345,18 @@ def adjust_range_by_history(base_range, dyn, pid, board, dead=None):
         wider = [c for c in R._SORTED
                  if pf.PCT[pf.cls(list(c))] <= cap
                  and c[0] not in seen and c[1] not in seen]
-        return wider, '쇼다운 이력 중앙값 %.0f%% → 레인지 확대' % (med*100)
+        # Expansion introduces genuinely new support. Existing posterior mass is
+        # preserved; new combos receive the incoming range's mean mass, which is
+        # scale-invariant and neutral until W5 likelihood production exists.
+        out = R.range_select(
+            base_range, wider,
+            new_mass=(R.range_mean_mass(base_range)
+                      if isinstance(base_range, dict) else None))
+        return out, '쇼다운 이력 중앙값 %.0f%% → 레인지 확대' % (med*100)
     if med < 0.15:
-        return R.narrow(base_range, board, 0.6, 'top') if board else base_range[:int(n*0.6)], \
-               '쇼다운 이력 중앙값 %.0f%% → 레인지 축소' % (med*100)
+        narrowed = (
+            R.narrow(base_range, board, 0.6, 'top')
+            if board else
+            R.range_select(base_range, support[:int(n*0.6)]))
+        return narrowed, '쇼다운 이력 중앙값 %.0f%% → 레인지 축소' % (med*100)
     return base_range, None
