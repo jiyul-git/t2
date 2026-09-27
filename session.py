@@ -1304,7 +1304,7 @@ class HandRun:
             open_bb=open_bb,
             seats=seats, ante=ante, polar=pol,
             raise_level=raise_level)
-        return sorted(set(rr)), {
+        return R.range_unique_sorted(rr), {
             'source': 'pf_seed' if pfo else 'public_action_meta',
             'action': act,
             'stack_bb': float(stack_bb or 0.0),
@@ -1364,7 +1364,7 @@ class HandRun:
         orange, _note = RU.adjust_range_by_history(
             orange, h.dyn, self._pid(target), board,
             dead=set(h.hole[observer]) | set(board))
-        return sorted(set(orange)), {
+        return R.range_unique_sorted(orange), {
             'stack_bb': float(stack_bb or 0.0),
             'acts': list(acts),
         }
@@ -1788,8 +1788,8 @@ class HandRun:
                     open_bb=float(_pfr.get('pf_open_bb', 2.5) or 2.5),
                     seats=_seats, ante=_ante,
                     raise_level=int(_pfr.get('pf_level', 1) or 1))
-                my_r = sorted(set(my_r))      # 순서 확정 (판단이 순서에 의존하면 안 된다)
-                opp_r = []
+                my_r = R.range_unique_sorted(my_r)  # legacy 순서 유지 + weighted mass 보존
+                opp_r = None
                 opp_ranges = {}
                 for o in r2.live():
                     if o == s: continue
@@ -1832,9 +1832,8 @@ class HandRun:
                     orange, _note = RU.adjust_range_by_history(
                         orange, h.dyn, self._pid(o), board,
                         dead=set(h.hole[s])|set(board))
-                    orange = sorted(set(orange))
+                    orange = R.range_unique_sorted(orange)
                     opp_ranges[o] = orange
-                    opp_r.extend(orange)
 
                 # F8-D2: 이전 street에서 이미 올인해 현재 Round에서 빠진 상대도
                 # pot layer에는 남아 있다. 그 공개 range를 별도 map으로 복원한다.
@@ -1896,8 +1895,12 @@ class HandRun:
                 # 레인지는 집합이지 수열이 아니다. 상류(축소·이력보정)에서 순서가
                 # 흔들려도 판단이 바뀌면 안 되므로 여기서 순서를 확정한다.
                 # 이걸 빼면 같은 시드가 재현되지 않는다 (rng.choice 가 순서에 의존).
-                opp_r = sorted(set(opp_r))
-                if not opp_r: opp_r = sorted(set(my_r))
+                opp_r = R.range_union(*[
+                    opp_ranges[o]
+                    for o in sorted(opp_ranges, key=lambda x: str(x))
+                ])
+                if not opp_r:
+                    opp_r = R.range_unique_sorted(my_r)
                 key = s
                 if key in h.plans and street != h.plans[key].get('street_made'):
                     h.plans[key].setdefault('streets', []).append(street)
@@ -1990,7 +1993,8 @@ class HandRun:
                         # D5-C1: hypothetical call must condition target range on the
                         # response.  If call exhausts the stack, strong hands that would
                         # normally raise remain in the continue range.
-                        _base_target_range = list(opp_ranges.get(_target) or [])
+                        _base_target_range = R.range_copy(
+                            opp_ranges.get(_target) or [])
                         # target가 실제로 부담 가능한 incremental call / action-time pot.
                         # Hero의 nominal intent가 target stack을 초과하면 nominal size로
                         # continue range를 과도하게 좁히면 안 된다.
