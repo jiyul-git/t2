@@ -59,18 +59,18 @@ This is intentional. Once a true posterior exists, an old consumer must not sile
 
 ## 4. Migration order
 
-### W0 — representation + adapter
-Implemented; local gate pending.
+### W0 — representation + adapter — CLOSED
 
-- add canonical helper API;
-- no production consumer receives non-uniform weights;
-- strategy behavior must remain unchanged.
+- canonical helper API implemented;
+- legacy occurrences map to mass;
+- non-uniform flattening fails closed;
+- production behavior unchanged.
 
-### W1 — weighted sampling consumers
+### W1 — weighted sampling consumers — CLOSED
 
-Implemented; local gate pending. Legacy list input still takes the exact old
-`rng.choice(list)` path. Uniform weighted dicts take the same choice path over
-stable support; only genuinely non-uniform weights use cumulative weighted draws.
+Legacy list input retains the exact old `rng.choice(list)` path. Uniform
+weighted dicts use stable support, and only genuinely non-uniform weights use
+cumulative weighted draws.
 
 Converted sampling consumers:
 
@@ -81,11 +81,9 @@ Converted sampling consumers:
 - `plan.joint_relative_strength`;
 - `plan._eq_current`.
 
-Legacy uniform input must have exact or statistically locked parity before activation.
+### W2 — weighted aggregate consumers — CLOSED
 
-### W2 — weighted aggregate consumers
-
-Use probability mass instead of combo count:
+Probability-mass aggregation is wired through:
 
 - `plan.relative_strength`;
 - `ranges._strong_share` / nut advantage;
@@ -93,9 +91,11 @@ Use probability mass instead of combo count:
 - `ranges.blocker_effect`;
 - `ranges.joint_blocker_effect`.
 
-### W3 — transforms preserve weights
+Legacy list input retains the historical count semantics.
 
-Rewrite:
+### W3 — transforms preserve weights — CLOSED
+
+Weight-preserving transforms are wired through:
 
 - `ranges._ranked`;
 - `_bet_range`;
@@ -103,30 +103,39 @@ Rewrite:
 - `_call_range`;
 - `_check_range`;
 - `perceived_range`;
+- `perceived_facing_bet_response`;
 - `narrow_by_actions`;
 - `runner.adjust_range_by_history`.
 
-Selection may change support, but surviving combos keep their incoming mass unless the model explicitly applies a likelihood multiplier.
+Selection may change support, but surviving weighted combos retain their incoming
+mass. Legacy list execution remains unchanged. The historical bet-range list can
+contain duplicate value/bluff combos; canonical weighted support de-duplicates
+the key while preserving incoming mass. Production still uses the legacy list
+path, so this cleanup does not change live actions.
 
-### W4 — signatures / adapters / collapse removal
+### W4 — signatures / adapters / collapse removal — CLOSED
 
-Remove or replace weight-destroying boundaries:
+Weight-destroying boundaries are removed from the downstream path:
 
-- `session.py: sorted(set(orange))`;
-- locked-range set collapse;
-- `plan._normalize_opp_pools: list(r)`;
-- range signatures;
-- archive range length/count semantics.
+- session range unique/sort boundaries preserve weighted mass;
+- active-opponent union uses `range_union` and sums mass only when weighted input exists;
+- locked ranges remain weighted through postflop reconstruction;
+- `plan._normalize_opp_pools` preserves representation;
+- archive signatures preserve the historical hash for legacy/uniform ranges and
+  include normalized mass only for genuinely non-uniform posteriors;
+- in-process refresh signatures detect mass movement at fixed support;
+- provenance now records both support count and range mass.
 
-Weighted signatures must include combo and stable numeric mass.
+### W5 — posterior production — LOGIC BARRIER / NOT STARTED
 
-### W5 — posterior production
+W5 is the first stage that intentionally changes the information distribution
+consumed by strategy. It is **not plumbing**.
 
-Only after all downstream paths are weight-safe:
+Only after the user explicitly moves to logic/strategy work:
 
 - observed preflop/action evidence may produce non-uniform mass;
-- postflop observations update mass rather than only hard-cut support;
-- read/persona attribution is measured before any strategic promotion.
+- postflop observations may update mass rather than only hard-cut support;
+- read/persona attribution must be measured before strategic promotion.
 
 ## 5. Invariants
 
@@ -140,15 +149,30 @@ Only after all downstream paths are weight-safe:
 
 ## 6. Current gates
 
-- `tools/verify_weighted_range_adapter.py`
-- `tools/verify_weighted_sampling.py`
+Canonical CI: `.github/workflows/weighted-range-wiring.yml`
 
-W0/W1 close only when:
+It runs:
 
-- helper validation passes;
-- legacy -> weighted -> legacy round-trip is exact for production-style unique ranges;
-- duplicate legacy occurrences aggregate mass;
-- non-uniform weighted flattening is rejected;
-- current regression baseline remains unchanged.
+- `tools/verify_weighted_range_adapter.py` — W0;
+- `tools/verify_weighted_sampling.py` — W1;
+- `tools/verify_weighted_aggregate_transform.py` — W2/W3;
+- `tools/verify_weighted_boundaries.py` — W4;
+- exact production fingerprint comparison against pre-W2 checkpoint
+  `dc649f7fa66e11802c63c70deeddd39f63dd3e07`.
 
-After W0/W1 pass together with the frozen regression, proceed to W2/W3 weight-preserving aggregate/transform consumers.
+2026-09-27 canonical result: **PASS**.
+
+The six production fingerprints are unchanged:
+
+- 3000 `12c2daefd7c87cbb`
+- 3001 `8b83f668c038d002`
+- 3002 `0badaa6a21474fd3`
+- 3003 `3aebdd1942b57229`
+- 3004 `d4295da0aace11ca`
+- 3005 `2c50d0b71bd16614`
+
+Aggregate fixture is also identical: 180 hands, 1,368 preflop decisions,
+283 VPIP events, 165 PFR events, 85 flop-seen hands.
+
+**Exit:** W0-W4 structural migration is closed. W5 is intentionally held until
+logic adjustment begins.
