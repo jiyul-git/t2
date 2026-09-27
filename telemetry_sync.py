@@ -78,6 +78,21 @@ def _session_id(st):
     return sid
 
 
+def _code_identity():
+    cfg = _load_config()
+    src = cfg.get("source_repo") if cfg else None
+    if src:
+        src = os.path.expanduser(str(src))
+        if os.path.exists(src):
+            sha = _run(["git", "-C", src, "rev-parse", "HEAD"], timeout=10)
+            br = _run(["git", "-C", src, "branch", "--show-current"], timeout=10)
+            return {
+                "sha": sha.stdout.strip() if sha.returncode == 0 else None,
+                "branch": br.stdout.strip() if br.returncode == 0 else None,
+            }
+    return {"sha": None, "branch": None}
+
+
 def _manifest(st, f):
     profiles = {}
     for pid, p in sorted(f.players.items()):
@@ -100,6 +115,7 @@ def _manifest(st, f):
         "format": fmt,
         "hero_pid": int(f.hero_pid),
         "hands_per_level": int(f.hands_per_level),
+        "code": _code_identity(),
         "profiles": profiles,
     }
 
@@ -184,6 +200,7 @@ def emit_round(st, f, hero_hand, bot_hands=None, source="live"):
         "session_id": sid,
         "source": source,
         "captured_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "code": _code_identity(),
         "hand_no": hand_no,
         "level": int(f.level),
         "blinds": list(f.blinds()),
@@ -232,23 +249,47 @@ def _sanitize_remote(remote):
 def _ensure_clone(cfg):
     wd = Path(os.path.expanduser(str(cfg.get("workdir") or "~/t2_telemetry_live")))
     branch = str(cfg.get("branch") or "telemetry/live")
-    remote = _sanitize_remote(cfg.get("remote"))
-    if not remote:
-        raise RuntimeError("telemetry remote missing")
+    source_repo = cfg.get("source_repo")
+    source_repo = (Path(os.path.expanduser(str(source_repo))).resolve()
+                   if source_repo else None)
 
-    if not (wd / ".git").exists():
+    # Preferred path on Termux: use the user's existing ~/t2 repository as the
+    # git owner and create a worktree. This reuses the exact same remote/auth
+    # configuration that already makes git fetch/pull work for the player.
+    if source_repo and (source_repo / ".git").exists():
         wd.parent.mkdir(parents=True, exist_ok=True)
-        r = _run(["git", "clone", "--depth", "1", "--single-branch",
-                  "--branch", branch, remote, str(wd)], timeout=120)
-        if r.returncode:
-            raise RuntimeError("git clone failed: " + r.stdout[-500:])
-    else:
-        r = _run(["git", "fetch", "origin", branch], cwd=str(wd), timeout=60)
+        r = _run(["git", "-C", str(source_repo), "fetch", "origin", branch],
+                 timeout=60)
         if r.returncode:
             raise RuntimeError("git fetch failed: " + r.stdout[-500:])
-        # Telemetry branch is single-writer in normal use. Resetting to origin
-        # avoids a half-finished local commit after a killed process.
-        _run(["git", "reset", "--hard", "origin/" + branch], cwd=str(wd))
+
+        if not (wd / ".git").exists():
+            if wd.exists():
+                shutil.rmtree(wd)
+            r = _run([
+                "git", "-C", str(source_repo), "worktree", "add",
+                "-B", branch, str(wd), "origin/" + branch
+            ], timeout=120)
+            if r.returncode:
+                raise RuntimeError("git worktree add failed: " + r.stdout[-700:])
+        else:
+            _run(["git", "reset", "--hard", "origin/" + branch], cwd=str(wd))
+    else:
+        # Portable fallback used by CI or non-worktree installations.
+        remote = _sanitize_remote(cfg.get("remote"))
+        if not remote:
+            raise RuntimeError("telemetry source_repo/remote missing")
+        if not (wd / ".git").exists():
+            wd.parent.mkdir(parents=True, exist_ok=True)
+            r = _run(["git", "clone", "--depth", "1", "--single-branch",
+                      "--branch", branch, remote, str(wd)], timeout=120)
+            if r.returncode:
+                raise RuntimeError("git clone failed: " + r.stdout[-500:])
+        else:
+            r = _run(["git", "fetch", "origin", branch], cwd=str(wd), timeout=60)
+            if r.returncode:
+                raise RuntimeError("git fetch failed: " + r.stdout[-500:])
+            _run(["git", "reset", "--hard", "origin/" + branch], cwd=str(wd))
 
     _run(["git", "config", "user.name", "T2 Telemetry"], cwd=str(wd))
     _run(["git", "config", "user.email", "t2-telemetry@local"], cwd=str(wd))
