@@ -763,6 +763,9 @@ def _action_event_fields(row):
             'facing_size_frac': (
                 float(row.get('facing_size_frac'))
                 if row.get('facing_size_frac') is not None else None),
+            'facing_price_frac': (
+                float(row.get('facing_price_frac'))
+                if row.get('facing_price_frac') is not None else None),
             'allin': bool(row.get('allin')),
             'allin_call': bool(row.get('allin_call')),
             'allin_raise': bool(row.get('allin_raise')),
@@ -778,6 +781,7 @@ def _action_event_fields(row):
     return {
         'street': stt, 'action': a, 'size_frac': float(sz or 0.0),
         'facing_kind': None, 'facing_size_frac': None,
+        'facing_price_frac': None,
         'allin': (a == 'allin'), 'allin_call': False,
         'allin_raise': False, 'full_raise': False,
         'incomplete_raise': False, 'can_raise_before': None,
@@ -874,7 +878,9 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
             if a == 'raise' or ev.get('facing_kind') in ('bet', 'raise'):
                 r = _raise_range(
                     r, action_board, stt, bluff, sz,
-                    ev.get('facing_size_frac'), d, barrel,
+                    (ev.get('facing_price_frac')
+                     if ev.get('facing_price_frac') is not None
+                     else ev.get('facing_size_frac')), d, barrel,
                     n_barrels=n_barrels)
             else:
                 r = _bet_range(
@@ -884,7 +890,9 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
         elif a == 'call':
             # 올인 콜 또는 규칙상 raise가 닫힌 콜은 top value도 call에 남는다.
             # ordinary flat만 _call_range의 trap-removal 의미를 사용한다.
-            faced = ev.get('facing_size_frac')
+            faced = (ev.get('facing_price_frac')
+                     if ev.get('facing_price_frac') is not None
+                     else ev.get('facing_size_frac'))
             use_sz = sz if faced is None else faced
             if ev.get('allin_call') or ev.get('can_raise_before') is False:
                 r = _continue_range(r, action_board, stt, use_sz, d)
