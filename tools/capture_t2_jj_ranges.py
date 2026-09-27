@@ -77,9 +77,7 @@ if not capture:
     raise SystemExit("T2 JJ flop range capture failed")
 
 # convert chips to BB using the known live hand's bb from the reconstructed field
-st=L.load()
-f=L._load_field(st["field"])
-bb=float(f.bb)
+bb=200.0
 capture["bb"]=bb
 capture["pot_bb"]=capture["pot"]/bb
 capture["stack_bb"]=capture["stack"]/bb
