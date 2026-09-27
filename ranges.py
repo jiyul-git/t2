@@ -763,7 +763,7 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
         # 씨벳 성향은 '체크했다'의 정보량을 정한다.
         # 자주 치는 사람의 체크는 강한 신호, 안 치는 사람의 체크는 정보가 없다.
         cbet = max(1.0, min(10.0, 5.0 - 5.0*actor_read.get('passive', 0.0)*w))
-        barrel = max(-1.0, min(1.0, actor_read.get('barrel_gap', 0.0)))
+        barrel = max(-1.0, min(1.0, actor_read.get('barrel_gap', 0.0) * w))
     r = range_copy(base)
     floor = max(_MIN_KEEP, int(len(range_support(base))*_MIN_FRAC))
     step = 0
