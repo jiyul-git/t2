@@ -82,7 +82,18 @@ Further chip/bubble movement should be based on an actual frame where the releva
 
 ## Current streamed-play additions
 
-The active UI line includes server-driven bot-action streaming and playback hardening. Bot calculation overlaps the existing 1.5s action pacing; board transitions can render before the next bot finishes computing; short presentation pauses are UI-only and do not sleep the engine.
+The active UI line now uses a **motion-gated bot pipeline** rather than compute-ahead playback:
+
+- HERO action is rendered first; the first following bot calculation starts after the HERO presentation pause.
+- Each server bot/street event is rendered, then the browser POSTs `/api/step-ack`.
+- The server does not start the next bot decision until that ACK arrives.
+- `ThreadingHTTPServer` is used so the ACK and read-only UI requests are not serialized behind the long gameplay request.
+- tournament/history/memo reads use the last atomic state snapshot and remain responsive while gameplay is waiting at the motion gate.
+- `/api/stats` exposes `motion_ack` and `motion_ack_timeout` for runtime verification.
+
+The 100-entry final-table CI fixture (ITM 15, remaining 9) passed with 10/10 motion ACKs, zero timeouts, max next-compute gap 0.4819 s, and max read-only UI response 0.0048 s.
+
+Browser cache checkpoint for this pipeline: `app.js?v=67`.
 
 It also includes the **parallel table round** implementation that was previously isolated on `chatgpt/parallel-tables-20260927`:
 
@@ -112,6 +123,7 @@ When starting work after any pause, read this file first and verify the canonica
 
 ## Historical UI branches — deletion candidates
 
+- `integration/latest-20260927` — final-table/UI wiring verified then fast-forwarded into canonical; deletion-only
 - `chatgpt/tda-position-ui-20260927` — fully contained after PR #10 / merge `ac7179e8`
 - `chatgpt/ui-recovery-20260927` — fully contained in `ui-bot-pipeline`
 - `chatgpt/parallel-tables-20260927` — fully contained in `ui-bot-pipeline` after merge `13505d64`
@@ -132,7 +144,7 @@ Do not create replacement UI branches for small fixes.
 ## Rule
 
 - **Only active engine/UI line:** `chatgpt/decision-architecture-audit-20260926`
-- `chatgpt/ui-bot-pipeline-20260927` is deletion-only after local migration.
+- `integration/latest-20260927` and `chatgpt/ui-bot-pipeline-20260927` are deletion-only after canonical promotion.
 - Branch cleanup is part of phase closure.
 - Historical branches are never runtime source-of-truth.
 - Before saying a feature is missing, search history and containment first.
