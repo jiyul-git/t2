@@ -33,7 +33,7 @@ def _run_response(mult, stack, contrib, pot=300, tocall=100):
         PL.decide_response = (
             lambda profile, hero, board, street, plan, plan_state,
                    eq, need, made_now, opp_range, pot, tocall, stack,
-                   committed, rng, allow_raise=True:
+                   committed, rng, allow_raise=True, **kwargs:
             ('raise', mult, need, 'test raise')
         )
         out, _, _ = PL.act_with_plan(
@@ -141,6 +141,50 @@ def test_aggressor_backaction_kind():
     return ctx
 
 
+def test_aggressor_backaction_does_not_reenter_checkraise_gate():
+    orig_norm = PL._normalize_opp_pools
+    orig_eq = PL.bot.equity_vs_betting
+    orig_need = PL.calldown_need
+    orig_ckr = PL.checkraise_decision
+    orig_resp = PL.decide_response
+    seen = {'ckr': 0, 'allow_raise': None}
+    try:
+        PL._normalize_opp_pools = lambda *a, **k: []
+        PL.bot.equity_vs_betting = lambda *a, **k: 0.35
+        PL.calldown_need = lambda *a, **k: 0.33
+
+        def _ckr(*a, **k):
+            seen['ckr'] += 1
+            return True
+        PL.checkraise_decision = _ckr
+
+        def _resp(profile, hero, board, street, plan, plan_state,
+                  eq, need, made_now, opp_range, pot, tocall, stack,
+                  committed, rng, allow_raise=True, **kwargs):
+            seen['allow_raise'] = allow_raise
+            return ('fold', 0.0, need, 'test fold')
+        PL.decide_response = _resp
+
+        out, _, _ = PL.act_with_plan(
+            ['As','Kd'], ['Qh','9h','3s'], _prof(),
+            {'plan':'bluff_2street','rel':0.34,'outs':0},
+            pot=4600, tocall=1900, stack=26900, street='flop',
+            initiative=False, opp_range=None, bf=1.0, seed=1,
+            n_opp=1, to_act_behind=0, read=None, opp_est=None,
+            checked_before=True, can_raise=True, hero_contrib=2600,
+            response_kind='aggressor_backaction')
+        assert out == ('fold', 0), out
+        assert seen['ckr'] == 0, seen
+        assert seen['allow_raise'] is True, seen
+        return seen
+    finally:
+        PL._normalize_opp_pools = orig_norm
+        PL.bot.equity_vs_betting = orig_eq
+        PL.calldown_need = orig_need
+        PL.checkraise_decision = orig_ckr
+        PL.decide_response = orig_resp
+
+
 def main():
     a=test_reraise_target_includes_prior_contrib()
     b=test_reraise_cap_uses_total_target()
@@ -148,6 +192,7 @@ def main():
     d=test_fold_to_bet_and_raise_are_separate()
     e=test_facing_sequence()
     f=test_aggressor_backaction_kind()
+    g=test_aggressor_backaction_does_not_reenter_checkraise_gate()
 
     print("PASS re-raise target includes prior contribution", a)
     print("PASS re-raise cap uses total reachable target", b)
@@ -155,7 +200,8 @@ def main():
     print("PASS fold-to-bet and fold-to-raise reads are separate", d)
     print("PASS current-street facing sequence is classified", e)
     print("PASS aggressor back-action kind is preserved", f)
-    print("6/6 F5 structural checks passed")
+    print("PASS aggressor back-action does not re-enter checkraise gate", g)
+    print("7/7 F5 structural checks passed")
 
 
 if __name__ == '__main__':
