@@ -499,6 +499,7 @@ def resume_others(st, others=None):
     if how != 'hit':
         others = compute_others(st['field'])
     st['field'] = others['field']
+    _telemetry_bot_rows = TM.parse_bot_log(others.get('bot_log'))
     if others.get('bot_log'):          # 워커가 모아둔 봇 핸드 기록을 여기서 붙인다
         with open(SP.sidecar_path('bot_log'), 'a', encoding='utf-8') as fp:
             fp.write(others['bot_log'])
@@ -537,9 +538,16 @@ def resume_others(st, others=None):
     rec = st.pop('pending_archive', None)
     if rec is not None:
         # 정산이 끝났으니 비워둔 자리를 채운다. 키 순서는 그대로다.
-        rec['field'] = _load_field(copy.deepcopy(others['field'])).status()
+        _final_f = _load_field(copy.deepcopy(others['field']))
+        rec['field'] = _final_f.status()
         rec['notes'] = list(rec.get('notes') or []) + _new_notes
         _archive_write(rec)
+        try:
+            TM.emit_round(
+                st, _final_f, rec, _telemetry_bot_rows,
+                source='resume_legacy')
+        except Exception:
+            pass
     st.pop('others_pending', None)
     save(st)
     return how
