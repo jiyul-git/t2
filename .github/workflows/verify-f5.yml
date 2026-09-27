@@ -1,0 +1,21 @@
+name: verify-f5
+on:
+  push:
+    branches:
+      - chatgpt/logic-tuning-20260927
+    paths:
+      - plan.py
+      - session.py
+      - tools/verify_f5_backaction.py
+      - .github/workflows/verify-f5.yml
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 tools/verify_f5_backaction.py
