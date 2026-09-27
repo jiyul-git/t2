@@ -1747,8 +1747,36 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             # range_read 가 낮은 사람도 완전한 축소를 얻어, session 에서 걸러둔
             # 인식 한계가 여기서 무효화된다.
             # 인식 주체는 '나'(profile)다 — opp_est 는 상대 성향 모델링용이다.
-            bet_r = R.perceived_range(opp_range, board,
-                                      [(street, 'bet', sz)], profile)
+            _rk = (response_context or {}).get('facing_kind')
+            _event_action = 'raise' if _rk == 'raise' else 'bet'
+            _price_frac = float(tocall) / max(
+                1.0, float(pot) - float(tocall))
+            _fallback_event = {
+                'street': street,
+                'action_kind': _event_action,
+                'size_frac': sz,
+                'facing_kind': (
+                    (response_context or {}).get('prior_facing_kind')
+                    if _event_action == 'raise' else None),
+                'facing_size_frac': (
+                    (response_context or {}).get('facing_size_frac')
+                    if _event_action == 'raise' else None),
+                'facing_price_frac': (
+                    _price_frac if _event_action == 'raise' else None),
+                'allin': bool((response_context or {}).get('facing_allin')),
+                'allin_raise': bool(
+                    (response_context or {}).get('facing_allin_raise')),
+                'full_raise': bool(
+                    (response_context or {}).get('facing_full_raise')),
+                'incomplete_raise': bool(
+                    (response_context or {}).get('facing_incomplete_raise')),
+                'raise_depth_full_after': int(
+                    (response_context or {}).get('raise_depth_full', 0) or 0),
+                'raise_depth_any_after': int(
+                    (response_context or {}).get('raise_depth_any', 0) or 0),
+            }
+            bet_r = R.perceived_range(
+                opp_range, board, [_fallback_event], profile)
             eq = bot.equity_vs_combos(hero, board,
                                       [bet_r] + [opp_range]*max(0, n_opp-1),
                                       sims=600)
