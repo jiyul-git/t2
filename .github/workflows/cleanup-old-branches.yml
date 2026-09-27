@@ -1,0 +1,89 @@
+name: one-shot branch cleanup
+on:
+  push:
+    paths:
+      - '.github/workflows/cleanup-old-branches.yml'
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete verified obsolete branch refs
+        shell: bash
+        run: |
+          set -u
+          failed=0
+          while IFS= read -r branch; do
+            [ -z "$branch" ] && continue
+            echo "delete: $branch"
+            if ! gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}" >/dev/null; then
+              echo "::error::failed to delete $branch"
+              failed=1
+            fi
+          done <<'BRANCHES'
+chatgpt/a5-block-context-4a-20260925
+chatgpt/a5-reachability-20260922
+chatgpt/a6-replan-provenance-20260922
+chatgpt/blockbet-donk-audit-20260926
+chatgpt/concept-prior-audit-20260926
+chatgpt/concept-prior-sensitivity-20260926
+chatgpt/concept-wiring-audit-20260926
+chatgpt/decision-architecture-audit-20260926
+chatgpt/docs-consolidation-20260928
+chatgpt/effective-allin-v1-20260925
+chatgpt/f1-final
+chatgpt/f1-no-aggressor-semantics
+chatgpt/f1-prefx-action-search
+chatgpt/f1-strict-final
+chatgpt/fix-blockbet-donk-noaggr-20260926
+chatgpt/fix-uncalled-excess-20260925
+chatgpt/hierarchical-read-v6
+chatgpt/leave-behind-audit-20260925
+chatgpt/liveplay-proxy-20260927
+chatgpt/logic-tuning-20260927
+chatgpt/money-open-shadow-audit-20260926
+chatgpt/near-allin-effective-audit-20260925
+chatgpt/near-allin-sizing-audit-20260924
+chatgpt/near-allin-sizing-audit-20260925
+chatgpt/preserve-planned-allin-20260925
+chatgpt/read-resolution-unify-v5
+chatgpt/revise-plan-position-context-20260925
+chatgpt/street-concept-granularity-audit-20260926
+chatgpt/style-hierarchy-v3
+chatgpt/style-model-v1-spec
+chatgpt/style-natural-v1
+chatgpt/style-observer-depth-v4
+chatgpt/style-shadow-v1
+chatgpt/ui-bot-pipeline-20260927
+claude/a5-blockbet-fix
+claude/a6-replan-opt
+claude/a7-trace-schema
+claude/a9r-archive-readers
+claude/a9w-state-namespace
+claude/attack-fixture-fix
+claude/audit-oop-nks1k7
+claude/e2-e3-preflop-state
+claude/e4-invalid-retry
+claude/f6-pf-role
+claude/f9-invalid-retry
+claude/fix-calc-nks1k7
+claude/new-session-nks1k7
+claude/qx-ev-validation
+claude/read-sample-curve
+claude/read-use-separation
+claude/regress-baseline-nks1k7
+claude/replan-context
+claude/semi-bluff-probability-calibration-4jerdk
+claude/style-calib-v2
+claude/style-calib-v2-run-calib
+claude/synth-channel-split
+claude/tier5-axis-design
+claude/v6-analysis
+claude/v7-num-validation
+claude/v7-tier
+integration/latest-20260927
+BRANCHES
+          exit "$failed"
