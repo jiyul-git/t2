@@ -1,0 +1,19 @@
+name: t2-jj-solver-fast
+on:
+  push:
+    branches:
+      - chatgpt/mini-cfr-solver-20260928
+    paths:
+      - tools/t2_jj_fast_trigger.txt
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/mini-cfr-solver-20260928
+      - run: python3 tools/capture_t2_jj_ranges.py
+      - run: python3 tools/make_t2_jj_fast_config.py
+      - run: cargo build --manifest-path vendor/postflop/Cargo.toml --release -p solver-cli
+      - run: vendor/postflop/target/release/solver solve --config /tmp/jj_fast.toml --report-every 20 --out /tmp/jj_fast.json
+      - run: vendor/postflop/target/release/solver show --solution /tmp/jj_fast.json --line check --combo JcJd
