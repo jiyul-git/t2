@@ -220,6 +220,34 @@ class Table:
         """현재 BTN 마커. dead button이면 빈 물리 좌석을 그대로 반환한다."""
         return self.button_seat
 
+    def _maximize_dead_button_for_open_seats(self):
+        """TDA 36-B: dead BTN 뒤의 연속 빈 좌석을 최대한 통과시킨다.
+
+        블라인드(SB/BB)는 건드리지 않는다. BTN이 빈 자리이고 BTN->SB 사이에
+        추가 빈 자리가 연속돼 있으면 BTN을 SB 직전 빈 자리까지 전진시킨다.
+        이렇게 해야 새/브레이크 플레이어가 들어올 수 있는 좌석을 최대화하면서
+        누구도 BB를 건너뛰거나 연속으로 내지 않는다.
+        """
+        live = set(self._live_seats())
+        if len(live) < 3 or self.button_seat in live or self.sb_seat is None:
+            return self.button_seat
+
+        cur = self._marker(self.button_seat)
+        if cur is None:
+            return self.button_seat
+
+        while True:
+            nxt = self._next_slot(cur)
+            if nxt == self.sb_seat:
+                break
+            if nxt in live:
+                break
+            cur = nxt
+
+        self.button_seat = cur
+        self._sync_legacy_button()
+        return self.button_seat
+
     def reconcile_next_hand(self):
         """좌석 이동/테이블 브레이크 뒤 다음 핸드 마커를 유효하게 만든다.
 
@@ -255,6 +283,7 @@ class Table:
             self.bb_seat = self._next_live_after(
                 self.bb_seat if self.bb_seat is not None else self.sb_seat,
                 live)
+        self._maximize_dead_button_for_open_seats()
         self._sync_legacy_button()
 
     def hand_layout(self):
@@ -339,6 +368,7 @@ class Table:
             self.button_seat = old_sb
             self.sb_seat = old_bb
             self.bb_seat = next_bb
+            self._maximize_dead_button_for_open_seats()
 
         self._sync_legacy_button()
         return self.button_seat
