@@ -25,7 +25,7 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓴다. sidecar 이름
 """
 import hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket
 from concurrent.futures import ProcessPoolExecutor
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 
 D = os.path.dirname(os.path.abspath(__file__))
 if D not in sys.path:
@@ -45,6 +45,56 @@ import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver
 LOCK = threading.Lock()
 _last = None
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
+
+# UI motion acknowledgement gate.
+# The gameplay request holds LOCK while the engine is in a hand. ACK must bypass
+# that LOCK, otherwise the stream waits for an ACK that is queued behind itself.
+STREAM_LOCK = threading.Lock()
+STREAMS = {}
+STREAM_ACK_TIMEOUT = float(os.environ.get('T2_UI_ACK_TIMEOUT', '15'))
+
+
+def _stream_gate_open():
+    sid = secrets.token_hex(12)
+    state = {'cond': threading.Condition(), 'acked': 0, 'closed': False}
+    with STREAM_LOCK:
+        STREAMS[sid] = state
+    return sid
+
+
+def _stream_gate_ack(sid, seq):
+    with STREAM_LOCK:
+        state = STREAMS.get(str(sid))
+    if state is None:
+        return False
+    with state['cond']:
+        if int(seq) > int(state['acked']):
+            state['acked'] = int(seq)
+        state['cond'].notify_all()
+    return True
+
+
+def _stream_gate_wait(sid, seq):
+    with STREAM_LOCK:
+        state = STREAMS.get(str(sid))
+    if state is None:
+        return False
+    with state['cond']:
+        ok = state['cond'].wait_for(
+            lambda: state['closed'] or int(state['acked']) >= int(seq),
+            timeout=max(1.0, STREAM_ACK_TIMEOUT))
+    COUNT['motion_ack' if ok else 'motion_ack_timeout'] += 1
+    return ok
+
+
+def _stream_gate_close(sid):
+    with STREAM_LOCK:
+        state = STREAMS.pop(str(sid), None)
+    if state is None:
+        return
+    with state['cond']:
+        state['closed'] = True
+        state['cond'].notify_all()
 
 def _lobby_payload():
     """UI-only tournament catalog; formats.py remains the rules source."""
@@ -220,6 +270,7 @@ COUNT = {'attempt': 0, 'hit': 0, 'mismatch': 0, 'fallback': 0,
          'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
          'round_start': 0, 'round_restart': 0,
          'round_ready_before_finish': 0, 'round_ready_after_finish': 0,
+         'motion_ack': 0, 'motion_ack_timeout': 0,
          # 다음 라운드 직전까지도 worker가 안 끝나 실제로 기다린 시간.
          'worker_wait_ms': 0, 'worker_wait_max_ms': 0}
 
@@ -801,21 +852,22 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, _lobby_payload())
 
         if path == '/api/tournament':
-            with LOCK:
-                try:
-                    return self._send(200, _tournament_payload())
-                except Exception as e:
-                    traceback.print_exc()
-                    return self._send(
-                        500, {'error': '%s: %s' % (type(e).__name__, e)})
+            # Read-only UI requests should not queue behind a long bot calculation.
+            # live2.save() replaces the state file atomically, so readers see the last
+            # completed snapshot while a hand is being computed.
+            try:
+                return self._send(200, _tournament_payload())
+            except Exception as e:
+                traceback.print_exc()
+                return self._send(
+                    500, {'error': '%s: %s' % (type(e).__name__, e)})
 
         if path == '/api/memos':
-            with LOCK:
-                try:
-                    return self._send(200, {'memos': _hero_memos()})
-                except Exception as e:
-                    traceback.print_exc()
-                    return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
+            try:
+                return self._send(200, {'memos': _hero_memos()})
+            except Exception as e:
+                traceback.print_exc()
+                return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
 
         if path == '/api/history':
             # 공개 관전 화면에서도 읽을 수 있는 sanitized 완료 핸드 기록.
@@ -864,6 +916,18 @@ class H(BaseHTTPRequestHandler):
             body = self._body()
         except ValueError:
             return self._send(400, {'error': 'JSON 파싱 실패'})
+        if self.path == '/api/step-ack':
+            sid = body.get('stream_id')
+            try:
+                seq = int(body.get('seq'))
+            except (TypeError, ValueError):
+                return self._send(400, {'error': 'seq가 올바르지 않습니다'})
+            if not sid:
+                return self._send(400, {'error': 'stream_id가 없습니다'})
+            ok = _stream_gate_ack(sid, seq)
+            return self._send(200 if ok else 410, {
+                'ok': bool(ok), 'stream_id': sid, 'seq': seq})
+
         with LOCK:
             try:
                 if self.path == '/api/memo':
@@ -930,13 +994,28 @@ class H(BaseHTTPRequestHandler):
                     if stream:
                         self._stream_start()
                         alive = [True]
+                        stream_id = _stream_gate_open()
+                        seq = [0]
+                        alive[0] = self._stream_line({
+                            'type': 'stream_start',
+                            'stream_id': stream_id,
+                        })
 
                         def _emit_bot(event):
+                            if not alive[0]:
+                                return
+                            seq[0] += 1
+                            cur = seq[0]
+                            alive[0] = self._stream_line({
+                                'type': 'bot_action',
+                                'stream_id': stream_id,
+                                'seq': cur,
+                                'event': event,
+                            })
                             if alive[0]:
-                                alive[0] = self._stream_line({
-                                    'type': 'bot_action',
-                                    'event': event,
-                                })
+                                # Do not start the next bot calculation until the UI
+                                # has finished animating this event.
+                                _stream_gate_wait(stream_id, cur)
 
                         try:
                             r = (_step(a, amt, on_bot_action=_emit_bot)
@@ -949,6 +1028,8 @@ class H(BaseHTTPRequestHandler):
                                     'error': '%s: %s' % (type(e).__name__, e),
                                 })
                             return
+                        finally:
+                            _stream_gate_close(stream_id)
                         v = r.get('view') or {}
                         if (not r.get('done') and v.get('error') and _last
                                 and (_last.get('view') or {}).get('type') == 'decision'):
@@ -1000,12 +1081,18 @@ if __name__ == '__main__':
     print('로비 주소: http://127.0.0.1:%d' % port)
     print('테이블 주소: http://127.0.0.1:%d/play' % port)
     print('다른 기기: http://<이 기기의 LAN IP>:%d' % port)
+    # The gameplay stream can be waiting for a motion ACK while settings/history
+    # are requested. A single-threaded HTTPServer would serialize those requests.
+    class _T2ThreadingHTTPServer(ThreadingHTTPServer):
+        daemon_threads = True
+        allow_reuse_address = True
+
     if ':' in host:
-        class _HTTPServer6(HTTPServer):
+        class _HTTPServer6(_T2ThreadingHTTPServer):
             address_family = socket.AF_INET6
         srv = _HTTPServer6((host, port), H)
     else:
-        srv = HTTPServer((host, port), H)
+        srv = _T2ThreadingHTTPServer((host, port), H)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
