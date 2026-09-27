@@ -412,6 +412,7 @@ def _resume_parallel_others(st, others=None):
         # 구/손상 상태의 안전망. HERO 결과를 보존한 채 예전 순차 경로로 끝낸다.
         legacy = compute_others(st['field'])
         st['field'] = legacy['field']
+        _telemetry_bot_rows = TM.parse_bot_log(legacy.get('bot_log'))
         _append_bot_log(legacy.get('bot_log'))
         _new_notes = list(legacy.get('notes') or [])
         how = 'fallback'
@@ -431,6 +432,7 @@ def _resume_parallel_others(st, others=None):
         merged_f, _new_notes = _merge_parallel_field(
             main_f, base, others)
         st['field'] = _dump(merged_f)
+        _telemetry_bot_rows = TM.parse_bot_log(others.get('bot_log'))
         _append_bot_log(others.get('bot_log'))
 
     if st.pop('bust_pending', False):
@@ -462,6 +464,13 @@ def _resume_parallel_others(st, others=None):
         rec['field'] = merged_f.status()
         rec['notes'] = list(rec.get('notes') or []) + _new_notes
         _archive_write(rec)
+        try:
+            TM.emit_round(
+                st, merged_f, rec,
+                locals().get('_telemetry_bot_rows', []),
+                source='resume_parallel')
+        except Exception:
+            pass
 
     st.pop('others_pending', None)
     st.pop('others_mode', None)
