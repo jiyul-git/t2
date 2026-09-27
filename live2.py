@@ -863,7 +863,7 @@ def _archive_write(rec):
         fp.write(json.dumps(rec, ensure_ascii=False, default=str) + '\n')
 
 
-def _archive(st, f, h, res, notes, defer=False):
+def _archive(st, f, h, res, notes, defer=False, run=None):
     """핸드 기록. defer 면 파일에 쓰지 않고 상태에 넣어둔다.
 
     기록의 'field'(f.status())와 'notes' 는 다른 테이블까지 정산돼야 확정된다.
@@ -894,9 +894,38 @@ def _archive(st, f, h, res, notes, defer=False):
            'board': h.board,
            'stacks_before': {str(k): v for k, v in getattr(h, '_start_stacks', {}).items()},
            'full_log': res.get('full_log', []),
-           'intents': getattr(h, 'intents', []),
-           'money_jump_obs': getattr(h, 'money_jump_obs', []),
-           'reads': getattr(h, 'reads_log', []),
+           'full_action_meta': copy.deepcopy(
+               getattr(run, 'full_action_meta', []) or []) if run is not None else [],
+           'intents': copy.deepcopy(getattr(h, 'intents', []) or []),
+           'plans': copy.deepcopy(getattr(h, 'plans', {}) or {}),
+           'decision_cache': copy.deepcopy(
+               getattr(run, 'recorded', []) or []) if run is not None else [],
+           'money_jump_obs': copy.deepcopy(
+               getattr(h, 'money_jump_obs', []) or []),
+           'reads': copy.deepcopy(getattr(h, 'reads_log', []) or []),
+           'book_before': copy.deepcopy(
+               getattr(h, '_telemetry_book_before', {}) or {}),
+           'book_after': copy.deepcopy(getattr(h.book, 'd', {}) or {}),
+           'tilt_before': copy.deepcopy(
+               getattr(h, '_telemetry_tilt_before', {}) or {}),
+           'tilt_after': copy.deepcopy(
+               getattr(h, '_telemetry_tilt_after', {}) or {}),
+           'street_outcomes': copy.deepcopy(
+               getattr(h, 'street_outcomes', {}) or {}),
+           'uncalled_returns': copy.deepcopy(
+               getattr(h, 'uncalled_returns', []) or []),
+           'field_context': {
+               'remaining': getattr(h, 'field_remaining', None),
+               'itm': getattr(h, 'field_itm', None),
+               'avg_stack': getattr(h, 'field_avg_stack', None),
+               'field_q': getattr(h, 'field_q', None),
+               'payouts': copy.deepcopy(getattr(h, 'payouts', None)),
+               'payout_flat': getattr(h, 'payout_flat', None),
+               'progress': getattr(h, 'progress', None),
+               'erosion_per_hand': getattr(h, 'erosion_per_hand', None),
+               'money_jump': copy.deepcopy(getattr(h, 'money_jump', None)),
+               'ante': getattr(h, 'ante', None),
+           },
            'result': {k: v for k, v in res.items() if k != 'full_log'},
            'field': (None if defer else f.status()), 'notes': list(notes),
            'profiles': {str(s): h.prof.get(str(s), {}) for s in h.seats}}
@@ -904,5 +933,6 @@ def _archive(st, f, h, res, notes, defer=False):
         # save() 는 default=str 를 안 쓰므로 여기서 미리 JSON 안전하게 만든다.
         st['pending_archive'] = json.loads(
             json.dumps(rec, ensure_ascii=False, default=str))
-        return
+        return rec
     _archive_write(rec)
+    return rec
