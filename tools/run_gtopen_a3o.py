@@ -47,7 +47,7 @@ else:
 
 path=[]
 def node():
-    return req("POST","/api/preflop/node",{"path":[{"type":"action","index":i} for i in path]})
+    return req("POST","/api/preflop/node",{"path":path})
 
 def choose(n, kind=None, to=None):
     for i,a in enumerate(n["actions"]):
