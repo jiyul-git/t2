@@ -101,9 +101,16 @@ def postflop_events(action_meta, street=None, pot_start=0.0):
             'pot_before': pot_before,
             'size_frac': inc / max(1.0, pot_before) if inc > 0 else 0.0,
             'facing_kind': facing_kind,
+            # 두 값은 다르다.
+            # facing_size_frac: 상대가 낸 공격 크기 / 그 공격 직전 팟.
+            # facing_price_frac: 내가 지금 더 내야 하는 가격 / 내 액션 직전 팟.
+            # 레인지의 continue 조건은 후자를 써야 한다.
             'facing_size_frac': (
                 latest_wager.get('size_frac')
                 if latest_wager is not None else None),
+            'facing_price_frac': (
+                float(m.get('to_call_before', 0) or 0) / max(1.0, pot_before)
+                if facing_kind in ('bet', 'raise') else None),
             'facing_increment': (
                 latest_wager.get('increment')
                 if latest_wager is not None else None),
@@ -171,6 +178,12 @@ def pending_response_context(action_meta, seat):
         'facing_allin_raise': bool(latest and latest.get('allin_raise')),
         'facing_size_frac': (
             latest.get('size_frac') if latest is not None else None),
+        'facing_price_frac': (
+            (float((events[-1].get('to_call_before') or 0))
+             / max(1.0, float(events[-1].get('pot_before') or 0)))
+            if (events and events[-1].get('seat') == seat
+                and events[-1].get('facing_kind') in ('bet','raise'))
+            else None),
         'facing_increment': (
             latest.get('increment') if latest is not None else None),
         'facing_target': (
