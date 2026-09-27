@@ -180,7 +180,57 @@ def read_bot_round(path, hand_no):
     return out
 
 
-def emit_round(st, f, hero_hand, bot_hands=None, source="live"):
+def _round_before(field_dump):
+    d = copy.deepcopy(field_dump or {})
+    players = {}
+    for pid, p in (d.get("players") or {}).items():
+        players[str(pid)] = {
+            "stack": int(p.get("stack", 0) or 0),
+            "table": p.get("table"),
+            "seat": p.get("seat"),
+            "alive": bool((p.get("stack", 0) or 0) > 0),
+            "tilt": copy.deepcopy((d.get("tilt") or {}).get(str(pid), {})),
+        }
+    tables = {}
+    for tid, tb in (d.get("tables") or {}).items():
+        tables[str(tid)] = copy.deepcopy(tb)
+    return {
+        "hand_no": int(d.get("hand_no", 0) or 0),
+        "level": int(d.get("level", 0) or 0),
+        "players": players,
+        "tables": tables,
+        "busted_order": list(d.get("busted_order") or []),
+    }
+
+
+def _round_changes(before, after_players):
+    before_players = (before or {}).get("players") or {}
+    chip_delta = {}
+    moves = []
+    busts = []
+    for pid, aft in after_players.items():
+        bef = before_players.get(str(pid), {})
+        bstack = int(bef.get("stack", 0) or 0)
+        astack = int(aft.get("stack", 0) or 0)
+        chip_delta[str(pid)] = astack - bstack
+        if bool(bef.get("alive")) and not bool(aft.get("alive")):
+            busts.append(int(pid))
+        if (bef.get("table"), bef.get("seat")) != (aft.get("table"), aft.get("seat")):
+            moves.append({
+                "pid": int(pid),
+                "from_table": bef.get("table"),
+                "from_seat": bef.get("seat"),
+                "to_table": aft.get("table"),
+                "to_seat": aft.get("seat"),
+            })
+    return {
+        "chip_delta": chip_delta,
+        "busts": busts,
+        "moves": moves,
+    }
+
+
+def emit_round(st, f, hero_hand, bot_hands=None, source="live", round_before=None):
     """Durably spool one completed tournament round and wake async sync."""
     cfg = _load_config()
     if not cfg:
@@ -195,6 +245,18 @@ def emit_round(st, f, hero_hand, bot_hands=None, source="live"):
         _atomic_json(manifest_path, _manifest(st, f))
 
     hand_no = int(getattr(f, "hand_no", 0) or 0)
+    _before = _round_before(round_before)
+    _after_players = _dynamic_players(f)
+    _changes = _round_changes(_before, _after_players)
+    _all_hands = []
+    if hero_hand:
+        _hh = copy.deepcopy(hero_hand)
+        _hh["table_role"] = "hero"
+        _all_hands.append(_hh)
+    for _bh in list(copy.deepcopy(bot_hands or [])):
+        _bh["table_role"] = "bot"
+        _all_hands.append(_bh)
+
     bundle = {
         "schema": "t2_tournament_round_v1",
         "session_id": sid,
@@ -205,14 +267,17 @@ def emit_round(st, f, hero_hand, bot_hands=None, source="live"):
         "level": int(f.level),
         "blinds": list(f.blinds()),
         "field_status": copy.deepcopy(f.status()),
-        "players_after": _dynamic_players(f),
+        "round_before": _before,
+        "players_after": _after_players,
         "tables_after": _tables(f),
+        "changes": _changes,
         "busted_order": list(f.busted_order),
         # HERO-table book is tournament-persistent today. Other-table books are
         # recorded per hand below, which also makes a missing persistence boundary visible.
         "hero_book_after": copy.deepcopy(st.get("book") or {}),
         "hero_hand": copy.deepcopy(hero_hand),
         "bot_hands": list(copy.deepcopy(bot_hands or [])),
+        "all_hands": _all_hands,
     }
 
     path = d / ("round_%06d.json" % hand_no)
