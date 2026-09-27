@@ -156,9 +156,10 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
                  fmt=fmt)
     st = {'field': _dump(f), 'actions': [], 'decisions': [], 'hand_seed': None,
           'seed': seed,
-          'telemetry_session_id': '%s_%s' % (
+          'telemetry_session_id': '%s_%s_%s' % (
               time.strftime('%Y%m%d_%H%M%S'),
-              seed if seed is not None else random.randrange(10**9)),
+              seed if seed is not None else 'auto',
+              os.urandom(4).hex()),
           # 히어로가 직접 적은 봇 메모. pid 기준이라 자리 이동 뒤에도 같은
           # 플레이어를 따라간다. 봇 판단에는 읽히지 않고 기록용으로만 쓴다.
           'hero_memos': {},
@@ -557,6 +558,7 @@ def resume_others(st, others=None):
 def step(action=None, amount=0, defer_others=False, others=None,
          on_bot_action=None, on_round_start=None):
     st = load()
+    TM.ensure_session(st)
     # 밀린 진행이 있으면 **다음 핸드를 딜하기 전에** 반드시 끝낸다.
     # 서버가 죽어도 상태 파일의 others_pending 이 남아 여기서 복구된다.
     if st.get('others_pending'):
