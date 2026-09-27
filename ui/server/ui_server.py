@@ -41,6 +41,7 @@ import formats as FM
 import context as CTX
 from table import BLINDS
 import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver 를 쓴다
+import telemetry_sync as _TM
 
 LOCK = threading.Lock()
 _last = None
@@ -848,6 +849,8 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {'working': bool(fut and not fut.done())})
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
+        if path == '/api/telemetry':
+            return self._send(200, _TM.status())
         if path == '/api/lobby':
             return self._send(200, _lobby_payload())
 
@@ -1075,7 +1078,11 @@ if __name__ == '__main__':
     # 자식이 듣기 소켓을 물려받는다.
     if DEFER and _pool() is None:
         print('경고: 워커 프로세스를 못 만들었습니다. 정산 지연이 꺼진 것과 같게 동작합니다.')
+    _tm = _TM.start()
     print('정산 지연: %s  (끄려면 T2_UI_DEFER=0)' % ('켬' if DEFER else '끔'))
+    print('텔레메트리: %s%s' % (
+        '켬' if _tm.get('enabled') else '끔',
+        (' -> ' + str(_tm.get('branch'))) if _tm.get('enabled') else ''))
     print('상태 파일: %s' % L.ST)
     print('정적 파일: %s%s' % (WEB, '' if os.path.isdir(WEB) else '  (없음 — API 만 동작)'))
     print('로비 주소: http://127.0.0.1:%d' % port)
