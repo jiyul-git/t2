@@ -367,9 +367,11 @@ html, body {
   position: absolute;
   left: 0; right: 0; bottom: 0;
   z-index: 24;
-  height: calc(68px + env(safe-area-inset-bottom));
-  min-height: calc(68px + env(safe-area-inset-bottom));
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  /* Android 브라우저/내비게이션 바와 버튼 하단이 맞닿아 잘려 보이지 않도록
+     dock 자체만 8px 위로 더 자란다. #app의 예약 공간은 그대로라 테이블은 안 움직인다. */
+  height: calc(76px + env(safe-area-inset-bottom));
+  min-height: calc(76px + env(safe-area-inset-bottom));
+  padding: 8px 10px calc(16px + env(safe-area-inset-bottom));
   background: linear-gradient(#121d19, #0b1411);
   border-top: 1px solid var(--line);
   overflow: visible;
