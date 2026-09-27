@@ -55,6 +55,7 @@ def _merge_pf_seed(prev, new):
         'to_call_bb': out.get('pf_to_call_bb'),
         'pot_layers': [dict(x) for x in (out.get('pf_pot_layers') or [])],
         'opp_ranges_n': dict(out.get('pf_opp_ranges_n') or {}),
+        'opp_ranges_mass': dict(out.get('pf_opp_ranges_mass') or {}),
         'opp_ranges_sig': dict(out.get('pf_opp_ranges_sig') or {}),
         'opp_range_meta': dict(out.get('pf_opp_range_meta') or {}),
         'call_ev_shadow': dict(out.get('pf_call_ev_shadow') or {})
@@ -2053,7 +2054,9 @@ class HandRun:
                             'fold_probability_meta': _pfold_meta,
                             'raise_possible': bool(_raise_possible),
                             'call_range_before_n': len(_base_target_range),
+                            'call_range_before_mass': R.range_mass(_base_target_range),
                             'call_range_after_n': len(_call_target_range),
+                            'call_range_after_mass': R.range_mass(_call_target_range),
                             'call_range_after_sig': PL._range_sig(_call_target_range),
                             'response_size_frac': round(_response_size_frac, 6),
                             'expected': _bet_expected,
@@ -2119,14 +2122,20 @@ class HandRun:
                         'eq_sims': _pl.get('eq_sims'), 'eq_seed': _pl.get('eq_seed'),
                         'outs_true': _pl.get('outs_true'),
                         'my_range_n': _pl.get('my_range_n'),
+                        'my_range_mass': _pl.get('my_range_mass'),
                         'my_range_sig': _pl.get('my_range_sig'),
                         'opp_range_n': _pl.get('opp_range_n'),
+                        'opp_range_mass': _pl.get('opp_range_mass'),
                         'opp_range_sig': _pl.get('opp_range_sig'),
                         'opp_ranges_n': _pl.get('opp_ranges_n'),
+                        'opp_ranges_mass': _pl.get('opp_ranges_mass'),
                         'opp_ranges_sig': _pl.get('opp_ranges_sig'),
                         # F8-D2 provenance only; active strategy pools remain unchanged.
                         'locked_opp_ranges_n': {
                             str(k): len(v) for k, v in locked_opp_ranges.items()},
+                        'locked_opp_ranges_mass': {
+                            str(k): R.range_mass(v)
+                            for k, v in locked_opp_ranges.items()},
                         'locked_opp_ranges_sig': {
                             str(k): PL._range_sig(v)
                             for k, v in locked_opp_ranges.items()},
