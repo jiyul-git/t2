@@ -38,7 +38,7 @@ Active engine / live hand-review line:
 GTO reference line:
 - `chatgpt/gto-reference-20260928`
 - last code checkpoint: `2897def3543bc61f080252f234709af7f2deb499`
-- 상황별 GTO 자료는 해당 branch의 `GTO_REFERENCE.md`, `data/gto_scenarios.jsonl`에 보존.
+- GTO workflow 규칙은 이 문서 10절에 통합했고, 상황별 데이터는 `data/gto_scenarios.jsonl`에 보존.
 
 Mini-CFR / vendored solver line:
 - `chatgpt/mini-cfr-solver-20260928`
