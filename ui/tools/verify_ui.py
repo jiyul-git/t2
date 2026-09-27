@@ -84,7 +84,7 @@ class Client:
         return c, r
 
     def step_stream(self, action, amount, token):
-        """NDJSON 진행 이벤트와 마지막 payload를 함께 검증한다."""
+        """NDJSON 진행 이벤트를 실제 UI처럼 한 줄씩 받고 모션 ACK를 보낸다."""
         t = time.time()
         headers = {
             'X-T2-Play-Key': self.play_key,
@@ -98,32 +98,68 @@ class Client:
             }).encode(),
             headers=headers
         )
+
+        events = []
+        final = None
+        raw_lines = []
+        stream_id = None
+
         try:
             with urllib.request.urlopen(req, timeout=120) as f:
-                code, raw = f.status, f.read().decode()
-        except urllib.error.HTTPError as e:
-            code, raw = e.code, e.read().decode()
+                code = f.status
+                for bline in f:
+                    line = bline.decode().strip()
+                    if not line:
+                        continue
+                    raw_lines.append(line)
+                    obj = json.loads(line)
+                    typ = obj.get('type')
 
-        self.bodies.append(raw)
-        dt = time.time() - t
-        if code != 200:
+                    if typ == 'stream_start':
+                        stream_id = obj.get('stream_id')
+                        continue
+
+                    if typ == 'bot_action':
+                        events.append(obj.get('event') or {})
+                        seq = obj.get('seq')
+                        if stream_id and seq:
+                            ah = {
+                                'X-T2-Play-Key': self.play_key,
+                                'X-T2-Client-Mode': 'play',
+                                'Content-Type': 'application/json',
+                            }
+                            areq = urllib.request.Request(
+                                self.base + '/api/step-ack',
+                                data=json.dumps({
+                                    'stream_id': stream_id,
+                                    'seq': seq,
+                                }).encode(),
+                                headers=ah,
+                            )
+                            with urllib.request.urlopen(areq, timeout=10) as af:
+                                ack = json.loads(af.read().decode() or '{}')
+                                if af.status != 200 or not ack.get('ok'):
+                                    final = {'error': 'stream ACK failed: %r' % ack}
+                                    break
+                        continue
+
+                    if typ == 'final':
+                        final = obj.get('payload')
+                    elif typ == 'error':
+                        final = {'error': obj.get('error') or 'stream error'}
+
+        except urllib.error.HTTPError as e:
+            code = e.code
+            raw = e.read().decode()
+            self.bodies.append(raw)
             try:
                 return code, json.loads(raw), []
             except Exception:
                 return code, {'error': raw[-300:]}, []
 
-        events = []
-        final = None
-        for line in raw.splitlines():
-            if not line.strip():
-                continue
-            obj = json.loads(line)
-            if obj.get('type') == 'bot_action':
-                events.append(obj.get('event') or {})
-            elif obj.get('type') == 'final':
-                final = obj.get('payload')
-            elif obj.get('type') == 'error':
-                final = {'error': obj.get('error') or 'stream error'}
+        raw = '\n'.join(raw_lines)
+        self.bodies.append(raw)
+        dt = time.time() - t
 
         if final is None:
             final = {'error': 'stream final payload missing'}
