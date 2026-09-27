@@ -2,7 +2,7 @@
 import json, os, math, random
 import play, session as SE, persona as PS, reads as RD, field as FLD
 import formats as FM, context as CTX, dynamics as DY
-from table import BLINDS
+from table import BLINDS, orders as position_orders
 
 D = os.path.dirname(os.path.abspath(__file__))
 MAXSEAT = 8  # legacy fallback; Field instances use fmt['seats']
@@ -14,40 +14,83 @@ STRICT = bool(os.environ.get('T2_STRICT'))
 
 
 class Table:
-    def __init__(self, tid, players, button=None, max_seat=MAXSEAT, button_seat=None):
+    """토너먼트 테이블의 고정 좌석 + TDA dead-button blind state.
+
+    핵심은 BTN이 아니라 BB 진행이다. BB는 매 핸드 다음 생존자로 이동하고,
+    SB/BTN은 그 진행을 따라간다. 따라서 탈락에 따라 SB나 BTN 마커가 빈 좌석
+    (dead small / dead button)에 놓일 수 있다.
+    """
+    def __init__(self, tid, players, button=None, max_seat=MAXSEAT,
+                 button_seat=None, sb_seat=None, bb_seat=None):
         self.id = tid
         self.players = players          # [{'pid','prof','stack'}]
-        # button 은 구 저장본 호환용 '생존자 배열 index'다.
-        # 실제 진행 기준은 고정 좌석번호 button_seat 로 보존한다.
-        self.button = int(button or 0)
-        self.button_seat = button_seat
+        self.button = int(button or 0)   # 구 저장본 호환용 live-index
+        self.button_seat = button_seat   # 물리 BTN 마커. 빈 좌석일 수 있다.
+        self.sb_seat = sb_seat           # 물리 SB 마커. 빈 좌석일 수 있다.
+        self.bb_seat = bb_seat           # BB는 실제 생존자가 있는 좌석이어야 한다.
         self.hands = 0
         self.max_seat = int(max_seat or MAXSEAT)
-        # 고정 좌석 슬롯. 포맷의 최대 테이블 인원을 따른다.
-        self.seats = [None]*self.max_seat
+        self.seats = [None] * self.max_seat
         for i, p in enumerate(players[:self.max_seat]):
             self.seats[i] = p['pid']
-        self.restore_button(self.button, button_seat)
+            p['seat'] = i
+        self.restore_positions(
+            self.button, button_seat, sb_seat, bb_seat,
+            legacy_dead_hint=False)
+
+    def _marker(self, seat):
+        try:
+            s = int(seat)
+        except (TypeError, ValueError):
+            return None
+        return s if 1 <= s <= self.max_seat else None
+
+    def _next_slot(self, seat, step=1):
+        s = self._marker(seat)
+        if s is None:
+            s = self.max_seat
+        return ((s - 1 + int(step)) % self.max_seat) + 1
 
     def seat_of(self, pid):
-        return self.seats.index(pid)+1 if pid in self.seats else None
+        return self.seats.index(pid) + 1 if pid in self.seats else None
 
-    def sit(self, p):
-        """빈 자리에 앉힌다."""
-        for i in range(self.max_seat):
-            if self.seats[i] is None:
-                self.seats[i] = p['pid']; return i+1
-        raise ValueError('테이블 좌석 초과: max_seat=%d' % self.max_seat)
+    def player_at(self, seat):
+        s = self._marker(seat)
+        if s is None:
+            return None
+        pid = self.seats[s - 1]
+        if pid is None:
+            return None
+        return next((p for p in self.players
+                     if p['pid'] == pid and p['stack'] > 0), None)
+
+    def sit(self, p, seat=None):
+        """빈 좌석에 앉힌다. seat=None이면 첫 빈 좌석(legacy 호출)."""
+        if seat is None:
+            candidates = [i + 1 for i, pid in enumerate(self.seats) if pid is None]
+            if not candidates:
+                raise ValueError('테이블 좌석 초과: max_seat=%d' % self.max_seat)
+            seat = candidates[0]
+        seat = self._marker(seat)
+        if seat is None or self.seats[seat - 1] is not None:
+            raise ValueError('앉을 수 없는 좌석: %s' % seat)
+        self.seats[seat - 1] = p['pid']
+        p['seat'] = seat - 1
+        return seat
 
     def stand(self, pid):
         if pid in self.seats:
-            self.seats[self.seats.index(pid)] = None
+            i = self.seats.index(pid)
+            self.seats[i] = None
+            p = next((x for x in self.players if x['pid'] == pid), None)
+            if p is not None:
+                p['seat'] = None
 
     def alive(self):
         return [p for p in self.players if p['stack'] > 0]
 
     def ordered_alive(self):
-        """고정 좌석의 시계방향 순서로 생존자를 반환한다."""
+        """고정 물리 좌석의 시계방향 순서로 생존자를 반환한다."""
         return sorted(
             (p for p in self.alive() if self.seat_of(p['pid']) is not None),
             key=lambda p: self.seat_of(p['pid'])
@@ -56,62 +99,297 @@ class Table:
     def _live_seats(self):
         return [self.seat_of(p['pid']) for p in self.ordered_alive()]
 
-    def restore_button(self, button=None, button_seat=None):
-        """구 index 저장본을 고정 좌석 버튼으로 1회 변환하고 index도 동기화한다."""
+    def _next_live_after(self, marker, live=None):
+        live = set(self._live_seats() if live is None else live)
+        if not live:
+            return None
+        start = self._marker(marker)
+        if start is None:
+            start = self.max_seat
+        for d in range(1, self.max_seat + 1):
+            cand = ((start - 1 + d) % self.max_seat) + 1
+            if cand in live:
+                return cand
+        return None
+
+    def _clockwise_live_after(self, marker, live=None):
+        live = set(self._live_seats() if live is None else live)
+        if not live:
+            return []
+        start = self._marker(marker)
+        if start is None:
+            start = self.max_seat
+        out = []
+        for d in range(1, self.max_seat + 1):
+            cand = ((start - 1 + d) % self.max_seat) + 1
+            if cand in live:
+                out.append(cand)
+        return out
+
+    def _between(self, start, end):
+        """물리적으로 start 다음부터 end 직전까지의 좌석."""
+        a = self._marker(start); b = self._marker(end)
+        if a is None or b is None or a == b:
+            return []
+        out = []
+        for d in range(1, self.max_seat):
+            cand = ((a - 1 + d) % self.max_seat) + 1
+            if cand == b:
+                break
+            out.append(cand)
+        return out
+
+    def _sync_legacy_button(self):
         live = self._live_seats()
         if not live:
             self.button = 0
-            self.button_seat = button_seat
-            return None
-        if button_seat in live:
-            seat = int(button_seat)
+            return
+        if self.button_seat in live:
+            self.button = live.index(self.button_seat)
         else:
-            seat = live[int(button or 0) % len(live)]
-        self.button_seat = seat
-        self.button = live.index(seat)
-        return seat
+            nxt = self._next_live_after(self.button_seat, live)
+            self.button = live.index(nxt) if nxt in live else 0
 
-    def dealer_seat(self):
-        """현재 딜러 좌석. 버튼 좌석이 비었으면 다음 생존 좌석으로 넘긴다."""
+    def restore_positions(self, button=None, button_seat=None,
+                          sb_seat=None, bb_seat=None,
+                          legacy_dead_hint=False):
+        """저장 상태를 복원한다.
+
+        구 저장본은 SB/BB 마커가 없다. 그런 경우 현재 BTN 바로 다음 물리 슬롯이
+        비어 있으면 '직전 BB 탈락 뒤 dead SB'일 가능성을 보존하는 1회 migration
+        힌트를 쓴다. 새 저장본은 세 마커를 모두 명시하므로 추정하지 않는다.
+        """
         live = self._live_seats()
         if not live:
+            self.button = 0
+            self.button_seat = self._marker(button_seat)
+            self.sb_seat = self._marker(sb_seat)
+            self.bb_seat = self._marker(bb_seat)
             return None
-        if self.button_seat not in live:
-            start = int(self.button_seat or live[0])
-            seat = None
-            for d in range(1, self.max_seat + 1):
-                cand = ((start - 1 + d) % self.max_seat) + 1
-                if cand in live:
-                    seat = cand
-                    break
-            self.button_seat = seat if seat is not None else live[0]
-        self.button = live.index(self.button_seat)
+
+        btn = self._marker(button_seat)
+        if btn is None:
+            btn = live[int(button or 0) % len(live)]
+        self.button_seat = btn
+
+        if len(live) == 1:
+            self.sb_seat = None
+            self.bb_seat = live[0]
+            self._sync_legacy_button()
+            return btn
+
+        sb = self._marker(sb_seat)
+        bb = self._marker(bb_seat)
+
+        if len(live) == 2:
+            if bb not in live:
+                bb = self._next_live_after(btn, live)
+            sb = next(s for s in live if s != bb)
+            self.button_seat = sb
+            self.sb_seat = sb
+            self.bb_seat = bb
+            self._sync_legacy_button()
+            return self.button_seat
+
+        if bb not in live:
+            if sb is not None:
+                bb = self._next_live_after(sb, live)
+            elif legacy_dead_hint:
+                physical_next = self._next_slot(btn)
+                sb = physical_next
+                bb = self._next_live_after(sb, live)
+            else:
+                sb = self._next_live_after(btn, live)
+                bb = self._next_live_after(sb, live)
+
+        if sb is None:
+            sb = self._next_live_after(btn, live)
+
+        self.sb_seat = sb
+        self.bb_seat = bb
+        self._sync_legacy_button()
         return self.button_seat
 
-    def advance_button(self):
-        """좌석 추가/삭제와 무관하게 물리 좌석 기준으로 버튼을 한 명 전진시킨다."""
+    def restore_button(self, button=None, button_seat=None):
+        """구 호출부 호환. 새 코드는 restore_positions를 사용한다."""
+        return self.restore_positions(
+            button, button_seat, self.sb_seat, self.bb_seat,
+            legacy_dead_hint=False)
+
+    def dealer_seat(self):
+        """현재 BTN 마커. dead button이면 빈 물리 좌석을 그대로 반환한다."""
+        return self.button_seat
+
+    def reconcile_next_hand(self):
+        """좌석 이동/테이블 브레이크 뒤 다음 핸드 마커를 유효하게 만든다.
+
+        BTN/SB의 dead 상태는 보존하고, 반드시 실제 플레이어가 필요한 BB만
+        다음 생존자로 넘긴다. HU가 되면 BTN=SB를 강제한다.
+        """
         live = self._live_seats()
         if not live:
             self.button = 0
-            return None
-        cur = self.dealer_seat()
-        for d in range(1, self.max_seat + 1):
-            cand = ((cur - 1 + d) % self.max_seat) + 1
-            if cand in live:
-                self.button_seat = cand
-                self.button = live.index(cand)
-                return cand
-        return cur
+            self.bb_seat = None
+            return
+        if len(live) == 1:
+            self.button_seat = live[0]
+            self.sb_seat = None
+            self.bb_seat = live[0]
+            self._sync_legacy_button()
+            return
+
+        if len(live) == 2:
+            bb = self.bb_seat if self.bb_seat in live else                  self._next_live_after(self.bb_seat or self.button_seat, live)
+            sb = next(s for s in live if s != bb)
+            self.button_seat = sb
+            self.sb_seat = sb
+            self.bb_seat = bb
+            self._sync_legacy_button()
+            return
+
+        if self.button_seat is None:
+            self.button_seat = live[0]
+        if self.sb_seat is None:
+            self.sb_seat = self._next_live_after(self.button_seat, live)
+        if self.bb_seat not in live:
+            self.bb_seat = self._next_live_after(
+                self.bb_seat if self.bb_seat is not None else self.sb_seat,
+                live)
+        self._sync_legacy_button()
+
+    def hand_layout(self):
+        """현재 핸드의 TDA 포지션/액션 순서를 한 곳에서 만든다."""
+        self.reconcile_next_hand()
+        live = self._live_seats()
+        n = len(live)
+        if n < 2:
+            raise ValueError('생존 좌석 부족: %s' % live)
+
+        if n == 2:
+            sb = self.sb_seat
+            bb = self.bb_seat
+            pos = {sb: 'SB', bb: 'BB'}
+            return {
+                'button': self.button_seat, 'sb': sb, 'bb': bb,
+                'pos': pos, 'pre_seats': [sb, bb], 'post_seats': [bb, sb],
+                'dead_button': False, 'dead_sb': False,
+            }
+
+        btn_live = self.button_seat in live
+        sb_live = self.sb_seat in live
+        effective_n = n + (0 if btn_live else 1) + (0 if sb_live else 1)
+        if effective_n > self.max_seat or effective_n > 9:
+            raise ValueError(
+                'dead-button 포지션 슬롯 초과: live=%d effective=%d max=%d'
+                % (n, effective_n, self.max_seat))
+
+        _seat_order, pre_template, _post_template = position_orders(effective_n)
+        labels = [
+            p for p in pre_template
+            if not (p == 'BTN' and not btn_live)
+            and not (p == 'SB' and not sb_live)
+        ]
+        pre_seats = self._clockwise_live_after(self.bb_seat, live)
+        if len(labels) != len(pre_seats):
+            raise ValueError(
+                '포지션 수 불일치: labels=%s seats=%s' % (labels, pre_seats))
+        pos = dict(zip(pre_seats, labels))
+        post_seats = self._clockwise_live_after(self.button_seat, live)
+
+        return {
+            'button': self.button_seat,
+            'sb': self.sb_seat,
+            'bb': self.bb_seat,
+            'pos': pos,
+            'pre_seats': pre_seats,
+            'post_seats': post_seats,
+            'dead_button': not btn_live,
+            'dead_sb': not sb_live,
+        }
+
+    def advance_button(self):
+        """한 핸드 종료 후 TDA dead-button 방식으로 다음 blind state로 이동.
+
+        기준은 BB다. 다음 BB는 직전 BB 다음 생존자, 다음 SB 마커는 직전 BB
+        자리, 다음 BTN 마커는 직전 SB 자리다. 그래서 탈락하면 SB/BTN이
+        자연스럽게 dead가 된다. HU는 BTN=SB이며 누구도 BB를 연속으로 내지 않는다.
+        """
+        # 현재 핸드 마커가 구 상태라면 먼저 정상화한다.
+        self.reconcile_next_hand()
+        old_sb = self.sb_seat
+        old_bb = self.bb_seat
+        live = self._live_seats()
+
+        if len(live) < 2:
+            if live:
+                self.button_seat = live[0]
+                self.sb_seat = None
+                self.bb_seat = live[0]
+            self._sync_legacy_button()
+            return self.button_seat
+
+        next_bb = self._next_live_after(old_bb, live)
+
+        if len(live) == 2:
+            next_sb = next(s for s in live if s != next_bb)
+            self.button_seat = next_sb
+            self.sb_seat = next_sb
+            self.bb_seat = next_bb
+        else:
+            self.button_seat = old_sb
+            self.sb_seat = old_bb
+            self.bb_seat = next_bb
+
+        self._sync_legacy_button()
+        return self.button_seat
 
     def player_after_button(self, offset):
-        """현재 버튼에서 생존자 기준 offset명 뒤 플레이어."""
-        alive = self.ordered_alive()
-        if not alive:
+        """legacy helper: 현재 BTN 마커 뒤 생존자 offset번째."""
+        order = self._clockwise_live_after(self.button_seat)
+        if not order:
             return None
-        live = [self.seat_of(p['pid']) for p in alive]
-        dealer = self.dealer_seat()
-        i = live.index(dealer)
-        return alive[(i + int(offset)) % len(alive)]
+        idx = max(0, int(offset) - 1) % len(order)
+        return self.player_at(order[idx])
+
+    def next_bb_player(self):
+        """다음 핸드에 BB를 낼 플레이어. TDA table-balance 이동 대상."""
+        self.reconcile_next_hand()
+        return self.player_at(self.bb_seat)
+
+    def broken_open_seats(self):
+        """broken-table 유입 가능 좌석. BTN~SB 사이만 금지(Rule 11)."""
+        forbidden = set(self._between(self.button_seat, self.sb_seat))
+        return [
+            i + 1 for i, pid in enumerate(self.seats)
+            if pid is None and (i + 1) not in forbidden
+        ]
+
+    def worst_open_seat(self):
+        """balance 이동의 destination: SB 제외, BB가 가장 빨리 오는 빈자리."""
+        self.reconcile_next_hand()
+        candidates = [
+            i + 1 for i, pid in enumerate(self.seats)
+            if pid is None and (i + 1) != self.sb_seat
+        ]
+        if not candidates:
+            return None
+
+        live = set(self._live_seats())
+
+        def score(seat):
+            if seat == self.bb_seat:
+                return (0, seat)
+            passed_live = 0
+            start = self._marker(self.bb_seat) or self.max_seat
+            for d in range(1, self.max_seat + 1):
+                cand = ((start - 1 + d) % self.max_seat) + 1
+                if cand == seat:
+                    return (1 + passed_live, seat)
+                if cand in live:
+                    passed_live += 1
+            return (self.max_seat + 1, seat)
+
+        return min(candidates, key=score)
 
     def n(self): return len(self.alive())
 
