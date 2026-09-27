@@ -58,7 +58,8 @@ Character/portrait assets and assignment logic remain frozen unless the user exp
 - A fixed 68px + safe-area slot is always reserved, so the table/background/hero geometry does not change when controls appear, disappear, or the hero folds.
 - On the hero's turn, only the control row animates upward; the table itself is not re-laid out.
 - Raise panel remains an overlay above the same dock.
-- Asset checkpoint: `style.css?v=50`, `app.js?v=66`.
+- The dock has 8px extra bottom breathing room for Android/browser navigation bars; the table reservation remains unchanged.
+- Asset checkpoint: `style.css?v=51`, `app.js?v=66`.
 
 ## Side-seat checkpoint
 
