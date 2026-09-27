@@ -2001,26 +2001,42 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                     checkraise_size_seed if checkraise_size_seed is not None else seed)
                 _amt = checkraise_size(
                     profile, pot, tocall, stack, board, street, _ckr_rng)
-                plan_state['_last_response_source'] = 'checkraise_gate'
-                why = '체크 후 새 판단 → 체크레이즈 실행'
-                plan_state.setdefault('acts', []).append(why)
-                record_response_plan(plan_state, street, {
-                    'response_kind': response_kind,
-                    'context': dict(response_context or {}),
-                    'act': 'raise',
-                    'target': _amt,
-                    'size_mult': None,
-                    'need': round(need, 4),
-                    'eq': round(eq, 4),
-                    'source': 'checkraise_gate',
-                    'why': why,
-                })
-                _trace(plan_state, street, 'response', act='raise',
-                       source='checkraise_gate', response_kind=response_kind,
-                       need=round(need, 3),
-                       need_raw=round(_need_in, 3), eq=round(eq, 3), why=why,
-                       plan=plan, tocall=tocall, pot=pot)
-                return ('raise', _amt), eq, need
+                if (plan in ('bluff_2street', 'semibluff', 'giveup', 'river_bluff')
+                        and made_now < 2):
+                    _g_ckr = _nonvalue_raise_ev_gate(
+                        profile, hero, board, street, opp_range, opp_ranges,
+                        n_opp, pot, tocall, stack, hero_contrib,
+                        response_context, target=_amt)
+                    plan_state['_last_nonvalue_raise_gate'] = dict(_g_ckr)
+                    if not _g_ckr.get('allow'):
+                        _ckr = False
+                        _trace(
+                            plan_state, street, 'checkraise_ev_veto',
+                            ev=_g_ckr.get('ev'),
+                            fold_p=_g_ckr.get('fold_p'),
+                            continue_eq=_g_ckr.get('continue_eq'),
+                            target=_amt)
+                if _ckr:
+                    plan_state['_last_response_source'] = 'checkraise_gate'
+                    why = '체크 후 새 판단 → 체크레이즈 실행'
+                    plan_state.setdefault('acts', []).append(why)
+                    record_response_plan(plan_state, street, {
+                        'response_kind': response_kind,
+                        'context': dict(response_context or {}),
+                        'act': 'raise',
+                        'target': _amt,
+                        'size_mult': None,
+                        'need': round(need, 4),
+                        'eq': round(eq, 4),
+                        'source': 'checkraise_gate',
+                        'why': why,
+                    })
+                    _trace(plan_state, street, 'response', act='raise',
+                           source='checkraise_gate', response_kind=response_kind,
+                           need=round(need, 3),
+                           need_raw=round(_need_in, 3), eq=round(eq, 3), why=why,
+                           plan=plan, tocall=tocall, pot=pot)
+                    return ('raise', _amt), eq, need
 
         # 체크레이즈 gate가 거절했거나, 아직 체크하지 않은 일반 facing-bet 상태.
         # checked_before=True 이면 generic reraise/bluff raise는 금지한다.
