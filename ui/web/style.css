@@ -288,26 +288,34 @@ html, body {
 #heroinfo .pos { font-size: 11px; color: var(--gold); letter-spacing: .4px; }
 #heroinfo .stack { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
 #herocards {
+  /* 50x70 -> 46x64로 약 8% 축소.
+     기존 카드 사이 간격 5/50=10% 비율도 그대로 유지한다. */
+  --hero-card-w: 46px;
+  --hero-card-h: 64px;
+  --hero-card-gap: 4.6px;
   display: grid;
-  grid-template-columns: 50px 50px;
-  grid-template-rows: 70px;
-  column-gap: 5px;
-  width: 105px;
-  min-width: 105px;
-  height: 70px;
-  min-height: 70px;
+  grid-template-columns: var(--hero-card-w) var(--hero-card-w);
+  grid-template-rows: var(--hero-card-h);
+  column-gap: var(--hero-card-gap);
+  width: calc(var(--hero-card-w) * 2 + var(--hero-card-gap));
+  min-width: calc(var(--hero-card-w) * 2 + var(--hero-card-gap));
+  height: var(--hero-card-h);
+  min-height: var(--hero-card-h);
+  /* 액션바 구분선과 카드 하단이 붙지 않게 카드만 살짝 위로 띄운다.
+     hero 영역/테이블 높이는 그대로라 전체 레이아웃은 움직이지 않는다. */
+  transform: translateY(-3px);
 }
 
 #herocards .hero-slot {
   position: relative;
-  width: 50px;
-  height: 70px;
+  width: var(--hero-card-w);
+  height: var(--hero-card-h);
 }
 
 #herocards .hero-slot .card {
-  --card-w: 50px;
-  --card-h: 70px;
-  font-size: 15px;
+  --card-w: var(--hero-card-w);
+  --card-h: var(--hero-card-h);
+  font-size: 14px;
   position: absolute;
   inset: 0;
 }
