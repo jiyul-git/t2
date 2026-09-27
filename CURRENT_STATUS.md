@@ -135,10 +135,42 @@ behavior change:
 - F8-ICM semantic closure;
 - W5 non-uniform posterior production.
 
-The current response-plan/intent provenance is already present, and final-table
-UI/server plus weighted-range downstream plumbing are CI-gated. Do not silently
-start any item above as a “cleanup”; that is the next logic phase.
+The pre-logic boundaries are now explicit without activating new strategy:
 
+- F7-C: `base_profile / planning_profile / execution_profile` views exist;
+  production `axes()` remains pinned to the historical tilted planning view.
+- F7-D: every postflop bet/raise now records
+  `calculated -> execution input -> shaped -> legal -> final -> applied` targets,
+  plus replay/shape/min-raise/effective-all-in provenance.
+- weighted range W0-W4 and final-table UI/server plumbing are CI-gated.
+
+No consumer has been moved to the emotion-free execution view, no sizing conversion
+has been removed/reinterpreted, and no non-uniform posterior is produced. Those are
+logic changes. Do not silently start any item above as a “cleanup”; that is the next
+logic phase.
+
+
+## Regression checkpoint
+
+`tools/regress.py check` is a valid current safety gate again.
+
+The old `be4a903` post-F8 / pre-F7B behavior was preserved separately as
+`pre_f7b` in `tools/baseline_9max_post_f8_frozen.json`; it is read-only by
+policy.  The writable `current` baseline now represents the pre-logic canonical
+behavior after intentional F7-B strategy promotions, TDA, final-table plumbing and
+weighted W0-W4 structural migration.
+
+Current fingerprints:
+
+- 3000 `12c2daefd7c87cbb`
+- 3001 `8b83f668c038d002`
+- 3002 `0badaa6a21474fd3`
+- 3003 `3aebdd1942b57229`
+- 3004 `d4295da0aace11ca`
+- 3005 `2c50d0b71bd16614`
+
+The structural CI independently recomputes these fingerprints and also checks that
+the committed current baseline is not stale.
 
 ## Balance status
 
@@ -206,12 +238,12 @@ Containment proof after merge: canonical is ahead of `chatgpt/tda-position-engin
 As of 2026-09-27 engine and playable UI share the same unified history:
 
 ```
-chatgpt/decision-architecture-audit-20260926 — post-`a02a519` final-table wiring, cache tag commit `391d7f4`
+chatgpt/decision-architecture-audit-20260926 — pre-logic canonical wiring checkpoint (final-table pipeline + weighted W0-W4 + F7-C/F7-D scaffolds)
 ```
 
 This contains:
 - B1D defend rewire and current architecture-audit engine;
-- W0 weighted-range representation foundation;
+- weighted-range W0-W4 structural pipeline, with W5 held at the logic barrier;
 - lobby/profile/history and approved visual layer;
 - bot-action streaming and playback hardening;
 - parallel HERO/OTHER round settlement;
