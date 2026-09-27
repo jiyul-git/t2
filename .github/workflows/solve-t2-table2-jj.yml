@@ -1,0 +1,72 @@
+name: solve-t2-table2-jj
+on:
+  push:
+    branches:
+      - chatgpt/mini-cfr-solver-20260928
+    paths:
+      - tools/solve_t2_jj_trigger.txt
+permissions:
+  contents: read
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/mini-cfr-solver-20260928
+      - name: Capture exact t2 ranges
+        run: python3 tools/capture_t2_jj_ranges.py
+      - name: Build solver configs
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.load(open('/tmp/t2_jj_ranges.json'))
+          for name,sizes in [('std','33.0, 75.0'),('wide','33.0, 50.0, 75.0, 100.0')]:
+              cfg=f'''board = "Td Jh 6c"
+oop_range = "{d["oop_range"]}"
+ip_range = "{d["ip_range"]}"
+effective_stack = {d["stack_bb"]:.6f}
+starting_pot = {d["pot_bb"]:.6f}
+allin_threshold = 85.0
+raise_cap = 2
+max_iterations = 700
+target_exploitability = 0.5
+
+[sizings.oop.flop]
+bet = {{ percents = [{sizes}] }}
+raise = {{ percents = [60.0] }}
+[sizings.ip.flop]
+bet = {{ percents = [{sizes}] }}
+raise = {{ percents = [60.0] }}
+
+[sizings.oop.turn]
+bet = {{ percents = [50.0, 75.0] }}
+raise = {{ percents = [60.0] }}
+[sizings.ip.turn]
+bet = {{ percents = [50.0, 75.0] }}
+raise = {{ percents = [60.0] }}
+
+[sizings.oop.river]
+bet = {{ percents = [50.0, 75.0], allin = true }}
+[sizings.ip.river]
+bet = {{ percents = [50.0, 75.0], allin = true }}
+'''
+              Path(f'/tmp/jj_{name}.toml').write_text(cfg)
+          PY
+      - name: Build postflop solver
+        working-directory: vendor/postflop
+        run: cargo build --release -p cli
+      - name: Solve standard menu
+        working-directory: vendor/postflop
+        run: |
+          ./target/release/solver solve --config /tmp/jj_std.toml --report-every 100 --out /tmp/jj_std.json
+          echo '=== STD JJ AFTER BB CHECK ==='
+          ./target/release/solver show --solution /tmp/jj_std.json --line check --combo JcJd
+      - name: Solve wide menu
+        working-directory: vendor/postflop
+        run: |
+          ./target/release/solver solve --config /tmp/jj_wide.toml --report-every 100 --out /tmp/jj_wide.json
+          echo '=== WIDE JJ AFTER BB CHECK ==='
+          ./target/release/solver show --solution /tmp/jj_wide.json --line check --combo JcJd
