@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Manual one-hand runner for ChatGPT-driven hero decisions.
 
-Reads tools/manual_hand_actions.json. Replays one fixed 100-player tournament
+Reads manual action fixtures. Replays one fixed 100-player tournament
 hand from scratch each run. If the supplied hero action list is exhausted,
 prints the next hero decision state and stops. If the hand ends, settles every
 other table in the same tournament round and prints a compact all-table audit.
