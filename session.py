@@ -1,7 +1,7 @@
 """제너레이터 기반 재개형 핸드 진행 + 쇼다운/사이드팟 정산 + 토너 세션."""
 import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
-import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS, money_pressure as MP
+import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS, money_pressure as MP, action_events as AE
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -203,131 +203,61 @@ def _preflop_public_action_context(action_meta, target, bb):
 
 
 def _facing_wager_context(rnd, aggressor, pot_start):
-    """현재 hero가 마주한 마지막 공격 액션의 실제 wager 문맥.
-
-    size_frac = 그 공격자가 **그 액션에서 새로 넣은 칩** / 액션 직전 팟.
-    hero의 to_call 이나 street 시작 팟으로 대신 계산하면
-    bet->call->hero / raise->hero에서 사이즈가 왜곡된다.
-    """
+    """현재 hero가 마주한 마지막 공격 사건의 canonical wager 문맥."""
     if aggressor is None:
         return None
-    pot_before = float(pot_start or 0)
-    latest = None
-    for m in (getattr(rnd, 'action_meta', None) or []):
-        inc = float(m.get('increment', 0) or 0)
-        if m.get('seat') == aggressor and m.get('raised'):
-            latest = {
-                'seat': aggressor,
-                'increment': inc,
-                'pot_before': pot_before,
-                'size_frac': inc / max(1.0, pot_before),
-                'full_raise': bool(m.get('full_raise')),
-                'incomplete_raise': bool(m.get('incomplete_raise')),
-            }
-        pot_before += inc
-    return latest
-
-
-def _observed_postflop_action(meta):
-    """행동 문자열이 아니라 규칙 의미로 postflop read 액션을 정규화."""
-    if meta.get('raised'):
-        return 'raise'
-    if meta.get('allin_call'):
-        return 'call'
-    return meta.get('action')
-
-
-def _postflop_facing_contexts(action_meta):
-    """각 액션 직전에 actor가 무엇을 마주했는지 분류한다.
-
-    반환 원소: None | 'bet' | 'raise'
-
-    첫 가격 생성은 bet, 이미 가격이 있는데 다시 올린 사건은 raise다.
-    incomplete all-in raise도 다음 actor 입장에서는 'raise를 맞은 것'이다.
-    """
-    out = []
-    facing = None
-    for m in (action_meta or []):
-        out.append(facing)
-        if m.get('raised'):
-            facing = ('raise'
-                      if float(m.get('pre_current', 0) or 0) > 0
-                      else 'bet')
-    return out
-
-
-def _postflop_response_context(rnd, seat):
-    """현재 seat의 재판단 사건을 공개 액션 이력으로 분류한다.
-
-    caller_backaction 하나만 남기면
-      bet -> call -> raise
-    와
-      bet -> raise -> call -> re-raise
-    가 같은 사건으로 뭉개진다. 마지막 hero action이 **어떤 가격을
-    마주하고 나온 것인지**와 현재 raise depth도 함께 보존한다.
-    """
-    metas = list(getattr(rnd, 'action_meta', None) or [])
-    facing_before = _postflop_facing_contexts(metas)
-    hero_idx = [i for i, m in enumerate(metas) if m.get('seat') == seat]
-    last_idx = hero_idx[-1] if hero_idx else None
-    last_hero = metas[last_idx] if last_idx is not None else None
-    latest_aggr = next((m for m in reversed(metas) if m.get('raised')), None)
-
-    facing_kind = None
-    if latest_aggr is not None:
-        facing_kind = ('raise'
-                       if float(latest_aggr.get('pre_current', 0) or 0) > 0
-                       else 'bet')
-
-    if last_hero and last_hero.get('raised'):
-        prior_action = ('raise'
-                        if float(last_hero.get('pre_current', 0) or 0) > 0
-                        else 'bet')
-    elif last_hero and last_hero.get('allin_call'):
-        prior_action = 'call'
-    else:
-        prior_action = last_hero.get('action') if last_hero else None
-    prior_aggressive = bool(last_hero and last_hero.get('raised'))
-    prior_facing_kind = (
-        facing_before[last_idx] if last_idx is not None and last_idx < len(facing_before)
-        else None)
-
-    if facing_kind == 'raise' and prior_aggressive:
-        kind = 'aggressor_backaction'
-    elif facing_kind == 'raise' and prior_action == 'call':
-        kind = 'caller_backaction'
-    elif facing_kind == 'raise':
-        kind = 'cold_facing_raise'
-    elif facing_kind == 'bet' and prior_action == 'check':
-        kind = 'check_then_face_bet'
-    elif facing_kind == 'bet':
-        kind = 'face_bet'
-    else:
-        kind = 'free_action'
-
+    events = AE.postflop_events(
+        getattr(rnd, 'action_meta', None), pot_start=pot_start)
+    latest = next(
+        (e for e in reversed(events)
+         if e.get('seat') == aggressor
+         and e.get('action_kind') in ('bet', 'raise')),
+        None)
+    if latest is None:
+        return None
     return {
-        'kind': kind,
-        'facing_kind': facing_kind,
-        'prior_action': prior_action,
-        'prior_aggressive': prior_aggressive,
-        'prior_facing_kind': prior_facing_kind,
-        'raise_depth_full': sum(1 for m in metas if m.get('full_raise')),
-        'raise_depth_any': sum(1 for m in metas if m.get('raised')),
-        'facing_full_raise': bool(latest_aggr and latest_aggr.get('full_raise')),
-        'facing_incomplete_raise': bool(
-            latest_aggr and latest_aggr.get('incomplete_raise')),
-        'hero_contrib': float(getattr(rnd, 'contrib', {}).get(seat, 0) or 0),
+        'seat': aggressor,
+        'increment': latest.get('increment'),
+        'pot_before': latest.get('pot_before'),
+        'size_frac': latest.get('size_frac'),
+        'full_raise': latest.get('full_raise'),
+        'incomplete_raise': latest.get('incomplete_raise'),
+        'allin': latest.get('allin'),
+        'allin_raise': latest.get('allin_raise'),
+        'raise_depth_full': latest.get('raise_depth_full_after'),
+        'raise_depth_any': latest.get('raise_depth_any_after'),
     }
 
 
-def _postflop_street_outcome(action_meta):
-    """완료된 스트리트의 POST-F 결과를 규칙 사건으로 요약한다.
+def _observed_postflop_action(meta):
+    """규칙 메타를 canonical postflop action으로 정규화."""
+    return AE.normalized_action(meta)
 
-    전략 판단은 원본 action_meta 를 그대로 볼 수 있어야 하고, 이 요약은
-    provenance/다음 단계 감사용이다. raw 'allin' 문자열은 쓰지 않는다.
-    """
-    metas = list(action_meta or [])
-    aggr_idx = [i for i, m in enumerate(metas) if m.get('raised')]
+
+def _postflop_facing_contexts(action_meta):
+    """호환용 projection. 의미 계산은 action_events 한 곳에서만 한다."""
+    return [
+        e.get('facing_kind')
+        for e in AE.postflop_events(action_meta)
+    ]
+
+
+def _postflop_response_context(rnd, seat):
+    """현재 seat의 재판단 문맥. canonical event stream의 projection."""
+    ctx = AE.pending_response_context(
+        getattr(rnd, 'action_meta', None), seat)
+    ctx['hero_contrib'] = float(
+        getattr(rnd, 'contrib', {}).get(seat, 0) or 0)
+    return ctx
+
+
+def _postflop_street_outcome(action_meta):
+    """완료된 스트리트의 closure를 canonical events로 요약."""
+    events = AE.postflop_events(action_meta)
+    aggr_idx = [
+        i for i, e in enumerate(events)
+        if e.get('action_kind') in ('bet', 'raise')
+    ]
     if not aggr_idx:
         return {
             'kind': 'checkthrough',
@@ -339,15 +269,14 @@ def _postflop_street_outcome(action_meta):
         }
 
     j = aggr_idx[-1]
-    last = metas[j]
+    last = events[j]
     callers = []
     allin_callers = []
-    for m in metas[j+1:]:
-        a = _observed_postflop_action(m)
-        if a == 'call':
-            callers.append(m.get('seat'))
-            if m.get('allin_call'):
-                allin_callers.append(m.get('seat'))
+    for e in events[j+1:]:
+        if e.get('action_kind') == 'call':
+            callers.append(e.get('seat'))
+            if e.get('allin_call'):
+                allin_callers.append(e.get('seat'))
 
     if not callers:
         kind = 'all_fold'
@@ -365,10 +294,14 @@ def _postflop_street_outcome(action_meta):
         'last_aggressor': last.get('seat'),
         'callers': callers,
         'allin_callers': allin_callers,
-        'raise_depth_full': sum(1 for m in metas if m.get('full_raise')),
-        'raise_depth_any': sum(1 for m in metas if m.get('raised')),
+        'raise_depth_full': max(
+            (e.get('raise_depth_full_after', 0) for e in events),
+            default=0),
+        'raise_depth_any': max(
+            (e.get('raise_depth_any_after', 0) for e in events),
+            default=0),
+        'last_aggressor_allin': bool(last.get('allin_raise')),
     }
-
 
 def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
                          hero=None, dead=0):
