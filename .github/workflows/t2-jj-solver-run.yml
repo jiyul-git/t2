@@ -14,7 +14,7 @@ jobs:
           ref: chatgpt/mini-cfr-solver-20260928
       - run: python3 tools/capture_t2_jj_ranges.py
       - run: python3 tools/make_t2_jj_solver_configs.py
-      - run: cargo build --manifest-path vendor/postflop/Cargo.toml --release -p cli
+      - run: cargo build --manifest-path vendor/postflop/Cargo.toml --release -p solver-cli
       - run: vendor/postflop/target/release/solver solve --config /tmp/jj_std.toml --report-every 100 --out /tmp/jj_std.json
       - run: vendor/postflop/target/release/solver show --solution /tmp/jj_std.json --line check --combo JcJd
       - run: vendor/postflop/target/release/solver solve --config /tmp/jj_wide.toml --report-every 100 --out /tmp/jj_wide.json
