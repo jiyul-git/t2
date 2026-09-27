@@ -6,12 +6,21 @@ PLANS = ['value_3street','value_2street','pot_control','semibluff','bluff_2stree
 
 def spr(stack, pot): return stack/max(1, pot)
 
-def line_bluff_prior(opp_profile, street, n_barrels, sizing_frac, board, aggressor_pos_oop):
-    """주의: opp_profile 은 '관찰로 추정된' 프로필이어야 한다.
-       reads.perceived_profile() 결과를 넘길 것. 진짜 축을 넘기면 정보 누출."""
+def line_bluff_prior(opp_profile, street, n_barrels, sizing_frac, board,
+                     aggressor_pos_oop, opp_read=None):
     """상대의 '이 라인'이 블러프일 사전확률. 0~1.
-       성향(블러프축) × 배럴 수 × 사이징 × 보드 × 포지션."""
-    base = opp_profile.get('bluff', 5)/10.0
+
+    공개 라인(배럴 수/사이즈/보드/포지션)은 항상 읽되, 특정 상대의 과거
+    bluff 성향은 read_opponent()가 허용한 만큼만 반영한다. 이렇게 해야
+    adaptability/confidence 게이트를 우회해 원시 est['bluff']를 직접 쓰는
+    숨은 익스플로잇 경로가 생기지 않는다.
+    """
+    base_axis = 4.5  # 모집단 사전값
+    if opp_read:
+        w = max(0.0, min(1.0, float(opp_read.get('w', 0.0) or 0.0)))
+        gap = max(-1.0, min(1.0, float(opp_read.get('bluff_gap', 0.0) or 0.0)))
+        base_axis = max(1.0, min(10.0, base_axis * (1.0 + w*gap)))
+    base = base_axis/10.0
     b = base
     b *= {1: 1.00, 2: 0.72, 3: 0.48}.get(n_barrels, 0.40)   # 배럴 겹칠수록 블러프↓
     if sizing_frac >= 1.0:   b *= 1.25                       # 오버벳은 양극화
