@@ -1275,7 +1275,8 @@ class HandRun:
                 observer, 'preflop', 'pf_range', target)))
         opp_view = RD.range_profile(oe)
         rd = PS.read_opponent(observer_profile, oe) if oe else {}
-        pol = float(rd.get('tb_polar', 0.0) or 0.0)
+        pol = (float(rd.get('tb_polar', 0.0) or 0.0)
+               * float(rd.get('w', 0.0) or 0.0))
 
         stack_bb = pfo.get('pf_stack_bb')
         if stack_bb is None:
@@ -1338,7 +1339,8 @@ class HandRun:
         pol = 0.0
         if oe:
             rdp = PS.read_opponent(observer_profile, oe)
-            pol = rdp.get('tb_polar', 0.0)
+            pol = (float(rdp.get('tb_polar', 0.0) or 0.0)
+                   * float(rdp.get('w', 0.0) or 0.0))
             if rdp.get('w', 0) > 0 and self._was_3bettor(target):
                 act_o = '3bet'
 
@@ -1809,7 +1811,8 @@ class HandRun:
                     _opp_view = RD.range_profile(_oe)
                     if _oe:
                         _rdp = PS.read_opponent(ax, _oe)
-                        _pol = _rdp.get('tb_polar', 0.0)
+                        _pol = (float(_rdp.get('tb_polar', 0.0) or 0.0)
+                                * float(_rdp.get('w', 0.0) or 0.0))
                         if (_pfo and _rdp.get('w', 0) > 0
                                 and self._was_3bettor(o)):
                             _act_o = '3bet'
@@ -1850,6 +1853,23 @@ class HandRun:
                         orange, h.dyn, self._pid(o), board,
                         dead=set(h.hole[s])|set(board))
                     orange = R.range_unique_sorted(orange)
+                    if not orange:
+                        # 빈 상대 레인지를 자기 레인지로 대체하면 equity가
+                        # '상대 추정'이 아니라 자기 투사로 바뀐다. 공개정보 기반
+                        # 복원이 실패한 경우에는 모든 합법 콤보라는 중립 prior로
+                        # 물러나고, 반드시 audit를 남긴다.
+                        _dead_o = set(h.hole[s]) | set(board)
+                        orange = sorted(
+                            c for c in R.ALL
+                            if c[0] not in _dead_o and c[1] not in _dead_o)
+                        h.range_fallback_audit = getattr(
+                            h, 'range_fallback_audit', [])
+                        h.range_fallback_audit.append({
+                            'street': street, 'observer': s, 'target': o,
+                            'reason': 'empty_perceived_opponent_range',
+                            'pf_source': ('pf_seed' if _pfo else 'public_action_meta'),
+                            'pf_action': _act_o,
+                        })
                     opp_ranges[o] = orange
 
                 # F8-D2: 이전 street에서 이미 올인해 현재 Round에서 빠진 상대도
@@ -1917,7 +1937,18 @@ class HandRun:
                     for o in sorted(opp_ranges, key=lambda x: str(x))
                 ])
                 if not opp_r:
-                    opp_r = R.range_unique_sorted(my_r)
+                    # opp_ranges가 비는 것은 정상 전략 사건이 아니다.
+                    # 자기 레인지로 폴백하면 오류를 숨기고 equity를 자기 투사한다.
+                    _dead_union = set(h.hole[s]) | set(board)
+                    opp_r = sorted(
+                        c for c in R.ALL
+                        if c[0] not in _dead_union and c[1] not in _dead_union)
+                    h.range_fallback_audit = getattr(
+                        h, 'range_fallback_audit', [])
+                    h.range_fallback_audit.append({
+                        'street': street, 'observer': s, 'target': None,
+                        'reason': 'empty_union_opponent_range',
+                    })
                 key = s
                 if key in h.plans and street != h.plans[key].get('street_made'):
                     h.plans[key].setdefault('streets', []).append(street)
@@ -2215,13 +2246,18 @@ class HandRun:
                         sz_frac = tc/max(1, pot_live)
                     # '어그레서가 **나보다 먼저** 액션하는 자리에서 리드했는가'다.
                     # 절대 인덱스로 재면 상대가 누구든 같은 값이 나온다.
-                    read_val = PL.line_bluff_prior(est, street, n_barrels, sz_frac, board,
-                                                  oop_vs(order, aggressor, s))
+                    _line_read = PS.read_opponent(ax, est)
+                    read_val = PL.line_bluff_prior(
+                        est, street, n_barrels, sz_frac, board,
+                        oop_vs(order, aggressor, s), opp_read=_line_read)
                     h.reads_log = getattr(h, 'reads_log', [])
-                    h.reads_log.append({'street': street, 'observer': s, 'target': aggressor,
-                                        'est_bluff': round(est['bluff'],1),
-                                        'confidence': est['confidence'], 'n': est['n'],
-                                        'barrels': n_barrels, 'read': round(read_val,2)})
+                    h.reads_log.append({
+                        'street': street, 'observer': s, 'target': aggressor,
+                        'est_bluff': round(est['bluff'],1),
+                        'confidence': est['confidence'], 'n': est['n'],
+                        'read_weight': _line_read.get('w', 0.0),
+                        'bluff_gap': round(_line_read.get('bluff_gap', 0.0), 3),
+                        'barrels': n_barrels, 'read': round(read_val,2)})
                 # 체크레이즈 라우팅 감사용: 판단에는 쓰지 않는 provenance.
                 # generic facing-bet response가 checkraise 전용 gate보다 먼저 raise를
                 # 만들어내는지 확인하려면 act_with_plan 호출 전에 체크 이력이 필요하다.
