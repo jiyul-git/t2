@@ -1,0 +1,23 @@
+name: liveplay-proxy
+on:
+  push:
+    branches:
+      - chatgpt/liveplay-proxy-20260927
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe live poker state
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== STATE ==='
+          curl -fsS --max-time 20 https://jiyul.alwaysdata.net/api/state
+          echo
+          echo '=== TOURNAMENT ==='
+          curl -fsS --max-time 20 https://jiyul.alwaysdata.net/api/tournament || true
+          echo
+          echo '=== HISTORY TAIL ==='
+          curl -fsS --max-time 20 https://jiyul.alwaysdata.net/api/history | python3 -c 'import sys,json; x=json.load(sys.stdin); print(json.dumps(x[:2] if isinstance(x,list) else x, ensure_ascii=False))' || true
