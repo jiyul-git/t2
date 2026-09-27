@@ -13,6 +13,7 @@ import runner as RU
 
 SEED=202609271937
 TARGETS={
+ # Table 3
  ("UTG",("Td","9d")),
  ("UTG+1",("2d","Jd")),
  ("LJ",("4d","6c")),
@@ -21,6 +22,15 @@ TARGETS={
  ("BTN",("9s","Jc")),
  ("SB",("2h","6s")),
  ("BB",("3d","Ac")),
+ # Table 4
+ ("UTG",("2s","7d")),
+ ("UTG+1",("4c","8h")),
+ ("LJ",("6h","8d")),
+ ("HJ",("Ac","Th")),
+ ("CO",("9c","Ah")),
+ ("BTN",("Kh","9s")),
+ ("SB",("Ks","Kd")),
+ ("BB",("4d","Jh")),
 }
 records=[]
 
@@ -107,7 +117,7 @@ if st.get("others_pending"): L.resume_others(st,None)
 
 order={"UTG":0,"UTG+1":1,"LJ":2,"HJ":3,"CO":4,"BTN":5,"SB":6,"BB":7}
 records.sort(key=lambda x:order.get(x["pos"],99))
-print("=== T3_PREFLOP_RUNTIME ===")
+print("=== T3_T4_PREFLOP_RUNTIME ===")
 print(json.dumps(records,ensure_ascii=False,sort_keys=True))
 
 # trigger 1
