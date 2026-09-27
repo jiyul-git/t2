@@ -34,7 +34,13 @@ html, body {
   user-select: none;
 }
 
-#app { display: flex; flex-direction: column; height: 100dvh; min-height: 0; }
+#app {
+  display: flex; flex-direction: column; height: 100dvh; min-height: 0;
+  position: relative;
+  /* 액션바는 화면 위에 뜨지만, 이 고정 dock 만큼의 자리만 항상 예약한다.
+     그래서 액션 버튼이 나타나거나 사라져도 테이블/배경/히어로 좌표는 움직이지 않는다. */
+  padding-bottom: calc(68px + env(safe-area-inset-bottom));
+}
 
 /* ---------- 상단 바 ---------- */
 #topbar {
@@ -358,8 +364,16 @@ html, body {
 
 /* ---------- 액션 바 ---------- */
 #actionbar {
-  flex: 0 0 auto; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-  background: linear-gradient(#121d19, #0b1411); border-top: 1px solid var(--line);
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 24;
+  height: calc(68px + env(safe-area-inset-bottom));
+  min-height: calc(68px + env(safe-area-inset-bottom));
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  background: linear-gradient(#121d19, #0b1411);
+  border-top: 1px solid var(--line);
+  overflow: visible;
+  /* flex flow 밖에 있으므로 내용이 바뀌어도 tablewrap 크기는 불변. */
 }
 #mainrow { display: flex; gap: 8px; }
 #mainrow[hidden] { display: none; }
@@ -379,7 +393,13 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 .wait { text-align: center; color: var(--dim); font-size: 13px; padding: 17px 0; }
 
 /* 레이즈 패널 */
-#actionbar { position: relative; min-height: 68px; }
+#actionbar.turn-open #mainrow {
+  animation: heroactionup .20s cubic-bezier(.2,.75,.25,1);
+}
+@keyframes heroactionup {
+  from { transform: translateY(18px); opacity: .35; }
+  to   { transform: translateY(0); opacity: 1; }
+}
 #raisepanel {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 18;
   padding: 10px;
