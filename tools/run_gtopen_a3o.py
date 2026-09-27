@@ -36,7 +36,7 @@ print("SOLVE_START",json.dumps(req("POST","/api/preflop/solve",{
   "iterations":int(os.getenv("GTOPEN_ITERS","300")),"check_every":int(os.getenv("GTOPEN_CHECK","25")),"target_gap":float(os.getenv("GTOPEN_TARGET","0.01"))
 }),sort_keys=True))
 
-for _ in range(1200):
+for _ in range(900):
     st=req("GET","/api/preflop/status")
     if st.get("state")!="running":
         print("STATUS",json.dumps(st,sort_keys=True))
