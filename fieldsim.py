@@ -583,26 +583,35 @@ class Field:
             pass
 
     def _play_table(self, tb, fast=True):
-        """봇 전용 테이블 한 핸드. 실제로 돌려서 스택을 갱신한다."""
-        # players append 순서가 아니라 고정 좌석 순서여야 button 의미가 유지된다.
+        """봇 전용 테이블 한 핸드. TDA 포지션을 그대로 써서 스택을 갱신한다."""
         alive = tb.ordered_alive()
-        if len(alive) < 2: return None
-        seats = list(range(1, len(alive)+1))
-        profs = {str(i+1): alive[i]['prof'] for i in range(len(alive))}
-        stacks = {i+1: alive[i]['stack'] for i in range(len(alive))}
-        physical = [tb.seat_of(p['pid']) for p in alive]
-        btn = seats[physical.index(tb.dealer_seat())]
+        if len(alive) < 2:
+            return None
+
+        layout = tb.hand_layout()
+        seats = [tb.seat_of(p['pid']) for p in alive]
+        profs = {str(tb.seat_of(p['pid'])): p['prof'] for p in alive}
+        stacks = {tb.seat_of(p['pid']): p['stack'] for p in alive}
         sb, bb = self.blinds()
+
         try:
-            h = play.Hand(seats, profs, stacks, btn, sb, bb, hero=None,
-                          seed=self.rng.randrange(10**9))
-            h.seat_pid = {i+1: alive[i]['pid'] for i in range(len(alive))}
+            h = play.Hand(
+                seats, profs, stacks, layout['button'], sb, bb, hero=None,
+                seed=self.rng.randrange(10**9),
+                position_map=layout['pos'],
+                pre_seats=layout['pre_seats'],
+                post_seats=layout['post_seats'],
+                sb_seat=layout['sb'],
+                bb_seat=layout['bb'])
+            h.seat_pid = {tb.seat_of(p['pid']): p['pid'] for p in alive}
             h.table_id = tb.id
+            h.table_max_seat = tb.max_seat
             self.stamp(h)
             run = SE.HandRun(h)
             run.start()
-            for i in range(len(alive)):
-                alive[i]['stack'] = int(h.stacks.get(i+1, alive[i]['stack']))
+            for p in alive:
+                s = tb.seat_of(p['pid'])
+                p['stack'] = int(h.stacks.get(s, p['stack']))
             self._log_bot_hand(tb, h, run)
         except Exception as e:
             # 조용히 넘기지 않는다. 예전에는 return None 뿐이라
@@ -657,46 +666,100 @@ class Field:
                 self.busted_order.append(p['pid'])
 
     def _balance(self, notify=True):
-        """TDA식 밸런싱: 테이블 간 인원차 1 이하. 필요시 테이블 브레이크.
+        """TDA식 테이블 브레이크/밸런싱.
 
-        초기 배치 직후의 균등화는 아직 플레이 중 이동이 아니므로
-        notify=False 로 hero 이동 횟수/노트를 만들지 않는다.
+        - Rule 11: broken-table 플레이어는 BTN/SB/BB도 받을 수 있지만
+          SB와 BTN 사이 좌석에는 들어가지 않는다. 소프트웨어에서는
+          2-step draw와 같은 편향 없는 결과가 되도록 후보 seat를 RNG로 뽑는다.
+        - Rule 12-A: 일반 balance는 '다음 BB 예정자'가 이동하며,
+          목적지는 BB가 가장 빨리 오는 worst open seat. SB는 절대 목적지가 아니다.
         """
         act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
-        if not act: return
+        if not act:
+            return
+
         need_tables = max(1, math.ceil(self.remaining()/self.max_seat))
-        # 테이블 브레이크
+
+        # ---------- 테이블 브레이크 ----------
         while len(act) > need_tables:
-            small = min(act.values(), key=lambda x: x.n())
-            movers = list(small.players)
+            small = min(act.values(), key=lambda x: (x.n(), x.id))
+            movers = [p for p in small.players if p['stack'] > 0]
+            self.rng.shuffle(movers)
             del self.tables[small.id]
             act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
-            if not act: break
+            if not act:
+                break
+
             for m in movers:
-                tgt = min(act.values(), key=lambda x: x.n())
+                # 인원수가 가장 적은 테이블들의 '허용된 빈 좌석' 전체가 seat pool.
+                mn = min(tb.n() for tb in act.values())
+                pool = []
+                for tgt in sorted(
+                        (tb for tb in act.values() if tb.n() == mn),
+                        key=lambda x: x.id):
+                    tgt.reconcile_next_hand()
+                    seats = tgt.broken_open_seats()
+                    if not seats:
+                        seats = [i + 1 for i, pid in enumerate(tgt.seats)
+                                 if pid is None]
+                    pool.extend((tgt, s) for s in seats)
+
+                if not pool:
+                    raise RuntimeError('테이블 브레이크 좌석 풀 없음')
+
+                tgt, seat = self.rng.choice(pool)
                 small.stand(m['pid'])
-                tgt.players.append(m); tgt.sit(m); m['table'] = tgt.id
+                tgt.players.append(m)
+                tgt.sit(m, seat)
+                m['table'] = tgt.id
+                tgt.reconcile_next_hand()
+
                 if notify and m['pid'] == self.hero_pid:
                     self.hero_moves += 1
-                    self.notes.append('🔄 테이블 브레이크 — 너 자리 이동 (%d번째)' % self.hero_moves)
+                    self.notes.append(
+                        '🔄 테이블 브레이크 — 너 자리 이동 (%d번째)'
+                        % self.hero_moves)
+
             act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
-        # 인원 균등화
-        for _ in range(12):
+
+        # ---------- 인원 균등화 ----------
+        for _ in range(24):
             act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
-            if len(act) < 2: break
-            big = max(act.values(), key=lambda x: x.n())
-            small = min(act.values(), key=lambda x: x.n())
-            if big.n() - small.n() <= 1: break
-            # 다음 핸드의 BB 예정자를 이동시킨다. players append 순서를
-            # button index로 해석하면 밸런싱 뒤 버튼/블라인드가 순간이동한다.
-            mover = big.player_after_button(2)
+            if len(act) < 2:
+                break
+            big = max(act.values(), key=lambda x: (x.n(), -x.id))
+            small = min(act.values(), key=lambda x: (x.n(), x.id))
+            if big.n() - small.n() <= 1:
+                break
+
+            # Rule 12-A: source는 '다음 BB 예정자'.
+            mover = big.next_bb_player()
             if mover is None:
                 break
-            big.players.remove(mover); big.stand(mover['pid'])
-            small.players.append(mover); small.sit(mover); mover['table'] = small.id
+
+            # destination은 SB가 아닌 worst position.
+            seat = small.worst_open_seat()
+            if seat is None:
+                break
+
+            big.players.remove(mover)
+            big.stand(mover['pid'])
+            big.reconcile_next_hand()
+
+            small.players.append(mover)
+            small.sit(mover, seat)
+            mover['table'] = small.id
+            small.reconcile_next_hand()
+
             if notify and mover['pid'] == self.hero_pid:
                 self.hero_moves += 1
-                self.notes.append('🔄 테이블 밸런싱 — 너 자리 이동 (%d번째)' % self.hero_moves)
+                self.notes.append(
+                    '🔄 테이블 밸런싱 — 너 자리 이동 (%d번째)'
+                    % self.hero_moves)
+
+        for tb in self.tables.values():
+            if tb.n() > 0:
+                tb.reconcile_next_hand()
 
     def advance_level(self):
         new = min(1 + self.hand_no//self.hands_per_level, len(BLINDS))
