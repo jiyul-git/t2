@@ -26,27 +26,24 @@
 - F7-B1C12 blocker-effect judgment lifecycle
 - F8 side-pot plumbing stages already marked closed in their audit docs
 
-### IN PROGRESS — do not call complete
+### F7-B1D — CLOSED
 
-**F7-B1D: empty/partial opponent-range semantics**
+B1D7-A likelihood shadow passed locally:
+- probability invariants 97,344
+- scripted branch checks 164,444
+- mismatches 0
 
-Current finding:
+B1D7-B production rewire exact parity also passed locally against checkpoint `5eb848c`:
+- exact checks 92,883
+- hotzone checks 1,611
+- calloff checks 13,050
+- attack outputs 2,124
+- action_or_rng_mismatches 0
 
-- live incomplete examples observed so far were heads-up, not true multiway partial pools;
-- 11/11 HU empty-seat cases originated at `preflop_range`;
-- all 11 were reconstructed as 3bet;
-- B1D5 proved the percentile-bin overlap fallback is **not behavior-preserving**:
-  3/6 preregistered target hands changed directly on identical pre-hand state;
-- B1D6 posterior audit: 11/11 observed actions had positive model-implied posterior mass;
-- 9/11 cannot be represented exactly by a unique unweighted combo list;
-- the other 2/11 are one-class AA posteriors, but the overlap fallback still has the wrong support;
-- overlap fallback was exact in **0/11** cases and omitted as much as **89.813%** of posterior mass.
+Defend execution now shares the likelihood helper without changing action, sizing, or RNG state.
 
-Conclusion: another hard-slice/bin patch cannot close B1D. B1D7 is active.
-Step A (RNG-free defend-action likelihood shadow) passed locally with 164,444 scripted branch checks and 0 mismatches.
-Step B rewires production defend execution to that shared helper while preserving the legacy RNG order;
-exact action+sizing+RNG-state parity against checkpoint 5eb848c is pending.
-Weighted-range representation/consumer migration starts only after Step B passes. Production ranges remain unweighted for now.
+**Next architecture step after the tournament-rules hotfix is promoted: weighted-range representation + legacy adapter.**
+Production ranges are still unweighted until that step begins.
 
 ### OPEN after B1D
 
@@ -80,8 +77,10 @@ Historical result/design markdown files remain for evidence. Their presence does
 
 Branch lifecycle is part of the project plan, not an afterthought.
 
-- Engine active line: `chatgpt/decision-architecture-audit-20260926`
-- UI active line: `chatgpt/ui-bot-pipeline-20260927`
+- Engine canonical line: `chatgpt/decision-architecture-audit-20260926`
+- Engine temporary verification line: `chatgpt/tda-position-engine-20260927`
+- UI canonical line: `chatgpt/ui-bot-pipeline-20260927`
+- UI temporary verification line: `chatgpt/tda-position-ui-20260927`
 - New branches require an explicit reason and exit condition.
 - Temporary branches must be merged/cherry-picked/abandoned and then cleaned up.
 - Every major phase closes with code + verification + docs + branch cleanup.
@@ -89,29 +88,40 @@ Branch lifecycle is part of the project plan, not an afterthought.
 See `BRANCH_POLICY.md`.
 
 
-## Tournament button / blind rotation hotfix — pending local verification
+## Tournament position / blind system — implementation complete, local gate pending
 
-User observed consecutive SB in HAND 50 -> HAND 51 without evidence of a full table break.
+The earlier physical-button-only hotfix was insufficient. 2026 Poker TDA requires a dead-button
+tournament model, so the system was redesigned on temporary branch
+`chatgpt/tda-position-engine-20260927`.
 
-Source audit found a real structural defect in the live field path:
+Implemented:
+- physical BTN/SB/BB anchors; BTN and SB may be dead/empty;
+- BB obligation is the rotation axis;
+- BB bust => old BB physical seat becomes dead SB, old UTG becomes BB;
+- SB bust => dead BTN as required;
+- TDA Rule 36-B vacant-seat BTN advance while preserving blind progression;
+- 3-handed → HU transition and HU BTN=SB / no consecutive BB;
+- broken-table Rule 11 seat restrictions and RNG assignment;
+- balance Rule 12-A: next-BB player moves, destination is worst position, never SB;
+- no-bet showdown order from physical first seat left of BTN;
+- split-pot odd chips from first winner left of BTN;
+- live-state schema persists `button_seat/sb_seat/bb_seat` with one-time legacy migration;
+- bot-only tables and HERO tables use the same explicit hand layout.
 
-- `fieldsim.Table.button` was stored as an index into a compressed alive-player list;
-- table busts / balancing can change that list between hands;
-- the same integer index can therefore point at a different physical seat on the next hand;
-- `_play_table` also used `tb.players` append order while the hero path used physical-seat order,
-  so the same button index had inconsistent meaning after player movement.
+Design source: `TDA_POSITION_DESIGN.md`
 
-Fix on the active engine branch:
+Local promotion gates:
+- `tools/verify_tda_dead_button.py`
+- `tools/verify_tda_live_integration.py`
+- `tools/verify_button_rotation.py`
+- Python compile of changed modules
 
-- persist a physical `button_seat` while retaining legacy `button` index for old saves;
-- order live players by fixed seat;
-- advance dealer by physical seat, not compressed-array index;
-- use the same physical dealer in `live2` build/finish;
-- choose the balancing source mover from physical button order;
-- regression tool: `tools/verify_button_rotation.py`.
-
-Production promotion is pending the local verifier result.
-
+Exit condition:
+1. gates pass;
+2. merge temp branch into `chatgpt/decision-architecture-audit-20260926`;
+3. prove temp branch fully contained;
+4. delete temp branch;
+5. then resume weighted-range migration.
 
 ## Latest playable checkpoint
 

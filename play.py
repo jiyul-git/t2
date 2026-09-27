@@ -9,7 +9,9 @@ from table import PRE_ORDER as PRE, POST_ORDER as POST   # 단일 출처 재수�
 
 class Hand:
     def __init__(self, seats, profiles, stacks, button, sb, bb, hero=None,
-                 payouts=None, seed=None, dyn=None, book=None):
+                 payouts=None, seed=None, dyn=None, book=None,
+                 position_map=None, pre_seats=None, post_seats=None,
+                 sb_seat=None, bb_seat=None):
         self.rng = random.Random(seed if seed is not None else os.urandom(8))
         self.all_seats = list(seats)
         self.stacks = dict(stacks)
@@ -18,12 +20,6 @@ class Hand:
         if len(self.seats) < 2:
             raise ValueError('생존 좌석 부족: %s' % self.seats)
         self.prof = profiles
-        if button not in self.seats:                     # 버튼이 파산했으면 다음 생존자로
-            idx = seats.index(button)
-            for k in range(1, len(seats)+1):
-                cand = seats[(idx+k) % len(seats)]
-                if cand in self.seats: button = cand; break
-        self.button = button
         self.sb, self.bb = sb, bb; self.hero = hero
         self.payouts = payouts or []
         # 예전에는 dict 였고 tourney 가 안 넘겨서 매 핸드 새로 만들어졌다.
@@ -34,13 +30,49 @@ class Hand:
         # 장부는 호출자가 소유한다. 주지 않으면 이 핸드 한정 빈 장부를 쓴다.
         # 디스크에서 무조건 읽으면 대회·세션이 서로 오염되고 같은 시드가 재현되지 않는다.
         self.book = book if book is not None else _RD.Book()
-        n = len(self.seats)
-        i = self.seats.index(button)
-        # 좌석 수마다 포지션 사다리가 다르다. 8맥스 목록을 잘라 쓰면
-        # 9인 테이블에서 인덱스가 넘친다.
-        order, self.PRE, self.POST = _TB.orders(n)
-        self.pos = {self.seats[(i+k) % n]: order[k] for k in range(n)}
-        self.seat_of = {v: k for k, v in self.pos.items()}
+
+        if position_map is not None:
+            # 토너먼트 필드 경로. BTN/SB는 dead seat일 수 있으므로
+            # '버튼이 반드시 생존자'라는 단일테이블 가정을 쓰지 않는다.
+            self.button = button
+            self.pos = {int(k): v for k, v in dict(position_map).items()}
+            if set(self.pos) != set(self.seats):
+                raise ValueError(
+                    '포지션 좌석 불일치: pos=%s live=%s'
+                    % (sorted(self.pos), sorted(self.seats)))
+            self.seat_of = {v: k for k, v in self.pos.items()}
+            self.pre_seats = [s for s in list(pre_seats or [])
+                              if s in self.pos]
+            self.post_seats = [s for s in list(post_seats or [])
+                               if s in self.pos]
+            if set(self.pre_seats) != set(self.seats):
+                raise ValueError('프리플랍 액션 순서 불일치: %s' % self.pre_seats)
+            if set(self.post_seats) != set(self.seats):
+                raise ValueError('포스트플랍 액션 순서 불일치: %s' % self.post_seats)
+            self.PRE = [self.pos[s] for s in self.pre_seats]
+            self.POST = [self.pos[s] for s in self.post_seats]
+            self.sb_seat = sb_seat
+            self.bb_seat = bb_seat
+        else:
+            # legacy 단일테이블 경로는 기존 moving-button 의미를 그대로 유지한다.
+            if button not in self.seats:
+                idx = seats.index(button)
+                for k in range(1, len(seats)+1):
+                    cand = seats[(idx+k) % len(seats)]
+                    if cand in self.seats:
+                        button = cand
+                        break
+            self.button = button
+            n = len(self.seats)
+            i = self.seats.index(button)
+            order, self.PRE, self.POST = _TB.orders(n)
+            self.pos = {self.seats[(i+k) % n]: order[k] for k in range(n)}
+            self.seat_of = {v: k for k, v in self.pos.items()}
+            self.pre_seats = [self.seat_of[p] for p in self.PRE if p in self.seat_of]
+            self.post_seats = [self.seat_of[p] for p in self.POST if p in self.seat_of]
+            self.sb_seat = self.seat_of.get('SB')
+            self.bb_seat = self.seat_of.get('BB')
+
         self._start_stacks = dict(self.stacks)
         self.seat_pid = {}          # 좌석번호 → 플레이어 고유 ID (드라이버가 채운다)
         self.deal()
