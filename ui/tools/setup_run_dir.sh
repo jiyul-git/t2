@@ -19,7 +19,7 @@ DST=${1:-$HOME/t2_ui_run}
 # view_text 라는 이름으로 직접 로드하므로 반드시 포함한다.
 MODULES="archetypes bot context depth dynamics field fieldsim formats gto icm
          live2 money_pressure persona plan play preflop ranges reads runner session storage_paths table
-         texture view"
+         telemetry_sync texture view"
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 # style_*.json 은 없어도 죽지는 않지만 스타일 추정 경로가 통째로 꺼진다.
@@ -45,8 +45,30 @@ fi
 # 이 표시 파일이 없으면 ui_server 가 시작을 거부한다.
 : > "$DST/UI_SERVER_DIR"
 
+# 이 프로젝트에서는 live hand telemetry를 GitHub의 별도 branch로 자동 공유한다.
+# 토큰/비밀번호는 저장하지 않고, SRC git repository의 기존 remote/auth를 공유하는
+# worktree를 telemetry_sync.py가 만든다.
+if [ "${T2_TELEMETRY:-1}" != "0" ]; then
+    TWD=${T2_TELEMETRY_WORKDIR:-$HOME/t2_telemetry_live}
+    cat > "$DST/telemetry_config.json" <<EOF
+{
+  "enabled": true,
+  "branch": "telemetry/live",
+  "source_repo": "$SRC",
+  "workdir": "$TWD"
+}
+EOF
+else
+    rm -f "$DST/telemetry_config.json"
+fi
+
 echo "실행 폴더: $DST"
 echo "  모듈 $(echo $MODULES | wc -w)개, 데이터 $(echo $DATA | wc -w)개"
 echo "  실행: cd $DST && python3 ui_server.py"
+if [ -f "$DST/telemetry_config.json" ]; then
+    echo "  텔레메트리: 켬 -> telemetry/live (비동기)"
+else
+    echo "  텔레메트리: 끔"
+fi
 echo "  주의: T2_LIVE_STATE 를 설정하지 마세요. 설정하면 접미사가 _alt 로 고정되어"
 echo "        cli.py 세션과 아카이브를 공유하게 됩니다."
