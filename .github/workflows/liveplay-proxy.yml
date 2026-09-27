@@ -3,21 +3,18 @@ on:
   push:
     branches:
       - chatgpt/liveplay-proxy-20260927
-  workflow_dispatch:
 
 jobs:
-  probe:
+  act:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe live poker state
+      - name: Fold hand 9 and read next state
         shell: bash
         run: |
           set -euo pipefail
+          echo '=== ACTION ==='
+          curl -fsS --max-time 20             -H 'Content-Type: application/json'             -X POST             --data '{"action":"fold","amount":0,"token":"686167287:0"}'             https://jiyul.alwaysdata.net/api/step
+          echo
           echo '=== STATE ==='
           curl -fsS --max-time 20 https://jiyul.alwaysdata.net/api/state
           echo
-          echo '=== TOURNAMENT ==='
-          curl -fsS --max-time 20 https://jiyul.alwaysdata.net/api/tournament || true
-          echo
-          echo '=== HISTORY TAIL ==='
-          curl -fsS --max-time 20 https://jiyul.alwaysdata.net/api/history | python3 -c 'import sys,json; x=json.load(sys.stdin); print(json.dumps(x[:2] if isinstance(x,list) else x, ensure_ascii=False))' || true
