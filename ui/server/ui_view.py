@@ -76,6 +76,8 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
     out = {'schema': SCHEMA, 'type': 'decision',
            'hand_no': hand_no, 'stage': raw['stage'], 'hash': raw['hash'],
            'n_slots': _n_slots, 'hero_seat': hand.hero, 'button_seat': btn,
+           'sb_seat': getattr(hand, 'sb_seat', None),
+           'bb_seat': getattr(hand, 'bb_seat', None),
            'hero_hole': list(raw['hole']), 'board': list(raw.get('board') or []),
            'seats': seats,
            'pot_total': pot, 'pot_center': pot - sum(inv.values()),
