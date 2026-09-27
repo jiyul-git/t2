@@ -1055,6 +1055,98 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
         return need
     return need, max(0.03, min(0.95, call_need))
 
+def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
+                            opp_ranges, n_opp, pot, tocall, stack,
+                            hero_contrib, response_context,
+                            mult=None, target=None):
+    """Veto a bluff/semi-bluff response raise that is negative even optimistically.
+
+    Uses the already-perceived opponent range.  The opponent's fold share comes
+    from the same continue-range heuristic used elsewhere, at the *actual price*
+    created by our candidate raise.
+
+    For non-all-in future streets this deliberately treats every continue as a
+    call followed by immediate showdown.  That is optimistic for the raiser:
+    future re-raises / imperfect realization can only make many weak raises
+    worse.  Therefore a negative result is a safe structural veto, not a new
+    frequency knob.
+    """
+    ctx = dict(response_context or {})
+    fs = ctx.get('facing_seat')
+    pool = None
+    if isinstance(opp_ranges, dict) and fs in opp_ranges:
+        pool = opp_ranges.get(fs)
+    if not pool:
+        pool = opp_range
+    if not pool or not board:
+        return {'known': False, 'allow': True, 'why': 'opponent range unavailable'}
+
+    hc = max(0.0, float(hero_contrib or 0.0))
+    actor_cap = hc + max(0.0, float(stack or 0.0))
+    if target is None:
+        if mult is None:
+            return {'known': False, 'allow': True, 'why': 'raise target unavailable'}
+        base = max(0.0, float(pot + 2*tocall) * float(mult))
+        target = hc + base
+    cand = min(actor_cap, max(hc + float(tocall or 0.0), float(target)))
+    hero_inc = max(0.0, cand - hc)
+    call_target = hc + max(0.0, float(tocall or 0.0))
+    if cand <= call_target:
+        return {
+            'known': True, 'allow': False, 'ev': None,
+            'candidate_target': round(cand, 3),
+            'why': 'candidate raise does not exceed call target',
+        }
+
+    opp_contrib = ctx.get('facing_contrib')
+    if opp_contrib is None:
+        opp_contrib = ctx.get('facing_target')
+    if opp_contrib is None:
+        return {'known': False, 'allow': True, 'why': 'facing contribution unavailable'}
+    opp_contrib = max(0.0, float(opp_contrib or 0.0))
+
+    opp_stack = ctx.get('facing_stack')
+    opp_cap = (
+        opp_contrib + max(0.0, float(opp_stack or 0.0))
+        if opp_stack is not None else cand)
+    opp_call_target = min(cand, opp_cap)
+    opp_call = max(0.0, opp_call_target - opp_contrib)
+
+    pot_after_raise = float(pot or 0.0) + hero_inc
+    price_frac = opp_call / max(1.0, pot_after_raise)
+    cont = R.perceived_continue_range(
+        pool, board, street, price_frac, profile=profile)
+    base_mass = float(R.range_mass(pool) or 0.0)
+    cont_mass = float(R.range_mass(cont) or 0.0)
+    if base_mass <= 0 or cont_mass <= 0:
+        return {'known': False, 'allow': True, 'why': 'range mass unavailable'}
+
+    fold_p = max(0.0, min(1.0, 1.0 - cont_mass/base_mass))
+    eq_cont = bot.equity_vs_combos(hero, board, [cont], sims=400)
+    final_pot = pot_after_raise + opp_call
+
+    # Incremental EV relative to folding now.  If villain folds, the raise chips
+    # return with the pot, so the net win is the current pot.
+    ev_continue = float(eq_cont) * final_pot - hero_inc
+    ev = fold_p * float(pot or 0.0) + (1.0 - fold_p) * ev_continue
+    return {
+        'known': True,
+        'allow': bool(ev > 0.0),
+        'ev': round(ev, 3),
+        'fold_p': round(fold_p, 4),
+        'continue_eq': round(float(eq_cont), 4),
+        'continue_mass': round(cont_mass, 4),
+        'base_mass': round(base_mass, 4),
+        'candidate_target': round(cand, 3),
+        'hero_increment': round(hero_inc, 3),
+        'opp_call': round(opp_call, 3),
+        'price_frac': round(price_frac, 4),
+        'optimistic': True,
+        'n_opp': int(n_opp or 1),
+        'why': 'optimistic immediate raise EV',
+    }
+
+
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                     made_now, opp_range, pot, tocall, stack, committed, rng,
                     allow_raise=True, call_eq=None, call_need=None,
