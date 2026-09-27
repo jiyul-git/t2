@@ -770,14 +770,25 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
     for (stt, a, sz) in acts:
         if len(r) <= floor:
             break
+        # 과거 액션은 **그 당시 공개돼 있던 보드**로 해석해야 한다.
+        # river에서 range를 다시 만들면서 flop call을 5장 보드로 평가하면
+        # turn/river 카드를 과거 판단에 누출시키는 셈이다.
+        if stt == 'flop':
+            action_board = list(board[:3])
+        elif stt == 'turn':
+            action_board = list(board[:4])
+        elif stt == 'river':
+            action_board = list(board[:5])
+        else:
+            action_board = list(board)
         # 연속 액션일수록 추가 정보량이 줄어든다 (축소 누적 폭주 방지)
         d = _DECAY ** step
         if a in ('bet', 'raise', 'allin'):
-            r = _bet_range(r, board, stt, bluff, sz, d, barrel)
+            r = _bet_range(r, action_board, stt, bluff, sz, d, barrel)
         elif a == 'call':
-            r = _call_range(r, board, stt, sz, d)
+            r = _call_range(r, action_board, stt, sz, d)
         elif a == 'check':
-            r = _check_range(r, board, stt, cbet, d)
+            r = _check_range(r, action_board, stt, cbet, d)
         else:
             continue                      # fold 는 살아있는 상대에게 나오지 않는다
         step += 1
