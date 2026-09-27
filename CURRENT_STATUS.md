@@ -13,7 +13,7 @@
 
 엔진과 UI는 더 이상 별도 최신선으로 운영하지 않는다.
 `~/t2`와 `~/t2_ui_src` 모두 같은 unified canonical branch를 추적한다.
-`chatgpt/ui-bot-pipeline-20260927`은 local 전환을 위한 임시 호환 ref이며 새 작업을 하지 않는다.
+`chatgpt/ui-bot-pipeline-20260927`은 폐기 후보인 과거 호환 ref이며 새 작업을 하지 않는다. `integration/latest-20260927`은 최신 엔진 위에 UI 배선을 검증하기 위해 잠시 만든 뒤 canonical로 fast-forward 완료된 임시 ref다.
 플레이 실행본은 unified source에서 `ui/tools/setup_run_dir.sh "$HOME/t2_ui_beta"`로 갱신한다.
 
 ## Architecture audit
@@ -56,21 +56,28 @@ Production ranges are still unweighted until that step begins.
 - F8-ICM semantic closure
 - final dead-code cleanup
 
-## Final-table latency fix — implementation complete / local gate pending
+## Final-table latency + action-pipeline wiring — CLOSED / CI verified
 
 User observed a final-table-only pause, including after HERO folds before the next bot action.
 
-Two independent sources were found:
+Three independent wiring issues were found and closed:
 
-1. **Intra-hand bot-action latency:** exact ICM used subset-DP only at exactly 9 players. At 8/7/6/... players every `h.bf(seat)` fell back to the factorial historical recursion. Safe 2..9-player states now use the same exact subset-DP; unsafe path-prune states still use the historical recursion.
-2. **Between-hand settlement overhead:** once only one table remains, the UI server still tried to submit an empty non-HERO worker and `live2.finish` could create `others_pending`. Single-table rounds now settle bust/balance locally and never create worker pending state.
+1. **Intra-hand ICM latency:** exact ICM used subset-DP only at exactly 9 players. At 8/7/6/... players every `h.bf(seat)` fell back to the factorial historical recursion. Safe 2..9-player states now use the same exact subset-DP; unsafe path-prune states still use the historical recursion.
+2. **Single-table settlement:** once only one table remains, there is no non-HERO table worker to launch or join. Final-table rounds now settle locally and do not create `others_pending`.
+3. **UI/server action pipeline:** bot decisions are no longer computed ahead while the UI merely queues animations. The live order is now `HERO motion -> bot compute -> bot motion -> ACK -> next bot compute`. The HTTP server is threaded so the ACK and read-only tournament/history/memo requests remain responsive while the gameplay request is paused at the motion gate.
 
-No ICM formula, payout semantics, bot decision coefficient, or action pacing was changed.
+No ICM formula, payout semantics, bot decision coefficient, or strategic action rule was changed by the UI pipeline work.
 
-Local gates:
-- `python3 tools/verify_icm_fast.py`
-- `python3 tools/verify_parallel_tables.py`
-- frozen regression after the current W0/W1 gate.
+CI gate on the real server/API now constructs a **100-entry / ITM 15 / 9-player final-table fixture** and plays it through `/api/step-stream`.
+Latest measured gate:
+- 3 HERO decisions, 10 streamed events;
+- bot compute gap: min 0.0243 s / avg 0.1410 s / max 0.4819 s;
+- motion ACK: 10/10, timeout 0;
+- read-only UI latency while the stream is deliberately waiting for ACK:
+  history max 0.0013 s, memos max 0.0026 s, tournament max 0.0048 s;
+- `ui/tools/predeploy_check.sh`, `verify_icm_fast.py`, and the final-table playtest all PASS.
+
+The browser cache tag for this pipeline is `app.js?v=67`.
 
 ## Weighted-range migration — W0+W1 implemented / local gate pending
 
@@ -122,7 +129,8 @@ Branch lifecycle is part of the project plan, not an afterthought.
 
 - **Only active canonical line:** `chatgpt/decision-architecture-audit-20260926`
 - PR #11에서 최신 엔진과 최신 playable UI를 한 history로 통합했다.
-- `chatgpt/ui-bot-pipeline-20260927`은 호환 ref / 삭제 후보이며 새 커밋 금지.
+- final-table motion-gated pipeline은 `integration/latest-20260927`에서 CI 검증 후 canonical로 fast-forward했다.
+- `integration/latest-20260927`과 `chatgpt/ui-bot-pipeline-20260927`은 삭제 후보이며 새 커밋 금지.
 - TDA temporary branches는 이미 merge/deletion 완료.
 - 새 temporary branch는 명시적 이유와 종료 조건이 있을 때만 만든다.
 - 기능 완료에는 verification + canonical 반영 + cleanup이 포함된다.
@@ -163,7 +171,7 @@ Containment proof after merge: canonical is ahead of `chatgpt/tda-position-engin
 As of 2026-09-27 engine and playable UI share the same unified history:
 
 ```
-chatgpt/decision-architecture-audit-20260926 @ 0b919b62
+chatgpt/decision-architecture-audit-20260926 — post-`a02a519` final-table wiring, cache tag commit `391d7f4`
 ```
 
 This contains:
