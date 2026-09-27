@@ -144,6 +144,8 @@ def main():
             print('거부 — 이 기준선은 덮어쓸 수 없다.')
             if a.baseline == 'historical':
                 print('  %s 은 봉인된 Phase C(024ab5b)가 서 있던 행동이다.' % os.path.basename(path))
+            elif a.baseline == 'pre_f7b':
+                print('  %s 은 post-F8 / pre-F7B checkpoint(be4a903)다.' % os.path.basename(path))
             elif a.baseline == 'pre_f8':
                 print('  %s 은 F8 이전 decision-audit checkpoint(2a53584)다.' % os.path.basename(path))
             print('  덮어쓰면 의도적 구조 변경 전후를 비교할 기준을 잃는다.')
