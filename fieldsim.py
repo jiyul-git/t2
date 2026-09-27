@@ -664,8 +664,12 @@ class Field:
         try:
             with open(_SP.path_for('bot_log', BOT_SUFFIX, D), 'a',
                       encoding='utf-8') as fp:
-                fp.write(json.dumps(rec, ensure_ascii=False) + '\n')
-        except OSError:
+                fp.write(json.dumps(
+                    rec, ensure_ascii=False, default=str) + '\n')
+        except Exception:
+            # Telemetry must never turn a valid poker hand into a failed hand.
+            # A later round still carries field/player state even if this one
+            # rich hand record could not be serialized.
             pass
 
     def _play_table(self, tb, fast=True):
