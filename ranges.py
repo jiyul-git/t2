@@ -1,10 +1,123 @@
 import random
+import math
 import zlib as _zlib
 import bot
 import preflop as pf
 
 ALL = bot._ALLCOMBOS
+
 _SORTED = sorted(ALL, key=lambda c: pf.PCT[pf.cls(list(c))])
+
+
+# ---------- weighted-range representation / legacy boundary ----------
+#
+# Canonical weighted form:
+#     {('As', 'Kd'): 1.0, ('Qh', 'Qs'): 0.35, ...}
+#
+# Weight is relative probability mass, not a normalized probability.  A common
+# scale factor is irrelevant.  Legacy list/set ranges remain accepted during
+# migration and are interpreted as one unit of mass per occurrence.
+#
+# IMPORTANT: legacy_range() refuses non-uniform weights.  That fail-closed rule
+# prevents a future weighted posterior from being silently flattened by an old
+# list-only consumer.
+
+def _range_combo(combo):
+    """One combo -> stable 2-card tuple without reordering the two cards."""
+    if not isinstance(combo, (list, tuple)) or len(combo) != 2:
+        raise ValueError('invalid range combo: %r' % (combo,))
+    a, b = combo
+    if not isinstance(a, str) or not isinstance(b, str):
+        raise ValueError('invalid range combo cards: %r' % (combo,))
+    if a == b:
+        raise ValueError('duplicate card in combo: %r' % (combo,))
+    return (a, b)
+
+
+def weighted_range(rng):
+    """Return canonical combo->mass mapping.
+
+    - legacy iterable: every occurrence contributes mass 1.0;
+      duplicates are aggregated rather than silently discarded.
+    - dict: positive finite masses are copied; zero mass is omitted.
+    - None/empty: {}.
+
+    The function does not normalize mass.  Consumers divide by range_mass()
+    when a probability is required.
+    """
+    if not rng:
+        return {}
+
+    out = {}
+    items = rng.items() if isinstance(rng, dict) else ((c, 1.0) for c in rng)
+    for combo, raw_w in items:
+        c = _range_combo(combo)
+        try:
+            w = float(raw_w)
+        except (TypeError, ValueError):
+            raise ValueError('invalid range weight for %r: %r' % (c, raw_w))
+        if not math.isfinite(w) or w < 0:
+            raise ValueError('invalid range weight for %r: %r' % (c, raw_w))
+        if w == 0:
+            continue
+        out[c] = out.get(c, 0.0) + w
+    return out
+
+
+def range_items(rng):
+    """Stable weighted items sorted by combo; safe for signatures/iteration."""
+    return sorted(weighted_range(rng).items(), key=lambda kv: kv[0])
+
+
+def range_mass(rng):
+    """Total probability mass (legacy list length when combos are unique)."""
+    return sum(w for _c, w in range_items(rng))
+
+
+def range_weight(rng, combo):
+    """Mass assigned to one combo."""
+    return weighted_range(rng).get(_range_combo(combo), 0.0)
+
+
+def range_is_uniform(rng, tol=1e-12):
+    """Whether all non-zero combos have the same mass."""
+    items = range_items(rng)
+    if len(items) <= 1:
+        return True
+    w0 = items[0][1]
+    return all(abs(w - w0) <= tol for _c, w in items[1:])
+
+
+def legacy_range(rng):
+    """List-only adapter for old consumers.
+
+    Non-uniform weighted input is rejected.  Silently dropping unequal weights
+    would recreate the exact representation bug this migration is meant to
+    remove.  Equal weights may be flattened because their distribution is
+    exactly the legacy uniform-combo distribution.
+
+    Dict insertion order is preserved here so a round-trip of a legacy list is
+    exact.  Callers that sample must still perform their existing deterministic
+    sort at the sampling boundary.
+    """
+    if not rng:
+        return []
+    if not isinstance(rng, dict):
+        return list(rng)
+    wr = weighted_range(rng)
+    if not range_is_uniform(wr):
+        raise ValueError('cannot flatten non-uniform weighted range')
+    return list(wr.keys())
+
+
+def range_filter(rng, keep):
+    """Filter combos while preserving their masses.
+
+    This is the primitive future narrowing code should use instead of set/list
+    reconstruction.  Return type is always canonical weighted form.
+    """
+    pred = keep if callable(keep) else (lambda c: c in keep)
+    return {c: w for c, w in range_items(rng) if pred(c)}
 
 def _def_thresholds(prof_type, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
                     raise_level=1, seats=8, ante=True):
