@@ -182,3 +182,37 @@ Temporary branch 종료 조건:
 **NOT TUNING YET.**
 
 구조/의미론 audit가 닫히기 전에는 광역 VPIP/PFR/bluff/personality 보정을 시작하지 않는다.
+
+## 10. GTO reference workflow
+
+GTO는 production personality/exploit을 튜닝하기 전의 **중립 기준선**으로 사용한다.
+
+Reference scope:
+- Hold'em tournament preflop 우선
+- table size 2-9
+- effective stack 1-600bb
+- main validation zone 5-300bb
+- 300-600bb는 ultra-deep tag로 별도 해석
+- postflop은 실제 리뷰 spot 기준으로 case-by-case 추가
+
+모든 reference row는 최소 다음을 보존한다:
+1. players / positions
+2. effective stacks
+3. blinds / ante
+4. action history
+5. allowed sizes
+6. source 또는 calculation method
+7. raise/call/fold frequencies
+8. source condition exact match 여부
+9. current T2 output
+10. discrepancy + decision
+
+Status labels:
+- `exact`: 조건 일치
+- `near`: 작은 mismatch, comparison only
+- `pending`: 미검증
+- `rejected`: tuning target으로 부적합
+
+단일 chart나 조건이 다른 solver 결과 하나로 production constant를 조정하지 않는다.
+실제 hand-review에서 얻은 reference는 `data/gto_scenarios.jsonl`에 저장한다.
+Mini-CFR/solver tooling이 존재하더라도 이 기록 규칙은 동일하다.
