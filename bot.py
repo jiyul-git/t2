@@ -152,6 +152,56 @@ def range_combos(pct, dead):
     n=int(len(_SCORED)*pct)
     return [c for c in _SCORED[:n] if c[0] not in dead and c[1] not in dead]
 
+def _filter_pool(pool, dead=None, sort_legacy=False):
+    """Filter one combo pool without discarding weighted mass.
+
+    Legacy iterable input remains a list. Weighted dict input remains a dict.
+    Dict keys are inserted in sorted order so seed/signature construction is stable.
+    """
+    dead = set(dead or ())
+    if isinstance(pool, dict):
+        out = {}
+        for combo, raw_w in sorted(pool.items(), key=lambda kv: kv[0]):
+            if combo[0] in dead or combo[1] in dead:
+                continue
+            w = float(raw_w)
+            if w > 0:
+                out[combo] = w
+        return out
+    vals = [c for c in (pool or [])
+            if c[0] not in dead and c[1] not in dead]
+    return sorted(vals) if sort_legacy else vals
+
+
+def _sample_pool_combo(rng, pool):
+    """Sample one combo from legacy-uniform or weighted pool.
+
+    Legacy lists use rng.choice() exactly as before. Uniform weighted dicts also
+    use rng.choice() on stable sorted support, preserving the legacy RNG path for
+    an equivalent sorted list. Non-uniform dicts use one cumulative random draw.
+    """
+    if not isinstance(pool, dict):
+        return rng.choice(pool)
+
+    items = [(c, float(w)) for c, w in sorted(pool.items(), key=lambda kv: kv[0])
+             if float(w) > 0]
+    if not items:
+        raise IndexError('cannot choose from empty weighted pool')
+
+    w0 = items[0][1]
+    if all(abs(w - w0) <= 1e-12 for _c, w in items[1:]):
+        return rng.choice([c for c, _w in items])
+
+    total = sum(w for _c, w in items)
+    x = rng.random() * total
+    acc = 0.0
+    for combo, w in items:
+        acc += w
+        if x < acc:
+            return combo
+    return items[-1][0]
+
+
 def equity_vs_pools(hero, board, pools, sims=500, seed=None):
     """에쿼티 몬테카를로의 유일한 구현.
 
@@ -168,7 +218,7 @@ def equity_vs_pools(hero, board, pools, sims=500, seed=None):
         used = set(dead); opps = []; ok = True
         for pool in pools:
             for _t in range(40):
-                c = rng.choice(pool)
+                c = _sample_pool_combo(rng, pool)
                 if c[0] not in used and c[1] not in used:
                     used.add(c[0]); used.add(c[1]); opps.append(list(c)); break
             else:
@@ -201,7 +251,7 @@ def equity_vs_combos(hero, board, opp_ranges, sims=500, seed=None):
     seed 도 내용에서 유도해 '같은 레인지 = 같은 추정치'를 보장한다.
     """
     dead = set(hero) | set(board)
-    pools = [sorted(c for c in r if c[0] not in dead and c[1] not in dead)
+    pools = [_filter_pool(r, dead, sort_legacy=True)
              for r in (opp_ranges or [])]
     if seed is None:
         seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
