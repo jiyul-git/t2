@@ -695,8 +695,10 @@ def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
         w_call = max(w_call, w_raise*slow)
     if r > tot*1.35:
         w_raise = 0.0
-    if r > tot:
-        w_call *= 0.15
+    # w_cont is already a smooth logistic around tot.  Do not add a second
+    # hard cliff immediately outside the defend threshold; that turned hands
+    # barely outside tot (e.g. A3o vs CO) from marginal continues into
+    # near-pure folds.
 
     total = w_raise + w_call + w_fold
     if total <= 0:
