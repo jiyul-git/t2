@@ -1802,8 +1802,8 @@ function playSequence(v, entries, streetChanged) {
  */
 const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
 
-/* 새 스트리트 보드를 본 뒤 첫 봇 액션까지의 호흡.
- * 계산은 이 시간에도 계속 진행되므로 체감만 완화하고 엔진 속도는 늦추지 않는다. */
+/* 새 스트리트/히어로 액션 뒤의 화면 호흡.
+ * 서버는 현재 모션의 ACK를 받기 전에는 다음 봇 판단을 시작하지 않는다. */
 const STREET_OPEN_PAUSE = 800;
 const HERO_ACTION_PAUSE = 800;
 
@@ -3324,13 +3324,24 @@ async function callStepStream(body, msg) {
 
   let queue = [];
   let playing = false;
-  let heroPauseUntil = Date.now() + HERO_ACTION_PAUSE;
+  let heroPauseUntil = 0;
+  let streamId = null;
   let finalPayload = null;
   let settled = false;
   let resolveDrain = null;
   const drained = new Promise((resolve) => {
     resolveDrain = resolve;
   });
+
+  const ackEvent = (e) => {
+    const seq = e && e._ackSeq;
+    if (!streamId || !seq) return;
+    fetch('/api/step-ack', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({stream_id: streamId, seq: seq})
+    }).catch(() => {});
+  };
 
   const publishPrev = () => {
     if (!base || !ss) return;
@@ -3409,6 +3420,7 @@ async function callStepStream(body, msg) {
       // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
       setTimeout(() => {
+        ackEvent(e);
         playing = false;
         playNext();
       }, 360 + STREET_OPEN_PAUSE);
@@ -3449,6 +3461,7 @@ async function callStepStream(body, msg) {
         publishPrev();
 
         setTimeout(() => {
+          ackEvent(e);
           playing = false;
           playNext();
         }, paceMs(e));
@@ -3476,6 +3489,7 @@ async function callStepStream(body, msg) {
       return;
     }
 
+    ackEvent(e);
     playing = false;
     playNext();
   };
@@ -3488,6 +3502,9 @@ async function callStepStream(body, msg) {
 
   setBusy(true, msg, true);
   try {
+    // HERO motion first; the first bot calculation starts only afterwards.
+    await new Promise((resolve) => setTimeout(resolve, HERO_ACTION_PAUSE));
+
     const res = await fetch('/api/step-stream', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -3523,8 +3540,10 @@ async function callStepStream(body, msg) {
         buf = buf.slice(nl + 1);
         if (!line) continue;
         const obj = JSON.parse(line);
-        if (obj.type === 'bot_action') {
-          pushEvent(obj.event);
+        if (obj.type === 'stream_start') {
+          streamId = obj.stream_id || null;
+        } else if (obj.type === 'bot_action') {
+          pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
         } else if (obj.type === 'final') {
           finalPayload = obj.payload;
           maybeFinish();
@@ -3538,8 +3557,11 @@ async function callStepStream(body, msg) {
     const tail = buf.trim();
     if (tail) {
       const obj = JSON.parse(tail);
-      if (obj.type === 'bot_action') pushEvent(obj.event);
-      else if (obj.type === 'final') {
+      if (obj.type === 'stream_start') {
+        streamId = obj.stream_id || null;
+      } else if (obj.type === 'bot_action') {
+        pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
+      } else if (obj.type === 'final') {
         finalPayload = obj.payload;
         maybeFinish();
       } else if (obj.type === 'error') {
