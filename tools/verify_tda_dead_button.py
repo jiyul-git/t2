@@ -3,6 +3,7 @@
 
 import fieldsim as FS
 import play
+import session as SE
 
 
 def _mk(live_seats, button, sb, bb, max_seat=9):
@@ -158,6 +159,18 @@ h = play.Hand(
 assert h.button == 2 and 'SB' not in h.seat_of and h.seat_of['BB'] == 4
 checks += 1
 
+# 15. TDA 21-A: split-pot odd chip은 BTN 왼쪽 첫 승자부터 최소칩 단위로.
+#     보드 로열플러시라 3명 전원 동률, 500을 100단위로 나누면
+#     기본 100씩 + odd 100씩을 post order의 첫 두 명(2,3)이 받는다.
+stacks = {1: 0, 2: 0, 3: 0}
+won, _ = SE.award_pots(
+    {1: 100, 2: 100, 3: 100},
+    {1: ['2c', '3d'], 2: ['4c', '5d'], 3: ['6c', '7d']},
+    ['As', 'Ks', 'Qs', 'Js', 'Ts'],
+    set(), stacks, dead=200, unit=100, odd_order=[2, 3, 1])
+assert won == {1: 100, 2: 200, 3: 200}, won
+checks += 1
+
 print({
     'checks': checks,
     'dead_button': True,
@@ -167,5 +180,6 @@ print({
     'balance_destination_not_sb': True,
     'broken_table_between_btn_sb_excluded': True,
     'rule36b_dead_button_maximize_incoming': True,
+    'odd_chip_left_of_button': True,
 })
 print('PASS TDA dead-button / heads-up / balance position contract')
