@@ -1,5 +1,6 @@
 """히어로가 직접 치는 실전 진행기. 필드 전체가 실제로 돌아간다."""
 import copy, json, os, random, math, time
+import telemetry_sync as TM
 import zlib as _zlib
 import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
 import formats as FM
@@ -155,6 +156,9 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
                  fmt=fmt)
     st = {'field': _dump(f), 'actions': [], 'decisions': [], 'hand_seed': None,
           'seed': seed,
+          'telemetry_session_id': '%s_%s' % (
+              time.strftime('%Y%m%d_%H%M%S'),
+              seed if seed is not None else random.randrange(10**9)),
           # 히어로가 직접 적은 봇 메모. pid 기준이라 자리 이동 뒤에도 같은
           # 플레이어를 따라간다. 봇 판단에는 읽히지 않고 기록용으로만 쓴다.
           'hero_memos': {},
@@ -207,6 +211,11 @@ def build_hand(st):
     h.table_id = tb.id
     h.table_max_seat = getattr(tb, 'max_seat', len(tb.seats))
     f.stamp(h)
+    _pids = [str(p['pid']) for p in alive]
+    h._telemetry_tilt_before = {
+        pid: copy.deepcopy(f.tilt.state.get(pid, {})) for pid in _pids
+    }
+    h._telemetry_book_before = copy.deepcopy(getattr(h.book, 'd', {}) or {})
     return f, tb, alive, h, hero_seat
 
 
