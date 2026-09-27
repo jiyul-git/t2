@@ -27,12 +27,13 @@ jobs:
       - name: Syntax
         run: |
           python3 -m py_compile \
-            bot.py ranges.py plan.py runner.py play.py \
+            bot.py ranges.py plan.py runner.py play.py session.py \
             tools/verify_weighted_range_adapter.py \
             tools/verify_weighted_sampling.py \
             tools/verify_weighted_aggregate_transform.py \
             tools/verify_weighted_boundaries.py \
-            tools/verify_prelogic_profile_boundary.py
+            tools/verify_prelogic_profile_boundary.py \
+            tools/verify_prelogic_execution_boundary.py
 
       - name: W0 adapter
         run: python3 tools/verify_weighted_range_adapter.py
@@ -48,6 +49,9 @@ jobs:
 
       - name: F7-C pre-logic profile boundary scaffold
         run: python3 tools/verify_prelogic_profile_boundary.py
+
+      - name: F7-D pre-logic execution boundary provenance
+        run: python3 tools/verify_prelogic_execution_boundary.py
 
       - name: Exact production fingerprint versus pre-W2 checkpoint
         env:
