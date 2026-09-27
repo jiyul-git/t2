@@ -161,14 +161,53 @@ def check_live_finish(seed=20260928):
     return {'live_remaining': f.remaining(), 'live_hand_no': f.hand_no}
 
 
+
+def check_single_table_finish(seed=20260929):
+    """Final table has no other-table worker and must never leave pending settle."""
+    L.new_game(entries=9, start_stack=30000, seed=seed)
+    callbacks = {'n': 0, 'other_tables': None}
+
+    def round_start(field_dump):
+        callbacks['n'] += 1
+        _ht, ots, _ops = L._round_owners(field_dump)
+        callbacks['other_tables'] = len(ots)
+
+    r = L.step(defer_others=True, on_round_start=round_start)
+    _assert(callbacks['n'] == 1, 'final-table round-start callback missing')
+    _assert(callbacks['other_tables'] == 0,
+            '9-player final table unexpectedly has other tables')
+
+    guard = 0
+    while not r.get('done'):
+        guard += 1
+        _assert(guard < 30, 'final-table HERO hand did not finish')
+        raw = r.get('raw') or {}
+        a = 'check' if float(raw.get('tocall') or 0) <= 0 else 'fold'
+        r = L.step(a, 0, defer_others=True)
+
+    st = L.load()
+    _assert(not st.get('others_pending'),
+            'single-table finish incorrectly left others_pending')
+    _assert('others_base' not in st,
+            'single-table finish incorrectly left others_base')
+    f = L._load_field(st['field'])
+    _assert(len([tb for tb in f.tables.values() if tb.n() > 0]) == 1,
+            'final table split after local settle')
+    _assert(f.total_chips() == f.entries * f.start_stack,
+            'single-table finish chip total changed')
+    return {'final_remaining': f.remaining(), 'final_hand_no': f.hand_no}
+
 def main():
     rows = [check_overlay(20260927), check_overlay(20260931)]
     live = check_live_finish()
+    final = check_single_table_finish()
     print('parallel table round: OK')
     for row in rows:
         print('  seed %(seed)s hero_table=%(hero_table)s other_tables=%(other_tables)s '
               'other_players=%(other_players)s remaining=%(remaining)s' % row)
     print('  live hand=%(live_hand_no)s remaining=%(live_remaining)s' % live)
+    print('  final-table hand=%(final_hand_no)s remaining=%(final_remaining)s no-pending=OK'
+          % final)
 
 
 if __name__ == '__main__':
