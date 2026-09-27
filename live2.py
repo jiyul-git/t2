@@ -67,8 +67,11 @@ def _load_field(d):
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
     f.notes = d.get('notes', []); f.errors = []
     f.players = {}
-    f._init_runtime(d.get('fmt'),
-                    d.get('tilt') if d.get('tilt_key') == 'pid' else None)
+    # tilt 내부 pid 상태도 중첩 dict다. 얕은 복사면 HandRun이 f.tilt를
+    # 갱신할 때 입력 field_dump 자체가 변해 round-start fingerprint가 흔들린다.
+    _tilt_in = (copy.deepcopy(d.get('tilt'))
+                if d.get('tilt_key') == 'pid' else None)
+    f._init_runtime(d.get('fmt'), _tilt_in)
     # 새 저장본은 max_seat 를 명시한다. 구 저장본은 저장된 좌석 슬롯 길이로
     # 추론해 진행 중인 8-max 세션이 standard=9 변경 때문에 중간에 변하지 않게 한다.
     _saved_max = d.get('max_seat')
@@ -98,8 +101,6 @@ def _load_field(d):
             elif len(tb.seats) > tb.max_seat:
                 raise ValueError('저장본 테이블 슬롯이 max_seat보다 큼: %d > %d'
                                  % (len(tb.seats), tb.max_seat))
-        # 새 저장본은 BTN/SB/BB 물리 마커를 모두 보존한다.
-        # 구 저장본은 SB/BB가 없으므로 한 번만 dead-SB migration 힌트를 쓴다.
         tb.restore_positions(
             v.get('button', 0), v.get('button_seat'),
             v.get('sb_seat'), v.get('bb_seat'),
@@ -212,6 +213,139 @@ def build_hand(st):
 def level_of(f): return f.level
 
 
+PARALLEL_TABLES_MODE = 'parallel_tables_v1'
+
+
+def _round_owners(field_dump):
+    """라운드 시작 스냅샷에서 HERO/기타 테이블의 소유 영역을 고정한다."""
+    hero_pid = int(field_dump['hero_pid'])
+    hp = field_dump['players'][str(hero_pid)]
+    hero_tid = int(hp['table'])
+    other_tids = []
+    other_pids = set()
+    for tid_s, td in (field_dump.get('tables') or {}).items():
+        tid = int(tid_s)
+        if tid == hero_tid:
+            continue
+        other_tids.append(tid)
+        for pid in td.get('pids') or []:
+            other_pids.add(int(pid))
+    return hero_tid, sorted(other_tids), sorted(other_pids)
+
+
+def compute_others_parallel(field_dump):
+    """라운드 시작 스냅샷에서 비-HERO 테이블만 진행한다.
+
+    탈락 수거/밸런싱은 하지 않는다. 반환값도 전체 field가 아니라
+    비-HERO 테이블이 소유한 player/table/tilt 부분만 담는다.
+    """
+    base = copy.deepcopy(field_dump)
+    f = _load_field(base)
+    f.notes = []
+    hero_tid, other_tids, other_pids = _round_owners(base)
+
+    _suf = FS.BOT_SUFFIX
+    _tmp = SP.pending_suffix(_suf, os.getpid())
+    FS.BOT_SUFFIX = _tmp
+    try:
+        f.step_others(settle=False)
+    finally:
+        FS.BOT_SUFFIX = _suf
+
+    out = _dump(f)
+    _p = SP.path_for('bot_log', _tmp, D)
+    _bot_log = ''
+    if os.path.exists(_p):
+        with open(_p, encoding='utf-8') as fp:
+            _bot_log = fp.read()
+        try: os.remove(_p)
+        except OSError: pass
+
+    players = {}
+    for pid in other_pids:
+        k = str(pid)
+        if k in out['players']:
+            players[k] = copy.deepcopy(out['players'][k])
+
+    tables = {}
+    for tid in other_tids:
+        k = str(tid)
+        if k in out['tables']:
+            tables[k] = copy.deepcopy(out['tables'][k])
+
+    tilt = {}
+    for pid in other_pids:
+        k = str(pid)
+        if k in (out.get('tilt') or {}):
+            tilt[k] = copy.deepcopy(out['tilt'][k])
+
+    return {
+        'mode': PARALLEL_TABLES_MODE,
+        'base_key': _others_key(base),
+        'hero_table': hero_tid,
+        'players': players,
+        'tables': tables,
+        'tilt': tilt,
+        'notes': list(f.notes),
+        'bot_log': _bot_log,
+    }
+
+
+def _overlay_parallel_dump(main_dump, base_dump, others):
+    """두 병렬 branch의 소유 영역만 합친다. 아직 bust/balance는 하지 않는다."""
+    if not isinstance(others, dict) or others.get('mode') != PARALLEL_TABLES_MODE:
+        raise ValueError('parallel worker result mode mismatch')
+    want = _others_key(base_dump)
+    if others.get('base_key') != want:
+        raise ValueError('parallel worker base key mismatch')
+
+    hero_tid, other_tids, other_pids = _round_owners(base_dump)
+    if int(others.get('hero_table', -1)) != hero_tid:
+        raise ValueError('parallel worker hero table mismatch')
+
+    expected_tables = {str(x) for x in other_tids}
+    expected_players = {str(x) for x in other_pids}
+    if set((others.get('tables') or {}).keys()) != expected_tables:
+        raise ValueError('parallel worker table ownership mismatch')
+    if set((others.get('players') or {}).keys()) != expected_players:
+        raise ValueError('parallel worker player ownership mismatch')
+
+    merged = copy.deepcopy(main_dump)
+    for pid, row in (others.get('players') or {}).items():
+        merged['players'][str(pid)] = copy.deepcopy(row)
+    for tid, row in (others.get('tables') or {}).items():
+        merged['tables'][str(tid)] = copy.deepcopy(row)
+
+    # HERO branch의 decay_all 이 다른 테이블 pid까지 건드렸을 수 있다.
+    # 비-HERO pid의 tilt는 worker 결과만 권위 있게 사용한다.
+    mt = merged.setdefault('tilt', {})
+    wt = others.get('tilt') or {}
+    for pid in expected_players:
+        mt.pop(pid, None)
+        if pid in wt:
+            mt[pid] = copy.deepcopy(wt[pid])
+    return merged
+
+
+def _merge_parallel_field(main_field, base_dump, others):
+    """HERO 결과 field에 비-HERO worker 소유 영역을 합치고 1회 settle 한다."""
+    merged = _overlay_parallel_dump(_dump(main_field), base_dump, others)
+    f2 = _load_field(merged)
+    f2.notes = []
+    f2._collect_busts()
+    f2._balance()
+    settle_notes = list(f2.notes)
+    f2.notes = []
+    return f2, list(others.get('notes') or []) + settle_notes
+
+
+def _append_bot_log(text):
+    if not text:
+        return
+    with open(SP.sidecar_path('bot_log'), 'a', encoding='utf-8') as fp:
+        fp.write(text)
+
+
 # ---------- 밀린 '다른 테이블 진행' ----------
 # finish 가 defer_others=True 로 불리면 step_others 를 건너뛰고 상태에
 # others_pending 표시만 남긴다. 실제 계산은 밖에서(워커 프로세스) 하고,
@@ -262,6 +396,71 @@ def _others_key(field_dump):
                                   separators=(',', ':')).encode())
 
 
+def _resume_parallel_others(st, others=None):
+    """병렬 라운드의 비-HERO 결과를 HERO 결과 field와 합친 뒤 settle 한다."""
+    base = st.get('others_base')
+    if not base:
+        # 구/손상 상태의 안전망. HERO 결과를 보존한 채 예전 순차 경로로 끝낸다.
+        legacy = compute_others(st['field'])
+        st['field'] = legacy['field']
+        _append_bot_log(legacy.get('bot_log'))
+        _new_notes = list(legacy.get('notes') or [])
+        how = 'fallback'
+        merged_f = _load_field(copy.deepcopy(st['field']))
+    else:
+        want = _others_key(base)
+        how = 'hit'
+        if others is None:
+            how = 'fallback'
+        elif (others.get('mode') != PARALLEL_TABLES_MODE
+              or others.get('base_key') != want):
+            how = 'mismatch'
+        if how != 'hit':
+            others = compute_others_parallel(base)
+
+        main_f = _load_field(copy.deepcopy(st['field']))
+        merged_f, _new_notes = _merge_parallel_field(
+            main_f, base, others)
+        st['field'] = _dump(merged_f)
+        _append_bot_log(others.get('bot_log'))
+
+    if st.pop('bust_pending', False):
+        _hero = merged_f.players.get(merged_f.hero_pid)
+        if _hero and _hero.get('stack', 0) <= 0:
+            if merged_f.hero_pid in merged_f.busted_order:
+                after = (
+                    len(merged_f.busted_order)
+                    - merged_f.busted_order.index(merged_f.hero_pid)
+                    - 1
+                )
+                rank = merged_f.remaining() + 1 + after
+            else:
+                rank = merged_f.remaining() + 1
+
+            st['busted'] = True
+            st['rank'] = rank
+            itm = ' (ITM!)' if rank <= merged_f.itm else ''
+            _new_notes.append(
+                '💀 탈락 — %d명 중 %d위%s'
+                % (merged_f.entries, rank, itm)
+            )
+
+    if _new_notes:
+        st['pending_notes'] = list(st.get('pending_notes') or []) + _new_notes
+
+    rec = st.pop('pending_archive', None)
+    if rec is not None:
+        rec['field'] = merged_f.status()
+        rec['notes'] = list(rec.get('notes') or []) + _new_notes
+        _archive_write(rec)
+
+    st.pop('others_pending', None)
+    st.pop('others_mode', None)
+    st.pop('others_base', None)
+    save(st)
+    return how
+
+
 def resume_others(st, others=None):
     """밀린 다른 테이블 진행을 마무리하고 상태에 반영한다.
 
@@ -271,6 +470,8 @@ def resume_others(st, others=None):
     """
     if not st.get('others_pending'):
         return None
+    if st.get('others_mode') == PARALLEL_TABLES_MODE:
+        return _resume_parallel_others(st, others)
     want = _others_key(st['field'])
     how = 'hit'
     if others is None:
@@ -327,12 +528,14 @@ def resume_others(st, others=None):
 
 
 # ---------- 진행 ----------
-def step(action=None, amount=0, defer_others=False, others=None):
+def step(action=None, amount=0, defer_others=False, others=None,
+         on_bot_action=None, on_round_start=None):
     st = load()
     # 밀린 진행이 있으면 **다음 핸드를 딜하기 전에** 반드시 끝낸다.
     # 서버가 죽어도 상태 파일의 others_pending 이 남아 여기서 복구된다.
     if st.get('others_pending'):
         resume_others(st, others)
+        others = None
     f = _load_field(st['field'])
 
     # worker 정산에서 히어로 탈락이 확정됐으면
@@ -393,13 +596,28 @@ def step(action=None, amount=0, defer_others=False, others=None):
         st['actions'] = []; st['decisions'] = []
         st['field'] = _dump(f)
         save(st)
+        # UI 서버는 이 순간 비-HERO 테이블 worker를 띄운다.
+        # 콜백 실패가 게임 진행을 막아서는 안 된다.
+        if on_round_start is not None:
+            try:
+                on_round_start(copy.deepcopy(st['field']))
+            except Exception:
+                pass
 
+    # build_hand/HandRun이 내부 상태를 바꿔도 worker 기준점은
+    # 반드시 라운드 시작 field 그대로여야 한다.
+    _round_base = copy.deepcopy(st['field'])
     f, tb, alive, h, hero_seat = build_hand(st)
+    # 저장된 HERO 액션을 재생하는 동안은 UI 진행 콜백을 끈다.
+    # 그렇지 않으면 과거 봇 액션을 현재 액션처럼 다시 스트리밍한다.
     run = SE.HandRun(h, decisions=st.get('decisions'))
     raw = run.start()
     for (a, amt) in st['actions']:
         if isinstance(raw, dict) and (raw.get('done') or raw.get('error')): break
         raw = run.send(a, amt)
+
+    # 여기부터가 이번 요청에서 처음 계산되는 구간이다.
+    run.on_bot_action = on_bot_action
 
     # 재생 중 기록된 액션이 불법이 됐으면 여기서 멈추고 정상 오류 응답으로 돌려준다.
     # 예전에는 오류 프레임에 **다음 기록 액션**을 그대로 먹였다. session 의
@@ -420,7 +638,8 @@ def step(action=None, amount=0, defer_others=False, others=None):
         raw = raw2
 
     if isinstance(raw, dict) and raw.get('done'):
-        return finish(st, f, tb, alive, h, run, defer_others=defer_others)
+        return finish(st, f, tb, alive, h, run, defer_others=defer_others,
+                      parallel_others=others, round_base=_round_base)
     return {'view': _render(raw, f, h, st), 'done': False, 'raw': raw}
 
 
@@ -502,7 +721,8 @@ def _opening_raw(h, run):
     }
 
 
-def finish(st, f, tb, alive, h, run, defer_others=False):
+def finish(st, f, tb, alive, h, run, defer_others=False,
+           parallel_others=None, round_base=None):
     res = run.result or {}
 
     try:
@@ -517,8 +737,7 @@ def finish(st, f, tb, alive, h, run, defer_others=False):
     for p in alive:
         s = tb.seat_of(p['pid'])
         if s: p['stack'] = int(h.stacks.get(s, p['stack']))
-    # 고정 좌석 기준으로 다음 딜러를 정한다. 배열 index +1은
-    # 이 뒤 탈락/밸런싱으로 좌석이 바뀔 때 BTN/SB/BB를 건너뛸 수 있다.
+    # 고정 좌석 기준으로 다음 딜러를 정한다.
     tb.advance_button()
     tb.hands += 1
 
@@ -528,28 +747,41 @@ def finish(st, f, tb, alive, h, run, defer_others=False):
 
     # 다른 테이블 진행.
     #
-    # V29까지는 히어로가 탈락한 순간만 defer를 끄고 여기서 모든 테이블을
-    # 동기적으로 계산했다. 그래서 올인콜 후 패배하면 브라우저는 결과도
-    # 못 받은 채 수십 초 멈출 수 있었다.
-    #
-    # 이제 탈락 여부와 관계없이 먼저 hero-table 결과를 반환하고,
-    # 다른 테이블은 worker에서 정산한다.
+    # 병렬 모드에서는 라운드 시작 스냅샷에서 worker가 이미 비-HERO 테이블을
+    # 계산하고 있다. 준비된 결과가 있으면 HERO 결과와 합친 뒤 여기서만
+    # bust 수거/밸런싱을 1회 수행한다.
     _hero_busted_now = (
         f.players[f.hero_pid]['stack'] <= 0
     )
+    _hero_notes = list(f.notes)
+    _parallel_notes = []
+    _round_base = copy.deepcopy(round_base if round_base is not None
+                                else (st.get('field') or {}))
 
-    if defer_others:
+    if defer_others and parallel_others is not None:
+        try:
+            f, _parallel_notes = _merge_parallel_field(
+                f, _round_base, parallel_others)
+            _append_bot_log(parallel_others.get('bot_log'))
+        except Exception:
+            # 잘못된/다른 라운드 결과는 절대 합치지 않는다.
+            parallel_others = None
+
+    if defer_others and parallel_others is None:
         st['others_pending'] = True
+        st['others_mode'] = PARALLEL_TABLES_MODE
+        # 서버가 worker 완료 전에 죽어도 같은 라운드 스냅샷에서 재계산한다.
+        st['others_base'] = _round_base
 
         if _hero_busted_now:
             st['bust_pending'] = True
 
-    else:
+    elif not defer_others:
         f.step_others()
         f._collect_busts()
         f._balance()
 
-    notes = list(f.notes)
+    notes = _hero_notes + _parallel_notes + list(f.notes)
     f.notes = []
 
     hero = f.players[f.hero_pid]
