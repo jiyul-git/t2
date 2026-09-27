@@ -18,6 +18,7 @@ os.environ["T2_BOT_LOG"] = "2"
 
 import live2 as L
 import persona as PS
+import preflop as PF
 import storage_paths as SP
 import telemetry_sync as TM
 
@@ -145,6 +146,18 @@ def main():
         })
     print("=== OTHER_TABLE_AUDIT ===")
     print(json.dumps(compact, ensure_ascii=False, sort_keys=True, default=str))
+
+    # Exact replay diagnostic for the suspicious table-2 BTN Q8s cold-call.
+    q = f.players[71]["prof"]
+    q8 = ["Qs", "8s"]
+    for nc in (0, 1):
+        lik = PF.defend_action_likelihoods(
+            q, "BTN", "HJ", q8, 146.0, 4.0, nc,
+            raise_level=1, stack_bb=146.0, exploit=None,
+            bf=1.0, seats=8, ante=False, opener_allin=False,
+            can_raise=True, pot_bb=(1.5 + 4.0 + 1.0), to_call_bb=4.0)
+        print("Q8S_DEFEND_NCALLERS_%d %s" % (
+            nc, json.dumps(lik, sort_keys=True, default=str)))
 
 
 if __name__ == "__main__":
