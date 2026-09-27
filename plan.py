@@ -1756,13 +1756,14 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 'action_kind': _event_action,
                 'size_frac': sz,
                 'facing_kind': (
-                    (response_context or {}).get('prior_facing_kind')
+                    (response_context or {}).get('raiser_facing_kind')
                     if _event_action == 'raise' else None),
                 'facing_size_frac': (
-                    (response_context or {}).get('facing_size_frac')
+                    (response_context or {}).get('raiser_facing_size_frac')
                     if _event_action == 'raise' else None),
                 'facing_price_frac': (
-                    _price_frac if _event_action == 'raise' else None),
+                    (response_context or {}).get('raiser_facing_price_frac')
+                    if _event_action == 'raise' else None),
                 'allin': bool((response_context or {}).get('facing_allin')),
                 'allin_raise': bool(
                     (response_context or {}).get('facing_allin_raise')),
