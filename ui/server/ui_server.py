@@ -861,12 +861,13 @@ class H(BaseHTTPRequestHandler):
                     500, {'error': '%s: %s' % (type(e).__name__, e)})
 
         if path == '/api/memos':
-            with LOCK:
-                try:
-                    return self._send(200, {'memos': _hero_memos()})
-                except Exception as e:
-                    traceback.print_exc()
-                    return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
+            # 조회는 마지막 원자적 상태 스냅샷만 읽는다. 저장(/api/memo)은
+            # 게임 상태와 충돌할 수 있으므로 아래 POST 경로에서 계속 LOCK한다.
+            try:
+                return self._send(200, {'memos': _hero_memos()})
+            except Exception as e:
+                traceback.print_exc()
+                return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
 
         if path == '/api/history':
             # 공개 관전 화면에서도 읽을 수 있는 sanitized 완료 핸드 기록.
