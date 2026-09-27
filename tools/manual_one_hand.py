@@ -274,6 +274,45 @@ def main():
                     } for h in rows3]
                     print("=== FOLLOWING_OTHER_TABLE_AUDIT ===")
                     print(json.dumps(audit3, ensure_ascii=False, sort_keys=True, default=str))
+                    nxt3 = L.step(defer_others=True)
+                    print("=== HAND4_HERO_DECISION ===")
+                    print(json.dumps(compact_raw(nxt3.get("raw")), ensure_ascii=False, sort_keys=True))
+                    print(nxt3.get("view") or "")
+                    hand4_path = ROOT / "tools" / "manual_hand4_actions.json"
+                    if hand4_path.exists():
+                        hand4_actions = json.loads(hand4_path.read_text(encoding="utf-8"))
+                        for act, amt in hand4_actions:
+                            if nxt3.get("done"):
+                                break
+                            nxt3 = L.step(str(act), int(amt), defer_others=True)
+                        if nxt3.get("done"):
+                            print("=== HAND4_HERO_HAND_DONE ===")
+                            print(json.dumps({"result": nxt3.get("result"), "view": nxt3.get("view")}, ensure_ascii=False, default=str))
+                            st4 = L.load()
+                            if st4.get("others_pending"):
+                                L.resume_others(st4, None)
+                            st4 = L.load()
+                            f4 = L._load_field(st4["field"])
+                            rows4 = TM.read_bot_round(SP.sidecar_path("bot_log"), f4.hand_no)
+                            audit4 = [{
+                                "table": h.get("table"),
+                                "pos": h.get("pos"),
+                                "hole": h.get("hole"),
+                                "board": h.get("board"),
+                                "full_log": h.get("full_log"),
+                                "result": h.get("result"),
+                                "reads": h.get("reads"),
+                                "range_fallback_audit": h.get("range_fallback_audit"),
+                                "intents": h.get("intents"),
+                                "plans": h.get("plans"),
+                                "pids": h.get("pids"),
+                            } for h in rows4]
+                            print("=== HAND4_OTHER_TABLE_AUDIT ===")
+                            print(json.dumps(audit4, ensure_ascii=False, sort_keys=True, default=str))
+                        else:
+                            print("=== HAND4_DECISION_CONTINUES ===")
+                            print(json.dumps(compact_raw(nxt3.get("raw")), ensure_ascii=False, sort_keys=True))
+                            print(nxt3.get("view") or "")
                 else:
                     print("=== FOLLOWING_HAND_DECISION_CONTINUES ===")
                     print(json.dumps(compact_raw(nxt2.get("raw")), ensure_ascii=False, sort_keys=True))
