@@ -115,18 +115,32 @@ def _icm_equity_subset(stacks, payouts):
     return res
 
 
+@lru_cache(maxsize=8192)
+def _icm_equity_cached(stacks_key, payouts_key):
+    """Hashable exact-ICM cache.
+
+    Final-table decisions ask for the same stack state repeatedly: observation,
+    action planning, replay reconstruction and multiple seats all reuse it.
+    Exact ICM is pure, so identical inputs must not redo the subset/recursive walk.
+    """
+    stacks = list(stacks_key)
+    payouts = list(payouts_key)
+    n = len(stacks)
+    k = min(len(payouts), n)
+    if n == 9 and _subset_path_prune_safe(stacks, k):
+        return tuple(_icm_equity_subset(stacks, payouts))
+    return tuple(_icm_equity_reference(stacks, payouts))
+
+
 def icm_equity(stacks, payouts):
     """Malmuth-Harville expected prize.
 
     Nine-player exact ICM is the production hot path after the 9-max migration.
-    Use subset DP when it is provably unaffected by the historical path-prune;
-    otherwise fall back to the historical recursion unchanged.
+    Identical exact states are cached; this changes no arithmetic or decision rule.
     """
-    n = len(stacks)
-    k = min(len(payouts), n)
-    if n == 9 and _subset_path_prune_safe(stacks, k):
-        return _icm_equity_subset(stacks, payouts)
-    return _icm_equity_reference(stacks, payouts)
+    sk = tuple(float(x) for x in stacks)
+    pk = tuple(float(x) for x in payouts)
+    return list(_icm_equity_cached(sk, pk))
 
 def icm_pressure(stacks, payouts, seat_idx):
     """0~1. 높을수록 그 스택은 리스크 회피(생존 가치)가 커야 한다.
