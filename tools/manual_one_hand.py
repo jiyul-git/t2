@@ -39,6 +39,46 @@ def compact_raw(raw):
     return {k: raw.get(k) for k in keep if k in raw}
 
 
+
+def force_max_logic_profiles():
+    """Manual audit only: identical maximum-skill profiles, neutral style."""
+    st = L.load()
+    for pv in (st.get("field", {}).get("players", {}) or {}).values():
+        prof = pv.get("prof") or {}
+
+        # All executable/calculation/perception concepts at maximum.
+        prof["concepts"] = {k: 10.0 for k in PS.ALL_CONCEPTS}
+
+        # Maximum knowledge/experience; neutral aggression latent so style does
+        # not contaminate pure-logic inspection.
+        prof["latent"] = {"study": 10.0, "aggro": 5.0, "exp": 10.0}
+
+        # Ability-like temperament axes maxed; style axes neutralized.
+        prof["temper"] = {
+            "aggression": 5.0,
+            "looseness": 5.0,
+            "gamble": 5.0,
+            "tilt_prone": 0.0,
+            "tilt_recovery": 10.0,
+            "discipline": 10.0,
+            "adaptability": 10.0,
+            "consistency": 10.0,
+            "attention": 10.0,
+            "slowplay_taste": 5.0,
+            "tilt_swing": 5.0,
+            "tilt_stack": 0.0,
+        }
+
+        # Refresh compatibility/derived fields used throughout the engine.
+        prof.update(PS.derive(prof))
+        pv["prof"] = prof
+
+    # Eliminate accumulated tilt/read-personality contamination in this audit.
+    st["field"]["tilt"] = {}
+    st["book"] = {}
+    L.save(st)
+
+
 def main():
     actions = json.loads(ACTIONS_PATH.read_text(encoding="utf-8"))
     if not isinstance(actions, list):
@@ -47,6 +87,7 @@ def main():
     L.new_game(
         entries=ENTRIES, start_stack=START_STACK, seed=SEED,
         hands_per_level=12, fmt="standard")
+    force_max_logic_profiles()
 
     out = L.step(defer_others=True)
     used = 0
