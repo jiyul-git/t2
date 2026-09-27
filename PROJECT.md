@@ -51,24 +51,25 @@ GTO 작업이 끝나기 전에는 master/test 정리 규칙으로 강제 merge/d
 - master/test로 코드를 merge하는 source로 취급하지 않는다.
 - telemetry 수집을 중단할 때 별도로 정리한다.
 
-## 3. Old branch cleanup status
+## 3. Branch cleanup status — COMPLETE
 
-2026-09-28 전수 비교 결과:
+2026-09-28 전수 비교 및 정리 완료:
 
-- GTO 2개와 `telemetry/live`를 제외한 모든 과거 작업 브랜치는 **master 또는 test 이력에 완전히 포함**되어 있다.
-- 삭제 대상 브랜치에 남아 있는 독립 고유 commit은 0개다.
-- 과거 diverged experiment의 코드는 test working tree에 적용하지 않았고, history만 보존했다.
+- GTO 2개와 `telemetry/live`를 제외한 모든 과거 작업 브랜치는 **master 또는 test 이력에 완전히 포함**됨을 확인했다.
+- 삭제 전 독립 고유 commit은 0개였다.
+- 과거 diverged experiment의 코드는 test working tree에 적용하지 않았고 history만 보존했다.
 - `ui-bot-pipeline`의 ancestry는 갈라져 있었지만 현재 master에 motion ACK, ThreadingHTTPServer, final-table ICM verifier, `app.js?v=67` 등 실제 기능이 존재함을 재확인했다.
+- 검증된 obsolete branch ref **61개를 실제 삭제 완료**했다.
+- branch 삭제에 사용한 one-shot GitHub Actions workflow는 실행 성공 후 저장소 working tree에서 즉시 제거했다.
 
-따라서 아래 네 역할 외의 branch에는 **새 commit 금지**:
+현재 존재하는 branch는 정확히 5개다:
 1. `master`
 2. `test`
-3. 진행 중 GTO 두 branch
-4. `telemetry/live`
+3. `chatgpt/gto-reference-20260928`
+4. `chatgpt/mini-cfr-solver-20260928`
+5. `telemetry/live`
 
-그 외 branch ref는 deletion-only다.
-
-GitHub branch 이름이 오래 남아 있더라도 source of truth로 사용하지 않는다.
+이 다섯 외의 과거 branch 이름은 더 이상 source of truth도, active ref도 아니다.
 
 ## 4. Promotion workflow
 
