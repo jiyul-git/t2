@@ -166,6 +166,43 @@ def main():
     print(json.dumps(compact_raw(nxt.get("raw")), ensure_ascii=False, sort_keys=True))
     print(nxt.get("view") or "")
 
+    next_path = ROOT / "tools" / "manual_next_hand_actions.json"
+    if next_path.exists():
+        next_actions = json.loads(next_path.read_text(encoding="utf-8"))
+        for act, amt in next_actions:
+            if nxt.get("done"):
+                break
+            nxt = L.step(str(act), int(amt), defer_others=True)
+        if nxt.get("done"):
+            print("=== NEXT_HERO_HAND_DONE ===")
+            print(json.dumps({"result": nxt.get("result"), "view": nxt.get("view")}, ensure_ascii=False, default=str))
+            st2 = L.load()
+            if st2.get("others_pending"):
+                L.resume_others(st2, None)
+            st2 = L.load()
+            f2 = L._load_field(st2["field"])
+            rows2 = TM.read_bot_round(SP.sidecar_path("bot_log"), f2.hand_no)
+            audit2 = [{
+                "table": h.get("table"),
+                "pos": h.get("pos"),
+                "hole": h.get("hole"),
+                "board": h.get("board"),
+                "full_log": h.get("full_log"),
+                "result": h.get("result"),
+                "reads": h.get("reads"),
+                "range_fallback_audit": h.get("range_fallback_audit"),
+            } for h in rows2]
+            print("=== NEXT_OTHER_TABLE_AUDIT ===")
+            print(json.dumps(audit2, ensure_ascii=False, sort_keys=True, default=str))
+            nxt2 = L.step(defer_others=True)
+            print("=== FOLLOWING_HERO_DECISION ===")
+            print(json.dumps(compact_raw(nxt2.get("raw")), ensure_ascii=False, sort_keys=True))
+            print(nxt2.get("view") or "")
+        else:
+            print("=== NEXT_HAND_DECISION_CONTINUES ===")
+            print(json.dumps(compact_raw(nxt.get("raw")), ensure_ascii=False, sort_keys=True))
+            print(nxt.get("view") or "")
+
 
 if __name__ == "__main__":
     main()
