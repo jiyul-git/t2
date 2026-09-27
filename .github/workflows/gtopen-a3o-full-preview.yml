@@ -1,0 +1,41 @@
+name: gtopen-a3o-full-preview
+on:
+  push:
+    branches:
+      - chatgpt/mini-cfr-solver-20260928
+    paths:
+      - tools/gtopen_a3o_preview_trigger.txt
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/mini-cfr-solver-20260928
+      - name: Build GTOpen server
+        working-directory: vendor/gtopen
+        run: cargo build --release -p server
+      - name: Start GTOpen
+        working-directory: vendor/gtopen
+        env:
+          PREFLOP_EQ_SAMPLES: "20000"
+          SOLVER_THREADS: "4"
+        run: |
+          ./target/release/gto-server >/tmp/gtopen.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:3737/api/preflop/capabilities >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Solve full-tree preview
+        env:
+          GTOPEN_ITERS: "2"
+          GTOPEN_CHECK: "2"
+          GTOPEN_TARGET: "999"
+          GTOPEN_MAX_RAISES: "3"
+          GTOPEN_ADD_ALLIN: "1"
+        run: python3 tools/run_gtopen_a3o.py
+      - name: Server log
+        if: always()
+        run: tail -80 /tmp/gtopen.log || true
