@@ -1802,8 +1802,9 @@ function playSequence(v, entries, streetChanged) {
  */
 const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
 
-/* 새 스트리트 보드를 본 뒤 첫 봇 액션까지의 호흡.
- * 계산은 이 시간에도 계속 진행되므로 체감만 완화하고 엔진 속도는 늦추지 않는다. */
+/* 새 스트리트/히어로 액션 뒤의 화면 호흡.
+ * 이제 이 시간은 표시만 늦추는 값이 아니다. 서버가 모션 종료 ACK를 받을 때까지
+ * 다음 봇 판단을 시작하지 않으므로 실제 계산 경계와도 일치한다. */
 const STREET_OPEN_PAUSE = 800;
 const HERO_ACTION_PAUSE = 800;
 
@@ -3315,13 +3316,29 @@ async function callStepStream(body, msg) {
 
   let queue = [];
   let playing = false;
-  let heroPauseUntil = Date.now() + HERO_ACTION_PAUSE;
+  let heroPauseUntil = 0;
+  let streamId = null;
   let finalPayload = null;
   let settled = false;
   let resolveDrain = null;
   const drained = new Promise((resolve) => {
     resolveDrain = resolve;
   });
+
+  const ackEvent = (e) => {
+    const seq = e && e._ackSeq;
+    if (!streamId || !seq) return;
+    // 게임 요청의 S.busy와 무관한 제어 ACK다. 응답을 기다릴 필요는 없고,
+    // 서버는 이 POST를 받은 뒤에만 다음 봇 판단을 시작한다.
+    fetch('/api/step-ack', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        stream_id: streamId,
+        seq: seq
+      })
+    }).catch(() => {});
+  };
 
   const publishPrev = () => {
     if (!base || !ss) return;
@@ -3400,6 +3417,7 @@ async function callStepStream(body, msg) {
       // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
       setTimeout(() => {
+        ackEvent(e);
         playing = false;
         playNext();
       }, 360 + STREET_OPEN_PAUSE);
@@ -3440,6 +3458,7 @@ async function callStepStream(body, msg) {
         publishPrev();
 
         setTimeout(() => {
+          ackEvent(e);
           playing = false;
           playNext();
         }, paceMs(e));
@@ -3467,6 +3486,7 @@ async function callStepStream(body, msg) {
       return;
     }
 
+    ackEvent(e);
     playing = false;
     playNext();
   };
@@ -3479,6 +3499,9 @@ async function callStepStream(body, msg) {
 
   setBusy(true, msg, true);
   try {
+    // 내 액션을 클릭 순간 먼저 그린 뒤, 그 모션/호흡이 끝나야 첫 봇 계산을 시작한다.
+    await new Promise((resolve) => setTimeout(resolve, HERO_ACTION_PAUSE));
+
     const res = await fetch('/api/step-stream', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -3514,8 +3537,13 @@ async function callStepStream(body, msg) {
         buf = buf.slice(nl + 1);
         if (!line) continue;
         const obj = JSON.parse(line);
-        if (obj.type === 'bot_action') {
-          pushEvent(obj.event);
+        if (obj.type === 'stream_start') {
+          streamId = obj.stream_id || null;
+        } else if (obj.type === 'bot_action') {
+          const ev = Object.assign({}, obj.event || {}, {
+            _ackSeq: obj.seq
+          });
+          pushEvent(ev);
         } else if (obj.type === 'final') {
           finalPayload = obj.payload;
           maybeFinish();
@@ -3529,8 +3557,14 @@ async function callStepStream(body, msg) {
     const tail = buf.trim();
     if (tail) {
       const obj = JSON.parse(tail);
-      if (obj.type === 'bot_action') pushEvent(obj.event);
-      else if (obj.type === 'final') {
+      if (obj.type === 'stream_start') {
+        streamId = obj.stream_id || null;
+      } else if (obj.type === 'bot_action') {
+        const ev = Object.assign({}, obj.event || {}, {
+          _ackSeq: obj.seq
+        });
+        pushEvent(ev);
+      } else if (obj.type === 'final') {
         finalPayload = obj.payload;
         maybeFinish();
       } else if (obj.type === 'error') {
