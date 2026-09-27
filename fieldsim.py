@@ -1,5 +1,5 @@
 """필드 전체를 실제로 돌린다. 확률 모델 없이 모든 탈락이 실제 파산에서 나온다."""
-import json, os, math, random
+import copy, json, os, math, random
 import play, session as SE, persona as PS, reads as RD, field as FLD
 import formats as FM, context as CTX, dynamics as DY
 from table import BLINDS, orders as position_orders
@@ -598,7 +598,12 @@ class Field:
 
     # ---------- 한 핸드 ----------
     # 봇 테이블 기록. 0=끄기, 1=요약, 2=전체
-    BOT_LOG = int(os.environ.get('T2_BOT_LOG', '1'))
+    # telemetry가 켜진 실행 폴더에서는 전체 테이블 판단 근거를 남겨야 하므로
+    # 환경변수가 더 낮아도 2를 강제한다. 전략에는 영향을 주지 않는다.
+    _telemetry_cfg = os.path.join(D, 'telemetry_config.json')
+    BOT_LOG = max(
+        int(os.environ.get('T2_BOT_LOG', '1')),
+        2 if os.path.exists(_telemetry_cfg) else 0)
 
     def _log_bot_hand(self, tb, h, run):
         """히어로 테이블 밖의 핸드도 남긴다.
@@ -612,16 +617,49 @@ class Field:
         res = getattr(run, 'result', None) or {}
         rec = {'hand_no': self.hand_no, 'table': tb.id, 'level': self.level,
                'blinds': list(self.blinds()),
+               'button': h.button,
+               'pos': {str(k): v for k, v in h.pos.items()},
                'pids': {str(k): v for k, v in getattr(h, 'seat_pid', {}).items()},
                'pot': res.get('pot'), 'how': res.get('how'),
                'winners': res.get('winners'),
                'board': res.get('board'),
+               'stacks_before': {
+                   str(k): v for k, v in getattr(h, '_start_stacks', {}).items()},
                'stacks': {str(k): v for k, v in h.stacks.items()}}
         if self.BOT_LOG >= 2:
-            rec['full_log'] = res.get('full_log', [])
-            rec['intents'] = getattr(h, 'intents', [])
-            rec['money_jump_obs'] = getattr(h, 'money_jump_obs', [])
             rec['hole'] = {str(k): v for k, v in h.hole.items()}
+            rec['full_log'] = res.get('full_log', [])
+            rec['full_action_meta'] = copy.deepcopy(
+                getattr(run, 'full_action_meta', []) or [])
+            rec['intents'] = copy.deepcopy(getattr(h, 'intents', []) or [])
+            rec['plans'] = copy.deepcopy(getattr(h, 'plans', {}) or {})
+            rec['decision_cache'] = copy.deepcopy(getattr(run, 'recorded', []) or [])
+            rec['money_jump_obs'] = copy.deepcopy(
+                getattr(h, 'money_jump_obs', []) or [])
+            rec['reads'] = copy.deepcopy(getattr(h, 'reads_log', []) or [])
+            rec['book_before'] = copy.deepcopy(
+                getattr(h, '_telemetry_book_before', {}) or {})
+            rec['book_after'] = copy.deepcopy(getattr(h.book, 'd', {}) or {})
+            rec['tilt_before'] = copy.deepcopy(
+                getattr(h, '_telemetry_tilt_before', {}) or {})
+            rec['tilt_after'] = copy.deepcopy(
+                getattr(h, '_telemetry_tilt_after', {}) or {})
+            rec['street_outcomes'] = copy.deepcopy(
+                getattr(h, 'street_outcomes', {}) or {})
+            rec['uncalled_returns'] = copy.deepcopy(
+                getattr(h, 'uncalled_returns', []) or [])
+            rec['field_context'] = {
+                'remaining': getattr(h, 'field_remaining', None),
+                'itm': getattr(h, 'field_itm', None),
+                'avg_stack': getattr(h, 'field_avg_stack', None),
+                'payout_flat': getattr(h, 'payout_flat', None),
+                'progress': getattr(h, 'progress', None),
+                'money_jump': copy.deepcopy(getattr(h, 'money_jump', None)),
+            }
+            rec['result'] = {
+                k: copy.deepcopy(v) for k, v in res.items()
+                if k != 'full_log'
+            }
         try:
             with open(_SP.path_for('bot_log', BOT_SUFFIX, D), 'a',
                       encoding='utf-8') as fp:
@@ -654,8 +692,19 @@ class Field:
             h.table_id = tb.id
             h.table_max_seat = tb.max_seat
             self.stamp(h)
+            _pids = [str(p['pid']) for p in alive]
+            h._telemetry_tilt_before = {
+                pid: copy.deepcopy(self.tilt.state.get(pid, {}))
+                for pid in _pids
+            }
+            h._telemetry_book_before = copy.deepcopy(
+                getattr(h.book, 'd', {}) or {})
             run = SE.HandRun(h)
             run.start()
+            h._telemetry_tilt_after = {
+                pid: copy.deepcopy(self.tilt.state.get(pid, {}))
+                for pid in _pids
+            }
             for p in alive:
                 s = tb.seat_of(p['pid'])
                 p['stack'] = int(h.stacks.get(s, p['stack']))
