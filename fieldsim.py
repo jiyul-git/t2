@@ -347,11 +347,21 @@ class Table:
         자리, 다음 BTN 마커는 직전 SB 자리다. 그래서 탈락하면 SB/BTN이
         자연스럽게 dead가 된다. HU는 BTN=SB이며 누구도 BB를 연속으로 내지 않는다.
         """
-        # 현재 핸드 마커가 구 상태라면 먼저 정상화한다.
-        self.reconcile_next_hand()
+        # 중요: hand 결과가 반영된 직후에는 현재 SB/BB 플레이어가
+        # 이미 stack=0일 수 있다. 여기서 reconcile_next_hand()를 호출하면
+        # '현재 핸드의 busted BB'를 다음 생존자로 먼저 당겨버린 뒤 다시
+        # advance해서 BB가 두 칸 이동한다. 현재 핸드의 물리 blind marker를
+        # 그대로 기준으로 다음 핸드를 계산해야 한다.
+        live = self._live_seats()
+        if (self.button_seat is None or self.bb_seat is None or
+                (len(live) > 2 and self.sb_seat is None)):
+            # 초기/legacy 상태에서 marker 자체가 없을 때만 복원한다.
+            self.restore_positions(
+                self.button, self.button_seat, self.sb_seat, self.bb_seat,
+                legacy_dead_hint=False)
+
         old_sb = self.sb_seat
         old_bb = self.bb_seat
-        live = self._live_seats()
 
         if len(live) < 2:
             if live:
