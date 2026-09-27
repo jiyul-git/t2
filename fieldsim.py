@@ -33,7 +33,6 @@ class Table:
         self.seats = [None] * self.max_seat
         for i, p in enumerate(players[:self.max_seat]):
             self.seats[i] = p['pid']
-            p['seat'] = i
         self.restore_positions(
             self.button, button_seat, sb_seat, bb_seat,
             legacy_dead_hint=False)
@@ -370,8 +369,11 @@ class Table:
             self.sb_seat = next_sb
             self.bb_seat = next_bb
         else:
-            self.button_seat = old_sb
+            # 2026 TDA Rule 36-B: normal blind progression을 보존하면서
+            # vacant seats를 최대한 쓸 수 있게 BTN은 새 SB 바로 전 물리 슬롯까지
+            # 전진할 수 있다. 따라서 오래된 dead gap에 BTN을 남겨두지 않는다.
             self.sb_seat = old_bb
+            self.button_seat = self._next_slot(self.sb_seat, -1)
             self.bb_seat = next_bb
             self._maximize_dead_button_for_open_seats()
 
