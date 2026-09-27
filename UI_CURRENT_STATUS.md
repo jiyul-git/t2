@@ -52,6 +52,14 @@ The temporary branch `chatgpt/tda-position-ui-20260927` is fully contained after
 
 Character/portrait assets and assignment logic remain frozen unless the user explicitly asks to change them.
 
+## Hero action dock checkpoint
+
+- Hero action controls are an absolute bottom dock, not a flex-flow sibling of the table.
+- A fixed 68px + safe-area slot is always reserved, so the table/background/hero geometry does not change when controls appear, disappear, or the hero folds.
+- On the hero's turn, only the control row animates upward; the table itself is not re-laid out.
+- Raise panel remains an overlay above the same dock.
+- Asset checkpoint: `style.css?v=50`, `app.js?v=66`.
+
 ## Side-seat checkpoint
 
 Current active values after the latest user-visible adjustment:
