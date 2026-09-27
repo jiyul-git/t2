@@ -7,6 +7,8 @@ on:
     paths:
       - tools/manual_one_hand.py
       - tools/manual_hand_actions.json
+      - tools/manual_next_hand_actions.json
+      - tools/manual_following_hand_actions.json
       - .github/workflows/manual-one-hand.yml
   workflow_dispatch:
 
