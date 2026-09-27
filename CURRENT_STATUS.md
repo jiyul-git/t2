@@ -56,28 +56,31 @@ Production ranges are still unweighted until that step begins.
 - F8-ICM semantic closure
 - final dead-code cleanup
 
-## Weighted-range migration — W0 implemented / local gate pending
+## Weighted-range migration — W0+W1 implemented / local gate pending
 
 The post-TDA architecture work has resumed.
 
-W0 is now implemented on the canonical engine line:
+W0 representation and W1 sampling are now implemented on the canonical engine line:
 
 - canonical representation: `{combo: relative_mass}`;
 - legacy lists map to unit mass per occurrence;
 - duplicate legacy occurrences aggregate mass rather than disappearing;
 - `legacy_range()` refuses to flatten non-uniform weighted input;
 - stable weighted iteration, total mass, per-combo mass and weight-preserving filter helpers added;
-- no production decision consumer has been switched to non-uniform weights yet.
+- weighted sampling is wired through equity/range-advantage/joint-relative/current-equity consumers;
+- legacy list input preserves the previous RNG-choice path;
+- no production range producer emits non-uniform weights yet, so this is still structural wiring rather than a strategy change.
 
 Design source: `WEIGHTED_RANGE_DESIGN.md`
 
-Local W0 gates:
+Local W0/W1 gates:
 
-- `python3 -m py_compile ranges.py tools/verify_weighted_range_adapter.py`
+- `python3 -m py_compile bot.py ranges.py plan.py tools/verify_weighted_range_adapter.py tools/verify_weighted_sampling.py`
 - `python3 tools/verify_weighted_range_adapter.py`
+- `python3 tools/verify_weighted_sampling.py`
 - `python3 tools/regress.py check --baseline current`
 
-W0 exit condition is exact existing regression behavior plus adapter contract PASS. Then W1 converts weighted sampling consumers one family at a time.
+Exit condition is adapter PASS + weighted-sampling exact legacy parity + unchanged frozen regression. Then proceed directly to W2/W3.
 
 ## Balance status
 
