@@ -1072,44 +1072,34 @@ class HandRun:
 
     def _acts_of(self, seat, upto_street=None, current_street=None,
                      current_log=None, current_meta=None):
-        """그 좌석의 공개 포스트플랍 액션 [(street, action, size_frac), ...].
+        """그 좌석의 canonical postflop event 이력.
 
-        size_frac 은 항상 **그 액션에서 새로 넣은 칩 / 액션 직전 팟**이다.
-
-        완료된 스트리트는 full_action_meta 를 우선한다. full_log 의 amount 는
-        bet/raise target 좌표라, 다음 스트리트에서 target/street-start-pot 으로
-        읽으면 액션 크기가 부풀 수 있다.
-
-        raw 'allin' 문자열도 그대로 쓰지 않는다. all-in call은 call,
-        가격을 올린 all-in은 raise로 정규화해야 상대 레인지가 맞게 좁혀진다.
+        새 경로는 dict event를 반환해 facing/raise depth/all-in 정보를 보존한다.
+        meta가 없는 구형 외부 호출만 legacy tuple로 물러난다.
         """
         out = []
         _ord = {'flop': 0, 'turn': 1, 'river': 2}
 
         full_meta = list(getattr(self, 'full_action_meta', []) or [])
         if full_meta:
-            added = {}
-            for m in full_meta:
-                stt = m.get('street')
-                if stt not in _ord:
-                    continue
+            for stt in ('flop', 'turn', 'river'):
                 if (upto_street is not None and upto_street in _ord
                         and _ord[stt] > _ord[upto_street]):
                     continue
-                inc = float(m.get('increment', 0) or 0)
-                before = (float((self._pot_at or {}).get(stt, 0) or 0)
-                          + added.get(stt, 0.0))
-                if m.get('seat') == seat:
-                    a = _observed_postflop_action(m)
-                    sz = inc / max(1.0, before) if inc > 0 else 0.0
-                    out.append((stt, a, sz))
-                added[stt] = added.get(stt, 0.0) + inc
+                rows = [m for m in full_meta if m.get('street') == stt]
+                if not rows:
+                    continue
+                events = AE.postflop_events(
+                    rows, street=stt,
+                    pot_start=float((self._pot_at or {}).get(stt, 0) or 0))
+                out.extend(e for e in events if e.get('seat') == seat)
         else:
-            # 구형/외부 기록 폴백.
+            # 구형/외부 기록 폴백. 정보가 없는 것은 발명하지 않는다.
             for (stt, x, a, amt) in (getattr(self, 'full_log', []) or []):
                 if stt == 'preflop' or x != seat:
                     continue
-                if (upto_street is not None and stt in _ord and upto_street in _ord
+                if (upto_street is not None and stt in _ord
+                        and upto_street in _ord
                         and _ord[stt] > _ord[upto_street]):
                     continue
                 pot = (self._pot_at or {}).get(stt, 0)
@@ -1118,20 +1108,16 @@ class HandRun:
 
         if current_street:
             if current_meta:
-                added = 0.0
-                pot0 = float((self._pot_at or {}).get(current_street, 0) or 0)
-                for m in current_meta:
-                    inc = float(m.get('increment', 0) or 0)
-                    before = pot0 + added
-                    if m.get('seat') == seat:
-                        a = _observed_postflop_action(m)
-                        sz = inc / max(1.0, before) if inc > 0 else 0.0
-                        out.append((current_street, a, sz))
-                    added += inc
+                events = AE.postflop_events(
+                    current_meta, street=current_street,
+                    pot_start=float(
+                        (self._pot_at or {}).get(current_street, 0) or 0))
+                out.extend(e for e in events if e.get('seat') == seat)
             elif current_log:
-                # meta가 없는 외부 호출용 폴백.
+                # meta 없는 외부 호출용 legacy 폴백.
                 contrib = {}
-                pot0 = float((self._pot_at or {}).get(current_street, 0) or 0)
+                pot0 = float(
+                    (self._pot_at or {}).get(current_street, 0) or 0)
                 for x, a, amt in current_log:
                     before = pot0 + sum(contrib.values())
                     prev = contrib.get(x, 0.0)
