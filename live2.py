@@ -468,7 +468,7 @@ def _resume_parallel_others(st, others=None):
             TM.emit_round(
                 st, merged_f, rec,
                 locals().get('_telemetry_bot_rows', []),
-                source='resume_parallel')
+                source='resume_parallel', round_before=base)
         except Exception:
             pass
 
@@ -869,7 +869,9 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             _bot_rows = TM.read_bot_round(
                 SP.sidecar_path('bot_log'), f.hand_no)
         try:
-            TM.emit_round(st, f, _hero_rec, _bot_rows, source='finish')
+            TM.emit_round(
+                st, f, _hero_rec, _bot_rows,
+                source='finish', round_before=_round_base)
         except Exception:
             pass
     if st.get('pending_archive'):
