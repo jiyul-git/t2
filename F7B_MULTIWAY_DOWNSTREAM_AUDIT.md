@@ -1639,3 +1639,423 @@ Interpretation:
   pre-hand state and therefore cannot be promoted as a behavior-preserving cleanup;
 - regardless of this result, the stochastic `defend_decision` vs hard-slice observer posterior
   mismatch remains open and must be resolved before B1D is fully closed.
+
+
+### B1D5 diagnostic implementation correction
+
+The first B1D5 implementation attempted `copy.deepcopy(Tournament)`.
+That is invalid because the tournament object graph contains a generator and therefore cannot be
+pickled/deep-copied. This was a **diagnostic implementation bug**, not a production failure.
+
+B1D4 already fixed the sequentially changed target set to six hands:
+
+- 3000:25
+- 3002:36,37,48
+- 3004:25,46
+
+The corrected B1D5 therefore reconstructs two fresh tournaments from the same seed for each target,
+replays **production only** through the preceding hand, verifies the pre-hand core state matches,
+then enables the overlap candidate for the target hand in only one copy. No candidate state is fed
+forward and no Tournament deepcopy is used.
+
+
+---
+
+## F7-B1D5 result — overlap fallback is a direct strategy change
+
+User validation on local commit `f66e08a`:
+
+- preregistered target hands: 6;
+- pre-hand state mismatches: **0**;
+- candidate empty calls: **15**;
+- candidate recovered calls: **15**;
+- direct changed hands: **3 / 6**.
+
+Direct differences on identical pre-hand tournament states:
+
+- seed 3000 hand 25: flop seat 8 bet **7300 -> 9100**;
+- seed 3002 hand 36: preflop seat 3 **call 31900 -> fold**;
+- seed 3004 hand 25: flop seat 3 **check -> bet 6900**.
+
+The other preregistered targets (3002:37, 3002:48, 3004:46) had no direct
+difference; in those target-hand replays the overlap candidate was not invoked.
+
+Therefore the B1D4 percentile-bin overlap fallback is **not** a
+behavior-preserving representation cleanup. It may still be a strategically
+better model, but promotion would be an intentional policy change and needs
+semantics/attribution of its own.
+
+The stochastic-policy posterior mismatch remains open.
+
+---
+
+## F7-B1D6 — stochastic preflop posterior representation preregistration
+
+### Question
+
+The current observer range is an unweighted unique-combo list.
+
+But `defend_decision` is a mixed policy: even at a fixed public state, different
+hand classes have different probabilities of producing the observed call/3bet.
+
+The correct observer quantity is therefore proportional to:
+
+```
+P(hand combo | observed action, public model)
+  ∝ P(observed action | hand combo, public model)
+    * P(hand combo | legal cards)
+```
+
+A hard percentile slice, including the B1D4 overlap fallback, represents only a
+support set. It does not represent those unequal posterior weights.
+
+### Diagnostic scope
+
+`tools/measure_f7b_empty_range_posterior.py` runs the same default fixture:
+
+```
+seeds 3000-3011
+50 hands per seed
+```
+
+It changes no production behavior.
+
+For each live HU empty-seat update it recovers the exact `preflop_range` inputs
+used by the observer and evaluates the 3bet-category likelihood of every legal
+starting-hand class under the current mixed-policy equations.
+
+The observer-model likelihood intentionally uses only information available to
+the current range API:
+
+- perceived/range profile passed to `preflop_range`;
+- position;
+- stack depth supplied to the range reconstruction;
+- opener position and open size;
+- caller count;
+- raise level;
+- seats / ante.
+
+It does **not** import hidden actor state.
+
+Because `preflop_range` does not currently receive the actor's private exploit
+read, `can_raise`, or `opener_allin`, the first diagnostic model fixes those
+missing inputs to the ordinary defend baseline:
+
+```
+exploit       = None
+can_raise     = True
+opener_allin  = False
+```
+
+That limitation is part of the audit result, not something to hide by reading
+the actual opponent persona.
+
+### Quantities reported
+
+For each empty live reconstruction:
+
+- whether the observed 3bet has positive model-implied posterior mass;
+- number of hand classes / combos with nonzero action likelihood;
+- number of top classes needed for 50%, 90%, and 95% posterior mass;
+- B1D4 overlap candidate combo count;
+- posterior mass retained by the overlap candidate;
+- posterior mass outside the overlap candidate;
+- minimum and maximum nonzero action likelihood;
+- max/min likelihood ratio;
+- top posterior-mass hand classes;
+- whether a unique unweighted combo list could exactly represent the posterior.
+
+### Exact representability rule
+
+No arbitrary support cutoff is introduced.
+
+An unweighted unique-combo list can exactly represent this posterior only if all
+legal combos with nonzero action likelihood have the **same likelihood**.
+
+If the likelihoods differ, assigning each included combo equal downstream
+sampling probability is structurally incapable of representing the stochastic
+posterior. In that case B1D cannot be closed by another hard-slice patch; it
+requires a separate weighted-range representation design.
+
+Likewise, the overlap fallback is an exact representation only if:
+
+1. its support equals the full nonzero posterior support; and
+2. those nonzero likelihoods are equal.
+
+No production consumer is activated in B1D6.
+
+
+---
+
+## F7-B1D6 result — unweighted hard-slice representation is insufficient
+
+User validation on local commit `46d796a` completed the preregistered
+`3000-3011 × 50 hands` fixture with a clean working tree.
+
+Observed live HU empty-seat updates:
+
+```
+hu_empty_updates              11
+posterior_evaluated           11
+posterior_positive            11
+unweighted_exact_impossible    9
+unweighted_exact_possible      2
+overlap_not_exact             11
+```
+
+The B1D4 overlap candidate retained between **10.187% and 100%** of the
+observer-model posterior mass. Therefore the omitted posterior mass ranged from
+**0% to 89.813%**.
+
+Representative unequal action likelihoods within a single observed 3bet
+posterior included:
+
+- 0.2028 -> 0.6043 (max/min 2.98x);
+- 0.3538 -> 0.7731 (2.18x);
+- 0.3538 -> 0.6066 (1.71x);
+- 0.5508 -> 0.8840 (1.60x).
+
+Those probabilities are not equal, so a unique unweighted combo list would
+sample the support with the wrong conditional distribution.
+
+The two `unweighted_exact_possible` observations were degenerate one-class
+posteriors: only AA had positive likelihood. Even there, the B1D4 overlap
+candidate was **not** exact: the true live support was 6 AA combos while the
+overlap candidate contained 10 combos. Hence `overlap_not_exact == 11/11`.
+
+### B1D6 conclusion
+
+The empty-range symptom is not only a percentile endpoint discretization bug.
+It exposes a deeper mismatch:
+
+```
+action generator: stochastic mixed policy
+observer range:   deterministic hard slice + uniform combo sampling
+```
+
+Therefore:
+
+- the B1D4 percentile-overlap fallback is rejected as a cleanup repair;
+- another hard cutoff/support patch cannot close B1D;
+- the correct repair direction requires action-likelihood weights;
+- production must not receive those weights until the likelihood source and
+  downstream weighted-range contract are defined and verified.
+
+The B1D6 diagnostic used the current observer API's available information and
+therefore fixed `exploit=None`, `can_raise=True`, and
+`opener_allin=False`. That limitation does **not** justify reading hidden actor
+state. Public context such as legal raise rights and facing-all-in state should
+instead be propagated explicitly in the observer model.
+
+---
+
+## F7-B1D7 — shared policy likelihood + weighted-range contract
+
+B1D7 is a design/consumer audit. No production strategy change is allowed.
+
+### A. One stochastic policy source
+
+The mixed-action equations currently live inside `preflop.defend_decision`.
+The observer posterior must not keep a second copied version of those formulas.
+
+The target architecture is a deterministic, RNG-free helper that returns the
+action-category likelihoods for a supplied hand and decision context.
+
+At minimum it must expose the probability mass for:
+
+```
+fold
+call
+attack   # 3bet / raise-form shove, because postflop role reconstruction maps both to 3bet
+```
+
+The helper must share the exact threshold/mixed-policy semantics used by
+`defend_decision`. Wiring it into production action generation is a later
+behavior-preservation step; B1D7 itself does not change RNG consumption.
+
+The observer version may use only its modeled profile plus public decision
+context. It must not inspect the target player's hidden read book/persona.
+
+Public context already recorded in `pf_seed`, but not currently propagated
+through `preflop_range`, includes:
+
+- `pf_can_raise`;
+- `pf_facing_allin`;
+- `pf_pot_bb`;
+- `pf_to_call_bb`.
+
+Those fields are eligible observer inputs because they are public game-state
+facts. A target player's private `exploit` read is not.
+
+### B. Weighted range representation requirement
+
+A weighted range must preserve a nonnegative weight per legal combo. Relative
+weights are sufficient; normalization may be lazy.
+
+It must provide deterministic semantics for:
+
+- support iteration;
+- support cardinality;
+- total mass;
+- combo lookup;
+- weighted sampling;
+- dead-card filtering;
+- subset/filter transforms while retaining weights;
+- deterministic content signature that includes weights.
+
+A legacy plain combo list is equivalent to a weighted range with equal weights.
+
+### C. Current consumers that would silently destroy weights
+
+Static source audit identified four classes.
+
+**1. Uniform samplers — must become weight-aware**
+
+- `bot.equity_vs_pools`;
+- `ranges.range_advantage`;
+- `ranges.joint_range_advantage`;
+- `plan.joint_relative_strength`;
+- `plan._eq_current`;
+- the downstream `bot.equity_vs_combos` path.
+
+All currently use `rng.choice(pool)` after converting the range to a plain
+list.
+
+**2. Aggregate metrics — counts must become weighted mass**
+
+- `plan.relative_strength`;
+- `ranges._strong_share` / `nut_advantage`;
+- `ranges.blocker_score`;
+- `ranges.blocker_effect`;
+- `ranges.joint_blocker_effect`.
+
+These currently treat each combo as one equal observation.
+
+**3. Postflop range transforms — must preserve inherited weights**
+
+- `ranges._ranked`;
+- `_bet_range`;
+- `_continue_range`;
+- `_call_range`;
+- `_check_range`;
+- `perceived_range`;
+- `narrow_by_actions`;
+- `runner.adjust_range_by_history`.
+
+A subset operation may remove combos, but surviving posterior weights must not
+silently reset to uniform.
+
+**4. Representation/provenance sites — must stop collapsing to sets/lists**
+
+- `session.py: sorted(set(orange))`;
+- locked-range `sorted(set(...))`;
+- `plan._normalize_opp_pools: list(r)`;
+- `plan._range_sig` and opponent-pool signatures;
+- all archive fields that currently record only `len(range)`.
+
+For weighted ranges, records must distinguish at least support size from
+weighted content signature. A set/list conversion that discards weights is a
+hard error, not an allowed compatibility path.
+
+### D. Migration rule
+
+Do not replace every list in one patch.
+
+The safe order is:
+
+1. define/test the RNG-free defend likelihood helper in shadow mode;
+2. define the weighted-range data contract and legacy-uniform adapter;
+3. make signatures/filtering weight-preserving;
+4. convert equity/relative-strength samplers;
+5. convert nut/blocker aggregate metrics;
+6. convert postflop narrowing/history transforms;
+7. only then let observed preflop actions construct weighted posterior ranges;
+8. run direct paired attribution before any production promotion.
+
+Until step 7, production ranges remain the existing unweighted lists.
+
+
+### B1D7-A implementation — RNG-free likelihood shadow
+
+Status: **IMPLEMENTED / local verification pending.**
+
+Added `preflop.defend_action_likelihoods(...)`.
+
+Properties:
+
+- consumes no RNG;
+- returns normalized `attack / call / fold` probabilities;
+- treats hot-zone reshove as an attack probability that precedes the ordinary mixed policy;
+- keeps call-off as a deterministic one-hot call/fold category;
+- accepts actor-side `exploit` explicitly but does not read any hidden/global opponent state;
+- exposes raw mixed weights and hot-attack probability for exact branch verification;
+- does not change `defend_decision` control flow or RNG consumption in this step.
+
+Added `tools/verify_f7b_defend_likelihood.py`.
+
+The verifier compares the shadow contract against the current live
+`defend_decision` branch semantics using scripted RNG rolls across:
+
+- every preflop hand class;
+- multiple generated personas;
+- multiple defender/opener positions;
+- hot-zone / normal / deep stacks;
+- raise levels 1 and 2;
+- caller counts 0 and 1;
+- positive/negative/no exploit contexts;
+- explicit call-off and pure-short-shove contexts.
+
+Acceptance:
+
+- all returned probabilities finite, nonnegative and sum to 1;
+- every scripted live action category matches the helper boundary;
+- call-off category parity is exact;
+- production `defend_decision` remains unchanged.
+
+Only after this verifier passes may the production action generator itself be
+rewired to consume the shared helper. Weighted-range representation remains the
+next step after that behavior-preserving wiring.
+
+
+### B1D7-B implementation — production defend rewired to the shared likelihood
+
+Status: **IMPLEMENTED / exact behavior+RNG parity pending.**
+
+After B1D7-A passed locally with:
+
+```
+probability_invariants   97,344
+scripted_branch_checks  164,444
+calloff_checks              676
+hotzone_positive_states    2,598
+mismatches                     0
+```
+
+`preflop.defend_decision` was structurally reduced to an execution layer.
+
+It now:
+
+1. calls `defend_action_likelihoods(...)` once;
+2. preserves the legacy hot-zone RNG roll before the mixed-policy roll;
+3. consumes the helper's raw `w_raise / w_call / w_fold` values rather than
+   recomputing threshold/exploit/slowplay math locally;
+4. invokes `raise_form` only after attack selection, as before;
+5. keeps call-off RNG-free.
+
+No policy coefficient, threshold, sizing formula or action category was changed.
+
+`tools/verify_f7b_defend_rewire.py` compares the rewired implementation against
+the user-validated pre-rewire checkpoint `5eb848c`.
+
+For every sampled state it requires exact equality of:
+
+- returned action tuple, including attack sizing;
+- final `random.Random` state.
+
+A mismatch in either is a wiring regression.
+
+B1D7-B may close only after:
+
+- `tools/verify_f7b_defend_likelihood.py` still passes;
+- `tools/verify_f7b_defend_rewire.py` reports zero action/RNG mismatches;
+- working tree is clean.
