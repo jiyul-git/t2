@@ -1,0 +1,60 @@
+name: vendor-gtopen-snapshot
+on:
+  push:
+    branches:
+      - chatgpt/mini-cfr-solver-20260928
+    paths:
+      - tools/gtopen_vendor_trigger.txt
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/mini-cfr-solver-20260928
+          fetch-depth: 0
+      - name: Clone pinned GTOpen
+        run: |
+          rm -rf /tmp/GTOpen
+          git clone https://github.com/MatthewPDingle/GTOpen.git /tmp/GTOpen
+          cd /tmp/GTOpen
+          git checkout b69ea07c79884fc598757dc45c712e73976db810
+      - name: Copy runnable source snapshot
+        run: |
+          rm -rf vendor/gtopen
+          mkdir -p vendor/gtopen
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='research' \
+            --exclude='cache' \
+            --exclude='target' \
+            /tmp/GTOpen/ vendor/gtopen/
+          cat > vendor/gtopen/VENDORED_FROM.md <<'EOF'
+          # Vendored GTOpen snapshot
+
+          Source repository: https://github.com/MatthewPDingle/GTOpen
+          Source commit: b69ea07c79884fc598757dc45c712e73976db810
+          Imported: 2026-09-28
+
+          Purpose: private/non-commercial research reference for the t2 poker project.
+
+          License note:
+          - Upstream README describes the project as open-source.
+          - No explicit root LICENSE file or Cargo license declaration was found at the pinned commit during import.
+          - Keep this source isolated under vendor/gtopen and do not redistribute or commercialize it unless upstream licensing terms are clarified.
+
+          Included: runnable source tree except research history, caches and build artifacts.
+          EOF
+      - name: Commit snapshot
+        run: |
+          git config user.name "chatgpt-vendor"
+          git config user.email "actions@users.noreply.github.com"
+          git add vendor/gtopen
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "vendor: snapshot GTOpen runnable source"
+          git push origin HEAD:chatgpt/mini-cfr-solver-20260928
