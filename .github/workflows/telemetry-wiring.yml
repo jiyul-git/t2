@@ -29,7 +29,7 @@ jobs:
         run: python3 tools/verify_tournament_telemetry.py
 
       - name: Read/range semantic regressions
-        run: python3 tools/verify_read_range_semantics.py
+        run: python3 -m tools.verify_read_range_semantics
 
       - name: Strategy regression
         run: python3 tools/regress.py check --baseline current
