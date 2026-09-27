@@ -46,7 +46,7 @@ html, body {
 .barrow { display: flex; justify-content: space-between; align-items: center; gap: 7px; }
 .barrow:first-child { min-height: 19px; line-height: 1.05; }
 .barrow + .barrow { margin-top: 0; }
-.topsub { min-height: 25px; }
+.topsub { min-height: 25px; justify-content:flex-end; }
 .topactions { display:flex; align-items:center; gap:4px; flex:0 0 auto; }
 .topactions button {
   flex:0 0 auto; min-width:42px; width:auto; height:32px; min-height:32px;
@@ -57,7 +57,7 @@ html, body {
 #lvl { font-weight: 600; letter-spacing: .1px; font-size:12px; }
 #lvl .ante { color: var(--dim); font-weight: 400; }
 #handno { color: var(--dim); font-variant-numeric: tabular-nums; font-size:10px; }
-#fieldline { color:var(--dim); font-size:10px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#fieldline { display:none; }
 #fieldline .bubblewarn { color: var(--gold); }
 #notes { display: none; }
 
@@ -554,3 +554,72 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
   min-width: 42px;
   font-size: 8px;
 }
+
+
+/* ---------- 전체 스택 순위 drawer ----------
+   테이블을 오른쪽으로 스와이프하면 왼쪽에서 별도 창으로 열린다. */
+#rankScrim {
+  position:absolute; inset:0; z-index:34;
+  background:rgba(4,10,8,.58);
+  backdrop-filter:blur(1px);
+}
+#rankScrim[hidden] { display:none; }
+
+#rankDrawer {
+  position:absolute; left:0; top:0; bottom:0; z-index:35;
+  width:min(90vw, 380px);
+  background:#0f1916;
+  border-right:1px solid var(--line);
+  box-shadow:12px 0 34px rgba(0,0,0,.55);
+  transform:translateX(-102%);
+  transition:transform .24s cubic-bezier(.22,.72,.28,1);
+  display:flex; flex-direction:column;
+  padding-top:env(safe-area-inset-top);
+}
+#rankDrawer.open { transform:translateX(0); }
+.rankhead {
+  flex:0 0 auto; min-height:58px; padding:10px 10px 8px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid var(--line);
+}
+.rankhead strong { display:block; font-size:17px; }
+.rankhead span { display:block; color:var(--dim); font-size:11px; margin-top:2px; }
+#rankClose {
+  flex:0 0 38px; width:38px; min-height:38px; height:38px;
+  padding:0; margin:0; border-radius:50%; font-size:24px; line-height:1;
+}
+#rankSummary {
+  flex:0 0 auto; padding:9px 12px;
+  display:grid; grid-template-columns:1fr 1fr; gap:5px;
+  border-bottom:1px solid var(--line);
+}
+#rankSummary .cell {
+  padding:6px 8px; border-radius:8px; background:rgba(255,255,255,.035);
+}
+#rankSummary .k { display:block; color:var(--dim); font-size:10px; }
+#rankSummary .v { display:block; margin-top:1px; font-size:12px; font-weight:700; }
+#rankList {
+  flex:1 1 auto; min-height:0; overflow:auto;
+  padding:8px 9px calc(12px + env(safe-area-inset-bottom));
+  overscroll-behavior:contain;
+}
+.rankrow {
+  display:grid;
+  grid-template-columns:34px 58px minmax(74px,1fr) 54px 54px;
+  gap:5px; align-items:center;
+  min-height:38px; padding:5px 6px; margin-bottom:4px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:8px; background:rgba(255,255,255,.025);
+  font-variant-numeric:tabular-nums;
+}
+.rankrow.hero {
+  border-color:var(--gold);
+  background:rgba(232,196,106,.10);
+}
+.rankrow.busted { opacity:.45; }
+.rankrow .rk { font-weight:800; text-align:center; }
+.rankrow .bot { font-size:11px; font-weight:700; }
+.rankrow .stk { font-weight:700; text-align:right; }
+.rankrow .bb { color:var(--dim); font-size:10px; text-align:right; }
+.rankrow .seat { color:var(--dim); font-size:10px; text-align:right; }
+.rankempty { padding:24px 10px; text-align:center; color:var(--dim); }
