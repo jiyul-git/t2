@@ -1,0 +1,66 @@
+name: scope-postflop-change
+on:
+  push:
+    branches:
+      - chatgpt/logic-tuning-20260927
+    paths:
+      - .github/workflows/scope-postflop-change.yml
+  workflow_dispatch:
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compare pre-change and current first divergences
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=47d4328a504bb3d49f2df94785d05ad2fe03c1bd
+          CUR=$(git rev-parse HEAD)
+          mkdir -p /tmp/base
+          git worktree add --detach /tmp/base "$BASE"
+          cat > /tmp/dump.py <<'PY'
+          import sys, json
+          sys.path.insert(0, sys.argv[1])
+          import tourney as T
+          out={}
+          for sd in range(3000,3006):
+              t=T.Tournament(entries=100,start_stack=30000,hero_seat=7,seed=sd,hands_per_level=200)
+              hands=[]
+              for hn in range(30):
+                  if sum(1 for s in t.seats if t.stacks[s]>0)<3: break
+                  st=t.next_hand(); guard=0
+                  while st and not st.get('done') and guard<200:
+                      st=t.submit('fold'); guard+=1
+                  hands.append(list(getattr(t.run,'full_log',[]) or []))
+                  t.finish_hand()
+              out[str(sd)]=hands
+          print(json.dumps(out,separators=(',',':')))
+          PY
+          python3 /tmp/dump.py /tmp/base > /tmp/base.json
+          python3 /tmp/dump.py "$GITHUB_WORKSPACE" > /tmp/current.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('/tmp/base.json')); b=json.load(open('/tmp/current.json'))
+          for sd in sorted(a,key=int):
+              first=None
+              for hi,(ha,hb) in enumerate(zip(a[sd],b[sd]),1):
+                  if ha!=hb:
+                      # first differing action
+                      m=max(len(ha),len(hb)); ai=None
+                      for j in range(m):
+                          xa=ha[j] if j<len(ha) else None
+                          xb=hb[j] if j<len(hb) else None
+                          if xa!=xb:
+                              ai=j; break
+                      first=(hi,ai,ha[ai] if ai is not None and ai<len(ha) else None,
+                             hb[ai] if ai is not None and ai<len(hb) else None)
+                      break
+              print("SCOPE",sd,first)
+          PY
