@@ -28,6 +28,8 @@ def test_arbitrary_raise_depth():
     assert [e['facing_kind'] for e in ev] == [None,'bet','raise','raise'], ev
     assert ev[2]['response_kind'] == 'aggressor_backaction', ev[2]
     assert ev[3]['response_kind'] == 'aggressor_backaction', ev[3]
+    assert abs(ev[1]['facing_price_frac'] - 0.4) < 1e-12, ev[1]
+    assert abs(ev[2]['facing_price_frac'] - 0.3) < 1e-12, ev[2]
     ctx = AE.pending_response_context(r.action_meta, 1)
     assert ctx['raise_depth_full'] == 4, ctx
     assert ctx['kind'] == 'aggressor_backaction', ctx
@@ -82,7 +84,7 @@ def test_raise_is_conditional_not_another_barrel():
 
     orig_bet = R._bet_range
     orig_cont = R._continue_range
-    seen = {'barrels': [], 'continue': 0}
+    seen = {'barrels': [], 'continue': 0, 'continue_sizes': []}
     try:
         def fake_bet(rr, board, street, bluff, size, damp=1.0,
                      barrel=0.0, n_barrels=1):
@@ -90,6 +92,7 @@ def test_raise_is_conditional_not_another_barrel():
             return rr
         def fake_cont(rr, board, street, size, damp=1.0):
             seen['continue'] += 1
+            seen['continue_sizes'].append(size)
             return rr
         R._bet_range = fake_bet
         R._continue_range = fake_cont
@@ -105,6 +108,10 @@ def test_raise_is_conditional_not_another_barrel():
     # Same-street re-raise remains barrel #1 and conditions on facing wager.
     assert seen['barrels'] == [1,1], seen
     assert seen['continue'] == 1, seen
+    # Actor 1's re-raise faced 300 more into a 1000 pot: 30%, not the
+    # opponent's 500-chip raise increment / prior pot.
+    assert len(seen['continue_sizes']) == 1, seen
+    assert abs(seen['continue_sizes'][0] - 0.3) < 1e-12, seen
     return seen
 
 
