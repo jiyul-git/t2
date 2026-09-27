@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import json, os, tempfile
+import json, os, tempfile, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 os.environ["T2_LIVE_STATE"] = str(Path(tempfile.mkdtemp(prefix="t2_jj_solver_")) / "state.json")
 os.environ["T2_BOT_LOG"] = "2"
 
