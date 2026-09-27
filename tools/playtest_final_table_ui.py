@@ -14,6 +14,7 @@ This is an end-to-end wiring test, not a strategy test:
 import http.client
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -264,6 +265,7 @@ def main():
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        start_new_session=True,
     )
 
     metrics = {
@@ -362,11 +364,20 @@ def main():
                  counters.get("motion_ack_timeout")))
 
     finally:
-        proc.terminate()
+        # ui_server may own a ProcessPool child whose inherited stdout pipe keeps
+        # communicate() open after only the parent is terminated. Kill the whole
+        # test process group so teardown cannot turn a successful playtest red.
+        try:
+            os.killpg(proc.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
         try:
             out, _ = proc.communicate(timeout=5)
         except subprocess.TimeoutExpired:
-            proc.kill()
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
             out, _ = proc.communicate(timeout=5)
         print("--- ui_server tail ---")
         lines = (out or "").splitlines()
