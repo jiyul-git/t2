@@ -230,20 +230,9 @@ def _round_changes(before, after_players):
     }
 
 
-def emit_round(st, f, hero_hand, bot_hands=None, source="live", round_before=None):
-    """Durably spool one completed tournament round and wake async sync."""
-    cfg = _load_config()
-    if not cfg:
-        return None
-
+def build_round_bundle(st, f, hero_hand, bot_hands=None, source="live", round_before=None):
+    """Pure JSON-safe tournament-round bundle builder for audit/tests."""
     sid = _session_id(st)
-    d = SPOOL / sid
-    d.mkdir(parents=True, exist_ok=True)
-
-    manifest_path = d / "manifest.json"
-    if not manifest_path.exists():
-        _atomic_json(manifest_path, _manifest(st, f))
-
     hand_no = int(getattr(f, "hand_no", 0) or 0)
     _before = _round_before(round_before)
     _after_players = _dynamic_players(f)
@@ -280,8 +269,28 @@ def emit_round(st, f, hero_hand, bot_hands=None, source="live", round_before=Non
         "all_hands": _all_hands,
     }
 
+    return _json_safe(bundle)
+
+
+def emit_round(st, f, hero_hand, bot_hands=None, source="live", round_before=None):
+    """Durably spool one completed tournament round and wake async sync."""
+    cfg = _load_config()
+    if not cfg:
+        return None
+
+    sid = _session_id(st)
+    d = SPOOL / sid
+    d.mkdir(parents=True, exist_ok=True)
+
+    manifest_path = d / "manifest.json"
+    if not manifest_path.exists():
+        _atomic_json(manifest_path, _manifest(st, f))
+
+    bundle = build_round_bundle(
+        st, f, hero_hand, bot_hands, source=source, round_before=round_before)
+    hand_no = int(getattr(f, "hand_no", 0) or 0)
     path = d / ("round_%06d.json" % hand_no)
-    _atomic_json(path, _json_safe(bundle))
+    _atomic_json(path, bundle)
     _ensure_worker()
     _WAKE.set()
     return str(path)
