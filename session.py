@@ -2274,6 +2274,26 @@ class HandRun:
                         'rel': (h.plans.get(key) or {}).get('rel'),
                         'outs': (h.plans.get(key) or {}).get('outs'),
                     })
+                # F7-D pre-logic boundary provenance.
+                # a2/amount is the newly calculated judgment result.  A replay may
+                # deliberately replace it with an already executed target; after
+                # that point session is the execution layer only.
+                _calculated_act = a2[0]
+                _calculated_target = a2[1]
+                _execution_input_act = a
+                _execution_input_target = amt
+                _execution_input_source = (
+                    'forced_replay' if _forced else 'judgment')
+                _shape_called = False
+                _shape_changed = False
+                _shaped_target = (
+                    amt if a in ('bet', 'raise') else None)
+                _min_raise_floor = None
+                _min_raise_clamped = False
+                _legal_target = None
+                _final_target = None
+                _applied_target = None
+
                 try:
                     # 이 액션에 **적용된** 제약을 apply 이전에 잡는다.
                     # apply 는 self.min_raise/current 를 갱신하므로, 사후에 읽으면
@@ -2312,15 +2332,23 @@ class HandRun:
                         # 포함한 최대 target과 비교한다.
                         _max_target = r2.stacks[s] + r2.contrib.get(s, 0)
                         if amt < _max_target:
+                            _shape_called = True
+                            _before_shape = amt
                             amt = RU.shape_size(
                                 amt, ax['type'],
                                 random.Random(self._dseed(s, street, 'size', len(r2.log))),
                                 pot=pot_live)
+                            _shape_changed = (amt != _before_shape)
                         else:
                             amt = _max_target
+                        _shaped_target = amt
                     if a in ('bet', 'raise'):
                         # 클램프 이후의 final legal target을 먼저 만든다.
-                        _sent = max(amt, r2.current+r2.min_raise) if r2.current else amt
+                        _min_raise_floor = (
+                            r2.current + r2.min_raise if r2.current else None)
+                        _sent = max(amt, _min_raise_floor) if r2.current else amt
+                        _min_raise_clamped = (_sent != amt)
+                        _legal_target = _sent
                         _pre_effective_target = _sent
                         _ea = RU.effective_allin_v1(
                             _sent, _actor_cap, _opp_cap_max,
@@ -2335,6 +2363,7 @@ class HandRun:
                         if _ea_applied:
                             _sent = _actor_cap
 
+                        _final_target = _sent
                         _target_capped = min(_actor_cap, _sent)
                         _increment = max(0, _target_capped - _contrib_before)
                         _pot_after = pot_live + _increment
@@ -2364,6 +2393,8 @@ class HandRun:
                     aggressor = s
                 if r2.log:
                     _row = r2.log[-1]
+                    _applied_target = (
+                        _row[2] if _row[1] in ('bet', 'raise', 'allin') else None)
                     self.recorded.append((_ck, _row[1], _row[2]))
                     self._emit_bot_action(
                         street, _row[0], _row[1], _row[2], board)
@@ -2408,6 +2439,22 @@ class HandRun:
                     h.intents.append(_slot)
                 _slot.update({'type': ax.get('type'),
                               'action': a, 'amt': _exec_amt, 'pre_clamp': amt,
+                                  # F7-D explicit judgment -> execution boundary.
+                                  # Existing fields stay for archive compatibility;
+                                  # these names make every target transition auditable.
+                                  'calculated_act': _calculated_act,
+                                  'calculated_target': _calculated_target,
+                                  'execution_input_act': _execution_input_act,
+                                  'execution_input_target': _execution_input_target,
+                                  'execution_input_source': _execution_input_source,
+                                  'shape_called': _shape_called,
+                                  'shape_changed': _shape_changed,
+                                  'shaped_target': _shaped_target,
+                                  'min_raise_floor': _min_raise_floor,
+                                  'min_raise_clamped': _min_raise_clamped,
+                                  'legal_target': _legal_target,
+                                  'final_target': _final_target,
+                                  'applied_target': _applied_target,
                                   'plan': _pl2.get('plan'), 'why': _pl2.get('why'),
                                   'intent_act': _it.get('act'), 'intent_size': _it.get('size'),
                                   'intent_src': _it.get('src'), 'dev': _dev,
