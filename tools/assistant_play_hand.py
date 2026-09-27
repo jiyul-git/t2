@@ -10,6 +10,7 @@ os.environ['T2_LIVE_STATE']=str(Path('/tmp/assistant_play_state.json'))
 
 import live2 as L
 
+# Interactive assistant-play fixture: decisions are chosen from printed state.
 SEED=202609271937
 HANDS=[
     [('fold',0)],
