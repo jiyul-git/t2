@@ -657,11 +657,19 @@ def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0,
 
 
 def _continue_range(r, board, street, size_frac, damp=1.0):
-    """벳을 맞고 fold하지 않은 전체 continue range; mass 보존."""
+    """벳을 맞고 fold하지 않은 전체 continue range; mass 보존.
+
+    기존 street 상수만 쓰면 이미 큰 레이즈를 넣은 뒤 아주 싼 추가 가격을
+    받아도 절반 가까이 폴드하는 모순이 생겼다. 실제 call price가 s*pot이면
+    최소방어빈도(MDF) 1/(1+s)를 가격 기반 하한으로 사용한다.
+    """
     ranked = _ranked(r, board)
     n = len(ranked)
+    s = max(0.0, float(size_frac or 0.0))
     keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
-    keep = _damp(keep * (1.25 - 0.45*min(1.5, size_frac)), damp)
+    keep = _damp(keep * (1.25 - 0.45*min(1.5, s)), damp)
+    mdf = 1.0 / (1.0 + s) if s > 0 else 0.95
+    keep = max(keep, min(0.95, mdf))
     k = max(1, int(n*min(0.95, keep)))
     out = ranked[:k]
     chosen = out if len(out) >= _MIN_KEEP else (ranked[:_MIN_KEEP] or ranked)
@@ -669,11 +677,17 @@ def _continue_range(r, board, street, size_frac, damp=1.0):
 
 
 def _call_range(r, board, street, size_frac, damp=1.0):
-    """콜: 기존 support 선택은 유지하고 surviving mass를 그대로 보존한다."""
+    """콜 range. 전체 continue 폭은 실제 가격의 MDF 하한을 지킨다.
+
+    이후 상단 raise 구간을 일부 빼고 trap 일부만 남겨 flat-call 구성을 만든다.
+    """
     ranked = _ranked(r, board)
     n = len(ranked)
+    s = max(0.0, float(size_frac or 0.0))
     keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
-    keep = _damp(keep * (1.25 - 0.45*min(1.5, size_frac)), damp)
+    keep = _damp(keep * (1.25 - 0.45*min(1.5, s)), damp)
+    mdf = 1.0 / (1.0 + s) if s > 0 else 0.95
+    keep = max(keep, min(0.95, mdf))
     cut = max(1, int(n*0.18))
     trap_keep = max(0, int(cut*0.25))
     lo = ranked[:trap_keep]
