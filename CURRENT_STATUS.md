@@ -55,6 +55,29 @@ Production ranges are still unweighted until that step begins.
 - F8-ICM semantic closure
 - final dead-code cleanup
 
+## Weighted-range migration — W0 implemented / local gate pending
+
+The post-TDA architecture work has resumed.
+
+W0 is now implemented on the canonical engine line:
+
+- canonical representation: `{combo: relative_mass}`;
+- legacy lists map to unit mass per occurrence;
+- duplicate legacy occurrences aggregate mass rather than disappearing;
+- `legacy_range()` refuses to flatten non-uniform weighted input;
+- stable weighted iteration, total mass, per-combo mass and weight-preserving filter helpers added;
+- no production decision consumer has been switched to non-uniform weights yet.
+
+Design source: `WEIGHTED_RANGE_DESIGN.md`
+
+Local W0 gates:
+
+- `python3 -m py_compile ranges.py tools/verify_weighted_range_adapter.py`
+- `python3 tools/verify_weighted_range_adapter.py`
+- `python3 tools/regress.py check --baseline current`
+
+W0 exit condition is exact existing regression behavior plus adapter contract PASS. Then W1 converts weighted sampling consumers one family at a time.
+
 ## Balance status
 
 **NOT TUNING YET.**
