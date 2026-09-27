@@ -88,10 +88,15 @@ def _stream_gate_wait(sid, seq):
         return False
     cond = state['cond']
     with cond:
-        return cond.wait_for(
+        ok = cond.wait_for(
             lambda: state['closed'] or int(state['acked']) >= int(seq),
             timeout=max(1.0, STREAM_ACK_TIMEOUT)
         )
+    try:
+        COUNT['motion_ack' if ok else 'motion_ack_timeout'] += 1
+    except NameError:
+        pass
+    return ok
 
 
 def _stream_gate_close(sid):
@@ -278,6 +283,7 @@ COUNT = {'attempt': 0, 'hit': 0, 'mismatch': 0, 'fallback': 0,
          'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
          'round_start': 0, 'round_restart': 0,
          'round_ready_before_finish': 0, 'round_ready_after_finish': 0,
+         'motion_ack': 0, 'motion_ack_timeout': 0,
          # 다음 라운드 직전까지도 worker가 안 끝나 실제로 기다린 시간.
          'worker_wait_ms': 0, 'worker_wait_max_ms': 0}
 
