@@ -135,7 +135,16 @@ allowed = tb.broken_open_seats()
 assert 2 not in allowed and 3 not in allowed, allowed
 checks += 1
 
-# 13. Hand가 dead SB/BTN을 live player로 압축하지 않는다.
+# 13. TDA 36-B: dead BTN 뒤 여러 빈 자리가 있으면 BTN을 SB 직전까지
+#     전진시켜 incoming seat를 최대화하되 SB/BB 진행은 보존한다.
+#     공식 예: BTN9 / SB1 / empty2,3 / BB4, SB1 bust -> BTN3 / SB4 / BB5.
+tb = _mk([1, 4, 5, 6, 7, 8, 9], 9, 1, 4)
+_kill(tb, 1)
+tb.advance_button()
+assert _state(tb) == (3, 4, 5), _state(tb)
+checks += 1
+
+# 14. Hand가 dead SB/BTN을 live player로 압축하지 않는다.
 tb = _mk([1, 2, 4, 5, 6, 7, 8, 9], 2, 3, 4)
 lay = tb.hand_layout()
 profiles = {str(s): {'type': 'reg'} for s in lay['pos']}
@@ -157,5 +166,6 @@ print({
     'balance_source_next_bb': True,
     'balance_destination_not_sb': True,
     'broken_table_between_btn_sb_excluded': True,
+    'rule36b_dead_button_maximize_incoming': True,
 })
 print('PASS TDA dead-button / heads-up / balance position contract')
