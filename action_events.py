@@ -186,3 +186,37 @@ def pending_response_context(action_meta, seat):
         'facing_target': (
             latest.get('target') if latest is not None else None),
     }
+
+
+def aggressive_street_count(full_meta, current_meta, seat, current_street):
+    """Count distinct postflop streets on which seat made an aggressive wager."""
+    streets = set()
+    by_street = {}
+    for m in (full_meta or []):
+        st = m.get('street')
+        if st:
+            by_street.setdefault(st, []).append(m)
+    for st, rows in by_street.items():
+        if any(e.get('seat') == seat and e.get('action_kind') in ('bet','raise')
+               for e in postflop_events(rows, street=st)):
+            streets.add(st)
+    if current_street and any(
+            e.get('seat') == seat and e.get('action_kind') in ('bet','raise')
+            for e in postflop_events(current_meta or [], street=current_street)):
+        streets.add(current_street)
+    return max(1, len(streets))
+
+
+def aggressive_seats(full_meta):
+    """Seats that made at least one semantic postflop bet/raise."""
+    out = set()
+    by_street = {}
+    for m in (full_meta or []):
+        st = m.get('street')
+        if st:
+            by_street.setdefault(st, []).append(m)
+    for st, rows in by_street.items():
+        for e in postflop_events(rows, street=st):
+            if e.get('action_kind') in ('bet','raise'):
+                out.add(e.get('seat'))
+    return out
