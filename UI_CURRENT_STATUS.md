@@ -8,8 +8,8 @@ UI는 엔진 감사와 별도 최신선으로 관리한다.
   `chatgpt/decision-architecture-audit-20260926`
 - **Only active UI line / current playable UI:**
   `chatgpt/ui-bot-pipeline-20260927`
-- Current verified UI head at this checkpoint:
-  `13505d64`
+- Current verified UI merge checkpoint:
+  `ac7179e8` (PR #10, TDA positions + tournament info UI)
 
 The user has designated this UI line as the latest version.
 Do not recover older UI branches again unless a specific regression requires historical comparison.
@@ -31,6 +31,26 @@ Already integrated on the active UI line:
 - action-bubble tail connection fix;
 - no fullscreen restore;
 - no watch-mode restore.
+
+Character/portrait assets and assignment logic remain frozen unless the user explicitly asks to change them.
+
+### TDA tournament/UI checkpoint
+
+Merged and locally verified on 2026-09-27:
+
+- physical BTN/SB/BB anchors from the engine, including dead BTN and dead SB;
+- dead BTN shown as `D` on the empty physical seat;
+- dead SB shown as `SB · DEAD`;
+- top field/ITM/rank text removed from the table chrome and moved into `...` tournament info;
+- bot-action interval setting removed; UI pacing is fixed at 1.5s;
+- result/auto-progress preference removed; next-hand progression is fixed;
+- tournament info shows field, remaining, ITM, chip rank, stack/BB, average, level, blinds/ante, bubble and money-jump data;
+- right swipe opens a separate full standings drawer with all bots' chip ranks, stacks, BB, table/seat and current position;
+- parallel HERO/OTHER settlement remains intact.
+
+Local gates passed: TDA core/live/button, parallel-table round, UI tournament panel. Cache tags: `style.css?v=49`, `app.js?v=65`.
+
+The temporary branch `chatgpt/tda-position-ui-20260927` is fully contained after PR #10 and is deletion-only.
 
 Character/portrait assets and assignment logic remain frozen unless the user explicitly asks to change them.
 
@@ -78,6 +98,7 @@ When starting work after any pause, read this file first and verify the canonica
 
 ## Historical UI branches — deletion candidates
 
+- `chatgpt/tda-position-ui-20260927` — fully contained after PR #10 / merge `ac7179e8`
 - `chatgpt/ui-recovery-20260927` — fully contained in `ui-bot-pipeline`
 - `chatgpt/parallel-tables-20260927` — fully contained in `ui-bot-pipeline` after merge `13505d64`
 The following branches are no longer active UI sources after the user confirmed
