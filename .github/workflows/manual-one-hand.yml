@@ -6,6 +6,11 @@ on:
       - chatgpt/logic-tuning-20260927
     paths:
       - tools/manual_one_hand.py
+      - plan.py
+      - ranges.py
+      - session.py
+      - runner.py
+      - action_events.py
       - tools/manual_hand_actions.json
       - tools/manual_next_hand_actions.json
       - tools/manual_following_hand_actions.json
