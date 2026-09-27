@@ -28,6 +28,9 @@ jobs:
       - name: Whole-tournament telemetry
         run: python3 tools/verify_tournament_telemetry.py
 
+      - name: Read/range semantic regressions
+        run: python3 tools/verify_read_range_semantics.py
+
       - name: Strategy regression
         run: python3 tools/regress.py check --baseline current
 
