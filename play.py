@@ -104,25 +104,54 @@ class Hand:
     def bbs(self, s): return self.stacks[s]/self.bb
     def ptype(self, s): return self.prof[str(s)]['type']
 
-    def axes(self, s):
-        """판단에 넘길 프로필. 개념 벡터(concepts/temper)를 반드시 보존한다.
+    def base_profile(self, s):
+        """Emotion-free persona view.
 
-        예전에는 여기서 aggr/gamble/bluff/value/tilt/icm 6개 스칼라만 추려 넘겼다.
-        그러면 persona.py 가 28개 개념으로 사람을 만들어도 포스트플랍은 6개 숫자만 보게 되고,
-        하위 코드의 `profile.get('concepts')` 분기가 전부 죽는다
-        (calc_noise·sk·call_bias 가 한 번도 실행되지 않았다).
-        결과적으로 모든 봇이 같은 문턱으로 수렴해 개성이 사라진다.
+        This is the future execution boundary.  It is additive plumbing only:
+        production still enters strategy through axes()/planning_profile below.
         """
         p = self.prof[str(s)]
         base = dict(p)
         base.setdefault('tilt', 3)
         base.setdefault('goal', 'accum')
-        # 틸트는 성향값을 밀어넣지 않는다. 개념 가중치를 깎는 방식이라
-        # 판단 층이 sk 대신 sk_tilted 를 쓰면 저절로 반영된다.
-        # 여기서는 현재 틸트 수치만 돌려준다.
-        t = self.dyn.level(self.pid_of(s)) if hasattr(self.dyn, 'level') else 0.0
-        # 틸트는 여기 한 곳에서만 반영한다. 판단 층은 그대로 sk()/temper() 를 쓴다.
+        return base
+
+    def emotion_level(self, s):
+        return (self.dyn.level(self.pid_of(s))
+                if hasattr(self.dyn, 'level') else 0.0)
+
+    def planning_profile(self, s):
+        """Persona view allowed to include current emotion/tilt."""
+        base = self.base_profile(s)
+        t = self.emotion_level(s)
         return PS.tilted_view(base, t), round(t, 2)
+
+    def execution_profile(self, s):
+        """Emotion-free view reserved for pure execution.
+
+        No current action consumer is switched to this method in the plumbing
+        phase; doing so would be the F7-C behavior activation.
+        """
+        return self.base_profile(s)
+
+    def profile_views(self, s):
+        """Explicit F7-C boundary bundle for audit/tests."""
+        planning, tilt = self.planning_profile(s)
+        return {
+            'base': self.base_profile(s),
+            'planning': planning,
+            'execution': self.execution_profile(s),
+            'tilt': tilt,
+        }
+
+    def axes(self, s):
+        """Current production strategy entry point.
+
+        Behavior is intentionally unchanged: axes still returns the same tilted
+        planning view as before.  F7-C activation later decides which consumers
+        move to execution_profile().
+        """
+        return self.planning_profile(s)
 
     def bf(self, s):
         """좌석 s 의 버블팩터. icm.table_bf 가 유일한 계산 지점.
