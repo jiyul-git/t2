@@ -97,6 +97,42 @@ def check_line_prior_no_raw_bluff_bypass():
     return a, lo, hi
 
 
+
+def check_line_model_single_source_and_no_need_double_use():
+    board = ['6d', 'Ac', '2d', 'Qd', '3d']
+    opp_read = {'w': 0.40, 'bluff_gap': 0.25}
+    base_axis = 5.0 + 5.0*opp_read['w']*opp_read['bluff_gap']
+    a = PL.line_bluff_prior(
+        {'bluff': 9.0}, 'river', 2, 0.25, board, False,
+        opp_read=opp_read)
+    b = R.line_bluff_share(
+        board, 'river', 0.25, base_axis, n_barrels=2)
+    assert abs(a - b) < 1e-12, (a, b)
+
+    prof = PS.make_player(random.Random(77), 0.6, pid=77)
+    opp_est = {
+        'confidence': 0.60, 'n': 12,
+        'ftb': 0.52, 'ftb_flop': 0.52, 'ftb_turn': 0.52, 'ftb_river': 0.52,
+        'bluff': 7.0, 'aggr': 6.0, 'tight': 5.0,
+        'rfi_rel': 1.0, 'pf_limp': 0.06,
+        'pf_fold_after_limp_raise': 0.48,
+        'barrel': 0.60, 'pf_3bet': 0.07, 'pf_fold_to_3bet': 0.55,
+        'pf_4bet': 0.04, 'pf_fold_to_4bet': 0.60,
+        'sz_mean': 0.62, 'sz_sd': 0.22, 'sz_n': 12, 'sz_big': 0.15,
+        'sz_river': 0.62,
+    }
+    need_lo = PL.calldown_need(
+        prof, ['Qd','Kh'], board, 'river', 3000, 500, 1.0, 0.05,
+        0, opp_est, n_opp=1, rng=random.Random(123),
+        facing_size_frac=0.20)
+    need_hi = PL.calldown_need(
+        prof, ['Qd','Kh'], board, 'river', 3000, 500, 1.0, 0.85,
+        0, opp_est, n_opp=1, rng=random.Random(123),
+        facing_size_frac=0.20)
+    assert abs(float(need_lo) - float(need_hi)) < 1e-12, (need_lo, need_hi)
+    return a, need_lo
+
+
 def check_no_self_range_fallback():
     text = (ROOT / 'session.py').read_text(encoding='utf-8')
     for needle in (
@@ -110,11 +146,13 @@ def main():
     n = check_public_bb_call_range()
     rd = check_low_adaptability_is_continuous()
     line = check_line_prior_no_raw_bluff_bypass()
+    single_line, need = check_line_model_single_source_and_no_need_double_use()
     check_no_self_range_fallback()
     print('PASS read/range semantics')
     print('  seedless_BB_call_range_n=%d' % n)
     print('  adaptability_1.5_read_weight=%.3f' % rd['w'])
     print('  line_prior neutral=%.4f low=%.4f high=%.4f' % line)
+    print('  line_model_single_source=%.4f need_no_double_use=%.4f' % (single_line, need))
     print('  self_range_fallback=ABSENT')
 
 
