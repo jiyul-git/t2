@@ -64,3 +64,37 @@ Before deleting or merging a branch, prove containment or inspect its unique com
 "GitHub `jiyul-git/t2`의 `CURRENT_STATUS.md`와 `ACTIVE_WORK.md`를 먼저 읽고, ACTIVE_WORK의 현재 작업부터 이어서 진행해. 필요 파일만 추가로 읽어."
 
 That should be enough; do not paste previous chats unless a fact exists only there.
+
+
+## Document loading policy — audited 2026-09-28
+
+Root Markdown audit: 125 files inspected by content.
+
+Default-current set (may be read when relevant, but only CURRENT_STATUS + ACTIVE_WORK are mandatory):
+- CURRENT_STATUS.md, ACTIVE_WORK.md, CHAT_HANDOFF.md, BRANCH_POLICY.md
+- DECISION_ARCHITECTURE_AUDIT.md, AUDIT_LEDGER.md
+- CONCEPTS.md, LEDGER.md, CONCEPT_DECISION_CHECKLIST.md
+- POKER_DECISION_MODEL_V2.md, POKER_SITUATION_SPEC_V1.md
+- TDA_POSITION_DESIGN.md, UI_CURRENT_STATUS.md, WEIGHTED_RANGE_DESIGN.md
+
+Open-work documents:
+- F7B_MULTIWAY_DOWNSTREAM_AUDIT.md
+- F8_SIDE_POT_DECISION_AUDIT.md
+- P7_COLD_RERAISE_PREFLOP_AUDIT.md
+- STREET_CONCEPT_GRANULARITY_AUDIT_DESIGN.md
+
+The following files are **not current sources of truth** and must never be loaded as current-state instructions without a historical reason:
+- A5_REPLAN_CONTEXT_4B_INTERIM.md
+- CLAUDE.md
+- FIX_PLAN.md
+- INSTRUMENTATION_BASELINE.md
+- MONEY_JUMP_DESIGN.md
+- MONEY_SIZING_CF_DESIGN.md
+- MONEY_SIZING_PROMOTION.md
+- NEAR_ALLIN_DESIGN.md
+- PLAN.md
+- REVIEW_2.md
+- WORKLOG.md
+- claude_README.md
+
+All other root Markdown files are either subsystem reference or closed experiment/audit evidence. Read them only when the active task names that subsystem or a historical claim must be verified. Do not preload them merely because they exist.
