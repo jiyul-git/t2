@@ -5,15 +5,16 @@
 ## Source of truth
 
 - Repository: `jiyul-git/t2`
-- Active branch: `chatgpt/decision-architecture-audit-20260926`
+- **Single unified canonical branch:** `chatgpt/decision-architecture-audit-20260926`
+- Unified engine+UI merge: PR #11 / `0b919b62`
 - 엔진/배선 감사 원본: `~/t2`
 - UI 소스 원본: `~/t2_ui_src`
 - 실제 플레이 실행본: `~/t2_ui_beta`
-- 임시 clone(`~/t2_ui_stream_test`, `~/t2_play_src` 등)은 사용하지 않는다.
 
-브랜치 역할을 섞지 않는다.
-`~/t2`는 엔진 감사 브랜치에 고정하고, UI 작업은 `~/t2_ui_src`에서만 한다.
-플레이할 때는 UI 소스에서 `ui/tools/setup_run_dir.sh "$HOME/t2_ui_beta"`로 실행본을 갱신한다.
+엔진과 UI는 더 이상 별도 최신선으로 운영하지 않는다.
+`~/t2`와 `~/t2_ui_src` 모두 같은 unified canonical branch를 추적한다.
+`chatgpt/ui-bot-pipeline-20260927`은 local 전환을 위한 임시 호환 ref이며 새 작업을 하지 않는다.
+플레이 실행본은 unified source에서 `ui/tools/setup_run_dir.sh "$HOME/t2_ui_beta"`로 갱신한다.
 
 ## Architecture audit
 
@@ -100,12 +101,12 @@ Historical result/design markdown files remain for evidence. Their presence does
 
 Branch lifecycle is part of the project plan, not an afterthought.
 
-- Engine canonical line: `chatgpt/decision-architecture-audit-20260926`
-- UI canonical line: `chatgpt/ui-bot-pipeline-20260927`
-- TDA temporary verification branches were merged and are deletion candidates; no further commits may land on them.
-- New branches require an explicit reason and exit condition.
-- Temporary branches must be merged/cherry-picked/abandoned and then cleaned up.
-- Every major phase closes with code + verification + docs + branch cleanup.
+- **Only active canonical line:** `chatgpt/decision-architecture-audit-20260926`
+- PR #11에서 최신 엔진과 최신 playable UI를 한 history로 통합했다.
+- `chatgpt/ui-bot-pipeline-20260927`은 호환 ref / 삭제 후보이며 새 커밋 금지.
+- TDA temporary branches는 이미 merge/deletion 완료.
+- 새 temporary branch는 명시적 이유와 종료 조건이 있을 때만 만든다.
+- 기능 완료에는 verification + canonical 반영 + cleanup이 포함된다.
 
 See `BRANCH_POLICY.md`.
 
@@ -140,24 +141,19 @@ Containment proof after merge: canonical is ahead of `chatgpt/tda-position-engin
 
 ## Latest playable checkpoint
 
-As of 2026-09-27 the canonical playable/UI line is:
+As of 2026-09-27 engine and playable UI share the same unified history:
 
 ```
-chatgpt/ui-bot-pipeline-20260927 @ ac7179e
+chatgpt/decision-architecture-audit-20260926 @ 0b919b62
 ```
 
-It contains the full `ui-recovery` lineage plus:
-
-- new-game sidecar backup `fn` hotfix;
-- physical dealer/button-seat persistence used by the live UI;
-- side-seat chip/bubble fixes;
-- bot-action server streaming;
-- streamed transport/error hardening;
-- new-street board reveal while the next bot computes;
-- 1.5s action pacing overlap;
-- short hero-action/new-street breathing pauses;
+This contains:
+- B1D defend rewire and current architecture-audit engine;
+- W0 weighted-range representation foundation;
+- lobby/profile/history and approved visual layer;
+- bot-action streaming and playback hardening;
 - parallel HERO/OTHER round settlement;
-- TDA dead-button position/blind UI;
-- tournament-info menu and right-swipe full stack standings.
+- TDA dead-button position/blind system;
+- tournament-info menu and right-swipe full standings.
 
-TDA UI was merged in PR #10 / merge `ac7179e8`. `chatgpt/ui-recovery-20260927` remains fully contained and obsolete.
+The old UI-only branch name is no longer a separate source of truth.
