@@ -14,19 +14,27 @@ import live2 as L
 
 SEED=202609271937
 ACTIONS=[('fold', 0)]  # hand 1
-NEXT_HAND=True
+HAND2=[('fold', 0)]
 
 L.new_game(entries=9,start_stack=30000,seed=SEED,hands_per_level=12,fmt='standard')
 r=L.step()
 for a,amt in ACTIONS:
     r=L.step(a,amt)
 hand1_result=r.get('view')
-if NEXT_HAND and r.get('done'):
+hand2_result=None
+if r.get('done'):
+    r=L.step()
+    for a,amt in HAND2:
+        r=L.step(a,amt)
+    hand2_result=r.get('view')
+if r.get('done'):
     r=L.step()
 
 out={
     'actions_hand1':ACTIONS,
+    'actions_hand2':HAND2,
     'hand1_result':hand1_result,
+    'hand2_result':hand2_result,
     'done':r.get('done'),
     'raw':r.get('raw'),
     'view':r.get('view'),
