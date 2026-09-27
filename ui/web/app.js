@@ -2093,6 +2093,15 @@ function renderActions(v) {
   if (!row.children.length) {
     row.innerHTML = '<div class="wait">액션 없음</div>';
   }
+
+  // 내 차례의 액션창만 아래에서 살짝 올라온다.
+  // actionbar 자체는 flex layout 밖의 고정 dock라 테이블/배경 좌표는 변하지 않는다.
+  const bar = $('#actionbar');
+  if (bar) {
+    bar.classList.remove('turn-open');
+    void bar.offsetWidth;
+    bar.classList.add('turn-open');
+  }
 }
 
 /* --- 레이즈 패널. 금액은 전부 raise-to(이번 스트리트 총 투입 목표) --- */
@@ -3619,6 +3628,8 @@ async function call(path, body, msg) {
  * 것이라 재생 중일 수가 없다.
  */
 function previewHeroAction(action, amount) {
+  const actionBar = $('#actionbar');
+  if (actionBar) actionBar.classList.remove('turn-open');
   const v = S.view;
   if (!v || v.type !== 'decision' || action === null) return;
 
@@ -3714,6 +3725,8 @@ function send(action, amount) {
 }
 
 function markQueued(action) {
+  const actionBar = $('#actionbar');
+  if (actionBar) actionBar.classList.remove('turn-open');
   const row = $('#mainrow');
   if (row) {
     row.innerHTML = '<div class="wait">' + (ACT[action] || action) +
