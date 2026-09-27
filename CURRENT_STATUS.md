@@ -42,7 +42,7 @@ B1D7-B production rewire exact parity also passed locally against checkpoint `5e
 
 Defend execution now shares the likelihood helper without changing action, sizing, or RNG state.
 
-**Next architecture step after the tournament-rules hotfix is promoted: weighted-range representation + legacy adapter.**
+**Next architecture step: weighted-range representation + legacy adapter.**
 Production ranges are still unweighted until that step begins.
 
 ### OPEN after B1D
@@ -78,9 +78,8 @@ Historical result/design markdown files remain for evidence. Their presence does
 Branch lifecycle is part of the project plan, not an afterthought.
 
 - Engine canonical line: `chatgpt/decision-architecture-audit-20260926`
-- Engine temporary verification line: `chatgpt/tda-position-engine-20260927`
 - UI canonical line: `chatgpt/ui-bot-pipeline-20260927`
-- UI temporary verification line: `chatgpt/tda-position-ui-20260927`
+- TDA temporary verification branches were merged and are deletion candidates; no further commits may land on them.
 - New branches require an explicit reason and exit condition.
 - Temporary branches must be merged/cherry-picked/abandoned and then cleaned up.
 - Every major phase closes with code + verification + docs + branch cleanup.
@@ -88,11 +87,9 @@ Branch lifecycle is part of the project plan, not an afterthought.
 See `BRANCH_POLICY.md`.
 
 
-## Tournament position / blind system — implementation complete, local gate pending
+## Tournament position / blind system — CLOSED / promoted
 
-The earlier physical-button-only hotfix was insufficient. 2026 Poker TDA requires a dead-button
-tournament model, so the system was redesigned on temporary branch
-`chatgpt/tda-position-engine-20260927`.
+The earlier physical-button-only hotfix was insufficient. The tournament position layer was redesigned around the 2026 Poker TDA dead-button model and locally verified, then merged to the canonical engine line in PR #9 / merge `4b601b8b`.
 
 Implemented:
 - physical BTN/SB/BB anchors; BTN and SB may be dead/empty;
@@ -110,25 +107,20 @@ Implemented:
 
 Design source: `TDA_POSITION_DESIGN.md`
 
-Local promotion gates:
-- `tools/verify_tda_dead_button.py`
-- `tools/verify_tda_live_integration.py`
-- `tools/verify_button_rotation.py`
-- Python compile of changed modules
+Promotion gates passed locally on 2026-09-27:
+- `tools/verify_tda_dead_button.py`: 16 checks PASS
+- `tools/verify_tda_live_integration.py`: PASS
+- `tools/verify_button_rotation.py`: PASS
+- changed Python modules compile cleanly
 
-Exit condition:
-1. gates pass;
-2. merge temp branch into `chatgpt/decision-architecture-audit-20260926`;
-3. prove temp branch fully contained;
-4. delete temp branch;
-5. then resume weighted-range migration.
+Containment proof after merge: canonical is ahead of `chatgpt/tda-position-engine-20260927` with temp behind=0. The temp branch is now deletion-only.
 
 ## Latest playable checkpoint
 
 As of 2026-09-27 the canonical playable/UI line is:
 
 ```
-chatgpt/ui-bot-pipeline-20260927 @ f9a4ed2
+chatgpt/ui-bot-pipeline-20260927 @ ac7179e
 ```
 
 It contains the full `ui-recovery` lineage plus:
@@ -140,6 +132,9 @@ It contains the full `ui-recovery` lineage plus:
 - streamed transport/error hardening;
 - new-street board reveal while the next bot computes;
 - 1.5s action pacing overlap;
-- short hero-action/new-street breathing pauses.
+- short hero-action/new-street breathing pauses;
+- parallel HERO/OTHER round settlement;
+- TDA dead-button position/blind UI;
+- tournament-info menu and right-swipe full stack standings.
 
-`chatgpt/ui-recovery-20260927` is fully contained in this line and is obsolete.
+TDA UI was merged in PR #10 / merge `ac7179e8`. `chatgpt/ui-recovery-20260927` remains fully contained and obsolete.
