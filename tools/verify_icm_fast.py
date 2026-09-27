@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the 9-player exact-ICM fast path against the historical recursion."""
+"""Verify the 2..9-player exact-ICM fast path against historical recursion."""
 
 import os
 import random
@@ -80,23 +80,35 @@ def main():
     if icm.icm_equity(all_zero, PAYOUTS) != [0.0] * 9:
         raise SystemExit('FAIL all-zero 9-max boundary')
 
-    # Non-9-player states must retain the historical reference path.
+    # Final table 2..9: safe states may use subset DP, but numerical
+    # semantics must remain equal to the historical recursion within the same
+    # tolerance already used for the 9-player fast path.
     short_cases = [
         ([50000, 30000], [100, 60]),
-        ([50000, 30000, 20000], [100, 60]),
-        ([60000, 40000, 30000, 20000, 10000], [100, 62, 44]),
-        ([70000, 50000, 30000, 20000, 10000, 5000, 0, 0],
-         [100, 62, 44, 34, 27]),
+        ([50000, 30000, 20000], [100, 60, 40]),
+        ([60000, 40000, 30000, 20000], [100, 62, 44, 34]),
+        ([60000, 40000, 30000, 20000, 10000], [100, 62, 44, 34, 27]),
+        ([65000, 52000, 43000, 35000, 27000, 18000], [100, 62, 44, 34, 27, 22]),
+        ([70000, 58000, 47000, 36000, 28000, 19000, 12000],
+         [100, 62, 44, 34, 27, 22, 18]),
+        ([70000, 50000, 30000, 20000, 10000, 5000, 4000, 3000],
+         [100, 62, 44, 34, 27, 22, 18, 15]),
     ]
+    final_speed = []
     for short_stacks, short_payouts in short_cases:
+        t0 = time.perf_counter()
         short_ref = icm._icm_equity_reference(short_stacks, short_payouts)
+        t_ref_n = time.perf_counter() - t0
+        t0 = time.perf_counter()
         short_got = icm.icm_equity(short_stacks, short_payouts)
-        if short_got != short_ref:
+        t_fast_n = time.perf_counter() - t0
+        diff = max_abs(short_ref, short_got)
+        if diff > 1e-8:
             raise SystemExit(
-                'FAIL non-9-player reference compatibility n=%d k=%d'
-                % (len(short_stacks),
-                   min(len(short_payouts), len(short_stacks)))
+                'FAIL final-table parity n=%d diff=%.12g'
+                % (len(short_stacks), diff)
             )
+        final_speed.append((len(short_stacks), t_ref_n, t_fast_n))
 
     skew = [1, 1, 1, 1, 1, 1, 1, 1, 1000000]
     if icm._subset_path_prune_safe(skew, 9):
@@ -118,11 +130,14 @@ def main():
     if worst_bf > 1e-8:
         raise SystemExit('FAIL BF mismatch > 1e-8: %.12g' % worst_bf)
 
-    print('PASS 9-player ICM fast path')
+    print('PASS 2..9-player ICM fast path')
     print('states=%d fast_path=%d worst_equity_diff=%.12g worst_bf_diff=%.12g'
           % (len(states), fast_states, worst_eq, worst_bf))
     print('balanced9 equity reference=%.4fs fast=%.4fs speedup=%.1fx'
           % (t_ref, t_fast, t_ref / max(t_fast, 1e-9)))
+    for n, tr, tf in final_speed:
+        print('final%d equity reference=%.6fs fast=%.6fs speedup=%.1fx'
+              % (n, tr, tf, tr / max(tf, 1e-9)))
 
 
 if __name__ == '__main__':
