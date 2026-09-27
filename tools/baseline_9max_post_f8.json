@@ -1,11 +1,11 @@
 {
  "fp": {
-  "3000": "e049b88cbd9158c6",
-  "3001": "77a7d20543886a5c",
-  "3002": "aed27043185cb777",
-  "3003": "fb927a83de13dedf",
-  "3004": "f70f4052baacfa8c",
-  "3005": "0a9bed2efdb7e7e3"
+  "3000": "12c2daefd7c87cbb",
+  "3001": "8b83f668c038d002",
+  "3002": "0badaa6a21474fd3",
+  "3003": "3aebdd1942b57229",
+  "3004": "d4295da0aace11ca",
+  "3005": "2c50d0b71bd16614"
  },
  "stats": {
   "n": 1368,
@@ -14,15 +14,8 @@
   "flop": 85,
   "pfr": 165
  },
- "rev": "be4a903",
- "note": "F8 closed and attributed; F7-B diagnostic only, no strategy change",
- "seeds": [
-  3000,
-  3001,
-  3002,
-  3003,
-  3004,
-  3005
- ],
+ "rev": "0962cb2",
+ "note": "pre-logic canonical wiring checkpoint: F7-B consumers + TDA + final-table pipeline + weighted W0-W4 closed",
+ "seeds": [3000, 3001, 3002, 3003, 3004, 3005],
  "hands": 30
 }
