@@ -22,7 +22,9 @@ money-sizing Phase C(`024ab5b`, INCONCLUSIVE)가 서 있던 행동이다.
 `save` 는 `historical` 을 **거부**한다 — 조용히 과거 기준을 잃지 않기 위해서다.
 
   baseline_9max.json           pre-OOP / Phase-C historical  (7e40ba0, 고정)
-  baseline_9max_post_oop.json  post-OOP current behaviour    (0d202c5 이후)
+  baseline_9max_post_oop.json        post-OOP historical checkpoint
+  baseline_9max_post_f8_frozen.json frozen post-F8 / pre-F7B checkpoint (be4a903)
+  baseline_9max_post_f8.json         current pre-logic canonical checkpoint
 """
 import sys, os, json, hashlib, collections, argparse
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -33,7 +35,9 @@ _D = os.path.dirname(os.path.abspath(__file__))
 # 이름 -> (파일, 설명, 쓰기 가능한가)
 BASELINES = collections.OrderedDict((
     ('current', (os.path.join(_D, 'baseline_9max_post_f8.json'),
-                 'post-F8 현재 행동 — side-pot/calloff architecture closure 이후', True)),
+                 'pre-logic canonical wiring checkpoint — current production behavior', True)),
+    ('pre_f7b', (os.path.join(_D, 'baseline_9max_post_f8_frozen.json'),
+                 'post-F8 / pre-F7B checkpoint (be4a903) — 덮어쓰기 금지', False)),
     ('pre_f8', (os.path.join(_D, 'baseline_9max_post_oop.json'),
                 'pre-F8 decision-audit checkpoint (2a53584) — 덮어쓰기 금지', False)),
     ('historical', (os.path.join(_D, 'baseline_9max.json'),
@@ -125,7 +129,7 @@ def main():
     ap.add_argument('cmd', nargs='?', default='check',
                     choices=['check', 'save', 'list'])
     ap.add_argument('--baseline', default=DEFAULT,
-                    help="'current' / 'pre_f8' / 'historical' / 파일 경로 (기본 current)")
+                    help="'current' / 'pre_f7b' / 'pre_f8' / 'historical' / 파일 경로 (기본 current)")
     ap.add_argument('--note', default=None, help='save 에 남길 한 줄 메모')
     a = ap.parse_args()
 
