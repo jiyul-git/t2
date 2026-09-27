@@ -267,7 +267,12 @@ class Table:
             return
 
         if len(live) == 2:
-            bb = self.bb_seat if self.bb_seat in live else                  self._next_live_after(self.bb_seat or self.button_seat, live)
+            bb = (
+                self.bb_seat
+                if self.bb_seat in live
+                else self._next_live_after(
+                    self.bb_seat or self.button_seat, live)
+            )
             sb = next(s for s in live if s != bb)
             self.button_seat = sb
             self.sb_seat = sb
@@ -691,8 +696,11 @@ class Field:
             if p['stack'] <= 0 and p['table'] is not None:
                 tb = self.tables.get(p['table'])
                 if tb and p in tb.players:
-                    tb.players.remove(p); tb.stand(p['pid'])
+                    # stand가 pid의 물리 seat도 지우므로 players에서 빼기 전에 호출.
+                    tb.stand(p['pid'])
+                    tb.players.remove(p)
                 p['table'] = None
+                p['seat'] = None
                 self.busted_order.append(p['pid'])
 
     def _balance(self, notify=True):
