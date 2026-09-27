@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, time, urllib.request, urllib.error
+import json, time, urllib.request, urllib.error, os
 
 BASE="http://127.0.0.1:3737"
 
@@ -33,7 +33,7 @@ cfg={
 
 print("BUILD",json.dumps(req("POST","/api/preflop/spot",cfg),sort_keys=True))
 print("SOLVE_START",json.dumps(req("POST","/api/preflop/solve",{
-  "iterations":300,"check_every":25,"target_gap":0.01
+  "iterations":int(os.getenv("GTOPEN_ITERS","300")),"check_every":int(os.getenv("GTOPEN_CHECK","25")),"target_gap":float(os.getenv("GTOPEN_TARGET","0.01"))
 }),sort_keys=True))
 
 for _ in range(1200):
