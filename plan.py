@@ -89,14 +89,14 @@ def joint_relative_strength(hero, board, opp_ranges, n_opp=None, sims=600, seed=
         for _, r in items:
             if not r:
                 return None
-            pools.append(list(r))
+            pools.append(dict(r) if isinstance(r, dict) else list(r))
     elif isinstance(opp_ranges, (list, tuple)):
         if n_opp is not None and len(opp_ranges) != int(n_opp):
             return None
         for r in opp_ranges:
             if not r:
                 return None
-            pools.append(list(r))
+            pools.append(dict(r) if isinstance(r, dict) else list(r))
     else:
         return None
 
@@ -106,7 +106,7 @@ def joint_relative_strength(hero, board, opp_ranges, n_opp=None, sims=600, seed=
     dead = set(hero) | set(board)
     clean = []
     for r in pools:
-        rr = sorted(c for c in r if c[0] not in dead and c[1] not in dead)
+        rr = bot._filter_pool(r, dead, sort_legacy=True)
         if not rr:
             return None
         clean.append(rr)
@@ -128,7 +128,7 @@ def joint_relative_strength(hero, board, opp_ranges, n_opp=None, sims=600, seed=
         ok = True
         for pool in clean:
             for _try in range(60):
-                c = rng.choice(pool)
+                c = bot._sample_pool_combo(rng, pool)
                 if c[0] not in used and c[1] not in used:
                     used.add(c[0]); used.add(c[1])
                     scores.append(bot.eval7(list(c) + board))
@@ -319,21 +319,23 @@ def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
         for k in sorted(opp_ranges, key=lambda x: str(x)):
             r = opp_ranges.get(k) or []
             if r:
-                pools.append(list(r))
+                pools.append(dict(r) if isinstance(r, dict) else list(r))
     elif isinstance(opp_ranges, (list, tuple)):
         for r in opp_ranges:
             if r:
-                pools.append(list(r))
+                pools.append(dict(r) if isinstance(r, dict) else list(r))
 
     if pools:
         # 호출부가 일부 상대 레인지만 만들었어도 상대 수를 조용히 줄이면 안 된다.
-        fallback = list(opp_range or pools[-1])
+        _fb = opp_range or pools[-1]
+        fallback = dict(_fb) if isinstance(_fb, dict) else list(_fb)
         while len(pools) < max(1, n_opp):
             pools.append(fallback)
         return pools[:max(1, n_opp)]
 
     if opp_range:
-        return [list(opp_range)] * max(1, n_opp)
+        return [(dict(opp_range) if isinstance(opp_range, dict) else list(opp_range))
+                for _ in range(max(1, n_opp))]
     return []
 
 
@@ -356,7 +358,7 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
     dead = set(hero) | set(board)
     pools0 = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
     if pools0:
-        pools = [sorted(c for c in p if c[0] not in dead and c[1] not in dead)
+        pools = [bot._filter_pool(p, dead, sort_legacy=True)
                  for p in pools0]
     else:
         pools = [bot.range_combos(0.35, dead) for _ in range(max(1, n_opp))]
@@ -372,7 +374,7 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
         used = set(dead); opps = []; ok = True
         for pool in pools:
             for _t in range(40):
-                cc = rng.choice(pool)
+                cc = bot._sample_pool_combo(rng, pool)
                 if cc[0] not in used and cc[1] not in used:
                     used.add(cc[0]); used.add(cc[1]); opps.append(list(cc)); break
             else:
