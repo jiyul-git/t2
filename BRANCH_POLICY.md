@@ -2,19 +2,16 @@
 
 브랜치는 작업 부산물이 아니라 **명시적 수명주기를 가진 작업 단위**로 관리한다.
 
-## Active branches
+## Active branch
 
-원칙적으로 동시에 유지하는 활성선은 두 개다.
+원칙적으로 활성선은 **하나만 유지한다**.
 
 1. `chatgpt/decision-architecture-audit-20260926`
-   - 엔진/판단 구조의 source of truth
-   - 현재 F7-B1D 포함 구조 감사 진행
-   - balance tuning 전까지 엔진 주 작업선
+   - 엔진/판단 구조 + 현재 플레이/UI의 단일 source of truth
+   - PR #11 `0b919b62`에서 기존 engine/UI 최신선을 통합
+   - 구조 감사, UI 수정, 배포 준비 모두 여기서 닫는다.
 
-2. `chatgpt/ui-bot-pipeline-20260927`
-   - 현재 플레이/UI source of truth
-   - `ui-recovery` 전체를 포함하고 bot-action streaming까지 통합
-   - 엔진 판단 로직은 여기서 임의 수정하지 않음
+`chatgpt/ui-bot-pipeline-20260927`은 통합 이후 호환 ref일 뿐이며 새 작업 금지, local clone 전환 후 삭제한다.
 
 ## Do not create branches casually
 
