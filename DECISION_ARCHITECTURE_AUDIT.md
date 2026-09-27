@@ -236,14 +236,17 @@ User design decision:
 > Emotional state may influence **plan / re-plan selection only**.  Once a plan or response-plan
 > is chosen, execution must follow it except for legality/chip conversion.
 
-The current implementation does **not** yet respect this boundary.
+The current strategy does **not** yet activate this boundary, but the pre-logic
+plumbing now exposes it explicitly.
 
-`play.Hand.axes()` currently returns `PS.tilted_view(base, t)`, and that tilted profile is
-then passed broadly through preflop and postflop logic, including functions that choose responses
-and sizes.  Therefore tilt can currently alter concept/temper values outside a clearly bounded
-planning stage.
+`play.Hand` now has `base_profile`, `planning_profile`, `execution_profile`, and
+`profile_views`.  For exact behavior preservation, production `axes()` is deliberately
+pinned to `planning_profile()`, which is the same `PS.tilted_view(base, t)` behavior as before.
+No current action consumer has been switched to `execution_profile()` yet.  Therefore tilt can
+still alter concept/temper values broadly; changing those consumers is F7-C **logic activation**,
+not plumbing.
 
-Required future architecture:
+Target architecture:
 
 ```
 base_profile
@@ -259,7 +262,9 @@ A reactive event (for example, check -> opponent river bet) is itself a new plan
 Emotion may bias the newly selected response-plan there, but may not subsequently rewrite the
 selected fold/call/raise or strategic size during execution.
 
-Status: ARCHITECTURE MISMATCH / defer behavior change until situation-to-code mapping is complete.
+Status: PRE-LOGIC BOUNDARY SCAFFOLDED / STRATEGY ACTIVATION DEFERRED.
+`tools/verify_prelogic_profile_boundary.py` proves the new views preserve historical
+`axes()` behavior before activation.
 
 
 ## 7. Locked decision-cycle invariant
@@ -307,3 +312,20 @@ The current engine only partially follows this cycle:
 - the tilted profile is passed broadly, so emotion is not currently confined to plan selection.
 
 These are architecture findings, not yet behavior changes.
+
+### Pre-logic execution boundary scaffold
+
+F7-D now records the execution transformation chain without changing it:
+
+`calculated_target -> execution_input_target -> shaped_target -> legal_target
+-> final_target -> applied_target`.
+
+The same intent record also identifies replay vs fresh judgment, whether expression shaping was
+called/changed the target, whether minimum-raise clamping occurred, and whether
+`effective_allin_v1` promoted the legal target to actor-cap shove.
+
+This is provenance only.  `plan.act_with_plan` still owns strategic action/size judgment;
+`session.HandRun` still performs the existing expression/legal conversion.  Moving or removing
+those conversions is F7-D logic/refactor activation and is deliberately deferred.
+
+Gate: `tools/verify_prelogic_execution_boundary.py` plus the frozen production fingerprint.
