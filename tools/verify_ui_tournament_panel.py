@@ -24,6 +24,7 @@ def need(cond, msg):
 need('STEP_CHOICES' not in APP, 'bot-action interval choices still present')
 need("const AUTO_KEY" not in APP, 'result auto preference still present')
 menu = APP[APP.index('async function showMenu()'):APP.index('function showHandDetail')]
+info = APP[APP.index('function tournamentInfoHTML'):APP.index('function renderRankDrawer')]
 need('mStep' not in menu and '봇 액션 간격' not in menu,
      'bot action interval control still in menu')
 need('mAuto' not in menu and '자동 진행 끄기' not in menu
@@ -31,10 +32,11 @@ need('mAuto' not in menu and '자동 진행 끄기' not in menu
      and '결과 화면' not in menu,
      'result/auto-progress control still in menu')
 
-# Field summary moved out of top bar into tournament menu.
+# Field summary moved out of top bar into tournament info/menu.
 need("$('#fieldline').textContent = ''" in APP, 'top field summary not cleared')
-for s in ('대회 정보', 'ITM', '레벨', '블라인드', '내 칩순위',
-          '다음 머니점프', '전체 봇 스택 순위'):
+for s in ('ITM', '레벨', '블라인드', '내 칩순위', '다음 머니점프'):
+    need(s in info, 'tournament info missing %r' % s)
+for s in ('대회 정보', '전체 봇 스택 순위'):
     need(s in menu, 'menu missing %r' % s)
 
 # Standings endpoint returns only public tournament/stack/seat data.
