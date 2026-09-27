@@ -6,12 +6,14 @@
 
 - Repository: `jiyul-git/t2`
 - Active branch: `chatgpt/decision-architecture-audit-20260926`
-- 개발 원본 폴더: `~/t2`
-- 실제 플레이 실행폴더: `~/t2_play`
-- `~/t2_play_src` 같은 추가 clone은 사용하지 않는다.
+- 엔진/배선 감사 원본: `~/t2`
+- UI 소스 원본: `~/t2_ui_src`
+- 실제 플레이 실행본: `~/t2_ui_beta`
+- 임시 clone(`~/t2_ui_stream_test`, `~/t2_play_src` 등)은 사용하지 않는다.
 
-Git 커밋 해시는 계속 바뀌므로 **브랜치 HEAD가 최신 원본**이다. 플레이할 때는 `~/t2`를 pull한 뒤
-`ui/tools/setup_run_dir.sh ~/t2_play`로 실행폴더만 갱신한다.
+브랜치 역할을 섞지 않는다.
+`~/t2`는 엔진 감사 브랜치에 고정하고, UI 작업은 `~/t2_ui_src`에서만 한다.
+플레이할 때는 UI 소스에서 `ui/tools/setup_run_dir.sh "$HOME/t2_ui_beta"`로 실행본을 갱신한다.
 
 ## Architecture audit
 
@@ -24,21 +26,24 @@ Git 커밋 해시는 계속 바뀌므로 **브랜치 HEAD가 최신 원본**이�
 - F7-B1C12 blocker-effect judgment lifecycle
 - F8 side-pot plumbing stages already marked closed in their audit docs
 
-### IN PROGRESS — do not call complete
+### F7-B1D — CLOSED
 
-**F7-B1D: empty/partial opponent-range semantics**
+B1D7-A likelihood shadow passed locally:
+- probability invariants 97,344
+- scripted branch checks 164,444
+- mismatches 0
 
-Current finding:
+B1D7-B production rewire exact parity also passed locally against checkpoint `5eb848c`:
+- exact checks 92,883
+- hotzone checks 1,611
+- calloff checks 13,050
+- attack outputs 2,124
+- action_or_rng_mismatches 0
 
-- live incomplete examples observed so far were heads-up, not true multiway partial pools;
-- 11/11 HU empty-seat cases originated at `preflop_range`;
-- all 11 were reconstructed as 3bet;
-- continuous 3bet interval was positive but narrower than the discrete AA percentile bin;
-- current downstream fallback can replace missing opponent union with hero's own range;
-- `tools/measure_f7b_empty_range_overlap_candidate.py` is the current shadow experiment.
+Defend execution now shares the likelihood helper without changing action, sizing, or RNG state.
 
-Separate open question: actual `defend_decision` uses stochastic mixed action probabilities while
-`ranges.preflop_range` reconstructs a hard slice. That posterior-semantics mismatch is **not closed** by the bin-overlap shadow.
+**Next architecture step: weighted-range representation + legacy adapter.**
+Production ranges are still unweighted until that step begins.
 
 ### OPEN after B1D
 
@@ -49,6 +54,29 @@ Separate open question: actual `defend_decision` uses stochastic mixed action pr
 - P7 / cold-reraise completeness revisit
 - F8-ICM semantic closure
 - final dead-code cleanup
+
+## Weighted-range migration — W0 implemented / local gate pending
+
+The post-TDA architecture work has resumed.
+
+W0 is now implemented on the canonical engine line:
+
+- canonical representation: `{combo: relative_mass}`;
+- legacy lists map to unit mass per occurrence;
+- duplicate legacy occurrences aggregate mass rather than disappearing;
+- `legacy_range()` refuses to flatten non-uniform weighted input;
+- stable weighted iteration, total mass, per-combo mass and weight-preserving filter helpers added;
+- no production decision consumer has been switched to non-uniform weights yet.
+
+Design source: `WEIGHTED_RANGE_DESIGN.md`
+
+Local W0 gates:
+
+- `python3 -m py_compile ranges.py tools/verify_weighted_range_adapter.py`
+- `python3 tools/verify_weighted_range_adapter.py`
+- `python3 tools/regress.py check --baseline current`
+
+W0 exit condition is exact existing regression behavior plus adapter contract PASS. Then W1 converts weighted sampling consumers one family at a time.
 
 ## Balance status
 
@@ -66,3 +94,70 @@ When that phase begins it must be announced explicitly as: **“이제부터 튜
 - Tool classification: `tools/README.md`
 
 Historical result/design markdown files remain for evidence. Their presence does **not** mean they are current work.
+
+
+## Branch hygiene
+
+Branch lifecycle is part of the project plan, not an afterthought.
+
+- Engine canonical line: `chatgpt/decision-architecture-audit-20260926`
+- UI canonical line: `chatgpt/ui-bot-pipeline-20260927`
+- TDA temporary verification branches were merged and are deletion candidates; no further commits may land on them.
+- New branches require an explicit reason and exit condition.
+- Temporary branches must be merged/cherry-picked/abandoned and then cleaned up.
+- Every major phase closes with code + verification + docs + branch cleanup.
+
+See `BRANCH_POLICY.md`.
+
+
+## Tournament position / blind system — CLOSED / promoted
+
+The earlier physical-button-only hotfix was insufficient. The tournament position layer was redesigned around the 2026 Poker TDA dead-button model and locally verified, then merged to the canonical engine line in PR #9 / merge `4b601b8b`.
+
+Implemented:
+- physical BTN/SB/BB anchors; BTN and SB may be dead/empty;
+- BB obligation is the rotation axis;
+- BB bust => old BB physical seat becomes dead SB, old UTG becomes BB;
+- SB bust => dead BTN as required;
+- TDA Rule 36-B vacant-seat BTN advance while preserving blind progression;
+- 3-handed → HU transition and HU BTN=SB / no consecutive BB;
+- broken-table Rule 11 seat restrictions and RNG assignment;
+- balance Rule 12-A: next-BB player moves, destination is worst position, never SB;
+- no-bet showdown order from physical first seat left of BTN;
+- split-pot odd chips from first winner left of BTN;
+- live-state schema persists `button_seat/sb_seat/bb_seat` with one-time legacy migration;
+- bot-only tables and HERO tables use the same explicit hand layout.
+
+Design source: `TDA_POSITION_DESIGN.md`
+
+Promotion gates passed locally on 2026-09-27:
+- `tools/verify_tda_dead_button.py`: 16 checks PASS
+- `tools/verify_tda_live_integration.py`: PASS
+- `tools/verify_button_rotation.py`: PASS
+- changed Python modules compile cleanly
+
+Containment proof after merge: canonical is ahead of `chatgpt/tda-position-engine-20260927` with temp behind=0. The temp branch is now deletion-only.
+
+## Latest playable checkpoint
+
+As of 2026-09-27 the canonical playable/UI line is:
+
+```
+chatgpt/ui-bot-pipeline-20260927 @ ac7179e
+```
+
+It contains the full `ui-recovery` lineage plus:
+
+- new-game sidecar backup `fn` hotfix;
+- physical dealer/button-seat persistence used by the live UI;
+- side-seat chip/bubble fixes;
+- bot-action server streaming;
+- streamed transport/error hardening;
+- new-street board reveal while the next bot computes;
+- 1.5s action pacing overlap;
+- short hero-action/new-street breathing pauses;
+- parallel HERO/OTHER round settlement;
+- TDA dead-button position/blind UI;
+- tournament-info menu and right-swipe full stack standings.
+
+TDA UI was merged in PR #10 / merge `ac7179e8`. `chatgpt/ui-recovery-20260927` remains fully contained and obsolete.
