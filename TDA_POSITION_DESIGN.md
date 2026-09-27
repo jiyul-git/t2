@@ -10,6 +10,7 @@ Scope: t2의 NLH 토너먼트 좌석·BTN·SB·BB·테이블 이동·관련 쇼�
 - Rule 36-C Heads-up: BTN=SB, preflop first, postflop last. HU 시작 때 같은 플레이어가 BB를 두 번 연속 내지 않게 BTN을 조정한다.
 - Rule 11: broken/new player는 BTN/SB/BB 포함 어느 자리도 받을 수 있으나 SB와 BTN 사이에는 들어가지 않는다. t2는 field RNG 기반 무작위 seat assignment를 쓴다.
 - Rule 12-A: balance source는 다음 BB 예정자. destination은 worst position이고 SB는 절대 아니다.
+- Rule 12-D: 가장 큰 테이블보다 3명 이상 부족해 blind 진행이 영향을 받는 테이블은 play를 멈추고 balance를 기다린다.
 - Rule 18-A: final street에 bet이 없으면 BTN 왼쪽 첫 플레이어부터 showdown 공개.
 - Rule 21-A: board-game split의 odd chip은 BTN 왼쪽 첫 승자부터 최소 칩 단위로 지급.
 - RP-11: BBA는 big-blind-first 계산. session은 BB 먼저, 남은 stack에서 ante를 게시한다.
@@ -48,9 +49,10 @@ S4가 SB가 되는 것은 금지다.
 한 hand 종료 후 기준축은 BB다.
 
 1. next BB = old BB 다음 생존자
-2. non-HU: next BTN marker = old SB marker, next SB marker = old BB marker
-3. Rule 36-B: BTN이 dead이고 BTN→SB 사이가 연속 빈 자리면 BTN만 SB 직전 빈 자리까지 전진
-4. HU: next BB는 old BB 다음 생존자, 다른 생존자가 BTN=SB
+2. non-HU: next SB marker = old BB physical seat
+3. next BTN marker = 새 SB 바로 전 physical slot. 이것이 Rule 36-B의 "blind progression 보존 + incoming seat 최대화"를 직접 표현한다.
+4. BTN/SB marker는 비어 있을 수 있지만 BB는 항상 생존 좌석이다.
+5. HU: next BB는 old BB 다음 생존자, 다른 생존자가 BTN=SB
 
 ## 5. Bust / balance ordering
 
@@ -61,6 +63,7 @@ _balance():
 - source = next_bb_player()
 - destination = worst_open_seat(), SB 제외
 - broken table = Rule 11 허용 seat pool에서 RNG 배정
+- step_others는 Rule 12-D에 따라 max table보다 3명 이상 적은 table을 그 round에서 halt
 
 ## 6. Persistence and old live-state migration
 
