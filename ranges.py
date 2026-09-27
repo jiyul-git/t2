@@ -752,45 +752,108 @@ def perceived_range(base, board, acts, profile=None, actor_read=None):
     return range_select(base, chosen)
 
 
+def _action_event_fields(row):
+    """Rich canonical event + legacy tuple compatibility."""
+    if isinstance(row, dict):
+        return {
+            'street': row.get('street'),
+            'action': row.get('action_kind') or row.get('action'),
+            'size_frac': float(row.get('size_frac', 0.0) or 0.0),
+            'facing_kind': row.get('facing_kind'),
+            'facing_size_frac': (
+                float(row.get('facing_size_frac'))
+                if row.get('facing_size_frac') is not None else None),
+            'allin': bool(row.get('allin')),
+            'allin_call': bool(row.get('allin_call')),
+            'allin_raise': bool(row.get('allin_raise')),
+            'full_raise': bool(row.get('full_raise')),
+            'incomplete_raise': bool(row.get('incomplete_raise')),
+            'can_raise_before': row.get('can_raise_before'),
+            'raise_depth_full': int(
+                row.get('raise_depth_full_after', 0) or 0),
+            'raise_depth_any': int(
+                row.get('raise_depth_any_after', 0) or 0),
+        }
+    stt, a, sz = row
+    return {
+        'street': stt, 'action': a, 'size_frac': float(sz or 0.0),
+        'facing_kind': None, 'facing_size_frac': None,
+        'allin': (a == 'allin'), 'allin_call': False,
+        'allin_raise': False, 'full_raise': False,
+        'incomplete_raise': False, 'can_raise_before': None,
+        'raise_depth_full': 0, 'raise_depth_any': 0,
+    }
+
+
+def _raise_range(r, board, street, bluff_axis, raise_size_frac,
+                 facing_size_frac, damp=1.0, barrel=0.0, n_barrels=1):
+    """Range after facing a wager *and choosing raise*.
+
+    A raise is not a first bet. It is the intersection of:
+      1) hands that can continue versus the wager faced, and
+      2) hands selected to attack from that continuing range.
+
+    Re-raise / re-re-raise therefore need no depth-specific magic constants:
+    every additional raise event repeats the same conditional update.
+    """
+    if facing_size_frac is None:
+        # Legacy event lacks the price that was faced; do not invent it.
+        return _bet_range(
+            r, board, street, bluff_axis, raise_size_frac,
+            damp, barrel, n_barrels=n_barrels)
+    cont = _continue_range(
+        r, board, street, float(facing_size_frac), damp)
+    return _bet_range(
+        cont, board, street, bluff_axis, raise_size_frac,
+        damp, barrel, n_barrels=n_barrels)
+
+
 def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
-    """관측된 포스트플랍 액션 경로로 레인지를 순차 축소한다.
+    """관측된 포스트플랍 액션 사건으로 레인지를 순차 축소.
 
-    acts — [(street, action, size_frac), ...] 관측 순서대로.
-           size_frac 은 그 시점 팟 대비 베팅 비율(모르면 0.0).
+    새 canonical event는 action뿐 아니라 facing bet/raise, 실제 action size,
+    all-in/full/incomplete, raise depth를 보존한다. legacy tuple도 지원한다.
 
-    **인자가 둘이다. 예전에는 하나였고 그게 뒤섞여 있었다.**
-      actor_read — 레인지의 주인(상대)에 대한 읽기. read_opponent 결과.
-                   블러프 성향·씨벳 성향은 **그 사람의 것**이어야 한다.
-      observer   — 이 축소를 수행하는 사람. 인식 한계는 perceived_range 가 건다.
+    핵심 의미:
+      bet   -> 처음 공격한 betting range
+      raise -> 먼저 facing wager를 계속할 수 있어야 하고, 그 중 raise range
+      call  -> raise 권리가 있으면 flat range; all-in/권리 없음이면 continue range
+      check -> checking range
 
-    예전에는 관찰자 프로필 하나만 받아 거기서 bluff/cbet 을 꺼냈다.
-    그래서 **자기 블러프 성향으로 상대 레인지를 좁혔다** — 자기 투사다.
-    블러프를 많이 하는 사람일수록 상대도 블러프가 많다고 가정했다.
+    배럴 수는 공격한 **스트리트 수**이지 같은 스트리트의 재레이즈 횟수가 아니다.
     """
     if not board or not base:
         return range_copy(base)
-    # 기본값은 필드 평균. 읽기가 없으면 상대를 평균으로 가정한다.
+
     bluff = 5.0
     cbet = 5.0
     barrel = 0.0
     if actor_read and actor_read.get('w', 0) > 0:
         w = actor_read['w']
-        # bluff_gap −1~+1 을 1~10 축으로 되돌린다.
-        bluff = max(1.0, min(10.0, 5.0 + 5.0*actor_read.get('bluff_gap', 0.0)*w))
-        # 씨벳 성향은 '체크했다'의 정보량을 정한다.
-        # 자주 치는 사람의 체크는 강한 신호, 안 치는 사람의 체크는 정보가 없다.
-        cbet = max(1.0, min(10.0, 5.0 - 5.0*actor_read.get('passive', 0.0)*w))
-        barrel = max(-1.0, min(1.0, actor_read.get('barrel_gap', 0.0) * w))
+        bluff = max(
+            1.0, min(10.0,
+                     5.0 + 5.0*actor_read.get('bluff_gap', 0.0)*w))
+        cbet = max(
+            1.0, min(10.0,
+                     5.0 - 5.0*actor_read.get('passive', 0.0)*w))
+        barrel = max(
+            -1.0, min(1.0, actor_read.get('barrel_gap', 0.0) * w))
+
     r = range_copy(base)
     floor = max(_MIN_KEEP, int(len(range_support(base))*_MIN_FRAC))
     step = 0
-    aggressive_seen = 0
-    for (stt, a, sz) in acts:
+    aggressive_streets = []
+
+    for row in acts:
+        ev = _action_event_fields(row)
+        stt = ev['street']
+        a = ev['action']
+        sz = ev['size_frac']
+
         if len(r) <= floor:
             break
-        # 과거 액션은 **그 당시 공개돼 있던 보드**로 해석해야 한다.
-        # river에서 range를 다시 만들면서 flop call을 5장 보드로 평가하면
-        # turn/river 카드를 과거 판단에 누출시키는 셈이다.
+
+        # 과거 액션은 당시 공개돼 있던 보드만 사용한다.
         if stt == 'flop':
             action_board = list(board[:3])
         elif stt == 'turn':
@@ -799,18 +862,40 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
             action_board = list(board[:5])
         else:
             action_board = list(board)
-        # 연속 액션일수록 추가 정보량이 줄어든다 (축소 누적 폭주 방지)
+
         d = _DECAY ** step
+
         if a in ('bet', 'raise', 'allin'):
-            aggressive_seen += 1
-            r = _bet_range(
-                r, action_board, stt, bluff, sz, d, barrel,
-                n_barrels=aggressive_seen)
+            if stt not in aggressive_streets:
+                aggressive_streets.append(stt)
+            n_barrels = len(aggressive_streets)
+
+            # canonical raise는 first-bet과 의미가 다르다.
+            if a == 'raise' or ev.get('facing_kind') in ('bet', 'raise'):
+                r = _raise_range(
+                    r, action_board, stt, bluff, sz,
+                    ev.get('facing_size_frac'), d, barrel,
+                    n_barrels=n_barrels)
+            else:
+                r = _bet_range(
+                    r, action_board, stt, bluff, sz, d, barrel,
+                    n_barrels=n_barrels)
+
         elif a == 'call':
-            r = _call_range(r, action_board, stt, sz, d)
+            # 올인 콜 또는 규칙상 raise가 닫힌 콜은 top value도 call에 남는다.
+            # ordinary flat만 _call_range의 trap-removal 의미를 사용한다.
+            faced = ev.get('facing_size_frac')
+            use_sz = sz if faced is None else faced
+            if ev.get('allin_call') or ev.get('can_raise_before') is False:
+                r = _continue_range(r, action_board, stt, use_sz, d)
+            else:
+                r = _call_range(r, action_board, stt, use_sz, d)
+
         elif a == 'check':
             r = _check_range(r, action_board, stt, cbet, d)
         else:
-            continue                      # fold 는 살아있는 상대에게 나오지 않는다
+            continue
         step += 1
+
     return r if r else range_copy(base)
+
