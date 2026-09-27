@@ -659,7 +659,7 @@ def perceived_facing_bet_response(base, board, street, size_frac,
     observer의 range_read 한계는 perceived_range와 같은 방식으로 적용한다.
     """
     if not base or not board:
-        return list(base or [])
+        return range_copy(base)
     full = (_call_range(base, board, street, size_frac)
             if raise_possible else
             _continue_range(base, board, street, size_frac))
@@ -667,14 +667,15 @@ def perceived_facing_bet_response(base, board, street, size_frac,
         return full
     rr = PS.sk(profile, 'range_read')
     if rr < 1.5:
-        return list(base)
+        return range_copy(base)
     grasp = min(1.0, (rr - 1.5) / 6.0)
     if grasp >= 0.98 or not full:
         return full
-    keep = set(full)
-    rest = [c for c in base if c not in keep]
+    keep = set(range_support(full))
+    rest = [c for c in range_support(base) if c not in keep]
     n_extra = int(len(rest) * (1.0 - grasp))
-    return full + rest[:n_extra]
+    chosen = range_support(full) + rest[:n_extra]
+    return range_select(base, chosen)
 
 
 def perceived_range(base, board, acts, profile=None, actor_read=None):
@@ -692,17 +693,18 @@ def perceived_range(base, board, acts, profile=None, actor_read=None):
         return narrow_by_actions(base, board, acts, actor_read, profile)
     rr = PS.sk(profile, 'range_read')
     if rr < 1.5:
-        return list(base)                     # 액션을 아예 반영 못 한다
+        return range_copy(base)               # 액션을 아예 반영 못 한다
     full = narrow_by_actions(base, board, acts, actor_read, profile)
     grasp = min(1.0, (rr - 1.5) / 6.0)        # rr 7.5 이상이면 완전 반영
     if grasp >= 0.98 or not full:
         return full
-    # 부분 인식: 좁혀진 레인지와 원본 사이를 섞는다.
-    # '어렴풋이 안다'는 좁힌 레인지 + 원본 잔여로 표현된다.
-    keep = set(full)
-    rest = [c for c in base if c not in keep]
+    # 부분 인식: 좁혀진 support와 원본 support 사이를 섞되,
+    # weighted input의 surviving mass는 그대로 보존한다.
+    keep = set(range_support(full))
+    rest = [c for c in range_support(base) if c not in keep]
     n_extra = int(len(rest) * (1.0 - grasp))
-    return full + rest[:n_extra]
+    chosen = range_support(full) + rest[:n_extra]
+    return range_select(base, chosen)
 
 
 def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
@@ -721,7 +723,7 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
     블러프를 많이 하는 사람일수록 상대도 블러프가 많다고 가정했다.
     """
     if not board or not base:
-        return base
+        return range_copy(base)
     # 기본값은 필드 평균. 읽기가 없으면 상대를 평균으로 가정한다.
     bluff = 5.0
     cbet = 5.0
@@ -734,8 +736,8 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
         # 자주 치는 사람의 체크는 강한 신호, 안 치는 사람의 체크는 정보가 없다.
         cbet = max(1.0, min(10.0, 5.0 - 5.0*actor_read.get('passive', 0.0)*w))
         barrel = max(-1.0, min(1.0, actor_read.get('barrel_gap', 0.0)))
-    r = list(base)
-    floor = max(_MIN_KEEP, int(len(base)*_MIN_FRAC))
+    r = range_copy(base)
+    floor = max(_MIN_KEEP, int(len(range_support(base))*_MIN_FRAC))
     step = 0
     for (stt, a, sz) in acts:
         if len(r) <= floor:
@@ -751,4 +753,4 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
         else:
             continue                      # fold 는 살아있는 상대에게 나오지 않는다
         step += 1
-    return r if r else list(base)
+    return r if r else range_copy(base)
