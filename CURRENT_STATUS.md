@@ -56,6 +56,22 @@ Production ranges are still unweighted until that step begins.
 - F8-ICM semantic closure
 - final dead-code cleanup
 
+## Final-table latency fix — implementation complete / local gate pending
+
+User observed a final-table-only pause, including after HERO folds before the next bot action.
+
+Two independent sources were found:
+
+1. **Intra-hand bot-action latency:** exact ICM used subset-DP only at exactly 9 players. At 8/7/6/... players every `h.bf(seat)` fell back to the factorial historical recursion. Safe 2..9-player states now use the same exact subset-DP; unsafe path-prune states still use the historical recursion.
+2. **Between-hand settlement overhead:** once only one table remains, the UI server still tried to submit an empty non-HERO worker and `live2.finish` could create `others_pending`. Single-table rounds now settle bust/balance locally and never create worker pending state.
+
+No ICM formula, payout semantics, bot decision coefficient, or action pacing was changed.
+
+Local gates:
+- `python3 tools/verify_icm_fast.py`
+- `python3 tools/verify_parallel_tables.py`
+- frozen regression after the current W0/W1 gate.
+
 ## Weighted-range migration — W0+W1 implemented / local gate pending
 
 The post-TDA architecture work has resumed.
