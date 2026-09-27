@@ -2687,15 +2687,24 @@ class HandRun:
         live_set = set(live)
 
         def _left_of_button_order():
+            # TDA dead button에서는 h.button이 빈 물리 좌석일 수 있다.
+            # Hand가 이미 계산해 둔 실제 포스트플랍 액션 순서가
+            # '버튼 왼쪽 첫 생존자부터'의 단일 출처다.
+            ordered = [
+                s for s in (getattr(h, 'post_seats', None) or [])
+                if s in live_set
+            ]
+            if ordered:
+                return ordered
+
+            # legacy 단일테이블 폴백.
             ring = list(h.seats or [])
             if not ring:
                 return list(live)
-
             btn = getattr(h, 'button', None)
             if btn in ring:
                 i = ring.index(btn)
                 ring = ring[i + 1:] + ring[:i + 1]
-
             return [s for s in ring if s in live_set]
 
         def _rotate_to(seats_, first_):
