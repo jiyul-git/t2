@@ -1,18 +1,16 @@
 # UI CURRENT STATUS — READ THIS FIRST
 
-UI는 엔진 감사와 별도 최신선으로 관리한다.
+UI는 이제 엔진 감사와 **같은 unified canonical line**에서 관리한다.
 
-## Canonical refs
+## Canonical ref
 
-- Engine / architecture source of truth:
+- **Single source of truth for engine + UI:**
   `chatgpt/decision-architecture-audit-20260926`
-- **Only active UI line / current playable UI:**
-  `chatgpt/ui-bot-pipeline-20260927`
-- Current verified UI merge checkpoint:
-  `ac7179e8` (PR #10, TDA positions + tournament info UI)
+- Unified merge checkpoint:
+  `0b919b62` (PR #11)
+- `chatgpt/ui-bot-pipeline-20260927`은 local clone 전환을 위한 임시 호환 ref이며 삭제 대상이다.
 
-The user has designated this UI line as the latest version.
-Do not recover older UI branches again unless a specific regression requires historical comparison.
+별도 "최신 UI 브랜치"를 다시 만들지 않는다. UI와 엔진은 같은 canonical history에서 닫는다.
 
 ## Current UI state
 
@@ -117,9 +115,9 @@ Do not create replacement UI branches for small fixes.
 
 ## Rule
 
-- Active engine line: `chatgpt/decision-architecture-audit-20260926`
-- **Only active UI line:** `chatgpt/ui-bot-pipeline-20260927`
-- Branch cleanup is part of phase closure, not a later housekeeping task.
-- Historical/temporary branches are never runtime source-of-truth.
-- Before saying a feature is missing or reimplementing it, search historical branches/commits and check containment first.
+- **Only active engine/UI line:** `chatgpt/decision-architecture-audit-20260926`
+- `chatgpt/ui-bot-pipeline-20260927` is deletion-only after local migration.
+- Branch cleanup is part of phase closure.
+- Historical branches are never runtime source-of-truth.
+- Before saying a feature is missing, search history and containment first.
 - Character/portrait assets stay frozen unless the user explicitly asks to change them.
