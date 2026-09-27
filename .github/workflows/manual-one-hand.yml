@@ -14,6 +14,7 @@ on:
       - tools/manual_hand_actions.json
       - tools/manual_next_hand_actions.json
       - tools/manual_following_hand_actions.json
+      - tools/manual_more_hands.json
       - tools/manual_hand4_actions.json
       - .github/workflows/manual-one-hand.yml
   workflow_dispatch:
