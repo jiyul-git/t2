@@ -314,16 +314,39 @@ def perceived_rel(profile, rel, hero, board, outs=0, made=0):
 
 
 def _range_sig(combos):
-    """레인지의 재현용 서명. **기록 전용** — 판단에 쓰지 않는다.
+    """Stable archive signature for support + posterior mass.
 
-    파이썬 내장 hash 는 프로세스마다 달라져 아카이브 ID 로 못 쓴다.
-    정렬 후 sha256 으로 고정한다. 앞으로 이 정규화를 바꾸지 말 것 —
-    바꾸면 과거 아카이브와 대조가 끊긴다.
+    Legacy lists and uniformly weighted dicts keep the historical support-only
+    SHA payload exactly, so old archives remain comparable. Only genuinely
+    non-uniform weighted ranges add normalized mass to the payload.
     """
     if not combos:
         return None
-    payload = '\n'.join(sorted(str(tuple(c)) for c in combos))
+
+    if isinstance(combos, dict) and not R.range_is_uniform(combos):
+        wr = R.weighted_range(combos)
+        total = sum(wr.values()) or 1.0
+        payload = '\n'.join(
+            '%s@%.17g' % (str(tuple(c)), float(w) / total)
+            for c, w in R.range_items(wr)
+        )
+    else:
+        support = R.range_support(combos)
+        payload = '\n'.join(sorted(str(tuple(c)) for c in support))
     return _hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def _decision_range_sig(combos):
+    """In-process refresh signature.
+
+    Preserve the old legacy support hash exactly. Weighted posteriors with the
+    same support but different probability mass must still trigger refresh.
+    """
+    if not combos:
+        return 0
+    if isinstance(combos, dict) and not R.range_is_uniform(combos):
+        return hash(R.range_signature(combos))
+    return hash(frozenset(map(str, R.range_support(combos))))
 
 
 def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
@@ -337,23 +360,21 @@ def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
         for k in sorted(opp_ranges, key=lambda x: str(x)):
             r = opp_ranges.get(k) or []
             if r:
-                pools.append(dict(r) if isinstance(r, dict) else list(r))
+                pools.append(R.range_copy(r))
     elif isinstance(opp_ranges, (list, tuple)):
         for r in opp_ranges:
             if r:
-                pools.append(dict(r) if isinstance(r, dict) else list(r))
+                pools.append(R.range_copy(r))
 
     if pools:
         # 호출부가 일부 상대 레인지만 만들었어도 상대 수를 조용히 줄이면 안 된다.
         _fb = opp_range or pools[-1]
-        fallback = dict(_fb) if isinstance(_fb, dict) else list(_fb)
         while len(pools) < max(1, n_opp):
-            pools.append(fallback)
+            pools.append(R.range_copy(_fb))
         return pools[:max(1, n_opp)]
 
     if opp_range:
-        return [(dict(opp_range) if isinstance(opp_range, dict) else list(opp_range))
-                for _ in range(max(1, n_opp))]
+        return [R.range_copy(opp_range) for _ in range(max(1, n_opp))]
     return []
 
 
@@ -2166,7 +2187,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     # **내 레인지는 서명에서 뺀다.** 그 스트리트 안에서 내 레인지는 변하지
     # 않는데 매번 새로 만들어져 서명만 흔들린다(실측 3건이 그 때문에
     # 변화로 오판됐다). 같은 스트리트에서 실제로 좁혀지는 것은 상대 레인지다.
-    _rsig = 0 if not opp_range else hash(frozenset(map(str, opp_range)))
+    _rsig = _decision_range_sig(opp_range)
     _first = (street != st.get('street_made')
               and street not in (st.get('refreshed') or []))
     _opps_sig = _opp_ranges_signature(opp_ranges)
