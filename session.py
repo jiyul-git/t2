@@ -664,14 +664,9 @@ def _project_bet_outcome_layers(prior_contrib, street_contrib, folded, stacks,
 
 
 def _barrel_count(full_meta, current_meta, seat, current_street):
-    """상대가 공격한 **postflop street 수**. 현재 street도 포함."""
-    streets = {
-        m.get('street') for m in (full_meta or [])
-        if m.get('seat') == seat and m.get('raised') and m.get('street')
-    }
-    if any(m.get('seat') == seat and m.get('raised') for m in (current_meta or [])):
-        streets.add(current_street)
-    return max(1, len(streets))
+    """상대가 공격한 postflop street 수. canonical event 해석을 재사용."""
+    return AE.aggressive_street_count(
+        full_meta, current_meta, seat, current_street)
 
 
 def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
@@ -2682,10 +2677,8 @@ class HandRun:
             import preflop as _pf
             # postflop 공격성은 raw action 문자열이 아니라 규칙 사건으로 본다.
             # all-in raise는 공격이고 all-in call은 공격이 아니다.
-            aggr_seats = {
-                m.get('seat') for m in (getattr(self, 'full_action_meta', []) or [])
-                if m.get('raised')
-            }
+            aggr_seats = AE.aggressive_seats(
+                getattr(self, 'full_action_meta', []) or [])
             # preflop meta는 아직 별도 보존하지 않으므로 기존 공개 raise만 합친다.
             aggr_seats |= {
                 x for (stt, x, a_, _) in (getattr(self, 'full_log', []) or [])
