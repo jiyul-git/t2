@@ -25,7 +25,7 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓴다. sidecar 이름
 """
 import hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket
 from concurrent.futures import ProcessPoolExecutor
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 
 D = os.path.dirname(os.path.abspath(__file__))
 if D not in sys.path:
@@ -45,6 +45,64 @@ import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver
 LOCK = threading.Lock()
 _last = None
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
+
+# 실시간 플레이 스트림은 "계산 -> 화면 모션 -> 다음 계산" 순서를 보장한다.
+# HTTP 응답은 서버->브라우저 단방향이므로, 각 진행 이벤트마다 별도 ACK를
+# 받아야 다음 봇 판단을 시작할 수 있다. 이 ACK는 게임 상태 LOCK과 분리한다.
+# 그렇지 않으면 step-stream이 LOCK을 잡은 채 기다리는 동안 ACK 자신도 LOCK을
+# 기다려 영구 교착된다.
+STREAM_LOCK = threading.Lock()
+STREAMS = {}
+STREAM_ACK_TIMEOUT = float(os.environ.get('T2_UI_ACK_TIMEOUT', '15'))
+
+
+def _stream_gate_open():
+    sid = secrets.token_hex(12)
+    state = {
+        'cond': threading.Condition(),
+        'acked': 0,
+        'closed': False,
+    }
+    with STREAM_LOCK:
+        STREAMS[sid] = state
+    return sid
+
+
+def _stream_gate_ack(sid, seq):
+    with STREAM_LOCK:
+        state = STREAMS.get(str(sid))
+    if state is None:
+        return False
+    cond = state['cond']
+    with cond:
+        if int(seq) > int(state['acked']):
+            state['acked'] = int(seq)
+        cond.notify_all()
+    return True
+
+
+def _stream_gate_wait(sid, seq):
+    with STREAM_LOCK:
+        state = STREAMS.get(str(sid))
+    if state is None:
+        return False
+    cond = state['cond']
+    with cond:
+        return cond.wait_for(
+            lambda: state['closed'] or int(state['acked']) >= int(seq),
+            timeout=max(1.0, STREAM_ACK_TIMEOUT)
+        )
+
+
+def _stream_gate_close(sid):
+    with STREAM_LOCK:
+        state = STREAMS.pop(str(sid), None)
+    if state is None:
+        return
+    cond = state['cond']
+    with cond:
+        state['closed'] = True
+        cond.notify_all()
 
 def _lobby_payload():
     """UI-only tournament catalog; formats.py remains the rules source."""
@@ -792,13 +850,15 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, _lobby_payload())
 
         if path == '/api/tournament':
-            with LOCK:
-                try:
-                    return self._send(200, _tournament_payload())
-                except Exception as e:
-                    traceback.print_exc()
-                    return self._send(
-                        500, {'error': '%s: %s' % (type(e).__name__, e)})
+            # 읽기 전용 상태는 진행 중인 봇 계산의 LOCK 뒤에 세우지 않는다.
+            # live2.save()가 tmp->replace로 원자적으로 저장하므로 계산 중에는
+            # 마지막 확정 스냅샷을 읽고, 저장 순간에도 ST/.bak 중 하나가 유효하다.
+            try:
+                return self._send(200, _tournament_payload())
+            except Exception as e:
+                traceback.print_exc()
+                return self._send(
+                    500, {'error': '%s: %s' % (type(e).__name__, e)})
 
         if path == '/api/memos':
             with LOCK:
@@ -855,6 +915,23 @@ class H(BaseHTTPRequestHandler):
             body = self._body()
         except ValueError:
             return self._send(400, {'error': 'JSON 파싱 실패'})
+        # 모션 종료 ACK는 진행 중인 /api/step-stream이 게임 LOCK을 잡은
+        # 상태에서도 반드시 들어와야 한다. 따라서 LOCK 바깥에서 처리한다.
+        if self.path == '/api/step-ack':
+            sid = body.get('stream_id')
+            try:
+                seq = int(body.get('seq'))
+            except (TypeError, ValueError):
+                return self._send(400, {'error': 'seq가 올바르지 않습니다'})
+            if not sid:
+                return self._send(400, {'error': 'stream_id가 없습니다'})
+            ok = _stream_gate_ack(sid, seq)
+            return self._send(200 if ok else 410, {
+                'ok': bool(ok),
+                'stream_id': sid,
+                'seq': seq,
+            })
+
         with LOCK:
             try:
                 if self.path == '/api/memo':
@@ -921,13 +998,28 @@ class H(BaseHTTPRequestHandler):
                     if stream:
                         self._stream_start()
                         alive = [True]
+                        stream_id = _stream_gate_open()
+                        seq = [0]
+                        alive[0] = self._stream_line({
+                            'type': 'stream_start',
+                            'stream_id': stream_id,
+                        })
 
                         def _emit_bot(event):
+                            if not alive[0]:
+                                return
+                            seq[0] += 1
+                            cur = seq[0]
+                            alive[0] = self._stream_line({
+                                'type': 'bot_action',
+                                'stream_id': stream_id,
+                                'seq': cur,
+                                'event': event,
+                            })
                             if alive[0]:
-                                alive[0] = self._stream_line({
-                                    'type': 'bot_action',
-                                    'event': event,
-                                })
+                                # 여기서 멈춘 동안 엔진은 다음 봇 판단을 시작하지 않는다.
+                                # 브라우저가 현재 액션/보드 모션을 끝낸 뒤 ACK하면 재개한다.
+                                _stream_gate_wait(stream_id, cur)
 
                         try:
                             r = (_step(a, amt, on_bot_action=_emit_bot)
@@ -940,6 +1032,9 @@ class H(BaseHTTPRequestHandler):
                                     'error': '%s: %s' % (type(e).__name__, e),
                                 })
                             return
+                        finally:
+                            _stream_gate_close(stream_id)
+
                         v = r.get('view') or {}
                         if (not r.get('done') and v.get('error') and _last
                                 and (_last.get('view') or {}).get('type') == 'decision'):
@@ -991,12 +1086,18 @@ if __name__ == '__main__':
     print('로비 주소: http://127.0.0.1:%d' % port)
     print('테이블 주소: http://127.0.0.1:%d/play' % port)
     print('다른 기기: http://<이 기기의 LAN IP>:%d' % port)
+    # 봇 계산 스트림이 모션 ACK를 기다리는 동안에도 ACK/기록/설정 요청을
+    # 받아야 하므로 단일 HTTPServer를 쓰면 안 된다.
+    class _T2ThreadingHTTPServer(ThreadingHTTPServer):
+        daemon_threads = True
+        allow_reuse_address = True
+
     if ':' in host:
-        class _HTTPServer6(HTTPServer):
+        class _HTTPServer6(_T2ThreadingHTTPServer):
             address_family = socket.AF_INET6
         srv = _HTTPServer6((host, port), H)
     else:
-        srv = HTTPServer((host, port), H)
+        srv = _T2ThreadingHTTPServer((host, port), H)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
