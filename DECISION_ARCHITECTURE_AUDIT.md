@@ -1,331 +1,312 @@
-# Decision architecture audit — working map
+# Decision architecture audit - current implementation map
 
-This document is the authoritative structural map for the current audit.
-It is intentionally separated from prior calibration work.
+Status: CURRENT IMPLEMENTATION
+Branch: `chatgpt/logic-tuning-20260927`
+Updated: 2026-09-28
 
-## 1. Current decision pipeline
+This file describes what the current code actually does.
+Target architecture remains in `POKER_DECISION_MODEL_V2.md`.
+
+---
+
+## 1. Runtime ownership
+
+### External entry
+`ui/server/ui_server.py`
+-> receives UI/API actions
+-> calls `live2.step()`
+-> streams state/bot actions to the browser
+
+### Tournament/session shell
+`live2.py`
+-> owns saved tournament state
+-> builds the hero hand/table
+-> starts or resumes `session.HandRun`
+-> advances other tournament tables
+-> archives completed hands
+-> emits telemetry
+
+### Hand state
+`play.Hand`
+-> cards / seats / stacks / profiles / reads / tilt / plan state
+-> exposes `base_profile`, `planning_profile`, `execution_profile`
+-> production `axes()` still returns the tilted planning profile
+
+### Betting rules
+`runner.Round`
+-> legal betting-round state machine
+-> contribution / current bet / min-raise / raise rights
+-> full raise / incomplete all-in raise / all-in call
+-> action order / folds / all-ins / uncalled excess
+-> raw `action_meta` is the rule-level source of truth
+
+---
+
+## 2. Canonical public action story
+
+### Raw facts
+`runner.Round.apply()` records:
+- actor and input action
+- contribution before/after
+- increment
+- current bet before/after
+- min-raise before
+- full vs incomplete raise
+- all-in call vs all-in raise
+- actor stack before/after
+- raise right before the action
+- cumulative full-raise count
+
+### Semantic event conversion
+`action_events.py` converts raw metadata into one canonical postflop event stream.
+
+Each event preserves:
+- street / actor
+- check / call / bet / raise / fold
+- wager faced
+- full-raise depth and any-raise depth
+- full vs incomplete raise
+- all-in state
+- action size and actual price faced
+- previous action by the same actor
+- response class:
+  - free_action
+  - face_bet
+  - check_then_face_bet
+  - cold_facing_raise
+  - caller_backaction
+  - aggressor_backaction
+
+Raise depth is recursive. Higher re-raises do not need separate hard-coded branches.
+
+### Consumers
+The same canonical event model now feeds:
+- opponent range narrowing
+- response classification
+- aggression/barrel summaries
+- postflop observation book
+- sizing context
+- street outcome summaries
+- audits
+
+`session.py` keeps compatibility aliases, but semantic reconstruction belongs to `action_events.py`.
+
+---
+
+## 3. Opponent model and range flow
+
+### Persistent reads
+`reads.Book` stores observer -> target public observations:
+- VPIP/PFR/limp
+- 3-bet / 4-bet / backraise
+- c-bet / barrel / delayed c-bet
+- facing bet / facing raise
+- fold to bet / fold to raise
+- sizing statistics
+- showdown evidence
+
+`reads.perceived_profile()` converts the book into the observer's current estimate of that opponent.
+
+### Starting range
+`session.HandRun` reconstructs each opponent's preflop perceived range from:
+- position
+- observed preflop action
+- stack depth
+- open size / callers / raise level
+- observer's perceived opponent profile
+
+### Postflop line update
+`session.HandRun._acts_of()`
+-> returns that opponent's accumulated postflop story
+
+`ranges.perceived_range()`
+-> `ranges.narrow_by_actions()`
+-> updates the range event by event
+
+Current interpretation:
+- bet: select a betting range
+- raise: first survive the price faced, then select a raising range
+- re-raise: repeat the same conditional update
+- call: call/continue range depending on raise rights and all-in state
+- check: checking range
+
+Same-street re-raises are not counted as new barrels.
+Barrel count means aggression across distinct postflop streets.
+
+Call/continue narrowing uses the actual incremental price faced.
+The continue model also uses a price-based minimum-defense floor.
+
+### Multiway
+Per-opponent pools are preserved as `opp_ranges[seat]`.
+Core equity can use distinct pools through `bot.equity_vs_combos()`.
+
+Legacy union `opp_range` still exists for several consumers.
+Some exploit inputs still use one selected main opponent.
+
+---
+
+## 4. Decision flow
 
 ### Preflop
+`session.HandRun`
+-> `plan.preflop_plan()`
+-> open / iso / defend / call-off logic in `preflop.py`
+-> returns action + size + `pf_seed`
+-> `runner.Round.apply()`
+
+The preflop path still does not use the same explicit plan-object structure as postflop.
 
-```
-preflop_plan
-  -> open_decision / iso_decision / defend_decision
-  -> action + size + pf_seed
-```
+### Postflop - no wager faced
+For every bot decision:
+`session.HandRun`
+-> rebuild current perceived opponent ranges
+-> `plan.update_plan()`
+
+`update_plan()` is the single plan-update entry point:
+1. create or revise line plan
+2. refresh if board/range state changed
+3. river-specific reclassification
+4. concept permission check
+5. create current street intent if missing
 
-`pf_seed` is carried into postflop state.
+Current intent:
+`attach_intent()`
+-> `decide_aggression()`
+-> `decide_size()`
+-> stored in `plan_state['intents'][street]`
 
-### Postflop, not facing a bet
+Execution:
+`act_with_plan(tocall == 0)`
+-> reads stored intent
+-> returns check/bet and strategic target
+-> session performs chip conversion / expression shaping / legality
+-> `runner.Round.apply()`
 
-```
-update_plan
-  -> make_plan or revise_plan
-  -> refresh
-  -> river_fix
-  -> _allowed
-  -> attach_intent
-       -> decide_aggression
-       -> decide_size
-  -> act_with_plan executes the stored intent
-```
+### Postflop - wager faced
+`session.HandRun`
+-> canonical `response_context`
+-> current opponent ranges
+-> pot/side-pot geometry
+-> `plan.act_with_plan(tocall > 0)`
 
-This path is intended to have one strategic owner for bet/check and one owner for size.
+Inside:
+1. compute current equity against current perceived pools
+2. compute call threshold
+3. classify check-raise spot vs ordinary response
+4. choose response
+5. store explicit response-plan record
+6. return fold / call / raise target
 
-### Postflop, facing a bet
+Response records are stored by `record_response_plan()` under
+`plan_state['response_plans'][street]`.
 
-```
-act_with_plan
-  -> calldown_need
-  -> decide_response
-       -> fold / call / raise
-```
+### Check-raise ownership
+Current implementation no longer has two competing raise producers for the same check-raise spot.
 
-After this generic response, session currently runs a second check-raise layer **only when
-the generic response returned call/fold and the player checked earlier on this street**:
+If the response class is `check_then_face_bet`:
+- `checkraise_decision()` owns the raise opportunity
+- generic `decide_response()` is called with direct raising disabled
 
-```
-decide_response -> call/fold
-  + already_checked
-  -> checkraise_decision
-  -> optional raise
-```
+If the player bet/raised and later faces another raise:
+- response class becomes `aggressor_backaction`
+- it does not re-enter the check-raise gate
 
-Therefore a real check-raise can currently be produced in two different places.
+---
 
-## 2. Confirmed architecture defects / hazards
+## 5. Response logic now separated by purpose
 
-### A. Check-raise has duplicate action producers
+### Call vs value re-raise
+A hand being good enough to call no longer automatically qualifies it as a value re-raise.
 
-`decide_response` can return raise before `checkraise_decision` is reached.
-That generic raise can use `reraise`, `bluff`, `semibluff`, `stackoff`, etc.
+Value re-raise requires a separate value condition, including equity against the opponent range expected to continue to the new raise.
 
-Consequence: a player can execute a check-raise without the declared `checkraise_*`
-skill governing the action.
+### Bluff / semibluff re-raises
+Non-value raises use a shared optimistic EV veto before frequency/personality selection.
 
-Status: DUP / requires rerouting design.
+The same structural veto is used for:
+- bluff re-raise
+- semibluff re-raise
+- give-up deviation raise
+- non-value check-raise
 
-### B. Street resolution is inconsistent
+### Made-hand bluff conversion
+A made one-pair hand is no longer converted into a pure bluff plan simply because relative strength is low.
 
-Current aliases:
+### River-started bluff
+A bluff that first starts on the river uses the `river_bluff` plan, not `bluff_2street`.
 
-- checkraise: flop / late(turn+river)
-- bluffcatch: early(flop+turn) / river
-- thin_value: turn alias also used on flop / river
+---
 
-Status: SHARED. Split decision must be semantic, not automatic.
+## 6. Relative strength and equity
 
-### C. Preflop reads postflop thin-value skill
+`plan.relative_strength()` / `joint_relative_strength()`
+compare the hero hand against the **current perceived opponent range(s)**.
 
-`preflop.defend_decision()` reads generic `thin_value`.
-The alias resolves to `thin_value_turn`.
+Therefore rel/equity do not read the betting story directly.
+The story first changes the opponent range; rel/equity are then computed against that updated range.
 
-Consequence: a postflop turn thin-value skill changes preflop 3-bet/call composition.
+This is the intended current data flow:
 
-Status: LEAK.
+public action story
+-> canonical events
+-> perceived opponent ranges
+-> rel / equity / range advantage / blocker judgment
+-> plan or response selection
 
-### D. Trap permission can use the wrong street skill
+---
 
-`_allowed(plan='trap')` requires generic `checkraise`.
-The alias resolves to `checkraise_flop`, regardless of current street.
+## 7. Profile / emotion boundary
 
-Consequence: a turn/river trap can be allowed/blocked by flop XR skill.
+Current plumbing exists:
+- `base_profile()`: emotion-free
+- `planning_profile()`: tilted
+- `execution_profile()`: emotion-free
+- `profile_views()`: exposes all views
 
-Status: LEAK.
+But production `Hand.axes()` still returns the tilted planning view.
 
-### E. Derived `value='xr'` is anchored to flop XR but used later
+Therefore current tilt can still affect:
+- range reading
+- calculations
+- plan selection
+- response selection
 
-`persona.derive()` sets `value='xr'` from `checkraise_flop >= 6.5`.
-Later this field changes trap taste and general value-bet frequency.
+This does not yet satisfy the target rule "emotion changes plan selection only".
 
-Consequence: a flop XR trait leaks into later-street value execution.
+Status: OPEN ARCHITECTURE MISMATCH.
 
-Status: LEAK / compatibility field review.
+---
 
-### F. River bluff-catch skill leaks into earlier-street biases
+## 8. Execution boundary
 
-`bluff_fear` and `hero_call` always read `bluffcatch_river`.
-Those biases are then used by generic call decisions on earlier streets.
+Strategic postflop bet size is selected in `plan.py`.
+The session then converts it to actual chips.
 
-Status: LEAK / bias model review.
+Production still calls `runner.shape_size()`, which can add persona sizing jitter / odd sizing before legality clamps.
 
-### G. Reactive river bluff check-raise lacks the observation it really needs
+Therefore execution is not yet a perfectly pure legality-only layer.
 
-Current opponent book has:
+Status: OPEN ARCHITECTURE MISMATCH.
 
-- street-specific fold-to-bet;
-- bet sizing mean/variance;
-- aggression/passivity;
-- showdown evidence.
+The manual pure-logic audit disables this sizing-expression layer so strategy can be inspected without presentation noise.
 
-It does **not** separately track:
+---
 
-```
-opponent bets -> faces raise -> folds
-```
+## 9. Current remaining structural mismatches
 
-That is strategically different from fold-to-bet.
+1. Preflop still returns action/size directly instead of using the same explicit plan object as postflop.
+2. Tilted planning profile still flows into judgment/calculation instead of plan selection only.
+3. Production expression shaping can still change strategic size after plan selection.
+4. Some multiway exploit/blocker/range-advantage consumers still use legacy union range or one main opponent even though distinct opponent pools now exist.
+5. Legacy compatibility paths remain for callers that do not provide full canonical event metadata.
 
-Consequence: a model for "small river value bet looks capped, raise only enough to fold
-that thin-value region" cannot directly estimate the opponent's fold-to-raise tendency
-from current observations.
-
-Status: MISS in perception data, if reactive bluff XR is adopted.
-
-### H. Current `river_bluff` is a proactive line, not the same as reactive bluff XR
-
-`river_fix` creates `river_bluff` after a missed draw using:
-
-- bluff;
-- barrel_river;
-- blocker effect.
-
-That state then feeds proactive river betting.
-
-This should not be conflated with:
-
-```
-check -> observe opponent river bet -> reinterpret range/size -> bluff check-raise
-```
-
-They are different decision events.
-
-Status: semantic separation required.
-
-## 3. Current concept layers
-
-### Motive / strategic goal
-
-Examples:
-
-- bluff
-- semibluff
-- thin value
-- pot control
-- trap
-- range merge
-- stack-off/value extraction
-
-### Execution form
-
-Examples:
-
-- c-bet / barrel
-- check-raise
-- block bet
-- probe
-- delayed c-bet
-- overbet
-- reraise
-- open / 3-bet forms
-
-### Perception / calculation
-
-Examples:
-
-- range_read
-- sizing_tell
-- blocker
-- fold_equity
-- board_texture
-- outs
-- potodds
-- spr
-- icm
-
-Target rule: composite actions should combine layers instead of introducing a single
-monolithic skill whenever possible.
-
-## 4. Inspection grid to finish before any code redesign
-
-Every strategic row must answer:
-
-1. What event creates the decision opportunity?
-2. Is this proactive, reactive, or deliberately induced?
-3. Which function owns the final action?
-4. Which concept(s) determine motive?
-5. Which concept determines execution form?
-6. Which perception/calculation inputs are available?
-7. Is any input coming through a generic alias or derived compatibility field?
-8. Can another function create the same final action first?
-9. Does the required opponent statistic actually exist?
-10. Is street sharing intentional and semantically defensible?
-
-Only after this grid is complete should a row be marked:
-
-`KEEP / SPLIT / ADD / REROUTE / REMOVE_COMPAT / ADD_OBSERVATION`.
-
-## 5. Work order
-
-1. finish complete decision/concept/observation matrix;
-2. lock taxonomy;
-3. lock one-owner routing for each final action;
-4. add missing observation channels only where required;
-5. implement concept splits/additions;
-6. targeted counterfactual tests;
-7. frozen regression;
-8. regenerate realized prior distribution;
-9. only then calibrate LOADING/SPREAD.
-
-No production strategic coefficients are changed by this audit.
-
-
-## 6. Emotion boundary — newly locked rule
-
-User design decision:
-
-> Emotional state may influence **plan / re-plan selection only**.  Once a plan or response-plan
-> is chosen, execution must follow it except for legality/chip conversion.
-
-The current strategy does **not** yet activate this boundary, but the pre-logic
-plumbing now exposes it explicitly.
-
-`play.Hand` now has `base_profile`, `planning_profile`, `execution_profile`, and
-`profile_views`.  For exact behavior preservation, production `axes()` is deliberately
-pinned to `planning_profile()`, which is the same `PS.tilted_view(base, t)` behavior as before.
-No current action consumer has been switched to `execution_profile()` yet.  Therefore tilt can
-still alter concept/temper values broadly; changing those consumers is F7-C **logic activation**,
-not plumbing.
-
-Target architecture:
-
-```
-base_profile
-   |
-   +--> planning_view(base_profile, emotion_state)
-   |       -> choose/revise plan or response-plan
-   |
-   +--> execution_view(base_profile)
-           -> execute stored intent; legality/chip conversion only
-```
-
-A reactive event (for example, check -> opponent river bet) is itself a new planning event.
-Emotion may bias the newly selected response-plan there, but may not subsequently rewrite the
-selected fold/call/raise or strategic size during execution.
-
-Status: PRE-LOGIC BOUNDARY SCAFFOLDED / STRATEGY ACTIVATION DEFERRED.
-`tools/verify_prelogic_profile_boundary.py` proves the new views preserve historical
-`axes()` behavior before activation.
-
-
-## 7. Locked decision-cycle invariant
-
-Every voluntary poker action must be produced by the same conceptual cycle:
-
-```
-JUDGMENT
--> PLAN
--> ACTION
--> new information/event
--> JUDGMENT
--> PLAN
--> ACTION
--> ...
-```
-
-Definitions:
-
-- **Judgment** = interpret the currently available state: hand/range strength, board, position,
-  stack geometry, opponent model, tournament context, previous action story, and perception limits.
-- **Plan** = choose the strategic intention for the next decision horizon.  The horizon may be
-  multi-street (for example value_3street / bluff_2street / trap) or immediate/reactive
-  (for example bluff-catch call, value raise, river bluff check-raise).
-- **Action** = execute the already chosen plan as fold/check/call/bet/raise/shove with its strategic
-  size.  Execution may apply only legality/chip conversion; it must not invent a new strategy.
-
-A long-horizon plan is context, not an instruction that skips later judgment.  New information
-(board card, opponent bet/raise/check, player elimination/ICM change, stack change, etc.) creates
-a new judgment event, which may preserve, revise, or replace the prior plan.
-
-Emotion/tilt belongs only in the **PLAN selection/revision step**.  It may bias which candidate
-plan wins, but it does not independently mutate ACTION after the plan has been selected.
-
-### Current-code mismatch against this invariant
-
-The current engine only partially follows this cycle:
-
-- proactive postflop play has a plan state and stored street intent;
-- facing-bet responses are selected separately inside `act_with_plan -> decide_response` rather
-  than being represented as a new explicit response-plan;
-- same-street stored intent is not re-created merely because an opponent later bet/raised;
-- check-raise can be produced by both the generic response path and a later checkraise-specific gate;
-- preflop decisions return actions directly rather than a uniform explicit plan object;
-- the tilted profile is passed broadly, so emotion is not currently confined to plan selection.
-
-These are architecture findings, not yet behavior changes.
-
-### Pre-logic execution boundary scaffold
-
-F7-D now records the execution transformation chain without changing it:
-
-`calculated_target -> execution_input_target -> shaped_target -> legal_target
--> final_target -> applied_target`.
-
-The same intent record also identifies replay vs fresh judgment, whether expression shaping was
-called/changed the target, whether minimum-raise clamping occurred, and whether
-`effective_allin_v1` promoted the legal target to actor-cap shove.
-
-This is provenance only.  `plan.act_with_plan` still owns strategic action/size judgment;
-`session.HandRun` still performs the existing expression/legal conversion.  Moving or removing
-those conversions is F7-D logic/refactor activation and is deliberately deferred.
-
-Gate: `tools/verify_prelogic_execution_boundary.py` plus the frozen production fingerprint.
+These are the current architecture gaps.
+The following older findings are CLOSED in the current branch:
+- duplicate check-raise producer
+- stale checked-before rerouting into check-raise after re-raise
+- loss of arbitrary raise depth
+- bet/raise treated identically in postflop range inference
+- same-street re-raise counted as another barrel
+- loss of all-in-call vs all-in-raise semantics
+- complete collapse of multiway opponent ranges before core equity
+- absence of fold-to-raise observation
