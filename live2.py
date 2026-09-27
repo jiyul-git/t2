@@ -836,7 +836,25 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     st['busted'] = busted; st['rank'] = rank
     save(st)
 
-    _archive(st, f, h, res, notes, defer=bool(st.get('others_pending')))
+    h._telemetry_tilt_after = {
+        str(p['pid']): copy.deepcopy(f.tilt.state.get(str(p['pid']), {}))
+        for p in alive
+    }
+    _hero_rec = _archive(
+        st, f, h, res, notes,
+        defer=bool(st.get('others_pending')), run=run)
+    if not st.get('others_pending'):
+        if parallel_others is not None:
+            _bot_rows = TM.parse_bot_log(parallel_others.get('bot_log'))
+        elif _single_table_round:
+            _bot_rows = []
+        else:
+            _bot_rows = TM.read_bot_round(
+                SP.sidecar_path('bot_log'), f.hand_no)
+        try:
+            TM.emit_round(st, f, _hero_rec, _bot_rows, source='finish')
+        except Exception:
+            pass
     if st.get('pending_archive'):
         # _archive 는 save() 뒤에 불린다. 미뤄둔 기록은 따로 한 번 더 저장해야
         # 다음 step() 이 디스크에서 읽을 수 있다.
