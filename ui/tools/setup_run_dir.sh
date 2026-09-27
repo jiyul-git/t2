@@ -48,7 +48,7 @@ fi
 # 이 프로젝트에서는 live hand telemetry를 GitHub의 별도 branch로 자동 공유한다.
 # 토큰/비밀번호는 저장하지 않고, SRC git repository의 기존 remote/auth를 공유하는
 # worktree를 telemetry_sync.py가 만든다.
-if [ "${T2_TELEMETRY:-1}" != "0" ]; then
+if [ "${T2_TELEMETRY:-0}" != "0" ]; then
     TWD=${T2_TELEMETRY_WORKDIR:-$HOME/t2_telemetry_live}
     cat > "$DST/telemetry_config.json" <<EOF
 {
