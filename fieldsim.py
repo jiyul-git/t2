@@ -677,16 +677,36 @@ class Field:
         기본값은 기존 동작이다. 인자를 안 쓰면 아무것도 바뀌지 않는다.
         """
         ht = self.players[self.hero_pid]['table']
+        active_counts = [
+            tb.n() for tb in self.tables.values()
+            if tb.n() >= 2
+        ]
+        max_n = max(active_counts) if active_counts else 0
+
         for tid, tb in list(self.tables.items()):
-            if tid == ht: continue
+            if tid == ht:
+                continue
             n = tb.n()
-            if n < 2: continue
-            # 인원이 적을수록 핸드가 빨리 돈다
+            if n < 2:
+                continue
+
+            # TDA Rule 12-D: 9-handed 기준 '가장 큰 테이블보다 3명 이상
+            # 부족'한 테이블은 blinds가 영향을 받는 시점부터 play를 멈춘다.
+            # 시뮬레이터는 hand 사이에서만 움직이므로 이 round에서는 건너뛰고,
+            # 아래 settle의 _balance가 인원을 복구한 뒤 다음 round에 재개한다.
+            if max_n - n >= 3:
+                continue
+
+            # 실제 테이블은 인원이 적으면 한 핸드가 빨리 끝날 수 있다.
+            # 다만 halt 기준을 넘지 않은 범위에서만 한 round 추가 진행을 허용한다.
             k = 1
-            if n <= 5 and self.rng.random() < 0.45: k = 2
-            elif n >= 8 and self.rng.random() < 0.20: k = 0
+            if n <= 5 and self.rng.random() < 0.45:
+                k = 2
+            elif n >= 8 and self.rng.random() < 0.20:
+                k = 0
             for _ in range(k):
-                if tb.n() < 2: break
+                if tb.n() < 2:
+                    break
                 self._play_table(tb)
         if settle:
             self._collect_busts()
