@@ -119,6 +119,71 @@ def range_filter(rng, keep):
     pred = keep if callable(keep) else (lambda c: c in keep)
     return {c: w for c, w in range_items(rng) if pred(c)}
 
+
+def range_support(rng):
+    """Combo support without flattening weighted mass.
+
+    Legacy lists preserve their exact order/duplicates. Weighted dicts preserve
+    insertion order; transforms use this only to select support, never to sample.
+    """
+    if not rng:
+        return []
+    return list(rng.keys()) if isinstance(rng, dict) else list(rng)
+
+
+def range_copy(rng):
+    """Copy a range without changing representation."""
+    if isinstance(rng, dict):
+        return dict(weighted_range(rng))
+    return list(rng or [])
+
+
+def range_select(rng, combos, new_mass=None):
+    """Select/reorder support while preserving incoming weights.
+
+    Legacy input returns a legacy list. Weighted input returns a weighted dict.
+    Existing combos keep their exact incoming mass. If a transform explicitly
+    expands support, `new_mass` supplies neutral mass for genuinely new combos.
+    """
+    selected = list(combos or [])
+    if not isinstance(rng, dict):
+        return selected
+
+    wr = weighted_range(rng)
+    out = {}
+    for c in selected:
+        if c in wr:
+            out[c] = wr[c]
+        elif new_mass is not None:
+            out[c] = float(new_mass)
+    return out
+
+
+def range_mean_mass(rng):
+    """Scale-preserving neutral mass for support expansion."""
+    wr = weighted_range(rng)
+    return (sum(wr.values()) / len(wr)) if wr else 1.0
+
+
+def range_signature(rng):
+    """Stable distribution signature payload.
+
+    Uniform weighted input intentionally shares the legacy support signature.
+    Non-uniform input includes normalized mass, so equal support with different
+    posterior probability cannot collide in caches/seeds.
+    """
+    if not rng:
+        return ()
+    if not isinstance(rng, dict):
+        return tuple(sorted(rng))
+    wr = weighted_range(rng)
+    if range_is_uniform(wr):
+        return tuple(sorted(wr))
+    total = sum(wr.values()) or 1.0
+    return ('weighted', tuple(
+        (c, float(w) / total) for c, w in range_items(wr)
+    ))
+
 def _def_thresholds(prof_type, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
                     raise_level=1, seats=8, ante=True):
     """역치 계산은 preflop.defend_thresholds 하나뿐이다. 여기서 복제하지 않는다.
