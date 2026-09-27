@@ -21,6 +21,7 @@ import persona as PS
 import preflop as PF
 import storage_paths as SP
 import telemetry_sync as TM
+import runner as RU
 
 ACTIONS_PATH = ROOT / "tools" / "manual_hand_actions.json"
 SEED = 202609271937
@@ -38,6 +39,11 @@ def compact_raw(raw):
     )
     return {k: raw.get(k) for k in keep if k in raw}
 
+
+
+def force_logic_execution_surface():
+    """Manual audit only: execute the judgment layer's exact sizing."""
+    RU.shape_size = lambda amount, ptype, rng, pot=None: int(round(float(amount)))
 
 
 def force_max_logic_profiles():
@@ -88,6 +94,7 @@ def main():
         entries=ENTRIES, start_stack=START_STACK, seed=SEED,
         hands_per_level=12, fmt="standard")
     force_max_logic_profiles()
+    force_logic_execution_surface()
 
     out = L.step(defer_others=True)
     used = 0
