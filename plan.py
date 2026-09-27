@@ -1171,6 +1171,14 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     _cf_eq = float(call_eq) if _layer_call else eq
     _cf_need = float(call_need) if _layer_call else need
 
+    def _nv_gate(mult=None, target=None):
+        g = _nonvalue_raise_ev_gate(
+            profile, hero, board, street, opp_range, opp_ranges, n_opp,
+            pot, tocall, stack, hero_contrib, response_context,
+            mult=mult, target=target)
+        plan_state['_last_nonvalue_raise_gate'] = dict(g)
+        return g
+
     # --- 넛급 메이드: 레이즈할 것인가 ---
     if made_now >= 5 and eq > need + 0.10:
         rel, _resp_rel_meta = _decision_relative_strength(
@@ -1299,36 +1307,33 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                 % (_cf_eq, _cf_need))
         return 'call', 0.0, (_cf_need if _layer_call else need), '밸류이나 콜 선택(상대가 팟을 키워줌)'
 
-    # --- 블러프 레이즈: reraise × bluff 개념 ---
-    # 계획을 반드시 본다. 예전에는 plan 조건이 없어서 pot_control(팟을 작게
-    # 유지하겠다는 계획)인데도 여기로 떨어져 올인급 레이즈가 나왔다.
-    # 또 쇼다운 가치가 있는 패를 블러프로 쓰면 이길 수 있는 상황을 버리게 된다.
-    # giveup 은 제외한다. 그 계획의 사유 자체가 '블러프 개념/조건 미달'이라
-    # 여기서 블러프 레이즈를 내면 판단 층이 이미 기각한 것을 집행부가 되살리는 셈이다.
-    # 규율이 낮아 뒤집는 경우는 아래 이탈 경로에서 따로 처리한다.
+    # --- 블러프/세미블러프 재레이즈 ---
+    # 빈도 주사위보다 먼저 공통 EV gate를 통과해야 한다.
+    # 재레이즈 깊이/올인 여부는 response_context와 현재 range에 이미 반영된다.
     if allow_raise and has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'river_bluff'):
         made_sd = plan_state.get('made', 0)
-        if made_sd >= 2:
-            pass                       # 투페어 이상은 쇼다운 가치가 있다 → 블러프 부적합
-        else:
+        if made_sd < 2:
             blr = (PS.sk(profile, 'reraise')/10.0) * (PS.sk(profile, 'bluff')/10.0)
-            if rng.random() < blr*0.28:
-                return 'raise', 1.0, need, '블러프 레이즈(개념 %.2f)' % blr
+            _g_bl = _nv_gate(mult=1.0)
+            if _g_bl.get('allow') and rng.random() < blr*0.28:
+                return 'raise', 1.0, need, (
+                    '블러프 레이즈(개념 %.2f, EV %s)'
+                    % (blr, _g_bl.get('ev')))
 
     # --- 세미블러프: 레이즈 or 내재오즈 콜 ---
     if plan == 'semibluff' and plan_state.get('outs', 0) >= 8 and street != 'river':
-        # 예전에는 0.35 고정이라 **전원이 같은 빈도로** 세미블러프 레이즈를 했다.
         _p_sb = 0.35
         if has_c:
             _p_sb = (0.10 + 0.055*PS.sk(profile, 'semibluff')
                           + 0.030*PS.sk(profile, 'reraise'))
             _p_sb *= 0.70 + 0.06*PS.temper(profile, 'aggression', 5.0)
             _p_sb = max(0.03, min(0.80, _p_sb))
-        if allow_raise and rng.random() < _p_sb:
-            return 'raise', 0.95, need, '세미블러프 레이즈(%.0f%%)' % (_p_sb*100)
+        _g_sb = _nv_gate(mult=0.95) if allow_raise else {'allow': False}
+        if allow_raise and _g_sb.get('allow') and rng.random() < _p_sb:
+            return 'raise', 0.95, need, (
+                '세미블러프 레이즈(%.0f%%, EV %s)'
+                % (_p_sb*100, _g_sb.get('ev')))
         if stack > pot:
-            # 내재오즈. 얼마나 벌 수 있는지는 아웃 계산과 팟오즈 감각의 함수다.
-            # 예전에는 0.08 상한 고정이라 개념과 무관했다.
             _io = 0.05
             if has_c:
                 _io = 0.02 + 0.008*(0.6*PS.sk(profile, 'outs') + 0.4*PS.sk(profile, 'potodds'))
@@ -1339,21 +1344,28 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         _use_eq = _cf_eq if _layer_call else eq
         _use_need = _cf_need if _layer_call else need
         act = 'call' if _use_eq >= _use_need else 'fold'
+        _gate_note = ''
+        if allow_raise and isinstance(_g_sb, dict) and _g_sb.get('known') and not _g_sb.get('allow'):
+            _gate_note = ' | raise EV %.1f ≤ 0' % float(_g_sb.get('ev') or 0.0)
         return act, 0.0, _use_need, (
-            '세미블러프 내재오즈 반영%s'
-            % (' + layer call EV' if _layer_call else ''))
+            '세미블러프 내재오즈 반영%s%s'
+            % (' + layer call EV' if _layer_call else '', _gate_note))
 
     if plan == 'giveup' and has_c and eq < need - 0.05:
-        # 포기 계획을 뒤집는 블러프 레이즈. 규율이 낮을수록 자주 나온다.
-        # 계획 이탈이므로 반드시 기록한다.
         disc = PS.temper(profile, 'discipline', 5.0)
         blr = (PS.sk(profile, 'reraise')/10.0) * (PS.sk(profile, 'bluff')/10.0)
         p_dev = blr * 0.28 * max(0.05, 1.0 - 0.085*disc)
-        if allow_raise and plan_state.get('made', 0) < 2 and rng.random() < p_dev:
+        _g_dev = _nv_gate(mult=1.0) if allow_raise else {'allow': False}
+        if (allow_raise and _g_dev.get('allow')
+                and plan_state.get('made', 0) < 2
+                and rng.random() < p_dev):
             plan_state.setdefault('deviations', []).append(
                 {'street': street, 'planned': 'fold', 'executed': 'raise',
-                 'why': '규율 %.1f → 포기 계획 뒤집고 블러프 레이즈' % disc})
-            return 'raise', 1.0, need, 'DEVIATE:포기 계획 뒤집은 블러프 레이즈'
+                 'why': '규율 %.1f + raise EV %s → 포기 계획 뒤집음'
+                        % (disc, _g_dev.get('ev'))})
+            return 'raise', 1.0, need, (
+                'DEVIATE:포기 계획 뒤집은 블러프 레이즈(EV %s)'
+                % _g_dev.get('ev'))
 
     if plan in ('bluff_2street', 'giveup', 'river_bluff'):
         # 계획은 포기지만 팟오즈가 실제로 맞으면 접으면 안 된다.
