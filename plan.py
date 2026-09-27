@@ -694,6 +694,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         sk = (lambda c: A.skill(T, c)) if T in A.ARCHETYPES else (lambda c: 2)
     why = []                                   # 의도 로그
 
+    # 현재 쇼다운 가치는 미래 런아웃까지 포함한 eq가 아니라
+    # **지금 보드에서 바로 쇼다운했을 때의 eq_current**로 본다.
+    # eq는 드로우/오버카드의 미래 개선분까지 포함하므로 K-high+gutshot 같은
+    # 미완성 핸드를 '쇼다운 가치 있음'으로 잘못 분류할 수 있다.
+    _sd_eq = eq_cur if eq_cur is not None else eq
+
     if eq >= v3:
         # 트랩은 '확률로 고르는 것'이 아니라 상대를 보고 내리는 판단이다.
         # 개념을 가졌는가(sk)는 사람마다 다르지만, 그 도구를 지금 쓸지는
@@ -786,12 +792,6 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         _bluff_mul = barrel_size(_fe, profile, floor=0.35, cap=1.20)
         why.append('세미블러프 사이즈: 폴드율 %.0f%% 역산 → 팟의 %.0f%%'
                    % (_fe*100, _bluff_mul*100))
-    # 현재 쇼다운 가치는 미래 런아웃까지 포함한 eq가 아니라
-    # **지금 보드에서 바로 쇼다운했을 때의 eq_current**로 본다.
-    # eq는 드로우/오버카드의 미래 개선분까지 포함하므로 K-high+gutshot 같은
-    # 미완성 핸드를 '쇼다운 가치 있음'으로 잘못 분류할 수 있다.
-    _sd_eq = eq_cur if eq_cur is not None else eq
-
     # **쇼다운 가치가 있으면 블러프 계획으로 가지 않는다.**
     # 예전에는 이 분기가 made 를 확인하지 않아, 세컨페어(made 1, eq 0.38)가
     # '쇼다운 가치 없음'이라는 이유로 2스트리트 블러프가 됐다.
