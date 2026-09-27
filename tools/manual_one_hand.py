@@ -242,6 +242,42 @@ def main():
             print("=== FOLLOWING_HERO_DECISION ===")
             print(json.dumps(compact_raw(nxt2.get("raw")), ensure_ascii=False, sort_keys=True))
             print(nxt2.get("view") or "")
+
+            following_path = ROOT / "tools" / "manual_following_hand_actions.json"
+            if following_path.exists():
+                following_actions = json.loads(following_path.read_text(encoding="utf-8"))
+                for act, amt in following_actions:
+                    if nxt2.get("done"):
+                        break
+                    nxt2 = L.step(str(act), int(amt), defer_others=True)
+                if nxt2.get("done"):
+                    print("=== FOLLOWING_HERO_HAND_DONE ===")
+                    print(json.dumps({"result": nxt2.get("result"), "view": nxt2.get("view")}, ensure_ascii=False, default=str))
+                    st3 = L.load()
+                    if st3.get("others_pending"):
+                        L.resume_others(st3, None)
+                    st3 = L.load()
+                    f3 = L._load_field(st3["field"])
+                    rows3 = TM.read_bot_round(SP.sidecar_path("bot_log"), f3.hand_no)
+                    audit3 = [{
+                        "table": h.get("table"),
+                        "pos": h.get("pos"),
+                        "hole": h.get("hole"),
+                        "board": h.get("board"),
+                        "full_log": h.get("full_log"),
+                        "result": h.get("result"),
+                        "reads": h.get("reads"),
+                        "range_fallback_audit": h.get("range_fallback_audit"),
+                        "intents": h.get("intents"),
+                        "plans": h.get("plans"),
+                        "pids": h.get("pids"),
+                    } for h in rows3]
+                    print("=== FOLLOWING_OTHER_TABLE_AUDIT ===")
+                    print(json.dumps(audit3, ensure_ascii=False, sort_keys=True, default=str))
+                else:
+                    print("=== FOLLOWING_HAND_DECISION_CONTINUES ===")
+                    print(json.dumps(compact_raw(nxt2.get("raw")), ensure_ascii=False, sort_keys=True))
+                    print(nxt2.get("view") or "")
         else:
             print("=== NEXT_HAND_DECISION_CONTINUES ===")
             print(json.dumps(compact_raw(nxt.get("raw")), ensure_ascii=False, sort_keys=True))
