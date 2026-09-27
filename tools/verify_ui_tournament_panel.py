@@ -67,9 +67,21 @@ need("'bb_seat': getattr(hand, 'bb_seat', None)" in VIEW,
 need("SB · DEAD" in APP, 'dead SB is not rendered')
 need("deadBTN" in APP, 'dead button marker is not rendered on empty seat')
 
+# Hero action controls rise without reflowing the table/background.
+need('position: absolute;' in CSS[CSS.index('#actionbar {'):CSS.index('#mainrow')],
+     'hero action dock is not out of flex flow')
+need('padding-bottom: calc(68px + env(safe-area-inset-bottom))' in CSS,
+     'fixed action dock space is not reserved')
+need('#actionbar.turn-open #mainrow' in CSS and 'heroactionup' in CSS,
+     'hero action rise animation missing')
+need("bar.classList.add('turn-open')" in APP,
+     'hero turn does not trigger action rise')
+need("actionBar.classList.remove('turn-open')" in APP,
+     'submitted hero action does not clear turn animation state')
+
 # Cache tags must point to this build.
-need('style.css?v=49' in INDEX, 'style cache tag not bumped')
-need('app.js?v=65' in INDEX, 'app cache tag not bumped')
+need('style.css?v=50' in INDEX, 'style cache tag not bumped')
+need('app.js?v=66' in INDEX, 'app cache tag not bumped')
 
 print({'checks': checks,
        'menu_clean': True,
