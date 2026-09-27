@@ -4,6 +4,19 @@ on:
   push:
     branches:
       - chatgpt/logic-tuning-20260927
+    paths:
+      - 'persona.py'
+      - 'preflop.py'
+      - 'plan.py'
+      - 'gto.py'
+      - 'ranges.py'
+      - 'reads.py'
+      - 'session.py'
+      - 'fieldsim.py'
+      - 'context.py'
+      - 'dynamics.py'
+      - 'money_pressure.py'
+      - 'tools/diagnose_field_difficulty.py'
   workflow_dispatch:
 
 concurrency:
