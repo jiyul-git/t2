@@ -316,6 +316,73 @@ def main():
                             } for h in rows4]
                             print("=== HAND4_OTHER_TABLE_AUDIT ===")
                             print(json.dumps(audit4, ensure_ascii=False, sort_keys=True, default=str))
+
+                            # HAND 5+ uses one reusable loop. Each element in
+                            # manual_more_hands.json is that hand's hero action list.
+                            more_path = ROOT / "tools" / "manual_more_hands.json"
+                            more_hands = (
+                                json.loads(more_path.read_text(encoding="utf-8"))
+                                if more_path.exists() else [])
+                            cur = L.step(defer_others=True)
+                            hand_no = 5
+                            while True:
+                                print("=== HAND%d_HERO_DECISION ===" % hand_no)
+                                print(json.dumps(
+                                    compact_raw(cur.get("raw")),
+                                    ensure_ascii=False, sort_keys=True))
+                                print(cur.get("view") or "")
+
+                                ix = hand_no - 5
+                                if ix >= len(more_hands):
+                                    break
+                                actions_n = more_hands[ix]
+                                for act, amt in actions_n:
+                                    if cur.get("done"):
+                                        break
+                                    cur = L.step(
+                                        str(act), int(amt), defer_others=True)
+
+                                if not cur.get("done"):
+                                    print("=== HAND%d_DECISION_CONTINUES ===" % hand_no)
+                                    print(json.dumps(
+                                        compact_raw(cur.get("raw")),
+                                        ensure_ascii=False, sort_keys=True))
+                                    print(cur.get("view") or "")
+                                    break
+
+                                print("=== HAND%d_HERO_HAND_DONE ===" % hand_no)
+                                print(json.dumps({
+                                    "result": cur.get("result"),
+                                    "view": cur.get("view"),
+                                }, ensure_ascii=False, default=str))
+
+                                stn = L.load()
+                                if stn.get("others_pending"):
+                                    L.resume_others(stn, None)
+                                stn = L.load()
+                                fn = L._load_field(stn["field"])
+                                rowsn = TM.read_bot_round(
+                                    SP.sidecar_path("bot_log"), fn.hand_no)
+                                auditn = [{
+                                    "table": h.get("table"),
+                                    "pos": h.get("pos"),
+                                    "hole": h.get("hole"),
+                                    "board": h.get("board"),
+                                    "full_log": h.get("full_log"),
+                                    "result": h.get("result"),
+                                    "reads": h.get("reads"),
+                                    "range_fallback_audit": h.get("range_fallback_audit"),
+                                    "intents": h.get("intents"),
+                                    "plans": h.get("plans"),
+                                    "pids": h.get("pids"),
+                                } for h in rowsn]
+                                print("=== HAND%d_OTHER_TABLE_AUDIT ===" % hand_no)
+                                print(json.dumps(
+                                    auditn, ensure_ascii=False,
+                                    sort_keys=True, default=str))
+
+                                cur = L.step(defer_others=True)
+                                hand_no += 1
                         else:
                             print("=== HAND4_DECISION_CONTINUES ===")
                             print(json.dumps(compact_raw(nxt3.get("raw")), ensure_ascii=False, sort_keys=True))
