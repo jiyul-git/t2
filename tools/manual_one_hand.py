@@ -159,6 +159,13 @@ def main():
         print("Q8S_DEFEND_NCALLERS_%d %s" % (
             nc, json.dumps(lik, sort_keys=True, default=str)))
 
+    # Continue one step into the next tournament round so the next hero
+    # decision can be driven manually after auditing all other tables.
+    nxt = L.step(defer_others=True)
+    print("=== NEXT_ROUND_HERO_DECISION ===")
+    print(json.dumps(compact_raw(nxt.get("raw")), ensure_ascii=False, sort_keys=True))
+    print(nxt.get("view") or "")
+
 
 if __name__ == "__main__":
     main()
