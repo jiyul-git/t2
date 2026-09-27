@@ -1784,7 +1784,17 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # call/fold 일 때만 session 의 checkraise gate가 한 번 더 돌아
         # checkraise_flop/late 숙련도를 우회하는 중복 producer 였다.
         _need_in = need
-        if checked_before and can_raise:
+        # 체크레이즈 gate는 오직 "이번 응답이 check -> face bet"인 경우에만 탄다.
+        # 같은 스트리트에서 과거에 한 번 체크했다는 이유만으로
+        # check -> raise -> opponent re-raise 뒤의 aggressor_backaction까지
+        # 다시 체크레이즈 스팟으로 분류하면 안 된다.
+        #
+        # response_kind가 없는 구형/직접 호출만 checked_before로 호환한다.
+        _is_checkraise_spot = (
+            response_kind == 'check_then_face_bet'
+            or (response_kind is None and checked_before)
+        )
+        if _is_checkraise_spot and can_raise:
             _ckr = checkraise_decision(
                 hero, board, profile, plan_state, pot, tocall, stack, street,
                 seed=(checkraise_seed if checkraise_seed is not None else seed),
@@ -1818,7 +1828,7 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # 체크레이즈 gate가 거절했거나, 아직 체크하지 않은 일반 facing-bet 상태.
         # checked_before=True 이면 generic reraise/bluff raise는 금지한다.
         # raise 권리가 닫힌 incomplete-allin 상태도 계획 단계에서 raise를 제거한다.
-        _direct_raise = bool(can_raise and not checked_before)
+        _direct_raise = bool(can_raise and not _is_checkraise_spot)
         act, mult, need, why = decide_response(
             profile, hero, board, street, plan, plan_state, eq, need,
             made_now, opp_range, pot, tocall, stack, committed, rng,
@@ -1827,7 +1837,7 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             opp_ranges=opp_ranges, n_opp=n_opp,
             rel_seed=(_zlib.crc32(('%s|f7b_rel_response' % seed).encode())
                       if seed is not None else None))
-        _source = ('checkraise_declined' if checked_before else 'generic_response')
+        _source = ('checkraise_declined' if _is_checkraise_spot else 'generic_response')
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
         _rp = {
