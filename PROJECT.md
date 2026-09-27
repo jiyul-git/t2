@@ -32,17 +32,17 @@ Documentation consolidation:
 
 Active engine / live hand-review line:
 - `chatgpt/logic-tuning-20260927`
-- observed HEAD: `6d2a663460acd2ed296741d828a960f4d9b3c557`
+- last code checkpoint: `6d2a663460acd2ed296741d828a960f4d9b3c557`
 - 최근 엔진 수정: board-danger connectivity 보정, duplicate preflop defend-call cliff 제거.
 
 GTO reference line:
 - `chatgpt/gto-reference-20260928`
-- observed HEAD: `2897def3543bc61f080252f234709af7f2deb499`
+- last code checkpoint: `2897def3543bc61f080252f234709af7f2deb499`
 - 상황별 GTO 자료는 해당 branch의 `GTO_REFERENCE.md`, `data/gto_scenarios.jsonl`에 보존.
 
 Mini-CFR / vendored solver line:
 - `chatgpt/mini-cfr-solver-20260928`
-- observed HEAD: `80026c02326e54694ce40ee27c87e521d2098708`
+- last code checkpoint: `80026c02326e54694ce40ee27c87e521d2098708`
 - logic-tuning 및 GTO reference와 diverged 상태이므로 이름만 보고 merge/delete 금지.
 
 `integration/latest-20260927`은 이름과 달리 최신선이 아니다.
