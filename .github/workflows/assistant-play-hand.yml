@@ -1,0 +1,19 @@
+name: assistant-play-hand
+on:
+  push:
+    branches:
+      - chatgpt/logic-tuning-20260927
+concurrency:
+  group: assistant-play-hand-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  play:
+    if: contains(github.event.head_commit.message, '[assistant-play]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 tools/assistant_play_hand.py
