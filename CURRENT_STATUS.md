@@ -79,31 +79,66 @@ Latest measured gate:
 
 The browser cache tag for this pipeline is `app.js?v=67`.
 
-## Weighted-range migration — W0+W1 implemented / local gate pending
+## Weighted-range migration — W0-W4 CLOSED / CI verified
 
-The post-TDA architecture work has resumed.
+The entire **structural** weighted-range path is now wired on the canonical
+engine line. Production still emits legacy/uniform ranges; no strategy has been
+promoted to a non-uniform posterior yet.
 
-W0 representation and W1 sampling are now implemented on the canonical engine line:
+Closed layers:
 
-- canonical representation: `{combo: relative_mass}`;
-- legacy lists map to unit mass per occurrence;
-- duplicate legacy occurrences aggregate mass rather than disappearing;
-- `legacy_range()` refuses to flatten non-uniform weighted input;
-- stable weighted iteration, total mass, per-combo mass and weight-preserving filter helpers added;
-- weighted sampling is wired through equity/range-advantage/joint-relative/current-equity consumers;
-- legacy list input preserves the previous RNG-choice path;
-- no production range producer emits non-uniform weights yet, so this is still structural wiring rather than a strategy change.
+- W0 representation/adapter: canonical `{combo: relative_mass}`, fail-closed
+  legacy adapter, duplicate legacy occurrence accounting;
+- W1 sampling: weighted equity/range-advantage/joint-relative/current-equity
+  consumers with exact legacy list RNG path;
+- W2 aggregates: relative strength, strong share/nut, blocker and joint blocker
+  consume probability mass;
+- W3 transforms: narrowing/perceived/action-history transforms preserve incoming
+  weighted mass;
+- W4 boundaries: session union/locked ranges, plan pool adapters, archive/refresh
+  signatures and provenance no longer silently destroy weights.
+
+Canonical gate: `.github/workflows/weighted-range-wiring.yml`.
+
+2026-09-27 result: **PASS W0-W4 + exact production parity** against pre-W2
+checkpoint `dc649f7`.
+
+Production fingerprints remain exactly:
+
+`3000 12c2daefd7c87cbb`
+`3001 8b83f668c038d002`
+`3002 0badaa6a21474fd3`
+`3003 3aebdd1942b57229`
+`3004 d4295da0aace11ca`
+`3005 2c50d0b71bd16614`
+
+Fixture totals are also identical: 180 hands / 1,368 preflop decisions /
+283 VPIP / 165 PFR / 85 flop-seen.
+
+**W5 posterior production is the logic barrier.** It is deliberately NOT
+started here because it would be the first step that changes the information
+distribution consumed by strategy.
 
 Design source: `WEIGHTED_RANGE_DESIGN.md`
 
-Local W0/W1 gates:
+## Pre-logic wiring boundary
 
-- `python3 -m py_compile bot.py ranges.py plan.py tools/verify_weighted_range_adapter.py tools/verify_weighted_sampling.py`
-- `python3 tools/verify_weighted_range_adapter.py`
-- `python3 tools/verify_weighted_sampling.py`
-- `python3 tools/regress.py check --baseline current`
+At this checkpoint the remaining OPEN architecture items are not missing
+transport/adapters; they require a strategic/semantic decision or an intentional
+behavior change:
 
-Exit condition is adapter PASS + weighted-sampling exact legacy parity + unchanged frozen regression. Then proceed directly to W2/W3.
+- F7-B nut semantics;
+- F7-B2 single-main-opponent aggregation;
+- F7-C emotion/tilt boundary **activation**;
+- F7-D execution/sizing boundary **activation/refactor**;
+- P7 cold-reraise completeness;
+- F8-ICM semantic closure;
+- W5 non-uniform posterior production.
+
+The current response-plan/intent provenance is already present, and final-table
+UI/server plus weighted-range downstream plumbing are CI-gated. Do not silently
+start any item above as a “cleanup”; that is the next logic phase.
+
 
 ## Balance status
 
