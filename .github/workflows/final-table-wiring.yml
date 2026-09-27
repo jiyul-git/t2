@@ -4,7 +4,12 @@ on:
   push:
     branches:
       - integration/latest-20260927
+      - chatgpt/decision-architecture-audit-20260926
   workflow_dispatch:
+
+concurrency:
+  group: final-table-wiring-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   wiring:
