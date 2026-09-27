@@ -178,12 +178,9 @@ def pending_response_context(action_meta, seat):
         'facing_allin_raise': bool(latest and latest.get('allin_raise')),
         'facing_size_frac': (
             latest.get('size_frac') if latest is not None else None),
-        'facing_price_frac': (
-            (float((events[-1].get('to_call_before') or 0))
-             / max(1.0, float(events[-1].get('pot_before') or 0)))
-            if (events and events[-1].get('seat') == seat
-                and events[-1].get('facing_kind') in ('bet','raise'))
-            else None),
+        # pending decision의 정확한 call-price fraction은 Round의 현재
+        # contrib/pot이 필요하므로 여기서 추측하지 않는다.
+        'facing_price_frac': None,
         'facing_increment': (
             latest.get('increment') if latest is not None else None),
         'facing_target': (
