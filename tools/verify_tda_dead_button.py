@@ -4,6 +4,7 @@
 import fieldsim as FS
 import play
 import session as SE
+import random
 
 
 def _mk(live_seats, button, sb, bb, max_seat=9):
@@ -171,6 +172,25 @@ won, _ = SE.award_pots(
 assert won == {1: 100, 2: 200, 3: 200}, won
 checks += 1
 
+# 16. TDA 12-D: 가장 큰 테이블보다 3명 부족한 테이블은 그 round에 halt.
+f = FS.Field.__new__(FS.Field)
+f.hero_pid = 0
+f.players = {0: {'table': 0}}
+f.rng = random.Random(7)
+
+hero_tb = _mk([1, 2, 3, 4, 5, 6, 7, 8], 1, 2, 3, max_seat=9)
+hero_tb.id = 0
+full_tb = _mk([1, 2, 3, 4, 5, 6, 7, 8], 1, 2, 3, max_seat=9)
+full_tb.id = 1
+short_tb = _mk([1, 2, 3, 4, 5], 1, 2, 3, max_seat=9)
+short_tb.id = 2
+f.tables = {0: hero_tb, 1: full_tb, 2: short_tb}
+called = []
+f._play_table = lambda tb, fast=True: called.append(tb.id)
+f.step_others(settle=False)
+assert 2 not in called, called
+checks += 1
+
 print({
     'checks': checks,
     'dead_button': True,
@@ -181,5 +201,6 @@ print({
     'broken_table_between_btn_sb_excluded': True,
     'rule36b_dead_button_maximize_incoming': True,
     'odd_chip_left_of_button': True,
+    'rule12d_three_short_halt': True,
 })
 print('PASS TDA dead-button / heads-up / balance position contract')
