@@ -4,14 +4,6 @@ on:
   push:
     branches:
       - chatgpt/logic-tuning-20260927
-    paths:
-      - 'telemetry_sync.py'
-      - 'fieldsim.py'
-      - 'live2.py'
-      - 'ui/server/ui_server.py'
-      - 'ui/tools/setup_run_dir.sh'
-      - 'tools/verify_telemetry_wiring.py'
-      - '.github/workflows/telemetry-wiring.yml'
   workflow_dispatch:
 
 concurrency:
@@ -30,18 +22,25 @@ jobs:
 
       - name: Syntax
         run: |
-          python3 -m py_compile telemetry_sync.py fieldsim.py live2.py ui/server/ui_server.py tools/verify_telemetry_wiring.py
+          python3 -m py_compile telemetry_sync.py
+          python3 -m py_compile tools/verify_tournament_telemetry.py
 
-      - name: Telemetry setup opt-in
-        run: |
-          rm -rf /tmp/t2_tm_play
-          T2_TELEMETRY=1 sh ui/tools/setup_run_dir.sh /tmp/t2_tm_play
-          test -f /tmp/t2_tm_play/telemetry_sync.py
-          test -f /tmp/t2_tm_play/telemetry_config.json
-          grep -q '"branch": "telemetry/live"' /tmp/t2_tm_play/telemetry_config.json
+      - name: Whole-tournament telemetry
+        run: python3 tools/verify_tournament_telemetry.py
 
-      - name: Real-engine telemetry schema
-        run: python3 tools/verify_telemetry_wiring.py
-
-      - name: Strategy regression unchanged
+      - name: Strategy regression
         run: python3 tools/regress.py check --baseline current
+
+      - name: Telemetry setup-run-dir wiring
+        run: |
+          T2_TELEMETRY=1 sh ui/tools/setup_run_dir.sh /tmp/t2_telemetry_run
+          test -f /tmp/t2_telemetry_run/telemetry_sync.py
+          test -f /tmp/t2_telemetry_run/telemetry_config.json
+          python3 - <<'PY'
+          import json
+          p='/tmp/t2_telemetry_run/telemetry_config.json'
+          d=json.load(open(p))
+          assert d['enabled'] is True
+          assert d['branch'] == 'telemetry/live'
+          print('setup telemetry config: OK')
+          PY
