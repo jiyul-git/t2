@@ -229,3 +229,101 @@ def aggressive_seats(full_meta):
             if e.get('action_kind') in ('bet','raise'):
                 out.add(e.get('seat'))
     return out
+
+
+def facing_wager_context(rnd, aggressor, pot_start):
+    """Latest canonical wager context for the aggressor."""
+    if aggressor is None:
+        return None
+    events = postflop_events(
+        getattr(rnd, 'action_meta', None), pot_start=pot_start)
+    latest = next(
+        (e for e in reversed(events)
+         if e.get('seat') == aggressor
+         and e.get('action_kind') in ('bet', 'raise')),
+        None)
+    if latest is None:
+        return None
+    return {
+        'seat': aggressor,
+        'increment': latest.get('increment'),
+        'pot_before': latest.get('pot_before'),
+        'size_frac': latest.get('size_frac'),
+        'full_raise': latest.get('full_raise'),
+        'incomplete_raise': latest.get('incomplete_raise'),
+        'allin': latest.get('allin'),
+        'allin_raise': latest.get('allin_raise'),
+        'raise_depth_full': latest.get('raise_depth_full_after'),
+        'raise_depth_any': latest.get('raise_depth_any_after'),
+    }
+
+
+def response_context(rnd, seat):
+    """Current response context, enriched with live stack/contribution geometry."""
+    ctx = pending_response_context(
+        getattr(rnd, 'action_meta', None), seat)
+    ctx['hero_contrib'] = float(
+        getattr(rnd, 'contrib', {}).get(seat, 0) or 0)
+    fs = ctx.get('facing_seat')
+    if fs is not None:
+        ctx['facing_stack'] = float(
+            getattr(rnd, 'stacks', {}).get(fs, 0) or 0)
+        ctx['facing_contrib'] = float(
+            getattr(rnd, 'contrib', {}).get(fs, 0) or 0)
+    else:
+        ctx['facing_stack'] = None
+        ctx['facing_contrib'] = None
+    return ctx
+
+
+def street_outcome(action_meta):
+    """Summarize one completed street from canonical events."""
+    events = postflop_events(action_meta)
+    aggr_idx = [
+        i for i, e in enumerate(events)
+        if e.get('action_kind') in ('bet', 'raise')
+    ]
+    if not aggr_idx:
+        return {
+            'kind': 'checkthrough',
+            'last_aggressor': None,
+            'callers': [],
+            'allin_callers': [],
+            'raise_depth_full': 0,
+            'raise_depth_any': 0,
+        }
+
+    j = aggr_idx[-1]
+    last = events[j]
+    callers = []
+    allin_callers = []
+    for e in events[j+1:]:
+        if e.get('action_kind') == 'call':
+            callers.append(e.get('seat'))
+            if e.get('allin_call'):
+                allin_callers.append(e.get('seat'))
+
+    if not callers:
+        kind = 'all_fold'
+    elif len(callers) == 1 and allin_callers:
+        kind = 'one_allin_call'
+    elif len(callers) == 1:
+        kind = 'one_call'
+    elif allin_callers:
+        kind = 'multi_call_with_allin'
+    else:
+        kind = 'multi_call'
+
+    return {
+        'kind': kind,
+        'last_aggressor': last.get('seat'),
+        'callers': callers,
+        'allin_callers': allin_callers,
+        'raise_depth_full': max(
+            (e.get('raise_depth_full_after', 0) for e in events),
+            default=0),
+        'raise_depth_any': max(
+            (e.get('raise_depth_any_after', 0) for e in events),
+            default=0),
+        'last_aggressor_allin': bool(last.get('allin_raise')),
+    }
