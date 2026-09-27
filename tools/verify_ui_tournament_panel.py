@@ -27,13 +27,14 @@ menu = APP[APP.index('async function showMenu()'):APP.index('function showHandDe
 need('mStep' not in menu and '봇 액션 간격' not in menu,
      'bot action interval control still in menu')
 need('mAuto' not in menu and '자동 진행 끄기' not in menu
-     and '자동 진행 켜기' not in menu,
-     'auto-progress control still in menu')
+     and '자동 진행 켜기' not in menu
+     and '결과 화면' not in menu,
+     'result/auto-progress control still in menu')
 
 # Field summary moved out of top bar into tournament menu.
 need("$('#fieldline').textContent = ''" in APP, 'top field summary not cleared')
-for s in ('대회 정보', 'ITM', '내 칩순위', '다음 머니점프',
-          '전체 봇 스택 순위'):
+for s in ('대회 정보', 'ITM', '레벨', '블라인드', '내 칩순위',
+          '다음 머니점프', '전체 봇 스택 순위'):
     need(s in menu, 'menu missing %r' % s)
 
 # Standings endpoint returns only public tournament/stack/seat data.
