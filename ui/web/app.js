@@ -2962,10 +2962,14 @@ function tournamentInfoHTML(t) {
     '<div class="grid">' +
       `<div class="row"><span class="who">필드</span><span class="amt">${fmt(t.entries)} → ${fmt(t.remaining)}</span></div>` +
       `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
+      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)}</span></div>` +
+      `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
       `<div class="row"><span class="who">내 칩순위</span><span class="amt">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
       `<div class="row"><span class="who">내 스택</span><span class="amt">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
       `<div class="row"><span class="who">평균</span><span class="amt">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
+      `<div class="row"><span class="who">칩리더</span><span class="amt">${fmt(t.leader)}</span></div>` +
       `<div class="row"><span class="who">테이블</span><span class="amt">${fmt(t.tables)}개</span></div>` +
+      `<div class="row"><span class="who">버블</span><span class="amt">${t.bubble ? '진입' : '아님'}</span></div>` +
     '</div>' +
     money + jump + jumpLine
   );
@@ -2981,7 +2985,9 @@ function renderRankDrawer(t) {
     ? `<div class="cell"><span class="k">내 칩순위</span><span class="v">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
       `<div class="cell"><span class="k">내 스택</span><span class="v">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
       `<div class="cell"><span class="k">평균 스택</span><span class="v">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
-      `<div class="cell"><span class="k">${t.in_money ? '보장 상금' : 'ITM까지'}</span><span class="v">${t.in_money ? pct(t.current_prize_pct) : fmt(t.players_to_jump) + '명'}</span></div>`
+      `<div class="cell"><span class="k">${t.in_money ? '보장 상금' : 'ITM까지'}</span><span class="v">${t.in_money ? pct(t.current_prize_pct) : fmt(t.players_to_jump) + '명'}</span></div>` +
+      `<div class="cell"><span class="k">다음 머니점프</span><span class="v">${t.next_rank ? fmt(t.next_rank) + '위 · ' + pct(t.next_prize_pct) : '최종 구간'}</span></div>` +
+      `<div class="cell"><span class="k">블라인드</span><span class="v">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' A' + fmt(t.ante) : ''}</span></div>`
     : '';
 
   $('#rankList').innerHTML = rows.length
