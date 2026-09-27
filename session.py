@@ -2536,11 +2536,11 @@ class HandRun:
                 if _prev_meta else
                 any(z[2] in ('bet', 'raise') for z in _prev_rows))
 
-            _pot_before_action = float(self._pot_at.get(street, 0) or 0)
-            _facing_seq = _postflop_facing_contexts(r2.action_meta)
-            for _obs_i, m in enumerate(r2.action_meta):
-                x = m.get('seat')
-                a_ = m.get('action')
+            _events = AE.postflop_events(
+                r2.action_meta, street=street,
+                pot_start=float(self._pot_at.get(street, 0) or 0))
+            for e in _events:
+                x = e.get('seat')
                 opp_spot = (x == street_aggr and x not in _acted_once and not _bet_seen)
                 is_cbet = (street == 'flop' and opp_spot)
                 # barrel = 직전 스트리트에도 공격했던 사람이 다시 치는 것.
@@ -2549,27 +2549,19 @@ class HandRun:
                 # 첫 베팅 기회를 얻는 것. barrel 표본과 섞지 않는다.
                 is_delayed = (street == 'turn' and opp_spot and _prev_checked_through
                               and not _prev_aggr_bet)
-                # 관측 의미는 UI 문자열이 아니라 규칙 사건이다.
-                # allin call은 call, allin raise는 raise로 학습해야 한다.
-                _obs_action = _observed_postflop_action(m)
-                _fk = _facing_seq[_obs_i] if _obs_i < len(_facing_seq) else None
                 h.book.observe_postflop(
-                    _ord, _pid(x), _obs_action, is_cbet, is_barrel,
-                    facing_bet=(_fk == 'bet'),
-                    facing_raise=(_fk == 'raise'),
+                    _ord, _pid(x), e.get('action_kind'), is_cbet, is_barrel,
+                    facing_bet=(e.get('facing_kind') == 'bet'),
+                    facing_raise=(e.get('facing_kind') == 'raise'),
                     street=street,
                     is_delayed_cbet_spot=is_delayed)
-                # sizing tell은 target/street-start-pot이 아니라
-                # **이번 액션에 새로 낸 칩 / 액션 직전 팟**을 본다.
-                if m.get('raised'):
-                    _inc = float(m.get('increment', 0) or 0)
+                # 사이즈/상황 의미도 canonical event에서 같은 값을 쓴다.
+                if e.get('action_kind') in ('bet', 'raise'):
                     h.book.observe_size(
-                        _ord, _pid(x),
-                        _inc/max(1.0, _pot_before_action), street)
+                        _ord, _pid(x), e.get('size_frac', 0.0), street)
                 _acted_once.add(x)
-                if m.get('raised'):
+                if e.get('action_kind') in ('bet', 'raise'):
                     _bet_seen = True
-                _pot_before_action += float(m.get('increment', 0) or 0)
 
             self.full_log.extend(('%s' % street, x, a, amt) for (x, a, amt) in r2.log)
             self.full_action_meta = getattr(self, 'full_action_meta', [])
