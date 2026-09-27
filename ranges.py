@@ -200,7 +200,8 @@ def range_advantage(r_a, r_b, board, sims=180, seed=None):
     if not r_a or not r_b: return 0.0
     w = 0.0; run = 0
     for _ in range(sims):
-        a = list(rng.choice(r_a)); b = list(rng.choice(r_b))
+        a = list(bot._sample_pool_combo(rng, r_a))
+        b = list(bot._sample_pool_combo(rng, r_b))
         if set(a) & set(b) or set(a+b) & set(board): continue
         run += 1
         ea, eb = bot.eval7(a+board), bot.eval7(b+board)
@@ -230,14 +231,14 @@ def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
         for _, r in items:
             if not r:
                 return None
-            pools.append(list(r))
+            pools.append(dict(r) if isinstance(r, dict) else list(r))
     elif isinstance(opp_ranges, (list, tuple)):
         if n_opp is not None and len(opp_ranges) != int(n_opp):
             return None
         for r in opp_ranges:
             if not r:
                 return None
-            pools.append(list(r))
+            pools.append(dict(r) if isinstance(r, dict) else list(r))
     else:
         return None
 
@@ -247,12 +248,10 @@ def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
         return range_advantage(r_a, pools[0], board, sims=sims, seed=seed)
 
     dead = set(board)
-    mine = sorted(c for c in r_a
-                  if c[0] not in dead and c[1] not in dead)
+    mine = bot._filter_pool(r_a, dead, sort_legacy=True)
     clean = []
     for r in pools:
-        rr = sorted(c for c in r
-                    if c[0] not in dead and c[1] not in dead)
+        rr = bot._filter_pool(r, dead, sort_legacy=True)
         if not rr:
             return None
         clean.append(rr)
@@ -265,7 +264,7 @@ def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
     for _ in range(int(sims)):
         used = set(dead)
         for _try in range(60):
-            h = rng.choice(mine)
+            h = bot._sample_pool_combo(rng, mine)
             if h[0] not in used and h[1] not in used:
                 used.add(h[0]); used.add(h[1])
                 break
@@ -277,7 +276,7 @@ def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
         ok = True
         for pool in clean:
             for _try in range(60):
-                c = rng.choice(pool)
+                c = bot._sample_pool_combo(rng, pool)
                 if c[0] not in used and c[1] not in used:
                     used.add(c[0]); used.add(c[1])
                     scores.append(bot.eval7(list(c) + board))
