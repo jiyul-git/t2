@@ -1609,6 +1609,7 @@ class HandRun:
             h.uncalled_returns.append(dict(_pf_uncalled, street='preflop'))
 
         self.full_log = [('preflop', x, a, amt) for (x, a, amt) in rnd.log]
+        self.preflop_action_meta = [dict(m, street='preflop') for m in rnd.action_meta]
         # 프리플랍 관찰 기록
         _pid = self._pid
         seats_all = [x for x in rnd.order]
