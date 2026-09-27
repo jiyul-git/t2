@@ -1058,7 +1058,8 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                     made_now, opp_range, pot, tocall, stack, committed, rng,
                     allow_raise=True, call_eq=None, call_need=None,
-                    opp_ranges=None, n_opp=1, rel_seed=None):
+                    opp_ranges=None, n_opp=1, rel_seed=None,
+                    response_context=None, hero_contrib=0.0):
     """저항(tocall>0)을 마주했을 때 폴드/콜/레이즈를 정하는 **유일한 지점**.
 
     예전에는 이 판단이 집행부에 흩어져 p_raise 를 네 곳에서 각자 굴렸다.
@@ -1113,12 +1114,80 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     if plan in ('value_3street', 'value_2street', 'trap') and eq > need + 0.15:
         rr = PS.sk(profile, 'reraise')/10.0 if has_c else 0.5
         so = PS.sk(profile, 'stackoff')/10.0 if has_c else 0.5
+
+        # 레이즈 크기는 먼저 정한다. 이 크기를 상대가 실제로 맞았을 때의
+        # continue range를 만들어야 "콜 가능"과 "밸류 재레이즈 가능"을
+        # 서로 다른 판단으로 볼 수 있다.
+        _so = plan_state.get('stackoff') or {}
+        _cm = _so.get('commit') if isinstance(_so, dict) else None
+        mult = 1.1
+        if _cm and stack > 0:
+            want = stack*float(_cm)
+            gap = max(0.0, want - tocall) / max(1.0, want)
+            mult = max(0.75, min(1.6, 0.75 + 0.85*gap))
+
+        # Value-raise invariant:
+        #   현재 range에 대한 콜 equity가 팟오즈를 넘는 것만으로는 부족하다.
+        #   추가 칩을 넣는 "value" raise라면 최소한 공정지분(fair share)을
+        #   넘어야 한다. HU에서는 50%, 3-way에서는 33.3%다.
+        _fair_share = 1.0 / max(2.0, float(n_opp) + 1.0)
+        _vr_eq_cont = None
+        _vr_ok = (float(eq) > _fair_share)
+
+        # HU에서는 한 단계 더 본다. 내가 제안한 raise를 맞고도 상대가
+        # fold하지 않는 전체 range(call + re-raise) 상대로도 50%를 넘어야
+        # "value raise"라고 부를 수 있다. 이 조건이 아니면 콜은 가능해도
+        # 재레이즈는 금지한다.
+        if (_vr_ok and int(n_opp or 1) == 1 and opp_range
+                and isinstance(response_context, dict)
+                and response_context.get('facing_target') is not None):
+            _hc = max(0.0, float(hero_contrib or 0.0))
+            _max_target = _hc + max(0.0, float(stack or 0.0))
+            _base_target = _hc + max(
+                0.0, float(pot + 2*tocall) * float(mult))
+            _candidate_target = min(_max_target, _base_target)
+            _hero_increment = max(0.0, _candidate_target - _hc)
+            _pot_after_raise = float(pot) + _hero_increment
+            _opp_contrib = max(
+                0.0, float(response_context.get('facing_target') or 0.0))
+            _opp_call = max(0.0, _candidate_target - _opp_contrib)
+            _continue_price = _opp_call / max(1.0, _pot_after_raise)
+            _cont = R.perceived_continue_range(
+                opp_range, board, street, _continue_price, profile=profile)
+            if _cont:
+                _vr_eq_cont = bot.equity_vs_combos(
+                    hero, board, [_cont], sims=400)
+                _vr_ok = (_vr_eq_cont > 0.5)
+
+        plan_state['_last_value_raise_gate'] = {
+            'current_eq': round(float(eq), 4),
+            'fair_share': round(_fair_share, 4),
+            'continue_eq': (
+                round(float(_vr_eq_cont), 4)
+                if _vr_eq_cont is not None else None),
+            'ok': bool(_vr_ok),
+        }
+
+        if not _vr_ok:
+            _use_eq = _cf_eq if _layer_call else eq
+            _use_need = _cf_need if _layer_call else need
+            if _use_eq < _use_need:
+                return 'fold', 0.0, _use_need, (
+                    '밸류 계획이나 재레이즈 자격 없음 + 콜 기준 미달'
+                    '(eq %.3f < need %.3f)' % (_use_eq, _use_need))
+            return 'call', 0.0, _use_need, (
+                '콜 가능하지만 밸류 재레이즈 자격 없음'
+                '(eq %.3f, continue_eq %s)'
+                % (_use_eq,
+                   ('%.3f' % _vr_eq_cont
+                    if _vr_eq_cont is not None else 'n/a')))
+
         p = 0.20 + 0.55*rr + (0.25 if committed else 0.0)
         p *= (0.7 + 0.06*profile.get('aggr', 5))
         if committed and so < 0.35:
             p *= 0.5
         if plan == 'value_2street':
-            p *= 0.80                      # 2스트리트 계획은 3스트리트보다 소극적
+            p *= 0.80
         if rel_ps >= 0.95:
             floor = 0.38 + 0.42*rr
             if street == 'river': floor *= 0.85
@@ -1127,16 +1196,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
             p = max(p, 0.22 + 0.34*rr)
         p = min(p, 0.93)
         if allow_raise and rng.random() < max(0.05, min(0.92, p)):
-            # 레이즈 크기는 **목표 대비 부족분**이 정한다. 고정 배수(1.1)면
-            # 상대가 이미 크게 쳐서 목표를 채워준 경우에도 똑같이 올린다.
-            _so = plan_state.get('stackoff') or {}
-            _cm = _so.get('commit') if isinstance(_so, dict) else None
-            mult = 1.1
-            if _cm and stack > 0:
-                want = stack*float(_cm)            # 넣을 작정인 총액
-                gap = max(0.0, want - tocall) / max(1.0, want)
-                mult = max(0.75, min(1.6, 0.75 + 0.85*gap))
-            return 'raise', mult, need, '밸류 레이즈(%.0f%%, x%.2f)' % (p*100, mult)
+            return 'raise', mult, need, (
+                '밸류 레이즈(%.0f%%, x%.2f, continue_eq %s)'
+                % (p*100, mult,
+                   ('%.3f' % _vr_eq_cont
+                    if _vr_eq_cont is not None else 'n/a')))
         if _layer_call and _cf_eq < _cf_need:
             return 'fold', 0.0, _cf_need, (
                 '밸류 레이즈 미선택 + layer call EV 미달(%.3f < %.3f)'
@@ -1865,7 +1929,9 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             call_eq=_call_eq, call_need=_call_need,
             opp_ranges=opp_ranges, n_opp=n_opp,
             rel_seed=(_zlib.crc32(('%s|f7b_rel_response' % seed).encode())
-                      if seed is not None else None))
+                      if seed is not None else None),
+            response_context=response_context,
+            hero_contrib=hero_contrib)
         _source = ('checkraise_declined' if _is_checkraise_spot else 'generic_response')
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
