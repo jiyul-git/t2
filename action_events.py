@@ -185,6 +185,14 @@ def pending_response_context(action_meta, seat):
             latest.get('increment') if latest is not None else None),
         'facing_target': (
             latest.get('target') if latest is not None else None),
+        # 상대의 현재 공격이 raise라면, 그 상대가 직전에 실제로
+        # 어떤 가격을 맞고 있었는지도 그대로 보존한다.
+        'raiser_facing_kind': (
+            latest.get('facing_kind') if latest is not None else None),
+        'raiser_facing_price_frac': (
+            latest.get('facing_price_frac') if latest is not None else None),
+        'raiser_facing_size_frac': (
+            latest.get('facing_size_frac') if latest is not None else None),
     }
 
 
