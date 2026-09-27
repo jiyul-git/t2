@@ -232,6 +232,9 @@ def main():
                 "result": h.get("result"),
                 "reads": h.get("reads"),
                 "range_fallback_audit": h.get("range_fallback_audit"),
+                "intents": h.get("intents"),
+                "plans": h.get("plans"),
+                "pids": h.get("pids"),
             } for h in rows2]
             print("=== NEXT_OTHER_TABLE_AUDIT ===")
             print(json.dumps(audit2, ensure_ascii=False, sort_keys=True, default=str))
