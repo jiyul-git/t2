@@ -80,7 +80,7 @@ need("actionBar.classList.remove('turn-open')" in APP,
      'submitted hero action does not clear turn animation state')
 
 # Cache tags must point to this build.
-need('style.css?v=51' in INDEX, 'style cache tag not bumped')
+need('style.css?v=52' in INDEX, 'style cache tag not bumped')
 need('app.js?v=66' in INDEX, 'app cache tag not bumped')
 
 print({'checks': checks,
