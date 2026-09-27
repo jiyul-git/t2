@@ -118,13 +118,17 @@ def _icm_equity_subset(stacks, payouts):
 def icm_equity(stacks, payouts):
     """Malmuth-Harville expected prize.
 
-    Nine-player exact ICM is the production hot path after the 9-max migration.
-    Use subset DP when it is provably unaffected by the historical path-prune;
-    otherwise fall back to the historical recursion unchanged.
+    Final-table exact ICM (2..9 players) uses subset DP whenever it is provably
+    equivalent to the historical path-pruned recursion.  The old code enabled
+    this only at exactly 9 players, so 9 -> 8 players caused a severe latency
+    cliff: every bot decision fell back to factorial recursion.
+
+    If any positive historical path could be pruned, keep the historical
+    recursion unchanged.  Strategy semantics therefore do not change.
     """
     n = len(stacks)
     k = min(len(payouts), n)
-    if n == 9 and _subset_path_prune_safe(stacks, k):
+    if 2 <= n <= EXACT_MAX and _subset_path_prune_safe(stacks, k):
         return _icm_equity_subset(stacks, payouts)
     return _icm_equity_reference(stacks, payouts)
 
