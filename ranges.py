@@ -184,6 +184,34 @@ def range_signature(rng):
         (c, float(w) / total) for c, w in range_items(wr)
     ))
 
+
+def range_unique_sorted(rng):
+    """Legacy sorted(set(range)) semantics without flattening weighted mass."""
+    support = sorted(set(range_support(rng)))
+    return range_select(rng, support)
+
+
+def range_union(*ranges_in):
+    """Union ranges without discarding probability mass.
+
+    All-legacy input returns the exact historical sorted(set(...)) list.
+    If any input is weighted, output is canonical weighted form and overlapping
+    support adds mass from each source range.
+    """
+    vals = [r for r in ranges_in if r]
+    if not vals:
+        return []
+    if not any(isinstance(r, dict) for r in vals):
+        return sorted(set(
+            c for r in vals for c in r
+        ))
+
+    out = {}
+    for r in vals:
+        for c, w in range_items(r):
+            out[c] = out.get(c, 0.0) + float(w)
+    return {c: out[c] for c in sorted(out)}
+
 def _def_thresholds(prof_type, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
                     raise_level=1, seats=8, ante=True):
     """역치 계산은 preflop.defend_thresholds 하나뿐이다. 여기서 복제하지 않는다.
