@@ -17,6 +17,7 @@ os.environ["T2_LIVE_STATE"] = str(STATE_DIR / "state.json")
 os.environ["T2_BOT_LOG"] = "2"
 
 import live2 as L
+import persona as PS
 import storage_paths as SP
 import telemetry_sync as TM
 
@@ -89,9 +90,33 @@ def main():
     # internal plans/reads/fallback alarms, but avoid dumping huge profiles.
     compact = []
     for h in rows:
+        profile_summary = {}
+        for seat, pid in (h.get("pids") or {}).items():
+            p = (f.players.get(int(pid)) or {}).get("prof") or {}
+            tm = p.get("temper") or {}
+            cc = p.get("concepts") or {}
+            profile_summary[str(seat)] = {
+                "pid": int(pid),
+                "type": p.get("type"),
+                "overall_skill": PS.overall_skill(p) if p else None,
+                "tier": PS.tier(p)[0] if p else None,
+                "aggression": tm.get("aggression"),
+                "looseness": tm.get("looseness"),
+                "discipline": tm.get("discipline"),
+                "adaptability": tm.get("adaptability"),
+                "attention": tm.get("attention"),
+                "pf_defend": cc.get("pf_defend"),
+                "pf_range": cc.get("pf_range"),
+                "reraise": cc.get("reraise"),
+                "range_read": cc.get("range_read"),
+                "potodds": cc.get("potodds"),
+                "bluffcatch_early": cc.get("bluffcatch_early"),
+                "bluffcatch_river": cc.get("bluffcatch_river"),
+            }
         compact.append({
             "table": h.get("table"),
             "pids": h.get("pids"),
+            "profile_summary": profile_summary,
             "pos": h.get("pos"),
             "hole": h.get("hole"),
             "board": h.get("board"),
