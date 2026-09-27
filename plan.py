@@ -843,11 +843,16 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'eq_sims': 400, 'eq_seed': seed,
             'outs_true': outs_true,
             'my_range_n': len(my_range) if my_range else 0,
+            'my_range_mass': (R.range_mass(my_range) if my_range else 0.0),
             'my_range_sig': _range_sig(my_range),
             'opp_range_n': len(opp_range) if opp_range else 0,
+            'opp_range_mass': (R.range_mass(opp_range) if opp_range else 0.0),
             'opp_range_sig': _range_sig(opp_range),
             'opp_ranges_n': ({str(k): len(v) for k, v in opp_ranges.items()}
                              if isinstance(opp_ranges, dict) else None),
+            'opp_ranges_mass': ({
+                str(k): R.range_mass(v) for k, v in opp_ranges.items()}
+                if isinstance(opp_ranges, dict) else None),
             'opp_ranges_sig': ({str(k): _range_sig(v) for k, v in opp_ranges.items()}
                                if isinstance(opp_ranges, dict) else None),
             # 사유에 어느 스트리트에서 붙은 줄인지 표시한다. why 는 스트리트를
@@ -2100,6 +2105,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         # F8-D6-B provenance: full combo maps stay transient; seed stores compact seat-keyed proof.
         'pf_opp_ranges_n': {
             str(k): len(v) for k, v in (opp_ranges or {}).items()},
+        'pf_opp_ranges_mass': {
+            str(k): R.range_mass(v) for k, v in (opp_ranges or {}).items()},
         'pf_opp_ranges_sig': {
             str(k): _range_sig(v) for k, v in (opp_ranges or {}).items()},
         'pf_opp_range_meta': {
@@ -2485,12 +2492,17 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
                'eq_sims': 300, 'eq_seed': seed,
                'outs_true': outs_true,
                'opp_range_n': len(opp_range) if opp_range else 0,
+               'opp_range_mass': (R.range_mass(opp_range) if opp_range else 0.0),
                'opp_range_sig': _range_sig(opp_range),
                'opp_ranges_n': ({str(k): len(v) for k, v in opp_ranges.items()}
                                 if isinstance(opp_ranges, dict) else None),
+               'opp_ranges_mass': ({
+                   str(k): R.range_mass(v) for k, v in opp_ranges.items()}
+                   if isinstance(opp_ranges, dict) else None),
                'opp_ranges_sig': ({str(k): _range_sig(v) for k, v in opp_ranges.items()}
                                   if isinstance(opp_ranges, dict) else None),
                'my_range_n': len(_mr) if _mr else 0,
+               'my_range_mass': (R.range_mass(_mr) if _mr else 0.0),
                'my_range_sig': _range_sig(_mr)})
     why = list(st.get('why') or [])
     old = st.get('plan')
