@@ -248,6 +248,15 @@ def _postflop_response_context(rnd, seat):
         getattr(rnd, 'action_meta', None), seat)
     ctx['hero_contrib'] = float(
         getattr(rnd, 'contrib', {}).get(seat, 0) or 0)
+    fs = ctx.get('facing_seat')
+    if fs is not None:
+        ctx['facing_stack'] = float(
+            getattr(rnd, 'stacks', {}).get(fs, 0) or 0)
+        ctx['facing_contrib'] = float(
+            getattr(rnd, 'contrib', {}).get(fs, 0) or 0)
+    else:
+        ctx['facing_stack'] = None
+        ctx['facing_contrib'] = None
     return ctx
 
 
