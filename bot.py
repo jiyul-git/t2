@@ -130,7 +130,7 @@ def board_danger(board):
             if vs[j]-vs[i]<=4: span=max(span,j-i+1)
     if span>=4: d+=0.50
     elif span==3: d+=0.40
-    elif span==2 and max(vs)-min(vs)<=4: d+=0.18
+    elif span==2: d+=0.18
     # 플랍 2장 동일 수트 = 플러시 드로우 위협
     if len(board)<=4 and m==2: d+=0.20
     return min(1.0,d)
