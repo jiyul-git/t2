@@ -21,7 +21,7 @@ HANDS=[
     [('fold',0)],
     [('raise',500),('check',0),('check',0),('check',0)],
     [('call',0),('bet',300),('bet',700),('check',0)],
-    [],
+    [('fold',0)],
 ]
 
 L.new_game(entries=9,start_stack=30000,seed=SEED,hands_per_level=12,fmt='standard')
