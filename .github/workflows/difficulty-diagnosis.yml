@@ -1,0 +1,25 @@
+name: difficulty-diagnosis
+
+on:
+  push:
+    branches:
+      - chatgpt/logic-tuning-20260927
+  workflow_dispatch:
+
+concurrency:
+  group: difficulty-diagnosis-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax
+        run: python3 -m py_compile tools/diagnose_field_difficulty.py
+      - name: Real-engine field diagnosis
+        run: python3 tools/diagnose_field_difficulty.py
