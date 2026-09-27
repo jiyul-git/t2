@@ -8,27 +8,22 @@ def spr(stack, pot): return stack/max(1, pot)
 
 def line_bluff_prior(opp_profile, street, n_barrels, sizing_frac, board,
                      aggressor_pos_oop, opp_read=None):
-    """상대의 '이 라인'이 블러프일 사전확률. 0~1.
+    """현재 betting range 안의 bluff share를 설명용으로 반환한다.
 
-    공개 라인(배럴 수/사이즈/보드/포지션)은 항상 읽되, 특정 상대의 과거
-    bluff 성향은 read_opponent()가 허용한 만큼만 반영한다. 이렇게 해야
-    adaptability/confidence 게이트를 우회해 원시 est['bluff']를 직접 쓰는
-    숨은 익스플로잇 경로가 생기지 않는다.
+    판단의 단일 근거는 ranges.line_bluff_share()다. 이 값은 call threshold를
+    직접 움직이지 않는다. 같은 값이 상대 betting combo 구성에 반영되고,
+    call/fold는 그 combo range에 대한 equity와 pot odds로 결정한다.
+
+    aggressor_pos_oop은 당장은 기록 호환용이다. 포지션을 line share에 넣으려면
+    opponent range 생성에도 똑같이 넣어야 하므로 별도 보정은 하지 않는다.
     """
-    base_axis = 4.5  # 모집단 사전값
+    base_axis = 5.0
     if opp_read:
         w = max(0.0, min(1.0, float(opp_read.get('w', 0.0) or 0.0)))
         gap = max(-1.0, min(1.0, float(opp_read.get('bluff_gap', 0.0) or 0.0)))
-        base_axis = max(1.0, min(10.0, base_axis * (1.0 + w*gap)))
-    base = base_axis/10.0
-    b = base
-    b *= {1: 1.00, 2: 0.72, 3: 0.48}.get(n_barrels, 0.40)   # 배럴 겹칠수록 블러프↓
-    if sizing_frac >= 1.0:   b *= 1.25                       # 오버벳은 양극화
-    elif sizing_frac <= 0.35: b *= 0.75                      # 소액은 밸류/머지
-    b *= (1.0 + 0.35*bot.board_danger(board))                    # 젖은 보드면 블러프↑
-    if aggressor_pos_oop: b *= 0.80                          # OOP 리드는 블러프↓
-    if street == 'river':  b *= 0.85
-    return max(0.02, min(0.85, b))
+        base_axis = max(1.0, min(10.0, 5.0 + 5.0*w*gap))
+    return R.line_bluff_share(
+        board, street, sizing_frac, base_axis, n_barrels=n_barrels)
 
 def board_paired(board):
     rs = [c[0] for c in board]
@@ -1018,25 +1013,8 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     need = max(0.01, min(0.97, need))
     if call_need is not None:
         call_need = max(0.01, min(0.97, call_need))
-    # 배팅라인 리딩 — 상대가 블러프일 사전확률만큼 문턱을 낮춘다
-    if read is not None:
-        trust = 0.25 + 0.06*profile.get('aggr', 5)
-        if profile.get('concepts'):
-            bc = PS.sk(profile, PS.street_concept('bluffcatch', street))
-            trust *= min(1.4, (0.6*PS.sk(profile,'range_read') + 0.4*bc)/5.0)    # 리딩을 얼마나 신뢰하는가
-        if (not profile.get('concepts')
-                and A.ARCHETYPES.get(profile.get('type'),(0,)*6+('reg',''))[6] == 'fish'):
-            trust *= 0.35
-        # 사이징 텔: 사이즈에서 정보를 읽는 능력. 없으면 큰 벳도 작은 벳도 똑같이 본다.
-        if profile.get('concepts'):
-            stell = PS.sk(profile, 'sizing_tell')
-            sz_now = tocall/max(1.0, float(pot) - tocall)
-            dev = abs(sz_now - 0.6)                      # 표준 사이즈에서 벗어난 정도
-            trust *= (1.0 + 0.10*(stell - 5.0)/5.0 * min(2.0, dev/0.4))
-        _read_adj = trust * (read - 0.35)
-        need -= _read_adj
-        if call_need is not None:
-            call_need -= _read_adj
+    # line bluff/value 판단은 이미 opponent combo range 구성에 반영된다.
+    # 여기서 같은 정보를 need에 다시 더하거나 빼면 동일 증거를 두 번 소비한다.
     # 상·하한. 상한은 팟오즈를 배 이상 부풀리지 못하게,
     # 하한은 팟오즈의 절반 아래로 못 내려가게 한다.
     # 예전엔 하한이 없어서 상대를 블러프로 크게 읽으면
@@ -1067,18 +1045,8 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
         # 오독 중앙 1.5%) 앞의 체인이 전부 지워졌다. 인지 사이즈는 이제
         # need_true 의 입력으로 들어간다 — 같은 정보를 안 지우고 반영한다.
         # 근거: FIX_PLAN.md 2-A / TRACE_SZSEEN.md / TRACE_STELL.md
-        # 상대가 블러프를 많이 하는 사람이면 더 넓게 받아야 한다.
-        # 개인 편향(call_bias)은 '내가 어떤 사람인가', 이건 '상대가 어떤 사람인가'다.
-        if _rdz and _rdz.get('w', 0) > 0:
-            # read_opponent 의 bluff_gap 을 쓴다. 예전에는 opp_est['bluff'] 를
-            # 날것으로 읽어 see_line 게이트를 우회했다 —
-            # 라인을 못 읽는 사람도 상대 블러프 성향에 완전히 반응했다.
-            bl = _rdz.get('bluff_gap', 0.0)
-            _bl_mult = max(0.55, 1.0 - 0.35*bl)
-            need = PS.blend(need, need*_bl_mult, _rdz['w'])
-            if call_need is not None:
-                call_need = PS.blend(
-                    call_need, call_need*_bl_mult, _rdz['w'])
+        # 상대 bluff 성향 역시 perceived opponent range에 이미 들어간다.
+        # call threshold에는 다시 넣지 않는다.
         need = max(0.03, min(0.95, need))
         if call_need is not None:
             call_need = max(0.03, min(0.95, call_need))
