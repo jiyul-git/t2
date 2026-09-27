@@ -619,7 +619,22 @@ def _damp(frac, d):
     return 1.0 - (1.0 - frac)*d
 
 
-def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
+def line_bluff_share(board, street, size_frac, bluff_axis=5.0, n_barrels=1):
+    """이 베팅 라인의 bluff share. 콤보 구성과 라인 판별이 같이 쓰는 단일식.
+
+    이것은 call threshold가 아니다. 상대가 bet했을 때 남길 betting range 안에서
+    value/merge와 bluff가 어느 비율인지 정하는 모델이다.
+    """
+    sh = bot.bluff_share(size_frac, street, bluff_axis)
+    # 연속 배럴일수록 자연스럽게 value 쪽으로 수렴한다.
+    sh *= {1: 1.00, 2: 0.78, 3: 0.58}.get(int(n_barrels or 1), 0.50)
+    # 동적 보드에서는 합리적 bluff 후보가 조금 더 존재한다.
+    sh *= 1.0 + 0.20 * bot.board_danger(board)
+    return max(0.03, min(0.55, sh))
+
+
+def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0,
+               n_barrels=1):
     """벳/레이즈: 양극화. 선택된 support의 기존 mass를 그대로 보존한다."""
     ranked = _ranked(r, board)
     n = len(ranked)
@@ -634,7 +649,9 @@ def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
     vfrac = _damp(vfrac, damp)
     nv = max(1, int(n*min(0.95, vfrac)))
     value = ranked[:nv]
-    nb = bot.bluff_count(nv, size_frac, street, bluff_axis)
+    _sh = line_bluff_share(
+        board, street, size_frac, bluff_axis, n_barrels=n_barrels)
+    nb = int(round(nv * _sh / max(1e-9, 1.0 - _sh)))
     chosen = value + bot.pick_bluffs(ranked, board, street, nb)
     return range_select(r, chosen)
 
@@ -767,6 +784,7 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
     r = range_copy(base)
     floor = max(_MIN_KEEP, int(len(range_support(base))*_MIN_FRAC))
     step = 0
+    aggressive_seen = 0
     for (stt, a, sz) in acts:
         if len(r) <= floor:
             break
@@ -784,7 +802,10 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
         # 연속 액션일수록 추가 정보량이 줄어든다 (축소 누적 폭주 방지)
         d = _DECAY ** step
         if a in ('bet', 'raise', 'allin'):
-            r = _bet_range(r, action_board, stt, bluff, sz, d, barrel)
+            aggressive_seen += 1
+            r = _bet_range(
+                r, action_board, stt, bluff, sz, d, barrel,
+                n_barrels=aggressive_seen)
         elif a == 'call':
             r = _call_range(r, action_board, stt, sz, d)
         elif a == 'check':
