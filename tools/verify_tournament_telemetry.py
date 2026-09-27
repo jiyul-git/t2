@@ -50,9 +50,9 @@ def real_round():
 
     suffix = "_verify_telemetry_%d" % os.getpid()
     old_suffix = FS.BOT_SUFFIX
-    old_log = FS.BOT_LOG
+    old_log = FS.Field.BOT_LOG
     FS.BOT_SUFFIX = suffix
-    FS.BOT_LOG = 2
+    FS.Field.BOT_LOG = 2
     path = Path(SP.path_for("bot_log", suffix, FS.D))
     try:
         if path.exists():
@@ -76,7 +76,7 @@ def real_round():
         hands = TM.parse_bot_log(text)
     finally:
         FS.BOT_SUFFIX = old_suffix
-        FS.BOT_LOG = old_log
+        FS.Field.BOT_LOG = old_log
         try:
             path.unlink()
         except OSError:
