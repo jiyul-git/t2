@@ -59,7 +59,14 @@ Character/portrait assets and assignment logic remain frozen unless the user exp
 - On the hero's turn, only the control row animates upward; the table itself is not re-laid out.
 - Raise panel remains an overlay above the same dock.
 - The dock has 8px extra bottom breathing room for Android/browser navigation bars; the table reservation remains unchanged.
-- Asset checkpoint: `style.css?v=51`, `app.js?v=66`.
+- Asset checkpoint: `style.css?v=52`, `app.js?v=66`.
+
+## Hero hole-card visual checkpoint
+
+- Hero hole cards: 46×64px (previously 50×70px).
+- Inter-card gap keeps the prior relative spacing: 4.6px = 10% of card width.
+- Cards alone are lifted 3px from the actionbar separator; hero/table geometry is unchanged.
+- Character/avatar and action layout are untouched.
 
 ## Side-seat checkpoint
 
