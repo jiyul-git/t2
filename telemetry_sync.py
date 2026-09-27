@@ -71,11 +71,20 @@ def _session_id(st):
     if sid:
         return str(sid)
     # Old live states can enter telemetry without restarting a tournament.
+    # Use OS entropy, never the poker RNG or global random state.
     seed = st.get("seed")
-    hand = ((st.get("field") or {}).get("hand_no") or 0)
-    sid = "adopted_%s_h%s" % (seed if seed is not None else "noseed", hand)
+    sid = "adopted_%s_%s" % (
+        seed if seed is not None else "noseed",
+        os.urandom(4).hex())
     st["telemetry_session_id"] = sid
     return sid
+
+
+def ensure_session(st):
+    """Assign a stable telemetry session id without consuming poker RNG."""
+    if not enabled():
+        return st.get("telemetry_session_id")
+    return _session_id(st)
 
 
 def _code_identity():
