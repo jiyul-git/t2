@@ -797,10 +797,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # '쇼다운 가치 없음'이라는 이유로 2스트리트 블러프가 됐다.
     # 아래 else 에만 has_sd 검사가 있어서 메이드 핸드가 먼저 새어나갔다.
     #
-    # 다만 '가치가 있다/없다'가 이분법이면 안 된다. 약한 페어는 쇼다운 가치가
-    # 얇아서 블러프로 전환할 여지가 있고, 그 판단은 rel 이 정한다.
+    # 메이드 원페어는 약하더라도 블러프 후보로 재분류하지 않는다.
+    # 상대 레인지 대비 약하다는 사실(rel)은 콜/폴드와 얇은 밸류 판단에 쓰지,
+    # 이미 이기는 worse made hand를 접게 만드는 '블러프' 근거가 아니다.
     elif (_sd_eq < 0.42 and sk('bluff') >= 1
-          and (made == 0 or rel < 0.30)
+          and made == 0
           and rng.random() < bluff_ok * (1 + 0.9*min(1.0, outs/8.0) + 0.6*(eq>=0.30))
                             * (0.45 + 0.28*sk('bluff'))):
         plan = ('river_bluff' if street == 'river' else 'bluff_2street')
