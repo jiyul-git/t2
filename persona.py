@@ -904,10 +904,11 @@ def read_opponent(prof, opp_est):
     see_line = _see(rr)       # 스트리트 구분·블러프 성향 — 레인지와 대조해야 안다
     see_size = _see(stl)      # 사이즈의 의미 — 사이즈에 주목해야 안다
 
-    # 쓸 의지는 별개다. 볼 줄 알아도 자기 전략을 안 바꾸는 사람이 있다.
-    use = _see(adp)
-    if use <= 0.0:
-        return neutral                      # 알아도 안 바꾸는 사람
+    # 쓸 의지는 별개다. 하지만 adaptability는 연속 성향이지 2.0에서
+    # 갑자기 '상대 정보를 전혀 안 쓰는 사람'이 되는 스위치가 아니다.
+    # 관찰/해석 능력은 위의 see_*가 정하고, adaptability는 실제 전략 반영
+    # 강도만 0~1로 연속 감쇠한다.
+    use = max(0.0, min(1.0, adp / 10.0))
 
     data = min(1.0, conf) * min(1.0, n/12.0)
     # w 는 '이 상대에 대해 조정할 여지'의 상한. 축별 게이트가 그 위에 곱해진다.
