@@ -1063,14 +1063,46 @@ def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
 class HandRun:
     """히어로 차례에 yield하고 send()로 재개하는 핸드 진행기.
        REPLAY: 이미 확정된 봇 결정은 재계산하지 않고 그대로 재생한다."""
-    def __init__(self, hand, decisions=None):
+    def __init__(self, hand, decisions=None, on_bot_action=None):
         self.h = hand
         self.REPLAY = list(decisions or [])
         self.recorded = []
         self._didx = 0
+        self.on_bot_action = on_bot_action
         self.gen = self._run()
         self.result = None
         self._pot_at = {}          # street -> 스트리트 시작 시점 팟
+
+    def _emit_bot_action(self, street, seat, action, amount, board=None):
+        """UI 진행 콜백. 전략/난수에는 관여하지 않고 관측만 전달한다."""
+        if self.on_bot_action is None:
+            return
+        event = {
+            'kind': 'bot_action',
+            'street': street,
+            'seat': int(seat),
+            'action': action,
+            'amount': int(amount or 0),
+            'board': list(board or []),
+        }
+        try:
+            self.on_bot_action(event)
+        except Exception:
+            # 화면 연결이 끊겨도 핸드 계산과 저장은 끝까지 진행한다.
+            pass
+
+    def _emit_street(self, street, board):
+        """새 스트리트 보드는 첫 봇 판단 전에 UI에 먼저 알린다."""
+        if self.on_bot_action is None:
+            return
+        try:
+            self.on_bot_action({
+                'kind': 'street',
+                'street': street,
+                'board': list(board or []),
+            })
+        except Exception:
+            pass
 
     def start(self):
         try: return next(self.gen)
@@ -1377,7 +1409,9 @@ class HandRun:
             if s == h.hero:
                 act = yield {'stage': 'preflop', 'pos': pos, 'hole': h.hole[s],
                              'stacks': dict(rnd.stacks), 'contrib': dict(rnd.contrib),
-                             'pot': rnd.contestable_contrib(s)+ante_pot, 'tocall': tc,
+                             'pot': rnd.contestable_contrib(s)+ante_pot,
+                             'pot_total': sum(rnd.contrib.values()) + ante_pot,
+                             'tocall': tc,
                              'stack': rnd.stacks[s], 'min_raise': rnd.current+rnd.min_raise,
                              'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
                              'contrib': dict(rnd.contrib), 'live': list(rnd.live()),
@@ -1388,7 +1422,9 @@ class HandRun:
                 try: rnd.apply(s, a, amt)
                 except ValueError as e:
                     act = yield {'stage': 'preflop', 'error': str(e), 'pos': pos,
-                                 'hole': h.hole[s], 'pot': rnd.contestable_contrib(s)+ante_pot,
+                                 'hole': h.hole[s],
+                                 'pot': rnd.contestable_contrib(s)+ante_pot,
+                                 'pot_total': sum(rnd.contrib.values()) + ante_pot,
                                  'tocall': tc, 'stack': rnd.stacks[s],
                                  'min_raise': rnd.current+rnd.min_raise,
                                  'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
@@ -1559,6 +1595,12 @@ class HandRun:
             aggressor, callers, limpers = _update_pf_state_after_apply(
                 rnd, s, aggressor, callers, limpers)
             _money_jump_attach_action(_mj_obs, rnd)
+            # 이번 진행에서 새로 계산된 봇 액션만 UI로 보낸다.
+            # preflop REPLAY 캐시의 의미는 별도 검증 없이 바꾸지 않는다.
+            if len(rnd.log) > _pre_len:
+                _row = rnd.log[-1]
+                self._emit_bot_action(
+                    'preflop', _row[0], _row[1], _row[2], [])
 
         _pf_uncalled = rnd.settle_uncalled()
         if _pf_uncalled:
@@ -1655,6 +1697,10 @@ class HandRun:
             board = h.board[:nc]
             active = [x for x in live if h.stacks[x] > 0]
             if len(active) < 2: break
+            # 스트리트가 열렸다는 사실은 첫 봇 계산보다 먼저 UI에 전달한다.
+            # 그래야 HERO가 직전 스트리트 마지막 액션이었을 때 보드가
+            # 다음 봇의 판단시간만큼 늦게 까지지 않는다.
+            self._emit_street(street, board)
             order = [h.seat_of[p] for p in h.POST if p in h.seat_of and h.seat_of[p] in active]
             r2 = RU.Round(None, order, h.stacks, h.bb)
             street_aggr = aggressor          # 이 스트리트에 들어올 때의 공격자(루프 중 갱신되므로 스냅샷)
@@ -1674,7 +1720,9 @@ class HandRun:
                 if s == h.hero:
                     act = yield {'stage': street, 'board': board, 'hole': h.hole[s],
                                  'stacks': dict(r2.stacks), 'contrib': dict(r2.contrib),
-                                 'pot': pot_now + r2.contestable_contrib(s), 'tocall': tc,
+                                 'pot': pot_now + r2.contestable_contrib(s),
+                                 'pot_total': pot_now + sum(r2.contrib.values()),
+                                 'tocall': tc,
                                  'stack': r2.stacks[s], 'min_raise': r2.current+r2.min_raise,
                                  'can_raise': r2.can_raise(s), 'log': list(r2.log),
                                  'prior_log': list(getattr(self, 'full_log', [])),
@@ -1684,7 +1732,9 @@ class HandRun:
                     try: r2.apply(s, act[0], act[1])
                     except ValueError as e:
                         act = yield {'stage': street, 'error': str(e), 'board': board,
-                                     'hole': h.hole[s], 'pot': pot_now+r2.contestable_contrib(s),
+                                     'hole': h.hole[s],
+                                     'pot': pot_now+r2.contestable_contrib(s),
+                                     'pot_total': pot_now + sum(r2.contrib.values()),
                                      'tocall': tc, 'stack': r2.stacks[s],
                                      'min_raise': r2.current+r2.min_raise,
                                      'can_raise': r2.can_raise(s), 'log': list(r2.log),
@@ -2299,7 +2349,11 @@ class HandRun:
                     _exec_amt = 0
                 if r2.action_meta and r2.action_meta[-1].get('raised'):
                     aggressor = s
-                if r2.log: self.recorded.append((_ck, r2.log[-1][1], r2.log[-1][2]))
+                if r2.log:
+                    _row = r2.log[-1]
+                    self.recorded.append((_ck, _row[1], _row[2]))
+                    self._emit_bot_action(
+                        street, _row[0], _row[1], _row[2], board)
 
                 # 실제 실행 이력. delayed-cbet/probe 같은 다음 스트리트 판단은
                 # 계획했던 행동이 아니라 테이블에서 실제로 일어난 행동을 봐야 한다.
