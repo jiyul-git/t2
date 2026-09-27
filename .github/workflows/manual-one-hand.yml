@@ -1,0 +1,27 @@
+name: manual-one-hand
+
+on:
+  push:
+    branches:
+      - chatgpt/logic-tuning-20260927
+    paths:
+      - tools/manual_one_hand.py
+      - tools/manual_hand_actions.json
+      - .github/workflows/manual-one-hand.yml
+  workflow_dispatch:
+
+concurrency:
+  group: manual-one-hand-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Play one hand
+        run: python3 tools/manual_one_hand.py
