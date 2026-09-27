@@ -574,7 +574,11 @@ _MIN_FRAC = 0.10        # 원본 레인지의 이 비율 밑으로도 줄이지 
 _DECAY    = 0.75        # 연속 액션의 정보량 감쇠
 
 def _ranked(r, board):
-    return sorted(r, key=lambda c: bot._sd_strength(c, board), reverse=True)
+    """Strength-ranked support view without flattening weighted input."""
+    return sorted(
+        range_support(r),
+        key=lambda c: bot._sd_strength(c, board),
+        reverse=True)
 
 
 def _damp(frac, d):
@@ -588,7 +592,7 @@ def _damp(frac, d):
 
 
 def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
-    """벳/레이즈: 양극화. 사이즈가 클수록 밸류가 좁고 블러프 비중이 커진다."""
+    """벳/레이즈: 양극화. 선택된 support의 기존 mass를 그대로 보존한다."""
     ranked = _ranked(r, board)
     n = len(ranked)
     # **고정 상수였다.** 닛이 턴에 배럴하든 매니악이 하든 같은 상위 30% 로
@@ -596,59 +600,52 @@ def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
     # barrel_gap 은 그 사람의 배럴 빈도가 기준보다 얼마나 넓은가(−1~+1).
     vfrac = {'flop': 0.42, 'turn': 0.30, 'river': 0.22}.get(street, 0.32)
     vfrac = max(0.08, min(0.85, vfrac * (1.0 + 1.15*barrel)))
-    if size_frac >= 1.0:   vfrac *= 0.60          # 오버벳은 극단적으로 양극화
+    if size_frac >= 1.0:   vfrac *= 0.60
     elif size_frac >= 0.7: vfrac *= 0.78
-    elif size_frac <= 0.35: vfrac *= 1.45         # 소액은 넓고 머지드
+    elif size_frac <= 0.35: vfrac *= 1.45
     vfrac = _damp(vfrac, damp)
     nv = max(1, int(n*min(0.95, vfrac)))
     value = ranked[:nv]
-    # 블러프 비중은 사이즈에서 유도한다 (bot.bluff_share 참조)
     nb = bot.bluff_count(nv, size_frac, street, bluff_axis)
-    return value + bot.pick_bluffs(ranked, board, street, nb)
+    chosen = value + bot.pick_bluffs(ranked, board, street, nb)
+    return range_select(r, chosen)
 
 
 def _continue_range(r, board, street, size_frac, damp=1.0):
-    """벳을 맞고 fold하지 않은 전체 continue range.
-
-    _call_range와 같은 size별 continue 폭을 쓰되, raise가 불가능한 경우에는
-    최상단 강한 핸드를 '원래 raise했을 것'이라며 제거하지 않는다.
-    """
+    """벳을 맞고 fold하지 않은 전체 continue range; mass 보존."""
     ranked = _ranked(r, board)
     n = len(ranked)
     keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
     keep = _damp(keep * (1.25 - 0.45*min(1.5, size_frac)), damp)
     k = max(1, int(n*min(0.95, keep)))
     out = ranked[:k]
-    return out if len(out) >= _MIN_KEEP else ranked[:_MIN_KEEP] or ranked
+    chosen = out if len(out) >= _MIN_KEEP else (ranked[:_MIN_KEEP] or ranked)
+    return range_select(r, chosen)
 
 
 def _call_range(r, board, street, size_frac, damp=1.0):
-    """콜: 최상위 일부는 올렸을 것이고, 최하위는 접었을 것이다. 가운데가 남는다."""
+    """콜: 기존 support 선택은 유지하고 surviving mass를 그대로 보존한다."""
     ranked = _ranked(r, board)
     n = len(ranked)
-    # 큰 벳에 콜할수록 아래쪽이 더 잘려나간다
     keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
     keep = _damp(keep * (1.25 - 0.45*min(1.5, size_frac)), damp)
-    # 최상위는 대부분 레이즈했을 것이므로 콜 레인지에서 빠진다.
-    # 다만 전부 빼면 슬로우플레이가 사라지므로 일부(trap_keep)만 남긴다.
-    #
-    # 예전에는 top_cut 만큼 잘라낸 lo 를 다시 결과에 더해서 최상위가
-    # 하나도 안 잘렸다. 그래서 3배럴을 '콜만' 한 레인지에 풀하우스·쿼드가
-    # 그대로 남았고, 콜 레인지가 벳 레인지보다 강해지는 역전이 생겼다.
-    cut = max(1, int(n*0.18))                      # 이 위쪽은 레이즈했을 구간
-    trap_keep = max(0, int(cut*0.25))              # 그중 함정으로 남기는 몫
+    cut = max(1, int(n*0.18))
+    trap_keep = max(0, int(cut*0.25))
     lo = ranked[:trap_keep]
     mid = ranked[cut:max(cut+1, int(n*min(0.95, keep)))]
     out = lo + mid
-    return out if len(out) >= _MIN_KEEP else ranked[cut:cut+_MIN_KEEP] or ranked[:_MIN_KEEP]
+    chosen = out if len(out) >= _MIN_KEEP else (
+        ranked[cut:cut+_MIN_KEEP] or ranked[:_MIN_KEEP])
+    return range_select(r, chosen)
 
 
 def _check_range(r, board, street, cbet_axis, damp=1.0):
-    """체크: 밸류의 일부는 벳했을 것이므로 최상위가 얇아진다. 나머지는 대부분 남는다."""
+    """체크: support 선택은 legacy와 같고 mass는 보존한다."""
     ranked = _ranked(r, board)
     n = len(ranked)
-    drop = int(n*0.10*min(1.0, cbet_axis/6.0)*damp)     # c-bet 성향이 높을수록 더 깎인다
-    return ranked[drop:] if n - drop >= _MIN_KEEP else ranked
+    drop = int(n*0.10*min(1.0, cbet_axis/6.0)*damp)
+    chosen = ranked[drop:] if n - drop >= _MIN_KEEP else ranked
+    return range_select(r, chosen)
 
 
 def perceived_facing_bet_response(base, board, street, size_frac,
