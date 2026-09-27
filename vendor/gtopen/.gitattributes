@@ -1,0 +1,40 @@
+# These artifacts are identified by byte hashes; checkout must preserve them.
+cache/contextual/*.json -text
+cache/realization_fit.json -text
+research/ignition-reraise/*.json -text
+research/ignition-action-sizes/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+cache/archetypes.json -text
+research/preflop-evolution/**/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Preserve the recorded Windows collector bytes used in the pass-three digest.
+tools/research/calling_audit.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+tools/ignition/action_sizes.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+tools/ignition/migrate_action_sizes.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Original failed diagnostic inputs retained by byte hash for repair provenance.
+research/preflop-evolution/continuation/terminal-ranges-20260916/build.log -text whitespace=cr-at-eol
+research/preflop-evolution/continuation/terminal-ranges-20260916/source-before-repair.rs.txt -text
+# Keep native Windows diagnostic logs byte-for-byte without treating CR as trailing space.
+research/preflop-evolution/continuation/exact-game-dcfr-gpu-20260917/*.log -text whitespace=cr-at-eol
+research/preflop-evolution/continuation/holdem-call-audit-20260917/*.log -text whitespace=cr-at-eol
+research/preflop-evolution/continuation/holdem-raise-audit-20260917/*.log -text whitespace=cr-at-eol
+research/preflop-evolution/continuation/shallow-continuation-20260917/*.log -text whitespace=cr-at-eol
+research/preflop-evolution/continuation/shallow-native-20260917/**/*.log -text whitespace=cr-at-eol
+research/preflop-evolution/continuation/shallow-native-20260917/*.md -text
+research/preflop-evolution/continuation/shallow-native-20260917/*.cu -text
+tools/research/shallow_native_study.py -text
+tools/research/shallow_native_feedback.py -text
+tools/research/evaluate_shallow_native_feedback.py -text
+crates/solver/examples/shallow_probe.rs -text
+crates/solver/examples/shallow_boundary_seed.rs -text
+research/preflop-evolution/continuation/paired-continuation-20260917/**/*.log -text whitespace=cr-at-eol
+research/preflop-evolution/continuation/paired-continuation-20260917/**/*.md -text
+research/preflop-evolution/continuation/paired-continuation-20260917/*.md -text
+tools/research/paired_continuation_model.py -text
+tools/research/paired_continuation_study.py -text
+tools/research/paired_continuation_expansion.py -text
+tools/research/evaluate_paired_continuation.py -text
+tools/research/diagnose_paired_transfer.py -text
+tools/research/fit_paired_expansion.py -text
+tools/research/run_paired_expansion.py -text
+tools/research/test_paired_continuation.py -text
+tools/research/test_paired_expansion.py -text
+tools/research/test_paired_metadata.py -text
