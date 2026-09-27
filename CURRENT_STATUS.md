@@ -2,6 +2,23 @@
 
 이 파일이 현재 작업 상태의 **첫 번째 기준 문서**다.
 
+
+## 2026-09-28 session-context override
+
+아래의 기존 architecture/canonical 설명은 **안정 기준선의 역사**로 읽는다.
+현재 실제 작업은 여러 검증 브랜치로 분기되어 있으므로, 새 세션은 반드시
+`ACTIVE_WORK.md`를 바로 이어서 읽고 branch name이 아니라 **remote HEAD와 containment**로 최신성을 확인한다.
+
+현재 역할 구분:
+- stable canonical baseline: `chatgpt/decision-architecture-audit-20260926`
+- engine / live hand-review candidate: `chatgpt/logic-tuning-20260927`
+- GTO reference: `chatgpt/gto-reference-20260928`
+- mini-CFR / vendored solver: `chatgpt/mini-cfr-solver-20260928`
+
+`integration/latest-20260927`은 이름과 달리 현재 최신 작업선이 아니다.
+세부 HEAD, 분기 차이, 현재 작업 및 다음 행동은 `ACTIVE_WORK.md`가 source of truth다.
+채팅 운영 규칙은 `CHAT_HANDOFF.md`를 따른다.
+
 ## Source of truth
 
 - Repository: `jiyul-git/t2`
