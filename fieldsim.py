@@ -638,6 +638,8 @@ class Field:
             rec['money_jump_obs'] = copy.deepcopy(
                 getattr(h, 'money_jump_obs', []) or [])
             rec['reads'] = copy.deepcopy(getattr(h, 'reads_log', []) or [])
+            rec['range_fallback_audit'] = copy.deepcopy(
+                getattr(h, 'range_fallback_audit', []) or [])
             rec['book_before'] = copy.deepcopy(
                 getattr(h, '_telemetry_book_before', {}) or {})
             rec['book_after'] = copy.deepcopy(getattr(h.book, 'd', {}) or {})
