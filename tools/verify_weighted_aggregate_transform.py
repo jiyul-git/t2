@@ -207,6 +207,15 @@ for name, newf, oldf in transform_cases:
 
     wg = newf(wr)
     need(isinstance(wg, dict), '%s weighted transform flattened to list' % name)
+    if list(wg) != want:
+        got_support = list(wg)
+        print('TRANSFORM MISMATCH', name)
+        print('legacy_n', len(want), 'weighted_n', len(got_support))
+        print('legacy_only', [c for c in want if c not in set(got_support)][:20])
+        print('weighted_only', [c for c in got_support if c not in set(want)][:20])
+        print('legacy_head', want[:30])
+        print('weighted_head', got_support[:30])
+        print('legacy_duplicates', len(want) - len(set(want)))
     need(list(wg) == want, '%s weighted support differs from legacy selection' % name)
     need(all(same_float(wg[c], wr[c]) for c in wg),
          '%s changed surviving probability mass' % name)
