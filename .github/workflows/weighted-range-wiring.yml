@@ -73,7 +73,16 @@ jobs:
           if a != b:
               print('BASE', json.dumps(a, indent=2, sort_keys=True))
               print('CURR', json.dumps(b, indent=2, sort_keys=True))
-              raise SystemExit('production fingerprint changed during W2/W3 structural wiring')
+              raise SystemExit('production fingerprint changed during W0-W4 structural wiring')
+
+          frozen = json.load(open('tools/baseline_9max_post_f8.json'))
+          frozen_view = {'fp': frozen.get('fp'), 'stats': frozen.get('stats')}
+          if frozen_view != b:
+              print('CURRENT BASELINE', json.dumps(frozen_view, indent=2, sort_keys=True))
+              print('MEASURED', json.dumps(b, indent=2, sort_keys=True))
+              raise SystemExit('current regression baseline is stale')
+
           print('PASS exact production fingerprint unchanged from pre-W2 checkpoint')
+          print('PASS current pre-logic regression baseline matches measured behavior')
           print(json.dumps(b, indent=2, sort_keys=True))
           PY
