@@ -163,6 +163,7 @@ def pending_response_context(action_meta, seat):
     return {
         'kind': _response_kind(facing_kind, prior),
         'facing_kind': facing_kind,
+        'facing_seat': latest.get('seat') if latest is not None else None,
         'prior_action': prior.get('action_kind') if prior else None,
         'prior_aggressive': bool(
             prior and prior.get('action_kind') in ('bet', 'raise')),
