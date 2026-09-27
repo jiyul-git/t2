@@ -27,42 +27,60 @@ def board_paired(board):
 
 _RS_CACHE={}
 def relative_strength(hero, board, opp_range=None):
-    """상대의 '벳할 만한' 레인지 중 나를 이기는 비율의 역수. 0(최하)~1(넛).
-       전체 랜덤이 아니라 실제 레인지 기준이라 낮은 플러시가 제대로 낮게 나온다."""
-    if len(board) < 3: return 0.5
-    # 레인지 크기만으로는 서로 다른 레인지를 구분하지 못한다 → 내용 해시 사용.
-    # 단 파이썬 내장 hash() 는 문자열에 대해 프로세스마다 값이 달라지고(PYTHONHASHSEED),
-    # XOR 로 합치면 순서를 무시해 서로 다른 레인지가 같은 키로 충돌한다.
-    # 캐시가 프로세스 안에서 대회 간에 남으므로 그대로 재현성 붕괴로 이어진다.
-    # crc32 + 정렬로 프로세스 독립·순서 안정 키를 만든다.
+    """상대 레인지 중 나를 이기는 probability mass의 역수. 0(최하)~1(넛).
+
+    Legacy unique-list input is exactly the former combo-count metric because
+    every combo has unit mass. A non-uniform posterior contributes according to
+    its relative probability mass instead of being silently flattened.
+    """
+    if len(board) < 3:
+        return 0.5
+
     if opp_range:
-        rk = _zlib.crc32(repr(sorted(opp_range)).encode())
+        rk = _zlib.crc32(repr(R.range_signature(opp_range)).encode())
     else:
         rk = 0
-    ck=(tuple(sorted(hero)),tuple(board),rk)
-    if ck in _RS_CACHE: return _RS_CACHE[ck]
+    ck = (tuple(sorted(hero)), tuple(board), rk)
+    if ck in _RS_CACHE:
+        return _RS_CACHE[ck]
+
     mine = bot.eval7(hero + board)
     dead = set(hero) | set(board)
     pool = opp_range if opp_range else None
+
     if pool:
-        cand = [c for c in pool if not (set(c) & dead)]
+        items = [
+            (c, w) for c, w in R.range_items(pool)
+            if not (set(c) & dead)
+        ]
+        if not items:
+            return 0.5
+        total = sum(w for _c, w in items)
+        better = sum(
+            w for c, w in items
+            if bot.eval7(list(c) + board) > mine)
+        out = 1.0 - (better / total if total > 0 else 0.5)
     else:
         deck = [c for c in bot.FULLDECK if c not in dead]
-        cand = [(deck[i], deck[j]) for i in range(len(deck)) for j in range(i+1, len(deck))]
-    if not cand: return 0.5
-    # **레인지가 주어지면 다시 좁히지 않는다.**
-    # 예전에는 항상 상위 절반만 봤는데, opp_range 는 이미 perceived_range 로
-    # 액션에 맞게 좁혀진 값이다. 여기서 또 자르면 이중 축소가 된다 —
-    # 상대를 잘 읽을수록 자기 핸드를 과소평가하게 되어 방향이 거꾸로다
-    # (미들페어가 rel 0.60 -> 0.00 까지 떨어졌다).
-    #
-    # opp_range 가 없을 때만 절반으로 자른다. 그 경우 cand 는 덱 전체라
-    # 쓰레기 조합까지 포함되어 아무 페어나 강해 보이기 때문이다.
-    ranked = sorted(cand, key=lambda c: bot.eval7(list(c)+board), reverse=True)
-    top = ranked if pool else ranked[:max(1, len(ranked)//2)]
-    better = sum(1 for c in top if bot.eval7(list(c)+board) > mine)
-    out = 1.0 - better/len(top)
-    _RS_CACHE[ck]=out
+        cand = [
+            (deck[i], deck[j])
+            for i in range(len(deck))
+            for j in range(i + 1, len(deck))
+        ]
+        if not cand:
+            return 0.5
+        # No perceived range: keep the historical top-half heuristic exactly.
+        ranked = sorted(
+            cand,
+            key=lambda c: bot.eval7(list(c) + board),
+            reverse=True)
+        top = ranked[:max(1, len(ranked)//2)]
+        better = sum(
+            1 for c in top
+            if bot.eval7(list(c) + board) > mine)
+        out = 1.0 - better / len(top)
+
+    _RS_CACHE[ck] = out
     return out
 
 
