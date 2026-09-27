@@ -183,6 +183,8 @@ class Round:
         _pre_current = self.current
         _pre_min_raise = self.min_raise
         _pre_contrib = self.contrib.get(seat, 0)
+        _pre_stack = st
+        _can_raise_before = self.can_raise(seat)
         _input_action = action
         _raised = False
         _full_raise = False
@@ -254,9 +256,15 @@ class Round:
             'pre_current': _pre_current,
             'post_current': self.current,
             'pre_min_raise': _pre_min_raise,
+            'to_call_before': tc,
+            'can_raise_before': bool(_can_raise_before),
+            'pre_stack': _pre_stack,
+            'post_stack': self.stacks.get(seat, 0),
             'raised': bool(_raised),
             'full_raise': bool(_full_raise),
             'incomplete_raise': bool(_incomplete_raise),
+            'actor_allin_after': bool(seat in self.allin),
+            'allin_raise': bool(_raised and seat in self.allin),
             # 'call' 자체가 남은 스택을 전부 소모해도 all-in call 이다.
             # 입력 문자열이 allin 인 경우만 세면 봇의 call-off가 누락된다.
             'allin_call': bool(
