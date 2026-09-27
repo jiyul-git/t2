@@ -34,11 +34,14 @@ def _dump(f):
         # 좌석 키('1'..'8')라서 pid 1..8 과 그대로 충돌한다 — 3번 자리의
         # 누적 틸트가 pid 3 인 사람에게 붙는다. 그런 상태는 버린다.
         'tilt_key': 'pid',
+        'blind_state': 'tda_dead_button_v1',
         'players': {str(p['pid']): {'prof': p['prof'], 'stack': p['stack'],
                                     'table': p['table'], 'seat': p['seat']}
                     for p in f.players.values()},
         'tables': {str(t): {'button': tb.button,
                             'button_seat': tb.dealer_seat(),
+                            'sb_seat': getattr(tb, 'sb_seat', None),
+                            'bb_seat': getattr(tb, 'bb_seat', None),
                             'hands': tb.hands,
                             'pids': [p['pid'] for p in tb.players],
                             'seats': list(tb.seats)}
@@ -86,8 +89,10 @@ def _load_field(d):
                              'table': v['table'], 'seat': v['seat']}
     f.tables = {}
     for k, v in d['tables'].items():
-        tb = FS.Table(int(k), [f.players[p] for p in v['pids']], button=v['button'],
-                      max_seat=f.max_seat, button_seat=v.get('button_seat'))
+        tb = FS.Table(
+            int(k), [f.players[p] for p in v['pids']], button=v['button'],
+            max_seat=f.max_seat, button_seat=v.get('button_seat'),
+            sb_seat=v.get('sb_seat'), bb_seat=v.get('bb_seat'))
         tb.hands = v['hands']
         if v.get('seats'):
             tb.seats = list(v['seats'])
@@ -96,7 +101,10 @@ def _load_field(d):
             elif len(tb.seats) > tb.max_seat:
                 raise ValueError('저장본 테이블 슬롯이 max_seat보다 큼: %d > %d'
                                  % (len(tb.seats), tb.max_seat))
-        tb.restore_button(v.get('button', 0), v.get('button_seat'))
+        tb.restore_positions(
+            v.get('button', 0), v.get('button_seat'),
+            v.get('sb_seat'), v.get('bb_seat'),
+            legacy_dead_hint=(d.get('blind_state') != 'tda_dead_button_v1'))
         f.tables[int(k)] = tb
     return f
 
@@ -157,7 +165,7 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
 
 # ---------- 히어로 테이블 구성 ----------
 def _hero_table_setup(f):
-    """히어로 테이블을 play.Hand 가 받는 형태로. 좌석 번호는 고정 슬롯을 쓴다."""
+    """히어로 테이블을 TDA dead-button layout과 함께 구성한다."""
     tb = f.hero_table()
     alive = [p for p in tb.alive() if tb.seat_of(p['pid'])]
     alive.sort(key=lambda p: tb.seat_of(p['pid']))
@@ -167,14 +175,15 @@ def _hero_table_setup(f):
     for p in alive:
         s = tb.seat_of(p['pid'])
         profs[str(s)] = p['prof']; stacks[s] = p['stack']
-        if p['pid'] == f.hero_pid: hero_seat = s
-    btn = tb.dealer_seat()
-    return tb, alive, seats, profs, stacks, btn, hero_seat
+        if p['pid'] == f.hero_pid:
+            hero_seat = s
+    layout = tb.hand_layout()
+    return tb, alive, seats, profs, stacks, layout, hero_seat
 
 
 def build_hand(st):
     f = _load_field(st['field'])
-    tb, alive, seats, profs, stacks, btn, hero_seat = _hero_table_setup(f)
+    tb, alive, seats, profs, stacks, layout, hero_seat = _hero_table_setup(f)
     sb, bb = f.blinds()
     # 리딩 장부는 이 대회 상태 안에 산다. 전역 book.json 을 쓰면
     # 대회끼리 관찰이 섞이고 같은 시드가 재현되지 않는다.
@@ -186,8 +195,14 @@ def build_hand(st):
     # 봇의 프리플랍 판단이 라이브와 달라지고(= 기록된 히어로 액션이 불법이 됨),
     # (2) 요청마다 같은 관측이 다시 누적돼 리딩이 몇 배로 부풀려진다.
     _bk = RD.Book(); _bk.d = copy.deepcopy(st.get('book') or {})
-    h = play.Hand(seats, profs, stacks, btn, sb, bb, hero=hero_seat,
-                  seed=st['hand_seed'], book=_bk)
+    h = play.Hand(
+        seats, profs, stacks, layout['button'], sb, bb, hero=hero_seat,
+        seed=st['hand_seed'], book=_bk,
+        position_map=layout['pos'],
+        pre_seats=layout['pre_seats'],
+        post_seats=layout['post_seats'],
+        sb_seat=layout['sb'],
+        bb_seat=layout['bb'])
     h.seat_pid = {tb.seat_of(p['pid']): p['pid'] for p in alive}
     h.table_id = tb.id
     h.table_max_seat = getattr(tb, 'max_seat', len(tb.seats))
