@@ -11,7 +11,7 @@
    - PR #11 `0b919b62`에서 기존 engine/UI 최신선을 통합
    - 구조 감사, UI 수정, 배포 준비 모두 여기서 닫는다.
 
-`chatgpt/ui-bot-pipeline-20260927`은 통합 이후 호환 ref일 뿐이며 새 작업 금지, local clone 전환 후 삭제한다.
+`chatgpt/ui-bot-pipeline-20260927`은 통합 이후 호환 ref일 뿐이며 새 작업 금지, local clone 전환 후 삭제한다. `integration/latest-20260927`도 final-table/UI 배선 검증을 위해 잠시 만든 뒤 canonical로 fast-forward 완료했으므로 deletion-only다.
 
 ## Do not create branches casually
 
@@ -74,6 +74,8 @@
 기능 자체가 사라진 것처럼 보일 수 있다. 그래서 **merge 확인과 old-branch 폐기를 같은 작업으로 묶는다.**
 
 ## Planned cleanup
+
+`integration/latest-20260927`은 최신 엔진 `b6cb821` 위에서 final-table/UI 배선을 검증한 임시선이다. CI 성공 후 canonical이 해당 커밋들을 fast-forward로 포함했으므로 새 작업 금지·삭제 대상이다.
 
 `chatgpt/ui-recovery-20260927`은 `ui-bot-pipeline`에 완전히 포함되어 삭제 대상으로 확정했다.
 `chatgpt/parallel-tables-20260927`도 merge `13505d64` 이후 `ui-bot-pipeline`에 완전히 포함되어 삭제 대상이다.
