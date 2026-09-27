@@ -1,0 +1,75 @@
+name: weighted-range-wiring
+
+on:
+  push:
+    branches:
+      - chatgpt/decision-architecture-audit-20260926
+  workflow_dispatch:
+
+concurrency:
+  group: weighted-range-wiring-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wiring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Syntax
+        run: |
+          python3 -m py_compile \
+            bot.py ranges.py plan.py runner.py \
+            tools/verify_weighted_range_adapter.py \
+            tools/verify_weighted_sampling.py \
+            tools/verify_weighted_aggregate_transform.py
+
+      - name: W0 adapter
+        run: python3 tools/verify_weighted_range_adapter.py
+
+      - name: W1 sampling
+        run: python3 tools/verify_weighted_sampling.py
+
+      - name: W2 W3 aggregates and transforms
+        run: python3 tools/verify_weighted_aggregate_transform.py
+
+      - name: Exact production fingerprint versus pre-W2 checkpoint
+        env:
+          BASE_REF: dc649f7fa66e11802c63c70deeddd39f63dd3e07
+        run: |
+          rm -rf /tmp/t2_weighted_base
+          git worktree add --detach /tmp/t2_weighted_base "$BASE_REF"
+          PYTHONPATH="$PWD" python3 - <<'PY' > /tmp/current_fp.json
+          import json
+          from tools import regress
+          fp, stats = regress.fingerprint()
+          print(json.dumps({'fp': fp, 'stats': stats}, sort_keys=True))
+          PY
+          (
+            cd /tmp/t2_weighted_base
+            PYTHONPATH="$PWD" python3 - <<'PY' > /tmp/base_fp.json
+          import json
+          from tools import regress
+          fp, stats = regress.fingerprint()
+          print(json.dumps({'fp': fp, 'stats': stats}, sort_keys=True))
+          PY
+          )
+          python3 - <<'PY'
+          import json
+          a = json.load(open('/tmp/base_fp.json'))
+          b = json.load(open('/tmp/current_fp.json'))
+          if a != b:
+              print('BASE', json.dumps(a, indent=2, sort_keys=True))
+              print('CURR', json.dumps(b, indent=2, sort_keys=True))
+              raise SystemExit('production fingerprint changed during W2/W3 structural wiring')
+          print('PASS exact production fingerprint unchanged from pre-W2 checkpoint')
+          print(json.dumps(b, indent=2, sort_keys=True))
+          PY
