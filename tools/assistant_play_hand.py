@@ -18,6 +18,7 @@ HAND2=[('fold', 0)]
 HAND3=[('fold', 0)]
 HAND4=[('fold', 0)]
 HAND5=[('fold', 0)]
+HAND6=[('fold', 0)]
 
 L.new_game(entries=9,start_stack=30000,seed=SEED,hands_per_level=12,fmt='standard')
 r=L.step()
@@ -48,6 +49,12 @@ if r.get('done'):
     for a,amt in HAND5:
         r=L.step(a,amt)
     hand5_result=r.get('view')
+hand6_result=None
+if r.get('done'):
+    r=L.step()
+    for a,amt in HAND6:
+        r=L.step(a,amt)
+    hand6_result=r.get('view')
 if r.get('done'):
     r=L.step()
 
@@ -57,11 +64,13 @@ out={
     'actions_hand3':HAND3,
     'actions_hand4':HAND4,
     'actions_hand5':HAND5,
+    'actions_hand6':HAND6,
     'hand1_result':hand1_result,
     'hand2_result':hand2_result,
     'hand3_result':hand3_result,
     'hand4_result':hand4_result,
     'hand5_result':hand5_result,
+    'hand6_result':hand6_result,
     'done':r.get('done'),
     'raw':r.get('raw'),
     'view':r.get('view'),
