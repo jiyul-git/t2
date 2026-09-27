@@ -723,6 +723,31 @@ def perceived_facing_bet_response(base, board, street, size_frac,
     return range_select(base, chosen)
 
 
+def perceived_continue_range(base, board, street, size_frac, profile=None):
+    """상대가 새 wager를 맞고 fold하지 않는 전체 perceived range.
+
+    call/raise를 구분하지 않는다. 밸류 레이즈 자격을 볼 때는 '콜만 하는
+    범위'가 아니라 **계속하는 전체 범위**가 필요하므로 _continue_range를 쓴다.
+    observer의 range_read 한계는 perceived_range와 같은 방식으로 적용한다.
+    """
+    if not base or not board:
+        return range_copy(base)
+    full = _continue_range(base, board, street, size_frac)
+    if not profile or not profile.get('concepts'):
+        return full
+    rr = PS.sk(profile, 'range_read')
+    if rr < 1.5:
+        return range_copy(base)
+    grasp = min(1.0, (rr - 1.5) / 6.0)
+    if grasp >= 0.98 or not full:
+        return full
+    keep = set(range_support(full))
+    rest = [c for c in range_support(base) if c not in keep]
+    n_extra = int(len(rest) * (1.0 - grasp))
+    chosen = range_support(full) + rest[:n_extra]
+    return range_select(base, chosen)
+
+
 def perceived_range(base, board, acts, profile=None, actor_read=None):
     """이 사람이 **실제로 인식하는** 상대 레인지.
 
