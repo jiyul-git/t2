@@ -2,7 +2,7 @@ import random, zlib as _zlib, hashlib as _hashlib
 import bot, ranges as R, preflop as pf, archetypes as A, persona as PS, texture as TX
 
 PLANS = ['value_3street','value_2street','pot_control','semibluff','bluff_2street',
-         'giveup','trap','block']
+         'river_bluff','thin_river','giveup','trap','block','showdown']
 
 def spr(stack, pot): return stack/max(1, pot)
 
@@ -803,8 +803,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
           and (made == 0 or rel < 0.30)
           and rng.random() < bluff_ok * (1 + 0.9*min(1.0, outs/8.0) + 0.6*(eq>=0.30))
                             * (0.45 + 0.28*sk('bluff'))):
-        plan = 'bluff_2street'
-        why.append('쇼다운 가치 없음 + 블로커 %.2f/넛우위 %.2f → 블러프 계획' % (blk, nut))
+        plan = ('river_bluff' if street == 'river' else 'bluff_2street')
+        why.append(
+            ('리버: 쇼다운 가치 없음 + 블로커 %.2f/넛우위 %.2f → 리버 블러프 계획'
+             if street == 'river'
+             else '쇼다운 가치 없음 + 블로커 %.2f/넛우위 %.2f → 블러프 계획')
+            % (blk, nut))
         # 큰 전략(블러프) 아래 세부 전략을 고른다. 사이즈는 여기서 갈린다.
         _bm, _bmul, _bwhy = bluff_mode(profile, rel, dang, nut, opp_est,
                                        street, s, rng)
