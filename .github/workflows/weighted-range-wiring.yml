@@ -30,7 +30,8 @@ jobs:
             bot.py ranges.py plan.py runner.py \
             tools/verify_weighted_range_adapter.py \
             tools/verify_weighted_sampling.py \
-            tools/verify_weighted_aggregate_transform.py
+            tools/verify_weighted_aggregate_transform.py \
+            tools/verify_weighted_boundaries.py
 
       - name: W0 adapter
         run: python3 tools/verify_weighted_range_adapter.py
@@ -40,6 +41,9 @@ jobs:
 
       - name: W2 W3 aggregates and transforms
         run: python3 tools/verify_weighted_aggregate_transform.py
+
+      - name: W4 boundaries signatures and provenance
+        run: python3 tools/verify_weighted_boundaries.py
 
       - name: Exact production fingerprint versus pre-W2 checkpoint
         env:
