@@ -942,6 +942,8 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
            'money_jump_obs': copy.deepcopy(
                getattr(h, 'money_jump_obs', []) or []),
            'reads': copy.deepcopy(getattr(h, 'reads_log', []) or []),
+           'range_fallback_audit': copy.deepcopy(
+               getattr(h, 'range_fallback_audit', []) or []),
            'book_before': copy.deepcopy(
                getattr(h, '_telemetry_book_before', {}) or {}),
            'book_after': copy.deepcopy(getattr(h.book, 'd', {}) or {}),
