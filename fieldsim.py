@@ -1,5 +1,5 @@
 """필드 전체를 실제로 돌린다. 확률 모델 없이 모든 탈락이 실제 파산에서 나온다."""
-import copy, json, os, math, random
+import copy, json, os, math, random, time
 import play, session as SE, persona as PS, reads as RD, field as FLD
 import formats as FM, context as CTX, dynamics as DY
 from table import BLINDS, orders as position_orders
@@ -625,7 +625,8 @@ class Field:
                'board': res.get('board'),
                'stacks_before': {
                    str(k): v for k, v in getattr(h, '_start_stacks', {}).items()},
-               'stacks': {str(k): v for k, v in h.stacks.items()}}
+               'stacks': {str(k): v for k, v in h.stacks.items()},
+               'compute_ms': getattr(h, '_telemetry_compute_ms', None)}
         if self.BOT_LOG >= 2:
             rec['hole'] = {str(k): v for k, v in h.hole.items()}
             rec['full_log'] = res.get('full_log', [])
@@ -700,7 +701,10 @@ class Field:
             h._telemetry_book_before = copy.deepcopy(
                 getattr(h.book, 'd', {}) or {})
             run = SE.HandRun(h)
+            _telemetry_t0 = time.perf_counter()
             run.start()
+            h._telemetry_compute_ms = round(
+                (time.perf_counter() - _telemetry_t0) * 1000.0, 3)
             h._telemetry_tilt_after = {
                 pid: copy.deepcopy(self.tilt.state.get(pid, {}))
                 for pid in _pids
