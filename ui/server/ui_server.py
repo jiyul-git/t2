@@ -260,6 +260,15 @@ def _submit_parallel(field_dump, restart=False):
     """라운드 시작 스냅샷으로 비-HERO worker를 한 번만 시작한다."""
     if not DEFER:
         return
+    try:
+        _hero_tid, _other_tids, _other_pids = L._round_owners(field_dump)
+    except Exception:
+        _other_tids = None
+    if _other_tids == []:
+        # 파이널테이블은 HERO table 자체가 전체 필드다.
+        COUNT['single_table_skip'] += 1
+        _clear_worker()
+        return
     key = L._others_key(field_dump)
     fut = PENDING.get('future')
     if fut is not None and PENDING.get('base_key') == key:
