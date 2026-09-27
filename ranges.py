@@ -246,10 +246,15 @@ def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
             if lo < pf.PCT[pf.cls(list(c))] <= hi and ok(c)]
 
 def narrow(r, board, keep_frac, mode='top'):
-    if not board or not r: return r
-    ranked = sorted(r, key=lambda c: bot.eval7(list(c)+board), reverse=True)
+    if not board or not r:
+        return range_copy(r)
+    ranked = sorted(
+        range_support(r),
+        key=lambda c: bot.eval7(list(c)+board),
+        reverse=True)
     k = max(1, int(len(ranked)*keep_frac))
-    return ranked[:k] if mode == 'top' else ranked[-k:]
+    chosen = ranked[:k] if mode == 'top' else ranked[-k:]
+    return range_select(r, chosen)
 
 # betting_range 는 bot.betting_range 하나만 쓴다.
 # (여기 있던 사본은 호출부가 없었고 시그니처·로직이 갈라져 있어 제거)
@@ -366,13 +371,17 @@ def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
 
 
 def _strong_share(r, board, cutoff=2):
-    if not r: return 0.0
-    n = ok = 0
-    for c in r:
-        if set(c) & set(board): continue
-        n += 1
-        if bot.eval7(list(c)+board)[0] >= cutoff: ok += 1
-    return ok/n if n else 0.0
+    if not r:
+        return 0.0
+    total = strong = 0.0
+    dead = set(board)
+    for c, w in range_items(r):
+        if set(c) & dead:
+            continue
+        total += w
+        if bot.eval7(list(c)+board)[0] >= cutoff:
+            strong += w
+    return strong / total if total > 0 else 0.0
 
 def nut_advantage(r_a, r_b, board):
     """넛 구간 점유율 차이. -1~1."""
@@ -390,11 +399,27 @@ def blocker_score(hero, opp_range, board):
     **근사값이다.** 정확히는 blocker_effect 를 쓸 것 —
     강한 콤보를 지우는 것과 '콜할 콤보'를 지우는 것은 다르다.
     이 함수는 상대 벳 사이즈를 모를 때의 폴백으로 남긴다.
+
+    Strong-support selection stays legacy-compatible; the aggregate itself is
+    probability-mass weighted when a weighted posterior is supplied.
     """
-    if not opp_range or not board: return 0.0
-    strong = sorted(opp_range, key=lambda c: bot.eval7(list(c)+board), reverse=True)
-    strong = strong[:max(4, len(strong)//5)]
-    return sum(1 for c in strong if c[0] in hero or c[1] in hero)/len(strong)
+    if not opp_range or not board:
+        return 0.0
+    support = sorted(
+        range_support(opp_range),
+        key=lambda c: bot.eval7(list(c)+board),
+        reverse=True)
+    strong = support[:max(4, len(support)//5)]
+    if not strong:
+        return 0.0
+    wr = weighted_range(opp_range)
+    total = sum(wr.get(c, 0.0) for c in strong)
+    if total <= 0:
+        return 0.0
+    blocked = sum(
+        wr.get(c, 0.0) for c in strong
+        if c[0] in hero or c[1] in hero)
+    return blocked / total
 
 
 def blocker_effect(hero, opp_range, board, street, size_frac, for_value=False):
@@ -416,13 +441,23 @@ def blocker_effect(hero, opp_range, board, street, size_frac, for_value=False):
     """
     if not opp_range or not board:
         return 0.0
-    calls = set(_call_range(opp_range, board, street, size_frac))
-    folds = [c for c in opp_range if c not in calls]
+    call_range = _call_range(opp_range, board, street, size_frac)
+    calls = set(range_support(call_range))
+    support = range_support(opp_range)
+    folds = [c for c in support if c not in calls]
     if not calls or not folds:
         return 0.0
+
+    wr = weighted_range(opp_range)
     hit = lambda c: (c[0] in hero or c[1] in hero)
-    blocked_call = sum(1 for c in calls if hit(c)) / len(calls)
-    blocked_fold = sum(1 for c in folds if hit(c)) / len(folds)
+    call_mass = sum(wr.get(c, 0.0) for c in calls)
+    fold_mass = sum(wr.get(c, 0.0) for c in folds)
+    if call_mass <= 0 or fold_mass <= 0:
+        return 0.0
+    blocked_call = sum(
+        wr.get(c, 0.0) for c in calls if hit(c)) / call_mass
+    blocked_fold = sum(
+        wr.get(c, 0.0) for c in folds if hit(c)) / fold_mass
     net = blocked_call - blocked_fold
     return max(-1.0, min(1.0, -net if for_value else net))
 
@@ -468,19 +503,20 @@ def joint_blocker_effect(hero, opp_ranges, board, street, size_frac,
     board_dead = set(board)
     prepared = []
     for seat, pool in items:
-        # Board collisions are impossible in both worlds.  Hero collisions are
+        # Board collisions are impossible in both worlds. Hero collisions are
         # intentionally preserved: they ARE the blocker counterfactual.
-        clean = sorted(c for c in pool
-                       if c[0] not in board_dead and c[1] not in board_dead)
+        clean = bot._filter_pool(pool, board_dead, sort_legacy=True)
         if not clean:
             return None
-        calls = set(_call_range(clean, board, street, size_frac))
+        calls = set(range_support(
+            _call_range(clean, board, street, size_frac)))
         prepared.append((seat, clean, calls))
 
     if seed is None:
         seed = _zlib.crc32(repr((
             tuple(sorted(hero)), tuple(board), street, float(size_frac),
-            tuple((str(s), tuple(pool)) for s, pool, _ in prepared),
+            tuple((str(s), range_signature(pool))
+                  for s, pool, _ in prepared),
             int(sims), 'joint_blocker_effect')).encode())
     rng = random.Random(seed)
 
@@ -493,7 +529,7 @@ def joint_blocker_effect(hero, opp_ranges, board, street, size_frac,
         for _seat, pool, calls in prepared:
             pick = None
             for _try in range(80):
-                c = rng.choice(pool)
+                c = bot._sample_pool_combo(rng, pool)
                 if c[0] not in used and c[1] not in used:
                     pick = c
                     used.add(c[0]); used.add(c[1])
