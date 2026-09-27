@@ -665,7 +665,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # (trap 숙련도 · SPR · 보드 위험 · 인원) 중복해서 봤고, 1차는 상대 성향과
     # 체크레이즈 능력을 못 보는 열등한 판정인데 앞에 서서 74% 를 미리 잘랐다.
     # 그래서 넛급의 92% 가 value_3street 로 직행했다.
-    trap_ok = True
+    # Same-street trap/check-raise only exists if someone can still act after us.
+    # If we are closing action (e.g. IP after OOP checked), checking ends the street;
+    # assigning a trap there incorrectly assumes the opponent can still bet.
+    trap_ok = (to_act_behind > 0)
 
     # 상대 레인지에 지는 콤보가 많으면 밸류 계획 자체를 강등한다.
     # eq(랜덤/광역 레인지 대비)가 높아도 rel이 낮으면 얇은 밸류다.
@@ -707,7 +710,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # 패시브한 상대에게 체크하면 무료 카드만 주는 최악의 수다.
         p_trap, trap_why = trap_judgment(profile, opp_est, s, dang, mw,
                                          street, tilt, sk)
-        if trap_ok and rng.random() < p_trap:
+        # Preserve the historical RNG consumption even when trap is structurally
+        # impossible, so the downstream aggression roll is not shifted by this gate.
+        _trap_roll = rng.random()
+        if trap_ok and _trap_roll < p_trap:
             plan = 'trap'; why.append(trap_why)
             # trap 은 **목적이 아니라 실행 방식**이다. 목적은 밸류 추출이고,
             # 그것을 '숨겼다가 상대가 치면 올린다'는 방식으로 실행하는 것.
