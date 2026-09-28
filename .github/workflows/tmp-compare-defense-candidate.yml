@@ -1,0 +1,50 @@
+name: tmp compare test vs defense candidate
+on:
+  push:
+    branches:
+      - tmp/preflop-policy-shape-20260928
+    paths:
+      - .github/workflows/tmp-compare-defense-candidate.yml
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/preflop-policy-shape-20260928
+          fetch-depth: 0
+      - name: Candidate fingerprint
+        run: |
+          PYTHONPATH=. python3 - <<'PY' > /tmp/candidate.json
+          import json
+          import tools.regress as R
+          fp,stats=R.fingerprint()
+          print(json.dumps({"fp":fp,"stats":stats},sort_keys=True))
+          PY
+      - name: Current test fingerprint
+        run: |
+          git worktree add /tmp/t2-test origin/test
+          cd /tmp/t2-test
+          PYTHONPATH=. python3 - <<'PY' > /tmp/test.json
+          import json
+          import tools.regress as R
+          fp,stats=R.fingerprint()
+          print(json.dumps({"fp":fp,"stats":stats},sort_keys=True))
+          PY
+      - name: Compare
+        run: |
+          python3 - <<'PY'
+          import json
+          a=json.load(open('/tmp/test.json'))
+          b=json.load(open('/tmp/candidate.json'))
+          print('TEST',json.dumps(a,sort_keys=True))
+          print('CANDIDATE',json.dumps(b,sort_keys=True))
+          bad=[s for s in b['fp'] if b['fp'][s] != a['fp'].get(s)]
+          print('DIFF_SEEDS',bad)
+          for k in sorted(set(a['stats'])|set(b['stats'])):
+              av=a['stats'].get(k,0);bv=b['stats'].get(k,0)
+              print('DELTA',k,bv-av)
+          PY
