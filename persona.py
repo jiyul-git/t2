@@ -538,23 +538,24 @@ def preflop_reasoned_width(prof, family, target, direction, pos=None, seats=8,
                             deviation_scale=0.95, anchor=None):
     """Human v3 three-stage width: recall -> condition reasoning -> temperament.
 
-    1) Recall a *studied-condition* chart.  Imperfect chart knowledge lets the
-       person's stable loose/tight direction distort that remembered width.
-    2) If conditions differ, existing reasoning skills move the remembered
-       chart by a fraction of the objective anchor->target delta.
-    3) Crucially, condition mismatch no longer enlarges the temperament term.
-       A chart memorizer with weak reasoning therefore keeps using the nearby
-       chart; a strong reasoner adjusts it.  Neither silently becomes more
-       loose/tight just because the spot is unfamiliar.
+    1) Recall the nearest *studied-condition* chart (anchor).
+    2) Existing reasoning skills move that anchor toward the current-condition
+       reference by a fraction r.
+    3) Only after that does stable loose/tight temperament move the player's
+       actual width away from the reasoned baseline; chart knowledge controls
+       how large that personal deviation may be.
+
+    Condition mismatch therefore changes the *reasoning problem*, not the
+    magnitude of personality.  This is the key difference from v2.
     """
     if anchor is None:
         anchor = gto_studied_anchor(
             family, pos, seats, bb, ante, opener_pos=opener_pos, open_bb=open_bb)
-    k = gto_knowledge(prof, family)
-    remembered = float(anchor) * (1.0 + (1.0 - k) * float(direction) * deviation_scale)
     r = preflop_reasoning_confidence(
         prof, family, pos, seats, bb, ante, opener_pos=opener_pos, open_bb=open_bb)
-    return remembered + r * (float(target) - float(anchor))
+    reasoned = float(anchor) + r * (float(target) - float(anchor))
+    k = gto_knowledge(prof, family)
+    return reasoned * (1.0 + (1.0 - k) * float(direction) * deviation_scale)
 
 
 def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
