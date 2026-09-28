@@ -1,0 +1,96 @@
+name: tmp same-state defense candidate attribution
+on:
+  push:
+    branches:
+      - tmp/preflop-policy-shape-20260928
+    paths:
+      - .github/workflows/tmp-same-state-defense-attribution.yml
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/preflop-policy-shape-20260928
+          fetch-depth: 0
+      - name: Capture candidate-hit states
+        run: |
+          PYTHONPATH=. python3 - <<'PY'
+          import json,inspect
+          import tourney as T
+          import preflop
+          orig=preflop.defend_action_likelihoods
+          sig=inspect.signature(orig)
+          rows=[]
+          def wrap(*args,**kwargs):
+              bound=sig.bind_partial(*args,**kwargs);bound.apply_defaults()
+              x=orig(*args,**kwargs)
+              if x.get('policy_shape')=='mtt8_compact_semantic_v1':
+                  d=dict(bound.arguments)
+                  try:
+                      json.dumps(d)
+                  except TypeError:
+                      d['exploit']=None
+                  rows.append({'args':d,'candidate':{k:x[k] for k in ('attack','call','fold','hot_attack')}})
+              return x
+          preflop.defend_action_likelihoods=wrap
+          for sd in range(3100,3106):
+              t=T.Tournament(entries=100,hero_seat=7,seats=8,seed=sd,
+                             hands_per_level=200,fmt='turbo')
+              for _ in range(30):
+                  if sum(1 for s in t.seats if t.stacks[s]>0)<3:break
+                  st=t.next_hand();guard=0
+                  while st and not st.get('done') and guard<200:
+                      st=t.submit('fold');guard+=1
+                  t.finish_hand()
+          json.dump(rows,open('/tmp/candidate_states.json','w'))
+          print('CAPTURED',len(rows))
+          PY
+      - name: Evaluate same states on current test
+        run: |
+          git worktree add /tmp/t2-test origin/test
+          cp /tmp/candidate_states.json /tmp/t2-test/candidate_states.json
+          cd /tmp/t2-test
+          PYTHONPATH=. python3 - <<'PY'
+          import json,collections
+          import preflop
+          rows=json.load(open('candidate_states.json'))
+          seen=set();out=[];groups=collections.defaultdict(lambda:[0,0.0,0.0,0.0])
+          for rec in rows:
+              a=rec['args']
+              key=json.dumps(a,sort_keys=True,separators=(',',':'))
+              # Preserve occurrence count but mark exact unique states too.
+              seen.add(key)
+              b=preflop.defend_action_likelihoods(**a)
+              c=rec['candidate']
+              da=c['attack']-b['attack']; dc=c['call']-b['call']; df=c['fold']-b['fold']
+              base_arg=max(('attack','call','fold'),key=lambda k:b[k])
+              cand_arg=max(('attack','call','fold'),key=lambda k:c[k])
+              out.append({
+                'def_pos':a['def_pos'],'opener_pos':a['opener_pos'],'hand':preflop.cls(a['hand']),
+                'stack_bb':a['stack_bb'],'base':{k:b[k] for k in ('attack','call','fold')},
+                'candidate':{k:c[k] for k in ('attack','call','fold')},
+                'delta':{'attack':da,'call':dc,'fold':df},
+                'argmax_change':base_arg!=cand_arg,'base_argmax':base_arg,'cand_argmax':cand_arg,
+              })
+              g=groups[a['def_pos']];g[0]+=1;g[1]+=da;g[2]+=dc;g[3]+=df
+          n=len(out)
+          s={
+            'occurrences':n,'unique_states':len(seen),
+            'mean_abs_attack_delta':sum(abs(x['delta']['attack']) for x in out)/max(1,n),
+            'mean_abs_call_delta':sum(abs(x['delta']['call']) for x in out)/max(1,n),
+            'mean_abs_fold_delta':sum(abs(x['delta']['fold']) for x in out)/max(1,n),
+            'mean_attack_delta':sum(x['delta']['attack'] for x in out)/max(1,n),
+            'mean_continue_delta':sum(x['delta']['attack']+x['delta']['call'] for x in out)/max(1,n),
+            'argmax_changes':sum(x['argmax_change'] for x in out),
+            'groups':{k:{'n':v[0],'mean_attack_delta':v[1]/v[0],
+                         'mean_call_delta':v[2]/v[0],'mean_fold_delta':v[3]/v[0]}
+                      for k,v in sorted(groups.items())},
+          }
+          worst=sorted(out,key=lambda x:abs(x['delta']['attack'])+abs(x['delta']['call'])+abs(x['delta']['fold']),reverse=True)[:20]
+          print('SUMMARY',json.dumps(s,sort_keys=True))
+          print('WORST',json.dumps(worst,sort_keys=True))
+          PY
