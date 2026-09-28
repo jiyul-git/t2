@@ -1,0 +1,81 @@
+{
+ "id": "m2_single_v1",
+ "note": "pre-registered sensitivity menu: one 50% pot bet per street, raise = all-in only, no donk leads",
+ "tree": {
+  "starting_pot": 0.0,
+  "effective_stack": 0.0,
+  "oop": [
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     }
+    ],
+    "raise": [
+     "AllIn"
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     }
+    ],
+    "raise": [
+     "AllIn"
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     }
+    ],
+    "raise": [
+     "AllIn"
+    ],
+    "donk": []
+   }
+  ],
+  "ip": [
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     }
+    ],
+    "raise": [
+     "AllIn"
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     }
+    ],
+    "raise": [
+     "AllIn"
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     }
+    ],
+    "raise": [
+     "AllIn"
+    ],
+    "donk": []
+   }
+  ],
+  "allin_threshold": 0.85,
+  "add_allin": false,
+  "max_raises": 1
+ }
+}

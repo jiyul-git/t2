@@ -23,6 +23,8 @@ path = "src/bin/solve_cli.rs"
 gpu = ["dep:cudarc"]
 # T2 audit: per-terminal-kind call counts / CPU time. Compiled out by default.
 t2-profile = []
+# T2 HU-continuation prototype: inject solved values at one terminal (T2_CONT_FILE). Off by default.
+t2-cont = []
 preflop-research = ["gpu"]
 
 [[example]]
@@ -40,6 +42,15 @@ name = "t2_mw_bench"
 
 [[example]]
 name = "t2_defend_check"
+
+[[example]]
+name = "t2_cont_terminal"
+
+[[example]]
+name = "t2_cont_flop"
+
+[[example]]
+name = "t2_cont_panel"
 
 [[example]]
 name = "learned_decisions"

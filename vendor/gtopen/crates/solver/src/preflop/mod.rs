@@ -15,6 +15,8 @@
 pub mod equity;
 #[cfg(feature = "t2-profile")]
 pub mod t2prof;
+#[cfg(feature = "t2-cont")]
+pub mod t2cont;
 pub mod multiway;
 pub mod reference;
 pub mod dataset;
@@ -1711,6 +1713,14 @@ impl PreflopSolver {
                     #[cfg(feature = "t2-profile")]
                     _tp.set(t2prof::K_DEAD);
                     out.iter_mut().for_each(|v| *v = (prob * -inv_p) as f32);
+                    return;
+                }
+                #[cfg(feature = "t2-cont")]
+                if let Some(g) = t2cont::gross_for(node, nd.live, nd.pot, p) {
+                    // externally solved HU continuation (gross share, zero rake)
+                    for h in 0..NUM_CLASSES {
+                        out[h] = (prob * (g[h] - inv_p)) as f32;
+                    }
                     return;
                 }
                 // normalized opponent class distributions

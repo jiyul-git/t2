@@ -1,0 +1,217 @@
+{
+ "schema": "flop_panel_v1",
+ "seed": 20260928,
+ "per_stratum": 2,
+ "canonical_flop_classes": 1755,
+ "strata": {
+  "monotone/A": {
+   "canonical_flops": 66,
+   "raw_flops": 264,
+   "probability": 0.011945701357466063
+  },
+  "monotone/J_or_lower": {
+   "canonical_flops": 120,
+   "raw_flops": 480,
+   "probability": 0.02171945701357466
+  },
+  "monotone/KQ": {
+   "canonical_flops": 100,
+   "raw_flops": 400,
+   "probability": 0.01809954751131222
+  },
+  "paired/A": {
+   "canonical_flops": 49,
+   "raw_flops": 580,
+   "probability": 0.026244343891402715
+  },
+  "paired/J_or_lower": {
+   "canonical_flops": 190,
+   "raw_flops": 2200,
+   "probability": 0.09954751131221719
+  },
+  "paired/KQ": {
+   "canonical_flops": 86,
+   "raw_flops": 1016,
+   "probability": 0.04597285067873303
+  },
+  "rainbow/A": {
+   "canonical_flops": 66,
+   "raw_flops": 1584,
+   "probability": 0.07167420814479639
+  },
+  "rainbow/J_or_lower": {
+   "canonical_flops": 120,
+   "raw_flops": 2880,
+   "probability": 0.13031674208144797
+  },
+  "rainbow/KQ": {
+   "canonical_flops": 100,
+   "raw_flops": 2400,
+   "probability": 0.1085972850678733
+  },
+  "twotone/A": {
+   "canonical_flops": 198,
+   "raw_flops": 2376,
+   "probability": 0.10751131221719457
+  },
+  "twotone/J_or_lower": {
+   "canonical_flops": 360,
+   "raw_flops": 4320,
+   "probability": 0.19547511312217195
+  },
+  "twotone/KQ": {
+   "canonical_flops": 300,
+   "raw_flops": 3600,
+   "probability": 0.16289592760180996
+  }
+ },
+ "panel": [
+  {
+   "board": "AcQc2c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.005972850678733032
+  },
+  {
+   "board": "AcKc6c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.005972850678733032
+  },
+  {
+   "board": "Tc9c7c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.01085972850678733
+  },
+  {
+   "board": "Jc6c2c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.01085972850678733
+  },
+  {
+   "board": "Qc5c2c",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.00904977375565611
+  },
+  {
+   "board": "KcQc6c",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.00904977375565611
+  },
+  {
+   "board": "AdAc9c",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.013122171945701358
+  },
+  {
+   "board": "AdAcKc",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.013122171945701358
+  },
+  {
+   "board": "JdJc3c",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.049773755656108594
+  },
+  {
+   "board": "6d6c3c",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.049773755656108594
+  },
+  {
+   "board": "KcJhJd",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.022986425339366515
+  },
+  {
+   "board": "Kc3d3c",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.022986425339366515
+  },
+  {
+   "board": "Ac4d3h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.03583710407239819
+  },
+  {
+   "board": "Ac4d2h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.03583710407239819
+  },
+  {
+   "board": "Tc9d5h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.06515837104072399
+  },
+  {
+   "board": "9c7d4h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.06515837104072399
+  },
+  {
+   "board": "Kc7d4h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.05429864253393665
+  },
+  {
+   "board": "KcTd9h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.05429864253393665
+  },
+  {
+   "board": "AcQdJc",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.05375565610859728
+  },
+  {
+   "board": "AcKd5d",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.05375565610859728
+  },
+  {
+   "board": "6c4d3d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.09773755656108597
+  },
+  {
+   "board": "8c4d3d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.09773755656108597
+  },
+  {
+   "board": "Qc9d7d",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.08144796380090498
+  },
+  {
+   "board": "Qc4d3c",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.08144796380090498
+  }
+ ],
+ "panel_hash_sha256": "4bec90159fe5466edb2596c4b116c8f870f185f74924b62a6517761f9d56ebec",
+ "estimator": "stratified: sum_strata P(stratum) * mean(panel values in stratum); draw within stratum proportional to raw-flop count",
+ "caveat": "flop probabilities ignore card removal by the players' ranges"
+}

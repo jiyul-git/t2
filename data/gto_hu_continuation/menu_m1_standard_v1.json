@@ -1,0 +1,111 @@
+{
+ "id": "m1_standard_v1",
+ "note": "pre-registered primary postflop menu (fixed before any result): flop 33/75, turn 50/100, river 50/100 (% pot); raises 2.5x; all-in offered; no donk leads; max 2 raises per street",
+ "tree": {
+  "starting_pot": 0.0,
+  "effective_stack": 0.0,
+  "oop": [
+   {
+    "bet": [
+     {
+      "PotPct": 33.0
+     },
+     {
+      "PotPct": 75.0
+     }
+    ],
+    "raise": [
+     {
+      "PrevMult": 2.5
+     }
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     },
+     {
+      "PotPct": 100.0
+     }
+    ],
+    "raise": [
+     {
+      "PrevMult": 2.5
+     }
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     },
+     {
+      "PotPct": 100.0
+     }
+    ],
+    "raise": [
+     {
+      "PrevMult": 2.5
+     }
+    ],
+    "donk": []
+   }
+  ],
+  "ip": [
+   {
+    "bet": [
+     {
+      "PotPct": 33.0
+     },
+     {
+      "PotPct": 75.0
+     }
+    ],
+    "raise": [
+     {
+      "PrevMult": 2.5
+     }
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     },
+     {
+      "PotPct": 100.0
+     }
+    ],
+    "raise": [
+     {
+      "PrevMult": 2.5
+     }
+    ],
+    "donk": []
+   },
+   {
+    "bet": [
+     {
+      "PotPct": 50.0
+     },
+     {
+      "PotPct": 100.0
+     }
+    ],
+    "raise": [
+     {
+      "PrevMult": 2.5
+     }
+    ],
+    "donk": []
+   }
+  ],
+  "allin_threshold": 0.85,
+  "add_allin": true,
+  "max_raises": 2
+ }
+}
