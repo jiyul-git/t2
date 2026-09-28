@@ -7,7 +7,10 @@ on:
     paths:
       - 'persona.py'
       - 'preflop.py'
+      - 'plan.py'
+      - 'tools/verify_human_model_v2.py'
       - 'tools/verify_human_model_v3.py'
+      - 'tools/verify_human_model_v3_runtime.py'
       - '.github/workflows/human-model-v3-verify.yml'
   workflow_dispatch:
 
@@ -16,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  structural:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -27,4 +30,42 @@ jobs:
       - name: Structural verifier
         run: python3 tools/verify_human_model_v3.py
       - name: Compile touched modules
-        run: python3 -m py_compile persona.py preflop.py tools/verify_human_model_v3.py
+        run: >-
+          python3 -m py_compile persona.py preflop.py plan.py
+          tools/verify_human_model_v3.py
+          tools/verify_human_model_v3_runtime.py
+
+  paired-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Paired counterfactual, population, runtime attribution
+        run: python3 tools/verify_human_model_v3_runtime.py
+
+  baseline-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run v2 regression harness with all V3 flags OFF
+        env:
+          T2_PREFLOP_REASONING_V3: '0'
+          T2_EXPLOIT_WEIGHT_V3: '0'
+        run: python3 tools/verify_human_model_v2.py --out /tmp/human_v2.json
+      - name: Require historical OFF fingerprints
+        run: |
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/human_v2.json'))
+          ok=bool((d.get('IDENT') or {}).get('pass'))
+          print(json.dumps({'IDENT': d.get('IDENT'), 'pass': ok}, indent=2))
+          if not ok:
+              raise SystemExit('default-OFF fingerprints changed')
+          PY
