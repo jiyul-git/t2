@@ -396,6 +396,10 @@ OPEN_ELASTICITY = {'UTG':0.75,'UTG+1':0.80,'UTG+2':0.85,'LJ':0.90,'HJ':1.00,
 # 기존 (1-acc) 이탈 항 — 기질·포지션 감각 쪽 — 의 비중이 커진다.
 import os as _os
 GTO_MEMORY_V2 = _os.environ.get('T2_GTO_MEMORY_V2') == '1'
+# Human Model v3 (opt-in): when the current preflop spot differs from the
+# studied chart family, keep chart recall, condition reasoning, and temperament
+# as three separate stages. OFF preserves v2/production behavior exactly.
+PREFLOP_REASONING_V3 = _os.environ.get('T2_PREFLOP_REASONING_V3') == '1'
 
 GTO_FAMILY_CONCEPT = {'rfi': 'pf_range', 'defend': 'pf_defend'}
 
@@ -468,6 +472,91 @@ def gto_memory_confidence(prof, family, pos=None, seats=8, bb=100.0, ante=True,
     return k * gto_condition_match(family, pos, seats, bb, ante, opener_pos, open_bb)
 
 
+def gto_studied_anchor(family, pos, seats=8, bb=100.0, ante=True,
+                       opener_pos=None, open_bb=2.5):
+    """Return the chart width the player could have studied for this family.
+
+    This is deliberately *not* the current-spot answer.  It maps the current
+    position to the studied table, clamps depth to the studied interval and
+    uses the studied ante convention.  V3 can then model the human step
+    "remember a nearby chart -> reason from it" instead of handing the player
+    the current reference and only changing confidence.
+
+    For defend we return (threebet_width, total_continue_width).  Open-size
+    mismatch is intentionally not invented here: GTO_STUDIED does not record
+    a canonical studied open size, so the observed/current open_bb is retained.
+    """
+    import gto as _G
+    S = GTO_STUDIED[family]
+    lo, hi = S['bb']
+    bb_s = max(lo, min(hi, float(bb)))
+    p_s = _pos_equiv(pos, seats, S['seats'])
+    if family == 'rfi':
+        return _G.rfi(p_s, S['seats'], bb_s, S['ante'])
+    if family != 'defend':
+        raise KeyError('unknown GTO family: %s' % family)
+    op = opener_pos or 'HJ'
+    op_s = _pos_equiv(op, seats, S['seats'])
+    tot = _G.defend_pct(p_s, op_s, S['seats'], bb_s, S['ante'], open_bb)
+    tp = _G.threebet_pct(p_s, op_s, S['seats'], bb_s, S['ante'], open_bb)
+    return tp, tot
+
+
+def preflop_reasoning_confidence(prof, family, pos=None, seats=8, bb=100.0,
+                                 ante=True, opener_pos=None, open_bb=2.5):
+    """Ability to *adjust* a remembered chart when its conditions differ.
+
+    No new latent concept is introduced.  Each mismatch activates an existing
+    reasoning skill whose 0..10 value is read directly as 0..1 competence:
+      depth outside studied range -> stack_decay
+      table-size/position mapping -> positional
+      ante/dead-money mismatch    -> potodds
+
+    The mean is over active mismatches only.  If the spot is inside the studied
+    family there is nothing to repair, so this returns 0 and matched-spot v2
+    behavior is preserved.  The size of the required correction comes from the
+    anchor-to-current reference delta itself, not from another tuned coefficient.
+    """
+    if not prof or not prof.get('concepts'):
+        return 0.0
+    S = GTO_STUDIED[family]
+    active = []
+    lo, hi = S['bb']
+    if float(bb) < lo or float(bb) > hi:
+        active.append(sk(prof, 'stack_decay') / 10.0)
+    if int(seats) != int(S['seats']):
+        active.append(sk(prof, 'positional') / 10.0)
+    if bool(ante) != bool(S['ante']):
+        active.append(sk(prof, 'potodds') / 10.0)
+    if not active:
+        return 0.0
+    return max(0.0, min(1.0, sum(active) / len(active)))
+
+
+def preflop_reasoned_width(prof, family, target, direction, pos=None, seats=8,
+                            bb=100.0, ante=True, opener_pos=None, open_bb=2.5,
+                            deviation_scale=0.95, anchor=None):
+    """Human v3 three-stage width: recall -> condition reasoning -> temperament.
+
+    1) Recall a *studied-condition* chart.  Imperfect chart knowledge lets the
+       person's stable loose/tight direction distort that remembered width.
+    2) If conditions differ, existing reasoning skills move the remembered
+       chart by a fraction of the objective anchor->target delta.
+    3) Crucially, condition mismatch no longer enlarges the temperament term.
+       A chart memorizer with weak reasoning therefore keeps using the nearby
+       chart; a strong reasoner adjusts it.  Neither silently becomes more
+       loose/tight just because the spot is unfamiliar.
+    """
+    if anchor is None:
+        anchor = gto_studied_anchor(
+            family, pos, seats, bb, ante, opener_pos=opener_pos, open_bb=open_bb)
+    k = gto_knowledge(prof, family)
+    remembered = float(anchor) * (1.0 + (1.0 - k) * float(direction) * deviation_scale)
+    r = preflop_reasoning_confidence(
+        prof, family, pos, seats, bb, ante, opener_pos=opener_pos, open_bb=open_bb)
+    return remembered + r * (float(target) - float(anchor))
+
+
 def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
     """실제 오픈 폭 = 기준 × (1 + 이탈크기 × 이탈방향).
 
@@ -502,14 +591,29 @@ def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
     if flat > 1e-6:
         base = base*(1.0 - flat) + _G.avg_rfi(seats, bb, ante)*flat
 
-    # --- 폭: 크기 × 방향 ---
-    # 크기 = 학습된 차트를 이 spot 에서 얼마나 믿는가. 플래그가 꺼져 있으면
-    # 예전 `0.10 + 0.80*min(1, pf_range/8)` 과 같은 값이다.
-    acc = gto_memory_confidence(prof, 'rfi', pos, seats, bb, ante)
+    # --- 폭: 기억 / 조건 추론 / 기질을 분리 ---
     loose = temper(prof, 'looseness', 5.0)
     aggr  = temper(prof, 'aggression', 5.0)
     direction = max(-1.0, min(1.0, ((0.75*loose + 0.25*aggr) - 5.0) / 4.0))
-    v = base * (1.0 + (1.0 - acc) * direction * 0.95) * _G.adapt_mult(prof)
+    if PREFLOP_REASONING_V3:
+        # base에는 위의 positional flattening이 이미 들어 있다. anchor도 같은
+        # 사람의 positional 인식으로 flatten해야 anchor->target delta가 좌석
+        # 인식 오류가 아니라 *조건 차이*만 나타낸다.
+        S = GTO_STUDIED['rfi']
+        bb_s = max(S['bb'][0], min(S['bb'][1], float(bb)))
+        p_s = _pos_equiv(pos, seats, S['seats'])
+        anchor = gto_studied_anchor('rfi', pos, seats, bb, ante)
+        if flat > 1e-6:
+            anchor = (anchor*(1.0-flat)
+                      + _G.avg_rfi(S['seats'], bb_s, S['ante'])*flat)
+        v = preflop_reasoned_width(
+            prof, 'rfi', base, direction, pos, seats, bb, ante,
+            deviation_scale=0.95, anchor=anchor)
+    else:
+        # v2 / production path: bit-identical when V3 is off.
+        acc = gto_memory_confidence(prof, 'rfi', pos, seats, bb, ante)
+        v = base * (1.0 + (1.0 - acc) * direction * 0.95)
+    v *= _G.adapt_mult(prof)
     return max(0.02, min(0.92, v))
 
 
