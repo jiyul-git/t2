@@ -233,6 +233,18 @@ Public data already collected on `chatgpt/gto-reference-20260928`:
   - query only as an external corroboration source.
 
 Source provenance and license notes: `data/gto_public/SOURCES.md`.
+### RFI reverse-calibration audit (2026-09-28)
+
+- Public 8-max MTT RFI population: 112 charts / 18,928 hand-node rows.
+- Current T2 non-SB RFI: mean Brier 0.0620, mean absolute aggregate-rate error 3.51%p.
+- Same architecture with reverse-fit base/depth coefficients (shadow only): Brier 0.0537, aggregate-rate error 0.64%p.
+- Per-chart best hard cutoff: Brier 0.0435; best monotone mixed boundary on current `pf_rank`: 0.0284.
+- Therefore order of work is: **ante/depth coefficient recalibration -> re-audit hard cutoff/mixing -> only then inspect `pf_rank` ordering.**
+- 100bb cross-source check: public MTT-ante / no-ante RFI ratio averages ~1.312x across UTG-BTN; current T2 ante separation is only 1.111x (`1/0.9`). This is a provisional 100bb anchor, not yet a production constant.
+- SB excluded from this coefficient fit because public SB RFI contains substantial limp mixing.
+- Evidence files: `data/gto_public/rfi_calibration_test_20260928.{json,md}`, `data/gto_public/rfi_100bb_ante_crosscheck_20260928.{json,md}`.
+- **No production constants were changed in this audit.**
+
 
 Calibration order:
 1. use the large 8-max public frequency dataset first;
