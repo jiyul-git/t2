@@ -13,6 +13,8 @@
 //! a small gap is not evidence of an accurate poker model or a Nash equilibrium.
 
 pub mod equity;
+#[cfg(feature = "t2-profile")]
+pub mod t2prof;
 pub mod multiway;
 pub mod reference;
 pub mod dataset;
@@ -828,7 +830,11 @@ impl PreflopSolver {
                 // positional skew: last to act (IP) over-realizes, first
                 // under-realizes; grows with SPR, saturating at 8.
                 let frac = rank as f64 / (m - 1) as f64 - 0.5; // -0.5 .. +0.5
-                1.0 + 0.16 * frac * (spr.min(8.0) / 8.0)
+                #[cfg(feature = "t2-profile")]
+                let k_real = t2prof::real_k(); // audit sensitivity only (env T2_REAL_K)
+                #[cfg(not(feature = "t2-profile"))]
+                let k_real = 0.16;
+                1.0 + k_real * frac * (spr.min(8.0) / 8.0)
             };
             r[seat] = w as f32;
         }
@@ -1671,6 +1677,8 @@ impl PreflopSolver {
     fn terminal_value(&self, node: usize, p: usize, reaches: &[Vec<f32>], out: &mut [f32]) {
         #[cfg(test)]
         checkpoint_tests::observe_terminal();
+        #[cfg(feature = "t2-profile")]
+        let mut _tp = t2prof::Timer::start(t2prof::K_ZERO);
         let nd = &self.nodes[node];
         let mut prob = 1f64;
         for q in 0..self.n {
@@ -1686,6 +1694,8 @@ impl PreflopSolver {
         let inv_p = nd.invested[p];
         match nd.kind {
             KIND_FOLD_WIN => {
+                #[cfg(feature = "t2-profile")]
+                _tp.set(t2prof::K_FOLD);
                 let rake = self.fold_win_rake(nd);
                 let delta = if nd.winner as usize == p {
                     nd.pot - rake - inv_p
@@ -1698,6 +1708,8 @@ impl PreflopSolver {
                 let rake = self.rake_of(nd.pot);
                 let pot_eff = nd.pot - rake;
                 if nd.live & (1 << p) == 0 {
+                    #[cfg(feature = "t2-profile")]
+                    _tp.set(t2prof::K_DEAD);
                     out.iter_mut().for_each(|v| *v = (prob * -inv_p) as f32);
                     return;
                 }
@@ -1712,6 +1724,8 @@ impl PreflopSolver {
                     }
                 }
                 if let (Some(model), true) = (&self.multiway, nd.live.count_ones() >= 3) {
+                    #[cfg(feature = "t2-profile")]
+                    _tp.set(match dists.len() { 0..=2 => t2prof::K_MW3, 3 => t2prof::K_MW4, _ => t2prof::K_MW5P });
                     let equities = model.equities(&dists);
                     for h in 0..NUM_CLASSES {
                         out[h] = (prob * (pot_eff * equities[h] - inv_p)) as f32;
@@ -1719,6 +1733,8 @@ impl PreflopSolver {
                     return;
                 }
                 if self.cfg.realization == "balanced" && nd.live.count_ones() == 2 {
+                    #[cfg(feature = "t2-profile")]
+                    _tp.set(t2prof::K_HU_BALANCED);
                     let w = nd.r[p];
                     let blend = ((w - 1.0).abs() / 0.08).min(1.0);
                     let dist = &dists[0];
@@ -1764,6 +1780,8 @@ impl PreflopSolver {
                 if let (Some(fit), 2, true) =
                     (self.fit.as_ref(), nd.live.count_ones(), spr > 1e-9)
                 {
+                    #[cfg(feature = "t2-profile")]
+                    _tp.set(t2prof::K_HU_FIT);
                     let posw = nd.r[p] as f64; // static positional weight
                     for h in 0..NUM_CLASSES {
                         let mut eqp = 1f64;
@@ -1776,6 +1794,8 @@ impl PreflopSolver {
                     }
                     return;
                 }
+                #[cfg(feature = "t2-profile")]
+                _tp.set(t2prof::K_HU_STATIC);
                 let rp = nd.r[p] as f64;
                 for h in 0..NUM_CLASSES {
                     let mut eqp = 1f64;
@@ -1820,6 +1840,8 @@ impl PreflopSolver {
         if depth < PAR_DEPTH && self.stop_requested() {
             return vec![0f32; NUM_CLASSES];
         }
+        #[cfg(feature = "t2-profile")]
+        t2prof::ACTION_VISITS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let (actor, na, data_off, child_start) = {
             let nd = &self.nodes[node];
             (
@@ -1995,6 +2017,8 @@ impl PreflopSolver {
     /// seats already swept keep their (complete) updates, the rest just
     /// missed one pass, which CFR absorbs.
     pub fn try_iterate(&mut self) -> bool {
+        #[cfg(feature = "t2-profile")]
+        let _t_trav = std::time::Instant::now();
         for p in 0..self.n {
             if self.seat_static(p) {
                 continue;
@@ -2008,6 +2032,11 @@ impl PreflopSolver {
         if self.stop_requested() {
             return false;
         }
+        #[cfg(feature = "t2-profile")]
+        let _t_disc = {
+            t2prof::TRAVERSE_NS.fetch_add(_t_trav.elapsed().as_nanos() as u64, std::sync::atomic::Ordering::Relaxed);
+            std::time::Instant::now()
+        };
         self.iteration += 1;
         // DCFR discounting
         let t = self.iteration as f64;
@@ -2041,6 +2070,8 @@ impl PreflopSolver {
                 }
             }
         }
+        #[cfg(feature = "t2-profile")]
+        t2prof::DISCOUNT_NS.fetch_add(_t_disc.elapsed().as_nanos() as u64, std::sync::atomic::Ordering::Relaxed);
         true
     }
 

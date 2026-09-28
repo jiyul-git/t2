@@ -21,7 +21,22 @@ path = "src/bin/solve_cli.rs"
 
 [features]
 gpu = ["dep:cudarc"]
+# T2 audit: per-terminal-kind call counts / CPU time. Compiled out by default.
+t2-profile = []
 preflop-research = ["gpu"]
+
+[[example]]
+name = "t2_profile"
+required-features = ["t2-profile"]
+
+[[example]]
+name = "t2_eval_bench"
+
+[[example]]
+name = "t2_resume"
+
+[[example]]
+name = "t2_mw_bench"
 
 [[example]]
 name = "learned_decisions"

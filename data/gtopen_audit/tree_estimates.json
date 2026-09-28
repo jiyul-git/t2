@@ -1,0 +1,448 @@
+{
+ "note": "estimate_tree() with PREFLOP_MAX_NODES=1e12 (same enumeration as build); arena = regret+strategy-sum f32 = 8B x actions x 169; metadata 354 B/node measured from mr3 RSS",
+ "configs": {
+  "bvb_mr2_limp0": {
+   "action_nodes": 5,
+   "arena_len": 2197,
+   "arena_mb": 0.017576,
+   "ms": 0.043494,
+   "nodes": 14,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 2,
+   "limp": false,
+   "seats": 2,
+   "open_sizes": [
+    2.5
+   ],
+   "threebet_mults": [
+    3.5
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 4.956e-06
+  },
+  "bvb_mr2_limp1": {
+   "action_nodes": 10,
+   "arena_len": 4563,
+   "arena_mb": 0.036504,
+   "ms": 0.037735,
+   "nodes": 28,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 2,
+   "limp": true,
+   "seats": 2,
+   "open_sizes": [
+    2.5
+   ],
+   "threebet_mults": [
+    3.5
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 9.912e-06
+  },
+  "bvb_mr3_limp0": {
+   "action_nodes": 7,
+   "arena_len": 3211,
+   "arena_mb": 0.025688,
+   "ms": 0.037020000000000004,
+   "nodes": 20,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 3,
+   "limp": false,
+   "seats": 2,
+   "open_sizes": [
+    2.5
+   ],
+   "threebet_mults": [
+    3.5
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 7.08e-06
+  },
+  "bvb_mr3_limp1": {
+   "action_nodes": 14,
+   "arena_len": 6591,
+   "arena_mb": 0.052728,
+   "ms": 0.04879,
+   "nodes": 40,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 3,
+   "limp": true,
+   "seats": 2,
+   "open_sizes": [
+    2.5
+   ],
+   "threebet_mults": [
+    3.5
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 1.416e-05
+  },
+  "bvb_mr4_limp0": {
+   "action_nodes": 8,
+   "arena_len": 3718,
+   "arena_mb": 0.029744,
+   "ms": 0.036111,
+   "nodes": 23,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 2,
+   "open_sizes": [
+    2.5
+   ],
+   "threebet_mults": [
+    3.5
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 8.142e-06
+  },
+  "bvb_mr4_limp1": {
+   "action_nodes": 16,
+   "arena_len": 7605,
+   "arena_mb": 0.06084,
+   "ms": 0.050044,
+   "nodes": 46,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": true,
+   "seats": 2,
+   "open_sizes": [
+    2.5
+   ],
+   "threebet_mults": [
+    3.5
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 1.6284e-05
+  },
+  "mr2": {
+   "action_nodes": 37328,
+   "arena_len": 12787892,
+   "arena_mb": 102.303136,
+   "ms": 13.195155,
+   "nodes": 75669,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 2,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 0.026786826
+  },
+  "mr2_balanced": {
+   "action_nodes": 37328,
+   "arena_len": 12787892,
+   "arena_mb": 102.303136,
+   "ms": 15.774691,
+   "nodes": 75669,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 2,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 0.026786826
+  },
+  "mr2_limp_all": {
+   "action_nodes": 893670,
+   "arena_len": 308496825,
+   "arena_mb": 2467.9746,
+   "ms": 363.293178,
+   "nodes": 1825426,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 2,
+   "limp": true,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 0.646200804
+  },
+  "mr3": {
+   "action_nodes": 856852,
+   "arena_len": 295924408,
+   "arena_mb": 2367.395264,
+   "ms": 383.340615,
+   "nodes": 1751033,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 3,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 0.619865682
+  },
+  "mr4": {
+   "action_nodes": 7817130,
+   "arena_len": 2717748150,
+   "arena_mb": 21741.9852,
+   "ms": 2600.273711,
+   "nodes": 16081351,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 5.692798254
+  },
+  "mr4_20bb": {
+   "action_nodes": 7817128,
+   "arena_len": 2717747136,
+   "arena_mb": 21741.977088,
+   "ms": 2295.147218,
+   "nodes": 16081345,
+   "truncated": false,
+   "stack": 20.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 5.69279613
+  },
+  "mr4_25bb": {
+   "action_nodes": 7817130,
+   "arena_len": 2717748150,
+   "arena_mb": 21741.9852,
+   "ms": 2526.3552259999997,
+   "nodes": 16081351,
+   "truncated": false,
+   "stack": 25.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 5.692798254
+  },
+  "mr4_3bet2": {
+   "action_nodes": 19656714,
+   "arena_len": 6830964114,
+   "arena_mb": 54647.712912,
+   "ms": 6227.159624000001,
+   "nodes": 40419907,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    2.5,
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 14.308647078
+  },
+  "mr4_40bb": {
+   "action_nodes": 14777407,
+   "arena_len": 5139571385,
+   "arena_mb": 41116.57108,
+   "ms": 5824.93113,
+   "nodes": 30411666,
+   "truncated": false,
+   "stack": 40.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 10.765729764
+  },
+  "mr4_4bet2": {
+   "action_nodes": 19228794,
+   "arena_len": 6683173614,
+   "arena_mb": 53465.388912,
+   "ms": 6459.31499,
+   "nodes": 39545407,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.0,
+    2.4
+   ],
+   "meta_gb_at_354B": 13.999074078
+  },
+  "mr4_limp_all": {
+   "action_nodes": 121000590,
+   "arena_len": 42294809505,
+   "arena_mb": 338358.47604,
+   "ms": 41769.843412,
+   "nodes": 250265146,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": true,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 88.593861684
+  },
+  "mr4_open2": {
+   "action_nodes": 15633748,
+   "arena_len": 5435322906,
+   "arena_mb": 43482.583248,
+   "ms": 5296.541209,
+   "nodes": 32161675,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0,
+    2.5
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 11.38523295
+  },
+  "mr5": {
+   "action_nodes": 7817130,
+   "arena_len": 2717748150,
+   "arena_mb": 21741.9852,
+   "ms": 2878.154126,
+   "nodes": 16081351,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 5,
+   "limp": false,
+   "seats": 9,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 5.692798254
+  },
+  "resume3": {
+   "action_nodes": 90,
+   "arena_len": 37518,
+   "arena_mb": 0.300144,
+   "ms": 0.082056,
+   "nodes": 223,
+   "truncated": false,
+   "stack": 30.0,
+   "max_raises": 4,
+   "limp": false,
+   "seats": 3,
+   "open_sizes": [
+    2.0
+   ],
+   "threebet_mults": [
+    3.0
+   ],
+   "fourbet_mults": [
+    2.2
+   ],
+   "meta_gb_at_354B": 7.8942e-05
+  }
+ }
+}
