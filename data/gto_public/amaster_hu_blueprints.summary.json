@@ -1,0 +1,30 @@
+{
+  "action_menu": "fold/call/open 2-5bb/reraise multipliers 2-5x/all-in; raise cap 4",
+  "ante_bb": [
+    0.0,
+    0.5,
+    1.0
+  ],
+  "compressed_bytes": 22274859,
+  "hand_classes": 169,
+  "iterations": [
+    25000
+  ],
+  "license": "MIT",
+  "model": "heads-up no-limit hold'em preflop blueprint",
+  "shard_count": 27,
+  "source_commit": "f78f1b2bc338dd8cbb5226ecb8398bbdb3635676",
+  "source_repo": "https://github.com/amaster97/poker_solver",
+  "stack_depths": [
+    20,
+    30,
+    40,
+    60,
+    80,
+    100,
+    150,
+    175,
+    200
+  ],
+  "usage": "auxiliary deep-stack/stack-trend reference; HU only, not direct 8-max ground truth"
+}
