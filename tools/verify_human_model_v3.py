@@ -11,6 +11,8 @@ Checks:
   R2 unfamiliar defend: same property for total continue and 3bet widths.
   S1 weak reasoning stays closer to the studied anchor than strong reasoning.
   N1 no new strategic concept was introduced by V3.
+  E1 unified exploit base weight matches read_opponent.w under V3.
+  E2 exploit evidence weight is monotone in evidence and blind observers stay neutral.
 """
 
 import json
@@ -56,6 +58,7 @@ def main():
     rows = {}
     old_v3 = PS.PREFLOP_REASONING_V3
     old_v2 = PS.GTO_MEMORY_V2
+    old_exp = PS.EXPLOIT_WEIGHT_V3
     try:
         # ----- M1: inside studied family, V3 must not change behavior -----
         p = mkprof(knowledge=6.0, loose=7.0, aggr=6.0,
@@ -139,12 +142,42 @@ def main():
             'used': sorted(needed),
         }
 
+        # ----- E1/E2: one base exploit weight, evidence monotonicity -----
+        exp = mkprof(knowledge=5.0, loose=5.0, aggr=5.0,
+                     stack_reason=5.0, positional=5.0, potodds=5.0)
+        exp['temper']['adaptability'] = 7.0
+        exp['temper']['attention'] = 7.0
+        exp['concepts']['range_read'] = 7.0
+        exp['concepts']['sizing_tell'] = 7.0
+        opp = {'confidence': 0.8, 'n': 12, 'ftb': 0.60, 'bluff': 5.5,
+               'aggr': 6.0, 'cbet': 0.65, 'barrel': 0.52}
+        PS.EXPLOIT_WEIGHT_V3 = True
+        ew = PS.exploit_weight(exp, opp['confidence'], opp['n'])
+        rd = PS.read_opponent(exp, opp)
+        rows['E1_exploit_base_unified'] = {
+            'pass': ew == rd.get('w'), 'exploit_weight': ew,
+            'read_w': rd.get('w'),
+        }
+        seq = [PS.exploit_weight(exp, 0.8, n) for n in (0, 1, 3, 6, 12, 24)]
+        mono = all(b >= a for a, b in zip(seq, seq[1:]))
+        blind = mkprof()
+        blind['temper']['adaptability'] = 9.0
+        blind['temper']['attention'] = 0.0
+        blind['concepts']['range_read'] = 0.0
+        blind['concepts']['sizing_tell'] = 0.0
+        blind_rd = PS.read_opponent(blind, opp)
+        rows['E2_exploit_evidence_and_perception'] = {
+            'pass': mono and blind_rd.get('w', 0.0) == 0.0,
+            'n_curve': seq, 'blind_read': blind_rd,
+        }
+
         passed = all(v['pass'] for v in rows.values())
         print(json.dumps({'pass': passed, 'checks': rows}, indent=2, sort_keys=True))
         raise SystemExit(0 if passed else 1)
     finally:
         PS.PREFLOP_REASONING_V3 = old_v3
         PS.GTO_MEMORY_V2 = old_v2
+        PS.EXPLOIT_WEIGHT_V3 = old_exp
 
 
 if __name__ == '__main__':
