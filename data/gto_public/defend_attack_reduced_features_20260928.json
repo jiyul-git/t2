@@ -1,0 +1,177 @@
+{
+  "base_holdout": {
+    "action_brier": 0.06614400686599849,
+    "attack_mae": 0.11553486271605537,
+    "continue_mae": 0.13776146909622844
+  },
+  "edges": [
+    0.0,
+    0.45,
+    0.7,
+    0.9,
+    1.05,
+    1.25,
+    1.55,
+    2.2,
+    null
+  ],
+  "results": [
+    {
+      "coefficients": {
+        "ace_offsuit": 0.2901067817100372,
+        "bias": -0.027955940970457206,
+        "broadway_suited": -0.06330952731705408,
+        "small_pair": -0.08698097466024263,
+        "suited_connector": 0.012120030798143475,
+        "wheel_ace_suited": 0.13664695526606113
+      },
+      "features": [
+        "bias",
+        "ace_offsuit",
+        "wheel_ace_suited",
+        "broadway_suited",
+        "small_pair",
+        "suited_connector"
+      ],
+      "holdout": {
+        "action_brier": 0.062310662233641505,
+        "attack_mae": 0.10173889963437206,
+        "continue_mae": 0.13776146909622844
+      },
+      "lambda": 300,
+      "set": "core6",
+      "train": {
+        "action_brier": 0.06844850382542611,
+        "attack_mae": 0.11401661879262821,
+        "continue_mae": 0.15069612842221358
+      }
+    },
+    {
+      "coefficients": {
+        "ace": 0.12702209435465991,
+        "ace_offsuit": 0.14605688012521398,
+        "bias": -0.030470490875794624,
+        "broadway": 0.017637595286916826,
+        "broadway_suited": -0.06519225960068428,
+        "king_suited": -0.07496187585891095,
+        "small_pair": -0.053744249830256566,
+        "suited_connector": 0.004467313521060687,
+        "wheel_ace_suited": 0.03163581335936006
+      },
+      "features": [
+        "bias",
+        "ace",
+        "ace_offsuit",
+        "wheel_ace_suited",
+        "broadway",
+        "broadway_suited",
+        "king_suited",
+        "small_pair",
+        "suited_connector"
+      ],
+      "holdout": {
+        "action_brier": 0.06214678371146234,
+        "attack_mae": 0.09965648671554668,
+        "continue_mae": 0.13776146909622844
+      },
+      "lambda": 1000,
+      "set": "core9",
+      "train": {
+        "action_brier": 0.06830414728785307,
+        "attack_mae": 0.11189751733644185,
+        "continue_mae": 0.15069612842221358
+      }
+    },
+    {
+      "coefficients": {
+        "ace": 0.12079370194362375,
+        "ace_offsuit": 0.1441311298430932,
+        "ace_suited": 0.001818739018914062,
+        "bias": -0.0449589981444604,
+        "broadway": 0.026152160812440352,
+        "broadway_suited": -0.06488573496360121,
+        "gap": 0.037385052889077355,
+        "king_suited": -0.07900151599605822,
+        "pair": 0.010118601482650853,
+        "small_pair": -0.05167429445793371,
+        "suited_connector": 0.009859541416819132,
+        "wheel_ace_suited": 0.027155674780823365
+      },
+      "features": [
+        "bias",
+        "ace",
+        "ace_offsuit",
+        "ace_suited",
+        "wheel_ace_suited",
+        "broadway",
+        "broadway_suited",
+        "king_suited",
+        "pair",
+        "small_pair",
+        "suited_connector",
+        "gap"
+      ],
+      "holdout": {
+        "action_brier": 0.062017841970236035,
+        "attack_mae": 0.10012483962802,
+        "continue_mae": 0.13776146909622844
+      },
+      "lambda": 1000,
+      "set": "core12",
+      "train": {
+        "action_brier": 0.0681620345800819,
+        "attack_mae": 0.11238041154801172,
+        "continue_mae": 0.15069612842221358
+      }
+    },
+    {
+      "coefficients": {
+        "ace": 0.12635350727595546,
+        "ace_offsuit": 0.14563918217622315,
+        "ace_suited": 0.0030543327257566057,
+        "bias": -0.0288591268117278,
+        "broadway": 0.0424405403633099,
+        "broadway_suited": -0.06288015222754847,
+        "gap": 0.02514517368564443,
+        "king_suited": -0.07582305073311142,
+        "lo_rank": -0.048690197385125346,
+        "low_suited_connector": 0.009090239238076994,
+        "mid_pair": 0.023693255892097094,
+        "pair": 0.005215413249846588,
+        "small_pair": -0.05313402350117933,
+        "suited_connector": 0.006911481779728087,
+        "wheel_ace_suited": 0.025177587841657186
+      },
+      "features": [
+        "bias",
+        "ace",
+        "ace_offsuit",
+        "ace_suited",
+        "wheel_ace_suited",
+        "broadway",
+        "broadway_suited",
+        "king_suited",
+        "pair",
+        "small_pair",
+        "mid_pair",
+        "suited_connector",
+        "low_suited_connector",
+        "gap",
+        "lo_rank"
+      ],
+      "holdout": {
+        "action_brier": 0.06185858093516463,
+        "attack_mae": 0.10005138290719695,
+        "continue_mae": 0.13776146909622844
+      },
+      "lambda": 1000,
+      "set": "core15",
+      "train": {
+        "action_brier": 0.06800102005672581,
+        "attack_mae": 0.11199255300969589,
+        "continue_mae": 0.15069612842221358
+      }
+    }
+  ],
+  "scope": "shadow: reduced semantic attack feature sets on 8-bin defender policy"
+}
