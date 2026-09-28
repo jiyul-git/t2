@@ -5,8 +5,12 @@
 
 P0 = preflop solve with the existing payoff; V0 = panel continuation at P0's arriving ranges;
 P1 = preflop solve with V0 injected at the one terminal; V1 = panel at P1's ranges; ...
-No damping (decision C0/C4): oscillation is observed first; under-relaxation would be a
-separate, explicitly labelled A/B run.
+No damping by default (decision C0/C4): oscillation is observed first. With --alpha < 1
+(the under-relaxation A/B, only after oscillation was observed) the injected table is
+  V_used_k = alpha * V_measured_k + (1 - alpha) * V_used_{k-1}
+written as table.json next to the measured table_measured.json; steps before --damp-from
+are taken unchanged from --seed-from (the undamped run). The blend is checked with the
+same conservation guard at P_k's ranges before it is used.
 Per outer step it records: max class-frequency change at the first-in nodes and at the
 terminal's parent (BB response), range L1/L2 distance of both arriving ranges, value change
 of the table (max/mean |dV|, and relative to the bootstrap CI), preflop gap, postflop
@@ -85,12 +89,28 @@ def main():
     ap.add_argument('--preflop-iters', default='400')
     ap.add_argument('--postflop', nargs=3, default=['1000', '0.3', '25'], metavar=('MAX_ITERS', 'TARGET_PCT', 'EVERY'))
     ap.add_argument('--boot', default='2000')
+    ap.add_argument('--alpha', type=float, default=1.0)
+    ap.add_argument('--damp-from', type=int, default=None, help='first outer step whose injected table is blended')
+    ap.add_argument('--seed-from', default=None, help='undamped run dir whose steps < damp-from are copied')
+    ap.add_argument('--stop-before-panel', type=int, default=None, help='solve P_K, then stop before its panel')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     env = {'PREFLOP_EQ_SEED': '202', 'PREFLOP_MULTIWAY_SEED': '202', 'PREFLOP_EQ_SAMPLES': '1200'}
     commit = subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
     log_path = os.path.join(a.out, 'outer_log.json')
     log = json.load(open(log_path)) if os.path.exists(log_path) else {'steps': []}
+    if a.alpha < 1.0:
+        assert a.damp_from is not None and a.seed_from, '--alpha needs --damp-from and --seed-from'
+        import shutil
+        for k in range(a.damp_from):
+            src, dst = os.path.join(a.seed_from, f'k{k}'), os.path.join(a.out, f'k{k}')
+            if not os.path.exists(dst):
+                shutil.copytree(src, dst)
+        # P_{damp_from} and its measured table are the same as in the undamped run
+        src, dst = os.path.join(a.seed_from, f'k{a.damp_from}'), os.path.join(a.out, f'k{a.damp_from}')
+        if not os.path.exists(dst):
+            shutil.copytree(src, dst)
+            os.rename(os.path.join(dst, 'table.json'), os.path.join(dst, 'table_measured.json'))
     prev_t = prev_v = None
     for k in range(a.max_outer + 1):
         d = os.path.join(a.out, f'k{k}')
@@ -105,12 +125,37 @@ def main():
         cur_t = json.load(open(term))
         if table_in and cur_t.get('t2_cont_file') != table_in:
             raise SystemExit(f'k{k}: terminal was solved with {cur_t.get("t2_cont_file")}, expected {table_in}')
+        if a.stop_before_panel is not None and k == a.stop_before_panel:
+            step = {'k': k, 'metrics': metrics(prev_t, cur_t, prev_v, None), 'injected_table': table_in,
+                    'ranges_hash': cur_t['ranges_hash_fnv1a64'], 'panel': 'not run (--stop-before-panel)'}
+            log['steps'] = [s for s in log['steps'] if s['k'] != k] + [step]
+            json.dump(log, open(log_path, 'w'), indent=1)
+            print(f'k{k}: preflop only (stopped before panel)', flush=True)
+            break
         table = os.path.join(d, 'table.json')
-        if not os.path.exists(table):
+        damped = a.alpha < 1.0 and k >= a.damp_from
+        measured = os.path.join(d, 'table_measured.json') if damped else table
+        if not os.path.exists(measured):
             run([os.path.join(BIN, 't2_cont_panel'), term, a.menu, a.panel, os.path.join(d, 'flops'), *a.postflop],
                 {'T2_SOURCE_COMMIT': commit})
             run(['python3', os.path.join(ROOT, 'tools/gto_hu_continuation/aggregate.py'), term, a.panel,
-                 os.path.join(d, 'flops'), table, '--outer', str(k), '--boot', a.boot])
+                 os.path.join(d, 'flops'), measured, '--outer', str(k), '--boot', a.boot])
+        if damped and not os.path.exists(table):
+            vm = json.load(open(measured))
+            vo = json.load(open(table_in))
+            vb = json.loads(json.dumps(vm))
+            for sb, so in zip(vb['seats'], vo['seats']):
+                assert sb['position'] == so['position']
+                for fld in ('gross', 'gross_ci95_lo', 'gross_ci95_hi', 'gross_br', 'gross_ratio'):
+                    sb[fld] = [a.alpha * x + (1 - a.alpha) * y for x, y in zip(sb[fld], so[fld])]
+            tot = sum(sum(pl['class_reach_normalized'][h] * next(x for x in vb['seats'] if x['position'] == pl['position'])['gross'][h]
+                          for h in range(169)) for pl in cur_t['players'])
+            vb['invariant'] = {'sum_range_weighted_gross': tot, 'pot': cur_t['pot_bb'], 'unallocated_bb': cur_t['pot_bb'] - tot,
+                               'note': 'blended table evaluated at this step\'s arriving ranges'}
+            vb['damping'] = {'alpha': a.alpha, 'measured': measured, 'previous_used': table_in}
+            if abs(vb['invariant']['unallocated_bb']) > 0.05:
+                raise SystemExit(f'k{k}: blended table unallocated {vb["invariant"]["unallocated_bb"]:.4f} bb exceeds guard')
+            json.dump(vb, open(table, 'w'))
         cur_v = json.load(open(table))
         step = {'k': k, 'metrics': metrics(prev_t, cur_t, prev_v, cur_v), 'injected_table': table_in,
                 'ranges_hash': cur_t['ranges_hash_fnv1a64']}
