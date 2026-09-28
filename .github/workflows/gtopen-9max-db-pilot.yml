@@ -1,0 +1,81 @@
+name: gtopen 9max 30bb DB pilot
+on:
+  push:
+    branches:
+      - chatgpt/mini-cfr-solver-20260928
+    paths:
+      - tools/run_gtopen_9max_db_pilot.py
+      - .github/workflows/gtopen-9max-db-pilot.yml
+permissions:
+  contents: write
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/mini-cfr-solver-20260928
+      - name: Build GTOpen server
+        working-directory: vendor/gtopen
+        run: cargo build --release -p server
+      - name: Start server
+        working-directory: vendor/gtopen
+        env:
+          PREFLOP_EQ_SAMPLES: "1200"
+          SOLVER_THREADS: "4"
+        run: |
+          ./target/release/gto-server >/tmp/gtopen9.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:3737/api/preflop/capabilities >/dev/null && exit 0
+            sleep 1
+          done
+          tail -100 /tmp/gtopen9.log
+          exit 1
+      - name: Solve 30bb 9-max pilot
+        env:
+          GT9_STACK: "30"
+          GT9_ITERS: "120"
+          GT9_TARGET: "0.15"
+          GT9_MAX_RAISES: "2"
+        run: python3 tools/run_gtopen_9max_db_pilot.py
+      - name: Cross-check aggregate RFI
+        run: |
+          python3 - <<'PY'
+          import json
+          p=json.load(open("data/gto_9max_solver_pilot_30bb.json"))
+          # Small external manual cross-check only; not a vendored chart dataset.
+          ref={"UTG":.165,"UTG+1":.186,"UTG+2":.217,"LJ":.257,
+               "HJ":.299,"CO":.375,"BTN":.487}
+          got=p["rfi_combo_weighted"]
+          rows=[]
+          for pos,v in ref.items():
+              rows.append((pos,got[pos],v,got[pos]-v))
+          mae=sum(abs(x[3]) for x in rows)/len(rows)
+          print("RFI_CROSSCHECK")
+          for r in rows: print("%-6s solver %.4f external %.4f delta %+0.4f"%r)
+          print("MAE",mae)
+          report=["# 9-max 30bb solver pilot cross-check","",
+            "Solver: 9-max, 30bb, no limp, 2.0bb opens (SB 2.5bb), open+3bet cap, all-in available.",
+            "Ante approximation: 1/9bb per player, same total dead money as T2's 1bb BBA but not the same stack distribution.",
+            "",
+            "| Position | Solver RFI | External 9-max MTT check | Delta |",
+            "|---|---:|---:|---:|"]
+          for pos,g,r,d in rows:
+              report.append(f"| {pos} | {g:.3%} | {r:.3%} | {d:+.2%} |")
+          report += ["",f"Mean absolute aggregate difference: **{mae:.2%}**.",
+                     "",
+                     "External values are a small manual cross-check only, not bulk-vendored source data.",
+                     "Do not mark this pilot exact GTO: GTOpen uses an approximate preflop continuation model and the ante is only same-total-pot BBA approximation."]
+          open("data/gto_9max_solver_pilot_30bb.md","w").write("\n".join(report)+"\n")
+          PY
+      - name: Commit pilot
+        run: |
+          git config user.name github-actions
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/gto_9max_solver_pilot_30bb.json data/gto_9max_solver_pilot_30bb.md
+          git commit -m "gto: record 9-max 30bb preflop solver pilot"
+          git push origin HEAD:chatgpt/mini-cfr-solver-20260928
+      - name: Server log
+        if: always()
+        run: tail -120 /tmp/gtopen9.log || true
