@@ -400,6 +400,8 @@ GTO_MEMORY_V2 = _os.environ.get('T2_GTO_MEMORY_V2') == '1'
 # studied chart family, keep chart recall, condition reasoning, and temperament
 # as three separate stages. OFF preserves v2/production behavior exactly.
 PREFLOP_REASONING_V3 = _os.environ.get('T2_PREFLOP_REASONING_V3') == '1'
+# Opt-in unification of the legacy exploit_weight() entry with read_opponent().
+EXPLOIT_WEIGHT_V3 = _os.environ.get('T2_EXPLOIT_WEIGHT_V3') == '1'
 
 GTO_FAMILY_CONCEPT = {'rfi': 'pf_range', 'defend': 'pf_defend'}
 
@@ -1013,34 +1015,43 @@ def call_bias(prof, street, size_frac, made, outs):
     return max(0.55, min(1.75, m))
 
 
-def exploit_weight(prof, confidence=0.0, n_hands=0):
-    """상대 정보를 얼마나 쓰는가. 0 = 순수 자기 전략, 1 = 최대 익스플로잇.
+def _exploit_base_weight(prof, confidence=0.0, n_hands=0):
+    """Shared upper bound for using opponent-specific information.
 
-    두 가지의 곱이다. 어느 하나라도 0 이면 0 이다.
-
-    1) 이 사람이 익스플로잇하는 타입인가 — 개인 고정값.
-       어떤 선수는 100핸드를 봐도 자기 패만 보고 친다. 그게 그 사람의 정체성이지
-       실수가 아니다. adaptability(적응력)·range_read·attention 이 이걸 만든다.
-    2) 데이터가 쌓였는가 — 상황값. reads.estimate 의 confidence.
-       1핸드 본 상대와 60핸드 본 상대를 같게 취급하면 안 된다.
-
-    초반에 자동으로 자기 전략이 되는 건 이 구조 때문이다. confidence 가 0 이면
-    아무리 적응력이 높아도 조정할 근거가 없다. 별도 분기가 필요 없다.
+    This answers only: *given evidence exists, how willing is this player to
+    alter strategy?*  Axis-specific perception (frequency/line/size) remains in
+    read_opponent via see_freq/see_line/see_size.  Keeping those separate avoids
+    turning range_read/attention into a second global multiplier.
     """
+    if not prof or not prof.get('concepts'):
+        return 0.0
+    adp = temper(prof, 'adaptability', 5.0)
+    use = max(0.0, min(1.0, adp / 10.0))
+    data = min(1.0, float(confidence)) * min(1.0, float(n_hands) / 12.0)
+    return round(max(0.0, min(0.85, use * data)), 3)
+
+
+def exploit_weight(prof, confidence=0.0, n_hands=0):
+    """Compatibility entry for opponent-information weight.
+
+    Legacy behavior is preserved unless T2_EXPLOIT_WEIGHT_V3=1.  Under V3 the
+    global weight is exactly the same base weight used by read_opponent();
+    ability to *see a particular signal* is still handled by read_opponent's
+    independent see_freq/see_line/see_size gates.
+    """
+    if EXPLOIT_WEIGHT_V3:
+        return _exploit_base_weight(prof, confidence, n_hands)
     if not prof or not prof.get('concepts'):
         return 0.0
     adp = temper(prof, 'adaptability', 5.0)
     att = temper(prof, 'attention', 5.0)
     rr  = sk(prof, 'range_read')
-    # 성향 항: 적응력이 주도하고 레인지 리딩·주의력이 보조한다
     trait = (0.50*adp + 0.30*rr + 0.20*att) / 10.0
-    trait = max(0.0, min(1.0, (trait - 0.28) / 0.60))    # 하위권은 아예 0
+    trait = max(0.0, min(1.0, (trait - 0.28) / 0.60))
     if trait <= 0.0:
         return 0.0
-    # 데이터 항: 표본이 적으면 신뢰도가 높다고 해도 상한을 둔다
     data = min(1.0, float(confidence)) * min(1.0, n_hands/12.0)
     return round(max(0.0, min(0.85, trait * data)), 3)
-
 
 def _polar(observed, value_base):
     """관측 빈도 중 기준(밸류 몫)을 넘는 비율. 0~1.
@@ -1109,11 +1120,9 @@ def read_opponent(prof, opp_est):
     # 갑자기 '상대 정보를 전혀 안 쓰는 사람'이 되는 스위치가 아니다.
     # 관찰/해석 능력은 위의 see_*가 정하고, adaptability는 실제 전략 반영
     # 강도만 0~1로 연속 감쇠한다.
-    use = max(0.0, min(1.0, adp / 10.0))
-
-    data = min(1.0, conf) * min(1.0, n/12.0)
-    # w 는 '이 상대에 대해 조정할 여지'의 상한. 축별 게이트가 그 위에 곱해진다.
-    w = round(max(0.0, min(0.85, use * data)), 3)
+    # w 는 '이 상대에 대해 조정할 여지'의 공통 상한. 특정 신호를
+    # 볼 수 있는지는 아래 see_*가 독립적으로 결정한다.
+    w = _exploit_base_weight(prof, conf, n)
     if w <= 0.0:
         return neutral
     if max(see_freq, see_line, see_size) <= 0.0:
