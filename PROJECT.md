@@ -280,3 +280,47 @@ Status:
 **NOT GLOBAL TUNING YET.**
 
 구조/의미론의 열린 항목을 닫기 전에는 광역 VPIP/PFR/bluff/personality calibration을 시작하지 않는다.
+
+
+### Preflop frequency calibration promotion (2026-09-28)
+
+Promoted on `test`:
+- `ca418d229b199a80040d1eb01439819ae24754d4` — RFI base/depth/ante calibration.
+- `ce5c118f8cfa078faed3ed09482549df4ca81458` — defense coefficients gated to **8-max + ante + directly supported defender seats (CO/BTN/SB/BB)**.
+- `1a23123608c5c8ab625c6314c550f464465e4724` — calibrated defense widths bypass the legacy exponential saturation; all other paths retain legacy saturation.
+
+Evidence:
+- RFI non-SB aggregate-rate error: **3.51%p -> ~0.6-1.0%p** in shadow calibration.
+- RFI 100bb no-ante cross-source check improved with the new RFI/ante separation.
+- 8-max MTT defense threshold audit exposed a separate defense-width problem; MTT-derived coefficients do **not** transfer to no-ante, so they are condition-gated.
+- Actual `defend_action_likelihoods()` audit across 60 public MTT charts:
+  - old action Brier **0.12169**
+  - gated coefficients + preserved calibrated widths **0.08407**
+  - continue-rate MAE **15.56%p -> 7.50%p**
+  - attack-rate MAE **7.77%p -> 4.55%p**
+  - holdout stacks 15/30/100bb show the same improvement.
+- Isolation verifier:
+  - GTO layer: **3,150 unchanged / 450 intended changed / 0 errors**
+  - threshold layer: **2,100 unchanged / 300 intended changed / 0 errors**
+  - preflop closure **4/4 PASS**.
+
+Rejected / not promoted:
+- A single global defense calibration across ante and no-ante: rejected; 100bb no-ante cross-source error worsened sharply.
+- Re-fitting only seat-level `TB_SHARE`: rejected; frequency-optimal values hit extreme bounds and worsened full action fit.
+- Linear opener-sensitive 3bet-share function: rejected for now; small attack-frequency gain but worse overall Brier/continue fit and unstable CO identification.
+- `pf_rank` ordering remains untouched.
+
+Next calibration target:
+- The remaining attack/3bet mismatch is in the **mixed-policy execution shape after tp/tot**, not justified by another global share constant.
+- Keep the new RFI/defense reference layer fixed while auditing the `w_raise / w_call / w_fold` mapping.
+- Do not broaden the MTT defense override to no-ante, 9-max, or unsupported defender seats without matched public data.
+
+Evidence files:
+- `data/gto_public/rfi_coeff_shadow_20260928.{json,md}`
+- `data/gto_public/rfi_candidate_same_state_ab_20260928.json`
+- `data/gto_public/defend_width_audit_20260928.{json,md}`
+- `data/gto_public/defend_100bb_noante_crosscheck_20260928.{json,md}`
+- `data/gto_public/defend_policy_frequency_audit_20260928.{json,md}`
+- `data/gto_public/defend_saturation_shadow_20260928.{json,md}`
+- `data/gto_public/defend_tbshare_shadow_20260928.{json,md}`
+- `data/gto_public/defend_tbshare_function_shadow_20260928.{json,md}`
