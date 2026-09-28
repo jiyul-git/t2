@@ -486,7 +486,16 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
         return 0.0, ''
     conf = (opp_est or {}).get('confidence', 0.0)
     n    = (opp_est or {}).get('n', 0)
-    w    = PS.exploit_weight(profile, conf, n)
+    if getattr(PS, 'EXPLOIT_WEIGHT_V3', False):
+        # Same base evidence/adaptability weight as every other read consumer.
+        # Bet-frequency estimation itself needs frequency counting (65%) and
+        # line/range interpretation (35%), matching opp_bet_prob's own mix.
+        _rd_trap = PS.read_opponent(profile, opp_est)
+        _see_bet = (0.65*_rd_trap.get('see_freq', 0.0)
+                    + 0.35*_rd_trap.get('see_line', 0.0))
+        w = _rd_trap.get('w', 0.0) * _see_bet
+    else:
+        w = PS.exploit_weight(profile, conf, n)
     pbet = opp_bet_prob(opp_est, w, street)
 
     # --- 상황이 시키는 빈도 ---
