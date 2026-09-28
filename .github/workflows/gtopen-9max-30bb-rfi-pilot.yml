@@ -1,0 +1,49 @@
+name: gtopen-9max-30bb-rfi-pilot
+on:
+  push:
+    branches:
+      - chatgpt/mini-cfr-solver-20260928
+    paths:
+      - tools/run_gtopen_9max_30bb_rfi.py
+      - .github/workflows/gtopen-9max-30bb-rfi-pilot.yml
+permissions:
+  contents: write
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/mini-cfr-solver-20260928
+      - name: Build GTOpen server
+        working-directory: vendor/gtopen
+        run: cargo build --release -p server
+      - name: Start GTOpen
+        working-directory: vendor/gtopen
+        env:
+          PREFLOP_EQ_SAMPLES: "1200"
+          SOLVER_THREADS: "4"
+        run: |
+          ./target/release/gto-server >/tmp/gtopen.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:3737/api/preflop/capabilities >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Solve 9-max 30bb RFI pilot
+        env:
+          GTOPEN_ITERS: "150"
+          GTOPEN_CHECK: "25"
+          GTOPEN_TARGET: "0.15"
+        run: python3 tools/run_gtopen_9max_30bb_rfi.py
+      - name: Commit result
+        run: |
+          git config user.name github-actions
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/gto_db/solver/gtopen_9max_30bb_rfi_pilot.json
+          git commit -m "solver: record 9-max 30bb RFI pilot"
+          git push origin HEAD:chatgpt/mini-cfr-solver-20260928
+      - name: Server log
+        if: always()
+        run: tail -120 /tmp/gtopen.log || true
