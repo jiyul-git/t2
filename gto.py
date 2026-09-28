@@ -159,12 +159,40 @@ def mdf(open_bb):
 DEF_SEAT = {'BB': 1.00, 'SB': 0.62, 'BTN': 0.46, 'CO': 0.34, 'HJ': 0.26,
             'LJ': 0.21, 'UTG+2': 0.18, 'UTG+1': 0.16, 'UTG': 0.14}
 
-# 3벳이 디펜스에서 차지하는 몫. BB 대 BTN 에서 밸류 8~12%.
+# 3벳이 디펜스에서 차지하는 몫. 기존 no-ante/비보정 경로의 기준.
 TB_SHARE = 0.18
+
+# 8-max MTT ante 공개 차트(10/15/20/30/50/100bb)에서 역산한 중립 기준.
+# IMPORTANT:
+# - 정확한 ante 크기가 원본 파일에 없으므로 8-max + ante 경로에서만 쓴다.
+# - 직접 자료가 있는 수비 좌석(CO/BTN/SB/BB)에만 적용한다.
+# - no-ante, 9-max, HJ/LJ/UTG 계열 수비는 기존 기준을 유지한다.
+# - 이 값은 현재 calibration 실험 후보이며 전역 일반화하지 않는다.
+_MTT8_ANTE_DEF_A = 0.5815
+_MTT8_ANTE_DEF_B = 0.2949
+_MTT8_ANTE_DEF_VS_SB = 0.7236
+_MTT8_ANTE_DEF_SEAT = {'BB': 1.0000, 'BTN': 0.2979,
+                       'CO': 0.2289, 'SB': 0.3498}
+_MTT8_ANTE_TB_SHARE = {'BB': 0.1957, 'BTN': 0.4986,
+                       'CO': 0.5486, 'SB': 0.6509}
+
+
+def _use_mtt8_ante_defense(def_pos, seats, ante):
+    return bool(ante) and int(seats) == 8 and def_pos in _MTT8_ANTE_DEF_SEAT
 
 
 def defend_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
     """디펜스 기준 폭. 성향은 들어가지 않는다."""
+    if _use_mtt8_ante_defense(def_pos, seats, ante):
+        if opener_pos == 'SB' and def_pos == 'BB':
+            base = _MTT8_ANTE_DEF_VS_SB
+        else:
+            base = _MTT8_ANTE_DEF_A + _MTT8_ANTE_DEF_B * rfi(
+                opener_pos, seats, bb, ante)
+        base *= mdf(open_bb) / mdf(3.0)
+        base *= _MTT8_ANTE_DEF_SEAT[def_pos]
+        return max(0.02, min(0.92, base))
+
     if opener_pos == 'SB':
         base = DEF_VS_SB
     else:
@@ -176,4 +204,7 @@ def defend_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
 
 def threebet_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
     """디펜스 중 3벳 구간의 기준 폭."""
-    return defend_pct(def_pos, opener_pos, seats, bb, ante, open_bb) * TB_SHARE
+    share = (_MTT8_ANTE_TB_SHARE[def_pos]
+             if _use_mtt8_ante_defense(def_pos, seats, ante)
+             else TB_SHARE)
+    return defend_pct(def_pos, opener_pos, seats, bb, ante, open_bb) * share
