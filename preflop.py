@@ -529,9 +529,21 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     import gto as _G
     base_tot = _G.defend_pct(def_pos, opener_pos, seats, bb, ante, open_bb)
     base_tp = _G.threebet_pct(def_pos, opener_pos, seats, bb, ante, open_bb)
+    _calibrated_mtt8 = _G._use_mtt8_ante_defense(def_pos, seats, ante)
+
+    def _finish_widths(_tp, _tot):
+        _tot = max(_tp, _tot)
+        if _calibrated_mtt8:
+            # 이 경로의 base_tot/base_tp 자체가 공개 8-max MTT 빈도에 맞춘
+            # 확률이다. 100% 초과 방지용 exp saturation을 다시 적용하면
+            # 정상적인 0~1 확률까지 불필요하게 압축된다.
+            _tot = max(0.0, min(0.95, float(_tot)))
+            _tp = max(0.0, min(_tot, float(_tp)))
+            return _tp, _tot
+        return _saturate(_tp, _tot)
 
     if not (isinstance(prof, dict) and prof.get('concepts')):
-        tp, tot = _saturate(base_tp, base_tot)
+        tp, tot = _finish_widths(base_tp, base_tot)
     else:
         # 크기 <- 개념, 방향 <- 기질. 상한 0.90 (완벽한 사람은 없다)
         acc = 0.10 + 0.80*min(1.0, PS.sk(prof, 'pf_defend')/8.0)
@@ -541,7 +553,7 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
         d_tb = max(-1.0, min(1.0, ((0.45*loose + 0.55*aggr) - 5.0)/4.0))
         tot = base_tot * (1.0 + (1.0-acc)*d_call*0.95)
         tp = base_tp * (1.0 + (1.0-acc)*d_tb*1.10)
-        tp, tot = _saturate(tp, max(tp, tot))
+        tp, tot = _finish_widths(tp, tot)
 
     # 다인원. 축소율을 상수로 두면 안 된다 —
     # 규율 있는 레귤러는 크게 조이지만 콜링 스테이션은 거의 신경 쓰지 않는다.
