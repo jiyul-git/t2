@@ -110,6 +110,7 @@ def main():
     iterations=int(os.getenv("GT9_ITERS","120"))
     target=float(os.getenv("GT9_TARGET","0.15"))
     max_raises=int(os.getenv("GT9_MAX_RAISES","2"))
+    realization=os.getenv("GT9_REALIZATION","static")
     # GTOpen's legacy ante is uniform and outside the live stack cap.
     # 1/9 bb each gives the same 1bb dead-money total as T2 BBA but is NOT exact BBA.
     ante=1.0/9.0
@@ -129,7 +130,7 @@ def main():
       "add_allin":True,
       "allin_threshold":0.85,
       "rake_pct":0.0,"rake_cap":0.0,"no_flop_no_drop":True,
-      "realization":"static",
+      "realization":realization,
       "call_only_seats":[],
       "open_raises_by_seat":per_open,
       "raise_mults_by_seat":per_raise,
@@ -197,13 +198,13 @@ def main():
       "rfi_combo_weighted":rfi_summary,
       "spots":spots,
     }
-    path=f"data/gto_9max_solver_pilot_{int(stack)}bb.json"
+    path=f"data/gto_9max_solver_pilot_{int(stack)}bb_{realization}.json"
     os.makedirs("data",exist_ok=True)
     with open(path,"w") as f:json.dump(out,f,indent=2,sort_keys=True)
     print("PILOT_SUMMARY",json.dumps({
       "stack":stack,"rfi":rfi_summary,"spot_count":len(spots),
       "gap_total":st.get("gap_total"),"iteration":st.get("iteration"),
-      "output":path},sort_keys=True))
+      "realization":realization,"output":path},sort_keys=True))
 
 if __name__=="__main__":
     main()
