@@ -32,49 +32,59 @@ jobs:
           done
           tail -100 /tmp/gtopen9.log
           exit 1
-      - name: Solve 30bb 9-max pilot
+      - name: Solve 30bb 9-max static pilot
         env:
           GT9_STACK: "30"
           GT9_ITERS: "120"
           GT9_TARGET: "0.15"
           GT9_MAX_RAISES: "2"
+          GT9_REALIZATION: "static"
+        run: python3 tools/run_gtopen_9max_db_pilot.py
+      - name: Solve 30bb 9-max balanced pilot
+        env:
+          GT9_STACK: "30"
+          GT9_ITERS: "120"
+          GT9_TARGET: "0.15"
+          GT9_MAX_RAISES: "2"
+          GT9_REALIZATION: "balanced"
         run: python3 tools/run_gtopen_9max_db_pilot.py
       - name: Cross-check aggregate RFI
         run: |
           python3 - <<'PY'
           import json
-          p=json.load(open("data/gto_9max_solver_pilot_30bb.json"))
-          # Small external manual cross-check only; not a vendored chart dataset.
           ref={"UTG":.165,"UTG+1":.186,"UTG+2":.217,"LJ":.257,
                "HJ":.299,"CO":.375,"BTN":.487}
-          got=p["rfi_combo_weighted"]
-          rows=[]
-          for pos,v in ref.items():
-              rows.append((pos,got[pos],v,got[pos]-v))
-          mae=sum(abs(x[3]) for x in rows)/len(rows)
-          print("RFI_CROSSCHECK")
-          for r in rows: print("%-6s solver %.4f external %.4f delta %+0.4f"%r)
-          print("MAE",mae)
-          report=["# 9-max 30bb solver pilot cross-check","",
-            "Solver: 9-max, 30bb, no limp, 2.0bb opens (SB 2.5bb), open+3bet cap, all-in available.",
-            "Ante approximation: 1/9bb per player, same total dead money as T2's 1bb BBA but not the same stack distribution.",
-            "",
-            "| Position | Solver RFI | External 9-max MTT check | Delta |",
+          arms={}
+          for mode in ("static","balanced"):
+              p=json.load(open(f"data/gto_9max_solver_pilot_30bb_{mode}.json"))
+              got=p["rfi_combo_weighted"]
+              rows=[(pos,got[pos],v,got[pos]-v) for pos,v in ref.items()]
+              mae=sum(abs(x[3]) for x in rows)/len(rows)
+              arms[mode]={"rows":rows,"mae":mae,"gap":p["solver"]["status"].get("gap_total")}
+          report=["# 9-max 30bb realization A/B","",
+            "Same restricted 9-max preflop tree; only continuation realization changes.",
+            "External values are manual validation points from public 9-max MTT charts, not vendored bulk data.","",
+            "| Position | External | Static | Balanced |",
             "|---|---:|---:|---:|"]
-          for pos,g,r,d in rows:
-              report.append(f"| {pos} | {g:.3%} | {r:.3%} | {d:+.2%} |")
-          report += ["",f"Mean absolute aggregate difference: **{mae:.2%}**.",
-                     "",
-                     "External values are a small manual cross-check only, not bulk-vendored source data.",
-                     "Do not mark this pilot exact GTO: GTOpen uses an approximate preflop continuation model and the ante is only same-total-pot BBA approximation."]
-          open("data/gto_9max_solver_pilot_30bb.md","w").write("\n".join(report)+"\n")
+          for i,pos in enumerate(ref):
+              s=arms["static"]["rows"][i][1]; b=arms["balanced"]["rows"][i][1]
+              report.append(f"| {pos} | {ref[pos]:.3%} | {s:.3%} | {b:.3%} |")
+          report += ["",
+            f"Static aggregate MAE: **{arms['static']['mae']:.2%}**.",
+            f"Balanced aggregate MAE: **{arms['balanced']['mae']:.2%}**.",
+            "",
+            "Neither arm is exact BBA: both use 1/9bb ante per seat to reproduce 1bb total dead money.",
+            "Restricted open+3bet trees and approximate postflop continuation remain limitations."]
+          open("data/gto_9max_solver_pilot_30bb_realization_ab.md","w").write("\n".join(report)+"\n")
+          json.dump({"reference":ref,"arms":arms},open("data/gto_9max_solver_pilot_30bb_realization_ab.json","w"),indent=2)
+          print(json.dumps({"static_mae":arms["static"]["mae"],"balanced_mae":arms["balanced"]["mae"]}))
           PY
       - name: Commit pilot
         run: |
           git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add data/gto_9max_solver_pilot_30bb.json data/gto_9max_solver_pilot_30bb.md
-          git commit -m "gto: record 9-max 30bb preflop solver pilot"
+          git add data/gto_9max_solver_pilot_30bb_static.json data/gto_9max_solver_pilot_30bb_balanced.json data/gto_9max_solver_pilot_30bb_realization_ab.json data/gto_9max_solver_pilot_30bb_realization_ab.md
+          git commit -m "gto: compare static and balanced 9-max 30bb pilots"
           git push origin HEAD:chatgpt/mini-cfr-solver-20260928
       - name: Server log
         if: always()
