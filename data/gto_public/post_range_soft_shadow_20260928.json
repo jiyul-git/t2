@@ -1,0 +1,322 @@
+{
+  "pairs": [
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.10317614872921388,
+        "nut_sign_flips": 1,
+        "range_mae": 0.07671968829481458,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.14872711031710584,
+      "node": "EP-vs-BB",
+      "position": "LJ",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.07748961166533759,
+        "nut_sign_flips": 0,
+        "range_mae": 0.06602008415565538,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.1625330511909325,
+      "stack_bb": 15
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.06031493480964001,
+        "nut_sign_flips": 0,
+        "range_mae": 0.10438013979213252,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.11813186813186814,
+      "node": "MP-vs-BB",
+      "position": "CO",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.04596519688240397,
+        "nut_sign_flips": 0,
+        "range_mae": 0.06506292882691818,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.1400213191182032,
+      "stack_bb": 15
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.0188529686902035,
+        "nut_sign_flips": 1,
+        "range_mae": 0.0846802958143152,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.08229966275106883,
+      "node": "BTN-vs-BB",
+      "position": "BTN",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.01755775353791224,
+        "nut_sign_flips": 0,
+        "range_mae": 0.06846010295673834,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.10449883107817375,
+      "stack_bb": 15
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.04390536093172454,
+        "nut_sign_flips": 0,
+        "range_mae": 0.0930502244297387,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.08971212255131929,
+      "node": "EP-vs-BB",
+      "position": "LJ",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.04038789953955051,
+        "nut_sign_flips": 0,
+        "range_mae": 0.07272432807593318,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.13958172252404927,
+      "stack_bb": 30
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.026571110209289053,
+        "nut_sign_flips": 0,
+        "range_mae": 0.10394432345956839,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.07146704587076895,
+      "node": "MP-vs-BB",
+      "position": "CO",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.02567873579833782,
+        "nut_sign_flips": 0,
+        "range_mae": 0.06592588214622465,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.11375632118598152,
+      "stack_bb": 30
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.020831216075038336,
+        "nut_sign_flips": 0,
+        "range_mae": 0.09562741221853306,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.06282292099633585,
+      "node": "BTN-vs-BB",
+      "position": "BTN",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.01938879058240028,
+        "nut_sign_flips": 0,
+        "range_mae": 0.06535619047227229,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.08039132890866829,
+      "stack_bb": 30
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.04079656165634425,
+        "nut_sign_flips": 0,
+        "range_mae": 0.08899935251440534,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.09914947567421932,
+      "node": "EP-vs-BB",
+      "position": "LJ",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.02848337889403849,
+        "nut_sign_flips": 0,
+        "range_mae": 0.05500575056906253,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.14578184791690732,
+      "stack_bb": 100
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.036838434793593916,
+        "nut_sign_flips": 0,
+        "range_mae": 0.09403076133832904,
+        "range_sign_flips": 0
+      },
+      "hard_tv": 0.11763438575078698,
+      "node": "MP-vs-BB",
+      "position": "CO",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.036799320702589906,
+        "nut_sign_flips": 0,
+        "range_mae": 0.08734908654282104,
+        "range_sign_flips": 0
+      },
+      "soft_tv": 0.13768489557896246,
+      "stack_bb": 100
+    },
+    {
+      "hard": {
+        "boards": 24,
+        "nut_mae": 0.02111873653307281,
+        "nut_sign_flips": 1,
+        "range_mae": 0.08795393146390194,
+        "range_sign_flips": 2
+      },
+      "hard_tv": 0.08658753050809856,
+      "node": "BTN-vs-BB",
+      "position": "BTN",
+      "soft": {
+        "boards": 24,
+        "nut_mae": 0.014096845034590086,
+        "nut_sign_flips": 0,
+        "range_mae": 0.0705121678367398,
+        "range_sign_flips": 1
+      },
+      "soft_tv": 0.08074821685773703,
+      "stack_bb": 100
+    }
+  ],
+  "summary": {
+    "best_tau": 0.04,
+    "grid": [
+      {
+        "holdout_brier": 0.0462434670133786,
+        "holdout_tv": 0.11126129700247334,
+        "tau": 0.0025,
+        "train_brier": 0.05456694897941675,
+        "train_tv": 0.126493668814977
+      },
+      {
+        "holdout_brier": 0.04376155770662867,
+        "holdout_tv": 0.11067753452244365,
+        "tau": 0.005,
+        "train_brier": 0.05239882851800102,
+        "train_tv": 0.1259402599717977
+      },
+      {
+        "holdout_brier": 0.041665656283823516,
+        "holdout_tv": 0.11064073893710274,
+        "tau": 0.0075,
+        "train_brier": 0.05020455544955422,
+        "train_tv": 0.1252895019103898
+      },
+      {
+        "holdout_brier": 0.039896144433007125,
+        "holdout_tv": 0.11098506176652384,
+        "tau": 0.01,
+        "train_brier": 0.04822073211043635,
+        "train_tv": 0.12505601543730832
+      },
+      {
+        "holdout_brier": 0.03712758569701481,
+        "holdout_tv": 0.11294218505341454,
+        "tau": 0.015,
+        "train_brier": 0.04495442747873095,
+        "train_tv": 0.12610832875056335
+      },
+      {
+        "holdout_brier": 0.03519348241856504,
+        "holdout_tv": 0.11661571089079151,
+        "tau": 0.02,
+        "train_brier": 0.042525856607630225,
+        "train_tv": 0.12890671899253864
+      },
+      {
+        "holdout_brier": 0.03315891669555163,
+        "holdout_tv": 0.12850795460642653,
+        "tau": 0.03,
+        "train_brier": 0.03959800200601996,
+        "train_tv": 0.13838597257180904
+      },
+      {
+        "holdout_brier": 0.0327920527812636,
+        "holdout_tv": 0.14468629367631702,
+        "tau": 0.04,
+        "train_brier": 0.03848186251827757,
+        "train_tv": 0.15178295676734055
+      },
+      {
+        "holdout_brier": 0.03489689568654801,
+        "holdout_tv": 0.18368637291832313,
+        "tau": 0.06,
+        "train_brier": 0.03948516276020335,
+        "train_tv": 0.18482821029731072
+      },
+      {
+        "holdout_brier": 0.038993300983741,
+        "holdout_tv": 0.22403564675825813,
+        "tau": 0.08,
+        "train_brier": 0.042896017412314955,
+        "train_tv": 0.22065064139497287
+      }
+    ],
+    "hard": {
+      "holdout": {
+        "brier": 0.048441344058991115,
+        "charts": 18,
+        "tv": 0.11427200315491295
+      },
+      "train": {
+        "brier": 0.05623468886568434,
+        "charts": 78,
+        "tv": 0.12962542167274987
+      }
+    },
+    "hard_pair_nut_mae": 0.0413783858253467,
+    "hard_pair_nut_sign_flips": 3,
+    "hard_pair_range_mae": 0.09215401436952653,
+    "hard_pair_range_sign_flips": 2,
+    "holdout_pair_spots": 9,
+    "holdout_stacks": [
+      15,
+      30,
+      100
+    ],
+    "revision": "1caf5682f39f508ac8ccd19dd2db31cf5fdc908c",
+    "soft": {
+      "holdout": {
+        "brier": 0.0327920527812636,
+        "charts": 18,
+        "tv": 0.14468629367631702
+      },
+      "train": {
+        "brier": 0.03848186251827757,
+        "charts": 78,
+        "tv": 0.15178295676734055
+      }
+    },
+    "soft_pair_nut_mae": 0.03398305918190677,
+    "soft_pair_nut_sign_flips": 0,
+    "soft_pair_range_mae": 0.06849072462026282,
+    "soft_pair_range_sign_flips": 1,
+    "train_stacks": [
+      3,
+      5,
+      8,
+      10,
+      12,
+      17,
+      20,
+      22,
+      26,
+      35,
+      40,
+      50,
+      70
+    ]
+  }
+}
