@@ -324,3 +324,23 @@ Evidence files:
 - `data/gto_public/defend_saturation_shadow_20260928.{json,md}`
 - `data/gto_public/defend_tbshare_shadow_20260928.{json,md}`
 - `data/gto_public/defend_tbshare_function_shadow_20260928.{json,md}`
+
+
+### RFI-only runtime attribution correction (2026-09-28)
+
+Direct A/B of pre-candidate `e17be45` vs the rounded RFI-only candidate shows the candidate effect is small:
+- VPIP 315/1379 (22.84%) -> 317/1380 (22.97%), +0.13%p.
+- PFR 167/1379 (12.11%) -> 167/1380 (12.10%), effectively unchanged.
+- flop reached 100/180 (55.56%) -> 101/180 (56.11%), +0.56%p.
+- 12/180 hands had any actual preflop-log change; 5/180 changed flop reach.
+- action totals: raise -2, all-in +2, call +2, fold -2.
+
+Therefore the previously observed `20.7 -> 23.0 VPIP` and `47.2 -> 56.1 flop` are **not** attributable to the RFI candidate. Those numbers compared the candidate to the frozen `current` regression baseline at rev `0962cb2`, while the actual parent `e17be45` had already moved to roughly 22.8% VPIP / 55.6% flop.
+
+For intentional strategy attribution, compare the exact parent and candidate directly. Do not interpret a mismatch against the frozen `current` baseline as the candidate's causal effect when intervening behavior-changing commits exist.
+
+Evidence:
+- `data/gto_public/rfi_only_attribution_summary_20260928.json`
+- `data/gto_public/rfi_only_attribution_20260928.md`
+
+The 6-seed fixture is 9-max at 150bb, outside the directly calibrated public-data envelope (8-max <=100bb), so use it as a side-effect/extrapolation check rather than direct calibration evidence.
