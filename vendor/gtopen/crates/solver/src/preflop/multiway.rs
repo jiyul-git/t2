@@ -68,7 +68,11 @@ impl CoupledDeck {
                 combos[class_index(a / 4, b / 4, a % 4 == b % 4)].push([a, b]);
             }
         }
-        let mut rng = Rng(90210);
+        let seed = std::env::var("PREFLOP_MULTIWAY_SEED")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(90210);
+        let mut rng = Rng(seed);
         let mut out = Self {
             order: vec![],
             lower: vec![0; SAMPLES * NUM_CLASSES],
