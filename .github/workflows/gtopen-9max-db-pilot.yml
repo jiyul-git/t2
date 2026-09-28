@@ -2,7 +2,7 @@ name: gtopen 9max 30bb DB pilot
 on:
   push:
     branches:
-      - chatgpt/mini-cfr-solver-20260928
+      - tmp/gtopen-9max-30bb-fast-20260928
     paths:
       - tools/run_gtopen_9max_db_pilot.py
       - .github/workflows/gtopen-9max-db-pilot.yml
@@ -35,8 +35,8 @@ jobs:
       - name: Solve 30bb 9-max pilot
         env:
           GT9_STACK: "30"
-          GT9_ITERS: "120"
-          GT9_TARGET: "0.15"
+          GT9_ITERS: "30"
+          GT9_TARGET: "0.50"
           GT9_MAX_RAISES: "2"
         run: python3 tools/run_gtopen_9max_db_pilot.py
       - name: Cross-check aggregate RFI
@@ -74,7 +74,7 @@ jobs:
           git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add data/gto_9max_solver_pilot_30bb.json data/gto_9max_solver_pilot_30bb.md
-          git commit -m "gto: record 9-max 30bb preflop solver pilot"
+          git commit -m "gto: record fast 9-max 30bb preflop pilot"
           git push origin HEAD:chatgpt/mini-cfr-solver-20260928
       - name: Server log
         if: always()
