@@ -36,7 +36,33 @@ Runtime 구분:
 - execution-form skill: 전략적 action form을 고르는 PLAN
 - pure legality/rounding: ACTION
 
-## 3. Current wiring status
+## 3. GTO-study knowledge and reasoning must remain separate
+
+GTO/solver 지식과 실제 테이블 reasoning은 같은 concept으로 뭉치지 않는다.
+
+구분:
+- **GTO-study knowledge / memory**: chart, solver 결과, 반복 학습으로 획득한 prior의 정확도·범위·회상 능력.
+- **reasoning skill**: 현재 board/range/story/stack/pot/read를 이용해 처음 보는 상황을 계산·추론하는 능력.
+- **adaptation/exploit skill**: 상대와 tournament context를 보고 prior에서 의도적으로 이탈하는 능력.
+
+한 축이 높다고 다른 축도 자동으로 높다고 가정하지 않는다.
+예:
+- solver chart는 잘 외우지만 새로운 postflop spot 추론은 약한 player
+- solver 공부는 적지만 live read와 exploit reasoning이 뛰어난 player
+- 두 능력이 모두 높은 elite regular
+
+향후 구현에서 필요한 first-class 상태:
+1. 어떤 GTO spot/family를 학습했는가
+2. 학습된 prior의 정확도와 confidence
+3. exact-condition mismatch 시 memory confidence decay
+4. reasoning이 prior를 얼마나 수정할 수 있는가
+5. exploit/read가 baseline에서 얼마나 의도적으로 이탈시키는가
+6. bounded memory/calculation 때문에 생기는 인간적 근사와 오류
+
+GTO calibration은 이 knowledge/prior layer의 기준점을 교정하는 작업이며,
+reasoning/persona를 solver 결과로 대체하는 작업이 아니다.
+
+## 4. Current wiring status
 
 Concept wiring audit 최종 요약:
 - declared strategic concepts: 37
@@ -47,7 +73,7 @@ Concept wiring audit 최종 요약:
 - archetype compatibility layer: legacy fallback로 유지
 - concept prior/loading/spread: 전역 calibration 완료 상태가 아니라 provisional
 
-## 4. Current taxonomy barrier
+## 5. Current taxonomy barrier
 
 Prior sensitivity audit 이후 **street granularity**가 calibration blocker로 남아 있다.
 
@@ -64,7 +90,7 @@ Prior sensitivity audit 이후 **street granularity**가 calibration blocker로 
 
 taxonomy가 안정되기 전에는 전역 prior 수치 튜닝을 확정하지 않는다.
 
-## 5. Important semantic rules
+## 6. Important semantic rules
 
 - `nut_advantage`는 **range vs range strong-region occupancy**이지 Hero 현재 핸드 강도가 아니다.
 - ICM/BF와 money_jump는 같은 개념이 아니다.
@@ -72,7 +98,7 @@ taxonomy가 안정되기 전에는 전역 prior 수치 튜닝을 확정하지 �
 - observation stat은 action class를 섞지 않는다: fold-to-bet, fold-to-raise, opener-4bet, caller-backraise 등은 분리.
 - true persona는 opponent range/read reconstruction에 직접 누출되면 안 된다.
 
-## 6. Prior/population audit
+## 7. Prior/population audit
 
 Realized concept distribution은 nominal base/spread와 같지 않다.
 다음이 분포를 재형성한다:
@@ -85,7 +111,7 @@ Realized concept distribution은 nominal base/spread와 같지 않다.
 Local sensitivity audit는 mechanics map으로 받아들였지만, 새 target median/width 자체를 선택한 것은 아니다.
 특히 clamp-sensitive concept은 spread 증가가 폭보다 saturation을 늘릴 수 있다.
 
-## 7. Cleanup ledger — current summary
+## 8. Cleanup ledger — current summary
 
 정리 후보이지만 production semantics와 분리해서 처리:
 - duplicate/dead ICM `field_bf` definition
@@ -103,7 +129,7 @@ Local sensitivity audit는 mechanics map으로 받아들였지만, 새 target me
 
 cleanup은 기능/전략 변경과 섞지 않고 별도 regression으로 닫는다.
 
-## 8. Open concept-level work
+## 9. Open concept-level work
 
 - street concept granularity
 - P7 cold defense concepts/observations
@@ -112,7 +138,7 @@ cleanup은 기능/전략 변경과 섞지 않고 별도 regression으로 닫는�
 - F7-D execution-form/sizing boundary
 - W5 posterior update에서 read/persona attribution
 
-## 9. Historical sources
+## 10. Historical sources
 
 - `CONCEPTS.md`
 - `LEDGER.md`
