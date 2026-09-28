@@ -294,9 +294,10 @@ correction is the actual studied-anchor -> current-reference width delta.
 
 `preflop_reasoned_width()` then applies:
 
-1. remembered studied width, including the ordinary knowledge-dependent
-   temperament deviation;
-2. plus a reasoning fraction of the anchor -> current-condition delta.
+1. remembered studied-condition width;
+2. a reasoning fraction of the anchor -> current-condition delta;
+3. the ordinary knowledge-dependent temperament deviation applied to that
+   reasoned baseline.
 
 Condition mismatch therefore does **not** enlarge temperament deviation.
 
@@ -331,7 +332,8 @@ target human frequencies.
 After the V3 structural verifier is runnable in CI/local:
 
 1. paired counterfactual fixtures across matched vs mismatched conditions;
-2. unify duplicate exploit-weight formulas;
-3. separate concept-specific calculation-error directions;
+2. validate the unified exploit evidence weight (implemented behind
+   `T2_EXPLOIT_WEIGHT_V3=1`);
+3. measure concept-specific calculation-error directions before changing them;
 4. test recency/forgetting in opponent memory;
 5. only then revisit deviation shape (multiplicative width vs logit shift).
