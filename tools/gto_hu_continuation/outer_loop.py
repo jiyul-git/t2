@@ -124,7 +124,11 @@ def main():
             run([os.path.join(BIN, 't2_cont_terminal'), a.config, a.preflop_iters, 'fold,raise,fold,call', term], e)
         cur_t = json.load(open(term))
         if table_in and cur_t.get('t2_cont_file') != table_in:
-            raise SystemExit(f'k{k}: terminal was solved with {cur_t.get("t2_cont_file")}, expected {table_in}')
+            # a step copied from --seed-from records the seed run's path: accept it only if
+            # that file's content is identical to the table this run would have injected
+            used = cur_t.get('t2_cont_file')
+            if not (used and os.path.exists(used) and json.load(open(used)) == json.load(open(table_in))):
+                raise SystemExit(f'k{k}: terminal was solved with {used}, expected {table_in}')
         if a.stop_before_panel is not None and k == a.stop_before_panel:
             step = {'k': k, 'metrics': metrics(prev_t, cur_t, prev_v, None), 'injected_table': table_in,
                     'ranges_hash': cur_t['ranges_hash_fnv1a64'], 'panel': 'not run (--stop-before-panel)'}
