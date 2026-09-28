@@ -9,6 +9,9 @@ on:
       - vendor/gtopen/crates/solver/src/preflop/multiway.rs
       - vendor/gtopen/crates/server/src/main.rs
       - .github/workflows/gtopen-9max-db-pilot.yml
+concurrency:
+  group: gtopen-9max-30bb-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
