@@ -1,0 +1,56 @@
+{
+  "date": "2026-09-28",
+  "scope": "100bb 8-max RFI cross-source check, non-SB",
+  "mtt_ante_source": {
+    "repo": "matthiola0/poker-hand-review",
+    "commit": "9ef33a4d70b48c4ec8aea6093562e38ef46feb24",
+    "label": "8-max MTT ante",
+    "rates": {
+      "UTG": 0.1671,
+      "UTG1": 0.1971,
+      "LJ": 0.235,
+      "HJ": 0.2853,
+      "CO": 0.3728,
+      "BTN": 0.5438
+    }
+  },
+  "no_ante_source": {
+    "repo": "mpcaren/preflop-range-trainer",
+    "commit": "6606aefc2f6b7fcb6ffff8b1d772c142102113b1",
+    "label": "100bb 8-max no rake; GTO Wizard screenshot extraction",
+    "vendored": false,
+    "rates": {
+      "UTG": 0.1282,
+      "UTG1": 0.148,
+      "LJ": 0.1767,
+      "HJ": 0.2171,
+      "CO": 0.284,
+      "BTN": 0.4247
+    }
+  },
+  "ante_to_noante_ratio": {
+    "UTG": 1.3034,
+    "UTG1": 1.3318,
+    "LJ": 1.3299,
+    "HJ": 1.3141,
+    "CO": 1.3127,
+    "BTN": 1.2804,
+    "mean": 1.3121
+  },
+  "noante_relative_to_ante": {
+    "UTG": 0.7672,
+    "UTG1": 0.7509,
+    "LJ": 0.7519,
+    "HJ": 0.761,
+    "CO": 0.7618,
+    "BTN": 0.781,
+    "mean": 0.7623
+  },
+  "current_t2": {
+    "ante_multiplier_true": 1,
+    "ante_multiplier_false": 0.9,
+    "implied_true_to_false_ratio": 1.1111111111111112,
+    "note": "At 100bb current ante=True RFI remains much closer to the public no-ante rates than to the public MTT-ante rates."
+  },
+  "provisional_interpretation": "For a 1BB-total tournament ante-like condition, the current ANTE_MULT separation appears materially too small. Treat ~0.76 no-ante/ante as a 100bb provisional anchor only, not a global production constant, until more matched-depth cross-source checks exist."
+}
