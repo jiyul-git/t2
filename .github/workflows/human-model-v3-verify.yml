@@ -1,0 +1,30 @@
+name: Human Model V3 Verify
+
+on:
+  push:
+    branches:
+      - chatgpt/human-model-v3-20260929
+    paths:
+      - 'persona.py'
+      - 'preflop.py'
+      - 'tools/verify_human_model_v3.py'
+      - '.github/workflows/human-model-v3-verify.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: human-model-v3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Structural verifier
+        run: python3 tools/verify_human_model_v3.py
+      - name: Compile touched modules
+        run: python3 -m py_compile persona.py preflop.py tools/verify_human_model_v3.py
