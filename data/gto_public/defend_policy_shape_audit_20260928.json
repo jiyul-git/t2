@@ -1,0 +1,1742 @@
+{
+  "charts": [
+    {
+      "actual_attack_brier": 0.13279732992910934,
+      "actual_continue_brier": 0.07611453768771537,
+      "attack_inversion_mass": 0.03153383203615589,
+      "attack_isotonic_blocks": 57,
+      "best_hard_attack": {
+        "brier": 0.1283571644042232,
+        "threshold": 0.2368
+      },
+      "best_hard_continue": {
+        "brier": 0.09213861236802413,
+        "threshold": 0.4691
+      },
+      "best_monotone_attack_brier": 0.08163236480119147,
+      "best_monotone_continue_brier": 0.06527393914479966,
+      "continue_inversion_mass": 0.021859272297241578,
+      "continue_isotonic_blocks": 45,
+      "defender": "BB",
+      "node": "BTN-vs-BB",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.12350353834500971,
+      "actual_continue_brier": 0.09476498802562162,
+      "attack_inversion_mass": 0.019185574287469167,
+      "attack_isotonic_blocks": 97,
+      "best_hard_attack": {
+        "brier": 0.09614057315233786,
+        "threshold": 0.2368
+      },
+      "best_hard_continue": {
+        "brier": 0.09317043740573153,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.06533467683369644,
+      "best_monotone_continue_brier": 0.06338915430038666,
+      "continue_inversion_mass": 0.017881063043737332,
+      "continue_isotonic_blocks": 114,
+      "defender": "SB",
+      "node": "BTN-vs-SB",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.06174854797636095,
+      "actual_continue_brier": 0.10047406451820216,
+      "attack_inversion_mass": 0.015580429581144663,
+      "attack_isotonic_blocks": 89,
+      "best_hard_attack": {
+        "brier": 0.075884012066365,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.10163831070889896,
+        "threshold": 0.5415
+      },
+      "best_monotone_attack_brier": 0.05222316916172298,
+      "best_monotone_continue_brier": 0.06771446554159852,
+      "continue_inversion_mass": 0.02673982197042623,
+      "continue_isotonic_blocks": 32,
+      "defender": "BB",
+      "node": "EP-vs-BB",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.052541091771849756,
+      "actual_continue_brier": 0.06559323352685163,
+      "attack_inversion_mass": 0.008290705242796771,
+      "attack_isotonic_blocks": 123,
+      "best_hard_attack": {
+        "brier": 0.06087285067873303,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.055708898944193064,
+        "threshold": 0.1222
+      },
+      "best_monotone_attack_brier": 0.03873303881518042,
+      "best_monotone_continue_brier": 0.0359962330635904,
+      "continue_inversion_mass": 0.006769890817084239,
+      "continue_isotonic_blocks": 132,
+      "defender": "BTN",
+      "node": "EP-vs-BTN",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.04970714936511555,
+      "actual_continue_brier": 0.05098924763721294,
+      "attack_inversion_mass": 0.006442983782990938,
+      "attack_isotonic_blocks": 121,
+      "best_hard_attack": {
+        "brier": 0.04933061840120663,
+        "threshold": 0.0935
+      },
+      "best_hard_continue": {
+        "brier": 0.04542835595776772,
+        "threshold": 0.0935
+      },
+      "best_monotone_attack_brier": 0.034215290166814835,
+      "best_monotone_continue_brier": 0.0317128294651988,
+      "continue_inversion_mass": 0.005556502846456375,
+      "continue_isotonic_blocks": 130,
+      "defender": "CO",
+      "node": "EP-vs-MP",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.055881605818632864,
+      "actual_continue_brier": 0.08469901558625163,
+      "attack_inversion_mass": 0.009233702776784647,
+      "attack_isotonic_blocks": 116,
+      "best_hard_attack": {
+        "brier": 0.05702443438914026,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.0492659125188537,
+        "threshold": 0.1222
+      },
+      "best_monotone_attack_brier": 0.04071559557478669,
+      "best_monotone_continue_brier": 0.03368058509959242,
+      "continue_inversion_mass": 0.007014383542806854,
+      "continue_isotonic_blocks": 114,
+      "defender": "SB",
+      "node": "EP-vs-SB",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.10497158079799535,
+      "actual_continue_brier": 0.1024191598788068,
+      "attack_inversion_mass": 0.02836541899287705,
+      "attack_isotonic_blocks": 90,
+      "best_hard_attack": {
+        "brier": 0.12138446455505279,
+        "threshold": 0.1357
+      },
+      "best_hard_continue": {
+        "brier": 0.12438959276018101,
+        "threshold": 0.3454
+      },
+      "best_monotone_attack_brier": 0.07656622005205353,
+      "best_monotone_continue_brier": 0.08175003233738753,
+      "continue_inversion_mass": 0.03591503717352835,
+      "continue_isotonic_blocks": 26,
+      "defender": "BB",
+      "node": "MP-vs-BB",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.06623327571503906,
+      "actual_continue_brier": 0.07398238766664487,
+      "attack_inversion_mass": 0.012487234491167282,
+      "attack_isotonic_blocks": 101,
+      "best_hard_attack": {
+        "brier": 0.07109773755656108,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.06546063348416291,
+        "threshold": 0.1222
+      },
+      "best_monotone_attack_brier": 0.04720965572187815,
+      "best_monotone_continue_brier": 0.04428640384625296,
+      "continue_inversion_mass": 0.011428270216257351,
+      "continue_isotonic_blocks": 113,
+      "defender": "BTN",
+      "node": "MP-vs-BTN",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.10224686851045024,
+      "actual_continue_brier": 0.13095878022583782,
+      "attack_inversion_mass": 0.026713557566256936,
+      "attack_isotonic_blocks": 98,
+      "best_hard_attack": {
+        "brier": 0.1085627450980392,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.10472368024132729,
+        "threshold": 0.1222
+      },
+      "best_monotone_attack_brier": 0.07150519726061516,
+      "best_monotone_continue_brier": 0.06871085068811458,
+      "continue_inversion_mass": 0.024918273241476725,
+      "continue_isotonic_blocks": 106,
+      "defender": "SB",
+      "node": "MP-vs-SB",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.23147633591240904,
+      "actual_continue_brier": 0.24665135793244214,
+      "attack_inversion_mass": 0.10046033754113881,
+      "attack_isotonic_blocks": 33,
+      "best_hard_attack": {
+        "brier": 0.25725460030165914,
+        "threshold": 0.3846
+      },
+      "best_hard_continue": {
+        "brier": 0.030228355957767728,
+        "threshold": 0.7707
+      },
+      "best_monotone_attack_brier": 0.13152358974166933,
+      "best_monotone_continue_brier": 0.016890149629702596,
+      "continue_inversion_mass": 0.003717169494788371,
+      "continue_isotonic_blocks": 47,
+      "defender": "BB",
+      "node": "SB-vs-BB",
+      "stack_bb": 10
+    },
+    {
+      "actual_attack_brier": 0.12008683564523034,
+      "actual_continue_brier": 0.20388355003972747,
+      "attack_inversion_mass": 0.03580191230530855,
+      "attack_isotonic_blocks": 52,
+      "best_hard_attack": {
+        "brier": 0.11271025641025643,
+        "threshold": 0.1267
+      },
+      "best_hard_continue": {
+        "brier": 0.07588295625942686,
+        "threshold": 0.7587
+      },
+      "best_monotone_attack_brier": 0.07684699509096361,
+      "best_monotone_continue_brier": 0.050797109110528905,
+      "continue_inversion_mass": 0.01376557300404279,
+      "continue_isotonic_blocks": 41,
+      "defender": "BB",
+      "node": "BTN-vs-BB",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.07761411601233704,
+      "actual_continue_brier": 0.09361761849066229,
+      "attack_inversion_mass": 0.01738735641667349,
+      "attack_isotonic_blocks": 74,
+      "best_hard_attack": {
+        "brier": 0.08980377073906486,
+        "threshold": 0.2066
+      },
+      "best_hard_continue": {
+        "brier": 0.08900859728506787,
+        "threshold": 0.2066
+      },
+      "best_monotone_attack_brier": 0.058884059476412426,
+      "best_monotone_continue_brier": 0.058345789622848455,
+      "continue_inversion_mass": 0.016897270885472482,
+      "continue_isotonic_blocks": 78,
+      "defender": "SB",
+      "node": "BTN-vs-SB",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.037357610038106455,
+      "actual_continue_brier": 0.24173829328096064,
+      "attack_inversion_mass": 0.005967015941989157,
+      "attack_isotonic_blocks": 51,
+      "best_hard_attack": {
+        "brier": 0.046894419306184015,
+        "threshold": 0.1267
+      },
+      "best_hard_continue": {
+        "brier": 0.06487571644042232,
+        "threshold": 0.7134
+      },
+      "best_monotone_attack_brier": 0.03015804674224424,
+      "best_monotone_continue_brier": 0.044833940821986364,
+      "continue_inversion_mass": 0.013299964247407928,
+      "continue_isotonic_blocks": 38,
+      "defender": "BB",
+      "node": "EP-vs-BB",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.03126970491752286,
+      "actual_continue_brier": 0.034648491211385815,
+      "attack_inversion_mass": 0.004653933243493483,
+      "attack_isotonic_blocks": 127,
+      "best_hard_attack": {
+        "brier": 0.03908280542986426,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.02976349924585218,
+        "threshold": 0.1222
+      },
+      "best_monotone_attack_brier": 0.025260419064724402,
+      "best_monotone_continue_brier": 0.019751882412090024,
+      "continue_inversion_mass": 0.0027166469569043757,
+      "continue_isotonic_blocks": 146,
+      "defender": "BTN",
+      "node": "EP-vs-BTN",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.029739350439176613,
+      "actual_continue_brier": 0.02890133459863677,
+      "attack_inversion_mass": 0.003630584050677006,
+      "attack_isotonic_blocks": 130,
+      "best_hard_attack": {
+        "brier": 0.03185625942684766,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.02351975867269985,
+        "threshold": 0.1222
+      },
+      "best_monotone_attack_brier": 0.021021182788465195,
+      "best_monotone_continue_brier": 0.01850490645488965,
+      "continue_inversion_mass": 0.0022551634993537026,
+      "continue_isotonic_blocks": 145,
+      "defender": "CO",
+      "node": "EP-vs-MP",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.029899032396589278,
+      "actual_continue_brier": 0.04496548356955774,
+      "attack_inversion_mass": 0.004494925882126461,
+      "attack_isotonic_blocks": 62,
+      "best_hard_attack": {
+        "brier": 0.032700301659125186,
+        "threshold": 0.1357
+      },
+      "best_hard_continue": {
+        "brier": 0.0458604826546003,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.023418081374436874,
+      "best_monotone_continue_brier": 0.029594699075210954,
+      "continue_inversion_mass": 0.0057277944317629835,
+      "continue_isotonic_blocks": 65,
+      "defender": "SB",
+      "node": "EP-vs-SB",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.08461946617842299,
+      "actual_continue_brier": 0.231125800109325,
+      "attack_inversion_mass": 0.026028712081625775,
+      "attack_isotonic_blocks": 49,
+      "best_hard_attack": {
+        "brier": 0.08240723981900452,
+        "threshold": 0.1267
+      },
+      "best_hard_continue": {
+        "brier": 0.07294811463046758,
+        "threshold": 0.7134
+      },
+      "best_monotone_attack_brier": 0.06100029985726149,
+      "best_monotone_continue_brier": 0.04574134395522121,
+      "continue_inversion_mass": 0.013155303759522554,
+      "continue_isotonic_blocks": 40,
+      "defender": "BB",
+      "node": "MP-vs-BB",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.04305183067038732,
+      "actual_continue_brier": 0.03487643727064589,
+      "attack_inversion_mass": 0.007618510675357308,
+      "attack_isotonic_blocks": 51,
+      "best_hard_attack": {
+        "brier": 0.04415535444947209,
+        "threshold": 0.1267
+      },
+      "best_hard_continue": {
+        "brier": 0.04212322775263952,
+        "threshold": 0.1508
+      },
+      "best_monotone_attack_brier": 0.031433234545928855,
+      "best_monotone_continue_brier": 0.02370086856042827,
+      "continue_inversion_mass": 0.003353134768937421,
+      "continue_isotonic_blocks": 55,
+      "defender": "BTN",
+      "node": "MP-vs-BTN",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.058083921272149924,
+      "actual_continue_brier": 0.07035759873405427,
+      "attack_inversion_mass": 0.008868842991116878,
+      "attack_isotonic_blocks": 68,
+      "best_hard_attack": {
+        "brier": 0.07172669683257918,
+        "threshold": 0.2066
+      },
+      "best_hard_continue": {
+        "brier": 0.0723577677224736,
+        "threshold": 0.2066
+      },
+      "best_monotone_attack_brier": 0.043601995235157,
+      "best_monotone_continue_brier": 0.044300237801046624,
+      "continue_inversion_mass": 0.008848491515634906,
+      "continue_isotonic_blocks": 73,
+      "defender": "SB",
+      "node": "MP-vs-SB",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.17716777075171422,
+      "actual_continue_brier": 0.2054369901329875,
+      "attack_inversion_mass": 0.06837949084641927,
+      "attack_isotonic_blocks": 49,
+      "best_hard_attack": {
+        "brier": 0.16725218702865766,
+        "threshold": 0.0
+      },
+      "best_hard_continue": {
+        "brier": 0.04419034690799397,
+        "threshold": 0.7587
+      },
+      "best_monotone_attack_brier": 0.10841420885469695,
+      "best_monotone_continue_brier": 0.027876709149679567,
+      "continue_inversion_mass": 0.006453526213983841,
+      "continue_isotonic_blocks": 48,
+      "defender": "BB",
+      "node": "SB-vs-BB",
+      "stack_bb": 15
+    },
+    {
+      "actual_attack_brier": 0.0899268739075658,
+      "actual_continue_brier": 0.2884915447031584,
+      "attack_inversion_mass": 0.03343454067086488,
+      "attack_isotonic_blocks": 38,
+      "best_hard_attack": {
+        "brier": 0.09383800904977375,
+        "threshold": 0.1267
+      },
+      "best_hard_continue": {
+        "brier": 0.0652051282051282,
+        "threshold": 0.8069
+      },
+      "best_monotone_attack_brier": 0.06597083099192551,
+      "best_monotone_continue_brier": 0.03337764676036735,
+      "continue_inversion_mass": 0.007525828955932641,
+      "continue_isotonic_blocks": 36,
+      "defender": "BB",
+      "node": "BTN-vs-BB",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.08227713466930447,
+      "actual_continue_brier": 0.07831967352728694,
+      "attack_inversion_mass": 0.013416847721459738,
+      "attack_isotonic_blocks": 72,
+      "best_hard_attack": {
+        "brier": 0.07922865761689289,
+        "threshold": 0.2368
+      },
+      "best_hard_continue": {
+        "brier": 0.07583016591251884,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.05221077359151725,
+      "best_monotone_continue_brier": 0.04951909162070484,
+      "continue_inversion_mass": 0.012905677328272911,
+      "continue_isotonic_blocks": 71,
+      "defender": "SB",
+      "node": "BTN-vs-SB",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.031308678944831456,
+      "actual_continue_brier": 0.25161229535470236,
+      "attack_inversion_mass": 0.00861564130066099,
+      "attack_isotonic_blocks": 63,
+      "best_hard_attack": {
+        "brier": 0.0420891402714932,
+        "threshold": 0.0935
+      },
+      "best_hard_continue": {
+        "brier": 0.08558476621417797,
+        "threshold": 0.7134
+      },
+      "best_monotone_attack_brier": 0.022945890502996127,
+      "best_monotone_continue_brier": 0.05229614303624263,
+      "continue_inversion_mass": 0.016847033909958467,
+      "continue_isotonic_blocks": 21,
+      "defender": "BB",
+      "node": "EP-vs-BB",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.02940649983554373,
+      "actual_continue_brier": 0.02535011725928645,
+      "attack_inversion_mass": 0.0032819962780634877,
+      "attack_isotonic_blocks": 128,
+      "best_hard_attack": {
+        "brier": 0.034963951734539964,
+        "threshold": 0.0709
+      },
+      "best_hard_continue": {
+        "brier": 0.029265309200603315,
+        "threshold": 0.1629
+      },
+      "best_monotone_attack_brier": 0.02157634534346802,
+      "best_monotone_continue_brier": 0.01889720031724888,
+      "continue_inversion_mass": 0.0030001008406442898,
+      "continue_isotonic_blocks": 78,
+      "defender": "BTN",
+      "node": "EP-vs-BTN",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.023841112549778238,
+      "actual_continue_brier": 0.017963841470125416,
+      "attack_inversion_mass": 0.002709908968400208,
+      "attack_isotonic_blocks": 131,
+      "best_hard_attack": {
+        "brier": 0.030400754147812976,
+        "threshold": 0.0935
+      },
+      "best_hard_continue": {
+        "brier": 0.02101447963800905,
+        "threshold": 0.1222
+      },
+      "best_monotone_attack_brier": 0.015807757412760665,
+      "best_monotone_continue_brier": 0.01305583495555605,
+      "continue_inversion_mass": 0.0017038860317373004,
+      "continue_isotonic_blocks": 137,
+      "defender": "CO",
+      "node": "EP-vs-MP",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.02721417578823993,
+      "actual_continue_brier": 0.03193521188858177,
+      "attack_inversion_mass": 0.003518925955465109,
+      "attack_isotonic_blocks": 117,
+      "best_hard_attack": {
+        "brier": 0.024590196078431367,
+        "threshold": 0.1222
+      },
+      "best_hard_continue": {
+        "brier": 0.0305393665158371,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.015101077832211953,
+      "best_monotone_continue_brier": 0.024680381030005954,
+      "continue_inversion_mass": 0.007066729004519512,
+      "continue_isotonic_blocks": 63,
+      "defender": "SB",
+      "node": "EP-vs-SB",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.05605188853215199,
+      "actual_continue_brier": 0.29902805202566674,
+      "attack_inversion_mass": 0.019476362036247693,
+      "attack_isotonic_blocks": 35,
+      "best_hard_attack": {
+        "brier": 0.06092850678733033,
+        "threshold": 0.1267
+      },
+      "best_hard_continue": {
+        "brier": 0.06631191553544494,
+        "threshold": 0.7798
+      },
+      "best_monotone_attack_brier": 0.04530129042035598,
+      "best_monotone_continue_brier": 0.03749818595413987,
+      "continue_inversion_mass": 0.009788326320324895,
+      "continue_isotonic_blocks": 35,
+      "defender": "BB",
+      "node": "MP-vs-BB",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.036428121467247665,
+      "actual_continue_brier": 0.03616620590026095,
+      "attack_inversion_mass": 0.004682947847052259,
+      "attack_isotonic_blocks": 52,
+      "best_hard_attack": {
+        "brier": 0.02848898944193062,
+        "threshold": 0.1357
+      },
+      "best_hard_continue": {
+        "brier": 0.04306726998491704,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.020654965305249396,
+      "best_monotone_continue_brier": 0.0233636283268721,
+      "continue_inversion_mass": 0.0034228981601166137,
+      "continue_isotonic_blocks": 67,
+      "defender": "BTN",
+      "node": "MP-vs-BTN",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.044869290938494545,
+      "actual_continue_brier": 0.027596449035796566,
+      "attack_inversion_mass": 0.005548160574975025,
+      "attack_isotonic_blocks": 65,
+      "best_hard_attack": {
+        "brier": 0.045161990950226244,
+        "threshold": 0.1508
+      },
+      "best_hard_continue": {
+        "brier": 0.03124555052790347,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.02618888869475044,
+      "best_monotone_continue_brier": 0.018890270891722166,
+      "continue_inversion_mass": 0.004744919006628004,
+      "continue_isotonic_blocks": 64,
+      "defender": "SB",
+      "node": "MP-vs-SB",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.14807299840551358,
+      "actual_continue_brier": 0.14998530164907786,
+      "attack_inversion_mass": 0.04926056305748817,
+      "attack_isotonic_blocks": 47,
+      "best_hard_attack": {
+        "brier": 0.12521749622926096,
+        "threshold": 0.0
+      },
+      "best_hard_continue": {
+        "brier": 0.050204223227752635,
+        "threshold": 0.6652
+      },
+      "best_monotone_attack_brier": 0.08564635917034065,
+      "best_monotone_continue_brier": 0.03487695011292493,
+      "continue_inversion_mass": 0.009414940916549793,
+      "continue_isotonic_blocks": 49,
+      "defender": "BB",
+      "node": "SB-vs-BB",
+      "stack_bb": 20
+    },
+    {
+      "actual_attack_brier": 0.07446213898104437,
+      "actual_continue_brier": 0.07619369380921664,
+      "attack_inversion_mass": 0.03518394250249798,
+      "attack_isotonic_blocks": 47,
+      "best_hard_attack": {
+        "brier": 0.07002956259426847,
+        "threshold": 0.1267
+      },
+      "best_hard_continue": {
+        "brier": 0.05270135746606335,
+        "threshold": 0.9367
+      },
+      "best_monotone_attack_brier": 0.050648246590305375,
+      "best_monotone_continue_brier": 0.03170417201960234,
+      "continue_inversion_mass": 0.006912076125519109,
+      "continue_isotonic_blocks": 13,
+      "defender": "BB",
+      "node": "BTN-vs-BB",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.08606914682665452,
+      "actual_continue_brier": 0.031483928551972046,
+      "attack_inversion_mass": 0.009167881338063694,
+      "attack_isotonic_blocks": 63,
+      "best_hard_attack": {
+        "brier": 0.04930935143288084,
+        "threshold": 0.2157
+      },
+      "best_hard_continue": {
+        "brier": 0.04400844645550528,
+        "threshold": 0.2911
+      },
+      "best_monotone_attack_brier": 0.029552815433252298,
+      "best_monotone_continue_brier": 0.02453179778448321,
+      "continue_inversion_mass": 0.004729151196795107,
+      "continue_isotonic_blocks": 77,
+      "defender": "SB",
+      "node": "BTN-vs-SB",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.03155496357737593,
+      "actual_continue_brier": 0.08690923638694358,
+      "attack_inversion_mass": 0.015378473272645625,
+      "attack_isotonic_blocks": 90,
+      "best_hard_attack": {
+        "brier": 0.035471342383107084,
+        "threshold": 0.0347
+      },
+      "best_hard_continue": {
+        "brier": 0.08504947209653092,
+        "threshold": 0.7134
+      },
+      "best_monotone_attack_brier": 0.022938673591441087,
+      "best_monotone_continue_brier": 0.058405059871676386,
+      "continue_inversion_mass": 0.0174926432166332,
+      "continue_isotonic_blocks": 40,
+      "defender": "BB",
+      "node": "EP-vs-BB",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.025861211488378756,
+      "actual_continue_brier": 0.026282075453296545,
+      "attack_inversion_mass": 0.0067388135639833814,
+      "attack_isotonic_blocks": 120,
+      "best_hard_attack": {
+        "brier": 0.029874660633484162,
+        "threshold": 0.0302
+      },
+      "best_hard_continue": {
+        "brier": 0.03333876319758673,
+        "threshold": 0.2278
+      },
+      "best_monotone_attack_brier": 0.01628676241064988,
+      "best_monotone_continue_brier": 0.021765350830769355,
+      "continue_inversion_mass": 0.004889121127948463,
+      "continue_isotonic_blocks": 77,
+      "defender": "BTN",
+      "node": "EP-vs-BTN",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.03000181537676631,
+      "actual_continue_brier": 0.02092559954215752,
+      "attack_inversion_mass": 0.0053518880118808634,
+      "attack_isotonic_blocks": 131,
+      "best_hard_attack": {
+        "brier": 0.035422322775263956,
+        "threshold": 0.0302
+      },
+      "best_hard_continue": {
+        "brier": 0.02692352941176471,
+        "threshold": 0.1508
+      },
+      "best_monotone_attack_brier": 0.018180296650884886,
+      "best_monotone_continue_brier": 0.016634811880518227,
+      "continue_inversion_mass": 0.0020547656371753694,
+      "continue_isotonic_blocks": 79,
+      "defender": "CO",
+      "node": "EP-vs-MP",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.031898535811421984,
+      "actual_continue_brier": 0.03354441679426746,
+      "attack_inversion_mass": 0.006437666730837994,
+      "attack_isotonic_blocks": 122,
+      "best_hard_attack": {
+        "brier": 0.04506847662141779,
+        "threshold": 0.0935
+      },
+      "best_hard_continue": {
+        "brier": 0.029111010558069386,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.023175415013924183,
+      "best_monotone_continue_brier": 0.024634893388779812,
+      "continue_inversion_mass": 0.0075272040556273855,
+      "continue_isotonic_blocks": 67,
+      "defender": "SB",
+      "node": "EP-vs-SB",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.042102487557049914,
+      "actual_continue_brier": 0.07874806534707442,
+      "attack_inversion_mass": 0.02235733340667183,
+      "attack_isotonic_blocks": 65,
+      "best_hard_attack": {
+        "brier": 0.051660482654600305,
+        "threshold": 0.0754
+      },
+      "best_hard_continue": {
+        "brier": 0.06816410256410255,
+        "threshold": 0.7798
+      },
+      "best_monotone_attack_brier": 0.029660971282155304,
+      "best_monotone_continue_brier": 0.038583252549549404,
+      "continue_inversion_mass": 0.010555815296609006,
+      "continue_isotonic_blocks": 38,
+      "defender": "BB",
+      "node": "MP-vs-BB",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.04292323496769254,
+      "actual_continue_brier": 0.021932864079936727,
+      "attack_inversion_mass": 0.011106863580942934,
+      "attack_isotonic_blocks": 117,
+      "best_hard_attack": {
+        "brier": 0.051953846153846156,
+        "threshold": 0.0347
+      },
+      "best_hard_continue": {
+        "brier": 0.021608597285067872,
+        "threshold": 0.2368
+      },
+      "best_monotone_attack_brier": 0.027740319829236238,
+      "best_monotone_continue_brier": 0.014214836912382655,
+      "continue_inversion_mass": 0.002702162573453256,
+      "continue_isotonic_blocks": 57,
+      "defender": "BTN",
+      "node": "MP-vs-BTN",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.04185181020382954,
+      "actual_continue_brier": 0.02946797597460588,
+      "attack_inversion_mass": 0.005510849536591415,
+      "attack_isotonic_blocks": 66,
+      "best_hard_attack": {
+        "brier": 0.03629743589743589,
+        "threshold": 0.1478
+      },
+      "best_hard_continue": {
+        "brier": 0.030591402714932128,
+        "threshold": 0.2911
+      },
+      "best_monotone_attack_brier": 0.019364556434982725,
+      "best_monotone_continue_brier": 0.021444016042351164,
+      "continue_inversion_mass": 0.005292162848473202,
+      "continue_isotonic_blocks": 74,
+      "defender": "SB",
+      "node": "MP-vs-SB",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.0555975975581178,
+      "actual_continue_brier": 0.07219109130717637,
+      "attack_inversion_mass": 0.04415678886719321,
+      "attack_isotonic_blocks": 35,
+      "best_hard_attack": {
+        "brier": 0.06252820512820512,
+        "threshold": 0.0226
+      },
+      "best_hard_continue": {
+        "brier": 0.04801478129713425,
+        "threshold": 0.7345
+      },
+      "best_monotone_attack_brier": 0.04196488912914301,
+      "best_monotone_continue_brier": 0.03196326304035704,
+      "continue_inversion_mass": 0.007733285663210578,
+      "continue_isotonic_blocks": 48,
+      "defender": "BB",
+      "node": "SB-vs-BB",
+      "stack_bb": 30
+    },
+    {
+      "actual_attack_brier": 0.04968857896362097,
+      "actual_continue_brier": 0.07182541081663373,
+      "attack_inversion_mass": 0.03189507072596092,
+      "attack_isotonic_blocks": 51,
+      "best_hard_attack": {
+        "brier": 0.06179532428355959,
+        "threshold": 0.0709
+      },
+      "best_hard_continue": {
+        "brier": 0.0617710407239819,
+        "threshold": 0.8462
+      },
+      "best_monotone_attack_brier": 0.035059212139847626,
+      "best_monotone_continue_brier": 0.032614879788685276,
+      "continue_inversion_mass": 0.006550699925744623,
+      "continue_isotonic_blocks": 36,
+      "defender": "BB",
+      "node": "BTN-vs-BB",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.06516847151145677,
+      "actual_continue_brier": 0.04146743670804191,
+      "attack_inversion_mass": 0.012351603824610561,
+      "attack_isotonic_blocks": 95,
+      "best_hard_attack": {
+        "brier": 0.06554147812971342,
+        "threshold": 0.2368
+      },
+      "best_hard_continue": {
+        "brier": 0.0334790346907994,
+        "threshold": 0.3363
+      },
+      "best_monotone_attack_brier": 0.032655674478684685,
+      "best_monotone_continue_brier": 0.026096602714559165,
+      "continue_inversion_mass": 0.005983792158264821,
+      "continue_isotonic_blocks": 75,
+      "defender": "SB",
+      "node": "BTN-vs-SB",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.029654817204591153,
+      "actual_continue_brier": 0.09135469661015168,
+      "attack_inversion_mass": 0.01031746468285617,
+      "attack_isotonic_blocks": 93,
+      "best_hard_attack": {
+        "brier": 0.032884766214177984,
+        "threshold": 0.0226
+      },
+      "best_hard_continue": {
+        "brier": 0.10290377073906486,
+        "threshold": 0.7134
+      },
+      "best_monotone_attack_brier": 0.020538346378565147,
+      "best_monotone_continue_brier": 0.06975825297971924,
+      "continue_inversion_mass": 0.024116773466076314,
+      "continue_isotonic_blocks": 42,
+      "defender": "BB",
+      "node": "EP-vs-BB",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.03001775814073359,
+      "actual_continue_brier": 0.036880446114565445,
+      "attack_inversion_mass": 0.008578971975468228,
+      "attack_isotonic_blocks": 80,
+      "best_hard_attack": {
+        "brier": 0.037291855203619904,
+        "threshold": 0.0181
+      },
+      "best_hard_continue": {
+        "brier": 0.03836742081447964,
+        "threshold": 0.2278
+      },
+      "best_monotone_attack_brier": 0.017953236911813428,
+      "best_monotone_continue_brier": 0.028388259742001567,
+      "continue_inversion_mass": 0.009388539002411008,
+      "continue_isotonic_blocks": 76,
+      "defender": "BTN",
+      "node": "EP-vs-BTN",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.0344760348169118,
+      "actual_continue_brier": 0.035045839651519785,
+      "attack_inversion_mass": 0.007572582345553376,
+      "attack_isotonic_blocks": 80,
+      "best_hard_attack": {
+        "brier": 0.04049502262443439,
+        "threshold": 0.0181
+      },
+      "best_hard_continue": {
+        "brier": 0.03915686274509804,
+        "threshold": 0.1629
+      },
+      "best_monotone_attack_brier": 0.01921130586484873,
+      "best_monotone_continue_brier": 0.026376158994736307,
+      "continue_inversion_mass": 0.006690501728041967,
+      "continue_isotonic_blocks": 76,
+      "defender": "CO",
+      "node": "EP-vs-MP",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.030262269820097935,
+      "actual_continue_brier": 0.04599685807756103,
+      "attack_inversion_mass": 0.00596252394965303,
+      "attack_isotonic_blocks": 77,
+      "best_hard_attack": {
+        "brier": 0.03506696832579186,
+        "threshold": 0.0935
+      },
+      "best_hard_continue": {
+        "brier": 0.0470657616892911,
+        "threshold": 0.2278
+      },
+      "best_monotone_attack_brier": 0.02180848363803115,
+      "best_monotone_continue_brier": 0.036551866862765174,
+      "continue_inversion_mass": 0.012484530128434255,
+      "continue_isotonic_blocks": 78,
+      "defender": "SB",
+      "node": "EP-vs-SB",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.03761459525929717,
+      "actual_continue_brier": 0.07902842292087546,
+      "attack_inversion_mass": 0.018622608472447604,
+      "attack_isotonic_blocks": 82,
+      "best_hard_attack": {
+        "brier": 0.04611146304675717,
+        "threshold": 0.0302
+      },
+      "best_hard_continue": {
+        "brier": 0.0723025641025641,
+        "threshold": 0.7798
+      },
+      "best_monotone_attack_brier": 0.02682873434904603,
+      "best_monotone_continue_brier": 0.04589652363207727,
+      "continue_inversion_mass": 0.011145183025769362,
+      "continue_isotonic_blocks": 41,
+      "defender": "BB",
+      "node": "MP-vs-BB",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.0436024445159541,
+      "actual_continue_brier": 0.041924387971280105,
+      "attack_inversion_mass": 0.013375228037366028,
+      "attack_isotonic_blocks": 102,
+      "best_hard_attack": {
+        "brier": 0.049329864253393654,
+        "threshold": 0.0302
+      },
+      "best_hard_continue": {
+        "brier": 0.03520211161387632,
+        "threshold": 0.2911
+      },
+      "best_monotone_attack_brier": 0.02347875217414934,
+      "best_monotone_continue_brier": 0.024393317721845265,
+      "continue_inversion_mass": 0.006371753618804044,
+      "continue_isotonic_blocks": 75,
+      "defender": "BTN",
+      "node": "MP-vs-BTN",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.04639914846526813,
+      "actual_continue_brier": 0.03689777418850981,
+      "attack_inversion_mass": 0.008716940311505926,
+      "attack_isotonic_blocks": 97,
+      "best_hard_attack": {
+        "brier": 0.05250316742081448,
+        "threshold": 0.1629
+      },
+      "best_hard_continue": {
+        "brier": 0.03862684766214178,
+        "threshold": 0.2911
+      },
+      "best_monotone_attack_brier": 0.029818646263016262,
+      "best_monotone_continue_brier": 0.028623444473400587,
+      "continue_inversion_mass": 0.0066986606528973485,
+      "continue_isotonic_blocks": 76,
+      "defender": "SB",
+      "node": "MP-vs-SB",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.04679519529318634,
+      "actual_continue_brier": 0.09149113843989139,
+      "attack_inversion_mass": 0.04370396853771869,
+      "attack_isotonic_blocks": 43,
+      "best_hard_attack": {
+        "brier": 0.051906787330316756,
+        "threshold": 0.0226
+      },
+      "best_hard_continue": {
+        "brier": 0.08720361990950226,
+        "threshold": 0.6833
+      },
+      "best_monotone_attack_brier": 0.031202342311305656,
+      "best_monotone_continue_brier": 0.05884078790329453,
+      "continue_inversion_mass": 0.01624927807266027,
+      "continue_isotonic_blocks": 51,
+      "defender": "BB",
+      "node": "SB-vs-BB",
+      "stack_bb": 50
+    },
+    {
+      "actual_attack_brier": 0.05444437950804993,
+      "actual_continue_brier": 0.08640718680428428,
+      "attack_inversion_mass": 0.02761906071523518,
+      "attack_isotonic_blocks": 78,
+      "best_hard_attack": {
+        "brier": 0.07255113122171947,
+        "threshold": 0.0302
+      },
+      "best_hard_continue": {
+        "brier": 0.06675987933634993,
+        "threshold": 0.7587
+      },
+      "best_monotone_attack_brier": 0.040590733505197915,
+      "best_monotone_continue_brier": 0.04784125870478732,
+      "continue_inversion_mass": 0.012250763180330575,
+      "continue_isotonic_blocks": 42,
+      "defender": "BB",
+      "node": "BTN-vs-BB",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.04934992759272526,
+      "actual_continue_brier": 0.037985902661355604,
+      "attack_inversion_mass": 0.011806330958994587,
+      "attack_isotonic_blocks": 82,
+      "best_hard_attack": {
+        "brier": 0.06021372549019608,
+        "threshold": 0.1629
+      },
+      "best_hard_continue": {
+        "brier": 0.040243740573152345,
+        "threshold": 0.3002
+      },
+      "best_monotone_attack_brier": 0.029469761381759347,
+      "best_monotone_continue_brier": 0.030178120548959013,
+      "continue_inversion_mass": 0.00703326824528113,
+      "continue_isotonic_blocks": 76,
+      "defender": "SB",
+      "node": "BTN-vs-SB",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.028229232175926794,
+      "actual_continue_brier": 0.1019436219081492,
+      "attack_inversion_mass": 0.010210848619858262,
+      "attack_isotonic_blocks": 76,
+      "best_hard_attack": {
+        "brier": 0.024638763197586722,
+        "threshold": 0.0136
+      },
+      "best_hard_continue": {
+        "brier": 0.12217073906485669,
+        "threshold": 0.7134
+      },
+      "best_monotone_attack_brier": 0.016898239092619644,
+      "best_monotone_continue_brier": 0.08151759848337525,
+      "continue_inversion_mass": 0.032296691510134506,
+      "continue_isotonic_blocks": 42,
+      "defender": "BB",
+      "node": "EP-vs-BB",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.0301298727999177,
+      "actual_continue_brier": 0.05050938368392412,
+      "attack_inversion_mass": 0.011175389382396874,
+      "attack_isotonic_blocks": 77,
+      "best_hard_attack": {
+        "brier": 0.033586576168929114,
+        "threshold": 0.0136
+      },
+      "best_hard_continue": {
+        "brier": 0.052759276018099543,
+        "threshold": 0.279
+      },
+      "best_monotone_attack_brier": 0.01850478727325292,
+      "best_monotone_continue_brier": 0.03646921269501639,
+      "continue_inversion_mass": 0.014001540111658092,
+      "continue_isotonic_blocks": 78,
+      "defender": "BTN",
+      "node": "EP-vs-BTN",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.028361710437976823,
+      "actual_continue_brier": 0.03995561328036668,
+      "attack_inversion_mass": 0.008699018178817934,
+      "attack_isotonic_blocks": 77,
+      "best_hard_attack": {
+        "brier": 0.03170377073906486,
+        "threshold": 0.0136
+      },
+      "best_hard_continue": {
+        "brier": 0.04238702865761689,
+        "threshold": 0.2278
+      },
+      "best_monotone_attack_brier": 0.016183852076984466,
+      "best_monotone_continue_brier": 0.02616782898487346,
+      "continue_inversion_mass": 0.008014722734064905,
+      "continue_isotonic_blocks": 76,
+      "defender": "CO",
+      "node": "EP-vs-MP",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.02816929494279705,
+      "actual_continue_brier": 0.05213046898718311,
+      "attack_inversion_mass": 0.007104406736155042,
+      "attack_isotonic_blocks": 78,
+      "best_hard_attack": {
+        "brier": 0.038736802413273,
+        "threshold": 0.0814
+      },
+      "best_hard_continue": {
+        "brier": 0.05783469079939666,
+        "threshold": 0.2278
+      },
+      "best_monotone_attack_brier": 0.021315187224768287,
+      "best_monotone_continue_brier": 0.042506759990981025,
+      "continue_inversion_mass": 0.014468065601422718,
+      "continue_isotonic_blocks": 76,
+      "defender": "SB",
+      "node": "EP-vs-SB",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.03951174056471543,
+      "actual_continue_brier": 0.08632580162409043,
+      "attack_inversion_mass": 0.01694654529120024,
+      "attack_isotonic_blocks": 81,
+      "best_hard_attack": {
+        "brier": 0.047687179487179494,
+        "threshold": 0.0302
+      },
+      "best_hard_continue": {
+        "brier": 0.08870437405731524,
+        "threshold": 0.7345
+      },
+      "best_monotone_attack_brier": 0.0305138085834809,
+      "best_monotone_continue_brier": 0.05829205995599105,
+      "continue_inversion_mass": 0.01589340227166468,
+      "continue_isotonic_blocks": 41,
+      "defender": "BB",
+      "node": "MP-vs-BB",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.0461009694504178,
+      "actual_continue_brier": 0.05959033631513732,
+      "attack_inversion_mass": 0.01734779938212183,
+      "attack_isotonic_blocks": 78,
+      "best_hard_attack": {
+        "brier": 0.05417662141779786,
+        "threshold": 0.0181
+      },
+      "best_hard_continue": {
+        "brier": 0.045906184012066364,
+        "threshold": 0.3122
+      },
+      "best_monotone_attack_brier": 0.026637269013390072,
+      "best_monotone_continue_brier": 0.03356154719395856,
+      "continue_inversion_mass": 0.010620261635635236,
+      "continue_isotonic_blocks": 76,
+      "defender": "BTN",
+      "node": "MP-vs-BTN",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.03249112957247959,
+      "actual_continue_brier": 0.04258113149587804,
+      "attack_inversion_mass": 0.009509410265577615,
+      "attack_isotonic_blocks": 78,
+      "best_hard_attack": {
+        "brier": 0.04737616892911012,
+        "threshold": 0.1086
+      },
+      "best_hard_continue": {
+        "brier": 0.04987119155354448,
+        "threshold": 0.3002
+      },
+      "best_monotone_attack_brier": 0.023985612952990617,
+      "best_monotone_continue_brier": 0.03532385106203505,
+      "continue_inversion_mass": 0.00871620692500209,
+      "continue_isotonic_blocks": 78,
+      "defender": "SB",
+      "node": "MP-vs-SB",
+      "stack_bb": 100
+    },
+    {
+      "actual_attack_brier": 0.04866740771821499,
+      "actual_continue_brier": 0.07982156301981787,
+      "attack_inversion_mass": 0.04217018233821919,
+      "attack_isotonic_blocks": 39,
+      "best_hard_attack": {
+        "brier": 0.05826636500754149,
+        "threshold": 0.0226
+      },
+      "best_hard_continue": {
+        "brier": 0.0755607843137255,
+        "threshold": 0.7134
+      },
+      "best_monotone_attack_brier": 0.03267459038129029,
+      "best_monotone_continue_brier": 0.04969544793330976,
+      "continue_inversion_mass": 0.015327136217375763,
+      "continue_isotonic_blocks": 47,
+      "defender": "BB",
+      "node": "SB-vs-BB",
+      "stack_bb": 100
+    }
+  ],
+  "summary": {
+    "actual_attack_brier_mean": 0.05834752764341586,
+    "actual_continue_brier_mean": 0.08515815719105563,
+    "attack_inversion_mass_mean": 0.01783579017812122,
+    "best_hard_attack_brier_mean": 0.061981427853192564,
+    "best_hard_continue_brier_mean": 0.05764566365007541,
+    "best_monotone_attack_brier_mean": 0.038099050379774894,
+    "best_monotone_continue_brier_mean": 0.038038044962886326,
+    "by_node": {
+      "BTN-vs-BB": {
+        "actual_attack_brier": 0.0869010228224368,
+        "actual_continue_brier": 0.13381932064345597,
+        "attack_inversion_mass": 0.032578059826003904,
+        "continue_inversion_mass": 0.011477368914801887,
+        "monotone_attack_brier": 0.05845806385323859,
+        "monotone_continue_brier": 0.04360150092146181,
+        "n": 6
+      },
+      "BTN-vs-SB": {
+        "actual_attack_brier": 0.08066372249291463,
+        "actual_continue_brier": 0.0629399246608234,
+        "attack_inversion_mass": 0.013885932424545206,
+        "continue_inversion_mass": 0.01090503714297063,
+        "monotone_attack_brier": 0.04468462686588707,
+        "monotone_continue_brier": 0.04201009276532356,
+        "n": 6
+      },
+      "EP-vs-BB": {
+        "actual_attack_brier": 0.03664230831953212,
+        "actual_continue_brier": 0.14567203467651826,
+        "attack_inversion_mass": 0.011011645566525811,
+        "continue_inversion_mass": 0.021798821386772776,
+        "monotone_attack_brier": 0.027617060911598202,
+        "monotone_continue_brier": 0.06242091012243307,
+        "n": 6
+      },
+      "EP-vs-BTN": {
+        "actual_attack_brier": 0.0332043564923244,
+        "actual_continue_brier": 0.039877291208218334,
+        "attack_inversion_mass": 0.007119968281033704,
+        "continue_inversion_mass": 0.006794306476108412,
+        "monotone_attack_brier": 0.023052431636514843,
+        "monotone_continue_brier": 0.026878023176786104,
+        "n": 6
+      },
+      "EP-vs-MP": {
+        "actual_attack_brier": 0.032687862164287554,
+        "actual_continue_brier": 0.03229691269666985,
+        "attack_inversion_mass": 0.005734494223053388,
+        "continue_inversion_mass": 0.004379257079471603,
+        "monotone_attack_brier": 0.020769947493459794,
+        "monotone_continue_brier": 0.02207539512262875,
+        "n": 6
+      },
+      "EP-vs-SB": {
+        "actual_attack_brier": 0.033887485762963174,
+        "actual_continue_brier": 0.04887857581723379,
+        "attack_inversion_mass": 0.006125358671837048,
+        "continue_inversion_mass": 0.009048117794095619,
+        "monotone_attack_brier": 0.02425564010969319,
+        "monotone_continue_brier": 0.031941530907889225,
+        "n": 6
+      },
+      "MP-vs-BB": {
+        "actual_attack_brier": 0.06081195981493881,
+        "actual_continue_brier": 0.1461125503176398,
+        "attack_inversion_mass": 0.02196616338017837,
+        "continue_inversion_mass": 0.01607551130790314,
+        "monotone_attack_brier": 0.04497855409072554,
+        "monotone_continue_brier": 0.05129356639739439,
+        "n": 6
+      },
+      "MP-vs-BTN": {
+        "actual_attack_brier": 0.046389979464456416,
+        "actual_continue_brier": 0.04474543653398431,
+        "attack_inversion_mass": 0.011103097335667939,
+        "continue_inversion_mass": 0.006316413495533988,
+        "monotone_attack_brier": 0.029525699431638675,
+        "monotone_continue_brier": 0.027253433760289967,
+        "n": 6
+      },
+      "MP-vs-SB": {
+        "actual_attack_brier": 0.054323694827111996,
+        "actual_continue_brier": 0.05630995160911373,
+        "attack_inversion_mass": 0.010811293541003965,
+        "continue_inversion_mass": 0.009869785698352047,
+        "monotone_attack_brier": 0.03574414947358537,
+        "monotone_continue_brier": 0.03621544515977836,
+        "n": 6
+      },
+      "SB-vs-BB": {
+        "actual_attack_brier": 0.11796288427319267,
+        "actual_continue_brier": 0.14092957374689885,
+        "attack_inversion_mass": 0.05802188853136289,
+        "continue_inversion_mass": 0.009815889429761436,
+        "monotone_attack_brier": 0.07190432993140765,
+        "monotone_continue_brier": 0.036690551294878075,
+        "n": 6
+      }
+    },
+    "charts": 60,
+    "continue_inversion_mass_mean": 0.010648050872577152,
+    "holdout_15_30_100": {
+      "actual_attack_brier": 0.051222274847773,
+      "actual_continue_brier": 0.07681605181549257,
+      "best_monotone_attack_brier": 0.03387751036273335,
+      "best_monotone_continue_brier": 0.03629608756125622
+    },
+    "interpretation": {
+      "actual_to_monotone_gap": "How much current mixed-policy mapping could improve without changing hand ordering.",
+      "attack_monotone_gap": "If large, no monotone function of current pf_rank can represent solver 3bet frequencies; blocker/polar structure is structurally missing.",
+      "continue_monotone_gap": "Residual after best monotone fit indicates current pf_rank ordering mismatch/noise for total defend decisions."
+    },
+    "worst_attack_monotone_residual_hands": [
+      {
+        "charts": 60,
+        "hand": "K9s",
+        "pct": 0.0845,
+        "residual_mse": 0.2699297455614317
+      },
+      {
+        "charts": 60,
+        "hand": "ATo",
+        "pct": 0.2066,
+        "residual_mse": 0.23052060925026518
+      },
+      {
+        "charts": 60,
+        "hand": "A5s",
+        "pct": 0.1569,
+        "residual_mse": 0.20127764607655066
+      },
+      {
+        "charts": 60,
+        "hand": "AKo",
+        "pct": 0.0709,
+        "residual_mse": 0.18009371762936283
+      },
+      {
+        "charts": 60,
+        "hand": "QTs",
+        "pct": 0.0588,
+        "residual_mse": 0.17806099711415188
+      },
+      {
+        "charts": 60,
+        "hand": "KJs",
+        "pct": 0.0483,
+        "residual_mse": 0.16780318680684222
+      },
+      {
+        "charts": 60,
+        "hand": "A9o",
+        "pct": 0.2368,
+        "residual_mse": 0.15812410542995614
+      },
+      {
+        "charts": 60,
+        "hand": "A9s",
+        "pct": 0.1056,
+        "residual_mse": 0.15162237303109588
+      },
+      {
+        "charts": 60,
+        "hand": "22",
+        "pct": 0.1885,
+        "residual_mse": 0.15101588926668286
+      },
+      {
+        "charts": 60,
+        "hand": "AA",
+        "pct": 0.0045,
+        "residual_mse": 0.14223293716699784
+      },
+      {
+        "charts": 60,
+        "hand": "55",
+        "pct": 0.0754,
+        "residual_mse": 0.1416854549207018
+      },
+      {
+        "charts": 60,
+        "hand": "ATs",
+        "pct": 0.0814,
+        "residual_mse": 0.14020101884385675
+      },
+      {
+        "charts": 60,
+        "hand": "A2s",
+        "pct": 0.2489,
+        "residual_mse": 0.13396651476283175
+      },
+      {
+        "charts": 60,
+        "hand": "A3s",
+        "pct": 0.2187,
+        "residual_mse": 0.13262452873328232
+      },
+      {
+        "charts": 60,
+        "hand": "A8o",
+        "pct": 0.2911,
+        "residual_mse": 0.13232575815066083
+      },
+      {
+        "charts": 60,
+        "hand": "A2o",
+        "pct": 0.4389,
+        "residual_mse": 0.1318926156002869
+      },
+      {
+        "charts": 60,
+        "hand": "KTs",
+        "pct": 0.0618,
+        "residual_mse": 0.1310808981803671
+      },
+      {
+        "charts": 60,
+        "hand": "QJs",
+        "pct": 0.0784,
+        "residual_mse": 0.1308921493536253
+      },
+      {
+        "charts": 60,
+        "hand": "A4s",
+        "pct": 0.2127,
+        "residual_mse": 0.1308187502031879
+      },
+      {
+        "charts": 60,
+        "hand": "AQo",
+        "pct": 0.0935,
+        "residual_mse": 0.13042347012397473
+      },
+      {
+        "charts": 60,
+        "hand": "JTs",
+        "pct": 0.1086,
+        "residual_mse": 0.1256975434109145
+      },
+      {
+        "charts": 60,
+        "hand": "A5o",
+        "pct": 0.3092,
+        "residual_mse": 0.12504095008707947
+      },
+      {
+        "charts": 60,
+        "hand": "76s",
+        "pct": 0.3876,
+        "residual_mse": 0.12177645959264237
+      },
+      {
+        "charts": 60,
+        "hand": "KQs",
+        "pct": 0.0422,
+        "residual_mse": 0.12103736769336496
+      },
+      {
+        "charts": 60,
+        "hand": "44",
+        "pct": 0.1131,
+        "residual_mse": 0.12016564090344439
+      },
+      {
+        "charts": 60,
+        "hand": "66",
+        "pct": 0.0558,
+        "residual_mse": 0.11813551927467633
+      },
+      {
+        "charts": 60,
+        "hand": "A4o",
+        "pct": 0.3846,
+        "residual_mse": 0.11787129016131907
+      },
+      {
+        "charts": 60,
+        "hand": "K8s",
+        "pct": 0.1388,
+        "residual_mse": 0.11525746175719348
+      },
+      {
+        "charts": 60,
+        "hand": "AJo",
+        "pct": 0.1222,
+        "residual_mse": 0.11158801114584184
+      },
+      {
+        "charts": 60,
+        "hand": "A3o",
+        "pct": 0.454,
+        "residual_mse": 0.1114933827028297
+      }
+    ],
+    "worst_continue_monotone_residual_hands": [
+      {
+        "charts": 60,
+        "hand": "65s",
+        "pct": 0.457,
+        "residual_mse": 0.2587258771882546
+      },
+      {
+        "charts": 60,
+        "hand": "76s",
+        "pct": 0.3876,
+        "residual_mse": 0.25444996914093504
+      },
+      {
+        "charts": 60,
+        "hand": "54s",
+        "pct": 0.5415,
+        "residual_mse": 0.24930537455901025
+      },
+      {
+        "charts": 60,
+        "hand": "A2s",
+        "pct": 0.2489,
+        "residual_mse": 0.1933706641749621
+      },
+      {
+        "charts": 60,
+        "hand": "62s",
+        "pct": 0.8371,
+        "residual_mse": 0.17402300089176073
+      },
+      {
+        "charts": 60,
+        "hand": "86s",
+        "pct": 0.4449,
+        "residual_mse": 0.15728794972050267
+      },
+      {
+        "charts": 60,
+        "hand": "54o",
+        "pct": 0.8462,
+        "residual_mse": 0.15405552440273249
+      },
+      {
+        "charts": 60,
+        "hand": "87s",
+        "pct": 0.27,
+        "residual_mse": 0.13816604035067012
+      },
+      {
+        "charts": 60,
+        "hand": "65o",
+        "pct": 0.7979,
+        "residual_mse": 0.12721446942607814
+      },
+      {
+        "charts": 60,
+        "hand": "ATo",
+        "pct": 0.2066,
+        "residual_mse": 0.11392154235672043
+      },
+      {
+        "charts": 60,
+        "hand": "73s",
+        "pct": 0.7587,
+        "residual_mse": 0.10446737608090466
+      },
+      {
+        "charts": 60,
+        "hand": "QTo",
+        "pct": 0.1719,
+        "residual_mse": 0.10396219320138314
+      },
+      {
+        "charts": 60,
+        "hand": "A4s",
+        "pct": 0.2127,
+        "residual_mse": 0.10378303412460288
+      },
+      {
+        "charts": 60,
+        "hand": "Q9o",
+        "pct": 0.2579,
+        "residual_mse": 0.09962580225543205
+      },
+      {
+        "charts": 60,
+        "hand": "82s",
+        "pct": 0.7466,
+        "residual_mse": 0.09781877218480076
+      },
+      {
+        "charts": 60,
+        "hand": "72s",
+        "pct": 0.7707,
+        "residual_mse": 0.09636869599087382
+      },
+      {
+        "charts": 60,
+        "hand": "J8s",
+        "pct": 0.279,
+        "residual_mse": 0.09334973993534226
+      },
+      {
+        "charts": 60,
+        "hand": "64s",
+        "pct": 0.629,
+        "residual_mse": 0.0929177914521929
+      },
+      {
+        "charts": 60,
+        "hand": "64o",
+        "pct": 0.9005,
+        "residual_mse": 0.09284358185524984
+      },
+      {
+        "charts": 60,
+        "hand": "A3s",
+        "pct": 0.2187,
+        "residual_mse": 0.09154793934164007
+      },
+      {
+        "charts": 60,
+        "hand": "A6s",
+        "pct": 0.175,
+        "residual_mse": 0.09008167278904862
+      },
+      {
+        "charts": 60,
+        "hand": "Q2o",
+        "pct": 0.6169,
+        "residual_mse": 0.08810989391090014
+      },
+      {
+        "charts": 60,
+        "hand": "53s",
+        "pct": 0.641,
+        "residual_mse": 0.08656651018976716
+      },
+      {
+        "charts": 60,
+        "hand": "A5s",
+        "pct": 0.1569,
+        "residual_mse": 0.08614343673737992
+      },
+      {
+        "charts": 60,
+        "hand": "75s",
+        "pct": 0.3363,
+        "residual_mse": 0.08605756383384541
+      },
+      {
+        "charts": 60,
+        "hand": "63s",
+        "pct": 0.7134,
+        "residual_mse": 0.0851287564070574
+      },
+      {
+        "charts": 60,
+        "hand": "83s",
+        "pct": 0.7345,
+        "residual_mse": 0.08361445730562934
+      },
+      {
+        "charts": 60,
+        "hand": "43o",
+        "pct": 0.9367,
+        "residual_mse": 0.0835268648078135
+      },
+      {
+        "charts": 60,
+        "hand": "53o",
+        "pct": 0.8824,
+        "residual_mse": 0.08192987166219651
+      },
+      {
+        "charts": 60,
+        "hand": "K9o",
+        "pct": 0.2459,
+        "residual_mse": 0.07977586492014578
+      }
+    ]
+  }
+}
