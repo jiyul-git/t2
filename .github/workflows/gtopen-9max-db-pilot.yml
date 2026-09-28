@@ -5,13 +5,21 @@ on:
       - chatgpt/mini-cfr-solver-20260928
     paths:
       - tools/run_gtopen_9max_db_pilot.py
+      - vendor/gtopen/crates/solver/src/preflop/equity.rs
+      - vendor/gtopen/crates/solver/src/preflop/multiway.rs
+      - vendor/gtopen/crates/server/src/main.rs
       - .github/workflows/gtopen-9max-db-pilot.yml
 permissions:
   contents: write
 jobs:
   solve:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        realization: [static, balanced]
+        seed: [101, 202, 303, 404]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,10 +27,12 @@ jobs:
       - name: Build GTOpen server
         working-directory: vendor/gtopen
         run: cargo build --release -p server
-      - name: Start server
+      - name: Start seeded server
         working-directory: vendor/gtopen
         env:
           PREFLOP_EQ_SAMPLES: "1200"
+          PREFLOP_EQ_SEED: "${{ matrix.seed }}"
+          PREFLOP_MULTIWAY_SEED: "${{ matrix.seed }}"
           SOLVER_THREADS: "4"
         run: |
           ./target/release/gto-server >/tmp/gtopen9.log 2>&1 &
@@ -32,60 +42,150 @@ jobs:
           done
           tail -100 /tmp/gtopen9.log
           exit 1
-      - name: Solve 30bb 9-max static pilot
+      - name: Solve seeded 30bb pilot
         env:
           GT9_STACK: "30"
-          GT9_ITERS: "120"
+          GT9_ITERS: "100"
           GT9_TARGET: "0.15"
           GT9_MAX_RAISES: "2"
-          GT9_REALIZATION: "static"
+          GT9_REALIZATION: "${{ matrix.realization }}"
+          GT9_SEED: "${{ matrix.seed }}"
+          PREFLOP_EQ_SEED: "${{ matrix.seed }}"
+          PREFLOP_MULTIWAY_SEED: "${{ matrix.seed }}"
         run: python3 tools/run_gtopen_9max_db_pilot.py
-      - name: Solve 30bb 9-max balanced pilot
-        env:
-          GT9_STACK: "30"
-          GT9_ITERS: "120"
-          GT9_TARGET: "0.15"
-          GT9_MAX_RAISES: "2"
-          GT9_REALIZATION: "balanced"
-        run: python3 tools/run_gtopen_9max_db_pilot.py
-      - name: Cross-check aggregate RFI
+      - name: Upload seeded result
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-${{ matrix.realization }}-${{ matrix.seed }}
+          path: data/gto_9max_solver_pilot_30bb_${{ matrix.realization }}_seed${{ matrix.seed }}.json
+          if-no-files-found: error
+      - name: Server log
+        if: always()
+        run: tail -80 /tmp/gtopen9.log || true
+
+  aggregate:
+    if: ${{ always() }}
+    needs: solve
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/mini-cfr-solver-20260928
+      - name: Download seeded results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pilot-*
+          path: data/ensemble
+          merge-multiple: true
+      - name: Aggregate paired ensemble
         run: |
           python3 - <<'PY'
-          import json
+          import glob, json, math, statistics
+
           ref={"UTG":.165,"UTG+1":.186,"UTG+2":.217,"LJ":.257,
                "HJ":.299,"CO":.375,"BTN":.487}
+          seeds=[101,202,303,404]
+          modes=["static","balanced"]
+          files=sorted(glob.glob("data/ensemble/gto_9max_solver_pilot_30bb_*_seed*.json"))
+          runs=[]
+          for path in files:
+              with open(path) as fh:
+                  row=json.load(fh)
+              gap=row["solver"]["status"].get("gap_total")
+              row["_gap_total"]=gap
+              row["_qualified"]=gap is not None and float(gap) <= float(row["solver"]["target_gap"])
+              runs.append(row)
+
+          def mean_sd(vals):
+              vals=[float(v) for v in vals]
+              if not vals: return {"mean":None,"sd":None,"n":0}
+              return {"mean":statistics.fmean(vals),
+                      "sd":statistics.stdev(vals) if len(vals)>1 else 0.0,
+                      "n":len(vals)}
+
           arms={}
-          for mode in ("static","balanced"):
-              p=json.load(open(f"data/gto_9max_solver_pilot_30bb_{mode}.json"))
-              got=p["rfi_combo_weighted"]
-              rows=[(pos,got[pos],v,got[pos]-v) for pos,v in ref.items()]
-              mae=sum(abs(x[3]) for x in rows)/len(rows)
-              arms[mode]={"rows":rows,"mae":mae,"gap":p["solver"]["status"].get("gap_total")}
-          report=["# 9-max 30bb realization A/B","",
-            "Same restricted 9-max preflop tree; only continuation realization changes.",
-            "External values are manual validation points from public 9-max MTT charts, not vendored bulk data.","",
-            "| Position | External | Static | Balanced |",
-            "|---|---:|---:|---:|"]
-          for i,pos in enumerate(ref):
-              s=arms["static"]["rows"][i][1]; b=arms["balanced"]["rows"][i][1]
-              report.append(f"| {pos} | {ref[pos]:.3%} | {s:.3%} | {b:.3%} |")
+          for mode in modes:
+              rr=sorted([r for r in runs if r["config"]["realization"]==mode], key=lambda r:r["run_seed"])
+              qq=[r for r in rr if r["_qualified"]]
+              per_run=[]
+              for r in rr:
+                  mae=statistics.fmean(abs(r["rfi_combo_weighted"][p]-ref[p]) for p in ref)
+                  per_run.append({"seed":r["run_seed"],"gap_total":r["_gap_total"],
+                                  "iteration":r["solver"]["status"].get("iteration"),
+                                  "qualified":r["_qualified"],"rfi_mae":mae})
+              arms[mode]={
+                  "runs":per_run,
+                  "rfi_all":{p:mean_sd([r["rfi_combo_weighted"][p] for r in rr]) for p in ref},
+                  "rfi_qualified":{p:mean_sd([r["rfi_combo_weighted"][p] for r in qq]) for p in ref},
+                  "mae_all":mean_sd([x["rfi_mae"] for x in per_run]),
+                  "mae_qualified":mean_sd([x["rfi_mae"] for x in per_run if x["qualified"]]),
+                  "qualified_count":len(qq),
+                  "received_count":len(rr),
+              }
+
+          paired=[]
+          by={(r["config"]["realization"],r["run_seed"]):r for r in runs}
+          for seed in seeds:
+              s=by.get(("static",seed)); b=by.get(("balanced",seed))
+              if s and b:
+                  paired.append({
+                    "seed":seed,
+                    "both_qualified":bool(s["_qualified"] and b["_qualified"]),
+                    "balanced_minus_static":{p:b["rfi_combo_weighted"][p]-s["rfi_combo_weighted"][p] for p in ref},
+                  })
+
+          complete=len(runs)==len(seeds)*len(modes)
+          promotion_ready=complete and all(arms[m]["qualified_count"]==len(seeds) for m in modes)
+          out={
+            "schema_version":"gto_9max_30bb_seeded_ensemble_v1",
+            "stack_bb":30,
+            "iterations_per_run":100,
+            "target_gap":0.15,
+            "seeds":seeds,
+            "realizations":modes,
+            "reference_rfi":ref,
+            "received_runs":len(runs),
+            "expected_runs":len(seeds)*len(modes),
+            "complete":complete,
+            "promotion_ready":promotion_ready,
+            "arms":arms,
+            "paired":paired,
+            "rule":"Do not promote or canonical-average runs that miss the convergence gate.",
+          }
+          with open("data/gto_9max_solver_pilot_30bb_ensemble.json","w") as fh:
+              json.dump(out,fh,indent=2,sort_keys=True)
+
+          def cell(stat):
+              if stat["n"]==0: return "—"
+              return f'{stat["mean"]:.2%} ± {stat["sd"]:.2%}'
+          report=[
+            "# 9-max 30bb seeded realization ensemble","",
+            f"Received **{len(runs)}/{len(seeds)*len(modes)}** runs. Each arm uses the same four preregistered seeds for paired noise control.",
+            "Each run requests 100 iterations and must satisfy gap_total <= 0.15 before it can enter a promotable average.","",
+            "| Position | External | Static all-run mean ± SD | Balanced all-run mean ± SD |",
+            "|---|---:|---:|---:|",
+          ]
+          for p in ref:
+              report.append(f'| {p} | {ref[p]:.2%} | {cell(arms["static"]["rfi_all"][p])} | {cell(arms["balanced"]["rfi_all"][p])} |')
           report += ["",
-            f"Static aggregate MAE: **{arms['static']['mae']:.2%}**.",
-            f"Balanced aggregate MAE: **{arms['balanced']['mae']:.2%}**.",
+            f'Static: {arms["static"]["qualified_count"]}/{len(seeds)} convergence-qualified; all-run RFI MAE {cell(arms["static"]["mae_all"])}.',
+            f'Balanced: {arms["balanced"]["qualified_count"]}/{len(seeds)} convergence-qualified; all-run RFI MAE {cell(arms["balanced"]["mae_all"])}.',
             "",
-            "Neither arm is exact BBA: both use 1/9bb ante per seat to reproduce 1bb total dead money.",
-            "Restricted open+3bet trees and approximate postflop continuation remain limitations."]
-          open("data/gto_9max_solver_pilot_30bb_realization_ab.md","w").write("\n".join(report)+"\n")
-          json.dump({"reference":ref,"arms":arms},open("data/gto_9max_solver_pilot_30bb_realization_ab.json","w"),indent=2)
-          print(json.dumps({"static_mae":arms["static"]["mae"],"balanced_mae":arms["balanced"]["mae"]}))
+            "**Promotion ready:** " + ("YES" if promotion_ready else "NO"),
+            "",
+            "The all-run means above are diagnostic only. A canonical frequency must use convergence-qualified runs; a fast seed is never selected after seeing runtime or output.",
+          ]
+          with open("data/gto_9max_solver_pilot_30bb_ensemble.md","w") as fh:
+              fh.write("\n".join(report)+"\n")
+          print(json.dumps({"received":len(runs),"promotion_ready":promotion_ready,
+                            "static_q":arms["static"]["qualified_count"],
+                            "balanced_q":arms["balanced"]["qualified_count"]}))
           PY
-      - name: Commit pilot
+      - name: Commit ensemble report
         run: |
           git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add data/gto_9max_solver_pilot_30bb_static.json data/gto_9max_solver_pilot_30bb_balanced.json data/gto_9max_solver_pilot_30bb_realization_ab.json data/gto_9max_solver_pilot_30bb_realization_ab.md
-          git commit -m "gto: compare static and balanced 9-max 30bb pilots"
+          git add data/gto_9max_solver_pilot_30bb_ensemble.json data/gto_9max_solver_pilot_30bb_ensemble.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "gto: record seeded 9-max 30bb ensemble"
           git push origin HEAD:chatgpt/mini-cfr-solver-20260928
-      - name: Server log
-        if: always()
-        run: tail -120 /tmp/gtopen9.log || true
