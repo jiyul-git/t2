@@ -1,0 +1,100 @@
+name: tmp compare 8max defense candidate
+on:
+  push:
+    branches:
+      - tmp/preflop-policy-shape-20260928
+    paths:
+      - .github/workflows/tmp-compare-8max-defense.yml
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/preflop-policy-shape-20260928
+          fetch-depth: 0
+      - name: Candidate 8max fingerprint
+        run: |
+          PYTHONPATH=. python3 - <<'PY' > /tmp/candidate8.json
+          import json,hashlib,collections
+          import tourney as T
+          import preflop
+          hits={'n':0}
+          orig=preflop.defend_action_likelihoods
+          def wrap(*a,**kw):
+              x=orig(*a,**kw)
+              if x.get('policy_shape')=='mtt8_compact_semantic_v1':
+                  hits['n']+=1
+              return x
+          preflop.defend_action_likelihoods=wrap
+          fps={};stats=collections.Counter()
+          for sd in range(3100,3106):
+              t=T.Tournament(entries=100,start_stack=30000,hero_seat=7,seats=8,
+                             seed=sd,hands_per_level=200)
+              rows=['q=%.3f|a=%.2f'%(t.field_q,t.aggr_bias)]
+              for _ in range(30):
+                  if sum(1 for s in t.seats if t.stacks[s]>0)<3: break
+                  st=t.next_hand();guard=0
+                  while st and not st.get('done') and guard<200:
+                      st=t.submit('fold');guard+=1
+                  log=getattr(t.run,'full_log',[]) or []
+                  rows.append(';'.join('%s:%s:%s:%s'%x for x in log))
+                  seen=set()
+                  for stt,x,a,_ in log:
+                      if stt!='preflop' or x==t.hero or x in seen: continue
+                      seen.add(x);stats['n']+=1
+                      if a in ('bet','raise','allin'):stats['vpip']+=1;stats['pfr']+=1
+                      elif a=='call':stats['vpip']+=1
+                  stats['hands']+=1
+                  if any(s=='flop' for s,_,_,_ in log):stats['flop']+=1
+                  t.finish_hand()
+              fps[str(sd)]=hashlib.sha256('\n'.join(rows).encode()).hexdigest()[:16]
+          print(json.dumps({'fp':fps,'stats':dict(stats),'policy_hits':hits['n']},sort_keys=True))
+          PY
+      - name: Current test 8max fingerprint
+        run: |
+          git worktree add /tmp/t2-test origin/test
+          cd /tmp/t2-test
+          PYTHONPATH=. python3 - <<'PY' > /tmp/test8.json
+          import json,hashlib,collections
+          import tourney as T
+          fps={};stats=collections.Counter()
+          for sd in range(3100,3106):
+              t=T.Tournament(entries=100,start_stack=30000,hero_seat=7,seats=8,
+                             seed=sd,hands_per_level=200)
+              rows=['q=%.3f|a=%.2f'%(t.field_q,t.aggr_bias)]
+              for _ in range(30):
+                  if sum(1 for s in t.seats if t.stacks[s]>0)<3: break
+                  st=t.next_hand();guard=0
+                  while st and not st.get('done') and guard<200:
+                      st=t.submit('fold');guard+=1
+                  log=getattr(t.run,'full_log',[]) or []
+                  rows.append(';'.join('%s:%s:%s:%s'%x for x in log))
+                  seen=set()
+                  for stt,x,a,_ in log:
+                      if stt!='preflop' or x==t.hero or x in seen: continue
+                      seen.add(x);stats['n']+=1
+                      if a in ('bet','raise','allin'):stats['vpip']+=1;stats['pfr']+=1
+                      elif a=='call':stats['vpip']+=1
+                  stats['hands']+=1
+                  if any(s=='flop' for s,_,_,_ in log):stats['flop']+=1
+                  t.finish_hand()
+              fps[str(sd)]=hashlib.sha256('\n'.join(rows).encode()).hexdigest()[:16]
+          print(json.dumps({'fp':fps,'stats':dict(stats)},sort_keys=True))
+          PY
+      - name: Compare
+        run: |
+          python3 - <<'PY'
+          import json
+          a=json.load(open('/tmp/test8.json'));b=json.load(open('/tmp/candidate8.json'))
+          print('TEST8',json.dumps(a,sort_keys=True))
+          print('CAND8',json.dumps(b,sort_keys=True))
+          bad=[s for s in b['fp'] if b['fp'][s]!=a['fp'].get(s)]
+          print('DIFF_SEEDS',bad)
+          for k in sorted(set(a['stats'])|set(b['stats'])):
+              print('DELTA',k,b['stats'].get(k,0)-a['stats'].get(k,0))
+          print('POLICY_HITS',b['policy_hits'])
+          PY
