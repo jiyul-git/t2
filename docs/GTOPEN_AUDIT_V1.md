@@ -57,7 +57,7 @@ Main files:
 | players/positions | 9 seats UTG..BB (`PreflopConfig.positions`) | same | exact |
 | blinds/ante | posts SB .5 / BB 1. **Every seat** adds a uniform 1/9bb to invested (`root_state`, mod.rs:3134) | T2 = BB posts a 1bb BBA | limited: dead money is equal, but BB's stack/SPR and "ante counts toward invested" differ |
 | action menu | `legal_actions_of` (mod.rs:3165): **all raises including jam** allowed only when `st.raises < max_raises`. Open = raise 1 | open, 3bet, 4bet, 5bet-jam | **pilot max_raises=2 has no 4bet at all**; `fourbet_mults` is dead config |
-| sizings | open 2bb (SB 2.5), 3bet ×3.0 IP / ×3.5 blinds, 4bet ×2.2. Jam when ≥0.85×stack; `add_allin` always adds jam | public ref: SB open 3–3.5bb | near/limited |
+| sizings | open 2bb (SB 2.5), 3bet ×3.0 IP / blinds ×4.0 in the CI pilot (`run_gtopen_9max_db_pilot.py`) and ×3.5 in this audit's fixtures (`make_configs.py`), 4bet ×2.2. Jam when ≥0.85×stack; `add_allin` always adds jam | public ref: SB open 3–3.5bb | near/limited |
 | limp | `cfg.limp` is global only (any first entrant may limp) | SB-only limp | missing; global limp makes the tree explode (§11) |
 | chance | independent 169 classes per seat, root reach = combos/1326. **No joint card removal between seats** | 1326 combos, dependent deal | approximate (small in HU, larger in multiway) |
 | fold terminal | exact chips (`KIND_FOLD_WIN`) | same | exact |

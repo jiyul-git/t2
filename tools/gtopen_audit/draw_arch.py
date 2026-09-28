@@ -26,7 +26,7 @@ C_EXACT, C_MODEL, C_MC = '#2a78d6', '#eb6834', '#1baf7a'   # validated slots 1-3
 TAG = {'EXACT': C_EXACT, 'MODEL': C_MODEL, 'MC': C_MC, 'ALGO': '#6b6a64'}
 
 BOXES = [
-    ('config', 'PreflopConfig  (mod.rs:61)\n9 seats · posts SB .5/BB 1 · uniform ante 1/9 (≈BBA)\nopen 2bb (SB 2.5) · 3bet ×3/×3.5 · 4bet ×2.2\nmax_raises 2 ⇒ open+3bet only · jam ≥85% stack', 'MODEL'),
+    ('config', 'PreflopConfig  (mod.rs:61)\n9 seats · posts SB .5/BB 1 · uniform ante 1/9 (≈BBA)\nopen 2bb (SB 2.5) · 3bet ×3 / blinds ×3.5 (CI ×4.0) · 4bet ×2.2\nmax_raises 2 ⇒ open+3bet only · jam ≥85% stack', 'MODEL'),
     ('tree', 'build() / legal_actions_of()  (mod.rs:842, 3163)\nfull enumeration, per-node Vec/String metadata ≈354 B/node\n30bb: max_raises 2→75.7k nodes · 3→1.75M · 4→16.1M', 'EXACT'),
     ('chance', 'chance = 169 hand classes per seat, independent\nroot reach = combos/1326; NO joint card removal', 'MODEL'),
     ('cfr', 'try_iterate()  (mod.rs:2016)\nfull-tree vector CFR, 9 alternating traversals / iter\nDCFR α1.5 β0 γ2 · regret pruning after 32 it · rayon depth<7', 'ALGO'),

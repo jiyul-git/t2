@@ -3,7 +3,8 @@
 
 Base = the committed 9-max 30bb DB pilot (tools/run_gtopen_9max_db_pilot.py):
 9 seats, posts SB 0.5 / BB 1, uniform ante 1/9bb (near-BBA), open 2bb (SB 2.5bb),
-3bet x3.0 IP / x3.5 blinds, 4bet+ x2.2, jam always offered, jam threshold 85%.
+3bet x3.0 IP / x3.5 blinds (NOTE: the CI pilot uses x4.0 for SB/BB; this audit fixture
+does not reproduce the CI numbers bit-exactly), 4bet+ x2.2, jam always offered, jam threshold 85%.
 Variants only change the ACTION MENU (raise cap, size menus, limp) so tree-size
 and runtime effects of each menu decision can be measured separately.
 """
