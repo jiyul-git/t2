@@ -1,0 +1,158 @@
+{
+  "defend_changed": [],
+  "defend_summary": {
+    "action_diff_pct": 0.0,
+    "action_diffs": 0,
+    "decisions": 675,
+    "diff_by_opener_defender": {},
+    "diff_by_stack_bucket": {},
+    "net_direct_participation_delta": 0,
+    "note": "Same baseline decision state and same RNG state for defend_decision.",
+    "top_diff_hands": [],
+    "transitions": {
+      "3bet->3bet": 22,
+      "call->call": 118,
+      "fold->fold": 535
+    }
+  },
+  "open_changed": [
+    {
+      "ante": false,
+      "base_action": "raise",
+      "base_amt": 3.47,
+      "base_rfi_ref": 0.0972,
+      "bb": 262.0,
+      "cand_action": "fold",
+      "cand_amt": 0,
+      "cand_rfi_ref": 0.082296,
+      "hand": "K7s",
+      "pos": "UTG",
+      "seats": 9,
+      "stack_bucket": ">150"
+    },
+    {
+      "ante": false,
+      "base_action": "fold",
+      "base_amt": 0,
+      "base_rfi_ref": 0.19797120000000004,
+      "bb": 139.0,
+      "cand_action": "raise",
+      "cand_amt": 2.91,
+      "cand_rfi_ref": 0.20323553764799998,
+      "hand": "K6s",
+      "pos": "HJ",
+      "seats": 9,
+      "stack_bucket": "100-150"
+    },
+    {
+      "ante": false,
+      "base_action": "limp",
+      "base_amt": 1.0,
+      "base_rfi_ref": 0.11016000000000001,
+      "bb": 343.0,
+      "cand_action": "fold",
+      "cand_amt": 0,
+      "cand_rfi_ref": 0.09656064,
+      "hand": "QTo",
+      "pos": "UTG+1",
+      "seats": 9,
+      "stack_bucket": ">150"
+    },
+    {
+      "ante": false,
+      "base_action": "raise",
+      "base_amt": 2.93,
+      "base_rfi_ref": 0.11016000000000001,
+      "bb": 297.5,
+      "cand_action": "fold",
+      "cand_amt": 0,
+      "cand_rfi_ref": 0.09656064,
+      "hand": "AQo",
+      "pos": "UTG+1",
+      "seats": 9,
+      "stack_bucket": ">150"
+    },
+    {
+      "ante": false,
+      "base_action": "fold",
+      "base_amt": 0,
+      "base_rfi_ref": 0.1313736,
+      "bb": 114.0,
+      "cand_action": "raise",
+      "cand_amt": 2.95,
+      "cand_rfi_ref": 0.1439176192,
+      "hand": "KQo",
+      "pos": "UTG+1",
+      "seats": 8,
+      "stack_bucket": "100-150"
+    },
+    {
+      "ante": false,
+      "base_action": "raise",
+      "base_amt": 2.53,
+      "base_rfi_ref": 0.3651192,
+      "bb": 192.0,
+      "cand_action": "fold",
+      "cand_amt": 0,
+      "cand_rfi_ref": 0.34563195288,
+      "hand": "A7o",
+      "pos": "BTN",
+      "seats": 8,
+      "stack_bucket": ">150"
+    }
+  ],
+  "open_summary": {
+    "action_diff_pct": 0.9188361408882083,
+    "action_diffs": 6,
+    "baseline_fold_to_candidate_nonfold": 2,
+    "baseline_nonfold_to_candidate_fold": 4,
+    "decisions": 653,
+    "diff_by_position": {
+      "BTN": 1,
+      "HJ": 1,
+      "UTG": 1,
+      "UTG+1": 3
+    },
+    "diff_by_stack_bucket": {
+      "100-150": 2,
+      ">150": 4
+    },
+    "net_direct_participation_delta": -2,
+    "note": "Same baseline decision state and same RNG state; candidate is shadow-only, so no cascade contamination.",
+    "top_diff_hands": [
+      [
+        "K7s",
+        1
+      ],
+      [
+        "K6s",
+        1
+      ],
+      [
+        "QTo",
+        1
+      ],
+      [
+        "AQo",
+        1
+      ],
+      [
+        "KQo",
+        1
+      ],
+      [
+        "A7o",
+        1
+      ]
+    ],
+    "transitions": {
+      "fold->fold": 494,
+      "fold->raise": 2,
+      "limp->fold": 1,
+      "limp->limp": 34,
+      "raise->fold": 3,
+      "raise->raise": 118,
+      "shove->shove": 1
+    }
+  }
+}

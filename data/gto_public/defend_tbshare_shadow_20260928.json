@@ -1,0 +1,194 @@
+{
+  "all_fit": {
+    "BB": {
+      "all": {
+        "attack_rate_mae": 0.04398498226119329,
+        "brier": 0.1451274869557495,
+        "charts": 24,
+        "continue_rate_mae": 0.1511872939186776,
+        "mae": 0.2505538994475439
+      },
+      "all_best_share": 0.26
+    },
+    "BTN": {
+      "all": {
+        "attack_rate_mae": 0.016203886759926858,
+        "brier": 0.04554224880452474,
+        "charts": 12,
+        "continue_rate_mae": 0.046669452609880584,
+        "mae": 0.08528770573987526
+      },
+      "all_best_share": 0.925
+    },
+    "CO": {
+      "all": {
+        "attack_rate_mae": 0.009979591824147226,
+        "brier": 0.03362434455716253,
+        "charts": 6,
+        "continue_rate_mae": 0.030728042012250645,
+        "mae": 0.06494139774569282
+      },
+      "all_best_share": 0.925
+    },
+    "SB": {
+      "all": {
+        "attack_rate_mae": 0.044882640703737584,
+        "brier": 0.05655584058500223,
+        "charts": 18,
+        "continue_rate_mae": 0.022795412516462325,
+        "mae": 0.10302832421516532
+      },
+      "all_best_share": 0.925
+    }
+  },
+  "all_fit_map_all": {
+    "attack_rate_mae": 0.035297521649998685,
+    "brier": 0.08748863117442163,
+    "charts": 60,
+    "continue_rate_mae": 0.07972023604561092,
+    "mae": 0.1546817379661115
+  },
+  "all_share_map": {
+    "BB": 0.26,
+    "BTN": 0.925,
+    "CO": 0.925,
+    "SB": 0.925
+  },
+  "cv": {
+    "BB": {
+      "all_at_train_share": {
+        "attack_rate_mae": 0.04398498226119329,
+        "brier": 0.1451274869557495,
+        "charts": 24,
+        "continue_rate_mae": 0.1511872939186776,
+        "mae": 0.2505538994475439
+      },
+      "holdout_at_train_share": {
+        "attack_rate_mae": 0.04246982111662664,
+        "brier": 0.131781348389175,
+        "charts": 12,
+        "continue_rate_mae": 0.1310507791804493,
+        "mae": 0.2436422438400574
+      },
+      "original_share": 0.1957,
+      "train": {
+        "attack_rate_mae": 0.045500143405759946,
+        "brier": 0.1584736255223238,
+        "charts": 12,
+        "continue_rate_mae": 0.17132380865690588,
+        "mae": 0.25746555505502855
+      },
+      "train_best_share": 0.26
+    },
+    "BTN": {
+      "all_at_train_share": {
+        "attack_rate_mae": 0.016203886759926858,
+        "brier": 0.04554224880452474,
+        "charts": 12,
+        "continue_rate_mae": 0.046669452609880584,
+        "mae": 0.08528770573987526
+      },
+      "holdout_at_train_share": {
+        "attack_rate_mae": 0.012244519519988138,
+        "brier": 0.041974928057475464,
+        "charts": 6,
+        "continue_rate_mae": 0.04485951621744467,
+        "mae": 0.08046574395608783
+      },
+      "original_share": 0.4986,
+      "train": {
+        "attack_rate_mae": 0.020163253999865575,
+        "brier": 0.049109569551573556,
+        "charts": 6,
+        "continue_rate_mae": 0.048479389002316485,
+        "mae": 0.09010966752366231
+      },
+      "train_best_share": 0.925
+    },
+    "CO": {
+      "all_at_train_share": {
+        "attack_rate_mae": 0.009979591824147226,
+        "brier": 0.03362434455716253,
+        "charts": 6,
+        "continue_rate_mae": 0.030728042012250645,
+        "mae": 0.06494139774569282
+      },
+      "holdout_at_train_share": {
+        "attack_rate_mae": 0.004942743708642126,
+        "brier": 0.030846641710514447,
+        "charts": 3,
+        "continue_rate_mae": 0.028507533213289426,
+        "mae": 0.06090136346265491
+      },
+      "original_share": 0.5486,
+      "train": {
+        "attack_rate_mae": 0.015016439939652326,
+        "brier": 0.03640204740381073,
+        "charts": 3,
+        "continue_rate_mae": 0.03294855081121186,
+        "mae": 0.06898143202873065
+      },
+      "train_best_share": 0.925
+    },
+    "SB": {
+      "all_at_train_share": {
+        "attack_rate_mae": 0.044882640703737584,
+        "brier": 0.05655584058500223,
+        "charts": 18,
+        "continue_rate_mae": 0.022795412516462325,
+        "mae": 0.10302832421516532
+      },
+      "holdout_at_train_share": {
+        "attack_rate_mae": 0.03339106395577038,
+        "brier": 0.048180391364558,
+        "charts": 9,
+        "continue_rate_mae": 0.019592269476262168,
+        "mae": 0.09341650473042208
+      },
+      "original_share": 0.6509,
+      "train": {
+        "attack_rate_mae": 0.05637421745170479,
+        "brier": 0.0649312898054472,
+        "charts": 9,
+        "continue_rate_mae": 0.025998555556662483,
+        "mae": 0.11264014369990887
+      },
+      "train_best_share": 0.925
+    }
+  },
+  "cv_train_map_all": {
+    "attack_rate_mae": 0.035297521649998685,
+    "brier": 0.08748863117442163,
+    "charts": 60,
+    "continue_rate_mae": 0.07972023604561092,
+    "mae": 0.1546817379661115
+  },
+  "cv_train_map_holdout": {
+    "attack_rate_mae": 0.029948425908243606,
+    "brier": 0.07864630654758387,
+    "charts": 30,
+    "continue_rate_mae": 0.07012064907987625,
+    "mae": 0.1476651340926328
+  },
+  "cv_train_map_train": {
+    "attack_rate_mae": 0.040646617391753764,
+    "brier": 0.09633095580125917,
+    "charts": 30,
+    "continue_rate_mae": 0.08931982301134558,
+    "mae": 0.16169834183959028
+  },
+  "note": "Identity saturation is shadowed only for this audit. Share fitting minimizes aggregate attack/3bet frequency MAE first, then action-level Brier.",
+  "original_identity_all": {
+    "attack_rate_mae": 0.04548179113650102,
+    "brier": 0.08406728191279138,
+    "charts": 60,
+    "continue_rate_mae": 0.07503510767702103,
+    "mae": 0.15272752053655153
+  },
+  "train_share_map": {
+    "BB": 0.26,
+    "BTN": 0.925,
+    "CO": 0.925,
+    "SB": 0.925
+  }
+}

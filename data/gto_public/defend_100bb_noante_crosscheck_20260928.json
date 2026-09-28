@@ -1,0 +1,758 @@
+{
+  "spots": [
+    {
+      "baseline": {
+        "defend": 0.5269318,
+        "threebet": 0.094847724
+      },
+      "file": "VSOPEN-BB-vs-BTN.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.7758686334519663,
+        "threebet": 0.15183240885705143
+      },
+      "hero": "BB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.5481578497685713,
+        "threebet": 0.09866841295834283
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.5360060331825037,
+        "threebet": 0.1182202111613876
+      },
+      "villain": "BTN"
+    },
+    {
+      "baseline": {
+        "defend": 0.4406634057142857,
+        "threebet": 0.07931941302857143
+      },
+      "file": "VSOPEN-BB-vs-CO.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.7394020580962104,
+        "threebet": 0.14469613895218694
+      },
+      "hero": "BB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.46406584472457135,
+        "threebet": 0.08353185205042284
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.3977647058823531,
+        "threebet": 0.08212368024132728
+      },
+      "villain": "CO"
+    },
+    {
+      "baseline": {
+        "defend": 0.39458854857142855,
+        "threebet": 0.07102593874285713
+      },
+      "file": "VSOPEN-BB-vs-HJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.7145500701491534,
+        "threebet": 0.13983276771613132
+      },
+      "hero": "BB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.40675710444914287,
+        "threebet": 0.07321627880084572
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.3440120663650076,
+        "threebet": 0.06127149321266968
+      },
+      "villain": "HJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.3657511085714285,
+        "threebet": 0.06583519954285713
+      },
+      "file": "VSOPEN-BB-vs-LJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.7028081593777247,
+        "threebet": 0.13753495269933058
+      },
+      "hero": "BB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.37968023171885706,
+        "threebet": 0.06834244170939427
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.2948989441930618,
+        "threebet": 0.04617194570135748
+      },
+      "villain": "LJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.6,
+        "threebet": 0.108
+      },
+      "file": "VSOPEN-BB-vs-SB.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.7235796882855706,
+        "threebet": 0.14159980483246865
+      },
+      "hero": "BB",
+      "open_bb": 3.0,
+      "rfi_candidate_only": {
+        "defend": 0.6,
+        "threebet": 0.108
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.6251040723981901,
+        "threebet": 0.13137858220211163
+      },
+      "villain": "SB"
+    },
+    {
+      "baseline": {
+        "defend": 0.3311136571428571,
+        "threebet": 0.05960045828571428
+      },
+      "file": "VSOPEN-BB-vs-UTG.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.6854673044843741,
+        "threebet": 0.13414146099651
+      },
+      "hero": "BB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.3396921812114285,
+        "threebet": 0.06114459261805713
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.23790950226244345,
+        "threebet": 0.034743589743589764
+      },
+      "villain": "UTG"
+    },
+    {
+      "baseline": {
+        "defend": 0.39458854857142855,
+        "threebet": 0.07102593874285713
+      },
+      "file": "VSOPEN-BB-vs-UTG1.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.7145500701491534,
+        "threebet": 0.13983276771613132
+      },
+      "hero": "BB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.40675710444914287,
+        "threebet": 0.07321627880084572
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.258817496229261,
+        "threebet": 0.03814630467571644
+      },
+      "villain": "UTG1"
+    },
+    {
+      "baseline": {
+        "defend": 0.20270516662857144,
+        "threebet": 0.036486929993142854
+      },
+      "file": "VSOPEN-BTN-vs-CO.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.22028073989702368,
+        "threebet": 0.10983929790625664
+      },
+      "hero": "BTN",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.21347028857330283,
+        "threebet": 0.038424651943194506
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.20247360482654603,
+        "threebet": 0.09643288084464556
+      },
+      "villain": "CO"
+    },
+    {
+      "baseline": {
+        "defend": 0.18151073234285714,
+        "threebet": 0.03267193182171428
+      },
+      "file": "VSOPEN-BTN-vs-HJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.21287690022286185,
+        "threebet": 0.10614749737934452
+      },
+      "hero": "BTN",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.18710826804660574,
+        "threebet": 0.03367948824838903
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.1766742081447964,
+        "threebet": 0.07441025641025642
+      },
+      "villain": "HJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.1682455099428571,
+        "threebet": 0.03028419178971428
+      },
+      "file": "VSOPEN-BTN-vs-LJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.20937878067583915,
+        "threebet": 0.10440321871378008
+      },
+      "hero": "BTN",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.17465290659067426,
+        "threebet": 0.03143752318632136
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.15524434389140274,
+        "threebet": 0.06221116138763197
+      },
+      "villain": "LJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.15231228228571428,
+        "threebet": 0.02741621081142857
+      },
+      "file": "VSOPEN-BTN-vs-UTG.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.2042126382442243,
+        "threebet": 0.10182720840149603
+      },
+      "hero": "BTN",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.15625840335725713,
+        "threebet": 0.02812651260430628
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.13505731523378584,
+        "threebet": 0.043609351432880854
+      },
+      "villain": "UTG"
+    },
+    {
+      "baseline": {
+        "defend": 0.18151073234285714,
+        "threebet": 0.03267193182171428
+      },
+      "file": "VSOPEN-BTN-vs-UTG1.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.21287690022286185,
+        "threebet": 0.10614749737934452
+      },
+      "hero": "BTN",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.18710826804660574,
+        "threebet": 0.03367948824838903
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.14207993966817492,
+        "threebet": 0.05299245852187027
+      },
+      "villain": "UTG1"
+    },
+    {
+      "baseline": {
+        "defend": 0.13416010651428573,
+        "threebet": 0.02414881917257143
+      },
+      "file": "VSOPEN-CO-vs-HJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.1635736044932166,
+        "threebet": 0.08974363486642209
+      },
+      "hero": "CO",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.13829741551270858,
+        "threebet": 0.024893534792287543
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.13094268476621418,
+        "threebet": 0.07478431372549021
+      },
+      "villain": "HJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.1243553769142857,
+        "threebet": 0.022383967844571428
+      },
+      "file": "VSOPEN-CO-vs-LJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.16088566595852524,
+        "threebet": 0.08826891420383054
+      },
+      "hero": "CO",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.1290912787844114,
+        "threebet": 0.02323643018119405
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.12353393665158371,
+        "threebet": 0.06291402714932125
+      },
+      "villain": "LJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.11257864342857143,
+        "threebet": 0.020264155817142856
+      },
+      "file": "VSOPEN-CO-vs-UTG.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.15691602651911254,
+        "threebet": 0.08609099635757574
+      },
+      "hero": "CO",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.11549534161188571,
+        "threebet": 0.020789161490139426
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.10903167420814482,
+        "threebet": 0.043633484162895926
+      },
+      "villain": "UTG"
+    },
+    {
+      "baseline": {
+        "defend": 0.13416010651428573,
+        "threebet": 0.02414881917257143
+      },
+      "file": "VSOPEN-CO-vs-UTG1.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.1635736044932166,
+        "threebet": 0.08974363486642209
+      },
+      "hero": "CO",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.13829741551270858,
+        "threebet": 0.024893534792287543
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.11514932126696832,
+        "threebet": 0.053408748114630464
+      },
+      "villain": "UTG1"
+    },
+    {
+      "baseline": {
+        "defend": 0.09509528822857141,
+        "threebet": 0.017117151881142854
+      },
+      "file": "VSOPEN-HJ-vs-LJ.txt",
+      "hero": "HJ",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.09871686024690284,
+        "threebet": 0.01776903484444251
+      },
+      "supported_by_mtt_fit": false,
+      "target": {
+        "defend": 0.10561689291101056,
+        "threebet": 0.06342533936651586
+      },
+      "villain": "LJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.08608955085714286,
+        "threebet": 0.015496119154285714
+      },
+      "file": "VSOPEN-HJ-vs-UTG.txt",
+      "hero": "HJ",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.08831996711497142,
+        "threebet": 0.015897594080694855
+      },
+      "supported_by_mtt_fit": false,
+      "target": {
+        "defend": 0.09454449472096531,
+        "threebet": 0.04275565610859727
+      },
+      "villain": "UTG"
+    },
+    {
+      "baseline": {
+        "defend": 0.10259302262857142,
+        "threebet": 0.018466744073142857
+      },
+      "file": "VSOPEN-HJ-vs-UTG1.txt",
+      "hero": "HJ",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.10575684715677715,
+        "threebet": 0.019036232488219885
+      },
+      "supported_by_mtt_fit": false,
+      "target": {
+        "defend": 0.09933031674208144,
+        "threebet": 0.052265460030165925
+      },
+      "villain": "UTG1"
+    },
+    {
+      "baseline": {
+        "defend": 0.069533868,
+        "threebet": 0.01251609624
+      },
+      "file": "VSOPEN-LJ-vs-UTG.txt",
+      "hero": "LJ",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.07133535805439999,
+        "threebet": 0.012840364449791997
+      },
+      "supported_by_mtt_fit": false,
+      "target": {
+        "defend": 0.08415837104072396,
+        "threebet": 0.042031674208144805
+      },
+      "villain": "UTG"
+    },
+    {
+      "baseline": {
+        "defend": 0.08286359519999999,
+        "threebet": 0.014915447135999998
+      },
+      "file": "VSOPEN-LJ-vs-UTG1.txt",
+      "hero": "LJ",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.08541899193432,
+        "threebet": 0.015375418548177599
+      },
+      "supported_by_mtt_fit": false,
+      "target": {
+        "defend": 0.08884614379918779,
+        "threebet": 0.051624582729639185
+      },
+      "villain": "UTG1"
+    },
+    {
+      "baseline": {
+        "defend": 0.32669771599999997,
+        "threebet": 0.058805588879999995
+      },
+      "file": "VSOPEN-SB-vs-BTN.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.271368875307603,
+        "threebet": 0.17663151034796407
+      },
+      "hero": "SB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.3398578668565142,
+        "threebet": 0.061174416034172556
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.20667722473604822,
+        "threebet": 0.1317239819004525
+      },
+      "villain": "BTN"
+    },
+    {
+      "baseline": {
+        "defend": 0.2732113115428571,
+        "threebet": 0.049178036077714274
+      },
+      "file": "VSOPEN-SB-vs-CO.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.2586142759927899,
+        "threebet": 0.1683296587140769
+      },
+      "hero": "SB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.28772082372923424,
+        "threebet": 0.05178974827126216
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.16147360482654602,
+        "threebet": 0.09180542986425343
+      },
+      "villain": "CO"
+    },
+    {
+      "baseline": {
+        "defend": 0.2446449001142857,
+        "threebet": 0.044036082020571424
+      },
+      "file": "VSOPEN-SB-vs-HJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.24992201066902553,
+        "threebet": 0.1626719429913677
+      },
+      "hero": "SB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.25218940475846857,
+        "threebet": 0.04539409285652434
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.13861085972850679,
+        "threebet": 0.06780241327300152
+      },
+      "villain": "HJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.22676568731428567,
+        "threebet": 0.04081782371657142
+      },
+      "file": "VSOPEN-SB-vs-LJ.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.24581514388433792,
+        "threebet": 0.15999882109352662
+      },
+      "hero": "SB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.2354017436656914,
+        "threebet": 0.04237231385982445
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.12361538461538463,
+        "threebet": 0.05557767722473605
+      },
+      "villain": "LJ"
+    },
+    {
+      "baseline": {
+        "defend": 0.2052904674285714,
+        "threebet": 0.036952284137142855
+      },
+      "file": "VSOPEN-SB-vs-UTG.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.2397499827392815,
+        "threebet": 0.15605106336950333
+      },
+      "hero": "SB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.21060915235108568,
+        "threebet": 0.03790964742319542
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.1000030165912519,
+        "threebet": 0.04140271493212671
+      },
+      "villain": "UTG"
+    },
+    {
+      "baseline": {
+        "defend": 0.2446449001142857,
+        "threebet": 0.044036082020571424
+      },
+      "file": "VSOPEN-SB-vs-UTG1.txt",
+      "fitted_mtt_coeffs": {
+        "defend": 0.24992201066902553,
+        "threebet": 0.1626719429913677
+      },
+      "hero": "SB",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.25218940475846857,
+        "threebet": 0.04539409285652434
+      },
+      "supported_by_mtt_fit": true,
+      "target": {
+        "defend": 0.1103891402714932,
+        "threebet": 0.046903469079939676
+      },
+      "villain": "UTG1"
+    },
+    {
+      "baseline": {
+        "defend": 0.06622273142857142,
+        "threebet": 0.011920091657142855
+      },
+      "file": "VSOPEN-UTG1-vs-UTG.txt",
+      "hero": "UTG1",
+      "open_bb": 2.5,
+      "rfi_candidate_only": {
+        "defend": 0.06793843624228571,
+        "threebet": 0.012228918523611427
+      },
+      "supported_by_mtt_fit": false,
+      "target": {
+        "defend": 0.0761285930408472,
+        "threebet": 0.04160816944024206
+      },
+      "villain": "UTG"
+    }
+  ],
+  "summary": {
+    "all_28": {
+      "baseline": {
+        "defend_mae": 0.04507394310380922,
+        "spots": 28,
+        "threebet_mae": 0.02911779582949244
+      },
+      "rfi_candidate_only": {
+        "defend_mae": 0.051128170559592824,
+        "spots": 28,
+        "threebet_mae": 0.028460923606948182
+      }
+    },
+    "by_hero": {
+      "BB": {
+        "baseline": {
+          "defend_mae": 0.061068694174285065,
+          "threebet_mae": 0.019529934079601057
+        },
+        "fitted_mtt_coeffs": {
+          "defend_mae": 0.3373875947830475,
+          "threebet_mae": 0.06820207069023577
+        },
+        "n": 7,
+        "rfi_candidate_only": {
+          "defend_mae": 0.07154366294361049,
+          "threebet_mae": 0.01998925868715163
+        }
+      },
+      "BTN": {
+        "baseline": {
+          "defend_mae": 0.014951002355630238,
+          "threebet_mae": 0.03402498247191416
+        },
+        "fitted_mtt_coeffs": {
+          "defend_mae": 0.049619309499620984,
+          "threebet_mae": 0.03974172223658735
+        },
+        "n": 5,
+        "rfi_candidate_only": {
+          "defend_mae": 0.021413744569947955,
+          "threebet_mae": 0.03286168887333697
+        }
+      },
+      "CO": {
+        "baseline": {
+          "defend_mae": 0.006649154119629391,
+          "threebet_mae": 0.035948702786370176
+        },
+        "fitted_mtt_coeffs": {
+          "defend_mae": 0.041572821142789984,
+          "threebet_mae": 0.02977665178547815
+        },
+        "n": 4,
+        "rfi_candidate_only": {
+          "defend_mae": 0.010630958632200808,
+          "threebet_mae": 0.03523197797410732
+        }
+      },
+      "HJ": {
+        "baseline": {
+          "defend_mae": 0.007413084810917195,
+          "threebet_mae": 0.03578881346556921
+        },
+        "n": 3,
+        "rfi_candidate_only": {
+          "defend_mae": 0.006517030228265774,
+          "threebet_mae": 0.03524786469730727
+        }
+      },
+      "LJ": {
+        "baseline": {
+          "defend_mae": 0.010303525819955882,
+          "threebet_mae": 0.03311235678089199
+        },
+        "n": 2,
+        "rfi_candidate_only": {
+          "defend_mae": 0.008125082425595884,
+          "threebet_mae": 0.032720236969907196
+        }
+      },
+      "SB": {
+        "baseline": {
+          "defend_mae": 0.11341429195750913,
+          "threebet_mae": 0.02689829823698975
+        },
+        "fitted_mtt_coeffs": {
+          "defend_mae": 0.11243717808213878,
+          "threebet_mae": 0.0918565422055494
+        },
+        "n": 6,
+        "rfi_candidate_only": {
+          "defend_mae": 0.12286652755837198,
+          "threebet_mae": 0.025196895828834432
+        }
+      },
+      "UTG1": {
+        "baseline": {
+          "defend_mae": 0.009905861612275774,
+          "threebet_mae": 0.029688077783099204
+        },
+        "n": 1,
+        "rfi_candidate_only": {
+          "defend_mae": 0.008190156798561485,
+          "threebet_mae": 0.02937925091663063
+        }
+      }
+    },
+    "note": "MTT-derived defense fit only covers CO/BTN/SB/BB defenders. HJ/LJ/UTG+1 remain out of scope for this cross-source candidate test.",
+    "source": "mpcaren/preflop-range-trainer@6606aefc..., 100bb 8-max no-rake GTO Wizard screenshot extraction; queried only, not vendored",
+    "supported_positions_only": {
+      "baseline": {
+        "defend_mae": 0.0549690108737145,
+        "spots": 22,
+        "threebet_mae": 0.02781904779473625
+      },
+      "fitted_mtt_coeffs": {
+        "defend_mae": 0.1568510938201559,
+        "spots": 22,
+        "threebet_mae": 0.06119858938135437
+      },
+      "positions": [
+        "BB",
+        "BTN",
+        "CO",
+        "SB"
+      ],
+      "rfi_candidate_only": {
+        "defend_mae": 0.06307260742427492,
+        "spots": 22,
+        "threebet_mae": 0.027106479183917374
+      }
+    }
+  }
+}
