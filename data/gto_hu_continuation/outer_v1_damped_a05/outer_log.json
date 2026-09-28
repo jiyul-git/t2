@@ -1,0 +1,324 @@
+{
+ "steps": [
+  {
+   "k": 0,
+   "metrics": {
+    "preflop_gap_total": 0.0003111254470083314,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.6241529307932012,
+      "jam_30": 0.0740267773467249,
+      "raise_2": 0.3018203084929486
+     },
+     "rfi_CO": {
+      "fold": 0.7269729706601225,
+      "jam_30": 0.01143369195304954,
+      "raise_2": 0.26159335295361635
+     },
+     "rfi_SB": {
+      "fold": 0.3655312484241366,
+      "jam_30": 0.2402608160167398,
+      "raise_2.5": 0.3942079411267008
+     },
+     "terminal_parent": {
+      "call": 0.8309952660155331,
+      "fold": 3.6396344795462538e-06,
+      "jam_30": 0.16884770606450533,
+      "raise_7": 0.0001533929622840097
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.29810917698646683,
+     "mean": 0.2458478929689478
+    },
+    "table_unallocated_bb": 0.02003261411995272
+   },
+   "injected_table": null,
+   "ranges_hash": "b4890f18751c20b8"
+  },
+  {
+   "k": 1,
+   "metrics": {
+    "preflop_gap_total": 0.0003485195321090257,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.5395848053511948,
+      "jam_30": 0.008126707451684995,
+      "raise_2": 0.45228850242286567
+     },
+     "rfi_CO": {
+      "fold": 0.7269721789020376,
+      "jam_30": 0.011433876343546192,
+      "raise_2": 0.26159395987118456
+     },
+     "rfi_SB": {
+      "fold": 0.3670321733479569,
+      "jam_30": 0.2398718837957337,
+      "raise_2.5": 0.3930959509380851
+     },
+     "terminal_parent": {
+      "call": 0.7443509113618353,
+      "fold": 0.10125234440716632,
+      "jam_30": 0.15439293939570242,
+      "raise_7": 3.815411845635626e-06
+     }
+    },
+    "max_class_frequency_delta": {
+     "rfi_BTN": 0.9999980770848023,
+     "rfi_CO": 0.00010585784912109375,
+     "rfi_SB": 0.22370752692222595,
+     "terminal_parent": 0.9999948623256145
+    },
+    "max_class_frequency_delta_all": 0.9999980770848023,
+    "max_aggregate_frequency_delta": {
+     "rfi_BTN": 0.15046819392991706,
+     "rfi_CO": 7.917580848726402e-07,
+     "rfi_SB": 0.0015009249238203126,
+     "terminal_parent": 0.10124870477268677
+    },
+    "range_distance": {
+     "BTN": {
+      "L1": 0.790604904596973,
+      "L2": 0.10197762691319641
+     },
+     "BB": {
+      "L1": 0.3973143464375501,
+      "L2": 0.05173127437579276
+     }
+    },
+    "value_delta": {
+     "BTN": {
+      "max_abs_dV_bb": 1.2429063174200543,
+      "mean_abs_dV_bb": 0.5164453220670211,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.6982248520710059
+     },
+     "BB": {
+      "max_abs_dV_bb": 2.0631743617613125,
+      "mean_abs_dV_bb": 0.18693317182266,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.07692307692307693
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.29442249210881355,
+     "mean": 0.24179201630695393
+    },
+    "table_unallocated_bb": -0.005766783006669662
+   },
+   "injected_table": "data/gto_hu_continuation/outer_v1_damped_a05/k0/table.json",
+   "ranges_hash": "b22bf24723b6d1a7"
+  },
+  {
+   "k": 2,
+   "metrics": {
+    "preflop_gap_total": 0.0003367246515085476,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.6161899668841102,
+      "jam_30": 0.05884660803170489,
+      "raise_2": 0.3249634393182688
+     },
+     "rfi_CO": {
+      "fold": 0.7269727297049708,
+      "jam_30": 0.011435341934989927,
+      "raise_2": 0.2615919418674559
+     },
+     "rfi_SB": {
+      "fold": 0.36690839563034344,
+      "jam_30": 0.23991460595835998,
+      "raise_2.5": 0.39317700529835
+     },
+     "terminal_parent": {
+      "call": 0.7565320783713354,
+      "fold": 0.09909038392232594,
+      "jam_30": 0.1443719968518139,
+      "raise_7": 5.541541815402954e-06
+     }
+    },
+    "max_class_frequency_delta": {
+     "rfi_BTN": 0.9999888549773459,
+     "rfi_CO": 0.0002294890582561493,
+     "rfi_SB": 0.02347862720489502,
+     "terminal_parent": 0.9999093975529831
+    },
+    "max_class_frequency_delta_all": 0.9999888549773459,
+    "max_aggregate_frequency_delta": {
+     "rfi_BTN": 0.12732506310459685,
+     "rfi_CO": 2.018003728676554e-06,
+     "rfi_SB": 0.00012377771761346024,
+     "terminal_parent": 0.012181167009500116
+    },
+    "range_distance": {
+     "BTN": {
+      "L1": 0.5441739556391553,
+      "L2": 0.07481879515244133
+     },
+     "BB": {
+      "L1": 0.16774093166619522,
+      "L2": 0.036286109616252116
+     }
+    },
+    "value_delta": {
+     "BTN": {
+      "max_abs_dV_bb": 0.4446195264473243,
+      "mean_abs_dV_bb": 0.16524704094309883,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.13609467455621302
+     },
+     "BB": {
+      "max_abs_dV_bb": 0.7745967722783718,
+      "mean_abs_dV_bb": 0.148395913099529,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.07100591715976332
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.2953470794908708,
+     "mean": 0.24819823356222637
+    },
+    "table_unallocated_bb": 0.03142080401770819
+   },
+   "injected_table": "data/gto_hu_continuation/outer_v1_damped_a05/k1/table.json",
+   "ranges_hash": "dbc1269544a8e900"
+  },
+  {
+   "k": 3,
+   "metrics": {
+    "preflop_gap_total": 0.0003606881951203116,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.6053105954132387,
+      "jam_30": 0.037238809750705246,
+      "raise_2": 0.35745060750148094
+     },
+     "rfi_CO": {
+      "fold": 0.726972921185891,
+      "jam_30": 0.011433312722969737,
+      "raise_2": 0.2615937818653214
+     },
+     "rfi_SB": {
+      "fold": 0.3671760920218743,
+      "jam_30": 0.2398092732195309,
+      "raise_2.5": 0.3930146401061483
+     },
+     "terminal_parent": {
+      "call": 0.6765449086291189,
+      "fold": 0.1531484573393456,
+      "jam_30": 0.17026635335750345,
+      "raise_7": 4.028700422224562e-05
+     }
+    },
+    "max_class_frequency_delta": {
+     "rfi_BTN": 0.9998802837208132,
+     "rfi_CO": 0.00018714368343353271,
+     "rfi_SB": 0.02849787473678589,
+     "terminal_parent": 0.9998220964771463
+    },
+    "max_class_frequency_delta_all": 0.9998802837208132,
+    "max_aggregate_frequency_delta": {
+     "rfi_BTN": 0.03248716818321212,
+     "rfi_CO": 2.029212020190213e-06,
+     "rfi_SB": 0.00026769639153084723,
+     "terminal_parent": 0.07998716974221654
+    },
+    "range_distance": {
+     "BTN": {
+      "L1": 0.2597873910425083,
+      "L2": 0.04999162300508782
+     },
+     "BB": {
+      "L1": 0.22688148395631316,
+      "L2": 0.034997889486582
+     }
+    },
+    "value_delta": {
+     "BTN": {
+      "max_abs_dV_bb": 0.1317029633798792,
+      "mean_abs_dV_bb": 0.040988838680782375,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     },
+     "BB": {
+      "max_abs_dV_bb": 0.19222584958484568,
+      "mean_abs_dV_bb": 0.03835270660249473,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.2956236801345327,
+     "mean": 0.2418108323847391
+    },
+    "table_unallocated_bb": 0.024049234243291195
+   },
+   "injected_table": "data/gto_hu_continuation/outer_v1_damped_a05/k2/table.json",
+   "ranges_hash": "c4d2638f05304bd7"
+  },
+  {
+   "k": 4,
+   "metrics": {
+    "preflop_gap_total": 0.00031231585760051336,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.6170105831849445,
+      "jam_30": 0.04799342695042824,
+      "raise_2": 0.3349960023239592
+     },
+     "rfi_CO": {
+      "fold": 0.7269718731154614,
+      "jam_30": 0.011436350827246347,
+      "raise_2": 0.2615917907700556
+     },
+     "rfi_SB": {
+      "fold": 0.3671629425135469,
+      "jam_30": 0.23979044640248093,
+      "raise_2.5": 0.39304661951663944
+     },
+     "terminal_parent": {
+      "call": 0.7351739408101414,
+      "fold": 0.10692971168953204,
+      "jam_30": 0.15787745743953904,
+      "raise_7": 1.888994946065077e-05
+     }
+    },
+    "max_class_frequency_delta": {
+     "rfi_BTN": 0.8423887193202972,
+     "rfi_CO": 0.00031377561390399933,
+     "rfi_SB": 0.005749821662902832,
+     "terminal_parent": 0.9968880844535306
+    },
+    "max_class_frequency_delta_all": 0.9968880844535306,
+    "max_aggregate_frequency_delta": {
+     "rfi_BTN": 0.022454605177521736,
+     "rfi_CO": 3.0381042766102623e-06,
+     "rfi_SB": 3.197941049115638e-05,
+     "terminal_parent": 0.058629032181022556
+    },
+    "range_distance": {
+     "BTN": {
+      "L1": 0.14520938929774493,
+      "L2": 0.030337609802079328
+     },
+     "BB": {
+      "L1": 0.17342851467491216,
+      "L2": 0.030361154321483206
+     }
+    },
+    "value_delta": {
+     "BTN": {
+      "max_abs_dV_bb": 0.052399115167962584,
+      "mean_abs_dV_bb": 0.013363650248130972,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     },
+     "BB": {
+      "max_abs_dV_bb": 0.056034162196949566,
+      "mean_abs_dV_bb": 0.010707140301431047,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.2999309037440218,
+     "mean": 0.24611068465646568
+    },
+    "table_unallocated_bb": 0.015854260106415552
+   },
+   "injected_table": "data/gto_hu_continuation/outer_v1_damped_a05/k3/table.json",
+   "ranges_hash": "fcc5b12e373cae08"
+  }
+ ]
+}
