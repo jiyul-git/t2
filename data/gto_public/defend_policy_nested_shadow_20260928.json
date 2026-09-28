@@ -1,0 +1,229 @@
+{
+  "current_all": {
+    "action_brier": 0.08406728191279131,
+    "attack_mae": 0.10860448385360741,
+    "continue_mae": 0.14843493850197279
+  },
+  "current_holdout": {
+    "action_brier": 0.07568305501777486,
+    "attack_mae": 0.10051440647289683,
+    "continue_mae": 0.14448582177476524
+  },
+  "current_train": {
+    "action_brier": 0.09245150880780752,
+    "attack_mae": 0.11669456123431812,
+    "continue_mae": 0.15238405522917917
+  },
+  "fits": [
+    {
+      "all": {
+        "action_brier": 0.0883148903000756,
+        "attack_mae": 0.13008190946838774,
+        "continue_mae": 0.1628395930605146
+      },
+      "holdout": {
+        "action_brier": 0.0828975759576611,
+        "attack_mae": 0.12242556392621909,
+        "continue_mae": 0.16033966002157274
+      },
+      "params": {
+        "attack_floor": 0.003,
+        "attack_rel_tp": 0.5,
+        "continue_floor": 0.04,
+        "continue_rel_gap": 0.4
+      },
+      "train": {
+        "action_brier": 0.09373220464249045,
+        "attack_mae": 0.13773825501055814,
+        "continue_mae": 0.1653395260994577
+      },
+      "use_hot": false
+    },
+    {
+      "all": {
+        "action_brier": 0.08992350846120974,
+        "attack_mae": 0.12907906826064455,
+        "continue_mae": 0.16214054245246678
+      },
+      "holdout": {
+        "action_brier": 0.08531999585301404,
+        "attack_mae": 0.12179408307689714,
+        "continue_mae": 0.15925128375438394
+      },
+      "params": {
+        "attack_floor": 0.003,
+        "attack_rel_tp": 0.5,
+        "continue_floor": 0.04,
+        "continue_rel_gap": 0.4
+      },
+      "train": {
+        "action_brier": 0.09452702106940616,
+        "attack_mae": 0.13636405344439334,
+        "continue_mae": 0.16502980115055085
+      },
+      "use_hot": true
+    }
+  ],
+  "formula": {
+    "attack0": "min(sigmoid(rank; center=tp, width=max(a_floor,a_rel*tp)), continue)",
+    "continue": "sigmoid(rank; center=tot, width=max(c_floor,c_rel*(tot-tp)))",
+    "with_hot": "attack=hot+(1-hot)*attack0; call=(1-hot)*(continue-attack0); fold=(1-hot)*(1-continue)"
+  },
+  "holdout_stacks": [
+    15,
+    30,
+    100
+  ],
+  "scope": "shadow only: replace current post-threshold w_raise/w_call/w_fold shape with nested smooth cumulative policy",
+  "train_stacks": [
+    10,
+    20,
+    50
+  ],
+  "winner": {
+    "all": {
+      "action_brier": 0.0883148903000756,
+      "attack_mae": 0.13008190946838774,
+      "continue_mae": 0.1628395930605146
+    },
+    "holdout": {
+      "action_brier": 0.0828975759576611,
+      "attack_mae": 0.12242556392621909,
+      "continue_mae": 0.16033966002157274
+    },
+    "params": {
+      "attack_floor": 0.003,
+      "attack_rel_tp": 0.5,
+      "continue_floor": 0.04,
+      "continue_rel_gap": 0.4
+    },
+    "train": {
+      "action_brier": 0.09373220464249045,
+      "attack_mae": 0.13773825501055814,
+      "continue_mae": 0.1653395260994577
+    },
+    "use_hot": false
+  },
+  "winner_holdout_by_node": {
+    "BTN-vs-BB": {
+      "candidate": {
+        "action_brier": 0.14081180264170404,
+        "attack_mae": 0.16540547247525372,
+        "continue_mae": 0.2749702939453367
+      },
+      "current": {
+        "action_brier": 0.1313753990220264,
+        "attack_mae": 0.14715039415504974,
+        "continue_mae": 0.2446836010873111
+      }
+    },
+    "BTN-vs-SB": {
+      "candidate": {
+        "action_brier": 0.0451606524229054,
+        "attack_mae": 0.11971417880569904,
+        "continue_mae": 0.09045409204171295
+      },
+      "current": {
+        "action_brier": 0.05909468331894854,
+        "attack_mae": 0.1277070694039787,
+        "continue_mae": 0.0872575600922358
+      }
+    },
+    "EP-vs-BB": {
+      "candidate": {
+        "action_brier": 0.14673590433049244,
+        "attack_mae": 0.13329190604585456,
+        "continue_mae": 0.2915464084748342
+      },
+      "current": {
+        "action_brier": 0.11688032285593145,
+        "attack_mae": 0.07906769873100594,
+        "continue_mae": 0.26897507557228356
+      }
+    },
+    "EP-vs-BTN": {
+      "candidate": {
+        "action_brier": 0.04098680852658747,
+        "attack_mae": 0.08469557567417546,
+        "continue_mae": 0.0758046878866341
+      },
+      "current": {
+        "action_brier": 0.036531646145445115,
+        "attack_mae": 0.06556206530358179,
+        "continue_mae": 0.06782051713474806
+      }
+    },
+    "EP-vs-MP": {
+      "candidate": {
+        "action_brier": 0.030598398545501972,
+        "attack_mae": 0.06871825985565568,
+        "continue_mae": 0.06687240132330914
+      },
+      "current": {
+        "action_brier": 0.02976099673178243,
+        "attack_mae": 0.06061974286806839,
+        "continue_mae": 0.05302079564092215
+      }
+    },
+    "EP-vs-SB": {
+      "candidate": {
+        "action_brier": 0.05246030272617168,
+        "attack_mae": 0.11423329365910263,
+        "continue_mae": 0.0829648017028282
+      },
+      "current": {
+        "action_brier": 0.04346388810275214,
+        "attack_mae": 0.07329880115821048,
+        "continue_mae": 0.07356525540369029
+      }
+    },
+    "MP-vs-BB": {
+      "candidate": {
+        "action_brier": 0.14125711676300082,
+        "attack_mae": 0.14402682818262597,
+        "continue_mae": 0.2854916972760863
+      },
+      "current": {
+        "action_brier": 0.12117430367104923,
+        "attack_mae": 0.10942055228693803,
+        "continue_mae": 0.2579052914601761
+      }
+    },
+    "MP-vs-BTN": {
+      "candidate": {
+        "action_brier": 0.044018188956847074,
+        "attack_mae": 0.095938744039823,
+        "continue_mae": 0.08247674975270698
+      },
+      "current": {
+        "action_brier": 0.04018920457105829,
+        "attack_mae": 0.08559852764667653,
+        "continue_mae": 0.07177888463075682
+      }
+    },
+    "MP-vs-SB": {
+      "candidate": {
+        "action_brier": 0.044509781650623796,
+        "attack_mae": 0.10684237103618324,
+        "continue_mae": 0.08526410837677093
+      },
+      "current": {
+        "action_brier": 0.04723399341348482,
+        "attack_mae": 0.09144465309405916,
+        "continue_mae": 0.07704216989032055
+      }
+    },
+    "SB-vs-BB": {
+      "candidate": {
+        "action_brier": 0.1424368030127784,
+        "attack_mae": 0.19138900948781512,
+        "continue_mae": 0.2675513594355081
+      },
+      "current": {
+        "action_brier": 0.13112611234527163,
+        "attack_mae": 0.1652745600813978,
+        "continue_mae": 0.24280906683520964
+      }
+    }
+  }
+}
