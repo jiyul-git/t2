@@ -1,0 +1,1158 @@
+{
+ "A": {
+  "A1_open": {
+   "note": "PASS = no persona/memory term moves a neutral-temper player (open == reference with only the existing positional term), with the flag off AND on",
+   "pass": true,
+   "rows": [
+    {
+     "ante": true,
+     "bb": 40,
+     "expect_no_persona_term": 0.1839,
+     "flag": false,
+     "open": 0.1839,
+     "pos": "UTG",
+     "ref": 0.176,
+     "rel_dev_from_ref": 0.0449,
+     "seats": 8
+    },
+    {
+     "ante": true,
+     "bb": 40,
+     "expect_no_persona_term": 0.5063,
+     "flag": false,
+     "open": 0.5063,
+     "pos": "BTN",
+     "ref": 0.519,
+     "rel_dev_from_ref": 0.0244,
+     "seats": 8
+    },
+    {
+     "ante": false,
+     "bb": 150,
+     "expect_no_persona_term": 0.2655,
+     "flag": false,
+     "open": 0.2655,
+     "pos": "CO",
+     "ref": 0.2696,
+     "rel_dev_from_ref": 0.0152,
+     "seats": 9
+    },
+    {
+     "ante": false,
+     "bb": 250,
+     "expect_no_persona_term": 0.3,
+     "flag": false,
+     "open": 0.3,
+     "pos": "BTN",
+     "ref": 0.3085,
+     "rel_dev_from_ref": 0.0276,
+     "seats": 9
+    },
+    {
+     "ante": true,
+     "bb": 40,
+     "expect_no_persona_term": 0.1839,
+     "flag": true,
+     "open": 0.1839,
+     "pos": "UTG",
+     "ref": 0.176,
+     "rel_dev_from_ref": 0.0449,
+     "seats": 8
+    },
+    {
+     "ante": true,
+     "bb": 40,
+     "expect_no_persona_term": 0.5063,
+     "flag": true,
+     "open": 0.5063,
+     "pos": "BTN",
+     "ref": 0.519,
+     "rel_dev_from_ref": 0.0244,
+     "seats": 8
+    },
+    {
+     "ante": false,
+     "bb": 150,
+     "expect_no_persona_term": 0.2655,
+     "flag": true,
+     "open": 0.2655,
+     "pos": "CO",
+     "ref": 0.2696,
+     "rel_dev_from_ref": 0.0152,
+     "seats": 9
+    },
+    {
+     "ante": false,
+     "bb": 250,
+     "expect_no_persona_term": 0.3,
+     "flag": true,
+     "open": 0.3,
+     "pos": "BTN",
+     "ref": 0.3085,
+     "rel_dev_from_ref": 0.0276,
+     "seats": 9
+    }
+   ]
+  },
+  "A2_defense": {
+   "82o": {
+    "30": 0.276,
+    "50": 0.271,
+    "100": 0.27
+   },
+   "J4o": {
+    "30": 0.564,
+    "50": 0.559,
+    "100": 0.557
+   },
+   "classification": "prior-layer (GTO reference/defense width) finding \u2014 neutral temper, pf_defend 10: no persona term is active",
+   "n_allstack_pure_fold_hands": 22,
+   "neutral_mean_continue_on_pure_fold": 0.3681,
+   "neutral_pure_fold_hands_continue_ge_0.5": [
+    "J4o",
+    "T6o",
+    "J2o"
+   ],
+   "node": "EP-vs-BB (BB vs UTG+1), 8-max ante, 2.5bb open",
+   "pass": false
+  }
+ },
+ "ATTR": {
+  "regress9": {
+   "fp_changed_on": 6,
+   "ident_off": true,
+   "match_hist_off_run": {
+    "0.5": 22,
+    "0.6": 790,
+    "0.7": 1859,
+    "0.8": 184,
+    "1.0": 360
+   },
+   "off": {
+    "flop": 101,
+    "hands": 180,
+    "n": 1380,
+    "pfr": 167,
+    "vpip": 317
+   },
+   "on": {
+    "flop": 100,
+    "hands": 180,
+    "n": 1380,
+    "pfr": 163,
+    "vpip": 305
+   },
+   "open_width_off_on": {
+    "BB|<=100": [
+     35,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "BB|>100": [
+     325,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "BTN|<=100": [
+     14,
+     0.3537,
+     0.3104,
+     0.762
+    ],
+    "BTN|>100": [
+     322,
+     0.3191,
+     0.317,
+     0.687
+    ],
+    "CO|<=100": [
+     15,
+     0.2767,
+     0.273,
+     0.762
+    ],
+    "CO|>100": [
+     330,
+     0.2417,
+     0.2366,
+     0.691
+    ],
+    "HJ|<=100": [
+     37,
+     0.2273,
+     0.2056,
+     0.762
+    ],
+    "HJ|>100": [
+     276,
+     0.1916,
+     0.1881,
+     0.687
+    ],
+    "LJ|<=100": [
+     19,
+     0.2269,
+     0.2183,
+     0.762
+    ],
+    "LJ|>100": [
+     288,
+     0.164,
+     0.166,
+     0.683
+    ],
+    "SB|<=100": [
+     14,
+     0.3035,
+     0.2468,
+     0.762
+    ],
+    "SB|>100": [
+     226,
+     0.2357,
+     0.235,
+     0.692
+    ],
+    "UTG+1|<=100": [
+     20,
+     0.1608,
+     0.1647,
+     0.762
+    ],
+    "UTG+1|>100": [
+     383,
+     0.1317,
+     0.1306,
+     0.689
+    ],
+    "UTG+2|<=100": [
+     32,
+     0.1689,
+     0.1641,
+     0.762
+    ],
+    "UTG+2|>100": [
+     351,
+     0.1478,
+     0.1451,
+     0.699
+    ],
+    "UTG|<=100": [
+     35,
+     0.1405,
+     0.1167,
+     0.649
+    ],
+    "UTG|>100": [
+     493,
+     0.1175,
+     0.115,
+     0.606
+    ]
+   }
+  },
+  "turbo8": {
+   "fp_changed_on": 1,
+   "ident_off": true,
+   "match_hist_off_run": {
+    "0.8": 118,
+    "0.9": 287,
+    "1.0": 2784
+   },
+   "off": {
+    "flop": 107,
+    "hands": 180,
+    "n": 1223,
+    "pfr": 190,
+    "vpip": 368
+   },
+   "on": {
+    "flop": 107,
+    "hands": 180,
+    "n": 1223,
+    "pfr": 191,
+    "vpip": 369
+   },
+   "open_width_off_on": {
+    "BB|<=100": [
+     320,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "BB|>100": [
+     167,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "BTN|<=100": [
+     214,
+     0.4749,
+     0.4772,
+     1.0
+    ],
+    "BTN|>100": [
+     101,
+     0.4425,
+     0.4449,
+     0.916
+    ],
+    "CO|<=100": [
+     246,
+     0.3672,
+     0.3669,
+     1.0
+    ],
+    "CO|>100": [
+     141,
+     0.3557,
+     0.3544,
+     0.932
+    ],
+    "HJ|<=100": [
+     208,
+     0.2863,
+     0.2858,
+     1.0
+    ],
+    "HJ|>100": [
+     119,
+     0.2629,
+     0.2622,
+     0.945
+    ],
+    "LJ|<=100": [
+     234,
+     0.256,
+     0.2559,
+     1.0
+    ],
+    "LJ|>100": [
+     197,
+     0.2389,
+     0.2383,
+     0.951
+    ],
+    "SB|<=100": [
+     223,
+     0.3598,
+     0.3609,
+     1.0
+    ],
+    "SB|>100": [
+     110,
+     0.3348,
+     0.3344,
+     0.958
+    ],
+    "UTG+1|<=100": [
+     231,
+     0.2099,
+     0.2097,
+     1.0
+    ],
+    "UTG+1|>100": [
+     169,
+     0.2103,
+     0.2101,
+     0.96
+    ],
+    "UTG|<=100": [
+     278,
+     0.2108,
+     0.2094,
+     1.0
+    ],
+    "UTG|>100": [
+     231,
+     0.1903,
+     0.1901,
+     0.933
+    ]
+   }
+  }
+ },
+ "B": {
+  "defense_delta_by_hand": {
+   "72o": 0.494,
+   "AA": -0.0,
+   "AKs": 0.011,
+   "J8o": 0.581,
+   "KJo": 0.038,
+   "Q9o": 0.136,
+   "T7o": 0.689
+  },
+  "open_delta_boundary": 1.0,
+  "open_delta_far_in": 0.0,
+  "open_delta_far_out": 0.0,
+  "pass": true,
+  "ref_BTN": 0.519,
+  "w_loose": 0.6629,
+  "w_tight": 0.2737
+ },
+ "C": {
+  "n_pure_cont": 107,
+  "n_pure_fold": 22,
+  "neutral_prior_ordering_ok": false,
+  "note": "only 8-max ante rows are judged: the charts are 8-max ante; the 9-max no-ante rows are condition-mismatched and reported only",
+  "pass_mean_ordering": true,
+  "pass_ordering": false,
+  "rows": [
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.559,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.367,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.39,
+    "ordering_ok": false,
+    "persona": "neutral k10",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.557,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.365,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.389,
+    "ordering_ok": false,
+    "persona": "neutral k10",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": false,
+    "max_cont_pure_fold": 0.045,
+    "mean_cont_pure_cont": 0.64,
+    "mean_cont_pure_fold": 0.014,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.013,
+    "ordering_ok": false,
+    "persona": "neutral k10",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.559,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.367,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.39,
+    "ordering_ok": false,
+    "persona": "neutral k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.557,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.365,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.389,
+    "ordering_ok": false,
+    "persona": "neutral k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": false,
+    "max_cont_pure_fold": 0.045,
+    "mean_cont_pure_cont": 0.64,
+    "mean_cont_pure_fold": 0.014,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.013,
+    "ordering_ok": false,
+    "persona": "neutral k5",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.738,
+    "mean_cont_pure_cont": 0.912,
+    "mean_cont_pure_fold": 0.604,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.629,
+    "ordering_ok": false,
+    "persona": "loose9 k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.738,
+    "mean_cont_pure_cont": 0.912,
+    "mean_cont_pure_fold": 0.604,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.629,
+    "ordering_ok": false,
+    "persona": "loose9 k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": false,
+    "max_cont_pure_fold": 0.143,
+    "mean_cont_pure_cont": 0.717,
+    "mean_cont_pure_fold": 0.056,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.056,
+    "ordering_ok": false,
+    "persona": "loose9 k5",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.746,
+    "mean_cont_pure_cont": 0.919,
+    "mean_cont_pure_fold": 0.607,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.634,
+    "ordering_ok": false,
+    "persona": "loose9 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.746,
+    "mean_cont_pure_cont": 0.919,
+    "mean_cont_pure_fold": 0.607,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.634,
+    "ordering_ok": false,
+    "persona": "loose9 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": false,
+    "max_cont_pure_fold": 0.23,
+    "mean_cont_pure_cont": 0.759,
+    "mean_cont_pure_fold": 0.104,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.106,
+    "ordering_ok": false,
+    "persona": "loose9 k2",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.743,
+    "mean_cont_pure_cont": 0.926,
+    "mean_cont_pure_fold": 0.59,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.619,
+    "ordering_ok": false,
+    "persona": "loose10 k0",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.773,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.743,
+    "mean_cont_pure_cont": 0.926,
+    "mean_cont_pure_fold": 0.59,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.619,
+    "ordering_ok": false,
+    "persona": "loose10 k0",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.773,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": false,
+    "max_cont_pure_fold": 0.257,
+    "mean_cont_pure_cont": 0.771,
+    "mean_cont_pure_fold": 0.12,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.124,
+    "ordering_ok": false,
+    "persona": "loose10 k0",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.001,
+    "mean_cont_pure_cont": 0.473,
+    "mean_cont_pure_fold": 0.0,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.0,
+    "ordering_ok": false,
+    "persona": "tight1 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": false,
+    "max_cont_pure_fold": 0.001,
+    "mean_cont_pure_cont": 0.472,
+    "mean_cont_pure_fold": 0.0,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.0,
+    "ordering_ok": false,
+    "persona": "tight1 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": false,
+    "max_cont_pure_fold": 0.0,
+    "mean_cont_pure_cont": 0.304,
+    "mean_cont_pure_fold": 0.0,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.0,
+    "ordering_ok": false,
+    "persona": "tight1 k2",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.559,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.367,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.39,
+    "ordering_ok": false,
+    "persona": "neutral k10",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.557,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.365,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.389,
+    "ordering_ok": false,
+    "persona": "neutral k10",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": true,
+    "max_cont_pure_fold": 0.045,
+    "mean_cont_pure_cont": 0.64,
+    "mean_cont_pure_fold": 0.014,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.013,
+    "ordering_ok": false,
+    "persona": "neutral k10",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.559,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.367,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.39,
+    "ordering_ok": false,
+    "persona": "neutral k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.557,
+    "mean_cont_pure_cont": 0.871,
+    "mean_cont_pure_fold": 0.365,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.389,
+    "ordering_ok": false,
+    "persona": "neutral k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.136,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": true,
+    "max_cont_pure_fold": 0.045,
+    "mean_cont_pure_cont": 0.64,
+    "mean_cont_pure_fold": 0.014,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.013,
+    "ordering_ok": false,
+    "persona": "neutral k5",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.738,
+    "mean_cont_pure_cont": 0.912,
+    "mean_cont_pure_fold": 0.604,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.629,
+    "ordering_ok": false,
+    "persona": "loose9 k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.738,
+    "mean_cont_pure_cont": 0.912,
+    "mean_cont_pure_fold": 0.604,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.629,
+    "ordering_ok": false,
+    "persona": "loose9 k5",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": true,
+    "max_cont_pure_fold": 0.234,
+    "mean_cont_pure_cont": 0.761,
+    "mean_cont_pure_fold": 0.107,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.109,
+    "ordering_ok": false,
+    "persona": "loose9 k5",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.746,
+    "mean_cont_pure_cont": 0.919,
+    "mean_cont_pure_fold": 0.607,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.634,
+    "ordering_ok": false,
+    "persona": "loose9 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.746,
+    "mean_cont_pure_cont": 0.919,
+    "mean_cont_pure_fold": 0.607,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.634,
+    "ordering_ok": false,
+    "persona": "loose9 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.864,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": true,
+    "max_cont_pure_fold": 0.273,
+    "mean_cont_pure_cont": 0.776,
+    "mean_cont_pure_fold": 0.131,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.135,
+    "ordering_ok": false,
+    "persona": "loose9 k2",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.743,
+    "mean_cont_pure_cont": 0.926,
+    "mean_cont_pure_fold": 0.59,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.619,
+    "ordering_ok": false,
+    "persona": "loose10 k0",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.773,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.743,
+    "mean_cont_pure_cont": 0.926,
+    "mean_cont_pure_fold": 0.59,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.619,
+    "ordering_ok": false,
+    "persona": "loose10 k0",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.773,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": true,
+    "max_cont_pure_fold": 0.269,
+    "mean_cont_pure_cont": 0.776,
+    "mean_cont_pure_fold": 0.128,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.133,
+    "ordering_ok": false,
+    "persona": "loose10 k0",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.001,
+    "mean_cont_pure_cont": 0.473,
+    "mean_cont_pure_fold": 0.0,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.0,
+    "ordering_ok": false,
+    "persona": "tight1 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 50
+   },
+   {
+    "ante": true,
+    "flag": true,
+    "max_cont_pure_fold": 0.001,
+    "mean_cont_pure_cont": 0.472,
+    "mean_cont_pure_fold": 0.0,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.0,
+    "ordering_ok": false,
+    "persona": "tight1 k2",
+    "seats": 8,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 100
+   },
+   {
+    "ante": false,
+    "flag": true,
+    "max_cont_pure_fold": 0.0,
+    "mean_cont_pure_cont": 0.182,
+    "mean_cont_pure_fold": 0.0,
+    "mean_ordering_ok": true,
+    "min_cont_pure_cont": 0.0,
+    "ordering_ok": false,
+    "persona": "tight1 k2",
+    "seats": 9,
+    "share_pure_fold_ge_0.5": 0.0,
+    "stack": 150
+   }
+  ]
+ },
+ "D": {
+  "exploit_weight_n0": 0.0,
+  "fold_gap": 0.0,
+  "pass": true,
+  "w": 0.0
+ },
+ "E": {
+  "exploit_weight_curve": [
+   0.0,
+   0.057,
+   0.224,
+   0.406,
+   0.537,
+   0.675,
+   0.767,
+   0.767,
+   0.767,
+   0.767,
+   0.767,
+   0.767,
+   0.767
+  ],
+  "fold_gap_curve": [
+   0.0,
+   0.129,
+   0.203,
+   0.217,
+   0.226,
+   0.207,
+   0.215,
+   0.243,
+   0.265,
+   0.283,
+   0.283,
+   0.283,
+   0.296
+  ],
+  "max_step": 0.053,
+  "monotone_exploit_weight": true,
+  "monotone_w": true,
+  "pass": true,
+  "ramp_step_bound": 0.0667,
+  "w_curve": [
+   0.0,
+   0.06,
+   0.233,
+   0.424,
+   0.56,
+   0.704,
+   0.8,
+   0.8,
+   0.8,
+   0.8,
+   0.8,
+   0.8,
+   0.8
+  ]
+ },
+ "F": {
+  "band_n": 1104,
+  "knowledge_band": [
+   5.0,
+   6.6
+  ],
+  "loose_bottom20_in_band": 240,
+  "loose_top20_in_band": 219,
+  "pass": true,
+  "reasoning_bottom20_in_band": 201,
+  "reasoning_top20_in_band": 176
+ },
+ "FG_population": {
+  "corr_knowledge_reasoning": 0.536,
+  "extreme_offdiagonal_share": {
+   "knowledge_bottom20_reasoning_top20": 0.0062,
+   "knowledge_top20_reasoning_bottom20": 0.006
+  }
+ },
+ "G": {
+  "knowledge_bottom20_in_band": 185,
+  "knowledge_top20_in_band": 164,
+  "pass": true,
+  "reasoning_band_n": 1012
+ },
+ "IDENT": {
+  "pass": true
+ },
+ "MATCH": {
+  "pass": true,
+  "rows": [
+   {
+    "ante": true,
+    "bb": 40,
+    "family": "rfi",
+    "inside": true,
+    "match": 1.0,
+    "pos": "UTG",
+    "seats": 8
+   },
+   {
+    "ante": true,
+    "bb": 100,
+    "family": "rfi",
+    "inside": true,
+    "match": 1.0,
+    "pos": "BTN",
+    "seats": 8
+   },
+   {
+    "ante": true,
+    "bb": 3,
+    "family": "rfi",
+    "inside": true,
+    "match": 1.0,
+    "pos": "CO",
+    "seats": 8
+   },
+   {
+    "ante": true,
+    "bb": 40,
+    "family": "rfi",
+    "inside": false,
+    "match": 0.8523,
+    "pos": "UTG",
+    "seats": 9
+   },
+   {
+    "ante": true,
+    "bb": 150,
+    "family": "rfi",
+    "inside": false,
+    "match": 0.9208,
+    "pos": "BTN",
+    "seats": 8
+   },
+   {
+    "ante": true,
+    "bb": 250,
+    "family": "rfi",
+    "inside": false,
+    "match": 0.7625,
+    "pos": "BTN",
+    "seats": 8
+   },
+   {
+    "ante": false,
+    "bb": 40,
+    "family": "rfi",
+    "inside": false,
+    "match": 0.762,
+    "pos": "BTN",
+    "seats": 8
+   },
+   {
+    "ante": false,
+    "bb": 250,
+    "family": "rfi",
+    "inside": false,
+    "match": 0.4912,
+    "pos": "UTG",
+    "seats": 9
+   },
+   {
+    "ante": false,
+    "bb": 150,
+    "family": "rfi",
+    "inside": false,
+    "match": 0.7011,
+    "pos": "HJ",
+    "seats": 9
+   },
+   {
+    "ante": false,
+    "bb": 300,
+    "family": "rfi",
+    "inside": false,
+    "match": 0.581,
+    "pos": "SB",
+    "seats": 9
+   },
+   {
+    "ante": true,
+    "bb": 50,
+    "family": "defend",
+    "inside": true,
+    "match": 1.0,
+    "opener": "UTG+1",
+    "pos": "BB",
+    "seats": 8
+   },
+   {
+    "ante": true,
+    "bb": 150,
+    "family": "defend",
+    "inside": false,
+    "match": 0.9928,
+    "opener": "UTG+1",
+    "pos": "BB",
+    "seats": 8
+   },
+   {
+    "ante": false,
+    "bb": 100,
+    "family": "defend",
+    "inside": false,
+    "match": 0.5522,
+    "opener": "HJ",
+    "pos": "BB",
+    "seats": 9
+   },
+   {
+    "ante": false,
+    "bb": 250,
+    "family": "defend",
+    "inside": false,
+    "match": 0.8258,
+    "opener": "CO",
+    "pos": "BTN",
+    "seats": 9
+   },
+   {
+    "ante": true,
+    "bb": 5,
+    "family": "defend",
+    "inside": false,
+    "match": 0.9727,
+    "opener": "BTN",
+    "pos": "SB",
+    "seats": 8
+   }
+  ]
+ },
+ "summary": {
+  "A": null,
+  "A1": true,
+  "A2": false,
+  "ATTR": null,
+  "B": true,
+  "C_mean_ordering": true,
+  "C_neutral_prior_ordering": false,
+  "C_worst_hand_ordering": false,
+  "D": true,
+  "E": true,
+  "F": true,
+  "FG_population": null,
+  "G": true,
+  "IDENT": true,
+  "MATCH": true
+ }
+}

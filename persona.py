@@ -374,6 +374,100 @@ def calc_noise(prof, concept, rng):
 OPEN_ELASTICITY = {'UTG':0.75,'UTG+1':0.80,'UTG+2':0.85,'LJ':0.90,'HJ':1.00,
                    'CO':1.10,'BTN':1.25,'SB':1.20,'BB':1.10}
 
+# ---------- GTO-study knowledge / memory (Human Model v2) ----------
+# 학습된 GTO prior 를 **얼마나 믿을 수 있는가**를 human reasoning 과 분리해 둔다.
+#
+#   gto_memory_confidence = gto_knowledge(개념) × gto_condition_match(spot)
+#
+# gto_knowledge  — 그 차트 family 를 얼마나 정확히 기억하는가. 새 개념이 아니다.
+#                  이미 open_pct / limp_p / defend_thresholds 세 곳에 따로 박혀 있던
+#                  `0.10 + 0.80*min(1, sk/8)` 을 한 이름으로 모은 것이다. 값은 같다.
+# gto_condition_match — 지금 spot 이 **공부한 조건**과 얼마나 같은가.
+#                  공부한 조건은 reference layer 가 실제로 교정된 공개 데이터의 범위다
+#                  (아래 GTO_STUDIED). 그 밖이면 가장 가까운 공부한 조건의 차트를
+#                  기억해 적용했을 때 **range 의 몇 %가 틀리는가**로 잰다:
+#                      match = 1 - |w_here - w_studied| / max(w_here, w_studied)
+#                  중첩된 레인지에서 이 값은 '넓은 쪽 레인지 중 행동이 같은 비율'이다.
+#                  새 계수가 없다 — reference layer(gto.rfi / gto.defend_pct) 자체로 잰다.
+#
+# 소비: GTO_MEMORY_V2 가 켜져 있을 때만 open_pct / defend_thresholds 의 acc 가
+# knowledge × match 가 된다. **기본은 꺼짐**이라 기존 행동·지문은 비트까지 같다.
+# 켜면 공부 안 한 조건(9맥스, 노안테, 100bb 초과 등)에서 기억의 비중이 줄고
+# 기존 (1-acc) 이탈 항 — 기질·포지션 감각 쪽 — 의 비중이 커진다.
+import os as _os
+GTO_MEMORY_V2 = _os.environ.get('T2_GTO_MEMORY_V2') == '1'
+
+GTO_FAMILY_CONCEPT = {'rfi': 'pf_range', 'defend': 'pf_defend'}
+
+# 공부한 조건 = reference layer 를 교정한 공개 데이터의 실제 범위.
+#   rfi    : matthiola0/poker-hand-review 8-max MTT RFI, 1bb ante, 3~100bb
+#            (gto.py RFI_BY_BEHIND 7..2, _DEPTH_* 100bb 까지 교정. 250bb 매듭은 외삽)
+#   defend : 같은 소스 vs-open, 8-max ante, 10~100bb (gto._MTT8_ANTE_* 의 출처)
+# 숫자는 데이터 커버리지 사실이지 조정값이 아니다.
+GTO_STUDIED = {
+    'rfi':    {'seats': 8, 'ante': True, 'bb': (3.0, 100.0)},
+    'defend': {'seats': 8, 'ante': True, 'bb': (10.0, 100.0)},
+}
+
+
+def gto_knowledge(prof, family):
+    """차트 family 의 기억 정확도 0.10~0.90. 기존 acc 식 그대로."""
+    return 0.10 + 0.80 * min(1.0, sk(prof, GTO_FAMILY_CONCEPT[family]) / 8.0)
+
+
+def _pos_equiv(pos, seats, seats_to):
+    """뒤에 남은 인원이 같은 자리로 옮긴다. 범위 밖이면 가장 가까운 자리."""
+    import gto as _G
+    import table as _TB
+    if pos in ('SB', 'BB'):
+        return pos
+    b = _G.behind_of(pos, seats)
+    _, pre, _ = _TB.orders(seats_to)
+    cands = [(abs(_G.behind_of(p, seats_to) - b), p) for p in pre
+             if p not in ('SB', 'BB')]
+    return min(cands)[1] if cands else pos
+
+
+def gto_condition_match(family, pos, seats=8, bb=100.0, ante=True,
+                        opener_pos=None, open_bb=2.5):
+    """지금 spot 이 공부한 조건과 얼마나 같은가. 0~1 (1 = 공부한 조건 안)."""
+    import gto as _G
+    S = GTO_STUDIED[family]
+    lo, hi = S['bb']
+    bb = float(bb)
+    inside = (int(seats) == S['seats'] and bool(ante) == S['ante']
+              and lo <= bb <= hi)
+    if inside:
+        return 1.0
+    bb_s = max(lo, min(hi, bb))
+    if family == 'rfi':
+        here = _G.rfi(pos, seats, bb, ante)
+        mem = _G.rfi(_pos_equiv(pos, seats, S['seats']), S['seats'], bb_s, S['ante'])
+    else:
+        op = opener_pos or 'HJ'
+        here = _G.defend_pct(pos, op, seats, bb, ante, open_bb)
+        mem = _G.defend_pct(pos, _pos_equiv(op, seats, S['seats']), S['seats'],
+                            bb_s, S['ante'], open_bb)
+    top = max(here, mem)
+    if top <= 1e-9:
+        return 1.0
+    return max(0.0, 1.0 - abs(here - mem) / top)
+
+
+def gto_memory_confidence(prof, family, pos=None, seats=8, bb=100.0, ante=True,
+                          opener_pos=None, open_bb=2.5, use_match=None):
+    """학습된 prior 를 이 spot 에서 얼마나 믿는가 = knowledge × match.
+
+    use_match=None 이면 GTO_MEMORY_V2 플래그를 따른다. 꺼져 있으면 knowledge 만
+    돌려주므로 기존 acc 와 같다.
+    """
+    k = gto_knowledge(prof, family)
+    um = GTO_MEMORY_V2 if use_match is None else use_match
+    if not um or pos is None:
+        return k
+    return k * gto_condition_match(family, pos, seats, bb, ante, opener_pos, open_bb)
+
+
 def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
     """실제 오픈 폭 = 기준 × (1 + 이탈크기 × 이탈방향).
 
@@ -409,7 +503,9 @@ def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
         base = base*(1.0 - flat) + _G.avg_rfi(seats, bb, ante)*flat
 
     # --- 폭: 크기 × 방향 ---
-    acc = 0.10 + 0.80 * min(1.0, sk(prof, 'pf_range') / 8.0)
+    # 크기 = 학습된 차트를 이 spot 에서 얼마나 믿는가. 플래그가 꺼져 있으면
+    # 예전 `0.10 + 0.80*min(1, pf_range/8)` 과 같은 값이다.
+    acc = gto_memory_confidence(prof, 'rfi', pos, seats, bb, ante)
     loose = temper(prof, 'looseness', 5.0)
     aggr  = temper(prof, 'aggression', 5.0)
     direction = max(-1.0, min(1.0, ((0.75*loose + 0.25*aggr) - 5.0) / 4.0))

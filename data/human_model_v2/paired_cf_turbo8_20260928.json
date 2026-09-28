@@ -1,0 +1,47 @@
+{
+ "summary": {
+  "decisions": 1304,
+  "flips": 1,
+  "flip_types": {
+   "vs_limp:fold>raise": 1
+  },
+  "by_pos": {
+   "CO": 1
+  },
+  "by_stack": {
+   ">100": 1
+  },
+  "rng_only": 0,
+  "decisions_by_sit": {
+   "unopened": 530,
+   "vs_open": 599,
+   "vs_limp": 86,
+   "vs_3bet+": 89
+  },
+  "match_rfi_hist": {
+   "1.0": 517,
+   "0.8": 30,
+   "0.9": 69
+  }
+ },
+ "flips": [
+  {
+   "seed": 3102,
+   "h": 23,
+   "sit": "vs_limp",
+   "pos": "CO",
+   "bb": 176.0,
+   "hand": "A4o",
+   "pct": 0.3846,
+   "first": true,
+   "off": "fold",
+   "on": "raise",
+   "rng_diff": true,
+   "match_rfi": 0.879,
+   "match_def": null,
+   "looseness": 5.3,
+   "pf_range": 8.2,
+   "pf_defend": 7.7
+  }
+ ]
+}

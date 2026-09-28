@@ -173,7 +173,9 @@ def limp_p(prof, feel, hand_pct, pos, traits=None):
     막고 습관적 림프만 남긴 셈인데, 이론과 정반대 방향이다.
     """
     t = traits or _tr(prof)
-    acc = 0.10 + 0.80*min(1.0, PS.sk(prof, 'pf_range')/8.0) if prof.get('concepts') else 0.5
+    # limp_p 호출부는 seats/bb/ante 를 넘기지 않아 condition match 를 잴 수 없다.
+    # knowledge 만 쓴다 (예전 acc 와 같은 값).
+    acc = PS.gto_knowledge(prof, 'rfi') if prof.get('concepts') else 0.5
 
     # --- 이론적 림프 ---
     # feel 0.12(=20bb) 아래에서만. 얕을수록 커진다.
@@ -546,7 +548,8 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
         tp, tot = _finish_widths(base_tp, base_tot)
     else:
         # 크기 <- 개념, 방향 <- 기질. 상한 0.90 (완벽한 사람은 없다)
-        acc = 0.10 + 0.80*min(1.0, PS.sk(prof, 'pf_defend')/8.0)
+        acc = PS.gto_memory_confidence(prof, 'defend', def_pos, seats, bb, ante,
+                                       opener_pos=opener_pos, open_bb=open_bb)
         loose = PS.temper(prof, 'looseness', 5.0)
         aggr = PS.temper(prof, 'aggression', 5.0)
         d_call = max(-1.0, min(1.0, (loose - 5.0)/4.0))
