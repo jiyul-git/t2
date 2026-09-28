@@ -111,6 +111,7 @@ def main():
     target=float(os.getenv("GT9_TARGET","0.15"))
     max_raises=int(os.getenv("GT9_MAX_RAISES","2"))
     realization=os.getenv("GT9_REALIZATION","static")
+    run_seed=int(os.getenv("GT9_SEED","0"))
     # GTOpen's legacy ante is uniform and outside the live stack cap.
     # 1/9 bb each gives the same 1bb dead-money total as T2 BBA but is NOT exact BBA.
     ante=1.0/9.0
@@ -179,6 +180,11 @@ def main():
       "schema_version":"gto_9max_solver_pilot_v1",
       "table_players":9,
       "stack_bb":stack,
+      "run_seed":run_seed,
+      "randomization":{
+        "pairwise_equity_seed":int(os.getenv("PREFLOP_EQ_SEED",str(run_seed))),
+        "multiway_deck_seed":int(os.getenv("PREFLOP_MULTIWAY_SEED",str(run_seed))),
+      },
       "target_model":"T2 1BB BBA",
       "solver_ante_model":{
         "kind":"uniform_per_player_same_total_dead_money",
@@ -198,13 +204,14 @@ def main():
       "rfi_combo_weighted":rfi_summary,
       "spots":spots,
     }
-    path=f"data/gto_9max_solver_pilot_{int(stack)}bb_{realization}.json"
+    suffix=f"_seed{run_seed}" if os.getenv("GT9_SEED") is not None else ""
+    path=f"data/gto_9max_solver_pilot_{int(stack)}bb_{realization}{suffix}.json"
     os.makedirs("data",exist_ok=True)
     with open(path,"w") as f:json.dump(out,f,indent=2,sort_keys=True)
     print("PILOT_SUMMARY",json.dumps({
       "stack":stack,"rfi":rfi_summary,"spot_count":len(spots),
       "gap_total":st.get("gap_total"),"iteration":st.get("iteration"),
-      "realization":realization,"output":path},sort_keys=True))
+      "realization":realization,"seed":run_seed,"output":path},sort_keys=True))
 
 if __name__=="__main__":
     main()
