@@ -232,10 +232,14 @@ impl EquityTable {
         let pairs: Vec<(usize, usize)> = (0..NUM_CLASSES)
             .flat_map(|i| (i..NUM_CLASSES).map(move |j| (i, j)))
             .collect();
+        let seed_base = std::env::var("PREFLOP_EQ_SEED")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(0);
         let results: Vec<((usize, usize), f32)> = pairs
             .par_iter()
             .map(|&(i, j)| {
-                let mut rng = Rng::new((i * NUM_CLASSES + j) as u64);
+                let mut rng = Rng::new(((i * NUM_CLASSES + j) as u64) ^ seed_base);
                 let mut won = 0f64;
                 let mut n = 0u32;
                 let mut deck = [0u8; 52];
