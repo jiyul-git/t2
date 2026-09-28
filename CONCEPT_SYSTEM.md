@@ -251,3 +251,87 @@ Latent 측정 (q=0.78, 5,000명):
 4. calc_noise bias 방향을 양마다 관측으로 정한다. `error_rate` 를 제거하거나 배선한다.
 5. `exploit_weight` / `read_opponent['w']` 통합.
 6. latent 분리 여부는 차트 퀴즈형 관측 지표를 만든 뒤 결정한다.
+
+
+## 12. Human Model v3 — learned chart -> condition reasoning -> temperament (2026-09-29)
+
+Branch: `chatgpt/human-model-v3-20260929`.  Opt-in only via
+`T2_PREFLOP_REASONING_V3=1`; OFF preserves the v2/production path.
+
+### 12-1. Problem
+
+Human Model v2 separated GTO chart knowledge from condition match, but when a
+spot was unfamiliar it reduced memory confidence and let the existing
+looseness/aggression deviation fill the missing weight.  That means a player
+who memorized an 8-max ante chart but faces 9-max/no-ante/deeper play becomes
+"more loose/tight" instead of first trying to reason about the changed
+conditions.
+
+That conflates three different human mechanisms:
+
+1. **recall** — what studied chart was remembered;
+2. **reasoning** — how well the player adjusts that chart to a new stack/table/
+   dead-money condition;
+3. **temperament/habit** — stable loose/tight/aggressive deviation.
+
+### 12-2. V3 split
+
+No new strategic concept or latent factor is introduced.
+
+- recall accuracy: existing `pf_range` / `pf_defend` through
+  `gto_knowledge()`;
+- depth adjustment: existing `stack_decay`;
+- table-size/position adjustment: existing `positional`;
+- ante/dead-money adjustment: existing `potodds`.
+
+`gto_studied_anchor()` constructs the nearest chart that could actually have
+been studied from `GTO_STUDIED`.
+
+`preflop_reasoning_confidence()` activates only the skills relevant to the
+conditions that differ and averages their existing 0..10 scores on a 0..1
+scale.  There is no new mismatch coefficient: the size/direction of the
+correction is the actual studied-anchor -> current-reference width delta.
+
+`preflop_reasoned_width()` then applies:
+
+1. remembered studied width, including the ordinary knowledge-dependent
+   temperament deviation;
+2. plus a reasoning fraction of the anchor -> current-condition delta.
+
+Condition mismatch therefore does **not** enlarge temperament deviation.
+
+### 12-3. Current consumers
+
+Implemented behind the V3 flag:
+
+- `persona.open_pct` (RFI width);
+- `preflop.defend_thresholds` (total continue and 3bet widths).
+
+`limp_p` is intentionally unchanged for now: its current call contract lacks
+seats/ante/current chart context, so inventing a condition adjustment there
+would mix semantics.  It continues to use chart knowledge only.
+
+### 12-4. Structural verifier
+
+`tools/verify_human_model_v3.py` checks:
+
+- studied/matched spots are identical between V2 and V3;
+- in unfamiliar RFI spots, stronger reasoning moves the remembered chart
+  toward the current-condition reference;
+- the same is true independently for defend total width and 3bet width;
+- a weak reasoner stays nearer the studied anchor;
+- V3 uses only already-declared concepts.
+
+This verifier is about mechanism, not population calibration.  It does not
+assert that the current GTO reference layer is correct and it does not choose
+target human frequencies.
+
+### 12-5. Next work
+
+After the V3 structural verifier is runnable in CI/local:
+
+1. paired counterfactual fixtures across matched vs mismatched conditions;
+2. unify duplicate exploit-weight formulas;
+3. separate concept-specific calculation-error directions;
+4. test recency/forgetting in opponent memory;
+5. only then revisit deviation shape (multiplicative width vs logit shift).
