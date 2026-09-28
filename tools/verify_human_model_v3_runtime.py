@@ -23,8 +23,12 @@ sys.path.insert(0, str(ROOT))
 FIXTURES = {
     # 8-max + ante + ~50bb: inside the declared studied RFI/defend family.
     'matched8': dict(seeds=range(4200, 4204),
+                     # turbo has ante_from=1; hands_per_level is overridden so
+                     # the fixture stays on one blind level.  With bb=230 and
+                     # 5,000 chips this starts at ~21.7bb, squarely inside the
+                     # studied 8-max + ante depth range.
                      kw=dict(entries=100, start_stack=5000, hero_seat=7,
-                             seats=8, hands_per_level=200), hands=16),
+                             seats=8, hands_per_level=200, fmt='turbo'), hands=16),
     # 9-max + ~200bb: table-size and depth mismatch by construction.
     'mismatch9deep': dict(seeds=range(4300, 4304),
                           kw=dict(entries=100, start_stack=20000, hero_seat=7,
