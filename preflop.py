@@ -547,15 +547,31 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     if not (isinstance(prof, dict) and prof.get('concepts')):
         tp, tot = _finish_widths(base_tp, base_tot)
     else:
-        # 크기 <- 개념, 방향 <- 기질. 상한 0.90 (완벽한 사람은 없다)
-        acc = PS.gto_memory_confidence(prof, 'defend', def_pos, seats, bb, ante,
-                                       opener_pos=opener_pos, open_bb=open_bb)
         loose = PS.temper(prof, 'looseness', 5.0)
         aggr = PS.temper(prof, 'aggression', 5.0)
         d_call = max(-1.0, min(1.0, (loose - 5.0)/4.0))
         d_tb = max(-1.0, min(1.0, ((0.45*loose + 0.55*aggr) - 5.0)/4.0))
-        tot = base_tot * (1.0 + (1.0-acc)*d_call*0.95)
-        tp = base_tp * (1.0 + (1.0-acc)*d_tb*1.10)
+        if getattr(PS, 'PREFLOP_REASONING_V3', False):
+            # 공부한 defend chart를 먼저 기억하고, 낯선 stack/table/ante의
+            # 차이만 기존 reasoning skills로 보정한다. condition mismatch가
+            # temperament deviation 자체를 키우지는 않는다.
+            anchor_tp, anchor_tot = PS.gto_studied_anchor(
+                'defend', def_pos, seats, bb, ante,
+                opener_pos=opener_pos, open_bb=open_bb)
+            tot = PS.preflop_reasoned_width(
+                prof, 'defend', base_tot, d_call, def_pos, seats, bb, ante,
+                opener_pos=opener_pos, open_bb=open_bb,
+                deviation_scale=0.95, anchor=anchor_tot)
+            tp = PS.preflop_reasoned_width(
+                prof, 'defend', base_tp, d_tb, def_pos, seats, bb, ante,
+                opener_pos=opener_pos, open_bb=open_bb,
+                deviation_scale=1.10, anchor=anchor_tp)
+        else:
+            # v2 / production path: V3 OFF이면 기존 수치 그대로.
+            acc = PS.gto_memory_confidence(prof, 'defend', def_pos, seats, bb, ante,
+                                           opener_pos=opener_pos, open_bb=open_bb)
+            tot = base_tot * (1.0 + (1.0-acc)*d_call*0.95)
+            tp = base_tp * (1.0 + (1.0-acc)*d_tb*1.10)
         tp, tot = _finish_widths(tp, tot)
 
     # 다인원. 축소율을 상수로 두면 안 된다 —
