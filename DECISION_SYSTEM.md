@@ -51,7 +51,134 @@ JUDGMENT는 “현재 무엇이 일어나고 있는가”를 답하며 액션을
 
 집행 단계가 새로운 motive, aggression, fear, tilt, strategic sizing을 발명하면 구조 위반이다.
 
-## 2. Emotion rule
+## 2. Dual-source strategy rule — learned GTO prior + human reasoning
+
+T2의 목표는 solver를 runtime 내부에서 재현하는 것이 아니라, **solver/GTO를 공부한 경험을 가진 인간이 실제 테이블에서 추론하는 방식**을 모델링하는 것이다.
+
+전략 판단에는 두 소스가 동시에 존재해야 한다.
+
+### A. Learned GTO prior / memory
+
+solver, chart, study material을 통해 이미 학습된 기준점이다.
+
+예:
+- 포지션별 RFI/defense의 대략적 범위와 혼합 빈도
+- 자주 공부한 stack-depth별 preflop pattern
+- 특정 board family의 range/nut advantage에 대한 학습된 감각
+- 반복 학습한 sizing/frequency pattern
+
+이 층은 매 의사결정마다 CFR/solver를 다시 실행한 결과가 아니다.
+사람이 solver 결과를 공부하고 기억하는 것과 같은 **학습된 prior**다.
+
+### B. Human reasoning
+
+현재 실제 상황을 보고 추론하는 층이다.
+
+예:
+- hole cards / board / blockers
+- position / effective stack / SPR
+- pot odds / implied odds
+- public action story
+- perceived opponent range
+- reads / tendencies / confidence
+- ICM / money-jump / table context
+- exploit opportunity
+- 계산 능력과 개념 숙련도
+
+정확히 외운 spot이 아니거나 현재 조건이 학습된 prior와 다르면 reasoning이 보간·수정한다.
+
+### Combination rule
+
+최종 판단은 개념적으로 다음 구조를 따른다.
+
+```
+learned GTO prior / memory
+        +
+current human reasoning
+        +
+opponent / tournament adaptation
+        ↓
+JUDGMENT
+        ↓
+PLAN
+        ↓
+ACTION
+```
+
+GTO frequency를 곧바로 production action으로 복사하지 않는다.
+반대로 human reasoning만 사용해 이미 학습 가능한 안정적 전략 지식을 매번 처음부터 재발명하지도 않는다.
+
+GTO-study skill / memory가 높은 player일수록 matched spot에서 prior를 강하게 신뢰한다.
+낮은 player일수록 heuristic/reasoning 의존도가 높고 solver baseline에서 더 멀어질 수 있다.
+
+조건 mismatch가 커질수록 exact memorization의 신뢰도는 낮아지고 reasoning 비중이 커져야 한다.
+
+### GTO discrepancy classification
+
+T2와 GTO reference의 차이는 자동으로 bug가 아니다. 최소 세 종류로 분리한다.
+
+1. **reasoning error**
+   - 잘못된 hand ordering
+   - pot odds/range/story 계산 오류
+   - 잘못된 position/stack semantics
+   - 의도와 다른 구현
+   - 이런 차이는 수정 대상이다.
+
+2. **human approximation / bounded knowledge**
+   - solver는 37% mix인데 player는 "가끔" 수준으로만 기억
+   - exact stack/size/node를 외우지 못해 근사
+   - 제한된 계산/기억 때문에 coarse 전략 사용
+   - 의도된 인간 모델일 수 있으며 자동 수정하지 않는다.
+
+3. **intentional exploit / adaptation**
+   - 상대가 과폴드/과콜/과3bet 등 특정 경향을 보여 GTO baseline에서 의도적으로 이탈
+   - ICM/table state/read confidence 때문에 baseline을 조정
+   - 이 경우 GTO와의 차이는 목적 있는 PLAN 변화다.
+
+검증에서 discrepancy를 발견하면 먼저 이 세 범주 중 무엇인지 분류하고 나서 수정 여부를 결정한다.
+
+### Calibration rule
+
+공개 GTO/solver 데이터의 역할은 **T2를 solver clone으로 만드는 것**이 아니다.
+
+사용 목적:
+- learned prior의 기준점 교정
+- reasoning이 명백히 잘못된 영역 탐지
+- hand ordering / stack / position / range semantics 검산
+- 높은 GTO-study skill player가 접근해야 할 reference behavior 정의
+
+금지:
+- `GTO와 다름 -> 즉시 production constant 수정`
+- 단일 hand/단일 chart를 근거로 global tuning
+- persona/read/exploit reasoning을 solver frequency로 덮어쓰기
+
+현재 진행 중인 RFI/defense/POST_RANGE calibration은 이 원칙에 따라 **GTO prior/reference layer를 교정하는 작업**으로 해석한다.
+
+### Implementation consequence
+
+향후 두 축을 모두 구현·검증해야 한다.
+
+**GTO knowledge axis**
+- public/solver frequency database
+- spot condition matching
+- learned prior representation
+- study/memory accuracy and confidence
+- unseen/mismatched spot interpolation
+- exact mix를 어느 정도 기억하는지에 대한 player variation
+
+**Human reasoning axis**
+- current range reconstruction
+- action-story interpretation
+- relative strength / equity / blockers
+- stack/SPR/pot-odds reasoning
+- opponent reads / exploit
+- ICM/money-jump
+- bounded calculation, approximation, mistakes
+
+두 축의 결합 자체도 first-class design 대상이다.
+한쪽을 다른 쪽의 fallback으로 취급하지 않는다.
+
+## 3. Emotion rule
 
 현재 tilt/emotion은 PLAN 선택/수정에만 들어간다.
 
@@ -61,7 +188,7 @@ JUDGMENT는 “현재 무엇이 일어나고 있는가”를 답하며 액션을
 
 현재 코드는 base/planning/execution profile view를 갖지만 production consumer 전환은 아직 F7-C logic barrier다.
 
-## 3. Sequential situation coverage
+## 4. Sequential situation coverage
 
 ### Preflop
 
@@ -91,7 +218,7 @@ JUDGMENT는 “현재 무엇이 일어나고 있는가”를 답하며 액션을
 Turn/river는 flop shortcut을 복사하지 않고 새 카드와 기존 story를 다시 판단한다.
 River에는 future-card semibluff가 없다.
 
-## 4. Current production pipeline
+## 5. Current production pipeline
 
 ```
 driver
@@ -116,7 +243,7 @@ driver
 - opponent identity가 필요한 곳에서 union/scalar로 압축하지 않는다.
 - response to new bet/raise는 새 response-plan event다.
 
-## 5. Preflop audit status
+## 6. Preflop audit status
 
 | Node | 상태 | 핵심 |
 |---|---|---|
@@ -138,7 +265,7 @@ P7 remaining gaps:
 - `verify_preflop_closure.py`: 4/4 PASS
 - P2/P3/P4/P5/P6 targeted verifier는 각각 당시 전 항목 PASS.
 
-## 6. Postflop audit status
+## 7. Postflop audit status
 
 | Node | 상태 | 핵심 |
 |---|---|---|
@@ -153,7 +280,7 @@ P7 remaining gaps:
 
 F7 downstream multiway semantics는 `RANGE_MODEL.md`에서 관리한다.
 
-## 7. Global open boundaries
+## 8. Global open boundaries
 
 ### P7
 cold-facing re-raise의 dedicated judgment/plan model.
@@ -176,7 +303,7 @@ execution이 strategy size를 silently reshape하지 않는지 최종 semantic c
 main/side-pot mixed eligibility에서 scalar pot/equity/EV를 쓰면 안 된다.
 pot-layer별 equity/EV가 판단층으로 연결되어야 한다.
 
-## 8. Audit checklist
+## 9. Audit checklist
 
 새 전략/수정마다 확인:
 1. judgment producer
@@ -195,14 +322,14 @@ pot-layer별 equity/EV가 판단층으로 연결되어야 한다.
 상태 표기:
 `KEEP / SPLIT / ADD / REROUTE / REMOVE_COMPAT / ADD_OBSERVATION / ARCH_MISMATCH`.
 
-## 9. Verification philosophy
+## 10. Verification philosophy
 
 - rule/legal fix와 strategy change를 분리한다.
 - intentional behavior change는 frozen regression mismatch를 “업데이트”하기 전에 원인 attribution부터 한다.
 - random stream 변화도 action 변화와 함께 검사한다.
 - 새로운 임계값/계수는 구조 감사의 빈칸을 메우기 위한 임시 수치로 발명하지 않는다.
 
-## 10. Historical sources
+## 11. Historical sources
 
 Consolidation 이전 원문:
 - `POKER_DECISION_MODEL_V2.md`
@@ -217,7 +344,7 @@ Consolidation 이전 원문:
 정확한 원문은 Git history의 pre-consolidation commit `4cfbfc3c...`에서 확인한다.
 
 
-## 11. logic-tuning branch ownership map
+## 12. logic-tuning branch ownership map
 
 이 section은 `chatgpt/logic-tuning-20260927` 계열에서 추가된 최신 semantic ownership을 기록한다.
 
