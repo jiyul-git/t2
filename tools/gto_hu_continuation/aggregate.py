@@ -58,6 +58,8 @@ def main():
     ap.add_argument('--outer', type=int, default=0)
     ap.add_argument('--boot', type=int, default=2000)
     ap.add_argument('--max-unallocated', type=float, default=0.05)
+    ap.add_argument('--estimator', default='ht_rho', choices=['ht_rho', 'fixed_norm'],
+                    help='fixed_norm: divide by the panel file\'s per-player fixed_normaliser instead of rho')
     a = ap.parse_args()
     term = json.load(open(a.terminal))
     panel = json.load(open(a.panel))
@@ -107,7 +109,11 @@ def main():
                     tot += p_str[s] * num / len(boards)
                 elif den > 0:
                     tot += p_str[s] * num / den
-            vals.append(tot / sum(p_str.values()) / (rho if estimator == 'ht_rho' else 1.0))
+            if estimator == 'ht_rho' and a.estimator == 'fixed_norm':
+                norm = panel['fixed_normaliser'][pos]
+            else:
+                norm = rho if estimator == 'ht_rho' else 1.0
+            vals.append(tot / sum(p_str.values()) / norm)
         return vals
 
     rng = random.Random(20260928 + a.outer)
@@ -119,11 +125,14 @@ def main():
         veq = estimate('equity', pos, strata)
         vratio = estimate('gross_eps', pos, strata, 'ratio')
         boots = []
-        for _ in range(a.boot):
+        for _ in range(a.boot if max(len(b) for b in strata.values()) > 1 else 0):
             draw = {s: [rng.choice(bs) for _ in bs] for s, bs in strata.items()}
             boots.append(estimate('gross_eps', pos, draw))
-        lo = [sorted(bb[h] for bb in boots)[int(0.025 * a.boot)] for h in range(169)]
-        hi = [sorted(bb[h] for bb in boots)[int(0.975 * a.boot) - 1] for h in range(169)]
+        if boots:
+            lo = [sorted(bb[h] for bb in boots)[int(0.025 * len(boots))] for h in range(169)]
+            hi = [sorted(bb[h] for bb in boots)[int(0.975 * len(boots)) - 1] for h in range(169)]
+        else:  # one flop per stratum: no within-stratum resampling possible
+            lo, hi = list(v), list(v)
         seats.append({'seat': pl['seat'], 'position': pos, 'gross': v, 'gross_ci95_lo': lo, 'gross_ci95_hi': hi,
                       'gross_br': vbr, 'equity_panel': veq, 'gross_ratio': vratio,
                       'realization_vs_equity': [v[h] / (term['pot_bb'] * veq[h]) if veq[h] > 1e-9 else None for h in range(169)],
@@ -140,7 +149,7 @@ def main():
         'schema': 't2_hu_continuation_table_v1', 'value_convention': 'gross_share', 'zero_reach_definition': key['zero_reach_definition'],
         'node': term['terminal_node'], 'live': term['terminal_live_mask'], 'pot_bb': term['pot_bb'],
         'outer_iteration': a.outer, 'seats': seats,
-        'estimator': 'ht_rho',
+        'estimator': a.estimator,
         'invariant': {'sum_range_weighted_gross': total, 'pot': term['pot_bb'], 'unallocated_bb': term['pot_bb'] - total,
                       'ratio_estimator_unallocated_bb': term['pot_bb'] - total_ratio},
         'provenance': {'terminal_file': a.terminal, 'ranges_hash_fnv1a64': term['ranges_hash_fnv1a64'],

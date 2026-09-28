@@ -90,6 +90,7 @@ def main():
     ap.add_argument('--postflop', nargs=3, default=['1000', '0.3', '25'], metavar=('MAX_ITERS', 'TARGET_PCT', 'EVERY'))
     ap.add_argument('--boot', default='2000')
     ap.add_argument('--alpha', type=float, default=1.0)
+    ap.add_argument('--estimator', default='ht_rho')
     ap.add_argument('--damp-from', type=int, default=None, help='first outer step whose injected table is blended')
     ap.add_argument('--seed-from', default=None, help='undamped run dir whose steps < damp-from are copied')
     ap.add_argument('--stop-before-panel', type=int, default=None, help='solve P_K, then stop before its panel')
@@ -99,8 +100,8 @@ def main():
     commit = subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
     log_path = os.path.join(a.out, 'outer_log.json')
     log = json.load(open(log_path)) if os.path.exists(log_path) else {'steps': []}
-    if a.alpha < 1.0:
-        assert a.damp_from is not None and a.seed_from, '--alpha needs --damp-from and --seed-from'
+    if a.alpha < 1.0 and a.seed_from:
+        assert a.damp_from is not None, '--alpha needs --damp-from'
         import shutil
         for k in range(a.damp_from):
             src, dst = os.path.join(a.seed_from, f'k{k}'), os.path.join(a.out, f'k{k}')
@@ -137,13 +138,13 @@ def main():
             print(f'k{k}: preflop only (stopped before panel)', flush=True)
             break
         table = os.path.join(d, 'table.json')
-        damped = a.alpha < 1.0 and k >= a.damp_from
+        damped = a.alpha < 1.0 and k >= (a.damp_from if a.damp_from is not None else 1) and k > 0
         measured = os.path.join(d, 'table_measured.json') if damped else table
         if not os.path.exists(measured):
             run([os.path.join(BIN, 't2_cont_panel'), term, a.menu, a.panel, os.path.join(d, 'flops'), *a.postflop],
                 {'T2_SOURCE_COMMIT': commit})
             run(['python3', os.path.join(ROOT, 'tools/gto_hu_continuation/aggregate.py'), term, a.panel,
-                 os.path.join(d, 'flops'), measured, '--outer', str(k), '--boot', a.boot])
+                 os.path.join(d, 'flops'), measured, '--outer', str(k), '--boot', a.boot, '--estimator', a.estimator])
         if damped and not os.path.exists(table):
             vm = json.load(open(measured))
             vo = json.load(open(table_in))

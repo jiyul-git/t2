@@ -1,0 +1,18 @@
+{
+ "schema": "flop_panel_v1",
+ "id": "panel_quantcheck_Kc7d4h",
+ "panel": [
+  {
+   "board": "Kc7d4h",
+   "stratum": "rainbow_dry",
+   "weight": 0.15529411764705883
+  }
+ ],
+ "strata": {
+  "rainbow_dry": {
+   "probability": 0.15529411764705883
+  }
+ },
+ "purpose": "storage quantization check (f32 vs compressed), same ranges/menu",
+ "panel_hash_sha256": "237a420b8088da89adbeedcb50c937c3abe9e1ed1899776b9e15e0511fa380e9"
+}

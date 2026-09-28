@@ -25,6 +25,8 @@ gpu = ["dep:cudarc"]
 t2-profile = []
 # T2 HU-continuation prototype: inject solved values at one terminal (T2_CONT_FILE). Off by default.
 t2-cont = []
+# T2 joint-CFR prototype: postflop panel solved jointly with the preflop tree at one terminal. Off by default.
+t2-joint = []
 preflop-research = ["gpu"]
 
 [[example]]
@@ -51,6 +53,10 @@ name = "t2_cont_flop"
 
 [[example]]
 name = "t2_cont_panel"
+
+[[example]]
+name = "t2_joint"
+required-features = ["t2-joint"]
 
 [[example]]
 name = "learned_decisions"

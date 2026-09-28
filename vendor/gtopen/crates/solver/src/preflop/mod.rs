@@ -17,6 +17,8 @@ pub mod equity;
 pub mod t2prof;
 #[cfg(feature = "t2-cont")]
 pub mod t2cont;
+#[cfg(feature = "t2-joint")]
+pub mod t2joint;
 pub mod multiway;
 pub mod reference;
 pub mod dataset;
@@ -1839,6 +1841,17 @@ impl PreflopSolver {
     ) -> Vec<f32> {
         let kind = self.nodes[node].kind;
         if kind != KIND_ACTION {
+            #[cfg(feature = "t2-joint")]
+            {
+                let how = match mode {
+                    0 => t2joint::Eval::Update(self.iteration + 1),
+                    2 | 3 => t2joint::Eval::BestResponse,
+                    _ => t2joint::Eval::Average,
+                };
+                if let Some(out) = t2joint::payoff(self, node, p, reaches, how) {
+                    return out;
+                }
+            }
             let mut out = vec![0f32; NUM_CLASSES];
             self.terminal_value(node, p, reaches, &mut out);
             return out;
@@ -3699,6 +3712,14 @@ impl PreflopSolver {
         checkpoint_tests::observe_checkpoint_visit(self);
         if depth < PAR_DEPTH && self.stop_requested() { return None; }
         let nd = &self.nodes[node];
+        #[cfg(feature = "t2-joint")]
+        if nd.kind != KIND_ACTION && t2joint::get().map_or(false, |j| j.node == node) {
+            let br = if needs.br { t2joint::payoff(self, node, p, reaches, t2joint::Eval::BestResponse) } else { None };
+            let avg = if needs.avg { t2joint::payoff(self, node, p, reaches, t2joint::Eval::Average) } else { None };
+            if br.is_some() || avg.is_some() {
+                return Some(CheckpointValues { br, avg });
+            }
+        }
         if nd.kind != KIND_ACTION {
             let mut values = vec![0f32; NUM_CLASSES];
             self.terminal_value(node, p, reaches, &mut values);

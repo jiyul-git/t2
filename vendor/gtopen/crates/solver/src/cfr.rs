@@ -139,6 +139,26 @@ impl Solver {
         Ok(out)
     }
 
+    /// T2 joint-CFR prototype (feature `t2-joint`, off by default): one alternating
+    /// update of player `p` with externally supplied reaches, using the solver's own
+    /// algorithm and iteration-`t` discounts (same body as `iterate` for one player).
+    /// Isomorphism must be off: external reaches need not preserve suit orbits.
+    #[cfg(feature = "t2-joint")]
+    pub fn t2_joint_sweep(&mut self, p: usize, t: u32, own: &[f32], opponent: &[f32]) -> Result<Vec<f32>, String> {
+        if p > 1 || t == 0 || self.use_isomorphism {
+            return Err("t2 joint sweep requires p=0/1, t>0 and no isomorphism".into());
+        }
+        if own.len() != self.spot.hands[p].len() || opponent.len() != self.spot.hands[1 - p].len()
+            || own.iter().chain(opponent).any(|x| !x.is_finite() || *x < 0.) {
+            return Err("invalid joint reaches".into());
+        }
+        self.iteration = t;
+        self.sym_dirty = true;
+        let mut out = vec![0.; own.len()];
+        self.cfr(0, p, own, opponent, Dealt::default(), &Discounts::for_iteration(self.algo, t), &mut out);
+        Ok(out)
+    }
+
     pub fn new(spot: Arc<Spot>) -> Solver {
         Solver::with_storage(spot, Storage::F32)
     }
