@@ -1,0 +1,17 @@
+name: tmp cleanup preflop calibration
+on:
+  push:
+    branches:
+      - chatgpt/gto-reference-20260928
+    paths:
+      - '.github/workflows/tmp-cleanup-preflop-calibration.yml'
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete completed temporary branch
+        run: gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/tmp/rfi-coeff-shadow-20260928"
