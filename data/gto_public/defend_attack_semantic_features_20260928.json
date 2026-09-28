@@ -1,0 +1,403 @@
+{
+  "baseline": {
+    "holdout": {
+      "action_brier": 0.06393733939725814,
+      "attack_mae": 0.10847915064176282,
+      "continue_mae": 0.13113110331428454
+    },
+    "train": {
+      "action_brier": 0.07005645613260512,
+      "attack_mae": 0.12479920069721062,
+      "continue_mae": 0.1415960744266469
+    }
+  },
+  "holdout_stacks": [
+    15,
+    30,
+    100
+  ],
+  "results": [
+    {
+      "coefficients": [
+        {
+          "coef": 0.1299328227443948,
+          "feature": "ace_offsuit"
+        },
+        {
+          "coef": 0.11034767525894848,
+          "feature": "ace"
+        },
+        {
+          "coef": -0.04908413439807872,
+          "feature": "bias"
+        },
+        {
+          "coef": -0.047173697181758574,
+          "feature": "queen_high"
+        },
+        {
+          "coef": 0.046686016417673476,
+          "feature": "broadway"
+        },
+        {
+          "coef": 0.041615109055233364,
+          "feature": "gap"
+        },
+        {
+          "coef": -0.04077414584830748,
+          "feature": "king_suited"
+        },
+        {
+          "coef": -0.04028868985814871,
+          "feature": "lo_rank"
+        },
+        {
+          "coef": 0.037614008260974025,
+          "feature": "offsuit"
+        },
+        {
+          "coef": 0.0345991425447593,
+          "feature": "wheel_ace_suited"
+        },
+        {
+          "coef": -0.032614301668407224,
+          "feature": "broadway_suited"
+        },
+        {
+          "coef": -0.03036686437579928,
+          "feature": "king"
+        },
+        {
+          "coef": -0.025135646223829883,
+          "feature": "small_pair"
+        },
+        {
+          "coef": -0.023313822257672707,
+          "feature": "pair"
+        },
+        {
+          "coef": -0.018575131675476805,
+          "feature": "suited_onegap"
+        },
+        {
+          "coef": 0.018503734837868623,
+          "feature": "ace_suited"
+        },
+        {
+          "coef": 0.018291805590508383,
+          "feature": "low_suited_connector"
+        },
+        {
+          "coef": 0.015928670550544338,
+          "feature": "suited_connector"
+        },
+        {
+          "coef": -0.014300186003299457,
+          "feature": "suited"
+        },
+        {
+          "coef": 0.003140223799630246,
+          "feature": "mid_pair"
+        },
+        {
+          "coef": -0.0023844968301464245,
+          "feature": "pair_rank"
+        },
+        {
+          "coef": 0.0013264191970831646,
+          "feature": "hi_rank"
+        },
+        {
+          "coef": -0.0013183998334731824,
+          "feature": "premium_pair"
+        }
+      ],
+      "cv_candidates": [
+        {
+          "attack_mae": 0.11835217322125428,
+          "brier": 0.08375637244386819,
+          "lambda": 1000.0
+        },
+        {
+          "attack_mae": 0.11744079033801474,
+          "brier": 0.08412592797918828,
+          "lambda": 100.0
+        },
+        {
+          "attack_mae": 0.1171474290235206,
+          "brier": 0.08423761601463142,
+          "lambda": 10.0
+        },
+        {
+          "attack_mae": 0.11702833670387557,
+          "brier": 0.08429334677715487,
+          "lambda": 1.0
+        },
+        {
+          "attack_mae": 0.11701550463556158,
+          "brier": 0.08430586877240542,
+          "lambda": 0.1
+        },
+        {
+          "attack_mae": 0.11701419424476585,
+          "brier": 0.08430728819209561,
+          "lambda": 0.01
+        }
+      ],
+      "holdout": {
+        "action_brier": 0.05908450845642453,
+        "attack_mae": 0.0965102879790231,
+        "continue_mae": 0.13113110331428454
+      },
+      "lambda": 1000.0,
+      "train": {
+        "action_brier": 0.06366705260257124,
+        "attack_mae": 0.10727306793344721,
+        "continue_mae": 0.1415960744266469
+      },
+      "variant": "semantic"
+    },
+    {
+      "coefficients": [
+        {
+          "coef": -0.21117943764263186,
+          "feature": "bias"
+        },
+        {
+          "coef": 0.17594760454175784,
+          "feature": "def_BTN"
+        },
+        {
+          "coef": 0.17349674178115568,
+          "feature": "def_CO"
+        },
+        {
+          "coef": 0.1642421276010673,
+          "feature": "def_SB"
+        },
+        {
+          "coef": 0.1555744448526585,
+          "feature": "def_BB"
+        },
+        {
+          "coef": 0.10914831373759044,
+          "feature": "BB*ace_offsuit"
+        },
+        {
+          "coef": 0.1050587787043663,
+          "feature": "ace_offsuit"
+        },
+        {
+          "coef": 0.09611515145338585,
+          "feature": "ace"
+        },
+        {
+          "coef": 0.04656269906366203,
+          "feature": "broadway"
+        },
+        {
+          "coef": -0.04571086103321867,
+          "feature": "queen_high"
+        },
+        {
+          "coef": -0.041065258272453976,
+          "feature": "king_suited"
+        },
+        {
+          "coef": -0.040779741041587804,
+          "feature": "lo_rank"
+        },
+        {
+          "coef": 0.039649810379260395,
+          "feature": "gap"
+        },
+        {
+          "coef": 0.036556388119973124,
+          "feature": "offsuit"
+        },
+        {
+          "coef": 0.03490515969933892,
+          "feature": "wheel_ace_suited"
+        },
+        {
+          "coef": 0.03049721633448141,
+          "feature": "SB*ace_offsuit"
+        },
+        {
+          "coef": -0.03033733909465122,
+          "feature": "BB*broadway_suited"
+        },
+        {
+          "coef": -0.02848325383702377,
+          "feature": "king"
+        },
+        {
+          "coef": 0.02681271414122931,
+          "feature": "ace_suited"
+        },
+        {
+          "coef": -0.02615023801555429,
+          "feature": "broadway_suited"
+        },
+        {
+          "coef": -0.02602371270837888,
+          "feature": "small_pair"
+        },
+        {
+          "coef": 0.02575185192877639,
+          "feature": "BB*pair"
+        },
+        {
+          "coef": -0.023491615193401774,
+          "feature": "pair"
+        },
+        {
+          "coef": -0.021463767487120075,
+          "feature": "BTN*pair"
+        },
+        {
+          "coef": 0.020081509261392887,
+          "feature": "SB*suited_connector"
+        },
+        {
+          "coef": 0.019010229167655168,
+          "feature": "SB*wheel_ace_suited"
+        },
+        {
+          "coef": -0.01871677918921219,
+          "feature": "CO*ace_offsuit"
+        },
+        {
+          "coef": 0.018635124598446875,
+          "feature": "BTN*wheel_ace_suited"
+        },
+        {
+          "coef": -0.018421948792761465,
+          "feature": "suited_onegap"
+        },
+        {
+          "coef": -0.017614472493359873,
+          "feature": "BB*suited_connector"
+        },
+        {
+          "coef": 0.016859371996474918,
+          "feature": "low_suited_connector"
+        },
+        {
+          "coef": 0.01599833243901529,
+          "feature": "suited_connector"
+        },
+        {
+          "coef": -0.0158699721784948,
+          "feature": "BTN*ace_offsuit"
+        },
+        {
+          "coef": -0.013959157995112565,
+          "feature": "SB*pair"
+        },
+        {
+          "coef": -0.013820541639945299,
+          "feature": "CO*pair"
+        },
+        {
+          "coef": -0.013064772926569584,
+          "feature": "suited"
+        },
+        {
+          "coef": -0.010401453985342776,
+          "feature": "BB*wheel_ace_suited"
+        },
+        {
+          "coef": 0.007661259918579573,
+          "feature": "CO*wheel_ace_suited"
+        },
+        {
+          "coef": 0.006946886832378492,
+          "feature": "SB*broadway_suited"
+        },
+        {
+          "coef": 0.006932732896061684,
+          "feature": "CO*suited_connector"
+        },
+        {
+          "coef": 0.006598562774920855,
+          "feature": "BTN*suited_connector"
+        },
+        {
+          "coef": -0.005062251150860197,
+          "feature": "BTN*broadway_suited"
+        },
+        {
+          "coef": 0.0026685548592248367,
+          "feature": "mid_pair"
+        },
+        {
+          "coef": 0.0023024653975786714,
+          "feature": "CO*broadway_suited"
+        },
+        {
+          "coef": -0.0014284586844372524,
+          "feature": "pair_rank"
+        },
+        {
+          "coef": -0.0011299306623292365,
+          "feature": "hi_rank"
+        },
+        {
+          "coef": -0.00013645734424733944,
+          "feature": "premium_pair"
+        }
+      ],
+      "cv_candidates": [
+        {
+          "attack_mae": 0.11693216889352202,
+          "brier": 0.08350011868989386,
+          "lambda": 1000.0
+        },
+        {
+          "attack_mae": 0.11509979721762485,
+          "brier": 0.08397643116202114,
+          "lambda": 100.0
+        },
+        {
+          "attack_mae": 0.11458987808312653,
+          "brier": 0.08414786746875215,
+          "lambda": 10.0
+        },
+        {
+          "attack_mae": 0.11448351158314803,
+          "brier": 0.08421643202852147,
+          "lambda": 1.0
+        },
+        {
+          "attack_mae": 0.11447041528957573,
+          "brier": 0.08422972139473339,
+          "lambda": 0.1
+        },
+        {
+          "attack_mae": 0.11446899420388063,
+          "brier": 0.08423110332107325,
+          "lambda": 0.01
+        }
+      ],
+      "holdout": {
+        "action_brier": 0.05889553190187758,
+        "attack_mae": 0.09514345884815657,
+        "continue_mae": 0.13113110331428454
+      },
+      "lambda": 1000.0,
+      "train": {
+        "action_brier": 0.06328137098428085,
+        "attack_mae": 0.105211101762975,
+        "continue_mae": 0.1415960744266469
+      },
+      "variant": "extended"
+    }
+  ],
+  "scope": "shadow only: compress cross-stack hand-class attack residual into semantic starting-hand features using weighted ridge",
+  "train_stacks": [
+    10,
+    20,
+    50
+  ]
+}
