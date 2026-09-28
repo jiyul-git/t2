@@ -10,6 +10,8 @@ t2는 9-max NLH 토너먼트 봇을 인간의 의사결정처럼 모델링하는
 
 핵심 원칙:
 - JUDGMENT -> PLAN -> ACTION을 분리한다.
+- **GTO를 공부해 얻은 learned prior/memory와 실제 테이블의 human reasoning을 동시에 구현한다. 둘 중 하나로 다른 하나를 대체하지 않는다.**
+- GTO reference와 T2의 차이는 먼저 `reasoning error / human approximation / intentional exploit`로 분류한 뒤 수정 여부를 결정한다.
 - 상대 읽기, 성향, ICM, money-jump, range, multiway semantics를 한 계수에 섞지 않는다.
 - 구조/의미론이 닫히기 전에는 VPIP/PFR/bluff/personality 계수를 광역 튜닝하지 않는다.
 - 실험은 고정 시드, 명시적 모집단, 사전등록, regression/attribution을 우선한다.
@@ -117,6 +119,9 @@ Immediate state:
 ### GTO
 
 - GTO는 중립 reference baseline으로 사용한다.
+- GTO 데이터는 solver clone을 만들기 위한 production 정답표가 아니라 **학습된 prior/reference layer의 기준점**으로 사용한다.
+- 높은 GTO-study skill은 matched spot의 prior 신뢰도를 높이고, 조건 mismatch가 커질수록 human reasoning 비중이 커지는 구조를 목표로 한다.
+- 향후 구현은 두 workstream을 모두 닫아야 한다: **(A) GTO knowledge/memory/prior + condition matching/interpolation**, **(B) human reasoning + reads/exploit/ICM + bounded mistakes**.
 - 실제 spot과 조건이 맞는 frequency만 비교한다.
 - solver/reference 결과는 chat에만 두지 않고 dataset에 저장한다.
 - GTO branch 정리는 현재 진행 중인 GTO 작업이 끝난 뒤 별도로 한다.
@@ -147,6 +152,9 @@ OPEN / logic barrier:
 - W5 non-uniform posterior production
 - street-concept granularity/taxonomy
 - final dead-code cleanup
+- dual-source strategy integration: GTO learned prior/memory ↔ human reasoning weighting
+- GTO-study knowledge/confidence/mismatch decay representation
+- human approximation/error vs intentional exploit discrepancy classification in verification
 
 ## 7. Regression checkpoint
 
