@@ -1,0 +1,87 @@
+{
+ "positions": [
+  "HJ",
+  "CO",
+  "BTN",
+  "SB",
+  "BB"
+ ],
+ "stack": 30.0,
+ "posts": [
+  0,
+  0,
+  0,
+  0.5,
+  1.0
+ ],
+ "ante": 0.2,
+ "limp": false,
+ "open_raises": [
+  2.0
+ ],
+ "raise_mults": [
+  3.0
+ ],
+ "max_raises": 3,
+ "add_allin": true,
+ "allin_threshold": 0.85,
+ "rake_pct": 0.0,
+ "rake_cap": 0.0,
+ "no_flop_no_drop": true,
+ "realization": "static",
+ "call_only_seats": [],
+ "open_raises_by_seat": [
+  [
+   2.0
+  ],
+  [
+   2.0
+  ],
+  [
+   2.0
+  ],
+  [
+   2.5
+  ],
+  [
+   2.0
+  ]
+ ],
+ "raise_mults_by_seat": [
+  [
+   3.0
+  ],
+  [
+   3.0
+  ],
+  [
+   3.0
+  ],
+  [
+   3.5
+  ],
+  [
+   3.5
+  ]
+ ],
+ "fourbet_mults": [
+  2.2
+ ],
+ "fourbet_mults_by_seat": [
+  [
+   2.2
+  ],
+  [
+   2.2
+  ],
+  [
+   2.2
+  ],
+  [
+   2.2
+  ],
+  [
+   2.2
+  ]
+ ]
+}
