@@ -182,3 +182,106 @@ What the solved continuation says about BB defence at the k0 ranges:
 - Those classes realize **31–39%** of pot × equity. Example: 72o gross 0.45 bb (CI 0.19–0.69) against 1.35 bb under the static model.
 - Premiums realize far more than their equity share because they win future bets: AA 2.42×, KK 2.19×.
 - Nothing forces a fold: this is the solved value. Whether the preflop solve then folds these hands is measured in C4.
+
+## C4. Terminal injection and the outer fixed point
+
+**Injection.** Feature `t2-cont` (off by default), `src/preflop/t2cont.rs`:
+- `terminal_value` pays `prob × (gross_h − invested_p)` at exactly one node. That node is identified by index and checked against the tree's pot and live mask.
+- CFR updates and the gap checks (`traverse_checkpoint`) both go through this function, so they see the same payoff.
+- Every other terminal keeps the existing payoff.
+
+**Loop.** `tools/gto_hu_continuation/outer_loop.py` runs P_k → V_k → P_{k+1}:
+- P_k: 400 preflop DCFR iterations, gap 0.0003 at every step.
+- V_k: the 24-flop panel at P_k's ranges, M2 menu, ε-tremble, `ht_rho` estimator.
+- Every table passed the conservation guard: at its own ranges, the two players' values summed to the pot within 0.006–0.031 bb.
+- Postflop exploitability stayed ≤ 0.30% pot on every flop of every step.
+
+Figure: [`GTO_HU_CONTINUATION_LOOP_V1.png`](GTO_HU_CONTINUATION_LOOP_V1.png).
+
+### Undamped run (as specified: no damping until oscillation is seen)
+
+| step | BTN open / jam | BB fold / call / jam | range L1 vs previous step (BTN / BB) | previous table at these ranges (unallocated bb) |
+|---|---|---|---|---|
+| P0 (static payoff) | 0.302 / 0.074 | 0.000 / 0.831 / 0.169 | — | — |
+| P1 | 0.452 / 0.008 | 0.101 / 0.744 / 0.154 | 0.791 / 0.397 | −0.527 |
+| P2 | 0.325 / 0.059 | 0.099 / 0.757 / 0.144 | 0.544 / 0.168 | −0.088 |
+| P3 | 0.357 / 0.037 | 0.153 / 0.677 / 0.170 | 0.260 / 0.227 | +0.031 |
+| P4 | 0.330 / 0.053 | 0.100 / 0.752 / 0.148 | 0.210 / 0.239 | −0.026 |
+| P5 | 0.347 / 0.044 | 0.148 / 0.690 / 0.162 | 0.185 / 0.218 | +0.020 |
+
+- **Aggregates looked like damped convergence, but class level showed a period-2 cycle.**
+  - P2 ≈ P4 (L1 0.077 / 0.067) and P3 ≈ P5 (L1 0.059 / 0.051), while adjacent steps stay 0.19–0.24 apart.
+  - The same marginal classes flip 0 ↔ 1 on both P2→P3 and P3→P4:
+    - BB: 77, 99, A2o, K2o, T3o, JTs;
+    - BTN: 85s, T8o, T7s, 43s, T9s, 97s.
+  - This is the classic best-response 2-cycle: a stationary value table makes near-indifferent classes switch purely, the ranges move, and the next table pushes them back.
+- The measured table change still halved each step (mean |ΔV| BB 0.187 → 0.148 → 0.077 → 0.072; BTN 0.516 → 0.165 → 0.082 → 0.057). The cycle lives in a few classes, not in the whole table.
+- Per the rule, undamped was stopped after P5; the k5 panel would add no information. Under-relaxation was then run as a separate A/B.
+
+### Damped A/B (α = 0.5, branched at k3; `outer_v1_damped_a05/`)
+
+- The injected table is V_used_k = 0.5·V_measured_k + 0.5·V_used_{k−1}. Both tables are kept.
+- Every blend passed the same guard at its step's ranges (+0.016 … +0.024 bb).
+
+| step | BTN open / jam | BB fold / call / jam | range L1 vs previous step (BTN / BB) | measured mean \|ΔV\| (BTN / BB) |
+|---|---|---|---|---|
+| P3 (shared) | 0.357 / 0.037 | 0.153 / 0.677 / 0.170 | — | — |
+| P4d | 0.335 / 0.048 | 0.107 / 0.735 / 0.158 | 0.145 / 0.173 | 0.047 / 0.052 |
+| P5d | 0.339 / 0.046 | 0.133 / 0.702 / 0.165 | 0.044 / 0.109 | 0.015 / 0.018 |
+| P6d | 0.341 / 0.046 | 0.128 / 0.712 / 0.160 | 0.053 / 0.057 | V6_DELTA |
+
+- Aggregate frequencies now move ≤ 0.005 per step.
+- Range steps are 3–4× smaller than undamped.
+- The measured table changes by 0.015–0.018 bb per class, about 25× below the panel's 95% CI half-width.
+- **Not converged at class level:** a few near-indifferent classes still move a lot between P5d and P6d:
+  - BB: JTs, JTo, KQo (call ↔ jam), T7o, A2o;
+  - BTN: 85s, 43s, T7s.
+- Their mixes are unidentified at this precision. The aggregates are not affected.
+
+**BB defence at P6d** (vs the 2bb BTN open, SB folded), an outcome, not a target:
+
+| | value |
+|---|---|
+| fold | **12.8%** |
+| call | 71.2% |
+| jam | 16.0% |
+| folds 100% | 32o, 62o, 72o, 82o, 92o, T2o, J2o, Q2o, 85o, T5o, J5o |
+| folds partially | T4o 98%, 42o 93%, K2o 69%, 72s 67%, T7o 31% |
+
+- The static model's 0.000 fold came from a structural artifact, and it is gone once the terminal pays solved postflop values.
+- BTN open settles at ≈ 0.34 raise + 0.046 jam, versus 0.302 + 0.074 under the static model.
+- CO and SB do not change. That is by construction: only the BTN–BB terminal is injected.
+
+## Conclusions of the prototype
+
+1. **The mechanism works and was not forced.**
+   - Solved postflop values make the trash offsuit classes realize 31–39% of pot × equity; premiums realize > 2×.
+   - Fed back into preflop CFR, they produce BB folds (0 → ≈ 13%) through the regrets alone.
+2. **The internal-consistency criteria were met.**
+   - Value-convention invariants hold per flop (≤ 7e-8) and per table (≤ 0.031 bb, after the aggregation fix).
+   - Postflop exploitability is ≤ 0.30% pot throughout.
+   - The fixed point is reached at aggregate level with α = 0.5, not at class level.
+3. **Precision, not correctness, is now the constraint.**
+   - The 24-flop panel gives per-class 95% CIs of ±0.36–0.48 bb, and the two estimators differ per class by up to 2 bb.
+   - Near-indifferent classes therefore cannot be resolved; they cycle undamped and drift damped.
+   - A larger panel (same strata, more draws per stratum; cost ≈ 2.5 min per flop per outer step on 4 cores with M2) is the direct lever.
+4. **Model inputs that remain and must be reported with any number:**
+   - the postflop menu (M2 single-size; the M1 two-size menu needs 20 GB in f32);
+   - the zero-reach definition (ε-tremble; the BR band is ≤ 0.033 bb here);
+   - the missing inter-player card removal in preflop (≈ ±0.02–0.05 bb per table);
+   - one injected terminal only.
+5. **Not established:** any GTO DB frequency. The 4-handed game still prices every other terminal (3-way pots, 3bet pots, SB pots) with the old model.
+
+## Next steps (proposed, not started)
+
+1. **Panel precision.**
+   - Panel v2 with 4–6 draws per stratum.
+   - Re-run the damped loop from the P6d state and check that the class mixes of the unresolved classes stabilise.
+   - Report the CI of BB fold % across bootstrap tables.
+2. **Menu sensitivity.** M1 on a sub-panel (compressed storage, ≈ 50 min per flop) at the P6d ranges, compared with M2 per class.
+3. **Generalise the terminal set** before any 9-max step:
+   - SB-open → BB-call;
+   - CO-open → BB-call;
+   - BTN-open → SB-call.
+   - Then check how the 3-way terminals interact, since they remain on the old model.
+4. **Joint CFR** (upstream `integrated_continuation` style) as the reference method, to confirm the damped fixed point without the stationary-value assumption.
