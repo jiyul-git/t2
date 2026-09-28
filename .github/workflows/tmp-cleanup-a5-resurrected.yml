@@ -1,0 +1,17 @@
+name: tmp cleanup resurrected A5 branch
+on:
+  push:
+    branches:
+      - chatgpt/gto-reference-20260928
+    paths:
+      - '.github/workflows/tmp-cleanup-a5-resurrected.yml'
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete resurrected A5 branch
+        run: gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/claude/a5-blockbet-fix"
