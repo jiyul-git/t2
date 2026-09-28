@@ -1,0 +1,57 @@
+name: build 9max GTO DB pushfold
+on:
+  push:
+    branches:
+      - chatgpt/gto-reference-20260928
+    paths:
+      - tools/build_gto_db_9max_pushfold.py
+      - .github/workflows/build-9max-gto-db-pushfold.yml
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/gto-reference-20260928
+      - name: Fetch pinned licensed source
+        run: |
+          curl -fsSL \
+            https://raw.githubusercontent.com/Julian-cloud-max/holdemmath-data/7c72b1261f08c63cf8366120dc531631935c21cd/pushfold/pushfold_charts.json \
+            -o /tmp/pushfold_charts.json
+          curl -fsSL \
+            https://raw.githubusercontent.com/Julian-cloud-max/holdemmath-data/7c72b1261f08c63cf8366120dc531631935c21cd/LICENSE-DATA \
+            -o /tmp/LICENSE-DATA
+      - name: Build 9-max DB
+        run: |
+          python3 tools/build_gto_db_9max_pushfold.py \
+            --source /tmp/pushfold_charts.json \
+            --license /tmp/LICENSE-DATA
+      - name: Validate
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          p=pathlib.Path("data/gto_db/preflop_9max_pushfold_v1.jsonl")
+          rows=[json.loads(x) for x in p.read_text().splitlines() if x.strip()]
+          assert rows, "no rows"
+          assert all(r["game"]["table_players"]==9 for r in rows)
+          assert all(r["strategy"]["hand_class_count"]==169 for r in rows)
+          assert {r["conditions"]["prehand_stack_bb"] for r in rows}=={4,6,8,10,12,15,20}
+          assert {r["conditions"]["ante"]["model"] for r in rows}=={"none","per_player"}
+          for r in rows:
+              for h,a in r["strategy"]["hands"].items():
+                  probs=[float(a.get(k,0)) for k in ("fold","call","jam")]
+                  assert abs(sum(probs)-1.0)<1e-9,(r["spot_id"],h,probs)
+          idx=json.load(open("data/gto_db/index_9max_v1.json"))
+          assert idx["record_count"]==len(rows)
+          print("records",len(rows),"variants",idx["records_by_variant"])
+          PY
+      - name: Commit generated DB
+        run: |
+          git config user.name github-actions
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/gto_db
+          git commit -m "gto-db: ingest licensed 9-max push-fold reference"
+          git push origin HEAD:chatgpt/gto-reference-20260928
