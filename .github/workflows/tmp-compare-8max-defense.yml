@@ -32,8 +32,8 @@ jobs:
           preflop.defend_action_likelihoods=wrap
           fps={};stats=collections.Counter()
           for sd in range(3100,3106):
-              t=T.Tournament(entries=100,start_stack=30000,hero_seat=7,seats=8,
-                             seed=sd,hands_per_level=200)
+              t=T.Tournament(entries=100,hero_seat=7,seats=8,
+                             seed=sd,hands_per_level=200,fmt='turbo')
               rows=['q=%.3f|a=%.2f'%(t.field_q,t.aggr_bias)]
               for _ in range(30):
                   if sum(1 for s in t.seats if t.stacks[s]>0)<3: break
@@ -63,8 +63,8 @@ jobs:
           import tourney as T
           fps={};stats=collections.Counter()
           for sd in range(3100,3106):
-              t=T.Tournament(entries=100,start_stack=30000,hero_seat=7,seats=8,
-                             seed=sd,hands_per_level=200)
+              t=T.Tournament(entries=100,hero_seat=7,seats=8,
+                             seed=sd,hands_per_level=200,fmt='turbo')
               rows=['q=%.3f|a=%.2f'%(t.field_q,t.aggr_bias)]
               for _ in range(30):
                   if sum(1 for s in t.seats if t.stacks[s]>0)<3: break
