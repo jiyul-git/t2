@@ -1,0 +1,32 @@
+name: tmp defense attack hand residual
+on:
+  push:
+    branches:
+      - tmp/preflop-policy-shape-20260928
+    paths:
+      - tools/tmp_defend_attack_hand_residual.py
+      - .github/workflows/tmp-defend-attack-hand-residual.yml
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/preflop-policy-shape-20260928
+          fetch-depth: 0
+      - name: Fetch public data
+        run: |
+          git fetch origin chatgpt/gto-reference-20260928:refs/remotes/origin/gto-reference
+          git show origin/gto-reference:data/gto_public/8max_mtt_matthiola.jsonl > /tmp/8max_mtt_matthiola.jsonl
+      - name: Run attack residual shadow
+        run: PYTHONPATH=. python3 tools/tmp_defend_attack_hand_residual.py
+      - name: Commit report
+        run: |
+          git config user.name github-actions
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/gto_public/defend_attack_hand_residual_shadow_20260928.json data/gto_public/defend_attack_hand_residual_shadow_20260928.md
+          git commit -m "analysis: test attack hand residual stability"
+          git push origin HEAD:tmp/preflop-policy-shape-20260928
