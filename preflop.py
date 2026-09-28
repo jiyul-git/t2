@@ -583,6 +583,137 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     return max(0.0, min(0.9, tp)), max(0.0, min(0.95, tot))
 
 
+
+# 8-max MTT ante direct-vs-open neutral policy shape.
+# Calibrated on public 10/20/50bb charts, held out on 15/30/100bb.
+# This is deliberately gated: it is not a general no-ante / 9-max / squeeze policy.
+_MTT8_POLICY_EDGES = (0.45, 0.70, 0.90, 1.05, 1.25, 1.55, 2.20)
+_MTT8_POLICY_CURVES = {
+    'BB': {
+        'attack': (0.6398424069, 0.4536945813, 0.2880575540, 0.2880575540,
+                   0.2344607843, 0.2344607843, 0.1481502890, 0.0296307969),
+        'continue': (0.9972330595, 0.9945207957, 0.8758108108, 0.7800595238,
+                     0.5537457818, 0.5537457818, 0.2453887399, 0.0),
+    },
+    'BTN': {
+        'attack': (0.7571052632, 0.5498601399, 0.2718699187, 0.1981308411,
+                   0.1981308411, 0.1964772727, 0.0879381443, 0.0066641679),
+        'continue': (0.9686280488, 0.8952688172, 0.6863333333, 0.5953846154,
+                     0.4421153846, 0.2319090909, 0.0485833333, 0.0029226848),
+    },
+    'CO': {
+        'attack': (0.7429629630, 0.5824561404, 0.4150909091, 0.2011250000,
+                   0.2011250000, 0.2011250000, 0.0496855346, 0.0062896552),
+        'continue': (0.9661240310, 0.9438571429, 0.6967213115, 0.5072727273,
+                     0.2913907285, 0.2913907285, 0.0179381443, 0.0039104478),
+    },
+    'SB': {
+        'attack': (0.8766556837, 0.5423893805, 0.4606015038, 0.2579310345,
+                   0.2579310345, 0.1353500000, 0.0390611354, 0.0020027155),
+        'continue': (0.9928966521, 0.7804871795, 0.7437748344, 0.3726829268,
+                     0.3696794872, 0.1196969697, 0.0526900585, 0.0017781275),
+    },
+}
+_MTT8_ATTACK_SEM = {
+    'bias': -0.0304704909,
+    'ace': 0.1270220944,
+    'ace_offsuit': 0.1460568801,
+    'wheel_ace_suited': 0.0316358134,
+    'broadway': 0.0176375953,
+    'broadway_suited': -0.0651922596,
+    'king_suited': -0.0749618759,
+    'small_pair': -0.0537442498,
+    'suited_connector': 0.0044673135,
+}
+
+
+def _mtt8_policy_semantic(hand):
+    h = cls(hand)
+    pair = len(h) == 2
+    suited = len(h) == 3 and h[2] == 's'
+    offsuit = len(h) == 3 and h[2] == 'o'
+    r1 = RV[h[0]]; r2 = RV[h[1]]
+    hi = max(r1, r2); lo = min(r1, r2)
+    gap = abs(r1-r2)
+    ace = hi == 14
+    king = hi == 13
+    broadway = hi >= 10 and lo >= 10
+    vals = {
+        'bias': 1.0,
+        'ace': float(ace),
+        'ace_offsuit': float(ace and offsuit),
+        'wheel_ace_suited': float(ace and suited and lo <= 5),
+        'broadway': float(broadway),
+        'broadway_suited': float(broadway and suited),
+        'king_suited': float(king and suited),
+        'small_pair': float(pair and hi <= 6),
+        'suited_connector': float(suited and gap == 1),
+    }
+    return sum(_MTT8_ATTACK_SEM[k] * vals[k] for k in _MTT8_ATTACK_SEM)
+
+
+def _mtt8_policy_shape_eligible(def_pos, opener_pos, open_bb, n_callers,
+                                raise_level, seats, ante, can_raise):
+    if not (can_raise and int(seats) == 8 and bool(ante)
+            and int(raise_level) == 1 and int(n_callers or 0) == 0
+            and def_pos in _MTT8_POLICY_CURVES):
+        return False
+    target = 3.0 if opener_pos == 'SB' else 2.5
+    return abs(float(open_bb) - target) <= 0.25
+
+
+def _mtt8_policy_shape(prof, def_pos, hand, tp, tot, p_hot):
+    """Return overall (attack, call, fold) plus conditional mixed weights.
+
+    tp/tot already contain persona/exploit width adjustments.  The public
+    frequency surface supplies the neutral execution shape.  Existing direct
+    aggression and slowplay tendencies are retained only as attack<->call
+    transfer, so total continue remains governed by tot.
+    """
+    import bisect
+    r = pct(hand)
+    curve = _MTT8_POLICY_CURVES[def_pos]
+    ia = bisect.bisect_right(_MTT8_POLICY_EDGES, r/max(1e-9, tp))
+    ic = bisect.bisect_right(_MTT8_POLICY_EDGES, r/max(1e-9, tot))
+    attack = curve['attack'][ia] + _mtt8_policy_semantic(hand)
+    cont = curve['continue'][ic]
+    attack = max(0.0, min(cont, attack))
+
+    # Preserve the existing persona direction without reintroducing the old
+    # neutral shape: aggression moves continue mass from call -> attack.
+    a = prof_aggr(prof)
+    q = attack/max(1e-9, cont) if cont > 1e-9 else 0.0
+    fac = max(0.20, (0.55 + 0.085*a) / 0.975)  # neutral a=5 -> 1
+    if 0.0 < q < 1.0:
+        q = (q*fac) / max(1e-9, (1.0-q) + q*fac)
+    attack = cont * max(0.0, min(1.0, q))
+
+    # Preserve premium slowplay as attack -> call transfer.
+    pf_slow = 0.0
+    if prof.get('concepts'):
+        taste = PS.temper(prof, 'slowplay_taste', 5.0) / 10.0
+        passive = max(0.0, min(1.0, (5.0-a)/5.0))
+        premium = max(0.0, min(1.0, (0.10-r)/0.10))
+        pf_slow = passive * (0.35 + 0.65*taste) * premium
+    elif A.ARCHETYPES.get(prof.get('type'), (0,)*7+('reg',))[6] == 'fish':
+        pf_slow = max(0.0, min(1.0, (0.10-r)/0.10)) * 0.55
+    attack *= max(0.30, 1.0 - 0.70*pf_slow)
+    attack = max(0.0, min(cont, attack))
+
+    # Preserve the earlier hot-zone shove branch while matching the calibrated
+    # overall attack/continue probabilities.
+    hot = max(0.0, min(float(p_hot or 0.0), attack))
+    if hot >= 1.0 - 1e-12:
+        mr, mc, mf = 0.0, 0.0, 0.0
+    else:
+        mr = max(0.0, min(1.0, (attack-hot)/(1.0-hot)))
+        mcont = max(mr, min(1.0, (cont-hot)/(1.0-hot)))
+        mc = max(0.0, mcont-mr)
+        mf = max(0.0, 1.0-mcont)
+    call = max(0.0, cont-attack)
+    fold = max(0.0, 1.0-cont)
+    return attack, call, fold, hot, mr, mc, mf
+
 def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
                               n_callers, raise_level=1, stack_bb=None,
                               exploit=None, bf=1.0, seats=8, ante=True,
@@ -670,6 +801,33 @@ def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
         if r <= rs:
             depth = 1.0 - (r / max(1e-6, rs))
             p_hot = max(0.0, min(1.0, 0.30 + 0.60*depth))
+
+    import gto as _G
+    if (_G._use_mtt8_ante_defense(def_pos, seats, ante)
+            and _mtt8_policy_shape_eligible(
+                def_pos, opener_pos, open_bb, n_callers,
+                raise_level, seats, ante, can_raise)):
+        attack, call, fold, p_hot2, mr, mc, mf = _mtt8_policy_shape(
+            prof, def_pos, hand, tp, tot, p_hot)
+        return {
+            'attack': attack,
+            'call': call,
+            'fold': fold,
+            'hot_attack': p_hot2,
+            'mixed_attack': mr,
+            'mixed_call': mc,
+            'mixed_fold': mf,
+            'w_raise': mr,
+            'w_call': mc,
+            'w_fold': mf,
+            'total_weight': mr + mc + mf,
+            'calloff': False,
+            'calloff_cap': None,
+            'tp': tp,
+            'tot': tot,
+            'hand_pct': r,
+            'policy_shape': 'mtt8_compact_semantic_v1',
+        }
 
     import math
     def _logit(x, center, width):
