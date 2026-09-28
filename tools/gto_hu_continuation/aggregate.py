@@ -4,10 +4,16 @@
     python3 tools/gto_hu_continuation/aggregate.py <terminal.json> <panel.json> <flop_dir> <out_table.json> \
         [--outer K] [--boot 2000]
 
-value_convention = gross_share (bb, zero rake). Per class h and player:
-  v_h = sum_s P(s) * [sum_{f in panel_s} c_hf v_hf / sum_{f in panel_s} c_hf]
+value_convention = gross_share (bb, zero rake). Per class h and player (primary,
+estimator = "ht_rho", Horvitz-Thompson with the exact full-deck normaliser):
+  v_h = (1/rho) * sum_s P(s) * mean_{f in panel_s} [c_hf v_hf],   rho = C(50,3)/C(52,3)
 where c_hf = share of class-h combos not blocked by board f (draws within a stratum are
-already proportional to raw-flop count, so flops are otherwise equally weighted).
+already proportional to raw-flop count). For the full 1,755-flop set this equals the
+class-conditional mean; on a small panel it keeps sum_players sum_h range_h v_h = pot up to
+the preflop model's missing inter-player card removal (the ratio estimator
+sum c v / sum c, kept as "gross_ratio" for sensitivity, does not: its per-class panel
+normaliser varies, 0.77-0.97 on panel_v1, which created 0.35 bb of chips at k0).
+Guard: exits non-zero if |unallocated| > --max-unallocated (default 0.05 bb).
 95% CI: stratified bootstrap (resample flops within each stratum), fixed seed.
 Invariant (at the terminal's ACTUAL arriving ranges, which differ from the EPS-floored
 ranges the solves used by <= EPS per class):
@@ -51,6 +57,7 @@ def main():
     ap.add_argument('out')
     ap.add_argument('--outer', type=int, default=0)
     ap.add_argument('--boot', type=int, default=2000)
+    ap.add_argument('--max-unallocated', type=float, default=0.05)
     a = ap.parse_args()
     term = json.load(open(a.terminal))
     panel = json.load(open(a.panel))
@@ -82,7 +89,9 @@ def main():
     table = {(b, pl['position'], fld): pl[fld] for b, d in flops.items() for pl in d['players']
              for fld in ('gross_eps', 'gross_br', 'equity')}
 
-    def estimate(field, pos, strata_draw):
+    rho = 19600 / 22100
+
+    def estimate(field, pos, strata_draw, estimator='ht_rho'):
         vals = []
         for h in range(169):
             tot = 0.0
@@ -94,9 +103,11 @@ def main():
                         continue
                     num += compat[b][h] * v
                     den += compat[b][h]
-                if den > 0:
+                if estimator == 'ht_rho':
+                    tot += p_str[s] * num / len(boards)
+                elif den > 0:
                     tot += p_str[s] * num / den
-            vals.append(tot / sum(p_str.values()))
+            vals.append(tot / sum(p_str.values()) / (rho if estimator == 'ht_rho' else 1.0))
         return vals
 
     rng = random.Random(20260928 + a.outer)
@@ -106,6 +117,7 @@ def main():
         v = estimate('gross_eps', pos, strata)
         vbr = estimate('gross_br', pos, strata)
         veq = estimate('equity', pos, strata)
+        vratio = estimate('gross_eps', pos, strata, 'ratio')
         boots = []
         for _ in range(a.boot):
             draw = {s: [rng.choice(bs) for _ in bs] for s, bs in strata.items()}
@@ -113,21 +125,24 @@ def main():
         lo = [sorted(bb[h] for bb in boots)[int(0.025 * a.boot)] for h in range(169)]
         hi = [sorted(bb[h] for bb in boots)[int(0.975 * a.boot) - 1] for h in range(169)]
         seats.append({'seat': pl['seat'], 'position': pos, 'gross': v, 'gross_ci95_lo': lo, 'gross_ci95_hi': hi,
-                      'gross_br': vbr, 'equity_panel': veq,
+                      'gross_br': vbr, 'equity_panel': veq, 'gross_ratio': vratio,
                       'realization_vs_equity': [v[h] / (term['pot_bb'] * veq[h]) if veq[h] > 1e-9 else None for h in range(169)],
                       'max_br_minus_eps_bb': max(vbr[h] - v[h] for h in range(169)),
                       'mean_ci95_halfwidth_bb': sum((hi[h] - lo[h]) / 2 for h in range(169)) / 169})
     # invariant at the actual terminal ranges
-    total = 0.0
+    total = total_ratio = 0.0
     for pl, st in zip(term['players'], seats):
         r = pl['class_reach_normalized']
         total += sum(r[h] * st['gross'][h] for h in range(169))
+        total_ratio += sum(r[h] * st['gross_ratio'][h] for h in range(169))
     key = json.loads(next(iter(keys)))
     out = {
         'schema': 't2_hu_continuation_table_v1', 'value_convention': 'gross_share', 'zero_reach_definition': key['zero_reach_definition'],
         'node': term['terminal_node'], 'live': term['terminal_live_mask'], 'pot_bb': term['pot_bb'],
         'outer_iteration': a.outer, 'seats': seats,
-        'invariant': {'sum_range_weighted_gross': total, 'pot': term['pot_bb'], 'unallocated_bb': term['pot_bb'] - total},
+        'estimator': 'ht_rho',
+        'invariant': {'sum_range_weighted_gross': total, 'pot': term['pot_bb'], 'unallocated_bb': term['pot_bb'] - total,
+                      'ratio_estimator_unallocated_bb': term['pot_bb'] - total_ratio},
         'provenance': {'terminal_file': a.terminal, 'ranges_hash_fnv1a64': term['ranges_hash_fnv1a64'],
                        'panel_hash_sha256': panel['panel_hash_sha256'], 'flop_key': key,
                        'solver_commits': sorted({d['solver_commit'] for d in flops.values()}),
@@ -138,6 +153,10 @@ def main():
                        'preflop_terminal_gap_total': term['gap_total'], 'bootstrap': a.boot},
         'scope': 'one HU terminal of the 4-handed CO/BTN/SB/BB 30bb full tree; other terminals keep the existing payoff',
     }
+    if abs(out['invariant']['unallocated_bb']) > a.max_unallocated:
+        json.dump(out, open(a.out + '.rejected', 'w'))
+        raise SystemExit('unallocated %.4f bb exceeds %.3f: table rejected (written to %s.rejected)'
+                         % (out['invariant']['unallocated_bb'], a.max_unallocated, a.out))
     json.dump(out, open(a.out, 'w'))
     print('table', a.out, 'unallocated %.4f bb' % out['invariant']['unallocated_bb'],
           'expl max %.3f%%' % out['provenance']['exploitability_pct_pot_max'],

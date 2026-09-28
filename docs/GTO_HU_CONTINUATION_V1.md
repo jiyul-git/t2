@@ -145,3 +145,40 @@ The BB's zero-reach classes are premiums. Their continuation value is exactly wh
 - 72o has equity 0.85 (two pair) and gross 9.98 bb, realization 2.14× the pot·equity proxy.
 - T5o has equity 0.14 and gross ≈ 0.00 bb: it folds and realizes nothing.
 - The raw-equity terminal instead gives every hand pot·equity·0.95.
+
+## C3. Panel values and the conservation check (outer step k0)
+
+**Panel.** 24 flops, 12 strata × 2 (`panel_v1.json`, seed 20260928, sha256 `4bec9015…`); fixed before any value was seen.
+
+**Per-flop solves.** One ε-floored solve per flop at the k0 ranges, M2 menu, target 0.3% pot, 4 threads:
+- 66–302 s per flop (monotone ≈ 70 s; unpaired offsuit boards up to 5 min); the whole panel took ≈ 1 h.
+- Exploitability is 0.20–0.30% pot on every flop.
+- The per-flop invariant (gross sum = pot at the solve's ranges) holds to ≤ 7e-8 bb on every flop.
+
+**An aggregation error was caught by the invariant.** The first aggregation used the class-conditional *ratio* estimator Σ_f c_hf v_hf / Σ_f c_hf, where c_hf is the share of class-h combos not blocked by the board. Evaluated at the preflop arriving ranges, it gave Σ = 5.853 bb for a 5.5 bb pot: **0.353 bb of chips created**.
+
+Decomposition, flop by flop:
+
+| weighting of that flop's class values | invariant error per flop |
+|---|---|
+| joint reach incl. opponent blockers (valid mass) | ≤ 7e-8 (exact) |
+| board-removal only (combos on board × keep) | −0.044 … +0.057 bb |
+| preflop class reach (no removal at all) | +0.12 … +1.30 bb |
+
+- The ±0.05 bb residual is the preflop model's own missing inter-player card removal. It cannot be removed without combo-level preflop.
+- The 0.35 bb came from the estimator. On a 24-flop panel the per-class normaliser Σ_f P(f) c_hf ranges from 0.766 to 0.969, whereas over all 1,755 flops it equals exactly 19600/22100 = 0.887 for every class.
+- **Fix:** divide by that exact constant (`ht_rho`, a Horvitz–Thompson estimator). It is the same estimator for the full flop set and keeps conservation on a panel. The ratio estimator stays in the artifact as `gross_ratio` (sensitivity).
+- **Guard:** the aggregator now refuses to write a table with |unallocated| > 0.05 bb. The rejected k0 table is kept as `k0/table_ratio_rejected.json`.
+- The two estimators differ per class by up to 2 bb (mean 0.21–0.25 bb). That is a direct measure of how little a 24-flop panel pins down individual classes.
+
+**k0 table** (`outer_v1/k0/table.json`, estimator `ht_rho`):
+- unallocated **+0.020 bb** (0.36% of pot);
+- 95% CI half-width averaged over classes: BTN ±0.38 bb, BB ±0.53 bb (stratified bootstrap, B = 2000);
+- max per-class (BR − ε) value: BTN 0.028 bb, BB 0.033 bb.
+
+What the solved continuation says about BB defence at the k0 ranges:
+- The fold/call boundary is gross = 1.0 bb: calling leaves the BB with 2.25 bb invested, folding loses 1.25 bb.
+- **13 BB classes are below it** at the point estimate; **4 have their whole 95% CI below it** (72o, 82o, 92o, T2o).
+- Those classes realize **31–39%** of pot × equity. Example: 72o gross 0.45 bb (CI 0.19–0.69) against 1.35 bb under the static model.
+- Premiums realize far more than their equity share because they win future bets: AA 2.42×, KK 2.19×.
+- Nothing forces a fold: this is the solved value. Whether the preflop solve then folds these hands is measured in C4.
