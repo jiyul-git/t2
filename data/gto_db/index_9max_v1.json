@@ -1,0 +1,32 @@
+{
+  "canonical_table_players": 9,
+  "dataset": "preflop_9max_pushfold_v1.jsonl",
+  "depths_bb": [
+    4,
+    6,
+    8,
+    10,
+    12,
+    15,
+    20
+  ],
+  "hand_classes": 169,
+  "record_count": 616,
+  "records_by_variant": {
+    "ante_0p1_each": 308,
+    "no_ante": 308
+  },
+  "schema_version": "gto_db_index_v1",
+  "source": {
+    "attribution": "HoldemMath (holdemmath.com)",
+    "commit": "7c72b1261f08c63cf8366120dc531631935c21cd",
+    "id": "holdemmath_pushfold_9max_v1",
+    "license": "CC BY 4.0",
+    "model": "multiway first-in push/fold; single-caller approximation",
+    "repo": "https://github.com/Julian-cloud-max/holdemmath-data",
+    "source_path": "pushfold/pushfold_charts.json"
+  },
+  "status": "auxiliary-near for T2 BBA; canonical short-stack reference only within source model",
+  "target_ante_model": "1BB big-blind ante",
+  "target_format": "MTT"
+}
