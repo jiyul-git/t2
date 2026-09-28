@@ -1,0 +1,5 @@
+{
+ "reason": "blended table 0.5*V1+0.5*V0 evaluated at P1 ranges: unallocated -0.3206 bb > 0.05 bb guard; injection refused",
+ "cause": "damping applied from k1 (protocol deviation: damping is only allowed after oscillation is observed). V0 is stale at P1 ranges (P0->P1 is the large first move).",
+ "remedy": "undamped continuation in outer_sub6_fp (k0,k1 reused; measured V1 passed the guard at +0.0124 bb), damping A/B only after a cycle is observed"
+}
