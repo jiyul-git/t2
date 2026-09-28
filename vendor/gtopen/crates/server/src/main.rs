@@ -967,8 +967,13 @@ fn preflop_equity() -> Arc<solver::preflop::equity::EquityTable> {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(20_000);
+        let cache = std::env::var("PREFLOP_EQ_SEED")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .map(|seed| format!("cache/preflop_eq169_seed{seed}.bin"))
+            .unwrap_or_else(|| "cache/preflop_eq169.bin".to_string());
         Arc::new(solver::preflop::equity::EquityTable::load_or_build(
-            "cache/preflop_eq169.bin",
+            &cache,
             samples,
         ))
     })
