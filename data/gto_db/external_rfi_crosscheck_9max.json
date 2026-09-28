@@ -1,0 +1,115 @@
+{
+  "schema_version": "external_crosscheck_v1",
+  "purpose": "small manual aggregate validation only; not a vendored chart dataset",
+  "source": {
+    "name": "PreflopRanges public MTT 9-Max opening chart pages",
+    "urls": {
+      "20": "https://preflopranges.app/charts/mtt/20bb",
+      "25": "https://preflopranges.app/charts/mtt/25bb",
+      "30": "https://preflopranges.app/charts/mtt/30bb",
+      "40": "https://preflopranges.app/charts/mtt/40bb"
+    },
+    "usage": "aggregate RFI and published primary open size only; no bulk per-hand extraction"
+  },
+  "mapping": {
+    "EP1": "UTG",
+    "EP2": "UTG+1",
+    "MP1": "UTG+2",
+    "MP2": "LJ",
+    "HJ": "HJ",
+    "CO": "CO",
+    "BTN": "BTN",
+    "SB": "SB"
+  },
+  "stacks": {
+    "20": {
+      "rfi": {
+        "UTG": 0.16,
+        "UTG+1": 0.174,
+        "UTG+2": 0.2,
+        "LJ": 0.227,
+        "HJ": 0.268,
+        "CO": 0.335,
+        "BTN": 0.477,
+        "SB": 0.895
+      },
+      "open_to_bb": {
+        "UTG": 2,
+        "UTG+1": 2,
+        "UTG+2": 2,
+        "LJ": 2,
+        "HJ": 2,
+        "CO": 2,
+        "BTN": 2,
+        "SB": 3
+      }
+    },
+    "25": {
+      "rfi": {
+        "UTG": 0.164,
+        "UTG+1": 0.182,
+        "UTG+2": 0.214,
+        "LJ": 0.244,
+        "HJ": 0.282,
+        "CO": 0.36,
+        "BTN": 0.485,
+        "SB": 0.88
+      },
+      "open_to_bb": {
+        "UTG": 2,
+        "UTG+1": 2,
+        "UTG+2": 2,
+        "LJ": 2,
+        "HJ": 2,
+        "CO": 2,
+        "BTN": 2,
+        "SB": 3.5
+      }
+    },
+    "30": {
+      "rfi": {
+        "UTG": 0.165,
+        "UTG+1": 0.186,
+        "UTG+2": 0.217,
+        "LJ": 0.257,
+        "HJ": 0.299,
+        "CO": 0.375,
+        "BTN": 0.487,
+        "SB": 0.894
+      },
+      "open_to_bb": {
+        "UTG": 2,
+        "UTG+1": 2,
+        "UTG+2": 2,
+        "LJ": 2,
+        "HJ": 2,
+        "CO": 2,
+        "BTN": 2,
+        "SB": 3.5
+      }
+    },
+    "40": {
+      "rfi": {
+        "UTG": 0.155,
+        "UTG+1": 0.18,
+        "UTG+2": 0.215,
+        "LJ": 0.253,
+        "HJ": 0.31,
+        "CO": 0.397,
+        "BTN": 0.551,
+        "SB": 0.859
+      },
+      "open_to_bb": {
+        "UTG": 2,
+        "UTG+1": 2,
+        "UTG+2": 2,
+        "LJ": 2,
+        "HJ": 2,
+        "CO": 2,
+        "BTN": 2,
+        "SB": 4
+      }
+    }
+  },
+  "caveat": "Use only as an independent aggregate cross-check. Do not reconstruct or vendor the provider's per-hand charts."
+}
