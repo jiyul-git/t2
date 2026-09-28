@@ -31,6 +31,7 @@ LABEL = {
     'X2_eq20k': 'X2 eq 20000 samples',
     'X3_legacy': 'X3 multiway legacy_product',
     'X4_balanced': 'X4 realization balanced (=raw)',
+    'X5_legacy400': 'X5 legacy_product, 400 iterations',
 }
 
 
