@@ -228,11 +228,14 @@ Figure: [`GTO_HU_CONTINUATION_LOOP_V1.png`](GTO_HU_CONTINUATION_LOOP_V1.png).
 | P3 (shared) | 0.357 / 0.037 | 0.153 / 0.677 / 0.170 | — | — |
 | P4d | 0.335 / 0.048 | 0.107 / 0.735 / 0.158 | 0.145 / 0.173 | 0.047 / 0.052 |
 | P5d | 0.339 / 0.046 | 0.133 / 0.702 / 0.165 | 0.044 / 0.109 | 0.015 / 0.018 |
-| P6d | 0.341 / 0.046 | 0.128 / 0.712 / 0.160 | 0.053 / 0.057 | V6_DELTA |
+| P6d | 0.341 / 0.046 | 0.128 / 0.712 / 0.160 | 0.053 / 0.057 | 0.033 / 0.023 |
 
 - Aggregate frequencies now move ≤ 0.005 per step.
 - Range steps are 3–4× smaller than undamped.
-- The measured table changes by 0.015–0.018 bb per class, about 25× below the panel's 95% CI half-width.
+- The measured table change fell to 0.015–0.018 bb per class (P4d→P5d), then **stopped falling** (0.033 / 0.023 bb at P5d→P6d).
+  - The floor is set by the few classes that still switch.
+  - It is still 10–25× below the panel's 95% CI half-width (±0.36–0.47 bb).
+- The last tables pass the guard: measured +0.023 bb, blended +0.011 bb.
 - **Not converged at class level:** a few near-indifferent classes still move a lot between P5d and P6d:
   - BB: JTs, JTo, KQo (call ↔ jam), T7o, A2o;
   - BTN: 85s, 43s, T7s.
@@ -260,7 +263,7 @@ Figure: [`GTO_HU_CONTINUATION_LOOP_V1.png`](GTO_HU_CONTINUATION_LOOP_V1.png).
 2. **The internal-consistency criteria were met.**
    - Value-convention invariants hold per flop (≤ 7e-8) and per table (≤ 0.031 bb, after the aggregation fix).
    - Postflop exploitability is ≤ 0.30% pot throughout.
-   - The fixed point is reached at aggregate level with α = 0.5, not at class level.
+   - The fixed point is reached at aggregate level with α = 0.5 (frequencies ±0.005 per step). The table change plateaus at 0.02–0.03 bb; the class level is not converged.
 3. **Precision, not correctness, is now the constraint.**
    - The 24-flop panel gives per-class 95% CIs of ±0.36–0.48 bb, and the two estimators differ per class by up to 2 bb.
    - Near-indifferent classes therefore cannot be resolved; they cycle undamped and drift damped.
