@@ -39,6 +39,9 @@ name = "t2_resume"
 name = "t2_mw_bench"
 
 [[example]]
+name = "t2_defend_check"
+
+[[example]]
 name = "learned_decisions"
 required-features = ["preflop-research"]
 

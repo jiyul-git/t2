@@ -15,6 +15,7 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 from matplotlib import font_manager as fm
 
 FONT = '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'
@@ -145,18 +146,26 @@ def draw_sub(axes, sub):
     ax.legend(fontsize=8, frameon=False, loc='lower right')
     ax.set_title('(5) one factor at a time (sensitivity, NOT calibration)', loc='left', fontsize=11, color=INK)
     style(ax)
-    # (6) BB fold vs BTN open
+    # (6) BB response mix vs BTN open (stacked): fold is 0.000 in every variant
     ax = axes[2]
-    vals = [(se[k]['bb_fold_vs_btn'] or 0.0) for k in order]
-    ax.barh(range(len(order)), vals, 0.6, color=SERIES[4])
-    for i, v in enumerate(vals):
-        ax.text(v + 0.005, i, '%.3f' % v, va='center', fontsize=8, color=INK)
+    kinds = [('fold', '#6b6a64'), ('call', SERIES[0]), ('raise', SERIES[3]), ('jam', SERIES[1])]
+    for yi, k in enumerate(order):
+        mix = se[k]['responses'].get('BB_vs_BTN_open', {})
+        left = 0.0
+        for kind, col in kinds:
+            v = sum(val for a, val in mix.items() if a.startswith(kind))
+            ax.barh(yi, v, 0.6, left=left, color=col, label=kind if yi == 0 else None)
+            left += v
+        ax.text(1.01, yi, 'fold %.3f' % sum(val for a, val in mix.items() if a.startswith('fold')),
+                va='center', fontsize=8, color=INK)
     ax.set_yticks(range(len(order)))
     ax.set_yticklabels([SUBLABEL[k] for k in order], fontsize=8)
     ax.invert_yaxis()
-    ax.set_xlim(0, 0.6)
-    ax.set_xlabel('BB fold frequency vs BTN 2bb open', fontsize=9, color=MUTED)
-    ax.set_title('(6) BB over-defense', loc='left', fontsize=11, color=INK)
+    ax.set_xlim(0, 1.25)
+    ax.set_ylim(len(order) + 0.9, -0.6)
+    ax.set_xlabel('BB response mix vs BTN 2bb open', fontsize=9, color=MUTED)
+    ax.legend(fontsize=8, frameon=False, loc='lower center', ncol=4)
+    ax.set_title('(6) BB never folds (all variants)', loc='left', fontsize=11, color=INK)
     style(ax)
 
 
@@ -228,6 +237,9 @@ def main():
     ax.axhline(0.15, color=MUTED, lw=1, ls=':')
     ax.text(ax.get_xlim()[1] if names else 1, 0.15, ' pilot stop 0.15', fontsize=8, color=MUTED, va='bottom', ha='right')
     ax.set_yscale('log')
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: '%g' % v))
+    ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.set_yticks([0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.3])
     ax.set_xlabel('iteration', fontsize=9, color=MUTED)
     ax.set_ylabel('gap_total (bb, model game)', fontsize=9, color=MUTED)
     ax.set_title('(3) gap (model game only)', loc='left', fontsize=11, color=INK)

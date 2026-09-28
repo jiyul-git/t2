@@ -22,6 +22,11 @@
    - SB opens only to 2.5bb, and there is no limp option.
 
    Converging fast on this game is not success, and the ">0.15 gap" stop rule measures only this model game's gap.
+   - **Why its RFI is tight (§5).** The main cause is the payoff model, not CFR or the equity arithmetic.
+     - Realization is hand-independent, so the BB folds **0.000** against CO/BTN opens in every variant tested. Calling beats folding whenever equity ≥ 19.2%, and the worst class (72o) has 28.9%. That caps steal EV.
+     - max_raises 2→4 moves late-position RFI by only +0.002–0.03, although it rewrites the 3bet responses.
+     - Equity samples and seed move it ≤0.006. The model knobs (positional k, multiway model) move it ≈±0.05.
+     - At the pilot's stop point (iteration 40, gap 0.051), early-position RFI is still drifting (UTG 0.105→0.112 by iteration 60).
 2. **Wall-clock is dominated by multiway terminals (coupled_deck_v1): 92% of pilot CPU and 87% at max_raises=3.**
    - HU table terminals are 0.03–0.07%.
    - Evaluator speed (evaluate7) does not enter the iteration loop at all.
@@ -111,7 +116,104 @@ Measurements are 30bb 9-max; mr2 = pilot tree (75,669 nodes); mr3 = max_raises 3
 
 ## 5. Structural causes of the tight 30bb RFI — evidence
 
-(Filled in by experiments X1–X4. See §5.1 for method, §5.2 for results.)
+Figure: [`GTOPEN_RFI_EXPERIMENTS_V1.png`](GTOPEN_RFI_EXPERIMENTS_V1.png). Raw data: `data/gtopen_audit/rfi_experiments.json`.
+The public aggregate (PreflopRanges 30bb) is used **only as a sanity marker**: it differs in SB open size (3.5bb), limp, BBA, the 4bet tree and the unknown continuation model. Nothing below is tuned toward it.
+
+### 5.1 Method
+
+- Seeds were fixed in advance (eq and multiway seed 202; one extra seed, 303) and every run is reported whether or not it looks good.
+- Every comparison changes **one factor** on the same config, seed and iteration count.
+- **X-series (9-max, pilot game mr2)**:
+  - X1: base (eq 1200, static), 60 iterations, report every 20.
+  - X2: eq 20000.
+  - X3: `legacy_product` multiway.
+  - X4: `balanced` (which is raw, because the fit file is missing).
+  - X2–X4 ran for 40 iterations.
+- **Late-position subgame (4-/5-handed, 200 iterations, gap ≤0.0025)**:
+  - Because the solver has **no card removal**, the 9-max subgame "UTG..HJ fold → CO" is the same game as a 4-handed CO/BTN/SB/BB table with the same 1bb total dead ante. (The ante is a sunk constant, so who pays it does not change strategies.)
+  - X1 confirms it: 9-max iteration 60 CO/BTN/SB = 0.269/0.376/0.602 vs 4-handed mr2 0.271/0.374/0.605.
+  - That lets the full legal tree (max_raises 4) and every factor sweep be solved to a gap 20–50× smaller than the pilot, in minutes.
+- The audit fixture uses a blind 3bet of ×3.5; the CI pilot uses ×4.0, so CI numbers are not reproduced bit-exactly (X1 at iteration 40 differs from the CI seed-202 run by 0.004–0.014 per position).
+
+### 5.2 Results
+
+**(a) The pilot's stop rule stops before frequencies converge (X1).**
+
+| iteration | gap_total | UTG | UTG+1 | UTG+2 | LJ | HJ | CO | BTN | SB |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 20 | 0.241 | 0.101 | 0.114 | 0.136 | 0.166 | 0.185 | 0.253 | 0.376 | 0.609 |
+| 40 | 0.051 | 0.105 | 0.122 | 0.147 | 0.170 | 0.211 | 0.264 | 0.376 | 0.601 |
+| 60 | 0.020 | 0.112 | 0.126 | 0.150 | 0.172 | 0.216 | 0.269 | 0.376 | 0.602 |
+
+- At iteration 40 the gap is already 3× below the 0.15 target, yet UTG still moves +7% relative (0.105→0.112) and CO +2% by iteration 60.
+- Early-position ranges converge slowest: their subtrees are the largest, and per-seat gap does not weight them by how much their frequencies can still move.
+- A gap threshold alone does not certify frequencies. A DB record must carry a **frequency drift** check between the last two checkpoints.
+
+**(b) The missing 4bet is *not* the main cause.** Late-position subgame, iteration 200:
+
+| game | nodes | CO | BTN | SB | opener vs BB 3bet (fold/call/4bet/jam) |
+|---|---:|---:|---:|---:|---|
+| 4-handed max_raises 2 (pilot menu) | 232 | 0.271 | 0.374 | 0.605 | 0 / 1.000 / – / – |
+| 4-handed max_raises 3 | 834 | 0.274 | 0.379 | 0.631 | .386 / .407 / .048 / .159 |
+| 4-handed max_raises 4 (full legal tree) | 1,811 | 0.274 | 0.376 | 0.631 | .432 / .380 / .001 / .187 |
+| 5-handed max_raises 2 | 785 | 0.270 | 0.374 | 0.605 | — |
+| 5-handed max_raises 4 | 12,871 | 0.273 | 0.376 | 0.631 | — (HJ 0.221→0.231) |
+
+- Allowing 4bets changes the *response* strategy completely: under mr2 the opener calls 100% of 3bets.
+- But it moves RFI by only **+0.003 CO / +0.002 BTN / +0.026 SB / +0.010 HJ**.
+- max_raises=2 is a real defect of the pilot game (3bet/4bet nodes are wrong), but it does not explain opens that are too tight.
+
+**(c) The defender never folds — in every variant.** 4-handed max_raises 4, one factor at a time:
+
+| variant | CO | BTN | SB | BB fold vs BTN open | BB fold vs CO open | SB fold vs BTN open |
+|---|---:|---:|---:|---:|---:|---:|
+| base (static k=0.16, eq 1200, seed 202) | 0.274 | 0.376 | 0.631 | **0.000** | **0.000** | 0.483 |
+| realization raw (= k 0 = "balanced" without fit) | 0.261 | 0.361 | 0.684 | 0.000 | 0.000 | 0.492 |
+| static k 0.32 (2×) — sensitivity only | 0.287 | 0.405 | 0.610 | 0.000 | 0.000 | 0.456 |
+| static k 0.64 (4×) — sensitivity only | 0.312 | 0.424 | 0.495 | 0.000 | 0.000 | 0.441 |
+| eq 20000 samples | 0.271 | 0.375 | 0.632 | 0.000 | 0.000 | 0.471 |
+| eq/multiway seed 303 | 0.280 | 0.373 | 0.634 | 0.000 | 0.000 | 0.451 |
+| multiway `legacy_product` | 0.314 | 0.414 | 0.632 | 0.000 | 0.000 | 0.622 |
+| SB open 3.5bb | 0.274 | 0.376 | 0.559 | 0.000 | 0.000 | 0.483 |
+| SB 3.5 + limp (global flag) | 0.321 | 0.398 | 1.000 (limp .799) | 0.000 | 0.000 | 0.485 |
+| *public aggregate (sanity only)* | *0.375* | *0.487* | *0.894* | | | |
+
+(k=0 and raw produce an identical gap to 1e-16, which confirms the audit hook reproduces the production path. The unmodified build at k=0.16 reproduces the earlier run's gap bit-for-bit.)
+
+Mechanism, from the code (`terminal_value`, `realization_weights`):
+- Facing a 2bb BTN open, the BB's call is worth `pot·eq(h,range)·r − 1` relative to folding. With pot 5.5bb and r_OOP≈0.95 at this SPR, calling beats folding whenever eq ≥ 19.2%.
+- Measured with the solver's own table (`t2_defend_check`, `data/gtopen_audit/defend_check.json`): the break-even is 19.2% (r_OOP 0.949). The worst class, 72o, has 28.9% against a top-37% range and still 28.0% against a top-25% range. So **fold is dominated by call for every hand** (when SB folds), whatever the positional coefficient.
+- The static model's realization depends only on **seat order and SPR, never on the hand**. It has no domination or playability penalty, so trash offsuit hands keep ≈92–100% of their equity.
+- With a defender that never folds, stealing earns only the dead money times the SB's fold rate. Openers therefore stay tight.
+- The same artifact appears in:
+  - SB completing 100% when limp is allowed
+  - the pilot's opener calling 100% vs 3bets
+  - multiway pots settling at pure showdown equity with no realization at all.
+
+**(d) Size of each factor on late-position RFI (CO/BTN), relative to base:**
+
+| factor | Δ CO | Δ BTN | classification |
+|---|---:|---:|---|
+| 4bet menu (mr2→mr4) | +0.003 | +0.002 | small; wrong responses, not wrong opens |
+| equity samples 1200→20000 | −0.003 | −0.001 | negligible (noise) |
+| seed 202→303 | +0.006 | −0.003 | seed variance ≈ ±0.006 — a *different game*, not more iterations |
+| positional realization k 0→0.64 | +0.051 | +0.063 | model-dependent; still no BB fold |
+| multiway model coupled→legacy | +0.040 | +0.038 | model-dependent (multiway settlement matters) |
+| SB open 2.5→3.5, SB limp | SB only (−0.07 / limp 80%); CO/BTN +0.047/+0.022 with global limp | | menu mismatch vs reference |
+| **hand-independent continuation value** | — | — | **root cause of zero BB folds; no config knob fixes it** |
+
+**(e) 9-max checks (X2–X4, 40 iterations, seed 202).** X2X4_TABLE
+
+### 5.3 Conclusion
+
+The tight 30bb RFI is mainly a property of the **payoff model**, not of the CFR or the equity arithmetic.
+
+- Terminal pots are valued by hand-independent realization (HU ±8% by seat) and pure showdown share (multiway). Defenders never fold, which caps steal EV.
+- max_raises=2 corrupts the 3bet/4bet responses but barely moves opens.
+- Equity MC noise and seed are ≤0.006.
+- The early-position ranges are additionally under-converged at the pilot's stop point.
+- The correct fix is a better continuation model: hand-dependent realization, measured from HU postflop solves or a trusted reference, never tuned to the public RFI. Its uncertainty should be reported as a model-sensitivity band (k=0…0.64 and coupled vs legacy give ≈±0.05 RFI).
+- Raising RFI by calibration toward the public numbers is not a fix and is not proposed.
 
 ## 6. Measured performance profile
 
@@ -315,10 +417,14 @@ Combined (estimate, from the measured prototypes): H at m=128 (≈4–8× on MW,
 - 1.4 K: compact node metadata + f16/i16 arenas. Check that mr4 30bb runs on a 16GB runner.
 - Pass criteria: on the mr3 30bb fixture, before/after per-iteration time plus **the same RFI/response frequencies (within tolerance)** at a fixed iteration count.
 
-**Phase 2 — widen the game definition (accuracy)**
-- 2.1 max_raises=4 (the full legal tree), per-seat SB limp, SB open 3/3.5
-- 2.2 BBA as a real posting structure (BB pays 1bb dead ante). Until this lands, keep uniform ante, marked near/limited.
-- 2.3 multiway continuation model improvement (G, with Pluribus-style multiple continuation strategies as reference). Report sensitivity against the current static model separately.
+**Phase 2 — fix the game definition (accuracy; ordered by measured impact, §5)**
+- 2.1 **Hand-dependent continuation value for HU pots.** This is the root cause of zero BB folds.
+  - Per class × position × SPR bucket, measured from HU postflop solves (the vendored postflop engine) or a trusted, licence-clean reference; the fit file the `balanced` mode expects is currently missing.
+  - Never fitted to the public RFI.
+  - Validate on the 4-handed subgame first (minutes per solve). Pass criterion: BB fold > 0 arises from the model rather than being forced, with the same seed and iterations.
+- 2.2 Multiway settlement: extend realization/continuation to 3+-way pots (G; Pluribus-style multiple continuation strategies as reference). Report the coupled vs legacy band (≈±0.04 RFI) until then.
+- 2.3 max_raises=4 (the full legal tree), per-seat SB limp, SB open 3/3.5.
+- 2.4 BBA as a real posting structure (BB pays 1bb dead ante). Until this lands, keep the uniform ante and mark records near/limited.
 
 **Phase 3 — DB production**
 - 20/25/30/40bb (mr4) → 8–15bb push/fold (small tree; exact is feasible) → 50/75/100bb → 150bb+
@@ -357,5 +463,7 @@ python3 tools/gtopen_audit/draw_arch.py --prof-mr2 ... --prof-mr3 ... --out docs
 | `vendor/gtopen/crates/solver/examples/t2_profile.rs` | stage timings, gap trajectory, RFI/response report |
 | `vendor/gtopen/crates/solver/examples/t2_eval_bench.rs` | evaluate7, exact HU cost, MC vs exact |
 | `vendor/gtopen/crates/solver/examples/t2_resume.rs` | resume bit-exactness / other-seed load |
+| `vendor/gtopen/crates/solver/examples/t2_mw_bench.rs` | isolated multiway-kernel prototypes E/E2/F/H on the production particles |
+| `vendor/gtopen/crates/solver/examples/t2_defend_check.rs` | fold-dominance check for BB defense under the static model |
 | `tools/gtopen_audit/make_configs.py`, `draw_arch.py` | configs, figure |
 | `data/gtopen_audit/*.json` | raw measurements |
