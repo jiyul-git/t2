@@ -1,0 +1,38 @@
+{
+ "purpose": "reproducibility + throughput check before stage A: two panel_v1 flops re-solved at P6d ranges under the panel_v2 hash, 2 workers x 2 threads, solver built at the P1 tooling commit",
+ "reference": "data/gto_hu_continuation/outer_v1_damped_a05/k6/flops (4 threads, solver commit bfc07ed)",
+ "ledger": [
+  {
+   "board": "Jc6c2c",
+   "rc": 0,
+   "wall_s": 157.6,
+   "peak_rss_kb_wait4": 2175536,
+   "threads": 2,
+   "workers": 2,
+   "time": "2026-09-29T13:18:58",
+   "status": "solved",
+   "iterations": 175,
+   "exploitability_pct_pot": 0.2108969282399655,
+   "converged": true,
+   "invariant_error_bb": -1.3087097627817457e-08,
+   "solve_s": 149.864365342
+  },
+  {
+   "board": "Kc7d4h",
+   "rc": 0,
+   "wall_s": 280.2,
+   "peak_rss_kb_wait4": 2177480,
+   "threads": 2,
+   "workers": 2,
+   "time": "2026-09-29T13:21:00",
+   "status": "solved",
+   "iterations": 100,
+   "exploitability_pct_pot": 0.2799067850159487,
+   "converged": true,
+   "invariant_error_bb": -7.295092530057445e-09,
+   "solve_s": 274.937995868
+  }
+ ],
+ "result": "gross_eps, gross_br, equity, iterations and exploitability bit-identical on both flops; provenance keys equal except the panel hash",
+ "throughput": "2 threads: Jc6c2c 150 s, Kc7d4h 275 s vs 4 threads 90 s, 159 s (speed-up 4 vs 2 threads = 1.67-1.73)"
+}
