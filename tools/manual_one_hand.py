@@ -40,6 +40,36 @@ def compact_raw(raw):
     return {k: raw.get(k) for k in keep if k in raw}
 
 
+def print_pending_hero_audit(label):
+    """Print the just-finished HERO table's internal reasoning before settlement.
+
+    live2.finish stores the full hero archive in pending_archive while other
+    tables are deferred.  Consume it only for diagnostics; resume_others keeps
+    ownership of settlement/archive writing.
+    """
+    st = L.load()
+    rec = st.get("pending_archive") or {}
+    if not rec:
+        print("=== %s ===" % label)
+        print("{}")
+        return
+    compact = {
+        "hand_no": rec.get("hand_no"),
+        "hash": rec.get("hash"),
+        "pos": rec.get("pos"),
+        "hole": rec.get("hole"),
+        "board": rec.get("board"),
+        "full_log": rec.get("full_log"),
+        "intents": rec.get("intents"),
+        "plans": rec.get("plans"),
+        "reads": rec.get("reads"),
+        "range_fallback_audit": rec.get("range_fallback_audit"),
+        "decision_cache": rec.get("decision_cache"),
+    }
+    print("=== %s ===" % label)
+    print(json.dumps(compact, ensure_ascii=False, sort_keys=True, default=str))
+
+
 
 def force_logic_execution_surface():
     """Manual audit only: execute the judgment layer's exact sizing."""
@@ -134,6 +164,7 @@ def main():
         "status": out.get("status"),
     }, ensure_ascii=False, default=str))
 
+    print_pending_hero_audit("HERO_INTERNAL_AUDIT")
     st = L.load()
     if st.get("others_pending"):
         how = L.resume_others(st, None)
@@ -227,6 +258,7 @@ def main():
         if nxt.get("done"):
             print("=== NEXT_HERO_HAND_DONE ===")
             print(json.dumps({"result": nxt.get("result"), "view": nxt.get("view")}, ensure_ascii=False, default=str))
+            print_pending_hero_audit("NEXT_HERO_INTERNAL_AUDIT")
             st2 = L.load()
             if st2.get("others_pending"):
                 L.resume_others(st2, None)
@@ -263,6 +295,7 @@ def main():
                 if nxt2.get("done"):
                     print("=== FOLLOWING_HERO_HAND_DONE ===")
                     print(json.dumps({"result": nxt2.get("result"), "view": nxt2.get("view")}, ensure_ascii=False, default=str))
+                    print_pending_hero_audit("FOLLOWING_HERO_INTERNAL_AUDIT")
                     st3 = L.load()
                     if st3.get("others_pending"):
                         L.resume_others(st3, None)
@@ -298,6 +331,7 @@ def main():
                         if nxt3.get("done"):
                             print("=== HAND4_HERO_HAND_DONE ===")
                             print(json.dumps({"result": nxt3.get("result"), "view": nxt3.get("view")}, ensure_ascii=False, default=str))
+                            print_pending_hero_audit("HAND4_HERO_INTERNAL_AUDIT")
                             st4 = L.load()
                             if st4.get("others_pending"):
                                 L.resume_others(st4, None)
@@ -359,6 +393,7 @@ def main():
                                     "view": cur.get("view"),
                                 }, ensure_ascii=False, default=str))
 
+                                print_pending_hero_audit("HAND%d_HERO_INTERNAL_AUDIT" % hand_no)
                                 stn = L.load()
                                 if stn.get("others_pending"):
                                     L.resume_others(stn, None)
