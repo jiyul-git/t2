@@ -391,3 +391,136 @@ Figure: [`GTO_HU_J1_COMPARE_V1.png`](GTO_HU_J1_COMPARE_V1.png). Numbers: `data/g
 **J1 verdict.**
 - On an identical game, the damped outer fixed point and joint CFR reach the same strategy structure and the same continuation values within the storage-quantisation band.
 - Their disagreement is confined to near-indifferent classes, and is smaller than any other error source measured below.
+
+## J2. Postflop action-abstraction sensitivity: M1 (two sizes) vs M2 (one size)
+
+**Setup.**
+- All solves use the same P6d arriving ranges (24-flop damped run, k6), ε-tremble, target 0.3% pot.
+- The menu effect is measured **in the same storage** (compressed): M1 (20 GB f32 per flop) only fits compressed here.
+- M2 f32 vs M2 compressed on the same flops measures the storage band.
+
+**Cost forced a 4-flop set.**
+- M1 needed 85–143 min per flop. Jc6c2c hit the 1,000-iteration cap at 0.472% pot after 94 min.
+- The remaining flops were therefore capped at 400 iterations, a cost decision taken before any M1 value was examined. They reached 0.68%, 0.80% and 0.29% pot.
+- M1 was stopped after 4 flops (monotone, paired, rainbow dry, rainbow connected), inside the 4–6 range asked for.
+- The two two-tone flops have M2 only.
+- Aggregation uses the 4 flops' texture weights renormalised to 1 and a fixed normaliser at P6d for those flops (`panel_j2_4flop_v1.json`).
+
+Figure: [`GTO_HU_J2_MENU_V1.png`](GTO_HU_J2_MENU_V1.png). Numbers: `data/gto_hu_continuation/j2/compare_j2.json`.
+
+**A storage finding that changes the zero-reach definition.**
+- With compressed (i16/u16) storage, ε-floored zero-reach classes are badly learned: BR − ε reaches **0.2–0.54 bb**, with 36–86 classes > 0.1 bb per player per flop. Examples: BB AA/KK/JJ, BTN 63o/22.
+- f32 never exceeds 0.15 bb.
+- The u16 strategy sums cannot represent ε-sized reach.
+- **So compressed storage and ε-tremble values are incompatible.** Production tables must use f32 for the ε path, or take BR values. The menu effect is therefore also reported on BR values and on in-range classes only.
+
+**Menu effect aggregated over the 4 flops** (same storage; bb per class):
+
+| | BB | BTN |
+|---|---:|---:|
+| mean \|M1 − M2\| (ε values, all classes) | 0.082 | 0.100 |
+| mean \|M1 − M2\| (BR values, all classes) | 0.073 | 0.090 |
+| mean \|M1 − M2\| (ε values, in-range classes) | 0.070 (155 classes) | 0.094 (119 classes) |
+| max \|M1 − M2\| (ε / BR) | 0.49 / 0.34 | 0.37 / 0.29 |
+| reach-weighted mean \|M1 − M2\| | 0.066 | 0.083 |
+| range-EV shift (signed, reach-weighted) | +0.017 | −0.018 |
+| storage band, in-range classes (mean / max) | 0.031 / 0.37 | 0.043 / 0.19 |
+| 24-flop panel 95% CI half-width, mean | 0.474 | 0.356 |
+| menu effect ÷ CI (BR values) | **0.20** | **0.30** |
+| share of classes with \|M1 − M2\| > own CI | 1.2% | 0.6% |
+
+Per flop the menu effect is larger (0.12–0.23 bb mean per class), but it partly cancels across flops.
+
+It is not pure noise:
+- It is 2–3× the storage band.
+- BTN premiums are uniformly 0.15–0.35 bb lower under M1: the richer menu lets the BB defend better against value hands.
+
+M1 is less converged (0.29–0.80% vs 0.21–0.30% pot), so these numbers are an upper bound on the pure menu effect.
+
+**Classes that cycled or drifted in the damped runs** (4-flop aggregate; M1 / M2 / Δ / 24-flop CI half-width):
+
+| class | BB | BTN |
+|---|---|---|
+| JTs | 2.21 / 2.12 / +0.08 / 0.58 | 3.28 / 3.36 / −0.08 / 0.46 |
+| JTo | 1.80 / 1.68 / +0.12 / 0.65 | 3.19 / 3.19 / −0.00 / 0.51 |
+| KQo | 3.72 / 3.73 / −0.00 / 0.28 | 4.03 / 3.97 / +0.06 / 0.24 |
+| T7o | 1.46 / 1.52 / −0.06 / 0.20 | 2.93 / 3.05 / −0.12 / 0.22 |
+| A2o | 0.56 / 0.49 / +0.07 / 0.26 | 1.86 / 2.01 / −0.15 / 0.22 |
+| 85s | 1.61 / 1.55 / +0.06 / 0.18 | 3.06 / 2.90 / +0.16 / 0.19 |
+| 43s | 1.20 / 1.30 / −0.10 / 0.61 | 2.56 / 2.42 / +0.14 / 0.35 |
+| T7s | 2.54 / 2.48 / +0.06 / 0.15 | 3.69 / 3.60 / +0.09 / 0.16 |
+
+Every Δ is below its class's sampling CI; BTN 85s and T7s come closest.
+
+**BB fold/call boundary** (the 55 classes with an M2 value within 0.5 bb of the 1.0 bb fold line):
+- **6 change side** between menus: 73o, A3o, 72s, J2s, Q3s, A3s.
+- All of them sit within ±0.1 bb of the line.
+
+**Realization** (value ÷ pot × equity), M1 vs M2:
+
+| class | BB | BTN |
+|---|---|---|
+| 72o | 0.22 vs 0.28 | 1.07 vs 1.11 |
+| 32o | 0.14 vs 0.28 | 1.08 vs 1.14 |
+| J5o | 0.26 vs 0.33 | 0.86 vs 0.92 |
+| AA | 2.30 vs 2.22 | 1.65 vs 1.68 |
+| KK | 2.19 vs 2.16 | 1.72 vs 1.76 |
+
+- The richer menu lowers the OOP trash realization further.
+- Premiums stay within ±0.08.
+
+**Cost:** M1 (compressed) takes 85–143 min per flop; M2 (f32) takes 1.5–2.7 min per flop. M1 is **35–55× more expensive** and needs 10 GB compressed or 20 GB f32.
+
+**J2 verdict.**
+- At the current panel size, the action-abstraction error (≈ 0.07–0.10 bb per class; range-level shift ≈ 0.02 bb) is about 0.2–0.3 of the flop-sampling CI. Enlarging the panel is the larger gain.
+- The abstraction error is systematic, though: it moves premium values one way and flips boundary classes. It will not shrink with more flops.
+- With a 72-flop panel the CI shrinks by about √3, to 0.21–0.27 bb, and the menu effect becomes 0.35–0.5 of it, co-dominant.
+
+## J3. Error budget, next bottleneck and architecture decision
+
+Per-class continuation-value error at the BTN-open → BB-call terminal (30bb, 4-handed), in bb:
+
+| source | how measured | typical (mean) | tail (max) | range level | shrinks with |
+|---|---|---:|---:|---:|---|
+| **flop sampling** (24-flop panel) | stratified bootstrap, 95% CI half-width | **0.36–0.47** | 1.5 | unallocated ≤ 0.03 | more flops (∝ 1/√n) |
+| estimator choice on a small panel | HT/ρ vs ratio (24 flops) | 0.21–0.25 | 2.0 | ratio breaks conservation by 0.35 | more flops (fixed by HT/ρ) |
+| **postflop action abstraction** | M1 vs M2, same storage, 4 flops | **0.07–0.10** | 0.3–0.5 | ±0.02 EV shift; 6/55 boundary classes flip | richer menu only (systematic) |
+| postflop solver residual (f32, 0.2–0.3% pot) | BR − ε per class, 24-flop table | 0.01–0.02 | 0.03–0.05 | exploitability 0.016 bb | more iterations |
+| storage quantisation (compressed) | f32 vs compressed, M2, same ranges | 0.03–0.04 (in-range) | 0.19–0.37 | — | use f32 |
+| compressed × ε-tremble | BR − ε on zero-reach classes | — | 0.54 | — | f32, or BR values |
+| preflop 169-class / no inter-player card removal | conservation residual of the tables | — | — | 0.02–0.04 | combo-level preflop (redesign) |
+| **fixed point vs joint CFR** | same 6-flop game | **0.011–0.019** (reach-weighted) | 0.06 | aggregate ±0.005 | — |
+| outer-loop class-level plateau (damped) | last step's table change | 0.02–0.03 | — | — | joint CFR / more steps |
+
+**Answer to the question of this phase.** Yes:
+- the error of the value-construction method itself — fixed point vs joint ≤ 0.02 bb, solver residual ≤ 0.02 bb, storage ≤ 0.04 bb in-range —
+- is **an order of magnitude below** the flop-sampling error (0.36–0.47 bb).
+- The postflop action abstraction (0.07–0.10 bb) sits in between. It is the only method-side error of the same order as sampling after a realistic panel increase.
+
+**Next bottleneck.**
+1. Flop sampling now.
+2. Postflop action abstraction once the panel reaches ≈ 72 flops.
+3. Everything else is below 0.05 bb, except the compressed × ε incompatibility, which is avoidable by design.
+
+**Is a larger panel worth it? Yes.** It is the largest reducible error.
+- Cost per outer step with M2 f32 is about 2.5 min per flop: 48 flops ≈ 2 h and 72 flops ≈ 3 h on 4 cores. Flops are embarrassingly parallel and resumable.
+- Going from 24 to 72 flops should cut the class CI from 0.36–0.47 to about 0.21–0.27 bb.
+- Aim of the enlargement: class CI, marginal-class mixes, the BB-fold CI and estimator sensitivity. Not any aggregate target.
+- Warm-starting the damped loop from the P6d ranges should need 2–3 steps.
+
+**Production architecture: damped outer fixed point, with joint CFR as the validation reference.**
+- **Accuracy:** on an identical game the two agree within the storage band (J1). Joint CFR has no cycle and better postflop convergence, but that difference is not what limits accuracy.
+- **Memory:** joint CFR holds every flop's postflop solver at once: 6.7 GB for 6 flops, 26 GB compressed / 51 GB f32 for 24. It is also forced into compressed storage, which cannot carry ε values. The fixed point needs one flop at a time (2.4 GB), in f32.
+- **Operations:**
+  - The fixed point parallelises across flops and machines.
+  - It is resumable per flop; joint CFR is not, and was lost once to a container restart.
+  - It produces provenance-stamped, guard-checked tables per step.
+- **Cost of the fixed point:** it needs damping (α = 0.5 after a cycle is observed) and leaves near-indifferent classes unresolved. Joint CFR on a sub-panel remains the check for those classes, and for any new terminal type before it enters production.
+- If large-memory or GPU hardware becomes available, joint CFR (upstream `integrated_continuation`) is the cleaner long-run method, and the comparison should be repeated on the full panel.
+
+**Unchanged caveats.**
+- One injected terminal; every other terminal still uses the old payoff.
+- The M2 menu is a model input.
+- The public RFI is a sanity marker only.
+
+Nothing here is a GTO DB value.
