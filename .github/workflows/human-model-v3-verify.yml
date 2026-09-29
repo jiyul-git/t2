@@ -12,6 +12,7 @@ on:
       - 'tools/verify_human_model_v3.py'
       - 'tools/verify_human_model_v3_runtime.py'
       - 'tools/audit_calc_noise_v3.py'
+      - 'tools/verify_calc_noise_v3.py'
       - '.github/workflows/human-model-v3-verify.yml'
   workflow_dispatch:
 
@@ -36,7 +37,12 @@ jobs:
           tools/verify_human_model_v3.py
           tools/verify_human_model_v3_runtime.py
           tools/audit_calc_noise_v3.py
+          tools/verify_calc_noise_v3.py
+      - name: Calc-noise V3 verifier
+        run: python3 tools/verify_calc_noise_v3.py
       - name: Calc-noise directional audit
+        env:
+          T2_CALC_NOISE_V3: '0'
         run: python3 tools/audit_calc_noise_v3.py > /tmp/calc_noise_v3.json
       - name: Upload calc-noise audit
         uses: actions/upload-artifact@v4
@@ -67,6 +73,7 @@ jobs:
         env:
           T2_PREFLOP_REASONING_V3: '0'
           T2_EXPLOIT_WEIGHT_V3: '0'
+          T2_CALC_NOISE_V3: '0'
         run: python3 tools/verify_human_model_v2.py --out /tmp/human_v2.json
       - name: Require historical OFF fingerprints
         run: |
