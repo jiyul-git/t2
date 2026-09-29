@@ -1207,37 +1207,18 @@ class HandRun:
                 float((getattr(h, '_start_stacks', {}) or {}).get(target, 0))
                 / max(1.0, float(h.bb)))
 
-        opener_pos = (
-            pfo.get('pf_vs')
-            if pfo else
-            h.pos.get(public.get('opener_seat')))
-        open_bb = (
-            float(pfo.get('pf_open_bb', 2.5) or 2.5)
-            if pfo else float(public.get('open_bb', 2.5) or 2.5))
-        n_callers = (
-            int(pfo.get('pf_n_callers', 0) or 0)
-            if pfo else int(public.get('n_callers', 0) or 0))
-        raise_level = (
-            int(pfo.get('pf_level', 1) or 1)
-            if pfo else int(public.get('raise_level', 1) or 1))
-
-        rr = R.preflop_range(
-            opp_view, h.pos[target], act, float(stack_bb or 0.0),
-            set(h.hole[observer]),
-            n_callers=n_callers,
-            opener_pos=opener_pos,
-            open_bb=open_bb,
-            seats=seats, ante=ante, polar=pol,
-            raise_level=raise_level)
-        return R.range_unique_sorted(rr), {
-            'source': 'pf_seed' if pfo else 'public_action_meta',
-            'action': act,
+        _pub_story = dict(public)
+        _pub_story['opener_pos'] = h.pos.get(public.get('opener_seat'))
+        rr, _story = _preflop_story_range(
+            opp_view, h.pos[target], float(stack_bb or 0.0),
+            set(h.hole[observer]), seats, ante, act,
+            pfo=pfo, public=_pub_story, polar=pol,
+            fourbet_rate=((oe or {}).get('pf_4bet')))
+        _story.update({
+            'source_base': 'pf_seed' if pfo else 'public_action_meta',
             'stack_bb': float(stack_bb or 0.0),
-            'opener_pos': opener_pos,
-            'open_bb': float(open_bb),
-            'n_callers': int(n_callers),
-            'raise_level': int(raise_level),
-        }
+        })
+        return R.range_unique_sorted(rr), _story
 
 
     def _locked_postflop_range(self, observer, target, observer_profile,
@@ -1272,14 +1253,10 @@ class HandRun:
             stack_bb = (
                 float((getattr(h, '_start_stacks', {}) or {}).get(target, 0))
                 / max(1.0, float(h.bb)))
-        pf_vs_o = pfo.get('pf_vs') or h.pos.get(aggressor)
-        orange = R.preflop_range(
-            opp_view, h.pos[target], act_o, float(stack_bb or 0.0), set(board),
-            n_callers=int(pfo.get('pf_n_callers', 0) or 0),
-            opener_pos=pf_vs_o,
-            open_bb=float(pfo.get('pf_open_bb', 2.5) or 2.5),
-            seats=seats, ante=ante, polar=pol,
-            raise_level=int(pfo.get('pf_level', 1) or 1))
+        orange, _story_meta = _preflop_story_range(
+            opp_view, h.pos[target], float(stack_bb or 0.0), set(board),
+            seats, ante, act_o, pfo=pfo, polar=pol,
+            fourbet_rate=((oe or {}).get('pf_4bet')))
 
         acts = self._acts_of(
             target, current_street=street, current_log=rnd.log,
@@ -1293,6 +1270,7 @@ class HandRun:
         return R.range_unique_sorted(orange), {
             'stack_bb': float(stack_bb or 0.0),
             'acts': list(acts),
+            'preflop_story': dict(_story_meta or {}),
         }
 
 
@@ -1721,14 +1699,9 @@ class HandRun:
                 # 프리플랍 역할은 이미 pf_seed 에 저장돼 있다 — 추정하지 않는다.
                 _pfr = (getattr(h, 'pf_seed', {}) or {}).get(s) or {}
                 _role = self._pf_range_action(s, aggressor)
-                _pf_vs = _pfr.get('pf_vs') or h.pos.get(aggressor)
-                my_r = R.preflop_range(
-                    ax, h.pos[s], _role, h.bbs(s), set(board),
-                    n_callers=int(_pfr.get('pf_n_callers', 0) or 0),
-                    opener_pos=_pf_vs,
-                    open_bb=float(_pfr.get('pf_open_bb', 2.5) or 2.5),
-                    seats=_seats, ante=_ante,
-                    raise_level=int(_pfr.get('pf_level', 1) or 1))
+                my_r, _my_pf_story = _preflop_story_range(
+                    ax, h.pos[s], h.bbs(s), set(board), _seats, _ante,
+                    _role, pfo=_pfr, fourbet_rate=RD.PRIOR.get('pf_4bet'))
                 my_r = R.range_unique_sorted(my_r)  # legacy 순서 유지 + weighted mass 보존
                 opp_r = None
                 opp_ranges = {}
@@ -1758,26 +1731,14 @@ class HandRun:
                         if (_pfo and _rdp.get('w', 0) > 0
                                 and self._was_3bettor(o)):
                             _act_o = '3bet'
-                    _pf_vs_o = (
-                        _pfo.get('pf_vs')
-                        if _pfo else h.pos.get(_public_pf.get('opener_seat')))
-                    _open_bb_o = (
-                        float(_pfo.get('pf_open_bb', 2.5) or 2.5)
-                        if _pfo else float(_public_pf.get('open_bb', 2.5) or 2.5))
-                    _n_callers_o = (
-                        int(_pfo.get('pf_n_callers', 0) or 0)
-                        if _pfo else int(_public_pf.get('n_callers', 0) or 0))
-                    _raise_level_o = (
-                        int(_pfo.get('pf_level', 1) or 1)
-                        if _pfo else int(_public_pf.get('raise_level', 1) or 1))
-                    orange = R.preflop_range(
-                        _opp_view, h.pos[o], _act_o,
-                        h.bbs(o), set(board),
-                        n_callers=_n_callers_o,
-                        opener_pos=_pf_vs_o,
-                        open_bb=_open_bb_o,
-                        seats=_seats, ante=_ante, polar=_pol,
-                        raise_level=_raise_level_o)
+                    _pub_story_o = dict(_public_pf)
+                    _pub_story_o['opener_pos'] = h.pos.get(
+                        _public_pf.get('opener_seat'))
+                    orange, _pf_story_o = _preflop_story_range(
+                        _opp_view, h.pos[o], h.bbs(o), set(board),
+                        _seats, _ante, _act_o, pfo=_pfo,
+                        public=_pub_story_o, polar=_pol,
+                        fourbet_rate=((_oe or {}).get('pf_4bet')))
                     # 관측된 포스트플랍 액션으로 레인지를 좁힌다.
                     # 이걸 빼면 상대가 무슨 행동을 했든 매 스트리트 프리플랍 레인지가 된다.
                     # 상대 레인지는 '이 사람이 인식하는 만큼'만 좁혀진다 (range_read).
@@ -1811,6 +1772,7 @@ class HandRun:
                             'reason': 'empty_perceived_opponent_range',
                             'pf_source': ('pf_seed' if _pfo else 'public_action_meta'),
                             'pf_action': _act_o,
+                            'pf_story': dict(_pf_story_o or {}),
                         })
                     opp_ranges[o] = orange
 
