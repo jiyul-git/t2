@@ -1,0 +1,41 @@
+name: Canonical Merge Gate
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - '.github/workflows/canonical-merge-gate.yml'
+  workflow_dispatch:
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile core
+        run: python3 -m py_compile persona.py preflop.py ranges.py reads.py plan.py runner.py session.py
+      - name: P7 cold-reraise reasoning
+        run: python3 tools/verify_core_p7_cold_reraise.py
+      - name: P7 cold-response observations
+        run: python3 tools/verify_core_p7_observation.py
+      - name: Multiway read and stack aggregation
+        run: python3 tools/verify_core_multiway_reads.py
+      - name: Multiway joint nut semantics
+        run: python3 tools/verify_core_joint_nut.py
+      - name: PLAN sizing ownership
+        run: python3 tools/verify_core_sizing_ownership.py
+      - name: Preflop closure
+        run: python3 tools/verify_preflop_closure.py
+      - name: Human V3 structural verify
+        run: python3 tools/verify_human_model_v3.py
+      - name: Human V3 runtime verify
+        run: python3 tools/verify_human_model_v3_runtime.py
+      - name: Human V3 9-max integration
+        run: python3 tools/verify_human_model_v3_integration.py
+      - name: Read recency semantics
+        run: python3 tools/verify_read_recency_v3.py
+      - name: Live attribution
+        run: python3 tools/audit_human_v3_live_attribution.py
+      - name: Pairwise interaction audit
+        run: python3 tools/audit_human_v3_interactions.py
