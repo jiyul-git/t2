@@ -1,0 +1,26 @@
+name: Core P7 Cold Reraise
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - 'preflop.py'
+      - 'plan.py'
+      - 'session.py'
+      - 'tools/verify_core_p7_cold_reraise.py'
+      - 'tools/verify_preflop_closure.py'
+      - '.github/workflows/core-p7-cold-reraise.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile core
+        run: python3 -m py_compile preflop.py plan.py session.py
+      - name: Verify P7 cold reraise
+        run: python3 tools/verify_core_p7_cold_reraise.py
+      - name: Preflop closure regression
+        run: python3 tools/verify_preflop_closure.py
