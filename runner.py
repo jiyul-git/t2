@@ -1,37 +1,26 @@
 """통합 핸드 진행기. 모든 의사결정은 좌석의 타입/축에서 파생된다."""
 import json, os, random, hashlib
-import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY
+import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, persona as PS
 from table import Table
 
 D = os.path.dirname(os.path.abspath(__file__))
 def P(f): return os.path.join(D, f)
 
 # ---------- 타입별 사이징 시그니처 ----------
-import archetypes as A
-FAMILY_SIG = {
-    'reg':    dict(jitter=0.05, round_to=100, odd=0.02, open_mult=1.00),
-    'nit':    dict(jitter=0.03, round_to=100, odd=0.00, open_mult=1.00),
-    'fish':   dict(jitter=0.26, round_to=500, odd=0.32, open_mult=1.25),
-    'maniac': dict(jitter=0.18, round_to=100, odd=0.15, open_mult=1.25),
-    'tilt':   dict(jitter=0.22, round_to=100, odd=0.20, open_mult=1.20),
-    'live':   dict(jitter=0.20, round_to=500, odd=0.28, open_mult=1.15),
-}
+# Compatibility surface only. Human sizing habit is owned by persona/PLAN.
+FAMILY_SIG = PS.SIZING_FAMILY_SIG
+
 def _sig(t):
-    fam = A.ARCHETYPES[t][6] if t in A.ARCHETYPES else 'reg'
-    return FAMILY_SIG[fam]
+    return PS.sizing_signature(t)
+
 class _SigMap(dict):
-    def __getitem__(self, k): return _sig(k)
+    def __getitem__(self,k): return _sig(k)
+
 SIZING_SIG = _SigMap()
 
 def shape_size(amount, ptype, rng, pot=None):
-    """타입별 사이징 버릇을 입힌다. 피쉬는 팟 무관 라운드 넘버를 즐겨 쓴다."""
-    sig = SIZING_SIG[ptype]
-    a = amount * (1 + rng.uniform(-sig['jitter'], sig['jitter']))
-    if rng.random() < sig['odd'] and pot:
-        a = pot * rng.choice([0.33, 0.5, 1.0, 1.5])      # 감으로 치는 사이즈
-    r = sig['round_to']
-    return max(r, int(round(a / r)) * r)
-
+    """Compatibility wrapper; strategic ownership lives in persona.shape_size."""
+    return PS.shape_size(amount,ptype,rng,pot=pot)
 
 def effective_allin_v1(target, actor_cap, opp_cap_max, contrib_before, pot_before):
     """final legal target이 actor 기준 사실상 올인인지 분류한다.
