@@ -55,6 +55,10 @@ name = "t2_cont_flop"
 name = "t2_cont_panel"
 
 [[example]]
+name = "t2_cont_census"
+required-features = ["t2-cont"]
+
+[[example]]
 name = "t2_joint"
 required-features = ["t2-joint"]
 
