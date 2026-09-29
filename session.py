@@ -220,6 +220,63 @@ def _preflop_public_action_context(action_meta, target, bb):
     }
 
 
+def _preflop_story_range(range_profile, pos, stack_bb, dead, seats, ante,
+                         action, pfo=None, public=None, polar=0.0,
+                         fourbet_rate=None):
+    """Rebuild a public preflop range without forgetting earlier actions.
+
+    A 4bet by the original opener is conditional on that player's RFI range.
+    Treating it as a fresh 3bet can query an impossible position pair
+    (e.g. LJ '3betting' BB), yield an empty range, and trigger the neutral
+    all-combos fallback.  For opener_backaction we therefore keep the RFI
+    support as the prior and reweight it by the observed 4bet event.
+    """
+    pfo = dict(pfo or {})
+    public = dict(public or {})
+    opener_pos = pfo.get('pf_vs') if pfo else public.get('opener_pos')
+    open_bb = (float(pfo.get('pf_open_bb', 2.5) or 2.5)
+               if pfo else float(public.get('open_bb', 2.5) or 2.5))
+    n_callers = (int(pfo.get('pf_n_callers', 0) or 0)
+                 if pfo else int(public.get('n_callers', 0) or 0))
+    level = (int(pfo.get('pf_level', 1) or 1)
+             if pfo else int(public.get('raise_level', 1) or 1))
+
+    if (pfo and action == '3bet' and level >= 2
+            and pfo.get('pf_decision_kind') == 'opener_backaction'):
+        line = list(pfo.get('pf_line') or [])
+        origin = next((x for x in line if x.get('role') == 'open'), None)
+        origin_stack = (float(origin.get('stack_bb'))
+                        if origin and origin.get('stack_bb') is not None
+                        else float(stack_bb or 0.0))
+        prior = R.preflop_range(
+            range_profile, pos, 'open', origin_stack, dead,
+            seats=seats, ante=ante)
+        rate = (float(fourbet_rate)
+                if fourbet_rate is not None else float(RD.PRIOR['pf_4bet']))
+        rr = R.preflop_reraise_posterior(prior, rate, polar=polar)
+        return rr, {
+            'source': 'opener_rfi_to_4bet_posterior',
+            'action': '4bet',
+            'raise_level': level,
+            'fourbet_rate': rate,
+            'prior_n': len(prior),
+            'prior_mass': R.range_mass(prior),
+            'posterior_n': len(rr),
+            'posterior_mass': R.range_mass(rr),
+        }
+
+    rr = R.preflop_range(
+        range_profile, pos, action, float(stack_bb or 0.0), dead,
+        n_callers=n_callers, opener_pos=opener_pos, open_bb=open_bb,
+        seats=seats, ante=ante, polar=polar, raise_level=level)
+    return rr, {
+        'source': 'standard_preflop_range',
+        'action': action,
+        'raise_level': level,
+        'opener_pos': opener_pos,
+        'open_bb': open_bb,
+    }
+
 def _cold_reraise_context(action_meta, actor, order, folded=(), allin=()):
     """P7 public context for a player who has not acted before two full raises.
 
