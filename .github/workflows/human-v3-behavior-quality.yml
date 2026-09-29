@@ -1,0 +1,24 @@
+name: Human V3 Behavior Quality
+
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - 'persona.py'
+      - 'tourney.py'
+      - 'tools/verify_human_model_v3_integration.py'
+      - 'tools/audit_human_v3_behavior_quality.py'
+      - '.github/workflows/human-v3-behavior-quality.yml'
+  workflow_dispatch:
+
+jobs:
+  behavior-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Human V3 behavior-quality audit
+        run: python tools/audit_human_v3_behavior_quality.py
