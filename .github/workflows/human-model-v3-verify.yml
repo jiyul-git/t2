@@ -11,6 +11,7 @@ on:
       - 'tools/verify_human_model_v2.py'
       - 'tools/verify_human_model_v3.py'
       - 'tools/verify_human_model_v3_runtime.py'
+      - 'tools/audit_calc_noise_v3.py'
       - '.github/workflows/human-model-v3-verify.yml'
   workflow_dispatch:
 
@@ -34,6 +35,14 @@ jobs:
           python3 -m py_compile persona.py preflop.py plan.py
           tools/verify_human_model_v3.py
           tools/verify_human_model_v3_runtime.py
+          tools/audit_calc_noise_v3.py
+      - name: Calc-noise directional audit
+        run: python3 tools/audit_calc_noise_v3.py > /tmp/calc_noise_v3.json
+      - name: Upload calc-noise audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: calc-noise-v3-audit
+          path: /tmp/calc_noise_v3.json
 
   paired-runtime:
     runs-on: ubuntu-latest
