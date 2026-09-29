@@ -110,6 +110,37 @@ fn main() -> Result<(), String> {
     if path.len() >= 1 {
         if let Some(m) = mix(&path[..path.len() - 1]) { freq.insert("terminal_parent".into(), m); }
     }
+    // read-only per-action class values at the BTN first-in node and the terminal's parent,
+    // plus q = P(path from the node reaches this terminal | the node's first action on the
+    // path), the factor by which a change of the terminal value moves that action's EV
+    #[cfg(feature = "t2-cont")]
+    let action_values = {
+        let mut m = serde_json::Map::new();
+        let mut spots: Vec<(String, usize)> = vec![("terminal_parent".into(), path.len() - 1)];
+        for k in 0..path.len() - 1 {
+            let (n, _) = s.walk(&path[..k])?;
+            if s.nodes[n].actor as usize == nd.aggressor as usize {
+                spots.push((format!("rfi_{}", s.cfg.positions[nd.aggressor as usize]), k));
+            }
+        }
+        for (name, k) in spots {
+            let (n, vals) = s.t2_action_values(&path[..k])?;
+            let actor = s.nodes[n].actor as usize;
+            let (_, r0) = s.walk(&path[..k])?;
+            let mass = |r: &Vec<Vec<f32>>, q: usize| r[q].iter().map(|&x| x as f64).sum::<f64>();
+            let q: f64 = (0..s.n).filter(|&x| x != actor).map(|x| mass(&reaches, x) / mass(&r0, x)).product();
+            m.insert(name, serde_json::json!({
+                "actor": s.cfg.positions[actor], "path": &path[..k],
+                "actions": s.nodes[n].actions.iter().map(|x| x.label.clone()).collect::<Vec<_>>(),
+                "on_path_action": path[k], "ev_bb": vals,
+                "terminal_sensitivity_q": q,
+                "note": "EV per class (bb, net of invested) given the node is reached, average strategies, class-level; dEV(on_path_action)/dV_terminal = q",
+            }));
+        }
+        serde_json::Value::Object(m)
+    };
+    #[cfg(not(feature = "t2-cont"))]
+    let action_values = serde_json::Value::Null;
     let labels: Vec<String> = (0..NUM_CLASSES).map(class_label).collect();
     let out = serde_json::json!({
         "config_file": a[1], "config": s.cfg, "iterations": s.iteration,
@@ -119,7 +150,7 @@ fn main() -> Result<(), String> {
         "pot_bb": nd.pot, "effective_behind_bb": eff, "spr": eff / nd.pot,
         "aggressor_seat": nd.aggressor,
         "aggressor": if (nd.aggressor as usize) < s.n { s.cfg.positions[nd.aggressor as usize].clone() } else { "none".into() },
-        "players": players, "class_labels": labels, "frequencies": freq,
+        "players": players, "class_labels": labels, "frequencies": freq, "action_values": action_values,
         "terminal_live_mask": nd.live, "t2_cont_file": std::env::var("T2_CONT_FILE").ok(),
         "ranges_hash_fnv1a64": fnv1a64(&norm.iter().map(|v| v.as_slice()).collect::<Vec<_>>()),
         "note": "average-strategy reaches; class-level (no card removal between seats); ante counted in invested",

@@ -17,6 +17,11 @@ of the table (max/mean |dV|, and relative to the bootstrap CI), preflop gap, pos
 exploitability (max/mean over the panel), and the table's unallocated chips.
 Every step is resumable: finished files are reused only through the same provenance checks
 the tools already enforce.
+Warm start (panel change, v2): --warm-from RUN --warm-k K --warm-table T starts at step K with
+P_K = RUN/kK/terminal.json (copied, not re-solved) and V_K measured = T (already aggregated at
+P_K's ranges on the new panel); with --alpha < 1 the step-K blend uses RUN/k(K-1)/table.json,
+the table P_K was solved with. --workers/--threads route flop solves through solve_panel.py
+(one process per flop).
 """
 import argparse
 import json
@@ -94,6 +99,11 @@ def main():
     ap.add_argument('--damp-from', type=int, default=None, help='first outer step whose injected table is blended')
     ap.add_argument('--seed-from', default=None, help='undamped run dir whose steps < damp-from are copied')
     ap.add_argument('--stop-before-panel', type=int, default=None, help='solve P_K, then stop before its panel')
+    ap.add_argument('--warm-from', default=None)
+    ap.add_argument('--warm-k', type=int, default=None)
+    ap.add_argument('--warm-table', default=None)
+    ap.add_argument('--workers', default=None, help='solve flops with solve_panel.py (auto or N)')
+    ap.add_argument('--threads', default=None)
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     env = {'PREFLOP_EQ_SEED': '202', 'PREFLOP_MULTIWAY_SEED': '202', 'PREFLOP_EQ_SAMPLES': '1200'}
@@ -113,11 +123,30 @@ def main():
             shutil.copytree(src, dst)
             os.rename(os.path.join(dst, 'table.json'), os.path.join(dst, 'table_measured.json'))
     prev_t = prev_v = None
-    for k in range(a.max_outer + 1):
+    k_first = 0
+    if a.warm_from:
+        import shutil
+        K = k_first = a.warm_k
+        d = os.path.join(a.out, f'k{K}')
+        os.makedirs(d, exist_ok=True)
+        if not os.path.exists(os.path.join(d, 'terminal.json')):
+            shutil.copy(os.path.join(a.warm_from, f'k{K}', 'terminal.json'), os.path.join(d, 'terminal.json'))
+        wt = os.path.join(d, 'table_measured.json' if a.alpha < 1.0 else 'table.json')
+        if not os.path.exists(wt):
+            shutil.copy(a.warm_table, wt)
+        assert json.load(open(wt))['provenance']['ranges_hash_fnv1a64'] == \
+            json.load(open(os.path.join(d, 'terminal.json')))['ranges_hash_fnv1a64'], 'warm table not at P_K ranges'
+        prev_t = json.load(open(os.path.join(a.warm_from, f'k{K-1}', 'terminal.json')))
+        pm = os.path.join(a.warm_from, f'k{K-1}', 'table_measured.json')
+        prev_v = json.load(open(pm if os.path.exists(pm) else os.path.join(a.warm_from, f'k{K-1}', 'table.json')))
+    for k in range(k_first, a.max_outer + 1):
         d = os.path.join(a.out, f'k{k}')
         os.makedirs(d, exist_ok=True)
         term = os.path.join(d, 'terminal.json')
-        table_in = os.path.join(a.out, f'k{k-1}', 'table.json') if k > 0 else None
+        if a.warm_from and k == k_first:
+            table_in = os.path.join(a.warm_from, f'k{k-1}', 'table.json')
+        else:
+            table_in = os.path.join(a.out, f'k{k-1}', 'table.json') if k > 0 else None
         if not os.path.exists(term):
             e = dict(env)
             if table_in:
@@ -138,11 +167,16 @@ def main():
             print(f'k{k}: preflop only (stopped before panel)', flush=True)
             break
         table = os.path.join(d, 'table.json')
-        damped = a.alpha < 1.0 and k >= (a.damp_from if a.damp_from is not None else 1) and k > 0
+        damped = a.alpha < 1.0 and k >= (a.damp_from if a.damp_from is not None else (k_first or 1)) and k > 0
         measured = os.path.join(d, 'table_measured.json') if damped else table
         if not os.path.exists(measured):
-            run([os.path.join(BIN, 't2_cont_panel'), term, a.menu, a.panel, os.path.join(d, 'flops'), *a.postflop],
-                {'T2_SOURCE_COMMIT': commit})
+            if a.workers:
+                run(['python3', os.path.join(ROOT, 'tools/gto_hu_continuation/solve_panel.py'), term, a.menu, a.panel,
+                     os.path.join(d, 'flops'), '--postflop', *a.postflop, '--workers', a.workers]
+                    + (['--threads', a.threads] if a.threads else []))
+            else:
+                run([os.path.join(BIN, 't2_cont_panel'), term, a.menu, a.panel, os.path.join(d, 'flops'), *a.postflop],
+                    {'T2_SOURCE_COMMIT': commit})
             run(['python3', os.path.join(ROOT, 'tools/gto_hu_continuation/aggregate.py'), term, a.panel,
                  os.path.join(d, 'flops'), measured, '--outer', str(k), '--boot', a.boot, '--estimator', a.estimator])
         if damped and not os.path.exists(table):

@@ -19,6 +19,9 @@ Invariant (at the terminal's ACTUAL arriving ranges, which differ from the EPS-f
 ranges the solves used by <= EPS per class):
   sum_player sum_h range_h * v_h = pot  ->  reported as 'unallocated_bb'.
 A per-flop artifact is accepted only if its provenance ranges hash equals the terminal's.
+Nested panels (panel_v2_72): with --flop-dir-extra, a board missing from flop_dir is taken
+from the extra dirs; its provenance key must equal the others' in every field except the
+panel hash, which must be this panel's or its declared parent panel's.
 """
 import argparse
 import glob
@@ -58,6 +61,7 @@ def main():
     ap.add_argument('--outer', type=int, default=0)
     ap.add_argument('--boot', type=int, default=2000)
     ap.add_argument('--max-unallocated', type=float, default=0.05)
+    ap.add_argument('--flop-dir-extra', action='append', default=[])
     ap.add_argument('--estimator', default='ht_rho', choices=['ht_rho', 'fixed_norm'],
                     help='fixed_norm: divide by the panel file\'s per-player fixed_normaliser instead of rho')
     a = ap.parse_args()
@@ -66,16 +70,25 @@ def main():
     labels = term['class_labels']
     combos = [class_combos(l) for l in labels]
     flops = {}
+    ok_hash = {panel['panel_hash_sha256']}
+    if 'parent_panel' in panel:
+        ok_hash.add(panel['parent_panel']['panel_hash_sha256'])
+    source = {}
     for f in panel['panel']:
-        path = os.path.join(a.flop_dir, f['board'] + '.json')
+        path = next((p for p in [os.path.join(d_, f['board'] + '.json') for d_ in [a.flop_dir] + a.flop_dir_extra]
+                     if os.path.exists(p)), None)
+        if path is None:
+            raise SystemExit(f"{f['board']}: no artifact in {[a.flop_dir] + a.flop_dir_extra}")
         d = json.load(open(path))
         key = d['provenance_key']
         if key['ranges_hash_fnv1a64'] != term['ranges_hash_fnv1a64']:
             raise SystemExit(f"{f['board']}: ranges hash {key['ranges_hash_fnv1a64']} != terminal {term['ranges_hash_fnv1a64']}")
-        if key['panel_hash_sha256'] != panel['panel_hash_sha256']:
+        if key['panel_hash_sha256'] not in ok_hash:
             raise SystemExit(f"{f['board']}: panel hash mismatch")
         flops[f['board']] = d
-    keys = {json.dumps(d['provenance_key'], sort_keys=True) for d in flops.values()}
+        source[f['board']] = path
+    keys = {json.dumps({k: v for k, v in d['provenance_key'].items() if k != 'panel_hash_sha256'}, sort_keys=True)
+            for d in flops.values()}
     if len(keys) != 1:
         raise SystemExit('flop artifacts disagree on provenance key')
     strata = {}
@@ -145,6 +158,7 @@ def main():
         total += sum(r[h] * st['gross'][h] for h in range(169))
         total_ratio += sum(r[h] * st['gross_ratio'][h] for h in range(169))
     key = json.loads(next(iter(keys)))
+    key['panel_hash_sha256'] = sorted({d['provenance_key']['panel_hash_sha256'] for d in flops.values()})
     out = {
         'schema': 't2_hu_continuation_table_v1', 'value_convention': 'gross_share', 'zero_reach_definition': key['zero_reach_definition'],
         'node': term['terminal_node'], 'live': term['terminal_live_mask'], 'pot_bb': term['pot_bb'],
@@ -155,7 +169,7 @@ def main():
         'provenance': {'terminal_file': a.terminal, 'ranges_hash_fnv1a64': term['ranges_hash_fnv1a64'],
                        'panel_hash_sha256': panel['panel_hash_sha256'], 'flop_key': key,
                        'solver_commits': sorted({d['solver_commit'] for d in flops.values()}),
-                       'flops': len(flops), 'exploitability_pct_pot_max': max(d['exploitability_pct_pot'] for d in flops.values()),
+                       'flops': len(flops), 'flop_dirs': sorted({os.path.dirname(p) for p in source.values()}), 'exploitability_pct_pot_max': max(d['exploitability_pct_pot'] for d in flops.values()),
                        'exploitability_pct_pot_mean': sum(d['exploitability_pct_pot'] for d in flops.values()) / len(flops),
                        'per_flop_invariant_error_max': max(abs(d['invariant']['error']) for d in flops.values()),
                        'iterations_mean': sum(d['iterations'] for d in flops.values()) / len(flops),

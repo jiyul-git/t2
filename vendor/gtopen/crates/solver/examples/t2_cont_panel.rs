@@ -8,7 +8,9 @@
 //! sensitivity bound). Existing per-flop files are reused ONLY if their provenance key
 //! (ranges hash, menu hash, panel hash, tree config, eps, target) matches exactly;
 //! a mismatch is an error, never a silent reuse.
-//! Env: T2_SOURCE_COMMIT (recorded), T2_STORAGE=compressed (optional).
+//! Env: T2_SOURCE_COMMIT (recorded), T2_STORAGE=compressed (optional),
+//! T2_PANEL_BOARDS=b1,b2,... (optional: solve only these panel boards, so independent
+//! processes can share one panel; the provenance key is the same either way).
 use solver::cards::{rank, suit};
 use solver::game::Dealt;
 use solver::preflop::equity::{class_index, class_label, NUM_CLASSES};
@@ -26,6 +28,12 @@ fn fnv(bytes: &[u8]) -> String {
         h = h.wrapping_mul(0x100000001b3);
     }
     format!("{h:016x}")
+}
+
+/// VmHWM of this process (peak resident set), kB; None off Linux.
+fn peak_rss_kb() -> Option<u64> {
+    let st = std::fs::read_to_string("/proc/self/status").ok()?;
+    st.lines().find(|l| l.starts_with("VmHWM:"))?.split_whitespace().nth(1)?.parse().ok()
 }
 
 fn full_range() -> String {
@@ -106,8 +114,18 @@ fn main() -> Result<(), String> {
         "roles": {"OOP": pos[oop_i], "IP": pos[ip_i]},
     });
     let commit = std::env::var("T2_SOURCE_COMMIT").unwrap_or_else(|_| "unknown".into());
+    let only: Option<Vec<String>> = std::env::var("T2_PANEL_BOARDS").ok().map(|v| v.split(',').map(|x| x.to_string()).collect());
+    let boards: Vec<&str> = panel["panel"].as_array().ok_or("panel")?.iter().map(|f| f["board"].as_str().unwrap()).collect();
+    if let Some(o) = &only {
+        if let Some(b) = o.iter().find(|b| !boards.contains(&b.as_str())) {
+            return Err(format!("T2_PANEL_BOARDS: {b} is not on the panel"));
+        }
+    }
     for f in panel["panel"].as_array().ok_or("panel")? {
         let board = f["board"].as_str().unwrap();
+        if only.as_ref().map_or(false, |o| !o.iter().any(|b| b == board)) {
+            continue;
+        }
         let path = out_dir.join(format!("{board}.json"));
         if path.exists() {
             let (_, old) = read(path.to_str().unwrap())?;
@@ -174,7 +192,9 @@ fn main() -> Result<(), String> {
             "schema": "t2_hu_continuation_flop_v1", "board": board, "stratum": f["stratum"], "panel_weight": f["weight"],
             "provenance_key": key, "solver_commit": commit, "solver": "vendored GTOpen CPU postflop Solver (DCFR), isomorphism on",
             "iterations": iters, "exploitability_pct_pot": expl, "trace": trace,
-            "cost": {"build_ms": build_ms, "solve_ms": solve_ms, "tree_nodes": nodes, "arena_bytes": s.arena_bytes()},
+            "converged": expl <= target,
+            "cost": {"build_ms": build_ms, "solve_ms": solve_ms, "tree_nodes": nodes, "arena_bytes": s.arena_bytes(),
+                     "threads": rayon::current_num_threads(), "peak_rss_kb": peak_rss_kb()},
             "invariant": {"range_mean_gross": inv, "sum": inv[0] + inv[1], "pot": pot, "error": inv[0] + inv[1] - pot,
                           "note": "at the EPS-floored ranges the solve used"},
             "players": players,

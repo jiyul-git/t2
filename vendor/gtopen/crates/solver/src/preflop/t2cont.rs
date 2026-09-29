@@ -57,3 +57,34 @@ pub fn gross_for(node: usize, live: u32, pot: f64, p: usize) -> Option<&'static 
     assert!(t.live == live && (t.pot - pot).abs() < 1e-9, "T2_CONT_FILE node {node} does not match the tree");
     t.gross.iter().find(|(s, _)| *s == p).map(|(_, g)| g.as_slice())
 }
+
+impl super::PreflopSolver {
+    /// Read-only diagnostic (no strategy or regret is touched): at the node reached by
+    /// `path` under the average strategy, the acting seat's expected value of each action
+    /// per class (bb, net of everything invested, same units as the terminal payoffs),
+    /// conditional on the node being reached — the counterfactual value of the average
+    /// strategy divided by the other seats' reach product at the node. Class-level, like
+    /// the solver itself (no card removal between seats).
+    pub fn t2_action_values(&self, path: &[usize]) -> Result<(usize, Vec<Vec<f64>>), String> {
+        let (node, reaches) = self.walk(path)?;
+        let nd = &self.nodes[node];
+        if nd.kind != super::KIND_ACTION {
+            return Err("path does not end at an action node".into());
+        }
+        let actor = nd.actor as usize;
+        let norm: f64 = (0..self.n).filter(|&q| q != actor).map(|q| reaches[q].iter().map(|&x| x as f64).sum::<f64>()).product();
+        if norm <= 0.0 {
+            return Err("node not reached by the other seats".into());
+        }
+        let mut out = Vec::with_capacity(nd.actions.len());
+        for a in 0..nd.actions.len() {
+            let mut r = reaches.clone();
+            let v = self
+                .traverse_checkpoint(self.child(node, a), actor, &mut r, 3, super::CheckpointNeeds { br: false, avg: true }, super::PAR_DEPTH)
+                .ok_or("cancelled")?;
+            let v = v.avg.unwrap_or_else(|| vec![0.0; super::NUM_CLASSES]);
+            out.push(v.iter().map(|&x| x as f64 / norm).collect());
+        }
+        Ok((node, out))
+    }
+}
