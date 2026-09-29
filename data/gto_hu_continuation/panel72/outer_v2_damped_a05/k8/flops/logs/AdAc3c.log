@@ -1,1 +1,2 @@
 AdAc3c 125 iters 0.234%pot solve 321s inv_err 1.3e-8
+reuse AdAc3c

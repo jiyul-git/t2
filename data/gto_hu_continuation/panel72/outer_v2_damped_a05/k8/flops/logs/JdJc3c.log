@@ -1,1 +1,2 @@
 JdJc3c 100 iters 0.216%pot solve 261s inv_err -4.9e-8
+reuse JdJc3c
