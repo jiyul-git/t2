@@ -1,0 +1,46 @@
+{
+ "schema": "flop_panel_v1",
+ "id": "panel_j2_4flop_v1",
+ "panel": [
+  {
+   "board": "Jc6c2c",
+   "stratum": "monotone",
+   "weight": 0.09691629955947138
+  },
+  {
+   "board": "6d6c3c",
+   "stratum": "paired",
+   "weight": 0.32158590308370044
+  },
+  {
+   "board": "Kc7d4h",
+   "stratum": "rainbow_dry",
+   "weight": 0.29074889867841414
+  },
+  {
+   "board": "Tc9d5h",
+   "stratum": "rainbow_connected",
+   "weight": 0.29074889867841414
+  }
+ ],
+ "strata": {
+  "monotone": {
+   "probability": 0.09691629955947138
+  },
+  "paired": {
+   "probability": 0.32158590308370044
+  },
+  "rainbow_dry": {
+   "probability": 0.29074889867841414
+  },
+  "rainbow_connected": {
+   "probability": 0.29074889867841414
+  }
+ },
+ "fixed_normaliser": {
+  "BTN": 0.9060673858127273,
+  "BB": 0.8758782448365052
+ },
+ "panel_hash_sha256": "f751da2b3614d5fddf9617fa0f7f83d8ee2e237533bb203e4cdfb419eea321f6",
+ "note": "J2 comparison set: the 4 sub6 flops with both M1 and M2 solves (M1 stopped after 4 flops for cost: 94/85/143/113 min per flop); weights renormalised to sum 1; normaliser at P6d ranges for these 4 flops"
+}

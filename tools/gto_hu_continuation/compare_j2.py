@@ -96,13 +96,21 @@ def main():
         s24 = next(s for s in p24['seats'] if s['position'] == pos)
         hw = [(hi - lo) / 2 for lo, hi in zip(s24['gross_ci95_lo'], s24['gross_ci95_hi'])]
         dmenu = [x - y for x, y in zip(v1, v2)]
+        dmenu_br = [x - y for x, y in zip(b1, b2)]
+        keep = pl(term, pos)['class_keep_fraction']
+        inr = [h for h in range(169) if keep[h] > 1e-6]
         dstor = [x - y for x, y in zip(vf, v2)]
         real = lambda v, e, n: v[L.index(n)] / (pot * e[L.index(n)]) if e[L.index(n)] > 1e-9 else None
         res['players'][pos] = {
             'menu_mean_abs_bb': sum(abs(x) for x in dmenu) / 169, 'menu_max_abs_bb': max(abs(x) for x in dmenu),
             'menu_reach_weighted_mean_abs_bb': sum(r[h] * abs(dmenu[h]) for h in range(169)),
             'menu_range_ev_delta_bb': sum(r[h] * dmenu[h] for h in range(169)),
+            'menu_br_mean_abs_bb': sum(abs(x) for x in dmenu_br) / 169, 'menu_br_max_abs_bb': max(abs(x) for x in dmenu_br),
+            'menu_br_over_ci_ratio_mean': sum(abs(dmenu_br[h]) / hw[h] for h in range(169) if hw[h] > 0) / sum(1 for x in hw if x > 0),
+            'menu_inrange_eps_mean_abs_bb': sum(abs(dmenu[h]) for h in inr) / len(inr), 'menu_inrange_eps_max_abs_bb': max(abs(dmenu[h]) for h in inr),
+            'in_range_classes': len(inr),
             'storage_mean_abs_bb': sum(abs(x) for x in dstor) / 169, 'storage_max_abs_bb': max(abs(x) for x in dstor),
+            'storage_inrange_mean_abs_bb': sum(abs(dstor[h]) for h in inr) / len(inr), 'storage_inrange_max_abs_bb': max(abs(dstor[h]) for h in inr),
             'panel24_ci_halfwidth_mean_bb': sum(hw) / 169,
             'menu_over_ci_ratio_mean': sum(abs(dmenu[h]) / hw[h] for h in range(169) if hw[h] > 0) / sum(1 for x in hw if x > 0),
             'share_classes_menu_gt_ci': sum(1 for h in range(169) if abs(dmenu[h]) > hw[h]) / 169,
@@ -131,10 +139,8 @@ def main():
         g = ax[i]
         P = res['players'][pos]
         g.scatter(P['_v2'], [x - y for x, y in zip(P['_v1'], P['_v2'])], s=12, color=C1, label='M1 − M2 (same storage)')
-        g.fill_between(sorted(P['_v2']), [0] * 169, [0] * 169, color=GRID)
-        xs = sorted(range(169), key=lambda h: P['_v2'][h])
-        g.plot([P['_v2'][h] for h in xs], [P['_hw'][h] for h in xs], color=C2, lw=1, label='+ 24-flop panel 95% CI half-width')
-        g.plot([P['_v2'][h] for h in xs], [-P['_hw'][h] for h in xs], color=C2, lw=1)
+        g.scatter(P['_v2'], P['_hw'], s=6, marker='_', color=C2, label='± 24-flop panel 95% CI half-width (same class)')
+        g.scatter(P['_v2'], [-x for x in P['_hw']], s=6, marker='_', color=C2)
         g.axhline(0, color=MUTED, lw=1)
         for n in BOUNDARY:
             h = L.index(n)
