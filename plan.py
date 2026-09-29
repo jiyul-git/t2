@@ -2681,15 +2681,41 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None):
     if st.get('plan') in ('value_2street', 'pot_control', 'block'):
         rel = st.get('rel', 0.5)
         made = bot.made_strength(hero, board)
+
+        # River is terminal: protection/future-equity is gone.  A turn
+        # value_2street label therefore cannot by itself authorize one more bet.
+        # Re-evaluate whether this is still clear value, a learned thin-value
+        # spot, or simply showdown value.
+        #
+        # Keep the existing semantic bands; the bug was the fallback direction.
+        # Previously, failing the thin-value gate returned the old value_2street
+        # plan, so a hand *not good enough for thin value* still bet as value.
+        if rel >= 0.92:
+            return st
+
         if profile and profile.get('concepts') and rng is not None and made >= 1:
             _tv = PS.sk(profile, 'thin_value_river')/10.0
-            # 이길 여지가 있어야 얇은 밸류다. 너무 강하면 이미 3스트리트고,
-            # 너무 약하면 블러프캐치 대상이다.
-            _band = max(0.0, min(1.0, (rel - 0.48)/0.30)) * max(0.0, min(1.0, (0.92 - rel)/0.20))
+            _band = (max(0.0, min(1.0, (rel - 0.48)/0.30))
+                     * max(0.0, min(1.0, (0.92 - rel)/0.20)))
             if rng.random() < 0.75*_tv*_band:
                 st['plan'] = 'thin_river'
                 st['why'] = (st.get('why') or []) + [
                     '리버: 얇은 밸류(rel %.2f, 개념 %.1f)' % (rel, _tv*10)]
+                return st
+
+        # If it is not clear value and the learned thin-value judgment did not
+        # fire, take the showdown value.  Air is handled by the bluff/giveup
+        # paths below; a made hand should not keep firing merely because the
+        # previous street called it value_2street.
+        if made >= 1:
+            st['plan'] = 'showdown'
+            st['why'] = (st.get('why') or []) + [
+                '리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel %.2f) → 쇼다운'
+                % rel]
+        else:
+            st['plan'] = 'giveup'
+            st['why'] = (st.get('why') or []) + [
+                '리버: 밸류 계획 근거 소멸(rel %.2f, made 0) → 포기' % rel]
         return st
 
     if st.get('plan') != 'semibluff':
