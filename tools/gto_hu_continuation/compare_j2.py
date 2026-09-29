@@ -50,7 +50,12 @@ def main():
     combos = [class_combos(l) for l in L]
     boards = [f['board'] for f in panel['panel']]
     w = {f['board']: f['weight'] for f in panel['panel']}
-    load = lambda d, b: json.load(open(os.path.join(d, b + '.json')))
+    def load(dirs, b):
+        for d in dirs.split(','):
+            f = os.path.join(d, b + '.json')
+            if os.path.exists(f):
+                return json.load(open(f))
+        raise SystemExit(f'{b}: not found in {dirs}')
     M1 = {b: load(a.m1, b) for b in boards}
     M2c = {b: load(a.m2c, b) for b in boards}
     M2f = {b: load(a.m2f, b) for b in boards}
