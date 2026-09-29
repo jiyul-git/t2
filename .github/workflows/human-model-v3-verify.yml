@@ -92,13 +92,15 @@ jobs:
           import json
           d=json.load(open('/tmp/human_v2.json'))
           required=('MATCH','B','D','E','F','G','A1')
-          bad=[k for k in required if not bool((d.get(k) or {}).get('pass'))]
+          summary=d.get('summary') or {}
+          status={k: bool(summary.get(k)) for k in required}
+          bad=[k for k in required if not status[k]]
           # IDENT compares against the pre-core-upgrade historical action
-          # fingerprints. P7 and multiway core changes intentionally move them;
+          # fingerprints. P7/multiway/sizing core changes intentionally move it;
           # keep that signal visible, but do not mistake it for a V3 regression.
           print(json.dumps({
             'historical_IDENT_diagnostic': d.get('IDENT'),
-            'required': {k:(d.get(k) or {}).get('pass') for k in required},
+            'required': status,
             'pass': not bad,
           }, indent=2))
           if bad:
