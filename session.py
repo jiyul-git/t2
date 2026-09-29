@@ -111,6 +111,10 @@ def _pf_observation_flags(action_meta, seat):
         'faced_fourbet_as_threebettor': False, 'folded_to_fourbet_as_threebettor': False,
         'backraise_chance_as_caller': False, 'did_backraise': False,
         'folded_to_squeeze_after_call': False,
+        'cold_reraise_chance': False,
+        'cold_reraise_call': False,
+        'cold_reraise_raise': False,
+        'cold_reraise_fold': False,
     }
 
     for m in action_meta:
@@ -121,6 +125,16 @@ def _pf_observation_flags(action_meta, seat):
             if full_before == 1 and not prior:
                 out['threebet_chance'] = True
                 out['did_threebet'] = bool(m.get('full_raise'))
+
+            # P7: 자발적 액션 전 open + re-raise(2+ full raises)를 처음
+            # 맞은 cold response. opener/3bettor/caller 역할과 별도다.
+            if full_before >= 2 and not prior:
+                out['cold_reraise_chance'] = True
+                out['cold_reraise_raise'] = bool(m.get('raised'))
+                out['cold_reraise_call'] = bool(
+                    not m.get('raised')
+                    and (m.get('allin_call') or a == 'call'))
+                out['cold_reraise_fold'] = (a == 'fold')
 
             # 첫 raiser가 두 번째 full raise를 맞으면 opener vs 3bet.
             if seat == first_raiser and full_before == 2:
@@ -1545,6 +1559,12 @@ class HandRun:
                 _pfobs['backraise_chance_as_caller'],
                 _pfobs['did_backraise'],
                 _pfobs['folded_to_squeeze_after_call'])
+            h.book.observe_cold_reraise(
+                obs_ids, _pid(x),
+                _pfobs['cold_reraise_chance'],
+                called=_pfobs['cold_reraise_call'],
+                raised=_pfobs['cold_reraise_raise'],
+                folded=_pfobs['cold_reraise_fold'])
         contrib = dict(rnd.contrib)
         if bb_s: contrib[bb_s] = contrib.get(bb_s, 0)          # 안테는 별도
         for k in rnd.stacks: h.stacks[k] = rnd.stacks[k]
