@@ -25,7 +25,7 @@ import runner as RU
 
 ACTIONS_PATH = ROOT / "tools" / "manual_hand_actions.json"
 SEED = 202609271937
-ENTRIES = 100
+ENTRIES = 99
 START_STACK = 30000
 
 
@@ -93,6 +93,19 @@ def main():
     L.new_game(
         entries=ENTRIES, start_stack=START_STACK, seed=SEED,
         hands_per_level=12, fmt="standard")
+
+    # Human-logic audit is a 9-max primary experiment.  100 entries creates
+    # partially filled tables after balancing; 99 gives 11 full 9-handed
+    # tables at hand 1.  Fail loudly rather than silently auditing 8-max again.
+    _st0 = L.load()
+    _f0 = L._load_field(_st0["field"])
+    _ht0 = _f0.hero_table()
+    _hero_n0 = len(_ht0.alive()) if _ht0 else 0
+    if _f0.max_seat != 9 or _hero_n0 != 9:
+        raise RuntimeError(
+            "manual human audit must start 9-max: max_seat=%s hero_n=%s"
+            % (_f0.max_seat, _hero_n0))
+
     force_max_logic_profiles()
     force_logic_execution_surface()
 
@@ -195,17 +208,7 @@ def main():
     print("=== OTHER_TABLE_AUDIT ===")
     print(json.dumps(compact, ensure_ascii=False, sort_keys=True, default=str))
 
-    # Exact replay diagnostic for the suspicious table-2 BTN Q8s cold-call.
-    q = f.players[71]["prof"]
-    q8 = ["Qs", "8s"]
-    for nc in (0, 1):
-        lik = PF.defend_action_likelihoods(
-            q, "BTN", "HJ", q8, 146.0, 4.0, nc,
-            raise_level=1, stack_bb=146.0, exploit=None,
-            bf=1.0, seats=8, ante=False, opener_allin=False,
-            can_raise=True, pot_bb=(1.5 + 4.0 + 1.0), to_call_bb=4.0)
-        print("Q8S_DEFEND_NCALLERS_%d %s" % (
-            nc, json.dumps(lik, sort_keys=True, default=str)))
+    print("MANUAL_AUDIT_TABLE_MODE 9max")
 
     # Continue one step into the next tournament round so the next hero
     # decision can be driven manually after auditing all other tables.
