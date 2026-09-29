@@ -304,7 +304,9 @@ def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, st
                            opp_stack_bb=state.get('opp_stack_bb'),
                            oop_vs_aggr=oop_vs_aggr,
                            oop_legacy_abs=oop_legacy_abs,
-                           initiative=initiative, opp_ranges=opp_ranges)
+                           initiative=initiative, opp_ranges=opp_ranges,
+                           opp_ests=state.get('opp_ests'),
+                           opp_stack_bbs=state.get('opp_stack_bbs'))
         new['revised'] = True
         # 이전 스트리트들의 의도·이탈 기록은 계획의 이력이다. 새 계획을 세워도 유지한다.
         # (make_plan 이 새 dict 를 반환하므로 명시적으로 옮기지 않으면 사라진다)
