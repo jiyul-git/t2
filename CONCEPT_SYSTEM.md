@@ -337,3 +337,106 @@ After the V3 structural verifier is runnable in CI/local:
 3. measure concept-specific calculation-error directions before changing them;
 4. test recency/forgetting in opponent memory;
 5. only then revisit deviation shape (multiplicative width vs logit shift).
+
+
+## 13. Human Model v3 — concept-specific calculation error (2026-09-29)
+
+Opt-in: `T2_CALC_NOISE_V3=1`. OFF keeps the historical Gaussian formula
+bit-for-bit.
+
+Legacy `calc_noise()` gave **the same positive mean bias** to every calculation:
+low skill meant `E[multiplier] ≈ 1.30` for outs, SPR, and pot odds.  The
+behavioral meaning is not the same:
+
+- outs × >1: counts too many/dirty outs (directional overestimate);
+- required pot-odds equity × >1: systematic overfold;
+- SPR × >1: says the pot is deeper than it is, while a separate perception
+  model already pulls poor SPR readers toward neutral SPR=5.
+
+V3 therefore keeps the positive outs bias, but makes `potodds` and `spr`
+arithmetic error zero-mean with a symmetric ±0.80 error clamp around multiplier
+1.0.  It consumes the same one Gaussian draw.
+
+Verifier: `tools/verify_calc_noise_v3.py`.
+
+Key checks:
+- legacy OFF formula: exact, no mismatches;
+- outs ON/OFF: identical;
+- arithmetic means stay near 1.0 and SD falls monotonically with skill;
+- at a symmetric pot-odds decision boundary, legacy low-skill error produced
+  wrong overfold 0.631 vs wrong loose-call 0.305; V3 gives 0.464 vs 0.467;
+- skill5, true SPR=8: existing neutral-pull model expects perceived SPR=7.0;
+  V3 mean = 7.004 instead of the legacy upward cancellation.
+
+Workflow run `36504408101`: structural, paired-runtime and baseline identity
+all PASS.
+
+## 14. Human Model v3 — real opponent-memory recency (2026-09-29)
+
+Opt-in: `T2_READ_RECENCY_V3=1`.  No new decay coefficient was introduced.
+The existing observer `memory` value (8..120 hands, derived from attention and
+adaptability or family defaults) now means what its name says: **a recent-hand
+window**.
+
+Legacy behavior capped only effective sample size:
+
+`n = min(lifetime_hands, memory)`
+
+but computed VPIP/PFR/cbet/barrel/fold/sizing rates from lifetime numerators and
+denominators.  Therefore an opponent who changed style never shed old evidence.
+
+Implementation:
+- at the first preflop observation of the next hand, store the previous hand's
+  cumulative public-observation counters;
+- retain at most 121 snapshots (max memory 120 + one baseline);
+- `_recent_record()` subtracts the cumulative snapshot at the window boundary;
+- every downstream rate uses that same recent view, including postflop,
+  sizing, 3bet/4bet, showdown and fold counters;
+- legacy saved books without snapshots remain lifetime-based until enough new
+  V3-era history exists.  No synthetic history is invented.
+
+Verifier: `tools/verify_read_recency_v3.py`.
+
+Checks:
+- OFF creates no history field;
+- 80 tight + 20 loose hands → recent20 VPIP=1.0 while lifetime/memory100=0.20;
+- same low-memory observer: lifetime estimate VPIP 0.234 → recent estimate 0.586;
+- stationary 50% process remains 50%;
+- postflop counters share the same window;
+- history bounded at 121;
+- save/load preserves history; old book fallback is safe.
+
+Workflow run `36505153548`: structural, paired-runtime and baseline identity
+all PASS.
+
+## 15. Human Model v3 — preflop temperament direction audit (2026-09-29)
+
+Current production/v2 direction normalizes a native 0..10 temperament score by
+`(x-5)/4` and clips to [-1,1].  That makes score 0==1 and 9==10 before poker
+logic is even applied.  The audit separated this **direction-axis clipping**
+from final probability caps.
+
+Audit: `tools/audit_preflop_deviation_shape_v3.py`, lightweight workflow
+`Human V3 Deviation Audit`.
+
+In 5,000 generated personas per field-quality band at 8-max/40bb/ante:
+- RFI probability clamp is effectively absent (0 to 0.003%);
+- total-defense probability clamp is real, concentrated in BB:
+  - q=.4: overall 7.17%, BB-v-BTN 30.0%;
+  - q=.8: overall 3.56%, BB-v-BTN 16.0%;
+  - q=1.2: overall 1.20%, BB-v-BTN 5.86%.
+
+Counterfactual using the natural 0..10 half-span `(x-5)/5`:
+- removes all artificial adjacent endpoint ties in RFI;
+- reduces defense clamp rate without changing the probability-cap rule:
+  q=.4 7.17%→5.92%, q=.8 3.56%→2.73%, q=1.2 1.20%→0.83%;
+- population p95 absolute width change is about 1.6–3.7pp depending on band/path.
+
+Implementation is opt-in:
+`T2_PREFLOP_TEMPER_DIRECTION_V3=1`.
+
+It changes only the direction normalization to full-scale `/5`; endpoints
+0/10 and midpoint 5 remain exactly unchanged.  RFI and 3bet retain all 11
+integer temperament levels.  **The remaining BB total-defense collisions at
+0.95 are a separate probability-cap issue and are not silently “fixed” by this
+change.**  Current evidence does not justify a wholesale logit rewrite.
