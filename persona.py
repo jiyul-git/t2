@@ -362,10 +362,25 @@ def gate(prof, concept, floor=0.0):
 
 # 계산 개념의 정확도 → 추정치에 노이즈를 얹는다
 def calc_noise(prof, concept, rng):
-    """숙련도가 낮으면 계산 결과가 부정확해진다. 반환: 곱할 계수."""
+    """숙련도가 낮으면 계산 결과가 부정확해진다. 반환: 곱할 계수.
+
+    Legacy는 모든 계산 개념에 같은 양(+)의 평균 bias를 줬다. V3에서는
+    계산 종류를 분리한다.
+
+    - outs: 기존 양의 bias 유지. 더티/중복 outs까지 세는 방향성 오류를 표현한다.
+    - potodds, spr: 산술 오차 자체에는 보편적인 한쪽 방향을 가정하지 않고
+      평균 1.0의 대칭 noise만 둔다. SPR의 '모르면 중립 SPR=5 쪽으로 본다'는
+      별도 인지 모델이 plan.py에 이미 있으므로 여기서 다시 방향을 넣지 않는다.
+
+    T2_CALC_NOISE_V3=0이면 기존 분포와 RNG 소비를 그대로 보존한다.
+    """
     s = sk(prof, concept)
     sigma = max(0.02, 0.70 * (1 - s/10.0) ** 1.1)
-    bias = 1.0 + 0.30 * (1 - s/10.0)            # 미숙할수록 과대평가 경향
+    legacy_bias = 1.0 + 0.30 * (1 - s/10.0)
+    if CALC_NOISE_V3 and concept in ('potodds', 'spr'):
+        bias = 1.0
+    else:
+        bias = legacy_bias
     return max(0.20, min(3.0, rng.gauss(bias, sigma)))
 
 # 포지션별 탄력성 — 성향 차이가 오픈 폭에 얼마나 크게 반영되는가.
@@ -402,6 +417,9 @@ GTO_MEMORY_V2 = _os.environ.get('T2_GTO_MEMORY_V2') == '1'
 PREFLOP_REASONING_V3 = _os.environ.get('T2_PREFLOP_REASONING_V3') == '1'
 # Opt-in unification of the legacy exploit_weight() entry with read_opponent().
 EXPLOIT_WEIGHT_V3 = _os.environ.get('T2_EXPLOIT_WEIGHT_V3') == '1'
+# Human Model v3 calc error semantics: retain directional outs overcount, but
+# make arithmetic-only pot-odds / SPR errors zero-mean. OFF keeps legacy bits.
+CALC_NOISE_V3 = _os.environ.get('T2_CALC_NOISE_V3') == '1'
 
 GTO_FAMILY_CONCEPT = {'rfi': 'pf_range', 'defend': 'pf_defend'}
 
