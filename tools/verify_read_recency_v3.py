@@ -70,10 +70,17 @@ def main():
         # R5: estimate() must consume recent n, not only cap confidence.
         # memory = 6*attention + 4*adaptability = 20.
         short=observer_profile(2,2)
-        est=RD.estimate(b,'obs','vill',short,random.Random(12345))
+        est_recent=RD.estimate(b,'obs','vill',short,random.Random(12345))
+        # Same observer / same book / same RNG, but legacy lifetime rates.
+        RD.READ_RECENCY_V3=False
+        est_life=RD.estimate(b,'obs','vill',short,random.Random(12345))
+        RD.READ_RECENCY_V3=True
         checks['R5_estimate_consumes_recent_view']={
-            'pass':(est['n']==20 and est['vpip'] > .70),
-            'estimated_n':est['n'],'estimated_vpip':round(est['vpip'],4),
+            'pass':(est_recent['n']==20
+                    and est_recent['vpip'] > est_life['vpip'] + .10),
+            'estimated_n':est_recent['n'],
+            'recent_estimated_vpip':round(est_recent['vpip'],4),
+            'lifetime_estimated_vpip':round(est_life['vpip'],4),
             'observer_memory':RD.obs_from_profile(short)['memory']}
 
         # R6: all cumulative event counters window together, not just VPIP.
