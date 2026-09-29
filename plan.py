@@ -460,6 +460,44 @@ def opp_bet_prob(opp_est, w, street):
     return max(0.05, min(0.92, PS.blend(base, obs, w)))
 
 
+
+def select_field_opponent(profile, opp_ests, street, purpose='fold_constraint'):
+    """Select the real opponent that constrains a multiway judgment.
+
+    We do not average identities into a synthetic villain.  Each seat keeps its
+    own perceived estimate/read.  The decision asks a purpose-specific question:
+
+    - fold_constraint: bluff/value extraction must survive the opponent least
+      likely to fold. Unknown evidence is neutral and therefore constrains an
+      overconfident exploit against some other seat.
+    - bet_probability: a trap only needs one opponent likely to bet, so choose
+      the highest perceived bet probability.
+
+    Returns {'seat','est','read','score'} or None.  Heads-up callers may keep
+    using the direct opp_est path.
+    """
+    if not isinstance(opp_ests, dict) or not opp_ests:
+        return None
+    rows=[]
+    for seat, est in sorted(opp_ests.items(), key=lambda kv: str(kv[0])):
+        if not est:
+            continue
+        rd=PS.read_opponent(profile, est)
+        if purpose == 'bet_probability':
+            see=(0.65*float(rd.get('see_freq',0.0))
+                 +0.35*float(rd.get('see_line',0.0)))
+            w=float(rd.get('w',0.0))*see
+            score=opp_bet_prob(est,w,street)
+        else:
+            # effective fold adjustment; 0 means no usable exploit evidence.
+            score=float(rd.get('w',0.0))*float(PS.street_gap(rd,street) or 0.0)
+        rows.append({'seat':seat,'est':est,'read':rd,'score':float(score)})
+    if not rows:
+        return None
+    if purpose == 'bet_probability':
+        return max(rows,key=lambda x:(x['score'],str(x['seat'])))
+    return min(rows,key=lambda x:(x['score'],str(x['seat'])))
+
 def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk):
     """트랩을 팔지 판단. 반환 (확률, 사유).
 
@@ -546,7 +584,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
               seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=None,
               initiative=True,
               opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None,
-              oop_legacy_abs=None, opp_ranges=None):
+              oop_legacy_abs=None, opp_ranges=None, opp_ests=None,
+              opp_stack_bbs=None):
     """플랍에서 라인을 확정. 상대 수와 뒤에 남은 액션자를 반영.
 
     opp_est — reads.perceived_profile() 결과. 진짜 프로필을 넘기면 정보 누출이다.
@@ -554,6 +593,18 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     tilt — 내 틸트 강도 0~1. 틸트 나면 인내가 필요한 계획(트랩)이 줄고 공격이 는다.
     """
     rng = random.Random(seed)
+    _field_fold = (
+        select_field_opponent(profile, opp_ests, street, 'fold_constraint')
+        if int(n_opp or 1) > 1 else None)
+    _field_bettor = (
+        select_field_opponent(profile, opp_ests, street, 'bet_probability')
+        if int(n_opp or 1) > 1 else None)
+    _plan_opp_est = (_field_fold.get('est') if _field_fold else opp_est)
+    _trap_opp_est = (_field_bettor.get('est') if _field_bettor else _plan_opp_est)
+    _stack_map = dict(opp_stack_bbs or {})
+    _plan_opp_stack_bb = (
+        max((float(v) for v in _stack_map.values() if v is not None), default=opp_stack_bb)
+        if int(n_opp or 1) > 1 else opp_stack_bb)
     # 추정한 opp_range 를 그대로 쓴다. 고정 35% 가정으로 되돌리지 말 것 —
     # 좁혀놓은 레인지를 버리고 EV 를 판단하면 리딩이 전부 무의미해진다.
     eq = _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=seed,
@@ -624,13 +675,13 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 목표(commit)는 강도가 정하고, 역산 능력은 sk('spr')이 가른다.
     # 상대 유효 스택 비율(내 스택 대비). 상대가 못 따라올 목표는 무의미하다.
     _opp_eff = None
-    if opp_stack_bb and bb_chips and stack > 0:
-        _opp_eff = min(1.0, (float(opp_stack_bb) * float(bb_chips)) / float(stack))
+    if _plan_opp_stack_bb and bb_chips and stack > 0:
+        _opp_eff = min(1.0, (float(_plan_opp_stack_bb) * float(bb_chips)) / float(stack))
     _commit = target_commit(profile, rel, made, s_true, street,
-                            opp_stack_bb=opp_stack_bb,
+                            opp_stack_bb=_plan_opp_stack_bb,
                             opp_eff=_opp_eff)
     _so = stackoff_plan(hero, board, profile, pot, stack, street, rng,
-                        commit=_commit, danger=dang, opp_est=opp_est)
+                        commit=_commit, danger=dang, opp_est=_plan_opp_est)
 
     # 다인원 보정: 밸류 문턱이 올라가고 블러프는 급감한다
     mw = max(0, n_opp - 1)
@@ -645,7 +696,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 자동으로 '내 전략대로'가 된다. 별도 분기가 필요 없다.
     # 정보가 쌓이면 밸류 문턱·블러프 빈도·함정 빈도가 같이 움직인다 —
     # 익스플로잇은 한 지점에 붙는 보정이 아니라 판단 체계 전체의 전환이다.
-    rd = PS.read_opponent(profile, opp_est)
+    rd = (_field_fold.get('read') if _field_fold else PS.read_opponent(profile, _plan_opp_est))
     if rd['w'] > 0:
         wq = rd['w']
         # **그 스트리트의** 폴드 성향을 쓴다. 전체 평균으로 뭉개면
@@ -717,7 +768,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # 개념을 가졌는가(sk)는 사람마다 다르지만, 그 도구를 지금 쓸지는
         # 상대가 벳해줄 사람인가 · 스택이 남았는가 · 보드가 안전한가로 결정된다.
         # 패시브한 상대에게 체크하면 무료 카드만 주는 최악의 수다.
-        p_trap, trap_why = trap_judgment(profile, opp_est, s, dang, mw,
+        p_trap, trap_why = trap_judgment(profile, _trap_opp_est, s, dang, mw,
                                          street, tilt, sk)
         # Preserve the historical RNG consumption even when trap is structurally
         # impossible, so the downstream aggression roll is not shifted by this gate.
@@ -801,8 +852,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # 아웃츠가 남아 있으면 계속 갈 이유가 있다.
         # 그래서 폴드율 역산(barrel)만 적용한다.
         _fe = 0.5
-        if isinstance(opp_est, dict) and opp_est.get('fold') is not None:
-            _fe = float(opp_est['fold'])
+        if isinstance(_plan_opp_est, dict) and _plan_opp_est.get('fold') is not None:
+            _fe = float(_plan_opp_est['fold'])
         _bluff_mode = 'barrel'
         _bluff_mul = barrel_size(_fe, profile, floor=0.35, cap=1.20)
         why.append('세미블러프 사이즈: 폴드율 %.0f%% 역산 → 팟의 %.0f%%'
@@ -826,7 +877,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
              else '쇼다운 가치 없음 + 블로커 %.2f/넛우위 %.2f → 블러프 계획')
             % (blk, nut))
         # 큰 전략(블러프) 아래 세부 전략을 고른다. 사이즈는 여기서 갈린다.
-        _bm, _bmul, _bwhy = bluff_mode(profile, rel, dang, nut, opp_est,
+        _bm, _bmul, _bwhy = bluff_mode(profile, rel, dang, nut, _plan_opp_est,
                                        street, s, rng)
         _bluff_mode, _bluff_mul = _bm, _bmul
         why.append('블러프 세부: %s — %s' % (_bm, _bwhy))
@@ -897,7 +948,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'my_range': my_range,
             # 상대 추정치도 계획에 실어 보낸다. 턴·리버는 make_plan 을 다시 부르지 않고
             # revise_plan/refresh 로 가므로, 이게 없으면 익스플로잇이 플랍에서 끊긴다.
-            'opp_est': opp_est, 'opp_stack_bb': opp_stack_bb,
+            'opp_est': _plan_opp_est, 'opp_stack_bb': _plan_opp_stack_bb,
+            'opp_ests': dict(opp_ests or {}), 'opp_stack_bbs': dict(opp_stack_bbs or {}),
+            'field_fold_seat': (_field_fold.get('seat') if _field_fold else None),
+            'field_bettor_seat': (_field_bettor.get('seat') if _field_bettor else None),
             'protect': round(min(1.0, dang*(1+0.5*mw)), 2)}
     # 의도는 파이프라인 끝(session)에서 최종 계획 기준으로 붙인다.
     return st
@@ -2389,7 +2443,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                 opp_est=None, opp_stack_bb=None, tilt=0.0, first=False,
                 pf_seed=None, bb_chips=None,
                 oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None,
-                opp_checked_prev=None):
+                opp_checked_prev=None, opp_ests=None, opp_stack_bbs=None):
     """계획 갱신의 **유일한 진입점**.
 
     예전에는 session 이 make_plan / revise_plan / refresh / river_fix / _allowed 를
@@ -2412,7 +2466,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                        oop_vs_aggr=oop_vs_aggr, initiative=initiative,
                        opp_est=opp_est, opp_stack_bb=opp_stack_bb, tilt=tilt,
                        bb_chips=bb_chips, oop_legacy_abs=oop_legacy_abs,
-                       opp_ranges=opp_ranges)
+                       opp_ranges=opp_ranges, opp_ests=opp_ests,
+                       opp_stack_bbs=opp_stack_bbs)
         # 프리플랍에서 확정된 것을 물려받는다. 이게 없으면 포스트플랍 계획이
         # 매번 백지에서 시작하고, '왜 3벳했는가'가 플랍 판단과 무관해진다.
         if pf_seed:
@@ -2459,7 +2514,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     if _first or _range_moved or _pools_moved:
         st = refresh(st, hero, board, opp_range, profile, pot, stack, street,
                      n_opp, seed=seed, opp_est=opp_est, my_range=my_range,
-                     opp_ranges=opp_ranges)
+                     opp_ranges=opp_ranges, opp_ests=opp_ests)
         if _first:
             st.setdefault('refreshed', []).append(street)
     st['_rsig'] = _rsig
@@ -2482,10 +2537,17 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
         st['plan_since'] = street
 
     # 의도는 무저항 시점에만, 한 번만 확정한다.
+    _intent_pick = (
+        select_field_opponent(
+            profile,
+            opp_ests if isinstance(opp_ests, dict) else st.get('opp_ests'),
+            street, 'fold_constraint')
+        if int(n_opp or 1) > 1 else None)
+    _intent_est = _intent_pick.get('est') if _intent_pick else opp_est
     if intent_of(st, street) is None:
         st = attach_intent(st, hero, board, my_range, opp_range, profile,
                            pot, stack, street, rng, n_opp, behind,
-                           oop, initiative, opp_est,
+                           oop, initiative, _intent_est,
                            oop_vs_aggr=oop_vs_aggr,
                            oop_legacy_abs=oop_legacy_abs)
     return st
@@ -2623,7 +2685,7 @@ def _allowed(profile, plan, rng=None):
 
 
 def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1, seed=None,
-            opp_est=None, my_range=None, opp_ranges=None):
+            opp_est=None, my_range=None, opp_ranges=None, opp_ests=None):
     """계획은 유지하되 **보드 의존 지표를 현재 보드로 한 번에 갱신**하고,
        근거가 무너지면 계획을 강등한다.
 
@@ -2766,7 +2828,16 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # 잘 접는 상대라면 내 강도가 떨어져도 계속 밀어붙일 근거가 되고,
     # 안 접는 상대(스테이션)라면 더 일찍 포기해야 한다.
     # 자기 전략만 치는 선수(exploit_weight=0)는 이 조정을 하지 않는다.
-    oe = opp_est if opp_est is not None else st.get('opp_est')
+    _oe_map = opp_ests if isinstance(opp_ests, dict) else st.get('opp_ests')
+    _field_refresh = (
+        select_field_opponent(profile, _oe_map, street, 'fold_constraint')
+        if int(n_opp or 1) > 1 else None)
+    oe = (_field_refresh.get('est') if _field_refresh
+          else (opp_est if opp_est is not None else st.get('opp_est')))
+    if isinstance(_oe_map, dict):
+        st['opp_ests'] = dict(_oe_map)
+    if _field_refresh:
+        st['field_fold_seat'] = _field_refresh.get('seat')
     give_thr, ctrl_thr = 0.12, 0.30
     if oe:
         # read_opponent 경유. oe['ftb'] 날것은 see_freq 게이트를 우회하고
