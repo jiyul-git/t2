@@ -129,6 +129,29 @@ def main():
         for _ in range(2000):
             subs.append(est(pos, {s: rng.sample(bs, 2) for s, bs in full.items()}))
         emp = [1.96 * statistics.pstdev([x[h] for x in subs]) * math.sqrt(1.25) for h in range(169)]
+        # old-24 vs new-48 consistency: stratified difference / SE from the 6-flop within-stratum variance
+        def old_new(vals_of):
+            eo = en = var = 0.0
+            for s, fs in strata.items():
+                o = [vals_of(f['board']) for f in fs if f['origin'] == 'panel_v1']
+                nw = [vals_of(f['board']) for f in fs if f['origin'] != 'panel_v1']
+                al = o + nw
+                m = sum(al) / len(al)
+                s2 = sum((v - m) ** 2 for v in al) / (len(al) - 1)
+                eo += P[s] * sum(o) / len(o)
+                en += P[s] * sum(nw) / len(nw)
+                var += P[s] ** 2 * s2 * (1 / len(o) + 1 / len(nw))
+            return eo - en, math.sqrt(var)
+        zs = []
+        for h in range(169):
+            dd, se = old_new(lambda b: y[(b, pos)][h])
+            zs.append(dd / se if se > 0 else 0.0)
+        r_ = pl(term, pos)['class_reach_normalized']
+        dr, ser = old_new(lambda b: sum(r_[h] * y[(b, pos)][h] for h in range(169)))
+        consistency = {'per_class_share_abs_z_gt_1_96': sum(1 for z in zs if abs(z) > 1.96) / 169,
+                       'per_class_z_sd': math.sqrt(sum(z * z for z in zs) / 169), 'per_class_z_mean': sum(zs) / 169,
+                       'range_ev_old24_minus_new48': dr, 'range_ev_se': ser, 'range_ev_z': dr / ser,
+                       'note': 'expected under pure flop sampling: share ~0.05, z sd ~1'}
         dv = [z - x for x, z in zip(s24['gross'], s72['gross'])]
         res['seats'][pos] = {
             'ci_halfwidth_24': stats(h24), 'ci_halfwidth_72': stats(h72),
@@ -139,7 +162,7 @@ def main():
                                  'pre_registered_prediction': 0.745, 'naive_1_over_sqrt3': 1 / math.sqrt(3)},
             'rescaled_ci_mean': {'24': stats(h24)['mean'] * math.sqrt(2), '72': stats(h72)['mean'] * math.sqrt(6 / 5)},
             'empirical_24flop_halfwidth_from_72': stats(emp),
-            'ess': ess,
+            'ess': ess, 'old24_vs_new48': consistency,
             'value_change_24_to_72': {'mean_abs': sum(abs(x) for x in dv) / 169, 'max_abs': max(abs(x) for x in dv),
                                       'share_outside_24_ci': sum(1 for h in range(169) if abs(dv[h]) > h24[h]) / 169,
                                       'reach_weighted_mean_abs': sum(pl(term, pos)['class_reach_normalized'][h] * abs(dv[h]) for h in range(169)),
@@ -239,7 +262,13 @@ def main():
     res['btn_terminal_sensitivity_q'] = q
     # BB fold/call boundary overall at 24 vs 72 (classes whose call-fold side differs)
     b24, b72 = seat(t24, 'BB')['gross'], seat(t72, 'BB')['gross']
-    res['bb_call_fold_side_changes_24_to_72'] = [L[h] for h in range(169) if (b24[h] < 1.0) != (b72[h] < 1.0)]
+    res['bb_call_fold_side_changes_24_to_72'] = [{'class': L[h], 'V24': b24[h], 'V72': b72[h], 'direction': 'up' if b72[h] >= 1.0 else 'down',
+                                                   'p6d_fold': term['frequencies']['terminal_parent']['class_strategy'][0][h]}
+                                                  for h in range(169) if (b24[h] < 1.0) != (b72[h] < 1.0)]
+    res['bb_classes_below_fold_line'] = {'24': [L[h] for h in range(169) if b24[h] < 1.0], '72': [L[h] for h in range(169) if b72[h] < 1.0]}
+    res['c3_whole_ci_below_line_classes'] = {c: {'V24': b24[L.index(c)], 'hi24': seat(t24, 'BB')['gross_ci95_hi'][L.index(c)],
+                                                 'V72': b72[L.index(c)], 'lo72': seat(t72, 'BB')['gross_ci95_lo'][L.index(c)],
+                                                 'hi72': seat(t72, 'BB')['gross_ci95_hi'][L.index(c)]} for c in ('72o', '82o', '92o', 'T2o')}
 
     out = json.loads(json.dumps(res))
     for pos in out['seats']:
@@ -252,7 +281,9 @@ def main():
               'ratio', {k: round(v, 3) for k, v in S['ratio_72_over_24'].items()}, 'emp24', round(S['empirical_24flop_halfwidth_from_72']['mean'], 3),
               'ESS', {k: {kk: round(vv, 1) for kk, vv in v.items()} for k, v in S['ess'].items()})
         print('   dV', {k: round(v, 3) for k, v in S['value_change_24_to_72'].items()}, 'abstr/CI', json.dumps(out['abstraction_over_ci'][pos]))
-    print('unallocated', out['unallocated_bb'], 'BB side changes', out['bb_call_fold_side_changes_24_to_72'])
+    print('unallocated', out['unallocated_bb'], 'BB side changes', [(x['class'], x['direction']) for x in out['bb_call_fold_side_changes_24_to_72']])
+    print('old24 vs new48', {p_: out['seats'][p_]['old24_vs_new48'] for p_ in out['seats']})
+    print('C3 whole-CI-below classes', out['c3_whole_ci_below_line_classes'])
     for pos in ('BB', 'BTN'):
         for r in watch[pos]:
             print(pos, r['class'], ' '.join(f"{n}:V={r[n]['V']:.3f}±{r[n]['ci_halfwidth']:.3f} {r[n]['best']} m={r[n]['margin']:.3f}" for n in ('24', '72')),
@@ -278,6 +309,11 @@ def figure(res, L, path):
         g.set_title(f"({i + 1}) {pos}: 72-flop vs 24-flop CI per class  (ratio of means {r['of_means']:.3f})", loc='left', fontsize=11, color=INK)
         g.set_xlabel('24-flop half-width (bb)', fontsize=9, color=MUTED)
         g.set_ylabel('72-flop half-width (bb)', fontsize=9, color=MUTED)
+        e = S['old24_vs_new48']
+        g.text(0.98, 0.03, f"calibration: empirical 24-flop half-width from nested 2-of-6 sub-panels\n"
+                           f"= {stats(S['_emp'])['mean']:.3f} (bootstrap 24: {stats(h24)['mean']:.3f}); 72-flop bootstrap {stats(h72)['mean']:.3f}\n"
+                           f"old24 vs new48: |z|>1.96 in {e['per_class_share_abs_z_gt_1_96']:.1%} of classes, z sd {e['per_class_z_sd']:.2f}",
+               transform=g.transAxes, ha='right', va='bottom', fontsize=8, color=INK)
         g.legend(fontsize=8, frameon=False)
     # (3) watch classes BB: V - 1.0 with CI, 24 vs 72
     g = ax[1][0]

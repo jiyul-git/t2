@@ -85,16 +85,19 @@ def main():
             log = open(os.path.join(a.out_dir, 'logs', b + '.log'), 'a')
             p = subprocess.Popen([os.path.join(BIN, 't2_cont_panel'), a.terminal, a.menu, a.panel, a.out_dir, *a.postflop],
                                  env=env, stdout=log, stderr=subprocess.STDOUT)
-            running[p.pid] = (b, time.time(), present, log)
+            # keep the Popen object referenced: an unreferenced running Popen is reaped by
+            # subprocess's own cleanup on the next Popen(), and wait4 below would never see it
+            running[p.pid] = (b, time.time(), present, log, p)
         if not running:
             time.sleep(5)
             continue
         pid, status, ru = os.wait4(-1, 0)
         if pid not in running:
             continue
-        b, t0, present, log = running.pop(pid)
+        b, t0, present, log, proc = running.pop(pid)
         log.close()
         rc = os.waitstatus_to_exitcode(status)
+        proc.returncode = rc
         rec = {'board': b, 'rc': rc, 'wall_s': round(time.time() - t0, 1), 'peak_rss_kb_wait4': ru.ru_maxrss,
                'threads': threads, 'workers': workers, 'time': time.strftime('%Y-%m-%dT%H:%M:%S')}
         art = os.path.join(a.out_dir, b + '.json')
