@@ -418,6 +418,67 @@ def nut_advantage(r_a, r_b, board):
     s_a, s_b = _strong_share(r_a, board, 3), _strong_share(r_b, board, 3)
     return max(-1.0, min(1.0, (0.5*(t_a-t_b) + 0.5*(s_a-s_b))*6))
 
+
+def joint_nut_advantage(r_a, opp_ranges, board, n_opp=None, sims=1600, seed=None):
+    """Seat-keyed multiway nut-advantage semantics.
+
+    Heads-up is EXACT nut_advantage().  In multiway, the opponent side is not a
+    union range: it is the probability that at least one compatible opponent
+    configuration contains a 2-pair+ / trips+ hand.  This preserves opponent
+    identity and naturally makes a field more likely than one villain to cover
+    a nut region.
+
+    Returns None when seat pools are incomplete; callers must keep unknown
+    distinct from measured zero.
+    """
+    if not board or not r_a or not isinstance(opp_ranges, dict):
+        return None
+    items=sorted(opp_ranges.items(),key=lambda kv:str(kv[0]))
+    want=int(n_opp if n_opp is not None else len(items))
+    if want<=0 or len(items)!=want or any(not r for _,r in items):
+        return None
+    if want==1:
+        return nut_advantage(r_a,items[0][1],board)
+
+    dead=set(board)
+    pools=[]
+    for _seat,pool in items:
+        clean=bot._filter_pool(pool,dead,sort_legacy=True)
+        if not clean:
+            return None
+        pools.append(clean)
+
+    if seed is None:
+        seed=_zlib.crc32(repr((
+            tuple(board),
+            tuple((str(seat),range_signature(pool)) for seat,pool in items),
+            int(sims),'joint_nut_advantage')).encode())
+    rng=random.Random(seed)
+    n=0; field2=0; field3=0
+    for _ in range(max(1,int(sims))):
+        used=set(dead); scores=[]; ok=True
+        for pool in pools:
+            pick=None
+            for _try in range(80):
+                c=bot._sample_pool_combo(rng,pool)
+                if c[0] not in used and c[1] not in used:
+                    pick=c; used.add(c[0]); used.add(c[1]); break
+            if pick is None:
+                ok=False; break
+            scores.append(bot.eval7(list(pick)+board)[0])
+        if not ok:
+            continue
+        n+=1
+        if any(x>=2 for x in scores): field2+=1
+        if any(x>=3 for x in scores): field3+=1
+    if not n:
+        return None
+
+    t_a=_strong_share(r_a,board,2)
+    s_a=_strong_share(r_a,board,3)
+    t_b=field2/float(n); s_b=field3/float(n)
+    return max(-1.0,min(1.0,(0.5*(t_a-t_b)+0.5*(s_a-s_b))*6))
+
 # strong_shares 는 _strong_share 를 감싼 표시용 래퍼였고 호출부가 없었다.
 # nut_advantage 가 같은 재료를 쓰므로 제거한다.
 
