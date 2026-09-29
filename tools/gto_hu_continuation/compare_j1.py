@@ -161,12 +161,14 @@ def main():
         fv = seat(FV, pos, 'seats')['gross']
         jv = seat(J, pos)['gross_avg']
         keepj = seat(J, pos)['class_keep_fraction']
-        g.scatter(fv, jv, s=[8 + 30 * min(1, k) for k in keepj], color=col, alpha=0.7, label=f'{pos} (marker size = joint keep)')
+        jb = seat(J, pos)['gross_br']
+        g.scatter(fv, jb, s=14, color=col, alpha=0.8, label=f'{pos}: joint best-response value (all classes)')
+        g.scatter(fv, jv, s=14, facecolors='none', edgecolors=col, alpha=0.5, label=f'{pos}: joint average-strategy value (off-diagonal = low/zero reach, uniform fallback)')
     lo = min(min(seat(FV, p, 'seats')['gross']) for p in ('BB', 'BTN'))
     hi = max(max(seat(FV, p, 'seats')['gross']) for p in ('BB', 'BTN'))
     g.plot([lo, hi], [lo, hi], color=MUTED, lw=1)
     g.set_xlabel('damped FP measured table (bb, f32, eps-tremble)', fontsize=9, color=MUTED)
-    g.set_ylabel('joint CFR average-strategy value (bb, compressed)', fontsize=9, color=MUTED)
+    g.set_ylabel('joint CFR value (bb, compressed)', fontsize=9, color=MUTED)
     g.set_title('(3) per-class continuation value', loc='left', fontsize=11, color=INK)
     g.legend(fontsize=8, frameon=False)
     g = ax[1][1]
