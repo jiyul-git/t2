@@ -836,24 +836,57 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         else:
             plan = 'value_3street'; why.append('강도 최상위 → 3스트리트 밸류')
     elif eq >= v2:
-        # 2스트리트냐 3스트리트냐. 예전에는 `dang > 0.35 or s < 2 or mw` 라는
-        # 결정론적 조건이라 같은 상황이면 전원이 같은 선택을 했다.
-        # 세 가지가 3스트리트를 막는다 — 보드 위험, 얕은 스택, 다인원.
-        # 그리고 3스트리트로 다 넣을 수 있는가(stackoff)와
-        # 얇은 밸류를 뽑을 줄 아는가(thin_value)가 사람마다 다르다.
-        _p2 = (0.55*min(1.0, dang/0.45)
-               + 0.30*max(0.0, min(1.0, (3.0 - s)/2.5))
-               + 0.30*min(1.0, mw))
-        _p2 *= max(0.45, 1.35 - 0.09*PS.sk(profile, 'stackoff')) if profile.get('concepts') else 1.0
+        # 중간 밸류는 "실력이 높으면 무조건 3스트리트"가 아니다.
+        # 사람은 현재 equity가 밸류 구간 어디쯤인지, 보드 취약성, SPR,
+        # 다인원을 함께 보고 몇 거리까지 갈지 정한다.
+        #
+        # 기존 식은 max-skill에서 stackoff(×0.45)와 thin-value(×0.55)가
+        # 위험 신호를 약 75% 지웠다. 실제 플레이에서 SPR 20의 66/743가
+        # pot-pot-pot value_3street가 된 원인이다. 숙련도는 위험을 지우는
+        # 방향이 아니라 **상황 기반 판단을 더 정확히 따르는 정도**로 쓴다.
+        _band = max(1e-6, v3 - v2)
+        _where = max(0.0, min(1.0, (eq - v2) / _band))  # 1이면 v3 직전
+        _danger = max(0.0, min(1.0, dang / 0.60))
+        _shallow = max(0.0, min(1.0, (3.0 - s_true) / 2.5))
+        _deep = max(0.0, min(1.0, (s_true - 4.0) / 10.0))
+        # 깊은 스택에서 한 페어는 future-card/stack-growth 위험이 크다.
+        # 셋+에는 이 항을 주지 않는다.
+        _vulnerable_deep = (
+            _deep * max(0.0, min(1.0, (dang - 0.20) / 0.45))
+            if made <= 1 else 0.0)
+        _ctx_p2 = (
+            0.18
+            + 0.42*(1.0 - _where)
+            + 0.22*_danger
+            + 0.28*_vulnerable_deep
+            + 0.18*_shallow
+            + 0.22*min(1.0, mw))
+        _ctx_p2 = max(0.05, min(0.95, _ctx_p2))
+
+        # 미숙한 사람은 상황 판단보다 성향(공격성)에 더 끌린다.
+        # 숙련자는 위 context를 더 충실히 따른다.
+        _habit_p2 = max(
+            0.18, min(0.82, 0.52 - 0.055*(float(profile.get('aggr', 5.0))-5.0)))
         if profile.get('concepts'):
-            # 얇은 밸류를 아는 사람은 3스트리트로 끌고 갈 여지를 더 본다.
-            _p2 *= max(0.55, 1.25 - 0.07*PS.sk(profile, PS.street_concept('thin_value', street)))
+            _judge = max(0.0, min(1.0, (
+                PS.sk(profile, 'stackoff')
+                + PS.sk(profile, PS.street_concept('thin_value', street))
+            ) / 20.0))
+            _p2 = _judge*_ctx_p2 + (1.0-_judge)*_habit_p2
+        else:
+            _p2 = _habit_p2
+
         if rng.random() < max(0.05, min(0.95, _p2)):
             plan = 'value_2street'
-            why.append('밸류(eq %.2f, rel %.2f)지만 위험 %.2f/SPR %.1f/다인원 %d → 2스트리트'
-                       % (eq, rel, dang, s, mw))
+            why.append(
+                '중간 밸류(eq %.2f, rel %.2f) + 위험 %.2f/SPR %.1f/다인원 %d'
+                ' → 2스트리트(p2 %.2f)'
+                % (eq, rel, dang, s_true, mw, _p2))
         else:
-            plan = 'value_3street'; why.append('밸류 → 3스트리트')
+            plan = 'value_3street'
+            why.append(
+                '중간 밸류이나 3스트리트 유지(eq %.2f, rel %.2f, p2 %.2f)'
+                % (eq, rel, _p2))
     elif eq >= pcz:
         # 블락벳: OOP + 이니셔티브 없음 + 쇼다운은 되는 중간 강도
         block_p = 0.0
