@@ -288,3 +288,106 @@ Figure: [`GTO_HU_CONTINUATION_LOOP_V1.png`](GTO_HU_CONTINUATION_LOOP_V1.png).
    - BTN-open → SB-call.
    - Then check how the 3-way terminals interact, since they remain on the old model.
 4. **Joint CFR** (upstream `integrated_continuation` style) as the reference method, to confirm the damped fixed point without the stationary-value assumption.
+
+---
+
+# v1.1 — error decomposition before scaling (J1–J3)
+
+Instruction for this phase:
+- Do not enlarge the panel or add terminals yet.
+- First separate the error of the value-construction method from the sampling error.
+
+Question: *is the error of the continuation method itself smaller than the flop-sampling error?*
+
+## J0. Constraints found before running
+
+**Joint CFR cannot run on the 24-flop panel in 16 GB.** It holds every flop's postflop solver at once:
+- M2 needs 2.14 GB per flop in f32 (1.07 GB compressed);
+- 24 flops therefore need 51 GB f32 or 26 GB compressed.
+
+J1 and J2 therefore use a **pre-registered 6-flop sub-panel**, `panel_sub6_v1.json` (sha256 `33ebbea5…`):
+
+| texture | flop |
+|---|---|
+| monotone | Jc6c2c |
+| paired | 6d6c3c |
+| rainbow dry | Kc7d4h |
+| rainbow connected | Tc9d5h |
+| two-tone dry | AcKd5d |
+| two-tone connected | Qc9d7d |
+
+- Selection rule: one flop from panel_v1 per texture category, all top ranks distinct.
+- A first candidate with loose texture labels was replaced before any J1/J2 result.
+
+**HT/ρ fails the conservation guard on 6 flops.**
+- On the 24-flop runs' data it gives up to 0.11 bb unallocated. The class-normaliser variability does not average out over 6 flops.
+- Both methods on the sub-panel therefore use a **fixed class-independent normaliser**: Σ_f w_f Σ_h r_h c_hf evaluated once at the P6d ranges (BTN 0.8790, BB 0.8803).
+- Because it is fixed, there is no own-range feedback. It passes the guard (≤ 0.021 bb on every stored step).
+
+**Storage.**
+- Joint CFR must use compressed (i16/u16) storage: 6.4 GB for 6 flops.
+- The outer fixed point's flop solves are f32.
+- Measured on Kc7d4h, M2, P6d ranges, target 0.3% pot (`j2/quant_*`):
+
+| per-class \|f32 − compressed\| | BB | BTN |
+|---|---:|---:|
+| mean | 0.050 bb | 0.055 bb |
+| max | 0.43 bb | 0.27 bb |
+
+- Compressed is also 1.5× slower (233 s vs 154 s).
+- This **storage band** is the floor below which no method difference is interpreted.
+
+## J1. Outer fixed point vs joint CFR (identical 6-flop game, M2)
+
+**Joint CFR** (`t2-joint` feature, `examples/t2_joint.rs`, `preflop/t2joint.rs`):
+- At the one terminal, each postflop solver on the panel runs one alternating DCFR update per role per preflop iteration. It uses the *current* preflop reaches: own reach feeds the strategy sums; opponent reach × folded seats' mass feeds the counterfactual weights.
+- It returns current-strategy CFVs, turned into the same per-class gross functional.
+- The joint-game gap uses postflop best response and average values separately.
+- 500 iterations from scratch.
+- A first run was lost to a container restart at iteration 200. The re-run reproduced its checkpoints 50–200 bit-for-bit.
+
+**Outer fixed point:**
+- Undamped k0–k4 showed **the same period-2 cycle** as on 24 flops, with a larger amplitude: BB fold 0.250 / 0.187 / 0.281 / 0.206.
+- Damping was then applied from k3 (α = 0.5) up to k6.
+- A first attempt that damped from k1 was **refused by the conservation guard**: the blend was −0.32 bb at P1, because V0 is stale after the large first move. That was a protocol deviation (damping before observing oscillation) and is recorded in `outer_sub6_fp_a05_rejected_k1/`.
+
+Figure: [`GTO_HU_J1_COMPARE_V1.png`](GTO_HU_J1_COMPARE_V1.png). Numbers: `data/gto_hu_continuation/j1/compare_j1.json`.
+
+| | damped outer fixed point (k6) | joint CFR (500 it) |
+|---|---|---|
+| CO open / jam | 0.262 / 0.011 | 0.262 / 0.012 |
+| BTN open / jam | 0.356 / 0.047 | 0.358 / 0.046 |
+| SB open / jam | 0.393 / 0.240 | 0.395 / 0.239 |
+| BB vs BTN: fold / call / jam | 0.242 / 0.591 / 0.166 | 0.246 / 0.586 / 0.168 |
+| arriving-range distance (BTN / BB) | — | L1 0.025 / 0.034 |
+| convergence | preflop gap 0.00037; last table change 0.023–0.027 bb | joint-game gap (incl. postflop BR) 0.00085, still falling |
+| postflop exploitability (max over panel) | 0.29% pot (per-flop fixed-range solves) | 0.088% pot |
+| conservation (unallocated) | +0.037 bb | +0.039 bb |
+| cost | 42 flop solves, 1.6 h + 7 preflop solves ≈ 1.7 h; peak ≈ 2.4 GB | 2.0 h; 6.7 GB |
+
+**(a) Aggregates agree; only marginal classes differ.**
+- Aggregates agree within 0.002, except BB fold/call at 0.004–0.005.
+- Class actions differing by > 0.1: 7 BB classes and 5 BTN classes. None differ by > 0.5.
+- The largest are mixed, near-indifferent classes:
+  - BB: Q4o fold 0.04 vs 0.54; 84s call/jam 0.39/0.61 vs 0.02/0.98; J9o;
+  - BTN: T7s, T8o, A5s.
+
+**(b) The continuation values themselves agree.**
+- Weighted by the arriving range, the mean |ΔV| is BTN 0.019 bb and BB 0.011 bb.
+- Over all 169 classes, joint best-response value vs the fixed-point table: mean 0.014 / 0.017 bb, max 0.056 / 0.060 bb.
+- Both are **inside the storage band** (mean 0.05, max 0.27–0.43 bb).
+
+**(c) Zero-reach handling.**
+- Joint CFR needs no ε in the regret path: CFVs of every hand come from its current, regret-matched postflop strategy.
+- For *reporting*, however, its average-strategy value of a never-reached hand is the solver's uniform-fallback play. That is off by 1.0 bb (BTN, 21 classes) and 1.6 bb (BB, 48 classes).
+- The joint **best-response** value of those hands matches the fixed point's ε-tremble value within 0.009 / 0.025 bb.
+- So ε-tremble (fixed point) and current-strategy CFVs (joint) are consistent. Uniform-fallback averages must never be exported as continuation values.
+
+**(d) The period-2 cycle does not appear in joint CFR.**
+- The largest class-strategy change per 50 iterations falls monotonically: 0.54 → 0.25 → 0.14 → 0.07 → 0.03.
+- Aggregates approach the damped fixed-point values from one side (BB fold 0.330 → 0.246).
+- The cycle is an artefact of stationary value tables plus pure best responses of near-indifferent classes, not a property of the game.
+
+**J1 verdict.**
+- On an identical game, the damped outer fixed point and joint CFR reach the same strategy structure and the same continuation values within the storage-quantisation band.
+- Their disagreement is confined to near-indifferent classes, and is smaller than any other error source measured below.
