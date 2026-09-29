@@ -1,0 +1,52 @@
+name: Human V3 Deviation Audit
+
+on:
+  push:
+    branches:
+      - chatgpt/human-model-v3-20260929
+    paths:
+      - 'tools/audit_preflop_deviation_shape_v3.py'
+      - '.github/workflows/human-v3-deviation-audit.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: human-v3-deviation-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run preflop deviation saturation audit
+        env:
+          T2_PREFLOP_REASONING_V3: '1'
+        run: python3 tools/audit_preflop_deviation_shape_v3.py > /tmp/deviation_audit.json
+      - name: Summarize clamp rates
+        run: |
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/deviation_audit.json'))
+          for q,v in d['population'].items():
+              print('q',q,
+                    'open_clamp',v['open']['clamp_rate'],
+                    'defend_clamp',v['defend']['clamp_rate'])
+              for p,x in v['open']['by_pos'].items():
+                  if x['clamp_rate']:
+                      print('  open',p,x['clamp_rate'])
+              for s,x in v['defend']['by_spot'].items():
+                  if x['clamp_rate']:
+                      print('  defend',s,x['clamp_rate'])
+          print('collision_probe')
+          for row in d['collision_probe']:
+              print(' skill',row['skill'],
+                    {p:x['adjacent_ties'] for p,x in row['positions'].items()})
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: human-v3-deviation-audit
+          path: /tmp/deviation_audit.json
