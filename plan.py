@@ -198,6 +198,23 @@ def _decision_relative_strength(hero, board, opp_range, n_opp=1,
         'complete': True,
     }
 
+
+def _decision_nut_advantage(my_range, board, opp_range, n_opp=1,
+                            opp_ranges=None, sims=1600, seed=None):
+    """판단용 nut advantage + provenance. HU exact, MW seat-keyed, incomplete union fallback."""
+    if not my_range or not opp_range or not board:
+        return 0.0, {'source':'unavailable','union':0.0,'joint':None,'complete':False}
+    legacy=R.nut_advantage(my_range,opp_range,board)
+    if int(n_opp or 1)<=1:
+        return legacy, {'source':'heads_up','union':legacy,'joint':legacy,'complete':True}
+    joint=R.joint_nut_advantage(
+        my_range,opp_ranges,board,n_opp=n_opp,sims=sims,seed=seed)
+    if joint is None:
+        return legacy, {'source':'union_fallback_incomplete','union':legacy,
+                        'joint':None,'complete':False}
+    return joint, {'source':'joint_seat_pools','union':legacy,
+                   'joint':joint,'complete':True}
+
 def _decision_range_advantage(my_range, board, opp_range, n_opp=1,
                               opp_ranges=None, sims=600, seed=None,
                               joint_seed=None):
@@ -656,7 +673,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         hero, board, opp_range, street, _typ,
         n_opp=n_opp, opp_ranges=opp_ranges, seed=seed, tag='make')
     blk_net = _blk_raw * _bg
-    nut = R.nut_advantage(my_range, opp_range, board) if my_range else 0.0
+    _nut_seed = (_zlib.crc32(('%s|f7b_nut_make' % seed).encode())
+                 if seed is not None else None)
+    nut, _nut_meta = _decision_nut_advantage(
+        my_range, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+        sims=1600, seed=_nut_seed)
     # 전체 에쿼티 우위. 넛 우위와 다른 축이다 —
     # 전자는 '얼마나 자주 칠까', 후자는 '얼마나 크게 칠까'를 정한다.
     _adv_joint_seed = (_zlib.crc32(('%s|f7b_range_adv_make' % seed).encode())
@@ -921,6 +942,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'blocker_net_raw': float(_blk_raw),
             'blocker_source': _blk_meta.get('source'),
             'nut_adv': round(nut,2), 'nut_adv_raw': float(nut),
+            'nut_adv_union': (round(float(_nut_meta.get('union')), 6)
+                              if _nut_meta.get('union') is not None else None),
+            'nut_adv_joint': (round(float(_nut_meta.get('joint')), 6)
+                              if _nut_meta.get('joint') is not None else None),
+            'nut_adv_source': _nut_meta.get('source'),
             'range_adv': round(adv,2),
             'range_adv_union': (round(float(_adv_meta.get('union')), 6)
                                 if _adv_meta.get('union') is not None else None),
@@ -2771,9 +2797,21 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # stale 9건, 전부 이 경로). 값이 비었으면 상태의 것을 쓴다.
     _mr = my_range if my_range else st.get('my_range')
     if _mr and opp_range:
-        _nut_raw = R.nut_advantage(_mr, opp_range, board)
+        _nut_joint_seed = (_zlib.crc32(
+            ('%s|f7b_nut_refresh' % seed).encode())
+            if seed is not None else None)
+        _nut_raw, _nut_meta = _decision_nut_advantage(
+            _mr, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+            sims=1600, seed=_nut_joint_seed)
         st['nut_adv_raw'] = float(_nut_raw)
         st['nut_adv'] = round(_nut_raw, 2)
+        st['nut_adv_union'] = (
+            round(float(_nut_meta.get('union')), 6)
+            if _nut_meta.get('union') is not None else None)
+        st['nut_adv_joint'] = (
+            round(float(_nut_meta.get('joint')), 6)
+            if _nut_meta.get('joint') is not None else None)
+        st['nut_adv_source'] = _nut_meta.get('source')
         _adv_joint_seed = (_zlib.crc32(
             ('%s|f7b_range_adv_refresh' % seed).encode())
             if seed is not None else None)
