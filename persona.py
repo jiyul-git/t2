@@ -299,7 +299,14 @@ def has(p, concept, level=3.0):
 
 
 def error_rate(p):
-    """일관성이 낮을수록 '말 안 되는 라인'이 나올 확률."""
+    """Deprecated compatibility metric; NOT a strategy/action probability.
+
+    Historical code exposed this presentation-only projection of consistency
+    and attention as an "error rate", but no decision consumer ever used it.
+    Human Model v3 keeps the function for compatibility while deliberately
+    refusing to inject generic random actions; concrete errors are modeled at
+    their actual concepts (outs/potodds/SPR/read/etc.).
+    """
     cons = p['temper']['consistency']
     att = p['temper']['attention']
     return max(0.01, min(0.28, 0.30 - 0.020*cons - 0.012*att))
@@ -310,12 +317,11 @@ def describe(p):
     top = sorted(c.items(), key=lambda x: -x[1])[:3]
     bot = sorted(c.items(), key=lambda x: x[1])[:3]
     return ('%s | 공격 %.0f 루즈 %.0f 규율 %.0f 틸트취약 %.0f 일관성 %.0f\n'
-            '  강점 %s\n  약점 %s\n  오류율 %.0f%%'
+            '  강점 %s\n  약점 %s'
             % (p['type'], t['aggression'], t['looseness'], t['discipline'],
                t['tilt_prone'], t['consistency'],
                ', '.join('%s %.1f' % x for x in top),
-               ', '.join('%s %.1f' % x for x in bot),
-               error_rate(p)*100))
+               ', '.join('%s %.1f' % x for x in bot)))
 
 
 # ---------- 엔진 어댑터 ----------
