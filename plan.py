@@ -1777,6 +1777,15 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
         # 블러프는 정의상 약한 패라 항상 이 감쇠를 받고, 사이즈를 읽는
         # 상대에게는 그대로 노출된다. 위장형(merged)은 그래서 면제한다.
         base *= 0.80
+
+    # Thin value has a different objective from polarized value: get called by
+    # worse.  Its eligibility in river_fix is evaluated against the opponent's
+    # continue range at the 42% base size, so execution must not later inflate
+    # that bet into a 70%+ polar sizing.  Texture/style may nudge the size, but
+    # keep it in a genuinely thin-value band and never route it through overbet.
+    if plan == 'thin_river':
+        return max(0.25, min(0.50, base))
+
     # 오버벳: 개념·넛우위·양극화가 갖춰졌을 때만. 판단 층에서 결정된다.
     ob = overbet_frac(profile, hero, board, opp_range, my_range, street, plan,
                       rel, rng, opp_est, nut=nut)
