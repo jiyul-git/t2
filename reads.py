@@ -1,7 +1,7 @@
 """각 플레이어가 각자 관찰한 것만으로 상대 성향을 추정한다.
    진짜 프로필은 절대 참조하지 않는다."""
 import math, random
-import json as _json_mod, os.path as _os_path
+import json as _json_mod, os.path as _os_path, os as _os
 
 # 모집단 사전분포 — 표본이 적을 때 끌려가는 기준점
 PRIOR = {'vpip': 0.26, 'pfr': 0.15, 'cbet': 0.55, 'barrel': 0.42,
@@ -46,6 +46,84 @@ class _ObsMap(dict):
         except Exception: return d
 OBSERVER = _ObsMap()
 DEFAULT_OBS = dict(skill=0.5, overconf=1.0, noise=0.15, memory=40)
+
+# Human Model v3 (opt-in): make the already-existing observer memory limit a
+# real recent-hand window instead of capping only confidence while lifetime
+# counters keep dominating the rates. OFF preserves legacy book/estimate bits.
+READ_RECENCY_V3 = _os.environ.get('T2_READ_RECENCY_V3') == '1'
+_MAX_RECENCY_HISTORY = 121  # max declared memory=120 plus one baseline snapshot
+
+
+def _numeric_snapshot(r):
+    """Snapshot cumulative public-observation counters at a hand boundary."""
+    return {
+        k: v for k, v in r.items()
+        if k != '_hand_hist' and isinstance(v, (int, float))
+        and not isinstance(v, bool)
+    }
+
+
+def _append_hand_snapshot(r):
+    """Store end-of-previous-hand cumulative counters once per target hand.
+
+    observe_preflop is the first observation update for the target in a new
+    hand.  Therefore r still contains the complete previous hand here,
+    including postflop/size/showdown observations.
+    """
+    if not READ_RECENCY_V3 or int(r.get('hands', 0) or 0) <= 0:
+        return
+    h = int(r.get('hands', 0) or 0)
+    hist = r.setdefault('_hand_hist', [])
+    if hist and int(hist[-1].get('hands', -1) or -1) == h:
+        return
+    hist.append(_numeric_snapshot(r))
+    if len(hist) > _MAX_RECENCY_HISTORY:
+        del hist[:-_MAX_RECENCY_HISTORY]
+
+
+def _recent_record(r, memory):
+    """Return cumulative-counter differences for the latest memory hands.
+
+    Old books have no snapshots.  In that case we deliberately keep lifetime
+    behavior until enough new boundaries have been recorded; we never invent
+    missing historical observations.
+    """
+    if not READ_RECENCY_V3:
+        return r
+    h = int(r.get('hands', 0) or 0)
+    m = max(1, int(memory or 1))
+    if h <= m:
+        return r
+    target = h - m
+    hist = r.get('_hand_hist') or []
+    base = None
+    for snap in reversed(hist):
+        sh = int(snap.get('hands', -1) or -1)
+        if sh == target:
+            base = snap
+            break
+        if sh < target:
+            base = snap
+            break
+    # Not enough V3-era history yet (e.g. a loaded legacy lifetime book).
+    if base is None:
+        return r
+    out = {}
+    for k, v in r.items():
+        if k == '_hand_hist':
+            continue
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            bv = base.get(k, 0)
+            if isinstance(bv, (int, float)) and not isinstance(bv, bool):
+                out[k] = v - bv
+            else:
+                out[k] = v
+        else:
+            out[k] = v
+    # A <=target fallback may yield slightly more than m hands only when
+    # snapshots are sparse. Never pretend it is exactly m.
+    return out
+
 
 
 class Book:
@@ -191,6 +269,9 @@ class Book:
         for i in observers:
             if i == actor: continue
             r = self.rec(i, actor)
+            # Snapshot *before* this hand's first update. At this point the
+            # previous hand is complete, so one snapshot covers every counter.
+            _append_hand_snapshot(r)
             r['hands'] += 1
             r['vpip'] += 1 if vpip else 0
             r['pfr'] += 1 if pfr else 0
@@ -275,6 +356,10 @@ def estimate(book, observer, target, observer_type, rng=None):
         est['sz_big'] = 0.15; est['sz_river'] = PRIOR['sz_mean']; est['sz_n'] = 0
         est['n'] = 0; est['confidence'] = 0.0
         return est
+    # Under V3 every downstream rate uses the same remembered window. Legacy
+    # used lifetime numerators/denominators while only n was capped, so old
+    # behavior never actually left the estimate.
+    r = _recent_record(r, o['memory'])
     n = min(r['hands'], o['memory'])
     vpip = r['vpip']/max(1, r['hands'])
     pfr = r['pfr']/max(1, r['hands'])
