@@ -834,6 +834,168 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
         return ('call', open_bb)
     return ('fold', 0)
 
+
+def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
+                          n_callers, rng, raise_level=2, stack_bb=None,
+                          exploit=None, bf=1.0, seats=8, ante=True,
+                          can_raise=True, pot_bb=None, to_call_bb=None,
+                          original_opener_range=None, reraiser_range=None,
+                          players_behind=0, decision_seed=None):
+    """P7: 아직 자발적 액션이 없는 상태에서 open + re-raise를 동시에 마주한 판단.
+
+    generic defend는 마지막 aggressor 하나만 본다. P7은 그걸 baseline으로만 쓰고,
+    실제로는 **original opener + re-raiser 두 seat-keyed perceived range**를 함께
+    보며 cold-call의 팟오즈를 계산한다. 숙련도가 높을수록 이 두-range 계산을
+    더 강하게 적용하고, 낮으면 기존 heuristic에 가깝게 남는다.
+
+    cold 4bet은 showdown equity 하나로 막지 않는다. 블러프 4bet이 존재하므로,
+    multiway fair-share에 못 미칠 때만 range_read/potodds 숙련도에 비례해
+    기존 attack weight를 줄이고, 기존 bluff skill / observed fold-to-4bet
+    근거가 있으면 그 몫을 보존한다.
+
+    새로운 성향/상수를 만들지 않는다:
+      - call price: 실제 pot_bb / to_call_bb
+      - ICM: 기존 icm_bf
+      - 계산오차: 기존 calc_noise(potodds)
+      - 뒤사람 위험: postflop calldown_need와 같은 6%p/인, 최대 18%p 규칙
+      - reasoning strength: 기존 range_read + potodds 평균
+      - bluff survival: 기존 bluff skill + f2fb read
+
+    범위가 둘 다 없으면 숫자를 발명하지 않고 기존 defend_decision으로 fallback.
+    반환: (action, size_bb, audit)
+    """
+    pools = [r for r in (original_opener_range, reraiser_range) if r]
+    if len(pools) < 2 or pot_bb is None or to_call_bb is None:
+        act, sz = defend_decision(
+            prof, def_pos, reraiser_pos, hand, bb, open_bb, n_callers, rng,
+            raise_level=raise_level, stack_bb=stack_bb,
+            exploit=exploit, bf=bf, seats=seats, ante=ante,
+            opener_allin=False, can_raise=can_raise,
+            pot_bb=pot_bb, to_call_bb=to_call_bb)
+        return act, sz, {
+            'complete': False,
+            'reason': 'missing_two_ranges_or_price',
+            'strategy_consumer': False,
+        }
+
+    import bot as _B
+    _seed = int(decision_seed or 0)
+    eq = float(_B.equity_vs_combos(
+        hand, [], pools, sims=900, seed=_seed))
+
+    cost = max(0.0, float(to_call_bb or 0.0))
+    pot_before = max(0.0, float(pot_bb or 0.0))
+    bf_seen = (
+        PS.icm_bf(prof, max(1.0, float(bf or 1.0)))
+        if isinstance(prof, dict) and prof.get('concepts')
+        else max(1.0, float(bf or 1.0)))
+    need_base = (cost * bf_seen) / max(1e-9, pot_before + cost)
+
+    noise = 1.0
+    reason_skill = 0.5
+    bluff_skill = 0.5
+    if isinstance(prof, dict) and prof.get('concepts'):
+        _nseed = zlib.crc32(('%s|p7_potodds' % _seed).encode())
+        noise = PS.calc_noise(prof, 'potodds', random.Random(_nseed))
+        noise = max(0.65, min(1.55, float(noise)))
+        reason_skill = max(0.0, min(
+            1.0, (PS.sk(prof, 'range_read') + PS.sk(prof, 'potodds')) / 20.0))
+        bluff_skill = max(0.0, min(1.0, PS.sk(prof, 'bluff') / 10.0))
+
+    need = need_base * noise
+    # Same unresolved-player risk rule used by calldown_need().
+    if players_behind:
+        need += (1.0 - need_base) * min(0.18, 0.06*int(players_behind))
+    need = max(0.01, min(0.95, need))
+
+    lik = defend_action_likelihoods(
+        prof, def_pos, reraiser_pos, hand, bb, open_bb, n_callers,
+        raise_level=raise_level, stack_bb=stack_bb,
+        exploit=exploit, bf=bf, seats=seats, ante=ante,
+        opener_allin=False, can_raise=can_raise,
+        pot_bb=pot_bb, to_call_bb=to_call_bb)
+
+    attack = float(lik['attack'])
+    call = float(lik['call'])
+    fold = float(lik['fold'])
+    base = {'attack': attack, 'call': call, 'fold': fold}
+
+    # Cold-call: two-range equity is first-class. Skilled players suppress a
+    # demonstrably -EV flat; +EV evidence can rescue generic folds into calls.
+    if eq < need:
+        severity = min(1.0, (need - eq) / max(need, 1e-9))
+        cut = call * reason_skill * severity
+        call -= cut
+        fold += cut
+    else:
+        surplus = min(1.0, (eq - need) / max(1e-9, 1.0 - need))
+        rescue = fold * reason_skill * surplus
+        call += rescue
+        fold -= rescue
+
+    # Cold 4bet: if showdown equity is below the multiway fair share, preserve
+    # only the part justified by existing bluff ability / reraiser fold-to-4bet read.
+    fair = 1.0 / 3.0
+    if eq < fair and attack > 0.0:
+        f2fb = 0.0
+        rw = 0.0
+        if exploit:
+            rw = max(0.0, min(1.0, float(exploit.get('w', 0.0) or 0.0)))
+            f2fb = max(0.0, float(exploit.get('f2fb_gap', 0.0) or 0.0))
+        bluff_support = max(bluff_skill, min(1.0, rw*f2fb))
+        suppress = reason_skill * min(1.0, (fair - eq) / fair)
+        keep = (1.0 - suppress) + suppress*bluff_support
+        removed = attack * (1.0 - keep)
+        attack *= keep
+        fold += removed
+
+    if not can_raise:
+        fold += attack
+        attack = 0.0
+
+    z = attack + call + fold
+    if z <= 0:
+        attack, call, fold = 0.0, 0.0, 1.0
+    else:
+        attack, call, fold = attack/z, call/z, fold/z
+
+    x = rng.random()
+    if x < attack:
+        mult = reraise_mult(raise_level, def_pos) + 1.0*n_callers
+        target = open_bb * mult
+        _raise_pot = max(
+            1.5 + open_bb*(1 + n_callers),
+            float(pot_bb or 0.0))
+        act, sz = raise_form(
+            prof, stack_bb if stack_bb is not None else bb,
+            target, _raise_pot, rng, exploit=exploit,
+            level=raise_level, n_opp=max(2, 2+n_callers),
+            facing_bb=open_bb)
+        action = (act, sz) if act == 'shove' else ('3bet', sz)
+    elif x < attack + call:
+        action = ('call', open_bb)
+    else:
+        action = ('fold', 0)
+
+    return action[0], action[1], {
+        'complete': True,
+        'strategy_consumer': True,
+        'equity_vs_open_and_reraise': round(eq, 6),
+        'need_base': round(need_base, 6),
+        'need_seen': round(need, 6),
+        'potodds_noise': round(noise, 6),
+        'reason_skill': round(reason_skill, 6),
+        'players_behind': int(players_behind or 0),
+        'fair_share_3way': round(fair, 6),
+        'base_likelihoods': {k: round(v, 6) for k, v in base.items()},
+        'final_likelihoods': {
+            'attack': round(attack, 6),
+            'call': round(call, 6),
+            'fold': round(fold, 6)},
+        'roll': round(x, 6),
+        'selected_action': action[0],
+    }
+
 def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
                  behind_stacks=None, behind_reads=None, seats=8, ante=True,
                  field_avg_bb=None, erosion=0.0, field_q=0.6, bf=1.0,
