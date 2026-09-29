@@ -1,0 +1,31 @@
+name: Core Sizing Ownership
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - 'persona.py'
+      - 'plan.py'
+      - 'runner.py'
+      - 'session.py'
+      - 'preflop.py'
+      - 'tools/verify_core_sizing_ownership.py'
+      - 'tools/verify_preflop_closure.py'
+      - 'tools/verify_human_model_v3_integration.py'
+      - '.github/workflows/core-sizing-ownership.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Compile core
+        run: python3 -m py_compile persona.py plan.py runner.py session.py preflop.py
+      - name: Verify sizing ownership
+        run: python3 tools/verify_core_sizing_ownership.py
+      - name: Preflop closure
+        run: python3 tools/verify_preflop_closure.py
+      - name: 9-max integration regression
+        run: python3 tools/verify_human_model_v3_integration.py
