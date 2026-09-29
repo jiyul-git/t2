@@ -1,0 +1,75 @@
+{
+ "steps": [
+  {
+   "k": 6,
+   "metrics": {
+    "preflop_gap_total": 0.00032834035742259715,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.6130829964062616,
+      "jam_30": 0.04600909277889343,
+      "raise_2": 0.3409079232301489
+     },
+     "rfi_CO": {
+      "fold": 0.7269727801439525,
+      "jam_30": 0.011435481910195637,
+      "raise_2": 0.2615917511180452
+     },
+     "rfi_SB": {
+      "fold": 0.36718684706905136,
+      "jam_30": 0.2397999233005592,
+      "raise_2.5": 0.39301323834190355
+     },
+     "terminal_parent": {
+      "call": 0.7122456471359927,
+      "fold": 0.12804759320388961,
+      "jam_30": 0.15968329765565234,
+      "raise_7": 2.3461518015316665e-05
+     }
+    },
+    "max_class_frequency_delta": {
+     "rfi_BTN": 0.9679793957620859,
+     "rfi_CO": 0.0002829357981681824,
+     "rfi_SB": 0.0005179643630981445,
+     "terminal_parent": 0.992309529799968
+    },
+    "max_class_frequency_delta_all": 0.992309529799968,
+    "max_aggregate_frequency_delta": {
+     "rfi_BTN": 0.00174617862976012,
+     "rfi_CO": 2.140193348931785e-06,
+     "rfi_SB": 1.933613449633942e-06,
+     "terminal_parent": 0.010041663688154068
+    },
+    "range_distance": {
+     "BTN": {
+      "L1": 0.05282804983979357,
+      "L2": 0.018769019712607273
+     },
+     "BB": {
+      "L1": 0.05655299885970408,
+      "L2": 0.018094804860767425
+     }
+    },
+    "value_delta": {
+     "BTN": {
+      "max_abs_dV_bb": 0.43258813978251,
+      "mean_abs_dV_bb": 0.09879300394018432,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     },
+     "BB": {
+      "max_abs_dV_bb": 0.623963279284145,
+      "mean_abs_dV_bb": 0.13466105131185102,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.005917159763313609
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.29807233514729653,
+     "mean": 0.24391993769857445
+    },
+    "table_unallocated_bb": -0.003751737288087753
+   },
+   "injected_table": "data/gto_hu_continuation/outer_v1_damped_a05/k5/table.json",
+   "ranges_hash": "875dc7760feb6422"
+  }
+ ]
+}

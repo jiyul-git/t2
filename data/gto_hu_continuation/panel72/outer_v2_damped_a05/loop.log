@@ -1,0 +1,5 @@
+k6: gap 0.00033 maxdF 0.9923 BBmix {'call': 0.7122456471359927, 'fold': 0.12804759320388961, 'jam_30': 0.15968329765565234, 'raise_7': 2.3461518015316665e-05} unalloc -0.0038
++ /home/user/t2/vendor/gtopen/target/release/examples/t2_cont_terminal /home/user/t2/data/gto_hu_continuation/cfg_4h_mr4_30bb.json 400 fold,raise,fold,call data/gto_hu_continuation/panel72/outer_v2_damped_a05/k7/terminal.json
+gap 0.00037  pot 5.5  spr 5.091  hash "2ac295dc083814b4"
++ python3 /home/user/t2/tools/gto_hu_continuation/solve_panel.py data/gto_hu_continuation/panel72/outer_v2_damped_a05/k7/terminal.json /home/user/t2/data/gto_hu_continuation/menu_m2_single_v1.json data/gto_hu_continuation/panel_v2_72.json data/gto_hu_continuation/panel72/outer_v2_damped_a05/k7/flops --postflop 1000 0.3 25 --workers 4 --threads 1
+72 boards, 0 artifacts present (verified by the solver on reuse), 72 to solve; workers 4 x threads 1; MemAvailable 15.2 GB
