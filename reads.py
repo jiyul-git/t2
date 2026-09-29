@@ -178,6 +178,12 @@ class Book:
             # 콜 후 squeeze를 맞은 상태는 opener의 fold-to-3bet/4bet과 다르다.
             'pf_backraise_opp': 0, 'pf_backraise': 0,
             'pf_call_faced_squeeze': 0, 'pf_fold_after_call_squeeze': 0,
+            # P7: 아직 자발적 액션이 없는 상태에서 open + re-raise를 처음
+            # 마주한 cold response. opener/3bettor 역할 통계와 섞지 않는다.
+            'pf_cold_reraise_opp': 0,
+            'pf_cold_reraise_call': 0,
+            'pf_cold_reraise_raise': 0,
+            'pf_cold_reraise_fold': 0,
         }
         key = self._k(i, j)
         r = self.d.setdefault(key, {})
@@ -245,6 +251,32 @@ class Book:
             r['pf_call_faced_squeeze'] += 1
             if folded_to_squeeze:
                 r['pf_fold_after_call_squeeze'] += 1
+
+    def observe_cold_reraise(self, observers, actor, had_chance,
+                                  called=False, raised=False, folded=False):
+        """P7 cold response observation.
+
+        Opportunity = actor had not voluntarily acted yet and two or more full
+        raises were already in front.  This is distinct from:
+          opener facing a 3bet,
+          3bettor facing a 4bet,
+          caller facing a squeeze.
+        No population prior is invented here; rates stay raw until enough
+        evidence/calibration exists.
+        """
+        if not had_chance:
+            return
+        for i in observers:
+            if i == actor:
+                continue
+            r=self.rec(i,actor)
+            r['pf_cold_reraise_opp'] += 1
+            if raised:
+                r['pf_cold_reraise_raise'] += 1
+            elif called:
+                r['pf_cold_reraise_call'] += 1
+            elif folded:
+                r['pf_cold_reraise_fold'] += 1
 
     def observe_limp_raise(self, observers, actor, faced, folded):
         """림프한 뒤 첫 레이즈가 돌아왔을 때의 반응을 센다.
@@ -354,6 +386,10 @@ def estimate(book, observer, target, observer_type, rng=None):
         for _k in ('ftr_flop', 'ftr_turn', 'ftr_river'):
             est[_k] = None
         est['sz_big'] = 0.15; est['sz_river'] = PRIOR['sz_mean']; est['sz_n'] = 0
+        est['pf_cold_reraise_n'] = 0
+        est['pf_cold_reraise_call'] = None
+        est['pf_cold_reraise_raise'] = None
+        est['pf_cold_reraise_fold'] = None
         est['n'] = 0; est['confidence'] = 0.0
         return est
     # Under V3 every downstream rate uses the same remembered window. Legacy
@@ -398,6 +434,13 @@ def estimate(book, observer, target, observer_type, rng=None):
     f2fb  = _rate('pf_fold_to_4bet', 'pf_faced_4bet', PRIOR['pf_fold_to_4bet'])
     backr = _rate('pf_backraise', 'pf_backraise_opp', 0.0)
     fcsq  = _rate('pf_fold_after_call_squeeze', 'pf_call_faced_squeeze', 0.0)
+    _cold_n = int(r.get('pf_cold_reraise_opp', 0) or 0)
+    _cold_call = (
+        r.get('pf_cold_reraise_call', 0)/float(_cold_n) if _cold_n else None)
+    _cold_raise = (
+        r.get('pf_cold_reraise_raise', 0)/float(_cold_n) if _cold_n else None)
+    _cold_fold = (
+        r.get('pf_cold_reraise_fold', 0)/float(_cold_n) if _cold_n else None)
     # 사이즈: 평균과 표준편차. 분산이 낮으면 사이즈에서 정보가 안 나온다.
     _sn = r.get('sz_n', 0)
     if _sn >= 2:
@@ -467,6 +510,11 @@ def estimate(book, observer, target, observer_type, rng=None):
             'pf_backraise_n': r.get('pf_backraise_opp', 0),
             'pf_fold_after_call_squeeze': fcsq,
             'pf_call_faced_squeeze_n': r.get('pf_call_faced_squeeze', 0),
+            # Raw P7 observation; None means no evidence, not zero frequency.
+            'pf_cold_reraise_n': _cold_n,
+            'pf_cold_reraise_call': _cold_call,
+            'pf_cold_reraise_raise': _cold_raise,
+            'pf_cold_reraise_fold': _cold_fold,
             'sz_mean': sz_mean, 'sz_sd': sz_sd,
             'sz_big': sz_big, 'sz_river': sz_riv, 'sz_n': _sn,
             'aggr': jitter(aggr_axis), 'bluff': jitter(bluff_axis),
@@ -570,6 +618,10 @@ def perceived_profile(book, observer, target, observer_type, rng=None):
             'pf_backraise_n': e.get('pf_backraise_n'),
             'pf_fold_after_call_squeeze': e.get('pf_fold_after_call_squeeze'),
             'pf_call_faced_squeeze_n': e.get('pf_call_faced_squeeze_n'),
+            'pf_cold_reraise_n': e.get('pf_cold_reraise_n'),
+            'pf_cold_reraise_call': e.get('pf_cold_reraise_call'),
+            'pf_cold_reraise_raise': e.get('pf_cold_reraise_raise'),
+            'pf_cold_reraise_fold': e.get('pf_cold_reraise_fold'),
             'pf_limp': e.get('pf_limp'),
             'pf_fold_after_limp_raise': e.get('pf_fold_after_limp_raise'),
             'pf_limp_raise_n': e.get('pf_limp_raise_n'),
