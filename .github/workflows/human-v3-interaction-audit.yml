@@ -1,0 +1,22 @@
+name: Human V3 Interaction Audit
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - 'persona.py'
+      - 'preflop.py'
+      - 'reads.py'
+      - 'tourney.py'
+      - 'tools/verify_human_model_v3_integration.py'
+      - 'tools/audit_human_v3_interactions.py'
+      - '.github/workflows/human-v3-interaction-audit.yml'
+  workflow_dispatch:
+jobs:
+  interaction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python3 tools/audit_human_v3_interactions.py
