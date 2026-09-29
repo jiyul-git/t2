@@ -549,8 +549,8 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     else:
         loose = PS.temper(prof, 'looseness', 5.0)
         aggr = PS.temper(prof, 'aggression', 5.0)
-        d_call = max(-1.0, min(1.0, (loose - 5.0)/4.0))
-        d_tb = max(-1.0, min(1.0, ((0.45*loose + 0.55*aggr) - 5.0)/4.0))
+        d_call = PS.preflop_temper_direction(loose)
+        d_tb = PS.preflop_temper_direction(0.45*loose + 0.55*aggr)
         if getattr(PS, 'PREFLOP_REASONING_V3', False):
             # 공부한 defend chart를 먼저 기억하고, 낯선 stack/table/ante의
             # 차이만 기존 reasoning skills로 보정한다. condition mismatch가
