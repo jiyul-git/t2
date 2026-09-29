@@ -423,6 +423,10 @@ EXPLOIT_WEIGHT_V3 = _os.environ.get('T2_EXPLOIT_WEIGHT_V3') == '1'
 # Human Model v3 calc error semantics: retain directional outs overcount, but
 # make arithmetic-only pot-odds / SPR errors zero-mean. OFF keeps legacy bits.
 CALC_NOISE_V3 = _os.environ.get('T2_CALC_NOISE_V3') == '1'
+# Human Model v3 (opt-in): use the full native 0..10 temperament scale for
+# preflop direction. Legacy divides by 4 and therefore clips both endpoint
+# pairs (0/1 and 9/10) to the same -/+1 direction.
+PREFLOP_TEMPER_DIRECTION_V3 = _os.environ.get('T2_PREFLOP_TEMPER_DIRECTION_V3') == '1'
 
 GTO_FAMILY_CONCEPT = {'rfi': 'pf_range', 'defend': 'pf_defend'}
 
@@ -556,6 +560,17 @@ def preflop_reasoning_confidence(prof, family, pos=None, seats=8, bb=100.0,
     return max(0.0, min(1.0, sum(active) / len(active)))
 
 
+def preflop_temper_direction(v):
+    """Map a native 0..10 temperament score to preflop direction -1..+1.
+
+    V3 uses the natural half-range span 5.0, so every integer temperament
+    level remains distinguishable. Legacy /4 is preserved behind the flag
+    because existing fingerprints depend on it.
+    """
+    span = 5.0 if PREFLOP_TEMPER_DIRECTION_V3 else 4.0
+    return max(-1.0, min(1.0, (float(v) - 5.0) / span))
+
+
 def preflop_reasoned_width(prof, family, target, direction, pos=None, seats=8,
                             bb=100.0, ante=True, opener_pos=None, open_bb=2.5,
                             deviation_scale=0.95, anchor=None):
@@ -618,7 +633,7 @@ def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
     # --- 폭: 기억 / 조건 추론 / 기질을 분리 ---
     loose = temper(prof, 'looseness', 5.0)
     aggr  = temper(prof, 'aggression', 5.0)
-    direction = max(-1.0, min(1.0, ((0.75*loose + 0.25*aggr) - 5.0) / 4.0))
+    direction = preflop_temper_direction(0.75*loose + 0.25*aggr)
     if PREFLOP_REASONING_V3:
         # base에는 위의 positional flattening이 이미 들어 있다. anchor도 같은
         # 사람의 positional 인식으로 flatten해야 anchor->target delta가 좌석
