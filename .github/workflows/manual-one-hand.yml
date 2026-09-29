@@ -3,7 +3,7 @@ name: manual-one-hand
 on:
   push:
     branches:
-      - chatgpt/logic-tuning-20260927
+      - chatgpt/human-model-v3-20260929
     paths:
       - tools/manual_one_hand.py
       - plan.py
