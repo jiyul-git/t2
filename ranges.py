@@ -750,12 +750,26 @@ def _call_range(r, board, street, size_frac, damp=1.0):
     mdf = 1.0 / (1.0 + s) if s > 0 else 0.95
     keep = max(keep, min(0.95, mdf))
     cut = max(1, int(n*0.18))
-    trap_keep = max(0, int(cut*0.25))
-    lo = ranked[:trap_keep]
+
+    # Observing a flat call does NOT mean "remove almost all strong hands".
+    # The old constant kept only 25% of the top raise-capable region, so a
+    # player who called a large bet was inferred to have shed 75% of their
+    # strongest hands.  In actual play this made repeated calls look *weaker*
+    # and let medium one-pair hands keep value-barrelling.
+    #
+    # Strong hands flat more often versus larger bets and on later streets,
+    # when ranges are already polarized and raising is less mandatory.  Keep
+    # that top region in the perceived call range; raising remains represented
+    # separately by _raise_range when a raise is actually observed.
+    _top_flat = {'flop': 0.55, 'turn': 0.65, 'river': 0.72}.get(street, 0.60)
+    _top_flat += 0.18 * min(1.0, s)
+    _top_flat = max(0.45, min(0.90, _top_flat))
+    top_keep = max(1, int(cut*_top_flat))
+    lo = ranked[:top_keep]
     mid = ranked[cut:max(cut+1, int(n*min(0.95, keep)))]
     out = lo + mid
     chosen = out if len(out) >= _MIN_KEEP else (
-        ranked[cut:cut+_MIN_KEEP] or ranked[:_MIN_KEEP])
+        ranked[:max(_MIN_KEEP, top_keep)] or ranked)
     return range_select(r, chosen)
 
 
