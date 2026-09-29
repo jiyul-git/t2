@@ -1,0 +1,29 @@
+BTN CI24 {'mean': 0.356, 'median': 0.322, 'p90': 0.54, 'max': 1.192} CI72 {'mean': 0.293, 'median': 0.271, 'p90': 0.411, 'max': 0.751} ratio {'of_means': 0.824, 'median_per_class': 0.814, 'pre_registered_prediction': 0.745, 'naive_1_over_sqrt3': 0.577} emp24 0.507 ESS {'24': {'kish_design': 16.1, 'per_class_mean': 35.6, 'per_class_median': 28.7, 'flops': 24}, '72': {'kish_design': 48.4, 'per_class_mean': 69.2, 'per_class_median': 60.1, 'flops': 72}}
+   dV {'mean_abs': 0.193, 'max_abs': 0.781, 'share_outside_24_ci': 0.178, 'reach_weighted_mean_abs': 0.199, 'range_ev_shift': 0.074} abstr/CI {"24": {"eps_ratio_of_means": 0.2808564806381872, "br_ratio_of_means": 0.25369509190688133, "eps_mean_per_class_ratio": 0.3184187882067628, "br_mean_per_class_ratio": 0.29870919007373453, "share_classes_menu_gt_ci": 0.005917159763313609}, "72": {"eps_ratio_of_means": 0.3410068695659107, "br_ratio_of_means": 0.30802838844530783, "eps_mean_per_class_ratio": 0.3666878640020723, "br_mean_per_class_ratio": 0.32821660015497645, "share_classes_menu_gt_ci": 0.029585798816568046}, "menu_mean_abs": {"eps": 0.09990466238022695, "br": 0.09024296839042388}, "classification_72": "0.25-0.5: abstraction approaching"}
+BB CI24 {'mean': 0.474, 'median': 0.421, 'p90': 0.725, 'max': 1.502} CI72 {'mean': 0.425, 'median': 0.392, 'p90': 0.641, 'max': 0.963} ratio {'of_means': 0.895, 'median_per_class': 0.89, 'pre_registered_prediction': 0.745, 'naive_1_over_sqrt3': 0.577} emp24 0.739 ESS {'24': {'kish_design': 16.1, 'per_class_mean': 49.4, 'per_class_median': 35.7, 'flops': 24}, '72': {'kish_design': 48.4, 'per_class_mean': 88.4, 'per_class_median': 71.1, 'flops': 72}}
+   dV {'mean_abs': 0.268, 'max_abs': 1.213, 'share_outside_24_ci': 0.207, 'reach_weighted_mean_abs': 0.242, 'range_ev_shift': -0.045} abstr/CI {"24": {"eps_ratio_of_means": 0.17235816600025292, "br_ratio_of_means": 0.15407611282216938, "eps_mean_per_class_ratio": 0.2210573210345782, "br_mean_per_class_ratio": 0.19644858300282256, "share_classes_menu_gt_ci": 0.011834319526627219}, "72": {"eps_ratio_of_means": 0.19255907270352338, "br_ratio_of_means": 0.1721343067131316, "eps_mean_per_class_ratio": 0.21583369653436799, "br_mean_per_class_ratio": 0.18909678097859928, "share_classes_menu_gt_ci": 0.011834319526627219}, "menu_mean_abs": {"eps": 0.08174282334776677, "br": 0.07307235139943814}, "classification_72": "< 0.25: sampling still clearly first"}
+unallocated {'24': 0.023359779306073136, '72': -0.00596020146535281} BB side changes [('32o', 'up'), ('42o', 'up'), ('62o', 'up'), ('72o', 'up'), ('82o', 'up'), ('Q2o', 'up'), ('K2o', 'up'), ('83o', 'down'), ('93o', 'down'), ('T3o', 'down'), ('J3o', 'down'), ('94o', 'down'), ('J4o', 'down'), ('85o', 'up'), ('T5o', 'up'), ('72s', 'up'), ('T7o', 'up')]
+old24 vs new48 {'BTN': {'per_class_share_abs_z_gt_1_96': 0.023668639053254437, 'per_class_z_sd': 0.9524435290440669, 'per_class_z_mean': -0.4401048450634711, 'range_ev_old24_minus_new48': -0.11092075886372621, 'range_ev_se': 0.06759347653729872, 'range_ev_z': -1.6409979859893593, 'note': 'expected under pure flop sampling: share ~0.05, z sd ~1'}, 'BB': {'per_class_share_abs_z_gt_1_96': 0.03550295857988166, 'per_class_z_sd': 0.9582831111998701, 'per_class_z_mean': -0.1698945736656859, 'range_ev_old24_minus_new48': 0.06694078770658574, 'range_ev_se': 0.06657108783451908, 'range_ev_z': 1.005553459979288, 'note': 'expected under pure flop sampling: share ~0.05, z sd ~1'}}
+C3 whole-CI-below classes {'72o': {'V24': 0.48164367926455054, 'hi24': 0.7392046861415135, 'V72': 1.1644452963158314, 'lo72': 0.7156531155885879, 'hi72': 1.6678216140665931}, '82o': {'V24': 0.5057360987012018, 'hi24': 0.8060588391302043, 'V72': 1.1701412626958154, 'lo72': 0.6789484805358498, 'hi72': 1.7211854856514408}, '92o': {'V24': 0.7029940079077978, 'hi24': 0.9330706084512488, 'V72': 0.9225387088326832, 'lo72': 0.6068069887840915, 'hi72': 1.2627561471580444}, 'T2o': {'V24': 0.4997085049512091, 'hi24': 0.7863025920047979, 'V72': 0.9819466003407871, 'lo72': 0.6502582561637206, 'hi72': 1.3340842205814718}}
+BB 73o 24:V=1.053±0.292 call m=0.053 72:V=1.044±0.284 call m=0.044 
+BB A3o 24:V=1.869±0.271 call m=0.294 72:V=1.794±0.242 call m=0.219 
+BB 72s 24:V=0.997±0.286 fold m=0.003 72:V=1.547±0.382 call m=0.547 CHANGE
+BB J2s 24:V=1.291±0.383 call m=0.111 72:V=1.349±0.318 call m=0.169 
+BB Q3s 24:V=1.948±0.466 call m=0.696 72:V=1.614±0.388 call m=0.362 
+BB A3s 24:V=2.153±0.274 jam m=0.095 72:V=2.362±0.215 call m=0.113 CHANGE
+BB JTs 24:V=2.288±0.577 jam m=0.081 72:V=2.184±0.329 jam m=0.185 
+BB JTo 24:V=1.602±0.646 jam m=0.079 72:V=1.514±0.360 jam m=0.166 
+BB KQo 24:V=2.877±0.279 jam m=0.141 72:V=2.991±0.248 jam m=0.027 
+BB T7o 24:V=0.888±0.199 jam m=0.006 72:V=1.443±0.378 call m=0.437 CHANGE
+BB A2o 24:V=1.581±0.264 call m=0.016 72:V=1.786±0.294 call m=0.221 
+BB 85s 24:V=1.591±0.180 call m=0.273 72:V=1.844±0.307 call m=0.526 
+BB 43s 24:V=2.891±0.608 call m=1.575 72:V=1.927±0.520 call m=0.611 
+BB T7s 24:V=1.606±0.147 call m=0.096 72:V=2.083±0.372 call m=0.573 
+BTN JTs 24:V=3.664±0.459 jam m=0.236 72:V=3.795±0.260 jam m=0.198 
+BTN JTo 24:V=3.150±0.509 raise m=0.047 72:V=3.306±0.291 raise m=0.092 
+BTN KQo 24:V=3.694±0.244 jam m=0.001 72:V=3.872±0.182 raise m=0.051 CHANGE
+BTN T7o 24:V=2.794±0.217 fold m=0.589 72:V=3.210±0.271 fold m=0.589 
+BTN A2o 24:V=2.750±0.218 fold m=0.182 72:V=2.826±0.178 fold m=0.160 
+BTN 85s 24:V=3.481±0.186 fold m=0.018 72:V=3.593±0.219 raise m=0.015 CHANGE
+BTN 43s 24:V=3.639±0.346 fold m=0.025 72:V=3.217±0.323 fold m=0.148 
+BTN T7s 24:V=3.295±0.165 raise m=0.003 72:V=3.661±0.251 raise m=0.110 
