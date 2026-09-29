@@ -1653,6 +1653,8 @@ class HandRun:
                 my_r = R.range_unique_sorted(my_r)  # legacy 순서 유지 + weighted mass 보존
                 opp_r = None
                 opp_ranges = {}
+                opp_ests = {}
+                opp_stack_bbs = {}
                 for o in r2.live():
                     if o == s: continue
                     # 상대의 실제 persona/tilt 는 관찰자가 알 수 없다.
@@ -1666,6 +1668,9 @@ class HandRun:
                     _oe = RD.perceived_profile(
                         h.book, self._pid(s), self._pid(o), ax,
                         random.Random(self._dseed(s, street, 'polar', o)))
+                    if _oe:
+                        opp_ests[o] = _oe
+                    opp_stack_bbs[o] = float(r2.stacks.get(o, 0) or 0) / max(1.0, float(h.bb))
                     _opp_view = RD.range_profile(_oe)
                     if _oe:
                         _rdp = PS.read_opponent(ax, _oe)
@@ -1816,9 +1821,13 @@ class HandRun:
                 _main = aggressor if (aggressor is not None and aggressor != s
                                       and aggressor in _others) else (
                         max(_others, key=lambda x: r2.stacks.get(x, 0)) if _others else None)
-                _est = (RD.perceived_profile(h.book, _pid(s), _pid(_main), ax,
-                                             random.Random(self._dseed(s, street, 'est', _main)))
-                        if _main is not None else None)
+                _est = (
+                    opp_ests.get(_main)
+                    if _main is not None and opp_ests.get(_main) is not None
+                    else (RD.perceived_profile(
+                        h.book, _pid(s), _pid(_main), ax,
+                        random.Random(self._dseed(s, street, 'est', _main)))
+                        if _main is not None else None))
                 _ostk = (r2.stacks.get(_main, 0)/h.bb) if _main is not None else None
 
                 # F2/probe context. 이전 스트리트의 알려진 공격자가 실제로
@@ -1852,7 +1861,8 @@ class HandRun:
                     first=(key not in h.plans or street == 'flop'),
                     pf_seed=getattr(h, 'pf_seed', {}).get(s),
                     bb_chips=h.bb, opp_ranges=opp_ranges,
-                    opp_checked_prev=_opp_checked_prev)
+                    opp_checked_prev=_opp_checked_prev,
+                    opp_ests=opp_ests, opp_stack_bbs=opp_stack_bbs)
                 # 실제 팟은 스트리트 시작 팟 + 이번 스트리트에 들어온 칩이다.
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
@@ -2035,6 +2045,12 @@ class HandRun:
                         'opp_ranges_n': _pl.get('opp_ranges_n'),
                         'opp_ranges_mass': _pl.get('opp_ranges_mass'),
                         'opp_ranges_sig': _pl.get('opp_ranges_sig'),
+                        'field_fold_seat': _pl.get('field_fold_seat'),
+                        'field_bettor_seat': _pl.get('field_bettor_seat'),
+                        'opp_read_seats': sorted(str(k) for k in opp_ests),
+                        'opp_stack_bbs': {
+                            str(k): round(float(v), 3)
+                            for k, v in opp_stack_bbs.items()},
                         # F8-D2 provenance only; active strategy pools remain unchanged.
                         'locked_opp_ranges_n': {
                             str(k): len(v) for k, v in locked_opp_ranges.items()},
