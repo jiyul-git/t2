@@ -2663,7 +2663,9 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     st['_rsig'] = _rsig
     st['_opps_sig'] = _opps_sig
 
-    st = river_fix(st, hero, board, profile, opp_range, rng)
+    st = river_fix(
+        st, hero, board, profile, opp_range, rng,
+        n_opp=n_opp, opp_ranges=opp_ranges)
 
     # F2/probe context must exist **before** attach_intent.
     # Session used to write this after update_plan returned, so the already-frozen
@@ -2696,7 +2698,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     return st
 
 
-def river_fix(state, hero, board, profile=None, opp_range=None, rng=None):
+def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
+              n_opp=1, opp_ranges=None):
     """리버 도달 시 드로우 기반 계획은 무효. 메이드 여부로 재분류.
 
     **미스한 드로우가 전부 giveup 으로 가면 안 된다.** busted 드로우는
@@ -2730,11 +2733,57 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None):
             _tv = PS.sk(profile, 'thin_value_river')/10.0
             _band = (max(0.0, min(1.0, (rel - 0.48)/0.30))
                      * max(0.0, min(1.0, (0.92 - rel)/0.20)))
-            if rng.random() < 0.75*_tv*_band:
+
+            # Thin value asks a different question from "am I ahead of their
+            # whole range?": am I still ahead **when called**?
+            # Use the same canonical continue-range model at the actual
+            # thin_river base size (42% pot).  This prevents medium showdown
+            # hands from betting merely because folds make the *overall* range
+            # look weak.
+            _thin_size = float(SIZING['thin_river']['river'])
+            _thin_eq = None
+            _thin_n = None
+            if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):
+                _cont_map = {}
+                for _seat, _rr in opp_ranges.items():
+                    if _rr:
+                        _cr = R.perceived_continue_range(
+                            _rr, board, 'river', _thin_size, profile)
+                        if _cr:
+                            _cont_map[_seat] = _cr
+                if len(_cont_map) == int(n_opp or 1):
+                    _thin_eq = _eq_vs(
+                        hero, board, opp_range, int(n_opp or 1),
+                        sims=500, opp_ranges=_cont_map)
+                    _thin_n = sum(len(_r) for _r in _cont_map.values())
+            elif opp_range:
+                _cr = R.perceived_continue_range(
+                    opp_range, board, 'river', _thin_size, profile)
+                if _cr:
+                    _thin_eq = _eq_vs(
+                        hero, board, _cr, 1, sims=500)
+                    _thin_n = len(_cr)
+
+            st['thin_call_eq'] = (
+                None if _thin_eq is None else round(float(_thin_eq), 3))
+            st['thin_call_range_n'] = _thin_n
+
+            # With no usable range evidence, do not invent a thin-value call
+            # range.  Check and take showdown value instead.
+            _value_when_called = (
+                _thin_eq is not None and float(_thin_eq) >= 0.50)
+            if (_value_when_called
+                    and rng.random() < 0.75*_tv*_band):
                 st['plan'] = 'thin_river'
                 st['why'] = (st.get('why') or []) + [
-                    '리버: 얇은 밸류(rel %.2f, 개념 %.1f)' % (rel, _tv*10)]
+                    '리버: 얇은 밸류(rel %.2f, call-eq %.2f, 개념 %.1f)'
+                    % (rel, float(_thin_eq), _tv*10)]
                 return st
+            elif _thin_eq is not None and float(_thin_eq) < 0.50:
+                st['why'] = (st.get('why') or []) + [
+                    '리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'
+                    ' → 얇은 밸류 아님'
+                    % (rel, float(_thin_eq))]
 
         # If it is not clear value and the learned thin-value judgment did not
         # fire, take the showdown value.  Air is handled by the bluff/giveup
