@@ -3,6 +3,32 @@
    같은 필드에 100명이면 100명이 전부 다르다."""
 import random, math, zlib
 
+
+# Strategic sizing habit.  This belongs to the human decision/planning model,
+# not Round/apply execution.  runner.shape_size remains a compatibility wrapper.
+SIZING_FAMILY_SIG = {
+    'reg':    dict(jitter=0.05, round_to=100, odd=0.02, open_mult=1.00),
+    'nit':    dict(jitter=0.03, round_to=100, odd=0.00, open_mult=1.00),
+    'fish':   dict(jitter=0.26, round_to=500, odd=0.32, open_mult=1.25),
+    'maniac': dict(jitter=0.18, round_to=100, odd=0.15, open_mult=1.25),
+    'tilt':   dict(jitter=0.22, round_to=100, odd=0.20, open_mult=1.20),
+    'live':   dict(jitter=0.20, round_to=500, odd=0.28, open_mult=1.15),
+}
+
+def sizing_signature(ptype):
+    import archetypes as _A
+    fam = _A.ARCHETYPES[ptype][6] if ptype in _A.ARCHETYPES else 'reg'
+    return SIZING_FAMILY_SIG[fam]
+
+def shape_size(amount, ptype, rng, pot=None):
+    """Human sizing habit; deterministic for a supplied decision RNG."""
+    sig=sizing_signature(ptype)
+    a=float(amount)*(1+rng.uniform(-sig['jitter'],sig['jitter']))
+    if rng.random()<sig['odd'] and pot:
+        a=float(pot)*rng.choice([0.33,0.5,1.0,1.5])
+    r=sig['round_to']
+    return max(r,int(round(a/r))*r)
+
 # ---------- 개념 목록 ----------
 # 실행 개념: 실제 액션을 만들어내는 능력
 EXEC = ['bluff', 'semibluff',
