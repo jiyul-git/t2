@@ -371,32 +371,33 @@ def _decision_range_sig(combos):
 
 
 def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
-    """상대별 레인지를 잃지 않고 equity 계산용 pool 목록으로 정규화한다.
+    """Equity용 seat pools. **모르는 상대를 아는 상대로 복제하지 않는다.**
 
-    opp_range 는 과거 단일/합집합 인터페이스 호환용이다.
-    opp_ranges 는 {seat: range} 또는 [range, ...] 이다.
+    반환 list 길이는 항상 n_opp이고, 모르는 seat는 None이다.
+    HU legacy에서만 opp_range를 실제 상대 pool로 사용한다. Multiway의
+    opp_range는 과거 union/compat 값이라 한 사람의 identity로 재사용하지 않는다.
+
+    이전 구현은 일부 seat range만 있을 때 마지막/union range를 복제했다.
+    그러면 "B를 모르니 A와 같은 사람"으로 가정하는 비인간적 판단이 된다.
     """
-    pools = []
-    if isinstance(opp_ranges, dict):
-        for k in sorted(opp_ranges, key=lambda x: str(x)):
-            r = opp_ranges.get(k) or []
-            if r:
-                pools.append(R.range_copy(r))
-    elif isinstance(opp_ranges, (list, tuple)):
-        for r in opp_ranges:
-            if r:
-                pools.append(R.range_copy(r))
+    want=max(1,int(n_opp or 1))
+    pools=[]
+    if isinstance(opp_ranges,dict):
+        for k in sorted(opp_ranges,key=lambda x:str(x)):
+            r=opp_ranges.get(k)
+            pools.append(R.range_copy(r) if r else None)
+    elif isinstance(opp_ranges,(list,tuple)):
+        pools=[R.range_copy(r) if r else None for r in opp_ranges]
 
     if pools:
-        # 호출부가 일부 상대 레인지만 만들었어도 상대 수를 조용히 줄이면 안 된다.
-        _fb = opp_range or pools[-1]
-        while len(pools) < max(1, n_opp):
-            pools.append(R.range_copy(_fb))
-        return pools[:max(1, n_opp)]
+        pools=pools[:want]
+        while len(pools)<want:
+            pools.append(None)
+        return pools
 
-    if opp_range:
-        return [R.range_copy(opp_range) for _ in range(max(1, n_opp))]
-    return []
+    if want==1 and opp_range:
+        return [R.range_copy(opp_range)]
+    return [None]*want
 
 
 def _opp_ranges_signature(opp_ranges):
@@ -417,11 +418,11 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
         return None
     dead = set(hero) | set(board)
     pools0 = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
-    if pools0:
-        pools = [bot._filter_pool(p, dead, sort_legacy=True)
-                 for p in pools0]
-    else:
-        pools = [bot.range_combos(0.35, dead) for _ in range(max(1, n_opp))]
+    pools = [
+        (bot._filter_pool(p, dead, sort_legacy=True)
+         if p else bot.range_combos(0.35, dead))
+        for p in pools0
+    ]
     pools = [p for p in pools if p]
     if not pools:
         return None
@@ -448,14 +449,23 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
 
 
 def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
-    """추정 레인지 기준 에쿼티. 멀티웨이는 상대별 pool을 각각 사용한다."""
-    pools = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
-    if pools:
-        # 좁은 레인지는 정보가 많은 것이다. 표본만 늘린다.
-        _s = sims if min(len(p) for p in pools if p) >= 20 else int(sims*1.8)
-        # seed=None 이면 bot 쪽이 실제 pool 내용에서 고정 seed 를 유도한다.
-        return bot.equity_vs_combos(hero, board, pools, sims=_s)
-    return bot.equity_vs_range(hero, board, [0.35]*max(1, n_opp), sims=sims, seed=seed)
+    """추정 레인지 기준 에쿼티.
+
+    아는 상대는 그 seat의 perceived range, 모르는 상대는 중립 field range를
+    사용한다. 다른 실제 상대의 range를 복사하지 않는다.
+    """
+    dead=set(hero)|set(board or [])
+    raw=_normalize_opp_pools(opp_range,n_opp,opp_ranges)
+    pools=[
+        (bot._filter_pool(p,dead,sort_legacy=True)
+         if p else bot.range_combos(0.35,dead))
+        for p in raw
+    ]
+    pools=[p for p in pools if p]
+    if not pools:
+        return None
+    _s=sims if min(len(p) for p in pools)>=20 else int(sims*1.8)
+    return bot.equity_vs_combos(hero,board,pools,sims=_s)
 
 
 def opp_bet_prob(opp_est, w, street):
@@ -2032,11 +2042,17 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
 
     if tocall > 0:
         callers = [(0.30, 5)]*max(0, n_opp-1)
-        _pools = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
+        _raw_pools = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
+        _dead = set(hero) | set(board or [])
+        _pools = [
+            (bot._filter_pool(p, _dead, sort_legacy=True)
+             if p else bot.range_combos(0.35, _dead))
+            for p in _raw_pools
+        ]
+        _pools = [p for p in _pools if p]
         if _pools:
-            # session 이 현재 스트리트의 bet/call/raise까지 상대별로 이미
-            # perceived_range 에 반영해 넘긴다. 다시 bettor 액션을 한 번 더
-            # 먹이면 같은 벳을 중복 관측하게 된다.
+            # 아는 상대는 실제 perceived range, 모르는 상대는 중립 field range.
+            # 다른 상대의 range를 복제하지 않는다.
             eq = bot.equity_vs_combos(hero, board, _pools, sims=600)
         elif opp_range and len(opp_range) >= 20:
             # 상대가 실제로 밟아온 액션 경로로 좁혀진 레인지가 있으면 그것을 쓴다.
