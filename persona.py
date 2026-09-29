@@ -378,10 +378,13 @@ def calc_noise(prof, concept, rng):
     sigma = max(0.02, 0.70 * (1 - s/10.0) ** 1.1)
     legacy_bias = 1.0 + 0.30 * (1 - s/10.0)
     if CALC_NOISE_V3 and concept in ('potodds', 'spr'):
-        bias = 1.0
-    else:
-        bias = legacy_bias
-    return max(0.20, min(3.0, rng.gauss(bias, sigma)))
+        # Arithmetic error has no assumed universal sign.  Clamp the error
+        # *around zero* symmetrically, then add it to 1.0.  This keeps the
+        # multiplier's expectation centered at 1 instead of reintroducing an
+        # upward mean through asymmetric [0.2, 3.0] clipping.
+        err = max(-0.80, min(0.80, rng.gauss(0.0, sigma)))
+        return 1.0 + err
+    return max(0.20, min(3.0, rng.gauss(legacy_bias, sigma)))
 
 # 포지션별 탄력성 — 성향 차이가 오픈 폭에 얼마나 크게 반영되는가.
 # 얼리에서는 누구나 쓰레기를 접으므로 타입 차이가 작고,
