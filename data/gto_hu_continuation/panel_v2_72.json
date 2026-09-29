@@ -1,0 +1,827 @@
+{
+ "schema": "flop_panel_v2_nested",
+ "parent_panel": {
+  "file": "panel_v1.json",
+  "panel_hash_sha256": "4bec90159fe5466edb2596c4b116c8f870f185f74924b62a6517761f9d56ebec",
+  "seed": 20260928
+ },
+ "seed_extension_accepted": 20260930,
+ "seed_extension_rejected": [
+  {
+   "seed": 20260929,
+   "shortfall": {
+    "rank_bucket:low": 1
+   }
+  }
+ ],
+ "per_stratum": 6,
+ "coverage_rule": ">= 3 flops per texture and rank category (restricted randomisation)",
+ "coverage": {
+  "texture": {
+   "monotone": 18,
+   "paired": 18,
+   "rainbow_dry": 12,
+   "rainbow_connected": 6,
+   "twotone_dry": 15,
+   "twotone_connected": 3
+  },
+  "rank_bucket": {
+   "A_high": 18,
+   "KQ_high": 18,
+   "middle": 15,
+   "low": 3,
+   "paired_high": 10,
+   "paired_mid": 3,
+   "paired_low": 5
+  }
+ },
+ "canonical_flop_classes": 1755,
+ "strata": {
+  "monotone/A": {
+   "canonical_flops": 66,
+   "raw_flops": 264,
+   "probability": 0.011945701357466063
+  },
+  "monotone/J_or_lower": {
+   "canonical_flops": 120,
+   "raw_flops": 480,
+   "probability": 0.02171945701357466
+  },
+  "monotone/KQ": {
+   "canonical_flops": 100,
+   "raw_flops": 400,
+   "probability": 0.01809954751131222
+  },
+  "paired/A": {
+   "canonical_flops": 49,
+   "raw_flops": 580,
+   "probability": 0.026244343891402715
+  },
+  "paired/J_or_lower": {
+   "canonical_flops": 190,
+   "raw_flops": 2200,
+   "probability": 0.09954751131221719
+  },
+  "paired/KQ": {
+   "canonical_flops": 86,
+   "raw_flops": 1016,
+   "probability": 0.04597285067873303
+  },
+  "rainbow/A": {
+   "canonical_flops": 66,
+   "raw_flops": 1584,
+   "probability": 0.07167420814479639
+  },
+  "rainbow/J_or_lower": {
+   "canonical_flops": 120,
+   "raw_flops": 2880,
+   "probability": 0.13031674208144797
+  },
+  "rainbow/KQ": {
+   "canonical_flops": 100,
+   "raw_flops": 2400,
+   "probability": 0.1085972850678733
+  },
+  "twotone/A": {
+   "canonical_flops": 198,
+   "raw_flops": 2376,
+   "probability": 0.10751131221719457
+  },
+  "twotone/J_or_lower": {
+   "canonical_flops": 360,
+   "raw_flops": 4320,
+   "probability": 0.19547511312217195
+  },
+  "twotone/KQ": {
+   "canonical_flops": 300,
+   "raw_flops": 3600,
+   "probability": 0.16289592760180996
+  }
+ },
+ "panel": [
+  {
+   "board": "AcQc2c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.001990950226244344,
+   "origin": "panel_v1",
+   "texture": "monotone",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AcKc6c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.001990950226244344,
+   "origin": "panel_v1",
+   "texture": "monotone",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AcTc3c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.001990950226244344,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AcJc6c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.001990950226244344,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Ac7c5c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.001990950226244344,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Ac8c6c",
+   "stratum": "monotone/A",
+   "raw_flops_of_class": 4,
+   "weight": 0.001990950226244344,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Tc9c7c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.003619909502262443,
+   "origin": "panel_v1",
+   "texture": "monotone",
+   "rank_bucket": "middle",
+   "straight_possible": true
+  },
+  {
+   "board": "Jc6c2c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.003619909502262443,
+   "origin": "panel_v1",
+   "texture": "monotone",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "Tc5c2c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.003619909502262443,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "JcTc3c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.003619909502262443,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "Tc8c6c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.003619909502262443,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "middle",
+   "straight_possible": true
+  },
+  {
+   "board": "Jc7c6c",
+   "stratum": "monotone/J_or_lower",
+   "raw_flops_of_class": 4,
+   "weight": 0.003619909502262443,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "Qc5c2c",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.0030165912518853697,
+   "origin": "panel_v1",
+   "texture": "monotone",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "KcQc6c",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.0030165912518853697,
+   "origin": "panel_v1",
+   "texture": "monotone",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Qc5c4c",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.0030165912518853697,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Kc9c6c",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.0030165912518853697,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "KcQcJc",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.0030165912518853697,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "KQ_high",
+   "straight_possible": true
+  },
+  {
+   "board": "Kc4c2c",
+   "stratum": "monotone/KQ",
+   "raw_flops_of_class": 4,
+   "weight": 0.0030165912518853697,
+   "origin": "extension_seed_20260930",
+   "texture": "monotone",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AdAc9c",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.004374057315233786,
+   "origin": "panel_v1",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "AdAcKc",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.004374057315233786,
+   "origin": "panel_v1",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "AdAcTh",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.004374057315233786,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "AdAc3c",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.004374057315233786,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "Ac2h2d",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.004374057315233786,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_low",
+   "straight_possible": null
+  },
+  {
+   "board": "Ac3d3c",
+   "stratum": "paired/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.004374057315233786,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_low",
+   "straight_possible": null
+  },
+  {
+   "board": "JdJc3c",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.016591251885369532,
+   "origin": "panel_v1",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "6d6c3c",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.016591251885369532,
+   "origin": "panel_v1",
+   "texture": "paired",
+   "rank_bucket": "paired_mid",
+   "straight_possible": null
+  },
+  {
+   "board": "Jc7h7d",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.016591251885369532,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_mid",
+   "straight_possible": null
+  },
+  {
+   "board": "6c5d5c",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.016591251885369532,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_low",
+   "straight_possible": null
+  },
+  {
+   "board": "9c7h7d",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.016591251885369532,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_mid",
+   "straight_possible": null
+  },
+  {
+   "board": "5c2d2c",
+   "stratum": "paired/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.016591251885369532,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_low",
+   "straight_possible": null
+  },
+  {
+   "board": "KcJhJd",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.0076621417797888385,
+   "origin": "panel_v1",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "Kc3d3c",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.0076621417797888385,
+   "origin": "panel_v1",
+   "texture": "paired",
+   "rank_bucket": "paired_low",
+   "straight_possible": null
+  },
+  {
+   "board": "QdQc7h",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.0076621417797888385,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "QdQc5c",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.0076621417797888385,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "KdKc6h",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.0076621417797888385,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "KdKc4c",
+   "stratum": "paired/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.0076621417797888385,
+   "origin": "extension_seed_20260930",
+   "texture": "paired",
+   "rank_bucket": "paired_high",
+   "straight_possible": null
+  },
+  {
+   "board": "Ac4d3h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.011945701357466065,
+   "origin": "panel_v1",
+   "texture": "rainbow_connected",
+   "rank_bucket": "A_high",
+   "straight_possible": true
+  },
+  {
+   "board": "Ac4d2h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.011945701357466065,
+   "origin": "panel_v1",
+   "texture": "rainbow_connected",
+   "rank_bucket": "A_high",
+   "straight_possible": true
+  },
+  {
+   "board": "AcKd8h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.011945701357466065,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AcKd5h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.011945701357466065,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Ac8d4h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.011945701357466065,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Ac3d2h",
+   "stratum": "rainbow/A",
+   "raw_flops_of_class": 24,
+   "weight": 0.011945701357466065,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_connected",
+   "rank_bucket": "A_high",
+   "straight_possible": true
+  },
+  {
+   "board": "Tc9d5h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.021719457013574663,
+   "origin": "panel_v1",
+   "texture": "rainbow_dry",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "9c7d4h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.021719457013574663,
+   "origin": "panel_v1",
+   "texture": "rainbow_dry",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "8c7d4h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.021719457013574663,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_connected",
+   "rank_bucket": "middle",
+   "straight_possible": true
+  },
+  {
+   "board": "JcTd7h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.021719457013574663,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_connected",
+   "rank_bucket": "middle",
+   "straight_possible": true
+  },
+  {
+   "board": "Tc5d4h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.021719457013574663,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "Tc6d5h",
+   "stratum": "rainbow/J_or_lower",
+   "raw_flops_of_class": 24,
+   "weight": 0.021719457013574663,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "Kc7d4h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.01809954751131222,
+   "origin": "panel_v1",
+   "texture": "rainbow_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "KcTd9h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.01809954751131222,
+   "origin": "panel_v1",
+   "texture": "rainbow_connected",
+   "rank_bucket": "KQ_high",
+   "straight_possible": true
+  },
+  {
+   "board": "Qc8d6h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.01809954751131222,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "KcTd5h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.01809954751131222,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Kc6d3h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.01809954751131222,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Qc8d2h",
+   "stratum": "rainbow/KQ",
+   "raw_flops_of_class": 24,
+   "weight": 0.01809954751131222,
+   "origin": "extension_seed_20260930",
+   "texture": "rainbow_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AcQdJc",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.017918552036199093,
+   "origin": "panel_v1",
+   "texture": "twotone_connected",
+   "rank_bucket": "A_high",
+   "straight_possible": true
+  },
+  {
+   "board": "AcKd5d",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.017918552036199093,
+   "origin": "panel_v1",
+   "texture": "twotone_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Ac8d2d",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.017918552036199093,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Ac9c8d",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.017918552036199093,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AcJc3d",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.017918552036199093,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "AcTd7d",
+   "stratum": "twotone/A",
+   "raw_flops_of_class": 12,
+   "weight": 0.017918552036199093,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "A_high",
+   "straight_possible": false
+  },
+  {
+   "board": "6c4d3d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.03257918552036199,
+   "origin": "panel_v1",
+   "texture": "twotone_connected",
+   "rank_bucket": "low",
+   "straight_possible": true
+  },
+  {
+   "board": "8c4d3d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.03257918552036199,
+   "origin": "panel_v1",
+   "texture": "twotone_dry",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "7c6d2d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.03257918552036199,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "low",
+   "straight_possible": false
+  },
+  {
+   "board": "8c4d2d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.03257918552036199,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "6c3c2d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.03257918552036199,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_connected",
+   "rank_bucket": "low",
+   "straight_possible": true
+  },
+  {
+   "board": "9c7d4d",
+   "stratum": "twotone/J_or_lower",
+   "raw_flops_of_class": 12,
+   "weight": 0.03257918552036199,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "middle",
+   "straight_possible": false
+  },
+  {
+   "board": "Qc9d7d",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.027149321266968326,
+   "origin": "panel_v1",
+   "texture": "twotone_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Qc4d3c",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.027149321266968326,
+   "origin": "panel_v1",
+   "texture": "twotone_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Kc5d2d",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.027149321266968326,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Kc8d6c",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.027149321266968326,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Kc6d3d",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.027149321266968326,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  },
+  {
+   "board": "Qc9d6d",
+   "stratum": "twotone/KQ",
+   "raw_flops_of_class": 12,
+   "weight": 0.027149321266968326,
+   "origin": "extension_seed_20260930",
+   "texture": "twotone_dry",
+   "rank_bucket": "KQ_high",
+   "straight_possible": false
+  }
+ ],
+ "panel_hash_sha256": "e0df1324fcb2ddd3afd1cfaa8ad8107d8fae92376b1c40dc0c785acfefbfdb7a",
+ "estimator": "stratified: sum_strata P(stratum) * mean(panel values in stratum); draw within stratum proportional to raw-flop count",
+ "caveat": "flop probabilities ignore card removal by the players' ranges",
+ "tag_definitions": "(restricted randomisation, rule set before drawing): every category below\n  must hold >= MIN_COVER flops of the 72. A draw that fails is rejected and the seed advances\n  by one (SEED_EXT, SEED_EXT+1, ...); every rejected attempt is recorded in the manifest.\n    texture:  monotone, paired, rainbow_dry, rainbow_connected, twotone_dry, twotone_connected\n    rank:     unpaired top card A / K-Q / middle (J-8) / low (7-2);\n              paired by pair rank high (A-T) / mid (9-6) / low (5-2)\n  connected = the three flop ranks fit in a 5-rank window (a straight is possible with two\n  hole cards; A also counts low), dry = otherwise. These labels are descriptive only: they do\n  not enter the estimator. (J2 called Tc9d5h \"rainbow connected\" informally; under this rule it\n  is rainbow_dry, span 6.)"
+}
