@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Attribute why EXPLOIT_WEIGHT_V3 / READ_RECENCY_V3 may be fingerprint-inert.
+"""Semantic attribution for EXPLOIT_WEIGHT_V3 and READ_RECENCY_V3.
 
-A tournament fingerprint is an action-level endpoint.  These mechanisms are
-state/evidence dependent, so endpoint identity on one short fixture is not by
-itself evidence that they are dead.  This audit separates semantic liveness
-from endpoint threshold crossing and records the coverage limitation.
+Important: EXPLOIT_WEIGHT_V3 gates the legacy compatibility entry
+``exploit_weight()``. ``read_opponent()`` deliberately uses the V3 shared base
+unconditionally, so toggling the flag around read_opponent is not a valid A/B.
+This audit tests each flag at the API it actually controls.
 """
 import json, pathlib, random, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -21,14 +21,22 @@ def prof(att=7,adp=7,rr=7,st=7):
 
 
 def exploit_probe():
-    p=prof(); opp={'confidence':.8,'n':24,'ftb':.70,'bluff':6.0,'aggr':6.0,'cbet':.7,'barrel':.6}
+    # Pick deliberately asymmetric traits so legacy's blended trait differs
+    # from V3's adaptability-only common upper bound.
+    p=prof(att=2,adp=9,rr=2,st=7)
+    conf=.8; n=24
     old=PS.EXPLOIT_WEIGHT_V3
     try:
-        PS.EXPLOIT_WEIGHT_V3=False; a=PS.read_opponent(p,opp)
-        PS.EXPLOIT_WEIGHT_V3=True; b=PS.read_opponent(p,opp)
+        PS.EXPLOIT_WEIGHT_V3=False; off=PS.exploit_weight(p,conf,n)
+        PS.EXPLOIT_WEIGHT_V3=True; on=PS.exploit_weight(p,conf,n)
+        shared=PS._exploit_base_weight(p,conf,n)
+        # read_opponent's w is intentionally the same shared V3 base.
+        rd=PS.read_opponent(p,{'confidence':conf,'n':n,'ftb':.70,'bluff':6.0,'aggr':6.0})
     finally: PS.EXPLOIT_WEIGHT_V3=old
-    return {'off':a,'on':b,'semantic_changed':a!=b,
-            'w_changed':a.get('w')!=b.get('w')}
+    return {'off':off,'on':on,'shared_base':shared,'read_w':rd.get('w'),
+            'semantic_changed':off!=on,
+            'v3_matches_shared':on==shared,
+            'read_matches_shared':rd.get('w')==shared}
 
 
 def recency_probe():
@@ -50,14 +58,14 @@ def recency_probe():
 
 def main():
     e=exploit_probe(); r=recency_probe()
-    checks={'exploit_semantic_live':e['semantic_changed'],
+    checks={'exploit_flag_live':e['semantic_changed'],
+            'exploit_v3_unifies_shared_base':e['v3_matches_shared'] and e['read_matches_shared'],
             'recency_semantic_live':r['semantic_changed']}
     out={'pass':all(checks.values()),'checks':checks,'exploit':e,'recency':r,
          'interpretation':(
-           'If this passes while the short integration fingerprint is inert, '
-           'the integration fixture lacks evidence/threshold coverage; do not '
-           'classify the feature as dead or require every single flag to flip '
-           'an action fingerprint on that fixture.')}
+           'EXPLOIT_WEIGHT_V3 is a compatibility-entry unification flag, not a '
+           'read_opponent gate. READ_RECENCY_V3 is evidence-dependent. Therefore '
+           'a short tournament fingerprint need not change for either flag alone.')}
     print(json.dumps(out,indent=2,sort_keys=True))
     raise SystemExit(0 if out['pass'] else 1)
 
