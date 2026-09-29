@@ -64,6 +64,10 @@ def _merge_pf_seed(prev, new):
                            if out.get('pf_calloff_compare') is not None else None,
         'calloff_consumer': dict(out.get('pf_calloff_consumer') or {})
                             if out.get('pf_calloff_consumer') is not None else None,
+        'cold_context': dict(out.get('pf_cold_context') or {})
+                        if out.get('pf_cold_context') is not None else None,
+        'cold_audit': dict(out.get('pf_cold_audit') or {})
+                      if out.get('pf_cold_audit') is not None else None,
         'stack_bb': out.get('pf_stack_bb'),
     })
     out['pf_line'] = line
@@ -199,6 +203,35 @@ def _preflop_public_action_context(action_meta, target, bb):
         'open_bb': float(open_bb),
         'n_callers': int(n_callers),
         'raise_level': max(1, len(full_before)),
+    }
+
+
+def _cold_reraise_context(action_meta, actor, order, folded=(), allin=()):
+    """P7 public context for a player who has not acted before two full raises.
+
+    No hidden persona is read here.  We preserve identities of the original
+    opener and latest re-raiser plus still-unresolved players behind actor.
+    """
+    metas = list(action_meta or [])
+    if any(m.get('seat') == actor for m in metas):
+        return None
+    raisers = [m.get('seat') for m in metas if m.get('full_raise')]
+    if len(raisers) < 2:
+        return None
+    order = list(order or [])
+    behind = []
+    if actor in order:
+        i = order.index(actor)
+        dead = set(folded or ()) | set(allin or ())
+        behind = [
+            x for x in order[i+1:]
+            if x != actor and x not in dead
+        ]
+    return {
+        'original_opener_seat': raisers[0],
+        'reraiser_seat': raisers[-1],
+        'raise_count': len(raisers),
+        'players_behind': behind,
     }
 
 
@@ -1354,6 +1387,9 @@ class HandRun:
                 _behind_seats = ([x for x in _ordr[_ordr.index(s)+1:] if x in rnd.live()]
                                  if s in _ordr else [])
                 _rlevel = max(1, int(getattr(rnd, 'full_raise_count', 0) or 0))
+                _cold_ctx = _cold_reraise_context(
+                    getattr(rnd, 'action_meta', None), s, rnd.order,
+                    folded=rnd.folded, allin=rnd.allin)
                 a, sz, _seed = PL.preflop_plan(
                     ax, pos, hand, bbs, h.rng,
                     aggressor_pos=(h.pos[aggressor] if aggressor is not None else None),
@@ -1394,7 +1430,10 @@ class HandRun:
                     opp_range_meta=_pf_opp_range_meta,
                     call_ev_shadow=_pf_call_ev_shadow,
                     calloff_decision_seed=self._dseed(
-                        s, 'preflop', 'f8_d6d2', len(rnd.log)))
+                        s, 'preflop', 'f8_d6d2', len(rnd.log)),
+                    cold_context=_cold_ctx,
+                    cold_decision_seed=self._dseed(
+                        s, 'preflop', 'p7_cold', len(rnd.log)))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
