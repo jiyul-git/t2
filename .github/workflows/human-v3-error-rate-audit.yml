@@ -1,0 +1,26 @@
+name: Human V3 Error-Rate Audit
+
+on:
+  push:
+    branches:
+      - chatgpt/human-model-v3-20260929
+    paths:
+      - 'tools/audit_error_rate_v3.py'
+      - '.github/workflows/human-v3-error-rate-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit generic error_rate consumers and population
+        run: python3 tools/audit_error_rate_v3.py | tee /tmp/error_rate_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: human-v3-error-rate-audit
+          path: /tmp/error_rate_audit.json
