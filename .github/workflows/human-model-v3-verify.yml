@@ -15,6 +15,7 @@ on:
       - 'tools/audit_calc_noise_v3.py'
       - 'tools/verify_calc_noise_v3.py'
       - 'tools/verify_read_recency_v3.py'
+      - 'tools/verify_preflop_temper_direction_v3.py'
       - '.github/workflows/human-model-v3-verify.yml'
   workflow_dispatch:
 
@@ -41,6 +42,9 @@ jobs:
           tools/audit_calc_noise_v3.py
           tools/verify_calc_noise_v3.py
           tools/verify_read_recency_v3.py
+          tools/verify_preflop_temper_direction_v3.py
+      - name: Temperament-direction V3 verifier
+        run: python3 tools/verify_preflop_temper_direction_v3.py
       - name: Read-recency V3 verifier
         run: python3 tools/verify_read_recency_v3.py
       - name: Calc-noise V3 verifier
@@ -49,6 +53,7 @@ jobs:
         env:
           T2_CALC_NOISE_V3: '0'
           T2_READ_RECENCY_V3: '0'
+          T2_PREFLOP_TEMPER_DIRECTION_V3: '0'
         run: python3 tools/audit_calc_noise_v3.py > /tmp/calc_noise_v3.json
       - name: Upload calc-noise audit
         uses: actions/upload-artifact@v4
