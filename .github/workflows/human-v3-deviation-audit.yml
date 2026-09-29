@@ -32,19 +32,22 @@ jobs:
           import json
           d=json.load(open('/tmp/deviation_audit.json'))
           for q,v in d['population'].items():
+              a=v['current_span4']; b=v['natural_span5']
               print('q',q,
-                    'open_clamp',v['open']['clamp_rate'],
-                    'defend_clamp',v['defend']['clamp_rate'])
-              for p,x in v['open']['by_pos'].items():
-                  if x['clamp_rate']:
-                      print('  open',p,x['clamp_rate'])
-              for s,x in v['defend']['by_spot'].items():
-                  if x['clamp_rate']:
-                      print('  defend',s,x['clamp_rate'])
+                    'span4 open/def',a['open']['clamp_rate'],a['defend']['clamp_rate'],
+                    'span5 open/def',b['open']['clamp_rate'],b['defend']['clamp_rate'],
+                    'delta95',v['abs_width_delta']['open']['p95'],
+                    v['abs_width_delta']['defend']['p95'])
+              for label,z in [('span4',a),('span5',b)]:
+                  for s,x in z['defend']['by_spot'].items():
+                      if x['clamp_rate'] >= .02:
+                          print(' ',label,'defend',s,x['clamp_rate'])
           print('collision_probe')
-          for row in d['collision_probe']:
-              print(' skill',row['skill'],
-                    {p:x['adjacent_ties'] for p,x in row['positions'].items()})
+          for label,rows in d['collision_probe'].items():
+              print(label)
+              for row in rows:
+                  print(' skill',row['skill'],
+                        {p:x['adjacent_ties'] for p,x in row['positions'].items()})
           PY
       - uses: actions/upload-artifact@v4
         with:
