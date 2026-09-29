@@ -4,9 +4,11 @@ on:
     branches: [chatgpt/human-model-v3-20260929]
     paths:
       - 'preflop.py'
+      - 'reads.py'
       - 'plan.py'
       - 'session.py'
       - 'tools/verify_core_p7_cold_reraise.py'
+      - 'tools/verify_core_p7_observation.py'
       - 'tools/verify_preflop_closure.py'
       - '.github/workflows/core-p7-cold-reraise.yml'
   workflow_dispatch:
@@ -19,8 +21,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - name: Compile core
-        run: python3 -m py_compile preflop.py plan.py session.py
+        run: python3 -m py_compile preflop.py plan.py session.py reads.py
       - name: Verify P7 cold reraise
         run: python3 tools/verify_core_p7_cold_reraise.py
+      - name: Verify P7 observation roles
+        run: python3 tools/verify_core_p7_observation.py
       - name: Preflop closure regression
         run: python3 tools/verify_preflop_closure.py
