@@ -1978,13 +1978,32 @@ def _trace(st, street, kind, **kw):
         tr.append(rec)
 
 
+
+def shape_planned_target(amount, profile, pot, actor_cap, seed=None):
+    """Apply human sizing habit inside PLAN, before execution legality.
+
+    Returns (target, provenance). Exact all-in targets are never reduced by
+    jitter. Round/session remain responsible only for min-raise/legal/effective
+    caps after this function.
+    """
+    a=float(amount or 0.0)
+    cap=max(0.0,float(actor_cap or 0.0))
+    meta={'called':False,'changed':False,'before':a,'after':a,'source':'plan'}
+    if a<=0 or (cap>0 and a>=cap-1e-9):
+        return a,meta
+    rng=random.Random(seed)
+    shaped=float(PS.shape_size(a,profile.get('type'),rng,pot=pot))
+    meta.update({'called':True,'changed':abs(shaped-a)>1e-9,'after':shaped})
+    return shaped,meta
+
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   initiative=True, opp_range=None, bf=1.0, seed=None,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None,
                   opp_ranges=None, facing_seat=None, checked_before=False,
                   can_raise=True, checkraise_seed=None, checkraise_size_seed=None,
                   facing_size_frac=None, hero_contrib=0, response_kind=None,
-                  response_context=None, call_value=None):
+                  response_context=None, call_value=None,
+                  size_shape_seed=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
@@ -1996,6 +2015,9 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     if profile.get('concepts') and bf and bf > 1.0:
         bf = PS.icm_bf(profile, bf)
     rng = random.Random(seed)
+    plan_state['_last_size_shape'] = {
+        'called': False, 'changed': False, 'before': None, 'after': None,
+        'source': 'plan'}
     plan = plan_state['plan']
     if opp_est is None:
         opp_est = plan_state.get('opp_est')      # 계획에 실린 추정치를 이어 쓴다
@@ -2138,6 +2160,10 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                             continue_eq=_g_ckr.get('continue_eq'),
                             target=_amt)
                 if _ckr:
+                    _cap = float(stack) + float(hero_contrib or 0.0)
+                    _amt, _shape = shape_planned_target(
+                        _amt, profile, pot, _cap, seed=size_shape_seed)
+                    plan_state['_last_size_shape'] = dict(_shape)
                     plan_state['_last_response_source'] = 'checkraise_gate'
                     why = '체크 후 새 판단 → 체크레이즈 실행'
                     plan_state.setdefault('acts', []).append(why)
@@ -2218,6 +2244,9 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 _rp['why'] = _rp['why'] + ' | raise target <= call target → call'
                 record_response_plan(plan_state, street, _rp)
                 return ('call', tocall), eq, need
+            amt, _shape = shape_planned_target(
+                amt, profile, pot, _max_target, seed=size_shape_seed)
+            plan_state['_last_size_shape'] = dict(_shape)
             _rp['target'] = int(amt)
             record_response_plan(plan_state, street, _rp)
             return ('raise', int(amt)), eq, need
@@ -2254,7 +2283,11 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             {'street': street, 'planned': 'bet', 'executed': 'check',
              'why': '사이즈 %.2f팟이 최소단위 미만' % it.get('size', 0)})
         return ('check', 0), None, None
-    return ('bet', amt), None, None
+    _cap = float(stack) + float(hero_contrib or 0.0)
+    amt, _shape = shape_planned_target(
+        amt, profile, pot, _cap, seed=size_shape_seed)
+    plan_state['_last_size_shape'] = dict(_shape)
+    return ('bet', int(amt)), None, None
 
 
 def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, street,
@@ -2482,6 +2515,20 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         'pf_hand_pct': _pf.pct(hand),
         'money_open': dict(money_open or {}) if role == 'open' else None,
     }
+    # Human sizing habit is part of the plan, not execution.  This is
+    # deliberately last: historically session shaped immediately after
+    # preflop_plan returned, so using the same rng here preserves consumption.
+    _pf_shape = None
+    if (a not in ('fold','check','limp','call','shove')
+            and bb_chips and float(sz or 0.0) > 0):
+        _before = float(bb_chips) * float(sz)
+        _after = float(PS.shape_size(
+            _before, profile.get('type'), rng, pot=None))
+        sz = _after / float(bb_chips)
+        _pf_shape = {
+            'called': True, 'changed': abs(_after-_before)>1e-9,
+            'before': _before, 'after': _after, 'source': 'plan'}
+    seed_info['pf_size_shape'] = _pf_shape
     return a, sz, seed_info
 
 
