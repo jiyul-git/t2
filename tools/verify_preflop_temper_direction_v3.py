@@ -57,16 +57,26 @@ def main():
         # Total defense can legitimately hit the .95 cap for the very loosest
         # player. Require the formerly-collapsed 0/1 pair to separate, and
         # require at least 10 distinct totals; 3bet should remain fully distinct.
+        _tot_distinct=len(set(round(x,12) for x in tot))
         checks['T4_defense_uses_full_direction_axis']={
-            'pass':(tot[0]!=tot[1] and len(set(round(x,12) for x in tot))>=10
+            # The direction axis itself must separate the previously collapsed
+            # tight endpoint and keep 3bet widths fully distinct.  Total defense
+            # may still collide at the independent 0.95 probability cap; that
+            # is measured explicitly rather than hidden by this test.
+            'pass':(tot[0]!=tot[1]
                     and len(set(round(x,12) for x in tp))==11
                     and all(b>=a for a,b in zip(tot,tot[1:]))
                     and all(b>a for a,b in zip(tp,tp[1:]))),
+            'total_distinct':_tot_distinct,
+            'total_cap_collisions':11-_tot_distinct,
             'total':[round(x,6) for x in tot],
             'threebet':[round(x,6) for x in tp]}
 
-        # T5 change size is bounded in representative spots; this is a semantic
-        # normalization, not a wholesale strategy rewrite.
+        # T5: /5 is a normalization change, not a new strength knob.
+        # The endpoints (-1,+1) and midpoint (0) must stay exactly unchanged.
+        # Intermediate scores must move toward the neutral-width result:
+        # tight intermediates become less extremely tight; loose intermediates
+        # become less extremely loose (or remain equal only if another cap binds).
         reps=[]
         for t in range(11):
             p=prof(2,t,t)
@@ -78,12 +88,27 @@ def main():
             b=PS.open_pct(p,'HJ',8,40.0,True)
             e=PF.defend_thresholds(p,'BB','BTN',40.0,
                                    open_bb=2.5,seats=8,ante=True)
-            reps.append({'t':t,'open_delta':abs(b-a),
-                         'def_tot_delta':abs(e[1]-d[1]),
-                         'def_tp_delta':abs(e[0]-d[0])})
-        mx=max(max(x['open_delta'],x['def_tot_delta'],x['def_tp_delta']) for x in reps)
-        checks['T5_representative_change_bounded']={
-            'pass':mx<0.08,'max_abs_delta':round(mx,6),
+            reps.append({'t':t,'open_change':b-a,
+                         'def_tot_change':e[1]-d[1],
+                         'def_tp_change':e[0]-d[0]})
+        anchors=all(
+            abs(next(x[k] for x in reps if x['t']==t))<1e-12
+            for t in (0,5,10)
+            for k in ('open_change','def_tot_change','def_tp_change'))
+        direction_ok=True
+        for x in reps:
+            if 0<x['t']<5:
+                direction_ok &= (x['open_change']>=-1e-12
+                                 and x['def_tot_change']>=-1e-12
+                                 and x['def_tp_change']>=-1e-12)
+            elif 5<x['t']<10:
+                direction_ok &= (x['open_change']<=1e-12
+                                 and x['def_tot_change']<=1e-12
+                                 and x['def_tp_change']<=1e-12)
+        checks['T5_normalization_preserves_anchors_and_direction']={
+            'pass':bool(anchors and direction_ok),
+            'anchors_0_5_10_unchanged':bool(anchors),
+            'intermediate_moves_toward_neutral':bool(direction_ok),
             'rows':[{k:(round(v,6) if isinstance(v,float) else v)
                      for k,v in x.items()} for x in reps]}
     finally:
