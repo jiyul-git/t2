@@ -1,0 +1,19 @@
+name: Human V3 Live Attribution
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - 'persona.py'
+      - 'reads.py'
+      - 'tools/audit_human_v3_live_attribution.py'
+      - '.github/workflows/human-v3-live-attribution.yml'
+  workflow_dispatch:
+jobs:
+  attribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python3 tools/audit_human_v3_live_attribution.py
