@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Pairwise interaction audit for Human Model V3 flags on canonical 9-max fixture.
+"""Pairwise endpoint-interaction audit for Human Model V3 on canonical 9-max.
 
-Measurement only. Detects non-additive feature interactions by comparing OFF,
-single-feature and pair-feature fingerprints/stats on the same deterministic seed.
+This audit asks whether flag combinations execute cleanly and reports action-level
+non-additivity. A single flag is NOT required to flip a 24-hand fingerprint:
+EXPLOIT_WEIGHT is a compatibility-path unification and READ_RECENCY needs enough
+opponent evidence. Semantic liveness for those mechanisms is verified separately
+by audit_human_v3_live_attribution.py.
 """
 import itertools, json, pathlib, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -29,15 +32,17 @@ def main():
             'expected_additive_delta':expected,
             'actual_delta':actual,
             'nonadditive_delta':{k:actual[k]-expected[k] for k in actual},
-            'errors':x['errors'],
-            'hands':x['hands'],
+            'errors':x['errors'],'hands':x['hands'],
         }
+    single_endpoint_live={f:x['fingerprint']!=off['fingerprint'] for f,x in singles.items()}
     checks={
-        'all_singles_live':all(x['fingerprint']!=off['fingerprint'] for x in singles.values()),
+        'off_complete':off['hands']==V.HANDS and not off['errors'],
+        'all_singles_complete':all(x['hands']==V.HANDS and not x['errors'] for x in singles.values()),
         'all_pairs_complete':all(x['hands']==V.HANDS and not x['errors'] for x in pairs.values()),
     }
-    out={'pass':all(checks.values()),'checks':checks,'seed':SEED,'pairs':pairs,
-         'note':'Non-additivity is reported, not failed: interactions are expected; pathological interactions require follow-up attribution.'}
+    out={'pass':all(checks.values()),'checks':checks,'seed':SEED,
+         'single_endpoint_live':single_endpoint_live,'pairs':pairs,
+         'note':'Non-additivity and endpoint-inert singles are diagnostics, not failures. Semantic liveness is a separate audit.'}
     print(json.dumps(out,indent=2,sort_keys=True))
     raise SystemExit(0 if out['pass'] else 1)
 
