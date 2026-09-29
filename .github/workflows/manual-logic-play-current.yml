@@ -5,6 +5,12 @@ on:
     paths:
       - '.github/workflows/manual-logic-play-current.yml'
       - 'tools/manual_hand_actions.json'
+      - 'plan.py'
+      - 'ranges.py'
+      - 'preflop.py'
+      - 'reads.py'
+      - 'session.py'
+      - 'runner.py'
 jobs:
   play:
     runs-on: ubuntu-latest
