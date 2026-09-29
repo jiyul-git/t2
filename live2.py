@@ -896,10 +896,36 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             'status': f.status()}
 
 
+def _archive_json_safe(v):
+    """JSON-safe telemetry copy; never used by strategy consumers.
+
+    Weighted ranges use tuple(card, card) keys internally.  JSON forbids tuple
+    object keys even with default=str, so serialize those keys only at the
+    archive boundary instead of flattening probability weights in live logic.
+    """
+    if isinstance(v, dict):
+        out = {}
+        for k, x in v.items():
+            if isinstance(k, tuple):
+                if len(k) == 2 and all(isinstance(c, str) for c in k):
+                    kk = '%s|%s' % (k[0], k[1])
+                else:
+                    kk = repr(k)
+            else:
+                kk = k
+            out[kk] = _archive_json_safe(x)
+        return out
+    if isinstance(v, (list, tuple)):
+        return [_archive_json_safe(x) for x in v]
+    if isinstance(v, set):
+        return [_archive_json_safe(x) for x in sorted(v, key=lambda z: str(z))]
+    return v
+
 def _archive_write(rec):
     path = SP.sidecar_path('archive')
     with open(path, 'a', encoding='utf-8') as fp:
-        fp.write(json.dumps(rec, ensure_ascii=False, default=str) + '\n')
+        fp.write(json.dumps(
+            _archive_json_safe(rec), ensure_ascii=False, default=str) + '\n')
 
 
 def _archive(st, f, h, res, notes, defer=False, run=None):
@@ -972,8 +998,7 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
            'profiles': {str(s): h.prof.get(str(s), {}) for s in h.seats}}
     if defer:
         # save() 는 default=str 를 안 쓰므로 여기서 미리 JSON 안전하게 만든다.
-        st['pending_archive'] = json.loads(
-            json.dumps(rec, ensure_ascii=False, default=str))
+        st['pending_archive'] = _archive_json_safe(rec)
         return rec
     _archive_write(rec)
     return rec
