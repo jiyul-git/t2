@@ -15,6 +15,7 @@ on:
       - 'reads.py'
       - 'session.py'
       - 'runner.py'
+      - 'live2.py'
 jobs:
   play:
     runs-on: ubuntu-latest
