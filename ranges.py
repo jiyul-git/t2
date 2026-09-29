@@ -228,6 +228,44 @@ import persona as PS
 _base_open = pf._open
 _traits    = pf._tr
 
+def preflop_reraise_posterior(prior_range, observed_rate, polar=0.0):
+    """Posterior after observing a 4bet+ from an existing PF prior.
+
+    A 4bet is conditional on the actor's earlier action; it is not another
+    RFI or an ordinary 3bet from the same seat.  The prior therefore stays
+    the actor's already-established range (for example LJ RFI), and the
+    observed re-raise only reweights that support.
+
+    observed_rate is the observer's estimated conditional 4bet frequency.
+    The exponential likelihood uses that rate as its rank-quantile scale, so
+    no new hard percentile cutoff is invented.  Every prior combo keeps
+    positive mass, preventing an unsupported position pair from collapsing
+    to an empty range and then triggering neutral all-combos fallback.
+    """
+    wr = weighted_range(prior_range)
+    if not wr:
+        return {}
+    rate = max(0.005, min(0.50, float(observed_rate or 0.0)))
+    pol = max(0.0, min(1.0, float(polar or 0.0)))
+    ranked = sorted(wr, key=lambda c: (pf.PCT[pf.cls(list(c))], c))
+    n = float(len(ranked))
+    out = {}
+    for i, c in enumerate(ranked):
+        q = (i + 0.5) / n
+        like = math.exp(-q / rate)
+
+        # Evidence-gated blocker-bluff channel; support never widens beyond
+        # the actor's original range.
+        a, b = c
+        suited = a[1] == b[1]
+        rs = {a[0], b[0]}
+        wheel_ace = suited and 'A' in rs and any(x in rs for x in '2345')
+        if wheel_ace and pol > 0.0:
+            like = max(like, 0.20 * pol)
+
+        out[c] = wr[c] * max(1e-9, like)
+    return out
+
 def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
                   opener_pos=None, open_bb=2.5, seats=8, ante=True, polar=0.0,
                   raise_level=1):
