@@ -461,6 +461,27 @@ def opp_bet_prob(opp_est, w, street):
 
 
 
+
+def field_effective_stack_bb(opp_stack_bbs, fallback=None):
+    """Maximum stack depth that can still contest hero in a multiway pot.
+
+    Stack identity is preserved upstream; this scalar is used only by the
+    existing target-commit geometry which accepts one effective cap.  Using the
+    former single 'main opponent' could understate the amount at risk whenever
+    the aggressor was short but another live opponent was deep.
+    """
+    vals=[]
+    if isinstance(opp_stack_bbs, dict):
+        for v in opp_stack_bbs.values():
+            if v is not None:
+                try:
+                    vals.append(max(0.0,float(v)))
+                except (TypeError,ValueError):
+                    pass
+    if vals:
+        return max(vals)
+    return fallback
+
 def select_field_opponent(profile, opp_ests, street, purpose='fold_constraint'):
     """Select the real opponent that constrains a multiway judgment.
 
@@ -603,7 +624,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     _trap_opp_est = (_field_bettor.get('est') if _field_bettor else _plan_opp_est)
     _stack_map = dict(opp_stack_bbs or {})
     _plan_opp_stack_bb = (
-        max((float(v) for v in _stack_map.values() if v is not None), default=opp_stack_bb)
+        field_effective_stack_bb(_stack_map, opp_stack_bb)
         if int(n_opp or 1) > 1 else opp_stack_bb)
     # 추정한 opp_range 를 그대로 쓴다. 고정 35% 가정으로 되돌리지 말 것 —
     # 좁혀놓은 레인지를 버리고 EV 를 판단하면 리딩이 전부 무의미해진다.
