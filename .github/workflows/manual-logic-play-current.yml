@@ -1,0 +1,17 @@
+name: Manual Logic Play Current
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - '.github/workflows/manual-logic-play-current.yml'
+      - 'tools/manual_hand_actions.json'
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Play audited hero hand
+        run: python3 tools/manual_one_hand.py
