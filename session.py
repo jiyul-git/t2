@@ -1448,9 +1448,11 @@ class HandRun:
                 elif a == 'shove':
                     rnd.apply(s, 'allin')
                 else:
+                    # Human sizing habit is already applied inside preflop_plan.
+                    # Execution owns only the legal minimum/cap semantics.
+                    _pf_target = int(round(float(h.bb) * float(sz)))
                     rnd.apply(s, 'raise',
-                              max(RU.shape_size(h.bb*sz, ax['type'], h.rng),
-                                  rnd.current + rnd.min_raise))
+                              max(_pf_target, rnd.current + rnd.min_raise))
             except ValueError:
                 rnd.apply(s, 'call' if tc > 0 else 'check')
             aggressor, callers, limpers = _update_pf_state_after_apply(
@@ -2157,7 +2159,9 @@ class HandRun:
                     hero_contrib=r2.contrib.get(s, 0),
                     response_kind=_resp_ctx.get('kind'),
                     response_context=_resp_ctx,
-                    call_value=_layer_call_value)
+                    call_value=_layer_call_value,
+                    size_shape_seed=self._dseed(
+                        s, street, 'size', len(r2.log)))
                 _tr = (h.plans.get(key) or {}).get('trace')
                 if _tr:
                     for _i in h.intents:
@@ -2200,20 +2204,28 @@ class HandRun:
                         'rel': (h.plans.get(key) or {}).get('rel'),
                         'outs': (h.plans.get(key) or {}).get('outs'),
                     })
-                # F7-D pre-logic boundary provenance.
-                # a2/amount is the newly calculated judgment result.  A replay may
-                # deliberately replace it with an already executed target; after
-                # that point session is the execution layer only.
+                # F7-D explicit PLAN -> execution boundary provenance.
+                # PLAN owns both strategic target and human sizing habit.
+                # A replay may replace that target with a prior applied target;
+                # otherwise session is legality/execution only.
                 _calculated_act = a2[0]
-                _calculated_target = a2[1]
+                _shape_meta0 = dict(
+                    (h.plans.get(key) or {}).get('_last_size_shape') or {})
+                _calculated_target = (
+                    _shape_meta0.get('before')
+                    if _shape_meta0.get('called') else a2[1])
                 _execution_input_act = a
                 _execution_input_target = amt
                 _execution_input_source = (
-                    'forced_replay' if _forced else 'judgment')
-                _shape_called = False
-                _shape_changed = False
+                    'forced_replay' if _forced else 'plan')
+                _shape_called = (
+                    bool(_shape_meta0.get('called')) if not _forced else False)
+                _shape_changed = (
+                    bool(_shape_meta0.get('changed')) if not _forced else False)
                 _shaped_target = (
-                    amt if a in ('bet', 'raise') else None)
+                    (_shape_meta0.get('after')
+                     if _shape_meta0.get('called') else amt)
+                    if a in ('bet', 'raise') else None)
                 _min_raise_floor = None
                 _min_raise_clamped = False
                 _legal_target = None
@@ -2240,34 +2252,22 @@ class HandRun:
                     # diagnostic scalar로 쓴다.
                     _opp_cap_max = max(_opp_caps) if _opp_caps else _actor_cap
                     _effective_cap = min(_actor_cap, _opp_cap_max)
-                    # 재생값을 **다시 shape 하지 않는다.** _forced[2] 는 아래
-                    # 587줄이 r2.log 에서 꺼내 기록한 집행값이라 이미 shape 를
-                    # 거쳤다. 두 번 먹이면 같은 상황을 재생했는데 다른 금액이
-                    # 나온다(실측: river bet 3100 → 재생 3200). shape_size 는
-                    # rng.uniform 지터를 곱하므로 멱등이 아니다.
-                    # 그러면 이후 tocall 이 어긋나 히어로의 기록된 액션이 불법이
-                    # 되고, 그 핸드가 영구히 막힌다.
-                    # amt 가 아직 재생값 그대로일 때만 건너뛴다 — 위 체크레이즈
-                    # 분기가 amt 를 새로 계산했다면 그건 라이브와 같은 경로이므로
-                    # 라이브처럼 shape 를 먹여야 한다.
+                    # Human sizing habit has already been consumed by PLAN
+                    # (act_with_plan -> shape_planned_target).  From this point on
+                    # execution may only replay or enforce poker legality.
                     _replayed = bool(_forced) and a == _forced[1] and amt == _forced[2]
-                    if a in ('bet', 'raise') and not _replayed:
-                        # 판단층이 이미 정확히 올인을 선택했다면 타입별 sizing jitter가
-                        # 그 결정을 다시 줄여 작은 잔여 스택을 만들면 안 된다.
-                        # target은 이번 스트리트 총 기여액 기준이므로 현재 contrib까지
-                        # 포함한 최대 target과 비교한다.
-                        _max_target = r2.stacks[s] + r2.contrib.get(s, 0)
-                        if amt < _max_target:
-                            _shape_called = True
-                            _before_shape = amt
-                            amt = RU.shape_size(
-                                amt, ax['type'],
-                                random.Random(self._dseed(s, street, 'size', len(r2.log))),
-                                pot=pot_live)
-                            _shape_changed = (amt != _before_shape)
-                        else:
-                            amt = _max_target
-                        _shaped_target = amt
+                    _plan_shape = dict(
+                        (h.plans.get(key) or {}).get('_last_size_shape') or {})
+                    if not _replayed and a in ('bet', 'raise'):
+                        _shape_called = bool(_plan_shape.get('called'))
+                        _shape_changed = bool(_plan_shape.get('changed'))
+                        _shaped_target = (
+                            _plan_shape.get('after')
+                            if _shape_called else amt)
+                    elif _replayed:
+                        _shape_called = False
+                        _shape_changed = False
+                        _shaped_target = amt if a in ('bet', 'raise') else None
                     if a in ('bet', 'raise'):
                         # 클램프 이후의 final legal target을 먼저 만든다.
                         _min_raise_floor = (
