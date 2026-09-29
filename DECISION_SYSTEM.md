@@ -253,13 +253,14 @@ driver
 | P4 opener faces 3bet | CLOSED | story overwrite, raise-level loss, true-persona leak, dead provenance gate 수정 |
 | P5 caller back-action | CLOSED | allin event classification, raise depth, fold/4bet stat contamination 수정 |
 | P6 all-in/call-off | CLOSED | short shove routing, exact pot/call price, all-in-call provenance 수정 |
-| P7 cold vs re-raise | **OPEN strategy** | decision class는 보존되지만 전용 cold-call/cold-4bet model 없음 |
+| P7 cold vs re-raise | **CORE JUDGMENT CLOSED / OBSERVATION OPEN** | original opener + re-raiser seat-keyed ranges, 실제 call price, players-behind, skill-dependent reasoning을 전용 P7 판단으로 소비. cold-call/cold-4bet 전용 population observation은 아직 없음 |
 
-P7 remaining gaps:
-- generic defend threshold 재사용 금지 필요.
-- original opener + re-raiser를 동시에 판단해야 함.
-- cold-call/cold-4bet tendencies 별도 observation 필요.
-- players behind가 first-class input이 아님.
+P7 current boundary:
+- dedicated `cold_reraise_decision`이 generic defend를 baseline/fallback으로만 사용한다.
+- original opener + re-raiser의 **두 seat-keyed perceived range**를 동시에 equity에 소비한다.
+- 실제 pot/call price, ICM, pot-odds error, players-behind risk가 같은 판단에 들어간다.
+- original-opener identity/range와 players-behind가 결과에 실제 영향을 주는 전용 verifier가 PASS한다.
+- 남은 것은 cold-call/cold-4bet **전용 population observation/calibration**이다. 근거 없는 prior를 새로 만들지 않는다.
 
 검증:
 - `verify_preflop_closure.py`: 4/4 PASS
@@ -286,11 +287,13 @@ F7 downstream multiway semantics는 `RANGE_MODEL.md`에서 관리한다.
 cold-facing re-raise의 dedicated judgment/plan model.
 
 ### F7-B
-seat-keyed equity와 union/scalar heuristic가 혼재.
+seat-keyed 판단으로 계속 수렴 중.
 - joint relative strength: closed
 - range advantage: closed
+- blocker effect: closed
+- multi-opponent read aggregation: **core closed** — proactive bluff/value planning은 실제 seat별 read 중 가장 안 접는 상대를 constraint로, trap은 가장 bet 가능성이 높은 실제 상대를 사용한다. identity를 synthetic average로 합치지 않는다.
+- multi-opponent stack aggregation: **core closed** — target-commit용 scalar가 필요할 때 live seat stack map의 최대 contest depth를 사용하며 원본 seat map도 state/provenance에 보존한다.
 - nut semantics: open
-- multi-opponent read/stack aggregation: open
 
 ### F7-C emotion
 현재 planning/execution view는 구조만 준비되어 있고 consumer activation은 아직.
@@ -300,8 +303,11 @@ seat-keyed equity와 union/scalar heuristic가 혼재.
 execution이 strategy size를 silently reshape하지 않는지 최종 semantic closure가 필요.
 
 ### F8
-main/side-pot mixed eligibility에서 scalar pot/equity/EV를 쓰면 안 된다.
-pot-layer별 equity/EV가 판단층으로 연결되어야 한다.
+**PARTIAL STRATEGY ACTIVE.** main/side-pot mixed eligibility의 layer geometry와 seat eligibility는 구현되어 있다.
+- postflop locked-allin call: complete layer summary + behind 없음 범위에서 layer-aware call equity/breakeven이 response 판단에 실제 소비된다.
+- river bet: action-closing + fold/call exhaustive 범위에서 layer bet-vs-check EV가 intent를 veto할 수 있다.
+- preflop pure calloff: layer-aware calloff judgment consumer가 있다.
+- 남은 범위는 active players/raise branch가 있는 일반 side-pot decision과 비종결 street의 완전한 layer-aware EV다.
 
 ## 9. Audit checklist
 
