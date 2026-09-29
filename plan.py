@@ -2202,7 +2202,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  can_raise=True, pot_bb=None, to_call_bb=None,
                  prior_pf=None, pot_layers=None, opp_ranges=None,
                  opp_range_meta=None, call_ev_shadow=None,
-                 calloff_decision_seed=None):
+                 calloff_decision_seed=None, cold_context=None,
+                 cold_decision_seed=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -2215,6 +2216,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     import preflop as _pf
     _calloff_compare = None
     _calloff_consumer = None
+    _cold_audit = None
     # 상대 정보가 프리플랍 레인지부터 움직인다.
     # 예전에는 preflop_plan 이 opp_est 를 아예 안 받아서,
     # 상대가 3벳에 과하게 접는 걸 알아도 3벳 레인지가 안 넓어졌다.
@@ -2247,14 +2249,36 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             can_check=can_check)
         role = 'iso'
     else:
-        a, sz = _pf.defend_decision(profile, pos, aggressor_pos, hand, bb, open_bb,
-                                    n_callers, rng, raise_level=raise_level,
-                                    stack_bb=bb, tilt=tilt, field_q=field_q,
-                                    exploit=rd, bf=bf, seats=seats, ante=ante,
-                                    payout_flat=payout_flat,
-                                    reentry=reentry, progress=progress,
-                                    opener_allin=opener_allin, can_raise=can_raise,
-                                    pot_bb=pot_bb, to_call_bb=to_call_bb)
+        # P7 core path: a player who has not acted yet and faces open + re-raise
+        # must reason about both ranges.  The generic defend path sees only the
+        # latest aggressor and is kept only as the fallback inside the P7 helper.
+        _cc = dict(cold_context or {})
+        _use_cold = bool(
+            raise_level >= 2 and not prior_pf and not opener_allin
+            and _cc.get('original_opener_seat') is not None
+            and _cc.get('reraiser_seat') is not None)
+        if _use_cold:
+            _op_seat = _cc.get('original_opener_seat')
+            _rr_seat = _cc.get('reraiser_seat')
+            a, sz, _cold_audit = _pf.cold_reraise_decision(
+                profile, pos, aggressor_pos, hand, bb, open_bb,
+                n_callers, rng, raise_level=raise_level, stack_bb=bb,
+                exploit=rd, bf=bf, seats=seats, ante=ante,
+                can_raise=can_raise, pot_bb=pot_bb, to_call_bb=to_call_bb,
+                original_opener_range=(opp_ranges or {}).get(_op_seat),
+                reraiser_range=(opp_ranges or {}).get(_rr_seat),
+                players_behind=len(_cc.get('players_behind') or []),
+                decision_seed=cold_decision_seed)
+        else:
+            a, sz = _pf.defend_decision(
+                profile, pos, aggressor_pos, hand, bb, open_bb,
+                n_callers, rng, raise_level=raise_level,
+                stack_bb=bb, tilt=tilt, field_q=field_q,
+                exploit=rd, bf=bf, seats=seats, ante=ante,
+                payout_flat=payout_flat,
+                reentry=reentry, progress=progress,
+                opener_allin=opener_allin, can_raise=can_raise,
+                pot_bb=pot_bb, to_call_bb=to_call_bb)
         role = 'defend'
 
     # F8-D6-D1: pure calloff에서 legacy percentile 판단과 layer-EV+ICM 판단을
@@ -2346,6 +2370,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             dict(_calloff_compare) if _calloff_compare is not None else None),
         'pf_calloff_consumer': (
             dict(_calloff_consumer) if _calloff_consumer is not None else None),
+        # P7 dedicated cold-vs-reraise judgment provenance.
+        'pf_cold_context': dict(cold_context or {}) if cold_context else None,
+        'pf_cold_audit': dict(_cold_audit) if _cold_audit is not None else None,
         # D2 provenance: later streets must not rebuild an all-in player's
         # preflop range from current stack=0.
         'pf_stack_bb': float(bb or 0.0),
