@@ -193,7 +193,7 @@ def figure(res, path):
     ref = res['pilot_noise_reference_node28']
     nr = sum(v['mean_abs_6flop_minus_72flop'] for v in ref.values()) / 2
     g.axhline(nr, color=MUTED, ls='--', lw=1)
-    g.text(len(xs) - 0.5, nr, f'6-flop pilot noise (node 28, 6 vs 72 flops): {nr:.2f}', ha='right', va='bottom', fontsize=8, color=MUTED)
+    g.text(-0.45, nr + 0.03, f'6-flop pilot noise (node 28: 6 vs 72 flops) = {nr:.2f}', ha='left', va='bottom', fontsize=8, color=MUTED)
     g.set_xticks(xs)
     g.set_xticklabels([names[n] for n in NODES], fontsize=8)
     g.set_ylabel('bb per class', fontsize=9, color=MUTED)
@@ -208,7 +208,9 @@ def figure(res, path):
     g.legend(fontsize=8, frameon=False)
     g = ax[2]
     for j, n in enumerate(NODES):
-        for k, (pos, s) in enumerate(T[n]['seats'].items()):
+        order = T[n]['postflop_order']  # OOP first
+        for k, pos in enumerate(order):
+            s = T[n]['seats'][pos]
             x = j + (k - 0.5) * 0.36
             v = s['range_ev_shift']
             g.bar([x], [v], 0.34, color=C3 if k == 0 else C1)
