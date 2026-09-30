@@ -99,7 +99,8 @@ The final expansion score must include the error of the legacy payoff:
 [
 I_t = P(t) 	imes
 sum_{p,h} 	ilde r_{t,p,h}
-left|V^{solved}_{t,p,h}-V^{legacy}_{t,p,h}ight|.
+left|V^{solved}_{t,p,h}-V^{legacy}_{t,p,h}
+ight|.
 ]
 
 A frequent terminal with a good legacy approximation can rank below a less frequent terminal with a large continuation error.
@@ -136,11 +137,14 @@ Correct outer step:
 
 [
 P_k
-ightarrow
+
+ightarrow
 {R_{t,k}}_{tin T}
-ightarrow
+
+ightarrow
 {V_{t,k}}_{tin T}
-ightarrow
+
+ightarrow
 P_{k+1}.
 ]
 
@@ -413,6 +417,8 @@ Reading:
   - Its impact stays about 10× below node 6 only because of reach.
 
 ## T2-B result — legacy 3-way diagnostic (nodes 46, 246)
+
+Figure: [`GTO_TERMINAL_MW_LEGACY_V2.png`](GTO_TERMINAL_MW_LEGACY_V2.png) — census coverage, P0 → P9 decomposition, transfer proxy.
 
 Numbers:
 - `data/gto_terminal_expansion/mw_legacy/analysis.json`;
