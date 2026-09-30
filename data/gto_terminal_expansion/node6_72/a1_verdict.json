@@ -1,0 +1,27 @@
+{
+ "schema": "t2_verdict_v1",
+ "test": "A1: node 6 (SB open -> BB call) on the unchanged 72-flop panel at P9 ranges (prereg.json)",
+ "effect_and_direction": {
+  "verdict": "PASS",
+  "rule": "aggressor (SB) legacy undervalue = signed range-EV shift > 0; caller (BB) legacy overvalue = shift < 0 (six-flop pilot direction)",
+  "SB_shift_bb": 0.14153811278573294, "SB_ci95": [0.06529692643890836, 0.21875225228341988],
+  "BB_shift_bb": -0.09043887090622882, "BB_ci95": [-0.17662112211938485, -0.008571667013607811],
+  "note": "both 95% bootstrap intervals exclude 0; the BB margin is thin (upper bound -0.009, 1.55% of bootstrap draws positive)"
+ },
+ "convergence_72flop": {
+  "verdict": "QUALIFIED",
+  "detail": "72/72 solved, 71/72 reached the 0.30% pot target; AcKd8h stopped at the pre-registered 1000-iteration cap with 0.362% pot",
+  "cap_policy": "the pre-registered 1000-iteration cap is NOT raised after seeing results",
+  "sensitivity_without_AcKd8h": {"SB_shift_bb": 0.1307397695666609, "BB_shift_bb": -0.07785854988037993, "direction": "unchanged"},
+  "consequence": "A1 overall conclusion kept"
+ },
+ "pilot6_vs_72": {
+  "direction": "correct",
+  "magnitude": "overstated by the six-flop pilot",
+  "SB_aggressor_bb": [0.29370284811869435, 0.14153811278573294],
+  "BB_caller_bb": [-0.24482044800303937, -0.09043887090622882]
+ },
+ "table": {"estimator": "ht_rho (guard passed, unallocated 0.0041 bb)", "file": "table72.json"},
+ "caveat": "action-boundary flips (SB 81 classes / 48.9% mass, BB 113 / 68.9%) are one-step, other strategies fixed at P9; per-class CIs are wide (mean half-width 0.38 / 0.51 bb); not a final range",
+ "status": "node 6 kept as a candidate for the next step"
+}
