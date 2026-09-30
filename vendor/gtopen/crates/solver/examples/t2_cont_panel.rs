@@ -91,7 +91,15 @@ fn main() -> Result<(), String> {
     let every: u32 = a[7].parse().map_err(|_| "check_every")?;
     let pl = term["players"].as_array().ok_or("players")?;
     let pos: Vec<&str> = pl.iter().map(|p| p["position"].as_str().unwrap()).collect();
-    let oop_i = pos.iter().position(|p| *p == "BB" || *p == "SB").ok_or("no blind")?;
+    if pl.len() != 2 {
+        return Err("heads-up terminals only (the postflop solver is heads-up)".into());
+    }
+    // OOP = first to act postflop: SB, then BB, then the earlier seat (CO before BTN)
+    let order = |i: usize| -> (usize, u64) {
+        let p = pos[i];
+        (if p == "SB" { 0 } else if p == "BB" { 1 } else { 2 }, pl[i]["seat"].as_u64().unwrap_or(99))
+    };
+    let oop_i = if order(0) <= order(1) { 0 } else { 1 };
     let ip_i = 1 - oop_i;
     let keep_of = |i: usize| -> Vec<f64> { pl[i]["class_keep_fraction"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect() };
     let keep = [keep_of(oop_i), keep_of(ip_i)];

@@ -12,7 +12,12 @@
 //! exactly like the pot-share branch. The table does not react to the opponent's
 //! current reach inside the preflop CFR: it is the stationary value of one outer
 //! fixed-point step. Every other terminal keeps the existing payoff.
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
+
+/// Set only inside `t2_terminal_gross(.., legacy = true)`: makes `gross_for` report no
+/// table so terminal_value falls through to the legacy payoff. Read-only diagnostics.
+static BYPASS: AtomicBool = AtomicBool::new(false);
 
 pub struct Table {
     pub node: usize,
@@ -50,6 +55,9 @@ pub fn table() -> Option<&'static Table> {
 /// Gross values for traverser `p` at `node`, if this node is the injected terminal.
 /// Panics if the file names this node but its pot / live mask disagree with the tree.
 pub fn gross_for(node: usize, live: u32, pot: f64, p: usize) -> Option<&'static [f64]> {
+    if BYPASS.load(Ordering::Relaxed) {
+        return None;
+    }
     let t = table()?;
     if t.node != node {
         return None;
@@ -86,5 +94,57 @@ impl super::PreflopSolver {
             out.push(v.iter().map(|&x| x as f64 / norm).collect());
         }
         Ok((node, out))
+    }
+}
+
+impl super::PreflopSolver {
+    /// Read-only diagnostic: gross value per class (bb, gross share of the pot, the same
+    /// convention as the continuation tables) of live seat `p` at terminal `node` reached
+    /// with `reaches`, taken from the solver's own `terminal_value`:
+    /// gross = payoff / prob + invested, prob = product of the other seats' reach masses.
+    /// `legacy = true` bypasses an injected continuation table (the pre-injection payoff).
+    /// Not thread-safe with a concurrent CFR run (the bypass flag is global).
+    pub fn t2_terminal_gross(&self, node: usize, p: usize, reaches: &[Vec<f32>], legacy: bool) -> Result<Vec<f64>, String> {
+        let nd = &self.nodes[node];
+        if nd.kind != super::KIND_POT_SHARE || nd.live & (1 << p) == 0 {
+            return Err("not a pot-share terminal with this seat live".into());
+        }
+        let mut prob = 1f64;
+        for q in 0..self.n {
+            if q != p {
+                prob *= reaches[q].iter().sum::<f32>() as f64;
+            }
+        }
+        if prob <= 0.0 {
+            return Err("terminal not reached by the other seats".into());
+        }
+        let mut out = vec![0f32; super::NUM_CLASSES];
+        BYPASS.store(legacy, Ordering::Relaxed);
+        self.terminal_value(node, p, reaches, &mut out);
+        BYPASS.store(false, Ordering::Relaxed);
+        Ok(out.iter().map(|&v| v as f64 / prob + nd.invested[p]).collect())
+    }
+
+    /// Read-only diagnostic for 3+ live seats: the coupled-deck gross pot * equity per class
+    /// in f64 (terminal_value rounds the same number to f32), plus the normalised opponent
+    /// distributions it integrates against (seat order).
+    pub fn t2_multiway_gross_f64(&self, node: usize, p: usize, reaches: &[Vec<f32>]) -> Option<(Vec<f64>, Vec<Vec<f32>>)> {
+        let nd = &self.nodes[node];
+        let model = self.multiway.as_ref()?;
+        if nd.live.count_ones() < 3 || nd.live & (1 << p) == 0 {
+            return None;
+        }
+        let mut dists: Vec<Vec<f32>> = Vec::new();
+        for q in 0..self.n {
+            if q != p && nd.live & (1 << q) != 0 {
+                let s: f32 = reaches[q].iter().sum();
+                if s > 0.0 {
+                    dists.push(reaches[q].iter().map(|&x| x / s).collect());
+                }
+            }
+        }
+        let pot_eff = nd.pot - self.rake_of(nd.pot);
+        let eq = model.equities(&dists);
+        Some((eq.iter().map(|&e| pot_eff * e).collect(), dists))
     }
 }

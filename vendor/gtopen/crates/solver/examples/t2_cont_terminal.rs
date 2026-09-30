@@ -58,9 +58,11 @@ fn main() -> Result<(), String> {
     }
     let (term, reaches) = s.walk(&path)?;
     let nd = &s.nodes[term];
-    if nd.kind != 2 || nd.live.count_ones() != 2 {
-        return Err("path does not end at a heads-up pot-share terminal".into());
+    if nd.kind != 2 || nd.live.count_ones() < 2 {
+        return Err("path does not end at a flop-reaching pot-share terminal".into());
     }
+    // 3+ live seats are exported for diagnostics only (the postflop panel is heads-up only)
+    let heads_up = nd.live.count_ones() == 2;
     let live: Vec<usize> = (0..s.n).filter(|&p| nd.live & (1 << p) != 0).collect();
     // postflop order: seat order with SB/BB first (BB acts before BTN postflop)
     let behind: Vec<f64> = live.iter().map(|&p| s.cfg.stack - nd.invested[p] + s.cfg.ante).collect();
@@ -69,6 +71,13 @@ fn main() -> Result<(), String> {
         let m: f32 = reaches[p].iter().sum();
         reaches[p].iter().map(|x| x / m).collect()
     }).collect();
+    // postflop acting order: SB, BB, then the other seats in seat order (by posted blind)
+    let blind_rank = |p: usize| -> usize {
+        let post = s.cfg.posts.get(p).copied().unwrap_or(0.0);
+        if post > 0.0 { if s.cfg.posts.iter().any(|&x| x > post) { 0 } else { 1 } } else { 2 + p }
+    };
+    let mut postflop_order = live.clone();
+    postflop_order.sort_by_key(|&p| blind_rank(p));
     let players: Vec<serde_json::Value> = live.iter().enumerate().map(|(i, &p)| {
         let mass: f32 = reaches[p].iter().sum();
         // fraction of each class's combos that reach (reach / class prior)
@@ -77,7 +86,17 @@ fn main() -> Result<(), String> {
             reaches[p][h] as f64 / prior
         }).collect();
         let in_range = keep.iter().filter(|&&k| k > 1e-6).count();
+        #[cfg(feature = "t2-cont")]
+        let (legacy, used, mw) = (
+            s.t2_terminal_gross(term, p, &reaches, true).ok(),
+            s.t2_terminal_gross(term, p, &reaches, false).ok(),
+            s.t2_multiway_gross_f64(term, p, &reaches).map(|x| x.0),
+        );
+        #[cfg(not(feature = "t2-cont"))]
+        let (legacy, used, mw): (Option<Vec<f64>>, Option<Vec<f64>>, Option<Vec<f64>>) = (None, None, None);
         serde_json::json!({
+            "legacy_gross": legacy, "model_gross": used, "coupled_deck_gross_f64": mw,
+            "static_r": nd.r[p], "postflop_order_index": postflop_order.iter().position(|&x| x == p),
             "seat": p, "position": s.cfg.positions[p], "invested_bb": nd.invested[p],
             "behind_bb": behind[i], "range_mass": mass,
             "classes_with_positive_reach": in_range,
@@ -141,6 +160,32 @@ fn main() -> Result<(), String> {
     };
     #[cfg(not(feature = "t2-cont"))]
     let action_values = serde_json::Value::Null;
+    // every decision on the path: actor, aggregate mix, class strategy, class action EVs
+    // (read-only) and the reach factor of the chosen action (= actor's mass ratio)
+    #[cfg(feature = "t2-cont")]
+    let path_nodes: Vec<serde_json::Value> = (0..path.len()).map(|k| {
+        let (n, r0) = s.walk(&path[..k]).unwrap();
+        let (_, r1) = s.walk(&path[..k + 1]).unwrap();
+        let nd_ = &s.nodes[n];
+        let actor = nd_.actor as usize;
+        let m0: f64 = r0[actor].iter().map(|&x| x as f64).sum();
+        let m1: f64 = r1[actor].iter().map(|&x| x as f64).sum();
+        let sigma = s.average_strategy(n);
+        let mut mixm = serde_json::Map::new();
+        for (ai, act) in nd_.actions.iter().enumerate() {
+            let f: f64 = (0..NUM_CLASSES).map(|h| r0[actor][h] as f64 * sigma[ai * NUM_CLASSES + h] as f64).sum::<f64>() / m0;
+            mixm.insert(act.label.clone(), serde_json::json!(f));
+        }
+        let ev = s.t2_action_values(&path[..k]).ok().map(|(_, v)| v);
+        serde_json::json!({"k": k, "node": n, "actor": s.cfg.positions[actor], "actor_seat": actor,
+            "actions": nd_.actions.iter().map(|x| x.label.clone()).collect::<Vec<_>>(), "chosen": path[k],
+            "mix": mixm, "reach_factor": m1 / m0, "actor_mass_before": m0,
+            "class_reach_before": r0[actor].clone(),
+            "class_strategy": (0..nd_.actions.len()).map(|ai| sigma[ai*NUM_CLASSES..(ai+1)*NUM_CLASSES].to_vec()).collect::<Vec<_>>(),
+            "ev_bb": ev})
+    }).collect();
+    #[cfg(not(feature = "t2-cont"))]
+    let path_nodes: Vec<serde_json::Value> = Vec::new();
     let labels: Vec<String> = (0..NUM_CLASSES).map(class_label).collect();
     let out = serde_json::json!({
         "config_file": a[1], "config": s.cfg, "iterations": s.iteration,
@@ -151,6 +196,8 @@ fn main() -> Result<(), String> {
         "aggressor_seat": nd.aggressor,
         "aggressor": if (nd.aggressor as usize) < s.n { s.cfg.positions[nd.aggressor as usize].clone() } else { "none".into() },
         "players": players, "class_labels": labels, "frequencies": freq, "action_values": action_values,
+        "heads_up": heads_up, "live_count": live.len(), "postflop_order": postflop_order.iter().map(|&p| s.cfg.positions[p].clone()).collect::<Vec<_>>(),
+        "path_nodes": path_nodes, "reach_probability": reaches.iter().map(|r| r.iter().map(|&x| x as f64).sum::<f64>()).product::<f64>(),
         "terminal_live_mask": nd.live, "t2_cont_file": std::env::var("T2_CONT_FILE").ok(),
         "ranges_hash_fnv1a64": fnv1a64(&norm.iter().map(|v| v.as_slice()).collect::<Vec<_>>()),
         "note": "average-strategy reaches; class-level (no card removal between seats); ante counted in invested",
