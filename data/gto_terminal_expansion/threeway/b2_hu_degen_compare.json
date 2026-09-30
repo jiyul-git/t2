@@ -1,0 +1,87 @@
+{
+ "criteria": {
+  "conservation_bb": "|sum of both players range values - pot| <= 1e-6",
+  "engine_exploitability": "<= 0.30% pot (same target as the vendored solves)",
+  "class_values": "mean |engine - vendored| over the 169 classes <= 0.05 bb per player (storage band 0.03-0.04, solver residual 0.01-0.02 measured in J1-J3)",
+  "range_values": "|range EV engine - vendored| <= 0.02 bb per player (J1 fixed point vs joint: 0.011-0.019)",
+  "aggregate_strategy": "first BB decision (check / bet) and BTN facing a check (check / bet): |frequency difference| <= 0.05"
+ },
+ "players": {
+  "BB": {
+   "mean_abs_class_diff_bb": 0.0008545035908314208,
+   "max_abs_class_diff_bb": 0.0057558317810200155,
+   "range_value_engine": 1.6941981771260302,
+   "range_value_vendored": 1.6940414418327865,
+   "range_value_diff_bb": 0.00015673529324367053,
+   "engine_br_gain_pct_pot": 0.3167036898795209
+  },
+  "BTN": {
+   "mean_abs_class_diff_bb": 0.0011395683272697554,
+   "max_abs_class_diff_bb": 0.00721219248905669,
+   "range_value_engine": 5.305801874870774,
+   "range_value_vendored": 5.305958520045644,
+   "range_value_diff_bb": -0.00015664517487046226,
+   "engine_br_gain_pct_pot": 0.2343220877368855
+  }
+ },
+ "checks": {},
+ "engine": {
+  "exploitability_pct_pot": 0.2755128888082032,
+  "conservation_error": 5.199680419565311e-08,
+  "iterations": 100,
+  "seconds": 394.850211101,
+  "bytes": 2364162528,
+  "peak_rss_kb": 2363400
+ },
+ "vendored": {
+  "exploitability_pct_pot": 0.27933236400900585,
+  "iterations": 100,
+  "rootmix_run_iterations": 100,
+  "rootmix_run_expl": 0.27933236400900585
+ },
+ "aggregate_strategy": [
+  {
+   "player_engine": "BB",
+   "player_vendored": "BB",
+   "actions_engine": [
+    "Check",
+    "Bet(3.5)"
+   ],
+   "actions_vendored": [
+    "Check",
+    "Bet 3.50 (50%)"
+   ],
+   "mix_engine": [
+    0.8492346551646808,
+    0.15076534595728108
+   ],
+   "mix_vendored": [
+    0.8479977760791368,
+    0.15200222464281785
+   ],
+   "max_abs_diff": 0.0012368790855439293
+  },
+  {
+   "player_engine": "BTN",
+   "player_vendored": "BTN",
+   "actions_engine": [
+    "Check",
+    "Bet(3.5)"
+   ],
+   "actions_vendored": [
+    "Check",
+    "Bet 3.50 (50%)"
+   ],
+   "mix_engine": [
+    0.004867374229288033,
+    0.9951326238531065
+   ],
+   "mix_vendored": [
+    0.0047255295490399064,
+    0.9952744700070804
+   ],
+   "max_abs_diff": 0.0001418461539738347
+  }
+ ],
+ "pass": true
+}

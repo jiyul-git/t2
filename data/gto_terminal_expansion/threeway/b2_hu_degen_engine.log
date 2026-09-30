@@ -2,3 +2,4 @@ engine: 2.36 GB, players [1, 2], build 0.3s, rss Some(39700) kB
 it 25 expl 3.9305% pot, conservation 6.77e-8, 104s
 it 50 expl 1.0211% pot, conservation 1.16e-7, 200s
 it 75 expl 0.4666% pot, conservation -2.06e-7, 298s
+it 100 expl 0.2755% pot, conservation 5.20e-8, 395s
