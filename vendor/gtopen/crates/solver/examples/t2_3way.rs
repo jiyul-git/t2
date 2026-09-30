@@ -1880,6 +1880,12 @@ fn main() -> Result<(), String> {
                     trace.push(serde_json::json!({"iteration": t, "seconds": t0.elapsed().as_secs_f64(), "eval": ev.clone(), "root_mix": e.root_mix(),
                         "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval}}));
                     last = ev;
+                    // partial result at every checkpoint (output only; the computation is unchanged)
+                    let part = serde_json::json!({"positions": spot.pos, "board": a[3], "scheme": scheme, "inner": inner, "partial": true,
+                        "bytes": e.bytes(), "bytes_trunk": btr, "bytes_frontier": bfr, "frontiers": n_front, "peak_rss_kb": peak_rss_kb(),
+                        "final": last, "trace": trace, "root_mix": e.root_mix(), "counters": e.counters(),
+                        "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval}});
+                    std::fs::write(format!("{out}.partial"), serde_json::to_vec(&part).unwrap()).map_err(|e| e.to_string())?;
                     if x <= target {
                         break;
                     }
