@@ -113,7 +113,7 @@ fn terminal_row(
     s: &PreflopSolver,
     node: usize,
     path: &[usize],
-    injected_node: Option<usize>,
+    _injected_node: Option<usize>,
 ) -> Result<Option<TerminalRow>, String> {
     let nd = &s.nodes[node];
     if nd.kind != 2 || nd.live.count_ones() < 2 {
@@ -226,7 +226,7 @@ fn terminal_row(
         reach_probability,
         share_of_flop_reach: 0.0,
         seat_reach,
-        current_injected_terminal: injected_node == Some(node),
+        current_injected_terminal: solver::preflop::t2cont::tables().map_or(false, |t| t.by_node.contains_key(&node)),
     }))
 }
 
@@ -295,6 +295,7 @@ fn main() -> Result<(), String> {
 
     let eq = Arc::new(EquityTable::build(samples));
     let mut s = PreflopSolver::new(cfg, eq)?;
+    solver::preflop::t2cont::validate(&s)?;
     for _ in 0..iters {
         s.iterate();
     }
@@ -303,7 +304,9 @@ fn main() -> Result<(), String> {
         s.save_game(p)?;
     }
 
-    let injected_node = solver::preflop::t2cont::table().map(|t| t.node);
+    let injected_nodes: Vec<usize> = solver::preflop::t2cont::tables().map(|t| t.by_node.keys().copied().collect()).unwrap_or_default();
+    // path verification is reported for the first injected terminal (node order)
+    let injected_node = injected_nodes.first().copied();
     let mut rows = Vec::new();
     let mut mass = KindMass::default();
     enumerate(&s, 0, &mut Vec::new(), injected_node, &mut rows, &mut mass)?;
@@ -367,6 +370,7 @@ fn main() -> Result<(), String> {
         "multiway_model": s.multiway_equity_model(),
         "t2_cont_file": std::env::var("T2_CONT_FILE").ok(),
         "current_injected_node": injected_node,
+        "injected_nodes": injected_nodes,
         "reach_definition": "product over seats of total average-strategy class reach; no inter-player card removal",
         "filter": "KIND_POT_SHARE with >=2 live seats and effective behind > 0",
         "summary": {

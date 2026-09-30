@@ -1,17 +1,27 @@
 //! T2 HU-continuation prototype (feature `t2-cont`, compiled out by default).
 //!
-//! Replaces the payoff of ONE heads-up pot-share terminal with externally solved
-//! per-class continuation values, loaded from the JSON file named by T2_CONT_FILE:
+//! Replaces the payoff of selected heads-up pot-share terminals with externally solved
+//! per-class continuation values. T2_CONT_FILE names either ONE table
 //!
 //! {"schema": "t2_hu_continuation_table_v1", "node": <terminal index>, "live": <mask>,
 //!  "pot_bb": <pot>, "value_convention": "gross_share",
 //!  "seats": [{"seat": s, "gross": [169 x bb]}, ...], ...provenance...}
 //!
+//! or a manifest of tables (paths relative to the manifest's directory):
+//!
+//! {"schema": "t2_hu_continuation_manifest_v1", "tables": [{"file": "node28.json"}, ...]}
+//!
 //! gross = expected chips of the terminal pot that the class ends with against the
 //! opponent's arriving range (zero rake). terminal_value then pays gross - invested,
-//! exactly like the pot-share branch. The table does not react to the opponent's
-//! current reach inside the preflop CFR: it is the stationary value of one outer
-//! fixed-point step. Every other terminal keeps the existing payoff.
+//! exactly like the pot-share branch. A table does not react to the opponent's current
+//! reach inside the preflop CFR: it is the stationary value of one outer fixed-point
+//! step. Every terminal not named by a table keeps the existing payoff.
+//! Loading fails closed (panic) on: unknown schema, value convention other than
+//! gross_share, a duplicate node, a seat not in the live mask or a live seat without
+//! values, anything but 169 finite values per seat, a non-finite pot. `validate` checks
+//! every table against the tree (node exists, is a pot-share terminal, live mask equal,
+//! pot within 1e-9); `gross_for` keeps the per-lookup live/pot guard.
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
@@ -24,44 +34,129 @@ pub struct Table {
     pub live: u32,
     pub pot: f64,
     pub gross: Vec<(usize, Vec<f64>)>,
+    pub file: String,
 }
 
-static TABLE: OnceLock<Option<Table>> = OnceLock::new();
+pub struct Tables {
+    pub by_node: BTreeMap<usize, Table>,
+    pub source: String,
+}
 
-fn load() -> Option<Table> {
+static TABLES: OnceLock<Option<Tables>> = OnceLock::new();
+
+fn parse_table(v: &serde_json::Value, file: &str) -> Result<Table, String> {
+    if v["schema"] != "t2_hu_continuation_table_v1" {
+        return Err(format!("{file}: schema {} is not t2_hu_continuation_table_v1", v["schema"]));
+    }
+    if v["value_convention"] != "gross_share" {
+        return Err(format!("{file}: value_convention {} is not gross_share", v["value_convention"]));
+    }
+    let node = v["node"].as_u64().ok_or(format!("{file}: node"))? as usize;
+    let live = v["live"].as_u64().ok_or(format!("{file}: live"))? as u32;
+    let pot = v["pot_bb"].as_f64().filter(|x| x.is_finite() && *x > 0.0).ok_or(format!("{file}: pot_bb"))?;
+    let seats = v["seats"].as_array().ok_or(format!("{file}: seats"))?;
+    let mut gross: Vec<(usize, Vec<f64>)> = Vec::new();
+    for s in seats {
+        let seat = s["seat"].as_u64().ok_or(format!("{file}: seat"))? as usize;
+        if seat >= 32 || live & (1 << seat) == 0 {
+            return Err(format!("{file}: seat {seat} is not in live mask {live}"));
+        }
+        if gross.iter().any(|(q, _)| *q == seat) {
+            return Err(format!("{file}: seat {seat} listed twice"));
+        }
+        let g = s["gross"].as_array().ok_or(format!("{file}: seat {seat} gross"))?;
+        if g.len() != super::NUM_CLASSES {
+            return Err(format!("{file}: seat {seat} has {} values, not 169", g.len()));
+        }
+        let mut vals = Vec::with_capacity(super::NUM_CLASSES);
+        for x in g {
+            match x.as_f64() {
+                Some(f) if f.is_finite() => vals.push(f),
+                _ => return Err(format!("{file}: seat {seat} has a non-finite or non-numeric value")),
+            }
+        }
+        gross.push((seat, vals));
+    }
+    if gross.len() != live.count_ones() as usize {
+        return Err(format!("{file}: {} seats for a live mask with {} seats", gross.len(), live.count_ones()));
+    }
+    Ok(Table { node, live, pot, gross, file: file.to_string() })
+}
+
+/// Parse a single table or a manifest of tables (fail closed; no tree needed).
+pub fn parse_file(path: &str) -> Result<Tables, String> {
+    let read = |p: &str| -> Result<serde_json::Value, String> {
+        let text = std::fs::read_to_string(p).map_err(|e| format!("{p}: {e}"))?;
+        serde_json::from_str(&text).map_err(|e| format!("{p}: {e}"))
+    };
+    let v = read(path)?;
+    let mut list = Vec::new();
+    if v["schema"] == "t2_hu_continuation_manifest_v1" {
+        let dir = std::path::Path::new(path).parent().map(|d| d.to_path_buf()).unwrap_or_default();
+        let entries = v["tables"].as_array().ok_or(format!("{path}: tables"))?;
+        if entries.is_empty() {
+            return Err(format!("{path}: empty manifest"));
+        }
+        for e in entries {
+            let f = e["file"].as_str().ok_or(format!("{path}: table entry without file"))?;
+            let fp = if std::path::Path::new(f).is_absolute() { f.to_string() } else { dir.join(f).to_string_lossy().into_owned() };
+            list.push(parse_table(&read(&fp)?, &fp)?);
+        }
+    } else {
+        list.push(parse_table(&v, path)?);
+    }
+    let mut by_node = BTreeMap::new();
+    for t in list {
+        if let Some(prev) = by_node.get(&t.node) {
+            let prev: &Table = prev;
+            return Err(format!("duplicate node {}: {} and {}", t.node, prev.file, t.file));
+        }
+        by_node.insert(t.node, t);
+    }
+    Ok(Tables { by_node, source: path.to_string() })
+}
+
+fn load() -> Option<Tables> {
     let path = std::env::var("T2_CONT_FILE").ok()?;
-    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("T2_CONT_FILE {path}: {e}"));
-    let v: serde_json::Value = serde_json::from_str(&text).unwrap_or_else(|e| panic!("T2_CONT_FILE {path}: {e}"));
-    assert_eq!(v["schema"], "t2_hu_continuation_table_v1", "T2_CONT_FILE schema");
-    assert_eq!(v["value_convention"], "gross_share", "T2_CONT_FILE value convention");
-    let seats = v["seats"].as_array().expect("seats");
-    let gross = seats.iter().map(|s| {
-        let g: Vec<f64> = s["gross"].as_array().expect("gross").iter().map(|x| x.as_f64().expect("finite gross")).collect();
-        assert_eq!(g.len(), super::NUM_CLASSES, "169 classes");
-        (s["seat"].as_u64().expect("seat") as usize, g)
-    }).collect();
-    Some(Table {
-        node: v["node"].as_u64().expect("node") as usize,
-        live: v["live"].as_u64().expect("live") as u32,
-        pot: v["pot_bb"].as_f64().expect("pot"),
-        gross,
-    })
+    Some(parse_file(&path).unwrap_or_else(|e| panic!("T2_CONT_FILE {e}")))
 }
 
+pub fn tables() -> Option<&'static Tables> {
+    TABLES.get_or_init(load).as_ref()
+}
+
+/// Backward-compatible accessor: the table when exactly one is loaded.
 pub fn table() -> Option<&'static Table> {
-    TABLE.get_or_init(load).as_ref()
+    let t = tables()?;
+    if t.by_node.len() == 1 { t.by_node.values().next() } else { None }
 }
 
-/// Gross values for traverser `p` at `node`, if this node is the injected terminal.
-/// Panics if the file names this node but its pot / live mask disagree with the tree.
+/// Check every loaded table against the tree: node exists and is a pot-share terminal,
+/// live mask identical, pot within 1e-9. Call before solving (fail closed).
+pub fn validate(s: &super::PreflopSolver) -> Result<(), String> {
+    let Some(t) = tables() else { return Ok(()) };
+    for (node, tb) in &t.by_node {
+        let nd = s.nodes.get(*node).ok_or(format!("{}: node {node} does not exist", tb.file))?;
+        if nd.kind != super::KIND_POT_SHARE {
+            return Err(format!("{}: node {node} is not a pot-share terminal", tb.file));
+        }
+        if nd.live != tb.live {
+            return Err(format!("{}: node {node} live mask {} != tree {}", tb.file, tb.live, nd.live));
+        }
+        if (nd.pot - tb.pot).abs() >= 1e-9 {
+            return Err(format!("{}: node {node} pot {} != tree {}", tb.file, tb.pot, nd.pot));
+        }
+    }
+    Ok(())
+}
+
+/// Gross values for traverser `p` at `node`, if a table names this node.
+/// Panics if the table's pot / live mask disagree with the tree.
 pub fn gross_for(node: usize, live: u32, pot: f64, p: usize) -> Option<&'static [f64]> {
     if BYPASS.load(Ordering::Relaxed) {
         return None;
     }
-    let t = table()?;
-    if t.node != node {
-        return None;
-    }
+    let t = tables()?.by_node.get(&node)?;
     assert!(t.live == live && (t.pot - pot).abs() < 1e-9, "T2_CONT_FILE node {node} does not match the tree");
     t.gross.iter().find(|(s, _)| *s == p).map(|(_, g)| g.as_slice())
 }
@@ -148,3 +243,4 @@ impl super::PreflopSolver {
         Some((eq.iter().map(|&e| pot_eff * e).collect(), dists))
     }
 }
+

@@ -35,6 +35,8 @@ fn main() -> Result<(), String> {
     let samples: u32 = std::env::var("PREFLOP_EQ_SAMPLES").ok().and_then(|v| v.parse().ok()).unwrap_or(1200);
     let eq = Arc::new(EquityTable::build(samples));
     let mut s = PreflopSolver::new(cfg, eq)?;
+    #[cfg(feature = "t2-cont")]
+    solver::preflop::t2cont::validate(&s)?;
     for _ in 0..iters {
         s.iterate();
     }

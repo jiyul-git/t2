@@ -1,0 +1,13 @@
+{
+ "loader_checks": "t2_cont_loader_check: single, manifest (2 tables, node-keyed), duplicate node, wrong schema, wrong convention, 168 values, non-numeric value, seat outside live mask, missing live seat, empty manifest -> all behave (pass / fail closed)",
+ "tree_validation": {
+  "node mismatch (node 6 with node 28 live mask)": "Error before solving: live mask 10 != tree 12",
+  "pot mismatch (5.6 vs 5.5)": "Error before solving: pot 5.6 != tree 5.5"
+ },
+ "bit_regression": {
+  "single T2_CONT_FILE=k8/table.json vs k9/terminal.json": "identical on every k9 key (players on every k9 player key); ranges hash d8707f750f1f9ec2",
+  "manifest [k8/table.json] vs single": "identical on every key except the recorded t2_cont_file path",
+  "census single vs census_p9.json": "identical on every previous key; new key injected_nodes=[28]"
+ },
+ "note": "loader built while A1 was running; it is not used for any injection until the A1 result is checked"
+}
