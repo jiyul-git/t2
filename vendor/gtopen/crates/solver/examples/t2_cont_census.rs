@@ -60,6 +60,44 @@ struct TerminalRow {
     current_injected_terminal: bool,
 }
 
+/// Same hash as t2_cont_terminal: FNV-1a over the live seats' normalised class reaches
+/// (seat order), so a census state can be matched to an outer-loop terminal.json.
+fn ranges_hash(s: &PreflopSolver, node: usize, reaches: &[Vec<f32>]) -> String {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for p in 0..s.n {
+        if s.nodes[node].live & (1 << p) == 0 {
+            continue;
+        }
+        let m: f32 = reaches[p].iter().sum();
+        for x in &reaches[p] {
+            for b in (x / m).to_le_bytes() {
+                h ^= b as u64;
+                h = h.wrapping_mul(0x100000001b3);
+            }
+        }
+    }
+    format!("{h:016x}")
+}
+
+/// Aggregate action mix of the actor at the node reached by `path` (average strategy).
+fn node_mix(s: &PreflopSolver, path: &[usize]) -> Result<serde_json::Value, String> {
+    let (n, r) = s.walk(path)?;
+    let nd = &s.nodes[n];
+    if nd.kind != 0 {
+        return Err("not an action node".into());
+    }
+    let actor = nd.actor as usize;
+    let sigma = s.average_strategy(n);
+    let k = solver::preflop::equity::NUM_CLASSES;
+    let tot: f64 = r[actor].iter().map(|&x| x as f64).sum();
+    let mut m = serde_json::Map::new();
+    for (ai, act) in nd.actions.iter().enumerate() {
+        let f: f64 = (0..k).map(|h| r[actor][h] as f64 * sigma[ai * k + h] as f64).sum::<f64>() / tot;
+        m.insert(act.label.clone(), serde_json::json!(f));
+    }
+    Ok(serde_json::json!({"actor": s.cfg.positions[actor], "node": n, "mix": m}))
+}
+
 fn pot_type(raises: usize) -> String {
     match raises {
         0 => "limped".into(),
@@ -192,17 +230,41 @@ fn terminal_row(
     }))
 }
 
+/// Reach mass of every terminal by kind (fold-win / all-in or dead pot-share / flop-reaching),
+/// with the same product-of-seat-masses definition; the grand total must be 1.
+#[derive(Default)]
+struct KindMass {
+    fold_win: f64,
+    pot_share_no_flop: f64,
+    flop: f64,
+    terminals: [usize; 3],
+}
+
 fn enumerate(
     s: &PreflopSolver,
     node: usize,
     path: &mut Vec<usize>,
     injected_node: Option<usize>,
     rows: &mut Vec<TerminalRow>,
+    mass: &mut KindMass,
 ) -> Result<(), String> {
     let kind = s.nodes[node].kind;
     if kind != 0 {
+        let (_, reaches) = s.walk(path)?;
+        let p: f64 = reaches.iter().map(|r| r.iter().map(|&x| x as f64).sum::<f64>()).product();
+        let before = rows.len();
         if let Some(row) = terminal_row(s, node, path, injected_node)? {
             rows.push(row);
+        }
+        if rows.len() > before {
+            mass.flop += p;
+            mass.terminals[2] += 1;
+        } else if kind == 1 {
+            mass.fold_win += p;
+            mass.terminals[0] += 1;
+        } else {
+            mass.pot_share_no_flop += p;
+            mass.terminals[1] += 1;
         }
         return Ok(());
     }
@@ -211,7 +273,7 @@ fn enumerate(
     for ai in 0..n_actions {
         let child = s.child(node, ai);
         path.push(ai);
-        enumerate(s, child, path, injected_node, rows)?;
+        enumerate(s, child, path, injected_node, rows, mass)?;
         path.pop();
     }
     Ok(())
@@ -243,7 +305,8 @@ fn main() -> Result<(), String> {
 
     let injected_node = solver::preflop::t2cont::table().map(|t| t.node);
     let mut rows = Vec::new();
-    enumerate(&s, 0, &mut Vec::new(), injected_node, &mut rows)?;
+    let mut mass = KindMass::default();
+    enumerate(&s, 0, &mut Vec::new(), injected_node, &mut rows, &mut mass)?;
 
     let total_flop_reach: f64 = rows.iter().map(|r| r.reach_probability).sum();
     if total_flop_reach > 0.0 {
@@ -257,6 +320,29 @@ fn main() -> Result<(), String> {
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
+    // P9-state verification: the injected terminal's ranges hash and the mixes on its path
+    let verification = match injected_node.and_then(|n| rows.iter().find(|r| r.terminal_node == n)) {
+        Some(r) => {
+            let (_, reaches) = s.walk(&r.path_action_indices)?;
+            let mut mixes = serde_json::Map::new();
+            for k in 0..r.path_action_indices.len() {
+                let v = node_mix(&s, &r.path_action_indices[..k])?;
+                mixes.insert(format!("{}:{}", k, v["actor"].as_str().unwrap_or("?")), v);
+            }
+            serde_json::json!({"injected_terminal_ranges_hash": ranges_hash(&s, r.terminal_node, &reaches),
+                               "path_mixes": mixes})
+        }
+        None => serde_json::Value::Null,
+    };
+    let by_type = |f: &dyn Fn(&TerminalRow) -> bool| -> f64 { rows.iter().filter(|r| f(r)).map(|r| r.reach_probability).sum() };
+    let mut pot_types = serde_json::Map::new();
+    for t in ["limped", "srp", "3bet", "4bet", "5bet"] {
+        let hu = by_type(&|r: &TerminalRow| r.pot_type == t && r.live_count == 2);
+        let mw = by_type(&|r: &TerminalRow| r.pot_type == t && r.live_count > 2);
+        let cnt = rows.iter().filter(|r| r.pot_type == t).count();
+        pot_types.insert(t.into(), serde_json::json!({"terminals": cnt, "hu_reach": hu, "multiway_reach": mw,
+            "share_of_flop_reach": if total_flop_reach > 0.0 { (hu + mw) / total_flop_reach } else { 0.0 }}));
+    }
     let hu_reach: f64 = rows
         .iter()
         .filter(|r| r.live_count == 2)
@@ -284,7 +370,15 @@ fn main() -> Result<(), String> {
         "reach_definition": "product over seats of total average-strategy class reach; no inter-player card removal",
         "filter": "KIND_POT_SHARE with >=2 live seats and effective behind > 0",
         "summary": {
+            "reach_check": {"fold_win": mass.fold_win, "pot_share_without_flop": mass.pot_share_no_flop,
+                            "flop": mass.flop, "total": mass.fold_win + mass.pot_share_no_flop + mass.flop,
+                            "terminal_counts": {"fold_win": mass.terminals[0], "pot_share_without_flop": mass.terminals[1],
+                                                "flop": mass.terminals[2]},
+                            "note": "total must be 1 (every hand ends in exactly one terminal)"},
             "flop_reaching_terminals": rows.len(),
+            "flop_reaching_terminals_with_positive_reach": rows.iter().filter(|r| r.reach_probability > 0.0).count(),
+            "flop_reaching_terminals_with_reach_gt_1e-6": rows.iter().filter(|r| r.reach_probability > 1e-6).count(),
+            "by_pot_type": pot_types,
             "total_flop_reach_probability": total_flop_reach,
             "hu_flop_reach_probability": hu_reach,
             "multiway_flop_reach_probability": multiway_reach,
@@ -292,6 +386,7 @@ fn main() -> Result<(), String> {
             "hu_share_of_flop_reach": if total_flop_reach > 0.0 { hu_reach / total_flop_reach } else { 0.0 },
             "multiway_share_of_flop_reach": if total_flop_reach > 0.0 { multiway_reach / total_flop_reach } else { 0.0 },
         },
+        "p9_verification": verification,
         "terminals": rows,
     });
 
