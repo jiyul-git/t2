@@ -1,0 +1,23 @@
+{
+ "schema": "t2_prereg_v1",
+ "test": "B2-2 HU degeneration: research engine with the SB out before the flop action and NON-blocking, vs the vendored HU solver on the identical HU game",
+ "game": {
+  "terminal": "data/gto_terminal_expansion/terminals/p9_node46.json (BB and BTN arriving ranges at P9)",
+  "board": "Kc7d4h",
+  "pot_bb": 7.0,
+  "effective_behind_bb": 28.0,
+  "menu": "M2 (50% bet, raise all-in, 1 raise/street, 0.85 all-in threshold, no donk leads)",
+  "eps_floor": 0.001,
+  "storage": "f32 both"
+ },
+ "vendored_reference": "t2_cont_panel on a HU terminal file with the same two ranges, one-board panel, target 0.3% pot, max 1000 iterations",
+ "engine": "t2_3way solve --fold-first SB --nonblocking SB, DCFR (1.5, 0, 2), alternating updates, full chance enumeration; run until its own exploitability <= 0.3% pot or 1000 iterations",
+ "pass_criteria_fixed_before_running": {
+  "conservation_bb": "|sum of both players range values - pot| <= 1e-6",
+  "engine_exploitability": "<= 0.30% pot (same target as the vendored solves)",
+  "class_values": "mean |engine - vendored| over the 169 classes <= 0.05 bb per player (storage band 0.03-0.04, solver residual 0.01-0.02 measured in J1-J3)",
+  "range_values": "|range EV engine - vendored| <= 0.02 bb per player (J1 fixed point vs joint: 0.011-0.019)",
+  "aggregate_strategy": "first BB decision (check / bet) and BTN facing a check (check / bet): |frequency difference| <= 0.05"
+ },
+ "if_fail": "no node 46 solve; the failing component is isolated first"
+}
