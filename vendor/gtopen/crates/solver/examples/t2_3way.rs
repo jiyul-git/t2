@@ -773,6 +773,273 @@ fn preflop_equity(t_path: &str, n_boards: usize, seed: u64) -> Result<serde_json
         "note": "range EV of the exact side uses the arriving class reach (class_reach_normalized) as weights, like the legacy check; the exact sums already condition on disjoint hands"}))
 }
 
+// ------------------------------------------------------------------ fast exact 3-player sums
+/// Incremental inclusion-exclusion aggregates for Den_{S,T}(h) = sum_{x in S, y in T, x,y,h pairwise
+/// disjoint} wq(x) wr(y). insert_* is O(52), a query is O(1).
+struct Agg<'a> {
+    wq: &'a [f32],
+    wr: &'a [f32],
+    in_q: Vec<bool>,
+    in_r: Vec<bool>,
+    tq: f64,
+    tr: f64,
+    cq: [f64; 52],
+    cr: [f64; 52],
+    dot: f64,
+    e: f64,
+    ec: [f64; 52],
+    g: [f64; 52],
+    hh: [f64; 52],
+    k: Vec<f64>,
+}
+
+impl<'a> Agg<'a> {
+    fn new(wq: &'a [f32], wr: &'a [f32]) -> Self {
+        Agg { wq, wr, in_q: vec![false; NUM_COMBOS], in_r: vec![false; NUM_COMBOS], tq: 0.0, tr: 0.0, cq: [0.0; 52], cr: [0.0; 52],
+              dot: 0.0, e: 0.0, ec: [0.0; 52], g: [0.0; 52], hh: [0.0; 52], k: vec![0.0; 52 * 52] }
+    }
+    #[inline(always)]
+    fn wqs(&self, a: Card, b: Card) -> f64 {
+        if a == b { return 0.0; }
+        let i = cidx(a, b);
+        if self.in_q[i] { self.wq[i] as f64 } else { 0.0 }
+    }
+    #[inline(always)]
+    fn wrt(&self, a: Card, b: Card) -> f64 {
+        if a == b { return 0.0; }
+        let i = cidx(a, b);
+        if self.in_r[i] { self.wr[i] as f64 } else { 0.0 }
+    }
+    fn insert_r(&mut self, x: usize) {
+        let v = self.wr[x] as f64;
+        let (x1, x2) = cc(x);
+        if v != 0.0 {
+            for a in 0..52u8 {
+                let add = self.wqs(a, x1) + self.wqs(a, x2);
+                self.g[a as usize] += v * add;
+            }
+            self.hh[x1 as usize] += v * self.cq[x2 as usize];
+            self.hh[x2 as usize] += v * self.cq[x1 as usize];
+            self.dot += v * (self.cq[x1 as usize] + self.cq[x2 as usize]);
+            let wqx = self.wqs(x1, x2);
+            self.e += v * wqx;
+            self.ec[x1 as usize] += v * wqx;
+            self.ec[x2 as usize] += v * wqx;
+            for b in 0..52u8 {
+                if b == x1 || b == x2 { continue; }
+                self.k[x1 as usize * 52 + b as usize] += v * self.wqs(b, x2);
+                self.k[x2 as usize * 52 + b as usize] += v * self.wqs(b, x1);
+            }
+            self.tr += v;
+            self.cr[x1 as usize] += v;
+            self.cr[x2 as usize] += v;
+        }
+        self.in_r[x] = true;
+    }
+    fn insert_q(&mut self, x: usize) {
+        let u = self.wq[x] as f64;
+        let (x1, x2) = cc(x);
+        self.in_q[x] = true; // membership first is harmless: every term below excludes x itself
+        if u == 0.0 {
+            return;
+        }
+        self.g[x1 as usize] += u * self.cr[x2 as usize];
+        self.g[x2 as usize] += u * self.cr[x1 as usize];
+        for i in 0..52u8 {
+            let add = self.wrt(i, x1) + self.wrt(i, x2);
+            self.hh[i as usize] += u * add;
+        }
+        self.dot += u * (self.cr[x1 as usize] + self.cr[x2 as usize]);
+        let wrx = self.wrt(x1, x2);
+        self.e += u * wrx;
+        self.ec[x1 as usize] += u * wrx;
+        self.ec[x2 as usize] += u * wrx;
+        for a in 0..52u8 {
+            if a == x1 || a == x2 { continue; }
+            self.k[a as usize * 52 + x1 as usize] += u * self.wrt(a, x2);
+            self.k[a as usize * 52 + x2 as usize] += u * self.wrt(a, x1);
+        }
+        self.tq += u;
+        self.cq[x1 as usize] += u;
+        self.cq[x2 as usize] += u;
+    }
+    fn den(&self, h: usize) -> f64 {
+        let (a, b) = cc(h);
+        let (ai, bi) = (a as usize, b as usize);
+        let wqh = if self.in_q[h] { self.wq[h] as f64 } else { 0.0 };
+        let wrh = if self.in_r[h] { self.wr[h] as f64 } else { 0.0 };
+        let q = self.tq - self.cq[ai] - self.cq[bi] + wqh;
+        let rh = self.tr - self.cr[ai] - self.cr[bi] + wrh;
+        let bb = self.dot - (self.cq[ai] * self.cr[ai] + self.g[ai]) - (self.cq[bi] * self.cr[bi] + self.g[bi]) + wqh * (self.cr[ai] + self.cr[bi]);
+        let c = self.e - self.ec[ai] - self.ec[bi] + wqh * wrh;
+        let d = (self.hh[ai] - wrh * self.cq[bi] - self.ec[ai] + wrh * wqh - self.k[ai * 52 + bi])
+            + (self.hh[bi] - wrh * self.cq[ai] - self.ec[bi] + wrh * wqh - self.k[bi * 52 + ai]);
+        q * rh - bb + c + d
+    }
+    /// mass of r (set T) disjoint from the 4 cards of h and x
+    fn r_excl(&self, h: usize, x: usize) -> f64 {
+        let (a, b) = cc(h);
+        let (x1, x2) = cc(x);
+        let mut m = self.tr - self.cr[a as usize] - self.cr[b as usize] - self.cr[x1 as usize] - self.cr[x2 as usize];
+        m += self.wrt(a, b) + self.wrt(x1, x2) + self.wrt(a, x1) + self.wrt(a, x2) + self.wrt(b, x1) + self.wrt(b, x2);
+        m
+    }
+    fn q_excl(&self, h: usize, y: usize) -> f64 {
+        let (a, b) = cc(h);
+        let (y1, y2) = cc(y);
+        let mut m = self.tq - self.cq[a as usize] - self.cq[b as usize] - self.cq[y1 as usize] - self.cq[y2 as usize];
+        m += self.wqs(a, b) + self.wqs(y1, y2) + self.wqs(a, y1) + self.wqs(a, y2) + self.wqs(b, y1) + self.wqs(b, y2);
+        m
+    }
+}
+
+#[inline(always)]
+fn disjoint(h: usize, x: usize) -> bool {
+    let (a, b) = cc(h);
+    let (c, d) = cc(x);
+    a != c && a != d && b != c && b != d
+}
+
+/// Same contract as showdown_sums, O(52 N) per call instead of O(N^2).
+fn showdown_sums_fast(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Vec<f64>, Vec<f64>) {
+    let mut order: Vec<usize> = (0..NUM_COMBOS).filter(|&i| st[i] > 0).collect();
+    order.sort_by_key(|&i| st[i]);
+    let mut num = vec![0f64; NUM_COMBOS];
+    let mut den = vec![0f64; NUM_COMBOS];
+    let mut all = Agg::new(wq, wr);
+    for &i in &order {
+        all.insert_r(i);
+        all.insert_q(i);
+    }
+    for &h in &order {
+        den[h] = all.den(h);
+    }
+    // incremental aggregate: q either strictly-below (in showdown) or all (folded), r strictly below
+    let mut lo = Agg::new(wq, wr);
+    if !q_in_showdown {
+        for &i in &order {
+            lo.insert_q(i);
+        }
+    }
+    let mut k = 0;
+    while k < order.len() {
+        let t = st[order[k]];
+        let mut e = k;
+        while e < order.len() && st[order[e]] == t {
+            e += 1;
+        }
+        let lvl = &order[k..e];
+        let big = lvl.len() > 48;
+        let ee = if q_in_showdown && big {
+            let mut a = Agg::new(wq, wr);
+            for &i in lvl {
+                a.insert_r(i);
+                a.insert_q(i);
+            }
+            Some(a)
+        } else {
+            None
+        };
+        for &h in lvl {
+            let base = lo.den(h); // Den_{L|All, L}
+            // equal-strength opponents
+            let mut el = 0f64; // q in E (only if q is in the showdown), r in L
+            let mut le = 0f64; // q in L (or all), r in E
+            let mut eeq = 0f64;
+            for &y in lvl {
+                if y == h || !disjoint(h, y) { continue; }
+                le += wr[y] as f64 * lo.q_excl(h, y);
+                if q_in_showdown {
+                    el += wq[y] as f64 * lo.r_excl(h, y);
+                }
+            }
+            if q_in_showdown {
+                if let Some(a) = &ee {
+                    eeq = a.den(h);
+                } else {
+                    for &x in lvl {
+                        if x == h || !disjoint(h, x) || wq[x] == 0.0 { continue; }
+                        for &y in lvl {
+                            if y == h || y == x || !disjoint(h, y) || !disjoint(x, y) { continue; }
+                            eeq += wq[x] as f64 * wr[y] as f64;
+                        }
+                    }
+                }
+                num[h] = base + 0.5 * (el + le) + eeq / 3.0;
+            } else {
+                num[h] = base + 0.5 * le;
+            }
+        }
+        for &i in lvl {
+            lo.insert_r(i);
+            if q_in_showdown {
+                lo.insert_q(i);
+            }
+        }
+        k = e;
+    }
+    (num, den)
+}
+
+fn evalcheck(spot: &Spot, n_boards: usize) -> serde_json::Value {
+    let rest = board_cards(&spot.board);
+    let mut rng = 777u64;
+    let mut next = || {
+        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (rng >> 33) as usize
+    };
+    let (mut max_rel, mut max_rel_brute) = (0f64, 0f64);
+    let (mut t_fast, mut t_slow) = (0f64, 0f64);
+    let mut calls = 0usize;
+    for trial in 0..n_boards {
+        let t1 = rest[next() % rest.len()];
+        let mut t2 = rest[next() % rest.len()];
+        while t2 == t1 {
+            t2 = rest[next() % rest.len()];
+        }
+        let mut b = spot.board.clone();
+        b.push(t1);
+        b.push(t2);
+        let st = strengths(&b);
+        for p in 0..NP {
+            let (q, r) = (&spot.w[(p + 1) % NP], &spot.w[(p + 2) % NP]);
+            for inq in [true, false] {
+                let t0 = std::time::Instant::now();
+                let (nf, df) = showdown_sums_fast(&st, q, r, inq);
+                t_fast += t0.elapsed().as_secs_f64();
+                let t0 = std::time::Instant::now();
+                let (ns, ds) = showdown_sums(&st, q, r, inq);
+                t_slow += t0.elapsed().as_secs_f64();
+                calls += 1;
+                for h in 0..NUM_COMBOS {
+                    for (f, s_) in [(nf[h], ns[h]), (df[h], ds[h])] {
+                        if s_.abs() > 1e-9 {
+                            max_rel = max_rel.max((f - s_).abs() / s_.abs());
+                        }
+                    }
+                }
+            }
+        }
+        if trial < 2 {
+            // brute force on reduced ranges
+            let red: Vec<Vec<f32>> = spot.w.iter().map(|w| (0..NUM_COMBOS).map(|i| if st[i] > 0 && next() % 10 == 0 { w[i] } else { 0.0 }).collect()).collect();
+            for inq in [true, false] {
+                let (nf, df) = showdown_sums_fast(&st, &red[1], &red[2], inq);
+                let (nb, db) = showdown_brute(&st, &red[1], &red[2], inq);
+                for h in 0..NUM_COMBOS {
+                    for (f, s_) in [(nf[h], nb[h]), (df[h], db[h])] {
+                        if s_.abs() > 1e-12 {
+                            max_rel_brute = max_rel_brute.max((f - s_).abs() / s_.abs());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    serde_json::json!({"boards": n_boards, "calls_each": calls, "max_rel_diff_fast_vs_quadratic": max_rel, "max_rel_diff_fast_vs_brute": max_rel_brute,
+        "ms_per_call_fast": t_fast / calls as f64 * 1e3, "ms_per_call_quadratic": t_slow / calls as f64 * 1e3, "speedup": t_slow / t_fast})
+}
+
 // ------------------------------------------------------------------ CFR engine
 #[derive(Clone, Copy)]
 enum Mode {
@@ -1256,6 +1523,12 @@ fn main() -> Result<(), String> {
                 "bytes": e.bytes(), "peak_rss_kb": peak_rss_kb(), "final": last, "trace": trace, "root_mix": e.root_mix(),
                 "labels": spot.labels});
             std::fs::write(out, serde_json::to_vec(&res).unwrap()).map_err(|e| e.to_string())?;
+            Ok(())
+        }
+        Some("evalcheck") => {
+            let spot = load_spot(&a[2], &a[3])?;
+            let r = evalcheck(&spot, a.get(4).and_then(|x| x.parse().ok()).unwrap_or(10));
+            println!("{}", serde_json::to_string_pretty(&r).unwrap());
             Ok(())
         }
         Some("preflop-equity") => {
