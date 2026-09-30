@@ -232,3 +232,145 @@ Classification with the pre-set thresholds:
   - The numerator comes from 4 M1 flops, so it has its own sampling error.
 - The ratios **rose less than the √3 J2/J3 expected** because the bootstrap CI shrank less.
 - **Against the calibrated 24-flop error** (0.51 / 0.74), the J2 ratios were really 0.18 (BTN) / 0.10 (BB), not 0.30 / 0.20. J2/J3 overstated how close abstraction already was, but the ranking is the same.
+
+## L2. Stage B result — damped outer fixed point on the 72-flop panel
+
+Numbers: `data/gto_hu_continuation/panel72/outer_v2_damped_a05/analysis.json`. Figure: [`GTO_HU_V2_STAGEB_LOOP.png`](GTO_HU_V2_STAGEB_LOOP.png).
+
+- **Solves.** 216 flop solves (72 per step at P7, P8, P9), 0 failed, all converged: 0.18–0.30% pot, invariant ≤ 1e-7 bb.
+- **Guard.** Every blended table passed at its step's ranges: −0.014 … +0.023 bb.
+- **Preflop gap.** 0.00033–0.00046 per step.
+- **Interruptions.** Two container restarts, both during k8. Finished per-flop artifacts were reused through the provenance check. Only the flops that were running (at most 4 each time) were redone.
+
+| step | table injected | BB fold / call / jam | BTN raise / jam | range L1 vs previous (BTN / BB) | measured mean \|ΔV\| (BTN / BB) | mean CI half-width (BTN / BB) |
+|---|---|---|---|---|---|---|
+| P6d | V5_used (24-flop) | 0.128 / 0.712 / 0.160 | 0.341 / 0.046 | — | — | 0.293 / 0.425 |
+| P7 | 0.5·V6′(72) + 0.5·V5_used | 0.112 / 0.732 / 0.156 | 0.361 / 0.041 | 0.252 / 0.253 | 0.046 / 0.065 | 0.305 / 0.432 |
+| P8 | blend | 0.100 / 0.754 / 0.146 | 0.373 / 0.042 | 0.097 / 0.104 | 0.026 / 0.033 | 0.301 / 0.422 |
+| P9 | blend | **0.100 / 0.756 / 0.144** | **0.368 / 0.041** | 0.085 / 0.063 | 0.015 / 0.015 | 0.302 / 0.427 |
+
+Reading:
+- **The panel change moved the fixed point.**
+  - BB fold 0.128 → 0.100; BTN open 0.341 → 0.368.
+  - Most of the move is in the first step (range L1 0.25).
+  - BB fold was flat from P8 to P9 (0.0996 → 0.0999). BTN open turned back by 0.005.
+- **The measured-table change fell to 0.015 bb per class.** That is half the v1 plateau (0.02–0.03) and about 1/20 of the class CI.
+- **The class level is still not converged, and cannot be at this precision.** Classes changing by > 0.1 between P8 and P9:
+  - BB: 72o 0.99, 82o 0.98, 95o 0.87, 83o 0.76, JTs 0.69, 33 0.46, 94o 0.36, KJo, A3s, KQo, JTo;
+  - BTN: K2s 0.94, Q4s 0.89, K6o 0.75, 65o 0.72, 52s 0.51, A3o 0.40.
+  - The BB fold/call switchers sit within ±0.05 bb of the fold line (72o +0.02, 82o +0.05, 95o −0.01, 83o −0.01, 94o +0.00) against a class CI of ±0.37–0.48.
+  - **43 BB classes have a 72-flop CI that straddles the fold line.**
+- **Which trash hands fold is not identified at 72 flops.** The fold > 50% set changes almost completely from P6d to P9:
+  - P6d: 32o 42o 62o 72o 72s 82o 85o 92o J2o J5o K2o Q2o T2o T4o T5o;
+  - P9: 83o 92o 93o 95o J2o J3o J4o J5o T2o T3o T4o.
+  - Only 5 classes are common: 92o, J2o, J5o, T2o, T4o.
+  - What is stable is the aggregate: about 10% BB folds, drawn from the weakest offsuit gappers.
+  - A bootstrap CI of the BB fold frequency was not part of this phase's plan and was not computed.
+
+**Watch classes, solved strategy P6d (24 flops) → P9 (72 flops)**, with the P9 margin to the next-best action and V ± CI:
+
+| class | BB P6d → P9 | P9 margin (bb) | V24 ± CI → V72 ± CI (P9) |
+|---|---|---|---|
+| 73o* | call → call | 0.04 | 1.05 ± 0.29 → 1.04 ± 0.27 |
+| A3o* | call → call | 0.16 | 1.87 ± 0.27 → 1.89 ± 0.26 |
+| 72s* | fold 0.67 / call 0.33 → **call** | 0.43 | 1.00 ± 0.29 → 1.45 ± 0.37 |
+| J2s* | call → call | 0.14 | 1.29 ± 0.38 → 1.38 ± 0.31 |
+| Q3s* | call → call | 0.38 | 1.95 ± 0.47 → 1.72 ± 0.42 |
+| A3s* | jam → **call** | 0.04 | 2.15 ± 0.27 → 2.43 ± 0.23 |
+| JTs | call → call 0.98 / jam 0.02 | 0.02 | 2.29 ± 0.58 → 2.37 ± 0.34 |
+| JTo | call → **jam 0.81** / call 0.19 | 0.00 | 1.60 ± 0.65 → 1.73 ± 0.37 |
+| KQo | call 0.77 / jam 0.23 → call 0.53 / jam 0.47 | 0.00 | 2.88 ± 0.28 → 3.14 ± 0.25 |
+| T7o | fold 0.31 / jam 0.69 → **call** | 0.14 | 0.89 ± 0.20 → 1.29 ± 0.34 |
+| A2o | jam 0.96 → **call** | 0.07 | 1.58 ± 0.26 → 1.79 ± 0.29 |
+| 85s | call → call | 0.30 | 1.59 ± 0.18 → 1.75 ± 0.30 |
+| 43s | call → call | 0.67 | 2.89 ± 0.61 → 2.04 ± 0.53 |
+| T7s | call → call | 0.32 | 1.61 ± 0.15 → 1.95 ± 0.35 |
+
+| class | BTN P6d → P9 | P9 margin (bb) | V24 ± CI → V72 ± CI (P9) |
+|---|---|---|---|
+| JTs | jam → jam | 0.24 | 3.66 ± 0.46 → 3.63 ± 0.26 |
+| JTo | raise → raise | 0.05 | 3.15 ± 0.51 → 3.10 ± 0.30 |
+| KQo | raise 0.45 / jam 0.55 → same | 0.00 | 3.69 ± 0.24 → 3.73 ± 0.20 |
+| T7o | fold → fold | 0.28 | 2.79 ± 0.22 → 3.03 ± 0.30 |
+| A2o | fold → fold | 0.09 | 2.75 ± 0.22 → 2.91 ± 0.22 |
+| 85s | raise 0.98 → raise | 0.03 | 3.48 ± 0.19 → 3.62 ± 0.20 |
+| 43s | raise → **fold** | 0.05 | 3.64 ± 0.35 → 3.52 ± 0.37 |
+| T7s | fold 0.61 / raise 0.39 → **raise** | 0.08 | 3.30 ± 0.17 → 3.51 ± 0.27 |
+
+\* J2 menu flipper.
+
+- Of the 22 rows, 8 changed their main action.
+- **Every changed class has a P9 margin (≤ 0.14 bb) smaller than its own CI (0.20–0.37 bb).** The CI enters BTN decisions only through q = 0.29, so each margin is also compared with q·CI.
+  - BB: 72s, A3s, JTo, T7o, A2o;
+  - BTN: 43s and T7s.
+- **The exception is 72s.** It moved from the fold line to +0.43 bb, which is about 1.2 × its 72-flop CI.
+- **JTo, KQo (both seats), JTs, 73o and A3s remain within 0.04 bb of indifference.** These classes are not resolvable by a panel of this size. As in v1, their mixes are not identified.
+
+## L3. Error budget, 24 → 72 flops (per-class continuation value, bb)
+
+| source | how measured | 24 flops (v1.1 J3) | 72 flops (this phase) |
+|---|---|---|---|
+| **flop sampling**, bootstrap 95% half-width, mean (BTN / BB) | stratified bootstrap, same method | 0.356 / 0.474 | **0.293–0.305 / 0.422–0.432** (P6d–P9) |
+| flop sampling, calibrated | 24: nested 2-of-6 sub-panels of the 72; 72: bootstrap × √(6/5) | **0.507 / 0.739** | **0.321 / 0.465** |
+| flop sampling, max over classes | bootstrap | 1.19 / 1.50 | 0.75 / 0.96 |
+| estimator choice (HT/ρ vs ratio), mean | same tables | 0.20 / 0.23 | 0.09 / 0.12 |
+| **postflop action abstraction** (M1 vs M2) | J2, 4 flops, not re-measured | 0.090 / 0.073 (BR) | same (systematic; does not shrink with flops) |
+| postflop solver residual (BR − ε), mean / max | same tables | 0.012 / 0.019 · 0.015 / 0.033 | 0.012 / 0.018 · 0.016 / 0.029 |
+| storage quantisation | J2 (compressed only) | 0.03–0.04 in-range | not incurred: f32 throughout |
+| fixed point vs joint CFR | J1, 6 flops, not re-measured | 0.011–0.019 | same |
+| preflop 169-class / no card removal (\|unallocated\|, range level) | table invariant | 0.02–0.03 | 0.004–0.023 |
+| outer-loop change of the last step (measured table, mean) | loop log | 0.023–0.033 | 0.015 |
+
+Ratios:
+- **Action abstraction ÷ sampling CI** (J2 BR effect ÷ 72-flop bootstrap mean): BB **0.17**, BTN **0.31**.
+- With the calibrated CIs: BB 0.16, BTN 0.28. At 24 flops the calibrated ratios were BB 0.10, BTN 0.18.
+
+## L4. Verdict (thresholds fixed in the instruction: < 0.25 / 0.25–0.5 / > 0.5)
+
+**BB.**
+- 0.16–0.19 (every variant < 0.25): **sampling is still clearly the first error**.
+- 43 classes straddle the fold line; the fold set is unidentified.
+
+**BTN.**
+- 0.28–0.34 (every variant in 0.25–0.5): **action abstraction is approaching**, co-equal to within a factor of about 3.
+- The calibrated value 0.28 is close to the 0.25 edge, so this is not a clear crossing.
+
+**Next bottleneck.**
+1. **BB-side values: flop sampling still.**
+2. **BTN-side values: sampling and abstraction together.** The BTN CI enters BTN decisions only through q = 0.29, so the premium bias J2 found (−0.15…−0.35 bb under M1) is now the more decision-relevant systematic term there.
+3. The method-side errors (fixed point vs joint, solver residual, card removal, loop plateau) are all ≤ 0.03 bb. They stay an order of magnitude below both.
+
+**Is further panel expansion worth it?** Yes, for BB, but not by brute force alone.
+- **The measured cost is steep.** From 24 to 72 flops (3× cost), the calibrated CI fell by 1.6× (0.51 / 0.74 → 0.32 / 0.47), as 1/√3 predicts.
+- **Doubling to 144 flops** would give ≈ 0.23 / 0.33. That is still above the BB fold-line margins of most trash classes (≤ 0.05 bb).
+- **Allocation is the cheaper lever.** The equal 6-per-stratum allocation spends 18 flops on monotone strata (P = 5%) while the paired and two-tone strata carry the variance.
+  - From the observed stratum dispersions, a Neyman allocation of the same 72 flops (keeping ≥ 2 per stratum) would cut the mean SE by about 26% (BTN) / 20% (BB). That is worth roughly 1.6–1.8× more flops.
+  - This is a design proposal for a *new* pre-registered panel. It was not applied here, because the allocation of this panel was fixed before results.
+- **Identifying trash-hand fold/call mixes class by class needs precision this approach cannot reach cheaply.** The aggregate (≈ 10% BB fold) is what is identified.
+
+**Unchanged caveats.**
+- One injected terminal; all other terminals keep the old payoff.
+- M2 menu.
+- The public RFI was not used.
+- **Nothing here is a GTO DB value.**
+
+## L5. Runtime and resources
+
+| part | flop solves | CPU-hours (1 thread) | wall | per flop (s) min / mean / max |
+|---|---:|---:|---|---|
+| stage A (48 new flops at P6d) | 48 | 5.6 | 13:21–17:26 (incl. restart and 1-worker leak) | 175 / 422 / 1,088 |
+| stage B k7 | 72 | 7.0 | 1 h 47 min | 165 / 350 / 758 |
+| stage B k8 | 72 | 7.9 | 2 h 10 min (2 restarts) | 149 / 397 / 781 |
+| stage B k9 | 72 | 9.0 | 2 h 17 min | 197 / 451 / 1,205 |
+| preflop solves (P7–P9, P6d re-run) | — | — | 30 s each | — |
+
+- **Machine:** 4 cores, 15 GB. Peak RSS 2.12 GB per flop (M2 f32); 4 workers use about 8.5 GB.
+- **Worker count** was set from a measured 2.18 GB peak and 15.2 GB MemAvailable with a 3 GB reserve.
+- **4 processes × 1 thread** gave about 1.3–1.6× the throughput of the old 1 process × 4 threads (2-thread test: speed-up 4 vs 2 threads was only 1.7).
+- One outer step on 72 flops costs about 2 h wall here.
+
+**Provenance.**
+- Every per-flop artifact carries the full provenance key (ranges hash, menu hash, panel hash, tree config, ε, target, storage), the solver commit, threads and peak RSS.
+- Every table carries the terminal file, ranges hash, panel hash(es), flop directories and solver commits.
+- Per-step ranges hashes and injected tables are in `analysis.json → provenance`.
+- Run ledgers (`run_ledger.jsonl`), driver logs and loop logs, including the interrupted runs, are committed unchanged.
