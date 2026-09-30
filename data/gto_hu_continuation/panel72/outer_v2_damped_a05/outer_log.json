@@ -141,6 +141,77 @@
    },
    "injected_table": "data/gto_hu_continuation/panel72/outer_v2_damped_a05/k6/table.json",
    "ranges_hash": "2ac295dc083814b4"
+  },
+  {
+   "k": 8,
+   "metrics": {
+    "preflop_gap_total": 0.0004204127540802365,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.5849998434914285,
+      "jam_30": 0.04161557558865975,
+      "raise_2": 0.37338459503041144
+     },
+     "rfi_CO": {
+      "fold": 0.7269714495520541,
+      "jam_30": 0.011437342586793818,
+      "raise_2": 0.2615912245647192
+     },
+     "rfi_SB": {
+      "fold": 0.3671973244909533,
+      "jam_30": 0.23972168954161838,
+      "raise_2.5": 0.39308099000216806
+     },
+     "terminal_parent": {
+      "call": 0.7541996238755875,
+      "fold": 0.09963960650619184,
+      "jam_30": 0.14615700790438274,
+      "raise_7": 3.7700824730412204e-06
+     }
+    },
+    "max_class_frequency_delta": {
+     "rfi_BTN": 0.758082934335107,
+     "rfi_CO": 0.00019916146993637085,
+     "rfi_SB": 0.012120425701141357,
+     "terminal_parent": 0.9978076108382083
+    },
+    "max_class_frequency_delta_all": 0.9978076108382083,
+    "max_aggregate_frequency_delta": {
+     "rfi_BTN": 0.012610042988850156,
+     "rfi_CO": 2.498595710971954e-06,
+     "rfi_SB": 7.200515034383459e-05,
+     "terminal_parent": 0.022387860735298415
+    },
+    "range_distance": {
+     "BTN": {
+      "L1": 0.09741979485681589,
+      "L2": 0.027512287265193565
+     },
+     "BB": {
+      "L1": 0.10382643839975163,
+      "L2": 0.024647383296117847
+     }
+    },
+    "value_delta": {
+     "BTN": {
+      "max_abs_dV_bb": 0.10716860640817094,
+      "mean_abs_dV_bb": 0.026300820128836555,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     },
+     "BB": {
+      "max_abs_dV_bb": 0.16038336877532888,
+      "mean_abs_dV_bb": 0.03310202698768996,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.2949028561458289,
+     "mean": 0.24531283678084004
+    },
+    "table_unallocated_bb": -0.01347272987737469
+   },
+   "injected_table": "data/gto_hu_continuation/panel72/outer_v2_damped_a05/k7/table.json",
+   "ranges_hash": "15269c3c081f77b2"
   }
  ]
 }
