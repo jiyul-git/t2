@@ -148,16 +148,23 @@ def figure(res, L, path):
     g.legend(fontsize=8, frameon=False)
     g = ax[2]
     xs = [0, 1]
-    for j, (key, lab, col) in enumerate((('pilot6_range_ev_shift', 'six-flop pilot', C2), ('range_ev_shift', '72 flops', C1))):
+    import os
+    sup = json.load(open(D + 'node6_72/supplement.json')) if os.path.exists(D + 'node6_72/supplement.json') else None
+    for j, (key, lab, col) in enumerate((('pilot6_range_ev_shift', 'six-flop pilot', '#b5b3aa'), ('range_ev_shift', '72 flops (95% bootstrap CI)', INK))):
         vals = [res['seats']['SB'][key], res['seats']['BB'][key]]
-        g.bar([x + (j - 0.5) * 0.36 for x in xs], vals, 0.34, color=col, label=lab)
-        for x, v in zip(xs, vals):
-            g.text(x + (j - 0.5) * 0.36, v, f'{v:+.3f}', ha='center', va='bottom' if v >= 0 else 'top', fontsize=8, color=INK)
+        pos_x = [x + (j - 0.5) * 0.36 for x in xs]
+        g.bar(pos_x, vals, 0.34, color=col, label=lab)
+        if key == 'range_ev_shift' and sup:
+            ci = [sup['seats'][p]['ci95']['range_ev_shift'] for p in ('SB', 'BB')]
+            g.errorbar(pos_x, vals, yerr=[[v - c[0] for v, c in zip(vals, ci)], [c[1] - v for v, c in zip(vals, ci)]],
+                       fmt='none', ecolor='#c0392b', capsize=5, lw=1.4)
+        for x, v in zip(pos_x, vals):
+            g.text(x + 0.19, v, f'{v:+.3f}', ha='left', va='bottom' if v >= 0 else 'top', fontsize=8, color=INK)
     g.axhline(0, color=INK, lw=1)
     g.set_xticks(xs)
     g.set_xticklabels(['SB (OOP, aggressor)', 'BB (IP, caller)'], fontsize=9)
     g.set_ylabel('signed range-EV shift, solved − legacy (bb)', fontsize=9, color=MUTED)
-    g.set_title('(3) direction check: aggressor up, caller down?', loc='left', fontsize=10, color=INK)
+    g.set_title(f"(3) direction check: aggressor up, caller down? {'holds' if res['direction_check']['holds'] else 'does NOT hold'} (72/72 solved, 71 converged)", loc='left', fontsize=10, color=INK)
     g.legend(fontsize=8, frameon=False)
     for g in ax:
         g.set_facecolor(SURF)

@@ -1,0 +1,65 @@
+{
+ "bootstrap": 2000,
+ "seed": 20260937,
+ "seats": {
+  "SB": {
+   "point": {
+    "range_ev_shift": 0.14153811278573294,
+    "reach_weighted_abs": 0.6031346700786555,
+    "mean_abs": 0.6156195938625832
+   },
+   "ci95": {
+    "range_ev_shift": [
+     0.06529692643890836,
+     0.21875225228341988
+    ],
+    "reach_weighted_abs": [
+     0.5611945267584398,
+     0.7147196990406868
+    ],
+    "mean_abs": [
+     0.5921200361406354,
+     0.6898735006461495
+    ]
+   },
+   "bootstrap_share_shift_positive": 1.0,
+   "without_AcKd8h": {
+    "range_ev_shift": 0.1307397695666609,
+    "reach_weighted_abs": 0.6113431391362474,
+    "mean_abs": 0.6204086750443457
+   }
+  },
+  "BB": {
+   "point": {
+    "range_ev_shift": -0.09043887090622882,
+    "reach_weighted_abs": 0.3776437588433891,
+    "mean_abs": 0.7490113562695737
+   },
+   "ci95": {
+    "range_ev_shift": [
+     -0.17662112211938485,
+     -0.008571667013607811
+    ],
+    "reach_weighted_abs": [
+     0.357388418095707,
+     0.5523517901353523
+    ],
+    "mean_abs": [
+     0.7268358387925499,
+     0.8768440202022751
+    ]
+   },
+   "bootstrap_share_shift_positive": 0.0155,
+   "without_AcKd8h": {
+    "range_ev_shift": -0.07785854988037993,
+    "reach_weighted_abs": 0.37146581451720917,
+    "mean_abs": 0.7506323762624859
+   }
+  }
+ },
+ "nonconverged": {
+  "AcKd8h": 0.3622628458551399
+ },
+ "AcKd8h_stratum": "rainbow/A",
+ "AcKd8h_stratum_size": 6
+}

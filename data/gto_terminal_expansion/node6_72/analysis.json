@@ -1,0 +1,1680 @@
+{
+ "reach_probability": 0.11803940108373635,
+ "flop_share": 0.24675795341729462,
+ "flops": 72,
+ "converged": 71,
+ "exploitability_pct_pot": {
+  "max": 0.3622628458551399,
+  "mean": 0.2520599463090527
+ },
+ "per_flop_invariant_max_abs": 1.0661101512710047e-07,
+ "solve_cpu_hours": 14.882389329635,
+ "table": {
+  "estimator": "ht_rho",
+  "unallocated_bb": 0.004053812827299552
+ },
+ "seats": {
+  "SB": {
+   "role": "OOP",
+   "aggressor_or_caller": "aggressor",
+   "ci_halfwidth": {
+    "mean": 0.38457485472735564,
+    "median": 0.36221413632855937,
+    "max": 0.863301422806589
+   },
+   "mean_abs_solved_minus_legacy": 0.6156195938625832,
+   "reach_weighted_abs_solved_minus_legacy": 0.6031346700786555,
+   "range_ev_shift": 0.14153811278573294,
+   "solved_over_legacy_range_ev": 1.0411618832371268,
+   "share_classes_delta_outside_ci": 0.6035502958579881,
+   "pilot6_minus_72": {
+    "mean_abs": 0.3825576592263629,
+    "reach_weighted_abs": 0.3638959602458819,
+    "range_ev_diff": 0.15216473533296146,
+    "share_outside_72_ci": 0.4319526627218935
+   },
+   "pilot6_range_ev_shift": 0.29370284811869435,
+   "br_minus_eps_max": 0.02320008159407605
+  },
+  "BB": {
+   "role": "IP",
+   "aggressor_or_caller": "caller",
+   "ci_halfwidth": {
+    "mean": 0.5139450607821808,
+    "median": 0.4949941919444807,
+    "max": 0.9796920603735058
+   },
+   "mean_abs_solved_minus_legacy": 0.7490113562695737,
+   "reach_weighted_abs_solved_minus_legacy": 0.3776437588433891,
+   "range_ev_shift": -0.09043887090622882,
+   "solved_over_legacy_range_ev": 0.9639150193734536,
+   "share_classes_delta_outside_ci": 0.46745562130177515,
+   "pilot6_minus_72": {
+    "mean_abs": 0.5644859319002482,
+    "reach_weighted_abs": 0.5222402646309701,
+    "range_ev_diff": -0.15438157709681083,
+    "share_outside_72_ci": 0.48520710059171596
+   },
+   "pilot6_range_ev_shift": -0.24482044800303937,
+   "br_minus_eps_max": 0.03312078429220122
+  }
+ },
+ "direction_check": {
+  "rule": "caller (BB) legacy overvalue = range-EV shift < 0; aggressor (SB) legacy undervalue = shift > 0 (six-flop pilot direction)",
+  "pilot6": {
+   "SB_shift": 0.29370284811869435,
+   "BB_shift": -0.24482044800303937
+  },
+  "72flop": {
+   "SB_shift": 0.14153811278573294,
+   "BB_shift": -0.09043887090622882
+  },
+  "holds": true
+ },
+ "impact": {
+  "mean_abs_both_seats": 0.6823154750660785,
+  "reach_weighted_sum_seats": 0.9807784289220446,
+  "score_unweighted": 0.08054011002696494,
+  "score_reach_weighted": 0.11577049834580602,
+  "pilot6": {
+   "mean_abs_delta_both_seats": 0.7984967990808884,
+   "reach_weighted_abs_delta_sum_seats": 1.3292846228044457,
+   "score_unweighted": 0.09425408393078863,
+   "score_reach_weighted": 0.15690796074565716
+  }
+ },
+ "decisions_other_strategies_fixed": {
+  "SB": {
+   "node_actions": [
+    "Fold",
+    "Raise 2.5",
+    "All-in 30"
+   ],
+   "on_path": "Raise 2.5",
+   "q": 0.6983949143587733,
+   "mix_P9": {
+    "All-in 30": 0.23972224694586475,
+    "Fold": 0.3671438765398621,
+    "Raise 2.5": 0.3931338823992706
+   },
+   "flip_count": 81,
+   "flip_share_of_mass": 0.48868778273695024,
+   "flips_beyond_ci": 35,
+   "flips": [
+    {
+     "class": "Q2o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.5703890809707608,
+     "new_margin_bb": 0.4884943194136817,
+     "margin_over_ci": 1.8728995030139015
+    },
+    {
+     "class": "K2o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.3437247469070336,
+     "new_margin_bb": 0.11640105863550765,
+     "margin_over_ci": 0.42861685757708
+    },
+    {
+     "class": "A2o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.10095746190379398,
+     "new_margin_bb": 0.06981577584282259,
+     "margin_over_ci": 0.41997201103858667
+    },
+    {
+     "class": "Q3o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.5382510893215078,
+     "new_margin_bb": 0.4093350777051292,
+     "margin_over_ci": 1.7337980447822903
+    },
+    {
+     "class": "K3o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.3003771909965149,
+     "new_margin_bb": 0.03865799401911607,
+     "margin_over_ci": 0.1527957791922452
+    },
+    {
+     "class": "43s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.7762803997300011,
+     "new_margin_bb": 0.36183031634170104,
+     "margin_over_ci": 1.2292323879087965
+    },
+    {
+     "class": "44",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.7360807677381629,
+     "new_margin_bb": 0.3843932030598213,
+     "margin_over_ci": 1.1020876499191
+    },
+    {
+     "class": "54o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.9856907051763687,
+     "new_margin_bb": 0.5446635140519017,
+     "margin_over_ci": 0.9033681171638848
+    },
+    {
+     "class": "74o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.5031825050423618,
+     "new_margin_bb": 0.050521035827646776,
+     "margin_over_ci": 0.20923114724167613
+    },
+    {
+     "class": "J4o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.43557841191692864,
+     "new_margin_bb": 0.4331948794686764,
+     "margin_over_ci": 1.8907911940548758
+    },
+    {
+     "class": "Q4o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.41783254229968686,
+     "new_margin_bb": 0.2634320601751936,
+     "margin_over_ci": 0.9478111052923518
+    },
+    {
+     "class": "A4o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.21854657037181638,
+     "new_margin_bb": 0.016928833127604903,
+     "margin_over_ci": 0.10971754031689192
+    },
+    {
+     "class": "52s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.9847264647152265,
+     "new_margin_bb": 0.4725313092235075,
+     "margin_over_ci": 0.8254390867489108
+    },
+    {
+     "class": "53s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.6201591204439695,
+     "new_margin_bb": 0.26718024461957,
+     "margin_over_ci": 1.0686524258504901
+    },
+    {
+     "class": "54s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 1.1480103907124544,
+     "new_margin_bb": 0.6656988842042614,
+     "margin_over_ci": 1.1167675927933298
+    },
+    {
+     "class": "55",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.7251431579257757,
+     "new_margin_bb": 0.5531083206095195,
+     "margin_over_ci": 1.6679485058593102
+    },
+    {
+     "class": "65o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.990556814100578,
+     "new_margin_bb": 0.6418467239952161,
+     "margin_over_ci": 1.5743599041160352
+    },
+    {
+     "class": "75o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.8457466207749141,
+     "new_margin_bb": 0.5280153124362764,
+     "margin_over_ci": 0.9769511530569918
+    },
+    {
+     "class": "85o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.4347519076724149,
+     "new_margin_bb": 0.18854119950734205,
+     "margin_over_ci": 0.78060940391774
+    },
+    {
+     "class": "J5o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.4818846283860802,
+     "new_margin_bb": 0.44661931473039207,
+     "margin_over_ci": 2.0216444038747934
+    },
+    {
+     "class": "Q5o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.43595172327303133,
+     "new_margin_bb": 0.24785757266696506,
+     "margin_over_ci": 0.9486563066485963
+    },
+    {
+     "class": "A5o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3556342884551341,
+     "new_margin_bb": 0.20246806631322373,
+     "margin_over_ci": 1.1256423388071741
+    },
+    {
+     "class": "63s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.6577990892573259,
+     "new_margin_bb": 0.3082295576881019,
+     "margin_over_ci": 0.9277861328859233
+    },
+    {
+     "class": "64s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.4727919023383556,
+     "new_margin_bb": 0.11835555298776657,
+     "margin_over_ci": 0.6331657463718645
+    },
+    {
+     "class": "65s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 1.1539143914211778,
+     "new_margin_bb": 0.7039626098480908,
+     "margin_over_ci": 1.7031595936643398
+    },
+    {
+     "class": "76o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.5524850449704831,
+     "new_margin_bb": 0.33410435186677834,
+     "margin_over_ci": 1.4706937817866175
+    },
+    {
+     "class": "86o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.6305896052467758,
+     "new_margin_bb": 0.4876030991499273,
+     "margin_over_ci": 2.0033165770365526
+    },
+    {
+     "class": "96o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.1514874340225224,
+     "new_margin_bb": 0.058585541247558326,
+     "margin_over_ci": 0.20617766856058647
+    },
+    {
+     "class": "T6o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.14080643315754185,
+     "new_margin_bb": 0.13268097492342412,
+     "margin_over_ci": 0.49589854253529114
+    },
+    {
+     "class": "J6o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.34945838905011856,
+     "new_margin_bb": 0.2804040212495027,
+     "margin_over_ci": 0.9411997712370257
+    },
+    {
+     "class": "Q6o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.2803589880633808,
+     "new_margin_bb": 0.046108747842419806,
+     "margin_over_ci": 0.1462267862581737
+    },
+    {
+     "class": "A6o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3801056223892999,
+     "new_margin_bb": 0.16159855714584517,
+     "margin_over_ci": 0.6864833274601363
+    },
+    {
+     "class": "73s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3480250446999959,
+     "new_margin_bb": 0.02960634956061159,
+     "margin_over_ci": 0.16359502240429097
+    },
+    {
+     "class": "74s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.7430090860499763,
+     "new_margin_bb": 0.47994887478653037,
+     "margin_over_ci": 1.925903372353614
+    },
+    {
+     "class": "75s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 1.0644284016761185,
+     "new_margin_bb": 0.8051687822579461,
+     "margin_over_ci": 1.5550304462200668
+    },
+    {
+     "class": "76s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.7140632264933512,
+     "new_margin_bb": 0.22381661715189272,
+     "margin_over_ci": 1.1844044491667824
+    },
+    {
+     "class": "87o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.4523256902295783,
+     "new_margin_bb": 0.3701474752005091,
+     "margin_over_ci": 1.2747171031767532
+    },
+    {
+     "class": "97o",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.11911803277332589,
+     "new_margin_bb": 0.08289927840994626,
+     "margin_over_ci": 0.23325831074886305
+    },
+    {
+     "class": "J7o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.40277573714864956,
+     "new_margin_bb": 0.27246581934132563,
+     "margin_over_ci": 0.9128574963356887
+    },
+    {
+     "class": "Q7o",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.3599273031840897,
+     "new_margin_bb": 0.0895076651348572,
+     "margin_over_ci": 0.2554308762127312
+    },
+    {
+     "class": "A7o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3243867420415119,
+     "new_margin_bb": 0.14267469643721392,
+     "margin_over_ci": 0.631637207307223
+    },
+    {
+     "class": "82s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3404292068976094,
+     "new_margin_bb": 0.044898981025803364,
+     "margin_over_ci": 0.1498400955244672
+    },
+    {
+     "class": "83s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3093410615458499,
+     "new_margin_bb": 0.039140165837254104,
+     "margin_over_ci": 0.14987300692518768
+    },
+    {
+     "class": "84s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.46735355368089987,
+     "new_margin_bb": 0.287039434884171,
+     "margin_over_ci": 1.2237067739995149
+    },
+    {
+     "class": "85s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.7212578521401468,
+     "new_margin_bb": 0.5564640067217108,
+     "margin_over_ci": 2.6619294040518056
+    },
+    {
+     "class": "86s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.8332190689783158,
+     "new_margin_bb": 0.43368533462299763,
+     "margin_over_ci": 1.9718842833626162
+    },
+    {
+     "class": "87s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.7427793394652769,
+     "new_margin_bb": 0.10224450695393258,
+     "margin_over_ci": 0.40182740521389887
+    },
+    {
+     "class": "98o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.4419909730571635,
+     "new_margin_bb": 0.4328796318984576,
+     "margin_over_ci": 0.9681200819030353
+    },
+    {
+     "class": "A8o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3546701515669545,
+     "new_margin_bb": 0.257865210543782,
+     "margin_over_ci": 0.8418164805398378
+    },
+    {
+     "class": "94s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.23697708638445458,
+     "new_margin_bb": 0.1170630967471955,
+     "margin_over_ci": 0.5879315385482183
+    },
+    {
+     "class": "95s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3818539924727092,
+     "new_margin_bb": 0.33031862975933374,
+     "margin_over_ci": 1.605338438913734
+    },
+    {
+     "class": "96s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.42967421858304394,
+     "new_margin_bb": 0.2785595507340031,
+     "margin_over_ci": 1.0669320130417035
+    },
+    {
+     "class": "97s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.4337414793104886,
+     "new_margin_bb": 0.09520639142380194,
+     "margin_over_ci": 0.3395045977594632
+    },
+    {
+     "class": "98s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.756307404981593,
+     "new_margin_bb": 0.22430177021087475,
+     "margin_over_ci": 0.5676070924128781
+    },
+    {
+     "class": "J9o",
+     "from": "Raise 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.3416991215522773,
+     "new_margin_bb": 0.13026652287617546,
+     "margin_over_ci": 0.4012319273121044
+    },
+    {
+     "class": "Q9o",
+     "from": "Raise 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.3378292436430952,
+     "new_margin_bb": 0.1138685585541045,
+     "margin_over_ci": 0.3117873414694418
+    },
+    {
+     "class": "A9o",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.2878808602581993,
+     "new_margin_bb": 0.18146768531837898,
+     "margin_over_ci": 0.6804820571610596
+    },
+    {
+     "class": "T3s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.10216924005125463,
+     "new_margin_bb": 0.054293678280337376,
+     "margin_over_ci": 0.2693303319643973
+    },
+    {
+     "class": "T4s",
+     "from": "Fold",
+     "to": "Raise 2.5",
+     "shift_bb": 0.1955026716922157,
+     "new_margin_bb": 0.18985869644582754,
+     "margin_over_ci": 1.0838036182834059
+    },
+    {
+     "class": "T6s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.38637552641103556,
+     "new_margin_bb": 0.3683698880703419,
+     "margin_over_ci": 1.8178738638408076
+    },
+    {
+     "class": "T7s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3815191146475781,
+     "new_margin_bb": 0.2763255729643466,
+     "margin_over_ci": 1.077549801890588
+    },
+    {
+     "class": "T8s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.6798826513233478,
+     "new_margin_bb": 0.45955684628584426,
+     "margin_over_ci": 1.551249411817997
+    },
+    {
+     "class": "T9s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.4253188812477921,
+     "new_margin_bb": 0.3913328168882897,
+     "margin_over_ci": 1.7122206782116736
+    },
+    {
+     "class": "QTo",
+     "from": "Raise 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.1491088522713091,
+     "new_margin_bb": 0.12116709179618507,
+     "margin_over_ci": 0.39164247549770426
+    },
+    {
+     "class": "ATo",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3382805505949173,
+     "new_margin_bb": 0.31368061574407635,
+     "margin_over_ci": 1.6267134401958392
+    },
+    {
+     "class": "J2s",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.2767148937675439,
+     "new_margin_bb": 0.16776875511529366,
+     "margin_over_ci": 0.8673523907851717
+    },
+    {
+     "class": "J3s",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.261288086749083,
+     "new_margin_bb": 0.17657487601545907,
+     "margin_over_ci": 0.9023832785550723
+    },
+    {
+     "class": "J4s",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.1278789434493847,
+     "new_margin_bb": 0.023995290933852664,
+     "margin_over_ci": 0.12910296086154144
+    },
+    {
+     "class": "J8s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.2843439869694466,
+     "new_margin_bb": 0.19049291672683205,
+     "margin_over_ci": 0.5865820351392769
+    },
+    {
+     "class": "KJo",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.05642735592562697,
+     "new_margin_bb": 0.0556491933064478,
+     "margin_over_ci": 0.1917003821253371
+    },
+    {
+     "class": "AJo",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.12285707873963496,
+     "new_margin_bb": 0.08997120759459909,
+     "margin_over_ci": 0.5056109615121096
+    },
+    {
+     "class": "Q2s",
+     "from": "Raise 2.5",
+     "to": "Fold",
+     "shift_bb": -0.2603783760339361,
+     "new_margin_bb": 0.07319648947565371,
+     "margin_over_ci": 0.33273822305705847
+    },
+    {
+     "class": "Q9s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.03056985844540568,
+     "new_margin_bb": 0.03027462040744887,
+     "margin_over_ci": 0.10086051041034542
+    },
+    {
+     "class": "KQo",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.29878679792484863,
+     "new_margin_bb": 0.2574710108178936,
+     "margin_over_ci": 1.4075209778675717
+    },
+    {
+     "class": "AQo",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3782455648103867,
+     "new_margin_bb": 0.3095753738602891,
+     "margin_over_ci": 1.4243843927360937
+    },
+    {
+     "class": "AKo",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.5256230710275821,
+     "new_margin_bb": 0.41520141063463845,
+     "margin_over_ci": 1.8015327285981646
+    },
+    {
+     "class": "A2s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.3652892649149644,
+     "new_margin_bb": 0.0016041109097153783,
+     "margin_over_ci": 0.01010150970023742
+    },
+    {
+     "class": "A3s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.34910133610241956,
+     "new_margin_bb": 0.042660959058538006,
+     "margin_over_ci": 0.27572372435961395
+    },
+    {
+     "class": "A4s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.48141166054141954,
+     "new_margin_bb": 0.40456495645817725,
+     "margin_over_ci": 2.949628617221369
+    },
+    {
+     "class": "A6s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.6512126715516656,
+     "new_margin_bb": 0.6299750813340853,
+     "margin_over_ci": 3.3355359265017173
+    },
+    {
+     "class": "A7s",
+     "from": "All-in 30",
+     "to": "Raise 2.5",
+     "shift_bb": 0.6585160703807024,
+     "new_margin_bb": 0.6530495568335791,
+     "margin_over_ci": 3.422450899240143
+    }
+   ]
+  },
+  "BB": {
+   "node_actions": [
+    "Fold",
+    "Call 2.5",
+    "3-bet 8.8",
+    "All-in 30"
+   ],
+   "on_path": "Call 2.5",
+   "q": 1.0,
+   "mix_P9": {
+    "3-bet 8.8": 0.00042713229814104656,
+    "All-in 30": 0.3011737341852292,
+    "Call 2.5": 0.6983949159362853,
+    "Fold": 4.2128008063186575e-06
+   },
+   "flip_count": 113,
+   "flip_share_of_mass": 0.6892911015808172,
+   "flips_beyond_ci": 41,
+   "flips": [
+    {
+     "class": "32o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.351166074267532,
+     "new_margin_bb": 0.229651657060439,
+     "margin_over_ci": 0.5023457707105887
+    },
+    {
+     "class": "42o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.27882283620882053,
+     "new_margin_bb": 0.24011679407758102,
+     "margin_over_ci": 0.585380812949993
+    },
+    {
+     "class": "62o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.20548395898995553,
+     "new_margin_bb": 0.13899710088008765,
+     "margin_over_ci": 0.27349433497306064
+    },
+    {
+     "class": "72o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.2918385113985553,
+     "new_margin_bb": 0.24869798978984436,
+     "margin_over_ci": 0.4712189022337018
+    },
+    {
+     "class": "82o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.2901125344004589,
+     "new_margin_bb": 0.20136570388652963,
+     "margin_over_ci": 0.3418054390984921
+    },
+    {
+     "class": "92o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.5533545527864432,
+     "new_margin_bb": 0.3384915506472813,
+     "margin_over_ci": 0.7897022575538388
+    },
+    {
+     "class": "T2o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.5545028467890074,
+     "new_margin_bb": 0.26039747140131553,
+     "margin_over_ci": 0.637990611395846
+    },
+    {
+     "class": "J2o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.8263399161047642,
+     "new_margin_bb": 0.3335091932495329,
+     "margin_over_ci": 0.7821523400746385
+    },
+    {
+     "class": "Q2o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.7555843492036585,
+     "new_margin_bb": 0.35471938986199275,
+     "margin_over_ci": 0.6553356710425492
+    },
+    {
+     "class": "K2o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.25908181277991194,
+     "new_margin_bb": 0.1388811401315054,
+     "margin_over_ci": 0.22215072170467653
+    },
+    {
+     "class": "33",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.34882352655425786,
+     "new_margin_bb": 0.2896974861107143,
+     "margin_over_ci": 0.3133617096654643
+    },
+    {
+     "class": "53o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.14956182175918276,
+     "new_margin_bb": 0.07772963262814969,
+     "margin_over_ci": 0.1505154766199763
+    },
+    {
+     "class": "73o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.3340597793300448,
+     "new_margin_bb": 0.2453583535807643,
+     "margin_over_ci": 0.7007049980192933
+    },
+    {
+     "class": "83o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.3265346781772498,
+     "new_margin_bb": 0.21062751093165333,
+     "margin_over_ci": 0.41957331428053757
+    },
+    {
+     "class": "93o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.5124675702965824,
+     "new_margin_bb": 0.2896995023909472,
+     "margin_over_ci": 0.7538428559247417
+    },
+    {
+     "class": "T3o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.5075526925782352,
+     "new_margin_bb": 0.24444144362235676,
+     "margin_over_ci": 0.6304565362683048
+    },
+    {
+     "class": "J3o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.8223285541217908,
+     "new_margin_bb": 0.3053785170232518,
+     "margin_over_ci": 0.7183154907832308
+    },
+    {
+     "class": "Q3o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.7519487599864689,
+     "new_margin_bb": 0.22283053894129612,
+     "margin_over_ci": 0.45073292546002297
+    },
+    {
+     "class": "K3o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.19215242467585636,
+     "new_margin_bb": 0.03448232960568629,
+     "margin_over_ci": 0.05545715545361397
+    },
+    {
+     "class": "A3o",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.456748046455691,
+     "new_margin_bb": 0.4438171221420413,
+     "margin_over_ci": 1.4566397383758605
+    },
+    {
+     "class": "43s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.6526045184807616,
+     "new_margin_bb": 0.5724298871210718,
+     "margin_over_ci": 0.9379142740978681
+    },
+    {
+     "class": "44",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.786331529108339,
+     "new_margin_bb": 0.7696505238930539,
+     "margin_over_ci": 0.9191326949582073
+    },
+    {
+     "class": "64o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.3516948925373522,
+     "new_margin_bb": 0.20582967258786267,
+     "margin_over_ci": 0.5261841785376907
+    },
+    {
+     "class": "84o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.12100432097141733,
+     "new_margin_bb": 0.02855634090416337,
+     "margin_over_ci": 0.04780218230154262
+    },
+    {
+     "class": "94o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.4126325308188685,
+     "new_margin_bb": 0.2443153682564384,
+     "margin_over_ci": 0.49421359656017083
+    },
+    {
+     "class": "T4o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.46987425562200724,
+     "new_margin_bb": 0.22139707084726312,
+     "margin_over_ci": 0.6288544335381623
+    },
+    {
+     "class": "J4o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.7555740654567547,
+     "new_margin_bb": 0.22483513725939863,
+     "margin_over_ci": 0.5749916403112012
+    },
+    {
+     "class": "Q4o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.6389430527042217,
+     "new_margin_bb": 0.2855699610872749,
+     "margin_over_ci": 0.4928006707913453
+    },
+    {
+     "class": "A4o",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.46102500233771426,
+     "new_margin_bb": 0.4573952661035463,
+     "margin_over_ci": 1.716085616893519
+    },
+    {
+     "class": "54s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.0716085685017585,
+     "new_margin_bb": 0.9098386215541208,
+     "margin_over_ci": 0.9509151000818851
+    },
+    {
+     "class": "85o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.09033381474900692,
+     "new_margin_bb": 0.007344705133224272,
+     "margin_over_ci": 0.018139227757117876
+    },
+    {
+     "class": "95o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.3314510609095729,
+     "new_margin_bb": 0.23804005900880387,
+     "margin_over_ci": 0.5303871672277322
+    },
+    {
+     "class": "T5o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.3376133353368209,
+     "new_margin_bb": 0.26764393177837986,
+     "margin_over_ci": 0.48444580135697857
+    },
+    {
+     "class": "J5o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.7338119317851837,
+     "new_margin_bb": 0.3585313623068973,
+     "margin_over_ci": 0.9093650403815073
+    },
+    {
+     "class": "Q5o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.6589345524562324,
+     "new_margin_bb": 0.38276613339711685,
+     "margin_over_ci": 0.7184378945467862
+    },
+    {
+     "class": "65s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.9828040220046765,
+     "new_margin_bb": 0.8434676876241607,
+     "margin_over_ci": 1.1248433011062355
+    },
+    {
+     "class": "66",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.13571394203381,
+     "new_margin_bb": 0.979229550514266,
+     "margin_over_ci": 1.1794757523815422
+    },
+    {
+     "class": "96o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.2822435047152605,
+     "new_margin_bb": 0.06142704811844146,
+     "margin_over_ci": 0.12409650278347349
+    },
+    {
+     "class": "T6o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.2068027242295618,
+     "new_margin_bb": 0.1135680074295996,
+     "margin_over_ci": 0.26430325468138494
+    },
+    {
+     "class": "J6o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.6464996429287972,
+     "new_margin_bb": 0.3531141771436178,
+     "margin_over_ci": 0.7390769060461642
+    },
+    {
+     "class": "Q6o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.47055852786467556,
+     "new_margin_bb": 0.28420473238710264,
+     "margin_over_ci": 0.44829396515713477
+    },
+    {
+     "class": "74s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.7053316929916238,
+     "new_margin_bb": 0.6578532971494047,
+     "margin_over_ci": 1.1599414280316505
+    },
+    {
+     "class": "75s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.0400951128887743,
+     "new_margin_bb": 1.0025759656373758,
+     "margin_over_ci": 1.2531044790333061
+    },
+    {
+     "class": "76s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.4424892484210057,
+     "new_margin_bb": 0.26666419045284745,
+     "margin_over_ci": 0.6680143522834159
+    },
+    {
+     "class": "77",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.264906664190149,
+     "new_margin_bb": 0.8363709410642604,
+     "margin_over_ci": 1.2587656716851352
+    },
+    {
+     "class": "87o",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.14823604800414714,
+     "new_margin_bb": 0.14427935338221104,
+     "margin_over_ci": 0.3114210905132781
+    },
+    {
+     "class": "97o",
+     "from": "Call 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.03136188554993957,
+     "new_margin_bb": 0.02944765593817722,
+     "margin_over_ci": 0.0456140737994726
+    },
+    {
+     "class": "T7o",
+     "from": "Call 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.15237469060133346,
+     "new_margin_bb": 0.01274022430212407,
+     "margin_over_ci": 0.028641740536040454
+    },
+    {
+     "class": "J7o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.5775394281816411,
+     "new_margin_bb": 0.25682839240613464,
+     "margin_over_ci": 0.5012403542474745
+    },
+    {
+     "class": "Q7o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.42482948542190124,
+     "new_margin_bb": 0.23130224483624062,
+     "margin_over_ci": 0.3279918756812806
+    },
+    {
+     "class": "84s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.32421219075796337,
+     "new_margin_bb": 0.30410374296382464,
+     "margin_over_ci": 0.6558250994074375
+    },
+    {
+     "class": "86s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.7389414706512936,
+     "new_margin_bb": 0.5952770042246359,
+     "margin_over_ci": 1.2794297053350476
+    },
+    {
+     "class": "87s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.7699606254411147,
+     "new_margin_bb": 0.4376274376371371,
+     "margin_over_ci": 1.0625401453203167
+    },
+    {
+     "class": "88",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.7889782415213165,
+     "new_margin_bb": 0.8354610799629829,
+     "margin_over_ci": 1.340427572291083
+    },
+    {
+     "class": "98o",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.34952756016687436,
+     "new_margin_bb": 0.3192733515884881,
+     "margin_over_ci": 0.40992974652449987
+    },
+    {
+     "class": "J8o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.2740706214529842,
+     "new_margin_bb": 0.14810408921257354,
+     "margin_over_ci": 0.2825736379808035
+    },
+    {
+     "class": "Q8o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.3471008563632303,
+     "new_margin_bb": 0.17327094106073065,
+     "margin_over_ci": 0.23763811239159352
+    },
+    {
+     "class": "A8o",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.8352608247522237,
+     "new_margin_bb": 0.5909854832203498,
+     "margin_over_ci": 1.5470593222149969
+    },
+    {
+     "class": "92s",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.16426592669861284,
+     "new_margin_bb": 0.06269793678751534,
+     "margin_over_ci": 0.15870419370323421
+    },
+    {
+     "class": "93s",
+     "from": "Call 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.1422391856166194,
+     "new_margin_bb": 0.06953060838629,
+     "margin_over_ci": 0.18800310299954434
+    },
+    {
+     "class": "95s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.20126853015192436,
+     "new_margin_bb": 0.1522970228694877,
+     "margin_over_ci": 0.3960624884264296
+    },
+    {
+     "class": "96s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.2402583393448703,
+     "new_margin_bb": 0.12780554896084625,
+     "margin_over_ci": 0.25134532591294234
+    },
+    {
+     "class": "97s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.5638535393012187,
+     "new_margin_bb": 0.25733688352448303,
+     "margin_over_ci": 0.48109874248340856
+    },
+    {
+     "class": "98s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.9605682264866577,
+     "new_margin_bb": 0.5898640892300084,
+     "margin_over_ci": 0.805443188711084
+    },
+    {
+     "class": "99",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 2.503347384040196,
+     "new_margin_bb": 1.1177780546219496,
+     "margin_over_ci": 2.116281601127716
+    },
+    {
+     "class": "T9o",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.050937532204589075,
+     "new_margin_bb": 0.05024463565901327,
+     "margin_over_ci": 0.11510903273287247
+    },
+    {
+     "class": "J9o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.5982308806368235,
+     "new_margin_bb": 0.1416267182221319,
+     "margin_over_ci": 0.27047678592603086
+    },
+    {
+     "class": "Q9o",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.32102604822558956,
+     "new_margin_bb": 0.13955338693413238,
+     "margin_over_ci": 0.1881530374089509
+    },
+    {
+     "class": "A9o",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.8752272520732065,
+     "new_margin_bb": 0.41679368164798225,
+     "margin_over_ci": 1.1487889043817165
+    },
+    {
+     "class": "T3s",
+     "from": "Call 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.022966853043706603,
+     "new_margin_bb": 0.01627044373931319,
+     "margin_over_ci": 0.04888127777962708
+    },
+    {
+     "class": "T4s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.06685986511806563,
+     "new_margin_bb": 0.05208806413282435,
+     "margin_over_ci": 0.17747889685486684
+    },
+    {
+     "class": "T6s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.26521285546010676,
+     "new_margin_bb": 0.24449228090682718,
+     "margin_over_ci": 0.697306141644526
+    },
+    {
+     "class": "T7s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.610033883009808,
+     "new_margin_bb": 0.460596509334109,
+     "margin_over_ci": 1.056135207030164
+    },
+    {
+     "class": "T8s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.9562565515823529,
+     "new_margin_bb": 0.7838521475194988,
+     "margin_over_ci": 1.95335602241043
+    },
+    {
+     "class": "T9s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.6956059982203389,
+     "new_margin_bb": 0.47723155120924743,
+     "margin_over_ci": 1.3424534276884097
+    },
+    {
+     "class": "TT",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 2.995121218646612,
+     "new_margin_bb": 1.1154928588136745,
+     "margin_over_ci": 3.1373728243974104
+    },
+    {
+     "class": "JTo",
+     "from": "Call 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.023530226022417278,
+     "new_margin_bb": 0.018123796939306935,
+     "margin_over_ci": 0.03504784073460123
+    },
+    {
+     "class": "ATo",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.1343940965440744,
+     "new_margin_bb": 0.2728151473846445,
+     "margin_over_ci": 0.8716465105119906
+    },
+    {
+     "class": "J2s",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.36830450220680255,
+     "new_margin_bb": 0.04934616271423403,
+     "margin_over_ci": 0.1350598543835199
+    },
+    {
+     "class": "J3s",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.3356537113939093,
+     "new_margin_bb": 0.02566956165312584,
+     "margin_over_ci": 0.06342844174157518
+    },
+    {
+     "class": "J4s",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.2351268306357115,
+     "new_margin_bb": 0.04126825834252701,
+     "margin_over_ci": 0.11947206936162866
+    },
+    {
+     "class": "J5s",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.17183501688008151,
+     "new_margin_bb": 0.015378637868889045,
+     "margin_over_ci": 0.044457662860546365
+    },
+    {
+     "class": "J6s",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.18990957623957083,
+     "new_margin_bb": 0.013956454842574684,
+     "margin_over_ci": 0.03512735859109702
+    },
+    {
+     "class": "J9s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.05774211450823108,
+     "new_margin_bb": 0.04477804030815813,
+     "margin_over_ci": 0.10033427323909441
+    },
+    {
+     "class": "JTs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.6516590451993598,
+     "new_margin_bb": 0.3661755294941009,
+     "margin_over_ci": 0.8015921996814128
+    },
+    {
+     "class": "JJ",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 3.5208450178564314,
+     "new_margin_bb": 1.060321852781338,
+     "margin_over_ci": 2.811213496805047
+    },
+    {
+     "class": "QJo",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.7757793377443214,
+     "new_margin_bb": 0.6967676414294893,
+     "margin_over_ci": 0.7889356026997478
+    },
+    {
+     "class": "KJo",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.2818815171308158,
+     "new_margin_bb": 0.9141985820562997,
+     "margin_over_ci": 1.398175524009245
+    },
+    {
+     "class": "Q2s",
+     "from": "Call 2.5",
+     "to": "3-bet 8.8",
+     "shift_bb": -0.23787684137387277,
+     "new_margin_bb": 0.037479914008158144,
+     "margin_over_ci": 0.07906649368918942
+    },
+    {
+     "class": "Q3s",
+     "from": "Call 2.5",
+     "to": "All-in 30",
+     "shift_bb": -0.09817819995450527,
+     "new_margin_bb": 0.01582805770570378,
+     "margin_over_ci": 0.0293939255753031
+    },
+    {
+     "class": "QTs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.8153947269790969,
+     "new_margin_bb": 0.6676722207325149,
+     "margin_over_ci": 1.1841792108191367
+    },
+    {
+     "class": "QJs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.3786657386922814,
+     "new_margin_bb": 1.0470380659910454,
+     "margin_over_ci": 1.3225205674323497
+    },
+    {
+     "class": "QQ",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 4.806316463251964,
+     "new_margin_bb": 1.9317771371397958,
+     "margin_over_ci": 4.149685126315558
+    },
+    {
+     "class": "KQo",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 2.105401544209167,
+     "new_margin_bb": 1.388227996703793,
+     "margin_over_ci": 4.416250783999335
+    },
+    {
+     "class": "AQo",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.9189948727356558,
+     "new_margin_bb": 0.563446909209508,
+     "margin_over_ci": 1.006874186164995
+    },
+    {
+     "class": "KTs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.9718589847784909,
+     "new_margin_bb": 1.6003723647306756,
+     "margin_over_ci": 2.1901596274697686
+    },
+    {
+     "class": "KJs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.866117438892954,
+     "new_margin_bb": 1.2258527740293208,
+     "margin_over_ci": 2.107180977846338
+    },
+    {
+     "class": "KQs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 2.660532239790543,
+     "new_margin_bb": 1.6757083607598826,
+     "margin_over_ci": 5.720862186896935
+    },
+    {
+     "class": "KK",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 6.620713291263977,
+     "new_margin_bb": 3.0796464790985008,
+     "margin_over_ci": 7.520496009475792
+    },
+    {
+     "class": "AKo",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 2.3650292921357723,
+     "new_margin_bb": 0.489591571668452,
+     "margin_over_ci": 0.773924012777941
+    },
+    {
+     "class": "A2s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.887590301697156,
+     "new_margin_bb": 0.6044427509273451,
+     "margin_over_ci": 2.0386676624230153
+    },
+    {
+     "class": "A3s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 0.9821486446484555,
+     "new_margin_bb": 0.6942842882306488,
+     "margin_over_ci": 2.0867012346299347
+    },
+    {
+     "class": "A4s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.0736465503408477,
+     "new_margin_bb": 0.8731125721091069,
+     "margin_over_ci": 3.1782154425543365
+    },
+    {
+     "class": "A5s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.4496127339549831,
+     "new_margin_bb": 1.1470172204286404,
+     "margin_over_ci": 3.567905818059787
+    },
+    {
+     "class": "A6s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.2470900847244915,
+     "new_margin_bb": 0.9810854334651034,
+     "margin_over_ci": 3.2606741903725043
+    },
+    {
+     "class": "A7s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.4737518098973594,
+     "new_margin_bb": 1.1837293606075596,
+     "margin_over_ci": 3.8279243281908184
+    },
+    {
+     "class": "A8s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.578936918319601,
+     "new_margin_bb": 1.1028920299090423,
+     "margin_over_ci": 3.0827348816880398
+    },
+    {
+     "class": "A9s",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.6966977104195102,
+     "new_margin_bb": 0.863648646756906,
+     "margin_over_ci": 2.6631072215013076
+    },
+    {
+     "class": "ATs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.8637315026856975,
+     "new_margin_bb": 0.646172586334274,
+     "margin_over_ci": 2.049337427829509
+    },
+    {
+     "class": "AJs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 1.9647226283274764,
+     "new_margin_bb": 0.5085196192357451,
+     "margin_over_ci": 2.05998065754388
+    },
+    {
+     "class": "AQs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 2.5298246269521094,
+     "new_margin_bb": 0.8804351885239332,
+     "margin_over_ci": 1.7650411189738762
+    },
+    {
+     "class": "AKs",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 2.8572258634112835,
+     "new_margin_bb": 0.8816068057287847,
+     "margin_over_ci": 1.542293479560002
+    },
+    {
+     "class": "AA",
+     "from": "All-in 30",
+     "to": "Call 2.5",
+     "shift_bb": 7.380781538680344,
+     "new_margin_bb": 2.9310657599012853,
+     "margin_over_ci": 9.766878368611644
+    }
+   ]
+  }
+ }
+}
