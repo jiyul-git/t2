@@ -112,14 +112,12 @@ fn behind(g: &Game, st: &State, p: usize) -> f64 {
 }
 
 impl Game {
+    /// One template per distinct betting history: templates are NOT shared between histories
+    /// that happen to reach the same state (sharing would merge information sets = imperfect
+    /// recall; found by the HU degeneration test, run 2).
     fn template_for(&mut self, entry: State) -> usize {
-        let k = format!("{}|{:?}|{:?}|{:?}", entry.street, entry.folded, entry.contrib.map(|x| (x * 1e6).round() as i64), entry.prev_aggr);
-        if let Some(&t) = self.key.get(&k) {
-            return t;
-        }
         let id = self.templates.len();
         self.templates.push(Template { street: entry.street, nodes: vec![], slots: vec![], entry: entry.clone() });
-        self.key.insert(k, id);
         let mut nodes = Vec::new();
         let mut slots = Vec::new();
         self.build(entry, &mut nodes, &mut slots);
