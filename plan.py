@@ -3209,29 +3209,61 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         st['plan'] = 'value_3street' if rel >= 0.88 else 'value_2street'
         why.append('%s: 강도 상승(rel %.2f, made %d) → 밸류 전환' % (street, rel, made))
     elif old == 'bluff_2street' and (
-            (made >= 2 and rel >= 0.55)
-            or (made >= 1 and rel >= 0.45)
-            or rel >= 0.75):
-        # Pure bluff identity must be reconsidered when the hand acquires real
-        # showdown value.  The old code only flipped at rel>=0.75, so 94 on
-        # A3A-9 (made=2, rel=.65) kept firing as a "bluff" despite actually
-        # improving into a value/protection hand.
-        #
-        # Do not promote every paired-board artifact: relative strength remains
-        # a required cross-check.  Medium improvement becomes showdown; stronger
-        # made hands become value.
-        if made >= 2 and rel >= 0.55:
+            made >= 1 or rel >= 0.75):
+        # A bluff that improves must be RE-JUDGED, not automatically promoted.
+        # "made=2" on a paired board can still be behind the raiser's overpairs
+        # and Ax.  Human reasoning asks whether worse hands will continue versus
+        # a bet, not merely whether the hand now has a made-hand label.
+        _vb_size = float(SIZING['value_2street'].get(street, 0.55) or 0.55)
+        _call_eq = None
+        _call_n = None
+        if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):
+            _cont_map = {}
+            for _seat, _rr in opp_ranges.items():
+                if _rr:
+                    _cr = R.perceived_continue_range(
+                        _rr, board, street, _vb_size, profile)
+                    if _cr:
+                        _cont_map[_seat] = _cr
+            if len(_cont_map) == int(n_opp or 1):
+                _call_eq = _eq_vs(
+                    hero, board, opp_range, int(n_opp or 1),
+                    sims=500, opp_ranges=_cont_map)
+                _call_n = sum(len(_r) for _r in _cont_map.values())
+        elif opp_range:
+            _cr = R.perceived_continue_range(
+                opp_range, board, street, _vb_size, profile)
+            if _cr:
+                _call_eq = _eq_vs(hero, board, _cr, 1, sims=500)
+                _call_n = len(_cr)
+
+        st['improved_bluff_call_eq'] = (
+            None if _call_eq is None else round(float(_call_eq), 3))
+        st['improved_bluff_call_range_n'] = _call_n
+
+        # Clear value only if the hand is actually ahead when called.
+        # Otherwise stop treating it as air and take showdown value.
+        # If the range evidence is unavailable, default to showdown rather than
+        # inventing a value bet.
+        if (_call_eq is not None and float(_call_eq) >= 0.54
+                and rel >= 0.55):
             st['plan'] = 'value_2street'
             why.append(
-                '%s: 블러프 중 실제 메이드 강도 획득(made %d, rel %.2f)'
-                ' → 밸류/프로텍션 재분류'
-                % (street, made, rel))
+                '%s: 블러프 중 강도 획득(made %d, rel %.2f),'
+                ' 콜 레인지 상대 eq %.2f → 밸류 재분류'
+                % (street, made, rel, float(_call_eq)))
         else:
             st['plan'] = 'showdown'
-            why.append(
-                '%s: 블러프 중 쇼다운 가치 획득(made %d, rel %.2f)'
-                ' → 블러프 중단'
-                % (street, made, rel))
+            if _call_eq is None:
+                why.append(
+                    '%s: 블러프 중 쇼다운 가치 획득(made %d, rel %.2f),'
+                    ' 콜 레인지 근거 부족 → 블러프 중단/쇼다운'
+                    % (street, made, rel))
+            else:
+                why.append(
+                    '%s: 블러프 중 쇼다운 가치 획득(made %d, rel %.2f)이나'
+                    ' 콜 레인지 상대 eq %.2f → 밸류 아님, 쇼다운'
+                    % (street, made, rel, float(_call_eq)))
     elif (old == 'value_2street'
           and made > _prev_made
           and rel >= max(0.85, _prev_rel)
