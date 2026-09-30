@@ -386,6 +386,47 @@ fn build_report(g: &Game, alloc: bool) -> serde_json::Value {
     out
 }
 
+/// HU frontiers of the full game: fold children of 3-active nodes, per street, and the storage
+/// (regret + strategy sum, f32) of each frontier subtree including its later-street instances
+fn frontier_report(g: &Game) -> serde_json::Value {
+    fn sub(g: &Game, t: usize, n: usize) -> u64 {
+        match &g.templates[t].nodes[n] {
+            TNode::Action { acts, children, .. } => {
+                (acts.len() * NUM_COMBOS * 8) as u64 + children.iter().map(|&c| sub(g, t, c)).sum::<u64>()
+            }
+            TNode::Next { template } => {
+                let mult = if g.templates[t].street == 0 { 49 } else { 48 };
+                mult * sub(g, *template, 0)
+            }
+            _ => 0,
+        }
+    }
+    let mut per = [(0u64, 0u64, 0u64); 3]; // count, total bytes, max bytes
+    for (t, tp) in g.templates.iter().enumerate() {
+        for n in &tp.nodes {
+            if let TNode::Action { acts, children, nact, .. } = n {
+                if *nact != NP {
+                    continue;
+                }
+                for (a, &c) in children.iter().enumerate() {
+                    if acts[a] == Act::Fold {
+                        let b = sub(g, t, c);
+                        let s = tp.street as usize;
+                        per[s].0 += 1;
+                        per[s].1 += b;
+                        per[s].2 = per[s].2.max(b);
+                    }
+                }
+            }
+        }
+    }
+    let inst = [1u64, 49, 49 * 48];
+    let rows: Vec<serde_json::Value> = (0..3).map(|s| serde_json::json!({"street": STREETS[s], "fold_nodes": per[s].0,
+        "instances": per[s].0 * inst[s], "bytes_all_instances": per[s].1 * inst[s], "max_frontier_bytes": per[s].2,
+        "value_store_bytes_f32_3players": per[s].0 * inst[s] * 3 * NUM_COMBOS as u64 * 4})).collect();
+    serde_json::json!({"by_street": rows})
+}
+
 fn peak_rss_kb() -> Option<u64> {
     let st = std::fs::read_to_string("/proc/self/status").ok()?;
     st.lines().find(|l| l.starts_with("VmHWM:"))?.split_whitespace().nth(1)?.parse().ok()
@@ -1741,6 +1782,7 @@ fn main() -> Result<(), String> {
             r["spot"] = serde_json::json!({"positions": spot.pos, "pot": spot.pot0, "stack": spot.stack, "board": a[3]});
             let g2 = build_game(spot.pot0, spot.stack, Some(0));
             r["hu_degenerate_tree"] = build_report(&g2, false);
+            r["frontiers"] = frontier_report(&g);
             println!("{}", serde_json::to_string_pretty(&r).unwrap());
             Ok(())
         }
