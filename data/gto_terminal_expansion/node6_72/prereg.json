@@ -1,0 +1,37 @@
+{
+ "schema": "t2_prereg_v1",
+ "purpose": "A1: node 6 (SB open -> BB call) promoted from the six-flop pilot to the 72-flop panel at P9 ranges",
+ "terminal_export": "data/gto_terminal_expansion/terminals/p9_node6.json",
+ "terminal_ranges_hash": "8919fac51d232e80",
+ "terminal_node": 6,
+ "panel": "data/gto_hu_continuation/panel_v2_72.json",
+ "panel_hash_sha256": "e0df1324fcb2ddd3afd1cfaa8ad8107d8fae92376b1c40dc0c785acfefbfdb7a",
+ "panel_changes": "none (same 72-flop manifest as node 28; no flop or weight change)",
+ "solver": {
+  "menu": "data/gto_hu_continuation/menu_m2_single_v1.json",
+  "storage": "f32",
+  "eps": 0.001,
+  "max_iters": 1000,
+  "target_pct_pot": 0.3,
+  "check_every": 25
+ },
+ "estimator": {
+  "primary": "ht_rho (as every 72-flop node 28 table), stratified bootstrap B=2000, rng seed 20260928+9",
+  "guard_unallocated_bb": 0.05,
+  "fallback_if_guard_fails": "fixed_norm with the per-player constants below (J1/J2 rule, computed here before any solve); the ht_rho rejection is kept"
+ },
+ "terminal_specific_normalisers_72flop": {
+  "SB": 0.8923091593643572,
+  "BB": 0.8854472382753971
+ },
+ "rho_exact": 0.8868778280542986,
+ "analysis": [
+  "72/72 convergence, exploitability, per-flop invariant",
+  "table conservation",
+  "6-flop vs 72-flop per class (pilot noise)",
+  "per-class CI",
+  "mean |solved-legacy|, reach-weighted, signed range-EV shift per seat",
+  "action boundaries (other strategies fixed at P9): SB open node and BB response node",
+  "direction check: caller (BB) legacy overvalue and aggressor (SB) undervalue at 72 flops"
+ ]
+}
