@@ -25,6 +25,29 @@ use solver::preflop::equity::class_index;
 use std::collections::HashMap;
 
 const NP: usize = 3;
+
+fn combo_cards() -> &'static [(Card, Card)] {
+    static T: std::sync::OnceLock<Vec<(Card, Card)>> = std::sync::OnceLock::new();
+    T.get_or_init(|| (0..NUM_COMBOS).map(combo_from_index).collect())
+}
+
+/// combos containing each card
+fn card_combos() -> &'static [Vec<u16>] {
+    static T: std::sync::OnceLock<Vec<Vec<u16>>> = std::sync::OnceLock::new();
+    T.get_or_init(|| {
+        let mut v = vec![Vec::new(); 52];
+        for (i, &(a, b)) in combo_cards().iter().enumerate() {
+            v[a as usize].push(i as u16);
+            v[b as usize].push(i as u16);
+        }
+        v
+    })
+}
+
+#[inline(always)]
+fn cc(i: usize) -> (Card, Card) {
+    combo_cards()[i]
+}
 const EPS: f32 = 1e-3;
 const BET_FRAC: f64 = 0.5;
 const ALLIN_THRESHOLD: f64 = 0.85;
@@ -56,7 +79,7 @@ struct State {
 
 #[derive(Clone, Debug)]
 enum TNode {
-    Action { player: usize, acts: Vec<Act>, children: Vec<usize>, slot: usize },
+    Action { player: usize, acts: Vec<Act>, children: Vec<usize>, slot: usize, contrib: [f64; NP] },
     /// only one player left: `winner` takes the pot
     FoldWin { winner: usize, contrib: [f64; NP], folded: [bool; NP] },
     /// river closed with >= 2 players, or an all-in (runout to the river, no more betting)
@@ -164,7 +187,7 @@ impl Game {
         let idx = nodes.len();
         let slot = slots.len();
         slots.push((me, acts.len()));
-        nodes.push(TNode::Action { player: me, acts: acts.clone(), children: vec![], slot });
+        nodes.push(TNode::Action { player: me, acts: acts.clone(), children: vec![], slot, contrib: st.contrib });
         let mut children = Vec::new();
         for &a in &acts {
             let mut s = st.clone();
@@ -418,7 +441,7 @@ fn strengths(board: &[Card]) -> Vec<u32> {
     }
     (0..NUM_COMBOS)
         .map(|i| {
-            let (a, c) = combo_from_index(i);
+            let (a, c) = cc(i);
             if bm & (1 << a) != 0 || bm & (1 << c) != 0 {
                 return 0;
             }
@@ -451,7 +474,7 @@ fn showdown_sums(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Ve
     let all_tot: f64 = order.iter().map(|&i| wr[i] as f64).sum();
     let mut all_card = [0f64; 52];
     for &i in &order {
-        let (a, b) = combo_from_index(i);
+        let (a, b) = cc(i);
         all_card[a as usize] += wr[i] as f64;
         all_card[b as usize] += wr[i] as f64;
     }
@@ -465,7 +488,7 @@ fn showdown_sums(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Ve
         let mut eq_tot = 0f64;
         let mut eq_card = [0f64; 52];
         for &i in &order[k..e] {
-            let (a, b) = combo_from_index(i);
+            let (a, b) = cc(i);
             eq_tot += wr[i] as f64;
             eq_card[a as usize] += wr[i] as f64;
             eq_card[b as usize] += wr[i] as f64;
@@ -490,14 +513,14 @@ fn showdown_sums(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Ve
         let is_eq = |ci: usize| st[ci] == t;
         let is_any = |ci: usize| st[ci] > 0;
         for &h in &order[k..e] {
-            let (ha, hb) = combo_from_index(h);
+            let (ha, hb) = cc(h);
             let (mut n, mut d) = (0f64, 0f64);
             for &x in &order {
                 let wx = wq[x] as f64;
                 if wx == 0.0 {
                     continue;
                 }
-                let (xa, xb) = combo_from_index(x);
+                let (xa, xb) = cc(x);
                 if xa == ha || xa == hb || xb == ha || xb == hb {
                     continue;
                 }
@@ -518,7 +541,7 @@ fn showdown_sums(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Ve
             den[h] = d;
         }
         for &i in &order[k..e] {
-            let (a, b) = combo_from_index(i);
+            let (a, b) = cc(i);
             lt_tot += wr[i] as f64;
             lt_card[a as usize] += wr[i] as f64;
             lt_card[b as usize] += wr[i] as f64;
@@ -534,7 +557,7 @@ fn showdown_brute(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (V
     let mut num = vec![0f64; NUM_COMBOS];
     let mut den = vec![0f64; NUM_COMBOS];
     let cards = |i: usize| {
-        let (a, b) = combo_from_index(i);
+        let (a, b) = cc(i);
         (1u64 << a) | (1u64 << b)
     };
     for &h in &idx {
@@ -619,7 +642,7 @@ fn showdown_test(spot: &Spot, brute_sample: usize) -> serde_json::Value {
         (0..NP).map(|p| showdown_sums(&st, &spot.w[(p + 1) % NP], &spot.w[(p + 2) % NP], true)).collect()
     }).collect();
     let flop_st: Vec<u32> = (0..NUM_COMBOS).map(|i| {
-        let (a, b) = combo_from_index(i);
+        let (a, b) = cc(i);
         (!spot.board.contains(&a) && !spot.board.contains(&b)) as u32
     }).collect();
     let n_runouts_per_triple = ((49 - 6) * (49 - 7) / 2) as f64;
@@ -650,7 +673,7 @@ fn showdown_test(spot: &Spot, brute_sample: usize) -> serde_json::Value {
         let mut cd = vec![0f64; 169];
         for h in 0..NUM_COMBOS {
             if den_flop[h] > 0.0 {
-                let (a, b) = combo_from_index(h);
+                let (a, b) = cc(h);
                 let k = class_index(rank(a), rank(b), suit(a) == suit(b));
                 cn[k] += den_flop[h] * ev[h] * spot.pot0;
                 cd[k] += den_flop[h];
@@ -687,7 +710,7 @@ fn preflop_equity(t_path: &str, n_boards: usize, seed: u64) -> Result<serde_json
     let w: Vec<Vec<f32>> = pls.iter().map(|pl| {
         let keep: Vec<f64> = pl["class_keep_fraction"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).collect();
         (0..NUM_COMBOS).map(|i| {
-            let (a, b) = combo_from_index(i);
+            let (a, b) = cc(i);
             keep[class_index(rank(a), rank(b), suit(a) == suit(b))] as f32
         }).collect()
     }).collect();
@@ -716,7 +739,7 @@ fn preflop_equity(t_path: &str, n_boards: usize, seed: u64) -> Result<serde_json
             let mut cd = vec![0f64; 169];
             for h in 0..NUM_COMBOS {
                 if st[h] > 0 {
-                    let (a, c) = combo_from_index(h);
+                    let (a, c) = cc(h);
                     let k = class_index(rank(a), rank(c), suit(a) == suit(c));
                     cn[k] += n[h];
                     cd[k] += d[h];
@@ -752,6 +775,419 @@ fn preflop_equity(t_path: &str, n_boards: usize, seed: u64) -> Result<serde_json
         "note": "range EV of the exact side uses the arriving class reach (class_reach_normalized) as weights, like the legacy check; the exact sums already condition on disjoint hands"}))
 }
 
+// ------------------------------------------------------------------ CFR engine
+#[derive(Clone, Copy)]
+enum Mode {
+    Update(u32),
+    Avg,
+    Br,
+}
+
+struct Ptr(*mut f32);
+unsafe impl Sync for Ptr {}
+unsafe impl Send for Ptr {}
+
+struct Engine {
+    g: Game,
+    w: Vec<Vec<f32>>,
+    flop: Vec<Card>,
+    nonblocking: [bool; NP],
+    base: Vec<usize>,
+    size: Vec<usize>,
+    slot_off: Vec<Vec<usize>>,
+    regret: Vec<f32>,
+    strat: Vec<f32>,
+    rest: Vec<Card>,
+    /// strengths and ascending order per river instance (turn_i * 48 + river_i)
+    river_st: Vec<Vec<u32>>,
+    river_order: Vec<Vec<u16>>,
+}
+
+impl Engine {
+    fn new(spot: &Spot, fold_first: Option<usize>, nonblocking: [bool; NP]) -> Engine {
+        let g = build_game(spot.pot0, spot.stack, fold_first);
+        let mut base = Vec::new();
+        let mut size = Vec::new();
+        let mut slot_off = Vec::new();
+        let mut tot = 0usize;
+        for t in &g.templates {
+            let mut off = Vec::new();
+            let mut sz = 0usize;
+            for &(_, na) in &t.slots {
+                off.push(sz);
+                sz += na * NUM_COMBOS;
+            }
+            base.push(tot);
+            size.push(sz);
+            slot_off.push(off);
+            tot += sz * instances(t) as usize;
+        }
+        let rest = board_cards(&spot.board);
+        let mut river_st = Vec::with_capacity(49 * 48);
+        let mut river_order = Vec::with_capacity(49 * 48);
+        for (ti, &tc) in rest.iter().enumerate() {
+            let _ = ti;
+            for &rc in rest.iter().filter(|&&c| c != tc) {
+                let mut b = spot.board.clone();
+                b.push(tc);
+                b.push(rc);
+                let st = strengths(&b);
+                let mut o: Vec<u16> = (0..NUM_COMBOS as u16).filter(|&i| st[i as usize] > 0).collect();
+                o.sort_by_key(|&i| st[i as usize]);
+                river_st.push(st);
+                river_order.push(o);
+            }
+        }
+        Engine { g, w: spot.w.clone(), flop: spot.board.clone(), nonblocking, base, size, slot_off,
+                 regret: vec![0.0; tot], strat: vec![0.0; tot], rest, river_st, river_order }
+    }
+
+    fn bytes(&self) -> usize {
+        (self.regret.len() + self.strat.len()) * 4
+    }
+
+    fn inst_of(&self, card: Card, turn_i: Option<usize>) -> (usize, usize) {
+        // returns (instance index for the next street, index of the card)
+        match turn_i {
+            None => {
+                let ti = self.rest.iter().position(|&c| c == card).unwrap();
+                (ti, ti)
+            }
+            Some(ti) => {
+                let tc = self.rest[ti];
+                let ri = self.rest.iter().filter(|&&c| c != tc).position(|&c| c == card).unwrap();
+                (ti * 48 + ri, ri)
+            }
+        }
+    }
+
+    fn blockers(&self) -> usize {
+        self.nonblocking.iter().filter(|&&b| !b).count()
+    }
+
+    /// joint compatible mass of p's opponents (blocking ones) for each hero combo on `board`
+    fn den(&self, p: usize, reach: &[Vec<f32>], board: &[Card]) -> Vec<f64> {
+        let opp: Vec<usize> = (0..NP).filter(|&q| q != p && !self.nonblocking[q]).collect();
+        let mut bm = 0u64;
+        for &c in board {
+            bm |= 1 << c;
+        }
+        let valid = |i: usize| {
+            let (a, b) = cc(i);
+            bm & (1 << a) == 0 && bm & (1 << b) == 0
+        };
+        if opp.len() == 1 {
+            let o = &reach[opp[0]];
+            let mut tot = 0f64;
+            let mut card = [0f64; 52];
+            for i in 0..NUM_COMBOS {
+                if valid(i) && o[i] > 0.0 {
+                    let (a, b) = cc(i);
+                    tot += o[i] as f64;
+                    card[a as usize] += o[i] as f64;
+                    card[b as usize] += o[i] as f64;
+                }
+            }
+            (0..NUM_COMBOS).map(|h| {
+                if !valid(h) {
+                    return 0.0;
+                }
+                let (a, b) = cc(h);
+                tot - card[a as usize] - card[b as usize] + o[h] as f64
+            }).collect()
+        } else {
+            let st: Vec<u32> = (0..NUM_COMBOS).map(|i| valid(i) as u32).collect();
+            let wq: Vec<f32> = (0..NUM_COMBOS).map(|i| if valid(i) { reach[opp[0]][i] } else { 0.0 }).collect();
+            let wr: Vec<f32> = (0..NUM_COMBOS).map(|i| if valid(i) { reach[opp[1]][i] } else { 0.0 }).collect();
+            showdown_sums(&st, &wq, &wr, true).1
+        }
+    }
+
+    /// counterfactual showdown value for p on a complete board (river instance `ri`)
+    fn showdown(&self, p: usize, reach: &[Vec<f32>], ri: usize, contrib: &[f64; NP], folded: &[bool; NP]) -> Vec<f64> {
+        let st = &self.river_st[ri];
+        let pot = self.g.pot0 + contrib.iter().sum::<f64>();
+        let opp: Vec<usize> = (0..NP).filter(|&q| q != p && !self.nonblocking[q]).collect();
+        if opp.len() == 1 {
+            // HU sweep, O(N)
+            let o = &reach[opp[0]];
+            let order = &self.river_order[ri];
+            let mut out = vec![0f64; NUM_COMBOS];
+            let (mut lt, mut lt_c) = (0f64, [0f64; 52]);
+            let (mut tot, mut tot_c) = (0f64, [0f64; 52]);
+            for &i in order {
+                let i = i as usize;
+                let (a, b) = cc(i);
+                tot += o[i] as f64;
+                tot_c[a as usize] += o[i] as f64;
+                tot_c[b as usize] += o[i] as f64;
+            }
+            let mut k = 0;
+            while k < order.len() {
+                let t = st[order[k] as usize];
+                let mut e = k;
+                let (mut eq, mut eq_c) = (0f64, [0f64; 52]);
+                while e < order.len() && st[order[e] as usize] == t {
+                    let i = order[e] as usize;
+                    let (a, b) = cc(i);
+                    eq += o[i] as f64;
+                    eq_c[a as usize] += o[i] as f64;
+                    eq_c[b as usize] += o[i] as f64;
+                    e += 1;
+                }
+                for &h in &order[k..e] {
+                    let h = h as usize;
+                    let (a, b) = cc(h);
+                    let (a, b) = (a as usize, b as usize);
+                    let win = lt - lt_c[a] - lt_c[b];
+                    let tie = eq - eq_c[a] - eq_c[b] + o[h] as f64;
+                    let all = tot - tot_c[a] - tot_c[b] + o[h] as f64;
+                    out[h] = pot * (win + 0.5 * tie) - contrib[p] * all;
+                }
+                for &i in &order[k..e] {
+                    let i = i as usize;
+                    let (a, b) = cc(i);
+                    lt += o[i] as f64;
+                    lt_c[a as usize] += o[i] as f64;
+                    lt_c[b as usize] += o[i] as f64;
+                }
+                k = e;
+            }
+            out
+        } else {
+            let (q, r) = (opp[0], opp[1]);
+            // active opponents enter the showdown; a folded opponent only blocks
+            let (fq, act) = if folded[q] { (q, r) } else if folded[r] { (r, q) } else { (q, r) };
+            let both_in = !folded[q] && !folded[r];
+            let (n, d) = showdown_sums(st, &reach[fq], &reach[act], both_in);
+            (0..NUM_COMBOS).map(|h| pot * n[h] - contrib[p] * d[h]).collect()
+        }
+    }
+
+    fn strategy(&self, off: usize, na: usize, mode: Mode) -> Vec<f32> {
+        let mut sig = vec![0f32; na * NUM_COMBOS];
+        let src = match mode {
+            Mode::Update(_) => &self.regret,
+            _ => &self.strat,
+        };
+        for h in 0..NUM_COMBOS {
+            let mut sum = 0f32;
+            for a in 0..na {
+                let v = src[off + a * NUM_COMBOS + h];
+                let v = if matches!(mode, Mode::Update(_)) { v.max(0.0) } else { v };
+                sig[a * NUM_COMBOS + h] = v;
+                sum += v;
+            }
+            for a in 0..na {
+                sig[a * NUM_COMBOS + h] = if sum > 0.0 { sig[a * NUM_COMBOS + h] / sum } else { 1.0 / na as f32 };
+            }
+        }
+        sig
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn walk(&self, tpl: usize, node: usize, inst: usize, turn_i: Option<usize>, ri: Option<usize>, board: &[Card],
+            p: usize, reach: &[Vec<f32>], mode: Mode, rp: &Ptr, sp: &Ptr) -> Vec<f64> {
+        match &self.g.templates[tpl].nodes[node] {
+            TNode::Action { player, acts, children, slot, contrib } => {
+                let q = *player;
+                let na = acts.len();
+                let off = self.base[tpl] + inst * self.size[tpl] + self.slot_off[tpl][*slot];
+                let sig = self.strategy(off, na, mode);
+                if q == p {
+                    let mut child_v: Vec<Vec<f64>> = Vec::with_capacity(na);
+                    for (a, &c) in children.iter().enumerate() {
+                        if acts[a] == Act::Fold {
+                            let d = self.den(p, reach, board);
+                            child_v.push(d.iter().map(|x| -contrib[p] * x).collect());
+                        } else {
+                            child_v.push(self.walk(tpl, c, inst, turn_i, ri, board, p, reach, mode, rp, sp));
+                        }
+                    }
+                    let mut v = vec![0f64; NUM_COMBOS];
+                    for h in 0..NUM_COMBOS {
+                        if matches!(mode, Mode::Br) {
+                            v[h] = (0..na).map(|a| child_v[a][h]).fold(f64::NEG_INFINITY, f64::max);
+                        } else {
+                            v[h] = (0..na).map(|a| sig[a * NUM_COMBOS + h] as f64 * child_v[a][h]).sum();
+                        }
+                    }
+                    if let Mode::Update(t) = mode {
+                        let tt = t as f64;
+                        let ta = tt.powf(1.5);
+                        let (dpos, dneg, dstr) = ((ta / (ta + 1.0)) as f32, 0.5f32, (tt / (tt + 1.0)).powi(2) as f32);
+                        unsafe {
+                            for a in 0..na {
+                                for h in 0..NUM_COMBOS {
+                                    let i = off + a * NUM_COMBOS + h;
+                                    let r = rp.0.add(i);
+                                    let inst_r = (child_v[a][h] - v[h]) as f32;
+                                    *r = *r * if *r > 0.0 { dpos } else { dneg } + inst_r;
+                                    let sgp = sp.0.add(i);
+                                    *sgp = *sgp * dstr + reach[p][h] * sig[a * NUM_COMBOS + h];
+                                }
+                            }
+                        }
+                    }
+                    v
+                } else {
+                    let mut v = vec![0f64; NUM_COMBOS];
+                    for (a, &c) in children.iter().enumerate() {
+                        let mut r2: Vec<Vec<f32>> = reach.to_vec();
+                        for h in 0..NUM_COMBOS {
+                            r2[q][h] *= sig[a * NUM_COMBOS + h];
+                        }
+                        let cv = self.walk(tpl, c, inst, turn_i, ri, board, p, &r2, mode, rp, sp);
+                        for h in 0..NUM_COMBOS {
+                            v[h] += cv[h];
+                        }
+                    }
+                    v
+                }
+            }
+            TNode::FoldWin { winner, contrib, .. } => {
+                let pot = self.g.pot0 + contrib.iter().sum::<f64>();
+                let u = if *winner == p { pot } else { 0.0 } - contrib[p];
+                self.den(p, reach, board).iter().map(|x| u * x).collect()
+            }
+            TNode::Showdown { contrib, folded } => {
+                if board.len() == 5 {
+                    self.showdown(p, reach, ri.unwrap(), contrib, folded)
+                } else {
+                    // all-in runout: deal the remaining cards without betting
+                    self.deal(board, turn_i, p, reach, &|nb, nti, nri, r2| {
+                        if nb.len() == 5 {
+                            self.showdown(p, r2, nri.unwrap(), contrib, folded)
+                        } else {
+                            self.deal(nb, nti, p, r2, &|nb2, _nti2, nri2, r3| {
+                                let _ = nb2;
+                                self.showdown(p, r3, nri2.unwrap(), contrib, folded)
+                            })
+                        }
+                    })
+                }
+            }
+            TNode::Next { template } => {
+                let nt = *template;
+                self.deal(board, turn_i, p, reach, &|nb, nti, nri, r2| {
+                    let inst2 = if nb.len() == 4 { nti.unwrap() } else { nri.unwrap() };
+                    self.walk(nt, 0, inst2, nti, nri, nb, p, r2, mode, rp, sp)
+                })
+            }
+        }
+    }
+
+    /// chance: deal one card to `board` (flop -> turn in parallel), call `f` with the new board,
+    /// turn index, river instance and the reach with the dealt card's combos removed;
+    /// average with weight 1 / (K - 2 * blockers) over the undealt cards.
+    fn deal(&self, board: &[Card], turn_i: Option<usize>, p: usize, reach: &[Vec<f32>],
+            f: &(dyn Fn(&[Card], Option<usize>, Option<usize>, &[Vec<f32>]) -> Vec<f64> + Sync)) -> Vec<f64> {
+        let _ = p;
+        let cards: Vec<Card> = (0..52u8).filter(|c| !board.contains(c)).collect();
+        let norm = (cards.len() - 2 * self.blockers()) as f64;
+        let one = |c: Card| -> Vec<f64> {
+            let mut nb = board.to_vec();
+            nb.push(c);
+            let r2: Vec<Vec<f32>> = reach.iter().map(|w| {
+                let mut v = w.clone();
+                for &i in &card_combos()[c as usize] {
+                    v[i as usize] = 0.0;
+                }
+                v
+            }).collect();
+            let (nti, nri) = if board.len() == 3 {
+                (Some(self.inst_of(c, None).0), None)
+            } else {
+                (turn_i, Some(self.inst_of(c, turn_i).0))
+            };
+            f(&nb, nti, nri, &r2)
+        };
+        let parts: Vec<Vec<f64>> = if board.len() == 3 { cards.par_iter().map(|&c| one(c)).collect() } else { cards.iter().map(|&c| one(c)).collect() };
+        let mut v = vec![0f64; NUM_COMBOS];
+        for part in parts.iter() {
+            for h in 0..NUM_COMBOS {
+                v[h] += part[h];
+            }
+        }
+        // hero combos containing a dealt card get nothing from that branch (their den is 0 there)
+        for x in v.iter_mut() {
+            *x /= norm;
+        }
+        v
+    }
+
+    fn root(&self, p: usize, mode: Mode) -> Vec<f64> {
+        let rp = Ptr(self.regret.as_ptr() as *mut f32);
+        let sp = Ptr(self.strat.as_ptr() as *mut f32);
+        self.walk(0, 0, 0, None, None, &self.flop.clone(), p, &self.w, mode, &rp, &sp)
+    }
+
+    fn players(&self) -> Vec<usize> {
+        let t0 = &self.g.templates[0];
+        (0..NP).filter(|&q| !t0.entry.folded[q]).collect()
+    }
+
+    /// per player: range value (avg strategies), BR value, gain; conservation
+    fn evaluate(&self) -> serde_json::Value {
+        let mut rows = Vec::new();
+        let mut total = 0f64;
+        let mut gains = 0f64;
+        for p in self.players() {
+            let avg = self.root(p, Mode::Avg);
+            let br = self.root(p, Mode::Br);
+            let den = self.den(p, &self.w, &self.flop);
+            let z: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * den[h]).sum();
+            let va: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * avg[h]).sum::<f64>() / z;
+            let vb: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * br[h]).sum::<f64>() / z;
+            // class values: den-weighted mean over the class's combos (as t2_cont_panel)
+            let mut cn = vec![0f64; 169];
+            let mut cd = vec![0f64; 169];
+            for h in 0..NUM_COMBOS {
+                if den[h] > 0.0 {
+                    let (a, b) = cc(h);
+                    let k = class_index(rank(a), rank(b), suit(a) == suit(b));
+                    cn[k] += avg[h];
+                    cd[k] += den[h];
+                }
+            }
+            let cls: Vec<Option<f64>> = (0..169).map(|k| if cd[k] > 0.0 { Some(cn[k] / cd[k] + self.g.pot0 * 0.0) } else { None }).collect();
+            total += va;
+            gains += vb - va;
+            rows.push(serde_json::json!({"player": p, "range_value": va, "br_value": vb, "br_gain_bb": vb - va,
+                                         "br_gain_pct_pot": (vb - va) / self.g.pot0 * 100.0, "class_gross": cls}));
+        }
+        // gross convention: utilities are share of the final pot minus postflop contributions
+        serde_json::json!({"players": rows, "sum_range_values": total, "pot": self.g.pot0,
+                           "conservation_error": total - self.g.pot0,
+                           "exploitability_pct_pot": gains / self.players().len() as f64 / self.g.pot0 * 100.0})
+    }
+
+    /// aggregate strategy (average) at the first decision of each player on the flop path of checks
+    fn root_mix(&self) -> serde_json::Value {
+        let t0 = &self.g.templates[0];
+        let mut out = Vec::new();
+        let mut node = 0usize;
+        // follow checks from the root; report every decision met
+        for _ in 0..NP {
+            if let TNode::Action { player, acts, children, slot, .. } = &t0.nodes[node] {
+                let off = self.base[0] + self.slot_off[0][*slot];
+                let sig = self.strategy(off, acts.len(), Mode::Avg);
+                let w = &self.w[*player];
+                let tot: f64 = w.iter().map(|&x| x as f64).sum();
+                let mix: Vec<f64> = (0..acts.len()).map(|a| (0..NUM_COMBOS).map(|h| w[h] as f64 * sig[a * NUM_COMBOS + h] as f64).sum::<f64>() / tot).collect();
+                out.push(serde_json::json!({"player": player, "actions": acts.iter().map(|x| format!("{:?}", x)).collect::<Vec<_>>(), "mix": mix}));
+                match acts.iter().position(|x| *x == Act::Check) {
+                    Some(ci) => node = children[ci],
+                    None => break,
+                }
+            } else {
+                break;
+            }
+        }
+        serde_json::Value::Array(out)
+    }
+}
+
 fn main() -> Result<(), String> {
     let a: Vec<String> = std::env::args().collect();
     match a.get(1).map(|s| s.as_str()) {
@@ -774,6 +1210,46 @@ fn main() -> Result<(), String> {
             r["board"] = serde_json::json!(a[3]);
             r["labels"] = serde_json::json!(spot.labels);
             println!("{}", serde_json::to_string(&r).unwrap());
+            Ok(())
+        }
+        Some("solve") => {
+            let spot = load_spot(&a[2], &a[3])?;
+            let iters: u32 = a[4].parse().map_err(|_| "iters")?;
+            let out = &a[5];
+            let seat = |name: &str| -> Option<usize> {
+                a.iter().position(|x| x == name).map(|i| spot.pos.iter().position(|p| *p == a[i + 1]).expect("seat name"))
+            };
+            let fold_first = seat("--fold-first");
+            let mut nb = [false; NP];
+            if let Some(q) = seat("--nonblocking") {
+                nb[q] = true;
+            }
+            let every: u32 = a.iter().position(|x| x == "--every").map(|i| a[i + 1].parse().unwrap()).unwrap_or(25);
+            let target: f64 = a.iter().position(|x| x == "--target").map(|i| a[i + 1].parse().unwrap()).unwrap_or(0.3);
+            let t0 = std::time::Instant::now();
+            let e = Engine::new(&spot, fold_first, nb);
+            eprintln!("engine: {:.2} GB, players {:?}, build {:.1}s, rss {:?} kB", e.bytes() as f64 / 1e9, e.players(), t0.elapsed().as_secs_f64(), peak_rss_kb());
+            let mut trace = Vec::new();
+            let mut last = serde_json::Value::Null;
+            for t in 1..=iters {
+                for p in e.players() {
+                    e.root(p, Mode::Update(t));
+                }
+                if t % every == 0 || t == iters {
+                    let ev = e.evaluate();
+                    let x = ev["exploitability_pct_pot"].as_f64().unwrap();
+                    eprintln!("it {t} expl {x:.4}% pot, conservation {:.2e}, {:.0}s", ev["conservation_error"].as_f64().unwrap(), t0.elapsed().as_secs_f64());
+                    trace.push(serde_json::json!({"iteration": t, "seconds": t0.elapsed().as_secs_f64(), "eval": ev.clone()}));
+                    last = ev;
+                    if x <= target {
+                        break;
+                    }
+                }
+            }
+            let res = serde_json::json!({"positions": spot.pos, "board": a[3], "fold_first": fold_first, "nonblocking": nb,
+                "bytes": e.bytes(), "peak_rss_kb": peak_rss_kb(), "final": last, "trace": trace, "root_mix": e.root_mix(),
+                "labels": spot.labels});
+            std::fs::write(out, serde_json::to_vec(&res).unwrap()).map_err(|e| e.to_string())?;
             Ok(())
         }
         Some("preflop-equity") => {

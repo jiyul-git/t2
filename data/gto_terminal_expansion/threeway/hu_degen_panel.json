@@ -1,0 +1,1 @@
+{"schema": "flop_panel_v1", "id": "b2_one_board", "panel": [{"board": "Kc7d4h", "stratum": "one", "weight": 1.0}], "strata": {"one": {"probability": 1.0}}, "panel_hash_sha256": "b2_one_board_Kc7d4h"}
