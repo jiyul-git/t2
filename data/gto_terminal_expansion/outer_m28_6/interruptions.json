@@ -14,6 +14,13 @@
    "detected": "2026-09-30T22:14 container uptime 0 min; all processes gone",
    "resumed": "2026-09-30T22:14 same driver command; 65 node-28 flops reused after the provenance check, the 7 unfinished ones recomputed",
    "data_loss": "none"
+  },
+  {
+   "what": "container restart during k11, node 6 panel",
+   "last_commit_before": "4c539c4 (12/72 node-6 flops of k11 on disk; node 28 table done)",
+   "detected": "2026-09-30T22:42 container uptime 0 min",
+   "resumed": "2026-09-30T22:42 via tools/gto_hu_continuation/resume_a3.sh (the same pre-registered command); finished artifacts reused through provenance checks",
+   "data_loss": "none"
   }
  ]
 }
