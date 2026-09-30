@@ -1,0 +1,772 @@
+{
+ "B_file": "b3a_rerun_B_1.json",
+ "iteration": 50,
+ "note": "interim, not the registered verdict",
+ "B@50_vs_A'@50": {
+  "checks": {
+   "conservation_max_abs": 2.0506103481920945e-09,
+   "conservation": true,
+   "range_ev": false,
+   "class_values": false,
+   "action_frequency": false,
+   "br_gain_decreasing_both": false
+  },
+  "players": {
+   "SB": {
+    "range_value_x": 1.9980982430558853,
+    "range_value_y": 1.9432669190099336,
+    "range_value_diff_bb": -0.0548313240459517,
+    "class_mean_abs_diff_bb": 0.8254690146470275,
+    "class_max_abs_diff_bb": 4.048494798231166,
+    "br_gain_bb_x": 0.4951804412429288,
+    "br_gain_bb_y": 0.4708398266587943
+   },
+   "BB": {
+    "range_value_x": 1.526800406579622,
+    "range_value_y": 1.698404133432263,
+    "range_value_diff_bb": 0.17160372685264114,
+    "class_mean_abs_diff_bb": 0.8669716072700564,
+    "class_max_abs_diff_bb": 3.839997635121117,
+    "br_gain_bb_x": 0.46668048145095953,
+    "br_gain_bb_y": 0.13735870395631467
+   },
+   "BTN": {
+    "range_value_x": 3.4751013502122072,
+    "range_value_y": 3.358328949608413,
+    "range_value_diff_bb": -0.11677240060379424,
+    "class_mean_abs_diff_bb": 0.9042473343362225,
+    "class_max_abs_diff_bb": 2.734378150052267,
+    "br_gain_bb_x": 0.5404134379784837,
+    "br_gain_bb_y": 0.21779100016621555
+   }
+  },
+  "strategy_max_abs_diff": 0.26891148394721404,
+  "strategy": [
+   {
+    "line": "root",
+    "player": "SB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.7159810575750015,
+     0.2840189433310693
+    ],
+    "mix_y": [
+     0.9848925396375244,
+     0.015107459383855288
+    ],
+    "max_abs_diff": 0.26891148394721404
+   },
+   {
+    "line": "Check",
+    "player": "BB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.8140297873972415,
+     0.18597021234139638
+    ],
+    "mix_y": [
+     0.9876233376235402,
+     0.012376664614335002
+    ],
+    "max_abs_diff": 0.17359355022629863
+   },
+   {
+    "line": "Check-Check",
+    "player": "BTN",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.375661261600077,
+     0.6243387374131157
+    ],
+    "mix_y": [
+     0.343396381304366,
+     0.6566036204417439
+    ],
+    "max_abs_diff": 0.03226488302862818
+   },
+   {
+    "line": "Bet",
+    "player": "BB",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.6882092019517323,
+     0.20407305810907697,
+     0.10771773521877519
+    ],
+    "mix_y": [
+     0.7165331342605009,
+     0.14895947958618908,
+     0.13450738031635948
+    ],
+    "max_abs_diff": 0.055113578522887896
+   },
+   {
+    "line": "Bet-Call",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.56591713660435,
+     0.14213268229559295,
+     0.29195017888712715
+    ],
+    "mix_y": [
+     0.5917476049227072,
+     0.10133575221769334,
+     0.3069166286186776
+    ],
+    "max_abs_diff": 0.04079693007789961
+   },
+   {
+    "line": "Bet-Fold",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.3786649428594679,
+     0.3333181513445926,
+     0.2880169050447141
+    ],
+    "mix_y": [
+     0.49789123513819955,
+     0.1750452786745497,
+     0.32706351592912786
+    ],
+    "max_abs_diff": 0.1582728726700429
+   }
+  ]
+ },
+ "B@50_vs_A@50": {
+  "checks": {
+   "conservation_max_abs": 6.584420120248069e-09,
+   "conservation": true,
+   "range_ev": false,
+   "class_values": false,
+   "action_frequency": false,
+   "br_gain_decreasing_both": false
+  },
+  "players": {
+   "SB": {
+    "range_value_x": 1.9715639209863982,
+    "range_value_y": 1.9432669190099336,
+    "range_value_diff_bb": -0.028297001976464564,
+    "class_mean_abs_diff_bb": 0.26901509478196806,
+    "class_max_abs_diff_bb": 1.8374519171987629,
+    "br_gain_bb_x": 0.08274299109636796,
+    "br_gain_bb_y": 0.4708398266587943
+   },
+   "BB": {
+    "range_value_x": 1.612057503052566,
+    "range_value_y": 1.698404133432263,
+    "range_value_diff_bb": 0.08634663037969714,
+    "class_mean_abs_diff_bb": 0.24571464678775984,
+    "class_max_abs_diff_bb": 1.1614034017148427,
+    "br_gain_bb_x": 0.03524466980904273,
+    "br_gain_bb_y": 0.13735870395631467
+   },
+   "BTN": {
+    "range_value_x": 3.4163785825454567,
+    "range_value_y": 3.358328949608413,
+    "range_value_diff_bb": -0.05804963293704368,
+    "class_mean_abs_diff_bb": 0.2836697484082588,
+    "class_max_abs_diff_bb": 0.9605839850966715,
+    "br_gain_bb_x": 0.05823501886100768,
+    "br_gain_bb_y": 0.21779100016621555
+   }
+  },
+  "strategy_max_abs_diff": 0.26349249823718895,
+  "strategy": [
+   {
+    "line": "root",
+    "player": "SB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.7214000425078901,
+     0.2785999576210442
+    ],
+    "mix_y": [
+     0.9848925396375244,
+     0.015107459383855288
+    ],
+    "max_abs_diff": 0.26349249823718895
+   },
+   {
+    "line": "Check",
+    "player": "BB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.9352610295571251,
+     0.06473896947686798
+    ],
+    "mix_y": [
+     0.9876233376235402,
+     0.012376664614335002
+    ],
+    "max_abs_diff": 0.052362308066415064
+   },
+   {
+    "line": "Check-Check",
+    "player": "BTN",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.28064258020169425,
+     0.7193574193514367
+    ],
+    "mix_y": [
+     0.343396381304366,
+     0.6566036204417439
+    ],
+    "max_abs_diff": 0.06275380110267176
+   },
+   {
+    "line": "Bet",
+    "player": "BB",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.7044016130965901,
+     0.20378123259056355,
+     0.09181721255162767
+    ],
+    "mix_y": [
+     0.7165331342605009,
+     0.14895947958618908,
+     0.13450738031635948
+    ],
+    "max_abs_diff": 0.054821753004374474
+   },
+   {
+    "line": "Bet-Call",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.6088172030877296,
+     0.11303965779392253,
+     0.2781431275438985
+    ],
+    "mix_y": [
+     0.5917476049227072,
+     0.10133575221769334,
+     0.3069166286186776
+    ],
+    "max_abs_diff": 0.02877350107477905
+   },
+   {
+    "line": "Bet-Fold",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.40548017760760585,
+     0.31147320352753,
+     0.2830466154567126
+    ],
+    "mix_y": [
+     0.49789123513819955,
+     0.1750452786745497,
+     0.32706351592912786
+    ],
+    "max_abs_diff": 0.1364279248529803
+   }
+  ]
+ },
+ "B@50_vs_A'@400": {
+  "checks": {
+   "conservation_max_abs": 2.0506103481920945e-09,
+   "conservation": true,
+   "range_ev": false,
+   "class_values": false,
+   "action_frequency": false,
+   "br_gain_decreasing_both": false
+  },
+  "players": {
+   "SB": {
+    "range_value_x": 1.996973858809582,
+    "range_value_y": 1.9432669190099336,
+    "range_value_diff_bb": -0.05370693979964836,
+    "class_mean_abs_diff_bb": 0.17883647855124463,
+    "class_max_abs_diff_bb": 1.834154370976389,
+    "br_gain_bb_x": 0.016326921128435812,
+    "br_gain_bb_y": 0.4708398266587943
+   },
+   "BB": {
+    "range_value_x": 1.6458102857939034,
+    "range_value_y": 1.698404133432263,
+    "range_value_diff_bb": 0.052593847638359614,
+    "class_mean_abs_diff_bb": 0.11812010488153896,
+    "class_max_abs_diff_bb": 0.6535464430398878,
+    "br_gain_bb_x": 0.018163119288512553,
+    "br_gain_bb_y": 0.13735870395631467
+   },
+   "BTN": {
+    "range_value_x": 3.357215856377815,
+    "range_value_y": 3.358328949608413,
+    "range_value_diff_bb": 0.00111309323059805,
+    "class_mean_abs_diff_bb": 0.128047757565867,
+    "class_max_abs_diff_bb": 0.7860851796566575,
+    "br_gain_bb_x": 0.021167364369302888,
+    "br_gain_bb_y": 0.21779100016621555
+   }
+  },
+  "strategy_max_abs_diff": 0.15992287095405114,
+  "strategy": [
+   {
+    "line": "root",
+    "player": "SB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.8366750542407532,
+     0.16332494684134014
+    ],
+    "mix_y": [
+     0.9848925396375244,
+     0.015107459383855288
+    ],
+    "max_abs_diff": 0.14821748745748484
+   },
+   {
+    "line": "Check",
+    "player": "BB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.9631521769081126,
+     0.03684782139159278
+    ],
+    "mix_y": [
+     0.9876233376235402,
+     0.012376664614335002
+    ],
+    "max_abs_diff": 0.024471160715427542
+   },
+   {
+    "line": "Check-Check",
+    "player": "BTN",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.3155798014266604,
+     0.6844201977264385
+    ],
+    "mix_y": [
+     0.343396381304366,
+     0.6566036204417439
+    ],
+    "max_abs_diff": 0.027816579877705583
+   },
+   {
+    "line": "Bet",
+    "player": "BB",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.7095664712062201,
+     0.20130649364399783,
+     0.08912702600768187
+    ],
+    "mix_y": [
+     0.7165331342605009,
+     0.14895947958618908,
+     0.13450738031635948
+    ],
+    "max_abs_diff": 0.052347014057808755
+   },
+   {
+    "line": "Bet-Call",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.6221018366132145,
+     0.0906263231089064,
+     0.2872718425538229
+    ],
+    "mix_y": [
+     0.5917476049227072,
+     0.10133575221769334,
+     0.3069166286186776
+    ],
+    "max_abs_diff": 0.030354231690507327
+   },
+   {
+    "line": "Bet-Fold",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.4121818451167885,
+     0.33496814962860083,
+     0.2528500026186864
+    ],
+    "mix_y": [
+     0.49789123513819955,
+     0.1750452786745497,
+     0.32706351592912786
+    ],
+    "max_abs_diff": 0.15992287095405114
+   }
+  ]
+ },
+ "B@50_vs_A@400": {
+  "checks": {
+   "conservation_max_abs": 2.0506103481920945e-09,
+   "conservation": true,
+   "range_ev": false,
+   "class_values": false,
+   "action_frequency": false,
+   "br_gain_decreasing_both": false
+  },
+  "players": {
+   "SB": {
+    "range_value_x": 1.9956473049007577,
+    "range_value_y": 1.9432669190099336,
+    "range_value_diff_bb": -0.052380385890824055,
+    "class_mean_abs_diff_bb": 0.18491444987140168,
+    "class_max_abs_diff_bb": 1.4107850578738557,
+    "br_gain_bb_x": 0.0013674048550331719,
+    "br_gain_bb_y": 0.4708398266587943
+   },
+   "BB": {
+    "range_value_x": 1.650087027304529,
+    "range_value_y": 1.698404133432263,
+    "range_value_diff_bb": 0.0483171061277341,
+    "class_mean_abs_diff_bb": 0.12429180528350228,
+    "class_max_abs_diff_bb": 0.775015375743564,
+    "br_gain_bb_x": 0.00088765382355116,
+    "br_gain_bb_y": 0.13735870395631467
+   },
+   "BTN": {
+    "range_value_x": 3.354265666813791,
+    "range_value_y": 3.358328949608413,
+    "range_value_diff_bb": 0.00406328279462187,
+    "class_mean_abs_diff_bb": 0.12598455818762344,
+    "class_max_abs_diff_bb": 0.7385975662797977,
+    "br_gain_bb_x": 0.001160106150219331,
+    "br_gain_bb_y": 0.21779100016621555
+   }
+  },
+  "strategy_max_abs_diff": 0.15912020949852224,
+  "strategy": [
+   {
+    "line": "root",
+    "player": "SB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.8257723328155088,
+     0.17422766888237753
+    ],
+    "mix_y": [
+     0.9848925396375244,
+     0.015107459383855288
+    ],
+    "max_abs_diff": 0.15912020949852224
+   },
+   {
+    "line": "Check",
+    "player": "BB",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.9691857645619452,
+     0.03081423471244765
+    ],
+    "mix_y": [
+     0.9876233376235402,
+     0.012376664614335002
+    ],
+    "max_abs_diff": 0.018437573061594992
+   },
+   {
+    "line": "Check-Check",
+    "player": "BTN",
+    "actions": [
+     "Check",
+     "Bet(3.5)"
+    ],
+    "mix_x": [
+     0.30353180702949467,
+     0.696468194513309
+    ],
+    "mix_y": [
+     0.343396381304366,
+     0.6566036204417439
+    ],
+    "max_abs_diff": 0.039864574274871334
+   },
+   {
+    "line": "Bet",
+    "player": "BB",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.7097000761480683,
+     0.19424132783145864,
+     0.09605855695943818
+    ],
+    "mix_y": [
+     0.7165331342605009,
+     0.14895947958618908,
+     0.13450738031635948
+    ],
+    "max_abs_diff": 0.04528184824526957
+   },
+   {
+    "line": "Bet-Call",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.6246333251065078,
+     0.08431290256764225,
+     0.2910537730440671
+    ],
+    "mix_y": [
+     0.5917476049227072,
+     0.10133575221769334,
+     0.3069166286186776
+    ],
+    "max_abs_diff": 0.03288572018380065
+   },
+   {
+    "line": "Bet-Fold",
+    "player": "BTN",
+    "actions": [
+     "Fold",
+     "Call",
+     "Raise(28.0)"
+    ],
+    "mix_x": [
+     0.41283153835367037,
+     0.3228944621586004,
+     0.2642739944691607
+    ],
+    "mix_y": [
+     0.49789123513819955,
+     0.1750452786745497,
+     0.32706351592912786
+    ],
+    "max_abs_diff": 0.1478491834840507
+   }
+  ]
+ },
+ "state": {
+  "B@50": {
+   "SB": {
+    "range_value": 1.9432669190099336,
+    "br_gain_bb": 0.4708398266587943
+   },
+   "BB": {
+    "range_value": 1.698404133432263,
+    "br_gain_bb": 0.13735870395631467
+   },
+   "BTN": {
+    "range_value": 3.358328949608413,
+    "br_gain_bb": 0.21779100016621555
+   },
+   "exploitability_pct_pot": 3.933283479911069,
+   "conservation_error": 2.0506103481920945e-09
+  },
+  "A'@50": {
+   "SB": {
+    "range_value": 1.9980982430558853,
+    "br_gain_bb": 0.4951804412429288
+   },
+   "BB": {
+    "range_value": 1.526800406579622,
+    "br_gain_bb": 0.46668048145095953
+   },
+   "BTN": {
+    "range_value": 3.4751013502122072,
+    "br_gain_bb": 0.5404134379784837
+   },
+   "exploitability_pct_pot": 7.153687431773201,
+   "conservation_error": -1.5228529548494407e-10
+  },
+  "A@50": {
+   "SB": {
+    "range_value": 1.9715639209863982,
+    "br_gain_bb": 0.08274299109636796
+   },
+   "BB": {
+    "range_value": 1.612057503052566,
+    "br_gain_bb": 0.03524466980904273
+   },
+   "BTN": {
+    "range_value": 3.4163785825454567,
+    "br_gain_bb": 0.05823501886100768
+   },
+   "exploitability_pct_pot": 0.8391556179353256,
+   "conservation_error": 6.584420120248069e-09
+  }
+ },
+ "B_time": {
+  "wall_s_to_50": 3927.774289773,
+  "threads": 2,
+  "per_trunk_iteration_s": {
+   "collect": 0.033583422499999994,
+   "frontier_solve": 73.94146919316002,
+   "trunk_update": 0.8422076334599999
+  },
+  "evaluation_s_total": 185.766004132,
+  "hu_frontier_share_of_iteration_time": 0.9882942645447873,
+  "frontiers": 1332,
+  "counters": {
+   "den3_calls": 17249763,
+   "den3_seconds": 2232.319438022,
+   "showdown2_calls": 0,
+   "showdown2_seconds": 0.0,
+   "showdown3_calls": 30753351,
+   "showdown3_seconds": 4837.211441988
+  },
+  "peak_rss_kb": 361500
+ },
+ "A'_time": {
+  "wall_s_to_50": 199.721692216,
+  "threads": 1,
+  "per_iteration_s": 3.476291526000001
+ },
+ "distance_to_A@400_reference": {
+  "B@50": {
+   "range_ev_diff_bb": {
+    "SB": -0.052380385890824055,
+    "BB": 0.0483171061277341,
+    "BTN": 0.00406328279462187
+   },
+   "class_mean_abs_diff_bb": {
+    "SB": 0.18491444987140168,
+    "BB": 0.12429180528350228,
+    "BTN": 0.12598455818762344
+   },
+   "strategy_max_abs_diff": 0.15912020949852224
+  },
+  "A@50": {
+   "range_ev_diff_bb": {
+    "SB": -0.02408338391435949,
+    "BB": -0.03802952425196304,
+    "BTN": 0.06211291573166555
+   },
+   "class_mean_abs_diff_bb": {
+    "SB": 0.13887527019241996,
+    "BB": 0.13318018170005178,
+    "BTN": 0.20225834530519018
+   },
+   "strategy_max_abs_diff": 0.10437229030761863
+  },
+  "A'@50": {
+   "range_ev_diff_bb": {
+    "SB": 0.0024509381551276466,
+    "BB": -0.12328662072490704,
+    "BTN": 0.1208356833984161
+   },
+   "class_mean_abs_diff_bb": {
+    "SB": 0.7456984840816058,
+    "BB": 0.7645147019219455,
+    "BTN": 0.8315212900215386
+   },
+   "strategy_max_abs_diff": 0.15515597762894873
+  },
+  "A'@100": {
+   "range_ev_diff_bb": {
+    "SB": -0.00029223417396528895,
+    "BB": -0.044060229030384424,
+    "BTN": 0.044352467960051545
+   },
+   "class_mean_abs_diff_bb": {
+    "SB": 0.19035881285325554,
+    "BB": 0.24204471185307685,
+    "BTN": 0.29264849196979625
+   },
+   "strategy_max_abs_diff": 0.0901512597361571
+  },
+  "A'@200": {
+   "range_ev_diff_bb": {
+    "SB": 0.006819002248309447,
+    "BB": -0.01195843098751359,
+    "BTN": 0.005139437953779691
+   },
+   "class_mean_abs_diff_bb": {
+    "SB": 0.050193011564688125,
+    "BB": 0.0649297530675628,
+    "BTN": 0.0872721951024413
+   },
+   "strategy_max_abs_diff": 0.04737335449111224
+  }
+ },
+ "note_convergence_check": "single checkpoint at 50: the BR-decreasing criterion is not applicable here (reported False by construction)",
+ "determinism_B": {
+  "main_B_log_it50": {
+   "expl_pct": 3.9333,
+   "conservation": 2.05e-09
+  },
+  "rerun_B_1_it50": {
+   "expl_pct": 3.933283479911069,
+   "conservation": 2.0506103481920945e-09
+  },
+  "exact_check": "pending main B JSON (trace at 50)"
+ }
+}
