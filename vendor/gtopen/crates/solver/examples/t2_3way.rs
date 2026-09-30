@@ -408,6 +408,350 @@ fn load_spot(path: &str, board: &str) -> Result<Spot, String> {
     Ok(Spot { pos: order, w, pot0: t["pot_bb"].as_f64().unwrap(), stack: t["effective_behind_bb"].as_f64().unwrap(), board: b, labels })
 }
 
+
+// ------------------------------------------------------------------ exact showdown evaluation
+/// strength of every combo on a complete 5-card board (0 = combo touches the board)
+fn strengths(board: &[Card]) -> Vec<u32> {
+    let mut bm = 0u64;
+    for &c in board {
+        bm |= 1 << c;
+    }
+    (0..NUM_COMBOS)
+        .map(|i| {
+            let (a, c) = combo_from_index(i);
+            if bm & (1 << a) != 0 || bm & (1 << c) != 0 {
+                return 0;
+            }
+            let mut cards = [a, c, 0, 0, 0, 0, 0];
+            cards[2..7].copy_from_slice(board);
+            evaluate7(&cards) + 1
+        })
+        .collect()
+}
+
+#[inline]
+fn cidx(a: Card, b: Card) -> usize {
+    combo_index(a, b)
+}
+
+/// Exact 3-way showdown sums for hero combos h against opponents q, r (pairwise disjoint
+/// hands, both disjoint from the board): num[h] = sum_{x,y} wq(x) wr(y) share_h(x, y),
+/// den[h] = sum_{x,y} wq(x) wr(y). If `q_in_showdown` is false, q has folded but still blocks
+/// cards (its hand never wins). O(N_hero * N_q) with an O(1) inclusion-exclusion over r.
+fn showdown_sums(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Vec<f64>, Vec<f64>) {
+    // r aggregates by strength: for each hero strength level we need, over r's combos
+    // disjoint from 4 given cards, the mass strictly below / equal to the hero strength.
+    let mut order: Vec<usize> = (0..NUM_COMBOS).filter(|&i| st[i] > 0).collect();
+    order.sort_by_key(|&i| st[i]);
+    let mut num = vec![0f64; NUM_COMBOS];
+    let mut den = vec![0f64; NUM_COMBOS];
+    // prefix structures over r: total and per card for combos with strength < t, = t
+    let mut lt_tot = 0f64;
+    let mut lt_card = [0f64; 52];
+    let all_tot: f64 = order.iter().map(|&i| wr[i] as f64).sum();
+    let mut all_card = [0f64; 52];
+    for &i in &order {
+        let (a, b) = combo_from_index(i);
+        all_card[a as usize] += wr[i] as f64;
+        all_card[b as usize] += wr[i] as f64;
+    }
+    let mut k = 0;
+    while k < order.len() {
+        let t = st[order[k]];
+        let mut e = k;
+        while e < order.len() && st[order[e]] == t {
+            e += 1;
+        }
+        let mut eq_tot = 0f64;
+        let mut eq_card = [0f64; 52];
+        for &i in &order[k..e] {
+            let (a, b) = combo_from_index(i);
+            eq_tot += wr[i] as f64;
+            eq_card[a as usize] += wr[i] as f64;
+            eq_card[b as usize] += wr[i] as f64;
+        }
+        // mass of r over combos disjoint from cards `cs` (4 distinct cards), for a set given by (tot, card sums, membership)
+        let excl = |tot: f64, card: &[f64; 52], cs: [Card; 4], member: &dyn Fn(usize) -> bool| -> f64 {
+            let mut m = tot;
+            for &c in &cs {
+                m -= card[c as usize];
+            }
+            for i in 0..4 {
+                for j in i + 1..4 {
+                    let ci = cidx(cs[i], cs[j]);
+                    if member(ci) {
+                        m += wr[ci] as f64;
+                    }
+                }
+            }
+            m
+        };
+        let is_lt = |ci: usize| st[ci] > 0 && st[ci] < t;
+        let is_eq = |ci: usize| st[ci] == t;
+        let is_any = |ci: usize| st[ci] > 0;
+        for &h in &order[k..e] {
+            let (ha, hb) = combo_from_index(h);
+            let (mut n, mut d) = (0f64, 0f64);
+            for &x in &order {
+                let wx = wq[x] as f64;
+                if wx == 0.0 {
+                    continue;
+                }
+                let (xa, xb) = combo_from_index(x);
+                if xa == ha || xa == hb || xb == ha || xb == hb {
+                    continue;
+                }
+                let cs = [ha, hb, xa, xb];
+                let r_all = excl(all_tot, &all_card, cs, &is_any);
+                d += wx * r_all;
+                let r_lt = excl(lt_tot, &lt_card, cs, &is_lt);
+                let r_eq = excl(eq_tot, &eq_card, cs, &is_eq);
+                if !q_in_showdown {
+                    n += wx * (r_lt + 0.5 * r_eq);
+                } else if st[x] < t {
+                    n += wx * (r_lt + 0.5 * r_eq);
+                } else if st[x] == t {
+                    n += wx * (0.5 * r_lt + r_eq / 3.0);
+                }
+            }
+            num[h] = n;
+            den[h] = d;
+        }
+        for &i in &order[k..e] {
+            let (a, b) = combo_from_index(i);
+            lt_tot += wr[i] as f64;
+            lt_card[a as usize] += wr[i] as f64;
+            lt_card[b as usize] += wr[i] as f64;
+        }
+        k = e;
+    }
+    (num, den)
+}
+
+/// brute force of the same sums (validation only): O(N^3)
+fn showdown_brute(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Vec<f64>, Vec<f64>) {
+    let idx: Vec<usize> = (0..NUM_COMBOS).filter(|&i| st[i] > 0).collect();
+    let mut num = vec![0f64; NUM_COMBOS];
+    let mut den = vec![0f64; NUM_COMBOS];
+    let cards = |i: usize| {
+        let (a, b) = combo_from_index(i);
+        (1u64 << a) | (1u64 << b)
+    };
+    for &h in &idx {
+        let mh = cards(h);
+        for &x in &idx {
+            if wq[x] == 0.0 || cards(x) & mh != 0 {
+                continue;
+            }
+            for &y in &idx {
+                if wr[y] == 0.0 || cards(y) & (mh | cards(x)) != 0 {
+                    continue;
+                }
+                let w = wq[x] as f64 * wr[y] as f64;
+                den[h] += w;
+                let (sh, sx, sy) = (st[h], st[x], st[y]);
+                let best = if q_in_showdown { sh.max(sx).max(sy) } else { sh.max(sy) };
+                if sh == best {
+                    let ties = 1 + (q_in_showdown && sx == best) as u32 + (sy == best) as u32;
+                    num[h] += w / ties as f64;
+                }
+            }
+        }
+    }
+    (num, den)
+}
+
+fn board_cards(flop: &[Card]) -> Vec<Card> {
+    (0..52u8).filter(|c| !flop.contains(c)).collect()
+}
+
+/// showdown-only game (no betting): per player, per combo, sums over all (turn, river)
+/// runouts; EV(h) = sum_R num_R(h) / (C(K-6, 2) * den_flop(h)) with K = 49 unseen cards.
+fn showdown_test(spot: &Spot, brute_sample: usize) -> serde_json::Value {
+    let rest = board_cards(&spot.board);
+    let runouts: Vec<(Card, Card)> = rest.iter().enumerate().flat_map(|(i, &a)| rest[i + 1..].iter().map(move |&b| (a, b))).collect();
+    let mut res = serde_json::Map::new();
+    let mut per_player = Vec::new();
+    // validation: fast vs brute on reduced ranges for a few runouts
+    let mut rng = 12345u64;
+    let mut next = || {
+        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (rng >> 33) as usize
+    };
+    let mut max_rel = 0f64;
+    for trial in 0..brute_sample {
+        let (t, r) = runouts[next() % runouts.len()];
+        let mut b = spot.board.clone();
+        b.push(t);
+        b.push(r);
+        let st = strengths(&b);
+        let red: Vec<Vec<f32>> = spot.w.iter().map(|w| {
+            let mut v = vec![0f32; NUM_COMBOS];
+            for i in 0..NUM_COMBOS {
+                if st[i] > 0 && w[i] > 0.0 && next() % 12 == 0 {
+                    v[i] = w[i];
+                }
+            }
+            v
+        }).collect();
+        for p in 0..NP {
+            let (q, r_) = ((p + 1) % NP, (p + 2) % NP);
+            let (nf, df) = showdown_sums(&st, &red[q], &red[r_], trial % 2 == 0);
+            let (nb, db) = showdown_brute(&st, &red[q], &red[r_], trial % 2 == 0);
+            for h in 0..NUM_COMBOS {
+                for (f, bb) in [(nf[h], nb[h]), (df[h], db[h])] {
+                    let rel = (f - bb).abs() / bb.abs().max(1e-12);
+                    if bb.abs() > 1e-12 && rel > max_rel {
+                        max_rel = rel;
+                    }
+                }
+            }
+        }
+    }
+    res.insert("fast_vs_brute_force".into(), serde_json::json!({"runouts_checked": brute_sample, "max_relative_difference": max_rel,
+        "note": "reduced random ranges (~1/12 of combos), alternately q in / out of the showdown"}));
+    // full showdown-only values
+    let sums: Vec<Vec<(Vec<f64>, Vec<f64>)>> = runouts.par_iter().map(|&(t, r)| {
+        let mut b = spot.board.clone();
+        b.push(t);
+        b.push(r);
+        let st = strengths(&b);
+        (0..NP).map(|p| showdown_sums(&st, &spot.w[(p + 1) % NP], &spot.w[(p + 2) % NP], true)).collect()
+    }).collect();
+    let flop_st: Vec<u32> = (0..NUM_COMBOS).map(|i| {
+        let (a, b) = combo_from_index(i);
+        (!spot.board.contains(&a) && !spot.board.contains(&b)) as u32
+    }).collect();
+    let n_runouts_per_triple = ((49 - 6) * (49 - 7) / 2) as f64;
+    let mut total_value = 0f64;
+    let mut masses = Vec::new();
+    for p in 0..NP {
+        let (q, r_) = ((p + 1) % NP, (p + 2) % NP);
+        // den on the flop only (all combos equal strength -> den = joint compatible mass)
+        let (_, den_flop) = showdown_brute_den(&flop_st, &spot.w[q], &spot.w[r_]);
+        let mut num = vec![0f64; NUM_COMBOS];
+        let mut den_chk = vec![0f64; NUM_COMBOS];
+        for s in &sums {
+            for h in 0..NUM_COMBOS {
+                num[h] += s[p].0[h];
+                den_chk[h] += s[p].1[h];
+            }
+        }
+        // check: sum over runouts of den_R(h) = C(K-6,2) * den_flop(h)
+        let mut max_den_rel = 0f64;
+        for h in 0..NUM_COMBOS {
+            if den_flop[h] > 0.0 {
+                max_den_rel = max_den_rel.max((den_chk[h] / (n_runouts_per_triple * den_flop[h]) - 1.0).abs());
+            }
+        }
+        let ev: Vec<f64> = (0..NUM_COMBOS).map(|h| if den_flop[h] > 0.0 { num[h] / (n_runouts_per_triple * den_flop[h]) } else { 0.0 }).collect();
+        // class values: den-weighted mean of pot*ev over the class's combos
+        let mut cn = vec![0f64; 169];
+        let mut cd = vec![0f64; 169];
+        for h in 0..NUM_COMBOS {
+            if den_flop[h] > 0.0 {
+                let (a, b) = combo_from_index(h);
+                let k = class_index(rank(a), rank(b), suit(a) == suit(b));
+                cn[k] += den_flop[h] * ev[h] * spot.pot0;
+                cd[k] += den_flop[h];
+            }
+        }
+        let cls: Vec<Option<f64>> = (0..169).map(|k| if cd[k] > 0.0 { Some(cn[k] / cd[k]) } else { None }).collect();
+        // range-weighted value (own weights x compatible opponent mass): conservation
+        let mass: f64 = (0..NUM_COMBOS).map(|h| spot.w[p][h] as f64 * den_flop[h]).sum();
+        let val: f64 = (0..NUM_COMBOS).map(|h| spot.w[p][h] as f64 * den_flop[h] * ev[h] * spot.pot0).sum::<f64>() / mass;
+        total_value += val;
+        masses.push(mass);
+        per_player.push(serde_json::json!({"position": spot.pos[p], "class_gross_showdown_only": cls, "range_value": val,
+            "runout_den_identity_max_rel_error": max_den_rel}));
+    }
+    res.insert("players".into(), serde_json::Value::Array(per_player));
+    res.insert("conservation".into(), serde_json::json!({"sum_range_values": total_value, "pot": spot.pot0, "error": total_value - spot.pot0,
+        "joint_mass_by_hero_player": masses, "note": "each player's range value is the pot share over the SAME joint (w0 w1 w2, disjoint) mass"}));
+    serde_json::Value::Object(res)
+}
+
+/// den only (no strengths): joint compatible mass of q, r for each hero combo
+fn showdown_brute_den(valid: &[u32], wq: &[f32], wr: &[f32]) -> (Vec<f64>, Vec<f64>) {
+    showdown_sums(valid, wq, wr, true)
+}
+
+/// Preflop-level exact card-removal 3-way showdown equity per class (hero uniform within the
+/// class, opponents' combos by weight, all three hands and the board pairwise disjoint),
+/// Monte Carlo over uniformly drawn complete boards; compared with coupled_deck_v1.
+fn preflop_equity(t_path: &str, n_boards: usize, seed: u64) -> Result<serde_json::Value, String> {
+    let t: serde_json::Value = serde_json::from_slice(&std::fs::read(t_path).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    let order: Vec<String> = t["postflop_order"].as_array().unwrap().iter().map(|x| x.as_str().unwrap().to_string()).collect();
+    let pls: Vec<&serde_json::Value> = order.iter().map(|p| t["players"].as_array().unwrap().iter().find(|x| x["position"] == p.as_str()).unwrap()).collect();
+    // opponent weights: class reach spread over the class's combos (no EPS floor: legacy model uses arriving reach)
+    let w: Vec<Vec<f32>> = pls.iter().map(|pl| {
+        let keep: Vec<f64> = pl["class_keep_fraction"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).collect();
+        (0..NUM_COMBOS).map(|i| {
+            let (a, b) = combo_from_index(i);
+            keep[class_index(rank(a), rank(b), suit(a) == suit(b))] as f32
+        }).collect()
+    }).collect();
+    let mut rng = seed;
+    let mut next = move || {
+        rng = rng.wrapping_add(0x9e3779b97f4a7c15);
+        let mut z = rng;
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);
+        z ^ (z >> 31)
+    };
+    let boards: Vec<Vec<Card>> = (0..n_boards).map(|_| {
+        let mut deck: Vec<Card> = (0..52).collect();
+        for i in 0..5 {
+            let j = i + (next() as usize) % (52 - i);
+            deck.swap(i, j);
+        }
+        deck[..5].to_vec()
+    }).collect();
+    let acc: Vec<[Vec<f64>; 6]> = boards.par_iter().map(|b| {
+        let st = strengths(b);
+        let mut out: [Vec<f64>; 6] = Default::default();
+        for p in 0..NP {
+            let (n, d) = showdown_sums(&st, &w[(p + 1) % NP], &w[(p + 2) % NP], true);
+            let mut cn = vec![0f64; 169];
+            let mut cd = vec![0f64; 169];
+            for h in 0..NUM_COMBOS {
+                if st[h] > 0 {
+                    let (a, c) = combo_from_index(h);
+                    let k = class_index(rank(a), rank(c), suit(a) == suit(c));
+                    cn[k] += n[h];
+                    cd[k] += d[h];
+                }
+            }
+            out[2 * p] = cn;
+            out[2 * p + 1] = cd;
+        }
+        out
+    }).collect();
+    let pot = t["pot_bb"].as_f64().unwrap();
+    let mut players = Vec::new();
+    for p in 0..NP {
+        let mut cn = vec![0f64; 169];
+        let mut cd = vec![0f64; 169];
+        for a in &acc {
+            for k in 0..169 {
+                cn[k] += a[2 * p][k];
+                cd[k] += a[2 * p + 1][k];
+            }
+        }
+        let exact: Vec<f64> = (0..169).map(|k| pot * cn[k] / cd[k]).collect();
+        let cdk: Vec<f64> = pls[p]["coupled_deck_gross_f64"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).collect();
+        let r: Vec<f64> = pls[p]["class_reach_normalized"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).collect();
+        let d: Vec<f64> = (0..169).map(|k| exact[k] - cdk[k]).collect();
+        players.push(serde_json::json!({"position": order[p], "exact_card_removal_gross": exact, "coupled_deck_gross": cdk,
+            "mean_abs_diff": d.iter().map(|x| x.abs()).sum::<f64>() / 169.0,
+            "reach_weighted_abs_diff": (0..169).map(|k| r[k] * d[k].abs()).sum::<f64>(),
+            "range_ev_exact": (0..169).map(|k| r[k] * exact[k]).sum::<f64>(), "range_ev_coupled": (0..169).map(|k| r[k] * cdk[k]).sum::<f64>(),
+            "max_abs_diff": d.iter().fold(0f64, |m, x| m.max(x.abs()))}));
+    }
+    Ok(serde_json::json!({"boards": n_boards, "seed": seed, "players": players,
+        "note": "range EV of the exact side uses the arriving class reach (class_reach_normalized) as weights, like the legacy check; the exact sums already condition on disjoint hands"}))
+}
+
 fn main() -> Result<(), String> {
     let a: Vec<String> = std::env::args().collect();
     match a.get(1).map(|s| s.as_str()) {
@@ -419,6 +763,23 @@ fn main() -> Result<(), String> {
             let g2 = build_game(spot.pot0, spot.stack, Some(0));
             r["hu_degenerate_tree"] = build_report(&g2, false);
             println!("{}", serde_json::to_string_pretty(&r).unwrap());
+            Ok(())
+        }
+        Some("showdown") => {
+            let spot = load_spot(&a[2], &a[3])?;
+            let n = a.iter().position(|x| x == "--brute-sample").map(|i| a[i + 1].parse().unwrap()).unwrap_or(6);
+            let t = std::time::Instant::now();
+            let mut r = showdown_test(&spot, n);
+            r["seconds"] = serde_json::json!(t.elapsed().as_secs_f64());
+            r["board"] = serde_json::json!(a[3]);
+            r["labels"] = serde_json::json!(spot.labels);
+            println!("{}", serde_json::to_string(&r).unwrap());
+            Ok(())
+        }
+        Some("preflop-equity") => {
+            let seed = a.get(4).and_then(|x| x.parse().ok()).unwrap_or(20260930);
+            let r = preflop_equity(&a[2], a[3].parse().map_err(|_| "boards")?, seed)?;
+            println!("{}", serde_json::to_string(&r).unwrap());
             Ok(())
         }
         _ => Err("usage: t2_3way build|showdown|preflop-equity|solve ...".into()),
