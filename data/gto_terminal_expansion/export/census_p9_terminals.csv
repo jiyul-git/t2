@@ -1,0 +1,182 @@
+rank,node,path,live,live_count,pot_type,pot_bb,spr,reach,flop_share,solved
+1,6,CO:Fold > BTN:Fold > SB:Raise 2.5 > BB:Call 2.5,"SB,BB",2,srp,6.0,4.583,1.180e-01,0.246758,False
+2,246,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:Call 2,"CO,SB,BB",3,srp,7.0,4.0,1.047e-01,0.218924,False
+3,46,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:Call 2,"BTN,SB,BB",3,srp,7.0,4.0,9.021e-02,0.188583,False
+4,28,CO:Fold > BTN:Raise 2 > SB:Fold > BB:Call 2,"BTN,BB",2,srp,5.5,5.091,8.352e-02,0.174588,True
+5,228,CO:Raise 2 > BTN:Fold > SB:Fold > BB:Call 2,"CO,BB",2,srp,5.5,5.091,6.956e-02,0.145405,False
+6,1371,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:Fold > CO:Call 6,"CO,BTN",2,3bet,14.5,1.655,4.779e-03,0.009989,False
+7,420,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:Call 2,"CO,BTN,BB",3,srp,7.5,3.733,4.123e-03,0.008619,False
+8,508,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:Call 2,"CO,BTN,SB,BB",4,srp,9.0,3.111,2.870e-03,0.006,False
+9,1383,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:Call 6 > CO:Call 6,"CO,BTN,BB",3,3bet,19.5,1.231,2.012e-04,0.000421,False
+10,1449,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Fold > CO:Call 6,"CO,BTN,SB",3,3bet,20.0,1.2,8.876e-05,0.000186,False
+11,135,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:Fold > BTN:Call 7,"BTN,SB",2,3bet,16.0,1.438,8.505e-05,0.000178,False
+12,1382,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:Call 6 > CO:Fold,"BTN,BB",2,3bet,15.5,1.548,6.912e-05,0.000144,False
+13,1448,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Fold > CO:Fold,"BTN,SB",2,3bet,16.0,1.5,3.942e-05,8.2e-05,False
+14,9,CO:Fold > BTN:Fold > SB:Raise 2.5 > BB:3-bet 8.8 > SB:Call 8.8,"SB,BB",2,3bet,18.5,1.149,2.451e-05,5.1e-05,False
+15,335,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:Fold > CO:Call 7,"CO,SB",2,3bet,16.0,1.438,2.377e-05,5e-05,False
+16,147,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:Call 7 > BTN:Call 7,"BTN,SB,BB",3,3bet,22.0,1.045,2.738e-06,6e-06,False
+17,1686,CO:Raise 2 > BTN:3-bet 6 > SB:4-bet 13.2 > BB:Fold > CO:Fold > BTN:Call 13.2,"BTN,SB",2,4bet,30.400000000000002,0.553,1.438e-06,3e-06,False
+18,146,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:Call 7 > BTN:Fold,"SB,BB",2,3bet,17.0,1.353,1.307e-06,3e-06,False
+19,1483,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:Call 6,"CO,BTN,SB,BB",4,3bet,25.0,0.96,6.076e-07,1e-06,False
+20,1482,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:Fold,"BTN,SB,BB",3,3bet,21.0,1.143,6.073e-07,1e-06,False
+21,1587,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:4-bet 13.2 > CO:Fold > BTN:Fold > SB:Call 13.2,"SB,BB",2,4bet,35.400000000000006,0.475,4.130e-07,1e-06,False
+22,231,CO:Raise 2 > BTN:Fold > SB:Fold > BB:3-bet 7 > CO:Call 7,"CO,BB",2,3bet,15.5,1.484,4.006e-07,1e-06,False
+23,346,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:Call 7 > CO:Fold,"SB,BB",2,3bet,17.0,1.353,3.061e-07,1e-06,False
+24,507,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:Fold,"CO,BTN,SB",3,srp,8.0,3.5,2.743e-07,1e-06,False
+25,347,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:Call 7 > CO:Call 7,"CO,SB,BB",3,3bet,22.0,1.045,2.644e-07,1e-06,False
+26,1418,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:4-bet 13.2 > CO:Fold > BTN:Call 13.2,"BTN,BB",2,4bet,29.900000000000006,0.562,2.228e-07,0.0,False
+27,31,CO:Fold > BTN:Raise 2 > SB:Fold > BB:3-bet 7 > BTN:Call 7,"BTN,BB",2,3bet,15.5,1.484,2.069e-07,0.0,False
+28,1593,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:4-bet 13.2 > CO:Fold > BTN:Call 13.2 > SB:Call 13.2,"BTN,SB,BB",3,4bet,42.6,0.394,1.916e-07,0.0,False
+29,245,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:Fold,"CO,SB",2,srp,6.0,4.667,1.575e-07,0.0,False
+30,45,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:Fold,"BTN,SB",2,srp,6.0,4.667,1.323e-07,0.0,False
+31,261,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > SB:Fold,"CO,BB",2,3bet,17.0,1.353,1.059e-07,0.0,False
+32,182,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:4-bet 15.4 > BTN:Fold > SB:Call 15.4,"SB,BB",2,4bet,33.800000000000004,0.432,1.027e-07,0.0,False
+33,942,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:Fold > BTN:Call 7,"BTN,SB",2,3bet,18.0,1.278,9.964e-08,0.0,False
+34,138,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:Fold > BTN:4-bet 15.4 > SB:Call 15.4,"BTN,SB",2,4bet,32.800000000000004,0.445,9.432e-08,0.0,False
+35,382,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:4-bet 15.4 > CO:Fold > SB:Call 15.4,"SB,BB",2,4bet,33.800000000000004,0.432,9.331e-08,0.0,False
+36,262,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > SB:Call 7,"CO,SB,BB",3,3bet,22.0,1.045,7.031e-08,0.0,False
+37,954,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:Call 7 > BTN:Call 7,"CO,BTN,SB",3,3bet,23.0,1.0,6.662e-08,0.0,False
+38,419,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:Fold,"CO,BTN",2,srp,6.5,4.308,4.700e-08,0.0,False
+39,1691,CO:Raise 2 > BTN:3-bet 6 > SB:4-bet 13.2 > BB:Fold > CO:Call 13.2 > BTN:Fold,"CO,SB",2,4bet,34.400000000000006,0.488,4.494e-08,0.0,False
+40,525,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:Call 7 > SB:Call 7,"BTN,SB,BB",3,3bet,24.0,0.958,3.201e-08,0.0,False
+41,250,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:Fold > SB:Call 7,"SB,BB",2,3bet,17.0,1.353,2.846e-08,0.0,False
+42,524,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:Call 7 > SB:Fold,"BTN,BB",2,3bet,19.0,1.211,2.465e-08,0.0,False
+43,62,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:Call 7 > SB:Call 7,"BTN,SB,BB",3,3bet,22.0,1.045,2.392e-08,0.0,False
+44,1692,CO:Raise 2 > BTN:3-bet 6 > SB:4-bet 13.2 > BB:Fold > CO:Call 13.2 > BTN:Call 13.2,"CO,BTN,SB",3,4bet,41.6,0.404,2.089e-08,0.0,False
+45,424,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:Fold > BTN:Call 7,"BTN,BB",2,3bet,17.5,1.314,2.083e-08,0.0,False
+46,1374,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:Fold > CO:4-bet 13.2 > BTN:Call 13.2,"CO,BTN",2,4bet,28.900000000000002,0.581,1.682e-08,0.0,False
+47,1611,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:4-bet 13.2 > CO:Call 13.2 > BTN:Fold > SB:Call 13.2,"CO,SB,BB",3,4bet,46.60000000000001,0.361,1.606e-08,0.0,False
+48,1710,CO:Raise 2 > BTN:3-bet 6 > SB:4-bet 13.2 > BB:Call 13.2 > CO:Fold > BTN:Call 13.2,"BTN,SB,BB",3,4bet,42.6,0.394,1.483e-08,0.0,False
+49,436,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:Call 7 > BTN:Call 7,"CO,BTN,BB",3,3bet,22.5,1.022,1.315e-08,0.0,False
+50,50,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:Fold > SB:Call 7,"SB,BB",2,3bet,17.0,1.353,1.245e-08,0.0,False
+51,61,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:Call 7 > SB:Fold,"BTN,BB",2,3bet,17.0,1.353,1.226e-08,0.0,False
+52,338,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:Fold > CO:4-bet 15.4 > SB:Call 15.4,"CO,SB",2,4bet,32.800000000000004,0.445,1.130e-08,0.0,False
+53,1709,CO:Raise 2 > BTN:3-bet 6 > SB:4-bet 13.2 > BB:Call 13.2 > CO:Fold > BTN:Fold,"SB,BB",2,4bet,35.400000000000006,0.475,1.063e-08,0.0,False
+54,1720,CO:Raise 2 > BTN:3-bet 6 > SB:4-bet 13.2 > BB:Call 13.2 > CO:Call 13.2 > BTN:Call 13.2,"CO,BTN,SB,BB",4,4bet,53.800000000000004,0.312,9.662e-09,0.0,False
+55,1453,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Fold > CO:4-bet 13.2 > BTN:Fold > SB:Call 13.2,"CO,SB",2,4bet,34.400000000000006,0.488,4.433e-09,0.0,False
+56,1424,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:4-bet 13.2 > CO:Call 13.2 > BTN:Call 13.2,"CO,BTN,BB",3,4bet,41.1,0.409,4.337e-09,0.0,False
+57,12,CO:Fold > BTN:Fold > SB:Raise 2.5 > BB:3-bet 8.8 > SB:4-bet 19.2 > BB:Call 19.2,"SB,BB",2,4bet,39.5,0.272,4.220e-09,0.0,False
+58,188,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:4-bet 15.4 > BTN:Call 15.4 > SB:Call 15.4,"BTN,SB,BB",3,4bet,47.2,0.309,3.349e-09,0.0,False
+59,591,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Fold > SB:Call 7,"CO,SB,BB",3,3bet,24.0,0.958,3.088e-09,0.0,False
+60,1621,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:4-bet 13.2 > CO:Call 13.2 > BTN:Call 13.2 > SB:Call 13.2,"CO,BTN,SB,BB",4,4bet,53.800000000000004,0.312,2.945e-09,0.0,False
+61,625,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:Call 7,"CO,BTN,SB,BB",4,3bet,29.0,0.793,2.324e-09,0.0,False
+62,1423,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:4-bet 13.2 > CO:Call 13.2 > BTN:Fold,"CO,BB",2,4bet,33.900000000000006,0.496,2.015e-09,0.0,False
+63,590,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Fold > SB:Fold,"CO,BB",2,3bet,19.0,1.211,1.606e-09,0.0,False
+64,624,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:Fold,"CO,BTN,BB",3,3bet,24.0,0.958,1.447e-09,0.0,False
+65,34,CO:Fold > BTN:Raise 2 > SB:Fold > BB:3-bet 7 > BTN:4-bet 15.4 > BB:Call 15.4,"BTN,BB",2,4bet,32.300000000000004,0.452,1.208e-09,0.0,False
+66,435,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:Call 7 > BTN:Fold,"CO,BB",2,3bet,17.5,1.314,9.974e-10,0.0,False
+67,187,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:4-bet 15.4 > BTN:Call 15.4 > SB:Fold,"BTN,BB",2,4bet,38.800000000000004,0.376,9.803e-10,0.0,False
+68,953,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:Call 7 > BTN:Fold,"CO,SB",2,3bet,18.0,1.278,8.141e-10,0.0,False
+69,234,CO:Raise 2 > BTN:Fold > SB:Fold > BB:3-bet 7 > CO:4-bet 15.4 > BB:Call 15.4,"CO,BB",2,4bet,32.300000000000004,0.452,6.201e-10,0.0,False
+70,560,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4,"BTN,BB",2,4bet,35.800000000000004,0.408,5.665e-10,0.0,False
+71,388,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:4-bet 15.4 > CO:Call 15.4 > SB:Call 15.4,"CO,SB,BB",3,4bet,47.2,0.309,4.879e-10,0.0,False
+72,513,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:Fold > SB:Call 7,"SB,BB",2,3bet,19.0,1.211,3.690e-10,0.0,False
+73,97,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4,"BTN,BB",2,4bet,33.800000000000004,0.432,3.479e-10,0.0,False
+74,1387,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:Call 6 > CO:4-bet 13.2 > BTN:Fold > BB:Call 13.2,"CO,BB",2,4bet,33.900000000000006,0.496,2.558e-10,0.0,False
+75,1054,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:Call 7,"CO,BTN,SB,BB",4,3bet,29.0,0.793,2.211e-10,0.0,False
+76,1257,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:4-bet 15.4 > CO:Fold > BTN:Fold > SB:Call 15.4,"SB,BB",2,4bet,35.800000000000004,0.408,2.092e-10,0.0,False
+77,989,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:4-bet 15.4 > BTN:Fold > SB:Call 15.4,"CO,SB",2,4bet,34.800000000000004,0.42,1.911e-10,0.0,False
+78,1019,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Fold > BTN:Fold,"SB,BB",2,3bet,19.0,1.211,1.586e-10,0.0,False
+79,1719,CO:Raise 2 > BTN:3-bet 6 > SB:4-bet 13.2 > BB:Call 13.2 > CO:Call 13.2 > BTN:Fold,"CO,SB,BB",3,4bet,46.60000000000001,0.361,1.506e-10,0.0,False
+80,1020,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Fold > BTN:Call 7,"BTN,SB,BB",3,3bet,24.0,0.958,1.265e-10,0.0,False
+81,387,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:4-bet 15.4 > CO:Call 15.4 > SB:Fold,"CO,BB",2,4bet,38.800000000000004,0.376,8.762e-11,0.0,False
+82,253,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:Fold > SB:4-bet 15.4 > BB:Call 15.4,"SB,BB",2,4bet,33.800000000000004,0.432,7.409e-11,0.0,False
+83,1053,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:Fold,"CO,SB,BB",3,3bet,24.0,0.958,7.185e-11,0.0,False
+84,151,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:Call 7 > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4,"BTN,BB",2,4bet,38.800000000000004,0.376,6.606e-11,0.0,False
+85,297,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > SB:Fold > BB:Call 15.4,"CO,BB",2,4bet,33.800000000000004,0.432,4.994e-11,0.0,False
+86,471,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Fold > BB:Call 15.4,"CO,BB",2,4bet,34.300000000000004,0.426,4.893e-11,0.0,False
+87,351,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > SB:Fold > BB:Call 15.4,"CO,BB",2,4bet,38.800000000000004,0.376,4.385e-11,0.0,False
+88,446,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > BB:Call 15.4 > CO:Call 15.4,"CO,BTN,BB",3,4bet,47.7,0.306,3.625e-11,0.0,False
+89,566,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4,"BTN,SB,BB",3,4bet,49.2,0.297,3.152e-11,0.0,False
+90,1281,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:4-bet 15.4 > CO:Call 15.4 > BTN:Fold > SB:Call 15.4,"CO,SB,BB",3,4bet,49.2,0.297,2.766e-11,0.0,False
+91,272,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > CO:Call 15.4,"CO,SB,BB",3,4bet,47.2,0.309,2.471e-11,0.0,False
+92,828,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Fold > SB:Fold > BB:Call 15.4,"CO,BB",2,4bet,35.800000000000004,0.408,1.461e-11,0.0,False
+93,445,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > BB:Call 15.4 > CO:Fold,"BTN,BB",2,4bet,39.300000000000004,0.372,1.221e-11,0.0,False
+94,271,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > CO:Fold,"SB,BB",2,4bet,38.800000000000004,0.376,1.216e-11,0.0,False
+95,1393,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:Call 6 > CO:4-bet 13.2 > BTN:Call 13.2 > BB:Call 13.2,"CO,BTN,BB",3,4bet,41.1,0.409,1.023e-11,0.0,False
+96,357,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4,"CO,SB,BB",3,4bet,47.2,0.309,8.762e-12,0.0,False
+97,1459,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Fold > CO:4-bet 13.2 > BTN:Call 13.2 > SB:Call 13.2,"CO,BTN,SB",3,4bet,41.6,0.404,8.047e-12,0.0,False
+98,964,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > CO:Call 15.4,"CO,BTN,SB",3,4bet,48.2,0.303,7.170e-12,0.0,False
+99,1458,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Fold > CO:4-bet 13.2 > BTN:Call 13.2 > SB:Fold,"CO,BTN",2,4bet,34.400000000000006,0.488,7.055e-12,0.0,False
+100,1392,CO:Raise 2 > BTN:3-bet 6 > SB:Fold > BB:Call 6 > CO:4-bet 13.2 > BTN:Call 13.2 > BB:Fold,"CO,BTN",2,4bet,33.900000000000006,0.496,6.195e-12,0.0,False
+101,1592,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:4-bet 13.2 > CO:Fold > BTN:Call 13.2 > SB:Fold,"BTN,BB",2,4bet,35.400000000000006,0.475,5.763e-12,0.0,False
+102,945,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:Fold > BTN:4-bet 15.4 > SB:Call 15.4,"BTN,SB",2,4bet,34.800000000000004,0.42,4.978e-12,0.0,False
+103,356,CO:Raise 2 > BTN:Fold > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > SB:Call 15.4 > BB:Fold,"CO,SB",2,4bet,38.800000000000004,0.376,4.814e-12,0.0,False
+104,66,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Fold > BTN:Call 15.4,"BTN,SB",2,4bet,38.800000000000004,0.376,4.057e-12,0.0,False
+105,157,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4,"BTN,SB,BB",3,4bet,47.2,0.309,3.987e-12,0.0,False
+106,103,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4,"BTN,SB,BB",3,4bet,47.2,0.309,2.936e-12,0.0,False
+107,1488,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:4-bet 13.2 > BTN:Fold > SB:Fold > BB:Call 13.2,"CO,BB",2,4bet,39.400000000000006,0.426,2.647e-12,0.0,False
+108,963,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > CO:Fold,"BTN,SB",2,4bet,39.800000000000004,0.367,2.305e-12,0.0,False
+109,852,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Fold > BB:Call 15.4,"CO,BTN,BB",3,4bet,49.2,0.297,2.127e-12,0.0,False
+110,477,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Call 15.4 > BB:Call 15.4,"CO,BTN,BB",3,4bet,47.7,0.306,1.895e-12,0.0,False
+111,72,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > BTN:Call 15.4,"BTN,SB,BB",3,4bet,47.2,0.309,1.856e-12,0.0,False
+112,303,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4,"CO,SB,BB",3,4bet,47.2,0.309,1.624e-12,0.0,False
+113,53,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:Fold > SB:4-bet 15.4 > BB:Call 15.4,"SB,BB",2,4bet,33.800000000000004,0.432,1.321e-12,0.0,False
+114,516,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:Fold > SB:4-bet 15.4 > BB:Call 15.4,"SB,BB",2,4bet,35.800000000000004,0.408,1.057e-12,0.0,False
+115,71,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > BTN:Fold,"SB,BB",2,4bet,38.800000000000004,0.376,1.028e-12,0.0,False
+116,565,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold,"BTN,SB",2,4bet,40.800000000000004,0.358,4.653e-13,0.0,False
+117,427,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:Fold > BTN:4-bet 15.4 > BB:Call 15.4,"BTN,BB",2,4bet,34.300000000000004,0.426,4.555e-13,0.0,False
+118,102,CO:Fold > BTN:Raise 2 > SB:Call 2 > BB:3-bet 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold,"BTN,SB",2,4bet,38.800000000000004,0.376,4.075e-13,0.0,False
+119,156,CO:Fold > BTN:Raise 2 > SB:3-bet 7 > BB:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold,"BTN,SB",2,4bet,38.800000000000004,0.376,4.058e-13,0.0,False
+120,1610,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:4-bet 13.2 > CO:Call 13.2 > BTN:Fold > SB:Fold,"CO,BB",2,4bet,39.400000000000006,0.426,2.950e-13,0.0,False
+121,851,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Fold > BB:Fold,"CO,BTN",2,4bet,40.800000000000004,0.358,2.772e-13,0.0,False
+122,995,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Call 15.4,"CO,BTN,SB",3,4bet,48.2,0.303,2.346e-13,0.0,False
+123,476,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Call 15.4 > BB:Fold,"CO,BTN",2,4bet,39.300000000000004,0.372,1.983e-13,0.0,False
+124,1512,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:4-bet 13.2 > BTN:Call 13.2 > SB:Fold > BB:Call 13.2,"CO,BTN,BB",3,4bet,46.60000000000001,0.361,1.682e-13,0.0,False
+125,529,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:Call 7 > SB:4-bet 15.4 > BB:Fold > BTN:Call 15.4,"BTN,SB",2,4bet,40.800000000000004,0.358,1.554e-13,0.0,False
+126,1522,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:4-bet 13.2 > BTN:Call 13.2 > SB:Call 13.2 > BB:Call 13.2,"CO,BTN,SB,BB",4,4bet,53.800000000000004,0.312,1.330e-13,0.0,False
+127,862,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Call 15.4 > BB:Call 15.4,"CO,BTN,SB,BB",4,4bet,62.60000000000001,0.233,9.962e-14,0.0,False
+128,1280,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:4-bet 15.4 > CO:Call 15.4 > BTN:Fold > SB:Fold,"CO,BB",2,4bet,40.800000000000004,0.358,9.464e-14,0.0,False
+129,834,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Fold > SB:Call 15.4 > BB:Call 15.4,"CO,SB,BB",3,4bet,49.2,0.297,8.828e-14,0.0,False
+130,535,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > BTN:Call 15.4,"BTN,SB,BB",3,4bet,49.2,0.297,6.909e-14,0.0,False
+131,302,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > SB:Call 15.4 > BB:Fold,"CO,SB",2,4bet,38.800000000000004,0.376,6.857e-14,0.0,False
+132,1620,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:4-bet 13.2 > CO:Call 13.2 > BTN:Call 13.2 > SB:Fold,"CO,BTN,BB",3,4bet,46.60000000000001,0.361,5.334e-14,0.0,False
+133,440,CO:Raise 2 > BTN:Call 2 > SB:Fold > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > BB:Fold > CO:Call 15.4,"CO,BTN",2,4bet,39.300000000000004,0.372,4.906e-14,0.0,False
+134,994,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Fold,"CO,BTN",2,4bet,39.800000000000004,0.367,2.913e-14,0.0,False
+135,1263,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:4-bet 15.4 > CO:Fold > BTN:Call 15.4 > SB:Call 15.4,"BTN,SB,BB",3,4bet,49.2,0.297,1.519e-14,0.0,False
+136,833,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Fold > SB:Call 15.4 > BB:Fold,"CO,SB",2,4bet,40.800000000000004,0.358,1.407e-14,0.0,False
+137,534,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Fold > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > BTN:Fold,"SB,BB",2,4bet,40.800000000000004,0.358,7.276e-15,0.0,False
+138,1291,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:4-bet 15.4 > CO:Call 15.4 > BTN:Call 15.4 > SB:Call 15.4,"CO,BTN,SB,BB",4,4bet,62.60000000000001,0.233,4.714e-15,0.0,False
+139,861,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Call 15.4 > BB:Fold,"CO,BTN,SB",3,4bet,54.2,0.269,4.411e-15,0.0,False
+140,1030,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Fold > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4,"BTN,SB,BB",3,4bet,49.2,0.297,2.279e-15,0.0,False
+141,1494,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:4-bet 13.2 > BTN:Fold > SB:Call 13.2 > BB:Call 13.2,"CO,SB,BB",3,4bet,46.60000000000001,0.361,1.148e-15,0.0,False
+142,1521,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:4-bet 13.2 > BTN:Call 13.2 > SB:Call 13.2 > BB:Fold,"CO,BTN,SB",3,4bet,46.6,0.361,1.100e-15,0.0,False
+143,1262,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:4-bet 15.4 > CO:Fold > BTN:Call 15.4 > SB:Fold,"BTN,BB",2,4bet,40.800000000000004,0.358,1.089e-15,0.0,False
+144,1511,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:4-bet 13.2 > BTN:Call 13.2 > SB:Fold > BB:Fold,"CO,BTN",2,4bet,39.400000000000006,0.426,1.659e-16,0.0,False
+145,1024,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Fold > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4,"BTN,BB",2,4bet,40.800000000000004,0.358,1.485e-16,0.0,False
+146,958,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Fold > CO:Call 7 > BTN:4-bet 15.4 > SB:Fold > CO:Call 15.4,"CO,BTN",2,4bet,39.800000000000004,0.367,9.593e-17,0.0,False
+147,1290,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:4-bet 15.4 > CO:Call 15.4 > BTN:Call 15.4 > SB:Fold,"CO,BTN,BB",3,4bet,54.2,0.269,8.987e-17,0.0,False
+148,1493,CO:Raise 2 > BTN:3-bet 6 > SB:Call 6 > BB:Call 6 > CO:4-bet 13.2 > BTN:Fold > SB:Call 13.2 > BB:Fold,"CO,SB",2,4bet,39.400000000000006,0.426,3.250e-17,0.0,False
+149,600,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Fold > SB:4-bet 15.4 > BB:Call 15.4 > CO:Fold,"SB,BB",2,4bet,40.800000000000004,0.358,2.150e-17,0.0,False
+150,601,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Fold > SB:4-bet 15.4 > BB:Call 15.4 > CO:Call 15.4,"CO,SB,BB",3,4bet,49.2,0.297,2.150e-17,0.0,False
+151,266,CO:Raise 2 > BTN:Fold > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > SB:4-bet 15.4 > BB:Fold > CO:Call 15.4,"CO,SB",2,4bet,38.800000000000004,0.376,7.442e-18,0.0,False
+152,1029,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Fold > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold,"BTN,SB",2,4bet,40.800000000000004,0.358,2.633e-18,0.0,False
+153,1192,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Call 15.4 > BB:Call 15.4,"CO,BTN,SB,BB",4,4bet,62.60000000000001,0.233,1.819e-18,0.0,False
+154,1164,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > BTN:Fold > SB:Call 15.4 > BB:Call 15.4,"CO,SB,BB",3,4bet,49.2,0.297,6.580e-19,0.0,False
+155,1158,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > BTN:Fold > SB:Fold > BB:Call 15.4,"CO,BB",2,4bet,40.800000000000004,0.358,5.535e-19,0.0,False
+156,1182,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Fold > BB:Call 15.4,"CO,BTN,BB",3,4bet,54.2,0.269,4.859e-19,0.0,False
+157,1163,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > BTN:Fold > SB:Call 15.4 > BB:Fold,"CO,SB",2,4bet,40.800000000000004,0.358,3.089e-19,0.0,False
+158,735,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4 > CO:Call 15.4,"CO,BTN,BB",3,4bet,49.2,0.297,2.122e-19,0.0,False
+159,734,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4 > CO:Fold,"BTN,BB",2,4bet,40.800000000000004,0.358,2.056e-19,0.0,False
+160,729,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Fold > BB:Fold > CO:Call 15.4,"CO,BTN",2,4bet,40.800000000000004,0.358,4.952e-20,0.0,False
+161,1191,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Call 15.4 > BB:Fold,"CO,BTN,SB",3,4bet,54.2,0.269,3.326e-20,0.0,False
+162,1181,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:4-bet 15.4 > BTN:Call 15.4 > SB:Fold > BB:Fold,"CO,BTN",2,4bet,45.800000000000004,0.319,2.326e-20,0.0,False
+163,635,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Fold > CO:Call 15.4 > BTN:Fold,"CO,SB",2,4bet,45.800000000000004,0.319,1.925e-20,0.0,False
+164,636,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Fold > CO:Call 15.4 > BTN:Call 15.4,"CO,BTN,SB",3,4bet,54.2,0.269,1.925e-20,0.0,False
+165,630,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Fold > CO:Fold > BTN:Call 15.4,"BTN,SB",2,4bet,45.800000000000004,0.319,9.213e-21,0.0,False
+166,663,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > CO:Call 15.4 > BTN:Fold,"CO,SB,BB",3,4bet,54.2,0.269,3.654e-21,0.0,False
+167,664,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > CO:Call 15.4 > BTN:Call 15.4,"CO,BTN,SB,BB",4,4bet,62.60000000000001,0.233,3.654e-21,0.0,False
+168,653,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > CO:Fold > BTN:Fold,"SB,BB",2,4bet,45.800000000000004,0.319,3.652e-21,0.0,False
+169,654,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Call 7 > SB:4-bet 15.4 > BB:Call 15.4 > CO:Fold > BTN:Call 15.4,"BTN,SB,BB",3,4bet,54.2,0.269,3.652e-21,0.0,False
+170,595,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:Fold > SB:4-bet 15.4 > BB:Fold > CO:Call 15.4,"CO,SB",2,4bet,40.800000000000004,0.358,1.210e-22,0.0,False
+171,752,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold > CO:Fold,"BTN,SB",2,4bet,45.800000000000004,0.319,2.938e-23,0.0,False
+172,753,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold > CO:Call 15.4,"CO,BTN,SB",3,4bet,54.2,0.269,2.938e-23,0.0,False
+173,762,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4 > CO:Fold,"BTN,SB,BB",3,4bet,54.2,0.269,1.905e-23,0.0,False
+174,763,CO:Raise 2 > BTN:Call 2 > SB:Call 2 > BB:3-bet 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4 > CO:Call 15.4,"CO,BTN,SB,BB",4,4bet,62.60000000000001,0.233,1.905e-23,0.0,False
+175,1082,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold > CO:Fold,"BTN,SB",2,4bet,45.800000000000004,0.319,2.870e-24,0.0,False
+176,1083,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Fold > CO:Call 15.4,"CO,BTN,SB",3,4bet,54.2,0.269,2.870e-24,0.0,False
+177,1092,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4 > CO:Fold,"BTN,SB,BB",3,4bet,54.2,0.269,2.386e-24,0.0,False
+178,1093,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Call 15.4 > BB:Call 15.4 > CO:Call 15.4,"CO,BTN,SB,BB",4,4bet,62.60000000000001,0.233,2.386e-24,0.0,False
+179,1064,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4 > CO:Fold,"BTN,BB",2,4bet,45.800000000000004,0.319,2.097e-25,0.0,False
+180,1065,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Fold > BB:Call 15.4 > CO:Call 15.4,"CO,BTN,BB",3,4bet,54.2,0.269,2.097e-25,0.0,False
+181,1059,CO:Raise 2 > BTN:Call 2 > SB:3-bet 7 > BB:Call 7 > CO:Call 7 > BTN:4-bet 15.4 > SB:Fold > BB:Fold > CO:Call 15.4,"CO,BTN",2,4bet,45.800000000000004,0.319,2.096e-25,0.0,False

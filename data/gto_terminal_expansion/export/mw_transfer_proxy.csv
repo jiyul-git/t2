@@ -1,0 +1,13 @@
+node,kind,seat_or_actor,role_or_action,mean_abs_delta_bb,reach_weighted_abs_delta_bb,range_ev_shift_bb,legacy_value,proxy_value,q
+46,value,BTN,aggressor,0.7719,0.695,0.695,2.9301,,
+46,value,SB,caller,0.5345,0.4024,-0.3303,2.2591,,
+46,value,BB,caller,0.5121,0.4065,-0.3647,1.8108,,
+46,best_response_share,BTN,Raise 2,,,,0.3952,0.6486,0.3375
+46,best_response_share,SB,Call 2,,,,0.4238,0.2051,0.7855
+46,best_response_share,BB,Call 2,,,,0.7783,0.5279,1.0
+246,value,CO,aggressor,0.9816,0.8918,0.8905,3.1282,,
+246,value,SB,caller,0.7704,0.6051,-0.3707,2.0976,,
+246,value,BB,caller,0.745,0.6215,-0.5198,1.7742,,
+246,best_response_share,CO,Raise 2,,,,0.2443,0.4148,0.4003
+246,best_response_share,SB,Call 2,,,,0.543,0.3077,0.8558
+246,best_response_share,BB,Call 2,,,,0.8552,0.4253,1.0

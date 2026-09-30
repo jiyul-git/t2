@@ -1,0 +1,7 @@
+node,terminal,reach,flop_share,pot_bb,spr,mean_abs_delta_both_seats,reach_weighted_abs_delta_sum_seats,impact_unweighted,impact_reach_weighted,unallocated_solved_bb,unallocated_legacy_bb,expl_max_pct_pot,solve_cpu_s
+28,"BTN-BB SRP (solved, ref)",0.08352,0.1746,5.5,5.091,0.5968,1.0904,0.04984,0.09107,-0.0085,-0.0586,0.264,2116
+6,SB-BB SRP,0.11804,0.2468,6.0,4.583,0.7985,1.3293,0.09425,0.15691,0.0063,0.0552,0.295,1873
+228,CO-BB SRP,0.06956,0.1454,5.5,5.091,0.74,1.2206,0.05147,0.0849,0.0097,-0.0803,0.289,1825
+1371,CO-BTN 3bet,0.00478,0.01,14.5,1.655,1.856,3.8785,0.00887,0.01853,0.0362,-0.069,0.288,761
+noise_ref,node28 6-flop vs 72-flop,BTN,,,,0.2947,0.3308,,,,,,
+noise_ref,node28 6-flop vs 72-flop,BB,,,,0.4333,0.4137,,,,,,
