@@ -2049,7 +2049,9 @@ fn main() -> Result<(), String> {
             let arg = |name: &str| a.iter().position(|x| x == name).map(|i| a[i + 1].clone());
             let cards = |v: String| -> Vec<Card> { v.split(',').map(|c| card_from_str(c).unwrap()).collect() };
             let restrict = Some((cards(arg("--turns").ok_or("--turns")?), cards(arg("--rivers").ok_or("--rivers")?)));
-            let control = a.iter().any(|x| x == "--control-no-oracle");
+            // negative control: the oracle values fed one iteration late (a snapshot off-by-one wiring error)
+            let control = a.iter().any(|x| x == "--control-stale-oracle");
+            let mut prev_ora: Option<Vec<Frontier>> = None;
             let checks: Vec<u32> = arg("--checks").unwrap_or_else(|| "1,10,25,50".into()).split(',').map(|x| x.parse().unwrap()).collect();
             let mut m = Engine::new(&spot, None, [false; NP], restrict.clone());
             let mut f = Engine::new(&spot, None, [false; NP], restrict);
@@ -2068,7 +2070,15 @@ fn main() -> Result<(), String> {
                 let own = Mutex::new(Vec::new());
                 f.collect(0, 0, 0, None, None, &f.flop.clone(), &f.w, Mode::Update(0), &own);
                 let own: BTreeMap<(usize, usize, usize), Vec<Vec<f32>>> = own.into_inner().unwrap().into_iter().map(|x| ((x.tpl, x.node, x.inst), x.reach)).collect();
-                let ora = m.oracle_frontiers();
+                let mut ora = m.oracle_frontiers();
+                if control {
+                    let keep: Vec<Frontier> = ora.iter().map(|o| Frontier { tpl: o.tpl, node: o.node, inst: o.inst, turn_i: o.turn_i, ri: o.ri,
+                        board: o.board.clone(), folder: o.folder, reach: o.reach.clone(), vals: o.vals.clone() }).collect();
+                    if let Some(pv) = prev_ora.take() {
+                        ora = pv;
+                    }
+                    prev_ora = Some(keep);
+                }
                 let mut reach_diff = 0f64;
                 for o in &ora {
                     let r = &own[&(o.tpl, o.node, o.inst)];
@@ -2085,8 +2095,7 @@ fn main() -> Result<(), String> {
                         fs.insert((o.tpl, o.node, o.inst), o);
                     }
                 }
-                // negative control: the factorized side ignores the oracle and walks its own (never updated) frontiers
-                f.cut.store(!control, Ordering::Relaxed);
+                f.cut.store(true, Ordering::Relaxed);
                 let mut root_diff = 0f64;
                 for p in 0..NP {
                     let vm = m.root(p, Mode::Update(t));
@@ -2145,7 +2154,7 @@ fn main() -> Result<(), String> {
                     break; // one-step differential failed: stop and report where
                 }
             }
-            let res = serde_json::json!({"positions": spot.pos, "board": a[3], "iterations": iters, "rows": rows, "first_divergence": first_div, "control_no_oracle": control,
+            let res = serde_json::json!({"positions": spot.pos, "board": a[3], "iterations": iters, "rows": rows, "first_divergence": first_div, "control_stale_oracle": control,
                 "trunk_slots": tr.len(), "frontier_slots": fr.len(), "labels": spot.labels, "peak_rss_kb": peak_rss_kb()});
             std::fs::write(out, serde_json::to_vec(&res).unwrap()).map_err(|e| e.to_string())?;
             Ok(())
