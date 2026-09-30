@@ -1,0 +1,24 @@
+{
+ "schema": "t2_prereg_addendum_v1",
+ "amends": "prereg.json (A3)",
+ "written": "before any A3 measured-step result (k10 panels still running); instruction of 2026-09-30 night run",
+ "existing_criterion_reused": {
+  "source": "docs/GTO_HU_CONTINUATION_V1.md (damped run: 'The fixed point is reached at aggregate level with alpha = 0.5 (frequencies +-0.005 per step)'; class level not required, table change reported against the class CI) and docs/GTO_HU_CONTINUATION_V2.md Stage B (same reading, fixed step count, no new threshold)",
+  "aggregate_fixed_point": "every main aggregate frequency changes by <= 0.005 between the last two preflop states",
+  "main_aggregates": ["CO first-in fold/raise/jam", "BTN first-in fold/raise/jam", "SB first-in fold/raise 2.5/jam",
+                      "BB vs BTN open after SB fold (node 28 parent) fold/call/3bet/jam", "BB vs SB open (node 6 parent) fold/call/3bet/jam"],
+  "reported_not_gating": ["measured mean |dV| per terminal vs the mean class CI half-width", "range L1", "class-level switchers"],
+  "preflop": "fixed 400 iterations as in every earlier step; the gap is recorded; no gap threshold existed and none is added"
+ },
+ "cases_after_3_measured_steps (P10..P13), evaluated in this order": {
+  "A_converged": "max main-aggregate change P12 -> P13 <= 0.005: stop, freeze as the dual-terminal reference (nodes 28 + 6 solved only; not a finished GTO DB)",
+  "C_period2": "for some main aggregate the step changes alternate in sign over P10..P13 AND |P_k - P_(k+2)| < 0.5 * min(|P_k - P_(k+1)|, |P_(k+1) - P_(k+2)|) (the V1 pattern: P2 ~ P4 while adjacent steps stay apart); record, no new alpha, never more than 5 measured steps",
+  "D_divergence": "range L1 (node 28 and node 6, all seats) and measured mean |dV| (both terminals) and the max main-aggregate change all increase over two consecutive steps, or the preflop EV sum grows in absolute value over two consecutive steps: stop, decompose by terminal, no tuning",
+  "B_decreasing": "not A, C or D, and range L1, measured mean |dV| and the max main-aggregate change each decrease step over step: up to 2 more measured steps (total 5, P15), same alpha/fallback; if still not A at P15, seal 'not converged / decreasing'",
+  "otherwise": "seal 'not converged / mixed' after 3 measured steps"
+ },
+ "hard_stops": ["measured table |unallocated| > 0.05 bb (driver SystemExit)", "manifest node/live/pot mismatch (loader)", "NaN / inf in exports or tables",
+                "postflop engine error", "provenance/hash mismatch or determinism break (driver asserts the terminal exports agree bit for bit)"],
+ "single_flop_cap": "a flop that misses the 0.30% target at the 1000-iteration cap is kept (A1 policy), recorded, and the table guard decides",
+ "restarts": "container restarts are not failures; finished artifacts are reused through the provenance checks"
+}
