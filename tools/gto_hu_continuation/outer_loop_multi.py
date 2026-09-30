@@ -14,8 +14,12 @@ M_k = manifest of the injected tables (one per terminal). One outer step k -> k+
   3. per terminal: the 72-flop panel at its P_{k+1} ranges (solve_panel.py), aggregate.py
      (ht_rho, B = 2000, guard 0.05 bb; if rejected, the J1/J2 fixed normaliser from the same ranges,
      the rejection kept);
-  4. V_used = alpha * V_measured + (1 - alpha) * V_used(previous step), guard-checked at P_{k+1};
-     M_{k+1} = manifest of the V_used tables.
+  4. candidate V_used = alpha * V_measured + (1 - alpha) * V_used(previous step), guard-checked at P_{k+1}
+     (|unallocated| <= 0.05 bb at this step's arriving ranges, per terminal); if the candidate fails, it is
+     kept as a rejected artifact and V_measured is used undamped for that step (A3 rule, fixed before
+     results: no other alpha is tried); M_{k+1} = manifest of the V_used tables.
+--reuse-first DIR: the first step's preflop exports and census are taken from DIR (a frozen-table solve
+with the same M_k0 tables, e.g. the A2.5 probe), checked by file hash, not re-solved.
 No terminal is updated before another: all ranges come from P_{k+1}, all tables enter M_{k+1} together.
 Resumable: finished files are reused only through the provenance checks of the tools.
 """
@@ -80,6 +84,7 @@ def main():
     ap.add_argument('--workers', default='4')
     ap.add_argument('--threads', default='1')
     ap.add_argument('--preflop-only-final', action='store_true', help='also solve P_{k0+steps+1} (no panel)')
+    ap.add_argument('--reuse-first', default=None, help='dir with terminal_node*.json + census.json + manifest.json of P_{k0+1}')
     a = ap.parse_args()
     terms = dict(x.split('=', 1) for x in a.terminal)
     init = dict(x.split('=', 1) for x in a.init)
@@ -106,6 +111,18 @@ def main():
         d = os.path.join(a.out, f'k{k}')
         os.makedirs(d, exist_ok=True)
         man_in = os.path.join(a.out, f'k{k - 1}', 'manifest.json')
+        expect_file = man_in
+        if k == k0 + 1 and a.reuse_first:
+            import hashlib
+            h = lambda f: hashlib.sha256(open(f, 'rb').read()).hexdigest()
+            rm = json.load(open(os.path.join(a.reuse_first, 'manifest.json')))
+            src = sorted(h(os.path.normpath(os.path.join(a.reuse_first, t['file']))) for t in rm['tables'])
+            assert src == sorted(h(f) for f in used.values()), 'reused P_k0+1 was solved with different tables'
+            for f in [f'terminal_node{n}.json' for n in terms] + ['census.json']:
+                if not os.path.exists(os.path.join(d, f)):
+                    shutil.copy(os.path.join(a.reuse_first, f), os.path.join(d, f))
+            expect_file = json.load(open(os.path.join(d, f'terminal_node{next(iter(terms))}.json')))['t2_cont_file']
+            assert os.path.normpath(os.path.abspath(expect_file)) == os.path.normpath(os.path.abspath(os.path.join(a.reuse_first, 'manifest.json')))
         # 1. preflop P_k and exports
         tj = {}
         for n, spec in terms.items():
@@ -113,7 +130,7 @@ def main():
             if not os.path.exists(out):
                 run([os.path.join(BIN, 't2_cont_terminal'), CFG, '400', spec, out], {'T2_CONT_FILE': man_in})
             tj[n] = json.load(open(out))
-            assert tj[n]['t2_cont_file'] == man_in, f'k{k} node {n}: solved with {tj[n]["t2_cont_file"]}'
+            assert tj[n]['t2_cont_file'] == expect_file, f'k{k} node {n}: solved with {tj[n]["t2_cont_file"]}'
         ref = next(iter(tj.values()))
         for n, t in tj.items():
             same = t['gaps'] == ref['gaps'] and t['evs'] == ref['evs'] and t['frequencies']['rfi_CO'] == ref['frequencies']['rfi_CO'] \
@@ -134,6 +151,9 @@ def main():
                 'reach': {str(x): (reach[x]['reach_probability'] if x in reach else None) for x in (28, 6, 46, 246, 228)},
                 'flop_share': {str(x): (reach[x]['share_of_flop_reach'] if x in reach else None) for x in (28, 6, 46, 246, 228)},
                 'hu_share_of_flop_reach': census['summary']['hu_share_of_flop_reach'],
+                'flop_reach_by_live_count': {f'{lc}-way': sum(r['reach_probability'] for r in census['terminals'] if r['live_count'] == lc) for lc in (2, 3, 4)},
+                'preflop_ev_sum': sum(ref['evs'].values()) if isinstance(ref['evs'], dict) else sum(ref['evs']),
+                'path_mixes': {n: {f"{pn['actor']}@{pn['node']}": pn['mix'] for pn in tj[n]['path_nodes']} for n in tj},
                 'ranges_hash': {n: tj[n]['ranges_hash_fnv1a64'] for n in tj}, 'terminals': {}}
         if k == last and a.preflop_only_final:
             log['steps'] = [s for s in log['steps'] if s['k'] != k] + [step]
@@ -168,12 +188,29 @@ def main():
             vb['invariant'] = {'sum_range_weighted_gross': tot, 'pot': t['pot_bb'], 'unallocated_bb': t['pot_bb'] - tot,
                                'note': 'blended table at this step\'s arriving ranges'}
             vb['damping'] = {'alpha': a.alpha, 'measured': meas, 'previous_used': used[n]}
-            if abs(vb['invariant']['unallocated_bb']) > 0.05:
-                raise SystemExit(f'k{k} node {n}: blended table unallocated {vb["invariant"]["unallocated_bb"]:.4f} bb exceeds guard')
+            # previous used table and measured table at this step's ranges (diagnostics)
+            at = lambda tab: t['pot_bb'] - sum(sum(pl['class_reach_normalized'][h] * next(x for x in tab['seats'] if x['position'] == pl['position'])['gross'][h]
+                                                   for h in range(169)) for pl in t['players'])
+            prev_unalloc, meas_unalloc = at(vp), at(vm)
             un = os.path.join(d, f'used_node{n}.json')
+            if abs(vb['invariant']['unallocated_bb']) > 0.05:
+                # A3 rule: keep the rejected candidate, use the measured table undamped this step
+                json.dump(vb, open(os.path.join(d, f'rejected_blend_node{n}.json'), 'w'))
+                cand_un = vb['invariant']['unallocated_bb']
+                if abs(meas_unalloc) > 0.05:
+                    raise SystemExit(f'k{k} node {n}: measured table unallocated {meas_unalloc:.4f} bb also exceeds the guard')
+                vb = json.loads(json.dumps(vm))
+                vb['damping'] = {'alpha': 1.0, 'reason': 'candidate alpha blend rejected by the guard', 'candidate_unallocated_bb': cand_un,
+                                 'measured': meas, 'previous_used': used[n]}
+                accepted = False
+            else:
+                accepted = True
             json.dump(vb, open(un, 'w'))
             new_used[n] = un
-            row = {'measured_unallocated_bb': vm['invariant']['unallocated_bb'], 'used_unallocated_bb': vb['invariant']['unallocated_bb'],
+            row = {'candidate_blend_unallocated_bb': vb['damping'].get('candidate_unallocated_bb', vb['invariant']['unallocated_bb']),
+                   'measured_unallocated_bb': vm['invariant']['unallocated_bb'], 'used_unallocated_bb': vb['invariant']['unallocated_bb'],
+                   'blend_candidate_accepted': accepted, 'alpha_used': a.alpha if accepted else 1.0,
+                   'previous_used_unallocated_at_these_ranges_bb': prev_unalloc, 'measured_unallocated_at_these_ranges_bb': meas_unalloc,
                    'estimator': vm.get('estimator'), 'ci_halfwidth_mean': {s['position']: s['mean_ci95_halfwidth_bb'] for s in vm['seats']},
                    'expl_max_pct_pot': vm['provenance']['exploitability_pct_pot_max'], 'expl_mean_pct_pot': vm['provenance']['exploitability_pct_pot_mean']}
             if n in prev_meas:
@@ -185,6 +222,7 @@ def main():
                                    for p, q in zip(t['players'], prev_terms[n]['players'])}
             step['terminals'][n] = row
             prev_meas[n] = vm
+        step['combined_reach_weighted_used_unallocated_bb'] = sum(step['reach'][str(n)] * step['terminals'][n]['used_unallocated_bb'] for n in step['terminals'])
         prev_terms = {**prev_terms, **tj}
         used = new_used
         man = os.path.join(d, 'manifest.json')

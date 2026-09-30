@@ -1,0 +1,26 @@
+{
+ "schema": "t2_prereg_v1",
+ "test": "A3: synchronous node 28 + node 6 damped outer fixed point (72-flop panel per terminal, 144 flops per step)",
+ "written": "before any A3 postflop result; the first preflop state P10 is the A2.5 frozen-table solve, reused (not re-solved)",
+ "start": {
+  "M9": {"node28": "data/gto_hu_continuation/panel72/outer_v2_damped_a05/k9/table.json", "node6": "data/gto_terminal_expansion/node6_72/table72.json"},
+  "P10": "data/gto_terminal_expansion/a25_routing_probe/P10_M9_28k9_6a1 (exports of both terminals + census from ONE preflop solve; reused after a file-hash check of the manifest tables)"
+ },
+ "per_step": [
+  "P_k arriving ranges of node 28 and node 6 from the same preflop snapshot",
+  "V_k measured for both terminals: unchanged 72-flop panel, M2 menu, eps 1e-3, target 0.30% pot, max_iters 1000, ht_rho B=2000",
+  "V_k own-range guard |unallocated| <= 0.05 bb; if ht_rho is rejected, the pre-registered J1/J2 fixed_norm fallback from the same ranges (rejection kept); if that also fails the run stops",
+  "candidate blend 0.5 V_k + 0.5 V_used(k-1), guard-checked at P_k ranges per terminal",
+  "candidate passes -> alpha 0.5; candidate fails -> kept as rejected_blend_node{n}.json and V_k used undamped for that step",
+  "no other alpha is tried (no 0.4 / 0.3 search)",
+  "M_k = both used tables together; P_{k+1} = one preflop solve with M_k"
+ ],
+ "guards_recorded": "per terminal (candidate, measured, used, previous-used-at-new-ranges) and the reach-weighted combined used residual",
+ "steps": "at least three measured steps: P10 -> V10 -> P11, P11 -> V11 -> P12, P12 -> V12 -> P13 (P13 preflop only)",
+ "stopping": "fixed step count as in Stage B; no new threshold; alpha and stopping are not changed after seeing intermediate results",
+ "recorded_each_step": ["own-range conservation of both tables", "candidate blend conservation and accept/reject", "postflop exploitability", "range L1",
+                        "CO/BTN/SB first-in and BB response frequencies (path mixes)", "reach of nodes 28/6/46/246", "flop reach by 2/3/4-way",
+                        "preflop EV sum", "boundary-class changes (from the exports)"],
+ "precedent": "A2.5: old node-6 table at P10 ranges +0.515 bb (off-policy / stale-table mismatch after a large range move); V1 first stale step -0.527 bb",
+ "not_done": ["no node 228 injection", "no 3-way production injection", "no f16"]
+}
