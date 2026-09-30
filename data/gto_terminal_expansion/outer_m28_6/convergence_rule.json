@@ -35,5 +35,6 @@
  ],
  "single_flop_cap": "a flop that misses the 0.30% target at the 1000-iteration cap is kept (A1 policy), recorded, and the table guard decides",
  "restarts": "container restarts are not failures; finished artifacts are reused through the provenance checks",
- "scope_note": "added during k10 without changing any rule: the <= 0.005 aggregate criterion decides only whether A3 converged in the same sense as the earlier V1/V2 experiments (research stability). It is NOT a production-DB acceptance criterion; a stricter DB criterion (EV change, strategy change, solver error, conservation, seed stability) is to be designed and fixed separately by the user."
+ "scope_note": "added during k10 without changing any rule: the <= 0.005 aggregate criterion decides only whether A3 converged in the same sense as the earlier V1/V2 experiments (research stability). It is NOT a production-DB acceptance criterion; a stricter DB criterion (EV change, strategy change, solver error, conservation, seed stability) is to be designed and fixed separately by the user.",
+ "artifact_retention": "A3 results and all intermediate artifacts (per-flop solves, measured/used/rejected tables, exports, censuses, logs) are kept until the production-DB decision is finished. After A3 ends: no separate re-run first; the stricter DB acceptance criterion is evaluated on the existing outputs, and only the items it finds insufficient get targeted validation."
 }
