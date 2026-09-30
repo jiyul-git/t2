@@ -545,11 +545,18 @@
    },
    "table_sum_minus_pot": 0.515470039343402
   },
-  "note": "the frozen A1 table conserves at the P9 ranges it was measured at (-0.004 bb) but over-allocates +0.52 bb (8.6% of the 6 bb pot) at the P10 arriving ranges; x node-6 reach 0.293 = ~0.15 bb/hand, matching the P10 preflop EV sum (+0.159 bb vs +0.001 at P9). The frozen table is used outside its range support (SB raise range 39% -> 90%): its values for the newly routed classes are eps-tremble extrapolations."
+  "note": "recorded as a large off-policy / stale-table mismatch after a large range move: the frozen A1 table conserves at the P9 ranges it was measured at (-0.004 bb) and over-allocates +0.515 bb at the P10 arriving ranges (x node-6 reach 0.293 ~ 0.15 bb/hand, matching the P10 preflop EV sum +0.159 bb vs +0.001 at P9). Same scale as the node-28 precedent: the first undamped stale-table step of V1 (docs/GTO_HU_CONTINUATION_V1.md, P1 row) left -0.527 bb unallocated. This is not by itself evidence of a table error.",
+  "possible_additional_contributor_not_measured": "epsilon-tremble values of classes newly routed into the SB 2.5 open; not separated from the stale-table mismatch, so not asserted as a cause"
  },
  "preflop_ev_sum": {
   "P9": 0.000824146533389386,
   "P10_control_28_only": 0.0014181685546070244,
   "P10": 0.15880952080315303
- }
+ },
+ "conclusions": [
+  "node 6 solved values push SB toward open-raising (raise 2.5: 39% -> 90%, jam 24% -> 0.7% in one frozen step)",
+  "the size of the one-step frozen shift (90% open) is not trusted",
+  "node 6 itself barely increases the 3-way legacy mass (nodes 46/246: +3.1e-5 / -5.8e-7; all 3/4-way +3.0e-5)",
+  "node 6 is kept as a target of the damped outer fixed point"
+ ]
 }
