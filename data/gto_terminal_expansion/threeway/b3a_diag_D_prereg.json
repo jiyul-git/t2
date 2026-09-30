@@ -1,0 +1,34 @@
+{
+ "schema": "t2_prereg_v1",
+ "test": "B3a diagnostic D: isolate the cause of the B exploitability reversal (3.93% -> 4.23%, trunk iterations 50 -> 100)",
+ "written": "before any D result (smoke tests of 2-3 iterations only, not kept)",
+ "run": "t2_3way solve ... 150 --every 50 --scheme factor --inner 100 --frontier-eval both, same reduced game and settings as the registered B; deterministic, so the trunk path equals B's (check: D log at 50 and 100 must print 3.9333% and 4.2309%)",
+ "evaluations_at_each_checkpoint_50_100_150_same_trunk_snapshot": {
+  "1_fresh_solve": "registered B evaluation: trunk average strategy + every frontier reset and solved 100 DCFR iterations against the trunk-average arriving reach",
+  "2_historical_frontier_average": "trunk average strategy + frontier strategy = reach-weighted DCFR average over trunk iterations (definition below)",
+  "3_inner_residual": "for every frontier: BR gap of its current average strategy against its own arriving reach, (a) for the checkpoint fresh solve, (b) for the in-iteration solve (trunk snapshot sigma_t) at the checkpoint iteration"
+ },
+ "historical_average_definition_audit": {
+  "per_iteration_numerator": "after the inner solve of trunk iteration t, for frontier infoset I (player i, combo h, every instance) and action a: S_t(I,a) = sum_j w_j * pi_i^{t,j}(I,h) * sigma_j(a|I,h), the solver's own DCFR strategy sum (inner decay w: (j/(j+1))^2)",
+  "own_reach_included": "pi_i^{t,j}(I,h) = w_i(h) * product of i's trunk action probabilities under sigma_t (collect() scales every actor's reach, the owner included) * product of i's own frontier action probabilities under the inner iterate j; opponents' and chance probabilities are NOT in it (standard average-strategy weight)",
+  "inner_normalisation": "W = total inner DCFR weight (W_j = W_{j-1} (j/(j+1))^2 + 1, j = 1..inner); S_t / W = inner-average own-reach-weighted numerator, whose action sum is the inner-average own reach (the denominator)",
+  "outer_accumulation": "F(I,a) <- F(I,a) * (t/(t+1))^2 + S_t(I,a) / W, the same DCFR gamma = 2 decay as the trunk strategy sums",
+  "strategy": "sigma_bar(a|I,h) = F(I,a) / sum_b F(I,b) (uniform if 0); numerator and denominator both carry outer weight x own reach, so arriving ranges that change across trunk iterations are weighted by how much each combo actually reached I",
+  "not_used": "equal-weight averaging of per-iteration policies (rejected: ignores the changing arriving range)",
+  "granularity": "per combo (1326), finer than per class"
+ },
+ "residual_definitions": {
+  "chance_weight": "cw = 1 / |turn cards| for turn and river frontiers, times 1 / |river cards| for river frontiers (reduced game: 1/3, 1/9)",
+  "mass_f": "cw * sum_h reach_a(h) den_a(h) / z, a = an active player, z = flop joint mass (fraction of all deals that arrive at the frontier)",
+  "gap_f": "sum over the two active players p of cw * sum_h reach_p(h) (BR_p(h) - AVG_p(h)) / z  [bb per flop mass; the frontier's additive contribution to a best-responding player's gain]",
+  "reported": "total sum_f gap_f (bb and % pot on the exploitability scale: / 3 / pot * 100), mass-weighted mean and max of gap_f / mass_f (bb per arriving deal), by street, and the detail set"
+ },
+ "detail_set_rule_fixed_before_results": "at each checkpoint, frontiers sorted by mass_f (fresh-solve snapshot) descending; detail = smallest prefix with cumulative mass >= 95% of the total frontier mass; the rest reported only in aggregate",
+ "judgement_rules": {
+  "assembly_or_evaluation": "historical average keeps improving (exploitability decreasing 50 -> 100 -> 150) while the fresh-solve evaluation stalls or rises",
+  "reset_solve_approximation": "both stall and the inner residual is large (total inner-residual contribution >= 25% of the fresh-solve exploitability in bb terms)",
+  "decomposition_itself": "both stall while the inner residual is small (< 25%)",
+  "note": "the 25% split is fixed here before results; mixed outcomes are reported as mixed"
+ },
+ "not_done": ["no warm-start / cache / inner-reuse", "no B re-run #2", "no change to the registered B verdict"]
+}

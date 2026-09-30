@@ -1796,6 +1796,43 @@ impl Engine {
         (tc, t1.elapsed().as_secs_f64(), n)
     }
 
+    /// inner-solve residual of every stored frontier (its current average strategy against its stored
+    /// arriving reach): per active player p, gap_p = sum_h reach_p(h) (BR_p(h) - AVG_p(h)); mass = joint
+    /// arriving mass sum_h reach_a(h) den_a(h). Values are per flop mass z (bb, comparable to BR gains).
+    fn frontier_residuals(&self) -> serde_json::Value {
+        let rp = Ptr(self.regret.as_ptr() as *mut f32);
+        let sp = Ptr(self.strat.as_ptr() as *mut f32);
+        let den0 = self.den(0, &self.w, &self.flop);
+        let z: f64 = (0..NUM_COMBOS).map(|h| self.w[0][h] as f64 * den0[h]).sum();
+        let fs = self.fstore.read().unwrap();
+        let fr: Vec<&Frontier> = fs.values().collect();
+        let rows: Vec<serde_json::Value> = fr.par_iter().map(|f| {
+            let act: Vec<usize> = (0..NP).filter(|&q| q != f.folder).collect();
+            // chance probability of the frontier's runout (the walk divides at each deal)
+            let norm = |k: usize| if self.restricted { k as f64 } else { (k - 2 * self.blockers()) as f64 };
+            let mut cw = 1.0;
+            if f.board.len() >= 4 {
+                cw /= norm(self.turns.len());
+            }
+            if f.board.len() == 5 {
+                cw /= norm(self.rivers[0].len());
+            }
+            let z = z / cw;
+            let d = self.den(act[0], &f.reach, &f.board);
+            let mass: f64 = (0..NUM_COMBOS).map(|h| f.reach[act[0]][h] as f64 * d[h]).sum::<f64>() / z;
+            let mut gaps = Vec::new();
+            for &p in &act {
+                let br = self.walk(f.tpl, f.node, f.inst, f.turn_i, f.ri, &f.board, p, &f.reach, Mode::Br, &rp, &sp);
+                let av = self.walk(f.tpl, f.node, f.inst, f.turn_i, f.ri, &f.board, p, &f.reach, Mode::Avg, &rp, &sp);
+                let g: f64 = (0..NUM_COMBOS).map(|h| f.reach[p][h] as f64 * (br[h] - av[h])).sum::<f64>() / z;
+                gaps.push(serde_json::json!({"player": p, "gap_bb": g}));
+            }
+            serde_json::json!({"tpl": f.tpl, "node": f.node, "inst": f.inst, "street": f.board.len() - 3, "folder": f.folder,
+                               "mass": mass, "gaps": gaps})
+        }).collect();
+        serde_json::Value::Array(rows)
+    }
+
     fn counters(&self) -> serde_json::Value {
         let c = &self.cnt;
         let g = |a: &AtomicU64| a.load(Ordering::Relaxed);
@@ -1877,6 +1914,7 @@ fn main() -> Result<(), String> {
             let mut last = serde_json::Value::Null;
             let (mut s_collect, mut s_front, mut s_trunk, mut s_eval) = (0f64, 0f64, 0f64, 0f64);
             let mut n_front = 0usize;
+            let mut resid_iter = serde_json::Value::Null;
             for t in 1..=iters {
                 match scheme.as_str() {
                     "mono-alt" => {
@@ -1903,6 +1941,11 @@ fn main() -> Result<(), String> {
                         n_front = n;
                         if feval != "resolve" {
                             e.accumulate_frontier_avg(t, inner);
+                        }
+                        if feval == "both" && (t % every == 0 || t == iters) {
+                            let t1 = std::time::Instant::now();
+                            resid_iter = e.frontier_residuals();
+                            eprintln!("it {t} residuals (iteration solve) {:.1}s", t1.elapsed().as_secs_f64());
                         }
                         let t1 = std::time::Instant::now();
                         // trunk regrets of all players from the same snapshot; frontier values fixed
@@ -1934,12 +1977,14 @@ fn main() -> Result<(), String> {
                         // final strategy: trunk average + frontiers re-solved against the trunk average reach
                         e.resolve_frontiers(Mode::Avg, inner, false);
                     }
+                    let resid_ck = if scheme == "factor" && feval == "both" { e.frontier_residuals() } else { serde_json::Value::Null };
                     let ev = e.evaluate();
                     s_eval += t1.elapsed().as_secs_f64();
                     let x = ev["exploitability_pct_pot"].as_f64().unwrap();
                     eprintln!("it {t} expl {x:.4}% pot, conservation {:.2e}, {:.0}s (collect {s_collect:.1} frontier {s_front:.1} trunk {s_trunk:.1} eval {s_eval:.1}) rss {:?}",
                               ev["conservation_error"].as_f64().unwrap(), t0.elapsed().as_secs_f64(), peak_rss_kb());
                     trace.push(serde_json::json!({"iteration": t, "seconds": t0.elapsed().as_secs_f64(), "eval": ev.clone(), "root_mix": e.root_mix(), "eval_cfrd_avg": ev_cfrd,
+                        "frontier_residual_checkpoint_resolve": resid_ck, "frontier_residual_iteration_solve": resid_iter.clone(),
                         "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval}}));
                     last = ev;
                     // partial result at every checkpoint (output only; the computation is unchanged)

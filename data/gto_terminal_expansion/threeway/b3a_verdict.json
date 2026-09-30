@@ -1,0 +1,17 @@
+{
+ "schema": "t2_verdict_v1",
+ "test": "B3a registered comparison (b3a_prereg.json + addendum)",
+ "verdict": "FAIL",
+ "sealed_at": "B main trunk iteration 100, before any later B result; not to be revised by later iterations",
+ "failed_criterion": "convergence: 'per-player BR gain decreasing in both A and B over the checkpoints'",
+ "evidence": {
+  "B_exploitability_pct_pot": {"50": 3.9333, "100": 4.2309},
+  "argument": "exploitability = sum of per-player BR gains / 3 / pot; it rose from 50 to 100, so at least one player's BR gain rose",
+  "log": "b3a_B_factor_stopped_at_it100.log",
+  "B_at_50_full_json": "b3a_rerun_B_1.json (deterministic re-run; log line identical to the main run at 50: 3.9333%, 2.05e-9)"
+ },
+ "other_registered_criteria_at_stop": "not evaluated at 400 (run stopped at 100 by instruction); interim values at 50 in b3a_interim_it50.json",
+ "speed_verdict_full_node46": "FAIL independent of accuracy: 74 s per trunk iteration on the reduced game (2 threads), HU frontier re-solves 98.8%",
+ "stopped": {"main_B": "stopped after trunk iteration 100 (log kept)", "B_rerun_2": "not run (instruction)"},
+ "next": "diagnostic D (b3a_diag_D_prereg.json) to isolate the cause; no warm-start/cache design before D"
+}
