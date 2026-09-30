@@ -1,0 +1,9 @@
+engine: 0.092 GB (trunk 0.039, frontier 0.052), players [0, 1, 2], scheme mono-sim, build 0.0s, rss Some(13128) kB
+it 50 expl 7.1537% pot, conservation -1.52e-10, 200s (collect 0.0 frontier 0.0 trunk 173.8 eval 25.9) rss Some(192060)
+it 100 expl 2.1409% pot, conservation 3.77e-9, 363s (collect 0.0 frontier 0.0 trunk 319.6 eval 43.6) rss Some(192060)
+it 150 expl 1.1147% pot, conservation 6.99e-9, 496s (collect 0.0 frontier 0.0 trunk 433.0 eval 62.6) rss Some(192060)
+it 200 expl 0.7365% pot, conservation 8.23e-9, 619s (collect 0.0 frontier 0.0 trunk 537.9 eval 81.3) rss Some(192060)
+it 250 expl 0.5335% pot, conservation 7.47e-9, 742s (collect 0.0 frontier 0.0 trunk 641.7 eval 100.1) rss Some(192060)
+it 300 expl 0.4135% pot, conservation 6.46e-9, 864s (collect 0.0 frontier 0.0 trunk 745.1 eval 118.4) rss Some(192060)
+it 350 expl 0.3270% pot, conservation -4.59e-9, 983s (collect 0.0 frontier 0.0 trunk 846.2 eval 137.1) rss Some(192060)
+it 400 expl 0.2650% pot, conservation 9.81e-10, 1103s (collect 0.0 frontier 0.0 trunk 946.7 eval 156.2) rss Some(192060)
