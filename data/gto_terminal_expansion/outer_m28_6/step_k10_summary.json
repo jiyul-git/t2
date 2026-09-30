@@ -1,0 +1,80 @@
+{
+ "step": "k10 (P10 -> V10 -> M10)",
+ "data_commit": "1728317 (results landed in that checkpoint commit)",
+ "terminals": {
+  "28": {
+   "candidate_blend_unallocated_bb": -0.012425572958041364,
+   "measured_unallocated_bb": -0.007190647879843581,
+   "used_unallocated_bb": -0.012425572958041364,
+   "blend_candidate_accepted": true,
+   "alpha_used": 0.5,
+   "previous_used_unallocated_at_these_ranges_bb": -0.017660498036245365,
+   "measured_unallocated_at_these_ranges_bb": -0.007190647879843581,
+   "estimator": "ht_rho",
+   "ci_halfwidth_mean": {
+    "BTN": 0.29894574966983556,
+    "BB": 0.4263112575757304
+   },
+   "expl_max_pct_pot": 0.2971643790622142,
+   "expl_mean_pct_pot": 0.2495515538348103,
+   "measured_change": {
+    "BTN": {
+     "mean_abs": 0.025669295321857098,
+     "max_abs": 0.1625024433030502
+    },
+    "BB": {
+     "mean_abs": 0.02134833692793162,
+     "max_abs": 0.08636237881218944
+    }
+   },
+   "range_L1": {
+    "BTN": 0.06866291507700777,
+    "BB": 0.05202949153034316
+   }
+  },
+  "6": {
+   "candidate_blend_unallocated_bb": -0.2533696174817992,
+   "measured_unallocated_bb": 0.008730804379806223,
+   "used_unallocated_bb": 0.008730804379806223,
+   "blend_candidate_accepted": false,
+   "alpha_used": 1.0,
+   "previous_used_unallocated_at_these_ranges_bb": -0.515470039343402,
+   "measured_unallocated_at_these_ranges_bb": 0.008730804379806223,
+   "estimator": "ht_rho",
+   "ci_halfwidth_mean": {
+    "SB": 0.4105284358272234,
+    "BB": 0.4267895126592704
+   },
+   "expl_max_pct_pot": 0.29921348572424283,
+   "expl_mean_pct_pot": 0.24646945377571758,
+   "measured_change": {
+    "SB": {
+     "mean_abs": 0.5598968226397832,
+     "max_abs": 0.9926827497067476
+    },
+    "BB": {
+     "mean_abs": 0.44068776141681115,
+     "max_abs": 2.523175604246722
+    }
+   },
+   "range_L1": {
+    "SB": 1.1743340445445258,
+    "BB": 0.47415222520286676
+   }
+  }
+ },
+ "combined_reach_weighted_used_unallocated_bb": 0.0015117590236224825,
+ "reach_P10": {
+  "28": 0.08411299210109464,
+  "6": 0.29286089029869444,
+  "46": 0.09146833658655144,
+  "246": 0.10472541212127916,
+  "228": 0.0695567268420509
+ },
+ "gap_P10": 0.0002920830579739044,
+ "reading": [
+  "node 28: alpha 0.5 blend accepted (candidate -0.012 bb)",
+  "node 6: candidate blend rejected by the guard (-0.253 bb at P10 ranges; previous table -0.516 bb there) -> V10 measured used undamped (+0.009 bb), per the pre-registered fallback",
+  "node 6 measured change vs the A1 table: mean |dV| SB 0.560 / BB 0.441 bb, range L1 SB 1.174 / BB 0.474 (the large P9 -> P10 range move of the frozen-table step)"
+ ]
+}
