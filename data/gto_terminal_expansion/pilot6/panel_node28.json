@@ -1,0 +1,80 @@
+{
+ "schema": "flop_panel_v1",
+ "selection_rule": "one flop from panel_v1 per texture category (monotone, paired, rainbow dry/connected, two-tone dry/connected), top ranks all distinct; a first candidate (AcQc2c,6d6c3c,Kc7d4h,Tc9d5h,Qc4d3c,8c4d3d) had loose texture labels and was replaced before any J1/J2 result",
+ "strata": {
+  "monotone": {
+   "probability": 0.05176470588235295,
+   "canonical_flops": null,
+   "raw_flops": null
+  },
+  "paired": {
+   "probability": 0.17176470588235293,
+   "canonical_flops": null,
+   "raw_flops": null
+  },
+  "rainbow_dry": {
+   "probability": 0.15529411764705883,
+   "canonical_flops": null,
+   "raw_flops": null
+  },
+  "rainbow_connected": {
+   "probability": 0.15529411764705883,
+   "canonical_flops": null,
+   "raw_flops": null
+  },
+  "twotone_dry": {
+   "probability": 0.2329411764705882,
+   "canonical_flops": null,
+   "raw_flops": null
+  },
+  "twotone_connected": {
+   "probability": 0.2329411764705882,
+   "canonical_flops": null,
+   "raw_flops": null
+  }
+ },
+ "panel": [
+  {
+   "board": "Jc6c2c",
+   "stratum": "monotone",
+   "weight": 0.05176470588235295
+  },
+  {
+   "board": "6d6c3c",
+   "stratum": "paired",
+   "weight": 0.17176470588235293
+  },
+  {
+   "board": "Kc7d4h",
+   "stratum": "rainbow_dry",
+   "weight": 0.15529411764705883
+  },
+  {
+   "board": "Tc9d5h",
+   "stratum": "rainbow_connected",
+   "weight": 0.15529411764705883
+  },
+  {
+   "board": "AcKd5d",
+   "stratum": "twotone_dry",
+   "weight": 0.2329411764705882
+  },
+  {
+   "board": "Qc9d7d",
+   "stratum": "twotone_connected",
+   "weight": 0.2329411764705882
+  }
+ ],
+ "id": "pilot6_node28",
+ "parent_panel": "panel_sub6_v1",
+ "parent_panel_hash_sha256": "33ebbea5b6f77e96b3b1535947ed4d00190707b706a0c72c373be28c9a3679eb",
+ "terminal_node": 28,
+ "terminal_ranges_hash": "d8707f750f1f9ec2",
+ "fixed_normaliser": {
+  "BTN": 0.8794354824372271,
+  "BB": 0.8825557366520953
+ },
+ "fixed_normaliser_note": "sum_f w_f sum_h r_h c_hf at this terminal's arriving ranges (J1/J2 rule), fixed before any solve",
+ "purpose": "T2 six-flop solved-vs-legacy impact pilot",
+ "panel_hash_sha256": "90d30a87cf645305e3c98e4c85e2fa5eb8c9ce28d6ae383acf5efa1a2e50d1fe"
+}
