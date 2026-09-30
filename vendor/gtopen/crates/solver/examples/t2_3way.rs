@@ -1144,6 +1144,9 @@ struct Engine {
     /// active players per (template, slot)
     slot_nact: Vec<Vec<usize>>,
     snap: Vec<f32>,
+    /// diagnostic: DCFR-weighted sum over trunk iterations of the frontier average strategies
+    /// (the CFR-D-consistent frontier average), frontier slots only
+    fsum: Vec<f32>,
     use_snap: AtomicBool,
     cut: AtomicBool,
     fstore: RwLock<BTreeMap<(usize, usize, usize), Frontier>>,
@@ -1208,7 +1211,7 @@ impl Engine {
         }
         Engine { g, w: spot.w.clone(), flop: spot.board.clone(), nonblocking, base, size, slot_off,
                  regret: vec![0.0; tot], strat: vec![0.0; tot], rest, river_st, river_order, turns, rivers, restricted, slot_nact,
-                 snap: Vec::new(), use_snap: AtomicBool::new(false), cut: AtomicBool::new(false), fstore: RwLock::new(BTreeMap::new()),
+                 snap: Vec::new(), fsum: Vec::new(), use_snap: AtomicBool::new(false), cut: AtomicBool::new(false), fstore: RwLock::new(BTreeMap::new()),
                  cnt: Counters::default() }
     }
 
@@ -1694,6 +1697,49 @@ impl Engine {
         }
     }
 
+    /// ranges (offset, length) of every 2-active slot instance
+    fn frontier_ranges(&self) -> Vec<(usize, usize)> {
+        let mut v = Vec::new();
+        for (t, tp) in self.g.templates.iter().enumerate() {
+            let n = match tp.street { 0 => 1, 1 => self.turns.len(), _ => self.turns.len() * self.rivers[0].len() };
+            for (sl, &(_, na)) in tp.slots.iter().enumerate() {
+                if self.slot_nact[t][sl] != NP {
+                    for inst in 0..n {
+                        v.push((self.base[t] + inst * self.size[t] + self.slot_off[t][sl], na * NUM_COMBOS));
+                    }
+                }
+            }
+        }
+        v
+    }
+
+    /// fsum = fsum * (t/(t+1))^2 + strat / W, W = DCFR weight total of `inner` iterations (same decay as the trunk)
+    fn accumulate_frontier_avg(&mut self, t: u32, inner: u32) {
+        if self.fsum.is_empty() {
+            self.fsum = vec![0.0; self.strat.len()];
+        }
+        let mut w = 0f64;
+        for j in 1..=inner {
+            let jj = j as f64;
+            w = w * (jj / (jj + 1.0)).powi(2) + 1.0;
+        }
+        let tt = t as f64;
+        let d = (tt / (tt + 1.0)).powi(2) as f32;
+        let inv = (1.0 / w) as f32;
+        for (o, l) in self.frontier_ranges() {
+            for i in o..o + l {
+                self.fsum[i] = self.fsum[i] * d + self.strat[i] * inv;
+            }
+        }
+    }
+
+    /// put the accumulated CFR-D frontier average into the strategy sums (evaluation only)
+    fn load_frontier_avg(&mut self) {
+        for (o, l) in self.frontier_ranges() {
+            self.strat[o..o + l].copy_from_slice(&self.fsum[o..o + l]);
+        }
+    }
+
     /// zero regrets and strategy sums of every 2-active slot (all frontier subtrees)
     fn reset_frontiers(&mut self) {
         for (t, tp) in self.g.templates.iter().enumerate() {
@@ -1819,6 +1865,9 @@ fn main() -> Result<(), String> {
             // mono-alt (default, B2), mono-sim (all players from one snapshot), factor (HU frontiers)
             let scheme = arg("--scheme").unwrap_or_else(|| "mono-alt".into());
             let inner: u32 = arg("--inner").map(|v| v.parse().unwrap()).unwrap_or(100);
+            // factor checkpoints: "resolve" (registered: frontiers re-solved against the trunk-average reach) or
+            // "cfrd-avg" (diagnostic: frontier average strategies accumulated over trunk iterations)
+            let feval = arg("--frontier-eval").unwrap_or_else(|| "resolve".into());
             let t0 = std::time::Instant::now();
             let mut e = Engine::new(&spot, fold_first, nb, restrict.clone());
             let (btr, bfr) = e.bytes_split();
@@ -1852,6 +1901,9 @@ fn main() -> Result<(), String> {
                         s_collect += c;
                         s_front += f;
                         n_front = n;
+                        if feval != "resolve" {
+                            e.accumulate_frontier_avg(t, inner);
+                        }
                         let t1 = std::time::Instant::now();
                         // trunk regrets of all players from the same snapshot; frontier values fixed
                         e.snap = e.regret.clone();
@@ -1868,7 +1920,17 @@ fn main() -> Result<(), String> {
                 }
                 if t % every == 0 || t == iters {
                     let t1 = std::time::Instant::now();
-                    if scheme == "factor" {
+                    let mut ev_cfrd = serde_json::Value::Null;
+                    if scheme == "factor" && feval == "both" {
+                        e.load_frontier_avg();
+                        ev_cfrd = e.evaluate();
+                        ev_cfrd["root_mix"] = e.root_mix();
+                        eprintln!("it {t} [cfrd-avg frontier] expl {:.4}% pot, conservation {:.2e}", ev_cfrd["exploitability_pct_pot"].as_f64().unwrap(),
+                                  ev_cfrd["conservation_error"].as_f64().unwrap());
+                    }
+                    if scheme == "factor" && feval == "cfrd-avg" {
+                        e.load_frontier_avg();
+                    } else if scheme == "factor" {
                         // final strategy: trunk average + frontiers re-solved against the trunk average reach
                         e.resolve_frontiers(Mode::Avg, inner, false);
                     }
@@ -1877,7 +1939,7 @@ fn main() -> Result<(), String> {
                     let x = ev["exploitability_pct_pot"].as_f64().unwrap();
                     eprintln!("it {t} expl {x:.4}% pot, conservation {:.2e}, {:.0}s (collect {s_collect:.1} frontier {s_front:.1} trunk {s_trunk:.1} eval {s_eval:.1}) rss {:?}",
                               ev["conservation_error"].as_f64().unwrap(), t0.elapsed().as_secs_f64(), peak_rss_kb());
-                    trace.push(serde_json::json!({"iteration": t, "seconds": t0.elapsed().as_secs_f64(), "eval": ev.clone(), "root_mix": e.root_mix(),
+                    trace.push(serde_json::json!({"iteration": t, "seconds": t0.elapsed().as_secs_f64(), "eval": ev.clone(), "root_mix": e.root_mix(), "eval_cfrd_avg": ev_cfrd,
                         "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval}}));
                     last = ev;
                     // partial result at every checkpoint (output only; the computation is unchanged)
@@ -1892,7 +1954,7 @@ fn main() -> Result<(), String> {
                 }
             }
             let res = serde_json::json!({"positions": spot.pos, "board": a[3], "fold_first": fold_first, "nonblocking": nb,
-                "scheme": scheme, "inner": inner, "restrict": restrict.as_ref().map(|(t, r)| serde_json::json!({"turns": t, "rivers": r})),
+                "scheme": scheme, "inner": inner, "frontier_eval": feval, "restrict": restrict.as_ref().map(|(t, r)| serde_json::json!({"turns": t, "rivers": r})),
                 "bytes": e.bytes(), "bytes_trunk": btr, "bytes_frontier": bfr, "frontiers": n_front,
                 "peak_rss_kb": peak_rss_kb(), "final": last, "trace": trace, "root_mix": e.root_mix(), "counters": e.counters(),
                 "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval},
