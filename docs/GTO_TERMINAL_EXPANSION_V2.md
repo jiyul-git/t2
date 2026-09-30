@@ -288,3 +288,79 @@ Three additions, all read-only:
   - 1371 has SPR 1.66, where the legacy equity-share payoff should be closest to the truth.
 - Candidates 4–6 are listed for completeness. Their reach is 3–4 orders of magnitude too small to matter at P9.
 - The larger coverage question is the 3-way family (41.6%), which needs a different continuation method than the HU solver.
+
+
+## T0 result — P9 census
+
+Census completed on the P9 state and reproduced the sealed diagnostics exactly.
+
+Key distribution:
+- 181 flop-reaching terminals in the tree; only 18 have reach > 1e-6.
+- HU = 57.7% of flop reach.
+- multiway = 42.3% (3-way 41.7%, 4-way 0.6%).
+- SRP = 98.9%; 3bet = 1.1%; 4bet = 0.0006%.
+- solved node 28 = 17.5% of flop reach.
+- top five terminals = 97.4% of flop reach.
+
+Dominant unsolved terminals:
+- node 6, SB open -> BB call, HU SRP: 24.7%
+- node 246, CO open -> SB call -> BB call, 3-way SRP: 21.9%
+- node 46, BTN open -> SB call -> BB call, 3-way SRP: 18.9%
+- node 228, CO open -> BB call, HU SRP: 14.5%
+
+The two dominant unsolved HU terminals (6 + 228) cover about 39.2% of flop reach.
+The two dominant 3-way terminals (246 + 46) cover about 40.8%.
+
+### Structural consequence
+
+The current preflop multiway terminal is not a solved postflop continuation. For 3+ live
+players it uses `coupled_deck_v1`: a pot-conserving coupled showdown-equity model over
+the arriving class distributions. There is no postflop betting tree or positional
+realization adjustment in that branch.
+
+Therefore a solved HU terminal and a legacy 3-way terminal are values from different
+models. The observed P0 -> P9 movement toward node 46 is consistent with a possible
+routing/escape effect, but does not by itself prove how much of the movement is caused by
+the model mismatch.
+
+The vendored postflop solver is explicitly heads-up only, so nodes 46/246 cannot simply be
+passed through the existing HU continuation pipeline.
+
+## T2 revised next step
+
+Run two workstreams in parallel.
+
+### A. HU impact pilots — existing solver, low risk
+
+Run the fixed six-flop pilot on:
+1. node 6 (SB vs BB SRP)
+2. node 228 (CO vs BB SRP)
+3. node 1371 only as the representative 3bet HU control if compute is cheap
+
+Measure solved-vs-legacy values and feed them into the terminal impact ranking. Do not
+promote them to 72 flops yet and do not implement the multi-terminal loader yet.
+
+### B. 3-way legacy-mismatch diagnostic — research only
+
+Target node 246 and node 46 first because together they cover ~40.8% of flop reach.
+
+Before building any production 3-way solver:
+1. export exact arriving ranges, invested amounts, pot, SPR, acting order and aggressor;
+2. reproduce the current coupled-deck legacy values exactly;
+3. quantify which preflop decisions feed each terminal and their action-EV margins;
+4. define a restricted 3-way postflop research game and its validation criteria before
+   looking at solved values;
+5. keep all resulting 3-way values out of production until conservation, determinism,
+   best-response/regret diagnostics and sensitivity to the action menu are understood.
+
+Because multiplayer no-limit is not covered by the existing heads-up exploitability
+framework, do not label an approximate 3-way research solution as GTO or mix it into the
+production DB without a separate validation standard.
+
+### Decision gate after A/B
+
+- If HU nodes 6/228 have large impact scores and the 3-way mismatch diagnostic is small,
+  continue HU terminal expansion first.
+- If the 3-way mismatch is material, pause broad HU expansion and build a validated
+  multiway continuation approximation before allowing more solved HU mass to redirect into
+  legacy 3-way paths.
