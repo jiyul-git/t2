@@ -1,0 +1,2179 @@
+{
+ "assumption": "(stated, untested): the per-class realization of solved HU play relative to raw\nequity transfers to the 3-way pot by role. For each class, R = V_solved / (pot * eq), with the\nHU raw equity eq = V_legacy_HU / (pot * static_r) (the static legacy formula without its cap).\nRoles: the aggressor (IP) takes the HU aggressor's R; both callers (SB and BB, OOP) take the HU\ncaller's R (the BB in the matching HU terminal: node 28 for the BTN open, node 228 for the CO open).\nNode 28 uses the 72-flop k9 table (P9 ranges), node 228 the six-flop pilot.\nProxy 3-way value = coupled-deck gross * R, then one common factor restores sum r V = pot.",
+ "nodes": {
+  "46": {
+   "renormalisation_factor": 1.0920345167745509,
+   "realization_source": "node 28, 72-flop k9 table",
+   "players": {
+    "BTN": {
+     "role": "aggressor",
+     "mean_abs_delta": 0.7718858293017569,
+     "reach_weighted_abs_delta": 0.6949671124542658,
+     "range_ev_shift": 0.6949671124542658,
+     "legacy_range_ev": 2.9301111040076018
+    },
+    "SB": {
+     "role": "caller",
+     "mean_abs_delta": 0.5344729981058713,
+     "reach_weighted_abs_delta": 0.40236704495502823,
+     "range_ev_shift": -0.33028665933099727,
+     "legacy_range_ev": 2.259118520597054
+    },
+    "BB": {
+     "role": "caller",
+     "mean_abs_delta": 0.5121376468097601,
+     "reach_weighted_abs_delta": 0.4065214890909788,
+     "range_ev_shift": -0.3646777131431364,
+     "legacy_range_ev": 1.8107676354152116
+    }
+   },
+   "decisions": [
+    {
+     "actor": "BTN",
+     "on_path_action": "Raise 2",
+     "q": 0.3374820227851391,
+     "mix_P9": {
+      "All-in 30": 0.040923721015531475,
+      "Fold": 0.591380722213132,
+      "Raise 2": 0.3676955727035205
+     },
+     "best_response_share_of_on_path_action_legacy": 0.3951734527415241,
+     "best_response_share_of_on_path_action_proxy": 0.6485671178040237,
+     "flips": [
+      {
+       "class": "52o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4763437387904229
+      },
+      {
+       "class": "33",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.35288327316534884
+      },
+      {
+       "class": "43o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4098908388726294
+      },
+      {
+       "class": "53o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3644929603217263
+      },
+      {
+       "class": "63o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3721612584069112
+      },
+      {
+       "class": "42s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4489433080773433
+      },
+      {
+       "class": "43s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.5254038948337029
+      },
+      {
+       "class": "54o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.5515368697382055
+      },
+      {
+       "class": "64o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.35123925181635846
+      },
+      {
+       "class": "74o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.36754098489775855
+      },
+      {
+       "class": "52s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.5911430824562083
+      },
+      {
+       "class": "53s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4121285652261672
+      },
+      {
+       "class": "55",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.4195852803323834
+      },
+      {
+       "class": "65o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.5621489503003169
+      },
+      {
+       "class": "75o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.5126536842682731
+      },
+      {
+       "class": "85o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3227573385158622
+      },
+      {
+       "class": "62s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.38696645629845433
+      },
+      {
+       "class": "63s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4701314507041654
+      },
+      {
+       "class": "64s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.35877405552596164
+      },
+      {
+       "class": "76o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3720028448412169
+      },
+      {
+       "class": "86o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3518022647140581
+      },
+      {
+       "class": "T6o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.20898045350268207
+      },
+      {
+       "class": "Q6o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.16605111992725416
+      },
+      {
+       "class": "K6o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.14591207777769796
+      },
+      {
+       "class": "73s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3209695165532721
+      },
+      {
+       "class": "74s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4398714784527493
+      },
+      {
+       "class": "87o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.30523556170160554
+      },
+      {
+       "class": "97o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.21215557464538676
+      },
+      {
+       "class": "82s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3071128837727585
+      },
+      {
+       "class": "83s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.2803068634037481
+      },
+      {
+       "class": "84s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3098255790072007
+      },
+      {
+       "class": "87s",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.4014721538797658
+      },
+      {
+       "class": "98o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.2562192669526212
+      },
+      {
+       "class": "J8o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.12832695897041874
+      },
+      {
+       "class": "Q8o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.10303514125487966
+      },
+      {
+       "class": "94s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.2191208560016838
+      },
+      {
+       "class": "95s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.30439726631718766
+      },
+      {
+       "class": "T4s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.20222319012119588
+      },
+      {
+       "class": "T5s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.22882873664532694
+      },
+      {
+       "class": "J5s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.19299914687966682
+      },
+      {
+       "class": "J6s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.2137850688563812
+      },
+      {
+       "class": "Q2s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.18385002626443328
+      },
+      {
+       "class": "Q3s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.19315708752243296
+      }
+     ]
+    },
+    {
+     "actor": "SB",
+     "on_path_action": "Call 2",
+     "q": 0.7854989181693063,
+     "mix_P9": {
+      "3-bet 7": 0.0005630105854067737,
+      "All-in 30": 0.15644175164656332,
+      "Call 2": 0.4296403411842897,
+      "Fold": 0.41335489781186346
+     },
+     "best_response_share_of_on_path_action_legacy": 0.42383107058401887,
+     "best_response_share_of_on_path_action_proxy": 0.20512820388644173,
+     "flips": [
+      {
+       "class": "A2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.39229666492678233
+      },
+      {
+       "class": "K3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.35197434644191916
+      },
+      {
+       "class": "A3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.32822226080565187
+      },
+      {
+       "class": "43s",
+       "from": "Fold",
+       "to": "Call 2",
+       "shift_bb": 0.2219091446366651
+      },
+      {
+       "class": "K4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.36403292149240435
+      },
+      {
+       "class": "A4o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.3432112428183234
+      },
+      {
+       "class": "54s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.5045049833646599
+      },
+      {
+       "class": "Q5o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5722505421257134
+      },
+      {
+       "class": "K5o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.22823923110468933
+      },
+      {
+       "class": "66",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.461452953230948
+      },
+      {
+       "class": "Q6o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.3774099040200267
+      },
+      {
+       "class": "K6o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.22711810225619397
+      },
+      {
+       "class": "74s",
+       "from": "Fold",
+       "to": "Call 2",
+       "shift_bb": 0.22076133606269568
+      },
+      {
+       "class": "77",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.5072779941946389
+      },
+      {
+       "class": "97o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.32230450711509184
+      },
+      {
+       "class": "T7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.42830432765055654
+      },
+      {
+       "class": "J7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6275240915786292
+      },
+      {
+       "class": "Q7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.4614414810902599
+      },
+      {
+       "class": "K7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.3001564181809723
+      },
+      {
+       "class": "85s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.08694319748186659
+      },
+      {
+       "class": "86s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.11876164228668792
+      },
+      {
+       "class": "88",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.8783057138632788
+      },
+      {
+       "class": "98o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.22213812049608742
+      },
+      {
+       "class": "T8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.37761250600176005
+      },
+      {
+       "class": "J8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6145880194766639
+      },
+      {
+       "class": "Q8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5809158421309338
+      },
+      {
+       "class": "K8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.3176959404311961
+      },
+      {
+       "class": "A8o",
+       "from": "Call 2",
+       "to": "3-bet 7",
+       "shift_bb": -0.20342697085889866
+      },
+      {
+       "class": "95s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.2228107712954395
+      },
+      {
+       "class": "96s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.16539198089772036
+      },
+      {
+       "class": "99",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.3322054432037118
+      },
+      {
+       "class": "T9o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.4073505554163766
+      },
+      {
+       "class": "J9o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6803446485674974
+      },
+      {
+       "class": "Q9o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5916612174171944
+      },
+      {
+       "class": "A9o",
+       "from": "Call 2",
+       "to": "3-bet 7",
+       "shift_bb": -0.13706656872345305
+      },
+      {
+       "class": "T3s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.30394699650112034
+      },
+      {
+       "class": "T5s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.18749172445538886
+      },
+      {
+       "class": "T6s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.1777865215618345
+      },
+      {
+       "class": "TT",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.8315084714285186
+      },
+      {
+       "class": "JTo",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.3959725905393474
+      },
+      {
+       "class": "QTo",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.5065110227532239
+      },
+      {
+       "class": "J2s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.4240929129467934
+      },
+      {
+       "class": "J3s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.38824778098515106
+      },
+      {
+       "class": "J4s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.38243239504420773
+      },
+      {
+       "class": "J5s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.36034551466297904
+      },
+      {
+       "class": "J6s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.3557553431716349
+      },
+      {
+       "class": "J7s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.35413927970291204
+      },
+      {
+       "class": "JJ",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 2.346060964413345
+      },
+      {
+       "class": "QJo",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.2754718032213101
+      },
+      {
+       "class": "KJo",
+       "from": "Call 2",
+       "to": "3-bet 7",
+       "shift_bb": -0.2042071462207698
+      },
+      {
+       "class": "Q2s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.2551858460738511
+      },
+      {
+       "class": "Q3s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.1995857762667585
+      },
+      {
+       "class": "Q4s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.2320566068863157
+      },
+      {
+       "class": "Q9s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.1892664636422276
+      },
+      {
+       "class": "QJs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.22414870803033415
+      },
+      {
+       "class": "QQ",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 3.037396523853943
+      },
+      {
+       "class": "KQo",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.2857222866930987
+      },
+      {
+       "class": "KTs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.42441752501827906
+      },
+      {
+       "class": "KJs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.28109894964748494
+      },
+      {
+       "class": "KQs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.7887982739459527
+      },
+      {
+       "class": "KK",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 4.44528383491669
+      },
+      {
+       "class": "A5s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.22017616451460761
+      },
+      {
+       "class": "A9s",
+       "from": "3-bet 7",
+       "to": "Call 2",
+       "shift_bb": 0.425242147203704
+      },
+      {
+       "class": "AJs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.873662784520983
+      },
+      {
+       "class": "AA",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 5.89209316143632
+      }
+     ]
+    },
+    {
+     "actor": "BB",
+     "on_path_action": "Call 2",
+     "q": 1.0,
+     "mix_P9": {
+      "3-bet 7": 6.296244741755382e-07,
+      "All-in 30": 0.21449930557037897,
+      "Call 2": 0.7854989219206595,
+      "Fold": 1.1517360996328815e-06
+     },
+     "best_response_share_of_on_path_action_legacy": 0.7782805437397009,
+     "best_response_share_of_on_path_action_proxy": 0.5279034689384151,
+     "flips": [
+      {
+       "class": "72o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.3796731248100692
+      },
+      {
+       "class": "92o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6241339391676122
+      },
+      {
+       "class": "T2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6565700899395851
+      },
+      {
+       "class": "J2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7283134349131332
+      },
+      {
+       "class": "73o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.4586005722443053
+      },
+      {
+       "class": "83o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5058085434966721
+      },
+      {
+       "class": "93o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6149420074932078
+      },
+      {
+       "class": "T3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6185689157631696
+      },
+      {
+       "class": "J3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7055292641351633
+      },
+      {
+       "class": "94o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.502391228854015
+      },
+      {
+       "class": "T4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5468454088763992
+      },
+      {
+       "class": "J4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.741212164461448
+      },
+      {
+       "class": "A4o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.41255463856717167
+      },
+      {
+       "class": "54s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.6327808995416917
+      },
+      {
+       "class": "J5o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.781882985522181
+      },
+      {
+       "class": "64s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.3222849007193276
+      },
+      {
+       "class": "65s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.545448230616919
+      },
+      {
+       "class": "J6o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6226614519310459
+      },
+      {
+       "class": "87o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.3920737380628545
+      },
+      {
+       "class": "T7o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.4986364644603054
+      },
+      {
+       "class": "J7o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.7285471143393323
+      },
+      {
+       "class": "T8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.44215837188162865
+      },
+      {
+       "class": "J8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.717396163651441
+      },
+      {
+       "class": "Q8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6830639128388039
+      },
+      {
+       "class": "96s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.19783229223864418
+      },
+      {
+       "class": "97s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.029858583325005572
+      },
+      {
+       "class": "T9o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.47677853884667964
+      },
+      {
+       "class": "J9o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.7932381507957591
+      },
+      {
+       "class": "Q9o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6950167484558705
+      },
+      {
+       "class": "T6s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.2118169599154538
+      },
+      {
+       "class": "T8s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.15582760890171565
+      },
+      {
+       "class": "QTo",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6013165698791691
+      },
+      {
+       "class": "J2s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.5110551907255971
+      },
+      {
+       "class": "J3s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.46373077052975975
+      },
+      {
+       "class": "J4s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.45463220171120855
+      },
+      {
+       "class": "J5s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.4259954211855046
+      },
+      {
+       "class": "J6s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.42136218481372145
+      },
+      {
+       "class": "J7s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.4178817103428625
+      },
+      {
+       "class": "Q4s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.27508794774718637
+      },
+      {
+       "class": "Q5s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.1724752861149541
+      },
+      {
+       "class": "Q6s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.22468388936572503
+      },
+      {
+       "class": "Q8s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.2055785704841333
+      },
+      {
+       "class": "Q9s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.22452842702632303
+      },
+      {
+       "class": "K3s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.15558980446891613
+      },
+      {
+       "class": "K4s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.01854594654052888
+      },
+      {
+       "class": "K6s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.10833567351265794
+      },
+      {
+       "class": "KTs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.5124838092266009
+      },
+      {
+       "class": "A5s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.26731097523347014
+      },
+      {
+       "class": "A8s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.38367926323165635
+      }
+     ]
+    }
+   ]
+  },
+  "246": {
+   "renormalisation_factor": 1.082551213488111,
+   "realization_source": "node 228, six-flop pilot",
+   "players": {
+    "CO": {
+     "role": "aggressor",
+     "mean_abs_delta": 0.9816170834378055,
+     "reach_weighted_abs_delta": 0.8917954438341612,
+     "range_ev_shift": 0.8905037341167734,
+     "legacy_range_ev": 3.1282256694185517
+    },
+    "SB": {
+     "role": "caller",
+     "mean_abs_delta": 0.7704475399614624,
+     "reach_weighted_abs_delta": 0.6051232565957292,
+     "range_ev_shift": -0.3706602311487079,
+     "legacy_range_ev": 2.0976100472407944
+    },
+    "BB": {
+     "role": "caller",
+     "mean_abs_delta": 0.7450264710515492,
+     "reach_weighted_abs_delta": 0.6214860559744211,
+     "range_ev_shift": -0.5198398457726993,
+     "legacy_range_ev": 1.7741606261452876
+    }
+   },
+   "decisions": [
+    {
+     "actor": "CO",
+     "on_path_action": "Raise 2",
+     "q": 0.4003375076847265,
+     "mix_P9": {
+      "All-in 30": 0.011435595000039982,
+      "Fold": 0.7269729146097926,
+      "Raise 2": 0.26159150544105136
+     },
+     "best_response_share_of_on_path_action_legacy": 0.24434389101922918,
+     "best_response_share_of_on_path_action_proxy": 0.41478129654074847,
+     "flips": [
+      {
+       "class": "22",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.1819053729909161
+      },
+      {
+       "class": "A4o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.01875783953261009
+      },
+      {
+       "class": "K6o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4020496304271515
+      },
+      {
+       "class": "K7o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.2150054849080285
+      },
+      {
+       "class": "T8o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.45544379276982677
+      },
+      {
+       "class": "J8o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3211326292107553
+      },
+      {
+       "class": "Q8o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.24795088317870004
+      },
+      {
+       "class": "K8o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.16060336282398022
+      },
+      {
+       "class": "97s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.6846572946603705
+      },
+      {
+       "class": "98s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.37840486638236054
+      },
+      {
+       "class": "T9o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.35415681325913795
+      },
+      {
+       "class": "J9o",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.209870821266493
+      },
+      {
+       "class": "T7s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4399069061662677
+      },
+      {
+       "class": "JTo",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.47537680081964817
+      },
+      {
+       "class": "J7s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.35419051573380284
+      },
+      {
+       "class": "J8s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4487667134418162
+      },
+      {
+       "class": "JTs",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.6145238035706728
+      },
+      {
+       "class": "Q4s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4083777102763828
+      },
+      {
+       "class": "Q5s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3199037722479983
+      },
+      {
+       "class": "Q6s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.5521449883220498
+      },
+      {
+       "class": "Q7s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3894145713215012
+      },
+      {
+       "class": "QTs",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.5538402695439286
+      },
+      {
+       "class": "KQo",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.4263827358701021
+      },
+      {
+       "class": "AQo",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.3004584357993537
+      },
+      {
+       "class": "K2s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.2413375770756634
+      },
+      {
+       "class": "K3s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.3074803667710351
+      },
+      {
+       "class": "K4s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.2604882603431932
+      },
+      {
+       "class": "K5s",
+       "from": "Fold",
+       "to": "Raise 2",
+       "shift_bb": 0.4468869799649169
+      },
+      {
+       "class": "KTs",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.5188267812781159
+      },
+      {
+       "class": "AKo",
+       "from": "All-in 30",
+       "to": "Raise 2",
+       "shift_bb": 0.2540200750224798
+      }
+     ]
+    },
+    {
+     "actor": "SB",
+     "on_path_action": "Call 2",
+     "q": 0.8557782346268057,
+     "mix_P9": {
+      "3-bet 7": 0.0002624587243794909,
+      "All-in 30": 0.1045237954028553,
+      "Call 2": 0.5470885979621042,
+      "Fold": 0.3481251861750156
+     },
+     "best_response_share_of_on_path_action_legacy": 0.5429864242026052,
+     "best_response_share_of_on_path_action_proxy": 0.3076923069938158,
+     "flips": [
+      {
+       "class": "A2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9894782712433825
+      },
+      {
+       "class": "33",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6898676112650792
+      },
+      {
+       "class": "K3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.3963674105014706
+      },
+      {
+       "class": "A3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7259159847418594
+      },
+      {
+       "class": "43s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5017684051623372
+      },
+      {
+       "class": "K4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.4555104300329583
+      },
+      {
+       "class": "A4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9062538879804694
+      },
+      {
+       "class": "53s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6281153328860644
+      },
+      {
+       "class": "65o",
+       "from": "Fold",
+       "to": "Call 2",
+       "shift_bb": 0.23406807591616086
+      },
+      {
+       "class": "75o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.8956241836407768
+      },
+      {
+       "class": "85o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.2689763216718593
+      },
+      {
+       "class": "66",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.372641888054287
+      },
+      {
+       "class": "86o",
+       "from": "Fold",
+       "to": "Call 2",
+       "shift_bb": 0.2778804764812143
+      },
+      {
+       "class": "96o",
+       "from": "Fold",
+       "to": "Call 2",
+       "shift_bb": 0.19721820689574543
+      },
+      {
+       "class": "73s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5601862060513341
+      },
+      {
+       "class": "74s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.01571335906914062
+      },
+      {
+       "class": "75s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5972903263721505
+      },
+      {
+       "class": "87o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9132751955957921
+      },
+      {
+       "class": "T7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7299975150460972
+      },
+      {
+       "class": "J7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9476314055496585
+      },
+      {
+       "class": "K7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.2555238111645132
+      },
+      {
+       "class": "A7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5712721271420537
+      },
+      {
+       "class": "82s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.086976723040855
+      },
+      {
+       "class": "83s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7843822302066994
+      },
+      {
+       "class": "85s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6899765897673111
+      },
+      {
+       "class": "98o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.0892200345530154
+      },
+      {
+       "class": "T8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7159406986779656
+      },
+      {
+       "class": "J8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.0774788058748248
+      },
+      {
+       "class": "Q8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7297563732012187
+      },
+      {
+       "class": "K8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9267718622557171
+      },
+      {
+       "class": "A8o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.092137722552491
+      },
+      {
+       "class": "92s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6922528069190176
+      },
+      {
+       "class": "93s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.42627868575164674
+      },
+      {
+       "class": "98s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.7991567409393598
+      },
+      {
+       "class": "99",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.8321648134300623
+      },
+      {
+       "class": "T9o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.2737402403895776
+      },
+      {
+       "class": "J9o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9272657764698186
+      },
+      {
+       "class": "T3s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.3421296366493045
+      },
+      {
+       "class": "T4s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.29127366206792277
+      },
+      {
+       "class": "T5s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.24166250606352513
+      },
+      {
+       "class": "T7s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.33173434704567406
+      },
+      {
+       "class": "QTo",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.3870667989146863
+      },
+      {
+       "class": "ATo",
+       "from": "Call 2",
+       "to": "3-bet 7",
+       "shift_bb": -0.25503508761367427
+      },
+      {
+       "class": "J2s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.8355274134198913
+      },
+      {
+       "class": "J3s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.8678870691526016
+      },
+      {
+       "class": "J4s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7830973736565058
+      },
+      {
+       "class": "J5s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9430180684340188
+      },
+      {
+       "class": "J7s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.7726231941044432
+      },
+      {
+       "class": "J8s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6001828323980266
+      },
+      {
+       "class": "AJo",
+       "from": "Call 2",
+       "to": "3-bet 7",
+       "shift_bb": -0.5164874249466298
+      },
+      {
+       "class": "Q2s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.38913359397408925
+      },
+      {
+       "class": "Q5s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.19922657876712413
+      },
+      {
+       "class": "QTs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.394116485960741
+      },
+      {
+       "class": "QQ",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 2.729012207433811
+      },
+      {
+       "class": "AQo",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.9984403423656733
+      },
+      {
+       "class": "K2s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.47894440548748834
+      },
+      {
+       "class": "K4s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.17153706225794757
+      },
+      {
+       "class": "K8s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.4319516971404688
+      },
+      {
+       "class": "KTs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.5608302160581946
+      },
+      {
+       "class": "KJs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.31588902319298945
+      },
+      {
+       "class": "KQs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.247528327446624
+      },
+      {
+       "class": "KK",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 6.138372430248556
+      },
+      {
+       "class": "A2s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.5451330427587862
+      },
+      {
+       "class": "A3s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.2569490049406247
+      },
+      {
+       "class": "A4s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.16367956963369062
+      },
+      {
+       "class": "A8s",
+       "from": "Call 2",
+       "to": "3-bet 7",
+       "shift_bb": -0.36372175069364504
+      },
+      {
+       "class": "AJs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.09274148647885808
+      },
+      {
+       "class": "AQs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.6648134030315334
+      },
+      {
+       "class": "AA",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 7.3285228548374235
+      }
+     ]
+    },
+    {
+     "actor": "BB",
+     "on_path_action": "Call 2",
+     "q": 1.0,
+     "mix_P9": {
+      "3-bet 7": 2.847390711977482e-06,
+      "All-in 30": 0.1442176766514958,
+      "Call 2": 0.8557782362784813,
+      "Fold": 1.2871197879962183e-06
+     },
+     "best_response_share_of_on_path_action_legacy": 0.8552036201971166,
+     "best_response_share_of_on_path_action_proxy": 0.4253393655982105,
+     "flips": [
+      {
+       "class": "22",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.609222710526027
+      },
+      {
+       "class": "32o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.1510199018830387
+      },
+      {
+       "class": "42o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.051066906396922
+      },
+      {
+       "class": "52o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.1905313315955164
+      },
+      {
+       "class": "72o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9061072318239876
+      },
+      {
+       "class": "82o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.317454317203235
+      },
+      {
+       "class": "92o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.8639022168701481
+      },
+      {
+       "class": "T2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.0103179413789753
+      },
+      {
+       "class": "J2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.2674699569411947
+      },
+      {
+       "class": "Q2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7285009536443748
+      },
+      {
+       "class": "K2o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7804179786582752
+      },
+      {
+       "class": "A2o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.0998829419843608
+      },
+      {
+       "class": "32s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.949411382876849
+      },
+      {
+       "class": "43o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.0298398195515002
+      },
+      {
+       "class": "53o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9845902819665739
+      },
+      {
+       "class": "73o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7458375162910452
+      },
+      {
+       "class": "83o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.109286836659769
+      },
+      {
+       "class": "93o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.5962766443683736
+      },
+      {
+       "class": "T3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6882307758931627
+      },
+      {
+       "class": "J3o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.0238313666249361
+      },
+      {
+       "class": "A3o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.8107201521986622
+      },
+      {
+       "class": "54o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7876817346340974
+      },
+      {
+       "class": "84o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.2515268493889569
+      },
+      {
+       "class": "94o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7453057021251002
+      },
+      {
+       "class": "T4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.8108699900960974
+      },
+      {
+       "class": "J4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.2069748216274663
+      },
+      {
+       "class": "Q4o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.631077842440931
+      },
+      {
+       "class": "A4o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.0076758774325614
+      },
+      {
+       "class": "52s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.0061137100230642
+      },
+      {
+       "class": "55",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.5500586369821088
+      },
+      {
+       "class": "75o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.9967826143838626
+      },
+      {
+       "class": "85o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.4167697843583207
+      },
+      {
+       "class": "J5o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.3051828178779161
+      },
+      {
+       "class": "Q5o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7023386650665964
+      },
+      {
+       "class": "72s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.8976026203759676
+      },
+      {
+       "class": "75s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6699081100816335
+      },
+      {
+       "class": "77",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.607107799154115
+      },
+      {
+       "class": "87o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.0094227003537495
+      },
+      {
+       "class": "T7o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.8070395578332211
+      },
+      {
+       "class": "J7o",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.0455453240212718
+      },
+      {
+       "class": "A7o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6409470255940211
+      },
+      {
+       "class": "82s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -1.23521245797412
+      },
+      {
+       "class": "83s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.888209974601426
+      },
+      {
+       "class": "84s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.8175706885912788
+      },
+      {
+       "class": "85s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.776508177576577
+      },
+      {
+       "class": "98o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.2035467949076222
+      },
+      {
+       "class": "T8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.7966843744509688
+      },
+      {
+       "class": "J8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.1975386788549855
+      },
+      {
+       "class": "Q8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.8091819605683732
+      },
+      {
+       "class": "K8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.0274966645531791
+      },
+      {
+       "class": "A8o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.229655286605066
+      },
+      {
+       "class": "92s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.7858579004610676
+      },
+      {
+       "class": "97s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.0741142551264558
+      },
+      {
+       "class": "T9o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.30499963591523827
+      },
+      {
+       "class": "J9o",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.0275262378056778
+      },
+      {
+       "class": "T2s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.6814285571650419
+      },
+      {
+       "class": "T7s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.3683192511756084
+      },
+      {
+       "class": "T8s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.05707688421830914
+      },
+      {
+       "class": "QTo",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.4315339979128292
+      },
+      {
+       "class": "ATo",
+       "from": "Call 2",
+       "to": "3-bet 7",
+       "shift_bb": -0.28933260811353323
+      },
+      {
+       "class": "J2s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.9446318852729441
+      },
+      {
+       "class": "J3s",
+       "from": "Call 2",
+       "to": "Fold",
+       "shift_bb": -0.976377794633357
+      },
+      {
+       "class": "J4s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.8786297069536776
+      },
+      {
+       "class": "J5s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -1.0539080946907455
+      },
+      {
+       "class": "J7s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.8614903155746114
+      },
+      {
+       "class": "J8s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6710901364219812
+      },
+      {
+       "class": "J9s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.8333537377156073
+      },
+      {
+       "class": "QTs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.4424639305968743
+      },
+      {
+       "class": "KQo",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.838807170432295
+      },
+      {
+       "class": "K2s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.5319875726762604
+      },
+      {
+       "class": "K8s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.48193052443723916
+      },
+      {
+       "class": "K9s",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.11442849607653205
+      },
+      {
+       "class": "KTs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.6292118239257762
+      },
+      {
+       "class": "KJs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.35595669923942275
+      },
+      {
+       "class": "KQs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 1.4126351471354273
+      },
+      {
+       "class": "KK",
+       "from": "3-bet 7",
+       "to": "Call 2",
+       "shift_bb": 7.045337170168141
+      },
+      {
+       "class": "A2s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.6107040965381743
+      },
+      {
+       "class": "A3s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.28924620283105495
+      },
+      {
+       "class": "A4s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.1834381662255602
+      },
+      {
+       "class": "A8s",
+       "from": "Call 2",
+       "to": "All-in 30",
+       "shift_bb": -0.4117679701512773
+      },
+      {
+       "class": "ATs",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 0.5958938282029624
+      },
+      {
+       "class": "AA",
+       "from": "All-in 30",
+       "to": "Call 2",
+       "shift_bb": 8.499057960673245
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

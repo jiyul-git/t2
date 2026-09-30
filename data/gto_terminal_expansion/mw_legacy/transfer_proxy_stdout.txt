@@ -1,0 +1,14 @@
+node 46: renorm 1.092 (node 28, 72-flop k9 table)
+   BTN (aggressor): mean|d| 0.772 rw|d| 0.695 range-EV shift +0.695 (legacy range EV 2.930)
+   SB (caller): mean|d| 0.534 rw|d| 0.402 range-EV shift -0.330 (legacy range EV 2.259)
+   BB (caller): mean|d| 0.512 rw|d| 0.407 range-EV shift -0.365 (legacy range EV 1.811)
+   BTN Raise 2 q 0.337: BR share of on-path action 0.395 -> 0.649; flips 43 [('52o', 'Fold', 'Rais'), ('33', 'All-', 'Rais'), ('43o', 'Fold', 'Rais'), ('53o', 'Fold', 'Rais'), ('63o', 'Fold', 'Rais'), ('42s', 'Fold', 'Rais'), ('43s', 'Fold', 'Rais'), ('54o', 'Fold', 'Rais'), ('64o', 'Fold', 'Rais'), ('74o', 'Fold', 'Rais'), ('52s', 'Fold', 'Rais'), ('53s', 'Fold', 'Rais')]
+   SB Call 2 q 0.785: BR share of on-path action 0.424 -> 0.205; flips 65 [('A2o', 'Call', 'Fold'), ('K3o', 'Call', 'Fold'), ('A3o', 'Call', 'Fold'), ('43s', 'Fold', 'Call'), ('K4o', 'Call', 'Fold'), ('A4o', 'Call', 'All-'), ('54s', 'All-', 'Call'), ('Q5o', 'Call', 'Fold'), ('K5o', 'Call', 'Fold'), ('66', 'All-', 'Call'), ('Q6o', 'Call', 'Fold'), ('K6o', 'Call', 'Fold')]
+   BB Call 2 q 1.000: BR share of on-path action 0.778 -> 0.528; flips 49 [('72o', 'Call', 'Fold'), ('92o', 'Call', 'Fold'), ('T2o', 'Call', 'Fold'), ('J2o', 'Call', 'Fold'), ('73o', 'Call', 'Fold'), ('83o', 'Call', 'Fold'), ('93o', 'Call', 'Fold'), ('T3o', 'Call', 'Fold'), ('J3o', 'Call', 'Fold'), ('94o', 'Call', 'Fold'), ('T4o', 'Call', 'Fold'), ('J4o', 'Call', 'Fold')]
+node 246: renorm 1.083 (node 228, six-flop pilot)
+   CO (aggressor): mean|d| 0.982 rw|d| 0.892 range-EV shift +0.891 (legacy range EV 3.128)
+   SB (caller): mean|d| 0.770 rw|d| 0.605 range-EV shift -0.371 (legacy range EV 2.098)
+   BB (caller): mean|d| 0.745 rw|d| 0.621 range-EV shift -0.520 (legacy range EV 1.774)
+   CO Raise 2 q 0.400: BR share of on-path action 0.244 -> 0.415; flips 30 [('22', 'Fold', 'Rais'), ('A4o', 'Fold', 'Rais'), ('K6o', 'Fold', 'Rais'), ('K7o', 'Fold', 'Rais'), ('T8o', 'Fold', 'Rais'), ('J8o', 'Fold', 'Rais'), ('Q8o', 'Fold', 'Rais'), ('K8o', 'Fold', 'Rais'), ('97s', 'Fold', 'Rais'), ('98s', 'Fold', 'Rais'), ('T9o', 'Fold', 'Rais'), ('J9o', 'Fold', 'Rais')]
+   SB Call 2 q 0.856: BR share of on-path action 0.543 -> 0.308; flips 69 [('A2o', 'Call', 'Fold'), ('33', 'Call', 'All-'), ('K3o', 'Call', 'Fold'), ('A3o', 'Call', 'Fold'), ('43s', 'Call', 'Fold'), ('K4o', 'Call', 'Fold'), ('A4o', 'Call', 'Fold'), ('53s', 'Call', 'Fold'), ('65o', 'Fold', 'Call'), ('75o', 'Call', 'Fold'), ('85o', 'Call', 'Fold'), ('66', 'Call', 'All-')]
+   BB Call 2 q 1.000: BR share of on-path action 0.855 -> 0.425; flips 82 [('22', 'Call', 'All-'), ('32o', 'Call', 'Fold'), ('42o', 'Call', 'Fold'), ('52o', 'Call', 'Fold'), ('72o', 'Call', 'Fold'), ('82o', 'Call', 'Fold'), ('92o', 'Call', 'Fold'), ('T2o', 'Call', 'Fold'), ('J2o', 'Call', 'Fold'), ('Q2o', 'Call', 'Fold'), ('K2o', 'Call', 'Fold'), ('A2o', 'Call', 'All-')]
