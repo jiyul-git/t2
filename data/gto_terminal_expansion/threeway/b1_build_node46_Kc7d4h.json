@@ -1,0 +1,123 @@
+{
+  "action_slots_total": 620373,
+  "alloc": {
+    "full": "14.30 GB > 10 GB limit: not allocated",
+    "peak_rss_kb_after": 440728,
+    "peak_rss_kb_before": 8592,
+    "rss_delta_over_accounted": 1.0004193508211994,
+    "slice_allocated_bytes": 442321776
+  },
+  "bytes_ev_scratch_estimate": 0,
+  "bytes_if_2_active_subtrees_delegated": 5915222352,
+  "bytes_regret_f32": 7150136760,
+  "bytes_regret_plus_strategy_f32": 14300273520,
+  "bytes_strategy_sum_f32": 7150136760,
+  "hu_degenerate_tree": {
+    "action_slots_total": 76054,
+    "bytes_ev_scratch_estimate": 0,
+    "bytes_if_2_active_subtrees_delegated": 0,
+    "bytes_regret_f32": 907631088,
+    "bytes_regret_plus_strategy_f32": 1815262176,
+    "bytes_strategy_sum_f32": 907631088,
+    "note": "memory = sum over action nodes (template x runout) of actions x 1326 combos x 4 bytes x 2 arrays; EV vectors are transient (per recursion level), not stored",
+    "streets": [
+      {
+        "action_nodes": 6,
+        "action_nodes_2_active": 6,
+        "action_nodes_3_active": 0,
+        "bytes_2_active_nodes": 148512,
+        "bytes_3_active_nodes": 0,
+        "chance_nodes_into_next_street": 3,
+        "fold_win_terminals": 4,
+        "showdown_terminals": 2,
+        "strategy_plus_regret_bytes_f32": 148512,
+        "street": "flop"
+      },
+      {
+        "action_nodes": 784,
+        "action_nodes_2_active": 784,
+        "action_nodes_3_active": 0,
+        "bytes_2_active_nodes": 18712512,
+        "bytes_3_active_nodes": 0,
+        "chance_nodes_into_next_street": 392,
+        "fold_win_terminals": 490,
+        "showdown_terminals": 245,
+        "strategy_plus_regret_bytes_f32": 18712512,
+        "street": "turn"
+      },
+      {
+        "action_nodes": 75264,
+        "action_nodes_2_active": 75264,
+        "action_nodes_3_active": 0,
+        "bytes_2_active_nodes": 1796401152,
+        "bytes_3_active_nodes": 0,
+        "chance_nodes_into_next_street": 0,
+        "fold_win_terminals": 47040,
+        "showdown_terminals": 61152,
+        "strategy_plus_regret_bytes_f32": 1796401152,
+        "street": "river"
+      }
+    ],
+    "templates": 10,
+    "templates_by_street": [
+      1,
+      3,
+      6
+    ]
+  },
+  "note": "memory = sum over action nodes (template x runout) of actions x 1326 combos x 4 bytes x 2 arrays; EV vectors are transient (per recursion level), not stored",
+  "spot": {
+    "board": "Kc7d4h",
+    "positions": [
+      "SB",
+      "BB",
+      "BTN"
+    ],
+    "pot": 7.0,
+    "stack": 28.0
+  },
+  "streets": [
+    {
+      "action_nodes": 33,
+      "action_nodes_2_active": 12,
+      "action_nodes_3_active": 21,
+      "bytes_2_active_nodes": 286416,
+      "bytes_3_active_nodes": 509184,
+      "chance_nodes_into_next_street": 10,
+      "fold_win_terminals": 12,
+      "showdown_terminals": 21,
+      "strategy_plus_regret_bytes_f32": 795600,
+      "street": "flop"
+    },
+    {
+      "action_nodes": 6468,
+      "action_nodes_2_active": 3234,
+      "action_nodes_3_active": 3234,
+      "bytes_2_active_nodes": 76409424,
+      "bytes_3_active_nodes": 76409424,
+      "chance_nodes_into_next_street": 2254,
+      "fold_win_terminals": 2646,
+      "showdown_terminals": 3528,
+      "strategy_plus_regret_bytes_f32": 152818848,
+      "street": "turn"
+    },
+    {
+      "action_nodes": 613872,
+      "action_nodes_2_active": 359856,
+      "action_nodes_3_active": 254016,
+      "bytes_2_active_nodes": 8308355328,
+      "bytes_3_active_nodes": 5838303744,
+      "chance_nodes_into_next_street": 0,
+      "fold_win_terminals": 261072,
+      "showdown_terminals": 526848,
+      "strategy_plus_regret_bytes_f32": 14146659072,
+      "street": "river"
+    }
+  ],
+  "templates": 40,
+  "templates_by_street": [
+    1,
+    10,
+    29
+  ]
+}

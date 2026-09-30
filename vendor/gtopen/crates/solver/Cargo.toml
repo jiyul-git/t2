@@ -59,6 +59,9 @@ name = "t2_cont_loader_check"
 required-features = ["t2-cont"]
 
 [[example]]
+name = "t2_3way"
+
+[[example]]
 name = "t2_cont_census"
 required-features = ["t2-cont"]
 
