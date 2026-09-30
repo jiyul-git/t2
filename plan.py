@@ -1566,6 +1566,29 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         % (_eq_seen, need_seen, need, ' [layer-call]' if _layer_call else ''))
 
 
+def _called_prior_street_aggression(plan_state, street):
+    """Did hero call an opponent's aggression on the immediately prior street?
+
+    This is line history, not hand strength.  After bet/raise -> call, the
+    aggressor normally keeps initiative on the next street.  Losing this fact
+    caused lines like bet/call flop -> donk turn -> fold to raise.
+    """
+    prev = {'turn': 'flop', 'river': 'turn'}.get(street)
+    if not prev or not isinstance(plan_state, dict):
+        return False
+    rows = ((plan_state.get('response_plans') or {}).get(prev) or [])
+    for rp in reversed(rows):
+        if rp.get('act') != 'call':
+            continue
+        if rp.get('response_kind') in (
+                'aggressor_backaction', 'face_bet', 'check_then_face_bet'):
+            return True
+        # Legacy response rows may not have response_kind but do carry source.
+        if rp.get('source') in ('generic_response', 'checkraise_declined'):
+            return True
+    return False
+
+
 def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
                       to_act_behind, rng, opp_est=None, outs=0, plan_state=None,
                       oop_vs_aggr=None, oop_legacy_abs=None):
@@ -1689,6 +1712,23 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         p = p + (1.0 - p) * (((rel - 0.65)/0.35) ** 0.8)
     else:
         p *= (0.35 + 0.65 * (rel/0.80) ** 0.8)
+
+    # Line ownership: if we CALLED the opponent's aggression on the prior
+    # street and remain OOP to that aggressor, default back to them.  A value
+    # label describes hand class; it does not erase who owns the betting line.
+    #
+    # Keep a small personality-driven donk/re-lead frequency instead of a hard
+    # prohibition.  Aggressive humans sometimes lead strong hands, but the
+    # previous implementation effectively treated it as a fresh 97% value bet.
+    _called_prev_aggr = _called_prior_street_aggression(plan_state, street)
+    if (_called_prev_aggr and not initiative and oop_vs_aggr is True):
+        _relead = max(0.04, min(0.16, 0.04 + 0.010*float(a)))
+        p *= _relead
+        _fp = max(0.02, min(0.35, p))
+        return _fp, (
+            '직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선'
+            ' (재리드 %.0f%%)' % (_fp*100))
+
     _fp = max(0.05, min(0.97, p))
     return _fp, '밸류 계획 실행(%.0f%%)' % (_fp*100)
 
@@ -2640,7 +2680,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     # 계획 이력은 라벨과 별개로 이어진다. 새 dict 가 만들어져도 유지한다.
     if prev:
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
-                  'executed_actions', 'plan_since', '_rsig', '_opps_sig'):
+                  'executed_actions', 'response_plans', '_last_response_plan',
+                  'plan_since', '_rsig', '_opps_sig'):
             if prev.get(k) is not None and st.get(k) is None:
                 st[k] = prev[k]
 
