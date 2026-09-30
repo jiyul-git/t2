@@ -1,0 +1,114 @@
+{
+ "one_step": {
+  "trunk_regret_max_abs_diff": 0.0,
+  "trunk_strategy_sum_max_abs_diff": 0.0,
+  "frontier_reach_max_abs_diff": 0.0,
+  "root_cf_value_max_abs_diff": 0.0,
+  "limits": {
+   "value_regret": 1e-06,
+   "strategy_reach": 1e-07
+  }
+ },
+ "one_step_pass": true,
+ "shadow": {
+  "iterations": 50,
+  "max_over_iterations": {
+   "trunk_regret_max_abs_diff": 0.0,
+   "trunk_strategy_sum_max_abs_diff": 0.0,
+   "frontier_reach_max_abs_diff": 0.0,
+   "root_cf_value_max_abs_diff": 0.0
+  },
+  "first_divergence": null
+ },
+ "control_stale_oracle": {
+  "first_divergence": {
+   "entry_contrib": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "entry_folded": [
+    false,
+    false,
+    false
+   ],
+   "instance": 5,
+   "iteration": 2,
+   "max_regret_diff": 4604026.5,
+   "player": 2,
+   "slot": 2,
+   "street": "river",
+   "template": 2
+  },
+  "max_over_iterations": {
+   "trunk_regret_max_abs_diff": 4604026.5,
+   "trunk_strategy_sum_max_abs_diff": 3.863919258117676,
+   "frontier_reach_max_abs_diff": 0.9999995827674866,
+   "root_cf_value_max_abs_diff": 4909630.541315321
+  }
+ },
+ "checks": [
+  {
+   "iteration": 1,
+   "expl_mono_pct": 88.19556773917056,
+   "expl_factorized_pct": 88.19556773917056,
+   "range_ev_max_abs_diff": 0.0,
+   "br_gain_max_abs_diff": 0.0,
+   "class_value_max_abs_diff": 0.0,
+   "strategy_max_abs_diff": 0.0,
+   "conservation": [
+    -1.7549899311575246e-09,
+    -1.7549899311575246e-09
+   ]
+  },
+  {
+   "iteration": 10,
+   "expl_mono_pct": 27.525913863559165,
+   "expl_factorized_pct": 27.525913863559165,
+   "range_ev_max_abs_diff": 0.0,
+   "br_gain_max_abs_diff": 0.0,
+   "class_value_max_abs_diff": 0.0,
+   "strategy_max_abs_diff": 0.0,
+   "conservation": [
+    -8.0151281167673e-09,
+    -8.0151281167673e-09
+   ]
+  },
+  {
+   "iteration": 25,
+   "expl_mono_pct": 20.14131408516637,
+   "expl_factorized_pct": 20.14131408516637,
+   "range_ev_max_abs_diff": 0.0,
+   "br_gain_max_abs_diff": 0.0,
+   "class_value_max_abs_diff": 0.0,
+   "strategy_max_abs_diff": 0.0,
+   "conservation": [
+    -2.414143551732195e-09,
+    -2.414143551732195e-09
+   ]
+  },
+  {
+   "iteration": 50,
+   "expl_mono_pct": 7.153687431773201,
+   "expl_factorized_pct": 7.153687431773201,
+   "range_ev_max_abs_diff": 0.0,
+   "br_gain_max_abs_diff": 0.0,
+   "class_value_max_abs_diff": 0.0,
+   "strategy_max_abs_diff": 0.0,
+   "conservation": [
+    -1.5228529548494407e-10,
+    -1.5228529548494407e-10
+   ]
+  }
+ ],
+ "same_path_as_Aprime_run": {
+  "Aprime_trace_expl_at_50": 7.153687431773201,
+  "shadow_mono_expl_at_50": 7.153687431773201
+ },
+ "verdict": {
+  "split_wiring": "correct",
+  "bit_identical_50": true,
+  "test_power": "the stale-by-one oracle diverges at iteration 2",
+  "implication": "the factorized trunk reproduces the monolithic trunk exactly when fed the monolithic frontier values; the B/D stall is therefore a property of combining the trunk with independently re-solved frontiers (3-player dynamics of the decomposition), not a wiring bug"
+ }
+}

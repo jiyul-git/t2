@@ -91,7 +91,7 @@ def figure(res, sh, ct, path):
     g.set_xlabel('iteration', fontsize=9, color=MUTED)
     g.set_ylabel('max |monolithic − factorized| (log)', fontsize=9, color=MUTED)
     g.set_title('(1) differential: oracle shadow vs stale-oracle control', loc='left', fontsize=10, color=INK)
-    g.legend(fontsize=6.8, frameon=False, loc='center right')
+    g.legend(fontsize=6.8, frameon=False, loc='lower right', bbox_to_anchor=(1.0, 0.12))
     g = ax[1]
     ck = res['checks']
     xs = [c['iteration'] for c in ck]
@@ -125,11 +125,12 @@ def figure(res, sh, ct, path):
     v = res['verdict']
     fd = ct['first_divergence']
     txt = [f"one-step differential (iteration 1): {'PASS' if res['one_step_pass'] else 'FAIL'}",
-           '   ' + ', '.join(f"{lab[k]} {res['one_step'][k]:.0e}" for k in lab),
-           f"shadow {res['shadow']['iterations']} iterations: max diffs " + ', '.join(f"{res['shadow']['max_over_iterations'][k]:.0e}" for k in lab),
-           f"checks: range EV / BR gain / class / strategy max diff = "
-           f"{max(c['range_ev_max_abs_diff'] for c in ck):.0e} / {max(c['br_gain_max_abs_diff'] for c in ck):.0e} / "
-           f"{max(c['class_value_max_abs_diff'] for c in ck):.0e} / {max(c['strategy_max_abs_diff'] for c in ck):.0e}",
+           *[f"   {lab[k]}: {res['one_step'][k]:.0e}" for k in lab],
+           f"shadow {res['shadow']['iterations']} iterations, max diff of the 4: " + '/'.join(f"{res['shadow']['max_over_iterations'][k]:.0e}" for k in lab),
+           f"checks 1/10/25/50 max diff:",
+           f"   range EV {max(c['range_ev_max_abs_diff'] for c in ck):.0e}, BR gain {max(c['br_gain_max_abs_diff'] for c in ck):.0e}",
+           f"   class {max(c['class_value_max_abs_diff'] for c in ck):.0e}, strategy {max(c['strategy_max_abs_diff'] for c in ck):.0e}",
+           f"monolithic side = A' run (expl@50 {res['same_path_as_Aprime_run']['Aprime_trace_expl_at_50']:.4f}%)",
            f"control (oracle one iteration late): first divergence at iteration {fd['iteration']},",
            f"   template {fd['template']} ({fd['street']}), slot {fd['slot']}, player {sh['positions'][fd['player']]}, instance {fd['instance']},",
            f"   regret diff {fd['max_regret_diff']:.2e} (test has power)",
