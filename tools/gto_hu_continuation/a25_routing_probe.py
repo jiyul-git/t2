@@ -72,6 +72,14 @@ def state(terms, census):
 
 
 def main():
+    if os.environ.get('A25_FIGURE_ONLY'):
+        res = json.load(open(OUT + 'probe.json'))
+        ik = lambda d: {int(k): v for k, v in d.items()}
+        for k in ('P9', 'P10', 'P10_control_28_only'):
+            res[k]['reach'] = ik(res[k]['reach'])
+        res['reach_change'] = {k: ik(v) for k, v in res['reach_change'].items()}
+        figure(res, OUT + '../../../docs/GTO_TERMINAL_A25_ROUTING_V2.png')
+        return
     os.makedirs(OUT, exist_ok=True)
     p9 = state({n: json.load(open(D + f'terminals/p9_node{n}.json')) for n in NODES}, json.load(open(D + 'census_p9.json')))
     t10, c10, m10 = solve('P10_M9_28k9_6a1', [K9, T6])
@@ -104,7 +112,7 @@ def figure(res, path):
     INK, MUTED, SURF, GRID = '#1f1f1e', '#6b6a64', '#fcfcfb', '#e6e5df'
     cols = {'P9': '#b5b3aa', 'P10_control_28_only': '#8a5cd1', 'P10': INK}
     labs = {'P9': 'P9 (node 28 = k8 table)', 'P10_control_28_only': 'control: node 28 = k9 only', 'P10': 'P10 probe: node 28 = k9 + node 6 solved'}
-    fig, ax = plt.subplots(1, 3, figsize=(19, 5.6), dpi=120)
+    fig, ax = plt.subplots(1, 4, figsize=(25, 5.8), dpi=115)
     fig.patch.set_facecolor(SURF)
     names = {28: '28 BTN open / BB call (HU)', 6: '6 SB open / BB call (HU)', 46: '46 BTN open, SB+BB call (3-way)', 246: '246 CO open, SB+BB call (3-way)'}
     g = ax[0]
@@ -116,7 +124,8 @@ def figure(res, path):
     g.set_xticklabels([names[n] for n in NODES], fontsize=7.5, rotation=10)
     g.set_ylabel('reach probability of the terminal', fontsize=9, color=MUTED)
     g.set_title('(1) terminal reach: P9 vs frozen-table re-solves', loc='left', fontsize=10, color=INK)
-    g.legend(fontsize=8, frameon=False)
+    g.legend(fontsize=8, frameon=False, loc='upper left')
+    g.set_ylim(0, 0.36)
     g = ax[1]
     ch = res['reach_change']
     for j, (k, lab, col) in enumerate((('P9_to_control', 'node 28 k8→k9 only', '#8a5cd1'), ('node6_effect_P10_minus_control', 'node 6 solved (P10 − control)', '#c0392b'),
@@ -138,8 +147,26 @@ def figure(res, path):
     g.set_xticklabels(keys, fontsize=9)
     g.set_ylabel('flop reach probability', fontsize=9, color=MUTED)
     mwe = res['multiway_legacy_mass']['node6_effect']
-    g.set_title(f'(3) flop reach by players: node-6 effect on 3/4-way mass {mwe:+.4f}', loc='left', fontsize=10, color=INK)
+    g.set_title(f'(3) flop reach by players: node-6 effect on 3/4-way mass {mwe:+.1e}', loc='left', fontsize=10, color=INK)
     g.legend(fontsize=8, frameon=False)
+    g = ax[3]
+    rows = [('rfi_SB', 'SB open (unopened to SB)'), ('node6_path:BB@4', 'BB vs SB 2.5 open (node 6 parent)')]
+    labels, vals = [], {k: [] for k in ('P9', 'P10_control_28_only', 'P10')}
+    for key, name in rows:
+        acts = list(res['P9']['frequencies'][key].keys())
+        for act in acts:
+            labels.append(f'{name}: {act}')
+            for k in vals:
+                vals[k].append(res[k]['frequencies'][key].get(act, 0.0))
+    y = range(len(labels))
+    for j, k in enumerate(('P9', 'P10_control_28_only', 'P10')):
+        g.barh([t + (j - 1) * 0.27 for t in y], vals[k], 0.26, color=cols[k], label=labs[k])
+    g.set_yticks(list(y))
+    g.set_yticklabels(labels, fontsize=7.5)
+    g.invert_yaxis()
+    g.set_xlabel('aggregate frequency', fontsize=9, color=MUTED)
+    g.set_title('(4) preflop frequencies that moved', loc='left', fontsize=10, color=INK)
+    g.legend(fontsize=7.5, frameon=False, loc='lower right')
     for g in ax:
         g.set_facecolor(SURF)
         g.grid(color=GRID, lw=0.8)
