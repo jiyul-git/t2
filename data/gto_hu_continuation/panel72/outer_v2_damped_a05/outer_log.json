@@ -212,6 +212,77 @@
    },
    "injected_table": "data/gto_hu_continuation/panel72/outer_v2_damped_a05/k7/table.json",
    "ranges_hash": "15269c3c081f77b2"
+  },
+  {
+   "k": 9,
+   "metrics": {
+    "preflop_gap_total": 0.00045716747132362777,
+    "mix": {
+     "rfi_BTN": {
+      "fold": 0.591380722213132,
+      "jam_30": 0.040923721015531475,
+      "raise_2": 0.3676955727035205
+     },
+     "rfi_CO": {
+      "fold": 0.7269729146097926,
+      "jam_30": 0.011435595000039982,
+      "raise_2": 0.26159150544105136
+     },
+     "rfi_SB": {
+      "fold": 0.3671438765398621,
+      "jam_30": 0.23972224694586475,
+      "raise_2.5": 0.3931338823992706
+     },
+     "terminal_parent": {
+      "call": 0.7558590464926892,
+      "fold": 0.09990535320769403,
+      "jam_30": 0.144232891388268,
+      "raise_7": 2.7168801109351026e-06
+     }
+    },
+    "max_class_frequency_delta": {
+     "rfi_BTN": 0.9426067993044853,
+     "rfi_CO": 0.0001576542854309082,
+     "rfi_SB": 0.00872337818145752,
+     "terminal_parent": 0.9884396661072969
+    },
+    "max_class_frequency_delta_all": 0.9884396661072969,
+    "max_aggregate_frequency_delta": {
+     "rfi_BTN": 0.0063808787217034535,
+     "rfi_CO": 1.7475867538363499e-06,
+     "rfi_SB": 5.344795109124556e-05,
+     "terminal_parent": 0.0019241165161147378
+    },
+    "range_distance": {
+     "BTN": {
+      "L1": 0.08458839466628647,
+      "L2": 0.029590960239685774
+     },
+     "BB": {
+      "L1": 0.06315422601485005,
+      "L2": 0.02276466699312472
+     }
+    },
+    "value_delta": {
+     "BTN": {
+      "max_abs_dV_bb": 0.06589622731531586,
+      "mean_abs_dV_bb": 0.015491042386200636,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     },
+     "BB": {
+      "max_abs_dV_bb": 0.06283318460410547,
+      "mean_abs_dV_bb": 0.015450638771032374,
+      "share_of_classes_dV_gt_ci_halfwidth": 0.0
+     }
+    },
+    "postflop_exploitability_pct_pot": {
+     "max": 0.28912835777097257,
+     "mean": 0.24752707633083126
+    },
+    "table_unallocated_bb": -0.010638480023353658
+   },
+   "injected_table": "data/gto_hu_continuation/panel72/outer_v2_damped_a05/k8/table.json",
+   "ranges_hash": "d8707f750f1f9ec2"
   }
  ]
 }
