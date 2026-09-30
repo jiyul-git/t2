@@ -1,0 +1,51 @@
+{
+ "schema": "t2_prereg_v1",
+ "test": "B3a: HU-frontier factorization vs monolithic 3-way CFR on a reduced game that fits in memory",
+ "reduced_game": {
+  "terminal": "data/gto_terminal_expansion/terminals/p9_node46.json (P9 SB/BB/BTN arriving ranges, pot 7, behind 28)",
+  "flop": "Kc7d4h",
+  "turn_cards": [
+   "2s",
+   "Qh",
+   "8c"
+  ],
+  "river_cards": [
+   "3d",
+   "Js",
+   "6h"
+  ],
+  "chance": "uniform over the listed cards (1/3 each); combos colliding with a dealt card lose their mass (identical definition in A and B)",
+  "menu": "M2 (50% bet, raise all-in, 1 raise/street, 0.85 threshold, no donk)",
+  "card_removal": "exact between all three hands (folded players keep blocking)",
+  "eps_floor": 0.001
+ },
+ "A_monolithic": "t2_3way solve, all nodes updated every iteration, DCFR(1.5,0,2), alternating over the 3 players, 400 iterations, evaluation every 50",
+ "B_factorized": {
+  "trunk": "action nodes with 3 players active",
+  "frontier": "the 2-active subtree below a fold at a 3-active node",
+  "per_trunk_iteration": [
+   "snapshot the current trunk strategies",
+   "arriving reaches of ALL frontiers from that snapshot",
+   "reset every frontier subtree",
+   "solve each frontier HU subgame 100 DCFR iterations (exact game: the folded player blocks)",
+   "update the trunk (all 3 players, alternating) with frontier values from the frontier average strategies"
+  ],
+  "trunk_iterations": 400,
+  "no_sequential_updates": "no frontier is solved after the trunk has changed within a trunk iteration"
+ },
+ "pass_criteria_fixed_before_running": {
+  "conservation": "|sum of range values - pot| <= 1e-6 in A and B",
+  "range_ev": "|A - B| <= 0.02 bb per player",
+  "class_values": "mean over classes |A - B| <= 0.05 bb per player",
+  "action_frequency": "aggregate frequencies at the first decision of each player on the check line and after a flop bet: |A - B| <= 0.05",
+  "convergence": "per-player BR gain decreasing in both A and B over the checkpoints (same direction)",
+  "rerun": "A and B re-run for 50 iterations twice: identical results (deterministic; no sampling in either)"
+ },
+ "measurements": [
+  "fast O(52N)-type 3-player evaluator: per-call time vs the O(N^2) one, max relative difference vs brute force",
+  "per-iteration time A and B, split trunk vs HU re-solve",
+  "peak RSS",
+  "extrapolation to the full node 46 game (memory and 100-iteration time) from measured per-call costs and B1 counts"
+ ],
+ "if_fail": "no node 46 B3 solve; the failing component is isolated first"
+}
