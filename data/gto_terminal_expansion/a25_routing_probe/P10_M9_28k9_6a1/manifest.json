@@ -1,0 +1,11 @@
+{
+ "schema": "t2_hu_continuation_manifest_v1",
+ "tables": [
+  {
+   "file": "../../../gto_hu_continuation/panel72/outer_v2_damped_a05/k9/table.json"
+  },
+  {
+   "file": "../../node6_72/table72.json"
+  }
+ ]
+}
