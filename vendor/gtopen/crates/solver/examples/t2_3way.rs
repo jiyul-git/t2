@@ -1001,7 +1001,15 @@ impl Engine {
                             let d = self.den(p, reach, board);
                             child_v.push(d.iter().map(|x| -contrib[p] * x).collect());
                         } else {
-                            child_v.push(self.walk(tpl, c, inst, turn_i, ri, board, p, reach, mode, rp, sp));
+                            // own reach scaled by the action probability: it weights the strategy
+                            // sums below (counterfactual values never use the traverser's own reach)
+                            let mut r2: Vec<Vec<f32>> = reach.to_vec();
+                            if matches!(mode, Mode::Update(_)) {
+                                for h in 0..NUM_COMBOS {
+                                    r2[p][h] *= sig[a * NUM_COMBOS + h];
+                                }
+                            }
+                            child_v.push(self.walk(tpl, c, inst, turn_i, ri, board, p, &r2, mode, rp, sp));
                         }
                     }
                     let mut v = vec![0f64; NUM_COMBOS];
