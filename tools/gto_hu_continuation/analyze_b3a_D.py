@@ -282,7 +282,7 @@ def figure(res, A, A2, B50, D, path):
         for sp in ('top', 'right'):
             g.spines[sp].set_visible(False)
     j = res['judgement']
-    fig.suptitle(f"B3a (reduced node 46 game): registered B = FAIL (sealed at trunk iteration 100)  |  diagnostic D cause: {j['cause']}  "
+    fig.suptitle(f"B3a (reduced node 46 game): registered B = FAIL (sealed at trunk iteration 100)  |  diagnostic D rule label: {j['cause']} — reading: MIXED (historical nearly stalls at ~3.7%)  "
                  f"(historical decreasing {j['hist_decreasing']}, fresh decreasing {j['fresh_decreasing']}, inner residual share {j['iteration_residual_share_last']:.0%})",
                  fontsize=11.5, color=INK, x=0.01, ha='left')
     fig.tight_layout(rect=(0, 0, 1, 0.965))
