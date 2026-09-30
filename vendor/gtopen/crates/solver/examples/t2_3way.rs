@@ -1094,6 +1094,8 @@ enum Mode {
     Br,
     /// average strategies, leaf utility 1: reached opponent mass (normaliser of the reduced game)
     Mass,
+    /// current (regret-matched) strategies, values only, nothing written (B3b oracle)
+    Cur,
 }
 
 /// one HU frontier (subtree below a fold at a 3-active node) at one runout instance
@@ -1368,15 +1370,15 @@ impl Engine {
     fn strategy(&self, off: usize, na: usize, mode: Mode) -> Vec<f32> {
         let mut sig = vec![0f32; na * NUM_COMBOS];
         let src = match mode {
-            Mode::Update(_) if self.use_snap.load(Ordering::Relaxed) => &self.snap,
-            Mode::Update(_) => &self.regret,
+            Mode::Update(_) | Mode::Cur if self.use_snap.load(Ordering::Relaxed) => &self.snap,
+            Mode::Update(_) | Mode::Cur => &self.regret,
             _ => &self.strat,
         };
         for h in 0..NUM_COMBOS {
             let mut sum = 0f32;
             for a in 0..na {
                 let v = src[off + a * NUM_COMBOS + h];
-                let v = if matches!(mode, Mode::Update(_)) { v.max(0.0) } else { v };
+                let v = if matches!(mode, Mode::Update(_) | Mode::Cur) { v.max(0.0) } else { v };
                 sig[a * NUM_COMBOS + h] = v;
                 sum += v;
             }
@@ -1833,6 +1835,38 @@ impl Engine {
         serde_json::Value::Array(rows)
     }
 
+    /// B3b oracle: arriving reaches of every frontier from this (monolithic) engine's snapshot and the
+    /// exact frontier counterfactual values of every player under its current frontier strategies
+    fn oracle_frontiers(&self) -> Vec<Frontier> {
+        let out = Mutex::new(Vec::new());
+        self.collect(0, 0, 0, None, None, &self.flop.clone(), &self.w, Mode::Update(0), &out);
+        let rp = Ptr(self.regret.as_ptr() as *mut f32);
+        let sp = Ptr(self.strat.as_ptr() as *mut f32);
+        out.into_inner().unwrap().into_par_iter().map(|mut f| {
+            let who: Vec<usize> = if self.restricted { (0..NP).collect() } else { (0..NP).filter(|&q| q != f.folder).collect() };
+            for p in who {
+                f.vals[p] = Some(self.walk(f.tpl, f.node, f.inst, f.turn_i, f.ri, &f.board, p, &f.reach, Mode::Cur, &rp, &sp));
+            }
+            f
+        }).collect()
+    }
+
+    /// (template, slot, instance, offset, length) of every 3-active (trunk) slot instance
+    fn trunk_ranges(&self) -> Vec<(usize, usize, usize, usize, usize)> {
+        let mut v = Vec::new();
+        for (t, tp) in self.g.templates.iter().enumerate() {
+            let n = match tp.street { 0 => 1, 1 => self.turns.len(), _ => self.turns.len() * self.rivers[0].len() };
+            for (sl, &(_, na)) in tp.slots.iter().enumerate() {
+                if self.slot_nact[t][sl] == NP {
+                    for inst in 0..n {
+                        v.push((t, sl, inst, self.base[t] + inst * self.size[t] + self.slot_off[t][sl], na * NUM_COMBOS));
+                    }
+                }
+            }
+        }
+        v
+    }
+
     fn counters(&self) -> serde_json::Value {
         let c = &self.cnt;
         let g = |a: &AtomicU64| a.load(Ordering::Relaxed);
@@ -2004,6 +2038,115 @@ fn main() -> Result<(), String> {
                 "peak_rss_kb": peak_rss_kb(), "final": last, "trace": trace, "root_mix": e.root_mix(), "counters": e.counters(),
                 "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval},
                 "labels": spot.labels});
+            std::fs::write(out, serde_json::to_vec(&res).unwrap()).map_err(|e| e.to_string())?;
+            Ok(())
+        }
+        Some("oracle") => {
+            // B3b: monolithic simultaneous (A') vs factorized trunk fed with the monolithic tree's exact frontier values
+            let spot = load_spot(&a[2], &a[3])?;
+            let iters: u32 = a[4].parse().map_err(|_| "iters")?;
+            let out = &a[5];
+            let arg = |name: &str| a.iter().position(|x| x == name).map(|i| a[i + 1].clone());
+            let cards = |v: String| -> Vec<Card> { v.split(',').map(|c| card_from_str(c).unwrap()).collect() };
+            let restrict = Some((cards(arg("--turns").ok_or("--turns")?), cards(arg("--rivers").ok_or("--rivers")?)));
+            let control = a.iter().any(|x| x == "--control-no-oracle");
+            let checks: Vec<u32> = arg("--checks").unwrap_or_else(|| "1,10,25,50".into()).split(',').map(|x| x.parse().unwrap()).collect();
+            let mut m = Engine::new(&spot, None, [false; NP], restrict.clone());
+            let mut f = Engine::new(&spot, None, [false; NP], restrict);
+            let tr = m.trunk_ranges();
+            let fr = m.frontier_ranges();
+            let t0 = std::time::Instant::now();
+            let mut rows = Vec::new();
+            let mut first_div: serde_json::Value = serde_json::Value::Null;
+            for t in 1..=iters {
+                // same snapshot on both sides
+                m.snap = m.regret.clone();
+                f.snap = f.regret.clone();
+                m.use_snap.store(true, Ordering::Relaxed);
+                f.use_snap.store(true, Ordering::Relaxed);
+                // reach check: the factorized trunk's own collection vs the monolithic one
+                let own = Mutex::new(Vec::new());
+                f.collect(0, 0, 0, None, None, &f.flop.clone(), &f.w, Mode::Update(0), &own);
+                let own: BTreeMap<(usize, usize, usize), Vec<Vec<f32>>> = own.into_inner().unwrap().into_iter().map(|x| ((x.tpl, x.node, x.inst), x.reach)).collect();
+                let ora = m.oracle_frontiers();
+                let mut reach_diff = 0f64;
+                for o in &ora {
+                    let r = &own[&(o.tpl, o.node, o.inst)];
+                    for p in 0..NP {
+                        for h in 0..NUM_COMBOS {
+                            reach_diff = reach_diff.max((r[p][h] - o.reach[p][h]).abs() as f64);
+                        }
+                    }
+                }
+                {
+                    let mut fs = f.fstore.write().unwrap();
+                    fs.clear();
+                    for o in ora {
+                        fs.insert((o.tpl, o.node, o.inst), o);
+                    }
+                }
+                // negative control: the factorized side ignores the oracle and walks its own (never updated) frontiers
+                f.cut.store(!control, Ordering::Relaxed);
+                let mut root_diff = 0f64;
+                for p in 0..NP {
+                    let vm = m.root(p, Mode::Update(t));
+                    let vf = f.root(p, Mode::Update(t));
+                    for h in 0..NUM_COMBOS {
+                        root_diff = root_diff.max((vm[h] - vf[h]).abs());
+                    }
+                }
+                f.cut.store(false, Ordering::Relaxed);
+                m.use_snap.store(false, Ordering::Relaxed);
+                f.use_snap.store(false, Ordering::Relaxed);
+                // trunk comparison
+                let (mut dreg, mut dstr, mut rmax, mut smax) = (0f64, 0f64, 0f64, 0f64);
+                let mut worst = (0f64, 0usize, 0usize, 0usize);
+                for &(tp, sl, inst, o, l) in &tr {
+                    for i in o..o + l {
+                        let d = (m.regret[i] - f.regret[i]).abs() as f64;
+                        if d > worst.0 {
+                            worst = (d, tp, sl, inst);
+                        }
+                        dreg = dreg.max(d);
+                        dstr = dstr.max((m.strat[i] - f.strat[i]).abs() as f64);
+                        rmax = rmax.max(m.regret[i].abs() as f64);
+                        smax = smax.max(m.strat[i].abs() as f64);
+                    }
+                }
+                let row = serde_json::json!({"iteration": t, "trunk_regret_max_abs_diff": dreg, "trunk_regret_max_abs": rmax,
+                    "trunk_strategy_sum_max_abs_diff": dstr, "trunk_strategy_sum_max_abs": smax, "frontier_reach_max_abs_diff": reach_diff,
+                    "root_cf_value_max_abs_diff": root_diff, "seconds": t0.elapsed().as_secs_f64()});
+                eprintln!("{}", row);
+                if first_div.is_null() && (dreg > 1e-6 || root_diff > 1e-6 || reach_diff > 1e-7) {
+                    let tpl = &f.g.templates[worst.1];
+                    first_div = serde_json::json!({"iteration": t, "max_regret_diff": worst.0, "template": worst.1, "slot": worst.2, "instance": worst.3,
+                        "street": STREETS[tpl.street as usize], "player": tpl.slots[worst.2].0, "entry_folded": tpl.entry.folded, "entry_contrib": tpl.entry.contrib});
+                    eprintln!("first divergence: {first_div}");
+                }
+                if checks.contains(&t) {
+                    // evaluation: monolithic as is; factorized = its own trunk + the monolithic frontier arrays (it never updates frontiers)
+                    let em = m.evaluate();
+                    for &(o, l) in &fr {
+                        f.strat[o..o + l].copy_from_slice(&m.strat[o..o + l]);
+                        f.regret[o..o + l].copy_from_slice(&m.regret[o..o + l]);
+                    }
+                    let ef = f.evaluate();
+                    rows.push(serde_json::json!({"iteration": t, "diff": row, "eval_mono": em, "eval_factorized": ef,
+                        "root_mix_mono": m.root_mix(), "root_mix_factorized": f.root_mix()}));
+                    eprintln!("check {t}: expl mono {:.6}% factorized {:.6}%", em["exploitability_pct_pot"].as_f64().unwrap(), ef["exploitability_pct_pot"].as_f64().unwrap());
+                    // restore the factorized frontier arrays to zero (they are not part of its state)
+                    for &(o, l) in &fr {
+                        f.strat[o..o + l].fill(0.0);
+                        f.regret[o..o + l].fill(0.0);
+                    }
+                }
+                rows.push(serde_json::json!({"iteration": t, "diff": row}));
+                if !first_div.is_null() && t == 1 && !control {
+                    break; // one-step differential failed: stop and report where
+                }
+            }
+            let res = serde_json::json!({"positions": spot.pos, "board": a[3], "iterations": iters, "rows": rows, "first_divergence": first_div, "control_no_oracle": control,
+                "trunk_slots": tr.len(), "frontier_slots": fr.len(), "labels": spot.labels, "peak_rss_kb": peak_rss_kb()});
             std::fs::write(out, serde_json::to_vec(&res).unwrap()).map_err(|e| e.to_string())?;
             Ok(())
         }
