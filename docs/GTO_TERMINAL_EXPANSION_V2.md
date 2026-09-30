@@ -203,3 +203,88 @@ Before the P9 census exists, likely HU candidates remain:
 This ordering is **not sealed**. The P9 census plus six-flop solved-vs-legacy impact score decides the actual order.
 
 After the high-impact single-raised HU terminals, inspect HU 3bet-call pots before doing broad multiway expansion. Multiway must still be measured in the census because it can become an artificial legacy-payoff escape route as HU coverage increases.
+
+---
+
+## T0 result — P9 census (run 2026-09-30)
+
+Files:
+- `data/gto_terminal_expansion/census_p9.json`: full census.
+- `rank_reach_p9{,_hu}.{json,txt}`: reach-only ranking, provisional.
+- `census_p0_legacy.json`: the same census at P0 (no injection), for comparison.
+
+### Code review of `t2_cont_census.rs`
+
+No defect was found in the enumeration, the reach definition or the all-in filter.
+
+Three additions, all read-only:
+- **`p9_verification`**: the injected terminal's ranges hash (same FNV as `t2_cont_terminal`) and the aggregate mixes along its path, computed inside the census process.
+- **`summary.reach_check`**: the reach mass of every terminal kind. Fold-win + no-flop pot-share + flop must sum to 1. This validates the reach definition.
+- **`summary.by_pot_type`**: terminal counts and HU/multiway reach per pot type, plus the number of terminals with reach > 0 and > 1e-6.
+
+### P9 reproduction: exact
+
+- Ranges hash `d8707f750f1f9ec2`. `gap_total` 0.00045716747132362777 is bit-identical, and so are gaps and evs.
+- Mixes match `k9/terminal.json`:
+  - BTN fold 0.5913807 / raise 0.3676956 / jam 0.0409237;
+  - BB fold 0.0999054 / call 0.755859 / 3bet 0.0000027 / jam 0.1442329.
+- An independent `t2_cont_terminal` re-run with the same `T2_CONT_FILE` (`k8/table.json`) also reproduces `k9/terminal.json` exactly.
+- The census at P0 reproduces `outer_v1/k0` (gap 0.0003111254470083314).
+
+### Census
+
+- **Reach check:** flop 0.4784 + fold-win 0.4263 + all-in/no-flop 0.0954 = **1.0000002**.
+- **Terminals:** 181 flop-reaching (all with reach > 0, only **18 > 1e-6**); 238 fold-win; 604 pot-share without a flop.
+
+| family | terminals | flop-reach share |
+|---|---:|---:|
+| SRP HU | 6 | 56.7% |
+| SRP 3-way | 4 | 41.6% |
+| SRP 4-way | 1 | 0.6% |
+| 3bet HU | 22 | 1.05% |
+| 3bet 3-way | 14 | 0.06% |
+| 4bet (all) | 131 | 0.0006% |
+| limped / 5bet | 0 | 0 |
+
+- HU 57.7% / multiway 42.3%.
+- SRP 98.9% / 3bet 1.1% / 4bet ≈ 0.
+- **Solved node 28** (BTN open → SB fold → BB call): reach 0.0835, **17.5%** of flop reach, rank 4.
+- **Concentration:** the top 5 terminals carry 97.4% of flop reach, the top 10 99.95%.
+
+### Structural findings
+
+1. **41.6% of flop reach is SRP 3-way, all legacy.** The HU postflop pipeline cannot solve these pots.
+   - node 246 (CO open → SB call → BB call) is 21.9%.
+   - node 46 (BTN open → SB call → BB call) is 18.9%.
+2. **The BB never folds after an SB flat.**
+   - node 45 (BTN open → SB call → BB fold) and node 245 (the CO-open equivalent) have reach ≈ 0.
+   - Every SB flat therefore becomes a 3-way pot.
+   - The SB flats the BTN open 43% of the time at P9 (fold 41%, jam 16%, 3bet 0.06%).
+3. **Mass moved into the legacy 3-way terminal after node 28 was solved** (P0 → P9):
+   - node 46 reach 0.063 → 0.090 (+43%);
+   - node 28 0.088 → 0.084, although the BTN opens more (0.30 → 0.37);
+   - HU share of flop reach 62.3% → 57.7%.
+   - This is the "legacy escape route" anticipated above, now measured. It is not yet separated from the other P0→P9 changes, because both states differ in the whole injected table.
+4. **3bet pots are rare and shallow.**
+   - HU 3bet flop reach is 1.05% in total, 0.999% of it node 1371 (CO open → BTN 3bet 6 → CO call; SPR 1.66).
+   - 3bets other than the jam are almost unused at 30bb: SB 3bet 7 = 0.06%, BB 3bet 7 = 0.0003%.
+   - 4bet flop terminals exist structurally (131) but carry 6e-6 of the reach at SPR 0.5.
+5. **Class-level reach proxy.** Reach is class-level, so it carries the preflop model's missing inter-player card removal.
+
+### Reach-only screening of HU candidates (provisional, not the expansion order)
+
+| # | node | path | pot / SPR | reach | flop share |
+|---|---|---|---|---:|---:|
+| 1 | 6 | CO fold → BTN fold → SB open 2.5 → BB call | 6.0 / 4.58 | 0.1180 | 24.7% |
+| 2 | 228 | CO open 2 → BTN fold → SB fold → BB call | 5.5 / 5.09 | 0.0696 | 14.5% |
+| 3 | 1371 | CO open → BTN 3bet 6 → SB, BB fold → CO call | 14.5 / 1.66 | 0.0048 | 1.0% |
+| 4 | 135 | BTN open → SB 3bet 7 → BB fold → BTN call | 16.0 / 1.44 | 8.5e-5 | 0.018% |
+| 5 | 1382 | CO open → BTN 3bet → BB call → CO fold | 15.5 / 1.55 | 6.9e-5 | 0.014% |
+| 6 | 9 | SB open → BB 3bet 8.8 → SB call | 18.5 / 1.15 | 2.5e-5 | 0.005% |
+
+**Implication for T2.**
+- With a per-class legacy error of a few tenths of a bb, reach × |Δ| can only be competitive for nodes 6, 228 and, marginally, 1371.
+  - 1371 would need a Δ about 15–25× that of the SRP terminals.
+  - 1371 has SPR 1.66, where the legacy equity-share payoff should be closest to the truth.
+- Candidates 4–6 are listed for completeness. Their reach is 3–4 orders of magnitude too small to matter at P9.
+- The larger coverage question is the 3-way family (41.6%), which needs a different continuation method than the HU solver.
