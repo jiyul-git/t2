@@ -93,6 +93,15 @@ def main():
         cause = 'reset_solve_approximation' if share >= 0.25 else 'decomposition_itself'
     else:
         cause = 'mixed'
+    a2 = {t['iteration']: t['eval']['exploitability_pct_pot'] for t in A2['trace']}
+    res['caveats'] = {
+        'historical_steps_pct': [hi[i + 1] - hi[i] for i in range(len(hi) - 1)],
+        'historical_vs_Aprime_same_iteration': {r['iteration']: {'D_hist': r['hist_expl_pct'], "A'": a2.get(r['iteration'])} for r in ck},
+        'class_distance_to_A400_hist': {r['iteration']: r['hist_vs_A400']['class_mean_abs_diff_bb'] for r in ck},
+        'reading': ('rule label = assembly_or_evaluation (fresh rises, historical falls); but the historical average nearly stalls '
+                    '(-0.33 then -0.04 % pot), stays ~3.4x above the monolithic simultaneous run at the same iteration, and its class '
+                    'distance to A@400 does not shrink; the inner residual (<1% of the exploitability) is excluded as the cause. So the '
+                    'assembly explains the reversal, while the slow convergence of the factorized trunk itself remains unexplained (mixed).')}
     res['judgement'] = {'fresh_decreasing': dec(fr), 'hist_decreasing': dec(hi), 'iteration_residual_share_last': share,
                         'cause': cause, 'rules': json.load(open(O + 'b3a_diag_D_prereg.json'))['judgement_rules']}
     ts = D['trace'][-1]['time_split']
@@ -187,7 +196,8 @@ def figure(res, A, A2, B50, D, path):
     g.set_xticklabels([str(r['iteration']) for r in ck])
     g.set_xlabel('checkpoint (trunk iteration)', fontsize=9, color=MUTED)
     g.set_ylabel('% pot (exploitability scale)', fontsize=9, color=MUTED)
-    g.set_title('(4) frontier inner residual, summed over 1332 frontiers', loc='left', fontsize=10, color=INK)
+    g.set_yscale('log')
+    g.set_title('(4) frontier inner residual (summed) vs whole-game exploitability', loc='left', fontsize=10, color=INK)
     g.legend(fontsize=7.5, frameon=False)
     # (5) values vs A@400
     g = ax[4]

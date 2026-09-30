@@ -1,0 +1,10 @@
+engine: 0.092 GB (trunk 0.039, frontier 0.052), players [0, 1, 2], scheme factor, build 0.0s, rss Some(13264) kB
+it 50 residuals (iteration solve) 1.2s
+it 50 [cfrd-avg frontier] expl 4.1001% pot, conservation -5.17e-10
+it 50 expl 3.9333% pot, conservation 2.05e-9, 1976s (collect 1.1 frontier 1827.0 trunk 29.7 eval 115.3) rss Some(414776)
+it 100 residuals (iteration solve) 0.9s
+it 100 [cfrd-avg frontier] expl 3.7683% pot, conservation -8.24e-9
+it 100 expl 4.2309% pot, conservation -5.36e-9, 3670s (collect 1.8 frontier 3406.8 trunk 55.1 eval 201.7) rss Some(423024)
+it 150 residuals (iteration solve) 1.0s
+it 150 [cfrd-avg frontier] expl 3.7304% pot, conservation -1.06e-9
+it 150 expl 4.3537% pot, conservation -2.06e-9, 5330s (collect 2.4 frontier 4944.6 trunk 80.0 eval 296.4) rss Some(426452)
