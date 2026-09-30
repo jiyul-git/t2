@@ -1,0 +1,29 @@
+node 46 P9: reach 0.09021 pot 7.0 spr 4.00 order ['SB', 'BB', 'BTN'] BTN(inv 2.25, mass 0.368, cls 126, r 1.040) SB(inv 2.25, mass 0.430, cls 133, r 0.960) BB(inv 2.25, mass 0.785, cls 143, r 1.000)
+   repro {'BTN': (True, '9.9e-08'), 'SB': (True, '6.6e-08'), 'BB': (True, '9.4e-08')} unallocated 0.0000 {'BTN': 2.93, 'SB': 2.259, 'BB': 1.811}
+   CO  Fold       factor 0.7270 mix {All-in 30: 0.011, Fold: 0.727, Raise 2: 0.262} | takers 115/169 rw-margin 0.881 <0.05: 8 weakest [('T8s', -0.002), ('J8s', 0.007), ('JTo', 0.007), ('A4o', 0.008)]
+   BTN Raise 2    factor 0.3677 mix {All-in 30: 0.041, Fold: 0.591, Raise 2: 0.368} | takers 76/169 rw-margin 0.253 <0.05: 19 weakest [('ATo', 0.0), ('AJo', 0.0), ('AQo', 0.001), ('AKo', 0.001)]
+   SB  Call 2     factor 0.4296 mix {3-bet 7: 0.001, All-in 30: 0.156, Call 2: 0.430, Fold: 0.413} | takers 74/169 rw-margin 0.158 <0.05: 19 weakest [('A9s', -0.017), ('87o', -0.002), ('86s', -0.001), ('A4s', 0.006)]
+   BB  Call 2     factor 0.7855 mix {3-bet 7: 0.000, All-in 30: 0.214, Call 2: 0.785, Fold: 0.000} | takers 122/169 rw-margin 0.484 <0.05: 7 weakest [('54s', -0.002), ('QJo', -0.0), ('K5s', 0.005), ('A6s', 0.007)]
+node 46 P0: reach 0.06296 pot 7.0 spr 4.00 order ['SB', 'BB', 'BTN'] BTN(inv 2.25, mass 0.302, cls 107, r 1.040) SB(inv 2.25, mass 0.365, cls 145, r 0.960) BB(inv 2.25, mass 0.787, cls 147, r 1.000)
+   repro {'BTN': (True, '1.3e-07'), 'SB': (True, '9.6e-08'), 'BB': (True, '5.5e-08')} unallocated 0.0000 {'BTN': 2.957, 'SB': 2.274, 'BB': 1.77}
+   CO  Fold       factor 0.7270 mix {All-in 30: 0.011, Fold: 0.727, Raise 2: 0.262} | takers 115/169 rw-margin 0.881 <0.05: 8 weakest [('T8s', -0.002), ('J8s', 0.007), ('JTo', 0.007), ('A4o', 0.008)]
+   BTN Raise 2    factor 0.3018 mix {All-in 30: 0.074, Fold: 0.624, Raise 2: 0.302} | takers 56/169 rw-margin 0.241 <0.05: 13 weakest [('AJo', -0.0), ('KJs', -0.0), ('KTs', 0.001), ('77', 0.001)]
+   SB  Call 2     factor 0.3648 mix {3-bet 7: 0.014, All-in 30: 0.138, Call 2: 0.365, Fold: 0.483} | takers 67/169 rw-margin 0.110 <0.05: 21 weakest [('54s', -0.002), ('A4s', -0.002), ('JTo', -0.001), ('A6o', 0.001)]
+   BB  Call 2     factor 0.7865 mix {3-bet 7: 0.000, All-in 30: 0.213, Call 2: 0.787, Fold: 0.000} | takers 122/169 rw-margin 0.489 <0.05: 5 weakest [('Q8s', -0.003), ('A6s', 0.003), ('K5s', 0.011), ('97s', 0.017)]
+node 246 P9: reach 0.10472 pot 7.0 spr 4.00 order ['SB', 'BB', 'CO'] CO(inv 2.25, mass 0.262, cls 86, r 1.040) SB(inv 2.25, mass 0.547, cls 157, r 0.960) BB(inv 2.25, mass 0.856, cls 150, r 1.000)
+   repro {'CO': (True, '1.1e-07'), 'SB': (True, '6.5e-08'), 'BB': (True, '9.1e-08')} unallocated 0.0000 {'CO': 3.128, 'SB': 2.098, 'BB': 1.774}
+   CO  Raise 2    factor 0.2616 mix {All-in 30: 0.011, Fold: 0.727, Raise 2: 0.262} | takers 53/169 rw-margin 0.201 <0.05: 18 weakest [('QTs', -0.002), ('KTs', -0.001), ('AKo', -0.001), ('KQo', -0.0)]
+   BTN Fold       factor 0.8551 mix {3-bet 6: 0.035, All-in 30: 0.075, Call 2: 0.035, Fold: 0.855} | takers 138/169 rw-margin 1.199 <0.05: 1 weakest [('A7s', 0.017), ('33', 0.067), ('A9o', 0.087), ('QJo', 0.09)]
+   SB  Call 2     factor 0.5471 mix {3-bet 7: 0.000, All-in 30: 0.105, Call 2: 0.547, Fold: 0.348} | takers 100/169 rw-margin 0.157 <0.05: 24 weakest [('QJs', 0.003), ('Q6o', 0.003), ('33', 0.004), ('74s', 0.01)]
+   BB  Call 2     factor 0.8558 mix {3-bet 7: 0.000, All-in 30: 0.144, Call 2: 0.856, Fold: 0.000} | takers 138/169 rw-margin 0.505 <0.05: 6 weakest [('KJs', -0.0), ('22', 0.0), ('Q9s', 0.007), ('T8s', 0.015)]
+node 246 P0: reach 0.10473 pot 7.0 spr 4.00 order ['SB', 'BB', 'CO'] CO(inv 2.25, mass 0.262, cls 86, r 1.040) SB(inv 2.25, mass 0.547, cls 157, r 0.960) BB(inv 2.25, mass 0.856, cls 150, r 1.000)
+   repro {'CO': (True, '7.0e-08'), 'SB': (True, '1.5e-07'), 'BB': (True, '9.7e-08')} unallocated 0.0000 {'CO': 3.128, 'SB': 2.098, 'BB': 1.774}
+   CO  Raise 2    factor 0.2616 mix {All-in 30: 0.011, Fold: 0.727, Raise 2: 0.262} | takers 53/169 rw-margin 0.201 <0.05: 18 weakest [('QTs', -0.002), ('KTs', -0.001), ('AKo', -0.001), ('KQo', -0.0)]
+   BTN Fold       factor 0.8551 mix {3-bet 6: 0.035, All-in 30: 0.075, Call 2: 0.035, Fold: 0.855} | takers 138/169 rw-margin 1.199 <0.05: 1 weakest [('A7s', 0.017), ('33', 0.067), ('A9o', 0.087), ('QJo', 0.09)]
+   SB  Call 2     factor 0.5471 mix {3-bet 7: 0.000, All-in 30: 0.105, Call 2: 0.547, Fold: 0.348} | takers 100/169 rw-margin 0.157 <0.05: 24 weakest [('QJs', 0.003), ('Q6o', 0.003), ('33', 0.005), ('74s', 0.01)]
+   BB  Call 2     factor 0.8558 mix {3-bet 7: 0.000, All-in 30: 0.144, Call 2: 0.856, Fold: 0.000} | takers 138/169 rw-margin 0.506 <0.05: 6 weakest [('KJs', -0.0), ('22', 0.0), ('Q9s', 0.007), ('T8s', 0.015)]
+HU legacy conservation {28: -0.0586, 6: 0.0552, 228: -0.0803, 1371: -0.069}
+decomp node 28: reach 0.08809 -> 0.08352 (-5.2%), dlog -0.053 = CO:Fold -0.000 (0.727->0.727) + BTN:Raise 2 +0.197 (0.302->0.368) + SB:Fold -0.156 (0.483->0.413) + BB:Call 2 -0.095 (0.831->0.756)
+decomp node 46: reach 0.06296 -> 0.09021 (+43.3%), dlog +0.360 = CO:Fold -0.000 (0.727->0.727) + BTN:Raise 2 +0.197 (0.302->0.368) + SB:Call 2 +0.164 (0.365->0.430) + BB:Call 2 -0.001 (0.787->0.785)
+decomp node 246: reach 0.10473 -> 0.10472 (-0.0%), dlog -0.000 = CO:Raise 2 -0.000 (0.262->0.262) + BTN:Fold +0.000 (0.855->0.855) + SB:Call 2 +0.000 (0.547->0.547) + BB:Call 2 -0.000 (0.856->0.856)
+SB flat value attribution {'values_bb': {'BTN_P0_BB_P0': 2.211624629884572, 'BTN_P9_BB_P0': 2.2607706504955676, 'BTN_P0_BB_P9': 2.2106129702973867, 'BTN_P9_BB_P9': 2.2591185189391814}, 'effect_btn_range_P0_to_P9': 0.0491, 'effect_bb_range_P0_to_P9': -0.001, 'total': 0.0475}
