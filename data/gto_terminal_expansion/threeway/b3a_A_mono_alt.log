@@ -5,3 +5,4 @@ it 150 expl 0.0991% pot, conservation 8.86e-10, 444s (collect 0.0 frontier 0.0 t
 it 200 expl 0.0571% pot, conservation -4.68e-9, 577s (collect 0.0 frontier 0.0 trunk 469.1 eval 107.6) rss Some(102508)
 it 250 expl 0.0376% pot, conservation -7.12e-9, 703s (collect 0.0 frontier 0.0 trunk 568.4 eval 134.8) rss Some(102508)
 it 300 expl 0.0270% pot, conservation -1.71e-9, 829s (collect 0.0 frontier 0.0 trunk 667.6 eval 161.3) rss Some(102508)
+it 350 expl 0.0205% pot, conservation -2.77e-9, 953s (collect 0.0 frontier 0.0 trunk 765.6 eval 187.5) rss Some(102508)
