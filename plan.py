@@ -3208,9 +3208,30 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 정의하는 별도 설계가 필요하다(known issue E).
         st['plan'] = 'value_3street' if rel >= 0.88 else 'value_2street'
         why.append('%s: 강도 상승(rel %.2f, made %d) → 밸류 전환' % (street, rel, made))
-    elif old == 'bluff_2street' and rel >= 0.75:
-        st['plan'] = 'value_2street'
-        why.append('%s: 블러프였으나 강도 상승 → 밸류 전환' % street)
+    elif old == 'bluff_2street' and (
+            (made >= 2 and rel >= 0.55)
+            or (made >= 1 and rel >= 0.45)
+            or rel >= 0.75):
+        # Pure bluff identity must be reconsidered when the hand acquires real
+        # showdown value.  The old code only flipped at rel>=0.75, so 94 on
+        # A3A-9 (made=2, rel=.65) kept firing as a "bluff" despite actually
+        # improving into a value/protection hand.
+        #
+        # Do not promote every paired-board artifact: relative strength remains
+        # a required cross-check.  Medium improvement becomes showdown; stronger
+        # made hands become value.
+        if made >= 2 and rel >= 0.55:
+            st['plan'] = 'value_2street'
+            why.append(
+                '%s: 블러프 중 실제 메이드 강도 획득(made %d, rel %.2f)'
+                ' → 밸류/프로텍션 재분류'
+                % (street, made, rel))
+        else:
+            st['plan'] = 'showdown'
+            why.append(
+                '%s: 블러프 중 쇼다운 가치 획득(made %d, rel %.2f)'
+                ' → 블러프 중단'
+                % (street, made, rel))
     elif (old == 'value_2street'
           and made > _prev_made
           and rel >= max(0.85, _prev_rel)
