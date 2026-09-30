@@ -4265,7 +4265,7 @@
   }
  },
  "runtime": {
-  "threads": 4,
+  "threads": 3,
   "per_trunk_iteration_s": {
    "collect": 0.016112490299999994,
    "frontier_solve": 32.96421035532668,

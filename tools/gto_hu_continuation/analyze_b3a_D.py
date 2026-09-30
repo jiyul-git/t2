@@ -106,7 +106,7 @@ def main():
                         'cause': cause, 'rules': json.load(open(O + 'b3a_diag_D_prereg.json'))['judgement_rules']}
     ts = D['trace'][-1]['time_split']
     it = D['trace'][-1]['iteration']
-    res['runtime'] = {'threads': 4, 'per_trunk_iteration_s': {k: ts[k] / it for k in ('collect', 'frontier_solve', 'trunk_update')},
+    res['runtime'] = {'threads': 3, 'per_trunk_iteration_s': {k: ts[k] / it for k in ('collect', 'frontier_solve', 'trunk_update')},
                       'hu_share': ts['frontier_solve'] / (ts['collect'] + ts['frontier_solve'] + ts['trunk_update']),
                       'evaluation_total_s': ts['evaluation'], 'peak_rss_kb': D['peak_rss_kb'], 'counters': D['counters']}
     fr = c.load('b3a_build_frontiers_node46_Kc7d4h.json')
@@ -261,7 +261,7 @@ def figure(res, A, A2, B50, D, path):
     items = [('A mono-alt\n(1 thread)', {'trunk_update': A['time_split']['trunk_update'] / 400}, 1),
              ("A' mono-sim\n(1 thread)", {'trunk_update': A2['time_split']['trunk_update'] / 400}, 1),
              ('B registered\n(2 threads)', {k: B50['time_split'][k] / 50 for k in ('collect', 'frontier_solve', 'trunk_update')}, 2),
-             ('D diagnostic\n(4 threads)', res['runtime']['per_trunk_iteration_s'], 4)]
+             ('D diagnostic\n(3 threads)', res['runtime']['per_trunk_iteration_s'], 3)]
     comp = [('trunk_update', INK, '3-way trunk / full update'), ('frontier_solve', COL['B'], 'HU frontier re-solves (100 inner)'), ('collect', '#8a5cd1', 'arriving-reach collection')]
     for i, (name, pi, th) in enumerate(items):
         bot = 0

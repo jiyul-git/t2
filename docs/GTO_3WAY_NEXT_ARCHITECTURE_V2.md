@@ -18,7 +18,7 @@ All numbers come from the reduced node-46 game (Kc7d4h; turns 2s/Qh/8c; rivers 3
 | B: trunk + frontiers reset and re-solved (100 inner) every trunk iteration | **FAIL** (sealed): 3.93 → 4.23% from 50 to 100 | `b3a_verdict.json` |
 | D: same trunk path, three evaluations | fresh re-solve 3.93 → 4.23 → 4.35%; reach-weighted historical frontier average 4.10 → 3.77 → 3.73% (nearly stalled); inner frontier residual 0.035% pot ≈ 1% | `b3a_D_analysis.json` |
 | B3b: factorized trunk fed the monolithic frontier values | **bit-identical to A′ for 50 iterations**; a stale-by-one oracle diverges at iteration 2 | `b3b_verdict.json` |
-| Speed of B/D | 33.5 s per trunk iteration on 4 threads, 98.4% in the HU re-solves | D |
+| Speed of B/D | 33.5 s per trunk iteration on 3 threads (D; B: 74 s on 2 contended threads), 98.4% in the HU re-solves | D |
 
 Consequences:
 - The split wiring is correct. B3b shows it exactly.
@@ -71,7 +71,7 @@ Speed figures are projections from measured reduced-game costs. River work scale
   - Batching the 48 rivers of a turn shares the combo order work.
 - **Accuracy risk.** None if results match the scalar evaluator bit for bit or within float-order tolerance (≤ 1e-12 relative).
 - **Memory.** Small scratch.
-- **Speed.** Showdown/den calls are about 75% of CPU in D (14 000 of about 19 000 CPU-s). A 2–4× evaluator speed-up is a plausible 1.5–2.5× overall.
+- **Speed.** Showdown/den calls are about 87% of CPU in D (13 900 of about 16 000 CPU-s, 3 threads x 5 330 s). A 2–4× evaluator speed-up is a plausible 1.5–2.5× overall.
 - **Fit with B3a/B3b.** Orthogonal. Combine with 2.3.
 - **Validation.** evalcheck-style comparison against the scalar and brute-force evaluators, then B3b identity.
 
