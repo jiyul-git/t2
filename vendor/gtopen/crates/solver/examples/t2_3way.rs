@@ -22,7 +22,9 @@ use rayon::prelude::*;
 use solver::cards::{card_from_str, combo_from_index, combo_index, rank, suit, Card, NUM_COMBOS};
 use solver::evaluator::evaluate7;
 use solver::preflop::equity::class_index;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Mutex, RwLock};
 
 const NP: usize = 3;
 
@@ -79,7 +81,7 @@ struct State {
 
 #[derive(Clone, Debug)]
 enum TNode {
-    Action { player: usize, acts: Vec<Act>, children: Vec<usize>, slot: usize, contrib: [f64; NP] },
+    Action { player: usize, acts: Vec<Act>, children: Vec<usize>, slot: usize, contrib: [f64; NP], nact: usize },
     /// only one player left: `winner` takes the pot
     FoldWin { winner: usize, contrib: [f64; NP], folded: [bool; NP] },
     /// river closed with >= 2 players, or an all-in (runout to the river, no more betting)
@@ -185,7 +187,7 @@ impl Game {
         let idx = nodes.len();
         let slot = slots.len();
         slots.push((me, acts.len()));
-        nodes.push(TNode::Action { player: me, acts: acts.clone(), children: vec![], slot, contrib: st.contrib });
+        nodes.push(TNode::Action { player: me, acts: acts.clone(), children: vec![], slot, contrib: st.contrib, nact: act.len() });
         let mut children = Vec::new();
         for &a in &acts {
             let mut s = st.clone();
@@ -776,11 +778,10 @@ fn preflop_equity(t_path: &str, n_boards: usize, seed: u64) -> Result<serde_json
 // ------------------------------------------------------------------ fast exact 3-player sums
 /// Incremental inclusion-exclusion aggregates for Den_{S,T}(h) = sum_{x in S, y in T, x,y,h pairwise
 /// disjoint} wq(x) wr(y). insert_* is O(52), a query is O(1).
-struct Agg<'a> {
-    wq: &'a [f32],
-    wr: &'a [f32],
-    in_q: Vec<bool>,
-    in_r: Vec<bool>,
+struct Agg {
+    /// dense 52x52 weight matrices of the inserted combos (0 on the diagonal / not inserted)
+    mq: Vec<f64>,
+    mr: Vec<f64>,
     tq: f64,
     tr: f64,
     cq: [f64; 52],
@@ -793,81 +794,89 @@ struct Agg<'a> {
     k: Vec<f64>,
 }
 
-impl<'a> Agg<'a> {
-    fn new(wq: &'a [f32], wr: &'a [f32]) -> Self {
-        Agg { wq, wr, in_q: vec![false; NUM_COMBOS], in_r: vec![false; NUM_COMBOS], tq: 0.0, tr: 0.0, cq: [0.0; 52], cr: [0.0; 52],
+impl Agg {
+    fn new() -> Self {
+        Agg { mq: vec![0.0; 52 * 52], mr: vec![0.0; 52 * 52], tq: 0.0, tr: 0.0, cq: [0.0; 52], cr: [0.0; 52],
               dot: 0.0, e: 0.0, ec: [0.0; 52], g: [0.0; 52], hh: [0.0; 52], k: vec![0.0; 52 * 52] }
     }
     #[inline(always)]
-    fn wqs(&self, a: Card, b: Card) -> f64 {
-        if a == b { return 0.0; }
-        let i = cidx(a, b);
-        if self.in_q[i] { self.wq[i] as f64 } else { 0.0 }
+    fn wqs(&self, a: usize, b: usize) -> f64 {
+        self.mq[a * 52 + b]
     }
     #[inline(always)]
-    fn wrt(&self, a: Card, b: Card) -> f64 {
-        if a == b { return 0.0; }
-        let i = cidx(a, b);
-        if self.in_r[i] { self.wr[i] as f64 } else { 0.0 }
+    fn wrt(&self, a: usize, b: usize) -> f64 {
+        self.mr[a * 52 + b]
     }
-    fn insert_r(&mut self, x: usize) {
-        let v = self.wr[x] as f64;
-        let (x1, x2) = cc(x);
-        if v != 0.0 {
-            for a in 0..52u8 {
-                let add = self.wqs(a, x1) + self.wqs(a, x2);
-                self.g[a as usize] += v * add;
-            }
-            self.hh[x1 as usize] += v * self.cq[x2 as usize];
-            self.hh[x2 as usize] += v * self.cq[x1 as usize];
-            self.dot += v * (self.cq[x1 as usize] + self.cq[x2 as usize]);
-            let wqx = self.wqs(x1, x2);
-            self.e += v * wqx;
-            self.ec[x1 as usize] += v * wqx;
-            self.ec[x2 as usize] += v * wqx;
-            for b in 0..52u8 {
-                if b == x1 || b == x2 { continue; }
-                self.k[x1 as usize * 52 + b as usize] += v * self.wqs(b, x2);
-                self.k[x2 as usize * 52 + b as usize] += v * self.wqs(b, x1);
-            }
-            self.tr += v;
-            self.cr[x1 as usize] += v;
-            self.cr[x2 as usize] += v;
+    fn insert_r(&mut self, x: usize, v: f64) {
+        if v == 0.0 {
+            return;
         }
-        self.in_r[x] = true;
-    }
-    fn insert_q(&mut self, x: usize) {
-        let u = self.wq[x] as f64;
         let (x1, x2) = cc(x);
-        self.in_q[x] = true; // membership first is harmless: every term below excludes x itself
+        let (x1, x2) = (x1 as usize, x2 as usize);
+        {
+            let (q1, q2) = (&self.mq[x1 * 52..x1 * 52 + 52], &self.mq[x2 * 52..x2 * 52 + 52]);
+            for a in 0..52 {
+                self.g[a] += v * (q1[a] + q2[a]);
+            }
+            for b in 0..52 {
+                if b == x1 || b == x2 {
+                    continue;
+                }
+                self.k[x1 * 52 + b] += v * q2[b];
+                self.k[x2 * 52 + b] += v * q1[b];
+            }
+        }
+        self.hh[x1] += v * self.cq[x2];
+        self.hh[x2] += v * self.cq[x1];
+        self.dot += v * (self.cq[x1] + self.cq[x2]);
+        let wqx = self.wqs(x1, x2);
+        self.e += v * wqx;
+        self.ec[x1] += v * wqx;
+        self.ec[x2] += v * wqx;
+        self.tr += v;
+        self.cr[x1] += v;
+        self.cr[x2] += v;
+        self.mr[x1 * 52 + x2] = v;
+        self.mr[x2 * 52 + x1] = v;
+    }
+    fn insert_q(&mut self, x: usize, u: f64) {
         if u == 0.0 {
             return;
         }
-        self.g[x1 as usize] += u * self.cr[x2 as usize];
-        self.g[x2 as usize] += u * self.cr[x1 as usize];
-        for i in 0..52u8 {
-            let add = self.wrt(i, x1) + self.wrt(i, x2);
-            self.hh[i as usize] += u * add;
+        let (x1, x2) = cc(x);
+        let (x1, x2) = (x1 as usize, x2 as usize);
+        self.g[x1] += u * self.cr[x2];
+        self.g[x2] += u * self.cr[x1];
+        {
+            let (r1, r2) = (&self.mr[x1 * 52..x1 * 52 + 52], &self.mr[x2 * 52..x2 * 52 + 52]);
+            for i in 0..52 {
+                self.hh[i] += u * (r1[i] + r2[i]);
+            }
+            for a in 0..52 {
+                if a == x1 || a == x2 {
+                    continue;
+                }
+                self.k[a * 52 + x1] += u * r2[a];
+                self.k[a * 52 + x2] += u * r1[a];
+            }
         }
-        self.dot += u * (self.cr[x1 as usize] + self.cr[x2 as usize]);
+        self.dot += u * (self.cr[x1] + self.cr[x2]);
         let wrx = self.wrt(x1, x2);
         self.e += u * wrx;
-        self.ec[x1 as usize] += u * wrx;
-        self.ec[x2 as usize] += u * wrx;
-        for a in 0..52u8 {
-            if a == x1 || a == x2 { continue; }
-            self.k[a as usize * 52 + x1 as usize] += u * self.wrt(a, x2);
-            self.k[a as usize * 52 + x2 as usize] += u * self.wrt(a, x1);
-        }
+        self.ec[x1] += u * wrx;
+        self.ec[x2] += u * wrx;
         self.tq += u;
-        self.cq[x1 as usize] += u;
-        self.cq[x2 as usize] += u;
+        self.cq[x1] += u;
+        self.cq[x2] += u;
+        self.mq[x1 * 52 + x2] = u;
+        self.mq[x2 * 52 + x1] = u;
     }
+    /// Den_{S,T}(h) = sum over x in S, y in T, x, y, h pairwise disjoint of wq(x) wr(y)
     fn den(&self, h: usize) -> f64 {
         let (a, b) = cc(h);
         let (ai, bi) = (a as usize, b as usize);
-        let wqh = if self.in_q[h] { self.wq[h] as f64 } else { 0.0 };
-        let wrh = if self.in_r[h] { self.wr[h] as f64 } else { 0.0 };
+        let wqh = self.wqs(ai, bi);
+        let wrh = self.wrt(ai, bi);
         let q = self.tq - self.cq[ai] - self.cq[bi] + wqh;
         let rh = self.tr - self.cr[ai] - self.cr[bi] + wrh;
         let bb = self.dot - (self.cq[ai] * self.cr[ai] + self.g[ai]) - (self.cq[bi] * self.cr[bi] + self.g[bi]) + wqh * (self.cr[ai] + self.cr[bi]);
@@ -875,21 +884,6 @@ impl<'a> Agg<'a> {
         let d = (self.hh[ai] - wrh * self.cq[bi] - self.ec[ai] + wrh * wqh - self.k[ai * 52 + bi])
             + (self.hh[bi] - wrh * self.cq[ai] - self.ec[bi] + wrh * wqh - self.k[bi * 52 + ai]);
         q * rh - bb + c + d
-    }
-    /// mass of r (set T) disjoint from the 4 cards of h and x
-    fn r_excl(&self, h: usize, x: usize) -> f64 {
-        let (a, b) = cc(h);
-        let (x1, x2) = cc(x);
-        let mut m = self.tr - self.cr[a as usize] - self.cr[b as usize] - self.cr[x1 as usize] - self.cr[x2 as usize];
-        m += self.wrt(a, b) + self.wrt(x1, x2) + self.wrt(a, x1) + self.wrt(a, x2) + self.wrt(b, x1) + self.wrt(b, x2);
-        m
-    }
-    fn q_excl(&self, h: usize, y: usize) -> f64 {
-        let (a, b) = cc(h);
-        let (y1, y2) = cc(y);
-        let mut m = self.tq - self.cq[a as usize] - self.cq[b as usize] - self.cq[y1 as usize] - self.cq[y2 as usize];
-        m += self.wqs(a, b) + self.wqs(y1, y2) + self.wqs(a, y1) + self.wqs(a, y2) + self.wqs(b, y1) + self.wqs(b, y2);
-        m
     }
 }
 
@@ -901,26 +895,22 @@ fn disjoint(h: usize, x: usize) -> bool {
 }
 
 /// Same contract as showdown_sums, O(52 N) per call instead of O(N^2).
+/// Levels of equal strength E, strictly weaker set L (grows level by level):
+///   in showdown: num = Den_{L,L} + (Den_{L,L+E} - Den_{L,L} + Den_{L+E,L+E} - Den_{L,L+E} - Den_{E,E}) / 2 + Den_{E,E} / 3
+///   q folded:    num = Den_{All,L} + (Den_{All,L+E} - Den_{All,L}) / 2
+/// read off one aggregate before and after inserting the level (r side first, then q side).
 fn showdown_sums_fast(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -> (Vec<f64>, Vec<f64>) {
     let mut order: Vec<usize> = (0..NUM_COMBOS).filter(|&i| st[i] > 0).collect();
     order.sort_by_key(|&i| st[i]);
     let mut num = vec![0f64; NUM_COMBOS];
     let mut den = vec![0f64; NUM_COMBOS];
-    let mut all = Agg::new(wq, wr);
-    for &i in &order {
-        all.insert_r(i);
-        all.insert_q(i);
-    }
-    for &h in &order {
-        den[h] = all.den(h);
-    }
-    // incremental aggregate: q either strictly-below (in showdown) or all (folded), r strictly below
-    let mut lo = Agg::new(wq, wr);
+    let mut lo = Agg::new();
     if !q_in_showdown {
         for &i in &order {
-            lo.insert_q(i);
+            lo.insert_q(i, wq[i] as f64);
         }
     }
+    let (mut d0, mut d1) = (vec![0f64; 64], vec![0f64; 64]);
     let mut k = 0;
     while k < order.len() {
         let t = st[order[k]];
@@ -929,56 +919,71 @@ fn showdown_sums_fast(st: &[u32], wq: &[f32], wr: &[f32], q_in_showdown: bool) -
             e += 1;
         }
         let lvl = &order[k..e];
-        let big = lvl.len() > 48;
-        let ee = if q_in_showdown && big {
-            let mut a = Agg::new(wq, wr);
-            for &i in lvl {
-                a.insert_r(i);
-                a.insert_q(i);
-            }
-            Some(a)
-        } else {
-            None
-        };
-        for &h in lvl {
-            let base = lo.den(h); // Den_{L|All, L}
-            // equal-strength opponents
-            let mut el = 0f64; // q in E (only if q is in the showdown), r in L
-            let mut le = 0f64; // q in L (or all), r in E
-            let mut eeq = 0f64;
-            for &y in lvl {
-                if y == h || !disjoint(h, y) { continue; }
-                le += wr[y] as f64 * lo.q_excl(h, y);
-                if q_in_showdown {
-                    el += wq[y] as f64 * lo.r_excl(h, y);
-                }
-            }
-            if q_in_showdown {
-                if let Some(a) = &ee {
-                    eeq = a.den(h);
-                } else {
-                    for &x in lvl {
-                        if x == h || !disjoint(h, x) || wq[x] == 0.0 { continue; }
-                        for &y in lvl {
-                            if y == h || y == x || !disjoint(h, y) || !disjoint(x, y) { continue; }
-                            eeq += wq[x] as f64 * wr[y] as f64;
-                        }
-                    }
-                }
-                num[h] = base + 0.5 * (el + le) + eeq / 3.0;
-            } else {
-                num[h] = base + 0.5 * le;
-            }
+        if d0.len() < lvl.len() {
+            d0.resize(lvl.len(), 0.0);
+            d1.resize(lvl.len(), 0.0);
+        }
+        for (j, &h) in lvl.iter().enumerate() {
+            d0[j] = lo.den(h);
         }
         for &i in lvl {
-            lo.insert_r(i);
-            if q_in_showdown {
-                lo.insert_q(i);
+            lo.insert_r(i, wr[i] as f64);
+        }
+        if !q_in_showdown {
+            for (j, &h) in lvl.iter().enumerate() {
+                num[h] = 0.5 * (d0[j] + lo.den(h));
+            }
+        } else {
+            for (j, &h) in lvl.iter().enumerate() {
+                d1[j] = lo.den(h);
+            }
+            for &i in lvl {
+                lo.insert_q(i, wq[i] as f64);
+            }
+            // Den_{E,E}: direct for small levels, own aggregate for large ones
+            let ee: Vec<f64> = if lvl.len() > 40 {
+                let mut a = Agg::new();
+                for &i in lvl {
+                    a.insert_r(i, wr[i] as f64);
+                    a.insert_q(i, wq[i] as f64);
+                }
+                lvl.iter().map(|&h| a.den(h)).collect()
+            } else {
+                lvl.iter().map(|&h| {
+                    let mut s = 0f64;
+                    for &x in lvl {
+                        if x == h || wq[x] == 0.0 || !disjoint(h, x) { continue; }
+                        for &y in lvl {
+                            if y == h || y == x || !disjoint(h, y) || !disjoint(x, y) { continue; }
+                            s += wq[x] as f64 * wr[y] as f64;
+                        }
+                    }
+                    s
+                }).collect()
+            };
+            for (j, &h) in lvl.iter().enumerate() {
+                let d2 = lo.den(h);
+                num[h] = d0[j] + 0.5 * (d2 - d0[j] - ee[j]) + ee[j] / 3.0;
             }
         }
         k = e;
     }
+    for &h in &order {
+        den[h] = lo.den(h);
+    }
     (num, den)
+}
+
+/// joint compatible opponent mass per hero combo (all of `valid`), O(52 N)
+fn den_fast(valid: &[bool], wq: &[f32], wr: &[f32]) -> Vec<f64> {
+    let mut a = Agg::new();
+    for i in 0..NUM_COMBOS {
+        if valid[i] {
+            a.insert_r(i, wr[i] as f64);
+            a.insert_q(i, wq[i] as f64);
+        }
+    }
+    (0..NUM_COMBOS).map(|h| if valid[h] { a.den(h) } else { 0.0 }).collect()
 }
 
 fn evalcheck(spot: &Spot, n_boards: usize) -> serde_json::Value {
@@ -1046,6 +1051,31 @@ enum Mode {
     Update(u32),
     Avg,
     Br,
+    /// average strategies, leaf utility 1: reached opponent mass (normaliser of the reduced game)
+    Mass,
+}
+
+/// one HU frontier (subtree below a fold at a 3-active node) at one runout instance
+struct Frontier {
+    tpl: usize,
+    node: usize,
+    inst: usize,
+    turn_i: Option<usize>,
+    ri: Option<usize>,
+    board: Vec<Card>,
+    folder: usize,
+    reach: Vec<Vec<f32>>,
+    vals: Vec<Option<Vec<f64>>>,
+}
+
+#[derive(Default)]
+struct Counters {
+    sd3: AtomicU64,
+    sd3_ns: AtomicU64,
+    sd2: AtomicU64,
+    sd2_ns: AtomicU64,
+    den3: AtomicU64,
+    den3_ns: AtomicU64,
 }
 
 struct Ptr(*mut f32);
@@ -1066,11 +1096,45 @@ struct Engine {
     /// strengths and ascending order per river instance (turn_i * 48 + river_i)
     river_st: Vec<Vec<u32>>,
     river_order: Vec<Vec<u16>>,
+    /// chance support: turn cards, river cards per turn index (full game: every undealt card)
+    turns: Vec<Card>,
+    rivers: Vec<Vec<Card>>,
+    restricted: bool,
+    /// active players per (template, slot)
+    slot_nact: Vec<Vec<usize>>,
+    snap: Vec<f32>,
+    use_snap: AtomicBool,
+    cut: AtomicBool,
+    fstore: RwLock<BTreeMap<(usize, usize, usize), Frontier>>,
+    cnt: Counters,
 }
 
 impl Engine {
-    fn new(spot: &Spot, fold_first: Option<usize>, nonblocking: [bool; NP]) -> Engine {
+    fn new(spot: &Spot, fold_first: Option<usize>, nonblocking: [bool; NP], restrict: Option<(Vec<Card>, Vec<Card>)>) -> Engine {
         let g = build_game(spot.pot0, spot.stack, fold_first);
+        let rest = board_cards(&spot.board);
+        let restricted = restrict.is_some();
+        let turns: Vec<Card> = match &restrict {
+            Some((t, _)) => t.clone(),
+            None => rest.clone(),
+        };
+        let rivers: Vec<Vec<Card>> = turns.iter().map(|&tc| match &restrict {
+            Some((_, r)) => r.iter().cloned().filter(|&c| c != tc).collect(),
+            None => rest.iter().cloned().filter(|&c| c != tc).collect(),
+        }).collect();
+        let nr = rivers[0].len();
+        assert!(rivers.iter().all(|r| r.len() == nr), "river support must have equal size per turn");
+        let n_inst = |t: &Template| -> usize { match t.street { 0 => 1, 1 => turns.len(), _ => turns.len() * nr } };
+        let mut slot_nact = Vec::new();
+        for t in &g.templates {
+            let mut v = vec![0usize; t.slots.len()];
+            for n in &t.nodes {
+                if let TNode::Action { slot, nact, .. } = n {
+                    v[*slot] = *nact;
+                }
+            }
+            slot_nact.push(v);
+        }
         let mut base = Vec::new();
         let mut size = Vec::new();
         let mut slot_off = Vec::new();
@@ -1085,14 +1149,12 @@ impl Engine {
             base.push(tot);
             size.push(sz);
             slot_off.push(off);
-            tot += sz * instances(t) as usize;
+            tot += sz * n_inst(t);
         }
-        let rest = board_cards(&spot.board);
-        let mut river_st = Vec::with_capacity(49 * 48);
-        let mut river_order = Vec::with_capacity(49 * 48);
-        for (ti, &tc) in rest.iter().enumerate() {
-            let _ = ti;
-            for &rc in rest.iter().filter(|&&c| c != tc) {
+        let mut river_st = Vec::new();
+        let mut river_order = Vec::new();
+        for (ti, &tc) in turns.iter().enumerate() {
+            for &rc in &rivers[ti] {
                 let mut b = spot.board.clone();
                 b.push(tc);
                 b.push(rc);
@@ -1104,7 +1166,9 @@ impl Engine {
             }
         }
         Engine { g, w: spot.w.clone(), flop: spot.board.clone(), nonblocking, base, size, slot_off,
-                 regret: vec![0.0; tot], strat: vec![0.0; tot], rest, river_st, river_order }
+                 regret: vec![0.0; tot], strat: vec![0.0; tot], rest, river_st, river_order, turns, rivers, restricted, slot_nact,
+                 snap: Vec::new(), use_snap: AtomicBool::new(false), cut: AtomicBool::new(false), fstore: RwLock::new(BTreeMap::new()),
+                 cnt: Counters::default() }
     }
 
     fn bytes(&self) -> usize {
@@ -1115,15 +1179,22 @@ impl Engine {
         // returns (instance index for the next street, index of the card)
         match turn_i {
             None => {
-                let ti = self.rest.iter().position(|&c| c == card).unwrap();
+                let ti = self.turns.iter().position(|&c| c == card).unwrap();
                 (ti, ti)
             }
             Some(ti) => {
-                let tc = self.rest[ti];
-                let ri = self.rest.iter().filter(|&&c| c != tc).position(|&c| c == card).unwrap();
-                (ti * 48 + ri, ri)
+                let ri = self.rivers[ti].iter().position(|&c| c == card).unwrap();
+                (ti * self.rivers[0].len() + ri, ri)
             }
         }
+    }
+
+    fn river_board(&self, ri: usize) -> Vec<Card> {
+        let nr = self.rivers[0].len();
+        let mut b = self.flop.clone();
+        b.push(self.turns[ri / nr]);
+        b.push(self.rivers[ri / nr][ri % nr]);
+        b
     }
 
     fn blockers(&self) -> usize {
@@ -1161,18 +1232,34 @@ impl Engine {
                 tot - card[a as usize] - card[b as usize] + o[h] as f64
             }).collect()
         } else {
-            let st: Vec<u32> = (0..NUM_COMBOS).map(|i| valid(i) as u32).collect();
-            let wq: Vec<f32> = (0..NUM_COMBOS).map(|i| if valid(i) { reach[opp[0]][i] } else { 0.0 }).collect();
-            let wr: Vec<f32> = (0..NUM_COMBOS).map(|i| if valid(i) { reach[opp[1]][i] } else { 0.0 }).collect();
-            showdown_sums(&st, &wq, &wr, true).1
+            let t0 = std::time::Instant::now();
+            let vm: Vec<bool> = (0..NUM_COMBOS).map(valid).collect();
+            let wq: Vec<f32> = (0..NUM_COMBOS).map(|i| if vm[i] { reach[opp[0]][i] } else { 0.0 }).collect();
+            let wr: Vec<f32> = (0..NUM_COMBOS).map(|i| if vm[i] { reach[opp[1]][i] } else { 0.0 }).collect();
+            let d = den_fast(&vm, &wq, &wr);
+            self.cnt.den3.fetch_add(1, Ordering::Relaxed);
+            self.cnt.den3_ns.fetch_add(t0.elapsed().as_nanos() as u64, Ordering::Relaxed);
+            d
         }
     }
 
     /// counterfactual showdown value for p on a complete board (river instance `ri`)
-    fn showdown(&self, p: usize, reach: &[Vec<f32>], ri: usize, contrib: &[f64; NP], folded: &[bool; NP]) -> Vec<f64> {
+    fn showdown(&self, p: usize, reach: &[Vec<f32>], ri: usize, contrib: &[f64; NP], folded: &[bool; NP], mass: bool) -> Vec<f64> {
+        let t0 = std::time::Instant::now();
         let st = &self.river_st[ri];
         let pot = self.g.pot0 + contrib.iter().sum::<f64>();
         let opp: Vec<usize> = (0..NP).filter(|&q| q != p && !self.nonblocking[q]).collect();
+        if folded[p] {
+            // folder carried through (reduced game): constant utility times the reached mass
+            let vm: Vec<bool> = st.iter().map(|&x| x > 0).collect();
+            let d = if opp.len() == 2 { den_fast(&vm, &reach[opp[0]], &reach[opp[1]]) } else {
+                self.den(p, reach, &self.river_board(ri))
+            };
+            self.cnt.den3.fetch_add(1, Ordering::Relaxed);
+            self.cnt.den3_ns.fetch_add(t0.elapsed().as_nanos() as u64, Ordering::Relaxed);
+            let u = if mass { 1.0 } else { -contrib[p] };
+            return d.iter().map(|x| u * x).collect();
+        }
         if opp.len() == 1 {
             // HU sweep, O(N)
             let o = &reach[opp[0]];
@@ -1207,7 +1294,7 @@ impl Engine {
                     let win = lt - lt_c[a] - lt_c[b];
                     let tie = eq - eq_c[a] - eq_c[b] + o[h] as f64;
                     let all = tot - tot_c[a] - tot_c[b] + o[h] as f64;
-                    out[h] = pot * (win + 0.5 * tie) - contrib[p] * all;
+                    out[h] = if mass { all } else { pot * (win + 0.5 * tie) - contrib[p] * all };
                 }
                 for &i in &order[k..e] {
                     let i = i as usize;
@@ -1218,20 +1305,26 @@ impl Engine {
                 }
                 k = e;
             }
+            self.cnt.sd2.fetch_add(1, Ordering::Relaxed);
+            self.cnt.sd2_ns.fetch_add(t0.elapsed().as_nanos() as u64, Ordering::Relaxed);
             out
         } else {
             let (q, r) = (opp[0], opp[1]);
             // active opponents enter the showdown; a folded opponent only blocks
             let (fq, act) = if folded[q] { (q, r) } else if folded[r] { (r, q) } else { (q, r) };
             let both_in = !folded[q] && !folded[r];
-            let (n, d) = showdown_sums(st, &reach[fq], &reach[act], both_in);
-            (0..NUM_COMBOS).map(|h| pot * n[h] - contrib[p] * d[h]).collect()
+            let (n, d) = showdown_sums_fast(st, &reach[fq], &reach[act], both_in);
+            let out = (0..NUM_COMBOS).map(|h| if mass { d[h] } else { pot * n[h] - contrib[p] * d[h] }).collect();
+            self.cnt.sd3.fetch_add(1, Ordering::Relaxed);
+            self.cnt.sd3_ns.fetch_add(t0.elapsed().as_nanos() as u64, Ordering::Relaxed);
+            out
         }
     }
 
     fn strategy(&self, off: usize, na: usize, mode: Mode) -> Vec<f32> {
         let mut sig = vec![0f32; na * NUM_COMBOS];
         let src = match mode {
+            Mode::Update(_) if self.use_snap.load(Ordering::Relaxed) => &self.snap,
             Mode::Update(_) => &self.regret,
             _ => &self.strat,
         };
@@ -1254,7 +1347,7 @@ impl Engine {
     fn walk(&self, tpl: usize, node: usize, inst: usize, turn_i: Option<usize>, ri: Option<usize>, board: &[Card],
             p: usize, reach: &[Vec<f32>], mode: Mode, rp: &Ptr, sp: &Ptr) -> Vec<f64> {
         match &self.g.templates[tpl].nodes[node] {
-            TNode::Action { player, acts, children, slot, contrib } => {
+            TNode::Action { player, acts, children, slot, contrib, nact } => {
                 let q = *player;
                 let na = acts.len();
                 let off = self.base[tpl] + inst * self.size[tpl] + self.slot_off[tpl][*slot];
@@ -1262,9 +1355,26 @@ impl Engine {
                 if q == p {
                     let mut child_v: Vec<Vec<f64>> = Vec::with_capacity(na);
                     for (a, &c) in children.iter().enumerate() {
-                        if acts[a] == Act::Fold {
+                        if acts[a] == Act::Fold && self.restricted {
+                            // reduced game: later cards can still collide with the folder's hand, so the
+                            // folder's (constant) utility has to be carried through the rest of the tree
+                            if *nact == NP && self.cut.load(Ordering::Relaxed) {
+                                let fs = self.fstore.read().unwrap();
+                                let fr = fs.get(&(tpl, c, inst)).expect("frontier value missing");
+                                child_v.push(fr.vals[p].clone().expect("folder value"));
+                            } else {
+                                let mut r2: Vec<Vec<f32>> = reach.to_vec();
+                                if matches!(mode, Mode::Update(_)) {
+                                    for h in 0..NUM_COMBOS {
+                                        r2[p][h] *= sig[a * NUM_COMBOS + h];
+                                    }
+                                }
+                                child_v.push(self.walk(tpl, c, inst, turn_i, ri, board, p, &r2, mode, rp, sp));
+                            }
+                        } else if acts[a] == Act::Fold {
                             let d = self.den(p, reach, board);
-                            child_v.push(d.iter().map(|x| -contrib[p] * x).collect());
+                            let u = if matches!(mode, Mode::Mass) { 1.0 } else { -contrib[p] };
+                            child_v.push(d.iter().map(|x| u * x).collect());
                         } else {
                             // own reach scaled by the action probability: it weights the strategy
                             // sums below (counterfactual values never use the traverser's own reach)
@@ -1305,7 +1415,18 @@ impl Engine {
                     v
                 } else {
                     let mut v = vec![0f64; NUM_COMBOS];
+                    let cut = *nact == NP && self.cut.load(Ordering::Relaxed);
                     for (a, &c) in children.iter().enumerate() {
+                        if cut && acts[a] == Act::Fold {
+                            // factorized trunk: the frontier's value is fixed for this trunk iteration
+                            let fs = self.fstore.read().unwrap();
+                            let fr = fs.get(&(tpl, c, inst)).expect("frontier value missing");
+                            let fv = fr.vals[p].as_ref().expect("frontier value for player");
+                            for h in 0..NUM_COMBOS {
+                                v[h] += fv[h];
+                            }
+                            continue;
+                        }
                         let mut r2: Vec<Vec<f32>> = reach.to_vec();
                         for h in 0..NUM_COMBOS {
                             r2[q][h] *= sig[a * NUM_COMBOS + h];
@@ -1320,21 +1441,22 @@ impl Engine {
             }
             TNode::FoldWin { winner, contrib, .. } => {
                 let pot = self.g.pot0 + contrib.iter().sum::<f64>();
-                let u = if *winner == p { pot } else { 0.0 } - contrib[p];
+                let u = if matches!(mode, Mode::Mass) { 1.0 } else { (if *winner == p { pot } else { 0.0 }) - contrib[p] };
                 self.den(p, reach, board).iter().map(|x| u * x).collect()
             }
             TNode::Showdown { contrib, folded } => {
+                let m = matches!(mode, Mode::Mass);
                 if board.len() == 5 {
-                    self.showdown(p, reach, ri.unwrap(), contrib, folded)
+                    self.showdown(p, reach, ri.unwrap(), contrib, folded, m)
                 } else {
                     // all-in runout: deal the remaining cards without betting
                     self.deal(board, turn_i, p, reach, &|nb, nti, nri, r2| {
                         if nb.len() == 5 {
-                            self.showdown(p, r2, nri.unwrap(), contrib, folded)
+                            self.showdown(p, r2, nri.unwrap(), contrib, folded, m)
                         } else {
                             self.deal(nb, nti, p, r2, &|nb2, _nti2, nri2, r3| {
                                 let _ = nb2;
-                                self.showdown(p, r3, nri2.unwrap(), contrib, folded)
+                                self.showdown(p, r3, nri2.unwrap(), contrib, folded, m)
                             })
                         }
                     })
@@ -1356,8 +1478,9 @@ impl Engine {
     fn deal(&self, board: &[Card], turn_i: Option<usize>, p: usize, reach: &[Vec<f32>],
             f: &(dyn Fn(&[Card], Option<usize>, Option<usize>, &[Vec<f32>]) -> Vec<f64> + Sync)) -> Vec<f64> {
         let _ = p;
-        let cards: Vec<Card> = (0..52u8).filter(|c| !board.contains(c)).collect();
-        let norm = (cards.len() - 2 * self.blockers()) as f64;
+        let cards: Vec<Card> = if board.len() == 3 { self.turns.clone() } else { self.rivers[turn_i.unwrap()].clone() };
+        // reduced game: uniform over the listed cards, colliding combos lose their mass
+        let norm = if self.restricted { cards.len() as f64 } else { (cards.len() - 2 * self.blockers()) as f64 };
         let one = |c: Card| -> Vec<f64> {
             let mut nb = board.to_vec();
             nb.push(c);
@@ -1408,25 +1531,29 @@ impl Engine {
         for p in self.players() {
             let avg = self.root(p, Mode::Avg);
             let br = self.root(p, Mode::Br);
+            let mass = self.root(p, Mode::Mass);
             let den = self.den(p, &self.w, &self.flop);
             let z: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * den[h]).sum();
-            let va: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * avg[h]).sum::<f64>() / z;
-            let vb: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * br[h]).sum::<f64>() / z;
+            let zm: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * mass[h]).sum();
+            // range value conditional on the reached mass (= z in the full game); BR gain per flop mass
+            let va: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * avg[h]).sum::<f64>() / zm;
+            let gain: f64 = (0..NUM_COMBOS).map(|h| self.w[p][h] as f64 * (br[h] - avg[h])).sum::<f64>() / z;
+            let vb = va + gain;
             // class values: den-weighted mean over the class's combos (as t2_cont_panel)
             let mut cn = vec![0f64; 169];
             let mut cd = vec![0f64; 169];
             for h in 0..NUM_COMBOS {
-                if den[h] > 0.0 {
+                if mass[h] > 0.0 {
                     let (a, b) = cc(h);
                     let k = class_index(rank(a), rank(b), suit(a) == suit(b));
                     cn[k] += avg[h];
-                    cd[k] += den[h];
+                    cd[k] += mass[h];
                 }
             }
             let cls: Vec<Option<f64>> = (0..169).map(|k| if cd[k] > 0.0 { Some(cn[k] / cd[k] + self.g.pot0 * 0.0) } else { None }).collect();
             total += va;
             gains += vb - va;
-            rows.push(serde_json::json!({"player": p, "range_value": va, "br_value": vb, "br_gain_bb": vb - va,
+            rows.push(serde_json::json!({"player": p, "range_value": va, "br_value": vb, "br_gain_bb": vb - va, "reached_mass_fraction": zm / z,
                                          "br_gain_pct_pot": (vb - va) / self.g.pot0 * 100.0, "class_gross": cls}));
         }
         // gross convention: utilities are share of the final pot minus postflop contributions
@@ -1435,29 +1562,172 @@ impl Engine {
                            "exploitability_pct_pot": gains / self.players().len() as f64 / self.g.pot0 * 100.0})
     }
 
-    /// aggregate strategy (average) at the first decision of each player on the flop path of checks
+    /// aggregate average strategy (weights: arriving range, no own earlier action on these lines)
+    /// at the decisions met on the flop lines: root, check, check-check, bet, bet-call, bet-fold
     fn root_mix(&self) -> serde_json::Value {
         let t0 = &self.g.templates[0];
+        let lines: [&[&str]; 6] = [&[], &["Check"], &["Check", "Check"], &["Bet"], &["Bet", "Call"], &["Bet", "Fold"]];
         let mut out = Vec::new();
-        let mut node = 0usize;
-        // follow checks from the root; report every decision met
-        for _ in 0..NP {
-            if let TNode::Action { player, acts, children, slot, .. } = &t0.nodes[node] {
+        'l: for line in lines {
+            let mut node = 0usize;
+            for step in line {
+                match &t0.nodes[node] {
+                    TNode::Action { acts, children, .. } => {
+                        match acts.iter().position(|x| format!("{:?}", x).starts_with(step)) {
+                            Some(k) => node = children[k],
+                            None => continue 'l,
+                        }
+                    }
+                    _ => continue 'l,
+                }
+            }
+            if let TNode::Action { player, acts, slot, nact, .. } = &t0.nodes[node] {
                 let off = self.base[0] + self.slot_off[0][*slot];
                 let sig = self.strategy(off, acts.len(), Mode::Avg);
                 let w = &self.w[*player];
                 let tot: f64 = w.iter().map(|&x| x as f64).sum();
                 let mix: Vec<f64> = (0..acts.len()).map(|a| (0..NUM_COMBOS).map(|h| w[h] as f64 * sig[a * NUM_COMBOS + h] as f64).sum::<f64>() / tot).collect();
-                out.push(serde_json::json!({"player": player, "actions": acts.iter().map(|x| format!("{:?}", x)).collect::<Vec<_>>(), "mix": mix}));
-                match acts.iter().position(|x| *x == Act::Check) {
-                    Some(ci) => node = children[ci],
-                    None => break,
-                }
-            } else {
-                break;
+                out.push(serde_json::json!({"line": line.join("-"), "player": player, "active": nact,
+                    "actions": acts.iter().map(|x| format!("{:?}", x)).collect::<Vec<_>>(), "mix": mix}));
             }
         }
         serde_json::Value::Array(out)
+    }
+
+    // ---------------------------------------------------------------- HU-frontier factorization
+    fn cards_after(&self, board: &[Card], turn_i: Option<usize>) -> Vec<Card> {
+        if board.len() == 3 { self.turns.clone() } else { self.rivers[turn_i.unwrap()].clone() }
+    }
+
+    /// walk the trunk with `mode`'s strategies (Update(_) = current regret matching, Avg = average)
+    /// and record the arriving reach of every frontier (fold child of a 3-active node) per runout
+    #[allow(clippy::too_many_arguments)]
+    fn collect(&self, tpl: usize, node: usize, inst: usize, turn_i: Option<usize>, ri: Option<usize>, board: &[Card],
+               reach: &[Vec<f32>], mode: Mode, out: &Mutex<Vec<Frontier>>) {
+        match &self.g.templates[tpl].nodes[node] {
+            TNode::Action { player, acts, children, slot, nact, .. } => {
+                if *nact < NP {
+                    return;
+                }
+                let na = acts.len();
+                let off = self.base[tpl] + inst * self.size[tpl] + self.slot_off[tpl][*slot];
+                let sig = self.strategy(off, na, mode);
+                for (a, &c) in children.iter().enumerate() {
+                    let mut r2: Vec<Vec<f32>> = reach.to_vec();
+                    for h in 0..NUM_COMBOS {
+                        r2[*player][h] *= sig[a * NUM_COMBOS + h];
+                    }
+                    if acts[a] == Act::Fold {
+                        out.lock().unwrap().push(Frontier { tpl, node: c, inst, turn_i, ri, board: board.to_vec(), folder: *player,
+                                                            reach: r2, vals: vec![None; NP] });
+                    } else {
+                        self.collect(tpl, c, inst, turn_i, ri, board, &r2, mode, out);
+                    }
+                }
+            }
+            TNode::Next { template } => {
+                let nt = *template;
+                let one = |c: Card| {
+                    let mut nb = board.to_vec();
+                    nb.push(c);
+                    let r2: Vec<Vec<f32>> = reach.iter().map(|w| {
+                        let mut v = w.clone();
+                        for &i in &card_combos()[c as usize] {
+                            v[i as usize] = 0.0;
+                        }
+                        v
+                    }).collect();
+                    let (nti, nri, inst2) = if board.len() == 3 {
+                        let ti = self.inst_of(c, None).0;
+                        (Some(ti), None, ti)
+                    } else {
+                        let r = self.inst_of(c, turn_i).0;
+                        (turn_i, Some(r), r)
+                    };
+                    self.collect(nt, 0, inst2, nti, nri, &nb, &r2, mode, out);
+                };
+                let cards = self.cards_after(board, turn_i);
+                if board.len() == 3 { cards.par_iter().for_each(|&c| one(c)) } else { cards.iter().for_each(|&c| one(c)) }
+            }
+            _ => {}
+        }
+    }
+
+    /// zero regrets and strategy sums of every 2-active slot (all frontier subtrees)
+    fn reset_frontiers(&mut self) {
+        for (t, tp) in self.g.templates.iter().enumerate() {
+            let n = match tp.street { 0 => 1, 1 => self.turns.len(), _ => self.turns.len() * self.rivers[0].len() };
+            for (sl, &(_, na)) in tp.slots.iter().enumerate() {
+                if self.slot_nact[t][sl] == NP {
+                    continue;
+                }
+                for inst in 0..n {
+                    let o = self.base[t] + inst * self.size[t] + self.slot_off[t][sl];
+                    self.regret[o..o + na * NUM_COMBOS].fill(0.0);
+                    self.strat[o..o + na * NUM_COMBOS].fill(0.0);
+                }
+            }
+        }
+    }
+
+    /// synchronous re-solve: arriving reaches of ALL frontiers from one snapshot of the trunk
+    /// (`mode`), every frontier reset and solved `inner` DCFR iterations on its own (exact HU
+    /// subgame, the folder only blocks), then its values fixed for both active players.
+    /// Returns (seconds collect, seconds solve+values, number of frontiers).
+    fn resolve_frontiers(&mut self, mode: Mode, inner: u32, with_values: bool) -> (f64, f64, usize) {
+        let t0 = std::time::Instant::now();
+        let out = Mutex::new(Vec::new());
+        self.collect(0, 0, 0, None, None, &self.flop.clone(), &self.w, mode, &out);
+        let fr = out.into_inner().unwrap();
+        let tc = t0.elapsed().as_secs_f64();
+        self.reset_frontiers();
+        let t1 = std::time::Instant::now();
+        let rp = Ptr(self.regret.as_ptr() as *mut f32);
+        let sp = Ptr(self.strat.as_ptr() as *mut f32);
+        let me = &*self;
+        let solved: Vec<Frontier> = fr.into_par_iter().map(|mut f| {
+            let act: Vec<usize> = (0..NP).filter(|&q| q != f.folder).collect();
+            for j in 1..=inner {
+                for &p in &act {
+                    me.walk(f.tpl, f.node, f.inst, f.turn_i, f.ri, &f.board, p, &f.reach, Mode::Update(j), &rp, &sp);
+                }
+            }
+            if with_values {
+                let who: Vec<usize> = if me.restricted { (0..NP).collect() } else { act.clone() };
+                for &p in &who {
+                    f.vals[p] = Some(me.walk(f.tpl, f.node, f.inst, f.turn_i, f.ri, &f.board, p, &f.reach, Mode::Avg, &rp, &sp));
+                }
+            }
+            f
+        }).collect();
+        let n = solved.len();
+        let mut fs = self.fstore.write().unwrap();
+        fs.clear();
+        for f in solved {
+            fs.insert((f.tpl, f.node, f.inst), f);
+        }
+        (tc, t1.elapsed().as_secs_f64(), n)
+    }
+
+    fn counters(&self) -> serde_json::Value {
+        let c = &self.cnt;
+        let g = |a: &AtomicU64| a.load(Ordering::Relaxed);
+        serde_json::json!({"showdown3_calls": g(&c.sd3), "showdown3_seconds": g(&c.sd3_ns) as f64 / 1e9,
+            "showdown2_calls": g(&c.sd2), "showdown2_seconds": g(&c.sd2_ns) as f64 / 1e9,
+            "den3_calls": g(&c.den3), "den3_seconds": g(&c.den3_ns) as f64 / 1e9})
+    }
+
+    /// bytes of trunk (3-active) and frontier (2-active) storage
+    fn bytes_split(&self) -> (usize, usize) {
+        let (mut tr, mut fr) = (0usize, 0usize);
+        for (t, tp) in self.g.templates.iter().enumerate() {
+            let n = match tp.street { 0 => 1, 1 => self.turns.len(), _ => self.turns.len() * self.rivers[0].len() };
+            for (sl, &(_, na)) in tp.slots.iter().enumerate() {
+                let b = 2 * 4 * na * NUM_COMBOS * n;
+                if self.slot_nact[t][sl] == NP { tr += b } else { fr += b }
+            }
+        }
+        (tr, fr)
     }
 }
 
@@ -1489,30 +1759,84 @@ fn main() -> Result<(), String> {
             let spot = load_spot(&a[2], &a[3])?;
             let iters: u32 = a[4].parse().map_err(|_| "iters")?;
             let out = &a[5];
-            let seat = |name: &str| -> Option<usize> {
-                a.iter().position(|x| x == name).map(|i| spot.pos.iter().position(|p| *p == a[i + 1]).expect("seat name"))
-            };
+            let arg = |name: &str| a.iter().position(|x| x == name).map(|i| a[i + 1].clone());
+            let seat = |name: &str| -> Option<usize> { arg(name).map(|v| spot.pos.iter().position(|p| *p == v).expect("seat name")) };
             let fold_first = seat("--fold-first");
             let mut nb = [false; NP];
             if let Some(q) = seat("--nonblocking") {
                 nb[q] = true;
             }
-            let every: u32 = a.iter().position(|x| x == "--every").map(|i| a[i + 1].parse().unwrap()).unwrap_or(25);
-            let target: f64 = a.iter().position(|x| x == "--target").map(|i| a[i + 1].parse().unwrap()).unwrap_or(0.3);
+            let every: u32 = arg("--every").map(|v| v.parse().unwrap()).unwrap_or(25);
+            let target: f64 = arg("--target").map(|v| v.parse().unwrap()).unwrap_or(0.3);
+            let cards = |v: String| -> Vec<Card> { v.split(',').map(|c| card_from_str(c).unwrap()).collect() };
+            let restrict = match (arg("--turns"), arg("--rivers")) {
+                (Some(t), Some(r)) => Some((cards(t), cards(r))),
+                (None, None) => None,
+                _ => return Err("--turns and --rivers go together".into()),
+            };
+            // mono-alt (default, B2), mono-sim (all players from one snapshot), factor (HU frontiers)
+            let scheme = arg("--scheme").unwrap_or_else(|| "mono-alt".into());
+            let inner: u32 = arg("--inner").map(|v| v.parse().unwrap()).unwrap_or(100);
             let t0 = std::time::Instant::now();
-            let e = Engine::new(&spot, fold_first, nb);
-            eprintln!("engine: {:.2} GB, players {:?}, build {:.1}s, rss {:?} kB", e.bytes() as f64 / 1e9, e.players(), t0.elapsed().as_secs_f64(), peak_rss_kb());
+            let mut e = Engine::new(&spot, fold_first, nb, restrict.clone());
+            let (btr, bfr) = e.bytes_split();
+            eprintln!("engine: {:.3} GB (trunk {:.3}, frontier {:.3}), players {:?}, scheme {scheme}, build {:.1}s, rss {:?} kB",
+                      e.bytes() as f64 / 1e9, btr as f64 / 1e9, bfr as f64 / 1e9, e.players(), t0.elapsed().as_secs_f64(), peak_rss_kb());
             let mut trace = Vec::new();
             let mut last = serde_json::Value::Null;
+            let (mut s_collect, mut s_front, mut s_trunk, mut s_eval) = (0f64, 0f64, 0f64, 0f64);
+            let mut n_front = 0usize;
             for t in 1..=iters {
-                for p in e.players() {
-                    e.root(p, Mode::Update(t));
+                match scheme.as_str() {
+                    "mono-alt" => {
+                        let t1 = std::time::Instant::now();
+                        for p in e.players() {
+                            e.root(p, Mode::Update(t));
+                        }
+                        s_trunk += t1.elapsed().as_secs_f64();
+                    }
+                    "mono-sim" => {
+                        let t1 = std::time::Instant::now();
+                        e.snap = e.regret.clone();
+                        e.use_snap.store(true, Ordering::Relaxed);
+                        for p in e.players() {
+                            e.root(p, Mode::Update(t));
+                        }
+                        e.use_snap.store(false, Ordering::Relaxed);
+                        s_trunk += t1.elapsed().as_secs_f64();
+                    }
+                    "factor" => {
+                        let (c, f, n) = e.resolve_frontiers(Mode::Update(0), inner, true);
+                        s_collect += c;
+                        s_front += f;
+                        n_front = n;
+                        let t1 = std::time::Instant::now();
+                        // trunk regrets of all players from the same snapshot; frontier values fixed
+                        e.snap = e.regret.clone();
+                        e.use_snap.store(true, Ordering::Relaxed);
+                        e.cut.store(true, Ordering::Relaxed);
+                        for p in e.players() {
+                            e.root(p, Mode::Update(t));
+                        }
+                        e.cut.store(false, Ordering::Relaxed);
+                        e.use_snap.store(false, Ordering::Relaxed);
+                        s_trunk += t1.elapsed().as_secs_f64();
+                    }
+                    _ => return Err(format!("unknown scheme {scheme}")),
                 }
                 if t % every == 0 || t == iters {
+                    let t1 = std::time::Instant::now();
+                    if scheme == "factor" {
+                        // final strategy: trunk average + frontiers re-solved against the trunk average reach
+                        e.resolve_frontiers(Mode::Avg, inner, false);
+                    }
                     let ev = e.evaluate();
+                    s_eval += t1.elapsed().as_secs_f64();
                     let x = ev["exploitability_pct_pot"].as_f64().unwrap();
-                    eprintln!("it {t} expl {x:.4}% pot, conservation {:.2e}, {:.0}s", ev["conservation_error"].as_f64().unwrap(), t0.elapsed().as_secs_f64());
-                    trace.push(serde_json::json!({"iteration": t, "seconds": t0.elapsed().as_secs_f64(), "eval": ev.clone()}));
+                    eprintln!("it {t} expl {x:.4}% pot, conservation {:.2e}, {:.0}s (collect {s_collect:.1} frontier {s_front:.1} trunk {s_trunk:.1} eval {s_eval:.1}) rss {:?}",
+                              ev["conservation_error"].as_f64().unwrap(), t0.elapsed().as_secs_f64(), peak_rss_kb());
+                    trace.push(serde_json::json!({"iteration": t, "seconds": t0.elapsed().as_secs_f64(), "eval": ev.clone(), "root_mix": e.root_mix(),
+                        "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval}}));
                     last = ev;
                     if x <= target {
                         break;
@@ -1520,7 +1844,10 @@ fn main() -> Result<(), String> {
                 }
             }
             let res = serde_json::json!({"positions": spot.pos, "board": a[3], "fold_first": fold_first, "nonblocking": nb,
-                "bytes": e.bytes(), "peak_rss_kb": peak_rss_kb(), "final": last, "trace": trace, "root_mix": e.root_mix(),
+                "scheme": scheme, "inner": inner, "restrict": restrict.as_ref().map(|(t, r)| serde_json::json!({"turns": t, "rivers": r})),
+                "bytes": e.bytes(), "bytes_trunk": btr, "bytes_frontier": bfr, "frontiers": n_front,
+                "peak_rss_kb": peak_rss_kb(), "final": last, "trace": trace, "root_mix": e.root_mix(), "counters": e.counters(),
+                "time_split": {"collect": s_collect, "frontier_solve": s_front, "trunk_update": s_trunk, "evaluation": s_eval},
                 "labels": spot.labels});
             std::fs::write(out, serde_json::to_vec(&res).unwrap()).map_err(|e| e.to_string())?;
             Ok(())

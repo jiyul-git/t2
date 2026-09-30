@@ -1,0 +1,32 @@
+{
+ "schema": "t2_prereg_addendum_v1",
+ "amends": "b3a_prereg.json",
+ "written": "after smoke tests of the implementation (5-10 iterations, not kept as results), before any registered A/B run",
+ "pass_criteria": "unchanged",
+ "changes": [
+  {
+   "item": "B trunk update order",
+   "was": "alternating over the 3 players",
+   "now": "simultaneous: all 3 players' trunk regrets updated from one snapshot of the trunk strategies",
+   "reason": "the frontier values are fixed from the snapshot reaches; with alternating updates the second and third players would meet arriving reaches changed by the first player's update, i.e. stale frontier values (the sequential pattern the instruction forbids). Simultaneous = snapshot -> all frontiers -> fix values -> update the parent -> next k."
+  },
+  {
+   "item": "added isolation run A' (mono-sim)",
+   "what": "monolithic CFR with the same simultaneous update schedule as B, 400 iterations",
+   "reason": "3-player equilibria are not unique and schedules can select different ones; A vs B is the registered test, A' vs B isolates the factorization from the update schedule. Reported beside A vs B, criteria applied to both, the registered verdict is A vs B."
+  },
+  {
+   "item": "reduced game, folded player's utility",
+   "what": "with a restricted card list a later card can still collide with the folder's hand (mass loss), so the folder's constant utility is carried through the remaining tree instead of the full-game shortcut -contrib * den (identical in A, A', B). Range values are reported conditional on the reached mass (= flop mass in the full game), BR gains per flop mass.",
+   "found_by": "smoke test: conservation -0.24 bb with the shortcut, 1e-8 after the fix"
+  },
+  {
+   "item": "evaluator",
+   "what": "3-player showdown and joint-mass sums by the O(52N) inclusion-exclusion aggregate (dense 52x52 weights), validated: max rel diff vs O(N^2) 6.5e-14, vs brute force 1.6e-13, 0.82 ms/call vs 17.0 ms (b3a_evalcheck.json)"
+  },
+  {
+   "item": "B checkpoints",
+   "what": "evaluation = trunk average strategy + every frontier re-solved (100 DCFR iterations, reset) against the trunk-average arriving reach"
+  }
+ ]
+}

@@ -1,9 +1,9 @@
 {
   "boards": 6,
   "calls_each": 36,
-  "max_rel_diff_fast_vs_brute": 8.914523136190688e-14,
-  "max_rel_diff_fast_vs_quadratic": 1.1177567431782477e-14,
-  "ms_per_call_fast": 3.015341527777778,
-  "ms_per_call_quadratic": 17.748836222222224,
-  "speedup": 5.886177754233571
+  "max_rel_diff_fast_vs_brute": 1.6375826316704749e-13,
+  "max_rel_diff_fast_vs_quadratic": 6.518817455857039e-14,
+  "ms_per_call_fast": 1.025125444444445,
+  "ms_per_call_quadratic": 17.670285222222223,
+  "speedup": 17.237193084987208
 }
