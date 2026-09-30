@@ -1,1 +1,2 @@
 KdKc4c 150 iters 0.222%pot solve 427s inv_err -2.9e-8
+reuse KdKc4c

@@ -1,1 +1,2 @@
 AcTd7d 100 iters 0.286%pot solve 239s inv_err -3.0e-8
+reuse AcTd7d

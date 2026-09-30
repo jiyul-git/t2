@@ -7,6 +7,13 @@
    "resumed": "2026-09-30T19:05 same driver command; 30 node-6 flops reused after the solver's provenance check (status 'reused'); node 28 table reused; nothing re-solved that was finished",
    "data_loss": "none (the flops running at the restart were incomplete and are recomputed)",
    "note": "an earlier status check reported the driver as running because pgrep -f matched the checking shell's own command line; the watcher now checks python3 processes only"
+  },
+  {
+   "what": "container restart during k11, node 28 panel",
+   "last_commit_before": "ec89aff (65/72 node-28 flops of k11 on disk)",
+   "detected": "2026-09-30T22:14 container uptime 0 min; all processes gone",
+   "resumed": "2026-09-30T22:14 same driver command; 65 node-28 flops reused after the provenance check, the 7 unfinished ones recomputed",
+   "data_loss": "none"
   }
  ]
 }

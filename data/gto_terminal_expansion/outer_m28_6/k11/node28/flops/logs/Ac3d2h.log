@@ -1,1 +1,2 @@
 Ac3d2h 100 iters 0.242%pot solve 440s inv_err -3.0e-8
+reuse Ac3d2h

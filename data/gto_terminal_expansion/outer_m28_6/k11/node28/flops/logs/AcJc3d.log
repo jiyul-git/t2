@@ -1,1 +1,2 @@
 AcJc3d 100 iters 0.271%pot solve 242s inv_err -2.9e-8
+reuse AcJc3d

@@ -1,1 +1,2 @@
 AcQdJc 100 iters 0.276%pot solve 257s inv_err -6.4e-8
+reuse AcQdJc
