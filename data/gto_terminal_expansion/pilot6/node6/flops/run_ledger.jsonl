@@ -1,0 +1,1 @@
+{"board": "Jc6c2c", "rc": 0, "wall_s": 140.4, "peak_rss_kb_wait4": 2171868, "threads": 1, "workers": 4, "time": "2026-09-30T04:42:01", "status": "solved", "iterations": 100, "exploitability_pct_pot": 0.29528173925083834, "converged": true, "invariant_error_bb": 9.947621393280315e-09, "solve_s": 133.451961514}
