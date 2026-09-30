@@ -1,1 +1,2 @@
 AcQc2c 125 iters 0.212%pot solve 196s inv_err -2.0e-8
+reuse AcQc2c
