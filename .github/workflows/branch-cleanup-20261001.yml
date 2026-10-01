@@ -1,0 +1,40 @@
+name: One-shot branch cleanup 2026-10-01
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/branch-cleanup-20261001.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: contains(github.event.head_commit.message, '[branch-cleanup-20261001]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete obsolete refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branches=(
+            "chatgpt/hand15-independent-audit-20261001"
+            "chatgpt/human-model-v3-20260929"
+            "tmp/claude-defense-residual-20260928"
+            "tmp/claude-human-model-v2-20260928"
+            "tmp/claude-rfi-attribution-20260928"
+            "tmp/preflop-policy-shape-20260928"
+            "chatgpt/gto-phase0-trust-20260928"
+            "chatgpt/terminal-census-20260929"
+            "chatgpt/terminal-census-v2-20260930"
+            "claude/gto-30bb-tightness-audit-20260928"
+            "claude/gto-hu-continuation-v1-20260928"
+            "claude/gtopen-architecture-perf-audit-20260928"
+            "tmp/gtopen-9max-30bb-fast-20260928"
+          )
+          for b in "${branches[@]}"; do
+            echo "deleting $b"
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${b}" || true
+          done
