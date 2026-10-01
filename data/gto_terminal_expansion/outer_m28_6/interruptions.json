@@ -22,5 +22,19 @@
    "resumed": "2026-09-30T22:42 via tools/gto_hu_continuation/resume_a3.sh (the same pre-registered command); finished artifacts reused through provenance checks",
    "data_loss": "none"
   }
+ ],
+ "provenance_notes": [
+  {
+   "commit": "bcc43aa",
+   "note": "commit message (\"A3 P14 preflop state; k14 panels running\") ran ahead of the actual state: P14 exports were not yet written at that moment. Message inaccurate, artifacts themselves valid; the P14 state was committed in 33de785."
+  },
+  {
+   "commit": "1728317",
+   "note": "the k10 step results (loop_log, used/rejected tables, manifest) landed in a checkpoint commit whose message said \"aggregation running\"; the step summary commit 909c072 describes them. Message inaccurate, artifacts valid."
+  },
+  {
+   "commit": "d10b9bc",
+   "note": "this push printed GitHub's \"create a pull request\" hint (as for a newly created remote branch); remote ref = local HEAD afterwards and the history is continuous; no data loss."
+  }
  ]
 }
