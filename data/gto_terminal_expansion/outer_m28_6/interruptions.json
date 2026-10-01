@@ -21,6 +21,17 @@
    "detected": "2026-09-30T22:42 container uptime 0 min",
    "resumed": "2026-09-30T22:42 via tools/gto_hu_continuation/resume_a3.sh (the same pre-registered command); finished artifacts reused through provenance checks",
    "data_loss": "none"
+  },
+  {
+   "what": "OPERATOR ERROR during k14 node 6 panel: after a session (not machine) restart notice, a second driver was started while the original (pid 9564, uptime unaffected) was still running",
+   "when": "2026-10-01T11:37:52 started, killed within ~10 s (driver, solve_panel and 4 solver processes of the duplicate)",
+   "effects": {
+    "artifacts": "none: no flop JSON was written by the duplicate; k10-k13 tables, manifests and loop_log rewritten by the duplicate are byte-identical (git diff empty); the original driver keeps its in-memory state",
+    "run_ledger": "k14/node6/flops/run_ledger.jsonl gained 57 extra \"reused\" rows from the duplicate (bookkeeping only)",
+    "logs": "per-flop text logs of finished k14 node-6 flops were overwritten by one-line \"reused\" notes; tracked ones restored from git; the solve logs of the 9 flops finished after the last checkpoint (Ac8d2d AcKd5d AcQdJc Kc6d3h Kc7d4h KcTd5h KcTd9h Qc8d2h Qc8d6h) are lost (their JSON artifacts with trace and provenance are intact); logs of the 4 flops running at that moment (6c4d3d Ac9c8d AcJc3d AcTd7d) were truncated once and continue to be written by the original solvers"
+   },
+   "data_loss": "diagnostic text logs only; no computation lost or altered",
+   "lesson": "after a restart notice, check the driver with ps (python3 only) before resuming; resume only if it is gone"
   }
  ],
  "provenance_notes": [
