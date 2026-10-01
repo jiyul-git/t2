@@ -1,0 +1,66 @@
+{
+ "schema": "t2_prereg_amendment_v1",
+ "amends": ["a4b_panel144/prereg.json (3465d81)", "a4b_panel144/prereg_amendment_1.json (1792020)", "a4r_robust/prereg.json (1792020)"],
+ "written": "before any V144 table, F144 / V-type / bootstrap preflop solve, or A4R evaluation exists; at this time node 28 has 25/72 new flops; only identity validations have been run (review/F72_identity: M14_72 = A3 used14 bit-exact, g(M14_72) = P15 exact, cross-eval self-consistency exact)",
+ "basis": "docs/GTO_TERMINAL_A4B_A4R_DESIGN_REVIEW_V2.md (ed44d5d) + the user's corrections of 2026-10-01 (paired nested bootstrap; EV difference as the primary A4R value), each re-checked before adoption (section 'review_of_corrections')",
+
+ "A4b": {
+  "primary": {
+   "quantity": "D = g(V144) - g(V72) per main aggregate; V = measured continuation tables at the P14 ranges (V72 = outer_m28_6/k14/node{n}/table_measured.json; V144 = aggregate.py on panel_v3_144 with the 72 k14 + 72 new flops); g = one frozen-table preflop solve (A3 config, seeds, 400 iterations), both terminals together",
+   "bootstrap": "nested paired: per stratum, old = its 6 panel_v2_72 boards, new = its 6 extension boards; replicate r resamples old and new separately with replacement (seed 20261001, old then new per stratum in sorted stratum order); V72*_r from old*_r only, V144*_r from old*_r + new*_r; D*_r = g(V144*_r) - g(V72*_r)",
+   "replicates": "60 (raised from 30 before any result: the 95% quantile of a max-statistic over 30 replicates is the 2nd-largest value; cost 120 preflop solves, about 2.2 h)",
+   "report": "point D; mean(D*), SD(D*), percentile 95% interval of D*; bootstrap bias estimate mean(D*) - D and bias-corrected 2D - mean(D*) (secondary; the table->policy map is non-linear and its bias scales with table variance, A4)",
+   "simultaneous": "m = aggregates with SD(D*) > 1e-4; T*_r = max_a |D*_ra - mean_a(D*)| / SD_a(D*); c = 95% quantile of T*; simultaneous band D_a +/- c SD_a; a panel-detectable shift exists if some |D_a| > c SD_a. Bonferroni z = Phi^-1(1 - 0.05/(2m)) reported alongside",
+   "limitation": "the panel was drawn without replacement proportional to raw-flop counts; the bootstrap resamples with replacement and equal weight within the old / new groups: approximate"
+  },
+  "secondary_A3_process": {
+   "identity": "g(M14_72) = P15 exact (done, review/F72_identity)",
+   "quantity": "g(M14_144) - P15, M14_144 = A3 k14 rule (0.5 V144 + 0.5 M13, guard 0.05 bb at P14 ranges, fallback measured) - point only, reported separately, never merged into the primary reading",
+   "staleness": "g(V72) - P15 (damping / non-convergence component), point only"
+  },
+  "superseded": ["amendment 1 'primary' section (blended comparison as primary)", "the h72 consistency reading of prereg.json (replaced by the paired max-statistic band)"]
+ },
+
+ "A4R": {
+  "primary": "dEV_p(A -> G) = EV_p(sigma_G; G) - EV_p(A_p (+) sigma_G,-p; G): seat p swapped to policy A's strategy blocks, all other seats held at G's own solve sigma_G, EV from the preflop solver's average-strategy EVs (bb per hand); positive_loss = max(dEV, 0) also recorded",
+  "groups": "per seat (CO, BTN, SB, BB) and per terminal-relevant group: SB (all SB nodes), BB|SB-open (BB nodes in the subtree below node 4, path BB@4, node 6 side), BTN (all BTN nodes), BB|BTN-open (BB nodes in the subtree below node 26, path BB@26, node 28 side); a partial splice is still an exact EV difference against identical opponents",
+  "directions": ["sigma72 -> G144", "sigma144 -> G72", "P15 -> G72", "P15 -> G144 (points only)"],
+  "games_and_policies": "points: G72 = V72 tables with sigma72 = g(V72); G144 = V144 with sigma144 = g(V144). Paired bootstrap: G72*_r / G144*_r with their own solves, swaps within the same replicate r",
+  "validation": [
+   "self-splice (A = sigma_G): dEV = 0 exactly and the save is byte-identical",
+   "BR value BR_p = EV_p + gap_p identical (|d| <= 1e-12) before and after any splice of seat p",
+   "dEV_p equals gap_p(splice) - gap_p(sigma_G) within 1e-12",
+   "splicing every seat from A reproduces the full-profile cross-eval of A exactly",
+   "dEV_p >= -gap_p(sigma_G) - 1e-12"
+  ],
+  "also_reported": "raw NashConv of A and of sigma_G in G (no subtraction); reach-weighted class-level L1 distance of A vs sigma_G at the SB first-in, BB@4, BTN first-in and BB@26 nodes",
+  "scales_not_thresholds": "per group: own residual gap_p(sigma_G), positive_loss, B_post = 0.0076 bb/hand (postflop exploitability contribution of nodes 6 + 28; a different error source, never added); ratios may be reported, none is a pass line",
+  "withdrawn": "the 0.005 / 0.02 bb/hand thresholds and the ROBUST / BORDERLINE / NOT_ROBUST classes of a4r_robust/prereg.json, and its gap_total-difference metric",
+  "limitation": "frozen-table game at the P14 ranges: range-dependence of the continuation values under a changed policy is not measured"
+ },
+
+ "final_classification_fixed_before_results": {
+  "definitions": {
+   "floor_p": "own residual gap_p(sigma_G) of the baseline solve (per game)",
+   "EV_stable": "for every group: point positive_loss <= floor_p (both directions) AND 95% quantile over paired replicates of positive_loss <= the replicate's floor_p",
+   "EV_sensitive": "some group: point positive_loss > floor_p AND its paired-bootstrap 95% quantile > floor_p",
+   "frequency_unstable": "a panel-detectable shift (simultaneous band) OR some main-aggregate bootstrap 95% half-width of g(V144*) > 0.005 (the A3 research criterion, used only to describe frequency precision)"
+  },
+  "labels": {
+   "inconclusive": "any validation fails, or < 90% of replicates usable",
+   "EV-sensitive to panel refinement": "EV_sensitive",
+   "frequency-unstable but EV-stable": "EV_stable and frequency_unstable",
+   "stable at 144 in frequency and EV": "EV_stable and not frequency_unstable",
+   "still precision-limited": "neither EV_stable nor EV_sensitive (mixed)"
+  },
+  "wording": "'smaller / larger than the residual suboptimality of the baseline preflop solve', not 'detectability floor'",
+  "no_production_verdict": "no production PASS/FAIL; 288 is only proposed with its cost, never started"
+ },
+
+ "review_of_corrections": {
+  "paired_nested_bootstrap": "adopted: it keeps the old-panel covariance that sd144 only approximates under iid. Added: D* is centred near D, not 0, so the band uses centred D* (max-statistic of |D* - mean| / SD); bias term reported separately; 60 replicates for the max-statistic tail",
+  "EV_primary": "adopted: EV difference is the definition, gap difference the validation. Added: BR-value identity check, lower bound -gap_p(sigma_G), sub-seat groups (a seat-level BB swap mixes node-6 and node-28 decisions)",
+  "added_label": "'stable at 144 in frequency and EV' added so every outcome has a label"
+ },
+ "not_done": ["no A3 / A4 change", "no 288", "no outer step", "no node 228", "no 3-way"]
+}

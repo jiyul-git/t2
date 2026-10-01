@@ -1,3 +1,4 @@
 QcJc3c 125 iters 0.208%pot solve 172s inv_err -3.4e-8
 reuse QcJc3c
 reuse QcJc3c
+reuse QcJc3c
