@@ -2,3 +2,4 @@ Tc9c2d 100 iters 0.251%pot solve 292s inv_err -1.1e-8
 reuse Tc9c2d
 reuse Tc9c2d
 reuse Tc9c2d
+reuse Tc9c2d

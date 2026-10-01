@@ -2,3 +2,4 @@ JcTd3c 100 iters 0.243%pot solve 287s inv_err -2.7e-8
 reuse JcTd3c
 reuse JcTd3c
 reuse JcTd3c
+reuse JcTd3c
