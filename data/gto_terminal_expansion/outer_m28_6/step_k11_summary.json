@@ -1,0 +1,79 @@
+{
+ "step": "k11 (P11 -> V11 -> M11)",
+ "terminals": {
+  "28": {
+   "candidate_blend_unallocated_bb": -0.014494769261765406,
+   "measured_unallocated_bb": -0.010186721804661403,
+   "used_unallocated_bb": -0.014494769261765406,
+   "blend_candidate_accepted": true,
+   "alpha_used": 0.5,
+   "previous_used_unallocated_at_these_ranges_bb": -0.018802816718867632,
+   "measured_unallocated_at_these_ranges_bb": -0.010186721804661403,
+   "estimator": "ht_rho",
+   "ci_halfwidth_mean": {
+    "BTN": 0.3017186887183196,
+    "BB": 0.4258091171625702
+   },
+   "expl_max_pct_pot": 0.29889162190818164,
+   "expl_mean_pct_pot": 0.24731489602718698,
+   "measured_change": {
+    "BTN": {
+     "mean_abs": 0.02511153338535284,
+     "max_abs": 0.13657585146564122
+    },
+    "BB": {
+     "mean_abs": 0.021021712826001293,
+     "max_abs": 0.11613560716885907
+    }
+   },
+   "range_L1": {
+    "BTN": 0.061119437057086126,
+    "BB": 0.05742836083297093
+   }
+  },
+  "6": {
+   "candidate_blend_unallocated_bb": -0.23541725167854288,
+   "measured_unallocated_bb": 0.008628973406153762,
+   "used_unallocated_bb": 0.008628973406153762,
+   "blend_candidate_accepted": false,
+   "alpha_used": 1.0,
+   "previous_used_unallocated_at_these_ranges_bb": -0.4794634767632395,
+   "measured_unallocated_at_these_ranges_bb": 0.008628973406153762,
+   "estimator": "ht_rho",
+   "ci_halfwidth_mean": {
+    "SB": 0.3774037211299617,
+    "BB": 0.46629179454831354
+   },
+   "expl_max_pct_pot": 0.29920641918470736,
+   "expl_mean_pct_pot": 0.24755920734309309,
+   "measured_change": {
+    "SB": {
+     "mean_abs": 0.18697961631919965,
+     "max_abs": 0.45020234436446493
+    },
+    "BB": {
+     "mean_abs": 0.44164638378074145,
+     "max_abs": 1.0182958337766883
+    }
+   },
+   "range_L1": {
+    "SB": 0.880680523382682,
+    "BB": 0.4143251785489602
+   }
+  }
+ },
+ "combined_reach_weighted_used_unallocated_bb": 0.0003869023288558917,
+ "reach_P11": {
+  "28": 0.0841461276521293,
+  "6": 0.18618449238687287,
+  "46": 0.09092156866935033,
+  "246": 0.10472496531795286,
+  "228": 0.06955614792997906
+ },
+ "gap_P11": 0.0003287035887646236,
+ "reading": [
+  "node 28: alpha 0.5 blend accepted (candidate -0.014 bb)",
+  "node 6: candidate blend rejected again (-0.235 bb; previous used table V10 at P11 ranges -0.480 bb) -> V11 measured used undamped (+0.009 bb)",
+  "node 6 measured change V10 -> V11: mean |dV| SB 0.187 / BB 0.442 bb; range L1 P10 -> P11 SB 0.881 / BB 0.414"
+ ]
+}
