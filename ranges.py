@@ -619,7 +619,17 @@ def _damp(frac, d):
     return 1.0 - (1.0 - frac)*d
 
 
-def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
+# 벳을 맞고 올리는 레인지는 먼저 치는 레인지보다 훨씬 좁다. 예전에는
+# raise 가 bet 과 같은 value 비율(플랍 42%)로 좁혀져, 레이즈를 맞은 쪽의
+# 체감 에쿼티가 과대평가됐다(균일 성향 3시드 실측: 자기 벳이 레이즈당한 뒤
+# 콜한 핸드의 평균 eq 0.67). 레이즈 value 비율 = 벳 value 비율 × 이 값.
+_RAISE_VALUE_SHARE = 0.45
+# 레이즈를 강함으로 인식하는 최소 grasp (perceived_range).
+_RAISE_GRASP_FLOOR = 0.75
+
+
+def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0,
+               raised=False):
     """벳/레이즈: 양극화. 선택된 support의 기존 mass를 그대로 보존한다."""
     ranked = _ranked(r, board)
     n = len(ranked)
@@ -627,6 +637,8 @@ def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0):
     # 좁혀졌다. 실제로는 닛의 턴 배럴이 상위 15%, 매니악이 55% 다.
     # barrel_gap 은 그 사람의 배럴 빈도가 기준보다 얼마나 넓은가(−1~+1).
     vfrac = {'flop': 0.42, 'turn': 0.30, 'river': 0.22}.get(street, 0.32)
+    if raised:
+        vfrac *= _RAISE_VALUE_SHARE
     vfrac = max(0.08, min(0.85, vfrac * (1.0 + 1.15*barrel)))
     if size_frac >= 1.0:   vfrac *= 0.60
     elif size_frac >= 0.7: vfrac *= 0.78
@@ -724,6 +736,13 @@ def perceived_range(base, board, acts, profile=None, actor_read=None):
         return range_copy(base)               # 액션을 아예 반영 못 한다
     full = narrow_by_actions(base, board, acts, actor_read, profile)
     grasp = min(1.0, (rr - 1.5) / 6.0)        # rr 7.5 이상이면 완전 반영
+    # '벳을 맞고 올렸다 = 강하다'는 세밀한 레인지 읽기가 아니라 상식이다
+    # (icm_aware 하한과 같은 논리). 평균 range_read(4.0)의 grasp 0.42 로는
+    # 레이즈로 걸러낸 콤보의 58%가 되살아나, 레이즈 축소를 고쳐도 레이즈 대면
+    # 체감 에쿼티가 그대로였다(실측 0.634 → 0.646). 레이즈가 경로에 있으면
+    # 인식 하한을 둔다. 세부 읽기(벳·체크·콜)의 개인차는 그대로 남는다.
+    if any(a == 'raise' for (_s, a, _z) in (acts or [])):
+        grasp = max(grasp, _RAISE_GRASP_FLOOR)
     if grasp >= 0.98 or not full:
         return full
     # 부분 인식: 좁혀진 support와 원본 support 사이를 섞되,
@@ -770,15 +789,18 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
     for (stt, a, sz) in acts:
         if len(r) <= floor:
             break
-        # 연속 액션일수록 추가 정보량이 줄어든다 (축소 누적 폭주 방지)
+        # 감쇠는 **이미 강함을 대표한 뒤의 추가 공격**에만 건다(_damp docstring).
+        # 예전에는 check/call 도 step 을 올려서, 체크 후 레이즈(체크레이즈)나
+        # 콜 후 턴 레이즈처럼 정보량이 가장 큰 공격이 오히려 덜 좁혀졌다.
         d = _DECAY ** step
         if a in ('bet', 'raise', 'allin'):
-            r = _bet_range(r, board, stt, bluff, sz, d, barrel)
+            r = _bet_range(r, board, stt, bluff, sz, d, barrel,
+                           raised=(a == 'raise'))
+            step += 1
         elif a == 'call':
             r = _call_range(r, board, stt, sz, d)
         elif a == 'check':
             r = _check_range(r, board, stt, cbet, d)
         else:
             continue                      # fold 는 살아있는 상대에게 나오지 않는다
-        step += 1
     return r if r else range_copy(base)

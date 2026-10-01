@@ -237,6 +237,23 @@ def _observed_postflop_action(meta):
     return meta.get('action')
 
 
+def _range_narrow_action(meta, priced=False):
+    """레인지 축소용 액션. 가격이 없던 상태의 첫 '올림'은 bet 이다.
+
+    _observed_postflop_action 은 raised 플래그만 보므로 첫 벳도 'raise' 가 된다
+    (read/book 쪽은 facing 문맥으로 따로 구분한다). 레인지 축소는 벳과
+    레이즈의 강도가 달라 여기서 _postflop_facing_contexts 와 같은 기준
+    (pre_current > 0)으로 나눈다.
+    """
+    a = _observed_postflop_action(meta)
+    # priced: 같은 스트리트에 이 액션 이전 '올림'이 이미 있었는가(호출부가 센다).
+    # pre_current 가 없는 기록(구형/테스트 meta)도 순서로 판정된다.
+    if (a == 'raise' and not priced
+            and float(meta.get('pre_current', 0) or 0) <= 0):
+        return 'bet'
+    return a
+
+
 def _postflop_facing_contexts(action_meta):
     """각 액션 직전에 actor가 무엇을 마주했는지 분류한다.
 
@@ -1156,6 +1173,7 @@ class HandRun:
         full_meta = list(getattr(self, 'full_action_meta', []) or [])
         if full_meta:
             added = {}
+            priced = set()
             for m in full_meta:
                 stt = m.get('street')
                 if stt not in _ord:
@@ -1167,9 +1185,11 @@ class HandRun:
                 before = (float((self._pot_at or {}).get(stt, 0) or 0)
                           + added.get(stt, 0.0))
                 if m.get('seat') == seat:
-                    a = _observed_postflop_action(m)
+                    a = _range_narrow_action(m, stt in priced)
                     sz = inc / max(1.0, before) if inc > 0 else 0.0
                     out.append((stt, a, sz))
+                if m.get('raised'):
+                    priced.add(stt)
                 added[stt] = added.get(stt, 0.0) + inc
         else:
             # 구형/외부 기록 폴백.
@@ -1186,14 +1206,17 @@ class HandRun:
         if current_street:
             if current_meta:
                 added = 0.0
+                _priced = False
                 pot0 = float((self._pot_at or {}).get(current_street, 0) or 0)
                 for m in current_meta:
                     inc = float(m.get('increment', 0) or 0)
                     before = pot0 + added
                     if m.get('seat') == seat:
-                        a = _observed_postflop_action(m)
+                        a = _range_narrow_action(m, _priced)
                         sz = inc / max(1.0, before) if inc > 0 else 0.0
                         out.append((current_street, a, sz))
+                    if m.get('raised'):
+                        _priced = True
                     added += inc
             elif current_log:
                 # meta가 없는 외부 호출용 폴백.

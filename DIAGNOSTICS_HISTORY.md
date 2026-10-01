@@ -98,6 +98,49 @@ Post-fix same-sample audit + frozen regression 후 CLOSED.
 
 그 외 오래된 line number, old branch, old baseline 설명은 현행 source로 사용하지 않는다.
 
+## 9-A. 2026-10-01 균일 성향 실플레이 점검 + 계수 수정
+
+조건: 봇 27명(3테이블) 전원 **동일 퍼소나**(latent 5/5/5, 노이즈 없음 → 개념 = LOADING base,
+기질 = 생성식 평균)로 맞추고, HERO 로 36핸드를 직접 치며 매 핸드 **모든 테이블**의
+프리플랍 판단(pf_seed)과 포스트플랍 intent(판단 → plan → 실행)를 읽었다.
+발견 패턴은 `tools/measure_uniform_playtest.py`(90명, 시드 11/12/13 × 60핸드, 약 1,650핸드)로 정량화했다.
+
+### 수정한 것 (논리 모순 → 수정)
+
+| # | 위치 | 문제 (실플레이 근거) | 수정 | 수정 전 → 후 |
+|---|---|---|---|---|
+| 1 | `ranges.narrow_by_actions` | 감쇠 `_DECAY**step` 이 check/call 뒤에도 쌓여, 체크레이즈·콜 후 레이즈처럼 정보량이 가장 큰 공격이 오히려 덜 좁혀짐. 레이즈도 벳과 같은 value 비율(플랍 42%) | 감쇠는 이전 **공격** 뒤에만. 레이즈 value 비율 = 벳 × `_RAISE_VALUE_SHARE` 0.45 | (아래 3과 함께) |
+| 2 | `session._acts_of` | 엔진 meta 의 `raised` 가 첫 벳에도 True → 레인지 축소에서 모든 벳이 'raise' | `_range_narrow_action`: 같은 스트리트 이전 올림이 없고 pre_current 0 이면 'bet' | 벳 대면 체감 eq 0.397 → 0.385 (대조군, 거의 불변) |
+| 3 | `ranges.perceived_range` | 평균 range_read(4.0) grasp 0.42 → 레이즈로 걸러낸 콤보 58% 복원. 1 을 고쳐도 레이즈 대면 체감 eq 불변(0.634→0.646) | 경로에 레이즈가 있으면 grasp 하한 `_RAISE_GRASP_FLOOR` 0.75 (“레이즈=강함”은 상식) | 자기 벳이 레이즈된 뒤 체감 eq 0.634 → 0.587 |
+| 4 | `plan.decide_response` 밸류 레이즈 | eq>need+0.15 만 봄 → 원페어 rel 0.38 이 턴 밸류 레이즈를 받고 다시 올인 리레이즈(핸드 15 테이블2) | rel ≥ 0.70 (재레이즈는 0.85) 일 때만 레이즈 후보, 미달이면 콜/폴드 | rel<0.70 밸류 레이즈 12건 → 0건 |
+| 5 | 같은 곳 레이즈 크기 | `mult` 상한 1.6 이 깊은 스택에서 거의 항상 걸림(TT 가 800 벳에 6,900 레이즈) | `0.70+0.45*gap`, 상한 1.10 | 레이즈 크기 p90 1.68 → 1.15 (콜 후 팟 대비) |
+| 6 | `plan.decide_aggression` pot_control | “대부분 체크” 라벨인데 0.18+0.035·aggr = 평균 35.5%, aggr10 53% | 0.10+0.025·aggr, 상한 0.40 | pot_control 무저항 벳률 15.3% → 9.7% |
+| 7 | `plan.revise_plan` 승격 | 생성 시 rel 0.73 → pot_control, 다음 스트리트 rel 0.74 → “강도 상승” 밸류 전환(승격 문턱 < 생성 문턱 역전). made 항은 원래 죽은 항 | rel ≥ 0.85 또는 (rel ≥ 0.70 이고 이전 rel + 0.08 이상) | — |
+| 8 | `preflop.defend_action_likelihoods` | 혼합 폭 (tot−tp)·0.35 ≈ tot 의 28% → AQs·88 이 UTG 오픈에 12~16% 폴드 | 폭 = tot·0.15 | 상위 3~6% 폴드 11.3% → 3.6%, 6~10% 21.9% → 11.2% |
+| 9 | `preflop.limp_p` 습관 림프 | 하위 50% 전체에 ×1.45 → 53o·T6o UTG 림프율이 그 위 대역과 같음(5.6% vs 5.8%) | 하위 대역으로 갈수록 감소(하한 0.20배) | 하위 50% 림프 5.6% → 2.0% (25~50% 대역 5.8→6.0% 유지) |
+
+그림: `docs/uniform_playtest_before_after.png`.
+
+### 회귀
+
+- 수정 전 코드: `tools/regress.py check --baseline current` 전 시드 지문 일치.
+- 수정 후: 6시드 전부 지문 변경(의도된 전략 변경). VPIP 20.7→20.5%, PFR 12.1→11.9%, flop 47.2→47.8%.
+- **baseline 은 덮어쓰지 않았다**(PROJECT.md 7절 규칙). 위 표가 attribution 이다.
+- 구조 verifier P2–P6, F1–F4, F6, F7, preflop_closure, weighted_boundaries, multiway_range_preservation PASS.
+- `verify_f5_backaction`(TypeError: call_eq kwarg), `verify_replan_contract`(C4) 는 **수정 전 코드에서도 같은 실패**다(기존 문제, 이번 변경과 무관).
+
+### 발견했지만 고치지 않은 것 (구조/열린 항목)
+
+- **P6 콜오프 폭**: `calloff_cap` = 일반 디펜스 tot × 2.6 × 0.55 ≈ 1.43배이고 `gto._MDF` 가 6bb 에서 포화되어
+  올인 가격을 거의 반영하지 않는다. BB 가 140bb 에서 BTN 30.8bb 쇼브에 QJo(상위 43%까지 콜) 콜. docstring 이 이미
+  “pot-odds/equity 직접 비교는 P6 남은 항목”이라고 적고 있어 계수만 바꾸지 않았다.
+- **calldown_need 잡음**: 평균 potodds(4.4)에서 calc_noise σ≈0.37, 편향 1.17. need/실제 팟오즈 중앙 1.12, p10 0.63 —
+  같은 사람이 결정마다 팟오즈를 ±40% 오독한다. 설계 의도(미숙도)일 수 있어 유지, 크기는 재검토 권장.
+- **F7-D 실행 사이즈 변형**: `runner.shape_size` 의 `odd` 확률이 계획 사이즈를 팟×{0.33,0.5,1,1.5}로 갈아치움
+  (핸드 1: 계획 600 → 실행 1,500). 3시드에서 ±40% 초과 변형 13~25건. F7-D 열린 항목.
+- **made 등급의 보드 페어**: 페어 보드에서 모든 원페어가 made=2(투페어). known issue E 그대로.
+- `pf_rank.json` 순위가 올인 에쿼티형이라 76s 38.8%, 77 3.9% 등 플레이어빌리티와 어긋남(데이터 문제, 미변경).
+
 ## 10. Historical sources
 
 - `TRACE_PLAN.md`

@@ -1127,6 +1127,20 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     # 오면 이 분기를 못 타고 아래로 흘러가 팟오즈만으로 콜/폴드가 정해졌다.
     # **밸류 계획의 목적은 팟을 목표까지 키우는 것이므로, 상대 벳이 목표에
     # 못 미치면 레이즈로 채우는 것이 계획의 일부다.**
+    # 레이즈는 '콜보다 강한 레인지에게서 더 받는다'는 판단이다. eq>need 만 보면
+    # 원페어(rel 0.38)가 턴에 밸류 레이즈를 받고 다시 올인 리레이즈하는 라인이
+    # 나왔다. 상대 레인지 대비 상위권(rel)일 때만 레이즈 후보가 된다.
+    # 이미 이 스트리트에 공격했다가 레이즈를 맞은 경우(재레이즈)는 문턱이 더 높다.
+    _resp_kind = plan_state.get('_last_response_kind')
+    _vr_rel_min = 0.85 if _resp_kind == 'aggressor_backaction' else 0.70
+    if (plan in ('value_3street', 'value_2street', 'trap') and eq > need + 0.15
+            and rel_ps < _vr_rel_min):
+        if _layer_call and _cf_eq < _cf_need:
+            return 'fold', 0.0, _cf_need, (
+                '밸류 계획이나 레이즈 강도 미달 + layer call EV 미달(%.3f < %.3f)'
+                % (_cf_eq, _cf_need))
+        return 'call', 0.0, (_cf_need if _layer_call else need), (
+            '밸류 계획이나 레이즈 강도 미달(rel %.2f < %.2f) → 콜' % (rel_ps, _vr_rel_min))
     if plan in ('value_3street', 'value_2street', 'trap') and eq > need + 0.15:
         rr = PS.sk(profile, 'reraise')/10.0 if has_c else 0.5
         so = PS.sk(profile, 'stackoff')/10.0 if has_c else 0.5
@@ -1152,7 +1166,10 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
             if _cm and stack > 0:
                 want = stack*float(_cm)            # 넣을 작정인 총액
                 gap = max(0.0, want - tocall) / max(1.0, want)
-                mult = max(0.75, min(1.6, 0.75 + 0.85*gap))
+                # 상한 1.6 은 깊은 스택에서 거의 항상 걸려(gap→1) 원페어 밸류
+                # 레이즈가 팟의 1.6배로 나갔다(실측 p90 1.68). 부족분은 다음
+                # 스트리트로 나눠 채운다 — 한 번의 레이즈는 팟 크기 근처까지만.
+                mult = max(0.70, min(1.10, 0.70 + 0.45*gap))
             return 'raise', mult, need, '밸류 레이즈(%.0f%%, x%.2f)' % (p*100, mult)
         if _layer_call and _cf_eq < _cf_need:
             return 'fold', 0.0, _cf_need, (
@@ -1354,7 +1371,9 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         # 얇은 밸류라면 river_fix 가 thin_river 로 승격시켰어야 한다.
         if rel < 0.30:
             return 0.04, '팟컨트롤 + 강도 %.2f → 체크' % rel
-        return max(0.05, min(0.6, 0.18 + 0.035*a)), '팟컨트롤 → 대부분 체크'
+        # 예전 0.18+0.035*aggr 는 평균(aggr 5)에서 35.5%, aggr 10 에서 53% 로
+        # '대부분 체크'라는 계획 의미와 어긋났다. 절반 이하로 낮춘다.
+        return max(0.05, min(0.40, 0.10 + 0.025*a)), '팟컨트롤 → 대부분 체크'
 
     # --- 밸류 계획 ---
     p = 0.30 + 0.058*a + 0.018*profile.get('gamble', 5)
@@ -2581,16 +2600,18 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         why.append('%s: 포기했으나 강도 상승(rel %.2f, made %d) → %s'
                    % (street, rel, made, st['plan']))
     elif old in ('pot_control', 'block', 'showdown') and (
-            rel >= 0.70 or made >= max(2, st.get('made', 0) + 1)):
+            rel >= 0.85 or (rel >= 0.70 and rel >= _prev_rel + 0.08)):
+        # 승격은 '강도가 올라갔다'일 때만이다. 예전에는 rel>=0.70 단독이라,
+        # 플랍에서 rel 0.73 으로 pot_control 을 받은 핸드가 턴에 rel 0.74 로
+        # 거의 그대로여도 '강도 상승'으로 밸류 전환됐다(생성 문턱보다 승격 문턱이
+        # 낮은 역전). 이제 이전 rel 대비 실제 상승(+0.08) 또는 최상위(0.85)만 승격.
         # 승격 조건. 예전에는 rel >= 0.88 하나뿐이라
         # 리버에 트립스가 되어 rel 0.05 → 0.76, made 1 → 3 이 됐는데도
         # 계획이 턴의 pot_control 그대로 남아 체크했다.
         # rel 만이 아니라 '내 완성 강도가 올라갔는가'도 승격 근거다.
         #
-        # **주의 — 이 made 항은 실제로는 죽어 있다.** st.update 가 위에서
-        # st['made'] 를 새 값으로 덮어쓴 뒤라 `made >= max(2, st['made']+1)`
-        # 이 `made >= made+1` 이 되어 모든 값에서 거짓이다. 실질 조건은
-        # rel >= 0.70 단독이다.
+        # (예전 조건의 made 항 `made >= max(2, st['made']+1)` 은 st.update 뒤라
+        # 항상 거짓인 죽은 항이었다. 위 조건에서 제거했다.)
         #
         # _prev_made 로 고쳐봤으나 **되돌렸다.** made 1→2 가 내가 핸드를
         # 개선한 경우와 **보드가 페어링된 경우**를 구분하지 못한다. 실측

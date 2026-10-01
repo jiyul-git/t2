@@ -187,7 +187,12 @@ def limp_p(prof, feel, hand_pct, pos, traits=None):
     if hand_pct <= 0.05:   habit *= 0.10     # 프리미엄은 거의 림프 안 한다
     elif hand_pct <= 0.12: habit *= 0.30
     elif hand_pct <= 0.25: habit *= 0.85
-    else:                  habit *= 1.45     # 약할수록 림프 선호
+    elif hand_pct <= 0.50: habit *= 1.45     # 오픈 밖 '볼 만한' 핸드에서 최대
+    else:
+        # 습관형 림퍼도 53o·T6o 같은 완전한 쓰레기는 대부분 접는다. 예전에는
+        # 하위 50%까지 1.45 배가 그대로 걸려 쓰레기 림프율이 그 위 대역과 같았다
+        # (균일 성향 실측 5.6% vs 5.8%). 하위 대역으로 갈수록 줄인다.
+        habit *= 1.45 * max(0.20, (0.85 - hand_pct) / 0.35)
     # 아주 얕으면 습관형도 림프 대신 쇼브/폴드로 간다
     habit *= min(1.0, feel / 0.10) if feel < 0.10 else 1.0
 
@@ -678,7 +683,10 @@ def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
         _pf_slow = max(0.0, min(1.0, (0.10 - r) / 0.10)) * 0.55
     w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)
 
-    w_cont = _logit(r, tot, max(0.02, (tot-tp)*0.35))
+    # 혼합 구간 폭. 예전 (tot-tp)*0.35 는 tot 의 ~28%라, 문턱 절반 위치의
+    # 핸드(9-max UTG 오픈 대면 AQs·88)도 11~16% 폴드했다(실측: 상위 3~6%
+    # 핸드 단일 오픈 대면 폴드 11.3%). 혼합은 경계 근처에서만 일어나야 한다.
+    w_cont = _logit(r, tot, max(0.015, tot*0.15))
     w_call = max(0.0, w_cont - w_raise*0.6) * (1.5 - 0.055*a)
     w_call *= 1.0 + 0.90*_pf_slow
     if not can_raise:
