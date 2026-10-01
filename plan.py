@@ -2512,15 +2512,23 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 players_behind=len(_cc.get('players_behind') or []),
                 decision_seed=cold_decision_seed)
         elif _use_multiway_backaction:
+            # 이미 opponent_ranges에 들어간 좌석은 multiway equity가 그 위험을
+            # 직접 포함한다. players_behind에 또 세면 같은 상대를 두 번 조인다.
+            _pending_behind = [
+                x for x in (_cc.get('players_behind') or [])
+                if x not in _live_ranges
+            ]
             a, sz, _cold_audit = _pf.multiway_reraise_decision(
                 profile, pos, aggressor_pos, hand, bb, open_bb,
                 n_callers, rng, raise_level=raise_level, stack_bb=bb,
                 exploit=rd, bf=bf, seats=seats, ante=ante,
                 can_raise=can_raise, pot_bb=pot_bb, to_call_bb=to_call_bb,
                 opponent_ranges=_live_ranges,
-                players_behind=len(_cc.get('players_behind') or []),
+                players_behind=len(_pending_behind),
                 decision_seed=cold_decision_seed)
             _cold_audit['context_kind'] = 'backaction_multiway_reraise'
+            _cold_audit['pending_behind_seats'] = [
+                str(x) for x in _pending_behind]
         else:
             a, sz = _pf.defend_decision(
                 profile, pos, aggressor_pos, hand, bb, open_bb,
