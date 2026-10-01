@@ -1,0 +1,33 @@
+{
+ "schema": "t2_prereg_v1",
+ "test": "A4 production-DB acceptance audit of the sealed A3 run (94502b8): is the P14 -> P15 movement larger than what the 72-flop panel can resolve?",
+ "written": "before any bootstrap replicate is solved",
+ "inputs": "existing A3 artifacts only: per-flop solves k10..k14 (nodes 28, 6), loop_log accept/reject history, k9 / A1 start tables; no new postflop solve",
+ "method": {
+  "panel_bootstrap": "stratified resample of the 72 panel boards within strata (the panel's own sampling design, same as aggregate.py); ONE draw is applied to every step k10..k14 (the same 72 boards were used at every step, so their errors are coherent across steps)",
+  "replicate_tables": "V_k(rep) = ht_rho estimate on the resampled boards for k = 10..14; the used chain is rebuilt with the recorded accept/reject flags: used_k = 0.5 V_k + 0.5 used_(k-1) if accepted else V_k; start tables used_9 fixed (node 28: k9/table.json; node 6: A1 table72, weight 0 because k10 was undamped)",
+  "preflop": "one frozen-table preflop solve per replicate with {28: used_14(rep), 6: used_14(rep)} (t2_cont_terminal for nodes 6 and 28, same config/seeds/400 iterations as A3) -> replicate P15 main aggregates",
+  "validation": "replicate 0 = identity draw must reproduce k14/used_node*.json (|d gross| <= 1e-9) and the A3 P15 main aggregates exactly; otherwise stop",
+  "variants": {"both": "both terminals resampled with the same draw", "only28": "node 28 resampled, node 6 at its A3 chain", "only6": "node 6 resampled, node 28 at its A3 chain"},
+  "replicates": "30 per variant + replicate 0 (fixed seed 20261001)",
+  "main_aggregates": "as convergence_rule.json: CO/BTN/SB first-in fold/raise/jam, BB vs BTN (node 28 parent) and BB vs SB (node 6 parent) fold/call/3bet/jam"
+ },
+ "quantities": {
+  "h_a": "95% half-width of aggregate a across the 'both' replicates (percentile, (q97.5 - q2.5)/2)",
+  "d_a": "|P15_a - P14_a| (A3)",
+  "amplitude": "period-2 half-amplitude per aggregate over P12..P15: mean |P_k+1 - P_k| / 2",
+  "attribution": "h_a under only28 vs only6"
+ },
+ "classification_fixed_before_results": {
+  "PASS": "every d_a <= 0.005 (the A3 criterion)",
+  "precision_limited": "not PASS, and every d_a <= h_a (the last step moves less than the panel's own 95% resolution), and max h_a > 0.005 (the 0.005 threshold is below the 72-flop resolution)",
+  "true_not_converged": "some d_a > h_a",
+  "per_terminal": "the same comparison per terminal's aggregates (BB vs BTN with only28; SB first-in and BB vs SB with only6)"
+ },
+ "after_classification": {
+  "true_not_converged": "a new A4 continuation from P15, recorded separately from A3, warm-started from the A3 tables/caches",
+  "precision_limited": "no blind outer steps; targeted denser board panel for the terminal(s) that set the floor, reusing the existing 72 boards",
+  "node28_only_floor": "targeted refinement of node 28 only"
+ },
+ "not_done": ["no A3 change or extension", "no long solve before this audit is reported", "no node 228 injection", "no 3-way production injection"]
+}
