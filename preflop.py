@@ -872,12 +872,51 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     return ('fold', 0)
 
 
+def preflop_blocker_share(hand, pools):
+    """내 두 장이 상대들의 최상단 밸류 질량을 지운 몫. 0~1.
+
+    최상단 = 각 pool 질량의 상위 20%(ranges.blocker_score 의 '상위 1/5'와
+    같은 정의). pool 이 이미 내 카드를 dead 로 뺐을 수도, 안 뺐을 수도 있어
+    클래스별 원래 콤보 수(페어 6/수딧 4/오프 12) 대비 사라진 질량과
+    남아 있는 '내 카드 포함 콤보' 질량을 함께 센다.
+    순서는 PCT(pf_rank) — R2 의존. 최상단(AA/KK/QQ/AK 근처)에서만 쓴다.
+    """
+    import ranges as _R
+    if not pools or not hand:
+        return 0.0
+    hs = set(hand)
+    full_tot = 0.0
+    blocked_tot = 0.0
+    for r in pools:
+        wr = _R.weighted_range(r)
+        by = {}
+        for c, w in wr.items():
+            by.setdefault(cls(list(c)), []).append((c, float(w)))
+        mass = sum(w for v in by.values() for _, w in v)
+        if mass <= 0:
+            continue
+        acc = 0.0
+        for k in sorted(by, key=lambda x: PCT.get(x, 1.0)):
+            rows = by[k]
+            mw = sum(w for _, w in rows) / len(rows)
+            n_full = 6 if len(k) == 2 else (4 if k.endswith('s') else 12)
+            present = sum(w for _, w in rows)
+            mine = sum(w for c, w in rows if c[0] in hs or c[1] in hs)
+            full = n_full * mw
+            full_tot += full
+            blocked_tot += max(0.0, full - present) + mine
+            acc += present
+            if acc >= 0.20 * mass:
+                break
+    return max(0.0, min(1.0, blocked_tot / full_tot)) if full_tot > 0 else 0.0
+
+
 def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
                               n_callers, rng, raise_level=2, stack_bb=None,
                               exploit=None, bf=1.0, seats=8, ante=True,
                               can_raise=True, pot_bb=None, to_call_bb=None,
                               opponent_ranges=None, players_behind=0,
-                              decision_seed=None):
+                              decision_seed=None, locked_keys=None):
     """두 개 이상의 살아 있는 상대 레인지를 함께 보는 재레이즈 판단.
 
     핵심은 '마지막 aggressor 한 명 vs 나'로 축약하지 않는 것이다.
@@ -892,14 +931,20 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     아직 행동하지 않은 뒤 좌석은 range pool에 들어 있지 않을 수 있으므로
     players_behind 위험은 기존 6%p/인, 최대 18%p 규칙을 그대로 재사용한다.
     """
+    _locked = {str(k) for k in (locked_keys or [])}
     if isinstance(opponent_ranges, dict):
         pools = [r for _, r in sorted(opponent_ranges.items(), key=lambda kv: str(kv[0]))
                  if r]
         range_seats = [str(k) for k, r in sorted(
             opponent_ranges.items(), key=lambda kv: str(kv[0])) if r]
+        # 공격으로 접게 만들 수 있는 상대만. 이미 올인한 상대는 폴드가 없다.
+        free_pools = [r for k, r in sorted(
+            opponent_ranges.items(), key=lambda kv: str(kv[0]))
+            if r and str(k) not in _locked]
     else:
         pools = [r for r in (opponent_ranges or []) if r]
         range_seats = []
+        free_pools = list(pools)
 
     if len(pools) < 2 or pot_bb is None or to_call_bb is None:
         act, sz = defend_decision(
@@ -969,15 +1014,42 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     call = (1.0 - reason_skill)*call + reason_skill*_evidence_call
     fold = max(0.0, _cf_mass - call)
 
+    # 이미 올인한 상대가 있으면 내 공격은 그 상대에게는 '콜'이다. 폴드
+    # 에쿼티가 없으므로 기준은 fair share 가 아니라 가격(need)이다. 다른
+    # 상대가 전부 접는 가장 낙관적인 경우의 eq(올인 상대 레인지만)조차
+    # need 에 못 미치면 공격은 -EV 다(audit9 HAND 51: TT eq 0.336 > fair
+    # 0.333 이라 억제 0, 실제 need 0.466).
+    eq_locked = None
+    if attack > 0.0 and _locked and isinstance(opponent_ranges, dict):
+        _lk_pools = [r for k, r in sorted(
+            opponent_ranges.items(), key=lambda kv: str(kv[0]))
+            if r and str(k) in _locked]
+        if _lk_pools:
+            eq_locked = float(_B.equity_vs_combos(
+                hand, [], _lk_pools, sims=900, seed=_seed + 17))
+            if eq_locked < need:
+                _rm = attack * reason_skill
+                attack -= _rm
+                fold += _rm
+
     # 공격도 헤즈업 기준이 아니라 현재 N-way fair share를 본다.
     fair = 1.0 / (1.0 + len(pools))
+    bluff_support = None
     if eq < fair and attack > 0.0:
         f2fb = 0.0
         rw = 0.0
         if exploit:
             rw = max(0.0, min(1.0, float(exploit.get('w', 0.0) or 0.0)))
             f2fb = max(0.0, float(exploit.get('f2fb_gap', 0.0) or 0.0))
-        bluff_support = max(bluff_skill, min(1.0, rw*f2fb))
+        # 블러프 '실력'은 공격 근거가 아니다. 근거는 (1) 상대가 4벳에 잘
+        # 접는다는 읽기, (2) 내 카드가 접을 수 있는 상대의 최상단 밸류를
+        # 실제로 지우는 블로커다. 실력은 그 근거를 얼마나 쓰는가에만 곱한다.
+        # 예전 max(bluff_skill, …)는 bluff 10 인 사람에게 근거 없이 keep=1 을
+        # 줘서 88/TT 의 cold 4bet·올인 위 재쇼브가 eq<fair 에서도 그대로
+        # 남았다(audit9 HAND 28/41/45/51 — 51은 올인 상대 앞 eq 0.30 쇼브).
+        _blk = preflop_blocker_share(hand, free_pools)
+        _read_ev = min(1.0, rw*f2fb) if free_pools else 0.0
+        bluff_support = max(_read_ev, bluff_skill*_blk)
         suppress = reason_skill * min(1.0, (fair - eq) / fair)
         keep = (1.0 - suppress) + suppress*bluff_support
         removed = attack * (1.0 - keep)
@@ -1024,6 +1096,11 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         'reason_skill': round(reason_skill, 6),
         'players_behind': int(players_behind or 0),
         'fair_share': round(fair, 6),
+        'locked_keys': sorted(_locked),
+        'equity_vs_locked': (round(eq_locked, 6)
+                             if eq_locked is not None else None),
+        'bluff_support': (round(bluff_support, 6)
+                          if bluff_support is not None else None),
         'base_likelihoods': {k: round(v, 6) for k, v in base.items()},
         'final_likelihoods': {
             'attack': round(attack, 6),
@@ -1039,7 +1116,8 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
                           exploit=None, bf=1.0, seats=8, ante=True,
                           can_raise=True, pot_bb=None, to_call_bb=None,
                           original_opener_range=None, reraiser_range=None,
-                          players_behind=0, decision_seed=None):
+                          players_behind=0, decision_seed=None,
+                          locked_keys=None):
     """P7 호환 wrapper: 아직 행동하지 않은 플레이어의 open+re-raise 대응."""
     act, sz, audit = multiway_reraise_decision(
         prof, def_pos, reraiser_pos, hand, bb, open_bb, n_callers, rng,
@@ -1051,7 +1129,7 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
             'reraiser': reraiser_range,
         },
         players_behind=players_behind,
-        decision_seed=decision_seed)
+        decision_seed=decision_seed, locked_keys=locked_keys)
 
     # 기존 P7 verifier / telemetry 계약은 유지한다.
     if audit.get('reason') == 'missing_multiway_ranges_or_price':

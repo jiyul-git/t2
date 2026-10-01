@@ -1772,6 +1772,13 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     # prohibition.  Aggressive humans sometimes lead strong hands, but the
     # previous implementation effectively treated it as a fresh 97% value bet.
     _called_prev_aggr = _called_prior_street_aggression(plan_state, street)
+    # 플랍의 '직전 스트리트'는 프리플랍이다. 프리플랍 레이즈를 받고(콜/림프
+    # 후 레이즈 콜) 들어와 그 레이저가 뒤에 살아 있으면(oop_vs_aggr) 라인은
+    # 그 사람 것이다. 턴/리버만 이 사실을 알고 플랍은 몰라서, OOP 콜러가
+    # 밸류 라벨만으로 프리플랍 레이저 앞에서 97% 리드했다(audit9 2차 HAND
+    # 13/15, max-skill 시뮬 플랍 동크 20%). R5a(pot_control 리드)와 같은 개념.
+    if street == 'flop' and not initiative and oop_vs_aggr is True:
+        _called_prev_aggr = True
     if (_called_prev_aggr and not initiative and oop_vs_aggr is True):
         _relead = max(0.04, min(0.16, 0.04 + 0.010*float(a)))
         p *= _relead
@@ -2576,6 +2583,11 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             raise_level >= 2 and prior_pf and _allin_ok
             and len(_live_ranges) >= 2)
 
+        # 이미 올인한 상대(폴드 불가) — 공격 근거 계산에서 뺀다.
+        _locked_seats = set()
+        for _ly in (pot_layers or []):
+            for _o in (_ly.get('locked_allin_opponents') or []):
+                _locked_seats.add(str(_o))
         if _use_cold:
             _op_seat = _cc.get('original_opener_seat')
             _rr_seat = _cc.get('reraiser_seat')
@@ -2587,7 +2599,10 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 original_opener_range=(opp_ranges or {}).get(_op_seat),
                 reraiser_range=(opp_ranges or {}).get(_rr_seat),
                 players_behind=len(_cc.get('players_behind') or []),
-                decision_seed=cold_decision_seed)
+                decision_seed=cold_decision_seed,
+                locked_keys=[k for k, st_ in (('original_opener', _op_seat),
+                                              ('reraiser', _rr_seat))
+                             if str(st_) in _locked_seats])
         elif _use_multiway_backaction:
             # 이미 opponent_ranges에 들어간 좌석은 multiway equity가 그 위험을
             # 직접 포함한다. players_behind에 또 세면 같은 상대를 두 번 조인다.
@@ -2602,7 +2617,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 can_raise=can_raise, pot_bb=pot_bb, to_call_bb=to_call_bb,
                 opponent_ranges=_live_ranges,
                 players_behind=len(_pending_behind),
-                decision_seed=cold_decision_seed)
+                decision_seed=cold_decision_seed,
+                locked_keys=[k for k in _live_ranges
+                             if str(k) in _locked_seats])
             _cold_audit['context_kind'] = 'backaction_multiway_reraise'
             _cold_audit['pending_behind_seats'] = [
                 str(x) for x in _pending_behind]
