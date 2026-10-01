@@ -1,0 +1,26 @@
+{
+ "schema": "t2_prereg_v1",
+ "status": "DRAFT: pre-registration only; no code written, nothing run; needs explicit approval before any implementation",
+ "test": "B4: out-of-core monolithic-equivalent 3-way solver (design note GTO_3WAY_NEXT_ARCHITECTURE_V2.md section 2.3)",
+ "basis": {
+  "B3b": "factorized trunk fed the exact monolithic frontier values is bit-identical to A' for 50 iterations; a stale-by-one oracle diverges at iteration 2 (b3b_verdict.json)",
+  "B3a/D": "frontier re-solve from scratch per trunk iteration (B) FAIL; any frontier state kept across iterations changes the algorithm unless it is the monolithic state itself",
+  "consequence": "the only no-accuracy-risk split is to keep the monolithic frontier regret/strategy state, just stored out of core"
+ },
+ "design": {
+  "in_memory": "trunk regrets + strategy sums (full node 46 Kc7d4h: 9.03 GB measured in B1)",
+  "on_disk": "one file per (frontier template, instance block): f32 regrets + strategy sums, same layout as the in-memory arena slice (full: 12.4 GB, largest flop frontier 0.91 GB)",
+  "walk": "unchanged player-major traversal of A (alternating) and A' (simultaneous); a frontier block is read before its subtree walk and written back after it, with no change in arithmetic or order",
+  "frontier_major_variant": "three per-player walks while a block is resident: registered separately, for A' only; not part of the first acceptance"
+ },
+ "acceptance_fixed_before_implementation": {
+  "T1_reduced_identity": "reduced node-46 game (Kc7d4h; turns 2s/Qh/8c; rivers 3d/Js/6h; M2): out-of-core vs in-memory A and A' for 50 iterations; trunk and frontier regret / strategy-sum / root value max abs diff == 0 at every iteration (same arithmetic and order, so tolerance 0)",
+  "T1_negative_control": "skip the write-back of one frontier block at one iteration: must diverge (first divergence reported); otherwise T1 is invalid",
+  "T2_resume": "kill the process mid-iteration (inside a frontier block) and resume from the on-disk state + trunk checkpoint: bit-identical to the uninterrupted run at iteration 50",
+  "T3_full_one_iteration": "full node 46 Kc7d4h, one alternating iteration: peak RSS <= 12 GB goal, >= 15 GB hard stop (abort); record wall time, CPU time, bytes read/written, disk use; disk free must exceed state size + 20%",
+  "T4_budget": "100 full iterations only after T1-T3 pass AND a separate approval; per-iteration checkpoint; exploitability measured with the exact evaluator at 50 and 100"
+ },
+ "measured_resources_at_draft": {"ram_total_gb": 15, "disk_avail_gb": 28, "note": "28 GB avail vs 12.4 GB frontier state: feasible, but leaves room for one state copy only"},
+ "not_allowed": ["no production injection of 3-way values (nodes 46/246)", "no f16", "no sparse allocation / MCCFR / river on-demand in this test", "results are a research solve of one flop, not 'GTO' for node 46"],
+ "ranking_caveat": "46/246 rank first by reach x proxy |delta| (final_census.json); the |delta| is an untested HU-to-3-way transfer proxy"
+}

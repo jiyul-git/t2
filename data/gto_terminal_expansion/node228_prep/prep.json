@@ -1,0 +1,17 @@
+{
+ "schema": "t2_prep_v1",
+ "status": "preparation only; NOT injected into any outer loop or manifest",
+ "terminal": {"node": 228, "path_spec": "raise,fold,fold,call", "spot": "CO open 2 -> BTN fold -> SB fold -> BB call", "live": ["CO", "BB"], "pot_bb": 5.5, "effective_behind_bb": 28.0},
+ "export_at_P15": {
+  "file": "data/gto_terminal_expansion/terminals/p15_node228.json",
+  "manifest": "data/gto_terminal_expansion/outer_m28_6/k14/manifest.json (A3 used tables, the P15 state)",
+  "check": "preflop gaps bit-identical to outer_m28_6/k15/terminal_node6.json (same solve)",
+  "reach_P15": 0.06955659797532784,
+  "reach_P9": 0.0695561514839461,
+  "range_L1_P9_to_P15": {"CO": 1.4e-05, "BB": 1.2e-06}
+ },
+ "reading": "node 228 ranges are effectively unchanged by the node 28 / node 6 injection (L1 ~1e-5); the P9 six-flop pilot (pilot6/node228, mean |solved - legacy| 0.74 bb) still applies at the current state",
+ "solver": "same HU path as nodes 28 / 6 (validated); 72-flop panel panel_v2_72.json, M2 menu, f32, target 0.300% pot, same flop_key fields with terminal_path_spec raise,fold,fold,call",
+ "cost_estimate": "72 flop solves; measured A3 k14 cost: node 28 8.5 CPU-h, node 6 7.4 CPU-h per 72 flops (sum of per-flop solve_ms, 1 thread each), i.e. about 2 h wall at 4 parallel; one measured table, no outer step",
+ "not_done": ["no 72-flop solve started", "no injection into a manifest or the A3/A4 outer loop", "decision deferred until the A4 audit verdict"]
+}
