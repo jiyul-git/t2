@@ -1,0 +1,74 @@
+{
+ "step": "k13 (P13 -> V13 -> M13)",
+ "terminals": {
+  "28": {
+   "candidate_blend_unallocated_bb": -0.012557283861901247,
+   "measured_unallocated_bb": -0.009774007335968449,
+   "used_unallocated_bb": -0.012557283861901247,
+   "blend_candidate_accepted": true,
+   "alpha_used": 0.5,
+   "previous_used_unallocated_at_these_ranges_bb": -0.015340560387841151,
+   "measured_unallocated_at_these_ranges_bb": -0.009774007335968449,
+   "estimator": "ht_rho",
+   "ci_halfwidth_mean": {
+    "BTN": 0.3035634269384632,
+    "BB": 0.4269049065669446
+   },
+   "expl_max_pct_pot": 0.2972818367039614,
+   "expl_mean_pct_pot": 0.24854129283722687,
+   "measured_change": {
+    "BTN": {
+     "mean_abs": 0.020641720581911306,
+     "max_abs": 0.0868695738095262
+    },
+    "BB": {
+     "mean_abs": 0.022276819919560938,
+     "max_abs": 0.1486143558175379
+    }
+   },
+   "range_L1": {
+    "BTN": 0.06587198559071705,
+    "BB": 0.09467900055010885
+   }
+  },
+  "6": {
+   "candidate_blend_unallocated_bb": -0.04914265498363868,
+   "measured_unallocated_bb": 0.00031244463534640943,
+   "used_unallocated_bb": -0.04914265498363868,
+   "blend_candidate_accepted": true,
+   "alpha_used": 0.5,
+   "previous_used_unallocated_at_these_ranges_bb": -0.0985977546026291,
+   "measured_unallocated_at_these_ranges_bb": 0.00031244463534640943,
+   "estimator": "ht_rho",
+   "ci_halfwidth_mean": {
+    "SB": 0.378526316559193,
+    "BB": 0.46094723436620294
+   },
+   "expl_max_pct_pot": 0.2993581989826496,
+   "expl_mean_pct_pot": 0.25132266748476173,
+   "measured_change": {
+    "SB": {
+     "mean_abs": 0.16416046957880964,
+     "max_abs": 0.3849894534935556
+    },
+    "BB": {
+     "mean_abs": 0.19285488917724375,
+     "max_abs": 0.5797670475596775
+    }
+   },
+   "range_L1": {
+    "SB": 0.41862619084174235,
+    "BB": 0.4458710603259609
+   }
+  }
+ },
+ "combined_reach_weighted_used_unallocated_bb": -0.010171108471345504,
+ "reach_P13": {
+  "28": 0.08365516849570441,
+  "6": 0.1855949129542623,
+  "46": 0.09089589833978517,
+  "246": 0.10472554422665743,
+  "228": 0.06955697647401786
+ },
+ "gap_P13": 0.0003887839499817219
+}
