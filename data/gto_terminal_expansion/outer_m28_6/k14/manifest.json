@@ -1,0 +1,11 @@
+{
+ "schema": "t2_hu_continuation_manifest_v1",
+ "tables": [
+  {
+   "file": "/home/user/t2/data/gto_terminal_expansion/outer_m28_6/k14/used_node28.json"
+  },
+  {
+   "file": "/home/user/t2/data/gto_terminal_expansion/outer_m28_6/k14/used_node6.json"
+  }
+ ]
+}
