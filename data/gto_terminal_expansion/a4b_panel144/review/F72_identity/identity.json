@@ -1,0 +1,84 @@
+{
+ "rule": {
+  "28": {
+   "accepted": true,
+   "candidate_unallocated_bb": -0.013718397734621135,
+   "measured_unallocated_bb": -0.009045184700688047,
+   "hard_stop": false
+  },
+  "6": {
+   "accepted": true,
+   "candidate_unallocated_bb": 0.01797439508518739,
+   "measured_unallocated_bb": 0.006727232662781191,
+   "hard_stop": false
+  }
+ },
+ "checks": {
+  "aggregates": true,
+  "gaps": true,
+  "evs": true,
+  "ranges_hash": true
+ },
+ "export_fields_equal": {
+  "6": {
+   "action_values": true,
+   "aggressor": true,
+   "aggressor_seat": true,
+   "class_labels": true,
+   "config": true,
+   "config_file": true,
+   "effective_behind_bb": true,
+   "eq_samples": true,
+   "evs": true,
+   "frequencies": true,
+   "gap_total": true,
+   "gaps": true,
+   "heads_up": true,
+   "iterations": true,
+   "live_count": true,
+   "multiway_model": true,
+   "note": true,
+   "path": true,
+   "path_nodes": true,
+   "path_spec": true,
+   "players": true,
+   "postflop_order": true,
+   "pot_bb": true,
+   "ranges_hash_fnv1a64": true,
+   "reach_probability": true,
+   "spr": true,
+   "terminal_live_mask": true,
+   "terminal_node": true
+  },
+  "28": {
+   "action_values": true,
+   "aggressor": true,
+   "aggressor_seat": true,
+   "class_labels": true,
+   "config": true,
+   "config_file": true,
+   "effective_behind_bb": true,
+   "eq_samples": true,
+   "evs": true,
+   "frequencies": true,
+   "gap_total": true,
+   "gaps": true,
+   "heads_up": true,
+   "iterations": true,
+   "live_count": true,
+   "multiway_model": true,
+   "note": true,
+   "path": true,
+   "path_nodes": true,
+   "path_spec": true,
+   "players": true,
+   "postflop_order": true,
+   "pot_bb": true,
+   "ranges_hash_fnv1a64": true,
+   "reach_probability": true,
+   "spr": true,
+   "terminal_live_mask": true,
+   "terminal_node": true
+  }
+ }
+}
