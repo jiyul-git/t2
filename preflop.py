@@ -921,18 +921,16 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     fold = float(lik['fold'])
     base = {'attack': attack, 'call': call, 'fold': fold}
 
-    # 모든 살아 있는 레인지에 대한 equity가 실제 가격보다 낮으면
-    # 숙련된 플레이어일수록 generic flat을 줄인다. 반대면 일부를 되살린다.
-    if eq < need:
-        severity = min(1.0, (need - eq) / max(need, 1e-9))
-        cut = call * reason_skill * severity
-        call -= cut
-        fold += cut
-    else:
-        surplus = min(1.0, (eq - need) / max(1e-9, 1.0 - need))
-        rescue = fold * reason_skill * surplus
-        call += rescue
-        fold -= rescue
+    # call/fold는 '휴리스틱 확률에 약간 보정'이 아니라
+    # multiway 계산을 실제로 이해하는 정도만큼 계산 결과로 교체한다.
+    #
+    # reason_skill=1 인 플레이어가 eq < perceived need라고 정확히 계산했는데도
+    # generic call 찌꺼기가 남아 랜덤 콜하는 것은 reasoning error다.
+    # 계산오차/인간차이는 이미 need의 calc_noise와 reason_skill<1에 들어 있다.
+    _cf_mass = call + fold
+    _evidence_call = _cf_mass if eq >= need else 0.0
+    call = (1.0 - reason_skill)*call + reason_skill*_evidence_call
+    fold = max(0.0, _cf_mass - call)
 
     # 공격도 헤즈업 기준이 아니라 현재 N-way fair share를 본다.
     fair = 1.0 / (1.0 + len(pools))
