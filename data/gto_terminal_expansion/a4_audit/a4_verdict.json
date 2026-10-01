@@ -1,0 +1,85 @@
+{
+ "schema": "t2_verdict_v1",
+ "prereg": "data/gto_terminal_expansion/a4_audit/prereg.json (005561b, unchanged)",
+ "a3_sealed_at": "94502b8 (not modified)",
+ "recovery": {
+  "background_process": "finished normally before recovery (not killed)",
+  "completed_replicates": "90/90 + identity",
+  "uncommitted_results_found": "yes: everything after df0df31 (both r03-r30, only28, only6, replicates.json, run.log)",
+  "rerun": 0
+ },
+ "validation": {
+  "identity_chain_max_abs_diff": {
+   "28": 0.0,
+   "6": 0.0
+  },
+  "identity_replicate_vs_P15_max_abs": 0.0
+ },
+ "classification": "precision_limited",
+ "per_terminal": {
+  "node 28": {
+   "classification": "precision_limited",
+   "max_d": 0.02013495435414725,
+   "max_own_half_width": 0.06799321446572931,
+   "aggregates_beyond_own_noise": []
+  },
+  "node 6": {
+   "classification": "precision_limited",
+   "max_d": 0.05262172916237229,
+   "max_own_half_width": 0.07479949213697568,
+   "aggregates_beyond_own_noise": []
+  }
+ },
+ "max_half_width_95_both": 0.07485639918198911,
+ "threshold_0.005_identifiable": false,
+ "threshold_note": "every aggregate moved by a solved terminal has a 72-flop 95% half-width above 0.005 (smallest: BTN jam 0.006; SB / BB-vs-SB / BB-vs-BTN 0.018-0.075); with h ~ 1/sqrt(boards) (assumed, not measured) 0.005 on SB raise would need ~(0.073/0.005)^2 x 72 ~ 15 000 boards per terminal",
+ "period2": {
+  "node 28 (BB vs BTN)": "half-amplitude 0.002-0.011 = 0.13-0.19 of its half-width: negligible against panel noise",
+  "node 6 (SB first-in, BB vs SB)": "half-amplitude 0.008-0.050 = 0.23-0.75 of its half-width: below noise, but not negligible"
+ },
+ "attribution": "the two terminals act on disjoint aggregates: only28 reproduces 'both' for BTN first-in and BB vs BTN, only6 for SB first-in and BB vs SB; cross effects <= 0.0001; CO first-in is unaffected (0 spread)",
+ "gap_total": {
+  "identity": {
+   "mean": 0.0003468912543572242,
+   "max": 0.0003468912543572242
+  },
+  "both": {
+   "mean": 0.0003768581132204328,
+   "max": 0.0009116673305757727
+  },
+  "only28": {
+   "mean": 0.0003742440896014797,
+   "max": 0.0009042955524176222
+  },
+  "only6": {
+   "mean": 0.00034291372706407743,
+   "max": 0.00038487220976737233
+  }
+ },
+ "unexpected_observation": {
+  "what": "the replicate distributions are not centred on P15: bootstrap mean - P15 = +0.053 SB raise, -0.039 SB fold, +0.055 BB-vs-SB fold, -0.082 BB-vs-SB call, +0.027 BB-vs-SB jam, +0.021 BB-vs-BTN fold, -0.033 BB-vs-BTN call; P15 lies at or outside the replicate range for BB vs SB (fold 0.014 < min 0.018; call 0.802 > max 0.789; jam 0.184 = min)",
+  "isolation": "diagnostic (not pre-registered), one preflop solve on the mean of the 30 both-replicate tables: mean table vs A3 table shift is at the 30-sample noise level (mean |z| 0.60 / 0.66 for nodes 28 / 6), and f(mean table) stays close to P15 (BB-vs-SB fold 0.029, call 0.783; SB raise 0.527) while the mean of f(replicates) moves much further (0.069, 0.720, 0.554)",
+  "reading": "the shift comes from the non-linear table -> preflop-strategy map under table noise (Jensen-type; BB-vs-SB fold sits at the 0 boundary), not from a biased table estimator. Panel noise therefore also displaces the aggregates systematically, by an amount of the same order as the half-width. A linear bootstrap bias correction is not usable here (it would give BB-vs-SB fold < 0)",
+  "consequence": "the 95% half-width understates the total 72-flop error of the node 6 aggregates; precision_limited is the registered label, but the effective uncertainty of SB first-in / BB vs SB at P15 is about +/-0.05-0.10"
+ },
+ "limitation": "the bootstrap measures the board-sampling sensitivity of P15 (one frozen-table preflop solve per resampled used table); it does not directly measure the noise of a fully re-converged outer fixed point; 30 replicates make the percentile interval coarse (2nd smallest / 2nd largest); the SD-based ratio d/(1.96 sd) gives the same classification (max 0.61)",
+ "p15_status": "not adopted as a production candidate",
+ "next_per_prereg": {
+  "precision_limited": "no blind outer steps; denser board panel for the terminal(s) that set the floor, reusing the 72 boards",
+  "floor": "both terminals (node 6 max h 0.075, node 28 max h 0.068): the node-28-only branch does not apply",
+  "conflict": "144/288-flop panels are on the standing do-not-run list: needs an explicit decision",
+  "minimum_compute_options": {
+   "144 boards per terminal (+72 each)": "~16 CPU-h (~4 h wall at 4 parallel; measured 7.4-8.5 CPU-h per 72 flops); expected h x0.71 (SB raise ~0.052, BB-vs-SB call ~0.053) and the noise-induced shift roughly halved (it scales with variance)",
+   "288 boards per terminal (+216 each)": "~48 CPU-h (~12 h wall); expected h x0.5 (~0.037)",
+   "range state": "the 72 existing solves are at the k14 (P14) ranges; P15 has no per-flop solves. Reusing them means solving the added boards at the k14 ranges (measured V14 on 144/288 boards), then one frozen-table preflop solve; any outer step after that is a separate registered experiment"
+  },
+  "not_recommended": "more outer steps at 72 flops: the last step already moves less than the panel resolution"
+ },
+ "not_done": [
+  "no new postflop solve",
+  "no outer-loop step",
+  "no node 228 injection",
+  "no 3-way implementation or injection",
+  "no change to A3 or to the A4 rules"
+ ]
+}

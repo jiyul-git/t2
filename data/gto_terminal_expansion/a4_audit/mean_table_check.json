@@ -1,0 +1,103 @@
+{
+ "table_check": {
+  "28": {
+   "mean_abs_table_shift_bb": 0.019033191804164337,
+   "mean_class_sd_bb": 0.17778377917885943,
+   "mean_abs_z_of_shift": 0.5950090155454879,
+   "max_abs_z": 2.1519171117972133
+  },
+  "6": {
+   "mean_abs_table_shift_bb": 0.024836794955734605,
+   "mean_class_sd_bb": 0.21289967756017583,
+   "mean_abs_z_of_shift": 0.660757256730677,
+   "max_abs_z": 2.7111770095014407
+  }
+ },
+ "rows": {
+  "CO first-in|fold": {
+   "P15": 0.7269727433939441,
+   "mean_table_solve": 0.7269729703271984,
+   "replicate_mean": 0.7269725371611211
+  },
+  "CO first-in|raise_2": {
+   "P15": 0.26159281083070995,
+   "mean_table_solve": 0.2615938951837328,
+   "replicate_mean": 0.2615930530508225
+  },
+  "CO first-in|jam_30": {
+   "P15": 0.011434459960508882,
+   "mean_table_solve": 0.01143314993294596,
+   "replicate_mean": 0.011434424338093522
+  },
+  "BTN first-in|fold": {
+   "P15": 0.589724848779433,
+   "mean_table_solve": 0.5901580082900912,
+   "replicate_mean": 0.5900934560064763
+  },
+  "BTN first-in|raise_2": {
+   "P15": 0.3704297037484434,
+   "mean_table_solve": 0.368918315401828,
+   "replicate_mean": 0.37007915892724863
+  },
+  "BTN first-in|jam_30": {
+   "P15": 0.03984546690040038,
+   "mean_table_solve": 0.040923685604331184,
+   "replicate_mean": 0.03982739875046735
+  },
+  "SB first-in|fold": {
+   "P15": 0.3547053724993051,
+   "mean_table_solve": 0.3388420077300781,
+   "replicate_mean": 0.3158520790135875
+  },
+  "SB first-in|raise_2.5": {
+   "P15": 0.5008497327617291,
+   "mean_table_solve": 0.5274147670879047,
+   "replicate_mean": 0.5536546683954976
+  },
+  "SB first-in|jam_30": {
+   "P15": 0.1444449076062879,
+   "mean_table_solve": 0.1337432385310326,
+   "replicate_mean": 0.13049326155706176
+  },
+  "BB vs BTN (node 28 parent)|Fold": {
+   "P15": 0.1028382459923745,
+   "mean_table_solve": 0.0906115050064401,
+   "replicate_mean": 0.12352351481026129
+  },
+  "BB vs BTN (node 28 parent)|Call 2": {
+   "P15": 0.7559634357918956,
+   "mean_table_solve": 0.7726839884690894,
+   "replicate_mean": 0.7233987423215937
+  },
+  "BB vs BTN (node 28 parent)|3-bet 7": {
+   "P15": 2.3597535145204518e-06,
+   "mean_table_solve": 2.3499032313981704e-06,
+   "replicate_mean": 7.1227534858739215e-06
+  },
+  "BB vs BTN (node 28 parent)|All-in 30": {
+   "P15": 0.14119596947266805,
+   "mean_table_solve": 0.13670216557789783,
+   "replicate_mean": 0.15307062370539976
+  },
+  "BB vs SB (node 6 parent)|Fold": {
+   "P15": 0.014094053495740702,
+   "mean_table_solve": 0.028718364055080464,
+   "replicate_mean": 0.06896798794190045
+  },
+  "BB vs SB (node 6 parent)|Call 2.5": {
+   "P15": 0.8023781092018113,
+   "mean_table_solve": 0.782770390202691,
+   "replicate_mean": 0.7199790035352307
+  },
+  "BB vs SB (node 6 parent)|3-bet 8.8": {
+   "P15": 3.4210063263658304e-06,
+   "mean_table_solve": 3.931310624805017e-06,
+   "replicate_mean": 0.00011531300436326799
+  },
+  "BB vs SB (node 6 parent)|All-in 30": {
+   "P15": 0.18352441825458687,
+   "mean_table_solve": 0.18850732535192083,
+   "replicate_mean": 0.21093770249747362
+  }
+ }
+}

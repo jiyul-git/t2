@@ -171,7 +171,10 @@ def analyze(a):
             for v in ('both', 'only28', 'only6'):
                 xs = [r['aggregates'][nm][ac] for r in rep['results'][v].values()]
                 hw[v] = {'half_width_95': (q(xs, 0.975) - q(xs, 0.025)) / 2, 'sd': (sum((x - sum(xs) / len(xs)) ** 2 for x in xs) / (len(xs) - 1)) ** 0.5,
-                         'lo': q(xs, 0.025), 'hi': q(xs, 0.975)}
+                         'lo': q(xs, 0.025), 'hi': q(xs, 0.975), 'mean': sum(xs) / len(xs), 'min': min(xs), 'max': max(xs),
+                         'P15_rank_below': sum(x < p15[nm][ac] for x in xs)}
+                hw[v]['d_over_sd'] = abs(p15[nm][ac] - p14[nm][ac]) / hw[v]['sd'] if hw[v]['sd'] > 0 else None
+                hw[v]['mean_minus_P15'] = hw[v]['mean'] - p15[nm][ac]
             seq = [st[f'P{k}'][nm][ac] for k in (12, 13, 14, 15)]
             amp = sum(abs(y - x) for x, y in zip(seq, seq[1:])) / len(seq[1:]) / 2
             rows.append({'aggregate': nm, 'action': ac, 'P14': p14[nm][ac], 'P15': p15[nm][ac], 'd_P14_P15': abs(p15[nm][ac] - p14[nm][ac]),
@@ -190,7 +193,14 @@ def analyze(a):
     res = {'validation': {'identity_chain_max_abs_diff': rep['identity_chain_max_abs_diff'], 'identity_replicate_vs_P15_max_abs': val2},
            'replicates': {v: len(rep['results'][v]) for v in rep['results']}, 'rows': rows, 'max_half_width_both': hmax,
            'classification': cls, 'aggregates_beyond_noise': [(r['aggregate'], r['action'], round(r['d_P14_P15'], 4), round(r['h']['both']['half_width_95'], 4)) for r in beyond],
-           'per_terminal': per_terminal}
+           'per_terminal': per_terminal,
+           'gap_total': {v: {'mean': sum(r['gap_total'] for r in rep['results'][v].values()) / len(rep['results'][v]),
+                             'max': max(r['gap_total'] for r in rep['results'][v].values())} for v in rep['results']},
+           'limitation': 'the bootstrap measures the board-sampling sensitivity of P15 (one frozen-table preflop solve per resampled used table); it does not directly measure the noise of a fully re-converged outer fixed point'}
+    mt = OUT + 'mean_table_check.json'
+    if os.path.exists(mt):
+        res['diagnostic_mean_table_solve'] = {'note': 'NOT pre-registered; one extra preflop solve on the mean of the 30 both-replicate used tables, run after the classification to isolate why the replicate distribution is not centred on P15',
+                                              **json.load(open(mt))}
     json.dump(res, open(OUT + 'audit.json', 'w'), indent=1)
     print(json.dumps({k: v for k, v in res.items() if k != 'rows'}, indent=1))
     for r in rows:
@@ -222,21 +232,23 @@ def figure(res, path):
     g.invert_yaxis()
     g.set_xlabel('frequency', fontsize=9, color=MUTED)
     g.set_title('(1) last-step change vs the 72-flop panel resolution, per main aggregate', loc='left', fontsize=10, color=INK)
-    g.legend(fontsize=8, frameon=False, loc='lower right')
+    g.legend(fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.07), ncol=3)
     g = ax[1]
     for i, r in enumerate(rows):
         h = r['h']['both']
         g.plot([h['lo'], h['hi']], [i, i], color='#c9a227', lw=4, solid_capstyle='butt')
         g.scatter([r['P15']], [i], color=INK, zorder=3, s=25)
         g.scatter([r['P14']], [i], color='#8a5cd1', marker='x', zorder=3, s=30)
+        g.scatter([h['mean']], [i], color='#c0392b', marker='|', zorder=4, s=120)
     g.set_yticks(y)
     g.set_yticklabels(lab, fontsize=8)
     g.invert_yaxis()
     g.set_xlabel('frequency', fontsize=9, color=MUTED)
     from matplotlib.lines import Line2D
     g.legend(handles=[Line2D([0], [0], color='#c9a227', lw=4, label='P15 panel-bootstrap 95% interval'),
-                      Line2D([0], [0], marker='o', color=INK, lw=0, label='P15 (A3)'), Line2D([0], [0], marker='x', color='#8a5cd1', lw=0, label='P14 (A3)')],
-             fontsize=8, frameon=False, loc='lower right')
+                      Line2D([0], [0], marker='o', color=INK, lw=0, label='P15 (A3)'), Line2D([0], [0], marker='x', color='#8a5cd1', lw=0, label='P14 (A3)'),
+                      Line2D([0], [0], marker='|', color='#c0392b', lw=0, markersize=12, label='bootstrap mean (30 replicates)')],
+             fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.07), ncol=2)
     g.set_title('(2) P14 and P15 against the P15 bootstrap interval', loc='left', fontsize=10, color=INK)
     for g in ax:
         g.set_facecolor(SURF)
@@ -246,7 +258,10 @@ def figure(res, path):
     fig.suptitle(f"A4 acceptance audit of A3 (panel bootstrap through the used-table chain): classification {res['classification']}; "
                  f"node 28 {res['per_terminal']['node 28']['classification']}, node 6 {res['per_terminal']['node 6']['classification']}",
                  fontsize=11, color=INK, x=0.01, ha='left')
-    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    fig.text(0.01, 0.002, 'Bootstrap = 30 stratified resamples of the 72 panel boards, one draw applied to every A3 step k10..k14, used-table chain rebuilt with the recorded '
+             'accept flags, one frozen-table preflop solve per replicate. It measures the board-sampling sensitivity of P15, not the noise of a fully re-converged fixed point. '
+             'Rows with both P14 and P15 below 0.005 are omitted.', fontsize=7.5, color=MUTED, wrap=True)
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     fig.savefig(path, facecolor=SURF, bbox_inches='tight')
 
 
