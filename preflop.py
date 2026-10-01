@@ -196,7 +196,8 @@ def limp_p(prof, feel, hand_pct, pos, traits=None):
     return max(0.0, min(0.85, 1.0 - (1.0-min(1.0, theory))*(1.0-min(1.0, habit))))
 
 
-def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
+def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None, eff_bb=None,
+              pos=None):
     """오픈을 레이즈로 칠지 쇼브할지 — 형태를 정하는 유일한 지점.
 
     예전에는 두 곳이 같은 질문에 각자 답했다.
@@ -217,11 +218,31 @@ def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
     # ---------- 구조항 ----------
     # feel 0(극단 숏) -> 1.0, feel 0.22 이상 -> 0. 연속이다.
     struct = max(0.0, min(1.0, (0.22 - feel) / 0.22))
+    # 기하를 계산하는 사람(aware)의 구조항은 **뒤 사람과의 유효 스택**으로 잰다.
+    # feel 은 필드 평균 대비 체감이 섞여 있어, 평균 50~60bb 필드에서 32.5bb 가
+    # 체감 0.18 → 오픈 쇼브 구간이 됐다(audit9 HAND 49: BTN 87o 32.5bb 오픈
+    # 올인). 쇼브 리스크/이득은 실제로 콜할 수 있는 스택이 정한다. 체감은
+    # 계산을 못 하는 사람(crude) 경로에 그대로 남는다.
+    struct_aware = struct
+    if eff_bb is not None:
+        # 뒤에 남은 사람이 많을수록 쇼브의 폴드에쿼티가 곱으로 줄고 콜당할
+        # 확률이 커진다. 같은 21bb 라도 UTG 쇼브와 BTN 쇼브는 다른 판단이다
+        # (audit9 HAND 81: UTG JTs 21.3bb 오픈 올인, 구조항 38% — 포지션 무관).
+        # 필드가 이 오프너를 얼마나 공격하는가는 reshove_range 의 pos_mult
+        # (OPENER_MULT/2.6)가 이미 정의한다. 같은 양을 써서 앞 포지션의
+        # 쇼브 판단 깊이를 늘린다. 늦은 포지션은 기존 곡선을 유지한다(≥1 클립).
+        _pos_depth = 1.0
+        if pos in OPENER_MULT:
+            _pos_depth = max(1.0, 2.6 / OPENER_MULT[pos]) ** 0.5
+        struct_aware = max(0.0, min(1.0,
+                                    (0.22 - _DP.base_feel(eff_bb*_pos_depth))
+                                    / 0.22))
     # 폴드에쿼티가 전부인 대역에서 최대. 프리미엄은 작게 올려 액션을 받는 게 낫다.
     if hand_pct <= 0.06:   shape = 0.45
     elif hand_pct <= 0.55: shape = 1.00
     else:                  shape = 0.30
     p_struct = struct * shape
+    p_struct_aware = struct_aware * shape
 
     # ---------- 성향항 ----------
     # 강할수록 크다. 구조항과 반대 방향이다.
@@ -243,7 +264,7 @@ def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None):
     _edge = crude_edge(prof)
     _w = max(1e-6, 0.40*_edge)
     crude = max(0.0, min(1.0, (_edge + _w - feel) / (2.0*_w)))
-    p_struct = crude*(1.0 - aware) + p_struct*aware
+    p_struct = crude*(1.0 - aware) + p_struct_aware*aware
 
     p = 1.0 - (1.0 - min(1.0, p_struct)) * (1.0 - min(1.0, p_vs))
     if rng.random() < max(0.0, min(1.0, p)):
@@ -327,7 +348,14 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     # 쇼브 판정은 **raise/open range 안**에서 먼저다. 10bb 에서 림프를 먼저
     # 물으면 쇼브해야 할 자리에서 림프가 나온다.
     if _in_raise_range:
-        act, amt = open_form(prof, feel, r, bb, rng, vs, t)
+        _eff = None
+        if behind_stacks:
+            try:
+                _eff = min(float(bb), max(float(x) for x in behind_stacks))
+            except (TypeError, ValueError):
+                _eff = None
+        act, amt = open_form(prof, feel, r, bb, rng, vs, t, eff_bb=_eff,
+                             pos=pos)
         if act: return (act, amt)
 
     # limp_p 자체는 "이론형은 좁고, 습관형은 약한 핸드에서 넓다"고 설계돼 있다.
@@ -446,7 +474,11 @@ def raise_form(prof, stack_bb, target_bb, pot_bb, rng, exploit=None,
         # 4벳을 자주 하는 상대에게 논올인 3벳은 유도가 된다. 쇼브로 그 기회를 없앨 이유가 없다.
         sh *= max(0.35, 1.0 - w*0.5*max(0.0, exploit.get('fb_gap', 0.0)))
     if n_opp > 1:
-        sh = min(1.0, sh + 0.20*(n_opp - 1))   # 다인원은 폴드에쿼티가 낮아 쇼브 쪽
+        # 다인원 보정은 **이미 있는 기하적 커밋 압력**을 키우는 배율이다.
+        # 예전에는 +0.20 을 바닥값으로 더해, 콜당해도 SPR 3 이 남는 99bb
+        # 스퀴즈에서도 22% 가 올인 형태가 됐다(audit9 HAND 23: SB AA 99bb 쇼브 —
+        # 밸류 핸드가 더 약한 핸드를 전부 접게 만든다). 커밋 구간이 아니면 0.
+        sh = min(1.0, sh * (1.0 + 0.20*(n_opp - 1)))
 
     # ---------- 3. 개념 게이트 ----------
     # 스택 깊이를 못 읽는 사람은 위 판단을 못 한다. 예전 밴드 계단으로 물러난다.
@@ -709,7 +741,12 @@ def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
         _pf_slow = max(0.0, min(1.0, (0.10 - r) / 0.10)) * 0.55
     w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)
 
-    w_cont = _logit(r, tot, max(0.02, (tot-tp)*0.35))
+    # 혼합 폭은 참가 경계(tot) 근처의 불확실성이다. (tot-tp)*0.35 는 tot 의
+    # 약 30% 폭이라, 경계에서 먼 핸드까지 폴드 꼬리가 남았다 — 최대숙련
+    # 프로필이 BB 대 BTN 오픈에 AKo 3%·88 4%, HJ 대 LJ 오픈에 AKo 12% 폴드,
+    # SB 대 LJ 오픈+콜에 AKo 6% 폴드(audit9 HAND 17 실제 발생). 폭을 tot 의
+    # 15% 로 묶어 경계 근처에서만 섞는다(경계 근처 AQo/ATs 혼합은 유지).
+    w_cont = _logit(r, tot, max(0.015, tot*0.15))
     w_call = max(0.0, w_cont - w_raise*0.6) * (1.5 - 0.055*a)
     w_call *= 1.0 + 0.90*_pf_slow
     if not can_raise:

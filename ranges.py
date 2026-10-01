@@ -266,6 +266,65 @@ def preflop_reraise_posterior(prior_range, observed_rate, polar=0.0):
         out[c] = wr[c] * max(1e-9, like)
     return out
 
+# 관찰한 액션의 확률이 이 값 미만인 콤보는 support 에서 뺀다(질량 0 근사).
+_LIK_MIN = 0.01
+_LIK_CACHE = {}
+
+
+def _prof_key(prof):
+    """캐시용 안정 키. id() 는 dict 가 해제·재사용되면 다른 프로필과 충돌한다."""
+    if not isinstance(prof, dict):
+        return ('label', prof)
+    return (prof.get('type'),
+            tuple(sorted((prof.get('concepts') or {}).items())),
+            tuple(sorted((prof.get('temper') or {}).items())))
+
+
+def _defend_likelihood_range(prof, pos, action, bb, ok, n_callers, opener_pos,
+                             open_bb, seats, ante, raise_level):
+    """오픈(또는 리레이즈)을 맞고 call/3bet 한 사람의 **가중** 레인지.
+
+    예전에는 (tp, tot] 구간 슬라이스였다. 그런데 실제 판단
+    (preflop.defend_action_likelihoods)은 혼합 정책이라 TT·99 를 절반쯤
+    플랫하고, tot 바로 밖의 22·ATo 도 절반쯤 콜한다. 슬라이스는 이 콤보를
+    콜 레인지에서 통째로 지워, 상대가 플랍 셋을 가질 수 없다고 믿게 만들었다
+    (audit9 HAND 15: CO 체크레이즈 레인지 셋 0% → BTN A-T 를 rel 1.00 으로
+    보고 100bb 스택오프). 같은 함수로 P(관찰 액션 | 핸드)를 가중치로 쓴다.
+    """
+    try:
+        key = (_prof_key(prof), pos, action, round(float(bb or 0), 2), n_callers,
+               opener_pos, round(float(open_bb or 0), 3), seats, ante,
+               raise_level)
+        cls_w = _LIK_CACHE.get(key)
+        if cls_w is None:
+            cls_w = {}
+            seen = set()
+            for c in _SORTED:
+                k = pf.cls(list(c))
+                if k in seen:
+                    continue
+                seen.add(k)
+                lk = pf.defend_action_likelihoods(
+                    prof, pos, opener_pos, list(c), bb, open_bb, n_callers,
+                    raise_level=raise_level, stack_bb=bb, seats=seats,
+                    ante=ante)
+                cls_w[k] = float(lk['call'] if action == 'call'
+                                 else lk['attack'])
+            if len(_LIK_CACHE) > 4096:
+                _LIK_CACHE.clear()
+            _LIK_CACHE[key] = cls_w
+    except Exception:
+        return None
+    out = {}
+    for c in _SORTED:
+        if not ok(c):
+            continue
+        w = cls_w.get(pf.cls(list(c)), 0.0)
+        if w >= _LIK_MIN:
+            out[tuple(c)] = w
+    return out or None
+
+
 def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
                   opener_pos=None, open_bb=2.5, seats=8, ante=True, polar=0.0,
                   raise_level=1):
@@ -292,6 +351,13 @@ def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
             hi = t['threebet']*3.0 if action == '3bet' else min(0.85, t['call']*2.4)
 
     ok = lambda c: c[0] not in dead and c[1] not in dead
+    if action in ('call', '3bet') and opener_pos and not (
+            action == '3bet' and polar > 0.02):
+        lk = _defend_likelihood_range(
+            prof_type, pos, action, bb, ok, n_callers, opener_pos,
+            open_bb, seats, ante, raise_level)
+        if lk:
+            return lk
     if action == '3bet' and polar > 0.02:
         # **폴라라이즈된 3벳 레인지는 상위 N% 슬라이스가 아니다.**
         # 밸류 덩어리(위)와 블러프 덩어리(아래)가 따로 있고 가운데가 비어 있다.
@@ -812,12 +878,33 @@ def _call_range(r, board, street, size_frac, damp=1.0):
 
 
 def _check_range(r, board, street, cbet_axis, damp=1.0):
-    """체크: support 선택은 legacy와 같고 mass는 보존한다."""
+    """체크: 최상단 구간을 **지우지 않고 가중치를 낮춘다.**
+
+    예전에는 상위 구간(최대 10%)을 support 에서 통째로 뺐다. 그러면 체크한
+    사람은 셋·투페어를 가질 수 없게 되고, 이어지는 체크레이즈도 그 콤보를
+    되살리지 못한다(audit9 HAND 15: CO 체크레이즈 인식 레인지의 셋 0% →
+    BTN 의 A-T 가 최상위로 평가됨). 실제로 강한 핸드도 체크한다.
+
+    얼마나 낮출지는 기존 읽기 축 그대로다 — '자주 치는 사람의 체크는 강한 신호,
+    안 치는 사람의 체크는 정보가 없다'(narrow_by_actions 의 cbet 축, 1~10).
+    """
     ranked = _ranked(r, board)
     n = len(ranked)
-    drop = int(n*0.10*min(1.0, cbet_axis/6.0)*damp)
-    chosen = ranked[drop:] if n - drop >= _MIN_KEEP else ranked
-    return range_select(r, chosen)
+    top = int(n*0.10*min(1.0, cbet_axis/6.0)*damp)
+    if top <= 0:
+        return range_select(r, ranked)
+    keep_w = max(0.0, 1.0 - min(1.0, cbet_axis/10.0)*damp)
+    wr = weighted_range(r)
+    out = {}
+    for i, c in enumerate(ranked):
+        w = wr.get(_range_combo(c), 0.0)
+        if i < top:
+            w *= keep_w
+        if w > 0:
+            out[_range_combo(c)] = w
+    if len(out) < _MIN_KEEP:
+        return range_select(r, ranked)
+    return out
 
 
 def perceived_facing_bet_response(base, board, street, size_frac,
@@ -1055,7 +1142,12 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
             r = _check_range(r, action_board, stt, cbet, d)
         else:
             continue
-        step += 1
+        # 감쇠는 '이미 강함을 대표한 뒤의 추가 공격'의 정보량을 줄이는 장치다
+        # (_damp docstring). check/call 뒤에도 step 을 올리면 체크레이즈·
+        # 콜 후 레이즈처럼 정보량이 가장 큰 공격이 오히려 덜 좁혀진다
+        # (audit9 HAND 15: CO 체크레이즈 인식 레인지 90콤보 vs 무감쇠 42콤보).
+        if a in ('bet', 'raise', 'allin'):
+            step += 1
 
     return r if r else range_copy(base)
 

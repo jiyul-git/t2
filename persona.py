@@ -1023,8 +1023,13 @@ def variance_seek(prof, tilt=0.0, field_q=0.6, stack_bb=None, bf=1.0,
     # perceived_edge 와 같은 값을 쓴다. 두 곳에서 따로 계산하지 않는다.
     gap = max(0.0, -perceived_edge(prof, field_q))    # 필드가 나보다 얼마나 센가
     weak = gap * (0.25 + 0.075*T('gamble'))          # 열세형 — 약자의 도박
-    accum = accum_drive(prof, payout_flat, reentry, progress)   # 축적형 — 강자의 도박
-    strategic = weak + 0.55*accum
+    # 축적형(accum_drive, 강자의 도박)은 여기서 더하지 않는다. 이 값의 유일한
+    # 소비자는 프리플랍 오픈 형태(open_form)의 '일부러 올인' 항인데, 깊은 스택
+    # 오픈 쇼브는 폴드를 받으면 블라인드만 얻고 콜을 받으면 더 강한 레인지에
+    # 스택을 거는 행동이라 '칩을 빨리 쌓아 압박한다'는 축적 논리와 반대다.
+    # 실제로 최대숙련·틸트 0 플레이어가 92bb 에서 ATo 를 오픈 올인했다
+    # (audit9 HAND 21, accum 만으로 vs 0.193). 축적 욕구는 공격성 경로의 몫이다.
+    strategic = weak
     # ICM 압박은 전략 경로만 억제한다.
     # '실력 열세를 자각해서 분산으로 간다'는 계산이므로, 같은 계산을 하는 사람은
     # 버블에서 그 계산이 뒤집힌다는 것도 안다.

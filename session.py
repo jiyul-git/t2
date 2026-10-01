@@ -189,6 +189,12 @@ def _preflop_public_action_context(action_meta, target, bb):
 
     if m.get('raised'):
         action = 'open' if not full_before else '3bet'
+        # 앞의 full raise 가 전부 이미 올인한 좌석의 것이면(숏스택 올인 위 레이즈)
+        # 이건 그 사람에 대한 3벳이 아니라 **아이솔레이트**다. 3벳 레인지(최상위
+        # 몇 %)로 읽으면 뒤 사람이 자기 에쿼티를 크게 과소평가한다
+        # (audit9 HAND 67: 2.9bb 올인 위 BTN 레이즈를 UTG 3벳으로 읽어 SB 88 eq 0.20).
+        if full_before and all(x.get('actor_allin_after') for x in full_before):
+            action = 'open'
     elif m.get('allin_call') or m.get('action') == 'call':
         action = 'call' if full_before else 'limp'
     elif m.get('action') == 'check':
@@ -420,10 +426,13 @@ def _diagnostic_layer_equities(hero_seat, hero_cards, board, pot_layers,
 
         for o in opps:
             if o in active_ranges and active_ranges.get(o):
-                pools.append(list(active_ranges[o]))
+                # list() 로 감싸면 weighted posterior 가 균등 support 로 평탄화된다
+                # (audit9 HAND 17: 콜드 4벳 올인 레인지 KQs eq 0.323 → 0.442 로 부풀어
+                # KQs 가 92bb 콜오프). equity_vs_combos 는 weighted pool 을 그대로 받는다.
+                pools.append(active_ranges[o])
                 sources[str(o)] = 'active'
             elif o in locked_ranges and locked_ranges.get(o):
-                pools.append(list(locked_ranges[o]))
+                pools.append(locked_ranges[o])
                 sources[str(o)] = 'locked_allin'
             else:
                 missing.append(o)
@@ -1155,11 +1164,16 @@ class HandRun:
             return 'limp'
         if act == 'call':
             return 'call'
+        # 숏스택 올인 하나만 마주하고 올린 것은 아이솔레이트(오픈 성격)다.
+        # pf_level 은 그 판단 시점까지의 full raise 수다.
+        _iso_over_allin = bool(
+            st.get('pf_facing_allin')
+            and int(st.get('pf_level', 1) or 1) <= 1)
         if act == '3bet':
-            return '3bet'
+            return 'open' if _iso_over_allin else '3bet'
         if act in ('raise', 'shove'):
             if role == 'defend':
-                return '3bet'
+                return 'open' if _iso_over_allin else '3bet'
             # BB의 iso raise는 RFI가 아니어서 open 모델이 0이 된다.
             # 전용 iso-range 모델을 만들기 전까지 기존 call 근사를 유지한다.
             if h.pos.get(seat) == 'BB' and role == 'iso':

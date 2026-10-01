@@ -732,8 +732,48 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     _commit = target_commit(profile, rel, made, s_true, street,
                             opp_stack_bb=_plan_opp_stack_bb,
                             opp_eff=_opp_eff)
+    # 목표 커밋은 '지금 레인지 전체 대비'가 아니라 **그 사이즈를 실제로 콜할
+    # 레인지 대비** 강도로 정한다. 리버 thin value 의 '콜당했을 때도 앞서는가'
+    # 원칙과 같은 질문이다. 레인지 전체 rel 0.90 인 A8(877 보드)이 79% 커밋
+    # → 턴 1.6 팟 오버벳을 계획했는데, 그 크기를 콜하는 레인지(7x·88·오버페어)
+    # 대비로는 앞서지 않았다(audit9 HAND 16). 같은 continue-range 모델을 쓴다.
+    _commit_rel = rel
+    _so_probe = stackoff_plan(hero, board, profile, pot, stack, street,
+                              random.Random(0), commit=_commit,
+                              danger=dang, opp_est=_plan_opp_est)
+    _probe_sz = float((_so_probe or {}).get(street) or 0.0)
+    if board and _probe_sz > 0 and _commit > 0.30 and made < 5:
+        _cont = None
+        if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):
+            _cm = {k: R.perceived_continue_range(v, board, street, _probe_sz,
+                                                 profile)
+                   for k, v in opp_ranges.items() if v}
+            if len(_cm) == int(n_opp or 1) and all(_cm.values()):
+                _cont = ('mw', _cm)
+        elif opp_range:
+            _cr = R.perceived_continue_range(opp_range, board, street,
+                                             _probe_sz, profile)
+            if _cr:
+                _cont = ('hu', _cr)
+        if _cont is not None:
+            _rc, _ = _decision_relative_strength(
+                hero, board,
+                (_cont[1] if _cont[0] == 'hu' else opp_range),
+                n_opp=n_opp,
+                opp_ranges=(_cont[1] if _cont[0] == 'mw' else None),
+                sims=400, seed=_rel_seed)
+            _rc = perceived_rel(profile, _rc, hero, board,
+                                bot.draw_strength(hero, board) if board else 0,
+                                made)
+            if _rc < rel:
+                _commit_rel = _rc
+                _commit = target_commit(profile, _rc, made, s_true, street,
+                                        opp_stack_bb=_plan_opp_stack_bb,
+                                        opp_eff=_opp_eff)
     _so = stackoff_plan(hero, board, profile, pot, stack, street, rng,
                         commit=_commit, danger=dang, opp_est=_plan_opp_est)
+    if isinstance(_so, dict):
+        _so['commit_rel'] = round(float(_commit_rel), 3)
 
     # 다인원 보정: 밸류 문턱이 올라가고 블러프는 급감한다
     mw = max(0, n_opp - 1)
@@ -925,8 +965,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                 # 폴백이 밸류면 안 된다. rel 0.0 에 made 0 인 완전 미스가
                 # '얇은 밸류'로 분류돼, 계획은 밸류인데 실행은 체크하는
                 # 모순이 생겼다 (decide_aggression 이 rel 을 보므로).
-                plan = 'showdown' if made >= 1 else 'giveup'
-                why.append('중간강도이나 상대레인지 열세(rel %.2f, made %d) → %s'
+                # 쇼다운 가치 정의는 아래 else 분기와 같아야 한다
+                # (made 또는 에쿼티). 예전에는 made 만 봐서 eq 0.59·rel 0.68 인
+                # A-K 하이가 '상대레인지 열세 → 포기'로 분류됐다(audit9 HAND 16).
+                _sd_here = made >= 1 or eq >= 0.42 + 0.05*mw
+                plan = 'showdown' if _sd_here else 'giveup'
+                why.append('중간강도이나 얇은 밸류 조건 미달(rel %.2f, made %d) → %s'
                            % (rel, made, plan))
     elif outs >= 8 and to_act_behind <= 1 and sk('semibluff') >= 0.4 \
          and rng.random() < min(0.95, 0.25 + 0.24*sk('semibluff')):
@@ -1692,6 +1736,13 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         # 얇은 밸류라면 river_fix 가 thin_river 로 승격시켰어야 한다.
         if rel < 0.30:
             return 0.04, '팟컨트롤 + 강도 %.2f → 체크' % rel
+        # 알려진 어그레서가 뒤에 있는데 먼저 치는 것은 팟컨트롤이 아니라 리드다.
+        # OOP 중간강도의 '먼저 쳐서 가격 고정'은 make_plan 의 block 계획 몫이고,
+        # pot_control 은 그 대안(체크)으로 선택된 것이다. 예전에는 위치를 보지
+        # 않아 SB 55 가 3-way 플랍에서 PFR 앞으로 2,200 리드 → 레이즈 맞고 콜 →
+        # 턴 폴드했다(audit9 HAND 38).
+        if not initiative and oop_vs_aggr is True:
+            return 0.04, '팟컨트롤 + 어그레서가 뒤에 있음 → 체크(리드는 block 계획)'
         return max(0.05, min(0.6, 0.18 + 0.035*a)), '팟컨트롤 → 대부분 체크'
 
     # --- 밸류 계획 ---
@@ -1825,6 +1876,12 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
     # keep it in a genuinely thin-value band and never route it through overbet.
     if plan == 'thin_river':
         return max(0.25, min(0.50, base))
+    # Block bet은 OOP 중간강도의 '가격 통제'다. 텍스처·equity denial·공격성
+    # 보정은 밸류/보호 사이즈를 위한 것이라, 그대로 곱하면 블락이 0.76팟이
+    # 됐다(audit9 HAND 83: SB AQs A856 턴 '블락벳' 7,100/9,200). 같은 이유로
+    # 계획 대역 안에서만 움직이게 한다.
+    if plan == 'block':
+        return max(0.18, min(0.40, base))
 
     # 오버벳: 개념·넛우위·양극화가 갖춰졌을 때만. 판단 층에서 결정된다.
     ob = overbet_frac(profile, hero, board, opp_range, my_range, street, plan,
@@ -1905,7 +1962,7 @@ STREET_ORDER = ['flop', 'turn', 'river']
 # '원래 안 치는 계획'을 동시에 뜻해서, bet_size 의 `base <= 0` 가드가
 # 둘을 구분하지 못했다. 사이즈는 SIZING 이, 예산은 여기가 맡는다.
 # value_3street 은 스트리트가 셋뿐이라 실제로는 걸리지 않는다(명시 목적).
-BUDGET = {'value_2street': 2, 'value_3street': 3}
+BUDGET = {'value_2street': 2, 'value_3street': 3, 'bluff_2street': 2}
 
 
 def budget_left(plan_state, plan, street):
@@ -1935,7 +1992,11 @@ SIZING = {
     'value_2street': {'flop':0.50,'turn':0.55,'river':0.60},
     'pot_control':   {'flop':0.30,'turn':0.0, 'river':0.30},
     'semibluff':     {'flop':0.55,'turn':0.65,'river':0.0},
-    'bluff_2street': {'flop':0.45,'turn':0.60,'river':0.0},
+    # 리버 0 은 value_2street 와 같은 예산/사이즈 겹침 결함이었다. 플랍을 체크하고
+    # 턴부터 블러프를 시작하면 예산(2스트리트)이 리버에 1 남는데, 사이즈 0 이
+    # '원래 안 치는 계획'으로 읽혀 판단층의 리버 벳(95%)이 체크로 바뀌었다
+    # (audit9 HAND 20). 횟수는 budget_left 가 막고, 사이즈는 river_bluff 값을 쓴다.
+    'bluff_2street': {'flop':0.45,'turn':0.60,'river':0.72},
     # 리버 전용. bluff_2street 은 이름 그대로 2스트리트라 리버가 0 인데,
     # river_fix 가 미스한 드로우를 그리로 보내면 **칠 수단이 없어진다.**
     # '플랍부터 이어온 블러프의 리버'와 '리버에서 새로 시작한 블러프'는
@@ -1978,6 +2039,15 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     if not (value_line or bluff_line): return None  # 계획 자체가 아니면 제외
 
     # 양극화 정도. 밸류는 rel 이 높을수록, 블러프는 낮을수록 오버벳에 맞는다.
+    # 밸류 오버벳의 양극화는 '레인지 전체 대비'가 아니라 **오버벳을 콜하는
+    # 레인지 대비** 강도로 본다. 전체 rel 0.90 인 A8(877) 이 턴 1.64 팟
+    # 오버벳을 쳤는데, 그 크기를 콜하는 레인지(7x·88·오버페어)에는 앞서지
+    # 않았다(audit9 HAND 16). 리버 thin value 와 같은 continue-range 모델.
+    if value_line and opp_range and board:
+        _ob_cr = R.perceived_continue_range(
+            opp_range, board, street, 1.15, profile)
+        if _ob_cr:
+            rel = min(rel, relative_strength(hero, board, _ob_cr))
     pol = (max(0.0, (rel - 0.62) / 0.30) if value_line
            else max(0.0, (0.42 - rel) / 0.30))
     pol = min(1.0, pol)
@@ -2491,12 +2561,19 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         _live_ranges = {
             k: v for k, v in (opp_ranges or {}).items() if v
         }
+        # 직전 레이저가 올인이어도 다른 생존 상대가 남아 raise 가 가능하면
+        # (예: UTG+1 open → BTN 17bb 올인 → BB, 오프너가 아직 뒤에 있음)
+        # 순수 calloff 경로(can_raise=False 전용)에도, multiway 경로에도
+        # 들어가지 못해 일반 percentile 디펜스로 떨어졌다. 그 경로는 6bb 이상의
+        # 가격을 보지 못해 17bb 올인을 6bb 3벳처럼 받아 K9s 가 콜했다
+        # (audit9 HAND 36). 두 상대 range 와 실제 가격을 보는 판단을 쓴다.
+        _allin_ok = (not opener_allin) or bool(can_raise)
         _use_cold = bool(
-            raise_level >= 2 and not prior_pf and not opener_allin
+            raise_level >= 2 and not prior_pf and _allin_ok
             and _cc.get('original_opener_seat') is not None
             and _cc.get('reraiser_seat') is not None)
         _use_multiway_backaction = bool(
-            raise_level >= 2 and prior_pf and not opener_allin
+            raise_level >= 2 and prior_pf and _allin_ok
             and len(_live_ranges) >= 2)
 
         if _use_cold:
@@ -2890,10 +2967,18 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
         return st
     made = bot.made_strength(hero, board)
     rel = st.get('rel', 0.5)
-    # 완성 판정. 계단(made>=2 or rel>=0.65)이 아니라 둘을 함께 본다.
-    if made >= 2 or rel >= 0.62:
+    # 완성 판정. 드로우가 목표 등급(스트레이트 4 이상)에 닿았거나 상대 대비
+    # 강해졌을 때만 밸류다. made >= 2 는 보드 페어로도 성립해 원페어 + 보드
+    # 페어(rel 0.00)가 '드로우 완성 → 밸류'로 올인했다(audit9 HAND 63).
+    if made >= 4 or rel >= 0.62:
         st['plan'] = 'value_2street'
         st['why'] = (st.get('why') or []) + ['리버: 드로우 완성 → 밸류 전환']
+        return st
+    if made >= 2:
+        st['plan'] = 'showdown'
+        st['why'] = (st.get('why') or []) + [
+            '리버: 드로우 미스, 쇼다운 가치(made %d, rel %.2f) → 쇼다운'
+            % (made, rel)]
         return st
 
     # 미스. 블러프로 갈지 포기할지 — 개념과 블로커가 정한다.
@@ -3197,9 +3282,17 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 플러시를 맞췄어도 rel 0.6 미만이면 giveup 으로 내려갔다.
         # river_fix 는 (made >= 2 or rel >= 0.62)로 둘을 함께 보는데
         # 턴만 rel 단독이라 같은 판정이 스트리트마다 달랐다.
-        if made >= 2 or rel >= 0.62:
+        # '완성'은 드로우가 목표로 한 등급(스트레이트 4 이상)에 닿았거나
+        # 상대 대비 강해진 것이다. made >= 2 는 보드 페어만으로도 성립해서
+        # 원페어 + 보드 페어(made 2, rel 0.00)가 '드로우 완성 → 밸류'가 됐다
+        # (audit9 HAND 63, river_fix 동일). 완성이 아닌 투페어 이상은 쇼다운.
+        if made >= 4 or rel >= 0.62:
             st['plan'] = 'value_2street'
             why.append('%s: 드로우 완성(made %d) → 밸류 전환' % (street, made))
+        elif made >= 2:
+            st['plan'] = 'showdown'
+            why.append('%s: 드로우 소멸, 쇼다운 가치(made %d, rel %.2f) → 쇼다운'
+                       % (street, made, rel))
         else:
             st['plan'] = 'giveup'
             why.append('%s: 드로우 소멸(%d아웃) → 포기' % (street, outs))
@@ -3223,7 +3316,12 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         why.append('%s: 포기했으나 강도 상승(rel %.2f, made %d) → %s'
                    % (street, rel, made, st['plan']))
     elif old in ('pot_control', 'block', 'showdown') and (
-            rel >= 0.70 or made >= max(2, st.get('made', 0) + 1)):
+            rel >= 0.88 or (rel >= 0.70 and rel > _prev_rel)):
+        # '강도 상승'은 실제로 올랐을 때만이다. 예전 조건 rel >= 0.70 단독은
+        # 생성 때 rel 0.70 으로 pot_control 을 받은 핸드가 다음 스트리트에
+        # **같은 0.70** 이어도 승격시켰다(audit9 HAND 46: KK A-9-7 → 턴 3♥,
+        # rel 0.70→0.70 '강도 상승'). 0.88(이 블록의 3스트리트 문턱) 이상은
+        # 이전 값과 무관하게 승격한다. (아래 주석의 made 항은 제거했다.)
         # 승격 조건. 예전에는 rel >= 0.88 하나뿐이라
         # 리버에 트립스가 되어 rel 0.05 → 0.76, made 1 → 3 이 됐는데도
         # 계획이 턴의 pot_control 그대로 남아 체크했다.

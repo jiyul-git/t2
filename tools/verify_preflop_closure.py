@@ -42,7 +42,7 @@ def test_variance_seek_reaches_open_form():
     ov, oo, ol = PF.PS.variance_seek, PF.open_form, PF.limp_p
     try:
         PF.PS.variance_seek=lambda *a, **k: 0.37
-        def fake_open_form(_p, _feel, _r, _bb, _rng, vs=0.0, traits=None):
+        def fake_open_form(_p, _feel, _r, _bb, _rng, vs=0.0, traits=None, **_kw):
             seen['vs']=vs
             return (None,0)
         PF.open_form=fake_open_form
