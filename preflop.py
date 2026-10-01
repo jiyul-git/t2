@@ -835,36 +835,35 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     return ('fold', 0)
 
 
-def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
-                          n_callers, rng, raise_level=2, stack_bb=None,
-                          exploit=None, bf=1.0, seats=8, ante=True,
-                          can_raise=True, pot_bb=None, to_call_bb=None,
-                          original_opener_range=None, reraiser_range=None,
-                          players_behind=0, decision_seed=None):
-    """P7: 아직 자발적 액션이 없는 상태에서 open + re-raise를 동시에 마주한 판단.
+def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
+                              n_callers, rng, raise_level=2, stack_bb=None,
+                              exploit=None, bf=1.0, seats=8, ante=True,
+                              can_raise=True, pot_bb=None, to_call_bb=None,
+                              opponent_ranges=None, players_behind=0,
+                              decision_seed=None):
+    """두 개 이상의 살아 있는 상대 레인지를 함께 보는 재레이즈 판단.
 
-    generic defend는 마지막 aggressor 하나만 본다. P7은 그걸 baseline으로만 쓰고,
-    실제로는 **original opener + re-raiser 두 seat-keyed perceived range**를 함께
-    보며 cold-call의 팟오즈를 계산한다. 숙련도가 높을수록 이 두-range 계산을
-    더 강하게 적용하고, 낮으면 기존 heuristic에 가깝게 남는다.
+    핵심은 '마지막 aggressor 한 명 vs 나'로 축약하지 않는 것이다.
+    이미 오픈/콜/3벳 등으로 행동한 플레이어가 다시 액션을 맞는 경우에도
+    현재 살아 있는 seat-keyed range를 모두 독립된 pool로 유지한다.
 
-    cold 4bet은 showdown equity 하나로 막지 않는다. 블러프 4bet이 존재하므로,
-    multiway fair-share에 못 미칠 때만 range_read/potodds 숙련도에 비례해
-    기존 attack weight를 줄이고, 기존 bluff skill / observed fold-to-4bet
-    근거가 있으면 그 몫을 보존한다.
+    generic defend는 마지막 aggressor에 대한 인간적 baseline을 제공하고,
+    multiway evidence는 다음 두 부분만 교정한다.
+      - call: 실제 팟오즈와 모든 살아 있는 레인지에 대한 showdown equity
+      - attack: N-way fair share에 못 미칠 때 무근거 재재레이즈를 억제
 
-    새로운 성향/상수를 만들지 않는다:
-      - call price: 실제 pot_bb / to_call_bb
-      - ICM: 기존 icm_bf
-      - 계산오차: 기존 calc_noise(potodds)
-      - 뒤사람 위험: postflop calldown_need와 같은 6%p/인, 최대 18%p 규칙
-      - reasoning strength: 기존 range_read + potodds 평균
-      - bluff survival: 기존 bluff skill + f2fb read
-
-    범위가 둘 다 없으면 숫자를 발명하지 않고 기존 defend_decision으로 fallback.
-    반환: (action, size_bb, audit)
+    아직 행동하지 않은 뒤 좌석은 range pool에 들어 있지 않을 수 있으므로
+    players_behind 위험은 기존 6%p/인, 최대 18%p 규칙을 그대로 재사용한다.
     """
-    pools = [r for r in (original_opener_range, reraiser_range) if r]
+    if isinstance(opponent_ranges, dict):
+        pools = [r for _, r in sorted(opponent_ranges.items(), key=lambda kv: str(kv[0]))
+                 if r]
+        range_seats = [str(k) for k, r in sorted(
+            opponent_ranges.items(), key=lambda kv: str(kv[0])) if r]
+    else:
+        pools = [r for r in (opponent_ranges or []) if r]
+        range_seats = []
+
     if len(pools) < 2 or pot_bb is None or to_call_bb is None:
         act, sz = defend_decision(
             prof, def_pos, reraiser_pos, hand, bb, open_bb, n_callers, rng,
@@ -874,8 +873,10 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
             pot_bb=pot_bb, to_call_bb=to_call_bb)
         return act, sz, {
             'complete': False,
-            'reason': 'missing_two_ranges_or_price',
+            'reason': 'missing_multiway_ranges_or_price',
             'strategy_consumer': False,
+            'opponent_range_count': len(pools),
+            'opponent_range_seats': range_seats,
         }
 
     import bot as _B
@@ -895,15 +896,15 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     reason_skill = 0.5
     bluff_skill = 0.5
     if isinstance(prof, dict) and prof.get('concepts'):
-        _nseed = zlib.crc32(('%s|p7_potodds' % _seed).encode())
+        _nseed = zlib.crc32(('%s|multiway_reraise_potodds' % _seed).encode())
         noise = PS.calc_noise(prof, 'potodds', random.Random(_nseed))
         noise = max(0.65, min(1.55, float(noise)))
         reason_skill = max(0.0, min(
-            1.0, (PS.sk(prof, 'range_read') + PS.sk(prof, 'potodds')) / 20.0))
+            1.0, (PS.sk(prof, 'range_read') + PS.sk(prof, 'potodds')
+                  + PS.sk(prof, 'multiway')) / 30.0))
         bluff_skill = max(0.0, min(1.0, PS.sk(prof, 'bluff') / 10.0))
 
     need = need_base * noise
-    # Same unresolved-player risk rule used by calldown_need().
     if players_behind:
         need += (1.0 - need_base) * min(0.18, 0.06*int(players_behind))
     need = max(0.01, min(0.95, need))
@@ -920,8 +921,8 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     fold = float(lik['fold'])
     base = {'attack': attack, 'call': call, 'fold': fold}
 
-    # Cold-call: two-range equity is first-class. Skilled players suppress a
-    # demonstrably -EV flat; +EV evidence can rescue generic folds into calls.
+    # 모든 살아 있는 레인지에 대한 equity가 실제 가격보다 낮으면
+    # 숙련된 플레이어일수록 generic flat을 줄인다. 반대면 일부를 되살린다.
     if eq < need:
         severity = min(1.0, (need - eq) / max(need, 1e-9))
         cut = call * reason_skill * severity
@@ -933,9 +934,8 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         call += rescue
         fold -= rescue
 
-    # Cold 4bet: if showdown equity is below the multiway fair share, preserve
-    # only the part justified by existing bluff ability / reraiser fold-to-4bet read.
-    fair = 1.0 / 3.0
+    # 공격도 헤즈업 기준이 아니라 현재 N-way fair share를 본다.
+    fair = 1.0 / (1.0 + len(pools))
     if eq < fair and attack > 0.0:
         f2fb = 0.0
         rw = 0.0
@@ -969,7 +969,7 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         act, sz = raise_form(
             prof, stack_bb if stack_bb is not None else bb,
             target, _raise_pot, rng, exploit=exploit,
-            level=raise_level, n_opp=max(2, 2+n_callers),
+            level=raise_level, n_opp=max(2, len(pools)+n_callers),
             facing_bb=open_bb)
         action = (act, sz) if act == 'shove' else ('3bet', sz)
     elif x < attack + call:
@@ -980,13 +980,15 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     return action[0], action[1], {
         'complete': True,
         'strategy_consumer': True,
-        'equity_vs_open_and_reraise': round(eq, 6),
+        'equity_vs_multiway_ranges': round(eq, 6),
+        'opponent_range_count': len(pools),
+        'opponent_range_seats': range_seats,
         'need_base': round(need_base, 6),
         'need_seen': round(need, 6),
         'potodds_noise': round(noise, 6),
         'reason_skill': round(reason_skill, 6),
         'players_behind': int(players_behind or 0),
-        'fair_share_3way': round(fair, 6),
+        'fair_share': round(fair, 6),
         'base_likelihoods': {k: round(v, 6) for k, v in base.items()},
         'final_likelihoods': {
             'attack': round(attack, 6),
@@ -995,6 +997,35 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         'roll': round(x, 6),
         'selected_action': action[0],
     }
+
+
+def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
+                          n_callers, rng, raise_level=2, stack_bb=None,
+                          exploit=None, bf=1.0, seats=8, ante=True,
+                          can_raise=True, pot_bb=None, to_call_bb=None,
+                          original_opener_range=None, reraiser_range=None,
+                          players_behind=0, decision_seed=None):
+    """P7 호환 wrapper: 아직 행동하지 않은 플레이어의 open+re-raise 대응."""
+    act, sz, audit = multiway_reraise_decision(
+        prof, def_pos, reraiser_pos, hand, bb, open_bb, n_callers, rng,
+        raise_level=raise_level, stack_bb=stack_bb,
+        exploit=exploit, bf=bf, seats=seats, ante=ante,
+        can_raise=can_raise, pot_bb=pot_bb, to_call_bb=to_call_bb,
+        opponent_ranges={
+            'original_opener': original_opener_range,
+            'reraiser': reraiser_range,
+        },
+        players_behind=players_behind,
+        decision_seed=decision_seed)
+
+    # 기존 P7 verifier / telemetry 계약은 유지한다.
+    if audit.get('reason') == 'missing_multiway_ranges_or_price':
+        audit['reason'] = 'missing_two_ranges_or_price'
+    if audit.get('complete'):
+        audit['equity_vs_open_and_reraise'] = audit.get(
+            'equity_vs_multiway_ranges')
+        audit['fair_share_3way'] = audit.get('fair_share')
+    return act, sz, audit
 
 def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
                  behind_stacks=None, behind_reads=None, seats=8, ante=True,
