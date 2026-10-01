@@ -1,0 +1,36 @@
+{
+ "schema": "t2_prereg_v1",
+ "test": "A4b: targeted panel refinement after the A4 verdict precision_limited (481857e) - nodes 28 and 6 extended from 72 to 144 flops at the k14 ranges",
+ "written": "before the 144-flop panel is drawn and before any new flop is solved",
+ "why": "A4 registered branch for precision_limited: no blind outer steps; denser board panel for the terminal(s) that set the floor, reusing the 72 boards. Both terminals set the floor (max half-width node 6 0.075, node 28 0.068). 144 is the minimum option reported (+72 flops per terminal).",
+ "separate_from": "A3 (94502b8, sealed) and A4 (481857e); nothing in either is modified",
+ "panel": {
+  "file": "data/gto_hu_continuation/panel_v3_144.json",
+  "rule": "nested: panel_v2_72 verbatim + 6 more draws per stratum continuing the same sequential scheme (proportional to raw-flop count, without replacement, from the stratum pool minus the 72); weight = P(s)/12; same 12 strata, probabilities and estimator",
+  "seed": "20261002 (advance by one on a coverage failure, same coverage rule as v2; every rejected attempt recorded)"
+ },
+ "solves": {
+  "terminals": "outer_m28_6/k14/terminal_node28.json and terminal_node6.json (the P14 ranges at which the existing 72 k14 flops were solved)",
+  "boards": "the 72 new boards only; the 72 existing k14 artifacts are reused through aggregate.py --flop-dir-extra (provenance key must match except the panel hash, which must be v3's or its parent v2's)",
+  "settings": "solve_panel.py, menu_m2_single_v1, postflop 1000 0.3 25, workers 4 x threads 1, same solver binary as A3",
+  "out": "data/gto_terminal_expansion/a4b_panel144/node{28,6}/flops"
+ },
+ "tables": {"V14_72": "outer_m28_6/k14/node{n}/table_measured.json (existing)", "V14_144": "aggregate.py on panel_v3_144 (boot 2000), same estimator"},
+ "preflop": {
+  "F72": "one frozen-table preflop solve with {28: V14_72, 6: V14_72}",
+  "F144": "one frozen-table preflop solve with {28: V14_144, 6: V14_144}",
+  "note": "measured tables, no damping (at a fixed point used = measured); same config/seeds/400 iterations as A3/A4"
+ },
+ "bootstrap": "30 replicates each for F72 and F144: stratified resample of the panel's boards (seed 20261001 scheme of A4), table = V14 on the resampled boards for both terminals, one preflop solve per replicate",
+ "quantities": {
+  "h72, h144": "95% percentile half-width and SD per main aggregate",
+  "scaling": "h144/h72 (sqrt-n expectation 0.71; reported, not a pass criterion)",
+  "panel_shift": "|F144 - F72| per main aggregate, compared with h72 and h144",
+  "nonlinearity_shift": "bootstrap mean - point, at 72 and at 144"
+ },
+ "readings_fixed_before_results": {
+  "consistent": "every |F144 - F72| <= h72: the 72-flop estimate is inside its own stated resolution",
+  "inconsistent": "some |F144 - F72| > h72: the 72-flop half-width understates its error (recorded as-is, cause isolated)"
+ },
+ "not_done": ["no outer-loop step", "no P15 adoption", "no production DB acceptance (criterion is the user's)", "no node 228 or 3-way work", "no 288 flops"]
+}
