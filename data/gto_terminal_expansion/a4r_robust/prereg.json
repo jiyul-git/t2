@@ -1,0 +1,31 @@
+{
+ "schema": "t2_prereg_v1",
+ "test": "A4R: robust-policy audit - does the remaining 72/144-flop table uncertainty cost real EV, not just move frequencies?",
+ "written": "before any F72 / F144 / bootstrap preflop result of A4b exists (same commit as A4b amendment 1)",
+ "spec_note": "the user referred to an A4R specification given in another conversation that is not available in this session; this pre-registration is written from the instructions here ('if frequencies still move at 144 but the actual policy loss is small, stop there'; '288 only if EV/regret is unstable'). A different user specification supersedes it; nothing here starts any long solve.",
+ "tool": "vendor/gtopen/crates/solver/examples/t2_cross_eval.rs: loads a saved preflop profile, holds it fixed, computes best-response gaps and EVs under the continuation tables named by T2_CONT_FILE; no iteration",
+ "validation": "cross-eval of the F72 save under M14_72 must reproduce the F72 gaps and EVs exactly (same profile, same tables); else hard stop",
+ "policies": {"sigma72": "F72 profile (= P15, A4b amendment 1)", "sigma144": "F144 profile"},
+ "games": {
+  "point": ["M14_72", "M14_144"],
+  "bootstrap": "the blended replicate tables of A4b (30 per panel); replicates marked guard_hard_stop are excluded"
+ },
+ "metric": {
+  "loss": "L(sigma; T) = gap_total(sigma; T) - gap_total(sigma_T; T), bb per hand summed over seats, where sigma_T is the profile solved under T (F72, F144, or the replicate's own solve); also per seat (SB, BB, BTN, CO)",
+  "L_switch": "L(sigma72; M14_144): what keeping the 72-flop policy costs if the 144-flop tables are right",
+  "L_noise_144": "95th percentile over the 144-panel bootstrap tables of L(sigma144; T_rep)",
+  "L_noise_72": "95th percentile over the 72-panel bootstrap tables of L(sigma72; T_rep)"
+ },
+ "classification_fixed_before_results": {
+  "ROBUST": "L_noise_144 <= 0.005 bb/hand AND L_switch <= 0.005 bb/hand",
+  "NOT_ROBUST": "L_noise_144 > 0.02 bb/hand OR L_switch > 0.02 bb/hand",
+  "BORDERLINE": "otherwise",
+  "threshold_note": "0.005 bb/hand = 0.5 bb/100 hands; 0.02 = 2 bb/100. Provisional research thresholds, not the production-DB criterion (the user's)"
+ },
+ "after": {
+  "ROBUST": "stop at 144; no 288",
+  "BORDERLINE": "report and wait",
+  "NOT_ROBUST": "report 288 (or a targeted alternative) as the next candidate with its cost, and wait; never started automatically"
+ },
+ "not_done": ["no 288 flops", "no outer step", "no adoption of any profile", "no node 228 / 3-way work"]
+}

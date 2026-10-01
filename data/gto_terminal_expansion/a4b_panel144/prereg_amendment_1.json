@@ -1,0 +1,20 @@
+{
+ "schema": "t2_prereg_amendment_v1",
+ "amends": "data/gto_terminal_expansion/a4b_panel144/prereg.json (3465d81)",
+ "written": "before any F72 / F144 preflop solve or bootstrap replicate exists; at this time node 6 has 72/72 and node 28 18/72 new flops solved; no table built from the 144 panel has been computed",
+ "unchanged": ["panel_v3_144 (seed 20261002), boards, P14 ranges, solver settings, all postflop solves"],
+ "reason": "structural error in the original 'preflop' section: it fed measured V14 tables undamped, assuming used = measured at a fixed point. A3 is sealed as NOT converged, and P15 was produced from the accepted alpha = 0.5 blend M14 = 0.5 V14 + 0.5 M13 (k14: node 28 measured -0.0090 -> used -0.0137 bb unallocated; node 6 +0.0067 -> +0.0180). The original identity check (72 boards -> k14 table_measured) reproduces V14, not M14 -> P15.",
+ "primary": {
+  "update_rule": "A3 rule verbatim (outer_loop_multi.py): candidate = 0.5 V + 0.5 M13 on gross, gross_ci95_lo/hi, gross_br, with M13 = outer_m28_6/k13/used_node{n}.json (the previous used table actually used by A3 at k14); guard |unallocated| <= 0.05 bb at the P14 ranges (outer_m28_6/k14/terminal_node{n}.json); pass -> candidate; fail -> measured V undamped; measured also failing -> hard stop (point solves) / replicate marked guard_hard_stop and excluded, count reported (bootstrap)",
+  "M14_72": "rule applied to V14_72 (k14/node{n}/table_measured.json); must be bit-identical in gross to outer_m28_6/k14/used_node{n}.json, else hard stop",
+  "F72": "frozen-table preflop solve with {28: M14_72, 6: M14_72}; must reproduce the A3 P15 main aggregates, gaps, EVs and ranges hash exactly (k15/terminal_node*.json), else hard stop",
+  "M14_144": "rule applied to V14_144 (72 existing + 72 new boards, aggregate.py on panel_v3_144) with the same M13 and the same P14 ranges",
+  "F144": "frozen-table preflop solve with {28: M14_144, 6: M14_144}",
+  "panel_shift": "F144 - P15 (= F72 exactly), per main aggregate",
+  "bootstrap": "per replicate (30 per panel, seed 20261001 scheme): V14_rep on the resampled boards -> same rule with the same M13 -> guard/fallback -> preflop solve",
+  "readings": "as in prereg.json (consistent / inconsistent against h72), now with the blended F72 / F144 and blended bootstrap"
+ },
+ "diagnostic_only": "the original measured-only F72 / F144 (no damping) may be computed and reported, but is not used for any reading",
+ "saves": "F72 and F144 preflop solves also write their .gtop strategy saves (input to A4R); saving happens after the solve and does not change it",
+ "not_done": ["no outer step", "no 288 flops", "no P15 / F144 adoption", "no node 228 / 3-way work"]
+}
