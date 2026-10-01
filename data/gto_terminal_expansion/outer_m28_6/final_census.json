@@ -1,0 +1,654 @@
+{
+ "final_state": "P15",
+ "last_measured_tables": "V14 (at P14)",
+ "note": "nodes 28 and 6 solved, all other terminals legacy; not a finished GTO DB",
+ "P9": {
+  "flop_reach_total": 0.47836107995319144,
+  "share_by_live": {
+   "2-way": 0.5772573946897789,
+   "3-way": 0.41674128103800306,
+   "4-way": 0.006001324272218009
+  },
+  "reach_by_live": {
+   "2-way": 0.2761374707347683,
+   "3-way": 0.19935280925841561,
+   "4-way": 0.0028707999600075074
+  },
+  "share_by_pot_type": {
+   "3bet": 0.01111584528904246,
+   "4bet": 5.702014516132535e-06,
+   "srp": 0.9888784526964408
+  },
+  "reach": {
+   "28": 0.08351617516009215,
+   "6": 0.11803940108373635,
+   "46": 0.09021055174816095,
+   "246": 0.10472490728490341,
+   "228": 0.0695561514839461,
+   "1371": 0.004778545010847355
+  },
+  "solved_terminals": [
+   28
+  ],
+  "solved_flop_reach": 0.08351617516009215,
+  "solved_share_of_flop_reach": 0.17458814828385363,
+  "solved_share_of_hu_flop_reach": 0.3024441954142107,
+  "legacy_hu_flop_reach": 0.19262129557467617,
+  "legacy_multiway_flop_reach": 0.2022236092184231,
+  "top15": [
+   {
+    "node": 6,
+    "path": "CO:Fold -> BTN:Fold -> SB:Raise 2.5 -> BB:Call 2.5",
+    "live": 2,
+    "pot_type": "srp",
+    "reach": 0.11803940108373635,
+    "share": 0.24675795341729462,
+    "solved": false
+   },
+   {
+    "node": 246,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:Call 2 -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.10472490728490341,
+    "share": 0.21892438928173452,
+    "solved": false
+   },
+   {
+    "node": 46,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:Call 2 -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.09021055174816095,
+    "share": 0.18858254889170378,
+    "solved": false
+   },
+   {
+    "node": 28,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:Fold -> BB:Call 2",
+    "live": 2,
+    "pot_type": "srp",
+    "reach": 0.08351617516009215,
+    "share": 0.17458814828385363,
+    "solved": true
+   },
+   {
+    "node": 228,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:Fold -> BB:Call 2",
+    "live": 2,
+    "pot_type": "srp",
+    "reach": 0.0695561514839461,
+    "share": 0.14540512261313632,
+    "solved": false
+   },
+   {
+    "node": 1371,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Fold -> CO:Call 6",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 0.004778545010847355,
+    "share": 0.009989410115293963,
+    "solved": false
+   },
+   {
+    "node": 420,
+    "path": "CO:Raise 2 -> BTN:Call 2 -> SB:Fold -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.004122989505137572,
+    "share": 0.00861899029398674,
+    "solved": false
+   },
+   {
+    "node": 508,
+    "path": "CO:Raise 2 -> BTN:Call 2 -> SB:Call 2 -> BB:Call 2",
+    "live": 4,
+    "pot_type": "srp",
+    "reach": 0.0028701771976090843,
+    "share": 0.006000022405438872,
+    "solved": false
+   },
+   {
+    "node": 1383,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Call 6 -> CO:Call 6",
+    "live": 3,
+    "pot_type": "3bet",
+    "reach": 0.00020124960956070787,
+    "share": 0.0004207064872008411,
+    "solved": false
+   },
+   {
+    "node": 1449,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Call 6 -> BB:Fold -> CO:Call 6",
+    "live": 3,
+    "pot_type": "3bet",
+    "reach": 8.876482042479995e-05,
+    "share": 0.0001855602893811632,
+    "solved": false
+   },
+   {
+    "node": 135,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:3-bet 7 -> BB:Fold -> BTN:Call 7",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 8.504555611087626e-05,
+    "share": 0.0001777852749207735,
+    "solved": false
+   },
+   {
+    "node": 1382,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Call 6 -> CO:Fold",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 6.912287480280677e-05,
+    "share": 0.00014449937024469168,
+    "solved": false
+   },
+   {
+    "node": 1448,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Call 6 -> BB:Fold -> CO:Fold",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 3.9422720846221475e-05,
+    "share": 8.241205754046517e-05,
+    "solved": false
+   },
+   {
+    "node": 9,
+    "path": "CO:Fold -> BTN:Fold -> SB:Raise 2.5 -> BB:3-bet 8.8 -> SB:Call 8.8",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 2.450847902850665e-05,
+    "share": 5.12342664476484e-05,
+    "solved": false
+   },
+   {
+    "node": 335,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:3-bet 7 -> BB:Fold -> CO:Call 7",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 2.3770095284801233e-05,
+    "share": 4.9690696590799535e-05,
+    "solved": false
+   }
+  ]
+ },
+ "Pfinal": {
+  "flop_reach_total": 0.5337090797808941,
+  "share_by_live": {
+   "2-way": 0.619942310333704,
+   "3-way": 0.37467854039690646,
+   "4-way": 0.0053791492693888564
+  },
+  "reach_by_live": {
+   "2-way": 0.3308688399654426,
+   "3-way": 0.1999693390088815,
+   "4-way": 0.0028709008065695954
+  },
+  "share_by_pot_type": {
+   "3bet": 0.009810481881787896,
+   "4bet": 4.910402121604649e-06,
+   "srp": 0.9901846077160901
+  },
+  "reach": {
+   "28": 0.0840785511777709,
+   "6": 0.17228764342200203,
+   "46": 0.09082835154791882,
+   "246": 0.1047253222859725,
+   "228": 0.06955659797532784,
+   "1371": 0.004778313793467083
+  },
+  "solved_terminals": [
+   6,
+   28
+  ],
+  "solved_flop_reach": 0.25636619459977295,
+  "solved_share_of_flop_reach": 0.48034819775788723,
+  "solved_share_of_hu_flop_reach": 0.7748272536832086,
+  "legacy_hu_flop_reach": 0.07450264536566964,
+  "legacy_multiway_flop_reach": 0.2028402398154511,
+  "top15": [
+   {
+    "node": 6,
+    "path": "CO:Fold -> BTN:Fold -> SB:Raise 2.5 -> BB:Call 2.5",
+    "live": 2,
+    "pot_type": "srp",
+    "reach": 0.17228764342200203,
+    "share": 0.32281190249326847,
+    "solved": true
+   },
+   {
+    "node": 246,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:Call 2 -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.1047253222859725,
+    "share": 0.19622173624808079,
+    "solved": false
+   },
+   {
+    "node": 46,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:Call 2 -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.09082835154791882,
+    "share": 0.17018326086040542,
+    "solved": false
+   },
+   {
+    "node": 28,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:Fold -> BB:Call 2",
+    "live": 2,
+    "pot_type": "srp",
+    "reach": 0.0840785511777709,
+    "share": 0.15753629526461874,
+    "solved": true
+   },
+   {
+    "node": 228,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:Fold -> BB:Call 2",
+    "live": 2,
+    "pot_type": "srp",
+    "reach": 0.06955659797532784,
+    "share": 0.13032680276656192,
+    "solved": false
+   },
+   {
+    "node": 1371,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Fold -> CO:Call 6",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 0.004778313793467083,
+    "share": 0.008953030732452115,
+    "solved": false
+   },
+   {
+    "node": 420,
+    "path": "CO:Raise 2 -> BTN:Call 2 -> SB:Fold -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.004123156796844107,
+    "share": 0.007725476206132384,
+    "solved": false
+   },
+   {
+    "node": 508,
+    "path": "CO:Raise 2 -> BTN:Call 2 -> SB:Call 2 -> BB:Call 2",
+    "live": 4,
+    "pot_type": "srp",
+    "reach": 0.0028702805807180615,
+    "share": 0.005377987164648595,
+    "solved": false
+   },
+   {
+    "node": 1383,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Call 6 -> CO:Call 6",
+    "live": 3,
+    "pot_type": "3bet",
+    "reach": 0.00020126000512221586,
+    "share": 0.0003770968356109662,
+    "solved": false
+   },
+   {
+    "node": 1449,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Call 6 -> BB:Fold -> CO:Call 6",
+    "live": 3,
+    "pot_type": "3bet",
+    "reach": 8.868420587841004e-05,
+    "share": 0.0001661658181172746,
+    "solved": false
+   },
+   {
+    "node": 1382,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Call 6 -> CO:Fold",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 6.912419703863835e-05,
+    "share": 0.00012951662180267983,
+    "solved": false
+   },
+   {
+    "node": 1448,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Call 6 -> BB:Fold -> CO:Fold",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 3.941265710588855e-05,
+    "share": 7.384670525386002e-05,
+    "solved": false
+   },
+   {
+    "node": 135,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:3-bet 7 -> BB:Fold -> BTN:Call 7",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 3.0517327434646443e-05,
+    "share": 5.717970443218776e-05,
+    "solved": false
+   },
+   {
+    "node": 335,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:3-bet 7 -> BB:Fold -> CO:Call 7",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 2.3769521223320126e-05,
+    "share": 4.45364752517951e-05,
+    "solved": false
+   },
+   {
+    "node": 1686,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:4-bet 13.2 -> BB:Fold -> CO:Fold -> BTN:Call 13.2",
+    "live": 2,
+    "pot_type": "4bet",
+    "reach": 1.4530370206068493e-06,
+    "share": 2.722526326895864e-06,
+    "solved": false
+   }
+  ]
+ },
+ "node6_recheck": {
+  "tables": {
+   "A1": "node6_72/table72.json (P9 ranges)",
+   "final": "outer_m28_6/k14/node6/table_measured.json (P14 ranges)"
+  },
+  "seats": {
+   "SB": {
+    "range_ev_shift_vs_legacy_A1_at_P9": 0.14153811278573294,
+    "range_ev_shift_vs_legacy_final_at_P14": 0.1327063585709138,
+    "class_mean_abs_final_minus_A1": 0.4803154506579634,
+    "class_reach_weighted_abs_final_minus_A1": 0.5111349724864354,
+    "largest_class_changes": [
+     {
+      "class": "86o",
+      "delta_bb": -0.9070635973053087
+     },
+     {
+      "class": "65o",
+      "delta_bb": -0.90133390824588
+     },
+     {
+      "class": "86s",
+      "delta_bb": -0.8866845257279077
+     },
+     {
+      "class": "65s",
+      "delta_bb": -0.8859740195580561
+     },
+     {
+      "class": "54o",
+      "delta_bb": -0.8681479909113357
+     },
+     {
+      "class": "54s",
+      "delta_bb": -0.8662481265968629
+     },
+     {
+      "class": "55",
+      "delta_bb": -0.8543563712966855
+     },
+     {
+      "class": "75o",
+      "delta_bb": -0.8265713172367013
+     },
+     {
+      "class": "75s",
+      "delta_bb": -0.825227628105373
+     },
+     {
+      "class": "85s",
+      "delta_bb": -0.7988731489275125
+     }
+    ]
+   },
+   "BB": {
+    "range_ev_shift_vs_legacy_A1_at_P9": -0.09043887090622882,
+    "range_ev_shift_vs_legacy_final_at_P14": -0.10851681488311271,
+    "class_mean_abs_final_minus_A1": 0.3068610004933992,
+    "class_reach_weighted_abs_final_minus_A1": 0.24552283652224102,
+    "largest_class_changes": [
+     {
+      "class": "KK",
+      "delta_bb": -2.002810761854697
+     },
+     {
+      "class": "AA",
+      "delta_bb": -1.702106006587579
+     },
+     {
+      "class": "KQo",
+      "delta_bb": -1.486129542409726
+     },
+     {
+      "class": "QQ",
+      "delta_bb": -1.4250420064493454
+     },
+     {
+      "class": "KQs",
+      "delta_bb": -1.417509800534721
+     },
+     {
+      "class": "KJo",
+      "delta_bb": -1.1453616371361734
+     },
+     {
+      "class": "KJs",
+      "delta_bb": -1.1243887770063559
+     },
+     {
+      "class": "KTs",
+      "delta_bb": -1.068073551905087
+     },
+     {
+      "class": "KTo",
+      "delta_bb": -1.0509519823119948
+     },
+     {
+      "class": "AQo",
+      "delta_bb": -0.9672962740267614
+     }
+    ]
+   }
+  },
+  "sb_open_and_bb_response": {
+   "P9": {
+    "SB": {
+     "fold": 0.3671438765398621,
+     "jam_30": 0.23972224694586475,
+     "raise_2.5": 0.3931338823992706
+    },
+    "BB_vs_SB": {
+     "3-bet 8.8": 0.00042713229814104656,
+     "All-in 30": 0.3011737341852292,
+     "Call 2.5": 0.6983949159362853,
+     "Fold": 4.2128008063186575e-06
+    }
+   },
+   "P10_frozen_table_A2.5": {
+    "SB": {
+     "fold": 0.09050371287306534,
+     "jam_30": 0.006825953355239779,
+     "raise_2.5": 0.9026703431214194
+    },
+    "BB_vs_SB": {
+     "3-bet 8.8": 1.3806351033465516e-06,
+     "All-in 30": 0.19099215178524126,
+     "Call 2.5": 0.7547881660327017,
+     "Fold": 0.05421830926856642
+    }
+   },
+   "P15_final": {
+    "SB": {
+     "fold": 0.3547053724993051,
+     "jam_30": 0.1444449076062879,
+     "raise_2.5": 0.5008497327617291
+    },
+    "BB_vs_SB": {
+     "3-bet 8.8": 3.4210063263658304e-06,
+     "All-in 30": 0.18352441825458687,
+     "Call 2.5": 0.8023781092018113,
+     "Fold": 0.014094053495740702
+    }
+   }
+  }
+ },
+ "ranking": {
+  "rule": "priority = reach(P*) x mean |solved - legacy| (bb/class); proposal only, nothing injected; node 228 not injected; node 1371 not enlarged",
+  "scored": [
+   {
+    "node": 246,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:Call 2 -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.1047253222859725,
+    "flop_share": 0.19622173624808079,
+    "mean_abs_delta_bb": 0.8323636981502723,
+    "impact_source": "PROXY (untested transfer assumption)",
+    "priority": 0.08716955654793121
+   },
+   {
+    "node": 46,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:Call 2 -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.09082835154791882,
+    "flop_share": 0.17018326086040542,
+    "mean_abs_delta_bb": 0.606165491405796,
+    "impact_source": "PROXY (untested transfer assumption)",
+    "priority": 0.055057012349622604
+   },
+   {
+    "node": 228,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:Fold -> BB:Call 2",
+    "live": 2,
+    "pot_type": "srp",
+    "reach": 0.06955659797532784,
+    "flop_share": 0.13032680276656192,
+    "mean_abs_delta_bb": 0.7400014446455003,
+    "impact_source": "measured six-flop pilot",
+    "priority": 0.05147198298636889
+   },
+   {
+    "node": 1371,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Fold -> CO:Call 6",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 0.004778313793467083,
+    "flop_share": 0.008953030732452115,
+    "mean_abs_delta_bb": 1.8559907668471756,
+    "impact_source": "measured six-flop pilot",
+    "priority": 0.008868506281773408
+   }
+  ],
+  "top_reach_only_unscored": [
+   {
+    "node": 420,
+    "path": "CO:Raise 2 -> BTN:Call 2 -> SB:Fold -> BB:Call 2",
+    "live": 3,
+    "pot_type": "srp",
+    "reach": 0.004123156796844107,
+    "flop_share": 0.007725476206132384,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 508,
+    "path": "CO:Raise 2 -> BTN:Call 2 -> SB:Call 2 -> BB:Call 2",
+    "live": 4,
+    "pot_type": "srp",
+    "reach": 0.0028702805807180615,
+    "flop_share": 0.005377987164648595,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 1383,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Call 6 -> CO:Call 6",
+    "live": 3,
+    "pot_type": "3bet",
+    "reach": 0.00020126000512221586,
+    "flop_share": 0.0003770968356109662,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 1449,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Call 6 -> BB:Fold -> CO:Call 6",
+    "live": 3,
+    "pot_type": "3bet",
+    "reach": 8.868420587841004e-05,
+    "flop_share": 0.0001661658181172746,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 1382,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Fold -> BB:Call 6 -> CO:Fold",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 6.912419703863835e-05,
+    "flop_share": 0.00012951662180267983,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 1448,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:Call 6 -> BB:Fold -> CO:Fold",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 3.941265710588855e-05,
+    "flop_share": 7.384670525386002e-05,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 135,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:3-bet 7 -> BB:Fold -> BTN:Call 7",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 3.0517327434646443e-05,
+    "flop_share": 5.717970443218776e-05,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 335,
+    "path": "CO:Raise 2 -> BTN:Fold -> SB:3-bet 7 -> BB:Fold -> CO:Call 7",
+    "live": 2,
+    "pot_type": "3bet",
+    "reach": 2.3769521223320126e-05,
+    "flop_share": 4.45364752517951e-05,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 1686,
+    "path": "CO:Raise 2 -> BTN:3-bet 6 -> SB:4-bet 13.2 -> BB:Fold -> CO:Fold -> BTN:Call 13.2",
+    "live": 2,
+    "pot_type": "4bet",
+    "reach": 1.4530370206068493e-06,
+    "flop_share": 2.722526326895864e-06,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   },
+   {
+    "node": 147,
+    "path": "CO:Fold -> BTN:Raise 2 -> SB:3-bet 7 -> BB:Call 7 -> BTN:Call 7",
+    "live": 3,
+    "pot_type": "3bet",
+    "reach": 9.521372237723441e-07,
+    "flop_share": 1.7840004224084573e-06,
+    "mean_abs_delta_bb": null,
+    "impact_source": "reach-only",
+    "priority": null
+   }
+  ]
+ }
+}
