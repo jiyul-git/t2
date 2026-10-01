@@ -145,9 +145,14 @@ def postflop_events(action_meta, street=None, pot_start=0.0):
     return out
 
 
-def pending_response_context(action_meta, seat):
-    """Classify the *next* decision for seat from current-street public history."""
-    events = postflop_events(action_meta)
+def pending_response_context(action_meta, seat, pot_start=0.0):
+    """Classify the next decision from current-street public history.
+
+    pot_start is required for truthful sizing semantics.  Without it the first
+    bet is measured against a zero pot and every later raise inherits a distorted
+    size story.
+    """
+    events = postflop_events(action_meta, pot_start=pot_start)
     prior = next((e for e in reversed(events) if e.get('seat') == seat), None)
     latest = next(
         (e for e in reversed(events)
@@ -258,10 +263,10 @@ def facing_wager_context(rnd, aggressor, pot_start):
     }
 
 
-def response_context(rnd, seat):
+def response_context(rnd, seat, pot_start=0.0):
     """Current response context, enriched with live stack/contribution geometry."""
     ctx = pending_response_context(
-        getattr(rnd, 'action_meta', None), seat)
+        getattr(rnd, 'action_meta', None), seat, pot_start=pot_start)
     ctx['hero_contrib'] = float(
         getattr(rnd, 'contrib', {}).get(seat, 0) or 0)
     fs = ctx.get('facing_seat')
