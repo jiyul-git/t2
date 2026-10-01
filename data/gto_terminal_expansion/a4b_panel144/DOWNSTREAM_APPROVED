@@ -1,0 +1,2 @@
+Gate opened after: amendment 2 committed (b94722d) before any result; t2_splice_eval validated (3d5200d); a4b_paired.py / a4r_robust.py written to amendment 2 and dry-run on A3 P14/P15 profiles only.
+The running chain re-reads this file only after all 144 flops are present.

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Resumable chain (every step skips finished work): A4b flops -> A4b tables/preflop/bootstrap/analysis (amendment 1)
+# Resumable chain (every step skips finished work): A4b flops -> V144 tables -> A4b amendment-2 points + nested paired bootstrap
 # -> A4R cross-evaluation/analysis. Ends there: never starts 288 flops or any outer step.
 cd "$(dirname "$0")/../.."
 OTHERS="$(ps -eo pid=,ppid=,args= | awk -v me=$$ '$1 != me && $2 != me && (($3 ~ /python3/ && $0 ~ /solve_panel|a4b_panel144|a4r_robust/) || ($3 ~ /sh$/ && $4 ~ /run_a4b/))')"
@@ -11,8 +11,8 @@ for n in 6 28; do test "$(ls $E/node$n/flops/*.json | wc -l)" -eq 72 || { echo "
 # downstream preflop analysis only after the independent design review is recorded (gate file)
 test -f data/gto_terminal_expansion/a4b_panel144/DOWNSTREAM_APPROVED || { echo "flops done; downstream gated (no DOWNSTREAM_APPROVED)"; exit 0; }
 python3 tools/gto_hu_continuation/a4b_panel144.py tables || exit 1
-python3 tools/gto_hu_continuation/a4b_panel144.py run || exit 1
-python3 tools/gto_hu_continuation/a4b_panel144.py analyze || exit 1
+python3 tools/gto_hu_continuation/a4b_paired.py run || exit 1
+python3 tools/gto_hu_continuation/a4b_paired.py analyze || exit 1
 echo A4B_DONE
 python3 tools/gto_hu_continuation/a4r_robust.py run || exit 1
 python3 tools/gto_hu_continuation/a4r_robust.py analyze || exit 1
