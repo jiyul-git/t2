@@ -73,6 +73,19 @@ GTO 작업이 끝나기 전에는 master/test 정리 규칙으로 강제 merge/d
 
 이 다섯 외의 과거 branch 이름은 더 이상 source of truth도, active ref도 아니다.
 
+
+### 2026-10-01 cleanup addendum
+
+이전 5-branch contract를 다시 적용했다.
+
+- `test`를 Human Model 최신 작업선(`70008d9c...`)까지 fast-forward했다.
+- 과거 non-GTO 임시 브랜치의 고유 이력은 working tree를 바꾸지 않는 history-only merge로 `test`에 보존했다.
+- GTO 감사/성능/terminal-census 임시 브랜치의 고유 이력도 working tree를 바꾸지 않는 history-only merge로 `chatgpt/mini-cfr-solver-20260928`에 보존했다.
+- `chatgpt/human-model-v3-20260929`를 포함한 obsolete ref 13개를 삭제했다.
+- 따라서 Human Model을 포함한 일반 비-GTO 개발의 source of truth는 다시 `test` 하나다.
+- 현재 `ccr-9a10123b-0lyye0`만 Claude가 진행 중인 임시 scratch branch로 예외 유지한다. 이 branch는 오래된 master에서 분기된 것이므로 production merge source가 아니며, 작업을 최신 `test` 기준으로 옮긴 뒤 삭제한다.
+- `ccr-*` 삭제 후 원격 branch는 다시 기존 계약의 5개만 남긴다.
+
 ## 4. Promotion workflow
 
 일반 개발은 다음 한 경로만 쓴다.
