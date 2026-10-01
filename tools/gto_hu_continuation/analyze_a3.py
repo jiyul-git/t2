@@ -198,6 +198,7 @@ def figure(res, states, steps, trans, path):
     h2, l2 = g2.get_legend_handles_labels()
     g.legend(h1 + h2, l1 + l2, fontsize=7, frameon=False)
     g = ax[3]
+    steps = [s for s in steps if s['terminals']]
     for i, s in enumerate(steps):
         for j, (n, col) in enumerate((('28', '#2a78d6'), ('6', '#1baf7a'))):
             t = s['terminals'].get(n)
@@ -206,6 +207,8 @@ def figure(res, states, steps, trans, path):
             x = i + (j - 0.5) * 0.3
             g.scatter(x, t['candidate_blend_unallocated_bb'], color=col, marker='o' if t['blend_candidate_accepted'] else 'X', s=90,
                       label=f'node {n} candidate α=0.5 ' + ('accepted' if t['blend_candidate_accepted'] else 'REJECTED'))
+            g.annotate(f"{t['candidate_blend_unallocated_bb']:+.3f}", (x, t['candidate_blend_unallocated_bb']), xytext=(6, -10 if n == '28' else 6),
+                       textcoords='offset points', fontsize=7.5, color=col)
             g.scatter(x, t['measured_unallocated_bb'], color=col, marker='_', s=200, label=f'node {n} measured (own range)')
             g.scatter(x, t['previous_used_unallocated_at_these_ranges_bb'], color=col, marker='v', s=40, alpha=0.6, label=f'node {n} previous table at new ranges')
     g.axhspan(-0.05, 0.05, color='#e6f4ea', lw=0)
