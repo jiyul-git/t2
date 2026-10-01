@@ -550,3 +550,7 @@ boot 12 D SB raise 0.0602
 boot 13 D SB raise 0.0435
 boot 14 D SB raise 0.0354
 boot 15 D SB raise 0.0315
+boot 16 D SB raise 0.0364
+boot 17 D SB raise -0.0194
+boot 18 D SB raise 0.0377
+boot 19 D SB raise 0.0443
