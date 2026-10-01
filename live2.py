@@ -961,6 +961,11 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
            'full_log': res.get('full_log', []),
            'full_action_meta': copy.deepcopy(
                getattr(run, 'full_action_meta', []) or []) if run is not None else [],
+           # Read-only provenance: preflop-only hands used to lose the complete
+           # decision story because plans/intents are created postflop.  Keep the
+           # seat-keyed preflop seeds so audit can prove which range/context path
+           # actually produced each open/call/reraise/fold.
+           'pf_seed': copy.deepcopy(getattr(h, 'pf_seed', {}) or {}),
            'intents': copy.deepcopy(getattr(h, 'intents', []) or []),
            'plans': copy.deepcopy(getattr(h, 'plans', {}) or {}),
            'decision_cache': copy.deepcopy(
