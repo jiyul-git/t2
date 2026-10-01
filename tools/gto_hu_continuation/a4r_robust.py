@@ -123,10 +123,20 @@ def analyze(a):
             pt = D['points'][tag]['groups'][gname]
             row[tag] = {'point_dEV': pt['dEV'], 'point_own_gap': pt['own_gap'], 'point_L1': pt['L1']}
         table[gname] = row
-    ev_stable = all(table[g][t]['point_positive_loss'] <= table[g][t]['point_own_gap'] and table[g][t]['boot_excess_over_own_gap_q95'] <= 0
-                    for g in GROUPS for t in ('sigma72->G144', 'sigma144->G72'))
-    ev_sensitive = any(table[g][t]['point_positive_loss'] > table[g][t]['point_own_gap'] and table[g][t]['boot_excess_over_own_gap_q95'] > 0
-                       for g in GROUPS for t in ('sigma72->G144', 'sigma144->G72'))
+    # amendment 3: E_r = positive_loss_r - floor_r; whole-seat groups only (sub-seats diagnostic)
+    q05 = lambda xs: sorted(xs)[min(len(xs) - 1, int(round(0.05 * (len(xs) - 1))))]
+    seat_groups = ('CO', 'BTN', 'SB', 'BB')
+    stab, sens = {}, {}
+    for g in seat_groups:
+        for t in ('sigma72->G144', 'sigma144->G72'):
+            pt = D['points'][t]['groups'][g]
+            E0 = pt['positive_loss'] - pt['own_gap']
+            Er = [b[t]['groups'][g]['positive_loss'] - b[t]['groups'][g]['own_gap'] for b in D['boot'].values()]
+            table[g][t].update({'E0': E0, 'E_q05': q05(Er), 'E_q95': q95(Er)})
+            stab[(g, t)] = E0 <= 0 and q95(Er) <= 0
+            sens[(g, t)] = E0 > 0 and q05(Er) > 0
+    ev_stable = all(stab.values())
+    ev_sensitive = any(sens.values())
     A4b = json.load(open(B + 'a4b_paired_analysis.json'))
     freq_unstable = bool(A4b['panel_detectable_shift']) or A4b['max_h144'] > 0.005
     usable = A4b['replicates_usable'] / max(1, A4b['replicates_planned'])
@@ -139,7 +149,11 @@ def analyze(a):
     else:
         label = 'still precision-limited'
     nash = {t: {'A_in_G': D['points'][t]['nashconv_A_in_G'], 'own': D['points'][t]['nashconv_own']} for t in D['points']}
-    res = {'validations': checks, 'validations_pass': valid, 'boot_pairs': nb, 'EV_stable': ev_stable, 'EV_sensitive': ev_sensitive,
+    res = {'rule': 'amendment 3 (E_r = positive_loss_r - own gap; stable: E0 <= 0 and q95 <= 0 for all whole seats and directions; sensitive: E0 > 0 and q05 > 0 for some)',
+           'sensitive_seat_directions': [f'{g} {t}' for (g, t), v in sens.items() if v],
+           'stable_seat_directions': [f'{g} {t}' for (g, t), v in stab.items() if v],
+           'sub_seat_groups_diagnostic_only': ['BB|SB-open', 'BB|BTN-open'],
+           'validations': checks, 'validations_pass': valid, 'boot_pairs': nb, 'EV_stable': ev_stable, 'EV_sensitive': ev_sensitive,
            'frequency_unstable': freq_unstable, 'frequency_basis': {'panel_detectable_shift': A4b['panel_detectable_shift'], 'max_h144': A4b['max_h144']},
            'label': label, 'nashconv_points': nash, 'B_post_reference_bb_per_hand': 0.0076,
            'wording': "losses are compared with the residual suboptimality of the baseline preflop solve (own gap); B_post is a different error source and a scale only",
@@ -151,7 +165,7 @@ def analyze(a):
         for t in ('sigma72->G144', 'sigma144->G72'):
             r = row[t]
             print(f"{g:12s} {t:14s} dEV={r['point_dEV']:+.6f} own_gap={r['point_own_gap']:.6f} boot_q95_loss={r['boot_positive_loss_q95']:.6f} "
-                  f"q95(excess)={r['boot_excess_over_own_gap_q95']:+.6f} L1={ {k: round(v, 3) for k, v in r['point_L1'].items()} }")
+                  f"E0={r.get('E0', float('nan')):+.6f} E_q05={r.get('E_q05', float('nan')):+.6f} E_q95={r.get('E_q95', float('nan')):+.6f} L1={ {k: round(v, 3) for k, v in r['point_L1'].items()} }")
         print(f"{'':12s} P15->G72 dEV={row['P15->G72']['point_dEV']:+.6f}  P15->G144 dEV={row['P15->G144']['point_dEV']:+.6f}")
 
 

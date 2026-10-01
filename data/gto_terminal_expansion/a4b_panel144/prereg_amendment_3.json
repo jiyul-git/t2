@@ -1,0 +1,23 @@
+{
+ "schema": "t2_prereg_amendment_v1",
+ "amends": "a4b_panel144/prereg_amendment_2.json (b94722d): final_classification only",
+ "written": "before any V144 table, A4b point / bootstrap solve or A4R evaluation exists (node 28 flops still running); no other part of amendment 2 changes",
+ "E_r": "per whole-seat group p (CO, BTN, SB, BB), direction (sigma72 -> G144, sigma144 -> G72) and paired replicate r: E_r = positive_loss_r - floor_r, floor_r = gap_p(sigma_G,r; G_r) (residual suboptimality of that replicate's own preflop solve); point excess E_0 likewise at the point games",
+ "rules": {
+  "EV_stable": "for every whole-seat group and both directions: E_0 <= 0 AND q95(E_r) <= 0",
+  "EV_sensitive": "for some whole-seat group and direction: E_0 > 0 AND q05(E_r) > 0",
+  "otherwise": "still precision-limited (the replicate distribution of E crosses 0)",
+  "labels": "unchanged from amendment 2 (inconclusive / EV-sensitive to panel refinement / frequency-unstable but EV-stable / stable at 144 in frequency and EV / still precision-limited)"
+ },
+ "replaces": "amendment 2's EV_sensitive ('point positive_loss > floor and 95% quantile > floor'), which a few upper-tail replicates could trigger",
+ "sub_seat_groups": {
+  "decision": "BB|SB-open and BB|BTN-open are diagnostic only (dEV, positive_loss, L1); they do not enter EV_stable / EV_sensitive",
+  "reason": "a group-specific floor needs a best response restricted to the subtree. The public API does not provide it: point locks fix sigma for the EV, but gaps_and_evs runs br_mode 2 unless the seat has an adaptive profile (constrained_br, mod.rs:1241), and in br_mode 2 the traverser maximises at every own node regardless of locks (mod.rs:3742). A restricted BR needs a core traversal change, not made in this test. The whole-BB gap mixes both subtrees and all other BB decisions, so it is not a valid sub-seat floor"
+ },
+ "review_notes": [
+  "interpretation: the paired bootstrap gives the distribution of the refinement-induced loss across plausible panel draws; q95 / q05 of E_r describe that distribution (percentile-bootstrap reading), not a confidence interval for a fixed parameter",
+  "positive_loss is a distance-like, zero-truncated statistic; resampling noise inflates such statistics, so q05(E_r) > 0 is a conservative-for-stability / liberal-for-sensitivity reading: reported as-is",
+  "multiplicity: EV_sensitive is checked over 4 seats x 2 directions; each requires 95% of replicates above the floor, so it is not corrected further; the number of seat-directions meeting it is reported"
+ ],
+ "not_done": ["no A3 / A4 change", "no 288", "no outer step", "no node 228", "no 3-way"]
+}
