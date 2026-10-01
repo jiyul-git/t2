@@ -11,6 +11,8 @@ import manual_one_hand as M
 
 TARGET=["Td","2h","9h"]
 orig=R.perceived_range
+# Counterfactual: every same-line action keeps its full conditional information.
+R._DECAY = 1.0
 rows=[]
 
 def shape(rng, board):
