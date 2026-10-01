@@ -1,0 +1,16 @@
+name: Diagnose Hand15 Ranges
+on:
+  push:
+    branches: [chatgpt/human-model-v3-20260929]
+    paths:
+      - 'tools/diagnose_hand15_ranges.py'
+      - '.github/workflows/diagnose-hand15-ranges.yml'
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python3 tools/diagnose_hand15_ranges.py
