@@ -1,0 +1,16 @@
+{
+ "written": "after P13 (3 measured steps), before any k13 panel result",
+ "rule_outcome": "C_period2 (convergence_rule.json order A, C, D, B)",
+ "period2_evidence": {
+  "SB first-in raise 2.5 (P10..P13)": [0.903, 0.493, 0.581, 0.521],
+  "SB first-in fold": [0.091, 0.368, 0.277, 0.361],
+  "BB vs SB call": [0.755, 0.880, 0.667, 0.833],
+  "BB vs SB fold": [0.054, 0.000, 0.102, 0.001],
+  "BB vs BTN fold (small amplitude)": [0.090, 0.102, 0.088, 0.105],
+  "test": "adjacent changes alternate in sign and |P11 - P13| < 0.5 x min adjacent change"
+ },
+ "amplitude_decreasing (case-B quantities)": {"max_aggregate_change": [0.409, 0.213, 0.166], "range_L1_max": [0.881, 0.553, 0.446], "node6_measured_mean_abs_dV": [0.560, 0.442, 0.229], "node28_measured_mean_abs_dV": [0.0257, 0.0251, 0.0207]},
+ "damping_history": "node 6 candidate blend rejected at k10 and k11 (measured used undamped, the V1 period-2 condition), accepted at k12 (first damped node-6 update); node 28 accepted at every step",
+ "decision": "continue under the identical pre-registered rules (alpha 0.5 candidate + guard fallback, no new alpha) up to the case-C cap of 5 measured steps: P13 -> V13 -> P14, P14 -> V14 -> P15 (P15 preflop only). Then evaluate once more with the same rule; if not A at P15, seal 'not converged' with the observed pattern (period-2 decaying or otherwise).",
+ "not_done": ["no alpha change", "no stopping-rule change", "no panel/weight change"]
+}
