@@ -58,6 +58,9 @@ name = "t2_cont_panel"
 name = "t2_cross_eval"
 
 [[example]]
+name = "t2_splice_eval"
+
+[[example]]
 name = "t2_cont_loader_check"
 required-features = ["t2-cont"]
 
