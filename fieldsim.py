@@ -632,6 +632,10 @@ class Field:
             rec['full_log'] = res.get('full_log', [])
             rec['full_action_meta'] = copy.deepcopy(
                 getattr(run, 'full_action_meta', []) or [])
+            # Read-only audit provenance for preflop-only bot hands.
+            # Without this, other-table opens/calls/squeezes that end preflop
+            # cannot be traced back to their range/context judgment.
+            rec['pf_seed'] = copy.deepcopy(getattr(h, 'pf_seed', {}) or {})
             rec['intents'] = copy.deepcopy(getattr(h, 'intents', []) or [])
             rec['plans'] = copy.deepcopy(getattr(h, 'plans', {}) or {})
             rec['decision_cache'] = copy.deepcopy(getattr(run, 'recorded', []) or [])
