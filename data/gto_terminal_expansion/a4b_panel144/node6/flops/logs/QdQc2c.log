@@ -1,2 +1,3 @@
 QdQc2c 125 iters 0.205%pot solve 353s inv_err 5.8e-10
 reuse QdQc2c
+reuse QdQc2c

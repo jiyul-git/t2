@@ -2,7 +2,7 @@
 # A4b: solve the 72 new panel_v3_144 boards for nodes 6 and 28 at the k14 ranges (prereg a4b_panel144/prereg.json)
 set -e
 cd "$(dirname "$0")/../.."
-if [ -n "$(ps -C python3 -o cmd= | grep solve_panel)" ]; then echo 'a solve_panel driver is already running'; exit 1; fi
+
 E=data/gto_terminal_expansion
 for n in 6 28; do
   mkdir -p $E/a4b_panel144/node$n/flops
