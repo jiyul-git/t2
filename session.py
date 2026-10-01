@@ -278,14 +278,15 @@ def _preflop_story_range(range_profile, pos, stack_bb, dead, seats, ante,
     }
 
 def _cold_reraise_context(action_meta, actor, order, folded=(), allin=()):
-    """P7 public context for a player who has not acted before two full raises.
+    """두 번 이상 full raise가 누적된 현재 프리플랍 문맥.
 
-    No hidden persona is read here.  We preserve identities of the original
-    opener and latest re-raiser plus still-unresolved players behind actor.
+    이름은 P7 호환을 위해 유지하지만 cold 전용이 아니다.
+    이미 open/call/3bet으로 행동했던 플레이어가 다시 액션을 맞는 경우에도
+    현재 raise story와 아직 뒤에서 행동할 좌석을 보존한다.
+
+    hidden persona는 읽지 않고 공개 action_meta만 사용한다.
     """
     metas = list(action_meta or [])
-    if any(m.get('seat') == actor for m in metas):
-        return None
     raisers = [m.get('seat') for m in metas if m.get('full_raise')]
     if len(raisers) < 2:
         return None
@@ -301,7 +302,9 @@ def _cold_reraise_context(action_meta, actor, order, folded=(), allin=()):
     return {
         'original_opener_seat': raisers[0],
         'reraiser_seat': raisers[-1],
+        'raise_seats': list(raisers),
         'raise_count': len(raisers),
+        'actor_previously_acted': any(m.get('seat') == actor for m in metas),
         'players_behind': behind,
     }
 
