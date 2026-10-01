@@ -2481,14 +2481,24 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             can_check=can_check)
         role = 'iso'
     else:
-        # P7 core path: a player who has not acted yet and faces open + re-raise
-        # must reason about both ranges.  The generic defend path sees only the
-        # latest aggressor and is kept only as the fallback inside the P7 helper.
+        # Re-raise 판단에서 핵심은 '마지막 aggressor 한 명'이 아니라
+        # 현재 살아 있는 seat-keyed range 전체다.
+        #
+        # P7 cold path(아직 행동 전 open+re-raise)는 기존 계약을 유지하고,
+        # 이미 open/call/3bet 했던 플레이어의 backaction에서도 2개 이상의
+        # 살아 있는 상대 range가 있으면 같은 multiway 판단을 실제로 소비한다.
         _cc = dict(cold_context or {})
+        _live_ranges = {
+            k: v for k, v in (opp_ranges or {}).items() if v
+        }
         _use_cold = bool(
             raise_level >= 2 and not prior_pf and not opener_allin
             and _cc.get('original_opener_seat') is not None
             and _cc.get('reraiser_seat') is not None)
+        _use_multiway_backaction = bool(
+            raise_level >= 2 and prior_pf and not opener_allin
+            and len(_live_ranges) >= 2)
+
         if _use_cold:
             _op_seat = _cc.get('original_opener_seat')
             _rr_seat = _cc.get('reraiser_seat')
@@ -2501,6 +2511,16 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 reraiser_range=(opp_ranges or {}).get(_rr_seat),
                 players_behind=len(_cc.get('players_behind') or []),
                 decision_seed=cold_decision_seed)
+        elif _use_multiway_backaction:
+            a, sz, _cold_audit = _pf.multiway_reraise_decision(
+                profile, pos, aggressor_pos, hand, bb, open_bb,
+                n_callers, rng, raise_level=raise_level, stack_bb=bb,
+                exploit=rd, bf=bf, seats=seats, ante=ante,
+                can_raise=can_raise, pot_bb=pot_bb, to_call_bb=to_call_bb,
+                opponent_ranges=_live_ranges,
+                players_behind=len(_cc.get('players_behind') or []),
+                decision_seed=cold_decision_seed)
+            _cold_audit['context_kind'] = 'backaction_multiway_reraise'
         else:
             a, sz = _pf.defend_decision(
                 profile, pos, aggressor_pos, hand, bb, open_bb,
@@ -2562,6 +2582,14 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     elif not _prev:
         _decision_kind = ('face_first_open' if raise_level <= 1
                           else 'cold_vs_reraise')
+    elif (_cold_audit and
+          _cold_audit.get('context_kind') == 'backaction_multiway_reraise'):
+        if _prev_role == 'open':
+            _decision_kind = 'opener_multiway_backaction'
+        elif _prev_act in ('call', 'limp', 'check'):
+            _decision_kind = 'caller_multiway_backaction'
+        else:
+            _decision_kind = 'reraiser_multiway_backaction'
     elif _prev_act in ('call', 'limp', 'check'):
         _decision_kind = 'caller_backaction'
     elif _prev_role == 'open':
