@@ -128,6 +128,11 @@ def solve(d, tabs, save=False):
     res = {}
     for n in (6, 28):
         f = os.path.join(d, f'terminal_node{n}.json')
+        if os.path.exists(f):
+            try:
+                json.load(open(f))
+            except ValueError:  # truncated by a container restart mid-write: re-solve (deterministic)
+                os.remove(f)
         if not os.path.exists(f):
             extra = [os.path.join(d, 'profile.gtop')] if save and n == 6 else []
             subprocess.run([BIN + '/t2_cont_terminal', CFG, '400', SPEC[n], f, *extra], check=True, env={**os.environ, **ENV, 'T2_CONT_FILE': man},

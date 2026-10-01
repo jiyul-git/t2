@@ -1,1 +1,2 @@
 AcTc2d 100 iters 0.278%pot solve 307s inv_err -6.4e-8
+reuse AcTc2d

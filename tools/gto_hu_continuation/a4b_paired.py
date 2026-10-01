@@ -54,7 +54,9 @@ def unalloc(tabs):
 def run(a):
     path = OUT + 'paired_results.json'
     R = json.load(open(path)) if os.path.exists(path) else {}
-    save = lambda: json.dump(R, open(path, 'w'))
+    def save():
+        json.dump(R, open(path + '.tmp', 'w'))
+        os.replace(path + '.tmp', path)
     strata, p_str, compat = B.load_panel(144)
     vals = {n: B.flop_values(n, strata) for n in (28, 6)}
     old, new = groups(144)

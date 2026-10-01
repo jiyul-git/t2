@@ -92,7 +92,8 @@ def run(a):
             'sigma72->G144': evaluate('sigma72->G144', rep['V144'], rep['V72'], OUT + f'evals/boot/r{int(k):02d}/s72_to_G144'),
             'sigma144->G72': evaluate('sigma144->G72', rep['V72'], rep['V144'], OUT + f'evals/boot/r{int(k):02d}/s144_to_G72')}
         print('boot', k, flush=True)
-        json.dump(out, open(OUT + 'evals.json', 'w'), indent=1)
+        json.dump(out, open(OUT + 'evals.json.tmp', 'w'), indent=1)
+        os.replace(OUT + 'evals.json.tmp', OUT + 'evals.json')
     json.dump(out, open(OUT + 'evals.json', 'w'), indent=1)
 
 

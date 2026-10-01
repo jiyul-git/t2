@@ -1,1 +1,2 @@
 JcTd6d 100 iters 0.266%pot solve 307s inv_err -8.0e-9
+reuse JcTd6d
