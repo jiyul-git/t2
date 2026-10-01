@@ -38,7 +38,7 @@ def audit(profile, hand, opener_range, behind=0, seed=991):
 def main():
     tight=top(0.07); wide=top(0.30)
     hands=(['As','Qh'],['Js','Jh'],['Ts','Th'],['Ah','Kh'],['9s','9h'])
-    hi=prof(9); lo=prof(1)
+    hi=prof(9); lo=prof(1); perfect=prof(10)
 
     rows=[]
     for k,h in enumerate(hands):
@@ -84,6 +84,25 @@ def main():
     fallback_ok=(fb.get('complete') is False and
                  fb.get('reason')=='missing_two_ranges_or_price')
 
+    # Backaction semantics: a player who fully understands range-read,
+    # pot-odds and multiway reasoning must not retain a random generic-call
+    # residue after perceiving a clearly negative multiway call.
+    _ma,_ms,mb=PF.multiway_reraise_decision(
+        perfect,'UTG+2','BB',['Ac','9c'],92.0,18.6667,0,random.Random(520),
+        raise_level=3,stack_bb=92.0,exploit=None,bf=1.0,
+        seats=9,ante=True,can_raise=True,pot_bb=31.0,to_call_bb=16.0,
+        opponent_ranges={5:top(0.08),9:top(0.04)},
+        players_behind=0,decision_seed=520)
+    backaction_multiway_complete=(
+        mb.get('complete') is True and
+        mb.get('opponent_range_count') == 2)
+    backaction_negative_edge=(
+        mb.get('equity_vs_multiway_ranges',1.0) < mb.get('need_seen',0.0))
+    perfect_reasoner_no_call_residue=(
+        backaction_negative_edge and
+        mb.get('reason_skill') == 1.0 and
+        mb.get('final_likelihoods',{}).get('call',1.0) <= 1e-12)
+
     checks={
       'complete_two_range_judgment':complete,
       'original_opener_identity_changes_equity':opener_identity_matters,
@@ -91,6 +110,9 @@ def main():
       'players_behind_do_not_widen_call':behind_call,
       'skill_uses_two_range_evidence_directionally':skill_direction,
       'missing_range_explicit_fallback':fallback_ok,
+      'backaction_multiway_complete':backaction_multiway_complete,
+      'backaction_negative_edge_detected':backaction_negative_edge,
+      'perfect_reasoner_has_no_negative_call_residue':perfect_reasoner_no_call_residue,
     }
     out={'pass':all(checks.values()),'checks':checks,
          'equity_delta_wide_minus_tight':d_eq,
