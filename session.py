@@ -1911,7 +1911,7 @@ class HandRun:
                 # pot_now 만 넘기면 봇이 팟을 실제보다 작게 보고 팟오즈를 과대 요구한다
                 # (= 모든 스트리트에서 체계적 과잉 폴드). 히어로 화면(208행)은 이미 이 값을 쓴다.
                 pot_live = pot_now + r2.contestable_contrib(s)
-                _resp_ctx = _postflop_response_context(r2, s)
+                _resp_ctx = _postflop_response_context(r2, s, pot_start=pot_now)
                 _mj_obs = _money_jump_observe(
                     h, s, r2, street, ax, tc, pot_live,
                     facing_seat=(aggressor if tc > 0 else None),
