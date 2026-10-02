@@ -17,3 +17,16 @@ File paths, solver run directories, legacy `spot_id` strings and other arbitrary
   Action menu / abstraction / convergence live in `quality` and `source`.
 
 No A4c / research result is exported here until its verdict is confirmed.
+
+## Decisions (2026-10-03)
+
+- `tools/gto_db_v2/spot_key.py` (sk1) is the only canonical spot address for the T2 GTO DB. The Termux-era
+  `tools/gto_db_schema.py` sha256 address (branch `chatgpt/gto-db-worker-v1-20261003`) is deprecated; it is used only to
+  verify and read old files during migration.
+- Legacy 616 stays a pinned, read-only source (no move to or from `chatgpt/gto-reference-20260928`).
+- Termux worker spots (30bb x44 now; 25/40/20bb in progress) are imported with `tools/gto_db_v2/migrate_termux_v1.py` after the
+  worker finishes: strategies verbatim (no re-solve), old address checked, canonical history checked, expected count per stack,
+  duplicate sk1 keys abort the run, appends only through `Index.add_solution`, round trip verified value by value.
+  Old `data/gto_db/spots` files are not deleted or changed before the migration is verified.
+- `Index.need_compute(state, target_quality)` requires the target quality; workers must pass the quality they will produce.
+- T2 `gto.py` runtime lookup is a separate later step, after migration and lookup parity.

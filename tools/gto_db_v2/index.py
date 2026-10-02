@@ -3,14 +3,14 @@
 
     python3 tools/gto_db_v2/index.py stats
     python3 tools/gto_db_v2/index.py lookup --state state.json [--hand AKs]
-    python3 tools/gto_db_v2/index.py need --state state.json [--tier 2 --expl 0.3]
+    python3 tools/gto_db_v2/index.py need --state state.json --tier 2 [--expl 0.3]
 
 Rules
   * legacy data/gto_db/preflop_9max_pushfold_v1.jsonl (616 rows) is never modified or moved: it is read in place if present,
     otherwise from its pinned git blob; its bytes must match the pinned sha256.
   * new solver results go to data/gto_db_v2/solutions.jsonl (schema gto_solution_v2), keyed by spot_key only.
-  * need_compute(state) is False when the spot already has a solution (skip), unless the caller's target quality is
-    strictly higher than the best one stored.
+  * need_compute(state, target_quality) requires the quality the caller will produce; it is False (skip) when the best
+    stored solution is at least as good, True when the spot is empty or the target is strictly better.
   * add_solution() never deletes or rewrites: a solution for an existing spot is appended only if its quality is strictly
     higher; identical content (same solution_id) is never duplicated. lookup() returns the best; all() returns every one.
 Quality order (lower is better): tier, then exploitability_pct_pot (None = worst), then earlier added_at.
@@ -145,14 +145,18 @@ class Index:
         k, _ = SK.key_of(raw_state)
         return self.best(k)
 
-    def need_compute(self, raw_state, target_quality=None):
+    def need_compute(self, raw_state, target_quality):
+        """target_quality is REQUIRED (workers must state the quality they will produce): compute only if the spot has no
+        solution or the target is strictly better than the best stored one. 'Some solution exists' alone never decides."""
+        if not isinstance(target_quality, dict) or int(target_quality.get('tier', 0)) not in TIERS:
+            raise ValueError('need_compute requires target_quality {"tier": 1..4, "exploitability_pct_pot": float|None}')
         k, _ = SK.key_of(raw_state)
         b = self.best(k)
         if b is None:
             return True, k, 'no solution for this spot'
-        if target_quality is not None and better(target_quality, b['quality']):
+        if better(target_quality, b['quality']):
             return True, k, f"target quality {quality_key(target_quality)} beats best stored {quality_key(b['quality'])}"
-        return False, k, f"skip: spot exists ({b['solution_id']}, quality {quality_key(b['quality'])})"
+        return False, k, f"skip: stored {b['solution_id']} quality {quality_key(b['quality'])} is not worse than target {quality_key(target_quality)}"
 
     def add_solution(self, raw_state, strategy, quality, source):
         """append a new solution; returns (added, spot_key, reason). Never deletes or rewrites."""
@@ -193,7 +197,9 @@ def main():
         return
     raw = json.load(open(a.state))
     if a.cmd == 'need':
-        tq = {'tier': a.tier, 'exploitability_pct_pot': a.expl} if a.tier else None
+        if not a.tier:
+            raise SystemExit('need: --tier (and --expl if known) is required')
+        tq = {'tier': a.tier, 'exploitability_pct_pot': a.expl}
         print(json.dumps(dict(zip(('compute', 'spot_key', 'reason'), ix.need_compute(raw, tq)))))
         return
     b = ix.lookup(raw)

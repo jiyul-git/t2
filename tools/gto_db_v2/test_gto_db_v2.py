@@ -58,8 +58,9 @@ def main():
     b = ix.lookup(leg)
     res['legacy_lookup_by_state'] = b is not None and b['source']['legacy_spot_id'] == 'hm_9max_no_ante_10bb_bb_vs_btn'
     # skip / append rules on a temp v2 store
-    need, key, _ = ix.need_compute(leg)
+    need, key, _ = ix.need_compute(leg, {'tier': 4, 'exploitability_pct_pot': None})
     res['skip_existing_legacy_spot'] = need is False
+    res['target_quality_required'] = raises(lambda: ix.need_compute(leg, None))
     need2, _, _ = ix.need_compute(leg, {'tier': 2, 'exploitability_pct_pot': 0.3})
     res['upgrade_target_allowed'] = need2 is True
     strat = {'actions': ['fold', 'call'], 'hands': {'AA': {'freq': {'fold': 0.0, 'call': 1.0}}}}
@@ -73,9 +74,10 @@ def main():
     ix2 = IX.Index(v2_path=ix.v2_path)
     res['reload_keeps_all_and_best'] = len(ix2.all(key)) == 3 and ix2.best(key)['quality']['exploitability_pct_pot'] == 0.2
     new_state = {**BASE, 'hero': 'SB'}
-    need, _, _ = ix2.need_compute(new_state)
+    need, _, _ = ix2.need_compute(new_state, {'tier': 3, 'exploitability_pct_pot': 0.3})
     added, _, _ = ix2.add_solution(new_state, strat, {'tier': 3, 'exploitability_pct_pot': 0.3}, {'run': 'test'})
-    res['new_spot_then_skip'] = need is True and added is True and ix2.need_compute(new_state)[0] is False
+    res['new_spot_then_skip'] = need is True and added is True and ix2.need_compute(new_state, {'tier': 3, 'exploitability_pct_pot': 0.3})[0] is False \
+        and ix2.need_compute(new_state, {'tier': 2, 'exploitability_pct_pot': 0.3})[0] is True
     # tamper detection
     lines = open(ix.v2_path).read().splitlines()
     rec = json.loads(lines[0])
