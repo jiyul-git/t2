@@ -29,3 +29,9 @@ R2 (pf_rank/PCT 용도 + 9-max 디펜스 지식, 첫 보고 — production 변�
 - [C. 9MAX_DEFEND_REFERENCE_COMPARISON](r2/9MAX_DEFEND_REFERENCE_COMPARISON.md) — 근거 자료·신뢰도·차이·판정, 그림 [defend_vs_reference.png](r2/defend_vs_reference.png)
 - [R2-B 9-max defend prior 출처·검증 상태](r2/9MAX_DEFEND_PRIOR_PROVENANCE.md) — 값별 출처, 완료된 GTO DB spot 비교, MISSING_KNOWLEDGE 목록
 - [D. R2_CHANGE_PLAN](r2/R2_CHANGE_PLAN.md) — 미적용 변경 계획(승인 대기)
+
+R2 다음 단계 (판단량 분리 — 행동 변경 없음):
+- [A. R2_QUANTITY_SEPARATION](r2/R2_QUANTITY_SEPARATION.md) — 소비처별 ordering/equity/EV/FE/solver prior, 리쇼브·3벳·4벳 층 분리
+- [B. CALLOFF_PATH_AUDIT](r2/CALLOFF_PATH_AUDIT.md) — 올인 대면 콜 경로 7개, 완료된 9-max push/fold DB 대비 측정
+- [C. PREFLOP_ORDERING_DUPLICATION](r2/PREFLOP_ORDERING_DUPLICATION.md) — PCT vs bot._pf_score
+- [D. R2_IMPLEMENTATION_PLAN](r2/R2_IMPLEMENTATION_PLAN.md) — 구조 분리 / DB 근거 수정안 / 보류

@@ -1,0 +1,200 @@
+[
+ {
+  "shove": 10,
+  "shover": "UTG",
+  "caller": "BTN",
+  "stack": 40.0,
+  "db_call": 0.433,
+  "t2_continue": 0.135,
+  "t2_iso_raise": 0.019,
+  "t2_call": 0.115,
+  "agree": 0.702
+ },
+ {
+  "shove": 10,
+  "shover": "CO",
+  "caller": "BTN",
+  "stack": 40.0,
+  "db_call": 0.421,
+  "t2_continue": 0.193,
+  "t2_iso_raise": 0.025,
+  "t2_call": 0.168,
+  "agree": 0.768
+ },
+ {
+  "shove": 10,
+  "shover": "UTG",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.517,
+  "t2_continue": 0.177,
+  "t2_iso_raise": 0.023,
+  "t2_call": 0.154,
+  "agree": 0.659
+ },
+ {
+  "shove": 10,
+  "shover": "CO",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.508,
+  "t2_continue": 0.25,
+  "t2_iso_raise": 0.029,
+  "t2_call": 0.22,
+  "agree": 0.738
+ },
+ {
+  "shove": 10,
+  "shover": "BTN",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.493,
+  "t2_continue": 0.289,
+  "t2_iso_raise": 0.033,
+  "t2_call": 0.256,
+  "agree": 0.782
+ },
+ {
+  "shove": 10,
+  "shover": "HJ",
+  "caller": "CO",
+  "stack": 40.0,
+  "db_call": 0.43,
+  "t2_continue": 0.129,
+  "t2_iso_raise": 0.019,
+  "t2_call": 0.11,
+  "agree": 0.699
+ },
+ {
+  "shove": 15,
+  "shover": "UTG",
+  "caller": "BTN",
+  "stack": 40.0,
+  "db_call": 0.342,
+  "t2_continue": 0.135,
+  "t2_iso_raise": 0.019,
+  "t2_call": 0.115,
+  "agree": 0.791
+ },
+ {
+  "shove": 15,
+  "shover": "CO",
+  "caller": "BTN",
+  "stack": 40.0,
+  "db_call": 0.351,
+  "t2_continue": 0.193,
+  "t2_iso_raise": 0.025,
+  "t2_call": 0.168,
+  "agree": 0.831
+ },
+ {
+  "shove": 15,
+  "shover": "UTG",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.397,
+  "t2_continue": 0.177,
+  "t2_iso_raise": 0.023,
+  "t2_call": 0.154,
+  "agree": 0.778
+ },
+ {
+  "shove": 15,
+  "shover": "CO",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.394,
+  "t2_continue": 0.25,
+  "t2_iso_raise": 0.029,
+  "t2_call": 0.22,
+  "agree": 0.834
+ },
+ {
+  "shove": 15,
+  "shover": "BTN",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.397,
+  "t2_continue": 0.289,
+  "t2_iso_raise": 0.033,
+  "t2_call": 0.256,
+  "agree": 0.861
+ },
+ {
+  "shove": 15,
+  "shover": "HJ",
+  "caller": "CO",
+  "stack": 40.0,
+  "db_call": 0.351,
+  "t2_continue": 0.129,
+  "t2_iso_raise": 0.019,
+  "t2_call": 0.11,
+  "agree": 0.776
+ },
+ {
+  "shove": 20,
+  "shover": "UTG",
+  "caller": "BTN",
+  "stack": 40.0,
+  "db_call": 0.278,
+  "t2_continue": 0.135,
+  "t2_iso_raise": 0.019,
+  "t2_call": 0.115,
+  "agree": 0.851
+ },
+ {
+  "shove": 20,
+  "shover": "CO",
+  "caller": "BTN",
+  "stack": 40.0,
+  "db_call": 0.287,
+  "t2_continue": 0.193,
+  "t2_iso_raise": 0.025,
+  "t2_call": 0.168,
+  "agree": 0.874
+ },
+ {
+  "shove": 20,
+  "shover": "UTG",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.318,
+  "t2_continue": 0.177,
+  "t2_iso_raise": 0.023,
+  "t2_call": 0.154,
+  "agree": 0.846
+ },
+ {
+  "shove": 20,
+  "shover": "CO",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.336,
+  "t2_continue": 0.25,
+  "t2_iso_raise": 0.029,
+  "t2_call": 0.22,
+  "agree": 0.873
+ },
+ {
+  "shove": 20,
+  "shover": "BTN",
+  "caller": "SB",
+  "stack": 40.0,
+  "db_call": 0.342,
+  "t2_continue": 0.289,
+  "t2_iso_raise": 0.033,
+  "t2_call": 0.256,
+  "agree": 0.888
+ },
+ {
+  "shove": 20,
+  "shover": "HJ",
+  "caller": "CO",
+  "stack": 40.0,
+  "db_call": 0.287,
+  "t2_continue": 0.129,
+  "t2_iso_raise": 0.019,
+  "t2_call": 0.11,
+  "agree": 0.838
+ }
+]

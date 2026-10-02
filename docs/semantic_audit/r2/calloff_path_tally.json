@@ -1,0 +1,2741 @@
+{
+ "source": "tools/r2_calloff_capture.py seeds 11,12 (baseline, 46a2070-identical production code)",
+ "tally": {
+  "P2_covering_vs_shove_players_behind": 102,
+  "P1_pure_calloff": 42,
+  "P3_cold_or_multiway_vs_allin": 28,
+  "P4_hero_calloff_nonpure": 10
+ },
+ "rows": [
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+2",
+   "hand": [
+    "9c",
+    "5d"
+   ],
+   "stack_bb": 148.5,
+   "facing_bb": 3.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "9h",
+    "Qh"
+   ],
+   "stack_bb": 150.0,
+   "facing_bb": 3.0,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "Js",
+    "5c"
+   ],
+   "stack_bb": 151.5,
+   "facing_bb": 3.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "Ts",
+    "9s"
+   ],
+   "stack_bb": 301.5,
+   "facing_bb": 3.0,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "Qs",
+    "4h"
+   ],
+   "stack_bb": 153.5,
+   "facing_bb": 3.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "4s",
+    "Jh"
+   ],
+   "stack_bb": 144.5,
+   "facing_bb": 3.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "9d",
+    "2c"
+   ],
+   "stack_bb": 147.5,
+   "facing_bb": 3.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "7s",
+    "Td"
+   ],
+   "stack_bb": 114.67,
+   "facing_bb": 7.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "7h",
+    "Jh"
+   ],
+   "stack_bb": 179.67,
+   "facing_bb": 7.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "3d",
+    "2d"
+   ],
+   "stack_bb": 88.67,
+   "facing_bb": 7.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "3s",
+    "2s"
+   ],
+   "stack_bb": 104.33,
+   "facing_bb": 7.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "3h",
+    "Ac"
+   ],
+   "stack_bb": 114.67,
+   "facing_bb": 9.67,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "Th",
+    "2h"
+   ],
+   "stack_bb": 190.33,
+   "facing_bb": 9.67,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "7h",
+    "9s"
+   ],
+   "stack_bb": 88.67,
+   "facing_bb": 9.67,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "5s",
+    "Qs"
+   ],
+   "stack_bb": 104.0,
+   "facing_bb": 9.67,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "3d",
+    "Td"
+   ],
+   "stack_bb": 118.33,
+   "facing_bb": 9.67,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Jd",
+    "Ad"
+   ],
+   "stack_bb": 92.67,
+   "facing_bb": 9.67,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "Tc",
+    "Ts"
+   ],
+   "stack_bb": 85.75,
+   "facing_bb": 8.5,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "As",
+    "5d"
+   ],
+   "stack_bb": 154.5,
+   "facing_bb": 8.5,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "7c",
+    "Kc"
+   ],
+   "stack_bb": 104.75,
+   "facing_bb": 8.5,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "3h",
+    "8s"
+   ],
+   "stack_bb": 46.0,
+   "facing_bb": 8.5,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Qh",
+    "Qd"
+   ],
+   "stack_bb": 68.75,
+   "facing_bb": 54.75,
+   "act": "call",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+1",
+   "hand": [
+    "5d",
+    "Ad"
+   ],
+   "stack_bb": 111.0,
+   "facing_bb": 18.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+2",
+   "hand": [
+    "8c",
+    "6h"
+   ],
+   "stack_bb": 55.0,
+   "facing_bb": 18.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "Jd",
+    "6d"
+   ],
+   "stack_bb": 109.6,
+   "facing_bb": 18.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "Qc",
+    "3s"
+   ],
+   "stack_bb": 71.8,
+   "facing_bb": 18.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "Qd",
+    "6c"
+   ],
+   "stack_bb": 58.8,
+   "facing_bb": 18.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "9d",
+    "Kh"
+   ],
+   "stack_bb": 61.2,
+   "facing_bb": 18.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Td",
+    "4h"
+   ],
+   "stack_bb": 52.0,
+   "facing_bb": 18.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "UTG+1",
+   "hand": [
+    "7c",
+    "7s"
+   ],
+   "stack_bb": 47.0,
+   "facing_bb": 26.2,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "SB",
+   "hand": [
+    "8c",
+    "Ks"
+   ],
+   "stack_bb": 41.2,
+   "facing_bb": 26.2,
+   "act": "fold",
+   "kind": "caller_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "3h",
+    "6h"
+   ],
+   "stack_bb": 53.8,
+   "facing_bb": 22.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "9h",
+    "2d"
+   ],
+   "stack_bb": 104.4,
+   "facing_bb": 22.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "8h",
+    "7s"
+   ],
+   "stack_bb": 78.0,
+   "facing_bb": 9.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "Kh",
+    "Jd"
+   ],
+   "stack_bb": 57.4,
+   "facing_bb": 9.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "Ts",
+    "5d"
+   ],
+   "stack_bb": 60.6,
+   "facing_bb": 9.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "3c",
+    "2s"
+   ],
+   "stack_bb": 139.8,
+   "facing_bb": 9.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "Qd",
+    "8c"
+   ],
+   "stack_bb": 60.6,
+   "facing_bb": 9.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Jh",
+    "9c"
+   ],
+   "stack_bb": 75.8,
+   "facing_bb": 9.0,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+1",
+   "hand": [
+    "3c",
+    "7h"
+   ],
+   "stack_bb": 78.0,
+   "facing_bb": 11.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "Th",
+    "3h"
+   ],
+   "stack_bb": 57.4,
+   "facing_bb": 11.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "9c",
+    "Jh"
+   ],
+   "stack_bb": 60.6,
+   "facing_bb": 11.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "5c",
+    "Ks"
+   ],
+   "stack_bb": 139.8,
+   "facing_bb": 11.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "9s",
+    "8c"
+   ],
+   "stack_bb": 60.6,
+   "facing_bb": 11.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "8s",
+    "Ah"
+   ],
+   "stack_bb": 75.2,
+   "facing_bb": 11.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "6h",
+    "2c"
+   ],
+   "stack_bb": 54.2,
+   "facing_bb": 11.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "LJ",
+   "hand": [
+    "Js",
+    "Ks"
+   ],
+   "stack_bb": 65.4,
+   "facing_bb": 58.0,
+   "act": "fold",
+   "kind": "caller_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BTN",
+   "hand": [
+    "Qc",
+    "Qd"
+   ],
+   "stack_bb": 40.8,
+   "facing_bb": 58.0,
+   "act": "call",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "Js",
+    "4c"
+   ],
+   "stack_bb": 107.4,
+   "facing_bb": 20.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Jc",
+    "2c"
+   ],
+   "stack_bb": 53.0,
+   "facing_bb": 20.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "CO",
+   "hand": [
+    "5c",
+    "Kd"
+   ],
+   "stack_bb": 37.2,
+   "facing_bb": 10.2,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BTN",
+   "hand": [
+    "6c",
+    "5d"
+   ],
+   "stack_bb": 53.8,
+   "facing_bb": 10.2,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "SB",
+   "hand": [
+    "Kh",
+    "3s"
+   ],
+   "stack_bb": 62.2,
+   "facing_bb": 10.2,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "Tc",
+    "4c"
+   ],
+   "stack_bb": 137.8,
+   "facing_bb": 10.2,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "UTG",
+   "hand": [
+    "3d",
+    "3h"
+   ],
+   "stack_bb": 58.6,
+   "facing_bb": 10.2,
+   "act": "fold",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "7c",
+    "5c"
+   ],
+   "stack_bb": 40.8,
+   "facing_bb": 2.2,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "Jd",
+    "9s"
+   ],
+   "stack_bb": 23.2,
+   "facing_bb": 2.2,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Qc",
+    "Kc"
+   ],
+   "stack_bb": 68.8,
+   "facing_bb": 75.6,
+   "act": "fold",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+2",
+   "hand": [
+    "4c",
+    "9s"
+   ],
+   "stack_bb": 58.8,
+   "facing_bb": 14.4,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "7c",
+    "Js"
+   ],
+   "stack_bb": 186.6,
+   "facing_bb": 14.4,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "6s",
+    "9c"
+   ],
+   "stack_bb": 101.4,
+   "facing_bb": 14.4,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "CO",
+   "hand": [
+    "8h",
+    "6c"
+   ],
+   "stack_bb": 6.4,
+   "facing_bb": 14.4,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "7h",
+    "Ac"
+   ],
+   "stack_bb": 39.2,
+   "facing_bb": 14.4,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "2c",
+    "Kc"
+   ],
+   "stack_bb": 22.6,
+   "facing_bb": 14.4,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "7d",
+    "5c"
+   ],
+   "stack_bb": 54.4,
+   "facing_bb": 14.4,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "2s",
+    "Qd"
+   ],
+   "stack_bb": 44.83,
+   "facing_bb": 18.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "5c",
+    "6d"
+   ],
+   "stack_bb": 78.33,
+   "facing_bb": 18.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "5h",
+    "Ad"
+   ],
+   "stack_bb": 14.67,
+   "facing_bb": 18.83,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "CO",
+   "hand": [
+    "Th",
+    "Qs"
+   ],
+   "stack_bb": 29.33,
+   "facing_bb": 11.33,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BTN",
+   "hand": [
+    "Kc",
+    "Jd"
+   ],
+   "stack_bb": 104.83,
+   "facing_bb": 11.33,
+   "act": "call",
+   "kind": "caller_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+2",
+   "hand": [
+    "7h",
+    "4d"
+   ],
+   "stack_bb": 32.67,
+   "facing_bb": 5.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "LJ",
+   "hand": [
+    "8h",
+    "5c"
+   ],
+   "stack_bb": 3.17,
+   "facing_bb": 5.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "9h",
+    "2d"
+   ],
+   "stack_bb": 44.83,
+   "facing_bb": 5.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "2s",
+    "As"
+   ],
+   "stack_bb": 78.33,
+   "facing_bb": 5.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "Kd",
+    "9s"
+   ],
+   "stack_bb": 30.17,
+   "facing_bb": 5.33,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "Ks",
+    "Td"
+   ],
+   "stack_bb": 46.5,
+   "facing_bb": 5.33,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "Jh",
+    "Kh"
+   ],
+   "stack_bb": 158.17,
+   "facing_bb": 5.33,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "Qd",
+    "5d"
+   ],
+   "stack_bb": 71.17,
+   "facing_bb": 15.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "6h",
+    "3s"
+   ],
+   "stack_bb": 49.33,
+   "facing_bb": 15.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "9d",
+    "Jh"
+   ],
+   "stack_bb": 60.0,
+   "facing_bb": 15.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "6c",
+    "Ac"
+   ],
+   "stack_bb": 75.83,
+   "facing_bb": 15.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "4d",
+    "2s"
+   ],
+   "stack_bb": 47.0,
+   "facing_bb": 15.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Jc",
+    "2d"
+   ],
+   "stack_bb": 58.33,
+   "facing_bb": 15.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "UTG",
+   "hand": [
+    "8h",
+    "3s"
+   ],
+   "stack_bb": 2.17,
+   "facing_bb": 4.17,
+   "act": "fold",
+   "kind": "caller_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "HJ",
+   "hand": [
+    "Ac",
+    "6c"
+   ],
+   "stack_bb": 60.0,
+   "facing_bb": 41.17,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "CO",
+   "hand": [
+    "Ts",
+    "Ks"
+   ],
+   "stack_bb": 38.17,
+   "facing_bb": 41.17,
+   "act": "fold",
+   "kind": "caller_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "SB",
+   "hand": [
+    "9c",
+    "9h"
+   ],
+   "stack_bb": 32.33,
+   "facing_bb": 41.17,
+   "act": "call",
+   "kind": "caller_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "Ks",
+    "Ac"
+   ],
+   "stack_bb": 78.0,
+   "facing_bb": 12.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "6c",
+    "Ts"
+   ],
+   "stack_bb": 45.67,
+   "facing_bb": 12.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "4s",
+    "7c"
+   ],
+   "stack_bb": 94.83,
+   "facing_bb": 12.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "6d",
+    "5c"
+   ],
+   "stack_bb": 35.5,
+   "facing_bb": 12.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "Tc",
+    "7s"
+   ],
+   "stack_bb": 66.67,
+   "facing_bb": 12.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "6h",
+    "Js"
+   ],
+   "stack_bb": 59.0,
+   "facing_bb": 12.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "BTN",
+   "hand": [
+    "9c",
+    "5s"
+   ],
+   "stack_bb": 6.0,
+   "facing_bb": 9.5,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "BB",
+   "hand": [
+    "Qc",
+    "4s"
+   ],
+   "stack_bb": 0.17,
+   "facing_bb": 9.5,
+   "act": "call",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BTN",
+   "hand": [
+    "Tc",
+    "Td"
+   ],
+   "stack_bb": 27.0,
+   "facing_bb": 6.0,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "Qc",
+    "9h"
+   ],
+   "stack_bb": 55.67,
+   "facing_bb": 6.0,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "LJ",
+   "hand": [
+    "4s",
+    "4h"
+   ],
+   "stack_bb": 159.5,
+   "facing_bb": 6.0,
+   "act": "call",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "Th",
+    "Jd"
+   ],
+   "stack_bb": 66.67,
+   "facing_bb": 15.33,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "CO",
+   "hand": [
+    "Tc",
+    "Jc"
+   ],
+   "stack_bb": 82.0,
+   "facing_bb": 15.33,
+   "act": "call",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "UTG+1",
+   "hand": [
+    "2s",
+    "2h"
+   ],
+   "stack_bb": 13.33,
+   "facing_bb": 33.0,
+   "act": "fold",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BTN",
+   "hand": [
+    "9c",
+    "Js"
+   ],
+   "stack_bb": 53.0,
+   "facing_bb": 29.0,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "SB",
+   "hand": [
+    "Ks",
+    "2s"
+   ],
+   "stack_bb": 54.83,
+   "facing_bb": 29.0,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "Jd",
+    "2h"
+   ],
+   "stack_bb": 67.83,
+   "facing_bb": 29.0,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "UTG+2",
+   "hand": [
+    "Ah",
+    "9d"
+   ],
+   "stack_bb": 19.5,
+   "facing_bb": 29.0,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "HJ",
+   "hand": [
+    "Qh",
+    "9h"
+   ],
+   "stack_bb": 21.67,
+   "facing_bb": 29.0,
+   "act": "fold",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "HJ",
+   "hand": [
+    "Kh",
+    "Jd"
+   ],
+   "stack_bb": 55.88,
+   "facing_bb": 20.25,
+   "act": "call",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "BB",
+   "hand": [
+    "8s",
+    "9d"
+   ],
+   "stack_bb": 8.0,
+   "facing_bb": 19.12,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "HJ",
+   "hand": [
+    "Js",
+    "Ts"
+   ],
+   "stack_bb": 86.75,
+   "facing_bb": 19.12,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "CO",
+   "hand": [
+    "As",
+    "6s"
+   ],
+   "stack_bb": 38.25,
+   "facing_bb": 19.12,
+   "act": "call",
+   "kind": "caller_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "CO",
+   "hand": [
+    "4c",
+    "Kc"
+   ],
+   "stack_bb": 101.0,
+   "facing_bb": 54.33,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BTN",
+   "hand": [
+    "Qh",
+    "Qc"
+   ],
+   "stack_bb": 138.0,
+   "facing_bb": 54.33,
+   "act": "call",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "6d",
+    "2s"
+   ],
+   "stack_bb": 71.75,
+   "facing_bb": 4.25,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "Jh",
+    "Qh"
+   ],
+   "stack_bb": 125.0,
+   "facing_bb": 4.25,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "5c",
+    "8d"
+   ],
+   "stack_bb": 73.0,
+   "facing_bb": 4.25,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "9s",
+    "4s"
+   ],
+   "stack_bb": 89.25,
+   "facing_bb": 4.25,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "6h",
+    "Kd"
+   ],
+   "stack_bb": 79.5,
+   "facing_bb": 4.25,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "Jd",
+    "7s"
+   ],
+   "stack_bb": 80.75,
+   "facing_bb": 4.25,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "Ah",
+    "As"
+   ],
+   "stack_bb": 73.5,
+   "facing_bb": 3.5,
+   "act": "3bet",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "5h",
+    "8h"
+   ],
+   "stack_bb": 100.5,
+   "facing_bb": 41.0,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "UTG+1",
+   "hand": [
+    "Qc",
+    "Th"
+   ],
+   "stack_bb": 69.0,
+   "facing_bb": 41.0,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "LJ",
+   "hand": [
+    "Js",
+    "Ah"
+   ],
+   "stack_bb": 51.75,
+   "facing_bb": 41.0,
+   "act": "call",
+   "kind": "caller_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "LJ",
+   "hand": [
+    "Ah",
+    "Kh"
+   ],
+   "stack_bb": 104.0,
+   "facing_bb": 87.25,
+   "act": "call",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "HJ",
+   "hand": [
+    "5c",
+    "3s"
+   ],
+   "stack_bb": 56.75,
+   "facing_bb": 17.25,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "CO",
+   "hand": [
+    "5s",
+    "Jd"
+   ],
+   "stack_bb": 69.75,
+   "facing_bb": 17.25,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BTN",
+   "hand": [
+    "Td",
+    "6h"
+   ],
+   "stack_bb": 51.75,
+   "facing_bb": 17.25,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "SB",
+   "hand": [
+    "Kh",
+    "Qc"
+   ],
+   "stack_bb": 119.75,
+   "facing_bb": 17.25,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "Qd",
+    "7h"
+   ],
+   "stack_bb": 184.0,
+   "facing_bb": 17.25,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "UTG+1",
+   "hand": [
+    "Qh",
+    "Qs"
+   ],
+   "stack_bb": 71.0,
+   "facing_bb": 17.25,
+   "act": "call",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "LJ",
+   "hand": [
+    "Kd",
+    "Td"
+   ],
+   "stack_bb": 154.25,
+   "facing_bb": 16.5,
+   "act": "call",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+1",
+   "hand": [
+    "Js",
+    "Td"
+   ],
+   "stack_bb": 80.5,
+   "facing_bb": 4.75,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+2",
+   "hand": [
+    "7s",
+    "3d"
+   ],
+   "stack_bb": 74.75,
+   "facing_bb": 4.75,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "Ac",
+    "As"
+   ],
+   "stack_bb": 47.0,
+   "facing_bb": 4.75,
+   "act": "3bet",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "8d",
+    "9d"
+   ],
+   "stack_bb": 116.2,
+   "facing_bb": 19.6,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "4s",
+    "Qd"
+   ],
+   "stack_bb": 27.2,
+   "facing_bb": 19.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "UTG+2",
+   "hand": [
+    "7c",
+    "Kc"
+   ],
+   "stack_bb": 51.6,
+   "facing_bb": 30.4,
+   "act": "fold",
+   "kind": "opener_multiway_backaction",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "SB",
+   "hand": [
+    "Jc",
+    "As"
+   ],
+   "stack_bb": 50.2,
+   "facing_bb": 30.4,
+   "act": "fold",
+   "kind": "caller_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+2",
+   "hand": [
+    "8h",
+    "Tc"
+   ],
+   "stack_bb": 73.6,
+   "facing_bb": 15.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "3d",
+    "4h"
+   ],
+   "stack_bb": 61.0,
+   "facing_bb": 15.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "3s",
+    "4s"
+   ],
+   "stack_bb": 72.0,
+   "facing_bb": 15.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "3c",
+    "Qc"
+   ],
+   "stack_bb": 40.8,
+   "facing_bb": 15.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "7c",
+    "Ah"
+   ],
+   "stack_bb": 74.6,
+   "facing_bb": 15.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "Ks",
+    "8c"
+   ],
+   "stack_bb": 76.2,
+   "facing_bb": 15.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "As",
+    "4c"
+   ],
+   "stack_bb": 78.8,
+   "facing_bb": 15.6,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "4c",
+    "Th"
+   ],
+   "stack_bb": 102.6,
+   "facing_bb": 13.8,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BTN",
+   "hand": [
+    "Td",
+    "Ah"
+   ],
+   "stack_bb": 25.2,
+   "facing_bb": 13.8,
+   "act": "call",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "HJ",
+   "hand": [
+    "7c",
+    "8c"
+   ],
+   "stack_bb": 56.6,
+   "facing_bb": 27.0,
+   "act": "fold",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "UTG+1",
+   "hand": [
+    "7c",
+    "Ah"
+   ],
+   "stack_bb": 67.0,
+   "facing_bb": 8.17,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "LJ",
+   "hand": [
+    "Qd",
+    "4s"
+   ],
+   "stack_bb": 58.17,
+   "facing_bb": 8.17,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "6d",
+    "4c"
+   ],
+   "stack_bb": 83.83,
+   "facing_bb": 8.17,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "5s",
+    "9h"
+   ],
+   "stack_bb": 118.0,
+   "facing_bb": 8.17,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "5d",
+    "9s"
+   ],
+   "stack_bb": 69.0,
+   "facing_bb": 8.17,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "6c",
+    "7d"
+   ],
+   "stack_bb": 35.33,
+   "facing_bb": 8.17,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Th",
+    "As"
+   ],
+   "stack_bb": 93.5,
+   "facing_bb": 8.17,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "SB",
+   "hand": [
+    "7c",
+    "Ah"
+   ],
+   "stack_bb": 53.17,
+   "facing_bb": 40.17,
+   "act": "fold",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "3h",
+    "Ac"
+   ],
+   "stack_bb": 44.17,
+   "facing_bb": 16.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "6d",
+    "Ah"
+   ],
+   "stack_bb": 58.0,
+   "facing_bb": 16.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "Jh",
+    "Th"
+   ],
+   "stack_bb": 69.0,
+   "facing_bb": 20.5,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "Qs",
+    "6s"
+   ],
+   "stack_bb": 62.33,
+   "facing_bb": 20.5,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "7c",
+    "8s"
+   ],
+   "stack_bb": 46.83,
+   "facing_bb": 20.5,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "2s",
+    "8c"
+   ],
+   "stack_bb": 21.17,
+   "facing_bb": 20.5,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "BB",
+   "hand": [
+    "7d",
+    "6h"
+   ],
+   "stack_bb": 7.33,
+   "facing_bb": 14.83,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "UTG+1",
+   "hand": [
+    "Ac",
+    "Jc"
+   ],
+   "stack_bb": 99.33,
+   "facing_bb": 14.83,
+   "act": "call",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P4_hero_calloff_nonpure",
+   "pos": "CO",
+   "hand": [
+    "9d",
+    "9c"
+   ],
+   "stack_bb": 23.0,
+   "facing_bb": 23.5,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BTN",
+   "hand": [
+    "7h",
+    "6s"
+   ],
+   "stack_bb": 105.33,
+   "facing_bb": 23.5,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "SB",
+   "hand": [
+    "Kc",
+    "3s"
+   ],
+   "stack_bb": 96.5,
+   "facing_bb": 23.5,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P3_cold_or_multiway_vs_allin",
+   "pos": "BB",
+   "hand": [
+    "4d",
+    "2h"
+   ],
+   "stack_bb": 45.67,
+   "facing_bb": 23.5,
+   "act": "fold",
+   "kind": "cold_vs_reraise",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "LJ",
+   "hand": [
+    "Kd",
+    "Qd"
+   ],
+   "stack_bb": 90.17,
+   "facing_bb": 23.5,
+   "act": "fold",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BTN",
+   "hand": [
+    "Qd",
+    "Qc"
+   ],
+   "stack_bb": 88.5,
+   "facing_bb": 23.0,
+   "act": "call",
+   "kind": "reraiser_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": true,
+   "legacy_action": "fold"
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BTN",
+   "hand": [
+    "Kh",
+    "Ks"
+   ],
+   "stack_bb": 24.67,
+   "facing_bb": 20.33,
+   "act": "call",
+   "kind": "opener_backaction",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "Jh",
+    "Qd"
+   ],
+   "stack_bb": 45.5,
+   "facing_bb": 6.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "6h",
+    "8c"
+   ],
+   "stack_bb": 115.0,
+   "facing_bb": 6.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "2c",
+    "9h"
+   ],
+   "stack_bb": 57.33,
+   "facing_bb": 6.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "5c",
+    "5h"
+   ],
+   "stack_bb": 101.5,
+   "facing_bb": 6.83,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "9d",
+    "Th"
+   ],
+   "stack_bb": 57.5,
+   "facing_bb": 6.83,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "3s",
+    "Td"
+   ],
+   "stack_bb": 67.83,
+   "facing_bb": 13.17,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P1_pure_calloff",
+   "pos": "BB",
+   "hand": [
+    "Js",
+    "As"
+   ],
+   "stack_bb": 62.0,
+   "facing_bb": 13.17,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": true,
+   "layer_changed": false,
+   "legacy_action": "call"
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "HJ",
+   "hand": [
+    "Ts",
+    "2s"
+   ],
+   "stack_bb": 52.12,
+   "facing_bb": 4.12,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "CO",
+   "hand": [
+    "As",
+    "Qs"
+   ],
+   "stack_bb": 36.88,
+   "facing_bb": 4.12,
+   "act": "call",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BTN",
+   "hand": [
+    "4c",
+    "8c"
+   ],
+   "stack_bb": 25.5,
+   "facing_bb": 4.12,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "SB",
+   "hand": [
+    "2h",
+    "7c"
+   ],
+   "stack_bb": 36.75,
+   "facing_bb": 4.12,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  },
+  {
+   "path": "P2_covering_vs_shove_players_behind",
+   "pos": "BB",
+   "hand": [
+    "9s",
+    "Tc"
+   ],
+   "stack_bb": 41.5,
+   "facing_bb": 4.12,
+   "act": "fold",
+   "kind": "face_first_open",
+   "layer_gate_pass": null,
+   "layer_changed": null,
+   "legacy_action": null
+  }
+ ]
+}
