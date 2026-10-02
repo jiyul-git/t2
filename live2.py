@@ -4,6 +4,7 @@ import telemetry_sync as TM
 import zlib as _zlib
 import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
 import formats as FM
+import runner as RU
 from table import BLINDS
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -708,24 +709,20 @@ def _opening_raw(h, run):
         if stacks[sb_s] <= 0:
             allin.add(sb_s)
 
-    ante_pot = 0
-
     if bb_s is not None:
         pay = min(h.bb, stacks.get(bb_s, 0))
         stacks[bb_s] = stacks.get(bb_s, 0) - pay
         contrib[bb_s] = pay
 
-        _ante = getattr(h, 'ante', None)
-        if _ante is None:
-            _ante = h.bb
-
-        if _ante > 0:
-            a = min(_ante, stacks.get(bb_s, 0))
-            stacks[bb_s] = stacks.get(bb_s, 0) - a
-            ante_pot = a
-
-        if stacks[bb_s] <= 0:
-            allin.add(bb_s)
+    # 안테는 참가 인원 전원이 균등 분담한다 — session 과 같은 함수(runner.post_antes).
+    _ante = getattr(h, 'ante', None)
+    if _ante is None:
+        _ante = h.bb
+    _seats = [h.seat_of[p] for p in h.PRE if p in h.seat_of]
+    _ante_paid, ante_pot = RU.post_antes(stacks, _seats, _ante)
+    for _s in _seats:
+        if stacks.get(_s, 0) <= 0:
+            allin.add(_s)
 
     hero = h.hero
     hero_contrib = contrib.get(hero, 0)
@@ -738,6 +735,7 @@ def _opening_raw(h, run):
         'stacks': dict(stacks),
         'contrib': dict(contrib),
         'pot': sum(contrib.values()) + ante_pot,
+        'ante_paid': dict(_ante_paid),
         'tocall': tocall,
         'stack': stacks.get(hero, 0),
         'min_raise': h.bb * 2,

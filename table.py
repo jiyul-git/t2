@@ -59,7 +59,7 @@ class Table:
     def blinds(self):
         lv = min(self.s['level'], len(BLINDS))
         _, sb, bb = BLINDS[lv-1]
-        return sb, bb, bb          # sb, bb, BB안테(=1BB)
+        return sb, bb, bb          # sb, bb, 안테 총액(=1BB, 참가 인원 균등 분담: runner.post_antes)
 
     def level_for_hand(self, n): return min(1 + (n-1)//HANDS_PER_LEVEL, len(BLINDS))
 

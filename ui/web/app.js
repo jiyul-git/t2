@@ -937,8 +937,12 @@ function forcedStartState(v) {
   const bb = blindSeat(v, 'BB');
 
   /*
-   * BB ante는 seat.bet이 아니라 dead money라
+   * ante는 seat.bet이 아니라 dead money라
    * frameView가 되돌려주지 못한다.
+   *
+   * 안테는 참가 인원 전원이 균등 분담한다(서버 runner.post_antes).
+   * 서버가 좌석별 실제 납부액(seat.ante)을 준다. 그 필드가 없는 예전
+   * 핸드는 실제로 BB 혼자 낸 BB 안테였으므로 BB에 되돌린다.
    */
   const ante =
     Math.max(
@@ -949,15 +953,22 @@ function forcedStartState(v) {
       )
     );
 
+  const perSeat = {};
+  const hasShares = (v.seats || []).some((s) => s.ante !== undefined);
+  if (hasShares) {
+    (v.seats || []).forEach((s) => {
+      const a = Number(s.ante || 0);
+      if (a > 0) perSeat[String(s.seat)] = a;
+    });
+  } else if (bb && ante > 0) {
+    perSeat[String(bb.seat)] = ante;
+  }
+
   const seats = (fv0.seats || []).map((s) => {
     let stack = Number(s.stack || 0);
 
-    if (
-      bb &&
-      String(s.seat) === String(bb.seat) &&
-      ante > 0
-    ) {
-      stack += ante;
+    if (perSeat[String(s.seat)] > 0) {
+      stack += perSeat[String(s.seat)];
     }
 
     return Object.assign({}, s, {
@@ -982,7 +993,8 @@ function forcedStartState(v) {
       boardShown: 0
     },
 
-    ante: ante
+    ante: ante,
+    antes: perSeat
   };
 }
 
@@ -1054,7 +1066,7 @@ function postBlindsThen(v, done, epoch) {
   const fs = forcedStartState(v);
   const base = fs.base;
   const ss = fs.state;
-  const anteAmt = fs.ante;
+  const anteBySeat = fs.antes || {};
 
   const sbAmt =
     blindAmount(v, sb, 'SB');
@@ -1072,58 +1084,39 @@ function postBlindsThen(v, done, epoch) {
   const postAnte = () => {
     if (!epochAlive(epoch)) return;
 
-    if (!bb || anteAmt <= 0) {
-      finish();
-      return;
-    }
-
-    const st =
-      ss.seats.find(
-        (x) =>
-          String(x.seat) ===
-          String(bb.seat)
-      );
-
-    if (!st) {
-      finish();
-      return;
-    }
-
     /*
-     * 일반 bet처럼:
-     *   스택 감소
-     *   -> 좌석 앞 칩 표시
-     *
-     * ante는 callable bet이 아니므로
-     * st.bet에는 넣지 않는다.
+     * 균등 분담 안테: 모든 참가 좌석이 동시에 자기 몫을 낸다.
+     * 일반 bet처럼 스택 감소 -> 좌석 앞 칩 표시.
+     * ante는 callable bet이 아니므로 st.bet에는 넣지 않는다.
      */
-    const paid =
-      Math.min(
-        anteAmt,
-        Number(st.stack || 0)
-      );
+    let total = 0;
+    ss.seats.forEach((st) => {
+      const share = Number(anteBySeat[String(st.seat)] || 0);
+      if (share <= 0) return;
+      const paid = Math.min(share, Number(st.stack || 0));
+      st.stack = Math.max(0, Number(st.stack || 0) - paid);
+      if (st.stack <= 0) st.allin = true;
+      st._antePaid = paid;
+      total += paid;
+    });
 
-    st.stack =
-      Math.max(
-        0,
-        Number(st.stack || 0) - paid
-      );
-
-    if (st.stack <= 0) {
-      st.allin = true;
+    if (total <= 0) {
+      finish();
+      return;
     }
 
     const fv = renderForced(base, ss);
+    const chips = [];
+    ss.seats.forEach((st) => {
+      if (st._antePaid > 0) {
+        const chip = makeAnteChip(fv, st.seat, st._antePaid);
+        if (chip) chips.push(chip);
+      }
+      delete st._antePaid;
+    });
 
-    const chip =
-      makeAnteChip(
-        fv,
-        bb.seat,
-        paid
-      );
-
-    if (!chip) {
-      ss.potCenter += paid;
+    if (!chips.length) {
+      ss.potCenter += total;
       renderForced(base, ss);
       finish();
       return;
@@ -1136,11 +1129,13 @@ function postBlindsThen(v, done, epoch) {
     epochTimer(() => {
       if (!epochAlive(epoch)) return;
 
-      ss.potCenter += paid;
+      ss.potCenter += total;
 
-      try {
-        chip.remove();
-      } catch (e) {}
+      chips.forEach((chip) => {
+        try {
+          chip.remove();
+        } catch (e) {}
+      });
 
       renderForced(base, ss);
       finish();
@@ -1207,7 +1202,7 @@ function postBlindsThen(v, done, epoch) {
    * -> 덱 제거
    * -> SB
    * -> BB
-   * -> BB ante
+   * -> ante (참가 인원 균등 분담)
    * -> 실제 프리플랍 액션
    */
   renderForced(base, ss);

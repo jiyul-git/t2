@@ -63,6 +63,37 @@ def effective_allin_v1(target, actor_cap, opp_cap_max, contrib_before, pot_befor
     }
 
 
+# ---------- 안테 ----------
+def ante_shares(ante, seats):
+    """안테 총액(보통 1bb)을 핸드에 참가한 좌석이 균등하게 나눠 낸다.
+
+    BB 는 블라인드 1bb 만 내고, 안테 1bb 는 테이블 인원 전원(SB·BB 포함)이
+    같은 몫으로 채운다. 칩은 정수라 ante // n 씩 내고, 나머지 칩은 seats 순서
+    (프리플랍 액션 순서) 앞쪽 좌석부터 1칩씩 더 낸다 — 총액이 정확히 ante 가 된다.
+    반환 {seat: 몫}.
+    """
+    seats = list(seats or [])
+    ante = int(ante or 0)
+    if ante <= 0 or not seats:
+        return {}
+    base, rem = divmod(ante, len(seats))
+    return {s: base + (1 if i < rem else 0) for i, s in enumerate(seats)}
+
+
+def post_antes(stacks, seats, ante):
+    """stacks 에서 균등 안테를 걷는다(제자리 수정). 반환 (좌석별 실제 납부, 총액).
+
+    스택이 몫보다 적은 좌석은 가진 만큼만 낸다(그만큼 총액이 줄어든다).
+    안테는 데드머니다 — 좌석의 베팅 기여(contrib)에는 들어가지 않는다.
+    """
+    paid = {}
+    for s, share in ante_shares(ante, seats).items():
+        a = min(share, max(0, stacks.get(s, 0)))
+        stacks[s] = stacks.get(s, 0) - a
+        paid[s] = a
+    return paid, sum(paid.values())
+
+
 # ---------- 베팅 라운드 ----------
 class Round:
     """재레이즈·최소레이즈·올인·사이드팟을 처리하는 베팅 라운드."""

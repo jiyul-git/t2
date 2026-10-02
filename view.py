@@ -48,6 +48,9 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
     live = set(raw.get('live') if raw.get('live') is not None else hand.seats)
     allin = set(raw.get('allin') or [])
     inv = raw.get('contrib', {})
+    # 좌석별 실제 안테 납부(균등 분담). UI 가 게시 전 스택을 복원하고 안테
+    # 칩을 좌석마다 그리는 데 쓴다. 이 키가 없는 raw(예전 BB 안테 핸드)는 0.
+    ante_paid = raw.get('ante_paid') or {}
     rows = []
     for s in sorted(hand.seats):
         p = pos_of.get(s)
@@ -61,6 +64,7 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
                      'live': (s in live), 'hero': s == hero,
                      'allin': s in allin,
                      'inv': inv.get(s, 0),
+                     'ante': ante_paid.get(s, ante_paid.get(str(s), 0)),
                      'eff': bbs(min(sk, raw['stack']), bb) if sk > raw['stack'] else None})
     v['seats'] = rows
     v['n_live'] = sum(1 for r in rows if r['live'])

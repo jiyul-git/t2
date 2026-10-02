@@ -1305,17 +1305,18 @@ class HandRun:
             pay = min(h.sb, rnd.stacks[sb_s]); rnd.stacks[sb_s] -= pay; rnd.contrib[sb_s] = pay
             if rnd.stacks[sb_s] <= 0:
                 rnd.allin.add(sb_s)
-        ante_pot = 0
         # 안테는 포맷이 정한 레벨부터 걷는다.
         # 예전에는 ante_from 이 저장만 되고 무조건 1레벨부터 걷혔다.
         _ante = getattr(h, 'ante', None)
         if _ante is None: _ante = h.bb
         if bb_s:
             pay = min(h.bb, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= pay; rnd.contrib[bb_s] = pay
-            if _ante > 0:
-                a = min(_ante, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= a; ante_pot = a
-            if rnd.stacks[bb_s] <= 0:
-                rnd.allin.add(bb_s)
+        # 안테: BB 혼자 1bb 를 더 내던 방식(BB 안테)에서, 참가 인원 전원이
+        # 1bb 를 균등하게 나눠 내는 방식으로 바꿨다(runner.post_antes).
+        _ante_paid, ante_pot = RU.post_antes(rnd.stacks, rnd.order, _ante)
+        for _s in list(rnd.order):
+            if rnd.stacks[_s] <= 0:
+                rnd.allin.add(_s)
         rnd.current = h.bb; rnd.min_raise = h.bb
         aggressor = None; limpers = []; callers = 0
 
