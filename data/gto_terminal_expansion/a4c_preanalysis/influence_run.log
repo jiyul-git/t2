@@ -9,3 +9,4 @@
 6|monotone/J_or_lower|1 {'CO': -0.0, 'BTN': 0.0, 'SB': 1e-05, 'BB': 0.0}
 6|monotone/J_or_lower|2 {'CO': 0.0, 'BTN': 0.0, 'SB': 2e-05, 'BB': 1e-05}
 6|monotone/J_or_lower|3 {'CO': 0.0, 'BTN': 0.0, 'SB': 1e-05, 'BB': 1e-05}
+6|monotone/J_or_lower|4 {'CO': 0.0, 'BTN': 0.0, 'SB': 3e-05, 'BB': 2e-05}
