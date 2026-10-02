@@ -55,3 +55,15 @@ the result; it is not a production panel.
 - mechanism confirmed in 9-max -> design the full HU replacement (larger panels, outer loop with the E1 raw-residual rule) and a
   separate multiway plan; only then decide whether to restart E1 and on which config.
 - not confirmed -> back to the audit list (multiway payoff, action abstraction, reference conditions).
+
+## Decision (2026-10-03): Option S, terminals chosen from C0
+- Option S, conditional on the 100-iteration audit check not overturning the audit (expected pattern: aggregate RFI unchanged, hand-level
+  regret down -> convergence ruled out as the main cause).
+- The 4 terminals are NOT fixed in advance: C0 gives exact HU flop-terminal reach at the 100-iteration state; selection then maximises
+  diagnostic value: BTN->BB and CO->BB included, plus at least 2 of HJ / LJ / UTG-family -> BB, so early / middle / late openers are covered.
+- SB->BB may be left out of the core 4 even with high reach (2.5 bb / no-limp SB tree is far from every reference); it is included only
+  with an explicit C0-based reason.
+- Order C1 identity -> C2 24-board panel -> C3 one outer step.
+- Expand to F / full HU only if S moves clearly in the expected direction; no move or the wrong direction -> stop, no automatic F, back to
+  the hypothesis list.
+- E1 stays paused at 24/450; Termux DB on hold; no solver-logic change or DB promotion.
