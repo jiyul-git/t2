@@ -1,0 +1,1 @@
+{"errors": [], "replicates": 60, "table_vs_draw_mismatches": [], "distinct_draws": 60, "distinct_profiles": 120, "rerun_identical": {"38": true, "5": true}, "ok": true, "scope": "bootstrap draw assignment / replay / restart integrity verified; statistical independence of the replicates is not tested by this script (it follows from the seeded RNG design, amendment 1)"}
