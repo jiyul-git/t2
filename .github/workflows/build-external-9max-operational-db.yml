@@ -33,11 +33,11 @@ jobs:
 
           root = Path("data/gto_db")
           idx = json.loads((root / "index_9max_external_v1.json").read_text())
-          assert idx["total_rows"] == 267020, idx["total_rows"]
+          assert idx["total_rows"] == 265330, idx["total_rows"]
           assert idx["provenance_fields_in_operational_rows"] is False
 
           targets = {
-              "preflop_9max_fulltree_external_v1.jsonl": 228995,
+              "preflop_9max_fulltree_external_v1.jsonl": 227305,
               "preflop_9max_pushfold_1to25_v1.jsonl": 38025,
           }
           forbidden = {"source", "source_id", "source_url", "provider", "origin_kind", "origin_id", "lookup_used", "chart_id"}
