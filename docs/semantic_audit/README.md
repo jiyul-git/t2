@@ -1,5 +1,8 @@
 # T2 semantic audit
 
+- [작업 진행 기록](WORK_STATUS.md) — 감사 브랜치·체크포인트·남은 작업
+- [기존 개념의 구조 비교](STRUCTURAL_CONCEPT_REVIEW.md) — 재레이즈 외 판단 구조의 공통점과 차이
+
 감사 기준 test `4b9d33d5f951fce4b292f6e6e79caaf141b106d2`. 전략 튜닝/merge/master promotion 없음.
 
 - [CURRENT_ARCHITECTURE_AUDIT](CURRENT_ARCHITECTURE_AUDIT.md)
