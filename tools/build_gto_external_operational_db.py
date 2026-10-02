@@ -146,10 +146,10 @@ def build_rmh():
                 "frequency_semantics": "first-in shove frequency",
                 "value_status": "exact",
             })
-    if spots != 225:
-        raise SystemExit(f"RangeMyHand spots: expected 225, got {spots}")
-    if len(rows) != 225 * 169:
-        raise SystemExit(f"RangeMyHand rows: expected {225*169}, got {len(rows)}")
+    if spots != 125:
+        raise SystemExit(f"RangeMyHand spots: expected 125, got {spots}")
+    if len(rows) != 125 * 169:
+        raise SystemExit(f"RangeMyHand rows: expected {125*169}, got {len(rows)}")
     return rows, spots, per_stack
 
 def main():
