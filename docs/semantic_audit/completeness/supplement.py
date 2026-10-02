@@ -680,7 +680,7 @@ sp('hero_made_contribution', 'plan', 'act_with_plan', 'made_now = bot.made_stren
 sp('intent_chip_conversion', 'plan', 'act_with_plan', 'it = intent_of(plan_state, street)', "return ('bet', int(amt)), None, None")
 
 # ---- plan.calldown_need ----
-sp('opponent_sizing_normalization', 'plan', 'calldown_need', "if profile.get('concepts') and board:", '_tocall_seen = float(tocall) * (_sz_seen / _sz_true)')
+sp('opponent_sizing_normalization', 'plan', 'perceived_facing_price')  # stage9 B2 (L169)
 sp('calculation_error', 'plan', 'calldown_need', 'nz = PS.calc_noise(profile', 'call_need = call_need_true * nz')
 sp('players_behind_risk_premium', 'plan', 'calldown_need', 'if to_act_behind:', 'call_need += ')
 sp('call_bias_reapplication', 'plan', 'calldown_need', '_cbias = PS.call_bias(profile', 'call_need *= _cbias')
@@ -837,7 +837,7 @@ sp('perceived_icm_pressure', 'plan', 'calldown_need', "if profile.get('concepts'
 sp('calldown_required_share', 'plan', 'calldown_need', '_p0 = max(1.0, float(pot) - float(tocall))', 'float(objective_breakeven) * float(bf) * _size_ratio)')
 sp('calldown_required_share', 'plan', 'calldown_need', 'need = max(0.01, min(0.97, need))', 'call_need = max(0.01, min(0.95, call_need))')
 sp('hero_made_contribution', 'plan', 'calldown_need', 'made_now = bot.made_strength(hero, board) if board else 0')
-sp('call_bias_reapplication', 'plan', 'calldown_need', "if profile.get('concepts') and board:@@2", "return need, max(0.03, min(0.95, call_need))")
+sp('call_bias_reapplication', 'plan', 'calldown_need', "if profile.get('concepts') and board:", "return need, max(0.03, min(0.95, call_need))")  # stage9 B2: first occurrence moved to perceived_facing_price
 sp('overbet_selection_core', 'plan', 'overbet_frac', "if street == 'flop': return None", 'return round(min(2.2, base * rng.uniform(0.92, 1.10)), 2)')
 sp('checkraise_flop_decision', 'plan', 'checkraise_decision', 'rng = random.Random(seed)', "outs = plan_state.get('outs', 0)")
 sp('checkraise_turn_decision', 'plan', 'checkraise_decision', 'else:@@2', 'plan, rel, outs, sk, profile.get(\'aggr\', 5))')
@@ -879,7 +879,14 @@ sp('opponent_unconsumed_estimates', 'reads', 'Book.observe_postflop', 'if facing
 sp('preflop_raise_observation', 'reads', 'Book.observe_backraise')
 sp('preflop_raise_observation', 'reads', 'Book.observe_cold_reraise')
 sp('opponent_estimation', 'reads', 'estimate')
-sp('opponent_unconsumed_estimates', 'reads', 'estimate', 'ftr = _raw(', "ftr_r = _raw('f2r_river', 'fr_river')")
+sp('opponent_unconsumed_estimates', 'reads', 'observed_record_rates', 'ftr = _raw(', "ftr_r = _raw('f2r_river', 'fr_river')")  # stage9 B2 (L164)
+sp('opponent_estimation', 'reads', 'observed_record_rates')  # stage9 B2 (L164) FACT layer
+sp('bet_range_partition', 'ranges', 'bet_value_support_fraction')  # stage9 B2 (L089)
+sp('bet_range_partition', 'bot', 'bluff_barrel_continuation')  # stage9 B2 (L089)
+sp('bet_range_partition', 'bot', 'bluff_nut_blocking')  # stage9 B2 (L089)
+sp('strong_support_blocker', 'ranges', 'strong_support_region')  # stage9 B2 (L103)
+sp('strong_support_blocker', 'ranges', 'blocked_mass_share')  # stage9 B2 (L103)
+sp('exploit_read_permission', 'persona', 'read_evidence_amount')  # stage9 B2 (L168)
 
 # module-level knowledge/parameter tables -> concept (checked by part 3 of the checker)
 TABLES = {
@@ -949,7 +956,7 @@ NONSEMANTIC_FUNCTIONS = {
     'session:HandRun._dseed': 'deterministic seed derivation', 'session:HandRun._reads_for': 'loops perceived_profile',
     'session:HandRun._finish._left_of_button_order': 'seat order helper for odd-chip', 'session:HandRun._finish._rotate_to': 'seat order helper',
     'reads:_ObsMap.__getitem__': 'container', 'reads:_ObsMap.get': 'container', 'reads:_numeric_snapshot': 'snapshot copy',
-    'reads:Book.__init__': 'init', 'reads:Book._k': 'key', 'reads:estimate._rate': 'ratio helper',
+    'reads:Book.__init__': 'init', 'reads:Book._k': 'key', 'reads:observed_record_rates._rate': 'ratio helper',
     'reads:save_book': 'io', 'reads:load_book': 'io', 'reads:_sig_scale': 'math helper',
     'reads:prior_spread': 'style_belief_reference helper (SHADOW)', 'reads:style_certainty': 'style_belief_reference helper (SHADOW)',
     'persona:dump_loading': 'debug dump', 'persona:_clamp': 'math', 'persona:skill': 'accessor', 'persona:has': 'accessor',

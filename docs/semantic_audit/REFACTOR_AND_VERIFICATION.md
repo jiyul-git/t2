@@ -149,3 +149,30 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
   - 지문은 프리플랍 결정 10,157건 전체와 핸드 로그, 최종 스택을 덮는다. RNG 상태는 함수 단위 probe 에서 따로 비교했다.
 - `tools/check_semantic_completeness.py`: site 1,135 / 함수 566 / 상수 표 84, 미소유 0. 새 함수는 SPAN_MAP 에서 기존 개념이 소유한다.
 - 23-gate: 통과·실패 집합이 기준(46a2070/e6de033)과 같다. 17 통과, 기존 실패 6 의 마지막 출력 줄도 같다.
+
+## 7차 — 9단계 B2 (ranges / reads semantic-only refactor)
+
+기준 `59650db`. 항목별 상태는 ledger 의 "9단계 B2" 절.
+
+| 추출/명명 | 이전 위치 | 질문 |
+| --- | --- | --- |
+| `ranges.bet_value_support_fraction` | `_bet_range` inline | 벳 레인지에서 밸류로 남기는 support 비율 |
+| `bot.bluff_barrel_continuation` / `bot.bluff_nut_blocking` | `pick_bluffs.score` | 다음 street 배럴 근거(flop/turn) / 넛 블로킹(모든 street) |
+| `ranges.strong_support_region` / `ranges.blocked_mass_share` | `blocker_score` inline | 강한 구간 선택(support 분위) / 질량 가중 블로커 몫 |
+| `reads.observed_record_rates` | `estimate` inline | 관찰 기록의 원시 빈도(FACT) — PERCEPTION 층과 분리 |
+| `persona.read_evidence_amount` | `_exploit_base_weight`, `opponent_read_application_weight` 중복 식 | 상대 정보 증거의 양(MERGE, 값 동일) |
+| `plan.perceived_facing_price` | `calldown_need` inline | 마주한 벳의 사실 → 인지 사이즈/콜 금액 |
+| 문서만 | `plan._opp_ranges_signature`, `money_pressure.pressure_opportunity`, `ranges.narrow_by_actions` 주석 | 서명 계약 / 압박 층 / 누적 공격 수(KEEP) |
+
+검증:
+- `tools/verify_stage9_semantic.py 59650db --probe b2`: 6,200건이 출력과 RNG 상태까지 바이트 동일.
+  - ranges 3,500: 벳 레인지, 블로커(hero 카드 포함/제외 레인지), 블러프 선택, 액션 재생 posterior
+  - reads 1,500: 가중치 3종, 채운 Book 기록의 estimate + RNG, read_opponent
+  - 가격/압박 1,200: calldown_need + RNG, pressure_opportunity
+- `--probe b1` 도 59650db 대비 동일하다(persona/ranges 변경이 preflop 경로를 바꾸지 않음).
+- 뮤테이션: 새 경계 11개에 의미 있는 변경을 넣었고, 11/11 검출했다.
+  - 처음 실행에서 probe 결함 둘을 찾아 고쳤다. (1) `calldown_need` 에 상대 추정치를 `read` 자리로 넘겨 사이즈 정규화 경로가 실행되지 않았다. (2) 압박 상태에 상금 점프 키가 없어 구조 압박이 늘 0 이었다.
+  - 뮤테이션 구분자를 `|||` 로 바꿨다(코드 안의 콜론과 충돌).
+- `tools/check_semantic_completeness.py`: site 1,136 / 함수 574 / 상수 표 84, 미소유 0.
+- baseline sim(시드 11/12, 1,149핸드): 지문이 R2 봉인값과 같다(`e6d8b5e5…`, `c13a5bf4…`).
+- 23-gate: 통과·실패 집합(17/6)과 각 게이트의 마지막 출력 줄이 기준과 같다.

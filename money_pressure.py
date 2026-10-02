@@ -217,6 +217,14 @@ def read_adjustment(read, channel='generic'):
 
 def pressure_opportunity(hero_state, target_state, actor, read=None,
                          read_channel='generic'):
+    """토너먼트 구조 압박 기회 = 사실 prior × 활용 능력 × 상대 읽기 보정.
+
+    세 층은 각각 다른 함수다(ledger L184):
+      FACT/PRIOR   structural_pressure  (cover_strength, topology_safety,
+                                         objective_self_preservation — 공개 상태)
+      APPLICATION  exploit_realization  (pressure_application_capacity — 개인 능력)
+      READ         read_adjustment      (기존 exploit read 의 fold gap — 상대 정보)
+    """
     prior = structural_pressure(hero_state, target_state)
     theory = clamp01(prior * exploit_realization(actor))
     adjust = read_adjustment(read, read_channel)

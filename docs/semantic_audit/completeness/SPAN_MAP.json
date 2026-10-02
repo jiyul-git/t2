@@ -598,9 +598,9 @@
   {
    "concept": "opponent_sizing_normalization",
    "module": "plan",
-   "func": "calldown_need",
-   "from": "if profile.get('concepts') and board:",
-   "to": "_tocall_seen = float(tocall) * (_sz_seen / _sz_true)"
+   "func": "perceived_facing_price",
+   "from": null,
+   "to": null
   },
   {
    "concept": "calculation_error",
@@ -1614,7 +1614,7 @@
    "concept": "call_bias_reapplication",
    "module": "plan",
    "func": "calldown_need",
-   "from": "if profile.get('concepts') and board:@@2",
+   "from": "if profile.get('concepts') and board:",
    "to": "return need, max(0.03, min(0.95, call_need))"
   },
   {
@@ -1900,9 +1900,58 @@
   {
    "concept": "opponent_unconsumed_estimates",
    "module": "reads",
-   "func": "estimate",
+   "func": "observed_record_rates",
    "from": "ftr = _raw(",
    "to": "ftr_r = _raw('f2r_river', 'fr_river')"
+  },
+  {
+   "concept": "opponent_estimation",
+   "module": "reads",
+   "func": "observed_record_rates",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "bet_range_partition",
+   "module": "ranges",
+   "func": "bet_value_support_fraction",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "bet_range_partition",
+   "module": "bot",
+   "func": "bluff_barrel_continuation",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "bet_range_partition",
+   "module": "bot",
+   "func": "bluff_nut_blocking",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "strong_support_blocker",
+   "module": "ranges",
+   "func": "strong_support_region",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "strong_support_blocker",
+   "module": "ranges",
+   "func": "blocked_mass_share",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "exploit_read_permission",
+   "module": "persona",
+   "func": "read_evidence_amount",
+   "from": null,
+   "to": null
   }
  ],
  "tables": {
@@ -2024,7 +2073,7 @@
   "reads:_numeric_snapshot": "snapshot copy",
   "reads:Book.__init__": "init",
   "reads:Book._k": "key",
-  "reads:estimate._rate": "ratio helper",
+  "reads:observed_record_rates._rate": "ratio helper",
   "reads:save_book": "io",
   "reads:load_book": "io",
   "reads:_sig_scale": "math helper",

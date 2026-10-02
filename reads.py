@@ -369,39 +369,13 @@ def _shrink(obs_val, n, prior, skill, overconf):
     return prior*(1-w) + obs_val*w
 
 
-def estimate(book, observer, target, observer_type, rng=None):
-    """관찰자 관점에서 본 target의 추정 성향. 진짜 값은 안 봄."""
-    # 전역 random 폴백을 두지 않는다. 전역 RNG 는 OS 엔트로피로 시드되므로
-    # 폴백이 한 번이라도 타면 같은 시드가 재현되지 않는다.
-    # 추정 노이즈는 '이 관찰자가 이 상대를 어떻게 보는가'의 일부이므로
-    # 호출자의 결정론적 rng 를 반드시 받아야 한다.
-    if rng is None:
-        raise ValueError('reads.estimate: rng 는 필수입니다 (전역 RNG 사용 금지)')
-    o = OBSERVER.get(observer_type, DEFAULT_OBS)
-    r = book.d.get(book._k(observer, target))
-    if not r or r['hands'] == 0:
-        # PRIOR 의 키는 'fold_to_bet' 이지만 소비 측은 'ftb' 를 본다.
-        # 이름을 맞춰주지 않으면 관찰 기록이 없는 상대에서 KeyError 가 난다.
-        est = dict(PRIOR)
-        est['ftb'] = PRIOR['fold_to_bet']
-        for _k in ('ftb_flop', 'ftb_turn', 'ftb_river'):
-            est[_k] = PRIOR['fold_to_bet']
-        est['fold_to_raise'] = None
-        est['fold_to_raise_n'] = 0
-        for _k in ('ftr_flop', 'ftr_turn', 'ftr_river'):
-            est[_k] = None
-        est['sz_big'] = 0.15; est['sz_river'] = PRIOR['sz_mean']; est['sz_n'] = 0
-        est['pf_cold_reraise_n'] = 0
-        est['pf_cold_reraise_call'] = None
-        est['pf_cold_reraise_raise'] = None
-        est['pf_cold_reraise_fold'] = None
-        est['n'] = 0; est['confidence'] = 0.0
-        return est
-    # Under V3 every downstream rate uses the same remembered window. Legacy
-    # used lifetime numerators/denominators while only n was capped, so old
-    # behavior never actually left the estimate.
-    r = _recent_record(r, o['memory'])
-    n = min(r['hands'], o['memory'])
+def observed_record_rates(r):
+    """관찰 기록 r(기억 창 적용 후)에서 바로 나오는 원시 빈도 — FACT 층.
+
+    표본 수에 따른 수축, 관찰자 실력/과신, 축 역산, 오독 잡음은 여기 없다.
+    그것은 estimate 의 PERCEPTION 층이다(ledger L164). 반환 키는 estimate 가
+    쓰는 지역 이름과 같다. RNG 없음.
+    """
     vpip = r['vpip']/max(1, r['hands'])
     pfr = r['pfr']/max(1, r['hands'])
     cbet = r['cbet']/max(1, r['cbet_opp']) if r['cbet_opp'] else PRIOR['cbet']
@@ -457,6 +431,75 @@ def estimate(book, observer, target, observer_type, rng=None):
     sz_big = _rate('sz_big', 'sz_n', 0.15)
     sz_riv = (r['szr_sum']/r['szr_n']) if r.get('szr_n') else sz_mean
 
+    return {'vpip': vpip, 'pfr': pfr, 'cbet': cbet, 'barrel': barrel, 'delayed': delayed, 'agg': agg, 'ftb': ftb, 'ftb_f': ftb_f, 'ftb_t': ftb_t, 'ftb_r': ftb_r, 'ftr': ftr, 'ftr_f': ftr_f, 'ftr_t': ftr_t, 'ftr_r': ftr_r, 'tb': tb, 'lmp': lmp, 'flr': flr, 'rfi_rel': rfi_rel, 'f2tb': f2tb, 'fb': fb, 'f2fb': f2fb, 'backr': backr, 'fcsq': fcsq, '_cold_n': _cold_n, '_cold_call': _cold_call, '_cold_raise': _cold_raise, '_cold_fold': _cold_fold, '_sn': _sn, 'sz_mean': sz_mean, 'sz_sd': sz_sd, 'sz_big': sz_big, 'sz_riv': sz_riv}
+
+
+def estimate(book, observer, target, observer_type, rng=None):
+    """관찰자 관점에서 본 target의 추정 성향. 진짜 값은 안 봄."""
+    # 전역 random 폴백을 두지 않는다. 전역 RNG 는 OS 엔트로피로 시드되므로
+    # 폴백이 한 번이라도 타면 같은 시드가 재현되지 않는다.
+    # 추정 노이즈는 '이 관찰자가 이 상대를 어떻게 보는가'의 일부이므로
+    # 호출자의 결정론적 rng 를 반드시 받아야 한다.
+    if rng is None:
+        raise ValueError('reads.estimate: rng 는 필수입니다 (전역 RNG 사용 금지)')
+    o = OBSERVER.get(observer_type, DEFAULT_OBS)
+    r = book.d.get(book._k(observer, target))
+    if not r or r['hands'] == 0:
+        # PRIOR 의 키는 'fold_to_bet' 이지만 소비 측은 'ftb' 를 본다.
+        # 이름을 맞춰주지 않으면 관찰 기록이 없는 상대에서 KeyError 가 난다.
+        est = dict(PRIOR)
+        est['ftb'] = PRIOR['fold_to_bet']
+        for _k in ('ftb_flop', 'ftb_turn', 'ftb_river'):
+            est[_k] = PRIOR['fold_to_bet']
+        est['fold_to_raise'] = None
+        est['fold_to_raise_n'] = 0
+        for _k in ('ftr_flop', 'ftr_turn', 'ftr_river'):
+            est[_k] = None
+        est['sz_big'] = 0.15; est['sz_river'] = PRIOR['sz_mean']; est['sz_n'] = 0
+        est['pf_cold_reraise_n'] = 0
+        est['pf_cold_reraise_call'] = None
+        est['pf_cold_reraise_raise'] = None
+        est['pf_cold_reraise_fold'] = None
+        est['n'] = 0; est['confidence'] = 0.0
+        return est
+    # Under V3 every downstream rate uses the same remembered window. Legacy
+    # used lifetime numerators/denominators while only n was capped, so old
+    # behavior never actually left the estimate.
+    r = _recent_record(r, o['memory'])
+    n = min(r['hands'], o['memory'])
+    _f = observed_record_rates(r)
+    vpip = _f['vpip']
+    pfr = _f['pfr']
+    cbet = _f['cbet']
+    barrel = _f['barrel']
+    delayed = _f['delayed']
+    agg = _f['agg']
+    ftb = _f['ftb']
+    ftb_f = _f['ftb_f']
+    ftb_t = _f['ftb_t']
+    ftb_r = _f['ftb_r']
+    ftr = _f['ftr']
+    ftr_f = _f['ftr_f']
+    ftr_t = _f['ftr_t']
+    ftr_r = _f['ftr_r']
+    tb = _f['tb']
+    lmp = _f['lmp']
+    flr = _f['flr']
+    rfi_rel = _f['rfi_rel']
+    f2tb = _f['f2tb']
+    fb = _f['fb']
+    f2fb = _f['f2fb']
+    backr = _f['backr']
+    fcsq = _f['fcsq']
+    _cold_n = _f['_cold_n']
+    _cold_call = _f['_cold_call']
+    _cold_raise = _f['_cold_raise']
+    _cold_fold = _f['_cold_fold']
+    _sn = _f['_sn']
+    sz_mean = _f['sz_mean']
+    sz_sd = _f['sz_sd']
+    sz_big = _f['sz_big']
+    sz_riv = _f['sz_riv']
     cap = o['memory']                      # 기억 한계는 기회 횟수에도 적용
     n_cb = min(r['cbet_opp'], cap)
     n_br = min(r['barrel_opp'], cap)

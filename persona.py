@@ -1112,6 +1112,16 @@ def call_bias(prof, street, size_frac, made, outs):
     return max(0.55, min(1.75, m))
 
 
+def read_evidence_amount(confidence, n_hands):
+    """상대 정보가 얼마나 쌓였나 0~1 = 관찰 확신 × 표본 수(12핸드 포화).
+
+    '증거의 양'이라는 하나의 질문이다. 그 증거를 얼마나 쓰려 하는가(적용
+    의지/능력)는 호출하는 가중치 함수가 따로 곱한다(ledger L168 — 두 가중치
+    함수에 같은 식이 중복돼 있던 것을 한 producer 로 모음, 값 동일).
+    """
+    return min(1.0, float(confidence)) * min(1.0, float(n_hands) / 12.0)
+
+
 def _exploit_base_weight(prof, confidence=0.0, n_hands=0):
     """Shared upper bound for using opponent-specific information.
 
@@ -1124,7 +1134,7 @@ def _exploit_base_weight(prof, confidence=0.0, n_hands=0):
         return 0.0
     adp = temper(prof, 'adaptability', 5.0)
     use = max(0.0, min(1.0, adp / 10.0))
-    data = min(1.0, float(confidence)) * min(1.0, float(n_hands) / 12.0)
+    data = read_evidence_amount(confidence, n_hands)
     return round(max(0.0, min(0.85, use * data)), 3)
 
 
@@ -1157,7 +1167,7 @@ def opponent_read_application_weight(application_skill, adaptability, attention,
     trait = max(0.0, min(1.0, (trait - 0.28) / 0.60))
     if trait <= 0.0:
         return 0.0
-    data = min(1.0, float(confidence)) * min(1.0, n_hands/12.0)
+    data = read_evidence_amount(confidence, n_hands)
     return round(max(0.0, min(0.85, trait * data)), 3)
 
 def _polar(observed, value_base):

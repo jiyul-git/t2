@@ -435,11 +435,24 @@ def pick_bluffs(ranked, board, street, n_want):
     def score(c):
         s = 0.0
         if later:
-            s += draw_strength(list(c), board) * 0.08     # 배럴 지속성
-        s += sum(wt.get(x, 0) for x in c) / (2.0*mx)      # 넛 블로킹
+            s += bluff_barrel_continuation(c, board)      # 배럴 지속성(flop/turn)
+        s += bluff_nut_blocking(c, wt, mx)                # 넛 블로킹(모든 street)
         return s
 
     return sorted(cand, key=score, reverse=True)[:n_want]
+
+
+def bluff_barrel_continuation(combo, board):
+    """블러프 후보가 다음 street 로 배럴을 이어갈 근거(드로우). flop/turn 전용.
+
+    리버에는 다음 street 가 없어 이 항을 쓰지 않는다(ledger L089).
+    """
+    return draw_strength(list(combo), board) * 0.08
+
+
+def bluff_nut_blocking(combo, top_card_weights, max_weight):
+    """블러프 후보가 상대 최상위 콤보의 카드를 얼마나 쥐고 있는가(모든 street)."""
+    return sum(top_card_weights.get(x, 0) for x in combo) / (2.0*max_weight)
 
 
 def betting_range(board, base_pct, bluff_axis, street, dead):

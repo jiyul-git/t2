@@ -44,7 +44,7 @@ C = {
  'L035': ('PARTIAL', '4차에서 multiway 적용 능력 분리. 남은 pool identity vs 추론 명명은 B4'),
  'L036': ('NOW:B4', 'fold_equity: 확률 추정 vs 활용 분리'),
  'L037': ('KEEP', 'money_jump: preflop 활성, 이후 shadow'),
- 'L047': ('NOW:B2', 'aggressive_street_count: ranges 의 로컬 재계산을 canonical wrapper 로(값 동일 확인 후)'),
+ 'L047': ('KEEP', 'ranges 의 재생 중 누적 수와 canonical 결정 시점 전체 수는 시간 기준이 다른 질문(B2 조사 결과 재분류)'),
  'L049': ('LATER', '_was_3bettor 는 원시 로그의 raise/allin(올인 콜 포함)을 세고 canonical 역할은 full raise 만 센다 — 교체하면 행동 변화(B1 조사 결과 재분류)'),
  'L054': ('DONE', 'line_owned_by_live_aggressor 추출(재감사)'),
  'L055': ('KEEP', 'RFI 폭 prior — 지식 항목'),
@@ -166,7 +166,7 @@ C = {
 }
 
 # 끝난 batch. 그 batch 의 NOW 항목은 DONE(batch) 로 표시한다.
-FINISHED = {'NOW:B1'}
+FINISHED = {'NOW:B1', 'NOW:B2'}
 
 BATCH = {
  'B1': 'preflop (preflop.py, gto.py 이름, persona preflop 공급)',

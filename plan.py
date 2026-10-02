@@ -402,6 +402,14 @@ def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
 
 
 def _opp_ranges_signature(opp_ranges):
+    """좌석별 레인지 묶음의 refresh 서명(좌석 키 + 각 레인지의 보관용 SHA).
+
+    네 서명은 계약이 다르다(ledger L082):
+      ranges.range_signature   equity/캐시 시드 payload(균일 가중치는 legacy support)
+      _range_sig               보관용 16자리 SHA(과거 아카이브와 비교 가능)
+      _decision_range_sig      프로세스 내 refresh 해시(질량이 다르면 refresh)
+      _opp_ranges_signature    seat-keyed 묶음의 refresh 비교(이 함수)
+    """
     if isinstance(opp_ranges, dict):
         return tuple((str(k), _range_sig(v)) for k, v in
                      sorted(opp_ranges.items(), key=lambda kv: str(kv[0])))
@@ -1145,6 +1153,28 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
 #
 # 집행부는 intent 를 만들지 않는다. 읽고 환산할 뿐이다.
 
+def perceived_facing_price(profile, opp_est, board, street, sz_true, tocall):
+    """마주한 벳의 사실(FACT)을 이 사람이 인지한 값(PERCEPTION)으로 옮긴다.
+
+    입력 sz_true / tocall 은 공개 사실이며 바뀌지 않는다. 반환:
+      read      read_opponent(관찰 기반 상대 읽기) 또는 None
+      sz_seen   상대 기준 정규화(opp_size_norm, 읽기) → 정의역 밖 인지(size_read, 능력)
+      tocall_seen  인지된 사이즈 비율만큼 옮긴 콜 금액(callers 칩은 재해석하지 않음)
+    개념 벡터가 없거나 프리플랍이면 사실 그대로다(ledger L169). RNG 없음.
+    """
+    read = None
+    sz_seen = sz_true
+    tocall_seen = float(tocall)
+    if profile.get('concepts') and board:
+        read = PS.read_opponent(profile, opp_est) if opp_est else None
+        sz_seen = PS.size_read(profile, PS.opp_size_norm(read, sz_true, street))
+        # 사이즈 오독은 실제 call price에 비례 적용한다.
+        # callers의 칩을 상대 bet으로 재해석하지 않는다.
+        if sz_true > 1e-9:
+            tocall_seen = float(tocall) * (sz_seen / sz_true)
+    return read, sz_seen, tocall_seen
+
+
 def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
                   to_act_behind, opp_est, n_opp=1, rng=None, _bf_gated=True,
                   facing_size_frac=None, objective_breakeven=None):
@@ -1180,16 +1210,8 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
     _sz_true = (float(facing_size_frac)
                 if facing_size_frac is not None and facing_size_frac > 0
                 else _sz_fallback)
-    _rdz = None
-    _sz_seen = _sz_true
-    _tocall_seen = float(tocall)
-    if profile.get('concepts') and board:
-        _rdz = PS.read_opponent(profile, opp_est) if opp_est else None
-        _sz_seen = PS.size_read(profile, PS.opp_size_norm(_rdz, _sz_true, street))
-        # 사이즈 오독은 실제 call price에 비례 적용한다.
-        # callers의 칩을 상대 bet으로 재해석하지 않는다.
-        if _sz_true > 1e-9:
-            _tocall_seen = float(tocall) * (_sz_seen / _sz_true)
+    _rdz, _sz_seen, _tocall_seen = perceived_facing_price(
+        profile, opp_est, board, street, _sz_true, tocall)
     # pot 은 pot_live 다 — 상대가 방금 낸 벳은 들어 있고 **내 콜은 아직
     # 아니다**(session.py:449 의 pot_now + sum(r2.contrib)). 콜하면 내 칩도
     # 팟에 들어가므로 분모에 내 콜을 더해야 한다.

@@ -111,3 +111,8 @@
   - 행동 동일성: probe 6,460건, 뮤테이션 13/13, 봉인 sim 지문 동일, 23-gate 동일, completeness 0.
   - 새 ledger 항목 L-S9-01(가려진 조건).
 - 다음: B2(ranges/reads). B1 이 push 로 봉인된 뒤 시작한다.
+- **B2 (ranges/reads) 완료.**
+  - DONE 7, KEEP 1(L047 — 재생 중 누적 수와 결정 시점 전체 수는 시간 기준이 다름).
+  - 행동 동일성: probe 6,200건(+B1 probe 재통과), 뮤테이션 11/11, 봉인 sim 지문 동일, 23-gate 동일, completeness 0.
+  - 기록: L-S9-02(복원 레인지에 hero 카드 콤보가 남음 — blocker_score 계약).
+- 다음: B3(plan 포스트플랍). 사용자 지시 전에는 시작하지 않는다.

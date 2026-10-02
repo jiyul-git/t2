@@ -4,18 +4,18 @@
 
 | 분류 | 수 | 뜻 |
 |---|---|---|
-| DONE | 32 | 행동 보존 처리 완료(이번 9단계 batch 완료분 포함) |
+| DONE | 39 | 행동 보존 처리 완료(이번 9단계 batch 완료분 포함) |
 | PARTIAL | 4 | 일부 완료, 남은 행동 보존 부분은 batch 에 배정 |
-| NOW | 66 | 이번 9단계에서 행동 보존으로 처리 |
+| NOW | 58 | 이번 9단계에서 행동 보존으로 처리 |
 | LATER | 18 | 행동 변화가 필요 — 9단계 대상 아님(판단 개선 단계) |
-| KEEP | 29 | 의도적으로 유지 |
+| KEEP | 30 | 의도적으로 유지 |
 
 ## batch
 
 | batch | 범위 | 배정 항목 수 | 상태 |
 |---|---|---|---|
 | B1 | preflop (preflop.py, gto.py 이름, persona preflop 공급) | 17 | 완료 |
-| B2 | ranges / reads / persona 읽기 / money_pressure | 8 | 대기 |
+| B2 | ranges / reads / persona 읽기 / money_pressure | 7 | 완료 |
 | B3 | plan 포스트플랍 (make_plan, decide_aggression, decide_size, decide_response, act_with_plan, checkraise) | 24 | 대기 |
 | B4 | persona 개념 scalar 역할 함수 | 20 | 대기 |
 | B5 | RENAME 과 REMOVE_COMPAT | 9 | 대기 |
@@ -60,7 +60,7 @@
 | L035 | multiway | SPLIT | PARTIAL | 4차에서 multiway 적용 능력 분리. 남은 pool identity vs 추론 명명은 B4 |
 | L036 | fold_equity | SPLIT | NOW:B4 | fold_equity: 확률 추정 vs 활용 분리 |
 | L037 | money_jump | KEEP | KEEP | money_jump: preflop 활성, 이후 shadow |
-| L047 | aggressive_street_count | MERGE | NOW:B2 | aggressive_street_count: ranges 의 로컬 재계산을 canonical wrapper 로(값 동일 확인 후) |
+| L047 | aggressive_street_count | MERGE | KEEP | ranges 의 재생 중 누적 수와 canonical 결정 시점 전체 수는 시간 기준이 다른 질문(B2 조사 결과 재분류) |
 | L049 | preflop_public_roles | SPLIT | LATER | _was_3bettor 는 원시 로그의 raise/allin(올인 콜 포함)을 세고 canonical 역할은 full raise 만 센다 — 교체하면 행동 변화(B1 조사 결과 재분류) |
 | L054 | called_aggression_ownership | SPLIT | DONE | line_owned_by_live_aggressor 추출(재감사) |
 | L055 | rfi_width_prior | KEEP | KEEP | RFI 폭 prior — 지식 항목 |
@@ -82,17 +82,17 @@
 | L077 | legacy_calloff_threshold | SPLIT | DONE(B1) | legacy 콜오프 폭 소비 경로 명명(R2 S1) |
 | L078 | layer_calloff_judgment | SPLIT | DONE(B1) | layer 콜오프: 수학 vs skill 게이트 경계 명명 |
 | L079 | calloff_comparison_shadow | KEEP | KEEP | SHADOW |
-| L082 | range_identity_signature | SPLIT | NOW:B2 | 캐시 시그니처 계약별 이름 분리 |
+| L082 | range_identity_signature | SPLIT | DONE(B2) | 캐시 시그니처 계약별 이름 분리 |
 | L083 | preflop_posterior_order | SPLIT | DONE(B1) | posterior 순서: support-count rank vs 누적 질량 명명 |
 | L087 | range_reconstruction_grasp | MERGE | DONE | blend_action_range_by_grasp 통합(1차), reconstruction 함수(3차) |
-| L089 | bet_range_partition | SPLIT | NOW:B2 | bet range 분할: flop/turn 드로우 지원 vs river 블로커 전용 분리 |
+| L089 | bet_range_partition | SPLIT | DONE(B2) | bet range 분할: flop/turn 드로우 지원 vs river 블로커 전용 분리 |
 | L090 | continue_range_partition | MERGE | DONE | continuation_support_fraction 통합(1차) |
 | L093 | raise_range_posterior | SPLIT | LATER | forward raise 정책과 posterior 불일치 — 행동 변화 |
 | L095 | hero_made_contribution | RENAME | NOW:B5 | RENAME: made_strength = hero 기여 카테고리(정의 교정은 LATER, L-RA09) |
 | L097 | current_board_not_behind | RENAME | NOW:B5 | RENAME: rel 은 equity 가 아님(joint/union fallback 명시) |
 | L099 | unconditioned_equity | KEEP | KEEP | FALLBACK |
 | L102 | strong_region_advantage | RENAME | NOW:B5 | RENAME: nut_advantage 는 문자 그대로의 넛이 아님 |
-| L103 | strong_support_blocker | SPLIT | NOW:B2 | blocker_score: support 분위 vs 질량 분위 분리 |
+| L103 | strong_support_blocker | SPLIT | DONE(B2) | blocker_score: support 분위 vs 질량 분위 분리 |
 | L105 | relative_strength_perception | SPLIT | NOW:B3 | perceived_rel: true rel 과 perceived rel 경계 명명 |
 | L107 | depth_perception | SPLIT | NOW:B6 | depth: 객관 깊이 vs 주관 추정 경계 명명 |
 | L109 | board_completion_danger | SPLIT | NOW:B6 | board_danger raw vs skill-scaled state.danger 명명(계약 통일은 LATER, L-RA06) |
@@ -135,17 +135,17 @@
 | L157 | plan_concept_permission | SPLIT | NOW:B3 | _allowed 의 generic checkraise 별칭 분리(별칭 교체는 LATER) |
 | L161 | opponent_behavior_memory | SPLIT | LATER | bot 테이블이 Book 을 매 핸드 새로 만듦 — 기억 지속은 행동 변화 |
 | L163 | showdown_strength_observation | SPLIT | LATER | 쇼다운 관측 가시성 + PCT 를 쇼다운 강도로 사용 |
-| L164 | opponent_estimation | SPLIT | NOW:B2 | estimate: 믿음 불확실성 vs exploit 강도 분리 |
+| L164 | opponent_estimation | SPLIT | DONE(B2) | estimate: 믿음 불확실성 vs exploit 강도 분리 |
 | L166 | style_belief_reference | KEEP | KEEP | SHADOW |
 | L167 | recency_window | KEEP | KEEP | OPT-IN |
-| L168 | exploit_read_permission | SPLIT | NOW:B2 | legacy exploit_weight vs read_opponent 가중치 경계 명명(v3 통합은 opt-in 유지) |
-| L169 | opponent_sizing_normalization | SPLIT | NOW:B2 | size read: 물리 팟오즈 vs 인지 분리 |
+| L168 | exploit_read_permission | SPLIT | DONE(B2) | legacy exploit_weight vs read_opponent 가중치 경계 명명(v3 통합은 opt-in 유지) |
+| L169 | opponent_sizing_normalization | SPLIT | DONE(B2) | size read: 물리 팟오즈 vs 인지 분리 |
 | L170 | shown_hand_range_adjustment | SPLIT | LATER | 쇼다운 히스토리 확장 — 상대 적응 경로(baseline 고정 대상) |
 | L172 | accumulation_variance_drive | SPLIT | KEEP | 분산 추구 = 의도된 인간 성향(D). 설명만 |
 | L174 | icm_bubble_factor | SPLIT | KEEP | BF 단순화 — 지식 항목 |
 | L175 | field_icm_proxy | REMOVE_COMPAT | NOW:B5 | REMOVE_COMPAT: 덮어쓰인 옛 field_bf 와 그 전용 표 |
 | L177 | icm_required_equity_reference | KEEP | KEEP | FALLBACK, 다른 pot 규약 — 합치지 않음 |
-| L184 | stack_cover_pressure | SPLIT | NOW:B2 | stack cover pressure 하위 질문 명명 |
+| L184 | stack_cover_pressure | SPLIT | DONE(B2) | stack cover pressure 하위 질문 명명 |
 | L185 | money_commitment_budget | KEEP | KEEP | SHADOW |
 | L187 | money_open_form_shadow | KEEP | KEEP | SHADOW |
 | L189 | layer_expected_share | RENAME | NOW:B5 | RENAME: _diagnostic_layer_equities 는 일부 ACTIVE |

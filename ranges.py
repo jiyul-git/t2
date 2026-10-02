@@ -594,6 +594,29 @@ def joint_nut_advantage(r_a, opp_ranges, board, n_opp=None, sims=1600, seed=None
 # strong_shares 는 _strong_share 를 감싼 표시용 래퍼였고 호출부가 없었다.
 # nut_advantage 가 같은 재료를 쓰므로 제거한다.
 
+def strong_support_region(opp_range, board):
+    """상대 레인지의 '강한 구간' = 현재 보드 강도 순 support 상위 1/5 (최소 4콤보).
+
+    support 개수 기준 분위다 — 가중치(질량) 분위가 아니다(ledger L103).
+    """
+    support = sorted(
+        range_support(opp_range),
+        key=lambda c: bot.eval7(list(c)+board),
+        reverse=True)
+    return support[:max(4, len(support)//5)]
+
+
+def blocked_mass_share(hero, weights, region):
+    """region 의 posterior 질량 중 hero 카드가 지운 몫. 질량 가중(가중치 의미 보존)."""
+    total = sum(weights.get(c, 0.0) for c in region)
+    if total <= 0:
+        return 0.0
+    blocked = sum(
+        weights.get(c, 0.0) for c in region
+        if c[0] in hero or c[1] in hero)
+    return blocked / total
+
+
 def blocker_score(hero, opp_range, board):
     """내 카드가 상대의 강한 콤보를 얼마나 지우는가. 0~1.
 
@@ -606,21 +629,10 @@ def blocker_score(hero, opp_range, board):
     """
     if not opp_range or not board:
         return 0.0
-    support = sorted(
-        range_support(opp_range),
-        key=lambda c: bot.eval7(list(c)+board),
-        reverse=True)
-    strong = support[:max(4, len(support)//5)]
+    strong = strong_support_region(opp_range, board)
     if not strong:
         return 0.0
-    wr = weighted_range(opp_range)
-    total = sum(wr.get(c, 0.0) for c in strong)
-    if total <= 0:
-        return 0.0
-    blocked = sum(
-        wr.get(c, 0.0) for c in strong
-        if c[0] in hero or c[1] in hero)
-    return blocked / total
+    return blocked_mass_share(hero, weighted_range(opp_range), strong)
 
 
 def blocker_effect(hero, opp_range, board, street, size_frac, for_value=False):
@@ -806,11 +818,12 @@ def line_bluff_share(board, street, size_frac, bluff_axis=5.0, n_barrels=1):
     return max(0.03, min(0.55, sh))
 
 
-def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0,
-               n_barrels=1):
-    """벳/레이즈: 양극화. 선택된 support의 기존 mass를 그대로 보존한다."""
-    ranked = _ranked(r, board)
-    n = len(ranked)
+def bet_value_support_fraction(street, size_frac, damp=1.0, barrel=0.0):
+    """벳/레이즈를 낸 레인지에서 밸류로 남기는 support 비율(질량 아님).
+
+    벳 레인지 분할의 '밸류 폭' 질문이다. 블러프 몫(line_bluff_share)과
+    블러프 콤보 선택(bot.pick_bluffs)은 별도 질문이다(ledger L089).
+    """
     # **고정 상수였다.** 닛이 턴에 배럴하든 매니악이 하든 같은 상위 30% 로
     # 좁혀졌다. 실제로는 닛의 턴 배럴이 상위 15%, 매니악이 55% 다.
     # barrel_gap 은 그 사람의 배럴 빈도가 기준보다 얼마나 넓은가(−1~+1).
@@ -819,7 +832,15 @@ def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0,
     if size_frac >= 1.0:   vfrac *= 0.60
     elif size_frac >= 0.7: vfrac *= 0.78
     elif size_frac <= 0.35: vfrac *= 1.45
-    vfrac = _damp(vfrac, damp)
+    return _damp(vfrac, damp)
+
+
+def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0,
+               n_barrels=1):
+    """벳/레이즈: 양극화. 선택된 support의 기존 mass를 그대로 보존한다."""
+    ranked = _ranked(r, board)
+    n = len(ranked)
+    vfrac = bet_value_support_fraction(street, size_frac, damp, barrel)
     nv = max(1, int(n*min(0.95, vfrac)))
     value = ranked[:nv]
     _sh = line_bluff_share(
@@ -1121,6 +1142,9 @@ def narrow_by_actions(base, board, acts, actor_read=None, observer=None):
         d = _DECAY ** step
 
         if a in ('bet', 'raise', 'allin'):
+            # 이 액션 '시점까지' 공격한 street 수(재생 중 누적). 결정 시점의
+            # 전체 수를 세는 action_events.aggressive_street_count 와는 시간 기준이
+            # 다른 질문이라 합치지 않는다(ledger L047, 9단계 B2 KEEP).
             if stt not in aggressive_streets:
                 aggressive_streets.append(stt)
             n_barrels = len(aggressive_streets)

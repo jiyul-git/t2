@@ -257,3 +257,24 @@
 | ID | 위치 | 내용 | 판정 |
 |---|---|---|---|
 | L-S9-01 | `preflop.raise_commit_geometry` `target_bb >= 0.75*stack_bb or spr_after < 0.50` | 호출부는 모두 `facing_bb <= target_bb` 다. 그래서 `target ≥ 0.75·stack` 이면 `rem ≤ 0.25·stack`, `pot_after ≥ target ≥ 0.75·stack`, `spr_after ≤ 0.33 < 0.50` 이 된다. 첫 조건은 항상 둘째 조건에 가려진다. 0.75 → 0.76 뮤테이션이 raise_form 직접 800건 + 디펜스 경로 1,500건 probe 에서 행동을 바꾸지 못했다. 호출부 3곳(preflop.py 핫존·defend_decision·multiway)은 모두 target = open × 배수(≥2.1) 또는 올인 금액 그대로라 facing ≤ target 이 성립한다(0.50 → 0.55 는 검출) | 죽은 조건 정리 후보. 제거는 행동 불변이지만, `facing > target` 호출이 생기면 의미가 달라지므로 별도 커밋으로 한다 |
+
+## 9단계 B2 (ranges / reads) — 처리 상태
+
+기준 `59650db`. 행동 보존 검증 결과는 `REFACTOR_AND_VERIFICATION.md` 7차.
+
+| ID | 상태 | 처리 |
+|---|---|---|
+| L047 | **KEEP** | `ranges.narrow_by_actions` 의 `aggressive_streets` 는 재생 중 '이 액션 시점까지' 누적된 공격 street 수이고, `action_events.aggressive_street_count` 는 결정 시점의 전체 수(max 1)다. 시간 기준이 다른 질문이라 합치면 값이 바뀐다. 코드에 그 경계를 주석으로 남겼다 |
+| L082 | DONE | 네 서명 함수의 계약(시드 payload / 보관용 SHA / 프로세스 내 refresh 해시 / seat-keyed 묶음)을 `plan._opp_ranges_signature` docstring 에 명시. 함수는 이미 분리돼 있어 코드 변경 없음 |
+| L089 | DONE | 밸류 폭 `ranges.bet_value_support_fraction`, 블러프 선택 점수 `bot.bluff_barrel_continuation`(flop/turn 전용) / `bot.bluff_nut_blocking`(모든 street) |
+| L103 | DONE | `ranges.strong_support_region`(support 개수 분위) / `ranges.blocked_mass_share`(posterior 질량 가중) |
+| L164 | DONE | `reads.observed_record_rates` = 관찰 기록의 원시 빈도(FACT). 수축·축 역산·오독 잡음·확신(PERCEPTION)은 `estimate` 에 남김. RNG 소비 순서 동일 |
+| L168 | DONE | 두 가중치 함수에 중복된 '증거의 양' 식을 `persona.read_evidence_amount` 하나로 합침(값 동일). 적용 의지/능력 부분은 각 함수에 그대로 |
+| L169 | DONE | `plan.perceived_facing_price` — 사실(`sz_true`, `tocall`)과 인지(`sz_seen`, `tocall_seen`, read)를 분리. `calldown_need` 의 지역 이름 `need_true` 는 실제로는 인지된 가격 기반이다 — 이름 정리는 B3(L145) |
+| L184 | DONE | 4차에서 이미 함수 분리. 합성 함수 `pressure_opportunity` docstring 에 FACT/PRIOR → APPLICATION → READ 층 명시 |
+
+### 관찰 기록
+
+| ID | 내용 | 판정 |
+|---|---|---|
+| L-S9-02 | 관찰자가 복원한 상대 레인지에는 hero 카드가 들어간 콤보가 남아 있다. baseline 짧은 sim(시드 11, 15핸드 상한) 에서 `blocker_score` 호출 624건 중 612건이 그랬다. equity 계산은 dead 카드를 따로 거르고, `blocker_score` 는 이 콤보로 블로커 몫을 잰다(486건이 0 이 아님). 의도된 계약으로 보이지만 '레인지 폭'을 콤보 수로 세는 소비처가 hero 카드 콤보를 함께 세는지는 B3 에서 확인한다 | KEEP(기록) |
