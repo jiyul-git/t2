@@ -232,11 +232,10 @@ def solve_stack(stack,iters,target,seed):
     print("SAVED",wrote,"new canonical spots for",stack,"bb")
     return wrote
 
-def git_push(count):
+def git_push(count,branch):
     if count<=0:
         print("PUSH skipped: no new spot files")
         return
-    branch=subprocess.run(["git","branch","--show-current"],cwd=ROOT,text=True,capture_output=True,check=True).stdout.strip()
     subprocess.run(["git","add","data/gto_db/spots"],cwd=ROOT,check=True)
     diff=subprocess.run(["git","diff","--cached","--quiet"],cwd=ROOT)
     if diff.returncode==0:
@@ -253,6 +252,7 @@ def main():
     ap.add_argument("--threads",type=int,default=4)
     ap.add_argument("--eq-samples",type=int,default=1200)
     ap.add_argument("--push",action="store_true")
+    ap.add_argument("--push-branch",default="chatgpt/gto-db-worker-v1-20261003")
     ap.add_argument("--inventory-only",action="store_true")
     a=ap.parse_args()
 
@@ -268,7 +268,7 @@ def main():
     need=[s for s in a.stacks if any(spot_key(x) not in have for x in planned_states(s))]
     if not need:
         print("DONE: all requested spots already exist")
-        if a.push: git_push(imported)
+        if a.push: git_push(imported,a.push_branch)
         return
     proc=start_server(a.threads,a.eq_samples,a.seed)
     wrote=0
@@ -284,7 +284,7 @@ def main():
         if proc is not None:
             proc.terminate()
     if a.push:
-        git_push(wrote+imported)
+        git_push(wrote+imported,a.push_branch)
     print("DONE new_or_imported",wrote+imported)
 
 if __name__=="__main__":
