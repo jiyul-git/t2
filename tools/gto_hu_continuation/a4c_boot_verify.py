@@ -9,7 +9,8 @@
    from draw NN exactly -> replicate NN was solved on draw NN, no shift / mix-up.
 3. result provenance: stored gaps / evs of each replicate equal its own terminal exports; every swap file names the right base
    and donor profiles for its replicate and the right seat.
-4. independence: no two replicates share a draw, and no two solved profiles are byte-identical.
+4. distinctness: no two replicates share a draw, and no two solved profiles are byte-identical (this is NOT a test of
+   statistical independence, which rests on the seeded RNG design of amendment 1).
 5. interrupted replicates (default 38) + one control: the swap evaluations are re-run into a scratch dir and must reproduce the
    stored swap files exactly (no partial / stale output kept from the interrupted run); profile files older than every swap
    that read them.
@@ -113,7 +114,7 @@ def main():
                 for p in (bp, dp):
                     if os.path.getmtime(p) > os.path.getmtime(f):
                         err(f'rep {i} {sd}/{name}: profile {p} newer than the swap that read it')
-    # 4. independence
+    # 4. distinctness (not a statistical-independence test)
     dk = [json.dumps(m, sort_keys=True) for m in manifest]
     res['distinct_draws'] = len(set(dk))
     ph = [sha_file(OUT + f'boot/r{i:02d}/{s}/profile.gtop') for i in range(1, len(keys) + 1) for s in ('144', 'ext')]
@@ -141,6 +142,8 @@ def main():
         os.remove(os.path.join(tmp, f))
     os.rmdir(tmp)
     res['ok'] = not res['errors']
+    res['scope'] = ('bootstrap draw assignment / replay / restart integrity verified' if res['ok'] else 'integrity check FAILED') + \
+        '; statistical independence of the replicates is not tested by this script (it follows from the seeded RNG design, amendment 1)'
     C.atomic(res, os.path.join(tempfile.gettempdir(), 'a4c_boot_verify_partial.json') if a.partial else OUT + 'boot_verify.json')
     print(json.dumps(res, indent=1))
     sys.exit(0 if res['ok'] else 1)
