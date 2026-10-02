@@ -1,0 +1,35 @@
+{
+  "base": "/home/user/t2/data/gto_terminal_expansion/a4b_panel144/points/V144/profile.gtop",
+  "br_values": [
+    -0.008901565231005128,
+    0.08666449933683144,
+    -0.16293085985392028,
+    0.09859845464443179
+  ],
+  "donor": "/home/user/t2/data/gto_terminal_expansion/a4c_preanalysis/influence/n6/monotone_KQ/r2/profile.gtop",
+  "evs": [
+    -0.009000175556648511,
+    0.08659001980045992,
+    -0.16309472476666048,
+    0.09852847742057572
+  ],
+  "floats_swapped": 83486,
+  "gap_total": 0.0004069319986111884,
+  "gaps": [
+    0.00009861032564338298,
+    0.0000744795363715152,
+    0.00016386491274021382,
+    0.0000699772238560764
+  ],
+  "nodes_swapped": 212,
+  "position": "BB",
+  "positions": [
+    "CO",
+    "BTN",
+    "SB",
+    "BB"
+  ],
+  "seat": 3,
+  "subtree_root": "all",
+  "t2_cont_file": "/home/user/t2/data/gto_terminal_expansion/a4b_panel144/points/V144/manifest.json"
+}
