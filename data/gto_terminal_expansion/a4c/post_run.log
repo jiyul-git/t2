@@ -116,3 +116,322 @@ Traceback (most recent call last):
     raise CalledProcessError(retcode, process.args,
 subprocess.CalledProcessError: Command '['/home/user/t2/vendor/gtopen/target/release/examples/t2_splice_eval', '/home/user/t2/data/gto_terminal_expansion/a4c/points/Gext/profile.gtop', '/home/user/t2/data/gto_terminal_expansion/a4c/points/Gext_lobo_Kc9h9d/profile.gtop', '0', 'all', '/home/user/t2/data/gto_terminal_expansion/a4c/points/lobo_swaps/swap_CO.json']' returned non-zero exit status 1.
 FAILED lobo
+POST_GATE {"6": {"ok": 87, "of": 88, "quarantined": [], "nonconverged_at_cap_pending_user": [], "accepted_exception_nonconverged": ["Kc9h9d"]}, "28": {"ok": 74, "of": 74, "quarantined": [], "nonconverged_at_cap_pending_user": [], "accepted_exception_nonconverged": []}} ok
+STEP tables 2026-10-02T17:39:30Z
+{
+ "V144_node6_vs_table_measured_144_max_abs": 0.0,
+ "node6_boards": {
+  "total": 232,
+  "new": 88
+ },
+ "node6_unallocated_bb": {
+  "V144": 0.008016188779018663,
+  "Vext": 0.011667751144181615
+ },
+ "node6_new_flops": {
+  "count": 88,
+  "max_expl_pct_pot": 0.30251012452929915,
+  "mean_expl_pct_pot": 0.2633018037580649,
+  "cpu_h": 14.071053642018331,
+  "iterations_mean": 116.76136363636364
+ },
+ "V144_node28_vs_table_measured_144_max_abs": 0.0,
+ "node28_boards": {
+  "total": 218,
+  "new": 74
+ },
+ "node28_unallocated_bb": {
+  "V144": -0.004931295668388458,
+  "Vext": 0.0026134776170545493
+ },
+ "node28_new_flops": {
+  "count": 74,
+  "max_expl_pct_pot": 0.298929709130387,
+  "mean_expl_pct_pot": 0.2414679191284743,
+  "cpu_h": 10.28292425195,
+  "iterations_mean": 116.89189189189189
+ },
+ "convergence_status_new_boards": {
+  "target_converged": 161,
+  "accepted_exception_nonconverged": [
+   "node6/Kc9h9d"
+  ],
+  "label": "161/162 target-converged + 1 prereg-approved capped exception(s)"
+ }
+}
+STEP margdiag 2026-10-02T17:39:32Z
+{
+ "6": {
+  "cell_variance_ratio_split_over_pooled": {
+   "table": {
+    "cells": 338,
+    "median": 0.9832615062377374,
+    "q05": 0.9523954506950157,
+    "q95": 0.9967333937949351,
+    "min": 0.9194856680689735,
+    "max": 0.9990812062886432
+   },
+   "new_part": {
+    "cells": 338,
+    "median": 0.9668206560932323,
+    "q05": 0.896152669992587,
+    "q95": 0.9935831266369219,
+    "min": 0.7979430308418235,
+    "max": 0.9988030078890214
+   }
+  },
+  "cells_skipped_zero_variance": 0,
+  "reach_weighted_value": {
+   "var_split": 2.463528667543055e-05,
+   "var_pooled": 2.4826928696608652e-05,
+   "ratio_table": 0.9922808808322602,
+   "ratio_new_part": 0.9826464957588106
+  }
+ },
+ "28": {
+  "cell_variance_ratio_split_over_pooled": {
+   "table": {
+    "cells": 338,
+    "median": 0.9961097528253418,
+    "q05": 0.9705680201571646,
+    "q95": 0.9998249473895708,
+    "min": 0.9521842802004667,
+    "max": 0.9999879018019211
+   },
+   "new_part": {
+    "cells": 338,
+    "median": 0.9897023279696067,
+    "q05": 0.9412900452531767,
+    "q95": 0.9996151774998314,
+    "min": 0.9046050225186044,
+    "max": 0.9999645365276326
+   }
+  },
+  "cells_skipped_zero_variance": 0,
+  "reach_weighted_value": {
+   "var_split": 4.17119651907084e-05,
+   "var_pooled": 4.182456743942807e-05,
+   "ratio_table": 0.9973077486364265,
+   "ratio_new_part": 0.990056229392232
+  }
+ }
+}
+STEP points 2026-10-02T17:39:35Z
+Gext SB raise 0.5924 G144 re-solve identical True
+STEP lobo 2026-10-02T17:39:35Z
+{
+ "plan": "a4c/lobo_Kc9h9d_plan.json",
+ "aggregates_lobo_minus_Gext": {
+  "CO first-in": {
+   "fold": 1.0951683326876349e-07,
+   "raise_2": 8.21642030524039e-08,
+   "jam_30": -1.9006881750958937e-07
+  },
+  "BTN first-in": {
+   "fold": 3.011792964791038e-05,
+   "raise_2": -2.4890617603301468e-05,
+   "jam_30": -5.226935656903187e-06
+  },
+  "SB first-in": {
+   "fold": 1.7531301308104652e-05,
+   "raise_2.5": 0.00021992704326445622,
+   "jam_30": -0.0002374639721705596
+  },
+  "BB vs BTN (node 28 parent)": {
+   "Fold": 8.122880035821289e-07,
+   "Call 2": 2.72596907702205e-06,
+   "3-bet 7": 1.6810717816452315e-07,
+   "All-in 30": -3.707219130816286e-06
+  },
+  "BB vs SB (node 6 parent)": {
+   "Fold": -9.90038264452528e-05,
+   "Call 2.5": 0.0003359489357718237,
+   "3-bet 8.8": 1.3825938247193941e-06,
+   "All-in 30": -0.00023833132439926574
+  }
+ },
+ "seat_ev_lobo_minus_Gext": {
+  "CO": -2.0749670861380798e-07,
+  "BTN": 4.646274501057812e-06,
+  "SB": -0.0002533559921049644,
+  "BB": -0.00017491694048626938
+ },
+ "seat_swap_dEV_lobo_into_Gext": {
+  "CO": -4.279448443528233e-08,
+  "BTN": -1.3493080736060037e-07,
+  "SB": -7.821424371501351e-07,
+  "BB": 6.827204305809298e-06
+ },
+ "regret_excess_lobo_in_Gext": {
+  "BTN first-in": -1.2098606666073e-07,
+  "SB vs BTN": -1.2721620910581796e-05,
+  "BB vs BTN": -9.093698064204859e-07,
+  "SB first-in": 5.72262708254588e-06,
+  "BB vs SB": 2.9465496513465887e-05
+ },
+ "L1_gext_reach": {
+  "BTN first-in": 0.00019491085132286958,
+  "SB vs BTN": 0.0005025411236323832,
+  "BB vs BTN": 0.00036168816949909546,
+  "SB first-in": 0.004048352705473767,
+  "BB vs SB": 0.007542873517667447
+ },
+ "max_check": 5.273559366969494e-16,
+ "hand_level": {
+  "BTN first-in": {
+   "policy_argmax_switch": {
+    "count_gext_reach_live": 0,
+    "share_gext_reach (primary)": 0.0,
+    "share_lobo_reach (secondary)": 0.0
+   },
+   "EV_argmax_switch (optional)": {
+    "count_gext_reach_live": 2,
+    "share_gext_reach": 0.018099547620879574
+   },
+   "strategy_L1": {
+    "gext_reach (primary)": 0.00019491085132286958,
+    "lobo_reach (secondary)": 0.00019491085132286958
+   },
+   "classes_switched_policy_argmax": [],
+   "switch_gaps": {
+    "policy": {},
+    "EV_bb": {
+     "116": {
+      "gext": 0.0001735732597767381,
+      "lobo": 1.1847582541135715e-05
+     },
+     "141": {
+      "gext": 9.051718412544929e-05,
+      "lobo": 0.00011240855130728589
+     }
+    }
+   }
+  },
+  "SB vs BTN": {
+   "policy_argmax_switch": {
+    "count_gext_reach_live": 0,
+    "share_gext_reach (primary)": 0.0,
+    "share_lobo_reach (secondary)": 0.0
+   },
+   "EV_argmax_switch (optional)": {
+    "count_gext_reach_live": 1,
+    "share_gext_reach": 0.009049773810439787
+   },
+   "strategy_L1": {
+    "gext_reach (primary)": 0.0005025411236323832,
+    "lobo_reach (secondary)": 0.0005025411236323832
+   },
+   "classes_switched_policy_argmax": [],
+   "switch_gaps": {
+    "policy": {},
+    "EV_bb": {
+     "103": {
+      "gext": 0.002522018036172552,
+      "lobo": 0.004524228320421736
+     }
+    }
+   }
+  },
+  "BB vs BTN": {
+   "policy_argmax_switch": {
+    "count_gext_reach_live": 0,
+    "share_gext_reach (primary)": 0.0,
+    "share_lobo_reach (secondary)": 0.0
+   },
+   "EV_argmax_switch (optional)": {
+    "count_gext_reach_live": 1,
+    "share_gext_reach": 0.009049773810439787
+   },
+   "strategy_L1": {
+    "gext_reach (primary)": 0.00036168816949909546,
+    "lobo_reach (secondary)": 0.00036168816949909546
+   },
+   "classes_switched_policy_argmax": [],
+   "switch_gaps": {
+    "policy": {},
+    "EV_bb": {
+     "114": {
+      "gext": 0.0002376550467799443,
+      "lobo": 4.662814402697779e-05
+     }
+    }
+   }
+  },
+  "SB first-in": {
+   "policy_argmax_switch": {
+    "count_gext_reach_live": 1,
+    "share_gext_reach (primary)": 0.0030165911925363843,
+    "share_lobo_reach (secondary)": 0.0030165911925363843
+   },
+   "EV_argmax_switch (optional)": {
+    "count_gext_reach_live": 2,
+    "share_gext_reach": 0.018099547620879574
+   },
+   "strategy_L1": {
+    "gext_reach (primary)": 0.004048352705473767,
+    "lobo_reach (secondary)": 0.004048352705473767
+   },
+   "classes_switched_policy_argmax": [
+    117
+   ],
+   "switch_gaps": {
+    "policy": {
+     "117": {
+      "gext": 0.2114090621471405,
+      "lobo": 0.2639884054660797
+     }
+    },
+    "EV_bb": {
+     "128": {
+      "gext": 3.977742254918093e-05,
+      "lobo": 0.0003093873257123958
+     },
+     "141": {
+      "gext": 0.00018317905406106672,
+      "lobo": 0.000376973973527428
+     }
+    }
+   }
+  },
+  "BB vs SB": {
+   "policy_argmax_switch": {
+    "count_gext_reach_live": 0,
+    "share_gext_reach (primary)": 0.0,
+    "share_lobo_reach (secondary)": 0.0
+   },
+   "EV_argmax_switch (optional)": {
+    "count_gext_reach_live": 3,
+    "share_gext_reach": 0.02111613881341596
+   },
+   "strategy_L1": {
+    "gext_reach (primary)": 0.007542873517667447,
+    "lobo_reach (secondary)": 0.007542873517667447
+   },
+   "classes_switched_policy_argmax": [],
+   "switch_gaps": {
+    "policy": {},
+    "EV_bb": {
+     "11": {
+      "gext": 0.0010468529175727825,
+      "lobo": 0.000397761122546858
+     },
+     "23": {
+      "gext": 0.0007029021451513406,
+      "lobo": 0.0005367236756005367
+     },
+     "95": {
+      "gext": 0.016353267629516235,
+      "lobo": 0.000633086886110662
+     }
+    }
+   }
+  }
+ },
+ "definitions": {
+  "policy_argmax_switch": "most-frequent-policy-action switch (not best-EV action switch)",
+  "EV_argmax_switch": "highest-action-EV switch (optional)",
+  "weighting": "primary = Gext baseline class reach at the node; secondary = LOBO reach"
+ },
+ "note": "practical sensitivity of the whole board, not a bound on its solver residual; primary results and panel unchanged"
+}
+STEP boot 2026-10-02T17:39:44Z
