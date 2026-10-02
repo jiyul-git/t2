@@ -1,6 +1,15 @@
 {
+  "canonical_exact_mechanics_rows": 0,
+  "canonical_target": {
+    "ante_model": "uniform_total",
+    "ante_per_player_bb": 0.1111111111111111,
+    "ante_total_bb": 1.0,
+    "folds_resplit": false,
+    "hand_start_players": 9
+  },
   "datasets": {
     "preflop_9max_fulltree_external_v1.jsonl": {
+      "canonical_t2_mechanics_match": "unknown_ante",
       "families": [
         "call_vs_5bet",
         "call_vs_4bet",
@@ -32,6 +41,7 @@
     },
     "preflop_9max_pushfold_1to25_v1.jsonl": {
       "ante_model": "none",
+      "canonical_t2_mechanics_match": false,
       "hand_classes_per_table": 169,
       "rows": 21125,
       "scenario": "first_in_open_shove",
@@ -100,6 +110,7 @@
         "none",
         "per_player"
       ],
+      "canonical_t2_mechanics_match": false,
       "rows": 104104,
       "spot_count": 616,
       "stacks_bb": [
@@ -114,6 +125,7 @@
     }
   },
   "format": "MTT",
+  "note": "Rows are exact stored frequencies for their own mechanical assumptions; exact T2-mechanics admission is a separate gate.",
   "provenance_fields_in_runtime_rows": false,
   "schema": "t2_gto_operational_index_v1",
   "table_players": 9,
