@@ -155,6 +155,39 @@ def tables(a):
     atomic(chk, OUT + 'tables_check.json')
 
 
+def joint_structure(st):
+    """per stratum: old boards (asserted identical across terminals), shared new prefix S and terminal-only tails."""
+    seqs = {n: json.load(open(PANEL[n]))['extension_sequence'] for n in (6, 28)}
+    out = {}
+    for s in sorted(st[6]['old']):
+        assert st[6]['old'][s] == st[28]['old'][s], f'{s}: old 144 boards differ between terminals'
+        n6, n28 = st[6]['new'][s], st[28]['new'][s]
+        assert seqs[6][s][:len(n6)] == n6 and seqs[28][s][:len(n28)] == n28, f'{s}: new boards are not the drawn sequence prefix'
+        short, long_ = (n6, n28) if len(n6) <= len(n28) else (n28, n6)
+        assert long_[:len(short)] == short, f'{s}: shorter extension is not a prefix of the longer'
+        S = list(short)
+        out[s] = {'old': list(st[6]['old'][s]), 'S': S, 'E6': n6[len(S):], 'E28': n28[len(S):]}
+        assert not (out[s]['E6'] and out[s]['E28'])
+    return out
+
+
+def joint_draw(rng, J):
+    """one replicate: old and S resampled once and shared by both terminals; E6 / E28 resampled separately.
+    RNG order per stratum (sorted): old, S, E6, E28."""
+    d = {6: ({}, {}), 28: ({}, {})}
+    man = {}
+    for s in sorted(J):
+        j = J[s]
+        o = [rng.choice(j['old']) for _ in j['old']]
+        sh = [rng.choice(j['S']) for _ in j['S']] if j['S'] else []
+        e6 = [rng.choice(j['E6']) for _ in j['E6']] if j['E6'] else []
+        e28 = [rng.choice(j['E28']) for _ in j['E28']] if j['E28'] else []
+        d[6][0][s], d[6][1][s] = o, sh + e6
+        d[28][0][s], d[28][1][s] = o, sh + e28
+        man[s] = {'old': o, 'S': sh, 'E6': e6, 'E28': e28}
+    return d, man
+
+
 def solve(d, tabs):
     r = B.solve(d, tabs, save=True)
     r['profile'] = os.path.join(d, 'profile.gtop')
@@ -212,17 +245,20 @@ def boot(a):
     ref = {n: {'144': stratum_means(st[n]['vals'], st[n]['compat'], st[n]['old']), 'ext': stratum_means(st[n]['vals'], st[n]['compat'], st[n]['all'])} for n in (6, 28)}
     lam = {n: {'144': {s: math.sqrt((1 - 12 / K[s]) * 12 / 11) for s in st[n]['old']},
                'ext': {s: math.sqrt((1 - len(st[n]['all'][s]) / K[s]) * len(st[n]['all'][s]) / (len(st[n]['all'][s]) - 1)) for s in st[n]['old']}} for n in (6, 28)}
+    # amendment 1 (a4c/prereg_amendment_1.json): covariance-preserving joint draw across terminals
+    J = joint_structure(st)
     rng = random.Random(20261005)
-    draws = []
+    draws, manifest = [], []
     for _ in range(a.reps):
-        d = {}
-        for n in (6, 28):
-            o, w = {}, {}
-            for s in sorted(st[n]['old']):
-                o[s] = [rng.choice(st[n]['old'][s]) for _ in st[n]['old'][s]]
-                w[s] = [rng.choice(st[n]['new'][s]) for _ in st[n]['new'][s]] if st[n]['new'][s] else []
-            d[n] = (o, w)
+        d, man = joint_draw(rng, J)
         draws.append(d)
+        manifest.append(man)
+    mtext = json.dumps(manifest, sort_keys=True)
+    mpath = OUT + 'boot_draw_manifest.json'
+    if os.path.exists(mpath):
+        assert json.load(open(mpath))['sha256'] == hashlib.sha256(mtext.encode()).hexdigest(), 'draw manifest changed'
+    else:
+        atomic({'sha256': hashlib.sha256(mtext.encode()).hexdigest(), 'seed': 20261005, 'rng_order': 'per replicate, per stratum sorted: old, S, E6, E28', 'draws': manifest}, mpath)
     for i, d in enumerate(draws, 1):
         k = str(i)
         if k in R['reps'] and 'done' in R['reps'][k]:

@@ -1,0 +1,129 @@
+{
+ "schema": "a4c_prereg_amendment",
+ "amendment": 1,
+ "parent_prereg": "data/gto_terminal_expansion/a4c/prereg.json (commit dfd9c78)",
+ "timing": "written 2026-10-02 ~11:20 UTC while the 162 new flop solves were running (19/162 done); no Vext table, preflop point, bootstrap replicate or metric had been computed",
+ "reason": "cross-terminal covariance: node 6 and node 28 panels share the 144 old boards and a common prefix S of the new boards. The prereg bootstrap drew each terminal independently, which drops the positive covariance between the two terminals panel errors that enters the preflop solve jointly. Panel identities must be shared within a replicate.",
+ "change": {
+  "bootstrap_draw": "per replicate, per stratum: old* = resample (with replacement, size 12) of the 144-panel boards, shared by both terminals; S* = resample of the common new prefix S (size |S|), shared; E6* / E28* = resample of the terminal-only tails, separate. node6 = old* + S* + E6*, node28 = old* + S* + E28*.",
+  "rng": "single random.Random(20261005); order per replicate, per stratum (sorted): old, S, E6, E28",
+  "manifest": "data/gto_terminal_expansion/a4c/boot_draw_manifest.json with sha256 of the draw list; a resumed run recomputes and must match",
+  "structure_assertions": "old boards identical across terminals per stratum; each terminal new boards = prefix of the panel extension_sequence; shorter extension is a prefix of the longer; at most one of E6/E28 non-empty per stratum"
+ },
+ "marginal_note": "the new group is resampled as two sub-parts (S and E) instead of one pool, so the per-terminal marginal is a within-group stratified bootstrap; its mean is unchanged in expectation and its variance differs only by an O(1/n) between-part term. Synthetic test D: variance ratio joint/terminal-wise 1.006 (node 6) and 0.967 (node 28) at 4000 reps (MC SE about 2.2%).",
+ "unchanged": [
+  "panel and allocation (162 new boards)",
+  "solver settings",
+  "estimator",
+  "FPC (lambda_s, paired +-2% sensitivity)",
+  "bootstrap reps 60 and seed 20261005",
+  "metrics",
+  "thresholds",
+  "pre-registered predictions",
+  "classification rules",
+  "numerical rules"
+ ],
+ "validation": {
+  "structure": {
+   "old_identical_all_strata": true,
+   "new_prefix_all_strata": true,
+   "per_stratum": {
+    "monotone/A": {
+     "S": 0,
+     "E6": 0,
+     "E28": 0
+    },
+    "monotone/J_or_lower": {
+     "S": 0,
+     "E6": 0,
+     "E28": 0
+    },
+    "monotone/KQ": {
+     "S": 0,
+     "E6": 0,
+     "E28": 0
+    },
+    "paired/A": {
+     "S": 0,
+     "E6": 3,
+     "E28": 0
+    },
+    "paired/J_or_lower": {
+     "S": 7,
+     "E6": 2,
+     "E28": 0
+    },
+    "paired/KQ": {
+     "S": 2,
+     "E6": 3,
+     "E28": 0
+    },
+    "rainbow/A": {
+     "S": 0,
+     "E6": 6,
+     "E28": 0
+    },
+    "rainbow/J_or_lower": {
+     "S": 11,
+     "E6": 4,
+     "E28": 0
+    },
+    "rainbow/KQ": {
+     "S": 7,
+     "E6": 6,
+     "E28": 0
+    },
+    "twotone/A": {
+     "S": 0,
+     "E6": 9,
+     "E28": 0
+    },
+    "twotone/J_or_lower": {
+     "S": 15,
+     "E6": 0,
+     "E28": 3
+    },
+    "twotone/KQ": {
+     "S": 13,
+     "E6": 0,
+     "E28": 16
+    }
+   }
+  },
+  "A_identity_max_abs_diff": 0.0,
+  "B_perfect_correlation": 1.0000000000000002,
+  "C_independent_tails_correlation": 0.0023189441183001473,
+  "C_expected_sd_of_null_correlation": 0.015811388300841896,
+  "D_marginal": {
+   "6": {
+    "var_joint": 0.004343649858743657,
+    "var_terminalwise": 0.004315604072489837,
+    "ratio": 1.0064986930642223,
+    "mean_joint": 0.11264121300697967,
+    "mean_terminalwise": 0.10954828267825477
+   },
+   "28": {
+    "var_joint": 0.0029571383571263773,
+    "var_terminalwise": 0.003058174360016717,
+    "ratio": 0.9669619874486858,
+    "mean_joint": 0.009946792521112122,
+    "mean_terminalwise": 0.009256339834642855
+   }
+  },
+  "D_cross_correlation": {
+   "joint": 0.77890059818351,
+   "terminalwise": -0.022749889779016003
+  },
+  "all_pass": true
+ },
+ "A4b_continuity_diagnostic": {
+  "cross_terminal_corr_shared_draw (A4b scheme)": 0.7273746449062561,
+  "cross_terminal_corr_independent_draws": 0.0017007164281425085,
+  "note": "reach-weighted terminal value (sum over seats) on the 144 panel; diagnostic only, A4b results unchanged",
+  "status": "diagnostic only; A4b/A4R verdicts (eac1060) not changed. A4b already used one shared draw for both terminals on the identical 144 panel, so it was the shared scheme (corr 0.73) and is consistent with this amendment."
+ },
+ "code_sha256": {
+  "a4c_run.py": "ab1f0a70430d58cb627653f69dd9c2b545585b0c2a2f09a2f225748e0afff6cd",
+  "a4c_bootstrap_tests.py": "07adaa3b9607691c44db1bbecb8fe3b8b5ea9d068ce83b32c65fdbe6e1023c79"
+ }
+}
