@@ -1,0 +1,100 @@
+{
+  "datasets": {
+    "preflop_9max_fulltree_external_v1.jsonl": {
+      "families": [
+        "call_vs_5bet",
+        "call_vs_4bet",
+        "call_vs_3bet",
+        "three_bet",
+        "four_bet",
+        "five_bet",
+        "call_vs_open",
+        "open",
+        "limp"
+      ],
+      "hand_classes_per_table": 169,
+      "rows": 227305,
+      "rows_by_stack": {
+        "10": 45461,
+        "100": 45461,
+        "20": 45461,
+        "40": 45461,
+        "5": 45461
+      },
+      "scenario_tables": 1345,
+      "stacks_bb": [
+        5,
+        10,
+        20,
+        40,
+        100
+      ]
+    },
+    "preflop_9max_pushfold_1to25_v1.jsonl": {
+      "ante_model": "none",
+      "hand_classes_per_table": 169,
+      "rows": 21125,
+      "scenario": "first_in_open_shove",
+      "scenario_tables": 125,
+      "spots_by_stack": {
+        "1": 5,
+        "10": 5,
+        "11": 5,
+        "12": 5,
+        "13": 5,
+        "14": 5,
+        "15": 5,
+        "16": 5,
+        "17": 5,
+        "18": 5,
+        "19": 5,
+        "2": 5,
+        "20": 5,
+        "21": 5,
+        "22": 5,
+        "23": 5,
+        "24": 5,
+        "25": 5,
+        "3": 5,
+        "4": 5,
+        "5": 5,
+        "6": 5,
+        "7": 5,
+        "8": 5,
+        "9": 5
+      },
+      "stacks_bb": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    }
+  },
+  "format": "MTT",
+  "provenance_fields_in_operational_rows": false,
+  "schema": "t2_gto_operational_frequency_rows_v1",
+  "table_players": 9,
+  "total_rows": 248430
+}
