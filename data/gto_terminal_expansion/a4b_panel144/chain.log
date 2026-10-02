@@ -583,3 +583,102 @@ boot 45 D SB raise -0.0225
 boot 46 D SB raise -0.0208
 boot 47 D SB raise -0.0219
 boot 48 D SB raise 0.0383
+boot 49 D SB raise 0.0139
+boot 50 D SB raise 0.077
+boot 51 D SB raise 0.1529
+boot 52 D SB raise 0.0002
+boot 53 D SB raise -0.0132
+boot 54 D SB raise 0.0173
+boot 55 D SB raise 0.0161
+boot 56 D SB raise 0.0598
+boot 57 D SB raise 0.037
+boot 58 D SB raise 0.0143
+boot 59 D SB raise -0.0476
+boot 60 D SB raise -0.0465
+{
+ "identity": {
+  "V72_node28": 0.0,
+  "V144_node28": 0.0,
+  "V72_node6": 0.0,
+  "V144_node6": 0.0
+ },
+ "replicates_usable": 60,
+ "replicates_planned": 60,
+ "simultaneous": {
+  "m": 12,
+  "maxstat_c95": 2.592772760420763,
+  "bonferroni_z": 2.86526023853213
+ },
+ "panel_detectable_shift": [],
+ "max_h144": 0.07682712414308618,
+ "max_h72": 0.10750685627696599,
+ "gap_total": {
+  "V72": 0.0002802385171063659,
+  "V144": 0.0003496843560188032,
+  "M144": 0.0002683912295934921,
+  "P15": 0.0003468912543572242
+ },
+ "point_unallocated": {
+  "V72": {
+   "28": -0.009045184700688047,
+   "6": 0.006727232662781191
+  },
+  "V144": {
+   "28": -0.004931295668388458,
+   "6": 0.008016188779018663
+  },
+  "M144": {
+   "28": -0.011661453218476225,
+   "6": 0.01861887314330879
+  },
+  "P15": null
+ },
+ "M144_rule": {
+  "28": {
+   "accepted": true,
+   "candidate_unallocated_bb": -0.011661453218476225,
+   "measured_unallocated_bb": -0.004931295668388458,
+   "hard_stop": false
+  },
+  "6": {
+   "accepted": true,
+   "candidate_unallocated_bb": 0.01861887314330879,
+   "measured_unallocated_bb": 0.008016188779018663,
+   "hard_stop": false
+  }
+ },
+ "limitations": [
+  "frozen-table preflop response at the P14 ranges; not a re-converged fixed point",
+  "panel drawn without replacement proportional to raw-flop counts; bootstrap resamples with replacement within old / new groups"
+ ]
+}
+BTN first-in             fold      V72=0.589 V144=0.587 D=-0.002 sdD*=0.009 z=-0.21 bias=+0.003 h72=0.024 h144=0.019 | P15=0.590 M144-P15=-0.004 V72-P15=-0.001
+BTN first-in             raise_2   V72=0.370 V144=0.371 D=+0.001 sdD*=0.013 z=+0.09 bias=-0.004 h72=0.033 h144=0.029 | P15=0.370 M144-P15=+0.002 V72-P15=-0.001
+BTN first-in             jam_30    V72=0.042 V144=0.043 D=+0.001 sdD*=0.007 z=+0.13 bias=+0.001 h72=0.013 h144=0.010 | P15=0.040 M144-P15=+0.002 V72-P15=+0.002
+SB first-in              fold      V72=0.359 V144=0.338 D=-0.021 sdD*=0.026 z=-0.84 bias=+0.019 h72=0.039 h144=0.048 | P15=0.355 M144-P15=+0.010 V72-P15=+0.005
+SB first-in              raise_2.5 V72=0.500 V144=0.549 D=+0.049 sdD*=0.043 z=+1.14 bias=-0.031 h72=0.064 h144=0.077 | P15=0.501 M144-P15=-0.002 V72-P15=-0.001
+SB first-in              jam_30    V72=0.141 V144=0.113 D=-0.028 sdD*=0.022 z=-1.26 bias=+0.012 h72=0.033 h144=0.037 | P15=0.144 M144-P15=-0.008 V72-P15=-0.003
+BB vs BTN (node 28 paren Fold      V72=0.109 V144=0.069 D=-0.039 sdD*=0.032 z=-1.22 bias=+0.003 h72=0.086 h144=0.057 | P15=0.103 M144-P15=-0.026 V72-P15=+0.006
+BB vs BTN (node 28 paren Call 2    V72=0.741 V144=0.796 D=+0.055 sdD*=0.040 z=+1.36 bias=-0.007 h72=0.108 h144=0.074 | P15=0.756 M144-P15=+0.036 V72-P15=-0.015
+BB vs BTN (node 28 paren All-in 30 V72=0.150 V144=0.134 D=-0.016 sdD*=0.011 z=-1.49 bias=+0.004 h72=0.028 h144=0.020 | P15=0.141 M144-P15=-0.010 V72-P15=+0.009
+BB vs SB (node 6 parent) Fold      V72=0.000 V144=0.018 D=+0.018 sdD*=0.029 z=+0.62 bias=-0.043 h72=0.065 h144=0.044 | P15=0.014 M144-P15=-0.014 V72-P15=-0.014
+BB vs SB (node 6 parent) Call 2.5  V72=0.826 V144=0.801 D=-0.024 sdD*=0.043 z=-0.57 bias=+0.066 h72=0.096 h144=0.066 | P15=0.802 M144-P15=+0.019 V72-P15=+0.023
+BB vs SB (node 6 parent) All-in 30 V72=0.174 V144=0.181 D=+0.006 sdD*=0.015 z=+0.42 bias=-0.023 h72=0.036 h144=0.027 | P15=0.184 M144-P15=-0.005 V72-P15=-0.009
+A4B_DONE
+sigma72->G144 {'CO': 0.0, 'BTN': 0.000302, 'SB': 0.002571, 'BB': 0.0026, 'BB|SB-open': 0.001377, 'BB|BTN-open': 0.001133}
+sigma144->G72 {'CO': -0.0, 'BTN': 0.000999, 'SB': 0.001934, 'BB': 0.002695, 'BB|SB-open': 0.000777, 'BB|BTN-open': 0.001092}
+P15->G72 {'CO': 0.0, 'BTN': 1.3e-05, 'SB': 0.000121, 'BB': 0.00015, 'BB|SB-open': 0.000115, 'BB|BTN-open': 3.3e-05}
+P15->G144 {'CO': 0.0, 'BTN': 0.000313, 'SB': 0.00262, 'BB': 0.003227, 'BB|SB-open': 0.001902, 'BB|BTN-open': 0.001222}
+boot 1
+boot 2
+boot 3
+boot 4
+boot 5
+boot 6
+boot 7
+boot 8
+boot 9
+boot 10
+boot 11
+boot 12
+boot 13
