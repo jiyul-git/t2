@@ -11,5 +11,14 @@
   "argmax switch count and reach share per node"
  ],
  "interpretation": "practical sensitivity: the effect of the whole board is expected to dominate the effect of its solver residual; this is NOT a rigorous bound on the residual. Primary results (board included) and the panel are not changed whatever the outcome; no automatic top-up.",
- "command": "python3 tools/gto_hu_continuation/a4c_run.py lobo   (after points, before boot)"
+ "command": "python3 tools/gto_hu_continuation/a4c_run.py lobo   (after points, before boot)",
+ "hand_level_definitions": {
+  "amended": "2026-10-02, before the LOBO point result (flops still running)",
+  "policy_argmax_switch": "the action with the highest policy frequency differs between Gext and LOBO; it is a most-frequent-policy-action switch, NOT a best-EV action switch",
+  "EV_argmax_switch": "optional secondary: the action with the highest action EV differs",
+  "weighting": "primary = Gext baseline class reach (class_reach_before at the node in Gext); LOBO reach reported as secondary",
+  "L1": "reach-weighted strategy L1, primary Gext reach (seat-swap L1 already uses the Gext node reach), LOBO reach secondary",
+  "note": "a4c_analyze.hand_level (main 144 vs ext analysis) is not changed by this; it is not used by the LOBO diagnostic any more",
+  "reach_finding": "class_reach_before is the actor's own reach r0[actor] before the node (t2_cont_terminal.rs path_nodes). In all 5 nodes (BTN first-in, SB vs BTN, BB vs BTN, SB first-in, BB vs SB) the actor has not acted before, so this weight is the combo-count prior (6/4/12 combos per class, /1326) and is strategy-independent: Gext and LOBO weights are identical by construction (checked: max |diff| = 0.0 between A4b V144 and boot r01). Both fields are still reported; the secondary will equal the primary. The same holds for a4c_analyze.hand_level."
+ }
 }

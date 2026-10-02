@@ -311,9 +311,32 @@ def boot(a):
         print('rep', i, 'errext seat', {s: round(x, 5) for s, x in rep['errext']['seat_dEV'].items()}, flush=True)
 
 
+def lobo_hand(gd, ld):
+    """hand-level comparison Gext (gd) vs LOBO (ld); definitions in lobo() / a4c/lobo_Kc9h9d_plan.json."""
+    gn_, ln_ = node_data(gd), node_data(ld)
+    hand = {}
+    for nd in NODES:
+        a_, b_ = gn_[nd], ln_[nd]
+        na = len(a_['s'])
+        pol = [max(range(na), key=lambda k: a_['s'][k][h]) != max(range(na), key=lambda k: b_['s'][k][h]) for h in range(169)]
+        evs = [max(range(na), key=lambda k: a_['ev'][k][h]) != max(range(na), key=lambda k: b_['ev'][k][h]) for h in range(169)]
+        l1 = [sum(abs(a_['s'][k][h] - b_['s'][k][h]) for k in range(na)) for h in range(169)]
+        def wsum(flags, w):
+            tw = sum(w)
+            return sum(w[h] * flags[h] for h in range(169)) / tw if tw else None
+        live = lambda w: [w[h] > 1e-9 for h in range(169)]
+        hand[nd] = {
+            'policy_argmax_switch': {'count_gext_reach_live': sum(1 for h in range(169) if pol[h] and live(a_['r'])[h]),
+                                     'share_gext_reach (primary)': wsum(pol, a_['r']), 'share_lobo_reach (secondary)': wsum(pol, b_['r'])},
+            'EV_argmax_switch (optional)': {'count_gext_reach_live': sum(1 for h in range(169) if evs[h] and live(a_['r'])[h]),
+                                            'share_gext_reach': wsum(evs, a_['r'])},
+            'strategy_L1': {'gext_reach (primary)': wsum(l1, a_['r']), 'lobo_reach (secondary)': wsum(l1, b_['r'])},
+            'classes_switched_policy_argmax': [h for h in range(169) if pol[h] and live(a_['r'])[h]]}
+    return hand
+
+
 def lobo(a):
     """Kc9h9d leave-one-board-out (a4c/lobo_Kc9h9d_plan.json): secondary, diagnostic only; primary results unchanged."""
-    import a4c_analyze as AN
     st = setup()
     P = json.load(open(OUT + 'points.json'))
     out_path = OUT + 'lobo_Kc9h9d.json'
@@ -332,13 +355,19 @@ def lobo(a):
     gn = node_data(gd)
     base = {nd: regret_l1(gn[nd], {'class_strategy': gn[nd]['s']})[0] for nd in NODES}
     sw = swap_metrics(G, gd, L, ld, OUT + 'points/lobo_swaps', base)
-    hl = AN.hand_level(gd, ld)
+    # hand-level definitions (fixed before the LOBO point result):
+    #   policy_argmax_switch = the action with the highest policy frequency differs between Gext and LOBO (NOT a best-EV action switch)
+    #   EV_argmax_switch     = the action with the highest action EV differs (optional, secondary)
+    #   primary weighting = Gext baseline reach (class_reach_before at the node in Gext); LOBO reach = secondary
+    hand = lobo_hand(gd, ld)
     agg = {nd: {k: L['aggregates'][nd][k] - G['aggregates'][nd][k] for k in G['aggregates'][nd]} for nd in G['aggregates']}
     R['diagnostic'] = {'plan': 'a4c/lobo_Kc9h9d_plan.json', 'aggregates_lobo_minus_Gext': agg,
                        'seat_ev_lobo_minus_Gext': {nm: L['evs'][seat] - G['evs'][seat] for nm, (seat, _) in SEATS.items()},
-                       'seat_swap_dEV_lobo_into_Gext': sw['seat_dEV'], 'regret_excess_lobo_in_Gext': sw['regret_excess'], 'L1': sw['L1'],
-                       'max_check': sw['max_check'],
-                       'argmax_switch': {nd: {'count': sum(1 for c in hl[nd]['classes'] if c['argmax_switch']), 'reach_share': hl[nd]['reach_weighted']['argmax_switch_share']} for nd in hl},
+                       'seat_swap_dEV_lobo_into_Gext': sw['seat_dEV'], 'regret_excess_lobo_in_Gext': sw['regret_excess'],
+                       'L1_gext_reach': sw['L1'], 'max_check': sw['max_check'], 'hand_level': hand,
+                       'definitions': {'policy_argmax_switch': 'most-frequent-policy-action switch (not best-EV action switch)',
+                                       'EV_argmax_switch': 'highest-action-EV switch (optional)',
+                                       'weighting': 'primary = Gext baseline class reach at the node; secondary = LOBO reach'},
                        'note': 'practical sensitivity of the whole board, not a bound on its solver residual; primary results and panel unchanged'}
     atomic(R, out_path)
     print(json.dumps(R['diagnostic'], indent=1))
