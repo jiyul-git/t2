@@ -15,7 +15,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"tools"))
 from gto_db_schema import POSITIONS, CLASSES, action_obj, face_open_state, policy_from_node, rfi_state, solution_id, spot_key, spot_path, write_spot
 
-BASE="http://127.0.0.1:3737"
+BASE="http://127.0.0.1:3737"  # overridden by --port in main()
 
 def req(method,path,obj=None,timeout=1200):
     data=None if obj is None else json.dumps(obj).encode()
@@ -30,9 +30,9 @@ def server_alive():
     except Exception:
         return False
 
-def start_server(threads,eq_samples,seed):
+def start_server(threads,eq_samples,seed,port):
     if server_alive():
-        print("SERVER already running")
+        print("SERVER already running",BASE)
         return None
     binary=ROOT/"vendor/gtopen/target/release/gto-server"
     if not binary.exists():
@@ -41,15 +41,17 @@ def start_server(threads,eq_samples,seed):
          "SOLVER_THREADS":str(threads),
          "PREFLOP_EQ_SAMPLES":str(eq_samples),
          "PREFLOP_EQ_SEED":str(seed),
-         "PREFLOP_MULTIWAY_SEED":str(seed)}
-    log=open(ROOT/"gto_db_worker_server.log","a")
+         "PREFLOP_MULTIWAY_SEED":str(seed),
+         "PORT":str(port)}
+    log_path=ROOT/f"gto_db_worker_server_{port}.log"
+    log=open(log_path,"a")
     p=subprocess.Popen([str(binary)],cwd=ROOT/"vendor/gtopen",env=env,stdout=log,stderr=log)
     for _ in range(120):
         if server_alive():
-            print("SERVER started pid",p.pid)
+            print("SERVER started pid",p.pid,"port",port)
             return p
         if p.poll() is not None:
-            raise SystemExit("gto-server exited; see gto_db_worker_server.log")
+            raise SystemExit(f"gto-server exited; see {log_path.name}")
         time.sleep(1)
     p.terminate()
     raise SystemExit("gto-server start timeout")
@@ -180,7 +182,7 @@ def face_open(opener,hero):
         p.append(choose(n,"fold"))
     raise RuntimeError("hero not reached")
 
-def make_solution(key,n,stack,status,cfg,seed):
+def make_solution(key,n,stack,status,cfg,seed,history):
     meta={
       "source_kind":"termux_worker",
       "solver_name":"GTOpen vendored snapshot",
@@ -192,6 +194,7 @@ def make_solution(key,n,stack,status,cfg,seed):
       },
       "stack_bb":float(stack),"seed":seed,
       "gap_total":status.get("gap_total"),"iteration":status.get("iteration"),
+      "convergence_history":history,
       "config_sha256":hashlib.sha256(json.dumps(cfg,sort_keys=True,separators=(",",":")).encode()).hexdigest(),
       "git_commit":subprocess.run(["git","rev-parse","HEAD"],cwd=ROOT,text=True,capture_output=True).stdout.strip(),
     }
@@ -199,15 +202,30 @@ def make_solution(key,n,stack,status,cfg,seed):
             "quality":{"status":"qualified_near_t2_bba","exact_target_match":False},
             "solver":meta,"strategy":policy_from_node(n)}
 
-def solve_stack(stack,iters,target,seed):
+def solve_stack(stack,iters,target,seed,check_every):
     cfg=cfg_for(stack)
     print("BUILD",stack)
     req("POST","/api/preflop/spot",cfg)
     print("SOLVE",stack,"iters",iters,"target",target)
-    req("POST","/api/preflop/solve",{"iterations":iters,"check_every":20,"target_gap":target})
+    req("POST","/api/preflop/solve",{"iterations":iters,"check_every":check_every,"target_gap":target})
     st=None
+    history=[]
+    seen_accuracy=None
     for _ in range(24*3600):
         st=req("GET","/api/preflop/status")
+        acc=st.get("accuracy_iteration")
+        if acc is not None and acc != seen_accuracy:
+            seen_accuracy=acc
+            snap={
+              "accuracy_iteration":acc,
+              "gap_total":st.get("gap_total"),
+              "gaps":st.get("gaps",[]),
+            }
+            history.append(snap)
+            print("CHECKPOINT",stack,
+                  "accuracy_iteration",acc,
+                  "gap",st.get("gap_total"),
+                  "gaps",json.dumps(st.get("gaps",[]),separators=(",",":")))
         if st.get("state")!="running": break
         time.sleep(1)
     if not st or st.get("state")=="running":
@@ -222,13 +240,13 @@ def solve_stack(stack,iters,target,seed):
         state=rfi_state(stack,hero); key=spot_key(state)
         if key in have: continue
         _,n=path_to_rfi(hero)
-        write_spot(ROOT,state,make_solution(key,n,stack,st,cfg,seed)); have.add(key); wrote+=1
+        write_spot(ROOT,state,make_solution(key,n,stack,st,cfg,seed,history)); have.add(key); wrote+=1
     for oi,opener in enumerate(POSITIONS[:-1]):
         for hero in POSITIONS[oi+1:]:
             state=face_open_state(stack,opener,hero,2.5 if opener=="SB" else 2.0); key=spot_key(state)
             if key in have: continue
             _,n=face_open(opener,hero)
-            write_spot(ROOT,state,make_solution(key,n,stack,st,cfg,seed)); have.add(key); wrote+=1
+            write_spot(ROOT,state,make_solution(key,n,stack,st,cfg,seed,history)); have.add(key); wrote+=1
     print("SAVED",wrote,"new canonical spots for",stack,"bb")
     return wrote
 
@@ -249,10 +267,19 @@ def main():
     ap.add_argument("--seed",type=int,default=20261003)
     ap.add_argument("--threads",type=int,default=4)
     ap.add_argument("--eq-samples",type=int,default=1200)
+    ap.add_argument("--check-every",type=int,default=20)
+    ap.add_argument("--port",type=int,default=3737)
     ap.add_argument("--push",action="store_true")
-    ap.add_argument("--push-branch",default="chatgpt/gto-db-worker-v1-20261003")
+    ap.add_argument("--push-branch",default="chatgpt/gto-worker-parallel-v2-20261003")
     ap.add_argument("--inventory-only",action="store_true")
     a=ap.parse_args()
+
+    global BASE
+    BASE=f"http://127.0.0.1:{a.port}"
+    if a.check_every < 1:
+        raise SystemExit("--check-every must be >= 1")
+    if not (1 <= a.port <= 65535):
+        raise SystemExit("--port must be 1..65535")
 
     imported=import_existing_pilots()
     have=existing_keys()
@@ -268,7 +295,7 @@ def main():
         print("DONE: all requested spots already exist")
         if a.push: git_push(imported,a.push_branch)
         return
-    proc=start_server(a.threads,a.eq_samples,a.seed)
+    proc=start_server(a.threads,a.eq_samples,a.seed,a.port)
     wrote=0
     try:
         for s in a.stacks:
@@ -277,7 +304,7 @@ def main():
             if not miss:
                 print("SKIP",s,"bb: all planned spots already stored")
                 continue
-            wrote+=solve_stack(s,a.iters,a.target_gap,a.seed)
+            wrote+=solve_stack(s,a.iters,a.target_gap,a.seed,a.check_every)
     finally:
         if proc is not None:
             proc.terminate()
