@@ -27,4 +27,5 @@ R2 (pf_rank/PCT 용도 + 9-max 디펜스 지식, 첫 보고 — production 변�
 - [A. PCT_CONSUMER_AUDIT](r2/PCT_CONSUMER_AUDIT.md) — 소비처 22개, 질문·현재 양·필요 양·판정, 순서 재현율 측정
 - [B. 9MAX_DEFEND_BASELINE_TABLE](r2/9MAX_DEFEND_BASELINE_TABLE.md) — 현재 코드가 내는 9-max 디펜스 값(prior/문턱/실현)
 - [C. 9MAX_DEFEND_REFERENCE_COMPARISON](r2/9MAX_DEFEND_REFERENCE_COMPARISON.md) — 근거 자료·신뢰도·차이·판정, 그림 [defend_vs_reference.png](r2/defend_vs_reference.png)
+- [R2-B 9-max defend prior 출처·검증 상태](r2/9MAX_DEFEND_PRIOR_PROVENANCE.md) — 값별 출처, 완료된 GTO DB spot 비교, MISSING_KNOWLEDGE 목록
 - [D. R2_CHANGE_PLAN](r2/R2_CHANGE_PLAN.md) — 미적용 변경 계획(승인 대기)

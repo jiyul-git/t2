@@ -2,6 +2,18 @@
 
 기준 `test` `46a2070`. 읽기 전용 감사이며 production 숫자는 바꾸지 않았다.
 
+## 0. 판정 기준 변경 (2026-10-02 사용자 지시 반영, 이 절이 우선한다)
+
+- 9-max 비교는 **계산이 끝난 GTO DB spot 이나 신뢰할 수 있는 공개 자료**가 있을 때만 한다.
+  - 그 결과는 `9MAX_DEFEND_PRIOR_PROVENANCE.md` 에 있다(9-max 쇼브 대면 콜 144 spot, 9-max RFI 집계).
+- 이 문서의 8-max 차트 비교는 두 가지 용도로만 유지한다.
+  - (1) 8-max 보정값(`_MTT8_*`)의 검증. 그 값의 출처가 이 자료다.
+  - (2) 자료와 무관한 코드 내부 결함(3.1~3.3)의 측정.
+- 아래 표의 9-max 행(REFERENCE_ONLY)과 3.4~3.6 의 형태 검정은 **9-max 판정 근거로 쓰지 않는다.** 8-max 자료 안에서 관찰한 것으로만 남긴다.
+  - 올인 아닌 9-max 디펜스 spot 은 모두 **MISSING_KNOWLEDGE** 다.
+- 첫 보고의 `MISSING_KNOWLEDGE` 표기는 모두 `MISSING_KNOWLEDGE` 로 바꿨다. 자체 solver 는 기준으로 쓰지 않는다.
+- 첫 보고 1절의 "우리 9-max GTO DB 없음"은 틀렸다(`chatgpt/gto-reference-20260928` 에 있음). 그 DB 에는 올인 아닌 디펜스 spot 이 없다는 결론은 같다.
+
 그림: `defend_vs_reference.png`. 위 줄은 디펜스 총량, 아래 줄은 3벳 비중이다.
 
 ## 1. 근거 자료와 신뢰도
@@ -18,7 +30,7 @@
 - (a) 8-max 자료로 현재 식의 **형태**(선형식, 좌석 배수, 3벳 비중 고정, 깊이 처리)를 반증할 수 있는지 본다.
 - (b) 코드 내부의 층 사이 손실을 측정한다. 이것은 자료와 무관하게 확인된다.
 
-9-max **값**은 전부 `NEEDS_SOLVER_DATA` 로 남긴다.
+9-max **값**은 전부 `MISSING_KNOWLEDGE` 로 남긴다.
 
 8-max 값을 위치 이름만 맞춰 9-max 로 옮기지 않았다. 표의 9-max 행은 `REFERENCE_ONLY` 다.
 
@@ -99,7 +111,7 @@
 - BB 디펜스는 오프너 폭에 **약하게** 의존한다(기울기 0.03~0.41, 절편 0.69~0.76).
 - legacy 식(절편 0.22, 기울기 0.68)은 "오프너가 좁으면 BB 도 아주 좁다"는 모양이다. 자료와 반대 방향은 아니지만 크기가 크게 다르다.
 - `mdf(2.15)/mdf(3) = 1.23` 보정을 곱해도 legacy L0 는 BB vs BTN 0.62~0.70, vs UTG+1 0.40~0.43 이다.
-- 이 차이는 좌석 수(8 vs 9)로 설명하기 어렵다. BB 의 가격(2.15x 오픈, 1bb BBA → 필요 equity ≈ 0.20)은 좌석 수와 무관하기 때문이다. 다만 9-max 기준값이 없으므로 **값은 NEEDS_SOLVER_DATA**, **현재 식은 UNSUPPORTED_PRIOR** 로 판정한다.
+- 이 차이는 좌석 수(8 vs 9)로 설명하기 어렵다. BB 의 가격(2.15x 오픈, 1bb BBA → 필요 equity ≈ 0.20)은 좌석 수와 무관하기 때문이다. 다만 9-max 기준값이 없으므로 **값은 MISSING_KNOWLEDGE**, **현재 식은 UNSUPPORTED_PRIOR** 로 판정한다.
 - 정정할 점: 위 legacy 주석의 근거 4점(3x 오픈)은 출처가 없다. T2 의 2.15x + BBA 조건과도 다르다.
 
 ### 3.5 [형태 반증, 8-max 자료] `DEF_SEAT` 단일 배수
@@ -139,7 +151,7 @@
 
 ### 3.7 오픈 사이즈 보정 `mdf(open)/mdf(3)`
 
-- 기준 자료에는 오픈 사이즈 변화가 없다(사이즈 미기재). 방향과 크기를 검증할 수 없다: **NEEDS_SOLVER_DATA**.
+- 기준 자료에는 오픈 사이즈 변화가 없다(사이즈 미기재). 방향과 크기를 검증할 수 없다: **MISSING_KNOWLEDGE**.
 - 현재 배수:
   - 2.15x → 1.23
   - 2.36x → 1.16
@@ -179,18 +191,17 @@
   - R2-B 에서 3벳 자료를 4벳 지식으로 재사용하지 않는다.
   - vs-3bet, 4벳, cold 4벳은 별도 지식 항목으로 분리한다(D 문서).
 
-## 4. spot 별 판정 요약
+## 4. spot 별 판정 요약 (0절 기준)
 
-| spot 군 | 경로 | 판정 |
-|---|---|---|
-| BB vs 모든 오픈, 9-max | legacy | 값 **NEEDS_SOLVER_DATA**, 현재 식 **UNSUPPORTED_PRIOR** (자료 대비 −0.2~−0.56, 구조 3.2·3.4) |
-| BB/SB/BTN/CO, 8-max 15~25bb | 보정 + 짧은 스택 후처리 | **WRONG_QUANTITY** (3.1 이중 적용) |
-| BB/SB/BTN/CO, 8-max 30bb 이상 | 보정 | 디펜스 총량 **PRIOR_SUPPORTED**(±0.08, 출처 신뢰도 중하). 3벳은 **WRONG_QUANTITY**(3.3 실현 손실) |
-| SB vs 오픈, 9-max | legacy | 총량 **APPROXIMATION_ACCEPTABLE**(≤25bb) ~ 과다(30bb 이상). 3벳/콜 분할 **UNSUPPORTED_PRIOR**(3.6) |
-| BTN/CO cold 디펜스, 9-max | legacy | 총량 **APPROXIMATION_ACCEPTABLE**(±0.06). 3벳 비중 **UNSUPPORTED_PRIOR** |
-| UTG+2~HJ cold 디펜스 (8·9-max 모두 legacy) | legacy | **NEEDS_SOLVER_DATA**(자료는 LJ vs EP 한 노드뿐이고 코드가 디펜스·3벳 모두 낮다) |
-| BB vs SB (BvB) | `DEF_VS_SB` 0.60 / 보정 0.72 | 9-max **UNSUPPORTED_PRIOR**, 8-max 30bb 이상 **PRIOR_SUPPORTED** |
-| 오픈 사이즈 보정 | 공통 | **NEEDS_SOLVER_DATA**, cold 디펜더 적용은 **WRONG_QUANTITY 후보** |
-| vs-3bet / 4벳 / cold 4벳 | 위치 바꾼 vs-open prior × LEVEL_TIGHTEN | **MISSING_KNOWLEDGE** |
+| spot 군 | 경로 | 판정 | 근거 |
+|---|---|---|---|
+| 9-max 올인 아닌 vs-open 디펜스(BB, SB, cold 디펜더 전부) | legacy | 값 **MISSING_KNOWLEDGE**. 현재 식은 출처 미상이라 **UNSUPPORTED_PRIOR** | 완료된 9-max spot 없음. 출처 표는 PROVENANCE 2절 |
+| 9-max 쇼브 대면 콜(디펜스 prior → `calloff_cap`) | legacy | **WRONG_QUANTITY** | HoldemMath 9-max 144 spot 대비 평균 0.17~0.33 좁음. SB→BB 만 넓음(PROVENANCE 3절) |
+| 9-max 디펜스 식의 입력 `gto.rfi` | legacy 입력 | **APPROXIMATION_ACCEPTABLE** | 공개 9-max RFI 집계 대비 비블라인드 25/28칸 ±0.024 |
+| 8-max BB/SB/BTN/CO 15~25bb | 보정 + 짧은 스택 후처리 | **WRONG_QUANTITY** (3.1 이중 적용) | 코드 내부 측정 |
+| 8-max BB/SB/BTN/CO 30bb 이상 | 보정 | 총량 **PRIOR_SUPPORTED**(출처 자체 대비, 신뢰도 중하). 3벳 실현은 **WRONG_QUANTITY**(3.3) | 출처 차트 대비 ±0.08 |
+| legacy `_saturate` | 공통 | **WRONG_QUANTITY**(3.2) | 코드 내부 측정 |
+| 오픈 사이즈 보정 `mdf` | 공통 | **MISSING_KNOWLEDGE**(검증 자료 없음) | — |
+| vs-3bet / 4벳 / cold 4벳 / 리쇼브(비올인 오픈 대상) | 위치 바꾼 vs-open prior × LEVEL_TIGHTEN | **MISSING_KNOWLEDGE** | 9-max 완료 spot 없음. 3.9 의 8-max 측정은 구조 확인용 |
 
 이 분류는 내부 감사용이다. 플레이 빈도를 맞추기 위한 점수가 아니다.

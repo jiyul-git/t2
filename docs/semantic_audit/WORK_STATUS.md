@@ -78,3 +78,12 @@
 - 46a2070 행동을 R2 before baseline 으로 봉인(`r2/R2_BEFORE_BASELINE.md`).
 - 핵심: 9-max 조건 일치 solver 자료가 저장소·공개 자료 모두에 없다 → 9-max 값은 NEEDS_SOLVER_DATA. 자료 없이 확인된 코드 내부 결함 3개(짧은 스택 이중 적용, saturate 증폭, prior→3벳 실현 손실), vs-3bet 지식 부재(오프너 계속률 7~25% vs 기준 43~89%).
 - 다음: 사용자 승인 대기(9-max 자료 출처 결정, R2-B2/B4 진행 여부).
+
+### R2-B 정정 — 출처·검증 상태 감사 (사용자 지시 2026-10-02)
+
+- 수치 변경 없음. 미완성 자체 solver 는 기준으로 쓰지 않는다. 비교는 계산이 끝난 GTO DB spot 이나 신뢰할 수 있는 공개 자료로만 한다. 자료가 없으면 MISSING_KNOWLEDGE.
+- 정정: 첫 보고의 "9-max GTO DB 없음"은 test 만 검색한 결과였다. `chatgpt/gto-reference-20260928:data/gto_db/` 에 9-max push/fold(HoldemMath) 616 spot 과 RFI 공개 집계가 있다. 올인 아닌 디펜스 spot 은 없다.
+- 결과(`r2/9MAX_DEFEND_PRIOR_PROVENANCE.md`):
+  - legacy 9-max 디펜스 값(DEF_A/B, DEF_SEAT, TB_SHARE, DEF_VS_SB, MDF 표)은 출처 미상이다.
+  - 쇼브 대면 콜 폭(calloff_cap)은 DB 144 spot 대비 평균 0.17~0.33 좁다.
+  - 디펜스 식의 입력인 9-max RFI 는 비블라인드 25/28칸이 ±0.024 안이다.

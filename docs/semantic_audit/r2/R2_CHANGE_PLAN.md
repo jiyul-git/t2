@@ -47,10 +47,11 @@ R2 행동 변경은 `R2_BEFORE_BASELINE.md` 의 봉인 커밋(`46a2070`) 위에 
 - 스택: 20/25/30/40bb 우선, 15/60/100bb 보조.
 - spot: (opener, defender) 쌍별 call / 3bet(+allin 분할) / fold.
 
-**자료 출처:** 사용자 결정이 필요하다.
-- (a) 사용자 측 solver 또는 차트 서비스에서 9-max 수치를 내보내 저장소에 넣는다.
-- (b) 공개 9-max 수치 자료를 찾는다. 이번 감사에서는 확보하지 못했다.
-- (c) 프리플랍 solver 를 직접 돌린다. 비용이 크다.
+**자료 출처 (2026-10-02 사용자 지시):**
+- 계산이 끝난 GTO DB spot(`chatgpt/gto-reference-20260928:data/gto_db/`)이나 신뢰할 수 있는 공개 자료만 쓴다.
+- 미완성 자체 solver(mini-cfr, GTOpen 경로)는 쓰지 않는다.
+- 현재 DB 에 올인 아닌 9-max 디펜스 spot 은 없다. 그래서 R2-B1 은 **MISSING_KNOWLEDGE** 로 남는다. 자료가 생기기 전에는 이 표를 만들지 않는다.
+- 지금 비교 가능한 9-max 완료 spot 은 쇼브 대면 콜(HoldemMath, near)과 RFI 집계뿐이다(`9MAX_DEFEND_PRIOR_PROVENANCE.md`).
 
 8-max 자료를 위치 이름으로 옮겨 쓰는 것은 하지 않는다.
 
@@ -87,7 +88,7 @@ R2 행동 변경은 `R2_BEFORE_BASELINE.md` 의 봉인 커밋(`46a2070`) 위에 
   - `OPENER_MULT` 의 두 번째 용도(open_form 깊이, L-RA12)도 같은 지식으로 정리한다.
 - **공격 집합 모양 (R2-A1)**
   - 3벳/4벳/올인 집합은 "상위 k%" 가 아니라 핸드 클래스별 액션 빈도로 표현해야 재현된다(A 1절: 상위 슬라이스 agreement 0.41~0.61).
-  - R2-B1/K1~K3 의 자료가 핸드 클래스별 빈도를 주면 그대로 쓰고, 없으면 이 항목은 NEEDS_SOLVER_DATA 로 남긴다.
+  - R2-B1/K1~K3 의 자료가 핸드 클래스별 빈도를 주면 그대로 쓰고, 없으면 이 항목은 MISSING_KNOWLEDGE 로 남긴다.
 - **중복 순서 (R2-A3)**
   - `bot.range_combos` fallback 이 `PCT` 순서를 쓰도록 통합한다.
   - fallback 전용 경로라도 행동이 바뀌므로 별도 커밋으로 한다.
@@ -96,9 +97,9 @@ R2 행동 변경은 `R2_BEFORE_BASELINE.md` 의 봉인 커밋(`46a2070`) 위에 
 
 1. R2-B2: 이중 적용 제거. 8-max 보정 경로만 해당하고 9-max 는 영향 없음.
 2. R2-B4: prior→빈도 변환 교정. 보정 경로만 해당.
-3. 9-max 자료 확보 후 R2-B1 + R2-B3 를 함께 진행. 표 도입.
-4. R2-K1 vs-3bet prior. 자료가 필요하다.
-5. R2-A2 / R2-K3 가격·EV 분리(콜오프 잔여, 리쇼브, 오픈 형태).
+3. 9-max 완료 spot 이 생긴 뒤에만 R2-B1 + R2-B3 를 함께 진행한다. 그 전에는 MISSING_KNOWLEDGE 로 둔다.
+4. R2-K1 vs-3bet prior. 9-max 완료 spot 이 생긴 뒤에만 진행한다.
+5. R2-A2 / R2-K3 가격·EV 분리(콜오프 잔여, 리쇼브, 오픈 형태). 콜오프는 9-max DB 쇼브 대면 콜 spot 으로 검증할 수 있다.
 6. R2-A3 중복 순서 정리.
 
 9-max production(standard/main/lowbuyin)에서 바로 효과가 있는 것은 3·4·5 다. 1·2 는 8-max 포맷(deep/turbo/hyper/highroller 등)에 영향이 있다.

@@ -2,6 +2,8 @@
 
 기준 `test` `46a2070`. 이 문서는 판정만 한다. production 숫자, 순서, 행동은 바꾸지 않았다.
 
+정정(2026-10-02): `NEEDS_SOLVER_DATA` 를 `MISSING_KNOWLEDGE` 로 바꿨다. 9-max 비교는 계산이 끝난 GTO DB spot(`chatgpt/gto-reference-20260928`)과 신뢰할 수 있는 공개 자료만 쓴다. 1절의 8-max 측정은 순서의 *모양*에 관한 것이라 유지한다.
+
 ## 0. 대상과 찾은 방법
 
 - 직접 소비: `preflop.PCT`, `preflop.legacy_preflop_order_percentile`, `preflop.pct`.
@@ -63,17 +65,17 @@
 | # | 소비처 (파일:줄) | 실제 질문 | 지금 쓰는 양 | 필요한 양 | 판정 | 근거 / 메모 |
 |---|---|---|---|---|---|---|
 | 1 | RFI `preflop.open_decision` `r <= thr` (preflop.py:336, 358) | 이 핸드가 이 자리·스택의 오픈 레인지에 드는가 | O(pf_rank) + W(`gto.rfi`) | O + W | **ORDERING_OK** | 오픈 집합 agreement 0.90. 폭은 R2-B 와 별개(RFI 는 8-max 교정, 9-max UTG `RFI_BY_BEHIND[8]` 은 교정 밖) |
-| 2 | 오픈 형태 `open_form` 손 대역 0.06/0.55, 성향항 0.10/0.25 (preflop.py:252-263) | 레이즈로 열까 올인으로 열까 | O 의 계단 대역 | F + E(콜당했을 때) + V(쇼브 vs 레이즈) | **WRONG_QUANTITY** | 형태 결정은 EV 비교 질문이다. 숏스택 RFI 차트의 raise/allin 분할이 있어 S 로 검증할 수 있다 |
-| 3 | 림프 `limp_p` 대역 0.03/0.30, 0.05/0.12/0.25 (preflop.py:194-202) | 이론형: 20bb 이하에서 림프가 레이즈보다 나은 손인가. 습관형: 사람의 림프 습관 | O 의 계단 대역 | 이론형 S(숏스택 림프 빈도), 습관형은 D(의도된 인간 오류)라 O 로 충분 | 이론형 **NEEDS_SOLVER_DATA**, 습관형 **APPROXIMATION_ACCEPTABLE** | 이론형 레인지(22-88, A2s-A8s)가 pf_rank 대역 0.03~0.30 과 실제로 겹치는지 미검증 |
+| 2 | 오픈 형태 `open_form` 손 대역 0.06/0.55, 성향항 0.10/0.25 (preflop.py:252-263) | 레이즈로 열까 올인으로 열까 | O 의 계단 대역 | F + E(콜당했을 때) + V(쇼브 vs 레이즈) | **WRONG_QUANTITY** | 형태 결정은 EV 비교 질문이다. 9-max GTO DB 에 첫 진입 쇼브 spot(4~20bb, near)이 있어 비교할 수 있다(이번 단계에서는 미실시) |
+| 3 | 림프 `limp_p` 대역 0.03/0.30, 0.05/0.12/0.25 (preflop.py:194-202) | 이론형: 20bb 이하에서 림프가 레이즈보다 나은 손인가. 습관형: 사람의 림프 습관 | O 의 계단 대역 | 이론형 S(숏스택 림프 빈도), 습관형은 D(의도된 인간 오류)라 O 로 충분 | 이론형 **MISSING_KNOWLEDGE**, 습관형 **APPROXIMATION_ACCEPTABLE** | 이론형 레인지(22-88, A2s-A8s)가 pf_rank 대역 0.03~0.30 과 실제로 겹치는지 미검증 |
 | 4 | iso `iso_decision` `r <= thr`, 오버림프 `r <= thr×2.2` (preflop.py:1228-1240) | 림퍼 상대 아이솔레이트 레인지에 드는가 | O + W(오픈 폭 × iso) | O + W(iso prior) | **ORDERING_OK**(순서) / 폭은 **UNSUPPORTED_PRIOR** | iso 폭은 오픈 폭에서 파생된 것이고 독립 prior 가 없다. 기준 자료가 없다 |
 | 5 | vs-open 계속 `defend_action_likelihoods` `w_cont` (preflop.py:787) | 이 핸드로 계속하는가 | O + W(`tot`) | O + W(디펜스 prior) | 순서 **ORDERING_OK** / 폭은 R2-B | 계속 집합 agreement 0.90. 폭 문제는 C 문서 |
 | 6 | vs-open 3벳 `w_raise` 로지스틱 + `(0.35+0.65(1-r/tp))` (preflop.py:768-770) | 이 핸드로 3벳하는가 | O 상위 슬라이스 (0, tp] | S(3벳 집합) + B + 폴라라이즈 | **WRONG_QUANTITY** | 3벳 agreement 0.61. 추가로 `tp` 폭의 약 절반만 실제 3벳 빈도가 된다(C 문서 3.3) |
 | 7 | 콜 구간 (tp, tot] | 플랫할 핸드인가 | O 중간 슬라이스 | S(콜 집합) | **WRONG_QUANTITY**(파생) | 6의 결과로 생긴다. 콜 agreement 0.61 |
 | 8 | 프리미엄/슬로플레이 `r <= 0.03` 폴드 금지, `r <= 0.015/0.04` 콜 축소, `_pf_slow` premium `(0.10-r)/0.10` (preflop.py:772-800) | 최상단 핸드인가 | O 최상단 | O | **ORDERING_OK** | 상위 3% = AA-TT, AKs. 최상단 동일성은 두 순서 모두 같다. 슬로플레이 혼합 비율 자체는 별도(D 판정은 R2 범위 밖) |
-| 9 | 핫존 리쇼브 `p_hot` `r <= rs`, `depth = 1-r/rs` (preflop.py:756-761) | 이 스택에서 3벳 올인이 +EV 인가 | O + 휴리스틱 폭 `reshove_range` (OPENER_MULT, 공격성) | F + E(콜 레인지 대비) + P, 또는 S(리쇼브 차트) | **WRONG_QUANTITY** + **NEEDS_SOLVER_DATA** | 올인 집합 agreement 0.53. `reshove_range` 폭은 solver 근거가 없다. 9-max 리쇼브 차트가 필요하다. `OPENER_MULT` 과적재는 L-RA12 |
+| 9 | 핫존 리쇼브 `p_hot` `r <= rs`, `depth = 1-r/rs` (preflop.py:756-761) | 이 스택에서 3벳 올인이 +EV 인가 | O + 휴리스틱 폭 `reshove_range` (OPENER_MULT, 공격성) | F + E(콜 레인지 대비) + P, 또는 S(리쇼브 차트) | **WRONG_QUANTITY** + **MISSING_KNOWLEDGE** | 올인 집합 agreement 0.53. `reshove_range` 폭은 출처가 없다. 9-max GTO DB 에 비올인 오픈 대상 리쇼브 spot 이 없다. `OPENER_MULT` 과적재는 L-RA12 |
 | 10 | vs-3bet (오프너가 HU 3벳을 맞음) `defend_decision(def_pos=오프너, opener_pos=3벳터, raise_level=2)` (plan.py:2733 → preflop.py:843) | 내 오픈 레인지 중 무엇으로 계속/4벳하는가 | O + **vs-open 디펜스 prior 를 위치만 바꿔서** × LEVEL_TIGHTEN[3]=0.34 | S(vs-3bet prior, 오프너 레인지 조건부) + P | **MISSING_KNOWLEDGE** | `gto.defend_pct(LJ, BTN)` 은 "LJ 가 BTN 오픈을 디펜스"하는 값이다. 3벳터가 BB 면 `rfi(BB)=0` 이라 `DEF_A` 만 남는다. 계속률: 코드 7~25% vs 기준 43~89%. baseline sim(시드 11·12) `opener_backaction` 비올인 87회 중 73회 폴드(84%) |
 | 11 | 4벳/cold 4벳 `multiway_reraise_decision` / `cold_reraise_decision` 기본 확률 (preflop.py:1047 → `defend_action_likelihoods`) | 다인원/콜드 상황에서 재재레이즈할까 | O + LEVEL_TIGHTEN + equity 증거(eq vs fair, locked 가격 게이트) | S(cold 4벳 prior) + E + P + B | **MISSING_KNOWLEDGE**(prior) / 증거층은 E·P 를 이미 씀 | cold 4벳 agreement 0.59. 기본 확률은 #10 과 같은 swap 구조 |
-| 12 | 콜오프 `calloff_cap`/`calloff_decision` `r <= cap`, `cap = tot×CALLOFF_TIGHTEN×2.6×…` (preflop.py:1247-1398) | 올인을 콜할 equity 가 가격(ICM 포함)을 넘는가 | O + 디펜스 폭에서 파생한 cap | E(쇼버 레인지 대비) + P(ICM) | **WRONG_QUANTITY** | 순수 콜오프(상대 올인 + 레이즈 불가)는 `calloff_layer_judgment`(E+P)가 pf_defend 게이트 통과 시 대체한다(plan.py:2757). 남은 경로: `defend_action_likelihoods` 의 `_hero_calloff`(open ≥ 스택×0.92, 상대 비올인)는 여전히 percentile 이다 |
+| 12 | 콜오프 `calloff_cap`/`calloff_decision` `r <= cap`, `cap = tot×CALLOFF_TIGHTEN×2.6×…` (preflop.py:1247-1398) | 올인을 콜할 equity 가 가격(ICM 포함)을 넘는가 | O + 디펜스 폭에서 파생한 cap | E(쇼버 레인지 대비) + P(ICM) | **WRONG_QUANTITY** | 9-max GTO DB(HoldemMath 쇼브 대면 콜 144 spot) 대비 cap 이 평균 0.17~0.33 좁다(`9MAX_DEFEND_PRIOR_PROVENANCE.md` 3절). 순수 콜오프(상대 올인 + 레이즈 불가)는 `calloff_layer_judgment`(E+P)가 pf_defend 게이트 통과 시 대체한다(plan.py:2757). 남은 경로: `defend_action_likelihoods` 의 `_hero_calloff`(open ≥ 스택×0.92, 상대 비올인)는 여전히 percentile 이다 |
 | 13 | 오픈쇼브 판단 깊이 `open_form` `_pos_depth = OPENER_MULT` | 뒤 인원 대비 쇼브 위험 | 리쇼브 표 재사용 | F(뒤 좌석 콜 확률) | (pf_rank 직접 소비 아님) L-RA12 과적재 | R2 범위에서 R2-B 리쇼브 지식과 함께 다룬다 |
 | 14 | 상대 레인지 구성 `ranges.preflop_range` open `hi=base` / limp `hi=base×2.6` / 기본 3벳 `t['threebet']×3` / polar 3벳 밴드 (ranges.py:328-378) | 관찰된 액션으로 상대 레인지 추정 | O 슬라이스 | 액션별 S(상대 모델) | open **ORDERING_OK** / limp·polar·opener 없는 3벳 **UNSUPPORTED_PRIOR** | call/3bet(opener 있음)은 `_defend_likelihood_range` 로 #5~7 과 같은 정책을 공유한다. 행동 지식과 관찰 모델이 같은 오류를 공유한다 |
 | 15 | 4벳+ 사후 레인지 `ranges.preflop_reraise_posterior` `exp(-q/rate)` (ranges.py:250) | 4벳한 상대의 레인지 | O 분위 가중 + wheel-A 블로커 채널 | S(4벳 레인지 모양) + B | **WRONG_QUANTITY**(모양) | 4벳 집합 agreement 0.41. 단조 감소 가중은 폴라 구조(A5s 류 외)를 표현하지 못한다 |
@@ -109,6 +111,6 @@ hotzone 의 `in_hotzone`, `reshove_weight`, `hotzone_pressure` 는 스택만 본
 - **근거 없는 prior (UNSUPPORTED_PRIOR):**
   - #4 iso 폭
   - #14 limp, polar 3벳 레인지 모델
-- **solver 자료가 필요한 것 (NEEDS_SOLVER_DATA):** #3 이론형 림프, #9 리쇼브 폭
+- **9-max 완료 spot 이 없는 것 (MISSING_KNOWLEDGE):** #3 이론형 림프, #9 리쇼브 폭(비올인 오픈 대상)
 
 전역적으로 pf_rank 를 equity 로 바꾸는 것은 근거가 없다(1절). equity 순서도 공격 집합을 재현하지 못한다.
