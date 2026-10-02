@@ -1,48 +1,43 @@
-# 9-max GTO source registry
+# 9-max GTO research/source registry
 
-This registry separates **data we may store** from **data we may only inspect/cross-check**.
+This file is **research/legal inventory only**. Runtime GTO rows do not carry source/provider/chart provenance.
 
-| Source | 9-max MTT | Stack coverage | Ante model | Frequencies | Local storage | Role |
-|---|---|---|---|---|---|---|
-| HoldemMath `holdemmath-data` | yes | 4/6/8/10/12/15/20bb | no ante + 0.1bb/player | push/fold shove + calls | **yes**, CC BY 4.0 | Tier-2 short-stack seed |
-| Jens Baagaard `poker-practice` | yes | **5/10/20/40/100bb** | upstream MTT model; preserve source assumptions | **169-class mixed frequencies; 271 scenarios/stack** | **yes**, MIT, on `chatgpt/gto-external-harvest-20261003` | primary redistributable hand-level 9-max MTT cross-check; **no 30bb pack** |
-| PokerData tournament packs | yes | methodology states 10–100bb | **big-blind ante** | full preflop packs | not fetched without authorized data access | exact-target validation candidate |
-| PreflopRanges / public chart viewer | yes | public 10–40bb MTT views | chart-specific MTT ante | mixed strategy | **no bulk extraction** | manual aggregate/boundary cross-check only |
-| GTO Academy public charts | yes | public selector includes mid/deep stacks | chart-specific | chart view | do not vendor unless rights are explicit | manual cross-check |
-| T2 vendored GTOpen | configurable to 9 seats | configurable | legacy uniform ante; BBA only approximated by equal total dead money | generated strategy | our generated outputs only | fill gaps after public search |
-| Existing Matthiola source | **8-max** | 3–100bb | unspecified MTT ante | RFI/vs-open mixed frequencies | yes, MIT | auxiliary methodology / sensitivity only |
-| haowenzheng-art/poker-gto-trainer generated JSON | nominally 9-max | 100bb/250bb files | unclear | many action tables | **no** | rejected as canonical: sampled files report `solver: fallback`, `accuracy: 0.0`, and include semantically suspect unopened-call mixes |
-| davidvayn/pokersolver curated full-ring | 9-max | 100bb | cash baseline | hard curated ranges | source code MIT | low-confidence auxiliary only |
-
-## Retrieval rule
-
-For every desired canonical spot:
-1. search for a legally reusable exact 9-max MTT/BBA source;
-2. if no reusable source exists, inspect a small number of public-viewer values for validation only;
-3. generate the missing spot with the solver;
-4. mark solver assumptions and convergence;
-5. do not call a non-BBA or restricted-tree output `exact`.
+| Material | 9-max | Stack coverage | Ante | Runtime use |
+|---|---:|---|---|---|
+| HoldemMath push/fold | yes | 4/6/8/10/12/15/20 BB | none + 0.1 BB/player | flattened to per-hand shove/call rows |
+| Jens Baagaard MTT tables | yes | 5/10/20/40/100 BB | upstream assumptions | 269 action tables/stack, normalized to 169 hands |
+| RangeMyHand push/fold | yes | 1–25 BB | none | 125 9-max spots, normalized to 169 hands |
+| PreflopRanges public viewer | yes | 10/15/20/25/30/40 BB | viewer-specific | manual cross-check only |
+| GTO Academy / commercial libraries | yes | broad | product-specific | cross-check/index only |
+| T2/GTOpen solver | configurable | configurable | **exact uniform_total supported** | canonical gap filling after validation |
+| Matthiola | 8-max | broad | source-specific | auxiliary only |
+| haowenzheng-art poker-gto-trainer | nominal 9-max | deep | unclear | rejected; sampled JSON is `solver:fallback`, `accuracy:0.0` |
 
 ## T2 target
 
-T2 tournament ante stage is 1BB **big-blind ante**. The current GTOpen preflop engine has a uniform per-seat dead-ante parameter and equal live-stack cap. Using 1/9bb per seat reproduces 1BB total dead money but not the BB-specific stack deduction. Such outputs are tagged `near/limited`, with BB defense receiving extra scrutiny.
+Canonical ante mechanics are **uniform_total_1bb**:
+- N is the number dealt in at hand start;
+- every seat posts `1/N BB`;
+- total ante is 1 BB;
+- folds do not change N or redistribute the ante.
 
-### Rejected bulk source: poker-gto-trainer
+For 9-max, the exact target is **1/9 BB/player**.
 
-The repository contains many 9-player JSON files, but sampled records identify the solver as `fallback` with `accuracy: 0.0`. An unopened UTG record also assigns nonzero `call` frequency, which is not a legal first-in action under the stated scenario. Keep this source out of the canonical GTO DB unless its generation/provenance is independently clarified.
+GTOpen now represents folded-seat antes in continuation subgames through `dead_money`, so new T2 solves can match these mechanics exactly.
 
+## Retrieval / solve rule
 
-## Hand-level reference locator
+1. Use already normalized 9-max rows when the mechanical state matches.
+2. Search for additional open exact values.
+3. If the exact state is missing, solve it with the current exact T2 mechanical config.
+4. Keep convergence/model diagnostics outside runtime rows.
+5. Admit frequencies only after validation; never promote heuristic/fallback charts as canonical values.
 
-When looking for already-collected 9-max MTT hand frequencies, do **not** stop after searching `data/gto_db/` on the older reference branch.
+## Correct current inventory
 
-The current redistributable hand-level pack is on:
+- Jens: **269 action tables/stack × 5 = 1,345 tables**, **227,305 rows**.
+- RangeMyHand 9-max only: **125 spots**, **21,125 rows**.
+- HoldemMath flattened: **616 spots**, **104,104 rows**.
+- Operational total: **352,534 rows**.
 
-- branch: `chatgpt/gto-external-harvest-20261003`
-- path: `data/gto_external/jensbaagaard_9max_mtt/charts/`
-- files: `MTT_5_GTO.charts.json`, `MTT_10_GTO.charts.json`, `MTT_20_GTO.charts.json`, `MTT_40_GTO.charts.json`, `MTT_100_GTO.charts.json`
-- index: `data/gto_external/jensbaagaard_9max_mtt/charts/INDEX_9MAX.json`
-
-Inventory: **5 stack packs × 271 scenario tables = 1,355 tables**, each with all **169 hand classes** and mixed action frequencies.
-
-Important: this source has **no 30bb pack**. For a 30bb solver comparison, 20bb/40bb are neighboring-stack evidence, not exact-match truth. Search the rest of the harvested catalog before declaring that no exact 30bb hand-level reference exists.
+There is no admitted exact 25/30 BB full-tree corpus yet.
