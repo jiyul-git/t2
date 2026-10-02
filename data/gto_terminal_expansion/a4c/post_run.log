@@ -435,3 +435,40 @@ STEP lobo 2026-10-02T17:39:35Z
  "note": "practical sensitivity of the whole board, not a bound on its solver residual; primary results and panel unchanged"
 }
 STEP boot 2026-10-02T17:39:44Z
+rep 1 errext seat {'CO': -0.0, 'BTN': 0.00065, 'SB': 0.00233, 'BB': 0.0025}
+rep 2 errext seat {'CO': -0.0, 'BTN': 0.00015, 'SB': 0.00242, 'BB': 0.0022}
+rep 3 errext seat {'CO': -0.0, 'BTN': 0.00019, 'SB': 0.00139, 'BB': 0.00156}
+rep 4 errext seat {'CO': -0.0, 'BTN': 0.00028, 'SB': 0.00191, 'BB': 0.00148}
+rep 5 errext seat {'CO': -0.0, 'BTN': 0.00018, 'SB': 0.00176, 'BB': 0.00101}
+rep 6 errext seat {'CO': -0.0, 'BTN': 0.00032, 'SB': 0.00187, 'BB': 0.00194}
+rep 7 errext seat {'CO': -0.0, 'BTN': 0.00073, 'SB': 0.00246, 'BB': 0.00312}
+rep 8 errext seat {'CO': -0.0, 'BTN': 0.00041, 'SB': 0.00229, 'BB': 0.00248}
+rep 9 errext seat {'CO': 0.0, 'BTN': 0.00087, 'SB': 0.00304, 'BB': 0.00292}
+rep 10 errext seat {'CO': -0.0, 'BTN': 0.00018, 'SB': 0.0025, 'BB': 0.00203}
+rep 11 errext seat {'CO': -0.0, 'BTN': 0.00047, 'SB': 0.00277, 'BB': 0.00422}
+rep 12 errext seat {'CO': -0.0, 'BTN': 0.00099, 'SB': 0.00186, 'BB': 0.003}
+rep 13 errext seat {'CO': 0.0, 'BTN': 0.00027, 'SB': 0.00257, 'BB': 0.00193}
+rep 14 errext seat {'CO': -0.0, 'BTN': 0.00099, 'SB': 0.00255, 'BB': 0.00369}
+rep 15 errext seat {'CO': -0.0, 'BTN': 0.00077, 'SB': 0.00202, 'BB': 0.0024}
+rep 16 errext seat {'CO': -0.0, 'BTN': 0.00051, 'SB': 0.00451, 'BB': 0.00262}
+rep 17 errext seat {'CO': -0.0, 'BTN': 0.00035, 'SB': 0.0023, 'BB': 0.00148}
+rep 18 errext seat {'CO': -0.0, 'BTN': 0.00038, 'SB': 0.00284, 'BB': 0.00221}
+rep 19 errext seat {'CO': -0.0, 'BTN': 0.0002, 'SB': 0.00124, 'BB': 0.00151}
+rep 20 errext seat {'CO': 0.0, 'BTN': 0.00063, 'SB': 0.00209, 'BB': 0.00276}
+rep 21 errext seat {'CO': -0.0, 'BTN': 0.00067, 'SB': 0.00156, 'BB': 0.00199}
+rep 22 errext seat {'CO': -0.0, 'BTN': 0.00056, 'SB': 0.00352, 'BB': 0.003}
+rep 23 errext seat {'CO': -0.0, 'BTN': 0.00011, 'SB': 0.00149, 'BB': 0.00194}
+rep 24 errext seat {'CO': -0.0, 'BTN': 0.00076, 'SB': 0.00219, 'BB': 0.00153}
+rep 25 errext seat {'CO': -0.0, 'BTN': 0.00027, 'SB': 0.0021, 'BB': 0.00201}
+rep 26 errext seat {'CO': -0.0, 'BTN': 0.00041, 'SB': 0.00225, 'BB': 0.00228}
+rep 27 errext seat {'CO': -0.0, 'BTN': 0.00028, 'SB': 0.00251, 'BB': 0.0026}
+rep 28 errext seat {'CO': -0.0, 'BTN': 0.00028, 'SB': 0.00145, 'BB': 0.00132}
+rep 29 errext seat {'CO': -0.0, 'BTN': 0.00073, 'SB': 0.00184, 'BB': 0.00201}
+rep 30 errext seat {'CO': -0.0, 'BTN': 0.00015, 'SB': 0.00293, 'BB': 0.00236}
+rep 31 errext seat {'CO': -0.0, 'BTN': 0.00018, 'SB': 0.00227, 'BB': 0.00213}
+rep 32 errext seat {'CO': -0.0, 'BTN': 0.00028, 'SB': 0.00057, 'BB': 0.00128}
+rep 33 errext seat {'CO': 0.0, 'BTN': 0.00021, 'SB': 0.00238, 'BB': 0.00141}
+rep 34 errext seat {'CO': -0.0, 'BTN': 0.00068, 'SB': 0.00425, 'BB': 0.00271}
+rep 35 errext seat {'CO': -0.0, 'BTN': 0.00039, 'SB': 0.00198, 'BB': 0.00194}
+rep 36 errext seat {'CO': -0.0, 'BTN': 0.0003, 'SB': 0.0022, 'BB': 0.00123}
+rep 37 errext seat {'CO': 0.0, 'BTN': 0.00069, 'SB': 0.00179, 'BB': 0.00121}
