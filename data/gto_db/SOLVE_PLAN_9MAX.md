@@ -1,64 +1,69 @@
 # 9-max MTT solver fill plan
 
-Public search happens before every generated block. Solver output is a gap-filler, not the default source.
+Public/open data is collected first. Solver output fills the remaining canonical gaps.
 
-## Main mid-stack tree
+## Main mid-stack order
 
-Target depths, in order:
-1. 30bb pilot
-2. 40bb
-3. 25bb
-4. 20bb
-5. 50/75/100bb after mid-stack validation
+1. **30 BB exact-uniform-ante pilot**
+2. **25 BB**
+3. 40 BB
+4. 20 BB
+5. 50 / 75 / 100 BB after mid-stack validation
 
 Positions:
 `UTG, UTG+1, UTG+2, LJ, HJ, CO, BTN, SB, BB`
 
-For the first main-tree pass:
-- EP through BTN open: 2.0bb
-- no open limps
+First validation pass:
+- EP through BTN open: 2.0 BB
+- no open limps outside the dedicated SB/BvB tree
 - one non-jam 3-bet size per seat class
 - jam available
-- restricted open+3bet tree for the first validation pass
-- no rake / chip EV
+- no rake / ChipEV
+- expand to 4-bet/squeeze/cold branches only after the initial surface passes
 
-Reason: validate the broad RFI and clean single-open defense surface before adding 4bet/squeeze complexity.
+## Exact T2 ante mechanics
 
-## Small blind is separate
+The canonical ante is **uniform_total_1bb**, not BBA.
 
-Do not validate SB first-in from the no-limp main tree.
+For `N = hand_start_players`, every dealt-in player posts `1/N BB`; total ante is exactly 1 BB and folds do not re-split it.
 
-Public 9-max MTT references show materially different SB sizing and strategic mixing:
-- 20bb primary raise size ~3bb
-- 25/30bb ~3.5bb
-- 40bb ~4bb
-- limp strategy can be first-class at shallow/mid stacks
+The GTO side now supports this exactly:
+- full-hand configs use the per-seat `1/N` ante;
+- continuation subgames keep already-folded antes as `dead_money`;
+- `hand_start_players` remains part of the state even after folds;
+- the 5–9 player reference/tree verifier passes.
 
-SB/BvB therefore gets a separate tree with limp enabled and stack-specific sizing after EP–BTN/clean-defense validation.
+For a 9-max 30 BB hand:
+- per-player ante = **1/9 BB**;
+- stack after ante before blinds = **30 - 1/9 = 29.88888888888889 BB**;
+- total starting pot after SB/BB = **2.5 BB**.
 
-## T2 BBA mismatch
+Do not downgrade a new solve merely for an ante mismatch if it uses this exact configuration.
 
-T2 posts 1BB dead money from the BB only.
+## Old 30 BB pilot
 
-Current GTOpen preflop config supports a uniform per-seat ante external to the common live-stack cap. A first approximation uses:
-- 1/9bb dead ante per seat
-- total dead money = 1bb
+The earlier 30 BB pilot is **not promotable**:
+- its ensemble file is `promotion_ready: false`;
+- only 2 of 8 planned runs were received;
+- the original public-RFI comparison had mean absolute aggregate difference **9.42 percentage points**.
 
-This matches the initial pot but not:
-- BB-specific 1bb stack reduction,
-- exact all-in cap for BB,
-- side-pot/excess behavior caused by that one-BB asymmetry.
+It may be retained as experiment history, but its frequencies must not enter the canonical DB. The new 30 BB run starts from the exact uniform-total-ante configuration and current solver implementation.
 
-Generated outputs are therefore `near/limited`, not `exact`, until the solver can model the BBA stack asymmetry or an exact external source is available.
+## Small blind / BvB
+
+SB first-in is separate from the no-limp EP–BTN validation surface.
+
+Use a dedicated BvB tree with limp enabled and stack-appropriate raise sizing. Do not infer SB strategy from the no-limp main tree.
 
 ## Promotion gates
 
 For each stack:
-1. non-blind RFI aggregate MAE versus an independent public 9-max MTT reference,
-2. boundary-hand direction check at EP / CO / BTN,
-3. selected BB and SB defense checks from an independent reference,
-4. solver convergence metadata present,
-5. no restricted-tree result labeled full GTO,
-6. all assumptions stored with the row.
+1. exact T2 mechanical state verified;
+2. convergence metadata present and registered threshold passed;
+3. non-blind RFI aggregate cross-check;
+4. boundary-hand direction checks at EP / CO / BTN;
+5. selected BB and SB defense checks;
+6. no restricted-tree result labeled full-tree GTO;
+7. no interpolation stored as exact.
 
-If the 30bb pilot fails the aggregate gate, change the solver model/tree before solving other depths.
+Only after those gates pass are the 169-class action frequencies materialized into the operational DB.
