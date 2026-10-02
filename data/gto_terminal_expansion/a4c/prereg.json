@@ -1,0 +1,226 @@
+{
+ "schema": "t2_prereg_v1",
+ "experiment": "A4c: downstream-aware nested panel extension of nodes 6 and 28 (144 -> 232 / 218 boards) at the frozen P14 ranges",
+ "written": "before the first new flop solve; source commit 9b450b3c01b6662fe109393f72bfcec71e100171",
+ "meaning": {
+  "not": "162 is NOT a production GTO acceptance threshold",
+  "purpose": [
+   "test out of sample whether the downstream-aware allocation (designed on the 144-board influence runs) works on unseen boards",
+   "check whether it reaches equal-24 / equal-288-level seat EV and reliable-node hand-regret precision with fewer solves (162 vs 288)",
+   "then decide whether the dominant remaining error is the panel or outer-loop self-consistency"
+  ],
+  "why_not_132": "matches only the three seat-EV metrics; BB vs BTN and other hand regrets predicted worse than equal-24; the target is state + hand -> action frequency + action EV",
+  "why_not_221": "its binding constraint is SB-vs-BTN regret, whose isolated->pooled reconstruction ratio is 4.07 and pooled excess 0.00019 (smallest of five); predictor reliability too low to justify 59 extra solves",
+  "SB_vs_BTN": "always measured and reported; diagnostic only; excluded from the formal allocation constraint; no automatic top-up whatever its result"
+ },
+ "source": {
+  "commit": "9b450b3c01b6662fe109393f72bfcec71e100171",
+  "design_docs": [
+   "docs/GTO_TERMINAL_A4C_DESIGN_REVIEW_V2b.md",
+   "docs/GTO_TERMINAL_A4C_DESIGN_REVIEW_V2c.md"
+  ],
+  "provenance_hashes": {
+   "binaries": {
+    "t2_cont_panel": "d349474bc190ca64843df62467756e42d5cfecc1efab8303d28661fa071172bd",
+    "t2_cont_terminal": "2876b0c86122b4eb9eba7f4107d2ae87c8571a7661b33175c52146395b3bec36",
+    "t2_splice_eval": "4862c1dd1e07f5d41e0a77837e2b924ad2bae98a756fe66e814cb8d6abfadf78",
+    "t2_cross_eval": "0c35a91b1ba307511720c64701a106126f51dc49a533626b8f62269b7b194ee4"
+   },
+   "menu": "7e41fd399436a7073e820d162b9ce04eb9a94cecc9e37530969b5c926137fccc",
+   "config": "e9a0863175047b49344bbfea7bd7eb18a3247e1a229deb50c7b2994ee9673b47",
+   "p14_terminals": {
+    "6": "bbac0462fa61bb9f8ea1503119ad4eb351961ae545cc0e5db70026f1371360fc",
+    "28": "a8288bea4a0763ec8c52739a83bb06d850f9c3af61ee9f00360e0d4ade1f0ca0"
+   },
+   "p14_ranges_hash": {
+    "6": "e143cd2e0fcaa9d7",
+    "28": "715f300449114fde"
+   },
+   "V144_tables": {
+    "6": "98c9b9b1409cde11f5254d1f00a8cea9f36156374eab1d0f2c60878032a98adb",
+    "28": "cedb7263f4292336b540bc2f5d207c94356ef2b96b70725af6809341409ca5b9"
+   },
+   "panels": {
+    "panel_v2_72": "e0df1324fcb2ddd3afd1cfaa8ad8107d8fae92376b1c40dc0c785acfefbfdb7a",
+    "panel_v3_144": "029e6a90fc71b9ff8cff5912efd2061a245116f5969c6eeebaaedc70d36c15c8",
+    "panel_v4_node6": "0bfaba79fa465832680cf48ad73e506be8ae3f8efaf74f2816fd73495f38cc3a",
+    "panel_v4_node28": "ff2197bf1bb068fe02f4297317701034f8fe0d3faa8db7db208b4512987027b7"
+   },
+   "existing_144_flop_artifacts_node6": {
+    "count": 144,
+    "sha256_of_concatenated_hashes": "8055813de011a9be053f8777b2dacaac64fc96922cd80693a05b97e8563856ff"
+   },
+   "existing_144_flop_artifacts_node28": {
+    "count": 144,
+    "sha256_of_concatenated_hashes": "5b8d3bead47b6e56fe656d0612602a0e582d4bf84a13a5b4d81ae1d4335c1f15"
+   }
+  }
+ },
+ "ranges": "frozen P14: outer_m28_6/k14/terminal_node{6,28}.json (ranges hashes in provenance)",
+ "terminals": [
+  6,
+  28
+ ],
+ "allocation": {
+  "node6": {
+   "paired/A": 15,
+   "paired/J_or_lower": 21,
+   "paired/KQ": 17,
+   "rainbow/A": 18,
+   "rainbow/J_or_lower": 27,
+   "rainbow/KQ": 25,
+   "twotone/A": 21,
+   "twotone/J_or_lower": 27,
+   "twotone/KQ": 25,
+   "monotone/A": 12,
+   "monotone/J_or_lower": 12,
+   "monotone/KQ": 12
+  },
+  "node28": {
+   "paired/J_or_lower": 19,
+   "paired/KQ": 14,
+   "rainbow/J_or_lower": 23,
+   "rainbow/KQ": 19,
+   "twotone/J_or_lower": 30,
+   "twotone/KQ": 41,
+   "paired/A": 12,
+   "rainbow/A": 12,
+   "twotone/A": 12,
+   "monotone/A": 12,
+   "monotone/J_or_lower": 12,
+   "monotone/KQ": 12
+  },
+  "new": {
+   "node6": 88,
+   "node28": 74,
+   "total": 162
+  },
+  "existing_144_boards_kept": true,
+  "verified_by": "tools/gto_hu_continuation/make_panel_v4.py asserts"
+ },
+ "sampling": {
+  "rule": "one sequential draw per stratum continuing the v1/v2/v3 scheme (proportional to raw-flop count, without replacement, from the pool minus the 144 boards), seed 20261004, strata in sorted order; node 6 takes the first target6-12 draws, node 28 the first target28-12 (55 boards shared)",
+  "panels": {
+   "node6": "data/gto_hu_continuation/panel_v4_node6.json",
+   "node28": "data/gto_hu_continuation/panel_v4_node28.json"
+  }
+ },
+ "solver": {
+  "menu": "menu_m2_single_v1",
+  "postflop": "1000 iterations cap, target 0.300% pot, check every 25",
+  "tool": "solve_panel.py --workers 4 --threads 1",
+  "binaries_sha256": {
+   "t2_cont_panel": "d349474bc190ca64843df62467756e42d5cfecc1efab8303d28661fa071172bd",
+   "t2_cont_terminal": "2876b0c86122b4eb9eba7f4107d2ae87c8571a7661b33175c52146395b3bec36",
+   "t2_splice_eval": "4862c1dd1e07f5d41e0a77837e2b924ad2bae98a756fe66e814cb8d6abfadf78",
+   "t2_cross_eval": "0c35a91b1ba307511720c64701a106126f51dc49a533626b8f62269b7b194ee4"
+  },
+  "policy": "every new board must reach <= 0.300% pot; a board that does not is reported and its handling decided by the user (no silent re-run with other settings)"
+ },
+ "estimator": "stratified mean per class: sum_s P(s) * mean_{b in s} compat_b(h) v_b(h) / sum P / rho, rho = 19600/22100 (identical to aggregate.py; identity: rebuilt V144 must equal table_measured_144 exactly)",
+ "fpc": {
+  "default": "SRSWOR FPC in all 12 strata: bootstrap deviations of each stratum mean rescaled by lambda_s = sqrt((1 - n_s/K_s) n_s/(n_s - 1)), K_s = classes in the stratum",
+  "paired_sensitivity": "paired strata design/SRS variance ratio 0.98-1.01 (fpc_paired.json, y~iid pseudo-populations: an approximation, not exact FPC); secondary sensitivity: +-2% on the paired strata variance contribution, propagated analytically through the influence shares (no re-solve); the pre-analysis found the allocation unchanged under +-2%; no re-tuning on new results"
+ },
+ "bootstrap": {
+  "replicates": 60,
+  "seed": 20261005,
+  "scheme": "nested paired: per stratum old (12 boards of panel_v3_144) and new (n_s - 12) resampled separately with replacement; V144* from old*, Vext* from old* + new*; FPC rescaling per stratum with the n_s of each estimator",
+  "solves": "g(V144*_r), g(Vext*_r) per replicate (frozen-table preflop, A3 config, 400 iterations), profiles saved"
+ },
+ "metrics": {
+  "seat_swap": "dEV_p(A -> G) = EV_p(sigma_G; G) - EV_p(A_p (+) sigma_G,-p; G) for p in BTN, SB, BB (CO reported), positive_loss = max(dEV, 0)",
+  "panel_error_estimate": "L_N,i = mean_r metric_i(sigma_N*_r into G_N point) for N = 144 and ext, metrics = seat dEV (BTN, SB, BB) and class-regret excess over G_N own residual at BTN first-in, SB vs BTN, BB vs BTN, SB first-in, BB vs SB",
+  "hand_level": "at the 5 nodes, for g(V144), g(Vext) and per replicate: 169-class action frequencies, action EVs (path_nodes ev_bb), strategy regret under each game, argmax switch, mixed flag (max action frequency < 0.99 at positive reach), L1 (diagnostic only)",
+  "refinement": "D = g(Vext) - g(V144) per main aggregate and per class; sigma144 -> Gext and sigma_ext -> G144 seat swaps, point and bootstrap"
+ },
+ "out_of_sample_test": {
+  "predicted": {
+   "seat:BTN": {
+    "ratio_vs_equal24_raw": 0.882739739913494,
+    "ratio_vs_144_raw": 0.41387149579067073,
+    "ratio_vs_144_calibrated": 0.46323708510776596,
+    "calibrated_abs_bb": 0.00041924735747746476,
+    "observed_pooled_144_bb": 0.0009050384154367356
+   },
+   "seat:SB": {
+    "ratio_vs_equal24_raw": 0.9988718953190363,
+    "ratio_vs_144_raw": 0.4596746811008596,
+    "ratio_vs_144_calibrated": 0.5316464863148006,
+    "calibrated_abs_bb": 0.0019877336504708332,
+    "observed_pooled_144_bb": 0.0037388258958488602
+   },
+   "seat:BB": {
+    "ratio_vs_equal24_raw": 0.9939113904144837,
+    "ratio_vs_144_raw": 0.4574939007372844,
+    "ratio_vs_144_calibrated": 0.5764749244104602,
+    "calibrated_abs_bb": 0.002190240849603552,
+    "observed_pooled_144_bb": 0.0037993688135584233
+   },
+   "regret:BTN first-in": {
+    "ratio_vs_equal24_raw": 0.8633446045892439,
+    "ratio_vs_144_raw": 0.40581604544447764,
+    "ratio_vs_144_calibrated": 0.45536260269633727,
+    "calibrated_abs_bb": 0.0005472846081431766,
+    "observed_pooled_144_bb": 0.0012018655131153543
+   },
+   "regret:SB vs BTN": {
+    "ratio_vs_equal24_raw": 1.1771573624027396,
+    "ratio_vs_144_raw": 0.5321899020705424,
+    "ratio_vs_144_calibrated": 0.5988709583647833,
+    "calibrated_abs_bb": 0.00011424428203252941,
+    "observed_pooled_144_bb": 0.00019076610818543168
+   },
+   "regret:BB vs BTN": {
+    "ratio_vs_equal24_raw": 0.9868240262961194,
+    "ratio_vs_144_raw": 0.4583077392512506,
+    "ratio_vs_144_calibrated": 0.5771970778509928,
+    "calibrated_abs_bb": 0.006259875471571708,
+    "observed_pooled_144_bb": 0.010845300005464919
+   },
+   "regret:SB first-in": {
+    "ratio_vs_equal24_raw": 0.9920130697127357,
+    "ratio_vs_144_raw": 0.4575997429376933,
+    "ratio_vs_144_calibrated": 0.5296949722817672,
+    "calibrated_abs_bb": 0.004906945350342968,
+    "observed_pooled_144_bb": 0.009263718946029105
+   },
+   "regret:BB vs SB": {
+    "ratio_vs_equal24_raw": 0.9938975140033441,
+    "ratio_vs_144_raw": 0.45611434685794333,
+    "ratio_vs_144_calibrated": 0.5752499195577697,
+    "calibrated_abs_bb": 0.005904294729757687,
+    "observed_pooled_144_bb": 0.010263877540907235
+   }
+  },
+  "primary_comparison": "measured L_ext,i / L_144,i (same FPC bootstrap, same replicates) vs predicted ratio_vs_144_calibrated (raw also shown); prediction error = measured - predicted, and relative",
+  "equal24_comparison": "measured L_ext,i vs predicted equal-24 loss (calibrated_abs / ratio_vs_equal24_raw^beta); equal-24 itself is not measured",
+  "SB_vs_BTN": "reported with the same columns, diagnostic only"
+ },
+ "classification_continuity": {
+  "rule": "amendment 3 (E_r = positive_loss_r - own residual gap; stable: E0<=0 and q95<=0 all whole seats and both directions; sensitive: E0>0 and q05>0 for some; else precision-limited), applied to 144 <-> ext",
+  "expected_before_results": "EV-sensitive is likely (pre-analysis: panel loss ~15-20x the ~1e-4 residual floor); this label alone does not decide success or failure",
+  "what_decides": [
+   "actual panel-error reduction",
+   "agreement with the pre-registered predictions",
+   "hand-regret reduction",
+   "comparison with the frozen-range / outer-step proxy (SB 0.0034, BB 0.0022, BTN 0.0005 bb/hand; a proxy, not the fixed-point residual)"
+  ]
+ },
+ "numerical_validation": {
+  "structural": "exact (self-splice byte identity, all-seat splice = donor, point re-solves reproduce stored exports)",
+  "floating": "|dEV - gap difference| and BR-value identity <= 1e-9 bb/hand (15x the measured deterministic floor 6.7e-11 over 1224 records)",
+  "decision": "classification unchanged when every E is moved by +-1e-9; otherwise numerically undecidable (inconclusive)"
+ },
+ "execution": {
+  "tracking": "long runs as harness-tracked background tasks (idle reclaim kills untracked processes)",
+  "restart": "check uptime, real PIDs (ps, no self-match), JSON integrity, provenance; resume incomplete boards only; completed boards never re-run",
+  "writes": "atomic temp + rename"
+ },
+ "not_done": [
+  "no post-result threshold or allocation change",
+  "no automatic top-up (221 / 288 / 576)",
+  "no automatic self-consistency or outer step",
+  "no node 228, 3-way, 20/25/40bb, production export, main merge"
+ ]
+}
