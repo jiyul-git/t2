@@ -1,0 +1,10 @@
+{
+ "schema": "a4c_diagnostic_registration",
+ "name": "amendment-1 marginal approximation diagnostic",
+ "registered": "2026-10-02 ~11:40 UTC, flops 21/162, before any Vext table / point / bootstrap result",
+ "status": "diagnostic only: prereg, amendment 1, 162 panel, allocation, bootstrap scheme unchanged regardless of result; no seat/hand correction or re-tuning",
+ "when": "after all 162 flops and `tables`, before `boot`: python3 tools/gto_hu_continuation/a4c_run.py margdiag -> a4c/marginal_diagnostic.json",
+ "method": "exact analytic with-replacement bootstrap variance per table cell (169 classes x position, node 6 and 28) of (i) amendment-1 split resample (old, S, E separately) vs (ii) one pool of all new boards per terminal; FPC lambda_ext identical in both; also reach-weighted terminal value. Analytic formula cross-checked by 40000-rep MC on partial data (split 0.05026 MC vs 0.04994 analytic; pool 0.05072 vs 0.05005).",
+ "report": "variance ratio split/pooled: median, 5-95%, max, for the whole ext table and for its new part; reach-weighted value ratio per terminal. Theory: ratio <= 1 (pooled = within + between part variance).",
+ "code_sha256": "ce69c1c88ec4a7021c25860d759fc30e1f45e7af6514bcb91c507b1c6bc42cd9"
+}

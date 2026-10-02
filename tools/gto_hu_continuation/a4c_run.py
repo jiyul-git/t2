@@ -3,6 +3,7 @@
 
     python3 tools/gto_hu_continuation/a4c_run.py tables     # provenance checks, V144 identity, Vext tables
     python3 tools/gto_hu_continuation/a4c_run.py points     # G144 (A4b point, verified) and Gext solve
+    python3 tools/gto_hu_continuation/a4c_run.py margdiag   # amendment-1 marginal diagnostic (before boot; diagnostic only)
     python3 tools/gto_hu_continuation/a4c_run.py boot       # 60-replicate nested paired FPC bootstrap + swaps + hand metrics (resumable)
     python3 tools/gto_hu_continuation/a4c_run.py analyze    # predicted vs measured, classification, hand-level, figure
 """
@@ -290,13 +291,91 @@ def boot(a):
         print('rep', i, 'errext seat', {s: round(x, 5) for s, x in rep['errext']['seat_dEV'].items()}, flush=True)
 
 
+def margdiag(a):
+    """amendment-1 marginal diagnostic (diagnostic only; registered before any Vext/point/bootstrap result, changes nothing).
+    Exact (analytic) with-replacement bootstrap variance of each table cell under (i) the amendment-1 scheme (old, S, E resampled
+    separately) and (ii) one pool of all new boards per terminal; FPC lambda_ext applied identically to both. Cell value
+    y_b = compat * gross (None counted as 0, as in estimate()). Ratios: split / pooled, for the whole ext table and for its new part."""
+    K = {s: len(v) for s, v in pools().items()}
+    if a.partial:   # code check only: restrict to boards that already have artifacts; output to the scratch path given
+        avail = lambda n, bs: [b for b in bs if any(os.path.exists(d + b + '.json') for d in FLOP_DIRS[n])]
+        st = {}
+        for n in (6, 28):
+            p, old, new = panel(n)
+            new = {s: avail(n, v) for s, v in new.items()}
+            bs = [b for v in list(old.values()) + list(new.values()) for b in v]
+            st[n] = {'old': old, 'new': new, 'p_str': {s: v['probability'] for s, v in p['strata'].items()}, 'vals': load_values(n, bs), 'compat': compat_of(bs)}
+        Jp = joint_structure({n: {'old': panel(n)[1], 'new': panel(n)[2]} for n in (6, 28)})
+        J = {s: {k: [b for b in v if all(b in st[n]['vals'] for n in ((6, 28) if k in ('old', 'S') else ((6,) if k == 'E6' else (28,))))]
+                 for k, v in j.items()} for s, j in Jp.items()}
+        J = {s: {**j, 'S6': [b for b in Jp[s]['S'] if b in st[6]['vals']], 'S28': [b for b in Jp[s]['S'] if b in st[28]['vals']]} for s, j in J.items()}
+    else:
+        st = setup()
+        J = joint_structure(st)
+    pvar = lambda xs: sum((x - sum(xs) / len(xs)) ** 2 for x in xs) / len(xs) if xs else 0.0
+    out = {'definition': margdiag.__doc__, 'partial_code_check': bool(a.partial), 'terminals': {}}
+    for n in (6, 28):
+        S_ = st[n]
+        P = sum(S_['p_str'].values())
+        term = json.load(open(A3 + f'k14/terminal_node{n}.json'))
+        reach = {pl['position']: pl['class_reach_normalized'] for pl in term['players']}
+        pos_list = list(next(iter(S_['vals'].values())).keys())
+        def y(b, pos, h):
+            v = S_['vals'][b][pos][h]
+            return S_['compat'][b][h] * v if v is not None else 0.0
+        def yr(b):
+            return sum(reach[pos][h] * y(b, pos, h) for pos in pos_list for h in range(169))
+        def var_parts(f):
+            tot_split = tot_pool = new_split = new_pool = 0.0
+            for s in S_['old']:
+                old, newb = S_['old'][s], S_['new'][s]
+                m = len(old) + len(newb)
+                lam2 = (1 - m / K[s]) * m / (m - 1) if m > 1 else 0.0
+                w2 = (S_['p_str'][s] / P / RHO) ** 2 * lam2 / m ** 2
+                vo = len(old) * pvar([f(b) for b in old])
+                tail = J[s]['E6'] if n == 6 else J[s]['E28']
+                Sn = J[s].get(f'S{n}', J[s]['S'])   # partial check: S boards available for this terminal
+                vs = len(Sn) * pvar([f(b) for b in Sn]) + len(tail) * pvar([f(b) for b in tail])
+                assert sorted(Sn + tail) == sorted(newb)
+                vp = len(newb) * pvar([f(b) for b in newb])
+                tot_split += w2 * (vo + vs)
+                tot_pool += w2 * (vo + vp)
+                new_split += w2 * vs
+                new_pool += w2 * vp
+            return tot_split, tot_pool, new_split, new_pool
+        cells = {'table': [], 'new_part': []}
+        zero = 0
+        for pos in pos_list:
+            for h in range(169):
+                ts, tp, ns, np_ = var_parts(lambda b: y(b, pos, h))
+                if tp <= 0 or np_ <= 0:
+                    zero += 1
+                    continue
+                cells['table'].append(ts / tp)
+                cells['new_part'].append(ns / np_)
+        def summ(xs):
+            if not xs:
+                return {'cells': 0}
+            xs = sorted(xs)
+            q = lambda f: xs[min(len(xs) - 1, int(f * (len(xs) - 1) + 0.5))]
+            return {'cells': len(xs), 'median': q(0.5), 'q05': q(0.05), 'q95': q(0.95), 'min': xs[0], 'max': xs[-1]}
+        ts, tp, ns, np_ = var_parts(yr)
+        out['terminals'][str(n)] = {'cell_variance_ratio_split_over_pooled': {k: summ(v) for k, v in cells.items()}, 'cells_skipped_zero_variance': zero,
+                                    'reach_weighted_value': {'var_split': ts, 'var_pooled': tp, 'ratio_table': ts / tp if tp else None, 'ratio_new_part': ns / np_ if np_ else None}}
+    dest = a.out or OUT + 'marginal_diagnostic.json'
+    atomic(out, dest)
+    print(json.dumps(out['terminals'], indent=1))
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['tables', 'points', 'boot', 'analyze'])
+    ap.add_argument('cmd', choices=['tables', 'points', 'boot', 'analyze', 'margdiag'])
+    ap.add_argument('--partial', action='store_true')
+    ap.add_argument('--out')
     ap.add_argument('--reps', type=int, default=60)
     a = ap.parse_args()
     if a.cmd == 'analyze':
         import a4c_analyze
         a4c_analyze.main()
     else:
-        {'tables': tables, 'points': points, 'boot': boot}[a.cmd](a)
+        {'tables': tables, 'points': points, 'boot': boot, 'margdiag': margdiag}[a.cmd](a)
