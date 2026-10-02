@@ -1,0 +1,101 @@
+POST_GATE {"6": {"ok": 87, "of": 88, "quarantined": [], "nonconverged_at_cap_pending_user": [], "accepted_exception_nonconverged": ["Kc9h9d"]}, "28": {"ok": 74, "of": 74, "quarantined": [], "nonconverged_at_cap_pending_user": [], "accepted_exception_nonconverged": []}} ok
+STEP tables 2026-10-02T17:34:49Z
+{
+ "V144_node6_vs_table_measured_144_max_abs": 0.0,
+ "node6_boards": {
+  "total": 232,
+  "new": 88
+ },
+ "node6_unallocated_bb": {
+  "V144": 0.008016188779018663,
+  "Vext": 0.011667751144181615
+ },
+ "node6_new_flops": {
+  "count": 88,
+  "max_expl_pct_pot": 0.30251012452929915,
+  "mean_expl_pct_pot": 0.2633018037580649,
+  "cpu_h": 14.071053642018331,
+  "iterations_mean": 116.76136363636364
+ },
+ "V144_node28_vs_table_measured_144_max_abs": 0.0,
+ "node28_boards": {
+  "total": 218,
+  "new": 74
+ },
+ "node28_unallocated_bb": {
+  "V144": -0.004931295668388458,
+  "Vext": 0.0026134776170545493
+ },
+ "node28_new_flops": {
+  "count": 74,
+  "max_expl_pct_pot": 0.298929709130387,
+  "mean_expl_pct_pot": 0.2414679191284743,
+  "cpu_h": 10.28292425195,
+  "iterations_mean": 116.89189189189189
+ },
+ "convergence_status_new_boards": {
+  "target_converged": 161,
+  "accepted_exception_nonconverged": [
+   "node6/Kc9h9d"
+  ],
+  "label": "161/162 target-converged + 1 prereg-approved capped exception(s)"
+ }
+}
+STEP margdiag 2026-10-02T17:34:52Z
+{
+ "6": {
+  "cell_variance_ratio_split_over_pooled": {
+   "table": {
+    "cells": 338,
+    "median": 0.9832615062377374,
+    "q05": 0.9523954506950157,
+    "q95": 0.9967333937949351,
+    "min": 0.9194856680689735,
+    "max": 0.9990812062886432
+   },
+   "new_part": {
+    "cells": 338,
+    "median": 0.9668206560932323,
+    "q05": 0.896152669992587,
+    "q95": 0.9935831266369219,
+    "min": 0.7979430308418235,
+    "max": 0.9988030078890214
+   }
+  },
+  "cells_skipped_zero_variance": 0,
+  "reach_weighted_value": {
+   "var_split": 2.463528667543055e-05,
+   "var_pooled": 2.4826928696608652e-05,
+   "ratio_table": 0.9922808808322602,
+   "ratio_new_part": 0.9826464957588106
+  }
+ },
+ "28": {
+  "cell_variance_ratio_split_over_pooled": {
+   "table": {
+    "cells": 338,
+    "median": 0.9961097528253418,
+    "q05": 0.9705680201571646,
+    "q95": 0.9998249473895708,
+    "min": 0.9521842802004667,
+    "max": 0.9999879018019211
+   },
+   "new_part": {
+    "cells": 338,
+    "median": 0.9897023279696067,
+    "q05": 0.9412900452531767,
+    "q95": 0.9996151774998314,
+    "min": 0.9046050225186044,
+    "max": 0.9999645365276326
+   }
+  },
+  "cells_skipped_zero_variance": 0,
+  "reach_weighted_value": {
+   "var_split": 4.17119651907084e-05,
+   "var_pooled": 4.182456743942807e-05,
+   "ratio_table": 0.9973077486364265,
+   "ratio_new_part": 0.990056229392232
+  }
+ }
+}
+STEP points 2026-10-02T17:34:55Z
