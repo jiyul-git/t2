@@ -104,7 +104,7 @@ def attribution(res):
          'verdict': 'solver/model mismatch (strong)'},
         {'candidate': 'preflop terminal value (pot-share payoff at every flop-reaching terminal)',
          'evidence': f"4-handed same engine: replacing the payoff at only the two HU terminals 6 / 28 with solved flop values raises BTN RFI {pct(g('base_static_mr4', 'BTN_rfi'))} -> {pct(g('A4c_solved_continuation_nodes_6_28', 'BTN_rfi'))} and BB vs BTN fold 0% -> {pct(g('A4c_solved_continuation_nodes_6_28', 'BB_vs_BTN_fold'))}; CO RFI unchanged ({pct(g('A4c_solved_continuation_nodes_6_28', 'CO_rfi'))}) because CO's terminals stayed static",
-         'verdict': 'solver/model mismatch (strong; same mechanism as the realization model)'},
+         'verdict': 'solver/model mismatch (strong internal evidence; the 4-handed numbers are mechanism evidence, not a 9-max correction or calibration target)'},
         {'candidate': 'opponent defence saturation (BB continues ~99%)',
          'evidence': f"present in the current 30bb 9-max artifact: BB vs CO fold {pct(bb['CO']['bb_fold_unweighted'])}, vs BTN {pct(bb['BTN']['bb_fold_unweighted'])}; 72o/82o/92o continue >= 95% (Matthiola folds them 100%); when BB starts folding (solved continuation) the BTN opens more; this is the channel through which the payoff model makes openers tight -> the old 'BB never folds' finding and today's low RFI are the same problem",
          'verdict': 'solver/model mismatch (strong, mechanism)'},
@@ -121,7 +121,7 @@ def attribution(res):
          'evidence': (f"4-handed A/B without any jam option: CO / BTN RFI {pct(g('no_jam_option', 'CO_rfi'))} / {pct(g('no_jam_option', 'BTN_rfi'))} (base {pct(g('base_static_mr4', 'CO_rfi'))} / {pct(g('base_static_mr4', 'BTN_rfi'))}) -> the reshove structure is a large lever on RFI; "
                       if g('no_jam_option', 'CO_rfi') is not None else '')
                      + "but the solver's 3-bet-jam frequencies are close to the near-reference (BB vs BTN jam 8.1% vs Matthiola 8.6%; SB vs BTN 8.9% vs 11.8%), early-position cold jams are somewhat higher (2-6% vs 0-4%); removing jams is not T2 play. Open-jams by the opener (BTN 22 / 98s / 55) are a symptom of the 2 bb raise getting no folds",
-         'verdict': 'structural lever, not the miscalibration (reshove rates near reference); opener jam overuse = symptom of the payoff model'},
+         'verdict': 'probably not the main cause (reshove rates near reference in the main spots), but a large structural lever: re-check jam frequencies after the continuation model is corrected; opener jam overuse looks like a symptom of the payoff model'},
         {'candidate': 'over-calling by SB / BB / BTN (passive continuation value)',
          'evidence': 'vs-open table: SB flats 32-37% of combos vs EP/MP opens (Matthiola 13-14%); BB folds 1-3% vs MP opens (Matthiola 17%) and 10% / 2% vs UTG / UTG+1 (Matthiola EP 24%); BTN cold-calls only 2-6% (Matthiola 14%) but 3-bets more; flat calls are valued by raw-equity realization, so blinds over-call and pots go multiway against the opener',
          'verdict': 'solver/model mismatch (strong; this is how the payoff model reaches the opener)'},
@@ -171,7 +171,31 @@ def main():
         rep[it] = {'gap_total': t['gap_total'], 'rfi': {p: rfi_of(pn, p) for p in ('UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN')},
                    'bb_vs_btn': pn['BB']['mix'], 'consistency': {p: consistency(pn, p) for p in ('UTG', 'HJ', 'CO', 'BTN', 'BB')},
                    'ev_focus': {p: ev_rows(pn, p, FOCUS_HANDS + ['72o', 'T7s', 'Q9o']) for p in ('UTG', 'HJ', 'CO', 'BTN', 'BB')}}
+    for it, f in ((20, S + 'audit9/t_btn20.json'), (100, S + 'audit9/t_btn100.json')):
+        if it in rep:
+            t, pn = nodes(f)
+            rep[it]['sb_vs_btn'] = pn['SB']['mix']
     res['reproduction_9max'] = {'config': 'data/gto_9max_solver_pilot_30bb.json config, t2_cont_terminal path BTN open / BB call, seeds 202', 'runs': rep}
+    if 20 in rep and 100 in rep:
+        a, b = rep[20], rep[100]
+        order = {}
+        for pos in a['ev_focus']:
+            same = []
+            for h in a['ev_focus'][pos]:
+                ea, eb = a['ev_focus'][pos][h]['ev_bb'], b['ev_focus'][pos][h]['ev_bb']
+                ra = sorted(range(len(ea)), key=lambda k: -ea[k])
+                rb = sorted(range(len(eb)), key=lambda k: -eb[k])
+                same.append({'hand': h, 'best_ev_action_same': ra[0] == rb[0], 'full_ordering_same': ra == rb,
+                             'ev20': ea, 'ev100': eb, 'freq20': a['ev_focus'][pos][h]['freq'], 'freq100': b['ev_focus'][pos][h]['freq']})
+            order[pos] = same
+        res['convergence_20_vs_100'] = {
+            'rfi_change_pp': {p: 100 * (b['rfi'][p] - a['rfi'][p]) for p in a['rfi']},
+            'bb_vs_btn': {'20': a['bb_vs_btn'], '100': b['bb_vs_btn']}, 'sb_vs_btn': {'20': a['sb_vs_btn'], '100': b['sb_vs_btn']},
+            'modal_not_best_ev': {p: {'20': a['consistency'][p]['modal_not_best_ev_combo_share'], '100': b['consistency'][p]['modal_not_best_ev_combo_share']} for p in a['consistency']},
+            'mean_class_regret_bb': {p: {'20': a['consistency'][p]['mean_class_regret_bb'], '100': b['consistency'][p]['mean_class_regret_bb']} for p in a['consistency']},
+            'focus_ev_ordering': order,
+            'focus_best_ev_same_share': sum(x['best_ev_action_same'] for v in order.values() for x in v) / sum(len(v) for v in order.values()),
+            'focus_full_ordering_same_share': sum(x['full_ordering_same'] for v in order.values() for x in v) / sum(len(v) for v in order.values())}
     # attach action EVs (20-iteration reproduction) to the hand rows
     if 20 in rep:
         for pos, blk in res['hand_level'].items():
@@ -217,6 +241,9 @@ def render_md(res):
     w('# 30bb 9-max solver vs reference audit v1')
     w('')
     w('Read-only audit. No solver code or DB value was changed. Machine-readable: `30bb_solver_reference_audit_v1.json`.')
+    w('')
+    w('Scope limits: (1) there is no exact-comparable 9-max hand-level reference, so the gaps below are differences to near-references, not a measured error against exact GTO, and the ~10 pp RFI gap is not attributed in full to solver defects; '
+      '(2) jam is judged "probably not the main cause", to be re-checked after the continuation model is corrected; (3) the 4-handed solved-continuation runs show the mechanism only and are not a 9-max correction.')
     w('')
     w('## 1. Comparability')
     c = res['comparability']
@@ -299,6 +326,14 @@ def render_md(res):
     for it, r in sorted(rep.items(), key=lambda x: int(x[0])):
         w(f"- {it} iterations: gap_total {r['gap_total']:.3f} bb; share of combos whose most-frequent action is not the best-EV action / mean class regret (bb): "
           + ', '.join(f"{p} {100 * c['modal_not_best_ev_combo_share']:.1f}% / {c['mean_class_regret_bb']:.4f}" for p, c in r['consistency'].items()))
+    w('')
+    cv = res.get('convergence_20_vs_100')
+    if cv:
+        w('')
+        w('20 -> 100 iterations (same config): RFI change ' + ', '.join(f"{p} {x:+.1f} pp" for p, x in cv['rfi_change_pp'].items()))
+        w(f"- BB vs BTN fold {pct(cv['bb_vs_btn']['20'].get('Fold'))} -> {pct(cv['bb_vs_btn']['100'].get('Fold'))}; SB vs BTN call {pct(cv['sb_vs_btn']['20'].get('Call 2'))} -> {pct(cv['sb_vs_btn']['100'].get('Call 2'))}")
+        w('- modal != best-EV combo share: ' + ', '.join(f"{p} {100 * v['20']:.1f}% -> {100 * v['100']:.1f}%" for p, v in cv['modal_not_best_ev'].items()))
+        w(f"- focus hands (10 hands x 5 nodes): best-EV action unchanged {100 * cv['focus_best_ev_same_share']:.0f}%, full EV ordering unchanged {100 * cv['focus_full_ordering_same_share']:.0f}%")
     w('')
     w('## 8. Attribution (where the evidence points)')
     w('| candidate | evidence | leaning |')

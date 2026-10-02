@@ -4553,6 +4553,12 @@
        ]
       }
      }
+    },
+    "sb_vs_btn": {
+     "3-bet 8": 0.1546961512042735,
+     "All-in 30": 0.0888702514709199,
+     "Call 2": 0.2382591518544062,
+     "Fold": 0.5181744463448983
     }
    }
   }
@@ -4927,7 +4933,7 @@
   {
    "candidate": "preflop terminal value (pot-share payoff at every flop-reaching terminal)",
    "evidence": "4-handed same engine: replacing the payoff at only the two HU terminals 6 / 28 with solved flop values raises BTN RFI 37.6% -> 41.4% and BB vs BTN fold 0% -> 6.5%; CO RFI unchanged (27.3%) because CO's terminals stayed static",
-   "verdict": "solver/model mismatch (strong; same mechanism as the realization model)"
+   "verdict": "solver/model mismatch (strong internal evidence; the 4-handed numbers are mechanism evidence, not a 9-max correction or calibration target)"
   },
   {
    "candidate": "opponent defence saturation (BB continues ~99%)",
@@ -4952,7 +4958,7 @@
   {
    "candidate": "all-in threshold / jam availability",
    "evidence": "4-handed A/B without any jam option: CO / BTN RFI 32.9% / 44.7% (base 27.3% / 37.6%) -> the reshove structure is a large lever on RFI; but the solver's 3-bet-jam frequencies are close to the near-reference (BB vs BTN jam 8.1% vs Matthiola 8.6%; SB vs BTN 8.9% vs 11.8%), early-position cold jams are somewhat higher (2-6% vs 0-4%); removing jams is not T2 play. Open-jams by the opener (BTN 22 / 98s / 55) are a symptom of the 2 bb raise getting no folds",
-   "verdict": "structural lever, not the miscalibration (reshove rates near reference); opener jam overuse = symptom of the payoff model"
+   "verdict": "probably not the main cause (reshove rates near reference in the main spots), but a large structural lever: re-check jam frequencies after the continuation model is corrected; opener jam overuse looks like a symptom of the payoff model"
   },
   {
    "candidate": "over-calling by SB / BB / BTN (passive continuation value)",
