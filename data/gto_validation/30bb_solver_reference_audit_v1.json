@@ -1,0 +1,4709 @@
+{
+ "schema": "solver_reference_audit_v1",
+ "stack_bb": 30,
+ "comparability": {
+  "solver": {
+   "source": "GTOpen 9-max 30bb pilot (data/gto_9max_solver_pilot_30bb.json)",
+   "table_size": 9,
+   "stack": "cfg.stack 30.0 bb after the ante -> hand-start 30.1111 bb",
+   "ante": "uniform 0.1111 bb x 9 (total 1 bb), paid outside cfg.stack",
+   "open_size": "2.0 bb (SB 2.5)",
+   "raise_tree": "3bet = 3x (blinds 4x), fourbet_mults [2.2] unreachable at max_raises 2",
+   "limp": false,
+   "jam": "add_allin True, allin_threshold 0.85",
+   "max_raise_depth": "2 (open + one re-raise; no 4bet)",
+   "icm_rake": "chip EV, rake 0",
+   "postflop": "no postflop tree: pot-share terminal payoff, realization 'static' (class-independent), multiway coupled_deck_v1",
+   "convergence": "20 iterations, gap_total 0.309 bb (target 0.5)"
+  },
+  "references": [
+   {
+    "source": "PreflopRanges public MTT 9-max 30bb chart (manual aggregate, external_rfi_crosscheck_9max.json)",
+    "table_size": 9,
+    "stack": "30 bb",
+    "ante": "chart-specific MTT ante, not recorded",
+    "open_size": "2.0 bb (SB 3.5)",
+    "raise_tree": "not recorded",
+    "limp": "unknown (SB RFI 89.4% suggests limps included)",
+    "jam": "unknown",
+    "max_raise_depth": "unknown",
+    "icm_rake": "chip EV presumed, not recorded",
+    "granularity": "aggregate RFI per position only",
+    "class": "near-reference",
+    "why_not_exact": [
+     "ante model unknown",
+     "raise tree / 4bet depth unknown",
+     "SB open size and limp differ",
+     "no per-hand data"
+    ]
+   },
+   {
+    "source": "Matthiola 8-max MTT 30bb charts (MIT, commit 9ef33a4)",
+    "table_size": 8,
+    "stack": "30 bb",
+    "ante": "MTT ante, unspecified",
+    "open_size": "unspecified",
+    "raise_tree": "unspecified",
+    "limp": "call column present (SB limps)",
+    "jam": "allin column present",
+    "max_raise_depth": "3bet / 4bet nodes exist (EPopen-vs-IP3bet etc.)",
+    "icm_rake": "unspecified",
+    "granularity": "per hand, 7 RFI nodes + vs-open nodes",
+    "class": "near-reference",
+    "why_not_exact": [
+     "8-max, not 9-max (positions mapped by distance from the button; 9-max UTG has no twin)",
+     "ante / sizes unspecified",
+     "origin of the charts (solver vs hand-built) not documented"
+    ]
+   },
+   {
+    "source": "GTOpen 4-handed 30bb (CO/BTN/SB/BB), same engine, P0 static payoff vs A4c solved flop continuation at nodes 6 / 28",
+    "table_size": 4,
+    "stack": "30 bb after a 0.25 ante (30.25 hand-start)",
+    "ante": "0.25 x 4",
+    "open_size": "2.0 (SB 2.5)",
+    "raise_tree": "3x / 3.5x, 4bet 2.2x",
+    "limp": false,
+    "jam": "add_allin, 0.85",
+    "max_raise_depth": 4,
+    "icm_rake": "chip EV, rake 0",
+    "granularity": "per class, converged (400 iterations, gap 3e-4)",
+    "class": "internal same-engine comparator (not a reference)",
+    "why_not_exact": [
+     "4-handed",
+     "different ante split and max_raises"
+    ]
+   }
+  ],
+  "exact_comparable": [],
+  "verdict": "no exact-comparable reference exists locally; all comparisons below are near-reference and are labelled so"
+ },
+ "aggregate_rfi": {
+  "UTG": {
+   "solver": 0.10609212572371036,
+   "preflopranges_9max": 0.165,
+   "matthiola_8max_mapped": 0.1851885369532428,
+   "matthiola_node": "UTG",
+   "mapping_exact_distance": false,
+   "ensemble_static_100it": 0.10036509362508594,
+   "ensemble_balanced_100it": 0.09409095276513124
+  },
+  "UTG+1": {
+   "solver": 0.1215114184906335,
+   "preflopranges_9max": 0.186,
+   "matthiola_8max_mapped": 0.1851885369532428,
+   "matthiola_node": "UTG",
+   "mapping_exact_distance": true,
+   "ensemble_static_100it": 0.11895106771368177,
+   "ensemble_balanced_100it": 0.11292511748429565
+  },
+  "UTG+2": {
+   "solver": 0.12634204521331827,
+   "preflopranges_9max": 0.217,
+   "matthiola_8max_mapped": 0.21318250377073902,
+   "matthiola_node": "UTG1",
+   "mapping_exact_distance": true,
+   "ensemble_static_100it": 0.14341301510695018,
+   "ensemble_balanced_100it": 0.13289584714346
+  },
+  "LJ": {
+   "solver": 0.15480610412989748,
+   "preflopranges_9max": 0.257,
+   "matthiola_8max_mapped": 0.24497737556561083,
+   "matthiola_node": "LJ",
+   "mapping_exact_distance": true,
+   "ensemble_static_100it": 0.16839703603229564,
+   "ensemble_balanced_100it": 0.1629773128947451
+  },
+  "HJ": {
+   "solver": 0.20145134073561985,
+   "preflopranges_9max": 0.299,
+   "matthiola_8max_mapped": 0.29031674208144803,
+   "matthiola_node": "HJ",
+   "mapping_exact_distance": true,
+   "ensemble_static_100it": 0.20756586946965913,
+   "ensemble_balanced_100it": 0.1929504629645882
+  },
+  "CO": {
+   "solver": 0.26050065315316717,
+   "preflopranges_9max": 0.375,
+   "matthiola_8max_mapped": 0.3629864253393665,
+   "matthiola_node": "CO",
+   "mapping_exact_distance": true,
+   "ensemble_static_100it": 0.2598495732562534,
+   "ensemble_balanced_100it": 0.24901118880907092
+  },
+  "BTN": {
+   "solver": 0.35623900764111605,
+   "preflopranges_9max": 0.487,
+   "matthiola_8max_mapped": 0.4869079939668175,
+   "matthiola_node": "BTN",
+   "mapping_exact_distance": true,
+   "ensemble_static_100it": 0.3619662360598039,
+   "ensemble_balanced_100it": 0.32155824623822327
+  },
+  "SB": {
+   "solver": 0.6043487727928657,
+   "preflopranges_9max": 0.894,
+   "matthiola_8max_mapped": 0.29413273001508305,
+   "matthiola_node": "SB",
+   "mapping_exact_distance": true,
+   "ensemble_static_100it": null,
+   "ensemble_balanced_100it": null
+  }
+ },
+ "family_decomposition_vs_matthiola": {
+  "UTG": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.043272304721266974,
+     "ref_open": 0.04723981900452488,
+     "solver_jam": 0.0029246208968325793,
+     "ref_jam": 0.0,
+     "shortfall": 0.0039675142832579086,
+     "share_of_shortfall": 0.05016048416842139
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.01584340282051282,
+     "ref_open": 0.03354449472096531,
+     "solver_jam": 0.0012372348256410256,
+     "ref_jam": 0.0,
+     "shortfall": 0.01770109190045249,
+     "share_of_shortfall": 0.22379134053358152
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.010778348790256409,
+     "ref_open": 0.024132730015082957,
+     "solver_jam": 0.00027942452434389134,
+     "ref_jam": 0.0,
+     "shortfall": 0.013354381224826548,
+     "share_of_shortfall": 0.16883675273297852
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.0013620394036953243,
+     "ref_open": 0.01927601809954751,
+     "solver_jam": 8.424609045248869e-05,
+     "ref_jam": 0.0,
+     "shortfall": 0.017913978695852185,
+     "share_of_shortfall": 0.22648282542006914
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.03421951535022625,
+     "ref_open": 0.060995475113122186,
+     "solver_jam": 0.0017484209067873304,
+     "ref_jam": 0.0,
+     "shortfall": 0.026775959762895936,
+     "share_of_shortfall": 0.338523067566162
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.0003082795371040724,
+     "ref_open": 0.0,
+     "solver_jam": 0.00020877954533936652,
+     "ref_jam": 0.0,
+     "shortfall": -0.0003082795371040724,
+     "share_of_shortfall": -0.0038975161111857036
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 6.360162313725492e-05,
+     "ref_open": 0.0,
+     "solver_jam": 2.7194040935143293e-05,
+     "ref_jam": 0.0,
+     "shortfall": -6.360162313725492e-05,
+     "share_of_shortfall": -0.0008041025142428691
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.0002446334775113122,
+     "ref_open": 0.0,
+     "solver_jam": 0.00010644895484162895,
+     "ref_jam": 0.0,
+     "shortfall": -0.0002446334775113122,
+     "share_of_shortfall": -0.0030928517957837867
+    }
+   },
+   "total_shortfall_vs_matthiola": 0.07909641122953241
+  },
+  "UTG+1": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.04523886201809954,
+     "ref_open": 0.04723981900452488,
+     "solver_jam": 0.0015401168063348416,
+     "ref_jam": 0.0,
+     "shortfall": 0.0020009569864253424,
+     "share_of_shortfall": 0.0314234851503258
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.01674236804042232,
+     "ref_open": 0.03354449472096531,
+     "solver_jam": 0.0005719843200603319,
+     "ref_jam": 0.0,
+     "shortfall": 0.01680212668054299,
+     "share_of_shortfall": 0.26386443178029556
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.01367363439960784,
+     "ref_open": 0.024132730015082957,
+     "solver_jam": 0.00021720982992458522,
+     "ref_jam": 0.0,
+     "shortfall": 0.010459095615475117,
+     "share_of_shortfall": 0.16425202440051687
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.001905843849683258,
+     "ref_open": 0.01927601809954751,
+     "solver_jam": 7.176973384615386e-05,
+     "ref_jam": 0.0,
+     "shortfall": 0.017370174249864253,
+     "share_of_shortfall": 0.27278518044223155
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.043289055236199095,
+     "ref_open": 0.060995475113122186,
+     "solver_jam": 0.0010349210497737557,
+     "ref_jam": 0.0,
+     "shortfall": 0.01770641987692309,
+     "share_of_shortfall": 0.2780656585036922
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.00035686815095022626,
+     "ref_open": 0.0,
+     "solver_jam": 0.00021532710262443436,
+     "ref_jam": 0.0,
+     "shortfall": -0.00035686815095022626,
+     "share_of_shortfall": -0.005604338882887359
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 5.802857046757166e-05,
+     "ref_open": 0.0,
+     "solver_jam": 2.6267786003016597e-05,
+     "ref_jam": 0.0,
+     "shortfall": -5.802857046757166e-05,
+     "share_of_shortfall": -0.0009112939132389528
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.00024675822520361983,
+     "ref_open": 0.0,
+     "solver_jam": 0.00011423062891402715,
+     "ref_jam": 0.0,
+     "shortfall": -0.00024675822520361983,
+     "share_of_shortfall": -0.003875147480935621
+    }
+   },
+   "total_shortfall_vs_matthiola": 0.06367711846260937
+  },
+  "UTG+2": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.046559266601357466,
+     "ref_open": 0.04950226244343891,
+     "solver_jam": 0.0008554586162895927,
+     "ref_jam": 0.0,
+     "shortfall": 0.002942995842081443,
+     "share_of_shortfall": 0.03388968564848687
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.01690058444193062,
+     "ref_open": 0.03619909502262444,
+     "solver_jam": 0.00034020948959276017,
+     "ref_jam": 0.0,
+     "shortfall": 0.019298510580693817,
+     "share_of_shortfall": 0.22222948728366307
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.01542311554588235,
+     "ref_open": 0.027541478129713425,
+     "solver_jam": 0.0005023619744193062,
+     "ref_jam": 0.0,
+     "shortfall": 0.012118362583831076,
+     "share_of_shortfall": 0.13954742737589473
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.0020601105809200603,
+     "ref_open": 0.024102564102564103,
+     "solver_jam": 9.741487105580692e-05,
+     "ref_jam": 0.0,
+     "shortfall": 0.022042453521644044,
+     "share_of_shortfall": 0.25382700515185663
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.04447288888868778,
+     "ref_open": 0.07239819004524888,
+     "solver_jam": 0.0007707466751131222,
+     "ref_jam": 0.0,
+     "shortfall": 0.027925301156561097,
+     "share_of_shortfall": 0.32157017155887396
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.000621802867239819,
+     "ref_open": 0.003438914027149322,
+     "solver_jam": 0.00022638418805429866,
+     "ref_jam": 0.0,
+     "shortfall": 0.002817111159909503,
+     "share_of_shortfall": 0.0324400769722648
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 5.2617020467571656e-05,
+     "ref_open": 0.0,
+     "solver_jam": 2.4927226259426854e-05,
+     "ref_jam": 0.0,
+     "shortfall": -5.2617020467571656e-05,
+     "share_of_shortfall": -0.000605904452160166
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.00025165926683257914,
+     "ref_open": 0.0,
+     "solver_jam": 0.00012235080339366514,
+     "ref_jam": 0.0,
+     "shortfall": -0.00025165926683257914,
+     "share_of_shortfall": -0.0028979495388796977
+    }
+   },
+   "total_shortfall_vs_matthiola": 0.08684045855742081
+  },
+  "LJ": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.050469426269230774,
+     "ref_open": 0.04950226244343891,
+     "solver_jam": 0.0005764701253393665,
+     "ref_jam": 0.0,
+     "shortfall": -0.0009671638257918655,
+     "share_of_shortfall": -0.010725853261161942
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.022108796649472098,
+     "ref_open": 0.03619909502262444,
+     "solver_jam": 0.00021628492790346909,
+     "ref_jam": 0.0,
+     "shortfall": 0.01409029837315234,
+     "share_of_shortfall": 0.15626150268046135
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.01990587983505279,
+     "ref_open": 0.033936651583710405,
+     "solver_jam": 0.0005961832747209653,
+     "ref_jam": 0.0,
+     "shortfall": 0.014030771748657616,
+     "share_of_shortfall": 0.15560135201887104
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.003656273509520362,
+     "ref_open": 0.03004524886877828,
+     "solver_jam": 0.00023632072574660638,
+     "ref_jam": 0.0,
+     "shortfall": 0.026388975359257917,
+     "share_of_shortfall": 0.29265391226153037
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.05593141810135747,
+     "ref_open": 0.08570135746606335,
+     "solver_jam": 0.0011876899085972847,
+     "ref_jam": 0.0,
+     "shortfall": 0.02976993936470588,
+     "share_of_shortfall": 0.33014882557057007
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.002430972124524887,
+     "ref_open": 0.009592760180995476,
+     "solver_jam": 0.0002306763907692308,
+     "ref_jam": 0.0,
+     "shortfall": 0.007161788056470589,
+     "share_of_shortfall": 0.07942427718318804
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 4.922315539969835e-05,
+     "ref_open": 0.0,
+     "solver_jam": 2.4126143182503776e-05,
+     "ref_jam": 0.0,
+     "shortfall": -4.922315539969835e-05,
+     "share_of_shortfall": -0.0005458851207925069
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.00025411448533936646,
+     "ref_open": 0.0,
+     "solver_jam": 0.00012677499683257914,
+     "ref_jam": 0.0,
+     "shortfall": -0.00025411448533936646,
+     "share_of_shortfall": -0.002818131332666574
+    }
+   },
+   "total_shortfall_vs_matthiola": 0.09017127143571342
+  },
+  "HJ": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.05448012390361992,
+     "ref_open": 0.0534841628959276,
+     "solver_jam": 0.0006572645371040723,
+     "ref_jam": 0.0,
+     "shortfall": -0.0009959610076923225,
+     "share_of_shortfall": -0.011207522754738334
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.029895827422021112,
+     "ref_open": 0.03619909502262444,
+     "solver_jam": 0.000140871821719457,
+     "ref_jam": 0.0,
+     "shortfall": 0.006303267600603325,
+     "share_of_shortfall": 0.0709305028182292
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.0252020416438914,
+     "ref_open": 0.044645550527903484,
+     "solver_jam": 0.0009928555861236801,
+     "ref_jam": 0.0,
+     "shortfall": 0.019443508884012084,
+     "share_of_shortfall": 0.21879728881599086
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.00836695184591252,
+     "ref_open": 0.036349924585218706,
+     "solver_jam": 0.0014130516215082958,
+     "ref_jam": 0.0,
+     "shortfall": 0.027982972739306188,
+     "share_of_shortfall": 0.31489164866771735
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.0694505842316742,
+     "ref_open": 0.09049773755656108,
+     "solver_jam": 0.002018684503167421,
+     "ref_jam": 0.0,
+     "shortfall": 0.02104715332488688,
+     "share_of_shortfall": 0.2368430570968774
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.013728630959457012,
+     "ref_open": 0.02669683257918552,
+     "solver_jam": 0.0002316428917647059,
+     "ref_jam": 0.0,
+     "shortfall": 0.012968201619728507,
+     "share_of_shortfall": 0.14593082823383122
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 5.1172986066365026e-05,
+     "ref_open": 0.001900452488687783,
+     "solver_jam": 2.3780121825037714e-05,
+     "ref_jam": 0.0,
+     "shortfall": 0.001849279502621418,
+     "share_of_shortfall": 0.020809893103670044
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.0002760077429773756,
+     "ref_open": 0.0005429864253393665,
+     "solver_jam": 0.00014121635225339366,
+     "ref_jam": 0.0,
+     "shortfall": 0.0002669786823619909,
+     "share_of_shortfall": 0.003004304018422403
+    }
+   },
+   "total_shortfall_vs_matthiola": 0.08886540134582806
+  },
+  "CO": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.05821741991493213,
+     "ref_open": 0.0534841628959276,
+     "solver_jam": 0.003484381046153846,
+     "ref_jam": 0.0,
+     "shortfall": -0.004733257019004532,
+     "share_of_shortfall": -0.046184528037755454
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.03446474293846154,
+     "ref_open": 0.03619909502262444,
+     "solver_jam": 0.0014441361511312216,
+     "ref_jam": 0.0,
+     "shortfall": 0.0017343520841629004,
+     "share_of_shortfall": 0.01692285716510853
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.031949655722292615,
+     "ref_open": 0.05592760180995478,
+     "solver_jam": 0.0038791193420814486,
+     "ref_jam": 0.0,
+     "shortfall": 0.023977946087662162,
+     "share_of_shortfall": 0.23396365735624583
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.013857384729155356,
+     "ref_open": 0.04093514328808447,
+     "solver_jam": 0.005910916893076923,
+     "ref_jam": 0.0,
+     "shortfall": 0.02707775855892912,
+     "share_of_shortfall": 0.2642099286692543
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.08161870827330317,
+     "ref_open": 0.09049773755656108,
+     "solver_jam": 0.009529426734841629,
+     "ref_jam": 0.0,
+     "shortfall": 0.008879029283257914,
+     "share_of_shortfall": 0.08663670179628676
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.039053238209321266,
+     "ref_open": 0.05429864253393666,
+     "solver_jam": 0.0002582447665158371,
+     "ref_jam": 0.0,
+     "shortfall": 0.015245404324615394,
+     "share_of_shortfall": 0.14875630050303082
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 0.00018767536570135743,
+     "ref_open": 0.006033182503770739,
+     "solver_jam": 3.0323320482654603e-05,
+     "ref_jam": 0.0,
+     "shortfall": 0.005845507138069382,
+     "share_of_shortfall": 0.05703725515624837
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.0011518279999999997,
+     "ref_open": 0.02561085972850679,
+     "solver_jam": 0.00019402770434389136,
+     "ref_jam": 0.0,
+     "shortfall": 0.02445903172850679,
+     "share_of_shortfall": 0.23865782739158084
+    }
+   },
+   "total_shortfall_vs_matthiola": 0.10248577218619913
+  },
+  "BTN": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.058810044248868786,
+     "ref_open": 0.0534841628959276,
+     "solver_jam": 0.020854259755656107,
+     "ref_jam": 0.0,
+     "shortfall": -0.005325881352941188,
+     "share_of_shortfall": -0.04075857250217022
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.036174397967722476,
+     "ref_open": 0.03619909502262444,
+     "solver_jam": 0.004315342371945702,
+     "ref_jam": 0.0,
+     "shortfall": 2.4697054901962057e-05,
+     "share_of_shortfall": 0.00018900471792444282
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.0436674688907994,
+     "ref_open": 0.06334841628959278,
+     "solver_jam": 0.005341230771342383,
+     "ref_jam": 0.0,
+     "shortfall": 0.019680947398793384,
+     "share_of_shortfall": 0.15061682157491665
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.025713588058778283,
+     "ref_open": 0.05146304675716443,
+     "solver_jam": 0.017922585110904977,
+     "ref_jam": 0.0,
+     "shortfall": 0.025749458698386143,
+     "share_of_shortfall": 0.1970586856333596
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.0891694302081448,
+     "ref_open": 0.09049773755656108,
+     "solver_jam": 0.022925083330316745,
+     "ref_jam": 0.0,
+     "shortfall": 0.0013283073484162827,
+     "share_of_shortfall": 0.010165437000524259
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.08752199744524888,
+     "ref_open": 0.10497737556561085,
+     "solver_jam": 0.00032100388597285063,
+     "ref_jam": 0.0,
+     "shortfall": 0.017455378120361964,
+     "share_of_shortfall": 0.13358470599024352
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 0.0015947688105580695,
+     "ref_open": 0.026123680241327298,
+     "solver_jam": 5.879397345399699e-05,
+     "ref_jam": 0.0,
+     "shortfall": 0.02452891143076923,
+     "share_of_shortfall": 0.1877179284886258
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.01358731201099548,
+     "ref_open": 0.06081447963800906,
+     "solver_jam": 0.0003716333076018101,
+     "ref_jam": 0.0,
+     "shortfall": 0.04722716762701358,
+     "share_of_shortfall": 0.3614259890965761
+    }
+   },
+   "total_shortfall_vs_matthiola": 0.13066898632570134
+  },
+  "SB": {
+   "families": {
+    "pocket pair": {
+     "combos": 78,
+     "solver_open": 0.05881669805882353,
+     "ref_open": 0.0365158371040724,
+     "solver_jam": 0.025747451638009053,
+     "ref_jam": 0.006651583710407239,
+     "shortfall": -0.02230086095475113,
+     "share_of_shortfall": 0.0718881614086152
+    },
+    "suited Ax": {
+     "combos": 48,
+     "solver_open": 0.03619489016591252,
+     "ref_open": 0.023227752639517346,
+     "solver_jam": 0.03153274431372549,
+     "ref_jam": 0.0,
+     "shortfall": -0.012967137526395174,
+     "share_of_shortfall": 0.04180034472196504
+    },
+    "suited Kx/Qx": {
+     "combos": 84,
+     "solver_open": 0.06278654364705882,
+     "ref_open": 0.010889894419306184,
+     "solver_jam": 0.014149483435897437,
+     "ref_jam": 0.0,
+     "shortfall": -0.05189664922775264,
+     "share_of_shortfall": 0.16729195809169609
+    },
+    "suited connectors/gappers": {
+     "combos": 96,
+     "solver_open": 0.05433021709405731,
+     "ref_open": 0.026546003016591248,
+     "solver_jam": 0.04895970725912519,
+     "ref_jam": 0.00045248868778280545,
+     "shortfall": -0.027784214077466063,
+     "share_of_shortfall": 0.08956407872615647
+    },
+    "offsuit broadway": {
+     "combos": 120,
+     "solver_open": 0.09047741318552036,
+     "ref_open": 0.04778280542986425,
+     "solver_jam": 0.06109620633484163,
+     "ref_jam": 0.0,
+     "shortfall": -0.0426946077556561,
+     "share_of_shortfall": 0.13762862608056525
+    },
+    "offsuit Ax/Kx": {
+     "combos": 192,
+     "solver_open": 0.14274147227420814,
+     "ref_open": 0.06570135746606336,
+     "solver_jam": 0.04037445865429863,
+     "ref_jam": 0.016561085972850678,
+     "shortfall": -0.07704011480814478,
+     "share_of_shortfall": 0.248343425821246
+    },
+    "other suited": {
+     "combos": 84,
+     "solver_open": 0.024714116134298636,
+     "ref_open": 0.010165912518853695,
+     "solver_jam": 0.009202813768536953,
+     "ref_jam": 0.0,
+     "shortfall": -0.01454820361544494,
+     "share_of_shortfall": 0.04689700598710255
+    },
+    "other offsuit": {
+     "combos": 624,
+     "solver_open": 0.13428742223298645,
+     "ref_open": 0.07330316742081448,
+     "solver_jam": 0.024665990273619907,
+     "ref_jam": 0.0,
+     "shortfall": -0.06098425481217197,
+     "share_of_shortfall": 0.19658639916265339
+    }
+   },
+   "total_shortfall_vs_matthiola": -0.3102160427777828
+  }
+ },
+ "hand_level": {
+  "UTG": {
+   "matthiola_node": "UTG",
+   "rows": [
+    {
+     "group": "focus",
+     "hand": "A5s",
+     "family": "suited Ax",
+     "solver": {
+      "fold": 0.8417,
+      "call": 0,
+      "raise": 0.0416,
+      "jam": 0.1167
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.8417,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.982,
+       0.0028,
+       0.0152
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.3814,
+       -0.483
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "K9s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.7015,
+      "call": 0,
+      "raise": 0.2934,
+      "jam": 0.0052
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.7015,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9913,
+       0.0054,
+       0.0033
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.3088,
+       -0.9434
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "KQo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.3926,
+      "call": 0,
+      "raise": 0.596,
+      "jam": 0.0114
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.3926,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.6615,
+       0.3293,
+       0.0092
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.0004,
+       -0.6539
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "22",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.997,
+      "call": 0,
+      "raise": 0.001,
+      "jam": 0.0019
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.003,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9957,
+       0.002,
+       0.0023
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.9369,
+       -1.0844
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "55",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.4413,
+      "call": 0,
+      "raise": 0.5502,
+      "jam": 0.0085
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.4413,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.3961,
+       0.5941,
+       0.0098
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.082,
+       -0.6584
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "98s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9877,
+      "call": 0,
+      "raise": 0.0099,
+      "jam": 0.0024
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9877,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9923,
+       0.0054,
+       0.0023
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.4418,
+       -0.9484
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "AKo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.8827,
+      "jam": 0.1172
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.7554,
+       0.2445
+      ],
+      "ev_bb": [
+       -0.1111,
+       1.0766,
+       0.5011
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "A4s",
+     "family": "suited Ax",
+     "solver": {
+      "fold": 0.9942,
+      "call": 0,
+      "raise": 0.0016,
+      "jam": 0.0042
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9942,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.996,
+       0.0013,
+       0.0027
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.7152,
+       -0.6723
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "A3s",
+     "family": "suited Ax",
+     "solver": {
+      "fold": 0.9917,
+      "call": 0,
+      "raise": 0.0023,
+      "jam": 0.006
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9917,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.996,
+       0.0014,
+       0.0026
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.7945,
+       -0.6519
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "K8s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.9908,
+      "call": 0,
+      "raise": 0.0065,
+      "jam": 0.0027
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9908,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9935,
+       0.0038,
+       0.0027
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.4914,
+       -1.0318
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "QJo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.9923,
+      "call": 0,
+      "raise": 0.0051,
+      "jam": 0.0027
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.49,
+      "call": 0.0,
+      "raise": 0.51,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.5023,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9928,
+       0.0043,
+       0.0029
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.4322,
+       -1.0039
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "44",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.9744,
+      "call": 0,
+      "raise": 0.0214,
+      "jam": 0.0042
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.56,
+      "call": 0.0,
+      "raise": 0.44,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.4144,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9966,
+       0.0007,
+       0.0027
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.8575,
+       -0.9103
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "76s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9949,
+      "call": 0,
+      "raise": 0.0033,
+      "jam": 0.0018
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.42,
+      "call": 0.0,
+      "raise": 0.58,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.5749,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9948,
+       0.0034,
+       0.0018
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.6934,
+       -0.887
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "J8s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.986,
+      "call": 0,
+      "raise": 0.0116,
+      "jam": 0.0024
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.014,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.993,
+       0.0048,
+       0.0022
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.4288,
+       -1.0293
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "Q8s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.9915,
+      "call": 0,
+      "raise": 0.0062,
+      "jam": 0.0024
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.0085,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9928,
+       0.0049,
+       0.0023
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.4648,
+       -1.085
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "K3s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.9921,
+      "call": 0,
+      "raise": 0.0057,
+      "jam": 0.0023
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.0079,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9964,
+       0.0017,
+       0.0019
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.7764,
+       -1.1551
+      ]
+     }
+    }
+   ]
+  },
+  "HJ": {
+   "matthiola_node": "HJ",
+   "rows": [
+    {
+     "group": "focus",
+     "hand": "A5s",
+     "family": "suited Ax",
+     "solver": {
+      "fold": 0.0428,
+      "call": 0,
+      "raise": 0.9534,
+      "jam": 0.0039
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0428,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.4075,
+       0.5567,
+       0.0358
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.061,
+       -0.1425
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "K9s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.019,
+      "call": 0,
+      "raise": 0.979,
+      "jam": 0.002
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.019,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.1555,
+       0.8426,
+       0.0019
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.1129,
+       -0.3721
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "KQo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.9974,
+      "jam": 0.0025
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0017,
+       0.9822,
+       0.0161
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.3073,
+       -0.0434
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "22",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.8191,
+      "call": 0,
+      "raise": 0.1792,
+      "jam": 0.0017
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.1809,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.7056,
+       0.2927,
+       0.0018
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.0835,
+       -0.4064
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "55",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.9972,
+      "jam": 0.0026
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.986,
+       0.0138
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.3905,
+       -0.0746
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "98s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.7693,
+      "call": 0,
+      "raise": 0.2291,
+      "jam": 0.0017
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.7693,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9512,
+       0.0471,
+       0.0017
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.1334,
+       -0.4214
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "AKo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.8047,
+      "jam": 0.1952
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.6016,
+       0.3983
+      ],
+      "ev_bb": [
+       -0.1111,
+       1.5929,
+       1.4951
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "65s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9998,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.2509,
+       -0.6012
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "76s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9996,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0002
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9996,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9991,
+       0.0001,
+       0.0008
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.1021,
+       -0.5218
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "97s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9978,
+      "call": 0,
+      "raise": 0.0008,
+      "jam": 0.0014
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9978,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9921,
+       0.0063,
+       0.0016
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.2708,
+       -0.4732
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "K9o",
+     "family": "offsuit Ax/Kx",
+     "solver": {
+      "fold": 0.9586,
+      "call": 0,
+      "raise": 0.0396,
+      "jam": 0.0017
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.45,
+      "call": 0.0,
+      "raise": 0.55,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.5086,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9168,
+       0.0815,
+       0.0017
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.1011,
+       -0.8148
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "86s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.44,
+      "call": 0.0,
+      "raise": 0.56,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.5598,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.999,
+       0.0001,
+       0.0009
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.0976,
+       -0.5801
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "54s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.57,
+      "call": 0.0,
+      "raise": 0.43,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.4298,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.2889,
+       -0.4985
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "22",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.8191,
+      "call": 0,
+      "raise": 0.1792,
+      "jam": 0.0017
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.1809,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.7056,
+       0.2927,
+       0.0018
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.0835,
+       -0.4064
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "K3s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.9879,
+      "call": 0,
+      "raise": 0.0104,
+      "jam": 0.0017
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.0121,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9963,
+       0.0021,
+       0.0016
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.5715,
+       -0.6556
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "A6o",
+     "family": "offsuit Ax/Kx",
+     "solver": {
+      "fold": 0.9912,
+      "call": 0,
+      "raise": 0.0071,
+      "jam": 0.0018
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.0088,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9962,
+       0.0021,
+       0.0017
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.5743,
+       -0.8332
+      ]
+     }
+    }
+   ]
+  },
+  "CO": {
+   "matthiola_node": "CO",
+   "rows": [
+    {
+     "group": "focus",
+     "hand": "A5s",
+     "family": "suited Ax",
+     "solver": {
+      "fold": 0.0176,
+      "call": 0,
+      "raise": 0.9638,
+      "jam": 0.0186
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0176,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0566,
+       0.9286,
+       0.0148
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.1423,
+       -0.0375
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "K9s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.0159,
+      "call": 0,
+      "raise": 0.9766,
+      "jam": 0.0075
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0159,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0644,
+       0.928,
+       0.0075
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.1199,
+       -0.0789
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "KQo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.9734,
+      "jam": 0.0264
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.9423,
+       0.0576
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.4331,
+       0.2025
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "22",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.1067,
+      "call": 0,
+      "raise": 0.8429,
+      "jam": 0.0504
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.8933,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0667,
+       0.9254,
+       0.0079
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.0051,
+       -0.2146
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "55",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.9829,
+      "jam": 0.017
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.9827,
+       0.0172
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.5192,
+       0.1612
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "98s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.3531,
+      "call": 0,
+      "raise": 0.4123,
+      "jam": 0.2346
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.3531,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.5165,
+       0.3946,
+       0.0889
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.1122,
+       -0.1298
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "AKo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.2829,
+      "jam": 0.717
+     },
+     "solver_modal": "jam",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.3335,
+       0.6664
+      ],
+      "ev_bb": [
+       -0.1111,
+       2.0003,
+       2.0867
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "54s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9998,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.2082,
+       -0.4873
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "65s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9998,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.1767,
+       -0.5575
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "76s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9998,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.0349,
+       -0.4236
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "75s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.49,
+      "call": 0.0,
+      "raise": 0.51,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.5098,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.1965,
+       -0.6314
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "K2s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.993,
+      "call": 0,
+      "raise": 0.0054,
+      "jam": 0.0016
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.46,
+      "call": 0.0,
+      "raise": 0.54,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.533,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9957,
+       0.0027,
+       0.0016
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.5085,
+       -0.5719
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "22",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.1067,
+      "call": 0,
+      "raise": 0.8429,
+      "jam": 0.0504
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.8933,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0667,
+       0.9254,
+       0.0079
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.0051,
+       -0.2146
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "A4o",
+     "family": "offsuit Ax/Kx",
+     "solver": {
+      "fold": 0.8917,
+      "call": 0,
+      "raise": 0.1066,
+      "jam": 0.0017
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.1083,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.8697,
+       0.1286,
+       0.0017
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.1339,
+       -0.587
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "K8o",
+     "family": "offsuit Ax/Kx",
+     "solver": {
+      "fold": 0.9029,
+      "call": 0,
+      "raise": 0.0955,
+      "jam": 0.0016
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.0971,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9899,
+       0.0085,
+       0.0016
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.3361,
+       -0.7122
+      ]
+     }
+    }
+   ]
+  },
+  "BTN": {
+   "matthiola_node": "BTN",
+   "rows": [
+    {
+     "group": "focus",
+     "hand": "A5s",
+     "family": "suited Ax",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.6701,
+      "jam": 0.3298
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.6968,
+       0.3031
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.358,
+       0.2072
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "K9s",
+     "family": "suited Kx/Qx",
+     "solver": {
+      "fold": 0.001,
+      "call": 0,
+      "raise": 0.9394,
+      "jam": 0.0595
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0019,
+       0.8559,
+       0.1422
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.2731,
+       0.1187
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "KQo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.5858,
+      "jam": 0.414
+     },
+     "solver_modal": "raise",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.3257,
+       0.6742
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.6845,
+       0.5817
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "22",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.0016,
+      "call": 0,
+      "raise": 0.0327,
+      "jam": 0.9657
+     },
+     "solver_modal": "jam",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.9984,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0017,
+       0.0369,
+       0.9614
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.0726,
+       0.2086
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "55",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.3299,
+      "jam": 0.67
+     },
+     "solver_modal": "jam",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.1731,
+       0.8268
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.8744,
+       0.8564
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "98s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.0342,
+      "call": 0,
+      "raise": 0.0737,
+      "jam": 0.8921
+     },
+     "solver_modal": "jam",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0342,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0486,
+       0.0785,
+       0.8728
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.0507,
+       0.1459
+      ]
+     }
+    },
+    {
+     "group": "focus",
+     "hand": "AKo",
+     "family": "offsuit broadway",
+     "solver": {
+      "fold": 0.0001,
+      "call": 0,
+      "raise": 0.1894,
+      "jam": 0.8105
+     },
+     "solver_modal": "jam",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.0001,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0001,
+       0.1488,
+       0.8511
+      ],
+      "ev_bb": [
+       -0.1111,
+       2.5345,
+       2.8084
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "54s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9998,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.1415,
+       -0.3353
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "64s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9998,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.2412,
+       -0.4857
+      ]
+     }
+    },
+    {
+     "group": "clear_open_by_ref",
+     "hand": "75s",
+     "family": "suited connectors/gappers",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.0,
+      "call": 0.0,
+      "raise": 1.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.9998,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.0754,
+       -0.3577
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "K6o",
+     "family": "offsuit Ax/Kx",
+     "solver": {
+      "fold": 0.9551,
+      "call": 0,
+      "raise": 0.0434,
+      "jam": 0.0016
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.4,
+      "call": 0.0,
+      "raise": 0.6,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.5551,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9867,
+       0.0117,
+       0.0016
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.2859,
+       -0.6098
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "95s",
+     "family": "other suited",
+     "solver": {
+      "fold": 0.9998,
+      "call": 0,
+      "raise": 0.0001,
+      "jam": 0.0001
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.34,
+      "call": 0.0,
+      "raise": 0.66,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.6598,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9998,
+       0.0001,
+       0.0001
+      ],
+      "ev_bb": [
+       -0.1111,
+       -1.0494,
+       -0.4403
+      ]
+     }
+    },
+    {
+     "group": "boundary_by_ref",
+     "hand": "98o",
+     "family": "other offsuit",
+     "solver": {
+      "fold": 0.9908,
+      "call": 0,
+      "raise": 0.0045,
+      "jam": 0.0048
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 0.28,
+      "call": 0.0,
+      "raise": 0.72,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": -0.7108,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9909,
+       0.0044,
+       0.0047
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.3459,
+       -0.361
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "22",
+     "family": "pocket pair",
+     "solver": {
+      "fold": 0.0016,
+      "call": 0,
+      "raise": 0.0327,
+      "jam": 0.9657
+     },
+     "solver_modal": "jam",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.9984,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.0017,
+       0.0369,
+       0.9614
+      ],
+      "ev_bb": [
+       -0.1111,
+       0.0726,
+       0.2086
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "K5o",
+     "family": "offsuit Ax/Kx",
+     "solver": {
+      "fold": 0.9861,
+      "call": 0,
+      "raise": 0.0124,
+      "jam": 0.0016
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.0139,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9926,
+       0.0058,
+       0.0016
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.4164,
+       -0.7766
+      ]
+     }
+    },
+    {
+     "group": "clear_fold_by_ref",
+     "hand": "K4o",
+     "family": "offsuit Ax/Kx",
+     "solver": {
+      "fold": 0.9881,
+      "call": 0,
+      "raise": 0.0104,
+      "jam": 0.0016
+     },
+     "solver_modal": "fold",
+     "action_ev": null,
+     "ref_matthiola_8max": {
+      "fold": 1.0,
+      "call": 0.0,
+      "raise": 0.0,
+      "allin": 0.0
+     },
+     "diff_open_solver_minus_ref": 0.0119,
+     "action_ev_reproduction20": {
+      "actions": [
+       "Fold",
+       "Raise 2",
+       "All-in 30"
+      ],
+      "freq": [
+       0.9944,
+       0.0041,
+       0.0015
+      ],
+      "ev_bb": [
+       -0.1111,
+       -0.4805,
+       -0.8315
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "bb_defence": {
+  "CO": {
+   "bb_fold_unweighted": 0.010759459541758672,
+   "bb_fold_by_family": {
+    "pocket pair": 0.00024626673692307695,
+    "other offsuit": 0.018208864761538462,
+    "suited connectors/gappers": 0.0101749696125,
+    "other suited": 0.01230774687142857,
+    "offsuit Ax/Kx": 0.0022218240684375,
+    "suited Ax": 0.0005919910521666665,
+    "offsuit broadway": 0.0010664537555999999,
+    "suited Kx/Qx": 0.00347470087352381
+   },
+   "worst_hands_continue": [
+    [
+     "32o",
+     0.945
+    ],
+    [
+     "42o",
+     0.951
+    ],
+    [
+     "72o",
+     0.952
+    ],
+    [
+     "82o",
+     0.965
+    ],
+    [
+     "92o",
+     0.972
+    ],
+    [
+     "J3o",
+     0.984
+    ],
+    [
+     "T2o",
+     0.983
+    ]
+   ]
+  },
+  "BTN": {
+   "bb_fold_unweighted": 0.007949897165776765,
+   "bb_fold_by_family": {
+    "pocket pair": 8.710801615384616e-05,
+    "other offsuit": 0.01424078539230769,
+    "suited connectors/gappers": 0.006282012220833332,
+    "other suited": 0.008068972123809522,
+    "offsuit Ax/Kx": 0.0011701526956250001,
+    "suited Ax": 8.710802983333332e-05,
+    "offsuit broadway": 0.000266881475,
+    "suited Kx/Qx": 0.0012711430972380954
+   },
+   "worst_hands_continue": [
+    [
+     "32o",
+     0.962
+    ],
+    [
+     "42o",
+     0.965
+    ],
+    [
+     "72o",
+     0.95
+    ],
+    [
+     "82o",
+     0.975
+    ],
+    [
+     "92o",
+     0.979
+    ],
+    [
+     "J3o",
+     0.989
+    ],
+    [
+     "T2o",
+     0.985
+    ]
+   ]
+  },
+  "SB": {
+   "bb_fold_unweighted": 0.024247044381924574,
+   "bb_fold_by_family": {
+    "pocket pair": 8.710801384615384e-05,
+    "other offsuit": 0.046810748402692295,
+    "suited connectors/gappers": 0.013319173033333334,
+    "other suited": 0.017983342880952383,
+    "offsuit Ax/Kx": 0.00040551071875,
+    "suited Ax": 8.710803149999999e-05,
+    "offsuit broadway": 0.0001605404744,
+    "suited Kx/Qx": 0.0005277846241904761
+   },
+   "worst_hands_continue": [
+    [
+     "32o",
+     0.814
+    ],
+    [
+     "42o",
+     0.846
+    ],
+    [
+     "72o",
+     0.754
+    ],
+    [
+     "82o",
+     0.876
+    ],
+    [
+     "92o",
+     0.931
+    ],
+    [
+     "J3o",
+     0.98
+    ],
+    [
+     "T2o",
+     0.96
+    ]
+   ]
+  },
+  "matthiola_8max_BB_vs_BTN_fold_unweighted": 0.10416289592760182,
+  "matthiola_8max_BB_vs_BTN_worst_hands_continue": [
+   [
+    "32o",
+    0.0
+   ],
+   [
+    "42o",
+    0.85
+   ],
+   [
+    "72o",
+    0.0
+   ],
+   [
+    "82o",
+    0.0
+   ],
+   [
+    "92o",
+    0.0
+   ],
+   [
+    "J3o",
+    1.0
+   ],
+   [
+    "T2o",
+    0.0
+   ]
+  ],
+  "four_handed_same_engine": {
+   "P0_static_payoff": {
+    "CO@0": {
+     "All-in 30": 0.01143369195304954,
+     "Fold": 0.7269729706601225,
+     "Raise 2": 0.26159335295361635
+    },
+    "BTN@1": {
+     "All-in 30": 0.0740267773467249,
+     "Fold": 0.6241529307932012,
+     "Raise 2": 0.3018203084929486
+    },
+    "SB@25": {
+     "3-bet 7": 0.014078927915509102,
+     "All-in 30": 0.137962401101144,
+     "Call 2": 0.3648133893418077,
+     "Fold": 0.48314528355410247
+    },
+    "BB@26": {
+     "3-bet 7": 0.0001533929622840097,
+     "All-in 30": 0.16884770606450533,
+     "Call 2": 0.8309952660155331,
+     "Fold": 3.6396344795462538e-06
+    },
+    "SB@2": {
+     "All-in 30": 0.2402608160167398,
+     "Fold": 0.3655312484241366,
+     "Raise 2.5": 0.3942079411267008
+    },
+    "BB@4": {
+     "3-bet 8.8": 8.822263022059671e-05,
+     "All-in 30": 0.3008392721944564,
+     "Call 2.5": 0.699071931776191,
+     "Fold": 5.699343137184188e-07
+    }
+   },
+   "A4c_solved_continuation_nodes_6_28": {
+    "CO@0": {
+     "All-in 30": 0.01143410914646346,
+     "Fold": 0.7269726899604743,
+     "Raise 2": 0.26159321501805316
+    },
+    "BTN@1": {
+     "All-in 30": 0.04561502614924783,
+     "Fold": 0.5859031039002898,
+     "Raise 2": 0.36848188254916764
+    },
+    "SB@25": {
+     "3-bet 7": 0.0005213132141436415,
+     "All-in 30": 0.15640427144973587,
+     "Call 2": 0.4314396637690024,
+     "Fold": 0.4116347530782766
+    },
+    "BB@26": {
+     "3-bet 7": 3.320904284737485e-06,
+     "All-in 30": 0.13633715030953472,
+     "Call 2": 0.7985689433968124,
+     "Fold": 0.06509059107085487
+    },
+    "SB@2": {
+     "All-in 30": 0.09992067735584083,
+     "Fold": 0.3076981554806376,
+     "Raise 2.5": 0.5923811802848689
+    },
+    "BB@4": {
+     "3-bet 8.8": 2.6783793121049355e-06,
+     "All-in 30": 0.18755094541605133,
+     "Call 2.5": 0.7762778178153248,
+     "Fold": 0.03616856866152798
+    }
+   },
+   "note": "converged (400 iterations). BB@26 = BB vs BTN open, BB@4 = BB vs SB open; CO@0 terminals vs BB stay static in both"
+  }
+ },
+ "reproduction_9max": {
+  "config": "data/gto_9max_solver_pilot_30bb.json config, t2_cont_terminal path BTN open / BB call, seeds 202",
+  "runs": {
+   "20": {
+    "gap_total": 0.30330646895398633,
+    "rfi": {
+     "UTG": 0.09632580951262697,
+     "UTG+1": 0.10876106528350543,
+     "UTG+2": 0.13121234953832261,
+     "LJ": 0.16058987750637388,
+     "HJ": 0.1847743136743484,
+     "CO": 0.25112353821728345,
+     "BTN": 0.35197745604714664
+    },
+    "bb_vs_btn": {
+     "3-bet 8": 0.10988637912444481,
+     "All-in 30": 0.07732710103836467,
+     "Call 2": 0.8048076009611057,
+     "Fold": 0.007978924115542812
+    },
+    "consistency": {
+     "UTG": {
+      "modal_not_best_ev_combo_share": 0.027149321266968326,
+      "mean_class_regret_bb": 0.010941431622582485,
+      "top": [
+       [
+        "KTs",
+        0.111,
+        "Fold",
+        "Raise 2",
+        0.196
+       ],
+       [
+        "KQo",
+        0.079,
+        "Fold",
+        "Raise 2",
+        0.111
+       ],
+       [
+        "AJo",
+        0.078,
+        "Fold",
+        "Raise 2",
+        0.137
+       ],
+       [
+        "JTs",
+        0.074,
+        "Fold",
+        "Raise 2",
+        0.095
+       ],
+       [
+        "A9s",
+        0.046,
+        "Fold",
+        "Raise 2",
+        0.057
+       ]
+      ]
+     },
+     "HJ": {
+      "modal_not_best_ev_combo_share": 0.05580693815987934,
+      "mean_class_regret_bb": 0.007758896609133416,
+      "top": [
+       [
+        "A8o",
+        0.085,
+        "Fold",
+        "Raise 2",
+        0.106
+       ],
+       [
+        "A9o",
+        0.085,
+        "Fold",
+        "Raise 2",
+        0.151
+       ],
+       [
+        "A4s",
+        0.071,
+        "Fold",
+        "Raise 2",
+        0.095
+       ],
+       [
+        "A3s",
+        0.058,
+        "Fold",
+        "Raise 2",
+        0.068
+       ],
+       [
+        "QTo",
+        0.045,
+        "Fold",
+        "Raise 2",
+        0.075
+       ],
+       [
+        "22",
+        0.02,
+        "Fold",
+        "Raise 2",
+        0.028
+       ],
+       [
+        "T8s",
+        0.016,
+        "Fold",
+        "Raise 2",
+        0.022
+       ],
+       [
+        "Q8s",
+        0.016,
+        "Fold",
+        "Raise 2",
+        0.019
+       ]
+      ]
+     },
+     "CO": {
+      "modal_not_best_ev_combo_share": 0.0392156862745098,
+      "mean_class_regret_bb": 0.007373445013621522,
+      "top": [
+       [
+        "A5o",
+        0.039,
+        "Fold",
+        "Raise 2",
+        0.068
+       ],
+       [
+        "JTo",
+        0.029,
+        "Fold",
+        "Raise 2",
+        0.04
+       ],
+       [
+        "K7s",
+        0.028,
+        "Fold",
+        "Raise 2",
+        0.05
+       ],
+       [
+        "T9s",
+        0.025,
+        "Raise 2",
+        "All-in 30",
+        0.027
+       ],
+       [
+        "J8s",
+        0.022,
+        "Fold",
+        "Raise 2",
+        0.032
+       ],
+       [
+        "K9o",
+        0.017,
+        "Fold",
+        "Raise 2",
+        0.027
+       ],
+       [
+        "K6s",
+        0.016,
+        "Fold",
+        "Raise 2",
+        0.023
+       ]
+      ]
+     },
+     "BTN": {
+      "modal_not_best_ev_combo_share": 0.07692307692307693,
+      "mean_class_regret_bb": 0.00872276117997786,
+      "top": [
+       [
+        "AJo",
+        0.124,
+        "All-in 30",
+        "Raise 2",
+        0.217
+       ],
+       [
+        "KQo",
+        0.069,
+        "All-in 30",
+        "Raise 2",
+        0.103
+       ],
+       [
+        "44",
+        0.057,
+        "All-in 30",
+        "Raise 2",
+        0.069
+       ],
+       [
+        "AKs",
+        0.044,
+        "Raise 2",
+        "All-in 30",
+        0.085
+       ],
+       [
+        "K8o",
+        0.021,
+        "Fold",
+        "Raise 2",
+        0.038
+       ],
+       [
+        "33",
+        0.016,
+        "All-in 30",
+        "Raise 2",
+        0.02
+       ],
+       [
+        "K4s",
+        0.016,
+        "Fold",
+        "Raise 2",
+        0.026
+       ],
+       [
+        "55",
+        0.015,
+        "All-in 30",
+        "Raise 2",
+        0.018
+       ]
+      ]
+     },
+     "BB": {
+      "modal_not_best_ev_combo_share": 0.0693815987933635,
+      "mean_class_regret_bb": 0.016026989044571463,
+      "top": [
+       [
+        "T9s",
+        0.099,
+        "Call 2",
+        "All-in 30",
+        0.183
+       ],
+       [
+        "98s",
+        0.093,
+        "Call 2",
+        "All-in 30",
+        0.139
+       ],
+       [
+        "J9s",
+        0.085,
+        "Call 2",
+        "All-in 30",
+        0.133
+       ],
+       [
+        "A5s",
+        0.081,
+        "Call 2",
+        "All-in 30",
+        0.133
+       ],
+       [
+        "87s",
+        0.076,
+        "Call 2",
+        "All-in 30",
+        0.105
+       ],
+       [
+        "54s",
+        0.066,
+        "Call 2",
+        "All-in 30",
+        0.074
+       ],
+       [
+        "J8s",
+        0.066,
+        "Call 2",
+        "All-in 30",
+        0.089
+       ],
+       [
+        "97s",
+        0.065,
+        "Call 2",
+        "All-in 30",
+        0.082
+       ]
+      ]
+     }
+    },
+    "ev_focus": {
+     "UTG": {
+      "A5s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.982,
+        0.0028,
+        0.0152
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.3814,
+        -0.483
+       ]
+      },
+      "K9s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9913,
+        0.0054,
+        0.0033
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.3088,
+        -0.9434
+       ]
+      },
+      "KQo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.6615,
+        0.3293,
+        0.0092
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.0004,
+        -0.6539
+       ]
+      },
+      "22": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9957,
+        0.002,
+        0.0023
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.9369,
+        -1.0844
+       ]
+      },
+      "55": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.3961,
+        0.5941,
+        0.0098
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.082,
+        -0.6584
+       ]
+      },
+      "98s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9923,
+        0.0054,
+        0.0023
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.4418,
+        -0.9484
+       ]
+      },
+      "AKo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.7554,
+        0.2445
+       ],
+       "ev_bb": [
+        -0.1111,
+        1.0766,
+        0.5011
+       ]
+      },
+      "72o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9996,
+        0.0003,
+        0.0001
+       ],
+       "ev_bb": [
+        -0.1111,
+        -1.9692,
+        -2.4262
+       ]
+      },
+      "T7s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9964,
+        0.0018,
+        0.0018
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.7074,
+        -1.2083
+       ]
+      },
+      "Q9o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9961,
+        0.0019,
+        0.002
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.7497,
+        -1.3828
+       ]
+      }
+     },
+     "HJ": {
+      "A5s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.4075,
+        0.5567,
+        0.0358
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.061,
+        -0.1425
+       ]
+      },
+      "K9s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.1555,
+        0.8426,
+        0.0019
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.1129,
+        -0.3721
+       ]
+      },
+      "KQo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0017,
+        0.9822,
+        0.0161
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.3073,
+        -0.0434
+       ]
+      },
+      "22": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.7056,
+        0.2927,
+        0.0018
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.0835,
+        -0.4064
+       ]
+      },
+      "55": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.986,
+        0.0138
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.3905,
+        -0.0746
+       ]
+      },
+      "98s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9512,
+        0.0471,
+        0.0017
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.1334,
+        -0.4214
+       ]
+      },
+      "AKo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.6016,
+        0.3983
+       ],
+       "ev_bb": [
+        -0.1111,
+        1.5929,
+        1.4951
+       ]
+      },
+      "72o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9996,
+        0.0003,
+        0.0001
+       ],
+       "ev_bb": [
+        -0.1111,
+        -1.7381,
+        -1.8444
+       ]
+      },
+      "T7s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9972,
+        0.0012,
+        0.0016
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.6043,
+        -0.5847
+       ]
+      },
+      "Q9o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9873,
+        0.0111,
+        0.0017
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.2226,
+        -0.6739
+       ]
+      }
+     },
+     "CO": {
+      "A5s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0566,
+        0.9286,
+        0.0148
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.1423,
+        -0.0375
+       ]
+      },
+      "K9s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0644,
+        0.928,
+        0.0075
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.1199,
+        -0.0789
+       ]
+      },
+      "KQo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.9423,
+        0.0576
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.4331,
+        0.2025
+       ]
+      },
+      "22": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0667,
+        0.9254,
+        0.0079
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.0051,
+        -0.2146
+       ]
+      },
+      "55": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.9827,
+        0.0172
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.5192,
+        0.1612
+       ]
+      },
+      "98s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.5165,
+        0.3946,
+        0.0889
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.1122,
+        -0.1298
+       ]
+      },
+      "AKo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.3335,
+        0.6664
+       ],
+       "ev_bb": [
+        -0.1111,
+        2.0003,
+        2.0867
+       ]
+      },
+      "72o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9996,
+        0.0003,
+        0.0001
+       ],
+       "ev_bb": [
+        -0.1111,
+        -1.7233,
+        -1.7846
+       ]
+      },
+      "T7s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9954,
+        0.0024,
+        0.0021
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.3908,
+        -0.447
+       ]
+      },
+      "Q9o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.8144,
+        0.1822,
+        0.0034
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.1447,
+        -0.5828
+       ]
+      }
+     },
+     "BTN": {
+      "A5s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.6968,
+        0.3031
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.358,
+        0.2072
+       ]
+      },
+      "K9s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0019,
+        0.8559,
+        0.1422
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.2731,
+        0.1187
+       ]
+      },
+      "KQo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.3257,
+        0.6742
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.6845,
+        0.5817
+       ]
+      },
+      "22": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0017,
+        0.0369,
+        0.9614
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.0726,
+        0.2086
+       ]
+      },
+      "55": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.1731,
+        0.8268
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.8744,
+        0.8564
+       ]
+      },
+      "98s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0486,
+        0.0785,
+        0.8728
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.0507,
+        0.1459
+       ]
+      },
+      "AKo": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.1488,
+        0.8511
+       ],
+       "ev_bb": [
+        -0.1111,
+        2.5345,
+        2.8084
+       ]
+      },
+      "72o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.9997,
+        0.0002,
+        0.0001
+       ],
+       "ev_bb": [
+        -0.1111,
+        -1.7162,
+        -1.4999
+       ]
+      },
+      "T7s": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.6687,
+        0.2765,
+        0.0548
+       ],
+       "ev_bb": [
+        -0.1111,
+        -0.1495,
+        -0.2113
+       ]
+      },
+      "Q9o": {
+       "actions": [
+        "Fold",
+        "Raise 2",
+        "All-in 30"
+       ],
+       "freq": [
+        0.2304,
+        0.7657,
+        0.0039
+       ],
+       "ev_bb": [
+        -0.1111,
+        0.0166,
+        -0.3273
+       ]
+      }
+     },
+     "BB": {
+      "A5s": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.4968,
+        0.0762,
+        0.427
+       ],
+       "ev_bb": [
+        -1.1111,
+        0.4429,
+        0.3803,
+        0.5758
+       ]
+      },
+      "K9s": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.9202,
+        0.0177,
+        0.062
+       ],
+       "ev_bb": [
+        -1.1111,
+        0.3041,
+        -0.0839,
+        0.2333
+       ]
+      },
+      "KQo": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.0055,
+        0.9275,
+        0.067
+       ],
+       "ev_bb": [
+        -1.1111,
+        0.6538,
+        1.0693,
+        1.0012
+       ]
+      },
+      "22": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.7274,
+        0.0018,
+        0.2707
+       ],
+       "ev_bb": [
+        -1.1111,
+        0.3376,
+        0.0673,
+        0.399
+       ]
+      },
+      "55": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.1068,
+        0.7427,
+        0.1504
+       ],
+       "ev_bb": [
+        -1.1111,
+        0.553,
+        0.7404,
+        0.695
+       ]
+      },
+      "98s": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0022,
+        0.6359,
+        0.0017,
+        0.3602
+       ],
+       "ev_bb": [
+        -1.1111,
+        -0.1002,
+        -1.3177,
+        0.0386
+       ]
+      },
+      "AKo": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0001,
+        0.0001,
+        0.3157,
+        0.6842
+       ],
+       "ev_bb": [
+        -1.1111,
+        1.3131,
+        3.1762,
+        3.2257
+       ]
+      },
+      "72o": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0498,
+        0.9467,
+        0.0019,
+        0.0016
+       ],
+       "ev_bb": [
+        -1.1111,
+        -0.6169,
+        -2.9742,
+        -1.4839
+       ]
+      },
+      "T7s": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0028,
+        0.8984,
+        0.0017,
+        0.0972
+       ],
+       "ev_bb": [
+        -1.1111,
+        -0.1919,
+        -1.6269,
+        -0.2713
+       ]
+      },
+      "Q9o": {
+       "actions": [
+        "Fold",
+        "Call 2",
+        "3-bet 8",
+        "All-in 30"
+       ],
+       "freq": [
+        0.0014,
+        0.9833,
+        0.0017,
+        0.0136
+       ],
+       "ev_bb": [
+        -1.1111,
+        -0.0532,
+        -1.1661,
+        -0.28
+       ]
+      }
+     }
+    }
+   }
+  }
+ },
+ "ab_small_4handed": {
+  "engine": "same GTOpen preflop engine, 4-handed CO/BTN/SB/BB 30bb (cfg_4h_mr4_30bb), 400 iterations, one factor changed per arm",
+  "arms": {
+   "base_static_mr4": {
+    "CO_rfi": 0.2730270452817906,
+    "BTN_rfi": 0.3758470863640989,
+    "CO_jam": 0.01143369195304954,
+    "BTN_jam": 0.0740267773467249,
+    "SB_rfi": 0.634468757881622,
+    "BB_vs_BTN_fold": 3.6396344795462538e-06,
+    "BB_vs_SB_fold": 5.699343137184188e-07,
+    "BB_vs_BTN": {
+     "3-bet 7": 0.0001533929622840097,
+     "All-in 30": 0.16884770606450533,
+     "Call 2": 0.8309952660155331,
+     "Fold": 3.6396344795462538e-06
+    }
+   },
+   "raw_realization": {
+    "CO_rfi": 0.2599934844956104,
+    "BTN_rfi": 0.3595099671876794,
+    "CO_jam": 0.02324330914521359,
+    "BTN_jam": 0.08302826642395465,
+    "SB_rfi": 0.683807245266923,
+    "BB_vs_BTN_fold": 3.3459800456091287e-06,
+    "BB_vs_SB_fold": 3.940483994433091e-06,
+    "BB_vs_BTN": {
+     "3-bet 7": 0.0009532539620845675,
+     "All-in 30": 0.1426565687783676,
+     "Call 2": 0.8563868333654997,
+     "Fold": 3.3459800456091287e-06
+    }
+   },
+   "max_raises_2": {
+    "CO_rfi": 0.26998608489739795,
+    "BTN_rfi": 0.37416454694778384,
+    "CO_jam": 0.013833862587407512,
+    "BTN_jam": 0.058653953248017636,
+    "SB_rfi": 0.6045811579343898,
+    "BB_vs_BTN_fold": 1.4656416987578972e-06,
+    "BB_vs_SB_fold": 4.24875431035725e-06,
+    "BB_vs_BTN": {
+     "3-bet 7": 0.09193257295529988,
+     "All-in 30": 0.11465623650324887,
+     "Call 2": 0.7934097316929822,
+     "Fold": 1.4656416987578972e-06
+    }
+   },
+   "no_jam_option": {
+    "CO_rfi": 0.3289614894367233,
+    "BTN_rfi": 0.4466860898310113,
+    "CO_jam": 0.0,
+    "BTN_jam": 0.0,
+    "SB_rfi": 0.7224729639513563,
+    "BB_vs_BTN_fold": 5.3524756338996674e-08,
+    "BB_vs_SB_fold": 3.071642007204378e-08,
+    "BB_vs_BTN": {
+     "3-bet 7": 0.13669860211213275,
+     "Call 2": 0.863301354042082,
+     "Fold": 5.3524756338996674e-08
+    }
+   },
+   "mr2_no_jam": {
+    "CO_rfi": 0.31735274853873646,
+    "BTN_rfi": 0.41478136569242874,
+    "CO_jam": 0.0,
+    "BTN_jam": 0.0,
+    "SB_rfi": 0.66213905844898,
+    "BB_vs_BTN_fold": 2.1240590865994517e-08,
+    "BB_vs_SB_fold": 1.8229230585292912e-08,
+    "BB_vs_BTN": {
+     "3-bet 7": 0.18123517203287842,
+     "Call 2": 0.818764821058472,
+     "Fold": 2.1240590865994517e-08
+    }
+   },
+   "A4c_solved_continuation_nodes_6_28": {
+    "CO_rfi": 0.27302731003952574,
+    "BTN_rfi": 0.41409689609971023,
+    "BB_vs_BTN_fold": 0.06509059107085487,
+    "BB_vs_SB_fold": 0.03616856866152798
+   }
+  }
+ },
+ "attribution": [
+  {
+   "candidate": "realization model (static: pot x equity x r, r = 1 +- 0.08 by seat order, identical for every hand class)",
+   "evidence": "BB vs BTN: 72o call EV -0.617 vs fold -1.111 bb (raw equity realized in full OOP); solver BB folds 0.8% vs Matthiola 10.4%; removing only the positional skew (raw) moves CO / BTN RFI by -1.3 / -1.6 pp (skew is not the driver; the class-independence is); shortfall concentrates in playability families (suited Kx/Qx, suited connectors) whose value a raw-equity payoff cannot express",
+   "verdict": "solver/model mismatch (strong)"
+  },
+  {
+   "candidate": "preflop terminal value (pot-share payoff at every flop-reaching terminal)",
+   "evidence": "4-handed same engine: replacing the payoff at only the two HU terminals 6 / 28 with solved flop values raises BTN RFI 37.6% -> 41.4% and BB vs BTN fold 0% -> 6.5%; CO RFI unchanged (27.3%) because CO's terminals stayed static",
+   "verdict": "solver/model mismatch (strong; same mechanism as the realization model)"
+  },
+  {
+   "candidate": "opponent defence saturation (BB continues ~99%)",
+   "evidence": "present in the current 30bb 9-max artifact: BB vs CO fold 1.1%, vs BTN 0.8%; 72o/82o/92o continue >= 95% (Matthiola folds them 100%); when BB starts folding (solved continuation) the BTN opens more; this is the channel through which the payoff model makes openers tight -> the old 'BB never folds' finding and today's low RFI are the same problem",
+   "verdict": "solver/model mismatch (strong, mechanism)"
+  },
+  {
+   "candidate": "multiway continuation / payoff approximation (coupled_deck_v1 raw equity)",
+   "evidence": "not isolated by an A/B here; it shares the class-independent raw-equity payoff, so speculative hands get no multiway playability premium; no near-reference covers multiway pots",
+   "verdict": "both/uncertain (leaning solver)"
+  },
+  {
+   "candidate": "action abstraction / sizing",
+   "evidence": "non-SB opens are 2.0 bb in solver and both references; the SB tree differs (2.5 bb, no limp vs 3.5 bb / limps) so SB is excluded; 3-bet sizes of the references are not recorded",
+   "verdict": "uncertain (minor for UTG-BTN; decisive only for SB comparability)"
+  },
+  {
+   "candidate": "max_raises (pilot uses 2: open + one re-raise, no 4-bet)",
+   "evidence": "4-handed A/B max_raises 4 -> 2: CO / BTN RFI -0.3 / -0.2 pp; 9-max has more players behind, so the 9-max effect may be somewhat larger but is not of the 10 pp order",
+   "verdict": "solver abstraction, small contributor"
+  },
+  {
+   "candidate": "all-in threshold / jam availability",
+   "evidence": "4-handed A/B without the jam option: CO / BTN RFI 32.9% / 44.7% (base 27.3% / 37.6%); 9-max BTN jams 22 / 98s / KQo / 55 because the 2 bb raise is called ~99% (no fold equity) while the jam takes 2.5 bb uncontested; references jam 0% at 30 bb -> jam overuse is a symptom of the payoff model, jam availability itself is not the cause",
+   "verdict": "solver/model mismatch (symptom)"
+  },
+  {
+   "candidate": "convergence (pilot: 20 iterations, gap_total 0.31 bb)",
+   "evidence": "20 it: modal action != best-EV action for 2.7% (UTG) - 7.7% of combos (e.g. UTG KQo raise EV beats fold by 0.11 bb but folds 66%); ensemble static 100 it gives the same aggregate RFI -> convergence adds hand-level noise but does not explain the aggregate gap",
+   "verdict": "solver issue at hand level; not the aggregate cause"
+  },
+  {
+   "candidate": "reference side (conditions / provenance)",
+   "evidence": "two independent near-references agree on aggregate RFI (UTG+1 18.6 vs 18.5, CO 37.5 vs 36.3, BTN 48.7 vs 48.7); neither records the ante model or raise tree; Matthiola is 8-max; no exact-comparable reference exists locally; a larger chart ante (e.g. 12.5% = 1.125 bb) would widen the reference somewhat",
+   "verdict": "reference mismatch possible for part of the gap; not the main cause"
+  }
+ ],
+ "stack_semantics": {
+  "GTOpen semantics": "cfg.stack is the stack AFTER the ante (behind = stack - invested + ante); hand-start stack S needs cfg.stack = S - ante",
+  "30bb (44 spots in the Termux branch)": "imported from the 9-max pilot: cfg.stack 30, ante 1/9 -> actual hand-start stack 30.1111 bb (each seat paid 1/9 from outside the 30); state metadata says prehand_bb 30 and target \"T2 1BB BBA\"; realization static, 20 iterations, gap_total 0.309 bb",
+  "25bb (added in 9730a5f, removed in 355f033)": "worker cfg_for(25): cfg.stack 25, ante 1/9, realization balanced, 40 iterations, gap_total 0.085 -> hand-start 25.1111 bb; no longer on the branch",
+  "20 / 40bb": "not present on origin/chatgpt/gto-db-worker-v1-20261003 (head 355f033); if produced by cfg_for they are 20.1111 / 40.1111 bb hand-start",
+  "ante model actually solved": "uniform 1/9 bb per seat (9 x 1/9 = 1 bb) = the new T2 uniform_total rule in structure, but at a stack 1/9 bb deeper than labelled; it is NOT the 1 bb big-blind ante the metadata names",
+  "migration proposal": "do not delete or overwrite; import with canonical_state = what was solved (hand_start_players 9, stacks 30.1111, ante uniform_total 1 bb) as its own sk1 spot, tier 3, with a provenance note and a link to the nominal 30 bb target spot; the 30 bb sk1 spot stays empty until an exact solve exists (lookup may offer the 30.1111 solution only as a declared near match)",
+  "re-solve needed?": "yes eventually for exact 20/25/30/40 bb (cfg.stack = S - 1/9), but only after the payoff-model issue is addressed; re-solving with the current static model would reproduce the same bias at a 0.11 bb different stack, which matters far less than the model"
+ },
+ "proposals": [
+  "Do not promote the 30bb pilot or the Termux spots beyond tier 3 / unassessed; record the stack-semantics correction in their provenance before migration.",
+  "Primary fix to evaluate: replace the class-independent pot-share payoff at the dominant flop-reaching terminals (BB vs CO / BTN / SB SRPs) with solved continuation values (A4c-style panels) or a class-dependent realization fit; A4c already shows the direction (BTN +3.8 pp, BB starts folding).",
+  "Check the calibrated (\"balanced\") realization before relying on it: the existing ensemble balanced arm was tighter, not looser (MAE 10.3% vs 8.9%), and its fit file (cache/realization_fit.json) is not present in this checkout.",
+  "Convergence gate for any stored frequency: >= 100 iterations and a per-seat gap target well below the marginal EV gaps (e.g. gap_total <= 0.02 bb), plus the hand_records_v1 status fields.",
+  "Use max_raises >= 3 for stored 9-max trees (small effect, but the no-4bet tree is not T2 play).",
+  "Acquire one exact-comparable reference (known 9-max, 30 bb, ante model, open / 3-bet sizes, raise depth) before any re-calibration; until then all reference comparisons stay near-reference.",
+  "Only after the payoff model is fixed: exact 20/25/30/40 bb re-solves with cfg.stack = S - 1/9 and hand_start_players in the key."
+ ]
+}
