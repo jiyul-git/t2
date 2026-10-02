@@ -1,2 +1,3 @@
 KdKc7c 100 iters 0.261%pot solve 371s inv_err -3.7e-8
 reuse KdKc7c
+reuse KdKc7c

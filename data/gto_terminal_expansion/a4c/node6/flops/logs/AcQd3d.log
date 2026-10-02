@@ -1,0 +1,2 @@
+AcQd3d 100 iters 0.278%pot solve 357s inv_err -1.7e-9
+reuse AcQd3d
