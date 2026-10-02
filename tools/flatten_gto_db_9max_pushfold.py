@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 IN = ROOT / "data" / "gto_db" / "preflop_9max_pushfold_v1.jsonl"
 OUT = ROOT / "data" / "gto_db" / "preflop_9max_pushfold_holdemmath_flat_v1.jsonl"
 IDX = ROOT / "data" / "gto_db" / "index_9max_pushfold_holdemmath_flat_v1.json"
+MASTER = ROOT / "data" / "gto_db" / "index_9max_operational_v1.json"
 
 def shape(hand):
     if len(hand) == 2 and hand[0] == hand[1]:
@@ -89,4 +90,24 @@ index = {
     "action_families": ["open_shove", "call_vs_shove"],
 }
 IDX.write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-print(json.dumps(index, sort_keys=True))
+
+external = json.loads((ROOT / "data" / "gto_db" / "index_9max_external_v1.json").read_text(encoding="utf-8"))
+master = {
+    "schema": "t2_gto_operational_index_v1",
+    "table_players": 9,
+    "format": "MTT",
+    "provenance_fields_in_runtime_rows": False,
+    "datasets": {
+        **external["datasets"],
+        OUT.name: {
+            "rows": rows,
+            "spot_count": spots,
+            "stacks_bb": [4, 6, 8, 10, 12, 15, 20],
+            "action_families": ["open_shove", "call_vs_shove"],
+            "ante_models": ["none", "per_player"],
+        },
+    },
+    "total_rows": int(external["total_rows"]) + rows,
+}
+MASTER.write_text(json.dumps(master, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+print(json.dumps(master, sort_keys=True))
