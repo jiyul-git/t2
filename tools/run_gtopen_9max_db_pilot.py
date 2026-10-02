@@ -106,24 +106,28 @@ def opener_vs_3bet(opener, threebettor):
     raise RuntimeError("opener not reached after 3bet")
 
 def main():
-    stack=float(os.getenv("GT9_STACK","30"))
-    iterations=int(os.getenv("GT9_ITERS","120"))
+    hand_start_stack=float(os.getenv("GT9_STACK","30"))
+    iterations=int(os.getenv("GT9_ITERS","60"))
     target=float(os.getenv("GT9_TARGET","0.15"))
     max_raises=int(os.getenv("GT9_MAX_RAISES","2"))
     realization=os.getenv("GT9_REALIZATION","static")
     run_seed=int(os.getenv("GT9_SEED","0"))
-    # GTOpen's legacy ante is uniform and outside the live stack cap.
-    # 1/9 bb each gives the same 1bb dead-money total as T2 BBA but is NOT exact BBA.
-    ante=1.0/9.0
+    # T2 canonical ante: uniform_total_1bb. With 9 players dealt in,
+    # each player pays exactly 1/9 bb before the live blinds. GTOpen cfg.stack
+    # is the stack after that ante, so a 30bb hand-start stack is 30 - 1/9.
+    hand_start_players=9
+    ante=1.0/hand_start_players
+    solver_stack=hand_start_stack-ante
     per_open=[[2.0] for _ in POSITIONS]
     per_open[7]=[2.5]  # SB
     per_raise=[[3.0] for _ in POSITIONS]
-    per_raise[7]=[4.0]; per_raise[8]=[4.0]
+    per_raise[7]=[3.5]; per_raise[8]=[3.5]
     cfg={
       "positions":POSITIONS,
-      "stack":stack,
+      "stack":solver_stack,
       "posts":[0,0,0,0,0,0,0,0.5,1.0],
       "ante":ante,
+      "dead_money":0.0,
       "limp":False,
       "open_raises":[2.0],
       "raise_mults":[3.0],
@@ -179,19 +183,22 @@ def main():
     out={
       "schema_version":"gto_9max_solver_pilot_v1",
       "table_players":9,
-      "stack_bb":stack,
+      "hand_start_players":hand_start_players,
+      "hand_start_stack_bb":hand_start_stack,
+      "solver_stack_after_ante_bb":solver_stack,
       "run_seed":run_seed,
       "randomization":{
         "pairwise_equity_seed":int(os.getenv("PREFLOP_EQ_SEED",str(run_seed))),
         "multiway_deck_seed":int(os.getenv("PREFLOP_MULTIWAY_SEED",str(run_seed))),
       },
-      "target_model":"T2 1BB BBA",
+      "target_model":"T2 uniform_total_1bb",
       "solver_ante_model":{
-        "kind":"uniform_per_player_same_total_dead_money",
+        "kind":"uniform_total",
+        "hand_start_players":hand_start_players,
         "per_player_bb":ante,
         "total_bb":1.0,
-        "exact_bba":False,
-        "limitation":"BB live stack is not reduced by the full 1BB BBA; treat as near/limited, especially for BB defense."
+        "folds_resplit":False,
+        "exact_t2_ante":True
       },
       "config":cfg,
       "solver":{
@@ -205,11 +212,11 @@ def main():
       "spots":spots,
     }
     suffix=f"_seed{run_seed}" if os.getenv("GT9_SEED") is not None else ""
-    path=f"data/gto_9max_solver_pilot_{int(stack)}bb_{realization}{suffix}.json"
+    path=f"data/gto_9max_solver_pilot_{int(hand_start_stack)}bb_uniform_{realization}{suffix}.json"
     os.makedirs("data",exist_ok=True)
     with open(path,"w") as f:json.dump(out,f,indent=2,sort_keys=True)
     print("PILOT_SUMMARY",json.dumps({
-      "stack":stack,"rfi":rfi_summary,"spot_count":len(spots),
+      "hand_start_stack":hand_start_stack,"solver_stack_after_ante":solver_stack,"rfi":rfi_summary,"spot_count":len(spots),
       "gap_total":st.get("gap_total"),"iteration":st.get("iteration"),
       "realization":realization,"seed":run_seed,"output":path},sort_keys=True))
 
