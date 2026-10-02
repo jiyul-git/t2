@@ -250,6 +250,213 @@
         "chipEV only",
         "shove-or-fold abstraction"
       ]
+    },
+    {
+      "id": "daily_poker_spot_pushfold_9max_bba",
+      "status": "index_and_manual_crosscheck_only",
+      "source_url": "https://www.dailypokerspot.com/tools/push-fold-charts",
+      "table_players": [
+        6,
+        9
+      ],
+      "stacks_bb": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        15
+      ],
+      "ante_structures": [
+        "none",
+        "0.125bb_per_seat",
+        "1bb_BBA"
+      ],
+      "coverage": [
+        "first_in_open_shove"
+      ],
+      "model": "chip-EV Nash open-shove; equal stacks; folded to hero; nash-chip-ev-1.0 (2026-07-29)",
+      "limitations": [
+        "no ICM",
+        "no bounties/satellites",
+        "no limpers or prior raises",
+        "single first-in shove abstraction"
+      ],
+      "restrictions": [
+        "no redistribution license established; use only as public crosscheck unless permission/license is obtained"
+      ]
+    },
+    {
+      "id": "preflop_camp_9max_nash",
+      "status": "index_and_manual_crosscheck_only",
+      "source_url": "https://pre-flop.ai-speeds.com/",
+      "table_players": [
+        9
+      ],
+      "stacks_bb": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        12,
+        15,
+        20,
+        25
+      ],
+      "exact_bba_relevant_coverage": [
+        "9max jam_or_fold at 4/5/6/7/8/10/12/15/20bb",
+        "9max BB call-off vs jam at 10/15/20bb",
+        "9max reshove 3bet-jam at 15/20/25bb with BB ante"
+      ],
+      "model": "self-computed simplified Nash; chip-EV; class-level Monte Carlo; exploitability published",
+      "limitations": [
+        "simplified no-overcall model",
+        "not table-exact",
+        "non-jam MTT open ranges are hand-curated approximations, not solver-exact",
+        "reshove opener range is the app's reference range; 25bb reference stands in at 20bb"
+      ],
+      "restrictions": [
+        "Terms of Use says not to redistribute the App's generated data as your own",
+        "do not bulk copy 169-hand tables; retain metadata and small public validation checkpoints only"
+      ]
+    },
+    {
+      "id": "pokerdata_io",
+      "status": "provider_index_and_api_crosscheck",
+      "source_url": "https://pokerdata.io/api",
+      "public_nlhe_mtt_api": {
+        "table_players": 8,
+        "ante": "1bb BBA",
+        "stacks_bb": [
+          10,
+          15,
+          20,
+          30,
+          40,
+          50,
+          75,
+          100,
+          200,
+          300
+        ],
+        "model": "chip-EV MTT",
+        "hand_classes": 169,
+        "coverage": [
+          "RFI",
+          "full action-path nodes exposed by API"
+        ]
+      },
+      "relevant_but_not_currently_exposed": [
+        "site methodology/material references 9-max tournament solves, but current documented NLHE tournament API endpoint is nlmtt8, not nlmtt9"
+      ],
+      "restrictions": [
+        "hosted API is usage-limited/paid beyond trial",
+        "do not treat 8-max API data as 9-max canonical truth",
+        "bulk/offline licensing should follow provider terms"
+      ]
+    },
+    {
+      "id": "b5501123_mttdoc",
+      "status": "rejected_as_gto_truth",
+      "source_url": "https://github.com/b5501123/MttDoc",
+      "apparent_coverage": [
+        "9max MTT BBA RFI",
+        "BB defend",
+        "rejam",
+        "15/20/25/30/40/60bb training ranges"
+      ],
+      "rejection_reason": [
+        "generator hardcodes hand-written ranges",
+        "files are explicitly labeled training-baseline",
+        "project documentation says the first version is not solver-precise GTO"
+      ]
+    },
+    {
+      "id": "jayj1990_gto_today_9max",
+      "status": "rejected_as_gto_truth",
+      "source_url": "https://github.com/jayj1990/gto-today",
+      "apparent_coverage": [
+        "9max 100/60/40bb RFI and decision trees"
+      ],
+      "rejection_reason": [
+        "9-max decision tree is derived from a solver-backed 6-max tree by seat mapping",
+        "shallower depths apply heuristic depth adjustments",
+        "source comments state TexasSolver does not supply a 9-max preflop solve"
+      ]
+    },
+    {
+      "id": "ho0527_pokertrace_9max",
+      "status": "rejected_as_gto_truth",
+      "source_url": "https://github.com/ho0527/pokertrace",
+      "apparent_coverage": [
+        "9max RFI across many stack depths",
+        "push/fold helpers"
+      ],
+      "rejection_reason": [
+        "deep-stack RFI generator explicitly labels values as teaching-reference extrapolation, not solver precision",
+        "stack-depth tables are generated from hardcoded anchor ranges"
+      ]
+    },
+    {
+      "id": "badtreebear_felt_9max",
+      "status": "auxiliary_unverified_only",
+      "source_url": "https://github.com/badtreebear/felt",
+      "license": "MIT",
+      "table_players": [
+        9
+      ],
+      "known_stacks_bb": [
+        100
+      ],
+      "coverage": [
+        "RFI",
+        "vs RFI",
+        "vs 3bet"
+      ],
+      "limitations": [
+        "action-category charts rather than precise mixed frequencies",
+        "underlying embedded chart/PDF provenance is not sufficiently established for canonical promotion"
+      ]
+    },
+    {
+      "id": "zwarag_gto_open",
+      "status": "watch_no_data_yet",
+      "source_url": "https://github.com/zwarag/gto-open",
+      "planned_coverage": [
+        "full-ring and 6-max",
+        "cash and MTT",
+        "RFI",
+        "vs RFI",
+        "3bet",
+        "4bet"
+      ],
+      "limitations": [
+        "repository currently contains project framing/spec intent, not solved preflop data",
+        "no usable v0 dataset found as of 2026-10-03"
+      ]
+    },
+    {
+      "id": "braininhood_portfolio_preflop_cfr",
+      "status": "solver_implementation_auxiliary_only",
+      "source_url": "https://github.com/Braininhood/Portfolio",
+      "license": "MIT for Poker AI project code",
+      "table_players": [
+        9
+      ],
+      "apparent_coverage": [
+        "own tabular preflop CFR implementation"
+      ],
+      "limitations": [
+        "default game is 100bb, ante=0, 2.5bb abstract raise, default max_raises=1",
+        "not the target 1bb-BBA MTT configuration",
+        "documented preflop_9max artifact was not available as usable committed data"
+      ]
     }
   ]
 }
