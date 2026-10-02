@@ -4641,6 +4641,283 @@
    }
   }
  },
+ "vs_open_comparison": {
+  "mapping": "Matthiola 8-max EP = 9-max UTG / UTG+1, MP = LJ / HJ; combo-weighted shares of all 1326 combos; near-reference only",
+  "rows": [
+   {
+    "ref_node_8max": "EP-vs-MP",
+    "solver_spot_9max": "UTG->UTG+2",
+    "ref": {
+     "allin": 0.0,
+     "raise": 0.07963800904977376,
+     "call": 0.08951734539969833,
+     "fold": 0.8308446455505277
+    },
+    "solver": {
+     "jam": 0.04206974625013573,
+     "raise": 0.06961070267016589,
+     "call": 0.03881770237013576,
+     "fold": 0.8495018560704216
+    }
+   },
+   {
+    "ref_node_8max": "EP-vs-MP",
+    "solver_spot_9max": "UTG->LJ",
+    "ref": {
+     "allin": 0.0,
+     "raise": 0.07963800904977376,
+     "call": 0.08951734539969833,
+     "fold": 0.8308446455505277
+    },
+    "solver": {
+     "jam": 0.018783089751131226,
+     "raise": 0.06332795755592767,
+     "call": 0.02861501789800302,
+     "fold": 0.8892739355908871
+    }
+   },
+   {
+    "ref_node_8max": "EP-vs-BTN",
+    "solver_spot_9max": "UTG->BTN",
+    "ref": {
+     "allin": 0.00036199095022624434,
+     "raise": 0.07678733031674209,
+     "call": 0.14327300150829564,
+     "fold": 0.779577677224736
+    },
+    "solver": {
+     "jam": 0.02981846274252791,
+     "raise": 0.06569531577443444,
+     "call": 0.04521526380705278,
+     "fold": 0.859270963180754
+    }
+   },
+   {
+    "ref_node_8max": "EP-vs-BTN",
+    "solver_spot_9max": "UTG+1->BTN",
+    "ref": {
+     "allin": 0.00036199095022624434,
+     "raise": 0.07678733031674209,
+     "call": 0.14327300150829564,
+     "fold": 0.779577677224736
+    },
+    "solver": {
+     "jam": 0.03403266371453393,
+     "raise": 0.06227830913499245,
+     "call": 0.05796825136087778,
+     "fold": 0.8457207859030018
+    }
+   },
+   {
+    "ref_node_8max": "EP-vs-SB",
+    "solver_spot_9max": "UTG->SB",
+    "ref": {
+     "allin": 0.0355656108597285,
+     "raise": 0.07188536953242834,
+     "call": 0.13677224736048266,
+     "fold": 0.7559577677224736
+    },
+    "solver": {
+     "jam": 0.06146562122141773,
+     "raise": 0.048296751842956266,
+     "call": 0.31709821149900136,
+     "fold": 0.5731394180586362
+    }
+   },
+   {
+    "ref_node_8max": "EP-vs-SB",
+    "solver_spot_9max": "UTG+1->SB",
+    "ref": {
+     "allin": 0.0355656108597285,
+     "raise": 0.07188536953242834,
+     "call": 0.13677224736048266,
+     "fold": 0.7559577677224736
+    },
+    "solver": {
+     "jam": 0.05155959640235895,
+     "raise": 0.04676859783909503,
+     "call": 0.33158261048040427,
+     "fold": 0.5700891935604467
+    }
+   },
+   {
+    "ref_node_8max": "EP-vs-BB",
+    "solver_spot_9max": "UTG->BB",
+    "ref": {
+     "allin": 0.00669683257918552,
+     "raise": 0.0866214177978884,
+     "call": 0.66315233785822,
+     "fold": 0.2434389140271493
+    },
+    "solver": {
+     "jam": 0.057974019733423844,
+     "raise": 0.03127813381598791,
+     "call": 0.8101179317624582,
+     "fold": 0.10062990664237403
+    }
+   },
+   {
+    "ref_node_8max": "EP-vs-BB",
+    "solver_spot_9max": "UTG+1->BB",
+    "ref": {
+     "allin": 0.00669683257918552,
+     "raise": 0.0866214177978884,
+     "call": 0.66315233785822,
+     "fold": 0.2434389140271493
+    },
+    "solver": {
+     "jam": 0.03834466005073906,
+     "raise": 0.030943817917043735,
+     "call": 0.9081834985257234,
+     "fold": 0.02252802310030921
+    }
+   },
+   {
+    "ref_node_8max": "MP-vs-BTN",
+    "solver_spot_9max": "LJ->BTN",
+    "ref": {
+     "allin": 0.013167420814479639,
+     "raise": 0.09612368024132731,
+     "call": 0.14052790346907995,
+     "fold": 0.7500452488687783
+    },
+    "solver": {
+     "jam": 0.03975416697237404,
+     "raise": 0.08698450935357466,
+     "call": 0.04278630718410256,
+     "fold": 0.8304750214705702
+    }
+   },
+   {
+    "ref_node_8max": "MP-vs-BTN",
+    "solver_spot_9max": "HJ->BTN",
+    "ref": {
+     "allin": 0.013167420814479639,
+     "raise": 0.09612368024132731,
+     "call": 0.14052790346907995,
+     "fold": 0.7500452488687783
+    },
+    "solver": {
+     "jam": 0.045723164707182504,
+     "raise": 0.1083731980847361,
+     "call": 0.0198941456696712,
+     "fold": 0.8260094953242956
+    }
+   },
+   {
+    "ref_node_8max": "MP-vs-SB",
+    "solver_spot_9max": "LJ->SB",
+    "ref": {
+     "allin": 0.07313725490196078,
+     "raise": 0.08025641025641025,
+     "call": 0.12728506787330318,
+     "fold": 0.7193363499245853
+    },
+    "solver": {
+     "jam": 0.04534695482637708,
+     "raise": 0.04566215418546002,
+     "call": 0.37610732954690507,
+     "fold": 0.5328835638535084
+    }
+   },
+   {
+    "ref_node_8max": "MP-vs-SB",
+    "solver_spot_9max": "HJ->SB",
+    "ref": {
+     "allin": 0.07313725490196078,
+     "raise": 0.08025641025641025,
+     "call": 0.12728506787330318,
+     "fold": 0.7193363499245853
+    },
+    "solver": {
+     "jam": 0.05670302461598793,
+     "raise": 0.06641878582701354,
+     "call": 0.37105306868602717,
+     "fold": 0.5058251228244256
+    }
+   },
+   {
+    "ref_node_8max": "MP-vs-BB",
+    "solver_spot_9max": "LJ->BB",
+    "ref": {
+     "allin": 0.04900452488687783,
+     "raise": 0.08796380090497737,
+     "call": 0.6974208144796378,
+     "fold": 0.16561085972850678
+    },
+    "solver": {
+     "jam": 0.05326635692654598,
+     "raise": 0.02492790978657618,
+     "call": 0.8959287621982653,
+     "fold": 0.02587697132746003
+    }
+   },
+   {
+    "ref_node_8max": "MP-vs-BB",
+    "solver_spot_9max": "HJ->BB",
+    "ref": {
+     "allin": 0.04900452488687783,
+     "raise": 0.08796380090497737,
+     "call": 0.6974208144796378,
+     "fold": 0.16561085972850678
+    },
+    "solver": {
+     "jam": 0.054104804316168945,
+     "raise": 0.050727193391402754,
+     "call": 0.8854456124915837,
+     "fold": 0.009722387014217192
+    }
+   },
+   {
+    "ref_node_8max": "BTN-vs-SB",
+    "solver_spot_9max": "BTN->SB",
+    "ref": {
+     "allin": 0.1183257918552036,
+     "raise": 0.09894419306184012,
+     "call": 0.07205128205128207,
+     "fold": 0.7105882352941175
+    },
+    "solver": {
+     "jam": 0.08938157703781603,
+     "raise": 0.16126668398760177,
+     "call": 0.2044553579135114,
+     "fold": 0.5448963821448445
+    }
+   },
+   {
+    "ref_node_8max": "BTN-vs-BB",
+    "solver_spot_9max": "BTN->BB",
+    "ref": {
+     "allin": 0.08601809954751131,
+     "raise": 0.0931372549019608,
+     "call": 0.7163197586726997,
+     "fold": 0.10416289592760182
+    },
+    "solver": {
+     "jam": 0.08057501158398193,
+     "raise": 0.10976961582895928,
+     "call": 0.8017054744867267,
+     "fold": 0.007949897165776765
+    }
+   },
+   {
+    "ref_node_8max": "SB-vs-BB",
+    "solver_spot_9max": "SB->BB",
+    "ref": {
+     "allin": 0.040015082956259426,
+     "raise": 0.0783559577677225,
+     "call": 0.6255203619909504,
+     "fold": 0.2558371040723982
+    },
+    "solver": {
+     "jam": 0.14851484849291105,
+     "raise": 0.22629251942111622,
+     "call": 0.6009455914617617,
+     "fold": 0.024247044381924574
+    }
+   }
+  ]
+ },
  "attribution": [
   {
    "candidate": "realization model (static: pot x equity x r, r = 1 +- 0.08 by seat order, identical for every hand class)",
@@ -4674,8 +4951,13 @@
   },
   {
    "candidate": "all-in threshold / jam availability",
-   "evidence": "4-handed A/B without the jam option: CO / BTN RFI 32.9% / 44.7% (base 27.3% / 37.6%); 9-max BTN jams 22 / 98s / KQo / 55 because the 2 bb raise is called ~99% (no fold equity) while the jam takes 2.5 bb uncontested; references jam 0% at 30 bb -> jam overuse is a symptom of the payoff model, jam availability itself is not the cause",
-   "verdict": "solver/model mismatch (symptom)"
+   "evidence": "4-handed A/B without any jam option: CO / BTN RFI 32.9% / 44.7% (base 27.3% / 37.6%) -> the reshove structure is a large lever on RFI; but the solver's 3-bet-jam frequencies are close to the near-reference (BB vs BTN jam 8.1% vs Matthiola 8.6%; SB vs BTN 8.9% vs 11.8%), early-position cold jams are somewhat higher (2-6% vs 0-4%); removing jams is not T2 play. Open-jams by the opener (BTN 22 / 98s / 55) are a symptom of the 2 bb raise getting no folds",
+   "verdict": "structural lever, not the miscalibration (reshove rates near reference); opener jam overuse = symptom of the payoff model"
+  },
+  {
+   "candidate": "over-calling by SB / BB / BTN (passive continuation value)",
+   "evidence": "vs-open table: SB flats 32-37% of combos vs EP/MP opens (Matthiola 13-14%); BB folds 1-3% vs MP opens (Matthiola 17%) and 10% / 2% vs UTG / UTG+1 (Matthiola EP 24%); BTN cold-calls only 2-6% (Matthiola 14%) but 3-bets more; flat calls are valued by raw-equity realization, so blinds over-call and pots go multiway against the opener",
+   "verdict": "solver/model mismatch (strong; this is how the payoff model reaches the opener)"
   },
   {
    "candidate": "convergence (pilot: 20 iterations, gap_total 0.31 bb)",

@@ -59,6 +59,33 @@ def rfi_of(pn, pos):
     return sum(combos(h) * sum(p['class_strategy'][k][i] for k in range(len(a)) if a[k] != 'Fold') for i, h in enumerate(LAB)) / 1326
 
 
+def vs_open_table():
+    import subprocess
+    rows = [json.loads(l) for l in subprocess.run(['git', '-C', ROOT, 'show', 'origin/chatgpt/gto-reference-20260928:data/gto_public/8max_mtt_matthiola.jsonl'],
+                                                  capture_output=True, text=True, check=True).stdout.splitlines() if l.strip()]
+    m = {}
+    for r in rows:
+        if r['stack_bb'] == 30 and r['scenario'] == 'vs-open':
+            m.setdefault(r['node'], {})[r['hand']] = r
+    ref = {n: {k: sum(combos(h) * r[k] for h, r in d.items()) / 1326 for k in ('allin', 'raise', 'call', 'fold')} for n, d in m.items()}
+    p = json.load(open(os.path.join(ROOT, 'data/gto_9max_solver_pilot_30bb.json')))
+    sol = {}
+    for sp in p['spots']:
+        if sp['spot_type'] == 'face_open':
+            H = sp['hands']
+            t = lambda pre: sum(combos(h) * sum(x for k, x in v.items() if k.startswith(pre)) for h, v in H.items()) / 1326
+            sol[f"{sp['opener']}->{sp['defender']}"] = {'jam': t('jam'), 'raise': t('raise'), 'call': t('call'), 'fold': t('fold')}
+    pairs = [('EP-vs-MP', ['UTG->UTG+2', 'UTG->LJ']), ('EP-vs-BTN', ['UTG->BTN', 'UTG+1->BTN']), ('EP-vs-SB', ['UTG->SB', 'UTG+1->SB']), ('EP-vs-BB', ['UTG->BB', 'UTG+1->BB']),
+             ('MP-vs-BTN', ['LJ->BTN', 'HJ->BTN']), ('MP-vs-SB', ['LJ->SB', 'HJ->SB']), ('MP-vs-BB', ['LJ->BB', 'HJ->BB']), ('BTN-vs-SB', ['BTN->SB']), ('BTN-vs-BB', ['BTN->BB']),
+             ('SB-vs-BB', ['SB->BB'])]
+    out = []
+    for rn, sl in pairs:
+        for x in sl:
+            if x in sol and rn in ref:
+                out.append({'ref_node_8max': rn, 'solver_spot_9max': x, 'ref': ref[rn], 'solver': sol[x]})
+    return {'mapping': 'Matthiola 8-max EP = 9-max UTG / UTG+1, MP = LJ / HJ; combo-weighted shares of all 1326 combos; near-reference only', 'rows': out}
+
+
 def attribution(res):
     ab = res['ab_small_4handed']['arms']
     g = lambda arm, k: ab.get(arm, {}).get(k)
@@ -91,9 +118,13 @@ def attribution(res):
          'evidence': f"4-handed A/B max_raises 4 -> 2: CO / BTN RFI {100 * d(g('max_raises_2', 'CO_rfi'), g('base_static_mr4', 'CO_rfi')):+.1f} / {100 * d(g('max_raises_2', 'BTN_rfi'), g('base_static_mr4', 'BTN_rfi')):+.1f} pp; 9-max has more players behind, so the 9-max effect may be somewhat larger but is not of the 10 pp order",
          'verdict': 'solver abstraction, small contributor'},
         {'candidate': 'all-in threshold / jam availability',
-         'evidence': (f"4-handed A/B without the jam option: CO / BTN RFI {pct(g('no_jam_option', 'CO_rfi'))} / {pct(g('no_jam_option', 'BTN_rfi'))} (base {pct(g('base_static_mr4', 'CO_rfi'))} / {pct(g('base_static_mr4', 'BTN_rfi'))}); " if g('no_jam_option', 'CO_rfi') is not None else '')
-                     + "9-max BTN jams 22 / 98s / KQo / 55 because the 2 bb raise is called ~99% (no fold equity) while the jam takes 2.5 bb uncontested; references jam 0% at 30 bb -> jam overuse is a symptom of the payoff model, jam availability itself is not the cause",
-         'verdict': 'solver/model mismatch (symptom)'},
+         'evidence': (f"4-handed A/B without any jam option: CO / BTN RFI {pct(g('no_jam_option', 'CO_rfi'))} / {pct(g('no_jam_option', 'BTN_rfi'))} (base {pct(g('base_static_mr4', 'CO_rfi'))} / {pct(g('base_static_mr4', 'BTN_rfi'))}) -> the reshove structure is a large lever on RFI; "
+                      if g('no_jam_option', 'CO_rfi') is not None else '')
+                     + "but the solver's 3-bet-jam frequencies are close to the near-reference (BB vs BTN jam 8.1% vs Matthiola 8.6%; SB vs BTN 8.9% vs 11.8%), early-position cold jams are somewhat higher (2-6% vs 0-4%); removing jams is not T2 play. Open-jams by the opener (BTN 22 / 98s / 55) are a symptom of the 2 bb raise getting no folds",
+         'verdict': 'structural lever, not the miscalibration (reshove rates near reference); opener jam overuse = symptom of the payoff model'},
+        {'candidate': 'over-calling by SB / BB / BTN (passive continuation value)',
+         'evidence': 'vs-open table: SB flats 32-37% of combos vs EP/MP opens (Matthiola 13-14%); BB folds 1-3% vs MP opens (Matthiola 17%) and 10% / 2% vs UTG / UTG+1 (Matthiola EP 24%); BTN cold-calls only 2-6% (Matthiola 14%) but 3-bets more; flat calls are valued by raw-equity realization, so blinds over-call and pots go multiway against the opener',
+         'verdict': 'solver/model mismatch (strong; this is how the payoff model reaches the opener)'},
         {'candidate': 'convergence (pilot: 20 iterations, gap_total 0.31 bb)',
          'evidence': (f"20 it: modal action != best-EV action for {100 * r20['consistency']['UTG']['modal_not_best_ev_combo_share']:.1f}% (UTG) - {100 * max(c['modal_not_best_ev_combo_share'] for c in r20['consistency'].values()):.1f}% of combos (e.g. UTG KQo raise EV beats fold by 0.11 bb but folds 66%); " if r20 else '')
                      + (f"100 it: RFI UTG {pct(r100['rfi']['UTG'])}, BTN {pct(r100['rfi']['BTN'])} (20 it: {pct(r20['rfi']['UTG'])}, {pct(r20['rfi']['BTN'])}); " if r100 else '')
@@ -164,6 +195,7 @@ def main():
         'BB_vs_BTN_fold': raw['bb_defence']['four_handed_same_engine']['A4c_solved_continuation_nodes_6_28']['BB@26']['Fold'],
         'BB_vs_SB_fold': raw['bb_defence']['four_handed_same_engine']['A4c_solved_continuation_nodes_6_28']['BB@4']['Fold']}
     res['ab_small_4handed'] = {'engine': 'same GTOpen preflop engine, 4-handed CO/BTN/SB/BB 30bb (cfg_4h_mr4_30bb), 400 iterations, one factor changed per arm', 'arms': ab}
+    res['vs_open_comparison'] = vs_open_table()
     res['attribution'] = attribution(res)
     res['stack_semantics'] = STACK_SEMANTICS
     res['proposals'] = PROPOSALS
@@ -249,6 +281,13 @@ def render_md(res):
         if op in b:
             w(f"- solver BB vs {op} open: fold {pct(b[op]['bb_fold_unweighted'])} of all combos; trash continue rates {b[op]['worst_hands_continue']}")
     w(f"- Matthiola 8-max BB vs BTN: fold {pct(b.get('matthiola_8max_BB_vs_BTN_fold_unweighted'))}; same trash {b.get('matthiola_8max_BB_vs_BTN_worst_hands_continue')}")
+    w('')
+    w('## 5b. Facing an open: solver 9-max vs Matthiola 8-max (combo share jam / 3-bet / call / fold)')
+    w('| ref node | solver spot | ref allin / raise / call / fold | solver jam / 3-bet / call / fold |')
+    w('|---|---|---|---|')
+    for r in res['vs_open_comparison']['rows']:
+        a, b = r['ref'], r['solver']
+        w(f"| {r['ref_node_8max']} | {r['solver_spot_9max']} | {100 * a['allin']:.1f} / {100 * a['raise']:.1f} / {100 * a['call']:.1f} / {100 * a['fold']:.1f} | {100 * b['jam']:.1f} / {100 * b['raise']:.1f} / {100 * b['call']:.1f} / {100 * b['fold']:.1f} |")
     w('')
     w('## 6. Small same-engine A/B (4-handed 30bb, 400 iterations, one factor per arm)')
     w('| arm | CO RFI | BTN RFI | BTN jam | SB RFI | BB vs BTN fold | BB vs SB fold |')

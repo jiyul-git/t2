@@ -135,6 +135,27 @@ Solver = pilot artifact; EV = 20-iteration reproduction of the same config (bb, 
 - solver BB vs SB open: fold 2.4% of all combos; trash continue rates [['32o', 0.814], ['42o', 0.846], ['72o', 0.754], ['82o', 0.876], ['92o', 0.931], ['J3o', 0.98], ['T2o', 0.96]]
 - Matthiola 8-max BB vs BTN: fold 10.4%; same trash [['32o', 0.0], ['42o', 0.85], ['72o', 0.0], ['82o', 0.0], ['92o', 0.0], ['J3o', 1.0], ['T2o', 0.0]]
 
+## 5b. Facing an open: solver 9-max vs Matthiola 8-max (combo share jam / 3-bet / call / fold)
+| ref node | solver spot | ref allin / raise / call / fold | solver jam / 3-bet / call / fold |
+|---|---|---|---|
+| EP-vs-MP | UTG->UTG+2 | 0.0 / 8.0 / 9.0 / 83.1 | 4.2 / 7.0 / 3.9 / 85.0 |
+| EP-vs-MP | UTG->LJ | 0.0 / 8.0 / 9.0 / 83.1 | 1.9 / 6.3 / 2.9 / 88.9 |
+| EP-vs-BTN | UTG->BTN | 0.0 / 7.7 / 14.3 / 78.0 | 3.0 / 6.6 / 4.5 / 85.9 |
+| EP-vs-BTN | UTG+1->BTN | 0.0 / 7.7 / 14.3 / 78.0 | 3.4 / 6.2 / 5.8 / 84.6 |
+| EP-vs-SB | UTG->SB | 3.6 / 7.2 / 13.7 / 75.6 | 6.1 / 4.8 / 31.7 / 57.3 |
+| EP-vs-SB | UTG+1->SB | 3.6 / 7.2 / 13.7 / 75.6 | 5.2 / 4.7 / 33.2 / 57.0 |
+| EP-vs-BB | UTG->BB | 0.7 / 8.7 / 66.3 / 24.3 | 5.8 / 3.1 / 81.0 / 10.1 |
+| EP-vs-BB | UTG+1->BB | 0.7 / 8.7 / 66.3 / 24.3 | 3.8 / 3.1 / 90.8 / 2.3 |
+| MP-vs-BTN | LJ->BTN | 1.3 / 9.6 / 14.1 / 75.0 | 4.0 / 8.7 / 4.3 / 83.0 |
+| MP-vs-BTN | HJ->BTN | 1.3 / 9.6 / 14.1 / 75.0 | 4.6 / 10.8 / 2.0 / 82.6 |
+| MP-vs-SB | LJ->SB | 7.3 / 8.0 / 12.7 / 71.9 | 4.5 / 4.6 / 37.6 / 53.3 |
+| MP-vs-SB | HJ->SB | 7.3 / 8.0 / 12.7 / 71.9 | 5.7 / 6.6 / 37.1 / 50.6 |
+| MP-vs-BB | LJ->BB | 4.9 / 8.8 / 69.7 / 16.6 | 5.3 / 2.5 / 89.6 / 2.6 |
+| MP-vs-BB | HJ->BB | 4.9 / 8.8 / 69.7 / 16.6 | 5.4 / 5.1 / 88.5 / 1.0 |
+| BTN-vs-SB | BTN->SB | 11.8 / 9.9 / 7.2 / 71.1 | 8.9 / 16.1 / 20.4 / 54.5 |
+| BTN-vs-BB | BTN->BB | 8.6 / 9.3 / 71.6 / 10.4 | 8.1 / 11.0 / 80.2 / 0.8 |
+| SB-vs-BB | SB->BB | 4.0 / 7.8 / 62.6 / 25.6 | 14.9 / 22.6 / 60.1 / 2.4 |
+
 ## 6. Small same-engine A/B (4-handed 30bb, 400 iterations, one factor per arm)
 | arm | CO RFI | BTN RFI | BTN jam | SB RFI | BB vs BTN fold | BB vs SB fold |
 |---|---|---|---|---|---|---|
@@ -157,7 +178,8 @@ Solver = pilot artifact; EV = 20-iteration reproduction of the same config (bb, 
 | multiway continuation / payoff approximation (coupled_deck_v1 raw equity) | not isolated by an A/B here; it shares the class-independent raw-equity payoff, so speculative hands get no multiway playability premium; no near-reference covers multiway pots | **both/uncertain (leaning solver)** |
 | action abstraction / sizing | non-SB opens are 2.0 bb in solver and both references; the SB tree differs (2.5 bb, no limp vs 3.5 bb / limps) so SB is excluded; 3-bet sizes of the references are not recorded | **uncertain (minor for UTG-BTN; decisive only for SB comparability)** |
 | max_raises (pilot uses 2: open + one re-raise, no 4-bet) | 4-handed A/B max_raises 4 -> 2: CO / BTN RFI -0.3 / -0.2 pp; 9-max has more players behind, so the 9-max effect may be somewhat larger but is not of the 10 pp order | **solver abstraction, small contributor** |
-| all-in threshold / jam availability | 4-handed A/B without the jam option: CO / BTN RFI 32.9% / 44.7% (base 27.3% / 37.6%); 9-max BTN jams 22 / 98s / KQo / 55 because the 2 bb raise is called ~99% (no fold equity) while the jam takes 2.5 bb uncontested; references jam 0% at 30 bb -> jam overuse is a symptom of the payoff model, jam availability itself is not the cause | **solver/model mismatch (symptom)** |
+| all-in threshold / jam availability | 4-handed A/B without any jam option: CO / BTN RFI 32.9% / 44.7% (base 27.3% / 37.6%) -> the reshove structure is a large lever on RFI; but the solver's 3-bet-jam frequencies are close to the near-reference (BB vs BTN jam 8.1% vs Matthiola 8.6%; SB vs BTN 8.9% vs 11.8%), early-position cold jams are somewhat higher (2-6% vs 0-4%); removing jams is not T2 play. Open-jams by the opener (BTN 22 / 98s / 55) are a symptom of the 2 bb raise getting no folds | **structural lever, not the miscalibration (reshove rates near reference); opener jam overuse = symptom of the payoff model** |
+| over-calling by SB / BB / BTN (passive continuation value) | vs-open table: SB flats 32-37% of combos vs EP/MP opens (Matthiola 13-14%); BB folds 1-3% vs MP opens (Matthiola 17%) and 10% / 2% vs UTG / UTG+1 (Matthiola EP 24%); BTN cold-calls only 2-6% (Matthiola 14%) but 3-bets more; flat calls are valued by raw-equity realization, so blinds over-call and pots go multiway against the opener | **solver/model mismatch (strong; this is how the payoff model reaches the opener)** |
 | convergence (pilot: 20 iterations, gap_total 0.31 bb) | 20 it: modal action != best-EV action for 2.7% (UTG) - 7.7% of combos (e.g. UTG KQo raise EV beats fold by 0.11 bb but folds 66%); ensemble static 100 it gives the same aggregate RFI -> convergence adds hand-level noise but does not explain the aggregate gap | **solver issue at hand level; not the aggregate cause** |
 | reference side (conditions / provenance) | two independent near-references agree on aggregate RFI (UTG+1 18.6 vs 18.5, CO 37.5 vs 36.3, BTN 48.7 vs 48.7); neither records the ante model or raise tree; Matthiola is 8-max; no exact-comparable reference exists locally; a larger chart ante (e.g. 12.5% = 1.125 bb) would widen the reference somewhat | **reference mismatch possible for part of the gap; not the main cause** |
 
