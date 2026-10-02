@@ -99,3 +99,20 @@ STEP margdiag 2026-10-02T17:34:52Z
  }
 }
 STEP points 2026-10-02T17:34:55Z
+Gext SB raise 0.5924 G144 re-solve identical True
+STEP lobo 2026-10-02T17:37:41Z
+Traceback (most recent call last):
+  File "/home/user/t2/tools/gto_hu_continuation/a4c_run.py", line 467, in <module>
+    {'tables': tables, 'points': points, 'boot': boot, 'margdiag': margdiag, 'lobo': lobo}[a.cmd](a)
+  File "/home/user/t2/tools/gto_hu_continuation/a4c_run.py", line 361, in lobo
+    sw = swap_metrics(G, gd, L, ld, OUT + 'points/lobo_swaps', base)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/t2/tools/gto_hu_continuation/a4c_run.py", line 242, in swap_metrics
+    s = A.splice(game, donor, seat, root, os.path.join(out_dir, f'swap_{name}.json'))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/t2/tools/gto_hu_continuation/a4r_robust.py", line 36, in splice
+    subprocess.run([BIN + '/t2_splice_eval', game['profile'], donor['profile'], str(seat), root, out], check=True, env=env(game['manifest']),
+  File "/usr/lib/python3.11/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/home/user/t2/vendor/gtopen/target/release/examples/t2_splice_eval', '/home/user/t2/data/gto_terminal_expansion/a4c/points/Gext/profile.gtop', '/home/user/t2/data/gto_terminal_expansion/a4c/points/Gext_lobo_Kc9h9d/profile.gtop', '0', 'all', '/home/user/t2/data/gto_terminal_expansion/a4c/points/lobo_swaps/swap_CO.json']' returned non-zero exit status 1.
+FAILED lobo

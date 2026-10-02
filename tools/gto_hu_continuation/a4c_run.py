@@ -238,6 +238,7 @@ def points(a):
 
 def swap_metrics(game, gdir, donor, ddir, out_dir, base_reg):
     res = {'seat_dEV': {}, 'own_gap': {}, 'checks': []}
+    os.makedirs(out_dir, exist_ok=True)
     for name, (seat, root) in SEATS.items():
         s = A.splice(game, donor, seat, root, os.path.join(out_dir, f'swap_{name}.json'))
         res['seat_dEV'][name] = game['evs'][seat] - s['evs'][seat]
