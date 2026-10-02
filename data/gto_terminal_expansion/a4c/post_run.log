@@ -791,3 +791,13 @@ STEP lobo 2026-10-02T19:39:56Z
  "note": "practical sensitivity of the whole board, not a bound on its solver residual; primary results and panel unchanged"
 }
 STEP boot 2026-10-02T19:39:58Z
+rep 38 errext seat {'CO': 0.0, 'BTN': 0.00082, 'SB': 0.00241, 'BB': 0.00317}
+rep 39 errext seat {'CO': -0.0, 'BTN': 0.00113, 'SB': 0.00253, 'BB': 0.00274}
+rep 40 errext seat {'CO': -0.0, 'BTN': 0.00043, 'SB': 0.00188, 'BB': 0.00187}
+rep 41 errext seat {'CO': -0.0, 'BTN': 7e-05, 'SB': 0.00278, 'BB': 0.00141}
+rep 42 errext seat {'CO': -0.0, 'BTN': 0.00058, 'SB': 0.00417, 'BB': 0.00215}
+rep 43 errext seat {'CO': -0.0, 'BTN': 0.00022, 'SB': 0.00096, 'BB': 0.00119}
+rep 44 errext seat {'CO': -0.0, 'BTN': 0.00018, 'SB': 0.00353, 'BB': 0.00137}
+rep 45 errext seat {'CO': -0.0, 'BTN': 0.00038, 'SB': 0.00141, 'BB': 0.00107}
+rep 46 errext seat {'CO': -0.0, 'BTN': 0.0006, 'SB': 0.00257, 'BB': 0.00218}
+rep 47 errext seat {'CO': -0.0, 'BTN': 0.00081, 'SB': 0.00364, 'BB': 0.00358}
