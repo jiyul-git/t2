@@ -11,7 +11,9 @@ spot_key, check the canonical history equals the old explicit history, and impor
 Checks: expected spot count per stack; no two old spots on one sk1 key (abort and report, never overwrite); every add must be
 accepted by Index.add_solution, otherwise the run stops and reports why.
 Quality: tier 3 (the solver used a uniform per-player ante with the same dead money, not exact T2 1BB BBA; low-iteration
-GTOpen solves). exploitability_pct_pot is not available (the worker records GTOpen gap_total), so it is None.
+GTOpen solves). exploitability_pct_pot is not available (the worker records GTOpen gap_total), so it is None; gap_total is kept
+as quality.comparable (family = GTOpen preflop + config_sha256), so a later better-converged solve of the same config can
+upgrade it, while solves of other configs / solvers cannot.
 """
 import argparse
 import collections
@@ -77,6 +79,7 @@ def main():
     ap.add_argument('--dir')
     ap.add_argument('--expect', action='append', default=[], help='stack=count, e.g. 30=44')
     ap.add_argument('--commit', action='store_true')
+    ap.add_argument('--expect-index-spots', type=int, help='total distinct spots in the unified index after import (legacy 616 + new)')
     ap.add_argument('--report', default=os.path.join(ROOT, 'data/gto_db_v2/migration_termux_v1_report.json'))
     a = ap.parse_args()
     commit = None if a.dir else subprocess.run(['git', '-C', ROOT, 'rev-parse', a.ref], check=True, capture_output=True, text=True).stdout.strip()
@@ -117,7 +120,9 @@ def main():
                 q = {'tier': 3, 'exploitability_pct_pot': None, 'method': 'GTOpen preflop (Termux worker v1)',
                      'status': sol['quality'].get('status'), 'exact_target_match': sol['quality'].get('exact_target_match'),
                      'gap_total': sol['solver'].get('gap_total'), 'target_gap': sol['solver'].get('target_gap'), 'iteration': sol['solver'].get('iteration'),
-                     'notes': ['ante solved as uniform per-player ante with the same total dead money, not exact T2 1BB BBA']}
+                     'notes': ['ante solved as uniform per-player ante with the same total dead money, not exact T2 1BB BBA'],
+                     'comparable': {'family': f"gtopen_preflop|config_sha256:{sol['solver'].get('config_sha256')}", 'metric': 'gap_total',
+                                    'value': sol['solver'].get('gap_total')}}
                 src = {'db': 'termux_worker_v1', 'ref': a.ref, 'commit': commit, 'old_path': s['path'], 'old_spot_key': s['old_key'],
                        'old_solution_id': sol['solution_id'], 'solver': sol['solver'], 'strategy_format': 'termux_v1_policy'}
                 ok, key, why = ix.add_solution(s['raw'], strat, q, src)
@@ -135,6 +140,9 @@ def main():
                     and len(src['hands']) == 169
                 mism += not same
         rep['roundtrip_strategy_mismatches'] = mism
+        rep['index_spots_after'] = len(ix2.by_key)
+        if a.expect_index_spots is not None and rep['index_spots_after'] != a.expect_index_spots:
+            rep['errors'].append({'error': f"unified index has {rep['index_spots_after']} spots, expected {a.expect_index_spots}"})
     rep['imported'] = len(imported)
     rep['refused'] = refused
     rep['ok'] = not rep['errors'] and not refused and rep.get('roundtrip_strategy_mismatches') == 0

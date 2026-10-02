@@ -9,10 +9,12 @@ File paths, solver run directories, legacy `spot_id` strings and other arbitrary
   `tools/gto_db_v2/index.py` reads it in place when present, otherwise from its pinned git blob
   `003078a5edc81bc45cbe157c824a66799e15055e`; bytes must match sha256 `bacf94e9…16c87`. Each row is mapped to its canonical spot_key
   (616 distinct keys, tier 4 external approximation) and queried together with v2.
-- Skip: `need_compute(state)` is false when any solution (legacy or v2) exists for the spot, unless the target quality is strictly higher.
+- Skip: `need_compute(state, target_quality)` (target quality required) is false when the best stored solution (legacy or v2) is at least as good as the target; true when the spot is empty or the target is strictly better.
 - Upgrade: `add_solution` appends a strictly better solution; nothing is deleted or rewritten; `lookup` returns the best, `all` returns every one.
-- Quality order: tier (1 exact full tree converged, 2 converged abstracted tree, 3 approximate / capped, 4 external reference),
-  then exploitability (% pot), then earlier `added_at`. Multiway research approximations are tier 3 at best and never labelled GTO.
+- Quality: tier (1 exact full tree converged, 2 converged abstracted tree, 3 approximate / capped, 4 external reference), then
+  exploitability (% pot). When both are None at the same tier, `quality.comparable` {family, metric, value} is compared only within
+  one family (same solver + same game abstraction / config); different families are incomparable (no upgrade).
+  best = earliest-added solution not beaten by another. Seed replicates are stored only if strictly better (best-only upgrades). Multiway research approximations are tier 3 at best and never labelled GTO.
 - The key encodes the game state only (players, positions, blinds, ante model, stacks, ICM, rake, full preflop history incl. folds, hero).
   Action menu / abstraction / convergence live in `quality` and `source`.
 

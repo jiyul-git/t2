@@ -13,7 +13,17 @@ Rules
     stored solution is at least as good, True when the spot is empty or the target is strictly better.
   * add_solution() never deletes or rewrites: a solution for an existing spot is appended only if its quality is strictly
     higher; identical content (same solution_id) is never duplicated. lookup() returns the best; all() returns every one.
-Quality order (lower is better): tier, then exploitability_pct_pot (None = worst), then earlier added_at.
+Quality comparison better(new, old) (a partial order; 'lower is better'):
+  1. tier: a lower tier is better.
+  2. same tier, at least one exploitability_pct_pot known: compare it (None = worst), strictly lower wins.
+  3. same tier, both exploitability_pct_pot None: only if both carry quality.comparable with the SAME family and metric
+     (family = one solver + one game abstraction / config, e.g. "gtopen_preflop|config_sha256:<hash>") is the secondary
+     convergence metric (e.g. GTOpen gap_total) compared, strictly lower wins. Different solvers / methods / configs are
+     incomparable: never better, so no upgrade and no skip-override happen on gap numbers from different families.
+  best(spot) = the earliest-added solution that no other stored solution beats.
+Seed replicates: storage is append-only and best-only for upgrades. A replicate (same family, other seed) is stored only if it
+is strictly better than the current best; equal or worse replicates are skipped, not kept (a replicate study belongs in its
+own log, not in this store).
   tier 1  exact game, full tree, converged at the stated target
   tier 2  converged solver solution of an abstracted tree (restricted action menu / bucketing)
   tier 3  solver solution with a known approximation (estimated continuation values, frozen ranges, capped/non-converged)
@@ -45,12 +55,24 @@ TIERS = {1: 'exact_full_tree_converged', 2: 'solver_abstracted_converged', 3: 's
 
 
 def quality_key(q):
+    """sort / display key (tier, exploitability or inf, comparable value or inf); the decision rule is better()."""
     e = q.get('exploitability_pct_pot')
-    return (int(q['tier']), float('inf') if e is None else float(e))
+    c = (q.get('comparable') or {}).get('value')
+    return (int(q['tier']), float('inf') if e is None else float(e), float('inf') if c is None else float(c))
 
 
 def better(q_new, q_old):
-    return quality_key(q_new) < quality_key(q_old)
+    tn, to = int(q_new['tier']), int(q_old['tier'])
+    if tn != to:
+        return tn < to
+    en, eo = q_new.get('exploitability_pct_pot'), q_old.get('exploitability_pct_pot')
+    if en is not None or eo is not None:
+        return (float('inf') if en is None else float(en)) < (float('inf') if eo is None else float(eo))
+    cn, co = q_new.get('comparable') or {}, q_old.get('comparable') or {}
+    if cn and co and cn.get('family') == co.get('family') and cn.get('metric') == co.get('metric') \
+            and cn.get('value') is not None and co.get('value') is not None:
+        return float(cn['value']) < float(co['value'])
+    return False   # incomparable (different solver / method / config family, or no metric)
 
 
 def _sha(obj):
@@ -138,8 +160,9 @@ class Index:
         return sorted(self.by_key.get(key, []), key=lambda s: (quality_key(s['quality']), s['added_at'] or ''))
 
     def best(self, key):
-        xs = self.all(key)
-        return xs[0] if xs else None
+        xs = self.by_key.get(key, [])
+        undominated = [s for s in xs if not any(better(o['quality'], s['quality']) for o in xs if o is not s)]
+        return min(undominated, key=lambda s: s['added_at'] or '') if undominated else None
 
     def lookup(self, raw_state):
         k, _ = SK.key_of(raw_state)

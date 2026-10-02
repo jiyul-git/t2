@@ -78,6 +78,21 @@ def main():
     added, _, _ = ix2.add_solution(new_state, strat, {'tier': 3, 'exploitability_pct_pot': 0.3}, {'run': 'test'})
     res['new_spot_then_skip'] = need is True and added is True and ix2.need_compute(new_state, {'tier': 3, 'exploitability_pct_pot': 0.3})[0] is False \
         and ix2.need_compute(new_state, {'tier': 2, 'exploitability_pct_pot': 0.3})[0] is True
+    # comparable secondary metric: only within one family
+    q = lambda v, fam='gtopen|cfgA': {'tier': 3, 'exploitability_pct_pot': None, 'comparable': {'family': fam, 'metric': 'gap_total', 'value': v}}
+    res['comparable_same_family'] = IX.better(q(0.1), q(0.3)) and not IX.better(q(0.3), q(0.1)) and not IX.better(q(0.3), q(0.3))
+    res['comparable_other_family_incomparable'] = not IX.better(q(0.01, 'other'), q(0.3)) and not IX.better(q(0.3), q(0.01, 'other'))
+    res['comparable_missing_incomparable'] = not IX.better(q(0.1), {'tier': 3, 'exploitability_pct_pot': None})
+    res['tier_dominates'] = IX.better({'tier': 2, 'exploitability_pct_pot': None}, q(0.0001))
+    s3 = {**BASE, 'hero': 'BTN'}
+    a1 = ix2.add_solution(s3, strat, q(0.3), {'run': 'seed1'})[0]
+    a2 = ix2.add_solution(s3, strat, q(0.3), {'run': 'seed2'})[0]          # equal replicate: skipped
+    a3 = ix2.add_solution(s3, strat, q(0.1, 'other'), {'run': 'x'})[0]     # other family: incomparable, skipped
+    a4 = ix2.add_solution(s3, strat, q(0.1), {'run': 'seed3'})[0]          # same family, better: appended
+    k3 = SK.key_of(s3)[0]
+    res['upgrade_within_family'] = a1 and not a2 and not a3 and a4 and len(ix2.all(k3)) == 2 and ix2.best(k3)['source']['run'] == 'seed3'
+    res['need_compute_family_target'] = ix2.need_compute(s3, q(0.05))[0] is True and ix2.need_compute(s3, q(0.1))[0] is False \
+        and ix2.need_compute(s3, q(0.01, 'other'))[0] is False
     # tamper detection
     lines = open(ix.v2_path).read().splitlines()
     rec = json.loads(lines[0])
