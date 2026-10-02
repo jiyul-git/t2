@@ -97,14 +97,15 @@ def _pilot_policy(s):
     for h in CLASSES:
         row=s["hands"][h]
         vals=[]
-        for a0,a1 in zip(s["actions"],acts):
-            k=a0.get("kind")
-            if k=="allin": k="jam"
-            oldk=k
-            if a0.get("kind") in ("raise","jam","allin"):
-                rawkind="jam" if a0.get("kind")=="allin" else a0.get("kind")
-                oldk=f'{rawkind}_to_{float(a0.get("to",0)):g}'
-            vals.append(float(row.get(oldk,row.get(k,0.0))))
+        for a0 in s["actions"]:
+            raw=a0.get("kind")
+            canon="jam" if raw=="allin" else raw
+            candidates=[canon,raw]
+            if raw in ("raise","jam","allin") and a0.get("to") is not None:
+                to=f'{float(a0.get("to",0)):g}'
+                candidates += [f'{canon}_to_{to}',f'{raw}_to_{to}']
+            v=next((row[k] for k in candidates if k in row),0.0)
+            vals.append(float(v))
         hands[h]=vals
     return {"actions":acts,"hand_class_order":CLASSES,"hands":hands}
 
