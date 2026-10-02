@@ -62,8 +62,10 @@
       "limitations": [
         "multiway single-caller approximation",
         "no ICM",
-        "per-player ante variant not exact BBA"
-      ]
+        "0.1bb-per-player variant totals 0.9bb at 9max, not exact T2 1.0bb uniform-total ante"
+      ],
+      "operational_rows_flat": 104104,
+      "operational_spots": 616
     },
     {
       "id": "matthiola_8max_mtt",
@@ -460,7 +462,7 @@
       ],
       "limitations": [
         "default game is 100bb, ante=0, 2.5bb abstract raise, default max_raises=1",
-        "not the target 1bb-BBA MTT configuration",
+        "not the target uniform-total-1bb MTT configuration",
         "documented preflop_9max artifact was not available as usable committed data"
       ]
     },
@@ -506,6 +508,14 @@
     "provenance_fields_in_runtime_rows": false,
     "fulltree_family_rows": 227305,
     "pushfold_rows_1to25": 21125,
-    "total_rows": 248430
+    "holdemmath_flat_rows": 104104,
+    "total_rows": 352534
+  },
+  "canonical_target": {
+    "table_players": 9,
+    "ante_model": "uniform_total",
+    "ante_total_bb": 1,
+    "ante_per_player_bb": 0.1111111111111111,
+    "hand_start_players": 9
   }
 }
