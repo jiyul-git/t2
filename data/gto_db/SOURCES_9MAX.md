@@ -5,6 +5,7 @@ This registry separates **data we may store** from **data we may only inspect/cr
 | Source | 9-max MTT | Stack coverage | Ante model | Frequencies | Local storage | Role |
 |---|---|---|---|---|---|---|
 | HoldemMath `holdemmath-data` | yes | 4/6/8/10/12/15/20bb | no ante + 0.1bb/player | push/fold shove + calls | **yes**, CC BY 4.0 | Tier-2 short-stack seed |
+| Jens Baagaard `poker-practice` | yes | **5/10/20/40/100bb** | upstream MTT model; preserve source assumptions | **169-class mixed frequencies; 271 scenarios/stack** | **yes**, MIT, on `chatgpt/gto-external-harvest-20261003` | primary redistributable hand-level 9-max MTT cross-check; **no 30bb pack** |
 | PokerData tournament packs | yes | methodology states 10–100bb | **big-blind ante** | full preflop packs | not fetched without authorized data access | exact-target validation candidate |
 | PreflopRanges / public chart viewer | yes | public 10–40bb MTT views | chart-specific MTT ante | mixed strategy | **no bulk extraction** | manual aggregate/boundary cross-check only |
 | GTO Academy public charts | yes | public selector includes mid/deep stacks | chart-specific | chart view | do not vendor unless rights are explicit | manual cross-check |
@@ -29,3 +30,19 @@ T2 tournament ante stage is 1BB **big-blind ante**. The current GTOpen preflop e
 ### Rejected bulk source: poker-gto-trainer
 
 The repository contains many 9-player JSON files, but sampled records identify the solver as `fallback` with `accuracy: 0.0`. An unopened UTG record also assigns nonzero `call` frequency, which is not a legal first-in action under the stated scenario. Keep this source out of the canonical GTO DB unless its generation/provenance is independently clarified.
+
+
+## Hand-level reference locator
+
+When looking for already-collected 9-max MTT hand frequencies, do **not** stop after searching `data/gto_db/` on the older reference branch.
+
+The current redistributable hand-level pack is on:
+
+- branch: `chatgpt/gto-external-harvest-20261003`
+- path: `data/gto_external/jensbaagaard_9max_mtt/charts/`
+- files: `MTT_5_GTO.charts.json`, `MTT_10_GTO.charts.json`, `MTT_20_GTO.charts.json`, `MTT_40_GTO.charts.json`, `MTT_100_GTO.charts.json`
+- index: `data/gto_external/jensbaagaard_9max_mtt/charts/INDEX_9MAX.json`
+
+Inventory: **5 stack packs × 271 scenario tables = 1,355 tables**, each with all **169 hand classes** and mixed action frequencies.
+
+Important: this source has **no 30bb pack**. For a 30bb solver comparison, 20bb/40bb are neighboring-stack evidence, not exact-match truth. Search the rest of the harvested catalog before declaring that no exact 30bb hand-level reference exists.
