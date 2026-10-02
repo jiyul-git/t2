@@ -112,9 +112,19 @@ master = {
             "stacks_bb": [4, 6, 8, 10, 12, 15, 20],
             "action_families": ["open_shove", "call_vs_shove"],
             "ante_models": ["none", "per_player"],
+            "canonical_t2_mechanics_match": False,
         },
     },
     "total_rows": int(external["total_rows"]) + rows,
+    "canonical_target": {
+        "ante_model": "uniform_total",
+        "hand_start_players": 9,
+        "ante_total_bb": 1.0,
+        "ante_per_player_bb": 1.0 / 9.0,
+        "folds_resplit": False,
+    },
+    "canonical_exact_mechanics_rows": 0,
+    "note": "Rows are exact stored frequencies for their own mechanical assumptions; exact T2-mechanics admission is a separate gate.",
 }
 MASTER.write_text(json.dumps(master, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 print(json.dumps(master, sort_keys=True))
