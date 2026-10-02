@@ -228,6 +228,28 @@
       "restrictions": [
         "commercial solution library; no bulk redistribution"
       ]
+    },
+    {
+      "id": "rangemyhand_pushfold_9max",
+      "status": "imported_raw",
+      "license": "CC BY 4.0",
+      "attribution": "RangeMyHand Nash push/fold ranges (www.rangemyhand.com), CC BY 4.0",
+      "table_players": [
+        6,
+        9
+      ],
+      "stacks_bb": "1..25",
+      "rows": 38025,
+      "hand_classes": 169,
+      "model": "chip-EV Nash push/fold equilibrium (fictitious play)",
+      "coverage": [
+        "open_shove_frequency by seat and stack"
+      ],
+      "limitations": [
+        "no ante",
+        "chipEV only",
+        "shove-or-fold abstraction"
+      ]
     }
   ]
 }
