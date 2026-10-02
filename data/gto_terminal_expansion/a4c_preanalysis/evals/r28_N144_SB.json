@@ -1,0 +1,35 @@
+{
+  "base": "/home/user/t2/data/gto_terminal_expansion/a4b_panel144/points/V144/profile.gtop",
+  "br_values": [
+    -0.008901266173900678,
+    0.08717526074094539,
+    -0.16331354488808283,
+    0.10004725055076065
+  ],
+  "donor": "/home/user/t2/data/gto_terminal_expansion/a4b_panel144/boot/r28/V144/profile.gtop",
+  "evs": [
+    -0.009000011663535576,
+    0.08677420529124147,
+    -0.169606601338657,
+    0.098706108436755
+  ],
+  "floats_swapped": 78585,
+  "gap_total": 0.008133999503918635,
+  "gaps": [
+    0.00009874548963489764,
+    0.00040105544970392876,
+    0.006293056450574153,
+    0.0013411421140056574
+  ],
+  "nodes_swapped": 202,
+  "position": "SB",
+  "positions": [
+    "CO",
+    "BTN",
+    "SB",
+    "BB"
+  ],
+  "seat": 2,
+  "subtree_root": "all",
+  "t2_cont_file": "/home/user/t2/data/gto_terminal_expansion/a4b_panel144/points/V144/manifest.json"
+}
