@@ -121,16 +121,20 @@ def _legacy_stream(ref):
     if local.exists():
         return local.open(), "worktree"
 
-    cp = subprocess.run(
-        ["git", "show", f"{ref}:{LEGACY_PATH}"],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    if cp.returncode != 0:
-        return None, "unavailable"
-    return io.StringIO(cp.stdout), f"git:{ref}"
+    refs = [ref]
+    if not ref.startswith("origin/"):
+        refs.append("origin/" + ref)
+    for candidate in refs:
+        cp = subprocess.run(
+            ["git", "show", f"{candidate}:{LEGACY_PATH}"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if cp.returncode == 0:
+            return io.StringIO(cp.stdout), f"git:{candidate}"
+    return None, "unavailable"
 
 
 def legacy_lookup(args):
