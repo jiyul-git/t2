@@ -457,6 +457,42 @@
         "not the target 1bb-BBA MTT configuration",
         "documented preflop_9max artifact was not available as usable committed data"
       ]
+    },
+    {
+      "id": "push_fold_trainer_9max",
+      "status": "index_and_manual_crosscheck_only",
+      "source_url": "https://www.pushfoldtrainer.com/ranges",
+      "table_players": [
+        6,
+        9
+      ],
+      "known_published_stacks_bb": [
+        5,
+        8,
+        10,
+        12,
+        15,
+        20,
+        25,
+        30
+      ],
+      "coverage": [
+        "first_in_push_fold",
+        "common facing_all_in call/fold nodes",
+        "exact mixed frequencies on published 169-grid pages"
+      ],
+      "model": "own Linear CFR solver; weighted-average regret-matching strategy; exact precomputed HU all-in equity, Monte Carlo for 3+ players",
+      "ante": "0.125bb per player on audited 9-max pages; not 1bb BBA",
+      "limitations": [
+        "restricted push/fold action tree; no smaller raises, limps or postflop alternatives",
+        "multi-player CFR has no two-player zero-sum convergence guarantee",
+        "published borderline frequencies are seed-sensitive"
+      ],
+      "restrictions": [
+        "Terms explicitly prohibit scraping, bulk-download, or systematic extraction of range data",
+        "Terms prohibit republishing/reselling range data as one's own",
+        "embed snippets are permitted with credit, but this is not a raw-data redistribution license"
+      ]
     }
   ]
 }
