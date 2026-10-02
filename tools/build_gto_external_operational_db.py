@@ -10,6 +10,24 @@ JENS_DIR = EXT / "jensbaagaard_9max_mtt"
 RMH_FILE = EXT / "rangemyhand_pushfold_9max" / "push-fold-ranges.json"
 
 STACKS = [5, 10, 20, 40, 100]
+RANKS = "AKQJT98765432"
+
+def canonical_hands():
+    out = []
+    for i, a in enumerate(RANKS):
+        for j, b in enumerate(RANKS):
+            if i == j:
+                out.append(a + b)
+            elif i < j:
+                out.append(a + b + "s")
+            else:
+                out.append(b + a + "o")
+    if len(out) != 169 or len(set(out)) != 169:
+        raise RuntimeError("failed to build canonical 169-hand universe")
+    return out
+
+HANDS_169 = canonical_hands()
+
 PREFIXES = [
     ("call_vs_5bet", "Call 5Bet"),
     ("call_vs_4bet", "Call 4Bet"),
@@ -59,10 +77,11 @@ def build_jens():
             family, hero, villain = parse_jens_key(key)
             if family is None:
                 continue
-            if len(hand_map) != 169:
-                raise SystemExit(f"{path}:{key}: expected 169 hand classes, got {len(hand_map)}")
-            for hand, freq in hand_map.items():
-                v = float(freq)
+            unknown = set(hand_map) - set(HANDS_169)
+            if unknown:
+                raise SystemExit(f"{path}:{key}: unknown hand classes {sorted(unknown)}")
+            for hand in HANDS_169:
+                v = float(hand_map.get(hand, 0.0))
                 if not (0.0 <= v <= 1.0):
                     raise SystemExit(f"{path}:{key}:{hand}: invalid frequency {v}")
                 rows.append({
