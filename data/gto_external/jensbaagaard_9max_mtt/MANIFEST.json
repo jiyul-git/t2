@@ -1,0 +1,73 @@
+{
+  "schema": "t2_external_gto_harvest_v1",
+  "harvested_utc": "2026-10-02T20:00:00Z",
+  "source": {
+    "repo": "jensbaagaard/poker-practice",
+    "commit": "449993f78d995c77b72d0bcac418a8507dd6f783",
+    "license": "MIT (repository README explicitly states range data in data/openSourcePokerData is free to use)",
+    "upstream_path": "data/openSourcePokerData"
+  },
+  "scope": {
+    "format": "MTT",
+    "table_players": 9,
+    "stacks_bb": [
+      5,
+      10,
+      20,
+      40,
+      100
+    ],
+    "positions": [
+      "EP1",
+      "EP2",
+      "EP3",
+      "LJ",
+      "HJ",
+      "CO",
+      "BTN",
+      "SB",
+      "BB"
+    ],
+    "scenario_key_count_per_file": 271,
+    "note": "Raw upstream action-frequency tables. They are reference data, not T2-native exact-BBA solves. These packs use one nominal/effective stack depth per set; they do not encode arbitrary per-seat asymmetric stack vectors."
+  },
+  "files": [
+    {
+      "file": "MTT_5_GTO.json",
+      "active_keys": 226,
+      "nonzero_hand_freqs": 3682
+    },
+    {
+      "file": "MTT_10_GTO.json",
+      "active_keys": 211,
+      "nonzero_hand_freqs": 2796
+    },
+    {
+      "file": "MTT_20_GTO.json",
+      "active_keys": 227,
+      "nonzero_hand_freqs": 5080
+    },
+    {
+      "file": "MTT_40_GTO.json",
+      "active_keys": 228,
+      "nonzero_hand_freqs": 5593
+    },
+    {
+      "file": "MTT_100_GTO.json",
+      "active_keys": 263,
+      "nonzero_hand_freqs": 9155
+    }
+  ],
+  "scenario_families": [
+    "open",
+    "limp",
+    "call_vs_open",
+    "3bet",
+    "call_vs_3bet",
+    "4bet",
+    "call_vs_4bet",
+    "5bet",
+    "call_vs_5bet"
+  ],
+  "policy": "Keep upstream provenance and assumptions. Do not blend with T2-native solved data. Normalize/query through an adapter later."
+}
