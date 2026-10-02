@@ -1,0 +1,120 @@
+{
+  "aggregate": {
+    "gap_total": {
+      "mean": 0.06473241154820905,
+      "n": 2,
+      "sd": 0.016664139620759147
+    },
+    "rfi": {
+      "BTN": {
+        "mean": 0.3723289775779668,
+        "n": 2,
+        "sd": 0.004044795023802228
+      },
+      "CO": {
+        "mean": 0.26325969281437944,
+        "n": 2,
+        "sd": 0.00142539442577509
+      },
+      "HJ": {
+        "mean": 0.21242181367385515,
+        "n": 2,
+        "sd": 0.0014621390283046987
+      },
+      "LJ": {
+        "mean": 0.17132683967073908,
+        "n": 2,
+        "sd": 0.003070457617037294
+      },
+      "UTG": {
+        "mean": 0.10315579092526697,
+        "n": 2,
+        "sd": 0.007481327637785202
+      },
+      "UTG+1": {
+        "mean": 0.12422410721284163,
+        "n": 2,
+        "sd": 0.006287976521881367
+      },
+      "UTG+2": {
+        "mean": 0.14594724017032734,
+        "n": 2,
+        "sd": 0.003218930981836867
+      }
+    },
+    "rfi_mae_vs_external_check": {
+      "mean": 0.08476221970780337,
+      "n": 2,
+      "sd": 0.002292948905324016
+    }
+  },
+  "ante_model": {
+    "exact_t2_ante": true,
+    "folds_resplit": false,
+    "kind": "uniform_total",
+    "per_player_bb": 0.1111111111111111,
+    "total_bb": 1.0
+  },
+  "canonical_promotion_ready": false,
+  "complete": false,
+  "convergence_ready": false,
+  "external_rfi_check": {
+    "BTN": 0.487,
+    "CO": 0.375,
+    "HJ": 0.299,
+    "LJ": 0.257,
+    "UTG": 0.165,
+    "UTG+1": 0.186,
+    "UTG+2": 0.217
+  },
+  "hand_start_players": 9,
+  "hand_start_stack_bb": 30.0,
+  "promotion_blocker": "pilot/restricted tree and preflop continuation model require validation before canonical DB admission",
+  "received_runs": 2,
+  "runs": [
+    {
+      "convergence_qualified": true,
+      "gap_total": 0.07651573767668726,
+      "iteration": 40,
+      "rfi": {
+        "BTN": 0.37518907956780695,
+        "CO": 0.2642675988787105,
+        "HJ": 0.2113879252519034,
+        "LJ": 0.16915569826838614,
+        "SB": 0.6005267143131466,
+        "UTG": 0.09786569342031072,
+        "UTG+1": 0.11977783637427751,
+        "UTG+2": 0.143671112244899
+      },
+      "rfi_mae_vs_external_check": 0.08638357942767226,
+      "seed": 202,
+      "spot_count": 50
+    },
+    {
+      "convergence_qualified": true,
+      "gap_total": 0.05294908541973083,
+      "iteration": 40,
+      "rfi": {
+        "BTN": 0.36946887558812663,
+        "CO": 0.26225178675004834,
+        "HJ": 0.21345570209580692,
+        "LJ": 0.17349798107309206,
+        "SB": 0.6034279833880871,
+        "UTG": 0.10844588843022322,
+        "UTG+1": 0.12867037805140574,
+        "UTG+2": 0.14822336809575565
+      },
+      "rfi_mae_vs_external_check": 0.0831408599879345,
+      "seed": 404,
+      "spot_count": 50
+    }
+  ],
+  "schema_version": "gto_9max_30bb_uniform_pilot_v2",
+  "seeds": [
+    101,
+    202,
+    303,
+    404
+  ],
+  "tree_scope": "restricted open+3bet validation tree (max_raises=2); not a full-tree solution"
+}
