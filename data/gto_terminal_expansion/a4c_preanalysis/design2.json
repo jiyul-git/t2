@@ -1,0 +1,142 @@
+{
+ "estimand": "raw-flop mean per stratum (= multiplicity-weighted canonical-class mean), stratified by P(s); card removal by ranges handled per class by compat / rho as before",
+ "design_bias": {
+  "paired/A m=12": {
+   "trips_share_in_sample": 0.0074333333333333335,
+   "trips_raw_mass_share": 0.006896551724137931,
+   "bias_bound_bb_stratum": 0.0007494530220164641,
+   "bias_bound_bb_total_contribution": 1.9668902840251096e-05
+  },
+  "paired/A m=24": {
+   "trips_share_in_sample": 0.008310416666666667,
+   "trips_raw_mass_share": 0.006896551724137931,
+   "bias_bound_bb_stratum": 0.0019740343852122635,
+   "bias_bound_bb_total_contribution": 5.180723725896439e-05
+  },
+  "paired/A m=36": {
+   "trips_share_in_sample": 0.010022222222222222,
+   "trips_raw_mass_share": 0.006896551724137931,
+   "bias_bound_bb_stratum": 0.004364052643547689,
+   "bias_bound_bb_total_contribution": 0.00011453169833745067
+  },
+  "paired/KQ m=12": {
+   "trips_share_in_sample": 0.008058333333333334,
+   "trips_raw_mass_share": 0.007874015748031496,
+   "bias_bound_bb_stratum": 0.00017706865471658098,
+   "bias_bound_bb_total_contribution": 8.140350823169516e-06
+  },
+  "paired/KQ m=24": {
+   "trips_share_in_sample": 0.008760416666666666,
+   "trips_raw_mass_share": 0.007874015748031496,
+   "bias_bound_bb_stratum": 0.0008515401172668575,
+   "bias_bound_bb_total_contribution": 3.9147726658060055e-05
+  },
+  "paired/KQ m=36": {
+   "trips_share_in_sample": 0.00932361111111111,
+   "trips_raw_mass_share": 0.007874015748031496,
+   "bias_bound_bb_stratum": 0.0013925849799061006,
+   "bias_bound_bb_total_contribution": 6.40211013386696e-05
+  },
+  "paired/J_or_lower m=12": {
+   "trips_share_in_sample": 0.018320833333333335,
+   "trips_raw_mass_share": 0.01818181818181818,
+   "bias_bound_bb_stratum": 0.00017802991746996883,
+   "bias_bound_bb_total_contribution": 1.7722435223254812e-05
+  },
+  "paired/J_or_lower m=24": {
+   "trips_share_in_sample": 0.019091666666666667,
+   "trips_raw_mass_share": 0.01818181818181818,
+   "bias_bound_bb_stratum": 0.0011651985334137826,
+   "bias_bound_bb_total_contribution": 0.0001159926141859874
+  },
+  "paired/J_or_lower m=36": {
+   "trips_share_in_sample": 0.019379166666666666,
+   "trips_raw_mass_share": 0.01818181818181818,
+   "bias_bound_bb_stratum": 0.001533385746927962,
+   "bias_bound_bb_total_contribution": 0.0001526447349883039
+  }
+ },
+ "allocations_table_level_joint": {
+  "198": {
+   "alloc": {
+    "paired/J_or_lower": 19,
+    "paired/KQ": 12,
+    "paired/A": 12,
+    "monotone/J_or_lower": 12,
+    "twotone/J_or_lower": 38,
+    "monotone/KQ": 12,
+    "twotone/KQ": 20,
+    "monotone/A": 12,
+    "twotone/A": 12,
+    "rainbow/J_or_lower": 25,
+    "rainbow/KQ": 12,
+    "rainbow/A": 12
+   },
+   "total": 198,
+   "new_per_terminal": 54,
+   "var_ratio_vs_equal24_fpc": 0.99242899167063,
+   "max_sampling_fraction": 0.24489795918367346
+  },
+  "216": {
+   "alloc": {
+    "paired/J_or_lower": 22,
+    "paired/KQ": 12,
+    "paired/A": 12,
+    "monotone/J_or_lower": 12,
+    "twotone/J_or_lower": 44,
+    "monotone/KQ": 12,
+    "twotone/KQ": 23,
+    "monotone/A": 12,
+    "twotone/A": 12,
+    "rainbow/J_or_lower": 29,
+    "rainbow/KQ": 13,
+    "rainbow/A": 13
+   },
+   "total": 216,
+   "new_per_terminal": 72,
+   "var_ratio_vs_equal24_fpc": 0.8596834221251708,
+   "max_sampling_fraction": 0.24489795918367346
+  },
+  "240": {
+   "alloc": {
+    "paired/J_or_lower": 25,
+    "paired/KQ": 12,
+    "paired/A": 12,
+    "monotone/J_or_lower": 12,
+    "twotone/J_or_lower": 52,
+    "monotone/KQ": 12,
+    "twotone/KQ": 27,
+    "monotone/A": 12,
+    "twotone/A": 12,
+    "rainbow/J_or_lower": 34,
+    "rainbow/KQ": 15,
+    "rainbow/A": 15
+   },
+   "total": 240,
+   "new_per_terminal": 96,
+   "var_ratio_vs_equal24_fpc": 0.7275512196439532,
+   "max_sampling_fraction": 0.2833333333333333
+  },
+  "288": {
+   "alloc": {
+    "paired/J_or_lower": 32,
+    "paired/KQ": 12,
+    "paired/A": 12,
+    "monotone/J_or_lower": 12,
+    "twotone/J_or_lower": 66,
+    "monotone/KQ": 12,
+    "twotone/KQ": 35,
+    "monotone/A": 12,
+    "twotone/A": 12,
+    "rainbow/J_or_lower": 43,
+    "rainbow/KQ": 20,
+    "rainbow/A": 20
+   },
+   "total": 288,
+   "new_per_terminal": 144,
+   "var_ratio_vs_equal24_fpc": 0.5512937646659937,
+   "max_sampling_fraction": 0.35833333333333334
+  }
+ },
+ "equal24_var_fpc": 0.0003367264931926469
+}
