@@ -8,6 +8,13 @@ OUT = ROOT / "data" / "gto_db" / "preflop_9max_pushfold_holdemmath_flat_v1.jsonl
 IDX = ROOT / "data" / "gto_db" / "index_9max_pushfold_holdemmath_flat_v1.json"
 MASTER = ROOT / "data" / "gto_db" / "index_9max_operational_v1.json"
 
+POSITION_ALIASES = {"UTG1": "UTG+1", "MP": "UTG+2"}
+
+def norm_pos(pos):
+    if pos is None:
+        return None
+    return POSITION_ALIASES.get(pos, pos)
+
 def shape(hand):
     if len(hand) == 2 and hand[0] == hand[1]:
         return "pair"
@@ -54,11 +61,11 @@ with IN.open(encoding="utf-8") as src, OUT.open("w", encoding="utf-8") as dst:
                 "ante_model": ante_model,
                 "ante_per_player_bb": float(ante.get("per_player_bb", 0.0)),
                 "ante_total_9max_bb": float(ante.get("total_at_9max_bb", 0.0)),
-                "action_history_key": "unopened" if scenario == "first_in_shove" else f"face_shove:{c['shover_position']}",
+                "action_history_key": "unopened" if scenario == "first_in_shove" else f"face_shove:{norm_pos(c['shover_position'])}",
                 "action_family": "open_shove" if scenario == "first_in_shove" else "call_vs_shove",
                 "action": active_action,
-                "hero_position": c["hero_position"],
-                "shover_position": c.get("shover_position"),
+                "hero_position": norm_pos(c["hero_position"]),
+                "shover_position": norm_pos(c.get("shover_position")),
                 "hand_class": hand,
                 "hand_shape": shape(hand),
                 "frequency": freq,
