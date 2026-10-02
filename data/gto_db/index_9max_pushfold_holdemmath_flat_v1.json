@@ -1,0 +1,36 @@
+{
+  "action_families": [
+    "open_shove",
+    "call_vs_shove"
+  ],
+  "dataset": "preflop_9max_pushfold_holdemmath_flat_v1.jsonl",
+  "format": "MTT",
+  "hand_classes_per_spot": 169,
+  "provenance_fields_in_operational_rows": false,
+  "rows": 104104,
+  "schema": "t2_gto_operational_frequency_rows_v1",
+  "spot_count": 616,
+  "spots_by_depth": {
+    "10": 88,
+    "12": 88,
+    "15": 88,
+    "20": 88,
+    "4": 88,
+    "6": 88,
+    "8": 88
+  },
+  "spots_by_variant": {
+    "ante_0p1_each": 308,
+    "no_ante": 308
+  },
+  "stacks_bb": [
+    4,
+    6,
+    8,
+    10,
+    12,
+    15,
+    20
+  ],
+  "table_players": 9
+}
