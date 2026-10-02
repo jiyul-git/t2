@@ -4,9 +4,9 @@
 
 | 분류 | 수 | 뜻 |
 |---|---|---|
-| DONE | 39 | 행동 보존 처리 완료(이번 9단계 batch 완료분 포함) |
-| PARTIAL | 4 | 일부 완료, 남은 행동 보존 부분은 batch 에 배정 |
-| NOW | 58 | 이번 9단계에서 행동 보존으로 처리 |
+| DONE | 64 | 행동 보존 처리 완료(이번 9단계 batch 완료분 포함) |
+| PARTIAL | 3 | 일부 완료, 남은 행동 보존 부분은 batch 에 배정 |
+| NOW | 34 | 이번 9단계에서 행동 보존으로 처리 |
 | LATER | 18 | 행동 변화가 필요 — 9단계 대상 아님(판단 개선 단계) |
 | KEEP | 30 | 의도적으로 유지 |
 
@@ -16,7 +16,7 @@
 |---|---|---|---|
 | B1 | preflop (preflop.py, gto.py 이름, persona preflop 공급) | 17 | 완료 |
 | B2 | ranges / reads / persona 읽기 / money_pressure | 7 | 완료 |
-| B3 | plan 포스트플랍 (make_plan, decide_aggression, decide_size, decide_response, act_with_plan, checkraise) | 24 | 대기 |
+| B3 | plan 포스트플랍 (make_plan, decide_aggression, decide_size, decide_response, act_with_plan, checkraise) | 25 | 완료 |
 | B4 | persona 개념 scalar 역할 함수 | 20 | 대기 |
 | B5 | RENAME 과 REMOVE_COMPAT | 9 | 대기 |
 | B6 | bot / texture / depth | 5 | 대기 |
@@ -40,8 +40,8 @@
 | L012 | blockbet | SPLIT | NOW:B4 | blockbet motive / size 공급 분리 |
 | L013 | potcontrol | SPLIT | NOW:B4 | potcontrol motive vs 빈도 scalar 분리 |
 | L014 | trap | SPLIT | NOW:B4 | trap no-bite / checkraise gate 공급 분리 |
-| L015 | overbet | SPLIT | NOW:B3 | overbet 실행 함수 안의 street 분기를 명명 |
-| L016 | probe | SPLIT | NOW:B3 | poker probe 와 bluff_mode 의 probe 크기 모드 이름 분리(L144 와 함께) |
+| L015 | overbet | SPLIT | DONE(B3) | overbet 실행 함수 안의 street 분기를 명명 |
+| L016 | probe | SPLIT | DONE(B3) | poker probe 와 bluff_mode 의 probe 크기 모드 이름 분리(L144 와 함께) |
 | L018 | equity_denial | KEEP | KEEP | river 미래 equity 없음 — 설명만 |
 | L019 | stackoff | SPLIT | NOW:B4 | stackoff ability / investment horizon 공급 분리 |
 | L020 | reraise | SPLIT | NOW:B4 | reraise 의 preflop/postflop 소비를 역할 이름으로 분리 |
@@ -93,46 +93,46 @@
 | L099 | unconditioned_equity | KEEP | KEEP | FALLBACK |
 | L102 | strong_region_advantage | RENAME | NOW:B5 | RENAME: nut_advantage 는 문자 그대로의 넛이 아님 |
 | L103 | strong_support_blocker | SPLIT | DONE(B2) | blocker_score: support 분위 vs 질량 분위 분리 |
-| L105 | relative_strength_perception | SPLIT | NOW:B3 | perceived_rel: true rel 과 perceived rel 경계 명명 |
+| L105 | relative_strength_perception | SPLIT | DONE(B3) | perceived_rel: true rel 과 perceived rel 경계 명명 |
 | L107 | depth_perception | SPLIT | NOW:B6 | depth: 객관 깊이 vs 주관 추정 경계 명명 |
 | L109 | board_completion_danger | SPLIT | NOW:B6 | board_danger raw vs skill-scaled state.danger 명명(계약 통일은 LATER, L-RA06) |
 | L111 | street_texture_sizing | SPLIT | NOW:B6 | texture sizing: 보드 사실 / 학습 prior / 인지 잡음 분리 |
 | L112 | turn_card_range_shift | SPLIT | NOW:B6 | river 호출을 실제 질문 이름으로(값 동일). 턴 카드 반영은 LATER(L-RA07) |
 | L114 | calculation_error | SPLIT | NOW:B4 | calc_noise 의 계산 종류별 진입점 명명 |
-| L115 | value_line_selection | SPLIT | NOW:B3 | make_plan 의 긴 inline 판단을 등록부 개념 단위 함수로 추출 |
-| L116 | vulnerable_paired_flush | SPLIT | NOW:B3 | 같은 이름 다른 문턱 — 문맥별 함수로 분리(합치지 않음) |
-| L118 | deep_one_pair_caution | SPLIT | NOW:B3 | 같음 |
-| L119 | continue_range_value | SPLIT | NOW:B3 | continue-range value 판정의 street 별 게이트 분리 |
-| L120 | semibluff_line_selection | SPLIT | NOW:B3 | semibluff 선택: flop 두 드로우 / turn 한 드로우 / river 전환 분리 |
-| L121 | pure_bluff_line_selection | SPLIT | NOW:B3 | 순수 블러프: 동기 / 증거 / 능력 / 위장 분리 |
-| L122 | potcontrol_motive | SPLIT | NOW:B3 | potcontrol 라벨과 빈도 분리 |
-| L123 | potcontrol_bet_propensity | SPLIT | NOW:B3 | potcontrol 벳 성향: continuation vs caller stab 분리 |
-| L124 | blockbet_motive | SPLIT | NOW:B3 | blockbet 동기: flop 비이니셔티브 동크 중첩 분리 |
+| L115 | value_line_selection | SPLIT | DONE(B3) | make_plan 의 긴 inline 판단을 등록부 개념 단위 함수로 추출 |
+| L116 | vulnerable_paired_flush | SPLIT | DONE(B3) | 같은 이름 다른 문턱 — 문맥별 함수로 분리(합치지 않음) |
+| L118 | deep_one_pair_caution | SPLIT | DONE(B3) | 같음 |
+| L119 | continue_range_value | SPLIT | DONE(B3) | continue-range value 판정의 street 별 게이트 분리 |
+| L120 | semibluff_line_selection | SPLIT | DONE(B3) | semibluff 선택: flop 두 드로우 / turn 한 드로우 / river 전환 분리 |
+| L121 | pure_bluff_line_selection | SPLIT | DONE(B3) | 순수 블러프: 동기 / 증거 / 능력 / 위장 분리 |
+| L122 | potcontrol_motive | SPLIT | DONE(B3) | potcontrol 라벨과 빈도 분리 |
+| L123 | potcontrol_bet_propensity | SPLIT | DONE(B3) | potcontrol 벳 성향: continuation vs caller stab 분리 |
+| L124 | blockbet_motive | SPLIT | DONE(B3) | blockbet 동기: flop 비이니셔티브 동크 중첩 분리 |
 | L125 | trap_induction | SPLIT | LATER | trap 의 latent.study 직접 사용 — 공급 변경 |
 | L127 | draw_completion_value_gate | MERGE | DONE | draw_completion_supports_value(1차) |
 | L129 | missed_draw_river_conversion | SPLIT | DONE | river_semibluff_resolution(1차) |
 | L131 | flop_cbet_plan | SPLIT | DONE | cbet_flop_frequency(1차) |
 | L132 | turn_barrel_plan | SPLIT | DONE | barrel_turn_frequency(1차) |
 | L133 | river_barrel_plan | SPLIT | DONE | barrel_river_frequency(1차) |
-| L134 | probe_after_checkthrough | SPLIT | NOW:B3 | probe: turn 드로우 의존 / river 무드로우 분리 |
-| L138 | planned_bet_sizing | SPLIT | NOW:B3 | decide_size: 강도 질문 vs 실행 사이즈 분리 |
-| L139 | turn_overbet | SPLIT | NOW:B3 | overbet_frac turn 분기 분리 |
-| L140 | river_overbet | SPLIT | NOW:B3 | overbet_frac river 분기 분리(union range 사용은 LATER, L-RA10) |
-| L142 | target_investment_fraction | SPLIT | NOW:B3 | target_commit 의 쓰이지 않는 인자 명시(고정 horizon 교정은 LATER) |
+| L134 | probe_after_checkthrough | SPLIT | DONE(B3) | probe: turn 드로우 의존 / river 무드로우 분리 |
+| L138 | planned_bet_sizing | SPLIT | DONE(B3) | decide_size: 강도 질문 vs 실행 사이즈 분리 |
+| L139 | turn_overbet | SPLIT | DONE(B3) | overbet_frac turn 분기 분리 |
+| L140 | river_overbet | SPLIT | DONE(B3) | overbet_frac river 분기 분리(union range 사용은 LATER, L-RA10) |
+| L142 | target_investment_fraction | SPLIT | DONE(B3) | target_commit 의 쓰이지 않는 인자 명시(고정 horizon 교정은 LATER) |
 | L143 | stackoff_spread_horizon | SPLIT | LATER | stackoff 고정 3스트리트 기하 — remaining streets 로 바꾸면 행동 변화 |
-| L144 | bluff_sizing_camouflage | RENAME | NOW:B3 | RENAME: bluff_mode 의 probe = 사이즈 모드 |
-| L145 | calldown_required_share | SPLIT | NOW:B3 | calldown_need: 객관 가격 vs 주관 콜 문턱 분리(쓰이지 않는 read 인자 명시) |
-| L146 | nonvalue_raise_ev_gate | SPLIT | NOW:B3 | nonvalue raise EV 게이트의 적용 범위 명명(트리 확장은 LATER) |
-| L147 | response_plan | SPLIT | NOW:B3 | decide_response: 판단 vs 계획 기록 분리 |
+| L144 | bluff_sizing_camouflage | RENAME | DONE(B3) | RENAME: bluff_mode 의 probe = 사이즈 모드 |
+| L145 | calldown_required_share | SPLIT | DONE(B3) | calldown_need: 객관 가격 vs 주관 콜 문턱 분리(쓰이지 않는 read 인자 명시) |
+| L146 | nonvalue_raise_ev_gate | SPLIT | DONE(B3) | nonvalue raise EV 게이트의 적용 범위 명명(트리 확장은 LATER) |
+| L147 | response_plan | SPLIT | DONE(B3) | decide_response: 판단 vs 계획 기록 분리 |
 | L148 | call_bias_reapplication | SPLIT | LATER | call bias 이중 반영 제거 = 행동 변화 |
-| L149 | checkraise_flop_decision | SPLIT | PARTIAL | checkraise_draw_street_probability(1차). flop 결정 함수 경계는 B3 |
+| L149 | checkraise_flop_decision | SPLIT | DONE(B3) | checkraise_draw_street_probability(1차) + checkraise_street_skill(B3) |
 | L150 | checkraise_turn_decision | SPLIT | DONE | flop/turn 공유 확률 함수(1차) |
 | L151 | checkraise_river_decision | SPLIT | DONE | checkraise_river_probability(1차). river_bluff 라벨 누락은 LATER |
-| L152 | checkraise_sizing | SPLIT | NOW:B3 | checkraise_size: street 기준과 절대/추가 단위 분리 |
-| L153 | action_adapter_with_reasoning | SPLIT | NOW:B3 | act_with_plan: 추론 vs 실행 분리 |
+| L152 | checkraise_sizing | SPLIT | DONE(B3) | checkraise_size: street 기준과 절대/추가 단위 분리 |
+| L153 | action_adapter_with_reasoning | SPLIT | DONE(B3) | act_with_plan: 추론 vs 실행 분리 |
 | L154 | human_planned_size_shape | RENAME | NOW:B5 | RENAME: shape_size 는 표시용이 아님 |
 | L156 | plan_revision_lifecycle | SPLIT | LATER | replan 의 bb/tilt/문맥 전달 보완 = 행동 변화(경계 명명만 B3) |
-| L157 | plan_concept_permission | SPLIT | NOW:B3 | _allowed 의 generic checkraise 별칭 분리(별칭 교체는 LATER) |
+| L157 | plan_concept_permission | SPLIT | DONE(B3) | _allowed 의 generic checkraise 별칭 분리(별칭 교체는 LATER) |
 | L161 | opponent_behavior_memory | SPLIT | LATER | bot 테이블이 Book 을 매 핸드 새로 만듦 — 기억 지속은 행동 변화 |
 | L163 | showdown_strength_observation | SPLIT | LATER | 쇼다운 관측 가시성 + PCT 를 쇼다운 강도로 사용 |
 | L164 | opponent_estimation | SPLIT | DONE(B2) | estimate: 믿음 불확실성 vs exploit 강도 분리 |

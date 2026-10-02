@@ -591,25 +591,17 @@ sp('perceived_board_danger', 'plan', 'make_plan', 'dang = bot.board_danger(board
 sp('strong_support_blocker', 'plan', 'make_plan', 'blk_true = R.blocker_score(hero, opp_range, board)', 'blk = blk_true * _bg')
 sp('continue_fold_blocker', 'plan', 'make_plan', "_typ = {'flop': 0.60", 'blk_net = _blk_raw * _bg')
 sp('perceived_spr', 'plan', 'make_plan', 's_true = spr(stack, pot)', 's = s*_sa + 5.0*(1.0 - _sa)')
-sp('potcontrol_disposition', 'plan', 'make_plan', "pc = max(0.0, min(1.0, (profile['icm']")
 sp('target_investment_fraction', 'plan', 'make_plan', '_opp_eff = None', 'opp_eff=_opp_eff)')
-sp('value_when_called_strength', 'plan', 'make_plan', '_commit_rel = rel', "_so['commit_rel'] = round(float(_commit_rel), 3)")
-sp('multiway_value_threshold_shift', 'plan', 'make_plan', 'mw = max(0, n_opp - 1)', 'pcz = 0.50 + 0.06*mw')
-sp('read_value_threshold_shift', 'plan', 'make_plan', "if rd['w'] > 0:", 'pcz += wq * 0.30 * sg')
-sp('bluff_evidence_composite', 'plan', 'make_plan', "bluff_ok = (profile['bluff']/10.0)", "bluff_ok *= max(0.25, 1.0 + rd['w']")
-sp('relative_strength_value_threshold_shift', 'plan', 'make_plan', 'if rel <= 0.45:', 'v2 += 0.08 * _pen')
 sp('showdown_value_predicate', 'plan', 'make_plan', '_sd_eq = eq_cur if eq_cur is not None else eq')
 sp('value_line_selection', 'plan', 'make_plan', 'if eq >= v3:', "'중간 밸류이나 3스트리트 유지")
 sp('hero_made_contribution', 'plan', 'make_plan', 'made = bot.made_strength(hero, board) if board else 0')
 sp('relative_strength_perception', 'plan', 'make_plan', 'rel = perceived_rel(profile, rel_true, hero, board,', 'bot.made_strength(hero, board) if board else 0)')
 sp('trap_induction', 'plan', 'make_plan', 'p_trap, trap_why = trap_judgment(', "_goal, _mode = 'value_3street', 'trap'")
-sp('deep_one_pair_caution', 'plan', 'make_plan', '_vulnerable_deep = (', 'if made <= 1 else 0.0)')
 sp('blockbet_motive', 'plan', 'make_plan', 'elif eq >= pcz:', "plan = 'block'; why.append('OOP 중간강도")
 sp('potcontrol_motive', 'plan', 'make_plan', '_mg = sk(\'range_merge\')', "plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤'")
 sp('medium_strength_merge_value', 'plan', 'make_plan', "elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:", "why.append('중간강도(eq %.2f, rel %.2f, 머징")
 sp('showdown_value_predicate', 'plan', 'make_plan', '_sd_here = ', "% (rel, made, plan))")
 sp('semibluff_line_selection', 'plan', 'make_plan', 'elif outs >= 8 and to_act_behind <= 1', "% (_fe*100, _bluff_mul*100))")
-sp('bluff_sizing_camouflage', 'plan', 'make_plan', '_fe = 0.5', "_fe = float(_plan_opp_est['fold'])")
 sp('pure_bluff_line_selection', 'plan', 'make_plan', "elif (_sd_eq < 0.42 and sk('bluff') >= 1", "why.append('블러프 세부: %s — %s' % (_bm, _bwhy))")
 sp('showdown_value_predicate', 'plan', 'make_plan', 'has_sd = has_showdown_value(', "plan = 'giveup'; why.append('쇼다운 가치 없고")
 sp('potcontrol_motive', 'plan', 'make_plan', "if has_sd and sk('potcontrol') >= 1 and rng.random() < 0.72:")
@@ -620,9 +612,6 @@ sp('response_plan', 'plan', 'decide_response', "rel_ps = plan_state.get('rel', 0
 sp('layer_investment_ev', 'plan', 'decide_response', '_layer_call = (call_eq is not None and call_need is not None)', '_cf_need = float(call_need) if _layer_call else need')
 sp('monster_made_hand_raise', 'plan', 'decide_response', 'if made_now >= 5 and eq > need + 0.10:', "'넛급이나 콜 선택'")
 sp('value_line_selection', 'plan', 'decide_response', "if plan in ('value_3street', 'value_2street', 'trap') and eq > need + 0.15:", "so = PS.sk(profile, 'stackoff')/10.0 if has_c else 0.5")
-sp('value_raise_sizing_from_commit', 'plan', 'decide_response', "_so = plan_state.get('stackoff') or {}", 'mult = max(0.75, min(1.6, 0.75 + 0.85*gap))')
-sp('value_raise_qualification', 'plan', 'decide_response', '_fair_share = 1.0 / max(2.0, float(n_opp) + 1.0)', "if _vr_eq_cont is not None else 'n/a')))")
-sp('value_raise_frequency', 'plan', 'decide_response', 'p = 0.20 + 0.55*rr + (0.25 if committed else 0.0)', "'밸류이나 콜 선택(상대가 팟을 키워줌)'")
 sp('bluff_reraise_frequency', 'plan', 'decide_response', "if allow_raise and has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'river_bluff'):", "% (blr, _g_bl.get('ev')))")
 sp('semibluff_raise_frequency', 'plan', 'decide_response', "if plan == 'semibluff' and plan_state.get('outs', 0) >= 8 and street != 'river':", "% (_p_sb*100, _g_sb.get('ev')))")
 sp('implied_odds_adjustment', 'plan', 'decide_response', 'if stack > pot:', '_cf_need = max(0.02, _cf_need - implied)')
@@ -637,9 +626,7 @@ sp('giveup_initiative_stab_deviation', 'plan', 'decide_aggression', "if plan in 
 sp('bluff_execution_frequency', 'plan', 'decide_aggression', "if plan in ('bluff_2street', 'semibluff', 'river_bluff'):", "return _fp, '블러프 계획 실행(%.0f%%)' % (_fp*100)")
 sp('turn_card_range_shift', 'plan', 'decide_aggression', "if street in ('turn', 'river') and len(board) >= 4 and has_c:", 'p *= max(0.35, min(1.70, 1.0 + 0.75*_tce*_bt))')
 sp('donk_suppression', 'plan', 'decide_aggression', '_oop_a = (oop_vs_aggr is True)', 'p *= max(0.03, 1.0 - max(0.30, min(0.97, supp)))')
-sp('probe_after_checkthrough', 'plan', 'decide_aggression', "if has_c and (plan_state or {}).get('opp_checked_prev'):", "supp *= max(0.25, 1.0 - 0.085*PS.sk(profile, 'probe'))")
 sp('blockbet', 'plan', 'decide_aggression', "if plan == 'block':", "return max(0.15, min(0.92, _bb))")
-sp('potcontrol_bet_propensity', 'plan', 'decide_aggression', "if plan == 'pot_control':", "return max(0.05, min(0.6, 0.18 + 0.035*a))")
 sp('value_bet_execution_frequency', 'plan', 'decide_aggression', 'p = 0.30 + 0.058*a + 0.018*profile.get', "p *= (0.35 + 0.65 * (rel/0.80) ** 0.8)")
 sp('called_aggression_ownership', 'plan', 'decide_aggression', 'if line_owned_by_live_aggressor(', "' (재리드 %.0f%%)' % (_fp*100))")
 sp('called_aggression_ownership', 'plan', 'line_owned_by_live_aggressor')
@@ -647,8 +634,6 @@ sp('showdown_value_predicate', 'plan', 'has_showdown_value')
 sp('players_behind_risk_premium', 'icm', 'players_behind_required_equity_premium')
 
 # ---- plan.decide_size ----
-sp('planned_bet_sizing', 'plan', 'decide_size', "base = SIZING.get(plan, {}).get(street, 0.0)")
-sp('bluff_sizing_camouflage', 'plan', 'decide_size', "_bm = (plan_state or {}).get('bluff_mode')", "base *= float((plan_state or {}).get('bluff_mul') or 1.0)")
 sp('bet_budget', 'plan', 'decide_size', 'if not deviating:', 'return 0.0')
 sp('street_texture_sizing', 'plan', 'decide_size', 'if base > 0:', "base = base*(1.0 - 0.45*_bt2) + _tf*(0.45*_bt2)")
 sp('value_blocker_size_adjust', 'plan', 'decide_size', "if base > 0 and plan in ('value_3street', 'value_2street', 'trap', 'thin_river'):", 'base *= max(0.75, min(1.25, 1.0 - 2.0*_bn))')
@@ -661,15 +646,11 @@ sp('weak_hand_size_shrink', 'plan', 'decide_size', "if rel < 0.45 and _bm != 'me
 sp('plan_size_band_clamp', 'plan', 'decide_size', "if plan == 'thin_river':", 'return max(0.18, min(0.40, base))')
 
 # ---- plan.overbet_frac ----
-sp('value_when_called_strength', 'plan', 'overbet_frac', 'if value_line and opp_range and board:', 'rel = min(rel, relative_strength(hero, board, _ob_cr))')
-sp('river_overbet', 'plan', 'overbet_frac', "if street == 'river': p *= 1.35")
 sp('exploit_read_permission', 'plan', 'overbet_frac', 'if opp_est:', "p = PS.blend(p, p*max(0.25, mult), _rdo['w'])")
 
 # ---- plan.act_with_plan ----
 sp('perceived_icm_pressure', 'plan', 'act_with_plan', "if profile.get('concepts') and bf and bf > 1.0:", 'bf = PS.icm_bf(profile, bf)')
 sp('spr_commitment_flag', 'plan', 'act_with_plan', 'committed = spr(stack, pot) < 1.2')
-sp('response_equity_basis', 'plan', 'act_with_plan', 'if tocall > 0:', 'street, sims=600, seed=seed)')
-sp('opponent_sizing_normalization', 'plan', 'act_with_plan', "if _rdo['w'] > 0 and opp_est and opp_est.get('sz_mean'):", "sz = sz*(1.0 - _pull) + float(opp_est['sz_mean'])*_pull")
 sp('calldown_required_share', 'plan', 'act_with_plan', '_objective_be = (', "_call_eq = float(call_value.get('effective_equity'))")
 sp('checkraise_flop_decision', 'plan', 'act_with_plan', '_is_checkraise_spot = (', "return ('raise', _amt), eq, need")
 sp('nonvalue_raise_ev_gate', 'plan', 'act_with_plan', "if (plan in ('bluff_2street', 'semibluff', 'giveup', 'river_bluff')", 'target=_amt)')
@@ -714,7 +695,8 @@ sp('checkraise_river_decision', 'plan', 'checkraise_decision', "if street == 'ri
 sp('checkraise_flop_decision', 'plan', 'checkraise_draw_street_probability')
 sp('river_thin_value', 'plan', 'river_fix')
 sp('river_thin_value', 'plan', 'river_value_reassessment')
-sp('value_when_called_strength', 'plan', 'river_value_reassessment', 'if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):', "'리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'")
+sp('value_when_called_strength', 'plan', 'river_value_reassessment', '_thin_eq, _thin_n = continue_range_call_equity(', "'리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'")  # stage9 B3 (L119)
+sp('value_when_called_strength', 'plan', 'continue_range_call_equity')  # stage9 B3 (L119)
 sp('plan_revision_lifecycle', 'plan', 'update_plan')
 sp('pure_bluff_line_selection', 'plan', '_blocker_score_bluff_factor')
 sp('pure_bluff_line_selection', 'plan', '_blocker_net_bluff_factor')
@@ -834,13 +816,59 @@ for f in ('draw_type', 'make_player', 'Field.__init__', 'Field.descriptor', 'Fie
 
 # ---- explicit spans replacing umbrella coverage (decomposed functions) ----
 sp('perceived_icm_pressure', 'plan', 'calldown_need', "if profile.get('concepts') and bf and bf > 1.0 and not _bf_gated:", 'bf = PS.icm_bf(profile, bf)')
-sp('calldown_required_share', 'plan', 'calldown_need', '_p0 = max(1.0, float(pot) - float(tocall))', 'float(objective_breakeven) * float(bf) * _size_ratio)')
 sp('calldown_required_share', 'plan', 'calldown_need', 'need = max(0.01, min(0.97, need))', 'call_need = max(0.01, min(0.95, call_need))')
 sp('hero_made_contribution', 'plan', 'calldown_need', 'made_now = bot.made_strength(hero, board) if board else 0')
+# ---- stage9 B3: plan postflop helpers (semantic-only extraction, ea07ec4 -> B3) ----
+sp('self_hand_overconfidence_bias', 'plan', 'self_strength_bias_shift')  # stage9 B3 (L105)
+sp('potcontrol_disposition', 'plan', 'potcontrol_disposition')  # stage9 B3
+sp('value_when_called_strength', 'plan', 'continue_range_commit_strength')  # stage9 B3 (L115)
+sp('value_when_called_strength', 'plan', 'make_plan', '_commit, _commit_rel = continue_range_commit_strength(', "_so['commit_rel'] = round(float(_commit_rel), 3)")  # stage9 B3
+sp('multiway_value_threshold_shift', 'plan', 'multiway_value_thresholds')  # stage9 B3
+sp('read_value_threshold_shift', 'plan', 'read_value_threshold_shift')  # stage9 B3
+sp('bluff_evidence_composite', 'plan', 'pure_bluff_evidence')  # stage9 B3
+sp('pure_bluff_line_selection', 'plan', 'pure_bluff_attempt_probability')  # stage9 B3
+sp('relative_strength_value_threshold_shift', 'plan', 'relative_strength_value_threshold_shift')  # stage9 B3
+sp('deep_one_pair_caution', 'plan', 'deep_one_pair_vulnerability')  # stage9 B3 (L118)
+sp('value_line_selection', 'plan', 'middle_value_two_street_context')  # stage9 B3 (L116)
+sp('value_line_selection', 'plan', 'middle_value_two_street_probability')  # stage9 B3 (L116)
+sp('blockbet_motive', 'plan', 'blockbet_probability')  # stage9 B3 (L124)
+sp('potcontrol_motive', 'plan', 'medium_potcontrol_probability')  # stage9 B3
+sp('semibluff_line_selection', 'plan', 'semibluff_line_probability')  # stage9 B3
+sp('bluff_sizing_camouflage', 'plan', 'semibluff_barrel_sizing')  # stage9 B3
+sp('calldown_required_share', 'plan', 'perceived_call_price_share')  # stage9 B3 (L145)
+sp('calldown_required_share', 'plan', 'calldown_need', '_p0 = max(1.0, float(pot) - float(tocall))', 'tocall, _tocall_seen, _p0, bf, objective_breakeven)')  # stage9 B3
+sp('monster_made_hand_raise', 'plan', 'paired_board_flush_raise_damp')  # stage9 B3
+sp('monster_made_hand_raise', 'plan', 'monster_raise_probability')  # stage9 B3
+sp('value_raise_sizing_from_commit', 'plan', 'value_raise_size_mult')  # stage9 B3
+sp('value_raise_frequency', 'plan', 'value_raise_probability')  # stage9 B3
+sp('value_raise_frequency', 'plan', 'decide_response', 'p = value_raise_probability(', "'밸류이나 콜 선택(상대가 팟을 키워줌)'")  # stage9 B3
+sp('semibluff_raise_frequency', 'plan', 'semibluff_raise_probability')  # stage9 B3
+sp('implied_odds_adjustment', 'plan', 'semibluff_implied_odds_credit')  # stage9 B3
+sp('value_raise_qualification', 'plan', 'value_raise_qualification')  # stage9 B3 (L147)
+sp('donk_suppression', 'plan', 'bluff_donk_suppression')  # stage9 B3 (L134)
+sp('probe_after_checkthrough', 'plan', 'bluff_donk_suppression', "if has_concepts and (plan_state or {}).get('opp_checked_prev'):", "supp *= max(0.25, 1.0 - 0.085*PS.sk(profile, 'probe'))")  # stage9 B3
+sp('potcontrol_bet_propensity', 'plan', 'potcontrol_bet_probability')  # stage9 B3 (L123)
+sp('potcontrol_bet_propensity', 'plan', 'decide_aggression', "if plan == 'pot_control':")  # stage9 B3
+sp('planned_bet_sizing', 'plan', 'planned_size_base')  # stage9 B3 (L138)
+sp('bluff_sizing_camouflage', 'plan', 'planned_size_base', "_bm = (plan_state or {}).get('bluff_mode')", "base *= float((plan_state or {}).get('bluff_mul') or 1.0)")  # stage9 B3
+sp('value_when_called_strength', 'plan', 'overbet_value_continue_rel')  # stage9 B3
+sp('value_when_called_strength', 'plan', 'overbet_frac', 'if value_line and opp_range and board:')  # stage9 B3
+sp('overbet_selection_core', 'plan', 'overbet_line_polarization')  # stage9 B3
+sp('overbet_selection_core', 'plan', 'overbet_selection_base')  # stage9 B3
+sp('river_overbet', 'plan', 'overbet_selection_base', "if street == 'river': p *= 1.35")  # stage9 B3
+sp('overbet_selection_core', 'plan', 'overbet_size')  # stage9 B3 (L015/L139/L140)
+sp('overbet_selection_core', 'plan', 'overbet_frac', "if street == 'flop': return None", 'return overbet_size(')  # stage9 B3
+sp('response_equity_basis', 'plan', 'response_equity')  # stage9 B3
+sp('opponent_sizing_normalization', 'plan', 'response_equity', "if _rdo['w'] > 0 and opp_est and opp_est.get('sz_mean'):", "sz = sz*(1.0 - _pull) + float(opp_est['sz_mean'])*_pull")  # stage9 B3
+sp('response_equity_basis', 'plan', 'act_with_plan', 'if tocall > 0:', 'eq = response_equity(')  # stage9 B3
+sp('raise_target_coordinate', 'plan', 'response_raise_target')  # stage9 B3
+sp('intent_chip_conversion', 'plan', 'intent_chip_amount')  # stage9 B3 (L153)
+sp('checkraise_flop_decision', 'plan', 'checkraise_street_skill')  # stage9 B3 (L149)
+sp('checkraise_turn_decision', 'plan', 'checkraise_decision', 'else:', 'plan, rel, outs, sk, profile.get(\'aggr\', 5))')  # stage9 B3: 'else:@@2' -> first else after skill extraction
+sp('checkraise_sizing', 'plan', 'checkraise_street_multiplier')  # stage9 B3
+sp('checkraise_sizing', 'plan', 'checkraise_target_amount')  # stage9 B3 (L152)
 sp('call_bias_reapplication', 'plan', 'calldown_need', "if profile.get('concepts') and board:", "return need, max(0.03, min(0.95, call_need))")  # stage9 B2: first occurrence moved to perceived_facing_price
-sp('overbet_selection_core', 'plan', 'overbet_frac', "if street == 'flop': return None", 'return round(min(2.2, base * rng.uniform(0.92, 1.10)), 2)')
 sp('checkraise_flop_decision', 'plan', 'checkraise_decision', 'rng = random.Random(seed)', "outs = plan_state.get('outs', 0)")
-sp('checkraise_turn_decision', 'plan', 'checkraise_decision', 'else:@@2', 'plan, rel, outs, sk, profile.get(\'aggr\', 5))')
 sp('continue_fold_blocker', 'plan', 'refresh', 'if opp_range and board:', "st['stackoff'] = _so")
 sp('strength_improvement_promotion', 'plan', 'refresh', "_prev_made = st.get('made') or 0", "_prev_rel = st.get('rel') or 0.0")
 sp('opponent_fold_constraint', 'plan', 'refresh', '_field_refresh = (', 'if int(n_opp or 1) > 1 else None)')
@@ -890,6 +918,7 @@ sp('exploit_read_permission', 'persona', 'read_evidence_amount')  # stage9 B2 (L
 
 # module-level knowledge/parameter tables -> concept (checked by part 3 of the checker)
 TABLES = {
+    'plan:PLAN_REQUIRED_CONCEPT': 'plan_concept_permission', 'plan:PLAN_DOWNGRADE': 'plan_concept_permission',  # stage9 B3 (L157)
     'plan:PLANS': 'dead_strategy_tables', 'plan:BUDGET': 'bet_budget', 'plan:SIZING': 'planned_bet_sizing',
     'preflop:PCT': 'legacy_preflop_ordering', 'preflop:RV': '@nonsemantic:card rank map',
     'preflop:OPENER_MULT': 'opener_position_attack_table', 'preflop:DEF_POS_MULT': 'dead_strategy_tables',

@@ -109,7 +109,7 @@ C = {
  'L146': ('NOW:B3', 'nonvalue raise EV 게이트의 적용 범위 명명(트리 확장은 LATER)'),
  'L147': ('NOW:B3', 'decide_response: 판단 vs 계획 기록 분리'),
  'L148': ('LATER', 'call bias 이중 반영 제거 = 행동 변화'),
- 'L149': ('PARTIAL', 'checkraise_draw_street_probability(1차). flop 결정 함수 경계는 B3'),
+ 'L149': ('NOW:B3', 'checkraise_draw_street_probability(1차) + checkraise_street_skill(B3)'),
  'L150': ('DONE', 'flop/turn 공유 확률 함수(1차)'),
  'L151': ('DONE', 'checkraise_river_probability(1차). river_bluff 라벨 누락은 LATER'),
  'L152': ('NOW:B3', 'checkraise_size: street 기준과 절대/추가 단위 분리'),
@@ -166,7 +166,7 @@ C = {
 }
 
 # 끝난 batch. 그 batch 의 NOW 항목은 DONE(batch) 로 표시한다.
-FINISHED = {'NOW:B1', 'NOW:B2'}
+FINISHED = {'NOW:B1', 'NOW:B2', 'NOW:B3'}
 
 BATCH = {
  'B1': 'preflop (preflop.py, gto.py 이름, persona preflop 공급)',

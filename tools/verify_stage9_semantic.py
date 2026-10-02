@@ -5,7 +5,7 @@ Runs one deterministic probe (randomised inputs, fixed seeds) in a temp copy of
 BASE's *.py/*.json files and in the working tree, then compares the JSON outputs
 byte for byte (including Random state digests and mutated record dicts).
 
-Usage: python tools/verify_stage9_semantic.py [BASE] [--probe b1|b2] [--mutate 'FILE|||OLD|||NEW']
+Usage: python tools/verify_stage9_semantic.py [BASE] [--probe b1|b2|b3] [--mutate 'FILE|||OLD|||NEW'] [--base-cache FILE]
   --mutate applies a textual change to a scratch copy of the working tree and
   must make the probe FAIL (proves the probe is sensitive to that site).
 """
@@ -232,6 +232,355 @@ print(json.dumps(out, sort_keys=True))
 '''
 
 
+PROBE_B3 = r'''
+import sys, json, random, hashlib, copy
+sys.path.insert(0, sys.argv[1])
+import persona as PS, ranges as R, bot as B, plan as PL
+
+def st(rng): return hashlib.sha1(repr(rng.getstate()).encode()).hexdigest()[:16]
+def rnd(x):
+    if isinstance(x, float): return round(x, 12)
+    if isinstance(x, dict): return {str(k): rnd(v) for k, v in sorted(x.items(), key=lambda kv: str(kv[0]))}
+    if isinstance(x, (list, tuple)): return [rnd(v) for v in x]
+    return x
+def H(x): return hashlib.sha1(json.dumps(rnd(x), sort_keys=True, default=str).encode()).hexdigest()[:20]
+
+g = random.Random(31337)
+PROFS = [PS.make_player(random.Random(3000 + i), field_quality=g.choice([0.3, 0.6, 0.9, 1.2]), pid=i) for i in range(40)]
+deck = [r + s for r in '23456789TJQKA' for s in 'shdc']
+PLANS = ['value_3street', 'value_2street', 'pot_control', 'block', 'semibluff', 'bluff_2street',
+         'river_bluff', 'giveup', 'showdown', 'trap', 'thin_river']
+out = {}
+
+def spot():
+    cards = g.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g.choice([3, 4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+    opp = g.sample(live, g.randint(60, 300))
+    if g.random() < .4:
+        opp = {tuple(c): g.choice([1.0, .5, .3, g.random()]) for c in opp}
+    mine = g.sample(live, g.randint(80, 250))
+    return hero, board, street, opp, mine
+
+def est():
+    return {'confidence': g.uniform(.2, 1.0), 'n': g.randint(0, 60), 'bluff': g.uniform(1, 10), 'aggr': g.uniform(1, 10),
+            'tight': g.uniform(1, 10), 'vpip': g.random(), 'pfr': g.random() * .4, 'cbet': g.random(), 'barrel': g.random(),
+            'ftb': g.random(), 'ftb_flop': g.random(), 'ftb_turn': g.random(), 'ftb_river': g.random(),
+            'sz_mean': g.uniform(.3, 1.2), 'sz_sd': g.uniform(.05, .5), 'sz_big': g.random() * .4,
+            'sz_river': g.uniform(.4, 1.5), 'sz_n': g.randint(0, 40), 'fold': g.random(), 'sizing_tell': g.uniform(0, 10)}
+
+rows = []
+states = []
+for i in range(450):
+    p = g.choice(PROFS); hero, board, street, opp, mine = spot()
+    n_opp = g.choice([1, 1, 2, 3])
+    oppr = None
+    if n_opp > 1 and g.random() < .6:
+        oppr = {'s%d' % k: (g.sample([c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)], 120)) for k in range(n_opp)}
+    s0 = PL.make_plan(hero, board, mine, opp, p, g.randint(400, 9000), g.randint(1500, 60000), street,
+                      seed=500 + i, n_opp=n_opp, to_act_behind=g.choice([0, 1, 2]),
+                      oop_vs_aggr=g.choice([True, False, None]), initiative=g.choice([True, False]),
+                      opp_est=(est() if g.random() < .6 else None), opp_stack_bb=g.choice([None, 15.0, 60.0]),
+                      tilt=g.random() * .3, bb_chips=g.choice([None, 200]), opp_ranges=oppr)
+    s0c = {k: v for k, v in s0.items() if k != 'my_range'}
+    rows.append(H(s0c))
+    states.append((s0, hero, board, street, opp, mine, p))
+out['make_plan'] = rows
+
+rows = []
+for i, (s0, hero, board, street, opp, mine, p) in enumerate(states):
+    plan = g.choice(PLANS)
+    ps = dict(s0); ps['opp_checked_prev'] = g.random() < .4; ps['flop_checked'] = g.random() < .4
+    rng = random.Random(i)
+    rows.append([rnd(PL.decide_aggression(p, board, street, plan, g.random(), g.choice([1, 2, 3]), g.choice([True, False]),
+                                          g.choice([True, False]), g.choice([0, 1, 2]), rng, opp_est=(est() if g.random() < .5 else None),
+                                          outs=g.choice([0, 4, 9]), plan_state=ps, oop_vs_aggr=g.choice([True, False, None]))), st(rng)])
+    ps2 = dict(s0); ps2['bluff_mode'] = g.choice([None, 'merged', 'barrel', 'probe', 'polarized', 'habit']); ps2['bluff_mul'] = g.uniform(.4, 1.5)
+    rng = random.Random(10000 + i)
+    rows.append([rnd(PL.decide_size(p, hero, board, street, plan, g.random(), opp, mine, g.randint(400, 9000),
+                                     g.randint(1500, 60000), rng, opp_est=(est() if g.random() < .5 else None),
+                                     nut=g.uniform(-.5, .8), deviating=g.random() < .2, stackoff=s0.get('stackoff'),
+                                     plan_state=ps2)), st(rng)])
+    rng = random.Random(20000 + i)
+    rows.append([rnd(PL.overbet_frac(p, hero, board, opp, mine, street, g.choice(PLANS), g.random(), rng,
+                                     opp_est=(est() if g.random() < .5 else None), nut=g.uniform(-.2, .8))), st(rng)])
+    rows.append([rnd(PL.perceived_rel(p, g.random(), hero, board, g.choice([0, 4, 8, 12]), g.choice([0, 1, 2, 3])))])
+    rows.append([PL._allowed(p, g.choice(PLANS), random.Random(i))])
+    rng = random.Random(30000 + i)
+    rows.append([rnd(PL.checkraise_decision(hero, board, p, dict(s0, plan=plan), 3000, 800, 20000, street, seed=i)),
+                 rnd(PL.checkraise_size(p, 3000, 800, g.randint(1000, 40000), board, street, rng)), st(rng)])
+    rng = random.Random(40000 + i)
+    rows.append([rnd(PL.bluff_mode(p, g.random(), g.random(), g.random(), est(), street, g.uniform(1, 15), rng)), st(rng),
+                 rnd(PL.target_commit(p, g.random(), g.choice([0, 1, 3, 5]), g.uniform(1, 12), street,
+                                      opp_stack_bb=g.choice([None, 20.0]), opp_eff=g.choice([None, .4, 1.0])))])
+out['aggr_size'] = rows
+
+rows = []
+for i, (s0, hero, board, street, opp, mine, p) in enumerate(states):
+    pot = g.randint(600, 12000); tocall = g.randint(200, max(201, pot // 2)); stack = g.randint(1000, 60000)
+    ps = copy.deepcopy({k: v for k, v in s0.items()})
+    ps['plan'] = g.choice(PLANS)
+    rc = {'facing_target': g.choice([None, tocall, tocall + 200]), 'facing_kind': g.choice(['bet', 'raise']),
+          'facing_seat': g.choice([None, 's0'])}
+    rk = g.choice([None, 'face_bet', 'check_then_face_bet', 'aggressor_backaction'])
+    cv = None if g.random() < .6 else {'breakeven_equity': g.uniform(.1, .5), 'effective_equity': g.random()}
+    a = PL.act_with_plan(hero, board, p, ps, pot, tocall, stack, street, initiative=g.choice([True, False]),
+                         opp_range=(opp if g.random() < .85 else None), bf=g.choice([1.0, 1.4]), seed=7000 + i,
+                         n_opp=g.choice([1, 2]), to_act_behind=g.choice([0, 1]), opp_est=(est() if g.random() < .6 else None),
+                         facing_seat='s0', checked_before=g.random() < .3, can_raise=g.random() < .85,
+                         checkraise_seed=i, checkraise_size_seed=i + 1, facing_size_frac=g.choice([None, .5, 1.0, 2.5]),
+                         hero_contrib=g.choice([0, 0, 300]), response_kind=rk, response_context=rc, call_value=cv,
+                         size_shape_seed=i + 2)
+    rows.append([rnd(list(a)), H({k: v for k, v in ps.items() if k != 'my_range'})])
+    ps3 = dict(s0); ps3['intents'] = {street: {'act': g.choice(['bet', 'check']), 'size': g.choice([0.0, .005, .33, .75, 1.4]), 'src': ''}}
+    a3 = PL.act_with_plan(hero, board, p, ps3, pot, 0, stack, street, seed=8000 + i, size_shape_seed=i + 3)
+    rows.append([rnd(list(a3)), H(ps3.get('deviations'))])
+    rng = random.Random(9000 + i)
+    rows.append([rnd(PL.calldown_need(p, hero, board, street, pot, tocall, g.choice([1.0, 1.3]), None, i % 3,
+                                      est() if g.random() < .7 else None, n_opp=1 + i % 2, rng=rng,
+                                      objective_breakeven=(g.random() * .5 if i % 2 else None),
+                                      facing_size_frac=g.choice([None, .5, 1.0, 2.5, 4.0]))), st(rng)])
+out['response'] = rows
+
+rows = []
+for i, (s0, hero, board, street, opp, mine, p) in enumerate(states[:250]):
+    st2 = PL.refresh(copy.deepcopy(s0), hero, board, opp, p, g.randint(400, 9000), g.randint(1500, 60000), street,
+                     n_opp=1, seed=600 + i, opp_est=(est() if g.random() < .5 else None), my_range=mine)
+    rows.append(H({k: v for k, v in st2.items() if k != 'my_range'}))
+out['refresh'] = rows
+
+# ---- river_fix / refresh next-street: continue-range call equity (L119) ----
+rows = []
+g3 = random.Random(4242)
+for i, (s0, hero, board, street, opp, mine, p) in enumerate(states):
+    stt = copy.deepcopy(s0)
+    if i % 2 == 0:
+        stt['plan'] = g3.choice(['bluff_2street', 'river_bluff', 'semibluff'])
+    oppr = None; n_opp = 1
+    if i % 3 == 0:
+        live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+        oppr = {'s0': g3.sample(live, 90), 's1': g3.sample(live, 90)}; n_opp = 2
+    if len(board) == 5:
+        if i % 2 == 1:
+            stt['plan'] = g3.choice(['showdown', 'pot_control', 'value_2street', 'thin_river'])
+        rng = random.Random(i)
+        r = PL.river_fix(stt, hero, board, profile=p, opp_range=opp, rng=rng, n_opp=n_opp, opp_ranges=oppr)
+        rows.append([H({k: v for k, v in (r or {}).items() if k != 'my_range'} if isinstance(r, dict) else r),
+                     H({k: v for k, v in stt.items() if k != 'my_range'}), st(rng)])
+    else:
+        nxt = [c for c in deck if c not in set(hero) | set(board)]
+        b2 = board + [g3.choice(nxt)]
+        s2 = ['flop', 'turn', 'river'][len(b2) - 3]
+        r = PL.refresh(stt, hero, b2, opp, p, g3.randint(400, 9000), g3.randint(1500, 60000), s2,
+                       n_opp=n_opp, seed=900 + i, opp_est=None, my_range=mine, opp_ranges=oppr)
+        rows.append(H({k: v for k, v in r.items() if k != 'my_range'}))
+out['next_street'] = rows
+
+# ---- mp_sweep: make_plan branch ladder with stubbed equity + swept RNG draw ----
+# The probabilistic plan gates (rng.random() < p) are invisible to 450 random
+# draws when p moves by ~0.01.  Here every rng.random() returns the same swept
+# value u, and the expensive equity estimators are replaced by deterministic
+# hash stubs (identical for BASE and working tree), so the branch boundary in u
+# is observed directly.
+import types, random as _random
+_orig = (PL._eq_vs, PL._eq_current, PL._decision_relative_strength, PL.random)
+def _hu(*xs):
+    return int(hashlib.sha1(repr(xs).encode()).hexdigest()[:12], 16) / float(16**12)
+SW = {'u': 0.5}
+class _SweepRandom(_random.Random):
+    def random(self):
+        return SW['u']
+_shim = types.ModuleType('random'); _shim.__dict__.update(_random.__dict__); _shim.Random = _SweepRandom
+PL.random = _shim
+PL._eq_vs = lambda hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None: _hu('eq', tuple(hero), tuple(board), n_opp)
+PL._eq_current = lambda hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None: _hu('eqc', tuple(hero), tuple(board), n_opp) * 0.8
+PL._decision_relative_strength = (lambda hero, board, opp_range, n_opp=1, opp_ranges=None, sims=600, seed=None:
+                                  (_hu('rel', tuple(hero), tuple(board), len(opp_range or ())), {'src': 'stub'}))
+g2 = random.Random(777)
+rows = []
+GRID = [0.0025 + 0.005*k for k in range(200)]
+SWEEP_SPOTS, COMMIT_SPOTS, RESP_SPOTS = 240, 120, 270
+for i in range(SWEEP_SPOTS):
+    p = g2.choice(PROFS) if i % 3 else PROFS[0]
+    if i % 4 == 0:   # flush-draw spot (outs >= 8) for the semibluff gate
+        su = g2.choice('shdc'); ranks = g2.sample('23456789TJQKA', 4)
+        hero = [ranks[0] + su, ranks[1] + su]
+        other = [c for c in deck if c[1] != su and c not in hero]
+        board = [ranks[2] + su, ranks[3] + su] + g2.sample(other, g2.choice([1, 2]))
+    else:
+        cards = g2.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g2.choice([3, 4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+    opp = g2.sample(live, g2.randint(40, 220)); mine = g2.sample(live, 120)
+    kw = dict(seed=i, n_opp=g2.choice([1, 1, 1, 2]), to_act_behind=g2.choice([0, 0, 1]),
+              oop_vs_aggr=g2.choice([True, True, False, None]), initiative=g2.choice([False, False, True]),
+              opp_est=(est() if g2.random() < .5 else None), opp_stack_bb=None, tilt=0.0, bb_chips=None)
+    pot = g2.randint(400, 6000); stack = g2.randint(800, 60000)
+    seq = []
+    for u in GRID:
+        SW['u'] = u
+        s0 = PL.make_plan(hero, board, mine, opp, p, pot, stack, street, **kw)
+        seq.append((s0.get('plan'), s0.get('bluff_mode'), rnd(s0.get('stackoff')), s0.get('commit_rel'),
+                    H(s0.get('why'))))
+    # compress: boundaries where the outcome changes along u
+    bnd = [(round(GRID[k], 4), H(seq[k])) for k in range(len(seq)) if k == 0 or seq[k] != seq[k-1]]
+    rows.append(bnd)
+out['mp_sweep'] = rows
+
+# commit boundary of continue_range_commit_strength (_commit > 0.30): sweep the
+# target commit itself across the threshold; commit_rel/stackoff expose the branch.
+_tc = PL.target_commit
+rows = []
+SW['u'] = 0.5
+for i in range(COMMIT_SPOTS):
+    p = PROFS[i % len(PROFS)]
+    cards = g2.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g2.choice([3, 4])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+    opp = g2.sample(live, g2.randint(60, 220)); mine = g2.sample(live, 120)
+    seq = []
+    for k in range(21):
+        cval = 0.290 + 0.001*k
+        PL.target_commit = (lambda cv: (lambda *a, **kw: cv))(cval)
+        s0 = PL.make_plan(hero, board, mine, opp, p, 1000, 30000, street, seed=i, n_opp=1,
+                          to_act_behind=0, oop_vs_aggr=None, initiative=True, opp_est=None)
+        seq.append((round(cval, 3), s0.get('commit_rel'), rnd(s0.get('stackoff'))))
+    rows.append(H(seq))
+PL.target_commit = _tc
+PL._eq_vs, PL._eq_current, PL._decision_relative_strength, PL.random = _orig
+out['commit_boundary'] = rows
+
+# ---- resp_sweep: decide_response gates with swept RNG draw + stubbed equity ----
+_beq = B.equity_vs_combos
+B.equity_vs_combos = lambda hero, board, pools, sims=400, seed=None: _hu('eqc2', tuple(hero), tuple(board), sum(len(p) for p in pools))
+PL._decision_relative_strength = (lambda hero, board, opp_range, n_opp=1, opp_ranges=None, sims=600, seed=None:
+                                  (_hu('rel', tuple(hero), tuple(board), len(opp_range or ())), {'src': 'stub'}))
+rows = []
+RPLANS = ['semibluff', 'value_3street', 'value_2street', 'trap', 'bluff_2street', 'giveup', 'river_bluff', 'pot_control', 'showdown']
+for i in range(RESP_SPOTS):
+    p = PROFS[i % len(PROFS)]
+    if i % 3 == 0:
+        p = dict(p); p['concepts'] = {}
+    cards = g2.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g2.choice([3, 4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+    opp = g2.sample(live, g2.randint(40, 220))
+    plan = RPLANS[i % len(RPLANS)]
+    ps = {'rel': g2.random(), 'outs': g2.choice([0, 8, 9, 12]), 'made': g2.choice([0, 1, 2, 5]),
+          'stackoff': g2.choice([None, {'commit': g2.uniform(.2, 1.0)}])}
+    eq = g2.random(); need = g2.uniform(.1, .5)
+    pot = g2.randint(600, 9000); tocall = g2.randint(100, pot); stack = g2.randint(500, 60000)
+    rc = {'facing_target': g2.choice([None, tocall, tocall + 300]), 'facing_contrib': tocall, 'facing_seat': None}
+    kw = dict(allow_raise=g2.random() < .85, call_eq=(g2.random() if i % 4 == 0 else None),
+              call_need=(g2.uniform(.1, .5) if i % 4 == 0 else None), n_opp=g2.choice([1, 1, 2]),
+              rel_seed=i, response_context=rc, hero_contrib=g2.choice([0.0, 200.0]))
+    seq = []
+    for u in GRID:
+        SW['u'] = u
+        r = PL.decide_response(p, hero, board, street, plan, dict(ps), eq, need,
+                               PL.bot.made_strength(hero, board), opp, pot, tocall, stack,
+                               (i % 5 == 0), _SweepRandom(0), **kw)
+        seq.append(H(r))
+    rows.append([(round(GRID[k], 4), seq[k]) for k in range(len(seq)) if k == 0 or seq[k] != seq[k-1]])
+B.equity_vs_combos = _beq
+PL._decision_relative_strength = _orig[2]
+out['resp_sweep'] = rows
+AGGR_SPOTS, OB_SPOTS, VR_SPOTS, CKR_SPOTS = 150, 140, 300, 300
+
+# ---- mp_sweep_aggr: high-aggression OOP no-initiative spots (blockbet cap) ----
+# Appended after the other sections with its own RNG so earlier rows are unchanged.
+PL._eq_vs = lambda hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None: _hu('eq', tuple(hero), tuple(board), n_opp)
+PL._eq_current = lambda hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None: _hu('eqc', tuple(hero), tuple(board), n_opp) * 0.8
+PL._decision_relative_strength = (lambda hero, board, opp_range, n_opp=1, opp_ranges=None, sims=600, seed=None:
+                                  (_hu('rel', tuple(hero), tuple(board), len(opp_range or ())), {'src': 'stub'}))
+PL.random = _shim
+g4 = random.Random(99)
+rows = []
+for i in range(AGGR_SPOTS):
+    p = dict(PROFS[i % len(PROFS)]); p['aggr'] = g4.uniform(8.0, 10.0); p['bluff'] = g4.uniform(1.0, 3.0)
+    cards = g4.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g4.choice([3, 4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+    opp = g4.sample(live, g4.randint(40, 220)); mine = g4.sample(live, 120)
+    seq = []
+    for u in GRID:
+        SW['u'] = u
+        s0 = PL.make_plan(hero, board, mine, opp, p, 1500, 30000, street, seed=i, n_opp=1, to_act_behind=0,
+                          oop_vs_aggr=True, initiative=False, opp_est=None, opp_stack_bb=None, tilt=0.0, bb_chips=None)
+        seq.append((s0.get('plan'), H(s0.get('why'))))
+    rows.append([(round(GRID[k], 4), H(seq[k])) for k in range(len(seq)) if k == 0 or seq[k] != seq[k-1]])
+PL._eq_vs, PL._eq_current, PL._decision_relative_strength, PL.random = _orig
+out['mp_sweep_aggr'] = rows
+
+# ---- ob_sweep: overbet_frac selection with swept draw (fine grid) ----
+_rs = PL.relative_strength
+PL.relative_strength = lambda hero, board, opp_range=None: _hu('rs', tuple(hero), tuple(board), len(opp_range or ()))
+GRID_OB = [0.0005 + 0.001*k for k in range(400)]
+OBPLANS = ['value_3street', 'value_2street', 'trap', 'thin_river', 'bluff_2street', 'river_bluff', 'semibluff']
+rows = []
+for i in range(OB_SPOTS):
+    p = PROFS[i % len(PROFS)]
+    cards = g4.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g4.choice([4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+    opp = g4.sample(live, g4.randint(40, 220)); mine = g4.sample(live, 120)
+    plan = OBPLANS[i % len(OBPLANS)]
+    rel = g4.random(); nut = g4.uniform(-0.2, 0.8)
+    seq = []
+    for u in GRID_OB:
+        SW['u'] = u
+        seq.append(PL.overbet_frac(p, hero, board, opp, mine, street, plan, rel, _SweepRandom(0), opp_est=None, nut=nut))
+    rows.append([(round(GRID_OB[k], 4), seq[k]) for k in range(len(seq)) if k == 0 or seq[k] != seq[k-1]])
+PL.relative_strength = _rs
+out['ob_sweep'] = rows
+
+# ---- vr_boundary: value-raise qualification with continue-range equity near 0.5 ----
+_beq = B.equity_vs_combos
+B.equity_vs_combos = lambda hero, board, pools, sims=400, seed=None: 0.49 + 0.02*_hu('vr', tuple(hero), tuple(board), sum(len(p) for p in pools))
+PL._decision_relative_strength = (lambda hero, board, opp_range, n_opp=1, opp_ranges=None, sims=600, seed=None:
+                                  (_hu('rel', tuple(hero), tuple(board), len(opp_range or ())), {'src': 'stub'}))
+rows = []
+for i in range(VR_SPOTS):
+    p = PROFS[i % len(PROFS)]
+    cards = g4.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g4.choice([3, 4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    live = [c for c in R._SORTED if c[0] not in set(board) and c[1] not in set(board)]
+    opp = g4.sample(live, g4.randint(40, 220))
+    plan = ['value_3street', 'value_2street', 'trap'][i % 3]
+    ps = {'rel': g4.uniform(.5, 1.0), 'outs': 0, 'made': 2, 'stackoff': g4.choice([None, {'commit': g4.uniform(.3, 1.0)}])}
+    pot = g4.randint(600, 6000); tocall = g4.randint(100, pot // 2); stack = g4.randint(5000, 60000)
+    rc = {'facing_target': tocall, 'facing_contrib': tocall, 'facing_seat': None}
+    res = []
+    for u in (0.1, 0.5, 0.9):
+        SW['u'] = u
+        res.append(H(PL.decide_response(p, hero, board, street, plan, dict(ps), g4.uniform(.7, .95), g4.uniform(.1, .3),
+                                        PL.bot.made_strength(hero, board), opp, pot, tocall, stack, False, _SweepRandom(0),
+                                        allow_raise=True, n_opp=1, rel_seed=i, response_context=rc, hero_contrib=0.0)))
+    rows.append(res)
+B.equity_vs_combos = _beq
+PL._decision_relative_strength = _orig[2]
+out['vr_boundary'] = rows
+
+# ---- ckr_extra: checkraise size with large facing bets (pot cap binds) and
+#      no-concept / unknown-type skill fallback ----
+rows = []
+for i in range(CKR_SPOTS):
+    p = PROFS[i % len(PROFS)]
+    pot = g4.randint(500, 6000); tocall = int(pot * g4.uniform(0.3, 3.0)); stack = g4.randint(tocall * 3, tocall * 30)
+    cards = g4.sample(deck, 5); board = cards[:g4.choice([3, 4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    rng = random.Random(70000 + i)
+    rows.append([PL.checkraise_size(p, pot, tocall, stack, board, street, rng), st(rng)])
+    pn = dict(p); pn['concepts'] = {}; pn['type'] = g4.choice(['__unknown__', p.get('type')])
+    cards = g4.sample(deck, 7); hero = cards[:2]; board = cards[2:2 + g4.choice([3, 4, 5])]
+    street = ['flop', 'turn', 'river'][len(board) - 3]
+    psn = {'plan': g4.choice(PLANS), 'rel': g4.random(), 'outs': g4.choice([0, 8, 12])}
+    rows.append(rnd(PL.checkraise_decision(hero, board, pn, psn, 3000, 800, 20000, street, seed=i)))
+out['ckr_extra'] = rows
+print(json.dumps(out, sort_keys=True))
+'''
+
+
 def run(root, probe=None):
     with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False) as f:
         f.write(probe or PROBE)
@@ -265,11 +614,27 @@ def main():
     mutate = None
     probe = PROBE
     if '--probe' in args:
-        i = args.index('--probe'); probe = {'b1': PROBE, 'b2': PROBE_B2}[args[i + 1]]; del args[i:i + 2]
+        i = args.index('--probe'); probe = {'b1': PROBE, 'b2': PROBE_B2, 'b3': PROBE_B3}[args[i + 1]]; del args[i:i + 2]
     if '--mutate' in args:
         i = args.index('--mutate'); mutate = args[i + 1].split('|||', 2); del args[i:i + 2]
+    cache = None
+    if '--base-cache' in args:
+        i = args.index('--base-cache'); cache = args[i + 1]; del args[i:i + 2]
     base = args[0] if args else 'HEAD'
-    before = run(copy_tree(src_ref=base), probe)
+    # BASE output depends only on (resolved base commit, probe text): cache it so
+    # mutation runs only execute the working-tree side.
+    import hashlib as _hl
+    key = subprocess.check_output(['git', 'rev-parse', base], cwd=ROOT, text=True).strip() + ':' + \
+        _hl.sha256(probe.encode()).hexdigest()
+    before = None
+    if cache and os.path.exists(cache):
+        c = json.load(open(cache))
+        if c.get('key') == key:
+            before = c['out']
+    if before is None:
+        before = run(copy_tree(src_ref=base), probe)
+        if cache:
+            json.dump({'key': key, 'out': before}, open(cache, 'w'))
     if mutate:
         work = copy_tree(src_dir=ROOT)
         fp = os.path.join(work, mutate[0]); txt = open(fp).read()

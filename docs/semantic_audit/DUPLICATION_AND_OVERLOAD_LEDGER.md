@@ -278,3 +278,59 @@
 | ID | 내용 | 판정 |
 |---|---|---|
 | L-S9-02 | 관찰자가 복원한 상대 레인지에는 hero 카드가 들어간 콤보가 남아 있다. baseline 짧은 sim(시드 11, 15핸드 상한) 에서 `blocker_score` 호출 624건 중 612건이 그랬다. equity 계산은 dead 카드를 따로 거르고, `blocker_score` 는 이 콤보로 블로커 몫을 잰다(486건이 0 이 아님). 의도된 계약으로 보이지만 '레인지 폭'을 콤보 수로 세는 소비처가 hero 카드 콤보를 함께 세는지는 B3 에서 확인한다 | KEEP(기록) |
+
+## 9단계 B3 (plan 포스트플랍) — 처리 상태
+
+기준 `ea07ec4`. 행동 보존 검증 결과는 `REFACTOR_AND_VERIFICATION.md` 8차. 전략 계수, 임계값, 행동 의미는 바꾸지 않았다. 의미 변경이 필요한 나머지 부분은 아래 '후속' 표에 따로 적었다.
+
+| ID | 상태 | 처리 |
+|---|---|---|
+| L015 | DONE | `overbet_frac` 을 네 단계로 나눴다: `overbet_value_continue_rel`(콜당했을 때 강도) / `overbet_line_polarization`(라인 양극성) / `overbet_selection_base`(선택 확률, river ×1.35) / `overbet_size`(사이즈 + rng 한 번). street 의미는 selection 단계에 드러난다 |
+| L016 | DONE(문서) | `bluff_mode` 의 'probe' 는 사이즈 모드이고 포커의 프로브 벳 기회가 아니다. docstring 에 명시. 라벨 문자열 변경은 기록되는 상태값이 바뀌므로 후속 L-S9-05 |
+| L105 | DONE | `self_strength_bias_shift`(overpair_love/draw_love/sticky 가산)를 분리. `perceived_rel` = clamp(rel + shift) |
+| L115 | DONE | make_plan 밸류 사다리의 문턱 조각을 함수로 분리: `multiway_value_thresholds`, `read_value_threshold_shift`, `relative_strength_value_threshold_shift`, `middle_value_two_street_context/probability`. 하나의 일반 강도로 합치지 않음 |
+| L116 | DONE | make_plan 중간 밸류 맥락(`middle_value_two_street_context`)과 decide_response 의 페어드 보드 플러시 감쇠(`paired_board_flush_raise_damp`)를 각각 이름 붙여 분리. 문턱이 달라 합치지 않음 |
+| L118 | DONE | `deep_one_pair_vulnerability`. decide_response 쪽에는 같은 계산이 없다(확인) |
+| L119 | DONE | `continue_range_commit_strength`(make_plan 커밋 재측정), `continue_range_call_equity`(river 얇은 밸류와 개선된 블러프 재판정에 중복돼 있던 동일 블록을 MERGE, 값 동일), `overbet_value_continue_rel`. 네 소비처의 지표(rel 와 eq)와 문턱(0.50, 0.54) 통일은 후속 L-S9-03 |
+| L120 | DONE | `semibluff_line_probability`, `semibluff_barrel_sizing`(make_plan) / `semibluff_raise_probability`, `semibluff_implied_odds_credit`(decide_response). refresh 의 드로우 소멸 해제는 다른 질문이라 유지 |
+| L121 | DONE | 동기·증거 `pure_bluff_evidence` / 실행 확률 `pure_bluff_attempt_probability` / 위장은 기존 `bluff_mode` |
+| L122 | DONE | `potcontrol_disposition`(성향 스칼라), `medium_potcontrol_probability`(중간강도 자리의 확률) |
+| L123 | DONE | `potcontrol_bet_probability` → (p, why). 강도 0.30 미만 / 뒤에 어그레서 / 기본 세 갈래 |
+| L124 | DONE | `blockbet_probability`. 플랍 비이니셔티브 동크 억제(`bluff_donk_suppression`)와는 다른 함수로 남김 |
+| L134 | DONE | `bluff_donk_suppression`. outs ≥ 8 (턴 드로우) 완화와 체크스루 후 프로브 완화를 한 곳에서 본다 |
+| L138 | DONE | `planned_size_base`(계획 → 기준 사이즈, bluff_mode merged/barrel/배수) |
+| L139 | DONE | L015 와 같은 분리. 턴/리버 차이는 `overbet_selection_base` 의 street 인자 |
+| L140 | DONE | 분리 완료. 멀티웨이에서도 HU `relative_strength` 와 합집합 레인지를 쓰는 의미 문제는 후속 L-S9-04 |
+| L142 | DONE(문서) | `target_commit` 의 쓰이지 않는 `s`/`street` 인자를 docstring 에 명시. 시그니처는 유지 |
+| L144 | DONE(문서) | L016 과 같다. 이름 변경은 L-S9-05 |
+| L145 | DONE | `perceived_call_price_share` → (need_true, call_need_true). docstring 에 층(사실 가격 → 인지 가격 → 주관 문턱)을 적고, `read` 인자가 쓰이지 않음을 명시 |
+| L146 | DONE(문서) | `_nonvalue_raise_ev_gate` 범위(HU 콜/폴드만, 멀티웨이 트리 없음, 모르면 allow). hero 카드 질량 문제는 L-S9-02a |
+| L147 | DONE | decide_response 의 판단 조각을 분리: `monster_raise_probability`, `value_raise_size_mult`, `value_raise_probability`, `value_raise_qualification`(→ ok, eq_cont, fair_share). plan_state 기록은 호출부에 그대로 둠 — 기록 위치 이동은 후속 L-S9-06 |
+| L149 | DONE | `checkraise_street_skill`(개념 street 별 / 아키타입 기본 2) |
+| L152 | DONE | `checkraise_street_multiplier`, `checkraise_target_amount`. rng.uniform 순서는 `checkraise_size` 에 유지. 단위 감사 결과: tocall 기준 금액이다. 세션 경로(`check_then_face_bet`)에서는 hero_contrib 가 0 이라 절대 target 과 같다(action_events._response_kind 로 확인) |
+| L153 | DONE | `response_equity`(3단계 대체 경로), `response_raise_target`, `intent_chip_amount`. act_with_plan 이 여전히 decide_response 를 부르는 구조(추론과 실행의 결합)는 후속 L-S9-06 |
+| L157 | DONE | 개념 게이트 표를 모듈 상수 `PLAN_REQUIRED_CONCEPT` / `PLAN_DOWNGRADE` 로 꺼냄. trap 이 generic 'checkraise' 별칭을 쓰는 문제는 후속 L-S9-07 |
+
+### 후속(의미 변경 필요 — 구조분리 기준점 커밋에서는 수정하지 않음)
+
+사용자 결정(목적 변경)에 따라 아래 LATER 는 미루지 않는다. B3 통합 단계에서 모두 판정하고 최종 실행 경로에 반영한다.
+
+| ID | 내용 | 분류 |
+|---|---|---|
+| L-S9-02a | `_nonvalue_raise_ev_gate` 의 `fold_p` 가 hero/board 와 겹치는 콤보 질량을 분모와 분자에 넣는다. 이 hero 패에 조건을 건 fold 확률이 아니다. 봉인 sim 에서 219회 중 2회 허용 → 거부로 뒤집힘. 재현 사례와 영향 경로는 `stage9/L_S9_02_HERO_CARD_COUNTING.md` | LATER(행동 변화) |
+| L-S9-03 | 'continue range 대비 강도'를 네 곳이 다른 지표와 문턱으로 묻는다: 커밋 rel(min) / 오버벳 HU rel @1.15 / 리버 얇은 밸류 eq ≥ 0.50 / 개선된 블러프 eq ≥ 0.54 + rel ≥ 0.55 | LATER |
+| L-S9-04 | 오버벳 밸류 재측정이 멀티웨이에서도 합집합 opp_range 와 HU `relative_strength` 를 쓴다 | LATER |
+| L-S9-05 | `bluff_mode` 의 'probe' 라벨 → 사이즈 모드 이름으로 변경(plan_state 기록값이 바뀜) | LATER(RENAME, 기록 변화) |
+| L-S9-06 | decide_response 와 act_with_plan 에 판단, 계획 기록, 실행이 남아 있다(ARCH). 함수 경계 이동은 세션 호출 구조를 바꾼다 | LATER |
+| L-S9-07 | `_allowed` 에서 trap 이 generic 'checkraise' 별칭(플랍 능력)으로 허용을 묻는다 | LATER |
+| L-S9-08 | `_eq_current` docstring 의 '기록 전용'은 사실이 아니었다. make_plan 의 `_sd_eq`(블러프/쇼다운 분기)에 쓰인다. docstring 을 실제 소비에 맞게 고쳤다(코드 불변). 판단 근거로 미래 eq 대신 현재 eq 를 쓰는 것은 의도된 설계(주석 근거)라 KEEP | KEEP(문서 수정) |
+
+### L-S9-02 추적 결론
+
+- 레인지를 액션으로 자르는 것(`_bet/_call/_continue/_check_range`, `narrow`)은 상대 전략 모델이다. hero 패와 무관하게 전체 위에서 자르는 것이 맞다(KEEP).
+- equity 와 relative_strength 는 이미 hero/board 를 거른다(KEEP).
+- 블로커 계산은 hero 카드와의 상호작용을 일부러 본다(KEEP).
+- 개수 기준 안전장치 두 곳은 측정상 영향이 없었다(기록):
+  - `narrow_by_actions` 바닥: 2,697건 중 1건
+  - `response_equity` 2단계: 1,267건 중 0건
+- 실제 왜곡은 `_nonvalue_raise_ev_gate` 의 fold_p 한 곳이다 → L-S9-02a.

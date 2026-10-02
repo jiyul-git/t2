@@ -176,3 +176,42 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - `tools/check_semantic_completeness.py`: site 1,136 / 함수 574 / 상수 표 84, 미소유 0.
 - baseline sim(시드 11/12, 1,149핸드): 지문이 R2 봉인값과 같다(`e6d8b5e5…`, `c13a5bf4…`).
 - 23-gate: 통과·실패 집합(17/6)과 각 게이트의 마지막 출력 줄이 기준과 같다.
+
+## 8차 — 9단계 B3 (plan 포스트플랍 semantic-only refactor)
+
+기준 `ea07ec4`. 항목별 상태는 ledger 의 "9단계 B3" 절. 전략 계수, 임계값, 행동 의미는 바꾸지 않았다. RNG 를 소비하는 단락 평가(`... and rng.random() < p`)는 호출부에 그대로 두고, 확률값 계산만 함수로 뺐다.
+
+| 추출/명명 | 이전 위치 | 질문 |
+| --- | --- | --- |
+| `self_strength_bias_shift` | `perceived_rel` | 자기 패 과신 편향 가산(L105) |
+| `potcontrol_disposition`, `medium_potcontrol_probability` | make_plan | 팟컨트롤 성향 / 중간강도 자리 확률(L122) |
+| `continue_range_commit_strength` | make_plan | 커밋 목표를 continue range 대비 강도로 재측정(L119) |
+| `continue_range_call_equity` | `river_value_reassessment` + `refresh` 중복 블록 | continue range 대비 equity(MERGE, 값 동일, L119) |
+| `multiway_value_thresholds`, `read_value_threshold_shift`, `relative_strength_value_threshold_shift` | make_plan | 밸류 사다리 문턱의 세 보정(L115) |
+| `deep_one_pair_vulnerability`, `middle_value_two_street_context/probability` | make_plan | 깊은 원페어 취약 / 중간 밸류 2스트리트 선택(L116/L118) |
+| `pure_bluff_evidence`, `pure_bluff_attempt_probability` | make_plan | 블러프 증거 / 실행 확률(L121) |
+| `blockbet_probability` | make_plan | OOP 블락벳(L124) |
+| `semibluff_line_probability`, `semibluff_barrel_sizing` | make_plan | 세미블러프 라인 / 배럴 사이즈(L120) |
+| `bluff_donk_suppression`, `potcontrol_bet_probability` | decide_aggression | 동크 억제·체크스루 프로브(L134) / 팟컨트롤 벳(L123) |
+| `planned_size_base` | decide_size | 계획 → 기준 사이즈(L138) |
+| `overbet_value_continue_rel`, `overbet_line_polarization`, `overbet_selection_base`, `overbet_size` | overbet_frac | 오버벳 네 단계(L015/L139/L140) |
+| `perceived_call_price_share` | calldown_need | 사실 가격 → 인지 가격 몫(L145) |
+| `paired_board_flush_raise_damp`, `monster_raise_probability`, `value_raise_size_mult`, `value_raise_probability`, `value_raise_qualification`, `semibluff_raise_probability`, `semibluff_implied_odds_credit` | decide_response | 응답 판단 조각(L147/L116/L120) |
+| `response_equity`, `response_raise_target`, `intent_chip_amount` | act_with_plan | 응답 equity 3단계 / 레이즈 target / intent 칩 환산(L153) |
+| `checkraise_street_skill`, `checkraise_street_multiplier`, `checkraise_target_amount` | checkraise_decision / checkraise_size | street 별 능력(L149) / 배수 / 칩 target(L152) |
+| `PLAN_REQUIRED_CONCEPT`, `PLAN_DOWNGRADE` | `_allowed` 내부 dict | 계획별 필요 개념 / 강등(L157) |
+| 문서만 | `bluff_mode`, `target_commit`, `_nonvalue_raise_ev_gate`, `_eq_current` | 'probe'=사이즈 모드 / 미사용 인자 / 범위 / 실제 소비처 |
+
+검증(구조분리 기준점):
+- `tools/verify_stage9_semantic.py ea07ec4 --probe b3`: 12개 구역의 출력과 RNG 상태가 바이트 동일하다.
+  - 일반 구역: make_plan 450 / aggr·size·overbet·checkraise 3,150 / 응답 1,350 / refresh 250 / 다음 street(river_fix, refresh) 450
+  - 경계 sweep 구역: make_plan 240 스팟 × 200 u / 고공격 블락벳 150 × 200 / 응답 270 × 200 / 오버벳 140 × 400 / 커밋 문턱 120 × 21 / 밸류 레이즈 0.5 경계 300 / 체크레이즈 600
+  - sweep 은 모든 `rng.random()` 이 같은 값 u 를 내도록 하고 비싼 equity 를 해시 stub 으로 바꾼다. stub 은 BASE 와 작업 트리에 똑같이 적용한다. 확률 gate 의 경계가 u 축에서 직접 보인다.
+  - `--base-cache` 를 추가했다. BASE 출력은 (기준 커밋, probe 본문)에만 의존하므로 캐시해서 다시 쓴다.
+- `--probe b1`, `--probe b2` 도 ea07ec4 대비 동일하다.
+- 뮤테이션 40/40 검출.
+  - 1차 실행에서 확률 gate 와 좁은 문턱의 0.01 변경 7개를 놓쳤다(무작위 450건에서는 거의 닿지 않음). 표적 구역을 추가한 뒤 모두 검출했다. 앞 구역은 그대로 두고 뒤에 붙였으므로 앞서 검출한 33개의 결과는 유효하다.
+- completeness: site 1,135 / 함수 611 / 상수 표 86, 미소유 0. ea07ec4 는 1,136 / 574 / 84.
+- 봉인 sim(시드 11/12, 1,149핸드): 최종 코드 지문이 `e6d8b5e5…` / `c13a5bf4…` 로 같다.
+- 23-gate: 통과·실패 집합(17/6)과 출력 줄이 기준과 같다.
+- L-S9-02 측정은 `tools/l_s9_02_measure.py`. 측정 실행 지문도 봉인값과 같다.

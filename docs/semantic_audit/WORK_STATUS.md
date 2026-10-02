@@ -116,3 +116,13 @@
   - 행동 동일성: probe 6,200건(+B1 probe 재통과), 뮤테이션 11/11, 봉인 sim 지문 동일, 23-gate 동일, completeness 0.
   - 기록: L-S9-02(복원 레인지에 hero 카드 콤보가 남음 — blocker_score 계약).
 - 다음: B3(plan 포스트플랍). 사용자 지시 전에는 시작하지 않는다.
+- **B3 구조분리(행동 보존) 기준점 완료.**
+  - 24개 + L149 를 함수 경계로 분리했다.
+  - 행동 동일성: probe 12개 구역(경계 sweep 포함), 뮤테이션 40/40, 봉인 sim 지문 동일, 23-gate 동일, completeness 0.
+  - L-S9-02 추적: 실제 왜곡은 `_nonvalue_raise_ev_gate` 의 fold_p 한 곳이다(219회 중 2회 판정 뒤집힘). 후속 L-S9-02a~08.
+- **목적 변경(사용자 결정):** B3~B6 는 감사와 동시에 본체 / Human Model 2차 / 3차를 하나의 최종 실행 경로로 통합한다.
+  - 충돌은 미루지 않는다. R2 의 미검증 9-max 수치 금지는 유지한다.
+  - 2차/3차는 이름이 아니라 실제 도입 commit 과 플래그로 식별한다.
+    - 2차: `T2_GTO_MEMORY_V2`(22487e9f)
+    - 3차: `T2_PREFLOP_REASONING_V3`, `T2_EXPLOIT_WEIGHT_V3`, `T2_CALC_NOISE_V3`, `T2_PREFLOP_TEMPER_DIRECTION_V3`, `T2_READ_RECENCY_V3`(114c846f 이후)
+- 다음: B3 통합 — L-S9-02a~07 판정과 B3 범위 플래그 경로(`plan.trap_judgment` 의 EXPLOIT_WEIGHT_V3).

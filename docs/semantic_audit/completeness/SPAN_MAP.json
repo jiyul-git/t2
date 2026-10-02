@@ -57,53 +57,11 @@
    "to": "s = s*_sa + 5.0*(1.0 - _sa)"
   },
   {
-   "concept": "potcontrol_disposition",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "pc = max(0.0, min(1.0, (profile['icm']",
-   "to": null
-  },
-  {
    "concept": "target_investment_fraction",
    "module": "plan",
    "func": "make_plan",
    "from": "_opp_eff = None",
    "to": "opp_eff=_opp_eff)"
-  },
-  {
-   "concept": "value_when_called_strength",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "_commit_rel = rel",
-   "to": "_so['commit_rel'] = round(float(_commit_rel), 3)"
-  },
-  {
-   "concept": "multiway_value_threshold_shift",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "mw = max(0, n_opp - 1)",
-   "to": "pcz = 0.50 + 0.06*mw"
-  },
-  {
-   "concept": "read_value_threshold_shift",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "if rd['w'] > 0:",
-   "to": "pcz += wq * 0.30 * sg"
-  },
-  {
-   "concept": "bluff_evidence_composite",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "bluff_ok = (profile['bluff']/10.0)",
-   "to": "bluff_ok *= max(0.25, 1.0 + rd['w']"
-  },
-  {
-   "concept": "relative_strength_value_threshold_shift",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "if rel <= 0.45:",
-   "to": "v2 += 0.08 * _pen"
   },
   {
    "concept": "showdown_value_predicate",
@@ -141,13 +99,6 @@
    "to": "_goal, _mode = 'value_3street', 'trap'"
   },
   {
-   "concept": "deep_one_pair_caution",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "_vulnerable_deep = (",
-   "to": "if made <= 1 else 0.0)"
-  },
-  {
    "concept": "blockbet_motive",
    "module": "plan",
    "func": "make_plan",
@@ -181,13 +132,6 @@
    "func": "make_plan",
    "from": "elif outs >= 8 and to_act_behind <= 1",
    "to": "% (_fe*100, _bluff_mul*100))"
-  },
-  {
-   "concept": "bluff_sizing_camouflage",
-   "module": "plan",
-   "func": "make_plan",
-   "from": "_fe = 0.5",
-   "to": "_fe = float(_plan_opp_est['fold'])"
   },
   {
    "concept": "pure_bluff_line_selection",
@@ -244,27 +188,6 @@
    "func": "decide_response",
    "from": "if plan in ('value_3street', 'value_2street', 'trap') and eq > need + 0.15:",
    "to": "so = PS.sk(profile, 'stackoff')/10.0 if has_c else 0.5"
-  },
-  {
-   "concept": "value_raise_sizing_from_commit",
-   "module": "plan",
-   "func": "decide_response",
-   "from": "_so = plan_state.get('stackoff') or {}",
-   "to": "mult = max(0.75, min(1.6, 0.75 + 0.85*gap))"
-  },
-  {
-   "concept": "value_raise_qualification",
-   "module": "plan",
-   "func": "decide_response",
-   "from": "_fair_share = 1.0 / max(2.0, float(n_opp) + 1.0)",
-   "to": "if _vr_eq_cont is not None else 'n/a')))"
-  },
-  {
-   "concept": "value_raise_frequency",
-   "module": "plan",
-   "func": "decide_response",
-   "from": "p = 0.20 + 0.55*rr + (0.25 if committed else 0.0)",
-   "to": "'밸류이나 콜 선택(상대가 팟을 키워줌)'"
   },
   {
    "concept": "bluff_reraise_frequency",
@@ -351,25 +274,11 @@
    "to": "p *= max(0.03, 1.0 - max(0.30, min(0.97, supp)))"
   },
   {
-   "concept": "probe_after_checkthrough",
-   "module": "plan",
-   "func": "decide_aggression",
-   "from": "if has_c and (plan_state or {}).get('opp_checked_prev'):",
-   "to": "supp *= max(0.25, 1.0 - 0.085*PS.sk(profile, 'probe'))"
-  },
-  {
    "concept": "blockbet",
    "module": "plan",
    "func": "decide_aggression",
    "from": "if plan == 'block':",
    "to": "return max(0.15, min(0.92, _bb))"
-  },
-  {
-   "concept": "potcontrol_bet_propensity",
-   "module": "plan",
-   "func": "decide_aggression",
-   "from": "if plan == 'pot_control':",
-   "to": "return max(0.05, min(0.6, 0.18 + 0.035*a))"
   },
   {
    "concept": "value_bet_execution_frequency",
@@ -405,20 +314,6 @@
    "func": "players_behind_required_equity_premium",
    "from": null,
    "to": null
-  },
-  {
-   "concept": "planned_bet_sizing",
-   "module": "plan",
-   "func": "decide_size",
-   "from": "base = SIZING.get(plan, {}).get(street, 0.0)",
-   "to": null
-  },
-  {
-   "concept": "bluff_sizing_camouflage",
-   "module": "plan",
-   "func": "decide_size",
-   "from": "_bm = (plan_state or {}).get('bluff_mode')",
-   "to": "base *= float((plan_state or {}).get('bluff_mul') or 1.0)"
   },
   {
    "concept": "bet_budget",
@@ -491,20 +386,6 @@
    "to": "return max(0.18, min(0.40, base))"
   },
   {
-   "concept": "value_when_called_strength",
-   "module": "plan",
-   "func": "overbet_frac",
-   "from": "if value_line and opp_range and board:",
-   "to": "rel = min(rel, relative_strength(hero, board, _ob_cr))"
-  },
-  {
-   "concept": "river_overbet",
-   "module": "plan",
-   "func": "overbet_frac",
-   "from": "if street == 'river': p *= 1.35",
-   "to": null
-  },
-  {
    "concept": "exploit_read_permission",
    "module": "plan",
    "func": "overbet_frac",
@@ -524,20 +405,6 @@
    "func": "act_with_plan",
    "from": "committed = spr(stack, pot) < 1.2",
    "to": null
-  },
-  {
-   "concept": "response_equity_basis",
-   "module": "plan",
-   "func": "act_with_plan",
-   "from": "if tocall > 0:",
-   "to": "street, sims=600, seed=seed)"
-  },
-  {
-   "concept": "opponent_sizing_normalization",
-   "module": "plan",
-   "func": "act_with_plan",
-   "from": "if _rdo['w'] > 0 and opp_est and opp_est.get('sz_mean'):",
-   "to": "sz = sz*(1.0 - _pull) + float(opp_est['sz_mean'])*_pull"
   },
   {
    "concept": "calldown_required_share",
@@ -795,8 +662,15 @@
    "concept": "value_when_called_strength",
    "module": "plan",
    "func": "river_value_reassessment",
-   "from": "if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):",
+   "from": "_thin_eq, _thin_n = continue_range_call_equity(",
    "to": "'리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'"
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "continue_range_call_equity",
+   "from": null,
+   "to": null
   },
   {
    "concept": "plan_revision_lifecycle",
@@ -1593,13 +1467,6 @@
    "concept": "calldown_required_share",
    "module": "plan",
    "func": "calldown_need",
-   "from": "_p0 = max(1.0, float(pot) - float(tocall))",
-   "to": "float(objective_breakeven) * float(bf) * _size_ratio)"
-  },
-  {
-   "concept": "calldown_required_share",
-   "module": "plan",
-   "func": "calldown_need",
    "from": "need = max(0.01, min(0.97, need))",
    "to": "call_need = max(0.01, min(0.95, call_need))"
   },
@@ -1611,6 +1478,342 @@
    "to": null
   },
   {
+   "concept": "self_hand_overconfidence_bias",
+   "module": "plan",
+   "func": "self_strength_bias_shift",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "potcontrol_disposition",
+   "module": "plan",
+   "func": "potcontrol_disposition",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "continue_range_commit_strength",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_commit, _commit_rel = continue_range_commit_strength(",
+   "to": "_so['commit_rel'] = round(float(_commit_rel), 3)"
+  },
+  {
+   "concept": "multiway_value_threshold_shift",
+   "module": "plan",
+   "func": "multiway_value_thresholds",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "read_value_threshold_shift",
+   "module": "plan",
+   "func": "read_value_threshold_shift",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "bluff_evidence_composite",
+   "module": "plan",
+   "func": "pure_bluff_evidence",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "pure_bluff_line_selection",
+   "module": "plan",
+   "func": "pure_bluff_attempt_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "relative_strength_value_threshold_shift",
+   "module": "plan",
+   "func": "relative_strength_value_threshold_shift",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "deep_one_pair_caution",
+   "module": "plan",
+   "func": "deep_one_pair_vulnerability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_line_selection",
+   "module": "plan",
+   "func": "middle_value_two_street_context",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_line_selection",
+   "module": "plan",
+   "func": "middle_value_two_street_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "blockbet_motive",
+   "module": "plan",
+   "func": "blockbet_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "potcontrol_motive",
+   "module": "plan",
+   "func": "medium_potcontrol_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "semibluff_line_selection",
+   "module": "plan",
+   "func": "semibluff_line_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "bluff_sizing_camouflage",
+   "module": "plan",
+   "func": "semibluff_barrel_sizing",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "calldown_required_share",
+   "module": "plan",
+   "func": "perceived_call_price_share",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "calldown_required_share",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "_p0 = max(1.0, float(pot) - float(tocall))",
+   "to": "tocall, _tocall_seen, _p0, bf, objective_breakeven)"
+  },
+  {
+   "concept": "monster_made_hand_raise",
+   "module": "plan",
+   "func": "paired_board_flush_raise_damp",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "monster_made_hand_raise",
+   "module": "plan",
+   "func": "monster_raise_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_raise_sizing_from_commit",
+   "module": "plan",
+   "func": "value_raise_size_mult",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_raise_frequency",
+   "module": "plan",
+   "func": "value_raise_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_raise_frequency",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "p = value_raise_probability(",
+   "to": "'밸류이나 콜 선택(상대가 팟을 키워줌)'"
+  },
+  {
+   "concept": "semibluff_raise_frequency",
+   "module": "plan",
+   "func": "semibluff_raise_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "implied_odds_adjustment",
+   "module": "plan",
+   "func": "semibluff_implied_odds_credit",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_raise_qualification",
+   "module": "plan",
+   "func": "value_raise_qualification",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "donk_suppression",
+   "module": "plan",
+   "func": "bluff_donk_suppression",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "probe_after_checkthrough",
+   "module": "plan",
+   "func": "bluff_donk_suppression",
+   "from": "if has_concepts and (plan_state or {}).get('opp_checked_prev'):",
+   "to": "supp *= max(0.25, 1.0 - 0.085*PS.sk(profile, 'probe'))"
+  },
+  {
+   "concept": "potcontrol_bet_propensity",
+   "module": "plan",
+   "func": "potcontrol_bet_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "potcontrol_bet_propensity",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if plan == 'pot_control':",
+   "to": null
+  },
+  {
+   "concept": "planned_bet_sizing",
+   "module": "plan",
+   "func": "planned_size_base",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "bluff_sizing_camouflage",
+   "module": "plan",
+   "func": "planned_size_base",
+   "from": "_bm = (plan_state or {}).get('bluff_mode')",
+   "to": "base *= float((plan_state or {}).get('bluff_mul') or 1.0)"
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "overbet_value_continue_rel",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "overbet_frac",
+   "from": "if value_line and opp_range and board:",
+   "to": null
+  },
+  {
+   "concept": "overbet_selection_core",
+   "module": "plan",
+   "func": "overbet_line_polarization",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "overbet_selection_core",
+   "module": "plan",
+   "func": "overbet_selection_base",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "river_overbet",
+   "module": "plan",
+   "func": "overbet_selection_base",
+   "from": "if street == 'river': p *= 1.35",
+   "to": null
+  },
+  {
+   "concept": "overbet_selection_core",
+   "module": "plan",
+   "func": "overbet_size",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "overbet_selection_core",
+   "module": "plan",
+   "func": "overbet_frac",
+   "from": "if street == 'flop': return None",
+   "to": "return overbet_size("
+  },
+  {
+   "concept": "response_equity_basis",
+   "module": "plan",
+   "func": "response_equity",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_sizing_normalization",
+   "module": "plan",
+   "func": "response_equity",
+   "from": "if _rdo['w'] > 0 and opp_est and opp_est.get('sz_mean'):",
+   "to": "sz = sz*(1.0 - _pull) + float(opp_est['sz_mean'])*_pull"
+  },
+  {
+   "concept": "response_equity_basis",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if tocall > 0:",
+   "to": "eq = response_equity("
+  },
+  {
+   "concept": "raise_target_coordinate",
+   "module": "plan",
+   "func": "response_raise_target",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "intent_chip_conversion",
+   "module": "plan",
+   "func": "intent_chip_amount",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "checkraise_flop_decision",
+   "module": "plan",
+   "func": "checkraise_street_skill",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "checkraise_turn_decision",
+   "module": "plan",
+   "func": "checkraise_decision",
+   "from": "else:",
+   "to": "plan, rel, outs, sk, profile.get('aggr', 5))"
+  },
+  {
+   "concept": "checkraise_sizing",
+   "module": "plan",
+   "func": "checkraise_street_multiplier",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "checkraise_sizing",
+   "module": "plan",
+   "func": "checkraise_target_amount",
+   "from": null,
+   "to": null
+  },
+  {
    "concept": "call_bias_reapplication",
    "module": "plan",
    "func": "calldown_need",
@@ -1618,25 +1821,11 @@
    "to": "return need, max(0.03, min(0.95, call_need))"
   },
   {
-   "concept": "overbet_selection_core",
-   "module": "plan",
-   "func": "overbet_frac",
-   "from": "if street == 'flop': return None",
-   "to": "return round(min(2.2, base * rng.uniform(0.92, 1.10)), 2)"
-  },
-  {
    "concept": "checkraise_flop_decision",
    "module": "plan",
    "func": "checkraise_decision",
    "from": "rng = random.Random(seed)",
    "to": "outs = plan_state.get('outs', 0)"
-  },
-  {
-   "concept": "checkraise_turn_decision",
-   "module": "plan",
-   "func": "checkraise_decision",
-   "from": "else:@@2",
-   "to": "plan, rel, outs, sk, profile.get('aggr', 5))"
   },
   {
    "concept": "continue_fold_blocker",
@@ -1955,6 +2144,8 @@
   }
  ],
  "tables": {
+  "plan:PLAN_REQUIRED_CONCEPT": "plan_concept_permission",
+  "plan:PLAN_DOWNGRADE": "plan_concept_permission",
   "plan:PLANS": "dead_strategy_tables",
   "plan:BUDGET": "bet_budget",
   "plan:SIZING": "planned_bet_sizing",
