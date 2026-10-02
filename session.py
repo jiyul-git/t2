@@ -1301,22 +1301,16 @@ class HandRun:
         self._before = dict(h.stacks)
         rnd = RU.Round(None, [h.seat_of[p] for p in h.PRE if p in h.seat_of], h.stacks, h.bb)
         sb_s, bb_s = h.seat_of.get('SB'), h.seat_of.get('BB')
-        if sb_s:
-            pay = min(h.sb, rnd.stacks[sb_s]); rnd.stacks[sb_s] -= pay; rnd.contrib[sb_s] = pay
-            if rnd.stacks[sb_s] <= 0:
-                rnd.allin.add(sb_s)
         # 안테는 포맷이 정한 레벨부터 걷는다.
         # 예전에는 ante_from 이 저장만 되고 무조건 1레벨부터 걷혔다.
         _ante = getattr(h, 'ante', None)
         if _ante is None: _ante = h.bb
-        if bb_s:
-            pay = min(h.bb, rnd.stacks[bb_s]); rnd.stacks[bb_s] -= pay; rnd.contrib[bb_s] = pay
-        # 안테: BB 혼자 1bb 를 더 내던 방식(BB 안테)에서, 참가 인원 전원이
-        # 1bb 를 균등하게 나눠 내는 방식으로 바꿨다(runner.post_antes).
-        _ante_paid, ante_pot = RU.post_antes(rnd.stacks, rnd.order, _ante)
-        for _s in list(rnd.order):
-            if rnd.stacks[_s] <= 0:
-                rnd.allin.add(_s)
+        # 강제 베팅: 안테 1bb 를 참가 인원 전원이 균등 분담(예전 BB 안테 대체)
+        # → SB → BB. 순서와 규칙은 runner.post_forced_bets 한 곳에만 있다.
+        _blinds, _ante_paid, ante_pot, _allin0 = RU.post_forced_bets(
+            rnd.stacks, rnd.order, sb_s, bb_s, h.sb, h.bb, _ante)
+        rnd.contrib.update(_blinds)
+        rnd.allin.update(_allin0)
         rnd.current = h.bb; rnd.min_raise = h.bb
         aggressor = None; limpers = []; callers = 0
 

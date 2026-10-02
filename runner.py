@@ -94,6 +94,26 @@ def post_antes(stacks, seats, ante):
     return paid, sum(paid.values())
 
 
+def post_forced_bets(stacks, seats, sb_seat, bb_seat, sb, bb, ante):
+    """강제 베팅 게시의 단일 순서: 안테(전원 균등) → SB → BB. stacks 제자리 수정.
+
+    안테를 먼저 걷고 남은 스택으로 블라인드를 낸다(실제 토너먼트 진행, GTO
+    검증기와 같은 순서). 그래서 ante+blind 보다 짧은 SB/BB 는 안테를 다 내고
+    블라인드가 짧아진다(예: BB 1.05bb → 안테 몫을 내고 나머지로 BB 올인).
+    반환 (contrib{seat: 블라인드}, ante_paid{seat: 안테}, ante_pot, allin set).
+    """
+    ante_paid, ante_pot = post_antes(stacks, seats, ante)
+    contrib = {}
+    for seat, amt in ((sb_seat, sb), (bb_seat, bb)):
+        if seat is None:
+            continue
+        pay = min(amt, max(0, stacks.get(seat, 0)))
+        stacks[seat] = stacks.get(seat, 0) - pay
+        contrib[seat] = pay
+    allin = {s for s in seats if stacks.get(s, 0) <= 0}
+    return contrib, ante_paid, ante_pot, allin
+
+
 # ---------- 베팅 라운드 ----------
 class Round:
     """재레이즈·최소레이즈·올인·사이드팟을 처리하는 베팅 라운드."""

@@ -1101,7 +1101,7 @@ function postBlindsThen(v, done, epoch) {
     });
 
     if (total <= 0) {
-      finish();
+      postSB();
       return;
     }
 
@@ -1118,7 +1118,7 @@ function postBlindsThen(v, done, epoch) {
     if (!chips.length) {
       ss.potCenter += total;
       renderForced(base, ss);
-      finish();
+      postSB();
       return;
     }
 
@@ -1138,7 +1138,7 @@ function postBlindsThen(v, done, epoch) {
       });
 
       renderForced(base, ss);
-      finish();
+      postSB();
 
     }, FORCED_POST_MS, epoch);
   };
@@ -1148,7 +1148,7 @@ function postBlindsThen(v, done, epoch) {
     if (!epochAlive(epoch)) return;
 
     if (!bb || bbAmt <= 0) {
-      postAnte();
+      finish();
       return;
     }
 
@@ -1165,7 +1165,7 @@ function postBlindsThen(v, done, epoch) {
     renderForced(base, ss);
 
     epochTimer(
-      postAnte,
+      finish,
       FORCED_POST_MS,
       epoch
     );
@@ -1200,13 +1200,14 @@ function postBlindsThen(v, done, epoch) {
   /*
    * 카드 딜
    * -> 덱 제거
+   * -> ante (참가 인원 균등 분담)
    * -> SB
    * -> BB
-   * -> ante (참가 인원 균등 분담)
    * -> 실제 프리플랍 액션
    */
   renderForced(base, ss);
-  postSB();
+  // 게시 순서: 안테(전원 균등) → SB → BB — 서버 runner.post_forced_bets 와 같다.
+  postAnte();
 }
 
 function dealThen(v, done) {

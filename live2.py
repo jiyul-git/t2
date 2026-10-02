@@ -701,28 +701,15 @@ def _opening_raw(h, run):
     sb_s = h.seat_of.get('SB')
     bb_s = h.seat_of.get('BB')
 
-    if sb_s is not None:
-        pay = min(h.sb, stacks.get(sb_s, 0))
-        stacks[sb_s] = stacks.get(sb_s, 0) - pay
-        contrib[sb_s] = pay
-
-        if stacks[sb_s] <= 0:
-            allin.add(sb_s)
-
-    if bb_s is not None:
-        pay = min(h.bb, stacks.get(bb_s, 0))
-        stacks[bb_s] = stacks.get(bb_s, 0) - pay
-        contrib[bb_s] = pay
-
-    # 안테는 참가 인원 전원이 균등 분담한다 — session 과 같은 함수(runner.post_antes).
+    # 강제 베팅은 session 과 같은 함수·같은 순서(안테 균등 분담 → SB → BB).
     _ante = getattr(h, 'ante', None)
     if _ante is None:
         _ante = h.bb
     _seats = [h.seat_of[p] for p in h.PRE if p in h.seat_of]
-    _ante_paid, ante_pot = RU.post_antes(stacks, _seats, _ante)
-    for _s in _seats:
-        if stacks.get(_s, 0) <= 0:
-            allin.add(_s)
+    _blinds, _ante_paid, ante_pot, _allin0 = RU.post_forced_bets(
+        stacks, _seats, sb_s, bb_s, h.sb, h.bb, _ante)
+    contrib.update(_blinds)
+    allin.update(_allin0)
 
     hero = h.hero
     hero_contrib = contrib.get(hero, 0)
