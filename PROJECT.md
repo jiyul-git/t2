@@ -1,6 +1,6 @@
 # t2 PROJECT — current status and branch contract
 
-Last updated: 2026-09-28 KST
+Last updated: 2026-10-03 KST
 
 이 파일이 새 세션의 첫 번째 기준 문서다. 전체 저장소나 과거 채팅을 다시 읽지 말고, 이 파일에서 현재 branch/workstream을 확인한 뒤 필요한 통합 문서만 추가로 읽는다.
 
@@ -36,14 +36,29 @@ t2는 9-max NLH 토너먼트 봇을 인간의 의사결정처럼 모델링하는
 
 ### GTO exception — ongoing, do not clean yet
 
-다음 두 브랜치는 현재 GTO 작업이 진행 중이므로 이번 일반 branch cleanup에서 제외한다.
+GTO는 일반 `master/test` 개발선과 분리된 여러 workstream으로 진행 중이다. 아래 브랜치는 현재 source-of-truth 또는 active evidence를 갖고 있으므로 일반 branch cleanup 규칙으로 강제 merge/delete하지 않는다.
 
-- `chatgpt/gto-reference-20260928`
-- `chatgpt/mini-cfr-solver-20260928`
+- `chatgpt/gto-reference-20260928` — 기존 public/reference registry와 legacy 616 push/fold DB
+- `chatgpt/mini-cfr-solver-20260928` — 9-max preflop solver/pilot 원시 결과
+- `chatgpt/gto-external-harvest-20261003` — 외부 9-max MTT hand-level reference 수집본
+- `chatgpt/terminal-census-v2-20260930` — terminal/postflop A4c 및 확장 연구
+- `chatgpt/gto-db-worker-v1-20261003` — Termux canonical-DB worker 결과
 
-GTO 작업이 끝나기 전에는 master/test 정리 규칙으로 강제 merge/delete하지 않는다.
+그 외 `gto-*` worker/audit 브랜치도 작업이 닫히기 전에는 이름만 보고 삭제하지 않는다. 먼저 해당 branch의 PROJECT/README와 canonical output이 다른 workstream에 승계되었는지 확인한다.
 
-상황별 reference data는 `data/gto_scenarios.jsonl`에 보존한다.
+상황별 reference data는 `data/gto_scenarios.jsonl` 및 각 GTO workstream의 documented dataset에 보존한다.
+
+#### GTO data locator rule
+
+"hand-level reference가 없다"고 결론내리기 전에 최소한 다음 위치를 확인한다.
+
+1. `chatgpt/gto-reference-20260928:data/gto_db/` — legacy/canonical reference registry
+2. `chatgpt/gto-external-harvest-20261003:data/gto_external/` — harvested external hand-level datasets
+3. `chatgpt/mini-cfr-solver-20260928` 및 worker branches — solver-generated outputs
+
+특히 9-max MTT hand-level mixed-frequency reference는
+`chatgpt/gto-external-harvest-20261003:data/gto_external/jensbaagaard_9max_mtt/charts/`
+에 있다. 5/10/20/40/100bb × 271 scenarios = **1,355 tables**, 각 169 hand classes다. 이 source에는 exact 30bb pack은 없다.
 
 ### telemetry/live — operational data only
 
@@ -62,14 +77,13 @@ GTO 작업이 끝나기 전에는 master/test 정리 규칙으로 강제 merge/d
 - 검증된 obsolete branch ref **61개를 실제 삭제 완료**했다.
 - branch 삭제에 사용한 one-shot GitHub Actions workflow는 실행 성공 후 저장소 working tree에서 즉시 제거했다.
 
-현재 존재하는 branch는 정확히 5개다:
-1. `master`
-2. `test`
-3. `chatgpt/gto-reference-20260928`
-4. `chatgpt/mini-cfr-solver-20260928`
-5. `telemetry/live`
+2026-09-28 당시의 5-branch 정리는 완료됐지만 이후 GTO 연구/worker/audit 브랜치가 새로 생겼다. 따라서 **브랜치 개수를 고정값으로 문서화하지 않는다.**
 
-이 다섯 외의 과거 branch 이름은 더 이상 source of truth도, active ref도 아니다.
+현재 원칙:
+- 일반 비-GTO 개발 source of truth는 `master/test`.
+- `telemetry/live`는 운영 데이터.
+- GTO 관련 `chatgpt/gto-*`, `chatgpt/mini-cfr-*`, `chatgpt/terminal-*` 브랜치는 각 workstream 문서와 output provenance를 확인한 뒤 정리한다.
+- 과거 브랜치 cleanup 완료 사실은 유지하되, 이후 생성된 GTO 브랜치를 obsolete로 오해하지 않는다.
 
 ## 4. Promotion workflow
 
@@ -207,7 +221,26 @@ Root Markdown은 125개에서 **10개**로 통합했다.
 
 ## 10. GTO reference datasets — current inventory
 
-Public data already collected on `chatgpt/gto-reference-20260928`:
+Public/reference data is split across more than one GTO branch. Do not search only the older reference branch.
+
+### 9-max MTT hand-level harvested reference
+
+On `chatgpt/gto-external-harvest-20261003`:
+
+- `data/gto_external/jensbaagaard_9max_mtt/charts/`
+  - 9-max MTT hand-level mixed-frequency charts
+  - stacks: **5, 10, 20, 40, 100bb**
+  - **271 scenarios per stack / 1,355 tables total**
+  - all **169 hand classes** per table
+  - MIT upstream
+  - no exact 30bb pack; 20/40bb are neighboring-stack evidence, not exact 30bb truth
+- `data/gto_external/rangemyhand_pushfold_9max/`
+  - 9-max push/fold auxiliary source, 1–25bb
+- discovery/provenance: `data/gto_external/DISCOVERY_AUDIT_20261003.md`
+
+### Older public/reference layer
+
+Collected on `chatgpt/gto-reference-20260928`:
 
 - `data/gto_public/8max_mtt_matthiola.jsonl`
   - 8-max MTT preflop
