@@ -105,3 +105,18 @@ their order is by reach x value sensitivity, not reach alone. Other stack depths
 1. z and a for the frequency status (proposal z = 2, a = 0.95).
 2. E1 step budget (proposal: at most 3 steps, then report) and whether damping is used.
 3. Order after E1: E2 (node 228) before E4 (postflop export), or measure E4's export size in parallel (small, no large solve).
+
+## 5. Decisions fixed (2026-10-03)
+- Frequency status: Z = 2, A = 0.95 (60 bootstrap replicates: modal action in >= 57 / 60). Statuses stable / near_indifferent /
+  unstable / unassessed. Each hand also stores bootstrap frequency q05/q50/q95, modal-action consistency and L1 dispersion.
+  near_indifferent is not frequency precision; no frequency-precision hard threshold is defined yet. Implemented in
+  `tools/gto_db_v2/hand_records.py` (format `hand_records_v1`, tests `test_hand_records.py`).
+- E1: at most 3 outer steps; damping alpha = 0.5 for the update x_{k+1} = x_k + 0.5 (F(x_k) - x_k). Convergence is judged on the
+  undamped raw residual F(x_k) - x_k, never on the damped step: early stop when raw residual <= panel uncertainty U for every
+  formal seat / node; stop and report if the raw residual grows two steps in a row; after 3 steps without meeting the rule, report
+  "not yet converged" and stop (no automatic 4th / 5th step).
+- Order: D1 and the E4 single-board export-size measurement now (no large solve); then E1; E2 (node 228) only after E1's result; the
+  E4 turn / river exporter after the size measurement is reviewed.
+- sk2: ranges are not part of the key, but every postflop solution stores `parent_preflop_solution_id` and `input_range_hashes`;
+  lookup selects only solutions whose parent matches the requesting preflop solution; solutions with different parent ranges are
+  never mixed because they share a spot.
