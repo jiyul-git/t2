@@ -233,14 +233,12 @@ def solve_stack(stack,iters,target,seed):
     return wrote
 
 def git_push(count,branch):
-    if count<=0:
-        print("PUSH skipped: no new spot files")
-        return
     subprocess.run(["git","add","data/gto_db/spots"],cwd=ROOT,check=True)
     diff=subprocess.run(["git","diff","--cached","--quiet"],cwd=ROOT)
     if diff.returncode==0:
         print("PUSH skipped: nothing staged"); return
-    subprocess.run(["git","commit","-m",f"gto-db: add {count} canonical solved spots"],cwd=ROOT,check=True)
+    msg=f"gto-db: add {count} canonical solved/imported spots" if count>0 else "gto-db: sync canonical spot files"
+    subprocess.run(["git","commit","-m",msg],cwd=ROOT,check=True)
     subprocess.run(["git","push","origin",f"HEAD:{branch}"],cwd=ROOT,check=True)
 
 def main():
