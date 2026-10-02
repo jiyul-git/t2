@@ -28,6 +28,14 @@ def canonical_hands():
 
 HANDS_169 = canonical_hands()
 
+POSITION_ALIASES = {"EP1": "UTG", "EP2": "UTG+1", "EP3": "UTG+2", "UTG1": "UTG+1", "UTG2": "UTG+2"}
+POSITION_BY_PLAYERS_BEHIND = {8: "UTG", 7: "UTG+1", 6: "UTG+2", 5: "LJ", 4: "HJ", 3: "CO", 2: "BTN", 1: "SB", 0: "BB"}
+
+def norm_pos(pos):
+    if pos is None:
+        return None
+    return POSITION_ALIASES.get(pos, pos)
+
 PREFIXES = [
     ("call_vs_5bet", "Call 5Bet"),
     ("call_vs_4bet", "Call 4Bet"),
@@ -54,8 +62,8 @@ def parse_jens_key(key):
         if key.startswith(prefix):
             rest = key[len(prefix):]
             parts = rest.split("vs", 1)
-            hero = parts[0] or None
-            villain = parts[1] if len(parts) > 1 else None
+            hero = norm_pos(parts[0] or None)
+            villain = norm_pos(parts[1] if len(parts) > 1 else None)
             return family, hero, villain
     return None, None, None
 
@@ -91,7 +99,7 @@ def build_jens():
                     "ante_model": "upstream_unspecified",
                     "stack_bb": stack,
                     "stack_model": "symmetric_nominal",
-                    "action_history_key": key,
+                    "action_history_key": family + ":" + str(hero) + (":vs:" + str(villain) if villain else ""),
                     "action_family": family,
                     "hero_position": hero,
                     "villain_position": villain,
@@ -138,7 +146,7 @@ def build_rmh():
                 "stack_model": "symmetric",
                 "action_history_key": "unopened",
                 "action_family": "open_shove",
-                "hero_position": spot["seat"],
+                "hero_position": POSITION_BY_PLAYERS_BEHIND[int(spot["playersBehind"])],
                 "players_behind": int(spot["playersBehind"]),
                 "hand_class": hand,
                 "hand_shape": hand_shape(hand),
