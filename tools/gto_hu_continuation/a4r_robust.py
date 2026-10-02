@@ -232,10 +232,12 @@ def figure(res, D, path):
         g.grid(color=GRID, lw=0.8)
         for sp in ('top', 'right'):
             g.spines[sp].set_visible(False)
-    fig.suptitle(f"A4R (amendment 3): {res['label']}  (EV-stable {res['EV_stable']}, EV-sensitive {res['EV_sensitive']}, frequency-unstable {res['frequency_unstable']})",
+    vmax = max(res['validations']['dEV_vs_gapdiff_max'], res['validations']['BR_value_max'])
+    fig.suptitle(f"A4R (amendment 3): pre-registered label {res['label']} (validation max |d| {vmax:.1e} vs tolerance 1e-12); EV rule alone: "
+                 f"EV-stable {res['EV_stable']}, EV-sensitive {res['EV_sensitive']}; frequency-unstable {res['frequency_unstable']}",
                  fontsize=11, color=INK, x=0.01, ha='left')
-    fig.text(0.01, 0.002, 'dEV = EV(own solve) − EV(seat swapped to the other policy, opponents fixed); validated equal to the gap difference. Own residual gap = the '
-             'baseline preflop solve\'s best-response gap for that seat. Frozen-table game at P14 ranges. Sub-seat groups are diagnostic only (no restricted BR).',
+    fig.text(0.01, 0.002, f'dEV = EV(own solve) − EV(seat swapped to the other policy, opponents fixed); equal to the gap difference within {vmax:.1e} bb/hand (deterministic, thread-independent). Own residual gap = the '
+             f'baseline preflop solve\'s best-response gap for that seat. Frozen-table game at P14 ranges. Sub-seat groups are diagnostic only (no restricted BR).',
              fontsize=7.5, color=MUTED)
     fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     fig.savefig(path, facecolor=SURF, bbox_inches='tight')

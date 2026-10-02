@@ -1,0 +1,150 @@
+{
+ "schema": "t2_verdict_v1",
+ "prereg": [
+  "a4b_panel144/prereg.json",
+  "prereg_amendment_1.json",
+  "prereg_amendment_2.json (b94722d)",
+  "prereg_amendment_3.json (20e70cc)"
+ ],
+ "A4b": {
+  "identity": {
+   "V72_node28": 0.0,
+   "V144_node28": 0.0,
+   "V72_node6": 0.0,
+   "V144_node6": 0.0
+  },
+  "replicates": 60,
+  "panel_detectable_shift": [],
+  "max_abs_z": 1.4909901616298566,
+  "maxstat_c95": 2.592772760420763,
+  "bonferroni_z": 2.86526023853213,
+  "max_h72": 0.10750685627696599,
+  "max_h144": 0.07682712414308618,
+  "h144_over_h72": {
+   "BTN first-in|fold": 0.8,
+   "BTN first-in|raise_2": 0.86,
+   "BTN first-in|jam_30": 0.77,
+   "SB first-in|fold": 1.23,
+   "SB first-in|raise_2.5": 1.2,
+   "SB first-in|jam_30": 1.14,
+   "BB vs BTN (node 28 parent)|Fold": 0.66,
+   "BB vs BTN (node 28 parent)|Call 2": 0.69,
+   "BB vs BTN (node 28 parent)|All-in 30": 0.69,
+   "BB vs SB (node 6 parent)|Fold": 0.68,
+   "BB vs SB (node 6 parent)|Call 2.5": 0.69,
+   "BB vs SB (node 6 parent)|All-in 30": 0.73
+  },
+  "unexpected": "SB first-in half-widths grow from 72 to 144 boards (raise 0.064 -> 0.077, fold 0.039 -> 0.048, jam 0.033 -> 0.037) while every other moving aggregate shrinks (ratio 0.66-0.88); recorded as-is, cause not isolated (candidate: non-linear table->policy map, the 144 point sits at a different SB mix, raise 0.500 -> 0.549)",
+  "secondary_max_abs": {
+   "M144_minus_P15": 0.03565339112382926,
+   "staleness_V72_minus_P15": 0.023157702376796707
+  }
+ },
+ "A4R": {
+  "validations": {
+   "self_splice_dEV_max_abs": 0.0,
+   "dEV_vs_gapdiff_max": 6.742609248711062e-11,
+   "BR_value_max": 6.742609248711062e-11,
+   "lower_bound_all": true
+  },
+  "validations_pass": false,
+  "EV_stable": false,
+  "EV_sensitive": true,
+  "sensitive_seat_directions": [
+   "BTN sigma72->G144",
+   "BTN sigma144->G72",
+   "SB sigma72->G144",
+   "SB sigma144->G72",
+   "BB sigma72->G144",
+   "BB sigma144->G72"
+  ],
+  "frequency_unstable": true,
+  "label": "inconclusive"
+ },
+ "validation_failure_isolation": {
+  "what": "|dEV - gap difference| and |BR value(splice) - BR value(own)| up to 6.7e-11 bb/hand in 128 of 744 records (pre-registered tolerance 1e-12); median 8e-17",
+  "checks": [
+   "deterministic: repeated evaluation identical",
+   "thread-independent: RAYON_NUM_THREADS=1 gives the same 6.7e-11",
+   "own-solve gaps/EVs from the stored export and from t2_cross_eval identical (0.0)",
+   "values repeat at a fixed quantum (2.2475e-11): floating-point rounding, not randomness"
+  ],
+  "reading": "the solver's best-response value for seat p depends on p's own strategy at the 1e-11 level (numerics inside the traversal; exact source in the Rust code not isolated); mathematically it is independent of it",
+  "impact": "relative size <= 3.5e-8 of the accompanying dEV; the EV rule gives identical results with dEV or with the gap difference; the smallest |E| at any decision point is 9.8e-5, six orders above 6.7e-11"
+ },
+ "final_classification": {
+  "pre_registered_label": "inconclusive (validation tolerance 1e-12 exceeded at 6.7e-11)",
+  "EV_rule_result_given_the_isolation": "EV-sensitive to panel refinement (BTN, SB, BB, both directions: q05(E) > 0 and point E > 0)",
+  "frequency": "frequency-unstable: no panel-detectable shift (max |z| 1.49 < c 2.59) but 144-board half-widths up to 0.077 >> 0.005"
+ },
+ "magnitudes_bb_per_hand": {
+  "BTN": {
+   "sigma72->G144": {
+    "point_dEV": 0.00030216820013755086,
+    "boot_q95_positive_loss": 0.002211732167586425,
+    "own_gap": 6.930625978598747e-05
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.0009989211032033624,
+    "boot_q95_positive_loss": 0.002400859417533832,
+    "own_gap": 6.040379901985646e-05
+   }
+  },
+  "SB": {
+   "sigma72->G144": {
+    "point_dEV": 0.002570994208906774,
+    "boot_q95_positive_loss": 0.00732385468779842,
+    "own_gap": 0.00011734573298884197
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.0019338792853907105,
+    "boot_q95_positive_loss": 0.009492297501426744,
+    "own_gap": 5.554796854716172e-05
+   }
+  },
+  "BB": {
+   "sigma72->G144": {
+    "point_dEV": 0.00260010466665532,
+    "boot_q95_positive_loss": 0.009109085995515631,
+    "own_gap": 6.443718318200286e-05
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.002694550844479282,
+    "boot_q95_positive_loss": 0.010482943743498424,
+    "own_gap": 6.415708693909223e-05
+   }
+  }
+ },
+ "P15_swaps": {
+  "BTN": {
+   "P15->G72": 1.2869681669219757e-05,
+   "P15->G144": 0.0003130008920982086
+  },
+  "SB": {
+   "P15->G72": 0.00012121936451492399,
+   "P15->G144": 0.002620313286892162
+  },
+  "BB": {
+   "P15->G72": 0.00015026405742020466,
+   "P15->G144": 0.0032270986289641285
+  }
+ },
+ "scales": {
+  "own_residual_gap_per_seat": "0.6-1.2e-4",
+  "B_post_total": 0.0076,
+  "note": "B_post is a different error source; ratios are not pass lines"
+ },
+ "near_indifference": "not observed: dEV rises with the class-level L1 distance of the swapped node (figure panel 2); large frequency differences come with EV loss",
+ "limitations": [
+  "frozen-table game at P14 ranges; not a re-converged fixed point",
+  "panel drawn without replacement, bootstrap with replacement",
+  "sub-seat groups diagnostic only"
+ ],
+ "not_done": [
+  "no 288",
+  "no outer step",
+  "no node 228",
+  "no 3-way",
+  "no production verdict"
+ ]
+}

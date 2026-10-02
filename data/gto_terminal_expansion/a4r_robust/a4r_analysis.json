@@ -1,0 +1,370 @@
+{
+ "rule": "amendment 3 (E_r = positive_loss_r - own gap; stable: E0 <= 0 and q95 <= 0 for all whole seats and directions; sensitive: E0 > 0 and q05 > 0 for some)",
+ "sensitive_seat_directions": [
+  "BTN sigma72->G144",
+  "BTN sigma144->G72",
+  "SB sigma72->G144",
+  "SB sigma144->G72",
+  "BB sigma72->G144",
+  "BB sigma144->G72"
+ ],
+ "stable_seat_directions": [
+  "CO sigma72->G144",
+  "CO sigma144->G72"
+ ],
+ "sub_seat_groups_diagnostic_only": [
+  "BB|SB-open",
+  "BB|BTN-open"
+ ],
+ "validations": {
+  "self_splice_dEV_max_abs": 0.0,
+  "dEV_vs_gapdiff_max": 6.742609248711062e-11,
+  "BR_value_max": 6.742609248711062e-11,
+  "lower_bound_all": true
+ },
+ "validations_pass": false,
+ "boot_pairs": 60,
+ "EV_stable": false,
+ "EV_sensitive": true,
+ "frequency_unstable": true,
+ "frequency_basis": {
+  "panel_detectable_shift": [],
+  "max_h144": 0.07682712414308618
+ },
+ "label": "inconclusive",
+ "nashconv_points": {
+  "sigma72->G144": {
+   "A_in_G": 0.010173046337913565,
+   "own": 0.0003496843560188032
+  },
+  "sigma144->G72": {
+   "A_in_G": 0.011702733785255996,
+   "own": 0.0002802385171063659
+  },
+  "P15->G72": {
+   "A_in_G": 0.0013862292445558622,
+   "own": 0.0002802385171063659
+  },
+  "P15->G144": {
+   "A_in_G": 0.011661681333348307,
+   "own": 0.0003496843560188032
+  }
+ },
+ "B_post_reference_bb_per_hand": 0.0076,
+ "wording": "losses are compared with the residual suboptimality of the baseline preflop solve (own gap); B_post is a different error source and a scale only",
+ "limitation": "frozen-table game at the P14 ranges; range-dependence of continuation values under a changed policy is not measured",
+ "groups": {
+  "CO": {
+   "terminal": "-",
+   "sigma72->G144": {
+    "point_dEV": 1.2038363063349156e-08,
+    "point_positive_loss": 1.2038363063349156e-08,
+    "point_own_gap": 9.859518006197091e-05,
+    "point_L1": {},
+    "boot_dEV_mean": -3.543216670296815e-09,
+    "boot_positive_loss_q95": 4.272565350127433e-08,
+    "boot_excess_over_own_gap_q95": -9.840629153872772e-05,
+    "boot_own_gap_median": 9.877410918942837e-05,
+    "boot_L1_median": {},
+    "ratio_point_loss_to_B_post": 1.5839951399143626e-06,
+    "E0": -9.858314169890756e-05,
+    "E_q05": -0.00010062060025687572,
+    "E_q95": -9.840629153872772e-05
+   },
+   "sigma144->G72": {
+    "point_dEV": -1.3052563467563782e-08,
+    "point_positive_loss": 0.0,
+    "point_own_gap": 0.0001001296626002555,
+    "point_L1": {},
+    "boot_dEV_mean": 2.01051437269395e-09,
+    "boot_positive_loss_q95": 4.49099773758288e-08,
+    "boot_excess_over_own_gap_q95": -9.841863331950997e-05,
+    "boot_own_gap_median": 9.888047241293221e-05,
+    "boot_L1_median": {},
+    "ratio_point_loss_to_B_post": 0.0,
+    "E0": -0.0001001296626002555,
+    "E_q05": -0.00010142493707412958,
+    "E_q95": -9.841863331950997e-05
+   },
+   "P15->G72": {
+    "point_dEV": 7.051643206856806e-09,
+    "point_own_gap": 0.0001001296626002555,
+    "point_L1": {}
+   },
+   "P15->G144": {
+    "point_dEV": 2.3033026694263548e-08,
+    "point_own_gap": 9.859518006197091e-05,
+    "point_L1": {}
+   }
+  },
+  "BTN": {
+   "terminal": "node 28",
+   "sigma72->G144": {
+    "point_dEV": 0.00030216820013755086,
+    "point_positive_loss": 0.00030216820013755086,
+    "point_own_gap": 6.930625978598747e-05,
+    "point_L1": {
+     "BTN first-in": 0.08926712895007005
+    },
+    "boot_dEV_mean": 0.001208352814923612,
+    "boot_positive_loss_q95": 0.002211732167586425,
+    "boot_excess_over_own_gap_q95": 0.0021224641397101828,
+    "boot_own_gap_median": 6.483394678870146e-05,
+    "boot_L1_median": {
+     "BTN first-in": 0.1214333541230784
+    },
+    "ratio_point_loss_to_B_post": 0.039758973702309325,
+    "E0": 0.00023286194035156339,
+    "E_q05": 0.0003205067389100147,
+    "E_q95": 0.0021224641397101828
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.0009989211032033624,
+    "point_positive_loss": 0.0009989211032033624,
+    "point_own_gap": 6.040379901985646e-05,
+    "point_L1": {
+     "BTN first-in": 0.08926712895007005
+    },
+    "boot_dEV_mean": 0.0014131703784702866,
+    "boot_positive_loss_q95": 0.002400859417533832,
+    "boot_excess_over_own_gap_q95": 0.002324630258228385,
+    "boot_own_gap_median": 6.520762008316446e-05,
+    "boot_L1_median": {
+     "BTN first-in": 0.1214333541230784
+    },
+    "ratio_point_loss_to_B_post": 0.1314369872636003,
+    "E0": 0.0009385173041835059,
+    "E_q05": 0.0005949198938238745,
+    "E_q95": 0.002324630258228385
+   },
+   "P15->G72": {
+    "point_dEV": 1.2869681669219757e-05,
+    "point_own_gap": 6.040379901985646e-05,
+    "point_L1": {
+     "BTN first-in": 0.014149958456237448
+    }
+   },
+   "P15->G144": {
+    "point_dEV": 0.0003130008920982086,
+    "point_own_gap": 6.930625978598747e-05,
+    "point_L1": {
+     "BTN first-in": 0.09358504414362981
+    }
+   }
+  },
+  "SB": {
+   "terminal": "node 6",
+   "sigma72->G144": {
+    "point_dEV": 0.002570994208906774,
+    "point_positive_loss": 0.002570994208906774,
+    "point_own_gap": 0.00011734573298884197,
+    "point_L1": {
+     "SB first-in": 0.2644482598129259
+    },
+    "boot_dEV_mean": 0.004439574092708313,
+    "boot_positive_loss_q95": 0.00732385468779842,
+    "boot_excess_over_own_gap_q95": 0.007243380500240055,
+    "boot_own_gap_median": 9.790758327164186e-05,
+    "boot_L1_median": {
+     "SB first-in": 0.2988312861167673
+    },
+    "ratio_point_loss_to_B_post": 0.33828871169825975,
+    "E0": 0.002453648475917932,
+    "E_q05": 0.001580237813347143,
+    "E_q95": 0.007243380500240055
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.0019338792853907105,
+    "point_positive_loss": 0.0019338792853907105,
+    "point_own_gap": 5.554796854716172e-05,
+    "point_L1": {
+     "SB first-in": 0.2644482598129259
+    },
+    "boot_dEV_mean": 0.00517708268702365,
+    "boot_positive_loss_q95": 0.009492297501426744,
+    "boot_excess_over_own_gap_q95": 0.009424908031265717,
+    "boot_own_gap_median": 7.948006050490387e-05,
+    "boot_L1_median": {
+     "SB first-in": 0.2988312861167673
+    },
+    "ratio_point_loss_to_B_post": 0.254457800709304,
+    "E0": 0.0018783313168435488,
+    "E_q05": 0.002488169634277865,
+    "E_q95": 0.009424908031265717
+   },
+   "P15->G72": {
+    "point_dEV": 0.00012121936451492399,
+    "point_own_gap": 5.554796854716172e-05,
+    "point_L1": {
+     "SB first-in": 0.06579855467694463
+    }
+   },
+   "P15->G144": {
+    "point_dEV": 0.002620313286892162,
+    "point_own_gap": 0.00011734573298884197,
+    "point_L1": {
+     "SB first-in": 0.25506668162940227
+    }
+   }
+  },
+  "BB": {
+   "terminal": "both",
+   "sigma72->G144": {
+    "point_dEV": 0.00260010466665532,
+    "point_positive_loss": 0.00260010466665532,
+    "point_own_gap": 6.443718318200286e-05,
+    "point_L1": {
+     "BB vs SB": 0.17026649105924016,
+     "BB vs BTN": 0.30206210306658654
+    },
+    "boot_dEV_mean": 0.005602160082266554,
+    "boot_positive_loss_q95": 0.009109085995515631,
+    "boot_excess_over_own_gap_q95": 0.009046581797088147,
+    "boot_own_gap_median": 7.756770808654053e-05,
+    "boot_L1_median": {
+     "BB vs SB": 0.27074167132663507,
+     "BB vs BTN": 0.29244153720117566
+    },
+    "ratio_point_loss_to_B_post": 0.3421190350862263,
+    "E0": 0.002535667483473317,
+    "E_q05": 0.002841833668897422,
+    "E_q95": 0.009046581797088147
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.002694550844479282,
+    "point_positive_loss": 0.002694550844479282,
+    "point_own_gap": 6.415708693909223e-05,
+    "point_L1": {
+     "BB vs SB": 0.17026649105924016,
+     "BB vs BTN": 0.30206210306658654
+    },
+    "boot_dEV_mean": 0.005614728278789144,
+    "boot_positive_loss_q95": 0.010482943743498424,
+    "boot_excess_over_own_gap_q95": 0.010390318209050089,
+    "boot_own_gap_median": 8.158160723851149e-05,
+    "boot_L1_median": {
+     "BB vs SB": 0.27074167132663507,
+     "BB vs BTN": 0.29244153720117566
+    },
+    "ratio_point_loss_to_B_post": 0.35454616374727393,
+    "E0": 0.00263039375754019,
+    "E_q05": 0.0021716206013924896,
+    "E_q95": 0.010390318209050089
+   },
+   "P15->G72": {
+    "point_dEV": 0.00015026405742020466,
+    "point_own_gap": 6.415708693909223e-05,
+    "point_L1": {
+     "BB vs SB": 0.0809996315128943,
+     "BB vs BTN": 0.046612558776799366
+    }
+   },
+   "P15->G144": {
+    "point_dEV": 0.0032270986289641285,
+    "point_own_gap": 6.443718318200286e-05,
+    "point_L1": {
+     "BB vs SB": 0.21062192661353246,
+     "BB vs BTN": 0.31504325258968036
+    }
+   }
+  },
+  "BB|SB-open": {
+   "terminal": "node 6",
+   "sigma72->G144": {
+    "point_dEV": 0.0013772756842910655,
+    "point_positive_loss": 0.0013772756842910655,
+    "point_own_gap": 6.443718318200286e-05,
+    "point_L1": {
+     "BB vs SB": 0.17026649105924016
+    },
+    "boot_dEV_mean": 0.0036874816689254778,
+    "boot_positive_loss_q95": 0.006334354826064731,
+    "boot_excess_over_own_gap_q95": 0.0062727662792255705,
+    "boot_own_gap_median": 7.756770808654053e-05,
+    "boot_L1_median": {
+     "BB vs SB": 0.27074167132663507
+    },
+    "ratio_point_loss_to_B_post": 0.1812204847751402
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.000776979792860788,
+    "point_positive_loss": 0.000776979792860788,
+    "point_own_gap": 6.415708693909223e-05,
+    "point_L1": {
+     "BB vs SB": 0.17026649105924016
+    },
+    "boot_dEV_mean": 0.00339482327365783,
+    "boot_positive_loss_q95": 0.006766013352089151,
+    "boot_excess_over_own_gap_q95": 0.006625173366478803,
+    "boot_own_gap_median": 8.158160723851149e-05,
+    "boot_L1_median": {
+     "BB vs SB": 0.27074167132663507
+    },
+    "ratio_point_loss_to_B_post": 0.10223418327115631
+   },
+   "P15->G72": {
+    "point_dEV": 0.0001149073764929176,
+    "point_own_gap": 6.415708693909223e-05,
+    "point_L1": {
+     "BB vs SB": 0.0809996315128943
+    }
+   },
+   "P15->G144": {
+    "point_dEV": 0.0019017723528948344,
+    "point_own_gap": 6.443718318200286e-05,
+    "point_L1": {
+     "BB vs SB": 0.21062192661353246
+    }
+   }
+  },
+  "BB|BTN-open": {
+   "terminal": "node 28",
+   "sigma72->G144": {
+    "point_dEV": 0.0011331488028658993,
+    "point_positive_loss": 0.0011331488028658993,
+    "point_own_gap": 6.443718318200286e-05,
+    "point_L1": {
+     "BB vs BTN": 0.30206210306658654
+    },
+    "boot_dEV_mean": 0.0016286282054414959,
+    "boot_positive_loss_q95": 0.0036079690534537023,
+    "boot_excess_over_own_gap_q95": 0.0035500280379333724,
+    "boot_own_gap_median": 7.756770808654053e-05,
+    "boot_L1_median": {
+     "BB vs BTN": 0.29244153720117566
+    },
+    "ratio_point_loss_to_B_post": 0.14909852669288148
+   },
+   "sigma144->G72": {
+    "point_dEV": 0.0010921328941463915,
+    "point_positive_loss": 0.0010921328941463915,
+    "point_own_gap": 6.415708693909223e-05,
+    "point_L1": {
+     "BB vs BTN": 0.30206210306658654
+    },
+    "boot_dEV_mean": 0.001565701956340986,
+    "boot_positive_loss_q95": 0.0028804848210154665,
+    "boot_excess_over_own_gap_q95": 0.0028171708606643626,
+    "boot_own_gap_median": 8.158160723851149e-05,
+    "boot_L1_median": {
+     "BB vs BTN": 0.29244153720117566
+    },
+    "ratio_point_loss_to_B_post": 0.14370169659820942
+   },
+   "P15->G72": {
+    "point_dEV": 3.2705555288836674e-05,
+    "point_own_gap": 6.415708693909223e-05,
+    "point_L1": {
+     "BB vs BTN": 0.046612558776799366
+    }
+   },
+   "P15->G144": {
+    "point_dEV": 0.0012217188821136843,
+    "point_own_gap": 6.443718318200286e-05,
+    "point_L1": {
+     "BB vs BTN": 0.31504325258968036
+    }
+   }
+  }
+ }
+}

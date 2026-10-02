@@ -1,0 +1,25 @@
+{
+  "eq_samples": 1200,
+  "evs": [
+    -0.009000024515223248,
+    0.08866229945509145,
+    -0.16433640101837302,
+    0.10331235449888594
+  ],
+  "gap_total": 0.020350960479989556,
+  "gaps": [
+    0.0000986565953788734,
+    0.0024749774199780273,
+    0.010192846272702817,
+    0.007584480191929839
+  ],
+  "iteration": 400,
+  "positions": [
+    "CO",
+    "BTN",
+    "SB",
+    "BB"
+  ],
+  "save": "/home/user/t2/data/gto_terminal_expansion/a4b_panel144/boot/r41/V72/profile.gtop",
+  "t2_cont_file": "/home/user/t2/data/gto_terminal_expansion/a4b_panel144/boot/r41/V144/manifest.json"
+}

@@ -685,3 +685,122 @@ boot 13
 boot 14
 boot 15
 boot 16
+boot 17
+boot 18
+boot 19
+boot 20
+boot 21
+boot 22
+boot 23
+boot 24
+boot 25
+boot 26
+boot 27
+boot 28
+boot 29
+boot 30
+boot 31
+boot 32
+boot 33
+boot 34
+boot 35
+boot 36
+boot 37
+boot 38
+boot 39
+boot 40
+boot 41
+boot 42
+boot 43
+boot 44
+boot 45
+boot 46
+boot 47
+boot 48
+boot 49
+boot 50
+boot 51
+boot 52
+boot 53
+boot 54
+boot 55
+boot 56
+boot 57
+boot 58
+boot 59
+boot 60
+{
+ "rule": "amendment 3 (E_r = positive_loss_r - own gap; stable: E0 <= 0 and q95 <= 0 for all whole seats and directions; sensitive: E0 > 0 and q05 > 0 for some)",
+ "sensitive_seat_directions": [
+  "BTN sigma72->G144",
+  "BTN sigma144->G72",
+  "SB sigma72->G144",
+  "SB sigma144->G72",
+  "BB sigma72->G144",
+  "BB sigma144->G72"
+ ],
+ "stable_seat_directions": [
+  "CO sigma72->G144",
+  "CO sigma144->G72"
+ ],
+ "sub_seat_groups_diagnostic_only": [
+  "BB|SB-open",
+  "BB|BTN-open"
+ ],
+ "validations": {
+  "self_splice_dEV_max_abs": 0.0,
+  "dEV_vs_gapdiff_max": 6.742609248711062e-11,
+  "BR_value_max": 6.742609248711062e-11,
+  "lower_bound_all": true
+ },
+ "validations_pass": false,
+ "boot_pairs": 60,
+ "EV_stable": false,
+ "EV_sensitive": true,
+ "frequency_unstable": true,
+ "frequency_basis": {
+  "panel_detectable_shift": [],
+  "max_h144": 0.07682712414308618
+ },
+ "label": "inconclusive",
+ "nashconv_points": {
+  "sigma72->G144": {
+   "A_in_G": 0.010173046337913565,
+   "own": 0.0003496843560188032
+  },
+  "sigma144->G72": {
+   "A_in_G": 0.011702733785255996,
+   "own": 0.0002802385171063659
+  },
+  "P15->G72": {
+   "A_in_G": 0.0013862292445558622,
+   "own": 0.0002802385171063659
+  },
+  "P15->G144": {
+   "A_in_G": 0.011661681333348307,
+   "own": 0.0003496843560188032
+  }
+ },
+ "B_post_reference_bb_per_hand": 0.0076,
+ "wording": "losses are compared with the residual suboptimality of the baseline preflop solve (own gap); B_post is a different error source and a scale only",
+ "limitation": "frozen-table game at the P14 ranges; range-dependence of continuation values under a changed policy is not measured"
+}
+CO           sigma72->G144  dEV=+0.000000 own_gap=0.000099 boot_q95_loss=0.000000 E0=-0.000099 E_q05=-0.000101 E_q95=-0.000098 L1={}
+CO           sigma144->G72  dEV=-0.000000 own_gap=0.000100 boot_q95_loss=0.000000 E0=-0.000100 E_q05=-0.000101 E_q95=-0.000098 L1={}
+             P15->G72 dEV=+0.000000  P15->G144 dEV=+0.000000
+BTN          sigma72->G144  dEV=+0.000302 own_gap=0.000069 boot_q95_loss=0.002212 E0=+0.000233 E_q05=+0.000321 E_q95=+0.002122 L1={'BTN first-in': 0.089}
+BTN          sigma144->G72  dEV=+0.000999 own_gap=0.000060 boot_q95_loss=0.002401 E0=+0.000939 E_q05=+0.000595 E_q95=+0.002325 L1={'BTN first-in': 0.089}
+             P15->G72 dEV=+0.000013  P15->G144 dEV=+0.000313
+SB           sigma72->G144  dEV=+0.002571 own_gap=0.000117 boot_q95_loss=0.007324 E0=+0.002454 E_q05=+0.001580 E_q95=+0.007243 L1={'SB first-in': 0.264}
+SB           sigma144->G72  dEV=+0.001934 own_gap=0.000056 boot_q95_loss=0.009492 E0=+0.001878 E_q05=+0.002488 E_q95=+0.009425 L1={'SB first-in': 0.264}
+             P15->G72 dEV=+0.000121  P15->G144 dEV=+0.002620
+BB           sigma72->G144  dEV=+0.002600 own_gap=0.000064 boot_q95_loss=0.009109 E0=+0.002536 E_q05=+0.002842 E_q95=+0.009047 L1={'BB vs SB': 0.17, 'BB vs BTN': 0.302}
+BB           sigma144->G72  dEV=+0.002695 own_gap=0.000064 boot_q95_loss=0.010483 E0=+0.002630 E_q05=+0.002172 E_q95=+0.010390 L1={'BB vs SB': 0.17, 'BB vs BTN': 0.302}
+             P15->G72 dEV=+0.000150  P15->G144 dEV=+0.003227
+BB|SB-open   sigma72->G144  dEV=+0.001377 own_gap=0.000064 boot_q95_loss=0.006334 E0=+nan E_q05=+nan E_q95=+nan L1={'BB vs SB': 0.17}
+BB|SB-open   sigma144->G72  dEV=+0.000777 own_gap=0.000064 boot_q95_loss=0.006766 E0=+nan E_q05=+nan E_q95=+nan L1={'BB vs SB': 0.17}
+             P15->G72 dEV=+0.000115  P15->G144 dEV=+0.001902
+BB|BTN-open  sigma72->G144  dEV=+0.001133 own_gap=0.000064 boot_q95_loss=0.003608 E0=+nan E_q05=+nan E_q95=+nan L1={'BB vs BTN': 0.302}
+BB|BTN-open  sigma144->G72  dEV=+0.001092 own_gap=0.000064 boot_q95_loss=0.002880 E0=+nan E_q05=+nan E_q95=+nan L1={'BB vs BTN': 0.302}
+             P15->G72 dEV=+0.000033  P15->G144 dEV=+0.001222
+A4R_DONE
