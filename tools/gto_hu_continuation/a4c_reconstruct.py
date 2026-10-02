@@ -121,5 +121,71 @@ def main():
     print(json.dumps(out, indent=1))
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and len(sys.argv) == 1:
     main()
+
+
+def allocate():
+    """Downstream-aware exact integer allocation over (terminal, stratum), FPC-aware.
+    c_{n,s,metric} = mean isolated contribution at 12 boards under with-replacement resampling (bootstrap variance factor 11/144 s^2);
+    the design contribution with m boards drawn without replacement from K classes is c * (144/11) * (1 - m/K) / m."""
+    import itertools
+    import make_panel as mp
+    iso = json.load(open(OUT + 'influence/results.json'))
+    groups = {}
+    for v in iso.values():
+        groups.setdefault((v['n'], v['stratum']), []).append(v)
+    deck = [(r, s) for r in range(13) for s in range(4)]
+    K = {}
+    for f in itertools.combinations(deck, 3):
+        K.setdefault(mp.stratum(f), set()).add(mp.canon(f))
+    K = {s: len(v) for s, v in K.items()}
+    gn = node_data(B + 'points/V144')
+    base_reg = {name: regret_l1(gn[name], {'class_strategy': gn[name]['s']})[0] for name in NODES}
+    metrics = {f'seat_dEV:{s}': (lambda r, s=s: r['seat_dEV'][s]) for s in SEATS}
+    metrics.update({f'regret_excess:{n}': (lambda r, n=n: r['regret'][n] - base_reg[n]) for n in NODES})
+    c = {k: {m: max(mean([f(r) for r in g]), 0.0) for m, f in metrics.items()} for k, g in groups.items()}
+    fac = lambda k, m: (144 / 11) * (1 - m / K[k[1]]) / m
+    def predict(alloc):
+        return {m: sum(c[k][m] * fac(k, alloc[k]) for k in c) for m in metrics}
+    obj = lambda k: c[k]['seat_dEV:BTN'] + c[k]['seat_dEV:SB'] + c[k]['seat_dEV:BB']
+    def greedy(budget, start=12):
+        a = {k: start for k in c}
+        for _ in range(budget):
+            cand = [k for k in c if a[k] < K[k[1]]]
+            if not cand:
+                break
+            best = max(cand, key=lambda k: obj(k) * (fac(k, a[k]) - fac(k, a[k] + 1)))
+            a[best] += 1
+        return a
+    cost = {}
+    for n, d in ((6, B + 'node6/flops/'), (28, B + 'node28/flops/')):
+        ms = [json.load(open(os.path.join(d, f)))['cost']['solve_ms'] for f in os.listdir(d) if f.endswith('.json') and f != 'run_ledger.jsonl']
+        cost[n] = mean(ms) / 60000
+    out = {'cpu_min_per_flop': cost, 'options': {}}
+    cur = {k: 12 for k in c}
+    out['options']['current_144'] = {'new_solves': 0, 'predicted': predict(cur)}
+    eq = {k: 24 for k in c}
+    out['options']['equal_24 (C0)'] = {'new_solves': 288, 'predicted': predict(eq)}
+    for name, budget in (('D_small_48', 48), ('B_108', 108), ('C_144', 144), ('C_192', 192), ('A_288', 288)):
+        a = greedy(budget)
+        out['options'][name] = {'new_solves': budget, 'alloc': {f'{k[0]}|{k[1]}': v for k, v in a.items() if v > 12},
+                                'new_by_terminal': {n: sum(v - 12 for k, v in a.items() if k[0] == n) for n in (6, 28)},
+                                'predicted': predict(a)}
+    for o in out['options'].values():
+        nb = o.get('new_by_terminal', {6: o['new_solves'] // 2, 28: o['new_solves'] // 2})
+        o['cpu_h'] = sum(nb[n] * cost[n] for n in nb) / 60
+        o['wall_h_4cores'] = o['cpu_h'] / 4
+    # which budget matches equal-24 on the downstream objective
+    tgt = sum(out['options']['equal_24 (C0)']['predicted'][f'seat_dEV:{s}'] for s in SEATS)
+    for budget in range(0, 289, 4):
+        a = greedy(budget)
+        if sum(predict(a)[f'seat_dEV:{s}'] for s in SEATS) <= tgt:
+            out['matching_equal24_downstream'] = {'new_solves': budget, 'alloc': {f'{k[0]}|{k[1]}': v for k, v in a.items() if v > 12}}
+            break
+    json.dump(out, open(OUT + 'allocation_downstream.json', 'w'), indent=1)
+    print(json.dumps(out, indent=1))
+
+
+if __name__ == '__main__' and len(sys.argv) > 1 and sys.argv[1] == 'allocate':
+    allocate()
