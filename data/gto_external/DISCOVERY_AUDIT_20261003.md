@@ -9,7 +9,14 @@ Collect external **scenario × position × stack × 169-hand** preflop action-fr
 ### jensbaagaard/poker-practice
 - 9-max MTT raw source, MIT.
 - Nominal stack packs: **5 / 10 / 20 / 40 / 100 BB**.
-- **271 scenario keys per stack**.
+- **271 scenario keys per stack = 1,355 hand-level scenario tables total**.
+- Every generated chart table contains the full **169 hand classes** with mixed action frequencies.
+- Local locator:
+  - branch: `chatgpt/gto-external-harvest-20261003`
+  - raw: `data/gto_external/jensbaagaard_9max_mtt/MTT_*_GTO.json`
+  - normalized/UI charts: `data/gto_external/jensbaagaard_9max_mtt/charts/MTT_*_GTO.charts.json`
+  - index: `data/gto_external/jensbaagaard_9max_mtt/charts/INDEX_9MAX.json`
+- **No 30 BB pack exists in this source.** 20/40 BB may be used for stack-sensitivity cross-checking, but not as an exact 30 BB hand-level reference.
 - Families include RFI, limp, call-vs-open, 3bet, call-vs-3bet, 4bet, call-vs-4bet, 5bet, call-vs-5bet.
 - Keep its original assumptions; do not silently reinterpret it as arbitrary asymmetric stacks or exact T2 BBA.
 
@@ -107,6 +114,15 @@ Useful solver implementation reference, not target data. Its default preflop abs
 
 ### zwarag/gto-open
 Watch only. The repository currently describes a planned open GTO database, but no solved v0 preflop corpus was found.
+
+## Discovery/search rule
+
+Before writing "no hand-level reference exists", search both the canonical DB and harvested external-data branches. In particular, the Jens Baagaard 9-max packs above are not located under the older `chatgpt/gto-reference-20260928:data/gto_db/` tree.
+
+For 30 BB, distinguish:
+- **hand-level reference exists in neighboring stacks**: yes, 20/40 BB in the Jens pack;
+- **exact 30 BB hand-level pack from that source**: no;
+- **exact 30 BB public-viewer crosscheck**: potentially available in non-vendored sources such as PreflopRanges.app, subject to the existing no-bulk-extraction rule.
 
 ## Remaining canonical gaps
 
