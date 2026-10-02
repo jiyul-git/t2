@@ -65,5 +65,5 @@ jobs:
             echo "No generated changes"
             exit 0
           fi
-          git commit -m "gto-db: materialize 267020 normalized 9max frequency rows"
+          git commit -m "gto-db: materialize 248430 normalized 9max frequency rows"
           git push origin HEAD:chatgpt/gto-external-harvest-20261003
