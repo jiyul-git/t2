@@ -149,6 +149,14 @@ _ALLCOMBOS=[(x,y) for i,x in enumerate(FULLDECK) for y in FULLDECK[i+1:]]
 _SCORED=sorted(_ALLCOMBOS, key=lambda t:-_pf_score(*t))
 
 def range_combos(pct, dead):
+    """레인지를 모를 때의 fallback 레인지: `_pf_score` 순서 상위 pct.
+
+    프리플랍 순서표가 둘이다 — 관찰 기반 레인지는 preflop.PCT(pf_rank),
+    이 fallback 만 `_pf_score` 공식을 쓴다(R2 PREFLOP_ORDERING_DUPLICATION,
+    같은 질문, 통합은 행동 변화라 보류). 소비처: plan 의 빈 레인지 fallback
+    (range_combos(0.35)), equity_vs_betting 의 콜러/벳 레인지.
+    동률은 덱 나열 순서로 깨져 경계 클래스가 수트에 따라 갈릴 수 있다.
+    """
     n=int(len(_SCORED)*pct)
     return [c for c in _SCORED[:n] if c[0] not in dead and c[1] not in dead]
 

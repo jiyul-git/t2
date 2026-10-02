@@ -822,23 +822,23 @@
   {
    "concept": "legacy_calloff_threshold",
    "module": "preflop",
-   "func": "defend_action_likelihoods",
-   "from": "_st = stack_bb if stack_bb is not None else bb",
-   "to": "'hand_pct': legacy_preflop_order_percentile(hand),"
+   "func": "legacy_calloff_likelihoods",
+   "from": null,
+   "to": null
   },
   {
    "concept": "preflop_read_width_exploit",
    "module": "preflop",
-   "func": "defend_action_likelihoods",
-   "from": "if exploit and exploit.get('w', 0) > 0:",
-   "to": "tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))"
+   "func": "apply_defend_exploit_evidence",
+   "from": null,
+   "to": null
   },
   {
    "concept": "reshove_opportunity",
    "module": "preflop",
-   "func": "defend_action_likelihoods",
-   "from": "p_hot = 0.0",
-   "to": "p_hot = max(0.0, min(1.0, 0.30 + 0.60*depth))"
+   "func": "hot_reshove_probability",
+   "from": null,
+   "to": null
   },
   {
    "concept": "mixed_preflop_action_likelihood",
@@ -850,14 +850,28 @@
   {
    "concept": "preflop_premium_slowplay_mix",
    "module": "preflop",
+   "func": "preflop_slowplay_share",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_premium_slowplay_mix",
+   "module": "preflop",
    "func": "defend_action_likelihoods",
-   "from": "_pf_slow = 0.0",
+   "from": "_pf_slow = preflop_slowplay_share(prof, r, a)",
    "to": "w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)"
+  },
+  {
+   "concept": "mixed_preflop_action_likelihood",
+   "module": "preflop",
+   "func": "attack_candidate_weight",
+   "from": null,
+   "to": null
   },
   {
    "concept": "allin_form_fold_equity_read",
    "module": "preflop",
-   "func": "raise_form",
+   "func": "shove_form_pressure",
    "from": "if exploit and exploit.get('w', 0) > 0:",
    "to": "sh *= max(0.35, 1.0 - w*0.5*max(0.0, exploit.get('fb_gap', 0.0)))"
   },
@@ -871,16 +885,16 @@
   {
    "concept": "short_stack_open_widening",
    "module": "preflop",
-   "func": "open_decision",
-   "from": "thr = min(0.9, thr + t['shove_add']",
+   "func": "open_entry_threshold",
+   "from": "return min(0.9, thr + traits['shove_add']",
    "to": null
   },
   {
    "concept": "money_open_range_modifier",
    "module": "preflop",
-   "func": "open_decision",
-   "from": "if money_open:",
-   "to": "'unchanged')"
+   "func": "apply_money_open_threshold",
+   "from": null,
+   "to": null
   },
   {
    "concept": "limp_entry_motive",
@@ -1664,14 +1678,21 @@
    "module": "preflop",
    "func": "raise_form",
    "from": "if stack_bb is None or target_bb >= stack_bb:",
-   "to": "sh = max(0.0, min(1.0, (1.75 - spr_after) / 1.25))"
+   "to": "sh = shove_form_pressure(spr_after, exploit, level, n_opp)"
   },
   {
    "concept": "reraise_sizing_form",
    "module": "preflop",
-   "func": "raise_form",
-   "from": "if n_opp > 1:",
-   "to": "sh = min(1.0, sh * (1.0 + 0.20*(n_opp - 1)))"
+   "func": "raise_commit_geometry",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "reraise_sizing_form",
+   "module": "preflop",
+   "func": "shove_form_pressure",
+   "from": null,
+   "to": null
   },
   {
    "concept": "reraise_sizing_form",
@@ -1704,16 +1725,72 @@
   {
    "concept": "isolation_decision",
    "module": "preflop",
-   "func": "iso_decision",
-   "from": "t = _tr(prof)",
-   "to": "hotzone_pressure(prof, pos, bb, behind_stacks or []))"
+   "func": "iso_entry_threshold",
+   "from": null,
+   "to": null
   },
   {
    "concept": "unopened_decision",
    "module": "preflop",
-   "func": "open_decision",
-   "from": "thr = (_open(prof, pos, seats, bb, ante)",
-   "to": "hotzone_pressure(prof, pos, bb, behind_stacks or []))"
+   "func": "open_entry_threshold",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "defend_width_prior",
+   "module": "gto",
+   "func": "open_size_defend_scale",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "positional",
+   "module": "persona",
+   "func": "positional_chart_flattening",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "rfi_personality_deviation",
+   "module": "persona",
+   "func": "chart_deviation_room",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "limp_entry_motive",
+   "module": "preflop",
+   "func": "limp_theory_knowledge",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_card_removal",
+   "module": "preflop",
+   "func": "top_value_class_order",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "layer_calloff_judgment",
+   "module": "preflop",
+   "func": "pf_defend_exact_calc_gate",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "layer_calloff_judgment",
+   "module": "preflop",
+   "func": "calloff_by_price",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_posterior_order",
+   "module": "ranges",
+   "func": "support_rank_quantiles",
+   "from": null,
+   "to": null
   },
   {
    "concept": "open_execution_form",
@@ -1922,7 +1999,7 @@
   "plan:record_deviation": "logging",
   "preflop:_tr": "trait accessor (see legacy_trait_adapter)",
   "preflop:prof_aggr": "temperament accessor",
-  "preflop:defend_action_likelihoods._logit": "math helper",
+  "preflop:_defend_logistic": "math helper (logistic)",
   "ranges:range_is_uniform": "container predicate",
   "ranges:range_mean_mass": "container stat",
   "ranges:range_unique_sorted": "container helper",

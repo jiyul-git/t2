@@ -101,3 +101,13 @@
 - 쇼브에 콜한 깊은 스택의 복원 레인지에서 AA/KK 가 약 10%만 남는다.
 - 두 순서표는 같은 질문이다(상위 35% 94% 일치). 통합은 보류.
 - 다음: 사용자 승인 대기(S1~S5 구조 분리, C1~C6 콜오프 수정안, DB 파일을 test 로 가져올지).
+
+## 9단계 재개 — semantic-only refactor (R2 행동 수정은 정지)
+
+- 원 계획 순서로 복귀: 재감사(0~8) 완료 → **9단계 semantic-only refactor** → 10단계 최종 regression → 11단계 문서 동기화 → 이후 R2/R1b/OOP.
+- 잔여 분류 `stage9/STAGE9_TRIAGE.md`: ledger 149 항목 중 DONE 14 / PARTIAL 5 / NOW 83 / LATER 18 / KEEP 29. batch B1~B6.
+- **B1 (preflop) 완료.**
+  - 18개 처리, 2개 재분류(L049 → LATER, L071 → KEEP).
+  - 행동 동일성: probe 6,460건, 뮤테이션 13/13, 봉인 sim 지문 동일, 23-gate 동일, completeness 0.
+  - 새 ledger 항목 L-S9-01(가려진 조건).
+- 다음: B2(ranges/reads). B1 이 push 로 봉인된 뒤 시작한다.

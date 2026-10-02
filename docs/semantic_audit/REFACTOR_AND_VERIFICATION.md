@@ -115,3 +115,37 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - 23-gate: 통과/실패 집합 동일(17/23).
 - 전체 verifier 71개: `CANONICAL_VERIFIER_MANIFEST.md` (pristine HEAD vs 작업 트리).
 - `tools/check_semantic_completeness.py`: site 1,136 / 함수 548 / 상수 표 84 / 등록부 참조 전부 소유, 미소유 0.
+
+## 6차 — 9단계 B1 (preflop semantic-only refactor)
+
+기준 `e6de033`. 잔여 분류는 [stage9/STAGE9_TRIAGE.md](stage9/STAGE9_TRIAGE.md), 항목별 상태는 ledger 의 "9단계 B1" 절.
+
+| 추출/명명 | 이전 위치 | 질문 |
+| --- | --- | --- |
+| `persona.positional_chart_flattening` | open_pct inline | 좌석 조건 인식이 차트를 평균 쪽으로 누르는 몫 |
+| `persona.chart_deviation_room` | open_pct / preflop_reasoned_width / defend_thresholds 의 `(1-acc)` | acc 의 이탈 상한 역할 |
+| `gto.open_size_defend_scale` | defend_pct 두 경로의 `mdf(open)/mdf(3)` | 오픈 사이즈 폭 보정 대용 |
+| `preflop.limp_theory_knowledge` | limp_p inline | 림프 이론 지식 공급(RFI 기억 공유) |
+| `preflop.open_entry_threshold` / `apply_money_open_threshold` | open_decision inline | RFI 진입 폭 / 머니점프 반사실 기록 |
+| `preflop.iso_entry_threshold` | iso_decision inline | iso 폭(오픈 폭 파생) |
+| `preflop.raise_commit_geometry` / `shove_form_pressure` | raise_form inline | 기하 커밋 / 올인 형태 동기 |
+| `preflop.legacy_calloff_likelihoods` | defend_action_likelihoods 분기 | legacy 콜오프 cap 경로 |
+| `preflop.apply_defend_exploit_evidence` | defend_action_likelihoods inline | 3벳/4벳 동기·증거 층 |
+| `preflop.hot_reshove_probability` | defend_action_likelihoods inline | 리쇼브 후보·legacy 폭·legacy 확률 |
+| `preflop.attack_candidate_weight` / `_defend_logistic` / `preflop_slowplay_share` | defend_action_likelihoods inline | 공격 후보 순서 / 로지스틱 / 슬로플레이 기질 |
+| `preflop.top_value_class_order` | preflop_blocker_share inline | 블로커 최상단 정의 순서 |
+| `preflop.pf_defend_exact_calc_gate` / `calloff_by_price` | calloff_layer_judgment inline | 추론 게이트 / 가격 판단 |
+| `ranges.support_rank_quantiles` | preflop_reraise_posterior inline | 개수 기준 분위 |
+| `RESHOVE_OPENER_ATTACK` / `OPEN_SHOVE_BEHIND_PROXY` | `OPENER_MULT` 두 소비처 | 같은 표, 질문별 이름(L-RA12) |
+| 문서만 | `tighten_defend_widths_for_raise_level`, `bot.range_combos`, session 레인지 메타 | 4벳 prior MISSING_KNOWLEDGE / fallback 순서 / 첫 진입 올인 기록 |
+
+검증:
+- `tools/verify_stage9_semantic.py e6de033`: pristine e6de033 대 작업 트리 비교.
+  - 6,460건(폭 V2·V3, 디펜스 likelihood+결정+RNG, 오픈/iso+money_open 기록+RNG, raise_form+RNG, 콜오프 layer/cap, multiway+블로커+4벳 posterior+fallback range)이 바이트 동일하다.
+- 뮤테이션 테스트: 추출한 각 함수에 의미 있는 변경 13개를 넣었고, 모두 검출했다.
+  - 0.75 → 0.76(raise_commit_geometry)은 검출되지 않았다. 이 조건이 다른 조건에 가려지기 때문이다(ledger L-S9-01).
+- baseline sim(tilt 0, exploit 중립, max-skill, 시드 11/12, 1,149핸드): 지문이 R2 봉인값과 같다.
+  - 시드 11 `e6d8b5e5…`, 시드 12 `c13a5bf4…`
+  - 지문은 프리플랍 결정 10,157건 전체와 핸드 로그, 최종 스택을 덮는다. RNG 상태는 함수 단위 probe 에서 따로 비교했다.
+- `tools/check_semantic_completeness.py`: site 1,135 / 함수 566 / 상수 표 84, 미소유 0. 새 함수는 SPAN_MAP 에서 기존 개념이 소유한다.
+- 23-gate: 통과·실패 집합이 기준(46a2070/e6de033)과 같다. 17 통과, 기존 실패 6 의 마지막 출력 줄도 같다.

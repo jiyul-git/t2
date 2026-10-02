@@ -155,6 +155,16 @@ def mdf(open_bb):
     return _interp(_MDF, max(1.5, float(open_bb or 3.0)))
 
 
+def open_size_defend_scale(open_bb):
+    """오픈 사이즈에 따른 디펜스 폭 배수 = mdf(open)/mdf(3).
+
+    이름과 달리 `_MDF` 표는 수학적 MDF(=1−α)가 아니라 '3x 기준 디펜스 폭을
+    다른 사이즈로 옮기는 대용 곡선'이다(ledger L056). 출처·검증 상태는
+    docs/semantic_audit/r2/9MAX_DEFEND_PRIOR_PROVENANCE.md 2절 — MISSING_KNOWLEDGE.
+    """
+    return mdf(open_bb) / mdf(3.0)
+
+
 # 디펜딩 포지션. BB 가 기준 1.0 — 이미 1bb 를 넣었고 액션을 닫는다.
 DEF_SEAT = {'BB': 1.00, 'SB': 0.62, 'BTN': 0.46, 'CO': 0.34, 'HJ': 0.26,
             'LJ': 0.21, 'UTG+2': 0.18, 'UTG+1': 0.16, 'UTG': 0.14}
@@ -189,7 +199,7 @@ def defend_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
         else:
             base = _MTT8_ANTE_DEF_A + _MTT8_ANTE_DEF_B * rfi(
                 opener_pos, seats, bb, ante)
-        base *= mdf(open_bb) / mdf(3.0)
+        base *= open_size_defend_scale(open_bb)
         base *= _MTT8_ANTE_DEF_SEAT[def_pos]
         return max(0.02, min(0.92, base))
 
@@ -197,7 +207,7 @@ def defend_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
         base = DEF_VS_SB
     else:
         base = DEF_A + DEF_B * rfi(opener_pos, seats, bb, ante)
-    base *= mdf(open_bb) / mdf(3.0)
+    base *= open_size_defend_scale(open_bb)
     base *= DEF_SEAT.get(def_pos, 0.20)
     return max(0.02, min(0.92, base))
 

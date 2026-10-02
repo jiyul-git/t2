@@ -228,6 +228,16 @@ import persona as PS
 _base_open = pf._open
 _traits    = pf._tr
 
+def support_rank_quantiles(ranked):
+    """정렬된 support 의 콤보 개수 기준 분위 (i+0.5)/n.
+
+    질량(가중치) 누적 분위가 아니다(ledger L083). 가중치가 고르지 않은
+    prior 에서는 두 값이 다르다 — 현재 4bet posterior 는 개수 기준을 쓴다.
+    """
+    n = float(len(ranked))
+    return [(i + 0.5) / n for i in range(len(ranked))]
+
+
 def preflop_reraise_posterior(prior_range, observed_rate, polar=0.0):
     """Posterior after observing a 4bet+ from an existing PF prior.
 
@@ -248,10 +258,8 @@ def preflop_reraise_posterior(prior_range, observed_rate, polar=0.0):
     rate = max(0.005, min(0.50, float(observed_rate or 0.0)))
     pol = max(0.0, min(1.0, float(polar or 0.0)))
     ranked = sorted(wr, key=lambda c: (pf.legacy_preflop_order_percentile(list(c)), c))
-    n = float(len(ranked))
     out = {}
-    for i, c in enumerate(ranked):
-        q = (i + 0.5) / n
+    for c, q in zip(ranked, support_rank_quantiles(ranked)):
         like = math.exp(-q / rate)
 
         # Evidence-gated blocker-bluff channel; support never widens beyond

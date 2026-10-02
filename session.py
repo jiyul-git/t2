@@ -1234,6 +1234,11 @@ class HandRun:
         _story.update({
             'source_base': 'pf_seed' if pfo else 'public_action_meta',
             'stack_bb': float(stack_bb or 0.0),
+            # 기록 전용(R2 S4): 첫 진입 올인은 현재 'open'(RFI 슬라이스)으로
+            # 복원된다. 쇼브 레인지 prior 와 다른 질문이라는 것을 남긴다.
+            'first_in_allin_read_as_open': bool(
+                act == 'open' and pfo.get('pf_act') == 'shove'
+                and pfo.get('pf_role') == 'open'),
         })
         return R.range_unique_sorted(rr), _story
 

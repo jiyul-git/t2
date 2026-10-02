@@ -61,6 +61,12 @@ def _saturate(tp_raw, tot_raw, ceiling=0.80, scale=0.55):
     return tot * (tp_raw/tot_raw), tot
 
 OPENER_MULT = {'UTG':1.4,'UTG+1':1.5,'UTG+2':1.65,'LJ':1.8,'HJ':2.2,'CO':2.9,'BTN':4.2,'SB':4.6}
+# 같은 표가 두 질문에 쓰인다(ledger L-RA12, 과적재). 값을 나누는 것은 행동 변화라
+# 표는 공유하고 질문별 이름만 둔다.
+#   RESHOVE_OPENER_ATTACK     리쇼브 폭: 오프너 위치가 늦을수록 리쇼브를 넓힌다
+#   OPEN_SHOVE_BEHIND_PROXY   오픈쇼브 판단 깊이: 앞자리일수록 뒤 인원이 많다는 대용
+RESHOVE_OPENER_ATTACK = OPENER_MULT
+OPEN_SHOVE_BEHIND_PROXY = OPENER_MULT
 DEF_POS_MULT = {'BB':1.0,'SB':0.55,'BTN':0.9,'CO':0.7,'HJ':0.6,'LJ':0.5,'UTG+2':0.47,'UTG+1':0.45,'UTG':0.4}
 
 # ---------- 스택 뎁스 ----------
@@ -168,6 +174,16 @@ def crude_edge(prof):
     return 0.13 + 0.014*g          # gamble 0 -> 0.13, 10 -> 0.27
 
 
+def limp_theory_knowledge(prof):
+    """숏스택 이론형 림프를 아는 정도 0.10~0.90 (개념 벡터 없으면 0.5).
+
+    별도 림프 지식 개념이 없어 RFI 차트 기억(gto_knowledge('rfi'))을 그대로
+    공급한다(ledger L064 — 공급 공유는 유지, 역할만 명명). limp_p 호출부는
+    seats/bb/ante 를 넘기지 않아 condition match 를 잴 수 없으므로 knowledge 만 쓴다.
+    """
+    return PS.gto_knowledge(prof, 'rfi') if prof.get('concepts') else 0.5
+
+
 def limp_p(prof, feel, hand_pct, pos, traits=None):
     """오픈 림프 확률. **동기가 둘이고 방향이 반대다.**
 
@@ -184,9 +200,7 @@ def limp_p(prof, feel, hand_pct, pos, traits=None):
     막고 습관적 림프만 남긴 셈인데, 이론과 정반대 방향이다.
     """
     t = traits or _tr(prof)
-    # limp_p 호출부는 seats/bb/ante 를 넘기지 않아 condition match 를 잴 수 없다.
-    # knowledge 만 쓴다 (예전 acc 와 같은 값).
-    acc = PS.gto_knowledge(prof, 'rfi') if prof.get('concepts') else 0.5
+    acc = limp_theory_knowledge(prof)
 
     # --- 이론적 림프 ---
     # feel 0.12(=20bb) 아래에서만. 얕을수록 커진다.
@@ -243,8 +257,8 @@ def open_form(prof, feel, hand_pct, bb, rng, vs=0.0, traits=None, eff_bb=None,
         # (OPENER_MULT/2.6)가 이미 정의한다. 같은 양을 써서 앞 포지션의
         # 쇼브 판단 깊이를 늘린다. 늦은 포지션은 기존 곡선을 유지한다(≥1 클립).
         _pos_depth = 1.0
-        if pos in OPENER_MULT:
-            _pos_depth = max(1.0, 2.6 / OPENER_MULT[pos]) ** 0.5
+        if pos in OPEN_SHOVE_BEHIND_PROXY:
+            _pos_depth = max(1.0, 2.6 / OPEN_SHOVE_BEHIND_PROXY[pos]) ** 0.5
         struct_aware = max(0.0, min(1.0,
                                     (0.22 - _DP.base_feel(eff_bb*_pos_depth))
                                     / 0.22))
@@ -310,6 +324,48 @@ def table_pressure(behind_reads):
     return max(0.55, min(1.45, 1.0 - 0.85*threat + 0.70*steal))
 
 
+def open_entry_threshold(prof, pos, bb, seats, ante, feel, traits,
+                         behind_reads, behind_stacks):
+    """첫 진입(RFI) 레이즈 레인지 폭 — 판단(JUDGMENT) 층.
+
+    기준 폭(gto.rfi × 성향, `_open`) × 뒤 사람 성향 압력 × 뒤 리쇼브 스택 압력,
+    짧으면 성향 쇼브 몫을 더한다. 깊이 배수는 `_open` 안(gto.rfi)에서 한 번만.
+    형태(레이즈/쇼브)와 사이즈는 별도 함수가 정한다(ledger L067).
+    """
+    # 뒤 사람의 성향(3벳 위협)과 스택(리쇼브 위협)은 다른 압력이다.
+    # 후자는 hotzone_pressure 가 재는데 호출부가 없어 죽어 있었다.
+    thr = (_open(prof, pos, seats, bb, ante)
+           * table_pressure(behind_reads)
+           * hotzone_pressure(prof, pos, bb, behind_stacks or []))
+    return min(0.9, thr + traits['shove_add'] if feel < 0.20 else thr)
+
+
+def apply_money_open_threshold(thr, hand_pct, money_open):
+    """머니점프 첫 행동 개입을 진입 폭에 곱하고 반사실(머니점프가 없었다면)을 기록.
+
+    기준 레인지를 새로 만들지 않고 기존 open threshold 에 연속 factor 만 곱한다.
+    진입 여부가 threshold 하나로 결정되므로 RNG 재생 없이 widen_entry /
+    narrow_fold 를 판정한다. money_open 이 없으면 thr 를 그대로 돌려준다.
+    """
+    _base_thr = thr
+    if money_open:
+        try:
+            thr *= max(0.0, float(money_open.get('range_factor', 1.0)))
+        except (TypeError, ValueError):
+            pass
+        thr = max(0.0, min(0.9, thr))
+        money_open['base_threshold'] = round(_base_thr, 6)
+        money_open['money_threshold'] = round(thr, 6)
+        money_open['hand_pct'] = round(hand_pct, 6)
+        _base_in = (hand_pct <= _base_thr)
+        _money_in = (hand_pct <= thr)
+        money_open['range_cf'] = (
+            'widen_entry' if (not _base_in and _money_in) else
+            'narrow_fold' if (_base_in and not _money_in) else
+            'unchanged')
+    return thr
+
+
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
                   field_avg_bb=None, erosion=0.0,
@@ -327,34 +383,10 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                            payout_flat, reentry, progress)
           if prof.get('concepts') else 0.0)
     # 깊이 배수는 _open 안(gto.rfi)에서 이미 적용된다. 여기서 또 곱하면 이중이다.
-    # 뒤 사람의 성향(3벳 위협)과 스택(리쇼브 위협)은 다른 압력이다.
-    # 후자는 hotzone_pressure 가 재는데 호출부가 없어 죽어 있었다.
-    thr = (_open(prof, pos, seats, bb, ante)
-           * table_pressure(behind_reads)
-           * hotzone_pressure(prof, pos, bb, behind_stacks or []))
-    thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
+    thr = open_entry_threshold(prof, pos, bb, seats, ante, feel, t,
+                               behind_reads, behind_stacks)
     r = legacy_preflop_order_percentile(hand)
-    # 같은 결정 상태에서 "머니점프가 없었다면"과 "있다면"을 정확히 비교하기
-    # 위한 로컬 반사실. 진입 여부는 threshold 하나로 결정되므로 RNG 재생 없이
-    # widen_entry / narrow_fold를 판정할 수 있다.
-    _base_thr = thr
-    # 머니점프 첫 행동 개입. 기준 레인지 자체를 새로 만들지 않고,
-    # 기존 open threshold에 연속 factor만 곱한다.
-    if money_open:
-        try:
-            thr *= max(0.0, float(money_open.get('range_factor', 1.0)))
-        except (TypeError, ValueError):
-            pass
-        thr = max(0.0, min(0.9, thr))
-        money_open['base_threshold'] = round(_base_thr, 6)
-        money_open['money_threshold'] = round(thr, 6)
-        money_open['hand_pct'] = round(r, 6)
-        _base_in = (r <= _base_thr)
-        _money_in = (r <= thr)
-        money_open['range_cf'] = (
-            'widen_entry' if (not _base_in and _money_in) else
-            'narrow_fold' if (_base_in and not _money_in) else
-            'unchanged')
+    thr = apply_money_open_threshold(thr, r, money_open)
     _in_raise_range = (r <= thr)
     # 쇼브 판정은 **raise/open range 안**에서 먼저다. 10bb 에서 림프를 먼저
     # 물으면 쇼브해야 할 자리에서 림프가 나온다.
@@ -435,30 +467,14 @@ def reraise_mult(level, def_pos):
             3: (2.1 if ip else 2.2),   # 5벳
             }.get(level, 2.1)
 
-def raise_form(prof, stack_bb, target_bb, pot_bb, rng, exploit=None,
-               level=1, n_opp=1, facing_bb=0.0):
-    """레이즈를 논올인으로 칠지 올인으로 갈지 — 형태를 정하는 유일한 지점.
+def raise_commit_geometry(stack_bb, target_bb, pot_bb, facing_bb):
+    """레이즈 형태의 '기하' 질문: 논올인으로 치면 이미 커밋인가.
 
-    기존에는 `band in ('micro','short','mid')` 한 줄이었다.
-    스택 24.9bb 와 25.1bb 가 완전히 다른 사람이 되고,
-    같은 20bb 에서 '3벳에 항상 접는 상대'와 '절대 안 접는 상대'가
-    같은 형태로 처리됐다. 그건 판단이 아니라 계단이다.
-
-    세 가지가 형태를 정한다:
-      1. 기하 — 논올인으로 치고 남는 스택이 팟 대비 얕으면 이미 커밋이다
-      2. 폴드에쿼티 — 잘 접는 상대에겐 굳이 다 밀 이유가 없다(싸게 같은 결과)
-                      안 접는 상대에겐 어중간한 3벳이 최악의 SPR 을 만든다
-      3. 상대 4벳 성향 — 4벳을 자주 하는 상대에게 논올인 3벳은 유도다
-    자기 개념(spr)이 낮으면 위 판단을 못 하고 예전 계단으로 물러난다.
-
-    반환: ('shove', stack_bb) 또는 ('raise', target_bb)
+    반환 (forced_shove, spr_after). 동기(폴드에쿼티·상대 4벳 성향)와 분리한다
+    (ledger L072). pot_bb 는 내가 치기 전의 팟(블라인드+오픈+콜러)이다.
     """
-    if stack_bb is None or target_bb >= stack_bb:
-        return ('shove', stack_bb if stack_bb is not None else target_bb)
-
     # ---------- 1. 기하: 여기 걸리면 판단 이전에 이미 올인이다 ----------
     # 콜당했을 때의 팟: 내가 target, 상대가 (target - 이미 넣은 것)을 더 넣는다.
-    # pot_bb 는 내가 치기 전의 팟(블라인드+오픈+콜러)이다.
     rem = stack_bb - target_bb
     pot_after = max(1.0, pot_bb + 2.0*target_bb - facing_bb)
     spr_after = rem / pot_after
@@ -466,8 +482,15 @@ def raise_form(prof, stack_bb, target_bb, pot_bb, rng, exploit=None,
     # 여기를 넓게 잡으면 아래 판단 층이 통째로 죽는다 —
     # 실제로 1.15 로 잡았더니 32bb 까지 100% 쇼브, 40bb 0% 인 새 계단이 됐다.
     if target_bb >= 0.75*stack_bb or spr_after < 0.50:
-        return ('shove', stack_bb)      # 쳐놓고 접을 수 없다 = 형태만 다른 올인
+        return True, spr_after
+    return False, spr_after
 
+
+def shove_form_pressure(spr_after, exploit, level, n_opp):
+    """레이즈 형태의 '동기' 질문: 커밋 구간 근처에서 올인 형태를 고를 압력 0~1.
+
+    기하(SPR) 압력에 상대 폴드에쿼티·4벳 성향(읽기)과 다인원 배율을 더한다.
+    """
     # ---------- 2. 연속 판단 ----------
     # 스택 깊이는 bb 가 아니라 '3벳 후 SPR' 로 잰다.
     # bb 만 보면 오픈 사이즈와 3벳 배수를 무시하게 된다 —
@@ -490,6 +513,37 @@ def raise_form(prof, stack_bb, target_bb, pot_bb, rng, exploit=None,
         # 스퀴즈에서도 22% 가 올인 형태가 됐다(audit9 HAND 23: SB AA 99bb 쇼브 —
         # 밸류 핸드가 더 약한 핸드를 전부 접게 만든다). 커밋 구간이 아니면 0.
         sh = min(1.0, sh * (1.0 + 0.20*(n_opp - 1)))
+
+    return sh
+
+
+def raise_form(prof, stack_bb, target_bb, pot_bb, rng, exploit=None,
+               level=1, n_opp=1, facing_bb=0.0):
+    """레이즈를 논올인으로 칠지 올인으로 갈지 — 형태를 정하는 유일한 지점.
+
+    기존에는 `band in ('micro','short','mid')` 한 줄이었다.
+    스택 24.9bb 와 25.1bb 가 완전히 다른 사람이 되고,
+    같은 20bb 에서 '3벳에 항상 접는 상대'와 '절대 안 접는 상대'가
+    같은 형태로 처리됐다. 그건 판단이 아니라 계단이다.
+
+    세 가지가 형태를 정한다:
+      1. 기하 — 논올인으로 치고 남는 스택이 팟 대비 얕으면 이미 커밋이다
+      2. 폴드에쿼티 — 잘 접는 상대에겐 굳이 다 밀 이유가 없다(싸게 같은 결과)
+                      안 접는 상대에겐 어중간한 3벳이 최악의 SPR 을 만든다
+      3. 상대 4벳 성향 — 4벳을 자주 하는 상대에게 논올인 3벳은 유도다
+    자기 개념(spr)이 낮으면 위 판단을 못 하고 예전 계단으로 물러난다.
+
+    반환: ('shove', stack_bb) 또는 ('raise', target_bb)
+    """
+    if stack_bb is None or target_bb >= stack_bb:
+        return ('shove', stack_bb if stack_bb is not None else target_bb)
+
+    # ---------- 1. 기하(raise_commit_geometry) / 2. 동기(shove_form_pressure) ----------
+    forced, spr_after = raise_commit_geometry(stack_bb, target_bb, pot_bb, facing_bb)
+    if forced:
+        return ('shove', stack_bb)      # 쳐놓고 접을 수 없다 = 형태만 다른 올인
+
+    sh = shove_form_pressure(spr_after, exploit, level, n_opp)
 
     # ---------- 3. 개념 게이트 ----------
     # 스택 깊이를 못 읽는 사람은 위 판단을 못 한다. 예전 밴드 계단으로 물러난다.
@@ -515,7 +569,7 @@ def reshove_range(prof, def_pos, opener_pos, bb, open_bb, n_callers=0):
     base = 0.055 + 0.011*a + 0.35*t['threebet']
     # 스택 곡선: 12bb 최대, 26bb에서 급감
     depth_mult = max(0.25, min(1.6, (26.0 - bb) / 9.0))
-    pos_mult = OPENER_MULT.get(opener_pos, 2.0) / 2.6
+    pos_mult = RESHOVE_OPENER_ATTACK.get(opener_pos, 2.0) / 2.6
     blind_mult = 1.25 if def_pos in ('SB', 'BB') else 0.85
     fold_eq = 1.0 / (1.0 + 0.55*n_callers)          # 콜러가 있으면 폴드에쿼티 하락
     cap = base * depth_mult * pos_mult * blind_mult * fold_eq
@@ -607,6 +661,10 @@ def tighten_defend_widths_for_raise_level(attack_width, continue_width, raise_le
 
     raise_level=1 faces an open; >=2 faces a reraise. Preserve this final
     stage after caller and short-stack transforms, including operation order.
+
+    지식 상태(R2): 독립 vs-3bet / 4bet / 5bet prior 는 MISSING_KNOWLEDGE 다.
+    여기서는 vs-open 디펜스 prior(오프너가 3벳을 맞으면 위치를 바꿔 쓴 값)를
+    LEVEL_TIGHTEN 으로 줄일 뿐이며, 이 값을 4벳 정답으로 간주하지 않는다.
     """
     tp, tot = attack_width, continue_width
     # 단계별 축소는 마지막에. 앞에서 하면 이후 곱셈이 좁아진 값을 되살린다.
@@ -663,8 +721,8 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
             # v2 / production path: V3 OFF이면 기존 수치 그대로.
             acc = PS.gto_memory_confidence(prof, 'defend', def_pos, seats, bb, ante,
                                            opener_pos=opener_pos, open_bb=open_bb)
-            tot = base_tot * (1.0 + (1.0-acc)*d_call*0.95)
-            tp = base_tp * (1.0 + (1.0-acc)*d_tb*1.10)
+            tot = base_tot * (1.0 + PS.chart_deviation_room(acc)*d_call*0.95)
+            tp = base_tp * (1.0 + PS.chart_deviation_room(acc)*d_tb*1.10)
         tp, tot = normalize_defend_prior_widths(tp, tot, _calibrated_mtt8)
 
     tp, tot = adjust_defend_widths_for_callers(prof, tp, tot, n_callers)
@@ -672,60 +730,56 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     return tighten_defend_widths_for_raise_level(tp, tot, raise_level)
 
 
-def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
-                              n_callers, raise_level=1, stack_bb=None,
-                              exploit=None, bf=1.0, seats=8, ante=True,
-                              opener_allin=False, can_raise=True,
-                              pot_bb=None, to_call_bb=None):
-    """RNG를 소비하지 않는 defend 액션 범주 확률.
+def legacy_calloff_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
+                               n_callers, raise_level, stack_bb, exploit, bf,
+                               seats, ante, opener_allin, can_raise,
+                               pot_bb, to_call_bb):
+    """올인/거의 올인 대면 콜·폴드의 legacy 경로. 해당하지 않으면 None.
 
-    반환 범주는 관찰자 레인지가 구분할 수 있는 세 가지다.
-
-      attack  3bet / raise-form shove
-      call    flat / call-off
-      fold
-
-    현재 defend_decision의 혼합정책 수학을 그대로 계산하지만 실제 액션
-    또는 사이즈를 뽑지 않는다. B1D weighted-posterior가 actor의 비공개 RNG를
-    재생하지 않고 P(observed action | hand, model)을 계산하기 위한 단일 의미
-    계약이다.
-
-    exploit는 actor 쪽에서는 실제 read를 받을 수 있지만 observer는 자신의
-    공개/추정 모델만 넣어야 한다. 이 helper 자체는 hidden state를 조회하지 않는다.
+    판단량은 `calloff_cap`(디펜스 폭에서 파생한 pf_rank 백분위 cap)이다 —
+    equity/가격이 아니다(R2 CALLOFF_PATH_AUDIT). 현재 이 값이 행동을 직접 정하는
+    경로: near-all-in(`open_bb >= 스택×0.92`), 계산 게이트를 통과하지 못한
+    순수 콜오프, 관찰자의 '쇼브에 콜한 사람' 레인지 복원. 공격(리쇼브)은 0.
     """
     _st = stack_bb if stack_bb is not None else bb
     _hero_calloff = open_bb >= _st * 0.92
     _pure_short_shove = bool(opener_allin and not can_raise)
-    if _hero_calloff or _pure_short_shove:
-        _pot = float(pot_bb if pot_bb is not None
-                     else 1.5 + open_bb*(1 + n_callers))
-        _tc = float(to_call_bb if to_call_bb is not None else open_bb)
-        _a, _cap = calloff_decision(
-            prof, def_pos, hand, bb, raise_level,
-            _pot, _tc, bf, opener_pos, open_bb, exploit, n_callers,
-            seats, ante)
-        _kind = _a[0]
-        return {
-            'attack': 0.0,
-            'call': 1.0 if _kind == 'call' else 0.0,
-            'fold': 1.0 if _kind == 'fold' else 0.0,
-            'hot_attack': 0.0,
-            'mixed_attack': 0.0,
-            'mixed_call': 1.0 if _kind == 'call' else 0.0,
-            'mixed_fold': 1.0 if _kind == 'fold' else 0.0,
-            'w_raise': 0.0,
-            'w_call': 1.0 if _kind == 'call' else 0.0,
-            'w_fold': 1.0 if _kind == 'fold' else 0.0,
-            'total_weight': 1.0,
-            'calloff': True,
-            'calloff_cap': _cap,
-            'tp': None,
-            'tot': None,
-            'hand_pct': legacy_preflop_order_percentile(hand),
-        }
+    if not (_hero_calloff or _pure_short_shove):
+        return None
+    _pot = float(pot_bb if pot_bb is not None
+                 else 1.5 + open_bb*(1 + n_callers))
+    _tc = float(to_call_bb if to_call_bb is not None else open_bb)
+    _a, _cap = calloff_decision(
+        prof, def_pos, hand, bb, raise_level,
+        _pot, _tc, bf, opener_pos, open_bb, exploit, n_callers,
+        seats, ante)
+    _kind = _a[0]
+    return {
+        'attack': 0.0,
+        'call': 1.0 if _kind == 'call' else 0.0,
+        'fold': 1.0 if _kind == 'fold' else 0.0,
+        'hot_attack': 0.0,
+        'mixed_attack': 0.0,
+        'mixed_call': 1.0 if _kind == 'call' else 0.0,
+        'mixed_fold': 1.0 if _kind == 'fold' else 0.0,
+        'w_raise': 0.0,
+        'w_call': 1.0 if _kind == 'call' else 0.0,
+        'w_fold': 1.0 if _kind == 'fold' else 0.0,
+        'total_weight': 1.0,
+        'calloff': True,
+        'calloff_cap': _cap,
+        'tp': None,
+        'tot': None,
+        'hand_pct': legacy_preflop_order_percentile(hand),
+    }
 
-    tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
-                                n_callers, raise_level, seats, ante)
+
+def apply_defend_exploit_evidence(tp, tot, exploit, raise_level):
+    """상대 읽기(exploit read)를 공격 폭 tp / 계속 폭 tot 에 적용한다.
+
+    3벳/4벳의 '동기·증거' 층이다(R2 A 3절 (b)). prior 폭(tp, tot)과 후보 순서는
+    바꾸지 않고 읽기만 반영한다. baseline(exploit 중립, w=0)에서는 그대로 통과.
+    """
     if exploit and exploit.get('w', 0) > 0:
         w = exploit['w']
         if raise_level >= 2:
@@ -751,32 +805,99 @@ def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
             if fbg > 0:
                 tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))
 
-    r = legacy_preflop_order_percentile(hand)
+    return tp, tot
 
+
+def hot_reshove_probability(prof, def_pos, opener_pos, hand_pct, stack_bb,
+                            open_bb, n_callers, raise_level, can_raise):
+    """핫존(12~26bb) 리쇼브 확률 — legacy 근사.
+
+    세 층이 섞여 있음을 이름으로 드러낸다(R2 A 2절):
+      후보      hand_pct <= rs            (pf_rank 순서: 유지 가능)
+      legacy 폭 rs = reshove_range(...)   (성향 + 폴드에쿼티 대용 + 스택)
+      legacy 확률 0.30 + 0.60·(1 − r/rs)  (근거 없는 순서→확률 변환)
+    리쇼브가 +EV 인지(콜당했을 때 equity, 폴드에쿼티, 가격, 뒤 좌석)는 계산하지
+    않는다. 빈도 지식은 MISSING_KNOWLEDGE.
+    """
     p_hot = 0.0
     if can_raise and stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:
         rs = reshove_range(prof, def_pos, opener_pos, stack_bb, open_bb, n_callers)
-        if r <= rs:
-            depth = 1.0 - (r / max(1e-6, rs))
+        if hand_pct <= rs:
+            depth = 1.0 - (hand_pct / max(1e-6, rs))
             p_hot = max(0.0, min(1.0, 0.30 + 0.60*depth))
+    return p_hot
 
-    import math
-    def _logit(x, center, width):
-        return 1.0/(1.0+math.exp((x-center)/max(1e-6, width)))
 
-    a = prof_aggr(prof)
-    w_raise = _logit(r, tp, max(0.015, tp*0.35))
-    w_raise *= (0.35 + 0.65*max(0.0, 1.0 - r/max(1e-6, tp)))
-    w_raise *= (0.55 + 0.085*a)
+def _defend_logistic(x, center, width):
+    return 1.0/(1.0+math.exp((x-center)/max(1e-6, width)))
 
+
+def attack_candidate_weight(hand_pct, tp, aggr):
+    """공격(3벳/상위 재레이즈) 후보 가중치 — pf_rank 상위 슬라이스 (0, tp] 의 형상.
+
+    3벳/4벳의 '후보 순서' 층이다(R2 A 3절 (a)). 집합 모양이 solver 3벳 집합을
+    재현한다는 근거는 없다(8-max 관찰 재현율 0.61). tp 는 독립 4벳 prior 가 아니다.
+    """
+    w_raise = _defend_logistic(hand_pct, tp, max(0.015, tp*0.35))
+    w_raise *= (0.35 + 0.65*max(0.0, 1.0 - hand_pct/max(1e-6, tp)))
+    w_raise *= (0.55 + 0.085*aggr)
+    return w_raise
+
+
+def preflop_slowplay_share(prof, hand_pct, aggr):
+    """프리미엄을 공격 대신 콜로 돌리는 슬로플레이 몫(기질). 0~1."""
     _pf_slow = 0.0
     if prof.get('concepts'):
         _taste = PS.temper(prof, 'slowplay_taste', 5.0) / 10.0
-        _passive = max(0.0, min(1.0, (5.0 - a) / 5.0))
-        _premium = max(0.0, min(1.0, (0.10 - r) / 0.10))
+        _passive = max(0.0, min(1.0, (5.0 - aggr) / 5.0))
+        _premium = max(0.0, min(1.0, (0.10 - hand_pct) / 0.10))
         _pf_slow = _passive * (0.35 + 0.65*_taste) * _premium
     elif A.ARCHETYPES.get(prof.get('type'), (0,)*7+('reg',))[6] == 'fish':
-        _pf_slow = max(0.0, min(1.0, (0.10 - r) / 0.10)) * 0.55
+        _pf_slow = max(0.0, min(1.0, (0.10 - hand_pct) / 0.10)) * 0.55
+    return _pf_slow
+
+
+def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
+                              n_callers, raise_level=1, stack_bb=None,
+                              exploit=None, bf=1.0, seats=8, ante=True,
+                              opener_allin=False, can_raise=True,
+                              pot_bb=None, to_call_bb=None):
+    """RNG를 소비하지 않는 defend 액션 범주 확률.
+
+    반환 범주는 관찰자 레인지가 구분할 수 있는 세 가지다.
+
+      attack  3bet / raise-form shove
+      call    flat / call-off
+      fold
+
+    현재 defend_decision의 혼합정책 수학을 그대로 계산하지만 실제 액션
+    또는 사이즈를 뽑지 않는다. B1D weighted-posterior가 actor의 비공개 RNG를
+    재생하지 않고 P(observed action | hand, model)을 계산하기 위한 단일 의미
+    계약이다.
+
+    exploit는 actor 쪽에서는 실제 read를 받을 수 있지만 observer는 자신의
+    공개/추정 모델만 넣어야 한다. 이 helper 자체는 hidden state를 조회하지 않는다.
+    """
+    _calloff = legacy_calloff_likelihoods(
+        prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, raise_level,
+        stack_bb, exploit, bf, seats, ante, opener_allin, can_raise,
+        pot_bb, to_call_bb)
+    if _calloff is not None:
+        return _calloff
+
+    tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
+                                n_callers, raise_level, seats, ante)
+    tp, tot = apply_defend_exploit_evidence(tp, tot, exploit, raise_level)
+
+    r = legacy_preflop_order_percentile(hand)
+
+    p_hot = hot_reshove_probability(prof, def_pos, opener_pos, r, stack_bb,
+                                    open_bb, n_callers, raise_level, can_raise)
+
+    _logit = _defend_logistic
+    a = prof_aggr(prof)
+    w_raise = attack_candidate_weight(r, tp, a)
+    _pf_slow = preflop_slowplay_share(prof, r, a)
     w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)
 
     # 혼합 폭은 참가 경계(tot) 근처의 불확실성이다. (tot-tp)*0.35 는 tot 의
@@ -910,6 +1031,16 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
     return ('fold', 0)
 
 
+def top_value_class_order(classes):
+    """블로커 계산에서 '상대 최상단 밸류'를 정의하는 클래스 순서(pf_rank).
+
+    블로커 몫은 두 질문이다: (1) 어느 클래스가 최상단인가 — 순서(PCT),
+    (2) 그 구간에서 내 카드가 지운 질량 — 관측 레인지의 실제 가중치.
+    (1)만 이 함수가 맡는다(ledger L075). 블러프 실력과는 무관하다.
+    """
+    return sorted(classes, key=lambda x: PCT.get(x, 1.0))
+
+
 def preflop_blocker_share(hand, pools):
     """내 두 장이 상대들의 최상단 밸류 질량을 지운 몫. 0~1.
 
@@ -934,7 +1065,7 @@ def preflop_blocker_share(hand, pools):
         if mass <= 0:
             continue
         acc = 0.0
-        for k in sorted(by, key=lambda x: PCT.get(x, 1.0)):
+        for k in top_value_class_order(by):
             rows = by[k]
             mw = sum(w for _, w in rows) / len(rows)
             n_full = 6 if len(k) == 2 else (4 if k.endswith('s') else 12)
@@ -1189,6 +1320,19 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         audit['fair_share_3way'] = audit.get('fair_share')
     return act, sz, audit
 
+def iso_entry_threshold(prof, pos, bb, seats, ante, traits, behind_reads,
+                        behind_stacks):
+    """림퍼 상대 아이솔레이트 레인지 폭(림퍼 읽기 반영 전).
+
+    독립 iso prior 가 없어 오픈 폭에 iso 성향 배수를 곱해 파생한다(ledger L068,
+    R2: MISSING_KNOWLEDGE). 뒤 3벳/리쇼브 위협은 오픈과 같은 압력 함수.
+    """
+    return (_open(prof, pos, seats, bb, ante)
+            * (1.0 + 0.35*traits['iso'])
+            * table_pressure(behind_reads)
+            * hotzone_pressure(prof, pos, bb, behind_stacks or []))
+
+
 def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
                  behind_stacks=None, behind_reads=None, seats=8, ante=True,
                  field_avg_bb=None, erosion=0.0, field_q=0.6, bf=1.0,
@@ -1204,10 +1348,8 @@ def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
     """
     t = _tr(prof)
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
-    thr = (_open(prof, pos, seats, bb, ante)
-           * (1.0 + 0.35*t['iso'])
-           * table_pressure(behind_reads)
-           * hotzone_pressure(prof, pos, bb, behind_stacks or []))
+    thr = iso_entry_threshold(prof, pos, bb, seats, ante, t, behind_reads,
+                              behind_stacks)
 
     # 림퍼가 약할수록 아이소를 넓힌다.
     # '레이즈에 접는가'는 포스트플랍 fold_to_bet 이 아니라
@@ -1314,6 +1456,21 @@ def calloff_ev_comparison(hand, legacy_action, legacy_cap, call_ev_shadow,
     }
 
 
+def pf_defend_exact_calc_gate(prof):
+    """정확한 프리플랍 콜오프 계산을 실제로 실행할 확률 0~1 (pf_defend 개념).
+
+    pf_defend 개념의 '추론 게이트' 역할이다(ledger L033/L078). 같은 개념의
+    차트 기억 역할(gto_knowledge('defend'))과 질문이 다르다. 통과하지 못하면
+    legacy 콜오프 폭(legacy_calloff_likelihoods)의 행동이 남는다.
+    """
+    return max(0.0, min(1.0, float(PS.gate(prof, 'pf_defend'))))
+
+
+def calloff_by_price(effective_equity, required_equity):
+    """올인 콜오프의 수학적 판단: equity ≥ 필요 equity 이면 call."""
+    return 'call' if float(effective_equity) >= required_equity else 'fold'
+
+
 def calloff_layer_judgment(prof, call_ev_shadow, bubble_factor=1.0,
                            seed=None):
     """F8-D6-D2: pure-calloff layer equity를 개인이 실제로 적용한 판단.
@@ -1358,10 +1515,10 @@ def calloff_layer_judgment(prof, call_ev_shadow, bubble_factor=1.0,
         noise = PS.calc_noise(
             prof, 'potodds', random.Random(noise_seed))
         noise = max(0.65, min(1.55, float(noise)))
-        gate_p = max(0.0, min(1.0, float(PS.gate(prof, 'pf_defend'))))
+        gate_p = pf_defend_exact_calc_gate(prof)
 
     need_seen = max(0.01, min(0.95, float(need_base) * noise))
-    layer_action = 'call' if float(eq) >= need_seen else 'fold'
+    layer_action = calloff_by_price(eq, need_seen)
     gate_roll = random.Random(gate_seed).random()
     gate_pass = bool(gate_roll < gate_p)
 

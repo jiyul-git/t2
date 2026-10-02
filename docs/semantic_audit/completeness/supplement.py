@@ -720,15 +720,17 @@ sp('pure_bluff_line_selection', 'plan', '_blocker_score_bluff_factor')
 sp('pure_bluff_line_selection', 'plan', '_blocker_net_bluff_factor')
 
 # ---- preflop.py ----
-sp('legacy_calloff_threshold', 'preflop', 'defend_action_likelihoods', '_st = stack_bb if stack_bb is not None else bb', "'hand_pct': legacy_preflop_order_percentile(hand),")
-sp('preflop_read_width_exploit', 'preflop', 'defend_action_likelihoods', "if exploit and exploit.get('w', 0) > 0:", 'tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))')
-sp('reshove_opportunity', 'preflop', 'defend_action_likelihoods', 'p_hot = 0.0', 'p_hot = max(0.0, min(1.0, 0.30 + 0.60*depth))')
+sp('legacy_calloff_threshold', 'preflop', 'legacy_calloff_likelihoods')  # stage9 B1
+sp('preflop_read_width_exploit', 'preflop', 'apply_defend_exploit_evidence')  # stage9 B1
+sp('reshove_opportunity', 'preflop', 'hot_reshove_probability')  # stage9 B1
 sp('mixed_preflop_action_likelihood', 'preflop', 'defend_action_likelihoods', 'a = prof_aggr(prof)', "'hand_pct': r,")
-sp('preflop_premium_slowplay_mix', 'preflop', 'defend_action_likelihoods', '_pf_slow = 0.0', 'w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)')
-sp('allin_form_fold_equity_read', 'preflop', 'raise_form', "if exploit and exploit.get('w', 0) > 0:", "sh *= max(0.35, 1.0 - w*0.5*max(0.0, exploit.get('fb_gap', 0.0)))")
+sp('preflop_premium_slowplay_mix', 'preflop', 'preflop_slowplay_share')  # stage9 B1
+sp('preflop_premium_slowplay_mix', 'preflop', 'defend_action_likelihoods', '_pf_slow = preflop_slowplay_share(prof, r, a)', 'w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)')
+sp('mixed_preflop_action_likelihood', 'preflop', 'attack_candidate_weight')  # stage9 B1
+sp('allin_form_fold_equity_read', 'preflop', 'shove_form_pressure', "if exploit and exploit.get('w', 0) > 0:", "sh *= max(0.35, 1.0 - w*0.5*max(0.0, exploit.get('fb_gap', 0.0)))")  # stage9 B1
 sp('accumulation_variance_drive', 'preflop', 'open_decision', 'vs = (PS.variance_seek(', "if prof.get('concepts') else 0.0)")
-sp('short_stack_open_widening', 'preflop', 'open_decision', "thr = min(0.9, thr + t['shove_add']")
-sp('money_open_range_modifier', 'preflop', 'open_decision', 'if money_open:', "'unchanged')")
+sp('short_stack_open_widening', 'preflop', 'open_entry_threshold', "return min(0.9, thr + traits['shove_add']")  # stage9 B1
+sp('money_open_range_modifier', 'preflop', 'apply_money_open_threshold')  # stage9 B1
 sp('limp_entry_motive', 'preflop', 'open_decision', '_base_limp_p = limp_p(prof, feel, r, pos, t)', "money_open['sb_limp_currently_blocked'] = False")
 sp('open_size_behind_read_adjust', 'preflop', 'open_decision', '_soft = 0.0', 'for r in _bl)/len(_bl)))')
 sp('players_behind_risk_premium', 'preflop', 'multiway_reraise_decision', 'if players_behind:', 'need += ')
@@ -844,14 +846,23 @@ sp('strength_improvement_promotion', 'plan', 'refresh', "_prev_made = st.get('ma
 sp('opponent_fold_constraint', 'plan', 'refresh', '_field_refresh = (', 'if int(n_opp or 1) > 1 else None)')
 sp('opponent_fold_constraint', 'plan', 'select_field_opponent', "if purpose == 'bet_probability':@@2", 'return min(rows')
 sp('preflop_decision_routing', 'plan', 'preflop_plan', 'if aggressor_pos is None and not n_limpers:', "role = 'defend'")
-sp('reraise_sizing_form', 'preflop', 'raise_form', 'if stack_bb is None or target_bb >= stack_bb:', 'sh = max(0.0, min(1.0, (1.75 - spr_after) / 1.25))')
-sp('reraise_sizing_form', 'preflop', 'raise_form', 'if n_opp > 1:', 'sh = min(1.0, sh * (1.0 + 0.20*(n_opp - 1)))')
+sp('reraise_sizing_form', 'preflop', 'raise_form', 'if stack_bb is None or target_bb >= stack_bb:', 'sh = shove_form_pressure(spr_after, exploit, level, n_opp)')  # stage9 B1
+sp('reraise_sizing_form', 'preflop', 'raise_commit_geometry')
+sp('reraise_sizing_form', 'preflop', 'shove_form_pressure')
 sp('reraise_sizing_form', 'preflop', 'raise_form', 'aware = 1.0', "return ('raise', target_bb)")
 sp('multiway_reraise_reasoning', 'preflop', 'multiway_reraise_decision', 'if len(pools) < 2 or pot_bb is None or to_call_bb is None:', "'opponent_range_seats': range_seats,")
 sp('multiway_reraise_reasoning', 'preflop', 'multiway_reraise_decision', 'cost = max(0.0, float(to_call_bb or 0.0))', 'need = max(0.01, min(0.95, need))')
 sp('multiway_reraise_reasoning', 'preflop', 'multiway_reraise_decision', 'lik = defend_action_likelihoods(', 'call, fold = apply_multiway_call_evidence(call, fold, eq, need, reason_skill)')
-sp('isolation_decision', 'preflop', 'iso_decision', 't = _tr(prof)', 'hotzone_pressure(prof, pos, bb, behind_stacks or []))')
-sp('unopened_decision', 'preflop', 'open_decision', 'thr = (_open(prof, pos, seats, bb, ante)', 'hotzone_pressure(prof, pos, bb, behind_stacks or []))')
+sp('isolation_decision', 'preflop', 'iso_entry_threshold')  # stage9 B1
+sp('unopened_decision', 'preflop', 'open_entry_threshold')  # stage9 B1
+sp('defend_width_prior', 'gto', 'open_size_defend_scale')  # stage9 B1 (L056)
+sp('positional', 'persona', 'positional_chart_flattening')  # stage9 B1 (L030)
+sp('rfi_personality_deviation', 'persona', 'chart_deviation_room')  # stage9 B1 (L058/L063)
+sp('limp_entry_motive', 'preflop', 'limp_theory_knowledge')  # stage9 B1 (L064)
+sp('preflop_card_removal', 'preflop', 'top_value_class_order')  # stage9 B1 (L075)
+sp('layer_calloff_judgment', 'preflop', 'pf_defend_exact_calc_gate')  # stage9 B1 (L033/L078)
+sp('layer_calloff_judgment', 'preflop', 'calloff_by_price')  # stage9 B1 (L078)
+sp('preflop_posterior_order', 'ranges', 'support_rank_quantiles')  # stage9 B1 (L083)
 sp('open_execution_form', 'preflop', 'open_decision', '_in_raise_range = (r <= thr)', 'if act: return (act, amt)')
 sp('self_hand_overconfidence_bias', 'persona', 'bias', "if name == 'overpair_love':", "+ 0.30*(10 - T('discipline')))")
 sp('self_hand_overconfidence_bias', 'persona', 'bias', "if name == 'draw_love':", "return _z(0.50*(10 - S('outs'))")
@@ -926,7 +937,7 @@ NONSEMANTIC_FUNCTIONS = {
     'plan:decide_response._nv_gate': 'closure that calls _nonvalue_raise_ev_gate and records it',
     'plan:_trace': 'trace logging', 'plan:_prof_hint': 'display hint', 'plan:record_deviation': 'logging',
     'preflop:_tr': 'trait accessor (see legacy_trait_adapter)', 'preflop:prof_aggr': 'temperament accessor',
-    'preflop:defend_action_likelihoods._logit': 'math helper',
+    'preflop:_defend_logistic': 'math helper (logistic)',
     'ranges:range_is_uniform': 'container predicate', 'ranges:range_mean_mass': 'container stat',
     'ranges:range_unique_sorted': 'container helper', 'ranges:_def_thresholds': 'forwarder to preflop.defend_thresholds',
     'ranges:_prof_key': 'cache key', 'ranges:_ranked': 'sort by range_ordering_strength',

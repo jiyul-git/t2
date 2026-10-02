@@ -625,7 +625,27 @@ def preflop_reasoned_width(prof, family, target, direction, pos=None, seats=8,
         prof, family, pos, seats, bb, ante, opener_pos=opener_pos, open_bb=open_bb)
     reasoned = float(anchor) + r * (float(target) - float(anchor))
     k = gto_knowledge(prof, family)
-    return reasoned * (1.0 + (1.0 - k) * float(direction) * deviation_scale)
+    return reasoned * (1.0 + chart_deviation_room(k) * float(direction) * deviation_scale)
+
+
+def positional_chart_flattening(prof):
+    """포지션 인식이 낮을 때 좌석별 차트가 테이블 평균 쪽으로 눌리는 몫(0~0.48).
+
+    positional 개념의 '조건(좌석 차이)을 아는가' 역할이다. 차트 기억 정확도
+    (gto_knowledge)와는 다른 질문이다. 상한 0.90 의 이유는 open_pct 주석 참조.
+    """
+    pos_acc = 0.10 + 0.80 * min(1.0, sk(prof, 'positional') / 8.0)
+    return (1.0 - pos_acc) * 0.60
+
+
+def chart_deviation_room(confidence):
+    """차트 기억 확신(acc/knowledge)이 남겨 두는 기질 이탈의 크기 = 1 − 확신.
+
+    같은 acc 값이 (1) 차트를 얼마나 정확히 기억하는가와 (2) 기질이 기준에서
+    얼마나 벗어날 수 있는가(이탈 상한) 두 역할을 맡는다. 값은 하나지만
+    질문이 다르므로 두 번째 역할을 이 이름으로 드러낸다. 값은 변하지 않는다.
+    """
+    return 1.0 - confidence
 
 
 def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
@@ -657,8 +677,7 @@ def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
     # 상한 0.90 — 가장 잘하는 사람도 기준과 완전히 같지는 않다.
     # 1.0 을 허용하면 개념 8 이상이 전부 기준과 동일해져서
     # '실력 있는 LAG' 가 표현되지 않는다(방금 실제로 그랬다).
-    pos_acc = 0.10 + 0.80 * min(1.0, sk(prof, 'positional') / 8.0)
-    flat = (1.0 - pos_acc) * 0.60
+    flat = positional_chart_flattening(prof)
     if flat > 1e-6:
         base = base*(1.0 - flat) + _G.avg_rfi(seats, bb, ante)*flat
 
@@ -683,7 +702,7 @@ def open_pct(prof, pos, seats=8, bb=100.0, ante=True, band=None):
     else:
         # v2 / production path: bit-identical when V3 is off.
         acc = gto_memory_confidence(prof, 'rfi', pos, seats, bb, ante)
-        v = base * (1.0 + (1.0 - acc) * direction * 0.95)
+        v = base * (1.0 + chart_deviation_room(acc) * direction * 0.95)
     v *= _G.adapt_mult(prof)
     return max(0.02, min(0.92, v))
 

@@ -218,3 +218,42 @@
 | L-RA17 | self_hand_overconfidence_bias / perceived_player_edge | persona.bias; persona.perceived_edge | range_read supplies self-assessment roles; perceived_edge IS active at baseline through preflop.feel_of (max-skill +0.016 feel) | KEEP (documented) | corrects the earlier claim that perceived_edge has no baseline effect |
 | L-RA18 | opponent_concept_inference (range_profile) | session.HandRun._preflop_perceived_range;_locked_postflop_range | observer Book estimates become the opponent preflop-range profile independent of exploit weight w: "exploit neutral" does not switch off opponent adaptation; manual_one_hand audits accumulate the Book | KEEP + document baseline harness | baseline harness must freeze the Book (sim2 T2_BASELINE does) |
 <!-- reaudit:end -->
+
+## 9단계 B1 (preflop) — 처리 상태
+
+기준 `e6de033`. 행동 보존 검증:
+- `tools/verify_stage9_semantic.py e6de033`: 6,460건(폭 1,800·디펜스 1,500·오픈/iso 1,200·raise_form 800·콜오프 800·멀티웨이/레인지 360)이 출력과 RNG 상태까지 바이트 동일.
+- 의미 있는 변경 13/13 을 probe 가 검출했다(뮤테이션 테스트).
+- baseline sim 지문이 봉인값과 동일하다.
+- 게이트·completeness 결과는 `REFACTOR_AND_VERIFICATION.md` 6차에 있다.
+
+| ID | 상태 | 처리 |
+|---|---|---|
+| L029 | 처리 완료 | 림프 이론 지식 공급을 `preflop.limp_theory_knowledge` 로 명명(RFI 기억 공급 공유는 유지) |
+| L030 | 처리 완료 | `persona.positional_chart_flattening` — 좌석 조건 인식 역할 |
+| L033 | 처리 완료 | `preflop.pf_defend_exact_calc_gate` — pf_defend 의 추론 게이트 역할(차트 기억 역할과 분리) |
+| L049 | **LATER** | `_was_3bettor` 는 원시 로그의 raise/allin(올인 콜 포함)을 센다. canonical 역할은 full raise 만 센다 → 교체하면 행동 변화 |
+| L056 | 처리 완료 | `gto.open_size_defend_scale` — `_MDF` 는 정확한 MDF 가 아닌 폭 보정 대용(출처 MISSING_KNOWLEDGE) |
+| L057 | 처리 완료 | 3벳 층 분리: 후보 `attack_candidate_weight`, 증거 `apply_defend_exploit_evidence`, prior `defend_thresholds`, 4벳 `tighten_defend_widths_for_raise_level`(MISSING_KNOWLEDGE 명시) |
+| L058 | 처리 완료 | `persona.chart_deviation_room` — acc 의 '이탈 상한' 역할(값 동일) |
+| L063 | 처리 완료 | L058 과 같은 함수를 RFI·디펜스·V3 reasoned width 세 곳에서 사용 |
+| L064 | 처리 완료 | L029 와 같음 |
+| L067 | 처리 완료 | `open_entry_threshold`(판단), `apply_money_open_threshold`(머니점프 반사실 기록), 형태 `open_form`, 사이즈 `open_size_bb` |
+| L068 | 처리 완료 | `iso_entry_threshold`(독립 iso prior 없음 — MISSING_KNOWLEDGE) |
+| L069 | 처리 완료 | L057 의 층 분리로 2차의 남은 부분 종료 |
+| L071 | **KEEP** | `"3bet"` 액션 라벨은 하위 소비처가 읽는다 — 라벨 변경은 행동 변화. 의미는 주석/문서로만 |
+| L072 | 처리 완료 | `raise_commit_geometry`(기하) / `shove_form_pressure`(동기) |
+| L073 | 처리 완료 | `hot_reshove_probability`: 후보·legacy 폭·legacy 확률 층을 docstring 으로 명시(빈도 MISSING_KNOWLEDGE) |
+| L075 | 처리 완료 | `top_value_class_order`(순서) — 질량 계산과 분리 |
+| L077 | 처리 완료 | `legacy_calloff_likelihoods` — legacy cap 경로와 그 소비처 3개 명시 |
+| L078 | 처리 완료 | `calloff_by_price`(수학) / `pf_defend_exact_calc_gate`(게이트) |
+| L083 | 처리 완료 | `ranges.support_rank_quantiles` — 개수 기준 분위(질량 분위 아님) |
+| L-RA12 | 처리 완료(이름) | `RESHOVE_OPENER_ATTACK` / `OPEN_SHOVE_BEHIND_PROXY` 가 같은 표를 공유. 값 분리는 LATER |
+| R2 S4 | 처리 완료(기록) | 관찰자 레인지 메타 `first_in_allin_read_as_open` |
+| R2 S5 | 처리 완료(문서) | `bot.range_combos` = 레인지를 모를 때의 fallback 순서(통합 보류) |
+
+### 새 항목: 가려진 조건 (masked / redundant condition)
+
+| ID | 위치 | 내용 | 판정 |
+|---|---|---|---|
+| L-S9-01 | `preflop.raise_commit_geometry` `target_bb >= 0.75*stack_bb or spr_after < 0.50` | 호출부는 모두 `facing_bb <= target_bb` 다. 그래서 `target ≥ 0.75·stack` 이면 `rem ≤ 0.25·stack`, `pot_after ≥ target ≥ 0.75·stack`, `spr_after ≤ 0.33 < 0.50` 이 된다. 첫 조건은 항상 둘째 조건에 가려진다. 0.75 → 0.76 뮤테이션이 raise_form 직접 800건 + 디펜스 경로 1,500건 probe 에서 행동을 바꾸지 못했다. 호출부 3곳(preflop.py 핫존·defend_decision·multiway)은 모두 target = open × 배수(≥2.1) 또는 올인 금액 그대로라 facing ≤ target 이 성립한다(0.50 → 0.55 는 검출) | 죽은 조건 정리 후보. 제거는 행동 불변이지만, `facing > target` 호출이 생기면 의미가 달라지므로 별도 커밋으로 한다 |
