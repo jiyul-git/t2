@@ -184,6 +184,7 @@ def main():
                 "hand_classes_per_table": 169,
                 "rows_by_stack": jens_by_stack,
                 "families": [x[0] for x in PREFIXES],
+                "canonical_t2_mechanics_match": "unknown_ante",
             },
             rmh_out.name: {
                 "rows": len(rmh_rows),
@@ -193,6 +194,7 @@ def main():
                 "scenario": "first_in_open_shove",
                 "ante_model": "none",
                 "spots_by_stack": rmh_by_stack,
+                "canonical_t2_mechanics_match": False,
             },
         },
         "total_rows": len(jens_rows) + len(rmh_rows),
