@@ -1,2 +1,3 @@
 Tc6c3d 100 iters 0.276%pot solve 372s inv_err -1.3e-9
 reuse Tc6c3d
+reuse Tc6c3d

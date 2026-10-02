@@ -1,2 +1,3 @@
 QcTd2d 100 iters 0.254%pot solve 372s inv_err 9.6e-9
 reuse QcTd2d
+reuse QcTd2d
