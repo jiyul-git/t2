@@ -556,12 +556,73 @@ def _tr_loose(prof):
     return max(0.0, min(10.0, _tr(prof)['call']/0.022))
 
 
+def normalize_defend_prior_widths(attack_width, continue_width, calibrated_mtt8):
+    """Preserve the prior-specific clamp/saturation contract; no new prior."""
+    _tp, _tot = attack_width, continue_width
+    _tot = max(_tp, _tot)
+    if calibrated_mtt8:
+        # 이 경로의 base_tot/base_tp 자체가 공개 8-max MTT 빈도에 맞춘
+        # 확률이다. 100% 초과 방지용 exp saturation을 다시 적용하면
+        # 정상적인 0~1 확률까지 불필요하게 압축된다.
+        _tot = max(0.0, min(0.95, float(_tot)))
+        _tp = max(0.0, min(_tot, float(_tp)))
+        return _tp, _tot
+    return _saturate(_tp, _tot)
+
+
+def adjust_defend_widths_for_callers(prof, attack_width, continue_width, n_callers):
+    """Caller/squeeze context; preserves existing personality and evaluation order."""
+    tp, tot = attack_width, continue_width
+    # 다인원. 축소율을 상수로 두면 안 된다 —
+    # 규율 있는 레귤러는 크게 조이지만 콜링 스테이션은 거의 신경 쓰지 않는다.
+    # 상수면 루즈한 필드일수록 다인원이 되어 축소가 세게 걸리고,
+    # 결국 필드의 헐거움이 스스로를 상쇄해 어떤 필드든 같은 참여율로 수렴한다.
+    if n_callers:
+        loose_v = _tr_loose(prof)
+        # 계수 근거: 콜러가 늘 때 축소가 거듭제곱으로 들어가 타이트한 퍼소나가
+        # 과도하게 압축됐다. 검토(2026-09-04)에서 하한/기울기를 조정.
+        # 실측: 콜러1명 디펜스율 28.1%->31.5%, 콜러2명 19.9%->24.8%.
+        # 효과는 균일하지 않다 — loose_v 낮을수록 크게 풀린다(+22% vs +1%).
+        mw = max(0.60, min(0.96, 0.60 + 0.040*loose_v))
+        tot *= mw ** n_callers
+        tp *= (_tr(prof)['sqz'] if 'sqz' in _tr(prof) else 1.0) * (0.92 ** n_callers)
+        tp = min(tp, tot)
+
+    return tp, tot
+
+
+def adjust_defend_widths_for_short_stack(attack_width, continue_width, bb):
+    """Existing shallow-stack attack/call partition, not a reshove EV model."""
+    tp, tot = attack_width, continue_width
+    # 짧으면 콜 대신 쇼브/폴드. 콜 구간이 줄고 3벳 구간이 는다.
+    if _DP.base_feel(bb) < 0.20:
+        tp = min(tot, tp * 1.6)
+        tot = max(tp, tot * 0.62)
+
+    return tp, tot
+
+
+def tighten_defend_widths_for_raise_level(attack_width, continue_width, raise_level):
+    """Legacy higher-reraise contraction and final caps; NOT a 4bet prior.
+
+    raise_level=1 faces an open; >=2 faces a reraise. Preserve this final
+    stage after caller and short-stack transforms, including operation order.
+    """
+    tp, tot = attack_width, continue_width
+    # 단계별 축소는 마지막에. 앞에서 하면 이후 곱셈이 좁아진 값을 되살린다.
+    if raise_level >= 2:
+        lt = LEVEL_TIGHTEN.get(raise_level+1, 0.10)
+        tp *= lt
+        tot = tp + (tot - tp) * (lt*0.8)
+    return max(0.0, min(0.9, tp)), max(0.0, min(0.95, tot))
+
+
 def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
                       raise_level=1, seats=8, ante=True):
     """디펜스 역치 (tp, tot) 를 내는 유일한 지점.
 
-    tp  — 이 값 이하면 3벳 구간
-    tot — 이 값 이하면 계속 참가(3벳+콜) 구간, 초과하면 폴드
+    tp  — 공격 구간 폭(3bet 또는 상위 재레이즈; 독립 4bet prior 아님)
+    tot — 전체 계속 참가(공격+콜) 구간 폭
 
     defend_decision(실제 판단)과 ranges.preflop_range(상대 레인지 모델)이
     반드시 같은 구간을 보도록 여기 하나만 쓴다. 절대 복제하지 말 것.
@@ -576,19 +637,8 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
     base_tp = _G.threebet_pct(def_pos, opener_pos, seats, bb, ante, open_bb)
     _calibrated_mtt8 = _G._use_mtt8_ante_defense(def_pos, seats, ante)
 
-    def _finish_widths(_tp, _tot):
-        _tot = max(_tp, _tot)
-        if _calibrated_mtt8:
-            # 이 경로의 base_tot/base_tp 자체가 공개 8-max MTT 빈도에 맞춘
-            # 확률이다. 100% 초과 방지용 exp saturation을 다시 적용하면
-            # 정상적인 0~1 확률까지 불필요하게 압축된다.
-            _tot = max(0.0, min(0.95, float(_tot)))
-            _tp = max(0.0, min(_tot, float(_tp)))
-            return _tp, _tot
-        return _saturate(_tp, _tot)
-
     if not (isinstance(prof, dict) and prof.get('concepts')):
-        tp, tot = _finish_widths(base_tp, base_tot)
+        tp, tot = normalize_defend_prior_widths(base_tp, base_tot, _calibrated_mtt8)
     else:
         loose = PS.temper(prof, 'looseness', 5.0)
         aggr = PS.temper(prof, 'aggression', 5.0)
@@ -615,34 +665,11 @@ def defend_thresholds(prof, def_pos, opener_pos, bb, open_bb=2.5, n_callers=0,
                                            opener_pos=opener_pos, open_bb=open_bb)
             tot = base_tot * (1.0 + (1.0-acc)*d_call*0.95)
             tp = base_tp * (1.0 + (1.0-acc)*d_tb*1.10)
-        tp, tot = _finish_widths(tp, tot)
+        tp, tot = normalize_defend_prior_widths(tp, tot, _calibrated_mtt8)
 
-    # 다인원. 축소율을 상수로 두면 안 된다 —
-    # 규율 있는 레귤러는 크게 조이지만 콜링 스테이션은 거의 신경 쓰지 않는다.
-    # 상수면 루즈한 필드일수록 다인원이 되어 축소가 세게 걸리고,
-    # 결국 필드의 헐거움이 스스로를 상쇄해 어떤 필드든 같은 참여율로 수렴한다.
-    if n_callers:
-        loose_v = _tr_loose(prof)
-        # 계수 근거: 콜러가 늘 때 축소가 거듭제곱으로 들어가 타이트한 퍼소나가
-        # 과도하게 압축됐다. 검토(2026-09-04)에서 하한/기울기를 조정.
-        # 실측: 콜러1명 디펜스율 28.1%->31.5%, 콜러2명 19.9%->24.8%.
-        # 효과는 균일하지 않다 — loose_v 낮을수록 크게 풀린다(+22% vs +1%).
-        mw = max(0.60, min(0.96, 0.60 + 0.040*loose_v))
-        tot *= mw ** n_callers
-        tp *= (_tr(prof)['sqz'] if 'sqz' in _tr(prof) else 1.0) * (0.92 ** n_callers)
-        tp = min(tp, tot)
-
-    # 짧으면 콜 대신 쇼브/폴드. 콜 구간이 줄고 3벳 구간이 는다.
-    if _DP.base_feel(bb) < 0.20:
-        tp = min(tot, tp * 1.6)
-        tot = max(tp, tot * 0.62)
-
-    # 단계별 축소는 마지막에. 앞에서 하면 이후 곱셈이 좁아진 값을 되살린다.
-    if raise_level >= 2:
-        lt = LEVEL_TIGHTEN.get(raise_level+1, 0.10)
-        tp *= lt
-        tot = tp + (tot - tp) * (lt*0.8)
-    return max(0.0, min(0.9, tp)), max(0.0, min(0.95, tot))
+    tp, tot = adjust_defend_widths_for_callers(prof, tp, tot, n_callers)
+    tp, tot = adjust_defend_widths_for_short_stack(tp, tot, bb)
+    return tighten_defend_widths_for_raise_level(tp, tot, raise_level)
 
 
 def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,

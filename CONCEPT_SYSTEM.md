@@ -446,3 +446,7 @@ It changes only the direction normalization to full-scale `/5`; endpoints
 integer temperament levels.  **The remaining BB total-defense collisions at
 0.95 are a separate probability-cap issue and are not silently “fixed” by this
 change.**  Current evidence does not justify a wholesale logit rewrite.
+
+### 감사 2차: preflop defend 계산 경계
+
+`preflop.defend_thresholds`의 정규화·콜러 보정·short-stack 보정·상위 재레이즈 축소를 명명된 순수 함수로 분리했다. 기준 prior, 상수, 계산 순서 및 actor/observer 공통 producer는 유지한다. [현재 함수 연결](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md)의 2차 정리를 참조한다. 독립 4bet prior 추가 또는 전략 교정은 아니다.

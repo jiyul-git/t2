@@ -1515,7 +1515,7 @@
     "recommended_canonical_name": "defend_attack_continue_widths",
     "evidence": "preflop.py:548; preflop.py:46",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.defend_thresholds;preflop._saturate"
+    "current_function": "preflop.defend_thresholds;preflop._saturate;preflop.normalize_defend_prior_widths;preflop.adjust_defend_widths_for_callers;preflop.adjust_defend_widths_for_short_stack;preflop.tighten_defend_widths_for_raise_level"
   },
   {
     "concept": "mixed_preflop_action_likelihood",

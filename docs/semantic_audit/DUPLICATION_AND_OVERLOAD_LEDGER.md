@@ -161,3 +161,16 @@
 - hero_table live2와 legacy tourney를 동일 runtime으로 취급하지 않는다.
 
 추가 provenance 문제: `plan._eq_vs(seed=...)`는 받은 seed를 `bot.equity_vs_combos`에 전달하지 않는다. 실제 계산은 content CRC32 seed이고 `eq_seed` 기록과 다를 수 있다. 이번에 전달 경로를 바꾸면 MC/action이 변하므로 RENAME/후속 REROUTE 대상으로 남긴다. `eq_current`는 current-board split-share shadow이며 rel 또는 future equity와 합치지 않는다.
+
+## 2차 정리: defend 판단 계산 경계
+
+`preflop.defend_thresholds`는 공통 producer를 유지하고 다음 순수 계산을 호출한다. 모든 수치와 계산 순서를 보존한다.
+
+| 함수 | 입력 → 출력 | 의미 |
+| --- | --- | --- |
+| normalize_defend_prior_widths | attack/continue 폭, calibrated 여부 → 정규화한 두 폭 | 기존 prior clamp/saturation 계약 |
+| adjust_defend_widths_for_callers | profile, 두 폭, 콜러 수 → 보정한 두 폭 | 콜러·squeeze 문맥 |
+| adjust_defend_widths_for_short_stack | 두 폭, bb → 보정한 두 폭 | 기존 short-stack attack/call 구간 |
+| tighten_defend_widths_for_raise_level | 두 폭, raise_level → 최종 두 폭 | 상위 재레이즈 축소 및 최종 cap |
+
+모두 preflop / REASONING / JUDGMENT, 기존 authored heuristic, ACTIVE이며 RNG를 호출하지 않는다. 직접 consumer는 defend_thresholds, 이후 defend_action_likelihoods와 관찰자 range 모델이 소비한다. 별도의 4bet solver prior를 추가한 것이 아니므로 기존 SEMANTICALLY_OVERLOADED 판정은 유지한다. 함수 경계는 분리됐지만 공유 지식 문제는 미해결이다.

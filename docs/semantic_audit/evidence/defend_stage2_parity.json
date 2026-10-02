@@ -1,0 +1,109 @@
+{
+  "pass": true,
+  "reference": "stage1 after captures; stage1 tree unchanged by documentation checkpoint 6feaf56",
+  "hands": 180,
+  "seeds": [
+    {
+      "seed": 3000,
+      "equal": true,
+      "actions": {
+        "3000": "16c9afad4c061757"
+      },
+      "compared_fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3001,
+      "equal": true,
+      "actions": {
+        "3001": "dc0e1a4d34ee9c5c"
+      },
+      "compared_fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3002,
+      "equal": true,
+      "actions": {
+        "3002": "07f2421433565171"
+      },
+      "compared_fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3003,
+      "equal": true,
+      "actions": {
+        "3003": "71e6f3ee18ad2171"
+      },
+      "compared_fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3004,
+      "equal": true,
+      "actions": {
+        "3004": "b94b9086d38600f3"
+      },
+      "compared_fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3005,
+      "equal": true,
+      "actions": {
+        "3005": "0d63c34dcfb9c118"
+      },
+      "compared_fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    }
+  ]
+}

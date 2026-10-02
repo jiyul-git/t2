@@ -64,3 +64,13 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 ### F5 실패 출력 차이의 원인 추적
 
 기존 F5 fixture는 size_shape_seed를 전달하지 않아 shape_planned_target이 Random(None)을 생성한다. baseline assert 결과 600, candidate 500 차이가 관측되어 별도 추적했다. 같은 20개 size seed를 명시한 paired 재검증은 모두 동일했다(evidence/f5_fixed_seed.json). 기존 verifier를 조용히 수정하거나 이를 새 전략 차이로 오인하지 않았다.
+
+## 2차 semantic cleanup: preflop defend
+
+기준 `6feaf56`. 기존 defend_thresholds의 inline 계산을 normalize_defend_prior_widths, adjust_defend_widths_for_callers, adjust_defend_widths_for_short_stack, tighten_defend_widths_for_raise_level로 추출했다. 상수·연산 순서·기존 producer/consumer·행동 라벨을 유지했다. 공유 4bet prior 문제를 해결했다고 주장하지 않는다.
+
+- syntax/import PASS. 실제 이전 함수 AST와 직접 비교: threshold 3,600 / likelihood 384 / action+RNG 768건 PASS. 9max 중심, 8max 호환 및 PREFLOP_REASONING_V3 OFF/ON 포함.
+- 기존 semantic cleanup verifier 4,638 비교 PASS.
+- 6 seeds × 30 hands = 180 hands 재실행. 이전 stage1 after 증거와 JSON 전체(행동, 통계, RNG 호출 수·추출 순서 digest·최종 상태 digest) 6/6 정확히 일치. `6feaf56`은 stage1 이후 문서만 변경했으므로 같은 실행 기준이다.
+- 기존 40 verifier 및 live2 suite는 이번 단계에서 재실행하지 않았다. 이전 PASS/FAIL/TIMEOUT 결과를 이번 새 통과로 세지 않는다.
+- 증거: evidence/defend_stage2_targeted.json, defend_stage2_parity.json, defend_stage2_3000..3005.json. 재현: python tools/verify_defend_semantic_cleanup.py 및 tools/measure_semantic_parity.py.

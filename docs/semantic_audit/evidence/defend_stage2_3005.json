@@ -1,0 +1,22 @@
+{
+  "actions": {
+    "3005": "0d63c34dcfb9c118"
+  },
+  "stats": {
+    "n": 236,
+    "vpip": 53,
+    "pfr": 27,
+    "hands": 30,
+    "flop": 21
+  },
+  "rng_counts": {
+    "instances": 2382,
+    "getrandbits": 578953,
+    "random": 383562
+  },
+  "rng_draw_digest": "43e92fc3854a99b8b8cf0f636aa522f8b4e66dcf2cc62fe943ec9c4d7f6bb995",
+  "rng_final_state_digest": "fac6b06cfb9c8e533b7db5937cb06b37c10048881682ac980815f872b49dcbeb",
+  "seed": 3005,
+  "mode": "regress",
+  "hands_requested": 30
+}
