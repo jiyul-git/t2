@@ -1,0 +1,745 @@
+{
+ "objective_definition": "scalar_sum = unweighted sum of BTN+SB+BB seat-swap dEV (bb per hand dealt; terminal reach included via seat EV); regret not included",
+ "equal24": {
+  "raw": {
+   "seat:BTN": 0.0006372389862159484,
+   "seat:SB": 0.002602476306098339,
+   "seat:BB": 0.0024432320170201475,
+   "regret:BTN first-in": 0.0008068103542381154,
+   "regret:SB vs BTN": 0.000349593058082975,
+   "regret:BB vs BTN": 0.005696550599028587,
+   "regret:SB first-in": 0.005393824175218317,
+   "regret:BB vs SB": 0.006885634897422922
+  },
+  "calibrated": {
+   "seat:BTN": 0.000467432449775907,
+   "seat:SB": 0.0019895582280868808,
+   "seat:BB": 0.002199683202160099,
+   "regret:BTN first-in": 0.0006221252870866223,
+   "regret:SB vs BTN": 0.00010005910839177602,
+   "regret:BB vs BTN": 0.006318633326723407,
+   "regret:SB first-in": 0.004939034474632375,
+   "regret:BB vs SB": 0.005929807063989248
+  }
+ },
+ "current144": {
+  "calibrated": {
+   "seat:BTN": 0.0009050384154367356,
+   "seat:SB": 0.0037388258958488602,
+   "seat:BB": 0.0037993688135584233,
+   "regret:BTN first-in": 0.0012018655131153543,
+   "regret:SB vs BTN": 0.00019076610818543168,
+   "regret:BB vs BTN": 0.010845300005464919,
+   "regret:SB first-in": 0.009263718946029105,
+   "regret:BB vs SB": 0.010263877540907235
+  }
+ },
+ "min_budget": {
+  "scalar_sum: all seats <= equal24": 194,
+  "scalar_sum: seats+regrets <= equal24": null,
+  "minimax_seats: all seats <= equal24": 134,
+  "minimax_seats_and_regrets: all 8 <= equal24": 221,
+  "constrained (weight sweep): all seats <= equal24": 132,
+  "constrained weights": [
+   0.2,
+   0.1,
+   0.7
+  ]
+ },
+ "B_prime_124_scalar": {
+  "new": 124,
+  "new_by_terminal": {
+   "6": 96,
+   "28": 28
+  },
+  "calibrated": {
+   "seat:BTN": 0.000579317347544281,
+   "seat:SB": 0.001827748787396367,
+   "seat:BB": 0.0022257108922532263,
+   "regret:BTN first-in": 0.0007611506544062755,
+   "regret:SB vs BTN": 0.0001416661235421444,
+   "regret:BB vs BTN": 0.007990703734895854,
+   "regret:SB first-in": 0.004409015805783694,
+   "regret:BB vs SB": 0.005391300184141082
+  },
+  "ratio_vs_equal24": {
+   "seat:BTN": 1.2789247635710557,
+   "seat:SB": 0.9009025210244225,
+   "seat:BB": 1.016839909929082,
+   "regret:BTN first-in": 1.260141583333968,
+   "regret:SB vs BTN": 1.53383155191718,
+   "regret:BB vs BTN": 1.3955744059553115,
+   "regret:SB first-in": 0.869658429754189,
+   "regret:BB vs SB": 0.8735756455163988
+  },
+  "cpu_h": 12.294996556573844,
+  "wall_h_4cores": 3.073749139143461
+ },
+ "budget_path": {
+  "scalar_sum": {
+   "48": {
+    "new": 48,
+    "new_by_terminal": {
+     "6": 43,
+     "28": 5
+    },
+    "calibrated": {
+     "seat:BTN": 0.0008066724073135598,
+     "seat:SB": 0.002485081010704321,
+     "seat:BB": 0.002883940877694411,
+     "regret:BTN first-in": 0.001068182517817586,
+     "regret:SB vs BTN": 0.00017248242615724096,
+     "regret:BB vs BTN": 0.010141544549738276,
+     "regret:SB first-in": 0.0060359722347378035,
+     "regret:BB vs SB": 0.0070787940938712105
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.869304551975971,
+     "seat:SB": 1.3146837649431384,
+     "seat:BB": 1.4688968812092429,
+     "regret:BTN first-in": 1.8584274223908097,
+     "regret:SB vs BTN": 1.9540563932277581,
+     "regret:BB vs BTN": 1.957567347656294,
+     "regret:SB first-in": 1.279853337964168,
+     "regret:BB vs SB": 1.2858780520158895
+    }
+   },
+   "108": {
+    "new": 108,
+    "new_by_terminal": {
+     "6": 85,
+     "28": 23
+    },
+    "calibrated": {
+     "seat:BTN": 0.0006139849716763051,
+     "seat:SB": 0.0019316702391524547,
+     "seat:BB": 0.002335641393752127,
+     "regret:BTN first-in": 0.0008074700199368884,
+     "regret:SB vs BTN": 0.0001463014055208588,
+     "regret:BB vs BTN": 0.008379500237268649,
+     "regret:SB first-in": 0.004668658965259535,
+     "regret:BB vs SB": 0.005661632991053311
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.3670436401226314,
+     "seat:SB": 0.9643258832084869,
+     "seat:BB": 1.0888723253871109,
+     "regret:BTN first-in": 1.3484411798819678,
+     "regret:SB vs BTN": 1.59580371883216,
+     "regret:BB vs BTN": 1.4929502335699247,
+     "regret:SB first-in": 0.9330840491653292,
+     "regret:BB vs SB": 0.9364101488934324
+    }
+   },
+   "124": {
+    "new": 124,
+    "new_by_terminal": {
+     "6": 96,
+     "28": 28
+    },
+    "calibrated": {
+     "seat:BTN": 0.000579317347544281,
+     "seat:SB": 0.001827748787396367,
+     "seat:BB": 0.0022257108922532263,
+     "regret:BTN first-in": 0.0007611506544062755,
+     "regret:SB vs BTN": 0.0001416661235421444,
+     "regret:BB vs BTN": 0.007990703734895854,
+     "regret:SB first-in": 0.004409015805783694,
+     "regret:BB vs SB": 0.005391300184141082
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.2789247635710557,
+     "seat:SB": 0.9009025210244225,
+     "seat:BB": 1.016839909929082,
+     "regret:BTN first-in": 1.260141583333968,
+     "regret:SB vs BTN": 1.53383155191718,
+     "regret:BB vs BTN": 1.3955744059553115,
+     "regret:SB first-in": 0.869658429754189,
+     "regret:BB vs SB": 0.8735756455163988
+    }
+   },
+   "144": {
+    "new": 144,
+    "new_by_terminal": {
+     "6": 110,
+     "28": 34
+    },
+    "calibrated": {
+     "seat:BTN": 0.0005409273550927339,
+     "seat:SB": 0.0017103675308733058,
+     "seat:BB": 0.0021073637010869074,
+     "regret:BTN first-in": 0.000709286748428505,
+     "regret:SB vs BTN": 0.00013588783579749624,
+     "regret:BB vs BTN": 0.0076102786497523915,
+     "regret:SB first-in": 0.004116153253766782,
+     "regret:BB vs SB": 0.005086082133703726
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.1822435464443548,
+     "seat:SB": 0.8302590544264193,
+     "seat:BB": 0.940945975064797,
+     "regret:BTN first-in": 1.1622044563349623,
+     "regret:SB vs BTN": 1.457230537121357,
+     "regret:BB vs BTN": 1.3022005577814237,
+     "regret:SB first-in": 0.7991456182635136,
+     "regret:BB vs SB": 0.8042077816180521
+    }
+   },
+   "192": {
+    "new": 192,
+    "new_by_terminal": {
+     "6": 144,
+     "28": 48
+    },
+    "calibrated": {
+     "seat:BTN": 0.000471434049717184,
+     "seat:SB": 0.0014815197793999835,
+     "seat:BB": 0.001870733546847375,
+     "regret:BTN first-in": 0.0006159398633725391,
+     "regret:SB vs BTN": 0.00012615778765178175,
+     "regret:BB vs BTN": 0.006837201107579596,
+     "regret:SB first-in": 0.0035452810465447346,
+     "regret:BB vs SB": 0.0044794144348832745
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.0098205404696212,
+     "seat:SB": 0.6957750467143773,
+     "seat:BB": 0.7945627965780079,
+     "regret:BTN first-in": 0.9886100045412325,
+     "regret:SB vs BTN": 1.3299420799916346,
+     "regret:BB vs BTN": 1.1184880356295122,
+     "regret:SB first-in": 0.6650528258523729,
+     "regret:BB vs SB": 0.6715151822532276
+    }
+   },
+   "288": {
+    "new": 288,
+    "new_by_terminal": {
+     "6": 212,
+     "28": 76
+    },
+    "calibrated": {
+     "seat:BTN": 0.0003765300216469793,
+     "seat:SB": 0.001163335718900534,
+     "seat:BB": 0.001532343930900441,
+     "regret:BTN first-in": 0.0004890259611129195,
+     "regret:SB vs BTN": 0.00011015664580401192,
+     "regret:BB vs BTN": 0.005766849634584562,
+     "regret:SB first-in": 0.0027598517618858103,
+     "regret:BB vs SB": 0.0035976278118088046
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 0.7804188781904574,
+     "seat:SB": 0.516762257728662,
+     "seat:BB": 0.5985564171157198,
+     "regret:BTN first-in": 0.7588308286516667,
+     "regret:SB vs BTN": 1.125557021015633,
+     "regret:BB vs BTN": 0.8783361650893745,
+     "regret:SB first-in": 0.48870780920568785,
+     "regret:BB vs SB": 0.49192104866018355
+    }
+   }
+  },
+  "minimax_seats": {
+   "48": {
+    "new": 48,
+    "new_by_terminal": {
+     "6": 29,
+     "28": 19
+    },
+    "calibrated": {
+     "seat:BTN": 0.0006702709616465873,
+     "seat:SB": 0.002765024717173163,
+     "seat:BB": 0.0029390197017741997,
+     "regret:BTN first-in": 0.0008849550119625558,
+     "regret:SB vs BTN": 0.00015779574259517824,
+     "regret:BB vs BTN": 0.008643351985486736,
+     "regret:SB first-in": 0.00681906866122288,
+     "regret:BB vs SB": 0.00783535259211347
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.5116564753898605,
+     "seat:SB": 1.4991783620015233,
+     "seat:BB": 1.5088830694309543,
+     "regret:BTN first-in": 1.4978009747163572,
+     "regret:SB vs BTN": 1.7514142317296255,
+     "regret:BB vs BTN": 1.5601271222544366,
+     "regret:SB first-in": 1.4870843764966963,
+     "regret:BB vs SB": 1.4852738144201645
+    }
+   },
+   "108": {
+    "new": 108,
+    "new_by_terminal": {
+     "6": 65,
+     "28": 43
+    },
+    "calibrated": {
+     "seat:BTN": 0.0005090898956090131,
+     "seat:SB": 0.002153554353164957,
+     "seat:BB": 0.002365215403304971,
+     "regret:BTN first-in": 0.0006671473550116827,
+     "regret:SB vs BTN": 0.00013679861597275516,
+     "regret:BB vs BTN": 0.007023348438883657,
+     "regret:SB first-in": 0.005276920182124593,
+     "regret:BB vs SB": 0.006268539605370955
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.1028203089656974,
+     "seat:SB": 1.1023492858735346,
+     "seat:BB": 1.1084978074810126,
+     "regret:BTN first-in": 1.0833961786371187,
+     "regret:SB vs BTN": 1.4692555407776415,
+     "regret:BB vs BTN": 1.1619651548171561,
+     "regret:SB first-in": 1.0848137733642784,
+     "regret:BB vs SB": 1.0820588337238533
+    }
+   },
+   "124": {
+    "new": 124,
+    "new_by_terminal": {
+     "6": 75,
+     "28": 49
+    },
+    "calibrated": {
+     "seat:BTN": 0.0004819678694046039,
+     "seat:SB": 0.0020318336801299613,
+     "seat:BB": 0.002252146899120038,
+     "regret:BTN first-in": 0.0006305103316713617,
+     "regret:SB vs BTN": 0.00013280156604980094,
+     "regret:BB vs BTN": 0.006729163536379222,
+     "regret:SB first-in": 0.004969134275923191,
+     "regret:BB vs SB": 0.005951100344858988
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.0357303187386806,
+     "seat:SB": 1.0262045378504736,
+     "seat:BB": 1.0340288082950753,
+     "regret:BTN first-in": 1.0154669030070353,
+     "regret:SB vs BTN": 1.4166210550383782,
+     "regret:BB vs BTN": 1.093480511416677,
+     "regret:SB first-in": 1.0075026597813574,
+     "regret:BB vs SB": 1.0051017439901238
+    }
+   },
+   "144": {
+    "new": 144,
+    "new_by_terminal": {
+     "6": 86,
+     "28": 58
+    },
+    "calibrated": {
+     "seat:BTN": 0.00044995743170864275,
+     "seat:SB": 0.0019143902025326371,
+     "seat:BB": 0.002133187361446322,
+     "regret:BTN first-in": 0.0005882197197368216,
+     "regret:SB vs BTN": 0.0001269269527493446,
+     "regret:BB vs BTN": 0.0063427231977438376,
+     "regret:SB first-in": 0.0046792058126629245,
+     "regret:BB vs SB": 0.005644811948995185
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 0.9572590089291948,
+     "seat:SB": 0.9537241575348457,
+     "seat:BB": 0.95735736680677,
+     "regret:BTN first-in": 0.9377731013112425,
+     "regret:SB vs BTN": 1.339924412750926,
+     "regret:BB vs BTN": 1.0054168662874226,
+     "regret:SB first-in": 0.9356779520797308,
+     "regret:BB vs SB": 0.9324628860668412
+    }
+   },
+   "192": {
+    "new": 192,
+    "new_by_terminal": {
+     "6": 114,
+     "28": 78
+    },
+    "calibrated": {
+     "seat:BTN": 0.0003873196682691199,
+     "seat:SB": 0.001683041941135569,
+     "seat:BB": 0.001904314321534793,
+     "regret:BTN first-in": 0.0005047207350657122,
+     "regret:SB vs BTN": 0.00011546910634213153,
+     "regret:BB vs BTN": 0.005636586476715514,
+     "regret:SB first-in": 0.004103431793351915,
+     "regret:BB vs SB": 0.005045444120072783
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 0.8061102561286025,
+     "seat:SB": 0.8139705765573346,
+     "seat:BB": 0.8148874865010777,
+     "regret:BTN first-in": 0.7868159622494724,
+     "regret:SB vs BTN": 1.1927026097887758,
+     "regret:BB vs BTN": 0.8503037210941884,
+     "regret:SB first-in": 0.7961081883548693,
+     "regret:BB vs SB": 0.7951007418747873
+    }
+   },
+   "288": {
+    "new": 288,
+    "new_by_terminal": {
+     "6": 168,
+     "28": 120
+    },
+    "calibrated": {
+     "seat:BTN": 0.00031968104196646675,
+     "seat:SB": 0.0013935011607014666,
+     "seat:BB": 0.0016160295934503457,
+     "regret:BTN first-in": 0.0004170129360824452,
+     "regret:SB vs BTN": 9.518176308146567e-05,
+     "regret:BB vs BTN": 0.004829245570210562,
+     "regret:SB first-in": 0.0034075661391514273,
+     "regret:BB vs SB": 0.004269289665817735
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 0.6468984359579637,
+     "seat:SB": 0.645274255839956,
+     "seat:BB": 0.6454904008012952,
+     "regret:BTN first-in": 0.6321671363569918,
+     "regret:SB vs BTN": 0.9403732378429596,
+     "regret:BB vs BTN": 0.68274942818127,
+     "regret:SB first-in": 0.6334147692963985,
+     "regret:BB vs SB": 0.6272394671420657
+    }
+   }
+  },
+  "minimax_seats_and_regrets": {
+   "48": {
+    "new": 48,
+    "new_by_terminal": {
+     "6": 29,
+     "28": 19
+    },
+    "calibrated": {
+     "seat:BTN": 0.0006863460710282435,
+     "seat:SB": 0.00299202338520021,
+     "seat:BB": 0.0031013955546978804,
+     "regret:BTN first-in": 0.0009071984419765853,
+     "regret:SB vs BTN": 0.0001536832876687474,
+     "regret:BB vs BTN": 0.008974496214017262,
+     "regret:SB first-in": 0.007437792519385532,
+     "regret:BB vs SB": 0.008333155815864695
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.5532918571300516,
+     "seat:SB": 1.65199466684476,
+     "seat:BB": 1.6285896796090957,
+     "regret:BTN first-in": 1.541040075124409,
+     "regret:SB vs BTN": 1.6954293797734725,
+     "regret:BB vs BTN": 1.6456607557981373,
+     "regret:SB first-in": 1.6547751861860236,
+     "regret:BB vs SB": 1.6210046538970473
+    }
+   },
+   "108": {
+    "new": 108,
+    "new_by_terminal": {
+     "6": 63,
+     "28": 45
+    },
+    "calibrated": {
+     "seat:BTN": 0.0005130990312395093,
+     "seat:SB": 0.0025378501644921117,
+     "seat:BB": 0.0026429066583082443,
+     "regret:BTN first-in": 0.0006723497753404983,
+     "regret:SB vs BTN": 0.00012815488482743886,
+     "regret:BB vs BTN": 0.007351912825194619,
+     "regret:SB first-in": 0.006320538292820983,
+     "regret:BB vs SB": 0.007196156866666162
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.1127826158850511,
+     "seat:SB": 1.3491112321240868,
+     "seat:BB": 1.2977143214167264,
+     "regret:BTN first-in": 1.093087152455278,
+     "regret:SB vs BTN": 1.3558895471625578,
+     "regret:BB vs BTN": 1.2398878782293103,
+     "regret:SB first-in": 1.3544824962669404,
+     "regret:BB vs SB": 1.3162494031155532
+    }
+   },
+   "124": {
+    "new": 124,
+    "new_by_terminal": {
+     "6": 72,
+     "28": 52
+    },
+    "calibrated": {
+     "seat:BTN": 0.0004897672429148244,
+     "seat:SB": 0.002429783690781564,
+     "seat:BB": 0.002549697057405434,
+     "regret:BTN first-in": 0.0006413067900905543,
+     "regret:SB vs BTN": 0.00012311580717900541,
+     "regret:BB vs BTN": 0.007093411983879313,
+     "regret:SB first-in": 0.006052628476156258,
+     "regret:BB vs SB": 0.006942790072746817
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 1.054967850142807,
+     "seat:SB": 1.2787871037229421,
+     "seat:BB": 1.233223294975898,
+     "regret:BTN first-in": 1.0354262122965414,
+     "regret:SB vs BTN": 1.2906006718953682,
+     "regret:BB vs BTN": 1.178455781648782,
+     "regret:SB first-in": 1.284199614936162,
+     "regret:BB vs SB": 1.2509462514192484
+    }
+   },
+   "144": {
+    "new": 144,
+    "new_by_terminal": {
+     "6": 83,
+     "28": 61
+    },
+    "calibrated": {
+     "seat:BTN": 0.00046644792359762816,
+     "seat:SB": 0.002324056493152622,
+     "seat:BB": 0.002451584434860038,
+     "regret:BTN first-in": 0.0006106733970691335,
+     "regret:SB vs BTN": 0.00011728141644327731,
+     "regret:BB vs BTN": 0.00682085276982945,
+     "regret:SB first-in": 0.005787435895063736,
+     "regret:BB vs SB": 0.00667545235442325
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 0.9975857040739167,
+     "seat:SB": 1.2106786369820022,
+     "seat:BB": 1.1664012062576246,
+     "regret:BTN first-in": 0.9789253868910701,
+     "regret:SB vs BTN": 1.215773763104363,
+     "regret:BB vs BTN": 1.114693153614988,
+     "regret:SB first-in": 1.2153315090141315,
+     "regret:BB vs SB": 1.1831189588867916
+    }
+   },
+   "192": {
+    "new": 192,
+    "new_by_terminal": {
+     "6": 110,
+     "28": 82
+    },
+    "calibrated": {
+     "seat:BTN": 0.0004148279357332682,
+     "seat:SB": 0.0020940559447657605,
+     "seat:BB": 0.002236699766464112,
+     "regret:BTN first-in": 0.0005427745468348782,
+     "regret:SB vs BTN": 0.00010577351398909004,
+     "regret:BB vs BTN": 0.0061962878014248,
+     "regret:SB first-in": 0.005217918253437379,
+     "regret:BB vs SB": 0.006098534286349869
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 0.8720801481549774,
+     "seat:SB": 1.0650014982084068,
+     "seat:BB": 1.0239746155814893,
+     "regret:BTN first-in": 0.8551930626713439,
+     "regret:SB vs BTN": 1.0707146489713337,
+     "regret:BB vs BTN": 0.972623378772988,
+     "regret:SB first-in": 1.0699109187003395,
+     "regret:BB vs SB": 1.040635506090098
+    }
+   },
+   "288": {
+    "new": 288,
+    "new_by_terminal": {
+     "6": 164,
+     "28": 124
+    },
+    "calibrated": {
+     "seat:BTN": 0.00034852727872098765,
+     "seat:SB": 0.0017525505586998941,
+     "seat:BB": 0.0019197654142580041,
+     "regret:BTN first-in": 0.0004564227993249699,
+     "regret:SB vs BTN": 8.859295915902466e-05,
+     "regret:BB vs BTN": 0.005378671860780307,
+     "regret:SB first-in": 0.00437160484813673,
+     "regret:BB vs SB": 0.005214527350848105
+    },
+    "ratio_vs_equal24": {
+     "seat:BTN": 0.7142498991227142,
+     "seat:SB": 0.8555214837637555,
+     "seat:BB": 0.8242900353246835,
+     "regret:BTN first-in": 0.7011203023273167,
+     "regret:SB vs BTN": 0.8609396849183882,
+     "regret:BB vs BTN": 0.7956026842309772,
+     "regret:SB first-in": 0.8605892063170971,
+     "regret:BB vs SB": 0.8331930217831657
+    }
+   }
+  }
+ },
+ "min_alloc_minimax_seats": {
+  "new": 134,
+  "new_by_terminal": {
+   "6": 80,
+   "28": 54
+  },
+  "calibrated": {
+   "seat:BTN": 0.0004639829994959047,
+   "seat:SB": 0.0019765506395121994,
+   "seat:BB": 0.0021936611845298475,
+   "regret:BTN first-in": 0.0006067905186481014,
+   "regret:SB vs BTN": 0.00012966167674689316,
+   "regret:BB vs BTN": 0.0065061032278655615,
+   "regret:SB first-in": 0.004831241610167385,
+   "regret:BB vs SB": 0.005812242196865767
+  },
+  "ratio_vs_equal24": {
+   "seat:BTN": 0.9915443902696229,
+   "seat:SB": 0.9919628481952543,
+   "seat:BB": 0.9961156179502758,
+   "regret:BTN first-in": 0.9717929013865821,
+   "regret:SB vs BTN": 1.3755284706100552,
+   "regret:BB vs BTN": 1.0423816970720778,
+   "regret:SB first-in": 0.9732182575163888,
+   "regret:BB vs SB": 0.9719708987895849
+  },
+  "alloc": {
+   "6|paired/J_or_lower": 24,
+   "6|rainbow/A": 14,
+   "6|rainbow/J_or_lower": 32,
+   "6|rainbow/KQ": 20,
+   "6|twotone/A": 18,
+   "6|twotone/J_or_lower": 29,
+   "6|twotone/KQ": 27,
+   "28|paired/J_or_lower": 24,
+   "28|rainbow/J_or_lower": 27,
+   "28|rainbow/KQ": 13,
+   "28|twotone/J_or_lower": 27,
+   "28|twotone/KQ": 23
+  },
+  "cpu_h": 13.735153474062201,
+  "wall_h_4cores": 3.4337883685155504
+ },
+ "min_alloc_minimax_seats_and_regrets": {
+  "new": 221,
+  "new_by_terminal": {
+   "6": 126,
+   "28": 95
+  },
+  "calibrated": {
+   "seat:BTN": 0.0003890332938220115,
+   "seat:SB": 0.0019790731420689586,
+   "seat:BB": 0.0021263912123278324,
+   "regret:BTN first-in": 0.0005090009287297421,
+   "regret:SB vs BTN": 9.988254605713193e-05,
+   "regret:BB vs BTN": 0.0058924853517754875,
+   "regret:SB first-in": 0.004933554318180143,
+   "regret:BB vs SB": 0.005796318149130903
+  },
+  "ratio_vs_equal24": {
+   "seat:BTN": 0.8102003231046632,
+   "seat:SB": 0.9935205073514404,
+   "seat:BB": 0.9530301653551323,
+   "regret:BTN first-in": 0.7944702268175696,
+   "regret:SB vs BTN": 0.9978295852134164,
+   "regret:BB vs BTN": 0.9056257927650806,
+   "regret:SB first-in": 0.9986351498149415,
+   "regret:BB vs SB": 0.9681925426138042
+  },
+  "alloc": {
+   "6|monotone/A": 19,
+   "6|monotone/J_or_lower": 15,
+   "6|monotone/KQ": 18,
+   "6|paired/A": 23,
+   "6|paired/J_or_lower": 22,
+   "6|paired/KQ": 23,
+   "6|rainbow/A": 20,
+   "6|rainbow/J_or_lower": 30,
+   "6|rainbow/KQ": 23,
+   "6|twotone/A": 29,
+   "6|twotone/J_or_lower": 21,
+   "6|twotone/KQ": 27,
+   "28|monotone/A": 18,
+   "28|monotone/KQ": 14,
+   "28|paired/A": 14,
+   "28|paired/J_or_lower": 22,
+   "28|paired/KQ": 15,
+   "28|rainbow/J_or_lower": 23,
+   "28|rainbow/KQ": 20,
+   "28|twotone/J_or_lower": 34,
+   "28|twotone/KQ": 43
+  },
+  "cpu_h": 22.765000328778214,
+  "wall_h_4cores": 5.6912500821945535
+ },
+ "min_alloc_constrained_seats": {
+  "new": 132,
+  "new_by_terminal": {
+   "6": 81,
+   "28": 51
+  },
+  "calibrated": {
+   "seat:BTN": 0.00046100323747359345,
+   "seat:SB": 0.0019590851644145702,
+   "seat:BB": 0.0021968465413480503,
+   "regret:BTN first-in": 0.0006007072877035858,
+   "regret:SB vs BTN": 0.0001305942179537226,
+   "regret:BB vs BTN": 0.006687239501814915,
+   "regret:SB first-in": 0.004781162644152704,
+   "regret:BB vs SB": 0.005756786448826216
+  },
+  "ratio_vs_equal24": {
+   "seat:BTN": 0.9842475279308172,
+   "seat:SB": 0.9811903996163873,
+   "seat:BB": 0.998169711919079,
+   "regret:BTN first-in": 0.9606320188025421,
+   "regret:SB vs BTN": 1.3877092288485948,
+   "regret:BB vs BTN": 1.0838214716438392,
+   "regret:SB first-in": 0.9608224025884896,
+   "regret:BB vs SB": 0.9588315487716449
+  },
+  "alloc": {
+   "6|paired/J_or_lower": 24,
+   "6|rainbow/J_or_lower": 33,
+   "6|rainbow/KQ": 21,
+   "6|twotone/A": 16,
+   "6|twotone/J_or_lower": 31,
+   "6|twotone/KQ": 28,
+   "28|paired/J_or_lower": 20,
+   "28|rainbow/J_or_lower": 26,
+   "28|twotone/J_or_lower": 29,
+   "28|twotone/KQ": 24
+  },
+  "cpu_h": 13.488693042618268,
+  "wall_h_4cores": 3.372173260654567
+ },
+ "min_alloc_minimax_seats_and_4regrets_excl_SBvsBTN": {
+  "new": 162,
+  "new_by_terminal": {
+   "6": 88,
+   "28": 74
+  },
+  "cpu_h": 16.769889993739934,
+  "wall_h_4cores": 4.1924724984349835,
+  "ratio_vs_equal24": {
+   "seat:BTN": 0.882739739913494,
+   "seat:SB": 0.9988718953190363,
+   "seat:BB": 0.9939113904144837,
+   "regret:BTN first-in": 0.8633446045892439,
+   "regret:SB vs BTN": 1.1771573624027396,
+   "regret:BB vs BTN": 0.9868240262961194,
+   "regret:SB first-in": 0.9920130697127357,
+   "regret:BB vs SB": 0.9938975140033441
+  },
+  "alloc": {
+   "6|paired/A": 15,
+   "6|paired/J_or_lower": 21,
+   "6|paired/KQ": 17,
+   "6|rainbow/A": 18,
+   "6|rainbow/J_or_lower": 27,
+   "6|rainbow/KQ": 25,
+   "6|twotone/A": 21,
+   "6|twotone/J_or_lower": 27,
+   "6|twotone/KQ": 25,
+   "28|paired/J_or_lower": 19,
+   "28|paired/KQ": 14,
+   "28|rainbow/J_or_lower": 23,
+   "28|rainbow/KQ": 19,
+   "28|twotone/J_or_lower": 30,
+   "28|twotone/KQ": 41
+  },
+  "note": "SB vs BTN regret excluded: isolated->pooled reconstruction ratio 4.07 (unreliable), pooled excess regret 0.00019 (smallest of the five)"
+ }
+}
