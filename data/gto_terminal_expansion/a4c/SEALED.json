@@ -1,0 +1,66 @@
+{
+ "schema": "a4c_seal",
+ "sealed_at": "2026-10-02 (after report 5fd93bc)",
+ "status": "research_evidence",
+ "not": [
+  "not a production GTO table",
+  "not to be exported to data/gto_db_v2 as a production solution",
+  "no further A4c top-up / repetition"
+ ],
+ "scope": "4-handed 30bb, HU terminals node 6 (SB open, BB call) and node 28 (BTN open, BB call), frozen P14 ranges, Gext point",
+ "frequency_status": {
+  "BTN first-in": "unassessed_class_level (node-level bootstrap L1 0.075)",
+  "SB vs BTN": "unassessed_class_level (node-level bootstrap L1 0.021)",
+  "BB vs BTN": "frequency_unstable",
+  "BB vs SB": "frequency_unstable",
+  "SB first-in": "frequency_unstable"
+ },
+ "frequency_status_basis": "bootstrap mean reach-weighted strategy L1 of the ext panel 0.240 / 0.226 / 0.216 (about 11-12% of frequency mass moves); point 144<->ext policy-argmax switch 12.1% / 11.2% / 6.6% of reach",
+ "ev_precision_bb_per_hand": {
+  "BTN": {
+   "panel_loss_ext": 0.00044692321625517973,
+   "q05_q50_q95": [
+    0.00010569382583999753,
+    0.00040430955661595325,
+    0.0008731485084252089
+   ]
+  },
+  "SB": {
+   "panel_loss_ext": 0.002344126667381455,
+   "q05_q50_q95": [
+    0.0012378373286428823,
+    0.002326333612545417,
+    0.00364155270319369
+   ]
+  },
+  "BB": {
+   "panel_loss_ext": 0.002172011469123993,
+   "q05_q50_q95": [
+    0.0012101741940352406,
+    0.0021849616532870764,
+    0.0031687368222231282
+   ]
+  }
+ },
+ "ev_precision_note": "seat-swap EV loss of the bootstrap policy in the Gext point game; frozen-range / outer-step proxy (SB 0.0034, BB 0.0022, BTN 0.0005) is a consecutive-outer-state sensitivity, not the fixed-point residual",
+ "convergence": "161/162 target-converged + 1 prereg-approved capped exception (node6/Kc9h9d)",
+ "bootstrap_integrity": "bootstrap draw assignment / replay / restart integrity verified (boot_verify.json); statistical independence not tested",
+ "sha256": {
+  "data/gto_terminal_expansion/a4c/prereg.json": "9d64d3f0ab5ed391fa83ec660aba0c1f1aeb099535c4903929195497e0189723",
+  "data/gto_terminal_expansion/a4c/prereg_amendment_1.json": "76ef4476d71fda0d3916516347bcca4b295560d0b4fb76f0cb2fcbc7721e20c2",
+  "data/gto_terminal_expansion/a4c/exception_nonconverged_1.json": "5bf7c96abf494275a87737fd77309c8883b6dbf05cf4935420461ceeeda199aa",
+  "data/gto_terminal_expansion/a4c/tables_check.json": "5e619e77df6522caa75edcafd0cfe940ed743d8ec91a349c0d04c86449a87b89",
+  "data/gto_terminal_expansion/a4c/marginal_diagnostic.json": "35124ce0f78042a21637a92ba45c2a76763e6f363f3ae536f18cfc3c2dd8c3fc",
+  "data/gto_terminal_expansion/a4c/points.json": "08925ffe334c32bf43974c180b7d17c60ab4e36e049c62ad6536b20de78d2c6e",
+  "data/gto_terminal_expansion/a4c/lobo_Kc9h9d.json": "1659c4169c5533303f00f1dcad6c5cfc0d4bd81065d7e386490620f5ab313449",
+  "data/gto_terminal_expansion/a4c/boot.json": "6545cb6c15e84790d2db4bdc9cd226f8755487728617b6a9ff9512620bb99df2",
+  "data/gto_terminal_expansion/a4c/boot_draw_manifest.json": "78f1990cf2b465afb33e4e7c9d40dc491ff86fdc4319cf30606d296733ec65c7",
+  "data/gto_terminal_expansion/a4c/boot_verify.json": "19d9529dd2198fccfe815ef146989a4a00ba964da5cc35e01ec349618e950c2e",
+  "data/gto_terminal_expansion/a4c/analysis.json": "5e7638316562e100661974d38e46c76dc839473b85b1bb00b1df02099220fd87",
+  "data/gto_terminal_expansion/a4c/hand_level.json": "b196bbd2bccf8f1eda02136eaff1585d38c9fa55ca9c4ddb3822adc5c919f87d",
+  "docs/GTO_TERMINAL_A4C_REPORT_V2.md": "49e9c35bec564dd97b8e22b406327ba3729a553413f1490ad0092167102b9920",
+  "docs/GTO_TERMINAL_A4C_V2.png": "c425a8d11c29606795c63ebf9d4a820f976bf926a090745ab0ddc2a46acfd685",
+  "data/gto_hu_continuation/panel_v4_node6.json": "f2dc9ba6883c8cdf58b1b7949b5cf7848d9e6460f11ec9ba920375bf9bf30a63",
+  "data/gto_hu_continuation/panel_v4_node28.json": "88b193e90fe5861d547028f2b64de85a02cc06467ba00b60f4d73c790a17799b"
+ }
+}
