@@ -314,6 +314,7 @@ def boot(a):
 def lobo_hand(gd, ld):
     """hand-level comparison Gext (gd) vs LOBO (ld); definitions in lobo() / a4c/lobo_Kc9h9d_plan.json."""
     gn_, ln_ = node_data(gd), node_data(ld)
+    gap = lambda m, h, na: (lambda v: v[0] - v[1])(sorted((m[k][h] for k in range(na)), reverse=True)) if na > 1 else None
     hand = {}
     for nd in NODES:
         a_, b_ = gn_[nd], ln_[nd]
@@ -331,7 +332,10 @@ def lobo_hand(gd, ld):
             'EV_argmax_switch (optional)': {'count_gext_reach_live': sum(1 for h in range(169) if evs[h] and live(a_['r'])[h]),
                                             'share_gext_reach': wsum(evs, a_['r'])},
             'strategy_L1': {'gext_reach (primary)': wsum(l1, a_['r']), 'lobo_reach (secondary)': wsum(l1, b_['r'])},
-            'classes_switched_policy_argmax': [h for h in range(169) if pol[h] and live(a_['r'])[h]]}
+            'classes_switched_policy_argmax': [h for h in range(169) if pol[h] and live(a_['r'])[h]],
+            # near-tie context (reported, no switch is filtered): top1 - top2 gap in each solve for every switched class
+            'switch_gaps': {'policy': {h: {'gext': gap(a_['s'], h, na), 'lobo': gap(b_['s'], h, na)} for h in range(169) if pol[h] and live(a_['r'])[h]},
+                            'EV_bb': {h: {'gext': gap(a_['ev'], h, na), 'lobo': gap(b_['ev'], h, na)} for h in range(169) if evs[h] and live(a_['r'])[h]}}}
     return hand
 
 

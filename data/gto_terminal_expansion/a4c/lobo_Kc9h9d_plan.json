@@ -19,6 +19,8 @@
   "weighting": "primary = Gext baseline class reach (class_reach_before at the node in Gext); LOBO reach reported as secondary",
   "L1": "reach-weighted strategy L1, primary Gext reach (seat-swap L1 already uses the Gext node reach), LOBO reach secondary",
   "note": "a4c_analyze.hand_level (main 144 vs ext analysis) is not changed by this; it is not used by the LOBO diagnostic any more",
-  "reach_finding": "class_reach_before is the actor's own reach r0[actor] before the node (t2_cont_terminal.rs path_nodes). In all 5 nodes (BTN first-in, SB vs BTN, BB vs BTN, SB first-in, BB vs SB) the actor has not acted before, so this weight is the combo-count prior (6/4/12 combos per class, /1326) and is strategy-independent: Gext and LOBO weights are identical by construction (checked: max |diff| = 0.0 between A4b V144 and boot r01). Both fields are still reported; the secondary will equal the primary. The same holds for a4c_analyze.hand_level."
+  "reach_finding": "class_reach_before is the actor's own reach r0[actor] before the node (t2_cont_terminal.rs path_nodes). In all 5 nodes (BTN first-in, SB vs BTN, BB vs BTN, SB first-in, BB vs SB) the actor has not acted before, so this weight is the combo-count prior (6/4/12 combos per class, /1326) and is strategy-independent: Gext and LOBO weights are identical by construction (checked: max |diff| = 0.0 between A4b V144 and boot r01). Both fields are still reported; the secondary will equal the primary. The same holds for a4c_analyze.hand_level.",
+  "reach_finding_scope": "strategy independence of class_reach_before holds for these 5 nodes only (actor has not acted before); at nodes where the same player acted earlier it depends on the strategy",
+  "near_ties": "switches use plain argmax, so a near-tie flip counts as one switch; for every switched class the top1-top2 frequency gap and EV gap in both solves are reported (switch_gaps); no threshold, nothing filtered"
  }
 }
