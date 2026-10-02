@@ -329,20 +329,20 @@ def adjust_range_by_history(base_range, dyn, pid, board, dead=None):
     # (잠복 버그였다. 특정 액션 라인에서만 빈 레인지가 나와 드러나지 않았다.)
     if not base_range: return base_range, None
     import statistics
-    pcts = [pf.PCT[pf.cls(h)] for h in shown[-6:] if isinstance(h, list)]
+    pcts = [pf.legacy_preflop_order_percentile(h) for h in shown[-6:] if isinstance(h, list)]
     if not pcts: return base_range, None
     med = statistics.median(pcts)
     support = R.range_support(base_range)
     n = len(support)
     if med > 0.55:
-        cap = min(0.9, max(pf.PCT[pf.cls(list(c))] for c in support) * 1.5)
+        cap = min(0.9, max(pf.legacy_preflop_order_percentile(list(c)) for c in support) * 1.5)
         # dead(히어로 홀카드 + 보드)를 걸러야 한다. 안 그러면 상대가 내 카드를
         # 들고 있는 콤보가 레인지에 들어가 에쿼티가 왜곡된다.
         # 주의: base_range 의 카드를 dead 로 넣으면 안 된다 — 그건 상대가 가질 수
         # 있는 카드들이지 죽은 카드가 아니다. (그렇게 하면 레인지가 통째로 비어버린다.)
         seen = set(board or []) | set(dead or [])
         wider = [c for c in R._SORTED
-                 if pf.PCT[pf.cls(list(c))] <= cap
+                 if pf.legacy_preflop_order_percentile(list(c)) <= cap
                  and c[0] not in seen and c[1] not in seen]
         # Expansion introduces genuinely new support. Existing posterior mass is
         # preserved; new combos receive the incoming range's mean mass, which is

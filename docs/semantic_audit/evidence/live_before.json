@@ -1,0 +1,16 @@
+{
+  "actions": "1c0837745298c59d0dea411254c69b5154a90dffebb3761d68e88a532691a222",
+  "hands": 4,
+  "records": 8,
+  "field": "32f195fcdfc675b1c374c341b63a32a0d305e1ef6cb9317539575a90039a813b",
+  "rng_counts": {
+    "instances": 2273,
+    "random": 818513,
+    "getrandbits": 509422
+  },
+  "rng_draw_digest": "919d80209da16bbc8a82b4505675bcdc2c810d7c5b539f91e40831a8b891620f",
+  "rng_final_state_digest": "4388e757a59b7f834f2d5c1e5d4ea9d07966f75ac417d65ff97702316e60fb48",
+  "seed": 9011,
+  "mode": "live",
+  "hands_requested": 4
+}

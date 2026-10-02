@@ -17,7 +17,7 @@ DST=${1:-$HOME/t2_ui_run}
 
 # live2 가 전이적으로 import 하는 모듈 전부. view.py 는 ui_view 가
 # view_text 라는 이름으로 직접 로드하므로 반드시 포함한다.
-MODULES="archetypes bot context depth dynamics field fieldsim formats gto icm
+MODULES="action_events archetypes bot context depth dynamics field fieldsim formats gto icm
          live2 money_pressure persona plan play preflop ranges reads runner session storage_paths table
          telemetry_sync texture view"
 

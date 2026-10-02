@@ -1,5 +1,11 @@
 # t2 PROJECT — current status and branch contract
 
+## 2026-10-02 코드 재감사 동기화
+
+master `8614f32d` / test 감사 기준 `4b9d33d`. remote 6개, test ahead 544 / behind 8; master ancestor 아님. 재개 확인 때 terminal-census만 `5d9fa389`로 전진했다. 이번 작업은 test semantic-only이며 merge/master promotion/branch cleanup 없음.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 Last updated: 2026-09-28 KST
 
 이 파일이 새 세션의 첫 번째 기준 문서다. 전체 저장소나 과거 채팅을 다시 읽지 말고, 이 파일에서 현재 branch/workstream을 확인한 뒤 필요한 통합 문서만 추가로 읽는다.
@@ -34,7 +40,7 @@ t2는 9-max NLH 토너먼트 봇을 인간의 의사결정처럼 모델링하는
 - 여기에는 board-danger local straight connectivity 수정과 duplicate preflop defend-call cliff 제거가 포함된다.
 - 과거 diverged 실험 36개는 `2520cb2a975d1492513608ccdd2a747cdf94fed4`에서 **history-only**로 연결했다. 이 commit은 파일 트리를 전혀 바꾸지 않았다.
 - `2f5c7cb8f978da711b5b60c418068bad3f64ce15`에서 master 이력도 test에 연결했다. 역시 test 파일 트리는 바뀌지 않았다.
-- 현재 master는 test의 ancestor다.
+- 당시에는 master ancestry를 연결했다. 현재 remote 관계는 위 재감사 상태를 따른다.
 
 ### GTO exception — ongoing, do not clean yet
 
@@ -64,14 +70,14 @@ GTO 작업이 끝나기 전에는 master/test 정리 규칙으로 강제 merge/d
 - 검증된 obsolete branch ref **61개를 실제 삭제 완료**했다.
 - branch 삭제에 사용한 one-shot GitHub Actions workflow는 실행 성공 후 저장소 working tree에서 즉시 제거했다.
 
-현재 존재하는 branch는 정확히 5개다:
+이전 cleanup 직후 branch snapshot은 다음 5개였다(현재 6개는 재감사 표 참조):
 1. `master`
 2. `test`
 3. `chatgpt/gto-reference-20260928`
 4. `chatgpt/mini-cfr-solver-20260928`
 5. `telemetry/live`
 
-이 다섯 외의 과거 branch 이름은 더 이상 source of truth도, active ref도 아니다.
+위 목록은 당시 snapshot이다. 현재 terminal-census branch도 존재하며 이번에 정리하지 않는다.
 
 
 ### 2026-10-01 cleanup addendum
@@ -156,13 +162,13 @@ CLOSED / verified:
 - uncalled-excess accounting
 
 OPEN / logic barrier:
-- P7 cold-facing re-raise dedicated strategy
-- F7-B nut semantics
-- F7-B2 multi-opponent read/stack aggregation
+- P7 dedicated strategy/observation ACTIVE; 독립 solver prior 및 완전 action EV OPEN
+- F7-B joint strong-region producer ACTIVE; literal nuts 의미는 OPEN
+- F7-B2 purpose별 read/stack selector ACTIVE; 일반 joint response model OPEN
 - F7-C emotion/tilt consumer boundary
 - F7-D execution/sizing semantic closure
 - F8 side-pot / ICM decision semantics
-- W5 non-uniform posterior production
+- W5 non-uniform likelihood/posterior ACTIVE; 전체 관측 의미 검증 OPEN
 - street-concept granularity/taxonomy
 - final dead-code cleanup
 - dual-source strategy integration: GTO learned prior/memory ↔ human reasoning weighting
@@ -175,7 +181,7 @@ Normal core safety gate:
 
 `tools/regress.py check --baseline current`
 
-Current stable fingerprints:
+Historical checkpoint fingerprints (현재 test와 이미 불일치):
 - 3000 `12c2daefd7c87cbb`
 - 3001 `8b83f668c038d002`
 - 3002 `0badaa6a21474fd3`

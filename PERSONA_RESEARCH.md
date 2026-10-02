@@ -1,5 +1,11 @@
 # PERSONA / AXIS / PRIOR RESEARCH — consolidated history
 
+## 2026-10-02 코드 재감사 동기화
+
+이 문서의 실험값은 해당 시점 역사 기록이다. 현재 default wiring은 semantic_audit registry/coverage를 따른다. authored human heuristic과 검증된 top-player empirical 데이터는 구분하며 후자는 production에서 확인되지 않았다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 이 문서는 personality axis와 concept prior를 검증하던 연구 흐름의 최종 결론을 보존한다. 현재 production source of truth가 아니라 calibration 근거다.
 
 ## 1. 연구 원칙

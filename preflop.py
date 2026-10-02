@@ -11,7 +11,18 @@ def cls(c):
     if c[0][0] == c[1][0]: return v[0]+v[1]
     return v[0]+v[1]+('s' if c[0][1] == c[1][1] else 'o')
 
-def pct(c): return PCT[cls(c)]
+def legacy_preflop_order_percentile(c):
+    """Compatibility ordering, NOT decision-family equity or EV.
+
+    RFI/defend/reraise/calloff and reconstruction currently share this table.
+    Their separate policies must not be mistaken for independent solved priors.
+    """
+    return PCT[cls(c)]
+
+
+def pct(c):
+    """Compatibility API for existing tools and recorded diagnostics."""
+    return legacy_preflop_order_percentile(c)
 
 # ---------- 아키타입 ----------
 import archetypes as A
@@ -322,7 +333,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
            * table_pressure(behind_reads)
            * hotzone_pressure(prof, pos, bb, behind_stacks or []))
     thr = min(0.9, thr + t['shove_add'] if feel < 0.20 else thr)
-    r = pct(hand)
+    r = legacy_preflop_order_percentile(hand)
     # 같은 결정 상태에서 "머니점프가 없었다면"과 "있다면"을 정확히 비교하기
     # 위한 로컬 반사실. 진입 여부는 threshold 하나로 결정되므로 RNG 재생 없이
     # widen_entry / narrow_fold를 판정할 수 있다.
@@ -683,7 +694,7 @@ def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
             'calloff_cap': _cap,
             'tp': None,
             'tot': None,
-            'hand_pct': pct(hand),
+            'hand_pct': legacy_preflop_order_percentile(hand),
         }
 
     tp, tot = defend_thresholds(prof, def_pos, opener_pos, bb, open_bb,
@@ -713,7 +724,7 @@ def defend_action_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
             if fbg > 0:
                 tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))
 
-    r = pct(hand)
+    r = legacy_preflop_order_percentile(hand)
 
     p_hot = 0.0
     if can_raise and stack_bb is not None and in_hotzone(stack_bb) and raise_level == 1:
@@ -1176,7 +1187,7 @@ def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
                        1.0 + _w*(0.45*max(0.0, _fg) + 0.25*max(0.0, _ps))
                        + 0.30*max(0.0, _lg)))
 
-    r = pct(hand)
+    r = legacy_preflop_order_percentile(hand)
     if r <= thr:
         return ('raise', 3.0 + n_limpers)
 
@@ -1252,7 +1263,7 @@ def calloff_ev_comparison(hand, legacy_action, legacy_cap, call_ev_shadow,
     ev_action = 'call' if float(eq) >= float(need) else 'fold'
     legacy = legacy_action[0] if isinstance(legacy_action, tuple) else legacy_action
     return {
-        'hand_pct': round(float(pct(hand)), 6),
+        'hand_pct': round(float(legacy_preflop_order_percentile(hand)), 6),
         'legacy_action': legacy,
         'legacy_cap': round(float(legacy_cap), 6),
         'layer_effective_equity': round(float(eq), 6),
@@ -1345,5 +1356,5 @@ def calloff_decision(prof, def_pos, hand, bb, raise_level, pot, tocall,
                       open_bb if open_bb is not None else tocall,
                       raise_level, bubble_factor, exploit, n_callers,
                       seats, ante)
-    r = pct(hand)
+    r = legacy_preflop_order_percentile(hand)
     return (('call', tocall) if r <= cap else ('fold', 0)), cap

@@ -1,0 +1,242 @@
+[
+  {
+    "name": "preflop_closure",
+    "exit": 0,
+    "seconds": 0.05,
+    "tail": "PASS live variance-seek reaches open planning (0.37, ('raise', 2.39))\nPASS SB complete is reachable ('limp', 1.0)\nPASS weak habitual limp can exist outside raise range ('limp', 1.0)\nPASS preflop decision classes are preserved {'face_first_open': 'face_first_open', 'cold_vs_reraise': 'cold_vs_reraise', 'opener_backaction': 'opener_backaction', 'caller_backaction': 'caller_backaction', 'reraiser_backaction': 'reraiser_backaction'}\n4/4 preflop closure checks passed\n"
+  },
+  {
+    "name": "postflop_events",
+    "exit": 0,
+    "seconds": 0.05,
+    "tail": "ng_kind': None, 'response_kind': 'face_bet'}\nPASS incomplete all-in raise {'idx': 1, 'street': 'flop', 'seat': 2, 'input_action': 'allin', 'action_kind': 'raise', 'raised': True, 'full_raise': False, 'incomplete_raise': True, 'allin': True, 'allin_call': False, 'allin_raise': True, 'actor_allin_after': True, 'can_raise_before': True, 'to_call_before': 300, 'pre_stack': 450, 'post_stack': 0, 'pre_contrib': 0.0, 'post_contrib': 450.0, 'target': 450.0, 'increment': 450.0, 'pre_current': 300.0, 'post_current': 450.0, 'pre_min_raise': 300.0, 'pot_before': 600.0, 'size_frac': 0.75, 'facing_kind': 'bet', 'facing_size_frac': 1.0, 'facing_price_frac': 0.5, 'facing_increment': 300.0, 'facing_target': 300.0, 'facing_full_raise': True, 'facing_incomplete_raise': False, 'facing_allin': False, 'raise_depth_full_before': 1, 'raise_depth_full_after': 1, 'raise_depth_any_before': 1, 'raise_depth_any_after': 2, 'prior_action': None, 'prior_facing_kind': None, 'response_kind': 'face_bet'}\nPASS same-street re-raise is not another barrel {'barrels': [1, 1], 'continue': 1, 'continue_sizes': [0.3]}\nPASS all-in call uses continue range {'call': 0, 'continue': 1}\n7/7 canonical postflop event checks passed\n"
+  },
+  {
+    "name": "read_range_semantics",
+    "exit": 0,
+    "seconds": 0.05,
+    "tail": "PASS read/range semantics\n  seedless_BB_call_range_n=761\n  adaptability_1.5_read_weight=0.090\n  line_prior neutral=0.1445 low=0.1084 high=0.1806\n  line_model_single_source=0.1446 need_no_double_use=0.1831\n  self_range_fallback=ABSENT\n"
+  },
+  {
+    "name": "core_p7_cold_reraise",
+    "exit": 0,
+    "seconds": 1.86,
+    "tail": "7,\n      \"wide_call\": 0.003356,\n      \"wide_eq\": 0.321852,\n      \"wide_need\": 0.430847\n    },\n    {\n      \"behind3_call\": 0.0737,\n      \"behind3_need\": 0.527705,\n      \"hand\": [\n        \"Js\",\n        \"Jh\"\n      ],\n      \"tight_eq\": 0.368519,\n      \"wide_call\": 0.737004,\n      \"wide_eq\": 0.456111,\n      \"wide_need\": 0.416277\n    },\n    {\n      \"behind3_call\": 0.076667,\n      \"behind3_need\": 0.498885,\n      \"hand\": [\n        \"Ts\",\n        \"Th\"\n      ],\n      \"tight_eq\": 0.304815,\n      \"wide_call\": 0.766671,\n      \"wide_eq\": 0.394259,\n      \"wide_need\": 0.387456\n    },\n    {\n      \"behind3_call\": 0.04025,\n      \"behind3_need\": 0.521219,\n      \"hand\": [\n        \"Ah\",\n        \"Kh\"\n      ],\n      \"tight_eq\": 0.376852,\n      \"wide_call\": 0.04025,\n      \"wide_eq\": 0.403519,\n      \"wide_need\": 0.409791\n    },\n    {\n      \"behind3_call\": 0.079392,\n      \"behind3_need\": 0.503471,\n      \"hand\": [\n        \"9s\",\n        \"9h\"\n      ],\n      \"tight_eq\": 0.272037,\n      \"wide_call\": 0.079392,\n      \"wide_eq\": 0.318333,\n      \"wide_need\": 0.392043\n    }\n  ],\n  \"skill_probe\": {\n    \"hand\": [\n      \"As\",\n      \"Qh\"\n    ],\n    \"high_call_cut\": 0.030206,\n    \"low_call_cut\": 0.0033560000000000013\n  }\n}\n"
+  },
+  {
+    "name": "core_p7_observation",
+    "exit": 0,
+    "seconds": 0.06,
+    "tail": " {\n      \"backraise_chance_as_caller\": false,\n      \"cold_reraise_call\": false,\n      \"cold_reraise_chance\": false,\n      \"cold_reraise_fold\": false,\n      \"cold_reraise_raise\": false,\n      \"did_backraise\": false,\n      \"did_fourbet_as_opener\": false,\n      \"did_threebet\": false,\n      \"faced_fourbet_as_threebettor\": false,\n      \"faced_threebet_as_opener\": true,\n      \"folded_to_fourbet_as_threebettor\": false,\n      \"folded_to_squeeze_after_call\": false,\n      \"folded_to_threebet_as_opener\": true,\n      \"fourbet_chance_as_opener\": true,\n      \"threebet_chance\": false\n    },\n    \"raise\": {\n      \"backraise_chance_as_caller\": false,\n      \"cold_reraise_call\": false,\n      \"cold_reraise_chance\": true,\n      \"cold_reraise_fold\": false,\n      \"cold_reraise_raise\": true,\n      \"did_backraise\": false,\n      \"did_fourbet_as_opener\": false,\n      \"did_threebet\": false,\n      \"faced_fourbet_as_threebettor\": false,\n      \"faced_threebet_as_opener\": false,\n      \"folded_to_fourbet_as_threebettor\": false,\n      \"folded_to_squeeze_after_call\": false,\n      \"folded_to_threebet_as_opener\": false,\n      \"fourbet_chance_as_opener\": false,\n      \"threebet_chance\": false\n    }\n  },\n  \"pass\": true\n}\n"
+  },
+  {
+    "name": "core_joint_nut",
+    "exit": 0,
+    "seconds": 0.09,
+    "tail": "{\n  \"checks\": {\n    \"bounded\": true,\n    \"heads_up_exact_legacy\": true,\n    \"incomplete_seat_map_is_unknown\": true,\n    \"multiway_deterministic\": true,\n    \"second_opponent_does_not_create_fake_hero_nut_edge\": true\n  },\n  \"hu\": 0.6857142857142857,\n  \"joint2\": -0.5529999999999999,\n  \"missing\": null,\n  \"pass\": true\n}\n"
+  },
+  {
+    "name": "core_multiway_reads",
+    "exit": 0,
+    "seconds": 0.05,
+    "tail": "{\n  \"bet_pick\": {\n    \"score\": 0.686156,\n    \"seat\": \"bettor\"\n  },\n  \"checks\": {\n    \"fallback_stack_preserved\": true,\n    \"likely_bettor_drives_trap_candidate\": true,\n    \"max_live_stack_preserved\": true,\n    \"sticky_opponent_constrains_field_bluff\": true,\n    \"unknown_opponent_blocks_overconfident_fold_exploit\": true\n  },\n  \"fold_pick\": {\n    \"score\": -0.20825,\n    \"seat\": \"station\"\n  },\n  \"pass\": true,\n  \"unknown_pick\": {\n    \"score\": 0.0,\n    \"seat\": \"unknown\"\n  }\n}\n"
+  },
+  {
+    "name": "core_sizing_ownership",
+    "exit": 0,
+    "seconds": 0.08,
+    "tail": "{\n  \"checks\": {\n    \"act_with_plan_accepts_plan_shape_seed\": true,\n    \"allin_target_not_jittered\": true,\n    \"direct_bet_is_shaped_in_plan\": true,\n    \"direct_bet_provenance_is_plan\": true,\n    \"plan_helper_matches_canonical_habit\": true,\n    \"runner_shape_is_compatibility_wrapper\": true,\n    \"runner_wrapper_exact_parity\": true,\n    \"session_has_no_execution_shape_call\": true\n  },\n  \"direct_bet\": {\n    \"action\": [\n      \"bet\",\n      1200\n    ],\n    \"expected\": 1200,\n    \"meta\": {\n      \"after\": 1200.0,\n      \"before\": 1200.0,\n      \"called\": true,\n      \"changed\": false,\n      \"source\": \"plan\"\n    },\n    \"raw\": 1200\n  },\n  \"helper\": {\n    \"expected\": 1300,\n    \"meta\": {\n      \"after\": 1300.0,\n      \"before\": 1375.0,\n      \"called\": true,\n      \"changed\": true,\n      \"source\": \"plan\"\n    },\n    \"raw\": 1375,\n    \"target\": 1300.0\n  },\n  \"pass\": true\n}\n"
+  },
+  {
+    "name": "f1_free_action",
+    "exit": 0,
+    "seconds": 0.08,
+    "tail": "PASS plan permission gate occurs once True\nPASS flop thin-value maps to range_merge ('range_merge', 'thin_value_turn', 'thin_value_river')\nPASS compatibility value label no longer changes value betting ((0.8998620181634833, '밸류 계획 실행(90%)'), (0.8998620181634833, '밸류 계획 실행(90%)'))\nPASS display-label blockbet fallback is legacy-only True\n4/4 F1 structural checks passed\n"
+  },
+  {
+    "name": "f2_checkthrough",
+    "exit": 0,
+    "seconds": 0.06,
+    "tail": "PASS probe/check-through context reaches plan before intent True\nPASS delayed-cbet skill affects giveup and value turn ranges ((0.25387361803571434, 0.6693031748214286), (0.7253007159085914, 0.97))\nPASS delayed-cbet read is separate from barrel {'delayed_opp': 1, 'delayed': 1, 'barrel_opp': 0, 'barrel': 0}\nPASS actual execution provenance is wired and preserved True\n4/4 F2 structural checks passed\n"
+  },
+  {
+    "name": "f3_checkraise_response",
+    "exit": 1,
+    "seconds": 0.12,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_f3_checkraise_response.py\", line 163, in <module>\n    main()\n  File \"<CANDIDATE>/tools/verify_f3_checkraise_response.py\", line 146, in main\n    a=test_checkraise_is_single_producer()\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<CANDIDATE>/tools/verify_f3_checkraise_response.py\", line 76, in test_checkraise_is_single_producer\n    assert out[0] == ('raise', 777), (out, seen)\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ((('raise', 800.0), 0.9833333333333333, 0.3), {'resp_calls': 0, 'allow_raise': None, 'gate_calls': 1})\n"
+  },
+  {
+    "name": "f4_facing_bet",
+    "exit": 1,
+    "seconds": 0.06,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_f4_facing_bet.py\", line 120, in <module>\n    main()\n  File \"<CANDIDATE>/tools/verify_f4_facing_bet.py\", line 107, in main\n    e=test_allin_observation_normalization()\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<CANDIDATE>/tools/verify_f4_facing_bet.py\", line 86, in test_allin_observation_normalization\n    ar = SE._observed_postflop_action(\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'session' has no attribute '_observed_postflop_action'\n"
+  },
+  {
+    "name": "f5_backaction",
+    "exit": 1,
+    "seconds": 0.05,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_f5_backaction.py\", line 208, in <module>\n    main()\n  File \"<CANDIDATE>/tools/verify_f5_backaction.py\", line 189, in main\n    a=test_reraise_target_includes_prior_contrib()\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<CANDIDATE>/tools/verify_f5_backaction.py\", line 57, in test_reraise_target_includes_prior_contrib\n    assert out == ('raise', 550), out\n           ^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ('raise', 500)\n"
+  },
+  {
+    "name": "f6_caller_backaction",
+    "exit": 1,
+    "seconds": 0.06,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_f6_caller_backaction.py\", line 146, in <module>\n    main()\n  File \"<CANDIDATE>/tools/verify_f6_caller_backaction.py\", line 133, in main\n    a=test_call_bet_then_raise_context()\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<CANDIDATE>/tools/verify_f6_caller_backaction.py\", line 47, in test_call_bet_then_raise_context\n    assert ctx['raise_depth_full'] == 2, ctx\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'kind': 'caller_backaction', 'facing_kind': 'raise', 'facing_seat': 3, 'prior_action': 'call', 'prior_aggressive': False, 'prior_facing_kind': 'bet', 'raise_depth_full': 0, 'raise_depth_any': 2, 'facing_full_raise': True, 'facing_incomplete_raise': False, 'facing_allin': False, 'facing_allin_raise': False, 'facing_size_frac': 1.5, 'facing_price_frac': None, 'facing_increment': 150.0, 'facing_target': 0.0, 'raiser_facing_kind': 'bet', 'raiser_facing_price_frac': 0.0, 'raiser_facing_size_frac': 50.0, 'hero_contrib': 50.0, 'facing_stack': 0.0, 'facing_contrib': 150.0}\n"
+  },
+  {
+    "name": "f7_street_closure",
+    "exit": 1,
+    "seconds": 0.06,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_f7_street_closure.py\", line 121, in <module>\n    main()\n  File \"<CANDIDATE>/tools/verify_f7_street_closure.py\", line 106, in main\n    a = test_completed_raise_uses_action_time_pot()\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<CANDIDATE>/tools/verify_f7_street_closure.py\", line 44, in test_completed_raise_uses_action_time_pot\n    st, act, frac = got[0]\n    ^^^^^^^^^^^^^\nValueError: too many values to unpack (expected 3)\n"
+  },
+  {
+    "name": "p2_limped_pot",
+    "exit": 0,
+    "seconds": 0.04,
+    "tail": "PASS RFI counted once + dedicated limp-raise fold read 0.42\nPASS premium iso cannot fail a second iso roll ('raise', 4.0)\nPASS actual seats/stack/ante reach iso base {'pos': 'CO', 'seats': 6, 'bb': 22.0, 'ante': False}\nPASS BB free option is explicit check ('check', 0)\nPASS pf action drives postflop range role ('check', 'limp', '3bet')\n5/5 P2 structural checks passed\n"
+  },
+  {
+    "name": "p3_first_open",
+    "exit": 0,
+    "seconds": 0.03,
+    "tail": "PASS postflop thin_value no longer changes P3 response [('call', 2.5), ('call', 2.5)]\nPASS caller count changes squeeze/defense context ((0.10633669029634048, 0.22884639592178568), (0.07695288534013331, 0.14646169338994286))\nPASS first-open raise level maps to 3bet sizing (3.0, 3.7)\n3/3 P3 structural checks passed\n"
+  },
+  {
+    "name": "p4_vs_3bet",
+    "exit": 1,
+    "seconds": 0.07,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_p4_vs_3bet.py\", line 115, in <module>\n    main()\n  File \"<CANDIDATE>/tools/verify_p4_vs_3bet.py\", line 104, in main\n    ctx = test_context_fields_exist()\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<CANDIDATE>/tools/verify_p4_vs_3bet.py\", line 95, in test_context_fields_exist\n    assert key in ssrc, key\n           ^^^^^^^^^^^\nAssertionError: pf_open_bb\n"
+  },
+  {
+    "name": "p5_backaction",
+    "exit": 0,
+    "seconds": 0.03,
+    "tail": "reraise_raise': False, 'cold_reraise_fold': False}, {'threebet_chance': True, 'did_threebet': False, 'faced_threebet_as_opener': False, 'folded_to_threebet_as_opener': False, 'fourbet_chance_as_opener': False, 'did_fourbet_as_opener': False, 'faced_fourbet_as_threebettor': False, 'folded_to_fourbet_as_threebettor': False, 'backraise_chance_as_caller': True, 'did_backraise': False, 'folded_to_squeeze_after_call': True, 'cold_reraise_chance': False, 'cold_reraise_call': False, 'cold_reraise_raise': False, 'cold_reraise_fold': False})\nPASS caller backraise is separate observation {'threebet_chance': True, 'did_threebet': False, 'faced_threebet_as_opener': False, 'folded_to_threebet_as_opener': False, 'fourbet_chance_as_opener': False, 'did_fourbet_as_opener': False, 'faced_fourbet_as_threebettor': False, 'folded_to_fourbet_as_threebettor': False, 'backraise_chance_as_caller': True, 'did_backraise': True, 'folded_to_squeeze_after_call': False, 'cold_reraise_chance': False, 'cold_reraise_call': False, 'cold_reraise_raise': False, 'cold_reraise_fold': False}\nPASS old read records hydrate new schema True\nPASS closed raise rights remove raise plans ['call']\n6/6 P5 structural checks passed\n"
+  },
+  {
+    "name": "p6_calloff",
+    "exit": 0,
+    "seconds": 0.04,
+    "tail": "PASS stack-exhausting call is all-in call {'seat': 1, 'input_action': 'call', 'action': 'call', 'amount': 10, 'pre_contrib': 2, 'post_contrib': 10, 'increment': 8, 'pre_current': 10, 'post_current': 10, 'pre_min_raise': 2, 'to_call_before': 8, 'can_raise_before': False, 'pre_stack': 8, 'post_stack': 0, 'raised': False, 'full_raise': False, 'incomplete_raise': False, 'actor_allin_after': True, 'allin_raise': False, 'allin_call': True, 'full_raise_count': 0}\nPASS short shove/no responder routes calloff with exact price (('call', 19.0), {'pot': 23.5, 'tocall': 19.0})\nPASS live responder preserves non-calloff-only branch True\nPASS contestable pot excludes unreachable side-pot chips (pre/call/post) (50, 10, 60)\nPASS P6 context survives in plan seed True\n5/5 P6 structural checks passed\n"
+  },
+  {
+    "name": "weighted_range_adapter",
+    "exit": 0,
+    "seconds": 0.06,
+    "tail": "{'checks': 21, 'legacy_fixture_combos': 590, 'legacy_roundtrip_checks': 5, 'duplicate_mass': 3.0, 'nonuniform_flatten_rejected': True, 'stable_items': True}\nPASS W0 weighted-range representation / legacy adapter\n"
+  },
+  {
+    "name": "weighted_sampling",
+    "exit": 0,
+    "seconds": 0.18,
+    "tail": "{'checks': 10, 'equity_vs_pools': 1.0, 'strong_draws': 1953, 'adv_strong': -0.948333, 'adv_weak': 0.941667, 'legacy_rng_exact': True}\nPASS W1 weighted sampling consumers\n"
+  },
+  {
+    "name": "weighted_aggregate_transform",
+    "exit": 1,
+    "seconds": 0.07,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_weighted_aggregate_transform.py\", line 206, in <module>\n    need(got == want, '%s legacy support/order changed' % name)\n  File \"<CANDIDATE>/tools/verify_weighted_aggregate_transform.py\", line 32, in need\n    raise AssertionError(msg)\nAssertionError: bet legacy support/order changed\n"
+  },
+  {
+    "name": "weighted_boundaries",
+    "exit": 1,
+    "seconds": 0.04,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_weighted_boundaries.py\", line 93, in <module>\n    need(isinstance(pools[2], dict), 'weighted fallback pool flattened')\n  File \"<CANDIDATE>/tools/verify_weighted_boundaries.py\", line 21, in need\n    raise AssertionError(msg)\nAssertionError: weighted fallback pool flattened\n"
+  },
+  {
+    "name": "multiway_range_preservation",
+    "exit": 0,
+    "seconds": 0.03,
+    "tail": "PASS current-street action visibility\n  bettor: ('flop', 'bet', 0.5)\n  caller: ('flop', 'call', 0.3333333333333333)\nPASS distinct opponent pools reach equity\n  pool sizes: [2, 2]\nPASS per-opponent signature catches redistribution with unchanged union\n  signatures differ: True\n3/3 structural checks passed\n"
+  },
+  {
+    "name": "allin_raise_rights",
+    "exit": 0,
+    "seconds": 0.04,
+    "tail": "PASS case_hu_covering_stack_cannot_dead_raise\nPASS case_hu_covering_allin_overcall_rejected\nPASS case_hu_short_allin_call_allowed\nPASS case_multiway_third_stack_keeps_raise_open\nPASS case_incomplete_allin_still_does_not_reopen\nPASS all-in raise-right verification (5 cases)\n"
+  },
+  {
+    "name": "effective_allin_v1",
+    "exit": 0,
+    "seconds": 0.03,
+    "tail": "PASS case_actor_effective_true\nPASS case_opponent_effective_false\nPASS case_commit_floor_false\nPASS case_post_spr_false\nPASS case_contrib_coordinate\nPASS case_exact_allin_true\nPASS effective-allin v1 targeted verification (6 cases)\n"
+  },
+  {
+    "name": "uncalled_excess",
+    "exit": 0,
+    "seconds": 0.04,
+    "tail": "PASS case_hu_overbet_short_call\nPASS case_legit_sidepot_no_return\nPASS case_raise_then_fold_return\nPASS case_contestable_multiway_view\nPASS case_tied_high_no_return\nPASS uncalled-excess targeted verification (5 cases)\n"
+  },
+  {
+    "name": "icm_fast",
+    "exit": 0,
+    "seconds": 14.74,
+    "tail": "PASS 2..9-player ICM fast path\nstates=8 fast_path=8 worst_equity_diff=1.04449782157e-12 worst_bf_diff=2.85105272724e-13\nbalanced9 equity reference=0.2726s fast=0.0023s speedup=118.4x\nfinal2 equity reference=0.000004s fast=0.000007s speedup=0.7x\nfinal3 equity reference=0.000006s fast=0.000010s speedup=0.6x\nfinal4 equity reference=0.000025s fast=0.000021s speedup=1.2x\nfinal5 equity reference=0.000068s fast=0.000048s speedup=1.4x\nfinal6 equity reference=0.000407s fast=0.000123s speedup=3.3x\nfinal7 equity reference=0.002815s fast=0.000265s speedup=10.6x\nfinal8 equity reference=0.024387s fast=0.000627s speedup=38.9x\n"
+  },
+  {
+    "name": "replan_contract",
+    "exit": 1,
+    "seconds": 0.07,
+    "tail": "make_plan 인자 21개 (위치 필수 8개)\n  C1     PASS update_plan 안의 make_plan 호출 1개\n  C2     PASS revise_plan 안의 make_plan 호출 1개\n  C3     PASS 두 경로 모두 위치 인자 8개 (8 / 8)\n\n  상황 입력              최초       재계획     \n  seed               O        O       \n  n_opp              O        O       \n  to_act_behind      O        O       \n  oop_vs_aggr        O        O          <= 알려진 누락\n  initiative         O        O          <= 알려진 누락\n  opp_est            O        O       \n  opp_stack_bb       O        O       \n  tilt               O        -          <= 알려진 누락\n  bb_chips           O        -          <= 알려진 누락\n  oop_legacy_abs     O        O          <= 알려진 누락\n  opp_ranges         O        O       \n  opp_ests           O        O       \n  opp_stack_bbs      O        O       \n\n  C4     FAIL 재계획이 빠뜨리는 인자 = ['bb_chips', 'tilt']\n  C5     PASS 재계획에만 있는 인자 = []\n  C6     PASS initiative 기본값 True — '공격권 보유' 라는 주장\n  C7     PASS oop_vs_aggr/oop_legacy_abs 기본값 None — 442 게이트가 닫힌다\n\nFAIL 1 : C4\n계약이 바뀌었다. 고의로 고쳤다면 KNOWN_MISSING 을 갱신할 것.\n"
+  },
+  {
+    "name": "prelogic_execution_boundary",
+    "exit": 1,
+    "seconds": 19.08,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_prelogic_execution_boundary.py\", line 175, in <module>\n    need(rec['execution_input_source'] == 'judgment',\n  File \"<CANDIDATE>/tools/verify_prelogic_execution_boundary.py\", line 28, in need\n    raise AssertionError(msg)\nAssertionError: fresh all-bot fixture unexpectedly used replay\n"
+  },
+  {
+    "name": "prelogic_profile_boundary",
+    "exit": 0,
+    "seconds": 0.04,
+    "tail": "{'tilt': 0.65, 'type': 'STUDIED_STATION', 'concepts': 37, 'planning_differs_from_execution': True}\nPASS F7-C behavior-neutral profile boundary scaffold\n"
+  },
+  {
+    "name": "human_model_v2",
+    "exit": "TIMEOUT",
+    "seconds": 180.1,
+    "tail": ""
+  },
+  {
+    "name": "human_model_v3",
+    "exit": 0,
+    "seconds": 0.03,
+    "tail": "920875\n      ],\n      \"open_v2\": 0.41861511428571435,\n      \"open_v3\": 0.41861511428571435,\n      \"pass\": true\n    },\n    \"N1_existing_concepts_only\": {\n      \"pass\": true,\n      \"used\": [\n        \"pf_defend\",\n        \"pf_range\",\n        \"positional\",\n        \"potodds\",\n        \"stack_decay\"\n      ]\n    },\n    \"R1_rfi_reasoning\": {\n      \"anchor\": 0.2844556,\n      \"high\": 0.19954438653399995,\n      \"high_reasoning\": 1.0,\n      \"low\": 0.2971575571428571,\n      \"low_reasoning\": 0.0,\n      \"pass\": true,\n      \"target\": 0.19942230879999995\n    },\n    \"R2_defend_reasoning\": {\n      \"anchor\": {\n        \"tot\": 0.7366773089157141,\n        \"tp\": 0.14416774935480528\n      },\n      \"high\": {\n        \"tot\": 0.4089720218621907,\n        \"tp\": 0.07361496393519433\n      },\n      \"low\": {\n        \"tot\": 0.5904005268743416,\n        \"tp\": 0.11554138310930868\n      },\n      \"pass\": true,\n      \"target\": {\n        \"tot\": 0.39370793819657135,\n        \"tp\": 0.07086742887538285\n      }\n    },\n    \"S1_low_reasoner_stays_near_anchor\": {\n      \"flattened_anchor\": 0.2971575571428571,\n      \"flattened_target\": 0.20052100840599996,\n      \"low\": 0.2971575571428571,\n      \"pass\": true\n    }\n  },\n  \"pass\": true\n}\n"
+  },
+  {
+    "name": "human_model_v3_integration",
+    "exit": "TIMEOUT",
+    "seconds": 180.1,
+    "tail": ""
+  },
+  {
+    "name": "calc_noise_v3",
+    "exit": 0,
+    "seconds": 1.67,
+    "tail": "      \"pass\": true\n    },\n    \"C3_arithmetic_zero_mean\": {\n      \"means\": {\n        \"potodds\": {\n          \"0\": 1.00962,\n          \"10\": 0.99998,\n          \"2\": 1.00343,\n          \"5\": 1.00188,\n          \"8\": 0.99933\n        },\n        \"spr\": {\n          \"0\": 1.00263,\n          \"10\": 0.99997,\n          \"2\": 0.99978,\n          \"5\": 0.99978,\n          \"8\": 1.00169\n        }\n      },\n      \"pass\": true\n    },\n    \"C4_error_shrinks_with_skill\": {\n      \"pass\": true,\n      \"sd\": {\n        \"potodds\": {\n          \"0\": 0.54311,\n          \"10\": 0.02001,\n          \"2\": 0.47633,\n          \"5\": 0.32394,\n          \"8\": 0.11975\n        },\n        \"spr\": {\n          \"0\": 0.54587,\n          \"10\": 0.01994,\n          \"2\": 0.4771,\n          \"5\": 0.32228,\n          \"8\": 0.11946\n        }\n      }\n    },\n    \"C5_potodds_no_directional_overfold\": {\n      \"legacy_wrong_loosecall\": 0.3049,\n      \"legacy_wrong_overfold\": 0.6308,\n      \"pass\": true,\n      \"v3_wrong_loosecall\": 0.4673,\n      \"v3_wrong_overfold\": 0.4644\n    },\n    \"C6_spr_neutral_pull_not_cancelled\": {\n      \"expected_seen\": 7.0,\n      \"mean_seen\": 7.0043,\n      \"pass\": true,\n      \"skill\": 5,\n      \"true_spr\": 8.0\n    }\n  },\n  \"pass\": true\n}\n"
+  },
+  {
+    "name": "read_recency_v3",
+    "exit": 0,
+    "seconds": 0.04,
+    "tail": "ue,\n      \"vpip\": 20\n    },\n    \"R2_recent_reversal_expires_old_phase\": {\n      \"lifetime_hands\": 100,\n      \"lifetime_vpip\": 20,\n      \"pass\": true,\n      \"recent20_hands\": 20,\n      \"recent20_vpip\": 20\n    },\n    \"R3_memory_length_changes_adaptation\": {\n      \"memory100_vpip_rate\": 0.2,\n      \"memory20_vpip_rate\": 1.0,\n      \"pass\": true\n    },\n    \"R4_stationary_process_unbiased\": {\n      \"pass\": true,\n      \"recent20_rate\": 0.5\n    },\n    \"R5_estimate_consumes_recent_view\": {\n      \"estimated_n\": 20,\n      \"lifetime_estimated_vpip\": 0.2336,\n      \"observer_memory\": 20,\n      \"pass\": true,\n      \"recent_estimated_vpip\": 0.586\n    },\n    \"R6_postflop_counters_share_same_window\": {\n      \"pass\": true,\n      \"recent\": {\n        \"cbet\": 0,\n        \"cbet_opp\": 10,\n        \"facing_bet\": 10,\n        \"fold_to_bet\": 10,\n        \"hands\": 10\n      }\n    },\n    \"R7_history_is_bounded\": {\n      \"history_len\": 121,\n      \"limit\": 121,\n      \"pass\": true\n    },\n    \"R8_save_load_and_legacy_safe\": {\n      \"legacy_fallback\": {\n        \"hands\": 100,\n        \"vpip\": 20\n      },\n      \"loaded_recent\": {\n        \"hands\": 20,\n        \"vpip\": 20\n      },\n      \"pass\": true\n    }\n  },\n  \"pass\": true\n}\n"
+  },
+  {
+    "name": "preflop_temper_direction_v3",
+    "exit": 0,
+    "seconds": 0.04,
+    "tail": "t\": 2\n        },\n        {\n          \"def_tot_change\": 0.054081,\n          \"def_tp_change\": 0.012255,\n          \"open_change\": 0.019106,\n          \"t\": 3\n        },\n        {\n          \"def_tot_change\": 0.027041,\n          \"def_tp_change\": 0.006127,\n          \"open_change\": 0.009553,\n          \"t\": 4\n        },\n        {\n          \"def_tot_change\": 0.0,\n          \"def_tp_change\": 0.0,\n          \"open_change\": 0.0,\n          \"t\": 5\n        },\n        {\n          \"def_tot_change\": -0.027041,\n          \"def_tp_change\": -0.006127,\n          \"open_change\": -0.009553,\n          \"t\": 6\n        },\n        {\n          \"def_tot_change\": 0.0,\n          \"def_tp_change\": -0.012255,\n          \"open_change\": -0.019106,\n          \"t\": 7\n        },\n        {\n          \"def_tot_change\": 0.0,\n          \"def_tp_change\": -0.018382,\n          \"open_change\": -0.028658,\n          \"t\": 8\n        },\n        {\n          \"def_tot_change\": 0.0,\n          \"def_tp_change\": -0.02451,\n          \"open_change\": -0.038211,\n          \"t\": 9\n        },\n        {\n          \"def_tot_change\": 0.0,\n          \"def_tp_change\": 0.0,\n          \"open_change\": 0.0,\n          \"t\": 10\n        }\n      ]\n    }\n  },\n  \"pass\": true\n}\n"
+  },
+  {
+    "name": "telemetry_wiring",
+    "exit": 1,
+    "seconds": 3.08,
+    "tail": "FAIL: no bot telemetry row\n"
+  },
+  {
+    "name": "tournament_telemetry",
+    "exit": 1,
+    "seconds": 8.22,
+    "tail": "Traceback (most recent call last):\n  File \"<CANDIDATE>/tools/verify_tournament_telemetry.py\", line 220, in <module>\n    main()\n  File \"<CANDIDATE>/tools/verify_tournament_telemetry.py\", line 208, in main\n    st, f, hero, bots, bundle = real_round()\n                                ^^^^^^^^^^^^\n  File \"<CANDIDATE>/tools/verify_tournament_telemetry.py\", line 86, in real_round\n    raise RuntimeError(\nRuntimeError: expected 2 table hands, got 1\n"
+  }
+]

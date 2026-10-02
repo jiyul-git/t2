@@ -1,5 +1,11 @@
 # POT / SIDE-POT / ALL-IN MODEL
 
+## 2026-10-02 코드 재감사 동기화
+
+F8은 PARTIAL ACTIVE: pure preflop calloff, complete closing postflop call, no-raise closing river bet-vs-check veto. 일반 sidepot raise tree와 비종결 street 전체 EV는 OPEN. effective-allin v1 조건/threshold는 변경하지 않았다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 이 문서는 uncalled excess, effective-all-in, leave-behind, F8 side-pot decision semantics를 통합한다.
 
 ## 1. Settlement/legal layer
@@ -70,7 +76,7 @@ Confirmatory OOS 6200-6215:
 
 leave-behind는 future optional execution mode로만 보존.
 
-## 4. F8 main/side-pot decision semantics — OPEN
+## 4. F8 main/side-pot decision semantics — PARTIAL ACTIVE / GENERAL TREE OPEN
 
 Settlement와 legal contribution plumbing은 sound지만 **전략 판단층**은 아직 완전히 닫히지 않았다.
 

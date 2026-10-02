@@ -1,5 +1,11 @@
 # MONEY-JUMP MODEL — architecture + measurement status
 
+## 2026-10-02 코드 재감사 동기화
+
+현재 unopened range_factor만 전략 소비한다. size_factor_shadow/limp_pull_shadow 및 postflop money signals는 shadow다. 이번 작업에서 money 계수/빈도/Phase C 판정 변경 없음.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 Money-jump는 ICM의 다른 이름이 아니다.
 ICM/BF가 payout-risk의 객관적 구조를 제공한다면 money-jump는 “다음 상금 구간까지의 상대적 위치와 pressure opportunity를 플레이어가 어떻게 활용하는가”를 별도 모델링한다.
 

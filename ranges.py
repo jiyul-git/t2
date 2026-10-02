@@ -6,7 +6,7 @@ import preflop as pf
 
 ALL = bot._ALLCOMBOS
 
-_SORTED = sorted(ALL, key=lambda c: pf.PCT[pf.cls(list(c))])
+_SORTED = sorted(ALL, key=lambda c: pf.legacy_preflop_order_percentile(list(c)))
 
 
 # ---------- weighted-range representation / legacy boundary ----------
@@ -247,7 +247,7 @@ def preflop_reraise_posterior(prior_range, observed_rate, polar=0.0):
         return {}
     rate = max(0.005, min(0.50, float(observed_rate or 0.0)))
     pol = max(0.0, min(1.0, float(polar or 0.0)))
-    ranked = sorted(wr, key=lambda c: (pf.PCT[pf.cls(list(c))], c))
+    ranked = sorted(wr, key=lambda c: (pf.legacy_preflop_order_percentile(list(c)), c))
     n = float(len(ranked))
     out = {}
     for i, c in enumerate(ranked):
@@ -370,12 +370,12 @@ def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
         for c in _SORTED:
             if not ok(c):
                 continue
-            v = pf.PCT[pf.cls(list(c))]
+            v = pf.legacy_preflop_order_percentile(list(c))
             if v <= val_hi or (blf_lo < v <= blf_hi):
                 out.append(c)
         return out
     return [c for c in _SORTED
-            if lo < pf.PCT[pf.cls(list(c))] <= hi and ok(c)]
+            if lo < pf.legacy_preflop_order_percentile(list(c)) <= hi and ok(c)]
 
 def narrow(r, board, keep_frac, mode='top'):
     if not board or not r:
@@ -821,6 +821,20 @@ def _bet_range(r, board, street, bluff_axis, size_frac, damp=1.0, barrel=0.0,
     return range_select(r, chosen)
 
 
+def continuation_support_fraction(street, size_frac, damp=1.0):
+    """Shared width of continuing support before call/raise partitioning.
+
+    Return normalized size and width. Call-only top flats remain in _call_range;
+    inability to raise still routes to _continue_range. Support is not mass.
+    """
+    s = max(0.0, float(size_frac or 0.0))
+    keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
+    keep = _damp(keep * (1.25 - 0.45*min(1.5, s)), damp)
+    mdf = 1.0 / (1.0 + s) if s > 0 else 0.95
+    keep = max(keep, min(0.95, mdf))
+    return s, keep
+
+
 def _continue_range(r, board, street, size_frac, damp=1.0):
     """벳을 맞고 fold하지 않은 전체 continue range; mass 보존.
 
@@ -830,11 +844,7 @@ def _continue_range(r, board, street, size_frac, damp=1.0):
     """
     ranked = _ranked(r, board)
     n = len(ranked)
-    s = max(0.0, float(size_frac or 0.0))
-    keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
-    keep = _damp(keep * (1.25 - 0.45*min(1.5, s)), damp)
-    mdf = 1.0 / (1.0 + s) if s > 0 else 0.95
-    keep = max(keep, min(0.95, mdf))
+    s, keep = continuation_support_fraction(street, size_frac, damp)
     k = max(1, int(n*min(0.95, keep)))
     out = ranked[:k]
     chosen = out if len(out) >= _MIN_KEEP else (ranked[:_MIN_KEEP] or ranked)
@@ -848,11 +858,7 @@ def _call_range(r, board, street, size_frac, damp=1.0):
     """
     ranked = _ranked(r, board)
     n = len(ranked)
-    s = max(0.0, float(size_frac or 0.0))
-    keep = {'flop': 0.62, 'turn': 0.48, 'river': 0.38}.get(street, 0.50)
-    keep = _damp(keep * (1.25 - 0.45*min(1.5, s)), damp)
-    mdf = 1.0 / (1.0 + s) if s > 0 else 0.95
-    keep = max(keep, min(0.95, mdf))
+    s, keep = continuation_support_fraction(street, size_frac, damp)
     cut = max(1, int(n*0.18))
 
     # Observing a flat call does NOT mean "remove almost all strong hands".
@@ -907,6 +913,22 @@ def _check_range(r, board, street, cbet_axis, damp=1.0):
     return out
 
 
+def blend_action_range_by_grasp(base, full, rr):
+    """Perceived posterior: retain ordered prior support at incomplete grasp.
+
+    Callers own the low-skill early exit and posterior construction timing.
+    Keeping that timing preserves legacy behavior and random consumption.
+    """
+    grasp = min(1.0, (rr - 1.5) / 6.0)
+    if grasp >= 0.98 or not full:
+        return full
+    keep = set(range_support(full))
+    rest = [c for c in range_support(base) if c not in keep]
+    n_extra = int(len(rest) * (1.0 - grasp))
+    chosen = range_support(full) + rest[:n_extra]
+    return range_select(base, chosen)
+
+
 def perceived_facing_bet_response(base, board, street, size_frac,
                                   profile=None, raise_possible=True):
     """현재 base range에서 '내 벳을 맞은 뒤 계속한 상대'의 체감 레인지.
@@ -927,14 +949,7 @@ def perceived_facing_bet_response(base, board, street, size_frac,
     rr = PS.sk(profile, 'range_read')
     if rr < 1.5:
         return range_copy(base)
-    grasp = min(1.0, (rr - 1.5) / 6.0)
-    if grasp >= 0.98 or not full:
-        return full
-    keep = set(range_support(full))
-    rest = [c for c in range_support(base) if c not in keep]
-    n_extra = int(len(rest) * (1.0 - grasp))
-    chosen = range_support(full) + rest[:n_extra]
-    return range_select(base, chosen)
+    return blend_action_range_by_grasp(base, full, rr)
 
 
 def perceived_continue_range(base, board, street, size_frac, profile=None):
@@ -952,14 +967,7 @@ def perceived_continue_range(base, board, street, size_frac, profile=None):
     rr = PS.sk(profile, 'range_read')
     if rr < 1.5:
         return range_copy(base)
-    grasp = min(1.0, (rr - 1.5) / 6.0)
-    if grasp >= 0.98 or not full:
-        return full
-    keep = set(range_support(full))
-    rest = [c for c in range_support(base) if c not in keep]
-    n_extra = int(len(rest) * (1.0 - grasp))
-    chosen = range_support(full) + rest[:n_extra]
-    return range_select(base, chosen)
+    return blend_action_range_by_grasp(base, full, rr)
 
 
 def perceived_range(base, board, acts, profile=None, actor_read=None):
@@ -979,16 +987,7 @@ def perceived_range(base, board, acts, profile=None, actor_read=None):
     if rr < 1.5:
         return range_copy(base)               # 액션을 아예 반영 못 한다
     full = narrow_by_actions(base, board, acts, actor_read, profile)
-    grasp = min(1.0, (rr - 1.5) / 6.0)        # rr 7.5 이상이면 완전 반영
-    if grasp >= 0.98 or not full:
-        return full
-    # 부분 인식: 좁혀진 support와 원본 support 사이를 섞되,
-    # weighted input의 surviving mass는 그대로 보존한다.
-    keep = set(range_support(full))
-    rest = [c for c in range_support(base) if c not in keep]
-    n_extra = int(len(rest) * (1.0 - grasp))
-    chosen = range_support(full) + rest[:n_extra]
-    return range_select(base, chosen)
+    return blend_action_range_by_grasp(base, full, rr)
 
 
 def _action_event_fields(row):

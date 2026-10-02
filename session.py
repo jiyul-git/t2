@@ -2702,7 +2702,7 @@ class HandRun:
             }
             _all = [self._pid(x) for x in h.seats]
             for sd in live:
-                RD_pct = _pf.PCT[_pf.cls(h.hole[sd])]
+                RD_pct = _pf.legacy_preflop_order_percentile(h.hole[sd])
                 h.book.observe_showdown(_all, self._pid(sd), RD_pct, sd in aggr_seats)
                 # 깐 패는 틸트 객체에도 남긴다. runner.adjust_range_by_history 가
                 # 이걸 읽어 '이 사람이 예상보다 넓게 깠다'를 판단한다. 키는 pid 다.

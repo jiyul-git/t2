@@ -2085,7 +2085,38 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     return round(min(2.2, base * rng.uniform(0.92, 1.10)), 2)
 
 
+def cbet_flop_frequency(profile, board, n_opp, oop, rel, opp_est=None, range_adv=0.0):
+    """Flop continuation entry; consumes cbet_flop capability."""
+    return _continuation_frequency(profile, board, n_opp, 'flop', oop, rel,
+                                   opp_est, range_adv)
+
+
+def barrel_turn_frequency(profile, board, n_opp, oop, rel, opp_est=None, range_adv=0.0):
+    """Turn continuation entry; consumes barrel_turn capability."""
+    return _continuation_frequency(profile, board, n_opp, 'turn', oop, rel,
+                                   opp_est, range_adv)
+
+
+def barrel_river_frequency(profile, board, n_opp, oop, rel, opp_est=None, range_adv=0.0):
+    """Terminal continuation entry; consumes barrel_river capability.
+
+    Existing shared board multiplier remains a documented follow-up question.
+    """
+    return _continuation_frequency(profile, board, n_opp, 'river', oop, rel,
+                                   opp_est, range_adv)
+
+
 def cbet_freq(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0.0):
+    """Compatibility dispatcher; actual street entry points are explicit."""
+    producer = {'flop': cbet_flop_frequency, 'turn': barrel_turn_frequency,
+                'river': barrel_river_frequency}.get(street)
+    if producer is None:
+        return _continuation_frequency(profile, board, n_opp, street, oop, rel,
+                                       opp_est, range_adv)
+    return producer(profile, board, n_opp, oop, rel, opp_est, range_adv)
+
+
+def _continuation_frequency(profile, board, n_opp, street, oop, rel, opp_est=None, range_adv=0.0):
     """이니셔티브 보유자의 지속벳 빈도. 핸드 강도와 별개인 구조적 빈도.
 
     opp_est 가 있고 이 사람이 상대를 보는 타입이면(exploit_weight) 조정한다.
@@ -2465,6 +2496,58 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     return ('bet', int(amt)), None, None
 
 
+def _checkraise_value_floor_probability(plan_probability, rel, skill, aggression):
+    """Combine a motive probability with the existing current-strength floor."""
+    value_band = max(0.0, min(1.0, (rel - 0.72) / 0.22))
+    probability = max(plan_probability, (0.10 + 0.11*skill) * value_band)
+    probability *= (0.7 + 0.05*aggression)
+    return probability
+
+
+def checkraise_draw_street_probability(plan, rel, outs, skill, aggression):
+    """Flop/turn checkraise motive: a future draw may support a semibluff.
+
+    Same poker question and formula on these two streets. This pure producer
+    consumes the street-selected skill and never samples the decision RNG.
+    """
+    probability = 0.0
+    if plan == 'trap':
+        probability = 0.55 + 0.12*skill
+    elif plan == 'semibluff' and outs >= 8:
+        probability = 0.06 + 0.115*skill
+    elif plan == 'bluff_2street':
+        probability = 0.03 + 0.05*skill
+    return _checkraise_value_floor_probability(probability, rel, skill, aggression)
+
+
+def checkraise_river_probability(plan, rel, skill, aggression):
+    """Terminal checkraise motive: no future draw/semibluff branch.
+
+    The legacy bluff_2street label is intentionally retained. Adding a
+    river_bluff branch would be a strategy change, not semantic extraction.
+    """
+    probability = 0.0
+    if plan == 'trap':
+        probability = 0.55 + 0.12*skill
+    elif plan == 'bluff_2street':
+        probability = 0.03 + 0.05*skill
+    return _checkraise_value_floor_probability(probability, rel, skill, aggression)
+
+
+def draw_completion_supports_value(made, rel):
+    """Existing completion evidence, shared by turn and terminal river policy.
+
+    This is a policy predicate, not an exact claim that the original draw hit.
+    Street-specific outcomes (especially missed-draw river bluffs) stay separate.
+    """
+    return made >= 4 or rel >= 0.62
+
+
+def strength_improvement_supports_value(rel, previous_rel):
+    """Promotion evidence: already strong, or increased into the value band."""
+    return rel >= 0.88 or (rel >= 0.70 and rel > previous_rel)
+
+
 def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, street,
                         seed=None, opp_est=None):
     """체크 후 벳을 맞았을 때 레이즈할지. 개념 보유·성향·강도의 함수."""
@@ -2479,19 +2562,13 @@ def checkraise_decision(hero, board, profile, plan_state, pot, tocall, stack, st
     plan = plan_state.get('plan')
     rel = plan_state.get('rel', 0.5)
     outs = plan_state.get('outs', 0)
-    p = 0.0
-    if plan == 'trap':
-        p = 0.55 + 0.12*sk
-    elif plan == 'semibluff' and outs >= 8 and street != 'river':
-        p = 0.06 + 0.115*sk
-    elif plan == 'bluff_2street':
-        p = 0.03 + 0.05*sk
-    # 강한 핸드의 밸류 체크레이즈. 예전에는 rel>=0.90 하드 컷이라
-    # rel 0.89 는 아예 못 했고, 순서상 trap 다음이라 밸류 계획이
-    # semibluff 분기보다 먼저 잡아채는 문제도 있었다.
-    _val = max(0.0, min(1.0, (rel - 0.72) / 0.22))
-    p = max(p, (0.10 + 0.11*sk) * _val)
-    p *= (0.7 + 0.05*profile.get('aggr', 5))
+    if street == 'river':
+        p = checkraise_river_probability(plan, rel, sk, profile.get('aggr', 5))
+    else:
+        # Flop and turn ask the same draw/value question here. Their capability
+        # sources remain distinct via street_concept above; do not clone logic.
+        p = checkraise_draw_street_probability(
+            plan, rel, outs, sk, profile.get('aggr', 5))
     # 블러프 체크레이즈는 '상대가 **벳한 뒤 레이즈에 접는가**'를 봐야 한다.
     # 예전에는 street_gap = fold-to-bet 을 재사용했는데, 그건 전혀 다른 사건이다:
     #   fold-to-bet: 내가 벳을 맞고 접는가
@@ -2878,116 +2955,107 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     return st
 
 
-def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
-              n_opp=1, opp_ranges=None):
-    """리버 도달 시 드로우 기반 계획은 무효. 메이드 여부로 재분류.
+def river_value_reassessment(st, hero, board, profile, opp_range, rng,
+                             n_opp=1, opp_ranges=None):
+    """Terminal value question: value when called, otherwise showdown/giveup.
 
-    **미스한 드로우가 전부 giveup 으로 가면 안 된다.** busted 드로우는
-    리버 블러프의 대표 후보다 — 쇼다운 가치가 없어서 체크해도 못 이기고,
-    그 드로우를 구성하던 카드가 상대의 완성 콤보를 지운다.
-    예전에는 그 라인이 통째로 없어서 리버 블러프가 거의 나오지 않았다.
+    Receives the copied river state; no extra copy, sampling or skill lookup.
     """
-    if len(board) < 5: return state
-    st = dict(state)
-    st['outs'] = 0
-    # 리버 얇은 밸류. value_2street / pot_control 은 리버 사이즈가 0 이라
-    # 리버에서 얇게 뽑는 경로가 아예 없었다.
-    # thin_value_river 개념이 있어야 시도한다 — 얇은 밸류는 배워야 하는 라인이고,
-    # 못 하는 사람은 체크하고 쇼다운을 본다.
-    if st.get('plan') in ('value_2street', 'pot_control', 'block'):
-        rel = st.get('rel', 0.5)
-        made = bot.made_strength(hero, board)
+    rel = st.get('rel', 0.5)
+    made = bot.made_strength(hero, board)
 
-        # River is terminal: protection/future-equity is gone.  A turn
-        # value_2street label therefore cannot by itself authorize one more bet.
-        # Re-evaluate whether this is still clear value, a learned thin-value
-        # spot, or simply showdown value.
-        #
-        # Keep the existing semantic bands; the bug was the fallback direction.
-        # Previously, failing the thin-value gate returned the old value_2street
-        # plan, so a hand *not good enough for thin value* still bet as value.
-        if rel >= 0.92:
+    # River is terminal: protection/future-equity is gone.  A turn
+    # value_2street label therefore cannot by itself authorize one more bet.
+    # Re-evaluate whether this is still clear value, a learned thin-value
+    # spot, or simply showdown value.
+    #
+    # Keep the existing semantic bands; the bug was the fallback direction.
+    # Previously, failing the thin-value gate returned the old value_2street
+    # plan, so a hand *not good enough for thin value* still bet as value.
+    if rel >= 0.92:
+        return st
+
+    if profile and profile.get('concepts') and rng is not None and made >= 1:
+        _tv = PS.sk(profile, 'thin_value_river')/10.0
+        _band = (max(0.0, min(1.0, (rel - 0.48)/0.30))
+                 * max(0.0, min(1.0, (0.92 - rel)/0.20)))
+
+        # Thin value asks a different question from "am I ahead of their
+        # whole range?": am I still ahead **when called**?
+        # Use the same canonical continue-range model at the actual
+        # thin_river base size (42% pot).  This prevents medium showdown
+        # hands from betting merely because folds make the *overall* range
+        # look weak.
+        _thin_size = float(SIZING['thin_river']['river'])
+        _thin_eq = None
+        _thin_n = None
+        if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):
+            _cont_map = {}
+            for _seat, _rr in opp_ranges.items():
+                if _rr:
+                    _cr = R.perceived_continue_range(
+                        _rr, board, 'river', _thin_size, profile)
+                    if _cr:
+                        _cont_map[_seat] = _cr
+            if len(_cont_map) == int(n_opp or 1):
+                _thin_eq = _eq_vs(
+                    hero, board, opp_range, int(n_opp or 1),
+                    sims=500, opp_ranges=_cont_map)
+                _thin_n = sum(len(_r) for _r in _cont_map.values())
+        elif opp_range:
+            _cr = R.perceived_continue_range(
+                opp_range, board, 'river', _thin_size, profile)
+            if _cr:
+                _thin_eq = _eq_vs(
+                    hero, board, _cr, 1, sims=500)
+                _thin_n = len(_cr)
+
+        st['thin_call_eq'] = (
+            None if _thin_eq is None else round(float(_thin_eq), 3))
+        st['thin_call_range_n'] = _thin_n
+
+        # With no usable range evidence, do not invent a thin-value call
+        # range.  Check and take showdown value instead.
+        _value_when_called = (
+            _thin_eq is not None and float(_thin_eq) >= 0.50)
+        if (_value_when_called
+                and rng.random() < 0.75*_tv*_band):
+            st['plan'] = 'thin_river'
+            st['why'] = (st.get('why') or []) + [
+                '리버: 얇은 밸류(rel %.2f, call-eq %.2f, 개념 %.1f)'
+                % (rel, float(_thin_eq), _tv*10)]
             return st
-
-        if profile and profile.get('concepts') and rng is not None and made >= 1:
-            _tv = PS.sk(profile, 'thin_value_river')/10.0
-            _band = (max(0.0, min(1.0, (rel - 0.48)/0.30))
-                     * max(0.0, min(1.0, (0.92 - rel)/0.20)))
-
-            # Thin value asks a different question from "am I ahead of their
-            # whole range?": am I still ahead **when called**?
-            # Use the same canonical continue-range model at the actual
-            # thin_river base size (42% pot).  This prevents medium showdown
-            # hands from betting merely because folds make the *overall* range
-            # look weak.
-            _thin_size = float(SIZING['thin_river']['river'])
-            _thin_eq = None
-            _thin_n = None
-            if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):
-                _cont_map = {}
-                for _seat, _rr in opp_ranges.items():
-                    if _rr:
-                        _cr = R.perceived_continue_range(
-                            _rr, board, 'river', _thin_size, profile)
-                        if _cr:
-                            _cont_map[_seat] = _cr
-                if len(_cont_map) == int(n_opp or 1):
-                    _thin_eq = _eq_vs(
-                        hero, board, opp_range, int(n_opp or 1),
-                        sims=500, opp_ranges=_cont_map)
-                    _thin_n = sum(len(_r) for _r in _cont_map.values())
-            elif opp_range:
-                _cr = R.perceived_continue_range(
-                    opp_range, board, 'river', _thin_size, profile)
-                if _cr:
-                    _thin_eq = _eq_vs(
-                        hero, board, _cr, 1, sims=500)
-                    _thin_n = len(_cr)
-
-            st['thin_call_eq'] = (
-                None if _thin_eq is None else round(float(_thin_eq), 3))
-            st['thin_call_range_n'] = _thin_n
-
-            # With no usable range evidence, do not invent a thin-value call
-            # range.  Check and take showdown value instead.
-            _value_when_called = (
-                _thin_eq is not None and float(_thin_eq) >= 0.50)
-            if (_value_when_called
-                    and rng.random() < 0.75*_tv*_band):
-                st['plan'] = 'thin_river'
-                st['why'] = (st.get('why') or []) + [
-                    '리버: 얇은 밸류(rel %.2f, call-eq %.2f, 개념 %.1f)'
-                    % (rel, float(_thin_eq), _tv*10)]
-                return st
-            elif _thin_eq is not None and float(_thin_eq) < 0.50:
-                st['why'] = (st.get('why') or []) + [
-                    '리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'
-                    ' → 얇은 밸류 아님'
-                    % (rel, float(_thin_eq))]
-
-        # If it is not clear value and the learned thin-value judgment did not
-        # fire, take the showdown value.  Air is handled by the bluff/giveup
-        # paths below; a made hand should not keep firing merely because the
-        # previous street called it value_2street.
-        if made >= 1:
-            st['plan'] = 'showdown'
+        elif _thin_eq is not None and float(_thin_eq) < 0.50:
             st['why'] = (st.get('why') or []) + [
-                '리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel %.2f) → 쇼다운'
-                % rel]
-        else:
-            st['plan'] = 'giveup'
-            st['why'] = (st.get('why') or []) + [
-                '리버: 밸류 계획 근거 소멸(rel %.2f, made 0) → 포기' % rel]
-        return st
+                '리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'
+                ' → 얇은 밸류 아님'
+                % (rel, float(_thin_eq))]
 
-    if st.get('plan') != 'semibluff':
-        return st
+    # If it is not clear value and the learned thin-value judgment did not
+    # fire, take the showdown value.  Air is handled by the bluff/giveup
+    # paths below; a made hand should not keep firing merely because the
+    # previous street called it value_2street.
+    if made >= 1:
+        st['plan'] = 'showdown'
+        st['why'] = (st.get('why') or []) + [
+            '리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel %.2f) → 쇼다운'
+            % rel]
+    else:
+        st['plan'] = 'giveup'
+        st['why'] = (st.get('why') or []) + [
+            '리버: 밸류 계획 근거 소멸(rel %.2f, made 0) → 포기' % rel]
+    return st
+
+
+
+def river_semibluff_resolution(st, hero, board, profile, opp_range, rng):
+    """Terminal draw question: completed value, showdown, missed-draw bluff/fold."""
     made = bot.made_strength(hero, board)
     rel = st.get('rel', 0.5)
     # 완성 판정. 드로우가 목표 등급(스트레이트 4 이상)에 닿았거나 상대 대비
     # 강해졌을 때만 밸류다. made >= 2 는 보드 페어로도 성립해 원페어 + 보드
     # 페어(rel 0.00)가 '드로우 완성 → 밸류'로 올인했다(audit9 HAND 63).
-    if made >= 4 or rel >= 0.62:
+    if draw_completion_supports_value(made, rel):
         st['plan'] = 'value_2street'
         st['why'] = (st.get('why') or []) + ['리버: 드로우 완성 → 밸류 전환']
         return st
@@ -3025,6 +3093,31 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
         st['plan'] = 'giveup'
         st['why'] = (st.get('why') or []) + ['리버: 드로우 미스 → 포기']
     return st
+
+
+def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
+              n_opp=1, opp_ranges=None):
+    """리버 도달 시 드로우 기반 계획은 무효. 메이드 여부로 재분류.
+
+    **미스한 드로우가 전부 giveup 으로 가면 안 된다.** busted 드로우는
+    리버 블러프의 대표 후보다 — 쇼다운 가치가 없어서 체크해도 못 이기고,
+    그 드로우를 구성하던 카드가 상대의 완성 콤보를 지운다.
+    예전에는 그 라인이 통째로 없어서 리버 블러프가 거의 나오지 않았다.
+    """
+    if len(board) < 5: return state
+    st = dict(state)
+    st['outs'] = 0
+    # 리버 얇은 밸류. value_2street / pot_control 은 리버 사이즈가 0 이라
+    # 리버에서 얇게 뽑는 경로가 아예 없었다.
+    # thin_value_river 개념이 있어야 시도한다 — 얇은 밸류는 배워야 하는 라인이고,
+    # 못 하는 사람은 체크하고 쇼다운을 본다.
+    if st.get('plan') in ('value_2street', 'pot_control', 'block'):
+        return river_value_reassessment(
+            st, hero, board, profile, opp_range, rng, n_opp, opp_ranges)
+
+    if st.get('plan') != 'semibluff':
+        return st
+    return river_semibluff_resolution(st, hero, board, profile, opp_range, rng)
 
 
 def _prof_hint(st):
@@ -3303,7 +3396,7 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 상대 대비 강해진 것이다. made >= 2 는 보드 페어만으로도 성립해서
         # 원페어 + 보드 페어(made 2, rel 0.00)가 '드로우 완성 → 밸류'가 됐다
         # (audit9 HAND 63, river_fix 동일). 완성이 아닌 투페어 이상은 쇼다운.
-        if made >= 4 or rel >= 0.62:
+        if draw_completion_supports_value(made, rel):
             st['plan'] = 'value_2street'
             why.append('%s: 드로우 완성(made %d) → 밸류 전환' % (street, made))
         elif made >= 2:
@@ -3333,7 +3426,7 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         why.append('%s: 포기했으나 강도 상승(rel %.2f, made %d) → %s'
                    % (street, rel, made, st['plan']))
     elif old in ('pot_control', 'block', 'showdown') and (
-            rel >= 0.88 or (rel >= 0.70 and rel > _prev_rel)):
+            strength_improvement_supports_value(rel, _prev_rel)):
         # '강도 상승'은 실제로 올랐을 때만이다. 예전 조건 rel >= 0.70 단독은
         # 생성 때 rel 0.70 으로 pot_control 을 받은 핸드가 다음 스트리트에
         # **같은 0.70** 이어도 승격시켰다(audit9 HAND 46: KK A-9-7 → 턴 3♥,

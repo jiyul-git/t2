@@ -1,5 +1,11 @@
 # RANGE MODEL — weighted ranges + multiway semantics
 
+## 2026-10-02 코드 재감사 동기화
+
+weighted defend likelihood와 reraise posterior는 이미 ACTIVE다. joint_nut_advantage도 ACTIVE이나 literal nuts 대신 strong-region occupancy를 계산한다. call-only와 inclusive-continue의 차이는 유지하고 공통 width/불완전 range grasp 계산만 단일 producer로 추출했다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 ## 1. Canonical weighted representation
 
 Weighted range:
@@ -54,9 +60,8 @@ downstream boundaries/signatures preserve weight.
 Canonical CI: `.github/workflows/weighted-range-wiring.yml`
 W0-W4 exact production parity PASS.
 
-### W5 — NOT STARTED / LOGIC BARRIER
-실제 observation을 non-uniform posterior mass로 생산하는 첫 전략 변화.
-read/persona attribution과 별도 실험 없이 시작하지 않는다.
+### W5 — PARTIAL ACTIVE / REMAINING SEMANTIC BARRIER
+defend_action_likelihoods와 preflop_reraise_posterior가 non-uniform mass를 실제 생산한다. 추가 posterior 모델/attribution 변경은 별도 실험이 필요하다.
 
 ## 3. Multiway identity rule
 
@@ -101,11 +106,11 @@ Shadow sample:
 
 이후 dedicated consumer로 승격/검증되어 closed.
 
-### Nut semantics — OPEN
+### Nut semantics — JOINT PRODUCER ACTIVE / LITERAL NUTS OPEN
 
 기존 nut advantage는 literal nuts가 아니라 strong occupancy bands를 비교한다.
 multiway에서는 “opponent seat 평균”과 “field에서 최소 한 명이 strong region에 있을 확률”이 서로 다른 의미다.
-최종 production semantic을 확정하지 않음.
+현재 production은 joint strong-region occupancy 경로를 소비한다. literal nuts로 바꾸는 것은 별도 전략 변경이다.
 
 ### Blocker lifecycle — CLOSED
 
@@ -126,7 +131,7 @@ production exact parity:
 - attack outputs 2,124
 - action/RNG mismatch 0
 
-### B2 representative opponent — OPEN
+### B2 representative opponent — PARTIAL ACTIVE / JOINT RESPONSE OPEN
 
 현재 multiway에서도 일부 경로가 main aggressor 또는 deepest opponent 한 명의:
 - perceived profile

@@ -1,5 +1,11 @@
 # COUNTERFACTUAL RESEARCH — consolidated history
 
+## 2026-10-02 코드 재감사 동기화
+
+기존 CF 결과/표본/INCONCLUSIVE 판정은 역사 증거로 보존한다. 이번 semantic cleanup은 전략 비교 실험이 아니며 기존 baseline을 덮어쓰지 않는다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 이 문서는 personality/plan path와 pcz/made gate에 대한 반사실 연구의 최종 기록이다. production tuning 지침이 아니라 과거 causal evidence다.
 
 ## 1. 공통 실험 규칙

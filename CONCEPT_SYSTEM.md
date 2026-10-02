@@ -1,11 +1,17 @@
 # CONCEPT SYSTEM — glossary, wiring, taxonomy, cleanup
 
+## 2026-10-02 코드 재감사 동기화
+
+37개 선언 capability는 전체 poker semantic inventory가 아니다. 227행 concept/function registry를 함께 사용한다. flop thin_value는 range_merge를 사용한다. trap은 latent.study를 runtime에서 소비하고 type label은 sizing_signature에 영향을 준다. 이 두 설계 불일치는 행동 보존 작업에서 교정하지 않았다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 이 문서는 기존 변수 사전, 배선 대장, 전수조사 장부, concept wiring/prior audit의 현재 결론을 통합한다.
 
 ## 1. 층 구분
 
 ### Latent
-플레이어 생성 시 상관 구조를 만드는 잠재요인. runtime 판단에서 직접 읽지 않는다.
+설계상 플레이어 생성 시 상관 구조를 만드는 잠재요인이다. 실제 `plan.trap_judgment`의 study 직접 소비는 이 원칙의 미해결 위반이다.
 
 ### Temperament / personality
 장기 성향. 방향과 빈도 편향을 만든다.
@@ -78,7 +84,7 @@ Concept wiring audit 최종 요약:
 Prior sensitivity audit 이후 **street granularity**가 calibration blocker로 남아 있다.
 
 확인된 대표 사례:
-- `thin_value_turn`이 flop fallback에서도 쓰여 street 의미가 섞임.
+- flop thin-value fallback은 `range_merge`를 사용한다. 독립 flop thin-value ability는 없으며 공유 의미가 남는다.
 
 진행 순서:
 1. street/motive별 의미가 다른 concept을 식별.

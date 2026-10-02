@@ -1,5 +1,11 @@
 # TOURNAMENT RUNTIME — 9-max, TDA, parallel tables, UI pipeline
 
+## 2026-10-02 코드 재감사 동기화
+
+live2/fieldsim 물리9max가 UI runtime이고 tools/regress는 tourney alternate runtime이다. hero Book은 저장되지만 bot-only table은 새 Hand/Book으로 시작한다. showdown 관측은 shown/muck 판정 전에 수행되어 visibility 후속 수정이 필요하다. standalone setup 목록의 action_events/telemetry_sync 누락은 기존 모듈 배선으로 복구했다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 ## 1. 9-max baseline
 
 Main tournament baseline is 9-max.

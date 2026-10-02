@@ -1,5 +1,11 @@
 # DIAGNOSTICS HISTORY — closed investigations and legacy notes
 
+## 2026-10-02 코드 재감사 동기화
+
+R3 blocker batch1은 감사 HEAD 4b9d33d에서 이미 반영됨. R5b/c draw/strength 전환은 plan.refresh/river_fix 경로이며 runner.revise_plan과 구분한다. 수정 전 regress current 6/6 mismatch와 기존 verifier 실패는 새 회귀와 분리 기록한다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 이 문서는 현재 source of truth가 아니라, 과거 진단에서 얻은 재사용 가능한 결론을 보존한다.
 
 ## 1. Plan / response path

@@ -1,0 +1,5 @@
+기준선 : baseline_9max_post_f8.json  (pre-logic canonical wiring checkpoint — current production behavior)
+  동결 rev 0962cb2  — pre-logic canonical wiring checkpoint: F7-B consumers + TDA + final-table pipeline + weighted W0-W4 closed
+기준선 : VPIP 20.7%  PFR 12.1%  flop 47.2%
+현재   : VPIP 21.7%  PFR 11.6%  flop 55.6%  (rev 4b9d33d)
+불일치 시드: [3000, 3001, 3002, 3003, 3004, 3005]  → 동작이 바뀌었습니다.

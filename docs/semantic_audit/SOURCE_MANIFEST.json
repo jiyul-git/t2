@@ -1,0 +1,4090 @@
+[
+  {
+    "file": "action_events.py",
+    "sha256": "9f4168b755534485acfb04b588c57dee9b745a35da9379840a5284bc9e4da4f2",
+    "lines": 334,
+    "role": "production dependency",
+    "imports": []
+  },
+  {
+    "file": "archetypes.py",
+    "sha256": "9906d7d3966305044a0d67f59acfe7ed29cd416304b3e4a26003d49ac391febd",
+    "lines": 140,
+    "role": "production dependency",
+    "imports": []
+  },
+  {
+    "file": "audit.py",
+    "sha256": "19016405b4e8984453418613a303a4f21d8bd6fd3a8a022569ccecd908fcc1b1",
+    "lines": 347,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "collections",
+      "json",
+      "os",
+      "preflop",
+      "storage_paths",
+      "sys",
+      "table"
+    ]
+  },
+  {
+    "file": "auto.py",
+    "sha256": "b4cfed4df48da42ef9e8d77a85168d897a1cb75aee3713e42b3b69142a8d904f",
+    "lines": 57,
+    "role": "alternate runtime",
+    "imports": [
+      "json",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "bot.py",
+    "sha256": "709fceebce11a4dc26e4f90167f02e8e8a6191c49d50415d3c477aa82c1a7708",
+    "lines": 475,
+    "role": "production dependency",
+    "imports": [
+      "itertools",
+      "random",
+      "zlib"
+    ]
+  },
+  {
+    "file": "cli.py",
+    "sha256": "0a89f0b16f5e10b3119a8a35d91addb26d011e748e68f3c3e4d2e5ef87bfa5a6",
+    "lines": 107,
+    "role": "alternate runtime",
+    "imports": [
+      "live2",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "context.py",
+    "sha256": "b1383d9143400c619a1658bb41e6f4ccba2dc68779a93de07ceea1bd09b8fdac",
+    "lines": 199,
+    "role": "production dependency",
+    "imports": [
+      "math"
+    ]
+  },
+  {
+    "file": "depth.py",
+    "sha256": "a787d15e1ec65a98abd8ef805f386886d8b9b538c617e88a455413bbf2b12539",
+    "lines": 158,
+    "role": "production dependency",
+    "imports": []
+  },
+  {
+    "file": "dynamics.py",
+    "sha256": "fb7ad4c5b2a118e169859f220aadcc43202b567ac191b2845cfd8e49c83b2cf4",
+    "lines": 229,
+    "role": "production dependency",
+    "imports": []
+  },
+  {
+    "file": "field.py",
+    "sha256": "f483eeec78fafce2447d03dc8c72b541580b15a41631b6f7a9d39bda38532987",
+    "lines": 209,
+    "role": "production dependency",
+    "imports": [
+      "archetypes",
+      "math",
+      "persona",
+      "random"
+    ]
+  },
+  {
+    "file": "fieldsim.py",
+    "sha256": "cce63a22528a39adb821a982cd4c487bdc04eeb87e17b141e986eb26a3846af8",
+    "lines": 910,
+    "role": "production dependency",
+    "imports": [
+      "context",
+      "copy",
+      "dynamics",
+      "field",
+      "formats",
+      "json",
+      "math",
+      "os",
+      "persona",
+      "play",
+      "random",
+      "reads",
+      "session",
+      "storage_paths",
+      "table",
+      "time"
+    ]
+  },
+  {
+    "file": "formats.py",
+    "sha256": "b171352741ce6d8f8420a5caa0557214e7cdf88cd51209b1eb84b608b62aa7a0",
+    "lines": 162,
+    "role": "production dependency",
+    "imports": []
+  },
+  {
+    "file": "game.py",
+    "sha256": "82b82ae354373f4567f3a153651dca652a3212e2460a8ec7516cc2ae87d2f2fa",
+    "lines": 66,
+    "role": "alternate runtime",
+    "imports": [
+      "json",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "gto.py",
+    "sha256": "5964de9b53cad12b6441802d08458ea3717383cc2858b204bea7cdaab45dbeed",
+    "lines": 210,
+    "role": "production dependency",
+    "imports": [
+      "table"
+    ]
+  },
+  {
+    "file": "icm.py",
+    "sha256": "f7c0ddd16ce958c0d99d7d220e4885378a43118d367a351f5eef54c6c01900fb",
+    "lines": 324,
+    "role": "production dependency",
+    "imports": [
+      "functools",
+      "math"
+    ]
+  },
+  {
+    "file": "legacy/engine.py",
+    "sha256": "43e95836e3d3e0241f21cc5be030e475477965c62a9d173d1c08e7f2326a0a05",
+    "lines": 87,
+    "role": "legacy/reference",
+    "imports": [
+      "bot",
+      "hashlib",
+      "json",
+      "os",
+      "players",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "legacy/players.py",
+    "sha256": "590dae779be041e99562fdac8084a38f0b499bfa6f42e6d1d082d914e29f8d34",
+    "lines": 46,
+    "role": "legacy/reference",
+    "imports": [
+      "json",
+      "random"
+    ]
+  },
+  {
+    "file": "legacy_dynamics.py",
+    "sha256": "b5d9d0290cb50bc9d6d83dc5fd1804d0b55999ed436ba3c10fd56208d5ebf03e",
+    "lines": 88,
+    "role": "legacy/reference",
+    "imports": [
+      "json",
+      "os",
+      "random"
+    ]
+  },
+  {
+    "file": "live.py",
+    "sha256": "0afcc541ff7540b5d336c33e10c8d63fe2d12b3944ca368984cbc3a65ecad8ea",
+    "lines": 279,
+    "role": "alternate runtime",
+    "imports": [
+      "context",
+      "dynamics",
+      "field",
+      "formats",
+      "json",
+      "math",
+      "os",
+      "play",
+      "random",
+      "reads",
+      "session",
+      "sys",
+      "table",
+      "tourney",
+      "view",
+      "zlib"
+    ]
+  },
+  {
+    "file": "live2.py",
+    "sha256": "9e79258b1c760adda1dceb53ed7d28a3f7fa3601797e32b86a73984402b53154",
+    "lines": 1009,
+    "role": "production dependency",
+    "imports": [
+      "copy",
+      "dynamics",
+      "fieldsim",
+      "formats",
+      "json",
+      "math",
+      "os",
+      "persona",
+      "play",
+      "random",
+      "reads",
+      "session",
+      "storage_paths",
+      "table",
+      "telemetry_sync",
+      "time",
+      "view",
+      "zlib"
+    ]
+  },
+  {
+    "file": "money_pressure.py",
+    "sha256": "9d7a3df3b64a3910b01ba2bf3346c1bbb187486b917296d64ffc155f8f04f870",
+    "lines": 341,
+    "role": "production dependency",
+    "imports": []
+  },
+  {
+    "file": "persona.py",
+    "sha256": "16310b502f6e6af3fc39de399f38eb61a1fe0f16cc7b2c6c685330f0c3deb691",
+    "lines": 1343,
+    "role": "production dependency",
+    "imports": [
+      "archetypes",
+      "gto",
+      "math",
+      "os",
+      "random",
+      "statistics",
+      "table",
+      "zlib"
+    ]
+  },
+  {
+    "file": "plan.py",
+    "sha256": "6593949badd19869da76b11ca3e8fa27942c06f9955f418d46744e1a6785ac1c",
+    "lines": 3662,
+    "role": "production dependency",
+    "imports": [
+      "archetypes",
+      "bot",
+      "hashlib",
+      "persona",
+      "preflop",
+      "random",
+      "ranges",
+      "runner",
+      "texture",
+      "zlib"
+    ]
+  },
+  {
+    "file": "play.py",
+    "sha256": "ea1fe9f34ae674524128fdc5848f61015ed3fbfef7dc03704aa12d0afd1e0c75",
+    "lines": 176,
+    "role": "production dependency",
+    "imports": [
+      "bot",
+      "dynamics",
+      "hashlib",
+      "icm",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "preflop",
+      "random",
+      "ranges",
+      "reads",
+      "runner",
+      "table"
+    ]
+  },
+  {
+    "file": "preflop.py",
+    "sha256": "d27621557ea784c47d2c2c812c2e0cac690f91ecc2f699a72cac677fd47f654b",
+    "lines": 1349,
+    "role": "production dependency",
+    "imports": [
+      "archetypes",
+      "bot",
+      "depth",
+      "gto",
+      "icm",
+      "json",
+      "math",
+      "os",
+      "persona",
+      "random",
+      "ranges",
+      "zlib"
+    ]
+  },
+  {
+    "file": "ranges.py",
+    "sha256": "cc40b0f753d555a2ea30f7d53c93421c1a6fcde75415c81d4bd782f54fa4262c",
+    "lines": 1153,
+    "role": "production dependency",
+    "imports": [
+      "bot",
+      "math",
+      "persona",
+      "preflop",
+      "random",
+      "zlib"
+    ]
+  },
+  {
+    "file": "reads.py",
+    "sha256": "7c7f46024e7079cdab22f7dce463fc74273b0f4d251448830ffd58379f8f4eb6",
+    "lines": 883,
+    "role": "production dependency",
+    "imports": [
+      "archetypes",
+      "json",
+      "math",
+      "os",
+      "os.path",
+      "persona",
+      "random"
+    ]
+  },
+  {
+    "file": "review.py",
+    "sha256": "2a0d7d094063e87db3aba75d2c23286a7d12a9dcef63fa313ddbc4b7e5bc8fd9",
+    "lines": 110,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "storage_paths"
+    ]
+  },
+  {
+    "file": "river_probe.py",
+    "sha256": "6a71aa5e1fe0d301c2e44973aabd787e4f39ae61daad22c20a9d27491a1df91c",
+    "lines": 49,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "plan",
+      "sys"
+    ]
+  },
+  {
+    "file": "runner.py",
+    "sha256": "81811988b2fd13d21f3b07b2ff00afb4b61df8b0d49bc1feeccd4ff068cc4ea9",
+    "lines": 361,
+    "role": "production dependency",
+    "imports": [
+      "bot",
+      "dynamics",
+      "hashlib",
+      "icm",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "preflop",
+      "random",
+      "ranges",
+      "statistics",
+      "table"
+    ]
+  },
+  {
+    "file": "session.py",
+    "sha256": "2b653088bb26ab9c51a5dc29c6feb63b91fc27e17bdbf5507d2f42251935fc86",
+    "lines": 2877,
+    "role": "production dependency",
+    "imports": [
+      "action_events",
+      "bot",
+      "dynamics",
+      "gto",
+      "hashlib",
+      "icm",
+      "itertools",
+      "json",
+      "money_pressure",
+      "os",
+      "persona",
+      "plan",
+      "play",
+      "preflop",
+      "random",
+      "ranges",
+      "reads",
+      "runner",
+      "zlib"
+    ]
+  },
+  {
+    "file": "storage_paths.py",
+    "sha256": "bb64b7a6254863a2e0e35996885f7d2e72529d2b20c172ed1d02af7823e0d6d0",
+    "lines": 194,
+    "role": "production dependency",
+    "imports": [
+      "hashlib",
+      "os"
+    ]
+  },
+  {
+    "file": "table.py",
+    "sha256": "d86810a6430cd0ab65943c02e6c44884fb584eb5fd2c049044b0dcd35bcf6c20",
+    "lines": 118,
+    "role": "production dependency",
+    "imports": [
+      "json",
+      "os"
+    ]
+  },
+  {
+    "file": "telemetry_sync.py",
+    "sha256": "93e2bcb033f9828b22ee72d351d8f2ed6212509444625822ca5714b24c135725",
+    "lines": 486,
+    "role": "production dependency",
+    "imports": [
+      "copy",
+      "json",
+      "os",
+      "pathlib",
+      "persona",
+      "shutil",
+      "subprocess",
+      "threading",
+      "time"
+    ]
+  },
+  {
+    "file": "texture.py",
+    "sha256": "2272b0d2299651682e9154262969d67d0c666190675d7a3e79577a62b53da8b8",
+    "lines": 145,
+    "role": "production dependency",
+    "imports": [
+      "bot"
+    ]
+  },
+  {
+    "file": "tools/a5_fingerprint_ab.py",
+    "sha256": "aa0fc02bbd8af9885205e3a37f0e5b5afb0054c35bd13e2490099e9b10f68c5b",
+    "lines": 196,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "plan",
+      "shutil",
+      "subprocess",
+      "sys",
+      "tempfile",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/adv_baseline.py",
+    "sha256": "6080640e7afc0d3e8c48ca268d9e00a16ebe7c6cd784b474993a0158d9c9f0ad",
+    "lines": 134,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/anomaly_scan.py",
+    "sha256": "daa1f830ce2d39f2c199c1bcbb3b6fd58b084445d290e255b5323f24a2d755be",
+    "lines": 106,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/arith.py",
+    "sha256": "416a1b18f040ed0d1188c0537fd3f6e683decc537094c64ccee4084a693172cb",
+    "lines": 438,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "cf_axis",
+      "collections",
+      "fieldsim",
+      "gzip",
+      "json",
+      "multiprocessing",
+      "os",
+      "plan",
+      "random",
+      "re",
+      "runner",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/assistant_play_hand.py",
+    "sha256": "d130c0440097e746824d4b1aa5a025a999edf49b4dc69fdcce527a88fee189b9",
+    "lines": 50,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "live2",
+      "os",
+      "pathlib",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/attribute_f7b_empty_range_overlap.py",
+    "sha256": "6b5310975185a8000d7ce1389e4c4c8002aa2ac40db39474bf4925569059b951",
+    "lines": 272,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "preflop",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/attribute_f7b_range_adv.py",
+    "sha256": "cedb8843b53a7fe1928f602cb1e541f0f1de4c1328bfddbb1ef73b78ecf108a4",
+    "lines": 77,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tools"
+    ]
+  },
+  {
+    "file": "tools/attribute_f7b_rel.py",
+    "sha256": "c08b5eee73d33a2c66b4581df04483bd514561f196b3d51ac5c6d16ee2d26c85",
+    "lines": 75,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "plan",
+      "sys",
+      "tools"
+    ]
+  },
+  {
+    "file": "tools/attribute_f8_d6d2.py",
+    "sha256": "5b0f4c2715f9ad4a9af57580e5b8221c01da4a3e95cf0bea9efa106a13b7ccba",
+    "lines": 176,
+    "role": "diagnostic/tool",
+    "imports": [
+      "hashlib",
+      "json",
+      "os",
+      "preflop",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/audit_calc_noise_v3.py",
+    "sha256": "a66a84bbe1cbf8f611c70d4f8a461041cde4ec940dc918f70a0b0680bc61f20f",
+    "lines": 159,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "math",
+      "pathlib",
+      "persona",
+      "plan",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/audit_error_rate_v3.py",
+    "sha256": "fafbae0ab98da769cbff6dc5c90d924c882b775b15b044e7f99b00645829ef0d",
+    "lines": 143,
+    "role": "diagnostic/tool",
+    "imports": [
+      "ast",
+      "json",
+      "math",
+      "pathlib",
+      "persona",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/audit_f7b_multiway.py",
+    "sha256": "700af342424d6a1d3a7f19f2c57d501d902bbd71e82f4f636f4b05e1aac0e143",
+    "lines": 439,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "inspect",
+      "os",
+      "plan",
+      "ranges",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/audit_f8_sidepot.py",
+    "sha256": "1acb79ff9dcceb32a0855b46d364e60d0e4843c4157fe9644af4c9357e9df30f",
+    "lines": 1178,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "runner",
+      "session",
+      "sys",
+      "types"
+    ]
+  },
+  {
+    "file": "tools/audit_human_v3_behavior_quality.py",
+    "sha256": "300ec171aaae3dfd3901c58acd046499b58c8e0c4ffb26b7e585757c079a6308",
+    "lines": 45,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "pathlib",
+      "subprocess",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/audit_human_v3_interactions.py",
+    "sha256": "89415665267d9a7dae5fd79baa88b5e6ef2759af4dc833cd47a56ca1b1cea817",
+    "lines": 49,
+    "role": "diagnostic/tool",
+    "imports": [
+      "itertools",
+      "json",
+      "pathlib",
+      "sys",
+      "verify_human_model_v3_integration"
+    ]
+  },
+  {
+    "file": "tools/audit_human_v3_live_attribution.py",
+    "sha256": "05522b0ff5fb6d366e3dba2b733fe3bf120ccd8f17ed0e0967dd46b1e98ed700",
+    "lines": 72,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "pathlib",
+      "persona",
+      "random",
+      "reads",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/audit_preflop_deviation_shape_v3.py",
+    "sha256": "a1de581b55a55d9eafff2da610334c9cb983d5de484d9db693927b9f837c6f8a",
+    "lines": 184,
+    "role": "diagnostic/tool",
+    "imports": [
+      "gto",
+      "json",
+      "pathlib",
+      "persona",
+      "preflop",
+      "random",
+      "statistics",
+      "sys",
+      "table"
+    ]
+  },
+  {
+    "file": "tools/audit_t3_preflop.py",
+    "sha256": "54c7da5de26042614b86ae8aee460653e4f214f146658da2172b896cce90a01a",
+    "lines": 123,
+    "role": "diagnostic/tool",
+    "imports": [
+      "copy",
+      "json",
+      "live2",
+      "os",
+      "pathlib",
+      "persona",
+      "preflop",
+      "runner",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/axis_accuracy.py",
+    "sha256": "f51a112d1c22bc5932d2843cce47dd550c5de765cf3ef8e4019512b91fc71874",
+    "lines": 256,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "depth",
+      "gto",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "ranges",
+      "statistics",
+      "sys",
+      "texture"
+    ]
+  },
+  {
+    "file": "tools/axis_analysis.py",
+    "sha256": "3837269d08c47f0395e4f1586d4f5348d0c945f6a9234a7460dda745dff41aab",
+    "lines": 395,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "f_trace",
+      "f_trace_layers",
+      "json",
+      "logkeys",
+      "math",
+      "multiprocessing",
+      "os",
+      "random",
+      "statistics",
+      "sys",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/axis_dataflow.py",
+    "sha256": "8676f18f973e3c312f03568c593c4e42ab9a9f0abfa37610dd9f9d55888228ba",
+    "lines": 237,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "os",
+      "persona",
+      "random",
+      "re",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/axis_dispersion.py",
+    "sha256": "18c92c1f384e628e9c11dabacd915c18274365cbedcdc3b4814127844e1bae66",
+    "lines": 86,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "field",
+      "os",
+      "persona",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/axis_freq.py",
+    "sha256": "c195991f6ef1a805bd954ccbfe3a9e709291f8eaeff2f9501ae5d8458d35becc",
+    "lines": 682,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "copy",
+      "gto",
+      "os",
+      "persona",
+      "plan",
+      "preflop",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/axis_sd.py",
+    "sha256": "0aaa53a7721a4663b702d7f05a92f3b96337f91dc1b5bbe98c8440834a02fa8c",
+    "lines": 158,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "os",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/axis_sites.py",
+    "sha256": "7d4548023069d08d1174b3c0808c501b5809cf03c43903c33a67f2ef5d9e4432",
+    "lines": 137,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "os",
+      "persona",
+      "re",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/band_count.py",
+    "sha256": "4e9a4789c62842d63eb2c624b7628e3cacab3c4084daf5bb8ae62d87000d6720",
+    "lines": 160,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collect",
+      "collections",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/belief_diag.py",
+    "sha256": "389e79651f9e24795c7d3bf7ec5b4c47ade40e228ba14be03628826f6b19ed4e",
+    "lines": 376,
+    "role": "diagnostic/tool",
+    "imports": [
+      "calibrate",
+      "collections",
+      "math",
+      "os",
+      "random",
+      "reads",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/block_context_arms.py",
+    "sha256": "63cbc2d2024cecfa7dc6c5ba5892a923a967a953862ddb52059a3c5854ec2aad",
+    "lines": 311,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "argparse",
+      "collections",
+      "fieldsim",
+      "os",
+      "persona",
+      "plan",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/block_s6_attrib.py",
+    "sha256": "e1f0d8fcc80227f0d3c5bc73c7d60b325c61493d91d0c74a82a47e626e960073",
+    "lines": 169,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "multiprocessing",
+      "os",
+      "plan",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/block_trace.py",
+    "sha256": "3bcfd5236fe4b0df218aa9e29f9fcf4bb06bc5d299927b5dd0b001c78366923c",
+    "lines": 259,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "multiprocessing",
+      "os",
+      "persona",
+      "plan",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/blockbet_donk_semantics_audit.py",
+    "sha256": "b3732f5cd1a03b2185ab8afb614436f8aabec11c34e6a0ac60b23f5d04262029",
+    "lines": 239,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/bluff_coherence.py",
+    "sha256": "3f03825d01343ca72d6aee706493c4d4fb0296bf97f1b9bba89ffc59585baf37",
+    "lines": 408,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "glob",
+      "json",
+      "logkeys",
+      "os",
+      "plan",
+      "ranges",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/calc_origin.py",
+    "sha256": "77a22c517d2b01d4a2045e6815b1b0e16cee81a6913a25080cf1d961ed0d29a6",
+    "lines": 106,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "inspect",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/calibrate.py",
+    "sha256": "e42f68db9711ade168c0f6d4977536a074048579edcedcda9315821d097b094f",
+    "lines": 167,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "persona",
+      "random",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/cf_B.py",
+    "sha256": "a5c4dfbb705d7340e6555b0538ddaad64df443d72b477521fc8bf876bf03eb03",
+    "lines": 146,
+    "role": "diagnostic/tool",
+    "imports": [
+      "archetypes",
+      "collections",
+      "json",
+      "os",
+      "persona",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_axis.py",
+    "sha256": "ac45c8ca4ef9dfebd3702a084c4d15f10a2df11efcf0db672215c711ca2dc82b",
+    "lines": 437,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "math",
+      "multiprocessing",
+      "os",
+      "persona",
+      "plan",
+      "preflop",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_axis_l2.py",
+    "sha256": "6805d0b41beac3c24fae8af3105a44933005aafe047f6237982251b49681e07d",
+    "lines": 405,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "cf_axis",
+      "collections",
+      "fieldsim",
+      "gzip",
+      "json",
+      "multiprocessing",
+      "os",
+      "plan",
+      "random",
+      "runner",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_defend.py",
+    "sha256": "1e4dc8afe2c44ffbe681322061f19e07a9030e1f149a65c610e2ea5aff17691b",
+    "lines": 144,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "gto",
+      "math",
+      "os",
+      "persona",
+      "preflop",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_ev.py",
+    "sha256": "a926db471845e4535a7dc0151278661911975377a4998b9794b2206ad3cf9503",
+    "lines": 233,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "copy",
+      "os",
+      "plan",
+      "statistics",
+      "sys",
+      "textwrap",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/cf_hassd.py",
+    "sha256": "09bb7bbf7c3c6e60c51e06916a1008fc51bc2b497d71a6a415728d9de042b1a2",
+    "lines": 168,
+    "role": "diagnostic/tool",
+    "imports": [
+      "archetypes",
+      "collections",
+      "json",
+      "os",
+      "persona",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_joint.py",
+    "sha256": "5b7b9d3bd4eeb2de4ddb1fca7e084dbd2c216e5c350fcdff270b53d4ee974be2",
+    "lines": 358,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "copy",
+      "gzip",
+      "itertools",
+      "json",
+      "os",
+      "plan",
+      "statistics",
+      "sys",
+      "textwrap",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/cf_joint_scope.py",
+    "sha256": "71dd16eaefdb629324b9fc6a00e0b903b0110be52ba24fd5c86ee5eca2c6b327",
+    "lines": 395,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "cf_joint",
+      "collections",
+      "copy",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_made.py",
+    "sha256": "c6e015d45c316d755b705612d84cfe8003417e1380a2e36a24b2edd227876196",
+    "lines": 223,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collect",
+      "collections",
+      "os",
+      "plan",
+      "sys",
+      "textwrap"
+    ]
+  },
+  {
+    "file": "tools/cf_mdf.py",
+    "sha256": "6ab507e8601e92e5920aaeee0132fad52f1cf4d0fd70513a739835bd204a2a7d",
+    "lines": 133,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "gto",
+      "os",
+      "persona",
+      "preflop",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_needpath.py",
+    "sha256": "5eef0664269e70fd7e0bb10bb7ea33e4686e08119f92f0a184b02e32d418e2f7",
+    "lines": 299,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "copy",
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "statistics",
+      "sys",
+      "textwrap"
+    ]
+  },
+  {
+    "file": "tools/cf_pcz.py",
+    "sha256": "1adf66e93db93ced034863a8a36bc39f19fd83668fbf459172ae282157b05c87",
+    "lines": 259,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collect",
+      "collections",
+      "os",
+      "plan",
+      "random",
+      "sys",
+      "textwrap"
+    ]
+  },
+  {
+    "file": "tools/cf_potodds.py",
+    "sha256": "a786ae0b8e3c739768f69faf6b5abfd6791468bba514b3c351542105bed1bf2d",
+    "lines": 170,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "copy",
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "statistics",
+      "sys",
+      "textwrap"
+    ]
+  },
+  {
+    "file": "tools/cf_profile.py",
+    "sha256": "e796ffbcd0ca3c257b2d47368ec655d4ad71096f259bb69812f482c4f2d83b54",
+    "lines": 165,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "itertools",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_refresh.py",
+    "sha256": "3451987123266a57ac2a8cbe288408508dbab777f12e8ae68c1d0e61fe6343ba",
+    "lines": 202,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "copy",
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "sys",
+      "textwrap"
+    ]
+  },
+  {
+    "file": "tools/cf_response.py",
+    "sha256": "46cd1f80a79c20048a931533fd965a6a90ed8214ad6d39ca3841c436783b83d0",
+    "lines": 178,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "copy",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_stell.py",
+    "sha256": "35d140b12c14c1b13a4ca6e65d2178f1991b5192989e36817785e6bc4246af71",
+    "lines": 230,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "cf_szseen",
+      "collections",
+      "copy",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cf_szseen.py",
+    "sha256": "55015754bd87de1813f0225be161d823bc807f5e30c9759b97fb104f08188eb6",
+    "lines": 300,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "copy",
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "statistics",
+      "subprocess",
+      "sys",
+      "textwrap"
+    ]
+  },
+  {
+    "file": "tools/checkraise_routing_audit.py",
+    "sha256": "b526a1d3c9b4cf9360db55201cb08f04eff8cc68dd3b1ebc85134ad96e4d5c7a",
+    "lines": 153,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "copy",
+      "fieldsim",
+      "os",
+      "persona",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/collect.py",
+    "sha256": "3628bee80e18697886432174a39840732d535e3ddd9aef707775c2c07d71890b",
+    "lines": 121,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "random",
+      "sys",
+      "time",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/concept_prior_audit.py",
+    "sha256": "5348b114e47f81f1cf6f04329358314111a26d435c8515e17d46fb5b5b258fa3",
+    "lines": 168,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "math",
+      "os",
+      "persona",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/concept_prior_sensitivity.py",
+    "sha256": "3a0fd3a083e12c3b2410fdc74725b35c6dff3e0727e0c6af42f630b286d4c03a",
+    "lines": 177,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "os",
+      "persona",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/concept_wiring_audit.py",
+    "sha256": "6a7f64a2b32797601b462b598b7263baddc800e74d995109715ed644a24ebd3f",
+    "lines": 286,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "ast",
+      "collections",
+      "os",
+      "persona",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/concept_wiring_audit_v2.py",
+    "sha256": "f7c8d21bc1d8bca83eb84064f689364e84801c10ae060940f34c4e6d273718ae",
+    "lines": 156,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "ast",
+      "collections",
+      "os",
+      "persona",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/cond_calib.py",
+    "sha256": "b63bba9d22c068ab3fa07fa34c86b871fb4a17fb201f4af8a86be679fe508bce",
+    "lines": 221,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "field",
+      "fieldsim",
+      "json",
+      "math",
+      "multiprocessing",
+      "os",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/ctx_bonly.py",
+    "sha256": "bc40f2fc1c3f75eec4a73dc3673cc6f5f7af52244c103e8f236f3c27fb4da3e3",
+    "lines": 116,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "logkeys",
+      "os",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/ctxcheck.py",
+    "sha256": "46150b5ba95f8d0e370c64b33b612297a7a8daacb6a8f71b4e239e47d0258334",
+    "lines": 66,
+    "role": "diagnostic/tool",
+    "imports": [
+      "context",
+      "fieldsim",
+      "live",
+      "live2",
+      "os",
+      "play",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/decision_case_matrix.py",
+    "sha256": "3d11b3cf917a7c4962798a961b5664bbe06d11dac819857e1da209574d26a00b",
+    "lines": 82,
+    "role": "diagnostic/tool",
+    "imports": []
+  },
+  {
+    "file": "tools/delta_var.py",
+    "sha256": "82c012c3d941a2029e2f795aff05218febb5288a61cb454a9293230d32597654",
+    "lines": 134,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "collections",
+      "json",
+      "os",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/deviate_ev.py",
+    "sha256": "76d3c2718b6b466251d3f19e4f1b56266b2b250d47a1ca62fcb5be8002c82dc7",
+    "lines": 200,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "glob",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/diag_mleak.py",
+    "sha256": "dd7b96789ac2db2f890b5d09bdab8d7ac477a5a21191238933a993082afdcf55",
+    "lines": 210,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "cf_axis",
+      "cf_axis_l2",
+      "collections",
+      "fieldsim",
+      "multiprocessing",
+      "os",
+      "plan",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/diagnose_field_difficulty.py",
+    "sha256": "526a09abde912db5d58c98aa4d8692fe9eb3cefea08c6aa3bbb1f8a003e1686a",
+    "lines": 382,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "fieldsim",
+      "json",
+      "math",
+      "pathlib",
+      "persona",
+      "play",
+      "session",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/diagnose_hand15_ranges.py",
+    "sha256": "6bf6b3fc09c4805824f2c1d2c4081ce242055976b6d48e298706d26c833f2260",
+    "lines": 62,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "json",
+      "manual_one_hand",
+      "os",
+      "pathlib",
+      "ranges",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/diverge.py",
+    "sha256": "e9fd440e070c032709860263f6821dcb232f6679b4b92ee55f64ddeba62df169",
+    "lines": 225,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "gzip",
+      "json",
+      "re",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/draw_arch.py",
+    "sha256": "3cd0dd7e89be23099868621fb6241108ba0cd9bcb03b555fe596c90681d27c79",
+    "lines": 157,
+    "role": "diagnostic/tool",
+    "imports": [
+      "matplotlib",
+      "matplotlib.font_manager",
+      "matplotlib.patches",
+      "matplotlib.pyplot",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/draw_eqrel.py",
+    "sha256": "5cebf28b1954e1848ea2a5cc4a590019e6545ce4312c6e10d66d1dcbe409f122",
+    "lines": 117,
+    "role": "diagnostic/tool",
+    "imports": [
+      "matplotlib",
+      "matplotlib.patches",
+      "matplotlib.pyplot"
+    ]
+  },
+  {
+    "file": "tools/edge_probe.py",
+    "sha256": "bf1b40df3de36e96f34d09fde21a402cc392b252172b18511b6ed0545986f4fa",
+    "lines": 125,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "plan",
+      "runner",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/effective_allin_regress_ab.py",
+    "sha256": "28d4198176f87c97c7799c9d9ac9c23c1e1d3703bc503ab255eacbeee183e670",
+    "lines": 81,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "runner",
+      "subprocess",
+      "sys",
+      "tools"
+    ]
+  },
+  {
+    "file": "tools/effective_allin_seed_trace.py",
+    "sha256": "b6f54fb3f7f33e124e6748091eb07cfe60ffea0b07e5ceec2726abfa9dd30647",
+    "lines": 178,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "runner",
+      "subprocess",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/execcheck.py",
+    "sha256": "4a08c3b1e35f08c7bab010e284e7f581548874461dd5e0d826e73d130bb72014",
+    "lines": 126,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/expression_trace.py",
+    "sha256": "b8e4a54334f03dfc6d38c260412b4076946cb4e7c07a662f6438ab02d2340f00",
+    "lines": 159,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "math",
+      "os",
+      "persona",
+      "random",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/f_trace.py",
+    "sha256": "d8b11c12edcc4f68f1d9a397e901387899fe3a03d5137b3d735a5b5e38114f22",
+    "lines": 332,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "math",
+      "multiprocessing",
+      "os",
+      "plan",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/f_trace_layers.py",
+    "sha256": "150fe8846a724065a94f30362bbdedf7df9c545e8ccafcc41b5adca70b300836",
+    "lines": 299,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "math",
+      "multiprocessing",
+      "os",
+      "persona",
+      "plan",
+      "preflop",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/field_audit.py",
+    "sha256": "488c3bc51f432704dd28b163e80fce75c0e116ef3c272452f4b8d8cedb54ec81",
+    "lines": 575,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "collections",
+      "field",
+      "formats",
+      "icm",
+      "json",
+      "math",
+      "os",
+      "persona",
+      "random",
+      "re",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/field_pace.py",
+    "sha256": "b948e421d02e32d55d8a6c5d26174f0cc56f175cb4fd1fe65cac1bef44f70209",
+    "lines": 104,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "fieldsim",
+      "json",
+      "os",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/fieldstats.py",
+    "sha256": "53d664aba224b89ccf39adb606aa11dbb6dab9f0a98b6a9c737cd868c69a1d72",
+    "lines": 110,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "os",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/fingerprint.py",
+    "sha256": "5522072c84af5d608e433db4965a9674153bb6941032a3291006f30399bb1211",
+    "lines": 125,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "hashlib",
+      "json",
+      "os",
+      "subprocess",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/fixed_bugs.py",
+    "sha256": "cb9de3dacdbf9417ff58ddf714b45f284c4ab7bac9a2cad8a13f5efdecfc9bee",
+    "lines": 394,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "preflop",
+      "random",
+      "ranges",
+      "reads",
+      "runner",
+      "shutil",
+      "subprocess",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/heroauto.py",
+    "sha256": "989dc62f73d67244b14b10084a9d4e7ade7d4ec9732c295adff6f55321fa9747",
+    "lines": 123,
+    "role": "diagnostic/tool",
+    "imports": [
+      "live2",
+      "os",
+      "re",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/hm2_paired_cf.py",
+    "sha256": "00fedf0eccb4091d1a92545c8517fdaf93c1429df3b4d819eb484db0d62ca85f",
+    "lines": 116,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "copy",
+      "json",
+      "os",
+      "pathlib",
+      "persona",
+      "plan",
+      "preflop",
+      "sys",
+      "tourney",
+      "verify_human_model_v2"
+    ]
+  },
+  {
+    "file": "tools/implied.py",
+    "sha256": "fb84499e9e061bb081bae0f7a7c2d45b52ed376f9b97a0570b64d0099bc680f5",
+    "lines": 157,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/invariants.py",
+    "sha256": "49a126d56fb6a32cfc6e637c5797551a751eba7ce57a9d517c8b8880d901d298",
+    "lines": 402,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "collections",
+      "fieldsim",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "session",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/l2_recount.py",
+    "sha256": "c6f034f92fa327fee2c8a71b94bee88af12a52d93ed7d5b9a3b707e8643dc7cb",
+    "lines": 272,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "gzip",
+      "json",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/latent_trace.py",
+    "sha256": "f9422104a3f622db6dc4464d3e85d61de508a1c748f694c21c81059771f92a90",
+    "lines": 126,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "math",
+      "os",
+      "reads",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/leave_behind_state_analyze.py",
+    "sha256": "1c3820661d949ef89897530f2db636c3cf8d797e1b36f0b1c6383b7746f176d9",
+    "lines": 217,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "csv",
+      "math"
+    ]
+  },
+  {
+    "file": "tools/log_baseline.py",
+    "sha256": "011fddd2385e89a1a594351774db0e39d5cfc86f04034b48ab92cc3b99856922",
+    "lines": 81,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "re",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/logkeys.py",
+    "sha256": "8c5e3a203385902f5671328b9e968b1b941da220b79aa909620d4fbc12fead0e",
+    "lines": 193,
+    "role": "diagnostic/tool",
+    "imports": []
+  },
+  {
+    "file": "tools/manual_one_hand.py",
+    "sha256": "61eb4f624e23d3c8c8be08e15d134a04c2185bbae7e4dcdf0448f7b7450ae81f",
+    "lines": 443,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "live2",
+      "os",
+      "pathlib",
+      "persona",
+      "preflop",
+      "runner",
+      "storage_paths",
+      "sys",
+      "telemetry_sync",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_consumers.py",
+    "sha256": "b4ed5308ca5b395049d4c97e321f9f830918799f6eafa042ef53e2d78a353fba",
+    "lines": 186,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_factor_attribution.py",
+    "sha256": "5eab634def29c6b847b4bd51a0c8dd71c1e0aa946a0f0316448d7c8f4c34fffb",
+    "lines": 189,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_field.py",
+    "sha256": "9f59475eaad7f37252464ae4066de5482d32f775dcb78a50b2f3912c93f4ea4a",
+    "lines": 329,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "inspect",
+      "json",
+      "math",
+      "os",
+      "plan",
+      "random",
+      "ranges",
+      "statistics",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_joint.py",
+    "sha256": "98cbcda406b2645b7703366364d0a7394ef41087681b328aad36c6a64b2c9ebf",
+    "lines": 261,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "statistics",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_neutral.py",
+    "sha256": "e7753231066ad2d5974b49d0c887651b0713d9a526f7c2bd09840ca95e28e75a",
+    "lines": 213,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_representation.py",
+    "sha256": "1fefbe55d418ee314f78a436559518f74570fe4910ae2741b9a67603b87bef62",
+    "lines": 227,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "json",
+      "os",
+      "preflop",
+      "ranges",
+      "runner",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_stale.py",
+    "sha256": "835cf231d35603ebf8b5a040a2a668f166a7a635d5e1b788e00a3923a7716dcc",
+    "lines": 275,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "inspect",
+      "json",
+      "math",
+      "os",
+      "persona",
+      "plan",
+      "ranges",
+      "statistics",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_structure_full.py",
+    "sha256": "4986212be52a4a4608f62ae9401492d650023710b33d3739aa9634b2fff72b53",
+    "lines": 312,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "hashlib",
+      "inspect",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_structure_only.py",
+    "sha256": "aab398d0c857709a78504e6d059c00c2071b09571ee533696b5da2f5354074ef",
+    "lines": 347,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "copy",
+      "inspect",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_unified_candidate.py",
+    "sha256": "75a7bf34f5faf4fde92847e701a7d131d4c0f4f0ba602f2cae142634f175b687",
+    "lines": 346,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "hashlib",
+      "inspect",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_blocker_unified_direct.py",
+    "sha256": "8367bc81347a7014942fbd5e8dfa138182435ad43cfd257fd62c10cea2b91fa3",
+    "lines": 356,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "copy",
+      "inspect",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_empty_hu_pipeline.py",
+    "sha256": "9c93f76111e1702000c6b37fd494e64fd10a6761a48f5a9c58f5c8a63e9723ab",
+    "lines": 238,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "preflop",
+      "ranges",
+      "runner",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_empty_hu_range.py",
+    "sha256": "1ccbcc7e2aaaf3c434fcae7665ca5b27b0384479722d8ad21fb29d829c366f79",
+    "lines": 159,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "hashlib",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "session",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_empty_range_overlap_candidate.py",
+    "sha256": "8afde0a5fee442e0a7f53a283fb9f2f4528e7ccdfdbb2bab19ff75a362b278be",
+    "lines": 101,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "preflop",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_empty_range_posterior.py",
+    "sha256": "d4e9e06100ca188ce61f4d4f405696971eb105bb0c2e0a17f616fbfb2dc4ad94",
+    "lines": 416,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "inspect",
+      "json",
+      "math",
+      "os",
+      "plan",
+      "preflop",
+      "ranges",
+      "runner",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_joint_rel.py",
+    "sha256": "c3abef4cb330fc44baf712df37136e031a8ff7933f748b601460a9975979f78b",
+    "lines": 256,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "inspect",
+      "json",
+      "math",
+      "os",
+      "plan",
+      "random",
+      "statistics",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_multiway.py",
+    "sha256": "3ce968238782bc798b4ea8737da054698f211c2d2b63d6fb9a07ccd17a4f1b89",
+    "lines": 235,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "inspect",
+      "json",
+      "math",
+      "os",
+      "plan",
+      "ranges",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_nut_bluffmode.py",
+    "sha256": "fa2dcae1e8fef5daa7bdb2afb2da7a881f27a0a6293d666326ad3e0bea7390a6",
+    "lines": 198,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_nut_consumers.py",
+    "sha256": "2ac26f99b15154b0af9442dddadba0aad5149712ed99345671baad922df92f9a",
+    "lines": 339,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "random",
+      "ranges",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_nut_semantics.py",
+    "sha256": "b495e54b8b4b691385a249e758e691c3e921a34118dc2a4d8576c8861988e548",
+    "lines": 327,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "inspect",
+      "json",
+      "math",
+      "os",
+      "plan",
+      "random",
+      "ranges",
+      "statistics",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_partial_pools.py",
+    "sha256": "4469a03c2e4e3c2180941b5d74b76047e93bc32ea6bd23bb73b631121d1a26f6",
+    "lines": 182,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/measure_f7b_range_nut.py",
+    "sha256": "10eb07f8a8f4f302a993ec2b731ab227b42e0363d6b415e0e12be4ae3d6e1f90",
+    "lines": 319,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "bot",
+      "inspect",
+      "json",
+      "math",
+      "os",
+      "plan",
+      "random",
+      "ranges",
+      "statistics",
+      "sys",
+      "tourney",
+      "zlib"
+    ]
+  },
+  {
+    "file": "tools/measure_prefetch.py",
+    "sha256": "abb20d9a758ac9f6ff12655a8ddd603a934b89ce11cc0eaaae34b542b239045a",
+    "lines": 157,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "shutil",
+      "socket",
+      "statistics",
+      "subprocess",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/money_form_check.py",
+    "sha256": "d5817343548ace1eb4462e1afd9a778912fae015a08d0fe732018c3ed556d33d",
+    "lines": 109,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "json"
+    ]
+  },
+  {
+    "file": "tools/money_jump_analyze.py",
+    "sha256": "47a369f9a79648ec1f877fb010b5b17cad502c5d3cc4feca5085447a6ed83fa2",
+    "lines": 570,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "json",
+      "math",
+      "statistics"
+    ]
+  },
+  {
+    "file": "tools/money_jump_observe.py",
+    "sha256": "6d4a22aa963c56920518437d9987e64a064bc201cc85241a1978a38f7c859ba4",
+    "lines": 149,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "json",
+      "os",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/money_open_check.py",
+    "sha256": "fc427815720de69546f86745cc89110a54c71d5f8d0895bbceb623b425d81c59",
+    "lines": 90,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "json"
+    ]
+  },
+  {
+    "file": "tools/money_open_shadow_audit.py",
+    "sha256": "943f6fccc25b874b8e63be234a31a4c2d638dcc5644e56f0b165897a985363d2",
+    "lines": 253,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "copy",
+      "fieldsim",
+      "os",
+      "persona",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/money_sizing_batch.py",
+    "sha256": "245aa5f6b205e70504ddd37130a7946105fce88b465a2a28083bba886e4308cf",
+    "lines": 224,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "concurrent.futures",
+      "json",
+      "money_sizing_sweep",
+      "os",
+      "subprocess",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/money_sizing_cf.py",
+    "sha256": "140bf0dec016745cb1dfc70301e85b64a31d96d94f81c31a9a31f784dee90998",
+    "lines": 640,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "copy",
+      "fieldsim",
+      "json",
+      "math",
+      "os",
+      "random",
+      "runner",
+      "session",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/money_sizing_cf_batch.py",
+    "sha256": "4076b0466831270c283b178a292b09ec9f792d02df61fc0e280b514dcd24d181",
+    "lines": 201,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "concurrent.futures",
+      "json",
+      "money_sizing_cf",
+      "os",
+      "subprocess",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/money_sizing_sweep.py",
+    "sha256": "3075b187bbbcf68ed2ed8ba330ecc3b041a32df3efe499fc8d04505de2c6d425",
+    "lines": 237,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "json",
+      "money_pressure",
+      "os",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/near_allin_audit.py",
+    "sha256": "ef98d672b894abec1248969b8bdb7bdd4bb47449763f0822937c9c734cc80933",
+    "lines": 511,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "argparse",
+      "collections",
+      "csv",
+      "fieldsim",
+      "os",
+      "persona",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/near_allin_rows_analyze.py",
+    "sha256": "1843abff454ada502b80fb91da3021c4f2e20c97f17c6fec8032a28a2ebd53aa",
+    "lines": 297,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "argparse",
+      "collections",
+      "csv"
+    ]
+  },
+  {
+    "file": "tools/path_test.py",
+    "sha256": "8cdb470e3143e3865e9251d1cbcd68e58217db35472f89649ef9b27a10d8eb6c",
+    "lines": 186,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "gzip",
+      "json",
+      "re",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/player_pilot.py",
+    "sha256": "a5260428f4772ddfb03325d5fd2738731e7a42cfc3a10293562d0a6beb4fe4bc",
+    "lines": 256,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "fieldsim",
+      "itertools",
+      "json",
+      "math",
+      "os",
+      "reads",
+      "statistics",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/playtest_final_table_ui.py",
+    "sha256": "1e4904b3b9ddadd85e364076c69fd817e9c512ba9e02aa1de80bbc8843a2c6f5",
+    "lines": 388,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "http.client",
+      "json",
+      "live2",
+      "os",
+      "pathlib",
+      "signal",
+      "subprocess",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/postmetrics.py",
+    "sha256": "5f9b2bc1998a399ca855660e662e4451aa82d81046d59eae57703074711f8ad5",
+    "lines": 73,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "os",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/profile_hand.py",
+    "sha256": "f9f397fa0daa154283fe28313aa2ac80ec4f524130af7dae0a533f2d645ccbcb",
+    "lines": 154,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "fieldsim",
+      "json",
+      "live2",
+      "os",
+      "session",
+      "statistics",
+      "sys",
+      "time",
+      "ui_view"
+    ]
+  },
+  {
+    "file": "tools/reachability.py",
+    "sha256": "8cf61e2f3b34646f2a8825efc289db215f144d4fe1b2618902ef9bf3da8ed484",
+    "lines": 649,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "argparse",
+      "axis_freq",
+      "copy",
+      "fieldsim",
+      "inspect",
+      "json",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/refresh_audit.py",
+    "sha256": "e90756bc66ee823b82a8ec3acf8aebd3c228e681aa225d2bd7e8ce7cd66f5b4f",
+    "lines": 138,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/refresh_baseline.py",
+    "sha256": "bbee48e4b8cdd0bfd1a855d4ffa0be1579edf3974c3857e047b8129c84cf7b94",
+    "lines": 114,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/regress.py",
+    "sha256": "b7d145278aa1d7a35016403d6fb9266e917019d45be05bac323c6dd5e9b5da04",
+    "lines": 187,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "subprocess",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/regress_block_reach.py",
+    "sha256": "22765679f5809b6eeac27c6044d4019b848cd1ec07123fab7a4eb5cef956031c",
+    "lines": 92,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "os",
+      "persona",
+      "plan",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/replan_context_3arm.py",
+    "sha256": "18b5d36fcdd34bc56478031e83cecf5daeac72fd10b745714c30ee9ae4dbb9d0",
+    "lines": 417,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "argparse",
+      "collections",
+      "copy",
+      "importlib.util",
+      "inspect",
+      "os",
+      "persona",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/replan_context_contract_check.py",
+    "sha256": "6e9c7db1e826328933259c054b0683e05840ed9666e8d76381604608269bc780",
+    "lines": 65,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "plan",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/replan_provenance.py",
+    "sha256": "8bdb9c9e2d3bea13d6bf5e8db2b922ecdf1d19cfb542eacb9cb893c2b5e7a23b",
+    "lines": 1265,
+    "role": "diagnostic/tool",
+    "imports": [
+      "__future__",
+      "argparse",
+      "collections",
+      "copy",
+      "fieldsim",
+      "hashlib",
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "runner",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/repro_test.py",
+    "sha256": "6b2eaa5663802d2fb9ee8a28f4fc696e3a8ad1b1ba25ca797c394dc223cad0a6",
+    "lines": 180,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "shutil",
+      "subprocess",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/review.py",
+    "sha256": "ae5202d6feb8f8022c20e37c9ad5d6a109e419cea82ea775cf742b20e71ef203",
+    "lines": 380,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/river_trace.py",
+    "sha256": "15e277c4f62672ba94cc79a1346f6e52db509dd7946f76b11e041c49d0d7796e",
+    "lines": 157,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "os",
+      "plan",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/riverprobe2.py",
+    "sha256": "c000f2354f9de9f65b23561db0ca6cadfd7d202870bf1c33f2bffbc647fdac1f",
+    "lines": 54,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "os",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/role_baseline.py",
+    "sha256": "6529ed73af397ea6f78ba4bdc54440b8a73c75cded1489c419d758cd3f98a566",
+    "lines": 114,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "session",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/seed_power.py",
+    "sha256": "cf338f38862fa5d6eab6dbe387bfd8c775e180252e966868f3d8574947b191ff",
+    "lines": 442,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "f_trace",
+      "f_trace_layers",
+      "math",
+      "multiprocessing",
+      "os",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/sidefx.py",
+    "sha256": "2b8a442287af948345ea840f90cd2caca5c70c748bb8956a80e594ac1ee1fb56",
+    "lines": 60,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "os",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/step4_verify.py",
+    "sha256": "3ea49bf767d9ea55dacf573c212d4dcf3fa95bbe13728c38a3f901297fcffd99",
+    "lines": 190,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "re",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/street_concept_granularity_audit.py",
+    "sha256": "39c4de965142781931ef869c61758be77dd2bff8da3e67dc18e69b3869110695",
+    "lines": 146,
+    "role": "diagnostic/tool",
+    "imports": [
+      "ast",
+      "collections",
+      "os",
+      "re",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/tag_draws.py",
+    "sha256": "23a7c5119e7681e8df47e6bd853d926a85e5dfe365ba365a0e0bbdb53706c36d",
+    "lines": 166,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "collections",
+      "itertools",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/threshold_audit.py",
+    "sha256": "1b2850167b7a5207e51d1cb0ea088a4d07e45967dc03c5fd5b8abc6569dd234c",
+    "lines": 116,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "math",
+      "os",
+      "random",
+      "re",
+      "statistics",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/trace_pf.py",
+    "sha256": "ff152bec0f5de3e827423cb8c43e2979a216242c749deece91cfa12493d66f47",
+    "lines": 124,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "plan",
+      "preflop",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/trap_baseline.py",
+    "sha256": "bc93c99461f80712de10e40ca76c1ea8c2c0f7bfa8fc75211b588e5f6a24569a",
+    "lines": 65,
+    "role": "diagnostic/tool",
+    "imports": [
+      "hashlib",
+      "json",
+      "os",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/uncalled_regress_ab.py",
+    "sha256": "e6dd2a42981f3cf6d5082521829b20a45855659763f5c4e6b9d8a2df7270c4ea",
+    "lines": 99,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "runner",
+      "subprocess",
+      "sys",
+      "tools"
+    ]
+  },
+  {
+    "file": "tools/verify_9max.py",
+    "sha256": "07a814dd2b963f5c58f34a9d69f033a541556ede9989d80331b7467b06c650c3",
+    "lines": 177,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "gto",
+      "live2",
+      "math",
+      "os",
+      "sys",
+      "table"
+    ]
+  },
+  {
+    "file": "tools/verify_allin_raise_rights.py",
+    "sha256": "be707f53efa2d352f0b7b01178ffe7ff04f0beeff7bdf92d63e21545fcd3785b",
+    "lines": 86,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_audit_order.py",
+    "sha256": "6e2e8e095946726dc982ff45b4a30eb0b4207c270ebc6a9e6b49f28263d04f17",
+    "lines": 192,
+    "role": "diagnostic/tool",
+    "imports": [
+      "audit",
+      "glob",
+      "json",
+      "os",
+      "sys",
+      "table"
+    ]
+  },
+  {
+    "file": "tools/verify_button_rotation.py",
+    "sha256": "11164fcdcc15409c382ad37a2f83982da7254013ab762a74fee7e0a1317ee1bc",
+    "lines": 100,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "pathlib",
+      "sys",
+      "table"
+    ]
+  },
+  {
+    "file": "tools/verify_calc_noise_v3.py",
+    "sha256": "7c573f56b974c3f3d9847694910bece3b7a7b3ea61b36dd08aa716e786e480cb",
+    "lines": 127,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "math",
+      "pathlib",
+      "persona",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_core_joint_nut.py",
+    "sha256": "e7711c72f9fd09d8c2e9ba3bdfef1454ec87fff821d06a4edbadae5eb225fd75",
+    "lines": 37,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "pathlib",
+      "ranges",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_core_multiway_reads.py",
+    "sha256": "af4e387196b578019c14822a0de5b98bcc1a582f1baa506011acfb64e63b9c11",
+    "lines": 66,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "pathlib",
+      "persona",
+      "plan",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_core_p7_cold_reraise.py",
+    "sha256": "9b40c97b897c4c1697af66924b18b7229f5faa2b5286eb4cafe2ecf5be564135",
+    "lines": 132,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "pathlib",
+      "persona",
+      "preflop",
+      "random",
+      "ranges",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_core_p7_observation.py",
+    "sha256": "b1d154835ad7fffbd050f8bb8acf06169f886f7d39afbda3f1c3615917bfb584",
+    "lines": 108,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "pathlib",
+      "persona",
+      "random",
+      "reads",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_core_sizing_ownership.py",
+    "sha256": "21423313c2ec195c4e68878afd61f201ff2c0a5b44bdc6b34a5ad4a2590760b5",
+    "lines": 76,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "json",
+      "pathlib",
+      "persona",
+      "plan",
+      "random",
+      "runner",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_decay_profile.py",
+    "sha256": "a254dd37979fc8c3f1a52ddbed01e728393eb0165f19e16abccb5792717e0540",
+    "lines": 93,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "dynamics",
+      "fieldsim",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_defer.py",
+    "sha256": "1954b94ce209a2bfcd3a17d0c6df41edcc9a455ff209ed090fd669ae6fcd3135",
+    "lines": 391,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "hashlib",
+      "json",
+      "os",
+      "shutil",
+      "socket",
+      "subprocess",
+      "sys",
+      "tempfile",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/verify_effective_allin_v1.py",
+    "sha256": "f8527281e1f7743e516443a7a5d397f39fb3465bfdf83f47ad313876a6628ca4",
+    "lines": 90,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f1_free_action.py",
+    "sha256": "6f865314e35fe9a420eac19e5b2b9044c6c0d49b1edfaf68699b42cc3e9198c6",
+    "lines": 103,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f2_checkthrough.py",
+    "sha256": "8a3c15e34442d2b11871eb57312d7168d9ccb78ab686ca9114bc916554a82d0c",
+    "lines": 125,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "reads",
+      "runner",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f3_checkraise_response.py",
+    "sha256": "f9256b00ec2be8cdd97773be2378f9b9c819b394634856c0f192fcd7771de1a0",
+    "lines": 163,
+    "role": "diagnostic/tool",
+    "imports": [
+      "ast",
+      "inspect",
+      "os",
+      "persona",
+      "plan",
+      "random",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f4_facing_bet.py",
+    "sha256": "81a07566863d914f401b0564b8f0ea2aa2f2e0e2a4c6dc2f06974d440a1a0d6b",
+    "lines": 120,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "plan",
+      "runner",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f5_backaction.py",
+    "sha256": "145e942dd7a6b4a029a5a3d110c3b10068fbb0a775125fc703b8bb19d7d825cc",
+    "lines": 208,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "plan",
+      "reads",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f6_caller_backaction.py",
+    "sha256": "71f085540d129de968cfdb3738138f344372cf488de0a3213fe4287840b0e426",
+    "lines": 146,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "plan",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f7_street_closure.py",
+    "sha256": "d10d718a1104853a75cf4e7706e343905aac1acc2a62e3cdfa4fd6b9df4f2cdb",
+    "lines": 121,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f7b_blocker_activation.py",
+    "sha256": "8002660dd36ad19624571aac1eb4d47b94214baced856e57efbd67d3c8587c30",
+    "lines": 64,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "json",
+      "os",
+      "plan",
+      "ranges",
+      "sys",
+      "tools"
+    ]
+  },
+  {
+    "file": "tools/verify_f7b_defend_likelihood.py",
+    "sha256": "f91a9ae3fa3ea4fec17b88cc40ad0df847f105ebc8af1593ae32b2b167d2e2b4",
+    "lines": 234,
+    "role": "diagnostic/tool",
+    "imports": [
+      "math",
+      "pathlib",
+      "persona",
+      "preflop",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_f7b_defend_rewire.py",
+    "sha256": "40941722128473a7eaf7f2c2b21796636ca07e4a61727457e0438f232b9512c3",
+    "lines": 233,
+    "role": "diagnostic/tool",
+    "imports": [
+      "pathlib",
+      "persona",
+      "preflop",
+      "random",
+      "subprocess",
+      "sys",
+      "types"
+    ]
+  },
+  {
+    "file": "tools/verify_forced_blind_allin_showdown.py",
+    "sha256": "9c086872112fdf0931449a9003750581e7397526652114f2de43258cffa00575",
+    "lines": 95,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_forced_blind_allin_view.py",
+    "sha256": "23f17e7ee66ffedbb990041f07812ab71d145b1f6d0b65837b5a816ad8208f59",
+    "lines": 45,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "sys",
+      "view"
+    ]
+  },
+  {
+    "file": "tools/verify_human_model_v2.py",
+    "sha256": "858b669bb4aecb81fe6245cff8a8f0da3984264b712295857bd25898736786d0",
+    "lines": 435,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "gto",
+      "hashlib",
+      "json",
+      "math",
+      "os",
+      "pathlib",
+      "persona",
+      "preflop",
+      "random",
+      "reads",
+      "subprocess",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/verify_human_model_v3.py",
+    "sha256": "2aa855bd3e6f37da7e0ddee2e0ae18da353bbce9a240bb18c60164bf10a08a79",
+    "lines": 184,
+    "role": "diagnostic/tool",
+    "imports": [
+      "gto",
+      "json",
+      "pathlib",
+      "persona",
+      "preflop",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_human_model_v3_integration.py",
+    "sha256": "eb8ceda7c4155453b2d19d1e04a0cb1b4c94b066a84b1725d400b3fd5ade3a98",
+    "lines": 153,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "hashlib",
+      "json",
+      "os",
+      "pathlib",
+      "subprocess",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/verify_human_model_v3_runtime.py",
+    "sha256": "bb87ed55915279efd20f11625b1719c22b1075c59a5a4869a425fcfe5cfd1f39",
+    "lines": 290,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "collections",
+      "gto",
+      "hashlib",
+      "json",
+      "math",
+      "os",
+      "pathlib",
+      "persona",
+      "preflop",
+      "random",
+      "subprocess",
+      "sys",
+      "tourney"
+    ]
+  },
+  {
+    "file": "tools/verify_icm_fast.py",
+    "sha256": "ca5cb68194042d3cc37c1560d7092a75600103ca81e544f5cf2638ca5a3e5127",
+    "lines": 144,
+    "role": "diagnostic/tool",
+    "imports": [
+      "icm",
+      "os",
+      "random",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/verify_money_jump_context.py",
+    "sha256": "bff8a09f32d59981b98ce7724dd558e826a7c66b0705f9b4df4607eb412baa21",
+    "lines": 54,
+    "role": "diagnostic/tool",
+    "imports": [
+      "context",
+      "formats",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_money_jump_observation.py",
+    "sha256": "2403899c76997a8984b68f9ccd9a839c141572aceb12941d7193e68d83f97092",
+    "lines": 68,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "runner",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_money_pressure_signals.py",
+    "sha256": "4fe15855fe35f883db727aeeb6a58d36b989e79b058c0ab6563a4730f34bbc2e",
+    "lines": 151,
+    "role": "diagnostic/tool",
+    "imports": [
+      "money_pressure",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_multiway_range_preservation.py",
+    "sha256": "2a34cb5e0af5f7915f778d27cf2b4c17eb2fbe2d4501e6f6507882c157896fd4",
+    "lines": 82,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "plan",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_oop_semantics.py",
+    "sha256": "13b3be04dca1861b271e08290524073d8bca5f929cac6068d7348d3e52af066c",
+    "lines": 198,
+    "role": "diagnostic/tool",
+    "imports": [
+      "copy",
+      "fieldsim",
+      "inspect",
+      "os",
+      "plan",
+      "random",
+      "session",
+      "sys",
+      "table"
+    ]
+  },
+  {
+    "file": "tools/verify_p2_limped_pot.py",
+    "sha256": "2074fe5bf866e26076caf40678083696eeb275ee4625eb54d9700c72d0bf962b",
+    "lines": 165,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "persona",
+      "preflop",
+      "reads",
+      "session",
+      "sys",
+      "types"
+    ]
+  },
+  {
+    "file": "tools/verify_p3_first_open.py",
+    "sha256": "18ce5cdf4a740ff72645babbe91fa1a82b58afdfe3607b24e17bda5fa9acf17d",
+    "lines": 89,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "preflop",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_p4_vs_3bet.py",
+    "sha256": "8fd3d8efc9097f594cdad59c4266c1afc64f59f8e325da628811919bf4990bae",
+    "lines": 115,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "plan",
+      "ranges",
+      "reads",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_p5_backaction.py",
+    "sha256": "15500b1a46ac78382a6f9b2c8ba62c57274043280466d669a75241051c334f0a",
+    "lines": 142,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "preflop",
+      "random",
+      "reads",
+      "runner",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_p6_calloff.py",
+    "sha256": "865c195bdd5d47554826a7ad27ca0b4cd2b999cfca6ce831872c019886218ae2",
+    "lines": 139,
+    "role": "diagnostic/tool",
+    "imports": [
+      "inspect",
+      "os",
+      "plan",
+      "preflop",
+      "random",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_parallel_tables.py",
+    "sha256": "e3cbd0151df4655dae484fc776188bfbb7040b456883539e93e71c41d7f417e5",
+    "lines": 214,
+    "role": "diagnostic/tool",
+    "imports": [
+      "copy",
+      "fieldsim",
+      "live2",
+      "os",
+      "pathlib",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/verify_postflop_events.py",
+    "sha256": "8bd03fc36b026246bca744b0e1d4e813667814f94164c45d28238df9c0368b7c",
+    "lines": 160,
+    "role": "diagnostic/tool",
+    "imports": [
+      "action_events",
+      "os",
+      "ranges",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_prefetch_determinism.py",
+    "sha256": "db3cfa6d65bebdd880eccc2c83c392a4adfcf3b768cbb09f9778b4f6f88e9aed",
+    "lines": 172,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "copy",
+      "fieldsim",
+      "hashlib",
+      "json",
+      "live2",
+      "os",
+      "subprocess",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_preflop_closure.py",
+    "sha256": "6be5e2a9560d00bfde321ca4a4d3b811cc2175401b9b9653903758faa0da3ce0",
+    "lines": 141,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "persona",
+      "plan",
+      "preflop",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_preflop_temper_direction_v3.py",
+    "sha256": "94424a8927daa6d695a653aa9d70f15f21c6fc575114a4a89abfaf1f0b2a93b2",
+    "lines": 124,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "pathlib",
+      "persona",
+      "preflop",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_prelogic_execution_boundary.py",
+    "sha256": "5e574748c422a602a406315479dcb0b262e2a0cba1412ad9bdc031b6cf659296",
+    "lines": 267,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "os",
+      "pathlib",
+      "play",
+      "random",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_prelogic_profile_boundary.py",
+    "sha256": "eb9b828aaa98af2dbcc2e7aee0b99377c947859d5a6f67f9a6099ae85a4913f1",
+    "lines": 69,
+    "role": "diagnostic/tool",
+    "imports": [
+      "pathlib",
+      "persona",
+      "play",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_read_range_semantics.py",
+    "sha256": "27df2b863a0c8411f128393f59f00a83c7b6982b59503d602739a0c2a8407e79",
+    "lines": 160,
+    "role": "diagnostic/tool",
+    "imports": [
+      "copy",
+      "pathlib",
+      "persona",
+      "plan",
+      "random",
+      "ranges",
+      "reads",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_read_recency_v3.py",
+    "sha256": "824e287d21df69e2338b2bdc1be64a02864a85890f3c5aac9d1bcf5eb3bfee2a",
+    "lines": 144,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "pathlib",
+      "random",
+      "reads",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/verify_replan_contract.py",
+    "sha256": "60e928fb7d22630a336e7424c764cb91cce1f6c9cb083b715362b65bb8c621c9",
+    "lines": 120,
+    "role": "diagnostic/tool",
+    "imports": [
+      "ast",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_settle_split.py",
+    "sha256": "8b3afde9fbf044803e60f21b1a900fea956841365c24443c847b6302b79f9cc9",
+    "lines": 98,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "fieldsim",
+      "hashlib",
+      "json",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_state_namespace.py",
+    "sha256": "3ba5d42022da5174bb5c7661e91640cd6487762004fab93d6ba55677ac6643e8",
+    "lines": 456,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "hashlib",
+      "importlib",
+      "importlib.util",
+      "json",
+      "live2",
+      "os",
+      "re",
+      "review",
+      "shutil",
+      "storage_paths",
+      "subprocess",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/verify_stepothers_timing.py",
+    "sha256": "3965920e54877ba95f91892ec26ab6afc9724e83bc356cdb3faa4d4c6a903274",
+    "lines": 121,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "copy",
+      "fieldsim",
+      "json",
+      "live2",
+      "os",
+      "sys",
+      "ui_view"
+    ]
+  },
+  {
+    "file": "tools/verify_tda_dead_button.py",
+    "sha256": "ae6f67ce1b975b1c4bac32738228dc94dac5735c3f2291a82c8b264b74e2a68e",
+    "lines": 211,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "pathlib",
+      "play",
+      "random",
+      "session",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_tda_live_integration.py",
+    "sha256": "52434521c2616dca05810bf92293fe9cff912c4fb0a907595d6a64f1515e9f14",
+    "lines": 124,
+    "role": "diagnostic/tool",
+    "imports": [
+      "copy",
+      "fieldsim",
+      "live2",
+      "os",
+      "pathlib",
+      "play",
+      "session",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/verify_telemetry_wiring.py",
+    "sha256": "1ef1ffbe45798b5ea98a9ecda68001a116bdf4d13c745cea4e3fb517a0e2b010",
+    "lines": 116,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "json",
+      "live2",
+      "os",
+      "pathlib",
+      "sys",
+      "telemetry_sync"
+    ]
+  },
+  {
+    "file": "tools/verify_tilt_divergence.py",
+    "sha256": "22d29e611a2e22fe8b5cc39c3bd33f30d627eb772fba02eaf00de21a55264d46",
+    "lines": 146,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "fieldsim",
+      "json",
+      "os",
+      "sys",
+      "time"
+    ]
+  },
+  {
+    "file": "tools/verify_tilt_isolation.py",
+    "sha256": "eecd78197eedf5eed295cddacff7b74ce2aa65f25b3847f188163bf3d24da266",
+    "lines": 120,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "hashlib",
+      "json",
+      "live2",
+      "os",
+      "sys",
+      "ui_view"
+    ]
+  },
+  {
+    "file": "tools/verify_tournament_telemetry.py",
+    "sha256": "33dd6eaa249e7553fe7c2a024e88f57564da9f1c96ba6cde07a5e44cab121401",
+    "lines": 220,
+    "role": "diagnostic/tool",
+    "imports": [
+      "fieldsim",
+      "json",
+      "live2",
+      "os",
+      "pathlib",
+      "storage_paths",
+      "subprocess",
+      "sys",
+      "telemetry_sync",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/verify_trace_schema.py",
+    "sha256": "66c21df29cd1b0881ac0c7910b6eac7d5fff34dca40ff0ae0fc281e3df9da4c5",
+    "lines": 483,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "ast",
+      "collect",
+      "collections",
+      "glob",
+      "hashlib",
+      "json",
+      "logkeys",
+      "os",
+      "re",
+      "shutil",
+      "sys",
+      "tempfile"
+    ]
+  },
+  {
+    "file": "tools/verify_ui_tournament_panel.py",
+    "sha256": "06eb33312e7d51848e3d144774daba9e2c8fd0027ffd23e7f48ca5ddb809b067",
+    "lines": 91,
+    "role": "diagnostic/tool",
+    "imports": [
+      "pathlib"
+    ]
+  },
+  {
+    "file": "tools/verify_uncalled_excess.py",
+    "sha256": "67d387cccba6a8fca2ab2d0fb1c65748a913e1cfc6c8a62c35f0ab585a293f36",
+    "lines": 127,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_weighted_aggregate_transform.py",
+    "sha256": "af2a474fa0e02eb1f20449966f65e832c2d1f79ec723a4e44570a5aded9eb673",
+    "lines": 389,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "math",
+      "pathlib",
+      "plan",
+      "preflop",
+      "random",
+      "ranges",
+      "runner",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_weighted_boundaries.py",
+    "sha256": "de1c41f55b1621b31412804849da6e185150c1ab127a668ccde28bfd8d33549a",
+    "lines": 143,
+    "role": "diagnostic/tool",
+    "imports": [
+      "hashlib",
+      "pathlib",
+      "plan",
+      "ranges",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_weighted_range_adapter.py",
+    "sha256": "27b8318faf7bcb3a6308872da1e3b80c0e0c8c6bd66667df54f0e8f6d27ec6f6",
+    "lines": 114,
+    "role": "diagnostic/tool",
+    "imports": [
+      "math",
+      "pathlib",
+      "ranges",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/verify_weighted_sampling.py",
+    "sha256": "e372627bc189c25169273f9010bd7593c2fe3589509b8ad4b56352984efc1b38",
+    "lines": 123,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "pathlib",
+      "plan",
+      "random",
+      "ranges",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools/wirecheck.py",
+    "sha256": "2ad058225264437b0d47227364b3796a9c702b822cd41391e717c204210bc164",
+    "lines": 173,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "persona",
+      "re",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools_cf_719.py",
+    "sha256": "4bbe389c143d228dc70742c0b79e9466a3960b50487161db534e38a3f6a32941",
+    "lines": 106,
+    "role": "diagnostic/tool",
+    "imports": [
+      "json",
+      "os",
+      "persona",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools_delta_probe.py",
+    "sha256": "514057b4766e90f3d51833e987a4e6a776a237c745ba47835616e01a77371fb1",
+    "lines": 126,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools_eq_decompose.py",
+    "sha256": "a6bdaf46fb5bf1004860913a46f6916c451daa9033bef8c867b466ce3f6f2cdf",
+    "lines": 74,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "json",
+      "os",
+      "plan",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools_eq_modes.py",
+    "sha256": "4f4007d87ed508239c4cfe564a2153f9dbdf0ab88f3a3d1827e1f138caafc63a",
+    "lines": 135,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "collections",
+      "json",
+      "os",
+      "random",
+      "statistics",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools_giveup_decompose.py",
+    "sha256": "7a4d02d0fbdc559f182ce6f34fc944e6f20fa56d335acd103f6b4b8ef15f5095",
+    "lines": 157,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "logkeys",
+      "os",
+      "sys"
+    ]
+  },
+  {
+    "file": "tools_hassd_variants.py",
+    "sha256": "0b4a7d0ae7927009db4e9ffbfb56202494c28e2ae7d8806d1469d4e1c314663e",
+    "lines": 90,
+    "role": "diagnostic/tool",
+    "imports": [
+      "collections",
+      "json",
+      "os"
+    ]
+  },
+  {
+    "file": "tools_pcz_semibluff.py",
+    "sha256": "c670942b9e4b170a8797846bf223512a475bdaca46c8291b8aa76187ce015663",
+    "lines": 121,
+    "role": "diagnostic/tool",
+    "imports": [
+      "bot",
+      "collections",
+      "json",
+      "os",
+      "persona",
+      "random",
+      "sys"
+    ]
+  },
+  {
+    "file": "tourney.py",
+    "sha256": "b57776176274b342b82d0f78a28a50c0e8dbc2bd3b71e2863eee7e09fb06373f",
+    "lines": 217,
+    "role": "alternate runtime",
+    "imports": [
+      "archetypes",
+      "context",
+      "dynamics",
+      "field",
+      "formats",
+      "math",
+      "persona",
+      "play",
+      "random",
+      "reads",
+      "session",
+      "table",
+      "view"
+    ]
+  },
+  {
+    "file": "ui/server/ui_server.py",
+    "sha256": "6f71d8bb736c3d38e43e4fdb4c02b0a7dd72d470f02b04a00e10c48860d26e64",
+    "lines": 1114,
+    "role": "UI entry/adapter",
+    "imports": [
+      "concurrent.futures",
+      "context",
+      "formats",
+      "hmac",
+      "http.server",
+      "json",
+      "live2",
+      "mimetypes",
+      "os",
+      "posixpath",
+      "secrets",
+      "socket",
+      "storage_paths",
+      "sys",
+      "table",
+      "telemetry_sync",
+      "threading",
+      "time",
+      "traceback",
+      "ui_view",
+      "urllib.parse"
+    ]
+  },
+  {
+    "file": "ui/server/ui_view.py",
+    "sha256": "7874c7aba2182407a03bd99f66d1def9b6e04b9ee33eb20626996cb246e397e8",
+    "lines": 129,
+    "role": "UI entry/adapter",
+    "imports": [
+      "importlib.util",
+      "os"
+    ]
+  },
+  {
+    "file": "ui/tools/setup_run_dir.py",
+    "sha256": "3493adac789266212ba97876b073f6ef928590a068b0d96f5d509f4064d99fd8",
+    "lines": 74,
+    "role": "diagnostic/tool",
+    "imports": [
+      "os",
+      "shutil",
+      "sys"
+    ]
+  },
+  {
+    "file": "ui/tools/verify_ui.py",
+    "sha256": "fae4715c29696cf7d435a4fd597f65e29797b97649fd61be2662bb6496e71fc1",
+    "lines": 471,
+    "role": "diagnostic/tool",
+    "imports": [
+      "argparse",
+      "json",
+      "os",
+      "random",
+      "shutil",
+      "subprocess",
+      "sys",
+      "tempfile",
+      "time",
+      "urllib.error",
+      "urllib.request"
+    ]
+  },
+  {
+    "file": "view.py",
+    "sha256": "7f621d8d0aef3eaa09608c506bf79ecca4bd725424c18f3e40a7c6bac9b61d90",
+    "lines": 179,
+    "role": "production dependency",
+    "imports": [
+      "table"
+    ]
+  }
+]

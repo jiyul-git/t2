@@ -1,5 +1,11 @@
 # DECISION SYSTEM — target model + implementation audit
 
+## 2026-10-02 코드 재감사 동기화
+
+실제 층은 `make_plan/decide_response/act_with_plan`에 혼재한다. 감정 view의 판단층 유입은 미해결 설계 위반으로 남긴다. P7 cold observation과 F8 closing-call/river-veto는 실제 ACTIVE다. street별 continuation entry와 terminal river policy를 명시적으로 추출했다.
+
+현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
+
 이 문서는 기존의 decision model, situation specification, opponent-action coverage, P1-P7/F1-F8 순차 감사, architecture audit를 통합한 현재 기준이다.
 
 ## 1. Core invariant
@@ -253,7 +259,7 @@ driver
 | P4 opener faces 3bet | CLOSED | story overwrite, raise-level loss, true-persona leak, dead provenance gate 수정 |
 | P5 caller back-action | CLOSED | allin event classification, raise depth, fold/4bet stat contamination 수정 |
 | P6 all-in/call-off | CLOSED | short shove routing, exact pot/call price, all-in-call provenance 수정 |
-| P7 cold vs re-raise | **CORE JUDGMENT CLOSED / OBSERVATION OPEN** | original opener + re-raiser seat-keyed ranges, 실제 call price, players-behind, skill-dependent reasoning을 전용 P7 판단으로 소비. cold-call/cold-4bet 전용 population observation은 아직 없음 |
+| P7 cold vs re-raise | **CORE + OBSERVATION ACTIVE / FULL EV OPEN** | original opener + re-raiser seat-keyed ranges, 실제 call price, players-behind, skill-dependent reasoning을 전용 P7 판단으로 소비. cold-call/cold-4bet 전용 Book 관측/estimate 존재; 독립 지식/전체 EV는 미완료 |
 
 P7 current boundary:
 - dedicated `cold_reraise_decision`이 generic defend를 baseline/fallback으로만 사용한다.
@@ -284,7 +290,7 @@ F7 downstream multiway semantics는 `RANGE_MODEL.md`에서 관리한다.
 ## 8. Global open boundaries
 
 ### P7
-cold-facing re-raise의 dedicated judgment/plan model.
+cold-facing re-raise의 dedicated judgment/plan 및 observation은 ACTIVE. 독립 prior/전체 EV는 OPEN.
 
 ### F7-B
 seat-keyed 판단으로 계속 수렴 중.
@@ -293,7 +299,7 @@ seat-keyed 판단으로 계속 수렴 중.
 - blocker effect: closed
 - multi-opponent read aggregation: **core closed** — proactive bluff/value planning은 실제 seat별 read 중 가장 안 접는 상대를 constraint로, trap은 가장 bet 가능성이 높은 실제 상대를 사용한다. identity를 synthetic average로 합치지 않는다.
 - multi-opponent stack aggregation: **core closed** — target-commit용 scalar가 필요할 때 live seat stack map의 최대 contest depth를 사용하며 원본 seat map도 state/provenance에 보존한다.
-- nut semantics: open
+- joint strong-region occupancy: active; literal-nuts semantic definition: open
 
 ### F7-C emotion
 현재 planning/execution view는 구조만 준비되어 있고 consumer activation은 아직.
@@ -368,7 +374,7 @@ action_events.py
 
 session.py
   _acts_of()
-  _postflop_response_context()
+  action_events.response_context()
   _facing_wager_context()
   _run()
     -> rebuild each opponent perceived range from public history

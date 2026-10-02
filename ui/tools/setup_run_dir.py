@@ -21,9 +21,9 @@ import os, shutil, sys
 # ModuleNotFoundError 로 죽는다.
 # setup_run_dir.sh 의 목록과 **같아야 한다.** 예전에는 money_pressure 가
 # .sh 에만 있어 둘이 어긋나 있었다.
-MODULES = """archetypes bot context depth dynamics field fieldsim formats gto icm
+MODULES = """action_events archetypes bot context depth dynamics field fieldsim formats gto icm
              live2 money_pressure persona plan play preflop ranges reads runner
-             session storage_paths table texture view""".split()
+             session storage_paths table telemetry_sync texture view""".split()
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json']
