@@ -76,15 +76,34 @@ This does **not** make it exact BBA. In particular the BB's price / stack-behind
 
 ## Required work for an exact implementation
 
-Before changing production results, decide and test the exact stack convention.
+Before changing production results, preserve the now-confirmed T2 stack convention.
 
-### A. Confirm T2 stack identity
+### A. T2 stack identity — confirmed from production runtime
 
-Verify whether canonical `prehand_bb` is:
-1. chips before SB/BB/BBA are posted, or
-2. actionable stack after ante deduction.
+Production `session.py` establishes this unambiguously.
 
-The name `prehand_bb` suggests (1), but engine truth must decide it.
+At hand start:
+
+```python
+self._before = dict(h.stacks)
+rnd = RU.Round(..., h.stacks, h.bb)
+```
+
+Then SB and BB are deducted from `rnd.stacks`. After the BB blind is deducted, the BBA is deducted **again from the BB's remaining stack** and put into separate dead money:
+
+```python
+pay = min(h.bb, rnd.stacks[bb_s])
+rnd.stacks[bb_s] -= pay
+rnd.contrib[bb_s] = pay
+
+a = min(_ante, rnd.stacks[bb_s])
+rnd.stacks[bb_s] -= a
+ante_pot = a
+```
+
+T2 therefore treats hand-start stack as chips **before** blinds/BBA are posted. The 1bb BBA is real stack depletion borne only by BB, while it remains dead money for pot/contribution semantics.
+
+This confirms that canonical `prehand_bb` must map to the pre-forced-bet stack, not a post-ante actionable stack.
 
 ### B. If it is pre-forced-bet stack, add per-seat live caps
 
@@ -119,4 +138,4 @@ Do **not** throw away the current 30/25/40/20 work. Keep it labeled as near-T2 B
 
 Do **not** relabel it exact.
 
-The next engineering step should be a small engine-truth test that determines the T2 definition of `prehand_bb`, followed by an exact-BBA prototype only if the solver can preserve chip conservation on all-in branches.
+The T2 `prehand_bb` convention is now confirmed. The next engineering step is therefore **not** another semantics probe; it is an exact-BBA solver prototype with per-seat forced dead money and per-seat live caps, plus chip-conservation/side-pot tests. Until that passes, the current worker output must remain near-T2 reference data.
