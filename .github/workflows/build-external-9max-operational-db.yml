@@ -6,6 +6,8 @@ on:
       - chatgpt/gto-external-harvest-20261003
     paths:
       - tools/build_gto_external_operational_db.py
+      - tools/flatten_gto_db_9max_pushfold.py
+      - data/gto_db/preflop_9max_pushfold_v1.jsonl
       - data/gto_external/jensbaagaard_9max_mtt/**
       - data/gto_external/rangemyhand_pushfold_9max/**
       - .github/workflows/build-external-9max-operational-db.yml
@@ -25,6 +27,9 @@ jobs:
       - name: Build normalized operational rows
         run: python3 tools/build_gto_external_operational_db.py
 
+      - name: Flatten existing 9max shove/call spots
+        run: python3 tools/flatten_gto_db_9max_pushfold.py
+
       - name: Validate exact counts and schema
         run: |
           python3 - <<'PY'
@@ -39,6 +44,7 @@ jobs:
           targets = {
               "preflop_9max_fulltree_external_v1.jsonl": 227305,
               "preflop_9max_pushfold_1to25_v1.jsonl": 21125,
+              "preflop_9max_pushfold_holdemmath_flat_v1.jsonl": 104104,
           }
           forbidden = {"source", "source_id", "source_url", "provider", "origin_kind", "origin_id", "lookup_used", "chart_id"}
           for name, expected in targets.items():
@@ -53,17 +59,26 @@ jobs:
                       assert 0.0 <= float(row["frequency"]) <= 1.0
                       assert not (forbidden & set(row))
               assert n == expected, (name, n, expected)
-          print("validated", idx["total_rows"])
+          master = json.loads((root / "index_9max_operational_v1.json").read_text())
+          assert master["total_rows"] == 352534, master["total_rows"]
+          assert master["provenance_fields_in_runtime_rows"] is False
+          print("validated", master["total_rows"])
           PY
 
       - name: Commit generated DB
         run: |
           git config user.name github-actions
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add             data/gto_db/preflop_9max_fulltree_external_v1.jsonl             data/gto_db/preflop_9max_pushfold_1to25_v1.jsonl             data/gto_db/index_9max_external_v1.json
+          git add \
+            data/gto_db/preflop_9max_fulltree_external_v1.jsonl \
+            data/gto_db/preflop_9max_pushfold_1to25_v1.jsonl \
+            data/gto_db/preflop_9max_pushfold_holdemmath_flat_v1.jsonl \
+            data/gto_db/index_9max_external_v1.json \
+            data/gto_db/index_9max_pushfold_holdemmath_flat_v1.json \
+            data/gto_db/index_9max_operational_v1.json
           if git diff --cached --quiet; then
             echo "No generated changes"
             exit 0
           fi
-          git commit -m "gto-db: materialize 248430 normalized 9max frequency rows"
+          git commit -m "gto-db: materialize 352534 normalized 9max frequency rows"
           git push origin HEAD:chatgpt/gto-external-harvest-20261003
