@@ -103,7 +103,7 @@ def build_jens():
                 })
                 count += 1
         per_stack[str(stack)] = count
-    expected = 1355 * 169
+    expected = 1345 * 169
     if len(rows) != expected:
         raise SystemExit(f"Jens rows: expected {expected}, got {len(rows)}")
     return rows, per_stack
@@ -172,7 +172,7 @@ def main():
             jens_out.name: {
                 "rows": len(jens_rows),
                 "stacks_bb": STACKS,
-                "scenario_tables": 1355,
+                "scenario_tables": 1345,
                 "hand_classes_per_table": 169,
                 "rows_by_stack": jens_by_stack,
                 "families": [x[0] for x in PREFIXES],
