@@ -1,5 +1,6 @@
 import random, zlib as _zlib, hashlib as _hashlib
 import bot, ranges as R, preflop as pf, archetypes as A, persona as PS, texture as TX
+import icm as _ICM
 
 PLANS = ['value_3street','value_2street','pot_control','semibluff','bluff_2street',
          'river_bluff','thin_river','giveup','trap','block','showdown']
@@ -628,6 +629,16 @@ def _blocker_net_bluff_factor(blk_net):
     return max(0.45, min(1.65, 1.0 + 4.0*blk_net))
 
 
+def has_showdown_value(made, equity, mw):
+    """쇼다운 가치: 메이드 핸드이거나 equity가 0.42+0.05*다인원 이상.
+
+    make_plan 의 두 호출부가 **다른 equity 기준**을 넘긴다 — 중간강도 폴백은
+    eq(런아웃 포함), 최종 분기는 eq_current(지금 보드). 기준 차이는 보존하고
+    호출부에서 드러나게만 했다(semantic audit re-audit; 통일은 행동 변경).
+    """
+    return made >= 1 or equity >= 0.42 + 0.05*mw
+
+
 def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
               seed=None, n_opp=1, to_act_behind=0, oop_vs_aggr=None,
               initiative=True,
@@ -968,7 +979,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                 # 쇼다운 가치 정의는 아래 else 분기와 같아야 한다
                 # (made 또는 에쿼티). 예전에는 made 만 봐서 eq 0.59·rel 0.68 인
                 # A-K 하이가 '상대레인지 열세 → 포기'로 분류됐다(audit9 HAND 16).
-                _sd_here = made >= 1 or eq >= 0.42 + 0.05*mw
+                _sd_here = has_showdown_value(made, eq, mw)
                 plan = 'showdown' if _sd_here else 'giveup'
                 why.append('중간강도이나 얇은 밸류 조건 미달(rel %.2f, made %d) → %s'
                            % (rel, made, plan))
@@ -1012,7 +1023,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         why.append('블러프 세부: %s — %s' % (_bm, _bwhy))
     else:
         # giveup은 '쇼다운 가치 없음'일 때만. 메이드 핸드는 팟컨트롤로 간다.
-        has_sd = made >= 1 or _sd_eq >= 0.42 + 0.05*mw
+        has_sd = has_showdown_value(made, _sd_eq, mw)
         if has_sd and sk('potcontrol') >= 1 and rng.random() < 0.72:
             plan = 'pot_control'; why.append('쇼다운 가치 있음 → 팟 컨트롤')
         elif has_sd:
@@ -1213,11 +1224,12 @@ def calldown_need(profile, hero, board, street, pot, tocall, bf, read,
             call_need = call_need_true * nz
     if to_act_behind:
         # 뒤에 남은 사람 리스크. 확률에 상수를 더하지 않고
-        # 남은 팟 지분 기준으로 비례 가산한다.
-        _behind_add = min(0.18, 0.06*to_act_behind)
-        need += (1.0 - need_true) * _behind_add
+        # 남은 팟 지분 기준으로 비례 가산한다(canonical producer: icm).
+        need += _ICM.players_behind_required_equity_premium(
+            need_true, to_act_behind)
         if call_need is not None:
-            call_need += (1.0 - call_need_true) * _behind_add
+            call_need += _ICM.players_behind_required_equity_premium(
+                call_need_true, to_act_behind)
     need = max(0.01, min(0.97, need))
     if call_need is not None:
         call_need = max(0.01, min(0.97, call_need))
@@ -1644,6 +1656,20 @@ def _called_prior_street_aggression(plan_state, street):
     return False
 
 
+def line_owned_by_live_aggressor(plan_state, street, initiative, oop_vs_aggr):
+    """이 스트리트의 베팅 라인이 뒤에 살아 있는 어그레서 것인가.
+
+    턴/리버: 직전 스트리트에 상대 공격을 내가 콜했다.
+    플랍: 직전 스트리트는 프리플랍이다. 프리플랍 레이즈를 받고 들어와 그
+    레이저가 뒤에 살아 있으면 라인은 그 사람 것이다(audit9 batch 1 R5a-ext).
+    공통 조건: 나는 이니셔티브가 없고 그 어그레서보다 먼저 행동한다.
+    """
+    _called_prev_aggr = _called_prior_street_aggression(plan_state, street)
+    if street == 'flop' and not initiative and oop_vs_aggr is True:
+        _called_prev_aggr = True
+    return bool(_called_prev_aggr and not initiative and oop_vs_aggr is True)
+
+
 def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
                       to_act_behind, rng, opp_est=None, outs=0, plan_state=None,
                       oop_vs_aggr=None, oop_legacy_abs=None):
@@ -1782,15 +1808,7 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     # Keep a small personality-driven donk/re-lead frequency instead of a hard
     # prohibition.  Aggressive humans sometimes lead strong hands, but the
     # previous implementation effectively treated it as a fresh 97% value bet.
-    _called_prev_aggr = _called_prior_street_aggression(plan_state, street)
-    # 플랍의 '직전 스트리트'는 프리플랍이다. 프리플랍 레이즈를 받고(콜/림프
-    # 후 레이즈 콜) 들어와 그 레이저가 뒤에 살아 있으면(oop_vs_aggr) 라인은
-    # 그 사람 것이다. 턴/리버만 이 사실을 알고 플랍은 몰라서, OOP 콜러가
-    # 밸류 라벨만으로 프리플랍 레이저 앞에서 97% 리드했다(audit9 2차 HAND
-    # 13/15, max-skill 시뮬 플랍 동크 20%). R5a(pot_control 리드)와 같은 개념.
-    if street == 'flop' and not initiative and oop_vs_aggr is True:
-        _called_prev_aggr = True
-    if (_called_prev_aggr and not initiative and oop_vs_aggr is True):
+    if line_owned_by_live_aggressor(plan_state, street, initiative, oop_vs_aggr):
         _relead = max(0.04, min(0.16, 0.04 + 0.010*float(a)))
         p *= _relead
         _fp = max(0.02, min(0.35, p))
@@ -3443,17 +3461,11 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # **같은 0.70** 이어도 승격시켰다(audit9 HAND 46: KK A-9-7 → 턴 3♥,
         # rel 0.70→0.70 '강도 상승'). 0.88(이 블록의 3스트리트 문턱) 이상은
         # 이전 값과 무관하게 승격한다. (아래 주석의 made 항은 제거했다.)
-        # 승격 조건. 예전에는 rel >= 0.88 하나뿐이라
-        # 리버에 트립스가 되어 rel 0.05 → 0.76, made 1 → 3 이 됐는데도
-        # 계획이 턴의 pot_control 그대로 남아 체크했다.
-        # rel 만이 아니라 '내 완성 강도가 올라갔는가'도 승격 근거다.
+        # (역사) 한때 `made >= max(2, st['made']+1)` 항이 있었으나 st.update 뒤라
+        # 항상 거짓인 죽은 항이었고, audit9 에서 제거했다. 현재 조건은
+        # strength_improvement_supports_value(rel, _prev_rel) 하나다.
         #
-        # **주의 — 이 made 항은 실제로는 죽어 있다.** st.update 가 위에서
-        # st['made'] 를 새 값으로 덮어쓴 뒤라 `made >= max(2, st['made']+1)`
-        # 이 `made >= made+1` 이 되어 모든 값에서 거짓이다. 실질 조건은
-        # rel >= 0.70 단독이다.
-        #
-        # _prev_made 로 고쳐봤으나 **되돌렸다.** made 1→2 가 내가 핸드를
+        # _prev_made 로 made 승격을 되살려봤으나 **되돌렸다.** made 1→2 가 내가 핸드를
         # 개선한 경우와 **보드가 페어링된 경우**를 구분하지 못한다. 실측
         # 신규 승격 11건이 대부분 페어 보드였고, rel 0.00 / eq 0.031 인
         # 핸드까지 밸류 계획으로 승격됐다.

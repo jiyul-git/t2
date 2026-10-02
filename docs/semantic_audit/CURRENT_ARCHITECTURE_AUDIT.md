@@ -48,3 +48,21 @@
 동일 predicate/weighted blend/continue-width 계산 통합, 실제 inline checkraise street 정책 추출, draw 완료 predicate 및 turn/river 전환 질문 명명, 호환 ordering 의미 명시. 수치/확률/threshold/evaluation 순서/RNG 소비 유지. 공유 skill을 독립적으로 새 샘플링하거나 기존 오류를 전략적으로 고치지 않는다. 미해결은 ledger에 남긴다.
 
 수정 전 기존 regress current는 이미 6/6 seed 불일치. 과거 baseline을 덮어쓰지 않고 pristine HEAD를 이번 before/after 기준으로 사용한다.
+
+## 재감사(2026-10-02) 추가
+
+Git: master `8614f32d`, test `63bd82d3`(semantic-audit 4차까지 fast-forward). test가 master보다 1,419 커밋 앞, 8 커밋 뒤(master-only는 문서/운영). master는 test의 ancestor가 아니다. Python 차이 52파일 +8,586/−818. merge/promotion/branch 정리 없음.
+
+흐름 표에 빠져 있던 실제 함수:
+
+| 단계 | 추가된 실제 producer | 비고 |
+| --- | --- | --- |
+| STATE | `session.HandRun._run` 블라인드·BB 앤티 징수(`forced_bet_posting`) | |
+| PERCEPTION | `make_plan` 의 perceived_board_danger / perceived_spr, `session` 의 `reads.range_profile` 상대 프로필 | range_profile은 exploit w와 무관한 적응 경로(L-RA18) |
+| RANGE | `session` 다인원 합집합 `opp_r`(multiway_representative_union_range), 주 상대 선택(primary_opponent_selection) | |
+| CALCULATION | `bot._sd_strength`(레인지 분할 정렬 키), `icm.players_behind_required_equity_premium`, `act_with_plan` 의 3단계 equity 출처 | |
+| JUDGMENT | `plan.has_showdown_value`, 밸류 문턱 이동 3종, value_raise_qualification, locked_allin_price_gate, reraise_attack_evidence | |
+| PLAN | `plan.line_owned_by_live_aggressor`, refresh 전환 5종, bluff/value 실행 빈도, 사이즈 대역 | |
+| ACTION | raise_target_coordinate, intent_chip_conversion | |
+
+개념→코드 위치 소유는 `completeness/SPAN_MAP.json`, 검사는 `tools/check_semantic_completeness.py`.

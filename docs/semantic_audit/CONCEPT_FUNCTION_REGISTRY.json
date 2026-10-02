@@ -19,7 +19,9 @@
     "recommended_canonical_name": "bluff_ground_utilization_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "semibluff",
@@ -41,7 +43,9 @@
     "recommended_canonical_name": "semibluff_utilization_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "cbet_flop",
@@ -63,7 +67,9 @@
     "recommended_canonical_name": "cbet_flop_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "barrel_turn",
@@ -85,7 +91,9 @@
     "recommended_canonical_name": "barrel_turn_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "barrel_river",
@@ -107,7 +115,9 @@
     "recommended_canonical_name": "barrel_river_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "checkraise_flop",
@@ -129,7 +139,9 @@
     "recommended_canonical_name": "checkraise_flop_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "checkraise_late",
@@ -151,7 +163,9 @@
     "recommended_canonical_name": "checkraise_turn_skill / checkraise_river_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "bluffcatch_early",
@@ -173,7 +187,9 @@
     "recommended_canonical_name": "bluffcatch_flop_skill / bluffcatch_turn_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "bluffcatch_river",
@@ -195,7 +211,9 @@
     "recommended_canonical_name": "bluffcatch_river_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "thin_value_turn",
@@ -217,7 +235,9 @@
     "recommended_canonical_name": "thin_value_turn_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "thin_value_river",
@@ -239,7 +259,9 @@
     "recommended_canonical_name": "thin_value_river_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "blockbet",
@@ -261,7 +283,9 @@
     "recommended_canonical_name": "blockbet_planning_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "potcontrol",
@@ -283,7 +307,9 @@
     "recommended_canonical_name": "potcontrol_reasoning_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "trap",
@@ -305,7 +331,9 @@
     "recommended_canonical_name": "trap_induction_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "overbet",
@@ -327,7 +355,9 @@
     "recommended_canonical_name": "overbet_utilization_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "probe",
@@ -349,7 +379,9 @@
     "recommended_canonical_name": "probe_opportunity_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "delayed_cbet",
@@ -371,7 +403,9 @@
     "recommended_canonical_name": "delayed_cbet_turn_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "equity_denial",
@@ -393,7 +427,9 @@
     "recommended_canonical_name": "draw_equity_denial_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "stackoff",
@@ -415,7 +451,9 @@
     "recommended_canonical_name": "stackoff_planning_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "reraise",
@@ -437,7 +475,9 @@
     "recommended_canonical_name": "reraise_reasoning_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "outs",
@@ -459,7 +499,9 @@
     "recommended_canonical_name": "draw_outs_calculation_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "potodds",
@@ -481,7 +523,9 @@
     "recommended_canonical_name": "pot_odds_calculation_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "spr",
@@ -503,7 +547,9 @@
     "recommended_canonical_name": "spr_perception_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "range_read",
@@ -525,7 +571,9 @@
     "recommended_canonical_name": "range_reconstruction_skill / line_interpretation_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk;ranges.reconstruct_range_with_accuracy;persona.interpret_opponent_action_signals;persona.interpret_bluff_threat_bias;persona.opponent_read_application_weight;plan.apply_response_biases_to_call_threshold;reads.observation_accuracy_from_capabilities;money_pressure.pressure_application_capacity;preflop.multiway_evidence_application_capacity;preflop.apply_multiway_call_evidence"
+    "current_function": "persona.make_player;persona.sk;ranges.reconstruct_range_with_accuracy;persona.interpret_opponent_action_signals;persona.interpret_bluff_threat_bias;persona.opponent_read_application_weight;plan.apply_response_biases_to_call_threshold;reads.observation_accuracy_from_capabilities;money_pressure.pressure_application_capacity;preflop.multiway_evidence_application_capacity;preflop.apply_multiway_call_evidence",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "blocker",
@@ -547,7 +595,9 @@
     "recommended_canonical_name": "blocker_effect_utilization_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "icm",
@@ -569,7 +619,9 @@
     "recommended_canonical_name": "icm_awareness_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "board_texture",
@@ -591,7 +643,9 @@
     "recommended_canonical_name": "board_interpretation_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "sizing_tell",
@@ -613,7 +667,9 @@
     "recommended_canonical_name": "opponent_sizing_interpretation_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "pf_range",
@@ -635,7 +691,9 @@
     "recommended_canonical_name": "rfi_chart_memory_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "positional",
@@ -657,7 +715,9 @@
     "recommended_canonical_name": "position_reasoning_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "stack_decay",
@@ -679,7 +739,9 @@
     "recommended_canonical_name": "stack_erosion_awareness_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "open_size",
@@ -701,7 +763,9 @@
     "recommended_canonical_name": "open_sizing_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "pf_defend",
@@ -723,7 +787,9 @@
     "recommended_canonical_name": "defend_chart_memory_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "range_merge",
@@ -745,7 +811,9 @@
     "recommended_canonical_name": "merged_value_skill / thin_value_flop_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "multiway",
@@ -767,7 +835,9 @@
     "recommended_canonical_name": "multiway_reasoning_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "fold_equity",
@@ -789,7 +859,9 @@
     "recommended_canonical_name": "fold_equity_utilization_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "money_jump",
@@ -811,7 +883,9 @@
     "recommended_canonical_name": "money_jump_awareness_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legal_call_price",
@@ -833,7 +907,9 @@
     "recommended_canonical_name": "legal_call_price",
     "evidence": "runner.py:88",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.Round.to_call"
+    "current_function": "runner.Round.to_call",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "raise_reopening_rights",
@@ -855,7 +931,9 @@
     "recommended_canonical_name": "raise_reopening_rights",
     "evidence": "runner.py:151; runner.py:146",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.Round.can_raise;runner.Round._only_incomplete"
+    "current_function": "runner.Round.can_raise;runner.Round._only_incomplete",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legal_action_application",
@@ -877,7 +955,9 @@
     "recommended_canonical_name": "legal_action_application",
     "evidence": "runner.py:169",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.Round.apply"
+    "current_function": "runner.Round.apply",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "contestable_pot",
@@ -899,7 +979,9 @@
     "recommended_canonical_name": "contestable_pot",
     "evidence": "runner.py:97",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.Round.contestable_contrib"
+    "current_function": "runner.Round.contestable_contrib",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "uncalled_return",
@@ -921,7 +1003,9 @@
     "recommended_canonical_name": "uncalled_return",
     "evidence": "runner.py:107",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.Round.settle_uncalled"
+    "current_function": "runner.Round.settle_uncalled",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "public_action_kind",
@@ -943,7 +1027,9 @@
     "recommended_canonical_name": "public_action_kind",
     "evidence": "action_events.py:10",
     "origin": "IMPLICIT_CODE",
-    "current_function": "action_events.normalized_action"
+    "current_function": "action_events.normalized_action",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "public_postflop_story",
@@ -965,7 +1051,9 @@
     "recommended_canonical_name": "public_postflop_story",
     "evidence": "action_events.py:35",
     "origin": "IMPLICIT_CODE",
-    "current_function": "action_events.postflop_events"
+    "current_function": "action_events.postflop_events",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "facing_response_kind",
@@ -987,7 +1075,9 @@
     "recommended_canonical_name": "facing_response_kind",
     "evidence": "action_events.py:266; action_events.py:148",
     "origin": "IMPLICIT_CODE",
-    "current_function": "action_events.response_context;action_events.pending_response_context"
+    "current_function": "action_events.response_context;action_events.pending_response_context",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "facing_wager_geometry",
@@ -1009,7 +1099,9 @@
     "recommended_canonical_name": "facing_wager_geometry",
     "evidence": "action_events.py:239",
     "origin": "IMPLICIT_CODE",
-    "current_function": "action_events.facing_wager_context"
+    "current_function": "action_events.facing_wager_context",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "aggressive_street_count",
@@ -1031,7 +1123,9 @@
     "recommended_canonical_name": "aggressive_street_count",
     "evidence": "action_events.py:205; session.py:687",
     "origin": "IMPLICIT_CODE",
-    "current_function": "action_events.aggressive_street_count;session._barrel_count"
+    "current_function": "action_events.aggressive_street_count;session._barrel_count",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "street_line_outcome",
@@ -1053,7 +1147,9 @@
     "recommended_canonical_name": "street_line_outcome",
     "evidence": "action_events.py:284",
     "origin": "IMPLICIT_CODE",
-    "current_function": "action_events.street_outcome"
+    "current_function": "action_events.street_outcome",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "preflop_public_roles",
@@ -1075,7 +1171,9 @@
     "recommended_canonical_name": "preflop_public_roles",
     "evidence": "session.py:97; session.py:171; session.py:286",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._pf_observation_flags;session._preflop_public_action_context;session._cold_reraise_context"
+    "current_function": "session._pf_observation_flags;session._preflop_public_action_context;session._cold_reraise_context",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "preflop_role_memory",
@@ -1097,7 +1195,9 @@
     "recommended_canonical_name": "preflop_role_memory",
     "evidence": "session.py:38; session.py:80",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._merge_pf_seed;session._update_pf_state_after_apply"
+    "current_function": "session._merge_pf_seed;session._update_pf_state_after_apply",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "absolute_field_position",
@@ -1119,7 +1219,9 @@
     "recommended_canonical_name": "absolute_field_position",
     "evidence": "session.py:12",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session.oop_field"
+    "current_function": "session.oop_field",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "aggressor_relative_position",
@@ -1141,7 +1243,9 @@
     "recommended_canonical_name": "aggressor_relative_position",
     "evidence": "session.py:28",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session.oop_vs"
+    "current_function": "session.oop_vs",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "initiative_owner",
@@ -1163,12 +1267,14 @@
     "recommended_canonical_name": "initiative_owner",
     "evidence": "runner.py:313",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.has_initiative"
+    "current_function": "runner.has_initiative",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "called_aggression_ownership",
-    "poker_meaning": "직전 스트리트 자신의 공격이 콜받은 라인인가",
-    "street": "turn river",
+    "poker_meaning": "직전 스트리트에 상대의 공격을 내가 콜했고 그 공격자가 뒤에 살아 있으면 라인은 그 사람 것; 플랍에서는 직전 스트리트가 프리플랍이므로 이니셔티브 없는 OOP + 살아 있는 프리플랍 어그레서가 같은 사실이다",
+    "street": "flop turn river",
     "category": "REASONING",
     "layer": "JUDGMENT",
     "producer": "plan._called_prior_street_aggression",
@@ -1181,11 +1287,13 @@
     "axis": "reasoning",
     "runtime_status": "ACTIVE",
     "action_influence": "YES (direct or upstream)",
-    "duplicate_overload": "SPLIT flop caller stab ownership vs later continuation",
+    "duplicate_overload": "earlier registry text inverted the meaning (\"내 공격이 콜받았나\"); code checks hero CALLED opponent aggression. Flop consumer added in batch 1 (R5a-ext); same question as donk_suppression and pot_control lead ban (see lead_into_aggressor_policy)",
     "recommended_canonical_name": "called_aggression_ownership",
     "evidence": "plan.py:1613",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan._called_prior_street_aggression"
+    "current_function": "plan.line_owned_by_live_aggressor;plan._called_prior_street_aggression",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "rfi_width_prior",
@@ -1207,7 +1315,9 @@
     "recommended_canonical_name": "rfi_width_prior",
     "evidence": "gto.py:98; gto.py:74; gto.py:86",
     "origin": "IMPLICIT_CODE",
-    "current_function": "gto.rfi;gto.depth_mult;gto.behind_of"
+    "current_function": "gto.rfi;gto.depth_mult;gto.behind_of",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "defend_width_prior",
@@ -1225,11 +1335,13 @@
     "axis": "GTO prior",
     "runtime_status": "ACTIVE",
     "action_influence": "YES (direct or upstream)",
-    "duplicate_overload": "RENAME mdf is width proxy not exact MDF",
+    "duplicate_overload": "calibrated MTT8-ante defend table applies only when seats==8 and ante; 9-max formats (standard/main/lowbuyin) use the uncalibrated legacy formula (knowledge coverage gap, see KNOWLEDGE_COVERAGE_MATRIX)",
     "recommended_canonical_name": "defend_width_prior",
     "evidence": "gto.py:184; gto.py:154",
     "origin": "IMPLICIT_CODE",
-    "current_function": "gto.defend_pct;gto.mdf"
+    "current_function": "gto.defend_pct;gto.mdf",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "threebet_width_prior",
@@ -1251,7 +1363,9 @@
     "recommended_canonical_name": "threebet_width_prior",
     "evidence": "gto.py:205",
     "origin": "IMPLICIT_CODE",
-    "current_function": "gto.threebet_pct"
+    "current_function": "gto.threebet_pct",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "chart_memory_accuracy",
@@ -1273,7 +1387,9 @@
     "recommended_canonical_name": "chart_memory_accuracy",
     "evidence": "persona.py:476; persona.py:520",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.gto_knowledge;persona.gto_memory_confidence"
+    "current_function": "persona.gto_knowledge;persona.gto_memory_confidence",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "studied_condition_match",
@@ -1295,7 +1411,9 @@
     "recommended_canonical_name": "studied_condition_match",
     "evidence": "persona.py:494; persona.py:534",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.gto_condition_match;persona.gto_studied_anchor"
+    "current_function": "persona.gto_condition_match;persona.gto_studied_anchor",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "preflop_condition_reasoning",
@@ -1317,7 +1435,9 @@
     "recommended_canonical_name": "preflop_condition_reasoning",
     "evidence": "persona.py:564; persona.py:606",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.preflop_reasoning_confidence;persona.preflop_reasoned_width"
+    "current_function": "persona.preflop_reasoning_confidence;persona.preflop_reasoned_width",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legacy_preflop_ordering",
@@ -1339,7 +1459,9 @@
     "recommended_canonical_name": "legacy_preflop_ordering",
     "evidence": "preflop.py:14; preflop.py:9",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.legacy_preflop_order_percentile;preflop.pct"
+    "current_function": "preflop.legacy_preflop_order_percentile;preflop.pct",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "fallback_preflop_ordering",
@@ -1361,7 +1483,9 @@
     "recommended_canonical_name": "fallback_preflop_ordering",
     "evidence": "bot.py:139; bot.py:151",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot._pf_score;bot.range_combos"
+    "current_function": "bot._pf_score;bot.range_combos",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "rfi_personality_deviation",
@@ -1383,7 +1507,9 @@
     "recommended_canonical_name": "rfi_personality_deviation",
     "evidence": "persona.py:631",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.open_pct"
+    "current_function": "persona.open_pct",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "limp_entry_motive",
@@ -1405,7 +1531,9 @@
     "recommended_canonical_name": "limp_entry_motive",
     "evidence": "preflop.py:160",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.limp_p"
+    "current_function": "preflop.limp_p",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "open_execution_form",
@@ -1427,7 +1555,9 @@
     "recommended_canonical_name": "open_execution_form",
     "evidence": "preflop.py:199",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.open_form"
+    "current_function": "preflop.open_form",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "open_sizing",
@@ -1449,7 +1579,9 @@
     "recommended_canonical_name": "open_sizing",
     "evidence": "preflop.py:91; preflop.py:74",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.open_size_bb;preflop.round_unit_bb"
+    "current_function": "preflop.open_size_bb;preflop.round_unit_bb",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "unopened_decision",
@@ -1471,7 +1603,9 @@
     "recommended_canonical_name": "unopened_decision",
     "evidence": "preflop.py:302",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.open_decision"
+    "current_function": "preflop.open_decision",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "isolation_decision",
@@ -1493,7 +1627,9 @@
     "recommended_canonical_name": "isolation_decision",
     "evidence": "preflop.py:1143",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.iso_decision"
+    "current_function": "preflop.iso_decision",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "defend_attack_continue_widths",
@@ -1515,7 +1651,9 @@
     "recommended_canonical_name": "defend_attack_continue_widths",
     "evidence": "preflop.py:548; preflop.py:46",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.defend_thresholds;preflop._saturate;preflop.normalize_defend_prior_widths;preflop.adjust_defend_widths_for_callers;preflop.adjust_defend_widths_for_short_stack;preflop.tighten_defend_widths_for_raise_level"
+    "current_function": "preflop.defend_thresholds;preflop._saturate;preflop.normalize_defend_prior_widths;preflop.adjust_defend_widths_for_callers;preflop.adjust_defend_widths_for_short_stack;preflop.tighten_defend_widths_for_raise_level",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "mixed_preflop_action_likelihood",
@@ -1537,7 +1675,9 @@
     "recommended_canonical_name": "mixed_preflop_action_likelihood",
     "evidence": "preflop.py:637",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.defend_action_likelihoods"
+    "current_function": "preflop.defend_action_likelihoods",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "sample_defend_action",
@@ -1559,7 +1699,9 @@
     "recommended_canonical_name": "sample_defend_action",
     "evidence": "preflop.py:805",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.defend_decision"
+    "current_function": "preflop.defend_decision",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "reraise_sizing_form",
@@ -1581,7 +1723,9 @@
     "recommended_canonical_name": "reraise_sizing_form",
     "evidence": "preflop.py:427; preflop.py:415",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.raise_form;preflop.reraise_mult"
+    "current_function": "preflop.raise_form;preflop.reraise_mult",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "reshove_opportunity",
@@ -1603,7 +1747,9 @@
     "recommended_canonical_name": "reshove_opportunity",
     "evidence": "preflop.py:497; preflop.py:499; preflop.py:514; preflop.py:528",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.in_hotzone;preflop.reshove_range;preflop.reshove_weight;preflop.hotzone_pressure"
+    "current_function": "preflop.in_hotzone;preflop.reshove_range;preflop.reshove_weight;preflop.hotzone_pressure",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "behind_player_threat",
@@ -1625,7 +1771,9 @@
     "recommended_canonical_name": "behind_player_threat",
     "evidence": "preflop.py:275",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.table_pressure"
+    "current_function": "preflop.table_pressure",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "preflop_card_removal",
@@ -1647,7 +1795,9 @@
     "recommended_canonical_name": "preflop_card_removal",
     "evidence": "preflop.py:875",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.preflop_blocker_share"
+    "current_function": "preflop.preflop_blocker_share",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "multiway_reraise_reasoning",
@@ -1665,11 +1815,13 @@
     "axis": "reasoning",
     "runtime_status": "ACTIVE",
     "action_influence": "YES (direct or upstream)",
-    "duplicate_overload": "KEEP seat identity; independent 4bet prior absent",
+    "duplicate_overload": "KEEP seat identity; independent 4bet prior absent; sub-semantics locked_allin_price_gate, reraise_attack_evidence, players_behind_risk_premium registered separately (re-audit)",
     "recommended_canonical_name": "multiway_reraise_reasoning",
     "evidence": "preflop.py:914; preflop.py:1114",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.multiway_reraise_decision;preflop.cold_reraise_decision;preflop.multiway_evidence_application_capacity;preflop.apply_multiway_call_evidence"
+    "current_function": "preflop.multiway_reraise_decision;preflop.cold_reraise_decision;preflop.multiway_evidence_application_capacity;preflop.apply_multiway_call_evidence",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legacy_calloff_threshold",
@@ -1691,7 +1843,9 @@
     "recommended_canonical_name": "legacy_calloff_threshold",
     "evidence": "preflop.py:1198; preflop.py:1335",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.calloff_cap;preflop.calloff_decision"
+    "current_function": "preflop.calloff_cap;preflop.calloff_decision",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "layer_calloff_judgment",
@@ -1713,7 +1867,9 @@
     "recommended_canonical_name": "layer_calloff_judgment",
     "evidence": "preflop.py:1268",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.calloff_layer_judgment"
+    "current_function": "preflop.calloff_layer_judgment",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "calloff_comparison_shadow",
@@ -1735,7 +1891,9 @@
     "recommended_canonical_name": "calloff_comparison_shadow",
     "evidence": "preflop.py:1233",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.calloff_ev_comparison"
+    "current_function": "preflop.calloff_ev_comparison",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "weighted_combo_measure",
@@ -1757,7 +1915,9 @@
     "recommended_canonical_name": "weighted_combo_measure",
     "evidence": "ranges.py:37; ranges.py:67; ranges.py:72; ranges.py:77",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.weighted_range;ranges.range_items;ranges.range_mass;ranges.range_weight"
+    "current_function": "ranges.weighted_range;ranges.range_items;ranges.range_mass;ranges.range_weight",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "weighted_range_transform",
@@ -1779,7 +1939,9 @@
     "recommended_canonical_name": "weighted_range_transform",
     "evidence": "ranges.py:113; ranges.py:141; ranges.py:134; ranges.py:194",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.range_filter;ranges.range_select;ranges.range_copy;ranges.range_union"
+    "current_function": "ranges.range_filter;ranges.range_select;ranges.range_copy;ranges.range_union",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "range_identity_signature",
@@ -1801,7 +1963,9 @@
     "recommended_canonical_name": "range_identity_signature",
     "evidence": "ranges.py:168; plan.py:337; plan.py:360; plan.py:403",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.range_signature;plan._range_sig;plan._decision_range_sig;plan._opp_ranges_signature"
+    "current_function": "ranges.range_signature;plan._range_sig;plan._decision_range_sig;plan._opp_ranges_signature",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "preflop_posterior_order",
@@ -1823,7 +1987,9 @@
     "recommended_canonical_name": "preflop_posterior_order",
     "evidence": "ranges.py:231",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.preflop_reraise_posterior"
+    "current_function": "ranges.preflop_reraise_posterior",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "inverse_defend_likelihood",
@@ -1845,7 +2011,9 @@
     "recommended_canonical_name": "inverse_defend_likelihood",
     "evidence": "ranges.py:283",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges._defend_likelihood_range"
+    "current_function": "ranges._defend_likelihood_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "preflop_range_reconstruction",
@@ -1867,7 +2035,9 @@
     "recommended_canonical_name": "preflop_range_reconstruction",
     "evidence": "session.py:229; session.py:1186; ranges.py:328",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._preflop_story_range;session.HandRun._preflop_perceived_range;ranges.preflop_range"
+    "current_function": "session._preflop_story_range;session.HandRun._preflop_perceived_range;ranges.preflop_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "postflop_action_posterior",
@@ -1889,7 +2059,9 @@
     "recommended_canonical_name": "postflop_action_posterior",
     "evidence": "ranges.py:1054; session.py:1089",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.narrow_by_actions;session.HandRun._acts_of"
+    "current_function": "ranges.narrow_by_actions;session.HandRun._acts_of",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "range_reconstruction_grasp",
@@ -1911,7 +2083,9 @@
     "recommended_canonical_name": "range_reconstruction_grasp",
     "evidence": "ranges.py:965; ranges.py:940; ranges.py:910",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.blend_action_range_by_grasp"
+    "current_function": "ranges.blend_action_range_by_grasp",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "line_bluff_composition",
@@ -1933,7 +2107,9 @@
     "recommended_canonical_name": "line_bluff_composition",
     "evidence": "ranges.py:787; bot.py:374; plan.py:9",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.line_bluff_share;bot.bluff_share;plan.line_bluff_prior"
+    "current_function": "ranges.line_bluff_share;bot.bluff_share;plan.line_bluff_prior",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "bet_range_partition",
@@ -1955,7 +2131,9 @@
     "recommended_canonical_name": "bet_range_partition",
     "evidence": "ranges.py:801; bot.py:398",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges._bet_range;bot.pick_bluffs"
+    "current_function": "ranges._bet_range;bot.pick_bluffs",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "continue_range_partition",
@@ -1977,7 +2155,9 @@
     "recommended_canonical_name": "continue_range_partition",
     "evidence": "ranges.py:824",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.continuation_support_fraction;ranges._continue_range"
+    "current_function": "ranges.continuation_support_fraction;ranges._continue_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "call_range_partition",
@@ -1999,7 +2179,9 @@
     "recommended_canonical_name": "call_range_partition",
     "evidence": "ranges.py:844",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.continuation_support_fraction;ranges._call_range"
+    "current_function": "ranges.continuation_support_fraction;ranges._call_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "check_range_posterior",
@@ -2021,7 +2203,9 @@
     "recommended_canonical_name": "check_range_posterior",
     "evidence": "ranges.py:880",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges._check_range"
+    "current_function": "ranges._check_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "raise_range_posterior",
@@ -2043,7 +2227,9 @@
     "recommended_canonical_name": "raise_range_posterior",
     "evidence": "ranges.py:1031",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges._raise_range"
+    "current_function": "ranges._raise_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "hand_category",
@@ -2065,7 +2251,9 @@
     "recommended_canonical_name": "hand_category",
     "evidence": "bot.py:6; bot.py:72; session.py:9",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot.eval5;bot.eval7;session.best5"
+    "current_function": "bot.eval5;bot.eval7;session.best5",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "hero_made_contribution",
@@ -2087,7 +2275,9 @@
     "recommended_canonical_name": "hero_made_contribution",
     "evidence": "bot.py:322",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot.made_strength"
+    "current_function": "bot.made_strength",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "future_draw_outs",
@@ -2109,7 +2299,9 @@
     "recommended_canonical_name": "future_draw_outs",
     "evidence": "bot.py:261",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot.draw_strength"
+    "current_function": "bot.draw_strength",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "current_board_not_behind",
@@ -2131,7 +2323,9 @@
     "recommended_canonical_name": "current_board_not_behind",
     "evidence": "plan.py:33; plan.py:91; plan.py:169",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.relative_strength;plan.joint_relative_strength;plan._decision_relative_strength"
+    "current_function": "plan.relative_strength;plan.joint_relative_strength;plan._decision_relative_strength",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "showdown_equity_share",
@@ -2153,7 +2347,9 @@
     "recommended_canonical_name": "showdown_equity_share",
     "evidence": "bot.py:83; bot.py:205; bot.py:243",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot._showdown_share;bot.equity_vs_pools;bot.equity_vs_combos"
+    "current_function": "bot._showdown_share;bot.equity_vs_pools;bot.equity_vs_combos",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "unconditioned_equity",
@@ -2175,7 +2371,9 @@
     "recommended_canonical_name": "unconditioned_equity",
     "evidence": "bot.py:100; bot.py:236",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot.equity;bot.equity_vs_range"
+    "current_function": "bot.equity;bot.equity_vs_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "weighted_joint_sampling",
@@ -2197,7 +2395,9 @@
     "recommended_canonical_name": "weighted_joint_sampling",
     "evidence": "bot.py:155; bot.py:176; bot.py:205",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot._filter_pool;bot._sample_pool_combo;bot.equity_vs_pools"
+    "current_function": "bot._filter_pool;bot._sample_pool_combo;bot.equity_vs_pools",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "range_advantage",
@@ -2219,7 +2419,9 @@
     "recommended_canonical_name": "range_advantage",
     "evidence": "ranges.py:393; ranges.py:413; plan.py:218",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.range_advantage;ranges.joint_range_advantage;plan._decision_range_advantage"
+    "current_function": "ranges.range_advantage;ranges.joint_range_advantage;plan._decision_range_advantage",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "strong_region_advantage",
@@ -2241,7 +2443,9 @@
     "recommended_canonical_name": "strong_region_advantage",
     "evidence": "ranges.py:505; ranges.py:518; ranges.py:526; plan.py:202",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges._strong_share;ranges.nut_advantage;ranges.joint_nut_advantage;plan._decision_nut_advantage"
+    "current_function": "ranges._strong_share;ranges.nut_advantage;ranges.joint_nut_advantage;plan._decision_nut_advantage",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "strong_support_blocker",
@@ -2263,7 +2467,9 @@
     "recommended_canonical_name": "strong_support_blocker",
     "evidence": "ranges.py:589",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.blocker_score"
+    "current_function": "ranges.blocker_score",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "continue_fold_blocker",
@@ -2285,7 +2491,9 @@
     "recommended_canonical_name": "continue_fold_blocker",
     "evidence": "ranges.py:618; ranges.py:658; plan.py:263",
     "origin": "IMPLICIT_CODE",
-    "current_function": "ranges.blocker_effect;ranges.joint_blocker_effect;plan._decision_blocker_effect"
+    "current_function": "ranges.blocker_effect;ranges.joint_blocker_effect;plan._decision_blocker_effect",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "relative_strength_perception",
@@ -2307,7 +2515,9 @@
     "recommended_canonical_name": "relative_strength_perception",
     "evidence": "plan.py:308",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.perceived_rel"
+    "current_function": "plan.perceived_rel",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "spr_ratio",
@@ -2329,7 +2539,9 @@
     "recommended_canonical_name": "spr_ratio",
     "evidence": "plan.py:7",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.spr"
+    "current_function": "plan.spr",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "depth_perception",
@@ -2351,7 +2563,9 @@
     "recommended_canonical_name": "depth_perception",
     "evidence": "depth.py:118; depth.py:53; depth.py:63; depth.py:98; depth.py:91; preflop.py:56",
     "origin": "IMPLICIT_CODE",
-    "current_function": "depth.depth_feel;depth.base_feel;depth.field_adjusted_bb;depth.eroded_bb;depth.lookahead_hands;preflop.feel_of"
+    "current_function": "depth.depth_feel;depth.base_feel;depth.field_adjusted_bb;depth.eroded_bb;depth.lookahead_hands;preflop.feel_of",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "board_structure_facts",
@@ -2373,7 +2587,9 @@
     "recommended_canonical_name": "board_structure_facts",
     "evidence": "texture.py:7; plan.py:28",
     "origin": "IMPLICIT_CODE",
-    "current_function": "texture.classify;plan.board_paired"
+    "current_function": "texture.classify;plan.board_paired",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "board_completion_danger",
@@ -2395,7 +2611,9 @@
     "recommended_canonical_name": "board_completion_danger",
     "evidence": "bot.py:117",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot.board_danger"
+    "current_function": "bot.board_danger",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "flop_texture_cbet_prior",
@@ -2417,7 +2635,9 @@
     "recommended_canonical_name": "flop_texture_cbet_prior",
     "evidence": "texture.py:64",
     "origin": "IMPLICIT_CODE",
-    "current_function": "texture.cbet_multiplier"
+    "current_function": "texture.cbet_multiplier",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "street_texture_sizing",
@@ -2439,7 +2659,9 @@
     "recommended_canonical_name": "street_texture_sizing",
     "evidence": "texture.py:82; texture.py:137",
     "origin": "IMPLICIT_CODE",
-    "current_function": "texture.size_fraction;texture.perceived"
+    "current_function": "texture.size_fraction;texture.perceived",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "turn_card_range_shift",
@@ -2461,7 +2683,9 @@
     "recommended_canonical_name": "turn_card_range_shift",
     "evidence": "texture.py:101",
     "origin": "IMPLICIT_CODE",
-    "current_function": "texture.turn_card_effect"
+    "current_function": "texture.turn_card_effect",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "replan_board_change",
@@ -2483,7 +2707,9 @@
     "recommended_canonical_name": "replan_board_change",
     "evidence": "runner.py:268",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.board_changed"
+    "current_function": "runner.board_changed",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "calculation_error",
@@ -2505,7 +2731,9 @@
     "recommended_canonical_name": "calculation_error",
     "evidence": "persona.py:396",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.calc_noise"
+    "current_function": "persona.calc_noise",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "value_line_selection",
@@ -2527,7 +2755,9 @@
     "recommended_canonical_name": "value_line_selection",
     "evidence": "plan.py:631",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan"
+    "current_function": "plan.make_plan",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "vulnerable_paired_flush",
@@ -2549,7 +2779,9 @@
     "recommended_canonical_name": "vulnerable_paired_flush",
     "evidence": "plan.py:631; plan.py:1358",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan;plan.decide_response"
+    "current_function": "plan.make_plan;plan.decide_response",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "shallow_one_pair_value",
@@ -2571,7 +2803,9 @@
     "recommended_canonical_name": "shallow_one_pair_value",
     "evidence": "plan.py:631",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan"
+    "current_function": "plan.make_plan",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "deep_one_pair_caution",
@@ -2593,7 +2827,9 @@
     "recommended_canonical_name": "deep_one_pair_caution",
     "evidence": "plan.py:631; plan.py:1358",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan;plan.decide_response"
+    "current_function": "plan.make_plan;plan.decide_response",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "continue_range_value",
@@ -2615,7 +2851,9 @@
     "recommended_canonical_name": "continue_range_value",
     "evidence": "plan.py:631; plan.py:1358; plan.py:2881; plan.py:3093",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan;plan.decide_response;plan.river_fix;plan.refresh"
+    "current_function": "plan.make_plan;plan.decide_response;plan.river_fix;plan.refresh",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "semibluff_line_selection",
@@ -2637,7 +2875,9 @@
     "recommended_canonical_name": "semibluff_line_selection",
     "evidence": "plan.py:631; plan.py:1358; plan.py:3093",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan;plan.decide_response;plan.refresh"
+    "current_function": "plan.make_plan;plan.decide_response;plan.refresh",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "pure_bluff_line_selection",
@@ -2659,7 +2899,9 @@
     "recommended_canonical_name": "pure_bluff_line_selection",
     "evidence": "plan.py:631; plan.py:3538",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan;plan.bluff_mode"
+    "current_function": "plan.make_plan;plan.bluff_mode",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "potcontrol_motive",
@@ -2681,7 +2923,9 @@
     "recommended_canonical_name": "potcontrol_motive",
     "evidence": "plan.py:631; plan.py:3093",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan;plan.refresh"
+    "current_function": "plan.make_plan;plan.refresh",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "potcontrol_bet_propensity",
@@ -2703,7 +2947,9 @@
     "recommended_canonical_name": "potcontrol_bet_propensity",
     "evidence": "plan.py:1636",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.decide_aggression"
+    "current_function": "plan.decide_aggression",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "blockbet_motive",
@@ -2725,7 +2971,9 @@
     "recommended_canonical_name": "blockbet_motive",
     "evidence": "plan.py:631",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.make_plan"
+    "current_function": "plan.make_plan",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "trap_induction",
@@ -2747,7 +2995,9 @@
     "recommended_canonical_name": "trap_induction",
     "evidence": "plan.py:549; plan.py:471",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.trap_judgment;plan.opp_bet_prob"
+    "current_function": "plan.trap_judgment;plan.opp_bet_prob",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "trap_release_no_bite",
@@ -2769,7 +3019,9 @@
     "recommended_canonical_name": "trap_release_no_bite",
     "evidence": "plan.py:3455; plan.py:3093",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.mark_no_bite;plan.refresh"
+    "current_function": "plan.mark_no_bite;plan.refresh",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "draw_completion_value_gate",
@@ -2791,7 +3043,9 @@
     "recommended_canonical_name": "draw_completion_value_gate",
     "evidence": "plan.py:3093; plan.py:2881",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.draw_completion_supports_value"
+    "current_function": "plan.draw_completion_supports_value",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "strength_improvement_promotion",
@@ -2813,7 +3067,9 @@
     "recommended_canonical_name": "strength_improvement_promotion",
     "evidence": "plan.py:3093",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.strength_improvement_supports_value"
+    "current_function": "plan.strength_improvement_supports_value",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "missed_draw_river_conversion",
@@ -2835,7 +3091,9 @@
     "recommended_canonical_name": "missed_draw_river_conversion",
     "evidence": "plan.py:2881",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.river_semibluff_resolution"
+    "current_function": "plan.river_semibluff_resolution",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "river_thin_value",
@@ -2857,7 +3115,9 @@
     "recommended_canonical_name": "river_thin_value",
     "evidence": "plan.py:2881",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.river_value_reassessment"
+    "current_function": "plan.river_value_reassessment",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "flop_cbet_plan",
@@ -2879,7 +3139,9 @@
     "recommended_canonical_name": "flop_cbet_plan",
     "evidence": "plan.py:2088; plan.py:1636",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.cbet_flop_frequency"
+    "current_function": "plan.cbet_flop_frequency",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "turn_barrel_plan",
@@ -2901,7 +3163,9 @@
     "recommended_canonical_name": "turn_barrel_plan",
     "evidence": "plan.py:2088; plan.py:1636",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.barrel_turn_frequency"
+    "current_function": "plan.barrel_turn_frequency",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "river_barrel_plan",
@@ -2923,7 +3187,9 @@
     "recommended_canonical_name": "river_barrel_plan",
     "evidence": "plan.py:2088; plan.py:1636",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.barrel_river_frequency"
+    "current_function": "plan.barrel_river_frequency",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "probe_after_checkthrough",
@@ -2945,7 +3211,9 @@
     "recommended_canonical_name": "probe_after_checkthrough",
     "evidence": "plan.py:1636",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.decide_aggression"
+    "current_function": "plan.decide_aggression",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "turn_delayed_cbet",
@@ -2967,7 +3235,9 @@
     "recommended_canonical_name": "turn_delayed_cbet",
     "evidence": "plan.py:1636",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.decide_aggression"
+    "current_function": "plan.decide_aggression",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "bet_budget",
@@ -2989,7 +3259,9 @@
     "recommended_canonical_name": "bet_budget",
     "evidence": "plan.py:1975",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.budget_left"
+    "current_function": "plan.budget_left",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "aggression_intent_sampling",
@@ -3011,7 +3283,9 @@
     "recommended_canonical_name": "aggression_intent_sampling",
     "evidence": "plan.py:1094; plan.py:1901; plan.py:1910; plan.py:1905",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.attach_intent;plan.mk_intent;plan.set_intent;plan.intent_of"
+    "current_function": "plan.attach_intent;plan.mk_intent;plan.set_intent;plan.intent_of",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "planned_bet_sizing",
@@ -3033,7 +3307,9 @@
     "recommended_canonical_name": "planned_bet_sizing",
     "evidence": "plan.py:1794",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.decide_size"
+    "current_function": "plan.decide_size",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "turn_overbet",
@@ -3055,7 +3331,9 @@
     "recommended_canonical_name": "turn_overbet",
     "evidence": "plan.py:2021",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.overbet_frac"
+    "current_function": "plan.overbet_frac",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "river_overbet",
@@ -3077,7 +3355,9 @@
     "recommended_canonical_name": "river_overbet",
     "evidence": "plan.py:2021",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.overbet_frac"
+    "current_function": "plan.overbet_frac",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "equity_denial_sizing",
@@ -3099,7 +3379,9 @@
     "recommended_canonical_name": "equity_denial_sizing",
     "evidence": "plan.py:1794",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.decide_size"
+    "current_function": "plan.decide_size",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "target_investment_fraction",
@@ -3121,7 +3403,9 @@
     "recommended_canonical_name": "target_investment_fraction",
     "evidence": "plan.py:3478",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.target_commit"
+    "current_function": "plan.target_commit",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "stackoff_spread_horizon",
@@ -3143,7 +3427,9 @@
     "recommended_canonical_name": "stackoff_spread_horizon",
     "evidence": "plan.py:3626; plan.py:3592",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.stackoff_plan;plan.spread_curve"
+    "current_function": "plan.stackoff_plan;plan.spread_curve",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "bluff_sizing_camouflage",
@@ -3165,7 +3451,9 @@
     "recommended_canonical_name": "bluff_sizing_camouflage",
     "evidence": "plan.py:3538; plan.py:3519; plan.py:3509",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.bluff_mode;plan.barrel_size;plan.breakeven_fold"
+    "current_function": "plan.bluff_mode;plan.barrel_size;plan.breakeven_fold",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "calldown_required_share",
@@ -3187,7 +3475,9 @@
     "recommended_canonical_name": "calldown_required_share",
     "evidence": "plan.py:1137",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.calldown_need"
+    "current_function": "plan.calldown_need",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "nonvalue_raise_ev_gate",
@@ -3209,7 +3499,9 @@
     "recommended_canonical_name": "nonvalue_raise_ev_gate",
     "evidence": "plan.py:1266",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan._nonvalue_raise_ev_gate"
+    "current_function": "plan._nonvalue_raise_ev_gate",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "response_plan",
@@ -3231,7 +3523,9 @@
     "recommended_canonical_name": "response_plan",
     "evidence": "plan.py:1358; plan.py:1953",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.decide_response;plan.record_response_plan;plan.apply_response_biases_to_call_threshold"
+    "current_function": "plan.decide_response;plan.record_response_plan;plan.apply_response_biases_to_call_threshold",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "call_bias_reapplication",
@@ -3253,7 +3547,9 @@
     "recommended_canonical_name": "call_bias_reapplication",
     "evidence": "persona.py:1070; persona.py:721; plan.py:1358",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.call_bias;persona.bias;plan.decide_response;persona.interpret_bluff_threat_bias;plan.apply_response_biases_to_call_threshold"
+    "current_function": "persona.call_bias;persona.bias;plan.decide_response;persona.interpret_bluff_threat_bias;plan.apply_response_biases_to_call_threshold",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "checkraise_flop_decision",
@@ -3275,7 +3571,9 @@
     "recommended_canonical_name": "checkraise_flop_decision",
     "evidence": "plan.py:2468",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.checkraise_draw_street_probability"
+    "current_function": "plan.checkraise_draw_street_probability",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "checkraise_turn_decision",
@@ -3297,7 +3595,9 @@
     "recommended_canonical_name": "checkraise_turn_decision",
     "evidence": "plan.py:2468",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.checkraise_draw_street_probability"
+    "current_function": "plan.checkraise_draw_street_probability",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "checkraise_river_decision",
@@ -3319,7 +3619,9 @@
     "recommended_canonical_name": "checkraise_river_decision",
     "evidence": "plan.py:2468",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.checkraise_river_probability"
+    "current_function": "plan.checkraise_river_probability",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "checkraise_sizing",
@@ -3341,7 +3643,9 @@
     "recommended_canonical_name": "checkraise_sizing",
     "evidence": "plan.py:3462",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.checkraise_size"
+    "current_function": "plan.checkraise_size",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "action_adapter_with_reasoning",
@@ -3363,7 +3667,9 @@
     "recommended_canonical_name": "action_adapter_with_reasoning",
     "evidence": "plan.py:2168",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.act_with_plan"
+    "current_function": "plan.act_with_plan",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "human_planned_size_shape",
@@ -3385,7 +3691,9 @@
     "recommended_canonical_name": "human_planned_size_shape",
     "evidence": "persona.py:23; persona.py:18; plan.py:2151",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.shape_size;persona.sizing_signature;plan.shape_planned_target"
+    "current_function": "persona.shape_size;persona.sizing_signature;plan.shape_planned_target",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "effective_allin_promotion",
@@ -3407,7 +3715,9 @@
     "recommended_canonical_name": "effective_allin_promotion",
     "evidence": "runner.py:25",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.effective_allin_v1"
+    "current_function": "runner.effective_allin_v1",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "plan_revision_lifecycle",
@@ -3429,7 +3739,9 @@
     "recommended_canonical_name": "plan_revision_lifecycle",
     "evidence": "plan.py:2763; runner.py:280; plan.py:3093",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.update_plan;runner.revise_plan;plan.refresh"
+    "current_function": "plan.update_plan;runner.revise_plan;plan.refresh",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "plan_concept_permission",
@@ -3451,7 +3763,9 @@
     "recommended_canonical_name": "plan_concept_permission",
     "evidence": "plan.py:3053",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan._allowed"
+    "current_function": "plan._allowed",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "opponent_fold_constraint",
@@ -3473,7 +3787,9 @@
     "recommended_canonical_name": "opponent_fold_constraint",
     "evidence": "plan.py:512",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.select_field_opponent"
+    "current_function": "plan.select_field_opponent",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "opponent_trap_target",
@@ -3495,7 +3811,9 @@
     "recommended_canonical_name": "opponent_trap_target",
     "evidence": "plan.py:512; plan.py:471",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.select_field_opponent;plan.opp_bet_prob"
+    "current_function": "plan.select_field_opponent;plan.opp_bet_prob",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "field_effective_depth",
@@ -3517,7 +3835,9 @@
     "recommended_canonical_name": "field_effective_depth",
     "evidence": "plan.py:492",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.field_effective_stack_bb"
+    "current_function": "plan.field_effective_stack_bb",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "opponent_behavior_memory",
@@ -3539,7 +3859,9 @@
     "recommended_canonical_name": "opponent_behavior_memory",
     "evidence": "reads.py:136; reads.py:296; reads.py:320; reads.py:195",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads.Book.rec;reads.Book.observe_preflop;reads.Book.observe_postflop;reads.Book.observe_size"
+    "current_function": "reads.Book.rec;reads.Book.observe_preflop;reads.Book.observe_postflop;reads.Book.observe_size",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "preflop_raise_observation",
@@ -3561,7 +3883,9 @@
     "recommended_canonical_name": "preflop_raise_observation",
     "evidence": "reads.py:223; reads.py:211; reads.py:237; reads.py:255; reads.py:281",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads.Book.observe_3bet;reads.Book.observe_4bet;reads.Book.observe_backraise;reads.Book.observe_cold_reraise;reads.Book.observe_limp_raise"
+    "current_function": "reads.Book.observe_3bet;reads.Book.observe_4bet;reads.Book.observe_backraise;reads.Book.observe_cold_reraise;reads.Book.observe_limp_raise",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "showdown_strength_observation",
@@ -3583,7 +3907,9 @@
     "recommended_canonical_name": "showdown_strength_observation",
     "evidence": "reads.py:350; session.py:2672; dynamics.py:191",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads.Book.observe_showdown;session.HandRun._finish;dynamics.Tilt.note_showdown"
+    "current_function": "reads.Book.observe_showdown;session.HandRun._finish;dynamics.Tilt.note_showdown",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "opponent_estimation",
@@ -3605,7 +3931,9 @@
     "recommended_canonical_name": "opponent_estimation",
     "evidence": "reads.py:367; reads.py:360; reads.py:25",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads.estimate;reads._shrink;reads.obs_from_profile;reads.observation_accuracy_from_capabilities"
+    "current_function": "reads.estimate;reads._shrink;reads.obs_from_profile;reads.observation_accuracy_from_capabilities",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "opponent_concept_inference",
@@ -3627,7 +3955,9 @@
     "recommended_canonical_name": "opponent_concept_inference",
     "evidence": "reads.py:524; reads.py:559; reads.py:594; reads.py:643",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads.infer_latent;reads.estimate_concepts;reads.perceived_profile;reads.range_profile"
+    "current_function": "reads.infer_latent;reads.estimate_concepts;reads.perceived_profile;reads.range_profile",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "style_belief_reference",
@@ -3649,7 +3979,9 @@
     "recommended_canonical_name": "style_belief_reference",
     "evidence": "reads.py:765; reads.py:793; reads.py:820",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads.style_hypotheses;reads.concept_belief;reads.opponent_belief"
+    "current_function": "reads.style_hypotheses;reads.concept_belief;reads.opponent_belief",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "recency_window",
@@ -3671,7 +4003,9 @@
     "recommended_canonical_name": "recency_window",
     "evidence": "reads.py:66; reads.py:84",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads._append_hand_snapshot;reads._recent_record"
+    "current_function": "reads._append_hand_snapshot;reads._recent_record",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "exploit_read_permission",
@@ -3693,7 +4027,9 @@
     "recommended_canonical_name": "exploit_read_permission",
     "evidence": "persona.py:1091; persona.py:1107; persona.py:1142; persona.py:1283",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap;persona.interpret_opponent_action_signals;persona.opponent_read_application_weight"
+    "current_function": "persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap;persona.interpret_opponent_action_signals;persona.opponent_read_application_weight",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "opponent_sizing_normalization",
@@ -3715,7 +4051,9 @@
     "recommended_canonical_name": "opponent_sizing_normalization",
     "evidence": "persona.py:922; persona.py:1048",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.opp_size_norm;persona.size_read"
+    "current_function": "persona.opp_size_norm;persona.size_read",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "shown_hand_range_adjustment",
@@ -3737,7 +4075,9 @@
     "recommended_canonical_name": "shown_hand_range_adjustment",
     "evidence": "runner.py:318",
     "origin": "IMPLICIT_CODE",
-    "current_function": "runner.adjust_range_by_history"
+    "current_function": "runner.adjust_range_by_history",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "perceived_player_edge",
@@ -3759,7 +4099,9 @@
     "recommended_canonical_name": "perceived_player_edge",
     "evidence": "persona.py:947; preflop.py:147",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.perceived_edge;preflop.crude_edge"
+    "current_function": "persona.perceived_edge;preflop.crude_edge",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "accumulation_variance_drive",
@@ -3781,7 +4123,9 @@
     "recommended_canonical_name": "accumulation_variance_drive",
     "evidence": "persona.py:968; persona.py:1000",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.accum_drive;persona.variance_seek"
+    "current_function": "persona.accum_drive;persona.variance_seek",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "icm_exact_share",
@@ -3803,7 +4147,9 @@
     "recommended_canonical_name": "icm_exact_share",
     "evidence": "icm.py:118; icm.py:81; icm.py:6; icm.py:35",
     "origin": "IMPLICIT_CODE",
-    "current_function": "icm.icm_equity;icm._icm_equity_subset;icm._icm_equity_reference;icm._subset_path_prune_safe"
+    "current_function": "icm.icm_equity;icm._icm_equity_subset;icm._icm_equity_reference;icm._subset_path_prune_safe",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "icm_bubble_factor",
@@ -3825,7 +4171,9 @@
     "recommended_canonical_name": "icm_bubble_factor",
     "evidence": "icm.py:148; icm.py:306; play.py:156",
     "origin": "IMPLICIT_CODE",
-    "current_function": "icm.bubble_factor;icm.table_bf;play.Hand.bf"
+    "current_function": "icm.bubble_factor;icm.table_bf;play.Hand.bf",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "field_icm_proxy",
@@ -3847,7 +4195,9 @@
     "recommended_canonical_name": "field_icm_proxy",
     "evidence": "icm.py:269; icm.py:284; icm.py:296",
     "origin": "IMPLICIT_CODE",
-    "current_function": "icm.stage_pressure;icm.stack_pressure;icm.field_bf"
+    "current_function": "icm.stage_pressure;icm.stack_pressure;icm.field_bf",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "perceived_icm_pressure",
@@ -3869,7 +4219,9 @@
     "recommended_canonical_name": "perceived_icm_pressure",
     "evidence": "persona.py:775; persona.py:780; persona.py:789; persona.py:803",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.icm_signal;persona.icm_aware;persona.icm_bf;persona.icm_press"
+    "current_function": "persona.icm_signal;persona.icm_aware;persona.icm_bf;persona.icm_press",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "icm_required_equity_reference",
@@ -3891,7 +4243,9 @@
     "recommended_canonical_name": "icm_required_equity_reference",
     "evidence": "icm.py:165",
     "origin": "IMPLICIT_CODE",
-    "current_function": "icm.required_equity"
+    "current_function": "icm.required_equity",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "payout_jump_context",
@@ -3913,7 +4267,9 @@
     "recommended_canonical_name": "payout_jump_context",
     "evidence": "context.py:62; context.py:50; formats.py:109",
     "origin": "IMPLICIT_CODE",
-    "current_function": "context.money_jump_context;context.progress_of;formats.payouts"
+    "current_function": "context.money_jump_context;context.progress_of;formats.payouts",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "money_jump_seat_topology",
@@ -3935,7 +4291,9 @@
     "recommended_canonical_name": "money_jump_seat_topology",
     "evidence": "session.py:693",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._money_jump_observe"
+    "current_function": "session._money_jump_observe",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "payout_importance",
@@ -3957,7 +4315,9 @@
     "recommended_canonical_name": "payout_importance",
     "evidence": "money_pressure.py:58",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.payout_importance"
+    "current_function": "money_pressure.payout_importance",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "ladder_wait_buffer",
@@ -3979,7 +4339,9 @@
     "recommended_canonical_name": "ladder_wait_buffer",
     "evidence": "money_pressure.py:72; money_pressure.py:84; money_pressure.py:92",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.ladder_buffer;money_pressure.shorter_severity;money_pressure.waiting_feasibility"
+    "current_function": "money_pressure.ladder_buffer;money_pressure.shorter_severity;money_pressure.waiting_feasibility",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "money_self_preservation",
@@ -4001,7 +4363,9 @@
     "recommended_canonical_name": "money_self_preservation",
     "evidence": "money_pressure.py:110; money_pressure.py:118",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.objective_self_preservation;money_pressure.perceived_self_preservation"
+    "current_function": "money_pressure.objective_self_preservation;money_pressure.perceived_self_preservation",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "money_urgency",
@@ -4023,7 +4387,9 @@
     "recommended_canonical_name": "money_urgency",
     "evidence": "money_pressure.py:129; money_pressure.py:137",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.objective_urgency;money_pressure.perceived_urgency"
+    "current_function": "money_pressure.objective_urgency;money_pressure.perceived_urgency",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "stack_cover_pressure",
@@ -4045,7 +4411,9 @@
     "recommended_canonical_name": "stack_cover_pressure",
     "evidence": "money_pressure.py:145; money_pressure.py:157; money_pressure.py:178; money_pressure.py:210; money_pressure.py:166; money_pressure.py:192",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.cover_strength;money_pressure.topology_safety;money_pressure.structural_pressure;money_pressure.pressure_opportunity;money_pressure.exploit_realization;money_pressure.read_adjustment;money_pressure.pressure_application_capacity"
+    "current_function": "money_pressure.cover_strength;money_pressure.topology_safety;money_pressure.structural_pressure;money_pressure.pressure_opportunity;money_pressure.exploit_realization;money_pressure.read_adjustment;money_pressure.pressure_application_capacity",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "money_commitment_budget",
@@ -4067,7 +4435,9 @@
     "recommended_canonical_name": "money_commitment_budget",
     "evidence": "money_pressure.py:224; money_pressure.py:235",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.commitment_budget;money_pressure.low_commit_pressure"
+    "current_function": "money_pressure.commitment_budget;money_pressure.low_commit_pressure",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "money_open_range_modifier",
@@ -4089,7 +4459,9 @@
     "recommended_canonical_name": "money_open_range_modifier",
     "evidence": "money_pressure.py:240",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.unopened_modifiers"
+    "current_function": "money_pressure.unopened_modifiers",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "money_open_form_shadow",
@@ -4111,7 +4483,9 @@
     "recommended_canonical_name": "money_open_form_shadow",
     "evidence": "money_pressure.py:240",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.unopened_modifiers"
+    "current_function": "money_pressure.unopened_modifiers",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "sidepot_geometry",
@@ -4133,7 +4507,9 @@
     "recommended_canonical_name": "sidepot_geometry",
     "evidence": "session.py:324; session.py:480; session.py:642",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._decision_pot_layers;session._project_call_layers;session._project_bet_outcome_layers"
+    "current_function": "session._decision_pot_layers;session._project_call_layers;session._project_bet_outcome_layers",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "layer_expected_share",
@@ -4155,7 +4531,9 @@
     "recommended_canonical_name": "layer_expected_share",
     "evidence": "session.py:404",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._diagnostic_layer_equities"
+    "current_function": "session._diagnostic_layer_equities",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "layer_investment_ev",
@@ -4177,7 +4555,9 @@
     "recommended_canonical_name": "layer_investment_ev",
     "evidence": "session.py:502; session.py:552",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._layer_investment_summary;session._layer_call_summary"
+    "current_function": "session._layer_investment_summary;session._layer_call_summary",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "fold_call_bet_ev",
@@ -4199,7 +4579,9 @@
     "recommended_canonical_name": "fold_call_bet_ev",
     "evidence": "session.py:579; session.py:606",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session._perceived_fold_to_bet_probability;session._combine_fold_call_ev"
+    "current_function": "session._perceived_fold_to_bet_probability;session._combine_fold_call_ev",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "river_layer_bet_veto",
@@ -4221,7 +4603,9 @@
     "recommended_canonical_name": "river_layer_bet_veto",
     "evidence": "plan.py:1917",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.apply_layer_bet_ev_judgment"
+    "current_function": "plan.apply_layer_bet_ev_judgment",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "pot_award_settlement",
@@ -4243,7 +4627,9 @@
     "recommended_canonical_name": "pot_award_settlement",
     "evidence": "session.py:954",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session.award_pots"
+    "current_function": "session.award_pots",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "showdown_visibility",
@@ -4265,7 +4651,9 @@
     "recommended_canonical_name": "showdown_visibility",
     "evidence": "session.py:2672",
     "origin": "IMPLICIT_CODE",
-    "current_function": "session.HandRun._finish"
+    "current_function": "session.HandRun._finish",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "emotion_loss_shock",
@@ -4287,7 +4675,9 @@
     "recommended_canonical_name": "emotion_loss_shock",
     "evidence": "dynamics.py:90; dynamics.py:173",
     "origin": "IMPLICIT_CODE",
-    "current_function": "dynamics.Tilt.on_pot;dynamics.Tilt.on_fold_after_investing"
+    "current_function": "dynamics.Tilt.on_pot;dynamics.Tilt.on_fold_after_investing",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "emotion_streak_and_dry",
@@ -4309,7 +4699,9 @@
     "recommended_canonical_name": "emotion_streak_and_dry",
     "evidence": "dynamics.py:139",
     "origin": "IMPLICIT_CODE",
-    "current_function": "dynamics.Tilt.on_result"
+    "current_function": "dynamics.Tilt.on_result",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "emotion_recovery",
@@ -4331,7 +4723,9 @@
     "recommended_canonical_name": "emotion_recovery",
     "evidence": "dynamics.py:204; dynamics.py:216",
     "origin": "IMPLICIT_CODE",
-    "current_function": "dynamics.Tilt.on_hand_end;dynamics.Tilt.decay_all"
+    "current_function": "dynamics.Tilt.on_hand_end;dynamics.Tilt.decay_all",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "emotion_profile_view",
@@ -4353,7 +4747,9 @@
     "recommended_canonical_name": "emotion_profile_view",
     "evidence": "persona.py:866; persona.py:826; persona.py:850; play.py:147; play.py:137",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.tilted_view;persona.tilt_decay;persona.tilt_direction;play.Hand.axes;play.Hand.profile_views"
+    "current_function": "persona.tilted_view;persona.tilt_decay;persona.tilt_direction;play.Hand.axes;play.Hand.profile_views",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "persona_population_generation",
@@ -4375,7 +4771,9 @@
     "recommended_canonical_name": "persona_population_generation",
     "evidence": "persona.py:224; persona.py:207; persona.py:216; persona.py:285",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.make_player;persona._money_jump_skill;persona.skill_bounds;persona.derive"
+    "current_function": "persona.make_player;persona._money_jump_skill;persona.skill_bounds;persona.derive",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "display_skill_summary",
@@ -4397,7 +4795,9 @@
     "recommended_canonical_name": "display_skill_summary",
     "evidence": "persona.py:1296; persona.py:1311; persona.py:1328; persona.py:1335; persona.py:302",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.overall_skill;persona.skill_pct;persona.tier;persona.profile_card;persona.label"
+    "current_function": "persona.overall_skill;persona.skill_pct;persona.tier;persona.profile_card;persona.label",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "physical_button_rotation",
@@ -4419,7 +4819,9 @@
     "recommended_canonical_name": "physical_button_rotation",
     "evidence": "fieldsim.py:343; fieldsim.py:152; fieldsim.py:293; fieldsim.py:250",
     "origin": "IMPLICIT_CODE",
-    "current_function": "fieldsim.Table.advance_button;fieldsim.Table.restore_positions;fieldsim.Table.hand_layout;fieldsim.Table.reconcile_next_hand"
+    "current_function": "fieldsim.Table.advance_button;fieldsim.Table.restore_positions;fieldsim.Table.hand_layout;fieldsim.Table.reconcile_next_hand",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "field_table_balance",
@@ -4441,7 +4843,9 @@
     "recommended_canonical_name": "field_table_balance",
     "evidence": "fieldsim.py:801; fieldsim.py:414; fieldsim.py:406",
     "origin": "IMPLICIT_CODE",
-    "current_function": "fieldsim.Field._balance;fieldsim.Table.worst_open_seat;fieldsim.Table.broken_open_seats"
+    "current_function": "fieldsim.Field._balance;fieldsim.Table.worst_open_seat;fieldsim.Table.broken_open_seats",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "field_context_producer",
@@ -4463,7 +4867,9 @@
     "recommended_canonical_name": "field_context_producer",
     "evidence": "fieldsim.py:530; context.py:187; context.py:158",
     "origin": "IMPLICIT_CODE",
-    "current_function": "fieldsim.Field.stamp;context.Context.apply;context.erosion"
+    "current_function": "fieldsim.Field.stamp;context.Context.apply;context.erosion",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "parallel_round_isolation",
@@ -4485,7 +4891,9 @@
     "recommended_canonical_name": "parallel_round_isolation",
     "evidence": "live2.py:246; live2.py:304; live2.py:340",
     "origin": "IMPLICIT_CODE",
-    "current_function": "live2.compute_others_parallel;live2._overlay_parallel_dump;live2._merge_parallel_field"
+    "current_function": "live2.compute_others_parallel;live2._overlay_parallel_dump;live2._merge_parallel_field",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "replay_decision_cache",
@@ -4507,7 +4915,9 @@
     "recommended_canonical_name": "replay_decision_cache",
     "evidence": "live2.py:189; live2.py:558; session.py:1294",
     "origin": "IMPLICIT_CODE",
-    "current_function": "live2.build_hand;live2.step;session.HandRun._run"
+    "current_function": "live2.build_hand;live2.step;session.HandRun._run",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legacy_tournament_progress",
@@ -4529,7 +4939,9 @@
     "recommended_canonical_name": "legacy_tournament_progress",
     "evidence": "field.py:81; field.py:143; tourney.py:105",
     "origin": "IMPLICIT_CODE",
-    "current_function": "field.Field.step;field.Tables.reconcile;tourney.Tournament.next_hand"
+    "current_function": "field.Field.step;field.Tables.reconcile;tourney.Tournament.next_hand",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "telemetry_observation_only",
@@ -4551,7 +4963,9 @@
     "recommended_canonical_name": "telemetry_observation_only",
     "evidence": "telemetry_sync.py:242; telemetry_sync.py:286; live2.py:931; fieldsim.py:608",
     "origin": "IMPLICIT_CODE",
-    "current_function": "telemetry_sync.build_round_bundle;telemetry_sync.emit_round;live2._archive;fieldsim.Field._log_bot_hand"
+    "current_function": "telemetry_sync.build_round_bundle;telemetry_sync.emit_round;live2._archive;fieldsim.Field._log_bot_hand",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legacy_betting_range",
@@ -4573,7 +4987,9 @@
     "recommended_canonical_name": "legacy_betting_range",
     "evidence": "bot.py:437; bot.py:454",
     "origin": "IMPLICIT_CODE",
-    "current_function": "bot.betting_range;bot.equity_vs_betting"
+    "current_function": "bot.betting_range;bot.equity_vs_betting",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legacy_arch_types",
@@ -4595,7 +5011,9 @@
     "recommended_canonical_name": "legacy_arch_types",
     "evidence": "archetypes.py:58; archetypes.py:129; archetypes.py:72; archetypes.py:66",
     "origin": "IMPLICIT_CODE",
-    "current_function": "archetypes.axes;archetypes.concepts;archetypes.traits;archetypes.open_range"
+    "current_function": "archetypes.axes;archetypes.concepts;archetypes.traits;archetypes.open_range",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legacy_sidepot_helper",
@@ -4617,7 +5035,9 @@
     "recommended_canonical_name": "legacy_sidepot_helper",
     "evidence": "table.py:102",
     "origin": "IMPLICIT_CODE",
-    "current_function": "table.Table.sidepots"
+    "current_function": "table.Table.sidepots",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "legacy_icm_overridden",
@@ -4639,7 +5059,9 @@
     "recommended_canonical_name": "legacy_icm_overridden",
     "evidence": "icm.py:209",
     "origin": "IMPLICIT_CODE",
-    "current_function": "icm.field_bf (overwritten definition at line 209)"
+    "current_function": "icm.field_bf (overwritten definition at line 209)",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "dead_generic_error_rate",
@@ -4661,7 +5083,9 @@
     "recommended_canonical_name": "dead_generic_error_rate",
     "evidence": "persona.py:327",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.error_rate"
+    "current_function": "persona.error_rate",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "placeholder_gto_adaptation",
@@ -4683,7 +5107,9 @@
     "recommended_canonical_name": "placeholder_gto_adaptation",
     "evidence": "gto.py:132",
     "origin": "IMPLICIT_CODE",
-    "current_function": "gto.adapt_mult"
+    "current_function": "gto.adapt_mult",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_aggression",
@@ -4705,7 +5131,9 @@
     "recommended_canonical_name": "temperament_aggression",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_looseness",
@@ -4727,7 +5155,9 @@
     "recommended_canonical_name": "temperament_looseness",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_gamble",
@@ -4749,7 +5179,9 @@
     "recommended_canonical_name": "temperament_gamble",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_discipline",
@@ -4771,7 +5203,9 @@
     "recommended_canonical_name": "temperament_discipline",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_adaptability",
@@ -4793,7 +5227,9 @@
     "recommended_canonical_name": "temperament_adaptability",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_consistency",
@@ -4815,7 +5251,9 @@
     "recommended_canonical_name": "temperament_consistency",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_attention",
@@ -4837,7 +5275,9 @@
     "recommended_canonical_name": "temperament_attention",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_slowplay_taste",
@@ -4859,7 +5299,9 @@
     "recommended_canonical_name": "temperament_slowplay_taste",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_tilt_prone",
@@ -4881,7 +5323,9 @@
     "recommended_canonical_name": "temperament_tilt_prone",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_tilt_recovery",
@@ -4903,7 +5347,9 @@
     "recommended_canonical_name": "temperament_tilt_recovery",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_tilt_swing",
@@ -4925,7 +5371,9 @@
     "recommended_canonical_name": "temperament_tilt_swing",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "temperament_tilt_stack",
@@ -4947,7 +5395,9 @@
     "recommended_canonical_name": "temperament_tilt_stack",
     "evidence": "persona.py:224; persona.py:383",
     "origin": "EXPLICIT_TEMPERAMENT",
-    "current_function": "persona.make_player;persona.temper"
+    "current_function": "persona.make_player;persona.temper",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "current_board_split_share_shadow",
@@ -4969,7 +5419,9 @@
     "recommended_canonical_name": "current_board_split_share_shadow",
     "evidence": "plan.py:412",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan._eq_current"
+    "current_function": "plan._eq_current",
+    "parent_concept": "",
+    "code_span": ""
   },
   {
     "concept": "future_equity_sampling_provenance",
@@ -4991,6 +5443,1592 @@
     "recommended_canonical_name": "future_equity_sampling_provenance",
     "evidence": "plan.py:451",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan._eq_vs"
+    "current_function": "plan._eq_vs",
+    "parent_concept": "",
+    "code_span": ""
+  },
+  {
+    "concept": "perceived_board_danger",
+    "poker_meaning": "보드 완성 위험을 board_texture 숙련도만큼만 인식한 값",
+    "street": "flop turn river",
+    "category": "PERCEPTION",
+    "layer": "JUDGMENT",
+    "producer": "plan.make_plan",
+    "consumer": "plan.trap_judgment;plan.stackoff_plan;plan.bluff_mode;plan.make_plan value p2",
+    "function": "plan.make_plan",
+    "state_variables": "",
+    "inputs": "bot.board_danger(board), sk(board_texture)",
+    "output": "danger 0..1 (scaled)",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "state key \"danger\" holds the skill-scaled value after make_plan but the raw bot.board_danger after refresh; decide_size equity denial and make_plan p2 read raw danger. SPLIT raw_board_danger vs perceived_board_danger (behavior change: deferred)",
+    "recommended_canonical_name": "perceived_board_danger",
+    "evidence": "plan.make_plan: dang = bot.board_danger(board) .. dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan",
+    "parent_concept": "board_completion_danger",
+    "code_span": "plan.make_plan: dang = bot.board_danger(board) .. dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)"
+  },
+  {
+    "concept": "perceived_spr",
+    "poker_meaning": "SPR을 계산 오차(calc_noise)와 spr 숙련도에 따라 중립 5.0 쪽으로 흐리게 본 값",
+    "street": "flop turn river",
+    "category": "PERCEPTION",
+    "layer": "JUDGMENT",
+    "producer": "plan.make_plan",
+    "consumer": "plan.trap_judgment;plan.bluff_mode;state spr",
+    "function": "plan.make_plan",
+    "state_variables": "",
+    "inputs": "s_true=spr(stack,pot), calc_noise(spr), sk(spr)",
+    "output": "s (perceived)",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "same function also uses s_true (target_commit, value p2 context): two SPR views consumed by different questions; KEEP but name both",
+    "recommended_canonical_name": "perceived_spr",
+    "evidence": "plan.make_plan: s_true = spr(stack, pot) .. s = s*_sa + 5.0*(1.0 - _sa)",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan",
+    "parent_concept": "spr_ratio",
+    "code_span": "plan.make_plan: s_true = spr(stack, pot) .. s = s*_sa + 5.0*(1.0 - _sa)"
+  },
+  {
+    "concept": "potcontrol_disposition",
+    "poker_meaning": "팟컨트롤 성향 합성값 pc = (icm + (10-gamble) + (10-aggr))/30",
+    "street": "flop turn river",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "PLAN",
+    "producer": "plan.make_plan",
+    "consumer": "plan.make_plan pot_control probability",
+    "function": "plan.make_plan",
+    "state_variables": "",
+    "inputs": "profile icm, gamble, aggr",
+    "output": "pc 0..1",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "ARCH_MISMATCH: icm (knowledge skill) and gamble/aggr (temperament) summed into one motive scalar",
+    "recommended_canonical_name": "potcontrol_disposition",
+    "evidence": "plan.make_plan: pc = max(0.0, min(1.0, (profile['icm']",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan",
+    "parent_concept": "potcontrol_motive",
+    "code_span": "plan.make_plan: pc = max(0.0, min(1.0, (profile['icm']"
+  },
+  {
+    "concept": "value_when_called_strength",
+    "poker_meaning": "그 사이즈를 실제로 계속(콜/레이즈)할 상대 레인지 대비 내 강도 — \"콜당했을 때도 앞서는가\"",
+    "street": "flop turn river",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "plan.make_plan (commit_rel);plan.overbet_frac;plan.river_value_reassessment;plan.refresh (improved bluff)",
+    "consumer": "plan.target_commit;plan.stackoff_plan;overbet polarity;river thin value;bluff re-judgment",
+    "function": "plan.make_plan (commit_rel);plan.overbet_frac;plan.river_value_reassessment;plan.refresh (improved bluff)",
+    "state_variables": "",
+    "inputs": "R.perceived_continue_range(opp_range, board, street, size, profile), relative_strength/_eq_vs",
+    "output": "rel or equity vs continuing range",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "DUPLICATED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "same poker question answered four times with different metric/threshold: commit uses rel (min with full rel), overbet uses HU relative_strength at fixed 1.15 pot, river thin value uses equity >= 0.50, improved bluff uses equity >= 0.54 and rel >= 0.55. MERGE into one producer only with a behavior-change review (deferred)",
+    "recommended_canonical_name": "value_when_called_strength",
+    "evidence": "plan.make_plan: _commit_rel = rel .. _so['commit_rel']; plan.overbet_frac: if value_line and opp_range and board",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan (commit_rel);plan.overbet_frac;plan.river_value_reassessment;plan.refresh (improved bluff)",
+    "parent_concept": "continue_range_value",
+    "code_span": "plan.make_plan: _commit_rel = rel .. _so['commit_rel']; plan.overbet_frac: if value_line and opp_range and board"
+  },
+  {
+    "concept": "multiway_value_threshold_shift",
+    "poker_meaning": "상대 수가 늘면 3/2스트리트 밸류·중간강도 문턱을 올림(넛급 면제, 트립스 이상 절반)",
+    "street": "flop turn river",
+    "category": "REASONING",
+    "layer": "JUDGMENT",
+    "producer": "plan.make_plan",
+    "consumer": "make_plan plan ladder",
+    "function": "plan.make_plan",
+    "state_variables": "",
+    "inputs": "n_opp, made",
+    "output": "v3, v2, pcz",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "constants 0.06/0.07/0.06 per extra opponent; independent from joint equity already computed vs all pools (possible double count; behavior change deferred)",
+    "recommended_canonical_name": "multiway_value_threshold_shift",
+    "evidence": "plan.make_plan: mw = max(0, n_opp - 1) .. pcz = 0.50 + 0.06*mw",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan",
+    "parent_concept": "value_line_selection",
+    "code_span": "plan.make_plan: mw = max(0, n_opp - 1) .. pcz = 0.50 + 0.06*mw"
+  },
+  {
+    "concept": "read_value_threshold_shift",
+    "poker_meaning": "그 스트리트 폴드 성향 읽기로 밸류/블러프 문턱 이동(잘 접는 상대 → 밸류 문턱↑)",
+    "street": "flop turn river",
+    "category": "EXPLOIT / ADAPTATION",
+    "layer": "JUDGMENT",
+    "producer": "plan.make_plan",
+    "consumer": "make_plan plan ladder",
+    "function": "plan.make_plan",
+    "state_variables": "",
+    "inputs": "read_opponent(...).w, street_gap",
+    "output": "v3,v2,pcz shift",
+    "source_knowledge": "H/E",
+    "axis": "exploit",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES only when read weight w>0; neutral at baseline",
+    "duplicate_overload": "KEEP; exploit axis separate from baseline ladder",
+    "recommended_canonical_name": "read_value_threshold_shift",
+    "evidence": "plan.make_plan: if rd['w'] > 0: .. pcz += wq * 0.30 * sg",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan",
+    "parent_concept": "value_line_selection",
+    "code_span": "plan.make_plan: if rd['w'] > 0: .. pcz += wq * 0.30 * sg"
+  },
+  {
+    "concept": "bluff_evidence_composite",
+    "poker_meaning": "블러프 계획 근거 합성: bluff 숙련 × 블로커(강콤보) × 넛우위 × 다인원/뒤 인원 감쇠 × 순블로커 × 폴드성향",
+    "street": "flop turn river",
+    "category": "REASONING",
+    "layer": "PLAN",
+    "producer": "plan.make_plan;plan._blocker_score_bluff_factor;plan._blocker_net_bluff_factor",
+    "consumer": "plan.make_plan pure bluff gate",
+    "function": "plan.make_plan;plan._blocker_score_bluff_factor;plan._blocker_net_bluff_factor",
+    "state_variables": "",
+    "inputs": "profile bluff, blocker_score, blocker_effect, nut_adv, mw, to_act_behind, read",
+    "output": "bluff_ok",
+    "source_knowledge": "M/H/E",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "capability (bluff skill) multiplies evidence in one scalar; unlike preflop R3 it is a product (skill cannot replace evidence) but ability and evidence are still not separable in telemetry. SPLIT bluff_evidence vs bluff_execution_skill (semantic-only possible)",
+    "recommended_canonical_name": "bluff_evidence_composite",
+    "evidence": "plan.make_plan: bluff_ok = (profile['bluff']/10.0) .. bluff_ok *= max(0.25, 1.0 + rd['w']",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan;plan._blocker_score_bluff_factor;plan._blocker_net_bluff_factor",
+    "parent_concept": "pure_bluff_line_selection",
+    "code_span": "plan.make_plan: bluff_ok = (profile['bluff']/10.0) .. bluff_ok *= max(0.25, 1.0 + rd['w']"
+  },
+  {
+    "concept": "relative_strength_value_threshold_shift",
+    "poker_meaning": "밸류 분류는 eq(미래 포함)로 하되 rel(현재 not-behind)이 낮으면 문턱을 올리고 넛급이면 낮춤",
+    "street": "flop turn river",
+    "category": "REASONING",
+    "layer": "JUDGMENT",
+    "producer": "plan.make_plan",
+    "consumer": "make_plan plan ladder",
+    "function": "plan.make_plan",
+    "state_variables": "",
+    "inputs": "rel",
+    "output": "v3, v2 shift",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "value ladder compares eq (runout share incl. draws) while rel adjusts the bar: two strength notions mixed in one classifier; KEEP, documented in RANGE/CALC split",
+    "recommended_canonical_name": "relative_strength_value_threshold_shift",
+    "evidence": "plan.make_plan: if rel <= 0.45: .. v2 += 0.08 * _pen",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan",
+    "parent_concept": "value_line_selection",
+    "code_span": "plan.make_plan: if rel <= 0.45: .. v2 += 0.08 * _pen"
+  },
+  {
+    "concept": "showdown_value_predicate",
+    "poker_meaning": "쇼다운 가치 있음 = made>=1 또는 equity >= 0.42+0.05*mw",
+    "street": "flop turn river",
+    "category": "REASONING",
+    "layer": "JUDGMENT",
+    "producer": "plan.has_showdown_value",
+    "consumer": "plan.make_plan pot_control/showdown/giveup routing",
+    "function": "plan.has_showdown_value",
+    "state_variables": "",
+    "inputs": "made, eq or eq_current, mw",
+    "output": "bool",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "DUPLICATED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "three variants in make_plan: medium band uses eq (future equity), final else uses eq_current, pure-bluff gate uses eq_current < 0.42 without mw. Extracted as plan.has_showdown_value(made, equity, mw) with the equity basis explicit; the eq vs eq_current inconsistency is a deferred semantic-fix",
+    "recommended_canonical_name": "plan.has_showdown_value",
+    "evidence": "plan.make_plan: _sd_eq = eq_cur .. ; _sd_here = ..; has_sd = ..",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.has_showdown_value",
+    "parent_concept": "potcontrol_motive",
+    "code_span": "plan.make_plan: _sd_eq = eq_cur .. ; _sd_here = ..; has_sd = .."
+  },
+  {
+    "concept": "medium_strength_merge_value",
+    "poker_meaning": "중간 강도(pcz 구간)에서 range_merge 숙련도가 높으면 얇은 2스트리트 밸류로 머지",
+    "street": "flop turn",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan.make_plan",
+    "consumer": "plan intents",
+    "function": "plan.make_plan",
+    "state_variables": "",
+    "inputs": "rel, made, sk(range_merge)",
+    "output": "value_2street",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "flop thin value reads range_merge (street_concept thin_value/flop); KEEP",
+    "recommended_canonical_name": "medium_strength_merge_value",
+    "evidence": "plan.make_plan: elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.make_plan",
+    "parent_concept": "range_merge",
+    "code_span": "plan.make_plan: elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1"
+  },
+  {
+    "concept": "monster_made_hand_raise",
+    "poker_meaning": "넛급(made>=5) + eq>need+0.10 이면 계획과 무관하게 레이즈 확률을 굴림(페어보드 플러시 감산)",
+    "street": "flop turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "JUDGMENT",
+    "producer": "plan.decide_response",
+    "consumer": "plan.act_with_plan",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "made_now, eq, need, rel(recomputed), board_paired, aggr, gamble, sk(reraise)",
+    "output": "raise/call/fold",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "plan-independent branch evaluated before the value branch; uses board-relative made category, not continue-range strength",
+    "recommended_canonical_name": "monster_made_hand_raise",
+    "evidence": "plan.decide_response: if made_now >= 5 and eq > need + 0.10 .. return 'call', 0.0, (_cf_need if _layer_call else need), '넛급이나",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "response_plan",
+    "code_span": "plan.decide_response: if made_now >= 5 and eq > need + 0.10 .. return 'call', 0.0, (_cf_need if _layer_call else need), '넛급이나"
+  },
+  {
+    "concept": "value_raise_sizing_from_commit",
+    "poker_meaning": "밸류 레이즈 배수: 목표 커밋(stack*commit)과 현재 콜 금액 차이로 0.75~1.6",
+    "street": "flop turn river",
+    "category": "EXECUTION FORM",
+    "layer": "PLAN",
+    "producer": "plan.decide_response",
+    "consumer": "act_with_plan raise target",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "stackoff.commit, stack, tocall",
+    "output": "mult",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "value_raise_sizing_from_commit",
+    "evidence": "plan.decide_response: _so = plan_state.get('stackoff') or {} .. mult = max(0.75, min(1.6",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "target_investment_fraction",
+    "code_span": "plan.decide_response: _so = plan_state.get('stackoff') or {} .. mult = max(0.75, min(1.6"
+  },
+  {
+    "concept": "value_raise_qualification",
+    "poker_meaning": "밸류 레이즈 자격: eq > N-way fair share, HU면 제안 레이즈를 계속할 레인지 대비 eq > 0.5",
+    "street": "flop turn river",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "plan.decide_response",
+    "consumer": "value raise branch",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "eq, n_opp, perceived_continue_range at candidate price",
+    "output": "ok + continue_eq",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "multiway only checks fair share (no continue-range test): street/opponent-count asymmetry, deferred",
+    "recommended_canonical_name": "value_raise_qualification",
+    "evidence": "plan.decide_response: _fair_share = 1.0 / max(2.0 .. (_use_eq, _use_need))",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "value_when_called_strength",
+    "code_span": "plan.decide_response: _fair_share = 1.0 / max(2.0 .. (_use_eq, _use_need))"
+  },
+  {
+    "concept": "value_raise_frequency",
+    "poker_meaning": "자격을 통과한 밸류 레이즈의 실행 확률(reraise 숙련, 커밋, 공격성, value2 감산, rel 하한)",
+    "street": "flop turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan.decide_response",
+    "consumer": "act_with_plan",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "sk(reraise), sk(stackoff), committed, aggr, rel_ps",
+    "output": "raise prob",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "value_raise_frequency",
+    "evidence": "plan.decide_response: p = 0.20 + 0.55*rr .. return 'call', 0.0, (_cf_need if _layer_call else need), '밸류이나",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "response_plan",
+    "code_span": "plan.decide_response: p = 0.20 + 0.55*rr .. return 'call', 0.0, (_cf_need if _layer_call else need), '밸류이나"
+  },
+  {
+    "concept": "bluff_reraise_frequency",
+    "poker_meaning": "블러프 계획(쇼다운가치 made<2) + eq<need-0.05 일 때 EV gate 통과 후 reraise×bluff 숙련으로 레이즈",
+    "street": "flop turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan.decide_response",
+    "consumer": "act_with_plan",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "sk(reraise), sk(bluff), nonvalue EV gate",
+    "output": "raise",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "skill product is frequency, evidence is the EV gate: separated correctly",
+    "recommended_canonical_name": "bluff_reraise_frequency",
+    "evidence": "plan.decide_response: if allow_raise and has_c and eq < need - 0.05 and plan in .. '블러프 레이즈",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "nonvalue_raise_ev_gate",
+    "code_span": "plan.decide_response: if allow_raise and has_c and eq < need - 0.05 and plan in .. '블러프 레이즈"
+  },
+  {
+    "concept": "semibluff_raise_frequency",
+    "poker_meaning": "세미블러프(아웃 8+, 리버 제외) 레이즈 확률과 EV gate",
+    "street": "flop turn",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan.decide_response",
+    "consumer": "act_with_plan",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "sk(semibluff), sk(reraise), aggression, EV gate",
+    "output": "raise",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "semibluff_raise_frequency",
+    "evidence": "plan.decide_response: if plan == 'semibluff' and plan_state.get('outs', 0) >= 8 .. '세미블러프 레이즈",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "semibluff_line_selection",
+    "code_span": "plan.decide_response: if plan == 'semibluff' and plan_state.get('outs', 0) >= 8 .. '세미블러프 레이즈"
+  },
+  {
+    "concept": "implied_odds_adjustment",
+    "poker_meaning": "드로우 콜의 내재 오즈: 남은 스택/팟 비율과 outs·potodds 숙련으로 필요 승률을 최대 0.12 낮춤",
+    "street": "flop turn",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "plan.decide_response",
+    "consumer": "semibluff call/fold",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "stack, pot, sk(outs), sk(potodds)",
+    "output": "need reduction",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "heuristic implied odds (no future-street EV model); only reachable from semibluff plan",
+    "recommended_canonical_name": "implied_odds_adjustment",
+    "evidence": "plan.decide_response: if stack > pot: .. _cf_need = max(0.02, _cf_need - implied)",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "calldown_required_share",
+    "code_span": "plan.decide_response: if stack > pot: .. _cf_need = max(0.02, _cf_need - implied)"
+  },
+  {
+    "concept": "giveup_deviation_raise",
+    "poker_meaning": "포기 계획인데 규율이 낮으면 EV gate를 통과한 블러프 레이즈로 계획을 뒤집음",
+    "street": "flop turn river",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "PLAN",
+    "producer": "plan.decide_response",
+    "consumer": "act_with_plan",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "discipline, sk(reraise), sk(bluff), EV gate",
+    "output": "raise (deviation)",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "deviation recorded in plan_state.deviations; KEEP",
+    "recommended_canonical_name": "giveup_deviation_raise",
+    "evidence": "plan.decide_response: if plan == 'giveup' and has_c and eq < need - 0.05 .. 'DEVIATE:포기 계획 뒤집은",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "response_plan",
+    "code_span": "plan.decide_response: if plan == 'giveup' and has_c and eq < need - 0.05 .. 'DEVIATE:포기 계획 뒤집은"
+  },
+  {
+    "concept": "price_overrides_giveup_plan",
+    "poker_meaning": "포기/블러프 계획이어도 eq>=need면 콜, 아니면 폴드(계획이 팟오즈 부등호를 덮지 못함)",
+    "street": "flop turn river",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "plan.decide_response",
+    "consumer": "act_with_plan",
+    "function": "plan.decide_response",
+    "state_variables": "",
+    "inputs": "eq/need or layer call eq/need",
+    "output": "call/fold",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "price_overrides_giveup_plan",
+    "evidence": "plan.decide_response: if plan in ('bluff_2street', 'giveup', 'river_bluff'):",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_response",
+    "parent_concept": "response_plan",
+    "code_span": "plan.decide_response: if plan in ('bluff_2street', 'giveup', 'river_bluff'):"
+  },
+  {
+    "concept": "giveup_initiative_stab_deviation",
+    "poker_meaning": "포기/쇼다운 계획이라도 이니셔티브가 있으면 cbet/지연cbet 빈도×(1-0.085·규율)로 지속벳",
+    "street": "flop turn river",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "PLAN",
+    "producer": "plan.decide_aggression",
+    "consumer": "plan.attach_intent",
+    "function": "plan.decide_aggression",
+    "state_variables": "",
+    "inputs": "cbet_freq, delayed boost, discipline",
+    "output": "bet prob (DEVIATE)",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "giveup_initiative_stab_deviation",
+    "evidence": "plan.decide_aggression: if plan in ('giveup', 'showdown'): .. 'DEVIATE:포기 계획이나",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_aggression",
+    "parent_concept": "flop_cbet_plan",
+    "code_span": "plan.decide_aggression: if plan in ('giveup', 'showdown'): .. 'DEVIATE:포기 계획이나"
+  },
+  {
+    "concept": "bluff_execution_frequency",
+    "poker_meaning": "블러프/세미블러프 계획의 실제 벳 확률: 뒤 2명 이상 포기, 공격 성향 기본값, 폴드성향 읽기, 턴카드, 다인원 감쇠",
+    "street": "flop turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan.decide_aggression",
+    "consumer": "plan.attach_intent",
+    "function": "plan.decide_aggression",
+    "state_variables": "",
+    "inputs": "bluff, gamble, sk(fold_equity), read street gap, turn_card_effect, sk(multiway), n_opp",
+    "output": "bet prob",
+    "source_knowledge": "H/E",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "turn/river share the body; turn-card term uses the last card on river too",
+    "recommended_canonical_name": "bluff_execution_frequency",
+    "evidence": "plan.decide_aggression: if plan in ('bluff_2street', 'semibluff', 'river_bluff'): .. return _fp, '블러프 계획 실행",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_aggression",
+    "parent_concept": "pure_bluff_line_selection",
+    "code_span": "plan.decide_aggression: if plan in ('bluff_2street', 'semibluff', 'river_bluff'): .. return _fp, '블러프 계획 실행"
+  },
+  {
+    "concept": "donk_suppression",
+    "poker_meaning": "알려진 어그레서가 뒤에 있을 때 이니셔티브 없는 블러프 리드(동크) 억제; 드로우·프로브 예외",
+    "street": "flop turn river",
+    "category": "REASONING",
+    "layer": "PLAN",
+    "producer": "plan.decide_aggression",
+    "consumer": "bluff execution prob",
+    "function": "plan.decide_aggression",
+    "state_variables": "",
+    "inputs": "oop_vs_aggr, initiative, aggr, bluff, outs, sk(probe), opp_checked_prev",
+    "output": "multiplier",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "DUPLICATED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "\"do not lead into the live aggressor\" is implemented three ways: bluff plans (this suppression 0.03..0.70), pot_control (fixed 0.04), value plans (line-ownership relead 0.04..0.16). Same poker question, three producers; MERGE needs behavior review",
+    "recommended_canonical_name": "lead_into_aggressor_policy",
+    "evidence": "plan.decide_aggression: if not initiative and _oop_a: .. p *= max(0.03, 1.0 - max(0.30",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_aggression",
+    "parent_concept": "aggressor_relative_position",
+    "code_span": "plan.decide_aggression: if not initiative and _oop_a: .. p *= max(0.03, 1.0 - max(0.30"
+  },
+  {
+    "concept": "value_bet_execution_frequency",
+    "poker_meaning": "밸류 계획의 무저항 벳 확률: 공격성·도박성, 지연cbet 배수, rel<0.85면 thin_value 숙련, 리버 감산, rel 곡선",
+    "street": "flop turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan.decide_aggression",
+    "consumer": "plan.attach_intent",
+    "function": "plan.decide_aggression",
+    "state_variables": "",
+    "inputs": "aggr, gamble, sk(thin_value_<street>), rel",
+    "output": "bet prob",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "flop thin value maps to range_merge via street_concept",
+    "recommended_canonical_name": "value_bet_execution_frequency",
+    "evidence": "plan.decide_aggression: p = 0.30 + 0.058*a .. p *= (0.35 + 0.65 * (rel/0.80) ** 0.8)",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_aggression",
+    "parent_concept": "value_line_selection",
+    "code_span": "plan.decide_aggression: p = 0.30 + 0.058*a .. p *= (0.35 + 0.65 * (rel/0.80) ** 0.8)"
+  },
+  {
+    "concept": "value_blocker_size_adjust",
+    "poker_meaning": "밸류 계획에서 콜할 콤보를 지웠으면 작게, 접을 콤보를 지웠으면 크게(0.75~1.25배)",
+    "street": "flop turn river",
+    "category": "CALCULATION",
+    "layer": "PLAN",
+    "producer": "plan.decide_size",
+    "consumer": "bet size",
+    "function": "plan.decide_size",
+    "state_variables": "",
+    "inputs": "stackoff._blk_net",
+    "output": "size multiplier",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "value_blocker_size_adjust",
+    "evidence": "plan.decide_size: if base > 0 and plan in ('value_3street', 'value_2street', 'trap', 'thin_river'): .. base *= max(0.75, min(1.25",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_size",
+    "parent_concept": "continue_fold_blocker",
+    "code_span": "plan.decide_size: if base > 0 and plan in ('value_3street', 'value_2street', 'trap', 'thin_river'): .. base *= max(0.75, min(1.25"
+  },
+  {
+    "concept": "deviation_bet_size_fallback",
+    "poker_meaning": "사이즈 표가 0인 계획(giveup/showdown)을 이탈해서 칠 때 쓰는 기본 사이즈",
+    "street": "flop turn river",
+    "category": "EXECUTION FORM",
+    "layer": "ACTION",
+    "producer": "plan.decide_size",
+    "consumer": "bet size",
+    "function": "plan.decide_size",
+    "state_variables": "",
+    "inputs": "street, deviating",
+    "output": "size",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "deviation_bet_size_fallback",
+    "evidence": "plan.decide_size: if base <= 0: .. base = {'flop': 0.50",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_size",
+    "parent_concept": "planned_bet_sizing",
+    "code_span": "plan.decide_size: if base <= 0: .. base = {'flop': 0.50"
+  },
+  {
+    "concept": "weak_hand_size_shrink",
+    "poker_meaning": "rel<0.45면 사이즈 0.8배(merged 위장 블러프는 면제) — 사이즈 텔이 생기는 통로",
+    "street": "flop turn river",
+    "category": "EXECUTION FORM",
+    "layer": "ACTION",
+    "producer": "plan.decide_size",
+    "consumer": "bet size",
+    "function": "plan.decide_size",
+    "state_variables": "",
+    "inputs": "rel, bluff_mode",
+    "output": "size multiplier",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "creates a strength tell by design; KEEP",
+    "recommended_canonical_name": "weak_hand_size_shrink",
+    "evidence": "plan.decide_size: if rel < 0.45 and _bm != 'merged':",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_size",
+    "parent_concept": "planned_bet_sizing",
+    "code_span": "plan.decide_size: if rel < 0.45 and _bm != 'merged':"
+  },
+  {
+    "concept": "plan_size_band_clamp",
+    "poker_meaning": "계획 목적별 사이즈 대역: thin_river [0.25,0.50], block [0.18,0.40]; 오버벳 경로 차단",
+    "street": "turn river",
+    "category": "EXECUTION FORM",
+    "layer": "ACTION",
+    "producer": "plan.decide_size",
+    "consumer": "bet size",
+    "function": "plan.decide_size",
+    "state_variables": "",
+    "inputs": "plan",
+    "output": "clamped size",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "plan_size_band_clamp",
+    "evidence": "plan.decide_size: if plan == 'thin_river': .. return max(0.18, min(0.40, base))",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.decide_size",
+    "parent_concept": "planned_bet_sizing",
+    "code_span": "plan.decide_size: if plan == 'thin_river': .. return max(0.18, min(0.40, base))"
+  },
+  {
+    "concept": "response_equity_basis",
+    "poker_meaning": "벳/레이즈를 맞았을 때 쓰는 equity의 출처 3단계: seat 풀 → (풀 없음) 현재 벳 이벤트로 좁힌 레인지+사이즈 습관 보정 → (레인지 없음) legacy equity_vs_betting",
+    "street": "flop turn river",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "plan.act_with_plan",
+    "consumer": "plan.decide_response;plan.checkraise_decision",
+    "function": "plan.act_with_plan",
+    "state_variables": "",
+    "inputs": "opp pools, opp_range, opp_est.sz_mean, size_info, profile bluff (legacy)",
+    "output": "eq",
+    "source_knowledge": "M/E",
+    "axis": "reasoning",
+    "runtime_status": "FALLBACK",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "tier 2/3 are fallbacks; tier 3 uses the actor's own bluff axis as the opponent model (self-projection) and fixed callers (0.30,5)",
+    "recommended_canonical_name": "response_equity_basis",
+    "evidence": "plan.act_with_plan: if tocall > 0: .. eq = bot.equity_vs_betting(",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.act_with_plan",
+    "parent_concept": "showdown_equity_share",
+    "code_span": "plan.act_with_plan: if tocall > 0: .. eq = bot.equity_vs_betting("
+  },
+  {
+    "concept": "spr_commitment_flag",
+    "poker_meaning": "SPR<1.2 이면 커밋 구간으로 보고 밸류 레이즈 확률 +0.25, 낮은 stackoff 숙련이면 절반",
+    "street": "flop turn river",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "plan.act_with_plan",
+    "consumer": "plan.decide_response",
+    "function": "plan.act_with_plan",
+    "state_variables": "",
+    "inputs": "stack, pot",
+    "output": "committed bool",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "distinct from runner.effective_allin_v1 (post-action residual) and target_commit",
+    "recommended_canonical_name": "spr_commitment_flag",
+    "evidence": "plan.act_with_plan: committed = spr(stack, pot) < 1.2",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.act_with_plan",
+    "parent_concept": "spr_ratio",
+    "code_span": "plan.act_with_plan: committed = spr(stack, pot) < 1.2"
+  },
+  {
+    "concept": "raise_target_coordinate",
+    "poker_meaning": "레이즈 배수를 street 총 기여 좌표 target으로 환산, call target 이하이면 콜로 강등",
+    "street": "flop turn river",
+    "category": "EXECUTION FORM",
+    "layer": "ACTION",
+    "producer": "plan.act_with_plan",
+    "consumer": "session.HandRun._run",
+    "function": "plan.act_with_plan",
+    "state_variables": "",
+    "inputs": "pot, tocall, mult, hero_contrib, stack",
+    "output": "raise target",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "raise_target_coordinate",
+    "evidence": "plan.act_with_plan: if act == 'raise': .. return ('raise', int(amt)), eq, need",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.act_with_plan",
+    "parent_concept": "legal_action_application",
+    "code_span": "plan.act_with_plan: if act == 'raise': .. return ('raise', int(amt)), eq, need"
+  },
+  {
+    "concept": "intent_chip_conversion",
+    "poker_meaning": "무저항 의도(팟 비율)를 100칩 단위 금액으로 환산, 0이 되면 체크로 기록",
+    "street": "flop turn river",
+    "category": "EXECUTION FORM",
+    "layer": "ACTION",
+    "producer": "plan.act_with_plan",
+    "consumer": "session.HandRun._run",
+    "function": "plan.act_with_plan",
+    "state_variables": "",
+    "inputs": "intent size, pot, stack",
+    "output": "bet amount",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "intent_chip_conversion",
+    "evidence": "plan.act_with_plan: it = intent_of(plan_state, street) .. return ('bet', int(amt)), None, None",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.act_with_plan",
+    "parent_concept": "aggression_intent_sampling",
+    "code_span": "plan.act_with_plan: it = intent_of(plan_state, street) .. return ('bet', int(amt)), None, None"
+  },
+  {
+    "concept": "players_behind_risk_premium",
+    "poker_meaning": "뒤에 남은 플레이어 위험: 필요승률에 (1-need_base)*min(0.18, 0.06*n) 가산",
+    "street": "preflop flop turn river",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "icm.players_behind_required_equity_premium",
+    "consumer": "plan.calldown_need;preflop.multiway_reraise_decision",
+    "function": "icm.players_behind_required_equity_premium",
+    "state_variables": "",
+    "inputs": "need_base, n_behind",
+    "output": "need increment",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "was DUPLICATED (identical formula in plan.calldown_need and preflop.multiway_reraise_decision); merged into one bit-identical helper",
+    "recommended_canonical_name": "icm.players_behind_required_equity_premium",
+    "evidence": "plan.calldown_need: if to_act_behind:; preflop.multiway_reraise_decision: if players_behind:",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "icm.players_behind_required_equity_premium",
+    "parent_concept": "calldown_required_share",
+    "code_span": "plan.calldown_need: if to_act_behind:; preflop.multiway_reraise_decision: if players_behind:"
+  },
+  {
+    "concept": "value_degradation_thresholds",
+    "poker_meaning": "밸류 계획 강등: rel<ctrl(0.30)·give(0.12) 문턱(폴드성향 읽기·턴카드로 이동)으로 pot_control/giveup, value3는 rel<0.62면 value2",
+    "street": "turn river",
+    "category": "REASONING",
+    "layer": "PLAN",
+    "producer": "plan.refresh",
+    "consumer": "plan.update_plan",
+    "function": "plan.refresh",
+    "state_variables": "",
+    "inputs": "rel, made, read street gap, turn_card_effect, sk(board_texture)",
+    "output": "plan",
+    "source_knowledge": "H/E",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "turn_card_effect also used by decide_aggression with a different aggressor flag",
+    "recommended_canonical_name": "value_degradation_thresholds",
+    "evidence": "plan.refresh: give_thr, ctrl_thr = 0.12, 0.30 .. why.append('%s: 상대강도 %.2f → 3스트리트 철회",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.refresh",
+    "parent_concept": "plan_revision_lifecycle",
+    "code_span": "plan.refresh: give_thr, ctrl_thr = 0.12, 0.30 .. why.append('%s: 상대강도 %.2f → 3스트리트 철회"
+  },
+  {
+    "concept": "semibluff_draw_loss_resolution",
+    "poker_meaning": "턴에 아웃이 6 미만이 된 세미블러프: 완성(draw_completion_supports_value)이면 밸류, 투페어+면 쇼다운, 아니면 포기",
+    "street": "turn",
+    "category": "REASONING",
+    "layer": "PLAN",
+    "producer": "plan.refresh",
+    "consumer": "plan.update_plan",
+    "function": "plan.refresh",
+    "state_variables": "",
+    "inputs": "outs, made, rel",
+    "output": "plan",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "made>=2 showdown branch shares the paired-board ambiguity of R5c (board pair counts)",
+    "recommended_canonical_name": "semibluff_draw_loss_resolution",
+    "evidence": "plan.refresh: elif old == 'semibluff' and outs < 6 and street != 'river': .. why.append('%s: 드로우 소멸(%d아웃) → 포기",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.refresh",
+    "parent_concept": "draw_completion_value_gate",
+    "code_span": "plan.refresh: elif old == 'semibluff' and outs < 6 and street != 'river': .. why.append('%s: 드로우 소멸(%d아웃) → 포기"
+  },
+  {
+    "concept": "giveup_reentry_on_improvement",
+    "poker_meaning": "포기 계획이 rel>=0.55 또는 made>=2가 되면 value2/쇼다운으로 복귀",
+    "street": "turn river",
+    "category": "REASONING",
+    "layer": "PLAN",
+    "producer": "plan.refresh",
+    "consumer": "plan.update_plan",
+    "function": "plan.refresh",
+    "state_variables": "",
+    "inputs": "rel, made",
+    "output": "plan",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "made>=2 / made>=3 can be produced by a paired board (same known issue as R5c / HAND 63); deferred semantic-fix (behavior change)",
+    "recommended_canonical_name": "giveup_reentry_on_improvement",
+    "evidence": "plan.refresh: elif old == 'giveup' and (rel >= 0.55 or made >= 2):",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.refresh",
+    "parent_concept": "plan_revision_lifecycle",
+    "code_span": "plan.refresh: elif old == 'giveup' and (rel >= 0.55 or made >= 2):"
+  },
+  {
+    "concept": "improved_bluff_rejudgment",
+    "poker_meaning": "블러프 계획이 made>=1 또는 rel>=0.75가 되면 계속 레인지 대비 eq>=0.54 & rel>=0.55일 때만 밸류, 아니면 쇼다운",
+    "street": "turn river",
+    "category": "REASONING",
+    "layer": "PLAN",
+    "producer": "plan.refresh",
+    "consumer": "plan.update_plan",
+    "function": "plan.refresh",
+    "state_variables": "",
+    "inputs": "perceived_continue_range at value_2street size, _eq_vs, rel",
+    "output": "plan",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "member of value_when_called_strength duplicate family (0.54 threshold)",
+    "recommended_canonical_name": "improved_bluff_rejudgment",
+    "evidence": "plan.refresh: elif old == 'bluff_2street' and ( .. ' 콜 레인지 상대 eq %.2f → 밸류 아님, 쇼다운'",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.refresh",
+    "parent_concept": "value_when_called_strength",
+    "code_span": "plan.refresh: elif old == 'bluff_2street' and ( .. ' 콜 레인지 상대 eq %.2f → 밸류 아님, 쇼다운'"
+  },
+  {
+    "concept": "value2_budget_exhaustion_upgrade",
+    "poker_meaning": "value_2street 예산을 다 쓴 뒤 made가 실제로 오르고 rel>=max(0.85, 이전 rel)이면 value_3street로 승격",
+    "street": "river",
+    "category": "REASONING",
+    "layer": "PLAN",
+    "producer": "plan.refresh",
+    "consumer": "plan.update_plan",
+    "function": "plan.refresh",
+    "state_variables": "",
+    "inputs": "made, prev made, rel, prev rel, budget_left",
+    "output": "plan",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "uses made increase; paired-board increases are filtered only by rel>=0.85",
+    "recommended_canonical_name": "value2_budget_exhaustion_upgrade",
+    "evidence": "plan.refresh: elif (old == 'value_2street' .. why.append('%s: 예산 소진 후 강도 상승",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.refresh",
+    "parent_concept": "plan_revision_lifecycle",
+    "code_span": "plan.refresh: elif (old == 'value_2street' .. why.append('%s: 예산 소진 후 강도 상승"
+  },
+  {
+    "concept": "preflop_decision_routing",
+    "poker_meaning": "프리플랍 판단 경로 선택: 오픈 / 아이소 / cold 재레이즈 / multiway backaction / 일반 디펜스",
+    "street": "preflop",
+    "category": "REASONING",
+    "layer": "JUDGMENT",
+    "producer": "plan.preflop_plan",
+    "consumer": "preflop.open_decision;preflop.iso_decision;preflop.cold_reraise_decision;preflop.multiway_reraise_decision;preflop.defend_decision",
+    "function": "plan.preflop_plan",
+    "state_variables": "",
+    "inputs": "aggressor_pos, n_limpers, raise_level, prior_pf, opener_allin, can_raise, cold_context, opp_ranges, pot_layers",
+    "output": "routed action",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "locked all-in seats are derived here from pot_layers for R3",
+    "recommended_canonical_name": "preflop_decision_routing",
+    "evidence": "plan.preflop_plan: if aggressor_pos is None and not n_limpers: .. role = 'defend'",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.preflop_plan",
+    "parent_concept": "unopened_decision",
+    "code_span": "plan.preflop_plan: if aggressor_pos is None and not n_limpers: .. role = 'defend'"
+  },
+  {
+    "concept": "preflop_decision_class",
+    "poker_meaning": "이번 프리플랍 판단 사건의 종류(unopened, face_first_open, cold_vs_reraise, opener/caller/reraiser backaction, multiway backaction)",
+    "street": "preflop",
+    "category": "FACT",
+    "layer": "JUDGMENT",
+    "producer": "plan.preflop_plan",
+    "consumer": "pf_seed.pf_decision_kind → session range story, telemetry",
+    "function": "plan.preflop_plan",
+    "state_variables": "",
+    "inputs": "aggressor_pos, prior_pf, raise_level, cold audit",
+    "output": "decision kind",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "preflop_decision_class",
+    "evidence": "plan.preflop_plan: _prev = dict(prior_pf or {}) .. _decision_kind = 'reraiser_backaction'",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.preflop_plan",
+    "parent_concept": "preflop_public_roles",
+    "code_span": "plan.preflop_plan: _prev = dict(prior_pf or {}) .. _decision_kind = 'reraiser_backaction'"
+  },
+  {
+    "concept": "preflop_read_width_exploit",
+    "poker_meaning": "상대 프리플랍 성향 읽기로 3벳/콜 폭(tp, tot) 이동: 오픈 대면은 open_gap/f2tb/fb_gap, 재레이즈 대면은 tb_gap/tb_polar/f2fb",
+    "street": "preflop",
+    "category": "EXPLOIT / ADAPTATION",
+    "layer": "JUDGMENT",
+    "producer": "preflop.defend_action_likelihoods",
+    "consumer": "mixed defend likelihoods",
+    "function": "preflop.defend_action_likelihoods",
+    "state_variables": "",
+    "inputs": "exploit read gaps, w",
+    "output": "tp, tot",
+    "source_knowledge": "H/E",
+    "axis": "exploit",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES only when read weight w>0; neutral at baseline",
+    "duplicate_overload": "observer-side range models call the same function without exploit (asymmetry by design)",
+    "recommended_canonical_name": "preflop_read_width_exploit",
+    "evidence": "preflop.defend_action_likelihoods: if exploit and exploit.get('w', 0) > 0: .. tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.defend_action_likelihoods",
+    "parent_concept": "mixed_preflop_action_likelihood",
+    "code_span": "preflop.defend_action_likelihoods: if exploit and exploit.get('w', 0) > 0: .. tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))"
+  },
+  {
+    "concept": "preflop_premium_slowplay_mix",
+    "poker_meaning": "수동적이고 슬로플레이 취향인 사람은 프리미엄(상위 10%)을 3벳 대신 플랫하는 비중을 늘림",
+    "street": "preflop",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "PLAN",
+    "producer": "preflop.defend_action_likelihoods",
+    "consumer": "w_raise, w_call",
+    "function": "preflop.defend_action_likelihoods",
+    "state_variables": "",
+    "inputs": "aggression, slowplay_taste, hand pct",
+    "output": "mix weights",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "preflop_premium_slowplay_mix",
+    "evidence": "preflop.defend_action_likelihoods: _pf_slow = 0.0 .. w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.defend_action_likelihoods",
+    "parent_concept": "mixed_preflop_action_likelihood",
+    "code_span": "preflop.defend_action_likelihoods: _pf_slow = 0.0 .. w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)"
+  },
+  {
+    "concept": "allin_form_fold_equity_read",
+    "poker_meaning": "레이즈를 올인 형태로 칠지에 상대 3벳/4벳 폴드 성향과 4벳 성향을 반영",
+    "street": "preflop",
+    "category": "EXPLOIT / ADAPTATION",
+    "layer": "PLAN",
+    "producer": "preflop.raise_form",
+    "consumer": "shove vs raise form",
+    "function": "preflop.raise_form",
+    "state_variables": "",
+    "inputs": "exploit f2tb/f2fb/fb_gap, w",
+    "output": "shove pressure multiplier",
+    "source_knowledge": "H/E",
+    "axis": "exploit",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES only when read weight w>0; neutral at baseline",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "allin_form_fold_equity_read",
+    "evidence": "preflop.raise_form: if exploit and exploit.get('w', 0) > 0: .. sh *= max(0.35",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.raise_form",
+    "parent_concept": "reraise_sizing_form",
+    "code_span": "preflop.raise_form: if exploit and exploit.get('w', 0) > 0: .. sh *= max(0.35"
+  },
+  {
+    "concept": "short_stack_open_widening",
+    "poker_meaning": "feel<0.20 (짧은 체감 스택)이면 오픈 문턱에 성향 trait shove_add를 더함",
+    "street": "preflop",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "JUDGMENT",
+    "producer": "preflop.open_decision",
+    "consumer": "open threshold",
+    "function": "preflop.open_decision",
+    "state_variables": "",
+    "inputs": "traits_of(prof).shove_add, feel",
+    "output": "thr",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "trait derived from gamble temperament via persona.traits_of",
+    "recommended_canonical_name": "short_stack_open_widening",
+    "evidence": "preflop.open_decision: thr = min(0.9, thr + t['shove_add']",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.open_decision",
+    "parent_concept": "unopened_decision",
+    "code_span": "preflop.open_decision: thr = min(0.9, thr + t['shove_add']"
+  },
+  {
+    "concept": "open_size_behind_read_adjust",
+    "poker_meaning": "뒤 플레이어가 잘 접고 수동적일수록 오픈 사이즈를 키움(table_soft)",
+    "street": "preflop",
+    "category": "EXPLOIT / ADAPTATION",
+    "layer": "PLAN",
+    "producer": "preflop.open_decision",
+    "consumer": "preflop.open_size_bb",
+    "function": "preflop.open_decision",
+    "state_variables": "",
+    "inputs": "behind_reads fold_gap/passive",
+    "output": "table_soft 0..1",
+    "source_knowledge": "H/E",
+    "axis": "exploit",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES only when read weight w>0; neutral at baseline",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "open_size_behind_read_adjust",
+    "evidence": "preflop.open_decision: _soft = 0.0 .. for r in _bl)/len(_bl)))",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.open_decision",
+    "parent_concept": "open_sizing",
+    "code_span": "preflop.open_decision: _soft = 0.0 .. for r in _bl)/len(_bl)))"
+  },
+  {
+    "concept": "locked_allin_price_gate",
+    "poker_meaning": "이미 올인한 상대가 있으면 내 공격은 그 상대에게 콜이므로, 올인 상대 레인지 대비 eq가 가격 need 미만이면 공격의 reason_skill 몫을 폴드로",
+    "street": "preflop",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "preflop.multiway_reraise_decision",
+    "consumer": "attack mass",
+    "function": "preflop.multiway_reraise_decision",
+    "state_variables": "",
+    "inputs": "locked_keys (pot_layers.locked_allin_opponents), locked ranges, need, reason_skill",
+    "output": "attack, fold",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "inline in multiway_reraise_decision (was missing from registry); KEEP",
+    "recommended_canonical_name": "locked_allin_price_gate",
+    "evidence": "preflop.multiway_reraise_decision: eq_locked = None .. fold += _rm",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.multiway_reraise_decision",
+    "parent_concept": "multiway_reraise_reasoning",
+    "code_span": "preflop.multiway_reraise_decision: eq_locked = None .. fold += _rm"
+  },
+  {
+    "concept": "reraise_attack_evidence",
+    "poker_meaning": "재레이즈 공격 근거: eq<N-way fair share이면 reason_skill만큼 억제, 근거=max(4bet 폴드 읽기, 블러프 숙련×폴드 가능한 상대 최상단 블로커 몫)",
+    "street": "preflop",
+    "category": "REASONING",
+    "layer": "JUDGMENT",
+    "producer": "preflop.multiway_reraise_decision;preflop.preflop_blocker_share",
+    "consumer": "attack mass",
+    "function": "preflop.multiway_reraise_decision;preflop.preflop_blocker_share",
+    "state_variables": "",
+    "inputs": "eq, fair, reason_skill, exploit f2fb, bluff skill, blocker share",
+    "output": "attack keep",
+    "source_knowledge": "M/H/E",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "blocker ordering uses PCT (R2 dependency)",
+    "recommended_canonical_name": "reraise_attack_evidence",
+    "evidence": "preflop.multiway_reraise_decision: fair = 1.0 / (1.0 + len(pools)) .. fold += removed",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.multiway_reraise_decision;preflop.preflop_blocker_share",
+    "parent_concept": "multiway_reraise_reasoning",
+    "code_span": "preflop.multiway_reraise_decision: fair = 1.0 / (1.0 + len(pools)) .. fold += removed"
+  },
+  {
+    "concept": "iso_limper_read_widening",
+    "poker_meaning": "림퍼가 아이소 레이즈에 잘 접고 수동적이며 림프가 넓을수록 아이소 폭 확대(0.70~1.60배)",
+    "street": "preflop",
+    "category": "EXPLOIT / ADAPTATION",
+    "layer": "JUDGMENT",
+    "producer": "preflop.iso_decision",
+    "consumer": "iso threshold",
+    "function": "preflop.iso_decision",
+    "state_variables": "",
+    "inputs": "limper_reads w, f2iso_gap, passive, limp_gap",
+    "output": "thr multiplier",
+    "source_knowledge": "H/E",
+    "axis": "exploit",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES only when read weight w>0; neutral at baseline",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "iso_limper_read_widening",
+    "evidence": "preflop.iso_decision: if limper_reads: .. + 0.30*max(0.0, _lg)))",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.iso_decision",
+    "parent_concept": "isolation_decision",
+    "code_span": "preflop.iso_decision: if limper_reads: .. + 0.30*max(0.0, _lg)))"
+  },
+  {
+    "concept": "self_hand_overconfidence_bias",
+    "poker_meaning": "자기 패 과신 편향: overpair_love(원페어 과신), draw_love(드로우 과대), sticky(매몰비용) — perceived_rel과 call_bias가 소비",
+    "street": "flop turn river",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "JUDGMENT",
+    "producer": "persona.bias",
+    "consumer": "plan.perceived_rel;persona.call_bias",
+    "function": "persona.bias",
+    "state_variables": "",
+    "inputs": "range_read, potodds, discipline, outs, gamble, looseness, tilt_prone",
+    "output": "bias -1..1",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (inactive at max skill: bias <= 0 clipped)",
+    "duplicate_overload": "overpair_love reads range_read (opponent-range reconstruction skill) as a self-assessment input; consumer clips at 0 so max-skill baseline sees 0",
+    "recommended_canonical_name": "self_hand_overconfidence_bias",
+    "evidence": "persona.bias: name in overpair_love / draw_love / sticky",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "persona.bias",
+    "parent_concept": "relative_strength_perception",
+    "code_span": "persona.bias: name in overpair_love / draw_love / sticky"
+  },
+  {
+    "concept": "call_threshold_bias",
+    "poker_meaning": "콜 문턱 성향 편향: station(넓게 콜), bluff_fear(상대 블러프를 과소평가해 접음), hero_call(블러프로 몰아 콜)",
+    "street": "flop turn river",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "JUDGMENT",
+    "producer": "persona.bias;persona.interpret_bluff_threat_bias",
+    "consumer": "persona.call_bias;plan.apply_response_biases_to_call_threshold",
+    "function": "persona.bias;persona.interpret_bluff_threat_bias",
+    "state_variables": "",
+    "inputs": "looseness, gamble, discipline, potodds, street bluffcatch, aggression, range_read, tilt_prone",
+    "output": "bias -1..1",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "DUPLICATED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "applied twice (calldown_need via call_bias and decide_response via apply_response_biases): registered as call_bias_reapplication; producer row added here",
+    "recommended_canonical_name": "call_threshold_bias",
+    "evidence": "persona.bias: station / bluff_fear / hero_call",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "persona.bias;persona.interpret_bluff_threat_bias",
+    "parent_concept": "call_bias_reapplication",
+    "code_span": "persona.bias: station / bluff_fear / hero_call"
+  },
+  {
+    "concept": "preflop_temperament_direction",
+    "poker_meaning": "루즈함·공격성(0~10)을 프리플랍 폭 이동 방향(-1~+1)으로 변환",
+    "street": "preflop",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "JUDGMENT",
+    "producer": "persona.preflop_temper_direction",
+    "consumer": "persona.open_pct;preflop.defend_thresholds",
+    "function": "persona.preflop_temper_direction",
+    "state_variables": "",
+    "inputs": "temperament scores",
+    "output": "direction",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "OPT-IN V3 span 5.0 vs legacy 4.0",
+    "recommended_canonical_name": "preflop_temperament_direction",
+    "evidence": "persona.preflop_temper_direction",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "persona.preflop_temper_direction",
+    "parent_concept": "rfi_personality_deviation",
+    "code_span": "persona.preflop_temper_direction"
+  },
+  {
+    "concept": "concept_skill_gate",
+    "poker_meaning": "개념 숙련도를 0..1 실행 게이트로 변환(0.5 이하 floor)",
+    "street": "all",
+    "category": "KNOWLEDGE",
+    "layer": "JUDGMENT",
+    "producer": "persona.gate",
+    "consumer": "preflop.calloff_layer_judgment",
+    "function": "persona.gate",
+    "state_variables": "",
+    "inputs": "sk(concept), floor",
+    "output": "gate prob",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "concept_skill_gate",
+    "evidence": "persona.gate",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "persona.gate",
+    "parent_concept": "persona_population_generation",
+    "code_span": "persona.gate"
+  },
+  {
+    "concept": "street_concept_alias",
+    "poker_meaning": "같은 행동 질문을 스트리트별 숙련 개념으로 매핑(cbet→barrel, checkraise_flop/late, bluffcatch_early/river, thin_value flop=range_merge)",
+    "street": "flop turn river",
+    "category": "KNOWLEDGE",
+    "layer": "JUDGMENT",
+    "producer": "persona.street_concept",
+    "consumer": "plan.*;persona.bias",
+    "function": "persona.street_concept",
+    "state_variables": "",
+    "inputs": "base concept, street",
+    "output": "concept name",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "this table IS the street-split policy: checkraise_late and bluffcatch_early still share two streets",
+    "recommended_canonical_name": "street_concept_alias",
+    "evidence": "persona.street_concept",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "persona.street_concept",
+    "parent_concept": "positional",
+    "code_span": "persona.street_concept"
+  },
+  {
+    "concept": "legacy_trait_adapter",
+    "poker_meaning": "기질 벡터에서 구형 trait(limp, iso, threebet, call, shove_add) 파생",
+    "street": "preflop",
+    "category": "PERSONALITY / TEMPERAMENT",
+    "layer": "JUDGMENT",
+    "producer": "persona.traits_of;preflop._tr",
+    "consumer": "preflop.open_decision;preflop.iso_decision;preflop.limp_p;ranges.preflop_range",
+    "function": "persona.traits_of;preflop._tr",
+    "state_variables": "",
+    "inputs": "looseness, aggression, gamble, discipline",
+    "output": "trait dict",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "adapter keeps archetype-era trait semantics alive for concept profiles",
+    "recommended_canonical_name": "legacy_trait_adapter",
+    "evidence": "persona.traits_of",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "persona.traits_of;preflop._tr",
+    "parent_concept": "legacy_arch_types",
+    "code_span": "persona.traits_of"
+  },
+  {
+    "concept": "read_polarity_signal",
+    "poker_meaning": "관측 3벳 빈도 중 밸류 기준(0.055)을 넘는 몫 = 폴라라이즈된 3벳 비율",
+    "street": "preflop",
+    "category": "PERCEPTION",
+    "layer": "JUDGMENT",
+    "producer": "persona._polar",
+    "consumer": "persona.read_opponent tb_polar;session preflop range polar",
+    "function": "persona._polar",
+    "state_variables": "",
+    "inputs": "observed rate, value base",
+    "output": "polarity 0..1",
+    "source_knowledge": "H",
+    "axis": "exploit",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES only when read weight w>0; neutral at baseline",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "read_polarity_signal",
+    "evidence": "persona._polar",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "persona._polar",
+    "parent_concept": "exploit_read_permission",
+    "code_span": "persona._polar"
+  },
+  {
+    "concept": "forced_bet_posting",
+    "poker_meaning": "블라인드와 BB 앤티 징수, 징수로 올인된 좌석 표시",
+    "street": "preflop",
+    "category": "FACT",
+    "layer": "ACTION",
+    "producer": "session.HandRun._run",
+    "consumer": "runner.Round",
+    "function": "session.HandRun._run",
+    "state_variables": "",
+    "inputs": "stacks, sb, bb, ante",
+    "output": "contrib, ante_pot, allin",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "KEEP",
+    "recommended_canonical_name": "forced_bet_posting",
+    "evidence": "session.HandRun._run: if sb_s: .. rnd.current = h.bb",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "session.HandRun._run",
+    "parent_concept": "legal_action_application",
+    "code_span": "session.HandRun._run: if sb_s: .. rnd.current = h.bb"
+  },
+  {
+    "concept": "multiway_representative_union_range",
+    "poker_meaning": "다인원에서 계획/응답용 단일 opp_range를 seat 레인지 합집합으로 만듦(빈 경우 ALL 폴백 + 감사 기록)",
+    "street": "flop turn river",
+    "category": "RANGE",
+    "layer": "JUDGMENT",
+    "producer": "session.HandRun._run",
+    "consumer": "plan.make_plan/refresh/act_with_plan opp_range",
+    "function": "session.HandRun._run",
+    "state_variables": "",
+    "inputs": "opp_ranges by seat",
+    "output": "opp_r",
+    "source_knowledge": "M",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "equity paths use seat pools (joint), but several single-range consumers (perceived continue range in overbet/raise gates, blocker_score) still read the union",
+    "recommended_canonical_name": "multiway_representative_union_range",
+    "evidence": "session.HandRun._run: opp_r = R.range_union(*[",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "session.HandRun._run",
+    "parent_concept": "weighted_range_transform",
+    "code_span": "session.HandRun._run: opp_r = R.range_union(*["
+  },
+  {
+    "concept": "primary_opponent_selection",
+    "poker_meaning": "주 상대 = 살아 있는 공격자, 없으면 가장 깊은 스택; 계획/갱신/실행의 opp_est·스택 기준",
+    "street": "flop turn river",
+    "category": "REASONING",
+    "layer": "JUDGMENT",
+    "producer": "session.HandRun._run",
+    "consumer": "plan.make_plan opp_est/opp_stack_bb;plan.act_with_plan",
+    "function": "session.HandRun._run",
+    "state_variables": "",
+    "inputs": "aggressor, live stacks",
+    "output": "_main seat",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "differs from plan.select_field_opponent (purpose-specific); two selectors coexist",
+    "recommended_canonical_name": "primary_opponent_selection",
+    "evidence": "session.HandRun._run: _main = aggressor if (aggressor is not None and aggressor != s",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "session.HandRun._run",
+    "parent_concept": "opponent_fold_constraint",
+    "code_span": "session.HandRun._run: _main = aggressor if (aggressor is not None and aggressor != s"
+  },
+  {
+    "concept": "preflop_range_action_label",
+    "poker_meaning": "관측된 프리플랍 라인을 레인지 라벨로 변환(open/limp/call/3bet/iso, BB iso, 올인 위 레이즈=open)",
+    "street": "preflop",
+    "category": "PERCEPTION",
+    "layer": "JUDGMENT",
+    "producer": "session.HandRun._pf_range_action;session._preflop_public_action_context",
+    "consumer": "session._preflop_story_range",
+    "function": "session.HandRun._pf_range_action;session._preflop_public_action_context",
+    "state_variables": "",
+    "inputs": "pf seed/public action",
+    "output": "range action label",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "two producers (bot record vs public story) kept aligned by tests",
+    "recommended_canonical_name": "preflop_range_action_label",
+    "evidence": "session.HandRun._pf_range_action",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "session.HandRun._pf_range_action;session._preflop_public_action_context",
+    "parent_concept": "preflop_range_reconstruction",
+    "code_span": "session.HandRun._pf_range_action"
+  },
+  {
+    "concept": "range_ordering_strength",
+    "poker_meaning": "레인지 분할(bet/call/continue/check)용 콤보 정렬 키: 현재 쇼다운 카테고리 + min(1.8, outs*0.11) 드로우 보너스",
+    "street": "flop turn river",
+    "category": "CALCULATION",
+    "layer": "JUDGMENT",
+    "producer": "bot._sd_strength;ranges._ranked",
+    "consumer": "ranges._bet_range;_continue_range;_call_range;_check_range;bot.pick_bluffs",
+    "function": "bot._sd_strength;ranges._ranked",
+    "state_variables": "",
+    "inputs": "combo, board",
+    "output": "sortable strength tuple",
+    "source_knowledge": "M/H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "single ordering serves value, continue and bluff partitions (draw bonus 0.11/out is a heuristic); river/no-board use pure made",
+    "recommended_canonical_name": "range_ordering_strength",
+    "evidence": "bot._sd_strength",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "bot._sd_strength;ranges._ranked",
+    "parent_concept": "postflop_action_posterior",
+    "code_span": "bot._sd_strength"
+  },
+  {
+    "concept": "checkraise_value_probability_floor",
+    "poker_meaning": "밸류 계획 체크레이즈 확률 하한: rel 0.72~0.94 구간에서 숙련·공격성으로 바닥값",
+    "street": "flop turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan._checkraise_value_floor_probability",
+    "consumer": "plan.checkraise_draw_street_probability;plan.checkraise_river_probability",
+    "function": "plan._checkraise_value_floor_probability",
+    "state_variables": "",
+    "inputs": "plan probability, rel, skill, aggression",
+    "output": "probability",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "shared by all streets (same question)",
+    "recommended_canonical_name": "checkraise_value_probability_floor",
+    "evidence": "plan._checkraise_value_floor_probability",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan._checkraise_value_floor_probability",
+    "parent_concept": "checkraise_flop_decision",
+    "code_span": "plan._checkraise_value_floor_probability"
+  },
+  {
+    "concept": "continuation_bet_frequency_core",
+    "poker_meaning": "cbet/턴 배럴/리버 배럴 공통 본문: 스트리트 기본값, 다인원, 텍스처, rel, 레인지 우위, 폴드 성향",
+    "street": "flop turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan._continuation_frequency",
+    "consumer": "plan.cbet_flop_frequency;plan.barrel_turn_frequency;plan.barrel_river_frequency",
+    "function": "plan._continuation_frequency",
+    "state_variables": "",
+    "inputs": "street capability, n_opp, board, rel, range_adv, read",
+    "output": "frequency",
+    "source_knowledge": "H/E",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "street base table distinct; body shared (same question)",
+    "recommended_canonical_name": "continuation_bet_frequency_core",
+    "evidence": "plan._continuation_frequency",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan._continuation_frequency",
+    "parent_concept": "flop_cbet_plan",
+    "code_span": "plan._continuation_frequency"
+  },
+  {
+    "concept": "overbet_selection_core",
+    "poker_meaning": "오버벳 선택 공통 본문(턴/리버): overbet 숙련 × 넛우위 × 양극화 × 공격성, 리버 ×1.35, 블러프 ×0.65, 폴드성향 읽기; 크기는 넛우위로",
+    "street": "turn river",
+    "category": "MOTIVE / PLAN",
+    "layer": "PLAN",
+    "producer": "plan.overbet_frac",
+    "consumer": "plan.decide_size",
+    "function": "plan.overbet_frac",
+    "state_variables": "",
+    "inputs": "sk(overbet), nut_adv, rel (value: vs continue range), aggr, read",
+    "output": "size or None",
+    "source_knowledge": "H/E",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "turn_overbet/river_overbet rows are street views of this one body (river multiplier only)",
+    "recommended_canonical_name": "overbet_selection_core",
+    "evidence": "plan.overbet_frac",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "plan.overbet_frac",
+    "parent_concept": "turn_overbet",
+    "code_span": "plan.overbet_frac"
+  },
+  {
+    "concept": "opponent_unconsumed_estimates",
+    "poker_meaning": "관측·추정은 되지만 어떤 판단도 소비하지 않는 상대 통계: 포스트플랍 fold-to-raise(전체/스트리트별), 프리플랍 backraise·cold re-raise 반응·squeeze 대면 콜 후 폴드, limp-raise 표본",
+    "street": "preflop flop turn river",
+    "category": "PERCEPTION",
+    "layer": "JUDGMENT",
+    "producer": "reads.Book.observe_postflop;reads.Book.observe_cold_reraise;reads.Book.observe_backraise;reads.estimate",
+    "consumer": "none (checkraise_decision explicitly declines to use fold-to-bet as a fold-to-raise proxy)",
+    "function": "reads.Book.observe_postflop;reads.Book.observe_cold_reraise;reads.Book.observe_backraise;reads.estimate",
+    "state_variables": "",
+    "inputs": "Book counters",
+    "output": "est fold_to_raise, ftr_<street>, pf_backraise, pf_cold_reraise_*, pf_fold_after_call_squeeze",
+    "source_knowledge": "E",
+    "axis": "exploit",
+    "runtime_status": "SHADOW",
+    "action_influence": "NO",
+    "duplicate_overload": "observation exists without an application path: bluff check-raise / bluff re-raise reads and cold-4bet/squeeze exploits have evidence but no consumer (wiring = behavior change, later phase)",
+    "recommended_canonical_name": "opponent_unconsumed_estimates",
+    "evidence": "reads.estimate: est[fold_to_raise]..",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "reads.Book.observe_postflop;reads.Book.observe_cold_reraise;reads.Book.observe_backraise;reads.estimate",
+    "parent_concept": "opponent_estimation",
+    "code_span": "reads.estimate: est[fold_to_raise].."
+  },
+  {
+    "concept": "dead_strategy_tables",
+    "poker_meaning": "프로덕션에서 읽히지 않는 전략 상수 표: preflop.DEF_POS_MULT, preflop.DEPTH_OPEN_MULT, persona.OPEN_ELASTICITY, plan.PLANS",
+    "street": "preflop flop turn river",
+    "category": "KNOWLEDGE",
+    "layer": "JUDGMENT",
+    "producer": "preflop.DEF_POS_MULT;preflop.DEPTH_OPEN_MULT;persona.OPEN_ELASTICITY;plan.PLANS",
+    "consumer": "none",
+    "function": "preflop.DEF_POS_MULT;preflop.DEPTH_OPEN_MULT;persona.OPEN_ELASTICITY;plan.PLANS",
+    "state_variables": "",
+    "inputs": "-",
+    "output": "-",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "DEAD",
+    "action_influence": "NO",
+    "duplicate_overload": "REMOVE_COMPAT candidates (DEF_POS_MULT/OPENER_MULT copies also live in legacy/players.py)",
+    "recommended_canonical_name": "dead_strategy_tables",
+    "evidence": "module constants",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.DEF_POS_MULT;preflop.DEPTH_OPEN_MULT;persona.OPEN_ELASTICITY;plan.PLANS",
+    "parent_concept": "legacy_arch_types",
+    "code_span": "module constants"
+  },
+  {
+    "concept": "opener_position_attack_table",
+    "poker_meaning": "OPENER_MULT: 오프너 포지션별로 필드가 그 오픈을 공격(리쇼브)하는 상대 폭",
+    "street": "preflop",
+    "category": "KNOWLEDGE",
+    "layer": "JUDGMENT",
+    "producer": "preflop.OPENER_MULT",
+    "consumer": "preflop.reshove_range (pos_mult);preflop.open_form (position shove depth, audit9 R4)",
+    "function": "preflop.OPENER_MULT",
+    "state_variables": "",
+    "inputs": "opener position",
+    "output": "multiplier",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "SEMANTICALLY_OVERLOADED",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "same table answers two questions: how wide the field reshoves vs this opener (reshove_range) and how many/strong players remain behind an opener when deciding an open-shove (open_form 2.6/OPENER_MULT depth). SPLIT candidate: behind-player depth from actual seats behind (behavior change, deferred)",
+    "recommended_canonical_name": "opener_position_attack_table",
+    "evidence": "preflop.OPENER_MULT",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.OPENER_MULT",
+    "parent_concept": "reshove_opportunity",
+    "code_span": "preflop.OPENER_MULT"
+  },
+  {
+    "concept": "iso_sizing",
+    "poker_meaning": "아이소 레이즈 크기 = 3.0 + 림퍼 수 (bb)",
+    "street": "preflop",
+    "category": "EXECUTION FORM",
+    "layer": "ACTION",
+    "producer": "preflop.iso_decision",
+    "consumer": "session apply",
+    "function": "preflop.iso_decision",
+    "state_variables": "",
+    "inputs": "n_limpers",
+    "output": "size bb",
+    "source_knowledge": "H",
+    "axis": "reasoning",
+    "runtime_status": "ACTIVE",
+    "action_influence": "YES (direct or upstream)",
+    "duplicate_overload": "fixed; open_size_bb skill not used",
+    "recommended_canonical_name": "iso_sizing",
+    "evidence": "preflop.iso_decision: return ('raise', 3.0 + n_limpers)",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "preflop.iso_decision",
+    "parent_concept": "isolation_decision",
+    "code_span": "preflop.iso_decision: return ('raise', 3.0 + n_limpers)"
   }
 ]

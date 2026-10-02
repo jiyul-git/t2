@@ -193,3 +193,28 @@
 멀티웨이 application capacity는 call/fold의 evidence 혼합과 기존 attack 억제 경로에 함께 소비된다. 이번에는 call/fold 혼합 본문을 분리했고, attack 억제 본문은 기존 위치에 남겼다. 따라서 call/raise 정책 전체를 한 적용 함수로 통일했다고 주장하지 않는다.
 
 3차 문서의 관측 품질·멀티웨이·pressure 경계 추출 후보를 여기서 처리했다. 여전히 range_read 값 공급은 공유하며, persona.overpair_love 편향과 perceived_edge 자기 실력 인식, read_opponent의 line visibility, 종합 실력/프로필 생성·진단 직렬화는 별도 역할로 남는다.
+
+<!-- reaudit:start -->
+## 재감사 추가 항목 (completeness)
+
+| ID | 개념 | 현재 위치 | 겹친 의미와 문제 | 판정 | 처리 경계 |
+| --- | --- | --- | --- | --- | --- |
+| L-RA01 | called_aggression_ownership | plan._called_prior_street_aggression;plan.line_owned_by_live_aggressor | registry meaning was inverted ("내 공격이 콜받았나"); code asks whether hero CALLED the opponent's aggression. Flop consumer added in batch 1. | RENAME (doc) + KEEP | registry row corrected; extraction behavior-identical |
+| L-RA02 | lead_into_aggressor_policy | plan.decide_aggression (bluff suppression / pot_control 0.04 / value relead) | one poker question "lead into a live aggressor?" answered by three mechanisms with different magnitudes | MERGE (later) | behavior change; needs EV/frequency review |
+| L-RA03 | value_when_called_strength | make_plan commit_rel; overbet_frac; river_value_reassessment; refresh improved bluff | same question, four producers, metric rel vs equity, thresholds none/0.50/0.54 | MERGE (later) | behavior change |
+| L-RA04 | showdown_value_predicate | plan.has_showdown_value (2 callers) + pure-bluff gate | medium-band fallback uses eq (runout), final branch eq_current; bluff gate omits multiway term | MERGE done for formula; SPLIT equity basis kept explicit | unifying the basis changes behavior |
+| L-RA05 | players_behind_risk_premium | plan.calldown_need; preflop.multiway_reraise_decision | identical formula duplicated in two modules | MERGE (done) | icm.players_behind_required_equity_premium, bit-identical |
+| L-RA06 | perceived_board_danger | make_plan (scaled) vs refresh/decide_size (raw) | state key "danger" changes meaning between plan creation and refresh | SPLIT (later) | behavior change |
+| L-RA07 | turn_card_range_shift | plan.decide_aggression; plan.refresh | on the river both call turn_card_effect(flop, river card): the turn card is ignored and the name says turn | SPLIT / RENAME (later) | river card effect vs turn card effect are different questions |
+| L-RA08 | medium_strength_merge_value | plan.make_plan (replan on turn/river) | board-change replan reads sk(range_merge) at turn/river instead of thin_value_<street> | REROUTE (later) | skill supply change |
+| L-RA09 | giveup_reentry_on_improvement | plan.refresh | made>=2 / made>=3 can come from a paired board. Root: bot.made_strength returns the full category when it exceeds the board category, so pocket pair + board pair = two pair (2) counts as "made 2" without hero improvement. Same root as HAND 63 / R5c; consumers: refresh giveup re-entry, semibluff_draw_loss_resolution, river_semibluff_resolution showdown branch | SPLIT (later) | hero_made_contribution semantics change = behavior change |
+| L-RA10 | multiway_representative_union_range | session.HandRun._run → plan opp_range | equity uses seat pools but continue-range gates (overbet, value raise HU check), blocker_score and plan state read the union | REROUTE (later) | behavior change |
+| L-RA11 | opponent_unconsumed_estimates | reads.estimate | fold-to-raise and cold-reraise/backraise/squeeze-response reads are estimated but no decision consumes them | KEEP SHADOW | wiring is an exploit-phase change (tilt/exploit disabled in baseline) |
+| L-RA12 | opener_position_attack_table | preflop.OPENER_MULT | reshove-width table reused (audit9 R4) as proxy for depth of players behind an open-shove | SPLIT (later) | behavior change |
+| L-RA13 | defend_width_prior | gto.defend_pct / _use_mtt8_ante_defense | calibrated defend table only for seats==8 ante; standard/main/lowbuyin are 9-max and use the legacy formula | KEEP (knowledge gap) | R2 knowledge-accuracy audit |
+| L-RA14 | dead_strategy_tables | preflop.DEF_POS_MULT, DEPTH_OPEN_MULT; persona.OPEN_ELASTICITY; plan.PLANS | strategy constants with no production reader | REMOVE_COMPAT (later) | harmless; removal is a separate cleanup |
+| L-RA15 | response_equity_basis | plan.act_with_plan | fallback tier 3 models the opponent with the actor's own bluff axis and fixed callers | KEEP FALLBACK | reachable only without perceived ranges |
+| L-RA16 | plan_revision_lifecycle | plan.refresh comment | stale in-code comment says the promotion "made term is dead"; the term was removed in audit9 (doc drift in code) | RENAME (comment) | documentation only |
+| L-RA17 | self_hand_overconfidence_bias / perceived_player_edge | persona.bias; persona.perceived_edge | range_read supplies self-assessment roles; perceived_edge IS active at baseline through preflop.feel_of (max-skill +0.016 feel) | KEEP (documented) | corrects the earlier claim that perceived_edge has no baseline effect |
+| L-RA18 | opponent_concept_inference (range_profile) | session.HandRun._preflop_perceived_range;_locked_postflop_range | observer Book estimates become the opponent preflop-range profile independent of exploit weight w: "exploit neutral" does not switch off opponent adaptation; manual_one_hand audits accumulate the Book | KEEP + document baseline harness | baseline harness must freeze the Book (sim2 T2_BASELINE does) |
+<!-- reaudit:end -->

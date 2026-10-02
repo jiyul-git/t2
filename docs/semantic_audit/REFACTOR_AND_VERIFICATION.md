@@ -96,3 +96,22 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - evidence/read_stage4_*에 raw 결과와 함수 입력 목록 보존. 재현: python tools/verify_remaining_read_semantics.py.
 - 이번 단계에서 기존 40개 verifier 및 live2를 재실행하지 않았다. 이전 실패/timeout은 미해결이다.
 - pressure helper는 기존 mean01 능력 혼합을 드러낸 것으로, 모든 압박 단계의 knowledge/reasoning 분리가 끝났다는 의미는 아니다. multiway attack 억제는 원래 위치를 유지했다.
+
+## 5차(재감사) — completeness 대조 + semantic-only 추출 3건
+
+기준 `63bd82d`. 행동 수정(R2/R1b/OOP 체크레이즈)은 포함하지 않는다.
+
+| 추출 | 이전 위치 | 보존한 경계 |
+| --- | --- | --- |
+| `icm.players_behind_required_equity_premium(base_need, n)` | `plan.calldown_need`(need, call_need 두 번), `preflop.multiway_reraise_decision` | 같은 식 `(1-base)*min(0.18, 0.06*n)`, 같은 연산 순서 |
+| `plan.has_showdown_value(made, equity, mw)` | `make_plan` 의 `_sd_here`(eq), `has_sd`(eq_current) | 각 호출부가 기존 equity 기준을 그대로 넘김 |
+| `plan.line_owned_by_live_aggressor(plan_state, street, initiative, oop_vs_aggr)` | `decide_aggression` inline | 턴/리버 콜 이력 + 플랍 프리플랍 어그레서 규칙, 순수 함수 |
+| refresh 주석 | "made 항은 죽어 있다" | 주석만 현재 코드에 맞춤 |
+
+검증:
+- `tools/verify_reaudit_semantic_extraction.py HEAD`: pristine HEAD 체크아웃과 작업 트리에서 같은 결정적 probe를 돌려 바이트 비교 — calldown_need 400, decide_aggression 1,500, make_plan 전체 상태 500, cold re-raise 120건 **동일**(RNG 상태 포함). 변이 테스트(0.06→0.061, 0.42→0.50, 플랍 소유 규칙 삭제)로 네 probe 모두 차이를 잡는 것을 확인.
+- 기존 parity verifier 4종(semantic_cleanup 4,638 / defend 4,752 / range_read 1,308+경계 / remaining 362+경계) PASS.
+- baseline sim(tilt 0·exploit 중립·max-skill, 시드 11/12, 1,149핸드): 이전 `test`와 핸드 로그·판단 기록 전체·프리플랍 seed **바이트 동일**.
+- 23-gate: 통과/실패 집합 동일(17/23).
+- 전체 verifier 71개: `CANONICAL_VERIFIER_MANIFEST.md` (pristine HEAD vs 작업 트리).
+- `tools/check_semantic_completeness.py`: site 1,136 / 함수 548 / 상수 표 84 / 등록부 참조 전부 소유, 미소유 0.

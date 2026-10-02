@@ -259,7 +259,7 @@ driver
 | P4 opener faces 3bet | CLOSED | story overwrite, raise-level loss, true-persona leak, dead provenance gate 수정 |
 | P5 caller back-action | CLOSED | allin event classification, raise depth, fold/4bet stat contamination 수정 |
 | P6 all-in/call-off | CLOSED | short shove routing, exact pot/call price, all-in-call provenance 수정 |
-| P7 cold vs re-raise | **CORE + OBSERVATION ACTIVE / FULL EV OPEN** | original opener + re-raiser seat-keyed ranges, 실제 call price, players-behind, skill-dependent reasoning을 전용 P7 판단으로 소비. cold-call/cold-4bet 전용 Book 관측/estimate 존재; 독립 지식/전체 EV는 미완료 |
+| P7 cold vs re-raise | **CORE + OBSERVATION ACTIVE / FULL EV OPEN** | original opener + re-raiser seat-keyed ranges, 실제 call price, players-behind(`icm.players_behind_required_equity_premium`), skill-dependent reasoning을 전용 P7 판단으로 소비. audit9 batch 1: 이미 올인한 상대가 있으면 그 레인지 대비 eq < need 일 때 공격 억제(`locked_allin_price_gate`), fair share 미만 공격의 근거는 4bet 폴드 읽기 또는 블러프 숙련×폴드 가능 상대 최상단 블로커 몫(`reraise_attack_evidence`). cold-call/cold-4bet 전용 Book 관측/estimate는 존재하나 **소비처 없음**(SHADOW); 독립 지식/전체 EV는 미완료 |
 
 P7 current boundary:
 - dedicated `cold_reraise_decision`이 generic defend를 baseline/fallback으로만 사용한다.

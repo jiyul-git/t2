@@ -17,3 +17,7 @@ SOURCE_MANIFEST / FUNCTION_CALL_CENSUS는 수정 전 코드 증거다. 실행 �
 - [REFACTOR_AND_VERIFICATION](REFACTOR_AND_VERIFICATION.md) — 실제 함수 추출 및 before/after 검증
 
 - [range_read 소비 경계](RANGE_READ_CONSUMER_BOUNDARIES.md) — 복원·해석·판단 적용 및 남은 소비처
+
+- [재감사 completeness 보고](completeness/COMPLETENESS_REPORT.md) — 검색 방법, 신규 66행, 정정, 추출, 한계
+- [CANONICAL_VERIFIER_MANIFEST](CANONICAL_VERIFIER_MANIFEST.md) — 검증 스크립트 71개의 목적·소속·기대 상태·실행 시점
+- 코드 위치 소유 맵: [completeness/SPAN_MAP.json](completeness/SPAN_MAP.json) (생성: `completeness/supplement.py`, 검사: `tools/check_semantic_completeness.py`)

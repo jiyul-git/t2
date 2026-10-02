@@ -63,3 +63,11 @@
 
 - 전체 검증 완료: 6 seeds / 180 hands, 직전 stage3의 전체 action/statistics/RNG JSON 6/6 동일. 실행 중인 검증 작업 없음.
 - 다음 검토 대상: range_read의 자기 패 과신·자기 실력 인식 및 line visibility 경계, 이후 street별 의미 과적재 ledger 항목.
+
+## 5차 — 재감사 completeness (Claude, test `63bd82d` 기준)
+
+- 기존 227행을 코드 전체와 기계적으로 대조: 결정 지점 1,136 / 함수 548 / 모듈 상수 표 84 / 등록부 참조 전부를 개념 또는 사유 있는 non-semantic 구간에 소유시킴. 미소유 0 (`tools/check_semantic_completeness.py`).
+- 신규 66행(origin `IMPLICIT_CODE_V2`, parent_concept·code_span 포함), 기존 3행 정정(called_aggression_ownership 의미 반전 등), ledger L-RA01~18, street matrix·knowledge coverage·document drift·range_read 5차 갱신.
+- semantic-only 추출 3건(players-behind premium 단일 producer, has_showdown_value, line_owned_by_live_aggressor): parity probe·sim 바이트 동일·23-gate 동일.
+- 검증 체계: `CANONICAL_VERIFIER_MANIFEST` (71개, 23-gate/40-suite 소속, pristine HEAD 대비 상태).
+- 다음(사용자 지정 순서): R2 pf_rank/PCT 지식 정확성 감사 → R1b 플랍 raise-range 지식 → OOP 체크레이즈 후속 행동.

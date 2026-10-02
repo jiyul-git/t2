@@ -1,0 +1,2010 @@
+{
+ "decomposed": [
+  "plan:make_plan",
+  "plan:decide_response",
+  "plan:decide_aggression",
+  "plan:decide_size",
+  "plan:overbet_frac",
+  "plan:act_with_plan",
+  "plan:calldown_need",
+  "plan:refresh",
+  "plan:preflop_plan",
+  "plan:select_field_opponent",
+  "plan:checkraise_decision",
+  "preflop:defend_action_likelihoods",
+  "preflop:raise_form",
+  "preflop:open_decision",
+  "preflop:multiway_reraise_decision",
+  "preflop:iso_decision",
+  "persona:bias",
+  "session:HandRun._run",
+  "money_pressure:unopened_modifiers"
+ ],
+ "spans": [
+  {
+   "concept": "opponent_fold_constraint",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_field_fold = (",
+   "to": "if int(n_opp or 1) > 1 else opp_stack_bb)"
+  },
+  {
+   "concept": "perceived_board_danger",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "dang = bot.board_danger(board)",
+   "to": "dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)"
+  },
+  {
+   "concept": "strong_support_blocker",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "blk_true = R.blocker_score(hero, opp_range, board)",
+   "to": "blk = blk_true * _bg"
+  },
+  {
+   "concept": "continue_fold_blocker",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_typ = {'flop': 0.60",
+   "to": "blk_net = _blk_raw * _bg"
+  },
+  {
+   "concept": "perceived_spr",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "s_true = spr(stack, pot)",
+   "to": "s = s*_sa + 5.0*(1.0 - _sa)"
+  },
+  {
+   "concept": "potcontrol_disposition",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "pc = max(0.0, min(1.0, (profile['icm']",
+   "to": null
+  },
+  {
+   "concept": "target_investment_fraction",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_opp_eff = None",
+   "to": "opp_eff=_opp_eff)"
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_commit_rel = rel",
+   "to": "_so['commit_rel'] = round(float(_commit_rel), 3)"
+  },
+  {
+   "concept": "multiway_value_threshold_shift",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "mw = max(0, n_opp - 1)",
+   "to": "pcz = 0.50 + 0.06*mw"
+  },
+  {
+   "concept": "read_value_threshold_shift",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "if rd['w'] > 0:",
+   "to": "pcz += wq * 0.30 * sg"
+  },
+  {
+   "concept": "bluff_evidence_composite",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "bluff_ok = (profile['bluff']/10.0)",
+   "to": "bluff_ok *= max(0.25, 1.0 + rd['w']"
+  },
+  {
+   "concept": "relative_strength_value_threshold_shift",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "if rel <= 0.45:",
+   "to": "v2 += 0.08 * _pen"
+  },
+  {
+   "concept": "showdown_value_predicate",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_sd_eq = eq_cur if eq_cur is not None else eq",
+   "to": null
+  },
+  {
+   "concept": "value_line_selection",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "if eq >= v3:",
+   "to": "'중간 밸류이나 3스트리트 유지"
+  },
+  {
+   "concept": "hero_made_contribution",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "made = bot.made_strength(hero, board) if board else 0",
+   "to": null
+  },
+  {
+   "concept": "relative_strength_perception",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "rel = perceived_rel(profile, rel_true, hero, board,",
+   "to": "bot.made_strength(hero, board) if board else 0)"
+  },
+  {
+   "concept": "trap_induction",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "p_trap, trap_why = trap_judgment(",
+   "to": "_goal, _mode = 'value_3street', 'trap'"
+  },
+  {
+   "concept": "deep_one_pair_caution",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_vulnerable_deep = (",
+   "to": "if made <= 1 else 0.0)"
+  },
+  {
+   "concept": "blockbet_motive",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "elif eq >= pcz:",
+   "to": "plan = 'block'; why.append('OOP 중간강도"
+  },
+  {
+   "concept": "potcontrol_motive",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_mg = sk('range_merge')",
+   "to": "plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤'"
+  },
+  {
+   "concept": "medium_strength_merge_value",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:",
+   "to": "why.append('중간강도(eq %.2f, rel %.2f, 머징"
+  },
+  {
+   "concept": "showdown_value_predicate",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_sd_here = ",
+   "to": "% (rel, made, plan))"
+  },
+  {
+   "concept": "semibluff_line_selection",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "elif outs >= 8 and to_act_behind <= 1",
+   "to": "% (_fe*100, _bluff_mul*100))"
+  },
+  {
+   "concept": "bluff_sizing_camouflage",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "_fe = 0.5",
+   "to": "_fe = float(_plan_opp_est['fold'])"
+  },
+  {
+   "concept": "pure_bluff_line_selection",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "elif (_sd_eq < 0.42 and sk('bluff') >= 1",
+   "to": "why.append('블러프 세부: %s — %s' % (_bm, _bwhy))"
+  },
+  {
+   "concept": "showdown_value_predicate",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "has_sd = has_showdown_value(",
+   "to": "plan = 'giveup'; why.append('쇼다운 가치 없고"
+  },
+  {
+   "concept": "potcontrol_motive",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "if has_sd and sk('potcontrol') >= 1 and rng.random() < 0.72:",
+   "to": null
+  },
+  {
+   "concept": "@nonsemantic:plan-state provenance/logging record (no decision)",
+   "module": "plan",
+   "func": "make_plan",
+   "from": "st = {'plan': plan, 'street_made': street",
+   "to": "'opp_est': _plan_opp_est, 'opp_stack_bb': _plan_opp_stack_bb,"
+  },
+  {
+   "concept": "response_plan",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "rel_ps = plan_state.get('rel', 0.5)",
+   "to": null
+  },
+  {
+   "concept": "layer_investment_ev",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "_layer_call = (call_eq is not None and call_need is not None)",
+   "to": "_cf_need = float(call_need) if _layer_call else need"
+  },
+  {
+   "concept": "monster_made_hand_raise",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "if made_now >= 5 and eq > need + 0.10:",
+   "to": "'넛급이나 콜 선택'"
+  },
+  {
+   "concept": "value_line_selection",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "if plan in ('value_3street', 'value_2street', 'trap') and eq > need + 0.15:",
+   "to": "so = PS.sk(profile, 'stackoff')/10.0 if has_c else 0.5"
+  },
+  {
+   "concept": "value_raise_sizing_from_commit",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "_so = plan_state.get('stackoff') or {}",
+   "to": "mult = max(0.75, min(1.6, 0.75 + 0.85*gap))"
+  },
+  {
+   "concept": "value_raise_qualification",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "_fair_share = 1.0 / max(2.0, float(n_opp) + 1.0)",
+   "to": "if _vr_eq_cont is not None else 'n/a')))"
+  },
+  {
+   "concept": "value_raise_frequency",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "p = 0.20 + 0.55*rr + (0.25 if committed else 0.0)",
+   "to": "'밸류이나 콜 선택(상대가 팟을 키워줌)'"
+  },
+  {
+   "concept": "bluff_reraise_frequency",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "if allow_raise and has_c and eq < need - 0.05 and plan in ('bluff_2street', 'semibluff', 'river_bluff'):",
+   "to": "% (blr, _g_bl.get('ev')))"
+  },
+  {
+   "concept": "semibluff_raise_frequency",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "if plan == 'semibluff' and plan_state.get('outs', 0) >= 8 and street != 'river':",
+   "to": "% (_p_sb*100, _g_sb.get('ev')))"
+  },
+  {
+   "concept": "implied_odds_adjustment",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "if stack > pot:",
+   "to": "_cf_need = max(0.02, _cf_need - implied)"
+  },
+  {
+   "concept": "price_overrides_giveup_plan",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "act = 'call' if _use_eq >= _use_need else 'fold'",
+   "to": "% (' + layer call EV' if _layer_call else '', _gate_note))"
+  },
+  {
+   "concept": "giveup_deviation_raise",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "if plan == 'giveup' and has_c and eq < need - 0.05:",
+   "to": "% _g_dev.get('ev'))"
+  },
+  {
+   "concept": "price_overrides_giveup_plan",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "if plan in ('bluff_2street', 'giveup', 'river_bluff'):",
+   "to": "% (' [layer]' if _layer_call else ''))"
+  },
+  {
+   "concept": "call_bias_reapplication",
+   "module": "plan",
+   "func": "decide_response",
+   "from": "need_seen = _cf_need if _layer_call else need",
+   "to": "% (_eq_seen, need_seen, need, ' [layer-call]' if _layer_call else ''))"
+  },
+  {
+   "concept": "turn_delayed_cbet",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if (street == 'turn' and initiative and has_c",
+   "to": "_dc_boost = 1.0"
+  },
+  {
+   "concept": "giveup_initiative_stab_deviation",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if plan in ('giveup', 'showdown'):",
+   "to": "return max(0.0, min(0.9, cf)), 'DEVIATE:포기 계획이나"
+  },
+  {
+   "concept": "bluff_execution_frequency",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if plan in ('bluff_2street', 'semibluff', 'river_bluff'):",
+   "to": "return _fp, '블러프 계획 실행(%.0f%%)' % (_fp*100)"
+  },
+  {
+   "concept": "turn_card_range_shift",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if street in ('turn', 'river') and len(board) >= 4 and has_c:",
+   "to": "p *= max(0.35, min(1.70, 1.0 + 0.75*_tce*_bt))"
+  },
+  {
+   "concept": "donk_suppression",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "_oop_a = (oop_vs_aggr is True)",
+   "to": "p *= max(0.03, 1.0 - max(0.30, min(0.97, supp)))"
+  },
+  {
+   "concept": "probe_after_checkthrough",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if has_c and (plan_state or {}).get('opp_checked_prev'):",
+   "to": "supp *= max(0.25, 1.0 - 0.085*PS.sk(profile, 'probe'))"
+  },
+  {
+   "concept": "blockbet",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if plan == 'block':",
+   "to": "return max(0.15, min(0.92, _bb))"
+  },
+  {
+   "concept": "potcontrol_bet_propensity",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if plan == 'pot_control':",
+   "to": "return max(0.05, min(0.6, 0.18 + 0.035*a))"
+  },
+  {
+   "concept": "value_bet_execution_frequency",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "p = 0.30 + 0.058*a + 0.018*profile.get",
+   "to": "p *= (0.35 + 0.65 * (rel/0.80) ** 0.8)"
+  },
+  {
+   "concept": "called_aggression_ownership",
+   "module": "plan",
+   "func": "decide_aggression",
+   "from": "if line_owned_by_live_aggressor(",
+   "to": "' (재리드 %.0f%%)' % (_fp*100))"
+  },
+  {
+   "concept": "called_aggression_ownership",
+   "module": "plan",
+   "func": "line_owned_by_live_aggressor",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "showdown_value_predicate",
+   "module": "plan",
+   "func": "has_showdown_value",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "players_behind_risk_premium",
+   "module": "icm",
+   "func": "players_behind_required_equity_premium",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "planned_bet_sizing",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "base = SIZING.get(plan, {}).get(street, 0.0)",
+   "to": null
+  },
+  {
+   "concept": "bluff_sizing_camouflage",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "_bm = (plan_state or {}).get('bluff_mode')",
+   "to": "base *= float((plan_state or {}).get('bluff_mul') or 1.0)"
+  },
+  {
+   "concept": "bet_budget",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if not deviating:",
+   "to": "return 0.0"
+  },
+  {
+   "concept": "street_texture_sizing",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if base > 0:",
+   "to": "base = base*(1.0 - 0.45*_bt2) + _tf*(0.45*_bt2)"
+  },
+  {
+   "concept": "value_blocker_size_adjust",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if base > 0 and plan in ('value_3street', 'value_2street', 'trap', 'thin_river'):",
+   "to": "base *= max(0.75, min(1.25, 1.0 - 2.0*_bn))"
+  },
+  {
+   "concept": "equity_denial_sizing",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if base > 0 and profile.get('concepts') and street != 'river':",
+   "to": "base *= 1.0 + 0.55*_ed*_dg"
+  },
+  {
+   "concept": "stackoff_spread_horizon",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if base > 0 and stackoff and stackoff.get('ok') and plan == 'value_3street':",
+   "to": "base = 0.35*base + 0.65*float(_sf)"
+  },
+  {
+   "concept": "deviation_bet_size_fallback",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if base <= 0:",
+   "to": "base = {'flop': 0.50, 'turn': 0.55, 'river': 0.60}.get(street, 0.50)"
+  },
+  {
+   "concept": "street_texture_sizing",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if profile.get('concepts'):",
+   "to": "base = 0.45*base + 0.55*tex"
+  },
+  {
+   "concept": "planned_bet_sizing",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "base *= (0.85 + 0.05*profile.get('aggr', 5))",
+   "to": null
+  },
+  {
+   "concept": "weak_hand_size_shrink",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if rel < 0.45 and _bm != 'merged':",
+   "to": "base *= 0.80"
+  },
+  {
+   "concept": "plan_size_band_clamp",
+   "module": "plan",
+   "func": "decide_size",
+   "from": "if plan == 'thin_river':",
+   "to": "return max(0.18, min(0.40, base))"
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "overbet_frac",
+   "from": "if value_line and opp_range and board:",
+   "to": "rel = min(rel, relative_strength(hero, board, _ob_cr))"
+  },
+  {
+   "concept": "river_overbet",
+   "module": "plan",
+   "func": "overbet_frac",
+   "from": "if street == 'river': p *= 1.35",
+   "to": null
+  },
+  {
+   "concept": "exploit_read_permission",
+   "module": "plan",
+   "func": "overbet_frac",
+   "from": "if opp_est:",
+   "to": "p = PS.blend(p, p*max(0.25, mult), _rdo['w'])"
+  },
+  {
+   "concept": "perceived_icm_pressure",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if profile.get('concepts') and bf and bf > 1.0:",
+   "to": "bf = PS.icm_bf(profile, bf)"
+  },
+  {
+   "concept": "spr_commitment_flag",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "committed = spr(stack, pot) < 1.2",
+   "to": null
+  },
+  {
+   "concept": "response_equity_basis",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if tocall > 0:",
+   "to": "street, sims=600, seed=seed)"
+  },
+  {
+   "concept": "opponent_sizing_normalization",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if _rdo['w'] > 0 and opp_est and opp_est.get('sz_mean'):",
+   "to": "sz = sz*(1.0 - _pull) + float(opp_est['sz_mean'])*_pull"
+  },
+  {
+   "concept": "calldown_required_share",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "_objective_be = (",
+   "to": "_call_eq = float(call_value.get('effective_equity'))"
+  },
+  {
+   "concept": "checkraise_flop_decision",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "_is_checkraise_spot = (",
+   "to": "return ('raise', _amt), eq, need"
+  },
+  {
+   "concept": "nonvalue_raise_ev_gate",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if (plan in ('bluff_2street', 'semibluff', 'giveup', 'river_bluff')",
+   "to": "target=_amt)"
+  },
+  {
+   "concept": "response_plan",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "_direct_raise = bool(can_raise and not _is_checkraise_spot)",
+   "to": "eq=round(eq, 3), why=why, plan=plan, tocall=tocall, pot=pot)"
+  },
+  {
+   "concept": "raise_target_coordinate",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if act == 'raise':",
+   "to": "return ('raise', int(amt)), eq, need"
+  },
+  {
+   "concept": "response_plan",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if act == 'call':",
+   "to": "return ('fold', 0), eq, need"
+  },
+  {
+   "concept": "hero_made_contribution",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "made_now = bot.made_strength(hero, board) if board else 0",
+   "to": null
+  },
+  {
+   "concept": "intent_chip_conversion",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "it = intent_of(plan_state, street)",
+   "to": "return ('bet', int(amt)), None, None"
+  },
+  {
+   "concept": "opponent_sizing_normalization",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "if profile.get('concepts') and board:",
+   "to": "_tocall_seen = float(tocall) * (_sz_seen / _sz_true)"
+  },
+  {
+   "concept": "calculation_error",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "nz = PS.calc_noise(profile",
+   "to": "call_need = call_need_true * nz"
+  },
+  {
+   "concept": "players_behind_risk_premium",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "if to_act_behind:",
+   "to": "call_need += "
+  },
+  {
+   "concept": "call_bias_reapplication",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "_cbias = PS.call_bias(profile",
+   "to": "call_need *= _cbias"
+  },
+  {
+   "concept": "turn_delayed_cbet",
+   "module": "plan",
+   "func": "refresh",
+   "from": "if street == 'turn':",
+   "to": "st['flop_checked'] = (_fi.get('act') in (None, 'check'))"
+  },
+  {
+   "concept": "value_degradation_thresholds",
+   "module": "plan",
+   "func": "refresh",
+   "from": "give_thr, ctrl_thr = 0.12, 0.30",
+   "to": "why.append('%s: 상대강도 %.2f → 3스트리트 철회"
+  },
+  {
+   "concept": "semibluff_draw_loss_resolution",
+   "module": "plan",
+   "func": "refresh",
+   "from": "elif old == 'semibluff' and outs < 6 and street != 'river':",
+   "to": "why.append('%s: 드로우 소멸(%d아웃) → 포기'"
+  },
+  {
+   "concept": "draw_completion_value_gate",
+   "module": "plan",
+   "func": "refresh",
+   "from": "if draw_completion_supports_value(made, rel):",
+   "to": "why.append('%s: 드로우 완성(made %d) → 밸류 전환'"
+  },
+  {
+   "concept": "trap_release_no_bite",
+   "module": "plan",
+   "func": "refresh",
+   "from": "elif old == 'trap' and st.get('_no_bite', 0) >= 1:",
+   "to": "why.append('%s: 상대가 벳하지 않음 → 함정 해제"
+  },
+  {
+   "concept": "giveup_reentry_on_improvement",
+   "module": "plan",
+   "func": "refresh",
+   "from": "elif old == 'giveup' and (rel >= 0.55 or made >= 2):",
+   "to": "% (street, rel, made, st['plan']))"
+  },
+  {
+   "concept": "strength_improvement_promotion",
+   "module": "plan",
+   "func": "refresh",
+   "from": "elif old in ('pot_control', 'block', 'showdown') and (",
+   "to": "why.append('%s: 강도 상승(rel %.2f, made %d) → 밸류 전환'"
+  },
+  {
+   "concept": "improved_bluff_rejudgment",
+   "module": "plan",
+   "func": "refresh",
+   "from": "elif old == 'bluff_2street' and (",
+   "to": "% (street, made, rel, float(_call_eq)))"
+  },
+  {
+   "concept": "value2_budget_exhaustion_upgrade",
+   "module": "plan",
+   "func": "refresh",
+   "from": "elif (old == 'value_2street'",
+   "to": "why.append('%s: 예산 소진 후 강도 상승"
+  },
+  {
+   "concept": "layer_calloff_judgment",
+   "module": "plan",
+   "func": "preflop_plan",
+   "from": "_calloff_compare = None",
+   "to": "'strategy_consumer': bool(_layer_j.get('gate_pass')),"
+  },
+  {
+   "concept": "preflop_decision_class",
+   "module": "plan",
+   "func": "preflop_plan",
+   "from": "_prev = dict(prior_pf or {})",
+   "to": "_decision_kind = 'reraiser_backaction'"
+  },
+  {
+   "concept": "preflop_role_memory",
+   "module": "plan",
+   "func": "preflop_plan",
+   "from": "seed_info = {",
+   "to": "'money_open': dict(money_open or {}) if role == 'open' else None,"
+  },
+  {
+   "concept": "human_planned_size_shape",
+   "module": "plan",
+   "func": "preflop_plan",
+   "from": "_pf_shape = None",
+   "to": "seed_info['pf_size_shape'] = _pf_shape"
+  },
+  {
+   "concept": "bluff_sizing_camouflage",
+   "module": "plan",
+   "func": "bluff_mode",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "continuation_bet_frequency_core",
+   "module": "plan",
+   "func": "_continuation_frequency",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "trap_induction",
+   "module": "plan",
+   "func": "opp_bet_prob",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_trap_target",
+   "module": "plan",
+   "func": "select_field_opponent",
+   "from": "if purpose == 'bet_probability':",
+   "to": "score=opp_bet_prob(est,w,street)"
+  },
+  {
+   "concept": "opponent_fold_constraint",
+   "module": "plan",
+   "func": "select_field_opponent",
+   "from": "else:",
+   "to": "score=float(rd.get('w',0.0))*float(PS.street_gap(rd,street) or 0.0)"
+  },
+  {
+   "concept": "call_bias_reapplication",
+   "module": "plan",
+   "func": "apply_response_biases_to_call_threshold",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "checkraise_value_probability_floor",
+   "module": "plan",
+   "func": "_checkraise_value_floor_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "checkraise_river_decision",
+   "module": "plan",
+   "func": "checkraise_decision",
+   "from": "if street == 'river':",
+   "to": null
+  },
+  {
+   "concept": "checkraise_flop_decision",
+   "module": "plan",
+   "func": "checkraise_draw_street_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "river_thin_value",
+   "module": "plan",
+   "func": "river_fix",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "river_thin_value",
+   "module": "plan",
+   "func": "river_value_reassessment",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "river_value_reassessment",
+   "from": "if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):",
+   "to": "'리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'"
+  },
+  {
+   "concept": "plan_revision_lifecycle",
+   "module": "plan",
+   "func": "update_plan",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "pure_bluff_line_selection",
+   "module": "plan",
+   "func": "_blocker_score_bluff_factor",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "pure_bluff_line_selection",
+   "module": "plan",
+   "func": "_blocker_net_bluff_factor",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_calloff_threshold",
+   "module": "preflop",
+   "func": "defend_action_likelihoods",
+   "from": "_st = stack_bb if stack_bb is not None else bb",
+   "to": "'hand_pct': legacy_preflop_order_percentile(hand),"
+  },
+  {
+   "concept": "preflop_read_width_exploit",
+   "module": "preflop",
+   "func": "defend_action_likelihoods",
+   "from": "if exploit and exploit.get('w', 0) > 0:",
+   "to": "tp = max(min(tp, 0.06), tp * (1.0 - w*1.1*fbg))"
+  },
+  {
+   "concept": "reshove_opportunity",
+   "module": "preflop",
+   "func": "defend_action_likelihoods",
+   "from": "p_hot = 0.0",
+   "to": "p_hot = max(0.0, min(1.0, 0.30 + 0.60*depth))"
+  },
+  {
+   "concept": "mixed_preflop_action_likelihood",
+   "module": "preflop",
+   "func": "defend_action_likelihoods",
+   "from": "a = prof_aggr(prof)",
+   "to": "'hand_pct': r,"
+  },
+  {
+   "concept": "preflop_premium_slowplay_mix",
+   "module": "preflop",
+   "func": "defend_action_likelihoods",
+   "from": "_pf_slow = 0.0",
+   "to": "w_raise *= max(0.30, 1.0 - 0.70*_pf_slow)"
+  },
+  {
+   "concept": "allin_form_fold_equity_read",
+   "module": "preflop",
+   "func": "raise_form",
+   "from": "if exploit and exploit.get('w', 0) > 0:",
+   "to": "sh *= max(0.35, 1.0 - w*0.5*max(0.0, exploit.get('fb_gap', 0.0)))"
+  },
+  {
+   "concept": "accumulation_variance_drive",
+   "module": "preflop",
+   "func": "open_decision",
+   "from": "vs = (PS.variance_seek(",
+   "to": "if prof.get('concepts') else 0.0)"
+  },
+  {
+   "concept": "short_stack_open_widening",
+   "module": "preflop",
+   "func": "open_decision",
+   "from": "thr = min(0.9, thr + t['shove_add']",
+   "to": null
+  },
+  {
+   "concept": "money_open_range_modifier",
+   "module": "preflop",
+   "func": "open_decision",
+   "from": "if money_open:",
+   "to": "'unchanged')"
+  },
+  {
+   "concept": "limp_entry_motive",
+   "module": "preflop",
+   "func": "open_decision",
+   "from": "_base_limp_p = limp_p(prof, feel, r, pos, t)",
+   "to": "money_open['sb_limp_currently_blocked'] = False"
+  },
+  {
+   "concept": "open_size_behind_read_adjust",
+   "module": "preflop",
+   "func": "open_decision",
+   "from": "_soft = 0.0",
+   "to": "for r in _bl)/len(_bl)))"
+  },
+  {
+   "concept": "players_behind_risk_premium",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "if players_behind:",
+   "to": "need += "
+  },
+  {
+   "concept": "locked_allin_price_gate",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "eq_locked = None",
+   "to": "fold += _rm"
+  },
+  {
+   "concept": "reraise_attack_evidence",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "fair = 1.0 / (1.0 + len(pools))",
+   "to": "fold += removed"
+  },
+  {
+   "concept": "reraise_sizing_form",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "x = rng.random()",
+   "to": "action = ('fold', 0)"
+  },
+  {
+   "concept": "@nonsemantic:decision audit record (provenance only)",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "return action[0], action[1], {",
+   "to": "'selected_action': action[0],"
+  },
+  {
+   "concept": "iso_limper_read_widening",
+   "module": "preflop",
+   "func": "iso_decision",
+   "from": "if limper_reads:",
+   "to": "+ 0.30*max(0.0, _lg)))"
+  },
+  {
+   "concept": "iso_sizing",
+   "module": "preflop",
+   "func": "iso_decision",
+   "from": "if r <= thr:",
+   "to": "return ('raise', 3.0 + n_limpers)"
+  },
+  {
+   "concept": "limp_entry_motive",
+   "module": "preflop",
+   "func": "iso_decision",
+   "from": "_lp = limp_p(prof, feel, r, pos, t)",
+   "to": "return ('limp', 1.0)"
+  },
+  {
+   "concept": "rfi_width_prior",
+   "module": "preflop",
+   "func": "_open",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_trait_adapter",
+   "module": "preflop",
+   "func": "_tr_loose",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "multiway_reraise_reasoning",
+   "module": "preflop",
+   "func": "multiway_evidence_application_capacity",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "multiway_reraise_reasoning",
+   "module": "preflop",
+   "func": "apply_multiway_call_evidence",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "call_threshold_bias",
+   "module": "persona",
+   "func": "bias",
+   "from": "if name == 'station':",
+   "to": "T('discipline')) - 0.30*(S('potodds') - 5))"
+  },
+  {
+   "concept": "call_threshold_bias",
+   "module": "persona",
+   "func": "bias",
+   "from": "if name == 'bluff_fear':",
+   "to": "return interpret_bluff_threat_bias(S(_bc), T('aggression'), S('range_read'))"
+  },
+  {
+   "concept": "call_threshold_bias",
+   "module": "persona",
+   "func": "bias",
+   "from": "if name == 'hero_call':",
+   "to": "+ 0.20*T('tilt_prone'))"
+  },
+  {
+   "concept": "call_threshold_bias",
+   "module": "persona",
+   "func": "interpret_bluff_threat_bias",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_temperament_direction",
+   "module": "persona",
+   "func": "preflop_temper_direction",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "concept_skill_gate",
+   "module": "persona",
+   "func": "gate",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "street_concept_alias",
+   "module": "persona",
+   "func": "street_concept",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_trait_adapter",
+   "module": "persona",
+   "func": "traits_of",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "read_polarity_signal",
+   "module": "persona",
+   "func": "_polar",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "exploit_read_permission",
+   "module": "persona",
+   "func": "blend",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "chart_memory_accuracy",
+   "module": "persona",
+   "func": "_pos_equiv",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "exploit_read_permission",
+   "module": "persona",
+   "func": "interpret_opponent_action_signals",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "persona_population_generation",
+   "module": "persona",
+   "func": "make_player",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "forced_bet_posting",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if sb_s:",
+   "to": "rnd.current = h.bb; rnd.min_raise = h.bb"
+  },
+  {
+   "concept": "opponent_concept_inference",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_opp_est_pf = (RD.perceived_profile(",
+   "to": "if aggressor is not None and aggressor != s else None)"
+  },
+  {
+   "concept": "money_jump_seat_topology",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "'kind': ('vs_raise' if aggressor is not None else",
+   "to": "'vs_limp' if limpers else 'unopened'),"
+  },
+  {
+   "concept": "preflop_decision_routing",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_behind = [rnd.stacks[x]/h.bb for x in rnd.order",
+   "to": "cold_decision_seed=self._dseed("
+  },
+  {
+   "concept": "preflop_role_memory",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if a == 'fold':",
+   "to": "elif a == 'shove':"
+  },
+  {
+   "concept": "preflop_public_roles",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if a_ == 'call' and not m.get('raised'):",
+   "to": "if m.get('raised'):"
+  },
+  {
+   "concept": "forced_bet_posting",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if bb_s: contrib[bb_s] = contrib.get(bb_s, 0)",
+   "to": null
+  },
+  {
+   "concept": "initiative_owner",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if r2.action_meta and r2.action_meta[-1].get('raised'):",
+   "to": null
+  },
+  {
+   "concept": "aggressor_relative_position",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_oop_a = (oop_vs(order, s, aggressor)",
+   "to": "else None)"
+  },
+  {
+   "concept": "preflop_range_reconstruction",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "opp_stack_bbs[o] = float(r2.stacks.get(o, 0) or 0)",
+   "to": "and self._was_3bettor(o)"
+  },
+  {
+   "concept": "layer_investment_ev",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_layer_call_value = None",
+   "to": "'call_chip_ev': call_ev_shadow.get('call_chip_ev'),"
+  },
+  {
+   "concept": "multiway_representative_union_range",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "opp_r = R.range_union(*[",
+   "to": "'reason': 'empty_union_opponent_range',"
+  },
+  {
+   "concept": "@nonsemantic:plan street bookkeeping",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if key in h.plans and street != h.plans[key].get('street_made'):",
+   "to": "h.plans[key].setdefault('streets', []).append(street)"
+  },
+  {
+   "concept": "primary_opponent_selection",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_others = [x for x in r2.live() if x != s]",
+   "to": "_ostk = (r2.stacks.get(_main, 0)/h.bb) if _main is not None else None"
+  },
+  {
+   "concept": "probe_after_checkthrough",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_prev_street = {'turn': 'flop', 'river': 'turn'}.get(street)",
+   "to": "x[1] == aggressor and x[2] == 'check' for x in _pr)"
+  },
+  {
+   "concept": "money_jump_seat_topology",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_mj_obs = _money_jump_observe(",
+   "to": "facing_read=(_est if tc > 0 and aggressor == _main else None))"
+  },
+  {
+   "concept": "fold_call_bet_ev",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "bet_ev_shadow = None",
+   "to": "_call_target_range = R.perceived_facing_bet_response("
+  },
+  {
+   "concept": "opponent_concept_inference",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if tc > 0 and aggressor is not None and aggressor != s:",
+   "to": null
+  },
+  {
+   "concept": "opponent_concept_inference",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "opp_est=(est if tc > 0 and aggressor is not None",
+   "to": null
+  },
+  {
+   "concept": "@nonsemantic:intent trace bookkeeping",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if _i['street'] == street and _i['seat'] == s and 'trace' not in _i:",
+   "to": null
+  },
+  {
+   "concept": "bet_budget",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if a in ('bet', 'raise', 'allin'):",
+   "to": "h.plans[key]['bet_streets'].append(street)"
+  },
+  {
+   "concept": "human_planned_size_shape",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_shape_meta0.get('before')",
+   "to": "_shape_meta0.get('after')"
+  },
+  {
+   "concept": "effective_allin_promotion",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if not _replayed and a in ('bet', 'raise'):",
+   "to": "if a in ('bet', 'raise'):"
+  },
+  {
+   "concept": "@nonsemantic:action/intent audit record fields",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_row[2] if _row[1] in ('bet', 'raise', 'allin') else None)",
+   "to": "_allin_execution_mode"
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if e.get('action_kind') in ('bet', 'raise'):",
+   "to": "if e.get('action_kind') in ('bet', 'raise'):"
+  },
+  {
+   "concept": "replan_board_change",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if len(h.board) > len(board):",
+   "to": null
+  },
+  {
+   "concept": "preflop_range_action_label",
+   "module": "session",
+   "func": "HandRun._pf_range_action",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_public_roles",
+   "module": "session",
+   "func": "_preflop_public_action_context",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_range_action_label",
+   "module": "session",
+   "func": "_preflop_public_action_context",
+   "from": "if full_before and all(x.get('actor_allin_after')",
+   "to": "action = 'open'"
+  },
+  {
+   "concept": "preflop_range_reconstruction",
+   "module": "session",
+   "func": "HandRun._locked_postflop_range",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_public_roles",
+   "module": "session",
+   "func": "HandRun._was_3bettor",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "emotion_loss_shock",
+   "module": "session",
+   "func": "HandRun._tilt_update",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "pot_award_settlement",
+   "module": "session",
+   "func": "HandRun._finish",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "money_open_form_shadow",
+   "module": "session",
+   "func": "_money_jump_attach_action",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "weighted_range_transform",
+   "module": "ranges",
+   "func": "legacy_range",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "weighted_range_transform",
+   "module": "ranges",
+   "func": "range_support",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "weighted_range_transform",
+   "module": "ranges",
+   "func": "_range_combo",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "postflop_action_posterior",
+   "module": "ranges",
+   "func": "narrow",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "postflop_action_posterior",
+   "module": "ranges",
+   "func": "_damp",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "continue_range_partition",
+   "module": "ranges",
+   "func": "continuation_support_fraction",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "range_ordering_strength",
+   "module": "bot",
+   "func": "_sd_strength",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "future_draw_outs",
+   "module": "bot",
+   "func": "draw_strength.straight_outs",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "bet_range_partition",
+   "module": "bot",
+   "func": "pick_bluffs.score",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "facing_response_kind",
+   "module": "action_events",
+   "func": "_response_kind",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "public_postflop_story",
+   "module": "action_events",
+   "func": "aggressive_seats",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legal_action_application",
+   "module": "runner",
+   "func": "Round.needs_action",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "icm_bubble_factor",
+   "module": "icm",
+   "func": "icm_pressure",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_icm_overridden",
+   "module": "icm",
+   "func": "field_bf",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "field_icm_proxy",
+   "module": "icm",
+   "func": "field_bf#2",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "money_self_preservation",
+   "module": "money_pressure",
+   "func": "bf_signal",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "money_open_form_shadow",
+   "module": "money_pressure",
+   "func": "unopened_modifiers",
+   "from": "skill01(state.get('open_size_skill', 5.0))",
+   "to": null
+  },
+  {
+   "concept": "emotion_profile_view",
+   "module": "play",
+   "func": "Hand.emotion_level",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "field_table_balance",
+   "module": "fieldsim",
+   "func": "Table.worst_open_seat.score",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "persona_population_generation",
+   "module": "fieldsim",
+   "func": "Field.__init__",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "emotion_profile_view",
+   "module": "fieldsim",
+   "func": "Field._init_runtime",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "field_context_producer",
+   "module": "fieldsim",
+   "func": "Field.avg_stack",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "field_table_balance",
+   "module": "fieldsim",
+   "func": "Field._collect_busts",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "field_context_producer",
+   "module": "fieldsim",
+   "func": "Field.advance_level",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "fieldsim",
+   "func": "Field.step_others",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "parallel_round_isolation",
+   "module": "live2",
+   "func": "_load_field",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "parallel_round_isolation",
+   "module": "live2",
+   "func": "_resume_parallel_others",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "parallel_round_isolation",
+   "module": "live2",
+   "func": "resume_others",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "forced_bet_posting",
+   "module": "live2",
+   "func": "_opening_raw",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "tourney",
+   "func": "Tournament.__init__",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "tourney",
+   "func": "Tournament.field_descriptor",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "tourney",
+   "func": "Tournament.finish_hand",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "field",
+   "func": "draw_type",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "field",
+   "func": "make_player",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "field",
+   "func": "Field.__init__",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "field",
+   "func": "Field.descriptor",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "field",
+   "func": "Field.avg_stack_bb",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "perceived_icm_pressure",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "if profile.get('concepts') and bf and bf > 1.0 and not _bf_gated:",
+   "to": "bf = PS.icm_bf(profile, bf)"
+  },
+  {
+   "concept": "calldown_required_share",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "_p0 = max(1.0, float(pot) - float(tocall))",
+   "to": "float(objective_breakeven) * float(bf) * _size_ratio)"
+  },
+  {
+   "concept": "calldown_required_share",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "need = max(0.01, min(0.97, need))",
+   "to": "call_need = max(0.01, min(0.95, call_need))"
+  },
+  {
+   "concept": "hero_made_contribution",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "made_now = bot.made_strength(hero, board) if board else 0",
+   "to": null
+  },
+  {
+   "concept": "call_bias_reapplication",
+   "module": "plan",
+   "func": "calldown_need",
+   "from": "if profile.get('concepts') and board:@@2",
+   "to": "return need, max(0.03, min(0.95, call_need))"
+  },
+  {
+   "concept": "overbet_selection_core",
+   "module": "plan",
+   "func": "overbet_frac",
+   "from": "if street == 'flop': return None",
+   "to": "return round(min(2.2, base * rng.uniform(0.92, 1.10)), 2)"
+  },
+  {
+   "concept": "checkraise_flop_decision",
+   "module": "plan",
+   "func": "checkraise_decision",
+   "from": "rng = random.Random(seed)",
+   "to": "outs = plan_state.get('outs', 0)"
+  },
+  {
+   "concept": "checkraise_turn_decision",
+   "module": "plan",
+   "func": "checkraise_decision",
+   "from": "else:@@2",
+   "to": "plan, rel, outs, sk, profile.get('aggr', 5))"
+  },
+  {
+   "concept": "continue_fold_blocker",
+   "module": "plan",
+   "func": "refresh",
+   "from": "if opp_range and board:",
+   "to": "st['stackoff'] = _so"
+  },
+  {
+   "concept": "strength_improvement_promotion",
+   "module": "plan",
+   "func": "refresh",
+   "from": "_prev_made = st.get('made') or 0",
+   "to": "_prev_rel = st.get('rel') or 0.0"
+  },
+  {
+   "concept": "opponent_fold_constraint",
+   "module": "plan",
+   "func": "refresh",
+   "from": "_field_refresh = (",
+   "to": "if int(n_opp or 1) > 1 else None)"
+  },
+  {
+   "concept": "opponent_fold_constraint",
+   "module": "plan",
+   "func": "select_field_opponent",
+   "from": "if purpose == 'bet_probability':@@2",
+   "to": "return min(rows"
+  },
+  {
+   "concept": "preflop_decision_routing",
+   "module": "plan",
+   "func": "preflop_plan",
+   "from": "if aggressor_pos is None and not n_limpers:",
+   "to": "role = 'defend'"
+  },
+  {
+   "concept": "reraise_sizing_form",
+   "module": "preflop",
+   "func": "raise_form",
+   "from": "if stack_bb is None or target_bb >= stack_bb:",
+   "to": "sh = max(0.0, min(1.0, (1.75 - spr_after) / 1.25))"
+  },
+  {
+   "concept": "reraise_sizing_form",
+   "module": "preflop",
+   "func": "raise_form",
+   "from": "if n_opp > 1:",
+   "to": "sh = min(1.0, sh * (1.0 + 0.20*(n_opp - 1)))"
+  },
+  {
+   "concept": "reraise_sizing_form",
+   "module": "preflop",
+   "func": "raise_form",
+   "from": "aware = 1.0",
+   "to": "return ('raise', target_bb)"
+  },
+  {
+   "concept": "multiway_reraise_reasoning",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "if len(pools) < 2 or pot_bb is None or to_call_bb is None:",
+   "to": "'opponent_range_seats': range_seats,"
+  },
+  {
+   "concept": "multiway_reraise_reasoning",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "cost = max(0.0, float(to_call_bb or 0.0))",
+   "to": "need = max(0.01, min(0.95, need))"
+  },
+  {
+   "concept": "multiway_reraise_reasoning",
+   "module": "preflop",
+   "func": "multiway_reraise_decision",
+   "from": "lik = defend_action_likelihoods(",
+   "to": "call, fold = apply_multiway_call_evidence(call, fold, eq, need, reason_skill)"
+  },
+  {
+   "concept": "isolation_decision",
+   "module": "preflop",
+   "func": "iso_decision",
+   "from": "t = _tr(prof)",
+   "to": "hotzone_pressure(prof, pos, bb, behind_stacks or []))"
+  },
+  {
+   "concept": "unopened_decision",
+   "module": "preflop",
+   "func": "open_decision",
+   "from": "thr = (_open(prof, pos, seats, bb, ante)",
+   "to": "hotzone_pressure(prof, pos, bb, behind_stacks or []))"
+  },
+  {
+   "concept": "open_execution_form",
+   "module": "preflop",
+   "func": "open_decision",
+   "from": "_in_raise_range = (r <= thr)",
+   "to": "if act: return (act, amt)"
+  },
+  {
+   "concept": "self_hand_overconfidence_bias",
+   "module": "persona",
+   "func": "bias",
+   "from": "if name == 'overpair_love':",
+   "to": "+ 0.30*(10 - T('discipline')))"
+  },
+  {
+   "concept": "self_hand_overconfidence_bias",
+   "module": "persona",
+   "func": "bias",
+   "from": "if name == 'draw_love':",
+   "to": "return _z(0.50*(10 - S('outs'))"
+  },
+  {
+   "concept": "self_hand_overconfidence_bias",
+   "module": "persona",
+   "func": "bias",
+   "from": "if name == 'sticky':",
+   "to": "+ 0.20*T('tilt_prone'))"
+  },
+  {
+   "concept": "initiative_owner",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if r2.action_meta and r2.action_meta[-1].get('raised'):@@2",
+   "to": null
+  },
+  {
+   "concept": "opponent_sizing_normalization",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "h.book.observe_size(",
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "if e.get('action_kind') in ('bet', 'raise'):@@2",
+   "to": null
+  },
+  {
+   "concept": "money_open_range_modifier",
+   "module": "money_pressure",
+   "func": "unopened_modifiers",
+   "from": "preserve = clamp01(",
+   "to": "range_factor = (1.0 + drive) / (1.0 + range_brake)"
+  },
+  {
+   "concept": "money_open_form_shadow",
+   "module": "money_pressure",
+   "func": "unopened_modifiers",
+   "from": "pot_brake = preserve * (1.0 - urgency)",
+   "to": null
+  },
+  {
+   "concept": "money_open_form_shadow",
+   "module": "money_pressure",
+   "func": "unopened_modifiers",
+   "from": "restraint = union01(pot_brake, pressure) * (1.0 - urgency)",
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "Book.observe_postflop",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_unconsumed_estimates",
+   "module": "reads",
+   "func": "Book.observe_postflop",
+   "from": "if facing_raise:",
+   "to": "if action == 'fold': r['f2r_' + street] += 1"
+  },
+  {
+   "concept": "preflop_raise_observation",
+   "module": "reads",
+   "func": "Book.observe_backraise",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "preflop_raise_observation",
+   "module": "reads",
+   "func": "Book.observe_cold_reraise",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_estimation",
+   "module": "reads",
+   "func": "estimate",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_unconsumed_estimates",
+   "module": "reads",
+   "func": "estimate",
+   "from": "ftr = _raw(",
+   "to": "ftr_r = _raw('f2r_river', 'fr_river')"
+  }
+ ],
+ "tables": {
+  "plan:PLANS": "dead_strategy_tables",
+  "plan:BUDGET": "bet_budget",
+  "plan:SIZING": "planned_bet_sizing",
+  "preflop:PCT": "legacy_preflop_ordering",
+  "preflop:RV": "@nonsemantic:card rank map",
+  "preflop:OPENER_MULT": "opener_position_attack_table",
+  "preflop:DEF_POS_MULT": "dead_strategy_tables",
+  "preflop:DEPTH_OPEN_MULT": "dead_strategy_tables",
+  "preflop:LEVEL_TIGHTEN": "defend_attack_continue_widths",
+  "preflop:CALLOFF_TIGHTEN": "legacy_calloff_threshold",
+  "ranges:_LIK_MIN": "inverse_defend_likelihood",
+  "ranges:_MIN_KEEP": "postflop_action_posterior",
+  "ranges:_MIN_FRAC": "postflop_action_posterior",
+  "ranges:_DECAY": "postflop_action_posterior",
+  "reads:PRIOR": "opponent_estimation",
+  "reads:FAMILY_OBS": "opponent_estimation",
+  "reads:DEFAULT_OBS": "opponent_estimation",
+  "reads:READ_RECENCY_V3": "recency_window",
+  "reads:_MAX_RECENCY_HISTORY": "recency_window",
+  "reads:_SIG_SCALE": "style_belief_reference",
+  "persona:SIZING_FAMILY_SIG": "human_planned_size_shape",
+  "persona:LOADING": "persona_population_generation",
+  "persona:DEFAULT_SPREAD": "persona_population_generation",
+  "persona:SPREAD": "persona_population_generation",
+  "persona:OPEN_ELASTICITY": "dead_strategy_tables",
+  "persona:GTO_MEMORY_V2": "chart_memory_accuracy",
+  "persona:PREFLOP_REASONING_V3": "preflop_condition_reasoning",
+  "persona:EXPLOIT_WEIGHT_V3": "exploit_read_permission",
+  "persona:CALC_NOISE_V3": "calculation_error",
+  "persona:PREFLOP_TEMPER_DIRECTION_V3": "preflop_temperament_direction",
+  "persona:GTO_STUDIED": "studied_condition_match",
+  "persona:TILT_CONCEPT_K": "emotion_profile_view",
+  "persona:_PCTL": "display_skill_summary",
+  "persona:TIERS": "display_skill_summary",
+  "gto:RFI_BY_BEHIND": "rfi_width_prior",
+  "gto:RFI_SB": "rfi_width_prior",
+  "gto:_DEPTH_EARLY": "rfi_width_prior",
+  "gto:_DEPTH_LATE": "rfi_width_prior",
+  "gto:ANTE_MULT": "rfi_width_prior",
+  "gto:DEF_VS_SB": "defend_width_prior",
+  "gto:_MDF": "defend_width_prior",
+  "gto:DEF_SEAT": "defend_width_prior",
+  "gto:TB_SHARE": "threebet_width_prior",
+  "gto:_MTT8_ANTE_DEF_A": "defend_width_prior",
+  "gto:_MTT8_ANTE_DEF_B": "defend_width_prior",
+  "gto:_MTT8_ANTE_DEF_VS_SB": "defend_width_prior",
+  "gto:_MTT8_ANTE_DEF_SEAT": "defend_width_prior",
+  "gto:_MTT8_ANTE_TB_SHARE": "threebet_width_prior",
+  "icm:_ICM_PRUNE": "icm_exact_share",
+  "icm:EXACT_MAX_SEATS": "icm_exact_share",
+  "icm:EXACT_MAX": "icm_exact_share",
+  "icm:MAX_PREMIUM": "field_icm_proxy",
+  "icm:_PROX": "field_icm_proxy",
+  "icm:_STACK": "field_icm_proxy",
+  "icm:_SIGMA_STAGE": "field_icm_proxy",
+  "icm:_SIGMA_HI": "field_icm_proxy",
+  "icm:_SIGMA_LO": "field_icm_proxy",
+  "icm:_LADDER_W": "field_icm_proxy",
+  "icm:_LADDER_P": "field_icm_proxy",
+  "icm:_K": "field_icm_proxy",
+  "icm:_FLAT_GAIN": "field_icm_proxy",
+  "texture:RANK_HELP": "turn_card_range_shift",
+  "bot:RANKS": "@nonsemantic:card ranks",
+  "bot:RV": "@nonsemantic:card rank map",
+  "bot:_E7_MAX": "@nonsemantic:cache size",
+  "bot:_ALLCOMBOS": "@nonsemantic:combo list",
+  "depth:_CURVE": "depth_perception",
+  "depth:FIELD_POW": "depth_perception",
+  "depth:FIELD_CLAMP": "depth_perception",
+  "depth:LOOKAHEAD_MAX": "depth_perception",
+  "depth:OFFSET_MAX": "depth_perception",
+  "depth:EDGE_GAIN": "depth_perception",
+  "depth:ICM_GAIN": "depth_perception",
+  "dynamics:HIT_MIN": "emotion_loss_shock",
+  "dynamics:HIT_FULL": "emotion_loss_shock",
+  "dynamics:HIT_BASE": "emotion_loss_shock",
+  "dynamics:RELIEF_MIN": "emotion_recovery",
+  "dynamics:RELIEF_FULL": "emotion_recovery",
+  "dynamics:RELIEF_MAX": "emotion_recovery",
+  "dynamics:DECAY_BASE": "emotion_recovery",
+  "dynamics:HEAT_DECAY": "emotion_recovery",
+  "dynamics:HEAT_GAIN": "emotion_loss_shock",
+  "dynamics:REP_CLAMP": "emotion_loss_shock",
+  "context:SPEC": "field_context_producer"
+ },
+ "nonsemantic_functions": {
+  "plan:_normalize_opp_pools": "shape adapter for pool lists",
+  "plan:decide_response._nv_gate": "closure that calls _nonvalue_raise_ev_gate and records it",
+  "plan:_trace": "trace logging",
+  "plan:_prof_hint": "display hint",
+  "plan:record_deviation": "logging",
+  "preflop:_tr": "trait accessor (see legacy_trait_adapter)",
+  "preflop:prof_aggr": "temperament accessor",
+  "preflop:defend_action_likelihoods._logit": "math helper",
+  "ranges:range_is_uniform": "container predicate",
+  "ranges:range_mean_mass": "container stat",
+  "ranges:range_unique_sorted": "container helper",
+  "ranges:_def_thresholds": "forwarder to preflop.defend_thresholds",
+  "ranges:_prof_key": "cache key",
+  "ranges:_ranked": "sort by range_ordering_strength",
+  "ranges:_action_event_fields": "event schema adapter",
+  "session:_cache_key": "replay cache key",
+  "session:_money_jump_observe._target_state": "state record builder",
+  "session:HandRun.__init__": "runtime init",
+  "session:HandRun._emit_bot_action": "telemetry/UI emit",
+  "session:HandRun._emit_street": "telemetry/UI emit",
+  "session:HandRun.start": "generator plumbing",
+  "session:HandRun.send": "generator plumbing",
+  "session:HandRun._pid": "id mapping",
+  "session:HandRun._dseed": "deterministic seed derivation",
+  "session:HandRun._reads_for": "loops perceived_profile",
+  "session:HandRun._finish._left_of_button_order": "seat order helper for odd-chip",
+  "session:HandRun._finish._rotate_to": "seat order helper",
+  "reads:_ObsMap.__getitem__": "container",
+  "reads:_ObsMap.get": "container",
+  "reads:_numeric_snapshot": "snapshot copy",
+  "reads:Book.__init__": "init",
+  "reads:Book._k": "key",
+  "reads:estimate._rate": "ratio helper",
+  "reads:save_book": "io",
+  "reads:load_book": "io",
+  "reads:_sig_scale": "math helper",
+  "reads:prior_spread": "style_belief_reference helper (SHADOW)",
+  "reads:style_certainty": "style_belief_reference helper (SHADOW)",
+  "persona:dump_loading": "debug dump",
+  "persona:_clamp": "math",
+  "persona:skill": "accessor",
+  "persona:has": "accessor",
+  "persona:describe": "display",
+  "persona:_z": "math",
+  "persona:read_opponent._see": "gate curve helper inside read_opponent",
+  "gto:_interp": "math",
+  "gto:avg_rfi": "rfi_width_prior helper (positional flattening input)",
+  "gto:table": "display table",
+  "gto:_use_mtt8_ante_defense": "defend_width_prior calibration switch (8-max ante only)",
+  "icm:_icm_equity_reference.rec": "recursion helper",
+  "icm:_lerp": "math",
+  "icm:_lognorm": "math",
+  "money_pressure:clamp01": "math",
+  "money_pressure:sat": "math",
+  "money_pressure:inv1p": "math",
+  "money_pressure:mean01": "math",
+  "money_pressure:union01": "math",
+  "money_pressure:skill01": "math",
+  "money_pressure:actor_from_profile": "profile adapter",
+  "money_pressure:signals": "telemetry summary",
+  "texture:label": "display label",
+  "bot:draw_strength.flush_count": "card count helper",
+  "bot:draw_strength.straight_run": "card helper",
+  "bot:bluff_count": "line_bluff_composition helper",
+  "bot:_ck": "cache key",
+  "depth:_interp": "math",
+  "runner:P": "debug print",
+  "runner:_sig": "signature",
+  "runner:_SigMap.__getitem__": "container",
+  "runner:shape_size": "compat wrapper of persona.shape_size",
+  "runner:Round.__init__": "init",
+  "runner:Round.live": "accessor",
+  "runner:Round.pot_contrib": "accessor",
+  "dynamics:_t": "accessor",
+  "dynamics:Tilt.__init__": "init",
+  "dynamics:Tilt._s": "accessor",
+  "dynamics:Tilt.level": "accessor",
+  "dynamics:Tilt.heat": "accessor",
+  "dynamics:Tilt.shown": "accessor",
+  "context:Context.__init__": "init",
+  "context:Context.update": "container",
+  "context:Context.missing": "container",
+  "context:Context.__repr__": "display"
+ },
+ "nonsemantic_modules": {
+  "fieldsim": "physical table/field runtime (registered rows: physical_button_rotation, field_table_balance, field_context_producer); helpers without poker meaning",
+  "live2": "UI/runtime state, parallel rounds, persistence (replay_decision_cache, parallel_round_isolation)",
+  "field": "legacy tournament field runtime (legacy_tournament_progress)",
+  "tourney": "legacy tournament runtime (legacy_tournament_progress)",
+  "play": "hand container (emotion_profile_view, icm_bubble_factor via Hand.bf)",
+  "archetypes": "legacy archetype tables (legacy_arch_types)"
+ }
+}

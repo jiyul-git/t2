@@ -458,3 +458,5 @@ range 복원, 관측 액션 해석, legacy 적용 가중치, call/fold 문턱 �
 ### 감사 4차: 관측·압박·멀티웨이 적용 경계
 
 기존 range_read 소비 중 observation accuracy, pressure application capacity, multiway evidence capacity와 call/fold evidence 혼합을 명시 입력의 함수로 분리했다. 기존 profile/actor 값 공급은 보존한다. [현재 함수와 잔여 의미](docs/semantic_audit/RANGE_READ_CONSUMER_BOUNDARIES.md)의 4차 항목 참조.
+
+재감사(2026-10-02): 개념 목록을 코드 전체 결정 지점·함수·상수 표와 대조해 inline 개념 66개를 등록하고([보고](docs/semantic_audit/completeness/COMPLETENESS_REPORT.md)), range_read 소비처 9곳의 baseline 활성 여부를 정리했다([5차](docs/semantic_audit/RANGE_READ_CONSUMER_BOUNDARIES.md)). `persona.street_concept` 표가 스트리트 분리 정책 자체다: checkraise_late(턴/리버)와 bluffcatch_early(플랍/턴)는 여전히 두 스트리트를 공유하고, 플랍 thin value는 range_merge가 맡는다.

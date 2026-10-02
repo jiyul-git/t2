@@ -259,3 +259,80 @@ CSV/JSON의 `current_function`이 아래 연결을 포함한다. 원래 `functio
 ## 3차: range_read 소비 경계
 
 [RANGE_READ_CONSUMER_BOUNDARIES](RANGE_READ_CONSUMER_BOUNDARIES.md)에 복원·액션 해석·판단 적용의 실제 함수와 공급/소비 경로를 분리했다. 기존 scalar 공급과 잔여 과적재는 유지한다. 새 skill 도입이나 전체 raise 적용 경로 통일은 하지 않았다.
+
+<!-- reaudit:start -->
+## 재감사 추가 행 (completeness)
+
+재감사(2026-10-02)에서 추가된 개념. 열 의미는 위 표와 같다.
+
+| concept | preflop | flop | turn | river |
+| --- | --- | --- | --- | --- |
+| perceived_board_danger | not applicable | overloaded — make_plan scaled danger | overloaded — refresh stores raw danger in same key | overloaded — same |
+| perceived_spr | not applicable | same — make_plan | same — only on board-change replan | same — only on board-change replan |
+| potcontrol_disposition | not applicable | same | same | same |
+| value_when_called_strength | not applicable | same — make_plan commit_rel | overloaded — commit_rel / overbet@1.15 / improved bluff eq>=0.54 | overloaded — river_value_reassessment eq>=0.50 / overbet / improved bluff |
+| multiway_value_threshold_shift | not applicable | same | same | same |
+| read_value_threshold_shift | not applicable | same — street_gap(flop) | same — street_gap(turn) | same — street_gap(river) |
+| bluff_evidence_composite | not applicable | same | same | same |
+| relative_strength_value_threshold_shift | not applicable | same | same | same |
+| showdown_value_predicate | not applicable | overloaded — plan.has_showdown_value with eq vs eq_current | overloaded | overloaded |
+| medium_strength_merge_value | not applicable | distinct — sk(range_merge) | overloaded — replan still reads range_merge, not thin_value_turn | overloaded — replan still reads range_merge, not thin_value_river |
+| monster_made_hand_raise | not applicable | same | same | same |
+| value_raise_sizing_from_commit | not applicable | same | same | same |
+| value_raise_qualification | not applicable | same | same | same |
+| value_raise_frequency | not applicable | same | same | distinct — rel floor ×0.85 |
+| bluff_reraise_frequency | not applicable | same | same | same |
+| semibluff_raise_frequency | not applicable | same | same | not applicable |
+| implied_odds_adjustment | not applicable | same | same | not applicable |
+| giveup_deviation_raise | not applicable | same | same | same |
+| price_overrides_giveup_plan | not applicable | same | same | same |
+| giveup_initiative_stab_deviation | not applicable | distinct — cbet_flop_frequency | distinct — barrel_turn_frequency × delayed boost | distinct — barrel_river_frequency |
+| bluff_execution_frequency | not applicable | same — no card term | distinct — turn_card_effect(turn card) | overloaded — turn_card_effect(flop, river card) ignores the turn |
+| donk_suppression | not applicable | same | same | same |
+| value_bet_execution_frequency | not applicable | distinct — range_merge | distinct — thin_value_turn | distinct — thin_value_river ×0.92 |
+| value_blocker_size_adjust | not applicable | same | same | same |
+| deviation_bet_size_fallback | not applicable | distinct — 0.50 | distinct — 0.55 | distinct — 0.60 |
+| weak_hand_size_shrink | not applicable | same | same | same |
+| plan_size_band_clamp | not applicable | same — block | same — block | distinct — thin_river + block |
+| response_equity_basis | not applicable | same | same | same |
+| spr_commitment_flag | not applicable | same | same | same |
+| raise_target_coordinate | not applicable | same | same | same |
+| intent_chip_conversion | not applicable | same | same | same |
+| players_behind_risk_premium | same — icm.players_behind_required_equity_premium | same | same | same |
+| value_degradation_thresholds | not applicable | not applicable | distinct — turn_card_effect(turn) | overloaded — turn_card_effect(flop, river card) |
+| semibluff_draw_loss_resolution | not applicable | not applicable | distinct — refresh | not applicable (river: river_semibluff_resolution) |
+| giveup_reentry_on_improvement | not applicable | not applicable | overloaded — made>=2 includes board pair | overloaded — same |
+| improved_bluff_rejudgment | not applicable | not applicable | same | same |
+| value2_budget_exhaustion_upgrade | not applicable | not applicable | same | same |
+| preflop_decision_routing | distinct — plan.preflop_plan | not applicable | not applicable | not applicable |
+| preflop_decision_class | distinct | not applicable | not applicable | not applicable |
+| preflop_read_width_exploit | distinct | not applicable | not applicable | not applicable |
+| preflop_premium_slowplay_mix | distinct | not applicable | not applicable | not applicable |
+| allin_form_fold_equity_read | distinct | not applicable | not applicable | not applicable |
+| short_stack_open_widening | distinct | not applicable | not applicable | not applicable |
+| open_size_behind_read_adjust | distinct | not applicable | not applicable | not applicable |
+| locked_allin_price_gate | distinct | not applicable | not applicable | not applicable |
+| reraise_attack_evidence | distinct | not applicable | not applicable | not applicable |
+| iso_limper_read_widening | distinct | not applicable | not applicable | not applicable |
+| self_hand_overconfidence_bias | not applicable | same | same | same |
+| call_threshold_bias | not applicable | distinct — bluffcatch_early w0.35 | overloaded — bluffcatch_early shared with flop | distinct — bluffcatch_river |
+| preflop_temperament_direction | distinct | not applicable | not applicable | not applicable |
+| concept_skill_gate | distinct — pf_defend | not applicable | not applicable | not applicable |
+| street_concept_alias | not applicable | distinct — alias table | distinct | distinct |
+| legacy_trait_adapter | distinct | not applicable | not applicable | not applicable |
+| read_polarity_signal | distinct | not applicable | not applicable | not applicable |
+| forced_bet_posting | distinct | not applicable | not applicable | not applicable |
+| multiway_representative_union_range | not applicable | overloaded | overloaded | overloaded |
+| primary_opponent_selection | not applicable | same | same | same |
+| preflop_range_action_label | distinct | not applicable | not applicable | not applicable |
+| range_ordering_strength | not applicable | same — draw bonus | same — draw bonus | distinct — no draw term |
+| checkraise_value_probability_floor | not applicable | same | same | same |
+| continuation_bet_frequency_core | not applicable | distinct — base 0.42 | distinct — base 0.30 | distinct — base 0.22 |
+| overbet_selection_core | not applicable | not applicable | same | distinct — ×1.35 |
+| opponent_unconsumed_estimates | missing — cold re-raise/backraise reads unconsumed | missing — fold-to-raise unconsumed | missing | missing |
+| dead_strategy_tables | not applicable | not applicable | not applicable | not applicable |
+| opener_position_attack_table | overloaded — reshove width + open-shove position depth | not applicable | not applicable | not applicable |
+| iso_sizing | distinct | not applicable | not applicable | not applicable |
+
+기존 행 정정: `called_aggression_ownership` — flop distinct(프리플랍 어그레서 라인 소유, `plan.line_owned_by_live_aggressor`), turn/river same.
+<!-- reaudit:end -->

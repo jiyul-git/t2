@@ -1039,7 +1039,8 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
 
     need = need_base * noise
     if players_behind:
-        need += (1.0 - need_base) * min(0.18, 0.06*int(players_behind))
+        need += _ICM.players_behind_required_equity_premium(
+            need_base, int(players_behind))
     need = max(0.01, min(0.95, need))
 
     lik = defend_action_likelihoods(

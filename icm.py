@@ -167,6 +167,17 @@ def required_equity(pot, tocall, bf):
     return (tocall * bf) / (pot + tocall * (1 + bf) - tocall) if pot > 0 else 0.5
 
 
+def players_behind_required_equity_premium(base_need, players_behind):
+    """뒤에 아직 행동할 플레이어가 있을 때 필요 승률에 더하는 위험 몫.
+
+    남은 지분(1 - base_need)에 인원당 6%p, 최대 18%p를 곱한다. 포스트플랍
+    콜 문턱(plan.calldown_need)과 프리플랍 다인원 재레이즈 판단
+    (preflop.multiway_reraise_decision)이 같은 질문에 같은 식을 각자 들고
+    있던 것을 한 곳으로 모았다(semantic audit re-audit, 행동 불변).
+    """
+    return (1.0 - base_need) * min(0.18, 0.06*players_behind)
+
+
 # ==================== 필드 규모 ICM 근사 ====================
 # ICM 은 O(n!) 이라 400명을 직접 못 돌린다. 그래서 근사가 필요한데,
 # 예전 근사(필드를 9명으로 축약 + 상금표를 k=round(9·itm/rem) 로 자름)는

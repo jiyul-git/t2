@@ -51,3 +51,27 @@
 멀티웨이 application capacity는 call/fold의 evidence 혼합과 기존 attack 억제 경로에 함께 소비된다. 이번에는 call/fold 혼합 본문을 분리했고, attack 억제 본문은 기존 위치에 남겼다. 따라서 call/raise 정책 전체를 한 적용 함수로 통일했다고 주장하지 않는다.
 
 3차 문서의 관측 품질·멀티웨이·pressure 경계 추출 후보를 여기서 처리했다. 여전히 range_read 값 공급은 공유하며, persona.overpair_love 편향과 perceived_edge 자기 실력 인식, read_opponent의 line visibility, 종합 실력/프로필 생성·진단 직렬화는 별도 역할로 남는다.
+
+## 5차(재감사): range_read 전체 소비처와 baseline 활성 여부
+
+기준 `63bd82d` + 재감사 추출. baseline = tilt 0, exploit 중립(관찰 장부 고정), 동일 max-skill(range_read 10) 프로필.
+아래 표는 production 코드의 `sk(..., 'range_read')` / `concepts['range_read']` 소비처 전부다(grep + 호출 경로 확인; 아키타입 표·주석 제외).
+
+| # | 역할 | 함수 (producer → consumer) | baseline 소비 | 비고 |
+| --- | --- | --- | --- | --- |
+| 1 | 상대 레인지 복원 정확도 | `ranges.reconstruct_range_with_accuracy` ← perceived_range / perceived_continue_range / perceived_facing_bet_response | **활성** (grasp=1 → 전체 축소 사용) | equity·value gate·response 입력 |
+| 2 | 라인 해석 가시성 `see_line` | `persona.read_opponent` → `interpret_opponent_action_signals` | 비활성 (w=0이면 neutral 반환) | 스트리트별 fold gap, tb_polar 등 |
+| 3 | 블러프 위협 해석 | `persona.interpret_bluff_threat_bias` → `call_threshold_bias(bluff_fear)` | 비활성 (max-skill bias −0.7 → 소비처가 0으로 clip) | 저숙련에서 활성 |
+| 4 | 관측 정확도 | `reads.observation_accuracy_from_capabilities` → Book 추정치 | baseline sim에서는 장부 고정이라 비활성 | 아래 6번 경로로 exploit과 무관하게 소비될 수 있음 |
+| 5 | 자기 패 과신 | `persona.bias('overpair_love')` → `plan.perceived_rel` | 비활성 (−1.0 → 0으로 clip) | `self_hand_overconfidence_bias` 행 |
+| 6 | 자기 실력 인식 | `persona.perceived_edge` → `preflop.feel_of → depth.depth_feel`, `variance_seek` | **활성(작음)**: edge 0.40 → 체감 깊이 +0.016; variance_seek 경로는 0 | 직전 보고의 "baseline 영향 없음"은 틀렸다 |
+| 7 | 멀티웨이 근거 적용 능력 | `preflop.multiway_evidence_application_capacity` → call/fold 혼합, R3 공격 억제, locked 가격 게이트 | **활성** (reason_skill 1.0) | |
+| 8 | 토너먼트 압박 활용 | `money_pressure.pressure_application_capacity` → pressure_opportunity | 머니점프 구간에서만 | |
+| 9 | 적용 가중치(V3) | `persona.opponent_read_application_weight` (EXPLOIT_WEIGHT_V3) | OPT-IN, 꺼짐 | |
+
+### 이번에 추출하지 않은 이유
+- 5(overpair_love)와 2(see_line)는 이미 이름 있는 단일 지점에서 계산되고, baseline에서 소비되지 않는다. 의미 중복(같은 질문을 두 곳에서 계산)이 없어 함수를 늘리지 않았다.
+- 6(perceived_edge)은 baseline에서 소비되지만 producer가 한 곳(`persona.perceived_edge`)이다. 의미 문제는 "상대 레인지 복원 숙련(range_read)이 자기 실력 자각의 40%를 공급"하는 공급 과적재이며, 분리하면 값이 바뀐다 → 후속 semantic-fix.
+
+### exploit weight 밖의 적응 경로 (baseline 조건 관련)
+`session.HandRun._preflop_perceived_range/_locked_postflop_range` 는 관찰자의 Book 추정치로 `reads.range_profile(oe)` 를 만들어 **상대 프리플랍 레인지 모델의 프로필**로 쓴다. 이 경로는 exploit 가중치 w와 무관하다. 따라서 "exploit 중립"만으로는 상대 적응이 완전히 꺼지지 않는다. baseline sim(`T2_BASELINE=1`)은 장부를 고정해 이 경로를 prior로 묶었지만, `tools/manual_one_hand.py` 기반 수동 감사는 장부가 핸드마다 누적된다(ledger L-RA18).

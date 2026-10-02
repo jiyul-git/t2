@@ -1,0 +1,1312 @@
+{
+ "meta": {
+  "head_root": "<scratch>/head_wt",
+  "work_root": "/home/user/t2",
+  "counts": {
+   "PASS": 49,
+   "FAIL": 20,
+   "TIMEOUT": 2
+  },
+  "regressions": []
+ },
+ "verifiers": [
+  {
+   "name": "9max",
+   "purpose": "Fast structural verification for the 9-max migration.",
+   "subsystem": "tournament runtime",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 5.3,
+   "tail": "positions 2..9 explicit; one bot hand completed for every size; legacy 8-slot restore PASS",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "allin_raise_rights",
+   "purpose": "Targeted checks for raise rights once all remaining opponents are all-in.",
+   "subsystem": "betting rules/pot",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "PASS all-in raise-right verification (5 cases)",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "audit_order",
+   "purpose": "audit.py 의 스트리트 액션 순서 검사 D1~D6.",
+   "subsystem": "audit tooling",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 19.5,
+   "tail": "FAIL 2/6 : D3, D4",
+   "tiers": [
+    "fast"
+   ],
+   "note": "environment-dependent: D3/D4 read untracked repo-root *.jsonl archives; PASS in a clean worktree"
+  },
+  {
+   "name": "button_rotation",
+   "purpose": "Tournament dealer/blind rotation regression.",
+   "subsystem": "tournament runtime",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "{'dealer_seat': 7, 'hero_seat': 7, 'hero_pos': 'BTN', 'button_index_compat': 6}",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "calc_noise_v3",
+   "purpose": "Verify Human Model v3 concept-specific calc error semantics.",
+   "subsystem": "human model v2/v3",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 2.5,
+   "tail": "}",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "core_joint_nut",
+   "purpose": "Verify seat-keyed multiway nut-advantage semantics.",
+   "subsystem": "core plan/range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.1,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "core_multiway_reads",
+   "purpose": "Verify seat-aware multiway read/stack selection in the core plan layer.",
+   "subsystem": "core plan/range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "core_p7_cold_reraise",
+   "purpose": "Core P7 cold-vs-reraise verifier.",
+   "subsystem": "core plan/range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 2.5,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "core_p7_observation",
+   "purpose": "Verify dedicated P7 cold-reraise observation semantics.",
+   "subsystem": "core plan/range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "core_sizing_ownership",
+   "purpose": "Core F7-D sizing ownership verifier.",
+   "subsystem": "core plan/range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.1,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "decay_profile",
+   "purpose": "틸트 감쇠가 **자기 프로필**을 쓰는지 직접 검증한다 (읽기 전용).",
+   "subsystem": "tilt/emotion",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 163.9,
+   "tail": "{\"calls\": 10538, \"default\": 0, \"wrong\": 0, \"ok\": 10538, \"calls_active\": 33, \"default_active\": 0, \"wrong_active\": 0, \"ok_active\": 33, \"unknown_pid\": 0, \"wrong_samples\": [], \"default_samples\": [], \"tilt",
+   "tiers": [],
+   "note": ""
+  },
+  {
+   "name": "defend_semantic_cleanup",
+   "purpose": "Compare real pre-checkpoint defend policy with extracted pipeline (9-max first).",
+   "subsystem": "semantic audit parity",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.3,
+   "tail": "{\"pass\": true, \"baseline\": \"6feaf56319fe2369e1738a4d6dca0c8b755a6c8b\", \"comparisons\": {\"thresholds\": 3600, \"likelihoods\": 384, \"actions_and_rng\": 768}, \"seats\": \"9 primary, 8 compatibility\", \"optin\": ",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "defer",
+   "purpose": "안 A(다른 테이블 진행 지연)가 동작을 보존하는지 검증한다.",
+   "subsystem": "runtime/parallel",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 862.2,
+   "tail": "판정: 실패",
+   "tiers": [],
+   "note": ""
+  },
+  {
+   "name": "effective_allin_v1",
+   "purpose": "Targeted checks for effective-all-in v1 classifier.",
+   "subsystem": "betting rules/pot",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "PASS effective-allin v1 targeted verification (6 cases)",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "f1_free_action",
+   "purpose": "Targeted structural verifier for F1 no-wager fixes.",
+   "subsystem": "postflop F-series",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.1,
+   "tail": "4/4 F1 structural checks passed",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "f2_checkthrough",
+   "purpose": "Targeted structural verifier for F2 check-through fixes.",
+   "subsystem": "postflop F-series",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.1,
+   "tail": "4/4 F2 structural checks passed",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "f3_checkraise_response",
+   "purpose": "Targeted structural verifier for F3 check-then-face-bet fixes.",
+   "subsystem": "postflop F-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.1,
+   "tail": "AssertionError: ((('raise', 800.0), 0.9833333333333333, 0.3), {'resp_calls': 0, 'allow_raise': None, 'gate_calls': 1})",
+   "tiers": [
+    "gate23",
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "f4_facing_bet",
+   "purpose": "Targeted structural verifier for F4 direct facing-bet fixes.",
+   "subsystem": "postflop F-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "AttributeError: module 'session' has no attribute '_observed_postflop_action'",
+   "tiers": [
+    "gate23",
+    "suite40"
+   ],
+   "note": "stale API: session._observed_postflop_action removed"
+  },
+  {
+   "name": "f5_backaction",
+   "purpose": "Targeted structural verifier for F5 postflop aggressor back-action fixes.",
+   "subsystem": "postflop F-series",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "AssertionError: ('raise', 500)",
+   "tiers": [
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "f6_caller_backaction",
+   "purpose": "Targeted structural verifier for F6 caller back-action.",
+   "subsystem": "postflop F-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "AssertionError: {'kind': 'caller_backaction', 'facing_kind': 'raise', 'facing_seat': 3, 'prior_action': 'call', 'prior_aggressive': False, 'prior_facing_kind': 'bet', 'raise_depth_full': 0, 'raise_dep",
+   "tiers": [
+    "gate23",
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "f7_street_closure",
+   "purpose": "Targeted verifier for F7 postflop street-closure carry fixes.",
+   "subsystem": "postflop F-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.1,
+   "tail": "ValueError: too many values to unpack (expected 3)",
+   "tiers": [
+    "gate23",
+    "suite40"
+   ],
+   "note": "stale tuple shape (expects 3 values)"
+  },
+  {
+   "name": "f7b_blocker_activation",
+   "purpose": "Verify production matches preregistered F7-B1C11 blocker structure target.",
+   "subsystem": "F7-B range/defend",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.1,
+   "tail": "AssertionError",
+   "tiers": [],
+   "note": ""
+  },
+  {
+   "name": "f7b_defend_likelihood",
+   "purpose": "F7-B1D7: verify RNG-free defend likelihoods against live branch semantics.",
+   "subsystem": "F7-B range/defend",
+   "in_gate23": true,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 7.6,
+   "tail": "NOTE: defend_decision production control flow is unchanged in this step.",
+   "tiers": [
+    "gate23",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "f7b_defend_rewire",
+   "purpose": "F7-B1D7: exact behavior/RNG parity for the defend wiring refactor.",
+   "subsystem": "F7-B range/defend",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.1,
+   "tail": "MISMATCH {'class': '66', 'seed': 1703511, 'ctx': {'def_pos': 'BB', 'opener_pos': 'BTN', 'bb': 13.0, 'open_bb': 8.5, 'n_callers': 0, 'raise_level': 2, 'stack_bb': 13.0, 'tilt': 0.0, 'field_q': 0.6, 'bf",
+   "tiers": [],
+   "note": ""
+  },
+  {
+   "name": "forced_blind_allin_showdown",
+   "purpose": "SB/BB 강제 올인이 액션 없이도 정상 쇼다운되는지 검증한다.",
+   "subsystem": "betting rules/pot",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "AttributeError: 'Book' object has no attribute 'observe_cold_reraise'. Did you mean: 'observe_limp_raise'?",
+   "tiers": [],
+   "note": "stale test double: fake Book lacks observe_cold_reraise"
+  },
+  {
+   "name": "forced_blind_allin_view",
+   "purpose": "강제 블라인드 올인 좌석이 UI 뷰에서 폴드처럼 사라지지 않는지 검증한다.",
+   "subsystem": "betting rules/pot",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "OK forced blind all-in remains live for showdown UI",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "human_model_v2",
+   "purpose": "Human Model v2 targeted verifier — GTO memory confidence + invariants A..G.",
+   "subsystem": "human model v2/v3",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "TIMEOUT",
+   "status_pristine_head": "TIMEOUT",
+   "status_working_tree": "TIMEOUT",
+   "expected": "TIMEOUT",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 900.1,
+   "tail": "",
+   "tiers": [
+    "suite40"
+   ],
+   "note": "exceeds 900 s"
+  },
+  {
+   "name": "human_model_v3",
+   "purpose": "Targeted verifier for Human Model v3 preflop recall -> reasoning -> temperament.",
+   "subsystem": "human model v2/v3",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "human_model_v3_integration",
+   "purpose": "Combined Human Model v3 integration verifier on canonical 9-max MTT fixtures.",
+   "subsystem": "human model v2/v3",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "TIMEOUT",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 776.6,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40"
+   ],
+   "note": "~6-10 min: TIMEOUT under the 40-suite 180 s limit, PASS under 900 s"
+  },
+  {
+   "name": "human_model_v3_runtime",
+   "purpose": "Human Model v3 runtime / paired-counterfactual verifier.",
+   "subsystem": "human model v2/v3",
+   "in_gate23": true,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 409.7,
+   "tail": "}",
+   "tiers": [
+    "gate23"
+   ],
+   "note": ""
+  },
+  {
+   "name": "icm_fast",
+   "purpose": "Verify the 2..9-player exact-ICM fast path against historical recursion.",
+   "subsystem": "money jump / ICM",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 30.2,
+   "tail": "final8 equity reference=0.034060s fast=0.000706s speedup=48.3x",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "money_jump_context",
+   "purpose": "머니점프 문맥 계산의 경계값/동일상금 구간 회귀검사.",
+   "subsystem": "money jump / ICM",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "OK money-jump context boundaries/bands/satellite",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "money_jump_observation",
+   "purpose": "머니점프 관측 배선: 스택분포/자리/커버관계가 행동과 분리돼 기록되는지 검사.",
+   "subsystem": "money jump / ICM",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.1,
+   "tail": "OK money-jump observation stack/position/topology/action",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "money_pressure_signals",
+   "purpose": "머니점프 연속 신호의 구조적 단조성 회귀검사.",
+   "subsystem": "money jump / ICM",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "OK money-pressure monotonic signals",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "multiway_range_preservation",
+   "purpose": "Targeted verifier for per-opponent postflop range preservation.",
+   "subsystem": "weighted range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "3/3 structural checks passed",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "oop_semantics",
+   "purpose": "포스트플랍 포지션 술어와 그 행동 영향 검증.",
+   "subsystem": "position semantics",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "TIMEOUT",
+   "status_working_tree": "TIMEOUT",
+   "expected": "TIMEOUT",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 900.1,
+   "tail": "",
+   "tiers": [],
+   "note": "exceeds 900 s"
+  },
+  {
+   "name": "p2_limped_pot",
+   "purpose": "Targeted verifier for P2 limped-pot fixes.",
+   "subsystem": "preflop P-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "5/5 P2 structural checks passed",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "p3_first_open",
+   "purpose": "Targeted verifier for P3 first-open audit fixes.",
+   "subsystem": "preflop P-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "3/3 P3 structural checks passed",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "p4_vs_3bet",
+   "purpose": "Targeted structural verifier for P4 opener-facing-3bet fixes.",
+   "subsystem": "preflop P-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.1,
+   "tail": "AssertionError: pf_open_bb",
+   "tiers": [
+    "gate23",
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "p5_backaction",
+   "purpose": "Targeted verifier for P5 preflop back-action fixes.",
+   "subsystem": "preflop P-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "6/6 P5 structural checks passed",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "p6_calloff",
+   "purpose": "Targeted structural verifier for P6 all-in/call-off fixes.",
+   "subsystem": "preflop P-series",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "5/5 P6 structural checks passed",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "parallel_tables",
+   "purpose": "병렬 테이블 round의 소유권/merge 불변식 검증.",
+   "subsystem": "runtime/parallel",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.4,
+   "tail": "  final-table hand=1 remaining=9 no-pending=OK",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "postflop_events",
+   "purpose": "Structural verification for canonical postflop action events.",
+   "subsystem": "public action events",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "7/7 canonical postflop event checks passed",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "prefetch_determinism",
+   "purpose": "프리페치 전제 검증: _load_field → step_others(settle=False) → _dump 가",
+   "subsystem": "runtime/parallel",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 193.7,
+   "tail": "     [tilt] 같은 경로까지 겹치는 것 1개  ['/tilt/37/heat']",
+   "tiers": [],
+   "note": ""
+  },
+  {
+   "name": "preflop_closure",
+   "purpose": "Preflop closure verifier for P1 reopen fixes and P7 decision classes.",
+   "subsystem": "preflop",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "4/4 preflop closure checks passed",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "preflop_temper_direction_v3",
+   "purpose": "Verify full-scale preflop temperament direction for Human Model v3.",
+   "subsystem": "preflop",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "}",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "prelogic_execution_boundary",
+   "purpose": "Behavior-neutral F7-D judgment -> execution boundary gate.",
+   "subsystem": "judgment/execution boundary",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 18.3,
+   "tail": "AssertionError: fresh all-bot fixture unexpectedly used replay",
+   "tiers": [
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "prelogic_profile_boundary",
+   "purpose": "Behavior-neutral F7-C pre-logic profile boundary gate.",
+   "subsystem": "judgment/execution boundary",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "PASS F7-C behavior-neutral profile boundary scaffold",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "range_read_semantics",
+   "purpose": "Compare real checkpoint functions, including RNG and mutated response state.",
+   "subsystem": "reads/range_read",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 1.1,
+   "tail": "{\"pass\": true, \"baseline\": \"33df2ee4c113458b3977cf6a6ed419c3bdba940c\", \"comparisons\": {\"read_and_bias\": 300, \"application_weight\": 180, \"range\": 540, \"response_action_state_rng\": 288}, \"boundary_check",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "read_range_semantics",
+   "purpose": "Regression checks for public preflop range reconstruction and read semantics.",
+   "subsystem": "reads/range_read",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "  self_range_fallback=ABSENT",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "read_recency_v3",
+   "purpose": "Verify Human Model v3 opponent-memory recency semantics.",
+   "subsystem": "reads/range_read",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "}",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "reaudit_semantic_extraction",
+   "purpose": "Behavior-identity check for the re-audit semantic extractions.",
+   "subsystem": "semantic audit parity",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "NEW",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 95.4,
+   "tail": "{\"pass\": true, \"base\": \"HEAD\", \"checks\": {\"aggr\": {\"n\": 1500, \"equal\": true}, \"calldown\": {\"n\": 400, \"equal\": true}, \"make\": {\"n\": 500, \"equal\": true}, \"mw\": {\"n\": 120, \"equal\": true}}}",
+   "tiers": [],
+   "note": "new in re-audit; compares against HEAD (or given base)"
+  },
+  {
+   "name": "remaining_read_semantics",
+   "purpose": "Stage4: compare actual old consumers, not duplicated formulas.",
+   "subsystem": "reads/range_read",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.4,
+   "tail": "{\"pass\": true, \"baseline\": \"b4869696a217272a5878841e29efc17b33e0df0c\", \"comparisons\": {\"observation\": 30, \"pressure\": 256, \"multiway_controlled_equity\": 72, \"multiway_real_equity\": 4}, \"boundary_check",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "replan_contract",
+   "purpose": "make_plan 입력 계약: 최초 수립 경로 vs 보드변화 재계획 경로.",
+   "subsystem": "plan lifecycle",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.1,
+   "tail": "계약이 바뀌었다. 고의로 고쳤다면 KNOWN_MISSING 을 갱신할 것.",
+   "tiers": [
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "semantic_cleanup",
+   "purpose": "Compare extracted semantic boundaries to the actual pre-refactor functions.",
+   "subsystem": "semantic audit parity",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 2.9,
+   "tail": "{\"pass\": true, \"comparisons\": 4638, \"baseline\": \"4b9d33d5f951fce4b292f6e6e79caaf141b106d2\", \"river_rng_states_equal\": true}",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "settle_split",
+   "purpose": "step_others(settle=False) 분리가 동작을 보존하는지 검증한다.",
+   "subsystem": "runtime/parallel",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 697.6,
+   "tail": "동일 — settle 분리는 동작을 보존한다",
+   "tiers": [],
+   "note": ""
+  },
+  {
+   "name": "state_namespace",
+   "purpose": "상태별 sidecar namespace 격리 검증 (A9-W). 읽기 전용.",
+   "subsystem": "runtime/parallel",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 155.2,
+   "tail": "FAIL 1 : 저장소 sidecar 불변",
+   "tiers": [],
+   "note": "environment-dependent: repo sidecar invariants; PASS in a clean worktree"
+  },
+  {
+   "name": "stepothers_timing",
+   "purpose": "step_others 를 언제 돌리느냐가 결과를 바꾸는지 잰다.",
+   "subsystem": "runtime/parallel",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "verify_stepothers_timing.py: error: the following arguments are required: --mode",
+   "tiers": [],
+   "note": "CLI driver: requires --mode (not a standalone pass/fail verifier)"
+  },
+  {
+   "name": "tda_dead_button",
+   "purpose": "TDA dead-button / heads-up / table-balance position contract.",
+   "subsystem": "tournament runtime",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "PASS TDA dead-button / heads-up / balance position contract",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "tda_live_integration",
+   "purpose": "Integration checks for TDA blind anchors through live2 persistence/HandRun.",
+   "subsystem": "tournament runtime",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 3.4,
+   "tail": "PASS TDA live-state / HandRun integration",
+   "tiers": [
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "telemetry_wiring",
+   "purpose": "Verify whole-tournament telemetry captures real engine provenance without strategy changes.",
+   "subsystem": "telemetry",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 2.9,
+   "tail": "FAIL: no bot telemetry row",
+   "tiers": [
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "tilt_divergence",
+   "purpose": "Tilt pid 격리 수정의 divergence 측정 드라이버 (읽기 전용).",
+   "subsystem": "tilt/emotion",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "verify_tilt_divergence.py: error: the following arguments are required: cmd",
+   "tiers": [],
+   "note": "CLI driver: requires a command argument"
+  },
+  {
+   "name": "tilt_isolation",
+   "purpose": "Tilt 상태의 소유 단위를 좌석에서 사람(pid)으로 바꾼 변경의 검증.",
+   "subsystem": "tilt/emotion",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "verify_tilt_isolation.py: error: the following arguments are required: --mode",
+   "tiers": [],
+   "note": "CLI driver: requires --mode"
+  },
+  {
+   "name": "tournament_telemetry",
+   "purpose": "End-to-end verification for whole-tournament telemetry.",
+   "subsystem": "telemetry",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 8.1,
+   "tail": "RuntimeError: expected 2 table hands, got 1",
+   "tiers": [
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "trace_schema",
+   "purpose": "결정 기록 스키마 계약 검사 (A7). 읽기 전용.",
+   "subsystem": "telemetry",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 8.5,
+   "tail": "FAIL 1 : 저장소 아카이브 불변",
+   "tiers": [
+    "fast"
+   ],
+   "note": "environment-dependent: repo archive invariants; PASS in a clean worktree"
+  },
+  {
+   "name": "ui_tournament_panel",
+   "purpose": "UI tournament-info / standings drawer wiring checks.",
+   "subsystem": "UI",
+   "in_gate23": false,
+   "in_suite40": false,
+   "suite40_status_at_4b9d33d": null,
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "AssertionError: app cache tag not bumped",
+   "tiers": [],
+   "note": ""
+  },
+  {
+   "name": "uncalled_excess",
+   "purpose": "Targeted verification for contestable-pot / uncalled-excess semantics.",
+   "subsystem": "betting rules/pot",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "PASS uncalled-excess targeted verification (5 cases)",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "weighted_aggregate_transform",
+   "purpose": "W2/W3 weighted aggregates + transforms.",
+   "subsystem": "weighted range",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.1,
+   "tail": "AssertionError: bet legacy support/order changed",
+   "tiers": [
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "weighted_boundaries",
+   "purpose": "W4 weighted range boundaries/signatures/provenance gate.",
+   "subsystem": "weighted range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "FAIL",
+   "status_pristine_head": "FAIL",
+   "status_working_tree": "FAIL",
+   "expected": "FAIL",
+   "classification": "historical (same status on pristine HEAD)",
+   "seconds": 0.0,
+   "tail": "AssertionError: weighted fallback pool flattened",
+   "tiers": [
+    "gate23",
+    "suite40"
+   ],
+   "note": ""
+  },
+  {
+   "name": "weighted_range_adapter",
+   "purpose": "W0 weighted-range representation / legacy-adapter contract.",
+   "subsystem": "weighted range",
+   "in_gate23": true,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.0,
+   "tail": "PASS W0 weighted-range representation / legacy adapter",
+   "tiers": [
+    "gate23",
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  },
+  {
+   "name": "weighted_sampling",
+   "purpose": "W1 weighted sampling consumers: exact legacy parity + weighted direction.",
+   "subsystem": "weighted range",
+   "in_gate23": false,
+   "in_suite40": true,
+   "suite40_status_at_4b9d33d": "PASS",
+   "status_pristine_head": "PASS",
+   "status_working_tree": "PASS",
+   "expected": "PASS",
+   "classification": "pass",
+   "seconds": 0.1,
+   "tail": "PASS W1 weighted sampling consumers",
+   "tiers": [
+    "suite40",
+    "fast"
+   ],
+   "note": ""
+  }
+ ]
+}

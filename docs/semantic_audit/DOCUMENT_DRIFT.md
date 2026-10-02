@@ -34,3 +34,13 @@
 | DIAGNOSTICS_HISTORY.md | R3 next; R5b/c revise_plan location | R3 blocker batch1 HEAD active; transitions mostly refresh | STALE | 현재 checkpoint와 함수 명칭 보완 |
 | 10 canonical docs 공통 | 독립적 human/solver 지식 공급 설계 | test has authored priors/heuristics; external empirical solver loader absent | IMPLEMENTATION GAP | coverage에서 provenance 검증 여부 분리 |
 | context.py SPEC 주석 | money_jump judgment unused | preflop range modifier active | STALE COMMENT | 현재 usage 주석 동기화 |
+
+## 재감사(2026-10-02) 추가
+
+| 문서 | 기록 | 코드 실제 | 판정 |
+| --- | --- | --- | --- |
+| CONCEPT_FUNCTION_REGISTRY `called_aggression_ownership` | "직전 스트리트 자신의 공격이 콜받은 라인인가", turn/river | 내가 상대 공격을 **콜했는가**; batch 1부터 플랍(프리플랍 어그레서) 포함 | registry stale → 정정 |
+| 직전 진행 보고 (range_read) | perceived_edge는 baseline 영향 없음 | `preflop.feel_of` 경유로 baseline 활성(작음) | 보고 오류 → RANGE_READ 5차에 정정 |
+| DECISION_SYSTEM P7 행 | players-behind, skill-dependent reasoning | batch 1 이후 올인 상대 가격 게이트와 공격 근거(읽기/블로커)가 추가됨 | 문서 stale → P7 행 갱신 |
+| plan.refresh 주석 | "made 항은 죽어 있다" | 항은 audit9에서 제거됨 | 코드 주석 stale → 수정(동작 무관) |
+| KNOWLEDGE_COVERAGE vs-open/3bet | GTO prior authored width | 9-max는 MTT8 보정 표를 쓰지 않음 | 문서 불완전 → 보정 섹션 추가 |
