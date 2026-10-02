@@ -1,0 +1,125 @@
+{
+ "schema": "e1_prereg",
+ "experiment": "E1 outer-loop (self-consistency) pilot, nodes 6 + 28, 4-handed 30bb",
+ "written": "2026-10-03, before any E1 solve",
+ "design": "docs/GTO_EXPANSION_DESIGN_V1.md sections 2 and 5",
+ "status": "prereg only; no solve starts until the user confirms",
+ "start_state_x0": {
+  "V_0": {
+   "node6": "data/gto_terminal_expansion/a4c/node6/table_ext.json",
+   "node28": "data/gto_terminal_expansion/a4c/node28/table_ext.json",
+   "sha256": {
+    "6": "2cb58ae2110c1c1bc1ffc49171098dba99e5e9b81815ff7c1e0c55dd40b72c57",
+    "28": "4cbb36f4b17a6cdcf7c34b88e588c739b9cf7279e7cbfe0dfab115e8a61ee60f"
+   },
+   "note": "A4c Vext tables (232 / 218 boards, values solved at the frozen P14 ranges)"
+  },
+  "sigma_0": {
+   "profile": "data/gto_terminal_expansion/a4c/points/Gext/profile.gtop",
+   "sha256": "91ec20954e0debc416991dee502d82433bdb28e7a047d2e6fc9aff2702ce6a23"
+  },
+  "R_0": {
+   "terminals": {
+    "6": "data/gto_terminal_expansion/a4c/points/Gext/terminal_node6.json",
+    "28": "data/gto_terminal_expansion/a4c/points/Gext/terminal_node28.json"
+   },
+   "ranges_hash_fnv1a64": {
+    "6": "27af42e0c3607d56",
+    "28": "ee15571176d1ed36"
+   },
+   "note": "Gext terminal ranges differ from P14 (node6 e143cd2e0fcaa9d7 -> 27af42e0c3607d56): the outer loop starts by solving the panel at R_0"
+  }
+ },
+ "panel": {
+  "files": {
+   "6": "data/gto_hu_continuation/panel_v4_node6.json",
+   "28": "data/gto_hu_continuation/panel_v4_node28.json"
+  },
+  "sha256": {
+   "6": "f2dc9ba6883c8cdf58b1b7949b5cf7848d9e6460f11ec9ba920375bf9bf30a63",
+   "28": "88b193e90fe5861d547028f2b64de85a02cc06467ba00b60f4d73c790a17799b"
+  },
+  "boards": {
+   "6": 232,
+   "28": 218
+  },
+  "same boards every step (common random numbers)": true
+ },
+ "solver": {
+  "postflop": "1000 iterations cap, target 0.300% pot, check every 25",
+  "menu": "menu_m2_single_v1",
+  "tool": "solve_panel.py --workers 4 --threads 1",
+  "binaries_sha256": {
+   "t2_cont_panel": "d349474bc190ca64843df62467756e42d5cfecc1efab8303d28661fa071172bd",
+   "t2_cont_terminal": "2876b0c86122b4eb9eba7f4107d2ae87c8571a7661b33175c52146395b3bec36",
+   "t2_splice_eval": "4862c1dd1e07f5d41e0a77837e2b924ad2bae98a756fe66e814cb8d6abfadf78",
+   "t2_cross_eval": "0c35a91b1ba307511720c64701a106126f51dc49a533626b8f62269b7b194ee4"
+  },
+  "preflop": "t2_cont_terminal, cfg_4h_mr4_30bb.json, 400 iterations, PREFLOP_EQ_SEED=202, PREFLOP_MULTIWAY_SEED=202, PREFLOP_EQ_SAMPLES=1200 (as A4c)",
+  "policy": "a board that does not reach <= 0.300% pot at the 1000-iteration cap pauses its step for a user decision (the A4c Kc9h9d exception covers only that A4c artifact hash); other boards keep solving"
+ },
+ "estimator": "A4c estimator unchanged (stratified mean, RHO, aggregate.py operation order)",
+ "step_k": {
+  "1_postflop": "solve all 450 panel boards at R_k (terminal exports of the current preflop state) -> per-board values",
+  "2_V_raw": "V_raw,k = panel estimate from step-k values (undamped)",
+  "3_raw_solve": "separate preflop solve g(V_raw,k) -> sigma_raw,k, R_raw,k (used only for measurement)",
+  "4_raw_residual": "Delta_raw,k = metrics of the current state sigma_k measured in the raw game G_raw,k (raw state vs current state)",
+  "5_U_k": "panel uncertainty of step k: the A4c joint draw manifest (seed 20261005, 60 draws, sha256 b70b1d5e...) re-applied to step-k board values, FPC as A4c; per replicate r: table V_raw,k^(r) -> preflop solve -> metric of sigma_r in G_raw,k; U_k = mean over r. No extra flop solve.",
+  "6_damped_next": "V_{k+1} = 0.5 * V_k + 0.5 * V_raw,k (element-wise on the terminal value tables only) -> preflop solve g(V_{k+1}) -> sigma_{k+1}, R_{k+1}; strategies and ranges are never mixed directly",
+  "k_range": "k = 0, 1, 2 (at most 3 postflop panels); after k = 2 the damped state x_3 is produced but not evaluated (labelled so)"
+ },
+ "metrics": {
+  "primary_seat": "whole-seat swap dEV_p = EV_p(sigma_raw,k; G_raw,k) - EV_p(sigma_k,p (+) sigma_raw,k,-p; G_raw,k) for BTN, SB, BB (CO reported)",
+  "primary_node": "class-regret excess of sigma_k at BTN first-in, BB vs BTN, SB first-in, BB vs SB in G_raw,k over sigma_raw,k own residual",
+  "diagnostic": [
+   "SB vs BTN regret excess (diagnostic, as A4c)",
+   "strategy L1 per node",
+   "per-class EV-gap change -> u_outer",
+   "Delta of the damped step (reported, never used for stopping)"
+  ],
+  "U_k_metrics": "same metric definitions, sigma_r (bootstrap replicate) in G_raw,k"
+ },
+ "stop": {
+  "converged": "Delta_raw,k <= U_k for every primary seat and node",
+  "partial": "if only some primary metrics satisfy it, report \"partial pass\" with the list; never call the state converged",
+  "divergence": "if the same primary metric Delta_raw increases at k = 1 vs 0 and again at k = 2 vs 1, stop and report (oscillation / divergence sign)",
+  "budget": "after k = 2 without convergence: report \"not yet converged\" and stop; no automatic 4th / 5th step",
+  "wording": "Delta_raw,k is a one-step raw residual F(x_k) - x_k measured in strategy-loss units, not the fixed-point distance; the contraction ratio Delta_raw,k / Delta_raw,k-1 is reported; any residual estimate under a contraction assumption is labelled an estimate"
+ },
+ "D1": {
+  "pre_outer": {
+   "file": "data/gto_terminal_expansion/a4c/d1_frequency_assessment.json",
+   "sha256": "e97a0095d44f78a2dd3f1a8372dda8e642f34556d245a6a0860519881ab7be21",
+   "label": "D1_pre_outer (u_outer not measured)",
+   "overwrite": false
+  },
+  "post_outer": "after E1: new file data/gto_terminal_expansion/e1/d1_post_outer.json with u_outer(h) = |EV gap_h in G_raw,K - EV gap_h in G_K| at the last evaluated step K; stable -> near_indifferent moves are expected and reported"
+ },
+ "provenance_per_step": [
+  "panel hashes",
+  "R_k range hashes (both terminals)",
+  "sha256 of every flop artifact",
+  "V_raw,k table hashes",
+  "V_{k+1} (damped) table hashes",
+  "raw and damped preflop profile + terminal export hashes",
+  "draw manifest sha256 (must equal A4c b70b1d5e...)",
+  "U_k replicate results"
+ ],
+ "restart": "flop artifacts are reused only when parse + provenance key (ranges hash = R_k, panel hash, menu, tree) + converged / approved status verify; incomplete outputs are quarantined; a completed step is reused only if all its recorded hashes match",
+ "layout": "data/gto_terminal_expansion/e1/step{k}/node{n}/flops, step{k}/V_raw, step{k}/raw_point, step{k}/boot/rNN, step{k}/damped_point",
+ "cost_estimate": {
+  "postflop_per_step": "node 6: 232 x 0.160 CPU-h + node 28: 218 x 0.139 CPU-h = about 67 CPU-h -> about 17 h wall at 4 workers (A4c measured rates; a capped board adds up to about 1.6 h of one worker)",
+  "preflop_per_step": "raw + damped point solves about 2-5 min",
+  "U_k_per_step": "60 preflop solves + seat swaps + node regrets, about 1-1.5 h (A4c: about 3.2 min per replicate for two panel sizes and cross swaps)",
+  "per_step_total": "about 18-19 h wall",
+  "max_total": "3 steps: about 200 CPU-h, about 55-57 h wall; with the 2 h background limit, about 30 resumable relaunches",
+  "disk": "flop artifacts about the A4c size per step (value JSON only; no strategy export)"
+ },
+ "not_done": [
+  "no solve before user confirmation",
+  "no change to A4c sealed files",
+  "no top-up / panel change",
+  "no node 228, 3-way, other stacks, DB export",
+  "no automatic extension beyond 3 steps"
+ ]
+}
