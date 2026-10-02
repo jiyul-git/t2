@@ -106,6 +106,53 @@
         "published_exploitability_bb_per_hand": 0.028
       },
       "url": "https://pre-flop.ai-speeds.com/charts/push-fold-chart-10bb.html"
+    },
+    {
+      "source_id": "push_fold_trainer_9max",
+      "spot": "BTN first-in shove/fold",
+      "stack_bb": 25,
+      "ante": "0.125bb_per_player",
+      "shove_pct": 32,
+      "full_frequency_hand_classes": 59,
+      "url": "https://www.pushfoldtrainer.com/ranges/btn-rfi-25bb-9max"
+    },
+    {
+      "source_id": "push_fold_trainer_9max",
+      "spot": "BB call/fold vs BTN all-in",
+      "stack_bb": 25,
+      "ante": "0.125bb_per_player",
+      "call_pct": 16,
+      "full_frequency_hand_classes": 27,
+      "mixed_hand_classes": 6,
+      "url": "https://www.pushfoldtrainer.com/ranges/bb-vs-btn-25bb-9max"
+    },
+    {
+      "source_id": "push_fold_trainer_9max",
+      "spot": "BB call/fold vs SB all-in",
+      "stack_bb": 25,
+      "ante": "0.125bb_per_player",
+      "call_pct": 28,
+      "full_frequency_hand_classes": 52,
+      "mixed_hand_classes": 2,
+      "url": "https://www.pushfoldtrainer.com/ranges/bb-vs-sb-25bb-9max"
+    },
+    {
+      "source_id": "push_fold_trainer_9max",
+      "spot": "BB call/fold vs BTN all-in",
+      "stack_bb": 30,
+      "ante": "0.125bb_per_player",
+      "call_pct": 13,
+      "full_frequency_hand_classes": 24,
+      "url": "https://www.pushfoldtrainer.com/ranges/bb-vs-btn-30bb-9max"
+    },
+    {
+      "source_id": "push_fold_trainer_9max",
+      "spot": "BB call/fold vs SB all-in",
+      "stack_bb": 30,
+      "ante": "0.125bb_per_player",
+      "call_pct": 24,
+      "full_frequency_hand_classes": 45,
+      "url": "https://www.pushfoldtrainer.com/ranges/bb-vs-sb-30bb-9max"
     }
   ]
 }
