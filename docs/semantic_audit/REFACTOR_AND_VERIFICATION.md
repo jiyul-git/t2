@@ -215,3 +215,26 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - 봉인 sim(시드 11/12, 1,149핸드): 최종 코드 지문이 `e6d8b5e5…` / `c13a5bf4…` 로 같다.
 - 23-gate: 통과·실패 집합(17/6)과 출력 줄이 기준과 같다.
 - L-S9-02 측정은 `tools/l_s9_02_measure.py`. 측정 실행 지문도 봉인값과 같다.
+
+## 9차 — 9단계 B3 통합 (의도한 행동 변화 포함)
+
+기준 `20e206f7`. 항목별 판정과 근거는 ledger 의 "9단계 B3 통합" 절.
+
+코드 변경:
+- `ranges.range_mass_live`
+- `plan.VALUE_WHEN_CALLED_EQ`, `ahead_when_called`, `continue_range_strength`
+- `continue_range_commit_strength` 와 `overbet_value_continue_rel` 이 공용 함수를 쓰도록 변경
+- overbet 경로에 n_opp / opp_ranges / seed 전달
+- bluff_mode 라벨 `low_cost`
+- `_allowed(street=)`
+- trap 읽기 단일 경로
+
+검증:
+- 같은 상태 쌍 비교(`tools/b3_integration_attribution.py`, 시드 11/12): 측정 실행 지문 = 일반 sim 지문.
+  - fold_p 판정 뒤집힘: 각 1
+  - 밸류 판정 뒤집힘: 2 (시드 11 레이즈 eq = 0.50 경계, 시드 12 개선된 블러프 eq 0.531)
+  - 멀티웨이 오버벳 rel 하향: 17/143. HU 는 0
+- 새 baseline: 시드 11 `e6d8b5e5…`(불변), 시드 12 `8c33ece5…`.
+- L-S9-07 / trap 읽기는 최대 숙련, exploit 중립 baseline 에서 드러나지 않는다. 그래서 필드 프로필로 따로 측정했다(ledger).
+- completeness: site 1,135 / 함수 614 / 상수 표 87, 미소유 0.
+- 23-gate: 통과·실패 집합(17/6)과 출력 줄이 기준과 같다.

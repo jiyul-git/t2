@@ -334,3 +334,29 @@
   - `narrow_by_actions` 바닥: 2,697건 중 1건
   - `response_equity` 2단계: 1,267건 중 0건
 - 실제 왜곡은 `_nonvalue_raise_ev_gate` 의 fold_p 한 곳이다 → L-S9-02a.
+
+## 9단계 B3 통합 (최종 인간모델 — 판정과 단일 경로)
+
+기준 `20e206f7`(B3 구조분리). 목적 변경 이후의 처리다. 충돌은 미루지 않는다. 의도한 행동 변화는 근거와 같은 상태 쌍 비교로 기록한다.
+
+본체 / Human Model 2차 / 3차는 이름이 아니라 도입 commit 과 플래그로 식별했다.
+- 2차: `T2_GTO_MEMORY_V2`(22487e9f, persona/preflop)
+- 3차: `T2_PREFLOP_REASONING_V3`, `T2_EXPLOIT_WEIGHT_V3`, `T2_CALC_NOISE_V3`, `T2_PREFLOP_TEMPER_DIRECTION_V3`, `T2_READ_RECENCY_V3`(114c846f 이후)
+- plan 범위의 플래그 소비처는 `trap_judgment` 의 EXPLOIT_WEIGHT_V3 하나다.
+- `hierarchical style belief v3`, `STYLE_CALIB_V2` 는 상대 모델 실험 계열이라 Human Model 2차/3차가 아니다.
+
+| ID | 충돌 | 최종 선택 | 근거 | 검증 |
+|---|---|---|---|---|
+| L-S9-02a | 비밸류 레이즈 EV gate 의 fold_p: 전체 질량 vs hero 패에 조건을 건 질량 | 슬라이스는 전체 레인지 위에서, fold_p 의 분모와 분자는 hero/board 와 겹치지 않는 질량(`ranges.range_mass_live`) | 상대 전략은 hero 패를 모른다(슬라이스는 전체에서). 이 holding 이 받는 fold 확률은 상대가 실제로 가질 수 있는 콤보로만 정해진다(베이즈) | 같은 상태 쌍 비교: 시드 11/12 각 1건 허용 → 거부. 현재식은 평균 약 1%p 낙관적이었다 |
+| L-S9-03 | '콜당했을 때 앞서는가'의 문턱이 셋: river 얇은 밸류 eq ≥ 0.50 / 개선된 블러프 eq ≥ 0.54 + 전체 rel ≥ 0.55 / 밸류 레이즈 eq > 0.5 | 이진 밸류 판정은 `ahead_when_called`(continue range 대비 eq ≥ 0.50) 하나 | 0.50 은 콜받는 부분의 손익분기다(포커 논리). 0.54 는 도입 commit(aae4b908)에 근거가 없고, rel ≥ 0.55 는 그 commit 이 대체하려던 옛 전체 rel 규칙의 잔재다. continue range 는 상대 레인지의 상단이라 이 판정이 통과하면 전체 rel 조건은 사실상 따라온다 | 시드 12 개선된 블러프 1건(eq 0.531) 쇼다운 → 밸류. 시드 11 밸류 레이즈 1건(eq 정확히 0.50) |
+| L-S9-03 (연속 강도) | 커밋 재측정(joint+인지 rel) vs 오버벳(HU relative_strength, 인지 편향 없음) | `continue_range_strength` 하나: seat 별 continue range 가 다 있으면 joint, 아니면 기존 HU/합집합 fallback. 인지 편향은 perceived_rel | 같은 질문(그 사이즈를 계속하는 레인지 대비 강도)이다. rel 척도를 쓰는 이유: 소비처(target_commit, 양극성)가 rel 척도로 정의돼 있다 | 커밋 경로는 같은 연산이라 불변. 오버벳은 L-S9-04 |
+| L-S9-04 | 오버벳 밸류 강도: 멀티웨이에서도 합집합 레인지 + HU 식 | joint(위 함수). `overbet_frac`/`decide_size`/`attach_intent` 에 n_opp, opp_ranges, seed 전달 | 멀티웨이 오버벳은 콜하는 모두를 동시에 이겨야 한다. 합집합은 강도를 과대평가한다 | 쌍 비교: 오버벳 판정 143회 중 17회 rel 변화. 전부 멀티웨이이고 전부 하향(최대 0.385). HU 는 동일 |
+| L-S9-05 | bluff_mode 'probe'(사이즈 모드)와 공개 probe 벳 개념의 이름 충돌 | 라벨을 `'low_cost'` 로 변경 | 같은 단어가 다른 질문 둘을 가리켰다. 라벨 값을 비교하는 코드는 없다(merged/barrel 만 비교) | 기록 라벨만 변하고 행동은 같다 |
+| L-S9-06 | decide_response/act_with_plan 의 판단·기록·실행 결합 | **현재 경계를 최종으로 확정** | decide_response 가 plan_state 에 쓰는 것은 `_last_*` 근거 기록과 deviation 로그뿐이고 계획을 바꾸지 않는다. act_with_plan 은 상황마다 한 경로를 고른다(tocall=0 이면 저장된 intent, tocall>0 이면 decide_response 한 번). 같은 질문에 경로가 둘인 곳이 없다 | 코드 변경 없음 |
+| L-S9-07 | `_allowed` 가 trap 허용을 generic 'checkraise'(=플랍 능력)로 판정 | street 별 개념(`street_concept`) 으로 판정. 아키타입 경로(street 구분 없음)는 그대로 | trap_judgment 가 이미 같은 alias 버그를 고쳐 street 능력을 쓴다. 턴/리버 트랩은 그 street 의 체크레이즈 능력으로 실행된다 | 필드 프로필 2,000건(턴/리버): 394건 변화(346 강등 / 48 허용). 최대 숙련 baseline 은 불변 |
+| HM3 EXPLOIT_WEIGHT_V3 | trap 의 상대 정보 가중치: legacy `exploit_weight`(0.5 adaptability + 0.3 range_read + 0.2 attention) vs 3차(`read_opponent` 공통 w × 빈도/라인 인식) | 3차 경로를 유일 경로로. plan 은 더 이상 `exploit_weight` 를 부르지 않는다 | `read_opponent` 는 상대 읽기의 단일 입구이고, 다른 모든 소비처가 이미 쓴다. legacy 는 인식 능력을 전역 의지 배수에 다시 섞어 이중으로 셌다. 인식 혼합 0.65/0.35 는 opp_bet_prob 자체 식과 같다 | range_read 높음/attention 낮음 프로필: 0.392 → 0.176(벳 빈도 읽기는 세기 = attention). baseline 은 exploit 중립이라 불변. `persona.exploit_weight` 와 플래그는 생산 소비처가 없어졌고, 검증기와 함께 B5(호환 경로 제거)에서 퇴역 |
+
+새 baseline(B3 통합):
+- 시드 11 `e6d8b5e5…`: 불변. 위 변화가 시드 11 에서는 실제 행동 분기로 이어지지 않았다.
+- 시드 12 `8c33ece5…`: 쌍 비교로 확인한 변화(fold_p 1, 개선된 블러프 1, 멀티웨이 오버벳 rel 10) 중 하나 이상에서 갈라졌다.
+- 측정 도구: `tools/b3_integration_attribution.py`. 측정 실행 지문이 일반 sim 지문과 같다.

@@ -590,18 +590,15 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
     tool = 0.07*sk('trap') + 0.12*sk(PS.street_concept('checkraise', street))
     if tool <= 0.05:
         return 0.0, ''
-    conf = (opp_est or {}).get('confidence', 0.0)
-    n    = (opp_est or {}).get('n', 0)
-    if getattr(PS, 'EXPLOIT_WEIGHT_V3', False):
-        # Same base evidence/adaptability weight as every other read consumer.
-        # Bet-frequency estimation itself needs frequency counting (65%) and
-        # line/range interpretation (35%), matching opp_bet_prob's own mix.
-        _rd_trap = PS.read_opponent(profile, opp_est)
-        _see_bet = (0.65*_rd_trap.get('see_freq', 0.0)
-                    + 0.35*_rd_trap.get('see_line', 0.0))
-        w = _rd_trap.get('w', 0.0) * _see_bet
-    else:
-        w = PS.exploit_weight(profile, conf, n)
+    # 상대 정보 적용은 모든 읽기 소비처와 같은 단일 입구(read_opponent)를
+    # 쓴다(Human Model 3차 EXPLOIT_WEIGHT_V3 통합). 적용 의지·증거량은 공통 w,
+    # '벳 빈도를 보는 능력'은 opp_bet_prob 자신의 혼합(빈도 0.65 / 공격 축 0.35)
+    # 그대로 see_freq / see_line 로 나눠 건다. 예전 exploit_weight 는
+    # range_read·attention 을 전역 의지 배수에 다시 섞어 인식을 이중으로 셌다.
+    _rd_trap = PS.read_opponent(profile, opp_est)
+    _see_bet = (0.65*_rd_trap.get('see_freq', 0.0)
+                + 0.35*_rd_trap.get('see_line', 0.0))
+    w = _rd_trap.get('w', 0.0) * _see_bet
     pbet = opp_bet_prob(opp_est, w, street)
 
     # --- 상황이 시키는 빈도 ---
@@ -663,6 +660,57 @@ def potcontrol_disposition(profile):
     return max(0.0, min(1.0, (profile['icm'] + (10-profile['gamble']) + (10-profile['aggr']))/30.0))
 
 
+# '콜당했을 때도 앞서는가'의 판단 기준(L-S9-03). 벳/레이즈를 밸류로 분류하는
+# 이진 질문은 continue range 대비 equity 가 이 값 이상이어야 한다 — 콜받는
+# 부분의 손익분기다(접는 핸드는 어차피 지는 핸드이거나, 우리 equity 를
+# 포기하고 나간 것이라 밸류 판정을 낮추는 방향이 아니다).
+VALUE_WHEN_CALLED_EQ = 0.50
+
+
+def ahead_when_called(eq_vs_continue):
+    """밸류 자격: continue range 대비 equity 가 손익분기(0.50) 이상인가.
+
+    river 얇은 밸류, 개선된 블러프 재분류, 밸류 레이즈 자격이 같은 질문을
+    서로 다른 문턱(0.50 / 0.54 + 전체 rel 0.55 / > 0.5)으로 물었다. 하나로 합친다.
+    근거가 없으면(None) 밸류로 인정하지 않는다 — 콜 레인지를 지어내지 않는다.
+    """
+    return eq_vs_continue is not None and float(eq_vs_continue) >= VALUE_WHEN_CALLED_EQ
+
+
+def continue_range_strength(hero, board, profile, street, size_frac,
+                            opp_range, opp_ranges, n_opp, made, seed=None):
+    """그 사이즈를 계속하는 상대 레인지 대비 '인지된' 상대강도(rel 척도). 없으면 None.
+
+    연속 강도 입력(커밋 목표, 오버벳 양극성)이 쓰는 단일 계산(L-S9-03/04).
+    멀티웨이는 seat 별 continue range 가 전부 있을 때 joint, 아니면 HU/합집합
+    경로(_decision_relative_strength 의 기존 fallback)를 그대로 쓴다.
+    인지 편향은 perceived_rel 로 rel 과 같은 방식으로 건다.
+    """
+    _cont = None
+    if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):
+        _cm = {k: R.perceived_continue_range(v, board, street, size_frac,
+                                             profile)
+               for k, v in opp_ranges.items() if v}
+        if len(_cm) == int(n_opp or 1) and all(_cm.values()):
+            _cont = ('mw', _cm)
+    elif opp_range:
+        _cr = R.perceived_continue_range(opp_range, board, street,
+                                         size_frac, profile)
+        if _cr:
+            _cont = ('hu', _cr)
+    if _cont is None:
+        return None
+    _rc, _ = _decision_relative_strength(
+        hero, board,
+        (_cont[1] if _cont[0] == 'hu' else opp_range),
+        n_opp=n_opp,
+        opp_ranges=(_cont[1] if _cont[0] == 'mw' else None),
+        sims=400, seed=seed)
+    return perceived_rel(profile, _rc, hero, board,
+                         bot.draw_strength(hero, board) if board else 0,
+                         made)
+
+
 def continue_range_commit_strength(hero, board, profile, pot, stack, street, rel,
                                    made, s_true, dang, commit, opp_est,
                                    opp_stack_bb, opp_eff, n_opp, opp_range,
@@ -678,40 +726,20 @@ def continue_range_commit_strength(hero, board, profile, pot, stack, street, rel
     _plan_opp_est = opp_est
     _plan_opp_stack_bb = opp_stack_bb
     _opp_eff = opp_eff
-    _rel_seed = rel_seed
     _commit_rel = rel
     _so_probe = stackoff_plan(hero, board, profile, pot, stack, street,
                               random.Random(0), commit=_commit,
                               danger=dang, opp_est=_plan_opp_est)
     _probe_sz = float((_so_probe or {}).get(street) or 0.0)
     if board and _probe_sz > 0 and _commit > 0.30 and made < 5:
-        _cont = None
-        if int(n_opp or 1) > 1 and isinstance(opp_ranges, dict):
-            _cm = {k: R.perceived_continue_range(v, board, street, _probe_sz,
-                                                 profile)
-                   for k, v in opp_ranges.items() if v}
-            if len(_cm) == int(n_opp or 1) and all(_cm.values()):
-                _cont = ('mw', _cm)
-        elif opp_range:
-            _cr = R.perceived_continue_range(opp_range, board, street,
-                                             _probe_sz, profile)
-            if _cr:
-                _cont = ('hu', _cr)
-        if _cont is not None:
-            _rc, _ = _decision_relative_strength(
-                hero, board,
-                (_cont[1] if _cont[0] == 'hu' else opp_range),
-                n_opp=n_opp,
-                opp_ranges=(_cont[1] if _cont[0] == 'mw' else None),
-                sims=400, seed=_rel_seed)
-            _rc = perceived_rel(profile, _rc, hero, board,
-                                bot.draw_strength(hero, board) if board else 0,
-                                made)
-            if _rc < rel:
-                _commit_rel = _rc
-                _commit = target_commit(profile, _rc, made, s_true, street,
-                                        opp_stack_bb=_plan_opp_stack_bb,
-                                        opp_eff=_opp_eff)
+        _rc = continue_range_strength(
+            hero, board, profile, street, _probe_sz, opp_range, opp_ranges,
+            n_opp, made, seed=rel_seed)
+        if _rc is not None and _rc < rel:
+            _commit_rel = _rc
+            _commit = target_commit(profile, _rc, made, s_true, street,
+                                    opp_stack_bb=_plan_opp_stack_bb,
+                                    opp_eff=_opp_eff)
     return _commit, _commit_rel
 
 
@@ -1235,7 +1263,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
 
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
-                  oop_vs_aggr=None, oop_legacy_abs=None):
+                  oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None):
     """계획에 이 스트리트의 의도를 붙인다. 판단 층의 마지막 단계."""
     plan = st.get('plan')
     rel = st.get('rel', 0.5)
@@ -1252,7 +1280,8 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                            opp_range, my_range, pot, stack, rng, opp_est,
                            st.get('nut_adv_raw', st.get('nut_adv', 0.0)),
                            deviating=why_a.startswith('DEVIATE:'),
-                           stackoff=st.get('stackoff'), plan_state=st)
+                           stackoff=st.get('stackoff'), plan_state=st,
+                           n_opp=n_opp, opp_ranges=opp_ranges)
         if size > 0:
             st = set_intent(st, street, mk_intent('bet', size, why_a))
             # 계획과 반대되는 의도는 이탈로 남긴다. 기록이 없으면
@@ -1506,8 +1535,12 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
     price_frac = opp_call / max(1.0, pot_after_raise)
     cont = R.perceived_continue_range(
         pool, board, street, price_frac, profile=profile)
-    base_mass = float(R.range_mass(pool) or 0.0)
-    cont_mass = float(R.range_mass(cont) or 0.0)
+    # Hand-conditioned fold share (L-S9-02a): the continue slice is taken on
+    # the full perceived range (opponent strategy), but the probability that
+    # *this* holding gets a fold counts only combos the opponent can hold.
+    _dead = set(hero) | set(board or [])
+    base_mass = float(R.range_mass_live(pool, _dead) or 0.0)
+    cont_mass = float(R.range_mass_live(cont, _dead) or 0.0)
     if base_mass <= 0 or cont_mass <= 0:
         return {'known': False, 'allow': True, 'why': 'range mass unavailable'}
 
@@ -1659,7 +1692,7 @@ def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
         if _cont:
             _vr_eq_cont = bot.equity_vs_combos(
                 hero, board, [_cont], sims=400)
-            _vr_ok = (_vr_eq_cont > 0.5)
+            _vr_ok = ahead_when_called(_vr_eq_cont)
     return _vr_ok, _vr_eq_cont, _fair_share
 
 
@@ -2095,7 +2128,7 @@ def planned_size_base(plan, street, plan_state):
 
 def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
                 pot, stack, rng, opp_est=None, nut=0.0, deviating=False,
-                stackoff=None, plan_state=None):
+                stackoff=None, plan_state=None, n_opp=1, opp_ranges=None):
     """이 스트리트 벳 사이즈(팟 대비)를 정하는 **유일한 지점**.
 
     예전에는 한 사이즈가 네 번 재계산됐다:
@@ -2175,7 +2208,9 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
 
     # 오버벳: 개념·넛우위·양극화가 갖춰졌을 때만. 판단 층에서 결정된다.
     ob = overbet_frac(profile, hero, board, opp_range, my_range, street, plan,
-                      rel, rng, opp_est, nut=nut)
+                      rel, rng, opp_est, nut=nut, n_opp=n_opp,
+                      opp_ranges=opp_ranges,
+                      seed=(plan_state or {}).get('eq_seed'))
     if ob:
         return ob
     return max(0.15, min(1.0, base))
@@ -2301,16 +2336,18 @@ SIZING = {
     'showdown':      {'flop':0.0, 'turn':0.0, 'river':0.0},
 }
 
-def overbet_value_continue_rel(hero, board, opp_range, street, rel, profile):
-    """밸류 오버벳의 강도는 '오버벳(1.15팟)을 콜하는 레인지' 대비로 본다(L140).
+def overbet_value_continue_rel(hero, board, opp_range, street, rel, profile,
+                               opp_ranges=None, n_opp=1, seed=None):
+    """밸류 오버벳의 강도 = min(rel, 오버벳(1.15팟)을 계속하는 레인지 대비 강도).
 
-    turn/river 공통 질문이다. 레인지 전체 rel 보다 낮으면 그 값을 쓴다.
-    (union continue range 사용은 multiway 에서 LATER, L-RA10)
+    커밋 재측정과 같은 continue_range_strength 를 쓴다(L-S9-03/04): 멀티웨이는
+    seat 별 continue range 의 joint 강도, 인지 편향도 rel 과 같은 방식.
     """
-    _ob_cr = R.perceived_continue_range(
-        opp_range, board, street, 1.15, profile)
-    if _ob_cr:
-        rel = min(rel, relative_strength(hero, board, _ob_cr))
+    _rc = continue_range_strength(
+        hero, board, profile, street, 1.15, opp_range, opp_ranges, n_opp,
+        bot.made_strength(hero, board) if board else 0, seed=seed)
+    if _rc is not None:
+        rel = min(rel, _rc)
     return rel
 
 
@@ -2339,7 +2376,7 @@ def overbet_size(nut, overbet_skill, rng):
 
 
 def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, rng,
-                 opp_est=None, nut=0.0):
+                 opp_est=None, nut=0.0, n_opp=1, opp_ranges=None, seed=None):
     """오버벳(팟 초과) 사이즈를 낼지, 낸다면 얼마나. 안 내면 None.
 
     오버벳은 아무나 치는 게 아니다. 세 가지가 동시에 필요하다:
@@ -2372,7 +2409,8 @@ def overbet_frac(profile, hero, board, opp_range, my_range, street, plan, rel, r
     # 않았다(audit9 HAND 16). 리버 thin value 와 같은 continue-range 모델.
     if value_line and opp_range and board:
         rel = overbet_value_continue_rel(hero, board, opp_range, street, rel,
-                                         profile)
+                                         profile, opp_ranges=opp_ranges,
+                                         n_opp=n_opp, seed=seed)
     pol = overbet_line_polarization(rel, value_line)
     if pol <= 0.02: return None                     # 미들레인지는 제외
 
@@ -3280,7 +3318,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     if opp_checked_prev is not None:
         st['opp_checked_prev'] = bool(opp_checked_prev)
 
-    st['plan'] = _allowed(profile, st['plan'], rng)
+    st['plan'] = _allowed(profile, st['plan'], rng, street=street)
 
     # 이 라벨을 언제 채택했는가. 예산(BUDGET)을 세는 기준점이다.
     # 플랍에 bluff_2street 으로 치다가 턴에 value_2street 으로 승격한 사람은
@@ -3301,7 +3339,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                            pot, stack, street, rng, n_opp, behind,
                            oop, initiative, _intent_est,
                            oop_vs_aggr=oop_vs_aggr,
-                           oop_legacy_abs=oop_legacy_abs)
+                           oop_legacy_abs=oop_legacy_abs,
+                           opp_ranges=opp_ranges)
     return st
 
 
@@ -3381,8 +3420,7 @@ def river_value_reassessment(st, hero, board, profile, opp_range, rng,
 
         # With no usable range evidence, do not invent a thin-value call
         # range.  Check and take showdown value instead.
-        _value_when_called = (
-            _thin_eq is not None and float(_thin_eq) >= 0.50)
+        _value_when_called = ahead_when_called(_thin_eq)
         if (_value_when_called
                 and rng.random() < 0.75*_tv*_band):
             st['plan'] = 'thin_river'
@@ -3390,7 +3428,7 @@ def river_value_reassessment(st, hero, board, profile, opp_range, rng,
                 '리버: 얇은 밸류(rel %.2f, call-eq %.2f, 개념 %.1f)'
                 % (rel, float(_thin_eq), _tv*10)]
             return st
-        elif _thin_eq is not None and float(_thin_eq) < 0.50:
+        elif _thin_eq is not None and not _value_when_called:
             st['why'] = (st.get('why') or []) + [
                 '리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'
                 ' → 얇은 밸류 아님'
@@ -3511,7 +3549,7 @@ def record_deviation(state, street, executed_action, planned_action, reason=''):
 # 계획 → 실행에 필요한 개념(_allowed). 'trap' 은 generic 'checkraise' 별칭을 쓰는데
 # persona.street_concept 를 거치지 않으므로 street 와 무관하게 같은 별칭 값을 읽는다
 # (ledger L157 — flop/late 분리 별칭으로 바꾸는 것은 공급 변경이라 LATER).
-PLAN_REQUIRED_CONCEPT = {'bluff_2street': 'bluff', 'semibluff': 'semibluff', 'trap': 'checkraise',
+PLAN_REQUIRED_CONCEPT = {'bluff_2street': 'bluff', 'semibluff': 'semibluff', 'trap': 'checkraise',  # street 별로 해석(_allowed)
                          'block': 'blockbet', 'pot_control': 'potcontrol',
                          'river_bluff': 'barrel_river', 'thin_river': 'thin_value_river'}
 # 개념이 부족할 때 내려가는 계획.
@@ -3521,7 +3559,7 @@ PLAN_DOWNGRADE = {'bluff_2street':'giveup','semibluff':'showdown',
                   'river_bluff':'giveup','thin_river':'showdown'}
 
 
-def _allowed(profile, plan, rng=None):
+def _allowed(profile, plan, rng=None, street=None):
     """그 개인이 해당 계획을 실행할 개념을 갖고 있는가. 벡터면 연속 확률.
 
     rng 는 필수다. 예전에는 `(rng or random).random()` 으로 전역 RNG 에 폴백했는데,
@@ -3532,7 +3570,12 @@ def _allowed(profile, plan, rng=None):
     if profile.get('concepts'):
         need = PLAN_REQUIRED_CONCEPT
         if plan in need:
-            s = PS.sk(profile, need[plan])
+            # 'checkraise' 같은 street 공유 개념은 지금 street 의 능력으로 묻는다
+            # (L-S9-07). generic 별칭은 항상 checkraise_flop 이라, 턴/리버 트랩
+            # 허용을 플랍 능력으로 판정했다. trap_judgment 와 같은 해석이다.
+            _c = (PS.street_concept(need[plan], street) if street
+                  else need[plan])
+            s = PS.sk(profile, _c)
             _down = PLAN_DOWNGRADE
             if s < 1.5: return _down[plan]
             if s < 3.5:
@@ -3838,8 +3881,10 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # Otherwise stop treating it as air and take showdown value.
         # If the range evidence is unavailable, default to showdown rather than
         # inventing a value bet.
-        if (_call_eq is not None and float(_call_eq) >= 0.54
-                and rel >= 0.55):
+        # 밸류 재분류는 '콜받는 레인지 대비 앞서는가' 하나로 판정한다
+        # (L-S9-03). 예전 0.54 여유분과 전체 레인지 rel ≥ 0.55 는 근거가 없거나
+        # (aae4b908 에 설명 없음) 이 커밋이 대체하려던 옛 전체-rel 규칙의 잔재였다.
+        if ahead_when_called(_call_eq):
             st['plan'] = 'value_2street'
             why.append(
                 '%s: 블러프 중 강도 획득(made %d, rel %.2f),'
@@ -4013,11 +4058,10 @@ def bluff_mode(profile, rel, danger, nut_adv, opp_est, street, s, rng):
       polarized  양극화 — 오버벳으로 '넛 아니면 블러프'만 남긴다.
                  내 레인지에 넛이 있어야(nut_adv) 성립한다.
       barrel     지속형 — 폴드율 위주. 상대가 사이즈를 안 읽을 때.
-      probe      저비용 — 중간에 접을 생각. 반응만 보고 손실을 줄인다.
-                 (이름 주의, ledger L144/L016: 여기 'probe' 는 **사이즈 모드**다.
-                 상대가 직전 street 를 체크백한 뒤의 공개 probe 기회
-                 — decide_aggression/bluff_donk_suppression 의 probe 개념 — 와
-                 다른 질문이다. 문자열은 plan_state 계약이라 바꾸지 않는다.)
+      low_cost   저비용 — 중간에 접을 생각. 반응만 보고 손실을 줄인다.
+                 (L-S9-05: 예전 라벨 'probe'. 상대가 체크백한 뒤의 공개 probe
+                 벳 기회 — decide_aggression/bluff_donk_suppression 의 probe
+                 개념 — 와 다른 질문이라 사이즈 모드 이름으로 바꿨다.)
 
     **이건 레귤러의 개념이다.** 상대의 읽기 능력을 고려해 사이즈를 바꾸는 것
     자체가 공부의 산물이다. 못 하는 사람은 늘 같은 크기로 친다.
@@ -4043,7 +4087,7 @@ def bluff_mode(profile, rel, danger, nut_adv, opp_est, street, s, rng):
     risk = max(0.0, min(1.0, 0.25 + 0.45*max(0.0, min(1.0, danger/0.65))
                         + 0.05*max(0.0, s - 4.0)))
     if risk > 0.62 and rng.random() < 0.55*aware:
-        return 'probe', 0.55, '도중 포기 위험 %.0f%% — 최소 비용 탐색' % (risk*100)
+        return 'low_cost', 0.55, '도중 포기 위험 %.0f%% — 최소 비용 탐색' % (risk*100)
     if reads >= 0.55 and nut_adv >= 0.55 and rng.random() < 0.45*aware:
         return 'polarized', 1.45, '상대가 사이즈를 읽음 + 넛 우위 — 양극화'
     if reads >= 0.55:

@@ -673,6 +673,27 @@
    "to": null
   },
   {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "continue_range_strength",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "ahead_when_called",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "nonvalue_raise_ev_gate",
+   "module": "ranges",
+   "func": "range_mass_live",
+   "from": null,
+   "to": null
+  },
+  {
    "concept": "plan_revision_lifecycle",
    "module": "plan",
    "func": "update_plan",
@@ -2144,6 +2165,7 @@
   }
  ],
  "tables": {
+  "plan:VALUE_WHEN_CALLED_EQ": "value_when_called_strength",
   "plan:PLAN_REQUIRED_CONCEPT": "plan_concept_permission",
   "plan:PLAN_DOWNGRADE": "plan_concept_permission",
   "plan:PLANS": "dead_strategy_tables",

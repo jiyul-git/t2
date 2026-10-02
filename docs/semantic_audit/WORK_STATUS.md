@@ -126,3 +126,7 @@
     - 2차: `T2_GTO_MEMORY_V2`(22487e9f)
     - 3차: `T2_PREFLOP_REASONING_V3`, `T2_EXPLOIT_WEIGHT_V3`, `T2_CALC_NOISE_V3`, `T2_PREFLOP_TEMPER_DIRECTION_V3`, `T2_READ_RECENCY_V3`(114c846f 이후)
 - 다음: B3 통합 — L-S9-02a~07 판정과 B3 범위 플래그 경로(`plan.trap_judgment` 의 EXPLOIT_WEIGHT_V3).
+- **B3 통합 완료.**
+  - 판정 8건: L-S9-02a, 03(이진/연속), 04, 05, 06(현 경계 확정), 07, HM3 EXPLOIT_WEIGHT_V3(trap) — 미결정 0.
+  - 새 baseline: 시드 11 `e6d8b5e5…`, 시드 12 `8c33ece5…`.
+- 다음: B4(persona/concept 역할) — GTO_MEMORY_V2, PREFLOP_TEMPER_DIRECTION_V3, CALC_NOISE_V3, PREFLOP_REASONING_V3(persona 쪽)의 판정과 통합.

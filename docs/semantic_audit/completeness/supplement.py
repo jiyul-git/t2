@@ -697,6 +697,9 @@ sp('river_thin_value', 'plan', 'river_fix')
 sp('river_thin_value', 'plan', 'river_value_reassessment')
 sp('value_when_called_strength', 'plan', 'river_value_reassessment', '_thin_eq, _thin_n = continue_range_call_equity(', "'리버: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50'")  # stage9 B3 (L119)
 sp('value_when_called_strength', 'plan', 'continue_range_call_equity')  # stage9 B3 (L119)
+sp('value_when_called_strength', 'plan', 'continue_range_strength')  # stage9 B3 integration (L-S9-03/04)
+sp('value_when_called_strength', 'plan', 'ahead_when_called')  # stage9 B3 integration (L-S9-03)
+sp('nonvalue_raise_ev_gate', 'ranges', 'range_mass_live')  # stage9 B3 integration (L-S9-02a)
 sp('plan_revision_lifecycle', 'plan', 'update_plan')
 sp('pure_bluff_line_selection', 'plan', '_blocker_score_bluff_factor')
 sp('pure_bluff_line_selection', 'plan', '_blocker_net_bluff_factor')
@@ -918,6 +921,7 @@ sp('exploit_read_permission', 'persona', 'read_evidence_amount')  # stage9 B2 (L
 
 # module-level knowledge/parameter tables -> concept (checked by part 3 of the checker)
 TABLES = {
+    'plan:VALUE_WHEN_CALLED_EQ': 'value_when_called_strength',  # stage9 B3 integration (L-S9-03)
     'plan:PLAN_REQUIRED_CONCEPT': 'plan_concept_permission', 'plan:PLAN_DOWNGRADE': 'plan_concept_permission',  # stage9 B3 (L157)
     'plan:PLANS': 'dead_strategy_tables', 'plan:BUDGET': 'bet_budget', 'plan:SIZING': 'planned_bet_sizing',
     'preflop:PCT': 'legacy_preflop_ordering', 'preflop:RV': '@nonsemantic:card rank map',

@@ -74,6 +74,19 @@ def range_mass(rng):
     return sum(w for _c, w in range_items(rng))
 
 
+def range_mass_live(rng, dead):
+    """Mass of combos that share no card with `dead` (hero hole cards + board).
+
+    The opponent's strategy (which combos bet/call/fold) is defined on the
+    full perceived range — the opponent does not know hero's cards — so slices
+    are taken on the full range.  A probability *conditioned on hero's hand*
+    (e.g. the fold share facing hero's raise) must divide live mass by live
+    mass: combos holding hero's cards cannot be in the opponent's hand.
+    """
+    dead = set(dead or ())
+    return sum(w for c, w in range_items(rng) if not (set(c) & dead))
+
+
 def range_weight(rng, combo):
     """Mass assigned to one combo."""
     return weighted_range(rng).get(_range_combo(combo), 0.0)
