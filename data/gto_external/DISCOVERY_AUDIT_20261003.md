@@ -9,8 +9,8 @@ Collect external **scenario × position × stack × 169-hand** preflop action-fr
 ### jensbaagaard/poker-practice
 - 9-max MTT raw source, MIT.
 - Nominal stack packs: **5 / 10 / 20 / 40 / 100 BB**.
-- **271 scenario keys per stack = 1,355 hand-level scenario tables total**.
-- Every generated chart table contains the full **169 hand classes** with mixed action frequencies.
+- Each stack file has **271 top-level keys**, of which **269 are action tables** and 2 are utility ranges (`EmptyRange`, `WideRange`). Across 5 stacks this is **1,345 action tables**.
+- Operational normalization expands every action table to the full **169 hand classes** (missing sparse entries are explicit 0.0), giving **227,305 hand-frequency rows**.
 - Local locator:
   - branch: `chatgpt/gto-external-harvest-20261003`
   - raw: `data/gto_external/jensbaagaard_9max_mtt/MTT_*_GTO.json`
@@ -22,7 +22,7 @@ Collect external **scenario × position × stack × 169-hand** preflop action-fr
 
 ### RangeMyHand push/fold
 - 9-max + 6-max, **1–25 BB**, CC BY 4.0.
-- 9-max coverage is **225 seat×stack spots × 169 classes = 38,025 rows**.
+- The raw file has **225 spots across 6-max + 9-max**. The **9-max subset is 125 seat×stack spots** (25 stack depths × 5 opening seats), giving **21,125 hand-frequency rows**.
 - Chip-EV Nash, no ante, shove-or-fold abstraction.
 
 ## Newly found high-value crosschecks
@@ -117,7 +117,7 @@ Watch only. The repository currently describes a planned open GTO database, but 
 
 ## Discovery/search rule
 
-Before writing "no hand-level reference exists", search both the canonical DB and harvested external-data branches. In particular, the Jens Baagaard 9-max packs above are not located under the older `chatgpt/gto-reference-20260928:data/gto_db/` tree.
+Before writing "no hand-level reference exists", search both the operational DB and harvested external-data branches. Current provenance-free operational materialization contains **248,430 9-max rows**: 227,305 full-tree-family rows plus 21,125 1–25 BB open-shove rows.
 
 For 30 BB, distinguish:
 - **hand-level reference exists in neighboring stacks**: yes, 20/40 BB in the Jens pack;
@@ -145,7 +145,6 @@ A source may look like GTO because it has a 13×13 grid. That is not enough. Bef
 - action sizes
 - solver/model and convergence evidence
 - whether frequencies are solved or hand-authored/extrapolated
-- license / redistribution status
 - whether the node is a full tree or a reduced shove/fold abstraction
 
-Anything missing these stays **crosscheck / auxiliary / rejected**, never silently merged into truth.
+Source/licensing notes may remain in separate research/legal files when required, but they are **not fields in the operational frequency rows or runtime lookup key**. Anything with unresolved model assumptions stays **crosscheck / auxiliary / rejected**, never silently merged into truth.
