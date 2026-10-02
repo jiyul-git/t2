@@ -1,4 +1,5 @@
 {
+ "note": "approximation / sensitivity only: design-MSE / SRSWOR ratio on pseudo-populations with y ~ iid; NOT the exact design variance (true flop values may correlate with trips status). A4c plan: SRSWOR FPC in all 12 strata by default; this 0.98-1.01 range is applied to the paired strata as a sensitivity check (allocation ranking, predicted EV loss, classification); paired-specific variance is refined only if the result changes.",
  "paired/A m=12": {
   "K": 49,
   "ratio_design_mse_over_srswor": 0.9902108248568502,
