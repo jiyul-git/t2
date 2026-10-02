@@ -21,3 +21,10 @@ SOURCE_MANIFEST / FUNCTION_CALL_CENSUS는 수정 전 코드 증거다. 실행 �
 - [재감사 completeness 보고](completeness/COMPLETENESS_REPORT.md) — 검색 방법, 신규 66행, 정정, 추출, 한계
 - [CANONICAL_VERIFIER_MANIFEST](CANONICAL_VERIFIER_MANIFEST.md) — 검증 스크립트 71개의 목적·소속·기대 상태·실행 시점
 - 코드 위치 소유 맵: [completeness/SPAN_MAP.json](completeness/SPAN_MAP.json) (생성: `completeness/supplement.py`, 검사: `tools/check_semantic_completeness.py`)
+
+R2 (pf_rank/PCT 용도 + 9-max 디펜스 지식, 첫 보고 — production 변경 없음):
+- [R2_BEFORE_BASELINE](r2/R2_BEFORE_BASELINE.md) — 46a2070 행동 봉인과 재현 방법
+- [A. PCT_CONSUMER_AUDIT](r2/PCT_CONSUMER_AUDIT.md) — 소비처 22개, 질문·현재 양·필요 양·판정, 순서 재현율 측정
+- [B. 9MAX_DEFEND_BASELINE_TABLE](r2/9MAX_DEFEND_BASELINE_TABLE.md) — 현재 코드가 내는 9-max 디펜스 값(prior/문턱/실현)
+- [C. 9MAX_DEFEND_REFERENCE_COMPARISON](r2/9MAX_DEFEND_REFERENCE_COMPARISON.md) — 근거 자료·신뢰도·차이·판정, 그림 [defend_vs_reference.png](r2/defend_vs_reference.png)
+- [D. R2_CHANGE_PLAN](r2/R2_CHANGE_PLAN.md) — 미적용 변경 계획(승인 대기)

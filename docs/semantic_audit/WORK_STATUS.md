@@ -71,3 +71,10 @@
 - semantic-only 추출 3건(players-behind premium 단일 producer, has_showdown_value, line_owned_by_live_aggressor): parity probe·sim 바이트 동일·23-gate 동일.
 - 검증 체계: `CANONICAL_VERIFIER_MANIFEST` (71개, 23-gate/40-suite 소속, pristine HEAD 대비 상태).
 - 다음(사용자 지정 순서): R2 pf_rank/PCT 지식 정확성 감사 → R1b 플랍 raise-range 지식 → OOP 체크레이즈 후속 행동.
+
+## R2 첫 보고 — pf_rank/PCT 용도(R2-A) + 9-max 디펜스 지식(R2-B) (Claude, test `46a2070` 기준)
+
+- production 계수·표·문턱·액션 변경 없음. 추가는 읽기 전용 측정 도구 `tools/r2_*.py` 와 `docs/semantic_audit/r2/` 문서뿐.
+- 46a2070 행동을 R2 before baseline 으로 봉인(`r2/R2_BEFORE_BASELINE.md`).
+- 핵심: 9-max 조건 일치 solver 자료가 저장소·공개 자료 모두에 없다 → 9-max 값은 NEEDS_SOLVER_DATA. 자료 없이 확인된 코드 내부 결함 3개(짧은 스택 이중 적용, saturate 증폭, prior→3벳 실현 손실), vs-3bet 지식 부재(오프너 계속률 7~25% vs 기준 43~89%).
+- 다음: 사용자 승인 대기(9-max 자료 출처 결정, R2-B2/B4 진행 여부).

@@ -1,0 +1,3677 @@
+{
+"orderings": [
+"pf_rank",
+"eq_random"
+],
+"rows": [
+{
+"stack": "3bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.5352,
+"pf_rank": 0.9483,
+"eq_random": 0.9652
+},
+{
+"stack": "3bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.4382,
+"pf_rank": 0.9353,
+"eq_random": 0.9362
+},
+{
+"stack": "3bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.3915,
+"pf_rank": 0.9401,
+"eq_random": 0.9297
+},
+{
+"stack": "3bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.3783,
+"pf_rank": 0.9111,
+"eq_random": 0.9275
+},
+{
+"stack": "3bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.8459,
+"pf_rank": 0.9578,
+"eq_random": 0.975
+},
+{
+"stack": "3bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.2993,
+"pf_rank": 0.8809,
+"eq_random": 0.9093
+},
+{
+"stack": "3bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.3271,
+"pf_rank": 0.9007,
+"eq_random": 0.9405
+},
+{
+"stack": "5bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.4721,
+"pf_rank": 0.9153,
+"eq_random": 0.9599
+},
+{
+"stack": "5bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3938,
+"pf_rank": 0.9279,
+"eq_random": 0.9477
+},
+{
+"stack": "5bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.3275,
+"pf_rank": 0.8699,
+"eq_random": 0.9071
+},
+{
+"stack": "5bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.318,
+"pf_rank": 0.856,
+"eq_random": 0.8862
+},
+{
+"stack": "5bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.7623,
+"pf_rank": 0.9587,
+"eq_random": 0.9753
+},
+{
+"stack": "5bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.2548,
+"pf_rank": 0.8558,
+"eq_random": 0.9402
+},
+{
+"stack": "5bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.2842,
+"pf_rank": 0.8184,
+"eq_random": 0.9066
+},
+{
+"stack": "8bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.419,
+"pf_rank": 0.916,
+"eq_random": 0.9124
+},
+{
+"stack": "8bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3308,
+"pf_rank": 0.8813,
+"eq_random": 0.8974
+},
+{
+"stack": "8bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2999,
+"pf_rank": 0.8171,
+"eq_random": 0.8784
+},
+{
+"stack": "8bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2571,
+"pf_rank": 0.824,
+"eq_random": 0.8928
+},
+{
+"stack": "8bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.6059,
+"pf_rank": 0.8938,
+"eq_random": 0.8877
+},
+{
+"stack": "8bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1938,
+"pf_rank": 0.8361,
+"eq_random": 0.8304
+},
+{
+"stack": "8bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.2184,
+"pf_rank": 0.8444,
+"eq_random": 0.87
+},
+{
+"stack": "10bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.3915,
+"pf_rank": 0.936,
+"eq_random": 0.9072
+},
+{
+"stack": "10bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3155,
+"pf_rank": 0.8549,
+"eq_random": 0.8567
+},
+{
+"stack": "10bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2703,
+"pf_rank": 0.8196,
+"eq_random": 0.8865
+},
+{
+"stack": "10bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.226,
+"pf_rank": 0.8425,
+"eq_random": 0.869
+},
+{
+"stack": "10bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.4998,
+"pf_rank": 0.813,
+"eq_random": 0.8165
+},
+{
+"stack": "10bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1693,
+"pf_rank": 0.8409,
+"eq_random": 0.8959
+},
+{
+"stack": "10bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1939,
+"pf_rank": 0.8158,
+"eq_random": 0.8806
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.4991,
+"pf_rank": 0.8885,
+"eq_random": 0.8325
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2483,
+"pf_rank": 0.7018,
+"eq_random": 0.7919
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.2455,
+"pf_rank": 0.6887,
+"eq_random": 0.7788
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.2509,
+"pf_rank": 0.4871,
+"eq_random": 0.4625
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2755,
+"pf_rank": 0.7701,
+"eq_random": 0.922
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2716,
+"pf_rank": 0.7668,
+"eq_random": 0.9244
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.2607,
+"pf_rank": 0.757,
+"eq_random": 0.909
+},
+{
+"stack": "10bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0039,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.5675,
+"pf_rank": 0.8826,
+"eq_random": 0.8155
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1183,
+"pf_rank": 0.6365,
+"eq_random": 0.6852
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1183,
+"pf_rank": 0.6365,
+"eq_random": 0.6852
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.4492,
+"pf_rank": 0.7568,
+"eq_random": 0.6841
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1332,
+"pf_rank": 0.7595,
+"eq_random": 0.8868
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1201,
+"pf_rank": 0.7134,
+"eq_random": 0.821
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1201,
+"pf_rank": 0.7134,
+"eq_random": 0.821
+},
+{
+"stack": "10bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0131,
+"pf_rank": 0.1108,
+"eq_random": 0.0
+},
+{
+"stack": "10bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1216,
+"pf_rank": 0.7745,
+"eq_random": 0.8598
+},
+{
+"stack": "10bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1121,
+"pf_rank": 0.7003,
+"eq_random": 0.8348
+},
+{
+"stack": "10bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1121,
+"pf_rank": 0.7003,
+"eq_random": 0.8348
+},
+{
+"stack": "10bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0095,
+"pf_rank": 0.0,
+"eq_random": 0.1502
+},
+{
+"stack": "10bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1702,
+"pf_rank": 0.7646,
+"eq_random": 0.8885
+},
+{
+"stack": "10bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1513,
+"pf_rank": 0.7266,
+"eq_random": 0.853
+},
+{
+"stack": "10bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1508,
+"pf_rank": 0.7257,
+"eq_random": 0.8505
+},
+{
+"stack": "10bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0189,
+"pf_rank": 0.0,
+"eq_random": 0.0296
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.4435,
+"pf_rank": 0.823,
+"eq_random": 0.7656
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2073,
+"pf_rank": 0.649,
+"eq_random": 0.7866
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.207,
+"pf_rank": 0.6484,
+"eq_random": 0.7863
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.2362,
+"pf_rank": 0.4,
+"eq_random": 0.3728
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1592,
+"pf_rank": 0.719,
+"eq_random": 0.8433
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1513,
+"pf_rank": 0.6892,
+"eq_random": 0.8319
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1513,
+"pf_rank": 0.6892,
+"eq_random": 0.8319
+},
+{
+"stack": "10bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0079,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "10bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2253,
+"pf_rank": 0.6746,
+"eq_random": 0.8131
+},
+{
+"stack": "10bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2171,
+"pf_rank": 0.6577,
+"eq_random": 0.7859
+},
+{
+"stack": "10bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.2167,
+"pf_rank": 0.6551,
+"eq_random": 0.7835
+},
+{
+"stack": "10bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0083,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "10bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7899,
+"pf_rank": 0.969,
+"eq_random": 0.9259
+},
+{
+"stack": "10bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2841,
+"pf_rank": 0.4298,
+"eq_random": 0.5671
+},
+{
+"stack": "10bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.2804,
+"pf_rank": 0.4149,
+"eq_random": 0.548
+},
+{
+"stack": "10bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.5058,
+"pf_rank": 0.6328,
+"eq_random": 0.6426
+},
+{
+"stack": "12bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.3744,
+"pf_rank": 0.9215,
+"eq_random": 0.9182
+},
+{
+"stack": "12bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3108,
+"pf_rank": 0.8527,
+"eq_random": 0.8822
+},
+{
+"stack": "12bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2468,
+"pf_rank": 0.8554,
+"eq_random": 0.9109
+},
+{
+"stack": "12bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2132,
+"pf_rank": 0.8673,
+"eq_random": 0.8894
+},
+{
+"stack": "12bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.4365,
+"pf_rank": 0.724,
+"eq_random": 0.7318
+},
+{
+"stack": "12bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1573,
+"pf_rank": 0.8675,
+"eq_random": 0.9384
+},
+{
+"stack": "12bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1773,
+"pf_rank": 0.8358,
+"eq_random": 0.894
+},
+{
+"stack": "15bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.3825,
+"pf_rank": 0.9238,
+"eq_random": 0.9144
+},
+{
+"stack": "15bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.2965,
+"pf_rank": 0.8819,
+"eq_random": 0.891
+},
+{
+"stack": "15bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2386,
+"pf_rank": 0.8924,
+"eq_random": 0.876
+},
+{
+"stack": "15bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2026,
+"pf_rank": 0.8761,
+"eq_random": 0.8934
+},
+{
+"stack": "15bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.3471,
+"pf_rank": 0.5923,
+"eq_random": 0.6337
+},
+{
+"stack": "15bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1572,
+"pf_rank": 0.8743,
+"eq_random": 0.8906
+},
+{
+"stack": "15bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1734,
+"pf_rank": 0.8215,
+"eq_random": 0.8622
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7734,
+"pf_rank": 0.9411,
+"eq_random": 0.886
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1784,
+"pf_rank": 0.5185,
+"eq_random": 0.6294
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1608,
+"pf_rank": 0.4932,
+"eq_random": 0.5511
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.595,
+"pf_rank": 0.7801,
+"eq_random": 0.7418
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2789,
+"pf_rank": 0.7709,
+"eq_random": 0.8884
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2772,
+"pf_rank": 0.7695,
+"eq_random": 0.8878
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.2772,
+"pf_rank": 0.7695,
+"eq_random": 0.8878
+},
+{
+"stack": "15bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0017,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7637,
+"pf_rank": 0.9334,
+"eq_random": 0.8702
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1098,
+"pf_rank": 0.6854,
+"eq_random": 0.6998
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1098,
+"pf_rank": 0.6854,
+"eq_random": 0.6998
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6539,
+"pf_rank": 0.8694,
+"eq_random": 0.7989
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1437,
+"pf_rank": 0.8497,
+"eq_random": 0.8642
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1047,
+"pf_rank": 0.7513,
+"eq_random": 0.8376
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1047,
+"pf_rank": 0.7513,
+"eq_random": 0.8376
+},
+{
+"stack": "15bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.039,
+"pf_rank": 0.194,
+"eq_random": 0.2657
+},
+{
+"stack": "15bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.128,
+"pf_rank": 0.8802,
+"eq_random": 0.9038
+},
+{
+"stack": "15bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1015,
+"pf_rank": 0.7934,
+"eq_random": 0.8512
+},
+{
+"stack": "15bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1015,
+"pf_rank": 0.7934,
+"eq_random": 0.8512
+},
+{
+"stack": "15bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0264,
+"pf_rank": 0.1852,
+"eq_random": 0.2759
+},
+{
+"stack": "15bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2079,
+"pf_rank": 0.8682,
+"eq_random": 0.8118
+},
+{
+"stack": "15bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1374,
+"pf_rank": 0.8452,
+"eq_random": 0.8192
+},
+{
+"stack": "15bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1374,
+"pf_rank": 0.8452,
+"eq_random": 0.8192
+},
+{
+"stack": "15bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0705,
+"pf_rank": 0.4286,
+"eq_random": 0.2725
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7748,
+"pf_rank": 0.9412,
+"eq_random": 0.888
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1547,
+"pf_rank": 0.6059,
+"eq_random": 0.6478
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1426,
+"pf_rank": 0.5889,
+"eq_random": 0.6397
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6201,
+"pf_rank": 0.8291,
+"eq_random": 0.7736
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1878,
+"pf_rank": 0.828,
+"eq_random": 0.851
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1426,
+"pf_rank": 0.7773,
+"eq_random": 0.8089
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1426,
+"pf_rank": 0.7773,
+"eq_random": 0.8089
+},
+{
+"stack": "15bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0452,
+"pf_rank": 0.2635,
+"eq_random": 0.107
+},
+{
+"stack": "15bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2242,
+"pf_rank": 0.8231,
+"eq_random": 0.8869
+},
+{
+"stack": "15bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2233,
+"pf_rank": 0.824,
+"eq_random": 0.8864
+},
+{
+"stack": "15bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.219,
+"pf_rank": 0.8239,
+"eq_random": 0.8684
+},
+{
+"stack": "15bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0009,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "15bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7468,
+"pf_rank": 0.9566,
+"eq_random": 0.9199
+},
+{
+"stack": "15bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1831,
+"pf_rank": 0.333,
+"eq_random": 0.4825
+},
+{
+"stack": "15bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1771,
+"pf_rank": 0.2987,
+"eq_random": 0.4313
+},
+{
+"stack": "15bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.5638,
+"pf_rank": 0.7274,
+"eq_random": 0.7268
+},
+{
+"stack": "17bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.3911,
+"pf_rank": 0.9304,
+"eq_random": 0.8979
+},
+{
+"stack": "17bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.305,
+"pf_rank": 0.9059,
+"eq_random": 0.8878
+},
+{
+"stack": "17bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.248,
+"pf_rank": 0.8816,
+"eq_random": 0.8696
+},
+{
+"stack": "17bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2082,
+"pf_rank": 0.8941,
+"eq_random": 0.8805
+},
+{
+"stack": "17bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.3188,
+"pf_rank": 0.5537,
+"eq_random": 0.5983
+},
+{
+"stack": "17bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1621,
+"pf_rank": 0.8708,
+"eq_random": 0.8643
+},
+{
+"stack": "17bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1823,
+"pf_rank": 0.8205,
+"eq_random": 0.8223
+},
+{
+"stack": "20bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.414,
+"pf_rank": 0.9166,
+"eq_random": 0.8911
+},
+{
+"stack": "20bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3173,
+"pf_rank": 0.9249,
+"eq_random": 0.8678
+},
+{
+"stack": "20bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2597,
+"pf_rank": 0.877,
+"eq_random": 0.8553
+},
+{
+"stack": "20bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2217,
+"pf_rank": 0.8978,
+"eq_random": 0.8571
+},
+{
+"stack": "20bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.3029,
+"pf_rank": 0.4684,
+"eq_random": 0.5768
+},
+{
+"stack": "20bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1716,
+"pf_rank": 0.846,
+"eq_random": 0.8304
+},
+{
+"stack": "20bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1952,
+"pf_rank": 0.8391,
+"eq_random": 0.872
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.8728,
+"pf_rank": 0.9501,
+"eq_random": 0.9293
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1953,
+"pf_rank": 0.5743,
+"eq_random": 0.6535
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1532,
+"pf_rank": 0.4978,
+"eq_random": 0.5624
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6775,
+"pf_rank": 0.8137,
+"eq_random": 0.8097
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2635,
+"pf_rank": 0.8063,
+"eq_random": 0.9025
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2595,
+"pf_rank": 0.8054,
+"eq_random": 0.8916
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.2481,
+"pf_rank": 0.8098,
+"eq_random": 0.8706
+},
+{
+"stack": "20bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.004,
+"pf_rank": 0.04,
+"eq_random": 0.0
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7829,
+"pf_rank": 0.9264,
+"eq_random": 0.8726
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.103,
+"pf_rank": 0.6881,
+"eq_random": 0.7017
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0725,
+"pf_rank": 0.58,
+"eq_random": 0.6639
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6798,
+"pf_rank": 0.868,
+"eq_random": 0.8083
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1827,
+"pf_rank": 0.8699,
+"eq_random": 0.8086
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0783,
+"pf_rank": 0.7053,
+"eq_random": 0.7679
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0775,
+"pf_rank": 0.6994,
+"eq_random": 0.7581
+},
+{
+"stack": "20bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1044,
+"pf_rank": 0.5732,
+"eq_random": 0.5474
+},
+{
+"stack": "20bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1436,
+"pf_rank": 0.8792,
+"eq_random": 0.8714
+},
+{
+"stack": "20bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0833,
+"pf_rank": 0.7019,
+"eq_random": 0.7895
+},
+{
+"stack": "20bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0732,
+"pf_rank": 0.6994,
+"eq_random": 0.7357
+},
+{
+"stack": "20bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0602,
+"pf_rank": 0.3501,
+"eq_random": 0.5197
+},
+{
+"stack": "20bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2402,
+"pf_rank": 0.9156,
+"eq_random": 0.7854
+},
+{
+"stack": "20bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1229,
+"pf_rank": 0.8529,
+"eq_random": 0.8445
+},
+{
+"stack": "20bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0999,
+"pf_rank": 0.7352,
+"eq_random": 0.749
+},
+{
+"stack": "20bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1174,
+"pf_rank": 0.6991,
+"eq_random": 0.4327
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.8501,
+"pf_rank": 0.9421,
+"eq_random": 0.925
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1562,
+"pf_rank": 0.6792,
+"eq_random": 0.6553
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1279,
+"pf_rank": 0.6598,
+"eq_random": 0.6718
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6938,
+"pf_rank": 0.8576,
+"eq_random": 0.8312
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2,
+"pf_rank": 0.8592,
+"eq_random": 0.8552
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1218,
+"pf_rank": 0.817,
+"eq_random": 0.8076
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1186,
+"pf_rank": 0.7952,
+"eq_random": 0.8027
+},
+{
+"stack": "20bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0782,
+"pf_rank": 0.4565,
+"eq_random": 0.4712
+},
+{
+"stack": "20bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2551,
+"pf_rank": 0.8912,
+"eq_random": 0.8588
+},
+{
+"stack": "20bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1848,
+"pf_rank": 0.8114,
+"eq_random": 0.8318
+},
+{
+"stack": "20bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1712,
+"pf_rank": 0.811,
+"eq_random": 0.8296
+},
+{
+"stack": "20bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0704,
+"pf_rank": 0.243,
+"eq_random": 0.3992
+},
+{
+"stack": "20bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.6831,
+"pf_rank": 0.9563,
+"eq_random": 0.88
+},
+{
+"stack": "20bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1373,
+"pf_rank": 0.364,
+"eq_random": 0.4359
+},
+{
+"stack": "20bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1343,
+"pf_rank": 0.3536,
+"eq_random": 0.4271
+},
+{
+"stack": "20bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.5458,
+"pf_rank": 0.7868,
+"eq_random": 0.7089
+},
+{
+"stack": "22bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.4344,
+"pf_rank": 0.9058,
+"eq_random": 0.8893
+},
+{
+"stack": "22bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3257,
+"pf_rank": 0.9192,
+"eq_random": 0.8729
+},
+{
+"stack": "22bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2662,
+"pf_rank": 0.897,
+"eq_random": 0.8528
+},
+{
+"stack": "22bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2272,
+"pf_rank": 0.9045,
+"eq_random": 0.8387
+},
+{
+"stack": "22bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.3001,
+"pf_rank": 0.449,
+"eq_random": 0.5818
+},
+{
+"stack": "22bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1776,
+"pf_rank": 0.8534,
+"eq_random": 0.8451
+},
+{
+"stack": "22bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.2017,
+"pf_rank": 0.8681,
+"eq_random": 0.8875
+},
+{
+"stack": "26bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.4579,
+"pf_rank": 0.9356,
+"eq_random": 0.8796
+},
+{
+"stack": "26bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3472,
+"pf_rank": 0.9384,
+"eq_random": 0.8494
+},
+{
+"stack": "26bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2774,
+"pf_rank": 0.8921,
+"eq_random": 0.8546
+},
+{
+"stack": "26bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2407,
+"pf_rank": 0.9243,
+"eq_random": 0.8241
+},
+{
+"stack": "26bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.2977,
+"pf_rank": 0.4813,
+"eq_random": 0.5653
+},
+{
+"stack": "26bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1844,
+"pf_rank": 0.8598,
+"eq_random": 0.8292
+},
+{
+"stack": "26bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.2106,
+"pf_rank": 0.8984,
+"eq_random": 0.8567
+},
+{
+"stack": "30bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.4869,
+"pf_rank": 0.9373,
+"eq_random": 0.8608
+},
+{
+"stack": "30bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.363,
+"pf_rank": 0.9373,
+"eq_random": 0.8458
+},
+{
+"stack": "30bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2903,
+"pf_rank": 0.9239,
+"eq_random": 0.8132
+},
+{
+"stack": "30bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.245,
+"pf_rank": 0.9133,
+"eq_random": 0.8114
+},
+{
+"stack": "30bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.2941,
+"pf_rank": 0.5334,
+"eq_random": 0.5401
+},
+{
+"stack": "30bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1852,
+"pf_rank": 0.8527,
+"eq_random": 0.8158
+},
+{
+"stack": "30bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.2132,
+"pf_rank": 0.8932,
+"eq_random": 0.8378
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.8955,
+"pf_rank": 0.9567,
+"eq_random": 0.9421
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1792,
+"pf_rank": 0.575,
+"eq_random": 0.5729
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.086,
+"pf_rank": 0.2564,
+"eq_random": 0.4627
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.7163,
+"pf_rank": 0.8403,
+"eq_random": 0.8211
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2893,
+"pf_rank": 0.9069,
+"eq_random": 0.862
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.2173,
+"pf_rank": 0.8309,
+"eq_random": 0.8035
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.1183,
+"pf_rank": 0.5746,
+"eq_random": 0.5896
+},
+{
+"stack": "30bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0721,
+"pf_rank": 0.4124,
+"eq_random": 0.2156
+},
+{
+"stack": "30bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.5479,
+"pf_rank": 0.8671,
+"eq_random": 0.8473
+},
+{
+"stack": "30bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.1349,
+"pf_rank": 0.2211,
+"eq_random": 0.3845
+},
+{
+"stack": "30bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.1349,
+"pf_rank": 0.2211,
+"eq_random": 0.3845
+},
+{
+"stack": "30bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.4129,
+"pf_rank": 0.5697,
+"eq_random": 0.6093
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7565,
+"pf_rank": 0.9209,
+"eq_random": 0.86
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0933,
+"pf_rank": 0.579,
+"eq_random": 0.6131
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0067,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6632,
+"pf_rank": 0.8505,
+"eq_random": 0.7859
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2204,
+"pf_rank": 0.8948,
+"eq_random": 0.7955
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0771,
+"pf_rank": 0.5089,
+"eq_random": 0.5781
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0004,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "30bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1433,
+"pf_rank": 0.6157,
+"eq_random": 0.4862
+},
+{
+"stack": "30bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1692,
+"pf_rank": 0.8887,
+"eq_random": 0.8357
+},
+{
+"stack": "30bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0796,
+"pf_rank": 0.5167,
+"eq_random": 0.6192
+},
+{
+"stack": "30bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.0895,
+"pf_rank": 0.466,
+"eq_random": 0.4215
+},
+{
+"stack": "30bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2442,
+"pf_rank": 0.9163,
+"eq_random": 0.7701
+},
+{
+"stack": "30bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1075,
+"pf_rank": 0.68,
+"eq_random": 0.7482
+},
+{
+"stack": "30bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0356,
+"pf_rank": 0.2036,
+"eq_random": 0.2036
+},
+{
+"stack": "30bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1368,
+"pf_rank": 0.6004,
+"eq_random": 0.4019
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.8086,
+"pf_rank": 0.8616,
+"eq_random": 0.7878
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.2515,
+"pf_rank": 0.5835,
+"eq_random": 0.696
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.2506,
+"pf_rank": 0.5821,
+"eq_random": 0.695
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5571,
+"pf_rank": 0.611,
+"eq_random": 0.5655
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.6434,
+"pf_rank": 0.8784,
+"eq_random": 0.8579
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.1382,
+"pf_rank": 0.3966,
+"eq_random": 0.3233
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0923,
+"pf_rank": 0.2379,
+"eq_random": 0.2379
+},
+{
+"stack": "30bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5051,
+"pf_rank": 0.6804,
+"eq_random": 0.6343
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.8344,
+"pf_rank": 0.933,
+"eq_random": 0.9113
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.137,
+"pf_rank": 0.6445,
+"eq_random": 0.626
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.049,
+"pf_rank": 0.2909,
+"eq_random": 0.2444
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6974,
+"pf_rank": 0.8508,
+"eq_random": 0.8207
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2498,
+"pf_rank": 0.9294,
+"eq_random": 0.8359
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1093,
+"pf_rank": 0.5622,
+"eq_random": 0.5605
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0132,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "30bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1405,
+"pf_rank": 0.5927,
+"eq_random": 0.4226
+},
+{
+"stack": "30bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2807,
+"pf_rank": 0.9215,
+"eq_random": 0.8194
+},
+{
+"stack": "30bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1534,
+"pf_rank": 0.7962,
+"eq_random": 0.8015
+},
+{
+"stack": "30bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.0731,
+"pf_rank": 0.4537,
+"eq_random": 0.5387
+},
+{
+"stack": "30bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1273,
+"pf_rank": 0.6527,
+"eq_random": 0.4123
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.8917,
+"pf_rank": 0.9266,
+"eq_random": 0.8901
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.3112,
+"pf_rank": 0.6786,
+"eq_random": 0.7712
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.3112,
+"pf_rank": 0.6786,
+"eq_random": 0.7712
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5805,
+"pf_rank": 0.715,
+"eq_random": 0.7085
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.8001,
+"pf_rank": 0.9096,
+"eq_random": 0.8724
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.185,
+"pf_rank": 0.2961,
+"eq_random": 0.3458
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.185,
+"pf_rank": 0.2961,
+"eq_random": 0.3458
+},
+{
+"stack": "30bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.6151,
+"pf_rank": 0.6711,
+"eq_random": 0.6377
+},
+{
+"stack": "30bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7439,
+"pf_rank": 0.9561,
+"eq_random": 0.9142
+},
+{
+"stack": "30bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1184,
+"pf_rank": 0.4272,
+"eq_random": 0.491
+},
+{
+"stack": "30bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "allin",
+"mass": 0.04,
+"pf_rank": 0.0204,
+"eq_random": 0.0
+},
+{
+"stack": "30bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6255,
+"pf_rank": 0.8452,
+"eq_random": 0.802
+},
+{
+"stack": "30bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.4437,
+"pf_rank": 0.774,
+"eq_random": 0.798
+},
+{
+"stack": "30bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0857,
+"pf_rank": 0.4982,
+"eq_random": 0.5445
+},
+{
+"stack": "30bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.066,
+"pf_rank": 0.3751,
+"eq_random": 0.4158
+},
+{
+"stack": "30bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.3581,
+"pf_rank": 0.6249,
+"eq_random": 0.6796
+},
+{
+"stack": "30bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "continue",
+"mass": 0.0471,
+"pf_rank": 0.6939,
+"eq_random": 0.8078
+},
+{
+"stack": "30bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "3bet",
+"mass": 0.0471,
+"pf_rank": 0.6939,
+"eq_random": 0.8078
+},
+{
+"stack": "30bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "allin",
+"mass": 0.0367,
+"pf_rank": 0.5575,
+"eq_random": 0.5792
+},
+{
+"stack": "30bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "continue",
+"mass": 0.0407,
+"pf_rank": 0.6667,
+"eq_random": 0.7778
+},
+{
+"stack": "30bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "3bet",
+"mass": 0.0407,
+"pf_rank": 0.6667,
+"eq_random": 0.7778
+},
+{
+"stack": "30bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "allin",
+"mass": 0.0306,
+"pf_rank": 0.6152,
+"eq_random": 0.5165
+},
+{
+"stack": "35bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.5066,
+"pf_rank": 0.9531,
+"eq_random": 0.8548
+},
+{
+"stack": "35bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3731,
+"pf_rank": 0.9257,
+"eq_random": 0.8341
+},
+{
+"stack": "35bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2904,
+"pf_rank": 0.9201,
+"eq_random": 0.7992
+},
+{
+"stack": "35bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2427,
+"pf_rank": 0.9069,
+"eq_random": 0.8019
+},
+{
+"stack": "35bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.296,
+"pf_rank": 0.5468,
+"eq_random": 0.5513
+},
+{
+"stack": "35bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1785,
+"pf_rank": 0.8673,
+"eq_random": 0.8282
+},
+{
+"stack": "35bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.2068,
+"pf_rank": 0.8938,
+"eq_random": 0.833
+},
+{
+"stack": "40bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.5191,
+"pf_rank": 0.9414,
+"eq_random": 0.8543
+},
+{
+"stack": "40bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.381,
+"pf_rank": 0.9151,
+"eq_random": 0.8382
+},
+{
+"stack": "40bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2864,
+"pf_rank": 0.9136,
+"eq_random": 0.8015
+},
+{
+"stack": "40bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.242,
+"pf_rank": 0.9071,
+"eq_random": 0.7999
+},
+{
+"stack": "40bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.2479,
+"pf_rank": 0.5087,
+"eq_random": 0.5059
+},
+{
+"stack": "40bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1758,
+"pf_rank": 0.879,
+"eq_random": 0.8372
+},
+{
+"stack": "40bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.2005,
+"pf_rank": 0.8701,
+"eq_random": 0.8277
+},
+{
+"stack": "50bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.5399,
+"pf_rank": 0.9378,
+"eq_random": 0.8547
+},
+{
+"stack": "50bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.377,
+"pf_rank": 0.91,
+"eq_random": 0.8226
+},
+{
+"stack": "50bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2833,
+"pf_rank": 0.9095,
+"eq_random": 0.8039
+},
+{
+"stack": "50bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2379,
+"pf_rank": 0.9076,
+"eq_random": 0.7919
+},
+{
+"stack": "50bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.1916,
+"pf_rank": 0.4595,
+"eq_random": 0.4352
+},
+{
+"stack": "50bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1734,
+"pf_rank": 0.8771,
+"eq_random": 0.8111
+},
+{
+"stack": "50bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1954,
+"pf_rank": 0.8489,
+"eq_random": 0.8059
+},
+{
+"stack": "50bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.8821,
+"pf_rank": 0.9611,
+"eq_random": 0.9406
+},
+{
+"stack": "50bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1543,
+"pf_rank": 0.5348,
+"eq_random": 0.5741
+},
+{
+"stack": "50bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.7278,
+"pf_rank": 0.855,
+"eq_random": 0.8377
+},
+{
+"stack": "50bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.3352,
+"pf_rank": 0.9421,
+"eq_random": 0.8226
+},
+{
+"stack": "50bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1759,
+"pf_rank": 0.6924,
+"eq_random": 0.7399
+},
+{
+"stack": "50bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1593,
+"pf_rank": 0.5653,
+"eq_random": 0.4367
+},
+{
+"stack": "50bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.4649,
+"pf_rank": 0.914,
+"eq_random": 0.7941
+},
+{
+"stack": "50bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0824,
+"pf_rank": 0.3399,
+"eq_random": 0.4927
+},
+{
+"stack": "50bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0824,
+"pf_rank": 0.3399,
+"eq_random": 0.4927
+},
+{
+"stack": "50bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.3825,
+"pf_rank": 0.7544,
+"eq_random": 0.666
+},
+{
+"stack": "50bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7381,
+"pf_rank": 0.9117,
+"eq_random": 0.8545
+},
+{
+"stack": "50bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0742,
+"pf_rank": 0.4441,
+"eq_random": 0.5551
+},
+{
+"stack": "50bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6639,
+"pf_rank": 0.8397,
+"eq_random": 0.7885
+},
+{
+"stack": "50bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2463,
+"pf_rank": 0.8835,
+"eq_random": 0.7388
+},
+{
+"stack": "50bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0863,
+"pf_rank": 0.4728,
+"eq_random": 0.5683
+},
+{
+"stack": "50bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.16,
+"pf_rank": 0.5691,
+"eq_random": 0.4287
+},
+{
+"stack": "50bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.1998,
+"pf_rank": 0.8526,
+"eq_random": 0.7754
+},
+{
+"stack": "50bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0843,
+"pf_rank": 0.467,
+"eq_random": 0.5933
+},
+{
+"stack": "50bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1155,
+"pf_rank": 0.4509,
+"eq_random": 0.3832
+},
+{
+"stack": "50bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2513,
+"pf_rank": 0.8553,
+"eq_random": 0.723
+},
+{
+"stack": "50bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0887,
+"pf_rank": 0.7114,
+"eq_random": 0.6574
+},
+{
+"stack": "50bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1625,
+"pf_rank": 0.6477,
+"eq_random": 0.441
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.7664,
+"pf_rank": 0.8546,
+"eq_random": 0.8247
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.2585,
+"pf_rank": 0.5013,
+"eq_random": 0.6805
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0767,
+"pf_rank": 0.0815,
+"eq_random": 0.0815
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5079,
+"pf_rank": 0.5654,
+"eq_random": 0.5729
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.6288,
+"pf_rank": 0.8436,
+"eq_random": 0.7896
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0486,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0486,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "50bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5802,
+"pf_rank": 0.7468,
+"eq_random": 0.6882
+},
+{
+"stack": "50bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.8012,
+"pf_rank": 0.9492,
+"eq_random": 0.8969
+},
+{
+"stack": "50bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1119,
+"pf_rank": 0.4974,
+"eq_random": 0.5629
+},
+{
+"stack": "50bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6892,
+"pf_rank": 0.8594,
+"eq_random": 0.8091
+},
+{
+"stack": "50bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2841,
+"pf_rank": 0.9191,
+"eq_random": 0.8036
+},
+{
+"stack": "50bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1093,
+"pf_rank": 0.4286,
+"eq_random": 0.5125
+},
+{
+"stack": "50bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1748,
+"pf_rank": 0.5674,
+"eq_random": 0.4318
+},
+{
+"stack": "50bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2944,
+"pf_rank": 0.9241,
+"eq_random": 0.7703
+},
+{
+"stack": "50bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1293,
+"pf_rank": 0.6841,
+"eq_random": 0.6885
+},
+{
+"stack": "50bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1651,
+"pf_rank": 0.6415,
+"eq_random": 0.4204
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.8531,
+"pf_rank": 0.9017,
+"eq_random": 0.8811
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.3124,
+"pf_rank": 0.6195,
+"eq_random": 0.7355
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.1494,
+"pf_rank": 0.3766,
+"eq_random": 0.3731
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5408,
+"pf_rank": 0.6416,
+"eq_random": 0.6618
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.8003,
+"pf_rank": 0.8855,
+"eq_random": 0.8654
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.097,
+"pf_rank": 0.2235,
+"eq_random": 0.2235
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0965,
+"pf_rank": 0.2247,
+"eq_random": 0.2247
+},
+{
+"stack": "50bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.7033,
+"pf_rank": 0.7629,
+"eq_random": 0.74
+},
+{
+"stack": "50bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.6797,
+"pf_rank": 0.9285,
+"eq_random": 0.8538
+},
+{
+"stack": "50bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1218,
+"pf_rank": 0.4378,
+"eq_random": 0.4666
+},
+{
+"stack": "50bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.5579,
+"pf_rank": 0.793,
+"eq_random": 0.7088
+},
+{
+"stack": "50bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.3297,
+"pf_rank": 0.8259,
+"eq_random": 0.7909
+},
+{
+"stack": "50bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0926,
+"pf_rank": 0.4968,
+"eq_random": 0.6154
+},
+{
+"stack": "50bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0392,
+"pf_rank": 0.2667,
+"eq_random": 0.272
+},
+{
+"stack": "50bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.2371,
+"pf_rank": 0.6233,
+"eq_random": 0.6144
+},
+{
+"stack": "50bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "continue",
+"mass": 0.0462,
+"pf_rank": 0.6284,
+"eq_random": 0.7768
+},
+{
+"stack": "50bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "3bet",
+"mass": 0.0462,
+"pf_rank": 0.6284,
+"eq_random": 0.7768
+},
+{
+"stack": "50bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "allin",
+"mass": 0.0154,
+"pf_rank": 0.2467,
+"eq_random": 0.2467
+},
+{
+"stack": "50bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "continue",
+"mass": 0.0404,
+"pf_rank": 0.5516,
+"eq_random": 0.6637
+},
+{
+"stack": "50bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "3bet",
+"mass": 0.0404,
+"pf_rank": 0.5516,
+"eq_random": 0.6637
+},
+{
+"stack": "50bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "allin",
+"mass": 0.0128,
+"pf_rank": 0.2816,
+"eq_random": 0.2816
+},
+{
+"stack": "70bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.5457,
+"pf_rank": 0.9415,
+"eq_random": 0.8609
+},
+{
+"stack": "70bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3671,
+"pf_rank": 0.9088,
+"eq_random": 0.8019
+},
+{
+"stack": "70bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2804,
+"pf_rank": 0.9137,
+"eq_random": 0.7991
+},
+{
+"stack": "70bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.2325,
+"pf_rank": 0.9127,
+"eq_random": 0.7621
+},
+{
+"stack": "70bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.1152,
+"pf_rank": 0.3861,
+"eq_random": 0.3544
+},
+{
+"stack": "70bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1705,
+"pf_rank": 0.884,
+"eq_random": 0.7849
+},
+{
+"stack": "70bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1958,
+"pf_rank": 0.8511,
+"eq_random": 0.7962
+},
+{
+"stack": "100bb",
+"node": "rfi_BTN",
+"family": "open",
+"mass": 0.5438,
+"pf_rank": 0.9399,
+"eq_random": 0.8567
+},
+{
+"stack": "100bb",
+"node": "rfi_CO",
+"family": "open",
+"mass": 0.3728,
+"pf_rank": 0.8887,
+"eq_random": 0.7842
+},
+{
+"stack": "100bb",
+"node": "rfi_HJ",
+"family": "open",
+"mass": 0.2853,
+"pf_rank": 0.9281,
+"eq_random": 0.7792
+},
+{
+"stack": "100bb",
+"node": "rfi_LJ",
+"family": "open",
+"mass": 0.235,
+"pf_rank": 0.9072,
+"eq_random": 0.7493
+},
+{
+"stack": "100bb",
+"node": "rfi_SB",
+"family": "open_raise",
+"mass": 0.0697,
+"pf_rank": 0.2914,
+"eq_random": 0.2191
+},
+{
+"stack": "100bb",
+"node": "rfi_UTG",
+"family": "open",
+"mass": 0.1671,
+"pf_rank": 0.9016,
+"eq_random": 0.7757
+},
+{
+"stack": "100bb",
+"node": "rfi_UTG1",
+"family": "open",
+"mass": 0.1971,
+"pf_rank": 0.8415,
+"eq_random": 0.7791
+},
+{
+"stack": "100bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7687,
+"pf_rank": 0.9484,
+"eq_random": 0.8896
+},
+{
+"stack": "100bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1409,
+"pf_rank": 0.5255,
+"eq_random": 0.5397
+},
+{
+"stack": "100bb",
+"node": "BTN-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6278,
+"pf_rank": 0.8317,
+"eq_random": 0.7615
+},
+{
+"stack": "100bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.3069,
+"pf_rank": 0.9219,
+"eq_random": 0.7486
+},
+{
+"stack": "100bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1571,
+"pf_rank": 0.6897,
+"eq_random": 0.6888
+},
+{
+"stack": "100bb",
+"node": "BTN-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1498,
+"pf_rank": 0.5677,
+"eq_random": 0.3208
+},
+{
+"stack": "100bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.4295,
+"pf_rank": 0.8724,
+"eq_random": 0.7228
+},
+{
+"stack": "100bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0584,
+"pf_rank": 0.4124,
+"eq_random": 0.3208
+},
+{
+"stack": "100bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0135,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "100bb",
+"node": "BTNopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.3711,
+"pf_rank": 0.7655,
+"eq_random": 0.5823
+},
+{
+"stack": "100bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.7039,
+"pf_rank": 0.8997,
+"eq_random": 0.8097
+},
+{
+"stack": "100bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0584,
+"pf_rank": 0.3551,
+"eq_random": 0.4577
+},
+{
+"stack": "100bb",
+"node": "EP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6455,
+"pf_rank": 0.8324,
+"eq_random": 0.7478
+},
+{
+"stack": "100bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2717,
+"pf_rank": 0.8711,
+"eq_random": 0.7468
+},
+{
+"stack": "100bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0778,
+"pf_rank": 0.4363,
+"eq_random": 0.4433
+},
+{
+"stack": "100bb",
+"node": "EP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1939,
+"pf_rank": 0.6304,
+"eq_random": 0.4767
+},
+{
+"stack": "100bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2105,
+"pf_rank": 0.8544,
+"eq_random": 0.7413
+},
+{
+"stack": "100bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0727,
+"pf_rank": 0.4251,
+"eq_random": 0.4639
+},
+{
+"stack": "100bb",
+"node": "EP-vs-MP",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1378,
+"pf_rank": 0.5349,
+"eq_random": 0.4283
+},
+{
+"stack": "100bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2589,
+"pf_rank": 0.8306,
+"eq_random": 0.7131
+},
+{
+"stack": "100bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0726,
+"pf_rank": 0.6179,
+"eq_random": 0.6029
+},
+{
+"stack": "100bb",
+"node": "EP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1862,
+"pf_rank": 0.6498,
+"eq_random": 0.4983
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.6251,
+"pf_rank": 0.8281,
+"eq_random": 0.7334
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.1879,
+"pf_rank": 0.4492,
+"eq_random": 0.4492
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0223,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.4372,
+"pf_rank": 0.545,
+"eq_random": 0.4161
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.5596,
+"pf_rank": 0.7867,
+"eq_random": 0.6891
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0481,
+"pf_rank": 0.4245,
+"eq_random": 0.4245
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.005,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "100bb",
+"node": "EPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5115,
+"pf_rank": 0.7258,
+"eq_random": 0.619
+},
+{
+"stack": "100bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.769,
+"pf_rank": 0.9267,
+"eq_random": 0.8678
+},
+{
+"stack": "100bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.0955,
+"pf_rank": 0.4868,
+"eq_random": 0.4801
+},
+{
+"stack": "100bb",
+"node": "MP-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.6735,
+"pf_rank": 0.8435,
+"eq_random": 0.7754
+},
+{
+"stack": "100bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.3088,
+"pf_rank": 0.9114,
+"eq_random": 0.7443
+},
+{
+"stack": "100bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1117,
+"pf_rank": 0.4347,
+"eq_random": 0.4533
+},
+{
+"stack": "100bb",
+"node": "MP-vs-BTN",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1971,
+"pf_rank": 0.5947,
+"eq_random": 0.3945
+},
+{
+"stack": "100bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.2968,
+"pf_rank": 0.907,
+"eq_random": 0.7372
+},
+{
+"stack": "100bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1115,
+"pf_rank": 0.6579,
+"eq_random": 0.6415
+},
+{
+"stack": "100bb",
+"node": "MP-vs-SB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.1853,
+"pf_rank": 0.6793,
+"eq_random": 0.4549
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.7522,
+"pf_rank": 0.8819,
+"eq_random": 0.8063
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.2512,
+"pf_rank": 0.3693,
+"eq_random": 0.5475
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0065,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-IP3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.5011,
+"pf_rank": 0.5175,
+"eq_random": 0.5049
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.7751,
+"pf_rank": 0.8329,
+"eq_random": 0.7969
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0902,
+"pf_rank": 0.3907,
+"eq_random": 0.3907
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "allin",
+"mass": 0.0054,
+"pf_rank": 0.0,
+"eq_random": 0.0
+},
+{
+"stack": "100bb",
+"node": "MPopen-vs-blind3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.6849,
+"pf_rank": 0.7492,
+"eq_random": 0.6975
+},
+{
+"stack": "100bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "continue",
+"mass": 0.698,
+"pf_rank": 0.9291,
+"eq_random": 0.8466
+},
+{
+"stack": "100bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "3bet",
+"mass": 0.1264,
+"pf_rank": 0.4459,
+"eq_random": 0.4326
+},
+{
+"stack": "100bb",
+"node": "SB-vs-BB",
+"kind": "vs_open",
+"family": "call",
+"mass": 0.5716,
+"pf_rank": 0.794,
+"eq_random": 0.6887
+},
+{
+"stack": "100bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "continue",
+"mass": 0.15,
+"pf_rank": 0.6215,
+"eq_random": 0.5613
+},
+{
+"stack": "100bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "3bet",
+"mass": 0.0433,
+"pf_rank": 0.5405,
+"eq_random": 0.5436
+},
+{
+"stack": "100bb",
+"node": "SBopen-vs-BB3bet",
+"kind": "vs3bet",
+"family": "call",
+"mass": 0.1068,
+"pf_rank": 0.4668,
+"eq_random": 0.3911
+},
+{
+"stack": "100bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "continue",
+"mass": 0.0402,
+"pf_rank": 0.5145,
+"eq_random": 0.6281
+},
+{
+"stack": "100bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "3bet",
+"mass": 0.0402,
+"pf_rank": 0.5145,
+"eq_random": 0.6281
+},
+{
+"stack": "100bb",
+"node": "cold-BB",
+"kind": "cold",
+"family": "allin",
+"mass": 0.009,
+"pf_rank": 0.2376,
+"eq_random": 0.2376
+},
+{
+"stack": "100bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "continue",
+"mass": 0.0401,
+"pf_rank": 0.4898,
+"eq_random": 0.6027
+},
+{
+"stack": "100bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "3bet",
+"mass": 0.0401,
+"pf_rank": 0.4898,
+"eq_random": 0.6027
+},
+{
+"stack": "100bb",
+"node": "cold-BTN",
+"kind": "cold",
+"family": "allin",
+"mass": 0.0017,
+"pf_rank": 0.0,
+"eq_random": 0.0
+}
+],
+"note": "vs3bet population = opener RFI chart (EP->UTG1, MP->LJ assumed)"
+}

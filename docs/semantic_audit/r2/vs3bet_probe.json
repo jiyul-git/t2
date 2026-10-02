@@ -1,0 +1,484 @@
+{
+ "rows": [
+  {
+   "seats": 8,
+   "stack": "30bb",
+   "node": "MPopen-vs-IP3bet",
+   "opener": "LJ",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 6.45,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0065,
+    0.0338
+   ],
+   "ref_continue|ref_open": 0.8919,
+   "ref_4bet|ref_open": 0.3112,
+   "code_continue|ref_open": 0.1592,
+   "code_4bet|ref_open": 0.0481,
+   "code_continue|code_open": 0.1567,
+   "code_4bet|code_open": 0.0474,
+   "code_open_width": 0.2498
+  },
+  {
+   "seats": 8,
+   "stack": "30bb",
+   "node": "EPopen-vs-IP3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 6.45,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0051,
+    0.0261
+   ],
+   "ref_continue|ref_open": 0.8093,
+   "ref_4bet|ref_open": 0.2515,
+   "code_continue|ref_open": 0.1638,
+   "code_4bet|ref_open": 0.0541,
+   "code_continue|code_open": 0.1642,
+   "code_4bet|code_open": 0.0543,
+   "code_open_width": 0.2144
+  },
+  {
+   "seats": 8,
+   "stack": "30bb",
+   "node": "MPopen-vs-blind3bet",
+   "opener": "LJ",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 7.96,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0027,
+    0.014
+   ],
+   "ref_continue|ref_open": 0.8004,
+   "ref_4bet|ref_open": 0.185,
+   "code_continue|ref_open": 0.1252,
+   "code_4bet|ref_open": 0.0387,
+   "code_continue|code_open": 0.1232,
+   "code_4bet|code_open": 0.0381,
+   "code_open_width": 0.2498
+  },
+  {
+   "seats": 8,
+   "stack": "30bb",
+   "node": "EPopen-vs-blind3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 7.96,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0021,
+    0.0108
+   ],
+   "ref_continue|ref_open": 0.644,
+   "ref_4bet|ref_open": 0.1382,
+   "code_continue|ref_open": 0.1406,
+   "code_4bet|ref_open": 0.0382,
+   "code_continue|code_open": 0.1409,
+   "code_4bet|code_open": 0.0383,
+   "code_open_width": 0.2144
+  },
+  {
+   "seats": 8,
+   "stack": "30bb",
+   "node": "BTNopen-vs-blind3bet",
+   "opener": "BTN",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 7.96,
+   "code_prior_used": "gto.defend_pct(def_pos=BTN, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0199,
+    0.0465
+   ],
+   "ref_continue|ref_open": 0.5479,
+   "ref_4bet|ref_open": 0.1349,
+   "code_continue|ref_open": 0.0992,
+   "code_4bet|ref_open": 0.0362,
+   "code_continue|code_open": 0.103,
+   "code_4bet|code_open": 0.0376,
+   "code_open_width": 0.4772
+  },
+  {
+   "seats": 8,
+   "stack": "30bb",
+   "node": "SBopen-vs-BB3bet",
+   "opener": "SB",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 10.18,
+   "code_prior_used": "gto.defend_pct(def_pos=SB, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0305,
+    0.0598
+   ],
+   "ref_continue|ref_open": 0.6267,
+   "ref_4bet|ref_open": 0.1359,
+   "code_continue|ref_open": 0.147,
+   "code_4bet|ref_open": 0.0663,
+   "code_continue|code_open": 0.1861,
+   "code_4bet|code_open": 0.0699,
+   "code_open_width": 0.3277
+  },
+  {
+   "seats": 8,
+   "stack": "100bb",
+   "node": "MPopen-vs-IP3bet",
+   "opener": "LJ",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 7.08,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0068,
+    0.0354
+   ],
+   "ref_continue|ref_open": 0.7522,
+   "ref_4bet|ref_open": 0.2512,
+   "code_continue|ref_open": 0.1701,
+   "code_4bet|ref_open": 0.0502,
+   "code_continue|code_open": 0.1688,
+   "code_4bet|code_open": 0.0498,
+   "code_open_width": 0.2415
+  },
+  {
+   "seats": 8,
+   "stack": "100bb",
+   "node": "EPopen-vs-IP3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 7.08,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0053,
+    0.0274
+   ],
+   "ref_continue|ref_open": 0.6251,
+   "ref_4bet|ref_open": 0.1879,
+   "code_continue|ref_open": 0.18,
+   "code_4bet|ref_open": 0.0584,
+   "code_continue|code_open": 0.1796,
+   "code_4bet|code_open": 0.0583,
+   "code_open_width": 0.2001
+  },
+  {
+   "seats": 8,
+   "stack": "100bb",
+   "node": "MPopen-vs-blind3bet",
+   "opener": "LJ",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 8.73,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0027,
+    0.014
+   ],
+   "ref_continue|ref_open": 0.7751,
+   "ref_4bet|ref_open": 0.0902,
+   "code_continue|ref_open": 0.1305,
+   "code_4bet|ref_open": 0.0403,
+   "code_continue|code_open": 0.1295,
+   "code_4bet|code_open": 0.04,
+   "code_open_width": 0.2415
+  },
+  {
+   "seats": 8,
+   "stack": "100bb",
+   "node": "EPopen-vs-blind3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 8.73,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0021,
+    0.0108
+   ],
+   "ref_continue|ref_open": 0.5599,
+   "ref_4bet|ref_open": 0.0481,
+   "code_continue|ref_open": 0.152,
+   "code_4bet|ref_open": 0.0413,
+   "code_continue|code_open": 0.1517,
+   "code_4bet|code_open": 0.0412,
+   "code_open_width": 0.2001
+  },
+  {
+   "seats": 8,
+   "stack": "100bb",
+   "node": "BTNopen-vs-blind3bet",
+   "opener": "BTN",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 8.73,
+   "code_prior_used": "gto.defend_pct(def_pos=BTN, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0199,
+    0.0465
+   ],
+   "ref_continue|ref_open": 0.4301,
+   "ref_4bet|ref_open": 0.0584,
+   "code_continue|ref_open": 0.0888,
+   "code_4bet|ref_open": 0.0324,
+   "code_continue|code_open": 0.0934,
+   "code_4bet|code_open": 0.0341,
+   "code_open_width": 0.5176
+  },
+  {
+   "seats": 8,
+   "stack": "100bb",
+   "node": "SBopen-vs-BB3bet",
+   "opener": "SB",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 10.95,
+   "code_prior_used": "gto.defend_pct(def_pos=SB, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0305,
+    0.0598
+   ],
+   "ref_continue|ref_open": 0.5292,
+   "ref_4bet|ref_open": 0.0879,
+   "code_continue|ref_open": 0.2445,
+   "code_4bet|ref_open": 0.0698,
+   "code_continue|code_open": 0.1703,
+   "code_4bet|code_open": 0.0639,
+   "code_open_width": 0.355
+  },
+  {
+   "seats": 9,
+   "stack": "30bb",
+   "node": "MPopen-vs-IP3bet",
+   "opener": "LJ",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 6.45,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0065,
+    0.0338
+   ],
+   "ref_continue|ref_open": 0.8919,
+   "ref_4bet|ref_open": 0.3112,
+   "code_continue|ref_open": 0.1592,
+   "code_4bet|ref_open": 0.0481,
+   "code_continue|code_open": 0.1586,
+   "code_4bet|code_open": 0.0479,
+   "code_open_width": 0.2487
+  },
+  {
+   "seats": 9,
+   "stack": "30bb",
+   "node": "EPopen-vs-IP3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 6.45,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0051,
+    0.0261
+   ],
+   "ref_continue|ref_open": 0.8093,
+   "ref_4bet|ref_open": 0.2515,
+   "code_continue|ref_open": 0.1638,
+   "code_4bet|ref_open": 0.0541,
+   "code_continue|code_open": 0.1852,
+   "code_4bet|code_open": 0.0612,
+   "code_open_width": 0.1941
+  },
+  {
+   "seats": 9,
+   "stack": "30bb",
+   "node": "MPopen-vs-blind3bet",
+   "opener": "LJ",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 7.96,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0027,
+    0.014
+   ],
+   "ref_continue|ref_open": 0.8004,
+   "ref_4bet|ref_open": 0.185,
+   "code_continue|ref_open": 0.1252,
+   "code_4bet|ref_open": 0.0387,
+   "code_continue|code_open": 0.1247,
+   "code_4bet|code_open": 0.0385,
+   "code_open_width": 0.2487
+  },
+  {
+   "seats": 9,
+   "stack": "30bb",
+   "node": "EPopen-vs-blind3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 7.96,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0021,
+    0.0108
+   ],
+   "ref_continue|ref_open": 0.644,
+   "ref_4bet|ref_open": 0.1382,
+   "code_continue|ref_open": 0.1406,
+   "code_4bet|ref_open": 0.0382,
+   "code_continue|code_open": 0.159,
+   "code_4bet|code_open": 0.0431,
+   "code_open_width": 0.1941
+  },
+  {
+   "seats": 9,
+   "stack": "30bb",
+   "node": "BTNopen-vs-blind3bet",
+   "opener": "BTN",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 7.96,
+   "code_prior_used": "gto.defend_pct(def_pos=BTN, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0057,
+    0.0297
+   ],
+   "ref_continue|ref_open": 0.5479,
+   "ref_4bet|ref_open": 0.1349,
+   "code_continue|ref_open": 0.0754,
+   "code_4bet|ref_open": 0.024,
+   "code_continue|code_open": 0.0783,
+   "code_4bet|code_open": 0.0249,
+   "code_open_width": 0.4761
+  },
+  {
+   "seats": 9,
+   "stack": "30bb",
+   "node": "SBopen-vs-BB3bet",
+   "opener": "SB",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 10.18,
+   "code_prior_used": "gto.defend_pct(def_pos=SB, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0076,
+    0.0392
+   ],
+   "ref_continue|ref_open": 0.6267,
+   "ref_4bet|ref_open": 0.1359,
+   "code_continue|ref_open": 0.1146,
+   "code_4bet|ref_open": 0.0372,
+   "code_continue|code_open": 0.1312,
+   "code_4bet|code_open": 0.0368,
+   "code_open_width": 0.3266
+  },
+  {
+   "seats": 9,
+   "stack": "100bb",
+   "node": "MPopen-vs-IP3bet",
+   "opener": "LJ",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 7.08,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0068,
+    0.0354
+   ],
+   "ref_continue|ref_open": 0.7522,
+   "ref_4bet|ref_open": 0.2512,
+   "code_continue|ref_open": 0.1701,
+   "code_4bet|ref_open": 0.0502,
+   "code_continue|code_open": 0.1688,
+   "code_4bet|code_open": 0.0498,
+   "code_open_width": 0.2403
+  },
+  {
+   "seats": 9,
+   "stack": "100bb",
+   "node": "EPopen-vs-IP3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BTN",
+   "code_3bet_size_bb": 7.08,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BTN) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0053,
+    0.0274
+   ],
+   "ref_continue|ref_open": 0.6251,
+   "ref_4bet|ref_open": 0.1879,
+   "code_continue|ref_open": 0.18,
+   "code_4bet|ref_open": 0.0584,
+   "code_continue|code_open": 0.2064,
+   "code_4bet|code_open": 0.067,
+   "code_open_width": 0.1747
+  },
+  {
+   "seats": 9,
+   "stack": "100bb",
+   "node": "MPopen-vs-blind3bet",
+   "opener": "LJ",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 8.73,
+   "code_prior_used": "gto.defend_pct(def_pos=LJ, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0027,
+    0.014
+   ],
+   "ref_continue|ref_open": 0.7751,
+   "ref_4bet|ref_open": 0.0902,
+   "code_continue|ref_open": 0.1305,
+   "code_4bet|ref_open": 0.0403,
+   "code_continue|code_open": 0.1295,
+   "code_4bet|code_open": 0.04,
+   "code_open_width": 0.2403
+  },
+  {
+   "seats": 9,
+   "stack": "100bb",
+   "node": "EPopen-vs-blind3bet",
+   "opener": "UTG+1",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 8.73,
+   "code_prior_used": "gto.defend_pct(def_pos=UTG+1, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0021,
+    0.0108
+   ],
+   "ref_continue|ref_open": 0.5599,
+   "ref_4bet|ref_open": 0.0481,
+   "code_continue|ref_open": 0.152,
+   "code_4bet|ref_open": 0.0413,
+   "code_continue|code_open": 0.1743,
+   "code_4bet|code_open": 0.0473,
+   "code_open_width": 0.1747
+  },
+  {
+   "seats": 9,
+   "stack": "100bb",
+   "node": "BTNopen-vs-blind3bet",
+   "opener": "BTN",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 8.73,
+   "code_prior_used": "gto.defend_pct(def_pos=BTN, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0057,
+    0.0297
+   ],
+   "ref_continue|ref_open": 0.4301,
+   "ref_4bet|ref_open": 0.0584,
+   "code_continue|ref_open": 0.0675,
+   "code_4bet|ref_open": 0.0214,
+   "code_continue|code_open": 0.0723,
+   "code_4bet|code_open": 0.0229,
+   "code_open_width": 0.5163
+  },
+  {
+   "seats": 9,
+   "stack": "100bb",
+   "node": "SBopen-vs-BB3bet",
+   "opener": "SB",
+   "three_bettor": "BB",
+   "code_3bet_size_bb": 10.95,
+   "code_prior_used": "gto.defend_pct(def_pos=SB, opener_pos=BB) x LEVEL_TIGHTEN[3]",
+   "code_threshold_tp_tot": [
+    0.0076,
+    0.0392
+   ],
+   "ref_continue|ref_open": 0.5292,
+   "ref_4bet|ref_open": 0.0879,
+   "code_continue|ref_open": 0.1605,
+   "code_4bet|ref_open": 0.0342,
+   "code_continue|code_open": 0.1232,
+   "code_4bet|code_open": 0.0346,
+   "code_open_width": 0.3538
+  }
+ ]
+}
