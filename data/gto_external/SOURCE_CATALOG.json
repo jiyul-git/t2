@@ -1,0 +1,233 @@
+{
+  "schema": "t2_gto_external_source_catalog_v1",
+  "updated": "2026-10-03",
+  "sources": [
+    {
+      "id": "jensbaagaard_poker_practice_9max_mtt",
+      "status": "imported_raw",
+      "license": "MIT",
+      "format": "MTT NLHE",
+      "table_players": [
+        9
+      ],
+      "stacks_bb": [
+        5,
+        10,
+        20,
+        40,
+        100
+      ],
+      "coverage": [
+        "RFI",
+        "limp",
+        "call_vs_open",
+        "3bet",
+        "call_vs_3bet",
+        "4bet",
+        "call_vs_4bet",
+        "5bet",
+        "call_vs_5bet"
+      ],
+      "raw_scenario_keys_per_stack": 271,
+      "limitations": [
+        "symmetric nominal/effective stack packs",
+        "not arbitrary per-seat stack vectors",
+        "source assumptions retained"
+      ]
+    },
+    {
+      "id": "holdemmath_pushfold_9max",
+      "status": "already_normalized",
+      "license": "CC BY 4.0",
+      "table_players": [
+        9
+      ],
+      "stacks_bb": [
+        4,
+        6,
+        8,
+        10,
+        12,
+        15,
+        20
+      ],
+      "coverage": [
+        "first_in_shove",
+        "call_vs_shove"
+      ],
+      "limitations": [
+        "multiway single-caller approximation",
+        "no ICM",
+        "per-player ante variant not exact BBA"
+      ]
+    },
+    {
+      "id": "matthiola_8max_mtt",
+      "status": "already_imported_auxiliary",
+      "license": "MIT",
+      "table_players": [
+        8
+      ],
+      "stacks_bb": [
+        3,
+        5,
+        8,
+        10,
+        12,
+        15,
+        17,
+        20,
+        22,
+        26,
+        30,
+        35,
+        40,
+        50,
+        70,
+        100
+      ],
+      "coverage": [
+        "many preflop nodes including RFI, facing open, facing 3bet"
+      ],
+      "limitations": [
+        "8-max; never promote directly to 9-max truth"
+      ]
+    },
+    {
+      "id": "preflopranges_app_9max_mtt",
+      "status": "index_and_manual_crosscheck_only",
+      "table_players": [
+        9
+      ],
+      "stacks_bb": [
+        10,
+        15,
+        20,
+        25,
+        30,
+        40
+      ],
+      "coverage": [
+        "open",
+        "3bet",
+        "squeeze",
+        "cold4bet",
+        "responses",
+        "limp/jam viewer states"
+      ],
+      "restrictions": [
+        "terms prohibit scraping, mass download, systematic extraction, and redistribution"
+      ]
+    },
+    {
+      "id": "poker_academy",
+      "status": "index_only",
+      "table_players": [
+        8,
+        9
+      ],
+      "stacks_bb": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12.5,
+        15,
+        17.5,
+        20,
+        22.5,
+        25,
+        27.5,
+        30,
+        35,
+        40,
+        50,
+        60,
+        70,
+        80,
+        100
+      ],
+      "coverage": [
+        "symmetric ChipEV",
+        "asymmetric ChipEV",
+        "BB ante",
+        "PKO",
+        "ICM",
+        "asymmetric ICM",
+        "final table",
+        "direct bubble",
+        "satellite",
+        "RFI",
+        "vs RFI",
+        "facing 3bet",
+        "facing 4bet",
+        "BvB",
+        "vs limp",
+        "squeeze",
+        "cold4bet",
+        "multiway",
+        "isolation"
+      ],
+      "restrictions": [
+        "commercial service; no redistribution permission established"
+      ]
+    },
+    {
+      "id": "gtosims_9max_mtt",
+      "status": "index_only",
+      "table_players": [
+        9
+      ],
+      "known_stacks_bb": [
+        15,
+        25,
+        30
+      ],
+      "coverage": [
+        "full preflop tree",
+        "limps/isolates where offered",
+        "multiway postflop continuation"
+      ],
+      "restrictions": [
+        "commercial paid solution files; do not copy without purchase/license"
+      ]
+    },
+    {
+      "id": "gto_wizard",
+      "status": "index_and_public-example-crosscheck_only",
+      "table_players": [
+        9
+      ],
+      "coverage": [
+        "MTT preflop",
+        "asymmetric examples",
+        "cash/spin/HU"
+      ],
+      "restrictions": [
+        "do not bulk extract through unofficial APIs without explicit permission"
+      ]
+    },
+    {
+      "id": "rangeconverter",
+      "status": "index_only",
+      "table_players": [
+        8,
+        9
+      ],
+      "coverage": [
+        "MTT",
+        "ICM",
+        "PKO",
+        "cash",
+        "many stack depths and asymmetric ICM examples"
+      ],
+      "restrictions": [
+        "commercial solution library; no bulk redistribution"
+      ]
+    }
+  ]
+}
