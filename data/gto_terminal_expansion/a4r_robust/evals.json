@@ -2727,6 +2727,370 @@
      0.010331975168878817
     ]
    }
+  },
+  "14": {
+   "sigma72->G144": {
+    "tag": "sigma72->G144",
+    "groups": {
+     "CO": {
+      "dEV": 8.216147311113087e-09,
+      "positive_loss": 8.216147311113087e-09,
+      "own_gap": 9.837323169385227e-05,
+      "gap_diff": 8.216147423111171e-09,
+      "check_dEV_minus_gapdiff": 1.119980844177526e-16,
+      "check_BR_value": 1.1275702593849246e-16,
+      "check_lower_bound": true,
+      "nodes_swapped": 182,
+      "L1": {}
+     },
+     "BTN": {
+      "dEV": 0.000920188349585252,
+      "positive_loss": 0.000920188349585252,
+      "own_gap": 5.161284894501008e-05,
+      "gap_diff": 0.0009201883495852381,
+      "check_dEV_minus_gapdiff": 1.3877787807814457e-17,
+      "check_BR_value": 1.3877787807814457e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 192,
+      "L1": {
+       "BTN first-in": 0.09908650953960632
+      }
+     },
+     "SB": {
+      "dEV": 0.0032695070500905477,
+      "positive_loss": 0.0032695070500905477,
+      "own_gap": 4.689394751955056e-05,
+      "gap_diff": 0.0032695070500906413,
+      "check_dEV_minus_gapdiff": 9.367506770274758e-17,
+      "check_BR_value": 8.326672684688674e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 202,
+      "L1": {
+       "SB first-in": 0.26055118752858936
+      }
+     },
+     "BB": {
+      "dEV": 0.007903517544555455,
+      "positive_loss": 0.007903517544555455,
+      "own_gap": 5.322483719832644e-05,
+      "gap_diff": 0.007903517544555521,
+      "check_dEV_minus_gapdiff": 6.591949208711867e-17,
+      "check_BR_value": 6.938893903907228e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 212,
+      "L1": {
+       "BB vs SB": 0.38594544253897844,
+       "BB vs BTN": 0.28588136019447996
+      }
+     },
+     "BB|SB-open": {
+      "dEV": 0.005787674702562515,
+      "positive_loss": 0.005787674702562515,
+      "own_gap": 5.322483719832644e-05,
+      "gap_diff": 0.005787674702562567,
+      "check_dEV_minus_gapdiff": 5.204170427930421e-17,
+      "check_BR_value": 5.551115123125783e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs SB": 0.38594544253897844
+      }
+     },
+     "BB|BTN-open": {
+      "dEV": 0.0020238148623506064,
+      "positive_loss": 0.0020238148623506064,
+      "own_gap": 5.322483719832644e-05,
+      "gap_diff": 0.0020238148623506255,
+      "check_dEV_minus_gapdiff": 1.9081958235744878e-17,
+      "check_BR_value": 1.3877787807814457e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs BTN": 0.28588136019447996
+      }
+     }
+    },
+    "nashconv_A_in_G": 0.018157575352519727,
+    "nashconv_own": 0.00025010486535673935,
+    "gaps_A_in_G": [
+     9.95760102619073e-05,
+     0.0017613665987148584,
+     0.00524120597962272,
+     0.011055426763920241
+    ]
+   },
+   "sigma144->G72": {
+    "tag": "sigma144->G72",
+    "groups": {
+     "CO": {
+      "dEV": -8.181029562126518e-09,
+      "positive_loss": 0.0,
+      "own_gap": 9.95760102619073e-05,
+      "gap_diff": -8.18102965753631e-09,
+      "check_dEV_minus_gapdiff": 9.540979117872439e-17,
+      "check_BR_value": 9.367506770274758e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 182,
+      "L1": {}
+     },
+     "BTN": {
+      "dEV": 0.0018392148988677776,
+      "positive_loss": 0.0018392148988677776,
+      "own_gap": 5.6878058780933686e-05,
+      "gap_diff": 0.0018392148988677457,
+      "check_dEV_minus_gapdiff": 3.187554387107383e-17,
+      "check_BR_value": 2.7755575615628914e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 192,
+      "L1": {
+       "BTN first-in": 0.09908650953960632
+      }
+     },
+     "SB": {
+      "dEV": 0.004482840181289388,
+      "positive_loss": 0.004482840181289388,
+      "own_gap": 8.205996164017005e-05,
+      "gap_diff": 0.004482840181289588,
+      "check_dEV_minus_gapdiff": 1.9949319973733282e-16,
+      "check_BR_value": 1.942890293094024e-16,
+      "check_lower_bound": true,
+      "nodes_swapped": 202,
+      "L1": {
+       "SB first-in": 0.26055118752858936
+      }
+     },
+     "BB": {
+      "dEV": 0.006840876548137448,
+      "positive_loss": 0.006840876548137448,
+      "own_gap": 5.8599675582746754e-05,
+      "gap_diff": 0.006840876548137231,
+      "check_dEV_minus_gapdiff": 2.1684043449710089e-16,
+      "check_BR_value": 2.220446049250313e-16,
+      "check_lower_bound": true,
+      "nodes_swapped": 212,
+      "L1": {
+       "BB vs SB": 0.38594544253897844,
+       "BB vs BTN": 0.28588136019447996
+      }
+     },
+     "BB|SB-open": {
+      "dEV": 0.005277244670871206,
+      "positive_loss": 0.005277244670871206,
+      "own_gap": 5.8599675582746754e-05,
+      "gap_diff": 0.005277244670871175,
+      "check_dEV_minus_gapdiff": 3.122502256758253e-17,
+      "check_BR_value": 2.7755575615628914e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs SB": 0.38594544253897844
+      }
+     },
+     "BB|BTN-open": {
+      "dEV": 0.00153173952542085,
+      "positive_loss": 0.00153173952542085,
+      "own_gap": 5.8599675582746754e-05,
+      "gap_diff": 0.0015317395254206643,
+      "check_dEV_minus_gapdiff": 1.8561541192951836e-16,
+      "check_BR_value": 1.942890293094024e-16,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs BTN": 0.28588136019447996
+      }
+     }
+    },
+    "nashconv_A_in_G": 0.02200976823111578,
+    "nashconv_own": 0.0002971137062657578,
+    "gaps_A_in_G": [
+     9.837323169385227e-05,
+     0.004006201010989209,
+     0.005989210056103089,
+     0.011915983932329628
+    ]
+   }
+  },
+  "15": {
+   "sigma72->G144": {
+    "tag": "sigma72->G144",
+    "groups": {
+     "CO": {
+      "dEV": 5.859044305278616e-09,
+      "positive_loss": 5.859044305278616e-09,
+      "own_gap": 9.838182008864991e-05,
+      "gap_diff": 5.859044320349026e-09,
+      "check_dEV_minus_gapdiff": 1.5070410197548512e-17,
+      "check_BR_value": 1.5612511283791264e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 182,
+      "L1": {}
+     },
+     "BTN": {
+      "dEV": 0.000997248434603873,
+      "positive_loss": 0.000997248434603873,
+      "own_gap": 5.988195070523038e-05,
+      "gap_diff": 0.0009972484374131338,
+      "check_dEV_minus_gapdiff": 2.8092608534563412e-12,
+      "check_BR_value": 2.809252830360265e-12,
+      "check_lower_bound": true,
+      "nodes_swapped": 192,
+      "L1": {
+       "BTN first-in": 0.1339797373878963
+      }
+     },
+     "SB": {
+      "dEV": 0.004564473850652007,
+      "positive_loss": 0.004564473850652007,
+      "own_gap": 0.00011064775085496128,
+      "gap_diff": 0.004564473850652133,
+      "check_dEV_minus_gapdiff": 1.2663481374630692e-16,
+      "check_BR_value": 1.3877787807814457e-16,
+      "check_lower_bound": true,
+      "nodes_swapped": 202,
+      "L1": {
+       "SB first-in": 0.31135925133024867
+      }
+     },
+     "BB": {
+      "dEV": 0.004060642945468651,
+      "positive_loss": 0.004060642945468651,
+      "own_gap": 5.636011858190849e-05,
+      "gap_diff": 0.004060642945468599,
+      "check_dEV_minus_gapdiff": 5.204170427930421e-17,
+      "check_BR_value": 5.551115123125783e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 212,
+      "L1": {
+       "BB vs SB": 0.28105930530110623,
+       "BB vs BTN": 0.2528151029729192
+      }
+     },
+     "BB|SB-open": {
+      "dEV": 0.002771376693120553,
+      "positive_loss": 0.002771376693120553,
+      "own_gap": 5.636011858190849e-05,
+      "gap_diff": 0.002771376693120692,
+      "check_dEV_minus_gapdiff": 1.3877787807814457e-16,
+      "check_BR_value": 1.3877787807814457e-16,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs SB": 0.28105930530110623
+      }
+     },
+     "BB|BTN-open": {
+      "dEV": 0.0011299457519013956,
+      "positive_loss": 0.0011299457519013956,
+      "own_gap": 5.636011858190849e-05,
+      "gap_diff": 0.0011299457519013956,
+      "check_dEV_minus_gapdiff": 0.0,
+      "check_BR_value": 0.0,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs BTN": 0.2528151029729192
+      }
+     }
+    },
+    "nashconv_A_in_G": 0.018976113069120518,
+    "nashconv_own": 0.00032527164023075006,
+    "gaps_A_in_G": [
+     9.984736648633273e-05,
+     0.0017270473133883901,
+     0.00924607225114124,
+     0.007903146138104552
+    ]
+   },
+   "sigma144->G72": {
+    "tag": "sigma144->G72",
+    "groups": {
+     "CO": {
+      "dEV": -1.0962355148635972e-08,
+      "positive_loss": 0.0,
+      "own_gap": 9.984736648633273e-05,
+      "gap_diff": -1.0962355078813352e-08,
+      "check_dEV_minus_gapdiff": 6.982261990806649e-17,
+      "check_BR_value": 6.938893903907228e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 182,
+      "L1": {}
+     },
+     "BTN": {
+      "dEV": 0.00203821504029561,
+      "positive_loss": 0.00203821504029561,
+      "own_gap": 5.352930228057933e-05,
+      "gap_diff": 0.0020382150402956213,
+      "check_dEV_minus_gapdiff": 1.1275702593849246e-17,
+      "check_BR_value": 0.0,
+      "check_lower_bound": true,
+      "nodes_swapped": 192,
+      "L1": {
+       "BTN first-in": 0.1339797373878963
+      }
+     },
+     "SB": {
+      "dEV": 0.0048865904785243,
+      "positive_loss": 0.0048865904785243,
+      "own_gap": 0.00021538678877275038,
+      "gap_diff": 0.004886590478524255,
+      "check_dEV_minus_gapdiff": 4.5102810375396984e-17,
+      "check_BR_value": 5.551115123125783e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 202,
+      "L1": {
+       "SB first-in": 0.31135925133024867
+      }
+     },
+     "BB": {
+      "dEV": 0.005103673522584451,
+      "positive_loss": 0.005103673522584451,
+      "own_gap": 0.0005451336928507847,
+      "gap_diff": 0.005103673522584451,
+      "check_dEV_minus_gapdiff": 0.0,
+      "check_BR_value": 0.0,
+      "check_lower_bound": true,
+      "nodes_swapped": 212,
+      "L1": {
+       "BB vs SB": 0.28105930530110623,
+       "BB vs BTN": 0.2528151029729192
+      }
+     },
+     "BB|SB-open": {
+      "dEV": 0.0025834109625369472,
+      "positive_loss": 0.0025834109625369472,
+      "own_gap": 0.0005451336928507847,
+      "gap_diff": 0.0025834109625369156,
+      "check_dEV_minus_gapdiff": 3.165870343657673e-17,
+      "check_BR_value": 2.7755575615628914e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs SB": 0.28105930530110623
+      }
+     },
+     "BB|BTN-open": {
+      "dEV": 0.0013601744768919066,
+      "positive_loss": 0.0013601744768919066,
+      "own_gap": 0.0005451336928507847,
+      "gap_diff": 0.0013601744768918563,
+      "check_dEV_minus_gapdiff": 5.0306980803327406e-17,
+      "check_BR_value": 5.551115123125783e-17,
+      "check_lower_bound": true,
+      "nodes_swapped": 3,
+      "L1": {
+       "BB vs BTN": 0.2528151029729192
+      }
+     }
+    },
+    "nashconv_A_in_G": 0.019964798350014832,
+    "nashconv_own": 0.0009138971503904472,
+    "gaps_A_in_G": [
+     9.838182008864991e-05,
+     0.0038054548200408917,
+     0.008192050552815506,
+     0.007868911157069784
+    ]
+   }
   }
  },
  "self_validation": {

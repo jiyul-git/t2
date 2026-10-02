@@ -161,6 +161,7 @@ def analyze(a):
            'limitation': 'frozen-table game at the P14 ranges; range-dependence of continuation values under a changed policy is not measured',
            'groups': table}
     json.dump(res, open(OUT + 'a4r_analysis.json', 'w'), indent=1)
+    figure(res, D, a.png)
     print(json.dumps({k: v for k, v in res.items() if k != 'groups'}, indent=1))
     for g, row in table.items():
         for t in ('sigma72->G144', 'sigma144->G72'):
@@ -168,6 +169,76 @@ def analyze(a):
             print(f"{g:12s} {t:14s} dEV={r['point_dEV']:+.6f} own_gap={r['point_own_gap']:.6f} boot_q95_loss={r['boot_positive_loss_q95']:.6f} "
                   f"E0={r.get('E0', float('nan')):+.6f} E_q05={r.get('E_q05', float('nan')):+.6f} E_q95={r.get('E_q95', float('nan')):+.6f} L1={ {k: round(v, 3) for k, v in r['point_L1'].items()} }")
         print(f"{'':12s} P15->G72 dEV={row['P15->G72']['point_dEV']:+.6f}  P15->G144 dEV={row['P15->G144']['point_dEV']:+.6f}")
+
+
+def figure(res, D, path):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    INK, MUTED, SURF, GRID = '#1f1f1e', '#6b6a64', '#fcfcfb', '#e6e5df'
+    C = {'sigma72->G144': '#c9a227', 'sigma144->G72': '#2a78d6'}
+    fig, ax = plt.subplots(1, 2, figsize=(20, 7.5), dpi=115)
+    fig.patch.set_facecolor(SURF)
+    g = ax[0]
+    names = list(GROUPS)
+    ticks = []
+    for i, gn in enumerate(names):
+        for j, t in enumerate(('sigma72->G144', 'sigma144->G72')):
+            x = i + (j - 0.5) * 0.36
+            E = sorted((b[t]['groups'][gn]['positive_loss'] - b[t]['groups'][gn]['own_gap']) * 100 for b in D['boot'].values())
+            bp = g.boxplot([E], positions=[x], widths=0.28, patch_artist=True, showfliers=False)
+            bp['boxes'][0].set_facecolor(C[t]); bp['boxes'][0].set_alpha(0.55)
+            for k in ('medians', 'whiskers', 'caps'):
+                for l in bp[k]:
+                    l.set_color(INK)
+            g.scatter([x] * len(E), E, color=INK, s=5, zorder=3, alpha=0.6)
+            pt = D['points'][t]['groups'][gn]
+            g.scatter([x], [(pt['positive_loss'] - pt['own_gap']) * 100], color='#c0392b', marker='D', s=40, zorder=4)
+        ticks.append(gn + ('\n(diagnostic)' if '|' in gn else ''))
+    g.axhline(0, color='#c0392b', lw=1, ls='--')
+    g.axvline(3.5, color=MUTED, lw=0.8, ls=':')
+    g.set_xticks(range(len(names)))
+    g.set_xticklabels(ticks, fontsize=8)
+    g.set_ylabel('E = positive_loss − own residual gap  (bb / 100 hands)', fontsize=9, color=MUTED)
+    g.set_title('(1) seat-swap EV loss in excess of the baseline solve residual (box = 60 paired replicates)', loc='left', fontsize=10, color=INK)
+    g.legend(handles=[Line2D([0], [0], color=C['sigma72->G144'], lw=8, alpha=0.55, label='72-board policy into 144-board game'),
+                      Line2D([0], [0], color=C['sigma144->G72'], lw=8, alpha=0.55, label='144-board policy into 72-board game'),
+                      Line2D([0], [0], marker='D', color='#c0392b', lw=0, label='point games (V72 / V144)'),
+                      Line2D([0], [0], color='#c0392b', ls='--', label='E = 0 (loss = own residual gap)')],
+             fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.09), ncol=2)
+    g = ax[1]
+    for t in ('sigma72->G144', 'sigma144->G72'):
+        for gn, mk in (('SB', 'o'), ('BB|SB-open', 's'), ('BTN', '^'), ('BB|BTN-open', 'v')):
+            nd = NODE_OF[gn][0]
+            xs = [b[t]['groups'][gn]['L1'][nd] for b in D['boot'].values()]
+            ys = [b[t]['groups'][gn]['dEV'] * 100 for b in D['boot'].values()]
+            g.scatter(xs, ys, color=C[t], marker=mk, s=18, alpha=0.6)
+    own = sorted(b['sigma72->G144']['groups']['SB']['own_gap'] * 100 for b in D['boot'].values())
+    g.axhline(own[len(own) // 2], color=MUTED, ls=':', lw=1)
+    g.text(g.get_xlim()[1] if False else 0.001, own[len(own) // 2], ' median own residual gap (SB)', fontsize=7.5, color=MUTED, va='bottom')
+    g.axhline(0, color=INK, lw=0.6)
+    g.set_xlabel('reach-weighted class-level L1 distance of the swapped node strategy', fontsize=9, color=MUTED)
+    g.set_ylabel('dEV of the swapped seat / group  (bb / 100 hands)', fontsize=9, color=MUTED)
+    g.set_title('(2) frequency distance vs EV loss (near-indifference check), paired replicates', loc='left', fontsize=10, color=INK)
+    g.legend(handles=[Line2D([0], [0], marker='o', color=MUTED, lw=0, label='SB first-in (node 6)'),
+                      Line2D([0], [0], marker='s', color=MUTED, lw=0, label='BB vs SB (node 6, diagnostic)'),
+                      Line2D([0], [0], marker='^', color=MUTED, lw=0, label='BTN first-in (node 28)'),
+                      Line2D([0], [0], marker='v', color=MUTED, lw=0, label='BB vs BTN (node 28, diagnostic)'),
+                      Line2D([0], [0], color=C['sigma72->G144'], lw=6, label='72 → 144'), Line2D([0], [0], color=C['sigma144->G72'], lw=6, label='144 → 72')],
+             fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.09), ncol=3)
+    for g in ax:
+        g.set_facecolor(SURF)
+        g.grid(color=GRID, lw=0.8)
+        for sp in ('top', 'right'):
+            g.spines[sp].set_visible(False)
+    fig.suptitle(f"A4R (amendment 3): {res['label']}  (EV-stable {res['EV_stable']}, EV-sensitive {res['EV_sensitive']}, frequency-unstable {res['frequency_unstable']})",
+                 fontsize=11, color=INK, x=0.01, ha='left')
+    fig.text(0.01, 0.002, 'dEV = EV(own solve) − EV(seat swapped to the other policy, opponents fixed); validated equal to the gap difference. Own residual gap = the '
+             'baseline preflop solve\'s best-response gap for that seat. Frozen-table game at P14 ranges. Sub-seat groups are diagnostic only (no restricted BR).',
+             fontsize=7.5, color=MUTED)
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
+    fig.savefig(path, facecolor=SURF, bbox_inches='tight')
 
 
 if __name__ == '__main__':

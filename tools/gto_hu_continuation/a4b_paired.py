@@ -182,9 +182,71 @@ def _phi_inv(p):
     return (lo + hi) / 2
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and not (len(sys.argv) > 1 and sys.argv[1] == 'figure'):
     ap = argparse.ArgumentParser()
     ap.add_argument('cmd', choices=['run', 'analyze'])
     ap.add_argument('--reps', type=int, default=60)
     a = ap.parse_args()
     run(a) if a.cmd == 'run' else analyze(a)
+
+
+def figure(path):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    a = json.load(open(OUT + 'a4b_paired_analysis.json'))
+    INK, MUTED, SURF, GRID = '#1f1f1e', '#6b6a64', '#fcfcfb', '#e6e5df'
+    rows = [r for r in a['rows'] if r['D_boot_sd'] > 1e-4]
+    lab = [f"{r['aggregate'].replace(' (node 28 parent)', '').replace(' (node 6 parent)', '')}: {r['action']}" for r in rows]
+    y = list(range(len(rows)))
+    c = a['simultaneous']['maxstat_c95']
+    fig, ax = plt.subplots(1, 2, figsize=(20, 0.5 * len(rows) + 3.2), dpi=115)
+    fig.patch.set_facecolor(SURF)
+    g = ax[0]
+    for i, r in enumerate(rows):
+        g.plot([-c * r['D_boot_sd'], c * r['D_boot_sd']], [i, i], color='#c9a227', lw=6, solid_capstyle='butt', alpha=0.55)
+        g.plot([r['D_boot_lo'], r['D_boot_hi']], [i - 0.22, i - 0.22], color='#8a5cd1', lw=2)
+        g.scatter([r['D']], [i], color=INK, s=30, zorder=3)
+        g.scatter([r['D_boot_mean']], [i - 0.22], color='#8a5cd1', marker='|', s=90, zorder=3)
+    g.axvline(0, color=MUTED, lw=0.8)
+    g.set_yticks(y)
+    g.set_yticklabels(lab, fontsize=8)
+    g.invert_yaxis()
+    g.set_xlabel('g(V144) − g(V72)  (frequency)', fontsize=9, color=MUTED)
+    g.set_title(f'(1) panel refinement shift D vs the simultaneous max-stat band (c = {c:.2f} · SD(D*))', loc='left', fontsize=10, color=INK)
+    g.legend(handles=[Line2D([0], [0], marker='o', color=INK, lw=0, label='point shift D'),
+                      Line2D([0], [0], color='#c9a227', lw=6, alpha=0.55, label='0 ± c·SD(D*): simultaneous 95% band'),
+                      Line2D([0], [0], color='#8a5cd1', lw=2, label='D* percentile 95% interval (paired bootstrap)'),
+                      Line2D([0], [0], marker='|', color='#8a5cd1', lw=0, markersize=10, label='mean(D*)')],
+             fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.06), ncol=2)
+    g = ax[1]
+    w = 0.2
+    g.barh([t - 1.5 * w for t in y], [r['h72'] for r in rows], w, color='#c9a227', label='72-board 95% half-width (paired bootstrap)')
+    g.barh([t - 0.5 * w for t in y], [r['h144'] for r in rows], w, color='#2a78d6', label='144-board 95% half-width')
+    g.barh([t + 0.5 * w for t in y], [abs(r['staleness_V72_minus_P15']) for r in rows], w, color='#1baf7a', label='|g(V72) − P15|: damping / staleness')
+    g.barh([t + 1.5 * w for t in y], [abs(r['secondary_M144_minus_P15']) for r in rows], w, color=INK, label='|g(M144) − P15|: A3-process counterfactual (secondary)')
+    g.axvline(0.005, color='#c0392b', ls='--', lw=1)
+    g.text(0.0055, -0.75, 'A3 criterion 0.005', color='#c0392b', fontsize=8)
+    g.set_yticks(y)
+    g.set_yticklabels(lab, fontsize=8)
+    g.invert_yaxis()
+    g.set_xlabel('frequency', fontsize=9, color=MUTED)
+    g.set_title('(2) resolution at 72 / 144 boards and the two secondary components', loc='left', fontsize=10, color=INK)
+    g.legend(fontsize=8, frameon=False, loc='upper center', bbox_to_anchor=(0.5, -0.06), ncol=2)
+    for g in ax:
+        g.set_facecolor(SURF)
+        g.grid(color=GRID, lw=0.8)
+        for sp in ('top', 'right'):
+            g.spines[sp].set_visible(False)
+    det = 'panel-detectable shift: ' + (', '.join(f'{x[0]} {x[1]}' for x in a['panel_detectable_shift']) or 'none')
+    fig.suptitle(f"A4b (amendment 2): 72 → 144 boards, measured tables at P14 ranges, nested paired bootstrap ({a['replicates_usable']} replicates); {det}",
+                 fontsize=11, color=INK, x=0.01, ha='left')
+    fig.text(0.01, 0.002, 'g = frozen-table preflop solve. D* = g(V144*) − g(V72*) with old (72) and new (72) boards resampled separately per stratum; band uses the '
+             'centred max-statistic over the 12 moving aggregates. Not a re-converged fixed point. Aggregates with no spread (CO, BB 3-bets) omitted.', fontsize=7.5, color=MUTED)
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
+    fig.savefig(path, facecolor=SURF, bbox_inches='tight')
+
+
+if __name__ == '__main__' and len(sys.argv) > 1 and sys.argv[1] == 'figure':
+    figure(sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'docs/GTO_TERMINAL_A4B_PAIRED_V2.png'))
