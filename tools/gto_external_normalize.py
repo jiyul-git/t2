@@ -27,7 +27,6 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("input")
     ap.add_argument("--stack",type=float,required=True)
-    ap.add_argument("--source-id",default="jensbaagaard_poker_practice_9max_mtt")
     ap.add_argument("--output",required=True)
     a=ap.parse_args()
     d=json.load(open(a.input))
@@ -40,13 +39,14 @@ def main():
             for hand,v in hm.items():
                 v=float(v)
                 row={
-                  "source_id":a.source_id,"table_players":9,"format":"MTT",
+                  "table_players":9,"format":"MTT",
                   "nominal_stack_bb":a.stack,"stack_model":"symmetric_nominal",
                   "range_key":key,"action_family":family,
                   "hero_position":hero,"villain_position":villain,
                   "hand_class":hand,"hand_shape":shape(hand),
                   "frequency":v,
-                  "frequency_semantics":"upstream conditional frequency for this range key"
+                  "frequency_semantics":"upstream conditional frequency for this range key",
+                  "value_status":"exact"
                 }
                 f.write(json.dumps(row,separators=(",",":"))+"\n"); n+=1
     print(n)
