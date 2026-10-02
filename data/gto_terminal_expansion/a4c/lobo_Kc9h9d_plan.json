@@ -1,0 +1,15 @@
+{
+ "schema": "a4c_diagnostic_registration",
+ "name": "Kc9h9d leave-one-board-out (secondary, diagnostic only)",
+ "registered": "2026-10-02, flops in progress, before any Vext table / point / bootstrap result",
+ "method": "node 6 table = Vext estimator with Kc9h9d removed from paired/KQ (that stratum re-averaged over its other 16 boards; P(stratum) and all other strata unchanged); node 28 table = its Vext table unchanged (Kc9h9d is not in the node 28 panel); same solver config; one preflop point solve G_lobo. Compared with Gext.",
+ "metrics": [
+  "aggregates (BTN / SB / BB node frequencies) difference",
+  "seat EV difference (raw EV and seat-swap dEV of sigma_lobo into Gext)",
+  "5-node class regret excess of sigma_lobo in Gext",
+  "169-class strategy L1 per node (reach-weighted)",
+  "argmax switch count and reach share per node"
+ ],
+ "interpretation": "practical sensitivity: the effect of the whole board is expected to dominate the effect of its solver residual; this is NOT a rigorous bound on the residual. Primary results (board included) and the panel are not changed whatever the outcome; no automatic top-up.",
+ "command": "python3 tools/gto_hu_continuation/a4c_run.py lobo   (after points, before boot)"
+}

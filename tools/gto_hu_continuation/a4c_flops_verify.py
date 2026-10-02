@@ -4,7 +4,8 @@ panel_v4 new-board list, carry the P14 ranges hash, the panel_v4 hash, one commo
 converged with exploitability <= 0.300% pot. Failing files are moved to flops/quarantine/ (kept, never deleted) so the resumable
 driver re-solves only them. Exception (prereg solver.policy): a complete artifact that ran to the 1000-iteration cap without
 reaching 0.300% is a final deterministic outcome, not an incomplete one; it stays in place (so it is not silently re-solved) and is
-listed under nonconverged_at_cap for the user's decision. Prints counts; exit 0."""
+listed under nonconverged_at_cap for the user's decision; an exact (node, board, sha256) match with a user-approved
+a4c/exception_nonconverged_*.json is listed as accepted_exception_nonconverged (target-converged count excludes it). Prints counts; exit 0."""
 import json
 import os
 import sys
@@ -19,7 +20,7 @@ for n in (6, 28):
     term = json.load(open(E + f'outer_m28_6/k14/terminal_node{n}.json'))
     d = E + f'a4c/node{n}/flops/'
     os.makedirs(d, exist_ok=True)
-    keys, ok, bad, capped = {}, 0, [], []
+    keys, ok, bad, capped, accepted = {}, 0, [], [], []
     for f in sorted(os.listdir(d)):
         if not f.endswith('.json'):
             continue
@@ -36,6 +37,13 @@ for n in (6, 28):
             elif k['panel_hash_sha256'] != p['panel_hash_sha256']:
                 why = 'panel hash != panel_v4'
             elif not (a['converged'] is True and a['exploitability_pct_pot'] <= 0.3):
+                import hashlib
+                sha = hashlib.sha256(open(d + f, 'rb').read()).hexdigest()
+                exc = [json.load(open(E + 'a4c/' + x)) for x in sorted(os.listdir(E + 'a4c')) if x.startswith('exception_nonconverged_')]
+                if any(x['terminal_node'] == n and x['board'] == b and x['artifact_sha256'] == sha and x['status'] == 'accepted_exception_nonconverged' for x in exc):
+                    accepted.append(b)
+                    keys.setdefault(json.dumps({x: y for x, y in k.items() if x != 'panel_hash_sha256'}, sort_keys=True), []).append(b)
+                    continue
                 if a['iterations'] >= k['max_iters']:
                     capped.append({'board': b, 'exploitability_pct_pot': a['exploitability_pct_pot'], 'iterations': a['iterations']})
                     continue
@@ -53,5 +61,5 @@ for n in (6, 28):
             ok += 1
     if len(keys) > 1:
         sys.exit(f'node {n}: {len(keys)} provenance-key variants among finished artifacts')
-    tot[n] = {'ok': ok, 'of': len(new), 'quarantined': bad, 'nonconverged_at_cap_pending_user': capped}
+    tot[n] = {'ok': ok, 'of': len(new), 'quarantined': bad, 'nonconverged_at_cap_pending_user': capped, 'accepted_exception_nonconverged': accepted}
 print(json.dumps({'time': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'verify': tot}))

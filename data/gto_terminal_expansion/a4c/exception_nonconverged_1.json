@@ -1,0 +1,43 @@
+{
+ "schema": "a4c_solver_policy_exception",
+ "exception_id": 1,
+ "status": "accepted_exception_nonconverged",
+ "kind": "post-observation exception under prereg solver.policy (\"a board that does not reach <= 0.300% pot is reported and its handling decided by the user\")",
+ "terminal_node": 6,
+ "board": "Kc9h9d",
+ "stratum": "paired/KQ",
+ "panel_position": "node 6 paired/KQ extension draw 4 of 5 (terminal-only tail E6; not in node 28 panel)",
+ "panel_weight": 0.0027042853340431194,
+ "iterations": 1000,
+ "max_iters": 1000,
+ "converged": false,
+ "exploitability_pct_pot": 0.30251012452929915,
+ "target_exploitability_pct_pot": 0.3,
+ "pot_bb": 6.0,
+ "artifact": "data/gto_terminal_expansion/a4c/node6/flops/Kc9h9d.json",
+ "artifact_sha256": "e691219482ab5f4a31ad073cc0c28b204091487afd91af9f78cfdd80e5ee0be7",
+ "trace_pct_pot": {
+  "200": 0.35456258957881814,
+  "400": 0.31112518054853633,
+  "600": 0.30450042924152954,
+  "800": 0.30316549124877834,
+  "1000": 0.30251012452929915
+ },
+ "approved_by": "user",
+ "approved_at": "2026-10-02 (after the 14:23 UTC report; before any Vext table, point, bootstrap or metric)",
+ "reason": "1000-iteration cap reached at 0.3025101% pot vs 0.300% target; trace flat from 600 to 1000 (0.3045 -> 0.3032 -> 0.3025), so a 3000-iteration re-solve has low expected benefit for several hours of compute; replacing or excluding the board would change the preregistered panel.",
+ "rules": [
+  "the 0.300% threshold is NOT relaxed; no general tolerance is introduced",
+  "artifact is not modified; converged=false is preserved",
+  "accepted only by exact match (node 6, board Kc9h9d, this artifact sha256); any other board above 0.300% waits for a user decision again",
+  "primary analysis: board kept at its panel position and weight; no replacement, exclusion, reweighting, or treatment as converged",
+  "reporting: 161/162 target-converged + 1 prereg-approved capped exception (never \"all converged\")"
+ ],
+ "aggregate_numerical_impact": {
+  "excess_pct_pot": 0.0025101245292991625,
+  "excess_bb": 0.00015060747175794977,
+  "times_panel_weight_bb": 4.0728557707233686e-07,
+  "caveat": "exploitability is a game-level quantity; this is the scale of the extra aggregate residual relative to a solve exactly at the target, NOT a bound on any hand-level or action-level EV / frequency error"
+ },
+ "secondary_diagnostic": "data/gto_terminal_expansion/a4c/lobo_Kc9h9d_plan.json"
+}

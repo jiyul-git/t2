@@ -4,6 +4,7 @@
     python3 tools/gto_hu_continuation/a4c_run.py tables     # provenance checks, V144 identity, Vext tables
     python3 tools/gto_hu_continuation/a4c_run.py points     # G144 (A4b point, verified) and Gext solve
     python3 tools/gto_hu_continuation/a4c_run.py margdiag   # amendment-1 marginal diagnostic (before boot; diagnostic only)
+    python3 tools/gto_hu_continuation/a4c_run.py lobo       # Kc9h9d leave-one-board-out (after points; diagnostic only)
     python3 tools/gto_hu_continuation/a4c_run.py boot       # 60-replicate nested paired FPC bootstrap + swaps + hand metrics (resumable)
     python3 tools/gto_hu_continuation/a4c_run.py analyze    # predicted vs measured, classification, hand-level, figure
 """
@@ -31,6 +32,15 @@ PANEL = {n: os.path.join(ROOT, f'data/gto_hu_continuation/panel_v4_node{n}.json'
 FLOP_DIRS = {n: [OUT + f'node{n}/flops/', E + f'a4b_panel144/node{n}/flops/', A3 + f'k14/node{n}/flops/'] for n in (6, 28)}
 SEATS = {'CO': (0, 'all'), 'BTN': (1, 'all'), 'SB': (2, 'all'), 'BB': (3, 'all')}
 RHO = 19600 / 22100
+# user-approved solver-policy exceptions (a4c/exception_nonconverged_*.json): exact (node, board, artifact sha256) matches only
+EXCEPTIONS = [json.load(open(os.path.join(OUT, f))) for f in sorted(os.listdir(OUT)) if f.startswith('exception_nonconverged_')] if os.path.isdir(OUT) else []
+STATUS = {}   # (node, board) -> 'target_converged' | 'accepted_exception_nonconverged'
+
+
+def exception_ok(n, b, path):
+    sha = hashlib.sha256(open(path, 'rb').read()).hexdigest()
+    return any(x['status'] == 'accepted_exception_nonconverged' and x['terminal_node'] == n and x['board'] == b and x['artifact_sha256'] == sha
+               for x in EXCEPTIONS)
 
 
 def atomic(obj, path):
@@ -72,14 +82,19 @@ def load_values(n, boards):
     ok_panels = {p['panel_hash_sha256'], *p['ancestor_panel_hashes']}
     term = json.load(open(A3 + f'k14/terminal_node{n}.json'))
     for b in boards:
-        d = json.load(open(flop_file(n, b)))
+        path = flop_file(n, b)
+        d = json.load(open(path))
         k = d['provenance_key']
         if k['ranges_hash_fnv1a64'] != term['ranges_hash_fnv1a64']:
             raise SystemExit(f'{n} {b}: ranges hash {k["ranges_hash_fnv1a64"]} != P14 {term["ranges_hash_fnv1a64"]}')
         if k['panel_hash_sha256'] not in ok_panels:
             raise SystemExit(f'{n} {b}: panel hash not in this panel lineage')
-        if not d['converged'] or d['exploitability_pct_pot'] > 0.3:
-            raise SystemExit(f'{n} {b}: not converged ({d["exploitability_pct_pot"]})')
+        if d['converged'] and d['exploitability_pct_pot'] <= 0.3:   # the 0.300% target is never relaxed
+            STATUS[(n, b)] = 'target_converged'
+        elif exception_ok(n, b, path):
+            STATUS[(n, b)] = 'accepted_exception_nonconverged'
+        else:
+            raise SystemExit(f'{n} {b}: not converged ({d["exploitability_pct_pot"]}) and no user-approved exact exception')
         keys[json.dumps({x: y for x, y in k.items() if x != 'panel_hash_sha256'}, sort_keys=True)] = b
         vals[b] = {pl['position']: pl['gross_eps'] for pl in d['players']}
     if len(keys) != 1:
@@ -150,6 +165,11 @@ def tables(a):
         chk[f'node{n}_new_flops'] = {'count': len(fl), 'max_expl_pct_pot': max(f['exploitability_pct_pot'] for f in fl),
                                      'mean_expl_pct_pot': sum(f['exploitability_pct_pot'] for f in fl) / len(fl),
                                      'cpu_h': sum(f['cost']['solve_ms'] for f in fl) / 3.6e6, 'iterations_mean': sum(f['iterations'] for f in fl) / len(fl)}
+    new_status = [STATUS[(n, b)] for n in (6, 28) for s in st[n]['new'] for b in st[n]['new'][s]]
+    chk['convergence_status_new_boards'] = {'target_converged': new_status.count('target_converged'),
+                                            'accepted_exception_nonconverged': [f'node{n}/{b}' for (n, b), v in sorted(STATUS.items()) if v != 'target_converged'],
+                                            'label': f"{new_status.count('target_converged')}/{len(new_status)} target-converged + "
+                                                     f"{len(new_status) - new_status.count('target_converged')} prereg-approved capped exception(s)"}
     print(json.dumps(chk, indent=1))
     if max(v for k, v in chk.items() if k.endswith('max_abs')) != 0:
         raise SystemExit('V144 identity failed')
@@ -291,6 +311,39 @@ def boot(a):
         print('rep', i, 'errext seat', {s: round(x, 5) for s, x in rep['errext']['seat_dEV'].items()}, flush=True)
 
 
+def lobo(a):
+    """Kc9h9d leave-one-board-out (a4c/lobo_Kc9h9d_plan.json): secondary, diagnostic only; primary results unchanged."""
+    import a4c_analyze as AN
+    st = setup()
+    P = json.load(open(OUT + 'points.json'))
+    out_path = OUT + 'lobo_Kc9h9d.json'
+    S6 = st[6]
+    assert 'Kc9h9d' in S6['all']['paired/KQ'] and all('Kc9h9d' not in v for v in st[28]['all'].values())
+    dr = {s: [b for b in bs if b != 'Kc9h9d'] for s, bs in S6['all'].items()}
+    assert len(dr['paired/KQ']) == 16 and all(dr[s] == S6['all'][s] for s in dr if s != 'paired/KQ')
+    g = estimate(S6['vals'], S6['compat'], dr, S6['p_str'])
+    tabs = {6: table_json(6, g, 'A4c LOBO Kc9h9d (diagnostic)'), 28: json.load(open(OUT + 'node28/table_ext.json'))}
+    gd, ld = OUT + 'points/Gext', OUT + 'points/Gext_lobo_Kc9h9d'
+    R = json.load(open(out_path)) if os.path.exists(out_path) else {}
+    if 'point' not in R:
+        R['point'] = solve(ld, tabs)
+        atomic(R, out_path)
+    L, G = R['point'], P['Gext']
+    gn = node_data(gd)
+    base = {nd: regret_l1(gn[nd], {'class_strategy': gn[nd]['s']})[0] for nd in NODES}
+    sw = swap_metrics(G, gd, L, ld, OUT + 'points/lobo_swaps', base)
+    hl = AN.hand_level(gd, ld)
+    agg = {nd: {k: L['aggregates'][nd][k] - G['aggregates'][nd][k] for k in G['aggregates'][nd]} for nd in G['aggregates']}
+    R['diagnostic'] = {'plan': 'a4c/lobo_Kc9h9d_plan.json', 'aggregates_lobo_minus_Gext': agg,
+                       'seat_ev_lobo_minus_Gext': {nm: L['evs'][seat] - G['evs'][seat] for nm, (seat, _) in SEATS.items()},
+                       'seat_swap_dEV_lobo_into_Gext': sw['seat_dEV'], 'regret_excess_lobo_in_Gext': sw['regret_excess'], 'L1': sw['L1'],
+                       'max_check': sw['max_check'],
+                       'argmax_switch': {nd: {'count': sum(1 for c in hl[nd]['classes'] if c['argmax_switch']), 'reach_share': hl[nd]['reach_weighted']['argmax_switch_share']} for nd in hl},
+                       'note': 'practical sensitivity of the whole board, not a bound on its solver residual; primary results and panel unchanged'}
+    atomic(R, out_path)
+    print(json.dumps(R['diagnostic'], indent=1))
+
+
 def margdiag(a):
     """amendment-1 marginal diagnostic (diagnostic only; registered before any Vext/point/bootstrap result, changes nothing).
     Exact (analytic) with-replacement bootstrap variance of each table cell under (i) the amendment-1 scheme (old, S, E resampled
@@ -369,7 +422,7 @@ def margdiag(a):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['tables', 'points', 'boot', 'analyze', 'margdiag'])
+    ap.add_argument('cmd', choices=['tables', 'points', 'boot', 'analyze', 'margdiag', 'lobo'])
     ap.add_argument('--partial', action='store_true')
     ap.add_argument('--out')
     ap.add_argument('--reps', type=int, default=60)
@@ -378,4 +431,4 @@ if __name__ == '__main__':
         import a4c_analyze
         a4c_analyze.main()
     else:
-        {'tables': tables, 'points': points, 'boot': boot, 'margdiag': margdiag}[a.cmd](a)
+        {'tables': tables, 'points': points, 'boot': boot, 'margdiag': margdiag, 'lobo': lobo}[a.cmd](a)
