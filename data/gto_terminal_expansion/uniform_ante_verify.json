@@ -1,0 +1,387 @@
+{
+ "N": {
+  "5": {
+   "1_hand_start": {
+    "HJ": "1/5",
+    "CO": "1/5",
+    "BTN": "1/5",
+    "SB": "7/10",
+    "BB": "6/5"
+   },
+   "2_initial_pot": "5/2",
+   "3_pot_after_folds": "5/2",
+   "4_survivor_stacks": {
+    "CO": "149/5",
+    "BTN": "149/5",
+    "SB": "293/10",
+    "BB": "144/5"
+   },
+   "5_to_call_CO": "1",
+   "5_min_raise_to": "2",
+   "7_node6": {
+    "pot": "6",
+    "behind": {
+     "SB": "273/10",
+     "BB": "273/10"
+    },
+    "action_costs": [
+     "0",
+     "0",
+     "2",
+     "3/2"
+    ]
+   },
+   "7_node28": {
+    "pot": "11/2",
+    "behind": {
+     "BTN": "139/5",
+     "BB": "139/5"
+    },
+    "action_costs": [
+     "0",
+     "2",
+     "0",
+     "1"
+    ]
+   }
+  },
+  "6": {
+   "1_hand_start": {
+    "LJ": "1/6",
+    "HJ": "1/6",
+    "CO": "1/6",
+    "BTN": "1/6",
+    "SB": "2/3",
+    "BB": "7/6"
+   },
+   "2_initial_pot": "5/2",
+   "3_pot_after_folds": "5/2",
+   "4_survivor_stacks": {
+    "CO": "179/6",
+    "BTN": "179/6",
+    "SB": "88/3",
+    "BB": "173/6"
+   },
+   "5_to_call_CO": "1",
+   "5_min_raise_to": "2",
+   "7_node6": {
+    "pot": "6",
+    "behind": {
+     "SB": "82/3",
+     "BB": "82/3"
+    },
+    "action_costs": [
+     "0",
+     "0",
+     "2",
+     "3/2"
+    ]
+   },
+   "7_node28": {
+    "pot": "11/2",
+    "behind": {
+     "BTN": "167/6",
+     "BB": "167/6"
+    },
+    "action_costs": [
+     "0",
+     "2",
+     "0",
+     "1"
+    ]
+   }
+  },
+  "7": {
+   "1_hand_start": {
+    "MP": "1/7",
+    "LJ": "1/7",
+    "HJ": "1/7",
+    "CO": "1/7",
+    "BTN": "1/7",
+    "SB": "9/14",
+    "BB": "8/7"
+   },
+   "2_initial_pot": "5/2",
+   "3_pot_after_folds": "5/2",
+   "4_survivor_stacks": {
+    "CO": "209/7",
+    "BTN": "209/7",
+    "SB": "411/14",
+    "BB": "202/7"
+   },
+   "5_to_call_CO": "1",
+   "5_min_raise_to": "2",
+   "7_node6": {
+    "pot": "6",
+    "behind": {
+     "SB": "383/14",
+     "BB": "383/14"
+    },
+    "action_costs": [
+     "0",
+     "0",
+     "2",
+     "3/2"
+    ]
+   },
+   "7_node28": {
+    "pot": "11/2",
+    "behind": {
+     "BTN": "195/7",
+     "BB": "195/7"
+    },
+    "action_costs": [
+     "0",
+     "2",
+     "0",
+     "1"
+    ]
+   }
+  },
+  "8": {
+   "1_hand_start": {
+    "UTG1": "1/8",
+    "MP": "1/8",
+    "LJ": "1/8",
+    "HJ": "1/8",
+    "CO": "1/8",
+    "BTN": "1/8",
+    "SB": "5/8",
+    "BB": "9/8"
+   },
+   "2_initial_pot": "5/2",
+   "3_pot_after_folds": "5/2",
+   "4_survivor_stacks": {
+    "CO": "239/8",
+    "BTN": "239/8",
+    "SB": "235/8",
+    "BB": "231/8"
+   },
+   "5_to_call_CO": "1",
+   "5_min_raise_to": "2",
+   "7_node6": {
+    "pot": "6",
+    "behind": {
+     "SB": "219/8",
+     "BB": "219/8"
+    },
+    "action_costs": [
+     "0",
+     "0",
+     "2",
+     "3/2"
+    ]
+   },
+   "7_node28": {
+    "pot": "11/2",
+    "behind": {
+     "BTN": "223/8",
+     "BB": "223/8"
+    },
+    "action_costs": [
+     "0",
+     "2",
+     "0",
+     "1"
+    ]
+   }
+  },
+  "9": {
+   "1_hand_start": {
+    "UTG": "1/9",
+    "UTG1": "1/9",
+    "MP": "1/9",
+    "LJ": "1/9",
+    "HJ": "1/9",
+    "CO": "1/9",
+    "BTN": "1/9",
+    "SB": "11/18",
+    "BB": "10/9"
+   },
+   "2_initial_pot": "5/2",
+   "3_pot_after_folds": "5/2",
+   "4_survivor_stacks": {
+    "CO": "269/9",
+    "BTN": "269/9",
+    "SB": "529/18",
+    "BB": "260/9"
+   },
+   "5_to_call_CO": "1",
+   "5_min_raise_to": "2",
+   "7_node6": {
+    "pot": "6",
+    "behind": {
+     "SB": "493/18",
+     "BB": "493/18"
+    },
+    "action_costs": [
+     "0",
+     "0",
+     "2",
+     "3/2"
+    ]
+   },
+   "7_node28": {
+    "pot": "11/2",
+    "behind": {
+     "BTN": "251/9",
+     "BB": "251/9"
+    },
+    "action_costs": [
+     "0",
+     "2",
+     "0",
+     "1"
+    ]
+   }
+  }
+ },
+ "errors": [],
+ "6_allin_edge": {
+  "N=9, S=1.05": {
+   "BB_paid_ante": "1/9",
+   "BB_paid_blind": "169/180",
+   "BB_behind": "0",
+   "note": "BB all-in for less than the blind after its ante; GTOpen v1 (no side pots) must reject this config"
+  },
+  "N=5, S=0.1": {
+   "ante_paid": {
+    "HJ": "1/10",
+    "CO": "1/10",
+    "BTN": "1/10",
+    "SB": "1/10",
+    "BB": "1/10"
+   },
+   "total_ante": "1/2",
+   "note": "every seat all-in on its ante (0.1 < 0.2); total ante below 1 bb by construction"
+  }
+ },
+ "gtopen_tree": {
+  "5": {
+   "28": {
+    "pot_bb": 5.500000000000001,
+    "behind": {
+     "BTN": 27.8,
+     "BB": 27.8
+    },
+    "invested": {
+     "BTN": 2.2,
+     "BB": 2.2
+    }
+   },
+   "6": {
+    "pot_bb": 6.000000000000001,
+    "behind": {
+     "SB": 27.3,
+     "BB": 27.3
+    },
+    "invested": {
+     "SB": 2.7,
+     "BB": 2.7
+    }
+   },
+   "edge_stack_eq_bb_plus_ante_rejected": true
+  },
+  "6": {
+   "28": {
+    "pot_bb": 5.499999999999999,
+    "behind": {
+     "BTN": 27.833333333333332,
+     "BB": 27.833333333333332
+    },
+    "invested": {
+     "BTN": 2.1666666666666665,
+     "BB": 2.1666666666666665
+    }
+   },
+   "6": {
+    "pot_bb": 5.999999999999999,
+    "behind": {
+     "SB": 27.333333333333332,
+     "BB": 27.333333333333332
+    },
+    "invested": {
+     "SB": 2.6666666666666665,
+     "BB": 2.6666666666666665
+    }
+   },
+   "edge_stack_eq_bb_plus_ante_rejected": true
+  },
+  "7": {
+   "28": {
+    "pot_bb": 5.5,
+    "behind": {
+     "BTN": 27.857142857142858,
+     "BB": 27.857142857142858
+    },
+    "invested": {
+     "BTN": 2.142857142857143,
+     "BB": 2.142857142857143
+    }
+   },
+   "6": {
+    "pot_bb": 6.0,
+    "behind": {
+     "SB": 27.357142857142858,
+     "BB": 27.357142857142858
+    },
+    "invested": {
+     "SB": 2.642857142857143,
+     "BB": 2.642857142857143
+    }
+   },
+   "edge_stack_eq_bb_plus_ante_rejected": true
+  },
+  "8": {
+   "28": {
+    "pot_bb": 5.5,
+    "behind": {
+     "BTN": 27.875,
+     "BB": 27.875
+    },
+    "invested": {
+     "BTN": 2.125,
+     "BB": 2.125
+    }
+   },
+   "6": {
+    "pot_bb": 6.0,
+    "behind": {
+     "SB": 27.375,
+     "BB": 27.375
+    },
+    "invested": {
+     "SB": 2.625,
+     "BB": 2.625
+    }
+   },
+   "edge_stack_eq_bb_plus_ante_rejected": true
+  },
+  "9": {
+   "28": {
+    "pot_bb": 5.5,
+    "behind": {
+     "BTN": 27.88888888888889,
+     "BB": 27.88888888888889
+    },
+    "invested": {
+     "BTN": 2.111111111111111,
+     "BB": 2.111111111111111
+    }
+   },
+   "6": {
+    "pot_bb": 6.0,
+    "behind": {
+     "SB": 27.38888888888889,
+     "BB": 27.38888888888889
+    },
+    "invested": {
+     "SB": 2.611111111111111,
+     "BB": 2.611111111111111
+    }
+   },
+   "edge_stack_eq_bb_plus_ante_rejected": true
+  }
+ },
+ "ok": true
+}

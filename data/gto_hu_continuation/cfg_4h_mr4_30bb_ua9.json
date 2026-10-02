@@ -1,0 +1,92 @@
+{
+ "positions": [
+  "CO",
+  "BTN",
+  "SB",
+  "BB"
+ ],
+ "stack": 29.88888888888889,
+ "posts": [
+  0,
+  0,
+  0.5,
+  1.0
+ ],
+ "ante": 0.1111111111111111,
+ "limp": false,
+ "open_raises": [
+  2.0
+ ],
+ "raise_mults": [
+  3.0
+ ],
+ "max_raises": 4,
+ "add_allin": true,
+ "allin_threshold": 0.85,
+ "rake_pct": 0.0,
+ "rake_cap": 0.0,
+ "no_flop_no_drop": true,
+ "realization": "static",
+ "call_only_seats": [],
+ "open_raises_by_seat": [
+  [
+   2.0
+  ],
+  [
+   2.0
+  ],
+  [
+   2.5
+  ],
+  [
+   2.0
+  ]
+ ],
+ "raise_mults_by_seat": [
+  [
+   3.0
+  ],
+  [
+   3.0
+  ],
+  [
+   3.5
+  ],
+  [
+   3.5
+  ]
+ ],
+ "fourbet_mults": [
+  2.2
+ ],
+ "fourbet_mults_by_seat": [
+  [
+   2.2
+  ],
+  [
+   2.2
+  ],
+  [
+   2.2
+  ],
+  [
+   2.2
+  ]
+ ],
+ "dead_money": 0.5555555555555556,
+ "t2_ante_rule": {
+  "model": "uniform_total_1bb",
+  "hand_start_players": 9,
+  "hand_start_stack_bb": 30.0,
+  "cfg_stack_after_ante_bb": "30.0 - 1/9",
+  "per_player_ante_bb": "1/9",
+  "folded_before_subgame": [
+   "UTG",
+   "UTG1",
+   "MP",
+   "LJ",
+   "HJ"
+  ],
+  "dead_money_bb": "5/9"
+ }
+}

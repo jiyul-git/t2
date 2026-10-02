@@ -13,7 +13,7 @@ fn bench_gpu_six_max() {
         positions: vec!["UTG".into(), "HJ".into(), "CO".into(), "BTN".into(), "SB".into(), "BB".into()],
         stack: 100.0,
         posts: vec![0.0, 0.0, 0.0, 0.0, 0.5, 1.0],
-        ante: 0.0,
+        ante: 0.0, dead_money: 0.0,
         limp: true,
         open_raises: vec![2.5, 4.0],
         raise_mults: vec![3.0],

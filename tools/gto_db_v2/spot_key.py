@@ -26,7 +26,7 @@ _ORDER_FROM_BB = ['BB', 'SB', 'BTN', 'CO', 'HJ', 'LJ', 'MP', 'UTG1', 'UTG']
 ALIASES = {'UTG+1': 'UTG1', 'UTG+2': 'MP', 'EP': 'UTG', 'EP1': 'UTG', 'EP2': 'UTG1', 'MP1': 'MP', 'MP2': 'LJ', 'MP3': 'HJ',
            'BU': 'BTN', 'BUTTON': 'BTN', 'D': 'BTN', 'SMALL_BLIND': 'SB', 'BIG_BLIND': 'BB'}
 ACTIONS = {'fold', 'check', 'call', 'raise', 'allin'}
-ANTE_MODELS = {'none', 'per_player', 'bb_ante'}
+ANTE_MODELS = {'none', 'per_player', 'bb_ante', 'uniform_total'}   # uniform_total: total amount_bb split equally over hand_start_players
 
 
 def positions(n):
@@ -53,7 +53,11 @@ def pos_name(p, table):
 def canonical_state(raw):
     """raw: {'table_players', 'hero', 'stacks_bb' (number or {pos: number}), 'blinds_bb' {'sb','bb'}, 'ante' {'model','amount_bb'},
     'history' [{'pos','act','to_bb'?}], 'format' ('MTT'|'cash'), 'icm' (None|'none'|{...}), 'rake' {'pct','cap_bb'}, 'variant', 'street'}"""
-    n = int(raw['table_players'])
+    # table_players IS hand_start_players: the seats dealt in at the start of the hand. A 4-seat continuation of a 9-max
+    # hand is a 9-player state whose history holds the 5 folds; it never shares a key with a 4-max hand.
+    if 'hand_start_players' in raw and 'table_players' in raw and int(raw['hand_start_players']) != int(raw['table_players']):
+        raise ValueError('hand_start_players and table_players disagree')
+    n = int(raw.get('hand_start_players', raw.get('table_players')))
     table = positions(n)
     if raw.get('street', 'preflop') != 'preflop':
         raise ValueError('only preflop states are defined in state version 1')

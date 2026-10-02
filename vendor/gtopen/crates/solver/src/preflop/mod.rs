@@ -80,6 +80,13 @@ pub struct PreflopConfig {
     /// Dead ante per seat (goes to the pot, does not count toward calls).
     #[serde(default)]
     pub ante: f64,
+    /// Dead money already in the pot that belongs to no seat of this game, e.g. the antes of the
+    /// players who were dealt in and folded before this continuation subgame started (T2 uniform
+    /// ante: every one of the hand_start_players dealt in pays 1/N bb; a 4-seat continuation of a
+    /// 9-max hand keeps the 5 folded antes = 5/9 bb here). Counts in every node's pot, never toward
+    /// a call or a seat's investment. 0 (the default, not serialized) leaves every existing tree unchanged.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub dead_money: f64,
     /// Allow open-limps / limps behind (calls with no raise pending).
     #[serde(default)]
     pub limp: bool,
@@ -127,6 +134,7 @@ pub struct PreflopConfig {
 }
 
 fn is_false(value: &bool) -> bool { !*value }
+fn is_zero(value: &f64) -> bool { *value == 0.0 }
 
 impl PreflopConfig {
     pub fn first_to_act(&self) -> usize { usize::from(self.utg_straddle) }
@@ -851,7 +859,7 @@ impl PreflopSolver {
 
     fn build(&mut self, st: BuildState, lim_nodes: u64, lim_mb: f64) -> Result<u32, String> {
         let live = ((1u32 << self.n) - 1) & !st.folded;
-        let pot: f64 = st.invested.iter().sum();
+        let pot: f64 = st.invested.iter().sum::<f64>() + self.cfg.dead_money;
 
         // fold-win terminal
         if self.live_count(live) == 1 {
@@ -3070,9 +3078,13 @@ fn validate(cfg: &PreflopConfig) -> Result<usize, String> {
     if !cfg.ante.is_finite() || cfg.ante < 0.0 {
         return Err(format!("ante must be finite and >= 0, got {}", cfg.ante));
     }
+    if !cfg.dead_money.is_finite() || cfg.dead_money < 0.0 {
+        return Err(format!("dead_money must be finite and >= 0, got {}", cfg.dead_money));
+    }
     let biggest_post = cfg.posts.iter().cloned().fold(0.0, f64::max);
     if cfg.stack <= biggest_post {
         return Err("stack must exceed the biggest blind".into());
+
     }
     if let Some(&s) = cfg.call_only_seats.iter().find(|&&s| s >= n) {
         return Err(format!("call_only_seats index {s} out of range for {n} seats"));

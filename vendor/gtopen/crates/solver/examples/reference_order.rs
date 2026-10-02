@@ -19,7 +19,7 @@ fn main() {
         positions: positions.iter().map(|s| s.to_string()).collect(),
         stack: 100.0,
         posts: vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0],
-        ante: 0.0,
+        ante: 0.0, dead_money: 0.0,
         limp: false,
         open_raises: vec![2.5],
         raise_mults: vec![3.0],

@@ -2,5 +2,11 @@
  "status": "paused",
  "reason": "ante rule change: uniform total 1BB over hand_start_players; the E1 config must inherit the 9-max uniform-ante state before continuing",
  "paused_at": "2026-10-02T22:46:04Z",
- "artifacts": "step0 flop artifacts kept unchanged (solved under the old 4 x 0.25 ante config); not valid for the new rule; never reused without a matching provenance key"
+ "artifacts": "step0 flop artifacts kept unchanged (solved under the old 4 x 0.25 ante config); not valid for the new rule; never reused without a matching provenance key",
+ "ante_fix": {
+  "gtopen": "PreflopConfig.dead_money (default 0, not serialized -> existing configs and A4c results reproduce bit-identically); continuation config cfg_4h_mr4_30bb_ua9.json: stack 30 - 1/9 (GTOpen stack is after the ante), ante 1/9, dead_money 5/9",
+  "verifier": "data/gto_terminal_expansion/uniform_ante_verify.json: N = 5..9 PASS (reference engine + GTOpen tree at nodes 6 and 28)",
+  "old_semantics_note": "the A4c config (stack 30, ante 0.25) meant 30 bb behind after a 0.25 ante, i.e. a 30.25 bb hand-start stack, 4 x 0.25 ante",
+  "restart": "needs prereg amendment 2 (new config, start state x0 = preflop solve of the new config with the A4c Vext tables) and user confirmation before any large solve"
+ }
 }

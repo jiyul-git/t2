@@ -257,7 +257,7 @@ mod tests {
         let cfg = PreflopConfig {
             utg_straddle: false,
             positions: vec!["BTN".into(), "SB".into(), "BB".into()],
-            stack: 2.0, posts: vec![0.0, 0.5, 1.0], ante: 0.0,
+            stack: 2.0, posts: vec![0.0, 0.5, 1.0], ante: 0.0, dead_money: 0.0,
             limp: false, open_raises: vec![], raise_mults: vec![],
             max_raises: 1, add_allin: true, allin_threshold: 0.85,
             rake_pct: 0.0, rake_cap: 0.0, no_flop_no_drop: true,

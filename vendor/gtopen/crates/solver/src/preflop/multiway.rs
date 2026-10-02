@@ -286,6 +286,7 @@ mod tests {
             stack: 4.0,
             posts: vec![0.0, 0.5, 1.0],
             ante: 0.0,
+            dead_money: 0.0,
             limp: true,
             open_raises: vec![],
             raise_mults: vec![],

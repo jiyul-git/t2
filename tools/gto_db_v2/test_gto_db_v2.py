@@ -42,6 +42,15 @@ def main():
     res['distinct_ante'] = k(hero='SB') != k(hero='SB', ante={'model': 'bb_ante', 'amount_bb': 1})
     res['distinct_size'] = k(hero='BB', history=[{'pos': 'SB', 'act': 'raise', 'to_bb': 2.5}]) != k(hero='BB', history=[{'pos': 'SB', 'act': 'raise', 'to_bb': 3}])
     res['distinct_table'] = k(hero='SB') != SK.key_of({**BASE, 'table_players': 5, 'hero': 'SB'})[0]
+    # uniform ante, hand_start_players: a 9-max hand with 5 folds is not a 4-max hand; N enters the key
+    ua = {'model': 'uniform_total', 'amount_bb': 1}
+    k9 = SK.key_of({'table_players': 9, 'stacks_bb': 30, 'ante': ua, 'hero': 'CO'})[0]
+    k9b = SK.key_of({'hand_start_players': 9, 'stacks_bb': 30, 'ante': ua, 'hero': 'CO',
+                     'history': [{'pos': p, 'act': 'fold'} for p in ('UTG', 'UTG1', 'MP', 'LJ', 'HJ')]})[0]
+    k4 = SK.key_of({'table_players': 4, 'stacks_bb': 30, 'ante': ua, 'hero': 'CO'})[0]
+    k8 = SK.key_of({'table_players': 8, 'stacks_bb': 30, 'ante': ua, 'hero': 'CO'})[0]
+    res['uniform_ante_hand_start_players'] = k9 == k9b and len({k9, k4, k8}) == 3
+    res['uniform_vs_bba_distinct'] = k9 != SK.key_of({'table_players': 9, 'stacks_bb': 30, 'ante': {'model': 'bb_ante', 'amount_bb': 1}, 'hero': 'CO'})[0]
     # invalid states rejected
     res['reject_hero_not_next'] = raises(lambda: k(hero='CO', history=[{'pos': 'BTN', 'act': 'raise', 'to_bb': 2.5}]))
     res['reject_overstack'] = raises(lambda: k(hero='BB', history=[{'pos': 'BTN', 'act': 'raise', 'to_bb': 31}]))
