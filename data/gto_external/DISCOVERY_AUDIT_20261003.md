@@ -2,7 +2,7 @@
 
 ## Goal
 
-Collect external **scenario × position × stack × 169-hand** preflop action-frequency / EV evidence for T2 without filling gaps with hand-authored or extrapolated pseudo-GTO. Canonical target remains **9-max NLHE MTT, 1 BB big-blind ante (BBA)**.
+Collect external **scenario × position × stack × 169-hand** preflop action-frequency / EV evidence for T2 without filling gaps with hand-authored or extrapolated pseudo-GTO. Canonical target is **9-max NLHE MTT with `uniform_total_1bb` ante**: 1/9 BB from each player dealt in, total 1 BB; folds do not re-split it.
 
 ## Already imported and redistributable
 
@@ -18,7 +18,7 @@ Collect external **scenario × position × stack × 169-hand** preflop action-fr
   - index: `data/gto_external/jensbaagaard_9max_mtt/charts/INDEX_9MAX.json`
 - **No 30 BB pack exists in this source.** 20/40 BB may be used for stack-sensitivity cross-checking, but not as an exact 30 BB hand-level reference.
 - Families include RFI, limp, call-vs-open, 3bet, call-vs-3bet, 4bet, call-vs-4bet, 5bet, call-vs-5bet.
-- Keep its original assumptions; do not silently reinterpret it as arbitrary asymmetric stacks or exact T2 BBA.
+- Keep its original assumptions; do not silently reinterpret it as arbitrary asymmetric stacks or exact T2 uniform-total ante.
 
 ### RangeMyHand push/fold
 - 9-max + 6-max, **1–25 BB**, CC BY 4.0.
@@ -110,14 +110,14 @@ Reject. Its deep RFI generator explicitly labels the output as teaching-referenc
 Keep only as auxiliary unverified reference. It has useful 9-max 100 BB RFI / vs-RFI / vs-3bet categories, but not precise mixed frequencies and the underlying chart provenance is insufficiently established for promotion.
 
 ### Braininhood/Portfolio Poker AI
-Useful solver implementation reference, not target data. Its default preflop abstraction is 100 BB, ante=0, 2.5 BB raise and max_raises=1; that is not T2's 1 BB-BBA MTT target.
+Useful solver implementation reference, not target data. Its default preflop abstraction is 100 BB, ante=0, 2.5 BB raise and max_raises=1; that is not T2's uniform-total-1BB MTT target.
 
 ### zwarag/gto-open
 Watch only. The repository currently describes a planned open GTO database, but no solved v0 preflop corpus was found.
 
 ## Discovery/search rule
 
-Before writing "no hand-level reference exists", search both the operational DB and harvested external-data branches. Current provenance-free operational materialization contains **248,430 9-max rows**: 227,305 full-tree-family rows plus 21,125 1–25 BB open-shove rows.
+Before writing "no hand-level reference exists", search both the operational DB and harvested external-data branches. Current provenance-free operational materialization contains **352,534 9-max rows**: 227,305 full-tree-family rows + 21,125 1–25 BB open-shove rows + 104,104 flattened HoldemMath shove/call rows.
 
 For 30 BB, distinguish:
 - **hand-level reference exists in neighboring stacks**: yes, 20/40 BB in the Jens pack;
@@ -134,7 +134,7 @@ Highest-priority missing **redistributable, exact-or-near-exact 9-max 1 BB-BBA**
 4. **Asymmetric effective stacks** rather than one symmetric stack bucket.
 5. **SB limp / limp-reraise trees** at tournament depths.
 6. Per-hand **EV as well as action frequency** at non-push/fold nodes.
-7. 4bet+ branches under the exact BBA configuration.
+7. 4bet+ branches under the exact uniform-total configuration.
 
 ## Data-quality rule going forward
 
