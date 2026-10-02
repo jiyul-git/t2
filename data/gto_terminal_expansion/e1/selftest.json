@@ -1,0 +1,11 @@
+{
+ "schema": "e1_selftest",
+ "test": "e1_run.py step 0 on the A4c artifacts with the P14 terminals (E1_OUT scratch, stop after Delta)",
+ "expect": "V_raw == A4c Vext exactly; raw solve reproduces Gext; Delta_raw signed = 0 for every seat and node",
+ "result": {
+  "vraw_vs_V_k_max_abs": 0.0,
+  "delta_signed_all_zero": true,
+  "max_check": 0.0
+ },
+ "pass": true
+}
