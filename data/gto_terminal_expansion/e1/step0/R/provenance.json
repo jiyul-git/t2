@@ -1,0 +1,18 @@
+{
+ "step": 0,
+ "source": "A4c Gext point terminal exports (x_0)",
+ "files": {
+  "6": {
+   "path": "data/gto_terminal_expansion/e1/step0/R/terminal_node6.json",
+   "sha256": "1c62e30645ef4b9d7a9297cd84efb9d513d59686928cdcc5431d40682efd6edc",
+   "source_sha256": "1c62e30645ef4b9d7a9297cd84efb9d513d59686928cdcc5431d40682efd6edc",
+   "ranges_hash_fnv1a64": "27af42e0c3607d56"
+  },
+  "28": {
+   "path": "data/gto_terminal_expansion/e1/step0/R/terminal_node28.json",
+   "sha256": "70a84b6d35a3d517b188d3e43aec6560cab35f0f0731ac7b48128b1e2535b048",
+   "source_sha256": "70a84b6d35a3d517b188d3e43aec6560cab35f0f0731ac7b48128b1e2535b048",
+   "ranges_hash_fnv1a64": "ee15571176d1ed36"
+  }
+ }
+}

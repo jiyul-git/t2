@@ -1,0 +1,21 @@
+{
+ "schema": "e1_prereg_amendment",
+ "amendment": 1,
+ "parent": "data/gto_terminal_expansion/e1/prereg.json (e65917a)",
+ "timing": "2026-10-03, before any E1 solve",
+ "loss_scale": {
+  "signed": "every signed seat dEV and node regret excess (point raw residual and each bootstrap replicate) is stored unchanged for diagnostics",
+  "primary_Delta_raw": "Delta_raw = max(0, signed loss / excess) per primary seat and node",
+  "U_k": "each replicate loss_r = max(0, signed metric of sigma_r in G_raw,k); U_k = mean(loss_r, r = 1..60)",
+  "negative_signed": "a negative signed value means no loss detectable within the current raw solve residual / noise; it is never read as a negative residual"
+ },
+ "wording": {
+  "pass": "Delta_raw,k <= U_k for every primary metric = \"converged at current panel resolution\" (panel-resolution outer-consistent)",
+  "never": "not a proof of true fixed-point convergence: U_k is a bootstrap panel-error scale, not a fixed-point bound"
+ },
+ "execution": {
+  "step0_only": "run step 0 (450 postflop at R_0, raw solve, U_0, stop decision) and report; step 1 is not started automatically",
+  "capped_board": "any board above 0.300% pot at the cap stops the step decision and is reported"
+ },
+ "unchanged": "everything else in prereg.json"
+}
