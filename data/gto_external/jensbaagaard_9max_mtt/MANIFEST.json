@@ -28,8 +28,15 @@
       "SB",
       "BB"
     ],
-    "scenario_key_count_per_file": 271,
-    "note": "Raw upstream action-frequency tables. They are reference data, not T2-native exact-BBA solves. These packs use one nominal/effective stack depth per set; they do not encode arbitrary per-seat asymmetric stack vectors."
+    "note": "Raw source pack retained separately. Operational DB expands each action table to 169 hand classes and does not carry source/provider/chart provenance in runtime rows.",
+    "raw_top_level_keys_per_file": 271,
+    "action_table_keys_per_file": 269,
+    "utility_keys_per_file": [
+      "EmptyRange",
+      "WideRange"
+    ],
+    "operational_action_tables_total": 1345,
+    "operational_hand_frequency_rows_total": 227305
   },
   "files": [
     {
@@ -69,5 +76,5 @@
     "5bet",
     "call_vs_5bet"
   ],
-  "policy": "Keep upstream provenance and assumptions. Do not blend with T2-native solved data. Normalize/query through an adapter later."
+  "policy": "Raw/legal artifacts remain separate. Runtime normalization stores poker-state/action/hand/frequency data only; do not blend incompatible stack/ante assumptions or silently interpolate missing states."
 }
