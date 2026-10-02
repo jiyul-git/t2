@@ -33,7 +33,11 @@
         "symmetric nominal/effective stack packs",
         "not arbitrary per-seat stack vectors",
         "source assumptions retained"
-      ]
+      ],
+      "action_tables_per_stack": 269,
+      "utility_keys_per_stack": 2,
+      "operational_action_tables": 1345,
+      "operational_rows_9max": 227305
     },
     {
       "id": "holdemmath_pushfold_9max",
@@ -239,7 +243,6 @@
         9
       ],
       "stacks_bb": "1..25",
-      "rows": 38025,
       "hand_classes": 169,
       "model": "chip-EV Nash push/fold equilibrium (fictitious play)",
       "coverage": [
@@ -249,7 +252,10 @@
         "no ante",
         "chipEV only",
         "shove-or-fold abstraction"
-      ]
+      ],
+      "spots_all_formats": 225,
+      "spots_9max": 125,
+      "rows_9max": 21125
     },
     {
       "id": "daily_poker_spot_pushfold_9max_bba",
@@ -494,5 +500,12 @@
         "embed snippets are permitted with credit, but this is not a raw-data redistribution license"
       ]
     }
-  ]
+  ],
+  "operational_summary": {
+    "table_players": 9,
+    "provenance_fields_in_runtime_rows": false,
+    "fulltree_family_rows": 227305,
+    "pushfold_rows_1to25": 21125,
+    "total_rows": 248430
+  }
 }
