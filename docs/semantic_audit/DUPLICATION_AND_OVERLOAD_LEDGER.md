@@ -360,3 +360,37 @@
 - 시드 11 `e6d8b5e5…`: 불변. 위 변화가 시드 11 에서는 실제 행동 분기로 이어지지 않았다.
 - 시드 12 `8c33ece5…`: 쌍 비교로 확인한 변화(fold_p 1, 개선된 블러프 1, 멀티웨이 오버벳 rel 10) 중 하나 이상에서 갈라졌다.
 - 측정 도구: `tools/b3_integration_attribution.py`. 측정 실행 지문이 일반 sim 지문과 같다.
+
+## 9단계 B4 통합 (persona / concept 역할)
+
+기준 `217bb4c0`.
+
+### 판정
+
+| ID | 충돌 | 최종 선택 | 근거 | 검증 |
+|---|---|---|---|---|
+| L148 | 콜 문턱 편향이 두 번 적용됨: `calldown_need` → `persona.call_bias`(station, bluff_fear, draw_love, sticky), decide_response 마지막 분기 → `apply_response_biases_to_call_threshold`(station, bluff_fear 재적용 + hero_call) | `persona.call_bias` 한 곳에서 한 번. hero_call 은 거울상인 bluff_fear 와 같은 노출(street × size)로 call_bias 에 편입. 두 번째 적용 함수는 삭제 | call_bias 는 선언된 주관 문턱 층이다(L145). 모든 응답 분기와 layer-call EV 가 이 need 를 쓴다. 두 번째 적용은 마지막 분기에서만 같은 기질을 다시 곱했다 | 같은 상태 쌍 비교(`tools/b4_integration_attribution.py`): 마지막 분기 514회 중 8회 콜 → 폴드(시드 11: 2, 시드 12: 6). 반대 방향 0 |
+| L008/L009 | bluffcatch 숙련이 hero_call 편향을 **키움**(0.45·S). 최대 숙련·중립 기질에서 +0.25 | 숙련 항 방향을 bluff_fear 와 같게: 0.45·(10 − S). 계수는 유지 | 숙련은 오류를 줄인다(편향은 최대 숙련에서 0 이하라는 설계 규칙). hero_call 과 bluff_fear 는 같은 블러프 판정 오류의 두 방향이다. 방향을 정하는 것은 기질(aggression, tilt_prone)이다 | 최대 숙련 hero_call +0.25 → −0.65(비활성). 위 8회 뒤집힘이 이 편향 소멸의 결과다 |
+| HM3 CALC_NOISE_V3 / L114, L021~L023 | potodds·spr 계산 오차: legacy 공통 양(+) bias vs 3차 평균 0 대칭 오차(outs 는 둘 다 방향성 유지) | 3차를 유일 경로로. 플래그 퇴역 | 산술 오차에는 보편적인 부호가 없다. legacy 는 대칭 경계에서 잘못된 과잉 폴드 0.631 vs 잘못된 콜 0.305 를 만들었다(`tools/verify_calc_noise_v3.py` C5). 사람의 방향성은 station/bluff_fear 가 이미 담당한다. SPR 은 중립 쪽으로 당기는 인지 모델이 따로 있어 legacy 상향 bias 가 그것을 상쇄했다(C6) | 최대 숙련에서는 비트 동일(gauss 한 번, σ = 0.02 에서 clamp 비활성). 검증기 6/6 |
+| HM3 PREFLOP_TEMPER_DIRECTION_V3 | 기질 방향 정규화 /4(0 = 1, 9 = 10 으로 잘림) vs /5 | /5 를 유일 경로로. 플래그 퇴역 | 기질은 중점 5 인 0..10 척도다. /4 의 끝점 붕괴는 척도 오류이지 판단이 아니다. 기록된 감사(CONCEPT_SYSTEM §15): 끝점 동점 제거, 디펜스 clamp 감소(q = .4: 7.17% → 5.92%), 끝점과 중점 불변 | 중립 기질 baseline 불변. 검증기 5/5(legacy 는 검증기 안의 참조식으로만 남김) |
+
+### 개념 역할 항목 (같은 질문인가)
+
+아래 항목은 소비처들이 같은 능력 질문을 하므로 공급자 하나가 최종이다. 따로 갈라진 실행 경로는 없다.
+- **L001 bluff, L020 reraise**: 포스트플랍 소비처는 같은 질문이다. 프리플랍 소비처(`preflop.py` 3bet bluff_skill, `persona` traits.threebet)는 9-max 3bet 지식(R2)과 얽혀 마지막 B1/B2 통합에서 판정한다.
+- **L002 semibluff**: river 에서는 코드가 street != river 로 이미 제외한다.
+- **L006/L007 checkraise**: L-S9-07 이후 production 소비처는 모두 street 해석이다. 아키타입 경로는 street 구분이 없는 데이터다.
+- **L012 blockbet, L013 potcontrol, L014 trap, L034 range_merge**: 각 소비처가 같은 계획 능력을 묻는다.
+- **L019 stackoff**: 중간 밸류 판단, 밸류 레이즈, 커밋 목표가 모두 '스택을 걸 계획을 세우는 능력'이다.
+- **L025 blocker, L026 icm, L036 fold_equity**: 각각 한 가지 지식이다.
+- **L028 sizing_tell**: 상대 사이즈 읽기와 자기 사이즈 위장은 '사이즈에 정보가 담긴다'는 같은 지식의 두 방향이다.
+- **L021~L023 outs/potodds/spr**: 숙련 = 계산 정밀도. 오차의 의미는 CALC_NOISE 판정으로 확정했다.
+
+### B4 에서 남긴 것
+
+- `GTO_MEMORY_V2` 와 `PREFLOP_REASONING_V3` 는 마지막 B1/B2 통합에서 판정한다.
+  - 둘 다 프리플랍 차트 기억을 '현재 조건 reference'(9-max `gto.rfi`/`defend_pct`)로 옮기는 것을 다룬다. 이 reference 는 R2 의 미검증 9-max 수치다.
+  - 사용자 지시에 따라 그 단계에서 완성된 DB, 자체 계산 결과, 공개 자료 또는 최소 직접 계산으로 근거를 확보해 결론 낸다.
+- `persona.exploit_weight` 와 그 플래그는 production 소비처가 없다. B5 에서 검증기와 함께 퇴역한다.
+
+새 baseline(B4): 시드 11 `7ce1561d…`, 시드 12 `ef73996c…`.

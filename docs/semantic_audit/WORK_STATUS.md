@@ -130,3 +130,9 @@
   - 판정 8건: L-S9-02a, 03(이진/연속), 04, 05, 06(현 경계 확정), 07, HM3 EXPLOIT_WEIGHT_V3(trap) — 미결정 0.
   - 새 baseline: 시드 11 `e6d8b5e5…`, 시드 12 `8c33ece5…`.
 - 다음: B4(persona/concept 역할) — GTO_MEMORY_V2, PREFLOP_TEMPER_DIRECTION_V3, CALC_NOISE_V3, PREFLOP_REASONING_V3(persona 쪽)의 판정과 통합.
+- **B4 통합 완료.**
+  - 판정 4건(L148 이중 편향, L008/L009 hero_call 방향, CALC_NOISE_V3, PREFLOP_TEMPER_DIRECTION_V3).
+  - 개념 역할 항목 16개 확인(같은 질문 → 단일 공급자). 미결정 0.
+  - GTO_MEMORY_V2 / PREFLOP_REASONING_V3 는 9-max 근거가 필요해 마지막 B1/B2 통합으로 넘겼다(사용자 지시).
+  - 새 baseline: 시드 11 `7ce1561d…`, 시드 12 `ef73996c…`.
+- 다음: B5(호환 / 이름 / 옛 경로 제거).

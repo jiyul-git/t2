@@ -423,7 +423,7 @@ NEW_ROWS = [
     row('call_threshold_bias',
         '콜 문턱 성향 편향: station(넓게 콜), bluff_fear(상대 블러프를 과소평가해 접음), hero_call(블러프로 몰아 콜)',
         ALL3, 'PERSONALITY / TEMPERAMENT', 'JUDGMENT', 'persona.bias;persona.interpret_bluff_threat_bias',
-        'persona.call_bias;plan.apply_response_biases_to_call_threshold',
+        'persona.call_bias',  # stage9 B4: single application (L148)
         'looseness, gamble, discipline, potodds, street bluffcatch, aggression, range_read, tilt_prone',
         'bias -1..1', 'H', 'reasoning', 'DUPLICATED', YES,
         'applied twice (calldown_need via call_bias and decide_response via '
@@ -689,7 +689,6 @@ sp('continuation_bet_frequency_core', 'plan', '_continuation_frequency')
 sp('trap_induction', 'plan', 'opp_bet_prob')
 sp('opponent_trap_target', 'plan', 'select_field_opponent', "if purpose == 'bet_probability':", 'score=opp_bet_prob(est,w,street)')
 sp('opponent_fold_constraint', 'plan', 'select_field_opponent', 'else:', "score=float(rd.get('w',0.0))*float(PS.street_gap(rd,street) or 0.0)")
-sp('call_bias_reapplication', 'plan', 'apply_response_biases_to_call_threshold')
 sp('checkraise_value_probability_floor', 'plan', '_checkraise_value_floor_probability')
 sp('checkraise_river_decision', 'plan', 'checkraise_decision', "if street == 'river':")
 sp('checkraise_flop_decision', 'plan', 'checkraise_draw_street_probability')

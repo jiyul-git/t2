@@ -238,3 +238,24 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - L-S9-07 / trap 읽기는 최대 숙련, exploit 중립 baseline 에서 드러나지 않는다. 그래서 필드 프로필로 따로 측정했다(ledger).
 - completeness: site 1,135 / 함수 614 / 상수 표 87, 미소유 0.
 - 23-gate: 통과·실패 집합(17/6)과 출력 줄이 기준과 같다.
+
+## 10차 — 9단계 B4 통합 (persona / concept 역할)
+
+기준 `217bb4c0`. 판정은 ledger "9단계 B4 통합" 절.
+
+코드 변경:
+- `persona.call_bias` 가 hero_call 을 포함하는 유일한 콜 문턱 편향 적용 지점이 됐다.
+- `plan.apply_response_biases_to_call_threshold` 와 decide_response 의 재적용을 삭제했다.
+- `persona.bias('hero_call')` 의 숙련 방향을 바꿨다.
+- `calc_noise` 와 `preflop_temper_direction` 을 3차 경로로 단일화하고 플래그 2개를 퇴역했다.
+
+검증기 갱신:
+- `verify_calc_noise_v3`, `verify_preflop_temper_direction_v3`: legacy 는 검증기 안의 참조식으로만 남긴다.
+- `verify_range_read_semantics`: 의도된 변경은 명시적으로 제외하고 새 계약을 검사한다.
+- `verify_human_model_v3_integration`: 퇴역 플래그를 목록에서 제외했다.
+
+검증:
+- 같은 상태 쌍 비교: 마지막 콜/폴드 분기 514회 중 8회 콜 → 폴드.
+- 새 baseline: 시드 11 `7ce1561d…`, 시드 12 `ef73996c…`.
+- completeness: site 1,132 / 함수 613 / 상수 표 87, 미소유 0.
+- 23-gate: 통과·실패 집합(17/6)과 출력 줄이 기준과 같다.

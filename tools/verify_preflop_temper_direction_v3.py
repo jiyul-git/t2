@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Verify full-scale preflop temperament direction for Human Model v3."""
+"""Verify full-scale preflop temperament direction for Human Model v3.
+
+Stage 9 B4: the full-scale /5 direction is the only production path (flag
+retired).  The historical /4 mapping is kept here only as a reference
+implementation so the before/after evidence (T1, T5) stays reproducible.
+"""
 import json, pathlib, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
@@ -18,20 +23,22 @@ def prof(skill=2.0, loose=5.0, aggr=5.0):
             'gamble':5.0,'bluff':5.0}
 
 
+def legacy_direction(v):
+    return max(-1.0, min(1.0, (float(v) - 5.0) / 4.0))
+
+
 def main():
     checks={}
-    old=PS.PREFLOP_TEMPER_DIRECTION_V3
+    prod_dir=PS.preflop_temper_direction
     old_reason=PS.PREFLOP_REASONING_V3
     try:
-        # T1 OFF reproduces exact historical /4 mapping.
-        PS.PREFLOP_TEMPER_DIRECTION_V3=False
-        vals_off=[PS.preflop_temper_direction(x) for x in range(11)]
-        exp=[max(-1.0,min(1.0,(x-5.0)/4.0)) for x in range(11)]
-        checks['T1_legacy_direction_exact']={
-            'pass':vals_off==exp,'values':vals_off}
+        # T1 the retired /4 reference collapses 0/1 and 9/10 (why it was retired).
+        vals_off=[legacy_direction(x) for x in range(11)]
+        checks['T1_legacy_reference_collapses_endpoints']={
+            'pass':vals_off[0]==vals_off[1] and vals_off[9]==vals_off[10],
+            'values':vals_off}
 
-        # T2 ON uses the whole 0..10 scale without endpoint collisions.
-        PS.PREFLOP_TEMPER_DIRECTION_V3=True
+        # T2 production uses the whole 0..10 scale without endpoint collisions.
         vals_on=[PS.preflop_temper_direction(x) for x in range(11)]
         exp_on=[(x-5.0)/5.0 for x in range(11)]
         checks['T2_full_scale_mapping']={
@@ -80,11 +87,11 @@ def main():
         reps=[]
         for t in range(11):
             p=prof(2,t,t)
-            PS.PREFLOP_TEMPER_DIRECTION_V3=False
+            PS.preflop_temper_direction=legacy_direction
             a=PS.open_pct(p,'HJ',8,40.0,True)
             d=PF.defend_thresholds(p,'BB','BTN',40.0,
                                    open_bb=2.5,seats=8,ante=True)
-            PS.PREFLOP_TEMPER_DIRECTION_V3=True
+            PS.preflop_temper_direction=prod_dir
             b=PS.open_pct(p,'HJ',8,40.0,True)
             e=PF.defend_thresholds(p,'BB','BTN',40.0,
                                    open_bb=2.5,seats=8,ante=True)
@@ -112,7 +119,7 @@ def main():
             'rows':[{k:(round(v,6) if isinstance(v,float) else v)
                      for k,v in x.items()} for x in reps]}
     finally:
-        PS.PREFLOP_TEMPER_DIRECTION_V3=old
+        PS.preflop_temper_direction=prod_dir
         PS.PREFLOP_REASONING_V3=old_reason
 
     passed=all(v['pass'] for v in checks.values())

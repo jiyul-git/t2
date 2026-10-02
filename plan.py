@@ -1570,20 +1570,6 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
     }
 
 
-def apply_response_biases_to_call_threshold(need, size_frac, street,
-                                           station_bias, bluff_fear_bias, hero_call_bias):
-    """Apply already interpreted biases to the call/fold threshold.
-
-    No range reconstruction or opponent classification occurs here. Inputs
-    may later come from independent interpretation/application models.
-    """
-    need *= max(0.55, 1.0 - 0.22*max(0.0, station_bias))
-    late_weight = min(1.0, size_frac/0.9) * (1.0 if street == 'river' else 0.65)
-    need *= 1.0 + 0.30*max(0.0, bluff_fear_bias)*late_weight
-    need *= max(0.60, 1.0 - 0.18*max(0.0, hero_call_bias)*late_weight)
-    return max(0.02, min(0.97, need))
-
-
 def paired_board_flush_raise_damp(board, made_now):
     """넛급 레이즈에서 페어 보드 위 플러시(made 5)의 취약성 감쇠(ledger L116, 응답 문맥).
 
@@ -1870,18 +1856,12 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
             '포기/블러프 계획 + 팟오즈 미달%s → 폴드'
             % (' [layer]' if _layer_call else ''))
 
-    # --- 인식 편향: 같은 eq/need 여도 사람마다 다르게 결정한다 ---
-    # station / bluff_fear / hero_call 은 전부 이 판단을 재려고 만든 축인데
-    # 아무도 읽지 않아 죽어 있었다. 결과적으로 콜/폴드가 순수 산수였다.
+    # --- 인식 편향은 이미 need 에 들어 있다 ---
+    # station / bluff_fear / hero_call / draw_love / sticky 는 calldown_need 의
+    # persona.call_bias 에서 한 번만 적용된다(L148). 여기서 다시 곱하면 같은
+    # 기질이 두 번 반영된다.
     need_seen = _cf_need if _layer_call else need
     _eq_seen = _cf_eq if _layer_call else eq
-    if has_c:
-        sz = tocall/max(1.0, float(pot) - tocall)
-        need_seen = apply_response_biases_to_call_threshold(
-            need_seen, sz, street,
-            PS.bias(profile, 'station'),
-            PS.bias(profile, 'bluff_fear', street),
-            PS.bias(profile, 'hero_call', street))
     act = 'call' if _eq_seen >= need_seen else 'fold'
     return act, 0.0, need_seen, (
         'eq %.3f vs 체감 need %.3f (실제 %.3f)%s'
@@ -3546,9 +3526,8 @@ def record_deviation(state, street, executed_action, planned_action, reason=''):
     return st
 
 
-# 계획 → 실행에 필요한 개념(_allowed). 'trap' 은 generic 'checkraise' 별칭을 쓰는데
-# persona.street_concept 를 거치지 않으므로 street 와 무관하게 같은 별칭 값을 읽는다
-# (ledger L157 — flop/late 분리 별칭으로 바꾸는 것은 공급 변경이라 LATER).
+# 계획 → 실행에 필요한 개념(_allowed). street 공유 개념('checkraise')은 _allowed 가
+# persona.street_concept 로 지금 street 의 능력으로 해석한다(L157 / L-S9-07).
 PLAN_REQUIRED_CONCEPT = {'bluff_2street': 'bluff', 'semibluff': 'semibluff', 'trap': 'checkraise',  # street 별로 해석(_allowed)
                          'block': 'blockbet', 'pot_control': 'potcontrol',
                          'river_bluff': 'barrel_river', 'thin_river': 'thin_value_river'}

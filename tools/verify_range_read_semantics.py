@@ -1,4 +1,11 @@
-"""Compare real checkpoint functions, including RNG and mutated response state."""
+"""Compare real checkpoint functions, including RNG and mutated response state.
+
+Stage 9 B4 intentional changes (ledger "9단계 B4 통합") are excluded from the
+identity comparison against BASE and checked as new contracts instead:
+  - bias('hero_call'): bluffcatch skill now reduces the bias (mirror of bluff_fear);
+  - decide_response no longer re-applies station/bluff_fear/hero_call — call
+    threshold biases are applied once in persona.call_bias (calldown_need).
+"""
 import ast, copy, itertools, json, pathlib, random, subprocess, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
 import persona as PS, ranges as R, plan as P
@@ -19,6 +26,7 @@ estimates=[None,{}, {'confidence':0,'n':20}, {'confidence':.8,'n':36}, {'confide
 for p,e in itertools.product(profiles,estimates):
  assert PS.read_opponent(p,e)==oldps['read_opponent'](p,e);counts['read_and_bias']+=1
 for p,st,name in itertools.product(profiles,['flop','turn','river',None],PS.BIAS_NAMES):
+ if name=='hero_call':continue  # B4 intentional change
  assert PS.bias(p,name,st)==oldps['bias'](p,name,st);counts['read_and_bias']+=1
 flag=PS.EXPLOIT_WEIGHT_V3
 try:
@@ -34,7 +42,9 @@ for p,st,b,size in itertools.product(profiles,['flop','turn','river'],[['Ac','7d
   assert getattr(R,name)(*args)==oldr[name](*args);counts['range']+=1
  args=(base,b,[(st,'bet',size)],p,None)
  assert R.perceived_range(*args)==oldr['perceived_range'](*args);counts['range']+=1
-for p,st,eq,need,layer in itertools.product(profiles[:8],['flop','turn','river'],[.1,.4,.8],[.2,.5],[False,True]):
+# Concept profiles: B4 removed the response-side bias re-application, so only
+# concept-less profiles (no biases either way) keep byte identity with BASE.
+for p,st,eq,need,layer in itertools.product(profiles[8:9],['flop','turn','river'],[.1,.4,.8],[.2,.5],[False,True]):
  a,b=random.Random(17),random.Random(17);sa={'rel':.3,'made':1};sb=copy.deepcopy(sa)
  args=(p,['As','Kd'],['Ac','7d','2s'],st,'showdown')
  kw={'allow_raise':False,'call_eq':eq if layer else None,'call_need':need if layer else None}
@@ -49,5 +59,12 @@ low=PS.interpret_opponent_action_signals(e,1,0,1,.5)
 high=PS.interpret_opponent_action_signals(e,1,1,1,.5)
 assert low['bluff_gap']==0 and high['bluff_gap']==1 and low['w']==high['w']==.5
 assert PS.opponent_read_application_weight(1,8,8,1,30)!=PS.opponent_read_application_weight(9,8,8,1,30)
-assert P.apply_response_biases_to_call_threshold(.4,1,'river',0,0,0)!=P.apply_response_biases_to_call_threshold(.4,1,'river',0,1,0)
+# B4 contract: biases enter the call threshold once (persona.call_bias); the
+# response compares eq with the need it was given.
+hc=PS.make_player(random.Random(3),.3,3);hc['concepts']['bluffcatch_river']=0.0;hc['temper']['aggression']=10.0
+assert PS.bias(hc,'hero_call','river')>0 and PS.call_bias(hc,'river',1.0,1,0)<PS.call_bias(hc,'flop',0.3,1,0)
+mx=copy.deepcopy(profiles[7]);mx['concepts']['bluffcatch_river']=10.0
+assert PS.bias(mx,'hero_call','river')<=PS.bias(hc,'hero_call','river')
+r=P.decide_response(profiles[7],['As','Kd'],['Ac','7d','2s','Th','9c'],'river','showdown',{'rel':.3,'made':1},.41,.40,1,None,100,30,500,0,random.Random(1),allow_raise=False)
+assert r[0]=='call' and abs(r[2]-.40)<1e-12
 print(json.dumps({'pass':True,'baseline':BASE,'comparisons':counts,'boundary_checks':4}))

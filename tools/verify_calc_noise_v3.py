@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Verify Human Model v3 concept-specific calc error semantics."""
+"""Verify Human Model v3 concept-specific calc error semantics.
+
+Stage 9 B4: the V3 semantics are the only production path (flag retired).  The
+legacy formula is kept here only as a reference implementation, so the evidence
+comparing the two (C5) stays reproducible.
+"""
 
 import json, math, pathlib, random, statistics, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -15,13 +20,10 @@ def prof(concept, skill):
 
 
 def samples(concept, skill, enabled, n=16000, base=7300000):
-    old=PS.CALC_NOISE_V3
-    PS.CALC_NOISE_V3=enabled
-    try:
+    if enabled:
         p=prof(concept,skill)
         return [PS.calc_noise(p,concept,random.Random(base+i)) for i in range(n)]
-    finally:
-        PS.CALC_NOISE_V3=old
+    return [legacy_expected(concept,skill,base+i) for i in range(n)]
 
 
 def legacy_expected(concept, skill, seed):
@@ -35,25 +37,19 @@ def legacy_expected(concept, skill, seed):
 def main():
     checks={}
 
-    # C1: flag OFF must be exactly the historical formula.
+    # C1: outs keeps the historical formula bit-for-bit (directional overcount).
     exact=True
     mismatches=[]
-    old=PS.CALC_NOISE_V3
-    PS.CALC_NOISE_V3=False
-    try:
-        for concept in ('outs','potodds','spr'):
-            for skill in (0,2,5,8,10):
-                p=prof(concept,skill)
-                for seed in range(101,181):
-                    got=PS.calc_noise(p,concept,random.Random(seed))
-                    exp=legacy_expected(concept,skill,seed)
-                    if got != exp:
-                        exact=False
-                        mismatches.append((concept,skill,seed,got,exp))
-                        break
-    finally:
-        PS.CALC_NOISE_V3=old
-    checks['C1_legacy_off_bit_exact']={
+    for skill in (0,2,5,8,10):
+        p=prof('outs',skill)
+        for seed in range(101,181):
+            got=PS.calc_noise(p,'outs',random.Random(seed))
+            exp=legacy_expected('outs',skill,seed)
+            if got != exp:
+                exact=False
+                mismatches.append(('outs',skill,seed,got,exp))
+                break
+    checks['C1_outs_legacy_bit_exact']={
         'pass':exact,'mismatches':mismatches[:3]}
 
     # C2: outs is intentionally unchanged by V3.

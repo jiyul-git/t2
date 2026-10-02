@@ -617,13 +617,6 @@
    "to": "score=float(rd.get('w',0.0))*float(PS.street_gap(rd,street) or 0.0)"
   },
   {
-   "concept": "call_bias_reapplication",
-   "module": "plan",
-   "func": "apply_response_biases_to_call_threshold",
-   "from": null,
-   "to": null
-  },
-  {
    "concept": "checkraise_value_probability_floor",
    "module": "plan",
    "func": "_checkraise_value_floor_probability",

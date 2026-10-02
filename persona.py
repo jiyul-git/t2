@@ -404,12 +404,15 @@ def calc_noise(prof, concept, rng):
       평균 1.0의 대칭 noise만 둔다. SPR의 '모르면 중립 SPR=5 쪽으로 본다'는
       별도 인지 모델이 plan.py에 이미 있으므로 여기서 다시 방향을 넣지 않는다.
 
-    T2_CALC_NOISE_V3=0이면 기존 분포와 RNG 소비를 그대로 보존한다.
+    Human Model 3차(CALC_NOISE_V3)를 유일 경로로 통합했다(stage9 B4). 예전
+    공통 양(+) bias 는 산술 오차에 근거 없는 방향(과잉 폴드)을 넣었고, 사람의
+    방향성 성향은 이미 station/bluff_fear 편향이 따로 맡는다. RNG 소비는
+    gauss 한 번으로 같다.
     """
     s = sk(prof, concept)
     sigma = max(0.02, 0.70 * (1 - s/10.0) ** 1.1)
     legacy_bias = 1.0 + 0.30 * (1 - s/10.0)
-    if CALC_NOISE_V3 and concept in ('potodds', 'spr'):
+    if concept in ('potodds', 'spr'):
         # Arithmetic error has no assumed universal sign.  Clamp the error
         # *around zero* symmetrically, then add it to 1.0.  This keeps the
         # multiplier's expectation centered at 1 instead of reintroducing an
@@ -452,13 +455,8 @@ GTO_MEMORY_V2 = _os.environ.get('T2_GTO_MEMORY_V2') == '1'
 PREFLOP_REASONING_V3 = _os.environ.get('T2_PREFLOP_REASONING_V3') == '1'
 # Opt-in unification of the legacy exploit_weight() entry with read_opponent().
 EXPLOIT_WEIGHT_V3 = _os.environ.get('T2_EXPLOIT_WEIGHT_V3') == '1'
-# Human Model v3 calc error semantics: retain directional outs overcount, but
-# make arithmetic-only pot-odds / SPR errors zero-mean. OFF keeps legacy bits.
-CALC_NOISE_V3 = _os.environ.get('T2_CALC_NOISE_V3') == '1'
-# Human Model v3 (opt-in): use the full native 0..10 temperament scale for
-# preflop direction. Legacy divides by 4 and therefore clips both endpoint
-# pairs (0/1 and 9/10) to the same -/+1 direction.
-PREFLOP_TEMPER_DIRECTION_V3 = _os.environ.get('T2_PREFLOP_TEMPER_DIRECTION_V3') == '1'
+# (stage9 B4) T2_CALC_NOISE_V3 와 T2_PREFLOP_TEMPER_DIRECTION_V3 는 3차 경로를
+# 유일 경로로 통합하면서 퇴역했다 — calc_noise / preflop_temper_direction 참고.
 
 GTO_FAMILY_CONCEPT = {'rfi': 'pf_range', 'defend': 'pf_defend'}
 
@@ -595,12 +593,12 @@ def preflop_reasoning_confidence(prof, family, pos=None, seats=8, bb=100.0,
 def preflop_temper_direction(v):
     """Map a native 0..10 temperament score to preflop direction -1..+1.
 
-    V3 uses the natural half-range span 5.0, so every integer temperament
-    level remains distinguishable. Legacy /4 is preserved behind the flag
-    because existing fingerprints depend on it.
+    기질은 중점 5 인 0..10 척도라 반폭 5.0 으로 정규화한다. 예전 /4 는
+    0 과 1, 9 와 10 을 같은 방향 ±1 로 잘라 정보가 사라졌다(Human Model 3차
+    PREFLOP_TEMPER_DIRECTION_V3 를 유일 경로로 통합, stage9 B4). 끝점 0/10 과
+    중점 5 는 그대로다.
     """
-    span = 5.0 if PREFLOP_TEMPER_DIRECTION_V3 else 4.0
-    return max(-1.0, min(1.0, (float(v) - 5.0) / span))
+    return max(-1.0, min(1.0, (float(v) - 5.0) / 5.0))
 
 
 def preflop_reasoned_width(prof, family, target, direction, pos=None, seats=8,
@@ -782,11 +780,14 @@ def bias(prof, name, street=None):
         return _z(0.50*(10 - S('outs')) + 0.35*T('gamble') + 0.15*T('looseness'))
 
     if name == 'hero_call':
-        # 상대를 블러프로 몰아 가볍게 콜한다. 공격적이고 블러프캐치를 좋아할수록.
-        # 이것도 스트리트별 숙련도를 쓴다. 리버 능력이 플랍 히어로콜을
-        # 직접 바꾸는 도메인 누수를 막는다.
+        # 상대를 블러프로 몰아 가볍게 콜한다. 공격적이고 틸트에 약할수록.
+        # bluff_fear 의 거울상 오류다: 블러프캐치 숙련은 **오류를 줄인다**
+        # (B4 L008/L009). 예전 식은 0.45*S(bluffcatch) 로 숙련이 높을수록 이
+        # 편향을 키워, 최대 숙련·중립 기질에서도 +0.25 의 히어로콜 편향이
+        # 생겼다(다른 편향은 최대 숙련에서 전부 0 이하). 계수는 그대로 두고
+        # 숙련 방향만 bluff_fear 와 같게 바로잡았다.
         _bc = street_concept('bluffcatch', street) if street else 'bluffcatch_river'
-        return _z(0.45*S(_bc) + 0.35*T('aggression')
+        return _z(0.45*(10 - S(_bc)) + 0.35*T('aggression')
                   + 0.20*T('tilt_prone'))
 
     if name == 'sticky':
@@ -1102,9 +1103,16 @@ def call_bias(prof, street, size_frac, made, outs):
     m *= 1.0 - 0.22*max(0.0, bias(prof, 'station'))          # 스테이션: 넓게 콜
     # 블러프 공포는 사이즈와 스트리트에 비례해 커진다
     bf = max(0.0, bias(prof, 'bluff_fear', street))
-    if bf:
+    hc = max(0.0, bias(prof, 'hero_call', street))
+    # 블러프 공포(과잉 폴드)와 히어로콜(과잉 콜)은 서로 거울상인 인식 오류라
+    # 같은 노출(후반 street·큰 사이즈일수록 커짐)로 건다. 이 함수가 콜 문턱
+    # 편향의 **유일한 적용 지점**이다(L148): 예전에는 decide_response 가
+    # station/bluff_fear 를 한 번 더, hero_call 은 거기서만 곱했다.
+    if bf or hc:
         w = {'flop': 0.35, 'turn': 0.75, 'river': 1.0}.get(street, 0.6)
-        m *= 1.0 + 0.30*bf*w*min(1.5, max(0.5, size_frac/0.6))
+        _exp = w*min(1.5, max(0.5, size_frac/0.6))
+        m *= 1.0 + 0.30*bf*_exp
+        m *= max(0.60, 1.0 - 0.18*hc*_exp)
     if outs:                                                  # 드로우 과대평가
         m *= 1.0 - 0.18*max(0.0, bias(prof, 'draw_love'))*min(1.0, outs/9.0)
     if made >= 1:                                             # 매몰비용: 뭔가 잡았을 때만
