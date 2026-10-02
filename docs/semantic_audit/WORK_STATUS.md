@@ -43,3 +43,12 @@
 
 - 전체 핸드 검증 완료: 6 seeds × 30 hands, stage1 after와 action/RNG 포함 전체 JSON 6/6 일치. evidence/defend_stage2_parity.json 참조.
 - 다음 후보: range_read의 인지 역할별 소비 경계. 기존 scalar를 유지하는 함수 추출과 행동을 바꾸는 독립 skill 도입을 구분할 것.
+
+## 3차 코드 정리 — range_read 소비 경계 완료
+
+- 기준 `33df2ee`. 복원·액션 해석·판단 적용 본문과 명시 입력을 분리했다. 세 독립 skill을 생성하지 않았다.
+- 직접 비교 1,308건 + 경계 검사 4건 PASS. 기존 verifier 4,638건 및 4,752건 PASS.
+- 6 seeds / 180 hands action·RNG 포함 전체 결과 일치. 원시 JSON과 검사 스크립트 보존.
+- 신규 함수 연결은 registry current_function 및 RANGE_READ_CONSUMER_BOUNDARIES에 기록했다. 총 227개 상위 의미 단위 수는 바꾸지 않았다.
+- 다음 작업: range_read의 남은 multiway/pressure 적용 consumer와 관측 품질 경계를 검토. 공유 값을 새로운 독립 skill로 바꾸거나 레이즈 확률에 새 multiplier를 넣는 것은 별도 전략 변경이다.
+- 현재 장기 검증 실행은 종료됐다. master/test 반영 없음.

@@ -1,0 +1,1 @@
+{"pass": true, "baseline": "6feaf56319fe2369e1738a4d6dca0c8b755a6c8b", "comparisons": {"thresholds": 3600, "likelihoods": 384, "actions_and_rng": 768}, "seats": "9 primary, 8 compatibility", "optin": [false, true]}

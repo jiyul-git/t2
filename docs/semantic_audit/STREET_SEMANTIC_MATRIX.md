@@ -255,3 +255,7 @@ CSV/JSON의 `current_function`이 아래 연결을 포함한다. 원래 `functio
 | --- | --- | --- | --- | --- |
 | current_board_split_share_shadow | not applicable | same — plan._eq_current | same — plan._eq_current | same — plan._eq_current |
 | future_equity_sampling_provenance | not applicable | same — plan._eq_vs | same — plan._eq_vs | same — plan._eq_vs |
+
+## 3차: range_read 소비 경계
+
+[RANGE_READ_CONSUMER_BOUNDARIES](RANGE_READ_CONSUMER_BOUNDARIES.md)에 복원·액션 해석·판단 적용의 실제 함수와 공급/소비 경로를 분리했다. 기존 scalar 공급과 잔여 과적재는 유지한다. 새 skill 도입이나 전체 raise 적용 경로 통일은 하지 않았다.

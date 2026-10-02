@@ -1355,6 +1355,20 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
     }
 
 
+def apply_response_biases_to_call_threshold(need, size_frac, street,
+                                           station_bias, bluff_fear_bias, hero_call_bias):
+    """Apply already interpreted biases to the call/fold threshold.
+
+    No range reconstruction or opponent classification occurs here. Inputs
+    may later come from independent interpretation/application models.
+    """
+    need *= max(0.55, 1.0 - 0.22*max(0.0, station_bias))
+    late_weight = min(1.0, size_frac/0.9) * (1.0 if street == 'river' else 0.65)
+    need *= 1.0 + 0.30*max(0.0, bluff_fear_bias)*late_weight
+    need *= max(0.60, 1.0 - 0.18*max(0.0, hero_call_bias)*late_weight)
+    return max(0.02, min(0.97, need))
+
+
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                     made_now, opp_range, pot, tocall, stack, committed, rng,
                     allow_raise=True, call_eq=None, call_need=None,
@@ -1596,14 +1610,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     _eq_seen = _cf_eq if _layer_call else eq
     if has_c:
         sz = tocall/max(1.0, float(pot) - tocall)
-        # 스테이션: 문턱을 낮춰 넓게 콜한다.
-        need_seen *= max(0.55, 1.0 - 0.22*max(0.0, PS.bias(profile, 'station')))
-        # 블러프 공포: 큰 벳일수록, 후반 스트리트일수록 문턱을 올린다.
-        _bf_w = min(1.0, sz/0.9) * (1.0 if street == 'river' else 0.65)
-        need_seen *= 1.0 + 0.30*max(0.0, PS.bias(profile, 'bluff_fear', street))*_bf_w
-        # 히어로콜: 가볍게 받아준다. 큰 벳에서 더 크게 작동한다.
-        need_seen *= max(0.60, 1.0 - 0.18*max(0.0, PS.bias(profile, 'hero_call', street))*_bf_w)
-        need_seen = max(0.02, min(0.97, need_seen))
+        need_seen = apply_response_biases_to_call_threshold(
+            need_seen, sz, street,
+            PS.bias(profile, 'station'),
+            PS.bias(profile, 'bluff_fear', street),
+            PS.bias(profile, 'hero_call', street))
     act = 'call' if _eq_seen >= need_seen else 'fold'
     return act, 0.0, need_seen, (
         'eq %.3f vs 체감 need %.3f (실제 %.3f)%s'

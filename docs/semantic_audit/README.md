@@ -15,3 +15,5 @@
 SOURCE_MANIFEST / FUNCTION_CALL_CENSUS는 수정 전 코드 증거다. 실행 결과 및 실제 추출 내역은 REFACTOR_AND_VERIFICATION에 추가한다.
 
 - [REFACTOR_AND_VERIFICATION](REFACTOR_AND_VERIFICATION.md) — 실제 함수 추출 및 before/after 검증
+
+- [range_read 소비 경계](RANGE_READ_CONSUMER_BOUNDARIES.md) — 복원·해석·판단 적용 및 남은 소비처

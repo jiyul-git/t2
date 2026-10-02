@@ -525,7 +525,7 @@
     "recommended_canonical_name": "range_reconstruction_skill / line_interpretation_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk"
+    "current_function": "persona.make_player;persona.sk;ranges.reconstruct_range_with_accuracy;persona.interpret_opponent_action_signals;persona.interpret_bluff_threat_bias;persona.opponent_read_application_weight;plan.apply_response_biases_to_call_threshold"
   },
   {
     "concept": "blocker",
@@ -3231,7 +3231,7 @@
     "recommended_canonical_name": "response_plan",
     "evidence": "plan.py:1358; plan.py:1953",
     "origin": "IMPLICIT_CODE",
-    "current_function": "plan.decide_response;plan.record_response_plan"
+    "current_function": "plan.decide_response;plan.record_response_plan;plan.apply_response_biases_to_call_threshold"
   },
   {
     "concept": "call_bias_reapplication",
@@ -3253,7 +3253,7 @@
     "recommended_canonical_name": "call_bias_reapplication",
     "evidence": "persona.py:1070; persona.py:721; plan.py:1358",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona.call_bias;persona.bias;plan.decide_response"
+    "current_function": "persona.call_bias;persona.bias;plan.decide_response;persona.interpret_bluff_threat_bias;plan.apply_response_biases_to_call_threshold"
   },
   {
     "concept": "checkraise_flop_decision",
@@ -3693,7 +3693,7 @@
     "recommended_canonical_name": "exploit_read_permission",
     "evidence": "persona.py:1091; persona.py:1107; persona.py:1142; persona.py:1283",
     "origin": "IMPLICIT_CODE",
-    "current_function": "persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap"
+    "current_function": "persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap;persona.interpret_opponent_action_signals;persona.opponent_read_application_weight"
   },
   {
     "concept": "opponent_sizing_normalization",

@@ -450,3 +450,7 @@ change.**  Current evidence does not justify a wholesale logit rewrite.
 ### 감사 2차: preflop defend 계산 경계
 
 `preflop.defend_thresholds`의 정규화·콜러 보정·short-stack 보정·상위 재레이즈 축소를 명명된 순수 함수로 분리했다. 기준 prior, 상수, 계산 순서 및 actor/observer 공통 producer는 유지한다. [현재 함수 연결](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md)의 2차 정리를 참조한다. 독립 4bet prior 추가 또는 전략 교정은 아니다.
+
+### 감사 3차: range_read 소비 경계
+
+range 복원, 관측 액션 해석, legacy 적용 가중치, call/fold 문턱 적용의 계산을 분리했다. 기존 scalar 공급은 유지한다. [실제 함수 및 잔여 경로](docs/semantic_audit/RANGE_READ_CONSUMER_BOUNDARIES.md)를 참조한다. 독립 3-skill 체계가 완성된 것은 아니다.

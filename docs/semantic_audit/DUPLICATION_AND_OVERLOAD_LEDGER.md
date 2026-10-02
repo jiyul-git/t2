@@ -174,3 +174,7 @@
 | tighten_defend_widths_for_raise_level | 두 폭, raise_level → 최종 두 폭 | 상위 재레이즈 축소 및 최종 cap |
 
 모두 preflop / REASONING / JUDGMENT, 기존 authored heuristic, ACTIVE이며 RNG를 호출하지 않는다. 직접 consumer는 defend_thresholds, 이후 defend_action_likelihoods와 관찰자 range 모델이 소비한다. 별도의 4bet solver prior를 추가한 것이 아니므로 기존 SEMANTICALLY_OVERLOADED 판정은 유지한다. 함수 경계는 분리됐지만 공유 지식 문제는 미해결이다.
+
+## 3차: range_read 소비 경계
+
+[RANGE_READ_CONSUMER_BOUNDARIES](RANGE_READ_CONSUMER_BOUNDARIES.md)에 복원·액션 해석·판단 적용의 실제 함수와 공급/소비 경로를 분리했다. 기존 scalar 공급과 잔여 과적재는 유지한다. 새 skill 도입이나 전체 raise 적용 경로 통일은 하지 않았다.

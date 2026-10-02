@@ -74,3 +74,14 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - 6 seeds × 30 hands = 180 hands 재실행. 이전 stage1 after 증거와 JSON 전체(행동, 통계, RNG 호출 수·추출 순서 digest·최종 상태 digest) 6/6 정확히 일치. `6feaf56`은 stage1 이후 문서만 변경했으므로 같은 실행 기준이다.
 - 기존 40 verifier 및 live2 suite는 이번 단계에서 재실행하지 않았다. 이전 PASS/FAIL/TIMEOUT 결과를 이번 새 통과로 세지 않는다.
 - 증거: evidence/defend_stage2_targeted.json, defend_stage2_parity.json, defend_stage2_3000..3005.json. 재현: python tools/verify_defend_semantic_cleanup.py 및 tools/measure_semantic_parity.py.
+
+## 3차 semantic cleanup: range_read 소비 경계
+
+기준 `33df2ee`. [소비 경계 상세](RANGE_READ_CONSUMER_BOUNDARIES.md). range 복원 계산·관측치 해석 dict 생성·bluff 위협 해석·legacy 적용 가중치·콜 문턱 적용의 본문을 분리했다. 기존 값 공급/early return/threshold/RNG 호출은 보존했다.
+
+- syntax/import PASS. 직접 비교 1,308건 및 입력 경계 검사 4건 PASS.
+- 기존 semantic verifier 4,638건, defend verifier 4,752건 PASS.
+- 6 seeds × 30 hands = 180 hands: 직전 단계 evidence/defend_stage2_SEED.json과 전체 JSON 6/6 일치. action/statistics/RNG 호출 수·반환 순서 digest·최종 상태 digest 동일.
+- 이번에는 live2와 기존 40개 verifier를 재실행하지 않았다. 기존 실패를 해결하거나 새 통과로 계산하지 않는다.
+- evidence/range_read_stage3_*에 결과 보존. `python tools/verify_range_read_semantics.py`로 직접 비교를 재현한다.
+- 적용 경계 분리는 전체 raise consumer의 독립 application skill 도입을 뜻하지 않는다. 관측 품질·self-edge·multiway·money pressure 소비는 후속 목록에 남긴다.

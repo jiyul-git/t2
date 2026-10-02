@@ -913,13 +913,13 @@ def _check_range(r, board, street, cbet_axis, damp=1.0):
     return out
 
 
-def blend_action_range_by_grasp(base, full, rr):
+def reconstruct_range_with_accuracy(base, full, reconstruction_skill):
     """Perceived posterior: retain ordered prior support at incomplete grasp.
 
     Callers own the low-skill early exit and posterior construction timing.
     Keeping that timing preserves legacy behavior and random consumption.
     """
-    grasp = min(1.0, (rr - 1.5) / 6.0)
+    grasp = min(1.0, (reconstruction_skill - 1.5) / 6.0)
     if grasp >= 0.98 or not full:
         return full
     keep = set(range_support(full))
@@ -927,6 +927,11 @@ def blend_action_range_by_grasp(base, full, rr):
     n_extra = int(len(rest) * (1.0 - grasp))
     chosen = range_support(full) + rest[:n_extra]
     return range_select(base, chosen)
+
+
+def blend_action_range_by_grasp(base, full, rr):
+    """Compatibility entry; runtime uses reconstruct_range_with_accuracy."""
+    return reconstruct_range_with_accuracy(base, full, rr)
 
 
 def perceived_facing_bet_response(base, board, street, size_frac,
@@ -949,7 +954,7 @@ def perceived_facing_bet_response(base, board, street, size_frac,
     rr = PS.sk(profile, 'range_read')
     if rr < 1.5:
         return range_copy(base)
-    return blend_action_range_by_grasp(base, full, rr)
+    return reconstruct_range_with_accuracy(base, full, rr)
 
 
 def perceived_continue_range(base, board, street, size_frac, profile=None):
@@ -967,7 +972,7 @@ def perceived_continue_range(base, board, street, size_frac, profile=None):
     rr = PS.sk(profile, 'range_read')
     if rr < 1.5:
         return range_copy(base)
-    return blend_action_range_by_grasp(base, full, rr)
+    return reconstruct_range_with_accuracy(base, full, rr)
 
 
 def perceived_range(base, board, acts, profile=None, actor_read=None):
@@ -987,7 +992,7 @@ def perceived_range(base, board, acts, profile=None, actor_read=None):
     if rr < 1.5:
         return range_copy(base)               # 액션을 아예 반영 못 한다
     full = narrow_by_actions(base, board, acts, actor_read, profile)
-    return blend_action_range_by_grasp(base, full, rr)
+    return reconstruct_range_with_accuracy(base, full, rr)
 
 
 def _action_event_fields(row):

@@ -718,6 +718,12 @@ BIAS_NAMES = ('station', 'bluff_fear', 'overpair_love', 'draw_love',
               'hero_call', 'sticky')
 
 
+def interpret_bluff_threat_bias(bluffcatch_skill, aggression, line_interpretation_skill):
+    """Perceived bluff threat bias; no call/fold threshold or range update."""
+    return _z(0.40*(10 - bluffcatch_skill) + 0.30*(10 - aggression)
+              + 0.30*(10 - line_interpretation_skill))
+
+
 def bias(prof, name, street=None):
     """이 사람의 고정된 행동 편향. 랜덤이 아니다 — 같은 사람은 항상 같은 값.
 
@@ -743,8 +749,7 @@ def bias(prof, name, street=None):
         # 스트리트별 블러프캐치 숙련도를 써야 한다. 예전에는 항상
         # bluffcatch_river 를 읽어 플랍/턴 콜 판단까지 리버 숙련도가 바꿨다.
         _bc = street_concept('bluffcatch', street) if street else 'bluffcatch_river'
-        return _z(0.40*(10 - S(_bc)) + 0.30*(10 - T('aggression'))
-                  + 0.30*(10 - S('range_read')))
+        return interpret_bluff_threat_bias(S(_bc), T('aggression'), S('range_read'))
 
     if name == 'overpair_love':
         # 오버페어·탑페어를 과대평가한다. '이기고 있다'를 과신하는 것이지
@@ -1119,7 +1124,17 @@ def exploit_weight(prof, confidence=0.0, n_hands=0):
     adp = temper(prof, 'adaptability', 5.0)
     att = temper(prof, 'attention', 5.0)
     rr  = sk(prof, 'range_read')
-    trait = (0.50*adp + 0.30*rr + 0.20*att) / 10.0
+    return opponent_read_application_weight(rr, adp, att, confidence, n_hands)
+
+
+def opponent_read_application_weight(application_skill, adaptability, attention,
+                                     confidence, n_hands):
+    """Legacy permission to apply an interpretation, not signal accuracy.
+
+    Caller retains the V3 bypass and missing-concepts guard. The current
+    application_skill supply remains range_read; no independent skill is drawn.
+    """
+    trait = (0.50*adaptability + 0.30*application_skill + 0.20*attention) / 10.0
     trait = max(0.0, min(1.0, (trait - 0.28) / 0.60))
     if trait <= 0.0:
         return 0.0
@@ -1201,6 +1216,17 @@ def read_opponent(prof, opp_est):
     if max(see_freq, see_line, see_size) <= 0.0:
         return neutral                      # 아무 축도 못 보는 사람
 
+    return interpret_opponent_action_signals(opp_est, see_freq, see_line, see_size, w)
+
+
+def interpret_opponent_action_signals(opp_est, see_freq, see_line, see_size, w):
+    """Observed statistics -> perceived line/value-bluff signals, not actions.
+
+    Gates are explicit inputs so line interpretation can be supplied separately
+    from range reconstruction and decision application. Existing defaults,
+    arithmetic order and rounding are preserved. w is carried for consumers;
+    it is not multiplied into these interpretation signals here.
+    """
     g = lambda k, d: float(opp_est.get(k) if opp_est.get(k) is not None else d)
     ftb = g('ftb', 0.52)
     bl  = g('bluff', 4.5)
