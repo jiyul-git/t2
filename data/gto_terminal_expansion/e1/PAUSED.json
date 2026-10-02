@@ -1,0 +1,6 @@
+{
+ "status": "paused",
+ "reason": "ante rule change: uniform total 1BB over hand_start_players; the E1 config must inherit the 9-max uniform-ante state before continuing",
+ "paused_at": "2026-10-02T22:46:04Z",
+ "artifacts": "step0 flop artifacts kept unchanged (solved under the old 4 x 0.25 ante config); not valid for the new rule; never reused without a matching provenance key"
+}
