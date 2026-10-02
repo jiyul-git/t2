@@ -1,0 +1,132 @@
+{
+ "schema": "e4_export_probe",
+ "board": "Ac7h7d",
+ "terminal": "node 6 (SB open, BB call), P14 ranges, menu m2_single_v1",
+ "probe": {
+  "action_nodes_by_street": [
+   6,
+   784,
+   100842
+  ],
+  "board": "Ac7h7d",
+  "bytes": {
+   "full_gtosolve": 2140058560,
+   "strategy_class_f32": 153771072,
+   "strategy_combo_f32": 1070028288
+  },
+  "chance_nodes_by_street": [
+   0,
+   5,
+   735
+  ],
+  "exploitability_pct_pot": 0.212465114743197,
+  "export_s_combo_and_class": 8.039186075,
+  "hands": [
+   1176,
+   1176
+  ],
+  "iterations": 125,
+  "note": "class export = unweighted in-class mean over the combos present (suit information lost); measurement only",
+  "save_s_full": 13.01534068,
+  "solve_s": 192.319025643,
+  "strategy_floats_class_by_street": [
+   2366,
+   298116,
+   38142286
+  ],
+  "strategy_floats_combo_by_street": [
+   16464,
+   2074464,
+   265416144
+  ],
+  "terminal_pot_bb": 6.0,
+  "tree_nodes": 263733
+ },
+ "compression": {
+  "combo_f32_flop": {
+   "raw": 65856,
+   "zlib6": 32462,
+   "ratio": 2.0287104922678822,
+   "compress_s": 0.0
+  },
+  "combo_f32_turn": {
+   "raw": 8297856,
+   "zlib6": 6319229,
+   "ratio": 1.3131120900983333,
+   "compress_s": 0.4
+  },
+  "combo_f32_all": {
+   "raw": 1070028288,
+   "zlib6": 809769515,
+   "ratio": 1.3213985809283029,
+   "compress_s": 38.3
+  },
+  "combo_f16_all": {
+   "raw": 535014144,
+   "zlib6": 361906330,
+   "ratio": 1.4783221503752089,
+   "compress_s": 15.0
+  },
+  "combo_u8_all": {
+   "raw": 267507072,
+   "zlib6": 147181821,
+   "ratio": 1.817527940492053,
+   "compress_s": 5.3
+  },
+  "class_f32_all": {
+   "raw": 153771072,
+   "zlib6": 119211781,
+   "ratio": 1.2898982861433803,
+   "compress_s": 6.6
+  },
+  "class_f16_all": {
+   "raw": 76885536,
+   "zlib6": 51538026,
+   "ratio": 1.4918215144677835,
+   "compress_s": 2.7
+  },
+  "class_u8_all": {
+   "raw": 38442768,
+   "zlib6": 24482739,
+   "ratio": 1.5701988245677905,
+   "compress_s": 1.5,
+   "xz6": 13894676,
+   "xz_s": 16.8
+  },
+  "u8_max_abs_quant_error": 0.0019608139991760254,
+  "strategy_sanity": {
+   "min": 0.0,
+   "max": 1.0
+  }
+ },
+ "projection": {
+  "combo_f32_raw": {
+   "per_board_MB": 1070.028288,
+   "panel_450_boards_GB": 481.5127296,
+   "all_1755_flops_per_terminal_GB": 1877.89964544
+  },
+  "combo_u8_zlib": {
+   "per_board_MB": 147.181821,
+   "panel_450_boards_GB": 66.23181945,
+   "all_1755_flops_per_terminal_GB": 258.304095855
+  },
+  "class_u8_xz": {
+   "per_board_MB": 13.894676,
+   "panel_450_boards_GB": 6.2526042,
+   "all_1755_flops_per_terminal_GB": 24.38515638
+  },
+  "flop_turn_combo_f32_raw": {
+   "per_board_MB": 8.363712,
+   "panel_450_boards_GB": 3.7636704,
+   "all_1755_flops_per_terminal_GB": 14.67831456
+  }
+ },
+ "peak_rss": "not captured by this run; t2_cont_panel ledger for the same tree shows about 2.17 GB per solve (f32 storage)",
+ "notes": [
+  "river holds 99.2% of the strategy floats (100,842 of 101,632 action nodes)",
+  "class export is an unweighted in-class mean over combos (suit information lost): size reference only, not a proposed format",
+  "Ac7h7d has no suit symmetry; representative-only export on symmetric boards would be smaller (not measured)",
+  "u8 quantization max abs frequency error 0.00196"
+ ],
+ "artifacts": "binaries kept outside the repo (scratchpad); only this summary is committed"
+}
