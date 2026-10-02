@@ -1,0 +1,1 @@
+{"pass": true, "baseline": "b4869696a217272a5878841e29efc17b33e0df0c", "comparisons": {"observation": 30, "pressure": 256, "multiway_controlled_equity": 72, "multiway_real_equity": 4}, "boundary_checks": 5}

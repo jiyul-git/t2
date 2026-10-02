@@ -454,3 +454,7 @@ change.**  Current evidence does not justify a wholesale logit rewrite.
 ### 감사 3차: range_read 소비 경계
 
 range 복원, 관측 액션 해석, legacy 적용 가중치, call/fold 문턱 적용의 계산을 분리했다. 기존 scalar 공급은 유지한다. [실제 함수 및 잔여 경로](docs/semantic_audit/RANGE_READ_CONSUMER_BOUNDARIES.md)를 참조한다. 독립 3-skill 체계가 완성된 것은 아니다.
+
+### 감사 4차: 관측·압박·멀티웨이 적용 경계
+
+기존 range_read 소비 중 observation accuracy, pressure application capacity, multiway evidence capacity와 call/fold evidence 혼합을 명시 입력의 함수로 분리했다. 기존 profile/actor 값 공급은 보존한다. [현재 함수와 잔여 의미](docs/semantic_audit/RANGE_READ_CONSUMER_BOUNDARIES.md)의 4차 항목 참조.

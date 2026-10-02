@@ -52,3 +52,14 @@
 - 신규 함수 연결은 registry current_function 및 RANGE_READ_CONSUMER_BOUNDARIES에 기록했다. 총 227개 상위 의미 단위 수는 바꾸지 않았다.
 - 다음 작업: range_read의 남은 multiway/pressure 적용 consumer와 관측 품질 경계를 검토. 공유 값을 새로운 독립 skill로 바꾸거나 레이즈 확률에 새 multiplier를 넣는 것은 별도 전략 변경이다.
 - 현재 장기 검증 실행은 종료됐다. master/test 반영 없음.
+
+## 4차 코드 정리 — 관측·멀티웨이·압박 소비 경계
+
+- 기준 `b486969`. 관측 정확도, pressure application capacity, multiway evidence capacity, call/fold evidence 적용의 네 계산을 명시 입력 함수로 추출했다.
+- 직접 비교: 관측 30 / pressure 256 / controlled equity multiway 72 / 실제 equity multiway 4 = 362건 PASS. 경계 검사 5건 PASS.
+- 이전 verifier: range_read 1,308건 + 경계 4건, defend 4,752건, semantic 4,638건 PASS.
+- 의미별 함수·입력·consumer는 registry current_function 및 RANGE_READ_CONSUMER_BOUNDARIES의 4차 항목에 기록했다.
+- 독립 skill 도입은 하지 않았다. 자기 패 과신·자기 실력 인식·line visibility·생성/진단 경로는 계속 별도 역할로 추적한다.
+
+- 전체 검증 완료: 6 seeds / 180 hands, 직전 stage3의 전체 action/statistics/RNG JSON 6/6 동일. 실행 중인 검증 작업 없음.
+- 다음 검토 대상: range_read의 자기 패 과신·자기 실력 인식 및 line visibility 경계, 이후 street별 의미 과적재 ledger 항목.

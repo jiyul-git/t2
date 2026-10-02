@@ -525,7 +525,7 @@
     "recommended_canonical_name": "range_reconstruction_skill / line_interpretation_skill",
     "evidence": "persona.py:224; persona.py:373",
     "origin": "EXPLICIT_DECLARED",
-    "current_function": "persona.make_player;persona.sk;ranges.reconstruct_range_with_accuracy;persona.interpret_opponent_action_signals;persona.interpret_bluff_threat_bias;persona.opponent_read_application_weight;plan.apply_response_biases_to_call_threshold"
+    "current_function": "persona.make_player;persona.sk;ranges.reconstruct_range_with_accuracy;persona.interpret_opponent_action_signals;persona.interpret_bluff_threat_bias;persona.opponent_read_application_weight;plan.apply_response_biases_to_call_threshold;reads.observation_accuracy_from_capabilities;money_pressure.pressure_application_capacity;preflop.multiway_evidence_application_capacity;preflop.apply_multiway_call_evidence"
   },
   {
     "concept": "blocker",
@@ -1669,7 +1669,7 @@
     "recommended_canonical_name": "multiway_reraise_reasoning",
     "evidence": "preflop.py:914; preflop.py:1114",
     "origin": "IMPLICIT_CODE",
-    "current_function": "preflop.multiway_reraise_decision;preflop.cold_reraise_decision"
+    "current_function": "preflop.multiway_reraise_decision;preflop.cold_reraise_decision;preflop.multiway_evidence_application_capacity;preflop.apply_multiway_call_evidence"
   },
   {
     "concept": "legacy_calloff_threshold",
@@ -3605,7 +3605,7 @@
     "recommended_canonical_name": "opponent_estimation",
     "evidence": "reads.py:367; reads.py:360; reads.py:25",
     "origin": "IMPLICIT_CODE",
-    "current_function": "reads.estimate;reads._shrink;reads.obs_from_profile"
+    "current_function": "reads.estimate;reads._shrink;reads.obs_from_profile;reads.observation_accuracy_from_capabilities"
   },
   {
     "concept": "opponent_concept_inference",
@@ -4045,7 +4045,7 @@
     "recommended_canonical_name": "stack_cover_pressure",
     "evidence": "money_pressure.py:145; money_pressure.py:157; money_pressure.py:178; money_pressure.py:210; money_pressure.py:166; money_pressure.py:192",
     "origin": "IMPLICIT_CODE",
-    "current_function": "money_pressure.cover_strength;money_pressure.topology_safety;money_pressure.structural_pressure;money_pressure.pressure_opportunity;money_pressure.exploit_realization;money_pressure.read_adjustment"
+    "current_function": "money_pressure.cover_strength;money_pressure.topology_safety;money_pressure.structural_pressure;money_pressure.pressure_opportunity;money_pressure.exploit_realization;money_pressure.read_adjustment;money_pressure.pressure_application_capacity"
   },
   {
     "concept": "money_commitment_budget",

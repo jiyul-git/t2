@@ -163,16 +163,24 @@ def topology_safety(state):
     return inv1p(n)
 
 
-def exploit_realization(actor):
-    """구조적 압박을 읽고 전략 수정으로 옮길 능력."""
+def pressure_application_capacity(money_jump, fold_equity, pressure_read_skill,
+                                  attention, adaptability, aggression):
+    """Capacity to use structural pressure; explicit inputs retain legacy mean order."""
     return mean01(
-        skill01(actor.get('money_jump')),
-        skill01(actor.get('fold_equity')),
-        skill01(actor.get('range_read')),
-        skill01(actor.get('attention')),
-        skill01(actor.get('adaptability')),
-        skill01(actor.get('aggression')),
+        skill01(money_jump),
+        skill01(fold_equity),
+        skill01(pressure_read_skill),
+        skill01(attention),
+        skill01(adaptability),
+        skill01(aggression),
     )
+
+
+def exploit_realization(actor):
+    """Compatibility profile adapter for structural-pressure application."""
+    return pressure_application_capacity(
+        actor.get('money_jump'), actor.get('fold_equity'), actor.get('range_read'),
+        actor.get('attention'), actor.get('adaptability'), actor.get('aggression'))
 
 
 def structural_pressure(hero_state, target_state):

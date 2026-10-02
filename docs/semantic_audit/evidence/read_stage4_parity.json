@@ -1,0 +1,91 @@
+{
+  "pass": true,
+  "baseline": "b486969",
+  "hands": 180,
+  "seeds": [
+    {
+      "seed": 3000,
+      "equal": true,
+      "fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3001,
+      "equal": true,
+      "fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3002,
+      "equal": true,
+      "fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3003,
+      "equal": true,
+      "fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3004,
+      "equal": true,
+      "fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    },
+    {
+      "seed": 3005,
+      "equal": true,
+      "fields": [
+        "actions",
+        "stats",
+        "rng_counts",
+        "rng_draw_digest",
+        "rng_final_state_digest",
+        "seed",
+        "mode",
+        "hands_requested"
+      ]
+    }
+  ]
+}

@@ -22,13 +22,18 @@ FAMILY_OBS = {
     'tilt':   dict(skill=0.45, overconf=1.6, noise=0.22, memory=20),
     'live':   dict(skill=0.35, overconf=1.1, noise=0.20, memory=30),
 }
+def observation_accuracy_from_capabilities(attention, observation_read_skill, sizing_tell):
+    """Observation fidelity, separate from reconstructing a posterior or acting on it."""
+    return max(0.03, min(0.98, (attention*0.5 + observation_read_skill*0.3 + sizing_tell*0.2)/10.0))
+
+
 def obs_from_profile(prof):
     """개인 벡터에서 관찰력을 파생."""
     t = prof.get('temper')
     if not t: return None
     att = t['attention']; adp = t['adaptability']; cons = t['consistency']
     rr = prof['concepts'].get('range_read', 4); st = prof['concepts'].get('sizing_tell', 4)
-    return dict(skill=max(0.03, min(0.98, (att*0.5 + rr*0.3 + st*0.2)/10.0)),
+    return dict(skill=observation_accuracy_from_capabilities(att, rr, st),
                 overconf=max(0.6, min(2.4, 1.8 - 0.09*cons)),
                 noise=max(0.03, min(0.35, 0.34 - 0.028*att)),
                 memory=int(max(8, min(120, 6*att + 4*adp))))

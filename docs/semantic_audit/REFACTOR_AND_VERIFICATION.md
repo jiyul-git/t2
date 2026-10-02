@@ -85,3 +85,14 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - 이번에는 live2와 기존 40개 verifier를 재실행하지 않았다. 기존 실패를 해결하거나 새 통과로 계산하지 않는다.
 - evidence/range_read_stage3_*에 결과 보존. `python tools/verify_range_read_semantics.py`로 직접 비교를 재현한다.
 - 적용 경계 분리는 전체 raise consumer의 독립 application skill 도입을 뜻하지 않는다. 관측 품질·self-edge·multiway·money pressure 소비는 후속 목록에 남긴다.
+
+## 4차 semantic cleanup: 추가 read 소비 경계
+
+기준 `b486969`. reads.observation_accuracy_from_capabilities, money_pressure.pressure_application_capacity, preflop.multiway_evidence_application_capacity, preflop.apply_multiway_call_evidence로 계산 본문을 분리했다. profile/actor 공급과 기존 상수·확률·RNG는 유지했다.
+
+- syntax/import PASS. 실제 이전 consumer 비교 362건, 경계 검사 5건 PASS. controlled equity multiway 72건과 실제 equity multiway 4건은 action·진단 dict·RNG 상태를 함께 비교했다.
+- 이전 verifier: range_read 1,308건+경계 4건, defend 4,752건, semantic 4,638건 PASS.
+- 6 seeds × 30 hands = 180 hands: 직전 range_read_stage3 증거와 action·통계·RNG 호출 수·반환 순서 digest·최종 상태 digest 포함 전체 JSON 6/6 일치.
+- evidence/read_stage4_*에 raw 결과와 함수 입력 목록 보존. 재현: python tools/verify_remaining_read_semantics.py.
+- 이번 단계에서 기존 40개 verifier 및 live2를 재실행하지 않았다. 이전 실패/timeout은 미해결이다.
+- pressure helper는 기존 mean01 능력 혼합을 드러낸 것으로, 모든 압박 단계의 knowledge/reasoning 분리가 끝났다는 의미는 아니다. multiway attack 억제는 원래 위치를 유지했다.

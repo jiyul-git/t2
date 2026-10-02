@@ -1,0 +1,47 @@
+[
+  {
+    "function": "reads.observation_accuracy_from_capabilities",
+    "inputs": [
+      "attention",
+      "observation_read_skill",
+      "sizing_tell"
+    ],
+    "line": 25,
+    "end_line": 27
+  },
+  {
+    "function": "money_pressure.pressure_application_capacity",
+    "inputs": [
+      "money_jump",
+      "fold_equity",
+      "pressure_read_skill",
+      "attention",
+      "adaptability",
+      "aggression"
+    ],
+    "line": 166,
+    "end_line": 176
+  },
+  {
+    "function": "preflop.multiway_evidence_application_capacity",
+    "inputs": [
+      "read_application_skill",
+      "potodds_skill",
+      "multiway_skill"
+    ],
+    "line": 952,
+    "end_line": 954
+  },
+  {
+    "function": "preflop.apply_multiway_call_evidence",
+    "inputs": [
+      "call",
+      "fold",
+      "equity",
+      "required_equity",
+      "application_capacity"
+    ],
+    "line": 957,
+    "end_line": 963
+  }
+]

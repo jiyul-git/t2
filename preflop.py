@@ -949,6 +949,20 @@ def preflop_blocker_share(hand, pools):
     return max(0.0, min(1.0, blocked_tot / full_tot)) if full_tot > 0 else 0.0
 
 
+def multiway_evidence_application_capacity(read_application_skill, potodds_skill, multiway_skill):
+    """How strongly multiway evidence replaces the existing preflop baseline."""
+    return max(0.0, min(1.0, (read_application_skill + potodds_skill + multiway_skill) / 30.0))
+
+
+def apply_multiway_call_evidence(call, fold, equity, required_equity, application_capacity):
+    """Move existing call/fold mass toward the price comparison; attack mass is separate."""
+    cf_mass = call + fold
+    evidence_call = cf_mass if equity >= required_equity else 0.0
+    call = (1.0 - application_capacity)*call + application_capacity*evidence_call
+    fold = max(0.0, cf_mass - call)
+    return call, fold
+
+
 def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
                               n_callers, rng, raise_level=2, stack_bb=None,
                               exploit=None, bf=1.0, seats=8, ante=True,
@@ -1019,9 +1033,8 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         _nseed = zlib.crc32(('%s|multiway_reraise_potodds' % _seed).encode())
         noise = PS.calc_noise(prof, 'potodds', random.Random(_nseed))
         noise = max(0.65, min(1.55, float(noise)))
-        reason_skill = max(0.0, min(
-            1.0, (PS.sk(prof, 'range_read') + PS.sk(prof, 'potodds')
-                  + PS.sk(prof, 'multiway')) / 30.0))
+        reason_skill = multiway_evidence_application_capacity(
+            PS.sk(prof, 'range_read'), PS.sk(prof, 'potodds'), PS.sk(prof, 'multiway'))
         bluff_skill = max(0.0, min(1.0, PS.sk(prof, 'bluff') / 10.0))
 
     need = need_base * noise
@@ -1047,10 +1060,7 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     # reason_skill=1 인 플레이어가 eq < perceived need라고 정확히 계산했는데도
     # generic call 찌꺼기가 남아 랜덤 콜하는 것은 reasoning error다.
     # 계산오차/인간차이는 이미 need의 calc_noise와 reason_skill<1에 들어 있다.
-    _cf_mass = call + fold
-    _evidence_call = _cf_mass if eq >= need else 0.0
-    call = (1.0 - reason_skill)*call + reason_skill*_evidence_call
-    fold = max(0.0, _cf_mass - call)
+    call, fold = apply_multiway_call_evidence(call, fold, eq, need, reason_skill)
 
     # 이미 올인한 상대가 있으면 내 공격은 그 상대에게는 '콜'이다. 폴드
     # 에쿼티가 없으므로 기준은 fair share 가 아니라 가격(need)이다. 다른
