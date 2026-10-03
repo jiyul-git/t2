@@ -36,6 +36,24 @@ _STATUS = {
 }
 
 
+
+def _hero_table_book(st):
+    """Hero-table slice of the tournament book (same-table pairs, no history)."""
+    field = st.get("field") or {}
+    book = field.get("book") or st.get("book") or {}
+    hero = str(field.get("hero_pid", 0))
+    tid = (field.get("players") or {}).get(hero, {}).get("table")
+    pids = [str(x) for x in ((field.get("tables") or {}).get(str(tid), {}) or {}).get("pids", [])]
+    if not pids:
+        return copy.deepcopy(book)
+    ps = set(pids)
+    out = {}
+    for k, v in book.items():
+        i, _, j = str(k).partition(">")
+        if i in ps and j in ps:
+            out[k] = {kk: copy.deepcopy(vv) for kk, vv in v.items() if kk != "_hand_hist"}
+    return out
+
 def _load_config():
     try:
         cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
@@ -274,8 +292,8 @@ def build_round_bundle(st, f, hero_hand, bot_hands=None, source="live", round_be
         "field_errors": copy.deepcopy(getattr(f, "errors", []) or []),
         # HERO-table book is tournament-persistent today. Other-table books are
         # recorded per hand below, which also makes a missing persistence boundary visible.
-        "hero_book_after": copy.deepcopy(
-            ((st.get("field") or {}).get("book")) or st.get("book") or {}),
+        # L161: the field book covers the whole tournament; keep the hero table only.
+        "hero_book_after": _hero_table_book(st),
         "hero_hand": copy.deepcopy(hero_hand),
         "bot_hands": list(copy.deepcopy(bot_hands or [])),
         "all_hands": _all_hands,

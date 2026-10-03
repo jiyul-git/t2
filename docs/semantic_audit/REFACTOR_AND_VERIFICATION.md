@@ -487,3 +487,7 @@ triage LATER 대조: 결론 기록이 없던 항목을 코드와 대조했다.
 | 검증 | 23-gate 23/23, `verify_read_recency_v3`·`verify_human_model_v3` 통과, completeness 미소유 0. `verify_tournament_telemetry` 는 변경 전과 같은 역사적 실패(2 table hands) |
 
 주의: 봇 대회·UI 대회의 봇 행동은 이제 상대 기억을 쓰므로 달라진다(의도). 기준 하네스 지문은 장부 고정이라 그대로다.
+
+## 21차 — 내 테이블 아카이브의 장부 기록 범위
+
+L161 이후 장부가 대회 전체를 담는데, 내 테이블 아카이브(`live2` 핸드 기록 `book_before`/`book_after`, 텔레메트리 `hero_book_after`)는 핸드마다 장부 전체를 복사했다. 봇 테이블과 같이 그 테이블 사람끼리의 기록만, 이력 제외로 남긴다(`fieldsim.book_view`, `telemetry_sync._hero_table_book`). 판단 경로 변화 없음(기록 전용). UI 27명 대회 6핸드: 아카이브 장부 72쌍(테이블 9명), 대회 장부 216쌍. 23-gate 23/23.

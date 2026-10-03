@@ -226,7 +226,9 @@ def build_hand(st):
     h._telemetry_tilt_before = {
         pid: copy.deepcopy(f.tilt.state.get(pid, {})) for pid in _pids
     }
-    h._telemetry_book_before = copy.deepcopy(getattr(h.book, 'd', {}) or {})
+    # 아카이브에는 이 테이블 사람끼리의 기록만, 이력 제외(L161 — 장부가 대회 전체다).
+    h._telemetry_book_before = FS.book_view(getattr(h.book, 'd', {}) or {}, _pids)
+    h._telemetry_book_pids = list(_pids)
     return f, tb, alive, h, hero_seat
 
 
@@ -985,7 +987,10 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
                getattr(h, 'range_fallback_audit', []) or []),
            'book_before': copy.deepcopy(
                getattr(h, '_telemetry_book_before', {}) or {}),
-           'book_after': copy.deepcopy(getattr(h.book, 'd', {}) or {}),
+           'book_after': FS.book_view(
+               getattr(h.book, 'd', {}) or {},
+               getattr(h, '_telemetry_book_pids', None)
+               or [str(x) for x in (getattr(h, 'seat_pid', {}) or {}).values()]),
            'tilt_before': copy.deepcopy(
                getattr(h, '_telemetry_tilt_before', {}) or {}),
            'tilt_after': copy.deepcopy(
