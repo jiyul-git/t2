@@ -2645,7 +2645,8 @@ def shape_planned_target(amount, profile, pot, actor_cap, seed=None):
     if a<=0 or (cap>0 and a>=cap-1e-9):
         return a,meta
     rng=random.Random(seed)
-    shaped=float(PS.shape_size(a,profile.get('type'),rng,pot=pot))
+    shaped=float(PS.shape_size(a,profile.get('type'),rng,pot=pot,
+                               odd=PS.sizing_odd_probability(profile)))
     meta.update({'called':True,'changed':abs(shaped-a)>1e-9,'after':shaped})
     return shaped,meta
 
@@ -3231,7 +3232,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             and bb_chips and float(sz or 0.0) > 0):
         _before = float(bb_chips) * float(sz)
         _after = float(PS.shape_size(
-            _before, profile.get('type'), rng, pot=None))
+            _before, profile.get('type'), rng, pot=None,
+            odd=PS.sizing_odd_probability(profile)))
         sz = _after / float(bb_chips)
         _pf_shape = {
             'called': True, 'changed': abs(_after-_before)>1e-9,

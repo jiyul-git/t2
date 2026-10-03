@@ -408,6 +408,13 @@
   },
   {
    "concept": "human_planned_size_shape",
+   "module": "persona",
+   "func": "sizing_odd_probability",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "human_planned_size_shape",
    "module": "plan",
    "func": "act_with_plan",
    "from": "if size_shape_seed is None and seed is not None:",
@@ -2227,6 +2234,7 @@
   "reads:_MAX_RECENCY_HISTORY": "recency_window",
   "reads:_SIG_SCALE": "style_belief_reference",
   "persona:SIZING_FAMILY_SIG": "human_planned_size_shape",
+  "persona:SIZING_ODD_MAX": "human_planned_size_shape",
   "persona:LOADING": "persona_population_generation",
   "persona:DEFAULT_SPREAD": "persona_population_generation",
   "persona:SPREAD": "persona_population_generation",

@@ -20,11 +20,35 @@ def sizing_signature(ptype):
     fam = _A.ARCHETYPES[ptype][6] if ptype in _A.ARCHETYPES else 'reg'
     return SIZING_FAMILY_SIG[fam]
 
-def shape_size(amount, ptype, rng, pot=None):
-    """Human sizing habit; deterministic for a supplied decision RNG."""
+# 계획한 사이즈를 버리고 팟 배수로 즉흥 사이징하는 확률의 상한(일관성 0).
+# 잠정값(근거 없음, 사용자 결정 2026-10-03): 일관성 10 → 0, 0 → 0.50.
+SIZING_ODD_MAX = 0.50
+
+
+def sizing_odd_probability(prof):
+    """계획 사이즈를 버리는 즉흥 사이징 확률 — 기질 '일관성'에서 공급(베타 A #1).
+
+    예전에는 아키타입 라벨의 고정값(SIZING_FAMILY_SIG['odd'], reg 2%)이라
+    일관성이 최고인 사람도 같은 확률로 계획을 버렸다. 개념/기질 프로필이
+    아니면 None(라벨 표를 그대로 쓴다). 오픈 사이즈 습관도 같은 축을 쓴다
+    (preflop open size의 consistency).
+    """
+    if not prof or not prof.get('concepts') or not prof.get('temper'):
+        return None
+    cons = max(0.0, min(10.0, temper(prof, 'consistency', 5.0)))
+    return SIZING_ODD_MAX * (1.0 - cons / 10.0)
+
+
+def shape_size(amount, ptype, rng, pot=None, odd=None):
+    """Human sizing habit; deterministic for a supplied decision RNG.
+
+    odd 가 주어지면 라벨 표의 odd 대신 쓴다(sizing_odd_probability). 난수 소비
+    순서는 같다 — odd 판정용 rng.random() 은 확률과 무관하게 한 번 뽑는다.
+    """
     sig=sizing_signature(ptype)
     a=float(amount)*(1+rng.uniform(-sig['jitter'],sig['jitter']))
-    if rng.random()<sig['odd'] and pot:
+    p_odd = sig['odd'] if odd is None else odd
+    if rng.random()<p_odd and pot:
         a=float(pot)*rng.choice([0.33,0.5,1.0,1.5])
     r=sig['round_to']
     return max(r,int(round(a/r))*r)

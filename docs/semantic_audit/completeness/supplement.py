@@ -624,7 +624,14 @@ ROW_UPDATES.update({'action_adapter_with_reasoning': {'duplicate_overload': 'ARC
                                                     'runner.shape_size wrapper removed stage9 B5 '
                                                     '(one formula persona.shape_size). '
                                                     'act_with_plan derives size_shape_seed from '
-                                                    'seed when omitted (stage10)'},
+                                                    'seed when omitted (stage10). The odd-size '
+                                                    'probability comes from temper consistency for '
+                                                    'concept profiles (persona.sizing_odd_probability, beta A #1); '
+                                                    'label-only profiles keep SIZING_FAMILY_SIG.',
+                              'producer': 'persona.shape_size;persona.sizing_signature;persona.sizing_odd_probability;plan.shape_planned_target',
+                              'function': 'persona.shape_size;persona.sizing_signature;persona.sizing_odd_probability;plan.shape_planned_target',
+                              'current_function': 'persona.shape_size;persona.sizing_signature;persona.sizing_odd_probability;plan.shape_planned_target',
+                              'inputs': 'persona.shape_size(amount, ptype, rng, pot=None, odd=None); persona.sizing_signature(ptype); persona.sizing_odd_probability(prof); plan.shape_planned_target(amount, profile, pot, actor_cap, seed=None)'},
  'legacy_sidepot_helper': {'action_influence': 'NO',
                            'consumer': 'none',
                            'current_function': '-',
@@ -740,6 +747,7 @@ sp('plan_size_band_clamp', 'plan', 'decide_size', "if plan == 'thin_river':", 'r
 sp('exploit_read_permission', 'plan', 'overbet_frac', 'if opp_est:', "p = PS.blend(p, p*max(0.25, mult), _rdo['w'])")
 
 # ---- plan.act_with_plan ----
+sp('human_planned_size_shape', 'persona', 'sizing_odd_probability')  # beta A #1: odd sizing from temper consistency
 sp('human_planned_size_shape', 'plan', 'act_with_plan', 'if size_shape_seed is None and seed is not None:', "size_shape_seed = _zlib.crc32(('%s|size_shape' % seed).encode())")  # stage10 f3: deterministic sizing RNG
 sp('perceived_icm_pressure', 'plan', 'act_with_plan', "if profile.get('concepts') and bf and bf > 1.0:", 'bf = PS.icm_bf(profile, bf)')
 sp('spr_commitment_flag', 'plan', 'act_with_plan', 'committed = spr(stack, pot) < 1.2')
@@ -1028,7 +1036,7 @@ TABLES = {
     'reads:PRIOR': 'opponent_estimation', 'reads:FAMILY_OBS': 'opponent_estimation',
     'reads:DEFAULT_OBS': 'opponent_estimation',
     'reads:_MAX_RECENCY_HISTORY': 'recency_window', 'reads:_SIG_SCALE': 'style_belief_reference',
-    'persona:SIZING_FAMILY_SIG': 'human_planned_size_shape', 'persona:LOADING': 'persona_population_generation',
+    'persona:SIZING_FAMILY_SIG': 'human_planned_size_shape', 'persona:SIZING_ODD_MAX': 'human_planned_size_shape', 'persona:LOADING': 'persona_population_generation',
     'persona:DEFAULT_SPREAD': 'persona_population_generation', 'persona:SPREAD': 'persona_population_generation',
     'persona:GTO_MEMORY_V2': 'chart_memory_accuracy',
     'persona:PREFLOP_REASONING_V3': 'preflop_condition_reasoning',

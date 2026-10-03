@@ -430,3 +430,16 @@ triage LATER 대조: 결론 기록이 없던 항목을 코드와 대조했다.
 | 변화 내용 | 의도한 리버 승격 1(value_2street → value_3street). 같은 강도인데 '강도 상승'으로 잘못 올리던 pot_control/block → value_2street 10회 제거 |
 | 새 기준선 | 시드 11 `7baf5613…`(583핸드), 시드 12 `9ccf72fc…`(566핸드), 오류 0 |
 | 검증 | 23-gate 23/23, `verify_bugfix3` 통과, completeness 미소유 0 |
+
+## 18차 — 베타 A #1: 즉흥 사이징 확률을 기질 '일관성'으로 배선
+
+기준 `6e01273d`. 의도된 행동 변화다.
+
+| 항목 | 내용 |
+|---|---|
+| 충돌 | '계획한 사이즈를 그대로 실행하는가'를 아키타입 라벨 고정값(`SIZING_FAMILY_SIG['odd']`, reg 2%)이 정했다. 기질 축 `consistency` 가 같은 질문(오픈 사이즈 습관)에 이미 쓰이는데 우회했다 |
+| 최종 선택 | 개념/기질 프로필: `odd = SIZING_ODD_MAX × (1 − consistency/10)`(`persona.sizing_odd_probability`). 라벨 전용 프로필은 라벨 표를 유지한다. 난수 소비 순서는 같다 |
+| 계수 | `SIZING_ODD_MAX = 0.50` 잠정값(사용자 결정). 일관성 10 → 0, 0 → 0.50. 계수 단계에서 재판정 |
+| 같은 상태 쌍 비교 | `tools/fix1_attribution.py`(같은 RNG 상태 복제로 옛 규칙 계산). 계측 지문 = 일반 sim 지문. 사이즈 습관 호출 2,209회 중 변화 20회(전부 odd 사이즈 제거) |
+| 새 기준선 | 시드 11 `fa55057f…`, 시드 12 `c04d672a…`, 오류 0 |
+| 검증 | 23-gate 23/23, completeness 미소유 0, registry 시그니처 불일치 0 |
