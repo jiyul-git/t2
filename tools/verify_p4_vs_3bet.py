@@ -88,11 +88,16 @@ def test_no_true_opponent_axes_in_range_loop():
 def test_context_fields_exist():
     # Structural source check: fields must be written by preflop_plan and consumed postflop.
     import plan as PL
+    # The postflop consumer is session._preflop_story_range, called from
+    # HandRun._run (the read moved out of _run in an earlier refactor; the old
+    # check looked for the keys inside _run itself and went stale).
     psrc = inspect.getsource(PL.preflop_plan)
+    csrc = inspect.getsource(SE._preflop_story_range)
     ssrc = inspect.getsource(SE.HandRun._run)
     for key in ("pf_open_bb", "pf_n_callers", "pf_level"):
         assert key in psrc, key
-        assert key in ssrc, key
+        assert key in csrc, key
+    assert "_preflop_story_range(" in ssrc, "HandRun._run no longer reconstructs via _preflop_story_range"
     return True
 
 

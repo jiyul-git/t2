@@ -7,7 +7,7 @@ What it checks (every threshold below is either structural — equality, orderin
 monotonicity, existence — or a comparison against the current code; no new tuned
 number decides PASS/FAIL):
 
-  IDENT  flag OFF: fixture fingerprints equal test@1a23123 (bit-identical default)
+  IDENT  flag OFF: fixture fingerprints equal the sealed Stage 10 default (repinned)
   A      neutral/high-GTO player stays near the source prior
            A1 open width: neutral temper, pf_range 10 -> equals reference except the
               existing positional-flattening term (reported)
@@ -41,17 +41,21 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-# test@1a23123 (== a148d95, docs-only diff) fingerprints of the two fixtures,
-# measured in isolated processes before this change.
+# Stage 10 repin: the flag-OFF default path changed on purpose after the old
+# pins (test@1a23123 / a148d95) — B3 hero-conditioned fold mass, B4 bias
+# directions, equal-share ante (ante -> SB -> BB).  Values below are the
+# sealed Stage 10 default (two runs identical).  Old pins kept for history:
+#   regress9 3000..3005: 2d832d70 ffa45668 dcb48163 93ae14a8 2edc7c6f 2f83a30a
+#   turbo8   3100..3105: 81aea8aa 61bbaf8c d1b9c04a c034b870 87de40c4 6296f93d
+# stats now: regress9 n 1397 / VPIP 307 / PFR 165 / flop 99;
+#            turbo8   n 1205 / VPIP 359 / PFR 189 / flop 114.
 EXPECT_OFF = {
-    'regress9': {'3000': '2d832d7055da3b84', '3001': 'ffa45668e102598c',
-                 '3002': 'dcb481636e97a99b', '3003': '93ae14a828303a51',
-                 '3004': '2edc7c6feeaa2a5c', '3005': '2f83a30af8ac3c97'},
-    # turbo8: measured with THIS recipe (q/aggr header line included) on pristine
-    # a148d95 via `git stash`; stats n 1223 / VPIP 368 / PFR 190 / flop 107.
-    'turbo8': {'3100': '81aea8aa32443fdb', '3101': '61bbaf8c0719c317',
-               '3102': 'd1b9c04aa0c17cc2', '3103': 'c034b8707389c9e2',
-               '3104': '87de40c49e6b770a', '3105': '6296f93d78693cf6'},
+    'regress9': {'3000': 'cec0bc46e734f1ef', '3001': '6a1bed196369c8bb',
+                 '3002': '92ea96efa6836594', '3003': '80e0d8609160887b',
+                 '3004': '3aeb98debbfa57a5', '3005': '4cfb4350ec1dc211'},
+    'turbo8': {'3100': '908151562a6bb6ca', '3101': '019ff392f3160278',
+               '3102': 'c67092c9589bc73e', '3103': 'd1bde4f14eabfb1b',
+               '3104': '9c3664499c46a9d9', '3105': '9f19d294b17b7c71'},
 }
 FIXTURES = {
     'regress9': dict(seeds=range(3000, 3006),

@@ -83,13 +83,21 @@ def test_barrel_count_includes_current_street():
 
 
 def test_allin_observation_normalization():
-    ar = SE._observed_postflop_action(
-        {'action':'allin','raised':True,'allin_call':False})
-    ac = SE._observed_postflop_action(
+    # The normalizer moved to the canonical event module (action_events.
+    # normalized_action); session._observed_postflop_action no longer exists
+    # (stage10: stale API).  An all-in that raises over a live bet is a raise,
+    # an all-in into an unbet pot is a bet, an all-in call is a call.
+    import action_events as AE
+    ar = AE.normalized_action(
+        {'action':'allin','raised':True,'allin_call':False,'pre_current':200})
+    ab = AE.normalized_action(
+        {'action':'allin','raised':True,'allin_call':False,'pre_current':0})
+    ac = AE.normalized_action(
         {'action':'allin','raised':False,'allin_call':True})
     assert ar == 'raise', ar
+    assert ab == 'bet', ab
     assert ac == 'call', ac
-    return ar, ac
+    return ar, ab, ac
 
 
 def test_session_aggressor_is_rule_event_based():

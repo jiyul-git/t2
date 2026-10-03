@@ -170,8 +170,10 @@ required = (
 for i, rec in enumerate(rows):
     missing = [k for k in required if k not in rec]
     need(not missing, 'row %d missing F7-D keys %r' % (i, missing))
-    need(rec['execution_input_source'] == 'judgment',
-         'fresh all-bot fixture unexpectedly used replay')
+    # Label is 'plan' since 63c6c4c4 moved strategic size shaping into PLAN
+    # (was 'judgment'; stage10 stale label).  'forced_replay' would mean replay.
+    need(rec['execution_input_source'] == 'plan',
+         'fresh all-bot fixture unexpectedly used replay (source=%r)' % rec['execution_input_source'])
     need(rec['execution_input_act'] in ('bet', 'raise'),
          'bad execution input action')
     need(rec['shaped_target'] is not None,
@@ -228,10 +230,12 @@ for rec in clamp_rows:
          'clamped final target differs from Round.apply target')
 
 src = (ROOT / 'session.py').read_text(encoding='utf-8')
+# Stage markers as written since 63c6c4c4 (shaping moved into PLAN; the
+# calculated target and shape flag became multi-line expressions).  stage10.
 order = [
-    "_calculated_target = a2[1]",
+    "_calculated_target = (",
     "_execution_input_target = amt",
-    "_shape_called = True",
+    "_shape_called = (",
     "_legal_target = _sent",
     "_final_target = _sent",
     "_applied_target = (",

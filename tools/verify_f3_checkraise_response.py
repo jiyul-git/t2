@@ -60,7 +60,7 @@ def _patched_response_case(gate_value, can_raise=True):
             pot=300, tocall=100, stack=1000, street='flop',
             opp_range=None, bf=1.0, seed=11, n_opp=1,
             response_kind='check_then_face_bet', can_raise=can_raise,
-            checkraise_seed=12, checkraise_size_seed=13)
+            checkraise_seed=12, checkraise_size_seed=13, size_shape_seed=14)
     finally:
         PL.bot.equity_vs_betting = old_eq
         PL.calldown_need = old_need
@@ -73,7 +73,12 @@ def _patched_response_case(gate_value, can_raise=True):
 
 def test_checkraise_is_single_producer():
     out, seen, st = _patched_response_case(True, True)
-    assert out[0] == ('raise', 777), (out, seen)
+    # F7-D sizing ownership: the checkraise target (777, stub) is shaped by the
+    # plan's human sizing habit before execution.  Exact 777 was a stale
+    # expectation (stage10); the single-producer contract is the gate/response
+    # counts and provenance below.
+    _expected, _ = PL.shape_planned_target(777, profile(), 300, 1000.0, seed=14)
+    assert out[0] == ('raise', int(_expected)), (out, seen, _expected)
     assert seen['gate_calls'] == 1, seen
     assert seen['resp_calls'] == 0, seen
     assert st.get('_last_response_source') == 'checkraise_gate', st
@@ -118,9 +123,12 @@ def test_bluffcatch_bias_is_street_aware():
     hr = PS.bias(p, 'hero_call', 'river')
     assert f != r, (f,r)
     assert hf != hr, (hf,hr)
-    # weak early bluffcatch => more fear and less hero-call than strong river skill
+    # Street-specific skill: weak early bluffcatch => more of BOTH errors than
+    # strong river skill.  Stage9 B4 (L008/L009): bluffcatch skill reduces the
+    # hero-call bias too (mirror of bluff_fear); the old "hf < hr" encoded the
+    # retired direction where skill increased hero-calling.
     assert f > r, (f,r)
-    assert hf < hr, (hf,hr)
+    assert hf > hr, (hf,hr)
     return round(f,3), round(r,3), round(hf,3), round(hr,3)
 
 

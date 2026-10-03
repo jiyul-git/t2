@@ -180,3 +180,10 @@
 - 그룹 A 봉인: `tools/verify_closeout_a.py` 9/9(A2 proxy 계약, A3 클래스 경계 floor 계약). 문구 정정 반영.
 - **Stage 9 완료.** GTO 의존 두 플래그는 별도 blocker 로 남긴다.
 - 다음: Stage 10 final regression. 23-gate 의 기존 실패 6개를 하나씩 판정한다(stale test 인지 실제 결함인지).
+- **Stage 10 완료.**
+  - 23-gate 실패 6개 + 비게이트 2개를 하나씩 판정했다.
+    - 7개: stale test(의도된 코드 변경 뒤 갱신 안 됨).
+    - f3: stale test + 실제 잠재 결함. 사이즈 습관 RNG 가 seed 없이 비결정적이었다. 코드 수정(production 경로 불변).
+  - 회귀 중 드러난 2개: HM2 IDENT stale pin → 재고정. completeness span 누락 → span 추가.
+  - 전체 회귀: 시드 11 `b6425e83…`, 시드 12 `b09618b3…`(B6 기준선과 동일), 23-gate 23/23, 추가 검증기 rc=0, completeness 미소유 0.
+- 다음: Stage 11 문서 동기화(전체 tier-all 검증기 실행으로 verifier manifest 재생성 포함).

@@ -33,44 +33,61 @@ def _m(seat, action, increment, raised=False, full=False,
     }
 
 
+import runner as RU
+
+
+def _round_meta(order, stacks, bb, actions, street=None):
+    """Real rule-engine metadata (stage10: hand-built rows lacked pre_current /
+    full_raise_count, so a raise read as a bet)."""
+    r = RU.Round(None, order, stacks, bb)
+    for seat, act, amt in actions:
+        r.apply(seat, act, amt)
+    rows = [dict(m) for m in r.action_meta]
+    if street:
+        for m in rows:
+            m['street'] = street
+    return rows
+
+
 def test_completed_raise_uses_action_time_pot():
     h = _hr()
-    h.full_action_meta = [
-        _m(1, 'bet', 50, raised=True, full=True, street='flop'),
-        _m(2, 'raise', 150, raised=True, full=True, street='flop'),
-    ]
+    h.full_action_meta = _round_meta(
+        [1, 2], {1: 1000, 2: 1000}, 50,
+        [(1, 'bet', 50), (2, 'raise', 150)], street='flop')
     got = SE.HandRun._acts_of(h, 2)
     assert len(got) == 1, got
-    st, act, frac = got[0]
+    # _acts_of returns canonical dict events (action_events.postflop_events);
+    # the 3-tuple form is only the fallback for meta-less legacy records
+    # (stage10: stale unpacking).
+    e = got[0]
+    st, act, frac = e['street'], e['action_kind'], e['size_frac']
     assert st == 'flop' and act == 'raise', got
     assert abs(frac - 1.0) < 1e-12, got
-    return got
+    return (st, act, frac)
 
 
 def test_completed_allin_call_is_call():
     h = _hr()
-    h.full_action_meta = [
-        _m(1, 'bet', 50, raised=True, full=True, street='flop'),
-        _m(2, 'allin', 50, allin_call=True, street='flop'),
-    ]
+    h.full_action_meta = _round_meta(
+        [1, 2], {1: 1000, 2: 50}, 50,
+        [(1, 'bet', 50), (2, 'allin', 0)], street='flop')
     got = SE.HandRun._acts_of(h, 2)
-    assert got[0][1] == 'call', got
-    assert abs(got[0][2] - (50.0/150.0)) < 1e-12, got
-    return got
+    assert got[0]['action_kind'] == 'call', got
+    assert abs(got[0]['size_frac'] - (50.0/150.0)) < 1e-12, got
+    return (got[0]['action_kind'], got[0]['size_frac'])
 
 
 def test_current_allin_call_is_call():
     h = _hr()
-    meta = [
-        _m(1, 'bet', 100, raised=True, full=True),
-        _m(2, 'allin', 100, allin_call=True),
-    ]
+    meta = _round_meta(
+        [1, 2], {1: 1000, 2: 100}, 50,
+        [(1, 'bet', 100), (2, 'allin', 0)])
     got = SE.HandRun._acts_of(
         h, 2, current_street='turn', current_meta=meta)
-    assert got[0][1] == 'call', got
+    assert got[0]['action_kind'] == 'call', got
     # turn starts 300, bettor adds 100 -> caller acts into 400
-    assert abs(got[0][2] - 0.25) < 1e-12, got
-    return got
+    assert abs(got[0]['size_frac'] - 0.25) < 1e-12, got
+    return (got[0]['action_kind'], got[0]['size_frac'])
 
 
 def test_street_outcome_classes():

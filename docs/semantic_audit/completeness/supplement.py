@@ -651,6 +651,7 @@ sp('plan_size_band_clamp', 'plan', 'decide_size', "if plan == 'thin_river':", 'r
 sp('exploit_read_permission', 'plan', 'overbet_frac', 'if opp_est:', "p = PS.blend(p, p*max(0.25, mult), _rdo['w'])")
 
 # ---- plan.act_with_plan ----
+sp('human_planned_size_shape', 'plan', 'act_with_plan', 'if size_shape_seed is None and seed is not None:', "size_shape_seed = _zlib.crc32(('%s|size_shape' % seed).encode())")  # stage10 f3: deterministic sizing RNG
 sp('perceived_icm_pressure', 'plan', 'act_with_plan', "if profile.get('concepts') and bf and bf > 1.0:", 'bf = PS.icm_bf(profile, bf)')
 sp('spr_commitment_flag', 'plan', 'act_with_plan', 'committed = spr(stack, pot) < 1.2')
 sp('calldown_required_share', 'plan', 'act_with_plan', '_objective_be = (', "_call_eq = float(call_value.get('effective_equity'))")

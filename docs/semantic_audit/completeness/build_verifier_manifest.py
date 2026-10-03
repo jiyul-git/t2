@@ -38,8 +38,6 @@ NOTES = {
     'human_model_v2': 'exceeds 900 s',
     'oop_semantics': 'exceeds 900 s',
     'forced_blind_allin_showdown': 'stale test double: fake Book lacks observe_cold_reraise',
-    'f4_facing_bet': 'stale API: session._observed_postflop_action removed',
-    'f7_street_closure': 'stale tuple shape (expects 3 values)',
     'reaudit_semantic_extraction': 'new in re-audit; compares against HEAD (or given base)',
     'human_model_v3_integration': '~6-10 min: TIMEOUT under the 40-suite 180 s limit, PASS under 900 s',
 }

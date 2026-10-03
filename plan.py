@@ -2658,6 +2658,11 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   response_context=None, call_value=None,
                   size_shape_seed=None):
     """계획을 스트리트에 걸쳐 실행. 체크레이즈·커밋 판단 포함."""
+    # 사이즈 습관 RNG 는 결정적이어야 한다. 세션은 항상 size_shape_seed 를 넘기지만,
+    # 직접 호출에서 빠지면 random.Random(None)(OS 엔트로피)이 돼 같은 입력이
+    # 다른 금액을 냈다(stage10 f3 판정). seed 에서 파생한다.
+    if size_shape_seed is None and seed is not None:
+        size_shape_seed = _zlib.crc32(('%s|size_shape' % seed).encode())
     # ICM 인지. 예전에는 이 두 줄이 docstring **앞에** 있어서
     # docstring 이 첫 문장이 아니게 되고 __doc__ 이 None 이 됐다.
     #

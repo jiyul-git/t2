@@ -21,7 +21,7 @@ def _prof():
     }
 
 
-def _run_response(mult, stack, contrib, pot=300, tocall=100):
+def _run_response(mult, stack, contrib, pot=300, tocall=100, state=None):
     orig_norm = PL._normalize_opp_pools
     orig_eq = PL.bot.equity_vs_betting
     orig_need = PL.calldown_need
@@ -38,7 +38,7 @@ def _run_response(mult, stack, contrib, pot=300, tocall=100):
         )
         out, _, _ = PL.act_with_plan(
             ['As','Ah'], ['Ks','7d','2c'], _prof(),
-            {'plan':'value_3street','rel':0.95,'outs':0},
+            (state if state is not None else {'plan':'value_3street','rel':0.95,'outs':0}),
             pot=pot, tocall=tocall, stack=stack, street='flop',
             initiative=True, opp_range=None, bf=1.0, seed=1,
             n_opp=1, to_act_behind=0, read=None, opp_est=None,
@@ -53,9 +53,16 @@ def _run_response(mult, stack, contrib, pot=300, tocall=100):
 
 
 def test_reraise_target_includes_prior_contrib():
-    out = _run_response(mult=1.0, stack=950, contrib=50)
-    assert out == ('raise', 550), out
-    return out
+    # The planned target (prior contrib 50 + 500) is then shaped by the plan's
+    # human sizing habit (F7-D sizing ownership), so the executed amount is the
+    # shaped value.  Exact 550 was a stale expectation (stage10); the contract
+    # is the pre-shaping target recorded as provenance.
+    st = {'plan': 'value_3street', 'rel': 0.95, 'outs': 0}
+    out = _run_response(mult=1.0, stack=950, contrib=50, state=st)
+    shape = st.get('_last_size_shape') or {}
+    assert shape.get('before') == 550, shape
+    assert out == ('raise', int(shape.get('after'))), (out, shape)
+    return out, shape.get('before')
 
 
 def test_reraise_cap_uses_total_target():
@@ -117,7 +124,10 @@ def test_facing_sequence():
         _m(3,'raise',50,True),    # faces bet, then creates raise
         _m(1,'fold',150,False),   # faces raise
     ]
-    got = SE._postflop_facing_contexts(seq)
+    # session._postflop_facing_contexts was replaced by the canonical event
+    # stream (action_events.postflop_events -> facing_kind per event); stage10.
+    import action_events as AE
+    got = [e['facing_kind'] for e in AE.postflop_events(seq)]
     assert got == [None, 'bet', 'bet', 'raise'], got
     return got
 

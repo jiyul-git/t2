@@ -407,6 +407,13 @@
    "to": "p = PS.blend(p, p*max(0.25, mult), _rdo['w'])"
   },
   {
+   "concept": "human_planned_size_shape",
+   "module": "plan",
+   "func": "act_with_plan",
+   "from": "if size_shape_seed is None and seed is not None:",
+   "to": "size_shape_seed = _zlib.crc32(('%s|size_shape' % seed).encode())"
+  },
+  {
    "concept": "perceived_icm_pressure",
    "module": "plan",
    "func": "act_with_plan",

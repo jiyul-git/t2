@@ -90,12 +90,17 @@ need(len(pools) == 3, 'pool normalization lost opponent slots')
 need(isinstance(pools[0], dict), 'weighted seat pool flattened')
 need(pools[0] == w1, 'weighted seat pool mass changed')
 need(pools[0] is not w1, 'pool normalization leaked input identity')
-need(isinstance(pools[2], dict), 'weighted fallback pool flattened')
-need(pools[2] == w1, 'weighted fallback mass changed')
-need(pools[2] is not pools[0], 'fallback pool aliases another pool')
+# Unknown seats are NOT cloned from a known villain or the union range
+# (eca264f5 "stop cloning known villains into unknown multiway seats"); they
+# stay None and downstream equity uses the neutral fallback.  The old checks
+# expected the retired clone (stage10: stale expectation).
+need(pools[1] is not None and pools[1] == b and pools[1] is not b,
+     'known second seat pool lost or aliased')
+need(pools[2] is None, 'unknown seat was filled by cloning another range')
 
 legacy_pools = PL._normalize_opp_pools(a, 2, {2: a})
-need(legacy_pools == [a, a], 'legacy pool fallback changed')
+need(legacy_pools[0] == a and legacy_pools[0] is not a and legacy_pools[1] is None,
+     'legacy pool normalization changed')
 
 # Source-level guard for the exact flattening boundaries closed by W4.
 session_src = (ROOT / 'session.py').read_text(encoding='utf-8')

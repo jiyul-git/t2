@@ -338,3 +338,30 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 `verify_f3_checkraise_response` 는 원래부터 실패하던 게이트라 A3 검증 근거로 쓰지 않는다. Stage 10 에서 따로 판정한다.
 
 그룹 A 를 최종 완료로 봉인한다. GTO_MEMORY_V2 / PREFLOP_REASONING_V3 는 계속 BLOCKED_BY_GTO_REFERENCE_VALIDATION, production OFF.
+
+## 14차 — Stage 10 final regression
+
+기준 `c6805a15`(Stage 9 봉인). 23-gate 의 기존 실패 6개를 '역사적 실패 유지'로 묶지 않고 하나씩 판정했다. B5 이전부터 실패하던 비게이트 검증기 2개도 같이 판정했다.
+
+| 검증기 | 실패 원인 | 판정 | 처리 |
+|---|---|---|---|
+| `verify_p4_vs_3bet` | pf_open_bb 등의 키를 `HandRun._run` 소스에서 찾음. 소비는 `_preflop_story_range` 로 옮겨졌다(_run 이 호출) | stale test(필드는 실제로 흐름) | 실제 소비 함수 + _run 의 호출을 검사 |
+| `verify_f3_checkraise_response` | ① 체크레이즈 금액을 정확히 777(stub)로 기대 — 계획이 사람 사이즈 습관으로 다듬는다(F7-D). ② hero_call 방향을 옛 식(숙련 ↑ → 편향 ↑)으로 기대 | stale test **+ 실제 잠재 결함**: `size_shape_seed` 없이 직접 호출하면 `random.Random(None)` 이라 같은 입력이 다른 금액(700/800)을 냈다 | 코드: seed 가 없으면 `seed` 에서 결정적으로 파생(세션은 항상 넘기므로 production 불변). 테스트: 같은 seed 로 다듬은 금액, B4 방향(hf > hr) |
+| `verify_f4_facing_bet` | 삭제된 API `session._observed_postflop_action` | stale test | canonical `action_events.normalized_action` 으로 검사(빈 팟 올인 = bet 포함) |
+| `verify_f6_caller_backaction` | 손으로 만든 action_meta 에 엔진의 full_raise_count / post_contrib 가 없어 raise_depth_full 이 0 | stale fixture(실제 Round 로 같은 시나리오를 돌리면 2/3/1 로 정확했다) | fixture 를 실제 `runner.Round` 액션으로 생성 |
+| `verify_f7_street_closure` | `_acts_of` 가 dict event 를 반환하는데 3-tuple 로 풀었다. fixture 에 pre_current 가 없어 raise 가 bet 으로 읽혔다 | stale test | dict 필드로 읽고, 실제 Round 메타데이터로 생성 |
+| `verify_weighted_boundaries` | 모르는 좌석에 알려진 레인지가 복제되기를 기대 — `eca264f5` 에서 의도적으로 퇴역한 동작 | stale test | 무복제 계약을 검사(모르는 좌석 None) |
+| `verify_f5_backaction`(비게이트) | 재레이즈 금액 550 정확 기대(F7-D 다듬기 전 값), 삭제된 `_postflop_facing_contexts` | stale test | 다듬기 전 target(provenance before=550)과 실행 금액(after) 검사, canonical event stream |
+| `verify_prelogic_execution_boundary`(비게이트) | source 라벨 'judgment' 와 옛 stage 마커 — `63c6c4c4` 에서 'plan' 으로 바뀌고 식이 여러 줄이 됐다 | stale test | 라벨 'plan', 현재 마커(순서 동일) |
+| `verify_human_model_v2` IDENT(rc 는 0, 보고 항목) | flag OFF fixture 지문을 `test@1a23123`/`a148d95` 값과 비교 — 그 뒤 B3(hero 조건 fold 질량), B4(편향 방향), 균등 ante 로 기본 경로가 의도적으로 바뀌었다 | stale pin | 현재 기본 경로 값으로 재고정(2회 실행 동일). 옛 값은 주석으로 보존 |
+| completeness 미소유 1 | Stage 10 에서 넣은 `act_with_plan` seed 파생 줄에 소유 span 이 없었다 | 문서 누락(코드 결함 아님) | `human_planned_size_shape` span 추가 → 미소유 0 |
+
+결론: 실패 검증기 8개 중 7개는 코드가 의도적으로 바뀐 뒤 갱신되지 않은 테스트였다. 1개(f3)는 테스트 갱신과 함께 실제 잠재 결함(사이즈 습관 RNG 의 비결정성)이 있어 코드를 고쳤다. 회귀 중 추가로 드러난 2개(HM2 IDENT pin, completeness 미소유 1)는 각각 stale pin, span 누락이며 코드 결함이 아니다.
+
+전체 회귀 1회(코드 고정 상태, md5 확인):
+- 시드 11 `b6425e83…`(581핸드), 시드 12 `b09618b3…`(567핸드), 오류 0. B6 기준선과 동일하다(f3 seed 수정은 production 경로에 영향 없음).
+- **23-gate: 23/23 통과**(이전 17/6).
+- 추가 검증기 rc=0: `verify_f5_backaction`, `verify_prelogic_execution_boundary`, `verify_uniform_ante`, `verify_closeout_a`, `verify_read_recency_v3`, `verify_calc_noise_v3`, `verify_preflop_temper_direction_v3`, `verify_human_model_v2`, `verify_range_read_semantics`, `audit_human_v3_live_attribution`. 단 첫 실행에서 HM2 IDENT=false(위 표, 재고정 후 재실행 결과는 아래).
+- HM2 재고정 후 재실행: IDENT true, MATCH/A1/B/D/E/F/G true, rc=0.
+- completeness: 첫 실행 미소유 1(위 표) → span 추가 후 미소유 0, rc=0.
+- md5: 회귀 시작 전후 *.py 동일(실행 중 코드 변경 없음).

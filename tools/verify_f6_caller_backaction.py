@@ -33,49 +33,53 @@ class _RoundLike:
         self.contrib = contrib
 
 
+# Stage10: the original fixtures hand-built action_meta without the rule
+# engine's full_raise_count / post_contrib fields, so raise_depth_full read 0.
+# The contexts are now produced by the real rule engine (runner.Round), which is
+# what production feeds into action_events.response_context.
+import runner as RU
+
+
+def _round(order, stacks, bb, actions):
+    r = RU.Round(None, order, stacks, bb)
+    for seat, act, amt in actions:
+        r.apply(seat, act, amt)
+    return r
+
+
 def test_call_bet_then_raise_context():
-    seq = [
-        _m(1,'bet',0,True, increment=50),
-        _m(2,'call',50,False, increment=50),
-        _m(3,'raise',50,True, increment=150),
-    ]
-    ctx = SE._postflop_response_context(_RoundLike(seq,{1:50,2:50,3:150}),2)
+    r = _round([1, 2, 3], {1: 1000, 2: 1000, 3: 1000}, 50,
+               [(1, 'bet', 50), (2, 'call', 0), (3, 'raise', 150)])
+    ctx = SE._postflop_response_context(r, 2)
     assert ctx['kind'] == 'caller_backaction', ctx
     assert ctx['prior_action'] == 'call', ctx
     assert ctx['prior_facing_kind'] == 'bet', ctx
     assert ctx['facing_kind'] == 'raise', ctx
     assert ctx['raise_depth_full'] == 2, ctx
-    return ctx
+    return {k: ctx[k] for k in ('kind', 'prior_facing_kind', 'raise_depth_full')}
 
 
 def test_call_raise_then_reraise_context():
-    seq = [
-        _m(1,'bet',0,True, increment=50),
-        _m(3,'raise',50,True, increment=150),
-        _m(2,'call',150,False, increment=150),
-        _m(4,'raise',150,True, increment=300),
-    ]
-    ctx = SE._postflop_response_context(_RoundLike(seq,{1:50,2:150,3:150,4:300}),2)
+    r = _round([1, 3, 2, 4], {1: 2000, 2: 2000, 3: 2000, 4: 2000}, 50,
+               [(1, 'bet', 50), (3, 'raise', 150), (2, 'call', 0), (4, 'raise', 300)])
+    ctx = SE._postflop_response_context(r, 2)
     assert ctx['kind'] == 'caller_backaction', ctx
     assert ctx['prior_facing_kind'] == 'raise', ctx
     assert ctx['facing_kind'] == 'raise', ctx
     assert ctx['raise_depth_full'] == 3, ctx
-    return ctx
+    return {k: ctx[k] for k in ('kind', 'prior_facing_kind', 'raise_depth_full')}
 
 
 def test_incomplete_raise_context():
-    seq = [
-        _m(1,'bet',0,True, increment=50),
-        _m(2,'call',50,False, increment=50),
-        _m(3,'allin',50,True,full=False,incomplete=True,increment=30),
-    ]
-    ctx = SE._postflop_response_context(_RoundLike(seq,{1:50,2:50,3:80}),2)
+    r = _round([1, 2, 3], {1: 1000, 2: 1000, 3: 80}, 50,
+               [(1, 'bet', 50), (2, 'call', 0), (3, 'allin', 0)])
+    ctx = SE._postflop_response_context(r, 2)
     assert ctx['kind'] == 'caller_backaction', ctx
     assert ctx['facing_incomplete_raise'] is True, ctx
     assert ctx['facing_full_raise'] is False, ctx
     assert ctx['raise_depth_full'] == 1, ctx
     assert ctx['raise_depth_any'] == 2, ctx
-    return ctx
+    return {k: ctx[k] for k in ('facing_incomplete_raise', 'raise_depth_full', 'raise_depth_any')}
 
 
 def _prof():
