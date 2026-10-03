@@ -365,3 +365,42 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - HM2 재고정 후 재실행: IDENT true, MATCH/A1/B/D/E/F/G true, rc=0.
 - completeness: 첫 실행 미소유 1(위 표) → span 추가 후 미소유 0, rc=0.
 - md5: 회귀 시작 전후 *.py 동일(실행 중 코드 변경 없음).
+
+## 15차 — Stage 11 문서 동기화와 봉인
+
+기준 `3c5d56d5`(Stage 10). 목적은 문서와 검증 manifest 를 현재 코드에 맞추는 것이다. **production 판단 코드는 바꾸지 않았다.** Stage 11 전후 production `*.py` 42개 md5 가 같다.
+
+문서 대조:
+- 개념→함수 registry: 모든 행의 함수 참조와 `inputs` 시그니처를 `inspect.signature` 로 현재 코드와 대조했다. 처음에는 삭제된 함수 참조 3건, 시그니처 불일치 8건이었고, 정정 후 둘 다 0.
+- 퇴역 플래그·API 를 ACTIVE/OPT-IN 으로 적은 행을 정정했다: recency_window, calculation_error, preflop_temperament_direction, exploit_read_permission, legacy_sidepot_helper, turn_card_range_shift, value_when_called_strength, human_planned_size_shape, value_degradation_thresholds. 정정은 `supplement.py` 의 `ROW_UPDATES` 로 기록했다(재생성 가능).
+- registry MD 빠른 표는 CSV 에서 자동 생성한다(`_sync_registry_quick_table`). 225행 중 210행은 기존 텍스트와 바이트 동일, 15행은 정정된 행이다.
+- 현재 상태 문서에서 삭제·개명된 `모듈.함수` 참조를 0으로 맞췄다: STREET_SEMANTIC_MATRIX, CURRENT_ARCHITECTURE_AUDIT, RANGE_READ_CONSUMER_BOUNDARIES, STRUCTURAL_CONCEPT_REVIEW, README. 남은 2건(`persona.overpair_love` 는 편향 이름, `tourney.next_hand` 는 메서드)은 오탐이다.
+- `CONCEPT_SYSTEM.md` 에 Stage 11 현재 플래그 상태 표를 두고, §11~§15 의 opt-in 문구에 현재 상태를 덧붙였다.
+- GTO_MEMORY_V2 / PREFLOP_REASONING_V3: 모든 문서에서 production OFF, BLOCKED_BY_GTO_REFERENCE_VALIDATION.
+- `size_shape_seed` 계약:
+  - production(세션)은 항상 명시 seed 를 넘긴다.
+  - `size_shape_seed` 가 없고 `seed` 가 있으면 `crc32('<seed>|size_shape')` 로 결정적으로 파생한다(Stage 10).
+  - `seed` 자체가 None 인 임의 직접 호출은 결정성 계약 대상이 아니다. `act_with_plan` 은 원래 `random.Random(seed)` 를 쓴다.
+
+tier-all(74개, HEAD clean worktree, timeout 2400, jobs 3) 판정. 이전 manifest 대비 바뀐 것만 적는다:
+
+| 검증기 | 결과 | 판정 | 처리 |
+|---|---|---|---|
+| `f1_free_action` | PASS → FAIL | stale test. 가드는 B3 구조분리(20e206f7, 행동 동일)에서 `plan.blockbet_probability` 로 옮겨졌을 뿐 그대로다 | 검사 위치 갱신 + make_plan 경유 확인. 4/4 |
+| `oop_semantics` | TIMEOUT → (처음 완주) FAIL B1c 25, C3 2 | stale test model. 옛 팔은 `vs_aggr=None`(살아 있는 어그레서 없음)을 넘긴다. None 은 legacy 로 대체되지 않는다(4b9d33d5 이전부터). 25건 전부 field=legacy=True, vs_aggr=True 였다. 입력이 다른데 '플래그 불변'으로 셌다. 같은 팔 재생 400/400 결정적(비결정성 없음) | 입력 변화 판정에 vs_aggr≠None 포함, C3 는 입력이 같은 쌍만. 재실행 B1c 0 / C3 0, PASS |
+| `state_namespace`, `trace_schema` | PASS → FAIL | 환경. 병렬(jobs 3)에서 다른 검증기가 같은 worktree 에 아카이브를 쓴다 | clean worktree 단독 rc=0. manifest 메모에 단독 실행 명시 |
+| `audit_order` | (재확인) | 같은 이유. 아카이브 8개가 남은 worktree 에서 D3 FAIL | 새 clean worktree 단독 PASS |
+| `human_model_v2` | TIMEOUT → PASS | 900 초를 넘던 것. 2400 초에서 완주 | — |
+| `closeout_a`, `uniform_ante`, `stage9_semantic` | NEW → PASS | Stage 9 에서 추가 | — |
+
+최종: **PASS 62 / FAIL 12 / TIMEOUT 0**, REGRESSION 0. 23-gate 23/23(재실행). completeness 미소유 0, rc=0.
+- 남은 FAIL 12 는 모두 이전 manifest 에서도 FAIL 이던 역사적 실패다.
+  - 3개(`stepothers_timing`, `tilt_divergence`, `tilt_isolation`)는 인자가 필요한 CLI 드라이버다.
+  - 나머지 9개(`defer`, `f7b_blocker_activation`, `f7b_defend_rewire`, `forced_blind_allin_showdown`, `replan_contract`, `telemetry_wiring`, `tournament_telemetry`, `ui_tournament_panel`, `weighted_aggregate_transform`)는 23-gate 밖이고 Stage 10 판정 범위 밖이었다. stale/실결함 판정은 하지 않았다(FOLLOWUP-S11-V).
+- manifest 는 실행 결과에서 재생성했다. 검증기별 실행 명령, rc, 상태, 목적(계약), verifier blob SHA, source `3c5d56d5` 를 남긴다.
+
+triage LATER 대조: 결론 기록이 없던 항목을 코드와 대조했다.
+- 해결됨이 4건이다(L148, L-RA06, L-RA07, L-RA03). L-RA03 은 registry 만 낡아 있었다.
+- 미판정 17건은 FOLLOWUP-S11 로 분리했다(ledger 'Stage 11' 절). 행동 변화가 필요하므로 이 단계에서 고치지 않았다.
+
+다음 단계 개념·지식 공백 목록: `CONCEPT_GAPS_NEXT.md`.

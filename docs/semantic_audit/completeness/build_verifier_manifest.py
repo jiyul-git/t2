@@ -24,19 +24,21 @@ SUITE40_BEFORE = {x['name']: ('TIMEOUT' if x['exit'] == 'TIMEOUT' else
                   for x in json.load(open(os.path.join(DOC, 'evidence', 'verifiers_before.json')))}
 
 
-# Verified separately in clean worktrees (only tracked files) at pristine HEAD and
-# with the working-tree code: PASS in both.  In a developer checkout they read
-# untracked repo-root archives (*.jsonl, sidecars) left by earlier runs.
+# Verified separately: each run ALONE in a clean worktree (only tracked files) at
+# the source head -> PASS.  They assert repo-root sidecar/archive invariants, so a
+# parallel run (--jobs > 1) or a developer checkout with untracked *.jsonl
+# archives makes them FAIL (stage 11: jobs=3 run FAIL, solo rc=0 for all three).
 CLEAN_TREE_PASS = {'audit_order', 'state_namespace', 'trace_schema'}
 NOTES = {
-    'audit_order': 'environment-dependent: D3/D4 read untracked repo-root *.jsonl archives; PASS in a clean worktree',
-    'state_namespace': 'environment-dependent: repo sidecar invariants; PASS in a clean worktree',
-    'trace_schema': 'environment-dependent: repo archive invariants; PASS in a clean worktree',
+    'audit_order': 'run alone in a clean worktree: D3/D4 read repo-root *.jsonl archives',
+    'state_namespace': 'run alone in a clean worktree: repo sidecar invariants (parallel runs contaminate)',
+    'trace_schema': 'run alone in a clean worktree: repo archive invariants (parallel runs contaminate)',
     'stepothers_timing': 'CLI driver: requires --mode (not a standalone pass/fail verifier)',
     'tilt_divergence': 'CLI driver: requires a command argument',
     'tilt_isolation': 'CLI driver: requires --mode',
-    'human_model_v2': 'exceeds 900 s',
-    'oop_semantics': 'exceeds 900 s',
+    'human_model_v2': '~18 min; needs --timeout > 900',
+    'oop_semantics': '~19 min; needs --timeout > 900. stage 11: B1c/C3 stale test model fixed (old arm vs_aggr=None is an input change)',
+    'f1_free_action': 'stage 11: guard moved to plan.blockbet_probability by B3 split (20e206f7); verifier updated',
     'forced_blind_allin_showdown': 'stale test double: fake Book lacks observe_cold_reraise',
     'reaudit_semantic_extraction': 'new in re-audit; compares against HEAD (or given base)',
     'human_model_v3_integration': '~6-10 min: TIMEOUT under the 40-suite 180 s limit, PASS under 900 s',
@@ -141,7 +143,7 @@ def main():
          '| 모든 코드 변경 직후 | `python tools/run_verifier_manifest.py --tier fast` + `python tools/check_semantic_completeness.py` | fast 전부 PASS, completeness rc 0 |',
          '| 행동 불변 리팩터링 | 위 + 해당 parity verifier(`semantic_cleanup`, `defend_semantic_cleanup`, `range_read_semantics`, `remaining_read_semantics`, `reaudit_semantic_extraction`) + baseline sim action/intent 바이트 비교 | parity PASS, sim 동일 |',
          '| 행동 변경 batch / push 전 | `--tier gate23` (+ baseline sim before/after) | expected 와 동일한 PASS/FAIL 집합 |',
-         '| 체크포인트 / 승격 검토 | `--tier all --timeout 900` | 아래 expected 와 동일; REGRESSION 0 |', '',
+         '| 체크포인트 / 승격 검토 | `--tier all --timeout 2400`(human_model_v2·oop_semantics 는 약 18~19분). `audit_order`·`state_namespace`·`trace_schema` 는 clean worktree 에서 단독 실행 | 아래 expected 와 동일; REGRESSION 0 |', '',
          '`expected` 가 FAIL/TIMEOUT 인 스크립트는 pristine HEAD 에서도 같은 상태인 **역사적 실패**다. '
          '억지로 고쳐 PASS로 만들지 않았다. 상태가 바뀌면 원인을 조사하고 이 표를 갱신한다.', '',
          '요약: PASS %(PASS)d / FAIL %(FAIL)d / TIMEOUT %(TIMEOUT)d (총 %(n)d). REGRESSION: %(reg)s' % dict(

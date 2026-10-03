@@ -187,3 +187,12 @@
   - 회귀 중 드러난 2개: HM2 IDENT stale pin → 재고정. completeness span 누락 → span 추가.
   - 전체 회귀: 시드 11 `b6425e83…`, 시드 12 `b09618b3…`(B6 기준선과 동일), 23-gate 23/23, 추가 검증기 rc=0, completeness 미소유 0.
 - 다음: Stage 11 문서 동기화(전체 tier-all 검증기 실행으로 verifier manifest 재생성 포함).
+- **Stage 11 완료(문서 동기화·봉인).** production 코드 불변(md5 동일).
+  - registry: 함수 참조·시그니처를 코드와 대조해 불일치 0. 퇴역 플래그/API 문구 정정.
+  - 현재 상태 문서에서 삭제·개명된 참조 0. CONCEPT_SYSTEM 에 현재 플래그 표를 추가했다.
+  - tier-all 74: PASS 62 / FAIL 12(전부 역사적), REGRESSION 0. 23-gate 23/23, completeness 미소유 0.
+  - 검증기 판정: f1, oop_semantics 는 stale test → 갱신. state_namespace, trace_schema, audit_order 는 단독 clean 실행 필요(환경).
+  - FOLLOWUP-S11: triage LATER 중 미판정 17건(ledger 'Stage 11' 절). FOLLOWUP-S11-V: 23-gate 밖 역사적 실패 9건은 미판정.
+  - GTO_MEMORY_V2 / PREFLOP_REASONING_V3: production OFF, BLOCKED_BY_GTO_REFERENCE_VALIDATION.
+- **Stage 0~11 감사·통합 완료 → 인간형 구조 정본화 완료.**
+- 다음: 전략 지식 개선 단계. 출발 목록은 `CONCEPT_GAPS_NEXT.md`(독립 능력 부재 / 지식 공백 / 권장 순서). FOLLOWUP-S11 17건의 처리 여부는 사용자 판정.

@@ -453,3 +453,40 @@
 - Termux 20/25/30/40bb 결과도 exact stack semantics 문제로 보류 중이다.
 - `persona.GTO_STUDIED` 는 8-max(Matthiola) 기준이다.
 - 지금 켜면 GTO 쪽 오류가 인간형 모델로 옮겨온다. GTO continuation S pilot 이 끝나고 corrected 9-max reference 가 검증된 뒤 다시 판정한다. Stage 9 범위에 넣지 않는다.
+
+## Stage 11 — Stage 9 triage 의 LATER / PARTIAL 항목 최종 상태
+
+Stage 11 문서 대조에서 확인했다. triage(`stage9/STAGE9_TRIAGE.md`)의 LATER 18 + PARTIAL 3 중 Stage 9 판정 표에 결론이 있는 것은 일부뿐이었다. 각 항목을 현재 코드와 대조했다. **Stage 11 은 행동 코드를 바꾸지 않는다(사용자 지시).** 그래서 미해결은 고치지 않고 FOLLOWUP 으로 분리한다.
+
+해결됨(코드 반영, 근거 기록 있음):
+
+| ID | 처리 |
+|---|---|
+| L148 | B4: 콜 문턱 편향을 `persona.call_bias` 한 곳에서 한 번 |
+| L-RA06 / L109 | B6: danger 기록을 `perceived_board_danger` 로 통일, 원시값은 `danger_raw` |
+| L-RA07 / L112 | B6: `texture.new_card_effect(prior_board, new_card)`, 리버는 플랍+턴 대비 |
+| L-RA03 | B3 L-S9-03: `continue_range_strength` + `ahead_when_called`. registry 행이 감사 당시 상태(DUPLICATED)로 남아 있어 Stage 11 에서 정정 |
+
+**FOLLOWUP-S11 (미판정 — 행동 변화가 필요하다. 코드는 감사 당시 그대로):**
+
+| ID | 문제(현재 코드 근거) | 성격 |
+|---|---|---|
+| L049 | `session.HandRun._was_3bettor` 가 원시 로그의 raise/allin 을 센다. 올인 콜도 3벳으로 셀 수 있다. canonical 역할은 full raise 만 센다 | 상대 역할 판정 |
+| L093 | `ranges._raise_range` posterior 와 실제 forward raise 정책이 다르다. 가격 fallback 이 없다 | 레인지 추론 |
+| L125 | `plan.trap_judgment` 가 생성 전용인 `latent.study` 를 runtime 에서 읽는다 | 설계 위반 |
+| L143 | `plan.stackoff_plan` / `spread_curve` 가 턴·리버에서도 3스트리트 배분으로 고정돼 있다 | 사이징 |
+| L156 | replan 에 bb·tilt·문맥이 전달되지 않는다. 플랍 계획이 항상 먼저다 | 계획 수명 |
+| L161 | 봇 테이블이 핸드마다 `reads.Book` 을 새로 만든다. 상대 기억이 지속되지 않는다 | 상대 기억 |
+| L163 | 쇼다운 관측이 공개/머크 결정 전에 모든 생존자를 기록한다. 포스트플랍 강도로 PCT 를 쓴다 | 관측 가시성 |
+| L170 | 쇼다운 이력 휴리스틱(`runner.adjust_range_by_history`)이 Book posterior 와 따로 있다 | 관측 가시성 |
+| L194 | 관찰자 기록이 가시성 판정보다 먼저다 | 관측 가시성 |
+| L198 | 감정 axes view 가 판단 입력으로 쓰인다. 깨끗한 view API 로 전부 옮기지 않았다 | 기질 경계 |
+| L-RA02 | '살아 있는 어그레서에게 리드하나'를 세 메커니즘이 다른 크기로 답한다 | 같은 질문 중복 |
+| L-RA04 | 쇼다운 가치 판정의 equity 기준이 섞여 있다(eq vs eq_current). 블러프 게이트에 멀티웨이 항이 없다 | 같은 질문 중복 |
+| L-RA08 | 턴/리버 replan 이 thin_value_<street> 대신 range_merge 숙련을 읽는다 | 숙련 공급 |
+| L-RA09 | `made_strength` 가 보드 페어로 made>=2 를 만든다 → giveup 재진입 오판 | 정의 |
+| L-RA10 (잔여) | 오버벳은 B3 L-S9-04 에서 joint 로 바꿨다. `blocker_score`, perceived continue range 를 쓰는 일부 gate 는 아직 합집합 레인지를 읽는다 | 멀티웨이 |
+| L024 | `range_read` 하나가 복원·해석·적용 세 능력을 공급한다(경계 함수는 분리됨) | 독립 능력 부재 |
+| L035 | `multiway` 하나가 풀 정체성(수학)과 추론을 공급한다 | 독립 능력 부재 |
+
+L024 / L035 / L-RA08 은 `CONCEPT_GAPS_NEXT.md` 의 '독립 능력 부재'와 같은 항목이다. 나머지는 사용자 판정 뒤 별도 행동 변경 batch 로 처리한다.

@@ -7,7 +7,7 @@ C1~C2   불변식
 B2      line_bluff_prior 의 aggressor_pos_oop
 B1      옛 절대식 팔 vs 새 팔을 같은 입력에 재생 — 출력이 달라지면
         반드시 바뀐 플래그가 있어야 한다 (설명 불가 = 0)
-C3      난수 소비량 특성화:
+C3      난수 소비량 특성화(입력이 같은 쌍):
           출력 동일  -> 소비량 동일
           출력 변화  -> decide_size 호출 여부 때문에 소비량이 달라질 수 있다
 
@@ -168,14 +168,18 @@ def main():
         outd = (o_out.get('plan') != n_out.get('plan')
                 or io.get('act') != inn.get('act')
                 or round(io.get('size', 0) or 0, 6) != round(inn.get('size', 0) or 0, 6))
-        flagd = (c['field'] != c['legacy']
-                 or (c['vs_aggr'] is not None and c['vs_aggr'] != c['legacy']))
+        # 옛 팔은 vs_aggr=None('살아 있는 어그레서 없음')을 넘긴다. None 은
+        # legacy 로 대체되지 않는다(plan: oop_legacy_abs 는 기록용, 4b9d33d5 이전부터).
+        # 따라서 새 팔의 vs_aggr 이 None 이 아니면 그것만으로 입력이 바뀐 것이다.
+        # (stage 11 판정: 예전 식은 vs_aggr == legacy 를 '불변'으로 세어 입력이
+        # 다른 25건을 설명 불가로 오분류했다. 같은 팔 재생은 400/400 결정적.)
+        flagd = (c['field'] != c['legacy'] or c['vs_aggr'] is not None)
         pairs += 1
         if outd:
             diffs += 1
             if not flagd:
                 unexplained += 1
-        if (o_n != n_n) and not outd:
+        if (o_n != n_n) and not outd and not flagd:
             cnt_only += 1
     dead = [r['ctx'] for r in rec if r['ctx'] and r['ctx'].get('ag_dead')]
     ok('A15', all(c['vs_aggr'] is None for c in dead),
