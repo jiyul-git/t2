@@ -5,6 +5,7 @@ C1  session.line_spot_kind classification cases (lead / probe / none).
 S1  a tournament with the persistent book records lead and probe spots; counts
     are consistent: bets <= opportunities, raise responses <= bets.
 S2  showdown links exist and strong/weak <= shown.
+M1  multiway streets record only donk (lead) bets, in separate mw_lead counters.
 R1  plan.opp_bet_prob: 'aggressor' uses c-bet/barrel, 'probe' uses the probe
     rate shrunk toward the same base; no probe sample -> base; None -> legacy.
 """
@@ -62,11 +63,18 @@ def sim():
                           r.get('sd_%s_strong' % kind, 0))
             ok &= sw + ss <= sd
             tot['sd_%s' % kind] = tot.get('sd_%s' % kind, 0) + sd
+        for st in ('flop', 'turn', 'river'):
+            o, b2 = r.get('mw_lead_opp_%s' % st, 0), r.get('mw_lead_%s' % st, 0)
+            ok &= b2 <= o
+            tot['mw_lead_opp'] = tot.get('mw_lead_opp', 0) + o
+            tot['mw_lead_bet'] = tot.get('mw_lead_bet', 0) + b2
     s1 = {'pass': bool(ok and tot.get('lead_opp', 0) > 0 and tot.get('probe_opp', 0) > 0
                        and tot.get('lead_bet', 0) > 0 and tot.get('probe_bet', 0) > 0),
           'totals': tot}
     s2 = {'pass': bool(ok and (tot.get('sd_lead', 0) + tot.get('sd_probe', 0)) > 0)}
-    return s1, s2
+    m1 = {'pass': bool(ok and tot.get('mw_lead_opp', 0) > 0),
+          'mw_lead_opp': tot.get('mw_lead_opp', 0), 'mw_lead_bet': tot.get('mw_lead_bet', 0)}
+    return s1, s2, m1
 
 
 def r1():
@@ -85,9 +93,9 @@ def r1():
 
 
 def main():
-    s1, s2 = sim()
+    s1, s2, m1 = sim()
     checks = {'C1_classification': c1(), 'S1_counts_consistent': s1,
-              'S2_showdown_link': s2, 'R1_role_rates': r1()}
+              'S2_showdown_link': s2, 'M1_multiway_donk_only': m1, 'R1_role_rates': r1()}
     ok = all(v['pass'] for v in checks.values())
     print(json.dumps({'pass': ok, 'checks': checks}, indent=1))
     raise SystemExit(0 if ok else 1)

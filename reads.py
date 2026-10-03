@@ -257,6 +257,9 @@ class Book:
             'lead_fr': 0, 'lead_f2r': 0, 'probe_fr': 0, 'probe_f2r': 0,
             'sd_lead': 0, 'sd_lead_strong': 0, 'sd_lead_weak': 0,
             'sd_probe': 0, 'sd_probe_strong': 0, 'sd_probe_weak': 0,
+            # 멀티웨이 동크(리드)는 헤즈업 리드와 의미가 달라 따로 센다.
+            'mw_lead_opp_flop': 0, 'mw_lead_flop': 0, 'mw_lead_opp_turn': 0,
+            'mw_lead_turn': 0, 'mw_lead_opp_river': 0, 'mw_lead_river': 0,
         }
         key = self._k(i, j)
         r = self.d.setdefault(key, {})
@@ -420,16 +423,23 @@ class Book:
             if action in ('bet', 'raise'): r['agg_actions'] += 1
             elif action in ('check', 'call'): r['passive_actions'] += 1
 
-    def observe_line(self, observers, actor, kind, street, did_bet):
-        """리드/프로브 기회와 실행. kind 는 'lead' 또는 'probe'."""
+    def observe_line(self, observers, actor, kind, street, did_bet, multiway=False):
+        """리드/프로브 기회와 실행. kind 는 'lead' 또는 'probe'.
+
+        multiway=True 는 멀티웨이 동크(리드)만 받는다 — 멀티웨이에서는 동크 외의
+        포스트플랍 액션을 성향으로 기억하지 않는다(session 참고).
+        """
         if kind not in ('lead', 'probe') or street not in ('flop', 'turn', 'river'):
             return
+        if multiway and kind != 'lead':
+            return
+        pre = 'mw_lead' if multiway else kind
         for i in observers:
             if i == actor: continue
             r = self.rec(i, actor)
-            r['%s_opp_%s' % (kind, street)] += 1
+            r['%s_opp_%s' % (pre, street)] += 1
             if did_bet:
-                r['%s_%s' % (kind, street)] += 1
+                r['%s_%s' % (pre, street)] += 1
 
     def observe_line_raise(self, observers, actor, kind, folded):
         """리드/프로브 벳이 레이즈를 맞았을 때 접었는가."""
@@ -692,6 +702,9 @@ def _line_rates(r):
         out['sd_%s_weak' % kind] = raw('sd_%s_weak' % kind, 'sd_%s' % kind)
         out['sd_%s_strong' % kind] = raw('sd_%s_strong' % kind, 'sd_%s' % kind)
         out['sd_%s_n' % kind] = r.get('sd_%s' % kind, 0) or 0
+    for st in ('flop', 'turn', 'river'):
+        out['mw_lead_%s' % st] = raw('mw_lead_%s' % st, 'mw_lead_opp_%s' % st)
+        out['mw_lead_%s_n' % st] = r.get('mw_lead_opp_%s' % st, 0) or 0
     return out
 
 

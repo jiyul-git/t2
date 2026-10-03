@@ -2577,6 +2577,12 @@ class HandRun:
             _aggr_live = (street_aggr is not None and street_aggr not in folded
                           and h.stacks.get(street_aggr, 1) > 0)
             _checked_now = set()
+            # 멀티웨이(이번 스트리트 시작 시 팟에 남은 사람 3명 이상)에서는 사람이
+            # 동크벳 외의 포스트플랍 액션을 상대 성향으로 기억하지 않는다(사용자
+            # 판단 2026-10-03): 멀티웨이 c벳/배럴은 대부분 진짜 패이고 멀티웨이
+            # 블러프는 드물어서, 헤즈업 성향 통계에 섞으면 오독한다. 멀티웨이는
+            # 동크(리드)만 따로 센다. 쇼다운에서 본 패는 그대로 기록한다.
+            _mw_obs = sum(1 for _x in h.seats if _x not in folded) >= 3
             _line_kind = getattr(self, '_line_kind', None)
             if _line_kind is None:
                 _line_kind = self._line_kind = {}
@@ -2591,14 +2597,19 @@ class HandRun:
                 # 체크했거나 대응할 공격자가 없으면 프로브.
                 _lk = line_spot_kind(x, street_aggr, _aggr_live, _acted_once,
                                      _checked_now, _bet_seen)
-                if _lk:
+                if _lk and _mw_obs:
+                    if _lk == 'lead':
+                        h.book.observe_line(_ord, _pid(x), 'lead', street,
+                                            _ak in ('bet', 'raise'), multiway=True)
+                elif _lk:
                     _did = _ak in ('bet', 'raise')
                     h.book.observe_line(_ord, _pid(x), _lk, street, _did)
                     if _did:
                         _line_kind[(street, x)] = _lk
                         _line_marks.setdefault(x, set()).add(_lk)
                 # 그 벳이 레이즈를 맞았을 때의 반응.
-                if (e.get('facing_kind') == 'raise' and (street, x) in _line_kind):
+                if (not _mw_obs and e.get('facing_kind') == 'raise'
+                        and (street, x) in _line_kind):
                     h.book.observe_line_raise(
                         _ord, _pid(x), _line_kind[(street, x)], _ak == 'fold')
                 if _ak == 'check':
@@ -2611,16 +2622,17 @@ class HandRun:
                 # 첫 베팅 기회를 얻는 것. barrel 표본과 섞지 않는다.
                 is_delayed = (street == 'turn' and opp_spot and _prev_checked_through
                               and not _prev_aggr_bet)
-                h.book.observe_postflop(
-                    _ord, _pid(x), e.get('action_kind'), is_cbet, is_barrel,
-                    facing_bet=(e.get('facing_kind') == 'bet'),
-                    facing_raise=(e.get('facing_kind') == 'raise'),
-                    street=street,
-                    is_delayed_cbet_spot=is_delayed)
-                # 사이즈/상황 의미도 canonical event에서 같은 값을 쓴다.
-                if e.get('action_kind') in ('bet', 'raise'):
-                    h.book.observe_size(
-                        _ord, _pid(x), e.get('size_frac', 0.0), street)
+                if not _mw_obs:
+                    h.book.observe_postflop(
+                        _ord, _pid(x), e.get('action_kind'), is_cbet, is_barrel,
+                        facing_bet=(e.get('facing_kind') == 'bet'),
+                        facing_raise=(e.get('facing_kind') == 'raise'),
+                        street=street,
+                        is_delayed_cbet_spot=is_delayed)
+                    # 사이즈/상황 의미도 canonical event에서 같은 값을 쓴다.
+                    if e.get('action_kind') in ('bet', 'raise'):
+                        h.book.observe_size(
+                            _ord, _pid(x), e.get('size_frac', 0.0), street)
                 _acted_once.add(x)
                 if e.get('action_kind') in ('bet', 'raise'):
                     _bet_seen = True
