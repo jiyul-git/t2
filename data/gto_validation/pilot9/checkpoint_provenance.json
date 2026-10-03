@@ -1,0 +1,8 @@
+{
+ "checkpoint": "/home/user/gto_ckpt/ck9max_pilot_100.gtop (outside the repo, persistent disk /dev/vda; survives container restarts, unlike running processes)",
+ "size_bytes": 102304053,
+ "save_cost": "~0.5 s write+fsync for 102 MB (measured on the same disk) vs ~33 s per 9-max iteration -> T2_CHECKPOINT_EVERY=10 kept",
+ "resume_check": "4-handed straight 40 vs 20 + resume 20: bit-identical (6ba3684)",
+ "history": "first run wrote checkpoints under the session scratchpad; stopped at iteration 30, checkpoint copied (sha256 prefix c527909a) to the persistent path and resumed there",
+ "flow": "100 iterations -> t_btn100.json -> C0 census from the same checkpoint -> STOP (C1-C3 only after the C0 report is reviewed)"
+}
