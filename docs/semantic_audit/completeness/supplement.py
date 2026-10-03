@@ -15,7 +15,7 @@ substring) so they survive line drift.  Running this file rewrites
 CONCEPT_FUNCTION_REGISTRY.csv/.json (rows with origin IMPLICIT_CODE_V2 are
 regenerated, other rows are kept, ROW_UPDATES are applied) and SPAN_MAP.json.
 """
-import csv, json, os, re
+import csv, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOC = os.path.dirname(HERE)
@@ -81,13 +81,13 @@ NEW_ROWS = [
     row('value_when_called_strength',
         '그 사이즈를 실제로 계속(콜/레이즈)할 상대 레인지 대비 내 강도 — "콜당했을 때도 앞서는가"',
         'flop turn river', 'CALCULATION', 'JUDGMENT',
-        'plan.continue_range_strength;plan.ahead_when_called',
+        'plan.continue_range_strength;plan.ahead_when_called;plan.turn_value_reassessment',
         'plan.target_commit;plan.stackoff_plan;overbet polarity;river thin value;bluff re-judgment;value raise qualification',
         'R.perceived_continue_range(opp_range, board, street, size, profile), relative_strength/_eq_vs',
         'rel or equity vs continuing range', 'M', 'reasoning', 'ACTIVE', YES,
         'RESOLVED stage9 B3 (L-S9-03/04): continuous strength (commit target, overbet polarity) = '
         'continue_range_strength (joint when every seat continue range exists); binary value qualification '
-        '(river thin value, improved bluff, value raise) = ahead_when_called (eq vs continue >= 0.50). '
+        '(river thin value, turn value_2street [beta A #4], improved bluff, value raise) = ahead_when_called (eq vs continue >= 0.50). '
         'Audit-time state: four metrics/thresholds',
         'value_when_called_strength', 'continue_range_value',
         'plan.make_plan: _commit_rel = rel .. _so[\'commit_rel\']; plan.overbet_frac: if value_line and opp_range and board'),
@@ -798,6 +798,7 @@ sp('value_when_called_strength', 'plan', 'river_value_reassessment', '_thin_eq, 
 sp('value_when_called_strength', 'plan', 'continue_range_call_equity')  # stage9 B3 (L119)
 sp('value_when_called_strength', 'plan', 'continue_range_strength')  # stage9 B3 integration (L-S9-03/04)
 sp('value_when_called_strength', 'plan', 'ahead_when_called')  # stage9 B3 integration (L-S9-03)
+sp('value_when_called_strength', 'plan', 'turn_value_reassessment')  # beta A #4: turn thin value asks value-when-called
 sp('nonvalue_raise_ev_gate', 'ranges', 'range_mass_live')  # stage9 B3 integration (L-S9-02a)
 sp('plan_revision_lifecycle', 'plan', 'update_plan')
 sp('pure_bluff_line_selection', 'plan', '_blocker_score_bluff_factor')
@@ -1036,6 +1037,7 @@ TABLES = {
     'reads:PRIOR': 'opponent_estimation', 'reads:FAMILY_OBS': 'opponent_estimation',
     'reads:DEFAULT_OBS': 'opponent_estimation',
     'reads:_MAX_RECENCY_HISTORY': 'recency_window', 'reads:_SIG_SCALE': 'style_belief_reference',
+    'plan:CLEAR_VALUE_REL': 'value_when_called_strength',  # beta A #4 (shared river/turn clear-value boundary)
     'persona:SIZING_FAMILY_SIG': 'human_planned_size_shape', 'persona:SIZING_ODD_MAX': 'human_planned_size_shape', 'persona:LOADING': 'persona_population_generation',
     'persona:DEFAULT_SPREAD': 'persona_population_generation', 'persona:SPREAD': 'persona_population_generation',
     'persona:GTO_MEMORY_V2': 'chart_memory_accuracy',
@@ -1125,6 +1127,47 @@ NONSEMANTIC_MODULES = {
 }
 
 
+def _sync_input_signatures(rows):
+    """`inputs` 칸의 `module.func(args)` 시그니처를 현재 코드의 inspect.signature 로
+    맞춘다(stage 11 이후). 시그니처가 바뀔 때마다 행을 손으로 고치면 어긋난다.
+    저장소 루트 모듈의 존재하는 callable 만 바꾸고, 나머지 텍스트는 그대로 둔다.
+    """
+    import importlib, inspect
+    root = os.path.dirname(os.path.dirname(DOC))
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    os.environ.setdefault('T2_BOT_LOG', '0')
+    mods = {}
+    pat = re.compile(r'([a-z_0-9]+)\.([A-Za-z_][\w.]*)\(([^()]*(?:\([^()]*\)[^()]*)*)\)')
+
+    def fix(m):
+        mod, path = m.group(1), m.group(2)
+        if not os.path.exists(os.path.join(root, mod + '.py')):
+            return m.group(0)
+        if mod not in mods:
+            try:
+                mods[mod] = importlib.import_module(mod)
+            except Exception:
+                mods[mod] = None
+        o = mods[mod]
+        if o is None:
+            return m.group(0)
+        for part in path.split('.'):
+            o = getattr(o, part, None)
+            if o is None:
+                return m.group(0)
+        if not callable(o):
+            return m.group(0)
+        try:
+            return '%s.%s%s' % (mod, path, inspect.signature(o))
+        except (TypeError, ValueError):
+            return m.group(0)
+
+    for r in rows:
+        if r.get('inputs'):
+            r['inputs'] = pat.sub(fix, r['inputs'])
+
+
 def build():
     path_csv = os.path.join(DOC, 'CONCEPT_FUNCTION_REGISTRY.csv')
     rows = list(csv.DictReader(open(path_csv, encoding='utf-8')))
@@ -1140,6 +1183,7 @@ def build():
         assert nr['concept'] not in names, nr['concept']
         names.add(nr['concept'])
         rows.append(nr)
+    _sync_input_signatures(rows)
     with open(path_csv, 'w', encoding='utf-8', newline='') as f:
         w = csv.DictWriter(f, fieldnames=COLS)
         w.writeheader()

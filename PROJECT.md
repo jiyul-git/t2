@@ -133,6 +133,11 @@ master promotion
 6. master에 반영
 7. test를 새 master 기준으로 계속 사용
 
+2026-10-03 사용자 결정 — 변경 종류별 승격:
+- 버그 수정·개념 연결/구현: test 에서 검증(같은 상태 귀속, 23-gate, completeness)이 끝나고 문제가 없으면 **바로 master 로 승격**한다.
+- 계수 조정: **test 에서만** 한다. 표본을 뽑아 포커적으로 검토한 뒤, master 승격 전에 사용자에게 한 번 더 확인한다.
+- 플레이(UI)는 master 로 한다: `T2_UI_REF=master sh ui/tools/setup_run_dir.sh ~/t2_play`.
+
 새 비-GTO branch를 관성적으로 만들지 않는다.
 정말 독립 이력이 필요한 예외 작업도 먼저 test에서 가능한지 확인하고, 별도 branch가 필요하면 같은 phase 안에서 merge/drop까지 닫는다.
 

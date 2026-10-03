@@ -708,6 +708,13 @@
    "to": null
   },
   {
+   "concept": "value_when_called_strength",
+   "module": "plan",
+   "func": "turn_value_reassessment",
+   "from": null,
+   "to": null
+  },
+  {
    "concept": "nonvalue_raise_ev_gate",
    "module": "ranges",
    "func": "range_mass_live",
@@ -2233,6 +2240,7 @@
   "reads:DEFAULT_OBS": "opponent_estimation",
   "reads:_MAX_RECENCY_HISTORY": "recency_window",
   "reads:_SIG_SCALE": "style_belief_reference",
+  "plan:CLEAR_VALUE_REL": "value_when_called_strength",
   "persona:SIZING_FAMILY_SIG": "human_planned_size_shape",
   "persona:SIZING_ODD_MAX": "human_planned_size_shape",
   "persona:LOADING": "persona_population_generation",

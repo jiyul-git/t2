@@ -1288,7 +1288,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
 
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
-                  oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None):
+                  oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None, tilt=0.0):
     """계획에 이 스트리트의 의도를 붙인다. 판단 층의 마지막 단계."""
     plan = st.get('plan')
     rel = st.get('rel', 0.5)
@@ -1296,7 +1296,10 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                                       oop, initiative, to_act_behind, rng,
                                       opp_est, st.get('outs', 0), plan_state=st,
                                       oop_vs_aggr=oop_vs_aggr,
-                                      oop_legacy_abs=oop_legacy_abs)
+                                      oop_legacy_abs=oop_legacy_abs,
+                                      spr_now=(float(stack)/max(1.0, float(pot))
+                                               if pot else None),
+                                      tilt=tilt)
     _roll = rng.random()
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
            why=why_a, plan=plan, rel=round(rel, 3))
@@ -1974,7 +1977,7 @@ def potcontrol_bet_probability(aggr, rel, initiative, oop_vs_aggr):
 
 def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
                       to_act_behind, rng, opp_est=None, outs=0, plan_state=None,
-                      oop_vs_aggr=None, oop_legacy_abs=None):
+                      oop_vs_aggr=None, oop_legacy_abs=None, spr_now=None, tilt=0.0):
     """무저항 상황(tocall==0)에서 칠지 체크할지 결정하는 **유일한 지점**.
 
     예전에는 이 판단이 집행부(act_with_plan)에 흩어져 있었다:
@@ -2005,6 +2008,13 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     if plan in ('giveup', 'showdown'):
         if not initiative:
             return 0.0, '포기 계획 + 이니셔티브 없음 → 체크'
+        # 리버의 쇼다운 계획은 '콜 레인지 대비 앞서지 않는다'는 판정의 결과다
+        # (river_fix 가 앞서면 얇은 밸류로 승격한다). 이 손으로 치면 더 좋은 손만
+        # 콜하고 더 나쁜 손만 접는다 — 쇼다운 가치를 블러프로 바꾸는 것이라
+        # 체크보다 항상 나쁘다(베타 A #3). 플랍/턴은 남은 카드에 대한 보호·
+        # 에쿼티 거부 동기가 있고, 포기(에어) 계획의 리버 벳은 순수 블러프다.
+        if plan == 'showdown' and street == 'river':
+            return 0.0, '리버 쇼다운 계획 → 체크(치면 더 좋은 손만 콜)'
         cf = cbet_freq(profile, board, n_opp, street, oop, rel, opp_est,
                        range_adv=(plan_state or {}).get('range_adv', 0.0))
         cf *= _dc_boost
@@ -2091,6 +2101,23 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
     # prohibition.  Aggressive humans sometimes lead strong hands, but the
     # previous implementation effectively treated it as a fresh 97% value bet.
     if line_owned_by_live_aggressor(plan_state, street, initiative, oop_vs_aggr):
+        # 분명한 밸류(rel >= CLEAR_VALUE_REL)에서 상대에게 액션을 넘기는 것은
+        # '체크로 상대 벳을 유도'하는 트랩이다. 트랩은 상대가 쳐줄 때만 성립하므로
+        # 그 판단(trap_judgment: 상대 벳 확률·SPR·인원·보드 위험·취향)을 그대로
+        # 거친다. 트랩이 아니면 리드한다. 예전에는 강도와 무관하게 재리드 4~16%
+        # 였고, 넛급으로 체크 → 상대 체크백으로 밸류를 잃었다(베타 A #2).
+        # 중간 강도는 아래 라인 소유 규칙(대부분 체크)을 그대로 쓴다.
+        if has_c and rel >= CLEAR_VALUE_REL:
+            _ps = plan_state or {}
+            _spr = spr_now if spr_now is not None else (_ps.get('spr') or 5.0)
+            p_trap, _twhy = trap_judgment(
+                profile, opp_est, _spr, _ps.get('danger', 0.0) or 0.0,
+                max(0, int(n_opp or 1) - 1), street, tilt,
+                lambda c: PS.sk(profile, c))
+            _fp = max(0.0, min(0.97, 1.0 - p_trap))
+            return _fp, (
+                '라인은 상대 것이나 분명한 밸류(rel %.2f) → 트랩 %.0f%%, 아니면 리드(%.0f%%)'
+                % (rel, p_trap*100, _fp*100))
         _relead = max(0.04, min(0.16, 0.04 + 0.010*float(a)))
         p *= _relead
         _fp = max(0.02, min(0.35, p))
@@ -3322,6 +3349,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                      opp_ranges=opp_ranges, opp_ests=opp_ests)
         if _first:
             st.setdefault('refreshed', []).append(street)
+        st = turn_value_reassessment(
+            st, hero, board, profile, opp_range, n_opp=n_opp, opp_ranges=opp_ranges)
     st['_rsig'] = _rsig
     st['_opps_sig'] = _opps_sig
 
@@ -3360,7 +3389,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
                            oop, initiative, _intent_est,
                            oop_vs_aggr=oop_vs_aggr,
                            oop_legacy_abs=oop_legacy_abs,
-                           opp_ranges=opp_ranges)
+                           opp_ranges=opp_ranges, tilt=tilt)
     return st
 
 
@@ -3398,6 +3427,40 @@ def continue_range_call_equity(hero, board, profile, street, size_frac,
     return _eq, _n
 
 
+# 이 rel 이상이면 '분명한 밸류'다 — 콜 레인지 대비 재평가 없이 계획대로 친다.
+# 리버 재평가에 있던 리터럴을 턴 재평가와 공유하려고 이름을 붙였다(값 불변).
+CLEAR_VALUE_REL = 0.92
+
+
+def turn_value_reassessment(st, hero, board, profile, opp_range,
+                            n_opp=1, opp_ranges=None):
+    """턴의 2스트리트 밸류: 계획한 턴 사이즈로 쳤을 때 **콜당해도 앞서는가**(베타 A #4).
+
+    리버에는 이 질문(river_value_reassessment)이 있는데 턴에는 없어서, 플랍에
+    '중간강도 → 얇은 밸류'로 세운 계획이 턴 카드로 밀린 뒤에도 강등 문턱
+    (rel 0.30)만 넘으면 계속 쳤다(예: KK 가 J♦T♦9♦6♣ 에서 rel 0.37 로 베팅).
+    콜 레인지 대비 eq 가 손익분기(0.50) 미만이면 팟 컨트롤로 내려 쇼다운 가치를
+    지킨다. 근거(콜 레인지)가 없으면 계획을 유지한다 — 턴은 마지막 스트리트가
+    아니고, 콜 레인지를 지어내지 않는다.
+    """
+    if len(board) != 4 or st.get('plan') != 'value_2street':
+        return st
+    if (st.get('rel') or 0.0) >= CLEAR_VALUE_REL:
+        return st
+    _size = float(SIZING['value_2street']['turn'])
+    _eq, _n = continue_range_call_equity(
+        hero, board, profile, 'turn', _size, opp_range, opp_ranges, n_opp)
+    st = dict(st)
+    st['turn_call_eq'] = None if _eq is None else round(float(_eq), 3)
+    st['turn_call_range_n'] = _n
+    if _eq is not None and not ahead_when_called(_eq):
+        st['plan'] = 'pot_control'
+        st['why'] = (st.get('why') or []) + [
+            '턴: 전체 rel %.2f지만 콜 레인지 상대 eq %.2f < 0.50 → 밸류 아님, 팟 컨트롤'
+            % (st.get('rel') or 0.0, float(_eq))]
+    return st
+
+
 def river_value_reassessment(st, hero, board, profile, opp_range, rng,
                              n_opp=1, opp_ranges=None):
     """Terminal value question: value when called, otherwise showdown/giveup.
@@ -3415,13 +3478,22 @@ def river_value_reassessment(st, hero, board, profile, opp_range, rng,
     # Keep the existing semantic bands; the bug was the fallback direction.
     # Previously, failing the thin-value gate returned the old value_2street
     # plan, so a hand *not good enough for thin value* still bet as value.
-    if rel >= 0.92:
+    if rel >= CLEAR_VALUE_REL:
+        # 분명한 밸류는 친다. 그런데 2스트리트 계획이 플랍·턴에 예산을 다
+        # 썼으면 리버 사이즈가 0 이라 '사이즈 0 → 체크'가 됐다 — 밸류라고
+        # 판정하고 치지 않는 모순(베타 A, #5 와 같은 계열).
+        if (st.get('plan') == 'value_2street'
+                and (budget_left(st, 'value_2street', 'river') or 0) <= 0):
+            st['plan'] = 'value_3street'
+            st['plan_goal'] = 'value_3street'
+            st['why'] = (st.get('why') or []) + [
+                '리버: 2스트리트 예산 소진이나 분명한 밸류(rel %.2f) → 리버 밸류' % rel]
         return st
 
     if profile and profile.get('concepts') and rng is not None and made >= 1:
         _tv = PS.sk(profile, 'thin_value_river')/10.0
         _band = (max(0.0, min(1.0, (rel - 0.48)/0.30))
-                 * max(0.0, min(1.0, (0.92 - rel)/0.20)))
+                 * max(0.0, min(1.0, (CLEAR_VALUE_REL - rel)/0.20)))
 
         # Thin value asks a different question from "am I ahead of their
         # whole range?": am I still ahead **when called**?
@@ -3471,7 +3543,8 @@ def river_value_reassessment(st, hero, board, profile, opp_range, rng,
 
 
 
-def river_semibluff_resolution(st, hero, board, profile, opp_range, rng):
+def river_semibluff_resolution(st, hero, board, profile, opp_range, rng,
+                               n_opp=1, opp_ranges=None):
     """Terminal draw question: completed value, showdown, missed-draw bluff/fold."""
     made = bot.made_strength(hero, board)
     rel = st.get('rel', 0.5)
@@ -3481,6 +3554,12 @@ def river_semibluff_resolution(st, hero, board, profile, opp_range, rng):
     if draw_completion_supports_value(made, rel):
         st['plan'] = 'value_2street'
         st['why'] = (st.get('why') or []) + ['리버: 드로우 완성 → 밸류 전환']
+        # 완성됐어도 분명한 밸류가 아니면 '콜당했을 때 앞서는가'를 묻는다.
+        # 낮은 플러시(55 의 5 하이 플러시, rel 0.36)가 완성만으로 밸류벳했다
+        # (베타 A J4). 다른 리버 밸류 후보와 같은 재평가를 거친다.
+        if rel < CLEAR_VALUE_REL:
+            return river_value_reassessment(
+                st, hero, board, profile, opp_range, rng, n_opp, opp_ranges)
         return st
     if made >= 2:
         st['plan'] = 'showdown'
@@ -3540,7 +3619,8 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
 
     if st.get('plan') != 'semibluff':
         return st
-    return river_semibluff_resolution(st, hero, board, profile, opp_range, rng)
+    return river_semibluff_resolution(st, hero, board, profile, opp_range, rng,
+                                      n_opp=n_opp, opp_ranges=opp_ranges)
 
 
 def _prof_hint(st):
