@@ -4,6 +4,31 @@ import icm as _ICM
 
 def spr(stack, pot): return stack/max(1, pot)
 
+
+def board_texture_read(profile):
+    """보드 텍스처를 읽는 정도 0~1 = min(1, sk(board_texture)/7).
+
+    같은 능력이 위험 인지(/6)와 나머지 다섯 소비처(/7)에서 다른 포화점으로
+    정규화돼 있었다(stage9 B6). 하나의 인지 능력이므로 한 정규화로 통일했다 —
+    기존 다수값 7 을 썼고 새 수치는 만들지 않았다. 개념 없는 프로필의
+    처리(0.5 기본값 / 원시값)는 각 소비처의 아키타입 기본값이라 호출부에 둔다.
+    """
+    return min(1.0, PS.sk(profile, 'board_texture')/7.0)
+
+
+def perceived_board_danger(profile, board):
+    """이 사람이 인지하는 보드 위험(0~1).
+
+    원시 위험(bot.board_danger)에 텍스처 읽기 능력을 곱한다 — 텍스처를 못
+    읽으면 위험을 모른다. 개념이 없는 프로필은 원시값 그대로다.
+    plan_state['danger'] 는 언제나 이 값이고, 원시값은 'danger_raw' 로 따로
+    기록한다(L-RA06/L109, stage9 B6).
+    """
+    d = bot.board_danger(board)
+    if profile.get('concepts'):
+        d *= board_texture_read(profile)
+    return d
+
 def line_bluff_prior(opp_profile, street, n_barrels, sizing_frac, board,
                      aggressor_pos_oop, opp_read=None):
     """현재 betting range 안의 bluff share를 설명용으로 반환한다.
@@ -940,9 +965,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 구분할 수 없다. 판단에는 절대 쓰지 않는다 — 쓰려면 먼저 검증이 필요하다.
     eq_cur = _eq_current(hero, board, opp_range, n_opp, sims=400, seed=seed,
                          opp_ranges=opp_ranges)
-    dang = bot.board_danger(board)
-    if profile.get('concepts'):
-        dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)   # 텍스처를 못 읽으면 위험을 모름
+    dang = perceived_board_danger(profile, board)
     outs_true = draw_strength(hero, board)
     outs = outs_true * PS.calc_noise(profile, 'outs', rng) if profile.get('concepts') else outs_true
     outs = int(round(outs))
@@ -1195,7 +1218,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         else:
             plan = 'giveup'; why.append('쇼다운 가치 없고 블러프 개념/조건 미달 → 포기')
     st = {'plan': plan, 'street_made': street, 'streets': [street],
-            'eq': round(eq,3), 'danger': round(dang,2), 'outs': outs,
+            'eq': round(eq,3), 'danger': round(dang,2),
+            'danger_raw': round(bot.board_danger(board), 2), 'outs': outs,
             'blocker': round(blk,2), 'blocker_net': round(blk_net,3),
             'blocker_net_raw': float(_blk_raw),
             'blocker_source': _blk_meta.get('source'),
@@ -2007,11 +2031,12 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
                 p *= max(0.40, min(1.80, 1.0 + _fe*_rdf['w']*2.2*_fg))
         # 턴/리버 카드가 누구를 도왔는가. 브릭이면 배럴이 먹히고
         # 상대를 도운 카드면 멈춰야 한다.
-        # texture.turn_card_effect 가 이걸 재는데 호출부가 없었다.
+        # texture.new_card_effect 가 이걸 잰다. 새 카드는 직전 보드 전체 대비로
+        # 본다(리버면 플랍+턴, L-RA07).
         if street in ('turn', 'river') and len(board) >= 4 and has_c:
-            _tce = TX.turn_card_effect(board[:3], board[3] if street == 'turn' else board[-1],
-                                       aggressor_range_high=bool(initiative))
-            _bt = min(1.0, PS.sk(profile, 'board_texture')/7.0)
+            _tce = TX.new_card_effect(board[:-1], board[-1],
+                                      aggressor_range_high=bool(initiative))
+            _bt = board_texture_read(profile)
             p *= max(0.35, min(1.70, 1.0 + 0.75*_tce*_bt))
         _mw2 = PS.sk(profile, 'multiway')/10.0 if has_c else 0.5
         p *= (1 - (0.12 + 0.20*_mw2)*max(0, n_opp-1))
@@ -2131,7 +2156,7 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
     # 구분하는데 호출부가 없어 죽어 있었다. SIZING 표는 계획별 상수라
     # 같은 계획이면 어떤 보드든 같은 사이즈가 나왔다.
     if base > 0:
-        _bt2 = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
+        _bt2 = board_texture_read(profile) if profile.get('concepts') else 0.5
         _tf = TX.size_fraction(board, plan, street)
         base = base*(1.0 - 0.45*_bt2) + _tf*(0.45*_bt2)
     # 블로커 순 효과(밸류 관점). 콜할 콤보를 지웠으면 크게 쳐도 콜을 못 받으므로
@@ -2469,7 +2494,7 @@ def _continuation_frequency(profile, board, n_opp, street, oop, rel, opp_est=Non
     # 보드 구조. board_danger(젖은 정도)만 보면 A하이·페어보드처럼
     # '아무도 못 맞은' 보드에서 쳐야 한다는 것이 안 나온다.
     # texture.cbet_multiplier 가 그 구조를 이미 갖고 있었는데 호출부가 없었다.
-    _bt = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
+    _bt = board_texture_read(profile) if profile.get('concepts') else 0.5
     _cm = TX.cbet_multiplier(board, not oop)
     f *= 1.0 + (_cm - 1.0) * _bt            # 개념이 낮으면 구조를 못 읽는다
     f *= (1 - 0.18*bot.board_danger(board)) # 젖은 정도는 남기되 비중을 줄인다
@@ -2478,7 +2503,7 @@ def _continuation_frequency(profile, board, n_opp, street, oop, rel, opp_est=Non
     # 레인지 우위. 씨벳 빈도의 가장 큰 구조적 근거인데 예전에는 들어가지 않았다.
     # 개념(board_texture)이 없으면 보드가 누구에게 유리한지 못 읽는다.
     if range_adv:
-        _ba = min(1.0, PS.sk(profile, 'board_texture')/7.0) if profile.get('concepts') else 0.5
+        _ba = board_texture_read(profile) if profile.get('concepts') else 0.5
         f *= max(0.45, min(1.75, 1.0 + 0.85*range_adv*_ba))
     if opp_est:
         # read_opponent 경유. 예전에는 opp_est['ftb'] 를 날것으로 읽어
@@ -3705,7 +3730,11 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
                       if _rel_meta.get('joint') is not None else None),
         'rel_source': _rel_meta.get('source'),
         'eq': round(eq, 3), 'outs': outs,
-        'made': made, 'danger': round(bot.board_danger(board), 2)})
+        'made': made,
+        # 'danger' 는 make_plan 과 같은 의미(이 사람이 인지한 위험)로 기록한다.
+        # 예전에는 여기서 원시값으로 덮어써 같은 키의 의미가 바뀌었다(L-RA06).
+        'danger': round(perceived_board_danger(profile, board), 2),
+        'danger_raw': round(bot.board_danger(board), 2)})
     # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
     # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
     _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed,
@@ -3760,13 +3789,13 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
                            % (street, 100*d, ctrl_thr))
 
     # 턴/리버 카드가 누구를 도왔는가. 상대를 도운 카드면 근거가 더 빨리 무너지고,
-    # 나를 도운 카드면 더 버틴다. turn_card_effect 가 이걸 재는데
-    # decide_aggression 에서만 쓰이고 계획 재평가에는 안 들어갔다.
+    # 나를 도운 카드면 더 버틴다. texture.new_card_effect 가 이걸 잰다
+    # (직전 보드 전체 대비 — 리버면 플랍+턴, L-RA07).
     if len(board) >= 4 and profile.get('concepts'):
-        _tce = TX.turn_card_effect(board[:3], board[-1],
+        _tce = TX.new_card_effect(board[:-1], board[-1],
                                    aggressor_range_high=bool(st.get('plan') in
                                        ('value_3street', 'value_2street', 'trap')))
-        _bt = min(1.0, PS.sk(profile, 'board_texture')/7.0)
+        _bt = board_texture_read(profile)
         _shift = 0.45 * _tce * _bt          # +면 내 레인지에 유리
         give_thr = max(0.02, give_thr * (1.0 - _shift))
         ctrl_thr = max(0.08, ctrl_thr * (1.0 - _shift))

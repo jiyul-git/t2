@@ -98,9 +98,16 @@ RANK_HELP = {14: 0.55, 13: 0.42, 12: 0.34, 11: 0.24, 10: 0.12,
              9: 0.00, 8: -0.06, 7: -0.12, 6: -0.18, 5: -0.22,
              4: -0.25, 3: -0.27, 2: -0.28}
 
-def turn_card_effect(flop, turn_card, aggressor_range_high=True):
-    """턴/리버 카드가 공격자 레인지를 도왔는가. -1(상대를 도움) ~ +1(나를 도움).
-       브릭(아무도 안 도움)은 0 근처가 되어야 한다."""
+def new_card_effect(prior_board, new_card, aggressor_range_high=True):
+    """새로 깔린 카드(턴 또는 리버)가 공격자 레인지를 도왔는가. -1(상대를 도움) ~ +1(나를 도움).
+       브릭(아무도 안 도움)은 0 근처가 되어야 한다.
+
+    prior_board 는 그 카드가 깔리기 **직전의 보드 전체**다(턴이면 플랍 3장,
+    리버면 플랍+턴 4장). 예전 이름 turn_card_effect 로 리버에서도 플랍만 넘겨
+    턴 카드를 무시했다(ledger L112/L-RA07, stage9 B6 에서 수정).
+    """
+    flop = prior_board
+    turn_card = new_card
     v = RV[turn_card[0]]
     fr = [RV[x[0]] for x in flop]
     e = RANK_HELP.get(v, 0.0)

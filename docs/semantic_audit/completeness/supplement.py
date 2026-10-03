@@ -587,7 +587,9 @@ NS = '@nonsemantic:'
 
 # ---- plan.make_plan ----
 sp('opponent_fold_constraint', 'plan', 'make_plan', '_field_fold = (', "if int(n_opp or 1) > 1 else opp_stack_bb)")
-sp('perceived_board_danger', 'plan', 'make_plan', 'dang = bot.board_danger(board)', "dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)")
+sp('perceived_board_danger', 'plan', 'make_plan', 'dang = perceived_board_danger(profile, board)')  # stage9 B6
+sp('perceived_board_danger', 'plan', 'perceived_board_danger')  # stage9 B6 (L-RA06/L109)
+sp('perceived_board_danger', 'plan', 'board_texture_read')  # stage9 B6: one normalization of board_texture
 sp('strong_support_blocker', 'plan', 'make_plan', 'blk_true = R.blocker_score(hero, opp_range, board)', 'blk = blk_true * _bg')
 sp('continue_fold_blocker', 'plan', 'make_plan', "_typ = {'flop': 0.60", 'blk_net = _blk_raw * _bg')
 sp('perceived_spr', 'plan', 'make_plan', 's_true = spr(stack, pot)', 's = s*_sa + 5.0*(1.0 - _sa)')

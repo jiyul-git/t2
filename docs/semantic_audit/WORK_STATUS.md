@@ -162,3 +162,10 @@
   - 호환 / 옛 경로 / 이름 정리 10건(ledger "9단계 B5 통합").
   - clean 안테 기준선 대비 행동 차이 0: 지문 동일, 23-gate 동일.
 - 다음: B6(bot / texture / depth).
+- **B6 통합 완료.**
+  - 리버 새 카드 효과가 턴 카드를 포함하도록 했다(L-RA07).
+  - danger 기록의 의미를 통일했다(L-RA06).
+  - board_texture 정규화를 하나로 통일했다(L027).
+  - depth / texture sizing 은 현 구조가 최종이다.
+  - 새 baseline: 시드 11 `b6425e83…`, 시드 12 `b09618b3…`.
+- 다음: B1/B2 의 남은 구형 / 2차 / 3차 분기 통합. 대상은 GTO_MEMORY_V2, PREFLOP_REASONING_V3, READ_RECENCY_V3, 프리플랍 bluff/3bet 소비처, 두 순서표. 9-max 수치는 근거를 확보해서 결론 낸다.

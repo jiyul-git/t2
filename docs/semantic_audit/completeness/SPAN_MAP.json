@@ -32,8 +32,22 @@
    "concept": "perceived_board_danger",
    "module": "plan",
    "func": "make_plan",
-   "from": "dang = bot.board_danger(board)",
-   "to": "dang *= min(1.0, PS.sk(profile,'board_texture')/6.0)"
+   "from": "dang = perceived_board_danger(profile, board)",
+   "to": null
+  },
+  {
+   "concept": "perceived_board_danger",
+   "module": "plan",
+   "func": "perceived_board_danger",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "perceived_board_danger",
+   "module": "plan",
+   "func": "board_texture_read",
+   "from": null,
+   "to": null
   },
   {
    "concept": "strong_support_blocker",

@@ -283,3 +283,18 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - completeness: site 1,122 / 함수 612 / 상수 표 76, 미소유 0. 안테 함수 3개를 forced_bet_posting 으로 소유시켰다.
 - 갱신한 검증기(새 계약): `verify_core_sizing_ownership`, `verify_human_model_v3`(E1/E2 단일 가중치), `verify_human_model_v2`, `audit_human_v3_live_attribution`, `verify_range_read_semantics`, `verify_f3`/`verify_f5` fixture(canonical response_kind).
 - B5 이전부터 실패하던 검증기: `verify_f5_backaction`, `verify_prelogic_execution_boundary`, `verify_f3_checkraise_response`(23-gate 의 기존 실패 6개 중 하나).
+
+## 12차 — 9단계 B6 통합 (bot / texture / depth)
+
+기준 `5acda39d`. 판정은 ledger "9단계 B6 통합" 절.
+
+코드 변경:
+- `texture.turn_card_effect` → `new_card_effect(prior_board, new_card)`. 리버도 직전 보드 전체 대비로 잰다.
+- `plan.perceived_board_danger`, `plan.board_texture_read` 추가.
+- `danger` / `danger_raw` 기록을 분리했다.
+
+검증:
+- 같은 상태 쌍 비교: 리버 호출 727회 중 252회 값 변화.
+- 새 baseline: 시드 11 `b6425e83…`(불변), 시드 12 `b09618b3…`(567핸드, 오류 0).
+- 23-gate: 안테 기준선과 동일하다.
+- completeness: 미소유 0.

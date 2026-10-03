@@ -416,3 +416,17 @@
 - `oop_legacy_abs` 는 판단 경로가 아니라 기록용 비교값이다(plan 주석). 실행 경로가 둘이 아니므로 유지한다.
 - `cbet_freq` 디스패처는 production 단일 진입점이다. continuation 함수군은 GTO terminal-continuation 작업과 맞닿아 있어 손대지 않았다(사용자 지시).
 - `tools/verify_f3_checkraise_response.py`, `tools/verify_f5_backaction.py`, `tools/verify_prelogic_execution_boundary.py` 는 B5 이전(HEAD)에도 실패하던 검증기다(기존 결함, B5 원인 아님). f3 는 23-gate 의 기존 실패 6개 중 하나다.
+
+## 9단계 B6 통합 (bot / texture / depth)
+
+기준 `5acda39d`(clean 안테 기준선 + B5).
+
+| ID | 충돌 | 최종 선택 | 근거 | 검증 |
+|---|---|---|---|---|
+| L112 / L-RA07 | 리버에서 '새 카드가 누구를 도왔나'를 플랍 + 리버 카드로 쟀다. 턴 카드를 무시했다(함수 이름도 turn) | `texture.new_card_effect(prior_board, new_card)`. 새 카드는 **직전 보드 전체**(턴: 플랍, 리버: 플랍 + 턴) 대비로 잰다. 두 호출부(decide_aggression 배럴, refresh 문턱) 모두 `board[:-1], board[-1]` | 리버 카드가 페어를 만들었는지, 플러시·스트레이트를 완성했는지는 턴까지 깔린 보드 대비의 사실이다. 턴은 `board[:-1]` = 플랍이라 그대로다 | 같은 상태 쌍 비교(`tools/b6_integration_attribution.py`): 리버 호출 727회 중 252회 값 변화(평균 \|Δ\| ≈ 0.23). 시드 11 지문 불변, 시드 12 변화 |
+| L-RA06 / L109 | plan_state `danger` 가 make_plan 에서는 숙련으로 줄인 인지 위험, refresh 에서는 원시 위험이었다(같은 키, 다른 의미) | `perceived_board_danger(profile, board)` 하나로 두 곳 모두 인지 위험을 기록. 원시값은 `danger_raw` 로 따로 기록 | 이 키는 기록 전용이다(세션 로그, 분석 도구). 판단 경로 변화는 없다 | 판단 경로 불변 |
+| L027 | 같은 `board_texture` 능력의 정규화가 위험 인지 /6, 나머지 다섯 소비처 /7 | `board_texture_read(profile)` = min(1, sk/7) 하나로 통일. 개념 없는 프로필의 기본값은 각 호출부 유지 | 한 인지 능력은 한 포화점을 가져야 한다. 기존 다수값 7 을 썼고 새 수치는 만들지 않았다. 최대 숙련은 두 정규화 모두 포화라 baseline 에서 차이가 없다 | 필드의 중간 숙련(6~7)에서 위험 인지가 약간 낮아진다 |
+| L107 | depth 의 객관 깊이 / 주관 추정 | 현 구조가 최종(`base_feel`, `field_adjusted_bb`, `eroded_bb` = 객관 곡선·환산 / `depth_feel` = 개인 인지) | 이미 함수가 분리돼 있고, 같은 질문에 경로가 둘인 곳이 없다 | — |
+| L111 | texture sizing 의 보드 사실 / 학습 prior / 인지 잡음 | 현 구조가 최종(`size_fraction` = 보드 → 사이즈 prior, `perceived` = 숙련 잡음) | 같음 | — |
+
+새 baseline(B6): 시드 11 `b6425e83…`(불변), 시드 12 `b09618b3…`.
