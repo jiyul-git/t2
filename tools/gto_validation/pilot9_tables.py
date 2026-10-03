@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 """Build t2_hu_continuation tables for the 4 pilot nodes.
     pilot9_tables.py legacy <export_dir> <out_dir>      gross = exported legacy_gross (static payoff at the export's profile)
-    pilot9_tables.py solved <flops_root> <out_dir>      gross = A4c estimator over the solved panel_v1 flops of each node
+    pilot9_tables.py solved <flops_root> <out_dir> [names] [terminal_prefix]
+                                                       gross = A4c estimator over the solved panel_v1 flops of each node
+    names: comma list from ALL_NODES (default the 4 S-pilot nodes); terminal_prefix: file prefix under <flops_root>/terminals
+    (default legacy_)
 """
 import json
 import os
 import sys
 
 NODES = {'btn': 24, 'co': 73, 'hj': 242, 'utg': 24726}
+ALL_NODES = {**NODES, 'sb': 11, 'lj': 795, 'utg2': 2548, 'utg1': 7997}
 
 
 def main():
     mode, src, out = sys.argv[1], sys.argv[2], sys.argv[3]
     os.makedirs(out, exist_ok=True)
     if mode == 'solved':
-        return solved(src, out)
+        names = sys.argv[4].split(',') if len(sys.argv) > 4 else list(NODES)
+        return solved(src, out, {n: ALL_NODES[n] for n in names}, sys.argv[5] if len(sys.argv) > 5 else 'legacy_')
     assert mode == 'legacy'
     files = []
     for n, node in NODES.items():
@@ -29,8 +34,8 @@ def main():
     json.dump({'schema': 't2_hu_continuation_manifest_v1', 'tables': files}, open(os.path.join(out, 'manifest.json'), 'w'))
 
 
-def solved(root, out):
-    """root/<name>/flops/<board>.json from solve_panel.py at the terminal root/terminals/legacy_<name>.json"""
+def solved(root, out, nodes, prefix):
+    """root/<name>/flops/<board>.json from solve_panel.py at the terminal root/terminals/<prefix><name>.json"""
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'gto_hu_continuation'))
     import a4c_run as C
     panel = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data/gto_hu_continuation/panel_v1.json')))
@@ -42,8 +47,9 @@ def solved(root, out):
     compat = C.compat_of(boards)
     files = []
     rep = {}
-    for n, node in NODES.items():
-        term = json.load(open(os.path.join(root, 'terminals', f'legacy_{n}.json')))
+    for n, node in nodes.items():
+        term = json.load(open(os.path.join(root, 'terminals', f'{prefix}{n}.json')))
+        assert term['terminal_node'] == node, (n, term['terminal_node'])
         vals = {}
         expl = []
         for b in boards:
@@ -58,7 +64,7 @@ def solved(root, out):
         tab = {'schema': 't2_hu_continuation_table_v1', 'node': node, 'live': term['terminal_live_mask'], 'pot_bb': term['pot_bb'],
                'value_convention': 'gross_share', 'zero_reach_definition': 'eps_tremble_avg',
                'seats': [{'seat': p['seat'], 'position': p['position'], 'gross': g[p['position']]} for p in term['players']],
-               'provenance': {'kind': 'C2 solved continuation, panel_v1 (24 boards), A4c estimator', 'terminal': f'legacy_{n}.json',
+               'provenance': {'kind': 'C2 solved continuation, panel_v1 (24 boards), A4c estimator', 'terminal': f'{prefix}{n}.json',
                               'ranges_hash_fnv1a64': term['ranges_hash_fnv1a64'], 'max_expl_pct_pot': max(expl)}}
         json.dump(tab, open(os.path.join(out, f'node{node}.json'), 'w'))
         files.append({'file': f'node{node}.json'})
