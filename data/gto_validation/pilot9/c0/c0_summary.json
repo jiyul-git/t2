@@ -1350,12 +1350,13 @@
   "coverage_reach": 0.13953776682773505,
   "coverage_share_of_flop_reach": 0.19117405937800622,
   "rule": "BTN->BB and CO->BB required; >= 2 of HJ / LJ / UTG-family -> BB for early / middle / late coverage; SB->BB optional",
-  "chosen": "BTN->BB (24), CO->BB (73), HJ->BB (242, middle), UTG->BB (24726, early; the tightest opener, largest RFI gap)",
+  "chosen": "BTN->BB (24), CO->BB (73), HJ->BB (242, middle), UTG->BB (24726, extreme early-position / tightest-opener representative)",
   "not_chosen": {
    "SB->BB (11)": "highest reach (6.19%) but not overwhelming vs BTN (5.73%); 2.5 bb / no-limp SB tree has the weakest reference comparability -> deferred to the full-HU stage",
    "LJ->BB (795)": "reach 4.25% vs HJ 4.53%; HJ covers the middle",
    "UTG+1 / UTG+2 -> BB": "reach ~4.0% each, UTG preferred as the extreme early position"
   },
-  "caveat": "3-way X->SB call->BB call SRPs carry ~4% of flop reach each (SB over-flatting) and stay static in S; part of the opener effect is therefore not addressed by S"
+  "caveat": "3-way X->SB call->BB call SRPs carry ~4% of flop reach each (SB over-flatting) and stay static in S; part of the opener effect is therefore not addressed by S",
+  "confirmed": "user-confirmed 2026-10-03: nodes 24, 73, 242, 24726; all 2 bb open -> BB call, pot 5.5, SPR 5.09; 19.1% of flop reach, ~51% of HU SRP reach"
  }
 }
