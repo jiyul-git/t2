@@ -1,0 +1,617 @@
+{
+ "schema": "pilot9_hu_3bet_rank_v1",
+ "state": "O (census at the 100-iteration static reproduction; ranks shift as openers loosen)",
+ "census_sha256": "c2d9d4789d1b5aa5b11e2ac4844dc83581a2fba5e77493abb4663dafc84a026d",
+ "hu_3bet_terminals": 2259,
+ "hu_3bet_reach": 0.19356971386695607,
+ "multiway_srp_reach": 0.19572819332229455,
+ "top_n_share": {
+  "10": 0.4284117829453718,
+  "20": 0.6992799982525092,
+  "30": 0.9041624133509232,
+  "40": 0.9864818660667822,
+  "50": 0.9998404025169927
+ },
+ "top50": [
+  {
+   "node": 51,
+   "line": "BTN:Raise 2 > SB:3-bet 8 > BTN:Call 8",
+   "live": [
+    "BTN",
+    "SB"
+   ],
+   "reach": 0.012867553442781558,
+   "cum_share_of_hu_3bet": 0.06647503468246928,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 14,
+   "line": "SB:Raise 2.5 > BB:3-bet 10 > SB:Call 10",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 0.012282649661103094,
+   "cum_share_of_hu_3bet": 0.12992839944564283,
+   "pot_bb": 21.0,
+   "spr": 0.9523809523809523
+  },
+  {
+   "node": 196,
+   "line": "CO:Raise 2 > BTN:3-bet 6 > CO:Call 6",
+   "live": [
+    "CO",
+    "BTN"
+   ],
+   "reach": 0.008047721181911188,
+   "cum_share_of_hu_3bet": 0.17150371110541276,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036
+  },
+  {
+   "node": 701,
+   "line": "HJ:Raise 2 > CO:3-bet 6 > HJ:Call 6",
+   "live": [
+    "HJ",
+    "CO"
+   ],
+   "reach": 0.007999785918751544,
+   "cum_share_of_hu_3bet": 0.21283138452569758,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036
+  },
+  {
+   "node": 100,
+   "line": "CO:Raise 2 > SB:3-bet 8 > CO:Call 8",
+   "live": [
+    "CO",
+    "SB"
+   ],
+   "reach": 0.007747481281864776,
+   "cum_share_of_hu_3bet": 0.2528556276115233,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 365,
+   "line": "HJ:Raise 2 > BTN:3-bet 6 > HJ:Call 6",
+   "live": [
+    "HJ",
+    "BTN"
+   ],
+   "reach": 0.007624708655411854,
+   "cum_share_of_hu_3bet": 0.29224561534820226,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036
+  },
+  {
+   "node": 2358,
+   "line": "LJ:Raise 2 > HJ:3-bet 6 > LJ:Call 6",
+   "live": [
+    "LJ",
+    "HJ"
+   ],
+   "reach": 0.006973635339318788,
+   "cum_share_of_hu_3bet": 0.3282720949043579,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 269,
+   "line": "HJ:Raise 2 > SB:3-bet 8 > HJ:Call 8",
+   "live": [
+    "HJ",
+    "SB"
+   ],
+   "reach": 0.006759159221892457,
+   "cum_share_of_hu_3bet": 0.363190569942959,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 1254,
+   "line": "LJ:Raise 2 > CO:3-bet 6 > LJ:Call 6",
+   "live": [
+    "LJ",
+    "CO"
+   ],
+   "reach": 0.00650989355412511,
+   "cum_share_of_hu_3bet": 0.39682131425763767,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 918,
+   "line": "LJ:Raise 2 > BTN:3-bet 6 > LJ:Call 6",
+   "live": [
+    "LJ",
+    "BTN"
+   ],
+   "reach": 0.006114957984807733,
+   "cum_share_of_hu_3bet": 0.4284117829453718,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 7615,
+   "line": "UTG+2:Raise 2 > LJ:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "LJ"
+   ],
+   "reach": 0.0059599766752391585,
+   "cum_share_of_hu_3bet": 0.4592016030891137,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 4111,
+   "line": "UTG+2:Raise 2 > HJ:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "HJ"
+   ],
+   "reach": 0.005839752310677591,
+   "cum_share_of_hu_3bet": 0.4893703324528991,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 3007,
+   "line": "UTG+2:Raise 2 > CO:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "CO"
+   ],
+   "reach": 0.005692386904510556,
+   "cum_share_of_hu_3bet": 0.5187777577716297,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 2671,
+   "line": "UTG+2:Raise 2 > BTN:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "BTN"
+   ],
+   "reach": 0.005488000384129994,
+   "cum_share_of_hu_3bet": 0.5471293024141041,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 23960,
+   "line": "UTG+1:Raise 2 > UTG+2:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "UTG+2"
+   ],
+   "reach": 0.005197829069021623,
+   "cum_share_of_hu_3bet": 0.573981793773337,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 13064,
+   "line": "UTG+1:Raise 2 > LJ:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "LJ"
+   ],
+   "reach": 0.005186430607655026,
+   "cum_share_of_hu_3bet": 0.6007753995706765,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 27,
+   "line": "BTN:Raise 2 > BB:3-bet 8 > BTN:Call 8",
+   "live": [
+    "BTN",
+    "BB"
+   ],
+   "reach": 0.004866631836454604,
+   "cum_share_of_hu_3bet": 0.6259168937602042,
+   "pot_bb": 17.5,
+   "spr": 1.2571428571428571
+  },
+  {
+   "node": 9560,
+   "line": "UTG+1:Raise 2 > HJ:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "HJ"
+   ],
+   "reach": 0.004813433293758749,
+   "cum_share_of_hu_3bet": 0.6507835590953976,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 74145,
+   "line": "UTG:Raise 2 > UTG+1:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "UTG+1"
+   ],
+   "reach": 0.00477506205174171,
+   "cum_share_of_hu_3bet": 0.6754519948560854,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 822,
+   "line": "LJ:Raise 2 > SB:3-bet 8 > LJ:Call 8",
+   "live": [
+    "LJ",
+    "SB"
+   ],
+   "reach": 0.004612379799466602,
+   "cum_share_of_hu_3bet": 0.6992799982525092,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 40689,
+   "line": "UTG:Raise 2 > UTG+2:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "UTG+2"
+   ],
+   "reach": 0.004606923477200556,
+   "cum_share_of_hu_3bet": 0.7230798137565345,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 8456,
+   "line": "UTG+1:Raise 2 > CO:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "CO"
+   ],
+   "reach": 0.004581848202847759,
+   "cum_share_of_hu_3bet": 0.7467500879503424,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 8120,
+   "line": "UTG+1:Raise 2 > BTN:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "BTN"
+   ],
+   "reach": 0.004527188262995187,
+   "cum_share_of_hu_3bet": 0.7701379835697305,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 29793,
+   "line": "UTG:Raise 2 > LJ:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "LJ"
+   ],
+   "reach": 0.004374969283499044,
+   "cum_share_of_hu_3bet": 0.7927395011113952,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 26289,
+   "line": "UTG:Raise 2 > HJ:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "HJ"
+   ],
+   "reach": 0.003915844044779348,
+   "cum_share_of_hu_3bet": 0.8129691329404259,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 25185,
+   "line": "UTG:Raise 2 > CO:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "CO"
+   ],
+   "reach": 0.0038989781128396456,
+   "cum_share_of_hu_3bet": 0.8331116337219248,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 2575,
+   "line": "UTG+2:Raise 2 > SB:3-bet 8 > UTG+2:Call 8",
+   "live": [
+    "UTG+2",
+    "SB"
+   ],
+   "reach": 0.0038956073157264703,
+   "cum_share_of_hu_3bet": 0.8532367206371433,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 24849,
+   "line": "UTG:Raise 2 > BTN:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "BTN"
+   ],
+   "reach": 0.0036104365908304244,
+   "cum_share_of_hu_3bet": 0.8718885878053303,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 76,
+   "line": "CO:Raise 2 > BB:3-bet 8 > CO:Call 8",
+   "live": [
+    "CO",
+    "BB"
+   ],
+   "reach": 0.0031927906500025583,
+   "cum_share_of_hu_3bet": 0.8883828553548345,
+   "pot_bb": 17.5,
+   "spr": 1.2571428571428571
+  },
+  {
+   "node": 245,
+   "line": "HJ:Raise 2 > BB:3-bet 8 > HJ:Call 8",
+   "live": [
+    "HJ",
+    "BB"
+   ],
+   "reach": 0.0030544445262499173,
+   "cum_share_of_hu_3bet": 0.9041624133509232,
+   "pot_bb": 17.5,
+   "spr": 1.2571428571428571
+  },
+  {
+   "node": 8024,
+   "line": "UTG+1:Raise 2 > SB:3-bet 8 > UTG+1:Call 8",
+   "live": [
+    "UTG+1",
+    "SB"
+   ],
+   "reach": 0.002812849858960836,
+   "cum_share_of_hu_3bet": 0.9186938697588928,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 24753,
+   "line": "UTG:Raise 2 > SB:3-bet 8 > UTG:Call 8",
+   "live": [
+    "UTG",
+    "SB"
+   ],
+   "reach": 0.0026818786585839586,
+   "cum_share_of_hu_3bet": 0.932548716186094,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 798,
+   "line": "LJ:Raise 2 > BB:3-bet 8 > LJ:Call 8",
+   "live": [
+    "LJ",
+    "BB"
+   ],
+   "reach": 0.001773734946284759,
+   "cum_share_of_hu_3bet": 0.9417120037213739,
+   "pot_bb": 17.5,
+   "spr": 1.2571428571428571
+  },
+  {
+   "node": 2551,
+   "line": "UTG+2:Raise 2 > BB:3-bet 8 > UTG+2:Call 8",
+   "live": [
+    "UTG+2",
+    "BB"
+   ],
+   "reach": 0.0015816756129951902,
+   "cum_share_of_hu_3bet": 0.9498830940298625,
+   "pot_bb": 17.499999999999996,
+   "spr": 1.2571428571428573
+  },
+  {
+   "node": 8012,
+   "line": "UTG+1:Raise 2 > SB:Call 2 > BB:3-bet 8 > UTG+1:Call 8",
+   "live": [
+    "UTG+1",
+    "BB"
+   ],
+   "reach": 0.0013727679131266522,
+   "cum_share_of_hu_3bet": 0.9569749468083926,
+   "pot_bb": 18.999999999999996,
+   "spr": 1.1578947368421055
+  },
+  {
+   "node": 24741,
+   "line": "UTG:Raise 2 > SB:Call 2 > BB:3-bet 8 > UTG:Call 8",
+   "live": [
+    "UTG",
+    "BB"
+   ],
+   "reach": 0.0012436553536071394,
+   "cum_share_of_hu_3bet": 0.9633997915258979,
+   "pot_bb": 18.999999999999996,
+   "spr": 1.1578947368421055
+  },
+  {
+   "node": 8000,
+   "line": "UTG+1:Raise 2 > BB:3-bet 8 > UTG+1:Call 8",
+   "live": [
+    "UTG+1",
+    "BB"
+   ],
+   "reach": 0.0011915141584473406,
+   "cum_share_of_hu_3bet": 0.9695552697494504,
+   "pot_bb": 17.499999999999996,
+   "spr": 1.2571428571428573
+  },
+  {
+   "node": 810,
+   "line": "LJ:Raise 2 > SB:Call 2 > BB:3-bet 8 > LJ:Call 8",
+   "live": [
+    "LJ",
+    "BB"
+   ],
+   "reach": 0.0011670227827218372,
+   "cum_share_of_hu_3bet": 0.9755842231399791,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 2563,
+   "line": "UTG+2:Raise 2 > SB:Call 2 > BB:3-bet 8 > UTG+2:Call 8",
+   "live": [
+    "UTG+2",
+    "BB"
+   ],
+   "reach": 0.0011262470203035543,
+   "cum_share_of_hu_3bet": 0.9814025249693533,
+   "pot_bb": 18.999999999999996,
+   "spr": 1.1578947368421055
+  },
+  {
+   "node": 24729,
+   "line": "UTG:Raise 2 > BB:3-bet 8 > UTG:Call 8",
+   "live": [
+    "UTG",
+    "BB"
+   ],
+   "reach": 0.000983206602861976,
+   "cum_share_of_hu_3bet": 0.9864818660667822,
+   "pot_bb": 17.499999999999996,
+   "spr": 1.2571428571428573
+  },
+  {
+   "node": 257,
+   "line": "HJ:Raise 2 > SB:Call 2 > BB:3-bet 8 > HJ:Call 8",
+   "live": [
+    "HJ",
+    "BB"
+   ],
+   "reach": 0.0007937410455438669,
+   "cum_share_of_hu_3bet": 0.990582409636782,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 53,
+   "line": "BTN:Raise 2 > SB:3-bet 8 > BB:Call 8",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 0.00046953376811562385,
+   "cum_share_of_hu_3bet": 0.9930080668263067,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 88,
+   "line": "CO:Raise 2 > SB:Call 2 > BB:3-bet 8 > CO:Call 8",
+   "live": [
+    "CO",
+    "BB"
+   ],
+   "reach": 0.0004271140537330009,
+   "cum_share_of_hu_3bet": 0.9952145796386703,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 102,
+   "line": "CO:Raise 2 > SB:3-bet 8 > BB:Call 8",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 0.0002586287181886656,
+   "cum_share_of_hu_3bet": 0.9965506807932467,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 271,
+   "line": "HJ:Raise 2 > SB:3-bet 8 > BB:Call 8",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 0.0001879757281024253,
+   "cum_share_of_hu_3bet": 0.9975217817178037,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 824,
+   "line": "LJ:Raise 2 > SB:3-bet 8 > BB:Call 8",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 0.00015416589977211264,
+   "cum_share_of_hu_3bet": 0.9983182177753476,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 2577,
+   "line": "UTG+2:Raise 2 > SB:3-bet 8 > BB:Call 8",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 0.00010325553176386889,
+   "cum_share_of_hu_3bet": 0.9988516459119147,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 39,
+   "line": "BTN:Raise 2 > SB:Call 2 > BB:3-bet 8 > BTN:Call 8",
+   "live": [
+    "BTN",
+    "BB"
+   ],
+   "reach": 8.608952844398284e-05,
+   "cum_share_of_hu_3bet": 0.9992963928029659,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 8026,
+   "line": "UTG+1:Raise 2 > SB:3-bet 8 > BB:Call 8",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 5.696954303573515e-05,
+   "cum_share_of_hu_3bet": 0.9995907030124385,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  },
+  {
+   "node": 24755,
+   "line": "UTG:Raise 2 > SB:3-bet 8 > BB:Call 8",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 4.833426164925497e-05,
+   "cum_share_of_hu_3bet": 0.9998404025169927,
+   "pot_bb": 19.0,
+   "spr": 1.1578947368421053
+  }
+ ]
+}
