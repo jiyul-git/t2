@@ -67,3 +67,12 @@ the result; it is not a production panel.
 - Expand to F / full HU only if S moves clearly in the expected direction; no move or the wrong direction -> stop, no automatic F, back to
   the hypothesis list.
 - E1 stays paused at 24/450; Termux DB on hold; no solver-logic change or DB promotion.
+
+## Analysis states (fixed 2026-10-03, before C3 results)
+- O = original dynamic static payoff (100 it); F = C1b frozen static tables at the 4 nodes (100 it); S = C3 frozen solved tables (100 it).
+- F - O = table-freezing effect; S - F = solved-continuation content effect = the pilot's main estimate; S - O is reported as total change only
+  and is never called the continuation effect.
+- If F's selected-node reach / ranges differ strongly from O, the size is recorded; C2 stays outer step 1 at O's endpoint ranges (no re-solve).
+- Expected direction judged on S - F per node / position: selected opener RFI up; that BB fold up / passive call down; opener jam share down;
+  playability hands (A5s / K9s / 98s ...) move from fold / jam toward raise. Opposite moves are reported per node, never averaged away.
+- After C3: stop. No automatic outer step 2, no expansion to F (full HU).
