@@ -196,3 +196,5 @@
   - GTO_MEMORY_V2 / PREFLOP_REASONING_V3: production OFF, BLOCKED_BY_GTO_REFERENCE_VALIDATION.
 - **Stage 0~11 감사·통합 완료 → 인간형 구조 정본화 완료.**
 - 다음: 전략 지식 개선 단계. 출발 목록은 `CONCEPT_GAPS_NEXT.md`(독립 능력 부재 / 지식 공백 / 권장 순서). FOLLOWUP-S11 17건의 처리 여부는 사용자 판정.
+- **베타 전 버그 수정 3건 완료**: 쇼다운 정보 누출, 3벳 판정의 올인 콜, 투페어 기여 오판. 새 기준선 시드 11 `d6c70b87…`, 시드 12 `f0620c61…`.
+- 다음: 베타 실행 — 판단 → 계획 → 실행 층 전이 추적과 판단의 포커적 타당성 검토 자료.

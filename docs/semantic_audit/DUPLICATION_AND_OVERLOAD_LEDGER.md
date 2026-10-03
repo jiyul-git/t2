@@ -490,3 +490,13 @@ Stage 11 문서 대조에서 확인했다. triage(`stage9/STAGE9_TRIAGE.md`)의 
 | L035 | `multiway` 하나가 풀 정체성(수학)과 추론을 공급한다 | 독립 능력 부재 |
 
 L024 / L035 / L-RA08 은 `CONCEPT_GAPS_NEXT.md` 의 '독립 능력 부재'와 같은 항목이다. 나머지는 사용자 판정 뒤 별도 행동 변경 batch 로 처리한다.
+
+### FOLLOWUP-S11 중 베타 전 버그 수정 (해결)
+
+| ID | 최종 처리 | 검증 |
+|---|---|---|
+| L163 / L194 | `HandRun._finish`: 쇼다운 관찰(관찰자 장부 `observe_showdown`, 틸트 기록 `note_showdown`)을 공개/머크 결정 **뒤로** 옮기고 공개된 좌석만 기록. 머크한 패는 아무도 보지 못한다 | 시드 11/12 쇼다운 131/131회에서 머크 75/69좌석이 더 이상 기록되지 않음. `verify_bugfix3` S1 |
+| L049 | `_was_3bettor`: 원시 'raise'/'allin' 문자열 → `preflop_action_meta` 의 full raise 사건. 올인 콜과 짧은 올인은 3벳이 아니다 | `verify_bugfix3` T1(7 사례). 기준 sim 은 읽기 가중치 0 이라 호출 0회 |
+| L-RA09 | `bot.made_strength` 투페어 = hero 카드가 들어간 페어 수(0/1/2). 페어 보드 위 한 페어 → 1, 보드 투페어 위 킥커 → 0 | made 호출 중 값 변화 491/5,492(시드 11), 533/5,399(시드 12). 대부분 2→1. `verify_bugfix3` M1(9 사례) |
+
+L163 의 나머지 절반(쇼다운 강도를 프리플랍 순위 PCT 로 판정)은 개념 문제라 남긴다.

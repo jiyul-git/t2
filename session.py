@@ -2609,15 +2609,20 @@ class HandRun:
         return
 
     def _was_3bettor(self, seat):
-        """이 좌석이 프리플랍에서 리레이즈(3벳 이상)를 쳤나."""
+        """이 좌석이 프리플랍에서 리레이즈(3벳 이상)를 쳤나.
+
+        규칙 사건(full raise)으로 센다. 예전에는 원시 로그의 'raise'/'allin'
+        문자열을 세어 올인 콜과 full raise 가 아닌 짧은 올인도 리레이즈로
+        쳤다(ledger L049). 3벳 이상 = 이미 full raise 가 하나 이상 있는 상태에서
+        이 좌석이 full raise 를 했다. full_log 와 같은 시점에 기록된다.
+        """
         n = 0
-        for row in (getattr(self, 'full_log', []) or []):
-            if row[0] != 'preflop':
+        for m in (getattr(self, 'preflop_action_meta', []) or []):
+            if not m.get('full_raise'):
                 continue
-            if row[2] in ('raise', 'allin'):
-                n += 1
-                if n >= 2 and row[1] == seat:
-                    return True
+            if n >= 1 and m.get('seat') == seat:
+                return True
+            n += 1
         return False
 
     def _reads_for(self, me, seats, ax):
@@ -2692,30 +2697,6 @@ class HandRun:
                     'full_log': getattr(self, 'full_log', []),
                     'pos': {k: v for k, v in h.pos.items()}}
         c2 = dict(contrib)          # 기여분은 그대로 둔다 (안테는 award_pots 에서 처리)
-        # 쇼다운 관찰: 깐 패의 강도와 공격 여부
-        try:
-            import preflop as _pf
-            # postflop 공격성은 raw action 문자열이 아니라 규칙 사건으로 본다.
-            # all-in raise는 공격이고 all-in call은 공격이 아니다.
-            aggr_seats = AE.aggressive_seats(
-                getattr(self, 'full_action_meta', []) or [])
-            # preflop meta는 아직 별도 보존하지 않으므로 기존 공개 raise만 합친다.
-            aggr_seats |= {
-                x for (stt, x, a_, _) in (getattr(self, 'full_log', []) or [])
-                if stt == 'preflop' and a_ == 'raise'
-            }
-            _all = [self._pid(x) for x in h.seats]
-            for sd in live:
-                RD_pct = _pf.legacy_preflop_order_percentile(h.hole[sd])
-                h.book.observe_showdown(_all, self._pid(sd), RD_pct, sd in aggr_seats)
-                # 깐 패는 틸트 객체에도 남긴다. runner.adjust_range_by_history 가
-                # 이걸 읽어 '이 사람이 예상보다 넓게 깠다'를 판단한다. 키는 pid 다.
-                if hasattr(h, 'dyn') and hasattr(h.dyn, 'note_showdown'):
-                    h.dyn.note_showdown(self._pid(sd), list(h.hole[sd]))
-        except Exception as _e:
-            # 관찰 실패를 조용히 삼키면 장부가 안 쌓이고 리딩이 통째로 죽는다.
-            h.book_errors = getattr(h, 'book_errors', [])
-            h.book_errors.append('showdown: %r' % (_e,))
         # 정산 전 0스택은 올인 쇼다운이므로 공개 의무가 있다.
         allin_show = {s for s in live if h.stacks.get(s, 0) <= 0}
         won, detail = award_pots(
@@ -2857,6 +2838,35 @@ class HandRun:
                 else:
                     mucked.append(s)
 
+        # 쇼다운 관찰: **공개된** 패의 강도와 공격 여부.
+        # 머크한 패는 아무도 보지 못한다. 예전에는 공개/머크 결정 전에 생존자
+        # 전원을 기록해 관찰자 장부와 틸트 기록(→ adjust_range_by_history)이
+        # 보지 못한 패로 학습했다(ledger L163/L194, 정보 누출).
+        try:
+            import preflop as _pf
+            # postflop 공격성은 raw action 문자열이 아니라 규칙 사건으로 본다.
+            # all-in raise는 공격이고 all-in call은 공격이 아니다.
+            aggr_seats = AE.aggressive_seats(
+                getattr(self, 'full_action_meta', []) or [])
+            # preflop meta는 아직 별도 보존하지 않으므로 기존 공개 raise만 합친다.
+            aggr_seats |= {
+                x for (stt, x, a_, _) in (getattr(self, 'full_log', []) or [])
+                if stt == 'preflop' and a_ == 'raise'
+            }
+            _all = [self._pid(x) for x in h.seats]
+            for sd in show_order:
+                if sd not in shown_seats:
+                    continue
+                RD_pct = _pf.legacy_preflop_order_percentile(h.hole[sd])
+                h.book.observe_showdown(_all, self._pid(sd), RD_pct, sd in aggr_seats)
+                # 깐 패는 틸트 객체에도 남긴다. runner.adjust_range_by_history 가
+                # 이걸 읽어 '이 사람이 예상보다 넓게 깠다'를 판단한다. 키는 pid 다.
+                if hasattr(h, 'dyn') and hasattr(h.dyn, 'note_showdown'):
+                    h.dyn.note_showdown(self._pid(sd), list(h.hole[sd]))
+        except Exception as _e:
+            # 관찰 실패를 조용히 삼키면 장부가 안 쌓이고 리딩이 통째로 죽는다.
+            h.book_errors = getattr(h, 'book_errors', [])
+            h.book_errors.append('showdown: %r' % (_e,))
         best_five = {}
         for s in all_w:
             combos = itertools.combinations(h.hole[s] + h.board, 5)

@@ -354,6 +354,14 @@ def made_strength(hero, board):
     if not board:
         return 0
     full = eval7(list(hero) + list(board))
+    # 투페어: 두 페어 중 내 카드가 들어간 페어만 내 기여다. 페어 보드에서
+    # 한 페어만 보탠 손(K K 5 위 A5)은 원페어 기여이고, 보드 투페어 위 킥커
+    # (K K 5 5 위 A2)는 기여 0 이다. 예전에는 7장 등급(투페어)을 그대로 반환해
+    # giveup 재진입(made >= 2) 등이 보드 페어를 내 패로 읽었다(ledger L-RA09).
+    if full[0] == 2:
+        hero_ranks = {RV[c[0]] for c in hero}
+        mine = sum(1 for pr in full[1:3] if pr in hero_ranks)
+        return {0: 0, 1: 1, 2: 2}[mine]
     # 내 카드를 뺀 조합과 비교한다. 같으면 내 기여가 없다는 뜻이다.
     # 보드가 5장 미만일 땐 5장을 못 만드니, 보드가 만들 수 있는
     # 최고 등급(페어/트립스 등)만 따져서 비교한다.
