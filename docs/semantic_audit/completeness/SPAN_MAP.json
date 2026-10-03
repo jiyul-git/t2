@@ -1352,6 +1352,13 @@
    "to": null
   },
   {
+   "concept": "fallback_preflop_ordering",
+   "module": "bot",
+   "func": "_pf_class",
+   "from": null,
+   "to": null
+  },
+  {
    "concept": "money_self_preservation",
    "module": "money_pressure",
    "func": "bf_signal",
@@ -2210,7 +2217,6 @@
   "reads:PRIOR": "opponent_estimation",
   "reads:FAMILY_OBS": "opponent_estimation",
   "reads:DEFAULT_OBS": "opponent_estimation",
-  "reads:READ_RECENCY_V3": "recency_window",
   "reads:_MAX_RECENCY_HISTORY": "recency_window",
   "reads:_SIG_SCALE": "style_belief_reference",
   "persona:SIZING_FAMILY_SIG": "human_planned_size_shape",
@@ -2239,6 +2245,7 @@
   "gto:_MTT8_ANTE_TB_SHARE": "threebet_width_prior",
   "icm:_ICM_PRUNE": "icm_exact_share",
   "icm:EXACT_MAX": "icm_exact_share",
+  "bot:_PCT": "fallback_preflop_ordering",
   "icm:_SIGMA_STAGE": "field_icm_proxy",
   "icm:_SIGMA_HI": "field_icm_proxy",
   "icm:_SIGMA_LO": "field_icm_proxy",

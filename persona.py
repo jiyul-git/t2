@@ -443,6 +443,12 @@ def calc_noise(prof, concept, rng):
 # 켜면 공부 안 한 조건(9맥스, 노안테, 100bb 초과 등)에서 기억의 비중이 줄고
 # 기존 (1-acc) 이탈 항 — 기질·포지션 감각 쪽 — 의 비중이 커진다.
 import os as _os
+# STATUS: BLOCKED_BY_GTO_REFERENCE_VALIDATION (stage9 B1/B2 closeout).
+#   GTO_MEMORY_V2 / PREFLOP_REASONING_V3 는 production 에서 OFF 로 유지한다.
+#   둘 다 9-max 현재 조건 reference(gto.rfi / defend_pct) 쪽으로 기억을 옮기는데,
+#   그 reference 와 30bb solver/Termux DB(20/25/30/40bb)는 continuation model 과
+#   exact stack semantics 문제로 검증 보류 상태다. GTO_STUDIED 도 8-max 기준이다.
+#   corrected 9-max reference 가 검증된 뒤 다시 판정한다 — 그 전에 켜지 말 것.
 GTO_MEMORY_V2 = _os.environ.get('T2_GTO_MEMORY_V2') == '1'
 # Human Model v3 (opt-in): when the current preflop spot differs from the
 # studied chart family, keep chart recall, condition reasoning, and temperament
@@ -708,7 +714,11 @@ def traits_of(prof):
     return {
       'limp': max(0.0, min(0.6, 0.02 + 0.055*(loose-4) - 0.035*(a-4) - 0.02*(disc-5))),
       'iso':  max(0.03, min(0.95, 0.55*(a/5.0)**1.15)),   # 곱셈형: 소극적인 사람은 이소를 거의 안 한다
-      'threebet': max(.005, .009*a + .006*sk(prof,'bluff') + .004*(loose-4)),
+      # 3벳 성향의 숙련 입력은 프리플랍 재레이즈 지식(pf_defend)이다. 예전에는
+      # 포스트플랍 블러프 능력(bluff, flop~river)을 그대로 썼다 — 다른 질문의
+      # 능력이 프리플랍 3벳 폭(핫존 리쇼브 폭, 관찰자 3벳 레인지)을 바꿨다.
+      # 계수는 그대로(stage9 B1/B2 closeout A2).
+      'threebet': max(.005, .009*a + .006*sk(prof,'pf_defend') + .004*(loose-4)),
       'sqz': 0.4 + 0.13*a,
       'call': max(.02, .022*loose + .018*g - .012*a),
       'shove_add': .008*g,

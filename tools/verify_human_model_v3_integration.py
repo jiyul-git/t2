@@ -17,7 +17,6 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 # the ones still awaiting their integration step.
 FLAGS=(
     'T2_PREFLOP_REASONING_V3',
-    'T2_READ_RECENCY_V3',
 )
 SEEDS=(5150,9001,4242)
 HANDS=24
@@ -102,7 +101,9 @@ def main():
                    for group in (off,on1,on2) for x in group.values())
     recency_ok=all(x['history_max']<=121 and x['history_records']>0
                    for x in on1.values())
-    off_has_no_recency=all(x['history_records']==0 for x in off.values())
+    # stage9 closeout A1: the recency window is the only path, so every run
+    # (flags off or on) records bounded history.
+    recency_single_path=all(x['history_max']<=121 and x['history_records']>0 for x in off.values())
 
     # One seed, one feature at a time: attribution only. Interaction is allowed
     # and expected, so these are reported rather than required to add linearly.
@@ -135,7 +136,7 @@ def main():
         'I2_live_path_changes':changed>0,
         'I3_error_free_complete':error_free,
         'I4_recency_bounded_and_live':recency_ok,
-        'I5_off_book_shape_preserved':off_has_no_recency,
+        'I5_recency_single_path':recency_single_path,
     }
     out={
         'pass':all(checks.values()),'checks':checks,

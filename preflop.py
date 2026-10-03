@@ -1164,6 +1164,9 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         noise = max(0.65, min(1.55, float(noise)))
         reason_skill = multiway_evidence_application_capacity(
             PS.sk(prof, 'range_read'), PS.sk(prof, 'potodds'), PS.sk(prof, 'multiway'))
+        # 블러프 능력 = '근거(블로커·폴드 에쿼티)를 블러프 행동으로 옮기는 능력'.
+        # 여기서는 그 근거를 얼마나 활용하는지에만 곱한다 — bluff 개념의 정의와
+        # 같은 질문이라 유지한다(3벳 성향 형질과는 다른 질문, stage9 closeout A2).
         bluff_skill = max(0.0, min(1.0, PS.sk(prof, 'bluff') / 10.0))
 
     need = need_base * noise

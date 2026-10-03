@@ -33,17 +33,19 @@ def exploit_probe():
 
 
 def recency_probe():
-    old=RD.READ_RECENCY_V3
+    # Stage 9 closeout A1: READ_RECENCY_V3 retired; the window is the only path.
+    # The lifetime view is reproduced as a reference via an identity window.
+    b=RD.Book()
+    for x in [0]*80+[1]*20:
+        b.observe_preflop(['obs'],'vill',bool(x),bool(x),limp=False,limp_chance=True,rfi_exp=.25)
+    p=prof(att=2,adp=2)
+    on=RD.estimate(b,'obs','vill',p,random.Random(12345))
+    _recent=RD._recent_record
     try:
-        RD.READ_RECENCY_V3=True
-        b=RD.Book()
-        for x in [0]*80+[1]*20:
-            b.observe_preflop(['obs'],'vill',bool(x),bool(x),limp=False,limp_chance=True,rfi_exp=.25)
-        p=prof(att=2,adp=2)
-        on=RD.estimate(b,'obs','vill',p,random.Random(12345))
-        RD.READ_RECENCY_V3=False
+        RD._recent_record=lambda r, m: r
         off=RD.estimate(b,'obs','vill',p,random.Random(12345))
-    finally: RD.READ_RECENCY_V3=old
+    finally:
+        RD._recent_record=_recent
     return {'off':off,'on':on,'semantic_changed':off!=on,
             'n_off':off.get('n'),'n_on':on.get('n'),
             'vpip_off':off.get('vpip'),'vpip_on':on.get('vpip')}
@@ -56,8 +58,8 @@ def main():
     out={'pass':all(checks.values()),'checks':checks,'exploit':e,'recency':r,
          'interpretation':(
            'EXPLOIT_WEIGHT_V3 was retired in stage9 B5 (single application weight). '
-           'READ_RECENCY_V3 is evidence-dependent, so a short tournament '
-           'fingerprint need not change for it alone.')}
+           'READ_RECENCY_V3 was retired in the stage9 closeout (recent window is '
+           'the only path); the recency check compares it with a lifetime reference.')}
     print(json.dumps(out,indent=2,sort_keys=True))
     raise SystemExit(0 if out['pass'] else 1)
 

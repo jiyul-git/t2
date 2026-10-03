@@ -52,10 +52,11 @@ class _ObsMap(dict):
 OBSERVER = _ObsMap()
 DEFAULT_OBS = dict(skill=0.5, overconf=1.0, noise=0.15, memory=40)
 
-# Human Model v3 (opt-in): make the already-existing observer memory limit a
-# real recent-hand window instead of capping only confidence while lifetime
-# counters keep dominating the rates. OFF preserves legacy book/estimate bits.
-READ_RECENCY_V3 = _os.environ.get('T2_READ_RECENCY_V3') == '1'
+# Observer memory is a real recent-hand window (Human Model v3 READ_RECENCY_V3,
+# now the only path — stage9 B1/B2 closeout A1).  Legacy capped only the
+# confidence sample at `memory` while every rate kept lifetime counters, so a
+# changed opponent never shed old evidence.  No new coefficient: the window is
+# the existing per-observer `memory` (8..120 hands).
 _MAX_RECENCY_HISTORY = 121  # max declared memory=120 plus one baseline snapshot
 
 
@@ -75,7 +76,7 @@ def _append_hand_snapshot(r):
     hand.  Therefore r still contains the complete previous hand here,
     including postflop/size/showdown observations.
     """
-    if not READ_RECENCY_V3 or int(r.get('hands', 0) or 0) <= 0:
+    if int(r.get('hands', 0) or 0) <= 0:
         return
     h = int(r.get('hands', 0) or 0)
     hist = r.setdefault('_hand_hist', [])
@@ -93,8 +94,6 @@ def _recent_record(r, memory):
     behavior until enough new boundaries have been recorded; we never invent
     missing historical observations.
     """
-    if not READ_RECENCY_V3:
-        return r
     h = int(r.get('hands', 0) or 0)
     m = max(1, int(memory or 1))
     if h <= m:

@@ -298,3 +298,24 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - 새 baseline: 시드 11 `b6425e83…`(불변), 시드 12 `b09618b3…`(567핸드, 오류 0).
 - 23-gate: 안테 기준선과 동일하다.
 - completeness: 미소유 0.
+
+## 13차 — 9단계 B1/B2 closeout 그룹 A (GTO 비의존)
+
+기준 `13c5c0b4`. 판정은 ledger "9단계 B1/B2 closeout" 절.
+
+코드 변경:
+- `reads` 최근 핸드 창을 유일 경로로 만들고 READ_RECENCY_V3 를 퇴역했다.
+- `persona.traits_of` 의 threebet 숙련 입력을 bluff 에서 pf_defend 로 바꿨다.
+- `bot.range_combos` 를 PCT 순서로 바꾸고 `_pf_score` 를 삭제했다.
+- GTO_MEMORY_V2 / PREFLOP_REASONING_V3 에 BLOCKED 상태 주석을 달았다(OFF 유지).
+
+검증:
+- 시드 11 `b6425e83…`, 시드 12 `b09618b3…`: B6 기준선과 **동일**.
+  - 이 하네스에서는 세 변경 모두 실행되지 않는다. 북이 비어 있고(exploit 중립), 모든 프로필이 pf_defend = bluff = 10 이며, fallback 레인지 호출은 0회다(`tools/closeout_a_attribution.py`).
+- 23-gate: 통과·실패 집합은 같다. 출력 한 줄이 바뀌었다 — 기존 실패 게이트 `verify_f3_checkraise_response` 의 fixture(opp_range=None → fallback 레인지)가 raise 800 / eq 0.9833 에서 700 / 0.9783 으로 바뀌었다. A3 순서 통합에 따른 의도된 변화다.
+- `verify_human_model_v3_integration` 5/5:
+  - I5 는 'flags OFF 면 기록 없음' 에서 '최근 창 단일 경로: 항상 기록, 상한 121' 로 바꿨다.
+- `verify_read_recency_v3` 통과(legacy 는 검증기 안의 참조로만 남김).
+- `audit_human_v3_live_attribution` 통과.
+- 필드 3벳 형질 차이: 평균 0.013, 최대 0.045(1,000명).
+- completeness: site 1,116 / 함수 614 / 상수 표 76, 미소유 0.

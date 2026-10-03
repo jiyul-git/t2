@@ -802,6 +802,7 @@ sp('legal_action_application', 'runner', 'Round.needs_action')
 sp('icm_bubble_factor', 'icm', 'icm_pressure')
 sp('field_icm_proxy', 'icm', 'field_bf')  # stage9 B5: overridden first definition removed (L211/L175)
 sp('call_threshold_bias', 'persona', '_bluffcatch_concept')  # stage9 B5: street required for bluff_fear/hero_call
+sp('fallback_preflop_ordering', 'bot', '_pf_class')  # stage9 closeout A3: one ordering (PCT)
 sp('money_self_preservation', 'money_pressure', 'bf_signal')
 sp('money_open_form_shadow', 'money_pressure', 'unopened_modifiers', 'skill01(state.get(\'open_size_skill\', 5.0))')
 sp('emotion_profile_view', 'play', 'Hand.emotion_level')
@@ -935,7 +936,7 @@ TABLES = {
     'ranges:_LIK_MIN': 'inverse_defend_likelihood', 'ranges:_MIN_KEEP': 'postflop_action_posterior',
     'ranges:_MIN_FRAC': 'postflop_action_posterior', 'ranges:_DECAY': 'postflop_action_posterior',
     'reads:PRIOR': 'opponent_estimation', 'reads:FAMILY_OBS': 'opponent_estimation',
-    'reads:DEFAULT_OBS': 'opponent_estimation', 'reads:READ_RECENCY_V3': 'recency_window',
+    'reads:DEFAULT_OBS': 'opponent_estimation',
     'reads:_MAX_RECENCY_HISTORY': 'recency_window', 'reads:_SIG_SCALE': 'style_belief_reference',
     'persona:SIZING_FAMILY_SIG': 'human_planned_size_shape', 'persona:LOADING': 'persona_population_generation',
     'persona:DEFAULT_SPREAD': 'persona_population_generation', 'persona:SPREAD': 'persona_population_generation',
@@ -950,6 +951,7 @@ TABLES = {
     'gto:_MTT8_ANTE_DEF_VS_SB': 'defend_width_prior', 'gto:_MTT8_ANTE_DEF_SEAT': 'defend_width_prior',
     'gto:_MTT8_ANTE_TB_SHARE': 'threebet_width_prior',
     'icm:_ICM_PRUNE': 'icm_exact_share', 'icm:EXACT_MAX': 'icm_exact_share',
+    'bot:_PCT': 'fallback_preflop_ordering',  # stage9 closeout A3
     'icm:_SIGMA_STAGE': 'field_icm_proxy', 'icm:_SIGMA_HI': 'field_icm_proxy', 'icm:_SIGMA_LO': 'field_icm_proxy',
     'icm:_LADDER_W': 'field_icm_proxy', 'icm:_LADDER_P': 'field_icm_proxy', 'icm:_K': 'field_icm_proxy',
     'icm:_FLAT_GAIN': 'field_icm_proxy', 'texture:RANK_HELP': 'turn_card_range_shift',

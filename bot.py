@@ -136,29 +136,41 @@ def board_danger(board):
     return min(1.0,d)
 
 # ---- range-aware equity ----
-def _pf_score(c1,c2):
-    a,b=sorted([RV[c1[0]],RV[c2[0]]],reverse=True)
-    s = a*2 + b
-    if a==b: s+=22
-    if c1[1]==c2[1]: s+=4
-    gap=a-b
-    if 0<gap<=4: s+=(5-gap)
-    return s
+# 프리플랍 순서표는 하나다: pf_rank.json(preflop.PCT) — 169 클래스의 누적 콤보
+# 백분위. 예전에는 레인지를 모를 때의 fallback 만 별도 공식 `_pf_score`
+# (2·높은랭크+낮은랭크, 페어/수티드/갭 가점)로 1326 콤보를 줄 세웠다. 같은
+# 질문("강한 순 상위 X%")에 순서가 둘이었고, 동률을 덱 순서로 깨서 같은
+# 클래스가 수트에 따라 레인지 안팎으로 갈렸다(R2 PREFLOP_ORDERING_DUPLICATION,
+# stage9 B1/B2 closeout 에서 PCT 하나로 통합). preflop 을 import 하면 순환이라
+# 같은 데이터 파일을 직접 읽는다.
+import json as _json, os as _os
+_PCT = _json.load(open(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                                     'pf_rank.json'), encoding='utf-8'))
+
+
+def _pf_class(c1, c2):
+    a, b = sorted([c1, c2], key=lambda x: -RV[x[0]])
+    if a[0] == b[0]:
+        return a[0] + b[0]
+    return a[0] + b[0] + ('s' if a[1] == b[1] else 'o')
+
 
 _ALLCOMBOS=[(x,y) for i,x in enumerate(FULLDECK) for y in FULLDECK[i+1:]]
-_SCORED=sorted(_ALLCOMBOS, key=lambda t:-_pf_score(*t))
+# 클래스 백분위 순, 같은 클래스 안에서는 덱 나열 순(결정적 순서).
+_SCORED=sorted(_ALLCOMBOS, key=lambda t: _PCT[_pf_class(*t)])
 
 def range_combos(pct, dead):
-    """레인지를 모를 때의 fallback 레인지: `_pf_score` 순서 상위 pct.
+    """레인지를 모를 때의 fallback 레인지: preflop.PCT(pf_rank) 순서 상위 pct.
 
-    프리플랍 순서표가 둘이다 — 관찰 기반 레인지는 preflop.PCT(pf_rank),
-    이 fallback 만 `_pf_score` 공식을 쓴다(R2 PREFLOP_ORDERING_DUPLICATION,
-    같은 질문, 통합은 행동 변화라 보류). 소비처: plan 의 빈 레인지 fallback
-    (range_combos(0.35)), equity_vs_betting 의 콜러/벳 레인지.
-    동률은 덱 나열 순서로 깨져 경계 클래스가 수트에 따라 갈릴 수 있다.
+    관찰 기반 레인지와 같은 순서표를 쓴다. 클래스 단위로 자르므로(누적
+    백분위 ≤ pct 인 클래스 전부) 같은 클래스가 수트에 따라 갈리지 않는다.
+    소비처: plan 의 빈 레인지 fallback(range_combos(0.35)),
+    equity_vs_betting 의 콜러/벳 레인지.
     """
-    n=int(len(_SCORED)*pct)
-    return [c for c in _SCORED[:n] if c[0] not in dead and c[1] not in dead]
+    p = float(pct)
+    return [c for c in _SCORED
+            if _PCT[_pf_class(*c)] <= p + 1e-12
+            and c[0] not in dead and c[1] not in dead]
 
 def _filter_pool(pool, dead=None, sort_legacy=False):
     """Filter one combo pool without discarding weighted mass.

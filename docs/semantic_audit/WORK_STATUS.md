@@ -168,4 +168,13 @@
   - board_texture 정규화를 하나로 통일했다(L027).
   - depth / texture sizing 은 현 구조가 최종이다.
   - 새 baseline: 시드 11 `b6425e83…`, 시드 12 `b09618b3…`.
-- 다음: B1/B2 의 남은 구형 / 2차 / 3차 분기 통합. 대상은 GTO_MEMORY_V2, PREFLOP_REASONING_V3, READ_RECENCY_V3, 프리플랍 bluff/3bet 소비처, 두 순서표. 9-max 수치는 근거를 확보해서 결론 낸다.
+- B1/B2 closeout 은 두 그룹으로 나눴다(사용자 결정).
+- **그룹 A(GTO 비의존) 완료.**
+  - A1 READ_RECENCY_V3 → 최근 창 유일 경로.
+  - A2 3벳 형질 숙련 입력 bluff → pf_defend.
+  - A3 fallback 순서표를 PCT 로 통합.
+  - B6 기준선 대비 지문 동일. 23-gate 집합 동일(f3 출력 한 줄만 의도된 변화).
+- **그룹 B(GTO 의존) 보류: BLOCKED_BY_GTO_REFERENCE_VALIDATION.**
+  - GTO_MEMORY_V2 / PREFLOP_REASONING_V3 는 production OFF 유지.
+  - GTO continuation S pilot 이후 corrected 9-max reference 가 검증되면 재판정한다. Stage 9 범위 밖이다.
+- 다음: 사용자 지시 대기.

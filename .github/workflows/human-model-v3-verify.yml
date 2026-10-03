@@ -50,8 +50,6 @@ jobs:
       - name: Calc-noise V3 verifier
         run: python3 tools/verify_calc_noise_v3.py
       - name: Calc-noise directional audit
-        env:
-          T2_READ_RECENCY_V3: '0'
         run: python3 tools/audit_calc_noise_v3.py > /tmp/calc_noise_v3.json
       - name: Upload calc-noise audit
         uses: actions/upload-artifact@v4

@@ -3,7 +3,11 @@
 
 No target poker frequency is fitted here.  The tests establish that the
 existing observer memory parameter becomes a real recent-hand window while
-legacy/OFF behavior and old saved books remain safe.
+old saved books remain safe.
+
+Stage 9 closeout A1: the recent-hand window is the only production path
+(T2_READ_RECENCY_V3 retired).  The legacy lifetime view is reproduced here only
+as a reference (identity _recent_record) for the R5 comparison.
 """
 import json, pathlib, random, tempfile, os, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -12,16 +16,11 @@ import reads as RD
 
 
 def observe_seq(seq, enabled=True):
-    old=RD.READ_RECENCY_V3
-    RD.READ_RECENCY_V3=enabled
-    try:
-        b=RD.Book()
-        for vpip in seq:
-            b.observe_preflop(['obs'],'vill',bool(vpip),bool(vpip),
-                              limp=False,limp_chance=True,rfi_exp=.25)
-        return b
-    finally:
-        RD.READ_RECENCY_V3=old
+    b=RD.Book()
+    for vpip in seq:
+        b.observe_preflop(['obs'],'vill',bool(vpip),bool(vpip),
+                          limp=False,limp_chance=True,rfi_exp=.25)
+    return b
 
 
 def observer_profile(att, adp, rr=5.0, st=5.0, cons=5.0):
@@ -35,16 +34,15 @@ def observer_profile(att, adp, rr=5.0, st=5.0, cons=5.0):
 def main():
     checks={}
 
-    # R1: OFF is truly inert: no history state is created.
-    b0=observe_seq(([0,1]*20), enabled=False)
+    # R1: the single path records hand-boundary history.
+    b0=observe_seq(([0,1]*20))
     r0=b0.rec('obs','vill')
-    checks['R1_off_does_not_mutate_book_shape']={
-        'pass':'_hand_hist' not in r0,
+    checks['R1_history_recorded_on_single_path']={
+        'pass':'_hand_hist' in r0 and 'READ_RECENCY_V3' not in vars(RD),
         'hands':r0['hands'],'vpip':r0['vpip']}
 
     # R2/R3: 80 tight hands followed by 20 loose hands.
-    old=RD.READ_RECENCY_V3
-    RD.READ_RECENCY_V3=True
+    _recent=RD._recent_record
     try:
         b=observe_seq([0]*80+[1]*20, enabled=True)
         r=b.rec('obs','vill')
@@ -72,9 +70,9 @@ def main():
         short=observer_profile(2,2)
         est_recent=RD.estimate(b,'obs','vill',short,random.Random(12345))
         # Same observer / same book / same RNG, but legacy lifetime rates.
-        RD.READ_RECENCY_V3=False
+        RD._recent_record=lambda r, m: r          # retired lifetime reference
         est_life=RD.estimate(b,'obs','vill',short,random.Random(12345))
-        RD.READ_RECENCY_V3=True
+        RD._recent_record=_recent
         checks['R5_estimate_consumes_recent_view']={
             'pass':(est_recent['n']==20
                     and est_recent['vpip'] > est_life['vpip'] + .10),
@@ -133,7 +131,7 @@ def main():
             'legacy_fallback':{'hands':lview['hands'],'vpip':lview['vpip']}}
 
     finally:
-        RD.READ_RECENCY_V3=old
+        RD._recent_record=_recent
 
     passed=all(v['pass'] for v in checks.values())
     print(json.dumps({'pass':passed,'checks':checks},indent=2,sort_keys=True))

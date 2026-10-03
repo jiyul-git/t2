@@ -430,3 +430,26 @@
 | L111 | texture sizing 의 보드 사실 / 학습 prior / 인지 잡음 | 현 구조가 최종(`size_fraction` = 보드 → 사이즈 prior, `perceived` = 숙련 잡음) | 같음 | — |
 
 새 baseline(B6): 시드 11 `b6425e83…`(불변), 시드 12 `b09618b3…`.
+
+## 9단계 B1/B2 closeout — 그룹 A (GTO 비의존)
+
+기준 `13c5c0b4`(B6 기준선: 시드 11 `b6425e83…`, 시드 12 `b09618b3…`).
+
+| 항목 | 같은 질문인가 | 최종 처리 | 근거 |
+|---|---|---|---|
+| A1 READ_RECENCY_V3 | 관찰자 기억(`memory`, 8~120핸드)이 무엇을 담는가는 하나의 질문이다. 그런데 legacy 는 확신(n)만 memory 로 자르고 모든 빈도를 평생 누적값으로 계산했다 | 최근 핸드 창을 유일 경로로. 플래그 퇴역 | 새 계수가 없다(기존 memory 그대로). 스타일이 바뀐 상대를 평생 데이터가 계속 지배하는 것은 '기억' 의 의미와 맞지 않는다. 기록이 없는 옛 북은 새 기록이 쌓일 때까지 평생값을 쓰고, 이력을 지어내지 않는다 |
+| A2 프리플랍 3벳 형질의 bluff 숙련 | **다른 질문.** `traits.threebet` 은 프리플랍 3벳 성향(핫존 리쇼브 폭, 오프너 모를 때의 관찰자 3벳 레인지)이다. `bluff` 는 포스트플랍(flop~river) '근거를 블러프 행동으로 옮기는 능력'이다 | 숙련 입력을 `sk('pf_defend')`(프리플랍 재레이즈 지식)로 교체. 계수 0.006 유지 | 새 수치 없음. 최대 숙련은 두 값이 같아(10) baseline 불변. 필드 프로필 1,000명에서 형질 차이는 평균 0.013, 최대 0.045. 프리플랍 멀티웨이 재레이즈의 `bluff_skill`(블로커·폴드 에쿼티 근거 활용)은 bluff 개념의 정의와 같은 질문이라 유지했다(주석 명시) |
+| A3 두 프리플랍 순서표 | **같은 질문**("강한 순 상위 X%", R2 PREFLOP_ORDERING_DUPLICATION). 관찰 기반은 PCT(pf_rank), 레인지를 모를 때의 fallback 은 `_pf_score` 공식 | PCT 하나로 통합. `bot.range_combos` 는 PCT 클래스 백분위 ≤ pct 인 클래스 전부를 쓴다. `_pf_score` 삭제 | 모든 1차 소비처가 이미 PCT 를 쓴다. 클래스 단위라 수트에 따라 갈리는 분할이 없다(`_pf_score` 는 동률을 덱 순서로 깨서 같은 클래스가 레인지 안팎으로 갈렸다). 새 수치 없음 |
+
+### 그룹 B (GTO 의존) — BLOCKED_BY_GTO_REFERENCE_VALIDATION
+
+| 플래그 | 상태 | 이유 |
+|---|---|---|
+| `T2_GTO_MEMORY_V2` | production OFF 유지 | 학습 기억의 신뢰도를 '현재 조건 일치도'로 줄인다. 일치도는 9-max reference(`gto.rfi`/`defend_pct`)로 잰다 |
+| `T2_PREFLOP_REASONING_V3` | production OFF 유지 | 기억한 차트를 9-max 현재 조건 reference 쪽으로 옮긴다 |
+
+- 두 경로 모두 9-max reference 값이 근거다.
+- 그런데 30bb 감사에서 solver continuation model 이 BB 과방어와 타이트한 RFI 를 만드는 구조 문제가 확인됐다.
+- Termux 20/25/30/40bb 결과도 exact stack semantics 문제로 보류 중이다.
+- `persona.GTO_STUDIED` 는 8-max(Matthiola) 기준이다.
+- 지금 켜면 GTO 쪽 오류가 인간형 모델로 옮겨온다. GTO continuation S pilot 이 끝나고 corrected 9-max reference 가 검증된 뒤 다시 판정한다. Stage 9 범위에 넣지 않는다.
