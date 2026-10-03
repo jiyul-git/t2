@@ -26,7 +26,14 @@ every step and node: common random numbers).
    (se_c^2 = sum_strata p^2 s^2 / n, n = 2 boards per stratum, s^2 with n - 1).
 4. damped update V_{k+1} = 0.5 V_k + 0.5 V_raw,k (tables only) -> preflop solve -> sigma_{k+1}.
 5. stop: all 16 D <= U -> "converged at panel_v1 resolution (value space)"; max_(n,s) D/U grows two steps in a row -> stop and
-   report; after 3 steps without meeting the rule -> "not yet converged", stop (no 4th step).
+   report; after 3 steps (k = 0, 1, 2) without meeting the rule -> "not yet converged", stop (no 4th step).
+6. minimum one update: step 0 always continues to state 1, because the 4 S-pilot tables were computed at O's ranges (two preflop
+   states back); the stop test applies from step 1. Reason: U (one estimate's panel error) is 0.2-0.4 bb per seat on panel_v1, so a
+   stale table could pass step 0 inside the noise.
+7. report only: U_paired = the same weighting over the stratified SE of the per-board change (raw minus state-k board values, same
+   boards). D / U_paired near 1 means the step's move is not detectable on this panel; D / U_paired >> 1 with D <= U means the loop
+   still moves, but by less than the panel's own error. Tables are linear in board values, so state-k per-board values are carried
+   (damped) and the estimator reproduces every table exactly (checked, < 1e-9).
 Reported every step (not stop criteria): RFI per position, BB / SB responses per opener, focus hands, ranges L1 change.
 
 Judgment vs E1: E1's primary residual is the seat-swap dEV of sigma_k in G_raw,k with U from 60 replicate preflop solves. In 9-max one
