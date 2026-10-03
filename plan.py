@@ -1,6 +1,7 @@
 import random, zlib as _zlib, hashlib as _hashlib
 import bot, ranges as R, preflop as pf, archetypes as A, persona as PS, texture as TX
 import icm as _ICM
+import reads as RD
 
 def spr(stack, pot): return stack/max(1, pot)
 
@@ -514,15 +515,29 @@ def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
     return bot.equity_vs_combos(hero,board,pools,sims=_s)
 
 
-def opp_bet_prob(opp_est, w, street):
+def opp_bet_prob(opp_est, w, street, opp_role=None):
     """체크했을 때 상대가 벳해줄 확률. 트랩의 성립 조건 그 자체다.
 
     정보가 없거나(w=0) 이 사람이 상대를 안 보는 타입이면 모집단 평균으로 돌아간다.
     그게 '자기 전략대로 친다'의 의미다 — 상대를 특정하지 않고 평균적인 상대를 가정한다.
+
+    opp_role 은 상대가 이 스트리트에서 어떤 입장으로 '체크받는가'다.
+      'aggressor' — 직전 스트리트 공격자: 라인을 잇는 c벳/배럴 빈도
+      'probe'     — 비공격자(내가 공격자이고 내가 체크함): 프로브 빈도
+    프로브는 c벳/배럴과 다른 질문이라, 예전처럼 상대의 c벳 빈도로 대신하면
+    '공격자일 때 잘 치는 사람'을 '체크받으면 치는 사람'으로 오독한다.
+    프로브 표본이 적으면 같은 질문의 기본값(base)으로 표본 수만큼 당긴다
+    (reads._shrink 와 같은 수축). None 은 예전 동작(c벳/배럴)이다.
     """
     base = {'flop': 0.45, 'turn': 0.38, 'river': 0.30}.get(street, 0.40)
     if not opp_est or w <= 0.0:
         return base
+    if opp_role == 'probe':
+        _raw = opp_est.get('probe_%s' % street)
+        _n = int(opp_est.get('probe_%s_n' % street, 0) or 0)
+        obs = RD._shrink(_raw, _n, base, 1.0, 1.0) if _raw is not None else base
+        obs = 0.65*obs + 0.35*(opp_est.get('aggr', 5.0)/10.0)
+        return max(0.05, min(0.92, PS.blend(base, obs, w)))
     # 관찰된 씨벳/배럴 빈도와 공격축에서 추정
     obs = opp_est.get('cbet' if street == 'flop' else 'barrel')
     if obs is None:
@@ -592,7 +607,8 @@ def select_field_opponent(profile, opp_ests, street, purpose='fold_constraint'):
         return max(rows,key=lambda x:(x['score'],str(x['seat'])))
     return min(rows,key=lambda x:(x['score'],str(x['seat'])))
 
-def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk):
+def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk,
+                  opp_role=None):
     """트랩을 팔지 판단. 반환 (확률, 사유).
 
     축이 셋이다.
@@ -625,7 +641,7 @@ def trap_judgment(profile, opp_est, spr_now, danger, multiway, street, tilt, sk)
     _see_bet = (0.65*_rd_trap.get('see_freq', 0.0)
                 + 0.35*_rd_trap.get('see_line', 0.0))
     w = _rd_trap.get('w', 0.0) * _see_bet
-    pbet = opp_bet_prob(opp_est, w, street)
+    pbet = opp_bet_prob(opp_est, w, street, opp_role=opp_role)
 
     # --- 상황이 시키는 빈도 ---
     # 상대가 벳해줘야 트랩이 성립한다. 안 치는 상대면 무료 카드만 주는 셈.
@@ -1097,8 +1113,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # 개념을 가졌는가(sk)는 사람마다 다르지만, 그 도구를 지금 쓸지는
         # 상대가 벳해줄 사람인가 · 스택이 남았는가 · 보드가 안전한가로 결정된다.
         # 패시브한 상대에게 체크하면 무료 카드만 주는 최악의 수다.
+        # 내가 공격자면 상대는 '체크받으면 칠지'(프로브), 아니면 상대가 공격자다.
         p_trap, trap_why = trap_judgment(profile, _trap_opp_est, s, dang, mw,
-                                         street, tilt, sk)
+                                         street, tilt, sk,
+                                         opp_role=('probe' if initiative else 'aggressor'))
         # Preserve the historical RNG consumption even when trap is structurally
         # impossible, so the downstream aggression roll is not shifted by this gate.
         _trap_roll = rng.random()
@@ -2113,7 +2131,7 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
             p_trap, _twhy = trap_judgment(
                 profile, opp_est, _spr, _ps.get('danger', 0.0) or 0.0,
                 max(0, int(n_opp or 1) - 1), street, tilt,
-                lambda c: PS.sk(profile, c))
+                lambda c: PS.sk(profile, c), opp_role='aggressor')
             _fp = max(0.0, min(0.97, 1.0 - p_trap))
             return _fp, (
                 '라인은 상대 것이나 분명한 밸류(rel %.2f) → 트랩 %.0f%%, 아니면 리드(%.0f%%)'

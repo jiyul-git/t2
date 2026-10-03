@@ -1013,6 +1013,14 @@ sp('money_open_form_shadow', 'money_pressure', 'unopened_modifiers', 'pot_brake 
 sp('money_open_form_shadow', 'money_pressure', 'unopened_modifiers', 'restraint = union01(pot_brake, pressure) * (1.0 - urgency)', None)
 
 sp('opponent_behavior_memory', 'reads', 'Book.observe_postflop')
+# exploit observations (after L161): lead / probe lines, follow-up and showdown link
+sp('opponent_behavior_memory', 'reads', 'Book.observe_line')
+sp('opponent_behavior_memory', 'reads', 'Book.observe_line_raise')
+sp('opponent_behavior_memory', 'reads', 'Book.observe_line_showdown')
+sp('opponent_behavior_memory', 'reads', '_line_rates')
+sp('opponent_behavior_memory', 'reads', '_line_rates.raw')
+sp('opponent_behavior_memory', 'session', 'line_spot_kind')
+sp('opponent_behavior_memory', 'session', 'HandRun._run', '_lk = line_spot_kind(', '_checked_now.add(x)')
 sp('opponent_unconsumed_estimates', 'reads', 'Book.observe_postflop', 'if facing_raise:', "if action == 'fold': r['f2r_' + street] += 1")
 sp('preflop_raise_observation', 'reads', 'Book.observe_backraise')
 sp('preflop_raise_observation', 'reads', 'Book.observe_cold_reraise')

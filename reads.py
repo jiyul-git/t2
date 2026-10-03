@@ -246,6 +246,17 @@ class Book:
             'pf_cold_reraise_call': 0,
             'pf_cold_reraise_raise': 0,
             'pf_cold_reraise_fold': 0,
+            # 리드(동크)·프로브(스탭) — 공격자가 라인을 잇는 c벳/배럴과 다른
+            # 질문이다. 리드: 비공격자가 살아 있는 공격자보다 먼저 첫 벳.
+            # 프로브: 공격자가 체크했거나 공격자가 없을 때 비공격자의 첫 벳.
+            'lead_opp_flop': 0, 'lead_flop': 0, 'lead_opp_turn': 0, 'lead_turn': 0,
+            'lead_opp_river': 0, 'lead_river': 0,
+            'probe_opp_flop': 0, 'probe_flop': 0, 'probe_opp_turn': 0, 'probe_turn': 0,
+            'probe_opp_river': 0, 'probe_river': 0,
+            # 그 벳 뒤의 반응과 공개된 패(해석: 밸류 위주인가 블러프 위주인가).
+            'lead_fr': 0, 'lead_f2r': 0, 'probe_fr': 0, 'probe_f2r': 0,
+            'sd_lead': 0, 'sd_lead_strong': 0, 'sd_lead_weak': 0,
+            'sd_probe': 0, 'sd_probe_strong': 0, 'sd_probe_weak': 0,
         }
         key = self._k(i, j)
         r = self.d.setdefault(key, {})
@@ -409,6 +420,40 @@ class Book:
             if action in ('bet', 'raise'): r['agg_actions'] += 1
             elif action in ('check', 'call'): r['passive_actions'] += 1
 
+    def observe_line(self, observers, actor, kind, street, did_bet):
+        """리드/프로브 기회와 실행. kind 는 'lead' 또는 'probe'."""
+        if kind not in ('lead', 'probe') or street not in ('flop', 'turn', 'river'):
+            return
+        for i in observers:
+            if i == actor: continue
+            r = self.rec(i, actor)
+            r['%s_opp_%s' % (kind, street)] += 1
+            if did_bet:
+                r['%s_%s' % (kind, street)] += 1
+
+    def observe_line_raise(self, observers, actor, kind, folded):
+        """리드/프로브 벳이 레이즈를 맞았을 때 접었는가."""
+        if kind not in ('lead', 'probe'):
+            return
+        for i in observers:
+            if i == actor: continue
+            r = self.rec(i, actor)
+            r['%s_fr' % kind] += 1
+            if folded:
+                r['%s_f2r' % kind] += 1
+
+    def observe_line_showdown(self, observers, actor, kinds, hand_pct):
+        """리드/프로브를 한 핸드에서 공개된 패. 강/약 문턱은 observe_showdown 과 같다."""
+        for kind in kinds or ():
+            if kind not in ('lead', 'probe'):
+                continue
+            for i in observers:
+                if i == actor: continue
+                r = self.rec(i, actor)
+                r['sd_%s' % kind] += 1
+                if hand_pct > 0.45: r['sd_%s_weak' % kind] += 1
+                elif hand_pct < 0.20: r['sd_%s_strong' % kind] += 1
+
     def observe_showdown(self, observers, actor, hand_pct, was_aggressor):
         """깐 패가 약한데 공격적이었다면 블러프 성향의 증거."""
         for i in observers:
@@ -517,6 +562,7 @@ def estimate(book, observer, target, observer_type, rng=None):
         est['pf_cold_reraise_call'] = None
         est['pf_cold_reraise_raise'] = None
         est['pf_cold_reraise_fold'] = None
+        est.update(_line_rates({}))
         est['n'] = 0; est['confidence'] = 0.0
         return est
     # Under V3 every downstream rate uses the same remembered window. Legacy
@@ -623,7 +669,30 @@ def estimate(book, observer, target, observer_type, rng=None):
             'sz_mean': sz_mean, 'sz_sd': sz_sd,
             'sz_big': sz_big, 'sz_river': sz_riv, 'sz_n': _sn,
             'aggr': jitter(aggr_axis), 'bluff': jitter(bluff_axis),
-            'tight': jitter(tight_axis), 'n': r['hands'], 'confidence': round(conf, 2)}
+            'tight': jitter(tight_axis), 'n': r['hands'], 'confidence': round(conf, 2),
+            **_line_rates(r)}
+
+
+def _line_rates(r):
+    """리드/프로브 관측의 원시 비율(None = 표본 없음) + 표본 수.
+
+    사전값을 새로 만들지 않는다(fold_to_raise 와 같은 방식). 표본 수에 따른
+    수축은 소비 쪽이 그 질문의 기존 기본값으로 한다(plan.opp_bet_prob).
+    """
+    def raw(num, den):
+        d = r.get(den, 0) or 0
+        return (r.get(num, 0) / float(d)) if d else None
+    out = {}
+    for kind in ('lead', 'probe'):
+        for st in ('flop', 'turn', 'river'):
+            out['%s_%s' % (kind, st)] = raw('%s_%s' % (kind, st), '%s_opp_%s' % (kind, st))
+            out['%s_%s_n' % (kind, st)] = r.get('%s_opp_%s' % (kind, st), 0) or 0
+        out['%s_fold_to_raise' % kind] = raw('%s_f2r' % kind, '%s_fr' % kind)
+        out['%s_fold_to_raise_n' % kind] = r.get('%s_fr' % kind, 0) or 0
+        out['sd_%s_weak' % kind] = raw('sd_%s_weak' % kind, 'sd_%s' % kind)
+        out['sd_%s_strong' % kind] = raw('sd_%s_strong' % kind, 'sd_%s' % kind)
+        out['sd_%s_n' % kind] = r.get('sd_%s' % kind, 0) or 0
+    return out
 
 
 def infer_latent(est):

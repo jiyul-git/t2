@@ -283,6 +283,24 @@ def _preflop_story_range(range_profile, pos, stack_bb, dead, seats, ante,
         'open_bb': open_bb,
     }
 
+
+def line_spot_kind(seat, street_aggr, aggr_live, acted_once, checked_now, bet_seen):
+    """이 첫 액션이 리드/프로브 '기회'인가. 'lead' / 'probe' / None.
+
+    리드(동크): 이번 스트리트 첫 벳이 아직 없고, 직전 스트리트 공격자가 아닌
+      사람이, 살아서 대응할 수 있는 공격자보다 **먼저** 액션한다.
+    프로브(스탭): 첫 벳이 아직 없고, 공격자가 이미 체크했거나 대응할 공격자가
+      없다(공격자 없음·폴드·올인).
+    공격자 자신의 첫 액션은 c벳/배럴/지연 c벳 기회이고 여기서 다루지 않는다.
+    """
+    if bet_seen or seat in acted_once or seat == street_aggr:
+        return None
+    if aggr_live and street_aggr not in acted_once:
+        return 'lead'
+    if street_aggr is None or not aggr_live or street_aggr in checked_now:
+        return 'probe'
+    return None
+
 def _cold_reraise_context(action_meta, actor, order, folded=(), allin=()):
     """두 번 이상 full raise가 누적된 현재 프리플랍 문맥.
 
@@ -2554,8 +2572,37 @@ class HandRun:
             _events = AE.postflop_events(
                 r2.action_meta, street=street,
                 pot_start=float(self._pot_at.get(street, 0) or 0))
+            # 리드/프로브 분류용(L161 이후 익스플로잇 관측). 이번 스트리트 시작 시점에
+            # 직전 스트리트 공격자가 살아서 대응할 수 있었는가.
+            _aggr_live = (street_aggr is not None and street_aggr not in folded
+                          and h.stacks.get(street_aggr, 1) > 0)
+            _checked_now = set()
+            _line_kind = getattr(self, '_line_kind', None)
+            if _line_kind is None:
+                _line_kind = self._line_kind = {}
+            _line_marks = getattr(self, '_line_marks', None)
+            if _line_marks is None:
+                _line_marks = self._line_marks = {}
             for e in _events:
                 x = e.get('seat')
+                _ak = e.get('action_kind')
+                # 리드/프로브 기회: 이번 스트리트 첫 벳이 아직 없고, 직전 공격자가
+                # 아닌 사람의 첫 액션. 공격자가 아직 액션 전이면 리드, 공격자가
+                # 체크했거나 대응할 공격자가 없으면 프로브.
+                _lk = line_spot_kind(x, street_aggr, _aggr_live, _acted_once,
+                                     _checked_now, _bet_seen)
+                if _lk:
+                    _did = _ak in ('bet', 'raise')
+                    h.book.observe_line(_ord, _pid(x), _lk, street, _did)
+                    if _did:
+                        _line_kind[(street, x)] = _lk
+                        _line_marks.setdefault(x, set()).add(_lk)
+                # 그 벳이 레이즈를 맞았을 때의 반응.
+                if (e.get('facing_kind') == 'raise' and (street, x) in _line_kind):
+                    h.book.observe_line_raise(
+                        _ord, _pid(x), _line_kind[(street, x)], _ak == 'fold')
+                if _ak == 'check':
+                    _checked_now.add(x)
                 opp_spot = (x == street_aggr and x not in _acted_once and not _bet_seen)
                 is_cbet = (street == 'flop' and opp_spot)
                 # barrel = 직전 스트리트에도 공격했던 사람이 다시 치는 것.
@@ -2859,6 +2906,10 @@ class HandRun:
                     continue
                 RD_pct = _pf.legacy_preflop_order_percentile(h.hole[sd])
                 h.book.observe_showdown(_all, self._pid(sd), RD_pct, sd in aggr_seats)
+                # 리드/프로브를 한 핸드에서 공개된 패 — 그 라인의 구성 해석용.
+                _mk = (getattr(self, '_line_marks', None) or {}).get(sd)
+                if _mk:
+                    h.book.observe_line_showdown(_all, self._pid(sd), sorted(_mk), RD_pct)
                 # 깐 패는 틸트 객체에도 남긴다. runner.adjust_range_by_history 가
                 # 이걸 읽어 '이 사람이 예상보다 넓게 깠다'를 판단한다. 키는 pid 다.
                 if hasattr(h, 'dyn') and hasattr(h.dyn, 'note_showdown'):

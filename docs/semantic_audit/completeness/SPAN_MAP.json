@@ -2157,6 +2157,55 @@
    "to": null
   },
   {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "Book.observe_line",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "Book.observe_line_raise",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "Book.observe_line_showdown",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "_line_rates",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "_line_rates.raw",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "session",
+   "func": "line_spot_kind",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "session",
+   "func": "HandRun._run",
+   "from": "_lk = line_spot_kind(",
+   "to": "_checked_now.add(x)"
+  },
+  {
    "concept": "opponent_unconsumed_estimates",
    "module": "reads",
    "func": "Book.observe_postflop",
