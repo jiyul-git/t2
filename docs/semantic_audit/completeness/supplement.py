@@ -819,7 +819,7 @@ sp('allin_form_fold_equity_read', 'preflop', 'shove_form_pressure', "if exploit 
 sp('accumulation_variance_drive', 'preflop', 'open_decision', 'vs = (PS.variance_seek(', "if prof.get('concepts') else 0.0)")
 sp('short_stack_open_widening', 'preflop', 'open_entry_threshold', "return min(0.9, thr + traits['shove_add']")  # stage9 B1
 sp('money_open_range_modifier', 'preflop', 'apply_money_open_threshold')  # stage9 B1
-sp('limp_entry_motive', 'preflop', 'open_decision', '_base_limp_p = limp_p(prof, feel, r, pos, t)', "money_open['sb_limp_currently_blocked'] = False")
+sp('limp_entry_motive', 'preflop', 'open_decision', '_base_limp_p = limp_p(prof, feel, r, pos, t, hand=hand)', "money_open['sb_limp_currently_blocked'] = False")
 sp('open_size_behind_read_adjust', 'preflop', 'open_decision', '_soft = 0.0', 'for r in _bl)/len(_bl)))')
 sp('players_behind_risk_premium', 'preflop', 'multiway_reraise_decision', 'if players_behind:', 'need += ')
 sp('locked_allin_price_gate', 'preflop', 'multiway_reraise_decision', 'eq_locked = None', 'fold += _rm')
@@ -828,7 +828,7 @@ sp('reraise_sizing_form', 'preflop', 'multiway_reraise_decision', 'x = rng.rando
 sp(NS + 'decision audit record (provenance only)', 'preflop', 'multiway_reraise_decision', "return action[0], action[1], {", "'selected_action': action[0],")
 sp('iso_limper_read_widening', 'preflop', 'iso_decision', 'if limper_reads:', '+ 0.30*max(0.0, _lg)))')
 sp('iso_sizing', 'preflop', 'iso_decision', 'if r <= thr:', "return ('raise', 3.0 + n_limpers)")
-sp('limp_entry_motive', 'preflop', 'iso_decision', '_lp = limp_p(prof, feel, r, pos, t)', "return ('limp', 1.0)")
+sp('limp_entry_motive', 'preflop', 'iso_decision', '_lp = limp_p(prof, feel, r, pos, t, hand=hand)', "return ('limp', 1.0)")
 sp('rfi_width_prior', 'preflop', '_open')
 sp('legacy_trait_adapter', 'preflop', '_tr_loose')
 sp('multiway_reraise_reasoning', 'preflop', 'multiway_evidence_application_capacity')
@@ -997,6 +997,7 @@ sp('defend_width_prior', 'gto', 'open_size_defend_scale')  # stage9 B1 (L056)
 sp('positional', 'persona', 'positional_chart_flattening')  # stage9 B1 (L030)
 sp('rfi_personality_deviation', 'persona', 'chart_deviation_room')  # stage9 B1 (L058/L063)
 sp('limp_entry_motive', 'preflop', 'limp_theory_knowledge')  # stage9 B1 (L064)
+sp('limp_entry_motive', 'preflop', 'theory_limp_hand')  # limp fix: theory limp hand set
 sp('preflop_card_removal', 'preflop', 'top_value_class_order')  # stage9 B1 (L075)
 sp('layer_calloff_judgment', 'preflop', 'pf_defend_exact_calc_gate')  # stage9 B1 (L033/L078)
 sp('layer_calloff_judgment', 'preflop', 'calloff_by_price')  # stage9 B1 (L078)

@@ -182,7 +182,21 @@ def limp_theory_knowledge(prof):
     return PS.gto_knowledge(prof, 'rfi') if prof.get('concepts') else 0.5
 
 
-def limp_p(prof, feel, hand_pct, pos, traits=None):
+def theory_limp_hand(hand):
+    """숏스택 이론형 림프 레인지: 22-88, A2s-A8s (아래 limp_p 설명의 정의)."""
+    if not hand or len(hand) != 2:
+        return False
+    rv = '23456789TJQKA'
+    a, b = hand[0], hand[1]
+    ra, rb = rv.index(a[0]) + 2, rv.index(b[0]) + 2
+    if ra == rb:
+        return 2 <= ra <= 8
+    suited = a[1] == b[1]
+    hi, lo = max(ra, rb), min(ra, rb)
+    return suited and hi == 14 and 2 <= lo <= 8
+
+
+def limp_p(prof, feel, hand_pct, pos, traits=None, hand=None):
     """오픈 림프 확률. **동기가 둘이고 방향이 반대다.**
 
     이론적 림프 — 얕을 때만. 20bb 아래에서 성립한다.
@@ -203,8 +217,14 @@ def limp_p(prof, feel, hand_pct, pos, traits=None):
     # --- 이론적 림프 ---
     # feel 0.12(=20bb) 아래에서만. 얕을수록 커진다.
     theory = max(0.0, min(1.0, (0.12 - feel) / 0.12))
-    if hand_pct <= 0.03 or hand_pct > 0.30:
-        theory *= 0.15          # 레인지가 좁다. 프리미엄도 최약체도 아니다
+    # 레인지가 좁다. 프리미엄도 최약체도 아니다 — 정의 밖의 손은 0 이다.
+    # 예전에는 손 순위 3~30% 구간을 대용으로 쓰고 구간 밖에도 0.15 를 남겨,
+    # 최고 숙련이 UTG 에서 84o·J2o·KK 를 이론 림프했다(베타 A).
+    if hand is not None:
+        if not theory_limp_hand(hand):
+            theory = 0.0
+    elif hand_pct <= 0.03 or hand_pct > 0.30:
+        theory = 0.0
     theory *= acc * 0.42        # 아는 사람만 한다
 
     # --- 습관적 림프 ---
@@ -403,7 +423,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     # 그런데 예전에는 r>thr 를 여기보다 먼저 fold 시켜서, 약한 핸드일수록
     # limp 확률을 높인 habit 분기가 사실상 도달 불가능했다.
     # SB complete도 포커의 정상 선택지인데 pos!='SB'로 전역 차단돼 있었다.
-    _base_limp_p = limp_p(prof, feel, r, pos, t)
+    _base_limp_p = limp_p(prof, feel, r, pos, t, hand=hand)
     _limp_roll = rng.random()
     if money_open is not None:
         _pull = max(0.0, min(1.0, float(money_open.get('limp_pull_shadow', 0.0))))
@@ -1379,7 +1399,7 @@ def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
     # 오버림프는 표시용 type 라벨(FISH/STATION)로 결정하지 않는다.
     # 같은 플레이어도 STUDIED_FISH / *_TILTY 라벨이 붙으면 행동이 바뀌는
     # 문제가 있었다. 기존 limp 동기(이론형+습관형)를 그대로 재사용한다.
-    _lp = limp_p(prof, feel, r, pos, t)
+    _lp = limp_p(prof, feel, r, pos, t, hand=hand)
     if r <= min(0.95, thr * 2.2) and rng.random() < _lp:
         return ('limp', 1.0)
     return ('fold', 0)

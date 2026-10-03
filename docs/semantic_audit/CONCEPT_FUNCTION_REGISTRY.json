@@ -1521,7 +1521,7 @@
     "consumer": "preflop.open_form;preflop.iso_decision",
     "function": "preflop.limp_p",
     "state_variables": "feel pf_range discipline",
-    "inputs": "preflop.limp_p(prof, feel, hand_pct, pos, traits=None)",
+    "inputs": "preflop.limp_p(prof, feel, hand_pct, pos, traits=None, hand=None)",
     "output": "limp probability",
     "source_knowledge": "H",
     "axis": "reasoning",

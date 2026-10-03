@@ -844,7 +844,7 @@
    "concept": "limp_entry_motive",
    "module": "preflop",
    "func": "open_decision",
-   "from": "_base_limp_p = limp_p(prof, feel, r, pos, t)",
+   "from": "_base_limp_p = limp_p(prof, feel, r, pos, t, hand=hand)",
    "to": "money_open['sb_limp_currently_blocked'] = False"
   },
   {
@@ -907,7 +907,7 @@
    "concept": "limp_entry_motive",
    "module": "preflop",
    "func": "iso_decision",
-   "from": "_lp = limp_p(prof, feel, r, pos, t)",
+   "from": "_lp = limp_p(prof, feel, r, pos, t, hand=hand)",
    "to": "return ('limp', 1.0)"
   },
   {
@@ -2048,6 +2048,13 @@
    "concept": "limp_entry_motive",
    "module": "preflop",
    "func": "limp_theory_knowledge",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "limp_entry_motive",
+   "module": "preflop",
+   "func": "theory_limp_hand",
    "from": null,
    "to": null
   },
