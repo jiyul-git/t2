@@ -274,7 +274,8 @@ def build_round_bundle(st, f, hero_hand, bot_hands=None, source="live", round_be
         "field_errors": copy.deepcopy(getattr(f, "errors", []) or []),
         # HERO-table book is tournament-persistent today. Other-table books are
         # recorded per hand below, which also makes a missing persistence boundary visible.
-        "hero_book_after": copy.deepcopy(st.get("book") or {}),
+        "hero_book_after": copy.deepcopy(
+            ((st.get("field") or {}).get("book")) or st.get("book") or {}),
         "hero_hand": copy.deepcopy(hero_hand),
         "bot_hands": list(copy.deepcopy(bot_hands or [])),
         "all_hands": _all_hands,

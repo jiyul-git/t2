@@ -113,6 +113,7 @@ def force_max_logic_profiles():
     # Eliminate accumulated tilt/read-personality contamination in this audit.
     st["field"]["tilt"] = {}
     st["book"] = {}
+    st["field"]["book"] = {}   # L161: the tournament book lives in the field dump
     L.save(st)
 
 

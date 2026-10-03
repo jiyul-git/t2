@@ -443,6 +443,21 @@ class Table:
     def chips(self): return sum(p['stack'] for p in self.players)
 
 
+
+def book_view(d, pids):
+    """텔레메트리용 장부 일부: 이 테이블 사람끼리의 기록만, 최근 창 이력 제외.
+
+    장부가 대회 내내 유지되므로(L161) 통째로 기록하면 핸드마다 크기가 커진다.
+    이력(_hand_hist)은 판단 기록이 아니라 최근 창 계산용 저장이다.
+    """
+    ps = {str(p) for p in pids}
+    out = {}
+    for k, v in (d or {}).items():
+        i, _, j = str(k).partition('>')
+        if i in ps and j in ps:
+            out[k] = {kk: copy.deepcopy(vv) for kk, vv in v.items() if kk != '_hand_hist'}
+    return out
+
 class Field:
     """전 테이블을 실제로 굴리는 필드."""
 
@@ -450,6 +465,10 @@ class Field:
                  hands_per_level=12, itm_frac=0.15, fmt=None):
         self.seed = seed if seed is not None else int.from_bytes(os.urandom(4), 'big')
         self.rng = random.Random(self.seed)
+        # 관찰 장부는 대회 하나에 하나다(ledger L161). 예전에는 봇 테이블이
+        # 핸드마다 play.Hand 안에서 새 Book 을 만들어 상대 기억이 전혀 쌓이지
+        # 않았다. 키가 pid 쌍이라 테이블을 옮겨도 기억이 따라간다.
+        self.book = RD.Book()
         self.entries = entries
         self.start_stack = start_stack
         self.hands_per_level = hands_per_level
@@ -646,7 +665,9 @@ class Field:
                 getattr(h, 'range_fallback_audit', []) or [])
             rec['book_before'] = copy.deepcopy(
                 getattr(h, '_telemetry_book_before', {}) or {})
-            rec['book_after'] = copy.deepcopy(getattr(h.book, 'd', {}) or {})
+            rec['book_after'] = book_view(
+                getattr(h.book, 'd', {}) or {},
+                [str(x) for x in (getattr(h, 'seat_pid', {}) or {}).values()])
             rec['tilt_before'] = copy.deepcopy(
                 getattr(h, '_telemetry_tilt_before', {}) or {})
             rec['tilt_after'] = copy.deepcopy(
@@ -691,9 +712,11 @@ class Field:
         sb, bb = self.blinds()
 
         try:
+            if getattr(self, 'book', None) is None:
+                self.book = RD.Book()
             h = play.Hand(
                 seats, profs, stacks, layout['button'], sb, bb, hero=None,
-                seed=self.rng.randrange(10**9),
+                seed=self.rng.randrange(10**9), book=self.book,
                 position_map=layout['pos'],
                 pre_seats=layout['pre_seats'],
                 post_seats=layout['post_seats'],
@@ -708,8 +731,8 @@ class Field:
                 pid: copy.deepcopy(self.tilt.state.get(pid, {}))
                 for pid in _pids
             }
-            h._telemetry_book_before = copy.deepcopy(
-                getattr(h.book, 'd', {}) or {})
+            h._telemetry_book_before = book_view(
+                getattr(h.book, 'd', {}) or {}, _pids)
             run = SE.HandRun(h)
             _telemetry_t0 = time.perf_counter()
             run.start()
@@ -797,6 +820,20 @@ class Field:
                 p['table'] = None
                 p['seat'] = None
                 self.busted_order.append(p['pid'])
+                self._forget_busted(p['pid'])
+
+    def _forget_busted(self, pid):
+        """탈락자가 관찰자이거나 대상인 장부 기록을 지운다(L161).
+
+        장부가 대회 내내 유지되므로, 다시 쓰일 수 없는 기록(탈락한 사람의 기억,
+        탈락한 사람에 대한 기억)을 남기면 크기가 참가자 수의 제곱으로 커진다.
+        """
+        bk = getattr(self, 'book', None)
+        if bk is None or not getattr(bk, 'd', None):
+            return
+        ps = str(pid)
+        for k in [k for k in bk.d if ps in str(k).split('>')]:
+            del bk.d[k]
 
     def _balance(self, notify=True):
         """TDA식 테이블 브레이크/밸런싱.

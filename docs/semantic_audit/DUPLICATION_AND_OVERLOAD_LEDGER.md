@@ -476,7 +476,7 @@ Stage 11 문서 대조에서 확인했다. triage(`stage9/STAGE9_TRIAGE.md`)의 
 | L125 | `plan.trap_judgment` 가 생성 전용인 `latent.study` 를 runtime 에서 읽는다 | 설계 위반 |
 | L143 | `plan.stackoff_plan` / `spread_curve` 가 턴·리버에서도 3스트리트 배분으로 고정돼 있다 | 사이징 |
 | L156 | replan 에 bb·tilt·문맥이 전달되지 않는다. 플랍 계획이 항상 먼저다 | 계획 수명 |
-| L161 | 봇 테이블이 핸드마다 `reads.Book` 을 새로 만든다. 상대 기억이 지속되지 않는다 | 상대 기억 |
+| L161 | **해결(REFACTOR 20차)**: 대회 단위 장부 `Field.book`, UI 상태·병렬 합치기 포함 | 상대 기억 |
 | L163 | 쇼다운 관측이 공개/머크 결정 전에 모든 생존자를 기록한다. 포스트플랍 강도로 PCT 를 쓴다 | 관측 가시성 |
 | L170 | 쇼다운 이력 휴리스틱(`runner.adjust_range_by_history`)이 Book posterior 와 따로 있다 | 관측 가시성 |
 | L194 | 관찰자 기록이 가시성 판정보다 먼저다 | 관측 가시성 |

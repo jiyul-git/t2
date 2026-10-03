@@ -105,7 +105,7 @@ def force_profiles():
           "adaptability":10.0,"consistency":10.0,"attention":10.0,
           "slowplay_taste":5.0,"tilt_swing":5.0,"tilt_stack":0.0}
         prof.update(PS.derive(prof)); pv["prof"]=prof
-    st["field"]["tilt"]={}; st["book"]={}; L.save(st)
+    st["field"]["tilt"]={}; st["book"]={}; st["field"]["book"]={}; L.save(st)
 
 L.new_game(entries=100,start_stack=30000,seed=SEED,hands_per_level=12,fmt="standard")
 force_profiles()

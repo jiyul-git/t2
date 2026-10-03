@@ -407,6 +407,27 @@
    "to": "p = PS.blend(p, p*max(0.25, mult), _rdo['w'])"
   },
   {
+   "concept": "recency_window",
+   "module": "reads",
+   "func": "_compact_entry",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "recency_window",
+   "module": "reads",
+   "func": "_compact_history",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "recency_window",
+   "module": "reads",
+   "func": "_restore_entry",
+   "from": null,
+   "to": null
+  },
+  {
    "concept": "human_planned_size_shape",
    "module": "persona",
    "func": "sizing_odd_probability",

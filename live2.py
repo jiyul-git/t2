@@ -32,6 +32,8 @@ def _dump(f):
         'max_seat': getattr(f, 'max_seat', FS.MAXSEAT),
         'seed': getattr(f, 'seed', None),
         'tilt': f.tilt.state,
+        # 대회 하나의 관찰 장부(L161). 내 테이블과 다른 테이블이 같은 장부를 쓴다.
+        'book': getattr(getattr(f, 'book', None), 'd', {}) or {},
         # 틸트 키가 좌석에서 사람(pid)으로 바뀌었다. 이 표시가 없는 저장본은
         # 좌석 키('1'..'8')라서 pid 1..8 과 그대로 충돌한다 — 3번 자리의
         # 누적 틸트가 pid 3 인 사람에게 붙는다. 그런 상태는 버린다.
@@ -63,6 +65,9 @@ def _load_field(d):
     # 결과: (1) 실험 재현 불가 (2) crc32('field|None|n') 로 파생되어
     # **어떤 시드로 시작하든 두 번째 핸드부터 같은 필드 RNG 를 쓴다.**
     f.seed = d.get('seed')
+    # 장부는 깊은 복사로 복원한다 — 핸드 도중 관측이 입력 덤프(=저장 상태)로
+    # 새면 재생 때 이미 이번 핸드를 품은 장부로 판단하게 된다(build_hand 주석).
+    f.book = RD.Book(); f.book.d = copy.deepcopy(d.get('book') or {})
     f.entries = d['entries']; f.start_stack = d['start_stack']
     f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
@@ -200,7 +205,11 @@ def build_hand(st):
     # 결과: (1) 다음 요청이 재생할 때 장부가 이미 이번 핸드 관측을 품고 있어
     # 봇의 프리플랍 판단이 라이브와 달라지고(= 기록된 히어로 액션이 불법이 됨),
     # (2) 요청마다 같은 관측이 다시 누적돼 리딩이 몇 배로 부풀려진다.
-    _bk = RD.Book(); _bk.d = copy.deepcopy(st.get('book') or {})
+    # 장부는 field 덤프 안에 산다(L161) — _load_field 가 이미 깊은 복사했다.
+    # 예전 저장본(st['book'] 만 있음)은 한 번 이어받는다.
+    if not f.book.d and st.get('book'):
+        f.book.d = copy.deepcopy(st['book'])
+    _bk = f.book
     h = play.Hand(
         seats, profs, stacks, layout['button'], sb, bb, hero=hero_seat,
         seed=st['hand_seed'], book=_bk,
@@ -290,6 +299,11 @@ def compute_others_parallel(field_dump):
         if k in (out.get('tilt') or {}):
             tilt[k] = copy.deepcopy(out['tilt'][k])
 
+    # 장부: 관찰자가 비-HERO 테이블 사람인 항목만 이 worker 소유다.
+    _op = {str(x) for x in other_pids}
+    book = {k: copy.deepcopy(v) for k, v in (out.get('book') or {}).items()
+            if str(k).partition('>')[0] in _op}
+
     return {
         'mode': PARALLEL_TABLES_MODE,
         'base_key': _others_key(base),
@@ -297,6 +311,7 @@ def compute_others_parallel(field_dump):
         'players': players,
         'tables': tables,
         'tilt': tilt,
+        'book': book,
         'notes': list(f.notes),
         'bot_log': _bot_log,
     }
@@ -335,6 +350,14 @@ def _overlay_parallel_dump(main_dump, base_dump, others):
         mt.pop(pid, None)
         if pid in wt:
             mt[pid] = copy.deepcopy(wt[pid])
+
+    # 장부: 관찰자가 비-HERO pid 인 항목은 worker 결과만 권위 있게 쓴다(L161).
+    mb = merged.setdefault('book', {})
+    for k in [k for k in mb if str(k).partition('>')[0] in expected_players]:
+        del mb[k]
+    for k, v in (others.get('book') or {}).items():
+        if str(k).partition('>')[0] in expected_players:
+            mb[k] = copy.deepcopy(v)
     return merged
 
 
@@ -833,8 +856,8 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             % (f.entries, rank, itm)
         )
 
-    st['field'] = _dump(f)
-    st['book'] = h.book.d                      # 이 대회의 리딩 누적을 함께 저장
+    st['field'] = _dump(f)                     # 리딩 누적(장부)은 field 안에 함께 저장된다
+    st.pop('book', None)
     st['hand_seed'] = None; st['actions'] = []; st['decisions'] = []
     st['notes'] = notes
     st['busted'] = busted; st['rank'] = rank

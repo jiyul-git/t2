@@ -75,6 +75,13 @@ def _append_hand_snapshot(r):
     observe_preflop is the first observation update for the target in a new
     hand.  Therefore r still contains the complete previous hand here,
     including postflop/size/showdown observations.
+
+    Storage is compact (L161 prerequisite): only the newest snapshot is kept in
+    full.  Every older entry stores ``{'hands': n, '_prev': {k: value}}`` — the
+    *absolute* values of the counters that differed from the next snapshot
+    (None = key absent then).  Reconstruction walks back from the newest full
+    snapshot and is exact for ints and floats (no arithmetic).  Full-snapshot
+    lists written by older code are read as-is and compacted on the next append.
     """
     if int(r.get('hands', 0) or 0) <= 0:
         return
@@ -82,9 +89,58 @@ def _append_hand_snapshot(r):
     hist = r.setdefault('_hand_hist', [])
     if hist and int(hist[-1].get('hands', -1) or -1) == h:
         return
-    hist.append(_numeric_snapshot(r))
+    snap = _numeric_snapshot(r)
+    if hist:
+        _compact_history(hist)
+        last = hist[-1]
+        hist[-1] = _compact_entry(last, snap)
+    hist.append(snap)
     if len(hist) > _MAX_RECENCY_HISTORY:
         del hist[:-_MAX_RECENCY_HISTORY]
+
+
+def _compact_entry(full, nxt):
+    """Older snapshot `full` stored relative to the next snapshot `nxt`."""
+    prev = {}
+    for k in set(full) | set(nxt):
+        if k == 'hands':
+            continue
+        if k not in full:
+            prev[k] = None
+        elif nxt.get(k, _MISSING) != full[k]:
+            prev[k] = full[k]
+    return {'hands': full.get('hands'), '_prev': prev}
+
+
+_MISSING = object()
+
+
+def _compact_history(hist):
+    """Convert legacy full snapshots (all but the newest) to compact entries."""
+    if len(hist) < 2 or all('_prev' in e for e in hist[:-1]):
+        return
+    cur = hist[-1]
+    for i in range(len(hist) - 2, -1, -1):
+        e = hist[i]
+        if '_prev' in e:
+            cur = _restore_entry(e, cur)
+        else:
+            hist[i] = _compact_entry(e, cur)
+            cur = e
+
+
+def _restore_entry(entry, nxt_full):
+    """Full snapshot of a compact entry, given the full snapshot after it."""
+    if '_prev' not in entry:
+        return entry
+    out = dict(nxt_full)
+    for k, v in entry['_prev'].items():
+        if v is None:
+            out.pop(k, None)
+        else:
+            out[k] = v
+    out['hands'] = entry.get('hands')
+    return out
 
 
 def _recent_record(r, memory):
@@ -101,13 +157,15 @@ def _recent_record(r, memory):
     target = h - m
     hist = r.get('_hand_hist') or []
     base = None
-    for snap in reversed(hist):
-        sh = int(snap.get('hands', -1) or -1)
+    cur = None
+    for entry in reversed(hist):
+        cur = dict(entry) if (cur is None or '_prev' not in entry) else _restore_entry(entry, cur)
+        sh = int(cur.get('hands', -1) or -1)
         if sh == target:
-            base = snap
+            base = cur
             break
         if sh < target:
-            base = snap
+            base = cur
             break
     # Not enough V3-era history yet (e.g. a loaded legacy lifetime book).
     if base is None:
