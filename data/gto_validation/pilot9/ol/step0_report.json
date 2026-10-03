@@ -1,0 +1,208 @@
+{
+ "schema": "pilot9_ol_step_v1",
+ "k": 0,
+ "alpha": 0.5,
+ "panel": "panel_v1 (24 boards, fixed)",
+ "nodes": {
+  "btn": {
+   "node": 24,
+   "seats": {
+    "BB": {
+     "D": 0.1311237004385425,
+     "signed": -0.05617959130356394,
+     "U": 0.3992112135618279,
+     "D_over_U": 0.3284569570795252,
+     "pass": true,
+     "U_paired_diff": 0.09785804330513435,
+     "D_over_U_paired_diff": 1.3399378938089066
+    },
+    "BTN": {
+     "D": 0.3440071112042674,
+     "signed": -0.3440071112042674,
+     "U": 0.33121248177630747,
+     "D_over_U": 1.0386296716818817,
+     "pass": false,
+     "U_paired_diff": 0.09185239581369123,
+     "D_over_U_paired_diff": 3.745216530900665
+    }
+   },
+   "max_expl_pct_pot": 0.29544678520129514
+  },
+  "co": {
+   "node": 73,
+   "seats": {
+    "BB": {
+     "D": 0.12566670442634453,
+     "signed": -0.03985024593536326,
+     "U": 0.3873031615909332,
+     "D_over_U": 0.32446599173149226,
+     "pass": true,
+     "U_paired_diff": 0.06850606995049591,
+     "D_over_U_paired_diff": 1.834387880039743
+    },
+    "CO": {
+     "D": 0.38445385733841675,
+     "signed": -0.379894520181781,
+     "U": 0.29588483084880746,
+     "D_over_U": 1.2993361512840336,
+     "pass": false,
+     "U_paired_diff": 0.07892513327787312,
+     "D_over_U_paired_diff": 4.871120787149807
+    }
+   },
+   "max_expl_pct_pot": 0.2923702368397734
+  },
+  "hj": {
+   "node": 242,
+   "seats": {
+    "BB": {
+     "D": 0.14605495518082393,
+     "signed": -0.05076291148051817,
+     "U": 0.3973909762408027,
+     "D_over_U": 0.3675346545672959,
+     "pass": true,
+     "U_paired_diff": 0.07502019032735238,
+     "D_over_U_paired_diff": 1.9468752950840256
+    },
+    "HJ": {
+     "D": 0.444714857268451,
+     "signed": -0.4387577440248141,
+     "U": 0.3024709329428459,
+     "D_over_U": 1.4702730372854809,
+     "pass": false,
+     "U_paired_diff": 0.1047860628507519,
+     "D_over_U_paired_diff": 4.244026783426952
+    }
+   },
+   "max_expl_pct_pot": 0.2987485968843906
+  },
+  "utg": {
+   "node": 24726,
+   "seats": {
+    "BB": {
+     "D": 0.17192622614111017,
+     "signed": -0.09073231930452846,
+     "U": 0.4000411437788437,
+     "D_over_U": 0.42977135930837357,
+     "pass": true,
+     "U_paired_diff": 0.11441336948642152,
+     "D_over_U_paired_diff": 1.5026760151619714
+    },
+    "UTG": {
+     "D": 0.5528910139043945,
+     "signed": -0.5424243743505467,
+     "U": 0.2284556605652971,
+     "D_over_U": 2.420123942371599,
+     "pass": false,
+     "U_paired_diff": 0.10329548553444468,
+     "D_over_U_paired_diff": 5.352518660847272
+    }
+   },
+   "max_expl_pct_pot": 0.29984489236618966
+  },
+  "sb": {
+   "node": 11,
+   "seats": {
+    "SB": {
+     "D": 1.0238396289089255,
+     "signed": -1.0167039891924676,
+     "U": 0.39774602322902797,
+     "D_over_U": 2.574103998820835,
+     "pass": false,
+     "U_paired_diff": 0.15723357620433878,
+     "D_over_U_paired_diff": 6.511583935344423
+    },
+    "BB": {
+     "D": 0.8257576307022114,
+     "signed": -0.45959207852940426,
+     "U": 0.4044515655171311,
+     "D_over_U": 2.041672479735365,
+     "pass": false,
+     "U_paired_diff": 0.18220095954842988,
+     "D_over_U_paired_diff": 4.532125586763011
+    }
+   },
+   "max_expl_pct_pot": 0.29398268100165015
+  },
+  "lj": {
+   "node": 795,
+   "seats": {
+    "BB": {
+     "D": 0.14572957379352802,
+     "signed": 0.0443202902272675,
+     "U": 0.42591856065473743,
+     "D_over_U": 0.342153611642346,
+     "pass": true,
+     "U_paired_diff": 0.09265294480028986,
+     "D_over_U_paired_diff": 1.5728542045548897
+    },
+    "LJ": {
+     "D": 0.4758105826238754,
+     "signed": -0.4683435797826405,
+     "U": 0.28230380092443713,
+     "D_over_U": 1.685455814146949,
+     "pass": false,
+     "U_paired_diff": 0.11152656511630606,
+     "D_over_U_paired_diff": 4.266343019958284
+    }
+   },
+   "max_expl_pct_pot": 0.29753345013009314
+  },
+  "utg2": {
+   "node": 2548,
+   "seats": {
+    "BB": {
+     "D": 0.1601590093304198,
+     "signed": -0.0005875504465914483,
+     "U": 0.40403329647242414,
+     "D_over_U": 0.3964005212658281,
+     "pass": true,
+     "U_paired_diff": 0.10294793082248521,
+     "D_over_U_paired_diff": 1.5557282992562966
+    },
+    "UTG+2": {
+     "D": 0.5200924432486652,
+     "signed": -0.513316503438919,
+     "U": 0.24804328162853465,
+     "D_over_U": 2.0967810127086883,
+     "pass": false,
+     "U_paired_diff": 0.10700796846508856,
+     "D_over_U_paired_diff": 4.860315084089703
+    }
+   },
+   "max_expl_pct_pot": 0.29657726229043674
+  },
+  "utg1": {
+   "node": 7997,
+   "seats": {
+    "BB": {
+     "D": 0.19456455695691083,
+     "signed": -0.10253056913903341,
+     "U": 0.3975441987737039,
+     "D_over_U": 0.48941616443424396,
+     "pass": true,
+     "U_paired_diff": 0.11808367619384884,
+     "D_over_U_paired_diff": 1.647683771612168
+    },
+    "UTG+1": {
+     "D": 0.5773431652245867,
+     "signed": -0.569882779132886,
+     "U": 0.23585279329577283,
+     "D_over_U": 2.4478962371268826,
+     "pass": false,
+     "U_paired_diff": 0.10964006284055997,
+     "D_over_U_paired_diff": 5.265804763940777
+    }
+   },
+   "max_expl_pct_pot": 0.2983691534164526
+  }
+ },
+ "max_D_over_U": 2.574103998820835,
+ "max_D_over_U_paired_diff": 6.511583935344423,
+ "all_pass": false,
+ "max_D_over_U_history": [
+  2.574103998820835
+ ],
+ "decision": "continue: minimum one update (the 4 S-pilot tables were computed at O ranges); stop test applies from step 1",
+ "wording": "D <= U means the tables move by no more than the panel_v1 error of one estimate; it is not a best-response / fixed-point proof. D / U_paired_diff (same boards, report only) shows whether the move is detectable at all."
+}

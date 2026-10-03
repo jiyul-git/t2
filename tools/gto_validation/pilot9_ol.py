@@ -98,6 +98,7 @@ def eff_values(k, n):
 def step(k):
     sd = OL + f'step{k}/'
     raw_dir = sd + 'raw_tables/'
+    os.makedirs(raw_dir, exist_ok=True)
     PT.solved(sd, raw_dir, NODES, 'export_')     # asserts ranges hash, panel hash, converged <= 0.3 on every board
     rep = {'schema': 'pilot9_ol_step_v1', 'k': k, 'alpha': ALPHA, 'panel': 'panel_v1 (24 boards, fixed)', 'nodes': {}}
     nxt = OL + f's{k + 1}/'
