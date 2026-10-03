@@ -18,10 +18,6 @@ class _SigMap(dict):
 
 SIZING_SIG = _SigMap()
 
-def shape_size(amount, ptype, rng, pot=None):
-    """Compatibility wrapper; strategic ownership lives in persona.shape_size."""
-    return PS.shape_size(amount,ptype,rng,pot=pot)
-
 def effective_allin_v1(target, actor_cap, opp_cap_max, contrib_before, pot_before):
     """final legal target이 actor 기준 사실상 올인인지 분류한다.
 

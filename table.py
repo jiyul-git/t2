@@ -99,15 +99,6 @@ class Table:
         self.s['stacks'][str(seat)] += amt
         self.s['pot'] -= amt
 
-    def sidepots(self, contribs):
-        """contribs: {seat: total_invested}. -> [(amount, [eligible seats])]"""
-        levels = sorted(set(v for v in contribs.values() if v > 0))
-        pots = []; prev = 0
-        for lv in levels:
-            elig = [s for s, v in contribs.items() if v >= lv]
-            pots.append(((lv - prev) * len(elig), elig)); prev = lv
-        return pots
-
     def bb(self, seat): 
         _, _, _ = self.blinds()
         return round(self.s['stacks'][str(seat)] / self.blinds()[1], 1)

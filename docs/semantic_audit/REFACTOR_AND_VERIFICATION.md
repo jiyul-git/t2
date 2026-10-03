@@ -259,3 +259,27 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - 새 baseline: 시드 11 `7ce1561d…`, 시드 12 `ef73996c…`.
 - completeness: site 1,132 / 함수 613 / 상수 표 87, 미소유 0.
 - 23-gate: 통과·실패 집합(17/6)과 출력 줄이 기준과 같다.
+
+## 11차 — 9단계 B5 통합 (호환 / 이름 / 옛 경로 제거)
+
+기준은 clean 안테 기준선 `60c7d615`(코드 `58900603`)이다. B5 는 안테 변경과 섞이지 않게 stash 로 분리해 두었다가, 기준선을 봉인한 뒤 복원했다. 판정은 ledger "9단계 B5 통합" 절.
+
+코드 변경:
+- `icm.field_bf` 의 덮인 첫 정의와 그 전용 표 삭제
+- 읽히지 않던 표 4개 삭제
+- `Table.sidepots` 삭제
+- `runner.shape_size` 래퍼 삭제
+- `session._diagnostic_layer_equities` → `layer_equities_by_pot_layer`(docstring 정정)
+- EXPLOIT_WEIGHT_V3 / `exploit_weight` / `opponent_read_application_weight` 퇴역
+- `act_with_plan` 의 response_kind=None 호환 분기와 `checked_before` 삭제
+- `bias()` 가 bluff_fear/hero_call 에 street 를 요구
+- CI 의 퇴역 플래그 env 정리
+- docstring 정의 명시: `relative_strength`, `nut_advantage`
+
+검증(clean 안테 기준선 대비):
+- 시드 11 `b6425e83…`, 시드 12 `a769e1e0…`: 기준선과 **동일**. B5 의 행동 차이는 0 이다.
+- 23-gate: 안테 기준선의 결과 파일과 동일하다.
+- `verify_uniform_ante` 6/6 통과(B5 위에서도).
+- completeness: site 1,122 / 함수 612 / 상수 표 76, 미소유 0. 안테 함수 3개를 forced_bet_posting 으로 소유시켰다.
+- 갱신한 검증기(새 계약): `verify_core_sizing_ownership`, `verify_human_model_v3`(E1/E2 단일 가중치), `verify_human_model_v2`, `audit_human_v3_live_attribution`, `verify_range_read_semantics`, `verify_f3`/`verify_f5` fixture(canonical response_kind).
+- B5 이전부터 실패하던 검증기: `verify_f5_backaction`, `verify_prelogic_execution_boundary`, `verify_f3_checkraise_response`(23-gate 의 기존 실패 6개 중 하나).

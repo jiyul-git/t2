@@ -401,12 +401,16 @@ def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
     return out
 
 
-def _diagnostic_layer_equities(hero_seat, hero_cards, board, pot_layers,
+def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                                   active_ranges, locked_ranges, sims=600,
                                   seed=None):
-    """F8-D3: 현재 참가 가능한 pot layer별 showdown equity 진단.
+    """F8-D3: 현재 참가 가능한 pot layer별 showdown equity.
 
-    기록 전용이다. 결과를 plan/action/sizing에 넘기지 않는다.
+    소비처(stage9 B5 확인, L189): 프리플랍 순수 콜오프와 포스트플랍 콜 판단에서
+    `_layer_call_summary` 를 거쳐 `act_with_plan(call_value=...)` 의 layer-call EV
+    로 **판단에 쓰인다**(완전한 layer 요약 + 뒤 좌석 없음일 때). 이름의
+    'diagnostic' 과 '기록 전용' 문구는 이 소비를 빠뜨려 고쳤다. 블러프 레이즈의
+    fold/call 가상 상태 계산(D4)은 기록용이다.
 
     range가 하나라도 없으면 임의 fallback을 만들지 않고 complete=False,
     equity=None 으로 남긴다. hero_eligible=False인 pending wager layer도
@@ -1392,7 +1396,7 @@ class HandRun:
                 _pf_active_ranges = {
                     o: rr for o, rr in _pf_opp_ranges.items()
                     if float(rnd.stacks.get(o, 0) or 0) > 0}
-                _pf_call_layer_eq = _diagnostic_layer_equities(
+                _pf_call_layer_eq = layer_equities_by_pot_layer(
                     s, h.hole[s], [], _pf_call_layers,
                     _pf_active_ranges, _pf_locked_ranges, sims=800,
                     seed=self._dseed(
@@ -1814,7 +1818,7 @@ class HandRun:
                 # locked opponent가 없는 일반 팟에서는 비용조차 추가하지 않는다.
                 # 이 결과는 아래 intent에만 기록되고 전략 함수에는 전달되지 않는다.
                 layer_equities = (
-                    _diagnostic_layer_equities(
+                    layer_equities_by_pot_layer(
                         s, h.hole[s], board, _pot_layers,
                         opp_ranges, locked_opp_ranges, sims=600,
                         seed=self._dseed(
@@ -1828,7 +1832,7 @@ class HandRun:
                     _call_layers, _call_cost = _project_call_layers(
                         contrib, r2.contrib, folded | set(r2.folded), r2.stacks,
                         s, tc, dead=dead)
-                    _call_layer_eq = _diagnostic_layer_equities(
+                    _call_layer_eq = layer_equities_by_pot_layer(
                         s, h.hole[s], board, _call_layers,
                         opp_ranges, locked_opp_ranges, sims=600,
                         seed=self._dseed(
@@ -1955,7 +1959,7 @@ class HandRun:
                             _project_bet_outcome_layers(
                                 contrib, r2.contrib, folded | set(r2.folded), r2.stacks,
                                 s, _target, _bet_cost, 'call', dead=dead))
-                        _fold_eq = _diagnostic_layer_equities(
+                        _fold_eq = layer_equities_by_pot_layer(
                             s, h.hole[s], board, _fold_layers,
                             opp_ranges, locked_opp_ranges, sims=600,
                             seed=self._dseed(
@@ -1981,7 +1985,7 @@ class HandRun:
                         _call_opp_ranges = dict(opp_ranges)
                         _call_opp_ranges[_target] = _call_target_range
 
-                        _call_eq_b = _diagnostic_layer_equities(
+                        _call_eq_b = layer_equities_by_pot_layer(
                             s, h.hole[s], board, _call_layers_b,
                             _call_opp_ranges, locked_opp_ranges, sims=600,
                             seed=self._dseed(
@@ -2193,6 +2197,7 @@ class HandRun:
                 # 체크레이즈 라우팅 감사용: 판단에는 쓰지 않는 provenance.
                 # generic facing-bet response가 checkraise 전용 gate보다 먼저 raise를
                 # 만들어내는지 확인하려면 act_with_plan 호출 전에 체크 이력이 필요하다.
+                # 체크레이즈 provenance 기록용(판단은 response_kind 로 한다).
                 _already_checked = bool(
                     tc > 0 and any(x == s and act == 'check' for (x, act, _) in r2.log))
                 a2, eq, need = PL.act_with_plan(
@@ -2204,7 +2209,6 @@ class HandRun:
                     n_opp=n_opp, to_act_behind=behind, read=read_val,
                     opp_est=(est if tc > 0 and aggressor is not None
                              and aggressor != s else None),
-                    checked_before=_already_checked,
                     can_raise=r2.can_raise(s),
                     checkraise_seed=self._dseed(s, street, 'ckr', len(r2.log)),
                     checkraise_size_seed=self._dseed(

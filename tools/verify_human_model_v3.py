@@ -58,7 +58,6 @@ def main():
     rows = {}
     old_v3 = PS.PREFLOP_REASONING_V3
     old_v2 = PS.GTO_MEMORY_V2
-    old_exp = PS.EXPLOIT_WEIGHT_V3
     try:
         # ----- M1: inside studied family, V3 must not change behavior -----
         p = mkprof(knowledge=6.0, loose=7.0, aggr=6.0,
@@ -151,14 +150,15 @@ def main():
         exp['concepts']['sizing_tell'] = 7.0
         opp = {'confidence': 0.8, 'n': 12, 'ftb': 0.60, 'bluff': 5.5,
                'aggr': 6.0, 'cbet': 0.65, 'barrel': 0.52}
-        PS.EXPLOIT_WEIGHT_V3 = True
-        ew = PS.exploit_weight(exp, opp['confidence'], opp['n'])
+        # stage9 B5: EXPLOIT_WEIGHT_V3 retired; the single weight is
+        # _exploit_base_weight and read_opponent is the only entry.
+        ew = PS._exploit_base_weight(exp, opp['confidence'], opp['n'])
         rd = PS.read_opponent(exp, opp)
         rows['E1_exploit_base_unified'] = {
             'pass': ew == rd.get('w'), 'exploit_weight': ew,
             'read_w': rd.get('w'),
         }
-        seq = [PS.exploit_weight(exp, 0.8, n) for n in (0, 1, 3, 6, 12, 24)]
+        seq = [PS._exploit_base_weight(exp, 0.8, n) for n in (0, 1, 3, 6, 12, 24)]
         mono = all(b >= a for a, b in zip(seq, seq[1:]))
         blind = mkprof()
         blind['temper']['adaptability'] = 9.0
@@ -177,7 +177,6 @@ def main():
     finally:
         PS.PREFLOP_REASONING_V3 = old_v3
         PS.GTO_MEMORY_V2 = old_v2
-        PS.EXPLOIT_WEIGHT_V3 = old_exp
 
 
 if __name__ == '__main__':

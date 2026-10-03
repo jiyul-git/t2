@@ -14,27 +14,23 @@ def prior(module,names):
  s=subprocess.check_output(['git','show',BASE+':'+module.__name__+'.py'],cwd=ROOT,text=True)
  body=[n for n in ast.parse(s).body if isinstance(n,ast.FunctionDef) and n.name in names]
  ns=dict(vars(module));exec(compile(ast.Module(body=body,type_ignores=[]),'<prior>', 'exec'),ns);return ns
-oldps=prior(PS,{'bias','read_opponent','exploit_weight'})
+oldps=prior(PS,{'bias','read_opponent'})
 oldr=prior(R,{'blend_action_range_by_grasp','perceived_range','perceived_continue_range','perceived_facing_bet_response'})
 oldp=prior(P,{'decide_response'})
 profiles=[]
 for skill in (0,1.499999,1.5,2,4,7.38,8,10):
  p=PS.make_player(random.Random(7),.6,7);p['concepts']['range_read']=skill;profiles.append(p)
 profiles += [{'type':'TAG'}, None]
-counts={'read_and_bias':0,'application_weight':0,'range':0,'response_action_state_rng':0}
+counts={'read_and_bias':0,'range':0,'response_action_state_rng':0}
 estimates=[None,{}, {'confidence':0,'n':20}, {'confidence':.8,'n':36}, {'confidence':1,'n':80,'bluff':9,'barrel':.8,'ftb':.1,'ftb_turn':.7,'sz_mean':1.2,'pf_3bet':.3}, {'confidence':.3,'n':5,'bluff':0,'ftb':None,'sz_mean':None}]
 for p,e in itertools.product(profiles,estimates):
  assert PS.read_opponent(p,e)==oldps['read_opponent'](p,e);counts['read_and_bias']+=1
 for p,st,name in itertools.product(profiles,['flop','turn','river',None],PS.BIAS_NAMES):
  if name=='hero_call':continue  # B4 intentional change
+ if st is None and name=='bluff_fear':continue  # B5: street now required (no river fallback)
  assert PS.bias(p,name,st)==oldps['bias'](p,name,st);counts['read_and_bias']+=1
-flag=PS.EXPLOIT_WEIGHT_V3
-try:
- for opt in (False,True):
-  PS.EXPLOIT_WEIGHT_V3=opt;oldps['EXPLOIT_WEIGHT_V3']=opt
-  for p,c,n in itertools.product(profiles,[0,.3,1],[0,4,36]):
-   assert PS.exploit_weight(p,c,n)==oldps['exploit_weight'](p,c,n);counts['application_weight']+=1
-finally:PS.EXPLOIT_WEIGHT_V3=flag
+# stage9 B5: legacy exploit_weight / application weight retired (single weight
+# _exploit_base_weight inside read_opponent, compared above).
 base={c:float(1+i%3) for i,c in enumerate(R.ALL[:100])}
 for p,st,b,size in itertools.product(profiles,['flop','turn','river'],[['Ac','7d','2s'],['Ac','7d','2s','Th','9c']],[0,.7,1.5]):
  for name in ('perceived_continue_range','perceived_facing_bet_response'):
@@ -58,7 +54,6 @@ e={'confidence':1,'n':30,'bluff':9}
 low=PS.interpret_opponent_action_signals(e,1,0,1,.5)
 high=PS.interpret_opponent_action_signals(e,1,1,1,.5)
 assert low['bluff_gap']==0 and high['bluff_gap']==1 and low['w']==high['w']==.5
-assert PS.opponent_read_application_weight(1,8,8,1,30)!=PS.opponent_read_application_weight(9,8,8,1,30)
 # B4 contract: biases enter the call threshold once (persona.call_bias); the
 # response compares eq with the need it was given.
 hc=PS.make_player(random.Random(3),.3,3);hc['concepts']['bluffcatch_river']=0.0;hc['temper']['aggression']=10.0

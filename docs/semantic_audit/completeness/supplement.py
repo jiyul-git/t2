@@ -464,10 +464,10 @@ NEW_ROWS = [
         'exploit_read_permission', 'persona._polar'),
     # ---------------- session / ranges / bot ----------------
     row('forced_bet_posting',
-        '블라인드와 BB 앤티 징수, 징수로 올인된 좌석 표시',
-        PF, 'FACT', 'ACTION', 'session.HandRun._run', 'runner.Round', 'stacks, sb, bb, ante',
+        '강제 베팅 징수: 안테 1bb 를 참가 인원 균등 분담(정수 칩, 나머지는 앞자리부터 1칩) → SB → BB, 징수로 올인된 좌석 표시',
+        PF, 'FACT', 'ACTION', 'runner.post_forced_bets', 'session.HandRun._run;live2._opening_raw;runner.Round', 'stacks, seats, sb, bb, ante',
         'contrib, ante_pot, allin', 'M', 'reasoning', 'ACTIVE', YES, 'KEEP', 'forced_bet_posting',
-        'legal_action_application', 'session.HandRun._run: if sb_s: .. rnd.current = h.bb'),
+        'legal_action_application', 'runner.post_forced_bets: antes -> SB -> BB'),
     row('multiway_representative_union_range',
         '다인원에서 계획/응답용 단일 opp_range를 seat 레인지 합집합으로 만듦(빈 경우 ALL 폴백 + 감사 기록)',
         ALL3, 'RANGE', 'JUDGMENT', 'session.HandRun._run', 'plan.make_plan/refresh/act_with_plan opp_range',
@@ -530,10 +530,10 @@ NEW_ROWS = [
         'cold-4bet/squeeze exploits have evidence but no consumer (wiring = behavior change, later phase)',
         'opponent_unconsumed_estimates', 'opponent_estimation', 'reads.estimate: est[fold_to_raise]..'),
     row('dead_strategy_tables',
-        '프로덕션에서 읽히지 않는 전략 상수 표: preflop.DEF_POS_MULT, preflop.DEPTH_OPEN_MULT, persona.OPEN_ELASTICITY, plan.PLANS',
-        'preflop flop turn river', 'KNOWLEDGE', 'JUDGMENT', 'preflop.DEF_POS_MULT;preflop.DEPTH_OPEN_MULT;persona.OPEN_ELASTICITY;plan.PLANS',
-        'none', '-', '-', 'H', 'reasoning', 'DEAD', 'NO',
-        'REMOVE_COMPAT candidates (DEF_POS_MULT/OPENER_MULT copies also live in legacy/players.py)',
+        '프로덕션에서 읽히지 않던 전략 상수 표(preflop DEF_POS_MULT, DEPTH_OPEN_MULT; persona OPEN_ELASTICITY; plan PLANS) — stage9 B5 에서 제거',
+        'preflop flop turn river', 'KNOWLEDGE', 'JUDGMENT', '-',
+        'none', '-', '-', 'H', 'reasoning', 'RETIRED', 'NO',
+        'REMOVED stage9 B5 (L-RA14); legacy/players.py copies are outside production',
         'dead_strategy_tables', 'legacy_arch_types', 'module constants'),
     row('opener_position_attack_table',
         'OPENER_MULT: 오프너 포지션별로 필드가 그 오픈을 공격(리쇼브)하는 상대 폭',
@@ -746,7 +746,10 @@ sp('exploit_read_permission', 'persona', 'interpret_opponent_action_signals')
 sp('persona_population_generation', 'persona', 'make_player')
 
 # ---- session ----
-sp('forced_bet_posting', 'session', 'HandRun._run', 'if sb_s:', 'rnd.current = h.bb; rnd.min_raise = h.bb')
+sp('forced_bet_posting', 'session', 'HandRun._run', "sb_s, bb_s = h.seat_of.get('SB'), h.seat_of.get('BB')", 'rnd.current = h.bb; rnd.min_raise = h.bb')  # ante: equal-share, ante -> SB -> BB
+sp('forced_bet_posting', 'runner', 'ante_shares')  # equal-share ante (d65a960f)
+sp('forced_bet_posting', 'runner', 'post_antes')
+sp('forced_bet_posting', 'runner', 'post_forced_bets')  # single posting order (58900603)
 sp('opponent_concept_inference', 'session', 'HandRun._run', '_opp_est_pf = (RD.perceived_profile(', 'if aggressor is not None and aggressor != s else None)')
 sp('money_jump_seat_topology', 'session', 'HandRun._run', "'kind': ('vs_raise' if aggressor is not None else", "'vs_limp' if limpers else 'unopened'),")
 sp('preflop_decision_routing', 'session', 'HandRun._run', '_behind = [rnd.stacks[x]/h.bb for x in rnd.order', 'cold_decision_seed=self._dseed(')
@@ -795,8 +798,8 @@ sp('facing_response_kind', 'action_events', '_response_kind')
 sp('public_postflop_story', 'action_events', 'aggressive_seats')
 sp('legal_action_application', 'runner', 'Round.needs_action')
 sp('icm_bubble_factor', 'icm', 'icm_pressure')
-sp('legacy_icm_overridden', 'icm', 'field_bf')
-sp('field_icm_proxy', 'icm', 'field_bf#2')
+sp('field_icm_proxy', 'icm', 'field_bf')  # stage9 B5: overridden first definition removed (L211/L175)
+sp('call_threshold_bias', 'persona', '_bluffcatch_concept')  # stage9 B5: street required for bluff_fear/hero_call
 sp('money_self_preservation', 'money_pressure', 'bf_signal')
 sp('money_open_form_shadow', 'money_pressure', 'unopened_modifiers', 'skill01(state.get(\'open_size_skill\', 5.0))')
 sp('emotion_profile_view', 'play', 'Hand.emotion_level')
@@ -922,10 +925,10 @@ sp('exploit_read_permission', 'persona', 'read_evidence_amount')  # stage9 B2 (L
 TABLES = {
     'plan:VALUE_WHEN_CALLED_EQ': 'value_when_called_strength',  # stage9 B3 integration (L-S9-03)
     'plan:PLAN_REQUIRED_CONCEPT': 'plan_concept_permission', 'plan:PLAN_DOWNGRADE': 'plan_concept_permission',  # stage9 B3 (L157)
-    'plan:PLANS': 'dead_strategy_tables', 'plan:BUDGET': 'bet_budget', 'plan:SIZING': 'planned_bet_sizing',
+    'plan:BUDGET': 'bet_budget', 'plan:SIZING': 'planned_bet_sizing',
     'preflop:PCT': 'legacy_preflop_ordering', 'preflop:RV': '@nonsemantic:card rank map',
-    'preflop:OPENER_MULT': 'opener_position_attack_table', 'preflop:DEF_POS_MULT': 'dead_strategy_tables',
-    'preflop:DEPTH_OPEN_MULT': 'dead_strategy_tables', 'preflop:LEVEL_TIGHTEN': 'defend_attack_continue_widths',
+    'preflop:OPENER_MULT': 'opener_position_attack_table',
+    'preflop:LEVEL_TIGHTEN': 'defend_attack_continue_widths',
     'preflop:CALLOFF_TIGHTEN': 'legacy_calloff_threshold',
     'ranges:_LIK_MIN': 'inverse_defend_likelihood', 'ranges:_MIN_KEEP': 'postflop_action_posterior',
     'ranges:_MIN_FRAC': 'postflop_action_posterior', 'ranges:_DECAY': 'postflop_action_posterior',
@@ -934,9 +937,8 @@ TABLES = {
     'reads:_MAX_RECENCY_HISTORY': 'recency_window', 'reads:_SIG_SCALE': 'style_belief_reference',
     'persona:SIZING_FAMILY_SIG': 'human_planned_size_shape', 'persona:LOADING': 'persona_population_generation',
     'persona:DEFAULT_SPREAD': 'persona_population_generation', 'persona:SPREAD': 'persona_population_generation',
-    'persona:OPEN_ELASTICITY': 'dead_strategy_tables', 'persona:GTO_MEMORY_V2': 'chart_memory_accuracy',
-    'persona:PREFLOP_REASONING_V3': 'preflop_condition_reasoning', 'persona:EXPLOIT_WEIGHT_V3': 'exploit_read_permission',
-    'persona:CALC_NOISE_V3': 'calculation_error', 'persona:PREFLOP_TEMPER_DIRECTION_V3': 'preflop_temperament_direction',
+    'persona:GTO_MEMORY_V2': 'chart_memory_accuracy',
+    'persona:PREFLOP_REASONING_V3': 'preflop_condition_reasoning',
     'persona:GTO_STUDIED': 'studied_condition_match', 'persona:TILT_CONCEPT_K': 'emotion_profile_view',
     'persona:_PCTL': 'display_skill_summary', 'persona:TIERS': 'display_skill_summary',
     'gto:RFI_BY_BEHIND': 'rfi_width_prior', 'gto:RFI_SB': 'rfi_width_prior', 'gto:_DEPTH_EARLY': 'rfi_width_prior',
@@ -945,8 +947,7 @@ TABLES = {
     'gto:_MTT8_ANTE_DEF_A': 'defend_width_prior', 'gto:_MTT8_ANTE_DEF_B': 'defend_width_prior',
     'gto:_MTT8_ANTE_DEF_VS_SB': 'defend_width_prior', 'gto:_MTT8_ANTE_DEF_SEAT': 'defend_width_prior',
     'gto:_MTT8_ANTE_TB_SHARE': 'threebet_width_prior',
-    'icm:_ICM_PRUNE': 'icm_exact_share', 'icm:EXACT_MAX_SEATS': 'icm_exact_share', 'icm:EXACT_MAX': 'icm_exact_share',
-    'icm:MAX_PREMIUM': 'field_icm_proxy', 'icm:_PROX': 'field_icm_proxy', 'icm:_STACK': 'field_icm_proxy',
+    'icm:_ICM_PRUNE': 'icm_exact_share', 'icm:EXACT_MAX': 'icm_exact_share',
     'icm:_SIGMA_STAGE': 'field_icm_proxy', 'icm:_SIGMA_HI': 'field_icm_proxy', 'icm:_SIGMA_LO': 'field_icm_proxy',
     'icm:_LADDER_W': 'field_icm_proxy', 'icm:_LADDER_P': 'field_icm_proxy', 'icm:_K': 'field_icm_proxy',
     'icm:_FLAT_GAIN': 'field_icm_proxy', 'texture:RANK_HELP': 'turn_card_range_shift',

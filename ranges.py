@@ -537,7 +537,13 @@ def _strong_share(r, board, cutoff=2):
     return strong / total if total > 0 else 0.0
 
 def nut_advantage(r_a, r_b, board):
-    """넛 구간 점유율 차이. -1~1."""
+    """강한 구간 점유율 차이. -1~1.
+
+    이름과 달리 문자 그대로의 넛이 아니다(L102, stage9 B5 판정: 이름 유지 +
+    정의 명시). 보드 기준 상위 두 강도 구간(_strong_share cutoff 2 와 3)에서
+    두 레인지가 차지하는 질량 몫의 차를 평균해 6배로 늘리고 [-1, 1] 로 자른다.
+    hero 패와 무관한 레인지 대 레인지 양이다.
+    """
     if not board or not r_a or not r_b: return 0.0
     t_a, t_b = _strong_share(r_a, board, 2), _strong_share(r_b, board, 2)
     s_a, s_b = _strong_share(r_a, board, 3), _strong_share(r_b, board, 3)

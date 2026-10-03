@@ -977,8 +977,29 @@
    "concept": "forced_bet_posting",
    "module": "session",
    "func": "HandRun._run",
-   "from": "if sb_s:",
+   "from": "sb_s, bb_s = h.seat_of.get('SB'), h.seat_of.get('BB')",
    "to": "rnd.current = h.bb; rnd.min_raise = h.bb"
+  },
+  {
+   "concept": "forced_bet_posting",
+   "module": "runner",
+   "func": "ante_shares",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "forced_bet_posting",
+   "module": "runner",
+   "func": "post_antes",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "forced_bet_posting",
+   "module": "runner",
+   "func": "post_forced_bets",
+   "from": null,
+   "to": null
   },
   {
    "concept": "opponent_concept_inference",
@@ -1303,16 +1324,16 @@
    "to": null
   },
   {
-   "concept": "legacy_icm_overridden",
+   "concept": "field_icm_proxy",
    "module": "icm",
    "func": "field_bf",
    "from": null,
    "to": null
   },
   {
-   "concept": "field_icm_proxy",
-   "module": "icm",
-   "func": "field_bf#2",
+   "concept": "call_threshold_bias",
+   "module": "persona",
+   "func": "_bluffcatch_concept",
    "from": null,
    "to": null
   },
@@ -2161,14 +2182,11 @@
   "plan:VALUE_WHEN_CALLED_EQ": "value_when_called_strength",
   "plan:PLAN_REQUIRED_CONCEPT": "plan_concept_permission",
   "plan:PLAN_DOWNGRADE": "plan_concept_permission",
-  "plan:PLANS": "dead_strategy_tables",
   "plan:BUDGET": "bet_budget",
   "plan:SIZING": "planned_bet_sizing",
   "preflop:PCT": "legacy_preflop_ordering",
   "preflop:RV": "@nonsemantic:card rank map",
   "preflop:OPENER_MULT": "opener_position_attack_table",
-  "preflop:DEF_POS_MULT": "dead_strategy_tables",
-  "preflop:DEPTH_OPEN_MULT": "dead_strategy_tables",
   "preflop:LEVEL_TIGHTEN": "defend_attack_continue_widths",
   "preflop:CALLOFF_TIGHTEN": "legacy_calloff_threshold",
   "ranges:_LIK_MIN": "inverse_defend_likelihood",
@@ -2185,12 +2203,8 @@
   "persona:LOADING": "persona_population_generation",
   "persona:DEFAULT_SPREAD": "persona_population_generation",
   "persona:SPREAD": "persona_population_generation",
-  "persona:OPEN_ELASTICITY": "dead_strategy_tables",
   "persona:GTO_MEMORY_V2": "chart_memory_accuracy",
   "persona:PREFLOP_REASONING_V3": "preflop_condition_reasoning",
-  "persona:EXPLOIT_WEIGHT_V3": "exploit_read_permission",
-  "persona:CALC_NOISE_V3": "calculation_error",
-  "persona:PREFLOP_TEMPER_DIRECTION_V3": "preflop_temperament_direction",
   "persona:GTO_STUDIED": "studied_condition_match",
   "persona:TILT_CONCEPT_K": "emotion_profile_view",
   "persona:_PCTL": "display_skill_summary",
@@ -2210,11 +2224,7 @@
   "gto:_MTT8_ANTE_DEF_SEAT": "defend_width_prior",
   "gto:_MTT8_ANTE_TB_SHARE": "threebet_width_prior",
   "icm:_ICM_PRUNE": "icm_exact_share",
-  "icm:EXACT_MAX_SEATS": "icm_exact_share",
   "icm:EXACT_MAX": "icm_exact_share",
-  "icm:MAX_PREMIUM": "field_icm_proxy",
-  "icm:_PROX": "field_icm_proxy",
-  "icm:_STACK": "field_icm_proxy",
   "icm:_SIGMA_STAGE": "field_icm_proxy",
   "icm:_SIGMA_HI": "field_icm_proxy",
   "icm:_SIGMA_LO": "field_icm_proxy",

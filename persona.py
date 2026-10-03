@@ -5,7 +5,7 @@ import random, math, zlib
 
 
 # Strategic sizing habit.  This belongs to the human decision/planning model,
-# not Round/apply execution.  runner.shape_size remains a compatibility wrapper.
+# not Round/apply execution.  (stage9 B5: the runner.shape_size wrapper was removed.)
 SIZING_FAMILY_SIG = {
     'reg':    dict(jitter=0.05, round_to=100, odd=0.02, open_mult=1.00),
     'nit':    dict(jitter=0.03, round_to=100, odd=0.00, open_mult=1.00),
@@ -421,11 +421,6 @@ def calc_noise(prof, concept, rng):
         return 1.0 + err
     return max(0.20, min(3.0, rng.gauss(legacy_bias, sigma)))
 
-# 포지션별 탄력성 — 성향 차이가 오픈 폭에 얼마나 크게 반영되는가.
-# 얼리에서는 누구나 쓰레기를 접으므로 타입 차이가 작고,
-# 레이트로 갈수록 닛과 매니악의 격차가 벌어진다. 이건 실제 통계와 같은 방향이다.
-OPEN_ELASTICITY = {'UTG':0.75,'UTG+1':0.80,'UTG+2':0.85,'LJ':0.90,'HJ':1.00,
-                   'CO':1.10,'BTN':1.25,'SB':1.20,'BB':1.10}
 
 # ---------- GTO-study knowledge / memory (Human Model v2) ----------
 # 학습된 GTO prior 를 **얼마나 믿을 수 있는가**를 human reasoning 과 분리해 둔다.
@@ -453,10 +448,11 @@ GTO_MEMORY_V2 = _os.environ.get('T2_GTO_MEMORY_V2') == '1'
 # studied chart family, keep chart recall, condition reasoning, and temperament
 # as three separate stages. OFF preserves v2/production behavior exactly.
 PREFLOP_REASONING_V3 = _os.environ.get('T2_PREFLOP_REASONING_V3') == '1'
-# Opt-in unification of the legacy exploit_weight() entry with read_opponent().
-EXPLOIT_WEIGHT_V3 = _os.environ.get('T2_EXPLOIT_WEIGHT_V3') == '1'
 # (stage9 B4) T2_CALC_NOISE_V3 와 T2_PREFLOP_TEMPER_DIRECTION_V3 는 3차 경로를
 # 유일 경로로 통합하면서 퇴역했다 — calc_noise / preflop_temper_direction 참고.
+# (stage9 B5) T2_EXPLOIT_WEIGHT_V3 와 legacy exploit_weight /
+# opponent_read_application_weight 도 퇴역했다. 상대 정보 적용 가중치는
+# _exploit_base_weight 하나이고 read_opponent 가 유일한 입구다(B3 통합).
 
 GTO_FAMILY_CONCEPT = {'rfi': 'pf_range', 'defend': 'pf_defend'}
 
@@ -741,6 +737,18 @@ def interpret_bluff_threat_bias(bluffcatch_skill, aggression, line_interpretatio
               + 0.30*(10 - line_interpretation_skill))
 
 
+def _bluffcatch_concept(street):
+    """bluff_fear / hero_call 은 그 street 의 블러프캐치 숙련으로 잰다.
+
+    street 없이 부르면 예전에는 조용히 리버 숙련으로 대체했다(호환 기본값).
+    production 은 항상 street 를 넘긴다. 대체값은 다른 street 의 능력을
+    섞으므로 stage9 B5 에서 제거하고 명시적으로 요구한다.
+    """
+    if street not in ('flop', 'turn', 'river'):
+        raise ValueError('bluff_fear/hero_call bias needs a postflop street, got %r' % (street,))
+    return street_concept('bluffcatch', street)
+
+
 def bias(prof, name, street=None):
     """이 사람의 고정된 행동 편향. 랜덤이 아니다 — 같은 사람은 항상 같은 값.
 
@@ -765,7 +773,7 @@ def bias(prof, name, street=None):
         # 큰 벳·후반 스트리트에서 과도하게 접는다.
         # 스트리트별 블러프캐치 숙련도를 써야 한다. 예전에는 항상
         # bluffcatch_river 를 읽어 플랍/턴 콜 판단까지 리버 숙련도가 바꿨다.
-        _bc = street_concept('bluffcatch', street) if street else 'bluffcatch_river'
+        _bc = _bluffcatch_concept(street)
         return interpret_bluff_threat_bias(S(_bc), T('aggression'), S('range_read'))
 
     if name == 'overpair_love':
@@ -786,7 +794,7 @@ def bias(prof, name, street=None):
         # 편향을 키워, 최대 숙련·중립 기질에서도 +0.25 의 히어로콜 편향이
         # 생겼다(다른 편향은 최대 숙련에서 전부 0 이하). 계수는 그대로 두고
         # 숙련 방향만 bluff_fear 와 같게 바로잡았다.
-        _bc = street_concept('bluffcatch', street) if street else 'bluffcatch_river'
+        _bc = _bluffcatch_concept(street)
         return _z(0.45*(10 - S(_bc)) + 0.35*T('aggression')
                   + 0.20*T('tilt_prone'))
 
@@ -1145,38 +1153,6 @@ def _exploit_base_weight(prof, confidence=0.0, n_hands=0):
     data = read_evidence_amount(confidence, n_hands)
     return round(max(0.0, min(0.85, use * data)), 3)
 
-
-def exploit_weight(prof, confidence=0.0, n_hands=0):
-    """Compatibility entry for opponent-information weight.
-
-    Legacy behavior is preserved unless T2_EXPLOIT_WEIGHT_V3=1.  Under V3 the
-    global weight is exactly the same base weight used by read_opponent();
-    ability to *see a particular signal* is still handled by read_opponent's
-    independent see_freq/see_line/see_size gates.
-    """
-    if EXPLOIT_WEIGHT_V3:
-        return _exploit_base_weight(prof, confidence, n_hands)
-    if not prof or not prof.get('concepts'):
-        return 0.0
-    adp = temper(prof, 'adaptability', 5.0)
-    att = temper(prof, 'attention', 5.0)
-    rr  = sk(prof, 'range_read')
-    return opponent_read_application_weight(rr, adp, att, confidence, n_hands)
-
-
-def opponent_read_application_weight(application_skill, adaptability, attention,
-                                     confidence, n_hands):
-    """Legacy permission to apply an interpretation, not signal accuracy.
-
-    Caller retains the V3 bypass and missing-concepts guard. The current
-    application_skill supply remains range_read; no independent skill is drawn.
-    """
-    trait = (0.50*adaptability + 0.30*application_skill + 0.20*attention) / 10.0
-    trait = max(0.0, min(1.0, (trait - 0.28) / 0.60))
-    if trait <= 0.0:
-        return 0.0
-    data = read_evidence_amount(confidence, n_hands)
-    return round(max(0.0, min(0.85, trait * data)), 3)
 
 def _polar(observed, value_base):
     """관측 빈도 중 기준(밸류 몫)을 넘는 비율. 0~1.

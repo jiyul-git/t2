@@ -91,7 +91,6 @@ def make_targeted_run(mode, seed):
 
     orig_pf = SE.PL.preflop_plan
     orig_act = SE.PL.act_with_plan
-    orig_shape = SE.RU.shape_size
     state = {'opened': False, 'raised': False}
 
     def pf_stub(*args, **kwargs):
@@ -130,9 +129,9 @@ def make_targeted_run(mode, seed):
     try:
         SE.PL.preflop_plan = pf_stub
         SE.PL.act_with_plan = act_stub
-        # Keep targeted numbers exact; shape behavior itself is covered by the
+        # Targeted numbers: execution has no sizing formula since stage9 B5
+        # (runner.shape_size wrapper removed); shape behavior is covered by the
         # natural fixture above.
-        SE.RU.shape_size = lambda amount, *_a, **_k: amount
         run = SE.HandRun(h)
         out = run.start()
         need(out.get('done'), '%s targeted hand did not finish' % mode)
@@ -140,7 +139,6 @@ def make_targeted_run(mode, seed):
     finally:
         SE.PL.preflop_plan = orig_pf
         SE.PL.act_with_plan = orig_act
-        SE.RU.shape_size = orig_shape
 
 
 rows = []

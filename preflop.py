@@ -34,8 +34,7 @@ TRAITS    = {n: A.traits(n)     for n in A.all_names()}
 def _open(prof, pos, seats=8, bb=100.0, ante=True):
     """오픈 폭. 깊이·안테·좌석수가 이미 반영된 값을 돌려준다.
 
-    호출부에서 DEPTH_OPEN_MULT 를 또 곱하지 말 것.
-    깊이는 gto.rfi 안에서 한 번만 적용된다.
+    깊이는 gto.rfi 안에서 한 번만 적용된다. 호출부에서 깊이 배수를 또 곱하지 말 것.
     """
     if isinstance(prof, dict):
         if prof.get('concepts'):
@@ -67,7 +66,6 @@ OPENER_MULT = {'UTG':1.4,'UTG+1':1.5,'UTG+2':1.65,'LJ':1.8,'HJ':2.2,'CO':2.9,'BT
 #   OPEN_SHOVE_BEHIND_PROXY   오픈쇼브 판단 깊이: 앞자리일수록 뒤 인원이 많다는 대용
 RESHOVE_OPENER_ATTACK = OPENER_MULT
 OPEN_SHOVE_BEHIND_PROXY = OPENER_MULT
-DEF_POS_MULT = {'BB':1.0,'SB':0.55,'BTN':0.9,'CO':0.7,'HJ':0.6,'LJ':0.5,'UTG+2':0.47,'UTG+1':0.45,'UTG':0.4}
 
 # ---------- 스택 뎁스 ----------
 def feel_of(prof, bb, field_avg_bb=None, erosion=0.0, field_q=0.6, bf=1.0):
@@ -86,7 +84,7 @@ def feel_of(prof, bb, field_avg_bb=None, erosion=0.0, field_q=0.6, bf=1.0):
 
 
 # depth_band 는 제거했다. feel_of / depth.base_feel 이 대체했다.
-DEPTH_OPEN_MULT = {'micro':2.40,'short':1.75,'mid':1.35,'normal':1.0,'deep':0.95}
+# (stage9 B5: 읽는 곳이 없던 DEPTH_OPEN_MULT / DEF_POS_MULT 표 제거, L-RA14)
 
 def round_unit_bb(bb_chips):
     """호가 단위를 bb 로 환산. 사람은 33,920 을 부르지 않는다.
@@ -437,7 +435,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     sz = open_size_bb(feel, pos, rng, prof, ante, 0,
                       bb_chips=bb_chips, table_soft=_soft)
     if money_open is not None:
-        # open_size_bb()는 runner.shape_size와 규칙상 최소레이즈 적용 전 값이다.
+        # open_size_bb()는 사이즈 습관(persona.shape_size)과 규칙상 최소레이즈 적용 전 값이다.
         # 실제 sizing shadow는 session에서 최종 적용 금액을 본 뒤 계산한다.
         money_open['raw_open_size_bb'] = round(float(sz if sz else 2.0), 3)
     return ('raise', sz if sz else 2.0)

@@ -237,7 +237,7 @@ def check_d3_layer_equities():
 
     active = {3: [('9s', '8s')]}
     locked = {1: [('Jc', 'Jd')]}
-    eqs = SE._diagnostic_layer_equities(
+    eqs = SE.layer_equities_by_pot_layer(
         2, hero, board, layers, active, locked, sims=40)
 
     assert len(eqs) == 2, eqs
@@ -253,7 +253,7 @@ def check_d3_layer_equities():
     assert eqs[1]['equity'] == 1.0, eqs
 
     # Missing range must stay explicitly unknown; never invent a fallback pool.
-    missing = SE._diagnostic_layer_equities(
+    missing = SE.layer_equities_by_pot_layer(
         2, hero, board, [layers[0]], active, {}, sims=40)
     assert missing[0]['complete'] is False, missing
     assert missing[0]['equity'] is None, missing
@@ -263,7 +263,7 @@ def check_d3_layer_equities():
     pending = SE._decision_pot_layers(
         {1: 20, 2: 20, 3: 20}, {3: 30}, folded=set(),
         stacks={1: 0, 2: 100, 3: 100}, hero=2, dead=0)
-    pending_eq = SE._diagnostic_layer_equities(
+    pending_eq = SE.layer_equities_by_pot_layer(
         2, hero, board, pending, active, locked, sims=40)
     assert pending_eq[-1]['hero_eligible'] is False, pending_eq
     assert pending_eq[-1]['equity'] is None, pending_eq
@@ -449,9 +449,9 @@ def check_d5_bet_outcome_shadow():
         (300.0, [1, 2, 3]), (40.0, [2, 3])
     ], call_layers
 
-    fold_eq = SE._diagnostic_layer_equities(
+    fold_eq = SE.layer_equities_by_pot_layer(
         2, hero, board, fold_layers, active, locked, sims=40)
-    call_eq = SE._diagnostic_layer_equities(
+    call_eq = SE.layer_equities_by_pot_layer(
         2, hero, board, call_layers, active, locked, sims=40)
 
     fold_sum = SE._layer_investment_summary(hcost_f, fold_layers, fold_eq)
@@ -896,7 +896,7 @@ def check_d6c_preflop_layer_equity_call_shadow():
         2: [('Ks', 'Kh')],
         3: [('Qs', 'Qh')],
     }
-    eqs = SE._diagnostic_layer_equities(
+    eqs = SE.layer_equities_by_pot_layer(
         1, hero, [], call_layers, {}, locked, sims=1200)
     assert eqs[0]['complete'] is True, eqs
     assert eqs[0]['opponents'] == [2, 3], eqs
@@ -920,7 +920,7 @@ def check_d6c_preflop_layer_equity_call_shadow():
         "_pf_pure_calloff = bool(",
         "and not rnd.can_raise(s)",
         "_project_call_layers(",
-        "_diagnostic_layer_equities(",
+        "layer_equities_by_pot_layer(",
         "_layer_call_summary(",
         "'strategy_consumer': False",
         "call_ev_shadow=_pf_call_ev_shadow",
@@ -1021,9 +1021,9 @@ def check_f8r_deterministic_layer_equity():
         2: [('Ah','Qd'), ('Kh','Qd'), ('8c','8d'), ('7c','7d')],
     }
 
-    a = SE._diagnostic_layer_equities(
+    a = SE.layer_equities_by_pot_layer(
         1, hero, [], layers, active, locked, sims=73, seed=123456)
-    b = SE._diagnostic_layer_equities(
+    b = SE.layer_equities_by_pot_layer(
         1, hero, [], layers, active, locked, sims=73, seed=123456)
     assert a == b, (a, b)
     assert a[0]['complete'] is True, a

@@ -178,69 +178,6 @@ def players_behind_required_equity_premium(base_need, players_behind):
     return (1.0 - base_need) * min(0.18, 0.06*players_behind)
 
 
-# ==================== 필드 규모 ICM 근사 ====================
-# ICM 은 O(n!) 이라 400명을 직접 못 돌린다. 그래서 근사가 필요한데,
-# 예전 근사(필드를 9명으로 축약 + 상금표를 k=round(9·itm/rem) 로 자름)는
-# 잔여 인원과 상금 자릿수의 관계를 깨뜨렸다. 실제 거동:
-#   - 181명 -> 180명에서 BF 가 1.00 -> 1.53 으로 튐 (rem > itm*3 계단)
-#   - 잔여 180명일 때 상금이 3자리만 남음 (실제로는 60자리)
-#   - 버블(61명) BF 2.03 < 70명 BF 2.66 — 정점이 뒤집힘
-#   - 9~40명 구간이 전부 2.03 으로 평평 (9명 모델 포화)
-#
-# 대신 BF 를 두 비율의 함수로 직접 만든다.
-#     r = 잔여 / ITM인원        상금까지 얼마나 남았나
-#     s = 내 스택 / 평균 스택    나는 어디쯤인가
-# 이러면 400명이든 4000명이든 일관되고 계단이 없다.
-# 파이널(9명 이하)에서는 실제 스택과 실제 상금표로 정확한 ICM 을 쓴다.
-
-EXACT_MAX_SEATS = 9          # 이하면 정확한 ICM
-MAX_PREMIUM = 1.70           # 표준 상금 구조에서 붙는 최대 리스크 프리미엄
-
-# 상금까지의 거리 -> 압박. 버블에서 정점, 터지면 급락, 파이널에서 재상승.
-_PROX = [(0.00, 1.00), (0.05, 0.90), (0.15, 0.75), (0.30, 0.55), (0.50, 0.45),
-         (0.80, 0.42), (0.98, 0.50),           # <- 버블 터진 직후
-         (1.00, 0.98), (1.02, 1.00),           # <- 버블
-         (1.20, 0.85), (1.50, 0.55), (2.00, 0.25), (3.00, 0.06), (5.00, 0.00)]
-
-# 내 스택 위치 -> 압박. 평균 근처가 가장 아프다.
-# 칩리더는 딸 게 많아서, 숏은 이미 잃을 게 없어서 낮다.
-_STACK = [(0.00, 0.15), (0.15, 0.20), (0.30, 0.32), (0.60, 0.75), (1.00, 1.00),
-          (1.50, 0.62), (2.50, 0.32), (4.00, 0.20), (10.0, 0.12)]
-
-
-def _lerp(tbl, x):
-    if x <= tbl[0][0]: return tbl[0][1]
-    if x >= tbl[-1][0]: return tbl[-1][1]
-    for (x0, y0), (x1, y1) in zip(tbl, tbl[1:]):
-        if x0 <= x <= x1:
-            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
-    return tbl[-1][1]
-
-
-def field_bf(my_stack, avg_stack, remaining, itm, payout_flat=0.0,
-             stacks=None, payouts=None):
-    """필드 규모 버블팩터. 1.0 = 칩EV.
-
-    stacks/payouts 가 주어지고 인원이 EXACT_MAX_SEATS 이하면 정확한 ICM 을 쓴다.
-    그 위에서는 두 비율(r, s)로 근사한다.
-    """
-    if remaining and remaining <= EXACT_MAX_SEATS and stacks and payouts:
-        n = len(stacks)
-        if n >= 2:
-            k = min(len(payouts), n)
-            return bubble_factor(list(stacks), list(payouts[:k]), 0)
-
-    if not remaining or not itm or itm <= 0 or avg_stack <= 0:
-        return 1.0
-    r = float(remaining) / float(itm)
-    s = float(my_stack) / float(avg_stack)
-    prox = _lerp(_PROX, r)
-    stk = _lerp(_STACK, s)
-    # 상금이 평탄할수록(위성) 리스크 프리미엄이 커진다.
-    flat = 1.0 + 0.80 * max(0.0, min(1.0, float(payout_flat)))
-    return max(1.0, min(4.0, 1.0 + MAX_PREMIUM * prox * stk * flat))
-
-
 # =====================================================================
 # 필드 단위 BF — 정확 ICM 은 9명이 한계다 (10명 2.9초, 11명 30초).
 # 그 위는 곡선으로 근사한다.

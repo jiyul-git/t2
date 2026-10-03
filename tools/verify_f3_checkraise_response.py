@@ -59,7 +59,7 @@ def _patched_response_case(gate_value, can_raise=True):
             ['As','Ad'], ['Ah','7c','2d'], p, st,
             pot=300, tocall=100, stack=1000, street='flop',
             opp_range=None, bf=1.0, seed=11, n_opp=1,
-            checked_before=True, can_raise=can_raise,
+            response_kind='check_then_face_bet', can_raise=can_raise,
             checkraise_seed=12, checkraise_size_seed=13)
     finally:
         PL.bot.equity_vs_betting = old_eq
@@ -103,7 +103,9 @@ def test_session_no_posthoc_checkraise_override():
     src = inspect.getsource(SE.HandRun._run)
     assert "PL.checkraise_decision(" not in src, "session still makes strategic checkraise decision"
     assert "PL.checkraise_size(" not in src, "session still sizes checkraise after response"
-    assert "checked_before=_already_checked" in src, "check history not passed to planner"
+    # stage9 B5: check history reaches the planner only as the canonical
+    # response_kind ('check_then_face_bet'); the checked_before compat flag is gone.
+    assert "checked_before" not in src, "retired checked_before compat flag still passed"
     assert "can_raise=r2.can_raise(s)" in src, "legal raise right not passed to planner"
     return True
 

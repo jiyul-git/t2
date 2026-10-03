@@ -316,9 +316,9 @@ def check_DE():
     p['temper']['attention'] = 8.0
     rd0 = PS.read_opponent(p, RD.estimate(RD.Book(), 1, 2, 'reg', rng=random.Random(1)))
     D = {'w': rd0['w'], 'fold_gap': rd0['fold_gap'],
-         'exploit_weight_n0': PS.exploit_weight(p, 0.0, 0),
+         'exploit_weight_n0': PS._exploit_base_weight(p, 0.0, 0),
          'pass': rd0['w'] == 0.0 and rd0['fold_gap'] == 0.0
-         and PS.exploit_weight(p, 0.0, 0) == 0.0}
+         and PS._exploit_base_weight(p, 0.0, 0) == 0.0}
     # E: opponent folds to bets 80% — feed observations hand by hand
     bk = RD.Book()
     ws, ews, gaps = [], [], []
@@ -328,7 +328,7 @@ def check_DE():
         r = PS.read_opponent(p, e)
         ws.append(r['w'])
         gaps.append(r.get('fold_gap', 0.0))
-        ews.append(PS.exploit_weight(p, e.get('confidence', 0.0), e.get('n', 0)))
+        ews.append(PS._exploit_base_weight(p, e.get('confidence', 0.0), e.get('n', 0)))  # stage9 B5: single weight
         bk.observe_preflop([1], 2, vpip=True, pfr=False)
         bk.observe_postflop([1], 2, 'fold' if rng.random() < 0.8 else 'call',
                             False, False, facing_bet=True, street='flop')

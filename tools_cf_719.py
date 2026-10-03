@@ -26,8 +26,8 @@ def need_seen(profile, need, pot, tocall, street):
     sz = tocall / max(1.0, float(pot) - tocall)
     ns *= max(0.55, 1.0 - 0.22 * max(0.0, PS.bias(profile, 'station')))
     _bf_w = min(1.0, sz / 0.9) * (1.0 if street == 'river' else 0.65)
-    ns *= 1.0 + 0.30 * max(0.0, PS.bias(profile, 'bluff_fear')) * _bf_w
-    ns *= max(0.60, 1.0 - 0.18 * max(0.0, PS.bias(profile, 'hero_call')) * _bf_w)
+    ns *= 1.0 + 0.30 * max(0.0, PS.bias(profile, 'bluff_fear', street)) * _bf_w
+    ns *= max(0.60, 1.0 - 0.18 * max(0.0, PS.bias(profile, 'hero_call', street)) * _bf_w)
     return max(0.02, min(0.97, ns))
 
 

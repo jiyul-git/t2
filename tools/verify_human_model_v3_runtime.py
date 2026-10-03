@@ -227,7 +227,6 @@ def fixture(name, v3):
     env['T2_PREFLOP_REASONING_V3'] = '1' if v3 else '0'
     # Isolate the reasoning change.  Exploit unification is validated by the
     # structural verifier and is intentionally OFF in this tournament fixture.
-    env['T2_EXPLOIT_WEIGHT_V3'] = '0'
     out = subprocess.run(
         [sys.executable, __file__, '--child', name],
         env=env, cwd=str(ROOT), capture_output=True, text=True, timeout=900)

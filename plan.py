@@ -2,9 +2,6 @@ import random, zlib as _zlib, hashlib as _hashlib
 import bot, ranges as R, preflop as pf, archetypes as A, persona as PS, texture as TX
 import icm as _ICM
 
-PLANS = ['value_3street','value_2street','pot_control','semibluff','bluff_2street',
-         'river_bluff','thin_river','giveup','trap','block','showdown']
-
 def spr(stack, pot): return stack/max(1, pot)
 
 def line_bluff_prior(opp_profile, street, n_barrels, sizing_frac, board,
@@ -33,6 +30,10 @@ def board_paired(board):
 _RS_CACHE={}
 def relative_strength(hero, board, opp_range=None):
     """상대 레인지 중 나를 이기는 probability mass의 역수. 0(최하)~1(넛).
+
+    equity 가 아니다(L097, stage9 B5 판정: 이름 유지 + 정의 명시). 지금 보드에서의
+    순위 몫이며 남은 카드와 무승부 분할을 보지 않는다. 판단용 rel 은
+    _decision_relative_strength 가 멀티웨이 joint / 불완전 시 합집합 fallback 으로 만든다.
 
     Legacy unique-list input is exactly the former combo-count metric because
     every combo has unit mass. A non-uniform posterior contributes according to
@@ -2113,7 +2114,7 @@ def decide_size(profile, hero, board, street, plan, rel, opp_range, my_range,
 
     예전에는 한 사이즈가 네 번 재계산됐다:
       SIZING 표 → TX.size_fraction 과 혼합 → overbet_frac 이 덮어씀
-      → RU.shape_size 가 또 흔듦
+      → (실행 층의) shape_size 가 또 흔듦
     그래서 어느 값이 최종인지 추적이 안 됐고, 개인 성향이 어디서 반영되는지도 불명확했다.
 
     지금은 여기 하나에서 정한다. 집행부는 이 값을 칩으로 환산만 한다.
@@ -2626,7 +2627,7 @@ def shape_planned_target(amount, profile, pot, actor_cap, seed=None):
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                   initiative=True, opp_range=None, bf=1.0, seed=None,
                   n_opp=1, to_act_behind=0, read=None, opp_est=None,
-                  opp_ranges=None, facing_seat=None, checked_before=False,
+                  opp_ranges=None, facing_seat=None,
                   can_raise=True, checkraise_seed=None, checkraise_size_seed=None,
                   facing_size_frac=None, hero_contrib=0, response_kind=None,
                   response_context=None, call_value=None,
@@ -2695,11 +2696,10 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # check -> raise -> opponent re-raise 뒤의 aggressor_backaction까지
         # 다시 체크레이즈 스팟으로 분류하면 안 된다.
         #
-        # response_kind가 없는 구형/직접 호출만 checked_before로 호환한다.
-        _is_checkraise_spot = (
-            response_kind == 'check_then_face_bet'
-            or (response_kind is None and checked_before)
-        )
+        # 판정은 canonical response_kind 하나로 한다(stage9 B5). 세션은 항상
+        # kind 를 넘기며(action_events._response_kind), 예전 response_kind=None +
+        # checked_before 호환 분기는 직접 호출 전용이라 제거했다.
+        _is_checkraise_spot = (response_kind == 'check_then_face_bet')
         if _is_checkraise_spot and can_raise:
             _ckr = checkraise_decision(
                 hero, board, profile, plan_state, pot, tocall, stack, street,
@@ -2752,7 +2752,7 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                     return ('raise', _amt), eq, need
 
         # 체크레이즈 gate가 거절했거나, 아직 체크하지 않은 일반 facing-bet 상태.
-        # checked_before=True 이면 generic reraise/bluff raise는 금지한다.
+        # 체크 후 마주한 벳(check_then_face_bet)이면 generic reraise/bluff raise는 금지한다.
         # raise 권리가 닫힌 incomplete-allin 상태도 계획 단계에서 raise를 제거한다.
         _direct_raise = bool(can_raise and not _is_checkraise_spot)
         act, mult, need, why = decide_response(

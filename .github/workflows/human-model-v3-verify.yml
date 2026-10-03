@@ -51,9 +51,7 @@ jobs:
         run: python3 tools/verify_calc_noise_v3.py
       - name: Calc-noise directional audit
         env:
-          T2_CALC_NOISE_V3: '0'
           T2_READ_RECENCY_V3: '0'
-          T2_PREFLOP_TEMPER_DIRECTION_V3: '0'
         run: python3 tools/audit_calc_noise_v3.py > /tmp/calc_noise_v3.json
       - name: Upload calc-noise audit
         uses: actions/upload-artifact@v4
@@ -80,11 +78,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run v2 regression harness with all V3 flags OFF
+      - name: Run v2 regression harness with remaining V3 flags OFF
         env:
           T2_PREFLOP_REASONING_V3: '0'
-          T2_EXPLOIT_WEIGHT_V3: '0'
-          T2_CALC_NOISE_V3: '0'
         run: python3 tools/verify_human_model_v2.py --out /tmp/human_v2.json
       - name: Verify V2 structural invariants; report historical core drift
         run: |

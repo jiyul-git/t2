@@ -394,3 +394,25 @@
 - `persona.exploit_weight` 와 그 플래그는 production 소비처가 없다. B5 에서 검증기와 함께 퇴역한다.
 
 새 baseline(B4): 시드 11 `7ce1561d…`, 시드 12 `ef73996c…`.
+
+## 9단계 B5 통합 (호환 / 이름 / 옛 경로 제거)
+
+기준 `274bdd37`. B5 항목은 실행 경로를 바꾸지 않는 정리다. 그래서 baseline 지문은 B4 와 같아야 한다(검증 결과는 REFACTOR 11차).
+
+| ID | 대상 | 최종 처리 | 근거 |
+|---|---|---|---|
+| L211 / L175 | `icm.field_bf` 첫 정의(뒤 정의에 덮임) + 그 전용 표 `_PROX`, `_STACK`, `_lerp`, `MAX_PREMIUM`, `EXACT_MAX_SEATS` | 삭제 | 파이썬은 뒤 정의를 묶는다. 첫 정의는 도달 불가였다. 생존 정의(lognorm 곡선)만 남는다 |
+| L-RA14 | `preflop.DEF_POS_MULT`, `preflop.DEPTH_OPEN_MULT`, `persona.OPEN_ELASTICITY`, `plan.PLANS` | 삭제 | production 에서 읽는 곳이 없었다. 남겨 두면 감사에서 살아 있는 지식으로 오독된다 |
+| L210 | `table.Table.sidepots` | 삭제 | 호출부가 없다. 사이드팟은 F8 layer 경로가 담당한다 |
+| L154 | `runner.shape_size`(persona.shape_size 를 감싸는 호환 래퍼) | 삭제. 사이즈 습관 식은 `persona.shape_size` 하나 | 같은 식의 두 진입점. 게이트 `verify_core_sizing_ownership` 은 '래퍼 동일성' 대신 'runner 에 식 없음'을 검사하도록 바꿨다 |
+| L189 | `session._diagnostic_layer_equities` | `layer_equities_by_pot_layer` 로 이름 변경, docstring 정정 | '진단/기록 전용'이 아니었다. `_layer_call_summary` → `act_with_plan(call_value=…)` 로 콜 판단에 쓰인다 |
+| L095 / L097 / L102 | `made_strength`, `relative_strength`(rel), `nut_advantage` | 이름 유지, docstring 에 정확한 정의 | 널리 쓰이는 API 라 이름을 바꾸면 의미 변화 없이 혼란만 생긴다. 오해의 소지(equity 아님, 문자 그대로의 넛 아님)는 정의로 막는다 |
+| HM3 EXPLOIT_WEIGHT_V3 잔여 | 플래그, `persona.exploit_weight`, `persona.opponent_read_application_weight` | 삭제. 적용 가중치는 `_exploit_base_weight` 하나(read_opponent 입구) | B3 통합 뒤 production 소비처가 없었다. 검증기는 단일 가중치 계약으로 갱신했다 |
+| response_kind=None 호환 | `act_with_plan` 의 `response_kind is None and checked_before` 체크레이즈 분기와 `checked_before` 인자 | 삭제. 체크레이즈 스팟 판정은 canonical `response_kind == 'check_then_face_bet'` 하나 | 세션은 항상 kind 를 넘긴다(`action_events._response_kind` 는 None 을 내지 않는다). `checked_before` 는 이 분기 말고는 의미가 없었다. f3/f5 fixture 는 canonical kind 를 쓰도록 바꿨다 |
+| bias street 기본값 | `bias('bluff_fear'/'hero_call', street=None)` → 리버 숙련으로 대체 | street 를 요구(`_bluffcatch_concept`) | production 은 항상 street 를 넘긴다. 대체값은 다른 street 의 능력을 섞는 호환 기본값이었다 |
+| CI 워크플로 | 퇴역 플래그 env | 제거 | 퇴역 플래그는 효과가 없다 |
+
+남은 확인 사항(이번 B5 범위에서 수정하지 않음):
+- `oop_legacy_abs` 는 판단 경로가 아니라 기록용 비교값이다(plan 주석). 실행 경로가 둘이 아니므로 유지한다.
+- `cbet_freq` 디스패처는 production 단일 진입점이다. continuation 함수군은 GTO terminal-continuation 작업과 맞닿아 있어 손대지 않았다(사용자 지시).
+- `tools/verify_f3_checkraise_response.py`, `tools/verify_f5_backaction.py`, `tools/verify_prelogic_execution_boundary.py` 는 B5 이전(HEAD)에도 실패하던 검증기다(기존 결함, B5 원인 아님). f3 는 23-gate 의 기존 실패 6개 중 하나다.

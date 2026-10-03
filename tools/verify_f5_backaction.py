@@ -171,7 +171,7 @@ def test_aggressor_backaction_does_not_reenter_checkraise_gate():
             pot=4600, tocall=1900, stack=26900, street='flop',
             initiative=False, opp_range=None, bf=1.0, seed=1,
             n_opp=1, to_act_behind=0, read=None, opp_est=None,
-            checked_before=True, can_raise=True, hero_contrib=2600,
+            can_raise=True, hero_contrib=2600,
             response_kind='aggressor_backaction')
         assert out == ('fold', 0), out
         assert seen['ckr'] == 0, seen

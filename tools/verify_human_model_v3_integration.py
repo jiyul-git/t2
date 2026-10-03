@@ -11,12 +11,12 @@ This does not fit target VPIP/PFR values. It checks composition:
 import argparse, collections, hashlib, json, os, pathlib, subprocess, sys
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
-# Stage 9 B4: T2_CALC_NOISE_V3 and T2_PREFLOP_TEMPER_DIRECTION_V3 were retired
+# Stage 9 B4/B5: T2_CALC_NOISE_V3, T2_PREFLOP_TEMPER_DIRECTION_V3 and
+# T2_EXPLOIT_WEIGHT_V3 were retired
 # (their V3 semantics are the only production path); the remaining flags are
 # the ones still awaiting their integration step.
 FLAGS=(
     'T2_PREFLOP_REASONING_V3',
-    'T2_EXPLOIT_WEIGHT_V3',
     'T2_READ_RECENCY_V3',
 )
 SEEDS=(5150,9001,4242)
