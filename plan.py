@@ -2932,8 +2932,13 @@ def draw_completion_supports_value(made, rel):
 
 
 def strength_improvement_supports_value(rel, previous_rel):
-    """Promotion evidence: already strong, or increased into the value band."""
-    return rel >= 0.88 or (rel >= 0.70 and rel > previous_rel)
+    """Promotion evidence: already strong, or increased into the value band.
+
+    previous_rel 은 plan_state 에 반올림(2자리)으로 저장된 값이다. '올랐는가'는
+    같은 정밀도로 비교한다 — 원값 0.7240 이 저장값 0.72 보다 크다고 '상승'으로
+    읽던 오판을 막는다(베타 A #5 와 같은 정밀도 불일치).
+    """
+    return rel >= 0.88 or (rel >= 0.70 and round(rel, 2) > previous_rel)
 
 
 def checkraise_street_skill(profile, street):
@@ -3286,7 +3291,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     if prev:
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
                   'executed_actions', 'response_plans', '_last_response_plan',
-                  'plan_since', '_rsig', '_opps_sig'):
+                  'plan_since', 'plan_made', '_rsig', '_opps_sig'):
             if prev.get(k) is not None and st.get(k) is None:
                 st[k] = prev[k]
 
@@ -3335,6 +3340,9 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     # 플랍의 벳을 새 계획의 예산에서 까면 안 된다 — 그건 다른 계획의 지출이었다.
     if not prev or prev.get('plan') != st.get('plan') or not st.get('plan_since'):
         st['plan_since'] = street
+        # 채택 시점의 완성 강도. 예산 소진 후 승격은 '이 계획을 세운 뒤 강도가
+        # 올랐는가'를 본다(아래 refresh 참고).
+        st['plan_made'] = st.get('made') or 0
 
     # 의도는 무저항 시점에만, 한 번만 확정한다.
     _intent_pick = (
@@ -3916,8 +3924,10 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
                     ' 콜 레인지 상대 eq %.2f → 밸류 아님, 쇼다운'
                     % (street, made, rel, float(_call_eq)))
     elif (old == 'value_2street'
-          and made > _prev_made
-          and rel >= max(0.85, _prev_rel)
+          and made > st.get('plan_made', _prev_made)
+          # _prev_rel 은 저장된 반올림값(2자리)이다. 같은 정밀도로 비교한다 —
+          # 원값 0.957 을 저장값 0.96 과 비교해 '강도 하락'으로 오판했다.
+          and round(rel, 2) >= max(0.85, _prev_rel)
           and budget_left(st, 'value_2street', street) is not None
           and budget_left(st, 'value_2street', street) <= 0):
         # **예산이 다 떨어졌는데 강도가 더 올라간 경우.**
@@ -3931,10 +3941,15 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # (made 증가), 상대 레인지 대비도 여전히 최상위이며, 예산이 소진돼
         # 계획이 더는 유효하지 않을 때**만 올린다. 예산이 남아 있으면 원래
         # 계획대로 치면 되므로 승격할 이유가 없다.
+        #
+        # made 증가의 기준은 **계획을 채택한 시점**(plan_made)이다. 직전
+        # 스트리트와 비교하면, 턴에 강해지고(예산 남음) 리버에 예산이 떨어진
+        # 경우(made 그대로) 승격 시점이 영영 오지 않았다: 플랍 얇은 밸류 →
+        # 턴 트립스(rel 0.96) → 리버 '사이즈 0 → 체크'(베타 A #5).
         st['plan'] = 'value_3street'
         st['plan_goal'] = 'value_3street'
         why.append('%s: 예산 소진 후 강도 상승(rel %.2f, made %d→%d) → 3스트리트 승격'
-                   % (street, rel, _prev_made, made))
+                   % (street, rel, st.get('plan_made', _prev_made), made))
     # 개념 보유/허용 판정은 update_plan 파이프라인 끝에서 **한 번만** 한다.
     # 여기서도 _allowed 를 굴리면 낮은 숙련도의 stochastic gate가
     # refresh 1회 + update_plan 1회로 곱해진다.

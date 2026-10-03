@@ -201,3 +201,4 @@
 - **베타 A(최고 숙련 단일 필드) 실행.** 보고서 `docs/beta/BETA_A_REPORT.md`, 도구 `tools/beta_trace.py` / `tools/beta_report.py`.
   - 층 전이 이상 0, 가격 불일치 콜/폴드 0.
   - 판단 이상 7종: 개념 연결 누락 1, 개념 공백 3, 버그 후보 1, 계수 2. 처리 순서는 사용자 판정.
+- **베타 A #5 수정**(밸류 계획 승격 기준·rel 비교 정밀도). 새 기준선 시드 11 `7baf5613…`, 시드 12 `9ccf72fc…`. UI 실행 폴더는 `T2_UI_REF=master` 로 master 고정.
