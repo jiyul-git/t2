@@ -147,7 +147,7 @@ def main():
       "iterations":iterations,"check_every":20,"target_gap":target
     }),sort_keys=True))
     st=None
-    for _ in range(1800):
+    for _ in range(3600):
         st=req("GET","/api/preflop/status")
         if st.get("state")!="running": break
         time.sleep(1)
