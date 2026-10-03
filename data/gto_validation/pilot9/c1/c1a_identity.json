@@ -1,0 +1,77 @@
+{
+ "schema": "pilot9_c1a_v1",
+ "profile": "/home/user/gto_ckpt/c1/ck_fixed.gtop (100-iteration checkpoint, no further iterations)",
+ "checkpoint_sha256": "94f4da470ff0f8853a3dfa416a67735a1fde21d8878af9d9da9b312f32f7aa79",
+ "paths": {
+  "btn": {
+   "terminal_node": 24,
+   "gap_total_identical": true,
+   "gaps_identical": true,
+   "evs_identical": true,
+   "pot_bb_identical": true,
+   "effective_behind_bb_identical": true,
+   "iterations_identical": true,
+   "path_nodes_identical": true,
+   "path_nodes_sha256": "7534b5bf14bbdc8abb4773e75c269bbf5304cc625391acb8a02fe1473b443514",
+   "injected_model_gross_equals_table": true,
+   "injected_legacy_gross_equals_table": true,
+   "t2_cont_file": "/home/user/gto_ckpt/c1/static_tables/manifest.json"
+  },
+  "co": {
+   "terminal_node": 73,
+   "gap_total_identical": true,
+   "gaps_identical": true,
+   "evs_identical": true,
+   "pot_bb_identical": true,
+   "effective_behind_bb_identical": true,
+   "iterations_identical": true,
+   "path_nodes_identical": true,
+   "path_nodes_sha256": "1ab87a2d097db4cb0bc90a74cb6bc9e2522fa2e3738d3e3566c4cc6b873de6e5",
+   "injected_model_gross_equals_table": true,
+   "injected_legacy_gross_equals_table": true,
+   "t2_cont_file": "/home/user/gto_ckpt/c1/static_tables/manifest.json"
+  },
+  "hj": {
+   "terminal_node": 242,
+   "gap_total_identical": true,
+   "gaps_identical": true,
+   "evs_identical": true,
+   "pot_bb_identical": true,
+   "effective_behind_bb_identical": true,
+   "iterations_identical": true,
+   "path_nodes_identical": true,
+   "path_nodes_sha256": "ffd9571a1d7e22a80f0607ace3f3aed72f7599ff214fd33ce6453b7ad1b3ee63",
+   "injected_model_gross_equals_table": true,
+   "injected_legacy_gross_equals_table": true,
+   "t2_cont_file": "/home/user/gto_ckpt/c1/static_tables/manifest.json"
+  },
+  "utg": {
+   "terminal_node": 24726,
+   "gap_total_identical": true,
+   "gaps_identical": true,
+   "evs_identical": true,
+   "pot_bb_identical": true,
+   "effective_behind_bb_identical": true,
+   "iterations_identical": true,
+   "path_nodes_identical": true,
+   "path_nodes_sha256": "1217b7a6022f2f137aaed3c0535b68082a071f66d3768ba96f7bab6039837a38",
+   "injected_model_gross_equals_table": true,
+   "injected_legacy_gross_equals_table": true,
+   "t2_cont_file": "/home/user/gto_ckpt/c1/static_tables/manifest.json"
+  },
+  "utg1_ctrl": {
+   "terminal_node": 7997,
+   "gap_total_identical": true,
+   "gaps_identical": true,
+   "evs_identical": true,
+   "pot_bb_identical": true,
+   "effective_behind_bb_identical": true,
+   "iterations_identical": true,
+   "path_nodes_identical": true,
+   "path_nodes_sha256": "688187f5d70ac90f7d5f501b59a2cd3f2818a92d13eaa86ab0be32cfccef0828"
+  }
+ },
+ "diffs": [],
+ "pass": true,
+ "meaning": "exact: the t2_cont injection reproduces the static payoff bit for bit at a fixed profile (node ids, seats, live masks, pot, class order, value convention). Not tested here by design: a from-scratch solve with frozen tables differs from the dynamic static payoff (tables do not react to the opponent reach inside CFR) -> measured separately as the C1b control arm."
+}
