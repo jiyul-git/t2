@@ -305,8 +305,8 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 
 코드 변경:
 - `reads` 최근 핸드 창을 유일 경로로 만들고 READ_RECENCY_V3 를 퇴역했다.
-- `persona.traits_of` 의 threebet 숙련 입력을 bluff 에서 pf_defend 로 바꿨다.
-- `bot.range_combos` 를 PCT 순서로 바꾸고 `_pf_score` 를 삭제했다.
+- `persona.traits_of` 의 threebet 숙련 입력을 bluff 에서 pf_defend 로 바꿨다. pf_defend 는 현존 proxy 이고, 독립 3벳 숙련 / prior 는 MISSING 이다.
+- `bot.range_combos` 를 PCT 순서(클래스 경계 floor)로 바꾸고 `_pf_score` 를 삭제했다.
 - GTO_MEMORY_V2 / PREFLOP_REASONING_V3 에 BLOCKED 상태 주석을 달았다(OFF 유지).
 
 검증:
@@ -319,3 +319,22 @@ human_model_v2, human_model_v3_integration: before/after 모두 timeout. 개별 
 - `audit_human_v3_live_attribution` 통과.
 - 필드 3벳 형질 차이: 평균 0.013, 최대 0.045(1,000명).
 - completeness: site 1,116 / 함수 614 / 상수 표 76, 미소유 0.
+
+### 13차 보강 — A2/A3 계약 검증과 문구 정정 (그룹 A 봉인)
+
+문구 정정(주석/문서만):
+- A2 의 pf_defend 는 전용 3벳 숙련이 아니라 bluff 보다 적합한 현존 proxy 다. 독립 3벳 숙련과 solved 3벳 prior 는 MISSING_INDEPENDENT_3BET_SKILL/PRIOR 로 남긴다.
+- A3 의 `PCT ≤ pct` 는 정확한 상위 pct 가 아니라 클래스 경계 floor 다(0.35 → 458콤보 ≈ 34.54%).
+
+`tools/verify_closeout_a.py` 9/9 통과:
+- A2a: aggression/looseness 고정, bluff 만 바꾸면 형질 불변.
+- A2b: pf_defend 만 바꾸면 형질이 단조 증가.
+- A2c: 최대 숙련에서 퇴역 식과 같다(0.109).
+- A3_0: PCT 는 클래스 누적 몫이다(저장 4자리 이내).
+- A3a 단조성, A3b 클래스 무결성(dead card 제외 시 부분 절단 없음), A3c 실현 몫 ≤ 요청 pct, A3e 결정적 순서.
+- A3d: 요청 대비 부족분 < 경계 클래스 하나(최대 부족 0.00864 < 최대 클래스 몫 0.00905).
+- pct 107점 grid × dead-card 13가지(없음, 2/5/7장 무작위)로 검사했다.
+
+`verify_f3_checkraise_response` 는 원래부터 실패하던 게이트라 A3 검증 근거로 쓰지 않는다. Stage 10 에서 따로 판정한다.
+
+그룹 A 를 최종 완료로 봉인한다. GTO_MEMORY_V2 / PREFLOP_REASONING_V3 는 계속 BLOCKED_BY_GTO_REFERENCE_VALIDATION, production OFF.

@@ -714,10 +714,12 @@ def traits_of(prof):
     return {
       'limp': max(0.0, min(0.6, 0.02 + 0.055*(loose-4) - 0.035*(a-4) - 0.02*(disc-5))),
       'iso':  max(0.03, min(0.95, 0.55*(a/5.0)**1.15)),   # 곱셈형: 소극적인 사람은 이소를 거의 안 한다
-      # 3벳 성향의 숙련 입력은 프리플랍 재레이즈 지식(pf_defend)이다. 예전에는
-      # 포스트플랍 블러프 능력(bluff, flop~river)을 그대로 썼다 — 다른 질문의
-      # 능력이 프리플랍 3벳 폭(핫존 리쇼브 폭, 관찰자 3벳 레인지)을 바꿨다.
-      # 계수는 그대로(stage9 B1/B2 closeout A2).
+      # 3벳 성향의 숙련 입력: 현존 개념 중 가장 가까운 proxy 인 pf_defend
+      # (디펜스 차트 기억 / 상위 레이즈 / 콜 gate 가 섞인 개념)를 쓴다. 전용
+      # 3벳 숙련이 아니다 — 독립 3벳 숙련과 solved 3벳 prior 는 없다
+      # (MISSING_INDEPENDENT_3BET_SKILL/PRIOR). 예전에는 포스트플랍 블러프
+      # 능력(bluff, flop~river)을 그대로 써서 다른 질문의 능력이 프리플랍 3벳 폭
+      # (핫존 리쇼브 폭, 관찰자 3벳 레인지)을 바꿨다. 계수는 그대로(stage9 closeout A2).
       'threebet': max(.005, .009*a + .006*sk(prof,'pf_defend') + .004*(loose-4)),
       'sqz': 0.4 + 0.13*a,
       'call': max(.02, .022*loose + .018*g - .012*a),

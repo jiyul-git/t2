@@ -177,4 +177,6 @@
 - **그룹 B(GTO 의존) 보류: BLOCKED_BY_GTO_REFERENCE_VALIDATION.**
   - GTO_MEMORY_V2 / PREFLOP_REASONING_V3 는 production OFF 유지.
   - GTO continuation S pilot 이후 corrected 9-max reference 가 검증되면 재판정한다. Stage 9 범위 밖이다.
-- 다음: 사용자 지시 대기.
+- 그룹 A 봉인: `tools/verify_closeout_a.py` 9/9(A2 proxy 계약, A3 클래스 경계 floor 계약). 문구 정정 반영.
+- **Stage 9 완료.** GTO 의존 두 플래그는 별도 blocker 로 남긴다.
+- 다음: Stage 10 final regression. 23-gate 의 기존 실패 6개를 하나씩 판정한다(stale test 인지 실제 결함인지).

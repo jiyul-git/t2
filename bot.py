@@ -162,8 +162,10 @@ _SCORED=sorted(_ALLCOMBOS, key=lambda t: _PCT[_pf_class(*t)])
 def range_combos(pct, dead):
     """레인지를 모를 때의 fallback 레인지: preflop.PCT(pf_rank) 순서 상위 pct.
 
-    관찰 기반 레인지와 같은 순서표를 쓴다. 클래스 단위로 자르므로(누적
-    백분위 ≤ pct 인 클래스 전부) 같은 클래스가 수트에 따라 갈리지 않는다.
+    관찰 기반 레인지와 같은 순서표를 쓴다. 누적 백분위 ≤ pct 인 클래스를
+    통째로 포함한다 — 정확한 상위 pct 가 아니라 **클래스 경계 floor** 다
+    (경계 클래스가 pct 를 넘기면 통째로 빠진다. 예: 0.35 → 458콤보 ≈ 34.54%).
+    같은 클래스가 수트에 따라 반쪽만 들어가는 분할을 없애기 위한 의도된 계약이다.
     소비처: plan 의 빈 레인지 fallback(range_combos(0.35)),
     equity_vs_betting 의 콜러/벳 레인지.
     """
