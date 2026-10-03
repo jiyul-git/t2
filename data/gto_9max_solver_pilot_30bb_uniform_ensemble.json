@@ -1,51 +1,51 @@
 {
   "aggregate": {
     "gap_total": {
-      "mean": null,
-      "n": 0,
-      "sd": null
+      "mean": 0.070992181967055,
+      "n": 4,
+      "sd": 0.013156365717538192
     },
     "rfi": {
       "BTN": {
-        "mean": null,
-        "n": 0,
-        "sd": null
+        "mean": 0.37244246391445246,
+        "n": 4,
+        "sd": 0.0035672242442182137
       },
       "CO": {
-        "mean": null,
-        "n": 0,
-        "sd": null
+        "mean": 0.2677244664621543,
+        "n": 4,
+        "sd": 0.006180165688012558
       },
       "HJ": {
-        "mean": null,
-        "n": 0,
-        "sd": null
+        "mean": 0.2124417264256531,
+        "n": 4,
+        "sd": 0.0031867767470216543
       },
       "LJ": {
-        "mean": null,
-        "n": 0,
-        "sd": null
+        "mean": 0.1712131393088349,
+        "n": 4,
+        "sd": 0.001974957056378208
       },
       "UTG": {
-        "mean": null,
-        "n": 0,
-        "sd": null
+        "mean": 0.10169085975494192,
+        "n": 4,
+        "sd": 0.005473175024684339
       },
       "UTG+1": {
-        "mean": null,
-        "n": 0,
-        "sd": null
+        "mean": 0.12500988015358372,
+        "n": 4,
+        "sd": 0.0037478539779112825
       },
       "UTG+2": {
-        "mean": null,
-        "n": 0,
-        "sd": null
+        "mean": 0.14453924463346268,
+        "n": 4,
+        "sd": 0.0033856520470442212
       }
     },
     "rfi_mae_vs_external_check": {
-      "mean": null,
-      "n": 0,
-      "sd": null
+      "mean": 0.08441974562098813,
+      "n": 4,
+      "sd": 0.001464950749007089
     }
   },
   "ante_model": {
@@ -56,8 +56,8 @@
     "total_bb": 1.0
   },
   "canonical_promotion_ready": false,
-  "complete": false,
-  "convergence_ready": false,
+  "complete": true,
+  "convergence_ready": true,
   "external_rfi_check": {
     "BTN": 0.487,
     "CO": 0.375,
@@ -70,8 +70,81 @@
   "hand_start_players": 9,
   "hand_start_stack_bb": 30.0,
   "promotion_blocker": "pilot/restricted tree and preflop continuation model require validation before canonical DB admission",
-  "received_runs": 0,
-  "runs": [],
+  "received_runs": 4,
+  "runs": [
+    {
+      "convergence_qualified": true,
+      "gap_total": 0.08376491732493035,
+      "iteration": 40,
+      "rfi": {
+        "BTN": 0.37585469115064246,
+        "CO": 0.27623984374527616,
+        "HJ": 0.2086981832193425,
+        "LJ": 0.1721534657626245,
+        "SB": 0.6013212565214843,
+        "UTG": 0.0966683607361116,
+        "UTG+1": 0.12605140993381903,
+        "UTG+2": 0.14596820141888087
+      },
+      "rfi_mae_vs_external_check": 0.0834808348619004,
+      "seed": 101,
+      "spot_count": 50
+    },
+    {
+      "convergence_qualified": true,
+      "gap_total": 0.07651573767668726,
+      "iteration": 40,
+      "rfi": {
+        "BTN": 0.37518907956780695,
+        "CO": 0.2642675988787105,
+        "HJ": 0.2113879252519034,
+        "LJ": 0.16915569826838614,
+        "SB": 0.6005267143131466,
+        "UTG": 0.09786569342031072,
+        "UTG+1": 0.11977783637427751,
+        "UTG+2": 0.143671112244899
+      },
+      "rfi_mae_vs_external_check": 0.08638357942767226,
+      "seed": 202,
+      "spot_count": 50
+    },
+    {
+      "convergence_qualified": true,
+      "gap_total": 0.07073898744687152,
+      "iteration": 40,
+      "rfi": {
+        "BTN": 0.3692572093512339,
+        "CO": 0.26813863647458225,
+        "HJ": 0.21622509513555957,
+        "LJ": 0.17004541213123686,
+        "SB": 0.6004935758737976,
+        "UTG": 0.10378349643312214,
+        "UTG+1": 0.12553989625483256,
+        "UTG+2": 0.1402942967743152
+      },
+      "rfi_mae_vs_external_check": 0.08467370820644536,
+      "seed": 303,
+      "spot_count": 50
+    },
+    {
+      "convergence_qualified": true,
+      "gap_total": 0.05294908541973083,
+      "iteration": 40,
+      "rfi": {
+        "BTN": 0.36946887558812663,
+        "CO": 0.26225178675004834,
+        "HJ": 0.21345570209580692,
+        "LJ": 0.17349798107309206,
+        "SB": 0.6034279833880871,
+        "UTG": 0.10844588843022322,
+        "UTG+1": 0.12867037805140574,
+        "UTG+2": 0.14822336809575565
+      },
+      "rfi_mae_vs_external_check": 0.0831408599879345,
+      "seed": 404,
+      "spot_count": 50
+    }
+  ],
   "schema_version": "gto_9max_30bb_uniform_pilot_v2",
   "seeds": [
     101,
