@@ -92,6 +92,19 @@ GTO 작업이 끝나기 전에는 master/test 정리 규칙으로 강제 merge/d
 - 오래된 master에서 분기됐던 `ccr-9a10123b-0lyye0`의 고유 commit은 **코드를 적용하지 않는 history-only merge**로 `test` 이력에 보존한 뒤 ref를 삭제했다.
 - 따라서 원격 branch는 다시 정확히 5개(`master`, `test`, GTO 2개, `telemetry/live`)만 남는다. Human Model을 포함한 일반 비-GTO 개발은 `test` 하나에서만 계속한다.
 
+
+### 2026-10-01 cleanup addendum
+
+이전 5-branch contract를 다시 적용했다.
+
+- `test`를 Human Model 최신 작업선(`70008d9c...`)까지 fast-forward했다.
+- 과거 non-GTO 임시 브랜치의 고유 이력은 working tree를 바꾸지 않는 history-only merge로 `test`에 보존했다.
+- GTO 감사/성능/terminal-census 임시 브랜치의 고유 이력도 working tree를 바꾸지 않는 history-only merge로 `chatgpt/mini-cfr-solver-20260928`에 보존했다.
+- `chatgpt/human-model-v3-20260929`를 포함한 obsolete ref 13개를 삭제했다.
+- 따라서 Human Model을 포함한 일반 비-GTO 개발의 source of truth는 다시 `test` 하나다.
+- 오래된 master에서 분기됐던 `ccr-9a10123b-0lyye0`의 고유 commit은 **코드를 적용하지 않는 history-only merge**로 `test` 이력에 보존한 뒤 ref를 삭제했다.
+- 따라서 원격 branch는 다시 정확히 5개(`master`, `test`, GTO 2개, `telemetry/live`)만 남는다. Human Model을 포함한 일반 비-GTO 개발은 `test` 하나에서만 계속한다.
+
 ## 4. Promotion workflow
 
 일반 개발은 다음 한 경로만 쓴다.
