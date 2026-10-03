@@ -1,0 +1,3267 @@
+{
+ "counts": {
+  "hands": 1150,
+  "pf_decisions": 10196,
+  "pf_plans_unmatched": 7,
+  "pf_raise_clamped_up": 4,
+  "post_decisions": 4243,
+  "free_with_intent": 2980,
+  "shaped_bets": 973,
+  "facing_priced": 1263,
+  "planned_deviation_giveup": 23,
+  "pf_groups_checked": 152,
+  "pf_inverted_folds": 852
+ },
+ "flags": {
+  "J4_value_bet_low_rel": [
+   {
+    "hash": "0ccf25146469",
+    "seat": 7,
+    "pos": "LJ",
+    "hole": "Kd Kc",
+    "board": "Jd 9d Td 6c",
+    "street": "turn",
+    "plan": "value_2street",
+    "action": "bet",
+    "amt": 2200,
+    "tocall": 0,
+    "pot": 3300,
+    "rel": 0.37,
+    "rel_true": 0.369213,
+    "eq": 0.495,
+    "made": 1,
+    "outs": 11,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도(eq 0.58, rel 0.39, 머징 3.0) → 얇은 밸류",
+     "프리플랍 3벳+ 팟 → 레인지 우위"
+    ]
+   },
+   {
+    "hash": "9eeee1e0670e",
+    "seat": 9,
+    "pos": "BB",
+    "hole": "9d 8d",
+    "board": "9s Kh 2c Td Ks",
+    "street": "turn",
+    "plan": "value_2street",
+    "action": "bet",
+    "amt": 5000,
+    "tocall": 0,
+    "pot": 7400,
+    "rel": 0.37,
+    "rel_true": 0.36938,
+    "eq": 0.37,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도(eq 0.59, rel 0.66, 머징 3.0) → 얇은 밸류"
+    ]
+   }
+  ],
+  "E4_odd_size_habit": [
+   {
+    "hash": "b20446542991",
+    "seat": 8,
+    "pos": "UTG+2",
+    "hole": "As 8s",
+    "board": "2s 9d 9h Kd 5c",
+    "street": "river",
+    "plan": "bluff_2street",
+    "action": "bet",
+    "amt": 3000,
+    "tocall": 0,
+    "pot": 2000,
+    "rel": 0.33,
+    "rel_true": 0.333727,
+    "eq": 0.347,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "turn: 쇼다운 가치 없음 + 블로커 0.09/넛우위 0.70 → 블러프 계획",
+     "turn: 블러프 세부: low_cost — 도중 포기 위험 100% — 최소 비용 탐색"
+    ],
+    "calc_target": 800.0,
+    "shaped_target": 3000.0
+   },
+   {
+    "hash": "bd28e8394194",
+    "seat": 6,
+    "pos": "HJ",
+    "hole": "Ts 8s",
+    "board": "Ah Ac Jh 6c 3s",
+    "street": "flop",
+    "plan": "bluff_2street",
+    "action": "bet",
+    "amt": 2100,
+    "tocall": 0,
+    "pot": 2100,
+    "rel": 0.02,
+    "rel_true": 0.018349,
+    "eq": 0.159,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 쇼다운 가치 없음 + 블로커 0.07/넛우위 0.45 → 블러프 계획",
+     "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 52% 역산(팟의 64%, 요구 39%)"
+    ],
+    "calc_target": 900.0,
+    "shaped_target": 2100.0
+   },
+   {
+    "hash": "4912e0656428",
+    "seat": 9,
+    "pos": "UTG+1",
+    "hole": "Qd Jd",
+    "board": "Tc 9c Ts Kh 4s",
+    "street": "flop",
+    "plan": "semibluff",
+    "action": "bet",
+    "amt": 1000,
+    "tocall": 0,
+    "pot": 1900,
+    "rel": 0.03,
+    "rel_true": 0.030642,
+    "eq": 0.43,
+    "made": 0,
+    "outs": 8,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 드로우 8아웃 → 세미블러프",
+     "flop: 세미블러프 사이즈: 폴드율 52% 역산 → 팟의 64%"
+    ],
+    "calc_target": 800.0,
+    "shaped_target": 1000.0
+   },
+   {
+    "hash": "8327a9cb1cd9",
+    "seat": 1,
+    "pos": "UTG+2",
+    "hole": "Qh Ah",
+    "board": "4c As Qc 4s",
+    "street": "turn",
+    "plan": "value_3street",
+    "action": "bet",
+    "amt": 11200,
+    "tocall": 0,
+    "pot": 22300,
+    "rel": 0.94,
+    "rel_true": 0.942675,
+    "eq": 0.858,
+    "made": 2,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "generic_response",
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "calc_target": 15200.0,
+    "shaped_target": 11200.0
+   },
+   {
+    "hash": "303ecc5a7170",
+    "seat": 3,
+    "pos": "BB",
+    "hole": "4h Qh",
+    "board": "3c 9s 8h 9h 3s",
+    "street": "flop",
+    "plan": "bluff_2street",
+    "action": "bet",
+    "amt": 1400,
+    "tocall": 0,
+    "pot": 2800,
+    "rel": 0.0,
+    "rel_true": 0.0,
+    "eq": 0.18,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 쇼다운 가치 없음 + 블로커 0.10/넛우위 -0.29 → 블러프 계획",
+     "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 52% 역산(팟의 64%, 요구 39%)"
+    ],
+    "calc_target": 1000.0,
+    "shaped_target": 1400.0
+   },
+   {
+    "hash": "ffad993788c1",
+    "seat": 4,
+    "pos": "BTN",
+    "hole": "2c Kc",
+    "board": "9d 4s 2h 2d",
+    "street": "turn",
+    "plan": "value_3street",
+    "action": "raise",
+    "amt": 2800,
+    "tocall": 1400,
+    "pot": 4700,
+    "rel": 0.97,
+    "rel_true": 0.966102,
+    "eq": 0.925,
+    "made": 3,
+    "outs": 0,
+    "resp_eq": 0.9242,
+    "resp_need": 0.2362,
+    "resp_src": "generic_response",
+    "intent_act": "bet",
+    "calc_act": "raise",
+    "why": [
+     "flop: 중간강도(eq 0.59, rel 0.68) → 팟 컨트롤",
+     "turn: 강도 상승(rel 0.97, made 3) → 밸류 전환"
+    ],
+    "calc_target": 10400.0,
+    "shaped_target": 1600.0
+   },
+   {
+    "hash": "c08123949204",
+    "seat": 6,
+    "pos": "SB",
+    "hole": "As 2c",
+    "board": "3d 3c 6h 8s Ac",
+    "street": "turn",
+    "plan": "block",
+    "action": "bet",
+    "amt": 2100,
+    "tocall": 0,
+    "pot": 6400,
+    "rel": 0.47,
+    "rel_true": 0.468401,
+    "eq": 0.452,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: OOP 중간강도 → 블락벳으로 가격 통제"
+    ],
+    "calc_target": 2600.0,
+    "shaped_target": 2100.0
+   },
+   {
+    "hash": "641bb4f5df94",
+    "seat": 8,
+    "pos": "UTG+1",
+    "hole": "Kh As",
+    "board": "3s Th Ks Jh",
+    "street": "turn",
+    "plan": "value_3street",
+    "action": "bet",
+    "amt": 3800,
+    "tocall": 0,
+    "pot": 7700,
+    "rel": 0.93,
+    "rel_true": 0.925452,
+    "eq": 0.8,
+    "made": 1,
+    "outs": 4,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "calc_target": 6400.0,
+    "shaped_target": 3800.0
+   },
+   {
+    "hash": "10550fb40c0c",
+    "seat": 5,
+    "pos": "UTG+2",
+    "hole": "Kd Qh",
+    "board": "8s 4s 4h Qs",
+    "street": "turn",
+    "plan": "value_2street",
+    "action": "bet",
+    "amt": 6500,
+    "tocall": 0,
+    "pot": 6500,
+    "rel": 0.81,
+    "rel_true": 0.810221,
+    "eq": 0.68,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "turn: 중간 밸류(eq 0.70, rel 0.81) + 위험 0.58/SPR 5.1/다인원 0 → 2스트리트(p2 0.80)"
+    ],
+    "calc_target": 4500.0,
+    "shaped_target": 6500.0
+   },
+   {
+    "hash": "a2c597c4f535",
+    "seat": 2,
+    "pos": "UTG",
+    "hole": "Ks Js",
+    "board": "9d 3c Kd",
+    "street": "flop",
+    "plan": "value_3street",
+    "action": "bet",
+    "amt": 5000,
+    "tocall": 0,
+    "pot": 3300,
+    "rel": 0.97,
+    "rel_true": 0.969587,
+    "eq": 0.829,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "calc_target": 2500.0,
+    "shaped_target": 5000.0
+   },
+   {
+    "hash": "20e0675e53ed",
+    "seat": 5,
+    "pos": "LJ",
+    "hole": "9h 9d",
+    "board": "8h 4s 2d Jh Qs",
+    "street": "flop",
+    "plan": "value_2street",
+    "action": "raise",
+    "amt": 17900,
+    "tocall": 8300,
+    "pot": 13200,
+    "rel": 0.81,
+    "rel_true": 0.805951,
+    "eq": 0.607,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": 0.6292,
+    "resp_need": 0.3641,
+    "resp_src": "generic_response",
+    "intent_act": "bet",
+    "calc_act": "raise",
+    "why": [
+     "flop: 중간강도(eq 0.62, rel 0.81, 머징 3.0) → 얇은 밸류"
+    ],
+    "calc_target": 23700.0,
+    "shaped_target": 13200.0
+   },
+   {
+    "hash": "27f279a47268",
+    "seat": 8,
+    "pos": "BTN",
+    "hole": "Ad Qd",
+    "board": "Qs 2h 2s 6s Ts",
+    "street": "flop",
+    "plan": "value_2street",
+    "action": "bet",
+    "amt": 3000,
+    "tocall": 0,
+    "pot": 3000,
+    "rel": 0.96,
+    "rel_true": 0.963333,
+    "eq": 0.72,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간 밸류(eq 0.72, rel 0.96) + 위험 0.20/SPR 9.6/다인원 1 → 2스트리트(p2 0.63)"
+    ],
+    "calc_target": 1300.0,
+    "shaped_target": 3000.0
+   },
+   {
+    "hash": "5676bbb8de3c",
+    "seat": 8,
+    "pos": "UTG+1",
+    "hole": "As Ah",
+    "board": "3d Jc 2d",
+    "street": "flop",
+    "plan": "value_3street",
+    "action": "raise",
+    "amt": 4100,
+    "tocall": 1500,
+    "pot": 4100,
+    "rel": 0.96,
+    "rel_true": 0.957201,
+    "eq": 0.787,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": 0.795,
+    "resp_need": 0.2611,
+    "resp_src": "generic_response",
+    "intent_act": "bet",
+    "calc_act": "raise",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "calc_target": 10500.0,
+    "shaped_target": 4100.0
+   },
+   {
+    "hash": "8260690bee56",
+    "seat": 1,
+    "pos": "SB",
+    "hole": "Jd Td",
+    "board": "4c 8s 4d Qd",
+    "street": "flop",
+    "plan": "bluff_2street",
+    "action": "bet",
+    "amt": 1200,
+    "tocall": 0,
+    "pot": 3600,
+    "rel": 0.0,
+    "rel_true": 0.0,
+    "eq": 0.24,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 쇼다운 가치 없음 + 블로커 0.11/넛우위 -1.00 → 블러프 계획",
+     "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 52% 역산(팟의 64%, 요구 39%)"
+    ],
+    "calc_target": 1400.0,
+    "shaped_target": 1200.0
+   },
+   {
+    "hash": "8c5ea5c34565",
+    "seat": 9,
+    "pos": "LJ",
+    "hole": "Tc 8c",
+    "board": "Kd 7h 3c Ks",
+    "street": "turn",
+    "plan": "bluff_2street",
+    "action": "bet",
+    "amt": 1800,
+    "tocall": 0,
+    "pot": 5500,
+    "rel": 0.0,
+    "rel_true": 0.0,
+    "eq": 0.11,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 쇼다운 가치 없음 + 블로커 0.06/넛우위 0.12 → 블러프 계획",
+     "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 52% 역산(팟의 64%, 요구 39%)"
+    ],
+    "calc_target": 2400.0,
+    "shaped_target": 1800.0
+   },
+   {
+    "hash": "82ee954c8064",
+    "seat": 4,
+    "pos": "SB",
+    "hole": "Qs As",
+    "board": "Td 2d Kh",
+    "street": "flop",
+    "plan": "giveup",
+    "action": "bet",
+    "amt": 5200,
+    "tocall": 0,
+    "pot": 3500,
+    "rel": 0.42,
+    "rel_true": 0.416432,
+    "eq": 0.46,
+    "made": 0,
+    "outs": 4,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기",
+     "계획이탈: giveup 계획인데 bet (포기 계획이나 지속벳(11%))"
+    ],
+    "calc_target": 1600.0,
+    "shaped_target": 5200.0
+   },
+   {
+    "hash": "7b996ecf47d7",
+    "seat": 8,
+    "pos": "UTG",
+    "hole": "Jc Tc",
+    "board": "2s 2c Jd",
+    "street": "flop",
+    "plan": "value_3street",
+    "action": "bet",
+    "amt": 1100,
+    "tocall": 0,
+    "pot": 3300,
+    "rel": 0.94,
+    "rel_true": 0.939238,
+    "eq": 0.85,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "calc_target": 1800.0,
+    "shaped_target": 1100.0
+   }
+  ],
+  "J7_showdown_value_turned_bluff": [
+   {
+    "hash": "f495185cf42d",
+    "seat": 5,
+    "pos": "BB",
+    "hole": "4s Ah",
+    "board": "6c 8d Ad 9c Kh",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 4400,
+    "tocall": 0,
+    "pot": 5500,
+    "rel": 0.46,
+    "rel_true": 0.455446,
+    "eq": 0.368,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도(eq 0.55, rel 0.63, 머징 3.0) → 얇은 밸류",
+     "리버: 전체 rel 0.46지만 콜 레인지 상대 eq 0.10 < 0.50 → 얇은 밸류 아님",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.46) → 쇼다운",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(4%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(4%)"
+    }
+   },
+   {
+    "hash": "2b8a77cefda2",
+    "seat": 1,
+    "pos": "LJ",
+    "hole": "As Qs",
+    "board": "Qc Jc 7c 8c Ks",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 2400,
+    "tocall": 0,
+    "pot": 3500,
+    "rel": 0.32,
+    "rel_true": 0.316535,
+    "eq": 0.265,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "turn: 쇼다운 가치 있음 → 팟 컨트롤",
+     "리버: 전체 rel 0.32지만 콜 레인지 상대 eq 0.04 < 0.50 → 얇은 밸류 아님",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.32) → 쇼다운",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(3%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(3%)"
+    }
+   },
+   {
+    "hash": "85e19da56f4f",
+    "seat": 6,
+    "pos": "BTN",
+    "hole": "8c Qc",
+    "board": "Ts 9d 8s 2s 9s",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 2300,
+    "tocall": 0,
+    "pot": 3400,
+    "rel": 0.32,
+    "rel_true": 0.315271,
+    "eq": 0.303,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "turn: 중간강도(eq 0.50, rel 0.56) → 팟 컨트롤",
+     "리버: 전체 rel 0.32지만 콜 레인지 상대 eq 0.00 < 0.50 → 얇은 밸류 아님",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.32) → 쇼다운",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(5%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(5%)"
+    }
+   },
+   {
+    "hash": "8b18b353f897",
+    "seat": 5,
+    "pos": "BTN",
+    "hole": "Ad 7s",
+    "board": "Js Jh 6c",
+    "street": "flop",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1000,
+    "tocall": 0,
+    "pot": 2000,
+    "rel": 0.73,
+    "rel_true": 0.732087,
+    "eq": 0.598,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.73, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(14%))"
+    ],
+    "dev": {
+     "street": "flop",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(14%)"
+    }
+   },
+   {
+    "hash": "1b1617315fd8",
+    "seat": 1,
+    "pos": "CO",
+    "hole": "2s 2c",
+    "board": "Ts 7h Td 5s Qh",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1200,
+    "tocall": 0,
+    "pot": 1800,
+    "rel": 0.57,
+    "rel_true": 0.567227,
+    "eq": 0.607,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 쇼다운 가치 있음 → 팟 컨트롤",
+     "리버: 전체 rel 0.57지만 콜 레인지 상대 eq 0.43 < 0.50 → 얇은 밸류 아님",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.57) → 쇼다운",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(14%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(14%)"
+    }
+   },
+   {
+    "hash": "32e98457c738",
+    "seat": 5,
+    "pos": "CO",
+    "hole": "Ad Th",
+    "board": "4h Qh 7s",
+    "street": "flop",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1000,
+    "tocall": 0,
+    "pot": 1800,
+    "rel": 0.61,
+    "rel_true": 0.614964,
+    "eq": 0.555,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.61, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(14%))"
+    ],
+    "dev": {
+     "street": "flop",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(14%)"
+    }
+   },
+   {
+    "hash": "88ca0d85e812",
+    "seat": 6,
+    "pos": "HJ",
+    "hole": "As 7s",
+    "board": "4h 8h 4s Ah",
+    "street": "flop",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1200,
+    "tocall": 0,
+    "pot": 2400,
+    "rel": 0.64,
+    "rel_true": 0.637622,
+    "eq": 0.546,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.64, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(13%))"
+    ],
+    "dev": {
+     "street": "flop",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(13%)"
+    }
+   },
+   {
+    "hash": "313ceead29d7",
+    "seat": 2,
+    "pos": "UTG",
+    "hole": "Ks Ah",
+    "board": "Kd 3c Qh Qd 5d",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 4700,
+    "tocall": 0,
+    "pot": 9600,
+    "rel": 0.44,
+    "rel_true": 0.438546,
+    "eq": 0.44,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "river: 쇼다운 가치 있음 → 팟 컨트롤",
+     "리버: 전체 rel 0.44지만 콜 레인지 상대 eq 0.25 < 0.50 → 얇은 밸류 아님",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.44) → 쇼다운",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(6%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(6%)"
+    }
+   },
+   {
+    "hash": "c8546fa919e0",
+    "seat": 7,
+    "pos": "HJ",
+    "hole": "Qd Ks",
+    "board": "4h 5c 4s 9s",
+    "street": "flop",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1500,
+    "tocall": 0,
+    "pot": 3000,
+    "rel": 0.48,
+    "rel_true": 0.477211,
+    "eq": 0.515,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.48, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(12%))"
+    ],
+    "dev": {
+     "street": "flop",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(12%)"
+    }
+   },
+   {
+    "hash": "7ce5eedcd477",
+    "seat": 8,
+    "pos": "LJ",
+    "hole": "Ts As",
+    "board": "3s 5c 4c 5h Qs",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1900,
+    "tocall": 0,
+    "pot": 3000,
+    "rel": 0.26,
+    "rel_true": 0.256513,
+    "eq": 0.263,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.58, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(6%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(6%)"
+    }
+   },
+   {
+    "hash": "0ef87fcf2e3f",
+    "seat": 9,
+    "pos": "BTN",
+    "hole": "9h 8c",
+    "board": "Js 2c Tc",
+    "street": "flop",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1300,
+    "tocall": 0,
+    "pot": 2800,
+    "rel": 0.26,
+    "rel_true": 0.263178,
+    "eq": 0.534,
+    "made": 0,
+    "outs": 8,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.26, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(14%))"
+    ],
+    "dev": {
+     "street": "flop",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(14%)"
+    }
+   },
+   {
+    "hash": "3c92f5fb58e4",
+    "seat": 9,
+    "pos": "UTG+1",
+    "hole": "Qc Qs",
+    "board": "7d 4c 8d Td 5c",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 31700,
+    "tocall": 0,
+    "pot": 36700,
+    "rel": 0.56,
+    "rel_true": 0.563886,
+    "eq": 0.567,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "turn: 중간강도(eq 0.62, rel 0.79) → 팟 컨트롤",
+     "turn: 강도 상승(rel 0.79, made 1) → 밸류 전환",
+     "리버: 전체 rel 0.56지만 콜 레인지 상대 eq 0.39 < 0.50 → 얇은 밸류 아님",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.56) → 쇼다운",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(2%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(2%)"
+    }
+   },
+   {
+    "hash": "aee5e15227a0",
+    "seat": 5,
+    "pos": "HJ",
+    "hole": "3h 3c",
+    "board": "Ac 2d 8c 8d",
+    "street": "turn",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 700,
+    "tocall": 0,
+    "pot": 1300,
+    "rel": 0.55,
+    "rel_true": 0.550855,
+    "eq": 0.447,
+    "made": 1,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 쇼다운 가치 있음 → 체크다운(팟컨트롤 개념 10.0)",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지연씨벳(20%))"
+    ],
+    "dev": {
+     "street": "turn",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지연씨벳(20%)"
+    }
+   },
+   {
+    "hash": "a64f7c3124bc",
+    "seat": 2,
+    "pos": "HJ",
+    "hole": "9h Ah",
+    "board": "Qc Ac 9c 6h 3h",
+    "street": "river",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 13100,
+    "tocall": 0,
+    "pot": 18000,
+    "rel": 0.91,
+    "rel_true": 0.905356,
+    "eq": 0.903,
+    "made": 2,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도(eq 0.57, rel 0.90, 머징 3.0) → 얇은 밸류",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.91) → 쇼다운",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(9%))"
+    ],
+    "dev": {
+     "street": "river",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(9%)"
+    }
+   },
+   {
+    "hash": "3af22bd449a7",
+    "seat": 5,
+    "pos": "HJ",
+    "hole": "6d Kd",
+    "board": "5d 3c 2s 8h",
+    "street": "flop",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1300,
+    "tocall": 0,
+    "pot": 2600,
+    "rel": 0.44,
+    "rel_true": 0.437671,
+    "eq": 0.541,
+    "made": 0,
+    "outs": 4,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.44, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(10%))"
+    ],
+    "dev": {
+     "street": "flop",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(10%)"
+    }
+   },
+   {
+    "hash": "0f8cca3f60ab",
+    "seat": 7,
+    "pos": "CO",
+    "hole": "Ts As",
+    "board": "Jh Qs 4h Qd",
+    "street": "turn",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1500,
+    "tocall": 0,
+    "pot": 3000,
+    "rel": 0.63,
+    "rel_true": 0.627884,
+    "eq": 0.58,
+    "made": 0,
+    "outs": 4,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.56, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지연씨벳(21%))"
+    ],
+    "dev": {
+     "street": "turn",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지연씨벳(21%)"
+    }
+   },
+   {
+    "hash": "9ce00d2cd027",
+    "seat": 5,
+    "pos": "LJ",
+    "hole": "4d Ad",
+    "board": "2s 9d 3h",
+    "street": "flop",
+    "plan": "showdown",
+    "action": "bet",
+    "amt": 1500,
+    "tocall": 0,
+    "pot": 3400,
+    "rel": 0.59,
+    "rel_true": 0.592419,
+    "eq": 0.621,
+    "made": 0,
+    "outs": 4,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "bet",
+    "calc_act": "bet",
+    "why": [
+     "flop: 중간강도이나 얇은 밸류 조건 미달(rel 0.59, made 0) → showdown",
+     "계획이탈: showdown 계획인데 bet (포기 계획이나 지속벳(14%))"
+    ],
+    "dev": {
+     "street": "flop",
+     "planned": "showdown",
+     "executed": "bet",
+     "why": "포기 계획이나 지속벳(14%)"
+    }
+   }
+  ],
+  "J5_river_check_strong": [
+   {
+    "hash": "a2a63744c3c4",
+    "seat": 4,
+    "pos": "SB",
+    "hole": "Jh Ac",
+    "board": "9h 5s Ad 4c Js",
+    "street": "river",
+    "plan": "showdown",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 3800,
+    "rel": 0.9,
+    "rel_true": 0.89726,
+    "eq": 0.855,
+    "made": 2,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 중간강도(eq 0.60, rel 0.71) → 팟 컨트롤",
+     "turn: 강도 상승(rel 0.72, made 1) → 밸류 전환",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.90) → 쇼다운"
+    ],
+    "cause": "쇼다운/포기 계획",
+    "intent_src": "DEVIATE:포기 계획이나 지속벳(5%)"
+   },
+   {
+    "hash": "bd28e8394194",
+    "seat": 3,
+    "pos": "UTG+1",
+    "hole": "Jd Ad",
+    "board": "Ah Ac Jh 6c 3s",
+    "street": "river",
+    "plan": "value_3street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 12300,
+    "rel": 1.0,
+    "rel_true": 1.0,
+    "eq": 0.95,
+    "made": 6,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 9%)"
+   },
+   {
+    "hash": "a973e801d60c",
+    "seat": 3,
+    "pos": "SB",
+    "hole": "8s Ks",
+    "board": "2s 4h 3s Qh 9s",
+    "street": "river",
+    "plan": "value_3street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 10200,
+    "rel": 0.96,
+    "rel_true": 0.955224,
+    "eq": 0.94,
+    "made": 5,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "river: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 9%)"
+   },
+   {
+    "hash": "def1bdd20c41",
+    "seat": 2,
+    "pos": "UTG",
+    "hole": "Jc Js",
+    "board": "7s Th 8d 9s 6c",
+    "street": "river",
+    "plan": "value_2street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 15400,
+    "rel": 0.93,
+    "rel_true": 0.926053,
+    "eq": 0.757,
+    "made": 0,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 중간 밸류(eq 0.72, rel 0.79) + 위험 0.40/SPR 7.5/다인원 0 → 2스트리트(p2 0.72)"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 8%)"
+   },
+   {
+    "hash": "1f2ccd47e425",
+    "seat": 1,
+    "pos": "CO",
+    "hole": "Th 8h",
+    "board": "Jh 2h 9c 5c Qd",
+    "street": "river",
+    "plan": "value_3street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 9200,
+    "rel": 0.99,
+    "rel_true": 0.991145,
+    "eq": 0.98,
+    "made": 4,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 중간강도(eq 0.60, rel 0.03) → 팟 컨트롤",
+     "river: 강도 상승(rel 0.99, made 4) → 밸류 전환"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 9%)"
+   },
+   {
+    "hash": "795ca7ef174d",
+    "seat": 4,
+    "pos": "SB",
+    "hole": "Ac 4c",
+    "board": "9c 5d As Jc 2c",
+    "street": "river",
+    "plan": "value_3street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 19800,
+    "rel": 1.0,
+    "rel_true": 1.0,
+    "eq": 1.0,
+    "made": 5,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "river: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 9%)"
+   },
+   {
+    "hash": "7edb6802d12e",
+    "seat": 1,
+    "pos": "UTG+2",
+    "hole": "Qc Jc",
+    "board": "Qd Ts 9h Ks 5c",
+    "street": "river",
+    "plan": "value_3street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 23200,
+    "rel": 0.91,
+    "rel_true": 0.906653,
+    "eq": 0.465,
+    "made": 4,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "generic_response",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "cause": "밸류 실행 확률 미달",
+    "intent_src": "밸류 계획 실행(92%)"
+   },
+   {
+    "hash": "9eeee1e0670e",
+    "seat": 8,
+    "pos": "SB",
+    "hole": "Js Qs",
+    "board": "9s Kh 2c Td Ks",
+    "street": "river",
+    "plan": "showdown",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 17400,
+    "rel": 0.9,
+    "rel_true": 0.895678,
+    "eq": 0.858,
+    "made": 4,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 쇼다운 가치 없음 + 블로커 0.04/넛우위 0.05 → 블러프 계획",
+     "flop: 블러프 세부: barrel — 상대가 사이즈를 안 읽음 — 폴드율 52% 역산(팟의 64%, 요구 39%)",
+     "turn: 블러프 중 강도 획득(made 4, rel 1.00), 콜 레인지 상대 eq 0.98 → 밸류 재분류",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.90) → 쇼다운"
+    ],
+    "cause": "쇼다운/포기 계획",
+    "intent_src": "포기 계획 + 이니셔티브 없음 → 체크"
+   },
+   {
+    "hash": "341de3f228a7",
+    "seat": 3,
+    "pos": "BB",
+    "hole": "As Ks",
+    "board": "3d 4s Ts 7s Js",
+    "street": "river",
+    "plan": "value_3street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 39300,
+    "rel": 1.0,
+    "rel_true": 1.0,
+    "eq": 1.0,
+    "made": 5,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "turn: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 9%)"
+   },
+   {
+    "hash": "bc66e4fbc1bc",
+    "seat": 7,
+    "pos": "HJ",
+    "hole": "As Tc",
+    "board": "Th Kh 2h Ts 7c",
+    "street": "river",
+    "plan": "value_2street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 10600,
+    "rel": 0.96,
+    "rel_true": 0.957392,
+    "eq": 0.933,
+    "made": 3,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 중간강도(eq 0.58, rel 0.73, 머징 3.0) → 얇은 밸류"
+    ],
+    "cause": "사이즈 0",
+    "intent_src": "사이즈 0 → 체크"
+   },
+   {
+    "hash": "30604be696f4",
+    "seat": 2,
+    "pos": "UTG+1",
+    "hole": "Jh Th",
+    "board": "Jd 7c 5s 9h Tc",
+    "street": "river",
+    "plan": "showdown",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 12400,
+    "rel": 0.9,
+    "rel_true": 0.897493,
+    "eq": 0.878,
+    "made": 2,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 중간 밸류(eq 0.70, rel 0.82) + 위험 0.18/SPR 8.8/다인원 0 → 2스트리트(p2 0.60)",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.90) → 쇼다운"
+    ],
+    "cause": "쇼다운/포기 계획",
+    "intent_src": "DEVIATE:포기 계획이나 지속벳(7%)"
+   },
+   {
+    "hash": "81c0771d3473",
+    "seat": 9,
+    "pos": "CO",
+    "hole": "5c 5s",
+    "board": "4c 5h Kc Qd 8d",
+    "street": "river",
+    "plan": "value_3street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 24800,
+    "rel": 0.98,
+    "rel_true": 0.983917,
+    "eq": 0.963,
+    "made": 3,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 강도 최상위 → 3스트리트 밸류"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 9%)"
+   },
+   {
+    "hash": "67197bb75665",
+    "seat": 5,
+    "pos": "SB",
+    "hole": "6s 6d",
+    "board": "5c Ts 2h 4h 3s",
+    "street": "river",
+    "plan": "value_2street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 13100,
+    "rel": 1.0,
+    "rel_true": 0.999604,
+    "eq": 0.973,
+    "made": 4,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": "checkraise_declined",
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "turn: 중간강도(eq 0.61, rel 0.70, 머징 3.0) → 얇은 밸류"
+    ],
+    "cause": "OOP 상대에게 액션 우선",
+    "intent_src": "직전 스트리트 상대 공격 콜 + OOP → 상대에게 액션 우선 (재리드 9%)"
+   },
+   {
+    "hash": "67197bb75665",
+    "seat": 6,
+    "pos": "BB",
+    "hole": "Ah Tc",
+    "board": "5c Ts 2h 4h 3s",
+    "street": "river",
+    "plan": "value_2street",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 13100,
+    "rel": 0.95,
+    "rel_true": 0.948872,
+    "eq": 0.718,
+    "made": 4,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "turn: 쇼다운 가치 있음 → 팟 컨트롤",
+     "turn: 강도 상승(rel 0.77, made 1) → 밸류 전환"
+    ],
+    "cause": "밸류 실행 확률 미달",
+    "intent_src": "밸류 계획 실행(96%)"
+   },
+   {
+    "hash": "bc9338a00300",
+    "seat": 5,
+    "pos": "BB",
+    "hole": "Th Jh",
+    "board": "9s Kd 9d 8c 7h",
+    "street": "river",
+    "plan": "showdown",
+    "action": "check",
+    "amt": 0,
+    "tocall": 0,
+    "pot": 4400,
+    "rel": 0.91,
+    "rel_true": 0.906667,
+    "eq": 0.867,
+    "made": 4,
+    "outs": 0,
+    "resp_eq": null,
+    "resp_need": null,
+    "resp_src": null,
+    "intent_act": "check",
+    "calc_act": "check",
+    "why": [
+     "flop: 쇼다운 가치 없고 블러프 개념/조건 미달 → 포기",
+     "river: 포기했으나 강도 상승(rel 0.91, made 4) → value_2street",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.91) → 쇼다운"
+    ],
+    "cause": "쇼다운/포기 계획",
+    "intent_src": "포기 계획 + 이니셔티브 없음 → 체크"
+   }
+  ],
+  "J3_strong_fold": [
+   {
+    "hash": "ef28435c91d2",
+    "seat": 1,
+    "pos": "HJ",
+    "hole": "Qh Qd",
+    "board": "7d 7h 7s 3c 5s",
+    "street": "river",
+    "plan": "showdown",
+    "action": "fold",
+    "amt": 0,
+    "tocall": 10000,
+    "pot": 21500,
+    "rel": 0.19,
+    "rel_true": 0.193659,
+    "eq": 0.187,
+    "made": 6,
+    "outs": 0,
+    "resp_eq": 0.1767,
+    "resp_need": 0.312,
+    "resp_src": "generic_response",
+    "intent_act": "check",
+    "calc_act": "fold",
+    "why": [
+     "flop: 중간 밸류이나 3스트리트 유지(eq 0.76, rel 0.85, p2 0.30)",
+     "프리플랍 3벳+ 팟 → 레인지 우위",
+     "river: 상대강도 0.19 → 3스트리트 철회, 2스트리트",
+     "리버: 전체 rel 0.19지만 콜 레인지 상대 eq 0.05 < 0.50 → 얇은 밸류 아님",
+     "리버: 밸류 계획 재평가 → 얇은 밸류 아님(rel 0.19) → 쇼다운"
+    ]
+   }
+  ],
+  "J6_pf_premium_fold": [
+   {
+    "hash": "ae6c6b9e99b1",
+    "pos": "LJ",
+    "hand": "Td Ts",
+    "pct": 0.0226,
+    "kind": "caller_multiway_backaction",
+    "to_call_bb": 9.5,
+    "stack_bb": 171.9375
+   }
+  ]
+ },
+ "pf_inversions": [
+  {
+   "spot": [
+    "LJ",
+    "caller_multiway_backaction",
+    "2",
+    ">=80",
+    "<12",
+    "False"
+   ],
+   "n": 2,
+   "widest_continue_pct": 0.0935,
+   "strongest_fold_pct": 0.0226,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "ae6c6b9e99b1",
+     "hand": "Td Ts",
+     "pct": 0.0226
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "False"
+   ],
+   "n": 242,
+   "widest_continue_pct": 0.1478,
+   "strongest_fold_pct": 0.0302,
+   "inverted_folds": 9,
+   "examples": [
+    {
+     "hash": "f17af617ac71",
+     "hand": "As Ks",
+     "pct": 0.0302
+    },
+    {
+     "hash": "8625651639a3",
+     "hand": "Ah Ks",
+     "pct": 0.0709
+    },
+    {
+     "hash": "5293e98f10cd",
+     "hand": "5c 5d",
+     "pct": 0.0754
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+1",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "False"
+   ],
+   "n": 99,
+   "widest_continue_pct": 0.0814,
+   "strongest_fold_pct": 0.0392,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "6a0505f2faa0",
+     "hand": "7c 7s",
+     "pct": 0.0392
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "caller_multiway_backaction",
+    "2",
+    "<80",
+    "<12",
+    "False"
+   ],
+   "n": 3,
+   "widest_continue_pct": 0.0513,
+   "strongest_fold_pct": 0.0392,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "6b36773ffa97",
+     "hand": "7h 7c",
+     "pct": 0.0392
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BTN",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "False"
+   ],
+   "n": 395,
+   "widest_continue_pct": 0.3544,
+   "strongest_fold_pct": 0.0483,
+   "inverted_folds": 45,
+   "examples": [
+    {
+     "hash": "57f4da97fd86",
+     "hand": "Kd Jd",
+     "pct": 0.0483
+    },
+    {
+     "hash": "fe43a2a3e2ee",
+     "hand": "Ts 9s",
+     "pct": 0.1508
+    },
+    {
+     "hash": "97c1dbee1cb5",
+     "hand": "Tc 8c",
+     "pct": 0.1599
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "opener_multiway_backaction",
+    "2",
+    ">=80",
+    "<12",
+    "False"
+   ],
+   "n": 6,
+   "widest_continue_pct": 0.0709,
+   "strongest_fold_pct": 0.0558,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "b79df25e4a42",
+     "hand": "6c 6d",
+     "pct": 0.0558
+    }
+   ]
+  },
+  {
+   "spot": [
+    "HJ",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "False"
+   ],
+   "n": 310,
+   "widest_continue_pct": 0.1599,
+   "strongest_fold_pct": 0.0754,
+   "inverted_folds": 10,
+   "examples": [
+    {
+     "hash": "44990d25492b",
+     "hand": "5s 5c",
+     "pct": 0.0754
+    },
+    {
+     "hash": "8752aa531826",
+     "hand": "Ad Jh",
+     "pct": 0.1222
+    },
+    {
+     "hash": "1b18a4e51e57",
+     "hand": "Ad 7d",
+     "pct": 0.1357
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "False"
+   ],
+   "n": 392,
+   "widest_continue_pct": 0.2941,
+   "strongest_fold_pct": 0.0845,
+   "inverted_folds": 30,
+   "examples": [
+    {
+     "hash": "e20a21ec8c09",
+     "hand": "9h Kh",
+     "pct": 0.0845
+    },
+    {
+     "hash": "6d3becff1c3c",
+     "hand": "4s 4c",
+     "pct": 0.1131
+    },
+    {
+     "hash": "4a55852339f7",
+     "hand": "Kc Jh",
+     "pct": 0.1478
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+2",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 73,
+   "widest_continue_pct": 0.1026,
+   "strongest_fold_pct": 0.0845,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "54feca3e99a7",
+     "hand": "Kc 9c",
+     "pct": 0.0845
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<6",
+    "False"
+   ],
+   "n": 23,
+   "widest_continue_pct": 0.1508,
+   "strongest_fold_pct": 0.1026,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "399708ea5b42",
+     "hand": "Kc Qs",
+     "pct": 0.1026
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "opener_backaction",
+    "2",
+    ">=80",
+    "<12",
+    "False"
+   ],
+   "n": 8,
+   "widest_continue_pct": 0.1086,
+   "strongest_fold_pct": 0.1026,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "3ff8b40c370f",
+     "hand": "Qs Kc",
+     "pct": 0.1026
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "face_first_open",
+    "1",
+    "<50",
+    "<3",
+    "False"
+   ],
+   "n": 45,
+   "widest_continue_pct": 0.1599,
+   "strongest_fold_pct": 0.1026,
+   "inverted_folds": 4,
+   "examples": [
+    {
+     "hash": "1bb148fb4a5d",
+     "hand": "Qs Kc",
+     "pct": 0.1026
+    },
+    {
+     "hash": "e0e9bf5cfdb0",
+     "hand": "Ad Jh",
+     "pct": 0.1222
+    },
+    {
+     "hash": "890daa93a996",
+     "hand": "Ah 7h",
+     "pct": 0.1357
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<6",
+    "False"
+   ],
+   "n": 12,
+   "widest_continue_pct": 0.1297,
+   "strongest_fold_pct": 0.1056,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "b76661e88a74",
+     "hand": "Ac 9c",
+     "pct": 0.1056
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 634,
+   "widest_continue_pct": 0.1599,
+   "strongest_fold_pct": 0.1222,
+   "inverted_folds": 9,
+   "examples": [
+    {
+     "hash": "b093232d42d3",
+     "hand": "Jc As",
+     "pct": 0.1222
+    },
+    {
+     "hash": "f9cdae5ec21a",
+     "hand": "9h Qh",
+     "pct": 0.1297
+    },
+    {
+     "hash": "cb5cc69154d0",
+     "hand": "Ah 7h",
+     "pct": 0.1357
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+1",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 524,
+   "widest_continue_pct": 0.1976,
+   "strongest_fold_pct": 0.1222,
+   "inverted_folds": 18,
+   "examples": [
+    {
+     "hash": "ae1f7eff094a",
+     "hand": "Jc Ad",
+     "pct": 0.1222
+    },
+    {
+     "hash": "23eef5f2b69c",
+     "hand": "8d Ad",
+     "pct": 0.1327
+    },
+    {
+     "hash": "da5bea63ebf3",
+     "hand": "Ad 7d",
+     "pct": 0.1357
+    }
+   ]
+  },
+  {
+   "spot": [
+    "HJ",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 177,
+   "widest_continue_pct": 0.1976,
+   "strongest_fold_pct": 0.1222,
+   "inverted_folds": 10,
+   "examples": [
+    {
+     "hash": "8c5ea5c34565",
+     "hand": "As Jc",
+     "pct": 0.1222
+    },
+    {
+     "hash": "aa2d62eacead",
+     "hand": "Ah Js",
+     "pct": 0.1222
+    },
+    {
+     "hash": "bd535ee2a85a",
+     "hand": "3c 3s",
+     "pct": 0.1267
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 132,
+   "widest_continue_pct": 0.1629,
+   "strongest_fold_pct": 0.1222,
+   "inverted_folds": 4,
+   "examples": [
+    {
+     "hash": "8d8fdc21d3e3",
+     "hand": "Ah Js",
+     "pct": 0.1222
+    },
+    {
+     "hash": "96a604918c7e",
+     "hand": "Ad 7d",
+     "pct": 0.1357
+    },
+    {
+     "hash": "861fd11596ea",
+     "hand": "Kc Jd",
+     "pct": 0.1478
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+1",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 57,
+   "widest_continue_pct": 0.1297,
+   "strongest_fold_pct": 0.1267,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "05eb23a5d6ae",
+     "hand": "3s 3h",
+     "pct": 0.1267
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 205,
+   "widest_continue_pct": 0.2579,
+   "strongest_fold_pct": 0.1297,
+   "inverted_folds": 11,
+   "examples": [
+    {
+     "hash": "b885087fcf52",
+     "hand": "Qc 9c",
+     "pct": 0.1297
+    },
+    {
+     "hash": "0001141309a9",
+     "hand": "Tc Qs",
+     "pct": 0.1719
+    },
+    {
+     "hash": "83e308e6fb4b",
+     "hand": "Qd Jc",
+     "pct": 0.1976
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+2",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 358,
+   "widest_continue_pct": 0.2127,
+   "strongest_fold_pct": 0.1478,
+   "inverted_folds": 21,
+   "examples": [
+    {
+     "hash": "d01907cada5e",
+     "hand": "Jc Ks",
+     "pct": 0.1478
+    },
+    {
+     "hash": "ae76c91afded",
+     "hand": "Kh Jd",
+     "pct": 0.1478
+    },
+    {
+     "hash": "da5bea63ebf3",
+     "hand": "Kd Js",
+     "pct": 0.1478
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BTN",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 252,
+   "widest_continue_pct": 0.4208,
+   "strongest_fold_pct": 0.1478,
+   "inverted_folds": 39,
+   "examples": [
+    {
+     "hash": "b2ccc0421ccc",
+     "hand": "Jc Kh",
+     "pct": 0.1478
+    },
+    {
+     "hash": "68a8cdeff3e6",
+     "hand": "Td As",
+     "pct": 0.2066
+    },
+    {
+     "hash": "eafa5014357e",
+     "hand": "8d Qd",
+     "pct": 0.2097
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG",
+    "unopened",
+    "1",
+    "<50",
+    "<1.01",
+    "False"
+   ],
+   "n": 125,
+   "widest_continue_pct": 0.1976,
+   "strongest_fold_pct": 0.1478,
+   "inverted_folds": 2,
+   "examples": [
+    {
+     "hash": "7cb35411714f",
+     "hand": "Jh Kd",
+     "pct": 0.1478
+    },
+    {
+     "hash": "ffad993788c1",
+     "hand": "Tc Qs",
+     "pct": 0.1719
+    }
+   ]
+  },
+  {
+   "spot": [
+    "SB",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 250,
+   "widest_continue_pct": 0.5173,
+   "strongest_fold_pct": 0.1508,
+   "inverted_folds": 60,
+   "examples": [
+    {
+     "hash": "9238de67ec34",
+     "hand": "Tc 9c",
+     "pct": 0.1508
+    },
+    {
+     "hash": "daf6c472c776",
+     "hand": "Jd Qh",
+     "pct": 0.1976
+    },
+    {
+     "hash": "e8dcdca7b7a2",
+     "hand": "9h 8h",
+     "pct": 0.2247
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG",
+    "unopened",
+    "1",
+    "<80",
+    "<1.01",
+    "False"
+   ],
+   "n": 330,
+   "widest_continue_pct": 0.184,
+   "strongest_fold_pct": 0.1508,
+   "inverted_folds": 6,
+   "examples": [
+    {
+     "hash": "4dcb3e8c696a",
+     "hand": "9d Td",
+     "pct": 0.1508
+    },
+    {
+     "hash": "42c4806d3e8a",
+     "hand": "Td Qs",
+     "pct": 0.1719
+    },
+    {
+     "hash": "12dee8b8df97",
+     "hand": "Th Qc",
+     "pct": 0.1719
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 363,
+   "widest_continue_pct": 0.2459,
+   "strongest_fold_pct": 0.1719,
+   "inverted_folds": 11,
+   "examples": [
+    {
+     "hash": "236d95f4a19c",
+     "hand": "Th Qd",
+     "pct": 0.1719
+    },
+    {
+     "hash": "aba549b89322",
+     "hand": "Td Kc",
+     "pct": 0.184
+    },
+    {
+     "hash": "3b0dbf5686f6",
+     "hand": "2d 2c",
+     "pct": 0.1885
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BTN",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<6",
+    "False"
+   ],
+   "n": 35,
+   "widest_continue_pct": 0.2368,
+   "strongest_fold_pct": 0.1719,
+   "inverted_folds": 3,
+   "examples": [
+    {
+     "hash": "76ecdafd901f",
+     "hand": "Ts Qc",
+     "pct": 0.1719
+    },
+    {
+     "hash": "1ae7704edbff",
+     "hand": "As 6s",
+     "pct": 0.175
+    },
+    {
+     "hash": "4bfa4a872c2a",
+     "hand": "Kc 5c",
+     "pct": 0.2217
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "face_first_open",
+    "1",
+    "<50",
+    "<3",
+    "False"
+   ],
+   "n": 74,
+   "widest_continue_pct": 0.2247,
+   "strongest_fold_pct": 0.1719,
+   "inverted_folds": 3,
+   "examples": [
+    {
+     "hash": "6d84a4451a20",
+     "hand": "Th Qd",
+     "pct": 0.1719
+    },
+    {
+     "hash": "ea53cad30422",
+     "hand": "Kd Th",
+     "pct": 0.184
+    },
+    {
+     "hash": "64bf0a3c5c69",
+     "hand": "Ac Ts",
+     "pct": 0.2066
+    }
+   ]
+  },
+  {
+   "spot": [
+    "SB",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "False"
+   ],
+   "n": 479,
+   "widest_continue_pct": 0.4962,
+   "strongest_fold_pct": 0.184,
+   "inverted_folds": 102,
+   "examples": [
+    {
+     "hash": "01ec8d92a0a7",
+     "hand": "Kc Th",
+     "pct": 0.184
+    },
+    {
+     "hash": "dea2b1e1811a",
+     "hand": "Qc Js",
+     "pct": 0.1976
+    },
+    {
+     "hash": "7c086660641b",
+     "hand": "Td Ac",
+     "pct": 0.2066
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+2",
+    "unopened",
+    "1",
+    "<50",
+    "<1.01",
+    "False"
+   ],
+   "n": 63,
+   "widest_continue_pct": 0.1976,
+   "strongest_fold_pct": 0.184,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "983f81cfe93a",
+     "hand": "Tc Kh",
+     "pct": 0.184
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "False"
+   ],
+   "n": 354,
+   "widest_continue_pct": 0.8552,
+   "strongest_fold_pct": 0.1976,
+   "inverted_folds": 136,
+   "examples": [
+    {
+     "hash": "bd1f99bb4ec4",
+     "hand": "Qh Js",
+     "pct": 0.1976
+    },
+    {
+     "hash": "b5dbc5ca5564",
+     "hand": "Kc 4c",
+     "pct": 0.273
+    },
+    {
+     "hash": "4b5ef9216b79",
+     "hand": "5c Qc",
+     "pct": 0.2971
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BTN",
+    "face_first_open",
+    "1",
+    "<30",
+    "<3",
+    "False"
+   ],
+   "n": 24,
+   "widest_continue_pct": 0.2066,
+   "strongest_fold_pct": 0.1976,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "10550fb40c0c",
+     "hand": "Qd Jh",
+     "pct": 0.1976
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<3",
+    "True"
+   ],
+   "n": 49,
+   "widest_continue_pct": 0.3665,
+   "strongest_fold_pct": 0.2066,
+   "inverted_folds": 6,
+   "examples": [
+    {
+     "hash": "14f3024f110c",
+     "hand": "Th Ac",
+     "pct": 0.2066
+    },
+    {
+     "hash": "4699c3145f0c",
+     "hand": "Js Td",
+     "pct": 0.267
+    },
+    {
+     "hash": "b416a4d358bb",
+     "hand": "2c Kc",
+     "pct": 0.2941
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+2",
+    "unopened",
+    "1",
+    "<80",
+    "<1.01",
+    "False"
+   ],
+   "n": 146,
+   "widest_continue_pct": 0.3002,
+   "strongest_fold_pct": 0.2066,
+   "inverted_folds": 16,
+   "examples": [
+    {
+     "hash": "37ca2ff52120",
+     "hand": "Ad Th",
+     "pct": 0.2066
+    },
+    {
+     "hash": "96a8c835e5c7",
+     "hand": "8d Qd",
+     "pct": 0.2097
+    },
+    {
+     "hash": "74df3cd02d20",
+     "hand": "Ks 6s",
+     "pct": 0.2157
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG+1",
+    "unopened",
+    "1",
+    "<50",
+    "<1.01",
+    "False"
+   ],
+   "n": 114,
+   "widest_continue_pct": 0.2368,
+   "strongest_fold_pct": 0.2066,
+   "inverted_folds": 4,
+   "examples": [
+    {
+     "hash": "060c68f2d720",
+     "hand": "As Tc",
+     "pct": 0.2066
+    },
+    {
+     "hash": "75a007ef351d",
+     "hand": "Kh 6h",
+     "pct": 0.2157
+    },
+    {
+     "hash": "a136b29ae13b",
+     "hand": "Kd 5d",
+     "pct": 0.2217
+    }
+   ]
+  },
+  {
+   "spot": [
+    "HJ",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 295,
+   "widest_continue_pct": 0.279,
+   "strongest_fold_pct": 0.2097,
+   "inverted_folds": 17,
+   "examples": [
+    {
+     "hash": "b7f05558de2e",
+     "hand": "Qc 8c",
+     "pct": 0.2097
+    },
+    {
+     "hash": "fb8d6a6924df",
+     "hand": "Qd 8d",
+     "pct": 0.2097
+    },
+    {
+     "hash": "23d47ca2c19e",
+     "hand": "4d Ad",
+     "pct": 0.2127
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG",
+    "unopened",
+    "1",
+    "<30",
+    "<1.01",
+    "False"
+   ],
+   "n": 38,
+   "widest_continue_pct": 0.825,
+   "strongest_fold_pct": 0.2247,
+   "inverted_folds": 17,
+   "examples": [
+    {
+     "hash": "6d84a4451a20",
+     "hand": "9s 8s",
+     "pct": 0.2247
+    },
+    {
+     "hash": "14e5f948ff45",
+     "hand": "Qd 9s",
+     "pct": 0.2579
+    },
+    {
+     "hash": "c50639425cdc",
+     "hand": "8d Ks",
+     "pct": 0.3213
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    "<30",
+    "<3",
+    "False"
+   ],
+   "n": 13,
+   "widest_continue_pct": 0.4057,
+   "strongest_fold_pct": 0.2368,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "ddd4e70c0a76",
+     "hand": "9d As",
+     "pct": 0.2368
+    }
+   ]
+  },
+  {
+   "spot": [
+    "SB",
+    "face_first_open",
+    "1",
+    "<50",
+    "<3",
+    "False"
+   ],
+   "n": 109,
+   "widest_continue_pct": 0.454,
+   "strongest_fold_pct": 0.2368,
+   "inverted_folds": 16,
+   "examples": [
+    {
+     "hash": "3fd926ae1c76",
+     "hand": "9h Ac",
+     "pct": 0.2368
+    },
+    {
+     "hash": "8dd2d6712caa",
+     "hand": "7c Tc",
+     "pct": 0.3002
+    },
+    {
+     "hash": "bd6b243a0d5e",
+     "hand": "5h Ad",
+     "pct": 0.3092
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "unopened",
+    "1",
+    "<80",
+    "<1.01",
+    "False"
+   ],
+   "n": 192,
+   "widest_continue_pct": 0.2489,
+   "strongest_fold_pct": 0.2459,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "afbd21f335fa",
+     "hand": "Kd 9h",
+     "pct": 0.2459
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 92,
+   "widest_continue_pct": 0.9095,
+   "strongest_fold_pct": 0.2459,
+   "inverted_folds": 33,
+   "examples": [
+    {
+     "hash": "74d0979230a9",
+     "hand": "Kd 9c",
+     "pct": 0.2459
+    },
+    {
+     "hash": "1f3714b36680",
+     "hand": "6c Qc",
+     "pct": 0.3243
+    },
+    {
+     "hash": "ffad993788c1",
+     "hand": "2s Ad",
+     "pct": 0.4389
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    "<80",
+    "<1.01",
+    "False"
+   ],
+   "n": 112,
+   "widest_continue_pct": 0.9186,
+   "strongest_fold_pct": 0.2489,
+   "inverted_folds": 45,
+   "examples": [
+    {
+     "hash": "ec2c05dc0b8b",
+     "hand": "2h Ah",
+     "pct": 0.2489
+    },
+    {
+     "hash": "051bd153ea4c",
+     "hand": "5d Ac",
+     "pct": 0.3092
+    },
+    {
+     "hash": "eb13ea61800c",
+     "hand": "8s Qh",
+     "pct": 0.3665
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BTN",
+    "face_first_open",
+    "1",
+    "<50",
+    "<3",
+    "False"
+   ],
+   "n": 88,
+   "widest_continue_pct": 0.3092,
+   "strongest_fold_pct": 0.2579,
+   "inverted_folds": 3,
+   "examples": [
+    {
+     "hash": "c9df071e84db",
+     "hand": "9d Qh",
+     "pct": 0.2579
+    },
+    {
+     "hash": "adb90fb282ee",
+     "hand": "Td Jc",
+     "pct": 0.267
+    },
+    {
+     "hash": "c951220f2c9b",
+     "hand": "7s Qs",
+     "pct": 0.2821
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "unopened",
+    "1",
+    "<50",
+    "<1.01",
+    "False"
+   ],
+   "n": 82,
+   "widest_continue_pct": 0.3092,
+   "strongest_fold_pct": 0.2579,
+   "inverted_folds": 4,
+   "examples": [
+    {
+     "hash": "2f7b05464a5e",
+     "hand": "9s Qh",
+     "pct": 0.2579
+    },
+    {
+     "hash": "eaec92505e56",
+     "hand": "Ts Jh",
+     "pct": 0.267
+    },
+    {
+     "hash": "78a323e9c0dc",
+     "hand": "Kc 4c",
+     "pct": 0.273
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "unopened",
+    "1",
+    "<20",
+    "<1.01",
+    "False"
+   ],
+   "n": 12,
+   "widest_continue_pct": 0.4299,
+   "strongest_fold_pct": 0.2579,
+   "inverted_folds": 3,
+   "examples": [
+    {
+     "hash": "d3e3489afcb9",
+     "hand": "9h Qc",
+     "pct": 0.2579
+    },
+    {
+     "hash": "bd6b243a0d5e",
+     "hand": "Ks 8d",
+     "pct": 0.3213
+    },
+    {
+     "hash": "1176e40bdb53",
+     "hand": "9h Jd",
+     "pct": 0.3544
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 202,
+   "widest_continue_pct": 0.3756,
+   "strongest_fold_pct": 0.273,
+   "inverted_folds": 14,
+   "examples": [
+    {
+     "hash": "3d222c851f87",
+     "hand": "Kh 4h",
+     "pct": 0.273
+    },
+    {
+     "hash": "f495185cf42d",
+     "hand": "3s Ks",
+     "pct": 0.276
+    },
+    {
+     "hash": "648f07ed7b42",
+     "hand": "5h Qh",
+     "pct": 0.2971
+    }
+   ]
+  },
+  {
+   "spot": [
+    "SB",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 77,
+   "widest_continue_pct": 0.3122,
+   "strongest_fold_pct": 0.273,
+   "inverted_folds": 7,
+   "examples": [
+    {
+     "hash": "aae8f3481cf4",
+     "hand": "Kc 4c",
+     "pct": 0.273
+    },
+    {
+     "hash": "28129af5b4af",
+     "hand": "Ac 8d",
+     "pct": 0.2911
+    },
+    {
+     "hash": "2b75a3aaf32d",
+     "hand": "8h Ac",
+     "pct": 0.2911
+    }
+   ]
+  },
+  {
+   "spot": [
+    "HJ",
+    "unopened",
+    "1",
+    "<80",
+    "<1.01",
+    "False"
+   ],
+   "n": 134,
+   "widest_continue_pct": 0.279,
+   "strongest_fold_pct": 0.273,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "e823836af4af",
+     "hand": "4s Ks",
+     "pct": 0.273
+    }
+   ]
+  },
+  {
+   "spot": [
+    "SB",
+    "face_first_open",
+    "1",
+    "<30",
+    "<3",
+    "False"
+   ],
+   "n": 23,
+   "widest_continue_pct": 0.3544,
+   "strongest_fold_pct": 0.2911,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "c11339aa9cc6",
+     "hand": "8s Ah",
+     "pct": 0.2911
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG",
+    "unopened",
+    "1",
+    "<20",
+    "<1.01",
+    "False"
+   ],
+   "n": 16,
+   "widest_continue_pct": 0.9095,
+   "strongest_fold_pct": 0.2911,
+   "inverted_folds": 8,
+   "examples": [
+    {
+     "hash": "67c9919f651f",
+     "hand": "Ac 8d",
+     "pct": 0.2911
+    },
+    {
+     "hash": "99283ac8f4be",
+     "hand": "Tc 9s",
+     "pct": 0.3967
+    },
+    {
+     "hash": "50847e930938",
+     "hand": "8c Ts",
+     "pct": 0.4057
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "False"
+   ],
+   "n": 133,
+   "widest_continue_pct": 0.9186,
+   "strongest_fold_pct": 0.3122,
+   "inverted_folds": 54,
+   "examples": [
+    {
+     "hash": "d754dbcf4937",
+     "hand": "Js 7s",
+     "pct": 0.3122
+    },
+    {
+     "hash": "3c92f5fb58e4",
+     "hand": "9h Jd",
+     "pct": 0.3544
+    },
+    {
+     "hash": "df5e887d6a1e",
+     "hand": "Qs 8h",
+     "pct": 0.3665
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BTN",
+    "unopened",
+    "1",
+    ">=80",
+    "<1.01",
+    "False"
+   ],
+   "n": 139,
+   "widest_continue_pct": 0.5204,
+   "strongest_fold_pct": 0.3243,
+   "inverted_folds": 18,
+   "examples": [
+    {
+     "hash": "23d47ca2c19e",
+     "hand": "Qd 6d",
+     "pct": 0.3243
+    },
+    {
+     "hash": "ba1c7f72d5dc",
+     "hand": "7c Kd",
+     "pct": 0.3756
+    },
+    {
+     "hash": "624dd3252d35",
+     "hand": "4h Ad",
+     "pct": 0.3846
+    }
+   ]
+  },
+  {
+   "spot": [
+    "CO",
+    "unopened",
+    "1",
+    "<80",
+    "<1.01",
+    "False"
+   ],
+   "n": 97,
+   "widest_continue_pct": 0.3846,
+   "strongest_fold_pct": 0.3333,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "d3e3489afcb9",
+     "hand": "7h Ad",
+     "pct": 0.3333
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    "<80",
+    "<3",
+    "True"
+   ],
+   "n": 11,
+   "widest_continue_pct": 0.6169,
+   "strongest_fold_pct": 0.3363,
+   "inverted_folds": 2,
+   "examples": [
+    {
+     "hash": "516590e8a5e3",
+     "hand": "5c 7c",
+     "pct": 0.3363
+    },
+    {
+     "hash": "64bf0a3c5c69",
+     "hand": "Qs 5d",
+     "pct": 0.5294
+    }
+   ]
+  },
+  {
+   "spot": [
+    "LJ",
+    "unopened",
+    "1",
+    "<30",
+    "<1.01",
+    "False"
+   ],
+   "n": 19,
+   "widest_continue_pct": 0.3665,
+   "strongest_fold_pct": 0.3363,
+   "inverted_folds": 2,
+   "examples": [
+    {
+     "hash": "f71c77df58c6",
+     "hand": "7d 5d",
+     "pct": 0.3363
+    },
+    {
+     "hash": "45bddad4868b",
+     "hand": "Jc 9s",
+     "pct": 0.3544
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    "<50",
+    "<3",
+    "False"
+   ],
+   "n": 37,
+   "widest_continue_pct": 0.8824,
+   "strongest_fold_pct": 0.4057,
+   "inverted_folds": 8,
+   "examples": [
+    {
+     "hash": "5ac59a1ce7d8",
+     "hand": "8c Th",
+     "pct": 0.4057
+    },
+    {
+     "hash": "31c9fca19ed5",
+     "hand": "8c 6c",
+     "pct": 0.4449
+    },
+    {
+     "hash": "11b29ea3f5fc",
+     "hand": "Jh 8c",
+     "pct": 0.4962
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BB",
+    "face_first_open",
+    "1",
+    "<50",
+    "<1.01",
+    "False"
+   ],
+   "n": 53,
+   "widest_continue_pct": 0.8733,
+   "strongest_fold_pct": 0.4208,
+   "inverted_folds": 19,
+   "examples": [
+    {
+     "hash": "ee4a1353122d",
+     "hand": "9c 8h",
+     "pct": 0.4208
+    },
+    {
+     "hash": "ed90944face0",
+     "hand": "8h 6h",
+     "pct": 0.4449
+    },
+    {
+     "hash": "daab53391337",
+     "hand": "Qh 4c",
+     "pct": 0.5958
+    }
+   ]
+  },
+  {
+   "spot": [
+    "HJ",
+    "unopened",
+    "1",
+    "<30",
+    "<1.01",
+    "False"
+   ],
+   "n": 11,
+   "widest_continue_pct": 0.816,
+   "strongest_fold_pct": 0.4811,
+   "inverted_folds": 4,
+   "examples": [
+    {
+     "hash": "1b8da5dd0971",
+     "hand": "5d Jd",
+     "pct": 0.4811
+    },
+    {
+     "hash": "1a562b85725f",
+     "hand": "7s Tc",
+     "pct": 0.6078
+    },
+    {
+     "hash": "886528e18998",
+     "hand": "8h 6s",
+     "pct": 0.7104
+    }
+   ]
+  },
+  {
+   "spot": [
+    "BTN",
+    "unopened",
+    "1",
+    "<80",
+    "<1.01",
+    "False"
+   ],
+   "n": 44,
+   "widest_continue_pct": 0.5083,
+   "strongest_fold_pct": 0.4842,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "7907bf38ba8f",
+     "hand": "Jc 4c",
+     "pct": 0.4842
+    }
+   ]
+  },
+  {
+   "spot": [
+    "HJ",
+    "unopened",
+    "1",
+    "<12",
+    "<1.01",
+    "False"
+   ],
+   "n": 9,
+   "widest_continue_pct": 0.5385,
+   "strongest_fold_pct": 0.5173,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "a2847ed655b6",
+     "hand": "Kc 3h",
+     "pct": 0.5173
+    }
+   ]
+  },
+  {
+   "spot": [
+    "UTG",
+    "unopened",
+    "1",
+    "<12",
+    "<1.01",
+    "False"
+   ],
+   "n": 6,
+   "widest_continue_pct": 0.7436,
+   "strongest_fold_pct": 0.6169,
+   "inverted_folds": 1,
+   "examples": [
+    {
+     "hash": "2d7ae2f23719",
+     "hand": "Qs 2h",
+     "pct": 0.6169
+    }
+   ]
+  }
+ ]
+}
