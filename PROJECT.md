@@ -140,7 +140,14 @@ master promotion
 
 ### Non-GTO / test
 
-현재 live hand-review를 한 table/spot씩 진행한다.
+**2026-10-03 master 승격**: 인간형 모델 감사·통합 Stage 0~11 과 베타 전 버그 수정 3건을 master 로 승격했다. 이 시점이 새 본체 기준선이다.
+- 본체 + Human Model 2차/3차가 하나의 실행 경로로 통합됐다. GTO 의존 두 플래그(`T2_GTO_MEMORY_V2`, `T2_PREFLOP_REASONING_V3`)는 production OFF 이고 BLOCKED_BY_GTO_REFERENCE_VALIDATION 이다.
+- 안테: 참가자 균등 분담. 게시 순서는 ante → SB → BB.
+- 검증: 23-gate 23/23, tier-all REGRESSION 0, completeness 미소유 0. 기준선 시드 11 `d6c70b87…`, 시드 12 `f0620c61…`.
+- 상세: `docs/semantic_audit/WORK_STATUS.md`, `REFACTOR_AND_VERIFICATION.md`.
+- 다음: 베타(판단 → 계획 → 실행 층 추적 + 포커 타당성 검토). 이후 `docs/semantic_audit/CONCEPT_GAPS_NEXT.md` 순서로 개념·지식을 보강한다. 미판정 FOLLOWUP 은 ledger 'Stage 11' 절에 있다.
+
+이전 메모: live hand-review를 한 table/spot씩 진행한다.
 
 Immediate state:
 - board-danger 0/under-detection 문제가 실제로 있었고 test의 logic line에서 수정됐다.
