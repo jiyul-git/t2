@@ -12,11 +12,15 @@ UI는 **플레이 전용**이다. 관전 모드와 플레이 키 인증은 제�
 
 ```sh
 cd ~/t2
-git pull --ff-only
-sh ui/tools/setup_run_dir.sh ~/t2_play
+T2_UI_REF=master sh ui/tools/setup_run_dir.sh ~/t2_play
 cd ~/t2_play
 python3 ui_server.py
 ```
+
+- 플레이는 **master** 로 한다. `T2_UI_REF=master` 는 `~/t2` 의 현재 체크아웃(test 등)과 무관하게 원격 master 커밋으로 실행 폴더를 만든다.
+- 어느 커밋으로 만들었는지는 `~/t2_play/UI_SOURCE` 에 남는다.
+- `T2_UI_REF` 를 빼면 예전처럼 `~/t2` 작업 트리 내용으로 만든다(개발 중 확인용).
+- 진행 중인 게임 상태·아카이브는 다시 만들어도 유지된다.
 
 브라우저에서 아래 주소 하나만 연다.
 

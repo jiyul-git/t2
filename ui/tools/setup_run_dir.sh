@@ -2,6 +2,11 @@
 # 엔진 실행 폴더를 만든다.
 #
 #   sh ui/tools/setup_run_dir.sh [대상폴더]        기본값 ~/t2_ui_run
+#   T2_UI_REF=master sh ui/tools/setup_run_dir.sh ~/t2_play
+#
+# T2_UI_REF 를 주면 작업 트리가 아니라 그 브랜치(원격 우선) 내용으로 만든다.
+# 플레이는 master, 개발은 test 라는 규칙을 로컬 체크아웃 상태와 무관하게
+# 지키기 위한 것이다. 어느 커밋으로 만들었는지 대상폴더/UI_SOURCE 에 남긴다.
 #
 # **허용 목록 방식이다.** 제외 목록으로 짜면 저장소에 파일이 하나 늘 때마다
 # 샌다. 실제로 live2_state.json·hand_archive2*.jsonl·claude_state.json 은
@@ -31,16 +36,38 @@ if [ "$(cd "$DST" && pwd)" = "$SRC" ]; then
     exit 1
 fi
 
-for m in $MODULES; do cp "$SRC/$m.py" "$DST/$m.py"; done
-for d in $DATA;    do cp "$SRC/$d"    "$DST/$d";    done
-cp "$SRC/ui/server/ui_view.py"   "$DST/ui_view.py"
-cp "$SRC/ui/server/ui_server.py" "$DST/ui_server.py"
+# 복사 원본: 기본은 작업 트리, T2_UI_REF 가 있으면 그 브랜치의 커밋.
+FROM=$SRC
+SOURCE_DESC="working tree $(git -C "$SRC" rev-parse --short HEAD 2>/dev/null || echo '?') ($(git -C "$SRC" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?'))"
+if [ -n "${T2_UI_REF:-}" ]; then
+    git -C "$SRC" fetch -q origin "$T2_UI_REF" 2>/dev/null \
+        || echo "경고: origin/$T2_UI_REF fetch 실패 — 로컬에 있는 ref 를 쓴다" >&2
+    if git -C "$SRC" rev-parse -q --verify "origin/$T2_UI_REF^{commit}" >/dev/null; then
+        REF="origin/$T2_UI_REF"
+    else
+        REF="$T2_UI_REF"
+    fi
+    COMMIT=$(git -C "$SRC" rev-parse --verify "$REF^{commit}")
+    FROM=$(mktemp -d)
+    trap 'rm -rf "$FROM"' EXIT
+    PATHS="ui/server/ui_view.py ui/server/ui_server.py ui/web $DATA"
+    for m in $MODULES; do PATHS="$PATHS $m.py"; done
+    # shellcheck disable=SC2086
+    git -C "$SRC" archive "$COMMIT" -- $PATHS | tar -x -C "$FROM"
+    SOURCE_DESC="$REF $(git -C "$SRC" rev-parse --short "$COMMIT")"
+fi
+
+for m in $MODULES; do cp "$FROM/$m.py" "$DST/$m.py"; done
+for d in $DATA;    do cp "$FROM/$d"    "$DST/$d";    done
+cp "$FROM/ui/server/ui_view.py"   "$DST/ui_view.py"
+cp "$FROM/ui/server/ui_server.py" "$DST/ui_server.py"
 
 # web/ 은 2단계 산출물. 아직 비어 있으면 건너뛴다.
-if [ -n "$(ls -A "$SRC/ui/web" 2>/dev/null || true)" ]; then
+if [ -n "$(ls -A "$FROM/ui/web" 2>/dev/null || true)" ]; then
     mkdir -p "$DST/web"
-    cp -R "$SRC/ui/web/." "$DST/web/"
+    cp -R "$FROM/ui/web/." "$DST/web/"
 fi
+echo "$SOURCE_DESC" > "$DST/UI_SOURCE"
 
 # 이 표시 파일이 없으면 ui_server 가 시작을 거부한다.
 : > "$DST/UI_SERVER_DIR"
@@ -63,6 +90,7 @@ else
 fi
 
 echo "실행 폴더: $DST"
+echo "  원본: $SOURCE_DESC"
 echo "  모듈 $(echo $MODULES | wc -w)개, 데이터 $(echo $DATA | wc -w)개"
 echo "  실행: cd $DST && python3 ui_server.py"
 if [ -f "$DST/telemetry_config.json" ]; then
