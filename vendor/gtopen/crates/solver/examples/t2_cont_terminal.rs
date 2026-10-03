@@ -34,11 +34,31 @@ fn main() -> Result<(), String> {
     let iters: u32 = a[2].parse().map_err(|_| "iterations")?;
     let samples: u32 = std::env::var("PREFLOP_EQ_SAMPLES").ok().and_then(|v| v.parse().ok()).unwrap_or(1200);
     let eq = Arc::new(EquityTable::build(samples));
-    let mut s = PreflopSolver::new(cfg, eq)?;
+    // Optional resumable run (env T2_CHECKPOINT=<path>, T2_CHECKPOINT_EVERY=<n>, default 10): resume from the checkpoint when it
+    // exists, save every n iterations (tmp + rename). save -> load -> continue is bit-identical (t2_resume audit). Without the env
+    // variable the behaviour is unchanged.
+    let ck = std::env::var("T2_CHECKPOINT").ok();
+    let every: u32 = std::env::var("T2_CHECKPOINT_EVERY").ok().and_then(|v| v.parse().ok()).unwrap_or(10).max(1);
+    let mut s = match &ck {
+        Some(p) if std::path::Path::new(p).exists() => PreflopSolver::load_game(p, eq)?,
+        _ => PreflopSolver::new(cfg, eq)?,
+    };
     #[cfg(feature = "t2-cont")]
     solver::preflop::t2cont::validate(&s)?;
-    for _ in 0..iters {
-        s.iterate();
+    if ck.is_none() {
+        for _ in 0..iters {
+            s.iterate();
+        }
+    } else {
+        let p = ck.as_ref().unwrap();
+        while s.iteration < iters {
+            s.iterate();
+            if s.iteration % every == 0 || s.iteration >= iters {
+                let tmp = format!("{p}.tmp");
+                s.save_game(&tmp)?;
+                std::fs::rename(&tmp, p).map_err(|e| e.to_string())?;
+            }
+        }
     }
     let (gaps, evs) = s.gaps_and_evs();
     if let Some(p) = a.get(5) {

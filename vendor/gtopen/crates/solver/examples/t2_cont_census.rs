@@ -294,10 +294,29 @@ fn main() -> Result<(), String> {
         .unwrap_or(1200);
 
     let eq = Arc::new(EquityTable::build(samples));
-    let mut s = PreflopSolver::new(cfg, eq)?;
+    // Optional resumable run (env T2_CHECKPOINT / T2_CHECKPOINT_EVERY), same semantics as t2_cont_terminal: resume from the
+    // checkpoint when it exists (a finished checkpoint with >= iters iterations is used as is), save every n iterations.
+    let ck = std::env::var("T2_CHECKPOINT").ok();
+    let every: u32 = std::env::var("T2_CHECKPOINT_EVERY").ok().and_then(|v| v.parse().ok()).unwrap_or(10).max(1);
+    let mut s = match &ck {
+        Some(p) if std::path::Path::new(p).exists() => PreflopSolver::load_game(p, eq)?,
+        _ => PreflopSolver::new(cfg, eq)?,
+    };
     solver::preflop::t2cont::validate(&s)?;
-    for _ in 0..iters {
-        s.iterate();
+    if ck.is_none() {
+        for _ in 0..iters {
+            s.iterate();
+        }
+    } else {
+        let p = ck.as_ref().unwrap();
+        while s.iteration < iters {
+            s.iterate();
+            if s.iteration % every == 0 || s.iteration >= iters {
+                let tmp = format!("{p}.tmp");
+                s.save_game(&tmp)?;
+                std::fs::rename(&tmp, p).map_err(|e| e.to_string())?;
+            }
+        }
     }
     let (gaps, evs) = s.gaps_and_evs();
     if let Some(p) = a.get(4) {
