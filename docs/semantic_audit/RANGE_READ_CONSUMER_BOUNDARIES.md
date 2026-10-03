@@ -7,8 +7,8 @@
 | 상대 range 복원 정확도 | `ranges.reconstruct_range_with_accuracy` | prior/full posterior, reconstruction_skill → 인식 가능한 combo range | perceived_range / perceived_continue_range / perceived_facing_bet_response → session 및 plan의 equity·value 판단 |
 | 액션·value/bluff 성향 해석 | `persona.interpret_opponent_action_signals` | 관측 통계, frequency/line/size gate, 기존 w → bluff_gap·barrel_gap·street fold gap 등 | read_opponent → range 모델 및 계획·익스플로잇 판단 |
 | bluff 위협의 주관적 해석 | `persona.interpret_bluff_threat_bias` | bluffcatch 숙련도·공격성·line_interpretation_skill → bluff_fear 편향 | bias('bluff_fear') → call_bias 및 decide_response |
-| 해석을 판단에 사용할 능력/성향 | `persona.opponent_read_application_weight` | application_skill·adaptability·attention·표본 신뢰도/수 → 기존 legacy 적용 가중치 | exploit_weight → 기존 exploit consumer. V3 ON은 기존 _exploit_base_weight 우회 유지 |
-| 해석된 편향의 실제 call/fold 적용 | `plan.apply_response_biases_to_call_threshold` | 필요승률·size·street·station/bluff_fear/hero_call → 주관적 콜 문턱 | decide_response → 실제 call/fold 선택 |
+| 해석을 판단에 사용할 능력/성향 | `persona._exploit_base_weight` (read_opponent 입구) | 적용 숙련·adaptability·attention·표본 신뢰도/수 → 단일 적용 가중치 w | read_opponent → exploit consumer. (stage9 B3/B5: `opponent_read_application_weight`·`exploit_weight`·EXPLOIT_WEIGHT_V3 퇴역) |
+| 해석된 편향의 실제 call/fold 적용 | `persona.call_bias` (stage9 B4: 단일 call-bias 경로, 옛 `plan.apply_response_biases_to_call_threshold` 통합) | 필요승률·size·street·station/bluff_fear/hero_call → 주관적 콜 문턱 | decide_response → 실제 call/fold 선택 |
 
 ## 공급과 계산을 혼동하지 않음
 
@@ -67,7 +67,7 @@
 | 6 | 자기 실력 인식 | `persona.perceived_edge` → `preflop.feel_of → depth.depth_feel`, `variance_seek` | **활성(작음)**: edge 0.40 → 체감 깊이 +0.016; variance_seek 경로는 0 | 직전 보고의 "baseline 영향 없음"은 틀렸다 |
 | 7 | 멀티웨이 근거 적용 능력 | `preflop.multiway_evidence_application_capacity` → call/fold 혼합, R3 공격 억제, locked 가격 게이트 | **활성** (reason_skill 1.0) | |
 | 8 | 토너먼트 압박 활용 | `money_pressure.pressure_application_capacity` → pressure_opportunity | 머니점프 구간에서만 | |
-| 9 | 적용 가중치(V3) | `persona.opponent_read_application_weight` (EXPLOIT_WEIGHT_V3) | OPT-IN, 꺼짐 | |
+| 9 | 적용 가중치 | `persona._exploit_base_weight` (단일 경로; EXPLOIT_WEIGHT_V3·`opponent_read_application_weight` 는 stage9 B3/B5 에서 퇴역) | **활성** | |
 
 ### 이번에 추출하지 않은 이유
 - 5(overpair_love)와 2(see_line)는 이미 이름 있는 단일 지점에서 계산되고, baseline에서 소비되지 않는다. 의미 중복(같은 질문을 두 곳에서 계산)이 없어 함수를 늘리지 않았다.

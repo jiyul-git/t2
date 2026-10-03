@@ -15,7 +15,7 @@ substring) so they survive line drift.  Running this file rewrites
 CONCEPT_FUNCTION_REGISTRY.csv/.json (rows with origin IMPLICIT_CODE_V2 are
 regenerated, other rows are kept, ROW_UPDATES are applied) and SPAN_MAP.json.
 """
-import csv, json, os
+import csv, json, os, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOC = os.path.dirname(HERE)
@@ -81,14 +81,14 @@ NEW_ROWS = [
     row('value_when_called_strength',
         '그 사이즈를 실제로 계속(콜/레이즈)할 상대 레인지 대비 내 강도 — "콜당했을 때도 앞서는가"',
         'flop turn river', 'CALCULATION', 'JUDGMENT',
-        'plan.make_plan (commit_rel);plan.overbet_frac;plan.river_value_reassessment;plan.refresh (improved bluff)',
-        'plan.target_commit;plan.stackoff_plan;overbet polarity;river thin value;bluff re-judgment',
+        'plan.continue_range_strength;plan.ahead_when_called',
+        'plan.target_commit;plan.stackoff_plan;overbet polarity;river thin value;bluff re-judgment;value raise qualification',
         'R.perceived_continue_range(opp_range, board, street, size, profile), relative_strength/_eq_vs',
-        'rel or equity vs continuing range', 'M', 'reasoning', 'DUPLICATED', YES,
-        'same poker question answered four times with different metric/threshold: commit uses rel '
-        '(min with full rel), overbet uses HU relative_strength at fixed 1.15 pot, river thin value '
-        'uses equity >= 0.50, improved bluff uses equity >= 0.54 and rel >= 0.55. MERGE into one '
-        'producer only with a behavior-change review (deferred)',
+        'rel or equity vs continuing range', 'M', 'reasoning', 'ACTIVE', YES,
+        'RESOLVED stage9 B3 (L-S9-03/04): continuous strength (commit target, overbet polarity) = '
+        'continue_range_strength (joint when every seat continue range exists); binary value qualification '
+        '(river thin value, improved bluff, value raise) = ahead_when_called (eq vs continue >= 0.50). '
+        'Audit-time state: four metrics/thresholds',
         'value_when_called_strength', 'continue_range_value',
         'plan.make_plan: _commit_rel = rel .. _so[\'commit_rel\']; plan.overbet_frac: if value_line and opp_range and board'),
     row('multiway_value_threshold_shift',
@@ -305,9 +305,10 @@ NEW_ROWS = [
     row('value_degradation_thresholds',
         '밸류 계획 강등: rel<ctrl(0.30)·give(0.12) 문턱(폴드성향 읽기·턴카드로 이동)으로 pot_control/giveup, value3는 rel<0.62면 value2',
         'turn river', 'REASONING', 'PLAN', 'plan.refresh', 'plan.update_plan',
-        'rel, made, read street gap, turn_card_effect, sk(board_texture)', 'plan', 'H/E',
+        'rel, made, read street gap, new_card_effect(board[:-1], board[-1]), sk(board_texture)', 'plan', 'H/E',
         'reasoning', 'ACTIVE', YES,
-        'turn_card_effect also used by decide_aggression with a different aggressor flag',
+        'texture.new_card_effect also used by decide_aggression with a different aggressor flag; '
+        'river measures the river card against flop+turn (stage9 B6, L-RA07)',
         'value_degradation_thresholds', 'plan_revision_lifecycle',
         'plan.refresh: give_thr, ctrl_thr = 0.12, 0.30 .. why.append(\'%s: 상대강도 %.2f → 3스트리트 철회'),
     row('semibluff_draw_loss_resolution',
@@ -434,7 +435,7 @@ NEW_ROWS = [
         '루즈함·공격성(0~10)을 프리플랍 폭 이동 방향(-1~+1)으로 변환',
         PF, 'PERSONALITY / TEMPERAMENT', 'JUDGMENT', 'persona.preflop_temper_direction',
         'persona.open_pct;preflop.defend_thresholds', 'temperament scores', 'direction', 'H',
-        'reasoning', 'ACTIVE', YES, 'OPT-IN V3 span 5.0 vs legacy 4.0',
+        'reasoning', 'ACTIVE', YES, 'RESOLVED stage9 B4: half-span 5.0 is the only path (T2_PREFLOP_TEMPER_DIRECTION_V3 retired; legacy /4 removed)',
         'preflop_temperament_direction', 'rfi_personality_deviation',
         'persona.preflop_temper_direction'),
     row('concept_skill_gate',
@@ -574,6 +575,94 @@ ROW_UPDATES = {
                               '(knowledge coverage gap, see KNOWLEDGE_COVERAGE_MATRIX)',
     },
 }
+
+# Stage 11 doc sync: registry rows corrected to the current code (signatures
+# regenerated with inspect.signature; retired flags/APIs from stage9 B3..B6,
+# closeout A and stage10).  Documentation only.
+ROW_UPDATES.update({'action_adapter_with_reasoning': {'duplicate_overload': 'ARCH_MISMATCH function is not pure '
+                                                         'ACTION executor; checked_before compat '
+                                                         'removed stage9 B5 (canonical '
+                                                         'response_kind)',
+                                   'inputs': 'plan.act_with_plan(hero, board, profile, plan_state, '
+                                             'pot, tocall, stack, street, initiative=True, '
+                                             'opp_range=None, bf=1.0, seed=None, n_opp=1, '
+                                             'to_act_behind=0, read=None, opp_est=None, '
+                                             'opp_ranges=None, facing_seat=None, can_raise=True, '
+                                             'checkraise_seed=None, checkraise_size_seed=None, '
+                                             'facing_size_frac=None, hero_contrib=0, '
+                                             'response_kind=None, response_context=None, '
+                                             'call_value=None, size_shape_seed=None)'},
+ 'aggression_intent_sampling': {'inputs': 'plan.attach_intent(st, hero, board, my_range, '
+                                          'opp_range, profile, pot, stack, street, rng, n_opp, '
+                                          'to_act_behind, oop, initiative, opp_est=None, '
+                                          'oop_vs_aggr=None, oop_legacy_abs=None, '
+                                          'opp_ranges=None); plan.mk_intent(act, size=0.0, '
+                                          "src=''); plan.set_intent(state, street, intent); "
+                                          'plan.intent_of(state, street)'},
+ 'calculation_error': {'duplicate_overload': 'RESOLVED stage9 B4: potodds/spr zero-mean symmetric '
+                                             'error is the only path (T2_CALC_NOISE_V3 retired); '
+                                             'outs keeps its positive directional bias'},
+ 'checkraise_flop_decision': {'state_variables': "response_kind=='check_then_face_bet' rel outs "
+                                                 'plan skill'},
+ 'equity_denial_sizing': {'inputs': 'plan.decide_size(profile, hero, board, street, plan, rel, '
+                                    'opp_range, my_range, pot, stack, rng, opp_est=None, nut=0.0, '
+                                    'deviating=False, stackoff=None, plan_state=None, n_opp=1, '
+                                    'opp_ranges=None)'},
+ 'exploit_read_permission': {'current_function': 'persona._exploit_base_weight;persona.read_opponent;persona.street_gap;persona.interpret_opponent_action_signals',
+                             'duplicate_overload': 'RESOLVED stage9 B3/B5: one application weight '
+                                                   '(_exploit_base_weight via read_opponent); '
+                                                   'T2_EXPLOIT_WEIGHT_V3, exploit_weight, '
+                                                   'opponent_read_application_weight retired',
+                             'function': 'persona._exploit_base_weight;persona.read_opponent;persona.street_gap',
+                             'inputs': 'persona._exploit_base_weight(prof, confidence=0.0, '
+                                       'n_hands=0); persona.read_opponent(prof, opp_est); '
+                                       'persona.street_gap(rd, street)',
+                             'producer': 'persona._exploit_base_weight;persona.read_opponent;persona.street_gap'},
+ 'fallback_preflop_ordering': {'inputs': 'bot._pf_class(c1, c2); bot.range_combos(pct, dead)',
+                               'state_variables': '_PCT _ALLCOMBOS'},
+ 'human_planned_size_shape': {'duplicate_overload': 'RENAME type not display-only; '
+                                                    'runner.shape_size wrapper removed stage9 B5 '
+                                                    '(one formula persona.shape_size). '
+                                                    'act_with_plan derives size_shape_seed from '
+                                                    'seed when omitted (stage10)'},
+ 'legacy_sidepot_helper': {'action_influence': 'NO',
+                           'consumer': 'none',
+                           'current_function': '-',
+                           'duplicate_overload': 'REMOVED stage9 B5 (L210): no callers; side pots '
+                                                 'are the F8 layer path',
+                           'function': '-',
+                           'producer': '-',
+                           'runtime_status': 'RETIRED'},
+ 'plan_concept_permission': {'inputs': 'plan._allowed(profile, plan, rng=None, street=None)'},
+ 'planned_bet_sizing': {'inputs': 'plan.decide_size(profile, hero, board, street, plan, rel, '
+                                  'opp_range, my_range, pot, stack, rng, opp_est=None, nut=0.0, '
+                                  'deviating=False, stackoff=None, plan_state=None, n_opp=1, '
+                                  'opp_ranges=None)'},
+ 'preflop_condition_reasoning': {'duplicate_overload': 'OPT-IN defaults off; '
+                                                       'BLOCKED_BY_GTO_REFERENCE_VALIDATION '
+                                                       '(production OFF until a corrected 9-max '
+                                                       'reference is validated)'},
+ 'recency_window': {'action_influence': 'YES (direct or upstream)',
+                    'duplicate_overload': 'RESOLVED stage9 closeout A1: recent memory-hand window '
+                                          'is the only path (T2_READ_RECENCY_V3 retired)',
+                    'runtime_status': 'ACTIVE'},
+ 'river_overbet': {'inputs': 'plan.overbet_frac(profile, hero, board, opp_range, my_range, street, '
+                             'plan, rel, rng, opp_est=None, nut=0.0, n_opp=1, opp_ranges=None, '
+                             'seed=None)'},
+ 'studied_condition_match': {'duplicate_overload': 'OPT-IN defaults off; '
+                                                   'BLOCKED_BY_GTO_REFERENCE_VALIDATION '
+                                                   '(production OFF until a corrected 9-max '
+                                                   'reference is validated)'},
+ 'turn_card_range_shift': {'duplicate_overload': 'RESOLVED stage9 B6 (L-RA07): river caller '
+                                                 'measures against flop+turn',
+                           'inputs': 'texture.new_card_effect(prior_board, new_card, '
+                                     'aggressor_range_high=True)',
+                           'poker_meaning': '직전 보드 전체(턴: 플랍, 리버: 플랍+턴) 대비 새 카드가 공격자 range에 주는 변화',
+                           'runtime_status': 'ACTIVE',
+                           'state_variables': 'prior_board new_card rank suit'},
+ 'turn_overbet': {'inputs': 'plan.overbet_frac(profile, hero, board, opp_range, my_range, street, '
+                            'plan, rel, rng, opp_est=None, nut=0.0, n_opp=1, opp_ranges=None, '
+                            'seed=None)'}})
 
 # spans: (concept, module, function, from-substring, to-substring)
 S = []
@@ -1086,7 +1175,7 @@ STREET = {
     'giveup_deviation_raise': (NA, SAME, SAME, SAME),
     'price_overrides_giveup_plan': (NA, SAME, SAME, SAME),
     'giveup_initiative_stab_deviation': (NA, DIST + ' — cbet_flop_frequency', DIST + ' — barrel_turn_frequency × delayed boost', DIST + ' — barrel_river_frequency'),
-    'bluff_execution_frequency': (NA, SAME + ' — no card term', DIST + ' — turn_card_effect(turn card)', OVER + ' — turn_card_effect(flop, river card) ignores the turn'),
+    'bluff_execution_frequency': (NA, SAME + ' — no card term', DIST + ' — new_card_effect(flop, turn card)', DIST + ' — new_card_effect(flop+turn, river card) (stage9 B6)'),
     'donk_suppression': (NA, SAME, SAME, SAME),
     'value_bet_execution_frequency': (NA, DIST + ' — range_merge', DIST + ' — thin_value_turn', DIST + ' — thin_value_river ×0.92'),
     'value_blocker_size_adjust': (NA, SAME, SAME, SAME),
@@ -1098,7 +1187,7 @@ STREET = {
     'raise_target_coordinate': (NA, SAME, SAME, SAME),
     'intent_chip_conversion': (NA, SAME, SAME, SAME),
     'players_behind_risk_premium': (SAME + ' — icm.players_behind_required_equity_premium', SAME, SAME, SAME),
-    'value_degradation_thresholds': (NA, NA, DIST + ' — turn_card_effect(turn)', OVER + ' — turn_card_effect(flop, river card)'),
+    'value_degradation_thresholds': (NA, NA, DIST + ' — new_card_effect(flop, turn card)', DIST + ' — new_card_effect(flop+turn, river card) (stage9 B6)'),
     'semibluff_draw_loss_resolution': (NA, NA, DIST + ' — refresh', NA + ' (river: river_semibluff_resolution)'),
     'giveup_reentry_on_improvement': (NA, NA, OVER + ' — made>=2 includes board pair', OVER + ' — same'),
     'improved_bluff_rejudgment': (NA, NA, SAME, SAME),
@@ -1201,9 +1290,32 @@ def _section(path, title, body):
     open(path, 'w', encoding='utf-8').write(txt)
 
 
+def _sync_registry_quick_table():
+    """Stage 11: the quick table above the reaudit block mirrors the CSV row by
+    row (same format), so a corrected CSV row cannot leave a stale MD row."""
+    path = os.path.join(DOC, 'CONCEPT_FUNCTION_REGISTRY.md')
+    rows = {r['concept']: r for r in csv.DictReader(open(os.path.join(DOC, 'CONCEPT_FUNCTION_REGISTRY.csv'),
+                                                          encoding='utf-8'))}
+    txt = open(path, encoding='utf-8').read()
+    head, sep, tail = txt.partition('<!-- reaudit:start -->')
+    out = []
+    for line in head.split('\n'):
+        m = re.match(r'\| (\S+) — ', line)
+        if m and m.group(1) in rows:
+            r = rows[m.group(1)]
+            line = '| %s — %s | %s / %s / %s | %s → %s | %s / %s / %s | %s / %s |' % tuple(
+                str(x).replace('|', '/') for x in (
+                    r['concept'], r['poker_meaning'], r['street'], r['category'], r['layer'],
+                    r['producer'], r['consumer'], r['source_knowledge'], r['runtime_status'],
+                    r['action_influence'], r['duplicate_overload'], r['recommended_canonical_name']))
+        out.append(line)
+    open(path, 'w', encoding='utf-8').write('\n'.join(out) + sep + tail)
+
+
 def write_docs():
     missing = [r['concept'] for r in NEW_ROWS if r['concept'] not in STREET]
     assert not missing, missing
+    _sync_registry_quick_table()
     # street matrix
     lines = ['재감사(2026-10-02)에서 추가된 개념. 열 의미는 위 표와 같다.', '',
              '| concept | preflop | flop | turn | river |', '| --- | --- | --- | --- | --- |']

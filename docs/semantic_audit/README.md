@@ -33,5 +33,5 @@ R2 (pf_rank/PCT 용도 + 9-max 디펜스 지식, 첫 보고 — production 변�
 R2 다음 단계 (판단량 분리 — 행동 변경 없음):
 - [A. R2_QUANTITY_SEPARATION](r2/R2_QUANTITY_SEPARATION.md) — 소비처별 ordering/equity/EV/FE/solver prior, 리쇼브·3벳·4벳 층 분리
 - [B. CALLOFF_PATH_AUDIT](r2/CALLOFF_PATH_AUDIT.md) — 올인 대면 콜 경로 7개, 완료된 9-max push/fold DB 대비 측정
-- [C. PREFLOP_ORDERING_DUPLICATION](r2/PREFLOP_ORDERING_DUPLICATION.md) — PCT vs bot._pf_score
+- [C. PREFLOP_ORDERING_DUPLICATION](r2/PREFLOP_ORDERING_DUPLICATION.md) — PCT vs bot._pf_score (stage9 closeout A3 에서 PCT 하나로 통합, `_pf_score` 삭제)
 - [D. R2_IMPLEMENTATION_PLAN](r2/R2_IMPLEMENTATION_PLAN.md) — 구조 분리 / DB 근거 수정안 / 보류

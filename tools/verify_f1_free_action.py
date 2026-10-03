@@ -79,10 +79,14 @@ def test_derived_value_label_no_longer_changes_value_bet_probability():
 
 
 def test_blockbet_label_gate_is_legacy_only():
-    src = inspect.getsource(PL.make_plan)
     # The F1 blockbet fish-label modifier must be guarded by absence of concepts.
+    # Stage 9 B3 (20e206f7, behavior identical) extracted the blockbet
+    # probability from make_plan into plan.blockbet_probability; check the guard
+    # there and that make_plan still routes through it (stage 11 judgment).
+    src = inspect.getsource(PL.blockbet_probability)
     needle = "not profile.get('concepts')"
     assert needle in src, "vector profile still lacks legacy-only label guard"
+    assert "blockbet_probability(" in inspect.getsource(PL.make_plan), "make_plan no longer uses blockbet_probability"
     return True
 
 

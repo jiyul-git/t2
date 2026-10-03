@@ -1,5 +1,7 @@
 # STREET_SEMANTIC_MATRIX
 
+> Stage 11(`3c5d56d5` 기준) 동기화: 아래 표의 producer 이름은 현재 코드와 대조했다(삭제·개명된 함수 참조 0). `same/distinct/overloaded` 판정은 감사 당시 기준이며, 이후 해소된 행은 셀에 stage 를 적었다. 행별 현재 상태의 정본은 `CONCEPT_FUNCTION_REGISTRY.csv` 다.
+
 수정 전 기준. 모든 registry 행을 포함한다. `same`은 같은 poker question의 수식/데이터 producer 재사용이며 모든 street의 action 정책이 같다는 뜻이 아니다. `overloaded`는 다른 질문이 공용 함수/skill에 남음. `distinct` 뒤에는 실제 producer를 적었다. producer가 다른 행과 같으면 아직 inline 분기이며 추출 전이다. 실제 추출 후 이름/배선은 REFACTOR_AND_VERIFICATION에서 함께 추적한다. SHADOW/OPT-IN 여부는 registry 상태를 함께 본다.
 
 | concept | preflop | flop | turn | river |
@@ -65,7 +67,7 @@
 | studied_condition_match | distinct — persona.gto_condition_match;persona.gto_studied_anchor | not applicable | not applicable | not applicable |
 | preflop_condition_reasoning | distinct — persona.preflop_reasoning_confidence;persona.preflop_reasoned_width | not applicable | not applicable | not applicable |
 | legacy_preflop_ordering | overloaded — preflop.pct;preflop.cls | not applicable | not applicable | not applicable |
-| fallback_preflop_ordering | same — bot._pf_score;bot.range_combos | same — bot._pf_score;bot.range_combos | same — bot._pf_score;bot.range_combos | same — bot._pf_score;bot.range_combos |
+| fallback_preflop_ordering | same — bot._pf_class;bot.range_combos (PCT, stage9 A3) | same — bot._pf_class;bot.range_combos (PCT, stage9 A3) | same — bot._pf_class;bot.range_combos (PCT, stage9 A3) | same — bot._pf_class;bot.range_combos (PCT, stage9 A3) |
 | rfi_personality_deviation | overloaded — persona.open_pct | not applicable | not applicable | not applicable |
 | limp_entry_motive | overloaded — preflop.limp_p | not applicable | not applicable | not applicable |
 | open_execution_form | distinct — preflop.open_form | not applicable | not applicable | not applicable |
@@ -115,7 +117,7 @@
 | board_completion_danger | not applicable | overloaded — bot.board_danger | overloaded — bot.board_danger | overloaded — bot.board_danger |
 | flop_texture_cbet_prior | not applicable | distinct — texture.cbet_multiplier | not applicable | not applicable |
 | street_texture_sizing | not applicable | overloaded — texture.size_fraction;texture.perceived | overloaded — texture.size_fraction;texture.perceived | overloaded — texture.size_fraction;texture.perceived |
-| turn_card_range_shift | not applicable | not applicable | overloaded — texture.turn_card_effect | not applicable |
+| turn_card_range_shift | not applicable | not applicable | distinct — texture.new_card_effect(prior_board, new_card) (stage9 B6; river uses flop+turn) | not applicable |
 | replan_board_change | not applicable | not applicable | same — runner.board_changed | same — runner.board_changed |
 | calculation_error | overloaded — persona.calc_noise | overloaded — persona.calc_noise | overloaded — persona.calc_noise | overloaded — persona.calc_noise |
 | value_line_selection | not applicable | overloaded — plan.make_plan | overloaded — plan.make_plan | overloaded — plan.make_plan |
@@ -171,7 +173,7 @@
 | opponent_concept_inference | same — reads.infer_latent;reads.estimate_concepts;reads.perceived_profile;reads.range_profile | same — reads.infer_latent;reads.estimate_concepts;reads.perceived_profile;reads.range_profile | same — reads.infer_latent;reads.estimate_concepts;reads.perceived_profile;reads.range_profile | same — reads.infer_latent;reads.estimate_concepts;reads.perceived_profile;reads.range_profile |
 | style_belief_reference | same — reads.style_hypotheses;reads.concept_belief;reads.opponent_belief | same — reads.style_hypotheses;reads.concept_belief;reads.opponent_belief | same — reads.style_hypotheses;reads.concept_belief;reads.opponent_belief | same — reads.style_hypotheses;reads.concept_belief;reads.opponent_belief |
 | recency_window | same — reads._append_hand_snapshot;reads._recent_record | same — reads._append_hand_snapshot;reads._recent_record | same — reads._append_hand_snapshot;reads._recent_record | same — reads._append_hand_snapshot;reads._recent_record |
-| exploit_read_permission | overloaded — persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap | overloaded — persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap | overloaded — persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap | overloaded — persona._exploit_base_weight;persona.exploit_weight;persona.read_opponent;persona.street_gap |
+| exploit_read_permission | same — persona._exploit_base_weight;persona.read_opponent;persona.street_gap (stage9 B3/B5: one weight) | same — persona._exploit_base_weight;persona.read_opponent;persona.street_gap (stage9 B3/B5: one weight) | same — persona._exploit_base_weight;persona.read_opponent;persona.street_gap (stage9 B3/B5: one weight) | same — persona._exploit_base_weight;persona.read_opponent;persona.street_gap (stage9 B3/B5: one weight) |
 | opponent_sizing_normalization | not applicable | overloaded — persona.opp_size_norm;persona.size_read | overloaded — persona.opp_size_norm;persona.size_read | overloaded — persona.opp_size_norm;persona.size_read |
 | shown_hand_range_adjustment | not applicable | overloaded — runner.adjust_range_by_history | overloaded — runner.adjust_range_by_history | overloaded — runner.adjust_range_by_history |
 | perceived_player_edge | same — persona.perceived_edge;preflop.crude_edge | same — persona.perceived_edge;preflop.crude_edge | same — persona.perceived_edge;preflop.crude_edge | same — persona.perceived_edge;preflop.crude_edge |
@@ -192,7 +194,7 @@
 | money_open_range_modifier | distinct — money_pressure.unopened_modifiers | not applicable | not applicable | not applicable |
 | money_open_form_shadow | distinct — money_pressure.unopened_modifiers | not applicable | not applicable | not applicable |
 | sidepot_geometry | same — session._decision_pot_layers;session._project_call_layers;session._project_bet_outcome_layers | same — session._decision_pot_layers;session._project_call_layers;session._project_bet_outcome_layers | same — session._decision_pot_layers;session._project_call_layers;session._project_bet_outcome_layers | same — session._decision_pot_layers;session._project_call_layers;session._project_bet_outcome_layers |
-| layer_expected_share | same — session._diagnostic_layer_equities | same — session._diagnostic_layer_equities | same — session._diagnostic_layer_equities | same — session._diagnostic_layer_equities |
+| layer_expected_share | same — session.layer_equities_by_pot_layer | same — session.layer_equities_by_pot_layer | same — session.layer_equities_by_pot_layer | same — session.layer_equities_by_pot_layer |
 | layer_investment_ev | same — session._layer_investment_summary;session._layer_call_summary | same — session._layer_investment_summary;session._layer_call_summary | same — session._layer_investment_summary;session._layer_call_summary | same — session._layer_investment_summary;session._layer_call_summary |
 | fold_call_bet_ev | not applicable | not applicable | not applicable | distinct — session._perceived_fold_to_bet_probability;session._combine_fold_call_ev |
 | river_layer_bet_veto | not applicable | not applicable | not applicable | distinct — plan.apply_layer_bet_ev_judgment |
@@ -287,7 +289,7 @@ CSV/JSON의 `current_function`이 아래 연결을 포함한다. 원래 `functio
 | giveup_deviation_raise | not applicable | same | same | same |
 | price_overrides_giveup_plan | not applicable | same | same | same |
 | giveup_initiative_stab_deviation | not applicable | distinct — cbet_flop_frequency | distinct — barrel_turn_frequency × delayed boost | distinct — barrel_river_frequency |
-| bluff_execution_frequency | not applicable | same — no card term | distinct — turn_card_effect(turn card) | overloaded — turn_card_effect(flop, river card) ignores the turn |
+| bluff_execution_frequency | not applicable | same — no card term | distinct — new_card_effect(flop, turn card) | distinct — new_card_effect(flop+turn, river card) (stage9 B6) |
 | donk_suppression | not applicable | same | same | same |
 | value_bet_execution_frequency | not applicable | distinct — range_merge | distinct — thin_value_turn | distinct — thin_value_river ×0.92 |
 | value_blocker_size_adjust | not applicable | same | same | same |
@@ -299,7 +301,7 @@ CSV/JSON의 `current_function`이 아래 연결을 포함한다. 원래 `functio
 | raise_target_coordinate | not applicable | same | same | same |
 | intent_chip_conversion | not applicable | same | same | same |
 | players_behind_risk_premium | same — icm.players_behind_required_equity_premium | same | same | same |
-| value_degradation_thresholds | not applicable | not applicable | distinct — turn_card_effect(turn) | overloaded — turn_card_effect(flop, river card) |
+| value_degradation_thresholds | not applicable | not applicable | distinct — new_card_effect(flop, turn card) | distinct — new_card_effect(flop+turn, river card) (stage9 B6) |
 | semibluff_draw_loss_resolution | not applicable | not applicable | distinct — refresh | not applicable (river: river_semibluff_resolution) |
 | giveup_reentry_on_improvement | not applicable | not applicable | overloaded — made>=2 includes board pair | overloaded — same |
 | improved_bluff_rejudgment | not applicable | not applicable | same | same |

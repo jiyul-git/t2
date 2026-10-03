@@ -6,7 +6,7 @@ inputs:
   --work  results JSON of the same run on the working tree
   --older optional: results JSON at an older baseline (e.g. 70008d9) to date historical failures
 """
-import argparse, ast, glob, json, os
+import argparse, ast, glob, json, os, subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOC = os.path.dirname(HERE)
@@ -78,10 +78,20 @@ def doc1(path):
     return d.strip().split('\n')[0][:140]
 
 
+def blob_sha(path):
+    try:
+        return subprocess.run(['git', 'hash-object', path], capture_output=True, text=True,
+                              cwd=ROOT).stdout.strip()[:12]
+    except Exception:
+        return ''
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--head', required=True)
     ap.add_argument('--work', required=True)
+    ap.add_argument('--source-head', default=None, help='commit SHA the run was made on')
+    ap.add_argument('--timeout', default=None, help='per-verifier timeout used by the run')
     a = ap.parse_args()
     head = {r['name']: r for r in json.load(open(a.head))['results']}
     work = {r['name']: r for r in json.load(open(a.work))['results']}
@@ -108,7 +118,9 @@ def main():
         if w == 'PASS' and (work.get(n, {}).get('seconds') or 0) <= 60:
             tiers.append('fast')
         rows.append({
-            'name': n, 'purpose': doc1(p), 'subsystem': subsystem(n),
+            'name': n, 'file': 'tools/verify_%s.py' % n, 'command': 'python3 tools/verify_%s.py' % n,
+            'rc': work.get(n, {}).get('rc'), 'verifier_sha': blob_sha(p),
+            'purpose': doc1(p), 'subsystem': subsystem(n),
             'in_gate23': n in GATE23, 'in_suite40': n in SUITE40,
             'suite40_status_at_4b9d33d': SUITE40_BEFORE.get(n),
             'status_pristine_head': h, 'status_working_tree': w,
@@ -117,6 +129,7 @@ def main():
             'tiers': tiers, 'note': NOTES.get(n, ''),
         })
     meta = {'head_root': json.load(open(a.head))['root'], 'work_root': json.load(open(a.work))['root'],
+            'source_head': a.source_head, 'timeout_s': a.timeout,
             'counts': {k: sum(1 for r in rows if r['expected'] == k) for k in ('PASS', 'FAIL', 'TIMEOUT')},
             'regressions': [r['name'] for r in rows if r['classification'].startswith('REGRESSION')]}
     json.dump({'meta': meta, 'verifiers': rows}, open(os.path.join(DOC, 'CANONICAL_VERIFIER_MANIFEST.json'), 'w',
@@ -133,13 +146,15 @@ def main():
          '억지로 고쳐 PASS로 만들지 않았다. 상태가 바뀌면 원인을 조사하고 이 표를 갱신한다.', '',
          '요약: PASS %(PASS)d / FAIL %(FAIL)d / TIMEOUT %(TIMEOUT)d (총 %(n)d). REGRESSION: %(reg)s' % dict(
              meta['counts'], n=len(rows), reg=(', '.join(meta['regressions']) or '없음')), '',
-         '| verifier | 목적 | subsystem | 23-gate | 40-suite | 40-suite@4b9d33d | pristine HEAD | 현재 | 분류 | 초 | 메모 |',
-         '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |']
+         '실행 기준: source `%s`, 검증기별 timeout %s 초, 실행 명령은 저장소 루트에서 `python3 tools/verify_<name>.py`. '
+         '`verifier_sha` 는 검증기 파일의 git blob SHA(앞 12자리)다.' % (meta['source_head'] or '?', meta['timeout_s'] or '?'), '',
+         '| verifier | 목적(검증 계약) | subsystem | 23-gate | 40-suite | 40-suite@4b9d33d | pristine HEAD | 현재 | rc | 분류 | 초 | verifier_sha | 메모 |',
+         '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |']
     for r in rows:
-        L.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (
+        L.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (
             r['name'], r['purpose'].replace('|', '/'), r['subsystem'], 'Y' if r['in_gate23'] else '',
             'Y' if r['in_suite40'] else '', r['suite40_status_at_4b9d33d'] or '', r['status_pristine_head'],
-            r['status_working_tree'], r['classification'], r['seconds'], r['note']))
+            r['status_working_tree'], r['rc'], r['classification'], r['seconds'], r['verifier_sha'], r['note']))
     open(os.path.join(DOC, 'CANONICAL_VERIFIER_MANIFEST.md'), 'w', encoding='utf-8').write('\n'.join(L) + '\n')
     print(json.dumps(meta, ensure_ascii=False))
 

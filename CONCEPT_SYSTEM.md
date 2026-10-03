@@ -1,8 +1,23 @@
 # CONCEPT SYSTEM — glossary, wiring, taxonomy, cleanup
 
+## Stage 11 현재 상태 (기준 `3c5d56d5`)
+
+Stage 0~10 감사·통합(본체 + Human Model 2차 + 3차를 하나의 실행 경로로)이 끝난 상태다. 아래 §11~§15 는 각 실험 시점의 기록이고, 플래그 상태는 이 표가 정본이다.
+
+| 경로(도입 commit/flag) | 현재 |
+| --- | --- |
+| 2차 `T2_GTO_MEMORY_V2` (22487e9f) | **production OFF**, BLOCKED_BY_GTO_REFERENCE_VALIDATION. corrected 9-max reference 검증 전에는 켜지 않는다 |
+| 3차 `T2_PREFLOP_REASONING_V3` | **production OFF**, BLOCKED_BY_GTO_REFERENCE_VALIDATION (같은 이유) |
+| 3차 `T2_EXPLOIT_WEIGHT_V3` | 통합 후 퇴역(stage9 B3/B5). 적용 가중치는 `persona._exploit_base_weight` 하나 |
+| 3차 `T2_CALC_NOISE_V3` | 유일 경로로 통합, 플래그 퇴역(stage9 B4) |
+| 3차 `T2_PREFLOP_TEMPER_DIRECTION_V3` | 유일 경로로 통합, 플래그 퇴역(stage9 B4) |
+| 3차 `T2_READ_RECENCY_V3` | 유일 경로로 통합, 플래그 퇴역(stage9 closeout A1) |
+
+개념→함수 정본은 `docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.csv`(293행), 코드 위치 소유는 `completeness/SPAN_MAP.json`(미소유 0), 검증기 기준은 `CANONICAL_VERIFIER_MANIFEST.md` 다.
+
 ## 2026-10-02 코드 재감사 동기화
 
-37개 선언 capability는 전체 poker semantic inventory가 아니다. 227행 concept/function registry를 함께 사용한다. flop thin_value는 range_merge를 사용한다. trap은 latent.study를 runtime에서 소비하고 type label은 sizing_signature에 영향을 준다. 이 두 설계 불일치는 행동 보존 작업에서 교정하지 않았다.
+37개 선언 capability는 전체 poker semantic inventory가 아니다. concept/function registry(재감사 당시 227행, Stage 11 현재 293행)를 함께 사용한다. flop thin_value는 range_merge를 사용한다. trap은 latent.study를 runtime에서 소비하고 type label은 sizing_signature에 영향을 준다. 이 두 설계 불일치는 행동 보존 작업에서 교정하지 않았다.
 
 현재 근거: [전체 구조](docs/semantic_audit/CURRENT_ARCHITECTURE_AUDIT.md), [개념→함수](docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.md), [문서 차이](docs/semantic_audit/DOCUMENT_DRIFT.md), [리팩터링·검증](docs/semantic_audit/REFACTOR_AND_VERIFICATION.md). 아래 과거 실험/commit별 증거는 그 시점 기록이며 현재 배포 인증이 아니다.
 
@@ -200,7 +215,7 @@ Latent 측정 (q=0.78, 5,000명):
 | `gto_memory_confidence` | knowledge × match | 위 둘 | flag ON 일 때 위 3 소비처 중 spot 을 아는 2곳(open_pct, defend_thresholds) | 같음 | (1−acc) 이탈 항의 크기를 정한다 | — |
 
 `match = 1 − |w_here − w_studied| / max(·)`. 새 계수 없음. 중첩 레인지에서 '넓은 쪽 레인지 중 행동이 같은 비율'이다.
-**기본 OFF** (`T2_GTO_MEMORY_V2=1` 로 켬).
+**기본 OFF** (`T2_GTO_MEMORY_V2=1` 로 켬). (Stage 11: production OFF 유지, BLOCKED_BY_GTO_REFERENCE_VALIDATION.)
 
 **추가하지 않음 (기존으로 충분 또는 근거 부족):**
 - `gto_coverage / gto_recall / gto_interpolation` 3개 개념: family 가 2개뿐이고 recall 오차를 family·조건별로 가를 데이터가 아직 없다. knowledge×match 한 쌍으로 시작한다.
@@ -262,7 +277,7 @@ Latent 측정 (q=0.78, 5,000명):
 ## 12. Human Model v3 — learned chart -> condition reasoning -> temperament (2026-09-29)
 
 Branch: `chatgpt/human-model-v3-20260929`.  Opt-in only via
-`T2_PREFLOP_REASONING_V3=1`; OFF preserves the v2/production path.
+`T2_PREFLOP_REASONING_V3=1`; OFF preserves the v2/production path. (Stage 11: production OFF, BLOCKED_BY_GTO_REFERENCE_VALIDATION.)
 
 ### 12-1. Problem
 
@@ -339,7 +354,7 @@ After the V3 structural verifier is runnable in CI/local:
 
 1. paired counterfactual fixtures across matched vs mismatched conditions;
 2. validate the unified exploit evidence weight (implemented behind
-   `T2_EXPLOIT_WEIGHT_V3=1`);
+   `T2_EXPLOIT_WEIGHT_V3=1`; stage9 B3/B5 에서 단일 가중치로 통합, 플래그 퇴역);
 3. measure concept-specific calculation-error directions before changing them;
 4. test recency/forgetting in opponent memory;
 5. only then revisit deviation shape (multiplicative width vs logit shift).
@@ -347,8 +362,8 @@ After the V3 structural verifier is runnable in CI/local:
 
 ## 13. Human Model v3 — concept-specific calculation error (2026-09-29)
 
-Opt-in: `T2_CALC_NOISE_V3=1`. OFF keeps the historical Gaussian formula
-bit-for-bit.
+(기록 당시) Opt-in: `T2_CALC_NOISE_V3=1`. OFF keeps the historical Gaussian formula
+bit-for-bit. **Stage 11 현재: stage9 B4 에서 유일 경로로 통합, 플래그와 legacy 식 퇴역.**
 
 Legacy `calc_noise()` gave **the same positive mean bias** to every calculation:
 low skill meant `E[multiplier] ≈ 1.30` for outs, SPR, and pot odds.  The
@@ -379,7 +394,7 @@ all PASS.
 
 ## 14. Human Model v3 — real opponent-memory recency (2026-09-29)
 
-Opt-in: `T2_READ_RECENCY_V3=1`.  No new decay coefficient was introduced.
+(기록 당시) Opt-in: `T2_READ_RECENCY_V3=1`.  No new decay coefficient was introduced. **Stage 11 현재: closeout A1 에서 유일 경로로 통합, 플래그 퇴역.**
 The existing observer `memory` value (8..120 hands, derived from attention and
 adaptability or family defaults) now means what its name says: **a recent-hand
 window**.
@@ -438,8 +453,8 @@ Counterfactual using the natural 0..10 half-span `(x-5)/5`:
   q=.4 7.17%→5.92%, q=.8 3.56%→2.73%, q=1.2 1.20%→0.83%;
 - population p95 absolute width change is about 1.6–3.7pp depending on band/path.
 
-Implementation is opt-in:
-`T2_PREFLOP_TEMPER_DIRECTION_V3=1`.
+Implementation is opt-in (기록 당시):
+`T2_PREFLOP_TEMPER_DIRECTION_V3=1`. **Stage 11 현재: stage9 B4 에서 유일 경로로 통합, 플래그 퇴역.**
 
 It changes only the direction normalization to full-scale `/5`; endpoints
 0/10 and midpoint 5 remain exactly unchanged.  RFI and 3bet retain all 11
