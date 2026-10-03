@@ -1,0 +1,12 @@
+{
+ "schema": "audit_seal",
+ "audit": "30bb_solver_reference_audit_v1",
+ "sealed": "2026-10-03 after the 100-iteration convergence check",
+ "conclusion": "convergence removed as a main cause: 20 -> 100 iterations (gap 0.303 -> 0.008) raises RFI by 1-3 pp while the 6-13 pp gap to the near-references remains, BB vs BTN fold stays 0%, and modal != best-EV share falls to 0-2.3%; the continuation / terminal-value model is the leading hypothesis (internal evidence, near-references only)",
+ "sha256": {
+  "data/gto_validation/30bb_solver_reference_audit_v1.json": "01cf22744e10163c3ae07312266b5afa5f69f0c60ba445cbdc9c91195392efb8",
+  "data/gto_validation/30bb_solver_reference_audit_v1.md": "a60e7489c3836f270ec2915e51ff4d89a1930e89e0fe6cb0c0d56d0537ff0549",
+  "tools/gto_validation/audit_30bb_solver_reference.py": "672219fbeeb5b11555fd8273528264d04851f0cb16a4eca82dc951a148fac106",
+  "tools/gto_validation/finalize_audit_30bb.py": "ac470fc78af4e3d49c9b2019ef05468b0ec3b9cc34b253e63e94ccbc563dda45"
+ }
+}

@@ -1,0 +1,1361 @@
+{
+ "schema": "pilot9_c0_v1",
+ "state": "9-max 30bb pilot config, 100 iterations (gap_total 0.0084), seeds 202, checkpoint /home/user/gto_ckpt/ck9max_pilot_100.gtop",
+ "census_file": {
+  "path": "/home/user/gto_ckpt/census_100it.json (108 MB, kept outside the repo)",
+  "sha256": "c2d9d4789d1b5aa5b11e2ac4844dc83581a2fba5e77493abb4663dafc84a026d"
+ },
+ "summary": {
+  "by_pot_type": {
+   "3bet": {
+    "hu_reach": 0.19356971386695607,
+    "multiway_reach": 0.0672529371324516,
+    "share_of_flop_reach": 0.3573407121445983,
+    "terminals": 18158
+   },
+   "4bet": {
+    "hu_reach": -0.0,
+    "multiway_reach": -0.0,
+    "share_of_flop_reach": -0.0,
+    "terminals": 0
+   },
+   "5bet": {
+    "hu_reach": -0.0,
+    "multiway_reach": -0.0,
+    "share_of_flop_reach": -0.0,
+    "terminals": 0
+   },
+   "limped": {
+    "hu_reach": -0.0,
+    "multiway_reach": -0.0,
+    "share_of_flop_reach": -0.0,
+    "terminals": 0
+   },
+   "srp": {
+    "hu_reach": 0.2733482187715392,
+    "multiway_reach": 0.19572819332229455,
+    "share_of_flop_reach": 0.6426592878554259,
+    "terminals": 502
+   }
+  },
+  "flop_reaching_terminals": 18660,
+  "flop_reaching_terminals_with_positive_reach": 18660,
+  "flop_reaching_terminals_with_reach_gt_1e-6": 608,
+  "hu_flop_reach_probability": 0.466917932638494,
+  "hu_share_of_flop_reach": 0.639702057788309,
+  "multiway_flop_reach_probability": 0.2629811304547297,
+  "multiway_share_of_flop_reach": 0.360297942211691,
+  "reach_check": {
+   "flop": 0.7298990630932237,
+   "fold_win": 0.22307706610807787,
+   "note": "total must be 1 (every hand ends in exactly one terminal)",
+   "pot_share_without_flop": 0.04702428669777764,
+   "terminal_counts": {
+    "flop": 18660,
+    "fold_win": 1021,
+    "pot_share_without_flop": 18660
+   },
+   "total": 1.0000004158990792
+  },
+  "srp_flop_reach_probability": 0.4690764120938333,
+  "total_flop_reach_probability": 0.7298990630932237
+ },
+ "top40": [
+  {
+   "node": 11,
+   "pot_type": "srp",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "line": "SB:Raise 2.5 > BB:Call 2.5",
+   "reach": 0.04517891017491413,
+   "share_of_flop_reach": 0.06189747659553279,
+   "pot_bb": 6.0,
+   "spr": 4.583333333333333,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 24,
+   "pot_type": "srp",
+   "live": [
+    "BTN",
+    "BB"
+   ],
+   "line": "BTN:Raise 2 > BB:Call 2",
+   "reach": 0.041854311897097894,
+   "share_of_flop_reach": 0.05734260257812141,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 73,
+   "pot_type": "srp",
+   "live": [
+    "CO",
+    "BB"
+   ],
+   "line": "CO:Raise 2 > BB:Call 2",
+   "reach": 0.03543983250319743,
+   "share_of_flop_reach": 0.04855442936590125,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 242,
+   "pot_type": "srp",
+   "live": [
+    "HJ",
+    "BB"
+   ],
+   "line": "HJ:Raise 2 > BB:Call 2",
+   "reach": 0.033046098877454064,
+   "share_of_flop_reach": 0.04527488874613526,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 795,
+   "pot_type": "srp",
+   "live": [
+    "LJ",
+    "BB"
+   ],
+   "line": "LJ:Raise 2 > BB:Call 2",
+   "reach": 0.03099039648740966,
+   "share_of_flop_reach": 0.04245846864918023,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 251,
+   "pot_type": "srp",
+   "live": [
+    "HJ",
+    "SB",
+    "BB"
+   ],
+   "line": "HJ:Raise 2 > SB:Call 2 > BB:Call 2",
+   "reach": 0.03082493677832295,
+   "share_of_flop_reach": 0.04223178016928889,
+   "pot_bb": 7.0,
+   "spr": 4.0,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 2557,
+   "pot_type": "srp",
+   "live": [
+    "UTG+2",
+    "SB",
+    "BB"
+   ],
+   "line": "UTG+2:Raise 2 > SB:Call 2 > BB:Call 2",
+   "reach": 0.029922357739500645,
+   "share_of_flop_reach": 0.040995199545391006,
+   "pot_bb": 7.0,
+   "spr": 4.0,
+   "path_action_indices": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 2548,
+   "pot_type": "srp",
+   "live": [
+    "UTG+2",
+    "BB"
+   ],
+   "line": "UTG+2:Raise 2 > BB:Call 2",
+   "reach": 0.029253060683115978,
+   "share_of_flop_reach": 0.040078227473186574,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 24726,
+   "pot_type": "srp",
+   "live": [
+    "UTG",
+    "BB"
+   ],
+   "line": "UTG:Raise 2 > BB:Call 2",
+   "reach": 0.02919752354998567,
+   "share_of_flop_reach": 0.0400021386878483,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 8006,
+   "pot_type": "srp",
+   "live": [
+    "UTG+1",
+    "SB",
+    "BB"
+   ],
+   "line": "UTG+1:Raise 2 > SB:Call 2 > BB:Call 2",
+   "reach": 0.029171907041112347,
+   "share_of_flop_reach": 0.03996704272709344,
+   "pot_bb": 7.0,
+   "spr": 4.0,
+   "path_action_indices": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 24735,
+   "pot_type": "srp",
+   "live": [
+    "UTG",
+    "SB",
+    "BB"
+   ],
+   "line": "UTG:Raise 2 > SB:Call 2 > BB:Call 2",
+   "reach": 0.029134680910477474,
+   "share_of_flop_reach": 0.03991604097559494,
+   "pot_bb": 7.0,
+   "spr": 4.0,
+   "path_action_indices": [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 804,
+   "pot_type": "srp",
+   "live": [
+    "LJ",
+    "SB",
+    "BB"
+   ],
+   "line": "LJ:Raise 2 > SB:Call 2 > BB:Call 2",
+   "reach": 0.028819025386304885,
+   "share_of_flop_reach": 0.03948357635119211,
+   "pot_bb": 7.0,
+   "spr": 4.0,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 7997,
+   "pot_type": "srp",
+   "live": [
+    "UTG+1",
+    "BB"
+   ],
+   "line": "UTG+1:Raise 2 > BB:Call 2",
+   "reach": 0.028239962036786255,
+   "share_of_flop_reach": 0.038690229190196136,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 82,
+   "pot_type": "srp",
+   "live": [
+    "CO",
+    "SB",
+    "BB"
+   ],
+   "line": "CO:Raise 2 > SB:Call 2 > BB:Call 2",
+   "reach": 0.025636089552809504,
+   "share_of_flop_reach": 0.03512278731276468,
+   "pot_bb": 7.0,
+   "spr": 4.0,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 33,
+   "pot_type": "srp",
+   "live": [
+    "BTN",
+    "SB",
+    "BB"
+   ],
+   "line": "BTN:Raise 2 > SB:Call 2 > BB:Call 2",
+   "reach": 0.013830901537713403,
+   "share_of_flop_reach": 0.01894906054420692,
+   "pot_bb": 7.0,
+   "spr": 4.0,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 51,
+   "pot_type": "3bet",
+   "live": [
+    "BTN",
+    "SB"
+   ],
+   "line": "BTN:Raise 2 > SB:3-bet 8 > BTN:Call 8",
+   "reach": 0.012867553442781558,
+   "share_of_flop_reach": 0.01762922312607229,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 14,
+   "pot_type": "3bet",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "line": "SB:Raise 2.5 > BB:3-bet 10 > SB:Call 10",
+   "reach": 0.012282649661103094,
+   "share_of_flop_reach": 0.016827874266683827,
+   "pot_bb": 21.0,
+   "spr": 0.9523809523809523,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    1
+   ]
+  },
+  {
+   "node": 196,
+   "pot_type": "3bet",
+   "live": [
+    "CO",
+    "BTN"
+   ],
+   "line": "CO:Raise 2 > BTN:3-bet 6 > CO:Call 6",
+   "reach": 0.008047721181911188,
+   "share_of_flop_reach": 0.011025800126124181,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 701,
+   "pot_type": "3bet",
+   "live": [
+    "HJ",
+    "CO"
+   ],
+   "line": "HJ:Raise 2 > CO:3-bet 6 > HJ:Call 6",
+   "reach": 0.007999785918751544,
+   "share_of_flop_reach": 0.01096012630136751,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    2,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 100,
+   "pot_type": "3bet",
+   "live": [
+    "CO",
+    "SB"
+   ],
+   "line": "CO:Raise 2 > SB:3-bet 8 > CO:Call 8",
+   "reach": 0.007747481281864776,
+   "share_of_flop_reach": 0.010614455715331227,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    2,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 365,
+   "pot_type": "3bet",
+   "live": [
+    "HJ",
+    "BTN"
+   ],
+   "line": "HJ:Raise 2 > BTN:3-bet 6 > HJ:Call 6",
+   "reach": 0.007624708655411854,
+   "share_of_flop_reach": 0.010446250777606515,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    2,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 2358,
+   "pot_type": "3bet",
+   "live": [
+    "LJ",
+    "HJ"
+   ],
+   "line": "LJ:Raise 2 > HJ:3-bet 6 > LJ:Call 6",
+   "reach": 0.006973635339318788,
+   "share_of_flop_reach": 0.009554246185445653,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    1,
+    2,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 269,
+   "pot_type": "3bet",
+   "live": [
+    "HJ",
+    "SB"
+   ],
+   "line": "HJ:Raise 2 > SB:3-bet 8 > HJ:Call 8",
+   "reach": 0.006759159221892457,
+   "share_of_flop_reach": 0.009260402655194486,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    2,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 1254,
+   "pot_type": "3bet",
+   "live": [
+    "LJ",
+    "CO"
+   ],
+   "line": "LJ:Raise 2 > CO:3-bet 6 > LJ:Call 6",
+   "reach": 0.00650989355412511,
+   "share_of_flop_reach": 0.008918895616247225,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    2,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 918,
+   "pot_type": "3bet",
+   "live": [
+    "LJ",
+    "BTN"
+   ],
+   "line": "LJ:Raise 2 > BTN:3-bet 6 > LJ:Call 6",
+   "reach": 0.006114957984807733,
+   "share_of_flop_reach": 0.008377813171718953,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    2,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 7615,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+2",
+    "LJ"
+   ],
+   "line": "UTG+2:Raise 2 > LJ:3-bet 6 > UTG+2:Call 6",
+   "reach": 0.0059599766752391585,
+   "share_of_flop_reach": 0.008165480648764638,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    0,
+    1,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 4111,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+2",
+    "HJ"
+   ],
+   "line": "UTG+2:Raise 2 > HJ:3-bet 6 > UTG+2:Call 6",
+   "reach": 0.005839752310677591,
+   "share_of_flop_reach": 0.008000766963488663,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    0,
+    1,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 3007,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+2",
+    "CO"
+   ],
+   "line": "UTG+2:Raise 2 > CO:3-bet 6 > UTG+2:Call 6",
+   "reach": 0.005692386904510556,
+   "share_of_flop_reach": 0.007798868627652309,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 2671,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+2",
+    "BTN"
+   ],
+   "line": "UTG+2:Raise 2 > BTN:3-bet 6 > UTG+2:Call 6",
+   "reach": 0.005488000384129994,
+   "share_of_flop_reach": 0.0075188483745581396,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 23960,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+1",
+    "UTG+2"
+   ],
+   "line": "UTG+1:Raise 2 > UTG+2:3-bet 6 > UTG+1:Call 6",
+   "reach": 0.005197829069021623,
+   "share_of_flop_reach": 0.0071212984532324965,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    1,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 13064,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+1",
+    "LJ"
+   ],
+   "line": "UTG+1:Raise 2 > LJ:3-bet 6 > UTG+1:Call 6",
+   "reach": 0.005186430607655026,
+   "share_of_flop_reach": 0.007105681963305395,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    1,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 27,
+   "pot_type": "3bet",
+   "live": [
+    "BTN",
+    "BB"
+   ],
+   "line": "BTN:Raise 2 > BB:3-bet 8 > BTN:Call 8",
+   "reach": 0.004866631836454604,
+   "share_of_flop_reach": 0.006667540873159103,
+   "pot_bb": 17.5,
+   "spr": 1.2571428571428571,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    2,
+    1
+   ]
+  },
+  {
+   "node": 9560,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+1",
+    "HJ"
+   ],
+   "line": "UTG+1:Raise 2 > HJ:3-bet 6 > UTG+1:Call 6",
+   "reach": 0.004813433293758749,
+   "share_of_flop_reach": 0.006594656079376239,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    1,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 74145,
+   "pot_type": "3bet",
+   "live": [
+    "UTG",
+    "UTG+1"
+   ],
+   "line": "UTG:Raise 2 > UTG+1:3-bet 6 > UTG:Call 6",
+   "reach": 0.00477506205174171,
+   "share_of_flop_reach": 0.006542085465222515,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    1,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 822,
+   "pot_type": "3bet",
+   "live": [
+    "LJ",
+    "SB"
+   ],
+   "line": "LJ:Raise 2 > SB:3-bet 8 > LJ:Call 8",
+   "reach": 0.004612379799466602,
+   "share_of_flop_reach": 0.006319202246842044,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    2,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 40689,
+   "pot_type": "3bet",
+   "live": [
+    "UTG",
+    "UTG+2"
+   ],
+   "line": "UTG:Raise 2 > UTG+2:3-bet 6 > UTG:Call 6",
+   "reach": 0.004606923477200556,
+   "share_of_flop_reach": 0.006311726799150793,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    1,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 8456,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+1",
+    "CO"
+   ],
+   "line": "UTG+1:Raise 2 > CO:3-bet 6 > UTG+1:Call 6",
+   "reach": 0.004581848202847759,
+   "share_of_flop_reach": 0.0062773723580770765,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 8120,
+   "pot_type": "3bet",
+   "live": [
+    "UTG+1",
+    "BTN"
+   ],
+   "line": "UTG+1:Raise 2 > BTN:3-bet 6 > UTG+1:Call 6",
+   "reach": 0.004527188262995187,
+   "share_of_flop_reach": 0.006202485373538517,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 29793,
+   "pot_type": "3bet",
+   "live": [
+    "UTG",
+    "LJ"
+   ],
+   "line": "UTG:Raise 2 > LJ:3-bet 6 > UTG:Call 6",
+   "reach": 0.004374969283499044,
+   "share_of_flop_reach": 0.0059939373876689945,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    1,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 26289,
+   "pot_type": "3bet",
+   "live": [
+    "UTG",
+    "HJ"
+   ],
+   "line": "UTG:Raise 2 > HJ:3-bet 6 > UTG:Call 6",
+   "reach": 0.003915844044779348,
+   "share_of_flop_reach": 0.00536491172928004,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039,
+   "path_action_indices": [
+    1,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "hu_srp_vs_bb": [
+  {
+   "node": 11,
+   "pot_type": "srp",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "line": "SB:Raise 2.5 > BB:Call 2.5",
+   "reach": 0.04517891017491413,
+   "share_of_flop_reach": 0.06189747659553279,
+   "pot_bb": 6.0,
+   "spr": 4.583333333333333,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ]
+  },
+  {
+   "node": 24,
+   "pot_type": "srp",
+   "live": [
+    "BTN",
+    "BB"
+   ],
+   "line": "BTN:Raise 2 > BB:Call 2",
+   "reach": 0.041854311897097894,
+   "share_of_flop_reach": 0.05734260257812141,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 73,
+   "pot_type": "srp",
+   "live": [
+    "CO",
+    "BB"
+   ],
+   "line": "CO:Raise 2 > BB:Call 2",
+   "reach": 0.03543983250319743,
+   "share_of_flop_reach": 0.04855442936590125,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 242,
+   "pot_type": "srp",
+   "live": [
+    "HJ",
+    "BB"
+   ],
+   "line": "HJ:Raise 2 > BB:Call 2",
+   "reach": 0.033046098877454064,
+   "share_of_flop_reach": 0.04527488874613526,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 795,
+   "pot_type": "srp",
+   "live": [
+    "LJ",
+    "BB"
+   ],
+   "line": "LJ:Raise 2 > BB:Call 2",
+   "reach": 0.03099039648740966,
+   "share_of_flop_reach": 0.04245846864918023,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 2548,
+   "pot_type": "srp",
+   "live": [
+    "UTG+2",
+    "BB"
+   ],
+   "line": "UTG+2:Raise 2 > BB:Call 2",
+   "reach": 0.029253060683115978,
+   "share_of_flop_reach": 0.040078227473186574,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 24726,
+   "pot_type": "srp",
+   "live": [
+    "UTG",
+    "BB"
+   ],
+   "line": "UTG:Raise 2 > BB:Call 2",
+   "reach": 0.02919752354998567,
+   "share_of_flop_reach": 0.0400021386878483,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  },
+  {
+   "node": 7997,
+   "pot_type": "srp",
+   "live": [
+    "UTG+1",
+    "BB"
+   ],
+   "line": "UTG+1:Raise 2 > BB:Call 2",
+   "reach": 0.028239962036786255,
+   "share_of_flop_reach": 0.038690229190196136,
+   "pot_bb": 5.5,
+   "spr": 5.090909090909091,
+   "path_action_indices": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+   ]
+  }
+ ],
+ "selection": {
+  "terminals": [
+   {
+    "node": 24,
+    "pot_type": "srp",
+    "live": [
+     "BTN",
+     "BB"
+    ],
+    "line": "BTN:Raise 2 > BB:Call 2",
+    "reach": 0.041854311897097894,
+    "share_of_flop_reach": 0.05734260257812141,
+    "pot_bb": 5.5,
+    "spr": 5.090909090909091,
+    "path_action_indices": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     1
+    ]
+   },
+   {
+    "node": 73,
+    "pot_type": "srp",
+    "live": [
+     "CO",
+     "BB"
+    ],
+    "line": "CO:Raise 2 > BB:Call 2",
+    "reach": 0.03543983250319743,
+    "share_of_flop_reach": 0.04855442936590125,
+    "pot_bb": 5.5,
+    "spr": 5.090909090909091,
+    "path_action_indices": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "node": 242,
+    "pot_type": "srp",
+    "live": [
+     "HJ",
+     "BB"
+    ],
+    "line": "HJ:Raise 2 > BB:Call 2",
+    "reach": 0.033046098877454064,
+    "share_of_flop_reach": 0.04527488874613526,
+    "pot_bb": 5.5,
+    "spr": 5.090909090909091,
+    "path_action_indices": [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     1
+    ]
+   },
+   {
+    "node": 24726,
+    "pot_type": "srp",
+    "live": [
+     "UTG",
+     "BB"
+    ],
+    "line": "UTG:Raise 2 > BB:Call 2",
+    "reach": 0.02919752354998567,
+    "share_of_flop_reach": 0.0400021386878483,
+    "pot_bb": 5.5,
+    "spr": 5.090909090909091,
+    "path_action_indices": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ]
+   }
+  ],
+  "coverage_reach": 0.13953776682773505,
+  "coverage_share_of_flop_reach": 0.19117405937800622,
+  "rule": "BTN->BB and CO->BB required; >= 2 of HJ / LJ / UTG-family -> BB for early / middle / late coverage; SB->BB optional",
+  "chosen": "BTN->BB (24), CO->BB (73), HJ->BB (242, middle), UTG->BB (24726, early; the tightest opener, largest RFI gap)",
+  "not_chosen": {
+   "SB->BB (11)": "highest reach (6.19%) but not overwhelming vs BTN (5.73%); 2.5 bb / no-limp SB tree has the weakest reference comparability -> deferred to the full-HU stage",
+   "LJ->BB (795)": "reach 4.25% vs HJ 4.53%; HJ covers the middle",
+   "UTG+1 / UTG+2 -> BB": "reach ~4.0% each, UTG preferred as the extreme early position"
+  },
+  "caveat": "3-way X->SB call->BB call SRPs carry ~4% of flop reach each (SB over-flatting) and stay static in S; part of the opener effect is therefore not addressed by S"
+ }
+}

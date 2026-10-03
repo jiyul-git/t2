@@ -19,13 +19,13 @@ Solver postflop model: no postflop tree: pot-share terminal payoff, realization 
 ## 2. Aggregate RFI
 | position | solver pilot | reproduction 20 it | reproduction 100 it | ensemble static 100 it | PreflopRanges 9-max | Matthiola 8-max (mapped) |
 |---|---|---|---|---|---|---|
-| UTG | 10.6% | 9.6% | — | 10.0% | 16.5% | 18.5% (nearest node) |
-| UTG+1 | 12.2% | 10.9% | — | 11.9% | 18.6% | 18.5% |
-| UTG+2 | 12.6% | 13.1% | — | 14.3% | 21.7% | 21.3% |
-| LJ | 15.5% | 16.1% | — | 16.8% | 25.7% | 24.5% |
-| HJ | 20.1% | 18.5% | — | 20.8% | 29.9% | 29.0% |
-| CO | 26.1% | 25.1% | — | 26.0% | 37.5% | 36.3% |
-| BTN | 35.6% | 35.2% | — | 36.2% | 48.7% | 48.7% |
+| UTG | 10.6% | 9.6% | 11.4% | 10.0% | 16.5% | 18.5% (nearest node) |
+| UTG+1 | 12.2% | 10.9% | 12.6% | 11.9% | 18.6% | 18.5% |
+| UTG+2 | 12.6% | 13.1% | 14.7% | 14.3% | 21.7% | 21.3% |
+| LJ | 15.5% | 16.1% | 16.8% | 16.8% | 25.7% | 24.5% |
+| HJ | 20.1% | 18.5% | 21.9% | 20.8% | 29.9% | 29.0% |
+| CO | 26.1% | 25.1% | 26.9% | 26.0% | 37.5% | 36.3% |
+| BTN | 35.6% | 35.2% | 36.5% | 36.2% | 48.7% | 48.7% |
 | SB | 60.4% | — | — | — | 89.4% | 29.4% |
 
 SB is not comparable (references include limps / 3.5bb opens; the solver has no limp and opens 2.5bb).
@@ -170,7 +170,13 @@ Solver = pilot artifact; EV = 20-iteration reproduction of the same config (bb, 
 
 ## 7. Convergence
 - 20 iterations: gap_total 0.303 bb; share of combos whose most-frequent action is not the best-EV action / mean class regret (bb): UTG 2.7% / 0.0109, HJ 5.6% / 0.0078, CO 3.9% / 0.0074, BTN 7.7% / 0.0087, BB 6.9% / 0.0160
+- 100 iterations: gap_total 0.008 bb; share of combos whose most-frequent action is not the best-EV action / mean class regret (bb): UTG 0.0% / 0.0003, HJ 0.0% / 0.0001, CO 1.1% / 0.0002, BTN 2.1% / 0.0002, BB 2.3% / 0.0004
 
+
+20 -> 100 iterations (same config): RFI change UTG +1.8 pp, UTG+1 +1.7 pp, UTG+2 +1.6 pp, LJ +0.8 pp, HJ +3.4 pp, CO +1.8 pp, BTN +1.3 pp
+- BB vs BTN fold 0.8% -> 0.0%; SB vs BTN call 23.8% -> 20.1%
+- modal != best-EV combo share: UTG 2.7% -> 0.0%, HJ 5.6% -> 0.0%, CO 3.9% -> 1.1%, BTN 7.7% -> 2.1%, BB 6.9% -> 2.3%
+- focus hands (10 hands x 5 nodes): best-EV action unchanged 96%, full EV ordering unchanged 82%
 
 ## 8. Attribution (where the evidence points)
 | candidate | evidence | leaning |
@@ -183,7 +189,7 @@ Solver = pilot artifact; EV = 20-iteration reproduction of the same config (bb, 
 | max_raises (pilot uses 2: open + one re-raise, no 4-bet) | 4-handed A/B max_raises 4 -> 2: CO / BTN RFI -0.3 / -0.2 pp; 9-max has more players behind, so the 9-max effect may be somewhat larger but is not of the 10 pp order | **solver abstraction, small contributor** |
 | all-in threshold / jam availability | 4-handed A/B without any jam option: CO / BTN RFI 32.9% / 44.7% (base 27.3% / 37.6%) -> the reshove structure is a large lever on RFI; but the solver's 3-bet-jam frequencies are close to the near-reference (BB vs BTN jam 8.1% vs Matthiola 8.6%; SB vs BTN 8.9% vs 11.8%), early-position cold jams are somewhat higher (2-6% vs 0-4%); removing jams is not T2 play. Open-jams by the opener (BTN 22 / 98s / 55) are a symptom of the 2 bb raise getting no folds | **probably not the main cause (reshove rates near reference in the main spots), but a large structural lever: re-check jam frequencies after the continuation model is corrected; opener jam overuse looks like a symptom of the payoff model** |
 | over-calling by SB / BB / BTN (passive continuation value) | vs-open table: SB flats 32-37% of combos vs EP/MP opens (Matthiola 13-14%); BB folds 1-3% vs MP opens (Matthiola 17%) and 10% / 2% vs UTG / UTG+1 (Matthiola EP 24%); BTN cold-calls only 2-6% (Matthiola 14%) but 3-bets more; flat calls are valued by raw-equity realization, so blinds over-call and pots go multiway against the opener | **solver/model mismatch (strong; this is how the payoff model reaches the opener)** |
-| convergence (pilot: 20 iterations, gap_total 0.31 bb) | 20 it: modal action != best-EV action for 2.7% (UTG) - 7.7% of combos (e.g. UTG KQo raise EV beats fold by 0.11 bb but folds 66%); ensemble static 100 it gives the same aggregate RFI -> convergence adds hand-level noise but does not explain the aggregate gap | **solver issue at hand level; not the aggregate cause** |
+| convergence (pilot: 20 iterations, gap_total 0.31 bb) | 20 it: modal action != best-EV action for 2.7% (UTG) - 7.7% of combos (e.g. UTG KQo raise EV beats fold by 0.11 bb but folds 66%); 100 it: RFI UTG 11.4%, BTN 36.5% (20 it: 9.6%, 35.2%); ensemble static 100 it gives the same aggregate RFI -> convergence adds hand-level noise but does not explain the aggregate gap | **solver issue at hand level; not the aggregate cause** |
 | reference side (conditions / provenance) | two independent near-references agree on aggregate RFI (UTG+1 18.6 vs 18.5, CO 37.5 vs 36.3, BTN 48.7 vs 48.7); neither records the ante model or raise tree; Matthiola is 8-max; no exact-comparable reference exists locally; a larger chart ante (e.g. 12.5% = 1.125 bb) would widen the reference somewhat | **reference mismatch possible for part of the gap; not the main cause** |
 
 ## 9. Termux / GTOpen stack semantics
