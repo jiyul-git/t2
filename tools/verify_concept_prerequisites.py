@@ -40,6 +40,7 @@ def main():
                 readiness = max(0.0, min(1.0,
                     (capacity - (difficulty - PS.ADVANCED_MASTERY_WINDOW))
                     / PS.ADVANCED_MASTERY_WINDOW))
+                readiness = readiness ** PS.ADVANCED_MASTERY_CURVE
                 # The raw pre-compression score can be at most the general
                 # difficulty cap, so this is a conservative final ceiling.
                 general_cap = 10.0 - max(0.0, difficulty - capacity)
