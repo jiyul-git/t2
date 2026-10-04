@@ -2164,6 +2164,27 @@
    "to": null
   },
   {
+   "concept": "weighted_joint_sampling",
+   "module": "bot",
+   "func": "PreparedPool.__init__",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "weighted_joint_sampling",
+   "module": "bot",
+   "func": "PreparedPool.sample",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "weighted_joint_sampling",
+   "module": "bot",
+   "func": "prepare_pool",
+   "from": null,
+   "to": null
+  },
+  {
    "concept": "opponent_behavior_memory",
    "module": "reads",
    "func": "Book.observe_line",

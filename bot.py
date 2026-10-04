@@ -1,4 +1,4 @@
-import random, itertools, zlib as _zlib
+import bisect, random, itertools, zlib as _zlib
 RANKS="23456789TJQKA"; SUITS="cdhs"
 RV={r:i+2 for i,r in enumerate(RANKS)}
 FULLDECK=[r+s for r in RANKS for s in SUITS]
@@ -195,33 +195,58 @@ def _filter_pool(pool, dead=None, sort_legacy=False):
     return sorted(vals) if sort_legacy else vals
 
 
+class PreparedPool:
+    """A weighted pool sorted and summed once for repeated sampling.
+
+    Monte Carlo loops draw from the same pool hundreds of times. Sorting and
+    summing the dict on every draw dominated bot think time (UI next-hand wait).
+    Sampling from a PreparedPool returns exactly what _sample_pool_combo returns
+    for the source dict with the same RNG state.
+    """
+    __slots__ = ('combos', 'uniform', 'total', 'cum')
+
+    def __init__(self, pool):
+        items = [(c, float(w)) for c, w in sorted(pool.items(), key=lambda kv: kv[0])
+                 if float(w) > 0]
+        self.combos = [c for c, _w in items]
+        w0 = items[0][1] if items else 0.0
+        self.uniform = all(abs(w - w0) <= 1e-12 for _c, w in items[1:])
+        self.total = sum(w for _c, w in items)
+        cum = []
+        acc = 0.0
+        for _c, w in items:
+            acc += w
+            cum.append(acc)
+        self.cum = cum
+
+    def sample(self, rng):
+        if not self.combos:
+            raise IndexError('cannot choose from empty weighted pool')
+        if self.uniform:
+            return rng.choice(self.combos)
+        x = rng.random() * self.total
+        i = bisect.bisect_right(self.cum, x)
+        return self.combos[i] if i < len(self.combos) else self.combos[-1]
+
+
+def prepare_pool(pool):
+    """Weighted dict -> PreparedPool; legacy lists and prepared pools unchanged."""
+    return PreparedPool(pool) if isinstance(pool, dict) else pool
+
+
 def _sample_pool_combo(rng, pool):
     """Sample one combo from legacy-uniform or weighted pool.
 
     Legacy lists use rng.choice() exactly as before. Uniform weighted dicts also
     use rng.choice() on stable sorted support, preserving the legacy RNG path for
     an equivalent sorted list. Non-uniform dicts use one cumulative random draw.
+    Callers sampling in a loop pass prepare_pool(pool) (same draws, no re-sort).
     """
+    if isinstance(pool, PreparedPool):
+        return pool.sample(rng)
     if not isinstance(pool, dict):
         return rng.choice(pool)
-
-    items = [(c, float(w)) for c, w in sorted(pool.items(), key=lambda kv: kv[0])
-             if float(w) > 0]
-    if not items:
-        raise IndexError('cannot choose from empty weighted pool')
-
-    w0 = items[0][1]
-    if all(abs(w - w0) <= 1e-12 for _c, w in items[1:]):
-        return rng.choice([c for c, _w in items])
-
-    total = sum(w for _c, w in items)
-    x = rng.random() * total
-    acc = 0.0
-    for combo, w in items:
-        acc += w
-        if x < acc:
-            return combo
-    return items[-1][0]
+    return PreparedPool(pool).sample(rng)
 
 
 def equity_vs_pools(hero, board, pools, sims=500, seed=None):
@@ -236,9 +261,10 @@ def equity_vs_pools(hero, board, pools, sims=500, seed=None):
     dead = set(hero) | set(board)
     need = 5 - len(board)
     share = 0.0; run = 0
+    prepped = [prepare_pool(p) for p in pools]
     for _ in range(sims):
         used = set(dead); opps = []; ok = True
-        for pool in pools:
+        for pool in prepped:
             for _t in range(40):
                 c = _sample_pool_combo(rng, pool)
                 if c[0] not in used and c[1] not in used:

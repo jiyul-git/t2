@@ -172,11 +172,12 @@ def joint_relative_strength(hero, board, opp_ranges, n_opp=None, sims=600, seed=
     mine = bot.eval7(hero + board)
     not_behind = 0
     run = 0
+    prepped = [bot.prepare_pool(p) for p in clean]
     for _ in range(int(sims)):
         used = set(dead)
         scores = []
         ok = True
-        for pool in clean:
+        for pool in prepped:
             for _try in range(60):
                 c = bot._sample_pool_combo(rng, pool)
                 if c[0] not in used and c[1] not in used:
@@ -478,9 +479,10 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
     rng = random.Random(seed)
     hs = bot.eval7(hero + board)
     share = 0.0; run = 0
+    prepped = [bot.prepare_pool(p) for p in pools]
     for _ in range(sims):
         used = set(dead); opps = []; ok = True
-        for pool in pools:
+        for pool in prepped:
             for _t in range(40):
                 cc = bot._sample_pool_combo(rng, pool)
                 if cc[0] not in used and cc[1] not in used:

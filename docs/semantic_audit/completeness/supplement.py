@@ -1015,6 +1015,9 @@ sp('money_open_form_shadow', 'money_pressure', 'unopened_modifiers', 'restraint 
 
 sp('opponent_behavior_memory', 'reads', 'Book.observe_postflop')
 # exploit observations (after L161): lead / probe lines, follow-up and showdown link
+sp('weighted_joint_sampling', 'bot', 'PreparedPool.__init__')  # sort/sum once per MC loop (same draws)
+sp('weighted_joint_sampling', 'bot', 'PreparedPool.sample')
+sp('weighted_joint_sampling', 'bot', 'prepare_pool')
 sp('opponent_behavior_memory', 'reads', 'Book.observe_line')
 sp('opponent_behavior_memory', 'reads', 'Book.observe_line_raise')
 sp('opponent_behavior_memory', 'reads', 'Book.observe_line_showdown')

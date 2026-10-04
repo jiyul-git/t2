@@ -422,9 +422,10 @@ def range_advantage(r_a, r_b, board, sims=180, seed=None):
     rng = random.Random(seed)
     if not r_a or not r_b: return 0.0
     w = 0.0; run = 0
+    p_a, p_b = bot.prepare_pool(r_a), bot.prepare_pool(r_b)
     for _ in range(sims):
-        a = list(bot._sample_pool_combo(rng, r_a))
-        b = list(bot._sample_pool_combo(rng, r_b))
+        a = list(bot._sample_pool_combo(rng, p_a))
+        b = list(bot._sample_pool_combo(rng, p_b))
         if set(a) & set(b) or set(a+b) & set(board): continue
         run += 1
         ea, eb = bot.eval7(a+board), bot.eval7(b+board)
@@ -484,10 +485,12 @@ def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
     rng = random.Random(seed)
     share = 0.0
     run = 0
+    p_mine = bot.prepare_pool(mine)
+    p_clean = [bot.prepare_pool(p) for p in clean]
     for _ in range(int(sims)):
         used = set(dead)
         for _try in range(60):
-            h = bot._sample_pool_combo(rng, mine)
+            h = bot._sample_pool_combo(rng, p_mine)
             if h[0] not in used and h[1] not in used:
                 used.add(h[0]); used.add(h[1])
                 break
@@ -497,7 +500,7 @@ def joint_range_advantage(r_a, opp_ranges, board, n_opp=None,
         hs = bot.eval7(list(h) + board)
         scores = []
         ok = True
-        for pool in clean:
+        for pool in p_clean:
             for _try in range(60):
                 c = bot._sample_pool_combo(rng, pool)
                 if c[0] not in used and c[1] not in used:
@@ -586,9 +589,10 @@ def joint_nut_advantage(r_a, opp_ranges, board, n_opp=None, sims=1600, seed=None
             int(sims),'joint_nut_advantage')).encode())
     rng=random.Random(seed)
     n=0; field2=0; field3=0
+    prepped=[bot.prepare_pool(p) for p in pools]
     for _ in range(max(1,int(sims))):
         used=set(dead); scores=[]; ok=True
-        for pool in pools:
+        for pool in prepped:
             pick=None
             for _try in range(80):
                 c=bot._sample_pool_combo(rng,pool)
@@ -754,11 +758,12 @@ def joint_blocker_effect(hero, opp_ranges, board, street, size_frac,
 
     hero_cards = set(hero)
     continue_n = fold_n = blocked_continue = blocked_fold = 0
+    sampled = [(_seat, bot.prepare_pool(pool), calls) for _seat, pool, calls in prepared]
     for _ in range(max(1, int(sims))):
         used = set(board_dead)
         picks = []
         ok = True
-        for _seat, pool, calls in prepared:
+        for _seat, pool, calls in sampled:
             pick = None
             for _try in range(80):
                 c = bot._sample_pool_combo(rng, pool)
