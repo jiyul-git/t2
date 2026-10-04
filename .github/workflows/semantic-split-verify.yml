@@ -1,0 +1,29 @@
+name: Semantic Split Verify
+
+on:
+  push:
+    branches: [test]
+    paths:
+      - 'persona.py'
+      - 'plan.py'
+      - 'session.py'
+      - 'tools/verify_checkraise_street_split.py'
+      - 'docs/semantic_audit/CONCEPT_SPLIT_TODO.md'
+      - '.github/workflows/semantic-split-verify.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python3 -m py_compile persona.py plan.py session.py tools/verify_checkraise_street_split.py
+      - name: Verify checkraise street split
+        run: python3 tools/verify_checkraise_street_split.py
+      - name: Street granularity audit
+        run: python3 tools/street_concept_granularity_audit.py
