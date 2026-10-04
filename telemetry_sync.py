@@ -18,6 +18,7 @@ import time
 from pathlib import Path
 
 import persona as PS
+import reads as RD
 
 D = Path(__file__).resolve().parent
 CONFIG = D / "telemetry_config.json"
@@ -45,13 +46,15 @@ def _hero_table_book(st):
     tid = (field.get("players") or {}).get(hero, {}).get("table")
     pids = [str(x) for x in ((field.get("tables") or {}).get(str(tid), {}) or {}).get("pids", [])]
     if not pids:
-        return copy.deepcopy(book)
+        return RD.unpack_book_d(book)
     ps = set(pids)
     out = {}
     for k, v in book.items():
         i, _, j = str(k).partition(">")
         if i in ps and j in ps:
-            out[k] = {kk: copy.deepcopy(vv) for kk, vv in v.items() if kk != "_hand_hist"}
+            # 저장 장부는 기본값 칸이 빠진 형태(reads.pack_book_d) — 채워서 기록한다.
+            full = dict(RD.REC_DEFAULTS); full.update(v)
+            out[k] = {kk: copy.deepcopy(vv) for kk, vv in full.items() if kk != "_hand_hist"}
     return out
 
 def _load_config():

@@ -2187,6 +2187,41 @@
   {
    "concept": "opponent_behavior_memory",
    "module": "reads",
+   "func": "_copy_hist",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "_copy_value",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "copy_book_d",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "pack_book_d",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "unpack_book_d",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
    "func": "Book.observe_line",
    "from": null,
    "to": null
@@ -2360,6 +2395,7 @@
   "reads:_MAX_RECENCY_HISTORY": "recency_window",
   "reads:_SIG_SCALE": "style_belief_reference",
   "plan:CLEAR_VALUE_REL": "value_when_called_strength",
+  "reads:REC_DEFAULTS": "opponent_behavior_memory",
   "reads:TABLE_DEV_K": "opponent_behavior_memory",
   "reads:TABLE_DEV_AXES": "opponent_behavior_memory",
   "persona:SIZING_FAMILY_SIG": "human_planned_size_shape",

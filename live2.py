@@ -21,6 +21,17 @@ _SUFFIX = SP.namespace()
 
 
 # ---------- 상태 직렬화 ----------
+def _copy_field(d):
+    """copy.deepcopy(field_dump) 와 같은 결과. 장부는 전용 복사(RD.copy_book_d) —
+    대회 장부가 커지면 범용 deepcopy 가 한 액션 시간의 대부분이었다."""
+    if not isinstance(d, dict):
+        return copy.deepcopy(d)
+    out = {}
+    for k, v in d.items():
+        out[k] = RD.copy_book_d(v) if (k == 'book' and isinstance(v, dict)) else copy.deepcopy(v)
+    return out
+
+
 def _dump(f):
     return {
         'entries': f.entries, 'start_stack': f.start_stack, 'hero_pid': f.hero_pid,
@@ -33,7 +44,8 @@ def _dump(f):
         'seed': getattr(f, 'seed', None),
         'tilt': f.tilt.state,
         # 대회 하나의 관찰 장부(L161). 내 테이블과 다른 테이블이 같은 장부를 쓴다.
-        'book': getattr(getattr(f, 'book', None), 'd', {}) or {},
+        # 저장 형태는 기본값(0) 칸을 뺀 것(RD.pack_book_d). 읽을 때 채운다.
+        'book': RD.pack_book_d(getattr(getattr(f, 'book', None), 'd', {}) or {}),
         # 틸트 키가 좌석에서 사람(pid)으로 바뀌었다. 이 표시가 없는 저장본은
         # 좌석 키('1'..'8')라서 pid 1..8 과 그대로 충돌한다 — 3번 자리의
         # 누적 틸트가 pid 3 인 사람에게 붙는다. 그런 상태는 버린다.
@@ -67,7 +79,7 @@ def _load_field(d):
     f.seed = d.get('seed')
     # 장부는 깊은 복사로 복원한다 — 핸드 도중 관측이 입력 덤프(=저장 상태)로
     # 새면 재생 때 이미 이번 핸드를 품은 장부로 판단하게 된다(build_hand 주석).
-    f.book = RD.Book(); f.book.d = copy.deepcopy(d.get('book') or {})
+    f.book = RD.Book(); f.book.d = RD.unpack_book_d(d.get('book') or {})
     f.entries = d['entries']; f.start_stack = d['start_stack']
     f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
@@ -208,7 +220,7 @@ def build_hand(st):
     # 장부는 field 덤프 안에 산다(L161) — _load_field 가 이미 깊은 복사했다.
     # 예전 저장본(st['book'] 만 있음)은 한 번 이어받는다.
     if not f.book.d and st.get('book'):
-        f.book.d = copy.deepcopy(st['book'])
+        f.book.d = RD.unpack_book_d(st['book'])
     _bk = f.book
     h = play.Hand(
         seats, profs, stacks, layout['button'], sb, bb, hero=hero_seat,
@@ -261,7 +273,7 @@ def compute_others_parallel(field_dump):
     탈락 수거/밸런싱은 하지 않는다. 반환값도 전체 field가 아니라
     비-HERO 테이블이 소유한 player/table/tilt 부분만 담는다.
     """
-    base = copy.deepcopy(field_dump)
+    base = _copy_field(field_dump)
     f = _load_field(base)
     f.notes = []
     hero_tid, other_tids, other_pids = _round_owners(base)
@@ -303,8 +315,8 @@ def compute_others_parallel(field_dump):
 
     # 장부: 관찰자가 비-HERO 테이블 사람인 항목만 이 worker 소유다.
     _op = {str(x) for x in other_pids}
-    book = {k: copy.deepcopy(v) for k, v in (out.get('book') or {}).items()
-            if str(k).partition('>')[0] in _op}
+    _ob = out.get('book') or {}
+    book = RD.copy_book_d({k: v for k, v in _ob.items() if str(k).partition('>')[0] in _op})
 
     return {
         'mode': PARALLEL_TABLES_MODE,
@@ -338,7 +350,7 @@ def _overlay_parallel_dump(main_dump, base_dump, others):
     if set((others.get('players') or {}).keys()) != expected_players:
         raise ValueError('parallel worker player ownership mismatch')
 
-    merged = copy.deepcopy(main_dump)
+    merged = _copy_field(main_dump)
     for pid, row in (others.get('players') or {}).items():
         merged['players'][str(pid)] = copy.deepcopy(row)
     for tid, row in (others.get('tables') or {}).items():
@@ -357,9 +369,9 @@ def _overlay_parallel_dump(main_dump, base_dump, others):
     mb = merged.setdefault('book', {})
     for k in [k for k in mb if str(k).partition('>')[0] in expected_players]:
         del mb[k]
-    for k, v in (others.get('book') or {}).items():
-        if str(k).partition('>')[0] in expected_players:
-            mb[k] = copy.deepcopy(v)
+    _wb = others.get('book') or {}
+    mb.update(RD.copy_book_d({k: v for k, v in _wb.items()
+                              if str(k).partition('>')[0] in expected_players}))
     return merged
 
 
@@ -400,7 +412,7 @@ def compute_others(field_dump):
     _load_field 는 프로필 dict 를 넘겨받은 덤프와 그대로 공유하므로
     (live2.py 의 _load_field 참고) 반드시 깊은 복사로 넘긴다.
     """
-    f = _load_field(copy.deepcopy(field_dump))
+    f = _load_field(_copy_field(field_dump))
     f.notes = []
     # 봇 핸드 기록은 fieldsim._log_bot_hand 가 모듈 폴더에 직접 append 한다.
     # 워커에서 그대로 두면 (1) 결과를 버리고 다시 계산할 때 줄이 중복되고
@@ -443,7 +455,7 @@ def _resume_parallel_others(st, others=None):
         _append_bot_log(legacy.get('bot_log'))
         _new_notes = list(legacy.get('notes') or [])
         how = 'fallback'
-        merged_f = _load_field(copy.deepcopy(st['field']))
+        merged_f = _load_field(_copy_field(st['field']))
     else:
         want = _others_key(base)
         how = 'hit'
@@ -455,7 +467,7 @@ def _resume_parallel_others(st, others=None):
         if how != 'hit':
             others = compute_others_parallel(base)
 
-        main_f = _load_field(copy.deepcopy(st['field']))
+        main_f = _load_field(_copy_field(st['field']))
         merged_f, _new_notes = _merge_parallel_field(
             main_f, base, others)
         st['field'] = _dump(merged_f)
@@ -534,7 +546,7 @@ def resume_others(st, others=None):
 
     if st.pop('bust_pending', False):
         _f2 = _load_field(
-            copy.deepcopy(st['field'])
+            _copy_field(st['field'])
         )
 
         _hero = _f2.players.get(_f2.hero_pid)
@@ -565,7 +577,7 @@ def resume_others(st, others=None):
     rec = st.pop('pending_archive', None)
     if rec is not None:
         # 정산이 끝났으니 비워둔 자리를 채운다. 키 순서는 그대로다.
-        _final_f = _load_field(copy.deepcopy(others['field']))
+        _final_f = _load_field(_copy_field(others['field']))
         rec['field'] = _final_f.status()
         rec['notes'] = list(rec.get('notes') or []) + _new_notes
         _archive_write(rec)
@@ -654,13 +666,13 @@ def step(action=None, amount=0, defer_others=False, others=None,
         # 콜백 실패가 게임 진행을 막아서는 안 된다.
         if on_round_start is not None:
             try:
-                on_round_start(copy.deepcopy(st['field']))
+                on_round_start(_copy_field(st['field']))
             except Exception:
                 pass
 
     # build_hand/HandRun이 내부 상태를 바꿔도 worker 기준점은
     # 반드시 라운드 시작 field 그대로여야 한다.
-    _round_base = copy.deepcopy(st['field'])
+    _round_base = _copy_field(st['field'])
     f, tb, alive, h, hero_seat = build_hand(st)
     # 저장된 HERO 액션을 재생하는 동안은 UI 진행 콜백을 끈다.
     # 그렇지 않으면 과거 봇 액션을 현재 액션처럼 다시 스트리밍한다.
@@ -793,8 +805,8 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     )
     _hero_notes = list(f.notes)
     _parallel_notes = []
-    _round_base = copy.deepcopy(round_base if round_base is not None
-                                else (st.get('field') or {}))
+    _round_base = _copy_field(round_base if round_base is not None
+                              else (st.get('field') or {}))
 
     _hero_tid, _other_tids, _other_pids = _round_owners(_round_base)
     _single_table_round = not _other_tids

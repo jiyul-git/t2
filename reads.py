@@ -1,6 +1,6 @@
 """각 플레이어가 각자 관찰한 것만으로 상대 성향을 추정한다.
    진짜 프로필은 절대 참조하지 않는다."""
-import math, random
+import copy, math, random
 import json as _json_mod, os.path as _os_path, os as _os
 
 # 모집단 사전분포 — 표본이 적을 때 끌려가는 기준점
@@ -61,12 +61,84 @@ _MAX_RECENCY_HISTORY = 121  # max declared memory=120 plus one baseline snapshot
 
 
 def _numeric_snapshot(r):
-    """Snapshot cumulative public-observation counters at a hand boundary."""
+    """Snapshot cumulative public-observation counters at a hand boundary.
+
+    Zero counters are left out: every reader treats a missing counter as 0
+    (_recent_record uses base.get(k, 0)), and most of the ~90 counters are 0.
+    """
     return {
         k: v for k, v in r.items()
         if k != '_hand_hist' and isinstance(v, (int, float))
-        and not isinstance(v, bool)
+        and not isinstance(v, bool) and v != 0
     }
+
+
+def _copy_hist(hist):
+    out = []
+    for e in hist:
+        c = dict(e)
+        if isinstance(e.get('_prev'), dict):
+            c['_prev'] = dict(e['_prev'])
+        out.append(c)
+    return out
+
+
+def _copy_value(v):
+    if isinstance(v, (dict, list)):
+        return copy.deepcopy(v)
+    return v
+
+
+def copy_book_d(d):
+    """Exact deep copy of Book.d, much faster than copy.deepcopy.
+
+    Records hold scalars plus the _hand_hist list of flat dicts; anything else
+    falls back to deepcopy.
+    """
+    out = {}
+    for k, r in (d or {}).items():
+        c = {}
+        for kk, v in r.items():
+            if kk == '_hand_hist' and isinstance(v, list):
+                c[kk] = _copy_hist(v)
+            else:
+                c[kk] = _copy_value(v)
+        out[k] = c
+    return out
+
+
+def pack_book_d(d):
+    """Save form of Book.d: counters still at their REC_DEFAULTS value are left out."""
+    out = {}
+    for k, r in (d or {}).items():
+        c = {}
+        for kk, v in r.items():
+            dv = REC_DEFAULTS.get(kk, _MISSING)
+            if dv is not _MISSING and type(v) is type(dv) and v == dv:
+                continue
+            c[kk] = _copy_hist(v) if (kk == '_hand_hist' and isinstance(v, list)) else _copy_value(v)
+        out[k] = c
+    return out
+
+
+def unpack_book_d(d):
+    """Inverse of pack_book_d (also accepts full records): copy and fill defaults
+    in REC_DEFAULTS order, exactly as Book.rec would."""
+    out = {}
+    for k, r in (d or {}).items():
+        c = {}
+        for kk, dv in REC_DEFAULTS.items():
+            if kk in r:
+                c[kk] = r[kk]
+            else:
+                c[kk] = dv
+        for kk, v in r.items():
+            if kk not in c:
+                c[kk] = v
+        for kk, v in list(c.items()):
+            c[kk] = _copy_hist(v) if (kk == '_hand_hist' and isinstance(v, list)) else _copy_value(v)
+        out[k] = c
+    return out
 
 
 def _append_hand_snapshot(r):
@@ -188,6 +260,74 @@ def _recent_record(r, memory):
 
 
 
+# 관찰 카운터 기본값(전부 0). Book.rec 가 채우고, 저장 시에는 기본값인 칸을 뺀다.
+REC_DEFAULTS = {
+    'hands': 0, 'vpip': 0, 'pfr': 0,
+    'cbet_opp': 0, 'cbet': 0,
+    'barrel_opp': 0, 'barrel': 0,
+    'delayed_cbet_opp': 0, 'delayed_cbet': 0,
+    'showdowns': 0, 'sd_strong': 0, 'sd_weak': 0,
+    'facing_bet': 0, 'fold_to_bet': 0,
+    # bet 대면과 raise 대면은 다른 사건이다.
+    # F3/F5 이전에는 둘 다 fold_to_bet 으로 섞여 bluff XR/raise
+    # 익스플로잇의 근거를 만들 수 없었다.
+    'facing_raise': 0, 'fold_to_raise': 0,
+    # 스트리트별 폴드 — bet/raise를 각각 분리한다.
+    'fb_flop': 0, 'f2b_flop': 0,
+    'fb_turn': 0, 'f2b_turn': 0,
+    'fb_river': 0, 'f2b_river': 0,
+    'fr_flop': 0, 'f2r_flop': 0,
+    'fr_turn': 0, 'f2r_turn': 0,
+    'fr_river': 0, 'f2r_river': 0,
+    # 프리플랍 공격성 — 3벳 많이 치는 사람과 포스트플랍 공격형은 다르다
+    'pf_3bet_opp': 0, 'pf_3bet': 0,
+    # 림프 — 기회 대비 실행. limp_p 의 관찰 쪽 짝이다
+    'limp_opp': 0, 'limp': 0,
+    # 기준 대비 관찰. 절대 빈도(VPIP 34%)만 세면 포지션을 구분하려고
+    # 자리마다 따로 세야 하고 표본이 그만큼 쪼개진다.
+    # 그 자리의 기준 오픈 폭을 같이 누적하면 한 축으로 합쳐진다 —
+    # BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
+    'rfi_opp': 0, 'rfi_did': 0, 'rfi_exp': 0.0,
+    # 림프 후 첫 레이즈를 다시 마주했을 때의 반응.
+    # 포스트플랍 fold_to_bet 과 섞으면 안 된다.
+    'pf_faced_limp_raise': 0, 'pf_fold_after_limp_raise': 0,
+    'pf_faced_3bet': 0, 'pf_fold_to_3bet': 0,
+    # 4벳 이상. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
+    'pf_4bet_opp': 0, 'pf_4bet': 0,
+    'pf_faced_4bet': 0, 'pf_fold_to_4bet': 0,
+    # 베팅 사이즈. 평균만이 아니라 **분산**이 중요하다.
+    # 항상 60%만 치는 사람과 30~120% 를 섞는 사람은
+    # 같은 60% 벳이라도 레인지 해석이 완전히 달라진다.
+    'sz_n': 0, 'sz_sum': 0.0, 'sz_sq': 0.0,
+    'sz_big': 0, 'sz_small': 0,          # 100%+ / 40%-
+    'szr_n': 0, 'szr_sum': 0.0,          # 리버 사이즈만 따로
+    'agg_actions': 0, 'passive_actions': 0,
+    # 콜 후 squeeze를 맞은 상태는 opener의 fold-to-3bet/4bet과 다르다.
+    'pf_backraise_opp': 0, 'pf_backraise': 0,
+    'pf_call_faced_squeeze': 0, 'pf_fold_after_call_squeeze': 0,
+    # P7: 아직 자발적 액션이 없는 상태에서 open + re-raise를 처음
+    # 마주한 cold response. opener/3bettor 역할 통계와 섞지 않는다.
+    'pf_cold_reraise_opp': 0,
+    'pf_cold_reraise_call': 0,
+    'pf_cold_reraise_raise': 0,
+    'pf_cold_reraise_fold': 0,
+    # 리드(동크)·프로브(스탭) — 공격자가 라인을 잇는 c벳/배럴과 다른
+    # 질문이다. 리드: 비공격자가 살아 있는 공격자보다 먼저 첫 벳.
+    # 프로브: 공격자가 체크했거나 공격자가 없을 때 비공격자의 첫 벳.
+    'lead_opp_flop': 0, 'lead_flop': 0, 'lead_opp_turn': 0, 'lead_turn': 0,
+    'lead_opp_river': 0, 'lead_river': 0,
+    'probe_opp_flop': 0, 'probe_flop': 0, 'probe_opp_turn': 0, 'probe_turn': 0,
+    'probe_opp_river': 0, 'probe_river': 0,
+    # 그 벳 뒤의 반응과 공개된 패(해석: 밸류 위주인가 블러프 위주인가).
+    'lead_fr': 0, 'lead_f2r': 0, 'probe_fr': 0, 'probe_f2r': 0,
+    'sd_lead': 0, 'sd_lead_strong': 0, 'sd_lead_weak': 0,
+    'sd_probe': 0, 'sd_probe_strong': 0, 'sd_probe_weak': 0,
+    # 멀티웨이 동크(리드)는 헤즈업 리드와 의미가 달라 따로 센다.
+    'mw_lead_opp_flop': 0, 'mw_lead_flop': 0, 'mw_lead_opp_turn': 0,
+    'mw_lead_turn': 0, 'mw_lead_opp_river': 0, 'mw_lead_river': 0,
+}
+
+
 class Book:
     """관찰자 i가 상대 j에 대해 쌓은 장부."""
     def __init__(self):
@@ -196,71 +336,7 @@ class Book:
     def _k(self, i, j): return '%s>%s' % (i, j)
 
     def rec(self, i, j):
-        defaults = {
-            'hands': 0, 'vpip': 0, 'pfr': 0,
-            'cbet_opp': 0, 'cbet': 0,
-            'barrel_opp': 0, 'barrel': 0,
-            'delayed_cbet_opp': 0, 'delayed_cbet': 0,
-            'showdowns': 0, 'sd_strong': 0, 'sd_weak': 0,
-            'facing_bet': 0, 'fold_to_bet': 0,
-            # bet 대면과 raise 대면은 다른 사건이다.
-            # F3/F5 이전에는 둘 다 fold_to_bet 으로 섞여 bluff XR/raise
-            # 익스플로잇의 근거를 만들 수 없었다.
-            'facing_raise': 0, 'fold_to_raise': 0,
-            # 스트리트별 폴드 — bet/raise를 각각 분리한다.
-            'fb_flop': 0, 'f2b_flop': 0,
-            'fb_turn': 0, 'f2b_turn': 0,
-            'fb_river': 0, 'f2b_river': 0,
-            'fr_flop': 0, 'f2r_flop': 0,
-            'fr_turn': 0, 'f2r_turn': 0,
-            'fr_river': 0, 'f2r_river': 0,
-            # 프리플랍 공격성 — 3벳 많이 치는 사람과 포스트플랍 공격형은 다르다
-            'pf_3bet_opp': 0, 'pf_3bet': 0,
-            # 림프 — 기회 대비 실행. limp_p 의 관찰 쪽 짝이다
-            'limp_opp': 0, 'limp': 0,
-            # 기준 대비 관찰. 절대 빈도(VPIP 34%)만 세면 포지션을 구분하려고
-            # 자리마다 따로 세야 하고 표본이 그만큼 쪼개진다.
-            # 그 자리의 기준 오픈 폭을 같이 누적하면 한 축으로 합쳐진다 —
-            # BTN 40% 와 UTG 40% 가 같은 값이 아니게 된다.
-            'rfi_opp': 0, 'rfi_did': 0, 'rfi_exp': 0.0,
-            # 림프 후 첫 레이즈를 다시 마주했을 때의 반응.
-            # 포스트플랍 fold_to_bet 과 섞으면 안 된다.
-            'pf_faced_limp_raise': 0, 'pf_fold_after_limp_raise': 0,
-            'pf_faced_3bet': 0, 'pf_fold_to_3bet': 0,
-            # 4벳 이상. 3벳만 남발하는 사람과 4벳까지 가는 사람은 다르다.
-            'pf_4bet_opp': 0, 'pf_4bet': 0,
-            'pf_faced_4bet': 0, 'pf_fold_to_4bet': 0,
-            # 베팅 사이즈. 평균만이 아니라 **분산**이 중요하다.
-            # 항상 60%만 치는 사람과 30~120% 를 섞는 사람은
-            # 같은 60% 벳이라도 레인지 해석이 완전히 달라진다.
-            'sz_n': 0, 'sz_sum': 0.0, 'sz_sq': 0.0,
-            'sz_big': 0, 'sz_small': 0,          # 100%+ / 40%-
-            'szr_n': 0, 'szr_sum': 0.0,          # 리버 사이즈만 따로
-            'agg_actions': 0, 'passive_actions': 0,
-            # 콜 후 squeeze를 맞은 상태는 opener의 fold-to-3bet/4bet과 다르다.
-            'pf_backraise_opp': 0, 'pf_backraise': 0,
-            'pf_call_faced_squeeze': 0, 'pf_fold_after_call_squeeze': 0,
-            # P7: 아직 자발적 액션이 없는 상태에서 open + re-raise를 처음
-            # 마주한 cold response. opener/3bettor 역할 통계와 섞지 않는다.
-            'pf_cold_reraise_opp': 0,
-            'pf_cold_reraise_call': 0,
-            'pf_cold_reraise_raise': 0,
-            'pf_cold_reraise_fold': 0,
-            # 리드(동크)·프로브(스탭) — 공격자가 라인을 잇는 c벳/배럴과 다른
-            # 질문이다. 리드: 비공격자가 살아 있는 공격자보다 먼저 첫 벳.
-            # 프로브: 공격자가 체크했거나 공격자가 없을 때 비공격자의 첫 벳.
-            'lead_opp_flop': 0, 'lead_flop': 0, 'lead_opp_turn': 0, 'lead_turn': 0,
-            'lead_opp_river': 0, 'lead_river': 0,
-            'probe_opp_flop': 0, 'probe_flop': 0, 'probe_opp_turn': 0, 'probe_turn': 0,
-            'probe_opp_river': 0, 'probe_river': 0,
-            # 그 벳 뒤의 반응과 공개된 패(해석: 밸류 위주인가 블러프 위주인가).
-            'lead_fr': 0, 'lead_f2r': 0, 'probe_fr': 0, 'probe_f2r': 0,
-            'sd_lead': 0, 'sd_lead_strong': 0, 'sd_lead_weak': 0,
-            'sd_probe': 0, 'sd_probe_strong': 0, 'sd_probe_weak': 0,
-            # 멀티웨이 동크(리드)는 헤즈업 리드와 의미가 달라 따로 센다.
-            'mw_lead_opp_flop': 0, 'mw_lead_flop': 0, 'mw_lead_opp_turn': 0,
-            'mw_lead_turn': 0, 'mw_lead_opp_river': 0, 'mw_lead_river': 0,
-        }
+        defaults = REC_DEFAULTS
         key = self._k(i, j)
         r = self.d.setdefault(key, {})
         # 과거 저장 장부에도 새 필드를 안전하게 채운다.
