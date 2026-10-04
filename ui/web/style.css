@@ -63,7 +63,7 @@ html, body {
 #lvl { font-weight: 600; letter-spacing: .1px; font-size:12px; }
 #lvl .ante { color: var(--dim); font-weight: 400; }
 #handno { color: var(--dim); font-variant-numeric: tabular-nums; font-size:10px; }
-#fieldline { display:none; }
+#fieldline { display:block; margin-right:auto; font-size:12px; color:var(--muted, #b9c9bf); white-space:nowrap; }
 #fieldline .bubblewarn { color: var(--gold); }
 #notes { display: none; }
 
