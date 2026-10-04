@@ -1361,7 +1361,12 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             # 잘못된/다른 라운드 결과는 절대 합치지 않는다.
             parallel_others = None
 
-    if defer_others and _single_table_round:
+    if vclock_others:
+        # The independent scheduler alone owns other tables and bust/balance.
+        # Do not fall through into the legacy round path, even when defer_others
+        # is false (the UI vclock caller uses that default).
+        pass
+    elif defer_others and _single_table_round:
         # 파이널테이블: 다른 테이블이 없으므로 worker/pending을 만들 이유가 없다.
         # HERO 핸드 결과만으로 bust 정리/좌석 reconcile을 즉시 끝낸다.
         f._collect_busts()

@@ -25,3 +25,25 @@ P1 bot_log_same=false / diff_keys=[]; P2 라운드 시작 문맥 통과. 기존 
 
 completeness: sites 1,145 / owned 1,145 / unowned 0, span errors 0.
 virtual_tournament_clock 개념과 코드 span을 registry에 추가했다.
+
+## 2026-10-05 종료 후 추가 지연 수정
+
+UI 75(5d1f50dc)에서 100명 seed=20261005, A♥ K♠ LJ 500 레이즈,
+2♠ Q♥ 7♥ 플롭 350 베팅 후 상대 폴드 경로를 직접 선택해 재현했다.
+마지막 폴드 이벤트→최종 응답은 원본 0.962초, 추적 재실행 0.919초였다.
+추적 재실행 중 기존 `Field.step_others()`가 0.819832초를 사용했다.
+원인: cc215661의 vclock 종료 경로는 pending을 설정했지만 아래의 별도
+legacy if/elif 체인으로 내려갔다. UI는 defer_others 기본 False로 호출해
+독립 선계산과 함께 기존 라운드 계산·탈락 수거·밸런싱도 실행했다.
+
+수정은 vclock 모드에서 legacy 종료 체인을 건너뛰는 것으로 제한한다.
+탈락·이동은 apply_vclock_events/finalize_vclock_settle이 계속 담당한다.
+화면 모션, 고정 대기, 결과 전달 순서, CPU 워커 설정은 변경하지 않았다.
+같은 핸드 수정 후 마지막 폴드→최종 응답 0.085초, 요청 전체 0.214초.
+서버 한 사례 측정이며 휴대폰 지연이나 모든 구간 해결을 의미하지 않는다.
+
+검증: 9/100명 × defer False/True에서 legacy 계산·정산 호출을 차단하고
+HERO 종료가 성공함을 확인. 다른 테이블 상태 불변, 기존 pending 미생성,
+새 정산기의 HERO 탈락 수거·순위·아카이브 완료를 확인. 독립 테이블 시계,
+이동 barrier, 핸드포핸드, 시계/휴식, 액션 타임아웃, 18명 4핸드 UI 통과.
+전체 gate: PASS 23 / FAIL 0 / TIMEOUT 0. 새 ownership 검사는 원본 UI75에서 실패함도 확인했다.
