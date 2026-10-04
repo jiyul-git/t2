@@ -627,40 +627,62 @@ def _vclock_pump(st, wait=False, target=None):
                     return False
 
 
+def _vclock_prepare_refill(st):
+    """Read-only candidate search; the current hand's field is never changed."""
+    with VCLOCK_LOCK:
+        L.vclock_find_refill(
+            st, VCLOCK.get('events') or {}, VCLOCK.get('cursors') or {},
+            _clock_values(st, time.time())[0], VCLOCK.get('barrier_time'))
+
+
 def _vclock_settle(st, wait=False):
-    """HERO 핸드 경계까지 봇 가상시간을 확정하고 이동/탈락을 한 번만 정산한다."""
+    """Normal hands never await bot coverage or a replenishment candidate."""
     global _last
-    if not st.get('vclock_settle_pending'):
+    if st.get('hand_seed') is not None:
+        _vclock_pump(st, wait=False)
+        _vclock_prepare_refill(st)
+        L.save(st)
+        return True, None
+
+    pending = bool(st.get('vclock_settle_pending'))
+    sync = L.vclock_needs_sync(st)
+    if sync and not pending:
+        # A completed H4H round is already settled. Start its next HERO hand;
+        # the new round's bots must not be consumed before that hand finishes.
         _vclock_pump(st, wait=False)
         return True, None
 
-    target = float(
-        st.get('vclock_settle_target',
-               (st.get('field') or {}).get('virtual_play_seconds', 0.0))
-        or 0.0)
-    if not _vclock_pump(st, wait=wait, target=target):
-        return False, None
+    target = float((st.get('field') or {}).get('virtual_play_seconds') or 0.0)
+    if st.get('ui_break_pending'):
+        target = min(target, _vclock_session_end(st))
+    fin = None
+    if not sync and pending:
+        # Close the HERO archive now. One slow bot chunk must not hold it open
+        # across multiple HERO hands (nor overwrite pending_archive).
+        fin = L.finalize_vclock_settle(st, independent_hero=True)
 
+    ready = _vclock_pump(st, wait=bool(wait and sync), target=target)
+    if not ready:
+        return (False, None) if sync else (True, fin)
+
+    _vclock_prepare_refill(st)
     with VCLOCK_LOCK:
         applied = L.apply_vclock_events(
-            st,
-            VCLOCK.get('events') or {},
-            VCLOCK.get('cursors') or {},
-            target,
-            VCLOCK.get('barrier_time'))
+            st, VCLOCK.get('events') or {}, VCLOCK.get('cursors') or {},
+            target, VCLOCK.get('barrier_time'), independent_hero=not sync)
         VCLOCK['cursors'] = applied.get('cursors') or {}
         invalidated = bool(applied.get('invalidated'))
 
     fin = L.finalize_vclock_settle(
-        st,
-        notes=applied.get('notes') or [],
-        bot_log=applied.get('bot_log') or '')
+        st, notes=applied.get('notes') or [],
+        bot_log=applied.get('bot_log') or '', independent_hero=not sync)
+    if sync:
+        st.pop('vclock_refill', None)
+        L.save(st)
 
-    # 이동/탈락 barrier 뒤 임시 미래는 폐기하고 새 좌석 상태에서 다시 계산한다.
     if invalidated:
         _vclock_reset()
-        fresh = L.load()
-        _vclock_pump(fresh, wait=False)
+        _vclock_pump(L.load(), wait=False)
 
     if _last is not None:
         _last['busted'] = fin.get('busted')
@@ -823,7 +845,7 @@ def _step(action=None, amount=0, on_bot_action=None):
     others = None
 
     if vclock and st0 is not None:
-        if st0.get('vclock_settle_pending'):
+        if st0.get('vclock_settle_pending') or st0.get('hand_seed') is None:
             _vclock_refresh_settle_target(st0)
             L.save(st0)
             ok, _ = _vclock_settle(st0, wait=True)
@@ -895,6 +917,10 @@ def _step(action=None, amount=0, on_bot_action=None):
             st['ui_next_break'] = threshold + PLAY_WINDOW_SECONDS
 
         if vclock:
+            # Fix elimination time at the HERO result, not at a later worker
+            # completion/readiness poll (the clock keeps flowing while waiting).
+            L._vclock_record_busts(st, st['field']['players'],
+                                   st['field'].get('virtual_play_seconds') or 0)
             st['vclock_settle_target'] = float(
                 st.get('ui_break_at')
                 if st.get('ui_break_pending') and st.get('ui_break_at') is not None
@@ -1301,7 +1327,7 @@ class H(BaseHTTPRequestHandler):
             if _vclock_enabled(st):
                 # 결정/애니메이션 중에도 완료 chunk를 이어 붙여 계속 선계산한다.
                 _vclock_pump(st, wait=False)
-                if st.get('vclock_settle_pending') and LOCK.acquire(blocking=False):
+                if LOCK.acquire(blocking=False):
                     try:
                         st = L.load()
                         _vclock_refresh_settle_target(st)

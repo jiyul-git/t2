@@ -534,15 +534,136 @@ def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
     }
 
 
+def vclock_needs_sync(st):
+    """Only tournament boundaries (not a refill request) block a new HERO hand."""
+    f = _load_field(st['field'])
+    hero = f.players[f.hero_pid]
+    tb = f.tables.get(hero.get('table'))
+    if st.get('ui_break_pending') or hero['stack'] <= 0 or not tb or tb.n() < 2:
+        return True
+    n = f.remaining()
+    previous = int(st.get('vclock_published_remaining', n))
+    thresholds = (f.itm + 1, f.max_seat + 1)
+    return (_vclock_h4h(f) or len(f.tables) > 1 and n <= f.max_seat
+            or any(n <= t < previous for t in thresholds))
+
+
+def _vclock_record_busts(st, players, at):
+    times = st.setdefault('vclock_bust_times', {})
+    for pid, row in players.items():
+        if int(row.get('stack', 0)) <= 0 and row.get('table') is not None:
+            times.setdefault(str(pid), float(at))
+
+
+def _vclock_order_busts(st, f):
+    times = st.get('vclock_bust_times') or {}
+    # Existing games can have a prefix from before timestamped settlements.
+    f.busted_order.sort(key=lambda pid: times.get(str(pid), -1.0))
+
+
+def vclock_request_refill(st):
+    """One persistent request per HERO table, independent of hand/archive state."""
+    f = _load_field(st['field'])
+    hero = f.players[f.hero_pid]
+    tb = f.tables.get(hero.get('table'))
+    others = [t for t in f.tables.values() if t is not tb and t.n() > 0]
+    if not tb or hero['stack'] <= 0 or not others or tb.n() >= f.max_seat:
+        st.pop('vclock_refill', None)
+        return
+    # Keep the request even if no table can currently donate without imbalance.
+    # A later bust or completed donor hand can make a transfer possible.
+    req = st.get('vclock_refill')
+    if not req or req['hero_tid'] != tb.id:
+        st['vclock_refill'] = {
+            'hero_tid': tb.id,
+            'requested_at': float(st['field'].get('virtual_play_seconds') or 0),
+        }
+
+
+def vclock_find_refill(st, events_by_table, cursors, now, barrier_time=None):
+    """Prepare a donor from completed events without mutating any hand or seats."""
+    req = st.get('vclock_refill')
+    if not req:
+        return
+    reserved = req.get('candidate')
+    if reserved:
+        # Once reserved, later speculative hands at the source must not change
+        # the selected person/departure time. Rebuild only after a buffer reset.
+        arr = events_by_table.get(str(reserved['tid']), [])
+        start = int((cursors or {}).get(str(reserved['tid']), 0))
+        if any(e['end'] == reserved['end'] and e['table']['hands'] == reserved['hands']
+               for e in arr[start:]):
+            return
+        req.pop('candidate', None)
+    f = _load_field(st['field'])
+    hero_tb = f.tables.get(req['hero_tid'])
+    if not hero_tb or hero_tb.n() >= f.max_seat - 1:
+        return
+    cutoff = min(float(now), float(barrier_time)) if barrier_time is not None else float(now)
+    choices = []
+    for tid, events in events_by_table.items():
+        eligible = [e for e in events[int((cursors or {}).get(str(tid), 0)):]
+                    if float(req['requested_at']) <= float(e['end']) <= cutoff]
+        if not eligible:
+            continue
+        event = eligible[-1]
+        fd = _copy_field(st['field'])
+        fd['tables'][str(tid)] = copy.deepcopy(event['table'])
+        fd['players'].update(copy.deepcopy(event['players']))
+        donor = _load_field(fd).tables[int(tid)]
+        if donor.n() <= hero_tb.n() + 1:
+            continue
+        mover = donor.next_bb_player()
+        if mover and mover['stack'] > 0:
+            choices.append((-donor.n(), int(tid), {
+                'tid': int(tid), 'pid': mover['pid'],
+                'end': float(event['end']), 'hands': event['table']['hands'],
+            }))
+    if choices:
+        req['candidate'] = min(choices, key=lambda x: x[:2])[2]
+
+
+def _vclock_arrive_refill(st, f):
+    """Commit at a HERO hand boundary only; stale/early candidates simply retry."""
+    req = st.get('vclock_refill') or {}
+    c = req.get('candidate')
+    if not c or st.get('hand_seed') is not None:
+        return False
+    donor, target = f.tables.get(c['tid']), f.tables.get(req['hero_tid'])
+    if (not donor or not target or donor.n() <= target.n() + 1
+            or donor.hands != c['hands']
+            or abs(float(donor.virtual_seconds) - c['end']) > 1e-6):
+        return False
+    mover = donor.next_bb_player()
+    seat = target.worst_open_seat()
+    if not mover or mover['pid'] != c['pid'] or mover['stack'] <= 0 or seat is None:
+        return False
+    donor.players.remove(mover)
+    donor.stand(mover['pid'])
+    donor.reconcile_next_hand()
+    target.players.append(mover)
+    target.sit(mover, seat)
+    mover['table'] = target.id
+    target.reconcile_next_hand()
+    st.setdefault('vclock_transfers', []).append(dict(c, to_tid=target.id,
+        joined_at=float(st['field'].get('virtual_play_seconds') or 0)))
+    st['vclock_transfers'] = st['vclock_transfers'][-100:]
+    st.pop('vclock_refill', None)
+    return True
+
+
 def apply_vclock_events(st, events_by_table, cursors, target_seconds,
-                        barrier_time=None):
+                        barrier_time=None, independent_hero=False):
     """HERO 시각까지 확정된 봇 이벤트만 메인 상태에 반영한다.
 
-    barrier가 HERO 시각 안에 들어오거나 HERO 테이블 자체에서 탈락이 생기면
-    그 핸드 경계에서 전역 bust/balance를 한 번만 실행하고 선계산 이후분을
-    무효화한다. 이동 후 모든 봇 테이블은 HERO 시각까지 대기한 것으로 맞춘다.
+    독립 HERO 모드는 진행 중인 핸드를 수정하지 않고, HERO를 전역 balance에서
+    제외한다. 예약된 donor는 출발 핸드 뒤 이벤트를 확정하지 않는다.
+    이동/탈락 후 임시 버퍼를 무효화하는 기존 보수적 재시작은 유지한다.
     """
+    if independent_hero and st.get('hand_seed') is not None:
+        raise ValueError('Cannot merge table events into an active HERO hand')
     target_seconds = float(target_seconds)
+    _vclock_record_busts(st, st['field']['players'], target_seconds)
     cutoff = target_seconds
     barrier_due = (
         barrier_time is not None
@@ -557,7 +678,11 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
     for tid, arr in (events_by_table or {}).items():
         tid = str(tid)
         i = cur.get(tid, 0)
-        while i < len(arr) and float(arr[i]['end']) <= cutoff + 1e-9:
+        table_cutoff = cutoff
+        candidate = (st.get('vclock_refill') or {}).get('candidate')
+        if independent_hero and candidate and str(candidate['tid']) == tid:
+            table_cutoff = min(table_cutoff, float(candidate['end']))
+        while i < len(arr) and float(arr[i]['end']) <= table_cutoff + 1e-9:
             due.append((float(arr[i]['end']), int(tid), i, arr[i]))
             i += 1
         cur[tid] = i
@@ -569,6 +694,7 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
         tid = str(tid_i)
         for pid, row in (e.get('players') or {}).items():
             fd['players'][str(pid)] = copy.deepcopy(row)
+        _vclock_record_busts(st, e.get('players') or {}, _end)
         fd['tables'][tid] = copy.deepcopy(e['table'])
         et = fd.setdefault('tilt', {})
         for pid, row in (e.get('tilt') or {}).items():
@@ -587,9 +713,17 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
         for p in f.players.values()
     )
     invalidated = bool(barrier_due or dead)
+    moved = False
+    if independent_hero:
+        # A donor snapshot is usable only if it is the last committed hand of
+        # that table. Recheck ownership before discarding any future work.
+        moved = _vclock_arrive_refill(st, f)
+        invalidated = invalidated or moved
     if invalidated:
         f._collect_busts()
-        f._balance()
+        _vclock_order_busts(st, f)
+        hero_tid = f.players.get(f.hero_pid, {}).get('table')
+        f._balance(protected_tid=hero_tid if independent_hero else None)
         # barrier 이후에는 테이블들이 HERO를 기다린다. 이동 확정 시점에서
         # 다음 선계산을 다시 시작하므로 각 봇 시계를 같은 HERO 시각으로 맞춘다.
         hero_tid = f.players.get(f.hero_pid, {}).get('table')
@@ -600,6 +734,9 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
         f.notes = []
 
     st['field'] = _dump(f)
+    st['vclock_published_remaining'] = f.remaining()
+    if independent_hero:
+        vclock_request_refill(st)
     return {
         'cursors': cur,
         'invalidated': invalidated,
@@ -610,7 +747,7 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
     }
 
 
-def finalize_vclock_settle(st, notes=None, bot_log=''):
+def finalize_vclock_settle(st, notes=None, bot_log='', independent_hero=False):
     """한 HERO 핸드 경계의 확정 작업(순위/아카이브/이동 알림)을 마친다."""
     f = _load_field(_copy_field(st['field']))
     # 버퍼가 없던 파이널테이블 등에서도 HERO 탈락 정리는 필요하다.
@@ -619,11 +756,18 @@ def finalize_vclock_settle(st, notes=None, bot_log=''):
         for p in f.players.values()
     )
     if dead:
+        _vclock_record_busts(st, st['field']['players'],
+                             st['field'].get('virtual_play_seconds') or 0)
         f._collect_busts()
-        f._balance()
+        _vclock_order_busts(st, f)
+        if not independent_hero:
+            f._balance()
         notes = list(notes or []) + list(f.notes)
         f.notes = []
         st['field'] = _dump(f)
+
+    if independent_hero:
+        vclock_request_refill(st)
 
     hero = f.players.get(f.hero_pid)
     busted = bool(hero and int(hero.get('stack', 0) or 0) <= 0)

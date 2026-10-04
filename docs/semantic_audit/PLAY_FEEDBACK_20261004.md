@@ -47,3 +47,57 @@ HERO 종료가 성공함을 확인. 다른 테이블 상태 불변, 기존 pendi
 새 정산기의 HERO 탈락 수거·순위·아카이브 완료를 확인. 독립 테이블 시계,
 이동 barrier, 핸드포핸드, 시계/휴식, 액션 타임아웃, 18명 4핸드 UI 통과.
 전체 gate: PASS 23 / FAIL 0 / TIMEOUT 0. 새 ownership 검사는 원본 UI75에서 실패함도 확인했다.
+
+## 2026-10-05 — asynchronous HERO replenishment (test only)
+
+Request: if a HERO-table vacancy becomes known at the river result at 120s,
+start the next hand without waiting for a donor. Candidate discovery may finish
+during that hand or the following hand. A donor finishing at 135s must not enter
+an ongoing pot or continue playing published hands at the old table.
+
+Implemented first stage:
+
+- Normal HERO results close their archive and clear settlement-pending without
+  waiting for bot coverage. Neither `/api/ready` nor the next `/api/step` waits
+  for a refill candidate. A short HERO table continues playing with >=2 players.
+- A persistent `vclock_refill` request is separate from hand/archive state.
+  Readiness polling searches completed bot events while HERO plays. A reserved
+  candidate pins the donor's completed hand/time; later speculative source
+  hands cannot be published. Reservations are revalidated after worker reset.
+- Current HERO hand snapshots remain unchanged. Ownership/seat changes commit
+  only at a later HERO hand boundary, using the donor's next-BB player and the
+  destination's worst eligible open seat. Normal global balancing excludes the
+  HERO table. An 8-vs-9 split is already balanced and does not force a transfer.
+- Existing full synchronization remains for break, money/seat or FT bubble,
+  HERO elimination/final rank, and a HERO table unable to deal with >=2 players.
+- Elimination timestamps preserve event-time ordering when older bot results
+  arrive after a HERO-table bust. Existing saves retain their earlier bust prefix.
+- Animation holds/collection/dealing durations and bot strategy coefficients are
+  unchanged. UI engine changes live in `ui/server/ui_server.py`.
+
+Validation:
+
+- `verify_async_refill.py`: an unavailable worker is forbidden from blocking;
+  TWO real HERO hands finish and archive; request survives serialization;
+  135s donor cannot arrive at 134s or alter an active hand; a later 170s source
+  hand is not applied after the 135s reservation; one transfer only; unique
+  ownership and chip conservation; protected HERO balancing; sync exceptions.
+- Existing vclock finish ownership, vclock session, clock HTTP lifecycle and
+  action timeout checks passed.
+- Actual HTTP UI smoke: 27 players / 8 completed hands / 38 decision chip and
+  seat checks, zero failures; 6 showdowns. Gate suite: 23 PASS, 0 FAIL, 0 TIMEOUT.
+- Python HTTP manual play: 100 players, seed 20261005; HERO A♥ K♠ opens to 500,
+  bets 350 on 2♠ Q♥ 7♥, BB folds. Final stream payload follows the last fold
+  in 0.108s on this server; `/api/ready` reports `working=false`, next hand deals.
+  This is server evidence, not a phone animation measurement or speed guarantee.
+
+Deliberate stage boundary:
+
+- Tournament stats and arrivals still publish at HERO hand boundaries; this is
+  not yet a live per-second global-state merger during an active HERO hand.
+- Existing bot event buffers and conservative all-buffer invalidation on
+  movement/bust remain. Per-table-only invalidation and fully independent bot
+  balancing are future stages. Those calculations no longer gate ordinary
+  HERO hand starts.
+- An arrival is committed before the next eligible deal; no mid-hand arrival
+  animation was added. Test branch only; master is unchanged.

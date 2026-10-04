@@ -961,7 +961,7 @@ class Field:
         for k in [k for k in bk.d if ps in str(k).split('>')]:
             del bk.d[k]
 
-    def _balance(self, notify=True):
+    def _balance(self, notify=True, protected_tid=None):
         """TDA식 테이블 브레이크/밸런싱.
 
         - Rule 11: broken-table 플레이어는 BTN/SB/BB도 받을 수 있지만
@@ -970,11 +970,13 @@ class Field:
         - Rule 12-A: 일반 balance는 '다음 BB 예정자'가 이동하며,
           목적지는 BB가 가장 빨리 오는 worst open seat. SB는 절대 목적지가 아니다.
         """
-        act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
+        act = {t: tb for t, tb in self.tables.items() if tb.n() > 0 and t != protected_tid}
         if not act:
             return
 
-        need_tables = max(1, math.ceil(self.remaining()/self.max_seat))
+        pool_size = (self.remaining() if protected_tid is None
+                     else sum(tb.n() for tb in act.values()))
+        need_tables = max(1, math.ceil(pool_size/self.max_seat))
 
         # ---------- 테이블 브레이크 ----------
         while len(act) > need_tables:
@@ -982,7 +984,7 @@ class Field:
             movers = [p for p in small.players if p['stack'] > 0]
             self.rng.shuffle(movers)
             del self.tables[small.id]
-            act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
+            act = {t: tb for t, tb in self.tables.items() if tb.n() > 0 and t != protected_tid}
             if not act:
                 break
 
@@ -1016,11 +1018,11 @@ class Field:
                         '🔄 테이블 브레이크 — 너 자리 이동 (%d번째)'
                         % self.hero_moves)
 
-            act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
+            act = {t: tb for t, tb in self.tables.items() if tb.n() > 0 and t != protected_tid}
 
         # ---------- 인원 균등화 ----------
         for _ in range(24):
-            act = {t: tb for t, tb in self.tables.items() if tb.n() > 0}
+            act = {t: tb for t, tb in self.tables.items() if tb.n() > 0 and t != protected_tid}
             if len(act) < 2:
                 break
             big = max(act.values(), key=lambda x: (x.n(), -x.id))
