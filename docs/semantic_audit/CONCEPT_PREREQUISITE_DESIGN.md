@@ -200,3 +200,17 @@ score = 6 + (score - 6) * readiness   # score > 6인 경우만
   충분한 study/experience가 있는 플레이어에게 집중시킨다.
 - 별도 RNG를 추가하지 않는다.
 - 모집단 감사와 구조 검증 모두 한 번에 생성하는 플레이어 수는 최대 1,000명으로 제한한다.
+
+
+### v3.1 고숙련 습득 곡선
+
+1차 1,000명 감사 결과 7점 이상 비율이 blocker 20.0%, range_read 18.7%,
+icm 14.1%로 여전히 높았다. readiness를 선형으로 쓰지 않고 다음처럼 조정한다.
+
+```
+readiness = readiness ** 1.5
+score = 6 + (score - 6) * readiness
+```
+
+초중간 학습량에서는 7~10 숙련이 더 천천히 열리고,
+difficulty 수준까지 도달하면 기존과 동일하게 완전히 열린다.
