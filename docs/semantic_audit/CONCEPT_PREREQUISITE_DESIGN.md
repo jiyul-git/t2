@@ -165,3 +165,38 @@ raw LOADING/SPREAD draw
 ```
 
 새 RNG는 추가하지 않는다.
+
+
+## v3: 고급 개념 고숙련 꼬리
+
+1,000명 모집단 감사에서 blocker / range_read / icm의 7~10 숙련 비율이
+난이도 정의에 비해 높게 나타났다. 세 개의 난이도 점수 자체는 유지하고,
+0~6점의 기초/중급 이해와 6~10점의 고급 활용을 분리한다.
+
+대상:
+- blocker (difficulty 7.0)
+- range_read (difficulty 8.0)
+- icm (difficulty 8.5)
+
+규칙:
+
+```
+capacity <= difficulty - 3:
+    6점 초과 숙련은 열리지 않음
+
+difficulty - 3 < capacity < difficulty:
+    6~10 구간을 readiness 비율만큼만 유지
+
+capacity >= difficulty:
+    기존 고숙련 raw score를 그대로 허용
+
+readiness = clamp((capacity - (difficulty - 3)) / 3, 0, 1)
+score = 6 + (score - 6) * readiness   # score > 6인 경우만
+```
+
+의도:
+- 기본적인 blocker 감각 / 상대 range 감 / 상금 압박 인식까지 희귀하게 만들지 않는다.
+- 정교한 combo 제거 활용, range reconstruction, ICM exploitation 같은 고숙련만
+  충분한 study/experience가 있는 플레이어에게 집중시킨다.
+- 별도 RNG를 추가하지 않는다.
+- 모집단 감사와 구조 검증 모두 한 번에 생성하는 플레이어 수는 최대 1,000명으로 제한한다.
