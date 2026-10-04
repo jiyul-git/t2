@@ -7,9 +7,12 @@
 
 ## 분리 필요 항목
 
-1. `checkraise_late`
-   - 현재: 턴 체크레이즈와 리버 체크레이즈가 같은 숙련치 공유
-   - 문제: 턴은 세미블러프/드로우가 존재하지만 리버는 드로우가 끝난 별도 판단
+1. `checkraise_late` — **PHASE 1 DONE**
+   - 의미 경계: 턴은 `checkraise_turn`, 리버는 `checkraise_river`로 분리
+   - 기존 생성 프로필: 두 새 키가 없으면 모두 `checkraise_late`로 fallback하여 행동 보존
+   - 새 prior/loading/base/spread: 아직 만들지 않음
+   - 다음 단계: 실제 모집단에서 turn/river를 독립 생성할 근거와 난이도/분포를 정한 뒤 compatibility fallback 제거 검토
+   - 이유: 턴은 세미블러프/드로우가 존재하지만 리버는 드로우가 끝난 별도 판단
 
 2. `bluffcatch_early`
    - 현재: 플랍과 턴 블러프캐치가 같은 숙련치 공유
