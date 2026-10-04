@@ -1023,6 +1023,9 @@ sp('opponent_behavior_memory', 'reads', 'Book.observe_line_raise')
 sp('opponent_behavior_memory', 'reads', 'Book.observe_line_showdown')
 sp('opponent_behavior_memory', 'reads', '_line_rates')
 sp('opponent_behavior_memory', 'reads', '_line_rates.raw')
+sp('opponent_behavior_memory', 'reads', 'table_deviation')  # table baseline ± deviation (shadow)
+sp('opponent_behavior_memory', 'reads', 'table_deviation.recent')
+sp('opponent_behavior_memory', 'reads', '_axis_counts')
 sp('opponent_behavior_memory', 'session', 'line_spot_kind')
 sp('opponent_behavior_memory', 'session', 'HandRun._run', '_lk = line_spot_kind(', '_checked_now.add(x)')
 sp('opponent_unconsumed_estimates', 'reads', 'Book.observe_postflop', 'if facing_raise:', "if action == 'fold': r['f2r_' + street] += 1")
@@ -1053,6 +1056,7 @@ TABLES = {
     'reads:DEFAULT_OBS': 'opponent_estimation',
     'reads:_MAX_RECENCY_HISTORY': 'recency_window', 'reads:_SIG_SCALE': 'style_belief_reference',
     'plan:CLEAR_VALUE_REL': 'value_when_called_strength',  # beta A #4 (shared river/turn clear-value boundary)
+    'reads:TABLE_DEV_K': 'opponent_behavior_memory', 'reads:TABLE_DEV_AXES': 'opponent_behavior_memory',  # table baseline ± deviation
     'persona:SIZING_FAMILY_SIG': 'human_planned_size_shape', 'persona:SIZING_ODD_MAX': 'human_planned_size_shape', 'persona:LOADING': 'persona_population_generation',
     'persona:DEFAULT_SPREAD': 'persona_population_generation', 'persona:SPREAD': 'persona_population_generation',
     'persona:GTO_MEMORY_V2': 'chart_memory_accuracy',

@@ -708,6 +708,60 @@ def _line_rates(r):
     return out
 
 
+# 테이블 기준선 대비 ± 편차 — 계산·기록만(소비 전 SHADOW).
+# 모집단 사전값을 쓰지 않는다. 기준은 관찰자가 같은 테이블의 다른 상대들에게서
+# 본 빈도를 합친 것이다(그 상대 자신은 뺀다). 표본이 적으면 0 쪽으로 수축한다
+# (_shrink 와 같은 12 척도, 관찰자 실력 반영은 읽기 깊이 단계에서).
+TABLE_DEV_K = 12.0
+TABLE_DEV_AXES = (
+    # 축, 분자, 분모(튜플이면 합)
+    ('loose', 'vpip', 'hands'),
+    ('aggr', 'agg_actions', ('agg_actions', 'passive_actions')),
+    ('fold', 'fold_to_bet', 'facing_bet'),
+    ('bluff', 'sd_weak', 'showdowns'),
+)
+
+
+def _axis_counts(r, num, den):
+    d = sum(r.get(x, 0) or 0 for x in den) if isinstance(den, tuple) else (r.get(den, 0) or 0)
+    return float(r.get(num, 0) or 0), float(d)
+
+
+def table_deviation(book, observer, target, others, memory=None):
+    """관찰자 기준 target 의 테이블 기준선 대비 편차(축별 dict).
+
+    others: 같은 테이블의 다른 상대 pid(관찰자·target 은 무시).
+    memory: 관찰자 기억 창(손 수). None 이면 전체 기록.
+    축마다 {'dev', 'rate', 'base', 'n', 'base_n'}. dev 는 w*(rate-base),
+    w = n/(n+K). 기준선 표본이 없으면 dev/base None, target 표본이 없으면 dev 0.
+    RNG 없음.
+    """
+    def recent(pid):
+        r = book.d.get(book._k(observer, pid))
+        if not r or not r.get('hands'):
+            return None
+        return _recent_record(r, memory) if memory else r
+    rt = recent(target)
+    pool = [x for x in (recent(p) for p in others if p not in (observer, target)) if x]
+    out = {}
+    for axis, num, den in TABLE_DEV_AXES:
+        bn = bd = 0.0
+        for r in pool:
+            a, b = _axis_counts(r, num, den)
+            bn += a; bd += b
+        tn, td = _axis_counts(rt, num, den) if rt else (0.0, 0.0)
+        base = (bn / bd) if bd else None
+        rate = (tn / td) if td else None
+        if base is None:
+            dev = None
+        elif rate is None:
+            dev = 0.0
+        else:
+            dev = (td / (td + TABLE_DEV_K)) * (rate - base)
+        out[axis] = {'dev': dev, 'rate': rate, 'base': base, 'n': int(td), 'base_n': int(bd)}
+    return out
+
+
 def infer_latent(est):
     """관찰 가능한 행동 빈도에서 **잠재요인을 추정**한다. (study, aggro, exp)
 

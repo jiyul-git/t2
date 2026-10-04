@@ -538,3 +538,12 @@ L161 이후 장부가 대회 전체를 담는데, 내 테이블 아카이브(`li
 | 수정 | `bot.PreparedPool`/`prepare_pool`: 정렬·누적합을 루프 전에 한 번. 같은 RNG 상태에서 같은 콤보(균등 → `rng.choice` 같은 목록, 비균등 → 같은 누적합에서 `bisect_right` = 기존 `x < acc` 첫 위치, 합계는 기존과 같은 `sum`). 호출부 9곳(bot·plan·ranges 의 MC 루프) |
 | 결과 | 같은 라운드 25초 → 약 6초 |
 | 검증 | 기준 하네스 지문 불변(시드 11 `e04c7e88…`, 시드 12 `6dc97c62…`), 23-gate 23/23, completeness 미소유 0 |
+
+## 26차 — 테이블 기준선 ± 편차(계산·기록만)
+
+| 항목 | 내용 |
+|---|---|
+| 정의 | `reads.table_deviation(book, observer, target, others, memory)`. 기준선은 관찰자가 같은 테이블의 다른 상대에게서 본 빈도의 합(그 상대 자신 제외, 모집단 사전값 없음). 축 4개: loose(vpip/핸드), aggr(공격 액션/포스트플랍 액션), fold(벳 대면 폴드, 헤즈업), bluff(약패 공격 공개/쇼다운). dev = n/(n+12)·(빈도 − 기준선) |
+| 소비 | 없음(SHADOW). 소비 방식은 표본 검토 후 결정 |
+| 표본 | `tools/table_deviation_samples.py`, 27명 200핸드 시드 21~23, `docs/beta/table_deviation_samples.png`. 루즈함은 진짜 tight 축과 r=−0.53(n≥30). 공격성 r=0.23(n 중앙값 10). 폴드 n 중앙값 3, 블러프 n 중앙값 2 — 200핸드로는 신호 없음 |
+| 검증 | `tools/verify_table_deviation.py`(기준선 구성·부호·수축·표본 없음·기억 창·소비 없음). completeness 미소유 0 |

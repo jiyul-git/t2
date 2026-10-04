@@ -2221,6 +2221,27 @@
   },
   {
    "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "table_deviation",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "table_deviation.recent",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "_axis_counts",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
    "module": "session",
    "func": "line_spot_kind",
    "from": null,
@@ -2339,6 +2360,8 @@
   "reads:_MAX_RECENCY_HISTORY": "recency_window",
   "reads:_SIG_SCALE": "style_belief_reference",
   "plan:CLEAR_VALUE_REL": "value_when_called_strength",
+  "reads:TABLE_DEV_K": "opponent_behavior_memory",
+  "reads:TABLE_DEV_AXES": "opponent_behavior_memory",
   "persona:SIZING_FAMILY_SIG": "human_planned_size_shape",
   "persona:SIZING_ODD_MAX": "human_planned_size_shape",
   "persona:LOADING": "persona_population_generation",
