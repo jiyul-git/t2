@@ -214,3 +214,44 @@ score = 6 + (score - 6) * readiness
 
 초중간 학습량에서는 7~10 숙련이 더 천천히 열리고,
 difficulty 수준까지 도달하면 기존과 동일하게 완전히 열린다.
+
+
+## v4: 선후행 필터 soft compression
+
+기존 `downstream <= upstream + 2` / `mean(prerequisites) + 3` hard cap은
+경계값에 표본을 몰아넣는 문제가 있다. v4부터 +2/+3은 절대 상한이 아니라
+"감쇠 없이 허용되는 자유 격차"로 해석한다.
+
+공통식:
+
+```
+gap = downstream - upstream
+if gap <= free_margin:
+    unchanged
+else:
+    excess = gap - free_margin
+    kept = soft_tail * excess / (soft_tail + excess)
+    downstream' = upstream + free_margin + kept
+```
+
+특성:
+- downstream 점수를 절대 올리지 않는다.
+- free_margin 안쪽은 완전히 보존한다.
+- 초과분은 연속적으로 압축하므로 경계점 pile-up을 줄인다.
+- raw downstream이 커질수록 최종 downstream도 계속 커져 순위가 보존된다.
+- 최종 격차는 `free_margin + soft_tail`에 점근한다.
+
+현재 값:
+
+| 관계 | free margin | soft tail | 점근 최대 격차 |
+|---|---:|---:|---:|
+| hard prerequisite | +2.0 | +1.0 | +3.0 |
+| learning support | +3.0 | +2.0 | +5.0 |
+
+예: hard 관계에서 upstream=3일 때
+- raw 5.0 -> 5.0 (그대로)
+- raw 6.0 -> 5.5
+- raw 7.0 -> 약 5.67
+- raw 9.0 -> 약 5.80
+
+즉 +2를 넘는 예외는 남기되, 멀리 벗어날수록 추가 이득이 급격히 줄어든다.
