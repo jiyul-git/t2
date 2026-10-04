@@ -2734,8 +2734,8 @@ class HandRun:
                 t.on_fold_after_investing(pid, prof, contrib[k]/bb, st0)
             t.on_result(pid, prof, won=(d > 0), played=(k in vpip),
                         contested=(k in vpip), showdown=(k in live))
-        # decay_all 은 상태에 있는 모든 키를 훑는다. 프로필도 같은 키로 준다.
-        t.decay_all(_pp)
+        # 감쇠는 이 핸드에 앉아 있던 사람만(dynamics.Tilt.decay_seated).
+        t.decay_seated([self._pid(k) for k in h.seats], _pp)
 
     def _finish(self, contrib, dead, folded, live, board, how):
         h = self.h

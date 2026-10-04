@@ -1471,6 +1471,27 @@
    "to": null
   },
   {
+   "concept": "legacy_tournament_progress",
+   "module": "fieldsim",
+   "func": "Field.plan_others",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "legacy_tournament_progress",
+   "module": "fieldsim",
+   "func": "Field.play_planned",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "emotion_recovery",
+   "module": "dynamics",
+   "func": "Tilt.decay_seated",
+   "from": null,
+   "to": null
+  },
+  {
    "concept": "parallel_round_isolation",
    "module": "live2",
    "func": "_load_field",

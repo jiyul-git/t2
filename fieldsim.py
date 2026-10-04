@@ -554,15 +554,13 @@ class Field:
         경로마다 다른 기능이 죽어 있었다. 여기 하나로 모은다.
         """
         bb = self.blinds()[1]
+        _fz = getattr(self, '_frozen_field', None) or self.field_snapshot()
         self.ctx.update(
             field_q=self.field_q,
-            field_remaining=self.remaining(),
+            field_remaining=_fz['remaining'],
             field_itm=self.itm,
-            field_avg_stack=(self.entries*self.start_stack
-                             / max(1, self.remaining())),
-            field_stacks=tuple(
-                p['stack'] for p in self.players.values()
-                if p['stack'] > 0),
+            field_avg_stack=_fz['avg_stack'],
+            field_stacks=_fz['stacks'],
             payouts=self.payouts,
             payout_flat=self.fmt['payout_flat'],
             ante=(bb if self.level >= self.fmt['ante_from'] else 0),
@@ -571,9 +569,9 @@ class Field:
             erosion_per_hand=CTX.erosion(self.hands_per_level,
                                          self.fmt['blind_mult']),
             reentry=self.fmt['reentry'],
-            progress=CTX.progress_of(self.remaining(), self.entries),
+            progress=CTX.progress_of(_fz['remaining'], self.entries),
             money_jump=CTX.money_jump_context(
-                self.remaining(), self.itm, self.payouts),
+                _fz['remaining'], self.itm, self.payouts),
         )
         self.ctx.apply(h, strict=True)
         return h
@@ -582,6 +580,14 @@ class Field:
         lv = min(self.level, len(BLINDS))
         _, sb, bb = BLINDS[lv-1]
         return sb, bb
+
+    def field_snapshot(self):
+        """핸드에 심는 대회 전체 문맥(남은 인원·평균 스택·전체 스택)."""
+        rem = self.remaining()
+        return {'remaining': rem,
+                'avg_stack': self.entries*self.start_stack / max(1, rem),
+                'stacks': tuple(p['stack'] for p in self.players.values()
+                                if p['stack'] > 0)}
 
     def remaining(self):
         return sum(1 for p in self.players.values() if p['stack'] > 0)
@@ -700,7 +706,7 @@ class Field:
             # rich hand record could not be serialized.
             pass
 
-    def _play_table(self, tb, fast=True):
+    def _play_table(self, tb, fast=True, seed=None):
         """봇 전용 테이블 한 핸드. TDA 포지션을 그대로 써서 스택을 갱신한다."""
         alive = tb.ordered_alive()
         if len(alive) < 2:
@@ -717,7 +723,8 @@ class Field:
                 self.book = RD.Book()
             h = play.Hand(
                 seats, profs, stacks, layout['button'], sb, bb, hero=None,
-                seed=self.rng.randrange(10**9), book=self.book,
+                seed=(self.rng.randrange(10**9) if seed is None else seed),
+                book=self.book,
                 position_map=layout['pos'],
                 pre_seats=layout['pre_seats'],
                 post_seats=layout['post_seats'],
@@ -761,7 +768,40 @@ class Field:
         tb.hands += 1
         return True
 
-    def step_others(self, settle=True):
+    def plan_others(self):
+        """동시 진행용 계획: 테이블 순서대로 이번 라운드 핸드 수와 시드를 미리 뽑는다.
+
+        순차 진행과 같은 건너뛰기 규칙(인원 2 미만, TDA 12-D)과 같은 핸드 수
+        추첨을 쓰되, 시드를 결과와 무관하게 미리 뽑는다. 그래서 테이블마다 따로
+        (다른 프로세스에서) 돌려도 같은 결과가 나온다.
+        """
+        ht = self.players[self.hero_pid]['table'] if self.hero_pid in self.players else None
+        active_counts = [tb.n() for tb in self.tables.values() if tb.n() >= 2]
+        max_n = max(active_counts) if active_counts else 0
+        plan = []
+        for tid, tb in list(self.tables.items()):
+            if tid == ht:
+                continue
+            n = tb.n()
+            if n < 2 or max_n - n >= 3:
+                continue
+            k = 1
+            if n <= 5 and self.rng.random() < 0.45:
+                k = 2
+            elif n >= 8 and self.rng.random() < 0.20:
+                k = 0
+            plan.append((tid, [self.rng.randrange(10**9) for _ in range(k)]))
+        return plan
+
+    def play_planned(self, tid, seeds):
+        """계획된 시드로 한 테이블의 이번 라운드 핸드를 진행한다."""
+        tb = self.tables[tid]
+        for s in seeds:
+            if tb.n() < 2:
+                break
+            self._play_table(tb, seed=s)
+
+    def step_others(self, settle=True, simultaneous=False, runner=None):
         """히어로 테이블 외 전 테이블을 한 핸드씩(인원 비례로 가감) 돌린다.
 
         settle=False 면 테이블만 돌리고 탈락 수거·밸런싱은 하지 않는다.
@@ -773,6 +813,24 @@ class Field:
         그래서 '다른 테이블을 미리 돌려두는' 최적화를 하려면 이 둘만 떼어내야 한다.
         기본값은 기존 동작이다. 인자를 안 쓰면 아무것도 바뀌지 않는다.
         """
+        if simultaneous:
+            # 동시 진행: 모든 테이블이 라운드 시작 시점의 대회 문맥을 본다
+            # (실제 대회처럼 서로의 이번 핸드 결과를 모른다). runner 가 있으면
+            # 테이블별 계산을 그쪽(예: 여러 프로세스)에 맡긴다.
+            plan = self.plan_others()
+            self._frozen_field = self.field_snapshot()
+            try:
+                if runner is None:
+                    for tid, seeds in plan:
+                        self.play_planned(tid, seeds)
+                else:
+                    runner(self, plan)
+            finally:
+                self._frozen_field = None
+            if settle:
+                self._collect_busts()
+                self._balance()
+            return
         ht = self.players[self.hero_pid]['table']
         active_counts = [
             tb.n() for tb in self.tables.values()
@@ -854,6 +912,18 @@ class Field:
         if '_book' not in self.__dict__ and '_book_packed' in self.__dict__:
             return RD.copy_book_d(self.__dict__['_book_packed'] or {})
         return RD.pack_book_d(self.book.d)
+
+    def book_update_packed(self, records):
+        """저장 형태 장부 기록 일부를 덮어쓴다(다른 프로세스 결과 합치기)."""
+        if not records:
+            return
+        if '_book' in self.__dict__:
+            self.__dict__['_book'].d.update(RD.unpack_book_d(records))
+        else:
+            # 받아 둔 dict 는 호출자 덤프와 공유될 수 있으므로 바꾸지 않고 새로 만든다.
+            pk = dict(self.__dict__.get('_book_packed') or {})
+            pk.update(RD.copy_book_d(records))
+            self.__dict__['_book_packed'] = pk
 
     def set_book_caps(self):
         """장부 이력 상한을 봇 관찰자마다 그 기억 창에 맞춘다(히어로는 최대치).

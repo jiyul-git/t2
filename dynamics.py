@@ -213,6 +213,17 @@ class Tilt:
             s['level'] = 0.0
         return s['level']
 
+    def decay_seated(self, pids, profiles):
+        """이 핸드에 앉아 있던 사람만 한 번 감쇠한다.
+
+        '핸드마다 식는다'는 그 사람이 겪은 핸드마다다. 예전 decay_all 은 어느
+        테이블이든 핸드 하나가 끝날 때마다 대회 전원을 식혀서, 테이블이 많을수록
+        틸트가 빨리 사라지고 결과가 테이블 처리 순서에 따라 달라졌다.
+        """
+        for pid in pids:
+            p = profiles.get(str(pid)) or profiles.get(pid) or {}
+            self.on_hand_end(pid, p)
+
     def decay_all(self, profiles):
         """핸드마다 감쇠. profiles 는 **pid 키**여야 한다 (session 이 그렇게 만든다).
 

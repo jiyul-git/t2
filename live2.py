@@ -111,24 +111,130 @@ def _load_field(d):
     f.set_book_caps()
     f.tables = {}
     for k, v in d['tables'].items():
-        tb = FS.Table(
-            int(k), [f.players[p] for p in v['pids']], button=v['button'],
-            max_seat=f.max_seat, button_seat=v.get('button_seat'),
-            sb_seat=v.get('sb_seat'), bb_seat=v.get('bb_seat'))
-        tb.hands = v['hands']
-        if v.get('seats'):
-            tb.seats = list(v['seats'])
-            if len(tb.seats) < tb.max_seat:
-                tb.seats.extend([None] * (tb.max_seat - len(tb.seats)))
-            elif len(tb.seats) > tb.max_seat:
-                raise ValueError('저장본 테이블 슬롯이 max_seat보다 큼: %d > %d'
-                                 % (len(tb.seats), tb.max_seat))
-        tb.restore_positions(
-            v.get('button', 0), v.get('button_seat'),
-            v.get('sb_seat'), v.get('bb_seat'),
-            legacy_dead_hint=(d.get('blind_state') != 'tda_dead_button_v1'))
-        f.tables[int(k)] = tb
+        f.tables[int(k)] = _restore_table(f, k, v, d.get('blind_state'))
     return f
+
+
+def _restore_table(f, k, v, blind_state):
+    """저장된 테이블 하나를 f 의 플레이어 객체로 복원한다."""
+    tb = FS.Table(
+        int(k), [f.players[p] for p in v['pids']], button=v['button'],
+        max_seat=f.max_seat, button_seat=v.get('button_seat'),
+        sb_seat=v.get('sb_seat'), bb_seat=v.get('bb_seat'))
+    tb.hands = v['hands']
+    if v.get('seats'):
+        tb.seats = list(v['seats'])
+        if len(tb.seats) < tb.max_seat:
+            tb.seats.extend([None] * (tb.max_seat - len(tb.seats)))
+        elif len(tb.seats) > tb.max_seat:
+            raise ValueError('저장본 테이블 슬롯이 max_seat보다 큼: %d > %d'
+                             % (len(tb.seats), tb.max_seat))
+    tb.restore_positions(
+        v.get('button', 0), v.get('button_seat'),
+        v.get('sb_seat'), v.get('bb_seat'),
+        legacy_dead_hint=(blind_state != 'tda_dead_button_v1'))
+    return tb
+
+
+# ---------- 다른 테이블 동시 계산(테이블별 프로세스) ----------
+_TABLE_POOL = None
+
+
+def _table_workers():
+    try:
+        n = int(os.environ.get('T2_TABLE_WORKERS', '0') or 0)
+    except ValueError:
+        n = 0
+    return n if n > 0 else max(1, min(8, os.cpu_count() or 1))
+
+
+def _table_pool():
+    """테이블별 계산 풀. fork 가 없거나 코어가 1개면 None(순차)."""
+    global _TABLE_POOL
+    if _table_workers() <= 1:
+        return None
+    if _TABLE_POOL is None:
+        try:
+            import multiprocessing as _mp
+            from concurrent.futures import ProcessPoolExecutor as _PPE
+            _TABLE_POOL = _PPE(max_workers=_table_workers(),
+                               mp_context=_mp.get_context('fork'))
+        except Exception:
+            return None
+    return _TABLE_POOL
+
+
+def _table_task(mini, tid, seeds, frozen, base_suffix):
+    """한 테이블의 이번 라운드를 계획된 시드로 진행하고 그 테이블 몫만 돌려준다."""
+    f = _load_field(mini)
+    f.notes = []
+    f._frozen_field = frozen
+    _suf = FS.BOT_SUFFIX
+    _tmp = SP.pending_suffix('%s_t%s' % (base_suffix, tid), os.getpid())
+    FS.BOT_SUFFIX = _tmp
+    try:
+        f.play_planned(tid, seeds)
+    finally:
+        FS.BOT_SUFFIX = _suf
+        f._frozen_field = None
+    out = _dump(f)
+    pids = [str(p) for p in mini['tables'][str(tid)]['pids']]
+    _p = SP.path_for('bot_log', _tmp, D)
+    log = ''
+    if os.path.exists(_p):
+        with open(_p, encoding='utf-8') as fp:
+            log = fp.read()
+        try: os.remove(_p)
+        except OSError: pass
+    ps = set(pids)
+    return {'tid': tid,
+            'players': {p: out['players'][p] for p in pids if p in out['players']},
+            'table': out['tables'][str(tid)],
+            'tilt': {p: out['tilt'][p] for p in pids if p in (out.get('tilt') or {})},
+            'book': {k: v for k, v in (out.get('book') or {}).items()
+                     if str(k).partition('>')[0] in ps},
+            'notes': list(f.notes), 'errors': list(f.errors), 'bot_log': log}
+
+
+def _parallel_tables_runner(f, plan):
+    """step_others(simultaneous=True) 의 runner: 테이블마다 다른 프로세스에서 진행.
+
+    결과는 순차 동시 진행(runner=None)과 같다 — 각 테이블은 계획된 시드와
+    라운드 시작 문맥만 쓰고, 장부·틸트·스택은 테이블끼리 겹치지 않는다.
+    봇 로그·알림·오류는 계획 순서(=순차 순서)대로 붙인다.
+    """
+    pool = _table_pool() if len(plan) > 1 else None
+    if pool is None:
+        for tid, seeds in plan:
+            f.play_planned(tid, seeds)
+        return
+    base = _dump(f)
+    futs = []
+    for tid, seeds in plan:
+        ps = {str(p) for p in base['tables'][str(tid)]['pids']}
+        mini = dict(base)
+        mini['book'] = {k: v for k, v in base['book'].items()
+                        if str(k).partition('>')[0] in ps}
+        futs.append(pool.submit(_table_task, mini, tid, seeds,
+                                f._frozen_field, FS.BOT_SUFFIX))
+    results = [fu.result() for fu in futs]
+    book_upd = {}
+    for r in results:
+        for pid, row in r['players'].items():
+            p = f.players[int(pid)]
+            p['stack'] = row['stack']; p['table'] = row['table']; p['seat'] = row['seat']
+        f.tables[int(r['tid'])] = _restore_table(
+            f, r['tid'], r['table'], base.get('blind_state'))
+        for pid, t in r['tilt'].items():
+            f.tilt.state[pid] = t
+        book_upd.update(r['book'])
+        f.notes.extend(r['notes'])
+        f.errors.extend(r['errors'])
+        if r['bot_log']:
+            with open(SP.path_for('bot_log', FS.BOT_SUFFIX, D), 'a',
+                      encoding='utf-8') as fp:
+                fp.write(r['bot_log'])
+    f.book_update_packed(book_upd)
 
 
 # 인코딩을 적지 않으면 파이썬이 OS 기본값을 쓴다. 리눅스·안드로이드는
@@ -285,7 +391,8 @@ def compute_others_parallel(field_dump):
     _tmp = SP.pending_suffix(_suf, os.getpid())
     FS.BOT_SUFFIX = _tmp
     try:
-        f.step_others(settle=False)
+        f.step_others(settle=False, simultaneous=True,
+                      runner=_parallel_tables_runner)
     finally:
         FS.BOT_SUFFIX = _suf
 
@@ -426,7 +533,8 @@ def compute_others(field_dump):
     _tmp = SP.pending_suffix(_suf, os.getpid())
     FS.BOT_SUFFIX = _tmp
     try:
-        f.step_others()
+        f.step_others(settle=False, simultaneous=True,
+                      runner=_parallel_tables_runner)
         f._collect_busts(); f._balance()
     finally:
         FS.BOT_SUFFIX = _suf
@@ -839,7 +947,8 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             st['bust_pending'] = True
 
     elif not defer_others:
-        f.step_others()
+        f.step_others(settle=False, simultaneous=True,
+                      runner=_parallel_tables_runner)
         f._collect_busts()
         f._balance()
 
