@@ -1023,6 +1023,11 @@ sp('opponent_behavior_memory', 'reads', '_copy_value')  # book save form / fast 
 sp('opponent_behavior_memory', 'reads', 'copy_book_d')  # book save form / fast copy (UI latency)
 sp('opponent_behavior_memory', 'reads', 'pack_book_d')  # book save form / fast copy (UI latency)
 sp('opponent_behavior_memory', 'reads', 'unpack_book_d')  # book save form / fast copy (UI latency)
+sp('opponent_behavior_memory', 'reads', 'history_cap')  # book history cap / save form
+sp('opponent_behavior_memory', 'reads', '_key_list')  # book history cap / save form
+sp('opponent_behavior_memory', 'reads', '_pack_hist')  # book history cap / save form
+sp('opponent_behavior_memory', 'reads', '_unpack_hist')  # book history cap / save form
+sp('opponent_behavior_memory', 'fieldsim', 'Field.set_book_caps')
 sp('opponent_behavior_memory', 'reads', 'Book.observe_line')
 sp('opponent_behavior_memory', 'reads', 'Book.observe_line_raise')
 sp('opponent_behavior_memory', 'reads', 'Book.observe_line_showdown')
@@ -1061,7 +1066,7 @@ TABLES = {
     'reads:DEFAULT_OBS': 'opponent_estimation',
     'reads:_MAX_RECENCY_HISTORY': 'recency_window', 'reads:_SIG_SCALE': 'style_belief_reference',
     'plan:CLEAR_VALUE_REL': 'value_when_called_strength',  # beta A #4 (shared river/turn clear-value boundary)
-    'reads:REC_DEFAULTS': 'opponent_behavior_memory',
+    'reads:REC_DEFAULTS': 'opponent_behavior_memory', 'reads:_HIST_KEYS': 'opponent_behavior_memory',
     'reads:TABLE_DEV_K': 'opponent_behavior_memory', 'reads:TABLE_DEV_AXES': 'opponent_behavior_memory',  # table baseline ± deviation
     'persona:SIZING_FAMILY_SIG': 'human_planned_size_shape', 'persona:SIZING_ODD_MAX': 'human_planned_size_shape', 'persona:LOADING': 'persona_population_generation',
     'persona:DEFAULT_SPREAD': 'persona_population_generation', 'persona:SPREAD': 'persona_population_generation',

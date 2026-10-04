@@ -73,9 +73,19 @@ def _numeric_snapshot(r):
     }
 
 
+def history_cap(observer_profile):
+    """관찰자가 쓰는 최근 창(memory)에 필요한 스냅숏 수. 틸트는 주의력·적응력을
+    바꾸지 않으므로(persona.tilted_view) 대회 내내 같다."""
+    o = OBSERVER.get(observer_profile, DEFAULT_OBS) or DEFAULT_OBS
+    return int(o['memory']) + 1
+
+
 def _copy_hist(hist):
     out = []
     for e in hist:
+        if isinstance(e, list):          # 저장 형태 항목(_pack_hist)
+            out.append(list(e))
+            continue
         c = dict(e)
         if isinstance(e.get('_prev'), dict):
             c['_prev'] = dict(e['_prev'])
@@ -107,6 +117,68 @@ def copy_book_d(d):
     return out
 
 
+# 저장 이력의 키 번호표. **뒤에만 추가한다** — 순서를 바꾸면 기존 저장본이 다른 칸으로 읽힌다.
+_HIST_KEYS = (
+    'hands', 'vpip', 'pfr', 'cbet_opp', 'cbet', 'barrel_opp', 'barrel',
+    'delayed_cbet_opp', 'delayed_cbet', 'showdowns', 'sd_strong', 'sd_weak',
+    'facing_bet', 'fold_to_bet', 'facing_raise', 'fold_to_raise', 'fb_flop',
+    'f2b_flop', 'fb_turn', 'f2b_turn', 'fb_river', 'f2b_river', 'fr_flop', 'f2r_flop',
+    'fr_turn', 'f2r_turn', 'fr_river', 'f2r_river', 'pf_3bet_opp', 'pf_3bet',
+    'limp_opp', 'limp', 'rfi_opp', 'rfi_did', 'rfi_exp', 'pf_faced_limp_raise',
+    'pf_fold_after_limp_raise', 'pf_faced_3bet', 'pf_fold_to_3bet', 'pf_4bet_opp',
+    'pf_4bet', 'pf_faced_4bet', 'pf_fold_to_4bet', 'sz_n', 'sz_sum', 'sz_sq', 'sz_big',
+    'sz_small', 'szr_n', 'szr_sum', 'agg_actions', 'passive_actions',
+    'pf_backraise_opp', 'pf_backraise', 'pf_call_faced_squeeze',
+    'pf_fold_after_call_squeeze', 'pf_cold_reraise_opp', 'pf_cold_reraise_call',
+    'pf_cold_reraise_raise', 'pf_cold_reraise_fold', 'lead_opp_flop', 'lead_flop',
+    'lead_opp_turn', 'lead_turn', 'lead_opp_river', 'lead_river', 'probe_opp_flop',
+    'probe_flop', 'probe_opp_turn', 'probe_turn', 'probe_opp_river', 'probe_river',
+    'lead_fr', 'lead_f2r', 'probe_fr', 'probe_f2r', 'sd_lead', 'sd_lead_strong',
+    'sd_lead_weak', 'sd_probe', 'sd_probe_strong', 'sd_probe_weak', 'mw_lead_opp_flop',
+    'mw_lead_flop', 'mw_lead_opp_turn', 'mw_lead_turn', 'mw_lead_opp_river',
+    'mw_lead_river',
+)
+
+
+def _key_list():
+    return _HIST_KEYS
+
+
+def _pack_hist(hist):
+    """저장 형태 이력: 압축 항목 {'hands': n, '_prev': {k: v}} 은
+    [n, k1, v1, k2, v2, ...] 목록으로(k 는 REC_DEFAULTS 순서 번호, 모르는 키는
+    문자열 그대로). 전체 스냅숏(dict)은 그대로 둔다. _unpack_hist 가 정확히 되돌린다."""
+    idx = {k: i for i, k in enumerate(_key_list())}
+    out = []
+    for e in hist:
+        if isinstance(e, dict) and set(e) == {'hands', '_prev'} and isinstance(e['_prev'], dict):
+            row = [e['hands']]
+            for k, v in e['_prev'].items():
+                row.append(idx.get(k, k)); row.append(v)
+            out.append(row)
+        else:
+            out.append(dict(e))
+    return out
+
+
+def _unpack_hist(hist):
+    keys = _key_list()
+    out = []
+    for e in hist:
+        if isinstance(e, list):
+            prev = {}
+            for n in range(1, len(e), 2):
+                k = e[n]
+                prev[keys[k] if isinstance(k, int) else k] = e[n + 1]
+            out.append({'hands': e[0], '_prev': prev})
+        else:
+            c = dict(e)
+            if isinstance(e.get('_prev'), dict):
+                c['_prev'] = dict(e['_prev'])
+            out.append(c)
+    return out
+
+
 def pack_book_d(d):
     """Save form of Book.d: counters still at their REC_DEFAULTS value are left out."""
     out = {}
@@ -116,7 +188,7 @@ def pack_book_d(d):
             dv = REC_DEFAULTS.get(kk, _MISSING)
             if dv is not _MISSING and type(v) is type(dv) and v == dv:
                 continue
-            c[kk] = _copy_hist(v) if (kk == '_hand_hist' and isinstance(v, list)) else _copy_value(v)
+            c[kk] = _pack_hist(v) if (kk == '_hand_hist' and isinstance(v, list)) else _copy_value(v)
         out[k] = c
     return out
 
@@ -136,12 +208,12 @@ def unpack_book_d(d):
             if kk not in c:
                 c[kk] = v
         for kk, v in list(c.items()):
-            c[kk] = _copy_hist(v) if (kk == '_hand_hist' and isinstance(v, list)) else _copy_value(v)
+            c[kk] = _unpack_hist(v) if (kk == '_hand_hist' and isinstance(v, list)) else _copy_value(v)
         out[k] = c
     return out
 
 
-def _append_hand_snapshot(r):
+def _append_hand_snapshot(r, cap=None):
     """Store end-of-previous-hand cumulative counters once per target hand.
 
     observe_preflop is the first observation update for the target in a new
@@ -167,8 +239,9 @@ def _append_hand_snapshot(r):
         last = hist[-1]
         hist[-1] = _compact_entry(last, snap)
     hist.append(snap)
-    if len(hist) > _MAX_RECENCY_HISTORY:
-        del hist[:-_MAX_RECENCY_HISTORY]
+    cap = _MAX_RECENCY_HISTORY if cap is None else max(2, min(int(cap), _MAX_RECENCY_HISTORY))
+    if len(hist) > cap:
+        del hist[:-cap]
 
 
 def _compact_entry(full, nxt):
@@ -332,6 +405,11 @@ class Book:
     """관찰자 i가 상대 j에 대해 쌓은 장부."""
     def __init__(self):
         self.d = {}          # (i, j) -> counters
+        # 관찰자 pid -> 남길 이력 길이(기억 창 + 1). 그보다 오래된 스냅숏은 그
+        # 관찰자의 추정에 다시 쓰이지 않는다(_recent_record 는 hands-memory 시점만
+        # 본다). 비어 있으면 최대치(_MAX_RECENCY_HISTORY). 저장하지 않는다 — 필드가
+        # 참가자 프로필에서 다시 만든다(fieldsim.Field.set_book_caps).
+        self.hist_cap = {}
 
     def _k(self, i, j): return '%s>%s' % (i, j)
 
@@ -455,7 +533,7 @@ class Book:
             r = self.rec(i, actor)
             # Snapshot *before* this hand's first update. At this point the
             # previous hand is complete, so one snapshot covers every counter.
-            _append_hand_snapshot(r)
+            _append_hand_snapshot(r, getattr(self, 'hist_cap', {}).get(i))
             r['hands'] += 1
             r['vpip'] += 1 if vpip else 0
             r['pfr'] += 1 if pfr else 0

@@ -2222,6 +2222,41 @@
   {
    "concept": "opponent_behavior_memory",
    "module": "reads",
+   "func": "history_cap",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "_key_list",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "_pack_hist",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
+   "func": "_unpack_hist",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "fieldsim",
+   "func": "Field.set_book_caps",
+   "from": null,
+   "to": null
+  },
+  {
+   "concept": "opponent_behavior_memory",
+   "module": "reads",
    "func": "Book.observe_line",
    "from": null,
    "to": null
@@ -2396,6 +2431,7 @@
   "reads:_SIG_SCALE": "style_belief_reference",
   "plan:CLEAR_VALUE_REL": "value_when_called_strength",
   "reads:REC_DEFAULTS": "opponent_behavior_memory",
+  "reads:_HIST_KEYS": "opponent_behavior_memory",
   "reads:TABLE_DEV_K": "opponent_behavior_memory",
   "reads:TABLE_DEV_AXES": "opponent_behavior_memory",
   "persona:SIZING_FAMILY_SIG": "human_planned_size_shape",

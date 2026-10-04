@@ -45,7 +45,8 @@ def _dump(f):
         'tilt': f.tilt.state,
         # 대회 하나의 관찰 장부(L161). 내 테이블과 다른 테이블이 같은 장부를 쓴다.
         # 저장 형태는 기본값(0) 칸을 뺀 것(RD.pack_book_d). 읽을 때 채운다.
-        'book': RD.pack_book_d(getattr(getattr(f, 'book', None), 'd', {}) or {}),
+        'book': (f.book_packed() if hasattr(f, 'book_packed')
+                 else RD.pack_book_d(getattr(getattr(f, 'book', None), 'd', {}) or {})),
         # 틸트 키가 좌석에서 사람(pid)으로 바뀌었다. 이 표시가 없는 저장본은
         # 좌석 키('1'..'8')라서 pid 1..8 과 그대로 충돌한다 — 3번 자리의
         # 누적 틸트가 pid 3 인 사람에게 붙는다. 그런 상태는 버린다.
@@ -79,7 +80,8 @@ def _load_field(d):
     f.seed = d.get('seed')
     # 장부는 깊은 복사로 복원한다 — 핸드 도중 관측이 입력 덤프(=저장 상태)로
     # 새면 재생 때 이미 이번 핸드를 품은 장부로 판단하게 된다(build_hand 주석).
-    f.book = RD.Book(); f.book.d = RD.unpack_book_d(d.get('book') or {})
+    # 장부는 저장 형태 그대로 받아 두고 처음 쓸 때 푼다(Field.book).
+    f.set_book_packed(d.get('book') or {})
     f.entries = d['entries']; f.start_stack = d['start_stack']
     f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
@@ -106,6 +108,7 @@ def _load_field(d):
     for k, v in d['players'].items():
         f.players[int(k)] = {'pid': int(k), 'prof': v['prof'], 'stack': v['stack'],
                              'table': v['table'], 'seat': v['seat']}
+    f.set_book_caps()
     f.tables = {}
     for k, v in d['tables'].items():
         tb = FS.Table(

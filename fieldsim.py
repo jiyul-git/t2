@@ -489,6 +489,7 @@ class Field:
                     else PS.make_player(self.rng, q, pid))
             self.players[pid] = {'pid': pid, 'prof': prof, 'stack': start_stack,
                                  'table': None, 'seat': None}
+        self.set_book_caps()
         # 테이블 배치
         ids = list(self.players)
         self.rng.shuffle(ids)
@@ -821,6 +822,53 @@ class Field:
                 p['seat'] = None
                 self.busted_order.append(p['pid'])
                 self._forget_busted(p['pid'])
+
+    # ---------- 대회 장부(지연 복원) ----------
+    # UI 는 요청마다 상태를 읽어 필드를 복원하지만 장부가 필요한 경우는 핸드
+    # 재생·다른 테이블 진행뿐이다. 저장 형태로 받아 두고 처음 쓸 때 한 번 푼다.
+    @property
+    def book(self):
+        b = self.__dict__.get('_book')
+        if b is None:
+            packed = self.__dict__.pop('_book_packed', None)
+            b = RD.Book()
+            if packed:
+                b.d = RD.unpack_book_d(packed)
+            self.__dict__['_book'] = b
+            if 'players' in self.__dict__:
+                self._apply_book_caps(b)
+        return b
+
+    @book.setter
+    def book(self, v):
+        self.__dict__.pop('_book_packed', None)
+        self.__dict__['_book'] = v
+
+    def set_book_packed(self, packed):
+        """저장 형태 장부(reads.pack_book_d)를 받아 둔다. 실제 사용 때 푼다."""
+        self.__dict__.pop('_book', None)
+        self.__dict__['_book_packed'] = packed
+
+    def book_packed(self):
+        """저장 형태 장부. 아직 풀지 않았으면 받은 것을 그대로 복사한다."""
+        if '_book' not in self.__dict__ and '_book_packed' in self.__dict__:
+            return RD.copy_book_d(self.__dict__['_book_packed'] or {})
+        return RD.pack_book_d(self.book.d)
+
+    def set_book_caps(self):
+        """장부 이력 상한을 봇 관찰자마다 그 기억 창에 맞춘다(히어로는 최대치).
+
+        결과 동일: 관찰자의 추정은 기억 창 시점 스냅숏만 읽는다. 상한이 없으면
+        이력이 상대마다 121핸드까지 쌓여 UI 저장 파일이 수 MB 가 된다.
+        """
+        if '_book' in self.__dict__:
+            self._apply_book_caps(self.__dict__['_book'])
+
+    def _apply_book_caps(self, b):
+        b.hist_cap = {
+            pid: RD.history_cap(p['prof'])
+            for pid, p in self.players.items()
+            if pid != self.hero_pid and p.get('prof')}
 
     def _forget_busted(self, pid):
         """탈락자가 관찰자이거나 대상인 장부 기록을 지운다(L161).

@@ -3993,7 +3993,7 @@
     "consumer": "reads.Book.observe_preflop;reads.estimate",
     "function": "reads._append_hand_snapshot;reads._recent_record",
     "state_variables": "_hand_hist memory",
-    "inputs": "reads._append_hand_snapshot(r); reads._recent_record(r, memory)",
+    "inputs": "reads._append_hand_snapshot(r, cap=None); reads._recent_record(r, memory)",
     "output": "recent counters",
     "source_knowledge": "M",
     "axis": "reasoning",
