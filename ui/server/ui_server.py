@@ -562,7 +562,11 @@ def _vclock_ready_locked(target):
 
 
 def _vclock_pump(st, wait=False, target=None):
-    """완료 chunk를 버퍼에 붙이고 다음 chunk를 즉시 시작한다."""
+    """완료 chunk를 버퍼에 붙이고 다음 chunk를 즉시 시작한다.
+
+    현재 HERO 시각을 이미 따라잡았더라도 speculative worker는 멈추지 않는다.
+    완료된 chunk는 수확해 다음 chunk를 잇고, 세션 끝/barrier까지 계속 앞서 간다.
+    """
     if not _vclock_enabled(st):
         return True
     with VCLOCK_LOCK:
@@ -572,9 +576,21 @@ def _vclock_pump(st, wait=False, target=None):
                 st.get('vclock_settle_target',
                        (st.get('field') or {}).get('virtual_play_seconds', 0.0))
                 or 0.0)
+
         while True:
+            # 목표가 이미 충족돼도 다음 speculative chunk는 항상 걸어 둔다.
+            _vclock_submit_next_locked()
+            fut = VCLOCK.get('future')
+
+            # 지난 호출 사이 끝난 chunk가 있으면 즉시 수확하고 다음 chunk를 잇는다.
+            if fut is not None and fut.done():
+                _vclock_accept_locked(wait=False)
+                continue
+
             if _vclock_ready_locked(target):
                 return True
+
+            # HERO가 앞서 버렸을 때만 필요한 coverage까지 기다린다.
             changed = _vclock_accept_locked(wait=wait)
             if _vclock_ready_locked(target):
                 return True
