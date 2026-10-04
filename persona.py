@@ -158,6 +158,60 @@ LOADING = {
 # 어려운 개념(base↓)이라고 편차가 큰 것도 아니다 —
 # 리버 씬밸류는 어렵지만(base 3.0) 거의 전원이 못해서 편차는 작다.
 DEFAULT_SPREAD = 1.45
+# ---------- 독자 개념 학습 난이도 / 학습 선후행 ----------
+# 0=거의 상식, 10=상당한 학습/경험이 필요한 고급 개념.
+# 복합 capability(판단+계획/계획+실행)는 아직 제외한다.
+# 난이도는 평균점수를 직접 정하지 않고, 낮은 학습량에서 비현실적인 고숙련
+# 꼬리만 잘라낸다. 기존 LOADING/SPREAD의 개별 차이는 그대로 남는다.
+INDEPENDENT_CONCEPT_DIFFICULTY = {
+    'positional':       2.0,
+    'open_size':        2.5,
+    'outs':             2.5,
+    'board_texture':    3.0,
+    'potodds':          3.5,
+    'pf_range':         3.5,
+    'cbet_flop':        4.0,
+    'trap':             4.0,
+    'multiway':         4.5,
+    'money_jump':       4.5,
+    'potcontrol':       5.0,
+    'sizing_tell':      5.0,
+    'delayed_cbet':     5.0,
+    'probe':            5.5,
+    'barrel_turn':      6.0,
+    'stack_decay':      6.5,
+    'blocker':          7.0,
+    'barrel_river':     7.5,
+    'range_read':       8.0,
+    'icm':              8.5,
+}
+
+# 학습 순서의 '도움 선행'. 필수조건은 아니므로 한 개가 낮다고 후행을 막지 않고,
+# 관련 선행들의 평균보다 최대 3점 앞서는 것까지 허용한다.
+# positional -> pf_range처럼 코드가 의도적으로 독립 조합을 보존하는 관계는
+# 학습상 관련이 있어도 여기에는 넣지 않는다.
+LEARNING_PREREQUISITES = {
+    'cbet_flop':       ('pf_range', 'positional', 'board_texture'),
+    'multiway':        ('potodds', 'board_texture'),
+    'potcontrol':      ('potodds', 'board_texture'),
+    'delayed_cbet':    ('cbet_flop', 'board_texture'),
+    'probe':           ('range_read', 'board_texture'),
+    'barrel_turn':     ('cbet_flop', 'board_texture'),
+    'trap':            ('board_texture', 'range_read'),
+    'range_read':      ('pf_range', 'positional', 'board_texture', 'sizing_tell'),
+    'barrel_river':    ('barrel_turn', 'range_read', 'board_texture'),
+    'icm':             ('money_jump', 'potodds', 'stack_decay'),
+}
+
+# 의미상 필수에 가까운 선후행. 후행이 선행보다 2점 넘게 앞서지 못한다.
+HARD_CONCEPT_PREREQUISITES = (
+    ('cbet_flop', 'barrel_turn'),
+    ('barrel_turn', 'barrel_river'),
+    ('cbet_flop', 'delayed_cbet'),
+)
+LEARNING_SUPPORT_MARGIN = 3.0
+HARD_PREREQ_MARGIN = 2.0
+
 SPREAD = {
     # 외워서 아는 것 — 갈린다
     'blocker':          2.20,
@@ -237,6 +291,48 @@ def _money_jump_skill(study, aggro, exp, pid):
     return round(_clamp(v), 1)
 
 
+def _apply_concept_learning_structure(c, study, exp):
+    """독자 개념의 난이도와 학습 선후행을 deterministic하게 반영한다.
+
+    기존 raw draw를 대체하지 않는다. 먼저 LOADING/SPREAD로 개인차를 뽑은 뒤,
+    (1) 학습량보다 지나치게 어려운 개념의 고숙련 꼬리,
+    (2) 관련 기초가 거의 없는데 후행만 매우 높은 표본,
+    (3) 명확한 필수 선후행 위반만 아래로 보정한다.
+    새 RNG를 소비하지 않는다.
+    """
+    # 학습량: 공부가 조금 더 직접적이고 경험도 상당 부분 기여한다.
+    capacity = _clamp(0.60*float(study) + 0.40*float(exp))
+
+    # 난이도가 현재 학습량을 넘는 만큼만 10점 상한을 아래로 내린다.
+    # capacity >= difficulty이면 기존 raw score를 전혀 건드리지 않는다.
+    for concept, difficulty in INDEPENDENT_CONCEPT_DIFFICULTY.items():
+        if concept not in c:
+            continue
+        cap = 10.0 - max(0.0, float(difficulty) - capacity)
+        if float(c[concept]) > cap:
+            c[concept] = round(_clamp(cap), 1)
+
+    # 도움 선행: 여러 선행 중 하나가 약해도 다른 기반/경험으로 보완할 수 있게 평균.
+    for post, pres in LEARNING_PREREQUISITES.items():
+        if post not in c:
+            continue
+        have = [float(c[p]) for p in pres if p in c]
+        if not have:
+            continue
+        cap = min(10.0, sum(have) / len(have) + LEARNING_SUPPORT_MARGIN)
+        if float(c[post]) > cap:
+            c[post] = round(cap, 1)
+
+    # 필수 선행은 마지막에 적용해 최종 프로필에서 항상 보장한다.
+    for pre, post in HARD_CONCEPT_PREREQUISITES:
+        if pre not in c or post not in c:
+            continue
+        cap = min(10.0, float(c[pre]) + HARD_PREREQ_MARGIN)
+        if float(c[post]) > cap:
+            c[post] = round(cap, 1)
+    return c
+
+
 def skill_bounds(q):
     """대회 등급(q)에 따른 실력 하한/상한.
        저가 대회는 초짜가 흔하고 엘리트가 드물다. 하이롤러는 반대."""
@@ -268,17 +364,8 @@ def make_player(rng, field_quality=0.6, pid=None, _depth=0, aggr_bias=0.0, loose
     # 이 한 줄을 추가해도 아래 temper 생성의 공유 rng 상태는 변하지 않는다.
     c['money_jump'] = _money_jump_skill(study, aggro, exp, pid)
 
-    # 명확한 선행 -> 후행 지식만 hard prerequisite 로 제한한다.
-    # 반대 방향(선행은 높지만 후행 활용은 낮음)은 제한하지 않는다.
-    # +2.0은 경험/암기/직관으로 후행이 조금 앞설 수 있는 허용폭(잠정).
-    # 새 난수를 쓰지 않는 결정적 후처리라 개념별 raw draw 순서는 그대로다.
-    for _pre, _post in (
-            ('cbet_flop', 'barrel_turn'),
-            ('barrel_turn', 'barrel_river'),
-            ('cbet_flop', 'delayed_cbet')):
-        _cap = min(10.0, float(c[_pre]) + 2.0)
-        if float(c[_post]) > _cap:
-            c[_post] = round(_cap, 1)
+    # 독자 개념의 난이도 + 학습 선후행 + hard prerequisite를 한 곳에서 적용.
+    _apply_concept_learning_structure(c, study, exp)
 
     # 기질 축 — 능력과 부분적으로만 상관
     t = {
