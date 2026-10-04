@@ -531,6 +531,9 @@ def describe(p):
 
 # ---------- 엔진 어댑터 ----------
 ALIAS = {'cbet':'cbet_flop', 'barrel':'barrel_turn', 'checkraise':'checkraise_flop',
+         # turn/river checkraise는 의미 경계를 분리하되 기존 생성 프로필에는
+         # 아직 전용 prior가 없으므로 checkraise_late를 compatibility fallback으로 쓴다.
+         'checkraise_turn':'checkraise_late', 'checkraise_river':'checkraise_late',
          'bluffcatch':'bluffcatch_early', 'thin_value':'thin_value_turn'}
 
 def street_concept(base, street):
@@ -538,8 +541,8 @@ def street_concept(base, street):
     m = {
       ('cbet','flop'):'cbet_flop', ('cbet','turn'):'barrel_turn', ('cbet','river'):'barrel_river',
       ('barrel','turn'):'barrel_turn', ('barrel','river'):'barrel_river',
-      ('checkraise','flop'):'checkraise_flop', ('checkraise','turn'):'checkraise_late',
-      ('checkraise','river'):'checkraise_late',
+      ('checkraise','flop'):'checkraise_flop', ('checkraise','turn'):'checkraise_turn',
+      ('checkraise','river'):'checkraise_river',
       ('bluffcatch','flop'):'bluffcatch_early', ('bluffcatch','turn'):'bluffcatch_early',
       ('bluffcatch','river'):'bluffcatch_river',
       # 플랍의 중간강도 밸류/머징은 range_merge가 맡는다.
