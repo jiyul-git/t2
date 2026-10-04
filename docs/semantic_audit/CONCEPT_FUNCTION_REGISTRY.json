@@ -7030,5 +7030,29 @@
     "current_function": "preflop.iso_decision",
     "parent_concept": "isolation_decision",
     "code_span": "preflop.iso_decision: return ('raise', 3.0 + n_limpers)"
+  },
+  {
+    "concept": "virtual_tournament_clock",
+    "poker_meaning": "액션별 가정 시간으로 대회 가상 플레이 시간을 누적하고 분 단위 레벨을 결정",
+    "street": "all",
+    "category": "TOURNAMENT",
+    "layer": "RUNTIME",
+    "producer": "live2.finish",
+    "consumer": "fieldsim.Field.advance_level;ui.server.ui_server._ui_timing",
+    "function": "live2.finish",
+    "state_variables": "virtual_play_seconds level_minutes",
+    "inputs": "full_log showdown virtual_play_seconds level_minutes",
+    "output": "virtual_play_seconds",
+    "source_knowledge": "M (duration model), official speed presets",
+    "axis": "tournament timing",
+    "runtime_status": "ACTIVE for new UI games",
+    "action_influence": "YES: blind level",
+    "duplicate_overload": "round-synchronous clock v1; per-table independent clocks and duration calibration pending",
+    "recommended_canonical_name": "virtual_tournament_clock",
+    "evidence": "live2.finish: virtual_play_seconds accumulation",
+    "origin": "IMPLICIT_CODE_V2",
+    "current_function": "live2.finish",
+    "parent_concept": "field_context_producer",
+    "code_span": "live2.finish: virtual_play_seconds accumulation"
   }
 ]

@@ -83,7 +83,7 @@ function renderCards(){
       '<div class="facts">'+
         '<div class="fact"><b>'+t.start_bb+' BB</b><span>START</span></div>'+
         '<div class="fact"><b>'+t.seats+'-MAX</b><span>TABLE</span></div>'+
-        '<div class="fact"><b>'+t.hands_per_level+' HAND</b><span>LEVEL</span></div>'+
+        '<div class="fact"><b>'+t.level_minutes+' MIN</b><span>LEVEL</span></div>'+
         '<div class="fact"><b>'+pct(t.itm_frac)+'</b><span>ITM</span></div>'+
       '</div><div class="enter">토너 정보 보기 →</div></article>';
   }).join('');
@@ -98,10 +98,11 @@ function openJoin(key){
   $('#joinFacts').innerHTML=[
     selected.start_bb+' BB 시작',
     selected.seats+'-max',
-    '레벨당 '+selected.hands_per_level+'핸드',
+    '레벨당 가상 '+selected.level_minutes+'분',
     'ITM '+pct(selected.itm_frac),
     selected.reentry?'리엔트리':'싱글 엔트리'
   ].map(x=>'<span>'+escapeHtml(x)+'</span>').join('');
+  $('#levelMinutes').value=selected.level_minutes;
   $('#joinHint').textContent='';
   $('#joinSheet').hidden=false;
 }
@@ -118,6 +119,8 @@ async function join(){
   const entries=Math.max(2,Math.min(400,Number($('#entries').value)||100));
   const seedRaw=$('#seed').value.trim();
   const body={fmt:selected.key,entries};
+  const minutes=Number($('#levelMinutes').value);
+  if(minutes) body.level_minutes=minutes;
   if(seedRaw!=='' && Number.isFinite(Number(seedRaw))) body.seed=Number(seedRaw);
   const btn=$('#join'); btn.disabled=true; btn.textContent='테이블 준비 중…';
   try{

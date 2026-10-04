@@ -1050,7 +1050,12 @@ class Field:
                 tb.reconcile_next_hand()
 
     def advance_level(self):
-        new = min(1 + self.hand_no//self.hands_per_level, len(BLINDS))
+        clock = getattr(self, 'virtual_play_seconds', None)
+        if clock is None:
+            new = min(1 + self.hand_no//self.hands_per_level, len(BLINDS))
+        else:
+            minutes = getattr(self, 'level_minutes', FM.level_minutes(self.fmt.get('key', 'standard')))
+            new = min(1 + int(clock // (60 * minutes)), len(BLINDS))
         if new != self.level:
             self.level = new
             sb, bb = self.blinds()

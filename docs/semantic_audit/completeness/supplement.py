@@ -671,6 +671,15 @@ ROW_UPDATES.update({'action_adapter_with_reasoning': {'duplicate_overload': 'ARC
                             'plan, rel, rng, opp_est=None, nut=0.0, n_opp=1, opp_ranges=None, '
                             'seed=None)'}})
 
+NEW_ROWS.append(row(
+    'virtual_tournament_clock', '액션별 가정 시간으로 대회 가상 플레이 시간을 누적하고 분 단위 레벨을 결정',
+    'all', 'TOURNAMENT', 'RUNTIME', 'live2.finish', 'fieldsim.Field.advance_level;ui.server.ui_server._ui_timing',
+    'full_log showdown virtual_play_seconds level_minutes', 'virtual_play_seconds', 'M (duration model), official speed presets',
+    'tournament timing', 'ACTIVE for new UI games', 'YES: blind level',
+    'round-synchronous clock v1; per-table independent clocks and duration calibration pending',
+    'virtual_tournament_clock', 'field_context_producer', 'live2.finish: virtual_play_seconds accumulation',
+    state='virtual_play_seconds level_minutes'))
+
 # spans: (concept, module, function, from-substring, to-substring)
 S = []
 
@@ -680,6 +689,8 @@ def sp(concept, module, func, a=None, b=None):
 
 
 NS = '@nonsemantic:'
+
+sp('virtual_tournament_clock', 'live2', 'finish', "if getattr(f, 'virtual_play_seconds', None) is not None:", 'f.virtual_play_seconds += duration')
 
 # ---- plan.make_plan ----
 sp('opponent_fold_constraint', 'plan', 'make_plan', '_field_fold = (', "if int(n_opp or 1) > 1 else opp_stack_bb)")
@@ -1396,6 +1407,8 @@ def _sync_registry_quick_table():
         out.append(line)
     open(path, 'w', encoding='utf-8').write('\n'.join(out) + sep + tail)
 
+
+STREET['virtual_tournament_clock'] = (SAME, SAME, SAME, SAME)
 
 def write_docs():
     missing = [r['concept'] for r in NEW_ROWS if r['concept'] not in STREET]

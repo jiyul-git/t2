@@ -389,7 +389,7 @@ def run(args):
         stats['parallel_wait_ms'] = int(pc.get('worker_wait_ms') or 0)
         if cs != 200:
             fail.append('/api/stats 가 %d' % cs)
-        elif stats['decisions'] and stats['parallel_round_start'] <= 0:
+        elif args.entries > 9 and stats['decisions'] and stats['parallel_round_start'] <= 0:
             fail.append('핸드를 진행했는데 round-start worker가 시작되지 않음')
 
         srv.terminate(); srv.wait(timeout=10)

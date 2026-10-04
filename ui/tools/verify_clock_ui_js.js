@@ -1,0 +1,20 @@
+'use strict';
+const fs = require('fs'), vm = require('vm'), assert = require('assert');
+const source = fs.readFileSync(require('path').join(__dirname, '../web/app.js'), 'utf8');
+const elements = {'#breakCountdown': {textContent:''}, '#breakSkip': {addEventListener(){}}};
+let hidden = 0;
+const context = {S:{}, $: id => elements[id], showOverlayPersistent(){}, hideOverlay(){hidden++;},
+  setTimeout, clearTimeout, AbortController, console};
+vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function clockText('), source.indexOf('async function showMenu(')), context);
+context.renderBreak({break_remaining:300, working:true});
+assert.strictEqual(elements['#breakCountdown'].textContent, '남은 시간 05:00');
+context.renderBreak({break_remaining:1, working:true});
+assert.strictEqual(elements['#breakCountdown'].textContent, '남은 시간 00:01');
+context.renderBreak({break_remaining:0, working:true});
+assert.strictEqual(elements['#breakCountdown'].textContent, '다른 테이블 진행 완료 대기 중');
+assert.strictEqual(hidden,0);
+context.renderBreak({break_remaining:0, working:false});
+assert.strictEqual(hidden,1);
+assert.strictEqual(context.S.breakOpen,false);
+console.log('PASS: UI 05:00 → 00:01 → worker wait → close');

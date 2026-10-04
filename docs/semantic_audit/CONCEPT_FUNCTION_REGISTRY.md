@@ -301,7 +301,7 @@ CSV/JSON의 `current_function`이 아래 연결을 포함한다. 원래 `functio
 <!-- reaudit:start -->
 ## 재감사 추가 행 (completeness)
 
-재감사에서 추가한 66개 행(origin `IMPLICIT_CODE_V2`, `parent_concept`·`code_span` 열 포함). 전체 필드는 CSV/JSON. 코드 위치 소유는 [completeness/SPAN_MAP.json](completeness/SPAN_MAP.json).
+재감사에서 추가한 67개 행(origin `IMPLICIT_CODE_V2`, `parent_concept`·`code_span` 열 포함). 전체 필드는 CSV/JSON. 코드 위치 소유는 [completeness/SPAN_MAP.json](completeness/SPAN_MAP.json).
 
 | concept / 의미 | street / 분류 / 층 | producer → consumer | source / status / 영향 | duplicate·overload / parent |
 | --- | --- | --- | --- | --- |
@@ -371,6 +371,7 @@ CSV/JSON의 `current_function`이 아래 연결을 포함한다. 원래 `functio
 | dead_strategy_tables — 프로덕션에서 읽히지 않던 전략 상수 표(preflop DEF_POS_MULT, DEPTH_OPEN_MULT; persona OPEN_ELASTICITY; plan PLANS) — stage9 B5 에서 제거 | preflop flop turn river / KNOWLEDGE / JUDGMENT | - → none | H / RETIRED / NO | REMOVED stage9 B5 (L-RA14); legacy/players.py copies are outside production / parent `legacy_arch_types` |
 | opener_position_attack_table — OPENER_MULT: 오프너 포지션별로 필드가 그 오픈을 공격(리쇼브)하는 상대 폭 | preflop / KNOWLEDGE / JUDGMENT | preflop.OPENER_MULT → preflop.reshove_range (pos_mult);preflop.open_form (position shove depth, audit9 R4) | H / SEMANTICALLY_OVERLOADED / YES (direct or upstream) | same table answers two questions: how wide the field reshoves vs this opener (reshove_range) and how many/strong players remain behind an opener when deciding an open-shove (open_form 2.6/OPENER_MULT depth). SPLIT candidate: behind-player depth from actual seats behind (behavior change, deferred) / parent `reshove_opportunity` |
 | iso_sizing — 아이소 레이즈 크기 = 3.0 + 림퍼 수 (bb) | preflop / EXECUTION FORM / ACTION | preflop.iso_decision → session apply | H / ACTIVE / YES (direct or upstream) | fixed; open_size_bb skill not used / parent `isolation_decision` |
+| virtual_tournament_clock — 액션별 가정 시간으로 대회 가상 플레이 시간을 누적하고 분 단위 레벨을 결정 | all / TOURNAMENT / RUNTIME | live2.finish → fieldsim.Field.advance_level;ui.server.ui_server._ui_timing | M (duration model), official speed presets / ACTIVE for new UI games / YES: blind level | round-synchronous clock v1; per-table independent clocks and duration calibration pending / parent `field_context_producer` |
 
 기존 행 정정: `called_aggression_ownership`, `multiway_reraise_reasoning`, `defend_width_prior`, `action_adapter_with_reasoning`, `aggression_intent_sampling`, `calculation_error`, `checkraise_flop_decision`, `equity_denial_sizing`, `exploit_read_permission`, `fallback_preflop_ordering`, `human_planned_size_shape`, `legacy_sidepot_helper`, `plan_concept_permission`, `planned_bet_sizing`, `preflop_condition_reasoning`, `recency_window`, `river_overbet`, `studied_condition_match`, `turn_card_range_shift`, `turn_overbet` (CSV/JSON 반영).
 <!-- reaudit:end -->

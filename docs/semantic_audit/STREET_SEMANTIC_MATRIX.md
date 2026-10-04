@@ -335,6 +335,7 @@ CSV/JSON의 `current_function`이 아래 연결을 포함한다. 원래 `functio
 | dead_strategy_tables | not applicable | not applicable | not applicable | not applicable |
 | opener_position_attack_table | overloaded — reshove width + open-shove position depth | not applicable | not applicable | not applicable |
 | iso_sizing | distinct | not applicable | not applicable | not applicable |
+| virtual_tournament_clock | same | same | same | same |
 
 기존 행 정정: `called_aggression_ownership` — flop distinct(프리플랍 어그레서 라인 소유, `plan.line_owned_by_live_aggressor`), turn/river same.
 <!-- reaudit:end -->

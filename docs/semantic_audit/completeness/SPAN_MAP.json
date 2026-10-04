@@ -22,6 +22,13 @@
  ],
  "spans": [
   {
+   "concept": "virtual_tournament_clock",
+   "module": "live2",
+   "func": "finish",
+   "from": "if getattr(f, 'virtual_play_seconds', None) is not None:",
+   "to": "f.virtual_play_seconds += duration"
+  },
+  {
    "concept": "opponent_fold_constraint",
    "module": "plan",
    "func": "make_plan",

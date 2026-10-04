@@ -33,7 +33,7 @@ def _copy_field(d):
 
 
 def _dump(f):
-    return {
+    result = {
         'entries': f.entries, 'start_stack': f.start_stack, 'hero_pid': f.hero_pid,
         'hand_no': f.hand_no, 'level': f.level, 'itm': f.itm,
         'hands_per_level': f.hands_per_level,
@@ -65,6 +65,11 @@ def _dump(f):
                    for t, tb in f.tables.items()},
     }
 
+    if getattr(f, 'virtual_play_seconds', None) is not None:
+        result['virtual_play_seconds'] = f.virtual_play_seconds
+        result['level_minutes'] = f.level_minutes
+    return result
+
 
 def _load_field(d):
     f = FS.Field.__new__(FS.Field)
@@ -85,6 +90,8 @@ def _load_field(d):
     f.entries = d['entries']; f.start_stack = d['start_stack']
     f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
+    f.virtual_play_seconds = d.get('virtual_play_seconds')
+    f.level_minutes = d.get('level_minutes') or FM.level_minutes(d.get('fmt'))
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
     f.notes = d.get('notes', []); f.errors = []
     f.players = {}
@@ -982,6 +989,15 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             % (f.entries, rank, itm)
         )
 
+    if getattr(f, 'virtual_play_seconds', None) is not None:
+        # Same duration shape as the design simulator. This is a model, not wall time.
+        log = res.get('full_log') or []
+        costs = {'fold': 1.5, 'check': 3.0, 'call': 3.5, 'bet': 5.0, 'raise': 5.5, 'allin': 5.5}
+        streets = {a[0] for a in log}
+        duration = 8.0 + 2.0 * max(0, len(streets) - 1)
+        duration += sum(costs.get(a[2], 3.5) for a in log)
+        duration += 3.0 if res.get('showdown') else 0.0
+        f.virtual_play_seconds += duration
     st['field'] = _dump(f)                     # 리딩 누적(장부)은 field 안에 함께 저장된다
     st.pop('book', None)
     st['hand_seed'] = None; st['actions'] = []; st['decisions'] = []

@@ -23,7 +23,7 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓴다. sidecar 이름
        amount: 이번 스트리트 총 투입 목표(raise-to)
        token : 직전 응답의 token. 다르면 409 — 재전송으로 액션이 두 번 들어가는 것을 막는다.
 """
-import hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket
+import math, hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket
 from concurrent.futures import ProcessPoolExecutor
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 
@@ -45,6 +45,15 @@ import telemetry_sync as _TM
 
 LOCK = threading.Lock()
 _last = None
+
+def _ui_timing(st, now=None):
+    now = time.time() if now is None else now
+    fd = st.get('field') or {}
+    seconds = fd.get('virtual_play_seconds')
+    return {'elapsed_seconds': None if seconds is None else int(seconds + st.get('ui_break_seconds', 0)),
+            'level_minutes': fd.get('level_minutes'),
+            'break_remaining': max(0, int(math.ceil(st.get('ui_break_until', 0) - now)))}
+
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
 
 # UI motion acknowledgement gate.
@@ -109,6 +118,7 @@ def _lobby_payload():
             'start_bb': int(f['start_bb']),
             'start_stack': int(f['start_bb']) * bb0,
             'hands_per_level': int(f['hpl']),
+            'level_minutes': FM.level_minutes(key),
             'seats': int(f['seats']),
             'itm_frac': float(f['itm_frac']),
             'reentry': bool(f['reentry']),
@@ -130,6 +140,8 @@ def _lobby_payload():
                 'remaining': int(f.remaining()),
                 'hand_no': int(f.hand_no),
                 'level': int(f.level),
+        'level_minutes': getattr(f, 'level_minutes', None),
+        'virtual_clock': getattr(f, 'virtual_play_seconds', None) is not None,
                 'stack': int((hero or {}).get('stack', 0)),
                 'busted': bool(st.get('busted')),
                 'rank': st.get('rank'),
@@ -268,7 +280,7 @@ DEFER = os.environ.get('T2_UI_DEFER', '1') != '0'
 POOL = None
 PENDING = {'future': None, 'base_key': None}
 COUNT = {'attempt': 0, 'hit': 0, 'mismatch': 0, 'fallback': 0,
-         'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
+         'single_table_skip': 0, 'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
          'round_start': 0, 'round_restart': 0,
          'round_ready_before_finish': 0, 'round_ready_after_finish': 0,
          'motion_ack': 0, 'motion_ack_timeout': 0,
@@ -339,6 +351,7 @@ def _submit_parallel(field_dump, restart=False):
     try:
         PENDING['future'] = p.submit(L.compute_others_parallel, field_dump)
         PENDING['base_key'] = key
+        PENDING['started_at'] = time.monotonic()
     except Exception:
         COUNT['worker_exception'] += 1
         _clear_worker()
@@ -412,6 +425,7 @@ def _kick_pending_worker():
     try:
         PENDING['future'] = p.submit(L.compute_others, st['field'])
         PENDING['base_key'] = L._others_key(st['field'])
+        PENDING['started_at'] = time.monotonic()
     except Exception:
         COUNT['worker_exception'] += 1
         _clear_worker()
@@ -426,6 +440,12 @@ def _step(action=None, amount=0, on_bot_action=None):
     except Exception:
         st0 = None
 
+    if st0 and st0.get('ui_break_pending'):
+        if _ui_timing(st0)['break_remaining']:
+            raise ValueError('브레이크가 끝난 뒤 다음 핸드를 시작할 수 있습니다.')
+        st0['ui_break_seconds'] = st0.get('ui_break_seconds', 0) + 300
+        st0['ui_break_pending'] = False
+        L.save(st0)
     others = None
     if DEFER and st0 is not None:
         if st0.get('others_pending'):
@@ -467,6 +487,16 @@ def _step(action=None, amount=0, on_bot_action=None):
                     COUNT['round_ready_before_finish'] += 1
                 _clear_worker()
 
+    if r.get('done'):
+        st = L.load()
+        active = (st.get('field') or {}).get('virtual_play_seconds')
+        remaining = sum(p.get('stack', 0) > 0 for p in st['field']['players'].values())
+        if (active is not None and active >= st.get('ui_next_break', 3300)
+                and not st.get('busted') and remaining > 1):
+            st['ui_break_until'] = time.time() + 300
+            st['ui_break_pending'] = True
+            st['ui_next_break'] = st.get('ui_next_break', 3300) + 3300
+            L.save(st)
     return r
 
 WEB = os.path.join(D, 'web')          # setup_run_dir.sh 가 ui/web 을 여기로 복사한다
@@ -846,7 +876,12 @@ class H(BaseHTTPRequestHandler):
             # 정산이 끝난 뒤에 다음 핸드로 넘어간다 — 빈 로딩 화면을 없앤다.
             # LOCK 을 잡지 않는다. 잡으면 진행 중인 요청 뒤에 줄을 서게 된다.
             fut = PENDING.get('future')
-            return self._send(200, {'working': bool(fut and not fut.done())})
+            working = bool(fut and not fut.done())
+            st = L.load() if os.path.exists(L.ST) else {}
+            timing = _ui_timing(st)
+            timing['working'] = working
+            timing['worker_elapsed_seconds'] = int(time.monotonic() - PENDING.get('started_at', time.monotonic())) if working else 0
+            return self._send(200, timing)
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
         if path == '/api/telemetry':
@@ -964,11 +999,31 @@ class H(BaseHTTPRequestHandler):
                         'memos': memos
                     })
 
+                if self.path == '/api/break':
+                    st = L.load()
+                    if body.get('skip'):
+                        st['ui_break_until'] = 0
+                        L.save(st)
+                    return self._send(200, _ui_timing(st))
                 if self.path == '/api/new':
                     kw = {k: body[k] for k in ('entries', 'seed', 'fmt', 'start_stack')
                           if body.get(k) is not None}
+                    raw_minutes = body.get('level_minutes', FM.level_minutes(kw.get('fmt')))
+                    try:
+                        minutes = int(raw_minutes)
+                        valid_minutes = not isinstance(raw_minutes, bool) and float(raw_minutes) == minutes and 1 <= minutes <= 120
+                    except (ValueError, TypeError, OverflowError):
+                        valid_minutes = False
+                    if not valid_minutes:
+                        return self._send(400, {'error': '레벨 길이는 1~120분이어야 합니다.'})
                     _clear_worker()             # 새 게임이면 밀린 것도 버린다
                     L.new_game(**kw)
+                    st = L.load()
+                    st['field']['virtual_play_seconds'] = 0.0
+                    st['field']['level_minutes'] = minutes
+                    st['ui_next_break'] = 3300
+                    st['ui_break_seconds'] = 0
+                    L.save(st)
                     _last = _wrap(_step())
                     return self._send(200, _last)
                 if self.path in ('/api/step', '/api/step-stream'):
@@ -987,6 +1042,8 @@ class H(BaseHTTPRequestHandler):
                     _f = L._load_field(_st['field'])
                     if _st.get('busted') or _f.remaining() <= 1:
                         _last = _game_over(); return self._send(200, _last)
+                    if _st.get('ui_break_pending') and _ui_timing(_st)['break_remaining']:
+                        return self._send(409, {'error': '브레이크가 끝난 뒤 재개됩니다.', 'current': _last})
                     a = body.get('action')
                     if a is not None and a not in ACTIONS:
                         return self._send(400, {'error': '알 수 없는 액션: %s' % a})

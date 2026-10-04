@@ -276,8 +276,9 @@ function renderTop(v) {
     : '—';
   $('#handno').textContent = v.hand_no ? `HAND ${v.hand_no}` : '';
   // 필드/ITM/내 순위는 ⋯ 대회 정보로 이동했다.
-  $('#fieldline').textContent = '';
+  $('#fieldline').textContent = S.elapsedSeconds == null ? '기존 대회 · 핸드 기준' : `가상 경과 ${clockText(S.elapsedSeconds)}`;
   $('#notes').textContent = (v.notes || []).join('  ');
+  readReady().catch(() => {});
 }
 
 /* ---------------- 좌석 ---------------- */
@@ -2427,46 +2428,39 @@ function finishResult2(v) {
       return;
     }
 
-    if (!autoOn()) {
-      $('#mainrow').innerHTML =
-        '<button type="button" id="bDeal">다음 핸드</button>';
-
-      $('#bDeal').addEventListener('click', () => {
-        if (!epochAlive(epoch)) return;
-
-        clearTimeout(S.autoTimer);
-        S.autoTimer = null;
-
-        collectCards(() => send(null, 0));
-      });
-
-      return;
-    }
-
     const waitReady = async () => {
       if (!epochAlive(epoch)) return;
-
-      let working = false;
-
       try {
-        const r = await fetch('/api/ready');
-        working = !!(await r.json()).working;
-      } catch (e) {}
-
-      if (!epochAlive(epoch)) return;
-
-      if (working) {
-        $('#mainrow').innerHTML =
-          '<div class="wait">다른 테이블 정산 중…</div>';
-
-        S.autoTimer =
-          setTimeout(waitReady, 500);
-
+        const ready = await readReady();
+        if (!epochAlive(epoch)) return;
+        if (ready.break_remaining > 0 || S.breakOpen) {
+          renderBreak(ready);
+        }
+        if (ready.break_remaining > 0 || ready.working) {
+          const elapsed = clockText(ready.worker_elapsed_seconds || 0);
+          $('#mainrow').innerHTML = '<div class="wait">' +
+            (ready.break_remaining > 0 ? '휴식 중…' : `다른 테이블 진행 완료 대기 중 · ${elapsed}`) + '</div>';
+          S.autoTimer = setTimeout(waitReady, 1000);
+          return;
+        }
+      } catch (e) {
+        if (!epochAlive(epoch)) return;
+        $('#mainrow').innerHTML = '<div class="wait">서버 연결 확인 중… 자동으로 다시 확인합니다.</div>';
+        S.autoTimer = setTimeout(waitReady, 2000);
+        return;
+      }
+      if (!autoOn()) {
+        $('#mainrow').innerHTML = '<button type="button" id="bDeal">다음 핸드</button>';
+        $('#bDeal').addEventListener('click', () => {
+          if (!epochAlive(epoch)) return;
+          clearTimeout(S.autoTimer);
+          S.autoTimer = null;
+          collectCards(() => send(null, 0));
+        });
         return;
       }
 
       S.autoTimer = null;
-
       collectCards(() => {
         if (!epochAlive(epoch)) return;
         send(null, 0);
@@ -2967,7 +2961,7 @@ function tournamentInfoHTML(t) {
     '<div class="grid">' +
       `<div class="row"><span class="who">필드</span><span class="amt">${fmt(t.entries)} → ${fmt(t.remaining)}</span></div>` +
       `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
-      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)}</span></div>` +
+      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)} · ${t.virtual_clock ? '가상 '+fmt(t.level_minutes)+'분' : '기존 핸드 기준'}</span></div>` +
       `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
       `<div class="row"><span class="who">내 칩순위</span><span class="amt">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
       `<div class="row"><span class="who">내 스택</span><span class="amt">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
@@ -3041,6 +3035,44 @@ function closeRankDrawer() {
   }, 250);
 }
 
+function clockText(seconds) {
+  seconds = Math.max(0, Math.ceil(Number(seconds) || 0));
+  const m = Math.floor(seconds / 60), sec = String(seconds % 60).padStart(2, '0');
+  return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}:${sec}` : `${String(m).padStart(2, '0')}:${sec}`;
+}
+async function readReady() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch('/api/ready', {cache: 'no-store', signal: controller.signal});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const ready = await response.json();
+    S.elapsedSeconds = ready.elapsed_seconds;
+    if ($('#fieldline')) $('#fieldline').textContent = ready.elapsed_seconds == null
+      ? '기존 대회 · 핸드 기준' : `가상 경과 ${clockText(ready.elapsed_seconds)}`;
+    return ready;
+  } finally { clearTimeout(timer); }
+}
+function renderBreak(ready) {
+  if (!ready.break_remaining && !ready.working) {
+    if (S.breakOpen) { S.breakOpen = false; hideOverlay(); }
+    return;
+  }
+  if (!S.breakOpen) {
+    S.breakOpen = true;
+    showOverlayPersistent('<h2>브레이크</h2><div id="breakCountdown" role="status" aria-live="polite"></div>' +
+      '<div class="actions"><button type="button" id="breakSkip">휴식 건너뛰기</button></div>');
+    $('#breakSkip').addEventListener('click', async () => {
+      try {
+        const r = await fetch('/api/break', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({skip:true})});
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderBreak(await readReady());
+      } catch (e) { toast('휴식을 종료하지 못했습니다. 다시 시도해 주세요.'); }
+    });
+  }
+  if ($('#breakCountdown')) $('#breakCountdown').textContent = ready.break_remaining > 0
+    ? `남은 시간 ${clockText(ready.break_remaining)}` : '다른 테이블 진행 완료 대기 중';
+}
 async function showMenu() {
   showOverlayPersistent(
     '<h2>대회 정보</h2><div class="sub">현재 상태 불러오는 중…</div>'
@@ -3186,6 +3218,7 @@ function newGameFormHTML() {
   </div>
   <div class="field">
     <label>시작 스택<input id="fStack" type="number" inputmode="numeric" value="30000"></label>
+    <label>레벨 길이 (가상 분)<input id="fLevelMinutes" type="number" min="1" max="120" value="10"></label>
   </div>`;
 }
 
@@ -3194,6 +3227,7 @@ function startNew() {
   hideOverlay();
   clearTimeout(S.autoTimer); S.autoTimer = null;
   S.heroSig = null; S.won = false; S.pendingMoveNote = null;
+  S.breakOpen = false; S.elapsedSeconds = null;
   memoClearAll();                    // 새 게임이면 봇 메모도 완전히 초기화
   histClear();                       // 핸드 번호가 1부터 다시 시작한다
   const body = {};
@@ -3203,6 +3237,7 @@ function startNew() {
   if (e) body.entries = e;
   if (s !== '' && s !== null && s !== undefined && !isNaN(Number(s))) body.seed = Number(s);
   if (k) body.start_stack = k;
+  body.level_minutes = Number($('#fLevelMinutes').value) || 10;
   S.handNo = null; S.boardLen = 0; S.logLen = 0; S.stage = null;
   call('/api/new', body, '새 게임을 만드는 중…');
 }

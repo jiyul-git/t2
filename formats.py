@@ -160,3 +160,10 @@ def blind_schedule(base_blinds, mult=1.0, levels=None):
         sb = _round_blind(bb * (sb0 / max(1.0, bb0)))
         out.append((i+1, max(1, min(sb, bb//1)), bb))
     return out
+
+# Online speed is independent of buy-in, payout and re-entry format.
+# PokerStars current help: slow 15, regular 10, turbo 5, hyper 2 minutes.
+LEVEL_MINUTES = {'slow': 15, 'regular': 10, 'turbo': 5, 'hyper': 2}
+FORMAT_SPEED = {'deep': 'slow', 'standard': 'regular', 'turbo': 'turbo', 'hyper': 'hyper'}
+def level_minutes(fmt):
+    return LEVEL_MINUTES[FORMAT_SPEED.get(fmt, 'regular')]
