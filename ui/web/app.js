@@ -68,6 +68,7 @@ const S = {
   actionToken: null,         // deadline이 속한 engine token
   actionArmPending: false,   // 중복 arm 요청 방지
   timeoutSubmitting: false,  // 시간초과 자동 폴드 중복 방지
+  actionSubmitted: false,     // 액션 클릭 후 응답 전 deadline 재-arm 방지
   levelRemainingSeconds: null, // 현재 레벨 종료까지 실제 초
   sessionRemainingSeconds: null, // 55분 플레이 세션 종료까지 실제 초
 };
@@ -3121,6 +3122,7 @@ function paintActionClock() {
 }
 
 function startActionClock(deadlineMs, token) {
+  if (S.actionSubmitted) return;
   if (!deadlineMs || token !== S.token || !S.view || S.view.type !== 'decision') return;
   if (S.actionTimer) clearInterval(S.actionTimer);
   S.actionDeadlineMs = Number(deadlineMs);
@@ -3131,6 +3133,7 @@ function startActionClock(deadlineMs, token) {
 }
 
 async function armActionClock(v) {
+  if (S.actionSubmitted) return;
   if (!v || v.type !== 'decision' || S.token == null || S.actionArmPending) return;
   const token = S.token;
   if (S.actionToken === token && S.actionDeadlineMs) {
@@ -3166,7 +3169,7 @@ async function readReady() {
     S.levelRemainingSeconds = ready.level_remaining_seconds;
     S.sessionRemainingSeconds = ready.session_remaining_seconds;
     paintTournamentClock();
-    if (ready.action_token === S.token && ready.action_deadline_ms && S.view && S.view.type === 'decision') {
+    if (!S.actionSubmitted && ready.action_token === S.token && ready.action_deadline_ms && S.view && S.view.type === 'decision') {
       if (!S.actionDeadlineMs || Math.abs(S.actionDeadlineMs - Number(ready.action_deadline_ms)) > 250) {
         startActionClock(ready.action_deadline_ms, S.token);
       }
@@ -3349,6 +3352,7 @@ function startNew() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
   S.heroSig = null; S.won = false; S.pendingMoveNote = null;
   S.breakOpen = false; S.elapsedSeconds = null;
+  S.actionSubmitted = false;
   S.levelRemainingSeconds = null; S.sessionRemainingSeconds = null;
   memoClearAll();                    // 새 게임이면 봇 메모도 완전히 초기화
   histClear();                       // 핸드 번호가 1부터 다시 시작한다
@@ -3865,6 +3869,13 @@ function send(action, amount) {
     S.timeoutSubmitting = true;
   }
 
+  // 클릭/자동폴드가 확정되는 순간 카운트다운은 즉시 끝난다.
+  // 응답 전 readReady()가 같은 서버 deadline을 다시 받아도 재-arm하지 않는다.
+  if (action !== null) {
+    S.actionSubmitted = true;
+    stopActionClock();
+  }
+
   if (action !== null && S.replayDone) {
     S.queuedAction = {
       action: action,
@@ -3873,9 +3884,6 @@ function send(action, amount) {
     markQueued(action);
     return;
   }
-
-  // 클릭/자동폴드가 확정되면 카운트다운은 즉시 멈춘다.
-  if (action !== null) stopActionClock();
 
   // 클릭 즉시 내 액션을 먼저 보여준다.
   previewHeroAction(action, amount);
@@ -3929,6 +3937,9 @@ function sync() { call('/api/state', null, '상태를 받는 중…'); }
 /* ---------------- 응답 반영 ---------------- */
 function apply(resp) {
   stopActionClock();
+  // 서버 응답이 새 화면의 원본이다. 같은 decision으로 돌아온 경우에도
+  // 그 화면에서 다시 정상적으로 deadline을 arm할 수 있다.
+  S.actionSubmitted = false;
   S.last = resp;
   S.token = resp.token;
 

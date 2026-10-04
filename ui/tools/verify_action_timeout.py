@@ -64,3 +64,15 @@ with tempfile.TemporaryDirectory(prefix='t2_action_clock_') as td:
     finally:
         proc.terminate()
         proc.wait(timeout=5)
+
+# JS regression: once HERO commits an action, local countdown must disappear
+# immediately and periodic /api/ready must not resurrect the same deadline.
+js = (ROOT / 'ui' / 'web' / 'app.js').read_text(encoding='utf-8')
+assert 'S.actionSubmitted = true;\n    stopActionClock();' in js
+assert 'if (S.actionSubmitted) return;\n  if (!deadlineMs' in js
+assert 'if (S.actionSubmitted) return;\n  if (!v || v.type' in js
+assert 'if (!S.actionSubmitted && ready.action_token === S.token' in js
+queued = js.index('if (action !== null && S.replayDone)')
+stopped = js.rfind('stopActionClock();', 0, queued)
+assert stopped >= 0
+print('PASS: committed/queued HERO action hides countdown and blocks deadline re-arm')
