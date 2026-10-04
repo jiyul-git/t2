@@ -1332,8 +1332,6 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
         # 여기서는 HERO 핸드 결과만 저장하고, bust/balance는 같은 시간축의
         # 봇 이벤트가 확정되는 HERO 핸드 경계에서 한 번만 수행한다.
         st['vclock_settle_pending'] = True
-        if _hero_busted_now:
-            st['vclock_hero_bust_pending'] = True
 
     elif defer_others and parallel_others is not None:
         try:
