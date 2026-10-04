@@ -534,7 +534,10 @@ ALIAS = {'cbet':'cbet_flop', 'barrel':'barrel_turn', 'checkraise':'checkraise_fl
          # turn/river checkraise는 의미 경계를 분리하되 기존 생성 프로필에는
          # 아직 전용 prior가 없으므로 checkraise_late를 compatibility fallback으로 쓴다.
          'checkraise_turn':'checkraise_late', 'checkraise_river':'checkraise_late',
-         'bluffcatch':'bluffcatch_early', 'thin_value':'thin_value_turn'}
+         # flop/turn bluffcatch도 의미 경계를 분리하되 기존 프로필은 early로 fallback.
+         'bluffcatch':'bluffcatch_early',
+         'bluffcatch_flop':'bluffcatch_early', 'bluffcatch_turn':'bluffcatch_early',
+         'thin_value':'thin_value_turn'}
 
 def street_concept(base, street):
     """스트리트에 맞는 개념 이름으로 변환."""
@@ -543,7 +546,7 @@ def street_concept(base, street):
       ('barrel','turn'):'barrel_turn', ('barrel','river'):'barrel_river',
       ('checkraise','flop'):'checkraise_flop', ('checkraise','turn'):'checkraise_turn',
       ('checkraise','river'):'checkraise_river',
-      ('bluffcatch','flop'):'bluffcatch_early', ('bluffcatch','turn'):'bluffcatch_early',
+      ('bluffcatch','flop'):'bluffcatch_flop', ('bluffcatch','turn'):'bluffcatch_turn',
       ('bluffcatch','river'):'bluffcatch_river',
       # 플랍의 중간강도 밸류/머징은 range_merge가 맡는다.
       # thin_value_turn을 재사용하면 턴 숙련도가 플랍 판단을 바꾼다.
