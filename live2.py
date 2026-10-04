@@ -297,14 +297,18 @@ def _vclock_book_delta(before, after):
 
 
 def _vclock_h4h(f):
-    active_tables = sum(1 for tb in f.tables.values() if tb.n() >= 2)
-    # 머니/새틀라이트 좌석 버블 + 마지막 두 테이블 -> FT 버블.
-    return (f.remaining() <= f.itm + 1
-            or (1 < active_tables <= 2))
+    """현재 확정 상태가 hand-for-hand 진입점인가.
+
+    9-max의 마지막 두 테이블 전체를 H4H로 묶지 않는다. 실제 동기화 지점은
+    머니/좌석 버블(ITM+1)과 파이널테이블 버블(9-max면 10명)이다.
+    """
+    remaining = f.remaining()
+    return (remaining == f.itm + 1
+            or remaining == int(getattr(f, 'max_seat', FS.MAXSEAT)) + 1)
 
 
 def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
-                       base_suffix):
+                       base_suffix, h4h_mode=False):
     """한 봇 테이블을 target_seconds까지 독립적으로 선계산한다.
 
     첫 탈락 또는 hand-for-hand 지점에서 멈춘다. 그 지점 이후에는 테이블 이동/
@@ -371,8 +375,10 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
             }
             dead = any(int(r.get('stack', 0) or 0) <= 0
                        for r in players.values())
-            barrier = 'bust' if dead else (
-                'hand_for_hand' if _vclock_h4h(f) else None)
+            # H4H에서는 모든 테이블이 정확히 한 핸드를 끝낸 뒤 함께
+            # 다음 핸드로 넘어간다. 탈락이 나도 해당 H4H 라운드가 끝날 때까지 기다린다.
+            barrier = ('hand_for_hand' if h4h_mode
+                       else ('bust' if dead else None))
 
             events.append({
                 'tid': tid,
@@ -448,11 +454,13 @@ def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
             'session_end': session_end,
             'coverage': session_end,
             'barrier_time': None,
+            'barrier_kind': None,
             'tables': {},
             'end_field': base,
         }
 
     frozen = f.field_snapshot()
+    h4h_mode = _vclock_h4h(f)
     pool = _table_pool() if len(other_tids) > 1 else None
     jobs = []
     for tid in other_tids:
@@ -462,7 +470,8 @@ def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
             k: v for k, v in (base.get('book') or {}).items()
             if str(k).partition('>')[0] in ps
         }
-        args = (mini, tid, target_seconds, session_end, frozen, FS.BOT_SUFFIX)
+        args = (mini, tid, target_seconds, session_end, frozen,
+                FS.BOT_SUFFIX, h4h_mode)
         if pool is None:
             jobs.append(_vclock_table_task(*args))
         else:
@@ -474,9 +483,18 @@ def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
         float(r['barrier_time']) for r in results
         if r.get('barrier_time') is not None
     ]
-    barrier_time = min(barriers) if barriers else None
+    if h4h_mode:
+        # H4H 한 라운드는 가장 느린 테이블의 한 핸드까지 끝나야 완료된다.
+        barrier_time = max(
+            (float(r.get('covered_until', 0.0)) for r in results),
+            default=None)
+        barrier_kind = 'hand_for_hand'
+    else:
+        barrier_time = min(barriers) if barriers else None
+        barrier_kind = 'bust' if barrier_time is not None else None
+
     coverage = min(float(r.get('covered_until', 0.0)) for r in results)
-    if barrier_time is not None:
+    if barrier_time is not None and not h4h_mode:
         coverage = min(coverage, barrier_time)
 
     end_field = None
@@ -510,6 +528,7 @@ def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
         'session_end': session_end,
         'coverage': float(coverage),
         'barrier_time': barrier_time,
+        'barrier_kind': barrier_kind,
         'tables': {str(r['tid']): r for r in results},
         'end_field': end_field,
     }

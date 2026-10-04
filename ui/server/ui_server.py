@@ -63,7 +63,8 @@ def _clock_values(st, now):
     elapsed = max(0.0, now - st['ui_clock_started_at'])
     paused = st.get('ui_clock_paused_seconds', 0.0)
     if st.get('ui_break_pending'):
-        paused += max(0.0, min(now, st.get('ui_break_until', now)) - st.get('ui_break_started_at', now))
+        # 5분이 끝났어도 봇 동기화가 늦으면 추가 대기까지 전부 브레이크다.
+        paused += max(0.0, now - st.get('ui_break_started_at', now))
     return max(0.0, elapsed - paused), elapsed
 
 
@@ -92,10 +93,17 @@ def _ui_timing(st, now=None):
         if st.get('ui_break_pending') and st.get('ui_break_at') is not None
         else st.get('ui_next_break', PLAY_WINDOW_SECONDS)
     )
+    level_remaining = None
+    if active is not None and minutes:
+        period = float(minutes) * 60.0
+        fallback_level = 1 + int(max(0.0, float(active)) // period)
+        level_no = max(1, int(fd.get('level') or fallback_level))
+        used = max(0.0, float(active) - (level_no - 1) * period)
+        level_remaining = int(math.ceil(max(0.0, period - used)))
     return {'elapsed_seconds': None if elapsed is None else int(elapsed),
             'active_seconds': None if active is None else int(active),
             'level_minutes': minutes,
-            'level_remaining_seconds': None if active is None or not minutes else int(math.ceil(minutes * 60 - active % (minutes * 60))),
+            'level_remaining_seconds': level_remaining,
             'session_remaining_seconds': None if active is None else max(0, int(math.ceil(float(next_break) - active))),
             'break_remaining': max(0, int(math.ceil(st.get('ui_break_until', 0) - now))),
             'action_deadline_ms': None if deadline is None else int(float(deadline) * 1000),
@@ -369,6 +377,7 @@ VCLOCK = {
     'cursors': {},
     'coverage': 0.0,
     'barrier_time': None,
+    'barrier_kind': None,
     'spec_field': None,
     'segment_target': None,
     'session_end': None,
@@ -429,6 +438,17 @@ def _vclock_session_end(st):
     return float(st.get('ui_next_break', PLAY_WINDOW_SECONDS))
 
 
+def _vclock_refresh_settle_target(st, now=None):
+    """대기 중 settlement의 HERO 확정선을 현재 실제 초까지 전진시킨다."""
+    if not st or not st.get('vclock_settle_pending'):
+        return
+    _sync_clock(st, now)
+    active = float((st.get('field') or {}).get('virtual_play_seconds', 0.0) or 0.0)
+    if st.get('ui_break_pending') and st.get('ui_break_at') is not None:
+        active = min(active, float(st['ui_break_at']))
+    st['vclock_settle_target'] = active
+
+
 def _vclock_other_clock_floor(field_dump):
     try:
         hero_tid, other_tids, _ = L._round_owners(field_dump)
@@ -457,6 +477,7 @@ def _vclock_reset_locked():
         'cursors': {},
         'coverage': 0.0,
         'barrier_time': None,
+        'barrier_kind': None,
         'spec_field': None,
         'segment_target': None,
         'session_end': None,
@@ -540,7 +561,9 @@ def _vclock_accept_locked(wait=False):
     if b is not None:
         b = float(b)
         old = VCLOCK.get('barrier_time')
-        VCLOCK['barrier_time'] = b if old is None else min(float(old), b)
+        if old is None or b < float(old):
+            VCLOCK['barrier_time'] = b
+            VCLOCK['barrier_kind'] = out.get('barrier_kind')
         COUNT['vclock_barrier'] += 1
 
     VCLOCK['coverage'] = max(
@@ -556,6 +579,8 @@ def _vclock_accept_locked(wait=False):
 def _vclock_ready_locked(target):
     target = float(target)
     b = VCLOCK.get('barrier_time')
+    if b is not None and VCLOCK.get('barrier_kind') == 'hand_for_hand':
+        return float(b) <= target + 1e-9
     if b is not None and float(b) <= target + 1e-9:
         return True
     return float(VCLOCK.get('coverage') or 0.0) >= target - 1e-9
@@ -767,26 +792,40 @@ def _step(action=None, amount=0, on_bot_action=None):
 
     if st0 is not None:
         _sync_clock(st0)
+    vclock = _vclock_enabled(st0)
+
+    if st0 and vclock and st0.get('vclock_settle_pending'):
+        _vclock_refresh_settle_target(st0)
+
+    if st0 is not None:
         L.save(st0)
+
     if st0 and st0.get('ui_break_pending'):
         if _ui_timing(st0)['break_remaining']:
             raise ValueError('브레이크가 끝난 뒤 다음 핸드를 시작할 수 있습니다.')
-        paused = max(
-            0.0,
-            st0.get('ui_break_until', 0)
-            - st0.get('ui_break_started_at', st0.get('ui_break_until', 0)))
+
+        if vclock and st0.get('vclock_settle_pending'):
+            ok, _ = _vclock_settle(st0, wait=True)
+            if not ok:
+                raise ValueError('다른 테이블 가상시계 동기화가 아직 끝나지 않았습니다.')
+            st0 = L.load()
+
+        resume_now = time.time()
+        paused = max(0.0, resume_now - st0.get('ui_break_started_at', resume_now))
         st0['ui_clock_paused_seconds'] = (
             st0.get('ui_clock_paused_seconds', 0) + paused)
         st0['ui_break_seconds'] = st0.get('ui_break_seconds', 0) + paused
         st0['ui_break_pending'] = False
         st0.pop('ui_break_at', None)
         L.save(st0)
+
     vclock = _vclock_enabled(st0)
     others = None
 
     if vclock and st0 is not None:
-        # 직전 HERO 핸드의 확정이 아직 남아 있으면 새 핸드 전에 반드시 끝낸다.
         if st0.get('vclock_settle_pending'):
+            _vclock_refresh_settle_target(st0)
+            L.save(st0)
             ok, _ = _vclock_settle(st0, wait=True)
             if not ok:
                 raise ValueError('다른 테이블 가상시계 동기화가 아직 끝나지 않았습니다.')
@@ -1265,6 +1304,8 @@ class H(BaseHTTPRequestHandler):
                 if st.get('vclock_settle_pending') and LOCK.acquire(blocking=False):
                     try:
                         st = L.load()
+                        _vclock_refresh_settle_target(st)
+                        L.save(st)
                         _vclock_settle(st, wait=False)
                         st = L.load()
                     finally:
@@ -1408,7 +1449,17 @@ class H(BaseHTTPRequestHandler):
                 if self.path == '/api/break':
                     st = L.load()
                     if body.get('skip'):
-                        st['ui_break_until'] = min(time.time(), st.get('ui_break_until', time.time()))
+                        if _vclock_enabled(st) and st.get('vclock_settle_pending'):
+                            _vclock_refresh_settle_target(st)
+                            L.save(st)
+                            ok, _ = _vclock_settle(st, wait=False)
+                            st = L.load()
+                            if not ok or st.get('vclock_settle_pending'):
+                                out = _ui_timing(st)
+                                out['error'] = '다른 테이블 동기화가 끝나야 휴식을 건너뛸 수 있습니다.'
+                                return self._send(409, out)
+                        st['ui_break_until'] = min(
+                            time.time(), st.get('ui_break_until', time.time()))
                         L.save(st)
                     return self._send(200, _ui_timing(st))
                 if self.path == '/api/action-clock':

@@ -34,6 +34,24 @@ for tid in other_tids:
     assert float(row['covered_until']) == ends[-1]
 print('PASS: bot-only tables advance on independent second clocks; HERO table is untouched')
 
+f18 = FS.Field(entries=18, hero_pid=0, seed=18, fmt='standard')
+assert not L._vclock_h4h(f18)
+f10 = FS.Field(entries=10, hero_pid=0, seed=10, fmt='standard')
+assert L._vclock_h4h(f10)
+
+fh = FS.Field(entries=19, hero_pid=0, seed=1901, fmt='standard')
+fh.itm = 18
+fh.virtual_play_seconds = 0.0
+fh.level_minutes = 10
+h4h = L.compute_vclock_ahead(L._dump(fh), 120.0, 3300.0)
+assert h4h['barrier_kind'] == 'hand_for_hand', h4h
+ends = []
+for row in h4h['tables'].values():
+    assert len(row['events']) == 1, row
+    ends.append(float(row['events'][0]['end']))
+assert ends and abs(float(h4h['barrier_time']) - max(ends)) < 1e-9
+print('PASS: H4H uses real bubble thresholds and waits for every table hand')
+
 # Calibration probe: with deep stacks, gather enough 9-max hands to report the
 # raw action-shape mean. The production scale is set from this measured value.
 cal = FS.Field(entries=27, start_stack=300000, hero_pid=0, seed=5150, fmt='standard')

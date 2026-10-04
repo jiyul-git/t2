@@ -14,8 +14,9 @@ for fmt, minutes in [('standard',10),('turbo',5),('hyper',2),('deep',15),('bount
 # Legacy games remain on their existing hand schedule.
 f=FS.Field(entries=9, hero_pid=1, seed=5); f.hand_no=12; f.advance_level(); assert f.level==2
 source=ast.parse((ROOT/'ui/server/ui_server.py').read_text())
-fns=[n for n in source.body if isinstance(n,ast.FunctionDef) and n.name in ('_ui_timing','_clock_values','_sync_clock')]
-ns={'math':math,'time':time,'PLAY_WINDOW_SECONDS':3300};exec(compile(ast.Module(body=fns,type_ignores=[]),'<timing>','exec'),ns)
+fns=[n for n in source.body if isinstance(n,ast.FunctionDef) and n.name in ('_ui_timing','_clock_values','_sync_clock','_vclock_ready_locked')]
+ns={'math':math,'time':time,'PLAY_WINDOW_SECONDS':3300,'VCLOCK':{}};
+exec(compile(ast.Module(body=fns,type_ignores=[]),'<timing>','exec'),ns)
 st={'field':{'virtual_play_seconds':3300,'level_minutes':10},'ui_break_seconds':0,'ui_break_until':1300}
 assert ns['_ui_timing'](st,1000)['break_remaining']==300
 assert ns['_ui_timing'](st,1000.1)['break_remaining']==300
@@ -28,6 +29,12 @@ assert ns['_ui_timing'](wall,1001.2)['level_remaining_seconds']==59
 assert ns['_ui_timing'](wall,1001.2)['session_remaining_seconds']==3299
 assert ns['_ui_timing'](wall,1060)['elapsed_seconds']==60
 assert ns['_ui_timing'](wall,1060)['level_remaining_seconds']==60
+wall_l1={'field':{'virtual_play_seconds':0,'level_minutes':1,'level':1},
+         'ui_clock_started_at':1000,'ui_clock_paused_seconds':0}
+assert ns['_ui_timing'](wall_l1,1060)['level_remaining_seconds']==0
+wall_l2={'field':{'virtual_play_seconds':60,'level_minutes':1,'level':2},
+         'ui_clock_started_at':1000,'ui_clock_paused_seconds':0}
+assert ns['_ui_timing'](wall_l2,1060)['level_remaining_seconds']==60
 assert ns['_clock_values'](wall,1060)[0]==60
 ns['_sync_clock'](wall,1060)
 f=L._load_field(dict(L._dump(FS.Field(entries=9,hero_pid=1,seed=5)),**wall['field']))
@@ -36,7 +43,12 @@ legacy={'field':{'virtual_play_seconds':120,'level_minutes':10},'ui_break_second
 ns['_sync_clock'](legacy,1000);assert ns['_clock_values'](legacy,1001)==(121,151)
 wall.update(ui_break_pending=True,ui_break_started_at=1060,ui_break_until=1360)
 assert ns['_clock_values'](wall,1200)==(60,200)
-assert ns['_clock_values'](wall,1400)==(100,400)
+assert ns['_clock_values'](wall,1400)==(60,400)
+ns['VCLOCK'].update(barrier_time=90.0,barrier_kind='hand_for_hand',coverage=70.0)
+assert not ns['_vclock_ready_locked'](80.0)
+assert ns['_vclock_ready_locked'](90.0)
+ns['VCLOCK'].update(barrier_time=90.0,barrier_kind='bust',coverage=70.0)
+assert ns['_vclock_ready_locked'](75.0)
 print('PASS: actual elapsed, level boundary, break pause and expiry')
 print('PASS: five speed/format boundaries, field persistence, legacy clock, countdown boundaries')
 # Real HTTP lifecycle: countdown starts only after a result, survives reload,
