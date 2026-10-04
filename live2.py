@@ -256,7 +256,7 @@ def _parallel_tables_runner(f, plan):
 VCLOCK_AHEAD_MODE = 'vclock_ahead_v1'
 try:
     VCLOCK_DURATION_SCALE = max(
-        0.1, float(os.environ.get('T2_VCLOCK_SCALE', '1.0')))
+        0.1, float(os.environ.get('T2_VCLOCK_SCALE', '1.2125')))
 except ValueError:
     VCLOCK_DURATION_SCALE = 1.0
 

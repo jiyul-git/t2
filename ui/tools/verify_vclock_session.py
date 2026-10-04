@@ -52,6 +52,7 @@ if durations:
     recommended = (3600.0 / 70.0) / raw_mean
     print('VCLOCK_CAL raw_mean=%.3f n=%d recommended_scale=%.4f'
           % (raw_mean, len(durations), recommended))
+    assert abs(recommended - 1.2125) < 0.08, recommended
 
 # 2) A real movement barrier: 27 players starts 9/9/9. Two bot busts on one
 # table create 9/9/7, so settle must invoke the actual TDA _balance path.
