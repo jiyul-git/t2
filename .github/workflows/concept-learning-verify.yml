@@ -6,6 +6,7 @@ on:
     paths:
       - 'persona.py'
       - 'tools/verify_concept_prerequisites.py'
+      - 'tools/audit_concept_learning_population.py'
       - 'docs/semantic_audit/CONCEPT_PREREQUISITE_DESIGN.md'
       - '.github/workflows/concept-learning-verify.yml'
   workflow_dispatch:
@@ -23,3 +24,10 @@ jobs:
         run: python3 -m py_compile persona.py tools/verify_concept_prerequisites.py
       - name: Verify learning structure
         run: python3 tools/verify_concept_prerequisites.py
+      - name: Audit 1000-player population
+        run: python3 tools/audit_concept_learning_population.py --n 1000 > /tmp/concept_population.json
+      - name: Upload population audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: concept-learning-population
+          path: /tmp/concept_population.json
