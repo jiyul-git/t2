@@ -64,18 +64,104 @@ cbet_flop -> delayed_cbet
 3. 같은 seed에서 난수 소비 순서는 바뀌지 않아야 한다.
 4. 필터 적용 전/후 concept 분포 변화량을 별도로 측정한다.
 
-## 다음 단계 — 아직 구현하지 않음
 
-기초 판단지식의 출현 빈도/분포를 개념 난이도에 따라 재설계한다.
+## v2: 독자 개념 난이도
 
-현재는 각 concept이 서로 다른 `base`, `SPREAD`, latent loading을 이미 갖지만,
-'기초 판단지식일수록 후행 전략의 기반이 된다'는 구조적 중요도가 population prior에
-직접 반영되지는 않는다.
+복합 capability(판단+계획, 계획+실행, 판단+계획+실행)는 아직 제외한다.
 
-다음 단계에서는:
-- 기초 판단 / 후행 활용을 구분
-- 각 개념 난이도 정의
-- 난이도에 따른 base/spread 또는 습득확률 설계
-- prerequisite filter와 중복 효과가 생기지 않는지 모집단 audit
+| 개념 | 난이도(0~10) | 해석 |
+|---|---:|---|
+| positional | 2.0 | 포지션 유불리 기본 |
+| open_size | 2.5 | 기본 오픈 사이즈 |
+| outs | 2.5 | 드로우 개선 카드 계산 |
+| board_texture | 3.0 | 기본 보드 구조 해석 |
+| potodds | 3.5 | 콜 가격 계산 |
+| pf_range | 3.5 | 포지션별 기본 프리플랍 레인지 |
+| cbet_flop | 4.0 | 기본 지속베팅 |
+| trap | 4.0 | 강한 패를 숨겨 유도하는 기본 개념 |
+| multiway | 4.5 | 다인팟 가치 조정 |
+| money_jump | 4.5 | 상금 점프 인식 |
+| potcontrol | 5.0 | 중간 강도 핸드의 팟 관리 |
+| sizing_tell | 5.0 | 상대 사이징 의미 해석 |
+| delayed_cbet | 5.0 | 플랍 체크 뒤 턴 공격 |
+| probe | 5.5 | 체크로 약해진 범위 공격 |
+| barrel_turn | 6.0 | 플랍 이후 변화까지 반영한 지속공격 |
+| stack_decay | 6.5 | 미래 블라인드 침식 반영 |
+| blocker | 7.0 | 콤보 제거 근거 활용 |
+| barrel_river | 7.5 | 전체 라인을 반영한 마지막 스트리트 공격 |
+| range_read | 8.0 | 포지션/액션/보드/사이징을 종합한 레인지 복원 |
+| icm | 8.5 | 칩 EV와 상금 EV의 비선형 관계 반영 |
 
-을 먼저 설계한 뒤 수치를 조정한다.
+난이도는 평균점수를 직접 덮어쓰지 않는다. 기존 LOADING/SPREAD로 뽑은 raw score에 대해,
+플레이어의 학습량보다 난이도가 높은 개념에서만 고숙련 꼬리를 제한한다.
+
+```
+capacity = clamp(0.60 * study + 0.40 * exp, 0, 10)
+difficulty_cap = 10 - max(0, difficulty - capacity)
+score = min(raw_score, difficulty_cap)
+```
+
+따라서 capacity가 difficulty 이상이면 기존 raw score는 그대로다.
+
+## v2: 학습 선후행
+
+실전 의사결정 의존성과 학습 순서는 구분한다.
+
+### 도움 선행
+
+후행을 배우는 데 도움이 되지만, 암기/직관/경험으로 일부 건너뛸 수 있다.
+
+```
+pf_range + positional + board_texture -> cbet_flop
+potodds + board_texture -> multiway
+potodds + board_texture -> potcontrol
+pf_range + positional + board_texture + sizing_tell -> range_read
+cbet_flop + board_texture -> barrel_turn
+cbet_flop + board_texture -> delayed_cbet
+range_read + board_texture -> probe
+board_texture + range_read -> trap
+barrel_turn + range_read + board_texture -> barrel_river
+money_jump + potodds + stack_decay -> icm
+```
+
+도움 선행은 개별 최솟값이 아니라 평균을 쓴다.
+
+```
+downstream <= mean(prerequisites) + 3.0
+```
+
+한 선행이 약해도 다른 지식과 경험으로 보완할 수 있게 하기 위해서다.
+
+### 필수에 가까운 선행
+
+기존 v1 규칙을 유지한다.
+
+```
+cbet_flop -> barrel_turn -> barrel_river
+cbet_flop -> delayed_cbet
+
+downstream <= prerequisite + 2.0
+```
+
+### 의도적으로 묶지 않은 관계
+
+`positional -> pf_range`는 학습상 자연스럽지만 hard/soft cap 모두 걸지 않는다.
+현재 코드가 "차트 총량은 외웠지만 포지션 의미는 약한 사람"과
+"포지션 감각은 있지만 차트를 외우지 않은 사람"을 의도적으로 표현하기 때문이다.
+
+같은 이유로 blocker도 range_read의 필수 후행으로 묶지 않는다. blocker 개념 자체를
+따로 배울 수 있고, 실제 활용 품질은 소비 단계에서 달라질 수 있다.
+
+## 적용 순서
+
+```
+raw LOADING/SPREAD draw
+    -> money_jump 생성
+    -> difficulty cap
+    -> 도움 선행 cap (위상순서)
+    -> hard prerequisite cap
+    -> temperament 생성
+    -> overall_skill field bound / 기존 재추첨
+```
+
+새 RNG는 추가하지 않는다.
