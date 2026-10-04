@@ -191,14 +191,15 @@ INDEPENDENT_CONCEPT_DIFFICULTY = {
 # positional -> pf_range처럼 코드가 의도적으로 독립 조합을 보존하는 관계는
 # 학습상 관련이 있어도 여기에는 넣지 않는다.
 LEARNING_PREREQUISITES = {
+    # 먼저 기초 해석 능력을 보정하고, 그 결과를 후행 계획이 읽는다.
+    'range_read':      ('pf_range', 'positional', 'board_texture', 'sizing_tell'),
     'cbet_flop':       ('pf_range', 'positional', 'board_texture'),
     'multiway':        ('potodds', 'board_texture'),
     'potcontrol':      ('potodds', 'board_texture'),
+    'barrel_turn':     ('cbet_flop', 'board_texture'),
     'delayed_cbet':    ('cbet_flop', 'board_texture'),
     'probe':           ('range_read', 'board_texture'),
-    'barrel_turn':     ('cbet_flop', 'board_texture'),
     'trap':            ('board_texture', 'range_read'),
-    'range_read':      ('pf_range', 'positional', 'board_texture', 'sizing_tell'),
     'barrel_river':    ('barrel_turn', 'range_read', 'board_texture'),
     'icm':             ('money_jump', 'potodds', 'stack_decay'),
 }
