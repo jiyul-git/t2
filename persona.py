@@ -218,6 +218,7 @@ HARD_PREREQ_MARGIN = 2.0
 ADVANCED_MASTERY_CONCEPTS = ('blocker', 'range_read', 'icm')
 ADVANCED_MASTERY_FLOOR = 6.0
 ADVANCED_MASTERY_WINDOW = 3.0
+ADVANCED_MASTERY_CURVE = 1.5
 
 SPREAD = {
     # 외워서 아는 것 — 갈린다
@@ -333,6 +334,7 @@ def _apply_concept_learning_structure(c, study, exp):
         readiness = _clamp(
             (capacity - (difficulty - ADVANCED_MASTERY_WINDOW))
             / ADVANCED_MASTERY_WINDOW, 0.0, 1.0)
+        readiness = readiness ** ADVANCED_MASTERY_CURVE
         score = ADVANCED_MASTERY_FLOOR + (score - ADVANCED_MASTERY_FLOOR) * readiness
         c[concept] = round(_clamp(score), 1)
 
