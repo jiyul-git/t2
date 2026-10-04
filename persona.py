@@ -268,6 +268,18 @@ def make_player(rng, field_quality=0.6, pid=None, _depth=0, aggr_bias=0.0, loose
     # 이 한 줄을 추가해도 아래 temper 생성의 공유 rng 상태는 변하지 않는다.
     c['money_jump'] = _money_jump_skill(study, aggro, exp, pid)
 
+    # 명확한 선행 -> 후행 지식만 hard prerequisite 로 제한한다.
+    # 반대 방향(선행은 높지만 후행 활용은 낮음)은 제한하지 않는다.
+    # +2.0은 경험/암기/직관으로 후행이 조금 앞설 수 있는 허용폭(잠정).
+    # 새 난수를 쓰지 않는 결정적 후처리라 개념별 raw draw 순서는 그대로다.
+    for _pre, _post in (
+            ('cbet_flop', 'barrel_turn'),
+            ('barrel_turn', 'barrel_river'),
+            ('cbet_flop', 'delayed_cbet')):
+        _cap = min(10.0, float(c[_pre]) + 2.0)
+        if float(c[_post]) > _cap:
+            c[_post] = round(_cap, 1)
+
     # 기질 축 — 능력과 부분적으로만 상관
     t = {
       'aggression':   round(_clamp(aggro + rng.gauss(0, 0.8)), 1),
