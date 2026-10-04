@@ -14,9 +14,12 @@
    - 다음 단계: 실제 모집단에서 turn/river를 독립 생성할 근거와 난이도/분포를 정한 뒤 compatibility fallback 제거 검토
    - 이유: 턴은 세미블러프/드로우가 존재하지만 리버는 드로우가 끝난 별도 판단
 
-2. `bluffcatch_early`
-   - 현재: 플랍과 턴 블러프캐치가 같은 숙련치 공유
-   - 문제: 남은 스트리트 수, 미래 액션, 실현 가능성이 다름
+2. `bluffcatch_early` — **PHASE 1 DONE**
+   - 의미 경계: 플랍은 `bluffcatch_flop`, 턴은 `bluffcatch_turn`, 리버는 기존 `bluffcatch_river`
+   - 기존 생성 프로필: 새 두 키가 없으면 모두 `bluffcatch_early`로 fallback하여 행동 보존
+   - 새 prior/loading/base/spread: 아직 만들지 않음
+   - 다음 단계: 실제 모집단에서 flop/turn을 독립 생성할 근거와 난이도/분포를 정한 뒤 compatibility fallback 제거 검토
+   - 이유: 남은 스트리트 수, 미래 액션, 실현 가능성이 다름
 
 3. 플랍 thin value
    - 현재: 독립 숙련치 없이 `range_merge`를 proxy로 사용
