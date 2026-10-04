@@ -579,4 +579,4 @@ L161 이후 장부가 대회 전체를 담는데, 내 테이블 아카이브(`li
 | 여러 프로세스 | `live2._parallel_tables_runner`: 테이블마다 다른 프로세스(fork)에서 진행, 장부·틸트·스택은 테이블끼리 겹치지 않음. 봇 로그·알림·오류는 계획 순서대로 붙인다. 코어 수는 `T2_TABLE_WORKERS`(기본 CPU 수, 최대 8) |
 | 적용 경로 | UI 라운드 워커(`compute_others_parallel`), 대체 경로(`compute_others`, 지연 정산 끈 finish) |
 | 결과 | 100명 한 라운드 서버 3.8초 → 1.1초(4코어). 기준 하네스 지문 불변(시드 11 `e04c7e88…`) |
-| 검증 | `tools/verify_parallel_tables.py`(P1 여러 프로세스 = 한 프로세스 순서대로, 선수·테이블·틸트·장부·알림·봇 로그 동일; P2 모든 핸드가 라운드 시작 문맥), 23-gate 23/23 |
+| 검증 | `tools/verify_parallel_table_processes.py`(P1 여러 프로세스 = 한 프로세스 순서대로, 선수·테이블·틸트·장부·알림·봇 로그 동일; P2 모든 핸드가 라운드 시작 문맥), 23-gate 23/23 |

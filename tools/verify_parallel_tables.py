@@ -1,80 +1,213 @@
 #!/usr/bin/env python3
-"""Other tables in parallel processes (UI worker) == sequential simultaneous play.
+"""병렬 테이블 round의 소유권/merge 불변식 검증.
 
-P1  live2.compute_others_parallel on the same round-start dump gives the same
-    players, tables, tilt, book, notes and bot log (timing field removed) with
-    T2_TABLE_WORKERS=1 (one process, tables in order) and with N processes.
-P2  simultaneous play ignores within-round results of other tables: every hand
-    of the round is stamped with the round-start field context.
-T1  wall time of both (reported, not a pass condition).
-
-  python tools/verify_parallel_tables.py [ENTRIES] [WARM_ROUNDS] [SEED]
+HERO 테이블과 나머지 테이블이 같은 round-start snapshot에서 갈라졌다가
+끝에서 합쳐질 때 서로의 상태를 덮어쓰지 않는지 본다.
 """
-import json, os, sys, time
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, ROOT)
-os.environ['T2_BOT_LOG'] = os.environ.get('T2_BOT_LOG', '2')
+import copy
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+# import 전에 로그를 끈다. 검증은 사용자 sidecar를 쓰면 안 된다.
+os.environ.setdefault('T2_BOT_LOG', '0')
+_tmp = tempfile.mkdtemp(prefix='t2_parallel_round_')
+os.environ['T2_LIVE_STATE'] = os.path.join(_tmp, 'state.json')
+
 import fieldsim as FS
 import live2 as L
 
 
-def warm_dump(entries, rounds, seed):
-    f = FS.Field(entries=entries, start_stack=30000, hero_pid=0, seed=seed)
-    _log = FS.Field._log_bot_hand
-    FS.Field._log_bot_hand = lambda *a, **k: None
-    try:
-        for _ in range(rounds):
-            f.hand_no += 1
-            f.advance_level()
-            for tb in list(f.tables.values()):
-                if tb.n() >= 2:
-                    f._play_table(tb)
-            f._collect_busts(); f._balance(notify=False); f.notes = []
-    finally:
-        FS.Field._log_bot_hand = _log
+def _chips(d):
+    return sum(int(v['stack']) for v in d['players'].values())
+
+
+def _assert(cond, msg):
+    if not cond:
+        raise AssertionError(msg)
+
+
+def _make_base(entries=27, seed=20260927):
+    f = FS.Field(entries=entries, start_stack=30000, hero_pid=0, seed=seed,
+                 hands_per_level=12, itm_frac=0.15)
     f.hand_no += 1
     f.advance_level()
+    f.notes = []
     return L._dump(f)
 
 
-def strip_log(text):
-    rows = []
-    for line in (text or '').splitlines():
-        r = json.loads(line)
-        r.pop('compute_ms', None)
-        rows.append(r)
-    return rows
+def check_overlay(seed):
+    base = _make_base(seed=seed)
+    hero_tid, other_tids, other_pids = L._round_owners(base)
+    hero_pids = set(base['tables'][str(hero_tid)]['pids'])
+
+    # HERO branch를 눈에 띄게 바꾼다. 실제 HandRun이 아니라 ownership 검증용.
+    main = L._load_field(copy.deepcopy(base))
+    ht = main.tables[hero_tid]
+    alive = ht.ordered_alive()
+    _assert(len(alive) >= 2, 'hero table needs >=2 players')
+    a, b = alive[0], alive[1]
+    move = min(137, int(b['stack']))
+    a['stack'] += move
+    b['stack'] -= move
+    ht.advance_button()
+    ht.hands += 1
+    main.tilt._s(a['pid'])['level'] = 0.731
+    main_dump = L._dump(main)
+
+    worker1 = L.compute_others_parallel(base)
+    worker2 = L.compute_others_parallel(base)
+
+    # 같은 snapshot은 같은 other-table 결과를 내야 한다.
+    for k in ('players', 'tables', 'tilt', 'notes', 'hero_table', 'base_key'):
+        _assert(worker1.get(k) == worker2.get(k),
+                'worker nondeterminism at %s' % k)
+
+    _assert(str(hero_tid) not in worker1['tables'],
+            'worker returned HERO table')
+    _assert(not (hero_pids & {int(x) for x in worker1['players']}),
+            'worker returned HERO player')
+
+    over = L._overlay_parallel_dump(main_dump, base, worker1)
+
+    # HERO-owned rows survive exactly.
+    _assert(over['tables'][str(hero_tid)] == main_dump['tables'][str(hero_tid)],
+            'HERO table overwritten')
+    for pid in hero_pids:
+        _assert(over['players'][str(pid)] == main_dump['players'][str(pid)],
+                'HERO player %s overwritten' % pid)
+
+    # Worker-owned rows come exactly from worker.
+    for tid in other_tids:
+        _assert(over['tables'][str(tid)] == worker1['tables'][str(tid)],
+                'other table %s not merged' % tid)
+    for pid in other_pids:
+        _assert(over['players'][str(pid)] == worker1['players'][str(pid)],
+                'other player %s not merged' % pid)
+
+    # HERO tilt는 main, other tilt는 worker 소유.
+    mt = main_dump.get('tilt') or {}
+    ot = over.get('tilt') or {}
+    wt = worker1.get('tilt') or {}
+    for pid in hero_pids:
+        k = str(pid)
+        _assert(ot.get(k) == mt.get(k), 'HERO tilt %s overwritten' % pid)
+    for pid in other_pids:
+        k = str(pid)
+        _assert(ot.get(k) == wt.get(k), 'other tilt %s not worker-owned' % pid)
+
+    _assert(_chips(over) == _chips(base), 'chip total changed at overlay')
+
+    settled, _notes = L._merge_parallel_field(main, base, worker1)
+    final = L._dump(settled)
+    _assert(_chips(final) == _chips(base), 'chip total changed after settle')
+
+    sizes = [tb.n() for tb in settled.tables.values() if tb.n() > 0]
+    if len(sizes) > 1:
+        _assert(max(sizes) - min(sizes) <= 1,
+                'tables not balanced after merged round: %r' % sizes)
+
+    bad = copy.deepcopy(worker1)
+    bad['base_key'] ^= 1
+    try:
+        L._overlay_parallel_dump(main_dump, base, bad)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('mismatched base_key was accepted')
+
+    return {
+        'seed': seed,
+        'hero_table': hero_tid,
+        'other_tables': len(other_tids),
+        'other_players': len(other_pids),
+        'remaining': settled.remaining(),
+    }
 
 
-def run(dump, workers):
-    os.environ['T2_TABLE_WORKERS'] = str(workers)
-    t = time.time()
-    out = L.compute_others_parallel(json.loads(json.dumps(dump)))
-    return out, time.time() - t
+def check_live_finish(seed=20260928):
+    """live2.finish가 준비된 worker 결과를 즉시 merge하는 통합 경로."""
+    L.new_game(entries=18, start_stack=30000, seed=seed)
+    holder = {}
 
+    def start_worker(field_dump):
+        holder['base'] = copy.deepcopy(field_dump)
+        holder['result'] = L.compute_others_parallel(field_dump)
+
+    r = L.step(defer_others=True, on_round_start=start_worker)
+    _assert('result' in holder, 'round-start callback did not run')
+
+    guard = 0
+    while not r.get('done'):
+        guard += 1
+        _assert(guard < 20, 'HERO hand did not finish')
+        raw = r.get('raw') or {}
+        # 가능한 한 빨리 끝내되 check 가능하면 규칙상 check를 쓴다.
+        a = 'check' if float(raw.get('tocall') or 0) <= 0 else 'fold'
+        r = L.step(a, 0, defer_others=True, others=holder['result'])
+
+    st = L.load()
+    _assert(not st.get('others_pending'), 'ready parallel result left pending')
+    _assert('others_base' not in st, 'ready parallel result left others_base')
+    _assert(st.get('hand_seed') is None, 'finished hand_seed not cleared')
+    f = L._load_field(st['field'])
+    _assert(f.total_chips() == f.entries * f.start_stack,
+            'live finish chip total changed')
+    return {'live_remaining': f.remaining(), 'live_hand_no': f.hand_no}
+
+
+
+def check_single_table_finish(seed=20260929):
+    """Final table has no other-table worker and must never leave pending settle."""
+    L.new_game(entries=9, start_stack=30000, seed=seed)
+    callbacks = {'n': 0, 'other_tables': None}
+
+    def round_start(field_dump):
+        callbacks['n'] += 1
+        _ht, ots, _ops = L._round_owners(field_dump)
+        callbacks['other_tables'] = len(ots)
+
+    r = L.step(defer_others=True, on_round_start=round_start)
+    _assert(callbacks['n'] == 1, 'final-table round-start callback missing')
+    _assert(callbacks['other_tables'] == 0,
+            '9-player final table unexpectedly has other tables')
+
+    guard = 0
+    while not r.get('done'):
+        guard += 1
+        _assert(guard < 30, 'final-table HERO hand did not finish')
+        raw = r.get('raw') or {}
+        a = 'check' if float(raw.get('tocall') or 0) <= 0 else 'fold'
+        r = L.step(a, 0, defer_others=True)
+
+    st = L.load()
+    _assert(not st.get('others_pending'),
+            'single-table finish incorrectly left others_pending')
+    _assert('others_base' not in st,
+            'single-table finish incorrectly left others_base')
+    f = L._load_field(st['field'])
+    _assert(len([tb for tb in f.tables.values() if tb.n() > 0]) == 1,
+            'final table split after local settle')
+    _assert(f.total_chips() == f.entries * f.start_stack,
+            'single-table finish chip total changed')
+    return {'final_remaining': f.remaining(), 'final_hand_no': f.hand_no}
 
 def main():
-    entries = int(sys.argv[1]) if len(sys.argv) > 1 else 100
-    warm = int(sys.argv[2]) if len(sys.argv) > 2 else 8
-    seed = int(sys.argv[3]) if len(sys.argv) > 3 else 11
-    dump = warm_dump(entries, warm, seed)
-    seq, t_seq = run(dump, 1)
-    par, t_par = run(dump, max(2, min(8, os.cpu_count() or 2)))
-    keys = ('players', 'tables', 'tilt', 'book', 'notes')
-    diff = [k for k in keys if seq.get(k) != par.get(k)]
-    log_same = strip_log(seq.get('bot_log')) == strip_log(par.get('bot_log'))
-    p1 = {'pass': not diff and log_same and bool(seq.get('bot_log')),
-          'diff_keys': diff, 'bot_log_same': log_same,
-          'bot_hands': len(strip_log(seq.get('bot_log')))}
-    rows = strip_log(seq.get('bot_log'))
-    ctxs = {json.dumps(r.get('field_context', {}).get('remaining')) for r in rows}
-    p2 = {'pass': len(ctxs) == 1, 'field_remaining_seen': sorted(ctxs)}
-    checks = {'P1_parallel_equals_sequential': p1, 'P2_round_start_context': p2,
-              'T1_seconds': {'pass': True, 'sequential': round(t_seq, 1), 'parallel': round(t_par, 1),
-                             'workers': max(2, min(8, os.cpu_count() or 2))}}
-    ok = all(v['pass'] for v in checks.values())
-    print(json.dumps({'pass': ok, 'checks': checks}, indent=1))
-    raise SystemExit(0 if ok else 1)
+    rows = [check_overlay(20260927), check_overlay(20260931)]
+    live = check_live_finish()
+    final = check_single_table_finish()
+    print('parallel table round: OK')
+    for row in rows:
+        print('  seed %(seed)s hero_table=%(hero_table)s other_tables=%(other_tables)s '
+              'other_players=%(other_players)s remaining=%(remaining)s' % row)
+    print('  live hand=%(live_hand_no)s remaining=%(live_remaining)s' % live)
+    print('  final-table hand=%(final_hand_no)s remaining=%(final_remaining)s no-pending=OK'
+          % final)
 
 
 if __name__ == '__main__':
