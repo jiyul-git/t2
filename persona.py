@@ -211,7 +211,9 @@ HARD_CONCEPT_PREREQUISITES = (
     ('cbet_flop', 'delayed_cbet'),
 )
 LEARNING_SUPPORT_MARGIN = 3.0
+LEARNING_SUPPORT_TAIL = 2.0
 HARD_PREREQ_MARGIN = 2.0
+HARD_PREREQ_TAIL = 1.0
 
 # 고급 숙련 꼬리를 별도로 제한할 개념. 0~6의 기초/중급 이해는 기존 분포를
 # 유지하고, 6~10 구간만 학습 준비도에 따라 압축한다.
@@ -299,6 +301,31 @@ def _money_jump_skill(study, aggro, exp, pid):
     return round(_clamp(v), 1)
 
 
+def _compress_dependency_gap(upstream, downstream, free_margin, soft_tail):
+    """선행-후행 격차를 계단식 cap 없이 부드럽게 압축한다.
+
+    gap <= free_margin 이면 그대로 둔다.
+    초과분은 rational saturation 으로 압축해, downstream 점수를 절대 올리지
+    않으면서 경계점에 표본이 몰리는 현상을 피한다.
+
+      excess = gap - free_margin
+      kept   = soft_tail * excess / (soft_tail + excess)
+
+    따라서 최종 gap 은 free_margin + soft_tail 에 점근한다.
+    """
+    up = float(upstream)
+    down = float(downstream)
+    gap = down - up
+    if gap <= float(free_margin):
+        return down
+    excess = gap - float(free_margin)
+    tail = max(0.0, float(soft_tail))
+    if tail <= 1e-9:
+        return up + float(free_margin)
+    kept = tail * excess / (tail + excess)
+    return min(down, up + float(free_margin) + kept)
+
+
 def _apply_concept_learning_structure(c, study, exp):
     """독자 개념의 난이도와 학습 선후행을 deterministic하게 반영한다.
 
@@ -345,17 +372,20 @@ def _apply_concept_learning_structure(c, study, exp):
         have = [float(c[p]) for p in pres if p in c]
         if not have:
             continue
-        cap = min(10.0, sum(have) / len(have) + LEARNING_SUPPORT_MARGIN)
-        if float(c[post]) > cap:
-            c[post] = round(cap, 1)
+        upstream = sum(have) / len(have)
+        adjusted = _compress_dependency_gap(
+            upstream, c[post], LEARNING_SUPPORT_MARGIN, LEARNING_SUPPORT_TAIL)
+        if adjusted < float(c[post]):
+            c[post] = round(_clamp(adjusted), 1)
 
     # 필수 선행은 마지막에 적용해 최종 프로필에서 항상 보장한다.
     for pre, post in HARD_CONCEPT_PREREQUISITES:
         if pre not in c or post not in c:
             continue
-        cap = min(10.0, float(c[pre]) + HARD_PREREQ_MARGIN)
-        if float(c[post]) > cap:
-            c[post] = round(cap, 1)
+        adjusted = _compress_dependency_gap(
+            c[pre], c[post], HARD_PREREQ_MARGIN, HARD_PREREQ_TAIL)
+        if adjusted < float(c[post]):
+            c[post] = round(_clamp(adjusted), 1)
     return c
 
 
