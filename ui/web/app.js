@@ -1827,6 +1827,7 @@ const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
 /* 새 스트리트/히어로 액션 뒤의 화면 호흡.
  * 서버는 현재 모션의 ACK를 받기 전에는 다음 봇 판단을 시작하지 않는다. */
 const STREET_OPEN_PAUSE = 800;
+const HERO_ACTION_PAUSE = 800;
 
 function applyEntry(ss, e) {
   if (e.street && e.street !== ss.stage) {
@@ -3463,6 +3464,16 @@ async function callStepStream(body, msg) {
     resolveDrain = resolve;
   });
 
+  const ackEvent = (e) => {
+    const seq = e && e._ackSeq;
+    if (!streamId || !seq) return;
+    fetch('/api/step-ack', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({stream_id: streamId, seq: seq})
+    }).catch(() => {});
+  };
+
   const publishPrev = () => {
     if (!base || !ss) return;
     const sum = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
@@ -3540,6 +3551,7 @@ async function callStepStream(body, msg) {
       // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
       setTimeout(() => {
+        ackEvent(e);
         playing = false;
         playNext();
       }, 360 + STREET_OPEN_PAUSE);
@@ -3580,6 +3592,7 @@ async function callStepStream(body, msg) {
         publishPrev();
 
         setTimeout(() => {
+          ackEvent(e);
           playing = false;
           playNext();
         }, paceMs(e));
@@ -3606,6 +3619,8 @@ async function callStepStream(body, msg) {
       }
       return;
     }
+
+    ackEvent(e);
     playing = false;
     playNext();
   };
@@ -3618,7 +3633,9 @@ async function callStepStream(body, msg) {
 
   setBusy(true, msg, true);
   try {
-    // HERO 액션 연출은 화면에서만 진행한다. 서버 계산은 즉시 시작한다.
+    // HERO motion first; the first bot calculation starts only afterwards.
+    await new Promise((resolve) => setTimeout(resolve, HERO_ACTION_PAUSE));
+
     const res = await fetch('/api/step-stream', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

@@ -1172,8 +1172,10 @@ class H(BaseHTTPRequestHandler):
                                 'seq': cur,
                                 'event': event,
                             })
-                            # UI는 받은 이벤트를 자기 속도로 재생한다.
-                            # 엔진 계산은 화면 애니메이션 ACK를 기다리지 않는다.
+                            if alive[0]:
+                                # Do not start the next bot calculation until the UI
+                                # has finished animating this event.
+                                _stream_gate_wait(stream_id, cur)
 
                         try:
                             r = (_step(a, amt, on_bot_action=_emit_bot)

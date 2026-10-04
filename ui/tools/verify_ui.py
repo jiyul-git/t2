@@ -84,7 +84,7 @@ class Client:
         return c, r
 
     def step_stream(self, action, amount, token):
-        """NDJSON 진행 이벤트를 받는다. UI 모션은 엔진 진행을 ACK로 막지 않는다."""
+        """NDJSON 진행 이벤트를 실제 UI처럼 한 줄씩 받고 모션 ACK를 보낸다."""
         t = time.time()
         headers = {
             'X-T2-Play-Key': self.play_key,
@@ -121,6 +121,26 @@ class Client:
 
                     if typ == 'bot_action':
                         events.append(obj.get('event') or {})
+                        seq = obj.get('seq')
+                        if stream_id and seq:
+                            ah = {
+                                'X-T2-Play-Key': self.play_key,
+                                'X-T2-Client-Mode': 'play',
+                                'Content-Type': 'application/json',
+                            }
+                            areq = urllib.request.Request(
+                                self.base + '/api/step-ack',
+                                data=json.dumps({
+                                    'stream_id': stream_id,
+                                    'seq': seq,
+                                }).encode(),
+                                headers=ah,
+                            )
+                            with urllib.request.urlopen(areq, timeout=10) as af:
+                                ack = json.loads(af.read().decode() or '{}')
+                                if af.status != 200 or not ack.get('ok'):
+                                    final = {'error': 'stream ACK failed: %r' % ack}
+                                    break
                         continue
 
                     if typ == 'final':
