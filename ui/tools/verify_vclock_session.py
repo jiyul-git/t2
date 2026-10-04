@@ -34,6 +34,25 @@ for tid in other_tids:
     assert float(row['covered_until']) == ends[-1]
 print('PASS: bot-only tables advance on independent second clocks; HERO table is untouched')
 
+# Calibration probe: with deep stacks, gather enough 9-max hands to report the
+# raw action-shape mean. The production scale is set from this measured value.
+cal = FS.Field(entries=27, start_stack=300000, hero_pid=0, seed=5150, fmt='standard')
+cal.virtual_play_seconds = 0.0
+cal.level_minutes = 10
+cal_out = L.compute_vclock_ahead(L._dump(cal), 600.0, 3300.0)
+durations = []
+for row in cal_out['tables'].values():
+    prev = 0.0
+    for e in row['events']:
+        end = float(e['end'])
+        durations.append(end - prev)
+        prev = end
+if durations:
+    raw_mean = sum(durations) / len(durations)
+    recommended = (3600.0 / 70.0) / raw_mean
+    print('VCLOCK_CAL raw_mean=%.3f n=%d recommended_scale=%.4f'
+          % (raw_mean, len(durations), recommended))
+
 # 2) A real movement barrier: 27 players starts 9/9/9. Two bot busts on one
 # table create 9/9/7, so settle must invoke the actual TDA _balance path.
 f2 = FS.Field(entries=27, hero_pid=0, seed=77, fmt='standard')
