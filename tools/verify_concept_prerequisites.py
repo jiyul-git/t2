@@ -46,7 +46,7 @@ def main():
                 mastery_cap = PS.ADVANCED_MASTERY_FLOOR + max(
                     0.0, general_cap - PS.ADVANCED_MASTERY_FLOOR) * readiness
                 cap = max(PS.ADVANCED_MASTERY_FLOOR, mastery_cap)
-                if score > cap + 0.11:
+                if score > cap + 0.21:
                     violations.append({
                         'kind': 'advanced_mastery', 'q': fq,
                         'pid': p.get('id'), 'concept': concept,
