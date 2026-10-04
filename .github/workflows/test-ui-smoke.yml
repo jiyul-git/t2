@@ -1,0 +1,34 @@
+name: test-ui-smoke
+
+on:
+  push:
+    branches: [test]
+    paths:
+      - 'ui/**'
+      - 'formats.py'
+      - 'fieldsim.py'
+      - 'live2.py'
+      - '.github/workflows/test-ui-smoke.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: test-ui-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile UI server
+        run: python3 -m py_compile ui/server/ui_server.py
+      - name: HERO 15-second action timeout
+        run: python3 ui/tools/verify_action_timeout.py
+      - name: Tournament real-time clock
+        run: python3 ui/tools/verify_clock_ui.py
+      - name: UI state scenarios
+        run: python3 ui/tools/verify_ui.py
