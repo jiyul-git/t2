@@ -213,6 +213,12 @@ HARD_CONCEPT_PREREQUISITES = (
 LEARNING_SUPPORT_MARGIN = 3.0
 HARD_PREREQ_MARGIN = 2.0
 
+# 고급 숙련 꼬리를 별도로 제한할 개념. 0~6의 기초/중급 이해는 기존 분포를
+# 유지하고, 6~10 구간만 학습 준비도에 따라 압축한다.
+ADVANCED_MASTERY_CONCEPTS = ('blocker', 'range_read', 'icm')
+ADVANCED_MASTERY_FLOOR = 6.0
+ADVANCED_MASTERY_WINDOW = 3.0
+
 SPREAD = {
     # 외워서 아는 것 — 갈린다
     'blocker':          2.20,
@@ -312,6 +318,23 @@ def _apply_concept_learning_structure(c, study, exp):
         cap = 10.0 - max(0.0, float(difficulty) - capacity)
         if float(c[concept]) > cap:
             c[concept] = round(_clamp(cap), 1)
+
+    # 고난도 세 개는 '개념을 조금 안다'와 '정교하게 활용한다'를 분리한다.
+    # difficulty-3부터 6점 초과 숙련이 열리기 시작하고 difficulty에서 완전히 열린다.
+    # 예: range_read 난이도 8이면 capacity 5에서 고숙련 꼬리 0%, 8에서 100%.
+    # 6점 이하는 건드리지 않아 기본적인 감/부분 이해까지 희귀하게 만들지는 않는다.
+    for concept in ADVANCED_MASTERY_CONCEPTS:
+        if concept not in c:
+            continue
+        score = float(c[concept])
+        if score <= ADVANCED_MASTERY_FLOOR:
+            continue
+        difficulty = float(INDEPENDENT_CONCEPT_DIFFICULTY[concept])
+        readiness = _clamp(
+            (capacity - (difficulty - ADVANCED_MASTERY_WINDOW))
+            / ADVANCED_MASTERY_WINDOW, 0.0, 1.0)
+        score = ADVANCED_MASTERY_FLOOR + (score - ADVANCED_MASTERY_FLOOR) * readiness
+        c[concept] = round(_clamp(score), 1)
 
     # 도움 선행: 여러 선행 중 하나가 약해도 다른 기반/경험으로 보완할 수 있게 평균.
     for post, pres in LEARNING_PREREQUISITES.items():
