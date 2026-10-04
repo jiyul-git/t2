@@ -49,13 +49,13 @@ cbet_flop -> delayed_cbet
 ## 생성 위치
 
 기존 `LOADING + SPREAD + latent`로 모든 concept raw score를 먼저 만든다.
-그 뒤 `apply_concept_prerequisites()`에서 deterministic cap만 적용한다.
+그 뒤 `persona.make_player()` 내부에서 deterministic cap만 적용한다.
 
 따라서:
-- RNG 소비량 불변
-- latent 생성 불변
-- 원래 raw 분포는 유지
+- prerequisite 필터 자체는 새 RNG를 소비하지 않음
+- latent/raw concept draw 순서는 유지
 - 선후행 위반 표본만 아래로 보정
+- 보정 뒤 `overall_skill`이 필드 하한/상한을 벗어나면 기존 재추첨이 작동할 수 있으므로 최종 모집단 RNG 진행은 달라질 수 있음
 
 ## 검증
 
