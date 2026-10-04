@@ -429,23 +429,43 @@ function renderBoard(v) {
   const b = v.board || [];
   const fresh = S.handNo !== v.hand_no;
   const known = fresh ? 0 : S.boardLen;
-  let html = '';
+  const box = $('#board');
+
+  /*
+   * 같은 액션 스트리트에서 보드는 그대로 둔다. #board.innerHTML 전체를
+   * 갈아엎으면 기존 카드 DOM까지 새로 생겨 딜 모션이 액션마다 다시 시작한다.
+   * 실제 카드가 바뀐 슬롯만 교체하고, 빈 슬롯 -> 새 카드일 때만 deal 한다.
+   */
   for (let i = 0; i < 5; i++) {
-    // 새로 깔린 카드에만 딜 애니메이션을 준다 (지연은 아래에서 스타일로)
-    if (i < b.length) {
+    const code = i < b.length ? String(b[i]) : '';
+    let el = box.children[i] || null;
+    const before = el ? (el.dataset.boardCode || '') : '';
+    const changed = !el || before !== code;
+
+    if (changed) {
       const cls = [];
-      if (i >= known) cls.push('deal');
-      if (boardWinCard(b[i])) cls.push('win5');
-      html += cardHTML(b[i], cls.join(' '));
+      if (code && (i >= known || before !== code)) cls.push('deal');
+      if (code && boardWinCard(code)) cls.push('win5');
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = cardHTML(code || null, cls.join(' '));
+      const next = wrap.firstElementChild;
+      next.dataset.boardCode = code;
+
+      if (el) box.replaceChild(next, el);
+      else box.appendChild(next);
+
+      if (code && next.classList.contains('deal')) {
+        next.style.animationDelay = (Math.max(0, i - known) * 90) + 'ms';
+      }
+      el = next;
     } else {
-      html += cardHTML(null);
+      // 쇼다운 시 같은 카드 DOM을 유지하면서 승리 5장 표시만 갱신한다.
+      el.classList.toggle('win5', !!code && boardWinCard(code));
     }
   }
-  const box = $('#board');
-  box.innerHTML = html;
-  Array.from(box.querySelectorAll('.card.deal')).forEach((el, i) => {
-    el.style.animationDelay = (i * 90) + 'ms';
-  });
+
+  while (box.children.length > 5) box.removeChild(box.lastElementChild);
   S.boardLen = b.length;
 }
 
@@ -1807,7 +1827,6 @@ const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
 /* 새 스트리트/히어로 액션 뒤의 화면 호흡.
  * 서버는 현재 모션의 ACK를 받기 전에는 다음 봇 판단을 시작하지 않는다. */
 const STREET_OPEN_PAUSE = 800;
-const HERO_ACTION_PAUSE = 800;
 
 function applyEntry(ss, e) {
   if (e.street && e.street !== ss.stage) {
@@ -3444,16 +3463,6 @@ async function callStepStream(body, msg) {
     resolveDrain = resolve;
   });
 
-  const ackEvent = (e) => {
-    const seq = e && e._ackSeq;
-    if (!streamId || !seq) return;
-    fetch('/api/step-ack', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({stream_id: streamId, seq: seq})
-    }).catch(() => {});
-  };
-
   const publishPrev = () => {
     if (!base || !ss) return;
     const sum = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
@@ -3531,7 +3540,6 @@ async function callStepStream(body, msg) {
       // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
       setTimeout(() => {
-        ackEvent(e);
         playing = false;
         playNext();
       }, 360 + STREET_OPEN_PAUSE);
@@ -3572,7 +3580,6 @@ async function callStepStream(body, msg) {
         publishPrev();
 
         setTimeout(() => {
-          ackEvent(e);
           playing = false;
           playNext();
         }, paceMs(e));
@@ -3599,8 +3606,6 @@ async function callStepStream(body, msg) {
       }
       return;
     }
-
-    ackEvent(e);
     playing = false;
     playNext();
   };
@@ -3613,9 +3618,7 @@ async function callStepStream(body, msg) {
 
   setBusy(true, msg, true);
   try {
-    // HERO motion first; the first bot calculation starts only afterwards.
-    await new Promise((resolve) => setTimeout(resolve, HERO_ACTION_PAUSE));
-
+    // HERO 액션 연출은 화면에서만 진행한다. 서버 계산은 즉시 시작한다.
     const res = await fetch('/api/step-stream', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
