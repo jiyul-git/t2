@@ -63,7 +63,10 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
         # live2.build_hand 가 h.seat_pid 를 만들어 둔다.
         seats.append({'seat': s, 'pid': (getattr(hand, 'seat_pid', None) or {}).get(s),
                       'pos': r['pos'], 'stack': stack_now, 'bet': bet,
-                      'in_hand': r['live'], 'allin': r['allin'], 'hero': r['hero']})
+                      'in_hand': r['live'], 'allin': r['allin'], 'hero': r['hero'],
+                      # 균등 분담 안테의 좌석별 실제 납부액(view.build). 빠뜨리면
+                      # 화면이 예전 BB 안테 방식으로 그린다.
+                      'ante': r.get('ante', 0)})
     # 헤즈업은 BTN과 SB가 같은 자리라 pos 문자열만 보고 버튼을 찾으면 안 된다.
     btn = getattr(hand, 'button', None)
     hero_inv = inv.get(hand.hero, 0)

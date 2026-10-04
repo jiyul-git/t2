@@ -1360,6 +1360,8 @@ class HandRun:
                              'contrib': dict(rnd.contrib), 'live': list(rnd.live()),
                              'allin': list(rnd.allin),
                              'pot_layers': _pf_pot_layers,
+                             # 좌석별 실제 안테(균등 분담). UI 가 안테 칩을 그린다.
+                             'ante_paid': dict(_ante_paid),
                              'hash': h.hash}
                 a, amt = act
                 try: rnd.apply(s, a, amt)
@@ -1371,6 +1373,7 @@ class HandRun:
                                  'tocall': tc, 'stack': rnd.stacks[s],
                                  'min_raise': rnd.current+rnd.min_raise,
                                  'can_raise': rnd.can_raise(s), 'log': list(rnd.log),
+                                 'ante_paid': dict(_ante_paid),
                                  'hash': h.hash}
                     rnd.apply(s, act[0], act[1])
                 aggressor, callers, limpers = _update_pf_state_after_apply(
