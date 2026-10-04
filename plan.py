@@ -2992,8 +2992,10 @@ def strength_improvement_supports_value(rel, previous_rel):
 def checkraise_street_skill(profile, street):
     """체크레이즈 숙련(0~3 스케일)을 street 별 개념에서 공급(ledger L149).
 
-    flop → checkraise_flop, turn/river → checkraise_late (persona.street_concept).
-    결정 확률 식(checkraise_draw_street_probability / checkraise_river_probability)과
+    flop → checkraise_flop, turn → checkraise_turn, river → checkraise_river.
+    기존 생성 프로필은 새 두 키가 없으므로 persona.sk()가 checkraise_late로
+    fallback해 행동을 보존한다. 결정 확률 식
+    (checkraise_draw_street_probability / checkraise_river_probability)과
     분리된 '공급' 질문이다. 라벨 기반 프로필은 아키타입 표를 쓴다.
     """
     import archetypes as _A
