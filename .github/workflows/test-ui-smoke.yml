@@ -24,11 +24,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Compile UI server
-        run: python3 -m py_compile ui/server/ui_server.py
+      - name: Compile vclock and UI
+        run: python3 -m py_compile fieldsim.py live2.py ui/server/ui_server.py
       - name: HERO 15-second action timeout
         run: python3 ui/tools/verify_action_timeout.py
       - name: Tournament real-time clock
         run: python3 ui/tools/verify_clock_ui.py
+      - name: Independent table vclock
+        run: python3 ui/tools/verify_vclock_session.py
       - name: UI state scenarios
         run: python3 ui/tools/verify_ui.py

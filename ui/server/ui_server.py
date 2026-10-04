@@ -23,7 +23,7 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓴다. sidecar 이름
        amount: 이번 스트리트 총 투입 목표(raise-to)
        token : 직전 응답의 token. 다르면 409 — 재전송으로 액션이 두 번 들어가는 것을 막는다.
 """
-import math, hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket
+import math, hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket, copy
 from concurrent.futures import ProcessPoolExecutor
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 
@@ -45,6 +45,15 @@ import telemetry_sync as _TM
 
 LOCK = threading.Lock()
 _last = None
+
+# HERO는 실제 wall-clock, 봇 전용 테이블은 독립 가상시계다.
+# 55분 플레이 + 5분 브레이크가 기본이며 테스트에서는 env로만 축소할 수 있다.
+PLAY_WINDOW_SECONDS = max(
+    60, int(float(os.environ.get('T2_PLAY_WINDOW_SECONDS', '3300'))))
+BREAK_SECONDS = max(
+    0, int(float(os.environ.get('T2_BREAK_SECONDS', '300'))))
+VCLOCK_CHUNK_SECONDS = max(
+    15, int(float(os.environ.get('T2_VCLOCK_CHUNK_SECONDS', '120'))))
 
 def _clock_values(st, now):
     fd = st.get('field') or {}
@@ -78,9 +87,16 @@ def _ui_timing(st, now=None):
     fd = st.get('field') or {}
     minutes = fd.get('level_minutes')
     deadline = st.get('ui_action_deadline')
+    next_break = (
+        st.get('ui_break_at')
+        if st.get('ui_break_pending') and st.get('ui_break_at') is not None
+        else st.get('ui_next_break', PLAY_WINDOW_SECONDS)
+    )
     return {'elapsed_seconds': None if elapsed is None else int(elapsed),
+            'active_seconds': None if active is None else int(active),
             'level_minutes': minutes,
             'level_remaining_seconds': None if active is None or not minutes else int(math.ceil(minutes * 60 - active % (minutes * 60))),
+            'session_remaining_seconds': None if active is None else max(0, int(math.ceil(float(next_break) - active))),
             'break_remaining': max(0, int(math.ceil(st.get('ui_break_until', 0) - now))),
             'action_deadline_ms': None if deadline is None else int(float(deadline) * 1000),
             'action_remaining': None if deadline is None else max(0, int(math.ceil(float(deadline) - now))),
@@ -343,6 +359,22 @@ def _tournament_payload():
 DEFER = os.environ.get('T2_UI_DEFER', '1') != '0'
 POOL = None
 PENDING = {'future': None, 'base_key': None}
+
+# v2: 55분 세션을 여러 짧은 계산 chunk로 계속 앞서 계산한다.
+# events는 확정 전 메모리 버퍼이며 상태 파일에는 쓰지 않는다.
+VCLOCK_LOCK = threading.Lock()
+VCLOCK = {
+    'future': None,
+    'events': {},
+    'cursors': {},
+    'coverage': 0.0,
+    'barrier_time': None,
+    'spec_field': None,
+    'segment_target': None,
+    'session_end': None,
+    'started_at': None,
+}
+
 COUNT = {'attempt': 0, 'hit': 0, 'mismatch': 0, 'fallback': 0,
          'single_table_skip': 0, 'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
          'round_start': 0, 'round_restart': 0,
@@ -382,6 +414,214 @@ def _pool():
 def _clear_worker():
     PENDING['future'] = None
     PENDING['base_key'] = None
+
+
+def _vclock_enabled(st):
+    return bool(st and st.get('vclock_session_v2')
+                and (st.get('field') or {}).get('virtual_play_seconds') is not None)
+
+
+def _vclock_session_end(st):
+    if st.get('ui_break_pending') and st.get('ui_break_at') is not None:
+        return float(st['ui_break_at'])
+    return float(st.get('ui_next_break', PLAY_WINDOW_SECONDS))
+
+
+def _vclock_other_clock_floor(field_dump):
+    try:
+        hero_tid, other_tids, _ = L._round_owners(field_dump)
+    except Exception:
+        return 0.0
+    if not other_tids:
+        return float((field_dump or {}).get('virtual_play_seconds') or 0.0)
+    vals = []
+    for tid in other_tids:
+        row = (field_dump.get('tables') or {}).get(str(tid)) or {}
+        vals.append(float(row.get('vclock_seconds',
+                                  field_dump.get('virtual_play_seconds', 0.0)) or 0.0))
+    return min(vals) if vals else 0.0
+
+
+def _vclock_reset_locked():
+    fut = VCLOCK.get('future')
+    if fut is not None and not fut.done():
+        try:
+            fut.cancel()
+        except Exception:
+            pass
+    VCLOCK.update({
+        'future': None,
+        'events': {},
+        'cursors': {},
+        'coverage': 0.0,
+        'barrier_time': None,
+        'spec_field': None,
+        'segment_target': None,
+        'session_end': None,
+        'started_at': None,
+    })
+
+
+def _vclock_reset():
+    with VCLOCK_LOCK:
+        _vclock_reset_locked()
+
+
+def _vclock_init_locked(st):
+    session_end = _vclock_session_end(st)
+    if (VCLOCK.get('spec_field') is not None
+            and VCLOCK.get('session_end') == session_end):
+        return
+    _vclock_reset_locked()
+    field = L._copy_field(st['field'])
+    VCLOCK['spec_field'] = field
+    VCLOCK['session_end'] = session_end
+    VCLOCK['coverage'] = _vclock_other_clock_floor(field)
+
+
+def _vclock_submit_next_locked():
+    if VCLOCK.get('future') is not None:
+        return
+    if VCLOCK.get('barrier_time') is not None:
+        return
+    field = VCLOCK.get('spec_field')
+    session_end = VCLOCK.get('session_end')
+    if field is None or session_end is None:
+        return
+    coverage = float(VCLOCK.get('coverage') or 0.0)
+    if coverage >= float(session_end) - 1e-9:
+        return
+    p = _pool()
+    if p is None:
+        return
+    target = min(float(session_end), coverage + VCLOCK_CHUNK_SECONDS)
+    VCLOCK['segment_target'] = target
+    VCLOCK['started_at'] = time.monotonic()
+    COUNT['attempt'] += 1
+    try:
+        VCLOCK['future'] = p.submit(
+            L.compute_vclock_ahead, field, target, session_end)
+    except Exception:
+        COUNT['worker_exception'] += 1
+        VCLOCK['future'] = None
+
+
+def _vclock_accept_locked(wait=False):
+    fut = VCLOCK.get('future')
+    if fut is None:
+        _vclock_submit_next_locked()
+        fut = VCLOCK.get('future')
+        if fut is None:
+            return False
+    if not wait and not fut.done():
+        return False
+    try:
+        out = fut.result()
+    except Exception:
+        COUNT['worker_exception'] += 1
+        traceback.print_exc()
+        VCLOCK['future'] = None
+        return False
+    VCLOCK['future'] = None
+    if not isinstance(out, dict) or out.get('mode') != L.VCLOCK_AHEAD_MODE:
+        COUNT['mismatch'] += 1
+        return False
+
+    for tid, row in (out.get('tables') or {}).items():
+        dst = VCLOCK['events'].setdefault(str(tid), [])
+        dst.extend(copy.deepcopy(row.get('events') or []))
+        VCLOCK['cursors'].setdefault(str(tid), 0)
+
+    b = out.get('barrier_time')
+    if b is not None:
+        b = float(b)
+        old = VCLOCK.get('barrier_time')
+        VCLOCK['barrier_time'] = b if old is None else min(float(old), b)
+
+    VCLOCK['coverage'] = max(
+        float(VCLOCK.get('coverage') or 0.0),
+        float(out.get('coverage') or 0.0))
+
+    if VCLOCK.get('barrier_time') is None and out.get('end_field') is not None:
+        VCLOCK['spec_field'] = L._copy_field(out['end_field'])
+        _vclock_submit_next_locked()
+    return True
+
+
+def _vclock_ready_locked(target):
+    target = float(target)
+    b = VCLOCK.get('barrier_time')
+    if b is not None and float(b) <= target + 1e-9:
+        return True
+    return float(VCLOCK.get('coverage') or 0.0) >= target - 1e-9
+
+
+def _vclock_pump(st, wait=False, target=None):
+    """완료 chunk를 버퍼에 붙이고 다음 chunk를 즉시 시작한다."""
+    if not _vclock_enabled(st):
+        return True
+    with VCLOCK_LOCK:
+        _vclock_init_locked(st)
+        if target is None:
+            target = float(
+                st.get('vclock_settle_target',
+                       (st.get('field') or {}).get('virtual_play_seconds', 0.0))
+                or 0.0)
+        while True:
+            if _vclock_ready_locked(target):
+                return True
+            changed = _vclock_accept_locked(wait=wait)
+            if _vclock_ready_locked(target):
+                return True
+            if not wait:
+                return False
+            if not changed and VCLOCK.get('future') is None:
+                _vclock_submit_next_locked()
+                if VCLOCK.get('future') is None:
+                    return False
+
+
+def _vclock_settle(st, wait=False):
+    """HERO 핸드 경계까지 봇 가상시간을 확정하고 이동/탈락을 한 번만 정산한다."""
+    global _last
+    if not st.get('vclock_settle_pending'):
+        _vclock_pump(st, wait=False)
+        return True, None
+
+    target = float(
+        st.get('vclock_settle_target',
+               (st.get('field') or {}).get('virtual_play_seconds', 0.0))
+        or 0.0)
+    if not _vclock_pump(st, wait=wait, target=target):
+        return False, None
+
+    with VCLOCK_LOCK:
+        applied = L.apply_vclock_events(
+            st,
+            VCLOCK.get('events') or {},
+            VCLOCK.get('cursors') or {},
+            target,
+            VCLOCK.get('barrier_time'))
+        VCLOCK['cursors'] = applied.get('cursors') or {}
+        invalidated = bool(applied.get('invalidated'))
+
+    fin = L.finalize_vclock_settle(
+        st,
+        notes=applied.get('notes') or [],
+        bot_log=applied.get('bot_log') or '')
+
+    # 이동/탈락 barrier 뒤 임시 미래는 폐기하고 새 좌석 상태에서 다시 계산한다.
+    if invalidated:
+        _vclock_reset()
+        fresh = L.load()
+        _vclock_pump(fresh, wait=False)
+
+    if _last is not None:
+        _last['busted'] = fin.get('busted')
+        _last['rank'] = fin.get('rank')
+        _last['remaining'] = fin.get('remaining')
+        _last['status'] = fin.get('status')
+    return True, fin
 
 
 def _submit_parallel(field_dump, restart=False):
@@ -510,31 +750,46 @@ def _step(action=None, amount=0, on_bot_action=None):
     if st0 and st0.get('ui_break_pending'):
         if _ui_timing(st0)['break_remaining']:
             raise ValueError('브레이크가 끝난 뒤 다음 핸드를 시작할 수 있습니다.')
-        paused = max(0.0, st0.get('ui_break_until', 0) - st0.get('ui_break_started_at', st0.get('ui_break_until', 0)))
-        st0['ui_clock_paused_seconds'] = st0.get('ui_clock_paused_seconds', 0) + paused
+        paused = max(
+            0.0,
+            st0.get('ui_break_until', 0)
+            - st0.get('ui_break_started_at', st0.get('ui_break_until', 0)))
+        st0['ui_clock_paused_seconds'] = (
+            st0.get('ui_clock_paused_seconds', 0) + paused)
         st0['ui_break_seconds'] = st0.get('ui_break_seconds', 0) + paused
         st0['ui_break_pending'] = False
+        st0.pop('ui_break_at', None)
         L.save(st0)
+    vclock = _vclock_enabled(st0)
     others = None
-    if DEFER and st0 is not None:
-        if st0.get('others_pending'):
-            # 다음 라운드는 settlement 전에는 시작하지 않는다.
-            others = _take_others(wait=True)
-        else:
-            _ensure_round_worker(st0)
-            # 완료된 결과는 넘기되 Future는 유지한다. 이번 HERO 액션이
-            # 핸드를 끝내지 않아도 같은 결과를 다음 요청에 다시 쓸 수 있다.
-            others = _peek_others()
 
-    kw = {'defer_others': True, 'others': others} if DEFER else {}
-    if DEFER:
-        kw['on_round_start'] = _submit_parallel
+    if vclock and st0 is not None:
+        # 직전 HERO 핸드의 확정이 아직 남아 있으면 새 핸드 전에 반드시 끝낸다.
+        if st0.get('vclock_settle_pending'):
+            ok, _ = _vclock_settle(st0, wait=True)
+            if not ok:
+                raise ValueError('다른 테이블 가상시계 동기화가 아직 끝나지 않았습니다.')
+            st0 = L.load()
+        _vclock_pump(st0, wait=False)
+        kw = {'vclock_others': True}
+    else:
+        if DEFER and st0 is not None:
+            if st0.get('others_pending'):
+                # legacy round worker: 다음 라운드 전에는 settlement를 끝낸다.
+                others = _take_others(wait=True)
+            else:
+                _ensure_round_worker(st0)
+                others = _peek_others()
+        kw = {'defer_others': True, 'others': others} if DEFER else {}
+        if DEFER:
+            kw['on_round_start'] = _submit_parallel
+
     if on_bot_action is not None:
         kw['on_bot_action'] = on_bot_action
 
     r = L.step(action, amount, **kw) if action is not None else L.step(**kw)
 
-    if DEFER:
+    if DEFER and not vclock:
         try:
             st1 = L.load()
         except Exception:
@@ -558,17 +813,40 @@ def _step(action=None, amount=0, on_bot_action=None):
 
     st = L.load()
     _sync_clock(st)
-    L.save(st)
+    now = time.time()
+
     if r.get('done'):
         active = (st.get('field') or {}).get('virtual_play_seconds')
-        remaining = sum(p.get('stack', 0) > 0 for p in st['field']['players'].values())
-        if (active is not None and active >= st.get('ui_next_break', 3300)
+        remaining = sum(
+            p.get('stack', 0) > 0
+            for p in st['field']['players'].values())
+        threshold = float(st.get('ui_next_break', PLAY_WINDOW_SECONDS))
+        if (active is not None and float(active) >= threshold
                 and not st.get('busted') and remaining > 1):
-            st['ui_break_started_at'] = time.time()
-            st['ui_break_until'] = st['ui_break_started_at'] + 300
+            # HERO 핸드가 55:00을 넘겨 끝나도 다음 세션으로 초과분을 넘기지 않는다.
+            overshoot = max(0.0, float(active) - threshold)
+            st['ui_clock_paused_seconds'] = (
+                st.get('ui_clock_paused_seconds', 0.0) + overshoot)
+            st['field']['virtual_play_seconds'] = threshold
+            st['ui_break_started_at'] = now
+            st['ui_break_until'] = now + BREAK_SECONDS
             st['ui_break_pending'] = True
-            st['ui_next_break'] = st.get('ui_next_break', 3300) + 3300
-            L.save(st)
+            st['ui_break_at'] = threshold
+            st['ui_next_break'] = threshold + PLAY_WINDOW_SECONDS
+
+        if vclock:
+            st['vclock_settle_target'] = float(
+                st.get('ui_break_at')
+                if st.get('ui_break_pending') and st.get('ui_break_at') is not None
+                else (st.get('field') or {}).get('virtual_play_seconds', 0.0))
+    L.save(st)
+
+    if vclock and r.get('done'):
+        ok, fin = _vclock_settle(st, wait=False)
+        if ok and fin:
+            r['busted'] = fin.get('busted')
+            r['rank'] = fin.get('rank')
+            r['status'] = fin.get('status')
     return r
 
 WEB = os.path.join(D, 'web')          # setup_run_dir.sh 가 ui/web 을 여기로 복사한다
@@ -959,12 +1237,35 @@ class H(BaseHTTPRequestHandler):
             # 워커가 아직 다른 테이블을 돌리는 중인가. 결과 화면이 이걸 보고
             # 정산이 끝난 뒤에 다음 핸드로 넘어간다 — 빈 로딩 화면을 없앤다.
             # LOCK 을 잡지 않는다. 잡으면 진행 중인 요청 뒤에 줄을 서게 된다.
-            fut = PENDING.get('future')
-            working = bool(fut and not fut.done())
             st = L.load() if os.path.exists(L.ST) else {}
-            timing = _ui_timing(st)
-            timing['working'] = working
-            timing['worker_elapsed_seconds'] = int(time.monotonic() - PENDING.get('started_at', time.monotonic())) if working else 0
+            if _vclock_enabled(st):
+                # 결정/애니메이션 중에도 완료 chunk를 이어 붙여 계속 선계산한다.
+                _vclock_pump(st, wait=False)
+                if st.get('vclock_settle_pending') and LOCK.acquire(blocking=False):
+                    try:
+                        st = L.load()
+                        _vclock_settle(st, wait=False)
+                        st = L.load()
+                    finally:
+                        LOCK.release()
+                working = bool(st.get('vclock_settle_pending'))
+                timing = _ui_timing(st)
+                timing['working'] = working
+                timing['vclock_coverage_seconds'] = int(
+                    float(VCLOCK.get('coverage') or 0.0))
+                timing['vclock_session_end_seconds'] = int(
+                    float(VCLOCK.get('session_end') or _vclock_session_end(st)))
+                timing['worker_elapsed_seconds'] = (
+                    int(time.monotonic() - VCLOCK.get('started_at', time.monotonic()))
+                    if working and VCLOCK.get('started_at') else 0)
+            else:
+                fut = PENDING.get('future')
+                working = bool(fut and not fut.done())
+                timing = _ui_timing(st)
+                timing['working'] = working
+                timing['worker_elapsed_seconds'] = int(
+                    time.monotonic() - PENDING.get('started_at', time.monotonic())
+                ) if working else 0
             return self._send(200, timing)
         if path == '/api/stats':
             return self._send(200, {'defer': DEFER, 'counters': dict(COUNT)})
@@ -1108,15 +1409,18 @@ class H(BaseHTTPRequestHandler):
                         valid_minutes = False
                     if not valid_minutes:
                         return self._send(400, {'error': '레벨 길이는 1~120분이어야 합니다.'})
-                    _clear_worker()             # 새 게임이면 밀린 것도 버린다
+                    _clear_worker()             # 새 게임이면 legacy 밀린 것도 버린다
+                    _vclock_reset()
                     L.new_game(**kw)
                     st = L.load()
                     st['field']['virtual_play_seconds'] = 0.0
                     st['field']['level_minutes'] = minutes
+                    st['vclock_session_v2'] = True
                     st['ui_clock_started_at'] = time.time()
                     st['ui_clock_paused_seconds'] = 0.0
-                    st['ui_next_break'] = 3300
+                    st['ui_next_break'] = PLAY_WINDOW_SECONDS
                     st['ui_break_seconds'] = 0
+                    st.pop('ui_break_at', None)
                     L.save(st)
                     _last = _wrap(_step())
                     return self._send(200, _last)

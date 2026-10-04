@@ -15,7 +15,7 @@ for fmt, minutes in [('standard',10),('turbo',5),('hyper',2),('deep',15),('bount
 f=FS.Field(entries=9, hero_pid=1, seed=5); f.hand_no=12; f.advance_level(); assert f.level==2
 source=ast.parse((ROOT/'ui/server/ui_server.py').read_text())
 fns=[n for n in source.body if isinstance(n,ast.FunctionDef) and n.name in ('_ui_timing','_clock_values','_sync_clock')]
-ns={'math':math,'time':time};exec(compile(ast.Module(body=fns,type_ignores=[]),'<timing>','exec'),ns)
+ns={'math':math,'time':time,'PLAY_WINDOW_SECONDS':3300};exec(compile(ast.Module(body=fns,type_ignores=[]),'<timing>','exec'),ns)
 st={'field':{'virtual_play_seconds':3300,'level_minutes':10},'ui_break_seconds':0,'ui_break_until':1300}
 assert ns['_ui_timing'](st,1000)['break_remaining']==300
 assert ns['_ui_timing'](st,1000.1)['break_remaining']==300
@@ -24,7 +24,10 @@ assert ns['_ui_timing'](st,1300)['break_remaining']==0
 assert ns['_ui_timing'](st,1500)['break_remaining']==0
 assert ns['_ui_timing']({},1000)['elapsed_seconds'] is None
 wall={'field':{'virtual_play_seconds':0,'level_minutes':1},'ui_clock_started_at':1000,'ui_clock_paused_seconds':0}
+assert ns['_ui_timing'](wall,1001.2)['level_remaining_seconds']==59
+assert ns['_ui_timing'](wall,1001.2)['session_remaining_seconds']==3299
 assert ns['_ui_timing'](wall,1060)['elapsed_seconds']==60
+assert ns['_ui_timing'](wall,1060)['level_remaining_seconds']==60
 assert ns['_clock_values'](wall,1060)[0]==60
 ns['_sync_clock'](wall,1060)
 f=L._load_field(dict(L._dump(FS.Field(entries=9,hero_pid=1,seed=5)),**wall['field']))

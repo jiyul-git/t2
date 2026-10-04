@@ -60,6 +60,7 @@ def _dump(f):
                             'sb_seat': getattr(tb, 'sb_seat', None),
                             'bb_seat': getattr(tb, 'bb_seat', None),
                             'hands': tb.hands,
+                            'vclock_seconds': float(getattr(tb, 'virtual_seconds', 0.0) or 0.0),
                             'pids': [p['pid'] for p in tb.players],
                             'seats': list(tb.seats)}
                    for t, tb in f.tables.items()},
@@ -129,6 +130,10 @@ def _restore_table(f, k, v, blind_state):
         max_seat=f.max_seat, button_seat=v.get('button_seat'),
         sb_seat=v.get('sb_seat'), bb_seat=v.get('bb_seat'))
     tb.hands = v['hands']
+    # 기존 저장본은 독립 테이블 시계가 없으므로 현재 대회 시각에서 이어간다.
+    tb.virtual_seconds = float(
+        v.get('vclock_seconds',
+              getattr(f, 'virtual_play_seconds', 0.0) or 0.0) or 0.0)
     if v.get('seats'):
         tb.seats = list(v['seats'])
         if len(tb.seats) < tb.max_seat:
@@ -242,6 +247,398 @@ def _parallel_tables_runner(f, plan):
                       encoding='utf-8') as fp:
                 fp.write(r['bot_log'])
     f.book_update_packed(book_upd)
+
+
+# ---------- 독립 가상시계 선계산 ----------
+# HERO 테이블은 UI wall-clock이 원본이다. 비-HERO 테이블은 각자 virtual_seconds
+# 를 갖고 계산 가능한 만큼 앞서 간다. 선계산은 임시이며, 탈락/핸드포핸드처럼
+# 전역 상태가 갈리는 지점에서는 barrier를 세워 그 뒤 결과를 확정하지 않는다.
+VCLOCK_AHEAD_MODE = 'vclock_ahead_v1'
+try:
+    VCLOCK_DURATION_SCALE = max(
+        0.1, float(os.environ.get('T2_VCLOCK_SCALE', '1.0')))
+except ValueError:
+    VCLOCK_DURATION_SCALE = 1.0
+
+
+def _vclock_hand_seconds(res):
+    """Claude 설계 초안과 같은 action-shape 시간 모델을 초 단위로 반환한다."""
+    log = (res or {}).get('full_log') or []
+    costs = {
+        'fold': 1.5, 'check': 3.0, 'call': 3.5,
+        'bet': 5.0, 'raise': 5.5, 'allin': 5.5,
+    }
+    streets = {a[0] for a in log if isinstance(a, (list, tuple)) and len(a) >= 3}
+    raw = 8.0 + 2.0 * max(0, len(streets) - 1)
+    raw += sum(
+        costs.get(a[2], 3.5)
+        for a in log
+        if isinstance(a, (list, tuple)) and len(a) >= 3
+    )
+    raw += 3.0 if (res or {}).get('showdown') else 0.0
+    return max(1.0, raw * VCLOCK_DURATION_SCALE)
+
+
+def _vclock_book_subset(packed, pids):
+    owners = {str(x) for x in pids}
+    return RD.copy_book_d({
+        k: v for k, v in (packed or {}).items()
+        if str(k).partition('>')[0] in owners
+    })
+
+
+def _vclock_book_delta(before, after):
+    set_rows = {
+        k: copy.deepcopy(v) for k, v in (after or {}).items()
+        if k not in (before or {}) or (before or {}).get(k) != v
+    }
+    deleted = [k for k in (before or {}) if k not in (after or {})]
+    return set_rows, deleted
+
+
+def _vclock_h4h(f):
+    active_tables = sum(1 for tb in f.tables.values() if tb.n() >= 2)
+    # 머니/새틀라이트 좌석 버블 + 마지막 두 테이블 -> FT 버블.
+    return (f.remaining() <= f.itm + 1
+            or (1 < active_tables <= 2))
+
+
+def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
+                       base_suffix):
+    """한 봇 테이블을 target_seconds까지 독립적으로 선계산한다.
+
+    첫 탈락 또는 hand-for-hand 지점에서 멈춘다. 그 지점 이후에는 테이블 이동/
+    전역 remaining 문맥이 달라질 수 있으므로 임시 결과를 만들지 않는다.
+    """
+    f = _load_field(_copy_field(mini))
+    f.notes = []
+    tid = int(tid)
+    tb = f.tables[tid]
+    local = float(getattr(tb, 'virtual_seconds', 0.0) or 0.0)
+    target_seconds = float(target_seconds)
+    session_end = float(session_end)
+    f._frozen_field = frozen
+
+    _suf = FS.BOT_SUFFIX
+    _tmp = SP.pending_suffix('%s_vc_t%s' % (base_suffix, tid), os.getpid())
+    FS.BOT_SUFFIX = _tmp
+    log_path = SP.path_for('bot_log', _tmp, D)
+    log_seen = 0
+    events = []
+    errors = []
+    try:
+        pids = [str(p) for p in mini['tables'][str(tid)]['pids']]
+        prev_book = _vclock_book_subset(mini.get('book') or {}, pids)
+
+        while local + 1e-9 < target_seconds and tb.n() >= 2:
+            f.virtual_play_seconds = local
+            f.advance_level()
+            seed = _zlib.crc32(
+                ('%s|vclock|%s|%s' % (
+                    getattr(f, 'seed', None), tid, tb.hands + 1
+                )).encode()) % (10**9)
+
+            note0 = len(f.notes)
+            res = f._play_table(
+                tb, seed=seed, return_result=True)
+            if not isinstance(res, dict):
+                errors.extend(list(getattr(f, 'errors', []) or []))
+                break
+
+            end = local + _vclock_hand_seconds(res)
+            # 세션 경계에서는 진행 중이던 핸드까지 끝낸 뒤 정각에 동기화한다.
+            if target_seconds >= session_end - 1e-9 and end >= session_end:
+                end = session_end
+            tb.virtual_seconds = end
+
+            out = _dump(f)
+            row = out['tables'][str(tid)]
+            pids = [str(p) for p in row.get('pids') or []]
+            cur_book = _vclock_book_subset(out.get('book') or {}, pids)
+            book_set, book_del = _vclock_book_delta(prev_book, cur_book)
+            prev_book = cur_book
+
+            log_chunk = ''
+            if os.path.exists(log_path):
+                with open(log_path, encoding='utf-8') as fp:
+                    txt = fp.read()
+                log_chunk = txt[log_seen:]
+                log_seen = len(txt)
+
+            players = {
+                p: copy.deepcopy(out['players'][p])
+                for p in pids if p in out['players']
+            }
+            dead = any(int(r.get('stack', 0) or 0) <= 0
+                       for r in players.values())
+            barrier = 'bust' if dead else (
+                'hand_for_hand' if _vclock_h4h(f) else None)
+
+            events.append({
+                'tid': tid,
+                'end': float(end),
+                'players': players,
+                'table': copy.deepcopy(row),
+                'tilt': {
+                    p: copy.deepcopy((out.get('tilt') or {}).get(p))
+                    for p in pids
+                    if p in (out.get('tilt') or {})
+                },
+                'book_set': book_set,
+                'book_del': book_del,
+                'notes': list(f.notes[note0:]),
+                'bot_log': log_chunk,
+                'barrier': barrier,
+            })
+            local = float(end)
+            if barrier:
+                break
+    finally:
+        FS.BOT_SUFFIX = _suf
+        f._frozen_field = None
+        try:
+            if os.path.exists(log_path):
+                os.remove(log_path)
+        except OSError:
+            pass
+
+    out = _dump(f)
+    row = out['tables'].get(str(tid), {})
+    pids = [str(p) for p in row.get('pids') or []]
+    return {
+        'tid': tid,
+        'events': events,
+        'covered_until': float(local),
+        'barrier': next(
+            (e['barrier'] for e in events if e.get('barrier')), None),
+        'barrier_time': next(
+            (float(e['end']) for e in events if e.get('barrier')), None),
+        'players': {
+            p: copy.deepcopy(out['players'][p])
+            for p in pids if p in out.get('players', {})
+        },
+        'table': copy.deepcopy(row),
+        'tilt': {
+            p: copy.deepcopy((out.get('tilt') or {}).get(p))
+            for p in pids if p in (out.get('tilt') or {})
+        },
+        'book': _vclock_book_subset(out.get('book') or {}, pids),
+        'notes': list(f.notes),
+        'errors': errors + list(getattr(f, 'errors', []) or []),
+    }
+
+
+def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
+    """비-HERO 테이블을 독립 가상시계로 target까지 선계산하는 순수 함수."""
+    base = _copy_field(field_dump)
+    f = _load_field(base)
+    f.notes = []
+    hero_tid, other_tids, _ = _round_owners(base)
+    target_seconds = float(target_seconds)
+    if session_end is None:
+        session_end = target_seconds
+    session_end = float(session_end)
+
+    if not other_tids:
+        return {
+            'mode': VCLOCK_AHEAD_MODE,
+            'base_key': _others_key(base),
+            'hero_table': hero_tid,
+            'target': target_seconds,
+            'session_end': session_end,
+            'coverage': session_end,
+            'barrier_time': None,
+            'tables': {},
+            'end_field': base,
+        }
+
+    frozen = f.field_snapshot()
+    pool = _table_pool() if len(other_tids) > 1 else None
+    jobs = []
+    for tid in other_tids:
+        ps = {str(p) for p in base['tables'][str(tid)]['pids']}
+        mini = dict(base)
+        mini['book'] = {
+            k: v for k, v in (base.get('book') or {}).items()
+            if str(k).partition('>')[0] in ps
+        }
+        args = (mini, tid, target_seconds, session_end, frozen, FS.BOT_SUFFIX)
+        if pool is None:
+            jobs.append(_vclock_table_task(*args))
+        else:
+            jobs.append(pool.submit(_vclock_table_task, *args))
+    results = [x.result() if hasattr(x, 'result') else x for x in jobs]
+    results.sort(key=lambda x: int(x['tid']))
+
+    barriers = [
+        float(r['barrier_time']) for r in results
+        if r.get('barrier_time') is not None
+    ]
+    barrier_time = min(barriers) if barriers else None
+    coverage = min(float(r.get('covered_until', 0.0)) for r in results)
+    if barrier_time is not None:
+        coverage = min(coverage, barrier_time)
+
+    end_field = None
+    if barrier_time is None:
+        end_field = _copy_field(base)
+        for r in results:
+            tid = str(r['tid'])
+            for pid, row in (r.get('players') or {}).items():
+                end_field['players'][str(pid)] = copy.deepcopy(row)
+            end_field['tables'][tid] = copy.deepcopy(r['table'])
+            et = end_field.setdefault('tilt', {})
+            for pid, row in (r.get('tilt') or {}).items():
+                et[str(pid)] = copy.deepcopy(row)
+            owners = {
+                str(p) for p in
+                (end_field['tables'][tid].get('pids') or [])
+            }
+            eb = end_field.setdefault('book', {})
+            for k in [
+                k for k in eb
+                if str(k).partition('>')[0] in owners
+            ]:
+                del eb[k]
+            eb.update(RD.copy_book_d(r.get('book') or {}))
+
+    return {
+        'mode': VCLOCK_AHEAD_MODE,
+        'base_key': _others_key(base),
+        'hero_table': hero_tid,
+        'target': target_seconds,
+        'session_end': session_end,
+        'coverage': float(coverage),
+        'barrier_time': barrier_time,
+        'tables': {str(r['tid']): r for r in results},
+        'end_field': end_field,
+    }
+
+
+def apply_vclock_events(st, events_by_table, cursors, target_seconds,
+                        barrier_time=None):
+    """HERO 시각까지 확정된 봇 이벤트만 메인 상태에 반영한다.
+
+    barrier가 HERO 시각 안에 들어오거나 HERO 테이블 자체에서 탈락이 생기면
+    그 핸드 경계에서 전역 bust/balance를 한 번만 실행하고 선계산 이후분을
+    무효화한다. 이동 후 모든 봇 테이블은 HERO 시각까지 대기한 것으로 맞춘다.
+    """
+    target_seconds = float(target_seconds)
+    cutoff = target_seconds
+    barrier_due = (
+        barrier_time is not None
+        and float(barrier_time) <= target_seconds + 1e-9
+    )
+    if barrier_due:
+        cutoff = min(cutoff, float(barrier_time))
+
+    fd = _copy_field(st['field'])
+    cur = {str(k): int(v) for k, v in (cursors or {}).items()}
+    due = []
+    for tid, arr in (events_by_table or {}).items():
+        tid = str(tid)
+        i = cur.get(tid, 0)
+        while i < len(arr) and float(arr[i]['end']) <= cutoff + 1e-9:
+            due.append((float(arr[i]['end']), int(tid), i, arr[i]))
+            i += 1
+        cur[tid] = i
+    due.sort(key=lambda x: (x[0], x[1], x[2]))
+
+    notes = []
+    bot_log = []
+    for _end, tid_i, _idx, e in due:
+        tid = str(tid_i)
+        for pid, row in (e.get('players') or {}).items():
+            fd['players'][str(pid)] = copy.deepcopy(row)
+        fd['tables'][tid] = copy.deepcopy(e['table'])
+        et = fd.setdefault('tilt', {})
+        for pid, row in (e.get('tilt') or {}).items():
+            et[str(pid)] = copy.deepcopy(row)
+        eb = fd.setdefault('book', {})
+        for k in e.get('book_del') or []:
+            eb.pop(k, None)
+        eb.update(RD.copy_book_d(e.get('book_set') or {}))
+        notes.extend(e.get('notes') or [])
+        if e.get('bot_log'):
+            bot_log.append(e['bot_log'])
+
+    f = _load_field(fd)
+    dead = any(
+        int(p.get('stack', 0) or 0) <= 0 and p.get('table') is not None
+        for p in f.players.values()
+    )
+    invalidated = bool(barrier_due or dead)
+    if invalidated:
+        f._collect_busts()
+        f._balance()
+        # barrier 이후에는 테이블들이 HERO를 기다린다. 이동 확정 시점에서
+        # 다음 선계산을 다시 시작하므로 각 봇 시계를 같은 HERO 시각으로 맞춘다.
+        hero_tid = f.players.get(f.hero_pid, {}).get('table')
+        for tid, tb in f.tables.items():
+            if tid != hero_tid and tb.n() >= 2:
+                tb.virtual_seconds = target_seconds
+        notes.extend(list(f.notes))
+        f.notes = []
+
+    st['field'] = _dump(f)
+    return {
+        'cursors': cur,
+        'invalidated': invalidated,
+        'barrier_due': barrier_due,
+        'applied': len(due),
+        'notes': notes,
+        'bot_log': ''.join(bot_log),
+    }
+
+
+def finalize_vclock_settle(st, notes=None, bot_log=''):
+    """한 HERO 핸드 경계의 확정 작업(순위/아카이브/이동 알림)을 마친다."""
+    f = _load_field(_copy_field(st['field']))
+    # 버퍼가 없던 파이널테이블 등에서도 HERO 탈락 정리는 필요하다.
+    dead = any(
+        int(p.get('stack', 0) or 0) <= 0 and p.get('table') is not None
+        for p in f.players.values()
+    )
+    if dead:
+        f._collect_busts()
+        f._balance()
+        notes = list(notes or []) + list(f.notes)
+        f.notes = []
+        st['field'] = _dump(f)
+
+    hero = f.players.get(f.hero_pid)
+    busted = bool(hero and int(hero.get('stack', 0) or 0) <= 0)
+    rank = None
+    if busted:
+        if f.hero_pid in f.busted_order:
+            after = len(f.busted_order) - f.busted_order.index(f.hero_pid) - 1
+            rank = f.remaining() + 1 + after
+        else:
+            rank = f.remaining() + 1
+    st['busted'] = busted
+    st['rank'] = rank
+
+    extra = list(notes or [])
+    if extra:
+        st['pending_notes'] = list(st.get('pending_notes') or []) + extra
+
+    if bot_log:
+        _append_bot_log(bot_log)
+
+    rec = st.pop('pending_archive', None)
+    if rec is not None:
+        rec['field'] = f.status()
+        rec['notes'] = list(rec.get('notes') or []) + extra
+        _archive_write(rec)
+
+    st.pop('vclock_settle_pending', None)
+    save(st)
+    return {
+        'busted': busted,
+        'rank': rank,
+        'remaining': f.remaining(),
+        'status': f.status(),
+    }
 
 
 # 인코딩을 적지 않으면 파이썬이 OS 기본값을 쓴다. 리눅스·안드로이드는
@@ -712,7 +1109,7 @@ def resume_others(st, others=None):
 
 # ---------- 진행 ----------
 def step(action=None, amount=0, defer_others=False, others=None,
-         on_bot_action=None, on_round_start=None):
+         on_bot_action=None, on_round_start=None, vclock_others=False):
     st = load()
     TM.ensure_session(st)
     # 밀린 진행이 있으면 **다음 핸드를 딜하기 전에** 반드시 끝낸다.
@@ -823,7 +1220,8 @@ def step(action=None, amount=0, defer_others=False, others=None,
 
     if isinstance(raw, dict) and raw.get('done'):
         return finish(st, f, tb, alive, h, run, defer_others=defer_others,
-                      parallel_others=others, round_base=_round_base)
+                      parallel_others=others, round_base=_round_base,
+                      vclock_others=vclock_others)
     return {'view': _render(raw, f, h, st), 'done': False, 'raw': raw}
 
 
@@ -890,7 +1288,7 @@ def _opening_raw(h, run):
 
 
 def finish(st, f, tb, alive, h, run, defer_others=False,
-           parallel_others=None, round_base=None):
+           parallel_others=None, round_base=None, vclock_others=False):
     res = run.result or {}
 
     try:
@@ -929,7 +1327,15 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     _hero_tid, _other_tids, _other_pids = _round_owners(_round_base)
     _single_table_round = not _other_tids
 
-    if defer_others and parallel_others is not None:
+    if vclock_others:
+        # 비-HERO 테이블은 UI 서버의 독립 가상시계 선계산기가 소유한다.
+        # 여기서는 HERO 핸드 결과만 저장하고, bust/balance는 같은 시간축의
+        # 봇 이벤트가 확정되는 HERO 핸드 경계에서 한 번만 수행한다.
+        st['vclock_settle_pending'] = True
+        if _hero_busted_now:
+            st['vclock_hero_bust_pending'] = True
+
+    elif defer_others and parallel_others is not None:
         try:
             f, _parallel_notes = _merge_parallel_field(
                 f, _round_base, parallel_others)
@@ -964,7 +1370,8 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
 
     hero = f.players[f.hero_pid]
     busted_now = hero['stack'] <= 0
-    pending = bool(st.get('others_pending'))
+    pending = bool(
+        st.get('others_pending') or st.get('vclock_settle_pending'))
 
     # worker 정산 전에는 정확한 탈락 순위가 아직 없다.
     # 그동안은 busted=False로 저장해 UI가 쇼다운/결과를 정상 재생하게 한다.
@@ -989,15 +1396,10 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
             % (f.entries, rank, itm)
         )
 
-    if getattr(f, 'virtual_play_seconds', None) is not None:
-        # Same duration shape as the design simulator. This is a model, not wall time.
-        log = res.get('full_log') or []
-        costs = {'fold': 1.5, 'check': 3.0, 'call': 3.5, 'bet': 5.0, 'raise': 5.5, 'allin': 5.5}
-        streets = {a[0] for a in log}
-        duration = 8.0 + 2.0 * max(0, len(streets) - 1)
-        duration += sum(costs.get(a[2], 3.5) for a in log)
-        duration += 3.0 if res.get('showdown') else 0.0
-        f.virtual_play_seconds += duration
+    if (getattr(f, 'virtual_play_seconds', None) is not None
+            and not vclock_others):
+        # Legacy virtual-time path only. UI vclock_others uses the real HERO wall-clock.
+        f.virtual_play_seconds += _vclock_hand_seconds(res)
     st['field'] = _dump(f)                     # 리딩 누적(장부)은 field 안에 함께 저장된다
     st.pop('book', None)
     st['hand_seed'] = None; st['actions'] = []; st['decisions'] = []
@@ -1011,7 +1413,8 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     }
     _hero_rec = _archive(
         st, f, h, res, notes,
-        defer=bool(st.get('others_pending')), run=run)
+        defer=bool(st.get('others_pending') or st.get('vclock_settle_pending')),
+        run=run)
     if not st.get('others_pending'):
         if parallel_others is not None:
             _bot_rows = TM.parse_bot_log(parallel_others.get('bot_log'))

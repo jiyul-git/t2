@@ -68,6 +68,8 @@ const S = {
   actionToken: null,         // deadline이 속한 engine token
   actionArmPending: false,   // 중복 arm 요청 방지
   timeoutSubmitting: false,  // 시간초과 자동 폴드 중복 방지
+  levelRemainingSeconds: null, // 현재 레벨 종료까지 실제 초
+  sessionRemainingSeconds: null, // 55분 플레이 세션 종료까지 실제 초
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -273,6 +275,25 @@ function sideSeatClass(p) {
 }
 
 /* ---------------- 상단 바 ---------------- */
+function paintTournamentClock() {
+  const v = S.view;
+  const lv = v && v.level;
+  if (lv) {
+    $('#lvl').innerHTML =
+      `레벨 ${lv.n} &nbsp;${fmt(lv.sb)}/${fmt(lv.bb)}` +
+      (lv.ante ? ` <span class="ante">ante ${fmt(lv.ante)}</span>` : '') +
+      (S.levelRemainingSeconds == null
+        ? '' : ` <span class="leveltime">· ${clockText(S.levelRemainingSeconds)}</span>`);
+  }
+  if ($('#fieldline')) {
+    $('#fieldline').textContent = S.elapsedSeconds == null
+      ? '기존 대회 · 핸드 기준'
+      : `경과 ${clockText(S.elapsedSeconds)}` +
+        (S.sessionRemainingSeconds == null
+          ? '' : ` · 세션 ${clockText(S.sessionRemainingSeconds)}`);
+  }
+}
+
 function renderTop(v) {
   const lv = v.level;
   $('#lvl').innerHTML = lv
@@ -280,8 +301,7 @@ function renderTop(v) {
       (lv.ante ? ` <span class="ante">ante ${fmt(lv.ante)}</span>` : '')
     : '—';
   $('#handno').textContent = v.hand_no ? `HAND ${v.hand_no}` : '';
-  // 필드/ITM/내 순위는 ⋯ 대회 정보로 이동했다.
-  $('#fieldline').textContent = S.elapsedSeconds == null ? '기존 대회 · 핸드 기준' : `경과 ${clockText(S.elapsedSeconds)}`;
+  paintTournamentClock();
   $('#notes').textContent = (v.notes || []).join('  ');
   readReady().catch(() => {});
 }
@@ -3143,8 +3163,9 @@ async function readReady() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const ready = await response.json();
     S.elapsedSeconds = ready.elapsed_seconds;
-    if ($('#fieldline')) $('#fieldline').textContent = ready.elapsed_seconds == null
-      ? '기존 대회 · 핸드 기준' : `경과 ${clockText(ready.elapsed_seconds)}`;
+    S.levelRemainingSeconds = ready.level_remaining_seconds;
+    S.sessionRemainingSeconds = ready.session_remaining_seconds;
+    paintTournamentClock();
     if (ready.action_token === S.token && ready.action_deadline_ms && S.view && S.view.type === 'decision') {
       if (!S.actionDeadlineMs || Math.abs(S.actionDeadlineMs - Number(ready.action_deadline_ms)) > 250) {
         startActionClock(ready.action_deadline_ms, S.token);
@@ -3328,6 +3349,7 @@ function startNew() {
   clearTimeout(S.autoTimer); S.autoTimer = null;
   S.heroSig = null; S.won = false; S.pendingMoveNote = null;
   S.breakOpen = false; S.elapsedSeconds = null;
+  S.levelRemainingSeconds = null; S.sessionRemainingSeconds = null;
   memoClearAll();                    // 새 게임이면 봇 메모도 완전히 초기화
   histClear();                       // 핸드 번호가 1부터 다시 시작한다
   const body = {};

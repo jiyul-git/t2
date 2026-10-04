@@ -29,6 +29,9 @@ class Table:
         self.sb_seat = sb_seat           # 물리 SB 마커. 빈 좌석일 수 있다.
         self.bb_seat = bb_seat           # BB는 실제 생존자가 있는 좌석이어야 한다.
         self.hands = 0
+        # 봇 전용 테이블의 독립 가상시계. HERO 테이블은 UI wall-clock이 원본이고,
+        # 이 값은 다른 테이블 선계산/브레이크 동기화에만 사용한다.
+        self.virtual_seconds = 0.0
         self.max_seat = int(max_seat or MAXSEAT)
         self.seats = [None] * self.max_seat
         for i, p in enumerate(players[:self.max_seat]):
@@ -706,8 +709,12 @@ class Field:
             # rich hand record could not be serialized.
             pass
 
-    def _play_table(self, tb, fast=True, seed=None):
-        """봇 전용 테이블 한 핸드. TDA 포지션을 그대로 써서 스택을 갱신한다."""
+    def _play_table(self, tb, fast=True, seed=None, return_result=False):
+        """봇 전용 테이블 한 핸드. TDA 포지션을 그대로 써서 스택을 갱신한다.
+
+        return_result=True 는 가상시계 선계산기가 이 핸드의 액션 로그로
+        실제 가상 소요시간을 계산할 때만 쓴다. 기존 호출은 True/None 계약을 유지한다.
+        """
         alive = tb.ordered_alive()
         if len(alive) < 2:
             return None
@@ -766,7 +773,7 @@ class Field:
             return None
         tb.advance_button()
         tb.hands += 1
-        return True
+        return copy.deepcopy(res) if return_result else True
 
     def plan_others(self):
         """동시 진행용 계획: 테이블 순서대로 이번 라운드 핸드 수와 시드를 미리 뽑는다.
