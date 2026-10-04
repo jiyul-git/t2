@@ -77,12 +77,48 @@ def _ui_timing(st, now=None):
     active, elapsed = _clock_values(st, now)
     fd = st.get('field') or {}
     minutes = fd.get('level_minutes')
+    deadline = st.get('ui_action_deadline')
     return {'elapsed_seconds': None if elapsed is None else int(elapsed),
             'level_minutes': minutes,
             'level_remaining_seconds': None if active is None or not minutes else int(math.ceil(minutes * 60 - active % (minutes * 60))),
-            'break_remaining': max(0, int(math.ceil(st.get('ui_break_until', 0) - now)))}
+            'break_remaining': max(0, int(math.ceil(st.get('ui_break_until', 0) - now))),
+            'action_deadline_ms': None if deadline is None else int(float(deadline) * 1000),
+            'action_remaining': None if deadline is None else max(0, int(math.ceil(float(deadline) - now))),
+            'action_token': st.get('ui_action_token')}
 
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
+HERO_ACTION_SECONDS = min(120.0, max(1.0, float(os.environ.get('T2_HERO_ACTION_SECONDS', '15'))))
+
+
+def _arm_action_clock(token, now=None):
+    """Start one server-authoritative clock when the HERO action bar is actually shown.
+
+    Re-arming the same token never extends the deadline, so reload/re-render cannot
+    buy extra time. A new engine token gets a fresh clock only when its action bar opens.
+    """
+    global _last
+    now = time.time() if now is None else now
+    current = _token()
+    view = ((_last or {}).get('view') or {})
+    if token != current or view.get('type') != 'decision':
+        raise ValueError('현재 히어로 액션 차례가 아닙니다.')
+
+    st = L.load()
+    if st.get('ui_action_token') != current or st.get('ui_action_deadline') is None:
+        st['ui_action_token'] = current
+        st['ui_action_deadline'] = now + HERO_ACTION_SECONDS
+        L.save(st)
+    return _ui_timing(st, now)
+
+
+def _timeout_action():
+    """Prefer literal fold; only free-check when this decision exposes no fold action."""
+    legal = (((_last or {}).get('view') or {}).get('legal') or {})
+    if legal.get('fold'):
+        return 'fold'
+    if legal.get('check'):
+        return 'check'
+    return 'fold'
 
 # UI motion acknowledgement gate.
 # The gameplay request holds LOCK while the engine is in a hand. ACK must bypass
@@ -797,6 +833,18 @@ def _wrap(r):
             out['entries'] = r.get('entries')
 
     out['token'] = _token()
+
+    # A decision deadline belongs to exactly one engine token. Once an action
+    # changes the token (or the hand ends), remove it. The next decision is armed
+    # only when the UI actually presents its action bar.
+    try:
+        st = L.load()
+        if st.get('ui_action_token') is not None and st.get('ui_action_token') != out['token']:
+            st.pop('ui_action_token', None)
+            st.pop('ui_action_deadline', None)
+            L.save(st)
+    except Exception:
+        pass
     return out
 
 
@@ -1041,6 +1089,14 @@ class H(BaseHTTPRequestHandler):
                         st['ui_break_until'] = min(time.time(), st.get('ui_break_until', time.time()))
                         L.save(st)
                     return self._send(200, _ui_timing(st))
+                if self.path == '/api/action-clock':
+                    if not os.path.exists(L.ST):
+                        return self._send(409, {'error': '진행 중인 게임 없음'})
+                    try:
+                        timing = _arm_action_clock(body.get('token'))
+                    except ValueError as e:
+                        return self._send(409, {'error': str(e), 'current': _last})
+                    return self._send(200, timing)
                 if self.path == '/api/new':
                     kw = {k: body[k] for k in ('entries', 'seed', 'fmt', 'start_stack')
                           if body.get(k) is not None}
@@ -1083,9 +1139,15 @@ class H(BaseHTTPRequestHandler):
                     if _st.get('ui_break_pending') and _ui_timing(_st)['break_remaining']:
                         return self._send(409, {'error': '브레이크가 끝난 뒤 재개됩니다.', 'current': _last})
                     a = body.get('action')
+                    timed_out = False
+                    deadline = _st.get('ui_action_deadline')
+                    if (a is not None and _st.get('ui_action_token') == body.get('token')
+                            and deadline is not None and time.time() >= float(deadline)):
+                        a = _timeout_action()
+                        timed_out = True
                     if a is not None and a not in ACTIONS:
                         return self._send(400, {'error': '알 수 없는 액션: %s' % a})
-                    amt = int(body.get('amount') or 0)
+                    amt = 0 if timed_out else int(body.get('amount') or 0)
 
                     # 일반 /api/step 은 기존 호환 경로. 실제 플레이 액션만
                     # 스트림 경로를 쓰며, 1.5초 모션 템포는 프론트가 그대로 유지한다.
@@ -1137,6 +1199,8 @@ class H(BaseHTTPRequestHandler):
                             _last = out
                         else:
                             _last = _wrap(r)
+                        if timed_out:
+                            _last['auto_folded'] = True
                         if alive[0]:
                             self._stream_line({
                                 'type': 'final',
@@ -1154,6 +1218,8 @@ class H(BaseHTTPRequestHandler):
                         out['token'] = _token()
                         return self._send(200, out)
                     _last = _wrap(r)
+                    if timed_out:
+                        _last['auto_folded'] = True
                     return self._send(200, _last)
                 return self._send(404, {'error': 'not found'})
             except Exception as e:

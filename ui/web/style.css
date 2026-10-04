@@ -387,6 +387,16 @@ html, body {
 }
 #mainrow { display: flex; gap: 8px; }
 #mainrow[hidden] { display: none; }
+#turnclock {
+  position: absolute; right: 12px; top: -25px; z-index: 26;
+  min-width: 48px; padding: 3px 9px; border-radius: 999px;
+  text-align: center; font-size: 12px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgba(13,20,18,.94); border: 1px solid var(--gold); color: var(--gold);
+  pointer-events: none;
+}
+#turnclock[hidden] { display: none; }
+#turnclock.urgent { border-color: var(--red); color: #ff8d84; }
 button {
   font: inherit; color: var(--ink); border: 1px solid var(--line);
   background: #1e2c27; border-radius: 11px; min-height: 52px; padding: 6px 10px;

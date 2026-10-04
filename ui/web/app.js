@@ -63,6 +63,11 @@ const S = {
   memos: {},                 // pid → 사용자 메모. 서버가 원본, localStorage는 캐시
   tournament: null,          // 공개 대회 정보 / 전체 스택 순위
   rankOpen: false,           // 전체 순위 drawer
+  actionTimer: null,         // 히어로 15초 액션 카운트다운
+  actionDeadlineMs: null,    // 서버가 확정한 절대 deadline
+  actionToken: null,         // deadline이 속한 engine token
+  actionArmPending: false,   // 중복 arm 요청 방지
+  timeoutSubmitting: false,  // 시간초과 자동 폴드 중복 방지
 };
 
 // 표시 속도. **계산과 무관하다.** 엔진과 워커에는 sleep 을 넣지 않는다 —
@@ -2099,6 +2104,9 @@ function renderActions(v) {
     void bar.offsetWidth;
     bar.classList.add('turn-open');
   }
+
+  // 딜/앞선 봇 액션 재생이 끝나 실제 액션창이 보인 시점부터 15초를 센다.
+  armActionClock(v);
 }
 
 /* --- 레이즈 패널. 금액은 전부 raise-to(이번 스트리트 총 투입 목표) --- */
@@ -3040,6 +3048,73 @@ function clockText(seconds) {
   const m = Math.floor(seconds / 60), sec = String(seconds % 60).padStart(2, '0');
   return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}:${sec}` : `${String(m).padStart(2, '0')}:${sec}`;
 }
+
+function stopActionClock() {
+  if (S.actionTimer) clearInterval(S.actionTimer);
+  S.actionTimer = null;
+  S.actionDeadlineMs = null;
+  S.actionToken = null;
+  S.actionArmPending = false;
+  S.timeoutSubmitting = false;
+  const el = $('#turnclock');
+  if (el) {
+    el.hidden = true;
+    el.classList.remove('urgent');
+    el.textContent = '';
+  }
+}
+
+function paintActionClock() {
+  const el = $('#turnclock');
+  if (!el || !S.actionDeadlineMs || S.actionToken !== S.token) return;
+  const leftMs = Math.max(0, S.actionDeadlineMs - Date.now());
+  const sec = Math.max(0, Math.ceil(leftMs / 1000));
+  el.hidden = false;
+  el.textContent = sec + '초';
+  el.classList.toggle('urgent', sec <= 5);
+
+  if (leftMs <= 0 && !S.timeoutSubmitting && S.view && S.view.type === 'decision') {
+    S.timeoutSubmitting = true;
+    closeRaise();
+    send('fold', 0);
+  }
+}
+
+function startActionClock(deadlineMs, token) {
+  if (!deadlineMs || token !== S.token || !S.view || S.view.type !== 'decision') return;
+  if (S.actionTimer) clearInterval(S.actionTimer);
+  S.actionDeadlineMs = Number(deadlineMs);
+  S.actionToken = token;
+  S.timeoutSubmitting = false;
+  paintActionClock();
+  S.actionTimer = setInterval(paintActionClock, 100);
+}
+
+async function armActionClock(v) {
+  if (!v || v.type !== 'decision' || S.token == null || S.actionArmPending) return;
+  const token = S.token;
+  if (S.actionToken === token && S.actionDeadlineMs) {
+    paintActionClock();
+    return;
+  }
+  S.actionArmPending = true;
+  try {
+    const response = await fetch('/api/action-clock', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({token: token})
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (token !== S.token || !S.view || S.view.type !== 'decision') return;
+    startActionClock(data.action_deadline_ms, token);
+  } catch (_) {
+    // 서버가 원본이다. 연결 복구 시 render/apply가 같은 token을 다시 arm한다.
+  } finally {
+    S.actionArmPending = false;
+  }
+}
+
 async function readReady() {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
@@ -3050,6 +3125,11 @@ async function readReady() {
     S.elapsedSeconds = ready.elapsed_seconds;
     if ($('#fieldline')) $('#fieldline').textContent = ready.elapsed_seconds == null
       ? '기존 대회 · 핸드 기준' : `경과 ${clockText(ready.elapsed_seconds)}`;
+    if (ready.action_token === S.token && ready.action_deadline_ms && S.view && S.view.type === 'decision') {
+      if (!S.actionDeadlineMs || Math.abs(S.actionDeadlineMs - Number(ready.action_deadline_ms)) > 250) {
+        startActionClock(ready.action_deadline_ms, S.token);
+      }
+    }
     return ready;
   } finally { clearTimeout(timer); }
 }
@@ -3752,6 +3832,12 @@ function send(action, amount) {
     return;
   }
 
+  if (action !== null && S.actionDeadlineMs && Date.now() >= S.actionDeadlineMs) {
+    action = 'fold';
+    amount = 0;
+    S.timeoutSubmitting = true;
+  }
+
   if (action !== null && S.replayDone) {
     S.queuedAction = {
       action: action,
@@ -3760,6 +3846,9 @@ function send(action, amount) {
     markQueued(action);
     return;
   }
+
+  // 클릭/자동폴드가 확정되면 카운트다운은 즉시 멈춘다.
+  if (action !== null) stopActionClock();
 
   // 클릭 즉시 내 액션을 먼저 보여준다.
   previewHeroAction(action, amount);
@@ -3812,6 +3901,7 @@ function sync() { call('/api/state', null, '상태를 받는 중…'); }
 
 /* ---------------- 응답 반영 ---------------- */
 function apply(resp) {
+  stopActionClock();
   S.last = resp;
   S.token = resp.token;
 
