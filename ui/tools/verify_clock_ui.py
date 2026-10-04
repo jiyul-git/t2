@@ -48,7 +48,8 @@ ns['VCLOCK'].update(barrier_time=90.0,barrier_kind='hand_for_hand',coverage=70.0
 assert not ns['_vclock_ready_locked'](80.0)
 assert ns['_vclock_ready_locked'](90.0)
 ns['VCLOCK'].update(barrier_time=90.0,barrier_kind='bust',coverage=70.0)
-assert ns['_vclock_ready_locked'](75.0)
+assert ns['_vclock_ready_locked'](65.0)
+assert not ns['_vclock_ready_locked'](75.0)
 print('PASS: actual elapsed, level boundary, break pause and expiry')
 print('PASS: five speed/format boundaries, field persistence, legacy clock, countdown boundaries')
 # Real HTTP lifecycle: countdown starts only after a result, survives reload,
