@@ -46,12 +46,40 @@ import telemetry_sync as _TM
 LOCK = threading.Lock()
 _last = None
 
-def _ui_timing(st, now=None):
+def _clock_values(st, now):
+    fd = st.get('field') or {}
+    if 'ui_clock_started_at' not in st:
+        seconds = fd.get('virtual_play_seconds')
+        return seconds, None if seconds is None else seconds + st.get('ui_break_seconds', 0)
+    elapsed = max(0.0, now - st['ui_clock_started_at'])
+    paused = st.get('ui_clock_paused_seconds', 0.0)
+    if st.get('ui_break_pending'):
+        paused += max(0.0, min(now, st.get('ui_break_until', now)) - st.get('ui_break_started_at', now))
+    return max(0.0, elapsed - paused), elapsed
+
+
+def _sync_clock(st, now=None):
     now = time.time() if now is None else now
     fd = st.get('field') or {}
-    seconds = fd.get('virtual_play_seconds')
-    return {'elapsed_seconds': None if seconds is None else int(seconds + st.get('ui_break_seconds', 0)),
-            'level_minutes': fd.get('level_minutes'),
+    if fd.get('virtual_play_seconds') is None:
+        return
+    # Upgrade an existing minute-based game without resetting its elapsed time.
+    if 'ui_clock_started_at' not in st:
+        st['ui_clock_started_at'] = now - fd['virtual_play_seconds'] - st.get('ui_break_seconds', 0)
+        st['ui_clock_paused_seconds'] = st.get('ui_break_seconds', 0)
+        if st.get('ui_break_pending'):
+            st['ui_break_started_at'] = now
+    fd['virtual_play_seconds'] = _clock_values(st, now)[0]
+
+
+def _ui_timing(st, now=None):
+    now = time.time() if now is None else now
+    active, elapsed = _clock_values(st, now)
+    fd = st.get('field') or {}
+    minutes = fd.get('level_minutes')
+    return {'elapsed_seconds': None if elapsed is None else int(elapsed),
+            'level_minutes': minutes,
+            'level_remaining_seconds': None if active is None or not minutes else int(math.ceil(minutes * 60 - active % (minutes * 60))),
             'break_remaining': max(0, int(math.ceil(st.get('ui_break_until', 0) - now)))}
 
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
@@ -440,10 +468,15 @@ def _step(action=None, amount=0, on_bot_action=None):
     except Exception:
         st0 = None
 
+    if st0 is not None:
+        _sync_clock(st0)
+        L.save(st0)
     if st0 and st0.get('ui_break_pending'):
         if _ui_timing(st0)['break_remaining']:
             raise ValueError('브레이크가 끝난 뒤 다음 핸드를 시작할 수 있습니다.')
-        st0['ui_break_seconds'] = st0.get('ui_break_seconds', 0) + 300
+        paused = max(0.0, st0.get('ui_break_until', 0) - st0.get('ui_break_started_at', st0.get('ui_break_until', 0)))
+        st0['ui_clock_paused_seconds'] = st0.get('ui_clock_paused_seconds', 0) + paused
+        st0['ui_break_seconds'] = st0.get('ui_break_seconds', 0) + paused
         st0['ui_break_pending'] = False
         L.save(st0)
     others = None
@@ -487,13 +520,16 @@ def _step(action=None, amount=0, on_bot_action=None):
                     COUNT['round_ready_before_finish'] += 1
                 _clear_worker()
 
+    st = L.load()
+    _sync_clock(st)
+    L.save(st)
     if r.get('done'):
-        st = L.load()
         active = (st.get('field') or {}).get('virtual_play_seconds')
         remaining = sum(p.get('stack', 0) > 0 for p in st['field']['players'].values())
         if (active is not None and active >= st.get('ui_next_break', 3300)
                 and not st.get('busted') and remaining > 1):
-            st['ui_break_until'] = time.time() + 300
+            st['ui_break_started_at'] = time.time()
+            st['ui_break_until'] = st['ui_break_started_at'] + 300
             st['ui_break_pending'] = True
             st['ui_next_break'] = st.get('ui_next_break', 3300) + 3300
             L.save(st)
@@ -1002,7 +1038,7 @@ class H(BaseHTTPRequestHandler):
                 if self.path == '/api/break':
                     st = L.load()
                     if body.get('skip'):
-                        st['ui_break_until'] = 0
+                        st['ui_break_until'] = min(time.time(), st.get('ui_break_until', time.time()))
                         L.save(st)
                     return self._send(200, _ui_timing(st))
                 if self.path == '/api/new':
@@ -1021,6 +1057,8 @@ class H(BaseHTTPRequestHandler):
                     st = L.load()
                     st['field']['virtual_play_seconds'] = 0.0
                     st['field']['level_minutes'] = minutes
+                    st['ui_clock_started_at'] = time.time()
+                    st['ui_clock_paused_seconds'] = 0.0
                     st['ui_next_break'] = 3300
                     st['ui_break_seconds'] = 0
                     L.save(st)

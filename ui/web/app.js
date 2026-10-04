@@ -276,7 +276,7 @@ function renderTop(v) {
     : '—';
   $('#handno').textContent = v.hand_no ? `HAND ${v.hand_no}` : '';
   // 필드/ITM/내 순위는 ⋯ 대회 정보로 이동했다.
-  $('#fieldline').textContent = S.elapsedSeconds == null ? '기존 대회 · 핸드 기준' : `가상 경과 ${clockText(S.elapsedSeconds)}`;
+  $('#fieldline').textContent = S.elapsedSeconds == null ? '기존 대회 · 핸드 기준' : `경과 ${clockText(S.elapsedSeconds)}`;
   $('#notes').textContent = (v.notes || []).join('  ');
   readReady().catch(() => {});
 }
@@ -2961,7 +2961,7 @@ function tournamentInfoHTML(t) {
     '<div class="grid">' +
       `<div class="row"><span class="who">필드</span><span class="amt">${fmt(t.entries)} → ${fmt(t.remaining)}</span></div>` +
       `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
-      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)} · ${t.virtual_clock ? '가상 '+fmt(t.level_minutes)+'분' : '기존 핸드 기준'}</span></div>` +
+      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)} · ${t.virtual_clock ? fmt(t.level_minutes)+'분' : '기존 핸드 기준'}</span></div>` +
       `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
       `<div class="row"><span class="who">내 칩순위</span><span class="amt">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
       `<div class="row"><span class="who">내 스택</span><span class="amt">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
@@ -3049,7 +3049,7 @@ async function readReady() {
     const ready = await response.json();
     S.elapsedSeconds = ready.elapsed_seconds;
     if ($('#fieldline')) $('#fieldline').textContent = ready.elapsed_seconds == null
-      ? '기존 대회 · 핸드 기준' : `가상 경과 ${clockText(ready.elapsed_seconds)}`;
+      ? '기존 대회 · 핸드 기준' : `경과 ${clockText(ready.elapsed_seconds)}`;
     return ready;
   } finally { clearTimeout(timer); }
 }
@@ -3218,7 +3218,7 @@ function newGameFormHTML() {
   </div>
   <div class="field">
     <label>시작 스택<input id="fStack" type="number" inputmode="numeric" value="30000"></label>
-    <label>레벨 길이 (가상 분)<input id="fLevelMinutes" type="number" min="1" max="120" value="10"></label>
+    <label>레벨 길이 (분)<input id="fLevelMinutes" type="number" min="1" max="120" value="10"></label>
   </div>`;
 }
 
@@ -4074,3 +4074,15 @@ memoLoad().finally(sync);
 if (location.hash === '#history') {
   setTimeout(showHistory, 250);
 }
+
+// Keep the clock moving during hero decisions and animations too.
+let clockRequestPending = false;
+setInterval(async () => {
+  if (clockRequestPending || document.hidden) return;
+  clockRequestPending = true;
+  try {
+    const ready = await readReady();
+    if (S.breakOpen) renderBreak(ready);
+  } catch (_) { /* Retain the last confirmed value; retry next tick. */ }
+  finally { clockRequestPending = false; }
+}, 1000);

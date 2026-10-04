@@ -98,7 +98,7 @@ function openJoin(key){
   $('#joinFacts').innerHTML=[
     selected.start_bb+' BB 시작',
     selected.seats+'-max',
-    '레벨당 가상 '+selected.level_minutes+'분',
+    '레벨당 '+selected.level_minutes+'분',
     'ITM '+pct(selected.itm_frac),
     selected.reentry?'리엔트리':'싱글 엔트리'
   ].map(x=>'<span>'+escapeHtml(x)+'</span>').join('');
