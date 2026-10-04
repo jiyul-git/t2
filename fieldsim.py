@@ -751,6 +751,7 @@ class Field:
             run = SE.HandRun(h)
             _telemetry_t0 = time.perf_counter()
             run.start()
+            res = run.result or {}
             h._telemetry_compute_ms = round(
                 (time.perf_counter() - _telemetry_t0) * 1000.0, 3)
             h._telemetry_tilt_after = {
