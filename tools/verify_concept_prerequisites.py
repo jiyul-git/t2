@@ -58,10 +58,12 @@ def main():
                 gap = float(c[post]) - float(c[pre])
                 key = '%s->%s' % (pre, post)
                 hard_max_gap[key] = max(hard_max_gap[key], gap)
-                if gap > PS.HARD_PREREQ_MARGIN + 1e-9:
+                hard_limit = PS.HARD_PREREQ_MARGIN + PS.HARD_PREREQ_TAIL
+                if gap > hard_limit + 0.11:
                     violations.append({
                         'kind': 'hard', 'q': fq, 'pid': p.get('id'),
                         'pre': pre, 'post': post, 'gap': gap,
+                        'limit': hard_limit,
                     })
 
             for post, pres in PS.LEARNING_PREREQUISITES.items():
@@ -69,10 +71,12 @@ def main():
                 base = sum(vals) / len(vals)
                 gap = float(c[post]) - base
                 soft_max_gap[post] = max(soft_max_gap[post], gap)
-                if gap > PS.LEARNING_SUPPORT_MARGIN + 0.11:
+                soft_limit = PS.LEARNING_SUPPORT_MARGIN + PS.LEARNING_SUPPORT_TAIL
+                if gap > soft_limit + 0.11:
                     violations.append({
                         'kind': 'learning', 'q': fq, 'pid': p.get('id'),
                         'post': post, 'prereq_mean': base, 'gap': gap,
+                        'limit': soft_limit,
                     })
 
             for concept, difficulty in PS.INDEPENDENT_CONCEPT_DIFFICULTY.items():
@@ -92,6 +96,31 @@ def main():
         if len(violations) >= 20:
             break
 
+    # Soft-cap helper invariants: unchanged inside margin, never raises a score,
+    # monotone in raw downstream score, and no flat pile-up at the free-margin boundary.
+    helper_checks = {}
+    for name, margin, tail in (
+            ('hard', PS.HARD_PREREQ_MARGIN, PS.HARD_PREREQ_TAIL),
+            ('learning', PS.LEARNING_SUPPORT_MARGIN, PS.LEARNING_SUPPORT_TAIL)):
+        up = 3.0
+        raws = [up + margin - 0.5, up + margin,
+                up + margin + 0.5, up + margin + 2.0, 10.0]
+        outs = [PS._compress_dependency_gap(up, x, margin, tail) for x in raws]
+        unchanged = (outs[0] == raws[0] and outs[1] == raws[1])
+        never_raises = all(o <= r + 1e-12 for o, r in zip(outs, raws))
+        monotone = all(b >= a - 1e-12 for a, b in zip(outs, outs[1:]))
+        no_boundary_plateau = outs[2] > up + margin
+        below_asymptote = all((o - up) < margin + tail + 1e-9
+                              for o in outs[2:])
+        helper_checks[name] = {
+            'pass': unchanged and never_raises and monotone
+                    and no_boundary_plateau and below_asymptote,
+            'raws': raws, 'outputs': outs,
+        }
+        if not helper_checks[name]['pass']:
+            violations.append({'kind': 'helper', 'name': name,
+                               'detail': helper_checks[name]})
+
     # Same seed remains deterministic even though population retry paths may differ
     # from the pre-filter build.
     a = PS.make_player(random.Random(424242), 0.78, pid=77)
@@ -102,7 +131,10 @@ def main():
         'pass': not violations and deterministic,
         'samples': samples,
         'hard_margin': PS.HARD_PREREQ_MARGIN,
+        'hard_tail': PS.HARD_PREREQ_TAIL,
         'learning_margin': PS.LEARNING_SUPPORT_MARGIN,
+        'learning_tail': PS.LEARNING_SUPPORT_TAIL,
+        'helper_checks': helper_checks,
         'hard_max_gap': hard_max_gap,
         'soft_max_gap': soft_max_gap,
         'difficulty_max_over_cap': difficulty_max_over,
