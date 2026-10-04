@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify hard prerequisite caps in persona population generation."""
+"""Verify concept difficulty, learning-support and hard-prerequisite caps."""
 
 import json
 import pathlib
@@ -11,17 +11,12 @@ sys.path.insert(0, str(ROOT))
 
 import persona as PS
 
-MARGIN = 2.0
-EDGES = (
-    ('cbet_flop', 'barrel_turn'),
-    ('barrel_turn', 'barrel_river'),
-    ('cbet_flop', 'delayed_cbet'),
-)
-
 
 def main():
     violations = []
-    max_gap = {('%s->%s' % e): -999.0 for e in EDGES}
+    hard_max_gap = {('%s->%s' % e): -999.0 for e in PS.HARD_CONCEPT_PREREQUISITES}
+    soft_max_gap = {k: -999.0 for k in PS.LEARNING_PREREQUISITES}
+    difficulty_max_over = {k: -999.0 for k in PS.INDEPENDENT_CONCEPT_DIFFICULTY}
     samples = 0
 
     for qi, fq in enumerate((0.40, 0.78, 1.20)):
@@ -29,26 +24,50 @@ def main():
         for i in range(5000):
             p = PS.make_player(rr, fq, pid=qi * 5000 + i)
             c = p['concepts']
+            latent = p['latent']
+            capacity = max(0.0, min(10.0,
+                0.60*float(latent['study']) + 0.40*float(latent['exp'])))
             samples += 1
-            for pre, post in EDGES:
+
+            for pre, post in PS.HARD_CONCEPT_PREREQUISITES:
                 gap = float(c[post]) - float(c[pre])
                 key = '%s->%s' % (pre, post)
-                max_gap[key] = max(max_gap[key], gap)
-                if gap > MARGIN + 1e-9:
+                hard_max_gap[key] = max(hard_max_gap[key], gap)
+                if gap > PS.HARD_PREREQ_MARGIN + 1e-9:
                     violations.append({
-                        'q': fq, 'pid': p.get('id'),
-                        'pre': pre, 'pre_score': c[pre],
-                        'post': post, 'post_score': c[post],
-                        'gap': gap,
+                        'kind': 'hard', 'q': fq, 'pid': p.get('id'),
+                        'pre': pre, 'post': post, 'gap': gap,
                     })
-                    if len(violations) >= 20:
-                        break
+
+            for post, pres in PS.LEARNING_PREREQUISITES.items():
+                vals = [float(c[x]) for x in pres]
+                base = sum(vals) / len(vals)
+                gap = float(c[post]) - base
+                soft_max_gap[post] = max(soft_max_gap[post], gap)
+                if gap > PS.LEARNING_SUPPORT_MARGIN + 0.11:
+                    violations.append({
+                        'kind': 'learning', 'q': fq, 'pid': p.get('id'),
+                        'post': post, 'prereq_mean': base, 'gap': gap,
+                    })
+
+            for concept, difficulty in PS.INDEPENDENT_CONCEPT_DIFFICULTY.items():
+                cap = 10.0 - max(0.0, float(difficulty) - capacity)
+                over = float(c[concept]) - cap
+                difficulty_max_over[concept] = max(difficulty_max_over[concept], over)
+                if over > 0.11:
+                    violations.append({
+                        'kind': 'difficulty', 'q': fq, 'pid': p.get('id'),
+                        'concept': concept, 'difficulty': difficulty,
+                        'capacity': capacity, 'score': c[concept], 'cap': cap,
+                    })
+
             if len(violations) >= 20:
                 break
         if len(violations) >= 20:
             break
 
-    # Same seed must still be deterministic.
+    # Same seed remains deterministic even though population retry paths may differ
+    # from the pre-filter build.
     a = PS.make_player(random.Random(424242), 0.78, pid=77)
     b = PS.make_player(random.Random(424242), 0.78, pid=77)
     deterministic = (a == b)
@@ -56,8 +75,11 @@ def main():
     out = {
         'pass': not violations and deterministic,
         'samples': samples,
-        'margin': MARGIN,
-        'max_observed_gap': max_gap,
+        'hard_margin': PS.HARD_PREREQ_MARGIN,
+        'learning_margin': PS.LEARNING_SUPPORT_MARGIN,
+        'hard_max_gap': hard_max_gap,
+        'soft_max_gap': soft_max_gap,
+        'difficulty_max_over_cap': difficulty_max_over,
         'violations': violations,
         'same_seed_deterministic': deterministic,
     }
