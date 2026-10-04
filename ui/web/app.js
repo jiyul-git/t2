@@ -1760,7 +1760,7 @@ function playDecisionTail(prev, v) {
     bubbleAt(e.seat, e);
 
     S.timers.push(
-      setTimeout(next, paceMs(e))
+      setTimeout(next, terminalFold(ss, e) ? 0 : paceMs(e))
     );
   };
 
@@ -1829,7 +1829,9 @@ function playSequence(v, entries, streetChanged) {
     else if (e.action !== 'check') bets[e.seat] = e.amount || bets[e.seat] || 0;
     drawFrame(v, bets, folded);
     bubbleAt(e.seat, e);
-    S.timers.push(setTimeout(next, paceMs(e)));
+    const aliveNow = (v.seats || []).filter((s) => !folded[s.seat]).length;
+    S.timers.push(setTimeout(next,
+      (e.action === 'fold' && aliveNow <= 1) ? 0 : paceMs(e)));
   })();
 }
 
@@ -1849,6 +1851,11 @@ const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
  * 서버는 현재 모션의 ACK를 받기 전에는 다음 봇 판단을 시작하지 않는다. */
 const STREET_OPEN_PAUSE = 800;
 const HERO_ACTION_PAUSE = 800;
+
+function terminalFold(ss, e) {
+  return !!(ss && e && e.action === 'fold' &&
+    (ss.seats || []).filter((x) => x.in_hand).length <= 1);
+}
 
 function applyEntry(ss, e) {
   if (e.street && e.street !== ss.stage) {
@@ -3609,7 +3616,7 @@ async function callStepStream(body, msg) {
         setTimeout(() => {
           playing = false;
           playNext();
-        }, paceMs(e));
+        }, terminalFold(ss, e) ? 0 : paceMs(e));
       };
 
       // 새 스트리트는 기존 재생과 똑같이 보드를 먼저 확인한 뒤 첫 액션을 보여준다.
