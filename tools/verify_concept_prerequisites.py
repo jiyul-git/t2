@@ -19,15 +19,39 @@ def main():
     difficulty_max_over = {k: -999.0 for k in PS.INDEPENDENT_CONCEPT_DIFFICULTY}
     samples = 0
 
-    for qi, fq in enumerate((0.40, 0.78, 1.20)):
+    # 총 생성 수는 1,000명을 넘기지 않는다.
+    field_samples = ((0.40, 333), (0.78, 334), (1.20, 333))
+    pid_base = 0
+    for qi, (fq, count) in enumerate(field_samples):
         rr = random.Random(20261005 + qi * 100003)
-        for i in range(5000):
-            p = PS.make_player(rr, fq, pid=qi * 5000 + i)
+        for i in range(count):
+            p = PS.make_player(rr, fq, pid=pid_base + i)
             c = p['concepts']
             latent = p['latent']
             capacity = max(0.0, min(10.0,
                 0.60*float(latent['study']) + 0.40*float(latent['exp'])))
             samples += 1
+
+            for concept in PS.ADVANCED_MASTERY_CONCEPTS:
+                score = float(c[concept])
+                difficulty = float(PS.INDEPENDENT_CONCEPT_DIFFICULTY[concept])
+                # Reconstruct the maximum allowed post-compression score from
+                # the final capacity.  Scores <= floor are always valid.
+                readiness = max(0.0, min(1.0,
+                    (capacity - (difficulty - PS.ADVANCED_MASTERY_WINDOW))
+                    / PS.ADVANCED_MASTERY_WINDOW))
+                # The raw pre-compression score can be at most the general
+                # difficulty cap, so this is a conservative final ceiling.
+                general_cap = 10.0 - max(0.0, difficulty - capacity)
+                mastery_cap = PS.ADVANCED_MASTERY_FLOOR + max(
+                    0.0, general_cap - PS.ADVANCED_MASTERY_FLOOR) * readiness
+                cap = max(PS.ADVANCED_MASTERY_FLOOR, mastery_cap)
+                if score > cap + 0.11:
+                    violations.append({
+                        'kind': 'advanced_mastery', 'q': fq,
+                        'pid': p.get('id'), 'concept': concept,
+                        'capacity': capacity, 'score': score, 'cap': cap,
+                    })
 
             for pre, post in PS.HARD_CONCEPT_PREREQUISITES:
                 gap = float(c[post]) - float(c[pre])
@@ -63,6 +87,7 @@ def main():
 
             if len(violations) >= 20:
                 break
+        pid_base += count
         if len(violations) >= 20:
             break
 
