@@ -379,6 +379,8 @@ COUNT = {'attempt': 0, 'hit': 0, 'mismatch': 0, 'fallback': 0,
          'single_table_skip': 0, 'worker_exception': 0, 'worker_join': 0, 'pool_unavailable': 0,
          'round_start': 0, 'round_restart': 0,
          'round_ready_before_finish': 0, 'round_ready_after_finish': 0,
+         'vclock_chunk_start': 0, 'vclock_chunk_done': 0,
+         'vclock_barrier': 0,
          'motion_ack': 0, 'motion_ack_timeout': 0,
          # 다음 라운드 직전까지도 worker가 안 끝나 실제로 기다린 시간.
          'worker_wait_ms': 0, 'worker_wait_max_ms': 0}
@@ -498,6 +500,7 @@ def _vclock_submit_next_locked():
     VCLOCK['segment_target'] = target
     VCLOCK['started_at'] = time.monotonic()
     COUNT['attempt'] += 1
+    COUNT['vclock_chunk_start'] += 1
     try:
         VCLOCK['future'] = p.submit(
             L.compute_vclock_ahead, field, target, session_end)
@@ -523,6 +526,7 @@ def _vclock_accept_locked(wait=False):
         VCLOCK['future'] = None
         return False
     VCLOCK['future'] = None
+    COUNT['vclock_chunk_done'] += 1
     if not isinstance(out, dict) or out.get('mode') != L.VCLOCK_AHEAD_MODE:
         COUNT['mismatch'] += 1
         return False
@@ -537,6 +541,7 @@ def _vclock_accept_locked(wait=False):
         b = float(b)
         old = VCLOCK.get('barrier_time')
         VCLOCK['barrier_time'] = b if old is None else min(float(old), b)
+        COUNT['vclock_barrier'] += 1
 
     VCLOCK['coverage'] = max(
         float(VCLOCK.get('coverage') or 0.0),

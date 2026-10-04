@@ -361,16 +361,22 @@ def run(args):
                             % (a, amt, r['view']['error']))
                 r = dict(r, token=r.get('token'))
 
-        # 실제 UI 서버 orchestration이 round-start worker를 띄웠는지 확인.
+        # 실제 UI 서버 orchestration이 다른 테이블 계산을 시작했는지 확인.
+        # 새 vclock 게임은 round-start worker 대신 55분 세션 선계산 chunk를 쓴다.
         cs, rs, _ = cli._call('/api/stats')
         pc = (rs.get('counters') or {}) if cs == 200 else {}
         stats['parallel_round_start'] = int(pc.get('round_start') or 0)
         stats['parallel_restarts'] = int(pc.get('round_restart') or 0)
         stats['parallel_wait_ms'] = int(pc.get('worker_wait_ms') or 0)
+        stats['vclock_chunk_start'] = int(pc.get('vclock_chunk_start') or 0)
+        stats['vclock_chunk_done'] = int(pc.get('vclock_chunk_done') or 0)
+        stats['vclock_barrier'] = int(pc.get('vclock_barrier') or 0)
         if cs != 200:
             fail.append('/api/stats 가 %d' % cs)
-        elif args.entries > 9 and stats['decisions'] and stats['parallel_round_start'] <= 0:
-            fail.append('핸드를 진행했는데 round-start worker가 시작되지 않음')
+        elif (args.entries > 9 and stats['decisions']
+              and stats['parallel_round_start'] <= 0
+              and stats['vclock_chunk_start'] <= 0):
+            fail.append('핸드를 진행했는데 다른 테이블 worker가 시작되지 않음')
 
         srv.terminate(); srv.wait(timeout=10)
 
@@ -432,7 +438,8 @@ def main():
               'chip_checks', 'chip_bad', 'slot_checks', 'slot_bad',
               'leak_hands_checked', 'legal_violations', 'err_checked',
               'watch_removed', 'stream_steps', 'stream_events',
-              'parallel_round_start', 'parallel_restarts', 'parallel_wait_ms'):
+              'parallel_round_start', 'parallel_restarts', 'parallel_wait_ms',
+              'vclock_chunk_start', 'vclock_chunk_done', 'vclock_barrier'):
         if k in stats: print('  %-18s %s' % (k, stats[k]))
     print('  %-18s 중앙 %s / 최대 %s 초'
           % ('지연(진행 중)', stats.get('lat_mid_med'), stats.get('lat_mid_max')))
