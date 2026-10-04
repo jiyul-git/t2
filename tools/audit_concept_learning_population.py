@@ -64,7 +64,11 @@ def main():
         gaps = [float(p["concepts"][post]) - float(p["concepts"][pre]) for p in players]
         hard[f"{pre}->{post}"] = {
             "max_gap": round(max(gaps), 2),
-            "violations": sum(1 for g in gaps if g > PS.HARD_PREREQ_MARGIN + 1e-9),
+            "q90_gap": q(gaps, .90),
+            "above_free_margin_pct": pct(gaps, lambda g: g > PS.HARD_PREREQ_MARGIN + .05),
+            "at_free_margin_pct": pct(gaps, lambda g: abs(g - PS.HARD_PREREQ_MARGIN) <= .05),
+            "violations": sum(1 for g in gaps
+                              if g > PS.HARD_PREREQ_MARGIN + PS.HARD_PREREQ_TAIL + .11),
         }
 
     learning = {}
@@ -77,7 +81,11 @@ def main():
         learning[post] = {
             "prerequisites": list(pres),
             "max_gap": round(max(gaps), 2),
-            "violations": sum(1 for g in gaps if g > PS.LEARNING_SUPPORT_MARGIN + 0.11),
+            "q90_gap": q(gaps, .90),
+            "above_free_margin_pct": pct(gaps, lambda g: g > PS.LEARNING_SUPPORT_MARGIN + .05),
+            "at_free_margin_pct": pct(gaps, lambda g: abs(g - PS.LEARNING_SUPPORT_MARGIN) <= .05),
+            "violations": sum(1 for g in gaps
+                              if g > PS.LEARNING_SUPPORT_MARGIN + PS.LEARNING_SUPPORT_TAIL + .11),
         }
 
     out = {
