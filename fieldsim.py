@@ -613,7 +613,9 @@ class Field:
         return {
             int(self.players[pid]['table'])
             for pid in self.human_pids
-            if pid in self.players and self.players[pid].get('table') is not None
+            if (pid in self.players
+                and self.players[pid].get('stack', 0) > 0
+                and self.players[pid].get('table') is not None)
         }
 
     def total_chips(self):
