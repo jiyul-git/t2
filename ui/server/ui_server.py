@@ -73,6 +73,11 @@ def _economy_receipt(st):
             'can_reenter': _TS.can_reenter(ev)}
 
 
+# The off-screen field may trail the current tournament time by at most this much
+# when the waiting HERO takes over (one completed hand per table is ~20-60s).
+ADMISSION_SYNC_LAG = 15.0
+
+
 def _managed_play_state():
     """Take over only a completed off-screen hand; no action/clock reset on reload."""
     global _last, LAST_PLAY_PRESENCE
@@ -96,13 +101,20 @@ def _managed_play_state():
             ECONOMY.request_enter(tid)
         return {'waiting': True, 'message': '예약한 대회의 시작을 기다리고 있습니다.',
                 'starts_at': ev['starts_at'], **_economy_receipt(st)}
+    # Take over only once the off-screen field is near the CURRENT tournament
+    # time, not merely the request time. Taking over sets the HERO clock to now;
+    # any gap left between the request time and now would otherwise be simulated
+    # for every other table inside this request (synchronously without a pool),
+    # e.g. a minute of a 99-player field after a multi-minute catch-up.
+    sync_target = max(float(_SR._enter_time(ev)),
+                      float(_TS.active_seconds(time.time() - ev['starts_at'])))
     if (not st or not entry or entry['pid'] is None or entry['status'] in ('reserved', 'waiting')
             or st.get('offscreen') and (not st.get('hero_ready') or
-                st.get('background_seconds', 0) + 2 < _SR._enter_time(ev))):
+                st.get('background_seconds', 0) + ADMISSION_SYNC_LAG < sync_target)):
         if not ev['enter_requested']:
             ECONOMY.request_enter(tid)
             ev = ECONOMY.event(tid)
-        target = float(_SR._enter_time(ev))
+        target = sync_target
         done = float((st or {}).get('background_seconds', 0) or 0)
         if target > 1:
             pct = max(0, min(99, int(done * 100 / target)))
@@ -853,7 +865,7 @@ def _vclock_init_locked(st):
     VCLOCK['coverage'] = _vclock_other_clock_floor(field)
 
 
-def _vclock_submit_next_locked():
+def _vclock_submit_next_locked(need=None):
     if VCLOCK.get('future') is not None:
         return
     if VCLOCK.get('barrier_time') is not None:
@@ -867,6 +879,10 @@ def _vclock_submit_next_locked():
         return
     p = _pool()
     target = min(float(session_end), coverage + VCLOCK_CHUNK_SECONDS)
+    if p is None and need is not None and float(need) > coverage:
+        # Without an async pool this runs inside the request: compute only up to
+        # the coverage needed now, not a whole speculative chunk for every table.
+        target = min(target, float(need))
     VCLOCK['segment_target'] = target
     VCLOCK['started_at'] = time.monotonic()
     COUNT['attempt'] += 1
@@ -964,7 +980,7 @@ def _vclock_pump(st, wait=False, target=None):
             if _pool() is None and _vclock_ready_locked(target):
                 return True
             # 목표가 이미 충족돼도 다음 speculative chunk는 항상 걸어 둔다.
-            _vclock_submit_next_locked()
+            _vclock_submit_next_locked(need=target)
             fut = VCLOCK.get('future')
 
             # 지난 호출 사이 끝난 chunk가 있으면 즉시 수확하고 다음 chunk를 잇는다.

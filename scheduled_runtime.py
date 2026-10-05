@@ -171,6 +171,39 @@ def _merge_batch(st, event, pending, target, hero_table):
     return batch, due, when, steps
 
 
+# 선계산 대기열은 스냅샷이 아니라 이 워커 프로세스에만 둔다. 99명 필드에서 대기열이
+# 상태 JSON 의 약 70%(3.4MB)였고, 발행자가 LOCK 안에서 그것을 여러 번 파싱·저장하는 동안
+# 대기실 요청이 수 초~수십 초 막혔다. 스냅샷에는 대기열이 만들어진 필드의 키만 남긴다.
+# 키가 맞지 않으면(재시작, 다른 프로세스, 외부에서 바뀐 필드) 대기열 없이 다시 계산한다.
+_PENDING_CACHE = {}
+
+
+def _pending_key(st):
+    fd = st['field']
+    tables = sorted((str(t), row.get('hands'), round(float(row.get('vclock_seconds', 0) or 0), 6),
+                     tuple(row.get('pids') or ())) for t, row in fd['tables'].items())
+    return repr((fd.get('hand_no'), round(float(st.get('background_seconds', 0) or 0), 6),
+                 len(fd['players']), tables))
+
+
+def _cache_pending(event_id, st):
+    pending = st.get('background_pending') or {}
+    _PENDING_CACHE.pop(event_id, None)
+    st['background_pending'] = {}
+    st.pop('background_pending_key', None)
+    if pending:
+        key = _pending_key(st)
+        _PENDING_CACHE[event_id] = (key, pending)
+        st['background_pending_key'] = key
+
+
+def _take_cached_pending(event_id, st):
+    key, pending = _PENDING_CACHE.pop(event_id, (None, {}))
+    if not pending or st.get('background_pending_key') != key or _pending_key(st) != key:
+        return {}
+    return pending
+
+
 def advance(event, target, budget=18, parallel=True):
     """Compute a bounded batch; target is a play-time timestamp, not CPU time."""
     event = copy.deepcopy(event)
@@ -201,6 +234,8 @@ def advance(event, target, budget=18, parallel=True):
     for key, queued in list(pending.items()):
         if isinstance(queued, dict):          # 예전 스냅샷: 테이블당 이벤트 1개
             pending[key] = [queued]
+    if not pending:
+        pending.update(_take_cached_pending(event['id'], st))
     f0 = L._load_field(st['field'])
     _close_admission(st, event, f0)
     hero_table = f0.players.get(f0.hero_pid, {}).get('table')
@@ -305,6 +340,7 @@ def advance(event, target, budget=18, parallel=True):
             st['hero_ready'] = True
             pending.pop(str(hero_table), None)
         work += 1
+    _cache_pending(event['id'], st)
     f = L._load_field(st['field'])
     latest = next((e for e in reversed(event['entries']) if e.get('pid') is not None), None)
     if latest:
