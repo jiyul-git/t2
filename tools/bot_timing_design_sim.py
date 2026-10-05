@@ -28,6 +28,7 @@ def c_facing(eq, need):
 import re
 _PCT = re.compile(r'\((\d+)%\)')
 CLOSENESS = 'v1'     # v1: eq-need 절대폭 0.15(기록값) / v2: 최종 비교값·상대폭·분기확률
+#                      v3: v2 응답 + 믹스확률·규칙 선택 제거 + 프리플랍 인간모델 경계
 
 
 def c_final(eq_used, need_used):
@@ -38,6 +39,34 @@ def c_final(eq_used, need_used):
     """
     w = min(0.15, max(0.03, 0.5 * need_used))
     return max(0.0, 1.0 - abs(eq_used - need_used) / w)
+
+
+def c_rank(r, thr):
+    """핸드 백분위 r 과 인간모델 임계값 thr 의 거리. 폭은 defend 혼합폭(max(0.015, 0.15·thr))의 2배."""
+    w = 2.0 * max(0.015, 0.15 * thr)
+    return max(0.0, 1.0 - abs(r - thr) / w)
+
+
+def c_preflop_human(p):
+    """v3 프리플랍: timing_trace 가 남긴 인간모델의 최종 선택 경계."""
+    pb = p.get('pf_bound') or {}
+    bs = pb.get('bounds') or []
+    if pb.get('calloff_layer') and pb['calloff_layer'].get('eq') is not None:
+        cl = pb['calloff_layer']
+        c = c_final(float(cl['eq']), float(cl['need']))
+    elif not bs:
+        return 0.0, p['act'] == 'fold'
+    else:
+        b = bs[-1]
+        if b.get('eq') is not None and b.get('need') is not None:
+            c = c_final(b['eq'], b['need'])
+        elif 'cap' in b:
+            c = c_rank(b['r'], b['cap'])
+        elif 'tot' in b:
+            c = c_rank(b['r'], b['tot'])
+        else:
+            c = c_rank(b['r'], b['thr'])
+    return c, (p['act'] == 'fold' and c < 0.05)
 
 
 def c_branch(p):
@@ -165,7 +194,12 @@ def load_spots(trace):
                 opp_c = (opp_rem + (tocall if facing else 0.0)) if opp_rem is not None else stack
                 eff = max(1.0, min(stack, opp_c) if opp_c > 0 else stack)
             if facing:
-                if CLOSENESS == 'v2' and i.get('dr_eq_used') is not None:
+                if CLOSENESS == 'v3' and i.get('dr_eq_used') is not None:
+                    # 레이즈 믹스 확률은 전략 빈도라 쓰지 않는다. 콜/폴드 경계 거리만.
+                    c = c_final(float(i['dr_eq_used']), float(i['dr_need_used']))
+                elif CLOSENESS == 'v3':
+                    c = c_final(float(i['resp_eq']), float(i['resp_need']))
+                elif CLOSENESS == 'v2' and i.get('dr_eq_used') is not None:
                     pm = _PCT.search(i.get('dr_why') or '')
                     if i.get('dr_act') == 'raise' and pm:
                         c = c_branch(int(pm.group(1)) / 100.0)
@@ -181,13 +215,17 @@ def load_spots(trace):
                 eq = i.get('eq')
                 if eq is None:
                     continue
-                pm = _PCT.search(i.get('intent_src') or '') if CLOSENESS == 'v2' else None
-                c = c_branch(int(pm.group(1)) / 100.0) if pm else c_choice(float(eq))
+                if CLOSENESS == 'v3':
+                    # 경쟁 선택지 점수/임계값이 기록돼 있지 않다 → 낮은 기본 난이도.
+                    c = 0.0
+                else:
+                    pm = _PCT.search(i.get('intent_src') or '') if CLOSENESS == 'v2' else None
+                    c = c_branch(int(pm.group(1)) / 100.0) if pm else c_choice(float(eq))
                 s = 0.6 * st_
                 commit = min(1.0, float(i.get('calc_amt') or i.get('amt') or 0.0) / eff)
             post.append((c, s, m, False, commit, _depth(eff / bb), ph))
     for p in trace['pf']:
-        c, triv = c_preflop(p)
+        c, triv = c_preflop_human(p) if CLOSENESS == 'v3' else c_preflop(p)
         s = 0.3 * min(1.0, (int(p.get('rlevel') or 1) - 1) / 2.0)
         sd = p['seed']
         stk = float(sd.get('pf_stack_bb') or p.get('bbs') or 100.0)
