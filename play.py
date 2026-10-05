@@ -11,7 +11,7 @@ class Hand:
     def __init__(self, seats, profiles, stacks, button, sb, bb, hero=None,
                  payouts=None, seed=None, dyn=None, book=None,
                  position_map=None, pre_seats=None, post_seats=None,
-                 sb_seat=None, bb_seat=None):
+                 sb_seat=None, bb_seat=None, human_seats=None):
         self.rng = random.Random(seed if seed is not None else os.urandom(8))
         self.all_seats = list(seats)
         self.stacks = dict(stacks)
@@ -21,6 +21,14 @@ class Hand:
             raise ValueError('생존 좌석 부족: %s' % self.seats)
         self.prof = profiles
         self.sb, self.bb = sb, bb; self.hero = hero
+        # Backward compatible: old callers only set hero.  Online multiplayer
+        # may mark up to two seats as human without changing bot strategy code.
+        self.human_seats = set(
+            human_seats if human_seats is not None
+            else ([] if hero is None else [hero])
+        )
+        if hero is not None:
+            self.human_seats.add(hero)
         self.payouts = payouts or []
         # 예전에는 dict 였고 tourney 가 안 넘겨서 매 핸드 새로 만들어졌다.
         # 그래서 틸트가 핸드를 못 넘겼다(live 경로만 JSON 으로 유지됐다).
@@ -76,6 +84,9 @@ class Hand:
         self._start_stacks = dict(self.stacks)
         self.seat_pid = {}          # 좌석번호 → 플레이어 고유 ID (드라이버가 채운다)
         self.deal()
+
+    def is_human(self, seat):
+        return seat in self.human_seats
 
     def pid_of(self, s):
         """좌석 → 플레이어 식별자. **대회 단위로 유지되는 상태의 유일한 키다.**
