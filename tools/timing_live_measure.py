@@ -21,7 +21,7 @@ def main():
     out_path, minutes, mode, seed = sys.argv[1], float(sys.argv[2]), sys.argv[3], int(sys.argv[4])
     entries = int(sys.argv[5]) if len(sys.argv) > 5 else 90
     rng = random.Random(seed * 7 + 1)
-    with tempfile.TemporaryDirectory(prefix='t2_live_measure_') as td:
+    with tempfile.TemporaryDirectory(prefix='t2_live_measure_', ignore_cleanup_errors=True) as td:
         subprocess.run([sys.executable, os.path.join(ROOT, 'ui/tools/setup_run_dir.py'), td],
                        check=True, stdout=subprocess.DEVNULL)
         with socket.socket() as sock:
