@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from online_server.auth import AuthError, AuthService, Identity
 from online_server.config import Settings, load_settings
 from online_server.engine import GameEngine, GameError
+from online_server.duo_engine import DuoTournamentEngine
 from online_server.registry import ConnectionRegistry
 
 
@@ -36,6 +37,12 @@ class NextHandRequest(BaseModel):
     token: str
 
 
+class DuoActionRequest(BaseModel):
+    token: str
+    action: str
+    amount: int = Field(default=0, ge=0)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = load_settings()
@@ -43,6 +50,7 @@ async def lifespan(app: FastAPI):
     app.state.auth = AuthService(settings)
     app.state.registry = ConnectionRegistry()
     app.state.game = GameEngine(settings)
+    app.state.duo = DuoTournamentEngine(settings)
     yield
 
 
@@ -274,6 +282,60 @@ async def _ws_game_message(
             }
         )
     return True
+
+
+@app.post("/v1/duo/join")
+async def duo_join(
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    duo: DuoTournamentEngine = request.app.state.duo
+    try:
+        return await duo.join(identity.uid)
+    except GameError as exc:
+        _raise_game_http(exc)
+
+
+@app.get("/v1/duo/state")
+async def duo_state(
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    duo: DuoTournamentEngine = request.app.state.duo
+    try:
+        return await duo.state(identity.uid)
+    except GameError as exc:
+        _raise_game_http(exc)
+
+
+@app.post("/v1/duo/action")
+async def duo_action(
+    body: DuoActionRequest,
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    duo: DuoTournamentEngine = request.app.state.duo
+    try:
+        return await duo.action(
+            identity.uid,
+            token=body.token,
+            action=body.action,
+            amount=body.amount,
+        )
+    except GameError as exc:
+        _raise_game_http(exc)
+
+
+@app.post("/v1/duo/reset")
+async def duo_reset(
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    duo: DuoTournamentEngine = request.app.state.duo
+    try:
+        return await duo.reset(identity.uid)
+    except GameError as exc:
+        _raise_game_http(exc)
 
 
 @app.websocket("/v1/ws")
