@@ -37,6 +37,7 @@ class DuoTournamentEngine:
         self.data_dir = Path(settings.online_data_dir).expanduser().resolve()
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.path = self.data_dir / "duo_room.json"
+        self._public_cache: dict[tuple[int, str], dict[str, Any]] = {}
 
         import fieldsim as FS
         import live2 as L
@@ -183,6 +184,12 @@ class DuoTournamentEngine:
             "hands": hands,
             "started_at": time.time(),
         }
+
+        # Freeze every bot decision leading up to the first human decision.
+        # Otherwise a read-only browser poll would recalculate the opening line.
+        for rec in hands.values():
+            _f, _tb, _alive, _h, run, _raw = self._build_hand(base, rec)
+            rec["decisions"] = [list(x) for x in run.recorded]
 
     # ---------- hand replay ----------
     def _build_hand(
@@ -558,6 +565,21 @@ class DuoTournamentEngine:
             base_out["token"] = self._token(state, pid, tid, rec, raw)
         return base_out
 
+    def _cached_public(self, state: dict[str, Any], uid: str) -> dict[str, Any]:
+        key = (int(state.get("revision", 0)), str(uid))
+        hit = self._public_cache.get(key)
+        if hit is not None:
+            return copy.deepcopy(hit)
+        payload = self._public(state, uid)
+        self._public_cache[key] = copy.deepcopy(payload)
+        if len(self._public_cache) > 24:
+            keep_rev = int(state.get("revision", 0))
+            self._public_cache = {
+                k: v for k, v in self._public_cache.items()
+                if k[0] >= keep_rev - 2
+            }
+        return payload
+
     # ---------- commands ----------
     def _sync_join(self, uid: str) -> dict[str, Any]:
         with self._lock:
@@ -576,7 +598,7 @@ class DuoTournamentEngine:
                 if len(state["players"]) == 2:
                     self._start_tournament(state)
                 self._save(state)
-            return self._public(state, uid)
+            return self._cached_public(state, uid)
 
     def _sync_state(self, uid: str) -> dict[str, Any]:
         with self._lock:
@@ -668,7 +690,7 @@ class DuoTournamentEngine:
                 }
             ]
             self._save(fresh)
-            return self._public(fresh, uid)
+            return self._cached_public(fresh, uid)
 
     async def join(self, uid: str) -> dict[str, Any]:
         return await asyncio.to_thread(self._sync_join, uid)
