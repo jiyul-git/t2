@@ -60,6 +60,22 @@ Remaining static share after H1 (C0 reach): 3-bet pots 0.261 (35.7% of flop reac
 - T (one outer step for the 3-bet tables): panel_v1 at state-2 ranges; the 8 SRP tables stay at state 2; one preflop solve with 33 tables.
   Reported as T - S2 per opener / 3-bettor position; no expected direction is pre-registered for 3-bet pots (the static payoff at
   SPR ~1.2-1.7 has r ~ 1 +- 0.01, so the bias comes from pot x equity ignoring postflop play, sign unknown a priori).
-- After T: a joint OL over all 33 tables with the same rule (max 3 steps) only if T moves preflop frequencies by more than the OL
-  step-2 residual scale; otherwise T is reported and the loop is not run.
-- 3-way terminals stay static (research game only); every DB record carries the static share of its line.
+- After T: joint-OL trigger, fixed 2026-10-05 before any T result exists (amendment; replaces the earlier wording "more than the
+  OL step-2 residual scale"):
+  - metric vector M (frequency units):
+    (a) RFI open frequency UTG, UTG+1, UTG+2, LJ, HJ, CO, BTN, SB (8);
+    (b) opener jam share of opens at the same 8 positions (8);
+    (c) for each of the 25 selected 3-bet paths: aggregate fold / call / raise / jam at the 3-bettor's node (facing the open) and at
+        the opener's node facing the 3-bet (25 x 2 x 4 = 200).
+  - R = max |M(state 2) - M(state 1)| (the last OL change; state-1 3-bet path exports come from the existing state-1 checkpoint and
+    tables, no new solve); D = max |M(T) - M(state 2)|.
+  - D > R -> run the 33-table joint OL (same rule as OL, max 3 steps); D <= R -> T is accepted as this pilot's result, no joint OL.
+  - Stored with the decision: every element's |M(T) - M(s2)| and |M(s2) - M(s1)|, the argmax elements of D and R, and per position /
+    path max D and max R. Tool: `tools/gto_validation/pilot9_t3_trigger.py`.
+- The T report states solved / static flop-reach coverage (census shares). State-2 census: solved HU SRP 29.5% + 25 HU 3-bet 24.6% =
+  54.1%; static HU 3-bet tail 5.8% + 3-way SRP 28.2% + 3-way 3-bet 11.8% = 45.9%; recomputed at T. Wording: about half of flop reach
+  carries solved postflop values; the calculator is not complete.
+- After step 3a: no automatic 3-way solve. 3-way terminals stay static (research game only) and are recorded per DB record as a static
+  dependency / quality downgrade. Next priority (`T2_GTO_EXTRACTOR_GOAL.md`): seal the calculator state, then the extractor
+  architecture: unequal stacks per seat, fast fallback (subgame solve on a DB miss), nearest-spot approximation with quality labels,
+  precompute order ranked by T2 log traffic.
