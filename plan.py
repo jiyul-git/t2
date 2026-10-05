@@ -517,6 +517,20 @@ def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
     return bot.equity_vs_combos(hero,board,pools,sims=_s)
 
 
+def _plan_eq(hero, board, opp_range, n_opp, sims, seed=None, opp_ranges=None):
+    """계획용 에쿼티. 추정 레인지가 보드·내 패와 전부 겹치면(모순) 모르는 상대로 본다.
+
+    _eq_vs 는 이때 None 을 돌려준다(근거 없음). continue_range_call_equity 는 그 None 을
+    '근거 없음'으로 쓰지만, make_plan/refresh 는 에쿼티가 반드시 있어야 해서 예전에는
+    핸드 전체가 예외로 건너뛰어졌다(완주 시뮬 시드 11·12). 새 값을 짓지 않고
+    모르는 seat 와 같은 중립 field range 로 잰다. 반환: (eq, fallback 여부).
+    """
+    eq = _eq_vs(hero, board, opp_range, n_opp, sims=sims, seed=seed, opp_ranges=opp_ranges)
+    if eq is not None:
+        return eq, False
+    return _eq_vs(hero, board, None, n_opp, sims=sims, seed=seed), True
+
+
 def opp_bet_prob(opp_est, w, street, opp_role=None):
     """체크했을 때 상대가 벳해줄 확률. 트랩의 성립 조건 그 자체다.
 
@@ -976,8 +990,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         if int(n_opp or 1) > 1 else opp_stack_bb)
     # 추정한 opp_range 를 그대로 쓴다. 고정 35% 가정으로 되돌리지 말 것 —
     # 좁혀놓은 레인지를 버리고 EV 를 판단하면 리딩이 전부 무의미해진다.
-    eq = _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=seed,
-                opp_ranges=opp_ranges)
+    eq, _eq_fallback = _plan_eq(hero, board, opp_range, n_opp, sims=400, seed=seed,
+                                opp_ranges=opp_ranges)
     # 기록 전용. 같은 레인지·같은 인원으로 '보드를 안 돌린' 값을 같이 남긴다.
     # eq 하나만 남기면 나중에 0.535 를 보고 '지금 강한 건가, 드로우 때문인가'를
     # 구분할 수 없다. 판단에는 절대 쓰지 않는다 — 쓰려면 먼저 검증이 필요하다.
@@ -1306,6 +1320,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'field_fold_seat': (_field_fold.get('seat') if _field_fold else None),
             'field_bettor_seat': (_field_bettor.get('seat') if _field_bettor else None),
             'protect': round(min(1.0, dang*(1+0.5*mw)), 2)}
+    if _eq_fallback:
+        st['eq_field_fallback'] = True
     # 의도는 파이프라인 끝(session)에서 최종 계획 기준으로 붙인다.
     return st
 
@@ -3780,8 +3796,8 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # perceived_rel 에는 **날것**을 넘긴다 (make_plan 과 같게).
     # 체감값을 넘기면 노이즈가 두 번 먹혀 새 불일치가 생긴다.
     rel = perceived_rel(profile, rel_true, hero, board, outs_true, made)
-    eq  = _eq_vs(hero, board, opp_range, n_opp, sims=300, seed=seed,
-                 opp_ranges=opp_ranges)
+    eq, _eq_fallback = _plan_eq(hero, board, opp_range, n_opp, sims=300, seed=seed,
+                                opp_ranges=opp_ranges)
     # 레인지 우위도 같은 시점에 갱신한다. my_range 가 없으면(구 호출부)
     # 이전 값을 유지해 동작을 깨지 않는다.
     # `my_range if my_range is not None` 로 쓰면 **빈 리스트가 들어올 때
@@ -3856,6 +3872,10 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         # 예전에는 여기서 원시값으로 덮어써 같은 키의 의미가 바뀌었다(L-RA06).
         'danger': round(perceived_board_danger(profile, board), 2),
         'danger_raw': round(bot.board_danger(board), 2)})
+    if _eq_fallback:
+        st['eq_field_fallback'] = True
+    else:
+        st.pop('eq_field_fallback', None)
     # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
     # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
     _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed,

@@ -25,6 +25,26 @@ def c_facing(eq, need):
     return max(0.0, 1.0 - abs(eq - need) / 0.15)
 
 
+import re
+_PCT = re.compile(r'\((\d+)%\)')
+CLOSENESS = 'v1'     # v1: eq-need 절대폭 0.15(기록값) / v2: 최종 비교값·상대폭·분기확률
+
+
+def c_final(eq_used, need_used):
+    """v2 응답 근접도: 실제로 비교된 eq/need, 폭은 need 에 비례(0.03~0.15).
+
+    need 가 작으면(가격이 좋아 사실상 콜이 정해진 숏스택) 같은 절대차도 멀다.
+    need 가 0.3 이상인 진짜 코인플립 경계(버블 올인 콜 등)는 v1 과 같은 폭이다.
+    """
+    w = min(0.15, max(0.03, 0.5 * need_used))
+    return max(0.0, 1.0 - abs(eq_used - need_used) / w)
+
+
+def c_branch(p):
+    """확률 분기(믹스)의 근접도: 50% 에 가까울수록 1."""
+    return max(0.0, 1.0 - abs(2.0 * p - 1.0))
+
+
 def c_choice(eq):
     # 가정: 벳/체크 선택은 중간 강도가 가장 어렵다. 구현 때는 실제 분기 확률을 쓴다.
     return max(0.0, 1.0 - abs(eq - 0.5) / 0.30)
@@ -134,17 +154,35 @@ def load_spots(trace):
             m = max(0.0, min(1.0, (bf - 1.0) / 0.6))
             stack = float(i.get('stack') or 0.0)
             opp = i.get('opp_stack_bbs')
-            opp_c = (max([float(x) for x in opp.values()]) * bb) if isinstance(opp, dict) and opp else stack
-            eff = max(1.0, min(stack, opp_c))
-            if i.get('resp_eq') is not None and i.get('resp_need') is not None:
-                c = c_facing(i['resp_eq'], i['resp_need'])
+            opp_rem = (max([float(x) for x in opp.values()]) * bb) if isinstance(opp, dict) and opp else None
+            tocall = float(i.get('tocall') or 0.0)
+            facing = i.get('resp_eq') is not None and i.get('resp_need') is not None
+            if CLOSENESS == 'v1':
+                opp_c = opp_rem if opp_rem is not None else stack
+                eff = max(1.0, min(stack, opp_c))
+            else:
+                # 상대가 이미 올인(남은 0)이어도 상대가 건 금액만큼은 맞서 있다.
+                opp_c = (opp_rem + (tocall if facing else 0.0)) if opp_rem is not None else stack
+                eff = max(1.0, min(stack, opp_c) if opp_c > 0 else stack)
+            if facing:
+                if CLOSENESS == 'v2' and i.get('dr_eq_used') is not None:
+                    pm = _PCT.search(i.get('dr_why') or '')
+                    if i.get('dr_act') == 'raise' and pm:
+                        c = c_branch(int(pm.group(1)) / 100.0)
+                    else:
+                        c = c_final(float(i['dr_eq_used']), float(i['dr_need_used']))
+                elif CLOSENESS == 'v2':
+                    c = c_final(float(i['resp_eq']), float(i['resp_need']))
+                else:
+                    c = c_facing(i['resp_eq'], i['resp_need'])
                 s = min(1.0, 0.6 * st_ + 0.4)
-                commit = min(1.0, float(i.get('tocall') or 0.0) / eff)
+                commit = min(1.0, tocall / (eff if CLOSENESS == 'v1' else max(1.0, stack)))
             else:
                 eq = i.get('eq')
                 if eq is None:
                     continue
-                c = c_choice(float(eq))
+                pm = _PCT.search(i.get('intent_src') or '') if CLOSENESS == 'v2' else None
+                c = c_branch(int(pm.group(1)) / 100.0) if pm else c_choice(float(eq))
                 s = 0.6 * st_
                 commit = min(1.0, float(i.get('calc_amt') or i.get('amt') or 0.0) / eff)
             post.append((c, s, m, False, commit, _depth(eff / bb), ph))
@@ -347,7 +385,11 @@ def population(n=1000, seed=20261005):
 
 def stage_main(args):
     """단계별 측정.  --stages OUT.json B TRACE...   (B 는 측정용 임시값, 확정 아님)"""
+    global CLOSENESS
     out_path, B, paths = args[0], float(args[1]), args[2:]
+    if paths and paths[0].startswith('--closeness='):
+        CLOSENESS = paths[0].split('=', 1)[1]
+        paths = paths[1:]
     G = 1.0
     post, pre = [], []
     for pth in paths:
@@ -408,7 +450,7 @@ def stage_main(args):
         }
 
     pre_set = _IdSet(pre)
-    out = {'traces': paths, 'B_temporary': B, 'G': G,
+    out = {'traces': paths, 'B_temporary': B, 'G': G, 'closeness': CLOSENESS,
            'phase_priority': 'final > itm > bubble > early_mid (mutually exclusive)',
            'postflop': len(post), 'preflop': len(pre),
            'all': section(allsp), 'depth': {}, 'phase': {}}

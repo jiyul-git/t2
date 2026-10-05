@@ -24,8 +24,54 @@ _ORIG = (PS.make_player, PLY.Hand.emotion_level, RD.Book.rec)
 import beta_trace as BT          # noqa: E402  (applies r2 baseline patches)
 import fieldsim as FS            # noqa: E402
 
+import plan as PL                # noqa: E402
+
 STAGE = {}
 _grab = FS.Field._log_bot_hand
+_LAST_DR = []
+_dr = PL.decide_response
+
+
+def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
+                    made_now, opp_range, pot, tocall, stack, committed, rng, **kw):
+    """최종 콜/폴드 경계: 실제로 비교된 eq/need(레이어 콜이면 call_eq/call_need)."""
+    r = _dr(profile, hero, board, street, plan, plan_state, eq, need,
+            made_now, opp_range, pot, tocall, stack, committed, rng, **kw)
+    act, mult, need_out, why = r
+    layer = kw.get('call_eq') is not None and kw.get('call_need') is not None
+    _LAST_DR.append({
+        'dr_act': act, 'dr_layer': layer, 'dr_committed': bool(committed),
+        'dr_eq_used': round(float(kw['call_eq'] if layer else eq), 4),
+        'dr_need_used': round(float(need_out), 4),
+        'dr_why': str(why)[:120]})
+    return r
+
+
+PL.decide_response = decide_response
+_awp = BT._awp
+
+
+def awp(hero, board, profile, plan_state, pot, tocall, stack, street, **kw):
+    """beta_trace.awp 와 같은 기록 + decide_response 의 최종 비교값."""
+    del _LAST_DR[:]
+    r = _awp(hero, board, profile, plan_state, pot, tocall, stack, street, **kw)
+    h = sys._getframe(1).f_locals.get('h')
+    s = sys._getframe(1).f_locals.get('s')
+    key = (getattr(h, 'hash', None), street, s)
+    (a, amt), eq, need = r
+    rec = {
+        'resp_eq': (round(float(eq), 4) if eq is not None else None),
+        'resp_need': (round(float(need), 4) if need is not None else None),
+        'resp_src': plan_state.get('_last_response_source'),
+        'response_kind': kw.get('response_kind'),
+        'calc_act': a, 'calc_amt': amt}
+    if _LAST_DR:
+        rec.update(_LAST_DR[-1])
+    BT.RESP.setdefault(key, []).append(rec)
+    return r
+
+
+PL.act_with_plan = awp
 
 
 def grab(self, tb, h, run):
