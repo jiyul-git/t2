@@ -1,0 +1,29 @@
+#!/bin/sh
+# Joint OL chain (resumable) over 33 tables (8 HU SRP + 25 HU 3-bet); state 0 = step3/t3/T. Same rule as OL (pilot9_ol.py, T2_JOL=1).
+# usage: pilot9_jol_run.sh [k_start]
+set -e
+R=/home/user/gto_ckpt
+B=/home/user/t2/vendor/gtopen/target/release/examples
+T=/home/user/t2/tools/gto_validation
+export PREFLOP_EQ_SEED=202 PREFLOP_MULTIWAY_SEED=202 PREFLOP_EQ_SAMPLES=1200 T2_CHECKPOINT_EVERY=10 T2_JOL=1
+SPECS="btn:fold,fold,fold,fold,fold,fold,raise,fold,call co:fold,fold,fold,fold,fold,raise,fold,fold,call hj:fold,fold,fold,fold,raise,fold,fold,fold,call utg:raise,fold,fold,fold,fold,fold,fold,fold,call sb:fold,fold,fold,fold,fold,fold,fold,raise,call lj:fold,fold,fold,raise,fold,fold,fold,fold,call utg2:fold,fold,raise,fold,fold,fold,fold,fold,call utg1:fold,raise,fold,fold,fold,fold,fold,fold,call $(python3 $T/pilot9_t3.py specs)"
+k=${1:-0}
+while [ $k -lt 3 ]; do
+  S=$R/jol/step$k
+  python3 $T/pilot9_ol.py prep $k
+  echo "JOL step $k panels $(date -u +%FT%TZ)"
+  for spec in $SPECS; do n=${spec%%:*}
+    python3 /home/user/t2/tools/gto_hu_continuation/solve_panel.py $S/terminals/export_$n.json /home/user/t2/data/gto_hu_continuation/menu_m2_single_v1.json \
+      /home/user/t2/data/gto_hu_continuation/panel_v1.json $S/$n/flops --workers 4 --threads 1 >> $S/solve.log 2>&1
+  done
+  [ -s $S/report.json ] || python3 $T/pilot9_ol.py step $k > $S/step.out
+  grep -q '"decision": "continue' $S/report.json || { echo "JOL stop at step $k"; echo JOL_DONE; exit 0; }
+  k1=$((k+1)); N=$R/jol/s$k1
+  echo "JOL state $k1 preflop $(date -u +%FT%TZ)"
+  cd $N
+  for spec in $SPECS; do n=${spec%%:*}; s=${spec#*:}
+    [ -s export_$n.json ] || { T2_CONT_FILE=$N/tables/manifest.json T2_CHECKPOINT=$N/ck.gtop $B/t2_cont_terminal $R/cfg_pilot.json 100 $s export_$n.tmp > /dev/null 2>&1 && mv export_$n.tmp export_$n.json; }
+  done
+  k=$k1
+done
+echo JOL_DONE

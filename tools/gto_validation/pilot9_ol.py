@@ -3,6 +3,7 @@
     pilot9_ol.py prep <k>     link the 8 state-k terminal exports into ol/step<k>/terminals
     pilot9_ol.py step <k>     after the step-k panels: V_raw,k, D / U per node-seat, stop decision, damped tables of state k+1
 State 0 = h1/H (tables h1/tables_all); state k >= 1 = ol/s<k> (tables ol/s<k>/tables). Panel panel_v1 fixed at every step.
+T2_JOL=1: step-3a joint OL over 33 tables (8 SRP + 25 HU 3-bet), state 0 = step3/t3/T (tables step3/t3/tables_all), root jol/.
 """
 import json
 import math
@@ -14,20 +15,30 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 import pilot9_tables as PT  # noqa: E402
 
 R = '/home/user/gto_ckpt/'
-OL = R + 'ol/'
+JOL = os.environ.get('T2_JOL') == '1'
+OL = R + ('jol/' if JOL else 'ol/')
 NAMES = ['btn', 'co', 'hj', 'utg', 'sb', 'lj', 'utg2', 'utg1']
 NODES = {n: PT.ALL_NODES[n] for n in NAMES}
+SRP_NAMES = list(NAMES)
+if JOL:
+    _sel = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data/gto_validation/pilot9/step3/t3_selection.json')))['terminals']
+    NODES.update({t['name']: t['node'] for t in _sel})
+    NAMES = list(NODES)
 ALPHA = 0.5
 MAX_STEPS = 3
 PANEL = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data/gto_hu_continuation/panel_v1.json')
 
 
 def state_dir(k):
-    return R + 'h1/H/' if k == 0 else OL + f's{k}/'
+    if k == 0:
+        return R + ('step3/t3/T/' if JOL else 'h1/H/')
+    return OL + f's{k}/'
 
 
 def tables_dir(k):
-    return R + 'h1/tables_all/' if k == 0 else OL + f's{k}/tables/'
+    if k == 0:
+        return R + ('step3/t3/tables_all/' if JOL else 'h1/tables_all/')
+    return OL + f's{k}/tables/'
 
 
 def combos(h):
@@ -89,6 +100,10 @@ def stratified(vals):
 
 def eff_values(k, n):
     """per-board values whose A4c estimate is the state-k table (tables are linear in board values)"""
+    if k == 0 and JOL:
+        if n in SRP_NAMES:
+            return json.load(open(R + f'ol/s2/eff/{n}.json'))   # T used the OL state-2 SRP tables unchanged
+        return board_values(R + f'step3/t3/{n}/flops')
     if k == 0:
         src = R + ('c2/' if n in ('btn', 'co', 'hj', 'utg') else 'h1/') + n + '/flops'
         return board_values(src)
@@ -156,7 +171,8 @@ def step(k):
     hist.append(worst)
     rep['max_D_over_U_history'] = hist
     if k == 0:
-        rep['decision'] = 'continue: minimum one update (the 4 S-pilot tables were computed at O ranges); stop test applies from step 1'
+        rep['decision'] = ('continue: minimum one update (same rule as OL; the 25 3-bet tables were computed at state-2 ranges); stop test applies from step 1'
+                           if JOL else 'continue: minimum one update (the 4 S-pilot tables were computed at O ranges); stop test applies from step 1')
     elif rep['all_pass']:
         rep['decision'] = 'stop: converged at panel_v1 resolution (value space); state k accepted, state k+1 not solved'
     elif len(hist) >= 3 and hist[-1] > hist[-2] > hist[-3]:
