@@ -46,5 +46,29 @@ B_eq replaces them by pot x equity vs the current range (sensitivity).
 1. Re-key the 33 tables by action line (loader keyed by path instead of node id; identity-checked against mr2).
 2. One mr3 jam-only preflop solve (100 it, ~2-2.5 h, 1.5 GB) with the 33 tables; compare with T. Then run the same pre-registered
    trigger idea on the new tree before any joint OL.
-3. Keep the 2.2x 4-bet (mr3 full) and 5-bet out for now: ~5x the cost and new 4-bet-pot terminals, for a size that 30 bb play
-   mostly replaces by the jam. Record "4-bet = jam only" as the declared abstraction in every DB record.
+3. Keep the 2.2x 4-bet (mr3 full) and 5-bet out for now, on cost / priority grounds only: ~5x the cost and new 4-bet-pot
+   terminals. Whether a non-all-in 4-bet matters at 30 bb is not tested here and is not assumed. Record "4-bet = jam only" as the
+   declared abstraction in every DB record until it is tested.
+
+## 5. Plan J (approved 2026-10-05), pre-registered before any J solve
+States: **T2** = state T (max_raises 2, 33 solved tables; `/home/user/gto_ckpt/step3/t3/T`). **J** = max_raises 3, 4-bet option =
+jam only (`fourbet_mults` 10 -> clamps to the stack), the same 33 tables re-keyed by action line, same seeds / equity samples,
+100 iterations from scratch with checkpoints, no new flop solve.
+
+A. Action-line re-key with an identity gate. Tables are stored keyed by a canonical preflop action line (every action from the root
+   with actor, kind and to-amount) and resolved to node ids of a target tree through that tree's own terminal enumeration
+   (`t2_cont_census`, 0 iterations); the Rust loader is unchanged and still checks node kind, live mask and pot (fail closed).
+   Gate on the mr2 tree, at the T checkpoint: the 33 resolved node ids equal the original ids; every resolved table equals the
+   original table field by field (gross arrays exact); all 33 path exports with the resolved manifest equal the original T exports
+   exactly (every field except the manifest path string). Any difference stops the plan; no tolerance.
+
+B. Shared comparison metric M4 (166 elements): RFI UTG..SB (8); first-in opener jam share of opens (8); on the 25 selected 3-bet
+   paths, the 3-bettor's node facing the open: fold / call / raise / jam (100); the opener's node facing the 3-bet: fold and
+   continue = 1 - fold (50). D4 = max |M4(J) - M4(T2)|, reference R = 4.33 pp (last HU OL residual).
+   D4 > R -> missing-4-bet is a structural effect larger than the previous outer-loop change. D4 <= R does NOT promote the mr2 tree
+   if J shows material 4-bet frequencies.
+   Reported separately (new actions): opener 4-bet-jam frequency on the 25 paths; 3-bettor fold / call vs the 4-bet jam (25 jam paths);
+   hand classes that 4-bet jam. Also: gap / convergence, RFI, 3-bet frequencies, first-in open-jam, selected-terminal reach and
+   coverage (census at J), near-reference comparison.
+
+C. Stop after J. No 33-table joint OL and no 2.2x 4-bet tree without a new decision.
