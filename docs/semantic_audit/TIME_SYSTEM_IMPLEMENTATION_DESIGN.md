@@ -164,3 +164,47 @@ HERO 액션 → /api/step-stream → _step() (엔진 즉시 계산)
 - 블라인드 20레벨 상한(TS-1) — 고친 뒤 final-table 타이밍 재검산.
 - 타임뱅크 충전 — 분포를 본 뒤.
 - 사람 여러 명이 한 대회에 있는 경우의 전역 보충 예약 — 지금은 HERO 한 명 경로뿐(TIME_SYSTEM_DESIGN §I-5).
+
+## 11. T1~T4 구현·검증 기록 (2026-10-05)
+
+| 단계 | 커밋 | 내용 | 검증 |
+|---|---|---|---|
+| T1 | `5e60185c` | `timing.py` 순수 모듈. 시뮬이 이 모듈을 씀 | 같은 trace 에서 K.5·K.7 결과 완전 재현 |
+| T2 | `e7ccb6c6` | 결정 경계 기록(`pf_timing`, `_last_response_boundary`), `persona.concept_tap` | R2 다이제스트 불변. `verify_timing_provenance`: 프리플랍 3,475·포스트플랍 응답 396 결정 불일치 0 |
+| T3 | `d1270ba8`, `eefcf66c`, `a2d855f1` | HandRun 봇 시계(사람과 같은 타임아웃), pid 뱅크, `T2_TIMING_V1=off/record/enforce`(기본 off) | `verify_timing_strategy_invariance` 통과(아래) |
+| T4 | `d1270ba8`, `15ffa046` | 뱅크 저장·병렬 작업·vclock 이벤트 전달, `_vclock_hand_seconds_v2`, 설치 모듈 목록에 timing 추가 | 기존 검증기 통과 + enforce 모드 vclock 검증 + 측정(아래) |
+
+**T3 전략 불변 검증**(`tools/verify_timing_strategy_invariance.py`):
+- off vs record: R2 시드 11·12 다이제스트 동일, realistic 짧은 완주 다이제스트 동일.
+- `T2_TIMING_TEST_BASE`(테스트 전용 기본초 덮어쓰기)는 `fieldsim._timing_ctx` 한 곳에서만 읽고, 시간 규칙이 off 면
+  그 전에 반환한다. env 를 켜고 off 로 돌린 R2 다이제스트가 off 와 같다.
+- 기본 3초 강제(타임아웃 경로 실제 실행): 5,082결정 중 타임아웃 64건, 규칙 위반 0(체크 가능 → 체크, 아니면 폴드).
+  첫 타임아웃 핸드(115번째) 전까지 record 와 핸드 기록 완전 동일, 그 핸드 안에서도 타임아웃 결정까지
+  결정별 RNG 상태 지문·좌석·뱅크 동일. 뱅크 음수 0.
+
+**기존 검증기**(시간 규칙 off): `verify_parallel_tables`, `verify_parallel_table_processes`, `verify_vclock_session`,
+`verify_vclock_finish_ownership`, `verify_book_save_compact`, `verify_personal_installation` 통과.
+`verify_vclock_finish_ownership` 은 처음에 `timing` 모듈이 설치 목록(`ui/tools/setup_run_dir.py/.sh`)에 없어
+실패했다 — 설치본도 같은 이유로 실패했을 것이라 목록에 추가했다(`15ffa046`).
+enforce 모드에서도 `verify_vclock_session` 통과. 탐침: vclock 이벤트 92개 모두 뱅크를 싣고, 다음 청크 필드와
+`apply_vclock_events` 확정까지 52명 뱅크가 전달된다.
+
+**T4 측정**(enforce, realistic 90명 × 3시드 완주, 3,536핸드 / 39,011 봇 결정, STRICT errors 0) —
+`evidence/TIMING_T4_RUNTIME.json`, 그림 `docs/beta/timing_t4_runtime.png`. 파라미터는 바꾸지 않았다.
+
+| 항목 | 값 |
+|---|---|
+| 핸드당 시간(가상 테이블, 같은 핸드) | 지금 고정비용 47.4초(중앙 41.8, 90% 77.6) → v2 37.8초(중앙 32.8, 90% 67.3) |
+| 테이블당 시간당 핸드 | **75.9 → 95.2 (+25%)** — early_mid 71.0 → 88.7, bubble 93.2 → 120.4, itm 97.2 → 126.2, final 146.2 → 196.8 |
+| 타임아웃 | 7건 / 39,011 결정(0.18‰). 느린형 5, 숨기는형 1, 시계사용형 1, 일반형·충동형 0. 7건 모두 뱅크가 남은 상태에서 한 결정이 base+bank 를 넘은 경우(그 결정으로 뱅크 0). 엔진 행동이 폴드 5(결과 동일), **콜 2(폴드로 바뀜)** |
+| 타임뱅크 | 270명 중 마지막 결정 시점 뱅크 < 60초 71명, 0초 7명. 결정 시점 뱅크 0 인 결정 0.35% |
+| K(실제 concept) | 결정당 조회 concept 평균 14.6개. K 평균 0.58(중앙 0.58, 90% 0.77) — v1 검증의 U(0.3,0.95)(평균 0.625)보다 좁고 약간 낮다 |
+| 일반형 생각 시간 | 전체 평균 1.5초(90% 2.9), 어려운 올인 평균 **18.7초**(중앙 15.5, 90% 30.6, n 44), 명백한 올인 1.1초 |
+| 느린형 | 어려운 올인 35.1초(n 17), 뱅크 사용 9.3초/시간 |
+
+해석 재료(결정 아님):
+- 시간당 핸드 증가는 쉬운 결정(대부분)이 지금 고정비용(액션당 1.5~5.5초 ×1.2125)보다 짧게 끝나기 때문이다
+  (일반형 결정 평균 1.5초). 어려운 결정만 길어진다.
+- 일반형 어려운 올인 평균이 v1 검증(21.4초)보다 낮은 18.7초다. K 가 실제 concept 값으로 바뀐 영향으로 보인다
+  (근거: 다른 입력은 같고 K 분포만 바뀌었다). 표본 44건.
+- 사람 있는 테이블(real) 핸드 시간은 T5·T6 이후 측정한다. 지금 측정은 전부 가상 테이블이다.
