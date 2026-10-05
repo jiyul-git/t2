@@ -25,7 +25,8 @@ def verify():
         installation = Path(tmp) / 'T2'
         run = installation / 'system'
         data = installation / 'personal'
-        env = dict(os.environ, T2_INITIAL_CHIPS='10000',
+        # 즉시 행동하는 흐름 검증이라 시간 규칙(봇 예정표·딜 7.5초 대기)을 끈다. 시간 규칙 ON 은 verify_timing_clock.
+        env = dict(os.environ, T2_INITIAL_CHIPS='10000', T2_TIMING_V1='off',
                    T2_UI_DEFER=os.environ.get('T2_VERIFY_SCHEDULE_DEFER', '0'),
                    T2_TELEMETRY='0', T2_HERO_ACTION_SECONDS='3')
         env.pop('T2_DATA_DIR', None)

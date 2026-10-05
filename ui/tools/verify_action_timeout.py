@@ -8,7 +8,8 @@ with tempfile.TemporaryDirectory(prefix='t2_action_clock_') as td:
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         port = sock.getsockname()[1]
-    env = dict(os.environ, T2_UI_DEFER='0', T2_HERO_ACTION_SECONDS='1')
+    # 예전 고정 HERO 시계(fallback 경로) 검증이라 시간 규칙을 끈다. 시간 규칙 ON 은 verify_timing_clock.
+    env = dict(os.environ, T2_UI_DEFER='0', T2_HERO_ACTION_SECONDS='1', T2_TIMING_V1='off')
     proc = subprocess.Popen([sys.executable, 'ui_server.py', '--port', str(port)],
                             cwd=td, env=env, stdout=subprocess.DEVNULL,
                             stderr=subprocess.PIPE)

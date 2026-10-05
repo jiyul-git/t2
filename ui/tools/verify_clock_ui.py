@@ -60,7 +60,7 @@ with tempfile.TemporaryDirectory(prefix='t2_clock_') as td:
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     proc=subprocess.Popen([sys.executable,'ui_server.py','--port',str(port)],cwd=td,
-        env=dict(os.environ,T2_UI_DEFER='0'),stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+        env=dict(os.environ,T2_UI_DEFER='0',T2_TIMING_V1='off'),stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
     def request(path,body=None):
         req=urllib.request.Request(f'http://127.0.0.1:{port}'+path,
             data=None if body is None else json.dumps(body).encode(),headers={'Content-Type':'application/json'})

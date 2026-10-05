@@ -253,7 +253,8 @@ def _parallel_tables_runner(f, plan):
         if r.get('time_banks'):
             if not hasattr(f, 'time_banks'):
                 f.time_banks = {}
-            f.time_banks.update({int(k): float(v) for k, v in r['time_banks'].items()})
+            f.time_banks.update({int(k): (list(v) if isinstance(v, (list, tuple)) else float(v))
+                                 for k, v in r['time_banks'].items()})
         f.tables[int(r['tid'])] = _restore_table(
             f, r['tid'], r['table'], base.get('blind_state'))
         for pid, t in r['tilt'].items():
