@@ -127,6 +127,11 @@ async def browser_client():
     return FileResponse(Path(__file__).with_name("play.html"))
 
 
+@app.get("/duo")
+async def duo_browser_client():
+    return FileResponse(Path(__file__).with_name("duo.html"))
+
+
 @app.get("/health")
 async def health() -> dict[str, Any]:
     return {
