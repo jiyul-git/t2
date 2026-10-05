@@ -39,5 +39,14 @@ jobs:
           T2_VERIFY_SCHEDULE_BOTS: '10'
           T2_VERIFY_SCHEDULE_DEFER: '1'
         run: python3 ui/tools/verify_scheduled_ui.py
+      - name: Real-size 99-player late admission catch-up
+        env:
+          T2_VERIFY_SCHEDULE_BOTS: '99'
+          T2_VERIFY_SCHEDULE_DEFER: '0'
+          T2_VERIFY_SCHEDULE_LATE: '1'
+          T2_VERIFY_SCHEDULE_LATE_SECONDS: '3300'
+          T2_VERIFY_SCHEDULE_TIMING: 'enforce'
+          T2_SCHEDULE_ADMISSION_BUDGET: '256'
+        run: python3 ui/tools/verify_scheduled_ui.py
       - name: Existing UI smoke check
         run: python3 ui/tools/verify_ui.py --hands 6 --entries 18 --seed 20260920 --port 8799

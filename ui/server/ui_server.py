@@ -99,7 +99,17 @@ def _managed_play_state():
                 st.get('background_seconds', 0) + 2 < _SR._enter_time(ev))):
         if not ev['enter_requested']:
             ECONOMY.request_enter(tid)
-        return {'waiting': True, 'message': '참가가 접수되었습니다. 대회 진행을 확인한 뒤 자동으로 입장합니다.',
+            ev = ECONOMY.event(tid)
+        target = float(_SR._enter_time(ev))
+        done = float((st or {}).get('background_seconds', 0) or 0)
+        if target > 1:
+            pct = max(0, min(99, int(done * 100 / target)))
+            message = '참가가 접수되었습니다. 대회 진행 동기화 중 %d%% — 완료 후 자동으로 입장합니다.' % pct
+        else:
+            pct = 0
+            message = '참가가 접수되었습니다. 다음 완료 핸드에 자동으로 입장합니다.'
+        return {'waiting': True, 'message': message, 'sync_progress': pct,
+                'sync_seconds': done, 'sync_target_seconds': target,
                 **_economy_receipt(st)}
     L.STATE_STORE = ECONOMY
     if st.get('offscreen'):
@@ -214,7 +224,19 @@ def _schedule_tick():
         SCHEDULE_CURSOR += 1
         if SCHEDULE_POOL is None:
             SCHEDULE_POOL = ProcessPoolExecutor(max_workers=1)
-        SCHEDULE_FUTURE = SCHEDULE_POOL.submit(_SR.advance, ev, target)
+        # A newly selected late admission may have to catch a 99/179-player
+        # field up from tournament start.  The normal budget=18 plus the 1s
+        # publisher cadence creates tens of seconds of artificial idle time
+        # between otherwise independent worker batches.  Keep normal background
+        # work conservative, but batch the actively-waiting admission much more
+        # aggressively; the worker still returns one deterministic snapshot and
+        # only this publisher commits it.
+        active_wait = (ev['id'] == tid and
+                       (ev.get('enter_requested') or any(
+                           e['status'] in ('reserved', 'waiting') for e in ev['entries'])))
+        budget = (max(18, int(os.environ.get('T2_SCHEDULE_ADMISSION_BUDGET', '256')))
+                  if active_wait else 18)
+        SCHEDULE_FUTURE = SCHEDULE_POOL.submit(_SR.advance, ev, target, budget=budget)
 
 
 def _schedule_loop():

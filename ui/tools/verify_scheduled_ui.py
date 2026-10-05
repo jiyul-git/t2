@@ -99,8 +99,9 @@ def verify():
                 # Its paid admission must survive catching up, not return 409.
                 with sqlite3.connect(data / 'tournaments.sqlite3') as db:
                     now = time.time()
+                    late_age = float(os.environ.get('T2_VERIFY_SCHEDULE_LATE_SECONDS', '30'))
                     db.execute('UPDATE tournaments SET starts_at=?,closes_at=? WHERE id=?',
-                               (now - 30, now + 600, tid))
+                               (now - late_age, now + 600, tid))
             for _ in range(3):
                 code, reply = call('/api/register', {'tournament_id': tid,
                                                      'buyin': 1, 'payout': 999999})
