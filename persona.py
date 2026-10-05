@@ -540,6 +540,12 @@ ALIAS = {'cbet':'cbet_flop', 'barrel':'barrel_turn', 'checkraise':'checkraise_fl
          # 플랍 얇은 밸류(중간 강도 머징)도 의미 이름을 분리하되, 기존 프로필은
          # 전용 prior 가 없으므로 range_merge 로 fallback 한다(행동 동일).
          'thin_value_flop':'range_merge',
+         # 프리플랍 3벳 판단 숙련도 의미 이름. 전용 prior 가 없어 기존 proxy 인
+         # pf_defend 로 fallback 한다(행동 동일). 관찰 통계 'pf_3bet'(reads)과는 다른 이름.
+         'pf_threebet':'pf_defend',
+         # 림프 이론 지식 / 아이솔 레이즈 판단 숙련 의미 이름. 전용 prior 가 없어
+         # 기존 공급원인 RFI 차트 기억(pf_range)으로 fallback 한다(행동 동일).
+         'limp_theory':'pf_range', 'iso_raise':'pf_range',
          'thin_value':'thin_value_turn'}
 
 def street_concept(base, street):
@@ -661,9 +667,14 @@ GTO_STUDIED = {
 }
 
 
+def concept_knowledge(prof, concept):
+    """개념 숙련도 → 기억/지식 정확도 0.10~0.90 (gto_knowledge 와 같은 식)."""
+    return 0.10 + 0.80 * min(1.0, sk(prof, concept) / 8.0)
+
+
 def gto_knowledge(prof, family):
     """차트 family 의 기억 정확도 0.10~0.90. 기존 acc 식 그대로."""
-    return 0.10 + 0.80 * min(1.0, sk(prof, GTO_FAMILY_CONCEPT[family]) / 8.0)
+    return concept_knowledge(prof, GTO_FAMILY_CONCEPT[family])
 
 
 def _pos_equiv(pos, seats, seats_to):
@@ -902,13 +913,13 @@ def traits_of(prof):
     return {
       'limp': max(0.0, min(0.6, 0.02 + 0.055*(loose-4) - 0.035*(a-4) - 0.02*(disc-5))),
       'iso':  max(0.03, min(0.95, 0.55*(a/5.0)**1.15)),   # 곱셈형: 소극적인 사람은 이소를 거의 안 한다
-      # 3벳 성향의 숙련 입력: 현존 개념 중 가장 가까운 proxy 인 pf_defend
-      # (디펜스 차트 기억 / 상위 레이즈 / 콜 gate 가 섞인 개념)를 쓴다. 전용
-      # 3벳 숙련이 아니다 — 독립 3벳 숙련과 solved 3벳 prior 는 없다
-      # (MISSING_INDEPENDENT_3BET_SKILL/PRIOR). 예전에는 포스트플랍 블러프
+      # 3벳 성향의 숙련 입력: 의미 이름 pf_threebet(3벳 판단 숙련). 기존 생성
+      # 프로필에는 전용 키가 없어 가장 가까운 proxy 인 pf_defend 로 fallback 한다
+      # (ALIAS, 행동 동일). 독립 solved 3벳 prior 는 없다
+      # (MISSING_INDEPENDENT_3BET_PRIOR). 예전에는 포스트플랍 블러프
       # 능력(bluff, flop~river)을 그대로 써서 다른 질문의 능력이 프리플랍 3벳 폭
       # (핫존 리쇼브 폭, 관찰자 3벳 레인지)을 바꿨다. 계수는 그대로(stage9 closeout A2).
-      'threebet': max(.005, .009*a + .006*sk(prof,'pf_defend') + .004*(loose-4)),
+      'threebet': max(.005, .009*a + .006*sk(prof,'pf_threebet') + .004*(loose-4)),
       'sqz': 0.4 + 0.13*a,
       'call': max(.02, .022*loose + .018*g - .012*a),
       'shove_add': .008*g,

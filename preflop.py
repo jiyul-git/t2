@@ -175,11 +175,12 @@ def crude_edge(prof):
 def limp_theory_knowledge(prof):
     """숏스택 이론형 림프를 아는 정도 0.10~0.90 (개념 벡터 없으면 0.5).
 
-    별도 림프 지식 개념이 없어 RFI 차트 기억(gto_knowledge('rfi'))을 그대로
-    공급한다(ledger L064 — 공급 공유는 유지, 역할만 명명). limp_p 호출부는
-    seats/bb/ante 를 넘기지 않아 condition match 를 잴 수 없으므로 knowledge 만 쓴다.
+    의미 이름은 limp_theory. 전용 prior 가 없어 기존 생성 프로필은 RFI 차트
+    기억(pf_range)으로 fallback 한다(ALIAS, ledger L064 — 공급 공유 유지, 값 동일).
+    limp_p 호출부는 seats/bb/ante 를 넘기지 않아 condition match 를 잴 수 없으므로
+    knowledge 만 쓴다.
     """
-    return PS.gto_knowledge(prof, 'rfi') if prof.get('concepts') else 0.5
+    return PS.concept_knowledge(prof, 'limp_theory') if prof.get('concepts') else 0.5
 
 
 def theory_limp_hand(hand):
@@ -1341,14 +1342,27 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         audit['fair_share_3way'] = audit.get('fair_share')
     return act, sz, audit
 
+def _iso_skill_view(prof):
+    """아이솔 폭 파생용 프로필: 명시 iso_raise 가 있을 때만 RFI 기억 입력을 대체."""
+    c = prof.get('concepts') if isinstance(prof, dict) else None
+    if not c or 'iso_raise' not in c:
+        return prof
+    view = dict(prof)
+    view['concepts'] = dict(c)
+    view['concepts']['pf_range'] = c['iso_raise']
+    return view
+
+
 def iso_entry_threshold(prof, pos, bb, seats, ante, traits, behind_reads,
                         behind_stacks):
     """림퍼 상대 아이솔레이트 레인지 폭(림퍼 읽기 반영 전).
 
     독립 iso prior 가 없어 오픈 폭에 iso 성향 배수를 곱해 파생한다(ledger L068,
     R2: MISSING_KNOWLEDGE). 뒤 3벳/리쇼브 위협은 오픈과 같은 압력 함수.
+    판단 숙련 의미 이름은 iso_raise. 명시 값이 있으면 폭 파생의 차트 기억 입력을
+    iso_raise 로 바꿔 읽고, 없으면 기존 RFI 차트 기억(pf_range) 그대로다.
     """
-    return (_open(prof, pos, seats, bb, ante)
+    return (_open(_iso_skill_view(prof), pos, seats, bb, ante)
             * (1.0 + 0.35*traits['iso'])
             * table_pressure(behind_reads)
             * hotzone_pressure(prof, pos, bb, behind_stacks or []))
