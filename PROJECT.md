@@ -151,13 +151,20 @@ master promotion
 기존 test의 개념 분리 변경을 보존했다. 운영값은 임시이며 정식 서버/master에는 아직 반영하지 않았다.
 근거: [예약 대회 V1](docs/semantic_audit/SCHEDULED_TOURNAMENTS_V1.md).
 
-**2026-10-05 개인 지갑 설치/업데이트 분리 (test 후속)**: `257ca01` 위에서 최초 설치는
+**2026-10-05 개인 지갑 설치/업데이트 분리 (test 후속)**: 예약 대회 V1 위에서 최초 설치는
 `system` + `personal` 생성, 업데이트는 `system`만 복사하도록 분리했다. 지갑 DB는 패키지에
 넣지 않고 최초 설치 시 로컬에서 한 번 생성한다. 시스템 폴더 전체 삭제 후 복원에도 지갑·원장·
 참가·대회 상태를 유지한다. 기존 지갑/연결 정보를 잃거나 손상된 경우 새 초기 지급으로 넘어가지
 않고 중단하며, 과거 `userdata`는 명시적인 이전만 허용한다. 실제 ZIP 설치 검증 23개와
-경제 검증 27개를 통과했다. 로컬 test 변경이며 원격/master/운영 서버 배포는 아직 하지 않았다.
+경제 검증 27개를 통과했다. test 검증본이며 정식 master/운영 서버 배포는 아직 하지 않았다.
 실행/업데이트 명령: [UI 설치 안내](ui/README.md#개인-지갑을-분리한-설치와-업데이트-test-2026-10-05).
+
+**2026-10-05 최신 test 통합**: 원격 `d235743a`의 인간모델 분리/시간 설계 5개 커밋 위에
+예약 대회(`4bc1d34`)와 개인 설치 분리(`28818d3`)를 통합했다. 원격용 개인 설치
+커밋은 이전 로컬 `aef0dbb`/리베이스 후 `bfe2fb4`와 파일 내용이 같다. 원격에서 추가된 15개 파일은 바이트 단위로
+그대로 유지했다. 설치 23개, 경제 27개, 인간모델 분리 검증 4개, 18명/6핸드 UI smoke와
+2테이블 실제 HTTP 검증을 다시 통과했다. 시간 설계 후보를 운영 타이머 코드로 적용한 변경은 없다.
+통합 검증 기록: [PERSONAL_INSTALLATION_V1.json](docs/semantic_audit/evidence/PERSONAL_INSTALLATION_V1.json).
 
 **2026-10-03 master 승격**: 인간형 모델 감사·통합 Stage 0~11 과 베타 전 버그 수정 3건을 master 로 승격했다. 이 시점이 새 본체 기준선이다.
 - 본체 + Human Model 2차/3차가 하나의 실행 경로로 통합됐다. GTO 의존 두 플래그(`T2_GTO_MEMORY_V2`, `T2_PREFLOP_REASONING_V3`)는 production OFF 이고 BLOCKED_BY_GTO_REFERENCE_VALIDATION 이다.

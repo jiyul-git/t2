@@ -1,12 +1,12 @@
 {
   "date": "2026-10-05",
   "branch": "test",
-  "base_commit": "257ca01583ead1ffbcb857fa445955620d296b66",
+  "base_commit": "4bc1d34cdca2973f4bd411e2e9e822bdc1acb888",
   "scope": "Separate first installation and system-only updates from personal wallet storage",
   "personal_installation_tests": {
     "passed": 23,
     "failed": 0,
-    "seconds": 5.303,
+    "seconds": 6.155,
     "cases": [
       "test_both_runtime_helpers_can_copy_a_legacy_ref_without_wallet_modules",
       "test_corrupt_binding_is_preserved_and_refused",
@@ -36,7 +36,7 @@
   "scheduled_economy_tests": {
     "passed": 27,
     "failed": 0,
-    "seconds": 2.567
+    "seconds": 5.641
   },
   "scheduled_http": {
     "status": "PASS",
@@ -79,7 +79,39 @@
   "limits": [
     "single HERO account",
     "stop server before updating or migrating",
-    "local test work; not pushed, promoted to master or deployed",
+    "test verification; no master promotion or production deploy",
     "mobile visual inspection not performed"
-  ]
+  ],
+  "original_local_base_commit": "257ca01583ead1ffbcb857fa445955620d296b66",
+  "remote_integration": {
+    "remote_base_commit": "d235743a002ef34eba0f5fb080853859f27d0e78",
+    "feature_code_checkpoint": "28818d30768db62187eaec840625710859df59d8",
+    "commit_mapping": {
+      "257ca01": "4bc1d34cdca2973f4bd411e2e9e822bdc1acb888",
+      "daa94d6": "4bc1d34cdca2973f4bd411e2e9e822bdc1acb888",
+      "aef0dbb": "28818d30768db62187eaec840625710859df59d8",
+      "bfe2fb4": "28818d30768db62187eaec840625710859df59d8"
+    },
+    "remote_commits_preserved": 5,
+    "remote_changed_files_preserved_byte_for_byte": 15,
+    "remote_split_verifiers": {
+      "thin_value_flop": "PASS",
+      "preflop_threebet": "PASS",
+      "limp_iso": "PASS",
+      "range_read": "PASS"
+    },
+    "existing_ui_smoke": {
+      "hands": 6,
+      "decisions": 28,
+      "showdowns": 5,
+      "chip_bad": 0,
+      "slot_bad": 0,
+      "legal_violations": 0,
+      "stream_events": 9
+    },
+    "force_push_used": false,
+    "verified_local_code_checkpoint": "bfe2fb45905ef854830caa0d5edb6be410a61ecf",
+    "publishing_method": "Connected GitHub: exact Git trees, commits on existing test parent, force=false ref update",
+    "uploaded_git_trees_equal_verified_local_trees": true
+  }
 }
