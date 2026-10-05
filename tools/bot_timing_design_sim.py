@@ -79,7 +79,7 @@ def visible_time(t, sp, K, rng, B=None, G=None):
     commit 은 독립 난이도가 아니다: commit_effect = commit × c(결정 근접도).
     명백한 올인(c≈0)은 커밋이 커도 빠르게 남는다.
     """
-    c, s, m, trivial, commit = sp
+    c, s, m, trivial, commit = sp[:5]
     B = AMP_B if B is None else B
     G = AMP_G if G is None else G
     D_c = 0.60 * c * (0.55 + 0.45 * K)          # 근접도: 몰라도 어느 정도 느낌
@@ -94,12 +94,29 @@ def visible_time(t, sp, K, rng, B=None, G=None):
     return max(reasoning, hold) * jitter, P
 
 
-def main():
-    trace = json.load(open(sys.argv[1]))
-    rng = random.Random(20261005)
-    spots = []
+def _depth(effbb):
+    return ('<20bb' if effbb < 20 else '20-30bb' if effbb < 30 else
+            '30-50bb' if effbb < 50 else '>=50bb')
+
+
+def _phase(stg):
+    if not stg:
+        return 'unknown'
+    r, itm = stg['remaining'], stg['itm']
+    if r <= itm:
+        return 'itm'
+    if r <= itm * 1.20:                          # field.Field.BUBBLE_HI
+        return 'bubble'
+    return 'pre_bubble'
+
+
+def load_spots(trace):
+    """(c, s, m, trivial, commit, depth, phase) — 포스트플랍 먼저, 그다음 프리플랍."""
+    stage = trace.get('stage') or {}
+    post, pre = [], []
     for h in trace['hands']:
         bb = float(h.get('bb') or 100.0)
+        ph = _phase(stage.get(h.get('hash')))
         for i in h['intents']:
             st_ = {'flop': 0.33, 'turn': 0.67, 'river': 1.0}.get(i.get('street'), 0.5)
             bf = float(i.get('bf') or 1.0)
@@ -119,14 +136,26 @@ def main():
                 c = c_choice(float(eq))
                 s = 0.6 * st_
                 commit = min(1.0, float(i.get('calc_amt') or i.get('amt') or 0.0) / eff)
-            spots.append((c, s, m, False, commit))
-    n_post = len(spots)
+            post.append((c, s, m, False, commit, _depth(eff / bb), ph))
     for p in trace['pf']:
         c, triv = c_preflop(p)
         s = 0.3 * min(1.0, (int(p.get('rlevel') or 1) - 1) / 2.0)
         sd = p['seed']
-        commit = min(1.0, float(sd.get('pf_to_call_bb') or 0.0) / max(1.0, float(sd.get('pf_stack_bb') or p.get('bbs') or 100.0)))
-        spots.append((c, s, 0.0, triv, commit))
+        stk = float(sd.get('pf_stack_bb') or p.get('bbs') or 100.0)
+        commit = min(1.0, float(sd.get('pf_to_call_bb') or 0.0) / max(1.0, stk))
+        pre.append((c, s, 0.0, triv, commit, _depth(stk), _phase(stage.get(p.get('hash')))))
+    return post, pre
+
+
+def main():
+    if sys.argv[1] == '--stages':
+        return stage_main(sys.argv[2:])
+    trace = json.load(open(sys.argv[1]))
+    rng = random.Random(20261005)
+    post, pre = load_spots(trace)
+    spots = [sp[:5] for sp in post]
+    n_post = len(spots)
+    spots += [sp[:5] for sp in pre]
     n_dec = len(spots)
 
     rng0 = random.Random(20261005)
@@ -292,6 +321,111 @@ def main():
         fig.tight_layout()
         fig.savefig(sys.argv[2], dpi=110)
 
+
+
+def population(n=1000, seed=20261005):
+    rng0 = random.Random(seed)
+    players = []
+    for _ in range(n):                          # 모집단 감사 상한 1000명
+        t = make_traits(rng0)
+        t['K'] = rng0.uniform(0.3, 0.95)
+        t['kind'] = kind(t)
+        players.append(t)
+    return players
+
+
+def stage_main(args):
+    """후반 실제 상태 추적으로 단계별 측정.  --stages OUT.json[.png] TRACE...  """
+    out_path, paths = args[0], args[1:]
+    post, pre = [], []
+    for pth in paths:
+        a, b = load_spots(json.load(open(pth)))
+        post += a; pre += b
+    allsp = post + pre
+    players = population()
+    tank_p90 = sorted(t['tank'] for t in players)[int(0.9 * (len(players) - 1))]
+    q = lambda a, x: sorted(a)[int(x * (len(a) - 1))] if a else None
+    mean = lambda a: round(st.mean(a), 1) if a else None
+
+    # 실제 스팟 그대로(구성 없음)
+    hard_post = [sp for sp in post if sp[0] >= 0.7 and sp[4] >= 0.5]
+    hard_pre = [sp for sp in pre if sp[0] >= 0.7 and sp[4] >= 0.5]
+    hard_allin = hard_post + hard_pre
+    obvious_allin = [sp for sp in post + pre if sp[0] <= 0.1 and sp[4] >= 0.5]
+
+    def allin_eval(B, G, n=12):
+        rng = random.Random(5)
+        hk, ok, top = {}, {}, []
+        for t in players:
+            for _ in range(n):
+                v = visible_time(t, hard_allin[rng.randrange(len(hard_allin))], t['K'], rng, B, G)[0]
+                hk.setdefault(t['kind'], []).append(v)
+                if t['tank'] >= tank_p90:
+                    top.append(v)
+                ok.setdefault(t['kind'], []).append(
+                    visible_time(t, obvious_allin[rng.randrange(len(obvious_allin))], t['K'], rng, B, G)[0])
+        return hk, ok, top
+
+    grid = []
+    for G in (1.0, 1.5):
+        for B in (2.0, 3.0, 4.0, 5.0, 6.0, 8.0):
+            hk, ok, top = allin_eval(B, G)
+            grid.append({'B': B, 'G': G, 'normal_hard_allin_mean': mean(hk['일반형']),
+                         'normal_hard_allin_p90': round(q(hk['일반형'], .9), 1),
+                         'top10_tank_mean': mean(top), 'top10_tank_p50': round(q(top, .5), 1),
+                         'normal_obvious_allin_mean': mean(ok['일반형']),
+                         'slow_hard_allin_mean': mean(hk['느린형']),
+                         'impulsive_hard_allin_mean': mean(hk['충동형'])})
+
+    def in_target(g):
+        return 20 <= g['normal_hard_allin_mean'] <= 24 and 30 <= g['top10_tank_mean'] <= 40
+
+    # 단계 구분: 깊이 × (버블 전 / 버블 / ITM)
+    buckets = {}
+    for sp in allsp:
+        buckets.setdefault(('depth', sp[5]), []).append(sp)
+        buckets.setdefault(('phase', sp[6]), []).append(sp)
+        if sp[6] == 'pre_bubble':
+            buckets.setdefault(('pre_bubble_depth', sp[5]), []).append(sp)
+    buckets[('all', 'all')] = allsp
+
+    def tb_hour(B, G, pool, hours=4):
+        rng = random.Random(11)
+        res = {}
+        for t in players:
+            over = 0.0
+            for _ in range(hours * HOUR_DECISIONS):
+                v = visible_time(t, pool[rng.randrange(len(pool))], t['K'], rng, B, G)[0]
+                over += max(0.0, v - BASE)
+            res.setdefault(t['kind'], []).append(over / hours)
+        return {k: {'mean': mean(v), 'p50': round(q(v, .5), 1), 'p90': round(q(v, .9), 1)}
+                for k, v in sorted(res.items())}
+
+    tb = {}
+    for B in (3.0, 4.0, 5.0):
+        for key, pool in sorted(buckets.items()):
+            if len(pool) < 200:
+                continue
+            tb.setdefault('B%g' % B, {})['%s:%s' % key] = tb_hour(B, 1.0, pool)
+
+    counts = {}
+    for key, pool in sorted(buckets.items()):
+        n = len(pool)
+        ha = sum(1 for sp in pool if sp[0] >= 0.7 and sp[4] >= 0.5)
+        counts['%s:%s' % key] = {
+            'decisions': n,
+            'hard_allin': ha,
+            'hard_allin_per_hour': round(HOUR_DECISIONS * ha / n, 2) if n else None,
+            'commit>=0.5_share_pct': round(100 * sum(1 for sp in pool if sp[4] >= 0.5) / n, 1) if n else None,
+        }
+    out = {'traces': paths, 'postflop': len(post), 'preflop': len(pre),
+           'real_hard_allin_spots': len(hard_allin), 'real_hard_allin_post_pre': [len(hard_post), len(hard_pre)], 'real_obvious_allin_spots': len(obvious_allin),
+           'bucket_counts': counts, 'allin_grid': grid,
+           'grid_in_target': [g for g in grid if in_target(g)], 'tb_per_hour': tb}
+    json.dump(out, open(out_path, 'w'), indent=1, ensure_ascii=False)
+    print(json.dumps({k: out[k] for k in ('postflop', 'preflop', 'real_hard_allin_spots',
+                                          'real_obvious_allin_spots', 'grid_in_target')},
+                     indent=1, ensure_ascii=False))
 
 if __name__ == '__main__':
     main()
