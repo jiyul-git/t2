@@ -15,6 +15,9 @@ import gto as G
 
 BASE = 18.0          # 사용자 결정: 일반 MTT 기본 액션 18초
 BANK0 = 60.0         # 사용자 결정: 시작 타임뱅크 60초, 충전 없음
+HOUR_DECISIONS = 110  # 약 70핸드/시간 × 1.57 결정/플레이어-핸드
+AMP_B = 1.0          # 커밋 증폭 계수(후보) — main 의 격자 탐색으로 정한다
+AMP_G = 1.0
 
 
 # ---------- 상황 근거 → 근접도 c (0 쉬움 ~ 1 아슬아슬) ----------
@@ -70,11 +73,20 @@ def kind(t):
 
 
 # ---------- 공식 ----------
-def visible_time(t, c, s, m, K, trivial, rng):
+def visible_time(t, sp, K, rng, B=None, G=None):
+    """sp = (c, s, m, trivial, commit).
+
+    commit 은 독립 난이도가 아니다: commit_effect = commit × c(결정 근접도).
+    명백한 올인(c≈0)은 커밋이 커도 빠르게 남는다.
+    """
+    c, s, m, trivial, commit = sp
+    B = AMP_B if B is None else B
+    G = AMP_G if G is None else G
     D_c = 0.60 * c * (0.55 + 0.45 * K)          # 근접도: 몰라도 어느 정도 느낌
     D_o = K * (0.25 * s + 0.15 * m)             # 구조·돈 압박: 알아야 느낌
     P = min(1.0, D_c + D_o)
-    reasoning = t['pace'] * (0.6 + 11.0 * t['tank'] * P ** 1.6)
+    effect = commit * c                         # commit_pressure × decision_closeness
+    reasoning = t['pace'] * (0.6 + 11.0 * t['tank'] * P ** 1.6) * (1.0 + B * effect ** G)
     hold = max(t['mask'] * 6.0, t['clock'] * BASE)
     if trivial:
         hold *= 0.3                              # 쓰레기 패 즉시 폴드는 숨길 이유가 적다
@@ -87,106 +99,196 @@ def main():
     rng = random.Random(20261005)
     spots = []
     for h in trace['hands']:
+        bb = float(h.get('bb') or 100.0)
         for i in h['intents']:
             st_ = {'flop': 0.33, 'turn': 0.67, 'river': 1.0}.get(i.get('street'), 0.5)
             bf = float(i.get('bf') or 1.0)
             m = max(0.0, min(1.0, (bf - 1.0) / 0.6))
+            stack = float(i.get('stack') or 0.0)
+            opp = i.get('opp_stack_bbs')
+            opp_c = (max([float(x) for x in opp.values()]) * bb) if isinstance(opp, dict) and opp else stack
+            eff = max(1.0, min(stack, opp_c))
             if i.get('resp_eq') is not None and i.get('resp_need') is not None:
                 c = c_facing(i['resp_eq'], i['resp_need'])
                 s = min(1.0, 0.6 * st_ + 0.4)
+                commit = min(1.0, float(i.get('tocall') or 0.0) / eff)
             else:
                 eq = i.get('eq')
                 if eq is None:
                     continue
                 c = c_choice(float(eq))
                 s = 0.6 * st_
-            spots.append((c, s, m, False))
+                commit = min(1.0, float(i.get('calc_amt') or i.get('amt') or 0.0) / eff)
+            spots.append((c, s, m, False, commit))
     n_post = len(spots)
     for p in trace['pf']:
         c, triv = c_preflop(p)
         s = 0.3 * min(1.0, (int(p.get('rlevel') or 1) - 1) / 2.0)
-        spots.append((c, s, 0.0, triv))
+        sd = p['seed']
+        commit = min(1.0, float(sd.get('pf_to_call_bb') or 0.0) / max(1.0, float(sd.get('pf_stack_bb') or p.get('bbs') or 100.0)))
+        spots.append((c, s, 0.0, triv, commit))
     n_dec = len(spots)
-    per_hand = n_dec / max(1, len(trace['hands'])) / 8.0
 
-    players = [make_traits(rng) for _ in range(400)]
-    by = {}
-    corr = {}
-    bank_hands = {}
-    for t in players:
-        K = rng.uniform(0.3, 0.95)
-        k = kind(t)
-        vs, Ps = [], []
-        for _ in range(300):
-            c, s, m, triv = spots[rng.randrange(n_dec)]
-            v, P = visible_time(t, c, s, m, K, triv, rng)
-            vs.append(v); Ps.append(P)
-        by.setdefault(k, []).extend(vs)
-        corr.setdefault(k, []).append(st.correlation(Ps, vs) if len(set(Ps)) > 1 else 0.0)
-        # 타임뱅크 60초(충전 없음)가 몇 핸드 만에 바닥나는가
-        bank, hands, dec_acc = BANK0, 0, 0.0
-        while bank > 0 and hands < 3000:
-            hands += 1
-            dec_acc += per_hand
-            while dec_acc >= 1.0:
-                dec_acc -= 1.0
-                c, s, m, triv = spots[rng.randrange(n_dec)]
-                v, _ = visible_time(t, c, s, m, K, triv, rng)
-                bank -= max(0.0, v - BASE)
-        bank_hands.setdefault(k, []).append(hands)
+    rng0 = random.Random(20261005)
+    players = []
+    for _ in range(1000):                       # 모집단 감사 상한 1000명
+        t = make_traits(rng0)
+        t['K'] = rng0.uniform(0.3, 0.95)
+        t['kind'] = kind(t)
+        players.append(t)
+    tank_p90 = sorted(t['tank'] for t in players)[int(0.9 * (len(players) - 1))]
 
-    q = lambda a, x: sorted(a)[int(x * (len(a) - 1))]
-    # 어려운 포스트플랍(근접도 c >= 0.7)만: 유형별 보이는 시간
-    hard = [sp for sp in spots[:n_post] if sp[0] >= 0.7]
-    easy = [sp for sp in spots[:n_post] if sp[0] <= 0.1]
-    hard_by = {}
-    easy_by = {}
-    for t in players:
-        K = 0.7
-        k = kind(t)
-        for sp in hard[:200]:
-            hard_by.setdefault(k, []).append(visible_time(t, sp[0], sp[1], sp[2], K, False, rng)[0])
-        for sp in easy[:200]:
-            easy_by.setdefault(k, []).append(visible_time(t, sp[0], sp[1], sp[2], K, False, rng)[0])
-    out = {'decisions_in_trace': n_dec, 'decisions_per_player_hand': round(per_hand, 2), 'types': {}}
-    for k, vs in sorted(by.items()):
-        out['types'][k] = {
-            'players': len(corr[k]),
-            'p10': round(q(vs, .1), 1), 'p50': round(q(vs, .5), 1), 'p90': round(q(vs, .9), 1),
-            'p99': round(q(vs, .99), 1),
-            'over_base_pct': round(100 * sum(v > BASE for v in vs) / len(vs), 2),
-            'corr_difficulty_time': round(st.mean(corr[k]), 2),
-            'hands_until_bank_empty_median': q(bank_hands[k], .5),
-            'postflop_easy_p50': round(q(easy_by[k], .5), 1),
-            'postflop_hard_p50': round(q(hard_by[k], .5), 1),
-            'postflop_hard_p90': round(q(hard_by[k], .9), 1),
-        }
-    out['postflop_hard_share_pct'] = round(100 * len(hard) / max(1, n_post), 1)
-    out['preflop_trivial_fold_share_pct'] = round(100 * sum(1 for sp in spots[n_post:] if sp[3]) / max(1, n_dec), 1)
+    # 평가용 스팟: 실제 포스트플랍 스팟의 (c, s, m) 위에 커밋만 바꿔 얹는다.
+    post = spots[:n_post]
+    hard_base = [sp for sp in post if sp[0] >= 0.7]
+    easy_base = [sp for sp in post if sp[0] <= 0.1]
+    rs = random.Random(7)
+    hard_allin = [(c, s, m, False, rs.uniform(0.5, 1.0)) for (c, s, m, _t, _k) in hard_base]
+    obvious_allin = [(c, s, m, False, rs.uniform(0.5, 1.0)) for (c, s, m, _t, _k) in easy_base]
+    hard_small = [(c, s, m, False, rs.uniform(0.0, 0.15)) for (c, s, m, _t, _k) in hard_base]
+    real_hard_allin = [sp for sp in post if sp[0] >= 0.7 and sp[4] >= 0.5]
+
+    def evaluate(B, G, hours=10, n_eval=120, pool=None):
+        pool = spots if pool is None else pool
+        rng = random.Random(11)
+        q = lambda a, x: sorted(a)[int(x * (len(a) - 1))] if a else float('nan')
+        res = {'types': {}}
+        tb_hour, gen, corr = {}, {}, {}
+        hard_t, obv_t, small_t, tank_hard = {}, {}, {}, []
+        for t in players:
+            k = t['kind']
+            over = 0.0
+            vs, Ps = [], []
+            for _ in range(hours * HOUR_DECISIONS):
+                v, P = visible_time(t, pool[rng.randrange(len(pool))], t['K'], rng, B, G)
+                over += max(0.0, v - BASE)
+                vs.append(v); Ps.append(P)
+            tb_hour.setdefault(k, []).append(over / hours)
+            gen.setdefault(k, []).extend(vs[:300])
+            corr.setdefault(k, []).append(st.correlation(Ps, vs) if len(set(Ps)) > 1 else 0.0)
+            for _ in range(n_eval // 10):
+                hv = visible_time(t, hard_allin[rng.randrange(len(hard_allin))], t['K'], rng, B, G)[0]
+                hard_t.setdefault(k, []).append(hv)
+                if t['tank'] >= tank_p90:
+                    tank_hard.append(hv)
+                obv_t.setdefault(k, []).append(
+                    visible_time(t, obvious_allin[rng.randrange(len(obvious_allin))], t['K'], rng, B, G)[0])
+                small_t.setdefault(k, []).append(
+                    visible_time(t, hard_small[rng.randrange(len(hard_small))], t['K'], rng, B, G)[0])
+        for k in sorted(tb_hour):
+            res['types'][k] = {
+                'players': len(tb_hour[k]),
+                'all_p50': round(q(gen[k], .5), 1), 'all_p90': round(q(gen[k], .9), 1),
+                'over_base_pct': round(100 * sum(v > BASE for v in gen[k]) / len(gen[k]), 2),
+                'tb_sec_per_hour_mean': round(st.mean(tb_hour[k]), 1),
+                'tb_sec_per_hour_p50': round(q(tb_hour[k], .5), 1),
+                'tb_sec_per_hour_p90': round(q(tb_hour[k], .9), 1),
+                'hard_allin_mean': round(st.mean(hard_t[k]), 1),
+                'hard_allin_p90': round(q(hard_t[k], .9), 1),
+                'hard_small_commit_mean': round(st.mean(small_t[k]), 1),
+                'obvious_allin_mean': round(st.mean(obv_t[k]), 1),
+                'obvious_allin_p90': round(q(obv_t[k], .9), 1),
+                'corr_difficulty_time': round(st.mean(corr[k]), 2),
+            }
+        allhard = [v for k in hard_t for v in hard_t[k]]
+        res['hard_allin_all_p90'] = round(q(allhard, .9), 1)
+        res['top10_tank_hard_allin_mean'] = round(st.mean(tank_hard), 1)
+        res['top10_tank_hard_allin_p50'] = round(q(tank_hard, .5), 1)
+        res['_raw'] = {'gen': gen, 'hard': hard_t, 'obv': obv_t, 'small': small_t, 'tb': tb_hour}
+        return res
+
+    def score(r):
+        n = r['types'].get('일반형', {})
+        sl = r['types'].get('느린형', {})
+        pen = lambda x, lo, hi: 0.0 if lo <= x <= hi else min(abs(x - lo), abs(x - hi))
+        return (pen(n['hard_allin_mean'], 20, 24) + pen(r['top10_tank_hard_allin_mean'], 30, 40)
+                + pen(n['tb_sec_per_hour_mean'], 6, 12) + pen(sl['tb_sec_per_hour_mean'], 12, 20))
+
+    grid = []
+    base = evaluate(0.0, 1.0, hours=4, n_eval=60)
+    for G in (1.0, 1.5, 2.0):
+        for B in (0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0):
+            r = evaluate(B, G, hours=4, n_eval=60)
+            n = r['types']['일반형']
+            grid.append({'B': B, 'G': G, 'score': round(score(r), 2),
+                         'normal_hard_allin': n['hard_allin_mean'],
+                         'top10_tank_hard': r['top10_tank_hard_allin_mean'],
+                         'normal_tb_h': n['tb_sec_per_hour_mean'],
+                         'slow_tb_h': r['types']['느린형']['tb_sec_per_hour_mean'],
+                         'normal_obvious': n['obvious_allin_mean']})
+    grid.sort(key=lambda g: g['score'])
+    best = grid[0]
+    final = evaluate(best['B'], best['G'])
+    out = {
+        'decisions_in_trace': n_dec,
+        'real_hard_allin_spots_in_trace': len(real_hard_allin),
+        'eval_hard_allin_spots': len(hard_allin), 'eval_obvious_allin_spots': len(obvious_allin),
+        'no_amplifier_B0': {k: {x: v[x] for x in ('hard_allin_mean', 'tb_sec_per_hour_mean', 'obvious_allin_mean')}
+                            for k, v in base['types'].items()},
+        'no_amplifier_top10_tank_hard': base['top10_tank_hard_allin_mean'],
+        'grid_top5': grid[:5],
+        'chosen': {'B': best['B'], 'G': best['G']},
+        'final': {k: v for k, v in final.items() if k != '_raw'},
+    }
+    # 단계 민감도: 트레이스는 초반(중앙 80bb)이다. 후반 짧은 스택은 같은 콜 금액이
+    # 더 큰 커밋이 되므로 커밋을 ×f 로 근사해 시간당 타임뱅크 사용을 본다.
+    sens = {}
+    for f in (2.0, 4.0):
+        pool = [(c, s_, m, tr, min(1.0, k * f)) for (c, s_, m, tr, k) in spots]
+        r = evaluate(best['B'], best['G'], hours=4, n_eval=10, pool=pool)
+        sens['commit_x%g' % f] = {k: r['types'][k]['tb_sec_per_hour_mean'] for k in r['types']}
+    out['tb_per_hour_stage_sensitivity'] = sens
     print(json.dumps(out, indent=1, ensure_ascii=False))
 
     if len(sys.argv) > 2:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        from matplotlib import font_manager as fm
-        names = list(out['types'])
+        raw = final['_raw']
         en = {'일반형': 'normal', '숨기는형': 'masker', '시계사용형': 'clock-user',
               '충동형': 'impulsive', '느린형': 'slow'}
-        fig, ax = plt.subplots(1, 2, figsize=(12, 4.8))
-        ax[0].boxplot([by[k] for k in names], tick_labels=[en[k] for k in names],
-                      showfliers=False, whis=(10, 90))
+        names = list(final['types'])
+        lab = [en[k] for k in names]
+        fig, ax = plt.subplots(1, 3, figsize=(16, 5))
+        pos = range(len(names))
+        for off, key, col, nm in ((-0.27, 'obv', '#7ab', 'obvious all-in (c<=0.1)'),
+                                  (0.0, 'small', '#bb7', 'hard, small commit'),
+                                  (0.27, 'hard', '#c66', 'hard all-in (c>=0.7)')):
+            bp = ax[0].boxplot([raw[key][k] for k in names], positions=[p + off for p in pos],
+                               widths=0.24, showfliers=False, whis=(10, 90), patch_artist=True)
+            for b in bp['boxes']:
+                b.set_facecolor(col)
+            ax[0].plot([], [], color=col, lw=8, label=nm)
+        ax[0].set_xticks(list(pos), lab)
         ax[0].axhline(BASE, color='red', ls='--', lw=1)
-        ax[0].text(0.6, BASE + 0.4, 'base 18s', color='red')
+        ax[0].axhspan(20, 24, color='#c66', alpha=0.12)
         ax[0].set_ylabel('visible action time (s)')
-        ax[0].set_title('Visible time by timing type (box 25-75%, whisker 10-90%)', fontsize=10)
-        ax[1].bar([en[k] for k in names], [out['types'][k]['corr_difficulty_time'] for k in names],
-                  color='#4a7')
-        ax[1].set_title('Correlation: perceived difficulty vs visible time\n(lower = less timing tell)',
-                        fontsize=10)
-        ax[1].set_ylim(0, 1)
-        fig.suptitle('Bot timing design sim (proposed formula, %d real decisions, seed 11 beta trace)' % n_dec,
-                     fontsize=11)
+        ax[0].set_title('Decision time by spot (box 25-75%, whisker 10-90%)\nshaded = normal hard all-in target 20-24s', fontsize=10)
+        ax[0].legend(fontsize=8, loc='upper left')
+        ax[1].boxplot([raw['tb'][k] for k in names], tick_labels=lab, showfliers=False, whis=(10, 90))
+        ax[1].axhspan(6, 12, color='#4a7', alpha=0.15, label='normal target 6-12')
+        ax[1].axhspan(12, 20, color='#a74', alpha=0.12, label='slow target 12-20')
+        ax[1].set_ylabel('time bank seconds used per hour')
+        ax[1].set_title('Time bank use per hour (110 decisions/h)', fontsize=10)
+        ax[1].legend(fontsize=8)
+        ax[2].plot([g['B'] for g in sorted(grid, key=lambda g: (g['G'], g['B'])) if g['G'] == best['G']],
+                   [g['normal_hard_allin'] for g in sorted(grid, key=lambda g: g['B']) if g['G'] == best['G']],
+                   'o-', color='#c66', label='normal hard all-in mean')
+        ax[2].plot([g['B'] for g in sorted(grid, key=lambda g: g['B']) if g['G'] == best['G']],
+                   [g['top10_tank_hard'] for g in sorted(grid, key=lambda g: g['B']) if g['G'] == best['G']],
+                   's-', color='#844', label='top-10% tank hard all-in mean')
+        ax[2].plot([g['B'] for g in sorted(grid, key=lambda g: g['B']) if g['G'] == best['G']],
+                   [g['normal_obvious'] for g in sorted(grid, key=lambda g: g['B']) if g['G'] == best['G']],
+                   '^-', color='#7ab', label='normal obvious all-in mean')
+        ax[2].axhspan(20, 24, color='#c66', alpha=0.12)
+        ax[2].axhspan(30, 40, color='#844', alpha=0.08)
+        ax[2].axvline(best['B'], color='k', ls=':', lw=1)
+        ax[2].set_xlabel('amplifier B  (reasoning x (1 + B * (commit*c)^%.1f))' % best['G'])
+        ax[2].set_ylabel('seconds')
+        ax[2].set_title('Amplifier sweep (chosen B=%.1f, gamma=%.1f)' % (best['B'], best['G']), fontsize=10)
+        ax[2].legend(fontsize=8)
+        fig.suptitle('Bot timing sim v3: commit_effect = commit_pressure x closeness '
+                     '(%d real decisions, seed 11 beta trace, 1000 bots)' % n_dec, fontsize=11)
         fig.tight_layout()
         fig.savefig(sys.argv[2], dpi=110)
 
