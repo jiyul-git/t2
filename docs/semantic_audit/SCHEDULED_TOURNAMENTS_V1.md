@@ -135,3 +135,22 @@ API: `GET /api/wallet`, `GET /api/lobby`, `POST /api/register`, `/api/reenter`,
 
 기계 판독 검증 기록: [SCHEDULED_TOURNAMENTS_V1.json](evidence/SCHEDULED_TOURNAMENTS_V1.json).
 설치 분리 후속 기록: [PERSONAL_INSTALLATION_V1.json](evidence/PERSONAL_INSTALLATION_V1.json).
+
+## 미해결 버그: `T2_UI_DEFER=0` 에서 탈락 후 vclock 정산이 끝나지 않음 (2026-10-05 발견, 수정 담당: 지갑/스케줄 작업자)
+
+재현: `python ui/tools/verify_scheduled_ui.py` (기본값 `T2_VERIFY_SCHEDULE_DEFER=0`) → 오프라인 탈락 복구 단계에서
+90초 기한 초과로 실패. 기한을 400초로 늘려도 `entries[-1].status == 'playing'`, `vclock_settle_pending == True`,
+`offscreen == False` 가 유지되고 `vclock_settle_target` 만 실제 시간과 함께 계속 증가한다.
+`T2_VERIFY_SCHEDULE_DEFER=1` 이면 통과한다.
+
+원인(`ui/server/ui_server.py`):
+1. `_pool()` 은 `DEFER` 가 꺼져 있으면 `None` 을 돌려준다.
+2. `_vclock_submit_next_locked()` 는 풀이 없으면 chunk 를 제출하지 않고 반환한다 → `VCLOCK['coverage']` 가 늘지 않는다.
+3. HERO 스택 0 이면 `L.vclock_needs_sync()` 가 항상 True → `_vclock_settle()` 은 `_vclock_pump()` 가 준비될 때까지
+   `(False, None)` 을 반환하고 `finalize_vclock_settle` 을 부르지 않는다.
+4. `_schedule_tick()` 은 매 틱 `_vclock_refresh_settle_target()` 으로 목표를 현재 시각까지 올린다 → 영원히 준비되지 않는다.
+   HTTP 경로(`wait=True`)도 `_vclock_accept_locked` 가 future 없음으로 False → 같은 결과.
+
+수정 방향(합의): 검증기 기본값을 켜짐으로 바꿔 숨기지 않는다. `T2_UI_DEFER=0` 은 허용된 설정이므로
+`_pool() is None` 일 때 `L.compute_vclock_ahead(field, target, session_end)` 를 같은 프로세스에서 동기 실행해
+완료된 future 와 같은 형태로 수확하는 fallback 을 넣는다. 수정 후 기본값(DEFER=0)과 DEFER=1 둘 다로 검증기를 돌린다.
