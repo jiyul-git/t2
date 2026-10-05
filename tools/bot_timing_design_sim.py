@@ -104,7 +104,11 @@ def _depth(effbb):
 
 
 def _phase(stg, max_seat=9):
-    """초중반 / 버블 근처(ITM < 남은 ≤ ITM×1.2) / ITM / 파이널 근처(남은 ≤ 한 테이블+1)."""
+    """상호배타 구간 — 한 결정은 한 구간에만 들어간다.
+
+    우선순위: final(남은 ≤ 한 테이블+1) > itm(남은 ≤ ITM) > bubble(남은 ≤ ITM×1.2) > early_mid.
+    예: 10명 남은 ITM 결정은 final 로만 집계된다.
+    """
     if not stg:
         return 'unknown'
     r, itm = stg['remaining'], stg['itm']
@@ -405,6 +409,7 @@ def stage_main(args):
 
     pre_set = _IdSet(pre)
     out = {'traces': paths, 'B_temporary': B, 'G': G,
+           'phase_priority': 'final > itm > bubble > early_mid (mutually exclusive)',
            'postflop': len(post), 'preflop': len(pre),
            'all': section(allsp), 'depth': {}, 'phase': {}}
     for d in DEPTHS:
