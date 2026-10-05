@@ -1058,7 +1058,7 @@ class HandRun:
         """
         T = self.timing
         pid = self._pid(seat)
-        base = TM.action_seconds(T.get('fmt_key', 'standard'))
+        base = float(T.get('base_override') or TM.action_seconds(T.get('fmt_key', 'standard')))
         banks = T['banks']
         bank = float(banks.get(pid, TM.BANK_START))
         K = TM.knowledge(ax, concepts)
@@ -1573,6 +1573,8 @@ class HandRun:
                         # 사람과 같은 타임아웃 규칙: 체크 가능하면 체크, 아니면 폴드.
                         _tm['engine_act'] = a
                         a = TM.timeout_action(tc <= 0)
+                    _tm['can_check'] = tc <= 0
+                    _tm['exec_act'] = a
                 if a == 'fold':
                     rnd.apply(s, 'fold' if tc > 0 else 'check')
                 elif a == 'check':
@@ -2319,6 +2321,8 @@ class HandRun:
                             {'street': street, 'planned': a,
                              'executed': TM.timeout_action(tc <= 0), 'why': '시간 초과'})
                         a, amt = TM.timeout_action(tc <= 0), 0
+                    _tm['can_check'] = tc <= 0
+                    _tm['exec_act'] = a
                 # 어느 스트리트에서 실제로 공격했는지 기록한다 (지연 씨벳 판단에 필요).
                 if a in ('bet', 'raise', 'allin'):
                     h.plans[key].setdefault('bet_streets', [])

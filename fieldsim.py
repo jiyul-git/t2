@@ -800,8 +800,13 @@ class Field:
             return None
         if not hasattr(self, 'time_banks'):
             self.time_banks = {}
-        return {'tour_seed': self.seed, 'fmt_key': self.fmt.get('key', 'standard'),
-                'banks': self.time_banks, 'enforce': mode == 'enforce'}
+        ctx = {'tour_seed': self.seed, 'fmt_key': self.fmt.get('key', 'standard'),
+               'banks': self.time_banks, 'enforce': mode == 'enforce'}
+        # 검증 전용: 기본 액션 시간을 짧게 덮어써 타임아웃 경로를 실제로 태운다.
+        _bo = os.environ.get('T2_TIMING_TEST_BASE')
+        if _bo:
+            ctx['base_override'] = float(_bo)
+        return ctx
 
     def plan_others(self):
         """동시 진행용 계획: 테이블 순서대로 이번 라운드 핸드 수와 시드를 미리 뽑는다.

@@ -14,8 +14,8 @@ import json, os, subprocess, sys, tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def start(args, mode):
-    env = dict(os.environ, T2_TIMING_V1=mode, T2_STRICT='1')
+def start(args, mode, **extra):
+    env = dict(os.environ, T2_TIMING_V1=mode, T2_STRICT='1', **extra)
     return subprocess.Popen([sys.executable] + args, stdout=subprocess.PIPE,
                             stderr=subprocess.DEVNULL, text=True, env=env)
 
@@ -45,6 +45,12 @@ def main():
         files = {mode: os.path.join(d, mode + '.json') for mode in ('off', 'record', 'enforce')}
         for mode in ('off', 'record', 'enforce'):
             jobs[('tt', mode)] = start([tt, '13', 'real', files[mode], cap, '90'], mode)
+        # 타임아웃 경로를 실제로 태우는 검증: 기본 시간 3초(테스트 전용 덮어쓰기)
+        files['rec3'] = os.path.join(d, 'rec3.json'); files['enf3'] = os.path.join(d, 'enf3.json')
+        jobs[('tt', 'rec3')] = start([tt, '13', 'real', files['rec3'], cap, '90'], 'record',
+                                     T2_TIMING_TEST_BASE='3')
+        jobs[('tt', 'enf3')] = start([tt, '13', 'real', files['enf3'], cap, '90'], 'enforce',
+                                     T2_TIMING_TEST_BASE='3')
         out = {k: finish(p) for k, p in jobs.items()}
         for seed in ('11', '12'):
             res['r2_%s_off_eq_record' % seed] = (out[('r2', seed, 'off')]['sha256']
@@ -52,6 +58,9 @@ def main():
         res['real_off_eq_record'] = out[('tt', 'off')]['sha256'] == out[('tt', 'record')]['sha256']
         rec = json.load(open(files['record']))['hands']
         enf = json.load(open(files['enforce']))['hands']
+        rec3 = json.load(open(files['rec3']))['hands']
+        enf3 = json.load(open(files['enf3']))['hands']
+        res['base3_off_eq_record_digest'] = None
     n_dec = n_to = 0
     bank_neg = bad_rule = 0
     first_to = None
@@ -73,7 +82,25 @@ def main():
     res.update({'enforce_decisions': n_dec, 'enforce_timeouts': n_to, 'bank_negative': bank_neg,
                 'timeout_without_engine_act': bad_rule, 'first_timeout_hand_index': first_to,
                 'prefix_identical_until_first_timeout': prefix_ok})
-    res['pass'] = (res['r2_11_off_eq_record'] and res['r2_12_off_eq_record'] and res['real_off_eq_record']
+    # 기본 3초 강제: 타임아웃 규칙 검사
+    n3 = to3 = rule_bad3 = 0
+    first3 = None
+    for k, h in enumerate(enf3):
+        for t in h.get('timing') or []:
+            n3 += 1
+            if t['timed_out']:
+                to3 += 1
+                first3 = k if first3 is None else first3
+                want = 'check' if t.get('can_check') else 'fold'
+                if t.get('exec_act') != want or t.get('engine_act') is None:
+                    rule_bad3 += 1
+    lim3 = first3 if first3 is not None else min(len(rec3), len(enf3))
+    prefix3 = all(strip(rec3[i]) == strip(enf3[i]) for i in range(min(lim3, len(rec3), len(enf3))))
+    res.update({'base3_decisions': n3, 'base3_timeouts': to3, 'base3_rule_violations': rule_bad3,
+                'base3_first_timeout_hand_index': first3,
+                'base3_prefix_identical_until_first_timeout': prefix3})
+    res.pop('base3_off_eq_record_digest', None)
+    res['pass'] = (to3 > 0 and rule_bad3 == 0 and prefix3 and res['r2_11_off_eq_record'] and res['r2_12_off_eq_record'] and res['real_off_eq_record']
                    and bank_neg == 0 and bad_rule == 0 and prefix_ok and n_dec > 0)
     print(json.dumps(res, indent=1))
     raise SystemExit(0 if res['pass'] else 1)
