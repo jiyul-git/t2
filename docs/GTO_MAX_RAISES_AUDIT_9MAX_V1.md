@@ -38,8 +38,9 @@ B_eq replaces them by pot x equity vs the current range (sensitivity).
 
 - mr3 jam-only has the same 18,660 flop-terminal action lines as mr2 (identical sets); only node ids change. All 33 solved tables
   (8 SRP + 25 3-bet) map to mr3 nodes by action line (e.g. 51 -> 74, 196 -> 428), so no new flop solve is needed.
-- Its extra cost is multiway all-in terminals after a 4-bet jam (3-way 34 s, 4-way 64 s, 5+-way 138 s CPU per iteration);
-  these are exact pot x equity terminals, not static continuation models.
+- As in mr2, multiway terminals dominate: multiway CPU per iteration ~99 s in mr2 (5-iteration profile) vs 236 s in mr3 jam-only
+  (3-way 34 s, 4-way 64 s, 5+-way 138 s). The added lines are multiway all-ins after a 4-bet jam, which are exact pot x equity
+  terminals, not static continuation models.
 
 ## 4. Recommendation (no solve started)
 1. Re-key the 33 tables by action line (loader keyed by path instead of node id; identity-checked against mr2).
