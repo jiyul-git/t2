@@ -1349,8 +1349,9 @@ class HandRun:
             _pf_pot_layers = _decision_pot_layers(
                 {}, rnd.contrib, set(rnd.folded), rnd.stacks,
                 hero=s, dead=ante_pot)
-            if s == h.hero:
-                act = yield {'stage': 'preflop', 'pos': pos, 'hole': h.hole[s],
+            if h.is_human(s):
+                act = yield {'stage': 'preflop', 'actor_seat': s,
+                             'actor_pid': h.pid_of(s), 'pos': pos, 'hole': h.hole[s],
                              'stacks': dict(rnd.stacks), 'contrib': dict(rnd.contrib),
                              'pot': rnd.contestable_contrib(s)+ante_pot,
                              'pot_total': sum(rnd.contrib.values()) + ante_pot,
@@ -1678,8 +1679,9 @@ class HandRun:
                 _pot_layers = _decision_pot_layers(
                     contrib, r2.contrib, folded | set(r2.folded), r2.stacks,
                     hero=s, dead=dead)
-                if s == h.hero:
-                    act = yield {'stage': street, 'board': board, 'hole': h.hole[s],
+                if h.is_human(s):
+                    act = yield {'stage': street, 'actor_seat': s,
+                                 'actor_pid': h.pid_of(s), 'board': board, 'hole': h.hole[s],
                                  'stacks': dict(r2.stacks), 'contrib': dict(r2.contrib),
                                  'pot': pot_now + r2.contestable_contrib(s),
                                  'pot_total': pot_now + sum(r2.contrib.values()),
