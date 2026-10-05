@@ -1,0 +1,96 @@
+{
+ "instant": {
+  "runs": [
+   [
+    21,
+    37,
+    84.6
+   ],
+   [
+    22,
+    40,
+    107.6
+   ]
+  ],
+  "hands": 77,
+  "hph": 95.2,
+  "hand_sec": {
+   "mean": 37.8,
+   "p50": 31.39,
+   "p90": 63.38
+  },
+  "bot_events": 848,
+  "bot_per_hand": 11.0,
+  "bot_elapsed": {
+   "mean": 2.27,
+   "p50": 1.19,
+   "p90": 4.86,
+   "p99": 13.89,
+   "max": 23.3
+  },
+  "bot_over_base": 3,
+  "bot_timeouts": 0,
+  "bot_bank_min": 54.7,
+  "breakdown": {
+   "deal": 8.0,
+   "bot_think": 25.0,
+   "hero_think": 0.5,
+   "result_collect": 2.54,
+   "residual": 1.8
+  },
+  "hero_decisions": 104,
+  "hero_think_mean": 0.36,
+  "hero_timeouts": 0,
+  "hero_bank_left": [
+   60.0,
+   60.0
+  ]
+ },
+ "human": {
+  "runs": [
+   [
+    23,
+    31,
+    70.7
+   ],
+   [
+    24,
+    28,
+    64.6
+   ]
+  ],
+  "hands": 59,
+  "hph": 67.7,
+  "hand_sec": {
+   "mean": 53.2,
+   "p50": 51.1,
+   "p90": 84.56
+  },
+  "bot_events": 743,
+  "bot_per_hand": 12.6,
+  "bot_elapsed": {
+   "mean": 2.53,
+   "p50": 1.25,
+   "p90": 7.04,
+   "p99": 14.23,
+   "max": 18.0
+  },
+  "bot_over_base": 0,
+  "bot_timeouts": 0,
+  "bot_bank_min": 60.0,
+  "breakdown": {
+   "deal": 8.0,
+   "bot_think": 31.8,
+   "hero_think": 7.4,
+   "result_collect": 2.54,
+   "residual": 3.5
+  },
+  "hero_decisions": 85,
+  "hero_think_mean": 5.13,
+  "hero_timeouts": 0,
+  "hero_bank_left": [
+   60.0,
+   55.9
+  ]
+ }
+}

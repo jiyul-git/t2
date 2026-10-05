@@ -1,0 +1,201 @@
+{
+ "traces": [
+  "/tmp/claude-0/-home-user-t2/bd21691f-5a05-5554-9137-a4bdcc9bc5c6/scratchpad/tt5_enf300_11.json",
+  "/tmp/claude-0/-home-user-t2/bd21691f-5a05-5554-9137-a4bdcc9bc5c6/scratchpad/tt5_enf300_12.json",
+  "/tmp/claude-0/-home-user-t2/bd21691f-5a05-5554-9137-a4bdcc9bc5c6/scratchpad/tt5_enf300_13.json"
+ ],
+ "hands": 12739,
+ "decisions": 139180,
+ "hand_seconds_old": {
+  "n": 12739,
+  "mean": 46.11,
+  "p50": 40.01,
+  "p90": 77.6
+ },
+ "hand_seconds_v2": {
+  "n": 12739,
+  "mean": 38.73,
+  "p50": 32.93,
+  "p90": 69.43
+ },
+ "hands_per_hour_old": 78.1,
+ "hands_per_hour_v2": 92.9,
+ "by_phase": {
+  "bubble": {
+   "hands": 196,
+   "hph_old": 92.9,
+   "hph_v2": 114.7
+  },
+  "early_mid": {
+   "hands": 10149,
+   "hph_old": 71.6,
+   "hph_v2": 86.9
+  },
+  "final": {
+   "hands": 1622,
+   "hph_old": 145.6,
+   "hph_v2": 140.8
+  },
+  "itm": {
+   "hands": 772,
+   "hph_old": 94.2,
+   "hph_v2": 109.1
+  }
+ },
+ "K": {
+  "n": 139180,
+  "mean": 0.63,
+  "p50": 0.65,
+  "p90": 0.81
+ },
+ "concepts_per_decision": {
+  "n": 139180,
+  "mean": 14.51,
+  "p50": 14,
+  "p90": 21
+ },
+ "timeouts": {
+  "n": 58,
+  "per_1000_decisions": 0.42,
+  "bank_empty_before": 43,
+  "engine_act": {
+   "bet": 6,
+   "call": 15,
+   "check": 4,
+   "fold": 18,
+   "raise": 14,
+   "shove": 1
+  },
+  "by_kind": {
+   "느린형": 17,
+   "숨기는형": 0,
+   "시계사용형": 33,
+   "일반형": 8,
+   "충동형": 0
+  },
+  "by_phase": {
+   "bubble": 0,
+   "early_mid": 16,
+   "final": 35,
+   "itm": 7
+  }
+ },
+ "by_kind": {
+  "느린형": {
+   "decisions": 16910,
+   "visible": {
+    "n": 16910,
+    "mean": 2.62,
+    "p50": 1.75,
+    "p90": 3.97
+   },
+   "hard_allin": {
+    "n": 44,
+    "mean": 40.52,
+    "p50": 33.66,
+    "p90": 68.55
+   },
+   "obvious_allin": {
+    "n": 707,
+    "mean": 1.9,
+    "p50": 1.69,
+    "p90": 3.06
+   },
+   "bank_used_per_hour": 10.33,
+   "timeouts_per_1000": 1.01
+  },
+  "숨기는형": {
+   "decisions": 9170,
+   "visible": {
+    "n": 9170,
+    "mean": 3.53,
+    "p50": 2.58,
+    "p90": 6.3
+   },
+   "hard_allin": {
+    "n": 18,
+    "mean": 23.78,
+    "p50": 21.87,
+    "p90": 36.84
+   },
+   "obvious_allin": {
+    "n": 360,
+    "mean": 2.8,
+    "p50": 1.77,
+    "p90": 5.64
+   },
+   "bank_used_per_hour": 2.44,
+   "timeouts_per_1000": 0.0
+  },
+  "시계사용형": {
+   "decisions": 22472,
+   "visible": {
+    "n": 22472,
+    "mean": 6.21,
+    "p50": 4.44,
+    "p90": 12.52
+   },
+   "hard_allin": {
+    "n": 48,
+    "mean": 20.12,
+    "p50": 16.48,
+    "p90": 33.83
+   },
+   "obvious_allin": {
+    "n": 964,
+    "mean": 4.71,
+    "p50": 3.11,
+    "p90": 10.46
+   },
+   "bank_used_per_hour": 3.3,
+   "timeouts_per_1000": 1.47
+  },
+  "일반형": {
+   "decisions": 84862,
+   "visible": {
+    "n": 84862,
+    "mean": 1.55,
+    "p50": 1.01,
+    "p90": 2.94
+   },
+   "hard_allin": {
+    "n": 215,
+    "mean": 22.59,
+    "p50": 19.89,
+    "p90": 39.52
+   },
+   "obvious_allin": {
+    "n": 3835,
+    "mean": 1.08,
+    "p50": 0.95,
+    "p90": 1.67
+   },
+   "bank_used_per_hour": 2.36,
+   "timeouts_per_1000": 0.09
+  },
+  "충동형": {
+   "decisions": 5766,
+   "visible": {
+    "n": 5766,
+    "mean": 0.99,
+    "p50": 0.73,
+    "p90": 2.03
+   },
+   "hard_allin": {
+    "n": 5,
+    "mean": 7.33,
+    "p50": 7.57,
+    "p90": 8.67
+   },
+   "obvious_allin": {
+    "n": 186,
+    "mean": 0.9,
+    "p50": 0.72,
+    "p90": 1.38
+   },
+   "bank_used_per_hour": 0.0,
+   "timeouts_per_1000": 0.0
+  }
+ },
+ "decisions_with_empty_bank_pct": 1.13
+}
