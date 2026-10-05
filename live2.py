@@ -36,6 +36,7 @@ def _copy_field(d):
 def _dump(f):
     result = {
         'entries': f.entries, 'start_stack': f.start_stack, 'hero_pid': f.hero_pid,
+        'human_pids': sorted(int(x) for x in getattr(f, 'human_pids', {f.hero_pid})),
         'hand_no': f.hand_no, 'level': f.level, 'itm': f.itm,
         'hands_per_level': f.hands_per_level,
         'busted_order': f.busted_order, 'hero_moves': f.hero_moves,
@@ -93,7 +94,10 @@ def _load_field(d):
     # 장부는 저장 형태 그대로 받아 두고 처음 쓸 때 푼다(Field.book).
     f.set_book_packed(d.get('book') or {})
     f.entries = d['entries']; f.start_stack = d['start_stack']
-    f.hero_pid = d['hero_pid']; f.hand_no = d['hand_no']; f.level = d['level']
+    f.hero_pid = d['hero_pid']
+    f.human_pids = set(int(x) for x in (d.get('human_pids') or [f.hero_pid]))
+    f.human_pids.add(int(f.hero_pid))
+    f.hand_no = d['hand_no']; f.level = d['level']
     f.itm = d['itm']; f.hands_per_level = d['hands_per_level']
     f.virtual_play_seconds = d.get('virtual_play_seconds')
     f.level_minutes = d.get('level_minutes') or FM.level_minutes(d.get('fmt'))
