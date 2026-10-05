@@ -190,6 +190,32 @@ def _table_pool():
     return _TABLE_POOL
 
 
+def _table_mini(base, tid):
+    """One table's mutable state only; whole-field context travels in frozen.
+
+    Parallel/vclock workers used to pickle the complete tournament once per
+    table per hand. For 99/179-player scheduled catch-up that dominates the
+    actual poker work. A bot hand mutates only its table players, table-local
+    tilt/book/time-bank state; Field.stamp reads remaining/avg/stacks from the
+    separately supplied frozen field snapshot.
+    """
+    tid = str(int(tid))
+    td = base['tables'][tid]
+    pids = {str(p) for p in (td.get('pids') or [])}
+    mini = dict(base)
+    mini['players'] = {p: base['players'][p] for p in pids if p in base['players']}
+    mini['tables'] = {tid: td}
+    mini['tilt'] = {p: base.get('tilt', {}).get(p, {}) for p in pids
+                    if p in (base.get('tilt') or {})}
+    mini['time_banks'] = {p: v for p, v in (base.get('time_banks') or {}).items()
+                          if str(p) in pids}
+    mini['book'] = _vclock_book_subset(base.get('book') or {}, pids)
+    if 'sitout_pids' in base:
+        mini['sitout_pids'] = [p for p in base.get('sitout_pids') or []
+                               if str(p) in pids]
+    return mini
+
+
 def _table_task(mini, tid, seeds, frozen, base_suffix):
     """한 테이블의 이번 라운드를 계획된 시드로 진행하고 그 테이블 몫만 돌려준다."""
     f = _load_field(mini)
@@ -238,10 +264,7 @@ def _parallel_tables_runner(f, plan):
     base = _dump(f)
     futs = []
     for tid, seeds in plan:
-        ps = {str(p) for p in base['tables'][str(tid)]['pids']}
-        mini = dict(base)
-        mini['book'] = {k: v for k, v in base['book'].items()
-                        if str(k).partition('>')[0] in ps}
+        mini = _table_mini(base, tid)
         futs.append(pool.submit(_table_task, mini, tid, seeds,
                                 f._frozen_field, FS.BOT_SUFFIX))
     results = [fu.result() for fu in futs]
@@ -503,12 +526,7 @@ def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
     pool = _table_pool() if len(other_tids) > 1 else None
     jobs = []
     for tid in other_tids:
-        ps = {str(p) for p in base['tables'][str(tid)]['pids']}
-        mini = dict(base)
-        mini['book'] = {
-            k: v for k, v in (base.get('book') or {}).items()
-            if str(k).partition('>')[0] in ps
-        }
+        mini = _table_mini(base, tid)
         args = (mini, tid, target_seconds, session_end, frozen,
                 FS.BOT_SUFFIX, h4h_mode)
         if pool is None:

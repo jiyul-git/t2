@@ -168,8 +168,7 @@ def advance(event, target, budget=18, parallel=True):
             results = []
             for tb in selected:
                 start = float(getattr(tb, 'virtual_seconds', 0))
-                mini = dict(base)
-                mini['book'] = L._vclock_book_subset(base.get('book'), base['tables'][str(tb.id)]['pids'])
+                mini = L._table_mini(base, tb.id)
                 args = (mini, tb.id, start + 0.001, float('inf'), frozen,
                         '_schedule_' + str(rules['seed']), True)
                 results.append((tb.id, pool.submit(L._vclock_table_task, *args) if pool else
