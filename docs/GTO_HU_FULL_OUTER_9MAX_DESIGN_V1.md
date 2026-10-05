@@ -49,3 +49,17 @@ Remaining static share after H1 (C0 reach): 3-bet pots 0.261 (35.7% of flop reac
 - 3-way SRPs: only the 3-way research game exists (B-series); results from it are never called GTO. Default: keep static, and mark
   every DB spot whose preflop line feeds mainly into 3-way terminals with that remaining static share.
 - Order and size are fixed after OL's result, before any solve.
+
+## Step 3a — HU 3-bet terminals (decided 2026-10-05 after OL)
+- Census at OL state 2 (`/home/user/gto_ckpt/step3/census_s2.json`): share of flop reach srp/hu 29.5%, srp/mw 28.2%, **3bet/hu 30.4%**,
+  3bet/mw 11.8%. HU 3-bet pots are now the largest unsolved share and the HU machinery applies to them directly.
+- Selection: the smallest reach-ranked set covering >= 80% of HU 3-bet reach = 25 terminals (80.8%; 24.6% of flop reach), listed in
+  `data/gto_validation/pilot9/step3/t3_selection.json` (pot 14.5-21 bb, SPR 0.95-1.66).
+- Cost probe (node 51, BTN open / SB 3-bet / BTN call, 4 boards): 89-132 s per board on one thread, 1.0 GB, <= 0.25% pot -> about
+  12 min wall per terminal on 4 workers, about 5 h for the 25.
+- T (one outer step for the 3-bet tables): panel_v1 at state-2 ranges; the 8 SRP tables stay at state 2; one preflop solve with 33 tables.
+  Reported as T - S2 per opener / 3-bettor position; no expected direction is pre-registered for 3-bet pots (the static payoff at
+  SPR ~1.2-1.7 has r ~ 1 +- 0.01, so the bias comes from pot x equity ignoring postflop play, sign unknown a priori).
+- After T: a joint OL over all 33 tables with the same rule (max 3 steps) only if T moves preflop frequencies by more than the OL
+  step-2 residual scale; otherwise T is reported and the loop is not run.
+- 3-way terminals stay static (research game only); every DB record carries the static share of its line.

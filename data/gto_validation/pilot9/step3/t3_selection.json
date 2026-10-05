@@ -1,0 +1,350 @@
+{
+ "schema": "pilot9_t3_selection_v1",
+ "state": "OL state 2 (census_s2.json, ck sha256 3bd99ed3...)",
+ "rule": "smallest reach-ranked set of HU 3-bet terminals covering >= 80% of HU 3-bet flop reach",
+ "hu_3bet_reach": 0.2144363785061326,
+ "flop_reach": 0.7051805638257844,
+ "selected_reach": 0.17335993988364679,
+ "selected_share_of_hu_3bet": 0.8084446356133967,
+ "selected_share_of_flop_reach": 0.24583766027685858,
+ "by_category_share_of_flop_reach": {
+  "srp/hu": 0.29538104885150096,
+  "srp/mw": 0.2824597835228173,
+  "3bet/hu": 0.30408719341718743,
+  "3bet/mw": 0.11807197420852784
+ },
+ "cost_probe": {
+  "node": 51,
+  "boards": 4,
+  "solve_s_per_board": "89-132 (1 thread)",
+  "peak_rss_gb": 1.0,
+  "max_expl_pct_pot": 0.246
+ },
+ "terminals": [
+  {
+   "node": 51,
+   "name": "n51",
+   "spec": "fold,fold,fold,fold,fold,fold,raise,raise,fold,call",
+   "line": "BTN:Raise 2 > SB:3-bet 8 > BTN:Call 8",
+   "live": [
+    "BTN",
+    "SB"
+   ],
+   "reach": 0.014599356231480324,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 14,
+   "name": "n14",
+   "spec": "fold,fold,fold,fold,fold,fold,fold,raise,raise,call",
+   "line": "SB:Raise 2.5 > BB:3-bet 10 > SB:Call 10",
+   "live": [
+    "SB",
+    "BB"
+   ],
+   "reach": 0.011795752203772518,
+   "pot_bb": 21.0,
+   "spr": 0.9523809523809523
+  },
+  {
+   "node": 196,
+   "name": "n196",
+   "spec": "fold,fold,fold,fold,fold,raise,raise,fold,fold,call",
+   "line": "CO:Raise 2 > BTN:3-bet 6 > CO:Call 6",
+   "live": [
+    "CO",
+    "BTN"
+   ],
+   "reach": 0.008974184224177801,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036
+  },
+  {
+   "node": 100,
+   "name": "n100",
+   "spec": "fold,fold,fold,fold,fold,raise,fold,raise,fold,call",
+   "line": "CO:Raise 2 > SB:3-bet 8 > CO:Call 8",
+   "live": [
+    "CO",
+    "SB"
+   ],
+   "reach": 0.0085085013756207,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 701,
+   "name": "n701",
+   "spec": "fold,fold,fold,fold,raise,raise,fold,fold,fold,call",
+   "line": "HJ:Raise 2 > CO:3-bet 6 > HJ:Call 6",
+   "live": [
+    "HJ",
+    "CO"
+   ],
+   "reach": 0.008050065068023804,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036
+  },
+  {
+   "node": 2358,
+   "name": "n2358",
+   "spec": "fold,fold,fold,raise,raise,fold,fold,fold,fold,call",
+   "line": "LJ:Raise 2 > HJ:3-bet 6 > LJ:Call 6",
+   "live": [
+    "LJ",
+    "HJ"
+   ],
+   "reach": 0.007905359107549616,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 1254,
+   "name": "n1254",
+   "spec": "fold,fold,fold,raise,fold,raise,fold,fold,fold,call",
+   "line": "LJ:Raise 2 > CO:3-bet 6 > LJ:Call 6",
+   "live": [
+    "LJ",
+    "CO"
+   ],
+   "reach": 0.00729318943208192,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 365,
+   "name": "n365",
+   "spec": "fold,fold,fold,fold,raise,fold,raise,fold,fold,call",
+   "line": "HJ:Raise 2 > BTN:3-bet 6 > HJ:Call 6",
+   "live": [
+    "HJ",
+    "BTN"
+   ],
+   "reach": 0.007202023992260902,
+   "pot_bb": 14.499999999999998,
+   "spr": 1.6551724137931036
+  },
+  {
+   "node": 27,
+   "name": "n27",
+   "spec": "fold,fold,fold,fold,fold,fold,raise,fold,raise,call",
+   "line": "BTN:Raise 2 > BB:3-bet 8 > BTN:Call 8",
+   "live": [
+    "BTN",
+    "BB"
+   ],
+   "reach": 0.007089661556530829,
+   "pot_bb": 17.5,
+   "spr": 1.2571428571428571
+  },
+  {
+   "node": 918,
+   "name": "n918",
+   "spec": "fold,fold,fold,raise,fold,fold,raise,fold,fold,call",
+   "line": "LJ:Raise 2 > BTN:3-bet 6 > LJ:Call 6",
+   "live": [
+    "LJ",
+    "BTN"
+   ],
+   "reach": 0.006794722361270143,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 3007,
+   "name": "n3007",
+   "spec": "fold,fold,raise,fold,fold,raise,fold,fold,fold,call",
+   "line": "UTG+2:Raise 2 > CO:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "CO"
+   ],
+   "reach": 0.006572750073459305,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 4111,
+   "name": "n4111",
+   "spec": "fold,fold,raise,fold,raise,fold,fold,fold,fold,call",
+   "line": "UTG+2:Raise 2 > HJ:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "HJ"
+   ],
+   "reach": 0.006333447430724335,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 269,
+   "name": "n269",
+   "spec": "fold,fold,fold,fold,raise,fold,fold,raise,fold,call",
+   "line": "HJ:Raise 2 > SB:3-bet 8 > HJ:Call 8",
+   "live": [
+    "HJ",
+    "SB"
+   ],
+   "reach": 0.006301411702395672,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 7615,
+   "name": "n7615",
+   "spec": "fold,fold,raise,raise,fold,fold,fold,fold,fold,call",
+   "line": "UTG+2:Raise 2 > LJ:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "LJ"
+   ],
+   "reach": 0.006089943922332435,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 822,
+   "name": "n822",
+   "spec": "fold,fold,fold,raise,fold,fold,fold,raise,fold,call",
+   "line": "LJ:Raise 2 > SB:3-bet 8 > LJ:Call 8",
+   "live": [
+    "LJ",
+    "SB"
+   ],
+   "reach": 0.005848610039038612,
+   "pot_bb": 17.999999999999996,
+   "spr": 1.2222222222222225
+  },
+  {
+   "node": 2671,
+   "name": "n2671",
+   "spec": "fold,fold,raise,fold,fold,fold,raise,fold,fold,call",
+   "line": "UTG+2:Raise 2 > BTN:3-bet 6 > UTG+2:Call 6",
+   "live": [
+    "UTG+2",
+    "BTN"
+   ],
+   "reach": 0.005840092189183306,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 23960,
+   "name": "n23960",
+   "spec": "fold,raise,raise,fold,fold,fold,fold,fold,fold,call",
+   "line": "UTG+1:Raise 2 > UTG+2:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "UTG+2"
+   ],
+   "reach": 0.005716207584218193,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 13064,
+   "name": "n13064",
+   "spec": "fold,raise,fold,raise,fold,fold,fold,fold,fold,call",
+   "line": "UTG+1:Raise 2 > LJ:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "LJ"
+   ],
+   "reach": 0.005661915970512982,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 8456,
+   "name": "n8456",
+   "spec": "fold,raise,fold,fold,fold,raise,fold,fold,fold,call",
+   "line": "UTG+1:Raise 2 > CO:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "CO"
+   ],
+   "reach": 0.005574749424477387,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 74145,
+   "name": "n74145",
+   "spec": "raise,raise,fold,fold,fold,fold,fold,fold,fold,call",
+   "line": "UTG:Raise 2 > UTG+1:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "UTG+1"
+   ],
+   "reach": 0.005435491575866267,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 8120,
+   "name": "n8120",
+   "spec": "fold,raise,fold,fold,fold,fold,raise,fold,fold,call",
+   "line": "UTG+1:Raise 2 > BTN:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "BTN"
+   ],
+   "reach": 0.005410192303571027,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 9560,
+   "name": "n9560",
+   "spec": "fold,raise,fold,fold,raise,fold,fold,fold,fold,call",
+   "line": "UTG+1:Raise 2 > HJ:3-bet 6 > UTG+1:Call 6",
+   "live": [
+    "UTG+1",
+    "HJ"
+   ],
+   "reach": 0.005305316229261703,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 40689,
+   "name": "n40689",
+   "spec": "raise,fold,raise,fold,fold,fold,fold,fold,fold,call",
+   "line": "UTG:Raise 2 > UTG+2:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "UTG+2"
+   ],
+   "reach": 0.005217358465696847,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 29793,
+   "name": "n29793",
+   "spec": "raise,fold,fold,raise,fold,fold,fold,fold,fold,call",
+   "line": "UTG:Raise 2 > LJ:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "LJ"
+   ],
+   "reach": 0.004947847766365166,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  },
+  {
+   "node": 25185,
+   "name": "n25185",
+   "spec": "raise,fold,fold,fold,fold,raise,fold,fold,fold,call",
+   "line": "UTG:Raise 2 > CO:3-bet 6 > UTG:Call 6",
+   "live": [
+    "UTG",
+    "CO"
+   ],
+   "reach": 0.004891789653774965,
+   "pot_bb": 14.499999999999996,
+   "spr": 1.6551724137931039
+  }
+ ]
+}
