@@ -122,7 +122,6 @@ $('#sheetClose').onclick=closeJoin;
 $('#joinSheet').onclick=e=>{ if(e.target===$('#joinSheet')) closeJoin(); };
 $('#join').onclick=join;
 $('#cancelRegistration').onclick=cancelRegistration;
-$('#continueNav').onclick=()=>location.href='/play';
 $('#walletNav').onclick=openWallet;
 $('#walletClose').onclick=()=>$('#walletSheet').hidden=true;
 $('#walletSheet').onclick=e=>{ if(e.target===$('#walletSheet')) $('#walletSheet').hidden=true; };
