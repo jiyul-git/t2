@@ -130,12 +130,23 @@ Server는 threaded라 ACK와 read-only history/memo/tournament 요청이 long ga
 - right swipe는 full standings drawer
 - standings가 hidden persona/hole cards/reads/intents를 노출하면 안 됨
 
-Current browser pipeline cache checkpoint: `app.js?v=67`.
+Current browser pipeline cache checkpoint: `app.js?v=76` (`test` scheduled-tournament UI).
 
 Runtime folders are not source of truth.
 source -> runtime copy는 `ui/tools/setup_run_dir.sh` 경로를 사용.
 
-## 9. Historical sources
+## 9. Scheduled tournaments / durable wallet V1 (2026-10-05, test)
+
+Manual game creation is replaced by scheduled buy-in tournaments. Personal chips,
+entry receipts and authoritative live state share one SQLite transaction in
+`T2_DATA_DIR` (default: runtime `userdata/`). Code updates preserve that directory.
+Off-screen registered seats check/fold and pay blinds; late entry/re-entry joins the
+existing field between hands. Integer payouts conserve the pool and credit once.
+The existing single-HERO installation remains the account scope. Operational
+amounts/schedule are provisional and configurable. This is not yet a production
+server/master promotion. See [implementation and verification](docs/semantic_audit/SCHEDULED_TOURNAMENTS_V1.md).
+
+## 10. Historical sources
 
 - `NINE_MAX_MIGRATION.md`
 - `TDA_POSITION_DESIGN.md`

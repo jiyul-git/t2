@@ -93,3 +93,11 @@ main{padding:0 14px 22px}
 .toggleRow{display:flex!important;flex-direction:column;justify-content:center;border:1px solid #355149;border-radius:10px;padding:9px 10px;background:#0b1715}
 .toggleRow input{width:20px;height:20px;margin-top:7px;accent-color:#d5b574}
 .secondaryAction{width:100%;margin-top:12px;border:1px solid #45655c;border-radius:11px;padding:11px;background:#142622;color:#d9e2de;font-weight:800}
+.walletBadge{border:1px solid #8a7545;border-radius:12px;padding:8px 12px;background:#182a24;color:var(--gold);font-size:10px}
+.walletBadge b{display:block;font-size:17px;margin-top:2px}
+.cost{font-size:19px;font-weight:800;color:var(--gold);margin:20px 0 10px}
+.rulesNote{font-size:12px;line-height:1.6;color:var(--muted)}
+.walletRow{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #31534b;font-size:12px}
+.walletRow small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+#walletDetail{max-height:60dvh;overflow:auto}
+.card .startTime{margin-top:8px;font-size:12px;font-weight:800;color:var(--gold)}

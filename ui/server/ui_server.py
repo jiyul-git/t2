@@ -42,9 +42,182 @@ import context as CTX
 from table import BLINDS
 import storage_paths as _SP   # 아카이브 경로는 엔진과 같은 resolver 를 쓴다
 import telemetry_sync as _TM
+import tournament_store as _TS
+import scheduled_runtime as _SR
 
 LOCK = threading.Lock()
 _last = None
+ECONOMY = _TS.Store()
+SCHEDULE_FUTURE = None
+SCHEDULE_POOL = None
+SCHEDULE_CURSOR = 0
+LAST_PLAY_PRESENCE = 0.0
+if ECONOMY.active_id():
+    L.STATE_STORE = ECONOMY
+    _saved_game = ECONOMY.load_active()
+    if _saved_game:
+        L.save(_saved_game)
+
+
+def _economy_receipt(st):
+    if not st or not st.get('tournament_id'):
+        return {}
+    ev = ECONOMY.event(st['tournament_id'])
+    return {'wallet': ECONOMY.wallet(), 'tournament_id': ev['id'],
+            'my_entry': ev['entries'][-1] if ev['entries'] else None,
+            'registration_closes_at': ev['closes_at'],
+            'prize_pool': st.get('prize_pool', 0),
+            'can_reenter': _TS.can_reenter(ev)}
+
+
+def _managed_play_state():
+    """Take over only a completed off-screen hand; no action/clock reset on reload."""
+    global _last, LAST_PLAY_PRESENCE
+    LAST_PLAY_PRESENCE = time.time()
+    tid = ECONOMY.active_id()
+    if not tid:
+        return None
+    ev = ECONOMY.event(tid)
+    st = ev['state']
+    entry = ev['entries'][-1] if ev['entries'] else None
+    if st and entry and entry['status'] in ('busted', 'finished'):
+        L.STATE_STORE = ECONOMY
+        _last = _game_over()
+        return None
+    if time.time() < ev['starts_at']:
+        if not ev['enter_requested']:
+            ECONOMY.request_enter(tid)
+        return {'waiting': True, 'message': '예약한 대회의 시작을 기다리고 있습니다.',
+                'starts_at': ev['starts_at'], **_economy_receipt(st)}
+    if (not st or not entry or entry['pid'] is None or entry['status'] in ('reserved', 'waiting')
+            or st.get('offscreen') and (not st.get('hero_ready') or
+                st.get('background_seconds', 0) + 2 < _TS.active_seconds(time.time() - ev['starts_at']))):
+        if not ev['enter_requested']:
+            ECONOMY.request_enter(tid)
+        return {'waiting': True, 'message': '대회 진행을 동기화하고 다음 핸드에 입장합니다.'}
+    L.STATE_STORE = ECONOMY
+    if st.get('offscreen'):
+        _clear_worker()
+        _vclock_reset()
+        st['offscreen'] = False
+        st.pop('background_pending', None)
+        st['field']['sitout_pids'] = []
+        st['field']['virtual_play_seconds'] = _TS.active_seconds(time.time() - ev['starts_at'])
+        st['ui_clock_started_at'] = ev['starts_at']
+        _sync_clock(st)
+        L.save(st)
+        _last = None
+    return None
+
+
+def _schedule_tick():
+    """One publisher under LOCK; process workers never write wallet/live state."""
+    global SCHEDULE_FUTURE, SCHEDULE_POOL, SCHEDULE_CURSOR, _last
+    now = time.time()
+    ECONOMY.ensure_schedule(now)
+    if SCHEDULE_FUTURE is not None and SCHEDULE_FUTURE.done():
+        try:
+            result = SCHEDULE_FUTURE.result()
+            ok = ECONOMY.save_state(result['id'], result['state'],
+                                    expected_revision=result['revision'],
+                                    assignments=result['assignments'])
+            if ok and result['id'] == ECONOMY.active_id():
+                L.STATE_STORE = ECONOMY
+                L.save(ECONOMY.load_active())
+                _last = None
+        except Exception:
+            traceback.print_exc()
+        SCHEDULE_FUTURE = None
+    tid = ECONOMY.active_id()
+    st = ECONOMY.load_active() if tid else None
+    if tid and now - LAST_PLAY_PRESENCE > 20 and ECONOMY.event(tid)['enter_requested']:
+        # A player may leave the waiting room before the tournament starts.
+        # An abandoned entry request must never pause that player's future blinds.
+        ECONOMY.request_enter(tid, False)
+        st = ECONOMY.load_active()
+    if st and not st.get('offscreen'):
+        # The deadline is authoritative even if the browser never posts again.
+        if not st.get('busted') and _last is None and st.get('hand_seed') is not None:
+            _last = _wrap(_step())
+            st = L.load()
+        decision = ((_last or {}).get('view') or {}).get('type') == 'decision'
+        if decision and st.get('ui_action_deadline') is None:
+            ready_at = float(st.get('ui_decision_ready_at') or now)
+            idle = now - LAST_PLAY_PRESENCE > 20
+            # Connected players retain the existing full clock beginning when
+            # their action bar is presented. Absence / failed presentation gets
+            # a bounded server fallback, without buying extra time on reload.
+            grace = 0.0 if idle else max(30.0, STREAM_ACK_TIMEOUT * 2)
+            if idle or now >= ready_at + grace:
+                _arm_action_clock(_token(), now=ready_at + grace)
+                st = L.load()
+        if (decision and st.get('ui_action_deadline') is not None
+                and now >= float(st['ui_action_deadline'])):
+            _last = _wrap(_step(_timeout_action()))
+            _last['auto_folded'] = True
+            st = L.load()
+        if ((st.get('busted') or now - LAST_PLAY_PRESENCE > 20)
+                and st.get('hand_seed') is None):
+            # Finalize legacy/vclock pending work before handing the whole field
+            # to the off-screen scheduler.
+            if st.get('vclock_settle_pending'):
+                _vclock_refresh_settle_target(st)
+                L.save(st)
+                _vclock_settle(st, wait=False)
+                st = L.load()
+            if st.get('others_pending'):
+                _kick_pending_worker()
+                ready = _peek_others()
+                if ready is not None:
+                    L.resume_others(st, ready)
+                    _clear_worker()
+                    st = L.load()
+            if not st.get('others_pending') and not st.get('vclock_settle_pending'):
+                _clear_worker()
+                _vclock_reset()
+                st['offscreen'] = True
+                st['field']['sitout_pids'] = [st['field']['hero_pid']]
+                st['background_pending'] = {}
+                st['background_seconds'] = min(
+                    (float(t.get('vclock_seconds', 0)) for t in st['field']['tables'].values()),
+                    default=0.0)
+                st['hero_ready'] = False
+                L.save(st)
+                ECONOMY.request_enter(tid, False)
+                _last = None
+    if SCHEDULE_FUTURE is not None:
+        return
+    jobs = []
+    for ev in ECONOMY.jobs(now):
+        es = ev['state'] or {}
+        if (ev['id'] == tid and es and not es.get('offscreen')
+                and not es.get('busted')):
+            continue
+        if es.get('hand_seed') is not None or es.get('others_pending') or es.get('vclock_settle_pending'):
+            continue
+        target = _TS.active_seconds(now - ev['starts_at'])
+        if es and es.get('background_seconds', -1) >= target - 0.25 and not any(
+                e['status'] in ('reserved', 'waiting') for e in ev['entries']):
+            continue
+        jobs.append((ev, target))
+    if jobs:
+        ev, target = jobs[SCHEDULE_CURSOR % len(jobs)]
+        SCHEDULE_CURSOR += 1
+        if SCHEDULE_POOL is None:
+            SCHEDULE_POOL = ProcessPoolExecutor(max_workers=1)
+        SCHEDULE_FUTURE = SCHEDULE_POOL.submit(_SR.advance, ev, target)
+
+
+def _schedule_loop():
+    stop = threading.Event()
+    while not stop.wait(1):
+        if LOCK.acquire(timeout=0.05):
+            try:
+                _schedule_tick()
+            except Exception:
+                traceback.print_exc()
+            finally:
+                LOCK.release()
 
 # HERO는 실제 wall-clock, 봇 전용 테이블은 독립 가상시계다.
 # 55분 플레이 + 5분 브레이크가 기본이며 테스트에서는 env로만 축소할 수 있다.
@@ -57,6 +230,9 @@ VCLOCK_CHUNK_SECONDS = max(
 
 def _clock_values(st, now):
     fd = st.get('field') or {}
+    if st.get('tournament_id'):
+        elapsed = max(0.0, now - st['tournament_started_at'])
+        return _TS.active_seconds(elapsed), elapsed
     if 'ui_clock_started_at' not in st:
         seconds = fd.get('virtual_play_seconds')
         return seconds, None if seconds is None else seconds + st.get('ui_break_seconds', 0)
@@ -72,6 +248,20 @@ def _sync_clock(st, now=None):
     now = time.time() if now is None else now
     fd = st.get('field') or {}
     if fd.get('virtual_play_seconds') is None:
+        return
+    if st.get('tournament_id'):
+        active, elapsed = _clock_values(st, now)
+        fd['virtual_play_seconds'] = active
+        cycles, phase = divmod(elapsed, 3600.0)
+        st['ui_next_break'] = (cycles + 1) * 3300.0
+        if phase >= 3300 and st.get('hand_seed') is None:
+            st['ui_break_pending'] = True
+            st['ui_break_until'] = st['tournament_started_at'] + (cycles + 1) * 3600
+            st['ui_break_started_at'] = st['ui_break_until'] - 300
+            st['ui_break_at'] = active
+        elif phase < 3300:
+            st['ui_break_pending'] = False
+            st.pop('ui_break_at', None)
         return
     # Upgrade an existing minute-based game without resetting its elapsed time.
     if 'ui_clock_started_at' not in st:
@@ -100,7 +290,8 @@ def _ui_timing(st, now=None):
         level_no = max(1, int(fd.get('level') or fallback_level))
         used = max(0.0, float(active) - (level_no - 1) * period)
         level_remaining = int(math.ceil(max(0.0, period - used)))
-    return {'elapsed_seconds': None if elapsed is None else int(elapsed),
+    return {'scheduled_tournament': bool(st.get('tournament_id')),
+            'elapsed_seconds': None if elapsed is None else int(elapsed),
             'active_seconds': None if active is None else int(active),
             'level_minutes': minutes,
             'level_remaining_seconds': level_remaining,
@@ -236,7 +427,9 @@ def _lobby_payload():
             }
         except Exception:
             current = {'error': 'current_state_unreadable'}
-    return {'tournaments': tournaments, 'current': current, 'can_play': True}
+    payload = ECONOMY.catalog()
+    payload['current'] = current
+    return payload
 
 
 def _tournament_payload():
@@ -354,6 +547,7 @@ def _tournament_payload():
         'players_to_jump': int(mj.get('players_to_jump') or 0),
         'money_jumps': jumps,
         'standings': rows,
+        **_economy_receipt(st),
     }
 
 
@@ -903,7 +1097,7 @@ def _step(action=None, amount=0, on_bot_action=None):
             p.get('stack', 0) > 0
             for p in st['field']['players'].values())
         threshold = float(st.get('ui_next_break', PLAY_WINDOW_SECONDS))
-        if (active is not None and float(active) >= threshold
+        if (not st.get('tournament_id') and active is not None and float(active) >= threshold
                 and not st.get('busted') and remaining > 1):
             # HERO 핸드가 55:00을 넘겨 끝나도 다음 세션으로 초과분을 넘기지 않는다.
             overshoot = max(0.0, float(active) - threshold)
@@ -925,6 +1119,8 @@ def _step(action=None, amount=0, on_bot_action=None):
                 st.get('ui_break_at')
                 if st.get('ui_break_pending') and st.get('ui_break_at') is not None
                 else (st.get('field') or {}).get('virtual_play_seconds', 0.0))
+        if st.get('tournament_id'):
+            _sync_clock(st, now)
     L.save(st)
 
     if vclock and r.get('done'):
@@ -1207,6 +1403,12 @@ def _wrap(r):
             st.pop('ui_action_token', None)
             st.pop('ui_action_deadline', None)
             L.save(st)
+        if st.get('tournament_id') and (out.get('view') or {}).get('type') == 'decision':
+            if st.get('ui_decision_token') != out['token']:
+                st['ui_decision_token'] = out['token']
+                st['ui_decision_ready_at'] = time.time()
+                L.save(st)
+        out.update(_economy_receipt(st))
     except Exception:
         pass
     return out
@@ -1230,6 +1432,7 @@ def _game_over():
         'entries': f.entries,
         'view': None,
         'token': _token(),
+        **_economy_receipt(st),
     }
 
 
@@ -1315,11 +1518,12 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        global _last
+        global _last, LAST_PLAY_PRESENCE
         parsed = urllib.parse.urlsplit(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
         if path == '/api/ready':
+            LAST_PLAY_PRESENCE = time.time()
             # 워커가 아직 다른 테이블을 돌리는 중인가. 결과 화면이 이걸 보고
             # 정산이 끝난 뒤에 다음 핸드로 넘어간다 — 빈 로딩 화면을 없앤다.
             # LOCK 을 잡지 않는다. 잡으면 진행 중인 요청 뒤에 줄을 서게 된다.
@@ -1361,6 +1565,8 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, _TM.status())
         if path == '/api/lobby':
             return self._send(200, _lobby_payload())
+        if path == '/api/wallet':
+            return self._send(200, ECONOMY.wallet())
 
         if path == '/api/tournament':
             # Read-only UI requests should not queue behind a long bot calculation.
@@ -1407,6 +1613,11 @@ class H(BaseHTTPRequestHandler):
             return self._serve_static(path)
         with LOCK:
             try:
+                waiting = _managed_play_state()
+                if waiting:
+                    return self._send(200, waiting)
+                if not ECONOMY.active_id() and os.path.exists(L.ST) and L.load().get('tournament_id'):
+                    return self._send(200, {'no_game': True})
                 if _last is None:
                     if not os.path.exists(L.ST):
                         return self._send(200, {'no_game': True})
@@ -1425,6 +1636,8 @@ class H(BaseHTTPRequestHandler):
         global _last
         try:
             body = self._body()
+            if not isinstance(body, dict):
+                raise ValueError('JSON object required')
         except ValueError:
             return self._send(400, {'error': 'JSON 파싱 실패'})
         if self.path == '/api/step-ack':
@@ -1441,6 +1654,50 @@ class H(BaseHTTPRequestHandler):
 
         with LOCK:
             try:
+                if self.path in ('/api/register', '/api/reenter', '/api/enter', '/api/unregister'):
+                    tid = str(body.get('tournament_id') or '')
+                    if self.path == '/api/unregister':
+                        ECONOMY.cancel(tid, body.get('entry_no'))
+                        return self._send(200, {'ok': True, 'wallet': ECONOMY.wallet()})
+                    receipt = None
+                    target = ECONOMY.event(tid)
+                    wants_enter = self.path == '/api/enter' or time.time() >= target['starts_at']
+                    old = ECONOMY.active_id()
+                    old_st = ECONOMY.load_active() if old and old != tid else None
+                    if self.path == '/api/enter' and (not target['entries'] or
+                            target['entries'][-1]['status'] == 'cancelled'):
+                        raise _TS.TournamentError('먼저 바이인해 주세요.')
+                    if wants_enter and old_st and (
+                            old_st.get('hand_seed') is not None or old_st.get('others_pending')
+                            or old_st.get('vclock_settle_pending')):
+                        raise _TS.TournamentError('현재 핸드와 정산이 끝난 뒤 다른 대회에 입장해 주세요.')
+                    if self.path != '/api/enter':
+                        receipt = ECONOMY.reserve(tid, reentry=self.path == '/api/reenter',
+                                                  expected_entry=body.get('entry_no'))
+                    # Paid reservations can coexist. The UI controls one HERO
+                    # table at a time; every other registered seat sits out.
+                    if wants_enter:
+                        old = ECONOMY.active_id()
+                        if old and old != tid:
+                            old_st = ECONOMY.load_active()
+                            if old_st and not old_st.get('offscreen') and old_st.get('hand_seed') is not None:
+                                raise _TS.TournamentError('진행 중인 핸드가 끝난 뒤 다른 대회에 입장해 주세요.')
+                            if old_st:
+                                old_st['offscreen'] = True
+                                old_st['field']['sitout_pids'] = [old_st['field']['hero_pid']]
+                                old_st['hero_ready'] = False
+                                old_st['background_pending'] = {}
+                                ECONOMY.save_state(old, old_st)
+                            ECONOMY.request_enter(old, False)
+                        ECONOMY.set_active(tid)
+                        ECONOMY.request_enter(tid)
+                        L.STATE_STORE = ECONOMY
+                        _clear_worker()
+                        _vclock_reset()
+                        _last = None
+                    return self._send(200, {'ok': True, 'receipt': receipt,
+                                            'wallet': ECONOMY.wallet(),
+                                            'scheduled': time.time() < ECONOMY.event(tid)['starts_at']})
                 if self.path == '/api/memo':
                     if not os.path.exists(L.ST):
                         return self._send(409, {'error': '진행 중인 게임 없음'})
@@ -1474,6 +1731,8 @@ class H(BaseHTTPRequestHandler):
 
                 if self.path == '/api/break':
                     st = L.load()
+                    if st.get('tournament_id') and body.get('skip'):
+                        return self._send(409, {'error': '예약 대회의 공통 브레이크는 건너뛸 수 없습니다.'})
                     if body.get('skip'):
                         if _vclock_enabled(st) and st.get('vclock_settle_pending'):
                             _vclock_refresh_settle_target(st)
@@ -1497,6 +1756,8 @@ class H(BaseHTTPRequestHandler):
                         return self._send(409, {'error': str(e), 'current': _last})
                     return self._send(200, timing)
                 if self.path == '/api/new':
+                    if ECONOMY.active_id() or os.environ.get('T2_ALLOW_PRACTICE_NEW') != '1':
+                        return self._send(409, {'error': '로비에서 예약 토너먼트에 바이인해 주세요.'})
                     kw = {k: body[k] for k in ('entries', 'seed', 'fmt', 'start_stack')
                           if body.get(k) is not None}
                     raw_minutes = body.get('level_minutes', FM.level_minutes(kw.get('fmt')))
@@ -1523,6 +1784,11 @@ class H(BaseHTTPRequestHandler):
                     _last = _wrap(_step())
                     return self._send(200, _last)
                 if self.path in ('/api/step', '/api/step-stream'):
+                    waiting = _managed_play_state()
+                    if waiting:
+                        return self._send(409, {'error': waiting['message'], 'current': waiting})
+                    if not ECONOMY.active_id() and os.path.exists(L.ST) and L.load().get('tournament_id'):
+                        return self._send(409, {'error': '로비에서 참가한 대회에 입장해 주세요.'})
                     stream = self.path == '/api/step-stream'
                     if not os.path.exists(L.ST):
                         return self._send(409, {'error': '진행 중인 게임 없음'})
@@ -1622,6 +1888,8 @@ class H(BaseHTTPRequestHandler):
                         _last['auto_folded'] = True
                     return self._send(200, _last)
                 return self._send(404, {'error': 'not found'})
+            except _TS.TournamentError as e:
+                return self._send(409, {'error': str(e), 'code': e.code})
             except Exception as e:
                 traceback.print_exc()
                 return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
@@ -1640,6 +1908,13 @@ if __name__ == '__main__':
     if DEFER and _pool() is None:
         print('경고: 워커 프로세스를 못 만들었습니다. 정산 지연이 꺼진 것과 같게 동작합니다.')
     _tm = _TM.start()
+    if os.environ.get('T2_SCHEDULE_ENABLED', '1') != '0':
+        # Start the process before the listening socket exists (fork-safe).
+        SCHEDULE_POOL = ProcessPoolExecutor(max_workers=1)
+        SCHEDULE_POOL.submit(_SR.worker_ready).result()
+        SCHEDULE_FUTURE = None
+        ECONOMY.ensure_schedule()
+        threading.Thread(target=_schedule_loop, name='t2-schedule', daemon=True).start()
     print('정산 지연: %s  (끄려면 T2_UI_DEFER=0)' % ('켬' if DEFER else '끔'))
     print('텔레메트리: %s%s' % (
         '켬' if _tm.get('enabled') else '끔',
@@ -1672,4 +1947,6 @@ if __name__ == '__main__':
         if POOL is not None:
             try: POOL.shutdown(wait=False, cancel_futures=True)
             except TypeError: POOL.shutdown(wait=False)   # 파이썬 3.8 이하
+        if SCHEDULE_POOL is not None:
+            SCHEDULE_POOL.shutdown(wait=False, cancel_futures=True)
         os._exit(0)

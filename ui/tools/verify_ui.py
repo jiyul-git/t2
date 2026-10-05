@@ -206,7 +206,8 @@ def run(args):
         subprocess.run(['sh', os.path.join(HERE, 'setup_run_dir.sh'), tmp],
                        check=True, stdout=subprocess.DEVNULL)
         test_key = 'verify-ui-play-key'
-        env = dict(os.environ, T2_PLAY_KEY=test_key)
+        env = dict(os.environ, T2_PLAY_KEY=test_key, T2_ALLOW_PRACTICE_NEW='1',
+                   T2_SCHEDULE_ENABLED='0', T2_DATA_DIR=os.path.join(tmp, 'userdata'))
         srv = subprocess.Popen(
             [sys.executable, 'ui_server.py', '--port', str(args.port)],
             cwd=tmp,

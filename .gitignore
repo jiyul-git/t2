@@ -22,3 +22,7 @@ bak_*bot_hands*.jsonl
 bak_*hand_archive2*.jsonl
 bak_testgame*.jsonl
 *.pyc
+userdata/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm

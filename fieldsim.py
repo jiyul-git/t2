@@ -465,7 +465,7 @@ class Field:
     """전 테이블을 실제로 굴리는 필드."""
 
     def __init__(self, entries=100, start_stack=30000, hero_pid=0, seed=None,
-                 hands_per_level=12, itm_frac=0.15, fmt=None):
+                 hands_per_level=12, itm_frac=0.15, fmt=None, format_rules=None):
         self.seed = seed if seed is not None else int.from_bytes(os.urandom(4), 'big')
         self.rng = random.Random(self.seed)
         # 관찰 장부는 대회 하나에 하나다(ledger L161). 예전에는 봇 테이블이
@@ -484,7 +484,7 @@ class Field:
         self.notes = []
         self.errors = []          # 삼킨 예외 기록. 비어 있지 않으면 문제가 있다
 
-        self._init_runtime(fmt)
+        self._init_runtime(fmt, rules=format_rules)
         q = self.field_q
         self.players = {}
         for pid in range(entries):
@@ -514,7 +514,7 @@ class Field:
         self._balance(notify=False)
 
     # ---------- 조회 ----------
-    def _init_runtime(self, fmt=None, tilt_state=None):
+    def _init_runtime(self, fmt=None, tilt_state=None, rules=None):
         """포맷에서 파생되는 실행 상태를 만든다.
 
         __init__ 과 역직렬화(live2._load_field) 양쪽에서 부른다.
@@ -522,6 +522,9 @@ class Field:
         한쪽만 고쳐져 그 경로에서 터진다(실제로 그랬다).
         """
         self.fmt = FM.get(fmt)
+        if rules is not None:
+            self.format_rules = dict(rules)
+            self.fmt.update(self.format_rules)
         self.max_seat = int(self.fmt.get('seats', MAXSEAT))
         if not (2 <= self.max_seat <= FM.MAX_SEATS):
             raise ValueError('잘못된 테이블 좌석 수: %s' % self.max_seat)
@@ -609,7 +612,7 @@ class Field:
         """생존자 중 히어로의 칩 순위."""
         alive = sorted((p['stack'] for p in self.players.values() if p['stack'] > 0),
                        reverse=True)
-        mine = self.players[self.hero_pid]['stack']
+        mine = self.players.get(self.hero_pid, {}).get('stack', 0)
         if mine <= 0: return None
         return alive.index(mine) + 1 if mine in alive else None
 
@@ -728,8 +731,11 @@ class Field:
         try:
             if getattr(self, 'book', None) is None:
                 self.book = RD.Book()
+            # A reserved real player's off-screen seat never uses bot strategy.
+            sitout = next((tb.seat_of(p['pid']) for p in alive
+                           if p['pid'] in getattr(self, 'sitout_pids', ())), None)
             h = play.Hand(
-                seats, profs, stacks, layout['button'], sb, bb, hero=None,
+                seats, profs, stacks, layout['button'], sb, bb, hero=sitout,
                 seed=(self.rng.randrange(10**9) if seed is None else seed),
                 book=self.book,
                 position_map=layout['pos'],
@@ -750,7 +756,9 @@ class Field:
                 getattr(h.book, 'd', {}) or {}, _pids)
             run = SE.HandRun(h)
             _telemetry_t0 = time.perf_counter()
-            run.start()
+            decision = run.start()
+            while sitout is not None and not decision.get('done'):
+                decision = run.send('check' if decision.get('tocall', 0) == 0 else 'fold')
             res = run.result or {}
             h._telemetry_compute_ms = round(
                 (time.perf_counter() - _telemetry_t0) * 1000.0, 3)

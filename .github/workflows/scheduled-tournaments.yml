@@ -1,0 +1,40 @@
+name: Scheduled Tournaments
+on:
+  push:
+    branches: [test]
+    paths:
+      - 'tournament_store.py'
+      - 'scheduled_runtime.py'
+      - 'live2.py'
+      - 'fieldsim.py'
+      - 'formats.py'
+      - 'ui/**'
+      - 'tools/verify_scheduled_tournaments.py'
+      - '.github/workflows/scheduled-tournaments.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      T2_TABLE_WORKERS: '4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Compile Python and browser scripts
+        run: |
+          python3 -m py_compile tournament_store.py scheduled_runtime.py live2.py fieldsim.py ui/server/ui_server.py
+          node --check ui/web/lobby.js
+          node --check ui/web/app.js
+      - name: Wallet and tournament invariants
+        run: python3 tools/verify_scheduled_tournaments.py
+      - name: Scheduled HTTP with two tables and background workers
+        env:
+          T2_VERIFY_SCHEDULE_BOTS: '10'
+          T2_VERIFY_SCHEDULE_DEFER: '1'
+        run: python3 ui/tools/verify_scheduled_ui.py
+      - name: Existing UI smoke check
+        run: python3 ui/tools/verify_ui.py --hands 6 --entries 18 --seed 20260920 --port 8799

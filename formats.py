@@ -85,7 +85,7 @@ FORMATS = {
 DEFAULT = 'standard'
 
 # ---------- 한계 ----------
-MAX_ENTRIES = 400      # 필드 최대 인원
+MAX_ENTRIES = 1000     # 필드 최대 엔트리(재참가 포함)
 MAX_SEATS   = 9        # 테이블 최대 인원 (포지션 사다리 상한)
 MIN_SEATS   = 6
 

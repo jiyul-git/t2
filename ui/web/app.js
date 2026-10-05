@@ -3192,8 +3192,8 @@ function renderBreak(ready) {
   if (!S.breakOpen) {
     S.breakOpen = true;
     showOverlayPersistent('<h2>브레이크</h2><div id="breakCountdown" role="status" aria-live="polite"></div>' +
-      '<div class="actions"><button type="button" id="breakSkip">휴식 건너뛰기</button></div>');
-    $('#breakSkip').addEventListener('click', async () => {
+      (ready.scheduled_tournament ? '' : '<div class="actions"><button type="button" id="breakSkip">휴식 건너뛰기</button></div>'));
+    if ($('#breakSkip')) $('#breakSkip').addEventListener('click', async () => {
       try {
         const r = await fetch('/api/break', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({skip:true})});
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -3218,13 +3218,11 @@ async function showMenu() {
   }
 
   showOverlayPersistent(
-    '<h2>대회 정보</h2>' +
+    '<h2>대회 정보</h2>' + newGameFormHTML() +
     (err
       ? `<div class="sub">대회 정보를 불러오지 못했습니다: ${esc(err)}</div>`
       : tournamentInfoHTML(t)) +
     '<button type="button" id="mRanks">전체 봇 스택 순위</button>' +
-    '<div class="potline" style="margin-top:14px">지금 대회를 접고 새로 시작합니다. 기존 기록은 bak_ 파일로 보관됩니다.</div>' +
-    '<button type="button" id="mNew">새 게임</button>' +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
     `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>'
@@ -3233,15 +3231,6 @@ async function showMenu() {
   $('#mRanks').addEventListener('click', () => {
     hideOverlay();
     openRankDrawer();
-  });
-  $('#mNew').addEventListener('click', () => {
-    showOverlayPersistent('<h2>새 게임을 시작할까요?</h2>' +
-      '<div class="sub">진행 중인 대회는 끝납니다. 되돌릴 수 없습니다.</div>' +
-      newGameFormHTML() +
-      '<div class="actions"><button type="button" id="bNew">시작</button>' +
-      '<button type="button" id="mBack">취소</button></div>');
-    $('#bNew').addEventListener('click', startNew);
-    $('#mBack').addEventListener('click', showMenu);
   });
   $('#mLobby').addEventListener('click', () => { location.href = '/'; });
   $('#mClose').addEventListener('click', hideOverlay);
@@ -3303,7 +3292,7 @@ function showWin(v) {
     `<div class="sub">${S.entries ? S.entries + '명 중 ' : ''}1위</div>` +
     resultBodyHTML(v, true) +
     newGameFormHTML() +
-    '<div class="actions"><button type="button" id="bNew">새 게임</button>' +
+    '<div class="actions"><button type="button" id="bNew">토너먼트 로비</button>' +
     '<button type="button" id="bClose">닫기</button></div>');
   $('#bNew').addEventListener('click', startNew);
   $('#bClose').addEventListener('click', hideOverlay);
@@ -3322,12 +3311,12 @@ function showGameOver(resp) {
       `<h2>🏆 우승</h2>` +
       `<div class="sub">${S.entries ? S.entries + '명 중 ' : ''}1위</div>` +
       newGameFormHTML() +
-      `<div class="actions"><button type="button" id="bNew">새 게임</button></div>`);
+      `<div class="actions"><button type="button" id="bNew">토너먼트 로비</button></div>`);
   } else {
     showOverlay(
       `<h2>탈락</h2><div class="sub">최종 ${resp.rank ? resp.rank + '위' : '순위 미상'}</div>` +
       newGameFormHTML() +
-      `<div class="actions"><button type="button" id="bNew">새 게임</button></div>`);
+      `<div class="actions"><button type="button" id="bNew">토너먼트 로비</button></div>`);
   }
   $('#bNew').addEventListener('click', startNew);
 }
@@ -3336,44 +3325,20 @@ function showNewGame(msg) {
   $('#mainrow').innerHTML = '<div class="wait">진행 중인 게임 없음</div>';
   closeRaise();
   $('#hero').hidden = true;
-  showOverlay(`<h2>t2 포커</h2><div class="sub">${msg || '새 게임을 시작하세요.'}</div>` +
+  showOverlay(`<h2>t2 포커</h2><div class="sub">${msg || '로비에서 토너먼트에 참가하세요.'}</div>` +
     newGameFormHTML() +
-    `<div class="actions"><button type="button" id="bNew">시작</button></div>`);
+    `<div class="actions"><button type="button" id="bNew">토너먼트 로비</button></div>`);
   $('#bNew').addEventListener('click', startNew);
 }
 
 function newGameFormHTML() {
-  return `<div class="field">
-    <label>엔트리<input id="fEntries" type="number" inputmode="numeric" value="100"></label>
-    <label>시드<input id="fSeed" type="number" inputmode="numeric" placeholder="자동"></label>
-  </div>
-  <div class="field">
-    <label>시작 스택<input id="fStack" type="number" inputmode="numeric" value="30000"></label>
-    <label>레벨 길이 (분)<input id="fLevelMinutes" type="number" min="1" max="120" value="10"></label>
-  </div>`;
+  const r=S.last || {}, w=r.wallet, e=r.my_entry;
+  if(!w) return '<div class="sub">로비에서 예정·진행 중인 토너먼트를 선택하세요.</div>';
+  return `<div class="sub">보유 칩 ${fmt(w.balance)}${e && e.payout != null ?
+    ' · 지급 상금 ' + fmt(e.payout) + ' 칩' : ''}</div>` +
+    (r.can_reenter ? '<div class="sub">등록 마감 전입니다. 로비에서 리바이인할 수 있습니다.</div>' : '');
 }
-
-function startNew() {
-  // 새 게임 시작을 확정하면 설정/확인 창부터 닫는다.
-  hideOverlay();
-  clearTimeout(S.autoTimer); S.autoTimer = null;
-  S.heroSig = null; S.won = false; S.pendingMoveNote = null;
-  S.breakOpen = false; S.elapsedSeconds = null;
-  S.actionSubmitted = false;
-  S.levelRemainingSeconds = null; S.sessionRemainingSeconds = null;
-  memoClearAll();                    // 새 게임이면 봇 메모도 완전히 초기화
-  histClear();                       // 핸드 번호가 1부터 다시 시작한다
-  const body = {};
-  const e = Number($('#fEntries') && $('#fEntries').value);
-  const s = $('#fSeed') && $('#fSeed').value;
-  const k = Number($('#fStack') && $('#fStack').value);
-  if (e) body.entries = e;
-  if (s !== '' && s !== null && s !== undefined && !isNaN(Number(s))) body.seed = Number(s);
-  if (k) body.start_stack = k;
-  body.level_minutes = Number($('#fLevelMinutes').value) || 10;
-  S.handNo = null; S.boardLen = 0; S.logLen = 0; S.stage = null;
-  call('/api/new', body, '새 게임을 만드는 중…');
-}
+function startNew() { location.href='/'; }
 
 function showOverlay(html, pinned) {
   const o = $('#overlay');
@@ -3952,6 +3917,16 @@ function apply(resp) {
 
   clearTimeout(S.autoTimer);
   S.autoTimer = null;
+
+  if (resp.waiting) {
+    $('#mainrow').innerHTML = '<div class="wait">토너먼트 입장 준비 중</div>';
+    closeRaise(); $('#hero').hidden = true;
+    showOverlayPersistent('<h2>토너먼트 대기</h2><div class="sub">'+esc(resp.message)+
+      '</div><div class="actions"><button id="waitingLobby" type="button">로비로</button></div>');
+    $('#waitingLobby').onclick=()=>location.href='/';
+    S.autoTimer=setTimeout(sync,3000);
+    return;
+  }
 
   if (resp.no_game) {
     showNewGame();

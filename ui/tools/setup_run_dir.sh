@@ -24,7 +24,7 @@ DST=${1:-$HOME/t2_ui_run}
 # view_text 라는 이름으로 직접 로드하므로 반드시 포함한다.
 MODULES="action_events archetypes bot context depth dynamics field fieldsim formats gto icm
          live2 money_pressure persona plan play preflop ranges reads runner session storage_paths table
-         telemetry_sync texture view"
+         telemetry_sync texture view tournament_store scheduled_runtime"
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 # style_*.json 은 없어도 죽지는 않지만 스타일 추정 경로가 통째로 꺼진다.

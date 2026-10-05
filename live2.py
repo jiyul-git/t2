@@ -17,6 +17,7 @@ ST = os.environ.get('T2_LIVE_STATE') or os.path.join(D, 'live2_state.json')
 # 설정돼 있기만 하면 경로와 무관하게 '_alt' 하나였고, 그래서 서로 다른
 # 상태를 쓰는 두 실행이 같은 아카이브에 섞여 썼다 (아래 new_game 주석).
 _SUFFIX = SP.namespace()
+STATE_STORE = None  # UI-only durable scheduled-game backend; CLI keeps JSON saves.
 
 
 
@@ -69,6 +70,9 @@ def _dump(f):
     if getattr(f, 'virtual_play_seconds', None) is not None:
         result['virtual_play_seconds'] = f.virtual_play_seconds
         result['level_minutes'] = f.level_minutes
+    if hasattr(f, 'format_rules'):
+        result['format_rules'] = dict(f.format_rules)
+        result['sitout_pids'] = list(getattr(f, 'sitout_pids', ()))
     return result
 
 
@@ -100,7 +104,9 @@ def _load_field(d):
     # 갱신할 때 입력 field_dump 자체가 변해 round-start fingerprint가 흔들린다.
     _tilt_in = (copy.deepcopy(d.get('tilt'))
                 if d.get('tilt_key') == 'pid' else None)
-    f._init_runtime(d.get('fmt'), _tilt_in)
+    f._init_runtime(d.get('fmt'), _tilt_in, rules=d.get('format_rules'))
+    if 'sitout_pids' in d:
+        f.sitout_pids = set(d['sitout_pids'])
     # 새 저장본은 max_seat 를 명시한다. 구 저장본은 저장된 좌석 슬롯 길이로
     # 추론해 진행 중인 8-max 세션이 standard=9 변경 때문에 중간에 변하지 않게 한다.
     _saved_max = d.get('max_seat')
@@ -808,6 +814,8 @@ def finalize_vclock_settle(st, notes=None, bot_log='', independent_hero=False):
 # UTF-8 이라 문제가 없지만 한글 윈도우는 cp949 라, 알림에 이모지가
 # 하나 들어가는 순간 기록이 통째로 터진다(실제로 그랬다).
 def save(st):
+    if STATE_STORE is not None and st.get('tournament_id'):
+        STATE_STORE.save_active(st)
     tmp = ST + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as fp:
         json.dump(st, fp)
@@ -819,6 +827,10 @@ def save(st):
 
 
 def load():
+    if STATE_STORE is not None:
+        managed = STATE_STORE.load_active()
+        if managed is not None:
+            return managed
     for p in (ST, ST + '.bak'):
         try:
             with open(p, encoding='utf-8') as fp:
@@ -929,8 +941,10 @@ PARALLEL_TABLES_MODE = 'parallel_tables_v1'
 def _round_owners(field_dump):
     """라운드 시작 스냅샷에서 HERO/기타 테이블의 소유 영역을 고정한다."""
     hero_pid = int(field_dump['hero_pid'])
-    hp = field_dump['players'][str(hero_pid)]
-    hero_tid = int(hp['table'])
+    hp = field_dump['players'].get(str(hero_pid), {})
+    # After elimination there is no interactive owner; every surviving table
+    # belongs to the worker, including recovery of a pending settlement.
+    hero_tid = int(hp['table']) if hp.get('table') is not None else -1
     other_tids = []
     other_pids = set()
     for tid_s, td in (field_dump.get('tables') or {}).items():

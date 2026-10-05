@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-05",
+  "branch": "test",
+  "base_commit": "cd2ee64659bf9801dfe11c096b0eea1144a166e9",
+  "scheduled_unit_tests": {
+    "passed": 27,
+    "failed": 0
+  },
+  "gates": {
+    "core_joint_nut": "PASS",
+    "core_multiway_reads": "PASS",
+    "core_p7_cold_reraise": "PASS",
+    "core_p7_observation": "PASS",
+    "core_sizing_ownership": "PASS",
+    "f3_checkraise_response": "PASS",
+    "f4_facing_bet": "PASS",
+    "f6_caller_backaction": "PASS",
+    "f7_street_closure": "PASS",
+    "f7b_defend_likelihood": "PASS",
+    "human_model_v3": "PASS",
+    "human_model_v3_integration": "PASS",
+    "human_model_v3_runtime": "PASS",
+    "multiway_range_preservation": "PASS",
+    "p2_limped_pot": "PASS",
+    "p3_first_open": "PASS",
+    "p4_vs_3bet": "PASS",
+    "p5_backaction": "PASS",
+    "p6_calloff": "PASS",
+    "preflop_closure": "PASS",
+    "read_recency_v3": "PASS",
+    "weighted_boundaries": "PASS",
+    "weighted_range_adapter": "PASS"
+  },
+  "existing_ui_smoke": {
+    "players": 18,
+    "hands": 6,
+    "decisions": 28,
+    "showdowns": 5,
+    "chip_violations": 0,
+    "slot_violations": 0,
+    "legal_violations": 0,
+    "stream_events": 9
+  },
+  "unmanaged_strategy_parity": {
+    "seeds": [
+      3000,
+      3001,
+      3002,
+      3003,
+      3004,
+      3005
+    ],
+    "hands_per_seed": 30,
+    "equal_before_after": true,
+    "fp": {
+      "3000": "1db02160c3c7cfd0",
+      "3001": "c627733bc71961a2",
+      "3002": "b96d8eadc38608ad",
+      "3003": "ec02b749a9b68f9b",
+      "3004": "5f15e8c45012e747",
+      "3005": "36479b7d7bf1ae91"
+    },
+    "stats": {
+      "n": 1401,
+      "vpip": 306,
+      "hands": 180,
+      "flop": 94,
+      "pfr": 167
+    }
+  },
+  "historical_baseline": {
+    "mismatching_seeds_before": 6,
+    "mismatching_seeds_after": 6,
+    "updated": false
+  },
+  "semantic_completeness": {
+    "before": {
+      "sites": 1153,
+      "owned": 1144,
+      "unowned": 9,
+      "span_errors": [
+        "'span markers not found in live2.finish: \"if getattr(f, \\'virtual_play_seconds\\', None) is not None:\"..\\'f.virtual_play_seconds += duration\\''"
+      ],
+      "nonsemantic_sites": 27,
+      "concepts_with_sites": 204,
+      "functions": 676,
+      "unowned_functions": 2,
+      "tables": 82,
+      "unowned_tables": 8
+    },
+    "after": {
+      "sites": 1154,
+      "owned": 1145,
+      "unowned": 9,
+      "span_errors": [
+        "'span markers not found in live2.finish: \"if getattr(f, \\'virtual_play_seconds\\', None) is not None:\"..\\'f.virtual_play_seconds += duration\\''"
+      ],
+      "nonsemantic_sites": 28,
+      "concepts_with_sites": 204,
+      "functions": 676,
+      "unowned_functions": 2,
+      "tables": 82,
+      "unowned_tables": 8
+    },
+    "new_unowned_sites": 0,
+    "preexisting_errors_remain": true
+  },
+  "local_performance": {
+    "field_entries": 1000,
+    "tables": 112,
+    "initialization_seconds": 0.131,
+    "initial_chips": 30000000,
+    "catchup_play_seconds": 120,
+    "catchup_real_seconds": 58.147,
+    "catchup_batches": 10,
+    "batch_budget": 48,
+    "remaining_after_catchup": 999,
+    "chips_after_catchup": 30000000,
+    "table_batch_size": 18,
+    "serial_seconds": 6.55,
+    "parallel_seconds": 1.61
+  },
+  "limits": [
+    "single HERO account",
+    "production/master not deployed",
+    "mobile visual inspection unavailable",
+    "no full tournament performance certification"
+  ],
+  "scheduled_http": {
+    "status": "PASS",
+    "initial_players": 11,
+    "defer": true,
+    "table_workers": 4,
+    "checks": [
+      "duplicate reservation charges once",
+      "client money ignored",
+      "waiting room absence releases entry request",
+      "manual deadline begins on action bar and survives reload",
+      "timeout without browser action",
+      "offline hands and blinds continue",
+      "runtime code replacement and process restart preserve wallet",
+      "restart during busted HERO settlement completes without browser polling",
+      "paid re-entry charges once and assigns distinct HERO pid in existing field"
+    ]
+  }
+}

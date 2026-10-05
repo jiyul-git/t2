@@ -145,6 +145,12 @@ master promotion
 
 ### Non-GTO / test
 
+**2026-10-05 예약 대회/개인 칩 V1 (test 검증본)**: 수동 새 게임 대신 시간대별 대회,
+영구 지갑, 예약 바이인/취소, 레이트 등록, 탈락 후 리엔트리, 한 번만 상금 지급을 구현했다.
+미접속 중 실제 시간대로 진행하며 체크/폴드·블라인드를 적용한다. 작업 시작 기준은 `cd2ee646`이고
+기존 test의 개념 분리 변경을 보존했다. 운영값은 임시이며 정식 서버/master에는 아직 반영하지 않았다.
+근거: [예약 대회 V1](docs/semantic_audit/SCHEDULED_TOURNAMENTS_V1.md).
+
 **2026-10-03 master 승격**: 인간형 모델 감사·통합 Stage 0~11 과 베타 전 버그 수정 3건을 master 로 승격했다. 이 시점이 새 본체 기준선이다.
 - 본체 + Human Model 2차/3차가 하나의 실행 경로로 통합됐다. GTO 의존 두 플래그(`T2_GTO_MEMORY_V2`, `T2_PREFLOP_REASONING_V3`)는 production OFF 이고 BLOCKED_BY_GTO_REFERENCE_VALIDATION 이다.
 - 안테: 참가자 균등 분담. 게시 순서는 ante → SB → BB.

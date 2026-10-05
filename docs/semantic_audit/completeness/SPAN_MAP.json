@@ -22,6 +22,13 @@
  ],
  "spans": [
   {
+   "concept": "@nonsemantic:off-screen human seat uses automatic check/fold input, never bot strategy",
+   "module": "fieldsim",
+   "func": "Field._play_table",
+   "from": "decision = run.send('check' if decision.get('tocall', 0) == 0 else 'fold')",
+   "to": null
+  },
+  {
    "concept": "virtual_tournament_clock",
    "module": "live2",
    "func": "finish",
