@@ -1,0 +1,113 @@
+{
+ "schema": "pilot9_max_raises_audit_v1",
+ "config_base": "/home/user/gto_ckpt/cfg_pilot.json (max_raises 2; open counts as raise 1)",
+ "action_lists": {
+  "opener_facing_3bet": [
+   "Fold, Call 6",
+   "Fold, Call 8",
+   "Fold, Call 10"
+  ],
+  "three_bettor": "Fold, Call, 3-bet, All-in",
+  "cold_player_behind_3bet": "Fold, Call",
+  "verified_on": "all 25 selected path exports (state 2)",
+  "fourbet_mults": "inactive (needs raises >= 2 < max_raises)"
+ },
+ "trigger_vector_structural_zeros": {
+  "elements": 50,
+  "of": 216,
+  "what": "opener_vs_3bet raise and jam (always 0 under max_raises 2)"
+ },
+ "tree": {
+  "mr2_pilot": {
+   "nodes": 75669,
+   "action_nodes": 37328,
+   "arena_mb": 102.3,
+   "iter1_s_4threads": 23.6,
+   "iters_1to5_s": [
+    23.6,
+    22.1,
+    30.4,
+    29.0,
+    28.8
+   ]
+  },
+  "mr3_4bet_jam_only": {
+   "nodes": 913351,
+   "action_nodes": 447090,
+   "arena_mb": 1234.8,
+   "iter1_s_4threads": 73.5,
+   "tree_build_s": 2.0,
+   "peak_rss_gb": 1.52,
+   "terminal_cpu": {
+    "fold_win": {
+     "calls": 28594,
+     "cpu_s": 0.03
+    },
+    "dead_seat": {
+     "calls": 382236,
+     "cpu_s": 0.28
+    },
+    "hu_static": {
+     "calls": 17385,
+     "cpu_s": 0.13
+    },
+    "hu_balanced": {
+     "calls": 0,
+     "cpu_s": 0.0
+    },
+    "hu_fit": {
+     "calls": 0,
+     "cpu_s": 0.0
+    },
+    "mw_3way": {
+     "calls": 47057,
+     "cpu_s": 34.34
+    },
+    "mw_4way": {
+     "calls": 62231,
+     "cpu_s": 63.78
+    },
+    "mw_5plus": {
+     "calls": 78653,
+     "cpu_s": 137.53
+    },
+    "zero_reach": {
+     "calls": 12,
+     "cpu_s": 0.0
+    }
+   },
+   "config_delta": {
+    "max_raises": 3,
+    "fourbet_mults": [
+     10.0
+    ],
+    "note": "4-bet size 10x clamps to the 30 bb stack -> only a 4-bet jam is offered; after it, fold / call"
+   }
+  },
+  "mr3_4bet_2.2x_plus_jam": {
+   "nodes": 1751033,
+   "arena_mb": 2367.4,
+   "iter1_s_4threads": 382.6,
+   "source": "data/gtopen_audit/prof_mr3.json (earlier audit)"
+  },
+  "mr4_default": {
+   "nodes": 16081351,
+   "arena_mb": 21742.0,
+   "note": "does not fit 16 GB with metadata (~5.7 GB)"
+  }
+ },
+ "flop_terminals": {
+  "mr2": 18660,
+  "mr3_4bet_jam_only": 18660,
+  "identical_action_lines": true,
+  "all_33_tables_rekeyable_by_line": true,
+  "example_node_map_mr2_to_mr3jam": {
+   "51": 74,
+   "14": 14,
+   "196": 428,
+   "100": 160,
+   "701": 2222
+  }
+ },
+ "conditional_ab": "data/gto_validation/pilot9/step3/fourbet_ab.json"
+}
