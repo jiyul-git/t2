@@ -603,7 +603,7 @@ class DuoTournamentEngine:
     def _sync_state(self, uid: str) -> dict[str, Any]:
         with self._lock:
             state = self._load()
-            return self._public(state, uid)
+            return self._cached_public(state, uid)
 
     def _sync_action(
         self,
@@ -670,9 +670,9 @@ class DuoTournamentEngine:
                 rec["commit"] = commit
                 rec["result"] = copy.deepcopy(commit.get("result") or {})
 
-            settled = self._settle_round_if_ready(state)
+            self._settle_round_if_ready(state)
             self._save(state)
-            return self._public(state, uid)
+            return self._cached_public(state, uid)
 
     def _sync_reset(self, uid: str) -> dict[str, Any]:
         with self._lock:
