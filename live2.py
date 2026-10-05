@@ -70,7 +70,8 @@ def _dump(f):
 
     if getattr(f, 'time_banks', None):
         # 누적 타임뱅크(timing.py). pid 를 따라간다. 시간 규칙이 꺼져 있으면 비어 있어 저장하지 않는다.
-        result['time_banks'] = {str(k): float(v) for k, v in f.time_banks.items()}
+        result['time_banks'] = {str(k): (list(v) if isinstance(v, (list, tuple)) else float(v))
+                                for k, v in f.time_banks.items()}
     if getattr(f, 'virtual_play_seconds', None) is not None:
         result['virtual_play_seconds'] = f.virtual_play_seconds
         result['level_minutes'] = f.level_minutes
@@ -103,7 +104,8 @@ def _load_field(d):
     f.level_minutes = d.get('level_minutes') or FM.level_minutes(d.get('fmt'))
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
     f.notes = d.get('notes', []); f.errors = []
-    f.time_banks = {int(k): float(v) for k, v in (d.get('time_banks') or {}).items()}
+    f.time_banks = {int(k): (list(v) if isinstance(v, (list, tuple)) else float(v))
+                    for k, v in (d.get('time_banks') or {}).items()}
     f.timing_mode = os.environ.get('T2_TIMING_V1', 'off')
     f.players = {}
     # tilt 내부 pid 상태도 중첩 dict다. 얕은 복사면 HandRun이 f.tilt를

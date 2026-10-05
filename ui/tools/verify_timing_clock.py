@@ -71,7 +71,7 @@ def main():
             code, r = request('/api/new', {'entries': 9, 'seed': 5, 'level_minutes': 10})
             assert code == 200 and (r.get('view') or {}).get('type') == 'decision', r
             token = r['token']
-            # 첫 핸드도 예정표를 탄다: HERO 앞 봇 액션마다 절대 시각, 시작은 딜 기계 시간(8초) 뒤
+            # 첫 핸드도 예정표를 탄다: HERO 앞 봇 액션마다 절대 시각, 시작은 딜 기계 시간(7.5초) 뒤
             sched0 = r.get('bot_schedule') or []
             log0 = [e for e in ((r.get('view') or {}).get('log') or []) if e.get('seat') != r['view'].get('hero_seat')]
             timed0 = [e for e in sched0 if e.get('act_at_ms')]
@@ -79,7 +79,7 @@ def main():
             if timed0:
                 assert timed0[0]['clock_started_ms'] >= t0 + 7500, (timed0[0], t0)
             assert r.get('bot_ready_at_ms') and r['bot_ready_at_ms'] >= t0 + 7500, r.get('bot_ready_at_ms')
-            print('PASS: first hand (/api/new) carries the bot schedule (%d bot actions), starts after the 8s deal'
+            print('PASS: first hand (/api/new) carries the bot schedule (%d bot actions), starts after the 7.5s deal'
                   % len(timed0))
             code, armed = request('/api/action-clock', {'token': token})
             assert code == 200 and armed['timing_on'] is True, armed
@@ -150,6 +150,48 @@ def main():
             code, ready = request('/api/ready')
             assert ready['hero_time_bank'] == 0.0, ready['hero_time_bank']
             print('PASS: past base+bank → timeout action, bank 0')
+        finally:
+            proc.terminate()
+            proc.wait(timeout=10)
+
+    # 브레이크 충전: 플레이 창 60초, 브레이크 5초. HERO 가 뱅크를 0.5초 쓴 뒤 브레이크를 지나면 +15초.
+    with tempfile.TemporaryDirectory(prefix='t2_timing_break_') as td:
+        subprocess.run(['sh', str(ROOT / 'ui/tools/setup_run_dir.sh'), td],
+                       check=True, stdout=subprocess.DEVNULL)
+        proc, request, stream = server(td, {'T2_TIMING_V1': 'enforce', 'T2_TIMING_TEST_BASE': '1',
+                                            'T2_TIMING_TEST_BANK': '2', 'T2_PLAY_WINDOW_SECONDS': '60',
+                                            'T2_BREAK_SECONDS': '5'})
+        try:
+            code, r = request('/api/new', {'entries': 9, 'seed': 5, 'level_minutes': 10})
+            code, armed = request('/api/action-clock', {'token': r['token']})
+            time.sleep(max(0.0, (armed['action_base_deadline_ms'] - time.time() * 1000) / 1000.0) + 0.5)
+            code, r = request('/api/step', {'token': r['token'], 'action': legal_passive(r['view']), 'amount': 0})
+            code, ready = request('/api/ready')
+            before = ready['hero_time_bank']
+            assert 1.3 <= before <= 1.55, before
+            deadline = time.time() + 240
+            while time.time() < deadline:
+                code, ready = request('/api/ready')
+                if (ready.get('active_seconds') or 0) >= 61 and not ready.get('break_remaining'):
+                    break
+                code, st = request('/api/state')
+                v = st.get('view') or {}
+                if v.get('type') == 'decision':
+                    time.sleep(max(0.0, ((st.get('bot_ready_at_ms') or 0) - time.time() * 1000) / 1000.0) + 0.05)
+                    request('/api/action-clock', {'token': st['token']})
+                    request('/api/step', {'token': st['token'], 'action': 'fold' if (v.get('legal') or {}).get('fold') else 'check', 'amount': 0})
+                elif st.get('done') or v.get('type') == 'result':
+                    time.sleep(max(0.0, ((st.get('bot_ready_at_ms') or 0) - time.time() * 1000) / 1000.0))
+                    code, _ = request('/api/step', {'token': st['token'], 'action': None})
+                    if code == 409:
+                        time.sleep(1.0)
+                else:
+                    time.sleep(0.3)
+            code, ready = request('/api/ready')
+            after = ready['hero_time_bank']
+            assert (ready.get('active_seconds') or 0) >= 60, ready
+            assert abs(after - min(60.0, before + 15.0)) < 0.3, (before, after)
+            print('PASS: break recharge +15s for HERO (%.2f -> %.2f), capped at 60' % (before, after))
         finally:
             proc.terminate()
             proc.wait(timeout=10)

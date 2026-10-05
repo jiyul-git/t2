@@ -801,7 +801,9 @@ class Field:
         if not hasattr(self, 'time_banks'):
             self.time_banks = {}
         ctx = {'tour_seed': self.seed, 'fmt_key': self.fmt.get('key', 'standard'),
-               'banks': self.time_banks, 'enforce': mode == 'enforce'}
+               'banks': self.time_banks, 'enforce': mode == 'enforce',
+               # 브레이크 충전 기준 시계: 이 필드(봇 테이블 worker 면 그 테이블)의 활성 플레이 초.
+               'clock': getattr(self, 'virtual_play_seconds', None)}
         # 검증 전용: 기본 액션 시간을 짧게 덮어써 타임아웃 경로를 실제로 태운다.
         _bo = os.environ.get('T2_TIMING_TEST_BASE')
         if _bo:

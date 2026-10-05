@@ -325,7 +325,7 @@ HERO_ACTION_SECONDS = min(120.0, max(1.0, float(os.environ.get('T2_HERO_ACTION_S
 # ---------- 시간 규칙(timing.py, TIME_SYSTEM_IMPLEMENTATION_DESIGN T5·T6) ----------
 # T2_TIMING_V1 이 record/enforce 일 때만 켠다. 꺼져 있으면 지금 동작(HERO 15초, 봇 고정 템포) 그대로다.
 TIMING_ON = os.environ.get('T2_TIMING_V1', 'off') in ('record', 'enforce')
-STREET_GAP_SECONDS = 2.0          # 사람 테이블 보드 공개 기계 시간(봇 테이블 mechanical 과 같은 값)
+STREET_GAP_SECONDS = TMG.STREET_SECONDS   # 사람 테이블 보드 공개 기계 시간(봇 테이블과 같은 값)
 
 
 def _hero_clock_params(st):
@@ -335,9 +335,12 @@ def _hero_clock_params(st):
     # 검증 전용 덮어쓰기(시간 규칙이 켜져 있을 때만 여기까지 온다).
     if os.environ.get('T2_TIMING_TEST_BASE'):
         base = float(os.environ['T2_TIMING_TEST_BASE'])
-    start_bank = float(os.environ.get('T2_TIMING_TEST_BANK') or TMG.BANK_START)
     hero = str(fd.get('hero_pid'))
-    bank = float((fd.get('time_banks') or {}).get(hero, start_bank))
+    banks = fd.get('time_banks') or {}
+    if hero not in banks and os.environ.get('T2_TIMING_TEST_BANK'):
+        bank = float(os.environ['T2_TIMING_TEST_BANK'])
+    else:
+        bank = TMG.bank_get(banks, hero, fd.get('virtual_play_seconds'))
     return base, bank, hero
 
 
@@ -348,7 +351,8 @@ def _settle_hero_bank(st, now, timed_out=False):
     base, bank, hero = _hero_clock_params(st)
     elapsed = max(0.0, float(now) - float(st['ui_action_started_at']))
     res = TMG.settle(base + bank + 1.0 if timed_out else elapsed, base, bank)
-    st['field'].setdefault('time_banks', {})[hero] = res['bank_left']
+    TMG.bank_put(st['field'].setdefault('time_banks', {}), hero, res['bank_left'],
+                 st['field'].get('virtual_play_seconds'))
     st.pop('ui_action_started_at', None)
     st.pop('ui_action_base_deadline', None)
 
@@ -389,10 +393,9 @@ class _BotSchedule:
         L.save(st)
 
 
-# 새 핸드의 봇 시계는 딜·블라인드 기계 시간 뒤에 시작한다. 봇 테이블 mechanical 의
-# 핸드 기본값(timing.mechanical_seconds 의 8초)과 같은 값이고, 화면의 딜(카드당 0.25초 × 18장)
-# + 블라인드 게시(1.3초 × 2) 애니메이션 길이(약 7.6초)와 거의 같다.
-HAND_START_SECONDS = TMG.mechanical_seconds(1, False)
+# 새 핸드의 봇 시계는 딜·블라인드 기계 시간(timing.DEAL_SECONDS 7.5초) 뒤에 시작한다.
+# 봇 테이블 mechanical 의 딜 값과 같고, 브라우저 실측 화면 딜+블라인드 애니메이션(7.0~7.5초)에 맞춘 값이다.
+HAND_START_SECONDS = TMG.DEAL_SECONDS
 
 
 def _step_sched(action=None, amount=0, on_bot_action=None):

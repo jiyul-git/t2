@@ -6,6 +6,7 @@
 같은 규칙을 사람이 있는 테이블(실제로 기다림)과 봇만 있는 테이블(테이블 시계만 전진)이 함께 쓴다.
 """
 import math
+import os
 import random
 import zlib
 
@@ -13,7 +14,15 @@ import formats as FM
 
 # ---------- 사용자 결정 정책 (§J, 구현 설계 §9) ----------
 ACTION_SECONDS = {'regular': 18.0, 'turbo': 14.0, 'hyper': 12.0, 'slow': 18.0}
-BANK_START = 60.0            # 누적 타임뱅크 시작값(레이트 레지 동일), 충전 없음
+BANK_START = 60.0            # 누적 타임뱅크 시작값(레이트 레지 동일)
+BANK_MAX = 60.0              # 저장 상한(초과분은 버린다)
+BANK_RECHARGE = 15.0         # 브레이크마다 충전(55분 플레이 → 5분 브레이크 진입). 레벨/핸드별 충전 없음
+# 브레이크 주기 = 플레이 창(활성 초). ui_server.PLAY_WINDOW_SECONDS 와 같은 env 를 읽는다.
+PLAY_SECONDS = max(60, int(float(os.environ.get('T2_PLAY_WINDOW_SECONDS', '3300'))))
+# 기계 시간(사용자 결정 2026-10-05): 딜·블라인드 7.5초(화면 7.0~7.5초), 보드 공개 2초,
+# 결과 표시·카드 수거 2.54초(화면 RESULT_HOLD 2.0 + COLLECT 0.54, 사람 테이블에서만 화면이 소비).
+DEAL_SECONDS = 7.5
+STREET_SECONDS = 2.0
 
 # ---------- Timing Model v1 (§L) ----------
 AMP_B = 4.0                  # commit_effect 증폭
@@ -158,6 +167,37 @@ def settle(visible, base, bank):
     return {'elapsed': base + bank, 'bank_used': bank, 'bank_left': 0.0, 'timed_out': True}
 
 
+def breaks_due(clock):
+    """활성 플레이 초 clock 까지 진입한 브레이크 수."""
+    if clock is None:
+        return 0
+    return int(max(0.0, float(clock)) // PLAY_SECONDS)
+
+
+def bank_get(banks, pid, clock):
+    """pid 의 지금 뱅크. 저장값은 [초, 이미 반영한 브레이크 수].
+
+    마지막 저장 이후 진입한 브레이크마다 +BANK_RECHARGE(상한 BANK_MAX)를 읽을 때 반영한다.
+    봇 테이블 worker 와 사람 테이블이 같은 사람의 뱅크를 따로 써도 브레이크가 두 번 반영되지 않는다.
+    예전 형식(초만 저장)은 저장 시점의 브레이크로 본다(소급 충전 없음).
+    """
+    v = banks.get(pid)
+    if v is None:
+        return BANK_START
+    if isinstance(v, (list, tuple)):
+        bank, as_of = float(v[0]), (None if v[1] is None else int(v[1]))
+    else:
+        bank, as_of = float(v), None
+    due = breaks_due(clock)
+    if as_of is None or due <= as_of:
+        return bank
+    return min(BANK_MAX, bank + BANK_RECHARGE * (due - as_of))
+
+
+def bank_put(banks, pid, bank, clock):
+    banks[pid] = [round(min(BANK_MAX, max(0.0, float(bank))), 4), breaks_due(clock)]
+
+
 def timeout_action(can_check):
     """타임아웃 규칙: 체크 가능하면 체크, 아니면 폴드."""
     return 'check' if can_check else 'fold'
@@ -165,5 +205,5 @@ def timeout_action(can_check):
 
 # ---------- 기계 시간 ----------
 def mechanical_seconds(n_streets, showdown):
-    """딜·보드 공개·쇼다운·칩 이동. 지금 vclock 고정비용에서 액션별 비용을 뺀 부분(T4 에서 측정)."""
-    return 8.0 + 2.0 * max(0, int(n_streets) - 1) + (3.0 if showdown else 0.0)
+    """봇 테이블 핸드의 기계 시간: 딜·블라인드 + 스트리트당 보드 공개 + 쇼다운."""
+    return DEAL_SECONDS + STREET_SECONDS * max(0, int(n_streets) - 1) + (3.0 if showdown else 0.0)

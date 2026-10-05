@@ -1060,7 +1060,7 @@ class HandRun:
         pid = self._pid(seat)
         base = float(T.get('base_override') or TM.action_seconds(T.get('fmt_key', 'standard')))
         banks = T['banks']
-        bank = float(banks.get(pid, TM.BANK_START))
+        bank = TM.bank_get(banks, pid, T.get('clock'))
         K = TM.knowledge(ax, concepts)
         if K is None:
             K = 0.5
@@ -1069,7 +1069,7 @@ class HandRun:
                                  getattr(self.h, 'hash', ''), seat, street, n_log))
         v = TM.visible_seconds(traits, c, s_struct, m, K, trivial, commit, jit, base)
         st = TM.settle(v['visible'], base, bank)
-        banks[pid] = st['bank_left']
+        TM.bank_put(banks, pid, st['bank_left'], T.get('clock'))
         rec = {'pid': pid, 'seat': seat, 'street': street, 'c': c, 's': s_struct, 'm': m,
                'commit': commit, 'K': K, 'n_concepts': len(concepts or ()),
                'visible': v['visible'], 'elapsed': st['elapsed'], 'base': base,
