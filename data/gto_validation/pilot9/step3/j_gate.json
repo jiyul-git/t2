@@ -1,0 +1,11 @@
+{
+ "schema": "pilot9_j_gate_v1",
+ "compared": 33,
+ "diffs": [],
+ "ignored_fields": [
+  "t2_cont_file"
+ ],
+ "n_paths": 33,
+ "pass": true,
+ "manifest_sha256": "e5571c98cdda8650f46c745f4e3c63b1a290b133eaba25f2f9fe56ce75a1c400"
+}
