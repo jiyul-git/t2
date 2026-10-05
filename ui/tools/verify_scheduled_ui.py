@@ -25,10 +25,13 @@ def verify():
         installation = Path(tmp) / 'T2'
         run = installation / 'system'
         data = installation / 'personal'
-        # 즉시 행동하는 흐름 검증이라 시간 규칙(봇 예정표·딜 7.5초 대기)을 끈다. 시간 규칙 ON 은 verify_timing_clock.
-        env = dict(os.environ, T2_INITIAL_CHIPS='10000', T2_TIMING_V1='off',
+        # Keep the instant-action verifier's default off path. Admission checks
+        # can also exercise the bot schedule with T2_VERIFY_SCHEDULE_TIMING=enforce.
+        env = dict(os.environ, T2_INITIAL_CHIPS='10000',
+                   T2_TIMING_V1=os.environ.get('T2_VERIFY_SCHEDULE_TIMING', 'off'),
                    T2_UI_DEFER=os.environ.get('T2_VERIFY_SCHEDULE_DEFER', '0'),
-                   T2_TELEMETRY='0', T2_HERO_ACTION_SECONDS='3')
+                   T2_TELEMETRY='0', T2_HERO_ACTION_SECONDS='3',
+                   T2_TIMING_TEST_BASE='3', T2_TIMING_TEST_BANK='0')
         env.pop('T2_DATA_DIR', None)
         env.pop('T2_UI_REF', None)
         installer = ROOT / 'ui/tools/install_game.py'
@@ -90,24 +93,35 @@ def verify():
             assert code == 200 and lobby['wallet']['balance'] == 10000
             event = next(t for t in lobby['tournaments'] if t['status'] == 'scheduled')
             tid = event['id']
+            late = os.environ.get('T2_VERIFY_SCHEDULE_LATE') == '1'
+            if late:
+                # Reproduce a late buy-in with no progressed snapshot yet.
+                # Its paid admission must survive catching up, not return 409.
+                with sqlite3.connect(data / 'tournaments.sqlite3') as db:
+                    now = time.time()
+                    db.execute('UPDATE tournaments SET starts_at=?,closes_at=? WHERE id=?',
+                               (now - 30, now + 600, tid))
             for _ in range(3):
                 code, reply = call('/api/register', {'tournament_id': tid,
                                                      'buyin': 1, 'payout': 999999})
                 assert code == 200 and reply['wallet']['balance'] == 9000, reply
+                if late:
+                    assert reply['receipt']['status'] in ('waiting', 'playing'), reply
             assert call('/api/new', {'entries': 2})[0] == 409
             # Leaving the pre-start waiting room must release a presentation
             # request, so it cannot stop the reserved seat's future blinds.
-            assert call('/api/enter', {'tournament_id': tid})[0] == 200
-            time.sleep(2)
-            with sqlite3.connect(data / 'tournaments.sqlite3') as db:
-                assert db.execute('SELECT value FROM meta WHERE key=?', ('enter:' + tid,)).fetchone()[0] == '0'
-            # Start the isolated fixture imminently. A player already in its
-            # waiting room can take over at the first hand boundary.
-            with sqlite3.connect(data / 'tournaments.sqlite3') as db:
-                now = time.time()
-                db.execute('UPDATE tournaments SET starts_at=?,closes_at=? WHERE id=?',
-                           (now + 1, now + 600, tid))
-                db.execute('UPDATE entries SET created_at=? WHERE tournament_id=?', (now, tid))
+            if not late:
+                assert call('/api/enter', {'tournament_id': tid})[0] == 200
+                time.sleep(2)
+                with sqlite3.connect(data / 'tournaments.sqlite3') as db:
+                    assert db.execute('SELECT value FROM meta WHERE key=?', ('enter:' + tid,)).fetchone()[0] == '0'
+                # Start the isolated fixture imminently. A player already in its
+                # waiting room can take over at the first hand boundary.
+                with sqlite3.connect(data / 'tournaments.sqlite3') as db:
+                    now = time.time()
+                    db.execute('UPDATE tournaments SET starts_at=?,closes_at=? WHERE id=?',
+                               (now + 1, now + 600, tid))
+                    db.execute('UPDATE entries SET created_at=? WHERE tournament_id=?', (now, tid))
             code, reply = call('/api/enter', {'tournament_id': tid})
             assert code == 200, reply
             deadline = time.monotonic() + 90
@@ -123,6 +137,7 @@ def verify():
             assert call('/api/wallet')[1]['balance'] == 9000
             code, tourney = call('/api/tournament')
             assert code == 200 and tourney['entries'] == bots + 1, tourney
+            assert call('/api/ready')[1]['timing_on'] == (env['T2_TIMING_V1'] != 'off')
             # Refresh must reuse the same authoritative action deadline.
             if (view.get('view') or {}).get('type') == 'decision':
                 token = view['token']
@@ -131,9 +146,20 @@ def verify():
                 refreshed = call('/api/state')[1]
                 second = call('/api/action-clock', {'token': refreshed['token']})[1]['action_deadline_ms']
                 assert token == refreshed['token'] and first == second
-                time.sleep(4)
-                advanced = call('/api/state')[1]
-                assert advanced['token'] != token or advanced.get('game_over'), advanced
+                # The timing system now delays HERO until scheduled bot actions
+                # finish. Use its actual server deadline, including that delay.
+                while time.time() * 1000 < first + 250:
+                    time.sleep(.2)
+                # Timeout is applied by the one-second scheduler tick. Poll
+                # through that tick without allowing the deadline to extend.
+                deadline = time.monotonic() + 5
+                while True:
+                    advanced = call('/api/state')[1]
+                    if advanced['token'] != token or advanced.get('game_over'):
+                        break
+                    assert time.monotonic() < deadline, advanced
+                    assert call('/api/ready')[1]['action_deadline_ms'] == first
+                    time.sleep(.2)
             # With no browser polling at all, play and blinds must continue.
             with sqlite3.connect(data / 'tournaments.sqlite3') as db:
                 before = json.loads(db.execute('SELECT state FROM tournaments WHERE id=?', (tid,)).fetchone()[0])
@@ -223,8 +249,10 @@ def verify():
             assert reentered['my_entry']['entry_no'] == 2, reentered
             assert reentered['my_entry']['pid'] != hero['pid'], reentered
             assert call('/api/tournament')[1]['entries'] == bots + 2
-            print('PASS scheduled HTTP: reservation/replay, ignored client money, activation, '
-                  'authoritative timeout, refresh, code update/restart, offline bust recovery and re-entry')
+            print('PASS scheduled HTTP: %s/replay, ignored client money, activation, '
+                  'authoritative timeout, refresh, code update/restart, offline bust recovery and re-entry '
+                  '(defer=%s, bots=%d, timing=%s)' % ('late admission' if late else 'reservation',
+                                         env['T2_UI_DEFER'], bots, env['T2_TIMING_V1']))
         except Exception:
             log.flush()
             log.seek(0)

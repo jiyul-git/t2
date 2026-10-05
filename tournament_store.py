@@ -16,7 +16,7 @@ import personal_data as PD
 from table import BLINDS
 
 PLAYER = 'hero'
-DEFAULT_SCHEDULE = [
+LEGACY_SCHEDULE = [
     dict(fmt='standard', minute=0, buyin=1000, bot_entries=99,
          late_minutes=60, max_reentries=2),
     dict(fmt='turbo', minute=20, buyin=500, bot_entries=44,
@@ -24,6 +24,15 @@ DEFAULT_SCHEDULE = [
     dict(fmt='deep', minute=40, buyin=5000, bot_entries=179,
          late_minutes=90, max_reentries=2),
 ]
+# One event every two hours, rotating formats. UTC offsets put standard at
+# 00/06/12/18, turbo at 02/08/14/20 and deep at 04/10/16/22 in Asia/Seoul.
+DEFAULT_SCHEDULE = [dict(spec, minute=0, interval_hours=6, hour_offset=offset)
+                    for spec, offset in zip(LEGACY_SCHEDULE, (3, 5, 1))]
+
+
+def scheduled_start(spec, hour):
+    interval = spec.get('interval_hours', 1)
+    return (int(hour // 3600) % interval == spec.get('hour_offset', 0))
 
 
 class TournamentError(ValueError):
@@ -75,16 +84,21 @@ class Store:
         if schedule is None and os.path.exists(config):
             with open(config, encoding='utf-8') as fp:
                 schedule = json.load(fp)
+        self.uses_default_schedule = schedule is None
         self.schedule = schedule if schedule is not None else DEFAULT_SCHEDULE
         for spec in self.schedule:
             if any(not isinstance(spec[key], int) or isinstance(spec[key], bool) for key in
-                   ('minute', 'buyin', 'bot_entries', 'late_minutes', 'max_reentries')):
+                   ('minute', 'buyin', 'bot_entries', 'late_minutes', 'max_reentries')) or any(
+                    not isinstance(spec.get(key, default), int) or isinstance(spec.get(key, default), bool)
+                    for key, default in (('interval_hours', 1), ('hour_offset', 0))):
                 raise ValueError('바이인·인원·시간·횟수는 정수여야 합니다.')
             if (spec['fmt'] not in FM.FORMATS or not 0 <= spec['minute'] < 60
                     or not 1 <= spec['buyin'] < 10**9
                     or not 2 <= spec['bot_entries'] < 1000
                     or not 1 <= spec['late_minutes'] <= 180
-                    or not 0 <= spec['max_reentries'] <= 100):
+                    or not 0 <= spec['max_reentries'] <= 100
+                    or not 1 <= spec.get('interval_hours', 1) <= 24
+                    or not 0 <= spec.get('hour_offset', 0) < spec.get('interval_hours', 1)):
                 raise ValueError('예약 토너먼트 설정 오류')
         with self._db() as db:
             db.executescript('''
@@ -159,8 +173,26 @@ class Store:
         now = time.time() if now is None else now
         hour = int(now // 3600) * 3600
         with self._db() as db:
+            if self.uses_default_schedule:
+                # Retire only obsolete built-in slots with no personal receipts
+                # or ledger references. Paid/cancelled entries keep their frozen
+                # rules and snapshots; explicit schedule.json is never rewritten.
+                for row in db.execute('SELECT id,starts_at,rules FROM tournaments t '
+                        'WHERE NOT EXISTS (SELECT 1 FROM entries e WHERE e.tournament_id=t.id) '
+                        'AND NOT EXISTS (SELECT 1 FROM ledger l WHERE l.tournament_id=t.id)').fetchall():
+                    rules = json.loads(row['rules'])
+                    legacy = next((s for s in LEGACY_SCHEDULE if all(
+                        rules.get(k) == v for k, v in s.items())), None)
+                    if not legacy or rules.get('interval_hours', 1) != 1:
+                        continue
+                    start = row['starts_at']
+                    replacement = next(s for s in DEFAULT_SCHEDULE if s['fmt'] == legacy['fmt'])
+                    if start % 3600 != replacement['minute'] * 60 or not scheduled_start(replacement, start):
+                        db.execute('DELETE FROM tournaments WHERE id=?', (row['id'],))
             for h in range(hour - 7200, hour + 86400, 3600):
                 for spec in self.schedule:
+                    if not scheduled_start(spec, h):
+                        continue
                     start = h + spec['minute'] * 60
                     # On first installation, don't simulate expired past tournaments.
                     if start + spec['late_minutes'] * 60 <= now:
@@ -259,12 +291,9 @@ class Store:
                 raise TournamentError('재참가할 이전 참가가 없습니다.')
             if ev['closed'] or ev['finished'] or now >= ev['closes_at']:
                 raise TournamentError('참가 등록이 마감되었습니다.', 'registration_closed')
-            # Late entry needs the actual progressed field, never a fresh stack field.
-            if now >= ev['starts_at']:
-                st = ev['state'] or {}
-                if st.get('background_seconds', -1) + 2 < active_seconds(now - ev['starts_at']):
-                    raise TournamentError('대회 진행을 동기화하고 있습니다. 잠시 후 다시 참가해 주세요.',
-                                          'synchronizing')
+            # Admission is durable even while the worker catches up. created_at
+            # prevents seating before the request's real tournament time; the
+            # existing field is advanced, never replaced with fresh bot stacks.
             count = sum(x['status'] != 'cancelled' for x in existing)
             if rules['bot_entries'] + count >= rules['max_entries']:
                 raise TournamentError('최대 1,000엔트리에 도달했습니다.')
@@ -303,6 +332,9 @@ class Store:
     def save_state(self, tid, st, expected_revision=None, assignments=None, now=None):
         now = time.time() if now is None else now
         with self._db() as db:
+            if expected_revision is not None and not db.execute(
+                    'SELECT 1 FROM tournaments WHERE id=?', (tid,)).fetchone():
+                return False  # An unowned legacy slot was retired during an update.
             ev = self._event(db, tid)
             if expected_revision is not None and ev['revision'] != expected_revision:
                 return False
@@ -326,13 +358,28 @@ class Store:
         players = fd.get('players') or {}
         alive = sum(p.get('stack', 0) > 0 for p in players.values())
         rows = [dict(r) for r in db.execute('SELECT * FROM entries WHERE tournament_id=?', (ev['id'],))]
+        refunded = False
+        for entry in rows:
+            if (entry['entry_no'] in st.get('refunded_entries', []) and entry['pid'] is None
+                    and entry['status'] in ('reserved', 'waiting')):
+                self._money(db, 'refund:%s:%d' % (ev['id'], entry['entry_no']),
+                            ev['rules']['buyin'], 'refund', ev['id'], entry['entry_no'], now)
+                db.execute("UPDATE entries SET status='cancelled' WHERE tournament_id=? AND entry_no=?",
+                           (ev['id'], entry['entry_no']))
+                entry['status'] = 'cancelled'
+                refunded = True
+                if entry['entry_no'] == rows[-1]['entry_no']:
+                    db.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', ('enter:' + ev['id'], '0'))
         waiting = sum(e['status'] in ('reserved', 'waiting') for e in rows)
         entrants = ev['rules']['bot_entries'] + sum(e['status'] != 'cancelled' for e in rows)
         itm = max(1, int(round(entrants * ev['rules']['itm_frac'])))
         pool = entrants * ev['rules']['buyin']
-        closed = bool(ev['closed'] or now >= ev['closes_at'] or
+        closed = bool(ev['closed'] or st.get('admission_closed') or now >= ev['closes_at'] or
                       (players and not waiting and alive <= itm))
-        if closed and not ev['prize_table']:
+        # No ranks/prizes can settle while an admission is waiting. If wall
+        # time closed registration before catch-up rejected that unused receipt,
+        # rebuild the still-unpaid pool so refunded chips cannot become a prize.
+        if closed and (not ev['prize_table'] or refunded):
             table = prizes(pool, itm, ev['rules']['payout_flat'])
             db.execute('UPDATE tournaments SET closed=1,prize_table=? WHERE id=?',
                        (json.dumps(table), ev['id']))
@@ -377,7 +424,9 @@ class Store:
         now = time.time() if now is None else now
         with self._db() as db:
             ids = [r[0] for r in db.execute('SELECT id FROM tournaments '
-                   'WHERE starts_at<=? AND finished=0 ORDER BY starts_at', (now,))]
+                   'WHERE starts_at<=? AND finished=0 AND ((closed=0 AND closes_at>?) OR EXISTS '
+                   "(SELECT 1 FROM entries e WHERE e.tournament_id=tournaments.id AND e.status<>'cancelled')) "
+                   'ORDER BY starts_at', (now, now))]
             return [self._event(db, tid) for tid in ids]
 
     def catalog(self, now=None):

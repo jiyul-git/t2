@@ -130,7 +130,7 @@ Server는 threaded라 ACK와 read-only history/memo/tournament 요청이 long ga
 - right swipe는 full standings drawer
 - standings가 hidden persona/hole cards/reads/intents를 노출하면 안 됨
 
-Current browser pipeline cache checkpoint: `app.js?v=76` (`test` scheduled-tournament UI).
+Current browser pipeline cache checkpoint: `app.js?v=77` (`test` scheduled-tournament admission/refund UI).
 
 Runtime folders are not source of truth.
 source -> runtime copy는 `ui/tools/setup_run_dir.sh` 경로를 사용.
@@ -151,6 +151,15 @@ existing field between hands. Integer payouts conserve the pool and credit once.
 The existing single-HERO installation remains the account scope. Operational
 amounts/schedule are provisional and configurable. This is not yet a production
 server/master promotion. See [implementation and verification](docs/semantic_audit/SCHEDULED_TOURNAMENTS_V1.md).
+
+2026-10-06 KST follow-up: default slots are two hours apart, rotating standard,
+turbo and deep in Seoul time. Paid/cancelled legacy receipts retain their rules.
+Late requests persist a waiting admission, then join the existing field after
+their request timestamp at a completed hand. Takeover uses the fixed entry-request
+time, not a moving wall-clock target. Unseated requests refund atomically if the
+field closes naturally first. Selected admissions get scheduler priority; expired
+unowned fields do not crowd its queue. With `T2_UI_DEFER=0`, vclock settlement
+computes the needed coverage synchronously rather than waiting for an absent pool.
 
 ## 10. Historical sources
 

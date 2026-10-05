@@ -1,0 +1,97 @@
+{
+  "timestamp_utc": "2026-10-05T15:46:06.991994+00:00",
+  "branch": "test",
+  "base_commit": "3d48f9b40acb4c325a8fd17b6629f78186a161c5",
+  "request": "Two-hour default tournaments and fix synchronizing error during late buy-in",
+  "default_start_times_seoul": {
+    "standard": [
+      "00:00",
+      "06:00",
+      "12:00",
+      "18:00"
+    ],
+    "turbo": [
+      "02:00",
+      "08:00",
+      "14:00",
+      "20:00"
+    ],
+    "deep": [
+      "04:00",
+      "10:00",
+      "16:00",
+      "22:00"
+    ]
+  },
+  "admission": [
+    "durable waiting receipt at real request timestamp",
+    "preserve progressed field and seat at completed hand boundary",
+    "prioritize pending selected admission; rotate within priority tier",
+    "fixed request-time takeover instead of moving current-time gate",
+    "refund unseated natural-close admissions exactly once in snapshot transaction",
+    "exclude refunded fees from still-unpaid prize table after wall-clock cutoff"
+  ],
+  "preservation": [
+    "wallet and initial grant unchanged across updates",
+    "retain all legacy events referenced by entries or ledger",
+    "keep explicit personal schedule.json unchanged",
+    "ignore stale worker for retired unowned legacy slot"
+  ],
+  "vclock_fallback": "Compute required coverage synchronously when DEFER=0 or pool unavailable; no full-session speculative synchronous drain",
+  "http_timing_mode": {
+    "late_admission": "enforce",
+    "reservation": "off"
+  },
+  "http_test_clock_overrides": {
+    "T2_TIMING_TEST_BASE": 3,
+    "T2_TIMING_TEST_BANK": 0
+  },
+  "checks": [
+    {
+      "command": "T2_TABLE_WORKERS=2 python3 tools/verify_scheduled_tournaments.py",
+      "result": "PASS",
+      "log_sha256": "0d432efd7c58d084917b92c3adc8cf6bdd67fb737b93b05f15b79eebf882356c",
+      "summary": [
+        "Ran 37 tests in 6.507s",
+        "OK"
+      ]
+    },
+    {
+      "command": "python3 ui/tools/verify_personal_installation.py",
+      "result": "PASS",
+      "log_sha256": "2fdb4073320bc9bec2f587231878ee42743d759a3a03e063d3337a51e24f30f2",
+      "summary": [
+        "Ran 23 tests in 9.297s",
+        "OK"
+      ]
+    },
+    {
+      "command": "T2_UI_REF= T2_TABLE_WORKERS=4 T2_VERIFY_SCHEDULE_BOTS=10 T2_VERIFY_SCHEDULE_DEFER=0 T2_VERIFY_SCHEDULE_LATE=1 T2_VERIFY_SCHEDULE_TIMING=enforce python3 ui/tools/verify_scheduled_ui.py",
+      "result": "PASS",
+      "log_sha256": "3e83db6f5cff32bfab59eab02c10ef56f450ac1ac66d4e435cfd8e727b0d1fce",
+      "summary": [
+        "PASS scheduled HTTP: late admission/replay, ignored client money, activation, authoritative timeout, refresh, code update/restart, offline bust recovery and re-entry (defer=0, bots=10, timing=enforce)"
+      ]
+    },
+    {
+      "command": "T2_UI_REF= T2_TABLE_WORKERS=4 T2_VERIFY_SCHEDULE_BOTS=10 T2_VERIFY_SCHEDULE_DEFER=1 python3 ui/tools/verify_scheduled_ui.py",
+      "result": "PASS",
+      "log_sha256": "9b2313324d73ca355ab604d27bd298aae4c361bac3482cd483d3e2a94e7230ca",
+      "summary": [
+        "PASS scheduled HTTP: reservation/replay, ignored client money, activation, authoritative timeout, refresh, code update/restart, offline bust recovery and re-entry (defer=1, bots=10, timing=off)"
+      ]
+    }
+  ],
+  "static_checks": [
+    "python3 -m py_compile (five modified Python modules)",
+    "node --check app.js and lobby.js",
+    "git diff --check"
+  ],
+  "limitations": [
+    "No real mobile visual inspection in this execution environment",
+    "No master promotion; prior V1 23-gate and action fingerprints are historical, not rerun for this UI/admission patch"
+  ],
+  "integration_base_commit": "a4c04e4a92840787ab25c7fd33e9b158da15b959",
+  "additional_ui_parent": "3d96e959116cba933e6ecc1983c9e1deb5c9bd4a",
+  "additional_ui_changes": "Box-border action clock and HERO clock display; no scheduler/wallet/server changes after the integrated HTTP checks."
+}

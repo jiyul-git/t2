@@ -18,6 +18,37 @@ def _enter_time(event):
                               - event['starts_at']))
 
 
+def choose_job(jobs, cursor, active_id):
+    """Catch up pending paid admissions first, then rotate fairly within a tier."""
+    def priority(job):
+        ev = job[0]
+        waiting = any(e['status'] in ('reserved', 'waiting') for e in ev['entries'])
+        if ev['id'] == active_id and (waiting or ev.get('enter_requested')):
+            return 0
+        if waiting or ev.get('enter_requested'):
+            return 1
+        return 2 if any(e['status'] != 'cancelled' for e in ev['entries']) else 3
+    first = min(map(priority, jobs))
+    candidates = [job for job in jobs if priority(job) == first]
+    return candidates[cursor % len(candidates)]
+
+
+def _close_admission(st, event, f):
+    # A queued late request may discover that the real field reached ITM before
+    # it could be seated. Close at that simulated boundary and refund the unused
+    # receipt atomically when the publisher commits this snapshot.
+    if f.remaining() > f.itm:
+        return False
+    st['admission_closed'] = True
+    refunded = st.setdefault('refunded_entries', [])
+    for entry in event['entries']:
+        if entry['status'] in ('reserved', 'waiting') and entry.get('pid') is None:
+            if entry['entry_no'] not in refunded:
+                refunded.append(entry['entry_no'])
+            entry['status'] = 'cancelled'
+    return True
+
+
 def _seat(f, tid=None):
     candidates = [tb for tb in f.tables.values()
                   if tb.n() < f.max_seat and tb.broken_open_seats()
@@ -35,6 +66,8 @@ def _seat(f, tid=None):
 def _insert(st, event, at, available=None):
     assignments = {}
     f = L._load_field(st['field'])
+    if _close_admission(st, event, f):
+        return assignments
     for entry in event['entries']:
         if entry['status'] not in ('reserved', 'waiting') or entry.get('pid') is not None:
             continue
@@ -106,6 +139,7 @@ def advance(event, target, budget=18, parallel=True):
 
     pending = st.setdefault('background_pending', {})
     f0 = L._load_field(st['field'])
+    _close_admission(st, event, f0)
     hero_table = f0.players.get(f0.hero_pid, {}).get('table')
     if (event.get('enter_requested') and hero_table is not None
             and str(hero_table) not in pending and
@@ -116,7 +150,7 @@ def advance(event, target, budget=18, parallel=True):
         f = L._load_field(st['field'])
         if f.remaining() <= 1:
             break
-        f.format_rules['reentry'] = not event['closed'] and rules['reentry']
+        f.format_rules['reentry'] = not (event['closed'] or st.get('admission_closed')) and rules['reentry']
         f.fmt['reentry'] = f.format_rules['reentry']
         frozen = f.field_snapshot()
         hero_table = f.players.get(f.hero_pid, {}).get('table')

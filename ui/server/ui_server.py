@@ -24,7 +24,7 @@ live2 는 아카이브·리딩 장부를 모듈 폴더에 쓴다. sidecar 이름
        token : 직전 응답의 token. 다르면 409 — 재전송으로 액션이 두 번 들어가는 것을 막는다.
 """
 import math, hmac, secrets, json, mimetypes, os, posixpath, sys, threading, time, traceback, urllib.parse, socket, copy
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import Future, ProcessPoolExecutor
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -81,6 +81,10 @@ def _managed_play_state():
     ev = ECONOMY.event(tid)
     st = ev['state']
     entry = ev['entries'][-1] if ev['entries'] else None
+    if st and entry and entry['entry_no'] in st.get('refunded_entries', []):
+        return {'waiting': True, 'registration_refunded': True,
+                'message': '입장 대기 중 등록이 마감되어 참가비를 환불했습니다.',
+                **_economy_receipt(st)}
     if st and entry and entry['status'] in ('busted', 'finished'):
         L.STATE_STORE = ECONOMY
         _last = _game_over()
@@ -92,10 +96,11 @@ def _managed_play_state():
                 'starts_at': ev['starts_at'], **_economy_receipt(st)}
     if (not st or not entry or entry['pid'] is None or entry['status'] in ('reserved', 'waiting')
             or st.get('offscreen') and (not st.get('hero_ready') or
-                st.get('background_seconds', 0) + 2 < _TS.active_seconds(time.time() - ev['starts_at']))):
+                st.get('background_seconds', 0) + 2 < _SR._enter_time(ev))):
         if not ev['enter_requested']:
             ECONOMY.request_enter(tid)
-        return {'waiting': True, 'message': '대회 진행을 동기화하고 다음 핸드에 입장합니다.'}
+        return {'waiting': True, 'message': '참가가 접수되었습니다. 대회 진행을 확인한 뒤 자동으로 입장합니다.',
+                **_economy_receipt(st)}
     L.STATE_STORE = ECONOMY
     if st.get('offscreen'):
         _clear_worker()
@@ -205,7 +210,7 @@ def _schedule_tick():
             continue
         jobs.append((ev, target))
     if jobs:
-        ev, target = jobs[SCHEDULE_CURSOR % len(jobs)]
+        ev, target = _SR.choose_job(jobs, SCHEDULE_CURSOR, tid)
         SCHEDULE_CURSOR += 1
         if SCHEDULE_POOL is None:
             SCHEDULE_POOL = ProcessPoolExecutor(max_workers=1)
@@ -801,6 +806,7 @@ def _vclock_reset_locked():
         'segment_target': None,
         'session_end': None,
         'started_at': None,
+        'synchronous': False,
     })
 
 
@@ -834,16 +840,20 @@ def _vclock_submit_next_locked():
     if coverage >= float(session_end) - 1e-9:
         return
     p = _pool()
-    if p is None:
-        return
     target = min(float(session_end), coverage + VCLOCK_CHUNK_SECONDS)
     VCLOCK['segment_target'] = target
     VCLOCK['started_at'] = time.monotonic()
     COUNT['attempt'] += 1
     COUNT['vclock_chunk_start'] += 1
+    VCLOCK['synchronous'] = p is None
     try:
-        VCLOCK['future'] = p.submit(
-            L.compute_vclock_ahead, field, target, session_end)
+        if p is None:
+            fut = Future()
+            fut.set_result(L.compute_vclock_ahead(field, target, session_end))
+            VCLOCK['future'] = fut
+        else:
+            VCLOCK['future'] = p.submit(
+                L.compute_vclock_ahead, field, target, session_end)
     except Exception:
         COUNT['worker_exception'] += 1
         VCLOCK['future'] = None
@@ -891,7 +901,8 @@ def _vclock_accept_locked(wait=False):
 
     if VCLOCK.get('barrier_time') is None and out.get('end_field') is not None:
         VCLOCK['spec_field'] = L._copy_field(out['end_field'])
-        _vclock_submit_next_locked()
+        if not VCLOCK.get('synchronous'):
+            _vclock_submit_next_locked()
     return True
 
 
@@ -922,6 +933,10 @@ def _vclock_pump(st, wait=False, target=None):
                 or 0.0)
 
         while True:
+            # Without an async pool, compute only the coverage needed now. Do
+            # not synchronously simulate the entire 55-minute session ahead.
+            if _pool() is None and _vclock_ready_locked(target):
+                return True
             # 목표가 이미 충족돼도 다음 speculative chunk는 항상 걸어 둔다.
             _vclock_submit_next_locked()
             fut = VCLOCK.get('future')

@@ -4093,12 +4093,12 @@ function apply(resp) {
   S.autoTimer = null;
 
   if (resp.waiting) {
-    $('#mainrow').innerHTML = '<div class="wait">토너먼트 입장 준비 중</div>';
+    $('#mainrow').innerHTML = '<div class="wait">'+(resp.registration_refunded ? '참가비 환불 완료' : '토너먼트 입장 준비 중')+'</div>';
     closeRaise(); $('#hero').hidden = true;
-    showOverlayPersistent('<h2>토너먼트 대기</h2><div class="sub">'+esc(resp.message)+
+    showOverlayPersistent('<h2>'+(resp.registration_refunded ? '참가비 환불 완료' : '토너먼트 대기')+'</h2><div class="sub">'+esc(resp.message)+
       '</div><div class="actions"><button id="waitingLobby" type="button">로비로</button></div>');
     $('#waitingLobby').onclick=()=>location.href='/';
-    S.autoTimer=setTimeout(sync,3000);
+    if(!resp.registration_refunded) S.autoTimer=setTimeout(sync,3000);
     return;
   }
 

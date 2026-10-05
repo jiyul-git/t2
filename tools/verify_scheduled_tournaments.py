@@ -145,12 +145,103 @@ class EconomyTests(unittest.TestCase):
             self.s.cancel(TID, 1, now=START)
         self.assertEqual(self.s.wallet()['balance'], 9000)
 
-    def test_late_registration_requires_real_progress(self):
+    def test_late_registration_is_queued_until_real_request_time(self):
         self.start(False)
-        with self.assertRaises(TS.TournamentError) as err:
-            self.s.reserve(TID, now=START + 30)
-        self.assertEqual(err.exception.code, 'synchronizing')
+        for _ in range(3):
+            receipt = self.s.reserve(TID, now=START + 90)
+        self.assertEqual(receipt['status'], 'waiting')
+        self.assertEqual(self.s.wallet()['balance'], 9000)
+        out = SR.advance(self.s.event(TID), 60, budget=30, parallel=False)
+        self.s.save_state(TID, out['state'], out['revision'], out['assignments'], now=START + 90)
+        self.assertEqual(out['assignments'], {})
+        self.assertIsNone(self.s.event(TID)['entries'][0]['pid'])
+        self.assertEqual(len(out['state']['field']['players']), 2)
+
+    def test_late_registration_without_snapshot_preserves_admission_time_on_restart(self):
+        self.s.reserve(TID, now=START + 90)
+        restarted = TS.Store(self.tmp.name, 99999, SPEC)
+        out = SR.advance(restarted.event(TID), 0, parallel=False)
+        self.assertEqual(out['assignments'], {})
+        self.assertEqual(len(out['state']['field']['players']), 2)
+        self.assertEqual(restarted.event(TID)['entries'][0]['created_at'], START + 90)
+        self.assertEqual(restarted.wallet()['balance'], 9000)
+
+    def test_catchup_closing_registration_refunds_unseated_entry_once(self):
+        st = self.start(False)
+        self.s.reserve(TID, now=START + 90)
+        self.s.request_enter(TID, now=START + 90)
+        f = L._load_field(st['field'])
+        winner, loser = list(f.players.values())
+        winner['stack'] += loser['stack']
+        loser['stack'] = 0
+        f._collect_busts()
+        f._balance()
+        st.update(field=L._dump(f), background_pending={}, background_seconds=60)
+        self.s.save_state(TID, st, now=START + 90)
+        out = SR.advance(self.s.event(TID), 90, parallel=False)
+        for _ in range(3):
+            self.s.save_state(TID, out['state'], now=START + 90)
+        ev = self.s.event(TID)
+        self.assertEqual(ev['entries'][0]['status'], 'cancelled')
+        self.assertTrue(ev['finished'])
+        self.assertFalse(ev['enter_requested'])
+        self.assertEqual(len(ev['state']['field']['players']), 2)
         self.assertEqual(self.s.wallet()['balance'], 10000)
+        self.assertEqual(sum(t['kind'] == 'refund' for t in self.s.wallet()['transactions']), 1)
+
+    def test_pending_admission_and_paid_fields_are_prioritized_fairly(self):
+        def job(tid, entries, enter=False):
+            return ({'id': tid, 'entries': entries, 'enter_requested': enter}, 100)
+        empty = job('unowned', [])
+        paid1 = job('paid1', [{'status': 'playing'}])
+        paid2 = job('paid2', [{'status': 'playing'}])
+        pending = job('waiting', [{'status': 'waiting'}])
+        active = job('selected', [{'status': 'playing'}], True)
+        jobs = [empty, paid1, paid2, pending, active]
+        self.assertEqual(SR.choose_job(jobs, 0, 'selected'), active)
+        self.assertEqual(SR.choose_job(jobs[:-1], 0, None), pending)
+        self.assertEqual(SR.choose_job(jobs[:3], 0, None), paid1)
+        self.assertEqual(SR.choose_job(jobs[:3], 1, None), paid2)
+
+    def test_waiting_refund_and_state_rollback_together_on_failure(self):
+        st = self.start(False)
+        self.s.reserve(TID, now=START + 90)
+        st['refunded_entries'] = [1]
+        with self.s._db() as db:
+            db.execute("CREATE TRIGGER fail_refund BEFORE UPDATE ON entries WHEN NEW.status='cancelled' "
+                       "BEGIN SELECT RAISE(ABORT,'crash'); END")
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.s.save_state(TID, st, now=START + 90)
+        self.assertEqual(self.s.wallet()['balance'], 9000)
+        self.assertEqual(self.s.event(TID)['entries'][0]['status'], 'waiting')
+        self.assertNotIn('refunded_entries', self.s.event(TID)['state'])
+
+    def test_refund_after_wall_clock_cutoff_rebuilds_unpaid_prize_pool(self):
+        st = self.start(False)
+        self.s.reserve(TID, now=START + 599)
+        self.s.save_state(TID, st, now=START + 610)
+        self.assertEqual(sum(json.loads(self.s.event(TID)['prize_table'])), 3000)
+        f = L._load_field(st['field'])
+        winner, loser = list(f.players.values())
+        winner['stack'] += loser['stack']
+        loser['stack'] = 0
+        f._collect_busts()
+        f._balance()
+        st.update(field=L._dump(f), background_pending={}, background_seconds=120)
+        self.s.save_state(TID, st, now=START + 610)
+        out = SR.advance(self.s.event(TID), 610, parallel=False)
+        self.s.save_state(TID, out['state'], out['revision'], out['assignments'], now=START + 610)
+        self.assertEqual(self.s.wallet()['balance'], 10000)
+        self.assertEqual(sum(json.loads(self.s.event(TID)['prize_table'])), 2000)
+        self.assertEqual(self.s.event(TID)['state']['prize_pool'], 2000)
+
+    def test_expired_unowned_events_do_not_crowd_scheduler_after_restart(self):
+        past = 'standard:%d' % (START - 3600)
+        self.s.ensure_schedule(START - 3601)
+        jobs = self.s.jobs(START + 1)
+        self.assertNotIn(past, {j['id'] for j in jobs})
+        self.s.reserve(past, now=START - 3601)
+        self.assertIn(past, {j['id'] for j in self.s.jobs(START + 1)})
 
     def test_late_entry_joins_existing_stacks_and_next_hand(self):
         self.start(False)
@@ -272,6 +363,57 @@ class EconomyTests(unittest.TestCase):
         rows = defaults.catalog(START)['tournaments']
         self.assertTrue(rows)
         self.assertTrue(all(r['seats'] == 9 and r['max_entries'] == 1000 for r in rows))
+
+    def test_default_schedule_has_one_event_every_two_hours_in_seoul(self):
+        defaults = TS.Store(self.tmp.name + '/spaced')
+        midnight = 54000  # 1970-01-02 00:00 Asia/Seoul
+        rows = defaults.catalog(midnight - 1)['tournaments']
+        starts = [r['starts_at'] for r in rows if midnight <= r['starts_at'] < midnight + 86400]
+        self.assertEqual(starts, list(range(midnight, midnight + 86400, 7200)))
+        self.assertEqual([r['fmt'] for r in rows if r['starts_at'] in starts],
+                         ['standard', 'turbo', 'deep'] * 4)
+
+    def test_default_update_retires_empty_legacy_slots_and_preserves_receipts(self):
+        root = self.tmp.name + '/legacy'
+        midnight = 54000
+        legacy = TS.Store(root, 10000, TS.LEGACY_SCHEDULE)
+        legacy.ensure_schedule(midnight - 1)
+        paid = 'turbo:%d' % (midnight + 1200)
+        cancelled = 'deep:%d' % (midnight + 2400)
+        obsolete = 'standard:%d' % (midnight + 3600)
+        result = SR.advance(legacy.event(obsolete), 0, parallel=False)
+        legacy.reserve(paid, now=midnight - 1)
+        legacy.reserve(cancelled, now=midnight - 1)
+        legacy.cancel(cancelled, 1, now=midnight - 1)
+        previous = legacy.event(paid)
+        wallet = legacy.wallet()
+        updated = TS.Store(root, 999999)
+        updated.ensure_schedule(midnight - 1)
+        self.assertEqual(updated.wallet(), wallet)
+        self.assertEqual(updated.event(paid), previous)
+        self.assertEqual(updated.event(cancelled)['entries'][0]['status'], 'cancelled')
+        with self.assertRaises(TS.TournamentError):
+            updated.event(obsolete)
+        self.assertFalse(updated.save_state(obsolete, result['state'], result['revision']))
+
+    def test_explicit_personal_schedule_keeps_hourly_slots_on_update(self):
+        root = Path(self.tmp.name) / 'custom'
+        root.mkdir()
+        (root / 'schedule.json').write_text(json.dumps(TS.LEGACY_SCHEDULE))
+        custom = TS.Store(root)
+        custom.ensure_schedule(53999)
+        self.assertIsNotNone(custom.event('turbo:55200'))
+        self.assertEqual([r['starts_at'] for r in custom.catalog(53999)['tournaments']
+                          if 54000 <= r['starts_at'] < 54000 + 23 * 3600],
+                         list(range(54000, 54000 + 23 * 3600, 1200)))
+
+    def test_invalid_schedule_interval_and_offset_are_rejected(self):
+        for options in ({'interval_hours': 0}, {'interval_hours': True},
+                        {'interval_hours': 1.5}, {'interval_hours': 25},
+                        {'interval_hours': 6, 'hour_offset': 6}, {'hour_offset': -1},
+                        {'hour_offset': False}):
+            with self.assertRaises(ValueError):
+                TS.Store(self.tmp.name + '/invalid', schedule=[dict(SPEC[0], **options)])
 
     def test_break_and_level_clock_is_independent_of_refresh(self):
         for elapsed, expected in ((0, 0), (3299, 3299), (3300, 3300),

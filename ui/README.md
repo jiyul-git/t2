@@ -118,7 +118,15 @@ Linux/Termux에서는 `~/.local/share/T2/personal`이며 `XDG_DATA_HOME`이 있�
 `/api/unregister`, `/api/reenter`. 일반 예약 대회 UI에서는 `/api/new`가 차단된다.
 기존 JSON 상태/아카이브는 UI 호환 파일이며, 예약 대회의 복구 원본은 개인 SQLite다.
 검증: `python3 ui/tools/verify_personal_installation.py` (23개),
-`python3 tools/verify_scheduled_tournaments.py` (27개), `python3 ui/tools/verify_scheduled_ui.py`.
+`python3 tools/verify_scheduled_tournaments.py` (37개), `python3 ui/tools/verify_scheduled_ui.py`.
+
+기본 대회는 한국 시간 00시부터 2시간마다 표준 → 터보 → 딥스택 순서로 열린다.
+기존 기본 일정의 미참가 빈 슬롯만 정리하며, 기존 참가·취소 내역과 지갑은 보존한다.
+개인 `schedule.json`이 있으면 그 명시적 설정을 유지한다.
+레이트 바이인은 접수 후 대기 화면에서 자동으로 입장한다. 기존 필드가 먼저 등록을 마감하면
+미착석 참가비를 자동 환불한다. `T2_UI_DEFER=0`과 `1` 모두 정산/재참가를 지원한다.
+재현 검증의 `T2_VERIFY_SCHEDULE_LATE=1`은 진행 스냅샷이 없는 레이트 참가 경로를 선택한다.
+`T2_VERIFY_SCHEDULE_TIMING=enforce`는 봇 예정표/액션 시계가 켜진 입장 검증을 선택한다.
 
 ## 가상 시계 / 화면 버전 68 (test, 2026-10-04)
 
