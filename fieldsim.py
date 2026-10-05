@@ -465,7 +465,8 @@ class Field:
     """전 테이블을 실제로 굴리는 필드."""
 
     def __init__(self, entries=100, start_stack=30000, hero_pid=0, seed=None,
-                 hands_per_level=12, itm_frac=0.15, fmt=None, format_rules=None):
+                 hands_per_level=12, itm_frac=0.15, fmt=None, format_rules=None,
+                 human_pids=None):
         self.seed = seed if seed is not None else int.from_bytes(os.urandom(4), 'big')
         self.rng = random.Random(self.seed)
         # 관찰 장부는 대회 하나에 하나다(ledger L161). 예전에는 봇 테이블이
@@ -480,6 +481,12 @@ class Field:
         self.level = 1
         self.busted_order = []           # 탈락 순서 (뒤에서부터 순위)
         self.hero_pid = hero_pid
+        self.human_pids = set(
+            int(x) for x in (
+                human_pids if human_pids is not None else [hero_pid]
+            )
+        )
+        self.human_pids.add(int(hero_pid))
         self.hero_moves = 0
         self.notes = []
         self.errors = []          # 삼킨 예외 기록. 비어 있지 않으면 문제가 있다
@@ -488,7 +495,8 @@ class Field:
         q = self.field_q
         self.players = {}
         for pid in range(entries):
-            prof = (PS.make_player(self.rng, 0.9, pid) if pid == hero_pid
+            prof = (PS.make_player(self.rng, 0.9, pid)
+                    if pid in self.human_pids
                     else PS.make_player(self.rng, q, pid))
             self.players[pid] = {'pid': pid, 'prof': prof, 'stack': start_stack,
                                  'table': None, 'seat': None}
@@ -600,6 +608,13 @@ class Field:
 
     def hero_table(self):
         return self.tables.get(self.players[self.hero_pid]['table'])
+
+    def human_tables(self):
+        return {
+            int(self.players[pid]['table'])
+            for pid in self.human_pids
+            if pid in self.players and self.players[pid].get('table') is not None
+        }
 
     def total_chips(self):
         return sum(p['stack'] for p in self.players.values())
@@ -791,12 +806,12 @@ class Field:
         추첨을 쓰되, 시드를 결과와 무관하게 미리 뽑는다. 그래서 테이블마다 따로
         (다른 프로세스에서) 돌려도 같은 결과가 나온다.
         """
-        ht = self.players[self.hero_pid]['table'] if self.hero_pid in self.players else None
+        protected = self.human_tables()
         active_counts = [tb.n() for tb in self.tables.values() if tb.n() >= 2]
         max_n = max(active_counts) if active_counts else 0
         plan = []
         for tid, tb in list(self.tables.items()):
-            if tid == ht:
+            if tid in protected:
                 continue
             n = tb.n()
             if n < 2 or max_n - n >= 3:
@@ -847,7 +862,7 @@ class Field:
                 self._collect_busts()
                 self._balance()
             return
-        ht = self.players[self.hero_pid]['table']
+        protected = self.human_tables()
         active_counts = [
             tb.n() for tb in self.tables.values()
             if tb.n() >= 2
@@ -855,7 +870,7 @@ class Field:
         max_n = max(active_counts) if active_counts else 0
 
         for tid, tb in list(self.tables.items()):
-            if tid == ht:
+            if tid in protected:
                 continue
             n = tb.n()
             if n < 2:
@@ -954,7 +969,7 @@ class Field:
         b.hist_cap = {
             pid: RD.history_cap(p['prof'])
             for pid, p in self.players.items()
-            if pid != self.hero_pid and p.get('prof')}
+            if pid not in self.human_pids and p.get('prof')}
 
     def _forget_busted(self, pid):
         """탈락자가 관찰자이거나 대상인 장부 기록을 지운다(L161).
