@@ -14,6 +14,7 @@ main{max-width:760px;margin:0 auto;padding:14px 14px calc(18px + env(safe-area-i
 input,button{font:inherit;border-radius:12px;border:1px solid #343943;background:#171a20;color:#fff;padding:12px}
 button{font-weight:700;touch-action:manipulation}
 button:active{transform:scale(.98)}
+button:disabled{opacity:.38;transform:none;cursor:not-allowed}
 .primary{background:#2c6bed}
 .danger{background:#8b2635}
 .good{background:#236b44}
@@ -68,6 +69,23 @@ button:active{transform:scale(.98)}
 <script>
 const $=id=>document.getElementById(id);
 let current=null;
+let busy=false;
+const actionIds=["fold","check","call","allin","bet","raise"];
+
+function syncControls(){
+  const decision=current?.phase==="decision";
+  for(const id of actionIds) $(id).disabled=busy || !decision;
+  $("amount").disabled=busy || !decision;
+  $("next").disabled=busy || !(current?.phase==="hand_result" || current?.phase==="between_hands");
+  $("newGame").disabled=busy;
+  $("refresh").disabled=busy;
+  $("saveToken").disabled=busy;
+}
+function setBusy(v){
+  busy=!!v;
+  syncControls();
+  if(busy){ $("status").textContent="처리 중…"; $("status").className="status"; }
+}
 
 function authToken(){ return sessionStorage.getItem("t2token") || $("token").value.trim(); }
 function headers(json=false){
@@ -83,7 +101,9 @@ async function api(path, method="GET", body=null){
   if(!r.ok){
     const d=data.detail||data;
     const msg=typeof d==="string"?d:(d.message||d.code||JSON.stringify(d));
-    throw new Error(msg);
+    const err=new Error(msg);
+    err.code=(typeof d==="object" && d)?d.code:null;
+    throw err;
   }
   return data;
 }
@@ -95,6 +115,7 @@ function render(p){
   $("summary").textContent="hand: "+(s.hand_no??"-")+" | stack: "+(s.hero_stack??"-");
   $("status").textContent=p?.exists===false?"게임 없음":"연결됨";
   $("status").className="status ok";
+  syncControls();
 }
 function fail(e){
   $("status").textContent="오류: "+e.message;
@@ -102,15 +123,30 @@ function fail(e){
 }
 async function load(){
   if(!authToken()){ $("status").textContent="개발 토큰을 입력하세요."; return; }
-  try{ render(await api("/v1/game/state")); }catch(e){ fail(e); }
+  if(busy) return;
+  setBusy(true);
+  try{ render(await api("/v1/game/state")); }
+  catch(e){ fail(e); }
+  finally{ setBusy(false); }
 }
 async function action(name,amount=0){
+  if(busy) return;
+  if(current?.phase!=="decision"){ syncControls(); return; }
+  setBusy(true);
   try{
-    if(!current?.token) await load();
     const token=current?.token;
     if(!token) throw new Error("현재 액션 토큰이 없습니다.");
     render(await api("/v1/game/action","POST",{token,action:name,amount}));
-  }catch(e){ fail(e); }
+  }catch(e){
+    if(e.code==="stale_action" || e.code==="no_decision"){
+      try{ render(await api("/v1/game/state")); }
+      catch(reloadError){ fail(reloadError); }
+    }else{
+      fail(e);
+    }
+  }finally{
+    setBusy(false);
+  }
 }
 $("saveToken").onclick=()=>{sessionStorage.setItem("t2token",$("token").value.trim());load();};
 $("refresh").onclick=load;
@@ -121,18 +157,27 @@ $("allin").onclick=()=>action("allin");
 $("bet").onclick=()=>action("bet",parseInt($("amount").value||"0",10));
 $("raise").onclick=()=>action("raise",parseInt($("amount").value||"0",10));
 $("next").onclick=async()=>{
-  try{
-    if(!current?.token) await load();
-    render(await api("/v1/game/next","POST",{token:current.token}));
-  }catch(e){fail(e);}
+  if(busy || !(current?.phase==="hand_result" || current?.phase==="between_hands")) return;
+  setBusy(true);
+  try{ render(await api("/v1/game/next","POST",{token:current.token})); }
+  catch(e){
+    if(e.code==="stale_action") {
+      try{ render(await api("/v1/game/state")); } catch(reloadError){ fail(reloadError); }
+    } else fail(e);
+  }
+  finally{ setBusy(false); }
 };
 $("newGame").onclick=async()=>{
-  try{ render(await api("/v1/game/new","POST",{start_stack:30000})); }catch(e){fail(e);}
+  if(busy) return;
+  setBusy(true);
+  try{ render(await api("/v1/game/new","POST",{start_stack:30000})); }
+  catch(e){fail(e);}
+  finally{setBusy(false);}
 };
 
 const saved=sessionStorage.getItem("t2token");
 if(saved){ $("token").value=saved; load(); }
-else { $("status").textContent="개발 토큰을 입력하세요."; }
+else { $("status").textContent="개발 토큰을 입력하세요."; syncControls(); }
 </script>
 </body>
 </html>
