@@ -97,37 +97,53 @@ const paceMs = (e) => (e && e.action === 'fold'
 const serverNow = () => Date.now() + (S.clockOffset || 0);
 const SEAT_CLOCKS = {};
 
+/* 박스 테두리 시계(WPL 방식): 포지션·스택 박스 둘레의 선이 남은 액션 시계 비율만큼 줄어든다.
+ * 봇·다른 플레이어는 .pod .meta, HERO 는 #heroinfo — 모양은 같고 흐르는 시간만 다르다
+ * (봇은 timing model 시간, HERO 는 실제 사람 시간). 차례 시작(clock_started) 전에는 보이지 않는다.
+ */
+function boxClockPaint(host, startMs, baseMs, bankMs, now) {
+  if (!host) return;
+  let c = host.querySelector(':scope > .actclock');
+  if (now < startMs) { if (c) c.remove(); return; }
+  if (!c) {
+    c = document.createElement('div');
+    c.className = 'actclock';
+    c.innerHTML = '<svg class="ac-svg" preserveAspectRatio="none"><rect pathLength="100"></rect></svg>' +
+                  '<span class="acnum"></span>';
+    host.appendChild(c);
+  }
+  const w = host.offsetWidth + 6, h = host.offsetHeight + 6;
+  const svg = c.querySelector('svg'), rect = c.querySelector('rect');
+  svg.setAttribute('width', w); svg.setAttribute('height', h);
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  rect.setAttribute('x', 1.5); rect.setAttribute('y', 1.5);
+  rect.setAttribute('width', Math.max(1, w - 3)); rect.setAttribute('height', Math.max(1, h - 3));
+  rect.setAttribute('rx', 8);
+  const inBank = now >= baseMs && bankMs > baseMs;
+  const frac = inBank
+    ? Math.max(0, (bankMs - now) / Math.max(1, bankMs - baseMs))
+    : Math.max(0, (baseMs - now) / Math.max(1, baseMs - startMs));
+  rect.setAttribute('stroke-dasharray', `${(frac * 100).toFixed(2)} 100`);
+  const left = Math.max(0, Math.ceil(((bankMs > baseMs ? bankMs : baseMs) - now) / 1000));
+  c.classList.toggle('bank', inBank);
+  c.classList.toggle('urgent', left <= 10);
+  c.querySelector('.acnum').textContent =
+    left <= 10 ? (inBank ? 'TIME BANK ' : '') + left : (inBank ? 'TIME BANK' : '');
+}
+
 function clearSeatClock(seat) {
   const k = String(seat);
   if (SEAT_CLOCKS[k]) { clearInterval(SEAT_CLOCKS[k]); delete SEAT_CLOCKS[k]; }
   const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
-  const r = pod && pod.querySelector('.clockring');
-  if (r) r.remove();
+  const c = pod && pod.querySelector('.meta > .actclock');
+  if (c) c.remove();
 }
 
 function seatClock(seat, startMs, baseMs, bankMs) {
   clearSeatClock(seat);
   const paint = () => {
     const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
-    if (!pod) return;
-    let r = pod.querySelector('.clockring');
-    if (!r) {
-      r = document.createElement('div');
-      r.className = 'clockring';
-      r.innerHTML = '<span class="clocknum"></span>';
-      pod.appendChild(r);
-    }
-    const now = serverNow();
-    const inBank = now >= baseMs && bankMs > baseMs;
-    const frac = inBank
-      ? Math.max(0, (bankMs - now) / Math.max(1, bankMs - baseMs))
-      : Math.max(0, (baseMs - now) / Math.max(1, baseMs - startMs));
-    const left = Math.max(0, Math.ceil(((inBank ? bankMs : (bankMs > baseMs ? bankMs : baseMs)) - now) / 1000));
-    r.style.setProperty('--p', (frac * 100).toFixed(1) + '%');
-    r.classList.toggle('bank', inBank);
-    r.classList.toggle('urgent', left <= 10);
-    r.querySelector('.clocknum').textContent =
-      left <= 10 ? (inBank ? 'TIME BANK ' : '') + left : (inBank ? 'TIME BANK' : '');
+    boxClockPaint(pod && pod.querySelector('.meta'), startMs, baseMs, bankMs, serverNow());
   };
   paint();
   SEAT_CLOCKS[String(seat)] = setInterval(paint, 100);
@@ -3204,6 +3220,8 @@ function stopActionClock() {
   S.timeoutSubmitting = false;
   S.actionBaseMs = null;
   S.actionStartMs = null;
+  const hc = document.querySelector('#heroinfo > .actclock');
+  if (hc) hc.remove();
   const el = $('#turnclock');
   if (el) {
     el.hidden = true;
@@ -3218,19 +3236,10 @@ function paintActionClock() {
   const leftMs = Math.max(0, S.actionDeadlineMs - Date.now());
   const sec = Math.max(0, Math.ceil(leftMs / 1000));
   if (S.timingOn && S.actionBaseMs) {
-    // 시간 규칙: 링만 줄어들다가 마지막 10초부터 숫자. 기본 시간이 지나면 TIME BANK.
-    const now = Date.now();
-    const inBank = now >= S.actionBaseMs && S.actionDeadlineMs > S.actionBaseMs;
+    // 시간 규칙: 봇과 같은 박스 테두리 시계(HERO 정보 박스). 숫자는 마지막 10초, 기본 시간 뒤 TIME BANK.
     const start = S.actionStartMs || (S.actionBaseMs - 18000);
-    const frac = inBank
-      ? Math.max(0, (S.actionDeadlineMs - now) / Math.max(1, S.actionDeadlineMs - S.actionBaseMs))
-      : Math.max(0, (S.actionBaseMs - now) / Math.max(1, S.actionBaseMs - start));
-    el.hidden = false;
-    el.classList.add('ring');
-    el.classList.toggle('bank', inBank);
-    el.style.setProperty('--p', (frac * 100).toFixed(1) + '%');
-    el.textContent = sec <= 10 ? (inBank ? 'TIME BANK ' : '') + sec + '초' : (inBank ? 'TIME BANK' : '');
-    el.classList.toggle('urgent', sec <= 5);
+    el.hidden = true;
+    boxClockPaint($('#heroinfo'), start, S.actionBaseMs, S.actionDeadlineMs, Date.now());
   } else {
     el.hidden = false;
     el.textContent = sec + '초';

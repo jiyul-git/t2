@@ -305,3 +305,21 @@ K 평균 0.63(중앙 0.65, 90% 0.81). 시간당 핸드(가상 테이블) 지금 
 유형별 시계사용형 33, 느린형 17, 일반형 8. 구간별 final 35, early_mid 16, itm 7. 결정 시점 뱅크 0 인 결정 1.13%.
 엔진 행동이 바뀐 것: 콜 15, 레이즈 14, 벳 6, 체크 4(→ 결과 같음), 폴드 18(결과 같음), 쇼브 1. 300명 대회는 길어서
 충전 없는 60초 뱅크가 후반(final)에 바닥나는 사람이 생긴다 — 충전은 사용자 결정으로 보류 중인 항목.
+
+## 14. 기계 시간·충전·T7·박스 시계 (2026-10-05, 사용자 결정)
+
+- **딜 7.5초**(`timing.DEAL_SECONDS`, 화면 딜 애니메이션 7.0~7.5초에 맞춤). 보드 공개 2초, 결과+수거 2.54초 그대로.
+  생각 시간 파라미터는 건드리지 않음.
+- **타임뱅크 충전**: 시작 60초(레이트 레지 동일), 브레이크(55분 플레이 → 5분 브레이크)마다 +15초, 상한 60초.
+  레벨·핸드별 충전 없음. 저장값 `[초, 반영한 브레이크 수]`, 읽을 때 반영 → worker/본 필드 이중 충전 없음.
+  검증 `tools/verify_timing_bank_recharge.py`, `ui/tools/verify_timing_clock.py`(HERO 1.49 → 16.49).
+- **T7 기본 ON**: 실제 게임 `T2_TIMING_V1` 기본 enforce. R2 기준선(`r2_baseline_sim.main`)은 off 강제
+  (digest e04c7e88 / 6dc97c62 불변). 시간 검증기는 record/enforce 를 따로 설정. 즉시 행동하는 UI 검증기
+  (`verify_action_timeout`, `verify_clock_ui`, `verify_scheduled_ui`, `verify_ui`)는 off 고정 — timing ON 은
+  `verify_timing_clock` 이 맡는다. `verify_timing_strategy_invariance` 가 계속 "행동 차이는 정당한 타임아웃뿐"을 확인
+  (T7 뒤 재실행 통과). 병렬 뱅크 병합 `float(list)` 버그 수정.
+- **박스 테두리 시계(WPL 방식)**: HERO 외 모든 좌석은 자기 차례 시작 순간부터 `.pod .meta`(포지션·스택) 박스 테두리가
+  실제 액션 시계 남은 비율만큼 줄어든다(봇은 서버 예정표의 모델 시간, 가짜 1.5초 없음). 행동하면 즉시 제거되고 다음
+  좌석 시계가 시작된다. TIME BANK 구간은 주황·굵은 선 + `TIME BANK n`, 숫자는 마지막 10초에만.
+  HERO(`#heroinfo`)도 같은 모양, HERO 는 실제 시간. 그림 `docs/beta/timing_box_clock.png`.
+- **남은 공백**: timing ON 상태의 예약 대회 흐름 전용 검증기 없음(제안 항목).

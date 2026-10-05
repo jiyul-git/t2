@@ -61,7 +61,7 @@ def legal_passive(view):
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix='t2_timing_clock_') as td:
+    with tempfile.TemporaryDirectory(prefix='t2_timing_clock_', ignore_cleanup_errors=True) as td:
         subprocess.run(['sh', str(ROOT / 'ui/tools/setup_run_dir.sh'), td],
                        check=True, stdout=subprocess.DEVNULL)
         proc, request, stream = server(td, {'T2_TIMING_V1': 'enforce', 'T2_TIMING_TEST_BASE': '1',
@@ -156,7 +156,7 @@ def main():
             proc.wait(timeout=10)
 
     # 브레이크 충전: 플레이 창 60초, 브레이크 5초. HERO 가 뱅크를 0.5초 쓴 뒤 브레이크를 지나면 +15초.
-    with tempfile.TemporaryDirectory(prefix='t2_timing_break_') as td:
+    with tempfile.TemporaryDirectory(prefix='t2_timing_break_', ignore_cleanup_errors=True) as td:
         subprocess.run(['sh', str(ROOT / 'ui/tools/setup_run_dir.sh'), td],
                        check=True, stdout=subprocess.DEVNULL)
         proc, request, stream = server(td, {'T2_TIMING_V1': 'enforce', 'T2_TIMING_TEST_BASE': '1',
@@ -197,7 +197,7 @@ def main():
             proc.terminate()
             proc.wait(timeout=10)
 
-    with tempfile.TemporaryDirectory(prefix='t2_timing_off_') as td:
+    with tempfile.TemporaryDirectory(prefix='t2_timing_off_', ignore_cleanup_errors=True) as td:
         subprocess.run(['sh', str(ROOT / 'ui/tools/setup_run_dir.sh'), td],
                        check=True, stdout=subprocess.DEVNULL)
         proc, request, stream = server(td, {'T2_TIMING_V1': 'off', 'T2_TIMING_TEST_BASE': '1'})
