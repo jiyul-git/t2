@@ -87,6 +87,64 @@ const FOLD_DIV = 2;
 const paceMs = (e) => (e && e.action === 'fold'
   ? Math.round(stepMs() / FOLD_DIV) : stepMs());
 
+/* ---------------- 시간 규칙(T2_TIMING_V1) 좌석 시계 ----------------
+ * 서버가 봇 액션마다 절대 예정 시각(act_at_ms)과 그 결정의 시계
+ * (clock_started_ms, base_deadline_ms, bank_deadline_ms)를 보낸다.
+ * 화면은 그 시각에 맞춰 재생한다(봇 모션은 생각 시간 안에 포함, 별도 템포 없음).
+ * 좌석에는 남은 액션 시계 링만 그리고, 숫자는 마지막 10초에만, TIME BANK 는 실제로
+ * 뱅크에 들어갔을 때만 보인다. 봇의 행동 예정 시각은 화면에 쓰지 않는다.
+ */
+const serverNow = () => Date.now() + (S.clockOffset || 0);
+const SEAT_CLOCKS = {};
+
+function clearSeatClock(seat) {
+  const k = String(seat);
+  if (SEAT_CLOCKS[k]) { clearInterval(SEAT_CLOCKS[k]); delete SEAT_CLOCKS[k]; }
+  const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
+  const r = pod && pod.querySelector('.clockring');
+  if (r) r.remove();
+}
+
+function seatClock(seat, startMs, baseMs, bankMs) {
+  clearSeatClock(seat);
+  const paint = () => {
+    const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
+    if (!pod) return;
+    let r = pod.querySelector('.clockring');
+    if (!r) {
+      r = document.createElement('div');
+      r.className = 'clockring';
+      r.innerHTML = '<span class="clocknum"></span>';
+      pod.appendChild(r);
+    }
+    const now = serverNow();
+    const inBank = now >= baseMs && bankMs > baseMs;
+    const frac = inBank
+      ? Math.max(0, (bankMs - now) / Math.max(1, bankMs - baseMs))
+      : Math.max(0, (baseMs - now) / Math.max(1, baseMs - startMs));
+    const left = Math.max(0, Math.ceil(((inBank ? bankMs : (bankMs > baseMs ? bankMs : baseMs)) - now) / 1000));
+    r.style.setProperty('--p', (frac * 100).toFixed(1) + '%');
+    r.classList.toggle('bank', inBank);
+    r.classList.toggle('urgent', left <= 10);
+    r.querySelector('.clocknum').textContent =
+      left <= 10 ? (inBank ? 'TIME BANK ' : '') + left : (inBank ? 'TIME BANK' : '');
+  };
+  paint();
+  SEAT_CLOCKS[String(seat)] = setInterval(paint, 100);
+}
+
+/* 재접속: 아직 끝나지 않은 봇 예정표는 링만 이어서 보여 준다(상태는 이미 최종이다). */
+function replayBotSchedule(schedule) {
+  (schedule || []).forEach((e) => {
+    if (!e.act_at_ms || e.seat === undefined) return;
+    const now = serverNow();
+    if (e.act_at_ms <= now) return;
+    const show = () => seatClock(e.seat, e.clock_started_ms, e.base_deadline_ms, e.bank_deadline_ms);
+    if (e.clock_started_ms <= now) show(); else setTimeout(show, e.clock_started_ms - now);
+    setTimeout(() => clearSeatClock(e.seat), e.act_at_ms - now);
+  });
+}
+
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
 
@@ -3104,10 +3162,12 @@ function stopActionClock() {
   S.actionToken = null;
   S.actionArmPending = false;
   S.timeoutSubmitting = false;
+  S.actionBaseMs = null;
+  S.actionStartMs = null;
   const el = $('#turnclock');
   if (el) {
     el.hidden = true;
-    el.classList.remove('urgent');
+    el.classList.remove('urgent', 'ring', 'bank');
     el.textContent = '';
   }
 }
@@ -3117,15 +3177,41 @@ function paintActionClock() {
   if (!el || !S.actionDeadlineMs || S.actionToken !== S.token) return;
   const leftMs = Math.max(0, S.actionDeadlineMs - Date.now());
   const sec = Math.max(0, Math.ceil(leftMs / 1000));
-  el.hidden = false;
-  el.textContent = sec + '초';
-  el.classList.toggle('urgent', sec <= 5);
+  if (S.timingOn && S.actionBaseMs) {
+    // 시간 규칙: 링만 줄어들다가 마지막 10초부터 숫자. 기본 시간이 지나면 TIME BANK.
+    const now = Date.now();
+    const inBank = now >= S.actionBaseMs && S.actionDeadlineMs > S.actionBaseMs;
+    const start = S.actionStartMs || (S.actionBaseMs - 18000);
+    const frac = inBank
+      ? Math.max(0, (S.actionDeadlineMs - now) / Math.max(1, S.actionDeadlineMs - S.actionBaseMs))
+      : Math.max(0, (S.actionBaseMs - now) / Math.max(1, S.actionBaseMs - start));
+    el.hidden = false;
+    el.classList.add('ring');
+    el.classList.toggle('bank', inBank);
+    el.style.setProperty('--p', (frac * 100).toFixed(1) + '%');
+    el.textContent = sec <= 10 ? (inBank ? 'TIME BANK ' : '') + sec + '초' : (inBank ? 'TIME BANK' : '');
+    el.classList.toggle('urgent', sec <= 5);
+  } else {
+    el.hidden = false;
+    el.textContent = sec + '초';
+    el.classList.toggle('urgent', sec <= 5);
+  }
 
   if (leftMs <= 0 && !S.timeoutSubmitting && S.view && S.view.type === 'decision') {
     S.timeoutSubmitting = true;
     closeRaise();
     send('fold', 0);
   }
+}
+
+function noteTiming(t) {
+  // 서버 시간 정보(시간 규칙). 꺼져 있으면 timing_on 이 false 라 기존 표시 그대로다.
+  if (!t) return;
+  S.timingOn = !!t.timing_on;
+  if (t.server_now_ms) S.clockOffset = t.server_now_ms - Date.now();
+  if (t.action_base_deadline_ms) S.actionBaseMs = Number(t.action_base_deadline_ms);
+  if (t.action_started_ms) S.actionStartMs = Number(t.action_started_ms);
+  if (t.bot_ready_at_ms !== undefined) S.botReadyAtMs = t.bot_ready_at_ms ? Number(t.bot_ready_at_ms) : 0;
 }
 
 function startActionClock(deadlineMs, token) {
@@ -3157,6 +3243,7 @@ async function armActionClock(v) {
     if (!response.ok) return;
     const data = await response.json();
     if (token !== S.token || !S.view || S.view.type !== 'decision') return;
+    noteTiming(data);
     startActionClock(data.action_deadline_ms, token);
   } catch (_) {
     // 서버가 원본이다. 연결 복구 시 render/apply가 같은 token을 다시 arm한다.
@@ -3172,6 +3259,11 @@ async function readReady() {
     const response = await fetch('/api/ready', {cache: 'no-store', signal: controller.signal});
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const ready = await response.json();
+    noteTiming(ready);
+    if (ready.timing_on && ready.bot_schedule && ready.bot_schedule.length && !S.scheduleReplayed) {
+      S.scheduleReplayed = true;          // 재접속: 남은 봇 시계만 이어서 보여 준다
+      replayBotSchedule(ready.bot_schedule);
+    }
     S.elapsedSeconds = ready.elapsed_seconds;
     S.levelRemainingSeconds = ready.level_remaining_seconds;
     S.sessionRemainingSeconds = ready.session_remaining_seconds;
@@ -3492,12 +3584,26 @@ async function callStepStream(body, msg) {
 
     const head = queue[0];
 
+    // 시간 규칙: 예정 시각까지 기다린다(봇은 그동안 좌석 시계 링이 줄어든다).
+    const dueMs = head && (head.kind === 'street' ? head.at_ms : head.act_at_ms);
+    if (dueMs && serverNow() < dueMs - 20) {
+      playing = true;
+      if (head.kind !== 'street' && head.clock_started_ms) {
+        if (!SEAT_CLOCKS[String(head.seat)]) {
+          seatClock(head.seat, head.clock_started_ms, head.base_deadline_ms, head.bank_deadline_ms);
+        }
+      }
+      setTimeout(() => { playing = false; playNext(); }, Math.max(0, dueMs - serverNow()));
+      return;
+    }
+    if (head && head.kind !== 'street' && head.seat !== undefined) clearSeatClock(head.seat);
+
     /*
      * HERO 액션 직후 같은 스트리트의 첫 봇 액션에는 짧은 호흡을 둔다.
      * 단, HERO가 스트리트를 닫았다면 street 이벤트는 막지 않는다 —
      * 보드는 즉시 공개하고, 새 스트리트 쪽 pause가 첫 봇 액션을 늦춘다.
      */
-    if (head && head.kind !== 'street' && Date.now() < heroPauseUntil) {
+    if (head && !dueMs && head.kind !== 'street' && Date.now() < heroPauseUntil) {
       playing = true;
       setTimeout(() => {
         playing = false;
@@ -3541,7 +3647,7 @@ async function callStepStream(body, msg) {
       setTimeout(() => {
         playing = false;
         playNext();
-      }, 360 + STREET_OPEN_PAUSE);
+      }, e.at_ms ? 360 : 360 + STREET_OPEN_PAUSE);
       return;
     }
 
@@ -3581,7 +3687,7 @@ async function callStepStream(body, msg) {
         setTimeout(() => {
           playing = false;
           playNext();
-        }, terminalFold(ss, e) ? 0 : paceMs(e));
+        }, (terminalFold(ss, e) || e.act_at_ms) ? 0 : paceMs(e));
       };
 
       // 새 스트리트는 기존 재생과 똑같이 보드를 먼저 확인한 뒤 첫 액션을 보여준다.
@@ -3656,6 +3762,7 @@ async function callStepStream(body, msg) {
         const obj = JSON.parse(line);
         if (obj.type === 'stream_start') {
           streamId = obj.stream_id || null;
+          if (obj.server_now_ms) S.clockOffset = obj.server_now_ms - Date.now();
         } else if (obj.type === 'bot_action') {
           pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
         } else if (obj.type === 'final') {
@@ -3832,6 +3939,11 @@ function previewHeroAction(action, amount) {
 function send(action, amount) {
   if (S.token === null || S.token === undefined) {
     sync();
+    return;
+  }
+
+  if (action !== null && S.timingOn && S.botReadyAtMs && serverNow() < S.botReadyAtMs - 250) {
+    toast('아직 차례가 아닙니다');
     return;
   }
 

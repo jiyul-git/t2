@@ -663,3 +663,22 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 .rankrow .bb { color:var(--dim); font-size:10px; text-align:right; }
 .rankrow .seat { color:var(--dim); font-size:10px; text-align:right; }
 .rankempty { padding:24px 10px; text-align:center; color:var(--dim); }
+
+/* 시간 규칙(T2_TIMING_V1): 좌석 액션 시계 링. 숫자는 마지막 10초, TIME BANK 는 뱅크 사용 중일 때만. */
+.pod .clockring {
+  position: absolute; left: 50%; top: 0; width: 46px; height: 46px; margin-left: -23px; margin-top: -4px;
+  border-radius: 50%; z-index: 2; pointer-events: none;
+  background: conic-gradient(#ffd56a var(--p, 100%), rgba(0,0,0,.45) 0);
+  -webkit-mask: radial-gradient(circle, transparent 18px, #000 19px);
+          mask: radial-gradient(circle, transparent 18px, #000 19px);
+  filter: drop-shadow(0 0 4px rgba(255,213,106,.55));
+}
+.pod .clockring.bank { background: conic-gradient(#ff7a3d var(--p, 100%), rgba(0,0,0,.45) 0);
+  filter: drop-shadow(0 0 4px rgba(255,122,61,.6)); }
+.pod .clockring .clocknum {
+  position: absolute; left: 50%; top: 48px; transform: translateX(-50%); white-space: nowrap;
+  font-size: 10px; font-weight: 700; color: var(--gold);
+}
+.pod .clockring.bank .clocknum, .pod .clockring.urgent .clocknum { color: #ff9a6b; }
+#turnclock.ring { background: conic-gradient(rgba(232,196,106,.35) var(--p, 100%), transparent 0); }
+#turnclock.ring.bank { background: conic-gradient(rgba(224,118,60,.45) var(--p, 100%), transparent 0); }

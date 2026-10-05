@@ -1093,6 +1093,13 @@ class HandRun:
             'amount': int(amount or 0),
             'board': list(board or []),
         }
+        if self.timing and self.timing_log and self.timing_log[-1].get('seat') == seat:
+            t = self.timing_log[-1]
+            # 화면 재생용 시간(전략과 무관). 서버가 절대 시각으로 바꿔 보낸다.
+            event['timing'] = {'elapsed': round(float(t['elapsed']), 3),
+                               'base': float(t['base']),
+                               'bank_before': round(float(t['bank_before']), 3),
+                               'timed_out': bool(t['timed_out'])}
         try:
             self.on_bot_action(event)
         except Exception:
@@ -2305,9 +2312,10 @@ class HandRun:
                     # 이미 확정된 결정은 그대로 재생한다. 계획은 위에서 정상적으로
                     # 계산됐으므로 기록에는 근거가 남고, 실행만 고정된다.
                     a, amt = _forced[1], _forced[2]
-                if self.timing and _forced:
-                    PS.concept_untap()
-                if self.timing and not _forced:
+                if self.timing:
+                    # 재생(_forced) 결정도 시간을 다시 계산한다 — 사람 테이블은 요청마다 핸드를
+                    # 처음부터 재생하고 필드(뱅크)는 핸드 시작값에서 다시 읽으므로, 같은 계산을
+                    # 반복해야 뱅크가 맞는다. 재생 행동은 이미 실행 결과(타임아웃 반영)라 바꾸지 않는다.
                     PS.concept_untap()
                     _tm_bd = (h.plans.get(key) or {}).get('_last_response_boundary') if tc > 0 else None
                     _tm_opp = [r2.stacks[x] for x in r2.live() if x != s]
@@ -2318,7 +2326,7 @@ class HandRun:
                          TM.commit_choice(amt if a in ('bet', 'raise', 'allin') else 0,
                                           r2.stacks[s], max(_tm_opp) if _tm_opp else None)),
                         False, len(r2.log), _tm_concepts)
-                    if _tm['timed_out'] and self.timing.get('enforce', True):
+                    if _tm['timed_out'] and self.timing.get('enforce', True) and not _forced:
                         _tm['engine_act'] = a
                         h.plans[key].setdefault('deviations', []).append(
                             {'street': street, 'planned': a,

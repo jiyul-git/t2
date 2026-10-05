@@ -1402,7 +1402,7 @@ def step(action=None, amount=0, defer_others=False, others=None,
     f, tb, alive, h, hero_seat = build_hand(st)
     # 저장된 HERO 액션을 재생하는 동안은 UI 진행 콜백을 끈다.
     # 그렇지 않으면 과거 봇 액션을 현재 액션처럼 다시 스트리밍한다.
-    run = SE.HandRun(h, decisions=st.get('decisions'))
+    run = SE.HandRun(h, decisions=st.get('decisions'), timing_ctx=f._timing_ctx())
     raw = run.start()
     for (a, amt) in st['actions']:
         if isinstance(raw, dict) and (raw.get('done') or raw.get('error')): break

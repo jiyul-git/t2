@@ -219,3 +219,40 @@ enforce 모드에서도 `verify_vclock_session` 통과. 탐침: vclock 이벤트
 - 재검산 항목(T5~T6 이후): 시간당 핸드 +25%, 일반형 어려운 올인 18.7초, final 197핸드/시간.
 - 타임아웃으로 콜 2건이 폴드로 바뀐 것은 정상 — 시간 규칙이 실제 게임 규칙이므로 시간이 다 되면 결과가 바뀐다.
   전략 불변성은 record 모드까지, enforce 의 변화는 합법적 시간 초과로 따로 본다.
+
+## 12. T5~T6 구현·검증 기록 (2026-10-05, `T2_TIMING_V1` 기본 off 유지)
+
+원격 `test` 에 지갑/스케줄 쪽 새 커밋이 없음을 확인한 뒤 진행했다(최신 작업은 이미 합쳐져 있음).
+
+**T5 — HERO 시계(서버)**: 시간 규칙이 켜지면 HERO 시계 = 포맷 기본 초(18/14/12, deep 18) + 누적 타임뱅크
+(`field.time_banks[hero_pid]`, 시작 60초). `ui_action_started_at / ui_action_base_deadline / ui_action_deadline`
+(절대 시각, 같은 토큰 재무장은 연장 안 됨). 행동 시 `timing.settle` 로 뱅크 정산(봇과 같은 규칙), base+bank 를 넘긴
+요청·서버 tick 은 기존 `_timeout_action`(체크 가능 체크/아니면 폴드)로 바꾸고 뱅크 0. 시간 규칙이 꺼져 있으면
+지금 동작(`T2_HERO_ACTION_SECONDS`, 기본 15초) 그대로.
+
+**T6 — 사람 테이블 봇 시간**:
+- `live2.step` 의 HandRun 에 시간 규칙 연결. 사람 테이블은 요청마다 핸드를 처음부터 재생하므로, 재생 결정(`_forced`)도
+  시간을 다시 계산해 뱅크가 맞게 한다(재생 행동은 이미 실행 결과라 바꾸지 않음).
+- 서버 `_BotSchedule`: 봇 이벤트마다 절대 시각(`clock_started_ms`, `act_at_ms`, `base_deadline_ms`, `bank_deadline_ms`),
+  보드 공개는 `at_ms`(2초). 예정표를 `st['ui_bot_schedule']`·`ui_bot_ready_at` 에 저장. 다음 HERO 시계는 예정표 끝 이후에만
+  시작하고, 그 전에 온 HERO 액션은 409.
+- 프런트: 고정 템포(1.5초) 대신 예정 시각에 재생(봇 모션은 생각 시간 안). 행동 중인 봇 좌석에 남은 액션 시계 링,
+  숫자는 남은 시간 10초 이하에서만, TIME BANK 는 실제 뱅크 구간에서만. 봇 행동 예정 시각은 표시하지 않음.
+  재접속 시 `/api/ready` 의 남은 예정표로 링을 이어 보여 주고, 예정표가 끝나기 전 액션은 막는다.
+- 스크린샷 `docs/beta/timing_t5_t6_ui.png`(왼쪽부터 HERO 기본 구간, HERO TIME BANK, 봇 생각 중 링;
+  검증용 기본 4초·뱅크 4초).
+
+**검증**: `ui/tools/verify_timing_clock.py`(새) — HERO 시계 = base+bank·재무장 불연장·재접속 동일 deadline,
+기본 초를 0.5초 넘긴 행동이 뱅크 0.5초 사용(2 → 1.50), 봇 이벤트 예정 시각 단조 증가·HERO 시계가 예정표 뒤에 시작,
+base+bank 초과 → 타임아웃·뱅크 0, 시간 규칙 off → 기존 시계·예정표 없음·테스트 덮어쓰기 무효. 전부 통과.
+기존 UI 검증기(off): `verify_action_timeout`, `verify_clock_ui`(+JS), `verify_ui`, `verify_async_refill`,
+`verify_personal_installation`, `verify_scheduled_ui`(DEFER=1) 통과.
+
+알게 된 것:
+- `verify_action_timeout`·`verify_clock_ui` 는 지갑 작업 이후 `/api/new` 가 `T2_ALLOW_PRACTICE_NEW=1` 일 때만 열려서,
+  그 env 없이 돌리면 처음부터 실패한다(기존 상태, 이번 변경과 무관). 그 env 로 돌려 통과를 확인했다.
+- `verify_clock_ui` 는 `_ui_timing` 함수만 떼어 실행하므로, 그 함수는 `TIMING_ON` 전역이 없으면 꺼진 것으로 본다.
+- 연습 대회 첫 핸드(`/api/new`)의 HERO 앞 봇 액션은 스트림이 아니라 예정표가 없다(기존 템포로 재생). 이후 핸드는
+  전부 스트림 경로라 예정표가 있다.
+- 남은 재검산(§11.1): 사람 포함 테이블에서 시간당 핸드·final 197핸드/시간 → mechanical time 으로 조정할지,
+  일반형 어려운 올인 18.7초.

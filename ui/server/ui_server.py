@@ -37,6 +37,7 @@ if not os.path.exists(os.path.join(D, 'UI_SERVER_DIR')):
 import ui_view
 sys.modules['view'] = ui_view          # live2 가 import 하기 전에 주입
 import live2 as L
+import timing as TMG
 import formats as FM
 import context as CTX
 from table import BLINDS
@@ -153,7 +154,14 @@ def _schedule_tick():
                 st = L.load()
         if (decision and st.get('ui_action_deadline') is not None
                 and now >= float(st['ui_action_deadline'])):
-            _last = _wrap(_step(_timeout_action()))
+            if TIMING_ON:
+                _settle_hero_bank(st, now, timed_out=True)
+                L.save(st)
+            _sched = _BotSchedule(now) if TIMING_ON else None
+            _last = _wrap(_step(_timeout_action(),
+                                on_bot_action=(_sched.stamp if _sched else None)))
+            if _sched:
+                _sched.save()
             _last['auto_folded'] = True
             st = L.load()
         if ((st.get('busted') or now - LAST_PLAY_PRESENCE > 20)
@@ -299,10 +307,90 @@ def _ui_timing(st, now=None):
             'break_remaining': max(0, int(math.ceil(st.get('ui_break_until', 0) - now))),
             'action_deadline_ms': None if deadline is None else int(float(deadline) * 1000),
             'action_remaining': None if deadline is None else max(0, int(math.ceil(float(deadline) - now))),
-            'action_token': st.get('ui_action_token')}
+            'action_token': st.get('ui_action_token'),
+            # 시간 규칙 필드. 이 함수만 떼어 실행하는 검증(verify_clock_ui)에서도 동작하도록
+            # 전역이 없으면 꺼진 것으로 본다.
+            'timing_on': globals().get('TIMING_ON', False),
+            'server_now_ms': int(now * 1000),
+            'action_started_ms': (None if st.get('ui_action_started_at') is None
+                                  else int(float(st['ui_action_started_at']) * 1000)),
+            'action_base_deadline_ms': (None if st.get('ui_action_base_deadline') is None
+                                        else int(float(st['ui_action_base_deadline']) * 1000)),
+            'hero_time_bank': (_hero_clock_params(st)[1]
+                               if globals().get('TIMING_ON', False) and st.get('field') else None),
+            'bot_ready_at_ms': (None if st.get('ui_bot_ready_at') is None
+                                else int(float(st['ui_bot_ready_at']) * 1000)),
+            'bot_schedule': [e for e in (st.get('ui_bot_schedule') or [])
+                             if (e.get('act_at_ms') or e.get('at_ms') or 0) > int(now * 1000)]}
 
 ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
 HERO_ACTION_SECONDS = min(120.0, max(1.0, float(os.environ.get('T2_HERO_ACTION_SECONDS', '15'))))
+
+# ---------- 시간 규칙(timing.py, TIME_SYSTEM_IMPLEMENTATION_DESIGN T5·T6) ----------
+# T2_TIMING_V1 이 record/enforce 일 때만 켠다. 꺼져 있으면 지금 동작(HERO 15초, 봇 고정 템포) 그대로다.
+TIMING_ON = os.environ.get('T2_TIMING_V1', 'off') in ('record', 'enforce')
+STREET_GAP_SECONDS = 2.0          # 사람 테이블 보드 공개 기계 시간(봇 테이블 mechanical 과 같은 값)
+
+
+def _hero_clock_params(st):
+    """HERO 시계: 포맷 기본 초 + 누적 타임뱅크(pid 를 따라감)."""
+    fd = st.get('field') or {}
+    base = TMG.action_seconds(fd.get('fmt', 'standard'))
+    # 검증 전용 덮어쓰기(시간 규칙이 켜져 있을 때만 여기까지 온다).
+    if os.environ.get('T2_TIMING_TEST_BASE'):
+        base = float(os.environ['T2_TIMING_TEST_BASE'])
+    start_bank = float(os.environ.get('T2_TIMING_TEST_BANK') or TMG.BANK_START)
+    hero = str(fd.get('hero_pid'))
+    bank = float((fd.get('time_banks') or {}).get(hero, start_bank))
+    return base, bank, hero
+
+
+def _settle_hero_bank(st, now, timed_out=False):
+    """HERO 결정 하나의 타임뱅크 정산. 사람도 봇과 같은 timing.settle 규칙."""
+    if not TIMING_ON or st.get('ui_action_started_at') is None:
+        return
+    base, bank, hero = _hero_clock_params(st)
+    elapsed = max(0.0, float(now) - float(st['ui_action_started_at']))
+    res = TMG.settle(base + bank + 1.0 if timed_out else elapsed, base, bank)
+    st['field'].setdefault('time_banks', {})[hero] = res['bank_left']
+    st.pop('ui_action_started_at', None)
+    st.pop('ui_action_base_deadline', None)
+
+
+class _BotSchedule:
+    """사람 테이블 봇 액션의 절대 예정 시각. 엔진은 즉시 계산하고 화면 재생만 이 시각을 따른다.
+
+    봇 결정의 시계는 직전 이벤트가 끝난 시각에 시작하고, 사람과 같은 규칙으로 흐른 시간(elapsed)
+    뒤에 행동한다. 보드 공개는 STREET_GAP_SECONDS. 다음 HERO 결정은 마지막 예정 시각 뒤에만 시작한다.
+    """
+    def __init__(self, start):
+        self.cursor = float(start)
+        self.events = []
+
+    def stamp(self, event):
+        if event.get('kind') == 'street':
+            self.cursor += STREET_GAP_SECONDS
+            event['at_ms'] = int(self.cursor * 1000)
+        elif event.get('timing'):
+            t = event['timing']
+            started = self.cursor
+            act = started + float(t['elapsed'])
+            event['clock_started_ms'] = int(started * 1000)
+            event['act_at_ms'] = int(act * 1000)
+            event['base_deadline_ms'] = int((started + float(t['base'])) * 1000)
+            event['bank_deadline_ms'] = int((started + float(t['base'])
+                                             + float(t['bank_before'])) * 1000)
+            self.cursor = act
+        self.events.append({k: event.get(k) for k in (
+            'kind', 'seat', 'street', 'action', 'amount', 'at_ms', 'clock_started_ms',
+            'act_at_ms', 'base_deadline_ms', 'bank_deadline_ms') if event.get(k) is not None})
+        return event
+
+    def save(self):
+        st = L.load()
+        st['ui_bot_ready_at'] = self.cursor
+        st['ui_bot_schedule'] = self.events
+        L.save(st)
 
 
 def _arm_action_clock(token, now=None):
@@ -321,7 +409,15 @@ def _arm_action_clock(token, now=None):
     st = L.load()
     if st.get('ui_action_token') != current or st.get('ui_action_deadline') is None:
         st['ui_action_token'] = current
-        st['ui_action_deadline'] = now + HERO_ACTION_SECONDS
+        if TIMING_ON:
+            # 봇 예정표가 끝나기 전에는 HERO 시계가 시작하지 않는다(서버 권위).
+            started = max(float(now), float(st.get('ui_bot_ready_at') or 0.0))
+            base, bank, _ = _hero_clock_params(st)
+            st['ui_action_started_at'] = started
+            st['ui_action_base_deadline'] = started + base
+            st['ui_action_deadline'] = started + base + bank
+        else:
+            st['ui_action_deadline'] = now + HERO_ACTION_SECONDS
         L.save(st)
     return _ui_timing(st, now)
 
@@ -1402,6 +1498,8 @@ def _wrap(r):
         if st.get('ui_action_token') is not None and st.get('ui_action_token') != out['token']:
             st.pop('ui_action_token', None)
             st.pop('ui_action_deadline', None)
+            st.pop('ui_action_started_at', None)
+            st.pop('ui_action_base_deadline', None)
             L.save(st)
         if st.get('tournament_id') and (out.get('view') or {}).get('type') == 'decision':
             if st.get('ui_decision_token') != out['token']:
@@ -1816,6 +1914,14 @@ class H(BaseHTTPRequestHandler):
                     if a is not None and a not in ACTIONS:
                         return self._send(400, {'error': '알 수 없는 액션: %s' % a})
                     amt = 0 if timed_out else int(body.get('amount') or 0)
+                    if TIMING_ON and a is not None and not timed_out and \
+                            time.time() < float(_st.get('ui_bot_ready_at') or 0.0) - 0.25:
+                        # 봇 예정표가 끝나기 전(아직 HERO 차례 전)의 액션은 받지 않는다.
+                        return self._send(409, {'error': '아직 차례가 아닙니다.', 'current': _last})
+                    if TIMING_ON and a is not None and _st.get('ui_action_token') == body.get('token'):
+                        _settle_hero_bank(_st, time.time(), timed_out=timed_out)
+                        L.save(_st)
+                    _sched = _BotSchedule(time.time()) if TIMING_ON else None
 
                     # 일반 /api/step 은 기존 호환 경로. 실제 플레이 액션만
                     # 스트림 경로를 쓰며, 1.5초 모션 템포는 프론트가 그대로 유지한다.
@@ -1827,9 +1933,12 @@ class H(BaseHTTPRequestHandler):
                         alive[0] = self._stream_line({
                             'type': 'stream_start',
                             'stream_id': stream_id,
+                            'server_now_ms': int(time.time() * 1000),
                         })
 
                         def _emit_bot(event):
+                            if _sched is not None:
+                                _sched.stamp(event)
                             if not alive[0]:
                                 return
                             seq[0] += 1
@@ -1856,6 +1965,8 @@ class H(BaseHTTPRequestHandler):
                             return
                         finally:
                             _stream_gate_close(stream_id)
+                        if _sched is not None:
+                            _sched.save()
                         v = r.get('view') or {}
                         if (not r.get('done') and v.get('error') and _last
                                 and (_last.get('view') or {}).get('type') == 'decision'):
@@ -1874,7 +1985,10 @@ class H(BaseHTTPRequestHandler):
                             })
                         return
 
-                    r = _step(a, amt) if a is not None else _step()
+                    _cb = _sched.stamp if _sched is not None else None
+                    r = _step(a, amt, on_bot_action=_cb) if a is not None else _step(on_bot_action=_cb)
+                    if _sched is not None:
+                        _sched.save()
                     v = r.get('view') or {}
                     if (not r.get('done') and v.get('error') and _last
                             and (_last.get('view') or {}).get('type') == 'decision'):
