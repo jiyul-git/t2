@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>T2 Duo</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#0b0d11;color:#f4f6fa;min-height:100vh}
+main{max-width:820px;margin:0 auto;padding:12px 12px calc(20px + env(safe-area-inset-bottom))}
+header{display:flex;gap:8px;align-items:center;position:sticky;top:0;background:#0b0d11;padding:8px 0;z-index:5}
+input,select,button{font:inherit;color:#fff;background:#171a21;border:1px solid #343945;border-radius:12px;padding:11px}
+header input{flex:1;min-width:100px}
+button{font-weight:750;touch-action:manipulation}
+button:disabled{opacity:.34}
+.panel{border:1px solid #272d38;background:#11141a;border-radius:16px;padding:12px;margin-top:10px}
+.status{font-size:14px;color:#a9b4c5}
+.good{color:#9de2b3}.warn{color:#ffd184}.bad{color:#ff9d9d}
+.topline{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px}
+.board,.hole{display:flex;gap:7px;justify-content:center;margin:13px 0}
+.card{width:49px;height:68px;border-radius:8px;background:#f3f3f3;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:850;font-size:20px;box-shadow:0 2px 8px #0007}
+.card.red{color:#c62828}
+.card.back{background:#283545;color:#9bacbf}
+.table{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.seat{border:1px solid #313845;border-radius:12px;padding:8px;min-height:70px;font-size:12px;background:#151920}
+.seat.me{outline:2px solid #4e8cff}
+.seat.actor{background:#252b36}
+.pos{font-weight:800;font-size:13px}.stack{font-size:14px;margin-top:3px}.bet{color:#f5cc69}
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:10px}
+.actions button{min-height:54px;font-size:17px}
+.fold{background:#762a35}.call{background:#275fad}.check{background:#256043}.allin{background:#65317a}
+.raiseRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:9px}
+.raiseRow input{width:100%;text-align:center;font-size:17px}
+.log{font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap;max-height:130px;overflow:auto;color:#b7c0cc}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <input id="baseToken" type="password" placeholder="개발 기본 토큰">
+  <select id="who"><option value="p1">나 (p1)</option><option value="p2">형 (p2)</option></select>
+  <button id="join">참가</button>
+</header>
+<div id="status" class="status panel">참가 버튼을 눌러 주세요.</div>
+<div class="panel">
+  <div class="topline"><span id="tour">대회 -</span><span id="me">내 상태 -</span></div>
+  <div id="phase" class="status" style="margin-top:6px">phase: -</div>
+</div>
+<div id="game" class="panel hidden">
+  <div class="board" id="board"></div>
+  <div class="table" id="seats"></div>
+  <div class="hole" id="hole"></div>
+  <div class="topline"><span id="pot">팟 -</span><span id="tocall">콜 -</span></div>
+  <div class="actions">
+    <button id="fold" class="fold">폴드</button>
+    <button id="check" class="check">체크</button>
+    <button id="call" class="call">콜</button>
+    <button id="allin" class="allin">올인</button>
+  </div>
+  <div class="raiseRow">
+    <input id="amount" inputmode="numeric" placeholder="raise-to">
+    <button id="wager">벳/레이즈</button>
+    <button id="refresh">새로고침</button>
+  </div>
+  <div id="log" class="log panel"></div>
+</div>
+<div class="panel">
+  <button id="reset">테스트 방 초기화 (p1)</button>
+</div>
+</main>
+<script>
+const $=x=>document.getElementById(x);
+let cur=null,busy=false,poll=null;
+
+function token(){
+  const base=$("baseToken").value.trim();
+  return base ? base+"."+$("who").value : "";
+}
+function savePrefs(){
+  sessionStorage.setItem("t2duo-base",$("baseToken").value.trim());
+  sessionStorage.setItem("t2duo-who",$("who").value);
+}
+function headers(json=false){
+  const h={Authorization:"Bearer "+token()};
+  if(json)h["Content-Type"]="application/json";
+  return h;
+}
+async function api(path,method="GET",body=null){
+  const opt={method,headers:headers(body!==null)};
+  if(body!==null)opt.body=JSON.stringify(body);
+  const r=await fetch(path,opt);
+  const d=await r.json().catch(()=>({detail:"invalid response"}));
+  if(!r.ok){
+    const x=d.detail||d;
+    const e=new Error(typeof x==="string"?x:(x.message||x.code||JSON.stringify(x)));
+    e.code=(x&&typeof x==="object")?x.code:null;
+    throw e;
+  }
+  return d;
+}
+const suit={s:"♠",h:"♥",d:"♦",c:"♣"};
+function card(c){
+  if(!c)return '<div class="card back">?</div>';
+  const s=c.slice(-1).toLowerCase(),r=c.slice(0,-1);
+  return '<div class="card '+((s==="h"||s==="d")?"red":"")+'"><span>'+r+'</span><span>'+suit[s]+'</span></div>';
+}
+function setStatus(txt,cls=""){
+  $("status").textContent=txt;$("status").className="status panel "+cls;
+}
+function controls(){
+  const d=cur&&cur.phase==="decision"&&!busy;
+  const l=(cur&&cur.table&&cur.table.legal)||{};
+  $("fold").disabled=!d||!l.fold;
+  $("check").disabled=!d||!l.check;
+  $("call").disabled=!d||!l.call;
+  $("allin").disabled=!d||!l.allin;
+  $("wager").disabled=!d||!l.raise;
+  $("amount").disabled=!d||!l.raise;
+  if(l.raise){
+    $("amount").placeholder=l.raise.min_to+" ~ "+l.raise.max_to;
+    if(!$("amount").value)$("amount").value=l.raise.min_to;
+  }
+}
+function render(d){
+  cur=d;
+  $("phase").textContent="phase: "+(d.phase||"-");
+  const t=d.tournament||{};
+  $("tour").textContent=t.entries ? ("HAND "+t.hand_no+" · "+t.remaining+"/"+t.entries+"명 · Lv"+t.level+" · "+t.tables+"테이블") : "대회 대기";
+  const m=d.me||{};
+  $("me").textContent=m.pid!==undefined ? ("나 #"+m.pid+" · "+Number(m.stack||0).toLocaleString()+" · T"+m.table) : ("slot "+(d.slot||"-"));
+
+  if(d.phase==="waiting_player") setStatus("참가 완료 · "+d.players_joined+"/2명 — 다른 플레이어를 기다리는 중","warn");
+  else if(d.phase==="decision") setStatus("내 차례입니다.","good");
+  else if(d.phase==="waiting_other") setStatus("다른 실제 플레이어의 액션을 기다리는 중","warn");
+  else if(d.phase==="waiting_round") setStatus("다른 테이블 핸드 종료를 기다리는 중","warn");
+  else if(d.phase==="busted") setStatus("탈락했습니다.","bad");
+  else if(d.phase==="game_over") setStatus("대회 종료","good");
+  else setStatus(d.phase||"연결됨");
+
+  if(!d.table){
+    $("game").classList.add("hidden");controls();return;
+  }
+  $("game").classList.remove("hidden");
+  const tb=d.table;
+  $("board").innerHTML=(tb.board||[]).map(card).join("");
+  $("hole").innerHTML=(tb.hole||[]).map(card).join("");
+  $("pot").textContent="팟 "+Number(tb.pot_total==null?tb.pot:tb.pot_total).toLocaleString();
+  $("tocall").textContent="콜 "+Number(tb.tocall||0).toLocaleString();
+  $("seats").innerHTML=(tb.seats||[]).map(function(x){
+    const cls="seat"+(x.me?" me":"")+(x.pid===tb.actor_pid?" actor":"");
+    return '<div class="'+cls+'"><div class="pos">'+(x.pos||"-")+' · #'+x.pid+(x.me?" · 나":"")+'</div>'+
+      '<div class="stack">'+Number(x.stack||0).toLocaleString()+'</div>'+
+      (x.bet?'<div class="bet">투입 '+Number(x.bet).toLocaleString()+'</div>':"")+
+      (!x.in_hand?'<div>폴드</div>':(x.allin?'<div>ALL-IN</div>':""))+
+      '</div>';
+  }).join("");
+  $("log").textContent=(tb.log||[]).map(function(x){return JSON.stringify(x)}).join("\n");
+  controls();
+}
+async function load(silent=false){
+  if(!token())return;
+  try{const d=await api("/v1/duo/state");render(d);}
+  catch(e){if(!silent)setStatus("오류: "+e.message,"bad");}
+}
+async function join(){
+  if(!$("baseToken").value.trim()){setStatus("기본 개발 토큰을 입력하세요.","bad");return;}
+  savePrefs();busy=true;controls();
+  try{render(await api("/v1/duo/join","POST",{}));}
+  catch(e){setStatus("참가 실패: "+e.message,"bad");}
+  finally{busy=false;controls();}
+}
+async function act(a,amount=0){
+  if(busy||!cur||cur.phase!=="decision"||!cur.token)return;
+  busy=true;controls();
+  try{render(await api("/v1/duo/action","POST",{token:cur.token,action:a,amount:amount}));}
+  catch(e){setStatus("액션 오류: "+e.message,"bad");await load(true);}
+  finally{busy=false;controls();}
+}
+$("join").onclick=join;
+$("refresh").onclick=()=>load();
+$("fold").onclick=()=>act("fold");
+$("check").onclick=()=>act("check");
+$("call").onclick=()=>act("call");
+$("allin").onclick=()=>act("allin");
+$("wager").onclick=function(){
+  const n=parseInt($("amount").value||"0",10);
+  const a=(cur&&cur.table&&cur.table.legal&&cur.table.legal.wager_action)||"raise";
+  act(a,n);
+};
+$("reset").onclick=async function(){
+  if($("who").value!=="p1")return setStatus("p1만 초기화할 수 있습니다.","bad");
+  try{render(await api("/v1/duo/reset","POST",{}));}catch(e){setStatus("초기화 실패: "+e.message,"bad");}
+};
+$("who").onchange=function(){savePrefs();cur=null;load();};
+const sb=sessionStorage.getItem("t2duo-base");
+const sw=sessionStorage.getItem("t2duo-who");
+if(sb)$("baseToken").value=sb;if(sw)$("who").value=sw;
+poll=setInterval(function(){if(!busy&&token())load(true)},900);
+if(sb)load(true);
+</script>
+</body>
+</html>
