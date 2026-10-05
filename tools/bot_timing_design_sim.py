@@ -94,20 +94,27 @@ def visible_time(t, sp, K, rng, B=None, G=None):
     return max(reasoning, hold) * jitter, P
 
 
+DEPTHS = ('40bb+', '25-40bb', '15-25bb', '<15bb')
+PHASES = ('early_mid', 'bubble', 'itm', 'final')
+
+
 def _depth(effbb):
-    return ('<20bb' if effbb < 20 else '20-30bb' if effbb < 30 else
-            '30-50bb' if effbb < 50 else '>=50bb')
+    return ('<15bb' if effbb < 15 else '15-25bb' if effbb < 25 else
+            '25-40bb' if effbb < 40 else '40bb+')
 
 
-def _phase(stg):
+def _phase(stg, max_seat=9):
+    """초중반 / 버블 근처(ITM < 남은 ≤ ITM×1.2) / ITM / 파이널 근처(남은 ≤ 한 테이블+1)."""
     if not stg:
         return 'unknown'
     r, itm = stg['remaining'], stg['itm']
+    if r <= max_seat + 1:
+        return 'final'
     if r <= itm:
         return 'itm'
     if r <= itm * 1.20:                          # field.Field.BUBBLE_HI
         return 'bubble'
-    return 'pre_bubble'
+    return 'early_mid'
 
 
 def load_spots(trace):
@@ -335,61 +342,37 @@ def population(n=1000, seed=20261005):
 
 
 def stage_main(args):
-    """후반 실제 상태 추적으로 단계별 측정.  --stages OUT.json[.png] TRACE...  """
-    out_path, paths = args[0], args[1:]
+    """단계별 측정.  --stages OUT.json B TRACE...   (B 는 측정용 임시값, 확정 아님)"""
+    out_path, B, paths = args[0], float(args[1]), args[2:]
+    G = 1.0
     post, pre = [], []
     for pth in paths:
         a, b = load_spots(json.load(open(pth)))
         post += a; pre += b
     allsp = post + pre
     players = population()
-    tank_p90 = sorted(t['tank'] for t in players)[int(0.9 * (len(players) - 1))]
-    q = lambda a, x: sorted(a)[int(x * (len(a) - 1))] if a else None
+    q = lambda a, x: round(sorted(a)[int(x * (len(a) - 1))], 1) if a else None
     mean = lambda a: round(st.mean(a), 1) if a else None
+    focus = ('일반형', '느린형')
 
-    # 실제 스팟 그대로(구성 없음)
-    hard_post = [sp for sp in post if sp[0] >= 0.7 and sp[4] >= 0.5]
-    hard_pre = [sp for sp in pre if sp[0] >= 0.7 and sp[4] >= 0.5]
-    hard_allin = hard_post + hard_pre
-    obvious_allin = [sp for sp in post + pre if sp[0] <= 0.1 and sp[4] >= 0.5]
+    def dist(vs):
+        return {'mean': mean(vs), 'p50': q(vs, .5), 'p90': q(vs, .9), 'n': len(vs)}
 
-    def allin_eval(B, G, n=12):
+    def think(pool, per_player=6):
+        """그 스팟 집합에서 유형별 생각시간 분포."""
         rng = random.Random(5)
-        hk, ok, top = {}, {}, []
+        res = {}
+        if not pool:
+            return {}
         for t in players:
-            for _ in range(n):
-                v = visible_time(t, hard_allin[rng.randrange(len(hard_allin))], t['K'], rng, B, G)[0]
-                hk.setdefault(t['kind'], []).append(v)
-                if t['tank'] >= tank_p90:
-                    top.append(v)
-                ok.setdefault(t['kind'], []).append(
-                    visible_time(t, obvious_allin[rng.randrange(len(obvious_allin))], t['K'], rng, B, G)[0])
-        return hk, ok, top
+            if t['kind'] not in focus:
+                continue
+            for _ in range(per_player):
+                v = visible_time(t, pool[rng.randrange(len(pool))], t['K'], rng, B, G)[0]
+                res.setdefault(t['kind'], []).append(v)
+        return {k: dist(v) for k, v in sorted(res.items())}
 
-    grid = []
-    for G in (1.0, 1.5):
-        for B in (2.0, 3.0, 4.0, 5.0, 6.0, 8.0):
-            hk, ok, top = allin_eval(B, G)
-            grid.append({'B': B, 'G': G, 'normal_hard_allin_mean': mean(hk['일반형']),
-                         'normal_hard_allin_p90': round(q(hk['일반형'], .9), 1),
-                         'top10_tank_mean': mean(top), 'top10_tank_p50': round(q(top, .5), 1),
-                         'normal_obvious_allin_mean': mean(ok['일반형']),
-                         'slow_hard_allin_mean': mean(hk['느린형']),
-                         'impulsive_hard_allin_mean': mean(hk['충동형'])})
-
-    def in_target(g):
-        return 20 <= g['normal_hard_allin_mean'] <= 24 and 30 <= g['top10_tank_mean'] <= 40
-
-    # 단계 구분: 깊이 × (버블 전 / 버블 / ITM)
-    buckets = {}
-    for sp in allsp:
-        buckets.setdefault(('depth', sp[5]), []).append(sp)
-        buckets.setdefault(('phase', sp[6]), []).append(sp)
-        if sp[6] == 'pre_bubble':
-            buckets.setdefault(('pre_bubble_depth', sp[5]), []).append(sp)
-    buckets[('all', 'all')] = allsp
-
-    def tb_hour(B, G, pool, hours=4):
+    def tb_hour(pool, hours=4):
         rng = random.Random(11)
         res = {}
         for t in players:
@@ -398,34 +381,47 @@ def stage_main(args):
                 v = visible_time(t, pool[rng.randrange(len(pool))], t['K'], rng, B, G)[0]
                 over += max(0.0, v - BASE)
             res.setdefault(t['kind'], []).append(over / hours)
-        return {k: {'mean': mean(v), 'p50': round(q(v, .5), 1), 'p90': round(q(v, .9), 1)}
-                for k, v in sorted(res.items())}
+        return {k: dist(v) for k, v in sorted(res.items())}
 
-    tb = {}
-    for B in (3.0, 4.0, 5.0):
-        for key, pool in sorted(buckets.items()):
-            if len(pool) < 200:
-                continue
-            tb.setdefault('B%g' % B, {})['%s:%s' % key] = tb_hour(B, 1.0, pool)
-
-    counts = {}
-    for key, pool in sorted(buckets.items()):
-        n = len(pool)
-        ha = sum(1 for sp in pool if sp[0] >= 0.7 and sp[4] >= 0.5)
-        counts['%s:%s' % key] = {
-            'decisions': n,
-            'hard_allin': ha,
-            'hard_allin_per_hour': round(HOUR_DECISIONS * ha / n, 2) if n else None,
-            'commit>=0.5_share_pct': round(100 * sum(1 for sp in pool if sp[4] >= 0.5) / n, 1) if n else None,
+    def section(pool):
+        hard = [sp for sp in pool if sp[0] >= 0.7]
+        hard_ai = [sp for sp in hard if sp[4] >= 0.5]
+        obvious = [sp for sp in pool if sp[0] <= 0.1 and sp[4] >= 0.5]
+        big_effect_low_c = [sp for sp in pool if sp[4] >= 0.5 and sp[0] < 0.3]
+        return {
+            'decisions': len(pool),
+            'hard_decisions(c>=0.7)': len(hard),
+            'hard_allin(c>=0.7,commit>=0.5)': len(hard_ai),
+            'hard_allin_pre_post': [sum(1 for sp in hard_ai if sp in pre_set),
+                                    sum(1 for sp in hard_ai if sp not in pre_set)],
+            'obvious_allin(c<=0.1,commit>=0.5)': len(obvious),
+            'think_all': think(pool),
+            'think_hard': think(hard),
+            'think_hard_allin': think(hard_ai) if len(hard_ai) >= 5 else 'n<5',
+            'think_obvious_allin': think(obvious) if len(obvious) >= 5 else 'n<5',
+            'think_commit>=0.5_c<0.3': think(big_effect_low_c) if len(big_effect_low_c) >= 5 else 'n<5',
+            'tb_sec_per_hour': tb_hour(pool) if len(pool) >= 100 else 'n<100',
         }
-    out = {'traces': paths, 'postflop': len(post), 'preflop': len(pre),
-           'real_hard_allin_spots': len(hard_allin), 'real_hard_allin_post_pre': [len(hard_post), len(hard_pre)], 'real_obvious_allin_spots': len(obvious_allin),
-           'bucket_counts': counts, 'allin_grid': grid,
-           'grid_in_target': [g for g in grid if in_target(g)], 'tb_per_hour': tb}
+
+    pre_set = _IdSet(pre)
+    out = {'traces': paths, 'B_temporary': B, 'G': G,
+           'postflop': len(post), 'preflop': len(pre),
+           'all': section(allsp), 'depth': {}, 'phase': {}}
+    for d in DEPTHS:
+        out['depth'][d] = section([sp for sp in allsp if sp[5] == d])
+    for ph in PHASES:
+        out['phase'][ph] = section([sp for sp in allsp if sp[6] == ph])
     json.dump(out, open(out_path, 'w'), indent=1, ensure_ascii=False)
-    print(json.dumps({k: out[k] for k in ('postflop', 'preflop', 'real_hard_allin_spots',
-                                          'real_obvious_allin_spots', 'grid_in_target')},
-                     indent=1, ensure_ascii=False))
+
+
+class _IdSet:
+    """튜플 값이 같아도 프리플랍/포스트플랍 출처를 구분하는 멤버십."""
+    def __init__(self, items):
+        self.ids = set(id(x) for x in items)
+
+    def __contains__(self, x):
+        return id(x) in self.ids
+
 
 if __name__ == '__main__':
     main()
