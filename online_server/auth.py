@@ -52,13 +52,25 @@ class AuthService:
 
     def _verify_dev(self, token: str) -> Identity:
         expected = self.settings.dev_token or ""
-        if not hmac.compare_digest(token, expected):
-            raise AuthError("invalid development token")
-        return Identity(
-            uid=self.settings.single_user_uid or "dev-user",
-            name="T2 local developer",
-            provider="dev",
-        )
+        if hmac.compare_digest(token, expected):
+            return Identity(
+                uid=self.settings.single_user_uid or "dev-user",
+                name="T2 local developer",
+                provider="dev",
+            )
+
+        # Local two-browser testing only.  A shared base secret may be suffixed
+        # with .p1 or .p2 to create two distinct authenticated identities.
+        # Dev auth is already fail-closed and must never be exposed publicly.
+        for suffix in ("p1", "p2"):
+            candidate = expected + "." + suffix
+            if hmac.compare_digest(token, candidate):
+                return Identity(
+                    uid="dev-" + suffix,
+                    name="T2 local " + suffix,
+                    provider="dev",
+                )
+        raise AuthError("invalid development token")
 
     def _verify_firebase(self, token: str) -> Identity:
         try:
