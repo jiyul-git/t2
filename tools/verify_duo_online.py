@@ -65,8 +65,8 @@ def choose_action(payload):
 
 def main() -> None:
     root = tempfile.mkdtemp(prefix="t2_duo_verify_")
-    old_bot_log = FS.BOT_LOG
-    FS.BOT_LOG = 0
+    old_bot_log = FS.Field.BOT_LOG
+    FS.Field.BOT_LOG = 0
     try:
         eng = DuoTournamentEngine(settings(root))
 
@@ -128,7 +128,7 @@ def main() -> None:
             f"(seed={state['seed']}, actions={acted}, round={room['round_no']})"
         )
     finally:
-        FS.BOT_LOG = old_bot_log
+        FS.Field.BOT_LOG = old_bot_log
         shutil.rmtree(root, ignore_errors=True)
 
 
