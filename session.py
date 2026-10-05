@@ -2,6 +2,7 @@
 import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
 import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS, money_pressure as MP, action_events as AE
+import timing as TM
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -1035,15 +1036,47 @@ def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
 class HandRun:
     """히어로 차례에 yield하고 send()로 재개하는 핸드 진행기.
        REPLAY: 이미 확정된 봇 결정은 재계산하지 않고 그대로 재생한다."""
-    def __init__(self, hand, decisions=None, on_bot_action=None):
+    def __init__(self, hand, decisions=None, on_bot_action=None, timing_ctx=None):
         self.h = hand
         self.REPLAY = list(decisions or [])
         self.recorded = []
         self._didx = 0
         self.on_bot_action = on_bot_action
+        # 시간 규칙(timing.py). None 이면 지금과 완전히 같다.
+        #   tour_seed, fmt_key, banks{pid: 초}(이 dict 를 직접 정산), enforce(타임아웃 적용 여부)
+        self.timing = timing_ctx
+        self.timing_log = []
         self.gen = self._run()
         self.result = None
         self._pot_at = {}          # street -> 스트리트 시작 시점 팟
+
+    def _timing_decide(self, seat, street, ax, c, s_struct, m, commit, trivial, n_log,
+                       concepts):
+        """봇 결정 하나의 시간 규칙(사람과 같은 규칙). 전략 RNG 를 쓰지 않는다.
+
+        반환 기록의 timed_out 이 참이고 enforce 면 호출부가 타임아웃 행동으로 바꾼다.
+        """
+        T = self.timing
+        pid = self._pid(seat)
+        base = TM.action_seconds(T.get('fmt_key', 'standard'))
+        banks = T['banks']
+        bank = float(banks.get(pid, TM.BANK_START))
+        K = TM.knowledge(ax, concepts)
+        if K is None:
+            K = 0.5
+        traits = TM.timing_traits(pid, T['tour_seed'])
+        jit = TM.jitter(TM._seed('timing_jitter', T['tour_seed'],
+                                 getattr(self.h, 'hash', ''), seat, street, n_log))
+        v = TM.visible_seconds(traits, c, s_struct, m, K, trivial, commit, jit, base)
+        st = TM.settle(v['visible'], base, bank)
+        banks[pid] = st['bank_left']
+        rec = {'pid': pid, 'seat': seat, 'street': street, 'c': c, 's': s_struct, 'm': m,
+               'commit': commit, 'K': K, 'n_concepts': len(concepts or ()),
+               'visible': v['visible'], 'elapsed': st['elapsed'], 'base': base,
+               'bank_before': bank, 'bank_used': st['bank_used'],
+               'timed_out': st['timed_out']}
+        self.timing_log.append(rec)
+        return rec
 
     def _emit_bot_action(self, street, seat, action, amount, board=None):
         """UI 진행 콜백. 전략/난수에는 관여하지 않고 관측만 전달한다."""
@@ -1441,6 +1474,7 @@ class HandRun:
                     'strategy_consumer': False,
                 }
 
+            _tm_concepts = PS.concept_tap() if self.timing else None
             _opp_est_pf = (RD.perceived_profile(
                 h.book, self._pid(s), self._pid(aggressor), ax,
                 random.Random(self._dseed(s, 'preflop', 'pfest', aggressor)))
@@ -1528,6 +1562,17 @@ class HandRun:
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
+                if self.timing:
+                    PS.concept_untap()
+                    _tm_c = TM.closeness_preflop((_seed or {}).get('pf_timing'))
+                    _tm = self._timing_decide(
+                        s, 'preflop', ax, _tm_c, TM.structure_preflop(_rlevel), 0.0,
+                        TM.commit_facing(tc, rnd.stacks[s]),
+                        (a == 'fold' and _tm_c < 0.05), len(rnd.log), _tm_concepts)
+                    if _tm['timed_out'] and self.timing.get('enforce', True):
+                        # 사람과 같은 타임아웃 규칙: 체크 가능하면 체크, 아니면 폴드.
+                        _tm['engine_act'] = a
+                        a = TM.timeout_action(tc <= 0)
                 if a == 'fold':
                     rnd.apply(s, 'fold' if tc > 0 else 'check')
                 elif a == 'check':
@@ -1707,6 +1752,7 @@ class HandRun:
                         aggressor = s
                     continue
                 ax, _ = h.axes(s)
+                _tm_concepts = PS.concept_tap() if self.timing else None
                 _ck = _cache_key(street, s, len(r2.log))
                 _forced = next((d for d in self.REPLAY if d[0] == _ck), None)
                 # 예전에는 여기서 바로 apply 하고 continue 했다. 그러면 계획 수립을
@@ -2254,6 +2300,25 @@ class HandRun:
                     # 이미 확정된 결정은 그대로 재생한다. 계획은 위에서 정상적으로
                     # 계산됐으므로 기록에는 근거가 남고, 실행만 고정된다.
                     a, amt = _forced[1], _forced[2]
+                if self.timing and _forced:
+                    PS.concept_untap()
+                if self.timing and not _forced:
+                    PS.concept_untap()
+                    _tm_bd = (h.plans.get(key) or {}).get('_last_response_boundary') if tc > 0 else None
+                    _tm_opp = [r2.stacks[x] for x in r2.live() if x != s]
+                    _tm = self._timing_decide(
+                        s, street, ax, TM.closeness_postflop(_tm_bd),
+                        TM.structure_postflop(street, tc > 0), TM.money_pressure(h.bf(s)),
+                        (TM.commit_facing(tc, r2.stacks[s]) if tc > 0 else
+                         TM.commit_choice(amt if a in ('bet', 'raise', 'allin') else 0,
+                                          r2.stacks[s], max(_tm_opp) if _tm_opp else None)),
+                        False, len(r2.log), _tm_concepts)
+                    if _tm['timed_out'] and self.timing.get('enforce', True):
+                        _tm['engine_act'] = a
+                        h.plans[key].setdefault('deviations', []).append(
+                            {'street': street, 'planned': a,
+                             'executed': TM.timeout_action(tc <= 0), 'why': '시간 초과'})
+                        a, amt = TM.timeout_action(tc <= 0), 0
                 # 어느 스트리트에서 실제로 공격했는지 기록한다 (지연 씨벳 판단에 필요).
                 if a in ('bet', 'raise', 'allin'):
                     h.plans[key].setdefault('bet_streets', [])

@@ -571,34 +571,43 @@ def street_concept(base, street):
     }
     return m.get((base, street), ALIAS.get(base, base))
 
-class record_concepts:
-    """이 블록 안에서 sk() 가 조회한 concept 이름을 모은다(관측 전용, RNG 없음).
+import threading as _threading
+_SK_TAP = _threading.local()
+
+
+def concept_tap():
+    """지금부터 sk() 가 조회한 concept 이름을 새 집합에 모은다(관측 전용, RNG 없음).
 
     시간 모델의 '관련 개념 숙련 K' 는 그 결정에서 실제로 참조한 concept 로 정한다
-    (TIME_SYSTEM_IMPLEMENTATION_DESIGN §2.2). 스레드마다 따로 쌓는다.
+    (TIME_SYSTEM_IMPLEMENTATION_DESIGN §2.2). 결정마다 새로 시작하므로, 이전 결정이
+    예외로 끝나 untap 을 못 했어도 다음 결정 기록이 섞이지 않는다.
     """
+    st = set()
+    _SK_TAP.set = st
+    return st
+
+
+def concept_untap():
+    _SK_TAP.set = None
+
+
+class record_concepts:
+    """with 블록용. 블록이 끝나면 바깥 기록 상태로 되돌린다."""
     def __enter__(self):
-        st = getattr(_SK_REC, 'stack', None)
-        if st is None:
-            st = _SK_REC.stack = []
-        self.concepts = set()
-        st.append(self.concepts)
+        self._prev = getattr(_SK_TAP, 'set', None)
+        self.concepts = concept_tap()
         return self
 
     def __exit__(self, *exc):
-        _SK_REC.stack.pop()
+        _SK_TAP.set = self._prev
         return False
-
-
-import threading as _threading
-_SK_REC = _threading.local()
 
 
 def sk(prof, concept, default=4.0):
     """prof 가 persona 벡터든 구형 dict 든 숙련도를 0~10으로 반환."""
-    _st = getattr(_SK_REC, 'stack', None)
-    if _st:
-        _st[-1].add(concept)
+    _tap = getattr(_SK_TAP, 'set', None)
+    if _tap is not None:
+        _tap.add(concept)
     c = prof.get('concepts')
     if c:
         if concept in c: return c[concept]

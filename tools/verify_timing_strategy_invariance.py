@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""T3 검증: 시간 규칙은 엔진 결정을 바꾸지 않는다(타임아웃 적용 전 기준).
+
+  1. off vs record — R2 기준(시드 11·12, 60라운드) 다이제스트 동일.
+  2. off vs record — realistic 필드 짧은 완주 trace 다이제스트 동일.
+  3. enforce — 타임아웃만 행동을 바꾼다:
+       타임아웃 행동 = 체크 가능하면 체크, 아니면 폴드; 뱅크 음수 없음;
+       첫 타임아웃이 난 핸드 전까지 record 와 핸드 기록이 완전히 같다.
+
+  python tools/verify_timing_strategy_invariance.py [CAP]
+"""
+import json, os, subprocess, sys, tempfile
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def start(args, mode):
+    env = dict(os.environ, T2_TIMING_V1=mode, T2_STRICT='1')
+    return subprocess.Popen([sys.executable] + args, stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL, text=True, env=env)
+
+
+def finish(p):
+    out, _ = p.communicate()
+    if p.returncode != 0:
+        raise SystemExit('subprocess failed rc=%s' % p.returncode)
+    return json.loads(out.strip().splitlines()[-1])
+
+
+def strip(h):
+    h = json.loads(json.dumps(h))
+    h.pop('timing', None)
+    return json.dumps(h, sort_keys=True)
+
+
+def main():
+    cap = sys.argv[1] if len(sys.argv) > 1 else '40'
+    res = {}
+    r2 = os.path.join(ROOT, 'tools', 'r2_baseline_sim.py')
+    tt = os.path.join(ROOT, 'tools', 'timing_trace.py')
+    with tempfile.TemporaryDirectory() as d:
+        # 전부 병렬로 띄운다(각자 별도 프로세스, 결과만 비교).
+        jobs = {('r2', seed, mode): start([r2, seed, '60'], mode)
+                for seed in ('11', '12') for mode in ('off', 'record')}
+        files = {mode: os.path.join(d, mode + '.json') for mode in ('off', 'record', 'enforce')}
+        for mode in ('off', 'record', 'enforce'):
+            jobs[('tt', mode)] = start([tt, '13', 'real', files[mode], cap, '90'], mode)
+        out = {k: finish(p) for k, p in jobs.items()}
+        for seed in ('11', '12'):
+            res['r2_%s_off_eq_record' % seed] = (out[('r2', seed, 'off')]['sha256']
+                                                 == out[('r2', seed, 'record')]['sha256'])
+        res['real_off_eq_record'] = out[('tt', 'off')]['sha256'] == out[('tt', 'record')]['sha256']
+        rec = json.load(open(files['record']))['hands']
+        enf = json.load(open(files['enforce']))['hands']
+    n_dec = n_to = 0
+    bank_neg = bad_rule = 0
+    first_to = None
+    for k, h in enumerate(enf):
+        for t in h.get('timing') or []:
+            n_dec += 1
+            if t['bank_before'] - t['bank_used'] < -1e-9:
+                bank_neg += 1
+            if t['timed_out']:
+                n_to += 1
+                if first_to is None:
+                    first_to = k
+    for k, h in enumerate(enf):
+        for t in h.get('timing') or []:
+            if t['timed_out'] and t.get('engine_act') is None:
+                bad_rule += 1
+    limit = first_to if first_to is not None else min(len(rec), len(enf))
+    prefix_ok = all(strip(rec[i]) == strip(enf[i]) for i in range(min(limit, len(rec), len(enf))))
+    res.update({'enforce_decisions': n_dec, 'enforce_timeouts': n_to, 'bank_negative': bank_neg,
+                'timeout_without_engine_act': bad_rule, 'first_timeout_hand_index': first_to,
+                'prefix_identical_until_first_timeout': prefix_ok})
+    res['pass'] = (res['r2_11_off_eq_record'] and res['r2_12_off_eq_record'] and res['real_off_eq_record']
+                   and bank_neg == 0 and bad_rule == 0 and prefix_ok and n_dec > 0)
+    print(json.dumps(res, indent=1))
+    raise SystemExit(0 if res['pass'] else 1)
+
+
+if __name__ == '__main__':
+    main()

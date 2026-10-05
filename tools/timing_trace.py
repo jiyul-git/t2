@@ -190,6 +190,8 @@ def grab(self, tb, h, run):
     STAGE[h.hash] = {'remaining': self.remaining(), 'itm': self.itm, 'bb': h.bb,
                      'entries': self.entries}
     _grab(self, tb, h, run)
+    if BT.HANDS and getattr(h, 'timing_log', None) is not None:
+        BT.HANDS[-1]['timing'] = h.timing_log
 
 
 FS.Field._log_bot_hand = grab

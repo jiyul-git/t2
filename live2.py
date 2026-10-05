@@ -3,6 +3,7 @@ import copy, json, os, random, math, time
 import telemetry_sync as TM
 import zlib as _zlib
 import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
+import timing as TMG
 import formats as FM
 import runner as RU
 from table import BLINDS
@@ -67,6 +68,9 @@ def _dump(f):
                    for t, tb in f.tables.items()},
     }
 
+    if getattr(f, 'time_banks', None):
+        # 누적 타임뱅크(timing.py). pid 를 따라간다. 시간 규칙이 꺼져 있으면 비어 있어 저장하지 않는다.
+        result['time_banks'] = {str(k): float(v) for k, v in f.time_banks.items()}
     if getattr(f, 'virtual_play_seconds', None) is not None:
         result['virtual_play_seconds'] = f.virtual_play_seconds
         result['level_minutes'] = f.level_minutes
@@ -99,6 +103,8 @@ def _load_field(d):
     f.level_minutes = d.get('level_minutes') or FM.level_minutes(d.get('fmt'))
     f.busted_order = d['busted_order']; f.hero_moves = d['hero_moves']
     f.notes = d.get('notes', []); f.errors = []
+    f.time_banks = {int(k): float(v) for k, v in (d.get('time_banks') or {}).items()}
+    f.timing_mode = os.environ.get('T2_TIMING_V1', 'off')
     f.players = {}
     # tilt 내부 pid 상태도 중첩 dict다. 얕은 복사면 HandRun이 f.tilt를
     # 갱신할 때 입력 field_dump 자체가 변해 round-start fingerprint가 흔들린다.
@@ -211,6 +217,7 @@ def _table_task(mini, tid, seeds, frozen, base_suffix):
             'tilt': {p: out['tilt'][p] for p in pids if p in (out.get('tilt') or {})},
             'book': {k: v for k, v in (out.get('book') or {}).items()
                      if str(k).partition('>')[0] in ps},
+            'time_banks': {p: v for p, v in (out.get('time_banks') or {}).items() if p in ps},
             'notes': list(f.notes), 'errors': list(f.errors), 'bot_log': log}
 
 
@@ -241,6 +248,10 @@ def _parallel_tables_runner(f, plan):
         for pid, row in r['players'].items():
             p = f.players[int(pid)]
             p['stack'] = row['stack']; p['table'] = row['table']; p['seat'] = row['seat']
+        if r.get('time_banks'):
+            if not hasattr(f, 'time_banks'):
+                f.time_banks = {}
+            f.time_banks.update({int(k): float(v) for k, v in r['time_banks'].items()})
         f.tables[int(r['tid'])] = _restore_table(
             f, r['tid'], r['table'], base.get('blind_state'))
         for pid, t in r['tilt'].items():
@@ -268,7 +279,13 @@ except ValueError:
 
 
 def _vclock_hand_seconds(res):
-    """Claude 설계 초안과 같은 action-shape 시간 모델을 초 단위로 반환한다."""
+    """Claude 설계 초안과 같은 action-shape 시간 모델을 초 단위로 반환한다.
+
+    시간 규칙(T2_TIMING_V1)이 켜져 결정별 기록이 있으면 v2: 기계 시간 + 결정마다 실제로 흐른 시간
+    (사람과 같은 액션 시계·타임뱅크·타임아웃 규칙, timing.settle 의 elapsed).
+    """
+    if (res or {}).get('timing_log') is not None:
+        return _vclock_hand_seconds_v2(res)
     log = (res or {}).get('full_log') or []
     costs = {
         'fold': 1.5, 'check': 3.0, 'call': 3.5,
@@ -283,6 +300,16 @@ def _vclock_hand_seconds(res):
     )
     raw += 3.0 if (res or {}).get('showdown') else 0.0
     return max(1.0, raw * VCLOCK_DURATION_SCALE)
+
+
+
+def _vclock_hand_seconds_v2(res):
+    """기계 시간(딜·보드·쇼다운) + Σ 결정 elapsed. 액션별 고정비용은 생각 시간이 대신한다."""
+    log = (res or {}).get('full_log') or []
+    streets = {a[0] for a in log if isinstance(a, (list, tuple)) and len(a) >= 3}
+    mech = TMG.mechanical_seconds(len(streets), bool((res or {}).get('showdown')))
+    think = sum(float(t.get('elapsed', 0.0)) for t in (res.get('timing_log') or []))
+    return max(1.0, mech + think)
 
 
 def _vclock_book_subset(packed, pids):
@@ -398,6 +425,8 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
                 },
                 'book_set': book_set,
                 'book_del': book_del,
+                'time_banks': {p: v for p, v in (out.get('time_banks') or {}).items()
+                               if p in pids},
                 'notes': list(f.notes[note0:]),
                 'bot_log': log_chunk,
                 'barrier': barrier,
@@ -435,6 +464,7 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
             for p in pids if p in (out.get('tilt') or {})
         },
         'book': _vclock_book_subset(out.get('book') or {}, pids),
+        'time_banks': {p: v for p, v in (out.get('time_banks') or {}).items() if p in pids},
         'notes': list(f.notes),
         'errors': errors + list(getattr(f, 'errors', []) or []),
     }
@@ -511,6 +541,8 @@ def compute_vclock_ahead(field_dump, target_seconds, session_end=None):
             for pid, row in (r.get('players') or {}).items():
                 end_field['players'][str(pid)] = copy.deepcopy(row)
             end_field['tables'][tid] = copy.deepcopy(r['table'])
+            if r.get('time_banks'):
+                end_field.setdefault('time_banks', {}).update(r['time_banks'])
             et = end_field.setdefault('tilt', {})
             for pid, row in (r.get('tilt') or {}).items():
                 et[str(pid)] = copy.deepcopy(row)
@@ -709,6 +741,8 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
         for k in e.get('book_del') or []:
             eb.pop(k, None)
         eb.update(RD.copy_book_d(e.get('book_set') or {}))
+        if e.get('time_banks'):
+            fd.setdefault('time_banks', {}).update(e['time_banks'])
         notes.extend(e.get('notes') or [])
         if e.get('bot_log'):
             bot_log.append(e['bot_log'])

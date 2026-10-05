@@ -483,6 +483,10 @@ class Field:
         self.hero_moves = 0
         self.notes = []
         self.errors = []          # 삼킨 예외 기록. 비어 있지 않으면 문제가 있다
+        # 시간 규칙(timing.py). off: 지금과 같음 / record: 계산·뱅크 정산만, 행동 불변 /
+        # enforce: 사람과 같은 타임아웃 적용. 뱅크는 pid 를 따라간다(이동·재입장 무관).
+        self.timing_mode = os.environ.get('T2_TIMING_V1', 'off')
+        self.time_banks = {}
 
         self._init_runtime(fmt, rules=format_rules)
         q = self.field_q
@@ -754,7 +758,7 @@ class Field:
             }
             h._telemetry_book_before = book_view(
                 getattr(h.book, 'd', {}) or {}, _pids)
-            run = SE.HandRun(h)
+            run = SE.HandRun(h, timing_ctx=self._timing_ctx())
             _telemetry_t0 = time.perf_counter()
             decision = run.start()
             while sitout is not None and not decision.get('done'):
@@ -769,6 +773,7 @@ class Field:
             for p in alive:
                 s = tb.seat_of(p['pid'])
                 p['stack'] = int(h.stacks.get(s, p['stack']))
+            h.timing_log = run.timing_log      # 시간 규칙 기록(관측용)
             self._log_bot_hand(tb, h, run)
         except Exception as e:
             # 조용히 넘기지 않는다. 예전에는 return None 뿐이라
@@ -782,7 +787,21 @@ class Field:
             return None
         tb.advance_button()
         tb.hands += 1
-        return copy.deepcopy(res) if return_result else True
+        if return_result:
+            out = copy.deepcopy(res)
+            if getattr(run, 'timing', None):
+                out['timing_log'] = list(run.timing_log)
+            return out
+        return True
+
+    def _timing_ctx(self):
+        mode = getattr(self, 'timing_mode', 'off')
+        if mode not in ('record', 'enforce'):
+            return None
+        if not hasattr(self, 'time_banks'):
+            self.time_banks = {}
+        return {'tour_seed': self.seed, 'fmt_key': self.fmt.get('key', 'standard'),
+                'banks': self.time_banks, 'enforce': mode == 'enforce'}
 
     def plan_others(self):
         """동시 진행용 계획: 테이블 순서대로 이번 라운드 핸드 수와 시드를 미리 뽑는다.
