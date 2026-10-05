@@ -37,6 +37,13 @@ def verify_auth() -> None:
     assert identity.uid == "only-user"
     assert identity.provider == "dev"
 
+    # With the single-user allowlist disabled, local multiplayer suffixes are
+    # two distinct authenticated identities.
+    multi = AuthService(_settings(single_user_uid=None).validate())
+    assert multi.verify(token + ".p1").uid == "dev-p1"
+    assert multi.verify(token + ".p2").uid == "dev-p2"
+    assert multi.verify(token + ".p1").uid != multi.verify(token + ".p2").uid
+
     try:
         service.verify("wrong-token")
     except AuthError:
