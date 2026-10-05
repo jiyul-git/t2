@@ -12,6 +12,7 @@ import json, math, random, statistics as st, sys, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 import gto as G
+import timing as TM
 
 BASE = 18.0          # 사용자 결정: 일반 MTT 기본 액션 18초
 BANK0 = 60.0         # 사용자 결정: 시작 타임뱅크 60초, 충전 없음
@@ -32,22 +33,15 @@ CLOSENESS = 'v1'     # v1: eq-need 절대폭 0.15(기록값) / v2: 최종 비교
 
 
 def c_final(eq_used, need_used):
-    """v2 응답 근접도: 실제로 비교된 eq/need, 폭은 need 에 비례(0.03~0.15).
-
-    need 가 작으면(가격이 좋아 사실상 콜이 정해진 숏스택) 같은 절대차도 멀다.
-    need 가 0.3 이상인 진짜 코인플립 경계(버블 올인 콜 등)는 v1 과 같은 폭이다.
-    """
-    w = min(0.15, max(0.03, 0.5 * need_used))
-    return max(0.0, 1.0 - abs(eq_used - need_used) / w)
+    return TM.c_final(eq_used, need_used)
 
 
 RANK_W = 2.0         # 프리플랍 경계 폭 배수(defend 혼합폭 대비). 민감도: K.6
 
 
 def c_rank(r, thr):
-    """핸드 백분위 r 과 인간모델 임계값 thr 의 거리. 폭은 defend 혼합폭(max(0.015, 0.15·thr))의 RANK_W 배."""
-    w = RANK_W * max(0.015, 0.15 * thr)
-    return max(0.0, 1.0 - abs(r - thr) / w)
+    TM.RANK_W = RANK_W
+    return TM.c_rank(r, thr)
 
 
 def c_preflop_human(p):
@@ -126,24 +120,12 @@ def kind(t):
 
 # ---------- 공식 ----------
 def visible_time(t, sp, K, rng, B=None, G=None):
-    """sp = (c, s, m, trivial, commit).
-
-    commit 은 독립 난이도가 아니다: commit_effect = commit × c(결정 근접도).
-    명백한 올인(c≈0)은 커밋이 커도 빠르게 남는다.
-    """
+    """sp = (c, s, m, trivial, commit, ...). 공식은 timing.visible_seconds 한 곳에 있다."""
     c, s, m, trivial, commit = sp[:5]
-    B = AMP_B if B is None else B
-    G = AMP_G if G is None else G
-    D_c = 0.60 * c * (0.55 + 0.45 * K)          # 근접도: 몰라도 어느 정도 느낌
-    D_o = K * (0.25 * s + 0.15 * m)             # 구조·돈 압박: 알아야 느낌
-    P = min(1.0, D_c + D_o)
-    effect = commit * c                         # commit_pressure × decision_closeness
-    reasoning = t['pace'] * (0.6 + 11.0 * t['tank'] * P ** 1.6) * (1.0 + B * effect ** G)
-    hold = max(t['mask'] * 6.0, t['clock'] * BASE)
-    if trivial:
-        hold *= 0.3                              # 쓰레기 패 즉시 폴드는 숨길 이유가 적다
-    jitter = math.exp(rng.gauss(0.0, 0.20))
-    return max(reasoning, hold) * jitter, P
+    jit = math.exp(rng.gauss(0.0, 0.20))
+    r = TM.visible_seconds(t, c, s, m, K, trivial, commit, jit, BASE,
+                           AMP_B if B is None else B, AMP_G if G is None else G)
+    return r['visible'], r['P']
 
 
 DEPTHS = ('40bb+', '25-40bb', '15-25bb', '<15bb')
