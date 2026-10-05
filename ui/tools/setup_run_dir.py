@@ -27,10 +27,11 @@ import io, os, shutil, subprocess, sys, tarfile, tempfile
 # .sh 에만 있어 둘이 어긋나 있었다.
 MODULES = """action_events archetypes bot context depth dynamics field fieldsim formats gto icm
              live2 money_pressure persona plan play preflop ranges reads runner
-             session storage_paths table telemetry_sync texture view tournament_store scheduled_runtime""".split()
+             session storage_paths table telemetry_sync texture view tournament_store scheduled_runtime personal_data""".split()
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json']
+OPTIONAL_MODULES = {'tournament_store', 'scheduled_runtime', 'personal_data'}
 
 
 def main():
@@ -62,7 +63,9 @@ def main():
         commit = git('rev-parse', '--verify', ref + '^{commit}').stdout.decode().strip()
         if not commit:
             sys.exit('중단: ref %s 를 찾을 수 없습니다.' % ref_name)
-        paths = ['ui/server/ui_view.py', 'ui/server/ui_server.py', 'ui/web'] + DATA + [m + '.py' for m in MODULES]
+        module_paths = [m + '.py' for m in MODULES if m not in OPTIONAL_MODULES
+                        or git('cat-file', '-e', commit + ':' + m + '.py').returncode == 0]
+        paths = ['ui/server/ui_view.py', 'ui/server/ui_server.py', 'ui/web'] + DATA + module_paths
         arc = subprocess.run(['git', '-C', repo, 'archive', commit, '--'] + paths,
                              capture_output=True, check=True).stdout
         tmp = tempfile.mkdtemp()
@@ -70,8 +73,13 @@ def main():
         src = tmp
         source_desc = '%s %s' % (ref, commit[:8])
 
+    copied_modules = 0
     for m in MODULES:
-        shutil.copy2(os.path.join(src, m + '.py'), os.path.join(dst, m + '.py'))
+        path = os.path.join(src, m + '.py')
+        if m in OPTIONAL_MODULES and not os.path.isfile(path):
+            continue
+        shutil.copy2(path, os.path.join(dst, m + '.py'))
+        copied_modules += 1
     for d in DATA:
         shutil.copy2(os.path.join(src, d), os.path.join(dst, d))
     shutil.copy2(os.path.join(src, 'ui', 'server', 'ui_view.py'),
@@ -100,7 +108,7 @@ def main():
 
     print('실행 폴더: %s' % dst)
     print('  원본: %s' % source_desc)
-    print('  모듈 %d개, 데이터 %d개' % (len(MODULES), len(DATA)))
+    print('  모듈 %d개, 데이터 %d개' % (copied_modules, len(DATA)))
     print('  실행: cd "%s" && python ui_server.py' % dst)
     print('  참고: sidecar 이름은 이제 상태 파일 경로에서 나옵니다 —')
     print('        T2_LIVE_STATE 가 다르면 아카이브도 갈립니다 (storage_paths).')

@@ -24,7 +24,7 @@ DST=${1:-$HOME/t2_ui_run}
 # view_text 라는 이름으로 직접 로드하므로 반드시 포함한다.
 MODULES="action_events archetypes bot context depth dynamics field fieldsim formats gto icm
          live2 money_pressure persona plan play preflop ranges reads runner session storage_paths table
-         telemetry_sync texture view tournament_store scheduled_runtime"
+         telemetry_sync texture view tournament_store scheduled_runtime personal_data"
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 # style_*.json 은 없어도 죽지는 않지만 스타일 추정 경로가 통째로 꺼진다.
@@ -51,13 +51,29 @@ if [ -n "${T2_UI_REF:-}" ]; then
     FROM=$(mktemp -d)
     trap 'rm -rf "$FROM"' EXIT
     PATHS="ui/server/ui_view.py ui/server/ui_server.py ui/web $DATA"
-    for m in $MODULES; do PATHS="$PATHS $m.py"; done
+    for m in $MODULES; do
+        case "$m" in
+            tournament_store|scheduled_runtime|personal_data)
+                if git -C "$SRC" cat-file -e "$COMMIT:$m.py" 2>/dev/null; then
+                    PATHS="$PATHS $m.py"
+                fi ;;
+            *) PATHS="$PATHS $m.py" ;;
+        esac
+    done
     # shellcheck disable=SC2086
     git -C "$SRC" archive "$COMMIT" -- $PATHS | tar -x -C "$FROM"
     SOURCE_DESC="$REF $(git -C "$SRC" rev-parse --short "$COMMIT")"
 fi
 
-for m in $MODULES; do cp "$FROM/$m.py" "$DST/$m.py"; done
+COPIED_MODULES=0
+for m in $MODULES; do
+    case "$m" in
+        tournament_store|scheduled_runtime|personal_data)
+            [ -f "$FROM/$m.py" ] || continue ;;
+    esac
+    cp "$FROM/$m.py" "$DST/$m.py"
+    COPIED_MODULES=$((COPIED_MODULES + 1))
+done
 for d in $DATA;    do cp "$FROM/$d"    "$DST/$d";    done
 cp "$FROM/ui/server/ui_view.py"   "$DST/ui_view.py"
 cp "$FROM/ui/server/ui_server.py" "$DST/ui_server.py"
@@ -91,7 +107,7 @@ fi
 
 echo "실행 폴더: $DST"
 echo "  원본: $SOURCE_DESC"
-echo "  모듈 $(echo $MODULES | wc -w)개, 데이터 $(echo $DATA | wc -w)개"
+echo "  모듈 ${COPIED_MODULES}개, 데이터 $(echo $DATA | wc -w)개"
 echo "  실행: cd $DST && python3 ui_server.py"
 if [ -f "$DST/telemetry_config.json" ]; then
     echo "  텔레메트리: 켬 -> telemetry/live (비동기)"

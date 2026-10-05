@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
 import socket
 import sqlite3
 import subprocess
@@ -21,11 +22,17 @@ import tournament_store as TS
 
 def verify():
     with tempfile.TemporaryDirectory(prefix='t2_schedule_http_') as tmp:
-        run = Path(tmp) / 'run'
-        subprocess.run(['sh', str(ROOT / 'ui/tools/setup_run_dir.sh'), str(run)],
-                       check=True, stdout=subprocess.DEVNULL)
-        data = run / 'userdata'
-        data.mkdir()
+        installation = Path(tmp) / 'T2'
+        run = installation / 'system'
+        data = installation / 'personal'
+        env = dict(os.environ, T2_INITIAL_CHIPS='10000',
+                   T2_UI_DEFER=os.environ.get('T2_VERIFY_SCHEDULE_DEFER', '0'),
+                   T2_TELEMETRY='0', T2_HERO_ACTION_SECONDS='3')
+        env.pop('T2_DATA_DIR', None)
+        env.pop('T2_UI_REF', None)
+        installer = ROOT / 'ui/tools/install_game.py'
+        subprocess.run([sys.executable, str(installer), 'install', str(installation)],
+                       check=True, stdout=subprocess.DEVNULL, env=env)
         minute = (int(time.time() // 60) + 1) % 60
         bots = int(os.environ.get('T2_VERIFY_SCHEDULE_BOTS', '2'))
         (data / 'schedule.json').write_text(json.dumps([dict(
@@ -34,9 +41,6 @@ def verify():
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
-        env = dict(os.environ, T2_INITIAL_CHIPS='10000',
-                   T2_UI_DEFER=os.environ.get('T2_VERIFY_SCHEDULE_DEFER', '0'),
-                   T2_TELEMETRY='0', T2_HERO_ACTION_SECONDS='3', T2_DATA_DIR=str(data))
         log = open(Path(tmp) / 'server.log', 'w+')
         proc = None
         base = 'http://127.0.0.1:%d' % port
@@ -149,10 +153,12 @@ def verify():
                 time.sleep(.5)
             assert after.get('offscreen') or after.get('busted'), after.keys()
             stop()
-            # Replace all runtime code, then restart with a different initial grant.
-            subprocess.run(['sh', str(ROOT / 'ui/tools/setup_run_dir.sh'), str(run)],
-                           check=True, stdout=subprocess.DEVNULL)
+            # Remove the entire system folder. Personal files stay independent,
+            # and a system-only update must restore code without a new grant.
+            shutil.rmtree(run)
             env['T2_INITIAL_CHIPS'] = '777777'
+            subprocess.run([sys.executable, str(installer), 'update', str(installation)],
+                           check=True, stdout=subprocess.DEVNULL, env=env)
             start()
             wallet = call('/api/wallet')[1]
             assert wallet['balance'] == 9000, wallet

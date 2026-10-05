@@ -5,6 +5,7 @@ on:
     paths:
       - 'tournament_store.py'
       - 'scheduled_runtime.py'
+      - 'personal_data.py'
       - 'live2.py'
       - 'fieldsim.py'
       - 'formats.py'
@@ -26,11 +27,13 @@ jobs:
         with: {node-version: '20'}
       - name: Compile Python and browser scripts
         run: |
-          python3 -m py_compile tournament_store.py scheduled_runtime.py live2.py fieldsim.py ui/server/ui_server.py
+          python3 -m py_compile personal_data.py tournament_store.py scheduled_runtime.py live2.py fieldsim.py ui/server/ui_server.py ui/tools/install_game.py ui/tools/build_game_packages.py
           node --check ui/web/lobby.js
           node --check ui/web/app.js
       - name: Wallet and tournament invariants
         run: python3 tools/verify_scheduled_tournaments.py
+      - name: Separate first installation and system-only updates
+        run: python3 ui/tools/verify_personal_installation.py
       - name: Scheduled HTTP with two tables and background workers
         env:
           T2_VERIFY_SCHEDULE_BOTS: '10'

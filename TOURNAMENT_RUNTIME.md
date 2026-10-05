@@ -139,7 +139,13 @@ source -> runtime copy는 `ui/tools/setup_run_dir.sh` 경로를 사용.
 
 Manual game creation is replaced by scheduled buy-in tournaments. Personal chips,
 entry receipts and authoritative live state share one SQLite transaction in
-`T2_DATA_DIR` (default: runtime `userdata/`). Code updates preserve that directory.
+the personal data folder, separate from replaceable game code. First installation
+creates `T2/system/` plus `T2/personal/`; updates contain and copy system files only.
+`personal/installation.json` binds the existing wallet. Missing/corrupt wallets or
+bindings stop an update/startup without creating a replacement account or grant.
+Manual runtime copies default to the OS user-data folder outside code, with an
+optional external `T2_DATA_DIR`. Legacy `userdata/` requires explicit migration.
+Stop the server before an update or migration. See [installation commands](ui/README.md#개인-지갑을-분리한-설치와-업데이트-test-2026-10-05).
 Off-screen registered seats check/fold and pay blinds; late entry/re-entry joins the
 existing field between hands. Integer payouts conserve the pool and credit once.
 The existing single-HERO installation remains the account scope. Operational

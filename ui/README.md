@@ -54,6 +54,72 @@ http://127.0.0.1:8765
 6. 실시간 액션의 화면 모션 순서는 유지하되 엔진 계산은 모션 ACK를 기다리지 않는다. 기록/대회정보 같은 읽기 요청도 계산 중 응답 가능해야 한다.
 7. final-table 배선 검증은 `tools/playtest_final_table_ui.py`와 `.github/workflows/final-table-wiring.yml`에서 자동 수행한다.
 
+## 개인 지갑을 분리한 설치와 업데이트 (test, 2026-10-05)
+
+예약 토너먼트/지갑 기능이 들어있는 `test` 소스 기준이다. 위의 기존 master 플레이 절차는
+아직 이 기능을 배포하는 절차가 아니다. 아래 명령의 빈 `T2_UI_REF`는 현재 작업 트리를 선택한다.
+
+| 구분 | 설치 결과 | 개인 지갑 |
+|---|---|---|
+| 최초 설치 | `~/T2/system`과 `~/T2/personal` | 처음 한 번 생성/지급 |
+| 시스템 업데이트 | `~/T2/system`의 게임 파일 교체 | 그대로 유지 |
+
+최초 설치와 실행:
+
+```sh
+cd ~/t2
+T2_UI_REF= python3 ui/tools/install_game.py install ~/T2
+cd ~/T2/system
+python3 ui_server.py
+```
+
+업데이트는 실행 중인 서버를 `Ctrl+C`로 종료한 뒤 수행한다. `system`만 교체하며,
+기존 개인 지갑을 찾거나 검증할 수 없으면 초기화하지 않고 중단한다.
+
+```sh
+cd ~/t2
+T2_UI_REF= python3 ui/tools/install_game.py update ~/T2
+cd ~/T2/system
+python3 ui_server.py
+```
+
+`personal/tournaments.sqlite3`에는 지갑·거래·참가·대회 상태 원본이 들어간다.
+`personal/installation.json`은 같은 지갑을 다시 연결하는 정보다. 서버를 종료하고
+`personal` 폴더 전체를 백업/복원한다. 게임 코드와 `personal`은 서로 포함되지 않는 별도
+폴더여야 한다. 두 폴더를 함께 옮기면 기본 상대 경로 연결도 유지된다.
+외부 개인 폴더는 최초 설치에 `--personal-dir ~/T2-wallet`을 추가해 지정한다.
+업데이트에서 개인 폴더를 새로 지정하거나 다른 지갑을 덮어쓰는 옵션은 허용하지 않는다.
+
+기존 예약 대회 실행본에 `userdata` 지갑이 있으면 서버를 종료하고 명시적으로 이전한다.
+원본 지갑은 남기며, 거래·참가·대회 상태와 `schedule.json`을 함께 가져온다.
+
+```sh
+cd ~/t2
+T2_UI_REF= python3 ui/tools/install_game.py install ~/T2 --migrate-from ~/old_t2_run
+```
+
+배포용 최초 설치/업데이트 ZIP 생성:
+
+```sh
+T2_UI_REF= python3 ui/tools/build_game_packages.py ~/T2-packages
+```
+
+- `T2-install.zip`: 시스템 + 개인 폴더 안내 + `install.py`. 압축을 푼 `T2` 폴더에서 `python3 install.py`로
+  처음 설치한다. 개인 지갑 DB는 패키지에 없으며 해당 사용자의 최초 설치에서 생성한다.
+- `T2-update.zip`: 시스템 + `update.py`. 별도 위치에 압축을 푼 `T2` 폴더에서 `python3 update.py ~/T2`로
+  기존 설치를 업데이트한다. 개인 폴더/지갑은 포함하지 않는다.
+
+수동 `setup_run_dir` 실행본의 개인 데이터 기본 경로도 코드 밖으로 바뀌었다.
+Linux/Termux에서는 `~/.local/share/T2/personal`이며 `XDG_DATA_HOME`이 있으면 이를 따른다.
+수동 실행본의 `T2_DATA_DIR`도 코드 밖의 폴더로 지정한다. 표준 설치에서는 연결된 지갑과
+다른 `T2_DATA_DIR`가 설정되면 시작/업데이트를 중단한다.
+
+예약 대회 API: `GET /api/wallet`, `GET /api/lobby`, `POST /api/register`, `/api/enter`,
+`/api/unregister`, `/api/reenter`. 일반 예약 대회 UI에서는 `/api/new`가 차단된다.
+기존 JSON 상태/아카이브는 UI 호환 파일이며, 예약 대회의 복구 원본은 개인 SQLite다.
+검증: `python3 ui/tools/verify_personal_installation.py` (23개),
+`python3 tools/verify_scheduled_tournaments.py` (27개), `python3 ui/tools/verify_scheduled_ui.py`.
+
 ## 가상 시계 / 화면 버전 68 (test, 2026-10-04)
 
 새 UI 대회는 핸드 수 대신 가상 진행 시간으로 레벨이 오른다. 로비에서 레벨 길이를

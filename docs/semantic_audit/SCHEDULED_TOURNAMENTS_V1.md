@@ -41,12 +41,14 @@
 별개다. 현재 상금 풀은 `(초기 봇 엔트리 + 취소하지 않은 HERO 엔트리) × 해당 대회 바이인`이며
 별도 수수료는 없다. 봇의 참가비는 게임 내 가상 필드의 기여금이다.
 
-`T2_INITIAL_CHIPS`는 새 지갑의 첫 지급만 설정한다. `T2_DATA_DIR/schedule.json`은 위
+`T2_INITIAL_CHIPS`는 새 지갑의 첫 지급만 설정한다. 개인 데이터 폴더의 `schedule.json`은 위
 템플릿 키(`fmt`, `minute`, `buyin`, `bot_entries`, `late_minutes`, `max_reentries`)를 사용한다.
 각 대회에 규칙 사본을 저장하므로 설정/코드 변경으로 이미 생성된 대회의 바이인이나 마감이 바뀌지 않는다.
 
 ## 저장과 배선
 
+- `personal_data.py`: 시스템 밖의 개인 데이터 위치와 설치 연결 정보를 확인한다. 기존 지갑이
+  없거나 거래 원장이 맞지 않으면 업데이트/실행을 중단하고 기존 파일을 보존한다.
 - `tournament_store.py`: SQLite 지갑·거래 원장·대회·엔트리·정산. 잔액은 정수, 음수 금지.
 - `scheduled_runtime.py`: 기존 `live2._vclock_table_task`와 시간순 이벤트 정산을 재사용하는
   백그라운드 필드. 테이블 작업은 기존 `T2_TABLE_WORKERS` 풀에서 병렬 계산한다.
@@ -57,8 +59,33 @@
 - `ui/web/lobby.*`, `ui/web/app.js`: 칩 잔액/거래, 예약/등록/재참가, 정산 결과와 로비 이동.
 - 두 `setup_run_dir` 허용 목록에 새 모듈을 넣었다. 사용자 데이터는 복사하거나 삭제하지 않는다.
 
-기본 사용자 데이터는 실행 폴더의 `userdata/tournaments.sqlite3`에 보관한다. 실행 폴더를
-통째로 교체하는 배포에서는 **고정된 영구 경로를 `T2_DATA_DIR`로 지정**해야 한다.
+최초 설치와 업데이트는 별도 패키지/명령이다. 표준 설치 경로는 `T2/system`과 `T2/personal`이다.
+
+| 경로 | 내용 | 업데이트 시 처리 |
+|---|---|---|
+| `T2/system/` | 게임 코드, 화면, 정적 자료, 기존 UI 호환 상태 파일 | 시스템 파일만 교체 |
+| `T2/personal/` | 지갑 SQLite, 거래/참가 내역, 대회 상태 원본, `schedule.json`, `installation.json` | 보존 |
+
+`T2-install.zip`은 시스템과 개인 폴더 안내, `install.py`를 포함한다. 지갑 DB는 배포하지 않고
+최초 설치 시 해당 사용자의 컴퓨터에서 한 번 생성/지급한다. 재설치에서는 기존 지갑을 유지한다.
+`T2-update.zip`에는 시스템과 `update.py`만 있으며 개인 폴더나 지갑 DB는 포함되지 않는다.
+업데이터는 기존 지갑을 검사한 뒤 시스템 파일만 복사한다. 개인 파일의 내용을 변경하거나
+초기 지급을 실행하지 않는다. 검사도 DB/WAL의 임시 복사본에서 수행해 원본 SHM까지 보존한다.
+
+`installation.json`의 상대 경로 연결로 시스템과 개인 폴더를 함께 옮겨도 같은 지갑을 사용한다.
+최초 설치의 `--personal-dir`로 별도 영구 폴더를 지정할 수도 있다. 연결 정보/지갑이 사라지거나
+손상되면 새 지갑으로 대체하지 않는다. 설치된 `system`에서는 연결 정보 없이 `T2_DATA_DIR`만으로
+다른 새 지갑을 시작할 수 없으며, 연결된 지갑과 환경 변수 경로가 다르면 중단한다.
+
+수동 `setup_run_dir` 실행본은 코드 밖의 OS 사용자 데이터 폴더를 기본으로 사용한다.
+Linux/Termux는 `$XDG_DATA_HOME/T2/personal` 또는 `~/.local/share/T2/personal`,
+macOS는 `~/Library/Application Support/T2/personal`, Windows는 `%LOCALAPPDATA%/T2/personal`이다.
+이 수동 실행본에 한해 `T2_DATA_DIR`로 코드와 분리된 경로를 지정할 수 있다.
+과거 실행본의 `userdata/tournaments.sqlite3`는 `--migrate-from`으로 명시적으로 이전한다.
+기존 지갑이 발견되면 임의로 새 지갑을 만들지 않으며, 이전에는 SQLite backup을 사용해
+커밋된 WAL·거래·참가·대회 상태와 `schedule.json`을 보존하고 원본 지갑을 남긴다.
+업데이트와 이전 전에 서버를 종료한다. 실행 명령은 [UI 설치 안내](../../ui/README.md#개인-지갑을-분리한-설치와-업데이트-test-2026-10-05)에 있다.
+
 SQLite WAL, `synchronous=FULL`, 명시적 트랜잭션을 사용한다. 최초 계정 생성과 지급도 한
 트랜잭션이다. 첫 스키마는 `user_version=1`이고 향후 스키마 변경은 기존 데이터를 마이그레이션해야 한다.
 
@@ -74,13 +101,19 @@ API: `GET /api/wallet`, `GET /api/lobby`, `POST /api/register`, `/api/reenter`,
 
 ## 검증
 
+- `ui/tools/verify_personal_installation.py`: **23/23 PASS**. 실제 최초 설치/업데이트 ZIP을
+  실행해 개인 파일 전체 바이트 보존, 시스템 폴더 전체 삭제 후 복원, 재설치 시 중복 지급 방지,
+  설치 이동/외부 개인 폴더/공백·한글 경로, 지갑·연결 정보 누락/손상, 거래 원장 불일치,
+  환경 변수로 새 지갑 우회 방지, 시스템 안 개인 폴더 링크 차단, 기존 지갑 자동 초기화 차단,
+  WAL 포함 이전과 원본 유지, 과거 코드 ref에 대한 두 runtime 복사 도구 호환을 확인했다.
 - `tools/verify_scheduled_tournaments.py`: **27/27 PASS**. 지갑 재시작, 초기 지급 변경, 동시 중복 바이인,
   거래 오류 롤백, 잔액 부족, 마감 경계, 취소/환불, 레이트 실필드 진입, 자동 체크/폴드,
   재참가/칩 보존, stale 워커 차단, 한 번만 지급, 정수 배분, 규칙 동결, 9-max/1,000명,
   휴식 시계, 순차/병렬 결과 동일성, 장기 참가 기록이 예정 대회를 가리지 않는 로비 목록,
   HERO 좌석이 제거된 탈락 상태에서 남은 테이블 워커 복구.
 - `ui/tools/verify_scheduled_ui.py`: 실제 HTTP 예약/입장, 클라이언트 금액 무시, 서버 액션
-  마감, 새로고침 시 마감 유지, 미접속 진행, 코드 재복사/서버 재시작 후 지갑과 지급 내역 유지,
+  마감, 새로고침 시 마감 유지, 미접속 진행, 시스템 폴더 전체 삭제/시스템 전용 업데이트/
+  서버 재시작 후 지갑과 지급 내역 유지,
   대기실 이탈 시 입장 요청 해제, 탈락 정산 중 재시작 복구와 HTTP 재참가/중복 차감 방지.
   3명 한 테이블 및 11명 두 테이블/기존 지연 워커 사용 경로를 확인했다.
 - 기존 23-gate: 23/23 PASS.
@@ -101,3 +134,4 @@ API: `GET /api/wallet`, `GET /api/lobby`, `POST /api/register`, `/api/reenter`,
 운영 서버/정식 master 반영 전 `test` 검증본이다. GTO 브랜치는 변경하지 않았다.
 
 기계 판독 검증 기록: [SCHEDULED_TOURNAMENTS_V1.json](evidence/SCHEDULED_TOURNAMENTS_V1.json).
+설치 분리 후속 기록: [PERSONAL_INSTALLATION_V1.json](evidence/PERSONAL_INSTALLATION_V1.json).

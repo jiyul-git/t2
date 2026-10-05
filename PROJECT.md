@@ -151,6 +151,14 @@ master promotion
 기존 test의 개념 분리 변경을 보존했다. 운영값은 임시이며 정식 서버/master에는 아직 반영하지 않았다.
 근거: [예약 대회 V1](docs/semantic_audit/SCHEDULED_TOURNAMENTS_V1.md).
 
+**2026-10-05 개인 지갑 설치/업데이트 분리 (test 후속)**: `257ca01` 위에서 최초 설치는
+`system` + `personal` 생성, 업데이트는 `system`만 복사하도록 분리했다. 지갑 DB는 패키지에
+넣지 않고 최초 설치 시 로컬에서 한 번 생성한다. 시스템 폴더 전체 삭제 후 복원에도 지갑·원장·
+참가·대회 상태를 유지한다. 기존 지갑/연결 정보를 잃거나 손상된 경우 새 초기 지급으로 넘어가지
+않고 중단하며, 과거 `userdata`는 명시적인 이전만 허용한다. 실제 ZIP 설치 검증 23개와
+경제 검증 27개를 통과했다. 로컬 test 변경이며 원격/master/운영 서버 배포는 아직 하지 않았다.
+실행/업데이트 명령: [UI 설치 안내](ui/README.md#개인-지갑을-분리한-설치와-업데이트-test-2026-10-05).
+
 **2026-10-03 master 승격**: 인간형 모델 감사·통합 Stage 0~11 과 베타 전 버그 수정 3건을 master 로 승격했다. 이 시점이 새 본체 기준선이다.
 - 본체 + Human Model 2차/3차가 하나의 실행 경로로 통합됐다. GTO 의존 두 플래그(`T2_GTO_MEMORY_V2`, `T2_PREFLOP_REASONING_V3`)는 production OFF 이고 BLOCKED_BY_GTO_REFERENCE_VALIDATION 이다.
 - 안테: 참가자 균등 분담. 게시 순서는 ante → SB → BB.

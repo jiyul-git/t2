@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-05",
+  "branch": "test",
+  "base_commit": "257ca01583ead1ffbcb857fa445955620d296b66",
+  "scope": "Separate first installation and system-only updates from personal wallet storage",
+  "personal_installation_tests": {
+    "passed": 23,
+    "failed": 0,
+    "seconds": 5.303,
+    "cases": [
+      "test_both_runtime_helpers_can_copy_a_legacy_ref_without_wallet_modules",
+      "test_corrupt_binding_is_preserved_and_refused",
+      "test_custom_personal_folder_is_kept_on_update",
+      "test_entire_system_folder_can_be_removed_and_rebuilt",
+      "test_existing_wallet_binding_cannot_be_switched_by_environment",
+      "test_first_install_creates_personal_wallet_outside_system",
+      "test_inconsistent_ledger_is_preserved_and_refused",
+      "test_install_and_update_support_spaces_in_folder_names",
+      "test_installer_detects_legacy_wallet_before_creating_new_one",
+      "test_legacy_migration_preserves_wal_receipts_and_leaves_source",
+      "test_legacy_runtime_wallet_is_never_silently_replaced",
+      "test_manual_runtime_defaults_to_external_user_folder",
+      "test_migration_never_overwrites_existing_personal_wallet",
+      "test_missing_binding_blocks_update_and_startup",
+      "test_missing_binding_cannot_start_a_new_wallet_via_environment",
+      "test_missing_wallet_blocks_update_and_new_grant",
+      "test_moving_system_and_personal_together_preserves_binding",
+      "test_personal_metadata_cannot_be_linked_into_system",
+      "test_repeated_initial_install_never_resets_or_regrants",
+      "test_runtime_code_and_personal_data_cannot_contain_each_other",
+      "test_system_update_preserves_all_personal_file_bytes",
+      "test_update_refuses_wallet_migration_options",
+      "test_update_zip_contains_system_only"
+    ]
+  },
+  "scheduled_economy_tests": {
+    "passed": 27,
+    "failed": 0,
+    "seconds": 2.567
+  },
+  "scheduled_http": {
+    "status": "PASS",
+    "initial_players": 11,
+    "defer": true,
+    "table_workers": 4,
+    "result": "PASS scheduled HTTP: reservation/replay, ignored client money, activation, authoritative timeout, refresh, code update/restart, offline bust recovery and re-entry",
+    "checks": [
+      "actual installer and default relative wallet binding",
+      "duplicate reservation charges once and ignores client money",
+      "authoritative action timeout survives page refresh",
+      "offline hands and blinds continue without browser polling",
+      "delete entire system folder then restore with system-only update",
+      "restart with different initial grant leaves one initial receipt and balance 9000",
+      "restart at HERO bust settlement recovers without browser polling",
+      "paid re-entry assigns distinct HERO pid and charges once to balance 8000"
+    ]
+  },
+  "packages": {
+    "install": [
+      "system files",
+      "install.py",
+      "personal/README.txt"
+    ],
+    "update": [
+      "system files",
+      "update.py"
+    ],
+    "wallet_database_shipped": false,
+    "update_creates_account_or_initial_grant": false,
+    "updates_preserve_all_personal_file_bytes": true
+  },
+  "static_checks": {
+    "python_compile": "PASS",
+    "setup_run_dir_shell_syntax": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "poker_strategy_changes": false,
+  "earlier_engine_regression_evidence": "SCHEDULED_TOURNAMENTS_V1.json",
+  "limits": [
+    "single HERO account",
+    "stop server before updating or migrating",
+    "local test work; not pushed, promoted to master or deployed",
+    "mobile visual inspection not performed"
+  ]
+}

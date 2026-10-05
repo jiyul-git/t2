@@ -200,6 +200,7 @@ def med(xs):
 
 def run(args):
     tmp = tempfile.mkdtemp(prefix='t2_ui_verify_')
+    personal = tempfile.mkdtemp(prefix='t2_ui_personal_verify_')
     fail = []
     note = []
     try:
@@ -207,7 +208,7 @@ def run(args):
                        check=True, stdout=subprocess.DEVNULL)
         test_key = 'verify-ui-play-key'
         env = dict(os.environ, T2_PLAY_KEY=test_key, T2_ALLOW_PRACTICE_NEW='1',
-                   T2_SCHEDULE_ENABLED='0', T2_DATA_DIR=os.path.join(tmp, 'userdata'))
+                   T2_SCHEDULE_ENABLED='0', T2_DATA_DIR=personal)
         srv = subprocess.Popen(
             [sys.executable, 'ui_server.py', '--port', str(args.port)],
             cwd=tmp,
@@ -417,8 +418,10 @@ def run(args):
     finally:
         if args.keep:
             print('임시 폴더 유지: %s' % tmp)
+            print('개인 폴더 유지: %s' % personal)
         else:
             shutil.rmtree(tmp, ignore_errors=True)
+            shutil.rmtree(personal, ignore_errors=True)
 
 
 def main():

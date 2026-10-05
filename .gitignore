@@ -23,6 +23,9 @@ bak_*hand_archive2*.jsonl
 bak_testgame*.jsonl
 *.pyc
 userdata/
+personal/
+T2-install.zip
+T2-update.zip
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm

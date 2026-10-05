@@ -12,6 +12,7 @@ import time
 from decimal import Decimal, ROUND_FLOOR
 
 import formats as FM
+import personal_data as PD
 from table import BLINDS
 
 PLAYER = 'hero'
@@ -62,8 +63,8 @@ def can_reenter(event, now=None):
 
 class Store:
     def __init__(self, root=None, initial_chips=None, schedule=None):
-        self.root = os.path.abspath(root or os.environ.get('T2_DATA_DIR') or
-                                    os.path.join(os.path.dirname(__file__), 'userdata'))
+        self.root = str(PD.normalized(root) if root is not None else
+                        PD.resolve_data_dir(os.path.dirname(__file__)))
         os.makedirs(self.root, exist_ok=True)
         self.path = os.path.join(self.root, 'tournaments.sqlite3')
         self.initial = int(initial_chips if initial_chips is not None else
