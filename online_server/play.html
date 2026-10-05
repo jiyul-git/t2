@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>T2 Online</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#0d0f12;color:#f5f7fa;min-height:100vh}
+main{max-width:760px;margin:0 auto;padding:14px 14px calc(18px + env(safe-area-inset-bottom))}
+.top{display:flex;gap:8px;align-items:center;position:sticky;top:0;background:#0d0f12;padding:8px 0;z-index:2}
+.top input{flex:1;min-width:0}
+input,button{font:inherit;border-radius:12px;border:1px solid #343943;background:#171a20;color:#fff;padding:12px}
+button{font-weight:700;touch-action:manipulation}
+button:active{transform:scale(.98)}
+.primary{background:#2c6bed}
+.danger{background:#8b2635}
+.good{background:#236b44}
+.status{font-size:13px;color:#aeb7c4;margin:8px 2px}
+.view{white-space:pre-wrap;background:#12151a;border:1px solid #292e37;border-radius:16px;padding:14px;min-height:310px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.45;overflow:auto}
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.actions button{min-height:58px;font-size:18px}
+.amountRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.amountRow input{width:100%;font-size:18px;text-align:center}
+.meta{display:flex;justify-content:space-between;gap:8px;margin:8px 2px 0;font-size:13px;color:#9ca7b7}
+.hidden{display:none!important}
+.err{color:#ff9a9a}
+.ok{color:#9fe2b7}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <input id="token" type="password" placeholder="개발 토큰" autocomplete="off">
+    <button id="saveToken">저장</button>
+    <button id="refresh">새로고침</button>
+  </div>
+
+  <div id="status" class="status">서버 상태 확인 중…</div>
+  <div id="view" class="view">T2 Online</div>
+  <div class="meta">
+    <span id="phase">phase: -</span>
+    <span id="summary">hand: -</span>
+  </div>
+
+  <div id="gameControls">
+    <div class="actions">
+      <button id="fold" class="danger">폴드</button>
+      <button id="check" class="good">체크</button>
+      <button id="call" class="primary">콜</button>
+      <button id="allin">올인</button>
+    </div>
+
+    <div class="amountRow">
+      <input id="amount" inputmode="numeric" pattern="[0-9]*" placeholder="금액">
+      <button id="bet">벳</button>
+      <button id="raise">레이즈</button>
+    </div>
+
+    <div class="actions">
+      <button id="next">다음 핸드</button>
+      <button id="newGame">새 게임</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let current=null;
+
+function authToken(){ return sessionStorage.getItem("t2token") || $("token").value.trim(); }
+function headers(json=false){
+  const h={"Authorization":"Bearer "+authToken()};
+  if(json) h["Content-Type"]="application/json";
+  return h;
+}
+async function api(path, method="GET", body=null){
+  const opt={method,headers:headers(body!==null)};
+  if(body!==null) opt.body=JSON.stringify(body);
+  const r=await fetch(path,opt);
+  const data=await r.json().catch(()=>({detail:"invalid response"}));
+  if(!r.ok){
+    const d=data.detail||data;
+    const msg=typeof d==="string"?d:(d.message||d.code||JSON.stringify(d));
+    throw new Error(msg);
+  }
+  return data;
+}
+function render(p){
+  current=p;
+  $("view").textContent=p?.view || JSON.stringify(p,null,2);
+  $("phase").textContent="phase: "+(p?.phase||"-");
+  const s=p?.summary||{};
+  $("summary").textContent="hand: "+(s.hand_no??"-")+" | stack: "+(s.hero_stack??"-");
+  $("status").textContent=p?.exists===false?"게임 없음":"연결됨";
+  $("status").className="status ok";
+}
+function fail(e){
+  $("status").textContent="오류: "+e.message;
+  $("status").className="status err";
+}
+async function load(){
+  if(!authToken()){ $("status").textContent="개발 토큰을 입력하세요."; return; }
+  try{ render(await api("/v1/game/state")); }catch(e){ fail(e); }
+}
+async function action(name,amount=0){
+  try{
+    if(!current?.token) await load();
+    const token=current?.token;
+    if(!token) throw new Error("현재 액션 토큰이 없습니다.");
+    render(await api("/v1/game/action","POST",{token,action:name,amount}));
+  }catch(e){ fail(e); }
+}
+$("saveToken").onclick=()=>{sessionStorage.setItem("t2token",$("token").value.trim());load();};
+$("refresh").onclick=load;
+$("fold").onclick=()=>action("fold");
+$("check").onclick=()=>action("check");
+$("call").onclick=()=>action("call");
+$("allin").onclick=()=>action("allin");
+$("bet").onclick=()=>action("bet",parseInt($("amount").value||"0",10));
+$("raise").onclick=()=>action("raise",parseInt($("amount").value||"0",10));
+$("next").onclick=async()=>{
+  try{
+    if(!current?.token) await load();
+    render(await api("/v1/game/next","POST",{token:current.token}));
+  }catch(e){fail(e);}
+};
+$("newGame").onclick=async()=>{
+  try{ render(await api("/v1/game/new","POST",{start_stack:30000})); }catch(e){fail(e);}
+};
+
+const saved=sessionStorage.getItem("t2token");
+if(saved){ $("token").value=saved; load(); }
+else { $("status").textContent="개발 토큰을 입력하세요."; }
+</script>
+</body>
+</html>
