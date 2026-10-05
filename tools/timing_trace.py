@@ -5,11 +5,12 @@ Same per-decision provenance as tools/beta_trace.py (preflop_plan inputs and
 act_with_plan response equity), plus a stage map hash -> {remaining, itm, bb}
 so late-stage (20-30bb, bubble / ITM) decisions can be measured directly.
 
-  python tools/timing_trace.py SEED FIELD OUT.json [CAP]
+  python tools/timing_trace.py SEED FIELD OUT.json [CAP] [ENTRIES]
     FIELD = uniform  r2 baseline field (max skill, neutral, frozen reads)
             real     generated population (persona.make_player), emotion and
                      read book restored
     CAP   = round cap (default: play to the end)
+    ENTRIES = field size (default 90, the r2 baseline size)
 
 Design tool only.  No production behaviour changes.
 """
@@ -196,6 +197,14 @@ FS.Field._log_bot_hand = grab
 def main():
     seed, field, out = sys.argv[1], sys.argv[2], sys.argv[3]
     cap = sys.argv[4] if len(sys.argv) > 4 else '100000'
+    if len(sys.argv) > 5:
+        _n = int(sys.argv[5])
+        _init = FS.Field.__init__
+
+        def _init_n(self, *a, **kw):
+            kw['entries'] = _n
+            _init(self, *a, **kw)
+        FS.Field.__init__ = _init_n
     if field == 'real':
         PS.make_player, PLY.Hand.emotion_level, RD.Book.rec = _ORIG
     elif field != 'uniform':

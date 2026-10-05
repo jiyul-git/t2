@@ -173,6 +173,17 @@ def _phase(stg, max_seat=9):
     return 'early_mid'
 
 
+def _pf_kind(p):
+    pb = p.get('pf_bound') or {}
+    if pb.get('calloff_layer'):
+        return 'calloff_layer'
+    bs = pb.get('bounds') or []
+    if not bs:
+        return 'unknown'
+    k = bs[-1]['kind']
+    return k + ('_eq' if bs[-1].get('eq') is not None else '')
+
+
 def load_spots(trace):
     """(c, s, m, trivial, commit, depth, phase) — 포스트플랍 먼저, 그다음 프리플랍."""
     stage = trace.get('stage') or {}
@@ -226,14 +237,16 @@ def load_spots(trace):
                     c = c_branch(int(pm.group(1)) / 100.0) if pm else c_choice(float(eq))
                 s = 0.6 * st_
                 commit = min(1.0, float(i.get('calc_amt') or i.get('amt') or 0.0) / eff)
-            post.append((c, s, m, False, commit, _depth(eff / bb), ph))
+            post.append((c, s, m, False, commit, _depth(eff / bb), ph,
+                         'post_response' if facing else 'post_choice'))
     for p in trace['pf']:
         c, triv = c_preflop_human(p) if CLOSENESS == 'v3' else c_preflop(p)
         s = 0.3 * min(1.0, (int(p.get('rlevel') or 1) - 1) / 2.0)
         sd = p['seed']
         stk = float(sd.get('pf_stack_bb') or p.get('bbs') or 100.0)
         commit = min(1.0, float(sd.get('pf_to_call_bb') or 0.0) / max(1.0, stk))
-        pre.append((c, s, 0.0, triv, commit, _depth(stk), _phase(stage.get(p.get('hash')))))
+        pre.append((c, s, 0.0, triv, commit, _depth(stk), _phase(stage.get(p.get('hash'))),
+                    'pre_' + _pf_kind(p)))
     return post, pre
 
 
@@ -464,18 +477,39 @@ def stage_main(args):
                 res.setdefault(t['kind'], []).append(v)
         return {k: dist(v) for k, v in sorted(res.items())}
 
-    def tb_hour(pool, hours=4):
+    def tb_hour(pool, hours=4, by_kind=None):
         rng = random.Random(11)
         res = {}
         for t in players:
             over = 0.0
             for _ in range(hours * HOUR_DECISIONS):
-                v = visible_time(t, pool[rng.randrange(len(pool))], t['K'], rng, B, G)[0]
-                over += max(0.0, v - BASE)
+                sp = pool[rng.randrange(len(pool))]
+                v = visible_time(t, sp, t['K'], rng, B, G)[0]
+                x = max(0.0, v - BASE)
+                over += x
+                if by_kind is not None and t['kind'] in focus and len(sp) > 7:
+                    d = by_kind.setdefault(t['kind'], {})
+                    d[sp[7]] = d.get(sp[7], 0.0) + x
             res.setdefault(t['kind'], []).append(over / hours)
         return {k: dist(v) for k, v in sorted(res.items())}
 
+    def _kinds(pool, bk):
+        """결정 유형별: 수, 어려운 수, 어려운 올인 수, 일반형/느린형 어려운 결정 생각시간, TB 기여 비율."""
+        out = {}
+        for k in sorted(set(sp[7] for sp in pool if len(sp) > 7)):
+            sub = [sp for sp in pool if len(sp) > 7 and sp[7] == k]
+            hd = [sp for sp in sub if sp[0] >= 0.7]
+            out[k] = {'n': len(sub), 'hard': len(hd),
+                      'hard_allin': sum(1 for sp in hd if sp[4] >= 0.5),
+                      'think_hard': think(hd, 3) if len(hd) >= 5 else 'n<5'}
+        for t, d in (bk or {}).items():
+            tot = sum(d.values()) or 1.0
+            for k, v in d.items():
+                out.setdefault(k, {})['tb_share_%s' % t] = round(100 * v / tot, 1)
+        return out
+
     def section(pool):
+        _bk = {}
         hard = [sp for sp in pool if sp[0] >= 0.7]
         hard_ai = [sp for sp in hard if sp[4] >= 0.5]
         obvious = [sp for sp in pool if sp[0] <= 0.1 and sp[4] >= 0.5]
@@ -492,7 +526,8 @@ def stage_main(args):
             'think_hard_allin': think(hard_ai) if len(hard_ai) >= 5 else 'n<5',
             'think_obvious_allin': think(obvious) if len(obvious) >= 5 else 'n<5',
             'think_commit>=0.5_c<0.3': think(big_effect_low_c) if len(big_effect_low_c) >= 5 else 'n<5',
-            'tb_sec_per_hour': tb_hour(pool) if len(pool) >= 100 else 'n<100',
+            'tb_sec_per_hour': tb_hour(pool, by_kind=_bk) if len(pool) >= 100 else 'n<100',
+            'by_kind': _kinds(pool, _bk),
         }
 
     pre_set = _IdSet(pre)
