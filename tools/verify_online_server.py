@@ -4,6 +4,7 @@
 import asyncio
 import os
 import sys
+import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -14,15 +15,22 @@ from online_server.config import Settings
 from online_server.registry import ConnectionRegistry
 
 
-def verify_auth() -> None:
-    token = "0123456789abcdef0123456789abcdef"
-    settings = Settings(
+def _settings(**overrides):
+    base = dict(
         auth_mode="dev",
         firebase_project_id=None,
         single_user_uid="only-user",
         allow_dev_auth=True,
-        dev_token=token,
-    ).validate()
+        dev_token="0123456789abcdef0123456789abcdef",
+        online_data_dir=tempfile.gettempdir(),
+    )
+    base.update(overrides)
+    return Settings(**base)
+
+
+def verify_auth() -> None:
+    token = "0123456789abcdef0123456789abcdef"
+    settings = _settings().validate()
     service = AuthService(settings)
 
     identity = service.verify(token)
@@ -39,20 +47,14 @@ def verify_auth() -> None:
 
 def verify_config_guards() -> None:
     try:
-        Settings(
-            auth_mode="dev",
-            firebase_project_id=None,
-            single_user_uid=None,
-            allow_dev_auth=False,
-            dev_token="0123456789abcdef0123456789abcdef",
-        ).validate()
+        _settings(allow_dev_auth=False).validate()
     except RuntimeError:
         pass
     else:
         raise AssertionError("dev auth started without explicit enable flag")
 
     try:
-        Settings(
+        _settings(
             auth_mode="firebase",
             firebase_project_id=None,
             single_user_uid=None,
@@ -63,6 +65,13 @@ def verify_config_guards() -> None:
         pass
     else:
         raise AssertionError("firebase auth started without a project id")
+
+    try:
+        _settings(online_data_dir="").validate()
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("empty online data dir was accepted")
 
 
 async def verify_registry() -> None:
