@@ -344,10 +344,14 @@ class DuoTournamentEngine:
             rec = hands[tid_s]
             self._merge_commit(f, int(tid_s), rec["commit"], blind_state)
 
-        # Existing field simulator advances every table that has no surviving
-        # human.  Human tables were already resolved above and are protected by
-        # Field.human_tables().
-        f.step_others(settle=False, simultaneous=True)
+        # Existing field simulator advances every table that has no human-owned
+        # hand in this round.  Keep all interactive table ids protected through
+        # settlement even when a human busted on that just-finished hand.
+        f._protected_tables = {int(x) for x in hands}
+        try:
+            f.step_others(settle=False, simultaneous=True)
+        finally:
+            f._protected_tables = set()
         f._collect_busts()
         f._balance()
 
