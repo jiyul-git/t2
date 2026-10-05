@@ -70,6 +70,24 @@ def can_reenter(event, now=None):
                 and event['rules']['bot_entries'] + len(entries) < event['rules']['max_entries'])
 
 
+def _ensure_wal(db, wait=15.0):
+    """WAL 은 파일에 영구 저장된다. 이미 WAL 이면 다시 바꾸지 않는다.
+
+    새 파일을 여러 연결이 동시에 열면 journal_mode 변경이 busy handler 없이 바로
+    'database is locked' 를 낼 수 있어(최초 설치 동시 생성), busy_timeout 범위 안에서 재시도한다.
+    """
+    deadline = time.monotonic() + wait
+    while True:
+        try:
+            if str(db.execute('PRAGMA journal_mode').fetchone()[0]).lower() != 'wal':
+                db.execute('PRAGMA journal_mode=WAL')
+            return
+        except sqlite3.OperationalError as exc:
+            if 'locked' not in str(exc) or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.02)
+
+
 class Store:
     def __init__(self, root=None, initial_chips=None, schedule=None):
         self.root = str(PD.normalized(root) if root is not None else
@@ -138,7 +156,7 @@ class Store:
         db.row_factory = sqlite3.Row
         db.execute('PRAGMA foreign_keys=ON')
         db.execute('PRAGMA busy_timeout=15000')
-        db.execute('PRAGMA journal_mode=WAL')
+        _ensure_wal(db)
         db.execute('PRAGMA synchronous=FULL')
         db.execute('BEGIN IMMEDIATE')
         try:

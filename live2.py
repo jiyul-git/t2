@@ -367,7 +367,7 @@ def _vclock_h4h(f):
 
 
 def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
-                       base_suffix, h4h_mode=False):
+                       base_suffix, h4h_mode=False, max_hands=None):
     """한 봇 테이블을 target_seconds까지 독립적으로 선계산한다.
 
     첫 탈락 또는 hand-for-hand 지점에서 멈춘다. 그 지점 이후에는 테이블 이동/
@@ -458,7 +458,7 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
                 'barrier': barrier,
             })
             local = float(end)
-            if barrier:
+            if barrier or (max_hands is not None and len(events) >= max_hands):
                 break
     finally:
         FS.BOT_SUFFIX = _suf

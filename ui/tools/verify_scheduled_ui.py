@@ -125,14 +125,29 @@ def verify():
                     db.execute('UPDATE entries SET created_at=? WHERE tournament_id=?', (now, tid))
             code, reply = call('/api/enter', {'tournament_id': tid})
             assert code == 200, reply
-            deadline = time.monotonic() + 90
+            # Catching up is real work: every bot hand the field played before
+            # the request must be simulated.  Judge the worker, not a fixed wall
+            # clock: fail when no snapshot is committed for STALL seconds (the
+            # waiting room stuck at 0%), or when catch-up runs slower than
+            # MIN_RATE x tournament time.
+            stall = float(os.environ.get('T2_VERIFY_SCHEDULE_STALL', '60'))
+            min_rate = float(os.environ.get('T2_VERIFY_SCHEDULE_MIN_RATE', '5'))
+            began = time.monotonic()
+            progress = (-1.0, began)
             while True:
                 code, view = call('/api/state')
                 assert code == 200, view
                 if not view.get('waiting'):
                     break
-                assert time.monotonic() < deadline, view
-                time.sleep(.2)
+                now = time.monotonic()
+                done = float(view.get('sync_seconds') or 0)
+                if done > progress[0]:
+                    progress = (done, now)
+                assert now - progress[1] < stall, ('catch-up stalled', now - began, view)
+                limit = max(90.0, 30 + float(view.get('sync_target_seconds') or 0) / min_rate)
+                assert now - began < limit, ('catch-up slower than %.1fx' % min_rate, now - began, view)
+                time.sleep(.5)
+            catchup = time.monotonic() - began
             assert view['wallet']['balance'] == 9000, view
             assert view.get('view') or view.get('game_over'), view
             assert call('/api/wallet')[1]['balance'] == 9000
@@ -252,8 +267,9 @@ def verify():
             assert call('/api/tournament')[1]['entries'] == bots + 2
             print('PASS scheduled HTTP: %s/replay, ignored client money, activation, '
                   'authoritative timeout, refresh, code update/restart, offline bust recovery and re-entry '
-                  '(defer=%s, bots=%d, timing=%s)' % ('late admission' if late else 'reservation',
-                                         env['T2_UI_DEFER'], bots, env['T2_TIMING_V1']))
+                  '(defer=%s, bots=%d, timing=%s, catch-up %.1fs)' % (
+                      'late admission' if late else 'reservation',
+                      env['T2_UI_DEFER'], bots, env['T2_TIMING_V1'], catchup))
         except Exception:
             log.flush()
             log.seek(0)

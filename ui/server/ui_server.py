@@ -52,6 +52,8 @@ ECONOMY = _TS.Store()
 SCHEDULE_FUTURE = None
 SCHEDULE_POOL = None
 SCHEDULE_CURSOR = 0
+# 오프스크린 작업이 끝나면 1초 주기를 기다리지 않고 바로 확정·다음 배치를 넘긴다.
+SCHEDULE_WAKE = threading.Event()
 LAST_PLAY_PRESENCE = 0.0
 if ECONOMY.active_id():
     L.STATE_STORE = ECONOMY
@@ -224,24 +226,26 @@ def _schedule_tick():
         SCHEDULE_CURSOR += 1
         if SCHEDULE_POOL is None:
             SCHEDULE_POOL = ProcessPoolExecutor(max_workers=1)
-        # A newly selected late admission may have to catch a 99/179-player
-        # field up from tournament start.  The normal budget=18 plus the 1s
-        # publisher cadence creates tens of seconds of artificial idle time
-        # between otherwise independent worker batches.  Keep normal background
-        # work conservative, but batch the actively-waiting admission much more
-        # aggressively; the worker still returns one deterministic snapshot and
-        # only this publisher commits it.
+        # A late admission may have to catch a 99/179-player field up from
+        # tournament start.  advance() computes all tables of a time window in
+        # parallel and merges whole windows, so a moderate budget (hands +
+        # merge batches) already keeps the table pool busy.  Nothing is visible
+        # until the worker returns, so the batch must stay short: a very large
+        # budget (e.g. 256) left the first snapshot uncommitted for minutes on
+        # slow CPUs and the waiting room showed 0% the whole time.
         active_wait = (ev['id'] == tid and
                        (ev.get('enter_requested') or any(
                            e['status'] in ('reserved', 'waiting') for e in ev['entries'])))
-        budget = (max(18, int(os.environ.get('T2_SCHEDULE_ADMISSION_BUDGET', '256')))
+        budget = (max(18, int(os.environ.get('T2_SCHEDULE_ADMISSION_BUDGET', '48')))
                   if active_wait else 18)
         SCHEDULE_FUTURE = SCHEDULE_POOL.submit(_SR.advance, ev, target, budget=budget)
+        SCHEDULE_FUTURE.add_done_callback(lambda _f: SCHEDULE_WAKE.set())
 
 
 def _schedule_loop():
-    stop = threading.Event()
-    while not stop.wait(1):
+    while True:
+        SCHEDULE_WAKE.wait(1)
+        SCHEDULE_WAKE.clear()
         if LOCK.acquire(timeout=0.05):
             try:
                 _schedule_tick()

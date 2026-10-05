@@ -4,6 +4,7 @@ Reuse the existing per-table hand duration and chronological event merge; insert
 paid late/re-entry seats only between hands. SQLite revision rejects stale jobs.
 """
 import copy
+import os
 import time
 
 import fieldsim as FS
@@ -111,6 +112,65 @@ def _insert(st, event, at, available=None):
     return assignments
 
 
+def _tail_mini(base, tid, queued):
+    """테이블 하나의 상태 + 아직 병합하지 않은 그 테이블 이벤트(시간순)를 덧씌운 것."""
+    mini = L._table_mini(base, tid)
+    key = str(int(tid))
+    for e in queued:
+        mini['players'].update(e.get('players') or {})
+        mini['tables'][key] = e['table']
+        mini['tilt'].update({p: v for p, v in (e.get('tilt') or {}).items() if v is not None})
+        book = mini['book']
+        for k in e.get('book_del') or []:
+            book.pop(k, None)
+        book.update(e.get('book_set') or {})
+        mini['time_banks'].update(e.get('time_banks') or {})
+    return mini
+
+
+# 예약 대회 오프스크린 진행에서 테이블들을 한 번에 미리 계산하는 대회 시간 창(초).
+# 탈락이 나면 다른 테이블의 선계산은 버려지므로(보수적 재시작) 너무 길면 낭비가 커진다.
+LOOKAHEAD_SECONDS = max(1.0, float(os.environ.get('T2_SCHEDULE_LOOKAHEAD_SECONDS', '45')))
+
+
+def _merge_batch(st, event, pending, target, hero_table):
+    """시간순으로 한 번에 확정해도 한 핸드씩 확정한 것과 같은 이벤트 묶음.
+
+    모든 대기 테이블의 다음 핸드 끝을 알고 있는 구간(각 대기열 끝의 최솟값, target 이하)만
+    확정한다. 탈락(테이블 재배치)·유료 좌석 배정 시각·HERO 입장 시각에 걸리는 이벤트에서는
+    그 이벤트(같은 시각 이벤트 포함)까지만 묶어, 그 경계 처리는 한 핸드씩과 같은 시점에 한다.
+    반환: ({tid: 이벤트 수}, 마지막 시각에 끝난 테이블들, 마지막 시각, 확정 시각 수).
+    """
+    horizon = min(min(float(q[-1]['end']) for q in pending.values()), float(target))
+    rows = sorted((float(e['end']), int(tid), i, e)
+                  for tid, q in pending.items() for i, e in enumerate(q)
+                  if float(e['end']) <= horizon + 1e-9)
+    if not rows:
+        return {}, {}, None, 0
+    admit_at = min((active_seconds(max(0.0, e['created_at'] - event['starts_at']))
+                    for e in event['entries']
+                    if e['status'] in ('reserved', 'waiting') and e.get('pid') is None),
+                   default=None)
+    hero_at = (_enter_time(event) if event.get('enter_requested') and not st.get('hero_ready')
+               and hero_table is not None else None)
+    stop = len(rows) - 1
+    for k, (end, tid, _i, e) in enumerate(rows):
+        if (e.get('barrier') or (admit_at is not None and end >= admit_at - 1e-9)
+                or (hero_at is not None and tid == int(hero_table) and end >= hero_at - 1e-9)):
+            stop = k
+            break
+    when = rows[stop][0]
+    while stop + 1 < len(rows) and rows[stop + 1][0] <= when + 1e-9:
+        stop += 1
+    rows = rows[:stop + 1]
+    batch = {}
+    for _end, tid, _i, _e in rows:
+        batch[str(tid)] = batch.get(str(tid), 0) + 1
+    due = {str(tid): [e] for end, tid, _i, e in rows if end >= when - 1e-9}
+    steps = len({round(end, 9) for end, _t, _i, _e in rows})
+    return batch, due, when, steps
+
+
 def advance(event, target, budget=18, parallel=True):
     """Compute a bounded batch; target is a play-time timestamp, not CPU time."""
     event = copy.deepcopy(event)
@@ -138,6 +198,9 @@ def advance(event, target, budget=18, parallel=True):
         raise ValueError('An unfinished interactive hand must settle before off-screen advancement')
 
     pending = st.setdefault('background_pending', {})
+    for key, queued in list(pending.items()):
+        if isinstance(queued, dict):          # 예전 스냅샷: 테이블당 이벤트 1개
+            pending[key] = [queued]
     f0 = L._load_field(st['field'])
     _close_admission(st, event, f0)
     hero_table = f0.players.get(f0.hero_pid, {}).get('table')
@@ -159,46 +222,76 @@ def advance(event, target, budget=18, parallel=True):
                            and tb.id == hero_table)]
         # Build the next completed hand for every live table before publishing
         # any result, so a slower CPU cannot reorder eliminations.
-        missing = [tb for tb in active if str(tb.id) not in pending
+        missing = [tb for tb in active if not pending.get(str(tb.id))
                    and float(getattr(tb, 'virtual_seconds', 0)) < target]
         if missing:
-            selected = sorted(missing, key=lambda x: (getattr(x, 'virtual_seconds', 0), x.id))[:budget - work]
+            # 비어 있는 테이블만 계산하면 병합 뒤 그 테이블 하나만 비어 워커가 1개만 일한다.
+            # 아직 대기 이벤트가 남은 테이블도 그 마지막 이벤트 상태에서 이어 함께 계산한다
+            # (테이블 이동·탈락이 없는 구간이므로 테이블 몫만으로 이어 갈 수 있다).
+            def tail(tb):
+                q = pending.get(str(tb.id))
+                return float(q[-1]['end']) if q else float(getattr(tb, 'virtual_seconds', 0))
+            # 모든 테이블을 같은 대회 시각 창(horizon)까지 함께 계산한다. 끝나는 시각이 비슷해
+            # 다음 라운드도 거의 모든 테이블이 같이 비므로 워커가 고르게 일한다.
+            horizon = min(float(target), min(tail(tb) for tb in missing) + LOOKAHEAD_SECONDS)
+            extend = [tb for tb in active if pending.get(str(tb.id))
+                      and not pending[str(tb.id)][-1].get('barrier')
+                      and tail(tb) < horizon]
+            order = (sorted(missing, key=lambda x: (getattr(x, 'virtual_seconds', 0), x.id)) +
+                     sorted(extend, key=lambda x: (tail(x), x.id)))
+            selected = order[:budget - work]
             pool = L._table_pool() if parallel and len(selected) > 1 else None
             base = L._dump(f)
             results = []
+            h4h_now = L._vclock_h4h(f)
             for tb in selected:
-                start = float(getattr(tb, 'virtual_seconds', 0))
-                mini = L._table_mini(base, tb.id)
-                args = (mini, tb.id, start + 0.001, float('inf'), frozen,
-                        '_schedule_' + str(rules['seed']), True)
-                results.append((tb.id, pool.submit(L._vclock_table_task, *args) if pool else
-                                L._vclock_table_task(*args)))
+                queued = pending.get(str(tb.id)) or []
+                mini = _tail_mini(base, tb.id, queued)
+                start = float(mini['tables'][str(tb.id)].get('vclock_seconds', 0) or 0)
+                # horizon 을 넘는 첫 핸드·다음 탈락·H4H 한 핸드 중 먼저 오는 곳까지.
+                args = (mini, tb.id, max(horizon, start + 0.001), float('inf'), frozen,
+                        '_schedule_' + str(rules['seed']), h4h_now)
+                kw = {'max_hands': 1} if h4h_now else {}
+                results.append((tb.id, pool.submit(L._vclock_table_task, *args, **kw) if pool else
+                                L._vclock_table_task(*args, **kw)))
             for tid, result in results:
                 out = result.result() if pool else result
                 if out.get('errors') or not out['events']:
                     raise RuntimeError('Scheduled table failed: %s' % out.get('errors'))
-                pending[str(tid)] = out['events'][0]
-            work += len(selected)
+                pending.setdefault(str(tid), []).extend(out['events'])
+                work += len(out['events'])
             continue
         if not pending:
             st['background_seconds'] = max(st.get('background_seconds', 0), target)
             break
         h4h = L._vclock_h4h(f)
-        when = (max(e['end'] for e in pending.values()) if h4h
-                else min(e['end'] for e in pending.values()))
-        if when > target + 1e-9:
-            st['background_seconds'] = max(st.get('background_seconds', 0), target)
-            break
-        due = {tid: [e] for tid, e in pending.items() if h4h or e['end'] <= when + 1e-9}
-        merged = L.apply_vclock_events(st, due, {}, when,
-                                      barrier_time=when if h4h else None)
+        heads = {tid: q[0] for tid, q in pending.items()}
+        if h4h:
+            when = max(e['end'] for e in heads.values())
+            if when > target + 1e-9:
+                st['background_seconds'] = max(st.get('background_seconds', 0), target)
+                break
+            due = dict((tid, [e]) for tid, e in heads.items())
+            batch = {tid: 1 for tid in due}
+            steps = 1
+        else:
+            batch, due, when, steps = _merge_batch(st, event, pending, target, hero_table)
+            if not batch:
+                st['background_seconds'] = max(st.get('background_seconds', 0), target)
+                break
+        merged = L.apply_vclock_events(
+            st, {tid: pending[tid][:n] for tid, n in batch.items()}, {}, when,
+            barrier_time=when if h4h else None)
         st['field']['virtual_play_seconds'] = when
-        st['field']['hand_no'] += 1
+        st['field']['hand_no'] += steps
         if merged['invalidated']:
+            # 탈락·이동 뒤에는 다른 테이블의 선계산이 낡았다(기존 보수적 재시작 그대로).
             pending.clear()
         else:
-            for tid in due:
-                pending.pop(tid, None)
+            for tid, n in batch.items():
+                del pending[tid][:n]
+                if not pending[tid]:
+                    pending.pop(tid)
         st['background_seconds'] = max(st.get('background_seconds', 0), when)
         # Only tables whose current hand just ended may receive a paid seat.
         for tid in sorted(due, key=int):

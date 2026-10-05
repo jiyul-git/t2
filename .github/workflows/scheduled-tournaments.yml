@@ -16,7 +16,10 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The real-size late admission step simulates every bot hand of a 99-player
+    # field's first 55 minutes (~900 hands, ~0.55 CPU-s each): about 6-7 minutes
+    # on 4 cores. The step itself fails on a stall or < 5x real-time catch-up.
+    timeout-minutes: 30
     env:
       T2_TABLE_WORKERS: '4'
     steps:
@@ -46,7 +49,6 @@ jobs:
           T2_VERIFY_SCHEDULE_LATE: '1'
           T2_VERIFY_SCHEDULE_LATE_SECONDS: '3300'
           T2_VERIFY_SCHEDULE_TIMING: 'enforce'
-          T2_SCHEDULE_ADMISSION_BUDGET: '256'
         run: python3 ui/tools/verify_scheduled_ui.py
       - name: Existing UI smoke check
         run: python3 ui/tools/verify_ui.py --hands 6 --entries 18 --seed 20260920 --port 8799
