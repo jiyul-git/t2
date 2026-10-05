@@ -41,9 +41,12 @@ def c_final(eq_used, need_used):
     return max(0.0, 1.0 - abs(eq_used - need_used) / w)
 
 
+RANK_W = 2.0         # 프리플랍 경계 폭 배수(defend 혼합폭 대비). 민감도: K.6
+
+
 def c_rank(r, thr):
-    """핸드 백분위 r 과 인간모델 임계값 thr 의 거리. 폭은 defend 혼합폭(max(0.015, 0.15·thr))의 2배."""
-    w = 2.0 * max(0.015, 0.15 * thr)
+    """핸드 백분위 r 과 인간모델 임계값 thr 의 거리. 폭은 defend 혼합폭(max(0.015, 0.15·thr))의 RANK_W 배."""
+    w = RANK_W * max(0.015, 0.15 * thr)
     return max(0.0, 1.0 - abs(r - thr) / w)
 
 
@@ -425,8 +428,13 @@ def stage_main(args):
     """단계별 측정.  --stages OUT.json B TRACE...   (B 는 측정용 임시값, 확정 아님)"""
     global CLOSENESS
     out_path, B, paths = args[0], float(args[1]), args[2:]
-    if paths and paths[0].startswith('--closeness='):
-        CLOSENESS = paths[0].split('=', 1)[1]
+    global RANK_W
+    while paths and paths[0].startswith('--'):
+        k, v = paths[0][2:].split('=', 1)
+        if k == 'closeness':
+            CLOSENESS = v
+        elif k == 'rankw':
+            RANK_W = float(v)
         paths = paths[1:]
     G = 1.0
     post, pre = [], []
@@ -488,7 +496,7 @@ def stage_main(args):
         }
 
     pre_set = _IdSet(pre)
-    out = {'traces': paths, 'B_temporary': B, 'G': G, 'closeness': CLOSENESS,
+    out = {'traces': paths, 'B_temporary': B, 'G': G, 'closeness': CLOSENESS, 'rank_w': RANK_W,
            'phase_priority': 'final > itm > bubble > early_mid (mutually exclusive)',
            'postflop': len(post), 'preflop': len(pre),
            'all': section(allsp), 'depth': {}, 'phase': {}}
