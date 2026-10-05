@@ -98,8 +98,8 @@ const serverNow = () => Date.now() + (S.clockOffset || 0);
 const SEAT_CLOCKS = {};
 
 /* 박스 테두리 시계(WPL 방식): 포지션·스택 박스 둘레의 선이 남은 액션 시계 비율만큼 줄어든다.
- * 봇·다른 플레이어는 .pod .meta, HERO 는 #heroinfo — 모양은 같고 흐르는 시간만 다르다
- * (봇은 timing model 시간, HERO 는 실제 사람 시간). 차례 시작(clock_started) 전에는 보이지 않는다.
+ * HERO 외 봇·다른 플레이어의 .pod .meta 에만 쓴다(HERO 는 기존 #turnclock 링 그대로).
+ * 차례 시작(clock_started) 전에는 보이지 않는다.
  */
 function boxClockPaint(host, startMs, baseMs, bankMs, now) {
   if (!host) return;
@@ -3220,8 +3220,6 @@ function stopActionClock() {
   S.timeoutSubmitting = false;
   S.actionBaseMs = null;
   S.actionStartMs = null;
-  const hc = document.querySelector('#heroinfo > .actclock');
-  if (hc) hc.remove();
   const el = $('#turnclock');
   if (el) {
     el.hidden = true;
@@ -3236,10 +3234,19 @@ function paintActionClock() {
   const leftMs = Math.max(0, S.actionDeadlineMs - Date.now());
   const sec = Math.max(0, Math.ceil(leftMs / 1000));
   if (S.timingOn && S.actionBaseMs) {
-    // 시간 규칙: 봇과 같은 박스 테두리 시계(HERO 정보 박스). 숫자는 마지막 10초, 기본 시간 뒤 TIME BANK.
+    // 시간 규칙: 링만 줄어들다가 마지막 10초부터 숫자. 기본 시간이 지나면 TIME BANK.
+    const now = Date.now();
+    const inBank = now >= S.actionBaseMs && S.actionDeadlineMs > S.actionBaseMs;
     const start = S.actionStartMs || (S.actionBaseMs - 18000);
-    el.hidden = true;
-    boxClockPaint($('#heroinfo'), start, S.actionBaseMs, S.actionDeadlineMs, Date.now());
+    const frac = inBank
+      ? Math.max(0, (S.actionDeadlineMs - now) / Math.max(1, S.actionDeadlineMs - S.actionBaseMs))
+      : Math.max(0, (S.actionBaseMs - now) / Math.max(1, S.actionBaseMs - start));
+    el.hidden = false;
+    el.classList.add('ring');
+    el.classList.toggle('bank', inBank);
+    el.style.setProperty('--p', (frac * 100).toFixed(1) + '%');
+    el.textContent = sec <= 10 ? (inBank ? 'TIME BANK ' : '') + sec + '초' : (inBank ? 'TIME BANK' : '');
+    el.classList.toggle('urgent', sec <= 5);
   } else {
     el.hidden = false;
     el.textContent = sec + '초';

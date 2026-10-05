@@ -664,9 +664,9 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 .rankrow .seat { color:var(--dim); font-size:10px; text-align:right; }
 .rankempty { padding:24px 10px; text-align:center; color:var(--dim); }
 
-/* 시간 규칙(T2_TIMING_V1): 박스 테두리 액션 시계(WPL 방식). 봇은 .pod .meta, HERO 는 #heroinfo.
+/* 시간 규칙(T2_TIMING_V1): 박스 테두리 액션 시계(WPL 방식). HERO 외 좌석의 .pod .meta 에만.
  * 선이 남은 시간 비율만큼 줄어들고, TIME BANK 구간은 색이 바뀐다. 숫자는 마지막 10초만. */
-.pod .meta, #heroinfo { position: relative; }
+.pod .meta { position: relative; }
 .actclock { position: absolute; left: -3px; top: -3px; right: -3px; bottom: -3px;
             pointer-events: none; z-index: 2; }
 .actclock .ac-svg { position: absolute; left: 0; top: 0; overflow: visible; }
@@ -678,3 +678,6 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
                    text-shadow: 0 1px 2px rgba(0,0,0,.8); }
 .actclock.bank .acnum, .actclock.urgent .acnum { color: #ff8a55; }
 .actclock.bank .acnum { letter-spacing: .3px; }
+/* HERO 는 기존 링 시계 그대로 */
+#turnclock.ring { background: conic-gradient(rgba(232,196,106,.35) var(--p, 100%), transparent 0); }
+#turnclock.ring.bank { background: conic-gradient(rgba(224,118,60,.45) var(--p, 100%), transparent 0); }
