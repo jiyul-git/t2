@@ -11,6 +11,13 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _default_online_data_dir() -> str:
+    xdg = (os.getenv("XDG_DATA_HOME") or "").strip()
+    if xdg:
+        return os.path.join(xdg, "T2", "online")
+    return os.path.expanduser("~/.local/share/T2/online")
+
+
 @dataclass(frozen=True)
 class Settings:
     auth_mode: str
@@ -18,6 +25,7 @@ class Settings:
     single_user_uid: str | None
     allow_dev_auth: bool
     dev_token: str | None
+    online_data_dir: str
     ws_auth_timeout_seconds: float = 5.0
     max_ws_message_bytes: int = 64 * 1024
 
@@ -41,6 +49,8 @@ class Settings:
                     "T2_DEV_TOKEN must be set to a random value of at least 24 characters."
                 )
 
+        if not self.online_data_dir.strip():
+            raise RuntimeError("T2_ONLINE_DATA_DIR must not be empty.")
         if self.ws_auth_timeout_seconds <= 0:
             raise RuntimeError("T2_WS_AUTH_TIMEOUT_SECONDS must be > 0.")
         if self.max_ws_message_bytes < 1024:
@@ -55,6 +65,10 @@ def load_settings() -> Settings:
         single_user_uid=(os.getenv("T2_SINGLE_USER_UID") or "").strip() or None,
         allow_dev_auth=_env_bool("T2_ALLOW_DEV_AUTH"),
         dev_token=(os.getenv("T2_DEV_TOKEN") or "").strip() or None,
+        online_data_dir=(
+            (os.getenv("T2_ONLINE_DATA_DIR") or "").strip()
+            or _default_online_data_dir()
+        ),
         ws_auth_timeout_seconds=float(os.getenv("T2_WS_AUTH_TIMEOUT_SECONDS", "5")),
         max_ws_message_bytes=int(os.getenv("T2_MAX_WS_MESSAGE_BYTES", str(64 * 1024))),
     ).validate()
