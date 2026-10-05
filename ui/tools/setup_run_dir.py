@@ -27,7 +27,7 @@ import io, os, shutil, subprocess, sys, tarfile, tempfile
 # .sh 에만 있어 둘이 어긋나 있었다.
 MODULES = """action_events archetypes bot context depth dynamics field fieldsim formats gto icm
              live2 money_pressure persona plan play preflop ranges reads runner
-             session storage_paths table telemetry_sync texture view tournament_store scheduled_runtime personal_data""".split()
+             session storage_paths table telemetry_sync texture timing view tournament_store scheduled_runtime personal_data""".split()
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json']
