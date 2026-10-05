@@ -2751,6 +2751,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     #  하고 함수 안에서 한 번도 읽지 않는 죽은 줄이었고, SIZING 에 없는
     #  계획이 오면 KeyError 만 낼 수 있었다. 사이즈는 decide_size 가 정한다.)
     committed = spr(stack, pot) < 1.2          # 커밋 구간
+    # 시간 모델용: 이 응답에서 실제로 비교한 eq/need(관측 전용). 이전 결정 값이 남지 않게 비운다.
+    plan_state.pop('_last_response_boundary', None)
     if response_kind is not None:
         plan_state['_last_response_kind'] = response_kind
     if response_context is not None:
@@ -2863,6 +2865,9 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                       if seed is not None else None),
             response_context=response_context,
             hero_contrib=hero_contrib)
+        plan_state['_last_response_boundary'] = {
+            'eq': float(_call_eq if (_call_eq is not None and _call_need is not None) else eq),
+            'need': float(need), 'act': act}
         _source = ('checkraise_declined' if _is_checkraise_spot else 'generic_response')
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
@@ -3082,6 +3087,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     # 잘 접는 상대의 오픈에는 3벳을 넓히고, 안 접는 상대에겐 좁힌다.
     # 실제 반영은 defend_decision(exploit=rd) 안의 역치 보정에서 이뤄진다.
     rd = PS.read_opponent(profile, opp_est)
+    _pf.take_timing_bound()          # 시간 모델용 경계 기록을 이 결정 것으로만 받는다
     if aggressor_pos is None and not n_limpers:
         a, sz = _pf.open_decision(profile, pos, bb, hand, rng,
                                   behind_stacks=behind_stacks,
@@ -3185,6 +3191,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 pot_bb=pot_bb, to_call_bb=to_call_bb)
         role = 'defend'
 
+    _pf_timing = _pf.take_timing_bound()
     # F8-D6-D1: pure calloff에서 legacy percentile 판단과 layer-EV+ICM 판단을
     # 나란히 기록한다. 실제 action은 여전히 defend_decision/calloff_cap 소유다.
     _calloff_compare = None
@@ -3212,6 +3219,10 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                     float(to_call_bb or 0.0)
                     if _selected_act == 'call' else 0.0)
                 a, sz = _selected_act, _selected_sz
+                # 레이어 판단이 행동을 정했으면 그 판단의 경계가 최종 경계다.
+                _pf_timing = {'kind': 'calloff_layer',
+                              'eq': _layer_j.get('layer_effective_equity'),
+                              'need': _layer_j.get('perceived_required_equity')}
             _calloff_consumer = dict(_layer_j)
             _calloff_consumer.update({
                 'eligible': True,
@@ -3291,6 +3302,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         'pf_initiative': a in ('raise', '3bet', 'shove'),
         'pf_multiway': (n_callers + n_limpers) >= 2,
         'pf_hand_pct': _pf.pct(hand),
+        'pf_timing': _pf_timing,
         'money_open': dict(money_open or {}) if role == 'open' else None,
     }
     # Human sizing habit is part of the plan, not execution.  This is

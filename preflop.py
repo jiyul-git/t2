@@ -1,4 +1,4 @@
-import json, os, random, zlib
+import json, os, random, threading, zlib
 import persona as PS
 import depth as _DP
 import icm as _ICM
@@ -385,6 +385,22 @@ def apply_money_open_threshold(thr, hand_pct, money_open):
     return thr
 
 
+# ---------- 시간 모델용 결정 경계 기록(관측 전용) ----------
+# 행위자 결정 함수가 실제로 비교한 경계를 남긴다. RNG·행동과 무관하다.
+# preflop_plan 이 결정 직전에 비우고 직후에 가져가 plan seed 의 pf_timing 으로 싣는다.
+_TIMING = threading.local()
+
+
+def _timing_bound(d):
+    _TIMING.bound = d
+
+
+def take_timing_bound():
+    d = getattr(_TIMING, 'bound', None)
+    _TIMING.bound = None
+    return d
+
+
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
                   field_avg_bb=None, erosion=0.0,
@@ -406,6 +422,7 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                                behind_reads, behind_stacks)
     r = legacy_preflop_order_percentile(hand)
     thr = apply_money_open_threshold(thr, r, money_open)
+    _timing_bound({'kind': 'open', 'r': float(r), 'thr': float(thr)})
     _in_raise_range = (r <= thr)
     # 쇼브 판정은 **raise/open range 안**에서 먼저다. 10bb 에서 림프를 먼저
     # 물으면 쇼브해야 할 자리에서 림프가 나온다.
@@ -1001,6 +1018,11 @@ def defend_decision(prof, def_pos, opener_pos, hand, bb, open_bb, n_callers, rng
         exploit=exploit, bf=bf, seats=seats, ante=ante,
         opener_allin=opener_allin, can_raise=can_raise,
         pot_bb=pot_bb, to_call_bb=to_call_bb)
+    _timing_bound(
+        {'kind': 'defend_calloff', 'r': float(lik['hand_pct']),
+         'cap': float(lik['calloff_cap'])} if lik['calloff'] else
+        {'kind': 'defend', 'r': float(lik['hand_pct']),
+         'tot': float(lik['tot']), 'tp': float(lik['tp'])})
 
     # 올인 대면 call-off는 원래부터 RNG가 없는 결정이다.
     if lik['calloff']:
@@ -1215,6 +1237,9 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     # generic call 찌꺼기가 남아 랜덤 콜하는 것은 reasoning error다.
     # 계산오차/인간차이는 이미 need의 calc_noise와 reason_skill<1에 들어 있다.
     call, fold = apply_multiway_call_evidence(call, fold, eq, need, reason_skill)
+    _timing_bound({'kind': 'multiway', 'r': float(lik['hand_pct']),
+                   'eq': float(eq), 'need': float(need),
+                   'reason_skill': float(reason_skill)})
 
     # 이미 올인한 상대가 있으면 내 공격은 그 상대에게는 '콜'이다. 폴드
     # 에쿼티가 없으므로 기준은 fair share 가 아니라 가격(need)이다. 다른
@@ -1403,6 +1428,7 @@ def iso_decision(prof, pos, hand, n_limpers, bb, rng, limper_reads=None,
                        + 0.30*max(0.0, _lg)))
 
     r = legacy_preflop_order_percentile(hand)
+    _timing_bound({'kind': 'iso', 'r': float(r), 'thr': float(thr)})
     if r <= thr:
         return ('raise', 3.0 + n_limpers)
 

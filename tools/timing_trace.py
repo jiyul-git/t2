@@ -68,6 +68,7 @@ def awp(hero, board, profile, plan_state, pot, tocall, stack, street, **kw):
         'calc_act': a, 'calc_amt': amt}
     if _LAST_DR:
         rec.update(_LAST_DR[-1])
+    rec['engine_boundary'] = plan_state.get('_last_response_boundary')
     BT.RESP.setdefault(key, []).append(rec)
     return r
 
@@ -172,7 +173,7 @@ def preflop_plan(ax, pos, hand, bbs, rng, **kw):
     r = _pfp(ax, pos, hand, bbs, rng, **kw)
     seed = r[2] or {}
     co = seed.get('pf_calloff_consumer')
-    ext = {'bounds': list(_BOUND)}
+    ext = {'bounds': list(_BOUND), 'engine': seed.get('pf_timing')}
     if isinstance(co, dict) and co.get('strategy_consumer'):
         ext['calloff_layer'] = {
             'eq': co.get('layer_effective_equity'),
