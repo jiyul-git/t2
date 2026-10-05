@@ -12,6 +12,10 @@ on:
       - 'tools/verify_thin_value_flop_split.py'
       - 'tools/verify_pf_threebet_split.py'
       - 'tools/verify_limp_iso_split.py'
+      - 'tools/verify_range_read_split.py'
+      - 'ranges.py'
+      - 'reads.py'
+      - 'money_pressure.py'
       - 'preflop.py'
       - 'docs/semantic_audit/CONCEPT_SPLIT_TODO.md'
       - '.github/workflows/semantic-split-verify.yml'
@@ -27,7 +31,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile
-        run: python3 -m py_compile persona.py plan.py session.py tools/verify_checkraise_street_split.py tools/verify_bluffcatch_street_split.py tools/verify_thin_value_flop_split.py tools/verify_pf_threebet_split.py tools/verify_limp_iso_split.py preflop.py
+        run: python3 -m py_compile persona.py plan.py session.py tools/verify_checkraise_street_split.py tools/verify_bluffcatch_street_split.py tools/verify_thin_value_flop_split.py tools/verify_pf_threebet_split.py tools/verify_limp_iso_split.py tools/verify_range_read_split.py preflop.py ranges.py reads.py money_pressure.py
       - name: Verify checkraise street split
         run: python3 tools/verify_checkraise_street_split.py
       - name: Verify bluffcatch street split
@@ -38,5 +42,7 @@ jobs:
         run: python3 tools/verify_pf_threebet_split.py
       - name: Verify limp / iso split
         run: python3 tools/verify_limp_iso_split.py
+      - name: Verify range_read role split
+        run: python3 tools/verify_range_read_split.py
       - name: Street granularity audit
         run: python3 tools/street_concept_granularity_audit.py

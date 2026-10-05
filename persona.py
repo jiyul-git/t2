@@ -546,6 +546,13 @@ ALIAS = {'cbet':'cbet_flop', 'barrel':'barrel_turn', 'checkraise':'checkraise_fl
          # 림프 이론 지식 / 아이솔 레이즈 판단 숙련 의미 이름. 전용 prior 가 없어
          # 기존 공급원인 RFI 차트 기억(pf_range)으로 fallback 한다(행동 동일).
          'limp_theory':'pf_range', 'iso_raise':'pf_range',
+         # range_read 의 세 역할을 의미 이름으로 분리한다. 전용 prior 가 없어
+         # 기존 프로필은 모두 range_read 로 fallback 한다(행동 동일).
+         #   range_reconstruction — 액션으로 상대 레인지를 좁혀 복원
+         #   line_interpretation  — 상대 라인/성향/블러프 위협을 해석
+         #   read_application     — 해석·근거를 자기 결정에 반영
+         'range_reconstruction':'range_read', 'line_interpretation':'range_read',
+         'read_application':'range_read',
          'thin_value':'thin_value_turn'}
 
 def street_concept(base, street):
@@ -985,7 +992,7 @@ def bias(prof, name, street=None):
         # 스트리트별 블러프캐치 숙련도를 써야 한다. 예전에는 항상
         # bluffcatch_river 를 읽어 플랍/턴 콜 판단까지 리버 숙련도가 바꿨다.
         _bc = _bluffcatch_concept(street)
-        return interpret_bluff_threat_bias(S(_bc), T('aggression'), S('range_read'))
+        return interpret_bluff_threat_bias(S(_bc), T('aggression'), S('line_interpretation'))
 
     if name == 'overpair_love':
         # 오버페어·탑페어를 과대평가한다. '이기고 있다'를 과신하는 것이지
@@ -1409,7 +1416,7 @@ def read_opponent(prof, opp_est):
 
     att = temper(prof, 'attention', 5.0)
     adp = temper(prof, 'adaptability', 5.0)
-    rr  = sk(prof, 'range_read')
+    rr  = sk(prof, 'line_interpretation')   # 라인/성향 해석(range_read fallback)
     stl = sk(prof, 'sizing_tell')
 
     # ---------- 축별 독립 게이트 ----------

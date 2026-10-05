@@ -335,7 +335,9 @@ def actor_from_profile(profile, sk_fn, temper_fn):
         'icm': sk_fn(profile, 'icm'),
         'stack_decay': sk_fn(profile, 'stack_decay'),
         'fold_equity': sk_fn(profile, 'fold_equity'),
-        'range_read': sk_fn(profile, 'range_read'),
+        # 압박 근거를 결정에 옮기는 능력(read_application, range_read fallback).
+        # 키 이름은 pressure_application_capacity 호환을 위해 그대로 둔다.
+        'range_read': sk_fn(profile, 'read_application'),
         'attention': temper_fn(profile, 'attention', 5.0),
         'adaptability': temper_fn(profile, 'adaptability', 5.0),
         'discipline': temper_fn(profile, 'discipline', 5.0),

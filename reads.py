@@ -32,7 +32,9 @@ def obs_from_profile(prof):
     t = prof.get('temper')
     if not t: return None
     att = t['attention']; adp = t['adaptability']; cons = t['consistency']
-    rr = prof['concepts'].get('range_read', 4); st = prof['concepts'].get('sizing_tell', 4)
+    # 상대 행동 관찰을 해석하는 능력(line_interpretation). 전용 값이 없으면 range_read.
+    _c = prof['concepts']
+    rr = _c.get('line_interpretation', _c.get('range_read', 4)); st = _c.get('sizing_tell', 4)
     return dict(skill=observation_accuracy_from_capabilities(att, rr, st),
                 overconf=max(0.6, min(2.4, 1.8 - 0.09*cons)),
                 noise=max(0.03, min(0.35, 0.34 - 0.028*att)),

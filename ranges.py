@@ -1004,7 +1004,7 @@ def perceived_facing_bet_response(base, board, street, size_frac,
             _continue_range(base, board, street, size_frac))
     if not profile or not profile.get('concepts'):
         return full
-    rr = PS.sk(profile, 'range_read')
+    rr = PS.sk(profile, 'range_reconstruction')   # range_read fallback
     if rr < 1.5:
         return range_copy(base)
     return reconstruct_range_with_accuracy(base, full, rr)
@@ -1022,7 +1022,7 @@ def perceived_continue_range(base, board, street, size_frac, profile=None):
     full = _continue_range(base, board, street, size_frac)
     if not profile or not profile.get('concepts'):
         return full
-    rr = PS.sk(profile, 'range_read')
+    rr = PS.sk(profile, 'range_reconstruction')   # range_read fallback
     if rr < 1.5:
         return range_copy(base)
     return reconstruct_range_with_accuracy(base, full, rr)
@@ -1041,7 +1041,7 @@ def perceived_range(base, board, acts, profile=None, actor_read=None):
     """
     if not profile or not profile.get('concepts'):
         return narrow_by_actions(base, board, acts, actor_read, profile)
-    rr = PS.sk(profile, 'range_read')
+    rr = PS.sk(profile, 'range_reconstruction')   # range_read fallback
     if rr < 1.5:
         return range_copy(base)               # 액션을 아예 반영 못 한다
     full = narrow_by_actions(base, board, acts, actor_read, profile)

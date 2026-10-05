@@ -47,12 +47,22 @@
    - 남긴 것: 독립 iso prior(오픈 폭 파생이 아닌 아이솔 고유 기준)는 근거 확보 전 만들지 않음
    - 검증: `tools/verify_limp_iso_split.py`(기질 방향이 0 이면 기억 크기가 폭에 영향이 없어 루즈 기질로 측정)
 
-6. `range_read`
-   - 현재 하나의 숙련치가 다음 세 기능을 함께 담당
-     - 상대 레인지 복원
-     - 상대 액션/라인 해석
-     - 해석 결과를 실제 의사결정에 반영
-   - 필요: reconstruction / interpretation / application 3경계 분리 검토
+6. `range_read` — **PHASE 1 DONE**
+   - 조사(소비처 전수, 주석·생성 구조 제외):
+     | 소비처 | 역할 | 새 의미 이름 |
+     |---|---|---|
+     | `ranges.perceived_range` / `perceived_facing_bet_response` / `perceived_continue_range` (액션으로 레인지 축소 정확도) | 복원 | `range_reconstruction` |
+     | `persona.bias('bluff_fear')` (`interpret_bluff_threat_bias` 의 `line_interpretation_skill`) | 해석 | `line_interpretation` |
+     | `persona.read_opponent` 의 `see_line`(스트리트 구분·블러프 성향 감지) | 해석 | `line_interpretation` |
+     | `reads.obs_from_profile` 관찰 정확도 | 해석 | `line_interpretation` |
+     | `preflop` 다인원 근거 적용(`multiway_evidence_application_capacity` 의 `read_application_skill`) | 적용 | `read_application` |
+     | `money_pressure.actor_from_profile` 압박 근거 적용 | 적용 | `read_application` |
+     | `persona.bias('overpair_love')` (레인지를 못 읽어 오버페어 과대평가) | 미분류 | `range_read` 유지 |
+     | `persona` 자기 실력 자각(`aware`) | 미분류 | `range_read` 유지 |
+     | 학습 선행 구조(`LEARNING_PREREQUISITES`, 난이도, 고숙련 압축) | 생성 구조 | `range_read` 유지 |
+   - 기존 생성 프로필: 세 키가 없으면 모두 `range_read` 로 fallback → 행동 동일(기준 하네스 지문 시드 11·12 불변)
+   - 남긴 것: 미분류 2곳의 귀속, 세 역할의 독립 생성(prior·난이도·선행 구조)은 phase 2
+   - 검증: `tools/verify_range_read_split.py`(fallback 동일, 각 역할 override 가 자기 소비처만 움직임, 새 prior 없음)
 
 ## 원칙
 
