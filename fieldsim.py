@@ -610,13 +610,18 @@ class Field:
         return self.tables.get(self.players[self.hero_pid]['table'])
 
     def human_tables(self):
-        return {
+        current = {
             int(self.players[pid]['table'])
             for pid in self.human_pids
             if (pid in self.players
                 and self.players[pid].get('stack', 0) > 0
                 and self.players[pid].get('table') is not None)
         }
+        # Online multiplayer may finish an interactive table before round
+        # settlement.  Keep that table protected for the rest of the round even
+        # if its human busted on the just-finished hand.
+        current.update(int(x) for x in getattr(self, '_protected_tables', set()))
+        return current
 
     def total_chips(self):
         return sum(p['stack'] for p in self.players.values())
