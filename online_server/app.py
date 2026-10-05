@@ -7,14 +7,31 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
 
 from online_server.auth import AuthError, AuthService, Identity
 from online_server.config import Settings, load_settings
+from online_server.engine import GameEngine, GameError
 from online_server.registry import ConnectionRegistry
 
 
 class ProtocolError(Exception):
     pass
+
+
+class NewGameRequest(BaseModel):
+    seed: int | None = None
+    start_stack: int = Field(default=30000, ge=1000, le=100_000_000)
+
+
+class ActionRequest(BaseModel):
+    token: str
+    action: str
+    amount: int = Field(default=0, ge=0)
+
+
+class NextHandRequest(BaseModel):
+    token: str
 
 
 @asynccontextmanager
@@ -23,12 +40,13 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.auth = AuthService(settings)
     app.state.registry = ConnectionRegistry()
+    app.state.game = GameEngine(settings)
     yield
 
 
 app = FastAPI(
     title="T2 Online Gateway",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -66,6 +84,21 @@ async def current_identity(
         ) from None
 
 
+def _raise_game_http(exc: GameError) -> None:
+    if exc.code in {"forbidden_user", "single_user_not_configured"}:
+        status = 403
+    elif exc.code in {
+        "stale_action", "no_decision", "hand_in_progress", "game_over", "no_game"
+    }:
+        status = 409
+    else:
+        status = 400
+    raise HTTPException(
+        status_code=status,
+        detail={"code": exc.code, "message": exc.detail},
+    ) from None
+
+
 async def _receive_object(websocket: WebSocket, settings: Settings) -> dict[str, Any]:
     raw = await websocket.receive_text()
     if len(raw.encode("utf-8")) > settings.max_ws_message_bytes:
@@ -84,8 +117,8 @@ async def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "service": "t2-online-gateway",
-        "protocol": 1,
-        "game_backend": "detached",
+        "protocol": 2,
+        "game_backend": "single_user_9max",
     }
 
 
@@ -100,11 +133,140 @@ async def server_state(
     identity: Identity = Depends(current_identity),
 ) -> dict[str, Any]:
     registry: ConnectionRegistry = request.app.state.registry
+    game: GameEngine = request.app.state.game
+    try:
+        game_state = await game.state(identity.uid)
+    except GameError as exc:
+        game_state = {"error": exc.code, "detail": exc.detail}
     return {
         "user": {"uid": identity.uid},
         "realtime": await registry.snapshot(),
-        "game_backend": "detached",
+        "game_backend": "single_user_9max",
+        "game": game_state,
     }
+
+
+@app.get("/v1/game/state")
+async def game_state(
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    game: GameEngine = request.app.state.game
+    try:
+        return await game.state(identity.uid)
+    except GameError as exc:
+        _raise_game_http(exc)
+
+
+@app.post("/v1/game/new")
+async def game_new(
+    body: NewGameRequest,
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    game: GameEngine = request.app.state.game
+    try:
+        return await game.new_game(
+            identity.uid,
+            seed=body.seed,
+            start_stack=body.start_stack,
+        )
+    except GameError as exc:
+        _raise_game_http(exc)
+
+
+@app.post("/v1/game/action")
+async def game_action(
+    body: ActionRequest,
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    game: GameEngine = request.app.state.game
+    try:
+        return await game.action(
+            identity.uid,
+            token=body.token,
+            action=body.action,
+            amount=body.amount,
+        )
+    except GameError as exc:
+        _raise_game_http(exc)
+
+
+@app.post("/v1/game/next")
+async def game_next(
+    body: NextHandRequest,
+    request: Request,
+    identity: Identity = Depends(current_identity),
+) -> dict[str, Any]:
+    game: GameEngine = request.app.state.game
+    try:
+        return await game.next_hand(identity.uid, token=body.token)
+    except GameError as exc:
+        _raise_game_http(exc)
+
+
+async def _ws_game_message(
+    websocket: WebSocket,
+    game: GameEngine,
+    identity: Identity,
+    message: dict[str, Any],
+) -> bool:
+    message_type = message.get("type")
+    if not isinstance(message_type, str) or not message_type.startswith("game."):
+        return False
+
+    try:
+        if message_type == "game.state":
+            payload = await game.state(identity.uid)
+        elif message_type == "game.new":
+            payload = await game.new_game(
+                identity.uid,
+                seed=message.get("seed"),
+                start_stack=message.get("start_stack", 30000),
+            )
+        elif message_type == "game.action":
+            payload = await game.action(
+                identity.uid,
+                token=str(message.get("token") or ""),
+                action=str(message.get("action") or ""),
+                amount=message.get("amount", 0),
+            )
+        elif message_type == "game.next":
+            payload = await game.next_hand(
+                identity.uid,
+                token=str(message.get("token") or ""),
+            )
+        else:
+            await websocket.send_json(
+                {
+                    "type": "error",
+                    "error": "unsupported_game_message",
+                    "detail": message_type,
+                }
+            )
+            return True
+
+        await websocket.send_json(
+            {"type": f"{message_type}.ok", "payload": payload}
+        )
+    except GameError as exc:
+        await websocket.send_json(
+            {
+                "type": f"{message_type}.error",
+                "error": exc.code,
+                "detail": exc.detail,
+            }
+        )
+    except (TypeError, ValueError) as exc:
+        await websocket.send_json(
+            {
+                "type": f"{message_type}.error",
+                "error": "bad_request",
+                "detail": str(exc),
+            }
+        )
+    return True
 
 
 @app.websocket("/v1/ws")
@@ -114,6 +276,7 @@ async def websocket_gateway(websocket: WebSocket) -> None:
     settings: Settings = websocket.app.state.settings
     auth_service: AuthService = websocket.app.state.auth
     registry: ConnectionRegistry = websocket.app.state.registry
+    game: GameEngine = websocket.app.state.game
     connection_id: str | None = None
 
     try:
@@ -152,11 +315,14 @@ async def websocket_gateway(websocket: WebSocket) -> None:
         await websocket.send_json(
             {
                 "type": "auth.ok",
-                "protocol": 1,
+                "protocol": 2,
                 "connection_id": connection_id,
                 "user": identity.public_dict(),
-                "capabilities": ["ping", "server.state"],
-                "game_backend": "detached",
+                "capabilities": [
+                    "ping", "server.state",
+                    "game.state", "game.new", "game.action", "game.next",
+                ],
+                "game_backend": "single_user_9max",
             }
         )
 
@@ -190,22 +356,12 @@ async def websocket_gateway(websocket: WebSocket) -> None:
                     {
                         "type": "server.state",
                         "realtime": await registry.snapshot(),
-                        "game_backend": "detached",
+                        "game_backend": "single_user_9max",
                     }
                 )
                 continue
 
-            if isinstance(message_type, str) and message_type.startswith("game."):
-                await websocket.send_json(
-                    {
-                        "type": "error",
-                        "error": "game_backend_not_attached",
-                        "detail": (
-                            "The online transport/auth boundary is ready, "
-                            "but the existing poker engine has not been attached yet."
-                        ),
-                    }
-                )
+            if await _ws_game_message(websocket, game, identity, message):
                 continue
 
             await websocket.send_json(
