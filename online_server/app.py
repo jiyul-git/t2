@@ -4,9 +4,11 @@ import asyncio
 import json
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from online_server.auth import AuthError, AuthService, Identity
@@ -110,6 +112,11 @@ async def _receive_object(websocket: WebSocket, settings: Settings) -> dict[str,
     if not isinstance(obj, dict):
         raise ProtocolError("JSON object required")
     return obj
+
+
+@app.get("/")
+async def browser_client():
+    return FileResponse(Path(__file__).with_name("play.html"))
 
 
 @app.get("/health")
