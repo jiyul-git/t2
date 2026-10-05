@@ -1367,7 +1367,8 @@ class HandRun:
                 a, amt = act
                 try: rnd.apply(s, a, amt)
                 except ValueError as e:
-                    act = yield {'stage': 'preflop', 'error': str(e), 'pos': pos,
+                    act = yield {'stage': 'preflop', 'actor_seat': s,
+                                 'actor_pid': h.pid_of(s), 'error': str(e), 'pos': pos,
                                  'hole': h.hole[s],
                                  'pot': rnd.contestable_contrib(s)+ante_pot,
                                  'pot_total': sum(rnd.contrib.values()) + ante_pot,
@@ -1694,7 +1695,8 @@ class HandRun:
                                  'pot_layers': _pot_layers, 'hash': h.hash}
                     try: r2.apply(s, act[0], act[1])
                     except ValueError as e:
-                        act = yield {'stage': street, 'error': str(e), 'board': board,
+                        act = yield {'stage': street, 'actor_seat': s,
+                                     'actor_pid': h.pid_of(s), 'error': str(e), 'board': board,
                                      'hole': h.hole[s],
                                      'pot': pot_now+r2.contestable_contrib(s),
                                      'pot_total': pot_now + sum(r2.contrib.values()),
