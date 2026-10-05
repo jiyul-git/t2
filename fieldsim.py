@@ -2,6 +2,7 @@
 import copy, json, os, math, random, time
 import play, session as SE, persona as PS, reads as RD, field as FLD
 import formats as FM, context as CTX, dynamics as DY
+import timing as TMG
 from table import BLINDS, orders as position_orders
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -483,9 +484,9 @@ class Field:
         self.hero_moves = 0
         self.notes = []
         self.errors = []          # 삼킨 예외 기록. 비어 있지 않으면 문제가 있다
-        # 시간 규칙(timing.py). off: 지금과 같음 / record: 계산·뱅크 정산만, 행동 불변 /
+        # 시간 규칙(timing.py, T7 기본 ON). off: 예전 고정 시간(호환) / record: 계산·뱅크 정산만, 행동 불변 /
         # enforce: 사람과 같은 타임아웃 적용. 뱅크는 pid 를 따라간다(이동·재입장 무관).
-        self.timing_mode = os.environ.get('T2_TIMING_V1', 'off')
+        self.timing_mode = TMG.mode()
         self.time_banks = {}
 
         self._init_runtime(fmt, rules=format_rules)

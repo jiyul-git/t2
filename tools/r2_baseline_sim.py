@@ -72,7 +72,13 @@ def grab(self, tb, h, run):
 FS.Field._log_bot_hand = grab
 
 
-def main():
+def main(keep_timing=False):
+    # R2 는 전략 엔진 자체(행동·RNG·스택)의 회귀 기준선이다. 시간 규칙 enforce 는 타임아웃으로 행동을
+    # 바꿀 수 있으므로 섞지 않는다 — 기준선 실행은 OFF 강제. 예외 두 가지:
+    #   record 명시 — 시간 규칙 검증기(verify_timing_strategy_invariance)가 off 와 같은 다이제스트인지 본다
+    #   keep_timing — 시간 측정 도구(timing_trace)가 이 필드 조건을 빌려 쓸 때 호출자 env 를 따른다
+    if not keep_timing and os.environ.get('T2_TIMING_V1') != 'record':
+        os.environ['T2_TIMING_V1'] = 'off'
     seed = int(sys.argv[1])
     cap = int(sys.argv[2]) if len(sys.argv) > 2 else 60
     out = sys.argv[3] if len(sys.argv) > 3 else None

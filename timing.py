@@ -31,6 +31,22 @@ RANK_W = 2.0                 # 프리플랍 경계 폭 배수(defend 혼합폭 �
 JITTER_SIGMA = 0.20
 
 
+def mode():
+    """시간 규칙 모드(T7: 기본 ON). env T2_TIMING_V1.
+
+      on / enforce (기본) — 실제 게임 규칙: 봇·사람 같은 시계, 타임아웃 적용
+      record             — 계산·뱅크 정산만, 행동 불변(전략 불변성 검증용)
+      off                — 예전 고정 템포·고정비용 시간(호환/fallback 경로). R2 기준선은 이걸 강제한다.
+    알 수 없는 값은 기본(enforce)으로 본다.
+    """
+    v = str(os.environ.get('T2_TIMING_V1', 'on')).strip().lower()
+    if v in ('off', '0', 'false', 'no'):
+        return 'off'
+    if v == 'record':
+        return 'record'
+    return 'enforce'
+
+
 def action_seconds(fmt_key):
     """포맷의 기본 액션 시간. deep(slow) 도 18초(§9-F)."""
     return ACTION_SECONDS[FM.FORMAT_SPEED.get(fmt_key, 'regular')]

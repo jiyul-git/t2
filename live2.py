@@ -106,7 +106,7 @@ def _load_field(d):
     f.notes = d.get('notes', []); f.errors = []
     f.time_banks = {int(k): (list(v) if isinstance(v, (list, tuple)) else float(v))
                     for k, v in (d.get('time_banks') or {}).items()}
-    f.timing_mode = os.environ.get('T2_TIMING_V1', 'off')
+    f.timing_mode = TMG.mode()
     f.players = {}
     # tilt 내부 pid 상태도 중첩 dict다. 얕은 복사면 HandRun이 f.tilt를
     # 갱신할 때 입력 field_dump 자체가 변해 round-start fingerprint가 흔들린다.

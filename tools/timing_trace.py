@@ -213,7 +213,7 @@ def main():
     elif field != 'uniform':
         raise SystemExit('FIELD must be uniform or real')
     sys.argv = ['x', seed, cap]
-    BT.SIM.main()
+    BT.SIM.main(keep_timing=True)
     assert len(PF_EXTRA) == len(BT.SIM.PF), (len(PF_EXTRA), len(BT.SIM.PF))
     for _p, _x in zip(BT.SIM.PF, PF_EXTRA):
         _p['pf_bound'] = _x

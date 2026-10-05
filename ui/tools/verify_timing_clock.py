@@ -199,7 +199,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='t2_timing_off_') as td:
         subprocess.run(['sh', str(ROOT / 'ui/tools/setup_run_dir.sh'), td],
                        check=True, stdout=subprocess.DEVNULL)
-        proc, request, stream = server(td, {'T2_TIMING_TEST_BASE': '1'})
+        proc, request, stream = server(td, {'T2_TIMING_V1': 'off', 'T2_TIMING_TEST_BASE': '1'})
         try:
             code, r = request('/api/new', {'entries': 9, 'seed': 5, 'level_minutes': 10})
             code, armed = request('/api/action-clock', {'token': r['token']})

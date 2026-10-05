@@ -323,8 +323,9 @@ ACTIONS = {'fold', 'check', 'call', 'bet', 'raise', 'allin'}
 HERO_ACTION_SECONDS = min(120.0, max(1.0, float(os.environ.get('T2_HERO_ACTION_SECONDS', '15'))))
 
 # ---------- 시간 규칙(timing.py, TIME_SYSTEM_IMPLEMENTATION_DESIGN T5·T6) ----------
-# T2_TIMING_V1 이 record/enforce 일 때만 켠다. 꺼져 있으면 지금 동작(HERO 15초, 봇 고정 템포) 그대로다.
-TIMING_ON = os.environ.get('T2_TIMING_V1', 'off') in ('record', 'enforce')
+# T7: 기본 ON(timing.mode()). T2_TIMING_V1=off 일 때만 예전 고정 경로(HERO 15초, 봇 1.5초 템포,
+# 액션별 고정비용 가상시간)로 돌아간다 — 호환/fallback 경로로만 남긴다.
+TIMING_ON = TMG.mode() != 'off'
 STREET_GAP_SECONDS = TMG.STREET_SECONDS   # 사람 테이블 보드 공개 기계 시간(봇 테이블과 같은 값)
 
 
