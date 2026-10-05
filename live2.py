@@ -1369,6 +1369,7 @@ def step(action=None, amount=0, defer_others=False, others=None,
             'status': f.status(),
         }
 
+    _new_hand = st['hand_seed'] is None
     if st['hand_seed'] is None:
         # 미뤄둔 진행이 남긴 알림(테이블 브레이크·자리 이동)을 여기서 붙인다.
         # defer 를 안 쓰면 pending_notes 가 아예 없어 기존과 동일하다.
@@ -1402,7 +1403,11 @@ def step(action=None, amount=0, defer_others=False, others=None,
     f, tb, alive, h, hero_seat = build_hand(st)
     # 저장된 HERO 액션을 재생하는 동안은 UI 진행 콜백을 끈다.
     # 그렇지 않으면 과거 봇 액션을 현재 액션처럼 다시 스트리밍한다.
-    run = SE.HandRun(h, decisions=st.get('decisions'), timing_ctx=f._timing_ctx())
+    # 이번 호출에서 새로 딜한 핸드면 HERO 앞 봇 액션도 이번에 처음 계산되는 것이다 —
+    # 콜백을 처음부터 단다(시간 규칙의 예정표가 첫 액션부터 붙도록). 이미 진행 중인 핸드를
+    # 재생할 때는 지금처럼 끈다(과거 액션을 다시 보내지 않게).
+    run = SE.HandRun(h, decisions=st.get('decisions'), timing_ctx=f._timing_ctx(),
+                     on_bot_action=(on_bot_action if _new_hand else None))
     raw = run.start()
     for (a, amt) in st['actions']:
         if isinstance(raw, dict) and (raw.get('done') or raw.get('error')): break

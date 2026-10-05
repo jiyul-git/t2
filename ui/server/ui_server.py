@@ -139,7 +139,7 @@ def _schedule_tick():
     if st and not st.get('offscreen'):
         # The deadline is authoritative even if the browser never posts again.
         if not st.get('busted') and _last is None and st.get('hand_seed') is not None:
-            _last = _wrap(_step())
+            _last = _wrap(_step_sched())
             st = L.load()
         decision = ((_last or {}).get('view') or {}).get('type') == 'decision'
         if decision and st.get('ui_action_deadline') is None:
@@ -157,11 +157,7 @@ def _schedule_tick():
             if TIMING_ON:
                 _settle_hero_bank(st, now, timed_out=True)
                 L.save(st)
-            _sched = _BotSchedule(now) if TIMING_ON else None
-            _last = _wrap(_step(_timeout_action(),
-                                on_bot_action=(_sched.stamp if _sched else None)))
-            if _sched:
-                _sched.save()
+            _last = _wrap(_step_sched(_timeout_action()))
             _last['auto_folded'] = True
             st = L.load()
         if ((st.get('busted') or now - LAST_PLAY_PRESENCE > 20)
@@ -391,6 +387,35 @@ class _BotSchedule:
         st['ui_bot_ready_at'] = self.cursor
         st['ui_bot_schedule'] = self.events
         L.save(st)
+
+
+# 새 핸드의 봇 시계는 딜·블라인드 기계 시간 뒤에 시작한다. 봇 테이블 mechanical 의
+# 핸드 기본값(timing.mechanical_seconds 의 8초)과 같은 값이고, 화면의 딜(카드당 0.25초 × 18장)
+# + 블라인드 게시(1.3초 × 2) 애니메이션 길이(약 7.6초)와 거의 같다.
+HAND_START_SECONDS = TMG.mechanical_seconds(1, False)
+
+
+def _step_sched(action=None, amount=0, on_bot_action=None):
+    """_step 과 같지만, 시간 규칙이 켜져 있으면 이번 호출의 봇 액션에 예정 시각을 붙여 저장한다.
+
+    새 핸드를 딜하는 경로(/api/new, /api/state, 스트림의 '다음 핸드', 서버 tick)도 모두 여기를 탄다 —
+    첫 핸드만 예정표 없이 고정 템포로 재생되는 예외를 두지 않는다.
+    """
+    if not TIMING_ON:
+        return _step(action, amount, on_bot_action=on_bot_action)
+    try:
+        new_hand = L.load().get('hand_seed') is None
+    except Exception:
+        new_hand = False
+    sched = _BotSchedule(time.time() + (HAND_START_SECONDS if new_hand else 0.0))
+
+    def _cb(event):
+        sched.stamp(event)
+        if on_bot_action is not None:
+            on_bot_action(event)
+    r = _step(action, amount, on_bot_action=_cb)
+    sched.save()
+    return r
 
 
 def _arm_action_clock(token, now=None):
@@ -1489,6 +1514,15 @@ def _wrap(r):
             out['entries'] = r.get('entries')
 
     out['token'] = _token()
+    if globals().get('TIMING_ON', False):
+        try:
+            _sst = L.load()
+            out['bot_schedule'] = list(_sst.get('ui_bot_schedule') or [])
+            out['bot_ready_at_ms'] = (None if _sst.get('ui_bot_ready_at') is None
+                                      else int(float(_sst['ui_bot_ready_at']) * 1000))
+            out['server_now_ms'] = int(time.time() * 1000)
+        except Exception:
+            pass
 
     # A decision deadline belongs to exactly one engine token. Once an action
     # changes the token (or the hand ends), remove it. The next decision is armed
@@ -1724,7 +1758,7 @@ class H(BaseHTTPRequestHandler):
                     if _st.get('busted') or _f.remaining() <= 1:
                         _last = _game_over()
                     else:
-                        _last = _wrap(_step())
+                        _last = _wrap(_step_sched())
                 return self._send(200, _last)
             except Exception as e:
                 traceback.print_exc()
@@ -1879,7 +1913,7 @@ class H(BaseHTTPRequestHandler):
                     st['ui_break_seconds'] = 0
                     st.pop('ui_break_at', None)
                     L.save(st)
-                    _last = _wrap(_step())
+                    _last = _wrap(_step_sched())
                     return self._send(200, _last)
                 if self.path in ('/api/step', '/api/step-stream'):
                     waiting = _managed_play_state()
@@ -1953,8 +1987,10 @@ class H(BaseHTTPRequestHandler):
                             # 다음 봇 계산은 화면 애니메이션 완료를 기다리지 않는다.
 
                         try:
+                            # 새 핸드(a=None)는 봇 이벤트를 스트림으로 보내지 않는다(화면이 로그로 재생).
+                            # 그래도 예정표는 같은 규칙으로 만든다.
                             r = (_step(a, amt, on_bot_action=_emit_bot)
-                                 if a is not None else _step())
+                                 if a is not None else _step_sched())
                         except Exception as e:
                             traceback.print_exc()
                             if alive[0]:
@@ -1965,7 +2001,7 @@ class H(BaseHTTPRequestHandler):
                             return
                         finally:
                             _stream_gate_close(stream_id)
-                        if _sched is not None:
+                        if _sched is not None and a is not None:
                             _sched.save()
                         v = r.get('view') or {}
                         if (not r.get('done') and v.get('error') and _last
@@ -1985,10 +2021,7 @@ class H(BaseHTTPRequestHandler):
                             })
                         return
 
-                    _cb = _sched.stamp if _sched is not None else None
-                    r = _step(a, amt, on_bot_action=_cb) if a is not None else _step(on_bot_action=_cb)
-                    if _sched is not None:
-                        _sched.save()
+                    r = _step_sched(a, amt) if a is not None else _step_sched()
                     v = r.get('view') or {}
                     if (not r.get('done') and v.get('error') and _last
                             and (_last.get('view') or {}).get('type') == 'decision'):

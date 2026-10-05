@@ -67,11 +67,23 @@ def main():
         proc, request, stream = server(td, {'T2_TIMING_V1': 'enforce', 'T2_TIMING_TEST_BASE': '1',
                                             'T2_TIMING_TEST_BANK': '2'})
         try:
+            t0 = time.time() * 1000
             code, r = request('/api/new', {'entries': 9, 'seed': 5, 'level_minutes': 10})
             assert code == 200 and (r.get('view') or {}).get('type') == 'decision', r
             token = r['token']
+            # 첫 핸드도 예정표를 탄다: HERO 앞 봇 액션마다 절대 시각, 시작은 딜 기계 시간(8초) 뒤
+            sched0 = r.get('bot_schedule') or []
+            log0 = [e for e in ((r.get('view') or {}).get('log') or []) if e.get('seat') != r['view'].get('hero_seat')]
+            timed0 = [e for e in sched0 if e.get('act_at_ms')]
+            assert len(timed0) >= len([e for e in log0 if e.get('action') not in ('sb', 'bb', 'ante')]), (sched0, log0)
+            if timed0:
+                assert timed0[0]['clock_started_ms'] >= t0 + 7500, (timed0[0], t0)
+            assert r.get('bot_ready_at_ms') and r['bot_ready_at_ms'] >= t0 + 7500, r.get('bot_ready_at_ms')
+            print('PASS: first hand (/api/new) carries the bot schedule (%d bot actions), starts after the 8s deal'
+                  % len(timed0))
             code, armed = request('/api/action-clock', {'token': token})
             assert code == 200 and armed['timing_on'] is True, armed
+            assert armed['action_started_ms'] >= r['bot_ready_at_ms'] - 1, armed
             started, base_dl, dl = armed['action_started_ms'], armed['action_base_deadline_ms'], armed['action_deadline_ms']
             assert abs((base_dl - started) - 1000) <= 2 and abs((dl - base_dl) - 2000) <= 2, armed
             time.sleep(.2)
@@ -108,6 +120,22 @@ def main():
                     assert code == 409, early
             print('PASS: %d timed bot events, schedule monotonic, HERO clock starts after it' % len(timed))
 
+            # 다음 핸드(스트림 a=None)도 예정표를 탄다
+            for _ in range(40):
+                code, st = request('/api/state')
+                v = st.get('view') or {}
+                if v.get('type') == 'result' or st.get('done'):
+                    t1 = time.time() * 1000
+                    nxt = [x for x in stream({'token': st['token'], 'action': None}) if x['type'] == 'final'][-1]['payload']
+                    assert nxt.get('bot_ready_at_ms') and nxt['bot_ready_at_ms'] >= t1 + 7500, nxt.get('bot_ready_at_ms')
+                    print('PASS: next hand via stream (action=None) carries the schedule (%d bot actions)'
+                          % len([e for e in nxt.get('bot_schedule') or [] if e.get('act_at_ms')]))
+                    break
+                if v.get('type') == 'decision':
+                    wait = max(0.0, ((st.get('bot_ready_at_ms') or 0) - time.time() * 1000) / 1000.0)
+                    time.sleep(wait + 0.05)
+                    code, a2 = request('/api/action-clock', {'token': st['token']})
+                    request('/api/step', {'token': st['token'], 'action': 'fold' if (v.get('legal') or {}).get('fold') else 'check', 'amount': 0})
             # 타임아웃: base+bank 를 넘김 → 체크/폴드, 뱅크 0
             for _ in range(30):
                 code, st = request('/api/state')

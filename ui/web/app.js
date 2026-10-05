@@ -133,6 +133,43 @@ function seatClock(seat, startMs, baseMs, bankMs) {
   SEAT_CLOCKS[String(seat)] = setInterval(paint, 100);
 }
 
+/* 예정표 조회. 서버가 준 봇 이벤트(스트림·응답 payload 의 bot_schedule)를 액션 기준으로 찾는다.
+ * 모든 재생 경로(스트림, 새 핸드 프리플랍, 남은 액션 꼬리, 결과 꼬리)가 같은 함수를 쓴다 —
+ * 첫 핸드만 고정 템포인 예외를 두지 않는다. 예정표가 없으면(시간 규칙 off) 기존 템포.
+ */
+S.sched = {};
+const schedKeys = (e) => [
+  [e.street || '', e.seat, e.action, Number(e.amount || 0)].join('|'),
+  ['*', e.seat, e.action, Number(e.amount || 0)].join('|')
+];
+function noteSchedule(list) {
+  (list || []).forEach((ev) => {
+    if (!ev || !ev.act_at_ms) return;
+    schedKeys(ev).forEach((k) => { S.sched[k] = ev; });
+  });
+}
+function schedOf(e) {
+  if (!e || e.act_at_ms) return e && e.act_at_ms ? e : null;
+  const ks = schedKeys(e);
+  return S.sched[ks[0]] || S.sched[ks[1]] || null;
+}
+// 예정 시각 전이면 좌석 시계를 보이고 retry 를 예약한 뒤 true. 아니면 링을 지우고 false.
+function schedWait(e, retry) {
+  const t = schedOf(e);
+  if (!t) return false;
+  const w = t.act_at_ms - serverNow();
+  if (w > 20) {
+    if (!SEAT_CLOCKS[String(e.seat)] && t.clock_started_ms) {
+      seatClock(e.seat, t.clock_started_ms, t.base_deadline_ms, t.bank_deadline_ms);
+    }
+    S.timers.push(setTimeout(retry, w));
+    return true;
+  }
+  clearSeatClock(e.seat);
+  return false;
+}
+const schedPace = (e, fallback) => (schedOf(e) ? 0 : fallback);
+
 /* 재접속: 아직 끝나지 않은 봇 예정표는 링만 이어서 보여 준다(상태는 이미 최종이다). */
 function replayBotSchedule(schedule) {
   (schedule || []).forEach((e) => {
@@ -1797,6 +1834,7 @@ function playDecisionTail(prev, v) {
 
   const playEntry = (e) => {
     const mine = e.seat === v.hero_seat;
+    if (!mine && schedWait(e, () => playEntry(e))) return;
 
     if (e.action === 'fold' && !mine) {
       markFold(e.seat);
@@ -1818,7 +1856,7 @@ function playDecisionTail(prev, v) {
     bubbleAt(e.seat, e);
 
     S.timers.push(
-      setTimeout(next, terminalFold(ss, e) ? 0 : paceMs(e))
+      setTimeout(next, terminalFold(ss, e) ? 0 : schedPace(e, paceMs(e)))
     );
   };
 
@@ -1882,6 +1920,7 @@ function playSequence(v, entries, streetChanged) {
   let i = 0;
   (function next() {
     if (i >= rest.length) { finalFrame(v); return; }
+    if (schedWait(rest[i], next)) return;
     const e = rest[i++];
     if (e.action === 'fold') { folded[e.seat] = 1; markFold(e.seat); }
     else if (e.action !== 'check') bets[e.seat] = e.amount || bets[e.seat] || 0;
@@ -1889,7 +1928,7 @@ function playSequence(v, entries, streetChanged) {
     bubbleAt(e.seat, e);
     const aliveNow = (v.seats || []).filter((s) => !folded[s.seat]).length;
     S.timers.push(setTimeout(next,
-      (e.action === 'fold' && aliveNow <= 1) ? 0 : paceMs(e)));
+      (e.action === 'fold' && aliveNow <= 1) ? 0 : schedPace(e, paceMs(e))));
   })();
 }
 
@@ -2092,6 +2131,7 @@ function spectateTail(res) {
 
   const playEntry = (e) => {
     const mine = e.seat === res.hero_seat;
+    if (!mine && schedWait(e, () => playEntry(e))) return;
 
     if (e.action === 'fold' && !mine) {
       markFold(e.seat);
@@ -2108,7 +2148,7 @@ function spectateTail(res) {
     bubbleAt(e.seat, e);
 
     S.timers.push(
-      setTimeout(next, paceMs(e))
+      setTimeout(next, schedPace(e, paceMs(e)))
     );
   };
 
@@ -3260,6 +3300,7 @@ async function readReady() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const ready = await response.json();
     noteTiming(ready);
+    if (ready.bot_schedule) noteSchedule(ready.bot_schedule);
     if (ready.timing_on && ready.bot_schedule && ready.bot_schedule.length && !S.scheduleReplayed) {
       S.scheduleReplayed = true;          // 재접속: 남은 봇 시계만 이어서 보여 준다
       replayBotSchedule(ready.bot_schedule);
@@ -3764,6 +3805,7 @@ async function callStepStream(body, msg) {
           streamId = obj.stream_id || null;
           if (obj.server_now_ms) S.clockOffset = obj.server_now_ms - Date.now();
         } else if (obj.type === 'bot_action') {
+          noteSchedule([obj.event || {}]);
           pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
         } else if (obj.type === 'final') {
           finalPayload = obj.payload;
@@ -4020,6 +4062,10 @@ function sync() { call('/api/state', null, '상태를 받는 중…'); }
 
 /* ---------------- 응답 반영 ---------------- */
 function apply(resp) {
+  if (resp && resp.bot_schedule) {
+    noteSchedule(resp.bot_schedule);
+    noteTiming(resp);
+  }
   stopActionClock();
   // 서버 응답이 새 화면의 원본이다. 같은 decision으로 돌아온 경우에도
   // 그 화면에서 다시 정상적으로 deadline을 arm할 수 있다.

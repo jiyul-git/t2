@@ -256,3 +256,16 @@ base+bank 초과 → 타임아웃·뱅크 0, 시간 규칙 off → 기존 시계
   전부 스트림 경로라 예정표가 있다.
 - 남은 재검산(§11.1): 사람 포함 테이블에서 시간당 핸드·final 197핸드/시간 → mechanical time 으로 조정할지,
   일반형 어려운 올인 18.7초.
+
+### 12.1 새 핸드 예정표 누락 수정
+
+원인은 첫 핸드만이 아니었다. `live2.step` 이 새로 딜한 핸드에서도 봇 콜백을 `run.start()` **뒤에** 달아서,
+모든 새 핸드의 HERO 앞 봇 액션이 콜백(=예정표) 밖에 있었다. 화면은 그 액션을 뷰 로그로 고정 템포 재생했다.
+- `live2.step`: 이번 호출에서 새로 딜한 핸드면 콜백을 처음부터 단다(진행 중 핸드 재생은 지금처럼 끔).
+- `ui_server._step_sched`: 새 핸드를 만드는 모든 경로(`/api/new`, `/api/state`, 스트림의 다음 핸드, 서버 tick,
+  `/api/step`)가 같은 예정표 규칙을 탄다. 새 핸드는 딜·블라인드 기계 시간 8초(봇 테이블 mechanical 핸드 기본값과
+  같은 값, 화면 딜+블라인드 애니메이션 약 7.6초) 뒤에 첫 봇 시계가 시작한다. 응답 payload 에 `bot_schedule`.
+- 프런트: 스트림·새 핸드 프리플랍(`playSequence`)·남은 액션 꼬리(`playDecisionTail`)·결과 꼬리 재생이 모두
+  같은 `schedWait`/`schedPace` 를 쓴다. 예정표가 없을 때(시간 규칙 off)만 기존 템포.
+- 검증: `verify_timing_clock` 에 첫 핸드(`/api/new`)와 다음 핸드(스트림 a=None)의 예정표·8초 시작 확인 추가, 통과.
+  브라우저: 첫 핸드 블라인드 직후 UTG 좌석 링(`docs/beta/timing_first_hand_ring.png`).
