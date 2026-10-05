@@ -806,6 +806,7 @@ class Field:
         _bo = os.environ.get('T2_TIMING_TEST_BASE')
         if _bo:
             ctx['base_override'] = float(_bo)
+            ctx['fingerprint'] = True
         return ctx
 
     def plan_others(self):

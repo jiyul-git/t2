@@ -1075,6 +1075,9 @@ class HandRun:
                'visible': v['visible'], 'elapsed': st['elapsed'], 'base': base,
                'bank_before': bank, 'bank_used': st['bank_used'],
                'timed_out': st['timed_out']}
+        if T.get('fingerprint'):
+            # 검증 전용: 이 결정 시점의 핸드 RNG 상태와 스택(타임아웃 전 동일성 확인용).
+            rec['rng_fp'] = _zlib.crc32(repr(self.h.rng.getstate()).encode())
         self.timing_log.append(rec)
         return rec
 

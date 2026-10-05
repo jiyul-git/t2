@@ -42,6 +42,8 @@ def main():
         # 전부 병렬로 띄운다(각자 별도 프로세스, 결과만 비교).
         jobs = {('r2', seed, mode): start([r2, seed, '60'], mode)
                 for seed in ('11', '12') for mode in ('off', 'record')}
+        # 테스트 전용 덮어쓰기는 시간 규칙이 꺼져 있으면 아무 영향이 없어야 한다.
+        jobs[('r2', '11', 'off_testbase')] = start([r2, '11', '60'], 'off', T2_TIMING_TEST_BASE='3')
         files = {mode: os.path.join(d, mode + '.json') for mode in ('off', 'record', 'enforce')}
         for mode in ('off', 'record', 'enforce'):
             jobs[('tt', mode)] = start([tt, '13', 'real', files[mode], cap, '90'], mode)
@@ -55,6 +57,8 @@ def main():
         for seed in ('11', '12'):
             res['r2_%s_off_eq_record' % seed] = (out[('r2', seed, 'off')]['sha256']
                                                  == out[('r2', seed, 'record')]['sha256'])
+        res['testbase_env_off_eq_off'] = (out[('r2', '11', 'off_testbase')]['sha256']
+                                          == out[('r2', '11', 'off')]['sha256'])
         res['real_off_eq_record'] = out[('tt', 'off')]['sha256'] == out[('tt', 'record')]['sha256']
         rec = json.load(open(files['record']))['hands']
         enf = json.load(open(files['enforce']))['hands']
@@ -94,13 +98,27 @@ def main():
                 want = 'check' if t.get('can_check') else 'fold'
                 if t.get('exec_act') != want or t.get('engine_act') is None:
                     rule_bad3 += 1
+    # 첫 타임아웃 핸드: 타임아웃 결정까지 결정별 RNG 지문·좌석·뱅크가 같은가
+    dec_ok = None
+    if first3 is not None and first3 < len(rec3):
+        a = enf3[first3].get('timing') or []
+        b = rec3[first3].get('timing') or []
+        dec_ok = rec3[first3]['hash'] == enf3[first3]['hash']
+        for x, y in zip(a, b):
+            dec_ok = dec_ok and (x.get('rng_fp') is not None and x.get('rng_fp') == y.get('rng_fp')
+                                 and x['seat'] == y['seat'] and x['street'] == y['street']
+                                 and abs(x['bank_before'] - y['bank_before']) < 1e-9)
+            if x['timed_out']:
+                break
+    res['base3_first_timeout_hand_decisions_identical_until_timeout'] = dec_ok
     lim3 = first3 if first3 is not None else min(len(rec3), len(enf3))
     prefix3 = all(strip(rec3[i]) == strip(enf3[i]) for i in range(min(lim3, len(rec3), len(enf3))))
     res.update({'base3_decisions': n3, 'base3_timeouts': to3, 'base3_rule_violations': rule_bad3,
                 'base3_first_timeout_hand_index': first3,
                 'base3_prefix_identical_until_first_timeout': prefix3})
     res.pop('base3_off_eq_record_digest', None)
-    res['pass'] = (to3 > 0 and rule_bad3 == 0 and prefix3 and res['r2_11_off_eq_record'] and res['r2_12_off_eq_record'] and res['real_off_eq_record']
+    res['pass'] = (to3 > 0 and rule_bad3 == 0 and prefix3 and bool(dec_ok)
+                   and res['testbase_env_off_eq_off'] and res['r2_11_off_eq_record'] and res['r2_12_off_eq_record'] and res['real_off_eq_record']
                    and bank_neg == 0 and bad_rule == 0 and prefix_ok and n_dec > 0)
     print(json.dumps(res, indent=1))
     raise SystemExit(0 if res['pass'] else 1)
