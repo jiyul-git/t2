@@ -21,9 +21,16 @@
    - 다음 단계: 실제 모집단에서 flop/turn을 독립 생성할 근거와 난이도/분포를 정한 뒤 compatibility fallback 제거 검토
    - 이유: 남은 스트리트 수, 미래 액션, 실현 가능성이 다름
 
-3. 플랍 thin value
-   - 현재: 독립 숙련치 없이 `range_merge`를 proxy로 사용
-   - 필요: flop thin-value ability 분리 검토
+3. 플랍 thin value — **PHASE 1 DONE**
+   - 조사(소비처 전부): `range_merge` 는 두 곳에서만 읽힌다.
+     1. `plan.make_plan` 중간강도 분기 — 팟컨트롤 / 얇은 밸류(`value_2street`) / 쇼다운 선택. 숙련이 높을수록 얇은 밸류.
+     2. `persona.street_concept('thin_value','flop')` — 플랍 2스트리트 확률(`middle_value_two_street_probability`)과 플랍 밸류벳 빈도(`decide_aggression`).
+     둘 다 "중간 강도를 얇은 밸류로 칠 줄 아는가"라는 같은 능력 → 의미 이름 `thin_value_flop`.
+   - 의미 경계: `street_concept('thin_value','flop')` → `thin_value_flop`, `make_plan` 플랍 → `thin_value_flop`
+   - 기존 생성 프로필: `thin_value_flop` 키가 없으면 `range_merge` 로 fallback(ALIAS) → 행동 동일(기준 하네스 지문 불변)
+   - 남긴 것: 보드 변경으로 턴/리버에서 `make_plan` 을 다시 세울 때는 phase 1 에서 기존 `range_merge` 를 그대로 쓴다. 이 경로가 `thin_value_turn/river` 를 써야 하는지는 phase 2 에서 판단(지금 바꾸면 행동이 바뀜)
+   - 새 prior/loading/base/spread: 만들지 않음
+   - 검증: `tools/verify_thin_value_flop_split.py`(매핑, fallback 동일, 독립 override, 소비처 두 곳 counterfactual — 플랍만 바뀌고 턴 불변, 새 prior 없음)
 
 4. 프리플랍 3-bet
    - 현재: 독립 3-bet 숙련치/prior 없이 `pf_defend`를 proxy로 사용

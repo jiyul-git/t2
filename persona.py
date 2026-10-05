@@ -537,6 +537,9 @@ ALIAS = {'cbet':'cbet_flop', 'barrel':'barrel_turn', 'checkraise':'checkraise_fl
          # flop/turn bluffcatch도 의미 경계를 분리하되 기존 프로필은 early로 fallback.
          'bluffcatch':'bluffcatch_early',
          'bluffcatch_flop':'bluffcatch_early', 'bluffcatch_turn':'bluffcatch_early',
+         # 플랍 얇은 밸류(중간 강도 머징)도 의미 이름을 분리하되, 기존 프로필은
+         # 전용 prior 가 없으므로 range_merge 로 fallback 한다(행동 동일).
+         'thin_value_flop':'range_merge',
          'thin_value':'thin_value_turn'}
 
 def street_concept(base, street):
@@ -548,9 +551,9 @@ def street_concept(base, street):
       ('checkraise','river'):'checkraise_river',
       ('bluffcatch','flop'):'bluffcatch_flop', ('bluffcatch','turn'):'bluffcatch_turn',
       ('bluffcatch','river'):'bluffcatch_river',
-      # 플랍의 중간강도 밸류/머징은 range_merge가 맡는다.
-      # thin_value_turn을 재사용하면 턴 숙련도가 플랍 판단을 바꾼다.
-      ('thin_value','flop'):'range_merge', ('thin_value','turn'):'thin_value_turn',
+      # 플랍의 중간강도 밸류/머징은 thin_value_flop(기존 프로필은 range_merge
+      # fallback). thin_value_turn을 재사용하면 턴 숙련도가 플랍 판단을 바꾼다.
+      ('thin_value','flop'):'thin_value_flop', ('thin_value','turn'):'thin_value_turn',
       ('thin_value','river'):'thin_value_river',
     }
     return m.get((base, street), ALIAS.get(base, base))

@@ -1171,7 +1171,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             # 높으면 얇은 밸류로 돌린다. thin_value_* 는 턴·리버 한정이라
             # 플랍 단계의 이 갈림이 성향과 무관하게 고정돼 있었다.
             # make_plan 안의 sk() 는 0~3 스케일이다(PS.sk/3.33). 0~10 로 착각하지 말 것.
-            _mg = sk('range_merge')                        # 0~3
+            # 의미: 중간 강도를 얇은 밸류로 칠 줄 아는가. 플랍은 thin_value_flop
+            # (기존 프로필은 range_merge fallback). 보드 변경으로 턴/리버에 계획을
+            # 다시 세울 때는 phase 1 에서 기존 range_merge 를 그대로 쓴다(행동 보존,
+            # CONCEPT_SPLIT_TODO 3 참고).
+            _mg = sk('thin_value_flop' if street == 'flop' else 'range_merge')   # 0~3
             _pc_p = medium_potcontrol_probability(pc, mw, _mg)
             if sk('potcontrol') >= 1 and rng.random() < _pc_p:
                 plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
