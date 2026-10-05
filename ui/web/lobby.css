@@ -69,7 +69,7 @@ main{padding:0 14px 22px}
 .join:disabled{opacity:.45}.joinHint{text-align:center;min-height:18px;margin-top:8px;color:var(--danger);font-size:10px}
 .toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:80;background:#243631;border:1px solid #5b756d;border-radius:999px;padding:9px 14px;font-size:11px}
 .bottom{position:fixed;z-index:30;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,560px);
-  height:66px;padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(3,1fr);
+  height:66px;padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(2,1fr);
   background:#0a1513f2;border-top:1px solid #8a754537;backdrop-filter:blur(14px)}
 .bottom button{border:0;background:transparent;color:#738982;font-size:9px}.bottom button span{display:block;font-size:17px;margin-bottom:3px}
 .bottom button.active{color:var(--gold)}
