@@ -3585,6 +3585,9 @@ def continue_range_call_equity(hero, board, profile, street, size_frac,
 # 이 rel 이상이면 '분명한 밸류'다 — 콜 레인지 대비 재평가 없이 계획대로 친다.
 # 리버 재평가에 있던 리터럴을 턴 재평가와 공유하려고 이름을 붙였다(값 불변).
 CLEAR_VALUE_REL = 0.92
+# 리버 얇은 밸류 v2 (FLOP_CLAIM_BASELINE.md 7절): 쇼다운 계획도 재평가하고,
+# 콜 받아도 앞서는 자리는 숙련만큼 친다.
+RIVER_THIN_VALUE_V2 = True
 
 
 def turn_value_reassessment(st, hero, board, profile, opp_range,
@@ -3668,8 +3671,18 @@ def river_value_reassessment(st, hero, board, profile, opp_range, rng,
         # With no usable range evidence, do not invent a thin-value call
         # range.  Check and take showdown value instead.
         _value_when_called = ahead_when_called(_thin_eq)
+        if RIVER_THIN_VALUE_V2 and _thin_eq is not None:
+            # 콜 받아도 앞서면 얇은 밸류다. 숙련자는 그 자리를 대부분 치고,
+            # 콜 레인지 대비 여유(eq-0.5)가 클수록 더 확실히 친다.
+            # 예전 0.75*개념*밴드 는 숙련 5 에서도 최대 ~37% 였고, 밴드 상단 감쇠가
+            # rel 0.85~0.92(분명한 밸류 직전)에서 오히려 확률을 깎았다(2026-10-06).
+            _band = max(0.0, min(1.0, (rel - 0.40)/0.15))
+            _margin = max(0.0, min(1.0, 0.4 + (float(_thin_eq) - 0.5)/0.08))
+            _p_thin = (0.10 + 0.85*_tv) * _margin * _band
+        else:
+            _p_thin = 0.75*_tv*_band
         if (_value_when_called
-                and rng.random() < 0.75*_tv*_band):
+                and rng.random() < _p_thin):
             st['plan'] = 'thin_river'
             st['why'] = (st.get('why') or []) + [
                 '리버: 얇은 밸류(rel %.2f, call-eq %.2f, 개념 %.1f)'
@@ -3768,7 +3781,23 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
     # 리버에서 얇게 뽑는 경로가 아예 없었다.
     # thin_value_river 개념이 있어야 시도한다 — 얇은 밸류는 배워야 하는 라인이고,
     # 못 하는 사람은 체크하고 쇼다운을 본다.
-    if st.get('plan') in ('value_2street', 'pot_control', 'block'):
+    _reassess = ('value_2street', 'pot_control', 'block') + (
+        ('showdown',) if RIVER_THIN_VALUE_V2 else ())
+    if (st.get('plan') == 'showdown'
+            and bot.made_strength(hero, board) < 1):
+        # 메이드 없는 쇼다운 가치(A하이 등)는 재평가하지 않는다 —
+        # giveup 으로 떨어지면 쇼다운 가치가 블러프로 새는 길이 열린다(베타 A #3).
+        _reassess = ()
+    if st.get('plan') in _reassess:
+        if (st.get('plan') == 'showdown' and RIVER_THIN_VALUE_V2
+                and st.get('rel', 0.5) >= CLEAR_VALUE_REL):
+            # 플랍에서 쇼다운으로 잡은 손이 리버에 분명한 밸류가 됐다.
+            st['plan'] = 'value_3street'
+            st['plan_goal'] = 'value_3street'
+            st['why'] = (st.get('why') or []) + [
+                '리버: 쇼다운 계획이나 분명한 밸류(rel %.2f) → 리버 밸류'
+                % st.get('rel', 0.5)]
+            return st
         return river_value_reassessment(
             st, hero, board, profile, opp_range, rng, n_opp, opp_ranges)
 
