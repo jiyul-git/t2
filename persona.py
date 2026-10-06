@@ -184,6 +184,24 @@ INDEPENDENT_CONCEPT_DIFFICULTY = {
     'barrel_river':     7.5,
     'range_read':       8.0,
     'icm':              8.5,
+    # v5 (2026-10-06): 표에 없던 생성 개념 17개. 기존 20개 값은 그대로.
+    'bluff':            3.5,
+    'fold_equity':      4.0,
+    'semibluff':        4.5,
+    'pf_defend':        4.5,
+    'bluffcatch_early': 5.0,
+    'reraise':          5.0,
+    'spr':              5.0,
+    'stackoff':         5.5,
+    'checkraise_flop':  5.5,
+    'thin_value_turn':  6.0,
+    'blockbet':         6.0,
+    'equity_denial':    6.0,
+    'range_merge':      6.5,
+    'checkraise_late':  6.5,
+    'bluffcatch_river': 7.0,
+    'thin_value_river': 7.0,
+    'overbet':          7.0,
 }
 
 # 학습 순서의 '도움 선행'. 필수조건은 아니므로 한 개가 낮다고 후행을 막지 않고,
@@ -202,6 +220,17 @@ LEARNING_PREREQUISITES = {
     'trap':            ('board_texture', 'range_read'),
     'barrel_river':    ('barrel_turn', 'range_read', 'board_texture'),
     'icm':             ('money_jump', 'potodds', 'stack_decay'),
+    # v5 (2026-10-06): 뒤 개념이 앞 개념을 문자 그대로 재료로 쓰는 경우만.
+    # pf_defend 는 pf_range 처럼 이론 없이 외우는 차트라 묶지 않는다.
+    'semibluff':       ('outs', 'fold_equity'),
+    'equity_denial':   ('outs', 'fold_equity'),
+    'stackoff':        ('potodds', 'spr'),
+    'bluffcatch_early': ('potodds',),
+    'bluffcatch_river': ('potodds', 'range_read'),
+    'thin_value_river': ('range_read', 'board_texture'),
+    'overbet':         ('range_read', 'board_texture'),
+    'blockbet':        ('potcontrol', 'sizing_tell'),
+    'checkraise_late': ('checkraise_flop',),
 }
 
 # 의미상 필수에 가까운 선후행. 후행이 선행보다 2점 넘게 앞서지 못한다.
