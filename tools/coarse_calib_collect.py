@@ -70,7 +70,9 @@ def _play_and_record(self, tb, fast=True, seed=None, return_result=False):
     sb, bb = self.blinds()
     level = self.level
     frozen = getattr(self, '_frozen_field', None) or self.field_snapshot()
-    button = tb.hand_layout()['button'] if len(alive) >= 2 else None
+    layout = tb.hand_layout() if len(alive) >= 2 else {}
+    button = layout.get('button')
+    pos = {str(k): v for k, v in (layout.get('pos') or {}).items()}
     res = _orig_play(self, tb, fast=fast, seed=seed, return_result=True)
     if _OUT is not None and isinstance(res, dict):
         log = res.get('full_log') or []
@@ -78,7 +80,7 @@ def _play_and_record(self, tb, fast=True, seed=None, return_result=False):
         rec = {
             'clock': round(clock, 3), 'table': tb.id, 'n': len(alive), 'level': level,
             'sb': sb, 'bb': bb, 'ante': bb if level >= self.fmt['ante_from'] else 0,
-            'button': button, 'seats': seats, 'before': before,
+            'button': button, 'pos': pos, 'seats': seats, 'before': before,
             'after': {pid: int(next(p['stack'] for p in alive if str(p['pid']) == pid))
                       for pid in before},
             'pot': res.get('pot'), 'how': res.get('how'), 'winners': res.get('winners'),
