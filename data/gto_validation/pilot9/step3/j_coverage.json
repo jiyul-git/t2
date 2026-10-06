@@ -1,0 +1,12 @@
+{
+ "flop_reach": 0.7346276083006409,
+ "terminals_without_parent_in_dump": 16684,
+ "share_of_flop_reach": {
+  "srp/hu": 0.23342148852341327,
+  "srp/mw": 0.5199721264996463,
+  "3bet/hu": 0.24105649290405576,
+  "3bet/mw": 0.00554989207288749
+ },
+ "solved_share": 0.46751373518167333,
+ "static_share": 0.5324862648183266
+}
