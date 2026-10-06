@@ -462,6 +462,18 @@ def book_view(d, pids):
             out[k] = {kk: copy.deepcopy(vv) for kk, vv in v.items() if kk != '_hand_hist'}
     return out
 
+def _json_keys(obj):
+    """JSON 은 튜플 키를 못 쓴다. 계획(h.plans)이 (좌석, ...) 튜플 키라서
+    예전에는 레이즈 팟이 플랍까지 간 핸드 기록이 직렬화에서 실패하고
+    아래 except 에 조용히 삼켜졌다(봇 로그의 약 28%). 키만 문자열로 바꾼다."""
+    if isinstance(obj, dict):
+        return {(k if isinstance(k, (str, int, float, bool)) or k is None
+                 else str(k)): _json_keys(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_keys(v) for v in obj]
+    return obj
+
+
 class Field:
     """전 테이블을 실제로 굴리는 필드."""
 
@@ -710,7 +722,7 @@ class Field:
             with open(_SP.path_for('bot_log', BOT_SUFFIX, D), 'a',
                       encoding='utf-8') as fp:
                 fp.write(json.dumps(
-                    rec, ensure_ascii=False, default=str) + '\n')
+                    _json_keys(rec), ensure_ascii=False, default=str) + '\n')
         except Exception:
             # Telemetry must never turn a valid poker hand into a failed hand.
             # A later round still carries field/player state even if this one
