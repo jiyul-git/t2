@@ -1,0 +1,162 @@
+{
+ "nodes": 595,
+ "missing_in_skip_dump": 0,
+ "min_reach": 0.0001,
+ "mix_max_abs_diff": 0.10488981056191453,
+ "mix_reach_weighted_mean_abs_diff": 0.0007678205851648469,
+ "class_weighted_max": 0.1334971372515085,
+ "worst": [
+  {
+   "line": [
+    "UTG:Raise 2",
+    "UTG+1:Fold",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Call 2",
+    "CO:Fold",
+    "BTN:Fold",
+    "SB:Fold"
+   ],
+   "reach_prob": 0.00021468503020417648,
+   "mix_max_abs_diff": 0.10488981056191453,
+   "class_reach_weighted_max_abs_diff": 0.1334971372515085
+  },
+  {
+   "line": [
+    "UTG:Raise 2",
+    "UTG+1:Fold",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Call 2",
+    "CO:Fold"
+   ],
+   "reach_prob": 0.00044674528820819263,
+   "mix_max_abs_diff": 0.05702545454744266,
+   "class_reach_weighted_max_abs_diff": 0.09640931032836021
+  },
+  {
+   "line": [
+    "UTG:Fold",
+    "UTG+1:Raise 2",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Fold",
+    "CO:Fold",
+    "BTN:Fold",
+    "SB:Call 2",
+    "BB:3-bet 8",
+    "UTG+1:Call 8"
+   ],
+   "reach_prob": 0.0022414498823770095,
+   "mix_max_abs_diff": 0.027305365040237672,
+   "class_reach_weighted_max_abs_diff": 0.018784298064692475
+  },
+  {
+   "line": [
+    "UTG:Fold",
+    "UTG+1:Raise 2",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Fold",
+    "CO:Fold",
+    "BTN:Fold",
+    "SB:Call 2",
+    "BB:3-bet 8",
+    "UTG+1:Fold"
+   ],
+   "reach_prob": 0.00010619081145337587,
+   "mix_max_abs_diff": 0.02662981575080353,
+   "class_reach_weighted_max_abs_diff": 0.02209090483169826
+  },
+  {
+   "line": [
+    "UTG:Raise 2",
+    "UTG+1:Fold",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Fold",
+    "CO:3-bet 6",
+    "BTN:Call 6",
+    "SB:Fold",
+    "BB:Fold"
+   ],
+   "reach_prob": 0.0005488776132179284,
+   "mix_max_abs_diff": 0.024712695414790375,
+   "class_reach_weighted_max_abs_diff": 0.024704851426926085
+  },
+  {
+   "line": [
+    "UTG:Raise 2",
+    "UTG+1:Fold",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Fold",
+    "CO:Fold",
+    "BTN:Call 2"
+   ],
+   "reach_prob": 0.002230911645892858,
+   "mix_max_abs_diff": 0.023065476519344652,
+   "class_reach_weighted_max_abs_diff": 0.07438361466820911
+  },
+  {
+   "line": [
+    "UTG:Raise 2",
+    "UTG+1:Fold",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Fold",
+    "CO:Fold",
+    "BTN:Call 2",
+    "SB:3-bet 8",
+    "BB:Fold",
+    "UTG:Call 8"
+   ],
+   "reach_prob": 0.00011557966747964484,
+   "mix_max_abs_diff": 0.0190763353704394,
+   "class_reach_weighted_max_abs_diff": 0.021097330157485373
+  },
+  {
+   "line": [
+    "UTG:Raise 2",
+    "UTG+1:Fold",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Call 2",
+    "CO:Fold",
+    "BTN:Fold"
+   ],
+   "reach_prob": 0.0003879253647971829,
+   "mix_max_abs_diff": 0.01824694500788354,
+   "class_reach_weighted_max_abs_diff": 0.11890647545261447
+  },
+  {
+   "line": [
+    "UTG:Raise 2",
+    "UTG+1:Fold",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Fold",
+    "CO:Fold",
+    "BTN:Call 2",
+    "SB:Fold"
+   ],
+   "reach_prob": 0.0013197885815118353,
+   "mix_max_abs_diff": 0.01739381807003597,
+   "class_reach_weighted_max_abs_diff": 0.04183294218138627
+  },
+  {
+   "line": [
+    "UTG:Fold",
+    "UTG+1:Raise 2",
+    "UTG+2:Fold",
+    "LJ:Fold",
+    "HJ:Fold",
+    "CO:Fold",
+    "BTN:Fold"
+   ],
+   "reach_prob": 0.0540347334610862,
+   "mix_max_abs_diff": 0.01554267021704725,
+   "class_reach_weighted_max_abs_diff": 0.042142756845553686
+  }
+ ]
+}

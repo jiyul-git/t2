@@ -42,3 +42,14 @@ J = 100 iterations, same seeds, same 33 tables re-keyed by line. Data: `data/gto
 - Next (efficiency): an exact heads-up spot solver (two-player zero-sum subgame from a node with the arriving ranges, solved
   continuation tables, exact all-ins) with measured exploitability — it verifies the HU-continuation spot families, serves as G6(a),
   and is the extractor's fast on-demand fallback.
+
+## Solver speed (2026-10-06)
+- Profile from the J checkpoint: 427 s per iteration, 99% in multiway pot-share terminals (5+-way 65%). Late iterations evaluate
+  ~6x more 5+-way terminals than iteration 1 (lines with tiny but non-zero reach).
+- New option `PREFLOP_MW_SKIP_BELOW` (default 0 = exact, unchanged): a multiway terminal whose other-seat reach product is below the
+  threshold returns 0 (error per class <= threshold x pot). One J iteration (machine shared with the spot pipeline):
+  exact 674 s, 1e-9: 36 s, 1e-7: 16 s.
+- Validation of 1e-9 on the mr2 tree (T re-solved from scratch, 100 it, same tables / seeds, compared node by node with the exact T
+  solve; data/gto_validation/pilot9/speed/): reach-weighted mean |delta mix| 0.08 pp; max |delta mix| 1.55 pp over nodes with reach
+  >= 1e-2, 2.7 pp over >= 1e-3, 10.5 pp at one cold-call node with reach 2e-4; gap 0.0107 vs 0.0118 exact.
+  Adopted for full-tree solves as a declared, bounded approximation (records carry `mw_skip_below = 1e-9`); spot solves are exact.
