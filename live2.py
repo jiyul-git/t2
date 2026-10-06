@@ -372,7 +372,13 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
 
     첫 탈락 또는 hand-for-hand 지점에서 멈춘다. 그 지점 이후에는 테이블 이동/
     전역 remaining 문맥이 달라질 수 있으므로 임시 결과를 만들지 않는다.
+
+    hybrid 대회에서 사람이 앉지 않은 테이블은 coarse_sim(통계 진행)이 같은 계약으로 대신한다.
     """
+    import coarse_sim as _CS
+    if _CS.use_coarse(mini, tid):
+        return _CS.coarse_table_task(mini, tid, target_seconds, session_end, frozen,
+                                     base_suffix, h4h_mode, max_hands)
     f = _load_field(_copy_field(mini))
     f.notes = []
     tid = int(tid)

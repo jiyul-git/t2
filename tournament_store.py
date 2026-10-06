@@ -16,6 +16,12 @@ import personal_data as PD
 from table import BLINDS
 
 PLAYER = 'hero'
+
+
+def FIELD_BACKEND():
+    """새 대회의 봇 필드 진행 방식. real(기본) | hybrid(관찰되지 않는 테이블은 coarse_sim)."""
+    v = os.environ.get('T2_FIELD_BACKEND', 'real').strip().lower()
+    return v if v in ('real', 'hybrid') else 'real'
 LEGACY_SCHEDULE = [
     dict(fmt='standard', minute=0, buyin=1000, bot_entries=99,
          late_minutes=60, max_reentries=2),
@@ -222,7 +228,9 @@ class Store:
                                  level_minutes=FM.level_minutes(spec['fmt']),
                                  itm_frac=fmt['itm_frac'], payout_flat=fmt['payout_flat'],
                                  reentry=spec['max_reentries'] > 0,
-                                 seed=int.from_bytes(hashlib.sha256(key.encode()).digest()[:4], 'big'))
+                                 seed=int.from_bytes(hashlib.sha256(key.encode()).digest()[:4], 'big'),
+                                 # 진행 방식은 대회 생성 때 고정한다(OBSERVED_FIELD_DESIGN §4).
+                                 field_backend=FIELD_BACKEND())
                     db.execute('INSERT OR IGNORE INTO tournaments(id,starts_at,closes_at,rules) '
                                'VALUES (?,?,?,?)',
                                (key, start, start + spec['late_minutes'] * 60, json.dumps(rules)))

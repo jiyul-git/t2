@@ -214,7 +214,8 @@ def advance(event, target, budget=18, parallel=True):
         f = FS.Field(entries=rules['bot_entries'], start_stack=rules['start_stack'],
                      hero_pid=-1, seed=rules['seed'], fmt=rules['fmt'],
                      hands_per_level=FM.get(rules['fmt'])['hpl'], itm_frac=rules['itm_frac'],
-                     format_rules={'seats': 9, 'reentry': rules['reentry']})
+                     format_rules={'seats': 9, 'reentry': rules['reentry'],
+                                   'field_backend': rules.get('field_backend', 'real')})
         f.virtual_play_seconds = 0.0
         f.level_minutes = rules['level_minutes']
         f.sitout_pids = set()
