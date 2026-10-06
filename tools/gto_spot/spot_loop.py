@@ -30,7 +30,7 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 PANEL = os.path.join(ROOT, 'data/gto_hu_continuation/panel_v1.json')
 MENU = os.path.join(ROOT, 'data/gto_hu_continuation/menu_m2_single_v1.json')
 ALPHA = 0.5
-MAX_STEPS = 3
+MAX_STEPS = 8   # rule v2 (standard amendment 1)
 
 
 def atomic(o, p):
@@ -172,12 +172,20 @@ class Loop:
                        'value_convention': 'gross_share', 'zero_reach_definition': 'eps_tremble_avg', 'seats': [],
                        'se': {pos: se[pos] for pos in se},
                        'provenance': {'kind': f'spot {self.spec["id"]} step {k}', 'raw_from': fd}}
+                # rule v2: undamped when every seat's signed change keeps the sign of the previous step (monotone drift)
+                prev_rep = self.dir + f'step{k - 1}/report.json'
+                alpha = ALPHA
+                if os.path.exists(prev_rep) and all(seats[p]['signed'] is not None for p in seats):
+                    pr = json.load(open(prev_rep))['terminals'].get(line, {}).get('seats', {})
+                    if pr and all(pr.get(p, {}).get('signed') is not None and pr[p]['signed'] * seats[p]['signed'] > 0 for p in seats):
+                        alpha = 1.0
+                rep['terminals'][line]['alpha'] = alpha
                 for pl in tj['players']:
                     pos = pl['position']
                     r = np.array(raw[pos])
                     if cur is not None and cur.get('provenance', {}).get('kind', '').startswith('spot'):
                         g = {s['position']: np.array(s['gross']) for s in cur['seats']}[pos]
-                        r = (1 - ALPHA) * g + ALPHA * r
+                        r = (1 - alpha) * g + alpha * r
                     tab['seats'].append({'seat': pl['seat'], 'position': pos, 'gross': r.tolist()})
                 new_tables[line] = tab
             all_pass = all(s['pass'] for t in rep['terminals'].values() for s in t['seats'].values())

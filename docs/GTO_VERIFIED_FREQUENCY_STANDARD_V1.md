@@ -38,3 +38,12 @@ G6 Independent checks (spot sample, must pass before the first verified release)
 - One-pass whole-tree export (all action nodes above a reach threshold, strategy + action EVs) instead of per-path exports.
 - Solver speed work (iteration time grew 73 s -> ~390 s on the mr3 tree) before any further multi-hour solve loop.
 - 3-way: measure s(spot) first; work on 3-way values only where it blocks high-traffic spots.
+
+## Amendment 1 (2026-10-06, before any step >= 3 of any spot): spot local outer loop rule v2
+Observed on j30_utg_open_bb (steps 0-2, rule v1 alpha 0.5 / max 3 steps): the SRP terminal converged (D 0.02-0.03 << U), the
+BB-3-bet-pot terminal drifted monotonically (BB signed change -2.45 then -2.10 bb, U 0.5) after its 3-bet range grew from 20 to
+~100 combos; v1 stopped "not converged". Rule v2 for every spot step >= 3 (and all steps of spots not yet started):
+- per terminal: alpha = 1.0 (undamped) when every seat's signed change has the same sign as at the previous step (monotone drift),
+  else alpha = 0.5;
+- at most 8 steps (k = 0..7); stop when every terminal-seat has D <= U (k >= 1), as before.
+- G3 for a spot = converged under v2. The v1 verdict of j30_utg_open_bb is kept in its step-2 report.
