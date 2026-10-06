@@ -237,3 +237,7 @@ required-features = ["preflop-research"]
 [[example]]
 name = "continuation_orbit_memory"
 required-features = ["preflop-research"]
+
+[[example]]
+name = "t2_tree_dump"
+required-features = ["t2-cont"]

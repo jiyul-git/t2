@@ -244,3 +244,94 @@ impl super::PreflopSolver {
     }
 }
 
+
+/// One recorded decision node of `t2_tree_values` (read-only export, seat p's own nodes).
+pub struct T2NodeRecord {
+    pub node: usize,
+    pub path: Vec<usize>,
+    pub actor: usize,
+    /// product of every seat's reach mass at the node (probability the node is reached)
+    pub reach_prob: f64,
+    /// product of the other seats' reach masses (the EV normaliser)
+    pub others_prob: f64,
+    /// actor's class reach at the node (average strategy, combos / 1326 x action probabilities)
+    pub actor_reach: Vec<f32>,
+    /// average strategy, action-major [a * 169 + h]
+    pub sigma: Vec<f32>,
+    /// per action, per class EV given the node is reached (bb, net of investment), as t2_action_values
+    pub ev: Vec<Vec<f64>>,
+}
+
+impl super::PreflopSolver {
+    /// Read-only whole-tree export for seat `p`: one average-strategy traversal recording, at every node where `p`
+    /// acts and the node's reach probability is >= `min_reach`, the average strategy and the per-action class EVs
+    /// (same definition as `t2_action_values`: counterfactual value / other seats' reach product). Sequential.
+    pub fn t2_tree_values(&self, p: usize, min_reach: f64) -> Vec<T2NodeRecord> {
+        let mut out = Vec::new();
+        let mut reaches = self.root_reaches();
+        let mut path = Vec::new();
+        self.t2_tv_rec(0, p, &mut reaches, &mut path, min_reach, &mut out);
+        out
+    }
+
+    fn t2_tv_rec(&self, node: usize, p: usize, reaches: &mut Vec<Vec<f32>>, path: &mut Vec<usize>, min_reach: f64,
+                 out: &mut Vec<T2NodeRecord>) -> Vec<f32> {
+        let nc = super::NUM_CLASSES;
+        let nd = &self.nodes[node];
+        if nd.kind != super::KIND_ACTION {
+            let mut v = vec![0f32; nc];
+            self.terminal_value(node, p, reaches, &mut v);
+            return v;
+        }
+        let others: f64 = (0..self.n).filter(|&q| q != p).map(|q| reaches[q].iter().map(|&x| x as f64).sum::<f64>()).product();
+        if others <= 0.0 {
+            return vec![0f32; nc];
+        }
+        let actor = nd.actor as usize;
+        let na = nd.actions.len();
+        let sigma = match self.forced_sigma(node) {
+            Some(f) => f,
+            None => self.average_strategy(node),
+        };
+        let saved = reaches[actor].clone();
+        let mut vals: Vec<Vec<f32>> = Vec::with_capacity(na);
+        for a in 0..na {
+            for h in 0..nc {
+                reaches[actor][h] = saved[h] * sigma[a * nc + h];
+            }
+            path.push(a);
+            let child = self.children[nd.child_start as usize + a] as usize;
+            vals.push(self.t2_tv_rec(child, p, reaches, path, min_reach, out));
+            path.pop();
+        }
+        reaches[actor].copy_from_slice(&saved);
+        let mut res = vec![0f32; nc];
+        if actor == p {
+            for h in 0..nc {
+                let mut v = 0f32;
+                for (a, va) in vals.iter().enumerate() {
+                    v += sigma[a * nc + h] * va[h];
+                }
+                res[h] = v;
+            }
+            let mass: f64 = saved.iter().map(|&x| x as f64).sum();
+            let reach_prob = others * mass;
+            if reach_prob >= min_reach {
+                out.push(T2NodeRecord {
+                    node, path: path.clone(), actor, reach_prob, others_prob: others, actor_reach: saved.clone(),
+                    sigma: sigma.clone(),
+                    ev: vals.iter().map(|va| va.iter().map(|&x| x as f64 / others).collect()).collect(),
+                });
+            }
+        } else {
+            for h in 0..nc {
+                let mut v = 0f32;
+                for va in vals.iter() {
+                    v += va[h];
+                }
+                res[h] = v;
+            }
+        }
+        res
+    }
+}

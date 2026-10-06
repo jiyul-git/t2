@@ -4,7 +4,7 @@
 //!       <config.json> <iterations> [gap_every] [save_path]
 //!
 //! Env: PREFLOP_EQ_SAMPLES (default 1200), PREFLOP_EQ_SEED, PREFLOP_MULTIWAY_SEED,
-//!      SOLVER_THREADS, T2_ESTIMATE_ONLY=1 (tree size only).
+//!      SOLVER_THREADS, T2_ESTIMATE_ONLY=1 (tree size only), T2_LOAD=<save.gtop> (start from a checkpoint).
 //! Prints one JSON object on the last line.
 use solver::preflop::equity::EquityTable;
 use solver::preflop::multiway::CoupledDeck;
@@ -118,7 +118,11 @@ fn main() {
     let _deck = CoupledDeck::shared();
     let multiway_build_ms = ms(t);
     let t = Instant::now();
-    let mut s = PreflopSolver::new(cfg, eq.clone()).expect("solver");
+    // T2_LOAD=<save.gtop>: continue from a checkpoint (iteration timing at a converged state); default: fresh solver
+    let mut s = match std::env::var("T2_LOAD") {
+        Ok(p) => PreflopSolver::load_game(&p, eq.clone()).expect("load"),
+        Err(_) => PreflopSolver::new(cfg, eq.clone()).expect("solver"),
+    };
     let tree_build_ms = ms(t);
     if let Ok(m) = std::env::var("T2_MW_MODEL") {
         s.set_multiway_equity_model(&m).expect("multiway model");
