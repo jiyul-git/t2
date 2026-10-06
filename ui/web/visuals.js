@@ -1,17 +1,17 @@
 /* Presentation only: stable portraits and bounded gaze, independent of game RNG. */
 (function (root) {
   'use strict';
-  // Atlas crops and eye centers in source pixels. Eyes remain separate from the art.
+  // Static portraits; eye centers use each extracted image's local pixels.
   const portraits = [
-    {crop:[0,0,432,440], eyes:[[151,283],[293,283]]},
-    {crop:[439,0,396,440], eyes:[[557,282],[694,282]]},
-    {crop:[855,0,390,440], eyes:[[976,282],[1112,282]]},
-    {crop:[15,440,405,390], eyes:[[145,651],[296,651]]},
-    {crop:[444,440,370,390], eyes:[[553,667],[696,667]]},
-    {crop:[867,440,358,390], eyes:[[975,676],[1111,676]]},
-    {crop:[15,828,405,382], eyes:[[137,1012],[305,1012]]},
-    {crop:[431,828,395,382], eyes:[[550,1038],[702,1038]]},
-    {crop:[855,828,382,382], eyes:[[957,1024],[1126,1024]]}
+    {size:[433,410], eyes:[[142,246],[284,246]]},
+    {size:[395,367], eyes:[[108,201],[246,200]]},
+    {size:[375,408], eyes:[[106,243],[244,242]]},
+    {size:[405,345], eyes:[[123,164],[281,163]]},
+    {size:[365,394], eyes:[[108,227],[255,226]]},
+    {size:[341,399], eyes:[[100,237],[240,237]]},
+    {size:[398,367], eyes:[[111,172],[286,171]]},
+    {size:[406,382], eyes:[[126,212],[280,212]]},
+    {size:[385,329], eyes:[[110,141],[281,141]]}
   ];
   function portraitIndex(pid) {
     const n = Number(pid);
@@ -50,12 +50,12 @@
   const tablePortraits = createTableAllocator();
   function avatarHTML(pid) {
     const index = portraitIndex(pid), p = portraits[index];
-    const [x,y,w,h] = p.crop;
+    const [w,h] = p.size;
     const eyes = p.eyes.map(([ex,ey]) =>
-      '<i class="portrait-pupil" style="left:'+((ex-x)/w*100)+'%;top:'+((ey-y)/h*100)+'%;width:'+(28/w*100)+'%;height:'+(32/h*100)+'%"></i>'
+      '<i class="portrait-pupil" style="left:'+(ex/w*100)+'%;top:'+(ey/h*100)+'%;width:'+(28/w*100)+'%;height:'+(32/h*100)+'%"></i>'
     ).join('');
     return '<span class="portrait" data-portrait="'+index+'" aria-hidden="true" style="aspect-ratio:'+w+'/'+h+'">'+
-      '<img draggable="false" alt="" src="assets/portraits.png" style="width:'+(1254/w*100)+'%;left:'+(-x/w*100)+'%;top:'+(-y/h*100)+'%">'+eyes+'</span>';
+      '<img draggable="false" alt="" src="assets/portraits/'+String(index+1).padStart(2,'0')+'.png" style="width:100%;left:0;top:0">'+eyes+'</span>';
   }
   function updateGaze() {
     const felt = document.getElementById('felt');
