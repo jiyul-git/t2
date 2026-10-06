@@ -257,108 +257,69 @@ else:
 즉 +2를 넘는 예외는 남기되, 멀리 벗어날수록 추가 이득이 급격히 줄어든다.
 
 
-## v5 초안: 남은 개념의 난이도·선후행 + 분할 개념 2단계 (2026-10-06, **제안 — 승인 전, 코드 없음**)
 
-v1~v4 는 생성 개념 37개 중 20개만 다룬다. 남은 17개와, 의미만 나눠 둔 분할 키 11개(지금은 부모 값으로
-fallback)를 같은 구조에 넣는다. 아래 수치는 모두 제안값이며 사용자 승인 후에만 적용한다.
+## v5 초안: 표에 없는 개념 17개의 난이도·선후행 (2026-10-06, **제안 — 승인 전, 코드 없음**)
 
-### v5-1. 난이도 추가 (기존 20개 값은 그대로)
+### 출발점 (다시 확인)
 
-| 개념 | 난이도 | 근거(기존 base·loading 과 의미) |
-|---|---:|---|
-| bluff | 3.5 | 블러프 자체는 직관적. base 4.2 |
-| fold_equity | 4.0 | 상대가 접을지 판단. base 4.1 |
-| reraise | 5.0 | 프리플랍 재레이즈. base 3.4, aggro 의존 큼 |
-| pf_defend | 4.5 | 디펜스 차트. base 4.0 |
-| semibluff | 4.5 | 아웃+폴드에퀴티 결합. base 4.4 |
-| spr | 5.0 | 계산은 단순하나 활용이 학습 필요. base 4.0 |
-| stackoff | 5.5 | SPR·팟오즈 기반 스택오프 판단. base 3.8 |
-| checkraise_flop | 5.5 | base 4.2 |
-| bluffcatch_flop (분할) | 5.0 | early 의 플랍 몫 |
-| bluffcatch_turn (분할) | 6.0 | early 의 턴 몫 |
-| bluffcatch_river | 7.0 | base 3.3, study 0.75 |
-| thin_value_flop (분할) | 5.0 | range_merge 를 빌리던 플랍 얇은 밸류 |
-| thin_value_turn | 6.0 | base 4.1 |
-| thin_value_river | 7.0 | base 3.0, study 0.80 |
-| blockbet | 6.0 | base 3.6 |
-| equity_denial | 6.0 | base 3.5 |
-| range_merge | 6.5 | 턴·리버 재계획 머징. base 3.2 |
-| checkraise_turn (분할) | 6.5 | 세미블러프 중심 |
-| checkraise_river (분할) | 7.5 | 드로우 없음, 밸류/블러프 분리 판단 |
-| overbet | 7.0 | base 3.2 |
-| pf_threebet (분할) | 5.0 | 독립 3벳 숙련 |
-| iso_raise (분할) | 4.5 | 림프 상대 아이솔 폭 |
-| limp_theory (분할) | 6.0 | 숏스택 이론 림프 |
-| range_reconstruction (분할) | 7.0 | 액션으로 레인지 복원 |
-| line_interpretation (분할) | 7.5 | 라인 의미 해석 |
-| read_application (분할) | 8.0 | 읽은 근거를 판단에 반영 |
+"각 개념 숙련도가 독립적으로 튀면, 고급 개념은 잘 아는데 그걸 떠받치는 기초 개념은 전혀 모르는 이상한
+플레이어가 생긴다 → **정말 관계 있는 개념에만** 선후행 필터를 건다."
+- 연관만 있다고 묶지 않는다(positional → pf_range 를 뺀 이유: 이론 없이도 차트는 외운다).
+- 필수 선행(hard)은 "앞 개념 없이는 뒤 개념을 배우기 어려운" 경우만. 지금은 c벳 계열 3쌍뿐이다.
+- 이 필터는 persona 의 숙련도 생성·조정이다. ranges.py 의 상대 레인지 컷오프와 무관하다.
+- 분할 키(checkraise_turn 등)의 독립 생성은 이 작업이 아니다 — CONCEPT_SPLIT_TODO 의 phase 2 로 따로 다룬다.
 
-`checkraise_late`, `bluffcatch_early`, `range_read` 는 분할 후에도 남는 소비처(미분류 2곳, 호환 fallback)가 있어 기존 값을 유지한다.
-고숙련 압축(v3) 대상에 `range_reconstruction`, `line_interpretation`, `read_application`, `checkraise_river`, `bluffcatch_river` 를 추가한다.
+지금 v1~v4 는 생성 개념 37개 중 20개만 다룬다. 남은 17개를 같은 원칙으로 채운다.
 
-### v5-2. 선후행 추가 (H = 필수에 가까운 선행, L = 학습 도움 선행)
+### v5-1. 난이도 (기존 20개 값은 그대로)
+
+| 개념 | 난이도 | 개념 | 난이도 |
+|---|---:|---|---:|
+| bluff | 3.5 | thin_value_turn | 6.0 |
+| fold_equity | 4.0 | blockbet | 6.0 |
+| semibluff | 4.5 | equity_denial | 6.0 |
+| pf_defend | 4.5 | range_merge | 6.5 |
+| bluffcatch_early | 5.0 | checkraise_late | 6.5 |
+| reraise | 5.0 | bluffcatch_river | 7.0 |
+| spr | 5.0 | thin_value_river | 7.0 |
+| stackoff | 5.5 | overbet | 7.0 |
+| checkraise_flop | 5.5 | | |
+
+난이도는 평균을 정하지 않고 낮은 학습량에서의 비현실적 고숙련 꼬리만 자른다(v2 방식 그대로).
+
+### v5-2. 학습 도움 선행 (L, 평균 +3.0 자유 / tail 2.0)
+
+뒤 개념이 앞 개념을 **문자 그대로 재료로 쓰는** 경우만 넣었다.
 
 ```
-H  outs -> semibluff
-H  bluffcatch_flop -> bluffcatch_turn
-H  range_reconstruction -> line_interpretation -> read_application
-H  checkraise_flop -> checkraise_turn
-L  positional + board_texture -> bluff
-L  board_texture + positional -> fold_equity
-L  pf_range + positional -> reraise
-L  pf_range + potodds -> pf_defend
-L  pf_range + positional + pf_defend -> pf_threebet
-L  pf_range + positional -> iso_raise
-L  pf_range + stack_decay -> limp_theory
-L  potodds -> spr
-L  potodds + spr -> stackoff
-L  semibluff + board_texture -> checkraise_flop
-L  semibluff + range_reconstruction -> checkraise_turn
-L  checkraise_turn + line_interpretation -> checkraise_river
-L  potodds + range_reconstruction -> bluffcatch_flop
-L  bluffcatch_turn + line_interpretation + blocker -> bluffcatch_river
-L  board_texture + range_reconstruction -> thin_value_flop
-L  thin_value_flop + range_reconstruction -> thin_value_turn
-L  thin_value_turn + line_interpretation -> thin_value_river
-L  potcontrol + sizing_tell -> blockbet
-L  board_texture + outs + fold_equity -> equity_denial
-L  thin_value_turn + range_reconstruction -> range_merge
-L  range_reconstruction + board_texture + blocker -> overbet
-L  pf_range + positional + board_texture + sizing_tell -> range_reconstruction   (기존 range_read 관계를 이어받음)
+L  outs + fold_equity            -> semibluff        (세미블러프 = 드로우 에퀴티 + 폴드 에퀴티)
+L  outs + fold_equity            -> equity_denial
+L  potodds + spr                 -> stackoff
+L  potodds                       -> bluffcatch_early
+L  potodds + range_read          -> bluffcatch_river
+L  range_read + board_texture    -> thin_value_river
+L  range_read + board_texture    -> overbet          (폴라라이즈는 레인지 우위 이해가 재료)
+L  potcontrol + sizing_tell      -> blockbet
 ```
 
-기존 v2 관계 중 `range_read` 를 선행으로 쓰던 것(probe, trap, barrel_river)은 분할 후 `range_reconstruction` 으로 바꾼다.
-여유 격차·압축(v4)은 그대로: H +2.0/tail 1.0, L 평균 +3.0/tail 2.0.
+묶지 않은 것과 이유:
+- bluff, fold_equity, spr, reraise: 기초이거나 독립적으로 익힌다.
+- pf_defend: pf_range 와 같은 차트 암기 계열. positional → pf_range 를 뺀 이유와 같다.
+- checkraise_flop, thin_value_turn, range_merge: 관련 개념은 많지만 특정 선행 없이는 못 배운다고 보기 어렵다.
 
-### v5-3. 분할 키의 독립 생성 방식
+### v5-3. 필수 선행(hard) 후보 — **기본은 추가하지 않음, 사용자 판단 요청**
 
-지금 분할 키 11개는 값이 없어 부모 개념으로 fallback 한다. 독립 생성은 다음처럼 한다.
+c벳 계열과 같은 "스트리트를 이어 가는 같은 기술"인지가 기준이다.
 
-```
-child_raw = parent + offset + sigma * z      z ~ N(0,1) — pid 로 시드한 별도 결정적 난수(money_jump 와 같은 방식)
-```
-
-- 공유 RNG 를 쓰지 않으므로 기존 37개 개념 값과 기질 값은 한 비트도 바뀌지 않는다.
-- 부모와 강하게 상관(같은 사람이 대체로 둘 다 잘함)하되 스트리트·역할별 차이를 둔다.
-- 그 뒤 v5-1 난이도 cap → v5-2 선후행 → v3 고숙련 압축을 기존 적용 순서대로 거친다.
-
-| 분할 키 | 부모 | offset | sigma | 의미 |
-|---|---|---:|---:|---|
-| checkraise_turn | checkraise_late | +0.3 | 0.8 | 턴은 드로우가 있어 조금 쉬움 |
-| checkraise_river | checkraise_late | −0.3 | 0.8 | 리버는 더 어려움 |
-| bluffcatch_flop | bluffcatch_early | +0.3 | 0.7 | |
-| bluffcatch_turn | bluffcatch_early | −0.2 | 0.7 | |
-| thin_value_flop | range_merge | +0.4 | 0.9 | 플랍 얇은 밸류가 턴·리버 머징보다 흔함 |
-| pf_threebet | pf_defend | −0.2 | 1.0 | 디펜스 차트와 3벳 판단은 상당히 다름 |
-| limp_theory | pf_range | −1.0 | 1.2 | 아는 사람이 드묾 |
-| iso_raise | pf_range | 0.0 | 0.9 | |
-| range_reconstruction | range_read | +0.2 | 0.7 | |
-| line_interpretation | range_read | 0.0 | 0.8 | |
-| read_application | range_read | −0.3 | 0.9 | 아는 것과 쓰는 것의 차이 |
+| 후보 | 찬성 근거 | 반대 근거 |
+|---|---|---|
+| checkraise_flop → checkraise_late | cbet_flop → barrel_turn 과 같은 구조(플랍 기술을 턴·리버로 확장) | 턴·리버 체크레이즈는 드로우·리버 판단이 달라 따로 익힐 수 있음 |
+| bluffcatch_early → bluffcatch_river | 앞 스트리트에서 블러프캐치를 못 하면 리버까지 갈 일이 적음 | 리버만 따로 콜다운 감각이 있는 사람도 흔함 |
+| outs → semibluff | 아웃을 모르면 세미블러프가 아님 | 감으로 드로우를 세게 치는 사람은 아웃을 몰라도 있음 → L 로 충분 |
 
 ### v5-4. 영향과 검증
 
-- 행동 변화: 분할 키를 읽는 소비처(문서 CONCEPT_SPLIT_TODO 의 표)만 바뀐다. R2 기준선(e04c7e88/6dc97c62)은
-  바뀌므로 새 기준선을 사용자 승인으로 다시 봉인한다.
-- 검증: 모든 생성 플레이어가 H 관계를 v4 압축 범위 안에서 만족, 기존 37개 개념·기질 값 불변(같은 시드),
-  새 키 분포(평균·분산·부모 상관), 개념별 7점 이상 비율 1,000명 감사, 소비처별 행동 변화 측정.
+- 기존 개념 값 생성 순서·난수는 그대로이고, 새 cap 에 걸리는 표본만 아래로 압축된다(v4 방식).
+  R2 기준선은 바뀔 수 있으므로 측정 후 사용자 승인으로 다시 봉인한다.
+- 검증: 모든 플레이어가 새 관계를 v4 압축 범위 안에서 만족, 선행이 높고 후행이 낮은 조합은 그대로 허용,
+  1,000명 감사(개념별 평균 변화, 7점 이상 비율), cap 에 걸린 표본 비율, 행동 지문 변화.
