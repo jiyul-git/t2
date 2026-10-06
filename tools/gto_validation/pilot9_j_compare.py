@@ -25,9 +25,55 @@ def mixd(p):
     return out
 
 
+DUMPS = {'J': R_ + 'step3/j/J_dump.jsonl'}
+_dump_cache = {}
+LABELS = None
+
+
+def _kind(label):
+    return 'fold' if label == 'Fold' else 'check' if label == 'Check' else 'call' if label.startswith('Call') else \
+        'jam' if label.startswith('All-in') else 'raise'
+
+
+def _from_dump(state, name):
+    """export-like view of one path built from the whole-tree dump (t2_tree_dump, gated exact vs t2_action_values):
+    path_nodes with actor, actions, mix (= sum_h r[h] sigma[a][h] / sum_h r[h], the export's formula), class_reach_before,
+    class_strategy. Used only when the per-path export is missing."""
+    if state not in DUMPS or not os.path.exists(DUMPS[state]):
+        return None
+    if state not in _dump_cache:
+        _dump_cache[state] = {tuple(r['path']): r for r in map(json.loads, open(DUMPS[state]))}
+    d = _dump_cache[state]
+    spec = {s['name']: s['spec'] for s in SEL}
+    spec.update(SRP)
+    spec.update({s['name'] + '_jam': s['spec'].rsplit(',', 1)[0] + ',jam,call' for s in SEL})
+    if name not in spec:
+        return None
+    path, pns = (), []
+    for kind in spec[name].split(','):
+        r = d.get(path)
+        if r is None:
+            return None
+        cands = [(float(l.split()[-1]) if kind != 'fold' and kind != 'check' else 0.0, i) for i, l in enumerate(r['actions']) if _kind(l) == kind]
+        if not cands:
+            return None
+        i = min(cands)[1]
+        m0 = sum(r['actor_reach'])
+        mix = {l: sum(r['actor_reach'][h] * r['sigma'][a][h] for h in range(169)) / m0 for a, l in enumerate(r['actions'])}
+        pns.append({'actor': r['actor'], 'actions': r['actions'], 'mix': mix, 'class_reach_before': r['actor_reach'],
+                    'class_strategy': r['sigma'], 'node': r['node']})
+        path = path + (i,)
+    return {'path_nodes': pns, 'terminal_node': -1, 'class_labels': LABELS, 'source': 'dump'}
+
+
 def load(state, name):
+    global LABELS
     f = DIRS[state] + f'export_{name}.json'
-    return json.load(open(f)) if os.path.exists(f) else None
+    if os.path.exists(f) and os.environ.get('J_FORCE_DUMP') != '1':
+        return json.load(open(f))
+    if LABELS is None:
+        LABELS = json.load(open(DIRS['T2'] + 'export_btn.json'))['class_labels']
+    return _from_dump(state, name)
 
 
 def m4(state):
