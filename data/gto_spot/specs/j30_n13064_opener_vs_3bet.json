@@ -1,0 +1,20 @@
+{
+ "config": "/home/user/gto_ckpt/step3/j/cfg_mr3_jam.json",
+ "dump": "/home/user/gto_ckpt/step3/j/J_dump.jsonl",
+ "tables_dir": "/home/user/gto_ckpt/step3/j/mr3_resolved",
+ "equity": "/home/user/gto_ckpt/step3/eq_table_202_1200.json",
+ "iterations": 3000,
+ "id": "j30_n13064_opener_vs_3bet",
+ "root_line": [
+  "UTG:Fold",
+  "UTG+1:Raise 2",
+  "UTG+2:Fold",
+  "LJ:3-bet 6",
+  "HJ:Fold",
+  "CO:Fold",
+  "BTN:Fold",
+  "SB:Fold",
+  "BB:Fold"
+ ],
+ "out": "/home/user/gto_ckpt/spots/j30_n13064_opener_vs_3bet/spot.json"
+}
