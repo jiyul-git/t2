@@ -6,7 +6,7 @@ R=/home/user/gto_ckpt
 J=$R/step3/j
 B=/home/user/t2/vendor/gtopen/target/release/examples
 T=/home/user/t2/tools/gto_validation
-export PREFLOP_EQ_SEED=202 PREFLOP_MULTIWAY_SEED=202 PREFLOP_EQ_SAMPLES=1200 T2_CHECKPOINT_EVERY=10 PREFLOP_MAX_NODES=40000000
+export PREFLOP_EQ_SEED=202 PREFLOP_MULTIWAY_SEED=202 PREFLOP_EQ_SAMPLES=1200 T2_CHECKPOINT_EVERY=2 PREFLOP_MAX_NODES=40000000
 python3 -c "import json,sys; sys.exit(0 if json.load(open('/home/user/t2/data/gto_validation/pilot9/step3/j_gate.json'))['pass'] else 1)" || { echo "gate not passed"; exit 1; }
 SRP="btn:fold,fold,fold,fold,fold,fold,raise,fold,call co:fold,fold,fold,fold,fold,raise,fold,fold,call hj:fold,fold,fold,fold,raise,fold,fold,fold,call utg:raise,fold,fold,fold,fold,fold,fold,fold,call sb:fold,fold,fold,fold,fold,fold,fold,raise,call lj:fold,fold,fold,raise,fold,fold,fold,fold,call utg2:fold,fold,raise,fold,fold,fold,fold,fold,call utg1:fold,raise,fold,fold,fold,fold,fold,fold,call"
 TB=$(python3 $T/pilot9_t3.py specs)
