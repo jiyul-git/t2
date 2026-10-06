@@ -1407,15 +1407,26 @@ def range_claim_anchor(profile, hero, board, my_range, p_old):
             'hand_target': round(tgt, 4), 'w': round(w, 3)}
 
 
-# ---------- 리버 블러프 기준선 (FLOP_CLAIM_BASELINE.md 10절, 2026-10-07) ----------
-# 리버 벳 레인지의 진짜:가짜 ≈ 7:3(사용자, '얼추'). 가짜는 좋은 후보부터 채운다:
-# 쇼다운 가치가 없고, 콜할 손을 막고, 접을 손은 막지 않는 손(블로커 순효과 +).
-# 예전에는 bluff_2street 이 플랍·턴에 예산을 다 써 리버 사이즈가 0 → 최선의 후보
-# (Q♥8♥4♣2♠K♦ 에서 J♠T♠)가 10% 만 쳤고, 블로커 순효과가 빈도에 거의 반영되지 않았다.
-# 쇼다운 계획은 건드리지 않는다(베타 A #3). 마지막 공격자, HU, 첫 액션/체크 받음만.
+# ---------- 리버 블러프 기준선 v2 (FLOP_CLAIM_BASELINE.md 10절, 2026-10-07) ----------
+# 주장(이야기)마다 진짜:가짜 비율을 맞춘다. 그 비율은 벳 사이즈가 정한다 —
+# 상대가 콜/폴드에 무차별해지는 가짜 비율 = s/(1+2s)
+#   1/3팟 20%(8:2), 팟 33%(7:3, 사용자 기준), 1.5배 38%(6:4, '넓힐 수도').
+# 리버가 새 오버카드(예 Q84 2 → K)면 이야기가 둘이다.
+#   새 카드 주장(K): 진짜 = 그 랭크를 가진 손. 크게(팟, 스택이 모자라면 올인) 폴라.
+#   기존 탑 주장(Q): 진짜 = 기존 탑 페어 좋은 키커(J+)·그 이상. 작게(1/3), 리스크 적음.
+# 오버카드가 아니면 이야기 하나(리버 밸류 전체), 2/3팟.
+# 가짜 후보(메이드 없는 손)에 이야기별 가짜 수를 나눠 준다. 블로커 순효과가 +면
+# 큰 이야기, 아니면 작은 이야기로 간다. 블러프 리스크(스택 대비 벳)가 크면
+# 신중한 성향(규율 높고 도박성 낮음)은 덜 친다. 쇼다운 계획은 건드리지 않는다(베타 A #3).
 RIVER_BLUFF_ANCHOR = True
-_RB_RATIO = 3.0 / 7.0
 _RB_CACHE = {}
+_RB_BIG, _RB_SMALL, _RB_SINGLE = 1.0, 0.33, 0.67
+
+
+def bluff_share_for_size(s):
+    """사이즈 s(팟 대비)에서 벳 레인지 안 가짜 비율 s/(1+2s)."""
+    s = max(0.05, float(s))
+    return s / (1.0 + 2.0*s)
 
 
 def river_value_hand(hole, board):
@@ -1436,47 +1447,116 @@ def river_value_hand(hole, board):
     return False
 
 
-def river_range_shares(my_range, board):
-    key = (_range_sig(my_range), tuple(board))
+def _line_keeps(c, board_now, small):
+    """내가 이 보드에서 벳했다면 그 벳 레인지에 들어갈 손인가(자기 라인 근사).
+    탑페어+·오버페어, 강한 드로우(아웃 8+), 오버카드 낀 드로우(아웃 4+).
+    작은 벳(플랍 1/3)이면 오버카드·약한 페어·약한 드로우까지 넓게."""
+    rv = _CLAIM_RV
+    h = list(c)
+    cat = bot.eval7(h + list(board_now))[0]
+    top = max(rv[x[0]] for x in board_now)
+    hr = sorted((rv[x[0]] for x in h), reverse=True)
+    if cat >= 2 or (hr[0] == hr[1] and hr[0] > top) or top in hr:
+        return True
+    outs = bot.draw_strength(h, list(board_now))
+    if outs >= 8:
+        return True
+    if small:
+        return outs >= 3 or hr[0] > top or bot.made_strength(h, list(board_now)) >= 1
+    return outs >= 4 and hr[0] > top
+
+
+def river_story_shares(my_range, board, bet_streets=()):
+    """내 레인지의 리버 이야기별 진짜 비율과 미스(메이드 없음) 비율.
+    bet_streets 가 있으면 그 스트리트에 벳한 자기 라인으로 레인지를 좁혀 센다."""
+    bet_streets = tuple(s for s in ('flop', 'turn') if s in (bet_streets or ()))
+    key = (_range_sig(my_range), tuple(board), bet_streets)
     v = _RB_CACHE.get(key)
     if v is not None:
         return v
+    rv = _CLAIM_RV
+    new_r = rv[board[4][0]]
+    prev_top = max(rv[c[0]] for c in board[:4])
+    over = new_r > prev_top
     dead = set(board)
-    tot = val = air = 0.0
+    tot = new = top = val = air = 0.0
     for c, w in R.range_items(my_range):
         if dead & set(c):
             continue
+        if 'flop' in bet_streets and not _line_keeps(c, board[:3], True):
+            continue
+        if 'turn' in bet_streets and not _line_keeps(c, board[:4], False):
+            continue
         tot += w
+        hr = [rv[x[0]] for x in c]
+        if bot.made_strength(list(c), board) < 1:
+            air += w
+            continue
         if river_value_hand(c, board):
             val += w
-        elif bot.made_strength(list(c), board) < 1:
-            air += w
-    v = ((val / tot) if tot else 0.0, (air / tot) if tot else 0.0)
+        if over:
+            if new_r in hr:
+                new += w
+            elif prev_top in hr:
+                k = hr[1] if hr[0] == prev_top else hr[0]
+                cat = bot.eval7(list(c) + list(board))[0]
+                if k >= 11 or k == prev_top or cat >= 2:
+                    top += w
+    v = {'over': over, 'new': new / tot if tot else 0.0,
+         'top': top / tot if tot else 0.0, 'value': val / tot if tot else 0.0,
+         'air': air / tot if tot else 0.0}
     if len(_RB_CACHE) > 4096:
         _RB_CACHE.clear()
     _RB_CACHE[key] = v
     return v
 
 
-def river_bluff_anchor(profile, hero, board, my_range, st, p_old):
-    """메이드 없는 손의 리버 블러프 확률을 레인지 기준선 쪽으로 당긴다."""
+def river_bluff_anchor(profile, hero, board, my_range, st, p_old, pot=None, stack=None):
+    """메이드 없는 손의 리버 블러프 확률·사이즈를 이야기별 기준선으로 정한다."""
     if bot.made_strength(list(hero), board) >= 1:
         return None
-    V, A = river_range_shares(my_range, board)
-    if V <= 0.0 or A <= 0.0:
+    sh = river_story_shares(my_range, board, (st or {}).get('bet_streets') or ())
+    A = sh['air']
+    if A <= 0.0:
         return None
-    base = min(1.0, _RB_RATIO * V / A)
+    _spr = (float(stack)/float(pot)) if (pot and stack is not None and pot > 0) else 99.0
+    big = min(_RB_BIG, _spr) if _spr > 0 else _RB_BIG     # 스택이 팟보다 작으면 올인
     blk = float(st.get('blocker_net') or 0.0)
+    if sh['over']:
+        f_big = sh['new'] * bluff_share_for_size(big) / (1.0 - bluff_share_for_size(big))
+        f_small = sh['top'] * bluff_share_for_size(_RB_SMALL) / (1.0 - bluff_share_for_size(_RB_SMALL))
+        if blk >= 0.0 or f_small <= 0.0:
+            story, size, fake = 'new', big, f_big
+            share = f_big / max(1e-9, f_big + f_small)
+        else:
+            story, size, fake = 'top', _RB_SMALL, f_small
+            share = f_small / max(1e-9, f_big + f_small)
+        total = f_big + f_small
+    else:
+        size = min(_RB_SINGLE, _spr) if _spr > 0 else _RB_SINGLE
+        total = sh['value'] * bluff_share_for_size(size) / (1.0 - bluff_share_for_size(size))
+        story, fake, share = 'single', total, 1.0
+    if total <= 0.0:
+        return None
+    base = min(1.0, total / A)
     f = max(0.3, min(1.8, 1.0 + 10.0*blk))
     if 'A' in (hero[0][0], hero[1][0]):
         f *= 0.6                      # A 하이는 미스한 드로우를 이기는 쇼다운 가치
-    tgt = max(0.0, min(0.95, base * f))
+    tgt = base * f
+    # 블러프 리스크: 실패 시 잃는 칩 / 남은 스택. 신중한 성향일수록 크게 깎는다.
+    _risk = max(0.0, min(1.0, size / max(1e-6, _spr))) if _spr < 99 else 0.0
+    _caution = max(0.0, min(1.0, 0.5 + (PS.temper(profile, 'discipline', 5.0)
+                                         - PS.temper(profile, 'gamble', 5.0))/10.0))
+    tgt *= 1.0 - 0.6*_risk*_caution
+    tgt = max(0.0, min(0.95, tgt))
     _sk = 0.5*(PS.sk(profile, 'barrel_river') + PS.sk(profile, 'bluff'))
     w = 0.9 * max(0.0, min(1.0, (_sk - 2.0) / 7.0))
     p = p_old + w * (tgt - p_old)
     return {'p': round(max(0.0, min(0.95, p)), 4), 'p_old': round(p_old, 4),
-            'V': round(V, 4), 'air': round(A, 4), 'base': round(base, 4),
-            'blk_net': round(blk, 4), 'f': round(f, 3), 'w': round(w, 3)}
+            'story': story, 'size': round(size, 3), 'fake': round(total, 4),
+            'air': round(A, 4), 'base': round(base, 4), 'blk_net': round(blk, 4),
+            'f': round(f, 3), 'risk': round(_risk, 3), 'caution': round(_caution, 3),
+            'w': round(w, 3), 'new': round(sh['new'], 4), 'top': round(sh['top'], 4)}
 
 
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
@@ -1506,19 +1586,22 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
             p_aggr = _anc['p']
             why_a = '%s | 레인지 주장 기준선 %.0f%%(V %.0f%%, w %.2f)' % (
                 why_a, _anc['target']*100, _anc['V']*100, _anc['w'])
+    _rb_size = None
     if (RIVER_BLUFF_ANCHOR and street == 'river' and len(board) == 5
             and initiative and int(n_opp or 1) == 1
             and int(to_act_behind or 0) == 0 and profile.get('concepts')
             and plan in ('giveup', 'bluff_2street', 'river_bluff') and my_range):
-        _rb = river_bluff_anchor(profile, hero, board, my_range, st, p_aggr)
+        _rb = river_bluff_anchor(profile, hero, board, my_range, st, p_aggr,
+                                 pot=pot, stack=stack)
         if _rb is not None:
             _trace(st, street, 'river_bluff_claim', **_rb)
             p_aggr = _rb['p']
+            _rb_size = _rb['size']
             if not why_a.startswith('DEVIATE:') and plan != 'river_bluff':
                 why_a = 'DEVIATE:' + why_a
-            why_a = '%s | 리버 블러프 기준선 %.0f%%(V %.0f%%, air %.0f%%, blk %+.3f, w %.2f)' % (
-                why_a, _rb['p']*100, _rb['V']*100, _rb['air']*100,
-                _rb['blk_net'], _rb['w'])
+            why_a = '%s | 리버 블러프 기준선 %.0f%%(%s 주장 %.2f팟, 가짜 %.0f%%/미스 %.0f%%, blk %+.3f, w %.2f)' % (
+                why_a, _rb['p']*100, _rb['story'], _rb['size'],
+                _rb['fake']*100, _rb['air']*100, _rb['blk_net'], _rb['w'])
     _roll = rng.random()
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
            why=why_a, plan=plan, rel=round(rel, 3))
@@ -1529,6 +1612,9 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                            deviating=why_a.startswith('DEVIATE:'),
                            stackoff=st.get('stackoff'), plan_state=st,
                            n_opp=n_opp, opp_ranges=opp_ranges)
+        if _rb_size:
+            # 블러프 사이즈는 이야기가 정한다(새 오버카드 = 크게 폴라, 기존 탑 = 작게).
+            size = _rb_size
         if size > 0:
             st = set_intent(st, street, mk_intent('bet', size, why_a))
             # 계획과 반대되는 의도는 이탈로 남긴다. 기록이 없으면
