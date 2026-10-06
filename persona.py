@@ -202,6 +202,18 @@ INDEPENDENT_CONCEPT_DIFFICULTY = {
     'bluffcatch_river': 7.0,
     'thin_value_river': 7.0,
     'overbet':          7.0,
+    # 분할 키(phase 2, 2026-10-06)
+    'bluffcatch_flop':  4.5,
+    'bluffcatch_turn':  5.5,
+    'thin_value_flop':  5.0,
+    'iso_raise':        4.5,
+    'pf_threebet':      5.0,
+    'limp_theory':      6.0,
+    'checkraise_turn':  6.0,
+    'checkraise_river': 7.0,
+    'range_reconstruction': 7.5,
+    'line_interpretation':  7.5,
+    'read_application':     8.0,
 }
 
 # 학습 순서의 '도움 선행'. 필수조건은 아니므로 한 개가 낮다고 후행을 막지 않고,
@@ -231,6 +243,15 @@ LEARNING_PREREQUISITES = {
     'overbet':         ('range_read', 'board_texture'),
     'blockbet':        ('potcontrol', 'sizing_tell'),
     'checkraise_late': ('checkraise_flop',),
+    # 분할 키: 부모의 관계를 물려받되 재료 관계가 분명한 것만. 차트 기억 계열(pf_threebet,
+    # limp_theory, iso_raise)과 thin_value_flop 은 부모처럼 묶지 않는다.
+    'checkraise_turn':  ('checkraise_flop',),
+    'checkraise_river': ('checkraise_flop',),
+    'bluffcatch_flop':  ('potodds',),
+    'bluffcatch_turn':  ('potodds',),
+    'range_reconstruction': ('pf_range', 'positional', 'board_texture', 'sizing_tell'),
+    'line_interpretation':  ('range_reconstruction',),
+    'read_application':     ('line_interpretation',),
 }
 
 # 의미상 필수에 가까운 선후행. 후행이 선행보다 2점 넘게 앞서지 못한다.
@@ -246,7 +267,8 @@ HARD_PREREQ_TAIL = 1.0
 
 # 고급 숙련 꼬리를 별도로 제한할 개념. 0~6의 기초/중급 이해는 기존 분포를
 # 유지하고, 6~10 구간만 학습 준비도에 따라 압축한다.
-ADVANCED_MASTERY_CONCEPTS = ('blocker', 'range_read', 'icm')
+ADVANCED_MASTERY_CONCEPTS = ('blocker', 'range_read', 'icm',
+                             'range_reconstruction', 'line_interpretation', 'read_application')
 ADVANCED_MASTERY_FLOOR = 6.0
 ADVANCED_MASTERY_WINDOW = 3.0
 ADVANCED_MASTERY_CURVE = 1.5
@@ -328,6 +350,45 @@ def _money_jump_skill(study, aggro, exp, pid):
     v = base + ws*(study-5.0)*1.05 + wa*(aggro-5.0)*0.85 + we*(exp-5.0)*0.85
     v += rr.gauss(0, 2.20)
     return round(_clamp(v), 1)
+
+
+# 의미만 나눠 두고 부모 값을 빌려 쓰던 분할 키(CONCEPT_SPLIT_TODO phase 1)의 독립 생성(phase 2, 2026-10-06).
+# child = parent_raw + offset + sigma * z. z 는 pid·잠재요인으로 시드한 별도 결정적 난수라
+# 공유 rng 와 기존 개념·기질 값은 바뀌지 않는다(money_jump 와 같은 방식). 부모와 강하게 상관하되
+# 스트리트·역할별 차이를 둔다. 값은 잠정(사용자 위임 설계값).
+SPLIT_CONCEPTS = {
+    #  child:                 (parent,          offset, r)     r = 부모와의 목표 상관
+    'checkraise_turn':      ('checkraise_late', +0.3, 0.85),  # 같은 기술의 스트리트 분할. 턴은 드로우가 있어 조금 쉬움
+    'checkraise_river':     ('checkraise_late', -0.3, 0.85),
+    'bluffcatch_flop':      ('bluffcatch_early', +0.3, 0.85),
+    'bluffcatch_turn':      ('bluffcatch_early', -0.2, 0.85),
+    'thin_value_flop':      ('range_merge',     +0.4, 0.80),  # 플랍 얇은 밸류가 턴·리버 머징보다 흔함
+    'pf_threebet':          ('pf_defend',       -0.2, 0.70),  # 같은 차트를 쓰지만 3벳 판단은 다름
+    'limp_theory':          ('pf_range',        -1.0, 0.60),  # 따로 공부하는 지식, 아는 사람이 드묾
+    'iso_raise':            ('pf_range',         0.0, 0.75),
+    'range_reconstruction': ('range_read',      +0.2, 0.80),  # 역할 분할
+    'line_interpretation':  ('range_read',       0.0, 0.80),
+    'read_application':     ('range_read',      -0.3, 0.80),  # 아는 것과 쓰는 것의 차이
+}
+# 부모 개념의 모집단 평균·표준편차(1,000명, 필드 품질 0.40/0.78/1.20 혼합, 2026-10-06 측정).
+# 분할 키가 부모와 같은 퍼짐을 유지하면서 상관만 r 이 되게 하는 데 쓴다.
+SPLIT_PARENT_STATS = {
+    'checkraise_late': (4.08, 2.45), 'bluffcatch_early': (5.37, 2.02), 'range_merge': (4.54, 2.88),
+    'pf_defend': (5.24, 2.90), 'pf_range': (5.75, 2.99), 'range_read': (5.13, 2.62),
+}
+
+
+def _split_concepts(c, pid, study, aggro, exp):
+    """child = mean + r*(parent-mean) + sqrt(1-r^2)*sd*z + offset (z: 별도 결정적 난수)."""
+    key = 'split|%s|%.8f|%.8f|%.8f' % (pid, study, aggro, exp)
+    rr = random.Random(zlib.crc32(key.encode()))
+    for child, (parent, offset, r) in SPLIT_CONCEPTS.items():
+        z = rr.gauss(0, 1)
+        if parent not in c:
+            continue
+        mean, sd = SPLIT_PARENT_STATS[parent]
+        v = mean + r * (float(c[parent]) - mean) + (1.0 - r * r) ** 0.5 * sd * z + offset
+        c[child] = round(_clamp(v), 1)
 
 
 def _compress_dependency_gap(upstream, downstream, free_margin, soft_tail):
@@ -448,6 +509,9 @@ def make_player(rng, field_quality=0.6, pid=None, _depth=0, aggr_bias=0.0, loose
     # 행동에는 아직 쓰지 않는 머니점프 인지 개념. 별도 결정적 난수이므로
     # 이 한 줄을 추가해도 아래 temper 생성의 공유 rng 상태는 변하지 않는다.
     c['money_jump'] = _money_jump_skill(study, aggro, exp, pid)
+
+    # 분할 키 독립 생성(별도 결정적 난수). 아래 학습 구조가 같이 적용된다.
+    _split_concepts(c, pid, study, aggro, exp)
 
     # 독자 개념의 난이도 + 학습 선후행 + hard prerequisite를 한 곳에서 적용.
     _apply_concept_learning_structure(c, study, exp)
