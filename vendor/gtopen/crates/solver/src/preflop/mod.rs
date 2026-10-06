@@ -1703,6 +1703,12 @@ impl PreflopSolver {
             out.iter_mut().for_each(|v| *v = 0.0);
             return;
         }
+        // Optional bounded skip of multiway pot-share terminals whose other-seat reach product is below
+        // PREFLOP_MW_SKIP_BELOW (default 0 = exact, unchanged): their contribution is at most prob x pot per class.
+        if nd.kind == KIND_POT_SHARE && nd.live.count_ones() >= 3 && prob < mw_skip_below() {
+            out.iter_mut().for_each(|v| *v = 0.0);
+            return;
+        }
         let inv_p = nd.invested[p];
         match nd.kind {
             KIND_FOLD_WIN => {
@@ -3267,6 +3273,12 @@ fn legal_actions_of(cfg: &PreflopConfig, st: &BuildState, actor: usize) -> Vec<P
         }
     }
     acts
+}
+
+/// PREFLOP_MW_SKIP_BELOW (f64, default 0.0): see terminal_value. Read once per process.
+fn mw_skip_below() -> f64 {
+    static V: std::sync::OnceLock<f64> = std::sync::OnceLock::new();
+    *V.get_or_init(|| std::env::var("PREFLOP_MW_SKIP_BELOW").ok().and_then(|v| v.parse().ok()).unwrap_or(0.0))
 }
 
 /// State after `actor` takes `a` — shared by builder and estimator.
