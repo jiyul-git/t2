@@ -325,6 +325,41 @@ class Spot:
             return vals.max(0) if br else (s * vals).sum(0)
         return vals.sum(0)
 
+    def node_evs(self, shift=None):
+        """per node: per action per class EV of the actor given the node is reached (bb, net), average strategies.
+        shift = (line, seat, delta): add delta to that table's gross for that seat (sensitivity probes)."""
+        saved = None
+        if shift is not None:
+            line, seat, delta = shift
+            saved = self.tables[line]
+            tab = json.loads(json.dumps(saved))
+            for s_ in tab['seats']:
+                if s_['seat'] == seat:
+                    s_['gross'] = [g + delta for g in s_['gross']]
+            self.tables[line] = tab
+        out = {}
+
+        def rec(i, reach):
+            node = self.nodes[i]
+            actor = node['actor']
+            q = self.live[0] if actor == self.live[1] else self.live[1]
+            s = self.avg[i]
+            vals = []
+            for a, ch in enumerate(node['children']):
+                r2 = {k: v.copy() for k, v in reach.items()}
+                r2[actor] = reach[actor] * s[a]
+                if ch[0] == 'node':
+                    vals.append(self.value(ch[1], actor, r2, False))
+                    rec(ch[1], r2)
+                else:
+                    vals.append(self.term_value(ch, actor, r2[q]))
+            m = reach[q].sum()
+            out[i] = (np.array(vals) / m) if m > 0 else np.zeros((len(vals), NC))
+        rec(self.root_idx, {k: v.copy() for k, v in self.reach0.items()})
+        if saved is not None:
+            self.tables[shift[0]] = saved
+        return out
+
     def exploitability(self):
         out = {}
         for p in self.live:
