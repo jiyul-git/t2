@@ -17,7 +17,7 @@ import zlib
 LIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'coarse_params')
 # 포지션 라벨의 프리플랍 순서(앞에서 뒤로). 라벨 집합이 같으면 같은 구성이다.
 LABEL_ORDER = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
-CANDIDATES = 48          # 한 핸드에서 거리 비교할 후보 수(같은 구성·같은 버블 구간 안에서 무작위)
+CANDIDATES = 200         # 한 핸드에서 거리 비교할 후보 수(같은 구성·같은 버블 구간 안에서 무작위)
 
 _LIB = {}
 

@@ -194,7 +194,58 @@ def plot(fmt, cmp, path):
     fig.savefig(path, dpi=110)
 
 
+def pooled(fmt, calib, days, n_coarse, prefix):
+    """교차 검증: 대회를 두 묶음으로 나눠, 각 묶음의 통계 진행은 다른 묶음으로 만든 라이브러리로 돌린다.
+    시각마다 실제 전체 vs 통계 전체를 KS 로 비교하고, 같은 검정을 실제 두 묶음끼리 한 기준선과 함께 보고한다."""
+    half = len(days) // 2
+    folds = [days[:half], days[half:]]
+    real_all = {d: real_timeline(calib, fmt, d) for d in days}
+    coarse_all = []
+    for k, fold in enumerate(folds):
+        other = [d for d in days if d not in fold]
+        CS._LIB[fmt] = CS.build_library([os.path.join(calib, '%s_%d_hands.jsonl' % (fmt, d)) for d in other])
+        coarse_all += [coarse_timeline(fmt, 1000 + 100 * k + i) for i in range(int(n_coarse))]
+
+    def checkpoint_ks(a_set, b_set):
+        res = {}
+        for metric in ('remaining', 'gini', 'leader', 'short'):
+            horizon = min(max(r['rows'][-1]['t'] for r in a_set), max(c['rows'][-1]['t'] for c in b_set))
+            ok = tot = 0
+            t = STEP
+            while t <= horizon:
+                av = [next((x[metric] for x in r['rows'] if x['t'] == t), None) for r in a_set]
+                bv = [next((x[metric] for x in c['rows'] if x['t'] == t), None) for c in b_set]
+                av = [v for v in av if v is not None]
+                bv = [v for v in bv if v is not None]
+                if len(av) >= 3 and len(bv) >= 3:
+                    _d, p = ks(av, bv)
+                    ok += p > 0.05
+                    tot += 1
+                t += STEP
+            res[metric] = round(ok / tot, 3) if tot else None
+        for key in ('end', 'itm_t'):
+            res[key + '_ks_p'] = ks([r[key] for r in a_set if r[key] is not None],
+                                    [c[key] for c in b_set if c[key] is not None])[1]
+        return res
+    real = list(real_all.values())
+    out = {'fmt': fmt, 'days': days, 'n_coarse': len(coarse_all),
+           'coarse_vs_real': checkpoint_ks(real, coarse_all),
+           'baseline_real_vs_real': checkpoint_ks([real_all[d] for d in folds[0]],
+                                                  [real_all[d] for d in folds[1]]),
+           'real_end_mean': round(sum(r['end'] for r in real) / len(real), 1),
+           'coarse_end_mean': round(sum(c['end'] for c in coarse_all) / len(coarse_all), 1),
+           'coarse_cpu_mean': round(sum(c['cpu'] for c in coarse_all) / len(coarse_all), 2),
+           'coarse_errors': sum(len(c['errors']) for c in coarse_all)}
+    out['compare_curves'] = compare(real, coarse_all)
+    json.dump(out, open(prefix + '.json', 'w'), indent=1)
+    plot(fmt, out['compare_curves'], prefix + '.png')
+    print(json.dumps({k: v for k, v in out.items() if k != 'compare_curves'}, ensure_ascii=False))
+
+
 def main():
+    if sys.argv[1] == 'pooled':
+        fmt, calib, days, n_coarse, prefix = sys.argv[2:7]
+        return pooled(fmt, calib, [int(x) for x in days.split(',')], n_coarse, prefix)
     fmt, calib, lib_days, test_days, n_coarse, prefix = sys.argv[1:7]
     lib_days = [int(x) for x in lib_days.split(',')]
     test_days = [int(x) for x in test_days.split(',')]
@@ -203,6 +254,12 @@ def main():
     real = [real_timeline(calib, fmt, d) for d in test_days]
     coarse = [coarse_timeline(fmt, 1000 + k) for k in range(int(n_coarse))]
     cmp = compare(real, coarse)
+    # 기준선: 같은 비교를 실제 대회끼리(라이브러리용 실제 대회 → 비교용 실제 대회 범위) 해 본 값.
+    # 비교용 실제 대회가 적으면 범위가 좁아 실제끼리도 90% 를 못 넘을 수 있으므로 함께 보고한다.
+    base = compare(real, [real_timeline(calib, fmt, d) for d in lib_days])
+    cmp['baseline_real_vs_real'] = {
+        'tournament': {k: {'ks_p': v['ks_p']} for k, v in base['tournament'].items()},
+        'checkpoints': {k: v['inside_frac'] for k, v in base['checkpoints'].items()}}
     cmp.update(fmt=fmt, lib_days=lib_days, test_days=test_days, n_coarse=len(coarse),
                lib_hands=sum(len(v) for v in lib.values()),
                coarse_cpu_mean=round(sum(c['cpu'] for c in coarse) / len(coarse), 2),
@@ -213,6 +270,7 @@ def main():
                       'tournament': {k: {kk: v[kk] for kk in ('real_mean', 'coarse_mean', 'ks_p', 'pass')}
                                      for k, v in cmp['tournament'].items()},
                       'checkpoints': {k: v['inside_frac'] for k, v in cmp['checkpoints'].items()},
+                      'baseline_real_vs_real': cmp['baseline_real_vs_real']['checkpoints'],
                       'coarse_cpu_mean': cmp['coarse_cpu_mean'], 'coarse_errors': cmp['coarse_errors']},
                      ensure_ascii=False))
 
