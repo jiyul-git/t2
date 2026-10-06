@@ -229,7 +229,11 @@ def limp_p(prof, feel, hand_pct, pos, traits=None, hand=None):
     theory *= acc * 0.42        # 아는 사람만 한다
 
     # --- 습관적 림프 ---
-    habit = t['limp'] * (1.0 - acc) * 2.2
+    # 습관적 림프를 누르는 것은 '레이즈 아니면 폴드' 차트 습관(RFI 차트 기억, pf_range)이지
+    # 숏스택 이론 림프 지식(limp_theory)이 아니다. 분할 phase 2 에서 limp_theory 를 독립 생성하자
+    # 이 항까지 limp_theory 를 읽어 습관 림프·SB 컴플리트가 늘었다(워크 12% → 5%, 2026-10-06 측정).
+    chart = PS.concept_knowledge(prof, 'pf_range') if prof.get('concepts') else 0.5
+    habit = t['limp'] * (1.0 - chart) * 2.2
     if hand_pct <= 0.05:   habit *= 0.10     # 프리미엄은 거의 림프 안 한다
     elif hand_pct <= 0.12: habit *= 0.30
     elif hand_pct <= 0.25: habit *= 0.85
