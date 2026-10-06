@@ -3505,7 +3505,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
         if _first:
             st.setdefault('refreshed', []).append(street)
         st = turn_value_reassessment(
-            st, hero, board, profile, opp_range, n_opp=n_opp, opp_ranges=opp_ranges)
+            st, hero, board, profile, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+            rng=rng)
     st['_rsig'] = _rsig
     st['_opps_sig'] = _opps_sig
 
@@ -3590,8 +3591,50 @@ CLEAR_VALUE_REL = 0.92
 RIVER_THIN_VALUE_V2 = True
 
 
+TURN_THIN_VALUE_V1 = True
+
+
+def turn_value_promotion(st, hero, board, profile, opp_range, rng,
+                         n_opp=1, opp_ranges=None):
+    """턴 팟컨트롤·쇼다운 계획을, 콜 받아도 앞서면 2스트리트 밸류로 올린다.
+
+    turn_value_reassessment 는 밸류 → 팟컨트롤 **강등**만 했다. 플랍부터 팟컨트롤·
+    쇼다운이던 메이드 핸드는 블랭크 턴에 콜 레인지보다 앞서도 턴 사이즈가 0 이라
+    항상 체크했다(블랭크 턴 rel 0.5~0.7 벳 32%). 사용자 기준(2026-10-06):
+    블랭크 턴, 플랍 작은 벳-콜, K9 탑페어 → 더 약한 Kx·드로우·Ax·낮은 페어에게
+    2/3 밸류. 무서운 턴은 콜 레인지 대비 eq 가 내려가 자연히 팟컨트롤에 남는다.
+    리버 v2 와 같은 확률식: (0.10+0.85·개념)·여유·밴드.
+    """
+    if (not TURN_THIN_VALUE_V1 or rng is None or len(board) != 4
+            or st.get('plan') not in ('pot_control', 'showdown')
+            or not (profile and profile.get('concepts'))):
+        return st
+    rel = st.get('rel') or 0.0
+    if rel >= CLEAR_VALUE_REL or bot.made_strength(hero, board) < 1:
+        return st
+    _size = float(SIZING['value_2street']['turn'])
+    _eq, _n = continue_range_call_equity(
+        hero, board, profile, 'turn', _size, opp_range, opp_ranges, n_opp)
+    if not ahead_when_called(_eq):
+        return st
+    _tv = PS.sk(profile, PS.street_concept('thin_value', 'turn'))/10.0
+    _band = max(0.0, min(1.0, (rel - 0.40)/0.15))
+    _margin = max(0.0, min(1.0, 0.4 + (float(_eq) - 0.5)/0.08))
+    if rng.random() < (0.10 + 0.85*_tv) * _margin * _band:
+        st = dict(st)
+        st['turn_call_eq'] = round(float(_eq), 3)
+        st['turn_call_range_n'] = _n
+        st['plan'] = 'value_2street'
+        st['plan_goal'] = 'value_2street'
+        st['plan_since'] = 'turn'
+        st['why'] = (st.get('why') or []) + [
+            '턴: 팟컨트롤이나 콜 레인지 상대 eq %.2f ≥ 0.50 → 2스트리트 밸류(개념 %.1f)'
+            % (float(_eq), _tv*10)]
+    return st
+
+
 def turn_value_reassessment(st, hero, board, profile, opp_range,
-                            n_opp=1, opp_ranges=None):
+                            n_opp=1, opp_ranges=None, rng=None):
     """턴의 2스트리트 밸류: 계획한 턴 사이즈로 쳤을 때 **콜당해도 앞서는가**(베타 A #4).
 
     리버에는 이 질문(river_value_reassessment)이 있는데 턴에는 없어서, 플랍에
@@ -3601,6 +3644,9 @@ def turn_value_reassessment(st, hero, board, profile, opp_range,
     지킨다. 근거(콜 레인지)가 없으면 계획을 유지한다 — 턴은 마지막 스트리트가
     아니고, 콜 레인지를 지어내지 않는다.
     """
+    if len(board) == 4 and st.get('plan') in ('pot_control', 'showdown'):
+        return turn_value_promotion(st, hero, board, profile, opp_range, rng,
+                                    n_opp=n_opp, opp_ranges=opp_ranges)
     if len(board) != 4 or st.get('plan') != 'value_2street':
         return st
     if (st.get('rel') or 0.0) >= CLEAR_VALUE_REL:
