@@ -1326,6 +1326,87 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     return st
 
 
+# ---------- 레인지 주장 기준선 (FLOP_CLAIM_BASELINE.md, 2026-10-06) ----------
+# 숙련자의 c벳 빈도는 '자기 레인지에 실제로 있는 주장 가능한 핸드 비율'에 수렴한다(층 A).
+# 예전에는 range_adv 가 지속벳 빈도를 몇 % 흔드는 곱셈항일 뿐이라 보드별 빈도가
+# 레인지 구성을 따라가지 않았다(봇 A·K 하이 62% vs 목표 80%+, 숙련자일수록 더 낮음).
+# 오프너 HU IP 플랍, 체크를 받은 상황에서만 쓴다.
+#   V      = 내 레인지 중 작은 벳 밸류(넛급·강·중) 비율
+#   목표 T = max(60%, 2V)  — 최저선 60%(작업용 작은 벳), 플랍 밸류:블러프 1:1
+#   밸류 핸드는 거의 항상, 나머지는 (T-V)/(1-V) 로 채운다.
+# 숙련(cbet_flop)이 낮으면 기준선을 거의 안 따른다(w→0) — 초보는 층 B(내 핸드)만 본다.
+RANGE_CLAIM_ANCHOR = True
+_CLAIM_FLOOR = 0.60
+_CLAIM_VALUE_P = 0.95
+_CLAIM_CACHE = {}
+_CLAIM_RV = {r: i for i, r in enumerate('23456789TJQKA', 2)}
+
+
+def claim_value_hand(hole, board):
+    """작은 벳으로 밸류를 주장할 수 있는 핸드인가(넛급·강·중). 플랍 3장 기준.
+
+    넛급: 투페어(보드 페어 제외)·셋/트립스·스트레이트+. 강: 오버페어·탑페어 좋은 키커.
+    중: 탑페어 약한 키커·세컨페어·보드 최저 카드보다 높은 포켓페어.
+    """
+    cat = bot.eval7(list(hole) + list(board))[0]
+    rv = _CLAIM_RV
+    bcnt = {}
+    for c in board:
+        bcnt[rv[c[0]]] = bcnt.get(rv[c[0]], 0) + 1
+    paired = max(bcnt.values()) >= 2
+    if cat >= 3 or (cat == 2 and not paired):
+        return True
+    hr = [rv[c[0]] for c in hole]
+    unpaired = sorted((r for r, n in bcnt.items() if n == 1), reverse=True) \
+        or sorted(bcnt, reverse=True)
+    top = max(bcnt)
+    if hr[0] == hr[1]:
+        return hr[0] > min(unpaired)
+    hits = [r for r in hr if r in unpaired]
+    if not hits:
+        return False
+    h = max(hits)
+    return h == unpaired[0] or (len(unpaired) >= 3 and h == unpaired[1])
+
+
+def range_claim_value_share(my_range, board):
+    key = (_range_sig(my_range), tuple(board))
+    v = _CLAIM_CACHE.get(key)
+    if v is not None:
+        return v
+    dead = set(board)
+    tot = val = 0.0
+    for c, w in R.range_items(my_range):
+        if dead & set(c):
+            continue
+        tot += w
+        if claim_value_hand(c, board):
+            val += w
+    v = (val / tot) if tot > 0 else 0.0
+    if len(_CLAIM_CACHE) > 4096:
+        _CLAIM_CACHE.clear()
+    _CLAIM_CACHE[key] = v
+    return v
+
+
+def range_claim_anchor(profile, hero, board, my_range, p_old):
+    """레인지 기준선 쪽으로 당긴 벳 확률. 반환 None 이면 적용 안 함."""
+    V = range_claim_value_share(my_range, board)
+    if V <= 0.0:
+        return None
+    T = min(0.95, max(_CLAIM_FLOOR, 2.0 * V))
+    is_val = claim_value_hand(hero, board)
+    fill = max(0.0, min(1.0, (T - V) / max(1e-6, 1.0 - V)))
+    tgt = _CLAIM_VALUE_P if is_val else fill
+    # 기질은 기준선 위에서 조금만 흔든다(같은 숙련이라도 사람마다 다르게).
+    tgt = max(0.0, min(0.97, tgt + 0.03*(PS.temper(profile, 'aggression', 5.0) - 5.0)))
+    w = 0.9 * max(0.0, min(1.0, (PS.sk(profile, 'cbet_flop') - 2.0) / 7.0))
+    p = p_old + w * (tgt - p_old)
+    return {'p': round(max(0.0, min(0.97, p)), 4), 'p_old': round(p_old, 4),
+            'target': round(T, 4), 'V': round(V, 4), 'value': bool(is_val),
+            'hand_target': round(tgt, 4), 'w': round(w, 3)}
+
+
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
                   oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None, tilt=0.0):
@@ -1340,6 +1421,19 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                                       spr_now=(float(stack)/max(1.0, float(pot))
                                                if pot else None),
                                       tilt=tilt)
+    if (RANGE_CLAIM_ANCHOR and street == 'flop' and len(board) == 3
+            and initiative and not oop and int(n_opp or 1) == 1
+            and int(to_act_behind or 0) == 0 and profile.get('concepts')
+            and plan != 'trap' and my_range):
+        _anc = range_claim_anchor(profile, hero, board, my_range, p_aggr)
+        if _anc is not None:
+            _trace(st, street, 'range_claim', **_anc)
+            if _anc['p'] > p_aggr + 1e-9 and plan in ('giveup', 'showdown') \
+                    and not why_a.startswith('DEVIATE:'):
+                why_a = 'DEVIATE:' + why_a
+            p_aggr = _anc['p']
+            why_a = '%s | 레인지 주장 기준선 %.0f%%(V %.0f%%, w %.2f)' % (
+                why_a, _anc['target']*100, _anc['V']*100, _anc['w'])
     _roll = rng.random()
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
            why=why_a, plan=plan, rel=round(rel, 3))
