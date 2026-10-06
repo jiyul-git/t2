@@ -148,6 +148,7 @@ fn main() -> Result<(), String> {
     let mut key = key;
     if std::env::var("T2_PANEL_MATRIX").ok().as_deref() == Some("1") {
         key["matrix"] = serde_json::json!(true);
+        key["matrix_opp_classes"] = term["matrix_opp_classes"].clone();
     }
     let commit = std::env::var("T2_SOURCE_COMMIT").unwrap_or_else(|_| "unknown".into());
     let only: Option<Vec<String>> = std::env::var("T2_PANEL_BOARDS").ok().map(|v| v.split(',').map(|x| x.to_string()).collect());
@@ -233,7 +234,16 @@ fn main() -> Result<(), String> {
             for p in 0..2 {
                 let opp = &s.spot.hands[1 - p];
                 let mut m: Vec<Vec<Option<f64>>> = vec![vec![None; NUM_CLASSES]; NUM_CLASSES];
+                // optional restriction: term["matrix_opp_classes"][<opponent position>] = list of opponent classes to evaluate
+                let opp_pos = if p == 0 { pos[ip_i] } else { pos[oop_i] };
+                let only_j: Option<Vec<usize>> = term["matrix_opp_classes"][opp_pos].as_array()
+                    .map(|v| v.iter().filter_map(|x| x.as_u64().map(|y| y as usize)).collect());
                 for j in 0..NUM_CLASSES {
+                    if let Some(o) = &only_j {
+                        if !o.contains(&j) {
+                            continue;
+                        }
+                    }
                     let w: Vec<f32> = opp.iter().map(|h| if cls(h) == j { 1.0 } else { 0.0 }).collect();
                     if w.iter().all(|&x| x == 0.0) {
                         continue;
