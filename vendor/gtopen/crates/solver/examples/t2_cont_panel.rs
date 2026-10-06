@@ -71,6 +71,30 @@ fn class_values(s: &Solver, p: usize, cfv: &[f32]) -> (Vec<Option<f64>>, Vec<f64
     (vals, den, combos)
 }
 
+/// Like class_values, but against an explicit opponent combo-weight vector (matrix mode).
+fn class_values_vs(s: &Solver, p: usize, cfv: &[f32], opp_w: &[f32]) -> Vec<Option<f64>> {
+    let spot = &*s.spot;
+    let pot = spot.tree.config.starting_pot;
+    let opp = &spot.hands[1 - p];
+    let (mut tot, mut by) = (0f64, [0f64; 52]);
+    for (h, &w) in opp.iter().zip(opp_w) {
+        tot += w as f64;
+        by[h.c1 as usize] += w as f64;
+        by[h.c2 as usize] += w as f64;
+    }
+    let mut num = vec![0f64; NUM_CLASSES];
+    let mut den = vec![0f64; NUM_CLASSES];
+    for (i, h) in spot.hands[p].iter().enumerate() {
+        let same = spot.same_combo[p][i];
+        let corr = if same != solver::tree::SENTINEL { opp_w[same as usize] as f64 } else { 0.0 };
+        let valid = tot - by[h.c1 as usize] - by[h.c2 as usize] + corr;
+        let k = cls(h);
+        num[k] += cfv[i] as f64;
+        den[k] += valid;
+    }
+    (0..NUM_CLASSES).map(|k| if den[k] > 0.0 { Some(num[k] / den[k] + pot / 2.0) } else { None }).collect()
+}
+
 fn main() -> Result<(), String> {
     let a: Vec<String> = std::env::args().collect();
     if a.len() < 8 {
@@ -121,6 +145,10 @@ fn main() -> Result<(), String> {
         "terminal_path_spec": term["path_spec"], "aggressor": term["aggressor"],
         "roles": {"OOP": pos[oop_i], "IP": pos[ip_i]},
     });
+    let mut key = key;
+    if std::env::var("T2_PANEL_MATRIX").ok().as_deref() == Some("1") {
+        key["matrix"] = serde_json::json!(true);
+    }
     let commit = std::env::var("T2_SOURCE_COMMIT").unwrap_or_else(|_| "unknown".into());
     let only: Option<Vec<String>> = std::env::var("T2_PANEL_BOARDS").ok().map(|v| v.split(',').map(|x| x.to_string()).collect());
     let boards: Vec<&str> = panel["panel"].as_array().ok_or("panel")?.iter().map(|f| f["board"].as_str().unwrap()).collect();
@@ -196,7 +224,33 @@ fn main() -> Result<(), String> {
                 "gross_eps": va, "gross_br": vb, "equity": equity, "valid_mass": valid, "combos_on_board": combos,
             }));
         }
+        // matrix mode (T2_PANEL_MATRIX=1): per role, value of own class h against a single opponent class j under the solved
+        // (average) strategies: matrix[h][j] = class_values_vs(traverse_avg(opp = indicator of class j)). Range-reactive tables.
+        let mut matrix = serde_json::Value::Null;
+        if std::env::var("T2_PANEL_MATRIX").ok().as_deref() == Some("1") {
+            let tm = Instant::now();
+            let mut per = Vec::new();
+            for p in 0..2 {
+                let opp = &s.spot.hands[1 - p];
+                let mut m: Vec<Vec<Option<f64>>> = vec![vec![None; NUM_CLASSES]; NUM_CLASSES];
+                for j in 0..NUM_CLASSES {
+                    let w: Vec<f32> = opp.iter().map(|h| if cls(h) == j { 1.0 } else { 0.0 }).collect();
+                    if w.iter().all(|&x| x == 0.0) {
+                        continue;
+                    }
+                    let c = s.traverse_avg(0, p, &w, Dealt::default());
+                    let v = class_values_vs(&s, p, &c, &w);
+                    for h in 0..NUM_CLASSES {
+                        m[h][j] = v[h];
+                    }
+                }
+                per.push(serde_json::json!({"position": if p == 0 { pos[oop_i] } else { pos[ip_i] }, "matrix": m}));
+            }
+            matrix = serde_json::json!({"players": per, "ms": tm.elapsed().as_secs_f64() * 1e3,
+                "definition": "matrix[h][j] = gross share (bb) of own class h vs opponent class j at the solved average strategies"});
+        }
         let out = serde_json::json!({
+            "matrix": matrix,
             "schema": "t2_hu_continuation_flop_v1", "board": board, "stratum": f["stratum"], "panel_weight": f["weight"],
             "provenance_key": key, "solver_commit": commit, "solver": "vendored GTOpen CPU postflop Solver (DCFR), isomorphism on",
             "iterations": iters, "exploitability_pct_pot": expl, "trace": trace,
