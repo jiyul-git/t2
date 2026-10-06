@@ -212,9 +212,24 @@ def defend_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
     return max(0.02, min(0.92, base))
 
 
+# 9-max + ante 의 3벳 몫 다리(2026-10-06, 사용자 승인). 9-max 는 디펜스 기준이 미보정이라 모든 좌석에서
+# 3벳 몫이 TB_SHARE(18%) 하나였고, 그 결과 포스트플랍 포지션이 없는 SB 까지 오픈에 콜을 3벳보다
+# 훨씬 많이 했다(최고 숙련 필드 SB 3벳 4% / 콜 20%). 이름이 같은 수비 좌석(BB/SB/BTN/CO)은 8-max ante
+# 보정 몫을 그대로 쓴다 — 3벳 몫은 '이 좌석이 IP 인가, 액션을 닫는가'의 성질이라 9-max 에서도 같은 자리다.
+# 수비 전체 폭(defend_pct)은 바꾸지 않는다. 정식 9-max 기준(GTO reference)이 들어오면 대체한다.
+NINE_MAX_TB_SHARE_BRIDGE = True
+
+
+def threebet_share(def_pos, seats=8, ante=True):
+    if _use_mtt8_ante_defense(def_pos, seats, ante):
+        return _MTT8_ANTE_TB_SHARE[def_pos]
+    if (NINE_MAX_TB_SHARE_BRIDGE and bool(ante) and int(seats) == 9
+            and def_pos in _MTT8_ANTE_TB_SHARE):
+        return _MTT8_ANTE_TB_SHARE[def_pos]
+    return TB_SHARE
+
+
 def threebet_pct(def_pos, opener_pos, seats=8, bb=100.0, ante=True, open_bb=2.5):
     """디펜스 중 3벳 구간의 기준 폭."""
-    share = (_MTT8_ANTE_TB_SHARE[def_pos]
-             if _use_mtt8_ante_defense(def_pos, seats, ante)
-             else TB_SHARE)
+    share = threebet_share(def_pos, seats, ante)
     return defend_pct(def_pos, opener_pos, seats, bb, ante, open_bb) * share

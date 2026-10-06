@@ -2565,7 +2565,14 @@ def _continuation_frequency(profile, board, n_opp, street, oop, rel, opp_est=Non
     _cm = TX.cbet_multiplier(board, not oop)
     f *= 1.0 + (_cm - 1.0) * _bt            # 개념이 낮으면 구조를 못 읽는다
     f *= (1 - 0.18*bot.board_danger(board)) # 젖은 정도는 남기되 비중을 줄인다
-    if oop: f *= 0.88
+    # 포지션 효과는 positional 숙련에 따라 다르다(2026-10-06, 사용자 승인). 예전에는 전원 OOP ×0.88 로
+    # 같아서 '포지션을 아는 사람이 IP/OOP 를 다르게 친다'가 없었다. 숙련 0 은 포지션 차이를 무시하고
+    # (OOP ×1.00, IP ×0.94), 숙련 10 은 크게 반영한다(OOP ×0.76, IP ×1.06). 숙련 5 에서 OOP ×0.88 로 예전과 같다.
+    _pk = PS.sk(profile, 'positional')/10.0 if profile.get('concepts') else 0.5
+    if oop:
+        f *= 1.0 - 0.24*_pk
+    else:
+        f *= 1.0 + 0.12*(_pk - 0.5)
     f += 0.35*max(0.0, rel-0.6)             # 강할수록 추가
     # 레인지 우위. 씨벳 빈도의 가장 큰 구조적 근거인데 예전에는 들어가지 않았다.
     # 개념(board_texture)이 없으면 보드가 누구에게 유리한지 못 읽는다.
