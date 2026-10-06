@@ -7,6 +7,8 @@
 //! "raise" picks the smallest raise-to on offer. Reaches are the AVERAGE-strategy
 //! class reaches (combos/1326 x action probabilities), exactly as `walk` defines them.
 //! Env: PREFLOP_EQ_SAMPLES / PREFLOP_EQ_SEED / PREFLOP_MULTIWAY_SEED as usual.
+//! Multi-path mode: path-spec "@multi" and out.json = a jobs file with one "<path-spec> <out.json>" per line; the solve / load
+//! and gaps_and_evs run once, then every job is exported exactly as a single-path run would export it.
 use solver::preflop::equity::{class_label, EquityTable, NUM_CLASSES};
 use solver::preflop::{PreflopConfig, PreflopSolver};
 use std::sync::Arc;
@@ -64,10 +66,18 @@ fn main() -> Result<(), String> {
     if let Some(p) = a.get(5) {
         s.save_game(p)?;
     }
+    let jobs: Vec<(String, String)> = if a[3] == "@multi" {
+        std::fs::read_to_string(&a[4]).map_err(|e| e.to_string())?.lines().filter(|l| !l.trim().is_empty())
+            .map(|l| { let mut it = l.split_whitespace(); (it.next().unwrap_or("").to_string(), it.next().unwrap_or("").to_string()) })
+            .collect()
+    } else {
+        vec![(a[3].clone(), a[4].clone())]
+    };
+    for (spec, outp) in jobs {
     // resolve the path spec
     let mut path = Vec::new();
     let mut node = 0usize;
-    for kind in a[3].split(',') {
+    for kind in spec.split(',') {
         let nd = &s.nodes[node];
         if nd.kind != 0 {
             return Err(format!("path ends early at {kind}"));
@@ -213,7 +223,7 @@ fn main() -> Result<(), String> {
         "config_file": a[1], "config": s.cfg, "iterations": s.iteration,
         "gap_total": gaps.iter().sum::<f64>(), "gaps": gaps, "evs": evs,
         "eq_samples": samples, "multiway_model": s.multiway_equity_model(),
-        "path_spec": a[3], "path": path, "terminal_node": term,
+        "path_spec": spec, "path": path, "terminal_node": term,
         "pot_bb": nd.pot, "effective_behind_bb": eff, "spr": eff / nd.pot,
         "aggressor_seat": nd.aggressor,
         "aggressor": if (nd.aggressor as usize) < s.n { s.cfg.positions[nd.aggressor as usize].clone() } else { "none".into() },
@@ -224,7 +234,10 @@ fn main() -> Result<(), String> {
         "ranges_hash_fnv1a64": fnv1a64(&norm.iter().map(|v| v.as_slice()).collect::<Vec<_>>()),
         "note": "average-strategy reaches; class-level (no card removal between seats); ante counted in invested",
     });
-    std::fs::write(&a[4], serde_json::to_vec_pretty(&out).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    let tmp = format!("{outp}.tmp");
+    std::fs::write(&tmp, serde_json::to_vec_pretty(&out).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, &outp).map_err(|e| e.to_string())?;
     eprintln!("gap {:.5}  pot {}  spr {:.3}  hash {}", gaps.iter().sum::<f64>(), nd.pot, eff / nd.pot, out["ranges_hash_fnv1a64"]);
+    }
     Ok(())
 }

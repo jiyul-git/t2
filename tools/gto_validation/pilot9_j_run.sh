@@ -13,9 +13,13 @@ TB=$(python3 $T/pilot9_t3.py specs)
 JAM=$(for x in $TB; do n=${x%%:*}; s=${x#*:}; echo "${n}_jam:${s%,call},jam,call"; done)
 mkdir -p $J/J; cd $J/J
 echo "J solve/exports $(date -u +%FT%TZ)"
+# one load + one gaps_and_evs for all missing exports (multi-path mode; gated bit-exact vs single-path exports on mr2)
+MB=/home/user/gto_ckpt/target_multi/release/examples/t2_cont_terminal
+: > jobs.txt
 for spec in $SRP $TB $JAM; do n=${spec%%:*}; s=${spec#*:}
-  [ -s export_$n.json ] || { T2_CONT_FILE=$J/mr3_resolved/manifest.json T2_CHECKPOINT=$J/J/ck.gtop $B/t2_cont_terminal $J/cfg_mr3_jam.json 100 $s export_$n.tmp > export_$n.log 2>&1 && mv export_$n.tmp export_$n.json; }
+  [ -s export_$n.json ] || echo "$s $J/J/export_$n.json" >> jobs.txt
 done
+[ -s jobs.txt ] && T2_CONT_FILE=$J/mr3_resolved/manifest.json T2_CHECKPOINT=$J/J/ck.gtop $MB $J/cfg_mr3_jam.json 100 @multi jobs.txt > multi.log 2>&1
 echo "J census $(date -u +%FT%TZ)"
 [ -s $J/ck_J_census.gtop ] || { cp $J/J/ck.gtop $J/ck_J_census.tmp && mv $J/ck_J_census.tmp $J/ck_J_census.gtop; }
 [ -s $J/census_J.json ] || T2_CONT_FILE=$J/mr3_resolved/manifest.json T2_CHECKPOINT=$J/ck_J_census.gtop $B/t2_cont_census $J/cfg_mr3_jam.json 100 $J/census_J.json > $J/census_J.log 2>&1

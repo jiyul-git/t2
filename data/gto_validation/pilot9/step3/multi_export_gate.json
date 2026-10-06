@@ -1,0 +1,13 @@
+{
+ "schema": "pilot9_multi_export_gate_v1",
+ "tree": "mr2 at the T checkpoint",
+ "compared_with": "original T exports",
+ "field_diffs": {
+  "m_btn": [],
+  "m_n51": [],
+  "m_n196": [],
+  "m_sb": [],
+  "s_btn": []
+ },
+ "pass": true
+}
