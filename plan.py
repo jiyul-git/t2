@@ -1407,6 +1407,78 @@ def range_claim_anchor(profile, hero, board, my_range, p_old):
             'hand_target': round(tgt, 4), 'w': round(w, 3)}
 
 
+# ---------- 리버 블러프 기준선 (FLOP_CLAIM_BASELINE.md 10절, 2026-10-07) ----------
+# 리버 벳 레인지의 진짜:가짜 ≈ 7:3(사용자, '얼추'). 가짜는 좋은 후보부터 채운다:
+# 쇼다운 가치가 없고, 콜할 손을 막고, 접을 손은 막지 않는 손(블로커 순효과 +).
+# 예전에는 bluff_2street 이 플랍·턴에 예산을 다 써 리버 사이즈가 0 → 최선의 후보
+# (Q♥8♥4♣2♠K♦ 에서 J♠T♠)가 10% 만 쳤고, 블로커 순효과가 빈도에 거의 반영되지 않았다.
+# 쇼다운 계획은 건드리지 않는다(베타 A #3). 마지막 공격자, HU, 첫 액션/체크 받음만.
+RIVER_BLUFF_ANCHOR = True
+_RB_RATIO = 3.0 / 7.0
+_RB_CACHE = {}
+
+
+def river_value_hand(hole, board):
+    """리버에서 벳 레인지의 밸류로 셀 손: 홀카드가 기여한 투페어+, 오버페어,
+    탑페어 좋은 키커(T+)."""
+    rv = _CLAIM_RV
+    cat = bot.eval7(list(hole) + list(board))[0]
+    bcat = bot.eval7(list(board))[0]
+    if cat >= 2 and cat > bcat:
+        return True
+    hr = sorted((rv[c[0]] for c in hole), reverse=True)
+    br = sorted({rv[c[0]] for c in board}, reverse=True)
+    if hr[0] == hr[1]:
+        return hr[0] > br[0]
+    if br[0] in hr:
+        k = hr[1] if hr[0] == br[0] else hr[0]
+        return k >= 10
+    return False
+
+
+def river_range_shares(my_range, board):
+    key = (_range_sig(my_range), tuple(board))
+    v = _RB_CACHE.get(key)
+    if v is not None:
+        return v
+    dead = set(board)
+    tot = val = air = 0.0
+    for c, w in R.range_items(my_range):
+        if dead & set(c):
+            continue
+        tot += w
+        if river_value_hand(c, board):
+            val += w
+        elif bot.made_strength(list(c), board) < 1:
+            air += w
+    v = ((val / tot) if tot else 0.0, (air / tot) if tot else 0.0)
+    if len(_RB_CACHE) > 4096:
+        _RB_CACHE.clear()
+    _RB_CACHE[key] = v
+    return v
+
+
+def river_bluff_anchor(profile, hero, board, my_range, st, p_old):
+    """메이드 없는 손의 리버 블러프 확률을 레인지 기준선 쪽으로 당긴다."""
+    if bot.made_strength(list(hero), board) >= 1:
+        return None
+    V, A = river_range_shares(my_range, board)
+    if V <= 0.0 or A <= 0.0:
+        return None
+    base = min(1.0, _RB_RATIO * V / A)
+    blk = float(st.get('blocker_net') or 0.0)
+    f = max(0.3, min(1.8, 1.0 + 10.0*blk))
+    if 'A' in (hero[0][0], hero[1][0]):
+        f *= 0.6                      # A 하이는 미스한 드로우를 이기는 쇼다운 가치
+    tgt = max(0.0, min(0.95, base * f))
+    _sk = 0.5*(PS.sk(profile, 'barrel_river') + PS.sk(profile, 'bluff'))
+    w = 0.9 * max(0.0, min(1.0, (_sk - 2.0) / 7.0))
+    p = p_old + w * (tgt - p_old)
+    return {'p': round(max(0.0, min(0.95, p)), 4), 'p_old': round(p_old, 4),
+            'V': round(V, 4), 'air': round(A, 4), 'base': round(base, 4),
+            'blk_net': round(blk, 4), 'f': round(f, 3), 'w': round(w, 3)}
+
+
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
                   oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None, tilt=0.0):
@@ -1434,6 +1506,19 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
             p_aggr = _anc['p']
             why_a = '%s | 레인지 주장 기준선 %.0f%%(V %.0f%%, w %.2f)' % (
                 why_a, _anc['target']*100, _anc['V']*100, _anc['w'])
+    if (RIVER_BLUFF_ANCHOR and street == 'river' and len(board) == 5
+            and initiative and int(n_opp or 1) == 1
+            and int(to_act_behind or 0) == 0 and profile.get('concepts')
+            and plan in ('giveup', 'bluff_2street', 'river_bluff') and my_range):
+        _rb = river_bluff_anchor(profile, hero, board, my_range, st, p_aggr)
+        if _rb is not None:
+            _trace(st, street, 'river_bluff_claim', **_rb)
+            p_aggr = _rb['p']
+            if not why_a.startswith('DEVIATE:') and plan != 'river_bluff':
+                why_a = 'DEVIATE:' + why_a
+            why_a = '%s | 리버 블러프 기준선 %.0f%%(V %.0f%%, air %.0f%%, blk %+.3f, w %.2f)' % (
+                why_a, _rb['p']*100, _rb['V']*100, _rb['air']*100,
+                _rb['blk_net'], _rb['w'])
     _roll = rng.random()
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
            why=why_a, plan=plan, rel=round(rel, 3))
