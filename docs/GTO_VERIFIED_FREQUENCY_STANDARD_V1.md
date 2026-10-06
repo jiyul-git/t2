@@ -47,3 +47,16 @@ BB-3-bet-pot terminal drifted monotonically (BB signed change -2.45 then -2.10 b
   else alpha = 0.5;
 - at most 8 steps (k = 0..7); stop when every terminal-seat has D <= U (k >= 1), as before.
 - G3 for a spot = converged under v2. The v1 verdict of j30_utg_open_bb is kept in its step-2 report.
+
+## Amendment 2 (2026-10-06, before any v3 step): spot loop rule v3 (range-reactive matrices for 3-bet pots)
+Observed on j30_utg_open_bb under v2 (steps 3-5): the BB-3-bet-pot ranges cycled (BB 3-bet range 20 -> 100 -> 95 -> 69 -> 94 combos,
+UTG calling range 94 -> 135 -> 104 -> 187 -> 56) and the BB table kept moving by 0.6-2.8 bb (U 0.5-0.75): stationary per-class tables
+do not react to the opponent's range inside the spot CFR, which a thin 3-bet range needs.
+Rule v3 (new spot ids `*_v3`, all steps):
+- terminals with two or more raises on the line use a range-reactive matrix: per flop, gross of own class h vs each single opponent
+  class j under the solved strategies (t2_cont_panel T2_PANEL_MATRIX=1; columns = the opponent's classes with positive reach at the
+  spot root), aggregated over panel_v1 by the ratio estimator sum_b w_b c_b(h) c_b(j) v_b(h, j) / sum_b w_b c_b(h) c_b(j);
+  the spot pays g(h) = sum_j dist(j) M[h][j] against the opponent's current distribution;
+- matrix terminals are replaced each step (alpha 1); D = weighted |M_new dist_k - value used at step k| at the step-k ranges,
+  U as before; reported next to it: |M_new dist_k - A4c table at the solve ranges| (consistency of the matrix with the table);
+- SRP terminals keep tables under rule v2; at most 6 steps; stop when every terminal-seat has D <= U (k >= 1).

@@ -67,6 +67,7 @@ class Spot:
         self.stack = self.cfg['stack']
         self.load_dump()
         self.load_tables()
+        self.matrices = {}   # line -> {seat: 169 x 169 array, gross of own class h vs opponent class j (NaN = not evaluated)}
 
     # ---------- inputs ----------
     def load_dump(self):
@@ -255,6 +256,12 @@ class Spot:
             return np.full(NC, v * mass)
         kind, line, ns, pot = ch
         dist = opp_reach / mass
+        if kind == 'flop' and line in self.matrices:
+            M = self.matrices[line][p]
+            use = dist > 0
+            assert not np.isnan(M[:, use]).any(), (line, 'matrix lacks an opponent class with positive reach')
+            g = M[:, use] @ dist[use]
+            return (g - ns['invested'][p]) * mass
         if kind == 'flop' and line in self.tables:
             tab = self.tables[line]
             assert abs(tab['pot_bb'] - pot) < 1e-9, (line, tab['pot_bb'], pot)
@@ -325,10 +332,23 @@ class Spot:
             return vals.max(0) if br else (s * vals).sum(0)
         return vals.sum(0)
 
+    def gross_at(self, line, ch, p, dist):
+        """gross (bb) of seat p's classes at flop terminal ch vs a normalised opponent class distribution, as term_value uses it"""
+        v = self.term_value(ch, p, dist) if dist.sum() > 0 else np.zeros(NC)
+        return v + ch[2]['invested'][p]
+
     def node_evs(self, shift=None):
         """per node: per action per class EV of the actor given the node is reached (bb, net), average strategies.
         shift = (line, seat, delta): add delta to that table's gross for that seat (sensitivity probes)."""
         saved = None
+        if shift is not None and shift[0] in self.matrices:
+            line, seat, delta = shift
+            savedm = self.matrices[line][seat]
+            self.matrices[line][seat] = savedm + delta
+            try:
+                return self.node_evs()
+            finally:
+                self.matrices[line][seat] = savedm
         if shift is not None:
             line, seat, delta = shift
             saved = self.tables[line]

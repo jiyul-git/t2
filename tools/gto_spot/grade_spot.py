@@ -22,10 +22,12 @@ import hu_spot as H  # noqa: E402
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 
 
-def solve_with(spec, tables):
+def solve_with(spec, tables, matrices=None):
     sp = H.Spot(spec)
     for line, tab in tables.items():
         sp.tables[line] = tab
+    for line, m in (matrices or {}).items():
+        sp.matrices[line] = {int(seat): np.array([[np.nan if x is None else x for x in row] for row in mm]) for seat, mm in m.items()}
     sp.root()
     sp.build()
     sp.solve(spec.get('iterations', 3000))
@@ -38,13 +40,16 @@ def main():
     st = json.load(open(wd + 'state.json'))
     k = st['final_step']
     tabs_k = json.load(open(wd + f'step{k}/tables_used.json'))
-    sp = solve_with(spec, tabs_k)
+    mf = wd + f'step{k}/matrices_used.json'
+    mats_k = json.load(open(mf)) if os.path.exists(mf) else {}
+    sp = solve_with(spec, tabs_k, mats_k)
     ev = sp.node_evs()
     expl = sp.exploitability()
     prev = None
     if k > 0:
         tabs_p = json.load(open(wd + f'step{k - 1}/tables_used.json'))
-        spp = solve_with(spec, tabs_p)
+        mfp = wd + f'step{k - 1}/matrices_used.json'
+        spp = solve_with(spec, tabs_p, json.load(open(mfp)) if os.path.exists(mfp) else {})
         prev = spp.node_evs()
     # sensitivities q_t(a, h) per node for the actor's own seat
     lines = [l for l in sp.tables if l in tabs_k]
@@ -136,7 +141,7 @@ def main():
                'root_line': spec['root_line'], 'live': [sp.pos[p] for p in sp.live], 'final_step': k,
                'gates': {'G2_exploitability_bb': expl['total_bb'], 'G2': g2, 'G3_outer_converged': g3,
                          'G4_static_share': s_share, 'G4': g4, 'G5_stable_combo_share': g5_share, 'verified': verified},
-               'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'nodes': nodes}
+               'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
     os.makedirs(os.path.join(ROOT, 'data/gto_spot/records'), exist_ok=True)
     json.dump(rec_out, open(os.path.join(ROOT, f"data/gto_spot/records/{spec['id']}.json"), 'w'))
     print(json.dumps(rec_out['gates'], indent=1))
