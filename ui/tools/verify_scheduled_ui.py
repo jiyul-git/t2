@@ -194,7 +194,9 @@ def verify():
                     'pending': after.get('vclock_settle_pending'),
                     'action_deadline': after.get('ui_action_deadline')}
                 time.sleep(.5)
-            assert after.get('offscreen') or after.get('busted'), after.keys()
+            # 2026-10-07: 자리 비움은 오프스크린으로 넘기지 않고 내 테이블을 실제처럼 계속 진행한다(sit-out).
+            assert (after.get('offscreen') or after.get('busted') or after.get('away_next_deal')
+                    or after.get('away_sitout')), after.keys()
             stop()
             # Remove the entire system folder. Personal files stay independent,
             # and a system-only update must restore code without a new grant.

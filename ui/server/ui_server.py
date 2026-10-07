@@ -85,6 +85,8 @@ def _economy_receipt(st):
 # The off-screen field may trail the current tournament time by at most this much
 # when the waiting HERO takes over (one completed hand per table is ~20-60s).
 ADMISSION_SYNC_LAG = 15.0
+# 자리 비움 중 내 테이블의 핸드 간격(실제 진행 템포에 맞춘 근사).
+AWAY_HAND_SECONDS = 30.0
 
 
 def _live_is_active(st):
@@ -208,6 +210,11 @@ def _schedule_tick():
         ECONOMY.request_enter(tid, False)
         st = ECONOMY.load_active()
     if st and not st.get('offscreen'):
+        away = _play_absent(now)
+        if not away and (st.get('away_sitout') or st.get('away_next_deal')):
+            st.pop('away_sitout', None)
+            st.pop('away_next_deal', None)
+            L.save(st)
         # The deadline is authoritative even if the browser never posts again.
         if not st.get('busted') and _last is None and st.get('hand_seed') is not None:
             _last = _wrap(_step_sched())
@@ -223,16 +230,39 @@ def _schedule_tick():
             if idle or now >= ready_at + grace:
                 _arm_action_clock(_token(), now=ready_at + grace)
                 st = L.load()
-        if (decision and st.get('ui_action_deadline') is not None
+        sitout_now = decision and away and st.get('away_sitout')
+        if sitout_now or (decision and st.get('ui_action_deadline') is not None
                 and now >= float(st['ui_action_deadline'])):
-            if TIMING_ON:
+            if TIMING_ON and not sitout_now:
                 _settle_hero_bank(st, now, timed_out=True)
                 L.save(st)
             _last = _wrap(_step_sched(_timeout_action()))
             _last['auto_folded'] = True
             st = L.load()
-        if ((st.get('busted') or _play_absent(now))
-                and st.get('hand_seed') is None):
+            if away and not st.get('away_sitout'):
+                # 자리 비움 중 첫 타임아웃 뒤로는 실제 사이트처럼 sit-out: 바로 폴드한다.
+                st['away_sitout'] = True
+                L.save(st)
+        if (away and not st.get('busted') and st.get('hand_seed') is None
+                and ((_last or {}).get('view') or {}).get('type') != 'decision'
+                and now >= float(st.get('away_next_deal') or 0.0)
+                and not (st.get('ui_break_pending') and _ui_timing(st).get('break_remaining'))):
+            # 자리를 비워도 백그라운드(오프스크린)로 넘기지 않는다. 내 테이블은 실제처럼
+            # 계속 진행되고(sit-out 자동 폴드), 돌아오면 동기화 없이 바로 이어진다.
+            ready = True
+            if _vclock_enabled(st):
+                _vclock_pump(st, wait=False)
+                _vclock_refresh_settle_target(st)
+                L.save(st)
+                ready, _ = _vclock_settle(st, wait=False)
+                st = L.load()
+                ready = ready and not st.get('vclock_settle_pending')
+            if ready and not st.get('others_pending'):
+                _last = _wrap(_step_sched())
+                st = L.load()
+                st['away_next_deal'] = now + AWAY_HAND_SECONDS
+                L.save(st)
+        if st.get('busted') and st.get('hand_seed') is None:
             # Finalize legacy/vclock pending work before handing the whole field
             # to the off-screen scheduler.
             if st.get('vclock_settle_pending'):
