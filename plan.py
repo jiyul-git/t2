@@ -1389,20 +1389,32 @@ def range_claim_value_share(my_range, board):
     return v
 
 
-def range_claim_anchor(profile, hero, board, my_range, p_old):
+# OOP 오프너(먼저 액션): 같은 레인지 기준에 포지션 숙련만큼 할인(플랍 c벳 포지션 수정 B 와
+# 같은 계수, 숙련 10 에서 ×0.76). 체크 레인지 보호를 위해 밸류도 85% 만 친다.
+# 사용자 원칙: 포지션이 없으면 이점이 없다(상대가 뒤에서 레이즈/플로트, 에퀴티 실현이 어렵다).
+RANGE_CLAIM_ANCHOR_OOP = True
+_CLAIM_VALUE_P_OOP = 0.85
+
+
+def range_claim_anchor(profile, hero, board, my_range, p_old, oop=False):
     """레인지 기준선 쪽으로 당긴 벳 확률. 반환 None 이면 적용 안 함."""
     V = range_claim_value_share(my_range, board)
     if V <= 0.0:
         return None
     T = min(0.95, max(_CLAIM_FLOOR, 2.0 * V))
+    vp = _CLAIM_VALUE_P
+    if oop:
+        T *= 1.0 - 0.24 * (PS.sk(profile, 'positional') / 10.0)
+        vp = _CLAIM_VALUE_P_OOP
     is_val = claim_value_hand(hero, board)
-    fill = max(0.0, min(1.0, (T - V) / max(1e-6, 1.0 - V)))
-    tgt = _CLAIM_VALUE_P if is_val else fill
+    fill = max(0.0, min(1.0, (T - V*vp) / max(1e-6, 1.0 - V)))
+    tgt = vp if is_val else fill
     # 기질은 기준선 위에서 조금만 흔든다(같은 숙련이라도 사람마다 다르게).
     tgt = max(0.0, min(0.97, tgt + 0.03*(PS.temper(profile, 'aggression', 5.0) - 5.0)))
     w = 0.9 * max(0.0, min(1.0, (PS.sk(profile, 'cbet_flop') - 2.0) / 7.0))
     p = p_old + w * (tgt - p_old)
     return {'p': round(max(0.0, min(0.97, p)), 4), 'p_old': round(p_old, 4),
+            'oop': bool(oop),
             'target': round(T, 4), 'V': round(V, 4), 'value': bool(is_val),
             'hand_target': round(tgt, 4), 'w': round(w, 3)}
 
@@ -1573,11 +1585,14 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                                       spr_now=(float(stack)/max(1.0, float(pot))
                                                if pot else None),
                                       tilt=tilt)
+    _anc_ip = (not oop and int(to_act_behind or 0) == 0)
+    _anc_oop = (RANGE_CLAIM_ANCHOR_OOP and oop and int(to_act_behind or 0) == 1)
     if (RANGE_CLAIM_ANCHOR and street == 'flop' and len(board) == 3
-            and initiative and not oop and int(n_opp or 1) == 1
-            and int(to_act_behind or 0) == 0 and profile.get('concepts')
+            and initiative and (_anc_ip or _anc_oop) and int(n_opp or 1) == 1
+            and profile.get('concepts')
             and plan != 'trap' and my_range):
-        _anc = range_claim_anchor(profile, hero, board, my_range, p_aggr)
+        _anc = range_claim_anchor(profile, hero, board, my_range, p_aggr,
+                                  oop=bool(_anc_oop))
         if _anc is not None:
             _trace(st, street, 'range_claim', **_anc)
             if _anc['p'] > p_aggr + 1e-9 and plan in ('giveup', 'showdown') \
