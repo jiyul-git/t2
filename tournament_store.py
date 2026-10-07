@@ -229,7 +229,13 @@ class Store:
         with self._db() as db:
             # 최초 설치(대회 0개)에서는 이미 시작한 대회를 만들지 않는다. 설치 순간 레이트 등록
             # 중인 대회를 처음부터 따라잡아 계산하느라 휴대폰에서 동기화가 0% 에 묶이는 것을 막는다.
-            first_install = db.execute('SELECT COUNT(*) FROM tournaments').fetchone()[0] == 0
+            row = db.execute('SELECT value FROM meta WHERE key=?', ('schedule_since',)).fetchone()
+            if row is None:
+                since = now if (self.uses_default_schedule and db.execute(
+                    'SELECT COUNT(*) FROM tournaments').fetchone()[0] == 0) else 0
+                db.execute('INSERT INTO meta(key,value) VALUES (?,?)', ('schedule_since', repr(float(since))))
+            else:
+                since = float(row[0])
             if self.uses_default_schedule:
                 # Retire only obsolete built-in slots with no personal receipts
                 # or ledger references. Paid/cancelled entries keep their frozen
@@ -268,7 +274,7 @@ class Store:
                     # On first installation, don't simulate expired past tournaments.
                     if start + spec['late_minutes'] * 60 <= now:
                         continue
-                    if first_install and start <= now:
+                    if start <= since:
                         continue
                     key = '%s:%d' % (spec['fmt'], start)
                     fmt = FM.get(spec['fmt'])
