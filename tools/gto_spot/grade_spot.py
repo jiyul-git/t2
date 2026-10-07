@@ -39,14 +39,21 @@ def main():
     wd = f"/home/user/gto_ckpt/spots/{spec['id']}/"
     st = json.load(open(wd + 'state.json'))
     k = st['final_step']
-    tabs_k = json.load(open(wd + f'step{k}/tables_used.json'))
-    mf = wd + f'step{k}/matrices_used.json'
+    precision = os.environ.get('PRECISION') == '144'
+    kd = wd + (f'step{k}_p144/' if precision else f'step{k}/')
+    tabs_k = json.load(open(kd + 'tables_used.json'))
+    mf = kd + 'matrices_used.json'
     mats_k = json.load(open(mf)) if os.path.exists(mf) else {}
     sp = solve_with(spec, tabs_k, mats_k)
     ev = sp.node_evs()
     expl = sp.exploitability()
     prev = None
-    if k > 0:
+    if precision:
+        # u_outer = change of the precision update itself (24-board accepted state -> 144-board state)
+        t24 = json.load(open(wd + f'step{k}/tables_used.json'))
+        m24f = wd + f'step{k}/matrices_used.json'
+        prev = solve_with(spec, t24, json.load(open(m24f)) if os.path.exists(m24f) else {}).node_evs()
+    elif k > 0:
         tabs_p = json.load(open(wd + f'step{k - 1}/tables_used.json'))
         mfp = wd + f'step{k - 1}/matrices_used.json'
         spp = solve_with(spec, tabs_p, json.load(open(mfp)) if os.path.exists(mfp) else {})
@@ -132,6 +139,8 @@ def main():
     s_share = static / flop if flop > 0 else 0.0
     g2 = expl['total_bb'] <= 0.010
     g3 = bool(st.get('converged'))
+    if precision:
+        g3 = g3 and json.load(open(kd + 'report.json'))['consistent_with_24']
     g4 = s_share <= 0.05
     g5_share = stable_mass / total_mass if total_mass > 0 else 0.0
     g5 = True  # near_indifferent classes are allowed (reported as groups); the >= 95% rule counts stable + near_indifferent
@@ -143,7 +152,8 @@ def main():
                          'G4_static_share': s_share, 'G4': g4, 'G5_stable_combo_share': g5_share, 'verified': verified},
                'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
     os.makedirs(os.path.join(ROOT, 'data/gto_spot/records'), exist_ok=True)
-    json.dump(rec_out, open(os.path.join(ROOT, f"data/gto_spot/records/{spec['id']}.json"), 'w'))
+    rec_out['panel'] = 'panel_v3_144 (precision pass)' if precision else 'panel_v1'
+    json.dump(rec_out, open(os.path.join(ROOT, f"data/gto_spot/records/{spec['id']}{'_p144' if precision else ''}.json"), 'w'))
     print(json.dumps(rec_out['gates'], indent=1))
     root = nodes[0]
     print('root', root['actor'], {a: round(100 * v, 1) for a, v in root['mix'].items()})

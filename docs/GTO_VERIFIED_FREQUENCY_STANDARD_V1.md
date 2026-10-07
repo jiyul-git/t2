@@ -60,3 +60,14 @@ Rule v3 (new spot ids `*_v3`, all steps):
 - matrix terminals are replaced each step (alpha 1); D = weighted |M_new dist_k - value used at step k| at the step-k ranges,
   U as before; reported next to it: |M_new dist_k - A4c table at the solve ranges| (consistency of the matrix with the table);
 - SRP terminals keep tables under rule v2; at most 6 steps; stop when every terminal-seat has D <= U (k >= 1).
+
+## Amendment 3 (2026-10-07, before any P144 solve): precision pass on panel_v3_144
+Observed on j30_utg_open_bb_v3 (converged, G2-G4 pass): only 21.5% of reaching combos are `stable`; the panel_v1 standard error
+(~0.35 bb weighted, class level) dominates u. Variance-reduction checks on the same data: ratio estimator SE not smaller (0.45 vs 0.41
+for the BB SRP seat); equity control variate -20 to -28% SE (within-stratum correlation 0.55-0.74) — not adopted. Flop target 0.6% / 1.0%
+instead of 0.3%: 75 vs 125 iterations, ~30% less time, mean |delta class value| 0.02 bb (max 0.18).
+Precision pass P144 (after a spot converges): at the accepted step, re-solve every terminal at that step's ranges on the nested
+panel_v3_144 (24 panel_v1 boards reused, 120 extension boards at target 0.6% pot); re-estimate tables and 3-bet-pot matrices on 144
+boards; re-solve the spot; grade with the 144-board standard errors and u_outer = |gap_144 - gap_24|. G3 additionally requires
+D144 <= U24 for every terminal-seat (the precision update stays inside the 24-board resolution at which the loop converged).
+Records carry `panel: panel_v3_144`. The verified label of a spot is the P144 grade when it exists.

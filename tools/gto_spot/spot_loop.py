@@ -54,7 +54,7 @@ def board_values(flops_dir):
     out = {}
     for b in boards:
         d = json.load(open(os.path.join(flops_dir, b + '.json')))
-        assert d['converged'] and d['exploitability_pct_pot'] <= 0.3, (flops_dir, b)
+        assert d['converged'] and d['exploitability_pct_pot'] <= d['provenance_key']['target_exploitability_pct_pot'] <= 0.6, (flops_dir, b)
         out[b] = {pl['position']: [0.0 if x is None else x for x in pl['gross_eps']] for pl in d['players']}
     return out
 
