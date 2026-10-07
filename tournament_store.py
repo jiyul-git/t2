@@ -30,10 +30,11 @@ LEGACY_SCHEDULE = [
     dict(fmt='deep', minute=40, buyin=5000, bot_entries=179,
          late_minutes=90, max_reentries=2),
 ]
-# One event every two hours, rotating formats. UTC offsets put standard at
-# 00/06/12/18, turbo at 02/08/14/20 and deep at 04/10/16/22 in Asia/Seoul.
-DEFAULT_SCHEDULE = [dict(spec, minute=0, interval_hours=6, hour_offset=offset)
-                    for spec, offset in zip(LEGACY_SCHEDULE, (3, 5, 1))]
+# One event every hour on the hour, rotating standard -> turbo -> deep (2026-10-07, 사용자 요청).
+# UTC offsets put standard at 02/05/08/11/14/17/20/23, turbo at 00/03/.../21 and deep at
+# 01/04/.../22 in Asia/Seoul (KST = UTC+9; 17:00 KST = 08 UTC, 8 % 3 == 2).
+DEFAULT_SCHEDULE = [dict(spec, minute=0, interval_hours=3, hour_offset=offset)
+                    for spec, offset in zip(LEGACY_SCHEDULE, (2, 0, 1))]
 
 
 def scheduled_start(spec, hour):
@@ -235,6 +236,20 @@ class Store:
                     start = row['starts_at']
                     replacement = next(s for s in DEFAULT_SCHEDULE if s['fmt'] == legacy['fmt'])
                     if start % 3600 != replacement['minute'] * 60 or not scheduled_start(replacement, start):
+                        db.execute('DELETE FROM tournaments WHERE id=?', (row['id'],))
+                # 기본 일정이 바뀌면(2시간 → 1시간 순환) 아직 시작 안 했고 아무 기록도 없는
+                # 예전 기본 슬롯을 지운다. 같은 시각에 옛 대회와 새 대회가 겹치지 않게 한다.
+                for row in db.execute('SELECT id,starts_at,rules FROM tournaments t '
+                        'WHERE starts_at>? '
+                        'AND NOT EXISTS (SELECT 1 FROM entries e WHERE e.tournament_id=t.id) '
+                        'AND NOT EXISTS (SELECT 1 FROM ledger l WHERE l.tournament_id=t.id)',
+                        (now,)).fetchall():
+                    rules = json.loads(row['rules'])
+                    if rules.get('interval_hours', 1) == 1:
+                        continue        # 위의 레거시 처리 대상
+                    current = next((sp for sp in DEFAULT_SCHEDULE if sp['fmt'] == rules.get('fmt')), None)
+                    if (current is None or rules.get('interval_hours') != current['interval_hours']
+                            or rules.get('hour_offset') != current['hour_offset']):
                         db.execute('DELETE FROM tournaments WHERE id=?', (row['id'],))
             for h in range(hour - 7200, hour + 86400, 3600):
                 for spec in self.schedule:

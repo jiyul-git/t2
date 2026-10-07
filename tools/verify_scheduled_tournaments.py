@@ -364,14 +364,27 @@ class EconomyTests(unittest.TestCase):
         self.assertTrue(rows)
         self.assertTrue(all(r['seats'] == 9 and r['max_entries'] == 1000 for r in rows))
 
-    def test_default_schedule_has_one_event_every_two_hours_in_seoul(self):
+    def test_default_schedule_has_one_event_every_hour_in_seoul(self):
+        # 2026-10-07: 매시 정각, standard -> turbo -> deep 순환, 17:00 KST 는 standard.
         defaults = TS.Store(self.tmp.name + '/spaced')
         midnight = 54000  # 1970-01-02 00:00 Asia/Seoul
         rows = defaults.catalog(midnight - 1)['tournaments']
-        starts = [r['starts_at'] for r in rows if midnight <= r['starts_at'] < midnight + 86400]
-        self.assertEqual(starts, list(range(midnight, midnight + 86400, 7200)))
-        self.assertEqual([r['fmt'] for r in rows if r['starts_at'] in starts],
-                         ['standard', 'turbo', 'deep'] * 4)
+        # 일정은 지금부터 24시간 앞까지 만든다 — 자정 1초 전 기준이면 23:00 슬롯은 아직 없다.
+        starts = [r['starts_at'] for r in rows if midnight <= r['starts_at'] < midnight + 23 * 3600]
+        self.assertEqual(starts, list(range(midnight, midnight + 23 * 3600, 3600)))
+        fmts = [r['fmt'] for r in rows if r['starts_at'] in starts]
+        self.assertEqual(fmts, (['turbo', 'deep', 'standard'] * 8)[:23])
+        self.assertEqual(fmts[17], 'standard')
+
+    def test_default_hourly_update_retires_empty_two_hour_slots(self):
+        root = self.tmp.name + '/two_hour'
+        midnight = 54000
+        old = [dict(spec, minute=0, interval_hours=6, hour_offset=o)
+               for spec, o in zip(TS.LEGACY_SCHEDULE, (3, 5, 1))]
+        TS.Store(root, 10000, old).ensure_schedule(midnight - 1)
+        rows = TS.Store(root, 10000).catalog(midnight - 1)['tournaments']
+        self.assertTrue(all(r.get('interval_hours') == 3 for r in rows
+                            if r['starts_at'] >= midnight))
 
     def test_default_update_retires_empty_legacy_slots_and_preserves_receipts(self):
         root = self.tmp.name + '/legacy'
