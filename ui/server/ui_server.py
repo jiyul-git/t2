@@ -55,6 +55,15 @@ SCHEDULE_CURSOR = 0
 # 오프스크린 작업이 끝나면 1초 주기를 기다리지 않고 바로 확정·다음 배치를 넘긴다.
 SCHEDULE_WAKE = threading.Event()
 LAST_PLAY_PRESENCE = 0.0
+# 처리 중인 플레이 요청 수. 폰에서 한 요청(정산 대기 등)이 20초를 넘겨도 그 사이에
+# '자리 비움'으로 판정해 HERO 를 오프스크린(동기화 화면)으로 넘기지 않게 한다.
+PLAY_INFLIGHT = 0
+PLAY_INFLIGHT_LOCK = threading.Lock()
+PLAY_PATHS = ('/api/state', '/api/step', '/api/ready', '/api/action-clock')
+
+
+def _play_absent(now, limit=20):
+    return PLAY_INFLIGHT == 0 and now - LAST_PLAY_PRESENCE > limit
 if ECONOMY.active_id():
     L.STATE_STORE = ECONOMY
     _saved_game = ECONOMY.load_active()
@@ -181,7 +190,7 @@ def _schedule_tick():
         SCHEDULE_FUTURE = None
     tid = ECONOMY.active_id()
     st = ECONOMY.load_active() if tid else None
-    if tid and now - LAST_PLAY_PRESENCE > 20 and ECONOMY.event(tid)['enter_requested']:
+    if tid and _play_absent(now) and ECONOMY.event(tid)['enter_requested']:
         # A player may leave the waiting room before the tournament starts.
         # An abandoned entry request must never pause that player's future blinds.
         ECONOMY.request_enter(tid, False)
@@ -194,7 +203,7 @@ def _schedule_tick():
         decision = ((_last or {}).get('view') or {}).get('type') == 'decision'
         if decision and st.get('ui_action_deadline') is None:
             ready_at = float(st.get('ui_decision_ready_at') or now)
-            idle = now - LAST_PLAY_PRESENCE > 20
+            idle = _play_absent(now)
             # Connected players retain the existing full clock beginning when
             # their action bar is presented. Absence / failed presentation gets
             # a bounded server fallback, without buying extra time on reload.
@@ -210,7 +219,7 @@ def _schedule_tick():
             _last = _wrap(_step_sched(_timeout_action()))
             _last['auto_folded'] = True
             st = L.load()
-        if ((st.get('busted') or now - LAST_PLAY_PRESENCE > 20)
+        if ((st.get('busted') or _play_absent(now))
                 and st.get('hand_seed') is None):
             # Finalize legacy/vclock pending work before handing the whole field
             # to the off-screen scheduler.
@@ -1731,7 +1740,27 @@ class H(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, POST')
         self.end_headers()
 
+    def _play_tracked(self, fn):
+        global PLAY_INFLIGHT, LAST_PLAY_PRESENCE
+        play = urllib.parse.urlsplit(self.path).path in PLAY_PATHS
+        if not play:
+            return fn()
+        with PLAY_INFLIGHT_LOCK:
+            PLAY_INFLIGHT += 1
+        try:
+            return fn()
+        finally:
+            with PLAY_INFLIGHT_LOCK:
+                PLAY_INFLIGHT -= 1
+                LAST_PLAY_PRESENCE = time.time()
+
     def do_GET(self):
+        return self._play_tracked(self._do_GET)
+
+    def do_POST(self):
+        return self._play_tracked(self._do_POST)
+
+    def _do_GET(self):
         global _last, LAST_PLAY_PRESENCE
         parsed = urllib.parse.urlsplit(self.path)
         path = parsed.path
@@ -1846,7 +1875,7 @@ class H(BaseHTTPRequestHandler):
                 traceback.print_exc()
                 return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
 
-    def do_POST(self):
+    def _do_POST(self):
         global _last
         try:
             body = self._body()
