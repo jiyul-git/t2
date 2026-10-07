@@ -30,11 +30,17 @@ LEGACY_SCHEDULE = [
     dict(fmt='deep', minute=40, buyin=5000, bot_entries=179,
          late_minutes=90, max_reentries=2),
 ]
-# One event every hour on the hour, rotating standard -> turbo -> deep (2026-10-07, 사용자 요청).
-# UTC offsets put standard at 02/05/08/11/14/17/20/23, turbo at 00/03/.../21 and deep at
-# 01/04/.../22 in Asia/Seoul (KST = UTC+9; 17:00 KST = 08 UTC, 8 % 3 == 2).
-DEFAULT_SCHEDULE = [dict(spec, minute=0, interval_hours=3, hour_offset=offset)
-                    for spec, offset in zip(LEGACY_SCHEDULE, (2, 0, 1))]
+# One event every hour on the hour (2026-10-07, 사용자 요청). 테스트 기간에는 딥스택을 빼고
+# standard/turbo 를 번갈아 연다: UTC 짝수 시 standard, 홀수 시 turbo → KST(UTC+9) 기준
+# standard 는 홀수 시(…15/17/19…), turbo 는 짝수 시. 17:00 KST = 08 UTC → standard.
+# 딥을 되살리려면 TEST_SKIP_DEEP=False (그때는 3시간 순환, offset standard 2/turbo 0/deep 1).
+TEST_SKIP_DEEP = True
+if TEST_SKIP_DEEP:
+    DEFAULT_SCHEDULE = [dict(spec, minute=0, interval_hours=2, hour_offset=offset)
+                        for spec, offset in zip(LEGACY_SCHEDULE[:2], (0, 1))]
+else:
+    DEFAULT_SCHEDULE = [dict(spec, minute=0, interval_hours=3, hour_offset=offset)
+                        for spec, offset in zip(LEGACY_SCHEDULE, (2, 0, 1))]
 
 
 def scheduled_start(spec, hour):
@@ -234,8 +240,8 @@ class Store:
                     if not legacy or rules.get('interval_hours', 1) != 1:
                         continue
                     start = row['starts_at']
-                    replacement = next(s for s in DEFAULT_SCHEDULE if s['fmt'] == legacy['fmt'])
-                    if start % 3600 != replacement['minute'] * 60 or not scheduled_start(replacement, start):
+                    replacement = next((s for s in DEFAULT_SCHEDULE if s['fmt'] == legacy['fmt']), None)
+                    if replacement is None or start % 3600 != replacement['minute'] * 60 or not scheduled_start(replacement, start):
                         db.execute('DELETE FROM tournaments WHERE id=?', (row['id'],))
                 # 기본 일정이 바뀌면(2시간 → 1시간 순환) 아직 시작 안 했고 아무 기록도 없는
                 # 예전 기본 슬롯을 지운다. 같은 시각에 옛 대회와 새 대회가 겹치지 않게 한다.

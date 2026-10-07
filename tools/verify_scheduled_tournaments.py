@@ -365,7 +365,7 @@ class EconomyTests(unittest.TestCase):
         self.assertTrue(all(r['seats'] == 9 and r['max_entries'] == 1000 for r in rows))
 
     def test_default_schedule_has_one_event_every_hour_in_seoul(self):
-        # 2026-10-07: 매시 정각, standard -> turbo -> deep 순환, 17:00 KST 는 standard.
+        # 2026-10-07: 매시 정각, 테스트 기간엔 딥 없이 turbo/standard 교대, 17:00 KST 는 standard.
         defaults = TS.Store(self.tmp.name + '/spaced')
         midnight = 54000  # 1970-01-02 00:00 Asia/Seoul
         rows = defaults.catalog(midnight - 1)['tournaments']
@@ -373,7 +373,7 @@ class EconomyTests(unittest.TestCase):
         starts = [r['starts_at'] for r in rows if midnight <= r['starts_at'] < midnight + 23 * 3600]
         self.assertEqual(starts, list(range(midnight, midnight + 23 * 3600, 3600)))
         fmts = [r['fmt'] for r in rows if r['starts_at'] in starts]
-        self.assertEqual(fmts, (['turbo', 'deep', 'standard'] * 8)[:23])
+        self.assertEqual(fmts, (['turbo', 'standard'] * 12)[:23])
         self.assertEqual(fmts[17], 'standard')
 
     def test_default_hourly_update_retires_empty_two_hour_slots(self):
@@ -383,7 +383,7 @@ class EconomyTests(unittest.TestCase):
                for spec, o in zip(TS.LEGACY_SCHEDULE, (3, 5, 1))]
         TS.Store(root, 10000, old).ensure_schedule(midnight - 1)
         rows = TS.Store(root, 10000).catalog(midnight - 1)['tournaments']
-        self.assertTrue(all(r.get('interval_hours') == 3 for r in rows
+        self.assertTrue(all(r.get('interval_hours') == 2 and r['fmt'] != 'deep' for r in rows
                             if r['starts_at'] >= midnight))
 
     def test_default_update_retires_empty_legacy_slots_and_preserves_receipts(self):
@@ -393,7 +393,7 @@ class EconomyTests(unittest.TestCase):
         legacy.ensure_schedule(midnight - 1)
         paid = 'turbo:%d' % (midnight + 1200)
         cancelled = 'deep:%d' % (midnight + 2400)
-        obsolete = 'standard:%d' % (midnight + 3600)
+        obsolete = 'standard:%d' % (midnight + 7200)   # 홀수 UTC 시 = 이제 터보 자리
         result = SR.advance(legacy.event(obsolete), 0, parallel=False)
         legacy.reserve(paid, now=midnight - 1)
         legacy.reserve(cancelled, now=midnight - 1)

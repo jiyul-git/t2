@@ -78,6 +78,27 @@ def _economy_receipt(st):
 ADMISSION_SYNC_LAG = 15.0
 
 
+def _live_is_active(st):
+    """실행 중 상태 파일이 지금 활성 대회의 것인가.
+
+    다른 대회에 입장(대기)하면 활성 대회가 바뀌지만 상태 파일은 입장이 끝날 때까지 이전 대회를
+    들고 있다. 그 사이 /api/ready 가 이전 대회 상태를 저장하려 하면 save_active 가
+    '다른 대회의 저장 상태입니다'로 실패했다(2026-10-07, 16:00 딥 → 17:00 표준 입장).
+    예약 대회가 아닌 상태(tournament_id 없음)는 그대로 둔다.
+    """
+    fd = (st or {}).get('field') or {}
+    hero = fd.get('hero_pid')
+    if hero is None or str(hero) not in (fd.get('players') or {}):
+        return False          # 아직 착석 전(오프스크린 필드, hero_pid=-1): 시계 작업 대상이 아니다
+    tid = (st or {}).get('tournament_id')
+    if not tid:
+        return True
+    try:
+        return ECONOMY.active_id() == tid
+    except Exception:
+        return False
+
+
 def _managed_play_state():
     """Take over only a completed off-screen hand; no action/clock reset on reload."""
     global _last, LAST_PLAY_PRESENCE
@@ -1721,7 +1742,7 @@ class H(BaseHTTPRequestHandler):
             # 정산이 끝난 뒤에 다음 핸드로 넘어간다 — 빈 로딩 화면을 없앤다.
             # LOCK 을 잡지 않는다. 잡으면 진행 중인 요청 뒤에 줄을 서게 된다.
             st = L.load() if os.path.exists(L.ST) else {}
-            if _vclock_enabled(st):
+            if _vclock_enabled(st) and _live_is_active(st):
                 # 결정/애니메이션 중에도 완료 chunk를 이어 붙여 계속 선계산한다.
                 _vclock_pump(st, wait=False)
                 if LOCK.acquire(blocking=False):
