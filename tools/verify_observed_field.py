@@ -43,12 +43,18 @@ def run(fmt='turbo', day=0, limit=None):
         print('SKIP: no coarse library for', fmt)
         return 0
     n_coarse = [0]
+    late_coarse = [0]       # 남은 인원이 2테이블 이하일 때 통계로 돈 핸드(0 이어야 한다)
     h4h = {'calls': 0, 'barrier_events': 0}
     orig = CS.coarse_table_task
 
     def wrap(*a, **k):
         out = orig(*a, **k)
         n_coarse[0] += len(out.get('events') or [])
+        frozen = a[4] if len(a) > 4 else k.get('frozen')
+        mini = a[0]
+        if (frozen or {}).get('remaining') is not None and \
+                int(frozen['remaining']) <= 2 * int(mini.get('max_seat') or 9):
+            late_coarse[0] += len(out.get('events') or [])
         if k.get('h4h_mode') or (len(a) > 6 and a[6]):
             h4h['calls'] += 1
             h4h['barrier_events'] += sum(e.get('barrier') == 'hand_for_hand'
@@ -139,10 +145,13 @@ def run(fmt='turbo', day=0, limit=None):
             break
     out = {'fmt': fmt, 'day': day, 'steps': steps, 'end_active': t, 'entries': int(f.entries),
            'remaining': int(f.remaining()), 'level': int(fd.get('level') or 1),
-           'coarse_hands': n_coarse[0], 'moves': moves, 'h4h': h4h, 'fails': fails[:20], 'n_fails': len(fails)}
+           'coarse_hands': n_coarse[0], 'moves': moves, 'h4h': h4h, 'final_tables_real': late_coarse[0] == 0, 'fails': fails[:20], 'n_fails': len(fails)}
     print(json.dumps(out, ensure_ascii=False))
     if n_coarse[0] == 0:
         print('FAIL: coarse backend was not used')
+        return 1
+    if late_coarse[0]:
+        print('FAIL: coarse used with <= 2 tables left')
         return 1
     return 1 if fails else 0
 

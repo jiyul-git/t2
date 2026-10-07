@@ -12,11 +12,17 @@ import json
 import math
 import os
 import random
+import time
 import zlib
 
 LIB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'coarse_params')
 # 포지션 라벨의 프리플랍 순서(앞에서 뒤로). 라벨 집합이 같으면 같은 구성이다.
 LABEL_ORDER = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
+# 핸드포핸드 대기: 통계 핸드 가상 길이 1초당 실제 지연(초), 상한. 40초 핸드 → 2.4초.
+H4H_DELAY_PER_SECOND = 0.06
+H4H_DELAY_CAP = 3.0
+# 테이블이 이 수 이하(파이널 직전)면 통계 진행을 쓰지 않고 실제 엔진·가상시계로 돈다.
+COARSE_MIN_TABLES = 3
 CANDIDATES = 200         # 한 핸드에서 거리 비교할 후보 수(같은 구성·같은 버블 구간 안에서 무작위)
 
 _LIB = {}
@@ -174,6 +180,7 @@ def coarse_table_task(mini, tid, target_seconds, session_end, frozen,
     tb = f.tables[tid]
     lib = library(f.fmt.get('key', 'standard'))
     local = float(getattr(tb, 'virtual_seconds', 0.0) or 0.0)
+    _start = local
     target_seconds = float(target_seconds)
     session_end = float(session_end)
     f._frozen_field = frozen
@@ -205,6 +212,15 @@ def coarse_table_task(mini, tid, target_seconds, session_end, frozen,
         local = float(end)
         if barrier or (max_hands is not None and len(events) >= max_hands):
             break
+    _hero = mini.get('hero_pid')
+    _watched = (_hero is not None and int(_hero) >= 0
+                and str(_hero) not in {str(p) for p in (mini.get('sitout_pids') or [])})
+    if h4h_mode and events and _watched and H4H_DELAY_PER_SECOND > 0:
+        # 핸드포핸드: 통계 테이블은 계산이 즉시 끝나 HERO 가 기다리는 느낌이 사라진다.
+        # 그 테이블 핸드의 가상 길이에 비례해 잠깐 늦게 끝낸다(난수로 꾸미지 않는다).
+        _prev = float(events[-2]['end']) if len(events) > 1 else _start
+        _hand = max(0.0, float(events[-1]['end']) - _prev)
+        time.sleep(min(H4H_DELAY_CAP, H4H_DELAY_PER_SECOND * _hand))
     f._frozen_field = None
     out = L._dump(f)
     row = out['tables'].get(str(tid), {})
@@ -223,12 +239,17 @@ def coarse_table_task(mini, tid, target_seconds, session_end, frozen,
     }
 
 
-def use_coarse(mini, tid):
+def use_coarse(mini, tid, frozen=None):
     """이 테이블을 통계로 진행해도 되는가. hybrid 대회이고, 앉아 있는 실제 사람(sitout 포함)이 없고,
     그 포맷의 보정 라이브러리가 있을 때만."""
     rules = mini.get('format_rules') or {}
     if rules.get('field_backend') != 'hybrid':
         return False
+    # 워커는 자기 테이블만 받는다(mini). 남은 테이블 수는 대회 전체 문맥(frozen)의 남은 인원으로 본다.
+    rem = (frozen or {}).get('remaining')
+    seats = int(mini.get('max_seat') or 9)
+    if rem is not None and int(rem) <= (COARSE_MIN_TABLES - 1) * seats:
+        return False                  # 파이널 직전(테이블 2개): 실제 엔진·가상시계
     if not available(mini.get('fmt') or 'standard'):
         return False
     row = (mini.get('tables') or {}).get(str(int(tid))) or {}
