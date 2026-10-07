@@ -148,7 +148,9 @@ def _managed_play_state():
         done = float((st or {}).get('background_seconds', 0) or 0)
         if target > 1:
             pct = max(0, min(99, int(done * 100 / target)))
-            message = '참가가 접수되었습니다. 대회 진행 동기화 중 %d%% — 완료 후 자동으로 입장합니다.' % pct
+            gap = max(0, int(target - done))
+            message = ('대회 진행 동기화 중 %d%% (따라잡을 시간 %d분 %02d초) — 완료 후 자동으로 입장합니다.'
+                       % (pct, gap // 60, gap % 60))
         else:
             pct = 0
             message = '참가가 접수되었습니다. 다음 완료 핸드에 자동으로 입장합니다.'
@@ -178,6 +180,12 @@ def _schedule_tick():
     if SCHEDULE_FUTURE is not None and SCHEDULE_FUTURE.done():
         try:
             result = SCHEDULE_FUTURE.result()
+            _m = getattr(SCHEDULE_FUTURE, 't2_meta', None)
+            if _m:
+                _bg = float((result.get('state') or {}).get('background_seconds', 0) or 0)
+                print('[동기화] %s 대회시각 %d→%d초 (+%d) / 실제 %.1f초 / 목표 %d초' % (
+                    result['id'], _m['bg'], _bg, _bg - _m['bg'], time.monotonic() - _m['t0'],
+                    _m['target']), flush=True)
             ok = ECONOMY.save_state(result['id'], result['state'],
                                     expected_revision=result['revision'],
                                     assignments=result['assignments'])
@@ -281,6 +289,8 @@ def _schedule_tick():
         budget = (max(18, int(os.environ.get('T2_SCHEDULE_ADMISSION_BUDGET', '48')))
                   if active_wait else 18)
         SCHEDULE_FUTURE = SCHEDULE_POOL.submit(_SR.advance, ev, target, budget=budget)
+        SCHEDULE_FUTURE.t2_meta = {'t0': time.monotonic(), 'target': target,
+                                   'bg': float((ev['state'] or {}).get('background_seconds', 0) or 0)}
         SCHEDULE_FUTURE.add_done_callback(lambda _f: SCHEDULE_WAKE.set())
 
 
