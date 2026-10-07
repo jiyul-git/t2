@@ -24,7 +24,7 @@ DST=${1:-$HOME/t2_ui_run}
 # view_text 라는 이름으로 직접 로드하므로 반드시 포함한다.
 MODULES="action_events archetypes bot context depth dynamics field fieldsim formats gto icm
          live2 money_pressure persona plan play preflop ranges reads runner session storage_paths table
-         telemetry_sync texture timing view tournament_store scheduled_runtime personal_data"
+         telemetry_sync texture timing view tournament_store scheduled_runtime personal_data coarse_sim"
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 # style_*.json 은 없어도 죽지는 않지만 스타일 추정 경로가 통째로 꺼진다.
@@ -53,13 +53,17 @@ if [ -n "${T2_UI_REF:-}" ]; then
     PATHS="ui/server/ui_view.py ui/server/ui_server.py ui/web $DATA"
     for m in $MODULES; do
         case "$m" in
-            tournament_store|scheduled_runtime|personal_data)
+            tournament_store|scheduled_runtime|personal_data|coarse_sim)
                 if git -C "$SRC" cat-file -e "$COMMIT:$m.py" 2>/dev/null; then
                     PATHS="$PATHS $m.py"
                 fi ;;
             *) PATHS="$PATHS $m.py" ;;
         esac
     done
+    # 통계 진행(hybrid) 보정 라이브러리. 없으면 hybrid 대회도 실제 진행으로 돈다.
+    if git -C "$SRC" cat-file -e "$COMMIT:coarse_params" 2>/dev/null; then
+        PATHS="$PATHS coarse_params"
+    fi
     # shellcheck disable=SC2086
     git -C "$SRC" archive "$COMMIT" -- $PATHS | tar -x -C "$FROM"
     SOURCE_DESC="$REF $(git -C "$SRC" rev-parse --short "$COMMIT")"
@@ -68,13 +72,17 @@ fi
 COPIED_MODULES=0
 for m in $MODULES; do
     case "$m" in
-        tournament_store|scheduled_runtime|personal_data)
+        tournament_store|scheduled_runtime|personal_data|coarse_sim)
             [ -f "$FROM/$m.py" ] || continue ;;
     esac
     cp "$FROM/$m.py" "$DST/$m.py"
     COPIED_MODULES=$((COPIED_MODULES + 1))
 done
 for d in $DATA;    do cp "$FROM/$d"    "$DST/$d";    done
+if [ -d "$FROM/coarse_params" ]; then
+    mkdir -p "$DST/coarse_params"
+    cp "$FROM/coarse_params/"*.json "$DST/coarse_params/" 2>/dev/null || true
+fi
 cp "$FROM/ui/server/ui_view.py"   "$DST/ui_view.py"
 cp "$FROM/ui/server/ui_server.py" "$DST/ui_server.py"
 

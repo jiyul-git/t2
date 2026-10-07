@@ -27,11 +27,11 @@ import io, os, shutil, subprocess, sys, tarfile, tempfile
 # .sh 에만 있어 둘이 어긋나 있었다.
 MODULES = """action_events archetypes bot context depth dynamics field fieldsim formats gto icm
              live2 money_pressure persona plan play preflop ranges reads runner
-             session storage_paths table telemetry_sync texture timing view tournament_store scheduled_runtime personal_data""".split()
+             session storage_paths table telemetry_sync texture timing view tournament_store scheduled_runtime personal_data coarse_sim""".split()
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json']
-OPTIONAL_MODULES = {'tournament_store', 'scheduled_runtime', 'personal_data'}
+OPTIONAL_MODULES = {'tournament_store', 'scheduled_runtime', 'personal_data', 'coarse_sim'}
 
 
 def main():
@@ -66,6 +66,9 @@ def main():
         module_paths = [m + '.py' for m in MODULES if m not in OPTIONAL_MODULES
                         or git('cat-file', '-e', commit + ':' + m + '.py').returncode == 0]
         paths = ['ui/server/ui_view.py', 'ui/server/ui_server.py', 'ui/web'] + DATA + module_paths
+        # 통계 진행(hybrid) 보정 라이브러리. 없으면 hybrid 대회도 실제 진행으로 돈다.
+        if git('cat-file', '-e', commit + ':coarse_params').returncode == 0:
+            paths.append('coarse_params')
         arc = subprocess.run(['git', '-C', repo, 'archive', commit, '--'] + paths,
                              capture_output=True, check=True).stdout
         tmp = tempfile.mkdtemp()
@@ -82,6 +85,12 @@ def main():
         copied_modules += 1
     for d in DATA:
         shutil.copy2(os.path.join(src, d), os.path.join(dst, d))
+    lib_src = os.path.join(src, 'coarse_params')
+    if os.path.isdir(lib_src):
+        os.makedirs(os.path.join(dst, 'coarse_params'), exist_ok=True)
+        for fn in os.listdir(lib_src):
+            if fn.endswith('.json'):
+                shutil.copy2(os.path.join(lib_src, fn), os.path.join(dst, 'coarse_params', fn))
     shutil.copy2(os.path.join(src, 'ui', 'server', 'ui_view.py'),
                  os.path.join(dst, 'ui_view.py'))
     shutil.copy2(os.path.join(src, 'ui', 'server', 'ui_server.py'),

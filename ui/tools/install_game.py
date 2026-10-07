@@ -48,6 +48,8 @@ def system_files(source):
         rel = path.relative_to(source)
         if len(rel.parts) == 1:
             keep = path.suffix == '.py' or path.name in STATIC_DATA | MARKERS
+        elif rel.parts[0] == 'coarse_params':
+            keep = len(rel.parts) == 2 and path.suffix == '.json'
         else:
             keep = (rel.parts[0] == 'web' and path.suffix.lower() in
                     {'.js', '.css', '.html', '.svg', '.png', '.jpg', '.jpeg', '.webp',

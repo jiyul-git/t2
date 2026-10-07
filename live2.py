@@ -375,8 +375,11 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
 
     hybrid 대회에서 사람이 앉지 않은 테이블은 coarse_sim(통계 진행)이 같은 계약으로 대신한다.
     """
-    import coarse_sim as _CS
-    if _CS.use_coarse(mini, tid):
+    try:
+        import coarse_sim as _CS
+    except ImportError:            # 설치본에 통계 진행 모듈이 없으면 실제 진행 그대로
+        _CS = None
+    if _CS is not None and _CS.use_coarse(mini, tid):
         return _CS.coarse_table_task(mini, tid, target_seconds, session_end, frozen,
                                      base_suffix, h4h_mode, max_hands)
     f = _load_field(_copy_field(mini))
