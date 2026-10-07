@@ -1,0 +1,1283 @@
+{
+ "note": "Real off-screen path (scheduled_runtime.advance, serial, default timing), blinds extended past level 20 (07448c36), one seed per format, bot-only field.",
+ "formats": {
+  "turbo": {
+   "entries": 44,
+   "seed": 2115496821,
+   "elapsed_hours": 1.67,
+   "active_seconds": 5700.0,
+   "final_level": 20,
+   "cpu_seconds": 291.3,
+   "peak_core_300s": 0.13,
+   "first_hour_avg_core": 0.079,
+   "rows": [
+    {
+     "active": 300.0,
+     "cpu": 38.41,
+     "remaining": 43,
+     "entries": 44,
+     "level": 2,
+     "hands": 37,
+     "tables": 5
+    },
+    {
+     "active": 600.0,
+     "cpu": 36.05,
+     "remaining": 41,
+     "entries": 44,
+     "level": 3,
+     "hands": 71,
+     "tables": 5
+    },
+    {
+     "active": 900.0,
+     "cpu": 37.53,
+     "remaining": 39,
+     "entries": 44,
+     "level": 4,
+     "hands": 112,
+     "tables": 5
+    },
+    {
+     "active": 1200.0,
+     "cpu": 38.91,
+     "remaining": 35,
+     "entries": 44,
+     "level": 5,
+     "hands": 112,
+     "tables": 4
+    },
+    {
+     "active": 1500.0,
+     "cpu": 26.64,
+     "remaining": 33,
+     "entries": 44,
+     "level": 6,
+     "hands": 145,
+     "tables": 4
+    },
+    {
+     "active": 1800.0,
+     "cpu": 24.16,
+     "remaining": 27,
+     "entries": 44,
+     "level": 7,
+     "hands": 139,
+     "tables": 3
+    },
+    {
+     "active": 2100.0,
+     "cpu": 12.43,
+     "remaining": 22,
+     "entries": 44,
+     "level": 8,
+     "hands": 162,
+     "tables": 3
+    },
+    {
+     "active": 2400.0,
+     "cpu": 15.49,
+     "remaining": 19,
+     "entries": 44,
+     "level": 9,
+     "hands": 191,
+     "tables": 3
+    },
+    {
+     "active": 2700.0,
+     "cpu": 13.02,
+     "remaining": 18,
+     "entries": 44,
+     "level": 10,
+     "hands": 151,
+     "tables": 2
+    },
+    {
+     "active": 3000.0,
+     "cpu": 8.31,
+     "remaining": 16,
+     "entries": 44,
+     "level": 11,
+     "hands": 167,
+     "tables": 2
+    },
+    {
+     "active": 3300.0,
+     "cpu": 8.36,
+     "remaining": 13,
+     "entries": 44,
+     "level": 12,
+     "hands": 188,
+     "tables": 2
+    },
+    {
+     "active": 3600.0,
+     "cpu": 8.49,
+     "remaining": 10,
+     "entries": 44,
+     "level": 13,
+     "hands": 214,
+     "tables": 2
+    },
+    {
+     "active": 3900.0,
+     "cpu": 6.38,
+     "remaining": 9,
+     "entries": 44,
+     "level": 14,
+     "hands": 120,
+     "tables": 1
+    },
+    {
+     "active": 4200.0,
+     "cpu": 6.19,
+     "remaining": 9,
+     "entries": 44,
+     "level": 15,
+     "hands": 131,
+     "tables": 1
+    },
+    {
+     "active": 4500.0,
+     "cpu": 3.53,
+     "remaining": 6,
+     "entries": 44,
+     "level": 16,
+     "hands": 143,
+     "tables": 1
+    },
+    {
+     "active": 4800.0,
+     "cpu": 2.99,
+     "remaining": 5,
+     "entries": 44,
+     "level": 17,
+     "hands": 157,
+     "tables": 1
+    },
+    {
+     "active": 5100.0,
+     "cpu": 2.14,
+     "remaining": 3,
+     "entries": 44,
+     "level": 18,
+     "hands": 179,
+     "tables": 1
+    },
+    {
+     "active": 5400.0,
+     "cpu": 2.04,
+     "remaining": 2,
+     "entries": 44,
+     "level": 19,
+     "hands": 205,
+     "tables": 1
+    },
+    {
+     "active": 5700.0,
+     "cpu": 0.23,
+     "remaining": 1,
+     "entries": 44,
+     "level": 20,
+     "hands": 208,
+     "tables": 0
+    }
+   ]
+  },
+  "standard": {
+   "entries": 99,
+   "seed": 1102529029,
+   "elapsed_hours": 3.58,
+   "active_seconds": 12000.0,
+   "final_level": 21,
+   "cpu_seconds": 1217.3,
+   "peak_core_300s": 0.259,
+   "first_hour_avg_core": 0.217,
+   "rows": [
+    {
+     "active": 300.0,
+     "cpu": 53.53,
+     "remaining": 99,
+     "entries": 99,
+     "level": 1,
+     "hands": 68,
+     "tables": 11
+    },
+    {
+     "active": 600.0,
+     "cpu": 56.54,
+     "remaining": 98,
+     "entries": 99,
+     "level": 2,
+     "hands": 142,
+     "tables": 11
+    },
+    {
+     "active": 900.0,
+     "cpu": 67.28,
+     "remaining": 96,
+     "entries": 99,
+     "level": 2,
+     "hands": 205,
+     "tables": 11
+    },
+    {
+     "active": 1200.0,
+     "cpu": 62.21,
+     "remaining": 95,
+     "entries": 99,
+     "level": 3,
+     "hands": 266,
+     "tables": 11
+    },
+    {
+     "active": 1500.0,
+     "cpu": 76.81,
+     "remaining": 92,
+     "entries": 99,
+     "level": 3,
+     "hands": 333,
+     "tables": 11
+    },
+    {
+     "active": 1800.0,
+     "cpu": 62.35,
+     "remaining": 91,
+     "entries": 99,
+     "level": 4,
+     "hands": 409,
+     "tables": 11
+    },
+    {
+     "active": 2100.0,
+     "cpu": 56.68,
+     "remaining": 88,
+     "entries": 99,
+     "level": 4,
+     "hands": 412,
+     "tables": 10
+    },
+    {
+     "active": 2400.0,
+     "cpu": 77.79,
+     "remaining": 84,
+     "entries": 99,
+     "level": 5,
+     "hands": 462,
+     "tables": 10
+    },
+    {
+     "active": 2700.0,
+     "cpu": 63.99,
+     "remaining": 83,
+     "entries": 99,
+     "level": 5,
+     "hands": 525,
+     "tables": 10
+    },
+    {
+     "active": 3000.0,
+     "cpu": 71.71,
+     "remaining": 79,
+     "entries": 99,
+     "level": 6,
+     "hands": 512,
+     "tables": 9
+    },
+    {
+     "active": 3300.0,
+     "cpu": 66.15,
+     "remaining": 73,
+     "entries": 99,
+     "level": 6,
+     "hands": 559,
+     "tables": 9
+    },
+    {
+     "active": 3600.0,
+     "cpu": 48.74,
+     "remaining": 70,
+     "entries": 99,
+     "level": 7,
+     "hands": 529,
+     "tables": 8
+    },
+    {
+     "active": 3900.0,
+     "cpu": 35.33,
+     "remaining": 67,
+     "entries": 99,
+     "level": 7,
+     "hands": 570,
+     "tables": 8
+    },
+    {
+     "active": 4200.0,
+     "cpu": 52.69,
+     "remaining": 62,
+     "entries": 99,
+     "level": 8,
+     "hands": 527,
+     "tables": 7
+    },
+    {
+     "active": 4500.0,
+     "cpu": 39.31,
+     "remaining": 56,
+     "entries": 99,
+     "level": 8,
+     "hands": 557,
+     "tables": 7
+    },
+    {
+     "active": 4800.0,
+     "cpu": 36.13,
+     "remaining": 55,
+     "entries": 99,
+     "level": 9,
+     "hands": 602,
+     "tables": 7
+    },
+    {
+     "active": 5100.0,
+     "cpu": 29.26,
+     "remaining": 51,
+     "entries": 99,
+     "level": 9,
+     "hands": 561,
+     "tables": 6
+    },
+    {
+     "active": 5400.0,
+     "cpu": 47.2,
+     "remaining": 45,
+     "entries": 99,
+     "level": 10,
+     "hands": 496,
+     "tables": 5
+    },
+    {
+     "active": 5700.0,
+     "cpu": 27.09,
+     "remaining": 42,
+     "entries": 99,
+     "level": 10,
+     "hands": 522,
+     "tables": 5
+    },
+    {
+     "active": 6000.0,
+     "cpu": 29.94,
+     "remaining": 37,
+     "entries": 99,
+     "level": 11,
+     "hands": 550,
+     "tables": 5
+    },
+    {
+     "active": 6300.0,
+     "cpu": 18.06,
+     "remaining": 31,
+     "entries": 99,
+     "level": 11,
+     "hands": 465,
+     "tables": 4
+    },
+    {
+     "active": 6600.0,
+     "cpu": 15.59,
+     "remaining": 29,
+     "entries": 99,
+     "level": 12,
+     "hands": 493,
+     "tables": 4
+    },
+    {
+     "active": 6900.0,
+     "cpu": 12.71,
+     "remaining": 27,
+     "entries": 99,
+     "level": 12,
+     "hands": 373,
+     "tables": 3
+    },
+    {
+     "active": 7200.0,
+     "cpu": 15.74,
+     "remaining": 24,
+     "entries": 99,
+     "level": 13,
+     "hands": 392,
+     "tables": 3
+    },
+    {
+     "active": 7500.0,
+     "cpu": 13.76,
+     "remaining": 21,
+     "entries": 99,
+     "level": 13,
+     "hands": 413,
+     "tables": 3
+    },
+    {
+     "active": 7800.0,
+     "cpu": 10.23,
+     "remaining": 20,
+     "entries": 99,
+     "level": 14,
+     "hands": 435,
+     "tables": 3
+    },
+    {
+     "active": 8100.0,
+     "cpu": 8.69,
+     "remaining": 18,
+     "entries": 99,
+     "level": 14,
+     "hands": 324,
+     "tables": 2
+    },
+    {
+     "active": 8400.0,
+     "cpu": 7.56,
+     "remaining": 16,
+     "entries": 99,
+     "level": 15,
+     "hands": 333,
+     "tables": 2
+    },
+    {
+     "active": 8700.0,
+     "cpu": 9.45,
+     "remaining": 12,
+     "entries": 99,
+     "level": 15,
+     "hands": 347,
+     "tables": 2
+    },
+    {
+     "active": 9000.0,
+     "cpu": 4.73,
+     "remaining": 12,
+     "entries": 99,
+     "level": 16,
+     "hands": 363,
+     "tables": 2
+    },
+    {
+     "active": 9300.0,
+     "cpu": 6.8,
+     "remaining": 11,
+     "entries": 99,
+     "level": 16,
+     "hands": 384,
+     "tables": 2
+    },
+    {
+     "active": 9600.0,
+     "cpu": 8.28,
+     "remaining": 9,
+     "entries": 99,
+     "level": 17,
+     "hands": 195,
+     "tables": 1
+    },
+    {
+     "active": 9900.0,
+     "cpu": 4.33,
+     "remaining": 8,
+     "entries": 99,
+     "level": 17,
+     "hands": 204,
+     "tables": 1
+    },
+    {
+     "active": 10200.0,
+     "cpu": 3.74,
+     "remaining": 8,
+     "entries": 99,
+     "level": 18,
+     "hands": 212,
+     "tables": 1
+    },
+    {
+     "active": 10500.0,
+     "cpu": 3.4,
+     "remaining": 7,
+     "entries": 99,
+     "level": 18,
+     "hands": 221,
+     "tables": 1
+    },
+    {
+     "active": 10800.0,
+     "cpu": 2.82,
+     "remaining": 5,
+     "entries": 99,
+     "level": 19,
+     "hands": 235,
+     "tables": 1
+    },
+    {
+     "active": 11100.0,
+     "cpu": 4.34,
+     "remaining": 4,
+     "entries": 99,
+     "level": 19,
+     "hands": 249,
+     "tables": 1
+    },
+    {
+     "active": 11400.0,
+     "cpu": 3.81,
+     "remaining": 4,
+     "entries": 99,
+     "level": 20,
+     "hands": 262,
+     "tables": 1
+    },
+    {
+     "active": 11700.0,
+     "cpu": 1.62,
+     "remaining": 2,
+     "entries": 99,
+     "level": 20,
+     "hands": 277,
+     "tables": 1
+    },
+    {
+     "active": 12000.0,
+     "cpu": 0.89,
+     "remaining": 1,
+     "entries": 99,
+     "level": 21,
+     "hands": 299,
+     "tables": 0
+    }
+   ]
+  },
+  "deep": {
+   "entries": 179,
+   "seed": 3638447685,
+   "elapsed_hours": 7.17,
+   "active_seconds": 23700.0,
+   "final_level": 27,
+   "cpu_seconds": 4212.4,
+   "peak_core_300s": 0.495,
+   "first_hour_avg_core": 0.345,
+   "rows": [
+    {
+     "active": 300.0,
+     "cpu": 77.16,
+     "remaining": 179,
+     "entries": 179,
+     "level": 1,
+     "hands": 149,
+     "tables": 20
+    },
+    {
+     "active": 600.0,
+     "cpu": 89.03,
+     "remaining": 178,
+     "entries": 179,
+     "level": 1,
+     "hands": 307,
+     "tables": 20
+    },
+    {
+     "active": 900.0,
+     "cpu": 99.88,
+     "remaining": 176,
+     "entries": 179,
+     "level": 2,
+     "hands": 443,
+     "tables": 20
+    },
+    {
+     "active": 1200.0,
+     "cpu": 80.01,
+     "remaining": 175,
+     "entries": 179,
+     "level": 2,
+     "hands": 580,
+     "tables": 20
+    },
+    {
+     "active": 1500.0,
+     "cpu": 94.55,
+     "remaining": 174,
+     "entries": 179,
+     "level": 2,
+     "hands": 719,
+     "tables": 20
+    },
+    {
+     "active": 1800.0,
+     "cpu": 84.52,
+     "remaining": 174,
+     "entries": 179,
+     "level": 3,
+     "hands": 880,
+     "tables": 20
+    },
+    {
+     "active": 2100.0,
+     "cpu": 126.1,
+     "remaining": 173,
+     "entries": 179,
+     "level": 3,
+     "hands": 1009,
+     "tables": 20
+    },
+    {
+     "active": 2400.0,
+     "cpu": 98.0,
+     "remaining": 173,
+     "entries": 179,
+     "level": 3,
+     "hands": 1152,
+     "tables": 20
+    },
+    {
+     "active": 2700.0,
+     "cpu": 134.65,
+     "remaining": 171,
+     "entries": 179,
+     "level": 4,
+     "hands": 1226,
+     "tables": 19
+    },
+    {
+     "active": 3000.0,
+     "cpu": 142.15,
+     "remaining": 168,
+     "entries": 179,
+     "level": 4,
+     "hands": 1334,
+     "tables": 19
+    },
+    {
+     "active": 3300.0,
+     "cpu": 113.04,
+     "remaining": 167,
+     "entries": 179,
+     "level": 4,
+     "hands": 1447,
+     "tables": 19
+    },
+    {
+     "active": 3600.0,
+     "cpu": 106.74,
+     "remaining": 165,
+     "entries": 179,
+     "level": 5,
+     "hands": 1551,
+     "tables": 19
+    },
+    {
+     "active": 3900.0,
+     "cpu": 142.74,
+     "remaining": 163,
+     "entries": 179,
+     "level": 5,
+     "hands": 1664,
+     "tables": 19
+    },
+    {
+     "active": 4200.0,
+     "cpu": 148.59,
+     "remaining": 158,
+     "entries": 179,
+     "level": 5,
+     "hands": 1673,
+     "tables": 18
+    },
+    {
+     "active": 4500.0,
+     "cpu": 106.86,
+     "remaining": 156,
+     "entries": 179,
+     "level": 6,
+     "hands": 1757,
+     "tables": 18
+    },
+    {
+     "active": 4800.0,
+     "cpu": 141.06,
+     "remaining": 152,
+     "entries": 179,
+     "level": 6,
+     "hands": 1765,
+     "tables": 17
+    },
+    {
+     "active": 5100.0,
+     "cpu": 106.3,
+     "remaining": 150,
+     "entries": 179,
+     "level": 6,
+     "hands": 1858,
+     "tables": 17
+    },
+    {
+     "active": 5400.0,
+     "cpu": 112.83,
+     "remaining": 148,
+     "entries": 179,
+     "level": 7,
+     "hands": 1952,
+     "tables": 17
+    },
+    {
+     "active": 5700.0,
+     "cpu": 138.35,
+     "remaining": 143,
+     "entries": 179,
+     "level": 7,
+     "hands": 1919,
+     "tables": 16
+    },
+    {
+     "active": 6000.0,
+     "cpu": 137.16,
+     "remaining": 138,
+     "entries": 179,
+     "level": 7,
+     "hands": 1989,
+     "tables": 16
+    },
+    {
+     "active": 6300.0,
+     "cpu": 111.02,
+     "remaining": 135,
+     "entries": 179,
+     "level": 8,
+     "hands": 1958,
+     "tables": 15
+    },
+    {
+     "active": 6600.0,
+     "cpu": 126.95,
+     "remaining": 128,
+     "entries": 179,
+     "level": 8,
+     "hands": 2009,
+     "tables": 15
+    },
+    {
+     "active": 6900.0,
+     "cpu": 91.09,
+     "remaining": 125,
+     "entries": 179,
+     "level": 8,
+     "hands": 1992,
+     "tables": 14
+    },
+    {
+     "active": 7200.0,
+     "cpu": 108.15,
+     "remaining": 120,
+     "entries": 179,
+     "level": 9,
+     "hands": 2046,
+     "tables": 14
+    },
+    {
+     "active": 7500.0,
+     "cpu": 125.26,
+     "remaining": 114,
+     "entries": 179,
+     "level": 9,
+     "hands": 1923,
+     "tables": 13
+    },
+    {
+     "active": 7800.0,
+     "cpu": 116.67,
+     "remaining": 109,
+     "entries": 179,
+     "level": 9,
+     "hands": 1949,
+     "tables": 13
+    },
+    {
+     "active": 8100.0,
+     "cpu": 83.99,
+     "remaining": 106,
+     "entries": 179,
+     "level": 10,
+     "hands": 1835,
+     "tables": 12
+    },
+    {
+     "active": 8400.0,
+     "cpu": 79.03,
+     "remaining": 103,
+     "entries": 179,
+     "level": 10,
+     "hands": 1902,
+     "tables": 12
+    },
+    {
+     "active": 8700.0,
+     "cpu": 84.11,
+     "remaining": 100,
+     "entries": 179,
+     "level": 10,
+     "hands": 1963,
+     "tables": 12
+    },
+    {
+     "active": 9000.0,
+     "cpu": 75.71,
+     "remaining": 96,
+     "entries": 179,
+     "level": 11,
+     "hands": 1854,
+     "tables": 11
+    },
+    {
+     "active": 9300.0,
+     "cpu": 86.25,
+     "remaining": 89,
+     "entries": 179,
+     "level": 11,
+     "hands": 1702,
+     "tables": 10
+    },
+    {
+     "active": 9600.0,
+     "cpu": 60.61,
+     "remaining": 85,
+     "entries": 179,
+     "level": 11,
+     "hands": 1737,
+     "tables": 10
+    },
+    {
+     "active": 9900.0,
+     "cpu": 66.57,
+     "remaining": 81,
+     "entries": 179,
+     "level": 12,
+     "hands": 1598,
+     "tables": 9
+    },
+    {
+     "active": 10200.0,
+     "cpu": 76.45,
+     "remaining": 74,
+     "entries": 179,
+     "level": 12,
+     "hands": 1632,
+     "tables": 9
+    },
+    {
+     "active": 10500.0,
+     "cpu": 45.1,
+     "remaining": 70,
+     "entries": 179,
+     "level": 12,
+     "hands": 1464,
+     "tables": 8
+    },
+    {
+     "active": 10800.0,
+     "cpu": 42.82,
+     "remaining": 67,
+     "entries": 179,
+     "level": 13,
+     "hands": 1504,
+     "tables": 8
+    },
+    {
+     "active": 11100.0,
+     "cpu": 36.84,
+     "remaining": 63,
+     "entries": 179,
+     "level": 13,
+     "hands": 1382,
+     "tables": 7
+    },
+    {
+     "active": 11400.0,
+     "cpu": 34.55,
+     "remaining": 60,
+     "entries": 179,
+     "level": 13,
+     "hands": 1416,
+     "tables": 7
+    },
+    {
+     "active": 11700.0,
+     "cpu": 44.44,
+     "remaining": 58,
+     "entries": 179,
+     "level": 14,
+     "hands": 1459,
+     "tables": 7
+    },
+    {
+     "active": 12000.0,
+     "cpu": 39.21,
+     "remaining": 54,
+     "entries": 179,
+     "level": 14,
+     "hands": 1298,
+     "tables": 6
+    },
+    {
+     "active": 12300.0,
+     "cpu": 34.58,
+     "remaining": 50,
+     "entries": 179,
+     "level": 14,
+     "hands": 1330,
+     "tables": 6
+    },
+    {
+     "active": 12600.0,
+     "cpu": 35.65,
+     "remaining": 45,
+     "entries": 179,
+     "level": 15,
+     "hands": 1090,
+     "tables": 5
+    },
+    {
+     "active": 12900.0,
+     "cpu": 20.65,
+     "remaining": 43,
+     "entries": 179,
+     "level": 15,
+     "hands": 1122,
+     "tables": 5
+    },
+    {
+     "active": 13200.0,
+     "cpu": 28.49,
+     "remaining": 40,
+     "entries": 179,
+     "level": 15,
+     "hands": 1164,
+     "tables": 5
+    },
+    {
+     "active": 13500.0,
+     "cpu": 15.94,
+     "remaining": 35,
+     "entries": 179,
+     "level": 16,
+     "hands": 966,
+     "tables": 4
+    },
+    {
+     "active": 13800.0,
+     "cpu": 21.72,
+     "remaining": 31,
+     "entries": 179,
+     "level": 16,
+     "hands": 988,
+     "tables": 4
+    },
+    {
+     "active": 14100.0,
+     "cpu": 18.0,
+     "remaining": 28,
+     "entries": 179,
+     "level": 16,
+     "hands": 1017,
+     "tables": 4
+    },
+    {
+     "active": 14400.0,
+     "cpu": 6.5,
+     "remaining": 27,
+     "entries": 179,
+     "level": 17,
+     "hands": 718,
+     "tables": 3
+    },
+    {
+     "active": 14700.0,
+     "cpu": 10.56,
+     "remaining": 25,
+     "entries": 179,
+     "level": 17,
+     "hands": 738,
+     "tables": 3
+    },
+    {
+     "active": 15000.0,
+     "cpu": 16.73,
+     "remaining": 23,
+     "entries": 179,
+     "level": 17,
+     "hands": 760,
+     "tables": 3
+    },
+    {
+     "active": 15300.0,
+     "cpu": 14.34,
+     "remaining": 23,
+     "entries": 179,
+     "level": 18,
+     "hands": 785,
+     "tables": 3
+    },
+    {
+     "active": 15600.0,
+     "cpu": 13.57,
+     "remaining": 22,
+     "entries": 179,
+     "level": 18,
+     "hands": 807,
+     "tables": 3
+    },
+    {
+     "active": 15900.0,
+     "cpu": 12.42,
+     "remaining": 20,
+     "entries": 179,
+     "level": 18,
+     "hands": 835,
+     "tables": 3
+    },
+    {
+     "active": 16200.0,
+     "cpu": 10.7,
+     "remaining": 16,
+     "entries": 179,
+     "level": 19,
+     "hands": 626,
+     "tables": 2
+    },
+    {
+     "active": 16500.0,
+     "cpu": 9.23,
+     "remaining": 15,
+     "entries": 179,
+     "level": 19,
+     "hands": 642,
+     "tables": 2
+    },
+    {
+     "active": 16800.0,
+     "cpu": 7.98,
+     "remaining": 13,
+     "entries": 179,
+     "level": 19,
+     "hands": 653,
+     "tables": 2
+    },
+    {
+     "active": 17100.0,
+     "cpu": 9.27,
+     "remaining": 13,
+     "entries": 179,
+     "level": 20,
+     "hands": 670,
+     "tables": 2
+    },
+    {
+     "active": 17400.0,
+     "cpu": 6.92,
+     "remaining": 12,
+     "entries": 179,
+     "level": 20,
+     "hands": 691,
+     "tables": 2
+    },
+    {
+     "active": 17700.0,
+     "cpu": 7.39,
+     "remaining": 11,
+     "entries": 179,
+     "level": 20,
+     "hands": 707,
+     "tables": 2
+    },
+    {
+     "active": 18000.0,
+     "cpu": 34.97,
+     "remaining": 8,
+     "entries": 179,
+     "level": 21,
+     "hands": 341,
+     "tables": 1
+    },
+    {
+     "active": 18300.0,
+     "cpu": 4.87,
+     "remaining": 5,
+     "entries": 179,
+     "level": 21,
+     "hands": 351,
+     "tables": 1
+    },
+    {
+     "active": 18600.0,
+     "cpu": 3.97,
+     "remaining": 5,
+     "entries": 179,
+     "level": 21,
+     "hands": 362,
+     "tables": 1
+    },
+    {
+     "active": 18900.0,
+     "cpu": 3.07,
+     "remaining": 5,
+     "entries": 179,
+     "level": 22,
+     "hands": 374,
+     "tables": 1
+    },
+    {
+     "active": 19200.0,
+     "cpu": 3.8,
+     "remaining": 5,
+     "entries": 179,
+     "level": 22,
+     "hands": 389,
+     "tables": 1
+    },
+    {
+     "active": 19500.0,
+     "cpu": 3.86,
+     "remaining": 4,
+     "entries": 179,
+     "level": 22,
+     "hands": 401,
+     "tables": 1
+    },
+    {
+     "active": 19800.0,
+     "cpu": 4.77,
+     "remaining": 4,
+     "entries": 179,
+     "level": 23,
+     "hands": 418,
+     "tables": 1
+    },
+    {
+     "active": 20100.0,
+     "cpu": 3.33,
+     "remaining": 4,
+     "entries": 179,
+     "level": 23,
+     "hands": 433,
+     "tables": 1
+    },
+    {
+     "active": 20400.0,
+     "cpu": 3.27,
+     "remaining": 3,
+     "entries": 179,
+     "level": 23,
+     "hands": 457,
+     "tables": 1
+    },
+    {
+     "active": 20700.0,
+     "cpu": 4.73,
+     "remaining": 3,
+     "entries": 179,
+     "level": 24,
+     "hands": 475,
+     "tables": 1
+    },
+    {
+     "active": 21000.0,
+     "cpu": 2.06,
+     "remaining": 3,
+     "entries": 179,
+     "level": 24,
+     "hands": 499,
+     "tables": 1
+    },
+    {
+     "active": 21300.0,
+     "cpu": 3.06,
+     "remaining": 3,
+     "entries": 179,
+     "level": 24,
+     "hands": 522,
+     "tables": 1
+    },
+    {
+     "active": 21600.0,
+     "cpu": 4.49,
+     "remaining": 3,
+     "entries": 179,
+     "level": 25,
+     "hands": 541,
+     "tables": 1
+    },
+    {
+     "active": 21900.0,
+     "cpu": 4.36,
+     "remaining": 3,
+     "entries": 179,
+     "level": 25,
+     "hands": 561,
+     "tables": 1
+    },
+    {
+     "active": 22200.0,
+     "cpu": 2.3,
+     "remaining": 3,
+     "entries": 179,
+     "level": 25,
+     "hands": 587,
+     "tables": 1
+    },
+    {
+     "active": 22500.0,
+     "cpu": 2.8,
+     "remaining": 2,
+     "entries": 179,
+     "level": 26,
+     "hands": 609,
+     "tables": 1
+    },
+    {
+     "active": 22800.0,
+     "cpu": 2.47,
+     "remaining": 2,
+     "entries": 179,
+     "level": 26,
+     "hands": 635,
+     "tables": 1
+    },
+    {
+     "active": 23100.0,
+     "cpu": 2.92,
+     "remaining": 2,
+     "entries": 179,
+     "level": 26,
+     "hands": 661,
+     "tables": 1
+    },
+    {
+     "active": 23400.0,
+     "cpu": 2.06,
+     "remaining": 2,
+     "entries": 179,
+     "level": 27,
+     "hands": 691,
+     "tables": 1
+    },
+    {
+     "active": 23700.0,
+     "cpu": 0.05,
+     "remaining": 1,
+     "entries": 179,
+     "level": 27,
+     "hands": 692,
+     "tables": 0
+    }
+   ]
+  }
+ }
+}

@@ -1326,6 +1326,251 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     return st
 
 
+# ---------- 레인지 주장 기준선 (FLOP_CLAIM_BASELINE.md, 2026-10-06) ----------
+# 숙련자의 c벳 빈도는 '자기 레인지에 실제로 있는 주장 가능한 핸드 비율'에 수렴한다(층 A).
+# 예전에는 range_adv 가 지속벳 빈도를 몇 % 흔드는 곱셈항일 뿐이라 보드별 빈도가
+# 레인지 구성을 따라가지 않았다(봇 A·K 하이 62% vs 목표 80%+, 숙련자일수록 더 낮음).
+# 오프너 HU IP 플랍, 체크를 받은 상황에서만 쓴다.
+#   V      = 내 레인지 중 작은 벳 밸류(넛급·강·중) 비율
+#   목표 T = max(60%, 2V)  — 최저선 60%(작업용 작은 벳), 플랍 밸류:블러프 1:1
+#   밸류 핸드는 거의 항상, 나머지는 (T-V)/(1-V) 로 채운다.
+# 숙련(cbet_flop)이 낮으면 기준선을 거의 안 따른다(w→0) — 초보는 층 B(내 핸드)만 본다.
+RANGE_CLAIM_ANCHOR = True
+_CLAIM_FLOOR = 0.60
+_CLAIM_VALUE_P = 0.95
+_CLAIM_CACHE = {}
+_CLAIM_RV = {r: i for i, r in enumerate('23456789TJQKA', 2)}
+
+
+def claim_value_hand(hole, board):
+    """작은 벳으로 밸류를 주장할 수 있는 핸드인가(넛급·강·중). 플랍 3장 기준.
+
+    넛급: 투페어(보드 페어 제외)·셋/트립스·스트레이트+. 강: 오버페어·탑페어 좋은 키커.
+    중: 탑페어 약한 키커·세컨페어·보드 최저 카드보다 높은 포켓페어.
+    """
+    cat = bot.eval7(list(hole) + list(board))[0]
+    rv = _CLAIM_RV
+    bcnt = {}
+    for c in board:
+        bcnt[rv[c[0]]] = bcnt.get(rv[c[0]], 0) + 1
+    paired = max(bcnt.values()) >= 2
+    if cat >= 3 or (cat == 2 and not paired):
+        return True
+    hr = [rv[c[0]] for c in hole]
+    unpaired = sorted((r for r, n in bcnt.items() if n == 1), reverse=True) \
+        or sorted(bcnt, reverse=True)
+    top = max(bcnt)
+    if hr[0] == hr[1]:
+        return hr[0] > min(unpaired)
+    hits = [r for r in hr if r in unpaired]
+    if not hits:
+        return False
+    h = max(hits)
+    return h == unpaired[0] or (len(unpaired) >= 3 and h == unpaired[1])
+
+
+def range_claim_value_share(my_range, board):
+    key = (_range_sig(my_range), tuple(board))
+    v = _CLAIM_CACHE.get(key)
+    if v is not None:
+        return v
+    dead = set(board)
+    tot = val = 0.0
+    for c, w in R.range_items(my_range):
+        if dead & set(c):
+            continue
+        tot += w
+        if claim_value_hand(c, board):
+            val += w
+    v = (val / tot) if tot > 0 else 0.0
+    if len(_CLAIM_CACHE) > 4096:
+        _CLAIM_CACHE.clear()
+    _CLAIM_CACHE[key] = v
+    return v
+
+
+# OOP 오프너(먼저 액션): 같은 레인지 기준에 포지션 숙련만큼 할인(플랍 c벳 포지션 수정 B 와
+# 같은 계수, 숙련 10 에서 ×0.76). 체크 레인지 보호를 위해 밸류도 85% 만 친다.
+# 사용자 원칙: 포지션이 없으면 이점이 없다(상대가 뒤에서 레이즈/플로트, 에퀴티 실현이 어렵다).
+RANGE_CLAIM_ANCHOR_OOP = True
+_CLAIM_VALUE_P_OOP = 0.85
+
+
+def range_claim_anchor(profile, hero, board, my_range, p_old, oop=False):
+    """레인지 기준선 쪽으로 당긴 벳 확률. 반환 None 이면 적용 안 함."""
+    V = range_claim_value_share(my_range, board)
+    if V <= 0.0:
+        return None
+    T = min(0.95, max(_CLAIM_FLOOR, 2.0 * V))
+    vp = _CLAIM_VALUE_P
+    if oop:
+        T *= 1.0 - 0.24 * (PS.sk(profile, 'positional') / 10.0)
+        vp = _CLAIM_VALUE_P_OOP
+    is_val = claim_value_hand(hero, board)
+    fill = max(0.0, min(1.0, (T - V*vp) / max(1e-6, 1.0 - V)))
+    tgt = vp if is_val else fill
+    # 기질은 기준선 위에서 조금만 흔든다(같은 숙련이라도 사람마다 다르게).
+    tgt = max(0.0, min(0.97, tgt + 0.03*(PS.temper(profile, 'aggression', 5.0) - 5.0)))
+    w = 0.9 * max(0.0, min(1.0, (PS.sk(profile, 'cbet_flop') - 2.0) / 7.0))
+    p = p_old + w * (tgt - p_old)
+    return {'p': round(max(0.0, min(0.97, p)), 4), 'p_old': round(p_old, 4),
+            'oop': bool(oop),
+            'target': round(T, 4), 'V': round(V, 4), 'value': bool(is_val),
+            'hand_target': round(tgt, 4), 'w': round(w, 3)}
+
+
+# ---------- 리버 블러프 기준선 v2 (FLOP_CLAIM_BASELINE.md 10절, 2026-10-07) ----------
+# 주장(이야기)마다 진짜:가짜 비율을 맞춘다. 그 비율은 벳 사이즈가 정한다 —
+# 상대가 콜/폴드에 무차별해지는 가짜 비율 = s/(1+2s)
+#   1/3팟 20%(8:2), 팟 33%(7:3, 사용자 기준), 1.5배 38%(6:4, '넓힐 수도').
+# 리버가 새 오버카드(예 Q84 2 → K)면 이야기가 둘이다.
+#   새 카드 주장(K): 진짜 = 그 랭크를 가진 손. 크게(팟, 스택이 모자라면 올인) 폴라.
+#   기존 탑 주장(Q): 진짜 = 기존 탑 페어 좋은 키커(J+)·그 이상. 작게(1/3), 리스크 적음.
+# 오버카드가 아니면 이야기 하나(리버 밸류 전체), 2/3팟.
+# 가짜 후보(메이드 없는 손)에 이야기별 가짜 수를 나눠 준다. 블로커 순효과가 +면
+# 큰 이야기, 아니면 작은 이야기로 간다. 블러프 리스크(스택 대비 벳)가 크면
+# 신중한 성향(규율 높고 도박성 낮음)은 덜 친다. 쇼다운 계획은 건드리지 않는다(베타 A #3).
+RIVER_BLUFF_ANCHOR = True
+_RB_CACHE = {}
+_RB_BIG, _RB_SMALL, _RB_SINGLE = 1.0, 0.33, 0.67
+
+
+def bluff_share_for_size(s):
+    """사이즈 s(팟 대비)에서 벳 레인지 안 가짜 비율 s/(1+2s)."""
+    s = max(0.05, float(s))
+    return s / (1.0 + 2.0*s)
+
+
+def river_value_hand(hole, board):
+    """리버에서 벳 레인지의 밸류로 셀 손: 홀카드가 기여한 투페어+, 오버페어,
+    탑페어 좋은 키커(T+)."""
+    rv = _CLAIM_RV
+    cat = bot.eval7(list(hole) + list(board))[0]
+    bcat = bot.eval7(list(board))[0]
+    if cat >= 2 and cat > bcat:
+        return True
+    hr = sorted((rv[c[0]] for c in hole), reverse=True)
+    br = sorted({rv[c[0]] for c in board}, reverse=True)
+    if hr[0] == hr[1]:
+        return hr[0] > br[0]
+    if br[0] in hr:
+        k = hr[1] if hr[0] == br[0] else hr[0]
+        return k >= 10
+    return False
+
+
+def _line_keeps(c, board_now, small):
+    """내가 이 보드에서 벳했다면 그 벳 레인지에 들어갈 손인가(자기 라인 근사).
+    탑페어+·오버페어, 강한 드로우(아웃 8+), 오버카드 낀 드로우(아웃 4+).
+    작은 벳(플랍 1/3)이면 오버카드·약한 페어·약한 드로우까지 넓게."""
+    rv = _CLAIM_RV
+    h = list(c)
+    cat = bot.eval7(h + list(board_now))[0]
+    top = max(rv[x[0]] for x in board_now)
+    hr = sorted((rv[x[0]] for x in h), reverse=True)
+    if cat >= 2 or (hr[0] == hr[1] and hr[0] > top) or top in hr:
+        return True
+    outs = bot.draw_strength(h, list(board_now))
+    if outs >= 8:
+        return True
+    if small:
+        return outs >= 3 or hr[0] > top or bot.made_strength(h, list(board_now)) >= 1
+    return outs >= 4 and hr[0] > top
+
+
+def river_story_shares(my_range, board, bet_streets=()):
+    """내 레인지의 리버 이야기별 진짜 비율과 미스(메이드 없음) 비율.
+    bet_streets 가 있으면 그 스트리트에 벳한 자기 라인으로 레인지를 좁혀 센다."""
+    bet_streets = tuple(s for s in ('flop', 'turn') if s in (bet_streets or ()))
+    key = (_range_sig(my_range), tuple(board), bet_streets)
+    v = _RB_CACHE.get(key)
+    if v is not None:
+        return v
+    rv = _CLAIM_RV
+    new_r = rv[board[4][0]]
+    prev_top = max(rv[c[0]] for c in board[:4])
+    over = new_r > prev_top
+    dead = set(board)
+    tot = new = top = val = air = 0.0
+    for c, w in R.range_items(my_range):
+        if dead & set(c):
+            continue
+        if 'flop' in bet_streets and not _line_keeps(c, board[:3], True):
+            continue
+        if 'turn' in bet_streets and not _line_keeps(c, board[:4], False):
+            continue
+        tot += w
+        hr = [rv[x[0]] for x in c]
+        if bot.made_strength(list(c), board) < 1:
+            air += w
+            continue
+        if river_value_hand(c, board):
+            val += w
+        if over:
+            if new_r in hr:
+                new += w
+            elif prev_top in hr:
+                k = hr[1] if hr[0] == prev_top else hr[0]
+                cat = bot.eval7(list(c) + list(board))[0]
+                if k >= 11 or k == prev_top or cat >= 2:
+                    top += w
+    v = {'over': over, 'new': new / tot if tot else 0.0,
+         'top': top / tot if tot else 0.0, 'value': val / tot if tot else 0.0,
+         'air': air / tot if tot else 0.0}
+    if len(_RB_CACHE) > 4096:
+        _RB_CACHE.clear()
+    _RB_CACHE[key] = v
+    return v
+
+
+def river_bluff_anchor(profile, hero, board, my_range, st, p_old, pot=None, stack=None):
+    """메이드 없는 손의 리버 블러프 확률·사이즈를 이야기별 기준선으로 정한다."""
+    if bot.made_strength(list(hero), board) >= 1:
+        return None
+    sh = river_story_shares(my_range, board, (st or {}).get('bet_streets') or ())
+    A = sh['air']
+    if A <= 0.0:
+        return None
+    _spr = (float(stack)/float(pot)) if (pot and stack is not None and pot > 0) else 99.0
+    big = min(_RB_BIG, _spr) if _spr > 0 else _RB_BIG     # 스택이 팟보다 작으면 올인
+    blk = float(st.get('blocker_net') or 0.0)
+    if sh['over']:
+        f_big = sh['new'] * bluff_share_for_size(big) / (1.0 - bluff_share_for_size(big))
+        f_small = sh['top'] * bluff_share_for_size(_RB_SMALL) / (1.0 - bluff_share_for_size(_RB_SMALL))
+        if blk >= 0.0 or f_small <= 0.0:
+            story, size, fake = 'new', big, f_big
+            share = f_big / max(1e-9, f_big + f_small)
+        else:
+            story, size, fake = 'top', _RB_SMALL, f_small
+            share = f_small / max(1e-9, f_big + f_small)
+        total = f_big + f_small
+    else:
+        size = min(_RB_SINGLE, _spr) if _spr > 0 else _RB_SINGLE
+        total = sh['value'] * bluff_share_for_size(size) / (1.0 - bluff_share_for_size(size))
+        story, fake, share = 'single', total, 1.0
+    if total <= 0.0:
+        return None
+    base = min(1.0, total / A)
+    f = max(0.3, min(1.8, 1.0 + 10.0*blk))
+    if 'A' in (hero[0][0], hero[1][0]):
+        f *= 0.6                      # A 하이는 미스한 드로우를 이기는 쇼다운 가치
+    tgt = base * f
+    # 블러프 리스크: 실패 시 잃는 칩 / 남은 스택. 신중한 성향일수록 크게 깎는다.
+    _risk = max(0.0, min(1.0, size / max(1e-6, _spr))) if _spr < 99 else 0.0
+    _caution = max(0.0, min(1.0, 0.5 + (PS.temper(profile, 'discipline', 5.0)
+                                         - PS.temper(profile, 'gamble', 5.0))/10.0))
+    tgt *= 1.0 - 0.6*_risk*_caution
+    tgt = max(0.0, min(0.95, tgt))
+    _sk = 0.5*(PS.sk(profile, 'barrel_river') + PS.sk(profile, 'bluff'))
+    w = 0.9 * max(0.0, min(1.0, (_sk - 2.0) / 7.0))
+    p = p_old + w * (tgt - p_old)
+    return {'p': round(max(0.0, min(0.95, p)), 4), 'p_old': round(p_old, 4),
+            'story': story, 'size': round(size, 3), 'fake': round(total, 4),
+            'air': round(A, 4), 'base': round(base, 4), 'blk_net': round(blk, 4),
+            'f': round(f, 3), 'risk': round(_risk, 3), 'caution': round(_caution, 3),
+            'w': round(w, 3), 'new': round(sh['new'], 4), 'top': round(sh['top'], 4)}
+
+
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
                   oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None, tilt=0.0):
@@ -1340,6 +1585,38 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                                       spr_now=(float(stack)/max(1.0, float(pot))
                                                if pot else None),
                                       tilt=tilt)
+    _anc_ip = (not oop and int(to_act_behind or 0) == 0)
+    _anc_oop = (RANGE_CLAIM_ANCHOR_OOP and oop and int(to_act_behind or 0) == 1)
+    if (RANGE_CLAIM_ANCHOR and street == 'flop' and len(board) == 3
+            and initiative and (_anc_ip or _anc_oop) and int(n_opp or 1) == 1
+            and profile.get('concepts')
+            and plan != 'trap' and my_range):
+        _anc = range_claim_anchor(profile, hero, board, my_range, p_aggr,
+                                  oop=bool(_anc_oop))
+        if _anc is not None:
+            _trace(st, street, 'range_claim', **_anc)
+            if _anc['p'] > p_aggr + 1e-9 and plan in ('giveup', 'showdown') \
+                    and not why_a.startswith('DEVIATE:'):
+                why_a = 'DEVIATE:' + why_a
+            p_aggr = _anc['p']
+            why_a = '%s | 레인지 주장 기준선 %.0f%%(V %.0f%%, w %.2f)' % (
+                why_a, _anc['target']*100, _anc['V']*100, _anc['w'])
+    _rb_size = None
+    if (RIVER_BLUFF_ANCHOR and street == 'river' and len(board) == 5
+            and initiative and int(n_opp or 1) == 1
+            and int(to_act_behind or 0) == 0 and profile.get('concepts')
+            and plan in ('giveup', 'bluff_2street', 'river_bluff') and my_range):
+        _rb = river_bluff_anchor(profile, hero, board, my_range, st, p_aggr,
+                                 pot=pot, stack=stack)
+        if _rb is not None:
+            _trace(st, street, 'river_bluff_claim', **_rb)
+            p_aggr = _rb['p']
+            _rb_size = _rb['size']
+            if not why_a.startswith('DEVIATE:') and plan != 'river_bluff':
+                why_a = 'DEVIATE:' + why_a
+            why_a = '%s | 리버 블러프 기준선 %.0f%%(%s 주장 %.2f팟, 가짜 %.0f%%/미스 %.0f%%, blk %+.3f, w %.2f)' % (
+                why_a, _rb['p']*100, _rb['story'], _rb['size'],
+                _rb['fake']*100, _rb['air']*100, _rb['blk_net'], _rb['w'])
     _roll = rng.random()
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
            why=why_a, plan=plan, rel=round(rel, 3))
@@ -1350,6 +1627,9 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                            deviating=why_a.startswith('DEVIATE:'),
                            stackoff=st.get('stackoff'), plan_state=st,
                            n_opp=n_opp, opp_ranges=opp_ranges)
+        if _rb_size:
+            # 블러프 사이즈는 이야기가 정한다(새 오버카드 = 크게 폴라, 기존 탑 = 작게).
+            size = _rb_size
         if size > 0:
             st = set_intent(st, street, mk_intent('bet', size, why_a))
             # 계획과 반대되는 의도는 이탈로 남긴다. 기록이 없으면
@@ -2565,7 +2845,14 @@ def _continuation_frequency(profile, board, n_opp, street, oop, rel, opp_est=Non
     _cm = TX.cbet_multiplier(board, not oop)
     f *= 1.0 + (_cm - 1.0) * _bt            # 개념이 낮으면 구조를 못 읽는다
     f *= (1 - 0.18*bot.board_danger(board)) # 젖은 정도는 남기되 비중을 줄인다
-    if oop: f *= 0.88
+    # 포지션 효과는 positional 숙련에 따라 다르다(2026-10-06, 사용자 승인). 예전에는 전원 OOP ×0.88 로
+    # 같아서 '포지션을 아는 사람이 IP/OOP 를 다르게 친다'가 없었다. 숙련 0 은 포지션 차이를 무시하고
+    # (OOP ×1.00, IP ×0.94), 숙련 10 은 크게 반영한다(OOP ×0.76, IP ×1.06). 숙련 5 에서 OOP ×0.88 로 예전과 같다.
+    _pk = PS.sk(profile, 'positional')/10.0 if profile.get('concepts') else 0.5
+    if oop:
+        f *= 1.0 - 0.24*_pk
+    else:
+        f *= 1.0 + 0.12*(_pk - 0.5)
     f += 0.35*max(0.0, rel-0.6)             # 강할수록 추가
     # 레인지 우위. 씨벳 빈도의 가장 큰 구조적 근거인데 예전에는 들어가지 않았다.
     # 개념(board_texture)이 없으면 보드가 누구에게 유리한지 못 읽는다.
@@ -3404,7 +3691,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
         if _first:
             st.setdefault('refreshed', []).append(street)
         st = turn_value_reassessment(
-            st, hero, board, profile, opp_range, n_opp=n_opp, opp_ranges=opp_ranges)
+            st, hero, board, profile, opp_range, n_opp=n_opp, opp_ranges=opp_ranges,
+            rng=rng)
     st['_rsig'] = _rsig
     st['_opps_sig'] = _opps_sig
 
@@ -3484,10 +3772,55 @@ def continue_range_call_equity(hero, board, profile, street, size_frac,
 # 이 rel 이상이면 '분명한 밸류'다 — 콜 레인지 대비 재평가 없이 계획대로 친다.
 # 리버 재평가에 있던 리터럴을 턴 재평가와 공유하려고 이름을 붙였다(값 불변).
 CLEAR_VALUE_REL = 0.92
+# 리버 얇은 밸류 v2 (FLOP_CLAIM_BASELINE.md 7절): 쇼다운 계획도 재평가하고,
+# 콜 받아도 앞서는 자리는 숙련만큼 친다.
+RIVER_THIN_VALUE_V2 = True
+
+
+TURN_THIN_VALUE_V1 = True
+
+
+def turn_value_promotion(st, hero, board, profile, opp_range, rng,
+                         n_opp=1, opp_ranges=None):
+    """턴 팟컨트롤·쇼다운 계획을, 콜 받아도 앞서면 2스트리트 밸류로 올린다.
+
+    turn_value_reassessment 는 밸류 → 팟컨트롤 **강등**만 했다. 플랍부터 팟컨트롤·
+    쇼다운이던 메이드 핸드는 블랭크 턴에 콜 레인지보다 앞서도 턴 사이즈가 0 이라
+    항상 체크했다(블랭크 턴 rel 0.5~0.7 벳 32%). 사용자 기준(2026-10-06):
+    블랭크 턴, 플랍 작은 벳-콜, K9 탑페어 → 더 약한 Kx·드로우·Ax·낮은 페어에게
+    2/3 밸류. 무서운 턴은 콜 레인지 대비 eq 가 내려가 자연히 팟컨트롤에 남는다.
+    리버 v2 와 같은 확률식: (0.10+0.85·개념)·여유·밴드.
+    """
+    if (not TURN_THIN_VALUE_V1 or rng is None or len(board) != 4
+            or st.get('plan') not in ('pot_control', 'showdown')
+            or not (profile and profile.get('concepts'))):
+        return st
+    rel = st.get('rel') or 0.0
+    if rel >= CLEAR_VALUE_REL or bot.made_strength(hero, board) < 1:
+        return st
+    _size = float(SIZING['value_2street']['turn'])
+    _eq, _n = continue_range_call_equity(
+        hero, board, profile, 'turn', _size, opp_range, opp_ranges, n_opp)
+    if not ahead_when_called(_eq):
+        return st
+    _tv = PS.sk(profile, PS.street_concept('thin_value', 'turn'))/10.0
+    _band = max(0.0, min(1.0, (rel - 0.40)/0.15))
+    _margin = max(0.0, min(1.0, 0.4 + (float(_eq) - 0.5)/0.08))
+    if rng.random() < (0.10 + 0.85*_tv) * _margin * _band:
+        st = dict(st)
+        st['turn_call_eq'] = round(float(_eq), 3)
+        st['turn_call_range_n'] = _n
+        st['plan'] = 'value_2street'
+        st['plan_goal'] = 'value_2street'
+        st['plan_since'] = 'turn'
+        st['why'] = (st.get('why') or []) + [
+            '턴: 팟컨트롤이나 콜 레인지 상대 eq %.2f ≥ 0.50 → 2스트리트 밸류(개념 %.1f)'
+            % (float(_eq), _tv*10)]
+    return st
 
 
 def turn_value_reassessment(st, hero, board, profile, opp_range,
-                            n_opp=1, opp_ranges=None):
+                            n_opp=1, opp_ranges=None, rng=None):
     """턴의 2스트리트 밸류: 계획한 턴 사이즈로 쳤을 때 **콜당해도 앞서는가**(베타 A #4).
 
     리버에는 이 질문(river_value_reassessment)이 있는데 턴에는 없어서, 플랍에
@@ -3497,6 +3830,9 @@ def turn_value_reassessment(st, hero, board, profile, opp_range,
     지킨다. 근거(콜 레인지)가 없으면 계획을 유지한다 — 턴은 마지막 스트리트가
     아니고, 콜 레인지를 지어내지 않는다.
     """
+    if len(board) == 4 and st.get('plan') in ('pot_control', 'showdown'):
+        return turn_value_promotion(st, hero, board, profile, opp_range, rng,
+                                    n_opp=n_opp, opp_ranges=opp_ranges)
     if len(board) != 4 or st.get('plan') != 'value_2street':
         return st
     if (st.get('rel') or 0.0) >= CLEAR_VALUE_REL:
@@ -3567,8 +3903,18 @@ def river_value_reassessment(st, hero, board, profile, opp_range, rng,
         # With no usable range evidence, do not invent a thin-value call
         # range.  Check and take showdown value instead.
         _value_when_called = ahead_when_called(_thin_eq)
+        if RIVER_THIN_VALUE_V2 and _thin_eq is not None:
+            # 콜 받아도 앞서면 얇은 밸류다. 숙련자는 그 자리를 대부분 치고,
+            # 콜 레인지 대비 여유(eq-0.5)가 클수록 더 확실히 친다.
+            # 예전 0.75*개념*밴드 는 숙련 5 에서도 최대 ~37% 였고, 밴드 상단 감쇠가
+            # rel 0.85~0.92(분명한 밸류 직전)에서 오히려 확률을 깎았다(2026-10-06).
+            _band = max(0.0, min(1.0, (rel - 0.40)/0.15))
+            _margin = max(0.0, min(1.0, 0.4 + (float(_thin_eq) - 0.5)/0.08))
+            _p_thin = (0.10 + 0.85*_tv) * _margin * _band
+        else:
+            _p_thin = 0.75*_tv*_band
         if (_value_when_called
-                and rng.random() < 0.75*_tv*_band):
+                and rng.random() < _p_thin):
             st['plan'] = 'thin_river'
             st['why'] = (st.get('why') or []) + [
                 '리버: 얇은 밸류(rel %.2f, call-eq %.2f, 개념 %.1f)'
@@ -3667,7 +4013,23 @@ def river_fix(state, hero, board, profile=None, opp_range=None, rng=None,
     # 리버에서 얇게 뽑는 경로가 아예 없었다.
     # thin_value_river 개념이 있어야 시도한다 — 얇은 밸류는 배워야 하는 라인이고,
     # 못 하는 사람은 체크하고 쇼다운을 본다.
-    if st.get('plan') in ('value_2street', 'pot_control', 'block'):
+    _reassess = ('value_2street', 'pot_control', 'block') + (
+        ('showdown',) if RIVER_THIN_VALUE_V2 else ())
+    if (st.get('plan') == 'showdown'
+            and bot.made_strength(hero, board) < 1):
+        # 메이드 없는 쇼다운 가치(A하이 등)는 재평가하지 않는다 —
+        # giveup 으로 떨어지면 쇼다운 가치가 블러프로 새는 길이 열린다(베타 A #3).
+        _reassess = ()
+    if st.get('plan') in _reassess:
+        if (st.get('plan') == 'showdown' and RIVER_THIN_VALUE_V2
+                and st.get('rel', 0.5) >= CLEAR_VALUE_REL):
+            # 플랍에서 쇼다운으로 잡은 손이 리버에 분명한 밸류가 됐다.
+            st['plan'] = 'value_3street'
+            st['plan_goal'] = 'value_3street'
+            st['why'] = (st.get('why') or []) + [
+                '리버: 쇼다운 계획이나 분명한 밸류(rel %.2f) → 리버 밸류'
+                % st.get('rel', 0.5)]
+            return st
         return river_value_reassessment(
             st, hero, board, profile, opp_range, rng, n_opp, opp_ranges)
 

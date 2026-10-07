@@ -131,6 +131,47 @@ def analyse(hands):
                 raises += 1
             if act == 'fold':
                 folded_pre.add(s)
+        # SB 까지 전원 폴드: SB 의 선택(폴드=워크, 컴플리트, 레이즈)
+        sb_seat = next((x for x in pos if pos[x] == 'SB'), None)
+        if sb_seat is not None:
+            prior = [a for a in pre if a[1] != sb_seat]
+            first_sb = next((a for a in pre if a[1] == sb_seat), None)
+            idx = pre.index(first_sb) if first_sb else None
+            if first_sb is not None and all(a[2] == 'fold' for a in pre[:idx]):
+                hand['all']['sb_folded_to'] += 1
+                hand['all']['sb_' + ('complete' if first_sb[2] == 'call' else
+                                     'raise' if first_sb[2] in ('raise', 'allin') else first_sb[2])] += 1
+        # 포스트플랍: 프리플랍 마지막 공격자의 플랍 c벳, c벳에 대한 응답, 공격/콜, 체크로만 끝난 스트리트
+        pf_aggr = None
+        for a in pre:
+            if a[2] in ('raise', 'allin'):
+                pf_aggr = a[1]
+        flop = [a for a in h['log'] if a[0] == 'flop']
+        if flop and pf_aggr is not None and any(a[1] == pf_aggr for a in flop):
+            before = []
+            for a in flop:
+                if a[1] == pf_aggr:
+                    break
+                before.append(a)
+            if all(a[2] == 'check' for a in before):
+                hand['all']['cbet_opp'] += 1
+                act0 = next(a[2] for a in flop if a[1] == pf_aggr)
+                if act0 in ('bet', 'allin'):
+                    hand['all']['cbet'] += 1
+                    after = flop[flop.index(next(a for a in flop if a[1] == pf_aggr)) + 1:]
+                    for a in after:
+                        if a[1] == pf_aggr:
+                            break
+                        hand['all']['vs_cbet'] += 1
+                        hand['all']['fold_to_cbet'] += a[2] == 'fold'
+                        hand['all']['raise_cbet'] += a[2] in ('raise', 'allin')
+        for st in ('flop', 'turn', 'river'):
+            acts = [a for a in h['log'] if a[0] == st]
+            if acts:
+                hand['all']['street_' + st] += 1
+                hand['all']['checked_through_' + st] += all(a[2] == 'check' for a in acts)
+                hand['all']['post_aggr'] += sum(a[2] in ('bet', 'raise', 'allin') for a in acts)
+                hand['all']['post_call'] += sum(a[2] == 'call' for a in acts)
         seen = [s for s in pos if s not in folded_pre]
         saw_flop = any(a[0] == 'flop' for a in h['log'])
         walk = not saw_flop and len(seen) == 1 and pos.get(seen[0]) == 'BB' and raises == 0
@@ -159,6 +200,18 @@ def analyse(hands):
                            'avg_seconds': round(c['seconds'] / n, 1),
                            'timeout_rate': round(c['timeouts'] / max(1, c['decisions']), 4),
                            'wtsd': round(c['wtsd_seat'] / max(1, c['flop_seat']), 3)}
+    c = hand['all']
+    out['postflop'] = {
+        'cbet_flop': round(c['cbet'] / max(1, c['cbet_opp']), 3),
+        'fold_to_cbet': round(c['fold_to_cbet'] / max(1, c['vs_cbet']), 3),
+        'raise_vs_cbet': round(c['raise_cbet'] / max(1, c['vs_cbet']), 3),
+        'aggression_factor': round(c['post_aggr'] / max(1, c['post_call']), 2),
+        'checked_through': {st: round(c['checked_through_' + st] / max(1, c['street_' + st]), 3)
+                            for st in ('flop', 'turn', 'river')},
+        'sb_when_folded_to': {k: round(c['sb_' + k] / max(1, c['sb_folded_to']), 3)
+                              for k in ('fold', 'complete', 'raise')},
+        'sb_folded_to_n': c['sb_folded_to'],
+    }
     for g, c in sorted(seat.items()):
         n = max(1, c['seat_hands'])
         out['seats'][g] = {'seat_hands': c['seat_hands'], 'vpip': round(c['vpip'] / n, 3),
@@ -231,7 +284,8 @@ def main():
                       'saw_flop': hh['saw_flop'], 'avg_flop_players': hh['avg_flop_players'],
                       'wtsd': hh['wtsd'], 'walk': hh['walk'], 'pre_allin': hh['pre_allin'],
                       'avg_pot_bb': hh['avg_pot_bb'], 'timeout_rate': hh['timeout_rate'],
-                      'errors': len(errors), 'players': stats['players']}, ensure_ascii=False))
+                      'errors': len(errors), 'players': stats['players'],
+                      'postflop': stats['postflop']}, ensure_ascii=False))
 
 
 if __name__ == '__main__':

@@ -114,10 +114,22 @@ def main():
 
     rr = random.Random(20261005)
     generated = [PS.make_player(rr, 0.78, pid=i) for i in range(100)]
-    checks['no_new_prior'] = {
-        'pass': all('thin_value_flop' not in p['concepts'] and 'range_merge' in p['concepts']
-                    for p in generated),
-        'sample_n': len(generated),
+    # phase 2(2026-10-06): 분할 키를 독립 생성한다. 생성 프로필에 키가 있고, 부모와의 상관이
+    # 설계값(persona.SPLIT_CONCEPTS 의 r) 근처인지 본다(100명 표본이라 ±0.15 허용).
+    def _corr(x, y):
+        mx, my = sum(x) / len(x), sum(y) / len(y)
+        num = sum((a - mx) * (b - my) for a, b in zip(x, y))
+        den = (sum((a - mx) ** 2 for a in x) * sum((b - my) ** 2 for b in y)) ** 0.5
+        return num / den if den else 0.0
+    _split = {}
+    for _k in ['thin_value_flop']:
+        _parent, _off, _r = PS.SPLIT_CONCEPTS[_k]
+        _c = _corr([p['concepts'][_k] for p in generated], [p['concepts'][_parent] for p in generated])
+        _split[_k] = {'parent': _parent, 'target_r': _r, 'corr': round(_c, 3),
+                      'present': all(_k in p['concepts'] for p in generated)}
+    checks['split_prior_phase2'] = {
+        'pass': all(v['present'] and abs(v['corr'] - v['target_r']) <= 0.15 for v in _split.values()),
+        'keys': _split, 'sample_n': len(generated),
     }
 
     passed = all(x['pass'] for x in checks.values())

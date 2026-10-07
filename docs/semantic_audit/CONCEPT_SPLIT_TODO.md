@@ -70,3 +70,35 @@
 - 새 숙련치의 loading/base/spread는 근거 없이 임의 생성하지 않는다.
 - 분리 후에는 same-state counterfactual + frozen regression으로 영향 측정한다.
 - GTO/reference 브랜치 정리와 이 작업은 분리한다.
+
+## PHASE 2 — 분할 키 독립 생성 (2026-10-06, 사용자 요청·위임)
+
+phase 1 에서 의미만 나누고 부모 값을 빌려 쓰던 11개 키를 독립 숙련치로 생성한다(`persona.SPLIT_CONCEPTS`).
+
+```
+child = mean_p + r * (parent - mean_p) + sqrt(1 - r^2) * sd_p * z + offset
+z: pid·잠재요인으로 시드한 별도 결정적 난수 (money_jump 와 같은 방식, 공유 rng 불변)
+mean_p, sd_p: 부모의 모집단 평균·표준편차(1,000명 측정, SPLIT_PARENT_STATS)
+```
+
+| 키 | 부모 | offset | 목표 r | 난이도 | 학습 도움 선행 |
+|---|---|---:|---:|---:|---|
+| checkraise_turn | checkraise_late | +0.3 | 0.85 | 6.0 | checkraise_flop |
+| checkraise_river | checkraise_late | −0.3 | 0.85 | 7.0 | checkraise_flop |
+| bluffcatch_flop | bluffcatch_early | +0.3 | 0.85 | 4.5 | potodds |
+| bluffcatch_turn | bluffcatch_early | −0.2 | 0.85 | 5.5 | potodds |
+| thin_value_flop | range_merge | +0.4 | 0.80 | 5.0 | — |
+| pf_threebet | pf_defend | −0.2 | 0.70 | 5.0 | — (차트 계열) |
+| limp_theory | pf_range | −1.0 | 0.60 | 6.0 | — (차트 계열) |
+| iso_raise | pf_range | 0.0 | 0.75 | 4.5 | — (차트 계열) |
+| range_reconstruction | range_read | +0.2 | 0.80 | 7.5 | pf_range+positional+board_texture+sizing_tell |
+| line_interpretation | range_read | 0.0 | 0.80 | 7.5 | range_reconstruction |
+| read_application | range_read | −0.3 | 0.80 | 8.0 | line_interpretation |
+
+읽기 3역할은 고숙련 압축(v3) 대상에 추가. 부모 키(checkraise_late, bluffcatch_early, range_merge, range_read 등)는
+남은 소비처·fallback 용으로 그대로 생성한다.
+
+1,000명 결과: 기질·기존 37개 개념 전원 불변. 분할 키 표준편차는 부모와 같은 수준(1.91~2.74 vs 2.02~2.99),
+부모 상관 0.63~0.86(목표 근처). 선후행 위반 0. 분할 검증기 4개의 `no_new_prior`(phase 1 불변식)는
+`split_prior_phase2`(키 존재 + 상관이 목표 ±0.15)로 바꿨다. 첫 시도(독립 편차만 더함)는 상관이 0.93~0.97 로
+사실상 부모 복사라 폐기했다.
