@@ -94,6 +94,29 @@ def _ensure_wal(db, wait=15.0):
             time.sleep(0.02)
 
 
+def _public_progress(fd):
+    """로비에 보일 진행 정보(공개 정보만): 레벨·블라인드·평균 스택·플레이 시간·칩 리더.
+
+    대회에 참가하지 않아도 로비에서 순위·진행 시간·평균 칩을 볼 수 있어야 한다(사용자 요구).
+    """
+    if not fd:
+        return None
+    alive = [int(p.get('stack', 0) or 0) for p in (fd.get('players') or {}).values()
+             if int(p.get('stack', 0) or 0) > 0]
+    if not alive:
+        return None
+    level = max(1, int(fd.get('level') or 1))
+    row = BLINDS[min(level, len(BLINDS)) - 1]
+    sb, bb = int(row[1]), int(row[2])
+    avg = sum(alive) / float(len(alive))
+    vps = fd.get('virtual_play_seconds')
+    return {'level': level, 'sb': sb, 'bb': bb,
+            'avg_stack': int(round(avg)), 'avg_bb': round(avg / max(1.0, bb), 1),
+            'leader_stack': max(alive), 'remaining': len(alive),
+            'play_seconds': None if vps is None else int(vps),
+            'hand_no': int(fd.get('hand_no') or 0)}
+
+
 class Store:
     def __init__(self, root=None, initial_chips=None, schedule=None):
         self.root = str(PD.normalized(root) if root is not None else
@@ -478,7 +501,9 @@ class Store:
                 closed = ev['closed'] or now >= ev['closes_at'] or ev['finished']
                 count = r['bot_entries'] + sum(e['status'] != 'cancelled' for e in ev['entries'])
                 public_rules = {key: value for key, value in r.items() if key != 'seed'}
+                progress = _public_progress(fd)
                 events.append(dict(public_rules, id=tid, key=r['fmt'], starts_at=ev['starts_at'],
+                                   progress=progress,
                                    closes_at=ev['closes_at'], entries=count,
                                    remaining=sum(p.get('stack', 0) > 0 for p in fd.get('players', {}).values()) if fd else count,
                                    status='finished' if ev['finished'] else

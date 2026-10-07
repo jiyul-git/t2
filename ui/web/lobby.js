@@ -55,8 +55,23 @@ function renderCards() {
     '<div class="fact"><b>'+fmt(t.prize_pool)+' 칩</b><span>현재 상금 풀</span></div>'+
     '<div class="fact"><b>'+t.remaining+' / '+t.entries+'명</b><span>잔여 / 엔트리</span></div>'+
     '<div class="fact"><b>9-MAX · '+t.level_minutes+'분</b><span>좌석 / 레벨</span></div>'+
+    progressFacts(t)+
     '</div><div class="enter">'+(t.can_reenter ? '리바이인 가능 →' : '토너 정보 보기 →')+'</div></article>').join('');
   box.querySelectorAll('.card').forEach(el=>el.onclick=()=>openJoin(el.dataset.id));
+}
+function playClock(sec) {
+  if(sec==null) return '-';
+  const m=Math.floor(sec/60), h=Math.floor(m/60);
+  return h ? h+'시간 '+(m%60)+'분' : m+'분';
+}
+// 진행 중인 대회의 공개 진행 정보(레벨·블라인드·평균 스택·진행 시간). 참가하지 않아도 보인다.
+function progressFacts(t) {
+  const p=t.progress;
+  if(!p || t.status==='scheduled') return '';
+  return '<div class="fact"><b>Lv '+p.level+' · '+fmt(p.sb)+'/'+fmt(p.bb)+'</b><span>레벨 / 블라인드</span></div>'+
+    '<div class="fact"><b>'+fmt(p.avg_stack)+' ('+p.avg_bb+'bb)</b><span>평균 스택</span></div>'+
+    '<div class="fact"><b>'+playClock(p.play_seconds)+'</b><span>진행 시간</span></div>'+
+    '<div class="fact"><b>'+fmt(p.leader_stack)+'</b><span>칩 리더</span></div>';
 }
 function openJoin(id) {
   selected=catalog.find(t=>t.id===id); if(!selected) return;
@@ -67,6 +82,9 @@ function paintJoin() {
   $('#joinTitle').innerHTML='<h2>'+escapeHtml(t.name)+'</h2><p>'+when(t.starts_at)+' 시작</p>';
   $('#joinFacts').innerHTML=[fmt(t.start_stack)+' 시작 스택','9-max','레벨 '+t.level_minutes+'분',
     '등록 마감 '+when(t.closes_at),'탈락 후 재참가 최대 '+t.max_reentries+'회',
+    t.progress && t.status!=='scheduled' ? 'Lv '+t.progress.level+' · '+fmt(t.progress.sb)+'/'+fmt(t.progress.bb) : '',
+    t.progress && t.status!=='scheduled' ? '평균 '+fmt(t.progress.avg_stack)+' ('+t.progress.avg_bb+'bb)' : '',
+    t.progress && t.status!=='scheduled' ? '진행 '+playClock(t.progress.play_seconds) : '',
     e && e.rank ? '내 순위 '+e.rank+'위' : '',
     e && e.payout != null ? '지급 상금 '+fmt(e.payout)+' 칩' : ''].filter(Boolean)
     .map(x=>'<span>'+escapeHtml(x)+'</span>').join('');

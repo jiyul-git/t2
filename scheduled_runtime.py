@@ -204,6 +204,21 @@ def _take_cached_pending(event_id, st):
     return pending
 
 
+def _sync_level(fd, when):
+    """오프스크린 병합 뒤 필드 레벨을 가상 시각에 맞춘다.
+
+    핸드는 워커가 매 핸드 전에 시각으로 레벨을 다시 계산하므로 블라인드는 맞았지만,
+    병합된 필드 자체의 level 은 갱신되지 않아 로비·관전 화면에 레벨 1 로 남았다
+    (턴보 80분에도 1). fieldsim.Field.advance_level 과 같은 식이다.
+    """
+    minutes = fd.get('level_minutes')
+    if not minutes:
+        return
+    new = min(1 + int(float(when) // (60.0 * float(minutes))), len(FS.BLINDS))
+    if new > int(fd.get('level') or 1):
+        fd['level'] = new
+
+
 def advance(event, target, budget=18, parallel=True):
     """Compute a bounded batch; target is a play-time timestamp, not CPU time."""
     event = copy.deepcopy(event)
@@ -320,6 +335,7 @@ def advance(event, target, budget=18, parallel=True):
             barrier_time=when if h4h else None)
         st['field']['virtual_play_seconds'] = when
         st['field']['hand_no'] += steps
+        _sync_level(st['field'], when)
         if merged['invalidated']:
             # 탈락·이동 뒤에는 다른 테이블의 선계산이 낡았다(기존 보수적 재시작 그대로).
             pending.clear()
