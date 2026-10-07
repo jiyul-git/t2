@@ -95,6 +95,8 @@ def _live_is_active(st):
     '다른 대회의 저장 상태입니다'로 실패했다(2026-10-07, 16:00 딥 → 17:00 표준 입장).
     예약 대회가 아닌 상태(tournament_id 없음)는 그대로 둔다.
     """
+    if (st or {}).get('offscreen'):
+        return False          # 백그라운드 진행 중 — 여기서 저장하면 백그라운드 결과가 버려진다
     fd = (st or {}).get('field') or {}
     hero = fd.get('hero_pid')
     if hero is None or str(hero) not in (fd.get('players') or {}):
@@ -189,6 +191,8 @@ def _schedule_tick():
             ok = ECONOMY.save_state(result['id'], result['state'],
                                     expected_revision=result['revision'],
                                     assignments=result['assignments'])
+            if not ok:
+                print('[동기화] %s 결과 저장 거부(상태가 그 사이 바뀜) — 다시 계산' % result['id'], flush=True)
             if ok and result['id'] == ECONOMY.active_id():
                 L.STATE_STORE = ECONOMY
                 L.save(ECONOMY.load_active())
