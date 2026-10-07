@@ -120,8 +120,23 @@ def main():
     late_active = TS.active_seconds(spec['late_minutes'] * 60)
     stem = os.path.join(out_dir, '%s_%d' % (fmt, day))
     cpu0, wall0, target = time.process_time(), time.time(), 0.0
-    with open(stem + '_hands.jsonl', 'w') as fp:
+    # 이어하기: 컨테이너가 재시작되면 긴 대회(딥 ~3.5시간)가 처음부터 다시 돈다. 단계마다 대회 상태와
+    # 핸드 기록 위치를 저장하고, 있으면 거기서 잇는다. 선계산 캐시는 메모리에만 있어 다시 계산되지만
+    # 시드가 같아 같은 핸드가 나온다(아직 확정 안 된 기록은 버리고 확정될 때 다시 쓴다).
+    ckpt = stem + '_ckpt.json'
+    mode, offset = 'w', 0
+    if os.path.exists(ckpt) and os.path.exists(stem + '_hands.jsonl'):
+        c = json.load(open(ckpt))
+        ev['state'], ev['closed'], target = c['state'], c['closed'], float(c['target'])
+        mode, offset = 'r+', int(c['offset'])
+        cpu0 -= float(c.get('cpu', 0.0))
+        wall0 -= float(c.get('wall', 0.0))
+    with open(stem + '_hands.jsonl', mode) as fp:
+        if mode == 'r+':
+            fp.seek(offset)
+            fp.truncate()
         _OUT = fp
+        _PENDING.clear()
         while True:
             target += STEP
             ev['closed'] = target >= late_active
@@ -130,7 +145,15 @@ def main():
             f = L._load_field(ev['state']['field'])
             if f.remaining() <= 1 or target > 30 * 3600:
                 break
+            fp.flush()
+            tmp = ckpt + '.tmp'
+            json.dump({'state': ev['state'], 'closed': ev['closed'], 'target': target,
+                       'offset': fp.tell(), 'cpu': time.process_time() - cpu0,
+                       'wall': time.time() - wall0}, open(tmp, 'w'))
+            os.replace(tmp, ckpt)
     _OUT = None
+    if os.path.exists(ckpt):
+        os.remove(ckpt)
     f = L._load_field(ev['state']['field'])
     json.dump({str(pid): _player_row(p) for pid, p in f.players.items()},
               open(stem + '_players.json', 'w'))
