@@ -118,7 +118,7 @@ function boxClockPaint(host, startMs, baseMs, bankMs, now) {
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   rect.setAttribute('x', 1.5); rect.setAttribute('y', 1.5);
   rect.setAttribute('width', Math.max(1, w - 3)); rect.setAttribute('height', Math.max(1, h - 3));
-  rect.setAttribute('rx', 12);
+  rect.setAttribute('rx', Math.min(8, (h - 3) / 2));
   const inBank = now >= baseMs && bankMs > baseMs;
   const frac = inBank
     ? Math.max(0, (bankMs - now) / Math.max(1, bankMs - baseMs))
@@ -135,7 +135,7 @@ function clearSeatClock(seat) {
   const k = String(seat);
   if (SEAT_CLOCKS[k]) { clearInterval(SEAT_CLOCKS[k]); delete SEAT_CLOCKS[k]; }
   const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
-  const c = pod && pod.querySelector('.avatar > .actclock');
+  const c = pod && pod.querySelector('.seatno > .actclock');
   if (c) c.remove();
 }
 
@@ -143,7 +143,7 @@ function seatClock(seat, startMs, baseMs, bankMs) {
   clearSeatClock(seat);
   const paint = () => {
     const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
-    boxClockPaint(pod && pod.querySelector('.avatar'), startMs, baseMs, bankMs, serverNow());
+    boxClockPaint(pod && pod.querySelector('.seatno'), startMs, baseMs, bankMs, serverNow());
   };
   paint();
   SEAT_CLOCKS[String(seat)] = setInterval(paint, 100);

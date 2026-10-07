@@ -673,8 +673,7 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 .actclock rect { fill: none; stroke: #ffd56a; stroke-width: 2.6; stroke-linecap: round;
                  filter: drop-shadow(0 0 3px rgba(255,213,106,.7)); }
 .actclock.bank rect { stroke: #ff6a2b; stroke-width: 3.2; filter: drop-shadow(0 0 5px rgba(255,106,43,.85)); }
-.pod .avatar { position: relative; }
-.actclock .acnum { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%);
+.actclock .acnum { position: absolute; left: 50%; bottom: -16px; transform: translateX(-50%);
                    padding: 0 4px; border-radius: 6px; background: rgba(8,14,12,.82);
                    white-space: nowrap; font-size: 10px; font-weight: 800; color: #ffd56a;
                    text-shadow: 0 1px 2px rgba(0,0,0,.8); }
@@ -683,3 +682,10 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 /* HERO 는 기존 링 시계 그대로 */
 #turnclock.ring { background: conic-gradient(rgba(232,196,106,.35) var(--p, 100%), transparent 0); }
 #turnclock.ring.bank { background: conic-gradient(rgba(224,118,60,.45) var(--p, 100%), transparent 0); }
+
+/* 봇 시계는 이름표(B62 · S8)를 감싼다. 숫자는 이름표 오른쪽. HERO 시계는 내 정보 아래 숫자로. */
+#seats .pod .seatno { position: relative; left: 0; top: 0; overflow: visible; }
+.seatno > .actclock .acnum { left: 100%; bottom: auto; top: 50%; transform: translate(5px, -50%); }
+#heroinfo #turnclock { position: static; display: inline-block; margin-top: 4px; min-width: 0;
+                       padding: 1px 8px; font-size: 13px; }
+#heroinfo #turnclock[hidden] { display: none; }
