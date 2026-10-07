@@ -2970,6 +2970,19 @@ def response_equity(hero, board, profile, opp_range, opp_ranges, n_opp,
     return eq
 
 
+# 벳·레이즈 뒤 남는 스택이 콜 받은 팟의 이 비율 이하이면 사람은 그냥 올인한다
+# (예: 4,600 벳에 34,000 레이즈하고 5,395 남기기 — 남은 칩으로는 폴드할 수 없다).
+ALLIN_SNAP_FRAC = 0.30
+
+
+def snap_allin(new_chips, stack, pot_if_called):
+    """이번 액션에 새로 넣을 칩(new_chips) 뒤 남는 스택이 너무 적으면 스택 전체를 반환."""
+    behind = float(stack) - float(new_chips)
+    if 0 < behind <= ALLIN_SNAP_FRAC * max(0.0, float(pot_if_called)):
+        return float(stack)
+    return float(new_chips)
+
+
 def response_raise_target(pot, tocall, mult, stack, hero_contrib):
     """응답 레이즈의 street 총 contribution target 좌표. 반환 (target, 최대 target).
 
@@ -2978,12 +2991,18 @@ def response_raise_target(pot, tocall, mult, stack, hero_contrib):
     _hc = hero_contrib
     _base = int(round((pot + 2*tocall)*mult/100))*100
     _max_target = float(stack) + _hc
-    return min(_max_target, _hc + _base), _max_target
+    _new = min(float(stack), float(_base))
+    _new = snap_allin(_new, stack, pot + 2*_new - tocall)
+    return min(_max_target, _hc + _new), _max_target
 
 
 def intent_chip_amount(pot, size_frac, stack):
     """판단 층이 정한 사이즈(팟 배수)를 칩으로 환산(100 단위, 스택 상한). 실행 층."""
-    return min(stack, int(round(pot*size_frac/100))*100)
+    amt = min(stack, int(round(pot*size_frac/100))*100)
+    if amt <= 0:
+        return amt
+    snapped = snap_allin(amt, stack, pot + 2*amt)
+    return stack if snapped >= stack else amt
 
 
 def shape_planned_target(amount, profile, pot, actor_cap, seed=None):
@@ -4506,7 +4525,8 @@ def checkraise_target_amount(tocall, pot, stack, mult, aggr, overbet_skill):
     # 팟 대비 상한 — 공격성이 높을수록 상한도 높다
     cap_mult = 1.15 + 0.075*aggr + 0.03*overbet_skill
     target = min(target, (pot + tocall) * cap_mult)
-    return int(min(stack, max(tocall*2.2, round(target/100)*100)))
+    amt = int(min(stack, max(tocall*2.2, round(target/100)*100)))
+    return int(snap_allin(amt, stack, pot + 2*amt - tocall))
 
 
 def target_commit(profile, rel, made, s, street, opp_stack_bb=None,
