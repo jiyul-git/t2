@@ -673,7 +673,9 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 .actclock rect { fill: none; stroke: #ffd56a; stroke-width: 2.6; stroke-linecap: round;
                  filter: drop-shadow(0 0 3px rgba(255,213,106,.7)); }
 .actclock.bank rect { stroke: #ff6a2b; stroke-width: 3.2; filter: drop-shadow(0 0 5px rgba(255,106,43,.85)); }
-.actclock .acnum { position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%);
+.pod .avatar { position: relative; }
+.actclock .acnum { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%);
+                   padding: 0 4px; border-radius: 6px; background: rgba(8,14,12,.82);
                    white-space: nowrap; font-size: 10px; font-weight: 800; color: #ffd56a;
                    text-shadow: 0 1px 2px rgba(0,0,0,.8); }
 .actclock.bank .acnum, .actclock.urgent .acnum { color: #ff8a55; }

@@ -101,3 +101,11 @@ main{padding:0 14px 22px}
 .walletRow small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
 #walletDetail{max-height:60dvh;overflow:auto}
 .card .startTime{margin-top:8px;font-size:12px;font-weight:800;color:var(--gold)}
+
+/* 내 캐릭터 (프로필) */
+.avatarPreview{width:96px;height:96px;margin:4px auto 8px;border-radius:50%;background:#0d1917;border:2px solid var(--gold);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.avatarPreview img{width:86%;height:auto;display:block}
+.avatarChoices{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-bottom:14px}
+.avatarChoices button{border:1px solid #335149;background:#0d1917;border-radius:9px;padding:3px;aspect-ratio:1;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.avatarChoices button.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.avatarChoices img{width:100%;height:auto;display:block}

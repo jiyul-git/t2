@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b1514">
 <title>T2 Poker Lobby</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="lobby.css?v=3">
+<link rel="stylesheet" href="lobby.css?v=4">
 </head>
 <body>
 <div id="lobby">
@@ -78,6 +78,10 @@
         <input id="nickname" type="text" maxlength="16" placeholder="플레이어">
       </label>
 
+      <div class="profileLabel">내 캐릭터</div>
+      <div id="avatarPreview" class="avatarPreview"></div>
+      <div id="avatarChoices" class="avatarChoices"></div>
+
       <div class="profileLabel">카드 뒷면</div>
       <div id="deckChoices" class="deckChoices">
         <button type="button" data-deck="jade"><span class="deckSample jade"></span><b>비취</b></button>
@@ -86,21 +90,6 @@
         <button type="button" data-deck="ivory"><span class="deckSample ivory"></span><b>백자</b></button>
       </div>
 
-      <div class="settingsGrid">
-        <label>게임 진행 속도
-          <select id="profileSpeed">
-            <option value="1000">빠르게 · 1.0초</option>
-            <option value="1500">보통 · 1.5초</option>
-            <option value="2000">천천히 · 2.0초</option>
-            <option value="2600">매우 천천히 · 2.6초</option>
-          </select>
-        </label>
-        <label class="toggleRow">결과 자동진행
-          <input id="profileAuto" type="checkbox">
-        </label>
-      </div>
-
-      <button id="profileHistory" class="secondaryAction" type="button">핸드 기록 보기</button>
       <button id="profileSave" class="join" type="button">저장</button>
     </div>
   </div>
@@ -112,6 +101,6 @@
     <button id="profileNav" type="button"><span>●</span>프로필</button>
   </nav>
 </div>
-<script src="lobby.js?v=6"></script>
+<script src="lobby.js?v=8"></script>
 </body>
 </html>

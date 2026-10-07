@@ -23,6 +23,15 @@
     const scale = distance ? Math.min(1, distance / 120) * radius / distance : 0;
     return {x: dx * scale, y: dy * scale};
   }
+  // 프로필에서 고른 내 캐릭터(로비 lobby.js 가 저장). 없으면 예전처럼 pid 로 정한다.
+  function heroPortrait() {
+    try {
+      const raw = localStorage.getItem('t2profile_avatar');
+      if (raw === null || raw === '') return null;
+      const v = Number(raw);
+      return Number.isInteger(v) && v >= 0 && v < portraits.length ? v : null;
+    } catch (e) { return null; }
+  }
   // Keep continuing players' portraits and assign newcomers an unused portrait.
   // Hero participates in the same pool; missing pid falls back to the seat.
   function createTableAllocator() {
@@ -31,7 +40,11 @@
     return function tablePortraits(seats) {
       const roster = [...seats].sort((a,b) => Number(b.hero)-Number(a.hero) || a.seat-b.seat);
       const next = new Map(), used = new Set(), result = new Map();
+      // 프로필에서 고른 내 캐릭터는 항상 내 것이다(봇이 먼저 쓰고 있었어도 비켜 준다).
+      const pick = heroPortrait(), me = roster.find(s => s.hero);
+      if (me && pick !== null) { next.set(key(me), pick); used.add(pick); result.set(me.seat, pick); }
       for (const s of roster) {
+        if (result.has(s.seat)) continue;
         const id = previous.get(key(s));
         if (id !== undefined && !used.has(id)) {
           next.set(key(s), id); used.add(id); result.set(s.seat, id);
@@ -39,7 +52,7 @@
       }
       for (const s of roster) {
         if (result.has(s.seat)) continue;
-        let id = portraitIndex(s.pid);
+        let id = s.hero && heroPortrait() !== null ? heroPortrait() : portraitIndex(s.pid);
         for (let count=0; count<portraits.length && used.has(id); count++) id=(id+1)%portraits.length;
         next.set(key(s), id); used.add(id); result.set(s.seat, id);
       }

@@ -147,8 +147,17 @@ setInterval(()=>{if(!document.hidden && !sending) loadLobby();},5000);
 
 const PROFILE_KEYS = {
   nickname: 't2profile_nickname',
-  deck: 't2profile_deck'
+  deck: 't2profile_deck',
+  avatar: 't2profile_avatar'      // 테이블의 내 캐릭터(visuals.js 가 HERO 자리에 쓴다)
 };
+const AVATARS = 9;
+function avatarImg(i){ return '<img alt="" draggable="false" src="assets/portraits/'+String(i+1).padStart(2,'0')+'.png">'; }
+function paintAvatars(sel){
+  $('#avatarPreview').innerHTML=avatarImg(sel);
+  $('#avatarChoices').innerHTML=Array.from({length:AVATARS},(_,i)=>
+    '<button type="button" data-avatar="'+i+'"'+(i===sel?' class="active"':'')+'>'+avatarImg(i)+'</button>').join('');
+  $('#avatarChoices').querySelectorAll('button').forEach(b=>b.onclick=()=>paintAvatars(Number(b.dataset.avatar)));
+}
 const DECKS = ['jade','navy','burgundy','ivory'];
 
 function storageGet(key, fallback){
@@ -168,8 +177,8 @@ function applyDeckTheme(deck){
 }
 function openProfile(){
   $('#nickname').value=profileGet('nickname','플레이어');
-  $('#profileSpeed').value=storageGet('t2step','1500');
-  $('#profileAuto').checked=storageGet('t2auto','1')!=='0';
+  const av=Number(profileGet('avatar','0'));
+  paintAvatars(Number.isInteger(av) && av>=0 && av<AVATARS ? av : 0);
   const deck=profileGet('deck','jade');
   $('#deckChoices').querySelectorAll('button').forEach(b=>
     b.classList.toggle('active',b.dataset.deck===deck));
@@ -181,10 +190,8 @@ function saveProfile(){
   const dk=$('#deckChoices button.active');
   profileSet('nickname',nick);
   profileSet('deck',dk?dk.dataset.deck:'jade');
-  try {
-    localStorage.setItem('t2step',$('#profileSpeed').value);
-    localStorage.setItem('t2auto',$('#profileAuto').checked?'1':'0');
-  } catch(e){}
+  const av=$('#avatarChoices button.active');
+  profileSet('avatar',av?av.dataset.avatar:'0');
   applyDeckTheme(profileGet('deck','jade'));
   closeProfile();
   toast('프로필을 저장했습니다');
@@ -193,7 +200,6 @@ $('#profileNav').addEventListener('click',openProfile);
 $('#profileClose').addEventListener('click',closeProfile);
 $('#profileSheet').addEventListener('click',(e)=>{if(e.target===$('#profileSheet'))closeProfile();});
 $('#profileSave').addEventListener('click',saveProfile);
-$('#profileHistory').addEventListener('click',()=>{location.href='/play#history';});
 $('#deckChoices').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
   $('#deckChoices').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
   applyDeckTheme(b.dataset.deck);

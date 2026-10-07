@@ -118,7 +118,7 @@ function boxClockPaint(host, startMs, baseMs, bankMs, now) {
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   rect.setAttribute('x', 1.5); rect.setAttribute('y', 1.5);
   rect.setAttribute('width', Math.max(1, w - 3)); rect.setAttribute('height', Math.max(1, h - 3));
-  rect.setAttribute('rx', 8);
+  rect.setAttribute('rx', 12);
   const inBank = now >= baseMs && bankMs > baseMs;
   const frac = inBank
     ? Math.max(0, (bankMs - now) / Math.max(1, bankMs - baseMs))
@@ -135,7 +135,7 @@ function clearSeatClock(seat) {
   const k = String(seat);
   if (SEAT_CLOCKS[k]) { clearInterval(SEAT_CLOCKS[k]); delete SEAT_CLOCKS[k]; }
   const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
-  const c = pod && pod.querySelector('.meta > .actclock');
+  const c = pod && pod.querySelector('.avatar > .actclock');
   if (c) c.remove();
 }
 
@@ -143,7 +143,7 @@ function seatClock(seat, startMs, baseMs, bankMs) {
   clearSeatClock(seat);
   const paint = () => {
     const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
-    boxClockPaint(pod && pod.querySelector('.meta'), startMs, baseMs, bankMs, serverNow());
+    boxClockPaint(pod && pod.querySelector('.avatar'), startMs, baseMs, bankMs, serverNow());
   };
   paint();
   SEAT_CLOCKS[String(seat)] = setInterval(paint, 100);
@@ -516,7 +516,24 @@ function renderSeats(v) {
             `<span class="stack">${fmt(d.stack)}</span></div></div>`;
   }
   box.innerHTML = html;
+  fitSeatsInView(box);
   PokerVisuals.scheduleGaze();
+}
+
+/* 3시·9시 좌석이 화면 밖으로 잘리지 않게, 렌더 후 실제 폭(스택 박스 포함)을 재서 안쪽으로 민다. */
+function fitSeatsInView(box) {
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  box.querySelectorAll('.pod').forEach((pod) => {
+    pod.style.translate = '';
+    let l = Infinity, r = -Infinity;
+    [pod].concat(Array.from(pod.querySelectorAll('.meta, .avatar, .memo'))).forEach((el) => {
+      const b = el.getBoundingClientRect();
+      if (b.width) { l = Math.min(l, b.left); r = Math.max(r, b.right); }
+    });
+    const pad = 4;
+    const shift = l < pad ? pad - l : (r > vw - pad ? (vw - pad) - r : 0);
+    if (shift) pod.style.translate = Math.round(shift) + 'px 0';
+  });
 }
 
 /* ---------------- 좌석 앞 칩 ---------------- */
@@ -3245,7 +3262,7 @@ function paintActionClock() {
     el.classList.add('ring');
     el.classList.toggle('bank', inBank);
     el.style.setProperty('--p', (frac * 100).toFixed(1) + '%');
-    el.textContent = sec <= 10 ? (inBank ? 'TIME BANK ' : '') + sec + '초' : (inBank ? 'TIME BANK' : '');
+    el.textContent = (inBank ? 'TIME BANK ' : '') + sec + '초';
     el.classList.toggle('urgent', sec <= 5);
   } else {
     el.hidden = false;
