@@ -1046,9 +1046,37 @@ class HandRun:
         #   tour_seed, fmt_key, banks{pid: 초}(이 dict 를 직접 정산), enforce(타임아웃 적용 여부)
         self.timing = timing_ctx
         self.timing_log = []
+        self.preflop_errors = []  # replay/engine errors that must never become a paid call
         self.gen = self._run()
         self.result = None
         self._pot_at = {}          # street -> 스트리트 시작 시점 팟
+
+    def _preflop_error_fallback(self, rnd, seat, exc, proposed=None, replay=False):
+        """A failed preflop decision must not silently become a paid call.
+
+        Strict verification surfaces the original exception. Normal play takes
+        the only risk-free legal action and records provenance for hand review.
+        """
+        if os.environ.get('T2_STRICT', '').strip().lower() in ('1', 'true', 'yes'):
+            raise exc
+        action = 'check' if rnd.to_call(seat) <= 0 else 'fold'
+        rec = {
+            'seat': seat, 'pos': self.h.pos.get(seat),
+            'hole': list(self.h.hole.get(seat, [])),
+            'to_call': rnd.to_call(seat),
+            'proposed': proposed, 'fallback': action,
+            'replay': bool(replay), 'error': str(exc),
+        }
+        self.preflop_errors.append(rec)
+        if not replay:
+            pf_seed = (getattr(self.h, 'pf_seed', {}) or {}).get(seat)
+            if isinstance(pf_seed, dict):
+                pf_seed['pf_execution_error'] = dict(rec)
+                pf_seed['pf_act'] = action
+                line = pf_seed.get('pf_line')
+                if isinstance(line, list) and line:
+                    line[-1]['act'] = action
+        rnd.apply(seat, action)
 
     def _timing_decide(self, seat, street, ax, c, s_struct, m, commit, trivial, n_log,
                        concepts):
@@ -1504,7 +1532,9 @@ class HandRun:
             _cached = next((d for d in self.REPLAY if d[0] == _ck), None)
             if _cached:
                 try: rnd.apply(s, _cached[1], _cached[2])
-                except ValueError: rnd.apply(s, 'call' if tc > 0 else 'check')
+                except ValueError as exc:
+                    self._preflop_error_fallback(
+                        rnd, s, exc, proposed=_cached[1], replay=True)
                 aggressor, callers, limpers = _update_pf_state_after_apply(
                     rnd, s, aggressor, callers, limpers)
                 _money_jump_attach_action(_mj_obs, rnd)
@@ -1601,8 +1631,9 @@ class HandRun:
                     _pf_target = int(round(float(h.bb) * float(sz)))
                     rnd.apply(s, 'raise',
                               max(_pf_target, rnd.current + rnd.min_raise))
-            except ValueError:
-                rnd.apply(s, 'call' if tc > 0 else 'check')
+            except ValueError as exc:
+                self._preflop_error_fallback(
+                    rnd, s, exc, proposed=locals().get('a'))
             aggressor, callers, limpers = _update_pf_state_after_apply(
                 rnd, s, aggressor, callers, limpers)
             _money_jump_attach_action(_mj_obs, rnd)
