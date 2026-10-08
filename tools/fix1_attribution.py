@@ -19,10 +19,10 @@ EX = []
 _ss = PS.shape_size
 
 
-def shape_size(amount, ptype, rng, pot=None, odd=None):
+def shape_size(amount, ptype, rng, pot=None, odd=None, profile=None):
     clone = random.Random(); clone.setstate(rng.getstate())
     old = _ss(amount, ptype, clone, pot=pot, odd=None)
-    new = _ss(amount, ptype, rng, pot=pot, odd=odd)
+    new = _ss(amount, ptype, rng, pot=pot, odd=odd, profile=profile)
     C['calls'] += 1
     C['with_pot'] += bool(pot)
     if old != new:

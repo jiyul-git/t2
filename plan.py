@@ -1618,6 +1618,7 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                 why_a, _rb['p']*100, _rb['story'], _rb['size'],
                 _rb['fake']*100, _rb['air']*100, _rb['blk_net'], _rb['w'])
     _roll = rng.random()
+    why_a += ' | 최종 실행 확률 %.2f%%' % (p_aggr * 100.0)
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
            why=why_a, plan=plan, rel=round(rel, 3))
     if _roll < p_aggr:
@@ -2381,7 +2382,7 @@ def decide_aggression(profile, board, street, plan, rel, n_opp, oop, initiative,
         # **clamp 이후 값으로 로그를 만든다.** 예전에는 원본 p 로 문자열을
         # 만들어 115% 같은 불가능한 확률이 기록됐다(실제 반환은 0.95).
         _fp = max(0.02, min(0.95, p))
-        return _fp, '블러프 계획 실행(%.0f%%)' % (_fp*100)
+        return _fp, '블러프 기본 실행률(%.0f%%)' % (_fp*100)
 
     if plan == 'block':
         # 상수 0.80 이었다. 블락벳은 개념이 있어야 실행하는 라인인데
@@ -3019,8 +3020,11 @@ def shape_planned_target(amount, profile, pot, actor_cap, seed=None):
         return a,meta
     rng=random.Random(seed)
     shaped=float(PS.shape_size(a,profile.get('type'),rng,pot=pot,
-                               odd=PS.sizing_odd_probability(profile)))
+                               profile=profile))
     meta.update({'called':True,'changed':abs(shaped-a)>1e-9,'after':shaped})
+    if profile.get('concepts') and profile.get('temper'):
+        meta.update(mode='planned_amount_variation',
+                    jitter=PS.profile_sizing_signature(profile)['jitter'])
     return shaped,meta
 
 def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
@@ -3444,6 +3448,14 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         _use_multiway_backaction = bool(
             raise_level >= 2 and prior_pf and _allin_ok
             and len(_live_ranges) >= 2)
+        # A limper facing an isolation raise plus a caller pays only the
+        # incremental price. Reuse the existing N-way evidence consumer
+        # instead of discarding this context into a first-open rank filter.
+        _use_limp_backaction = bool(
+            raise_level == 1 and prior_pf
+            and prior_pf.get('pf_act') == 'limp' and _allin_ok
+            and len(_live_ranges) >= 2
+            and pot_bb is not None and to_call_bb is not None)
 
         # 이미 올인한 상대(폴드 불가) — 공격 근거 계산에서 뺀다.
         _locked_seats = set()
@@ -3465,7 +3477,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 locked_keys=[k for k, st_ in (('original_opener', _op_seat),
                                               ('reraiser', _rr_seat))
                              if str(st_) in _locked_seats])
-        elif _use_multiway_backaction:
+        elif _use_multiway_backaction or _use_limp_backaction:
             # 이미 opponent_ranges에 들어간 좌석은 multiway equity가 그 위험을
             # 직접 포함한다. players_behind에 또 세면 같은 상대를 두 번 조인다.
             _pending_behind = [
@@ -3482,7 +3494,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 decision_seed=cold_decision_seed,
                 locked_keys=[k for k in _live_ranges
                              if str(k) in _locked_seats])
-            _cold_audit['context_kind'] = 'backaction_multiway_reraise'
+            _cold_audit['context_kind'] = (
+                'limp_vs_isolation_multiway' if _use_limp_backaction
+                else 'backaction_multiway_reraise')
             _cold_audit['pending_behind_seats'] = [
                 str(x) for x in _pending_behind]
         else:
@@ -3620,11 +3634,14 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         _before = float(bb_chips) * float(sz)
         _after = float(PS.shape_size(
             _before, profile.get('type'), rng, pot=None,
-            odd=PS.sizing_odd_probability(profile)))
+            profile=profile))
         sz = _after / float(bb_chips)
         _pf_shape = {
             'called': True, 'changed': abs(_after-_before)>1e-9,
             'before': _before, 'after': _after, 'source': 'plan'}
+        if profile.get('concepts') and profile.get('temper'):
+            _pf_shape.update(mode='planned_amount_variation',
+                             jitter=PS.profile_sizing_signature(profile)['jitter'])
     seed_info['pf_size_shape'] = _pf_shape
     return a, sz, seed_info
 

@@ -25,7 +25,7 @@ def main():
     p=prof('Fish')
     target,meta=PL.shape_planned_target(
         1375,p,2500,5000,seed=73)
-    expected=PS.shape_size(1375,'Fish',random.Random(73),pot=2500)
+    expected=PS.shape_size(1375,'Fish',random.Random(73),pot=2500,profile=p)
     ai,meta_ai=PL.shape_planned_target(
         5000,p,2500,5000,seed=73)
 
@@ -41,7 +41,7 @@ def main():
         pot=2000,tocall=0,stack=10000,street='flop',
         seed=11,size_shape_seed=73)
     raw=1200
-    expected_bet=PS.shape_size(raw,'Fish',random.Random(73),pot=2000)
+    expected_bet=PS.shape_size(raw,'Fish',random.Random(73),pot=2000,profile=p)
 
     checks={
       'runner_has_no_sizing_formula': not hasattr(RU, 'shape_size'),

@@ -26,7 +26,10 @@ SIZING_ODD_MAX = 0.50
 
 
 def sizing_odd_probability(prof):
-    """계획 사이즈를 버리는 즉흥 사이징 확률 — 기질 '일관성'에서 공급(베타 A #1).
+    """Historical odd-sizing probability, retained for diagnostic compatibility.
+
+    Vector-profile production sizing no longer consumes this probability:
+    consistency now controls variation around the planned amount.
 
     예전에는 아키타입 라벨의 고정값(SIZING_FAMILY_SIG['odd'], reg 2%)이라
     일관성이 최고인 사람도 같은 확률로 계획을 버렸다. 개념/기질 프로필이
@@ -39,15 +42,33 @@ def sizing_odd_probability(prof):
     return SIZING_ODD_MAX * (1.0 - cons / 10.0)
 
 
-def shape_size(amount, ptype, rng, pot=None, odd=None):
+def profile_sizing_signature(prof):
+    """Amount variation around an already judged size, independent of labels.
+
+    Low consistency/attention broadens execution of a sizing intention; it
+    does not supply a new strategic bet size. The 3..20% envelope is a human
+    model heuristic, not a measured population or solver frequency.
+    """
+    cons = max(0.0, min(10.0, temper(prof, 'consistency', 5.0)))
+    attention = max(0.0, min(10.0, temper(prof, 'attention', 5.0)))
+    return dict(jitter=0.03 + 0.12*(1.0-cons/10.0)
+                + 0.05*(1.0-attention/10.0), round_to=100, odd=0.0)
+
+
+def shape_size(amount, ptype, rng, pot=None, odd=None, profile=None):
     """Human sizing habit; deterministic for a supplied decision RNG.
 
-    odd 가 주어지면 라벨 표의 odd 대신 쓴다(sizing_odd_probability). 난수 소비
-    순서는 같다 — odd 판정용 rng.random() 은 확률과 무관하게 한 번 뽑는다.
+    Vector profiles use consistency/attention and preserve strategic amount.
+    Labels and odd pot-multiple replacement belong to legacy-only callers.
+    The ordinary uniform/random pair is consumed even when odd is disabled.
     """
-    sig=sizing_signature(ptype)
+    vector = bool(profile and profile.get('concepts') and profile.get('temper'))
+    sig = profile_sizing_signature(profile) if vector else sizing_signature(ptype)
     a=float(amount)*(1+rng.uniform(-sig['jitter'],sig['jitter']))
-    p_odd = sig['odd'] if odd is None else odd
+    # A strategic alternative must be judged before reaching this helper.
+    # Preserve the ordinary two RNG draws, but never replace a vector
+    # player's planned amount with an unrelated random pot multiple.
+    p_odd = 0.0 if vector else (sig['odd'] if odd is None else odd)
     if rng.random()<p_odd and pot:
         a=float(pot)*rng.choice([0.33,0.5,1.0,1.5])
     r=sig['round_to']

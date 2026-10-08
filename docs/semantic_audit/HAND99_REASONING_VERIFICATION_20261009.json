@@ -1,0 +1,262 @@
+{
+  "baseline": "e6cc4618657e12853a12d61627ba19562612cb7b",
+  "review_reasoning": {
+    "pass": true,
+    "sizing_cases": 3600,
+    "rank_classes": 169,
+    "cheap_action": "call",
+    "costly_action": "fold",
+    "cheap_price_audit": {
+      "complete": true,
+      "strategy_consumer": true,
+      "equity_vs_multiway_ranges": 0.73,
+      "opponent_range_count": 2,
+      "opponent_range_seats": [
+        "1",
+        "3"
+      ],
+      "need_base": 0.227848,
+      "need_seen": 0.22802,
+      "potodds_noise": 1.000755,
+      "reason_skill": 1.0,
+      "players_behind": 0,
+      "fair_share": 0.333333,
+      "locked_keys": [],
+      "equity_vs_locked": null,
+      "bluff_support": null,
+      "base_likelihoods": {
+        "attack": 0.0,
+        "call": 0.833,
+        "fold": 0.167
+      },
+      "final_likelihoods": {
+        "attack": 0.0,
+        "call": 1.0,
+        "fold": 0.0
+      },
+      "roll": 0.521984,
+      "selected_action": "call",
+      "context_kind": "limp_vs_isolation_multiway",
+      "pending_behind_seats": []
+    },
+    "historical_review_replay": {
+      "hash": "7c03e7208f83",
+      "b14_action": "raise",
+      "b14_target": 1300,
+      "b13_fixed_river_target": 5500.0,
+      "handedness": 8
+    }
+  },
+  "core_sizing": {
+    "checks": {
+      "act_with_plan_accepts_plan_shape_seed": true,
+      "allin_target_not_jittered": true,
+      "direct_bet_is_shaped_in_plan": true,
+      "direct_bet_provenance_is_plan": true,
+      "plan_helper_matches_canonical_habit": true,
+      "runner_has_no_sizing_formula": true,
+      "session_has_no_execution_shape_call": true
+    },
+    "direct_bet": {
+      "action": [
+        "bet",
+        1100
+      ],
+      "expected": 1100,
+      "meta": {
+        "after": 1100.0,
+        "before": 1200.0,
+        "called": true,
+        "changed": true,
+        "jitter": 0.11499999999999999,
+        "mode": "planned_amount_variation",
+        "source": "plan"
+      },
+      "raw": 1200
+    },
+    "helper": {
+      "expected": 1300,
+      "meta": {
+        "after": 1300.0,
+        "before": 1375.0,
+        "called": true,
+        "changed": true,
+        "jitter": 0.11499999999999999,
+        "mode": "planned_amount_variation",
+        "source": "plan"
+      },
+      "raw": 1375,
+      "target": 1300.0
+    },
+    "pass": true
+  },
+  "defend_formula_same_rank_input": {
+    "pass": true,
+    "baseline": "e6cc4618657e12853a12d61627ba19562612cb7b",
+    "comparisons": {
+      "thresholds": 3600,
+      "likelihoods": 384,
+      "actions_and_rng": 768
+    },
+    "seats": "9 primary, 8 compatibility",
+    "optin": [
+      false,
+      true
+    ]
+  },
+  "nine_max_integration": {
+    "aggregate": {
+      "all_on": {
+        "flop_hands": 45,
+        "hands": 72,
+        "opponent_decisions": 557,
+        "pfr_n": 74,
+        "pfr_rate": 0.1329,
+        "vpip_n": 149,
+        "vpip_rate": 0.2675
+      },
+      "off": {
+        "flop_hands": 41,
+        "hands": 72,
+        "opponent_decisions": 563,
+        "pfr_n": 70,
+        "pfr_rate": 0.1243,
+        "vpip_n": 137,
+        "vpip_rate": 0.2433
+      }
+    },
+    "changed_seed_fingerprints": 3,
+    "checks": {
+      "I1_all_on_deterministic": true,
+      "I2_live_path_changes": true,
+      "I3_error_free_complete": true,
+      "I4_recency_bounded_and_live": true,
+      "I5_recency_single_path": true
+    },
+    "flags": [
+      "T2_PREFLOP_REASONING_V3"
+    ],
+    "pass": true,
+    "per_seed": {
+      "all_on": {
+        "4242": {
+          "book_records": 72,
+          "errors": [],
+          "fingerprint": "51fff556994b55bb2eee",
+          "hands": 24,
+          "history_ge13": 72,
+          "history_max": 23,
+          "history_records": 72,
+          "seed": 4242,
+          "stats": {
+            "flop": 15,
+            "n": 190,
+            "pfr": 23,
+            "vpip": 48
+          }
+        },
+        "5150": {
+          "book_records": 72,
+          "errors": [],
+          "fingerprint": "6526522ce4fb27769751",
+          "hands": 24,
+          "history_ge13": 72,
+          "history_max": 23,
+          "history_records": 72,
+          "seed": 5150,
+          "stats": {
+            "flop": 16,
+            "n": 181,
+            "pfr": 23,
+            "vpip": 52
+          }
+        },
+        "9001": {
+          "book_records": 72,
+          "errors": [],
+          "fingerprint": "7dbfdfacb1be1f7ad95e",
+          "hands": 24,
+          "history_ge13": 72,
+          "history_max": 23,
+          "history_records": 72,
+          "seed": 9001,
+          "stats": {
+            "flop": 14,
+            "n": 186,
+            "pfr": 28,
+            "vpip": 49
+          }
+        }
+      },
+      "off": {
+        "4242": {
+          "book_records": 72,
+          "errors": [],
+          "fingerprint": "0db71e19acfc462aec4a",
+          "hands": 24,
+          "history_ge13": 72,
+          "history_max": 23,
+          "history_records": 72,
+          "seed": 4242,
+          "stats": {
+            "flop": 16,
+            "n": 189,
+            "pfr": 22,
+            "vpip": 47
+          }
+        },
+        "5150": {
+          "book_records": 72,
+          "errors": [],
+          "fingerprint": "febceec6171c92847cac",
+          "hands": 24,
+          "history_ge13": 72,
+          "history_max": 23,
+          "history_records": 72,
+          "seed": 5150,
+          "stats": {
+            "flop": 14,
+            "n": 188,
+            "pfr": 20,
+            "vpip": 45
+          }
+        },
+        "9001": {
+          "book_records": 72,
+          "errors": [],
+          "fingerprint": "c4d3e3e0d1b573486e9c",
+          "hands": 24,
+          "history_ge13": 72,
+          "history_max": 23,
+          "history_records": 72,
+          "seed": 9001,
+          "stats": {
+            "flop": 11,
+            "n": 186,
+            "pfr": 28,
+            "vpip": 45
+          }
+        }
+      }
+    },
+    "single_feature_anchor_seed": 5150,
+    "single_feature_attribution": {
+      "T2_PREFLOP_REASONING_V3": {
+        "changed_vs_off": true,
+        "fingerprint": "6526522ce4fb27769751",
+        "history_max": 23,
+        "history_records": 72,
+        "stats": {
+          "flop": 16,
+          "n": 181,
+          "pfr": 23,
+          "vpip": 52
+        }
+      }
+    }
+  },
+  "preflop_closure": "PASS live variance-seek reaches open planning (0.37, ('raise', 2.39))\nPASS SB complete is reachable ('limp', 1.0)\nPASS weak habitual limp can exist outside raise range ('limp', 1.0)\nPASS preflop decision classes are preserved {'face_first_open': 'face_first_open', 'cold_vs_reraise': 'cold_vs_reraise', 'opener_backaction': 'opener_backaction', 'caller_backaction': 'caller_backaction', 'reraiser_backaction': 'reraiser_backaction'}\n4/4 preflop closure checks passed\n",
+  "timing_familiarity": "PASS: consulted existing skill, weakness, boundary and proxy\nPASS: compatibility, shorter familiar reasoning, minimum time, bank\nPASS: session provenance, deterministic timing, strategy RNG unchanged\nPASS: timing familiarity 3/3\n",
+  "preflop_error_fallback": "PASS: J3o facing 45bb, invalid raise cannot turn into a 44bb call\nPASS: free decision checks; failed replay does not alter prior plan\nPASS: strict verifier raises original error rather than hiding it\nPASS: preflop execution fallback 3/3\n",
+  "known_existing_replan_failure_identical": true
+}
