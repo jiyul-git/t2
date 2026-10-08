@@ -1079,7 +1079,7 @@ class HandRun:
         rnd.apply(seat, action)
 
     def _timing_decide(self, seat, street, ax, c, s_struct, m, commit, trivial, n_log,
-                       concepts):
+                       concepts, boundary_known=True):
         """봇 결정 하나의 시간 규칙(사람과 같은 규칙). 전략 RNG 를 쓰지 않는다.
 
         반환 기록의 timed_out 이 참이고 enforce 면 호출부가 타임아웃 행동으로 바꾼다.
@@ -1095,11 +1095,21 @@ class HandRun:
         traits = TM.timing_traits(pid, T['tour_seed'])
         jit = TM.jitter(TM._seed('timing_jitter', T['tour_seed'],
                                  getattr(self.h, 'hash', ''), seat, street, n_log))
-        v = TM.visible_seconds(traits, c, s_struct, m, K, trivial, commit, jit, base)
+        familiar = TM.contextual_familiarity(
+            ax, concepts, c, s_struct, m, boundary_known=boundary_known)
+        v = TM.visible_seconds(traits, c, s_struct, m, K, trivial, commit, jit,
+                               base, familiarity=familiar)
         st = TM.settle(v['visible'], base, bank)
         TM.bank_put(banks, pid, st['bank_left'], T.get('clock'))
         rec = {'pid': pid, 'seat': seat, 'street': street, 'c': c, 's': s_struct, 'm': m,
                'commit': commit, 'K': K, 'n_concepts': len(concepts or ()),
+               'concepts_used': sorted(set(concepts or ())),
+               'familiarity': familiar, 'boundary_known': bool(boundary_known),
+               'familiarity_class': (
+                   'familiar' if familiar is not None and familiar >= 0.55
+                   and c <= 0.30 and s_struct <= 0.60 else
+                   'uncertain' if boundary_known and c >= 0.60 else
+                   'unclassified' if familiar is None else 'other'),
                'visible': v['visible'], 'elapsed': st['elapsed'], 'base': base,
                'bank_before': bank, 'bank_used': st['bank_used'],
                'timed_out': st['timed_out']}
@@ -1609,7 +1619,8 @@ class HandRun:
                     _tm = self._timing_decide(
                         s, 'preflop', ax, _tm_c, TM.structure_preflop(_rlevel), 0.0,
                         TM.commit_facing(tc, rnd.stacks[s]),
-                        (a == 'fold' and _tm_c < 0.05), len(rnd.log), _tm_concepts)
+                        (a == 'fold' and _tm_c < 0.05), len(rnd.log), _tm_concepts,
+                        boundary_known=bool((_seed or {}).get('pf_timing')))
                     if _tm['timed_out'] and self.timing.get('enforce', True):
                         # 사람과 같은 타임아웃 규칙: 체크 가능하면 체크, 아니면 폴드.
                         _tm['engine_act'] = a
@@ -2357,7 +2368,8 @@ class HandRun:
                         (TM.commit_facing(tc, r2.stacks[s]) if tc > 0 else
                          TM.commit_choice(amt if a in ('bet', 'raise', 'allin') else 0,
                                           r2.stacks[s], max(_tm_opp) if _tm_opp else None)),
-                        False, len(r2.log), _tm_concepts)
+                        False, len(r2.log), _tm_concepts,
+                        boundary_known=bool(_tm_bd))
                     if _tm['timed_out'] and self.timing.get('enforce', True) and not _forced:
                         _tm['engine_act'] = a
                         h.plans[key].setdefault('deviations', []).append(
