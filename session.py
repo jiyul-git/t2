@@ -1106,8 +1106,10 @@ class HandRun:
                'concepts_used': sorted(set(concepts or ())),
                'familiarity': familiar, 'boundary_known': bool(boundary_known),
                'familiarity_class': (
-                   'familiar' if familiar is not None and familiar >= 0.55
-                   and c <= 0.30 and s_struct <= 0.60 else
+                   'familiar' if boundary_known and familiar is not None
+                   and familiar >= 0.55 and c <= 0.30 and s_struct <= 0.60 else
+                   'familiar_proxy' if not boundary_known and familiar is not None
+                   and familiar >= 0.55 and s_struct <= 0.60 else
                    'uncertain' if boundary_known and c >= 0.60 else
                    'unclassified' if familiar is None else 'other'),
                'visible': v['visible'], 'elapsed': st['elapsed'], 'base': base,
