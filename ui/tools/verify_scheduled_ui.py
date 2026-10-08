@@ -162,6 +162,13 @@ def verify():
                 refreshed = call('/api/state')[1]
                 second = call('/api/action-clock', {'token': refreshed['token']})[1]['action_deadline_ms']
                 assert token == refreshed['token'] and first == second
+                # A lobby return is not a new admission and must not reconstruct
+                # the in-flight decision or buy a fresh action clock.
+                assert call('/api/enter', {'tournament_id': tid})[0] == 200
+                resumed = call('/api/state')[1]
+                assert resumed['token'] == token and not resumed.get('waiting'), resumed
+                resumed_deadline = call('/api/action-clock', {'token': token})[1]['action_deadline_ms']
+                assert resumed_deadline == first, (first, resumed_deadline)
                 # The timing system now delays HERO until scheduled bot actions
                 # finish. Use its actual server deadline, including that delay.
                 while time.time() * 1000 < first + 250:

@@ -1962,6 +1962,14 @@ class H(BaseHTTPRequestHandler):
                     target = ECONOMY.event(tid)
                     wants_enter = self.path == '/api/enter' or time.time() >= target['starts_at']
                     old = ECONOMY.active_id()
+                    # Returning from the lobby to the same live seat is a resume,
+                    # not admission. Retain its decision, worker and ahead buffer.
+                    live_resume = (self.path == '/api/enter' and old == tid
+                                   and target.get('state') is not None
+                                   and not target['state'].get('offscreen')
+                                   and bool(target['entries'])
+                                   and target['entries'][-1]['status'] == 'playing'
+                                   and target['entries'][-1]['pid'] is not None)
                     old_st = ECONOMY.load_active() if old and old != tid else None
                     if self.path == '/api/enter' and (not target['entries'] or
                             target['entries'][-1]['status'] == 'cancelled'):
@@ -1988,12 +1996,13 @@ class H(BaseHTTPRequestHandler):
                                 old_st['background_pending'] = {}
                                 ECONOMY.save_state(old, old_st)
                             ECONOMY.request_enter(old, False)
-                        ECONOMY.set_active(tid)
-                        ECONOMY.request_enter(tid)
+                        if not live_resume:
+                            ECONOMY.set_active(tid)
+                            ECONOMY.request_enter(tid)
+                            _clear_worker()
+                            _vclock_reset()
+                            _last = None
                         L.STATE_STORE = ECONOMY
-                        _clear_worker()
-                        _vclock_reset()
-                        _last = None
                     return self._send(200, {'ok': True, 'receipt': receipt,
                                             'wallet': ECONOMY.wallet(),
                                             'scheduled': time.time() < ECONOMY.event(tid)['starts_at']})
