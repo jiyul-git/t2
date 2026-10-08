@@ -159,7 +159,9 @@ const schedKeys = (e) => [
   ['*', e.seat, e.action, Number(e.amount || 0)].join('|')
 ];
 function noteSchedule(list) {
+  S.streetSchedule = {};
   (list || []).forEach((ev) => {
+    if (ev && ev.kind === 'street' && ev.at_ms) S.streetSchedule[ev.street] = ev.at_ms;
     if (!ev || !ev.act_at_ms) return;
     schedKeys(ev).forEach((k) => { S.sched[k] = ev; });
   });
@@ -185,6 +187,33 @@ function schedWait(e, retry) {
   return false;
 }
 const schedPace = (e, fallback) => (schedOf(e) ? 0 : fallback);
+
+// A snapshot seeks completed actions without replaying their visual effects.
+// Events without a timestamp precede this response's scheduled tail.
+function seekActionTail(ss, entries, at) {
+  let i = 0;
+  while (i < entries.length) {
+    const e = entries[i];
+    const t = schedOf(e);
+    if (t && t.act_at_ms > at) break;
+    applyEntry(ss, e);
+    i++;
+  }
+  return i;
+}
+
+function snapshotPaint(draw) {
+  S.snapshotPaint = true;
+  try { draw(); } finally { S.snapshotPaint = false; }
+}
+
+function resumeStreetWait(street, retry) {
+  const due = (S.streetSchedule || {})[street];
+  const wait = Number(due || 0) - serverNow();
+  if (wait <= 20) return false;
+  S.timers.push(setTimeout(retry, wait));
+  return true;
+}
 
 /* 재접속: 아직 끝나지 않은 봇 예정표는 링만 이어서 보여 준다(상태는 이미 최종이다). */
 function replayBotSchedule(schedule) {
@@ -604,7 +633,7 @@ function renderBoard(v) {
 
     if (changed) {
       const cls = [];
-      if (code && (i >= known || before !== code)) cls.push('deal');
+      if (!S.snapshotPaint && code && (i >= known || before !== code)) cls.push('deal');
       if (code && boardWinCard(code)) cls.push('win5');
 
       const wrap = document.createElement('div');
@@ -744,7 +773,7 @@ function renderHeroSlot(side, code, seat) {
 
   const isNew = oldCode !== code;
   const cls =
-    (isNew ? 'deal' : '') +
+    (isNew && !S.snapshotPaint ? 'deal' : '') +
     (win ? ' win5' : '');
 
   slot.innerHTML = cardHTML(code, cls.trim());
@@ -1792,7 +1821,7 @@ function unseenActionTail(prev, next) {
   return after.slice(overlap);
 }
 
-function playDecisionTail(prev, v) {
+function playDecisionTail(prev, v, resumeAt = null) {
   if (!prev ||
       prev.type !== 'decision' ||
       prev.hand_no !== v.hand_no) {
@@ -1865,7 +1894,12 @@ function playDecisionTail(prev, v) {
       '</span> —';
   }
 
-  let i = 0;
+  let i = resumeAt === null ? 0 : seekActionTail(ss, tail, resumeAt);
+  if (resumeAt !== null && i === tail.length && ss.stage !== v.stage &&
+      Number((S.streetSchedule || {})[v.stage] || 0) <= resumeAt) {
+    applyEntry(ss, {street: v.stage});
+  }
+  if (resumeAt !== null) snapshotPaint(() => renderCurrent(false));
   let finished = false;
 
   const finish = () => {
@@ -1911,8 +1945,9 @@ function playDecisionTail(prev, v) {
        * 여기서만 board를 연다.
        */
       if (ss.stage !== v.stage) {
+        if (resumeAt !== null && resumeStreetWait(v.stage, next)) return;
         enterStreet(v.stage);
-        S.timers.push(setTimeout(finish, 360));
+        S.timers.push(setTimeout(finish, resumeAt === null ? 360 : 0));
       } else {
         finish();
       }
@@ -1920,20 +1955,23 @@ function playDecisionTail(prev, v) {
       return;
     }
 
-    const e = tail[i++];
+    const e = tail[i];
     const targetStreet = e.street || ss.stage;
 
     if (targetStreet !== ss.stage) {
+      if (resumeAt !== null && resumeStreetWait(targetStreet, next)) return;
+      i++;
       enterStreet(targetStreet);
 
       // 보드를 먼저 확인한 뒤 해당 street 첫 액션.
       S.timers.push(
-        setTimeout(() => playEntry(e), 360)
+        setTimeout(() => playEntry(e), resumeAt === null ? 360 : 0)
       );
 
       return;
     }
 
+    i++;
     playEntry(e);
   };
 
@@ -2059,7 +2097,7 @@ function renderSpectate(base, res, ss) {
     (STREET[ss.stage] || ss.stage) + '</span>' + (S.spectating ? ' 관전 중' : '');
 }
 
-function spectateTail(res) {
+function spectateTail(res, resumeAt = null) {
   const base = S.view0;
 
   if (!base ||
@@ -2156,7 +2194,8 @@ function spectateTail(res) {
     renderCurrent(true);
   }
 
-  let i = 0;
+  let i = resumeAt === null ? 0 : seekActionTail(ss, tail, resumeAt);
+  if (resumeAt !== null) snapshotPaint(() => renderCurrent(false));
   let finished = false;
 
   const finish = () => {
@@ -2168,7 +2207,7 @@ function spectateTail(res) {
     // 마지막 액션 직후, 팟 지급 전 프레임을 따로 보관한다.
     S.showdownFrame = currentView();
 
-    finishResult(res);
+    finishResult(res, resumeAt);
   };
 
   S.replayDone = finish;
@@ -2202,19 +2241,22 @@ function spectateTail(res) {
       return;
     }
 
-    const e = tail[i++];
+    const e = tail[i];
     const targetStreet = e.street || ss.stage;
 
     if (targetStreet !== ss.stage) {
+      if (resumeAt !== null && resumeStreetWait(targetStreet, next)) return;
+      i++;
       enterStreet(targetStreet);
 
       S.timers.push(
-        setTimeout(() => playEntry(e), 360)
+        setTimeout(() => playEntry(e), resumeAt === null ? 360 : 0)
       );
 
       return;
     }
 
+    i++;
     playEntry(e);
   };
 
@@ -2561,7 +2603,7 @@ function runoutThen(res, done) {
   }
 }
 
-function finishResult(v) {
+function finishResult(v, resumeAt = null) {
   clearBubbles();
   histPush(v);
 
@@ -2582,6 +2624,13 @@ function finishResult(v) {
 
     finishResult2(v);
   };
+
+  // A completed snapshot shows the existing result immediately. Pending
+  // scheduled actions still finish with the normal showdown/runout sequence.
+  if (resumeAt !== null && (!S.botReadyAtMs || resumeAt >= S.botReadyAtMs)) {
+    snapshotPaint(showWinner);
+    return;
+  }
 
   if (v.allin_show) {
     // 올인콜 -> 홀카드 공개 -> 보드 런아웃 -> 팟별 결과 표시
@@ -4110,6 +4159,7 @@ function sync() { call('/api/state', null, '상태를 받는 중…'); }
 
 /* ---------------- 응답 반영 ---------------- */
 function apply(resp) {
+  noteTiming(resp);
   if (resp && resp.bot_schedule) {
     noteSchedule(resp.bot_schedule);
     noteTiming(resp);
@@ -4175,6 +4225,43 @@ function apply(resp) {
   S.epoch = (S.epoch || 0) + 1;
 
   stopReplay();
+
+  if (resp.resume) {
+    const at = serverNow();
+    const opening = resp.opening_view;
+    clearBubbles();
+    resetFolding();
+    S.prevBets = null;
+    S.reveal = null;
+    S.winners = null;
+    S.awards = null;
+    S.bestFive = null;
+    S.heroSig = null;
+    S.showdownFrame = null;
+    S.pendingMoveNote = null;
+    S.scheduleReplayed = true;
+    S.boardLen = 0;
+    S.handNo = v.hand_no;
+    S.stage = v.stage;
+    S.logLen = (v.log || []).length;
+    if (!S.overlayPinned) hideOverlay();
+    renderTop(v);
+    closeRaise();
+    $('#mainrow').hidden = false;
+    $('#mainrow').innerHTML = '';
+    S.view0 = opening || null;
+    if (v.type === 'result') {
+      S.won = (resp.remaining === 1 && !resp.busted);
+      S.entries = resp.entries || S.entries;
+      if (!spectateTail(v, at)) finishResult(v, at);
+    } else {
+      if (!playDecisionTail(opening, v, at)) {
+        snapshotPaint(() => { renderBoard(v); finalFrame(v); });
+      }
+      S.view0 = v;
+    }
+    return;
+  }
 
   if (v.type === 'result') {
     S.won = (resp.remaining === 1 && !resp.busted);
@@ -4411,3 +4498,4 @@ setInterval(async () => {
   } catch (_) { /* Retain the last confirmed value; retry next tick. */ }
   finally { clockRequestPending = false; }
 }, 1000);
+
