@@ -1540,6 +1540,7 @@ class HandRun:
                 _money_jump_attach_action(_mj_obs, rnd)
                 continue
             _pre_len = len(rnd.log)
+            a = None  # no stale proposal from a previous seat if planning fails
             try:
                 # 프리플랍도 판단 층을 거친다. 액션만 내고 끝내면
                 # '왜 이렇게 쳤는가'가 플랍 계획에 이어지지 않는다.
@@ -1633,7 +1634,7 @@ class HandRun:
                               max(_pf_target, rnd.current + rnd.min_raise))
             except ValueError as exc:
                 self._preflop_error_fallback(
-                    rnd, s, exc, proposed=locals().get('a'))
+                    rnd, s, exc, proposed=a)
             aggressor, callers, limpers = _update_pf_state_after_apply(
                 rnd, s, aggressor, callers, limpers)
             _money_jump_attach_action(_mj_obs, rnd)
