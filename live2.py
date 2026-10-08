@@ -782,7 +782,13 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
         int(p.get('stack', 0) or 0) <= 0 and p.get('table') is not None
         for p in f.players.values()
     )
-    invalidated = bool(barrier_due or dead)
+    # Protecting HERO from routine balancing must not keep an extra table
+    # alive after the field fits into fewer tables. This function runs only
+    # at a HERO hand boundary; any moved table's speculative work is discarded.
+    table_break_due = (independent_hero and
+        sum(tb.n() > 0 for tb in f.tables.values()) >
+        max(1, math.ceil(f.remaining() / f.max_seat)))
+    invalidated = bool(barrier_due or dead or table_break_due)
     moved = False
     if independent_hero:
         # A donor snapshot is usable only if it is the last committed hand of
@@ -793,7 +799,7 @@ def apply_vclock_events(st, events_by_table, cursors, target_seconds,
         f._collect_busts()
         _vclock_order_busts(st, f)
         hero_tid = f.players.get(f.hero_pid, {}).get('table')
-        f._balance(protected_tid=hero_tid if independent_hero else None)
+        f._balance(protected_tid=hero_tid if independent_hero and not table_break_due else None)
         # barrier 이후에는 테이블들이 HERO를 기다린다. 이동 확정 시점에서
         # 다음 선계산을 다시 시작하므로 각 봇 시계를 같은 HERO 시각으로 맞춘다.
         hero_tid = f.players.get(f.hero_pid, {}).get('table')
