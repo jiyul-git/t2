@@ -1772,6 +1772,8 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
            'plans': copy.deepcopy(getattr(h, 'plans', {}) or {}),
            'decision_cache': copy.deepcopy(
                getattr(run, 'recorded', []) or []) if run is not None else [],
+           'preflop_errors': copy.deepcopy(
+               getattr(run, 'preflop_errors', []) or []) if run is not None else [],
            'money_jump_obs': copy.deepcopy(
                getattr(h, 'money_jump_obs', []) or []),
            'reads': copy.deepcopy(getattr(h, 'reads_log', []) or []),
