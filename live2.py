@@ -1468,7 +1468,12 @@ def step(action=None, amount=0, defer_others=False, others=None,
         return finish(st, f, tb, alive, h, run, defer_others=defer_others,
                       parallel_others=others, round_base=_round_base,
                       vclock_others=vclock_others)
-    return {'view': _render(raw, f, h, st), 'done': False, 'raw': raw}
+    # Reconnecting clients need the same exact post-forced-bets frame as an
+    # automatic result, so they can seek the public action log by server time.
+    # This renders an existing hand; it does not run any decisions or RNG.
+    opening_view = _render(_opening_raw(h, run), f, h, st)
+    return {'view': _render(raw, f, h, st), 'opening_view': opening_view,
+            'done': False, 'raw': raw}
 
 
 def _render(raw, f, h, st):
@@ -1815,3 +1820,4 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
         return rec
     _archive_write(rec)
     return rec
+
