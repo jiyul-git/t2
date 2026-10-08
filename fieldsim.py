@@ -688,6 +688,8 @@ class Field:
             rec['intents'] = copy.deepcopy(getattr(h, 'intents', []) or [])
             rec['plans'] = copy.deepcopy(getattr(h, 'plans', {}) or {})
             rec['decision_cache'] = copy.deepcopy(getattr(run, 'recorded', []) or [])
+            rec['preflop_errors'] = copy.deepcopy(
+                getattr(run, 'preflop_errors', []) or [])
             rec['money_jump_obs'] = copy.deepcopy(
                 getattr(h, 'money_jump_obs', []) or [])
             rec['reads'] = copy.deepcopy(getattr(h, 'reads_log', []) or [])
