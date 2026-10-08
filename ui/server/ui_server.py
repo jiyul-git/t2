@@ -2286,4 +2286,3 @@ if __name__ == '__main__':
         if SCHEDULE_POOL is not None:
             SCHEDULE_POOL.shutdown(wait=False, cancel_futures=True)
         os._exit(0)
-
