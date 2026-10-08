@@ -3248,11 +3248,15 @@ function stopActionClock() {
 function paintActionClock() {
   const el = $('#turnclock');
   if (!el || !S.actionDeadlineMs || S.actionToken !== S.token) return;
-  const leftMs = Math.max(0, S.actionDeadlineMs - Date.now());
+  const now = serverNow();
+  if (S.timingOn && S.actionStartMs && now < S.actionStartMs) {
+    el.hidden = true;
+    return;
+  }
+  const leftMs = Math.max(0, S.actionDeadlineMs - now);
   const sec = Math.max(0, Math.ceil(leftMs / 1000));
   if (S.timingOn && S.actionBaseMs) {
     // 시간 규칙: 링만 줄어들다가 마지막 10초부터 숫자. 기본 시간이 지나면 TIME BANK.
-    const now = Date.now();
     const inBank = now >= S.actionBaseMs && S.actionDeadlineMs > S.actionBaseMs;
     const start = S.actionStartMs || (S.actionBaseMs - 18000);
     const frac = inBank
@@ -4022,7 +4026,7 @@ function send(action, amount) {
     return;
   }
 
-  if (action !== null && S.actionDeadlineMs && Date.now() >= S.actionDeadlineMs) {
+  if (action !== null && S.actionDeadlineMs && serverNow() >= S.actionDeadlineMs) {
     action = 'fold';
     amount = 0;
     S.timeoutSubmitting = true;
@@ -4110,13 +4114,22 @@ function apply(resp) {
   S.autoTimer = null;
 
   if (resp.waiting) {
+    S.waitingOpen = true;
     $('#mainrow').innerHTML = '<div class="wait">'+(resp.registration_refunded ? '참가비 환불 완료' : '토너먼트 입장 준비 중')+'</div>';
     closeRaise(); $('#hero').hidden = true;
-    showOverlayPersistent('<h2>'+(resp.registration_refunded ? '참가비 환불 완료' : '토너먼트 대기')+'</h2><div class="sub">'+esc(resp.message)+
-      '</div><div class="actions"><button id="waitingLobby" type="button">로비로</button></div>');
-    $('#waitingLobby').onclick=()=>location.href='/';
+    // Polling owns the waiting sheet, not a history/settings sheet opened over it.
+    if ($('#waitingLobby') || $('#overlay').hidden) {
+      showOverlayPersistent('<h2>'+(resp.registration_refunded ? '참가비 환불 완료' : '토너먼트 대기')+'</h2><div class="sub">'+esc(resp.message)+
+        '</div><div class="actions"><button id="waitingLobby" type="button">로비로</button></div>');
+      $('#waitingLobby').onclick=()=>location.href='/';
+    }
     if(!resp.registration_refunded) S.autoTimer=setTimeout(sync,3000);
     return;
+  }
+
+  if (S.waitingOpen) {
+    S.waitingOpen = false;
+    if ($('#waitingLobby')) hideOverlay();
   }
 
   if (resp.no_game) {

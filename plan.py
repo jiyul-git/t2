@@ -1638,6 +1638,9 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
             if why_a.startswith('DEVIATE:'):
                 st = record_deviation(st, street, 'bet', plan, why_a[8:])
         else:
+            _trace(st, street, 'size_veto', act='check', size=0.0,
+                   why='베팅 의향 추첨 통과 후 사이즈 판단이 0 → 최종 체크',
+                   plan=plan)
             st = set_intent(st, street, mk_intent('check', 0.0, '사이즈 0 → 체크'))
     else:
         st = set_intent(st, street, mk_intent('check', 0.0, why_a))

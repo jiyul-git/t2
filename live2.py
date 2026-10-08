@@ -1752,6 +1752,7 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
             hand_memos[str(pid)] = str(memo)
 
     rec = {'hand_no': f.hand_no, 'hash': getattr(h, 'hash', None),
+           'tournament_id': st.get('tournament_id'),
            'level': f.level, 'blinds': list(f.blinds()),
            'button': h.button, 'hero': h.hero,
            'pos': {str(k): v for k, v in h.pos.items()},

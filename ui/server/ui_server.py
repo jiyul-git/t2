@@ -1449,6 +1449,10 @@ def _public_history():
     if not fn:
         return []
 
+    try:
+        current_tournament = (L.load() or {}).get('tournament_id')
+    except RuntimeError:
+        return []
     out = []
 
     with open(fn, encoding='utf-8') as f:
@@ -1461,6 +1465,11 @@ def _public_history():
                 h = json.loads(line)
             except Exception:
                 # 쓰는 순간의 마지막 불완전 행 등은 건너뛴다.
+                continue
+
+            # Scheduled games share an engine sidecar. Never attribute another
+            # event (or an untagged legacy record) to the current tournament.
+            if h.get('tournament_id') != current_tournament:
                 continue
 
             r = h.get('result') or {}
@@ -1502,7 +1511,7 @@ def _public_history():
                 'hero_seat': hero,
                 'hero_hole': list(hero_hole or []),
 
-                'board': r.get('board') or h.get('board') or [],
+                'board': list(r.get('board') or []),
                 'pot': r.get('pot') or 0,
                 'pots': r.get('pots') or [],
 
