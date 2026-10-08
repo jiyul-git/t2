@@ -513,7 +513,18 @@ function renderSeats(v) {
             `<div class="meta"><span class="pos">${d.pos || ''}</span>` +
             `<span class="stack">${fmt(d.stack)}</span></div></div>`;
   }
+  // Keep decoded portraits and gaze state across action-clock/seat redraws.
+  const keptAvatars = new Map(Array.from(box.querySelectorAll('.pod[data-slot] .botavatar'),
+    el => [el.closest('.pod').dataset.slot, el]));
   box.innerHTML = html;
+  box.querySelectorAll('.pod[data-slot] .botavatar').forEach(el => {
+    const previous = keptAvatars.get(el.closest('.pod').dataset.slot);
+    const portrait = el.querySelector('.portrait');
+    const oldPortrait = previous && previous.querySelector('.portrait');
+    if (portrait && oldPortrait && portrait.dataset.portrait === oldPortrait.dataset.portrait) {
+      el.replaceWith(previous);
+    }
+  });
   fitSeatsInView(box);
   PokerVisuals.scheduleGaze();
 }
