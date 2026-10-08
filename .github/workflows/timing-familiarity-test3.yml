@@ -1,0 +1,25 @@
+name: timing-familiarity-test3
+on:
+  push:
+    branches: [test3]
+    paths:
+      - timing.py
+      - session.py
+      - tools/verify_timing_familiarity.py
+      - .github/workflows/timing-familiarity-test3.yml
+  workflow_dispatch:
+jobs:
+  focused-timing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile edited timing and execution paths
+        run: python3 -m py_compile timing.py session.py tools/verify_timing_familiarity.py
+      - name: Verify existing-concept familiarity and deterministic timing
+        run: python3 tools/verify_timing_familiarity.py
+      - name: Verify previous preflop safety regression
+        run: python3 tools/verify_preflop_error_fallback.py
