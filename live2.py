@@ -1820,4 +1820,3 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
         return rec
     _archive_write(rec)
     return rec
-
