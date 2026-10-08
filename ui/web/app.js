@@ -400,9 +400,7 @@ function paintTournamentClock() {
   if ($('#fieldline')) {
     $('#fieldline').textContent = S.elapsedSeconds == null
       ? '기존 대회 · 핸드 기준'
-      : `경과 ${clockText(S.elapsedSeconds)}` +
-        (S.sessionRemainingSeconds == null
-          ? '' : ` · 세션 ${clockText(S.sessionRemainingSeconds)}`);
+      : `경과 ${clockText(S.elapsedSeconds)}`;
   }
 }
 
@@ -560,7 +558,9 @@ function renderChips(v, streetChanged) {
     // x stays clear of the side-seat cards; y is lowered enough for wider
     // chip labels while remaining between the upper/lower diagonal lanes.
     if (side === ' side-left') {
-      p.x = 22; p.y = 51;
+      // Only the 9-o'clock chip label moves; keep the 8-o'clock lane unchanged.
+      // Tested against nearby cards, board, pot, and lower-left bet label.
+      p.x = 26; p.y = 54;
     } else if (side === ' side-right') {
       p.x = 78; p.y = 51;
     }
