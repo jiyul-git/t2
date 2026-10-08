@@ -538,7 +538,10 @@ def _step_sched(action=None, amount=0, on_bot_action=None):
         if on_bot_action is not None:
             on_bot_action(event)
     r = _step(action, amount, on_bot_action=_cb)
-    sched.save()
+    # Rebuilding a saved decision after a process restart replays old engine
+    # actions with callbacks disabled. Keep its original absolute timeline.
+    if new_hand or action is not None or sched.events:
+        sched.save()
     return r
 
 
@@ -1693,6 +1696,16 @@ def _wrap(r):
     return out
 
 
+def _resume_response(response, st, now=None):
+    """Refresh clocks without changing the cached decision or its token."""
+    out = dict(response)
+    out.update(_ui_timing(st, now))
+    # Keep elapsed events too: the client uses them to seek the action log.
+    out['bot_schedule'] = list(response.get('bot_schedule') or [])
+    out['resume'] = True
+    return out
+
+
 def _game_over():
     st = L.load()
     f = L._load_field(st['field'])
@@ -1926,7 +1939,7 @@ class H(BaseHTTPRequestHandler):
                         _last = _game_over()
                     else:
                         _last = _wrap(_step_sched())
-                return self._send(200, _last)
+                return self._send(200, _resume_response(_last, L.load()))
             except Exception as e:
                 traceback.print_exc()
                 return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
@@ -2273,3 +2286,4 @@ if __name__ == '__main__':
         if SCHEDULE_POOL is not None:
             SCHEDULE_POOL.shutdown(wait=False, cancel_futures=True)
         os._exit(0)
+
