@@ -4498,4 +4498,3 @@ setInterval(async () => {
   } catch (_) { /* Retain the last confirmed value; retry next tick. */ }
   finally { clockRequestPending = false; }
 }, 1000);
-
