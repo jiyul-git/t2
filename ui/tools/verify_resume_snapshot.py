@@ -24,3 +24,22 @@ assert cached == before # reading a snapshot never changes cached gameplay
 out2 = ns['_resume_response'](cached, st, 2)
 assert out2['server_now_ms'] == 2000 and out2['action_deadline_ms'] == 15000
 print('resume response: PASS (fresh time, unchanged token/deadline, elapsed schedule)')
+
+# Exercise the real arming function with an exhausted bank. A same-token read
+# keeps its deadline; a new action still receives the full turbo base time.
+nodes = [n for n in source.body if isinstance(n, ast.FunctionDef) and n.name == '_arm_action_clock']
+state = {'ui_bot_ready_at': 0}
+class StateStore:
+    def load(self): return dict(state)
+    def save(self, value): state.update(value)
+current = ['61:4']
+ns.update(L=StateStore(), TIMING_ON=True, _last={'view': {'type': 'decision'}},
+          _token=lambda: current[0], _hero_clock_params=lambda st: (14, 0, '45'),
+          _ui_timing=lambda st, now: dict(st))
+exec(compile(ast.Module(body=nodes, type_ignores=[]), '<clock>', 'exec'), ns)
+armed = ns['_arm_action_clock']('61:4', 1000)
+assert armed['ui_action_deadline'] == 1014
+assert ns['_arm_action_clock']('61:4', 1005)['ui_action_deadline'] == 1014
+current[0] = '61:5'
+assert ns['_arm_action_clock']('61:5', 1016)['ui_action_deadline'] == 1030
+print('zero-bank HERO clock: PASS (new action gets base time; reload adds no time)')
