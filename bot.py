@@ -69,6 +69,57 @@ _E7 = {}
 _E7_MAX = 60000
 
 
+def _straight_high(ranks):
+    if len(ranks) < 5:
+        return 0
+    if 14 in ranks:
+        ranks = ranks | {1}
+    ordered = sorted(ranks, reverse=True)
+    run = 1
+    for i in range(1, len(ordered)):
+        run = run + 1 if ordered[i-1] - ordered[i] == 1 else 1
+        if run == 5:
+            return ordered[i] + 4
+    return 0
+
+
+def _eval_best(cs):
+    """Exact best-five tuple for a valid 5–7 card set, without 21 subset evaluations."""
+    counts = {}
+    suits = {}
+    for c in cs:
+        rank = RV[c[0]]
+        counts[rank] = counts.get(rank, 0) + 1
+        suits.setdefault(c[1], []).append(rank)
+    ranks = sorted(counts, reverse=True)
+    flush = next((sorted(v, reverse=True) for v in suits.values() if len(v) >= 5), None)
+    if flush:
+        straight_flush = _straight_high(set(flush))
+        if straight_flush:
+            return (8, straight_flush)
+    quads = [r for r in ranks if counts[r] == 4]
+    if quads:
+        return (7, quads[0], next(r for r in ranks if r != quads[0]))
+    trips = [r for r in ranks if counts[r] >= 3]
+    if trips:
+        pairs = [r for r in ranks if r != trips[0] and counts[r] >= 2]
+        if pairs:
+            return (6, trips[0], pairs[0])
+    if flush:
+        return (5, *flush[:5])
+    straight = _straight_high(set(ranks))
+    if straight:
+        return (4, straight)
+    if trips:
+        return (3, trips[0], *[r for r in ranks if r != trips[0]][:2])
+    pairs = [r for r in ranks if counts[r] >= 2]
+    if len(pairs) >= 2:
+        return (2, *pairs[:2], next(r for r in ranks if r not in pairs[:2]))
+    if pairs:
+        return (1, pairs[0], *[r for r in ranks if r != pairs[0]][:3])
+    return (0, *ranks[:5])
+
+
 def eval7(cs):
     k = tuple(sorted(cs))
     v = _E7.get(k)
@@ -77,7 +128,11 @@ def eval7(cs):
             _E7.clear()
         # 정렬된 k 로 조합을 만들어도 부분집합의 **집합**은 같다.
         # eval5 는 순서에 의존하지 않으므로 max 값도 같다.
-        v = _E7[k] = max(eval5(list(c)) for c in itertools.combinations(k, 5))
+        # Keep the general legacy behavior for unusual tool inputs. Production
+        # hands are distinct 5–7 card sets; direct evaluation returns identical tuples.
+        v = _E7[k] = (eval5(list(k)) if len(k) == 5 else
+                     _eval_best(k) if 6 <= len(k) <= 7 and len(set(k)) == len(k)
+                     else max(eval5(list(c)) for c in itertools.combinations(k, 5)))
     return v
 
 def _showdown_share(hero_score, opp_scores):

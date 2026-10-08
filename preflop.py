@@ -441,12 +441,19 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                              pos=pos)
         if act: return (act, amt)
 
-    # limp_p 자체는 "이론형은 좁고, 습관형은 약한 핸드에서 넓다"고 설계돼 있다.
-    # 그런데 예전에는 r>thr 를 여기보다 먼저 fold 시켜서, 약한 핸드일수록
-    # limp 확률을 높인 habit 분기가 사실상 도달 불가능했다.
-    # SB complete도 포커의 정상 선택지인데 pos!='SB'로 전역 차단돼 있었다.
-    _base_limp_p = limp_p(prof, feel, r, pos, t, hand=hand)
+    # Willingness to limp is not willingness to enter with every weak hand.
+    # Use the same wider entry envelope as overlimping: outside the raise range
+    # still permits speculative limps, but arbitrary bottom-range trash is excluded.
+    # The envelope follows this player's positional/depth/pressure threshold.
+    _in_limp_range = r <= min(0.95, thr * 2.2)
+    _base_limp_p = (limp_p(prof, feel, r, pos, t, hand=hand)
+                    if _in_limp_range else 0.0)
     _limp_roll = rng.random()
+    _timing_bound({'kind': 'open', 'r': float(r), 'thr': float(thr),
+                   'limp_thr': min(0.95, thr * 2.2),
+                   'limp_eligible': _in_limp_range,
+                   'limp_p': _base_limp_p,
+                   'limp_roll': _limp_roll})
     if money_open is not None:
         _pull = max(0.0, min(1.0, float(money_open.get('limp_pull_shadow', 0.0))))
         _limp_shadow = 1.0 - (1.0 - _base_limp_p) * (1.0 - _pull)

@@ -153,8 +153,11 @@ def _managed_play_state():
         if target > 1:
             pct = max(0, min(99, int(done * 100 / target)))
             gap = max(0, int(target - done))
-            message = ('대회 진행 동기화 중 %d%% (따라잡을 시간 %d분 %02d초) — 완료 후 자동으로 입장합니다.'
-                       % (pct, gap // 60, gap % 60))
+            if target - done <= ADMISSION_SYNC_LAG:
+                message = '진행 중인 핸드를 마치고 좌석을 준비하고 있습니다. 준비되면 자동으로 입장합니다.'
+            else:
+                message = ('대회 진행 동기화 중 %d%% (따라잡을 시간 %d분 %02d초) — 완료 후 자동으로 입장합니다.'
+                           % (pct, gap // 60, gap % 60))
         else:
             pct = 0
             message = '참가가 접수되었습니다. 다음 완료 핸드에 자동으로 입장합니다.'
@@ -320,7 +323,7 @@ def _schedule_tick():
         active_wait = (ev['id'] == tid and
                        (ev.get('enter_requested') or any(
                            e['status'] in ('reserved', 'waiting') for e in ev['entries'])))
-        budget = (max(18, int(os.environ.get('T2_SCHEDULE_ADMISSION_BUDGET', '48')))
+        budget = (max(18, int(os.environ.get('T2_SCHEDULE_ADMISSION_BUDGET', '18')))
                   if active_wait else 18)
         SCHEDULE_FUTURE = SCHEDULE_POOL.submit(_SR.advance, ev, target, budget=budget)
         SCHEDULE_FUTURE.t2_meta = {'t0': time.monotonic(), 'target': target,
