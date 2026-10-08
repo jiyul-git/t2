@@ -144,13 +144,45 @@ def knowledge(prof, concepts):
     return sum(PS.concept_knowledge(prof, c) for c in cs) / len(cs)
 
 
+def contextual_familiarity(profile, concepts, c, s, m, boundary_known=True):
+    """Runtime familiarity proxy from EXISTING decision-used concept skills.
+
+    The 294-item concept/function registry is a semantic audit, not 294 player
+    abilities. Only the concepts actually tapped by persona.sk() are scored.
+    A low skill in one relevant concept should not be hidden by a high mean.
+    No additional trait, experience state, or decision RNG is introduced.
+
+    With an equity/rank decision boundary, distance expresses how clear this
+    particular decision was. For free bet/check choices the engine has no
+    comparable EV boundary yet: use a conservative familiarity proxy, never
+    mistake the missing boundary for a certain decision.
+    """
+    if not isinstance(profile, dict) or not profile.get('concepts') or not concepts:
+        return None
+    import persona as PS
+    levels = sorted(PS.concept_knowledge(profile, name)
+                    for name in set(concepts))
+    average = sum(levels) / len(levels)
+    lower_quartile = levels[max(0, math.ceil(len(levels) / 4) - 1)]
+    competence = 0.7 * average + 0.3 * lower_quartile
+    if boundary_known:
+        clarity = 1.0 - max(0.0, min(1.0, float(c)))
+    else:
+        # Free-action policy frequency is not an EV confidence score.
+        # This is only familiarity with the concepts, not a "clear fold" claim.
+        clarity = 0.8
+    friction = max(0.45, 1.0 - 0.20 * max(0.0, min(1.0, float(s)))
+                   - 0.15 * max(0.0, min(1.0, float(m))))
+    return max(0.0, min(1.0, competence * clarity * friction))
+
+
 # ---------- 생각 시간 ----------
 def jitter(seed):
     return math.exp(random.Random(seed).gauss(0.0, JITTER_SIGMA))
 
 
 def visible_seconds(traits, c, s, m, K, trivial, commit, jit, base=18.0,
-                    B=None, G=None):
+                    B=None, G=None, familiarity=None):
     """reasoning / hold / visible. `jit` 은 곱해질 지터(시드에서 만든 값 또는 시뮬 값)."""
     B = AMP_B if B is None else B
     G = AMP_G if G is None else G
@@ -159,6 +191,11 @@ def visible_seconds(traits, c, s, m, K, trivial, commit, jit, base=18.0,
     P = min(1.0, D_c + D_o)
     effect = commit * c
     reasoning = traits['pace'] * (0.6 + 11.0 * traits['tank'] * P ** 1.6) * (1.0 + B * effect ** G)
+    # Familiar situations are faster to recognise. Keep the existing habit/
+    # clock hold independent: a slow or tell-conscious person may still wait.
+    # This only shortens the time model, not the poker decision or its RNG.
+    if familiarity is not None:
+        reasoning *= 1.0 - 0.30 * max(0.0, min(1.0, float(familiarity)))
     hold = max(traits['mask'] * 6.0, traits['clock'] * base)
     if trivial:
         hold *= 0.3
