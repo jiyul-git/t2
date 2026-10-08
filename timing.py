@@ -163,7 +163,7 @@ def visible_seconds(traits, c, s, m, K, trivial, commit, jit, base=18.0,
     if trivial:
         hold *= 0.3
     return {'P': P, 'effect': effect, 'reasoning': reasoning, 'hold': hold,
-            'visible': max(reasoning, hold) * jit}
+            'visible': max(1.5, max(reasoning, hold) * jit)}
 
 
 # ---------- 액션 시계 · 타임뱅크 ----------
