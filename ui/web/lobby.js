@@ -29,7 +29,7 @@ async function loadLobby() {
 }
 function renderCurrent() {
   const box=$('#current');
-  const mine=catalog.find(t=>t.active && t.my_entry);
+  const mine=catalog.find(t=>t.active && t.my_entry && t.status !== 'finished');
   if(!mine) { box.hidden=true; return; }
   box.hidden=false;
   box.innerHTML='<div><div class="kicker">MY TOURNAMENT</div><h3>'+escapeHtml(mine.name)+
@@ -39,6 +39,7 @@ function renderCurrent() {
 }
 function visible(t) {
   if(filter==='mine') return t.my_entry && t.my_entry.status !== 'cancelled';
+  if(t.status==='finished') return false;
   if(filter==='scheduled') return t.status==='scheduled';
   if(filter==='running') return ['late_registration','closed'].includes(t.status);
   return t.registration_open || (t.my_entry && t.my_entry.status !== 'cancelled');
