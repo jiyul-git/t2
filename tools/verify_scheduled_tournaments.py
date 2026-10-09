@@ -57,6 +57,23 @@ class EconomyTests(unittest.TestCase):
         self.assertEqual(other.wallet()['balance'], 9000)
         self.assertEqual(len(other.wallet()['transactions']), 2)
 
+    def test_lobby_clock_advances_without_worker_and_excludes_break(self):
+        self.start()
+        before = self.s.event(TID)['state']
+        rows = self.s.catalog(START + 3720)['tournaments']
+        event = next(row for row in rows if row['id'] == TID)
+        self.assertEqual(event['progress']['play_seconds'], 3420)
+        self.assertEqual(event['progress']['simulated_seconds'], 0)
+        self.assertEqual(self.s.event(TID)['state'], before)
+
+    def test_finished_lobby_clock_keeps_final_duration(self):
+        self.start()
+        with self.s._db() as db:
+            db.execute('UPDATE tournaments SET finished=1 WHERE id=?', (TID,))
+        event = next(row for row in self.s.catalog(START + 3720)['tournaments']
+                     if row['id'] == TID)
+        self.assertEqual(event['progress']['play_seconds'], 0)
+
     def test_long_history_keeps_upcoming_catalog_and_active_result(self):
         rules = json.dumps(self.s.event(TID)['rules'])
         with self.s._db() as db:

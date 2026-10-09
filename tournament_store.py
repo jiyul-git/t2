@@ -523,6 +523,13 @@ class Store:
                 count = r['bot_entries'] + sum(e['status'] != 'cancelled' for e in ev['entries'])
                 public_rules = {key: value for key, value in r.items() if key != 'seed'}
                 progress = _public_progress(fd)
+                if progress is not None:
+                    # Wall-clock play time must not freeze with a worker snapshot.
+                    # Keep the simulated timestamp separately for diagnostics;
+                    # completed events retain their final duration.
+                    progress['simulated_seconds'] = progress['play_seconds']
+                    if not ev['finished']:
+                        progress['play_seconds'] = int(active_seconds(now - ev['starts_at']))
                 events.append(dict(public_rules, id=tid, key=r['fmt'], starts_at=ev['starts_at'],
                                    progress=progress,
                                    closes_at=ev['closes_at'], entries=count,
