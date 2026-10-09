@@ -627,13 +627,9 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
   padding-top:env(safe-area-inset-top);
 }
 #rankDrawer.open { transform:translateX(0); visibility:visible; pointer-events:auto; }
-#rankDrawer.from-menu {
-  left:auto; right:0; border-right:0; border-left:1px solid var(--line);
-  transform:translateX(102%);
-}
-#rankDrawer.from-menu.open { transform:translateX(0); }
-.sheet.tournament-menu, #rankDrawer { touch-action:pan-y; }
-.menuSwipeHint { text-align:right; }
+#rankDrawer.dragging, #rankDrawer.settling { visibility:visible; pointer-events:auto; }
+#rankDrawer.dragging { transition:none; }
+.sheet.tournament-menu, #rankDrawer, #tablewrap { touch-action:pan-y; }
 .rankhead {
   flex:0 0 auto; min-height:58px; padding:10px 10px 8px 14px;
   display:flex; align-items:center; justify-content:space-between;

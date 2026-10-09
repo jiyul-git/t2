@@ -3337,7 +3337,8 @@ async function openRankDrawer(fromMenu = false) {
   $('#rankDrawer').classList.toggle('from-menu', fromMenu);
   $('#rankDrawer').classList.add('open');
   $('#rankDrawer').setAttribute('aria-hidden', 'false');
-  $('#rankList').innerHTML = '<div class="rankempty">전체 순위 불러오는 중…</div>';
+  if (S.tournament) renderRankDrawer(S.tournament);
+  else $('#rankList').innerHTML = '<div class="rankempty">전체 순위 불러오는 중…</div>';
   try {
     const t = await tournamentLoad(true);
     renderRankDrawer(t);
@@ -3353,7 +3354,7 @@ function closeRankDrawer() {
   $('#rankDrawer').classList.remove('open');
   $('#rankDrawer').setAttribute('aria-hidden', 'true');
   setTimeout(() => {
-    if (!S.rankOpen) $('#rankScrim').hidden = true;
+    if (!S.rankOpen && !$('#rankDrawer').classList.contains('dragging')) $('#rankScrim').hidden = true;
   }, 250);
 }
 
@@ -3537,7 +3538,6 @@ async function showMenu() {
     (err
       ? `<div class="sub">대회 정보를 불러오지 못했습니다: ${esc(err)}</div>`
       : tournamentInfoHTML(t)) +
-    '<div class="sub menuSwipeHint">← 왼쪽으로 밀어 전체 스택 순위 보기</div>' +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
     `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>'
@@ -3552,21 +3552,83 @@ function bindMenuRankSwipe(sheet) {
   if (!sheet) return;
   sheet.classList.add('tournament-menu');
   sheet.tabIndex = 0;
-  let start = null;
-  sheet.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    start = {x: e.clientX, y: e.clientY, id: e.pointerId};
-  }, {passive: true});
-  sheet.addEventListener('pointerup', e => {
-    if (!start || e.pointerId !== start.id) return;
-    const dx = e.clientX-start.x, dy = e.clientY-start.y;
-    start = null;
-    if (dx <= -80 && Math.abs(dy) <= 48) openRankDrawer(true);
-  }, {passive: true});
-  sheet.addEventListener('pointercancel', () => {start = null;}, {passive: true});
+  bindRankDrag(sheet, true, () => !S.rankOpen, true);
   sheet.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft') { e.preventDefault(); openRankDrawer(true); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); openRankDrawer(true); }
   });
+}
+
+function bindRankDrag(host, opening, enabled, fromMenu = false) {
+  let drag = null, suppressClick = false;
+  const drawer = $('#rankDrawer'), scrim = $('#rankScrim');
+  const paint = e => {
+    const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+    if (!drag.active) {
+      if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { drag = null; return; }
+      if ((opening ? dx : -dx) <= 8 || Math.abs(dx) <= Math.abs(dy)) return;
+      drag.active = true;
+      drag.width = drawer.getBoundingClientRect().width * 1.02;
+      drawer.classList.toggle('from-menu', fromMenu);
+      drawer.classList.add('dragging');
+      drawer.style.transition = 'none';
+      scrim.hidden = false;
+      if (opening && S.tournament) renderRankDrawer(S.tournament);
+      try { host.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    const now = performance.now();
+    const dt = now-drag.at;
+    if (dt > 0 && e.clientX !== drag.lastX) {
+      drag.velocity = (e.clientX-drag.lastX)/dt;
+      drag.at = now; drag.lastX = e.clientX;
+    }
+    drag.distance = Math.max(0, Math.min(drag.width, opening ? dx : -dx));
+    const visible = opening ? drag.distance : drag.width-drag.distance;
+    drawer.style.transform = `translateX(${visible-drag.width}px)`;
+    scrim.style.opacity = String(visible/drag.width);
+  };
+  const finish = (e, cancelled) => {
+    if (!drag || drag.id !== e.pointerId) return;
+    if (!cancelled) paint(e);
+    if (!drag || !drag.active) { drag = null; return; }
+    const d = drag;
+    const velocity = performance.now()-d.at < 100 ? d.velocity : 0;
+    const commit = !cancelled && (d.distance >= d.width*0.35 ||
+      (d.distance >= 24 && (opening ? velocity : -velocity) >= 0.45));
+    suppressClick = true;
+    drag = null;
+    try { host.releasePointerCapture(e.pointerId); } catch (_) {}
+    // Start settling at the exact last dragged frame, never at the edge.
+    drawer.getBoundingClientRect();
+    drawer.classList.add('settling');
+    drawer.classList.remove('dragging');
+    drawer.style.transition = '';
+    if (commit) {
+      if (opening) openRankDrawer(fromMenu);
+      else closeRankDrawer();
+    }
+    drawer.style.transform = '';
+    scrim.style.opacity = '';
+    setTimeout(() => {
+      drawer.classList.remove('settling');
+      if (!S.rankOpen && !drawer.classList.contains('dragging')) scrim.hidden = true;
+      suppressClick = false;
+    }, 250);
+    drag = null;
+  };
+  host.addEventListener('pointerdown', e => {
+    if (!enabled() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    drag = {x:e.clientX, y:e.clientY, lastX:e.clientX, id:e.pointerId,
+      at:performance.now(), velocity:0, distance:0, active:false};
+  }, {passive:true});
+  host.addEventListener('pointermove', e => {
+    if (drag && drag.id === e.pointerId) paint(e);
+  }, {passive:true});
+  host.addEventListener('pointerup', e => finish(e, false), {passive:true});
+  host.addEventListener('pointercancel', e => finish(e, true), {passive:true});
+  host.addEventListener('lostpointercapture', e => finish(e, true), {passive:true});
+  host.addEventListener('click', e => {
+    if (suppressClick) {e.preventDefault(); e.stopImmediatePropagation();}
+  }, true);
 }
 
 function showHandDetail(v) {
@@ -4651,36 +4713,8 @@ $('#bMenu').addEventListener('click', showMenu);
 $('#rankClose').addEventListener('click', closeRankDrawer);
 $('#rankScrim').addEventListener('click', closeRankDrawer);
 
-// 오른쪽 스와이프 = 전체 스택 순위. 단순 탭/세로 스크롤과 섞이지 않게
-// 수평 이동 80px + 세로 48px 이내일 때만 연다.
-let _swipe = null;
-$('#tablewrap').addEventListener('pointerdown', (e) => {
-  if (S.rankOpen || !$('#overlay').hidden) return;
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  _swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
-}, { passive: true });
-$('#tablewrap').addEventListener('pointerup', (e) => {
-  if (!_swipe || _swipe.id !== e.pointerId) return;
-  const dx = e.clientX - _swipe.x;
-  const dy = e.clientY - _swipe.y;
-  _swipe = null;
-  if (dx >= 80 && Math.abs(dy) <= 48) openRankDrawer();
-}, { passive: true });
-$('#tablewrap').addEventListener('pointercancel', () => { _swipe = null; }, { passive: true });
-
-let _rankSwipe = null;
-$('#rankDrawer').addEventListener('pointerdown', (e) => {
-  _rankSwipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
-}, { passive: true });
-$('#rankDrawer').addEventListener('pointerup', (e) => {
-  if (!_rankSwipe || _rankSwipe.id !== e.pointerId) return;
-  const dx = e.clientX - _rankSwipe.x;
-  const dy = e.clientY - _rankSwipe.y;
-  _rankSwipe = null;
-  const fromMenu = $('#rankDrawer').classList.contains('from-menu');
-  if ((fromMenu ? dx >= 70 : dx <= -70) && Math.abs(dy) <= 50) closeRankDrawer();
-}, { passive: true });
-$('#rankDrawer').addEventListener('pointercancel', () => { _rankSwipe = null; }, { passive: true });
+bindRankDrag($('#tablewrap'), true, () => !S.rankOpen && $('#overlay').hidden);
+bindRankDrag($('#rankDrawer'), false, () => S.rankOpen);
 
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
