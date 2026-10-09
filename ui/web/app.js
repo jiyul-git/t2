@@ -627,7 +627,9 @@ function clearRightChipMemo(box) {
       .filter(other => other !== el).map(rect).filter(b => b.w && b.h);
     const candidates = [];
     for (let dx=-64; dx<=64; dx+=8) {
-      for (let dy=-80; dy<=80; dy+=8) {
+      // Keep the right-side bet at or above its lane. A memo collision must
+      // never push it down toward the lower-right player's chips.
+      for (let dy=-80; dy<=0; dy+=8) {
         candidates.push({x:start.x+dx,y:start.y+dy,w:start.w,h:start.h,d:dx*dx+dy*dy});
       }
     }
@@ -670,14 +672,13 @@ function renderChips(v, streetChanged) {
     const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
     const side = sideSeatClass(seatP);
     // 3/9 o'clock gets its own chip lane.
-    // x stays clear of the side-seat cards; y is lowered enough for wider
-    // chip labels while remaining between the upper/lower diagonal lanes.
+    // x stays clear of the side-seat cards.
     if (side === ' side-left') {
       // Only the 9-o'clock chip label moves; keep the 8-o'clock lane unchanged.
       // Tested against nearby cards, board, pot, and lower-left bet label.
       p.x = 26; p.y = 54;
     } else if (side === ' side-right') {
-      p.x = 78; p.y = 51;
+      p.x = 78; p.y = 44;
     }
     const el = document.createElement('div');
     el.className = 'chips' + side;
