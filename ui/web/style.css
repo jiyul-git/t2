@@ -102,6 +102,8 @@ html, body {
   position: absolute; width: 72px; margin-left: -36px; margin-top: -30px;
   text-align: center; transition: opacity .25s;
 }
+/* Lift the entire active seat; a child's z-index cannot beat a later pod. */
+#seats .pod.bubble-front { z-index: 12; }
 .pod .avatar {
   width: 38px; height: 38px; margin: 0 auto; border-radius: 50%;
   background: linear-gradient(#41544c, #24332d);
