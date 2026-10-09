@@ -36,6 +36,7 @@ namespace = dict(BaseHTTPRequestHandler=BaseHTTPRequestHandler, threading=thread
                  LOCK=threading.Lock(), PLAY_INFLIGHT_LOCK=threading.Lock(),
                  STEP_PROGRESS={}, STEP_PROGRESS_LOCK=threading.Lock(),
                  TIMING_ON=False, ACTIONS={'fold'}, _last=None,
+                 STREAM_WRITE_TIMEOUT_SECONDS=2.0,
                  _TS=SimpleNamespace(TournamentError=type('TournamentError', (Exception,), {})),
                  ECONOMY=SimpleNamespace(active_id=lambda:None),
                  _managed_play_state=lambda:None, _token=lambda:17,

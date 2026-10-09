@@ -642,6 +642,9 @@ def _timeout_action():
 STREAM_LOCK = threading.Lock()
 STREAMS = {}
 STREAM_ACK_TIMEOUT = float(os.environ.get('T2_UI_ACK_TIMEOUT', '15'))
+# A stalled HTTP consumer must not block the gameplay lock indefinitely.
+# Computed events remain available through the independent progress mailbox.
+STREAM_WRITE_TIMEOUT_SECONDS = 2.0
 
 
 def _stream_gate_open():
@@ -1902,12 +1905,18 @@ class H(BaseHTTPRequestHandler):
 
     def _stream_start(self):
         """봇 진행 이벤트를 계산 즉시 NDJSON으로 흘려보낸다."""
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/x-ndjson; charset=utf-8')
-        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('X-Accel-Buffering', 'no')
-        self.end_headers()
+        self.connection.settimeout(STREAM_WRITE_TIMEOUT_SECONDS)
+        self.close_connection = True
+        try:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/x-ndjson; charset=utf-8')
+            self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('X-Accel-Buffering', 'no')
+            self.end_headers()
+            return True
+        except OSError:
+            return False
 
     def _stream_line(self, obj):
         try:
@@ -1915,7 +1924,7 @@ class H(BaseHTTPRequestHandler):
             self.wfile.write(b)
             self.wfile.flush()
             return True
-        except (BrokenPipeError, ConnectionResetError):
+        except OSError:
             # 클라이언트가 사라져도 엔진 계산/저장은 중단하지 않는다.
             return False
 
@@ -2279,13 +2288,12 @@ class H(BaseHTTPRequestHandler):
                     # 스트림 경로를 쓰며, 1.5초 모션 템포는 프론트가 그대로 유지한다.
                     if stream:
                         request_id = _step_progress_open(body.get('request_id'))
+                        alive = [self._stream_start()]
                         def _publish(message):
                             # Publish before the socket write: a disconnected or
                             # buffered stream must not hide computed actions.
                             _step_progress_emit(request_id, message)
-                            return self._stream_line(message)
-                        self._stream_start()
-                        alive = [True]
+                            return self._stream_line(message) if alive[0] else False
                         stream_id = _stream_gate_open()
                         seq = [0]
                         alive[0] = _publish({
