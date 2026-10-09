@@ -784,6 +784,7 @@ def _tournament_payload():
         'to_itm': int(status.get('to_itm') or 0),
         'bubble': bool(status.get('bubble')),
         'hand_no': int(f.hand_no),
+        'display_hand_no': _display_hand_number(st),
         'level': int(f.level),
         'sb': int(sb),
         'bb': int(bb),
@@ -1443,6 +1444,67 @@ def _archive_status():
     return out
 
 
+def _hero_hand_numbers(st):
+    """Per-tournament HERO ordinals; engine hand IDs remain unchanged.
+
+    Off-screen simulation increments the engine's field counter across bot
+    tables. Only completed HERO archive records count toward displayed hands.
+    Deduplicate engine IDs so an archive retry cannot advance the UI count.
+    """
+    fn = _SP.resolve_read('archive').get('path')
+    tid = st.get('tournament_id')
+    if not fn:
+        return {}
+    try:
+        stat = os.stat(fn)
+    except FileNotFoundError:
+        return {}
+    key = (fn, tid, stat.st_mtime_ns, stat.st_size)
+    cache = globals().get('_HERO_HAND_NUMBER_CACHE')
+    if cache and cache[0] == key:
+        return cache[1]
+    numbers = set()
+    with open(fn, encoding='utf-8') as fp:
+        for line in fp:
+            try:
+                rec = json.loads(line)
+                if (rec.get('tournament_id') != tid
+                        or not isinstance(rec.get('result'), dict)):
+                    continue
+                number = int(rec['hand_no'])
+                if number > 0:
+                    numbers.add(number)
+            except (ValueError, TypeError, KeyError, AttributeError):
+                continue
+    out = {number: i+1 for i, number in enumerate(sorted(numbers))}
+    globals()['_HERO_HAND_NUMBER_CACHE'] = (key, out)
+    return out
+
+
+def _display_hand_number(st, engine_no=None):
+    numbers = _hero_hand_numbers(st)
+    pending = st.get('pending_archive') or {}
+    if (pending.get('tournament_id') == st.get('tournament_id')
+            and pending.get('hand_no') is not None
+            and isinstance(pending.get('result'), dict)):
+        keys = set(numbers) | {int(pending['hand_no'])}
+        numbers = {number: i+1 for i, number in enumerate(sorted(keys))}
+    current = int(engine_no if engine_no is not None else
+                  (st.get('field') or {}).get('hand_no') or 0)
+    if current in numbers:
+        return numbers[current]
+    return len(numbers) + (1 if engine_no is not None or st.get('hand_seed') is not None else 0)
+
+
+def _display_hand_response(response, st):
+    out = dict(response)
+    for key in ('view', 'opening_view'):
+        v = out.get(key)
+        if isinstance(v, dict) and v.get('hand_no') is not None:
+            out[key] = dict(v, display_hand_no=_display_hand_number(st, v['hand_no']))
+    return out
+
+
 def _public_history():
     """현재 토너먼트의 완료 핸드를 UI용으로 안전하게 반환한다.
 
@@ -1557,6 +1619,10 @@ def _public_history():
             return -1
 
     out.sort(key=hand_key, reverse=True)
+    ordinals = {number: i+1 for i, number in enumerate(sorted({
+        hand_key(row) for row in out}))}
+    for row in out:
+        row['display_hand_no'] = ordinals[hand_key(row)]
     return out
 
 def _hero_memos():
@@ -1702,7 +1768,7 @@ def _wrap(r):
         out.update(_economy_receipt(st))
     except Exception:
         pass
-    return out
+    return _display_hand_response(out, L.load())
 
 
 def _resume_response(response, st, now=None):
@@ -1948,7 +2014,9 @@ class H(BaseHTTPRequestHandler):
                         _last = _game_over()
                     else:
                         _last = _wrap(_step_sched())
-                return self._send(200, _resume_response(_last, L.load()))
+                st = L.load()
+                return self._send(200, _display_hand_response(
+                    _resume_response(_last, st), st))
             except Exception as e:
                 traceback.print_exc()
                 return self._send(500, {'error': '%s: %s' % (type(e).__name__, e)})
