@@ -416,6 +416,7 @@ function sideSeatClass(p) {
 }
 
 /* ---------------- 상단 바 ---------------- */
+const displayHandNo = v => v.display_hand_no ?? v.hand_no ?? '';
 function noteTournamentClock(t, at = performance.now()) {
   if (!t || t.elapsed_seconds === undefined) return;
   if (S.tournamentClock && t.server_now_ms &&
@@ -468,7 +469,7 @@ function renderTop(v) {
     ? `레벨 ${lv.n} &nbsp;${fmt(lv.sb)}/${fmt(lv.bb)}` +
       (lv.ante ? ` <span class="ante">ante ${fmt(lv.ante)}</span>` : '')
     : '—';
-  $('#handno').textContent = v.hand_no ? `HAND ${v.hand_no}` : '';
+  $('#handno').textContent = v.hand_no ? `HAND ${displayHandNo(v)}` : '';
   paintTournamentClock();
   $('#notes').textContent = (v.notes || []).join('  ');
   readReady().catch(() => {});
@@ -3018,7 +3019,7 @@ function resultBodyHTML(v, withLog) {
   }[v.how] || v.how;
 
   return (
-    `<h2>HAND ${v.hand_no ?? ''} 결과</h2>` +
+    `<h2>HAND ${displayHandNo(v)} 결과</h2>` +
     `<div class="sub">${how} · 팟 ${fmt(v.pot)}</div>` +
     `<div class="boardrow">${
       (v.board || []).length
@@ -3119,7 +3120,7 @@ function renderHistoryList(list, fallbackNote) {
 
     return (
       `<div class="row hist${mineSolo ? ' win' : ''}" data-i="${i}">` +
-      `<span class="who">HAND ${v.hand_no ?? '?'}</span>` +
+      `<span class="who">HAND ${displayHandNo(v)}</span>` +
       `<span class="cards">${
         cardsHTML((v.board || []).slice(0, 5), 'mini')
       }</span>` +
@@ -3233,7 +3234,7 @@ function tournamentInfoHTML(t) {
     : '';
 
   return (
-    `<div class="sub">${esc(t.format || '대회')} · HAND ${fmt(t.hand_no)}</div>` +
+    `<div class="sub">${esc(t.format || '대회')} · HAND ${fmt(displayHandNo(t))}</div>` +
     '<div class="grid">' +
       `<div class="row"><span class="who">필드</span><span class="amt">${fmt(t.entries)} → ${fmt(t.remaining)}</span></div>` +
       `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
