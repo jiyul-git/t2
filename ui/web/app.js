@@ -416,20 +416,49 @@ function sideSeatClass(p) {
 }
 
 /* ---------------- 상단 바 ---------------- */
+function noteTournamentClock(t, at = performance.now()) {
+  if (!t || t.elapsed_seconds === undefined) return;
+  if (S.tournamentClock && t.server_now_ms &&
+      t.server_now_ms < S.tournamentClock.serverMs) return;
+  S.elapsedSeconds = t.elapsed_seconds;
+  S.levelRemainingSeconds = t.level_remaining_seconds;
+  S.sessionRemainingSeconds = t.session_remaining_seconds;
+  const elapsed = t.elapsed_started_ms != null && t.server_now_ms != null
+    ? Math.max(0, (t.server_now_ms - t.elapsed_started_ms) / 1000)
+    : t.elapsed_seconds;
+  S.tournamentClock = {
+    at, serverMs: Number(t.server_now_ms || 0), elapsed,
+    running: !!t.clock_running, activeRunning: !!t.active_clock_running,
+    levelRemaining: t.level_remaining_seconds,
+  };
+}
+
+function tournamentClockValues(at = performance.now()) {
+  const c = S.tournamentClock;
+  if (!c) return {elapsed: S.elapsedSeconds, levelRemaining: S.levelRemainingSeconds};
+  const delta = Math.max(0, (at - c.at) / 1000);
+  return {
+    elapsed: c.elapsed == null ? null : Math.floor(c.elapsed + (c.running ? delta : 0)),
+    levelRemaining: c.levelRemaining == null ? null
+      : Math.max(0, Math.ceil(c.levelRemaining - (c.activeRunning ? delta : 0))),
+  };
+}
+
 function paintTournamentClock() {
+  const clock = tournamentClockValues();
   const v = S.view;
   const lv = v && v.level;
   if (lv) {
     $('#lvl').innerHTML =
       `레벨 ${lv.n} &nbsp;${fmt(lv.sb)}/${fmt(lv.bb)}` +
       (lv.ante ? ` <span class="ante">ante ${fmt(lv.ante)}</span>` : '') +
-      (S.levelRemainingSeconds == null
-        ? '' : ` <span class="leveltime">· ${clockText(S.levelRemainingSeconds)}</span>`);
+      (clock.levelRemaining == null
+        ? '' : ` <span class="leveltime">· ${clockText(clock.levelRemaining)}</span>`);
   }
   if ($('#fieldline')) {
-    $('#fieldline').textContent = S.elapsedSeconds == null
+    $('#fieldline').textContent = clock.elapsed == null
       ? '기존 대회 · 핸드 기준'
-      : `경과 ${clockText(S.elapsedSeconds)}`;
+      : `경과 ${clockText(clock.elapsed)}`;
   }
 }
 
@@ -3344,6 +3373,7 @@ function paintActionClock() {
 function noteTiming(t) {
   // 서버 시간 정보(시간 규칙). 꺼져 있으면 timing_on 이 false 라 기존 표시 그대로다.
   if (!t) return;
+  noteTournamentClock(t);
   S.timingOn = !!t.timing_on;
   if (t.server_now_ms) S.clockOffset = t.server_now_ms - Date.now();
   if (t.action_base_deadline_ms) S.actionBaseMs = Number(t.action_base_deadline_ms);
@@ -3402,9 +3432,6 @@ async function readReady() {
       S.scheduleReplayed = true;          // 재접속: 남은 봇 시계만 이어서 보여 준다
       replayBotSchedule(ready.bot_schedule);
     }
-    S.elapsedSeconds = ready.elapsed_seconds;
-    S.levelRemainingSeconds = ready.level_remaining_seconds;
-    S.sessionRemainingSeconds = ready.session_remaining_seconds;
     paintTournamentClock();
     if (!S.actionSubmitted && ready.action_token === S.token && ready.action_deadline_ms && S.view && S.view.type === 'decision') {
       if (!S.actionDeadlineMs || Math.abs(S.actionDeadlineMs - Number(ready.action_deadline_ms)) > 250) {
@@ -4489,6 +4516,10 @@ if (location.hash === '#history') {
 
 // Keep the clock moving during hero decisions and animations too.
 let clockRequestPending = false;
+// Display time advances from the last server anchor, independently of HTTP.
+setInterval(() => {
+  if (!document.hidden) paintTournamentClock();
+}, 200);
 setInterval(async () => {
   if (clockRequestPending || document.hidden) return;
   clockRequestPending = true;
