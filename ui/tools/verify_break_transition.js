@@ -32,6 +32,9 @@ async function main() {
   vm.runInContext(between('async function call(', '/* 재생이 도는 중이면'),ctx);
   await ctx.call('/api/step',{action:null,token:69},'next');
   assert.equal(waiting,1);
+  ctx.req=async()=>({status:500,json:{error:'ValueError: 브레이크가 끝난 뒤 다음 핸드를 시작할 수 있습니다.'}});
+  await ctx.call('/api/step',{action:null,token:69},'next');
+  assert.equal(waiting,2, 'legacy break error must preserve the next-deal retry');
   console.log('PASS: break sheet after visible result, boundary race without error toast, one automatic resume');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

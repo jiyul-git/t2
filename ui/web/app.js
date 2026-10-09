@@ -3274,7 +3274,7 @@ function tournamentInfoHTML(t) {
 
   const jump = t.next_rank
     ? `<div class="row"><span class="who">다음 머니점프</span><span class="amt">${fmt(t.next_rank)}위 · ${pct(t.next_prize_pct)}</span></div>` +
-      `<div class="potline">현재에서 ${fmt(t.players_to_jump)}명 더 탈락 · 점프 +${pct(t.next_jump_pct)}</div>`
+      `<div class="potline">${t.in_money ? '현재에서 ' + fmt(t.players_to_jump) + '명 더 탈락 · ' : ''}점프 +${pct(t.next_jump_pct)}</div>`
     : '<div class="row"><span class="who">다음 머니점프</span><span class="amt">1위 구간</span></div>';
 
   const jumps = (t.money_jumps || []).slice(0, 5);
@@ -3290,10 +3290,6 @@ function tournamentInfoHTML(t) {
       `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
       `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)} · ${t.virtual_clock ? fmt(t.level_minutes)+'분' : '기존 핸드 기준'}</span></div>` +
       `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
-      `<div class="row"><span class="who">내 칩순위</span><span class="amt">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
-      `<div class="row"><span class="who">내 스택</span><span class="amt">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
-      `<div class="row"><span class="who">평균</span><span class="amt">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
-      `<div class="row"><span class="who">칩리더</span><span class="amt">${fmt(t.leader)}</span></div>` +
       `<div class="row"><span class="who">테이블</span><span class="amt">${fmt(t.tables)}개</span></div>` +
       `<div class="row"><span class="who">버블</span><span class="amt">${t.bubble ? '진입' : '아님'}</span></div>` +
     '</div>' +
@@ -3311,9 +3307,7 @@ function renderRankDrawer(t) {
     ? `<div class="cell"><span class="k">내 칩순위</span><span class="v">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
       `<div class="cell"><span class="k">내 스택</span><span class="v">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
       `<div class="cell"><span class="k">평균 스택</span><span class="v">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
-      `<div class="cell"><span class="k">${t.in_money ? '보장 상금' : 'ITM까지'}</span><span class="v">${t.in_money ? pct(t.current_prize_pct) : fmt(t.players_to_jump) + '명'}</span></div>` +
-      `<div class="cell"><span class="k">다음 머니점프</span><span class="v">${t.next_rank ? fmt(t.next_rank) + '위 · ' + pct(t.next_prize_pct) : '최종 구간'}</span></div>` +
-      `<div class="cell"><span class="k">블라인드</span><span class="v">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' A' + fmt(t.ante) : ''}</span></div>`
+      `<div class="cell"><span class="k">칩리더</span><span class="v">${fmt(t.leader)}</span></div>`
     : '';
 
   $('#rankList').innerHTML = rows.length
@@ -3336,10 +3330,11 @@ function renderRankDrawer(t) {
     : '<div class="rankempty">순위 정보가 없습니다.</div>';
 }
 
-async function openRankDrawer() {
+async function openRankDrawer(fromMenu = false) {
   if (S.rankOpen) return;
   S.rankOpen = true;
   $('#rankScrim').hidden = false;
+  $('#rankDrawer').classList.toggle('from-menu', fromMenu);
   $('#rankDrawer').classList.add('open');
   $('#rankDrawer').setAttribute('aria-hidden', 'false');
   $('#rankList').innerHTML = '<div class="rankempty">전체 순위 불러오는 중…</div>';
@@ -3542,18 +3537,36 @@ async function showMenu() {
     (err
       ? `<div class="sub">대회 정보를 불러오지 못했습니다: ${esc(err)}</div>`
       : tournamentInfoHTML(t)) +
-    '<button type="button" id="mRanks">전체 봇 스택 순위</button>' +
+    '<div class="sub menuSwipeHint">← 왼쪽으로 밀어 전체 스택 순위 보기</div>' +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
     `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>'
   );
 
-  $('#mRanks').addEventListener('click', () => {
-    hideOverlay();
-    openRankDrawer();
-  });
+  bindMenuRankSwipe($('#overlay .sheet'));
   $('#mLobby').addEventListener('click', () => { location.href = '/'; });
   $('#mClose').addEventListener('click', hideOverlay);
+}
+
+function bindMenuRankSwipe(sheet) {
+  if (!sheet) return;
+  sheet.classList.add('tournament-menu');
+  sheet.tabIndex = 0;
+  let start = null;
+  sheet.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    start = {x: e.clientX, y: e.clientY, id: e.pointerId};
+  }, {passive: true});
+  sheet.addEventListener('pointerup', e => {
+    if (!start || e.pointerId !== start.id) return;
+    const dx = e.clientX-start.x, dy = e.clientY-start.y;
+    start = null;
+    if (dx <= -80 && Math.abs(dy) <= 48) openRankDrawer(true);
+  }, {passive: true});
+  sheet.addEventListener('pointercancel', () => {start = null;}, {passive: true});
+  sheet.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); openRankDrawer(true); }
+  });
 }
 
 function showHandDetail(v) {
@@ -4159,6 +4172,13 @@ async function call(path, body, msg) {
   setBusy(true, msg, path === '/api/step');
   try {
     const r = await req(path, body);
+    // An older server can report the same boundary as a ValueError/500.
+    // Keep the automatic next-deal request alive across that response too.
+    if (path === '/api/step' && body && body.action === null &&
+        r.status !== 200 && r.json && /브레이크/.test(r.json.error || '')) {
+      resumeAfterBreak(body, msg);
+      return null;
+    }
     if (r.status === 409) {
       if (path === '/api/step' && body && body.action === null &&
           r.json && r.json.code === 'break_active') {
@@ -4657,8 +4677,10 @@ $('#rankDrawer').addEventListener('pointerup', (e) => {
   const dx = e.clientX - _rankSwipe.x;
   const dy = e.clientY - _rankSwipe.y;
   _rankSwipe = null;
-  if (dx <= -70 && Math.abs(dy) <= 50) closeRankDrawer();
+  const fromMenu = $('#rankDrawer').classList.contains('from-menu');
+  if ((fromMenu ? dx >= 70 : dx <= -70) && Math.abs(dy) <= 50) closeRankDrawer();
 }, { passive: true });
+$('#rankDrawer').addEventListener('pointercancel', () => { _rankSwipe = null; }, { passive: true });
 
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
