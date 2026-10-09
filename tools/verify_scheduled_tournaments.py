@@ -116,6 +116,24 @@ class EconomyTests(unittest.TestCase):
         r = SR.advance(s.event(TID), 300, budget=1, parallel=False)
         self.assertGreater(r['state']['field']['virtual_play_seconds'], 0)
 
+    def test_future_hand_boundary_survives_break_and_worker_cache(self):
+        st = self.start(False)
+        # At the 55-minute pause the current hands cannot yet be merged. Their
+        # future boundary must remain visible even with worker-only queues.
+        st['background_seconds'] = 3290.0
+        st['background_pending'] = {tid: [{'end': 3330.0}]
+                                    for tid in st['field']['tables']}
+        ev = self.s.event(TID)
+        ev['state'] = st
+        for _ in range(2):
+            out = SR.advance(ev, 3300, parallel=False)
+            self.assertEqual(out['work'], 0)
+            self.assertEqual(out['state']['background_seconds'], 3300)
+            self.assertEqual(out['state']['background_resume_at'], 3330)
+            self.assertTrue(out['state']['background_pending_key'])
+            self.assertEqual(out['state']['background_pending'], {})
+            ev['state'] = out['state']
+
     def test_removed_format_retires_only_settled_personal_results(self):
         self.bust(self.start())
         self.s.uses_default_schedule = True

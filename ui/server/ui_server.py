@@ -199,6 +199,12 @@ def _managed_play_state():
             gap = max(0, int(target - done))
             if target - done <= ADMISSION_SYNC_LAG:
                 message = '진행 중인 핸드를 마치고 좌석을 준비하고 있습니다. 준비되면 자동으로 입장합니다.'
+                phase = max(0.0, time.time() - ev['starts_at']) % 3600.0
+                if phase >= 3300.0:
+                    left = int(3600.0 - phase + 0.999999)
+                    message = ('대회 휴식 중 — 남은 시간 %d분 %02d초. '
+                               '휴식 종료 후 다음 완료 핸드에 좌석을 배정하고 자동으로 입장합니다.'
+                               % (left // 60, left % 60))
             else:
                 message = ('대회 진행 동기화 중 %d%% (따라잡을 시간 %d분 %02d초) — 완료 후 자동으로 입장합니다.'
                            % (pct, gap // 60, gap % 60))
@@ -348,6 +354,11 @@ def _schedule_tick():
         if es.get('hand_seed') is not None or es.get('others_pending') or es.get('vclock_settle_pending'):
             continue
         target = _TS.active_seconds(now - ev['starts_at'])
+        # No completed hand is due yet. During the five-minute break target
+        # stays fixed, so repeatedly submitting this snapshot cannot help admit
+        # a waiting receipt; resume when the next boundary actually becomes due.
+        if float(es.get('background_resume_at') or 0) > target + 1e-9:
+            continue
         if es and es.get('background_seconds', -1) >= target - 0.25 and not any(
                 e['status'] in ('reserved', 'waiting') for e in ev['entries']):
             continue
