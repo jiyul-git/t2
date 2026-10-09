@@ -2034,6 +2034,102 @@ def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
     return _vr_ok, _vr_eq_cont, _fair_share
 
 
+def river_nut_value_response(profile, hero, board, street, opp_range,
+                             pot, tocall, stack, hero_contrib,
+                             response_context, n_opp, allow_raise):
+    """Exact river nuts use value sizing, never a generic raise-frequency roll.
+
+    Hole cards must improve the board. Board-only nuts need separate chop /
+    bluff reasoning. HU sizing compares weighted, blocker-conditioned river
+    EV for legal raise candidates, including the effective all-in. No actual
+    opponent hole cards or sampled equity enter this decision.
+    """
+    if street != 'river' or len(board) != 5 or len(hero) != 2:
+        return None
+    cards = list(hero) + list(board)
+    if len(set(cards)) != 7:
+        return None
+    mine = bot.eval7(cards)
+    if mine <= bot.eval7(list(board)):
+        return None
+    dead = set(cards)
+    deck = [c for c in bot.FULLDECK if c not in dead]
+    for i, a in enumerate(deck):
+        for b in deck[i+1:]:
+            if bot.eval7([a, b] + list(board)) > mine:
+                return None
+
+    hc = max(0.0, float(hero_contrib or 0.0))
+    call_target = hc + float(tocall)
+    cap = hc + max(0.0, float(stack))
+    ctx = dict(response_context or {})
+    info = {'exact_nuts': True, 'sizing_model': 'existing_value_size',
+            'candidates': []}
+    if not allow_raise or cap <= call_target:
+        info.update(act='call', why='raise unavailable')
+        return 'call', 0.0, info
+    if int(n_opp or 1) == 1 and ctx.get('facing_stack') is not None:
+        oc = ctx.get('facing_contrib')
+        oc = call_target if oc is None else max(0.0, float(oc))
+        cap = min(cap, oc + max(0.0, float(ctx['facing_stack'])))
+        if cap <= call_target:
+            info.update(act='call', why='opponent already all-in')
+            return 'call', 0.0, info
+    else:
+        oc = call_target
+
+    denom = max(1.0, float(pot) + 2.0*float(tocall))
+    # A full raise increment cannot exceed the current wager. This floor is
+    # conservative when earlier raises had smaller increments; a short
+    # effective all-in remains a valid candidate.
+    floor = call_target + max(float(tocall), call_target)
+    targets = {cap}
+    for mult in (0.5, 1.0, 1.5):
+        targets.add(min(cap, max(floor, hc + denom*mult)))
+
+    items = [(c, w) for c, w in R.range_items(opp_range)
+             if not (set(c) & dead)] if opp_range else []
+    mass = sum(w for _, w in items)
+    if int(n_opp or 1) != 1 or mass <= 0:
+        target = min(cap, max(floor, hc + denom))
+        info.update(act='raise', target=target, why='exact nuts value raise')
+        return 'raise', (target-hc)/denom, info
+
+    scores = {tuple(c): bot.eval7(list(c) + list(board)) for c, _ in items}
+    def eq_of(rows):
+        total = sum(w for _, w in rows)
+        return (sum(w*(0.5 if scores[tuple(c)] == mine else 1.0)
+                    for c, w in rows)/total) if total else 0.0
+
+    call_ev = eq_of(items)*(float(pot) + float(tocall)) - float(tocall)
+    best = None
+    for target in sorted(targets):
+        if target <= call_target:
+            continue
+        inc = target-hc
+        opp_call = max(0.0, target-oc)
+        cont = R.perceived_continue_range(
+            opp_range, board, street,
+            opp_call/max(1.0, float(pot)+inc), profile=profile)
+        rows = [(c, w) for c, w in R.range_items(cont)
+                if tuple(c) in scores and not (set(c) & dead)]
+        cm = sum(w for _, w in rows)
+        cp = max(0.0, min(1.0, cm/mass))
+        ev = ((1.0-cp)*float(pot) + cp*(
+            eq_of(rows)*(float(pot)+inc+opp_call)-inc))
+        info['candidates'].append({'target': target, 'ev': ev,
+                                   'continue_p': cp})
+        # Equal EV favors the smaller raise, rather than needless all-in.
+        if best is None or ev > best[0] + 1e-9:
+            best = (ev, target)
+    info.update(sizing_model='heads_up_river_value_ev', call_ev=call_ev)
+    if best is None or best[0] < call_ev - 1e-9:
+        info.update(act='call', why='raise EV below call EV (split-pot range)')
+        return 'call', 0.0, info
+    info.update(act='raise', target=best[1], why='exact nuts best value target')
+    return 'raise', (best[1]-hc)/denom, info
+
+
 def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                     made_now, opp_range, pot, tocall, stack, committed, rng,
                     allow_raise=True, call_eq=None, call_need=None,
@@ -2051,6 +2147,15 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     """
     rel_ps = plan_state.get('rel', 0.5)
     has_c = bool(profile.get('concepts'))
+
+    plan_state.pop('_last_river_nuts_value', None)
+    nuts = river_nut_value_response(
+        profile, hero, board, street, opp_range, pot, tocall, stack,
+        hero_contrib, response_context, n_opp, allow_raise)
+    if nuts is not None:
+        act, mult, info = nuts
+        plan_state['_last_river_nuts_value'] = info
+        return act, mult, need, info['why']
 
     # F8-D4: raise eligibility keeps legacy eq/need.  These two values are used
     # only when the response has reached an actual call-vs-fold choice.
@@ -3113,7 +3218,10 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # kind 를 넘기며(action_events._response_kind), 예전 response_kind=None +
         # checked_before 호환 분기는 직접 호출 전용이라 제거했다.
         _is_checkraise_spot = (response_kind == 'check_then_face_bet')
-        if _is_checkraise_spot and can_raise:
+        _river_nuts_response = river_nut_value_response(
+            profile, hero, board, street, opp_range, pot, tocall, stack,
+            hero_contrib, response_context, n_opp, can_raise)
+        if _is_checkraise_spot and can_raise and _river_nuts_response is None:
             _ckr = checkraise_decision(
                 hero, board, profile, plan_state, pot, tocall, stack, street,
                 seed=(checkraise_seed if checkraise_seed is not None else seed),
@@ -3167,7 +3275,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         # 체크레이즈 gate가 거절했거나, 아직 체크하지 않은 일반 facing-bet 상태.
         # 체크 후 마주한 벳(check_then_face_bet)이면 generic reraise/bluff raise는 금지한다.
         # raise 권리가 닫힌 incomplete-allin 상태도 계획 단계에서 raise를 제거한다.
-        _direct_raise = bool(can_raise and not _is_checkraise_spot)
+        _direct_raise = bool(can_raise and (
+            not _is_checkraise_spot or _river_nuts_response is not None))
         act, mult, need, why = decide_response(
             profile, hero, board, street, plan, plan_state, eq, need,
             made_now, opp_range, pot, tocall, stack, committed, rng,
@@ -3181,7 +3290,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
         plan_state['_last_response_boundary'] = {
             'eq': float(_call_eq if (_call_eq is not None and _call_need is not None) else eq),
             'need': float(need), 'act': act}
-        _source = ('checkraise_declined' if _is_checkraise_spot else 'generic_response')
+        _source = ('river_nuts_value' if _river_nuts_response is not None else
+                   'checkraise_declined' if _is_checkraise_spot else 'generic_response')
         plan_state['_last_response_source'] = _source
         plan_state.setdefault('acts', []).append(why)
         _rp = {
@@ -3215,6 +3325,9 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
             # 종전 식은 500으로 50을 누락했다.
             _hc = max(0.0, float(hero_contrib or 0))
             amt, _max_target = response_raise_target(pot, tocall, mult, stack, _hc)
+            _nuts_size = plan_state.get('_last_river_nuts_value')
+            if _nuts_size and _nuts_size.get('act') == 'raise':
+                amt = min(_max_target, float(_nuts_size['target']))
             # call target도 street 총 contribution 좌표다.
             # amt를 단순 tocall과 비교하면 이미 넣은 칩만큼 좌표가 어긋난다.
             _call_target = _hc + float(tocall)
@@ -3224,8 +3337,12 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
                 _rp['why'] = _rp['why'] + ' | raise target <= call target → call'
                 record_response_plan(plan_state, street, _rp)
                 return ('call', tocall), eq, need
-            amt, _shape = shape_planned_target(
-                amt, profile, pot, _max_target, seed=size_shape_seed)
+            if _nuts_size and _nuts_size.get('act') == 'raise':
+                _shape = {'called': False, 'changed': False, 'before': amt,
+                          'after': amt, 'source': 'river_nuts_value'}
+            else:
+                amt, _shape = shape_planned_target(
+                    amt, profile, pot, _max_target, seed=size_shape_seed)
             plan_state['_last_size_shape'] = dict(_shape)
             _rp['target'] = int(amt)
             record_response_plan(plan_state, street, _rp)
