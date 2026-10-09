@@ -19,6 +19,7 @@ const applyCtx = {S:{}, $: id => id === '#waitingLobby' ? (waitingNode ? {} : nu
   : ({'#overlay':overlay,'#mainrow':mainrow,'#hero':hero}[id] || {}),
   clearTimeout(){},setTimeout(){return 1;},sync(){},closeRaise(){},esc:x=>x,
   showOverlayPersistent(){shown++;waitingNode=true;},
+  noteTiming(){},noteSchedule(){},
   stopActionClock(){},hideOverlay(){dismissed++;}};
 vm.createContext(applyCtx);
 vm.runInContext(source.slice(source.indexOf('function apply(resp)'), source.indexOf('  if (resp.no_game)', source.indexOf('function apply(resp)'))) + '}', applyCtx);

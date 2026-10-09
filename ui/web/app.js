@@ -3687,6 +3687,29 @@ async function req(path, body) {
   return { status: res.status, json };
 }
 
+// Both transports deliver the same events. Sequence de-duplication prevents
+// double bets / animation when a previously buffered stream catches up.
+function stepEventReceiver(onStart, onEvent, onFinal, onError) {
+  const seen = new Set();
+  let started = false, finished = false;
+  return (obj) => {
+    if (finished || !obj) return;
+    if (obj.type === 'stream_start') {
+      if (!started) { started = true; onStart(obj); }
+    } else if (obj.type === 'bot_action') {
+      if (seen.has(obj.seq)) return;
+      seen.add(obj.seq);
+      onEvent(obj);
+    } else if (obj.type === 'final') {
+      finished = true;
+      onFinal(obj.payload);
+    } else if (obj.type === 'error') {
+      finished = true;
+      onError(new Error(obj.error || '서버 스트림 오류'));
+    }
+  };
+}
+
 async function callStepStream(body, msg) {
   if (S.busy) {
     toast('앞선 요청을 처리하는 중입니다 — 끝나면 다시 눌러 주세요');
@@ -3887,81 +3910,109 @@ async function callStepStream(body, msg) {
     playNext();
   };
 
+  const controller = new AbortController();
+  const requestId = crypto.randomUUID();
+  const requestBody = Object.assign({}, body, {request_id: requestId});
+  let progressTimer = null, progressCursor = 0, streamError = null, progressStopped = false;
+  const receive = stepEventReceiver(
+    (obj) => {
+      streamId = obj.stream_id || null;
+      // A buffered stream_start has an old timestamp. Fresh /ready and
+      // progress responses synchronize the clock; replay never moves it back.
+    },
+    (obj) => {
+      noteSchedule([obj.event || {}]);
+      pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
+    },
+    (payload) => { finalPayload = payload; maybeFinish(); },
+    (error) => { streamError = error; resolveDrain(null); }
+  );
+  const pollProgress = async () => {
+    if (progressStopped || settled || finalPayload || streamError) return;
+    const pollController = new AbortController();
+    const timeout = setTimeout(() => pollController.abort(), 4000);
+    try {
+      const response = await fetch('/api/step-progress?request_id=' +
+        encodeURIComponent(requestId) + '&after=' + progressCursor,
+        {cache: 'no-store', signal: pollController.signal});
+      if (response.ok && !settled && !streamError) {
+        const progress = await response.json();
+        if (progressStopped || settled || streamError) return;
+        if (progress.server_now_ms) S.clockOffset = progress.server_now_ms - Date.now();
+        (progress.messages || []).forEach(receive);
+        progressCursor = Number(progress.cursor || progressCursor);
+      }
+    } catch (_) { /* The stream remains active; retry the read, never the action. */ }
+    finally {
+      clearTimeout(timeout);
+      if (!progressStopped && !settled && !finalPayload && !streamError) progressTimer = setTimeout(pollProgress, 1000);
+    }
+  };
+
   setBusy(true, msg, true);
   // HERO 액션 뒤 0.8초 호흡은 화면에만 적용한다. 서버 계산은 즉시 시작한다.
   heroPauseUntil = Date.now() + HERO_ACTION_PAUSE;
+  progressTimer = setTimeout(pollProgress, 1000);
   try {
-    const res = await fetch('/api/step-stream', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
+    const transport = (async () => {
+      const res = await fetch('/api/step-stream', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
 
-    if (!res.ok) {
-      let j = null;
-      try { j = await res.json(); } catch (e) {}
-      if (res.status === 409) {
-        toast((j && j.error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
-        const cur = await req('/api/state', null);
-        if (cur.status === 200 && cur.json) apply(cur.json);
-        return null;
-      }
-      throw new Error((j && j.error) || ('서버 오류 ' + res.status));
-    }
-
-    if (!res.body || !res.body.getReader) {
-      throw new Error('이 브라우저가 스트리밍 응답을 지원하지 않습니다');
-    }
-
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-
-    while (true) {
-      const part = await reader.read();
-      buf += dec.decode(part.value || new Uint8Array(), {stream: !part.done});
-      let nl;
-      while ((nl = buf.indexOf('\n')) >= 0) {
-        const line = buf.slice(0, nl).trim();
-        buf = buf.slice(nl + 1);
-        if (!line) continue;
-        const obj = JSON.parse(line);
-        if (obj.type === 'stream_start') {
-          streamId = obj.stream_id || null;
-          if (obj.server_now_ms) S.clockOffset = obj.server_now_ms - Date.now();
-        } else if (obj.type === 'bot_action') {
-          noteSchedule([obj.event || {}]);
-          pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
-        } else if (obj.type === 'final') {
-          finalPayload = obj.payload;
-          maybeFinish();
-        } else if (obj.type === 'error') {
-          throw new Error(obj.error || '서버 스트림 오류');
+      if (!res.ok) {
+        let j = null;
+        try { j = await res.json(); } catch (e) {}
+        if (res.status === 409) {
+          toast((j && j.error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
+          const cur = await req('/api/state', null);
+          if (cur.status === 200 && cur.json) apply(cur.json);
+          return null;
         }
+        throw new Error((j && j.error) || ('서버 오류 ' + res.status));
       }
-      if (part.done) break;
-    }
 
-    const tail = buf.trim();
-    if (tail) {
-      const obj = JSON.parse(tail);
-      if (obj.type === 'stream_start') {
-        streamId = obj.stream_id || null;
-      } else if (obj.type === 'bot_action') {
-        pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
-      } else if (obj.type === 'final') {
-        finalPayload = obj.payload;
-        maybeFinish();
-      } else if (obj.type === 'error') {
-        throw new Error(obj.error || '서버 스트림 오류');
+      if (!res.body || !res.body.getReader) {
+        throw new Error('이 브라우저가 스트리밍 응답을 지원하지 않습니다');
       }
-    }
 
-    if (!finalPayload && !settled) {
-      throw new Error('서버 스트림이 최종 상태 없이 종료됐습니다');
-    }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
 
-    return await drained;
+      while (true) {
+        const part = await reader.read();
+        buf += dec.decode(part.value || new Uint8Array(), {stream: !part.done});
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const obj = JSON.parse(line);
+          receive(obj);
+          if (streamError) throw streamError;
+        }
+        if (part.done) break;
+      }
+
+      const tail = buf.trim();
+      if (tail) {
+        const obj = JSON.parse(tail);
+        receive(obj);
+        if (streamError) throw streamError;
+      }
+
+      if (!finalPayload && !settled) {
+        throw new Error('서버 스트림이 최종 상태 없이 종료됐습니다');
+      }
+
+      return await drained;
+    })();
+    const result = await Promise.race([transport, drained]);
+    if (streamError) throw streamError;
+    return result;
   } catch (e) {
     if (!settled) {
       settled = true;
@@ -3974,6 +4025,9 @@ async function callStepStream(body, msg) {
     } catch (_) {}
     return null;
   } finally {
+    progressStopped = true;
+    clearTimeout(progressTimer);
+    controller.abort();
     setBusy(false);
     if (S.queuedNew) {
       const q = S.queuedNew; S.queuedNew = null;

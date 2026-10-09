@@ -59,7 +59,51 @@ LAST_PLAY_PRESENCE = 0.0
 # '자리 비움'으로 판정해 HERO 를 오프스크린(동기화 화면)으로 넘기지 않게 한다.
 PLAY_INFLIGHT = 0
 PLAY_INFLIGHT_LOCK = threading.Lock()
-PLAY_PATHS = ('/api/state', '/api/step', '/api/ready', '/api/action-clock')
+PLAY_PATHS = ('/api/state', '/api/step', '/api/step-stream', '/api/step-progress',
+              '/api/ready', '/api/action-clock')
+
+# A proxy may buffer NDJSON even though the engine already emitted an action.
+# Read-only snapshots recover the same public events without submitting the
+# HERO action again or waiting for the gameplay lock. IDs are client-generated
+# random values; retain only a bounded, short-lived set of requests.
+STEP_PROGRESS = {}
+STEP_PROGRESS_LOCK = threading.Lock()
+
+
+def _step_progress_open(request_id):
+    if not isinstance(request_id, str) or not (16 <= len(request_id) <= 80):
+        return None
+    now = time.monotonic()
+    with STEP_PROGRESS_LOCK:
+        for key, value in list(STEP_PROGRESS.items()):
+            if now - value['updated'] > 120:
+                del STEP_PROGRESS[key]
+        if request_id in STEP_PROGRESS:
+            return None
+        while len(STEP_PROGRESS) >= 32:
+            del STEP_PROGRESS[min(STEP_PROGRESS, key=lambda k: STEP_PROGRESS[k]['updated'])]
+        STEP_PROGRESS[request_id] = {'updated': now, 'messages': []}
+    return request_id
+
+
+def _step_progress_emit(request_id, message):
+    if request_id is None:
+        return
+    with STEP_PROGRESS_LOCK:
+        row = STEP_PROGRESS.get(request_id)
+        if row is not None:
+            row['messages'].append(message)
+            row['updated'] = time.monotonic()
+
+
+def _step_progress_read(request_id, after):
+    with STEP_PROGRESS_LOCK:
+        row = STEP_PROGRESS.get(request_id)
+        if row is None or time.monotonic() - row['updated'] > 120:
+            return None
+        # Publication is append-only. Do not expose private engine state here.
+        return {'messages': list(row['messages'][after:]),
+                'cursor': len(row['messages']), 'server_now_ms': int(time.time() * 1000)}
 
 
 def _play_absent(now, limit=20):
@@ -1817,6 +1861,7 @@ class H(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(b)))
+        self.send_header('Cache-Control', 'no-store')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers(); self.wfile.write(b)
 
@@ -1909,6 +1954,13 @@ class H(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlsplit(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
+        if path == '/api/step-progress':
+            try:
+                after = max(0, int(query.get('after', ['0'])[0]))
+            except ValueError:
+                return self._send(400, {'error': 'invalid progress cursor'})
+            progress = _step_progress_read(query.get('request_id', [''])[0], after)
+            return self._send(200, progress or {'messages': [], 'cursor': 0})
         if path == '/api/ready':
             LAST_PLAY_PRESENCE = time.time()
             # 워커가 아직 다른 테이블을 돌리는 중인가. 결과 화면이 이걸 보고
@@ -2226,11 +2278,17 @@ class H(BaseHTTPRequestHandler):
                     # 일반 /api/step 은 기존 호환 경로. 실제 플레이 액션만
                     # 스트림 경로를 쓰며, 1.5초 모션 템포는 프론트가 그대로 유지한다.
                     if stream:
+                        request_id = _step_progress_open(body.get('request_id'))
+                        def _publish(message):
+                            # Publish before the socket write: a disconnected or
+                            # buffered stream must not hide computed actions.
+                            _step_progress_emit(request_id, message)
+                            return self._stream_line(message)
                         self._stream_start()
                         alive = [True]
                         stream_id = _stream_gate_open()
                         seq = [0]
-                        alive[0] = self._stream_line({
+                        alive[0] = _publish({
                             'type': 'stream_start',
                             'stream_id': stream_id,
                             'server_now_ms': int(time.time() * 1000),
@@ -2239,16 +2297,17 @@ class H(BaseHTTPRequestHandler):
                         def _emit_bot(event):
                             if _sched is not None:
                                 _sched.stamp(event)
-                            if not alive[0]:
-                                return
                             seq[0] += 1
                             cur = seq[0]
-                            alive[0] = self._stream_line({
+                            message = {
                                 'type': 'bot_action',
                                 'stream_id': stream_id,
                                 'seq': cur,
                                 'event': event,
-                            })
+                            }
+                            _step_progress_emit(request_id, message)
+                            if alive[0]:
+                                alive[0] = self._stream_line(message)
                             # UI는 이벤트를 기존 템포로 재생하지만,
                             # 다음 봇 계산은 화면 애니메이션 완료를 기다리지 않는다.
 
@@ -2259,11 +2318,11 @@ class H(BaseHTTPRequestHandler):
                                  if a is not None else _step_sched())
                         except Exception as e:
                             traceback.print_exc()
+                            message = {'type': 'error',
+                                       'error': '%s: %s' % (type(e).__name__, e)}
+                            _step_progress_emit(request_id, message)
                             if alive[0]:
-                                self._stream_line({
-                                    'type': 'error',
-                                    'error': '%s: %s' % (type(e).__name__, e),
-                                })
+                                self._stream_line(message)
                             return
                         finally:
                             _stream_gate_close(stream_id)
@@ -2280,11 +2339,10 @@ class H(BaseHTTPRequestHandler):
                             _last = _wrap(r)
                         if timed_out:
                             _last['auto_folded'] = True
+                        message = {'type': 'final', 'payload': _last}
+                        _step_progress_emit(request_id, message)
                         if alive[0]:
-                            self._stream_line({
-                                'type': 'final',
-                                'payload': _last,
-                            })
+                            self._stream_line(message)
                         return
 
                     r = _step_sched(a, amt) if a is not None else _step_sched()
