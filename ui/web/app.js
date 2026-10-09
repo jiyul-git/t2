@@ -1659,6 +1659,8 @@ function stopReplay() {
 function clearBubbles() {
   stopReplay();
   document.querySelectorAll('.bubble').forEach((b) => b.remove());
+  document.querySelectorAll('#seats .pod.bubble-front').forEach((p) =>
+    p.classList.remove('bubble-front'));
 }
 function actionText(e) {
   const t = ACT[e.action] || e.action;
@@ -1704,6 +1706,7 @@ function bubbleAt(seat, e) {
   const b = document.createElement('div');
   b.className = 'bubble' + (e.action === 'fold' ? ' fold' : '');
   b.textContent = actionText(e);
+  pod.classList.add('bubble-front');
   pod.appendChild(b);
 }
 
@@ -2835,7 +2838,7 @@ function potAwards(v) {
       if (!ws.length) return;
 
       const split = ws.length > 1;
-      const base = i === 0 ? 'MAIN' : `SIDE ${i}`;
+      const base = real.length === 1 ? '승리' : (i === 0 ? 'MAIN' : `SIDE ${i}`);
 
       ws.forEach((w) =>
         add(
@@ -2859,7 +2862,7 @@ function potAwards(v) {
     ws.forEach((w) =>
       add(
         w,
-        split ? 'SPLIT' : 'MAIN',
+        split ? '공동 승리' : '승리',
         split,
         0
       )
@@ -3712,6 +3715,8 @@ function stepEventReceiver(onStart, onEvent, onFinal, onError) {
 }
 
 async function callStepStream(body, msg) {
+  // Scheduled action times include thinking; allow a brief visible result frame.
+  const BOT_ACTION_FEEDBACK_MS = 550;
   if (S.busy) {
     toast('앞선 요청을 처리하는 중입니다 — 끝나면 다시 눌러 주세요');
     return null;
@@ -3877,7 +3882,8 @@ async function callStepStream(body, msg) {
         setTimeout(() => {
           playing = false;
           playNext();
-        }, (terminalFold(ss, e) || e.act_at_ms) ? 0 : paceMs(e));
+        }, e.act_at_ms ? BOT_ACTION_FEEDBACK_MS
+           : terminalFold(ss, e) ? 0 : paceMs(e));
       };
 
       // 새 스트리트는 기존 재생과 똑같이 보드를 먼저 확인한 뒤 첫 액션을 보여준다.
@@ -3907,6 +3913,11 @@ async function callStepStream(body, msg) {
 
   const pushEvent = (e) => {
     if (!e || settled) return;
+    if (computingHint) {
+      const row = $('#mainrow');
+      if (row) row.innerHTML = '';
+      computingHint = false;
+    }
     queue.push(e);
     playNext();
   };
@@ -3915,6 +3926,12 @@ async function callStepStream(body, msg) {
   const requestId = crypto.randomUUID();
   const requestBody = Object.assign({}, body, {request_id: requestId});
   let progressTimer = null, progressCursor = 0, streamError = null, progressStopped = false;
+  let computingHint = false;
+  const computingTimer = setTimeout(() => {
+    if (settled || playing || queue.length || finalPayload || streamError) return;
+    const row = $('#mainrow');
+    if (row) { row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>'; computingHint = true; }
+  }, 1500);
   const receive = stepEventReceiver(
     (obj) => {
       streamId = obj.stream_id || null;
@@ -4028,6 +4045,7 @@ async function callStepStream(body, msg) {
   } finally {
     progressStopped = true;
     clearTimeout(progressTimer);
+    clearTimeout(computingTimer);
     controller.abort();
     setBusy(false);
     if (S.queuedNew) {
