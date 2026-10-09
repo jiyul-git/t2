@@ -3497,6 +3497,13 @@ async function readReady() {
     return ready;
   } finally { clearTimeout(timer); }
 }
+function updateBreakFromReady(ready) {
+  // Finish the last visible hand before covering it with the break sheet.
+  if (S.breakOpen || (ready.break_remaining > 0 && S.historyHandComplete)) {
+    renderBreak(ready);
+  }
+}
+
 function renderBreak(ready) {
   if (!ready.break_remaining && !ready.working) {
     if (S.breakOpen) { S.breakOpen = false; hideOverlay(); }
@@ -3740,6 +3747,24 @@ async function req(path, body) {
   let json = null;
   try { json = await res.json(); } catch (e) { json = null; }
   return { status: res.status, json };
+}
+
+function resumeAfterBreak(body, msg) {
+  const epoch = S.epoch || 0;
+  const poll = async () => {
+    if (!epochAlive(epoch)) return;
+    try {
+      const ready = await readReady();
+      if (!epochAlive(epoch)) return;
+      renderBreak(ready);
+      if (!ready.break_remaining && !ready.working) {
+        call('/api/step', body, msg);
+        return;
+      }
+    } catch (_) { /* Keep the result; retry the readiness request. */ }
+    S.autoTimer = setTimeout(poll, 1000);
+  };
+  S.autoTimer = setTimeout(poll, 1000);
 }
 
 // Both transports deliver the same events. Sequence de-duplication prevents
@@ -4135,6 +4160,12 @@ async function call(path, body, msg) {
   try {
     const r = await req(path, body);
     if (r.status === 409) {
+      if (path === '/api/step' && body && body.action === null &&
+          r.json && r.json.code === 'break_active') {
+        renderBreak(r.json);
+        resumeAfterBreak(body, msg);
+        return null;
+      }
       toast((r.json && r.json.error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
       const s = await req('/api/state', null);          // 추정하지 않고 다시 받는다
       if (s.status === 200 && s.json) apply(s.json);
@@ -4660,7 +4691,7 @@ setInterval(async () => {
   clockRequestPending = true;
   try {
     const ready = await readReady();
-    if (S.breakOpen) renderBreak(ready);
+    updateBreakFromReady(ready);
   } catch (_) { /* Retain the last confirmed value; retry next tick. */ }
   finally { clockRequestPending = false; }
 }, 1000);

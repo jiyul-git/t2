@@ -2007,6 +2007,7 @@ class H(BaseHTTPRequestHandler):
                     finally:
                         LOCK.release()
                 working = bool(st.get('vclock_settle_pending'))
+                _sync_clock(st)
                 timing = _ui_timing(st)
                 timing['working'] = working
                 timing['vclock_coverage_seconds'] = int(
@@ -2019,6 +2020,7 @@ class H(BaseHTTPRequestHandler):
             else:
                 fut = PENDING.get('future')
                 working = bool(fut and not fut.done())
+                _sync_clock(st)
                 timing = _ui_timing(st)
                 timing['working'] = working
                 timing['worker_elapsed_seconds'] = int(
@@ -2281,8 +2283,14 @@ class H(BaseHTTPRequestHandler):
                     _f = L._load_field(_st['field'])
                     if _st.get('busted') or _f.remaining() <= 1:
                         _last = _game_over(); return self._send(200, _last)
+                    # /ready and the next-deal request can straddle 55:00.
+                    # Resolve the wall-clock boundary before checking the gate,
+                    # rather than letting _step raise a generic ValueError.
+                    _sync_clock(_st)
                     if _st.get('ui_break_pending') and _ui_timing(_st)['break_remaining']:
-                        return self._send(409, {'error': '브레이크가 끝난 뒤 재개됩니다.', 'current': _last})
+                        L.save(_st)
+                        return self._send(409, dict(_ui_timing(_st),
+                            code='break_active', current=_last))
                     a = body.get('action')
                     timed_out = False
                     deadline = _st.get('ui_action_deadline')
