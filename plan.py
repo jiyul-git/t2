@@ -2079,11 +2079,11 @@ def river_nut_value_response(profile, hero, board, street, opp_range,
         oc = call_target
 
     denom = max(1.0, float(pot) + 2.0*float(tocall))
-    # A full raise increment cannot exceed the current wager. This floor is
-    # conservative when earlier raises had smaller increments; a short
-    # effective all-in remains a valid candidate.
-    floor = call_target + max(float(tocall), call_target)
-    targets = {cap}
+    # The betting round owns the actual last full-raise increment. Facing
+    # to-call is not the same increment after a hero bet or short all-in.
+    min_increment = float(ctx.get('min_raise') or max(float(tocall), call_target))
+    floor = call_target + min_increment
+    targets = {cap, min(cap, floor)}
     for mult in (0.5, 1.0, 1.5):
         targets.add(min(cap, max(floor, hc + denom*mult)))
 
