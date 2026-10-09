@@ -19,9 +19,9 @@ PLAYER = 'hero'
 
 
 def FIELD_BACKEND():
-    """새 대회의 봇 필드 진행 방식. real(기본) | hybrid(관찰되지 않는 테이블은 coarse_sim)."""
-    v = os.environ.get('T2_FIELD_BACKEND', 'real').strip().lower()
-    return v if v in ('real', 'hybrid') else 'real'
+    """Human tables stay real; calibrated unobserved tables use hybrid by default."""
+    v = os.environ.get('T2_FIELD_BACKEND', 'hybrid').strip().lower()
+    return v if v in ('real', 'hybrid') else 'hybrid'
 LEGACY_SCHEDULE = [
     dict(fmt='standard', minute=0, buyin=1000, bot_entries=99,
          late_minutes=60, max_reentries=2),
@@ -490,6 +490,52 @@ class Store:
         if fd.get('format_rules') is not None:
             fd['format_rules']['reentry'] = bool(ev['rules']['reentry'] and not closed)
 
+    def prepare_recovery(self, now=None):
+        """Recover bot fields without changing chips, ranks or wallet receipts."""
+        import coarse_sim as CS
+        now = time.time() if now is None else now
+        changed = 0
+        with self._db() as db:
+            active = db.execute("SELECT value FROM meta WHERE key='active'").fetchone()
+            active = active[0] if active else None
+            ids = [r[0] for r in db.execute('SELECT id FROM tournaments WHERE finished=0')]
+            for tid in ids:
+                ev = self._event(db, tid)
+                rules, st = ev['rules'], ev['state']
+                obsolete = self.uses_default_schedule and rules['fmt'] not in {
+                    spec['fmt'] for spec in DEFAULT_SCHEDULE}
+                settled = bool(ev['entries']) and all(
+                    e['status'] == 'cancelled' or
+                    e['status'] in ('busted', 'finished') and e['rank'] is not None
+                    for e in ev['entries'])
+                dirty = False
+                if obsolete and settled and now >= ev['closes_at']:
+                    if not rules.get('retired'):
+                        rules['retired'] = True
+                        dirty = True
+                elif (FIELD_BACKEND() == 'hybrid' and CS.available(rules['fmt'])
+                      and rules.get('field_backend') != 'hybrid'):
+                    rules['backend_transitions'] = list(rules.get('backend_transitions') or []) + [
+                        {'from': rules.get('field_backend', 'real'), 'to': 'hybrid',
+                         'reason': 'approved_restart_recovery', 'at': now}]
+                    rules['field_backend'] = 'hybrid'
+                    if st and not any(st.get(k) for k in
+                                      ('hand_seed', 'others_pending', 'vclock_settle_pending')):
+                        st['field'].setdefault('format_rules', {})['field_backend'] = 'hybrid'
+                        st['background_pending'] = {}
+                        st.pop('background_pending_key', None)
+                    dirty = True
+                if tid != active and ev['enter_requested']:
+                    db.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', ('enter:' + tid, '0'))
+                    if st:
+                        st['hero_ready'] = False
+                    dirty = True
+                if dirty:
+                    db.execute('UPDATE tournaments SET rules=?,state=?,revision=revision+1 WHERE id=?',
+                               (json.dumps(rules), json.dumps(st) if st else None, tid))
+                    changed += 1
+        return changed
+
     def jobs(self, now=None):
         now = time.time() if now is None else now
         with self._db() as db:
@@ -497,7 +543,8 @@ class Store:
                    'WHERE starts_at<=? AND finished=0 AND ((closed=0 AND closes_at>?) OR EXISTS '
                    "(SELECT 1 FROM entries e WHERE e.tournament_id=tournaments.id AND e.status<>'cancelled')) "
                    'ORDER BY starts_at', (now, now))]
-            return [self._event(db, tid) for tid in ids]
+            events = [self._event(db, tid) for tid in ids]
+            return [ev for ev in events if not ev['rules'].get('retired')]
 
     def catalog(self, now=None):
         now = time.time() if now is None else now
@@ -524,17 +571,16 @@ class Store:
                 public_rules = {key: value for key, value in r.items() if key != 'seed'}
                 progress = _public_progress(fd)
                 if progress is not None:
-                    # Wall-clock play time must not freeze with a worker snapshot.
-                    # Keep the simulated timestamp separately for diagnostics;
-                    # completed events retain their final duration.
                     progress['simulated_seconds'] = progress['play_seconds']
-                    if not ev['finished']:
-                        progress['play_seconds'] = int(active_seconds(now - ev['starts_at']))
+                    progress['target_seconds'] = int(active_seconds(now - ev['starts_at']))
+                    progress['recovering'] = bool(not ev['finished'] and not r.get('retired') and
+                        progress['target_seconds'] - (progress['play_seconds'] or 0) > 60)
                 events.append(dict(public_rules, id=tid, key=r['fmt'], starts_at=ev['starts_at'],
                                    progress=progress,
                                    closes_at=ev['closes_at'], entries=count,
                                    remaining=sum(p.get('stack', 0) > 0 for p in fd.get('players', {}).values()) if fd else count,
-                                   status='finished' if ev['finished'] else
+                                   status='retired' if r.get('retired') else
+                                          'finished' if ev['finished'] else
                                           'scheduled' if now < ev['starts_at'] else
                                           'closed' if closed else 'late_registration',
                                    prize_pool=count * r['buyin'],

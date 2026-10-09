@@ -33,6 +33,7 @@ class EconomyTests(unittest.TestCase):
     def start(self, reserve=True):
         if reserve:
             self.s.reserve(TID, now=START - 1)
+            self.s.request_enter(TID, now=START - 1)
         r = SR.advance(self.s.event(TID), 0)
         self.assertTrue(self.s.save_state(TID, r['state'], r['revision'], r['assignments'], now=START))
         return self.s.event(TID)['state']
@@ -57,12 +58,14 @@ class EconomyTests(unittest.TestCase):
         self.assertEqual(other.wallet()['balance'], 9000)
         self.assertEqual(len(other.wallet()['transactions']), 2)
 
-    def test_lobby_clock_advances_without_worker_and_excludes_break(self):
+    def test_lobby_reports_recovery_without_mixing_clock_and_stacks(self):
         self.start()
         before = self.s.event(TID)['state']
         rows = self.s.catalog(START + 3720)['tournaments']
         event = next(row for row in rows if row['id'] == TID)
-        self.assertEqual(event['progress']['play_seconds'], 3420)
+        self.assertEqual(event['progress']['play_seconds'], 0)
+        self.assertEqual(event['progress']['target_seconds'], 3420)
+        self.assertTrue(event['progress']['recovering'])
         self.assertEqual(event['progress']['simulated_seconds'], 0)
         self.assertEqual(self.s.event(TID)['state'], before)
 
@@ -73,6 +76,72 @@ class EconomyTests(unittest.TestCase):
         event = next(row for row in self.s.catalog(START + 3720)['tournaments']
                      if row['id'] == TID)
         self.assertEqual(event['progress']['play_seconds'], 0)
+
+    def test_reservation_preserves_full_stack_until_first_admission(self):
+        s = TS.Store(self.tmp.name + '/first', 10000, [dict(SPEC[0], bot_entries=18)])
+        s.ensure_schedule(START - 1)
+        s.reserve(TID, now=START - 1)
+        r = SR.advance(s.event(TID), 60, budget=64, parallel=False)
+        self.assertEqual(r['assignments'], {})
+        s.save_state(TID, r['state'], r['revision'], r['assignments'], now=START + 60)
+        self.assertIsNone(s.event(TID)['entries'][0]['pid'])
+        s.set_active(TID)
+        s.request_enter(TID, now=START + 60)
+        r = SR.advance(s.event(TID), 120, budget=64, parallel=False)
+        pid = r['assignments'][1]
+        self.assertEqual(r['state']['field']['players'][str(pid)]['stack'],
+                         s.event(TID)['rules']['start_stack'])
+        self.assertTrue(r['state']['hero_ready'])
+
+    def test_restart_migrates_real_background_without_changing_wallet_or_chips(self):
+        st = self.start()
+        with self.s._db() as db:
+            ev = self.s._event(db, TID)
+            ev['rules']['field_backend'] = 'real'
+            st['field']['format_rules']['field_backend'] = 'real'
+            db.execute('UPDATE tournaments SET rules=?,state=? WHERE id=?',
+                       (json.dumps(ev['rules']), json.dumps(st), TID))
+        chips = {pid: p['stack'] for pid, p in st['field']['players'].items()}
+        wallet = self.s.wallet()
+        self.s.prepare_recovery(START + 100)
+        ev = self.s.event(TID)
+        self.assertEqual(ev['rules']['field_backend'], 'hybrid')
+        self.assertEqual(ev['state']['field']['format_rules']['field_backend'], 'hybrid')
+        self.assertEqual({pid: p['stack'] for pid, p in ev['state']['field']['players'].items()}, chips)
+        self.assertEqual(self.s.wallet(), wallet)
+
+    def test_small_budget_publishes_generated_window(self):
+        s = TS.Store(self.tmp.name + '/budget', 10000, [dict(SPEC[0], bot_entries=27)])
+        s.ensure_schedule(START - 1)
+        r = SR.advance(s.event(TID), 300, budget=1, parallel=False)
+        self.assertGreater(r['state']['field']['virtual_play_seconds'], 0)
+
+    def test_removed_format_retires_only_settled_personal_results(self):
+        self.bust(self.start())
+        self.s.uses_default_schedule = True
+        with self.s._db() as db:
+            ev = self.s._event(db, TID)
+            ev['rules']['fmt'] = 'deep'
+            db.execute('UPDATE tournaments SET rules=? WHERE id=?', (json.dumps(ev['rules']), TID))
+        before = self.s.event(TID)
+        wallet = self.s.wallet()
+        self.s.prepare_recovery(START + 10000)
+        after = self.s.event(TID)
+        self.assertTrue(after['rules']['retired'])
+        self.assertEqual(after['entries'], before['entries'])
+        self.assertEqual(after['state']['field'], before['state']['field'])
+        self.assertEqual(self.s.wallet(), wallet)
+        self.assertNotIn(TID, {ev['id'] for ev in self.s.jobs(START + 10000)})
+
+    def test_removed_format_does_not_retire_an_unsettled_live_seat(self):
+        self.start()
+        self.s.uses_default_schedule = True
+        with self.s._db() as db:
+            ev = self.s._event(db, TID)
+            ev['rules']['fmt'] = 'deep'
+            db.execute('UPDATE tournaments SET rules=? WHERE id=?', (json.dumps(ev['rules']), TID))
+        self.s.prepare_recovery(START + 10000)
+        self.assertFalse(self.s.event(TID)['rules'].get('retired'))
 
     def test_long_history_keeps_upcoming_catalog_and_active_result(self):
         rules = json.dumps(self.s.event(TID)['rules'])
@@ -465,6 +534,7 @@ class EconomyTests(unittest.TestCase):
         s = TS.Store(self.tmp.name + '/large', 10000, spec)
         s.ensure_schedule(START - 1)
         s.reserve(TID, now=START - 1)
+        s.request_enter(TID, now=START - 1)
         st = SR.advance(s.event(TID), 0)['state']
         self.assertEqual(len(st['field']['players']), 1000)
         self.assertEqual(len(st['field']['tables']), 112)

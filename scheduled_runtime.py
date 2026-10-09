@@ -28,7 +28,11 @@ def choose_job(jobs, cursor, active_id):
             return 0
         if waiting or ev.get('enter_requested'):
             return 1
-        return 2 if any(e['status'] != 'cancelled' for e in ev['entries']) else 3
+        start = ev.get('starts_at', 0)
+        registration_target = active_seconds(ev.get('closes_at', start) - start)
+        if job[1] < registration_target:
+            return 2
+        return 3 if any(e['status'] == 'playing' for e in ev['entries']) else 4
     first = min(map(priority, jobs))
     candidates = [job for job in jobs if priority(job) == first]
     return candidates[cursor % len(candidates)]
@@ -72,7 +76,12 @@ def _insert(st, event, at, available=None):
     for entry in event['entries']:
         if entry['status'] not in ('reserved', 'waiting') or entry.get('pid') is not None:
             continue
-        eligible = active_seconds(max(0.0, entry['created_at'] - event['starts_at']))
+        # Paying reserves a stack, not a seat already posting blinds. Seat the
+        # first entry only once the player requests admission.
+        if not event.get('enter_requested'):
+            continue
+        eligible = max(active_seconds(max(0.0, entry['created_at'] - event['starts_at'])),
+                       _enter_time(event))
         if eligible > at + 1e-9:
             continue
         tb = _seat(f, available)
@@ -182,7 +191,8 @@ def _pending_key(st):
     fd = st['field']
     tables = sorted((str(t), row.get('hands'), round(float(row.get('vclock_seconds', 0) or 0), 6),
                      tuple(row.get('pids') or ())) for t, row in fd['tables'].items())
-    return repr((fd.get('hand_no'), round(float(st.get('background_seconds', 0) or 0), 6),
+    return repr(((fd.get('format_rules') or {}).get('field_backend'),
+                 fd.get('hand_no'), round(float(st.get('background_seconds', 0) or 0), 6),
                  len(fd['players']), tables))
 
 
@@ -246,6 +256,18 @@ def advance(event, target, budget=18, parallel=True):
     if st.get('hand_seed') is not None or st.get('others_pending') or st.get('vclock_settle_pending'):
         raise ValueError('An unfinished interactive hand must settle before off-screen advancement')
 
+    backend = rules.get('field_backend', 'real')
+    if st['field'].setdefault('format_rules', {}).get('field_backend') != backend:
+        st['field']['format_rules']['field_backend'] = backend
+        st['background_pending'] = {}
+        st.pop('background_pending_key', None)
+    fd = st['field']
+    hero = (fd.get('players') or {}).get(str(fd.get('hero_pid'))) or {}
+    # After the human has busted, the whole remaining field is unobserved;
+    # keeping its final two tables on the real engine defeats fast recovery.
+    fd['format_rules']['unobserved_recovery'] = bool(
+        backend == 'hybrid' and st.get('offscreen') and hero.get('stack', 0) <= 0)
+
     pending = st.setdefault('background_pending', {})
     for key, queued in list(pending.items()):
         if isinstance(queued, dict):          # 예전 스냅샷: 테이블당 이벤트 1개
@@ -260,7 +282,9 @@ def advance(event, target, budget=18, parallel=True):
             float(f0.tables[hero_table].virtual_seconds) >= _enter_time(event)):
         st['hero_ready'] = True
     work = 0
-    while work < budget:
+    merge_due = False
+    while work < budget or merge_due:
+        merge_due = False
         f = L._load_field(st['field'])
         if f.remaining() <= 1:
             break
@@ -290,7 +314,10 @@ def advance(event, target, budget=18, parallel=True):
                       and tail(tb) < horizon]
             order = (sorted(missing, key=lambda x: (getattr(x, 'virtual_seconds', 0), x.id)) +
                      sorted(extend, key=lambda x: (tail(x), x.id)))
-            selected = order[:budget - work]
+            # A partial window needs every missing table before it can merge.
+            # Once its budget is spent, finish missing tables one at a time;
+            # selecting an empty slice here would spin without progress.
+            selected = order[:max(1, budget - work)]
             pool = L._table_pool() if parallel and len(selected) > 1 else None
             base = L._dump(f)
             results = []
@@ -311,6 +338,10 @@ def advance(event, target, budget=18, parallel=True):
                     raise RuntimeError('Scheduled table failed: %s' % out.get('errors'))
                 pending.setdefault(str(tid), []).extend(out['events'])
                 work += len(out['events'])
+            # Publish a completed window even if generating its tables used
+            # the whole budget. Large fields must not return only speculative
+            # work, discard it on restart, then repeat the same zero-progress job.
+            merge_due = True
             continue
         if not pending:
             st['background_seconds'] = max(st.get('background_seconds', 0), target)

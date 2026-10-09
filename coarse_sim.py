@@ -248,7 +248,8 @@ def use_coarse(mini, tid, frozen=None):
     # 워커는 자기 테이블만 받는다(mini). 남은 테이블 수는 대회 전체 문맥(frozen)의 남은 인원으로 본다.
     rem = (frozen or {}).get('remaining')
     seats = int(mini.get('max_seat') or 9)
-    if rem is not None and int(rem) <= (COARSE_MIN_TABLES - 1) * seats:
+    if (rem is not None and int(rem) <= (COARSE_MIN_TABLES - 1) * seats
+            and not rules.get('unobserved_recovery')):
         return False                  # 파이널 직전(테이블 2개): 실제 엔진·가상시계
     if not available(mini.get('fmt') or 'standard'):
         return False

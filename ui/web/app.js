@@ -1746,7 +1746,8 @@ function frameView(v, bets, folded) {
       bet: bets[s.seat] || 0,
       in_hand: !folded[s.seat],
       stack: st,
-      allin: st <= 0 && !folded[s.seat] && (bets[s.seat] || 0) > 0,
+      allin: st <= 0 && !folded[s.seat] &&
+        ((bets[s.seat] || 0) > 0 || (s.ante || 0) > 0),
     });
   });
   const sum = seats.reduce((a, s) => a + (s.bet || 0), 0);

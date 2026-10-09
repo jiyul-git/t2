@@ -6,7 +6,7 @@ const fmt = n => Number(n || 0).toLocaleString('ko-KR');
 const when = t => new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
 }).format(new Date(t * 1000));
-const labels = {scheduled:'예정', late_registration:'레이트 등록', closed:'등록 마감', finished:'종료'};
+const labels = {scheduled:'예정', late_registration:'레이트 등록', closed:'등록 마감', finished:'종료', retired:'내 참가 종료'};
 function escapeHtml(v) { return String(v == null ? '' : v).replace(/[&<>"]/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function playKey() { try { return localStorage.getItem('t2_play_key') || ''; } catch(e) { return ''; } }
@@ -29,7 +29,7 @@ async function loadLobby() {
 }
 function renderCurrent() {
   const box=$('#current');
-  const mine=catalog.find(t=>t.active && t.my_entry && t.status !== 'finished');
+  const mine=catalog.find(t=>t.active && t.my_entry && !['finished','retired'].includes(t.status));
   if(!mine) { box.hidden=true; return; }
   box.hidden=false;
   box.innerHTML='<div><div class="kicker">MY TOURNAMENT</div><h3>'+escapeHtml(mine.name)+
@@ -39,7 +39,7 @@ function renderCurrent() {
 }
 function visible(t) {
   if(filter==='mine') return t.my_entry && t.my_entry.status !== 'cancelled';
-  if(t.status==='finished') return false;
+  if(['finished','retired'].includes(t.status)) return false;
   if(filter==='scheduled') return t.status==='scheduled';
   if(filter==='running') return ['late_registration','closed'].includes(t.status);
   return t.registration_open || (t.my_entry && t.my_entry.status !== 'cancelled');
@@ -68,7 +68,8 @@ function playClock(sec) {
 // 진행 중인 대회의 공개 진행 정보(레벨·블라인드·평균 스택·진행 시간). 참가하지 않아도 보인다.
 function progressFacts(t) {
   const p=t.progress;
-  if(!p || t.status==='scheduled') return '';
+  if(!p || ['scheduled','retired'].includes(t.status)) return '';
+  if(p.recovering) return '<div class="fact"><b>대회 상태 복구 중</b><span>복구가 끝나면 진행 정보가 표시됩니다</span></div>';
   return '<div class="fact"><b>Lv '+p.level+' · '+fmt(p.sb)+'/'+fmt(p.bb)+'</b><span>레벨 / 블라인드</span></div>'+
     '<div class="fact"><b>'+fmt(p.avg_stack)+' ('+p.avg_bb+'bb)</b><span>평균 스택</span></div>'+
     '<div class="fact"><b>'+playClock(p.play_seconds)+'</b><span>진행 시간</span></div>'+

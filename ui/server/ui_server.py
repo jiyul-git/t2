@@ -369,6 +369,10 @@ def _schedule_tick():
                            e['status'] in ('reserved', 'waiting') for e in ev['entries'])))
         budget = (max(18, int(os.environ.get('T2_SCHEDULE_ADMISSION_BUDGET', '18')))
                   if active_wait else 18)
+        if (ev['rules'].get('field_backend') == 'hybrid' and not active_wait
+                and not any(e['status'] in ('playing', 'reserved', 'waiting')
+                            for e in ev['entries'])):
+            budget = 128  # cheap bot-only recovery; actual human tables stay real
         SCHEDULE_FUTURE = SCHEDULE_POOL.submit(_SR.advance, ev, target, budget=budget)
         SCHEDULE_FUTURE.t2_meta = {'t0': time.monotonic(), 'target': target,
                                    'bg': float((ev['state'] or {}).get('background_seconds', 0) or 0)}
@@ -2393,6 +2397,9 @@ if __name__ == '__main__':
         SCHEDULE_POOL.submit(_SR.worker_ready).result()
         SCHEDULE_FUTURE = None
         ECONOMY.ensure_schedule()
+        recovered = ECONOMY.prepare_recovery()
+        if recovered:
+            print('[복구] 기존 대회 %d개에 백그라운드 복구 정책 적용' % recovered, flush=True)
         threading.Thread(target=_schedule_loop, name='t2-schedule', daemon=True).start()
     print('정산 지연: %s  (끄려면 T2_UI_DEFER=0)' % ('켬' if DEFER else '끔'))
     print('텔레메트리: %s%s' % (
