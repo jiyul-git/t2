@@ -266,6 +266,9 @@ html, body {
 .chips.side-right {
   width: max-content; min-width: 60px; white-space: nowrap; z-index: 17;
 }
+/* The DOM pot anchor is resolved before paint. This is initial placement,
+   not a bet moving from its fallback coordinates past the memo button. */
+.chips.side-right:not(.toPot) { transition: none; }
 .chips.toPot { opacity: 0; }
 
 /* ---------- 히어로 ---------- */

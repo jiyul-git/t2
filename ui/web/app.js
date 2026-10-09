@@ -1263,7 +1263,7 @@ function forcedStartState(v) {
 function renderForced(base, ss) {
   const bets =
     ss.seats.reduce(
-      (a, x) => a + Number(x.bet || 0),
+      (a, x) => a + Number(x.bet || 0) + Number(x._antePaid || 0),
       0
     );
 
@@ -1479,15 +1479,13 @@ function dealThen(v, done) {
 
   /*
    * 카드 딜링 동안은 아직 SB/BB가 칩을 내기 전 화면으로 보인다.
-   * 서버 값에는 블라인드가 이미 들어가 있지만 frameView를 bet=0으로
-   * 되감아 시각적으로만 게시 전 상태를 만든다.
+   * 서버 값에는 블라인드/안테가 이미 들어가 있으므로 둘 다 되감아
+   * 시각적으로만 게시 전 상태를 만든다.
    */
-  const noBets = {};
-  (v.seats || []).forEach((s) => {
-    noBets[s.seat] = 0;
-  });
-
-  const fv0 = frameView(v, noBets, {});
+  // Rewind dead-money antes as well as ordinary bets. frameView alone keeps
+  // the already-paid ante pot and stacks, causing the pot to jump backward
+  // when postBlindsThen begins its unpaid frame.
+  const fv0 = forcedStartState(v).base;
 
   const draw0 = () => {
     if (!epochAlive(epoch)) return;
@@ -1524,7 +1522,7 @@ function dealThen(v, done) {
     // 마지막 카드 비행이 끝난 뒤 중앙 덱을 먼저 치운다.
     deckHide(true);
 
-    // 그 다음 SB -> BB 순서로 각각 1.3초.
+    // 그 다음 안테 -> SB -> BB를 FORCED_POST_MS 간격으로 게시한다.
     postBlindsThen(v, afterBlinds, epoch);
   };
 
