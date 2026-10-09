@@ -44,6 +44,8 @@ const S = {
   prevBets: null,          // 직전에 그린 좌석별 이번 스트리트 투입액
   replayDone: null,        // 재생 중이면 마지막 프레임을 그리는 함수
   view0: null,             // 마지막 decision 뷰. 관전 재생의 출발점
+  historyHand: null,       // 화면에서 진행 중인 핸드: 서버 계산 완료와 별개
+  historyHandComplete: false,
   folding: {},             // 방금 폴드해서 카드가 사라지는 중인 좌석
   autoTimer: null,         // 결과 화면 자동 진행
   spectating: false,       // 히어로가 접어서 남은 진행을 구경하는 중인가
@@ -2664,7 +2666,6 @@ function runoutThen(res, done) {
 
 function finishResult(v, resumeAt = null) {
   clearBubbles();
-  histPush(v);
 
   // 보드/홀카드 공개 완료 전에는 결과를 스포일러하지 않는다.
   S.winners = null;
@@ -2709,6 +2710,9 @@ function finishResult2(v) {
   const epoch = S.epoch || 0;
 
   renderResult(v);
+  // Only publish history after runout, reveals and winner rendering finish.
+  if (S.historyHand === v) S.historyHandComplete = true;
+  histPush(v);
 
   const amap = potAwards(v);
   const heroAward =
@@ -3114,8 +3118,27 @@ function histPush(v) {
 }
 function histClear() { try { localStorage.removeItem(HIST_KEY); } catch (e) {} }
 
+function visibleHistory(list) {
+  if (!Array.isArray(list)) return [];
+  const current = S.historyHand;
+  if (!current) return list;
+  return list.filter(v => {
+    if (!v) return false;
+    if (current.hash && v.hash === current.hash) return S.historyHandComplete;
+    // The engine may finish this hand (or deal the next one) ahead of replay.
+    // Use engine hand_no, not the tournament-local display number.
+    const no = Number(v.hand_no), limit = Number(current.hand_no);
+    if (Number.isFinite(no) && Number.isFinite(limit)) {
+      return no < limit || (no === limit && S.historyHandComplete);
+    }
+    return false;
+  });
+}
+
 function renderHistoryList(list, fallbackNote) {
-  list = Array.isArray(list) ? list : [];
+  // Filter at render time: history fetches can overlap live replay or runout.
+  // This also protects the local fallback from an earlier cached result.
+  list = visibleHistory(list);
 
   list.sort((a, b) =>
     Number(b && b.hand_no || 0) -
@@ -4358,6 +4381,8 @@ function apply(resp) {
   const prevView = S.view0;
 
   S.view = v;
+  S.historyHand = v;
+  S.historyHandComplete = false;
 
   // 새 서버 응답은 새 렌더 세대다.
   // 이전 핸드에서 늦게 깨어난 timeout/fetch 콜백은 화면을 건드리지 못한다.

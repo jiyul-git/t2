@@ -77,3 +77,23 @@ for (const expected of ['check', 'fold']) {
   vm.runInContext(between('function send(', 'function markQueued('), c3);
 }
 console.log('PASS: expired clock display and replay match accepted check/fold action');
+
+const c4 = {S: {historyHand: {hand_no: 10, hash: 'current'}, historyHandComplete: false}};
+vm.createContext(c4);
+vm.runInContext(between('function visibleHistory(', 'function renderHistoryList('), c4);
+const history = [{hand_no: 11, hash: 'future'}, {hand_no: 10, hash: 'current'},
+  {hand_no: 9, hash: 'previous'}];
+// Engine finished; UI is still replaying actions, runout or card reveals.
+assert.deepEqual(Array.from(c4.visibleHistory(history), v => v.hand_no), [9]);
+c4.S.historyHandComplete = true;
+assert.deepEqual(Array.from(c4.visibleHistory(history), v => v.hand_no), [10, 9]);
+c4.S.historyHand = {hand_no: 11, hash: 'future'};
+c4.S.historyHandComplete = false;
+assert.deepEqual(Array.from(c4.visibleHistory(history), v => v.hand_no), [10, 9]);
+c4.S.historyHand = null;
+assert.equal(c4.visibleHistory(history).length, 3); // standalone history page
+assert(!between('function finishResult(', 'function finishResult2(').includes('histPush('));
+const finish = between('function finishResult2(', '/* 사이드팟은');
+assert(finish.indexOf('histPush(v)') > finish.indexOf('renderResult(v)'));
+assert(ui.includes('S.historyHand = v;\n  S.historyHandComplete = false;'));
+console.log('PASS: history hides current/future results until visible hand completion');
