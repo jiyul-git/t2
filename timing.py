@@ -104,6 +104,33 @@ def closeness_postflop(boundary):
     return c_final(boundary['eq'], boundary['need'])
 
 
+def preflop_calloff_effort(profile, decision):
+    """Timing-only effort for a heuristic call-off; never changes call ranges.
+
+    A percentile boundary is not proof of a price/range calculation. For a
+    selected heuristic call, existing looseness and gamble express willingness
+    to take the gamble; pf_defend knowledge limits that interpretation. An
+    actually applied layer-equity comparison keeps the original timing model.
+    This is a disposition proxy, not a claim about the actor's private motive.
+    """
+    neutral = {'weight': 1.0, 'source': 'existing', 'impulse': 0.0}
+    if not isinstance(profile, dict) or not profile.get('concepts'):
+        return neutral
+    d = decision or {}
+    if d.get('pf_act') != 'call' or (d.get('pf_timing') or {}).get('kind') != 'defend_calloff':
+        return neutral
+    if (d.get('pf_calloff_consumer') or {}).get('strategy_consumer'):
+        return neutral
+    import persona as PS
+    loose = max(0.0, min(1.0, PS.temper(profile, 'looseness', 5.0) / 10.0))
+    gamble = max(0.0, min(1.0, PS.temper(profile, 'gamble', 5.0) / 10.0))
+    knowledge = PS.concept_knowledge(profile, 'pf_defend')
+    impulse = loose * gamble * (1.0 - knowledge)
+    return {'weight': 1.0 - impulse, 'source': 'heuristic_calloff_disposition',
+            'impulse': impulse, 'looseness': loose, 'gamble': gamble,
+            'defend_knowledge': knowledge}
+
+
 def structure_postflop(street, facing):
     st = {'flop': 0.33, 'turn': 0.67, 'river': 1.0}.get(street, 0.5)
     return min(1.0, 0.6 * st + 0.4) if facing else 0.6 * st

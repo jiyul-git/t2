@@ -1079,7 +1079,7 @@ class HandRun:
         rnd.apply(seat, action)
 
     def _timing_decide(self, seat, street, ax, c, s_struct, m, commit, trivial, n_log,
-                       concepts, boundary_known=True):
+                       concepts, boundary_known=True, decision=None):
         """봇 결정 하나의 시간 규칙(사람과 같은 규칙). 전략 RNG 를 쓰지 않는다.
 
         반환 기록의 timed_out 이 참이고 enforce 면 호출부가 타임아웃 행동으로 바꾼다.
@@ -1097,12 +1097,19 @@ class HandRun:
                                  getattr(self.h, 'hash', ''), seat, street, n_log))
         familiar = TM.contextual_familiarity(
             ax, concepts, c, s_struct, m, boundary_known=boundary_known)
-        v = TM.visible_seconds(traits, c, s_struct, m, K, trivial, commit, jit,
+        effort = (TM.preflop_calloff_effort(ax, decision) if street == 'preflop'
+                  else {'weight': 1.0, 'source': 'existing', 'impulse': 0.0})
+        # Keep the factual decision boundary for provenance/familiarity. Only
+        # its contribution to deliberate comparison and commitment amplification
+        # is reduced; pacing, masking and clock habits retain their old behavior.
+        timing_c = c * effort['weight']
+        v = TM.visible_seconds(traits, timing_c, s_struct, m, K, trivial, commit, jit,
                                base, familiarity=familiar)
         st = TM.settle(v['visible'], base, bank)
         TM.bank_put(banks, pid, st['bank_left'], T.get('clock'))
         rec = {'pid': pid, 'seat': seat, 'street': street, 'c': c, 's': s_struct, 'm': m,
                'commit': commit, 'K': K, 'n_concepts': len(concepts or ()),
+               'timing_c': timing_c, 'decision_effort': effort,
                'concepts_used': sorted(set(concepts or ())),
                'familiarity': familiar, 'boundary_known': bool(boundary_known),
                'familiarity_class': (
@@ -1622,7 +1629,8 @@ class HandRun:
                         s, 'preflop', ax, _tm_c, TM.structure_preflop(_rlevel), 0.0,
                         TM.commit_facing(tc, rnd.stacks[s]),
                         (a == 'fold' and _tm_c < 0.05), len(rnd.log), _tm_concepts,
-                        boundary_known=bool((_seed or {}).get('pf_timing')))
+                        boundary_known=bool((_seed or {}).get('pf_timing')),
+                        decision=_seed)
                     if _tm['timed_out'] and self.timing.get('enforce', True):
                         # 사람과 같은 타임아웃 규칙: 체크 가능하면 체크, 아니면 폴드.
                         _tm['engine_act'] = a
