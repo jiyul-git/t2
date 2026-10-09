@@ -415,6 +415,15 @@ def _ui_timing(st, now=None):
         used = max(0.0, float(active) - (level_no - 1) * period)
         level_remaining = int(math.ceil(max(0.0, period - used)))
     return {'scheduled_tournament': bool(st.get('tournament_id')),
+            'elapsed_started_ms': (None if elapsed is None or not (
+                st.get('tournament_id') or 'ui_clock_started_at' in st)
+                else int((now - elapsed) * 1000)),
+            'clock_running': bool(st.get('tournament_id') or 'ui_clock_started_at' in st),
+            'active_clock_running': bool(
+                (st.get('tournament_id') and elapsed is not None
+                 and elapsed % 3600.0 < 3300.0)
+                or (not st.get('tournament_id') and 'ui_clock_started_at' in st
+                    and not st.get('ui_break_pending'))),
             'elapsed_seconds': None if elapsed is None else int(elapsed),
             'active_seconds': None if active is None else int(active),
             'level_minutes': minutes,
