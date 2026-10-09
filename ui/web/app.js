@@ -605,6 +605,51 @@ function fitSeatsInView(box) {
 }
 
 /* ---------------- 좌석 앞 칩 ---------------- */
+function clearRightChipMemo(box) {
+  const wrap = $('#tablewrap');
+  if (!wrap) return;
+  const area = wrap.getBoundingClientRect();
+  const rect = el => {
+    const b = el.getBoundingClientRect();
+    return {x:b.left-area.left, y:b.top-area.top, w:b.width, h:b.height};
+  };
+  const overlaps = (a,b,pad=0) => a.x < b.x+b.w+pad && a.x+a.w+pad > b.x
+    && a.y < b.y+b.h+pad && a.y+a.h+pad > b.y;
+  box.querySelectorAll('.chips.side-right:not(.toPot)').forEach(el => {
+    const memo = document.querySelector(`.pod[data-slot="${el.dataset.seat}"] .memo`);
+    if (!memo) return;
+    const start = rect(el), mr = rect(memo);
+    if (!mr.w || !overlaps(start,mr,6)) return;
+    // Read geometry once. The fitted seat can move independently of its bet.
+    // Keep cards, stacks, the pot and neighboring bet labels clear as well.
+    const obstacles = Array.from(wrap.querySelectorAll(
+      '.pod .memo, .pod .avatar, .pod .meta, .pod .backs, #board, #potline, .chips:not(.toPot)'))
+      .filter(other => other !== el).map(rect).filter(b => b.w && b.h);
+    const candidates = [];
+    for (let dx=-64; dx<=64; dx+=8) {
+      for (let dy=-80; dy<=80; dy+=8) {
+        candidates.push({x:start.x+dx,y:start.y+dy,w:start.w,h:start.h,d:dx*dx+dy*dy});
+      }
+    }
+    candidates.sort((a,b) => a.d-b.d);
+    let free;
+    for (const gap of [6,3,0]) {
+      free = candidates.find(a => a.x>=4 && a.y>=4
+        && a.x+a.w<=area.width-4 && a.y+a.h<=area.height-4
+        && !obstacles.some(b => overlaps(a,b,gap)));
+      if (free) break;
+    }
+    if (free) {
+      // CSS centers chips with negative margins: convert the box back to its anchor.
+      const css = getComputedStyle(el);
+      el.style.transition = 'none';
+      el.style.left = (free.x - parseFloat(css.marginLeft || 0)) + 'px';
+      el.style.top = (free.y - parseFloat(css.marginTop || 0)) + 'px';
+      requestAnimationFrame(() => { el.style.transition = ''; });
+    }
+  });
+}
+
 function renderChips(v, streetChanged) {
   const box = $('#chips');
   const old = Array.from(box.children);
@@ -641,6 +686,9 @@ function renderChips(v, streetChanged) {
     el.innerHTML = `<span class="disc"></span>${fmt(s.bet)}`;
     box.appendChild(el);
   });
+  // Board/pot rendering follows this call in several paths. Measure the
+  // completed frame before paint, rather than the previous hand's obstacles.
+  requestAnimationFrame(() => clearRightChipMemo(box));
 }
 
 /* ---------------- 보드 / 팟 ---------------- */
