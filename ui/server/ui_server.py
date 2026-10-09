@@ -289,8 +289,10 @@ def _schedule_tick():
             if TIMING_ON and not sitout_now:
                 _settle_hero_bank(st, now, timed_out=True)
                 L.save(st)
-            _last = _wrap(_step_sched(_timeout_action()))
-            _last['auto_folded'] = True
+            timeout_action = _timeout_action()
+            _last = _wrap(_step_sched(timeout_action))
+            _last['auto_action'] = timeout_action
+            _last['auto_folded'] = timeout_action == 'fold'
             st = L.load()
             if away and not st.get('away_sitout'):
                 # 자리 비움 중 첫 타임아웃 뒤로는 실제 사이트처럼 sit-out: 바로 폴드한다.
@@ -1667,6 +1669,7 @@ def _public_history():
                 'best_five': r.get('best_five') or {},
 
                 'pos': r.get('pos') or h.get('pos') or {},
+                'seat_pid': h.get('seat_pid') or {},
                 'stacks': r.get('stacks') or {},
 
                 # UI 상세 기록에서 사용하는 필드
@@ -2314,6 +2317,8 @@ class H(BaseHTTPRequestHandler):
                         alive[0] = _publish({
                             'type': 'stream_start',
                             'stream_id': stream_id,
+                            'hero_action': a,
+                            'hero_amount': amt,
                             'server_now_ms': int(time.time() * 1000),
                         })
 
@@ -2361,7 +2366,8 @@ class H(BaseHTTPRequestHandler):
                         else:
                             _last = _wrap(r)
                         if timed_out:
-                            _last['auto_folded'] = True
+                            _last['auto_action'] = a
+                            _last['auto_folded'] = a == 'fold'
                         message = {'type': 'final', 'payload': _last}
                         _step_progress_emit(request_id, message)
                         if alive[0]:
@@ -2379,7 +2385,8 @@ class H(BaseHTTPRequestHandler):
                         return self._send(200, out)
                     _last = _wrap(r)
                     if timed_out:
-                        _last['auto_folded'] = True
+                        _last['auto_action'] = a
+                        _last['auto_folded'] = a == 'fold'
                     return self._send(200, _last)
                 return self._send(404, {'error': 'not found'})
             except _TS.TournamentError as e:

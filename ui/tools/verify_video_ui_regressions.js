@@ -36,3 +36,44 @@ assert(ui.includes('const BOT_ACTION_FEEDBACK_MS = 550;'));
 assert(ui.includes('}, e.act_at_ms ? BOT_ACTION_FEEDBACK_MS'));
 assert(ui.includes('봇 판단 계산 중…'));
 console.log('PASS: normal/fold/side-pot labels, bubble stacking, scheduled action visibility and non-fabricated compute status');
+
+// Expired HERO clocks use the same legal action as the server. A request
+// expiring in transit must also undo an optimistic fold/call in replay state.
+const c3 = {S: {token: 1, view: null}, serverNow: () => 2000,
+  closeRaise: () => {}, stopActionClock: () => {},
+  fullActionLog: v => (v.log || []).slice(),
+  BOARD_AT: {flop: 3}, $: () => null};
+vm.createContext(c3);
+vm.runInContext(between('function heroTimeoutAction(', 'function noteTiming('), c3);
+vm.runInContext(between('function applyEntry(', 'function renderSpectate('), c3);
+vm.runInContext(between('function send(', 'function markQueued('), c3);
+let displayed, sent;
+c3.previewHeroAction = action => { displayed = action; };
+c3.callStepStream = payload => { sent = payload.action; };
+for (const expected of ['check', 'fold']) {
+  const view = {type: 'decision', hero_seat: 9, stage: 'flop', pot_center: 400,
+    legal: {check: expected === 'check', fold: expected === 'fold'},
+    seats: [{seat: 9, stack: 1000, bet: 0, in_hand: true}], log: []};
+  Object.assign(c3.S, {view, actionDeadlineMs: 1000, actionToken: 1,
+    timeoutSubmitting: false, replayDone: false});
+  c3.send('call', 999);
+  assert.equal(displayed, expected);
+  assert.equal(sent, expected);
+  c3.S.timeoutSubmitting = false;
+  c3.$ = () => ({classList: {toggle() {}}, style: {}, textContent: ''});
+  c3.send = action => { sent = action; };
+  c3.paintActionClock();
+  assert.equal(sent, expected);
+  const ss = {seats: [{seat: 9, stack: 1, bet: 999, in_hand: false}], potCenter: 999};
+  const log = [{action: 'call', amount: 999}];
+  c3.replaceHeroReplay(ss, log, view, expected, 0);
+  assert.equal(ss.seats[0].in_hand, expected === 'check');
+  assert.equal(ss.seats[0].stack, 1000);
+  assert.equal(ss.seats[0].bet, 0);
+  assert.equal(ss.potCenter, 400);
+  assert.equal(log.length, 1);
+  assert.equal(log[0].action, expected);
+  // Restore the actual send function for the next fixture.
+  vm.runInContext(between('function send(', 'function markQueued('), c3);
+}
+console.log('PASS: expired clock display and replay match accepted check/fold action');

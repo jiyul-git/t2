@@ -33,6 +33,9 @@ class Book:
     def observe_limp_raise(self, *args, **kwargs):
         pass
 
+    def observe_cold_reraise(self, *args, **kwargs):
+        pass
+
     def observe_showdown(self, *args, **kwargs):
         pass
 

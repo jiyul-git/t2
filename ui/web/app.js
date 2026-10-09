@@ -67,7 +67,7 @@ const S = {
   actionDeadlineMs: null,    // 서버가 확정한 절대 deadline
   actionToken: null,         // deadline이 속한 engine token
   actionArmPending: false,   // 중복 arm 요청 방지
-  timeoutSubmitting: false,  // 시간초과 자동 폴드 중복 방지
+  timeoutSubmitting: false,  // 시간초과 자동 액션 중복 방지
   actionSubmitted: false,     // 액션 클릭 후 응답 전 deadline 재-arm 방지
   levelRemainingSeconds: null, // 현재 레벨 종료까지 실제 초
   sessionRemainingSeconds: null, // 55분 플레이 세션 종료까지 실제 초
@@ -605,50 +605,27 @@ function fitSeatsInView(box) {
 }
 
 /* ---------------- 좌석 앞 칩 ---------------- */
-function clearRightChipMemo(box) {
-  const wrap = $('#tablewrap');
-  if (!wrap) return;
-  const area = wrap.getBoundingClientRect();
-  const rect = el => {
-    const b = el.getBoundingClientRect();
-    return {x:b.left-area.left, y:b.top-area.top, w:b.width, h:b.height};
-  };
-  const overlaps = (a,b,pad=0) => a.x < b.x+b.w+pad && a.x+a.w+pad > b.x
-    && a.y < b.y+b.h+pad && a.y+a.h+pad > b.y;
+function chipPosition(v, seat) {
+  const n = v.n_slots || 8;
+  const side = sideSeatClass(slotPos(seat, v.hero_seat, n, 1, 1));
+  const p = slotPos(seat, v.hero_seat, n, 0.43, 0.62);
+  if (side === ' side-left') { p.x = 26; p.y = 54; }
+  if (side === ' side-right') { p.x = 78; p.y = 50; }
+  return {p, side};
+}
+
+function positionRightChips(box) {
+  const wrap = $('#tablewrap'), pot = $('#pot');
+  if (!wrap || !pot) return;
+  const area = wrap.getBoundingClientRect(), pr = pot.getBoundingClientRect();
+  if (!pr.width) return;
   box.querySelectorAll('.chips.side-right:not(.toPot)').forEach(el => {
-    const memo = document.querySelector(`.pod[data-slot="${el.dataset.seat}"] .memo`);
-    if (!memo) return;
-    const start = rect(el), mr = rect(memo);
-    if (!mr.w || !overlaps(start,mr,6)) return;
-    // Read geometry once. The fitted seat can move independently of its bet.
-    // Keep cards, stacks, the pot and neighboring bet labels clear as well.
-    const obstacles = Array.from(wrap.querySelectorAll(
-      '.pod .memo, .pod .avatar, .pod .meta, .pod .backs, #board, #potline, .chips:not(.toPot)'))
-      .filter(other => other !== el).map(rect).filter(b => b.w && b.h);
-    const candidates = [];
-    for (let dx=-64; dx<=64; dx+=8) {
-      // Keep the right-side bet at or above its lane. A memo collision must
-      // never push it down toward the lower-right player's chips.
-      for (let dy=-80; dy<=0; dy+=8) {
-        candidates.push({x:start.x+dx,y:start.y+dy,w:start.w,h:start.h,d:dx*dx+dy*dy});
-      }
-    }
-    candidates.sort((a,b) => a.d-b.d);
-    let free;
-    for (const gap of [6,3,0]) {
-      free = candidates.find(a => a.x>=4 && a.y>=4
-        && a.x+a.w<=area.width-4 && a.y+a.h<=area.height-4
-        && !obstacles.some(b => overlaps(a,b,gap)));
-      if (free) break;
-    }
-    if (free) {
-      // CSS centers chips with negative margins: convert the box back to its anchor.
-      const css = getComputedStyle(el);
-      el.style.transition = 'none';
-      el.style.left = (free.x - parseFloat(css.marginLeft || 0)) + 'px';
-      el.style.top = (free.y - parseFloat(css.marginTop || 0)) + 'px';
-      requestAnimationFrame(() => { el.style.transition = ''; });
-    }
+    const cr = el.getBoundingClientRect(), css = getComputedStyle(el);
+    // Place the whole label to the right of the pot pill, inside the table.
+    const left = Math.max(4, Math.min(pr.right-area.left+8, area.width-cr.width-4));
+    const top = pr.top-area.top+(pr.height-cr.height)/2;
+    el.style.left = (left-parseFloat(css.marginLeft || 0))+'px';
+    el.style.top = (top-parseFloat(css.marginTop || 0))+'px';
   });
 }
 
@@ -665,21 +642,9 @@ function renderChips(v, streetChanged) {
   } else {
     box.innerHTML = '';
   }
-  const n = v.n_slots || 8;
   (v.seats || []).forEach((s) => {
     if (!s.bet) return;
-    const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
-    const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
-    const side = sideSeatClass(seatP);
-    // 3/9 o'clock gets its own chip lane.
-    // x stays clear of the side-seat cards.
-    if (side === ' side-left') {
-      // Only the 9-o'clock chip label moves; keep the 8-o'clock lane unchanged.
-      // Tested against nearby cards, board, pot, and lower-left bet label.
-      p.x = 26; p.y = 54;
-    } else if (side === ' side-right') {
-      p.x = 78; p.y = 44;
-    }
+    const {p, side} = chipPosition(v, s.seat);
     const el = document.createElement('div');
     el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
@@ -688,8 +653,8 @@ function renderChips(v, streetChanged) {
     box.appendChild(el);
   });
   // Board/pot rendering follows this call in several paths. Measure the
-  // completed frame before paint, rather than the previous hand's obstacles.
-  requestAnimationFrame(() => clearRightChipMemo(box));
+  // completed frame before paint to use the current pot label's position.
+  requestAnimationFrame(() => positionRightChips(box));
 }
 
 /* ---------------- 보드 / 팟 ---------------- */
@@ -1321,15 +1286,7 @@ function makeAnteChip(v, seat, amount) {
   const box = $('#chips');
   if (!box || !amount) return null;
 
-  const n = v.n_slots || 8;
-  const p =
-    slotPos(
-      seat,
-      v.hero_seat,
-      n,
-      0.62,
-      0.62
-    );
+  const {p, side} = chipPosition(v, seat);
 
   const el =
     document.createElement('div');
@@ -1338,7 +1295,8 @@ function makeAnteChip(v, seat, amount) {
    * 일반 벳과 완전히 같은 .chips / .disc를 쓴다.
    * 별도 scale/translate 애니메이션 없음.
    */
-  el.className = 'chips forced-ante';
+  el.className = 'chips forced-ante' + side;
+  el.dataset.seat = String(seat);
   el.style.left = p.x + '%';
   el.style.top = p.y + '%';
 
@@ -1346,6 +1304,7 @@ function makeAnteChip(v, seat, amount) {
     `<span class="disc"></span>${fmt(amount)}`;
 
   box.appendChild(el);
+  requestAnimationFrame(() => positionRightChips(box));
 
   return el;
 }
@@ -2165,6 +2124,14 @@ function heroRequestEntry(v, action, amount) {
   };
 }
 
+function replaceHeroReplay(ss, shownLog, base, action, amount) {
+  ss.seats = (base.seats || []).map((x) => Object.assign({}, x));
+  ss.potCenter = base.pot_center || 0;
+  shownLog.splice(0, shownLog.length, ...fullActionLog(base));
+  const accepted = heroRequestEntry(base, action, amount);
+  if (accepted) { applyEntry(ss, accepted); shownLog.push(accepted); }
+}
+
 function renderSpectate(base, res, ss) {
   const bets = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
   const fv = Object.assign({}, base, {
@@ -2529,6 +2496,15 @@ function seatName(v, s) {
   const p = (v.pos || {})[String(s)];
   const me = String(s) === String(v.hero_seat);
   return (me ? '나' : s + '번') + (p ? `(${p})` : '');
+}
+
+function resultCardSeatName(v, s) {
+  const label = seatName(v, s);
+  if (String(s) === String(v.hero_seat)) return label;
+  const name = (v.seat_names || {})[String(s)];
+  const pid = (v.seat_pid || {})[String(s)];
+  const nick = name || (pid !== undefined && pid !== null ? 'B' + pid : '');
+  return esc(label) + (nick ? ' · ' + esc(nick) : '');
 }
 
 const RUNOUT_HOLD = 2000;
@@ -2980,7 +2956,7 @@ function resultBodyHTML(v, withLog) {
 
       rows +=
         `<div class="row${lab && !awardMapSplitOnly(awards, s) ? ' win' : ''}">` +
-        `<span class="who">${seatName(v, s)}</span>` +
+        `<span class="who">${resultCardSeatName(v, s)}</span>` +
         `<span class="cards">${cardsHTML(v.shown[s], 'mini')}</span>` +
         `${lab ? `<span class="amt">${esc(lab)}</span>` : ''}` +
         `</div>`;
@@ -3388,6 +3364,11 @@ function stopActionClock() {
   }
 }
 
+function heroTimeoutAction(v) {
+  const legal = (v && v.legal) || {};
+  return legal.fold ? 'fold' : legal.check ? 'check' : 'fold';
+}
+
 function paintActionClock() {
   const el = $('#turnclock');
   if (!el || !S.actionDeadlineMs || S.actionToken !== S.token) return;
@@ -3420,7 +3401,7 @@ function paintActionClock() {
   if (leftMs <= 0 && !S.timeoutSubmitting && S.view && S.view.type === 'decision') {
     S.timeoutSubmitting = true;
     closeRaise();
-    send('fold', 0);
+    send(heroTimeoutAction(S.view), 0);
   }
 }
 
@@ -3984,6 +3965,14 @@ async function callStepStream(body, msg) {
   const receive = stepEventReceiver(
     (obj) => {
       streamId = obj.stream_id || null;
+      // The request can cross the deadline in transit. Rebuild the hero
+      // preview and replay from the action accepted by the server.
+      if (ss && obj.hero_action &&
+          (obj.hero_action !== body.action || obj.hero_amount !== body.amount)) {
+        replaceHeroReplay(ss, shownLog, base, obj.hero_action, obj.hero_amount);
+        previewHeroAction(obj.hero_action, obj.hero_amount);
+        publishPrev();
+      }
       // A buffered stream_start has an old timestamp. Fresh /ready and
       // progress responses synchronize the clock; replay never moves it back.
     },
@@ -4237,12 +4226,12 @@ function send(action, amount) {
   }
 
   if (action !== null && S.actionDeadlineMs && serverNow() >= S.actionDeadlineMs) {
-    action = 'fold';
+    action = heroTimeoutAction(S.view);
     amount = 0;
     S.timeoutSubmitting = true;
   }
 
-  // 클릭/자동폴드가 확정되는 순간 카운트다운은 즉시 끝난다.
+  // 클릭/자동 액션이 확정되는 순간 카운트다운은 즉시 끝난다.
   // 응답 전 readReady()가 같은 서버 deadline을 다시 받아도 재-arm하지 않는다.
   if (action !== null) {
     S.actionSubmitted = true;

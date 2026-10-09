@@ -12,6 +12,7 @@ with tempfile.TemporaryDirectory() as td:
     archive = Path(td) / 'archive.jsonl'
     def hand(no, event=None, board=None):
         return dict(hand_no=no, tournament_id=event, hero=9,
+                    seat_pid={'1': 41, '9': 100},
                     hole={'9': ['Ac', 'Kd'], '1': ['As', 'Ad']},
                     board=['2c', '3c', '4c', '5c', '6c'],
                     result={'board': board or [], 'shown_hole': {}})
@@ -27,6 +28,7 @@ with tempfile.TemporaryDirectory() as td:
     assert result[0]['board'] == ['2c', '3c', '4c']
     assert result[1]['board'] == []
     assert all(h['shown'] == {} and h['hero_hole'] == ['Ac', 'Kd'] for h in result)
+    assert all(h['seat_pid'] == {'1': 41, '9': 100} for h in result)
     state.clear()
     assert [h['hand_no'] for h in ns['_public_history']()] == [103]
 print('PASS: event isolation, preflop/flop board privacy, legacy standalone history')

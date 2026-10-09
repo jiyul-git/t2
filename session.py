@@ -6,6 +6,9 @@ import timing as TM
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
+# Current test rule: every player reaching showdown exposes their hand.
+# Restore normal losing-hand mucking only when explicitly enabled.
+SHOWDOWN_MUCK_ENABLED = os.environ.get('T2_SHOWDOWN_MUCK', '0') == '1'
 
 def best5(cards): return bot.eval7(cards)
 
@@ -2992,7 +2995,7 @@ class HandRun:
             if s not in show_order:
                 show_order.append(s)
 
-        if allin_show:
+        if allin_show or not SHOWDOWN_MUCK_ENABLED:
             shown_seats = set(live)
             mucked = []
 

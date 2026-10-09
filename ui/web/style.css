@@ -263,6 +263,9 @@ html, body {
   background: radial-gradient(circle at 35% 30%, #f0f3f1, #c9d2cd 60%, #8e9b95);
   border: 2px solid var(--red); vertical-align: -1px; margin-right: 3px;
 }
+.chips.side-right {
+  width: max-content; min-width: 60px; white-space: nowrap; z-index: 17;
+}
 .chips.toPot { opacity: 0; }
 
 /* ---------- 히어로 ---------- */
