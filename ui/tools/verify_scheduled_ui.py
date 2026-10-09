@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import live2 as L
 import tournament_store as TS
+import scheduled_runtime as SR
 
 
 def verify():
@@ -93,6 +94,57 @@ def verify():
             assert code == 200 and lobby['wallet']['balance'] == 10000
             event = next(t for t in lobby['tournaments'] if t['status'] == 'scheduled')
             tid = event['id']
+            if os.environ.get('T2_VERIFY_CANCELLED_SWITCH') == '1':
+                # A refunded admission keeps its event selected. Switching must
+                # release that old request without demanding another buy-in.
+                stop()
+                store = TS.Store(str(data))
+                store.ensure_schedule(time.time() - 3600)
+                old = next(t['id'] for t in store.catalog()['tournaments']
+                           if t['id'] != tid and t['starts_at'] < time.time())
+                now = time.time()
+                with store._db() as db:
+                    db.execute('UPDATE tournaments SET starts_at=?,closes_at=? WHERE id IN (?,?)',
+                               (now - 1, now + 600, old, tid))
+                store.reserve(old, now=now)
+                store.set_active(old)
+                store.request_enter(old, now=now)
+                out = SR.advance(store.event(old), 0, parallel=False)
+                out['state']['refunded_entries'] = [1]
+                store.save_state(old, out['state'], out['revision'], now=now)
+                assert store.event(old)['entries'][-1]['status'] == 'cancelled'
+                assert store.active_id() == old
+                # Also exercise recovery of a payment committed before the old
+                # request-release failure, as on the phone's waiting receipt.
+                pre_paid = os.environ.get('T2_VERIFY_CANCELLED_PREPAID') == '1'
+                if pre_paid:
+                    store.reserve(tid, now=now)
+                start()
+                path = '/api/enter' if pre_paid else '/api/register'
+                code, reply = call(path, {'tournament_id': tid})
+                assert code == 200, (path, reply)
+                assert reply['wallet']['balance'] == 9000, reply
+                assert store.active_id() == tid
+                assert store.event(tid)['enter_requested']
+                assert not store.event(old)['enter_requested']
+                code, replay = call('/api/register', {'tournament_id': tid})
+                assert code == 200 and replay['wallet']['balance'] == 9000, replay
+                deadline = time.monotonic() + 90
+                while True:
+                    code, admitted = call('/api/state')
+                    assert code == 200, admitted
+                    if not admitted.get('waiting'):
+                        break
+                    assert time.monotonic() < deadline, admitted
+                    time.sleep(.2)
+                assert admitted['tournament_id'] == tid, admitted
+                assert admitted['my_entry']['status'] == 'playing', admitted
+                assert len(store.event(tid)['entries']) == 1
+                assert store.wallet()['balance'] == 9000
+                print('PASS cancelled active admission: %s, replay without recharge, '
+                      'seat assigned and /api/state exits waiting' %
+                      ('recover paid waiting entry' if pre_paid else 'new registration'))
+                return
             late = os.environ.get('T2_VERIFY_SCHEDULE_LATE') == '1'
             if late:
                 # Reproduce a late buy-in with no progressed snapshot yet.

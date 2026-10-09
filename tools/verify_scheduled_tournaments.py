@@ -400,6 +400,25 @@ class EconomyTests(unittest.TestCase):
         self.start()
         with self.assertRaises(TS.TournamentError):
             self.s.reserve(TID, True, 1, now=START + 1)
+
+    def test_refunded_active_reentry_can_release_admission(self):
+        st = self.bust(self.start())
+        self.s.set_active(TID)
+        self.s.reserve(TID, True, 1, now=START + 10)
+        st['refunded_entries'] = [2]
+        self.s.save_state(TID, st, now=START + 11)
+        self.assertEqual(self.s.active_id(), TID)
+        self.assertEqual(self.s.event(TID)['entries'][-1]['status'], 'cancelled')
+        wallet = self.s.wallet()
+        field = copy.deepcopy(self.s.event(TID)['state']['field'])
+        self.s.request_enter(TID, False, now=START + 12)
+        ev = self.s.event(TID)
+        self.assertFalse(ev['enter_requested'])
+        self.assertFalse(ev['state']['hero_ready'])
+        self.assertEqual(ev['state']['field'], field)
+        self.assertEqual(self.s.wallet(), wallet)
+        with self.assertRaises(TS.TournamentError):
+            self.s.request_enter(TID, True, now=START + 12)
         self.assertEqual(self.s.wallet()['balance'], 9000)
 
     def test_stale_worker_does_not_overwrite_paid_reservation(self):
