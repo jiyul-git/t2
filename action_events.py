@@ -269,6 +269,7 @@ def response_context(rnd, seat, pot_start=0.0):
         getattr(rnd, 'action_meta', None), seat, pot_start=pot_start)
     ctx['hero_contrib'] = float(
         getattr(rnd, 'contrib', {}).get(seat, 0) or 0)
+    ctx['min_raise'] = float(getattr(rnd, 'min_raise', 0) or 0)
     fs = ctx.get('facing_seat')
     if fs is not None:
         ctx['facing_stack'] = float(
