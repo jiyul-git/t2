@@ -28,16 +28,22 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile audit and core math
+        id: compile
         run: python3 -m py_compile tools/verify_hand130_part2.py preflop.py gto.py persona.py depth.py icm.py
       - name: Verify HAND130 static equations and recorded price
+        id: equations
         run: python3 tools/verify_hand130_part2.py
       - name: Frozen regression baseline
+        id: regression
         run: python3 tools/regress.py check --baseline current
       - name: Publish auditable commit status
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           TASK_RESULT: ${{ job.status }}
+          COMPILE_RESULT: ${{ steps.compile.outcome }}
+          EQUATIONS_RESULT: ${{ steps.equations.outcome }}
+          REGRESSION_RESULT: ${{ steps.regression.outcome }}
         run: |
           case "$TASK_RESULT" in
             success) STATUS=success ;;
@@ -47,3 +53,18 @@ jobs:
             -f state="$STATUS" \
             -f context="hand130-part2/source-math" \
             -f description="Equation replay and frozen regression: $TASK_RESULT"
+          for STEP in compile equations regression; do
+            case "$STEP" in
+              compile) OUTCOME="$COMPILE_RESULT" ;;
+              equations) OUTCOME="$EQUATIONS_RESULT" ;;
+              regression) OUTCOME="$REGRESSION_RESULT" ;;
+            esac
+            case "$OUTCOME" in
+              success) STEP_STATE=success ;;
+              *) STEP_STATE=failure ;;
+            esac
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+              -f state="$STEP_STATE" \
+              -f context="hand130-part2/$STEP" \
+              -f description="$STEP: $OUTCOME"
+          done
