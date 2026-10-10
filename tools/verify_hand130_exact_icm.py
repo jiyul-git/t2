@@ -63,8 +63,10 @@ def main():
     assert rng.getstate() == rng_state
     used=pseed['pf_calloff_consumer']
     nearly(used['objective_spot_bf'],x['equivalent_bubble_factor'],'planner BF')
-    nearly(pseed['pf_calloff_compare']['icm_required_equity'],
-           round(x['no_tie_breakeven_equity'], 6),'planner rounded price')
+    assert pseed['pf_calloff_compare'] is None  # old cap not evaluated
+    from icm import required_equity
+    nearly(required_equity(108442, 53442, used['objective_spot_bf']),
+           x['no_tie_breakeven_equity'], 'spot break-even')
     assert used['gate_pass'] is False and used['strategy_consumer'] is True
     assert used['decision_quantity'] == 'perceived_layer_equity_vs_spot_icm_price'
     print('PASS full HAND130 objective-spot BF propagation to personal planner')
