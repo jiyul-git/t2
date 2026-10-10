@@ -2,7 +2,7 @@ name: P13 complete surviving-field BF review
 
 on:
   push:
-    branches: [chatgpt/p13-complete-field-bf-20261010, chatgpt/p13-pr18-preview-20261010, chatgpt/p13-p18-p19-isolated-integration-20261010, chatgpt/p13-pr21-field-epoch-guard-20261010]
+    branches: [chatgpt/p13-complete-field-bf-20261010, chatgpt/p13-pr18-preview-20261010, chatgpt/p13-p18-p19-isolated-integration-20261010, chatgpt/p13-pr21-field-epoch-guard-20261010, chatgpt/p13-p8-pr23-pr24-provenance-epoch-20261010]
   workflow_dispatch:
 
 jobs:
@@ -33,6 +33,13 @@ jobs:
         run: python3 tools/verify_p13_complete_field_bf.py
       - name: Remote-only field drift, frozen common epoch and P8 actor provenance
         run: python3 tools/verify_p13_field_epoch_freshness.py
+      - name: PR23 observed-actor BF source to successful and incomplete P9 layers
+        run: python3 tools/verify_pr21_actor_bf_provenance.py
+      - name: Check P13 field epoch implementation and P8/P9 strategic files unchanged
+        run: |
+          git diff --exit-code 75c6ee2db50a06a0f3141835f063695c26c6ebc7 HEAD -- fieldsim.py play.py icm.py live2.py context.py bot.py plan.py preflop.py
+          echo "PASS unchanged PR24 epoch contract and P5/P9 core"
+
       - name: Parallel vs sequential frozen-field round semantic parity
         env:
           T2_BOT_LOG: "2"
