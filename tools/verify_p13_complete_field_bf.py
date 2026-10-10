@@ -44,6 +44,16 @@ def hand(seats, snapshot):
     h._start_stacks = dict(h.stacks)
     h.seat_pid = {s: 'P%s' % s for s in seats}
     h.field_pid_stacks = {'P%s' % s: ORIGINAL[s] for s in FULL}
+    from types import SimpleNamespace
+    h.field_snapshot_hand_no = 1
+    h.field_snapshot_level = 1
+    h.field_snapshot_scope = 'decision_current'
+    h.field_snapshot_id = I.field_epoch_id(h.field_pid_stacks, 1, 1)
+    h._field_epoch_owner = SimpleNamespace(
+        players={pid: {'pid': pid, 'stack': chips}
+                 for pid, chips in h.field_pid_stacks.items()},
+        hand_no=1, level=1, _frozen_field=None)
+    h._field_frozen_epoch_ref = None
     return h
 
 
@@ -92,7 +102,8 @@ def main():
     full_info = I.table_bf(
         ST, HERO_LOCAL, 8, 7, PAYOUTS, field_avg=112500,
         field_stacks=ALL, field_pid_stacks=pid_full,
-        table_pids=local_pids, return_details=True)
+        table_pids=local_pids, field_epoch_status='current_verified',
+        return_details=True)
     assert full_info['is_exact']
     assert full_info['price_specific'] is False
     assert full_info['bf_kind'] == 'generic_default_risk_not_spot_call_prize_ev'
@@ -136,6 +147,7 @@ def main():
         field_avg=112500,field_stacks=dupl_full,
         field_pid_stacks={'P%s'%s:duplicated[s] for s in FULL},
         table_pids=['P%s'%s for s in dupl_local],
+        field_epoch_status='current_verified',
         return_details=True)
     assert dupl['is_exact']
     equal(dupl['value'],I.bubble_factor(dupl_full,PAYOUTS,FULL.index(3)),
@@ -148,7 +160,8 @@ def main():
     unknown = I.table_bf(
         ST, HERO_LOCAL, 8, 7, PAYOUTS, field_avg=112500,
         field_stacks=ALL, field_pid_stacks=bogus,
-        table_pids=local_pids, return_details=True)
+        table_pids=local_pids, field_epoch_status='current_verified',
+        return_details=True)
     assert not unknown['is_exact']
     assert unknown['reason'] == 'missing_or_mismatched_player_id_snapshot'
     # Snapshot was captured before this hand changed the local hero's chips.
@@ -160,7 +173,8 @@ def main():
     # Counts-only snapshot with no pid association also fails exactness.
     unverified = I.table_bf(
         ST, HERO_LOCAL, 8, 7, PAYOUTS, field_avg=112500,
-        field_stacks=ALL, return_details=True)
+        field_stacks=ALL, field_epoch_status='current_verified',
+        return_details=True)
     assert not unverified['is_exact']
     assert unverified['reason'] == 'missing_or_mismatched_player_id_snapshot'
 
