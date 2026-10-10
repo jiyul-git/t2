@@ -1,0 +1,93 @@
+name: P8 independent PR27 27-player 3-table provenance and MC audit
+
+on:
+  push:
+    branches: [chatgpt/p8-pr27-independent-epoch-range-audit-20261010]
+  workflow_dispatch:
+
+jobs:
+  p8-independent-pr27:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      T2_BOT_LOG: "2"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Assert exact P27 and ancestor P23/P26 P8 code, zero production changes
+        run: |
+          set -euo pipefail
+          PROD=3c434b28046643ba54c04447951ad148ae6f9c1c
+          P26=0ce4ecd1ecc1e7221ea5a6f00e734aa32100d889
+          git diff --exit-code "$PROD" HEAD -- session.py range_posterior_v1.py icm.py play.py live2.py fieldsim.py context.py bot.py plan.py preflop.py
+          git diff --exit-code "$P26" "$PROD" -- session.py range_posterior_v1.py bot.py plan.py preflop.py tools/verify_pr21_actor_bf_provenance.py tools/verify_pr24_p8_epoch_evidence_endtoend.py
+          git diff --exit-code "$PROD" HEAD -- tools/verify_pr21_actor_bf_provenance.py tools/verify_pr24_p8_epoch_evidence_endtoend.py
+          git diff --exit-code "$PROD" HEAD -- tools/verify_hand130_mc_contract.py
+          echo "PASS immutable PR27 source and full PR23/PR26 P8 witness unchanged"
+      - name: Compile dedicated P8 27 player evidence
+        run: python3 -m py_compile tools/verify_pr27_p8_27player_3table_epoch_range.py
+      - name: Independent real 27 survivors / 3 tables three-state epoch through P8 P9 P5
+        run: python3 tools/verify_pr27_p8_27player_3table_epoch_range.py
+      - name: Re-run P8 PR23 and PR26 successful incomplete and replay evidence
+        run: |
+          python3 tools/verify_pr21_actor_bf_provenance.py
+          python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
+          python3 tools/verify_hand130_conditioned_posterior.py
+          python3 tools/verify_pr16_p5_provenance.py
+      - name: P13 P15 remote-only, false true unknown and frozen lifecycle
+        run: |
+          python3 tools/verify_p13_parallel_epoch_lifetime.py
+          python3 tools/verify_p13_field_epoch_freshness.py
+          python3 tools/verify_p13_complete_field_bf.py
+      - name: Real three-table sequential and parallel preservation
+        run: python3 tools/verify_parallel_table_processes.py 27 0 11
+      - name: P9 valid zero partial reject tie variance seed global RNG
+        run: |
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_weighted_sampling.py
+          python3 tools/verify_weighted_range_adapter.py
+      - name: P5 calloff and P13 HAND130 odd chips tie partial call
+        run: |
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/compare_hand130_range_v1.py
+      - name: Default OFF same-seed full JSON fingerprints against P27
+        run: |
+          git worktree add --detach /tmp/pr27_p8_before 3c434b28046643ba54c04447951ad148ae6f9c1c
+          for seed in 11 12; do
+            (cd /tmp/pr27_p8_before && python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr27_p8_before_off_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr27_p8_after_off_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/pr27_p8_before_off_%s.json'%seed))
+              b=json.load(open('/tmp/pr27_p8_after_off_%s.json'%seed))
+              assert a==b, ('default-off',seed)
+              print({'mode':'default_OFF','seed':seed,
+                     'hands':len(a.get('hands',[])), 'pf_decisions':len(a.get('pf',[])),
+                     'fingerprint_identical':True})
+          PY
+      - name: Conditional ON same-seed full JSON fingerprints against P27
+        env:
+          T2_RANGE_CONDITIONAL_V1: "1"
+        run: |
+          for seed in 11 12; do
+            (cd /tmp/pr27_p8_before && python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr27_p8_before_on_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr27_p8_after_on_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/pr27_p8_before_on_%s.json'%seed))
+              b=json.load(open('/tmp/pr27_p8_after_on_%s.json'%seed))
+              assert a==b, ('conditional-on',seed)
+              print({'mode':'conditional_ON','seed':seed,
+                     'hands':len(a.get('hands',[])), 'pf_decisions':len(a.get('pf',[])),
+                     'fingerprint_identical':True})
+          PY
