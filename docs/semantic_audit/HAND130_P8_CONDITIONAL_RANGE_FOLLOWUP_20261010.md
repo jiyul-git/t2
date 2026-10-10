@@ -71,3 +71,38 @@ P5 branch HEAD `6f0d912` adds changes after original parent, including `session.
 ## Integration branch source lineage
 
 This document also appears on `chatgpt/hand130-range-conditional-integrate-20261010` created from actual P5 HEAD `6f0d912`. It preserves all subsequent P5 session/plan updates and adds P8 source changes as independent insertions. The older prototype PR #15 is superseded for integration review; it should remain a nonmergeable archive of the initial experiment. Final actual Actions result must be taken from the integration-branch run, not inferred from the older base.
+
+## PR #16 P5/P13 blocking-review correction (2026-10-10)
+
+**Reference:** P5 independent review commit `3f17b6633c2bf26df3a56bebaab3c0e4b409b126`, original witness `tools/review_pr16_p5_contract.py`. This addendum **supersedes the old B37 single-equity comparison** above; do not quote its +0.0059375 equity delta as the corrected result.
+
+### P13 actual chip-ICM geometry
+
+`tools/compare_hand130_range_v1.py` previously invoked `session._terminal_hu_call_icm(...)` without tournament `unit` and `odd_order`, silently using `unit=1, odd_order=None`. Correct inputs are `unit=5000` and `odd_order=[8,9,1,2,3,4,5,7]`, which split a tie across **both** layers under the actual small-blind unit and BTN-left payout priority. Correct final B37/B.B. stacks: **231422 and 86884 chips**; correct B37 tied prize share **18.515842285449054%**. The corrected comparison asserts these outputs for every modeled equity and leaves all P13 production split logic unchanged.
+
+The prior comparison called `bot.equity_vs_combos` once then replaced `shadow['effective_equity']`, `gross_return` and `call_chip_ev` without replacing the archived `layer_equities`. This mixed incompatible numeric sources. The corrected comparison instead invokes production `session.layer_equities_by_pot_layer` for **both layers and each model/seed**, generates `session._layer_call_summary`, replaces **all** dependent fields and recorded layer equities consistently, then invokes actual P5 calloff with exact ICM. It asserts all MC accepted draws >0 and verifies unchanged shared RNG.
+
+Corrected **four paired seeds, 800 requested draws per layer** (neutral perceived observer proxy, NOT the original archived 288-combo distribution):
+
+| model | original single-pool mean (obsolete methodology) | corrected layered mean | P5 action | objective ICM | fixed-input ICM EV min-max across seeds (prize points) |
+|---|---:|---:|---|---|---|
+| general 3bet | 0.58046875 | **0.60225550** | call 4/4 | call 4/4 | lower 1.30580–1.49237; upper 1.33969–1.52372 |
+| conditional 3bet-shove | 0.58640625 | **0.59638625** | call 4/4 | call 4/4 | lower 1.22921–1.48157; upper 1.26414–1.51306 |
+
+New difference **conditional minus general = -0.00586925**; obsolete difference **+0.0059375**. Because the sampling object changed from one unconditional pool-equity estimate to two per-layer estimates with new derived seeds and rounding, the difference in means is **not** attributable solely to correcting odd-chip settlement. These are P5 *conditional input* responses; no certification that the opponent 288 combo posterior is correct.
+
+### P5 independent blocker / evidence status
+
+Previously `HandRun._run` saved range metadata inside `if _rr`, so `complete=False`, `source`, `missing` and its failure reason disappeared whenever the conditional range was empty. Now `session._record_preflop_observer_range` keeps metadata regardless of support, and only keeps the pool if it exists. For supported but incomplete contexts, status is `missing_evidence`, `failure_kind=missing_evidence` and `range_available=False`. The observer range stays empty—no guessed opponent pool, and the calloff missing-evidence fallback remains explicitly unverified.
+
+Previously `call_allin` / unsupported event forms silently used legacy `ranges.preflop_range` without any conditional-model failure marker. Now unsupported forms explicitly return `source=legacy_fallback`, `conditional_source=observer_actor_policy_conditional_v1`, `failure_kind=model_unavailable`, `complete=False`, `missing=['action_class_not_supported']`, `model_calibrated=False`, `equity_model_status=unvalidated_legacy_proxy` and `legacy_source` from the real fallback. The legacy pool is intentionally unchanged for supported old action routes; numeric equity derived from that pool is **not** labeled a verified conditional-model estimate.
+
+`session._attach_p8_observer_evidence` puts the full per-seat source/missing/status into `pf_opp_range_meta` and (when present) `pf_calloff_consumer.opponent_range_evidence` on the **experimental ON** path. The consumer explicitly marks estimate status unvalidated and `mathematically_justified=False`. OFF behavior intentionally retains the old exact fingerprint.
+
+Native regression `tools/verify_pr16_p5_provenance.py` derives cases from P5's independent witness, asserting ON supported weight preservation, ON missing evidence retention through final seed and consumer, `call_allin` fallback and conditional model unavailability, and OFF unchanged legacy support.
+
+### Unresolved: P9 acceptance-zero sample gate
+
+P5's original reviewer also reproduced `bot.equity_vs_combos` returning numeric 0.0 with `accepted=0`, which `session.layer_equities_by_pot_layer` may currently mark `complete=True`. It is **not** a mathematically established 0% equity. This is a separate shared-sampling producer issue requiring Department 9 approval and regression. **GitHub issue [#17](https://github.com/jiyul-git/t2/issues/17)** requests a fail-closed contract; P8 has not invented a fallback probability or changed the P9 sampler. PR #16 must remain non-release / draft pending P9's decision.
+
+Neither production `_split_pot_winnings` / `_terminal_hu_call_icm` nor `preflop.defend_thresholds` is modified by this correction. No `test3` merge, feature flag remains off by default.

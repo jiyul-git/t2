@@ -18,6 +18,8 @@ jobs:
         run: python3 -m py_compile range_posterior_v1.py ranges.py bot.py session.py tools/verify_hand130_conditioned_posterior.py
       - name: Conditional posterior and replay invariants
         run: python3 tools/verify_hand130_conditioned_posterior.py
+      - name: P5 independent PR16 failure-provenance regression
+        run: python3 tools/verify_pr16_p5_provenance.py
       - name: Paired B37 opponent range and P5 decision comparison
         run: python3 tools/compare_hand130_range_v1.py
       - name: P5 isolation and missing-evidence contract
