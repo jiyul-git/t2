@@ -64,7 +64,12 @@ def classify_public_action(action_meta, seat, bb, position,
     if m.get('allin_call') or (m.get('action') == 'call' and allin):
         kind = 'call_allin'
     elif raised and not full:
-        kind = 'first_in_shove' if allin else 'open_raise'
+        # Raising over prior limpers is an iso, not a first-in RFI.
+        earlier_limp = any(
+            x.get('action') == 'call' and not x.get('raised')
+            for x in before)
+        kind = ('iso_after_limp' if earlier_limp else
+                'first_in_shove' if allin else 'open_raise')
     elif raised and all(x.get('actor_allin_after') for x in full):
         kind = 'iso_over_shove'
     elif raised and len(full) == 1:
@@ -106,6 +111,47 @@ def classify_public_action(action_meta, seat, bb, position,
             for x in rows[:i+1]],
     }
 
+
+
+def public_behind_stacks(action_meta, order, seat, stacks, bb):
+    """Reconstruct stacks of people behind a first-in opener at action time.
+
+    A player's FIRST action after the open records their pre_stack. Players
+    who have not yet acted still hold their current (unchanged) stack.
+    This uses public amounts only, not opponent cards or hidden tendencies.
+    Fail closed if the action ordering or stack snapshot is unavailable.
+    """
+    order = list(order or ())
+    metas = list(action_meta or ())
+    if seat not in order or bb is None or float(bb) <= 0:
+        return None, {'reason': 'missing_public_order_or_blind'}
+    idxs = [i for i, row in enumerate(metas) if row.get('seat') == seat]
+    if not idxs:
+        return None, {'reason': 'missing_actor_action'}
+    idx = idxs[-1]
+    behind = order[order.index(seat)+1:]
+    result = []
+    provenance = {}
+    for other in behind:
+        first = next((x for x in metas[idx+1:]
+                      if x.get('seat') == other), None)
+        if first is not None and first.get('pre_stack') is not None:
+            amount = float(first['pre_stack'])
+            source = 'later_public_action_pre_stack'
+        elif first is None and other in (stacks or {}):
+            amount = float(stacks[other])
+            source = 'unacted_current_stack'
+        else:
+            return None, {'reason': 'missing_behind_stack',
+                          'seat': other}
+        if amount < 0:
+            return None, {'reason': 'negative_public_stack',
+                          'seat': other}
+        result.append(amount / float(bb))
+        provenance[str(other)] = {'stack_bb': amount / float(bb),
+                                  'source': source}
+    return result, {'source': 'public_action_history_stack_snapshots',
+                    'seats': provenance}
 
 def _defend_attack_form_prob(prof, pos, open_bb, n_callers, stack_bb,
                              level, exploit, hot):
