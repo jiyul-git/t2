@@ -41,6 +41,8 @@ jobs:
           python3 tools/verify_pr16_p5_provenance.py
           python3 tools/verify_pr21_actor_bf_provenance.py
           python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
+      - name: Real 27-player 3-table frozen BF passes to preflop and actor meta OFF ON
+        run: python3 tools/review_p5_pr27_real_27_field.py
       - name: P13 and P15 actual epoch lifecycle checks
         run: |
           python3 tools/verify_p13_parallel_epoch_lifetime.py
