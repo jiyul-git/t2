@@ -1,0 +1,5 @@
+{"mode": "default_OFF", "seed": 11, "decisions": 725, "hands": 80, "full_record_equal": true}
+{"mode": "default_OFF", "seed": 12, "decisions": 719, "hands": 80, "full_record_equal": true}
+{"mode": "ON", "seed": 11, "decisions": 725, "hands": 80, "full_record_equal": true}
+{"mode": "ON", "seed": 12, "decisions": 719, "hands": 80, "full_record_equal": true}
+PASS exact production paired behavior/state; no claim of strategic optimality

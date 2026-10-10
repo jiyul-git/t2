@@ -23,7 +23,7 @@ DST=${1:-$HOME/t2_ui_run}
 # live2 가 전이적으로 import 하는 모듈 전부. view.py 는 ui_view 가
 # view_text 라는 이름으로 직접 로드하므로 반드시 포함한다.
 MODULES="action_events archetypes bot context depth dynamics field fieldsim formats gto icm
-         live2 money_pressure persona plan play preflop ranges reads runner session storage_paths table
+         live2 money_pressure persona plan play preflop range_posterior_v1 ranges reads runner session storage_paths table
          telemetry_sync texture timing view tournament_store scheduled_runtime personal_data coarse_sim"
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
@@ -53,7 +53,7 @@ if [ -n "${T2_UI_REF:-}" ]; then
     PATHS="ui/server/ui_view.py ui/server/ui_server.py ui/web $DATA"
     for m in $MODULES; do
         case "$m" in
-            tournament_store|scheduled_runtime|personal_data|coarse_sim)
+            tournament_store|scheduled_runtime|personal_data|coarse_sim|range_posterior_v1)
                 if git -C "$SRC" cat-file -e "$COMMIT:$m.py" 2>/dev/null; then
                     PATHS="$PATHS $m.py"
                 fi ;;
@@ -69,10 +69,15 @@ if [ -n "${T2_UI_REF:-}" ]; then
     SOURCE_DESC="$REF $(git -C "$SRC" rev-parse --short "$COMMIT")"
 fi
 
+# Legacy refs may predate this import; current session requires it even when OFF.
+if [ ! -f "$FROM/range_posterior_v1.py" ] && grep -q 'import range_posterior_v1' "$FROM/session.py"; then
+    echo '중단: session.py가 요구하는 range_posterior_v1.py가 원본에 없습니다.' >&2
+    exit 1
+fi
 COPIED_MODULES=0
 for m in $MODULES; do
     case "$m" in
-        tournament_store|scheduled_runtime|personal_data|coarse_sim)
+        tournament_store|scheduled_runtime|personal_data|coarse_sim|range_posterior_v1)
             [ -f "$FROM/$m.py" ] || continue ;;
     esac
     cp "$FROM/$m.py" "$DST/$m.py"

@@ -1,0 +1,46 @@
+name: P16 isolated fresh installation
+on:
+  push:
+    branches: [chatgpt/p16-fresh-install-20261010]
+  workflow_dispatch:
+jobs:
+  installation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact base and unchanged engine guard
+        run: |
+          git merge-base --is-ancestor 3c434b28046643ba54c04447951ad148ae6f9c1c HEAD
+          git diff --exit-code 3c434b28046643ba54c04447951ad148ae6f9c1c HEAD -- '*.py' ':!ui/tools/*' '*.json' ui/server ui/web
+          git rev-parse HEAD
+          python --version
+          git worktree add --detach /tmp/p16-production-base 3c434b28046643ba54c04447951ad148ae6f9c1c
+      - name: Reproduce original clean-install failure on exact production base
+        run: |
+          mkdir -p p16-results
+          python ui/tools/verify_original_install_failure.py /tmp/p16-production-base p16-results
+      - name: Original P17 import isolation plus eight actual server starts
+        run: |
+          mkdir -p p16-results
+          python ui/tools/verify_fresh_install_startup.py p16-results > p16-results/fresh-install.log 2>&1
+          cat p16-results/fresh-install.log
+      - name: Wallet and system replacement regression
+        run: python ui/tools/verify_personal_installation.py > p16-results/wallet.log 2>&1
+      - name: Conditional range and shared RNG contracts
+        run: |
+          python tools/verify_hand130_conditioned_posterior.py > p16-results/posterior.log 2>&1
+          python tools/verify_hand130_mc_contract.py > p16-results/mc.log 2>&1
+      - name: Paired exact production base OFF and ON seeds 11 and 12
+        run: |
+          python ui/tools/verify_installation_paired_behavior.py /tmp/p16-production-base p16-results | tee p16-results/paired-summary.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p16-fresh-install-evidence
+          path: p16-results/

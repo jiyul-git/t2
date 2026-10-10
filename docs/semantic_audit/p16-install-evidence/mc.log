@@ -1,0 +1,2 @@
+PASS P9 MC: zero/partial/complete, true 0, tie, variance, seed, global RNG
+PASS P5/P8: incomplete per-layer provenance, no fabricated equity/EV
