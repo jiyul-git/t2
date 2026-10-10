@@ -327,7 +327,7 @@ def board_changed(prev_board, board):
 def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, street,
                 seed, n_opp, behind, prev_board,
                 oop_vs_aggr=None, oop_legacy_abs=None, initiative=True,
-                opp_ranges=None):
+                opp_ranges=None, tilt=0.0, bb_chips=None):
     if board_changed(prev_board, board):
         # 보드 변화로 계획을 다시 세워도 **현재 의사결정 문맥**을 잃으면 안 된다.
         # opp_* 는 이전 계획 snapshot에서 이어지고, 위치/initiative 세 값은
