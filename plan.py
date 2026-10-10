@@ -3543,6 +3543,58 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             field_avg_bb=field_avg_bb, erosion=erosion, field_q=field_q, bf=bf,
             can_check=can_check)
         role = 'iso'
+    elif opener_allin and not can_raise and float(to_call_bb or 0) > 0:
+        # An all-in call/fold is an incremental-EV question, not a vs-open
+        # defend-percentile question. Deliberately bypass defend_decision,
+        # gto.defend_pct, calloff_cap and shared decision RNG entirely.
+        role = 'defend'
+        _sh = dict(call_ev_shadow or {})
+        _exact_hu_icm = dict(_sh.get('exact_hu_icm') or {})
+        _spot_bf = float(_exact_hu_icm.get('equivalent_bubble_factor', bf))
+        _layer_j = _pf.calloff_layer_judgment(
+            profile, _sh, bubble_factor=_spot_bf,
+            seed=calloff_decision_seed)
+        if _layer_j is None:
+            # Incomplete input is NOT evidence of -EV and must never be
+            # presented as a successful mathematical fold. The engine needs
+            # a legal action; explicitly mark its conservative fallback.
+            a, sz = 'fold', 0.0
+            _calloff_consumer = {
+                'eligible': True, 'strategy_consumer': False,
+                'selected_action': 'fold',
+                'decision_quantity': 'unverified_missing_calloff_equity',
+                'missing_equity_layers': list(
+                    _sh.get('missing_equity_layers') or []),
+                'legacy_evaluated': False,
+                'mathematically_justified': False,
+                'fallback_reason': 'missing_pot_or_range_evidence',
+            }
+            _pf_timing = {'kind': 'calloff_evidence_missing'}
+        else:
+            a = _layer_j['layer_action']
+            sz = float(to_call_bb or 0) if a == 'call' else 0.0
+            _calloff_consumer = dict(_layer_j)
+            _calloff_consumer.update({
+                'eligible': True, 'strategy_consumer': True,
+                'legacy_action': None, 'legacy_evaluated': False,
+                'selected_action': a, 'selected_size_bb': sz,
+                'gate_role': 'diagnostic_only',
+                'decision_quantity': (
+                    'perceived_layer_equity_vs_spot_icm_price'
+                    if _exact_hu_icm else 'perceived_layer_equity_vs_price'),
+                'objective_unconditional_bf': float(bf),
+                'objective_spot_bf': float(_spot_bf),
+                'exact_hu_icm': dict(_exact_hu_icm) if _exact_hu_icm else None,
+                'mathematically_justified': (
+                    not bool(_exact_hu_icm) or
+                    _exact_hu_icm.get('objective_action_with_fixed_equity')
+                    != 'uncertain'),
+                'estimate_status': 'point_estimate_range_uncertainty_not_bounded',
+            })
+            _pf_timing = {'kind': 'calloff_layer',
+                          'eq': _layer_j.get('layer_effective_equity'),
+                          'need': _layer_j.get('perceived_required_equity')}
+
     else:
         # Re-raise 판단에서 핵심은 '마지막 aggressor 한 명'이 아니라
         # 현재 살아 있는 seat-keyed range 전체다.
@@ -3631,67 +3683,11 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 pot_bb=pot_bb, to_call_bb=to_call_bb)
         role = 'defend'
 
-    _pf_timing = _pf.take_timing_bound()
-    # Pure calloff: conditional showdown equity and actual call price own the
-    # decision when every eligible pot layer has a modeled range. A percentile
-    # defense width is NOT an alternative EV calculation. Retain the legacy
-    # outcome as a comparison/fallback when price/equity input is incomplete.
-    _calloff_compare = None
-    if (role == 'defend' and call_ev_shadow
-            and call_ev_shadow.get('pure_calloff')
-            and call_ev_shadow.get('complete')):
-        _legacy_cap = _pf.calloff_cap(
-            profile, pos, aggressor_pos, bb, open_bb, raise_level,
-            bf=bf, exploit=rd, n_callers=n_callers,
-            seats=seats, ante=ante)
-        _exact_hu_icm = (call_ev_shadow.get('exact_hu_icm') or {})
-        # Equivalent bubble factor is derived from the actual win/loss ICM
-        # prize states and true call price. Do not apply a generic
-        # full-stack-risk BF to a much smaller covered all-in.
-        _spot_bf = float(_exact_hu_icm.get('equivalent_bubble_factor', bf))
-        _calloff_compare = _pf.calloff_ev_comparison(
-            hand, a, _legacy_cap, call_ev_shadow, bubble_factor=_spot_bf)
-
-        _layer_j = _pf.calloff_layer_judgment(
-            profile, call_ev_shadow, bubble_factor=_spot_bf,
-            seed=calloff_decision_seed)
-        if _layer_j is not None:
-            _legacy_act = a
-            _legacy_sz = sz
-            _selected_act = a
-            _selected_sz = sz
-            # The pf_defend knowledge gate is retained for audit, not as a
-            # veto of a computed call-vs-fold EV comparison. A failed gate used
-            # to restore an unrelated percentile cap even when a complete
-            # price/equity comparison existed (HAND130 B37). Individual
-            # imperfect knowledge is already reflected in the opponent range,
-            # perceived ICM factor and pot-odds calculation noise.
-            _selected_act = _layer_j.get('layer_action')
-            _selected_sz = (
-                float(to_call_bb or 0.0)
-                if _selected_act == 'call' else 0.0)
-            a, sz = _selected_act, _selected_sz
-            _pf_timing = {'kind': 'calloff_layer',
-                          'eq': _layer_j.get('layer_effective_equity'),
-                          'need': _layer_j.get('perceived_required_equity')}
-            _calloff_consumer = dict(_layer_j)
-            _calloff_consumer.update({
-                'eligible': True,
-                'legacy_action': _legacy_act,
-                'legacy_size_bb': float(_legacy_sz or 0.0),
-                'selected_action': _selected_act,
-                'selected_size_bb': float(_selected_sz or 0.0),
-                'changed': bool(
-                    _selected_act != _legacy_act),
-                'strategy_consumer': True,
-                'gate_role': 'diagnostic_only',
-                'decision_quantity': (
-                    'perceived_layer_equity_vs_spot_icm_price'
-                    if _exact_hu_icm else 'perceived_layer_equity_vs_price'),
-                'objective_unconditional_bf': float(bf),
-                'objective_spot_bf': float(_spot_bf),
-                'exact_hu_icm': dict(_exact_hu_icm) if _exact_hu_icm else None,
-            })
+    # Preserve a dedicated price/ICM timing boundary. Only general defend
+    # and open/iso decisions consume the existing preflop timing tracer.
+    _recorded_timing = _pf.take_timing_bound()
+    if _calloff_consumer is None:
+        _pf_timing = _recorded_timing
 
     # 현재 판단 사건의 종류. 행동 결과만 남기면
     # cold 4bet / opener 4bet / caller backraise 가 모두 'defend'로 뭉개진다.
