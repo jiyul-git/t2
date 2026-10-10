@@ -8,7 +8,11 @@ environment variables were not archived). Changes no strategies or RNG.
 import json
 import math
 import os
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 os.environ.pop("T2_GTO_MEMORY_V2", None)
 os.environ.pop("T2_PREFLOP_REASONING_V3", None)
@@ -19,7 +23,6 @@ import icm as ICM
 import persona as PS
 import preflop as PF
 
-ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs/handoff/T2_T3_HANDOFF_20261010.md"
 
 
