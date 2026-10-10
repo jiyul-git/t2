@@ -512,6 +512,18 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
             'sims': int(sims),
         }
 
+        # Evidence must survive successful *and* incomplete pot layers.
+        # Keep the PR24 epoch fields untouched; they refer to the actor BF
+        # at observer reconstruction time, not necessarily action time.
+        _actor_evidence = {
+            str(o): dict(range_metadata[o])
+            for o in opps
+            if o in range_metadata
+            and 'actor_bf_provenance' in (range_metadata.get(o) or {})
+        }
+        if _actor_evidence:
+            row['range_provenance'] = _actor_evidence
+
         if not row['hero_eligible']:
             row['reason'] = 'hero_not_currently_eligible'
         elif missing:
@@ -607,6 +619,9 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
                 'missing_ranges': row.get('missing_ranges', []) if row else [],
                 'missing_range_details': row.get('missing_range_details', {}) if row else {},
             }
+            if row and row.get('range_provenance'):
+                incomplete_reasons[idx]['range_provenance'] = dict(
+                    row['range_provenance'])
             continue
         gross += amount * float(row['equity'])
 
@@ -1577,6 +1592,12 @@ class HandRun:
                 observer_context=_ctx)
             _new_meta = dict(_new_meta or {})
             _new_meta['actor_bf_provenance'] = dict(_actor_bf)
+            _new_meta['actor_bf_evidence_source'] = 'Hand.bf_details(target)' if hasattr(
+                h, 'bf_details') else 'legacy_scalar_without_epoch_evidence'
+            _new_meta['actor_bf_evaluation_phase'] = 'observer_reconstruction'
+            _new_meta['actor_action_epoch_bf_verified'] = False
+            _new_meta['actor_bf_likelihood_direct_input'] = (
+                _event.get('kind') in ('first_in_shove', 'open_raise'))
             # The posterior's declared completeness is authoritative.
             # A non-empty but incomplete candidate is *not* usable EV input.
             if not _new_meta.get('complete'):
@@ -1622,6 +1643,10 @@ class HandRun:
                 'failure_kind': 'model_unavailable',
                 'failure_reason': 'unsupported_conditional_action',
                 'actor_bf_provenance': dict(_actor_bf),
+                'actor_bf_evidence_source': _new_meta['actor_bf_evidence_source'],
+                'actor_bf_evaluation_phase': 'observer_reconstruction',
+                'actor_action_epoch_bf_verified': False,
+                'actor_bf_likelihood_direct_input': False,
             }
         else:
             _conditional_unavailable = None
@@ -1656,6 +1681,11 @@ class HandRun:
                 'model_calibrated': False,
                 'equity_model_status': 'unvalidated_legacy_proxy',
                 'actor_bf_provenance': dict(_actor_bf),
+                'actor_bf_evidence_source': _conditional_unavailable[
+                    'actor_bf_evidence_source'],
+                'actor_bf_evaluation_phase': 'observer_reconstruction',
+                'actor_action_epoch_bf_verified': False,
+                'actor_bf_likelihood_direct_input': False,
             })
         return R.range_unique_sorted(rr), _story
 
