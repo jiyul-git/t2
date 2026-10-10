@@ -432,7 +432,10 @@ def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
             pools.append(None)
         return pools
 
-    if want==1 and opp_range:
+    # Legacy union identifies the HU opponent only when seat-pool input
+    # was genuinely omitted. An explicitly supplied empty seat map is not
+    # authorization to substitute a different opponent's union range.
+    if opp_ranges is None and want==1 and opp_range:
         return [R.range_copy(opp_range)]
     return [None]*want
 
@@ -454,7 +457,52 @@ def _opp_ranges_signature(opp_ranges):
     return ()
 
 
-def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
+def _equity_input_provenance(opp_range, n_opp, opp_ranges, raw):
+    """Identify observed versus neutral-proxy seats before MC filtering.
+
+    Unknown actual seat ids are kept as None, not fabricated from order.
+    This records the source of a calculation separately from MC completeness.
+    No opponent range is copied or inferred from another opponent.
+    """
+    n = max(1, int(n_opp or 1))
+    if isinstance(opp_ranges, dict):
+        entries = [(k, opp_ranges[k]) for k in
+                   sorted(opp_ranges, key=lambda x: str(x))][:n]
+        contract = 'seat_keyed'
+    elif isinstance(opp_ranges, (list, tuple)):
+        entries = [(None, p) for p in opp_ranges[:n]]
+        contract = 'positional'
+    elif opp_ranges is None and n == 1 and opp_range:
+        entries = [(None, opp_range)]
+        contract = 'legacy_hu_opp_range'
+    else:
+        entries = []
+        contract = 'unobserved_field'
+    missing = []
+    per_seat = []
+    for i in range(n):
+        seat, original = entries[i] if i < len(entries) else (None, None)
+        observed = bool(original) and bool(raw[i])
+        reason = (None if observed else
+                  'explicit_empty_range' if i < len(entries) else
+                  'unobserved_opponent_slot')
+        item = {'slot': i+1, 'seat': seat,
+                'source': 'observed_range' if observed else 'neutral_field_proxy',
+                'reason': reason}
+        per_seat.append(item)
+        if not observed:
+            missing.append(dict(item))
+    return {'input_contract': contract, 'range_provenance': per_seat,
+            'missing_opponents': missing, 'imputed_seats': missing,
+            'observed_input_complete': not bool(missing),
+            'model_source': ('observed_range_mc' if not missing else
+                             'observed_and_neutral_field_proxy_mc'),
+            'neutral_model': ('existing_field_range_combos_0.35'
+                              if missing else None)}
+
+
+def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None,
+                audit=None):
     """**보드를 돌리지 않은** 에쿼티. 상대별 레인지를 각각 보존한다.
 
     소비처(stage9 B3 확인): make_plan 은 이 값을 '지금 바로 쇼다운했을 때'의
@@ -463,16 +511,25 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
     다시 계산한다. (예전 문구 '기록 전용'은 make_plan 소비를 빠뜨렸다.)
     """
     if not board:
+        if audit is not None:
+            audit.update(complete=False, reason='missing_board',
+                         requested=int(sims), accepted=0)
         return None
     dead = set(hero) | set(board)
     pools0 = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
+    if audit is not None:
+        audit.update(_equity_input_provenance(
+            opp_range, n_opp, opp_ranges, pools0))
     pools = [
         (bot._filter_pool(p, dead, sort_legacy=True)
          if p else bot.range_combos(0.35, dead))
         for p in pools0
     ]
-    pools = [p for p in pools if p]
-    if not pools:
+    # A missing seat is not a zero-equity opponent and must not be dropped.
+    if not pools or any(not p for p in pools):
+        if audit is not None:
+            audit.update(complete=False, reason='missing_opponent_range',
+                         requested=int(sims), accepted=0)
         return None
     if seed is None:
         seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
@@ -494,10 +551,20 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
         run += 1
         opp_scores = [bot.eval7(o + board) for o in opps]
         share += bot._showdown_share(hs, opp_scores)
-    return share / max(1, run)
+    # Match bot.equity_vs_pools: even a partial accepted sample is not a
+    # decision-grade estimate. A fully accepted real zero remains numeric 0.0.
+    complete = (sims > 0 and run == sims)
+    if audit is not None:
+        audit.update(complete=complete, requested=int(sims), accepted=run,
+                     rejected=int(sims) - run,
+                     reason=('computed' if complete else
+                             'no_valid_current_samples' if run == 0 else
+                             'insufficient_current_samples'))
+    return share / run if complete else None
 
 
-def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
+def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None,
+           audit=None):
     """추정 레인지 기준 에쿼티.
 
     아는 상대는 그 seat의 perceived range, 모르는 상대는 중립 field range를
@@ -505,19 +572,26 @@ def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
     """
     dead=set(hero)|set(board or [])
     raw=_normalize_opp_pools(opp_range,n_opp,opp_ranges)
+    if audit is not None:
+        audit.update(_equity_input_provenance(
+            opp_range, n_opp, opp_ranges, raw))
     pools=[
         (bot._filter_pool(p,dead,sort_legacy=True)
          if p else bot.range_combos(0.35,dead))
         for p in raw
     ]
-    pools=[p for p in pools if p]
-    if not pools:
+    # Never drop a missing opponent: that would turn multiway into fictitious HU.
+    if not pools or any(not p for p in pools):
+        if audit is not None:
+            audit.update(complete=False, reason='missing_opponent_range',
+                         requested=int(sims), accepted=0)
         return None
     _s=sims if min(len(p) for p in pools)>=20 else int(sims*1.8)
-    return bot.equity_vs_combos(hero,board,pools,sims=_s)
+    return bot.equity_vs_combos(hero,board,pools,sims=_s, audit=audit)
 
 
-def _plan_eq(hero, board, opp_range, n_opp, sims, seed=None, opp_ranges=None):
+def _plan_eq(hero, board, opp_range, n_opp, sims, seed=None, opp_ranges=None,
+             audit=None):
     """계획용 에쿼티. 추정 레인지가 보드·내 패와 전부 겹치면(모순) 모르는 상대로 본다.
 
     _eq_vs 는 이때 None 을 돌려준다(근거 없음). continue_range_call_equity 는 그 None 을
@@ -525,10 +599,25 @@ def _plan_eq(hero, board, opp_range, n_opp, sims, seed=None, opp_ranges=None):
     핸드 전체가 예외로 건너뛰어졌다(완주 시뮬 시드 11·12). 새 값을 짓지 않고
     모르는 seat 와 같은 중립 field range 로 잰다. 반환: (eq, fallback 여부).
     """
-    eq = _eq_vs(hero, board, opp_range, n_opp, sims=sims, seed=seed, opp_ranges=opp_ranges)
+    original_audit = {}
+    eq = _eq_vs(hero, board, opp_range, n_opp, sims=sims, seed=seed,
+                opp_ranges=opp_ranges, audit=original_audit)
     if eq is not None:
+        if audit is not None:
+            audit.update(source=original_audit.get('model_source'),
+                         used_fallback=False, original=original_audit,
+                         field_fallback=None, result_equity=eq)
         return eq, False
-    return _eq_vs(hero, board, None, n_opp, sims=sims, seed=seed), True
+    fallback_audit = {}
+    eq = _eq_vs(hero, board, None, n_opp, sims=sims, seed=seed,
+                audit=fallback_audit)
+    if audit is not None:
+        audit.update(source=('neutral_field_after_primary_failure' if eq is not None
+                             else 'plan_and_field_equity_unavailable'),
+                     used_fallback=True, original=original_audit,
+                     field_fallback=fallback_audit, result_equity=eq,
+                     original_failure_reason=original_audit.get('reason'))
+    return eq, True
 
 
 def opp_bet_prob(opp_est, w, street, opp_role=None):
@@ -990,13 +1079,23 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         if int(n_opp or 1) > 1 else opp_stack_bb)
     # 추정한 opp_range 를 그대로 쓴다. 고정 35% 가정으로 되돌리지 말 것 —
     # 좁혀놓은 레인지를 버리고 EV 를 판단하면 리딩이 전부 무의미해진다.
+    _eq_audit = {}
     eq, _eq_fallback = _plan_eq(hero, board, opp_range, n_opp, sims=400, seed=seed,
-                                opp_ranges=opp_ranges)
+                                opp_ranges=opp_ranges, audit=_eq_audit)
+    if eq is None:
+        return {'plan': 'showdown', 'plan_goal': 'showdown',
+                'street_made': street, 'streets': [street],
+                'eq': None, 'rel': None, 'outs': 0,
+                'my_range': my_range, 'n_opp': n_opp,
+                'equity_status': 'unavailable_not_negative_ev',
+                'equity_unavailable': _eq_audit,
+                'why': ['%s: MC equity unavailable; no positive betting EV' % street]}
     # 기록 전용. 같은 레인지·같은 인원으로 '보드를 안 돌린' 값을 같이 남긴다.
     # eq 하나만 남기면 나중에 0.535 를 보고 '지금 강한 건가, 드로우 때문인가'를
     # 구분할 수 없다. 판단에는 절대 쓰지 않는다 — 쓰려면 먼저 검증이 필요하다.
+    _eq_cur_audit = {}
     eq_cur = _eq_current(hero, board, opp_range, n_opp, sims=400, seed=seed,
-                         opp_ranges=opp_ranges)
+                         opp_ranges=opp_ranges, audit=_eq_cur_audit)
     dang = perceived_board_danger(profile, board)
     outs_true = draw_strength(hero, board)
     outs = outs_true * PS.calc_noise(profile, 'outs', rng) if profile.get('concepts') else outs_true
@@ -1322,6 +1421,11 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'protect': round(min(1.0, dang*(1+0.5*mw)), 2)}
     if _eq_fallback:
         st['eq_field_fallback'] = True
+        st['eq_provenance'] = dict(_eq_audit)
+    elif _eq_audit.get('original', {}).get('missing_opponents'):
+        st['eq_provenance'] = dict(_eq_audit)
+    if eq_cur is None or _eq_cur_audit.get('missing_opponents'):
+        st['eq_current_sampling'] = dict(_eq_cur_audit)
     # 의도는 파이프라인 끝(session)에서 최종 계획 기준으로 붙인다.
     return st
 
@@ -1840,23 +1944,51 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
 
     적용 범위(ledger L146): 상대 한 명(facing seat, 없으면 opp_range)의 콜/폴드만
     본다. 멀티웨이 응답 트리와 사이드팟 레이즈 분기는 다루지 않으며(LATER),
-    레인지를 모르면 allow 로 통과한다(known=False).
+    레인지나 MC 근거를 모르면 공격 허용을 승인하지 않는다(known=False).
     """
     ctx = dict(response_context or {})
     fs = ctx.get('facing_seat')
     pool = None
-    if isinstance(opp_ranges, dict) and fs in opp_ranges:
-        pool = opp_ranges.get(fs)
-    if not pool:
+    range_source = None
+    range_reason = None
+    if isinstance(opp_ranges, dict):
+        keys = [k for k in opp_ranges if fs is not None and str(k) == str(fs)]
+        if len(keys) == 1:
+            pool = opp_ranges[keys[0]]
+            range_source = 'observed_facing_seat'
+            if not pool:
+                range_reason = 'explicit_empty_facing_seat_range'
+        elif fs is None:
+            range_reason = 'facing_seat_unidentified'
+        else:
+            range_reason = 'facing_seat_not_in_observed_ranges'
+    elif isinstance(opp_ranges, (list, tuple)):
+        if int(n_opp or 1) == 1 and len(opp_ranges) == 1:
+            pool = opp_ranges[0]
+            range_source = 'legacy_single_positional_opponent'
+        else:
+            range_reason = 'seat_identity_unavailable_in_positional_ranges'
+    elif opp_ranges is None and int(n_opp or 1) == 1 and opp_range:
+        # Explicitly supported HU legacy contract; not a missing seat-keyed pool.
         pool = opp_range
+        range_source = 'legacy_hu_opp_range'
+    else:
+        range_reason = 'no_supported_facing_range_source'
     if not pool or not board:
-        return {'known': False, 'allow': True, 'why': 'opponent range unavailable'}
+        return {'known': False, 'allow': False, 'ev': None,
+                'equity_status': 'unavailable_not_negative_ev',
+                'range_provenance': {'source': range_source,
+                                     'facing_seat': fs,
+                                     'reason': range_reason or 'range_or_board_unavailable'},
+                'why': range_reason or 'opponent range or board unavailable'}
 
     hc = max(0.0, float(hero_contrib or 0.0))
     actor_cap = hc + max(0.0, float(stack or 0.0))
     if target is None:
         if mult is None:
-            return {'known': False, 'allow': True, 'why': 'raise target unavailable'}
+            return {'known': False, 'allow': False, 'ev': None,
+                    'equity_status': 'unavailable_not_negative_ev',
+                    'why': 'raise target unavailable'}
         base = max(0.0, float(pot + 2*tocall) * float(mult))
         target = hc + base
     cand = min(actor_cap, max(hc + float(tocall or 0.0), float(target)))
@@ -1873,7 +2005,9 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
     if opp_contrib is None:
         opp_contrib = ctx.get('facing_target')
     if opp_contrib is None:
-        return {'known': False, 'allow': True, 'why': 'facing contribution unavailable'}
+        return {'known': False, 'allow': False, 'ev': None,
+                'equity_status': 'unavailable_not_negative_ev',
+                'why': 'facing contribution unavailable'}
     opp_contrib = max(0.0, float(opp_contrib or 0.0))
 
     opp_stack = ctx.get('facing_stack')
@@ -1894,10 +2028,20 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
     base_mass = float(R.range_mass_live(pool, _dead) or 0.0)
     cont_mass = float(R.range_mass_live(cont, _dead) or 0.0)
     if base_mass <= 0 or cont_mass <= 0:
-        return {'known': False, 'allow': True, 'why': 'range mass unavailable'}
+        return {'known': False, 'allow': False, 'ev': None,
+                'equity_status': 'unavailable_not_negative_ev',
+                'why': 'range mass unavailable'}
 
     fold_p = max(0.0, min(1.0, 1.0 - cont_mass/base_mass))
-    eq_cont = bot.equity_vs_combos(hero, board, [cont], sims=400)
+    _mc_audit = {}
+    eq_cont = bot.equity_vs_combos(hero, board, [cont], sims=400,
+                                   audit=_mc_audit)
+    if eq_cont is None:
+        return {'known': False, 'allow': False, 'ev': None,
+                'continue_eq': None, 'fold_p': round(fold_p, 4),
+                'equity_status': 'unavailable_not_negative_ev',
+                'mc_audit': _mc_audit,
+                'why': 'continue-range MC unavailable; raise EV not computed'}
     final_pot = pot_after_raise + opp_call
 
     # Incremental EV relative to folding now.  If villain folds, the raise chips
@@ -1918,6 +2062,7 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
         'price_frac': round(price_frac, 4),
         'optimistic': True,
         'n_opp': int(n_opp or 1),
+        'range_provenance': {'source': range_source, 'facing_seat': fs},
         'why': 'optimistic immediate raise EV',
     }
 
@@ -1995,7 +2140,7 @@ def semibluff_implied_odds_credit(profile, has_concepts, stack, pot):
 
 def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
                               response_context, hero_contrib, stack, pot, tocall,
-                              mult, profile):
+                              mult, profile, audit=None):
     """밸류 재레이즈 자격(판단). 반환 (ok, continue_eq 또는 None, fair_share).
 
     콜 equity 가 팟오즈를 넘는 것만으로는 부족하다 — 공정지분을 넘어야 하고,
@@ -2005,7 +2150,11 @@ def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
     """
     _fair_share = 1.0 / max(2.0, float(n_opp) + 1.0)
     _vr_eq_cont = None
-    _vr_ok = (float(eq) > _fair_share)
+    _vr_ok = (eq is not None and float(eq) > _fair_share)
+    if audit is not None:
+        audit['status'] = ('fair_share_only' if _vr_ok else
+                           'current_eq_unavailable' if eq is None else
+                           'current_eq_below_fair_share')
 
     # HU에서는 한 단계 더 본다. 내가 제안한 raise를 맞고도 상대가
     # fold하지 않는 전체 range(call + re-raise) 상대로도 50%를 넘어야
@@ -2028,9 +2177,19 @@ def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
         _cont = R.perceived_continue_range(
             opp_range, board, street, _continue_price, profile=profile)
         if _cont:
+            _mc_audit = {}
             _vr_eq_cont = bot.equity_vs_combos(
-                hero, board, [_cont], sims=400)
+                hero, board, [_cont], sims=400, audit=_mc_audit)
             _vr_ok = ahead_when_called(_vr_eq_cont)
+            if audit is not None:
+                audit['status'] = ('computed' if _vr_eq_cont is not None
+                                   else 'continue_mc_unavailable')
+                audit['mc_audit'] = _mc_audit
+        else:
+            # An empty continue slice does not certify a value raise.
+            _vr_ok = False
+            if audit is not None:
+                audit['status'] = 'continue_range_unavailable'
     return _vr_ok, _vr_eq_cont, _fair_share
 
 
@@ -2145,10 +2304,21 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
       act       : 'fold' | 'call' | 'raise'
       size_mult : raise 일 때 (pot + 2*tocall) 에 곱할 배수
     """
+    # Public/direct callers must obey the same unavailable-equity contract
+    # as act_with_plan: do not let the legacy comparisons run on None.
+    if eq is None or need is None:
+        plan_state['equity_status'] = 'unavailable_not_negative_ev'
+        plan_state.setdefault('equity_unavailable', {}).setdefault(
+            'reason', 'response_equity_or_price_unavailable')
+        return 'fold', 0.0, need, (
+            'MC/price unavailable; executable fold, NOT verified negative EV')
+
     rel_ps = plan_state.get('rel', 0.5)
     has_c = bool(profile.get('concepts'))
 
     plan_state.pop('_last_river_nuts_value', None)
+    plan_state.pop('_last_nonvalue_raise_gate', None)
+    plan_state.pop('_last_value_raise_gate', None)
     nuts = river_nut_value_response(
         profile, hero, board, street, opp_range, pot, tocall, stack,
         hero_contrib, response_context, n_opp, allow_raise)
@@ -2206,9 +2376,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         #   현재 range에 대한 콜 equity가 팟오즈를 넘는 것만으로는 부족하다.
         #   추가 칩을 넣는 "value" raise라면 최소한 공정지분(fair share)을
         #   넘어야 한다. HU에서는 50%, 3-way에서는 33.3%다.
+        _vr_audit = {}
         _vr_ok, _vr_eq_cont, _fair_share = value_raise_qualification(
             hero, board, street, eq, n_opp, opp_range, response_context,
-            hero_contrib, stack, pot, tocall, mult, profile)
+            hero_contrib, stack, pot, tocall, mult, profile,
+            audit=_vr_audit)
 
         plan_state['_last_value_raise_gate'] = {
             'current_eq': round(float(eq), 4),
@@ -2217,6 +2389,9 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                 round(float(_vr_eq_cont), 4)
                 if _vr_eq_cont is not None else None),
             'ok': bool(_vr_ok),
+            'continue_eq_status': _vr_audit.get('status'),
+            'continue_mc_audit': (_vr_audit.get('mc_audit') if _vr_eq_cont is None
+                                  else None),
         }
 
         if not _vr_ok:
@@ -2277,8 +2452,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         _use_need = _cf_need if _layer_call else need
         act = 'call' if _use_eq >= _use_need else 'fold'
         _gate_note = ''
-        if allow_raise and isinstance(_g_sb, dict) and _g_sb.get('known') and not _g_sb.get('allow'):
-            _gate_note = ' | raise EV %.1f ≤ 0' % float(_g_sb.get('ev') or 0.0)
+        if allow_raise and isinstance(_g_sb, dict) and not _g_sb.get('allow'):
+            if _g_sb.get('ev') is not None:
+                _gate_note = ' | raise EV %.1f ≤ 0' % float(_g_sb['ev'])
+            else:
+                _gate_note = ' | raise EV 계산 불가(%s)' % _g_sb.get('why', 'unknown')
         return act, 0.0, _use_need, (
             '세미블러프 내재오즈 반영%s%s'
             % (' + layer call EV' if _layer_call else '', _gate_note))
@@ -2736,8 +2914,28 @@ def record_response_plan(state, street, response):
     line plan(value_2street 등)과 별개다. 같은 스트리트에서
     bet -> call -> raise처럼 새 정보가 들어오면 response plan도 새로 생긴다.
     """
+    response = dict(response)
+    response_audit = state.get('_last_response_equity_audit')
+    if response_audit:
+        response['response_equity_audit'] = dict(response_audit)
+    eq_provenance = state.get('eq_provenance')
+    if eq_provenance:
+        response['plan_equity_provenance'] = dict(eq_provenance)
+    current_sampling = state.get('eq_current_sampling')
+    if current_sampling:
+        response['current_showdown_provenance'] = dict(current_sampling)
+    # Only unavailable evidence needs extra provenance in the final
+    # response record. Do not silently reinterpret this as verified -EV.
+    nonvalue = state.get('_last_nonvalue_raise_gate') or {}
+    if nonvalue.get('equity_status') == 'unavailable_not_negative_ev':
+        response['nonvalue_raise_gate'] = dict(nonvalue)
+    value = state.get('_last_value_raise_gate') or {}
+    if value.get('continue_eq_status') in (
+            'continue_mc_unavailable', 'continue_range_unavailable',
+            'current_eq_unavailable'):
+        response['value_raise_gate'] = dict(value)
     rows = state.setdefault('response_plans', {})
-    rows.setdefault(street, []).append(dict(response))
+    rows.setdefault(street, []).append(response)
     state['_last_response_plan'] = dict(response)
     return response
 
@@ -2997,7 +3195,8 @@ def _trace(st, street, kind, **kw):
 
 
 def response_equity(hero, board, profile, opp_range, opp_ranges, n_opp,
-                    opp_est, pot, tocall, street, response_context, seed):
+                    opp_est, pot, tocall, street, response_context, seed,
+                    audit=None):
     """벳을 맞았을 때 판단에 쓰는 equity — 3단 fallback(ledger L153 추론 층).
 
       1. seat pools: 아는 상대는 perceived range(hero/board 카드 제외),
@@ -3009,16 +3208,24 @@ def response_equity(hero, board, profile, opp_range, opp_ranges, n_opp,
     callers = [(0.30, 5)]*max(0, n_opp-1)
     _raw_pools = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
     _dead = set(hero) | set(board or [])
+    if audit is not None:
+        audit.update(_equity_input_provenance(
+            opp_range, n_opp, opp_ranges, _raw_pools))
     _pools = [
         (bot._filter_pool(p, _dead, sort_legacy=True)
          if p else bot.range_combos(0.35, _dead))
         for p in _raw_pools
     ]
-    _pools = [p for p in _pools if p]
+    if any(not p for p in _pools):
+        if audit is not None:
+            audit.update(complete=False, reason='missing_opponent_range',
+                         requested=600, accepted=0)
+        return None
     if _pools:
         # 아는 상대는 실제 perceived range, 모르는 상대는 중립 field range.
         # 다른 상대의 range를 복제하지 않는다.
-        eq = bot.equity_vs_combos(hero, board, _pools, sims=600)
+        eq = bot.equity_vs_combos(hero, board, _pools, sims=600,
+                                  audit=audit)
     elif opp_range and len(opp_range) >= 20:
         # 상대가 실제로 밟아온 액션 경로로 좁혀진 레인지가 있으면 그것을 쓴다.
         # 여기서 다시 22% 고정 가정으로 돌아가면 콜/폴드 판단만 리딩을 못 받는다.
@@ -3072,10 +3279,12 @@ def response_equity(hero, board, profile, opp_range, opp_ranges, n_opp,
             opp_range, board, [_fallback_event], profile)
         eq = bot.equity_vs_combos(hero, board,
                                   [bet_r] + [opp_range]*max(0, n_opp-1),
-                                  sims=600)
+                                  sims=600, audit=audit)
     else:
         eq = bot.equity_vs_betting(hero, board, [(0.22, profile['bluff'])], callers,
                                    street, sims=600, seed=seed)
+        if eq is None and audit is not None:
+            audit.update(complete=False, reason='betting_range_mc_unavailable')
     return eq
 
 
@@ -3171,15 +3380,40 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     committed = spr(stack, pot) < 1.2          # 커밋 구간
     # 시간 모델용: 이 응답에서 실제로 비교한 eq/need(관측 전용). 이전 결정 값이 남지 않게 비운다.
     plan_state.pop('_last_response_boundary', None)
+    plan_state.pop('_last_response_equity_audit', None)
     if response_kind is not None:
         plan_state['_last_response_kind'] = response_kind
     if response_context is not None:
         plan_state['_last_response_context'] = dict(response_context)
 
     if tocall > 0:
-        eq = response_equity(hero, board, profile, opp_range, opp_ranges,
-                             n_opp, opp_est, pot, tocall, street,
-                             response_context, seed)
+        _mc_audit = {}
+        eq = (None if plan_state.get('equity_status') == 'unavailable_not_negative_ev'
+              else response_equity(hero, board, profile, opp_range, opp_ranges,
+                                   n_opp, opp_est, pot, tocall, street,
+                                   response_context, seed, audit=_mc_audit))
+        if _mc_audit:
+            plan_state['_last_response_equity_audit'] = dict(_mc_audit)
+        if eq is None:
+            details = dict(_mc_audit)
+            if plan_state.get('equity_unavailable'):
+                details['plan'] = plan_state['equity_unavailable']
+            plan_state['equity_status'] = 'unavailable_not_negative_ev'
+            plan_state['equity_unavailable'] = details
+            plan_state['_last_response_boundary'] = {
+                'eq': None, 'need': None, 'act': 'fold',
+                'mathematically_justified': False}
+            why = 'MC unavailable; executable fold, NOT verified -EV'
+            record_response_plan(plan_state, street, {
+                'response_kind': response_kind, 'act': 'fold',
+                'target': None, 'eq': None, 'need': None,
+                'source': 'equity_unavailable',
+                'equity_status': 'unavailable_not_negative_ev',
+                'equity_unavailable': details, 'why': why})
+            plan_state.setdefault('acts', []).append(why)
+            _trace(plan_state, street, 'response', act='fold',
+                   source='equity_unavailable', eq=None, need=None, why=why)
+            return ('fold', 0), None, None
         # pot 은 pot_live 다 — 상대가 방금 낸 벳이 이미 포함돼 있고
         # **내 콜은 아직 아니다.** 팟오즈 분모에는 내 콜도 들어가야 하므로
         # calldown_need 가 tocall 을 한 번 더한다 (거기 주석 참조).
@@ -3816,7 +4050,7 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
     rng = random.Random(seed)
     prev = dict(state) if state else None
 
-    if first or state is None:
+    if first or state is None or (state or {}).get('equity_status') == 'unavailable_not_negative_ev':
         st = make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
                        seed=seed, n_opp=n_opp, to_act_behind=behind,
                        oop_vs_aggr=oop_vs_aggr, initiative=initiative,
@@ -3841,7 +4075,11 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
             oop_legacy_abs=oop_legacy_abs,
             initiative=initiative, opp_ranges=opp_ranges)
 
-    # 계획 이력은 라벨과 별개로 이어진다. 새 dict 가 만들어져도 유지한다.
+    if st.get('equity_status') == 'unavailable_not_negative_ev':
+        return set_intent(st, street, mk_intent(
+            'check', 0.0, 'MC unavailable; no verified betting EV'))
+
+    # 계획 이력은 라벨과 별개로 이어진다.
     if prev:
         for k in ('intents', 'deviations', 'streets', 'refreshed', 'bet_streets',
                   'executed_actions', 'response_plans', '_last_response_plan',
@@ -3872,6 +4110,9 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
         st = refresh(st, hero, board, opp_range, profile, pot, stack, street,
                      n_opp, seed=seed, opp_est=opp_est, my_range=my_range,
                      opp_ranges=opp_ranges, opp_ests=opp_ests)
+        if st.get('equity_status') == 'unavailable_not_negative_ev':
+            return set_intent(st, street, mk_intent(
+                'check', 0.0, 'MC unavailable; no verified betting EV'))
         if _first:
             st.setdefault('refreshed', []).append(street)
         st = turn_value_reassessment(
@@ -4354,8 +4595,18 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
     # perceived_rel 에는 **날것**을 넘긴다 (make_plan 과 같게).
     # 체감값을 넘기면 노이즈가 두 번 먹혀 새 불일치가 생긴다.
     rel = perceived_rel(profile, rel_true, hero, board, outs_true, made)
+    _eq_audit = {}
     eq, _eq_fallback = _plan_eq(hero, board, opp_range, n_opp, sims=300, seed=seed,
-                                opp_ranges=opp_ranges)
+                                opp_ranges=opp_ranges, audit=_eq_audit)
+    if eq is None:
+        st.update(plan='showdown', eq=None,
+                  equity_status='unavailable_not_negative_ev',
+                  equity_unavailable=_eq_audit)
+        st['why'] = (st.get('why') or []) + [
+            '%s: MC refresh equity unavailable; no verified betting EV' % street]
+        return st
+    st.pop('equity_status', None)
+    st.pop('equity_unavailable', None)
     # 레인지 우위도 같은 시점에 갱신한다. my_range 가 없으면(구 호출부)
     # 이전 값을 유지해 동작을 깨지 않는다.
     # `my_range if my_range is not None` 로 쓰면 **빈 리스트가 들어올 때
@@ -4434,10 +4685,19 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         st['eq_field_fallback'] = True
     else:
         st.pop('eq_field_fallback', None)
+    if _eq_fallback or _eq_audit.get('original', {}).get('missing_opponents'):
+        st['eq_provenance'] = dict(_eq_audit)
+    else:
+        st.pop('eq_provenance', None)
     # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
     # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
+    _eqc_audit = {}
     _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed,
-                       opp_ranges=opp_ranges)
+                       opp_ranges=opp_ranges, audit=_eqc_audit)
+    if _eqc is None or _eqc_audit.get('missing_opponents'):
+        st['eq_current_sampling'] = dict(_eqc_audit)
+    else:
+        st.pop('eq_current_sampling', None)
     st.update({'eq_current': (None if _eqc is None else round(_eqc, 3)),
                'eq_delta': (None if _eqc is None else round(eq - _eqc, 3)),
                'eq_sims': 300, 'eq_seed': seed,
