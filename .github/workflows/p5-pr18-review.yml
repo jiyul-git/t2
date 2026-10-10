@@ -1,0 +1,25 @@
+name: P5 independent PR18 end-to-end consumer verification
+on:
+  push:
+    branches: [chatgpt/p5-review-p9-mc-20261010]
+  workflow_dispatch:
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: P5 injected failure status and full planner consumption
+        run: python3 tools/review_p9_p5_consumer.py
+      - name: Original PR18 MC and provenance tests
+        run: |
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_hand130_conditioned_posterior.py
+      - name: Exact tie/partial-call ICM unchanged
+        run: |
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
