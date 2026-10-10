@@ -85,7 +85,7 @@ def posterior_tests(shove, ordinary, first):
 
     # Per-class identity: P(shove attack) + P(nonshove attack) equals
     # actor's attack probability; no new polar blend coefficient.
-    sample = ('Qs', 'Qh')
+    sample = next(c for c in R.ALL if PF.cls(list(c)) == 'QQ' and not (set(c) & dead))
     lk = PF.defend_action_likelihoods(
         profile, 'BB', 'LJ', list(sample), 20, 2, 0,
         raise_level=1, stack_bb=20, seats=8, ante=True,
