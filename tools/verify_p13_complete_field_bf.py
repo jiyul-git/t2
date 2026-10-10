@@ -168,6 +168,22 @@ def main():
                     field_avg=112500,field_stacks=ALL,return_details=True)
     assert not many['is_exact']
     assert many['reason']=='more_than_exact_max_survivors'
+    # A contradictory "remaining=5" with an 8-survivor field snapshot
+    # must never make five local seats masquerade as a complete final table.
+    contradictory = I.table_bf(
+        ST, HERO_LOCAL, 5, 5, PAYOUTS, field_avg=112500,
+        field_stacks=ALL, field_pid_stacks=pid_full,
+        table_pids=local_pids, return_details=True)
+    assert not contradictory['is_exact']
+    assert contradictory['reason'] == 'field_snapshot_conflicts_with_table_field_count'
+    # Busted seats cannot be counted as extra payout ranks.
+    with_dead = [0] + ALL
+    exact_dead = I.table_bf(
+        with_dead, HERO_FULL + 1, 8, 7, PAYOUTS,
+        field_avg=112500, return_details=True)
+    assert exact_dead['is_exact']
+    equal(exact_dead['value'],whole,'busted seat omitted from exact prize rank')
+
     # A field of 8 cannot be declared exact using 5 players, even if
     # a wrong full-field list was supplied.
 
@@ -205,6 +221,8 @@ def main():
         'wrong_pid_snapshot':unknown,
         'multiset_only_snapshot':unverified,
         'large_field':many,
+        'contradictory_remaining_snapshot':contradictory,
+        'complete_with_busted_table_seat':exact_dead,
     },sort_keys=True,ensure_ascii=False,indent=2))
 
 
