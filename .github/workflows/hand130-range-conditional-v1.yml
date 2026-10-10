@@ -1,0 +1,26 @@
+name: HAND130 P8 action-conditioned shadow
+
+on:
+  push:
+    branches: [chatgpt/hand130-range-conditional-v1-20261010]
+  workflow_dispatch:
+
+jobs:
+  posterior:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile edited model and verifier
+        run: python3 -m py_compile range_posterior_v1.py ranges.py bot.py session.py tools/verify_hand130_conditioned_posterior.py
+      - name: Conditional posterior and replay invariants
+        run: python3 tools/verify_hand130_conditioned_posterior.py
+      - name: Existing weighted-sampler verification
+        run: python3 tools/verify_weighted_sampling.py
+      - name: Existing weighted range adapter verification
+        run: python3 tools/verify_weighted_range_adapter.py
+      - name: Existing P8 action likelihood verification
+        run: python3 tools/verify_f7b_defend_likelihood.py
