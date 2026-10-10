@@ -104,6 +104,19 @@ def main():
     assert ra['accepted']==ra['requested']==600,ra
     assert not ra['observed_input_complete'],ra
 
+    # Carry the original failed sample counts and the neutral fallback
+    # together with current-showdown unknown-seat provenance to final log.
+    provenance_state = {
+        'eq_provenance': pa,
+        'eq_current_sampling': ca,
+    }
+    plan.record_response_plan(provenance_state, 'river',
+                              {'act': 'fold', 'source': 'generic_response'})
+    saved = provenance_state['response_plans']['river'][-1]
+    assert saved['plan_equity_provenance']['original']['accepted']==0,saved
+    assert saved['plan_equity_provenance']['field_fallback']['complete'],saved
+    assert saved['current_showdown_provenance']['missing_opponents'][0]['slot']==2,saved
+
     assert random.getstate()==before,'global RNG state changed'
     print('PASS P10 missing/empty/legacy/neutral, original MC failure, facing-seat gate, final response provenance, shared RNG')
 
