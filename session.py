@@ -1532,6 +1532,9 @@ class HandRun:
         # P8 test-only conditional posterior: observer-model profile, public
         # action history, no private target cards/persona.
         if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
+            # P8 must retain the *observed actor* BF evidence, not confuse
+            # it with pf_bf_provenance for the deciding observer seat.
+            _actor_bf = h.bf_details(target)
             _event = RP.classify_public_action(
                 getattr(rnd, 'action_meta', None), target, h.bb,
                 h.pos[target], stack_bb=stack_bb, seats=seats, ante=ante,
@@ -1541,7 +1544,7 @@ class HandRun:
                     / max(1.0, float(h.bb))))
             _ctx = {'opener_pos': h.pos.get(_event.get('opener_seat')),
                     'field_q': getattr(h, 'field_q', 0.6),
-                    'bubble_factor': h.bf(target),
+                    'bubble_factor': _actor_bf['value'],
                     'erosion': getattr(h, 'erosion_per_hand', 0.0),
                     'field_avg_bb': ((getattr(h, 'field_avg_stack', None) or 0)
                                      / max(1, h.bb)) or None,
@@ -1560,6 +1563,7 @@ class HandRun:
                 opp_view, _event, dead=h.hole[observer],
                 observer_context=_ctx)
             _new_meta = dict(_new_meta or {})
+            _new_meta['actor_bf_provenance'] = dict(_actor_bf)
             # The posterior's declared completeness is authoritative.
             # A non-empty but incomplete candidate is *not* usable EV input.
             if not _new_meta.get('complete'):
@@ -1576,6 +1580,7 @@ class HandRun:
                         'opener_pos': _ctx.get('opener_pos'),
                         'field_q': _ctx.get('field_q'),
                         'bubble_factor': _ctx.get('bubble_factor'),
+                        'actor_bf_provenance': dict(_actor_bf),
                         'tilt_known': False,
                         'opener_read_available': False,
                         'behind_stacks_available': _ctx.get('behind_stacks_bb') is not None,
@@ -1603,6 +1608,7 @@ class HandRun:
                                 ['action_class_not_supported']),
                 'failure_kind': 'model_unavailable',
                 'failure_reason': 'unsupported_conditional_action',
+                'actor_bf_provenance': dict(_actor_bf),
             }
         else:
             _conditional_unavailable = None
