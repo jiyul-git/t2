@@ -222,7 +222,8 @@ def conditioned_preflop_range(observer_profile, event, dead=(),
         if not context.get('opener_pos'):
             meta['missing'].append('opener_position')
     else:
-        meta['missing'].extend(x for x in FIRST_IN_FIELDS if x not in context)
+        meta['missing'].extend(x for x in FIRST_IN_FIELDS
+                               if x not in context or context[x] is None)
     if meta['missing']:
         return None, meta
     # All-in form corresponds to actor putting in their remaining stack.
