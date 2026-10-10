@@ -1,0 +1,61 @@
+name: P8 PR21 actor BF provenance integration
+
+on:
+  push:
+    branches: [chatgpt/p8-pr21-actor-bf-provenance-20261010]
+  workflow_dispatch:
+
+jobs:
+  actor-bf-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile P8 and affected contracts
+        run: python3 -m py_compile session.py range_posterior_v1.py tools/verify_pr21_actor_bf_provenance.py
+      - name: Actor BF provenance and exact numeric-likelihood identity
+        run: python3 tools/verify_pr21_actor_bf_provenance.py
+      - name: P8 conditional and P5 incomplete/legacy provenance regressions
+        run: |
+          python3 tools/verify_hand130_conditioned_posterior.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_weighted_sampling.py
+          python3 tools/verify_weighted_range_adapter.py
+      - name: P9 MC valid 0, missing, partial and RNG invariants
+        run: python3 tools/verify_hand130_mc_contract.py
+      - name: P13 BF exactness, runtime, ON/OFF likelihood
+        run: |
+          python3 tools/verify_p13_complete_field_bf.py
+          python3 tools/verify_p13_runtime_provenance.py
+          python3 tools/verify_p13_bf_observer_likelihood.py
+      - name: P5 calloff and P13 ICM preservation
+        run: |
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/compare_hand130_range_v1.py
+      - name: Assert no strategic, ICM or probability producer edits
+        run: |
+          git fetch --no-tags --depth=1 origin 0a45af4ce79faf13d78824448f2e1b8943b4518e
+          git diff --exit-code 0a45af4ce79faf13d78824448f2e1b8943b4518e HEAD -- bot.py icm.py preflop.py play.py plan.py fieldsim.py context.py
+          echo "PASS no changes in P5/P9/P13 production modules"
+      - name: Paired default-OFF 9max replay with PR21
+        run: |
+          git fetch --no-tags --depth=1 origin 0a45af4ce79faf13d78824448f2e1b8943b4518e
+          git worktree add --detach /tmp/p8_pr21_off_before 0a45af4ce79faf13d78824448f2e1b8943b4518e
+          for seed in 11 12; do
+            (cd /tmp/p8_pr21_off_before && python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/p8_pr21_off_before_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/p8_pr21_off_after_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              old=json.load(open('/tmp/p8_pr21_off_before_%s.json'%seed))
+              new=json.load(open('/tmp/p8_pr21_off_after_%s.json'%seed))
+              print({'seed':seed,'equal':old==new,'preflop_actions':len(old['pf'])})
+              assert old==new
+          print('PASS default OFF full fingerprints and action decisions unchanged')
+          PY
