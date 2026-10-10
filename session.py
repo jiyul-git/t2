@@ -1844,13 +1844,14 @@ class HandRun:
                 _cold_ctx = _cold_reraise_context(
                     getattr(rnd, 'action_meta', None), s, rnd.order,
                     folded=rnd.folded, allin=rnd.allin)
+                _bf_provenance = h.bf_details(s)
                 a, sz, _seed = PL.preflop_plan(
                     ax, pos, hand, bbs, h.rng,
                     aggressor_pos=(h.pos[aggressor] if aggressor is not None else None),
                     open_bb=_obb, n_callers=callers, n_limpers=len(limpers),
                     raise_level=_rlevel, behind_stacks=_behind,
                     tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6),
-                    bf=h.bf(s),
+                    bf=_bf_provenance['value'],
                     seats=len(h.seats), ante=(getattr(h, 'ante', h.bb) > 0),
                     field_avg_bb=((getattr(h, 'field_avg_stack', None) or 0)
                                   / max(1, h.bb)) or None,
@@ -1888,6 +1889,8 @@ class HandRun:
                     cold_context=_cold_ctx,
                     cold_decision_seed=self._dseed(
                         s, 'preflop', 'p7_cold', len(rnd.log)))
+                # Provenance only; P5 consumes unchanged scalar BF input.
+                _seed['pf_bf_provenance'] = dict(_bf_provenance)
                 if os.environ.get('T2_RANGE_REPLAY_CAPTURE') == '1':
                     _seed['pf_opp_range_replay'] = RP.replay_record(
                         _pf_opp_ranges, _pf_opp_range_meta,
