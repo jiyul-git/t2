@@ -145,7 +145,7 @@ def evidence_fails_closed_at_p5():
             assert item['missing_range_details']['9'] == meta
         summary=S._layer_call_summary(53442,layer,rows)
         assert not summary['complete'] and summary['effective_equity'] is None
-        assert summary['chip_ev'] is None
+        assert summary['call_chip_ev'] is None
         assert summary['incomplete_reasons'][0]['reason']==reason
         shadow = dict(pf['pf_call_ev_shadow'])
         shadow.update({
