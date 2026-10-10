@@ -87,6 +87,55 @@ def audit():
     close(final_tp, direct_tp)
     close(final_tot, direct_tot)
 
+    # The earlier "W5=0.013483745270" was a review-script algebra error:
+    # it subtracted the ORIGINAL tp in the second expression, but source
+    # mutates tp *= lt BEFORE computing tot. The in-place order is semantic.
+    level_factor = PF.LEVEL_TIGHTEN.get(level + 1, 0.10)
+    correct_w5 = ((short_tp * level_factor) +
+                  (short_tot - short_tp * level_factor) *
+                  (level_factor * 0.8))
+    previous_mistake = ((short_tp * level_factor) +
+                        (short_tot - short_tp) * (level_factor * 0.8))
+    close(final_tot, correct_w5)
+    close(final_tot, 0.016657816839054443)
+    close(previous_mistake, 0.013483745270123417)
+    close(final_tot - previous_mistake,
+          short_tp * (1.0 - level_factor) * level_factor * 0.8)
+
+    # These flags are observationally neutral for the archived 8-max,
+    # ante-on, 20.9864bb spot: condition_match=1; studied anchor=current.
+    saved_flags = (PS.GTO_MEMORY_V2, PS.PREFLOP_REASONING_V3)
+    try:
+        flag_results = {}
+        for memory_v2 in (False, True):
+            for reasoning_v3 in (False, True):
+                PS.GTO_MEMORY_V2 = memory_v2
+                PS.PREFLOP_REASONING_V3 = reasoning_v3
+                _, width = PF.defend_thresholds(
+                    prof, pos, vs, bb, facing_bb, n_callers, level,
+                    n_seats, ante)
+                close(width, final_tot)
+                flag_results[f'memory={memory_v2};reasoning={reasoning_v3}'] = width
+    finally:
+        PS.GTO_MEMORY_V2, PS.PREFLOP_REASONING_V3 = saved_flags
+
+    # Runtime profile may have been a tilted planning view: sweep the real
+    # persona transformation. This is sensitivity, NOT an observed tilt.
+    tilt_results = {}
+    for tilt in (0.0, 0.02, 0.10, 0.20, 0.50, 1.00):
+        view = PS.tilted_view(prof, tilt)
+        _, tilted_width = PF.defend_thresholds(
+            view, pos, vs, bb, facing_bb, n_callers, level,
+            n_seats, ante)
+        tilt_results[str(tilt)] = tilted_width
+
+    # Facing BB's all-in as a raise: open_bb>=6 saturates the
+    # legacy MDF surrogate, and current vs=BB has RFI 0.
+    _, alternate_stack_width = PF.defend_thresholds(
+        prof, pos, vs, 22.9864, facing_bb, n_callers, level,
+        n_seats, ante)
+    close(alternate_stack_width, final_tot)
+
     # Source-recorded depth curve, unvalidated legacy percentile policy.
     depth = DP.base_feel(bb)
     close(depth, 0.1318368)
@@ -120,9 +169,11 @@ def audit():
     assert eq >= need_icm  # Point estimate, NOT confidence-guaranteed.
     assert hand_pct > final_cap
 
-    archived_claimed_w5 = 0.0166578  # A preceding analysis, not raw engine telemetry.
+    archived_claimed_w5 = 0.0166578  # Prior analysis, not original archive stage log.
+    if abs(final_tot - archived_claimed_w5) > 5e-8:
+        raise AssertionError("Current-source W5 fails to reproduce prior analysis")
     report = {
-        "status": "STATIC_REPLAY_PASS__NO_STRATEGY_CHANGE",
+        "status": "CURRENT_CODE_STAGE_IDENTITY__NO_STRATEGY_CHANGE",
         "code_context": "test3/945758acc, GTO flags OFF, base profile, no tilt",
         "first_rfi_is_BB": G.rfi(vs, n_seats, bb, ante),
         "stages": {
@@ -135,7 +186,13 @@ def audit():
             "raw_calloff_cap": raw_cap, "clamped_calloff_cap": final_cap,
         },
         "archived_reported_w5": archived_claimed_w5,
-        "w5_discrepancy": final_tot - archived_claimed_w5,
+        "w5_rounding_difference": final_tot - archived_claimed_w5,
+        "previous_wrong_w5": previous_mistake,
+        "algebra_error": "mutated tp incorrectly replaced by pre-mutation tp",
+        "w5_correction": final_tot - previous_mistake,
+        "flag_results": flag_results,
+        "tilt_sensitivity_only": tilt_results,
+        "alternate_bb_22_9864": alternate_stack_width,
         "price": {
             "call_cost_chips": cost, "pot_before_chips": before,
             "chip_required_equity": need_chip,
@@ -150,9 +207,9 @@ def audit():
             "gate_draw": pf["pf_calloff_consumer"]["pf_defend_gate_roll"],
             "actually_selected": pf["pf_calloff_consumer"]["selected_action"],
         },
-        "warning": ("Archived W5 and static source+base-profile W5 differ; "
-                    "live tilted view/env unknown; ICM equity 800-sim margin "
-                    "must not be called statistically decisive."),
+        "warning": ("Earlier W5 mismatch was analyst algebra error, not an "
+                    "observed runtime deviation. Live tilt/env/original process SHA "
+                    "were not archived. ICM equity 800-sim margin is not decisive."),
     }
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return report
