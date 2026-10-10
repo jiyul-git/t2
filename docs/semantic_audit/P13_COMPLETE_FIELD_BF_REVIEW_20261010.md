@@ -37,3 +37,25 @@ Existing constants `_SIGMA_STAGE=.55`, `_SIGMA_HI=.63`, `_SIGMA_LO=.89`, `_LADDE
 `python3 tools/verify_p13_complete_field_bf.py` checks old 5-seat BF versus full 8, complete and missing snapshots, invalid snapshot membership/length, duplicate stacks, >9 curve, Hand integration, and a *derived midpoint* synthetic equity in the actual P5 price consumer (to show a possible justified call-to-fold change, not a reported HAND130 action). Run the existing `verify_hand130_exact_icm.py` and `verify_hand130_partial_call_icm.py` to demonstrate B37 spot-price and odd-chip regression preservation. Fixed-seed paired field actions vs original PR #16 SHA and results should be attached from CI rather than claimed without execution.
 
 **Review requested:** department 5 for numeric BF behavioral changes and audit-only plan seed field, department 8 for observer posterior BF input on split-table endgames, and department 17 for release CI. Do not merge into PR #16, test3, or production without that review and complete regression evidence.
+
+
+## 2026-10-10 P9/P8 preview-only integration (NOT upstream approval)
+
+**Preview parent:** PR #18 `69e55fc35a208679f06409754d4b43260f9f4fe4`, which itself descends from P8 PR #16 head `71c46aa20b9eac016709d7ee835597b890c8906b`. GitHub PR #18 remains unapproved/unmerged at preview creation; do not substitute this branch for its requested upstream approval/merge.
+
+### Strengthened time/identity contract
+
+Previous proof by matching stack *counts* was incomplete: different players can own identical stack values and a hand-start snapshot may be stale at a later decision. The preview therefore adds:
+- `fieldsim.Field.field_snapshot()` captures `remaining`, `stacks`, and **pid→stack** in one synchronous read. `context.SPEC` carries `field_pid_stacks` and `Field.stamp()` applies the same `_frozen_field` frame to the hand.
+- `Hand.bf_details()` maps each current local seat to its same-period player pid and compares its stacks with immutable `_start_stacks`. If the current-table chips changed since the field snapshot, exact full-field BF is **not** asserted; an empirical method and `stale_field_snapshot` reason are logged.
+- `icm.table_bf()` accepts optional `field_pid_stacks`, `table_pids`, `snapshot_is_current`; exact split-table BF needs all positive surviving PIDs and chips plus exact local PID membership. A coincidentally matching chips-only multiset does not prove that all survivors were represented.
+- In complete **single-table** cases, the current table itself is the full field, so the separate frozen snapshot is unnecessary and `remaining == live_table_count` still enables generic exact-field BF.
+- `bf_kind=generic_default_risk_not_spot_call_prize_ev` and `price_specific=False` are mandatory provenance distinctions even when `is_exact=True` for the underlying generic payout-ICM BF. Only the separate terminal HU payout-state calculation yields call-price-specific win/lose/tie EV.
+
+### Preserving P8/P9/P5
+
+The preview begins with PR #18's **entire** code tree. `session.py` only inserts the BF provenance acquisition/seed log and replaces the single planner BF float source. P8 range `source,missing,complete,model_unavailable,legacy_fallback`, P9 `valid_samples,requested_samples,incomplete_reasons,observed_sample_mean`, and P5 `unavailable_not_negative_ev` are unchanged. In particular, no `bot.py`, `plan.py`, `range_posterior_v1.py`, or `tools/compare_hand130_range_v1.py` change is introduced by P13.
+
+Additional P13 observer sensitivity test uses existing synthetic *neutral perceived* observer profile for first-in shove; the P8 OFF legacy range does not consume `h.bf(target)`, while the ON first-in policy `_first_in_likelihood` consumes `bubble_factor` through the pre-existing depth and variance functions. A general 3bet shove's likelihood has no direct `bubble_factor` argument. This test does not reconstruct the original HAND130 opponent Book.
+
+**Release:** hold draft P13 code until departments 5 and 8 explicitly approve PR #18 and the approved P9 code has actually been integrated into PR #16; only then re-integrate and validate against its true latest commit. No production deployment.
