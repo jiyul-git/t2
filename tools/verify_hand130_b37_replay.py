@@ -103,7 +103,8 @@ def main():
     assert info["pf_calloff_compare"] is None
     assert consumer["legacy_evaluated"] is False
     assert consumer["legacy_action"] is None
-    assert consumer["mathematically_justified"] is True
+    assert consumer["mathematically_justified"] is False
+    assert consumer["conditional_point_estimate_action"] is True
     assert consumer["selected_action"] != pf["pf_act"]
 
     print(json.dumps({
