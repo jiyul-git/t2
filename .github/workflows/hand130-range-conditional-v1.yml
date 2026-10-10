@@ -18,6 +18,14 @@ jobs:
         run: python3 -m py_compile range_posterior_v1.py ranges.py bot.py session.py tools/verify_hand130_conditioned_posterior.py
       - name: Conditional posterior and replay invariants
         run: python3 tools/verify_hand130_conditioned_posterior.py
+      - name: Paired B37 opponent range and P5 decision comparison
+        run: python3 tools/compare_hand130_range_v1.py
+      - name: P5 isolation and missing-evidence contract
+        run: python3 tools/verify_hand130_calloff_isolation.py
+      - name: P5 terminal ICM decision replay
+        run: python3 tools/verify_hand130_exact_icm.py
+      - name: Unmodified baseline 9max fingerprint
+        run: python3 tools/regress.py check --baseline current
       - name: Existing weighted-sampler verification
         run: python3 tools/verify_weighted_sampling.py
       - name: Existing weighted range adapter verification
