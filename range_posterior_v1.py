@@ -343,6 +343,15 @@ def replay_record(ranges, metadata, layers=None, event_tag=None):
             'sha256': hashlib.sha256(canonical.encode()).hexdigest(),
             'source_metadata': (metadata or {}).get(seat, {}),
         }
+    # No-pool/failed posteriors have no 'opponents' entry. Keep their
+    # original actor BF epoch evidence in the independent metadata record.
+    # Do not change legacy combo weights, support, mass or hash encoding.
+    all_metadata = {
+        str(seat): dict(meta or {})
+        for seat, meta in sorted((metadata or {}).items(),
+                                 key=lambda item: str(item[0]))
+    }
     return {'schema': 1, 'event_tag': event_tag,
             'range_model': MODEL, 'opponents': records,
+            'range_metadata': all_metadata,
             'layer_sampling': list(layers or [])}
