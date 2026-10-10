@@ -29,3 +29,37 @@ jobs:
           python3 tools/verify_hand130_partial_call_icm.py
           python3 tools/verify_p13_complete_field_bf.py
           python3 tools/verify_p13_bf_observer_likelihood.py
+
+  on-off-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Independent PR21 ON/OFF same-seed field actions and states
+        run: |
+          set -euo pipefail
+          for seed in 11 12; do
+            T2_RANGE_CONDITIONAL_V1=0 python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr21off_${seed}.json"
+            T2_RANGE_CONDITIONAL_V1=1 python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr21on_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              x=json.load(open('/tmp/pr21off_%s.json'%seed))
+              y=json.load(open('/tmp/pr21on_%s.json'%seed))
+              a,b=x['pf'],y['pf']
+              diffs=[(i,p,q) for i,(p,q) in enumerate(zip(a,b))
+                    if (p['act'],p['sz']) != (q['act'],q['sz'])]
+              print(json.dumps({'seed':seed,
+                'OFF_pf':len(a),'ON_pf':len(b),
+                'OFF_hands':len(x['hands']),'ON_hands':len(y['hands']),
+                'act_size_diff':len(diffs),
+                'sample_diffs':[{'index':i,'off':p,'on':q}
+                               for i,p,q in diffs[:3]],
+                'full_state_identical':x==y},sort_keys=True))
+              assert len(a)==len(b)
+          print('PASS ON/OFF comparisons recorded; different posterior is not presumed GTO')
+          PY
