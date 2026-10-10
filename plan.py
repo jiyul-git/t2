@@ -3584,6 +3584,13 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                     if _exact_hu_icm else 'perceived_layer_equity_vs_price'),
                 'objective_unconditional_bf': float(bf),
                 'objective_spot_bf': float(_spot_bf),
+                'icm_pricing_basis': (
+                    'terminal_hu_exact_outcome_prices'
+                    if _exact_hu_icm
+                    else 'generic_bf_approximation_not_spot_validated'),
+                'icm_fallback_risk': (
+                    None if _exact_hu_icm
+                    else 'other_tables_or_nonterminal_or_missing_field_data'),
                 'exact_hu_icm': dict(_exact_hu_icm) if _exact_hu_icm else None,
                 # A complete layer is NOT a confidence interval. Even an
                 # exact payout ICM model cannot certify the unarchived
