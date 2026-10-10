@@ -79,7 +79,7 @@ def main():
     # Actual fieldsim snapshot producer must capture counts, chips and
     # PID mapping from one synchronous read, not disjoint samplings.
     import fieldsim as FS
-    fs = object.__new__(FS.FieldSim)
+    fs = object.__new__(FS.Field)
     fs.players = {str(k): {'pid':'P%s'%k,'stack':ORIGINAL[k]}
                   for k in FULL}
     fs.entries = 8
