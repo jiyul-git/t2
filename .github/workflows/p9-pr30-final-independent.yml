@@ -1,0 +1,101 @@
+name: P9 PR30 final independent MC audit exact SHA
+on:
+  push:
+    branches: [chatgpt/p9-pr30-final-independent-20261010]
+  workflow_dispatch:
+jobs:
+  original-p9-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact target and unchanged independent audit blob
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          target='2c2acdcc10874c0c6efb205f6684423ac37b04e2'
+          expected='1538f0c8ea79ebbfd605344f2b10305f2f754171'
+          actual=subprocess.check_output(['git','hash-object','tools/audit_p9_pr30_mc_contract.py'],text=True).strip()
+          original=subprocess.check_output(['git','rev-parse',target+':tools/audit_p9_pr30_mc_contract.py'],text=True).strip()
+          files=subprocess.check_output(['git','diff','--name-only',target,'HEAD'],text=True).splitlines()
+          assert actual==original==expected,(actual,original,expected)
+          assert files==['.github/workflows/p9-pr30-final-independent.yml'],files
+          print('PASS audit blob unchanged',actual,'target',target)
+          print('PASS isolated workflow only; production code byte-identical')
+          PY
+      - name: Run original P9 audit unmodified
+        run: python3 tools/audit_p9_pr30_mc_contract.py
+      - name: P10 independent added edge provenance and RNG
+        run: |
+          python3 tools/verify_p10_range_provenance.py
+          python3 tools/verify_p10_postflop_mc_unavailable.py
+          python3 tools/verify_hand130_mc_contract.py
+
+  p5-p8-hand130:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify P5 calloff P8 provenance and HAND130 end-to-end
+        run: |
+          set -euo pipefail
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_b37_replay.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/verify_hand130_skill_semantics.py
+          python3 tools/verify_pr21_actor_bf_provenance.py
+          python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
+          python3 tools/verify_hand130_conditioned_posterior.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_calloff_price_routing.py
+          python3 tools/verify_weighted_sampling.py
+          python3 tools/verify_weighted_range_adapter.py
+      - name: Postflop action regression
+        run: |
+          python3 tools/verify_f3_checkraise_response.py
+          python3 tools/verify_f4_facing_bet.py
+          python3 tools/verify_f5_backaction.py
+          python3 tools/verify_river_nuts_value.py
+          python3 tools/verify_postflop_events.py
+
+  independent-normal-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Baseline vs final production paired execution
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/p9_pr30_base 3c434b28046643ba54c04447951ad148ae6f9c1c
+          for flag in 0 1; do
+            for seed in 11 12 13 14; do
+              (cd /tmp/p9_pr30_base && T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p9old_${flag}_${seed}.json)
+              T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p9new_${flag}_${seed}.json
+            done
+          done
+          python3 - <<'PY'
+          import json
+          for flag in (0,1):
+              for seed in (11,12,13,14):
+                  original=json.load(open('/tmp/p9old_%s_%s.json'%(flag,seed)))
+                  updated=json.load(open('/tmp/p9new_%s_%s.json'%(flag,seed)))
+                  assert original==updated, ('normal action/state mismatch',flag,seed)
+                  print('PASS P9 full baseline JSON equal flag=%s seed=%s hand_count=%s pf_count=%s'%(
+                    flag,seed,len(original['hands']),len(original['pf'])),flush=True)
+          print('PASS independent paired normal action/state invariance: 8 runs')
+          PY
