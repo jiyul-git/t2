@@ -131,6 +131,35 @@ def run():
             H, B, 'river', .7, 1, POOL, CTX, 0, 1000, 300, 100, 1.0, PROFILE)
         assert not ok and eq is None and fair == .5
 
+    # Value-raise MC incompleteness includes exact producer reason and sample counts.
+    vr_audit = {}
+    with patch.object(plan.R, 'perceived_continue_range', lambda *a, **k: POOL):
+        with patch.object(bot, 'equity_vs_combos',
+                          stub_equity(None, 'insufficient_valid_samples', 19)):
+            ok, eq, fair = plan.value_raise_qualification(
+                H, B, 'river', .7, 1, POOL, CTX, 0, 1000, 300, 100, 1.0,
+                PROFILE, audit=vr_audit)
+    assert not ok and eq is None, (ok, eq)
+    assert vr_audit['status'] == 'continue_mc_unavailable', vr_audit
+    assert vr_audit['mc_audit']['accepted'] == 19, vr_audit
+
+    # Gate failure survives to the final response record, not only transient state.
+    provenance_state = {
+        '_last_nonvalue_raise_gate': {
+            'allow': False, 'ev': None, 'known': False,
+            'equity_status': 'unavailable_not_negative_ev',
+            'mc_audit': {'reason': 'insufficient_valid_samples', 'accepted': 19}},
+        '_last_value_raise_gate': {
+            'ok': False, 'continue_eq': None, 'continue_eq_status': vr_audit['status'],
+            'continue_mc_audit': vr_audit['mc_audit']},
+    }
+    plan.record_response_plan(provenance_state, 'river',
+                              {'act': 'fold', 'source': 'generic_response'})
+    rec = provenance_state['response_plans']['river'][-1]
+    assert rec['nonvalue_raise_gate']['mc_audit']['accepted'] == 19, rec
+    assert rec['value_raise_gate']['continue_mc_audit']['accepted'] == 19, rec
+    assert rec['value_raise_gate']['continue_eq'] is None, rec
+
     # Both primary and neutral field-estimate failing must stay unknown.
     with patch.object(bot, 'equity_vs_combos', stub_equity(None)):
         audit = {}
