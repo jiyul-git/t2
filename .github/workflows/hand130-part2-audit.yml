@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   verify:
@@ -32,3 +33,17 @@ jobs:
         run: python3 tools/verify_hand130_part2.py
       - name: Frozen regression baseline
         run: python3 tools/regress.py check --baseline current
+      - name: Publish auditable commit status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TASK_RESULT: ${{ job.status }}
+        run: |
+          case "$TASK_RESULT" in
+            success) STATUS=success ;;
+            *) STATUS=failure ;;
+          esac
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="$STATUS" \
+            -f context="hand130-part2/source-math" \
+            -f description="Equation replay and frozen regression: $TASK_RESULT"
