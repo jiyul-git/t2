@@ -2198,6 +2198,15 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
       act       : 'fold' | 'call' | 'raise'
       size_mult : raise 일 때 (pot + 2*tocall) 에 곱할 배수
     """
+    # Public/direct callers must obey the same unavailable-equity contract
+    # as act_with_plan: do not let the legacy comparisons run on None.
+    if eq is None or need is None:
+        plan_state['equity_status'] = 'unavailable_not_negative_ev'
+        plan_state.setdefault('equity_unavailable', {}).setdefault(
+            'reason', 'response_equity_or_price_unavailable')
+        return 'fold', 0.0, need, (
+            'MC/price unavailable; executable fold, NOT verified negative EV')
+
     rel_ps = plan_state.get('rel', 0.5)
     has_c = bool(profile.get('concepts'))
 
