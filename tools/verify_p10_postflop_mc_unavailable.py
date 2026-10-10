@@ -96,6 +96,18 @@ def run():
             gp = gate()
             assert gp['known'] and gp['allow'] and gp['ev'] > 0, gp
 
+    # Do not drop one missing opponent and report fictitious HU equity.
+    with patch.object(bot, '_filter_pool', side_effect=lambda p, dead, sort_legacy=True:
+                      [] if p == [('2d', '3h')] else p):
+        assert plan._eq_current(H, B, POOL, 2, sims=12,
+                                opp_ranges={1: POOL, 2: [('2d', '3h')]}) is None
+        audit_missing = {}
+        eq_missing = plan.response_equity(
+            H, B, PROFILE, POOL, {1: POOL, 2: [('2d', '3h')]},
+            2, None, 300, 100, 'river', CTX, 17, audit=audit_missing)
+        assert eq_missing is None, eq_missing
+        assert audit_missing['reason'] == 'missing_opponent_range', audit_missing
+
     # Value raise: unknown continue equity cannot justify a raise.
     with patch.object(plan.R, 'perceived_continue_range', lambda *a, **k: POOL):
         with patch.object(bot, 'equity_vs_combos', stub_equity(None)):
@@ -112,6 +124,12 @@ def run():
                 H, B, 'river', .7, 1, POOL, CTX, 0, 1000, 300, 100, 1.0,
                 PROFILE)
             assert ok and eq == .7
+
+    # Empty continue slice must not silently keep the initial fair-share raise approval.
+    with patch.object(plan.R, 'perceived_continue_range', lambda *a, **k: []):
+        ok, eq, fair = plan.value_raise_qualification(
+            H, B, 'river', .7, 1, POOL, CTX, 0, 1000, 300, 100, 1.0, PROFILE)
+        assert not ok and eq is None and fair == .5
 
     # Both primary and neutral field-estimate failing must stay unknown.
     with patch.object(bot, 'equity_vs_combos', stub_equity(None)):
