@@ -471,8 +471,8 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
          if p else bot.range_combos(0.35, dead))
         for p in pools0
     ]
-    pools = [p for p in pools if p]
-    if not pools:
+    # A missing seat is not a zero-equity opponent and must not be dropped.
+    if not pools or any(not p for p in pools):
         return None
     if seed is None:
         seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
@@ -2070,6 +2070,9 @@ def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
             _vr_eq_cont = bot.equity_vs_combos(
                 hero, board, [_cont], sims=400)
             _vr_ok = ahead_when_called(_vr_eq_cont)
+        else:
+            # An empty continue slice does not certify a value raise.
+            _vr_ok = False
     return _vr_ok, _vr_eq_cont, _fair_share
 
 
@@ -3056,7 +3059,11 @@ def response_equity(hero, board, profile, opp_range, opp_ranges, n_opp,
          if p else bot.range_combos(0.35, _dead))
         for p in _raw_pools
     ]
-    _pools = [p for p in _pools if p]
+    if any(not p for p in _pools):
+        if audit is not None:
+            audit.update(complete=False, reason='missing_opponent_range',
+                         requested=600, accepted=0)
+        return None
     if _pools:
         # 아는 상대는 실제 perceived range, 모르는 상대는 중립 field range.
         # 다른 상대의 range를 복제하지 않는다.
