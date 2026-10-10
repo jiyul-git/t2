@@ -29,6 +29,8 @@ jobs:
             tools/verify_p13_field_epoch_freshness.py
       - name: Execute original PR23 actor BF witness against PR24 code
         run: python3 tools/verify_pr21_actor_bf_provenance.py
+      - name: P8 real P13 current stale frozen epoch through layers replay P5
+        run: python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
       - name: P13 remote-only, frozen common-round, live2 and missing epoch proof
         run: |
           python3 tools/verify_p13_field_epoch_freshness.py
