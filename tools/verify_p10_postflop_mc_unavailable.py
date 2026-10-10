@@ -39,6 +39,35 @@ def run():
     assert audit['accepted'] == 0 and not audit['complete']
     assert audit['reason'] == 'missing_opponent_range', audit
 
+    # P17-B2 exact fixture from 17 release audit:
+    # Hero A-clubs K-hearts, flop 2-clubs 7-diamonds 9-hearts.
+    # Both opponents are independently assigned only Q-spades J-diamonds,
+    # hence individually nonempty but jointly incompatible range evidence.
+    hero17, board17 = ['Ac', 'Kh'], ['2c', '7d', '9h']
+    singleton17 = [('Qs', 'Jd')]
+    audit17 = {}
+    mc17 = bot.equity_vs_combos(hero17, board17,
+                                [singleton17, singleton17], sims=600,
+                                audit=audit17)
+    assert mc17 is None and audit17['requested'] == 600, audit17
+    assert audit17['accepted'] == 0 and audit17['rejected'] == 600
+    assert audit17['reason'] == 'no_valid_mc_samples', audit17
+
+    state17 = {'plan': 'value_2street', 'eq': .65, 'rel': .8,
+               'outs': 0, 'made': 1}
+    act17, eq17, need17 = plan.act_with_plan(
+        hero17, board17, PROFILE, state17, 300, 100, 1000, 'flop',
+        opp_range=singleton17,
+        opp_ranges={1: singleton17, 2: singleton17}, n_opp=2,
+        response_context=CTX, response_kind='face_bet', seed=11)
+    assert act17 == ('fold', 0) and eq17 is None and need17 is None, act17
+    assert state17['equity_unavailable']['reason'] == 'no_valid_mc_samples', state17
+    assert state17['equity_unavailable']['accepted'] == 0, state17
+    assert state17['_last_response_boundary']['mathematically_justified'] is False
+    assert state17['response_plans']['flop'][-1]['equity_status'] == (
+        'unavailable_not_negative_ev'), state17
+    print('PASS P17-B2 original two incompatible nonempty pools -> None, safe response')
+
     # A real computed equity of exactly zero is numeric and fully accepted.
     audit = {}
     true_zero = bot.equity_vs_combos(H, B, [POOL], sims=37, audit=audit)
