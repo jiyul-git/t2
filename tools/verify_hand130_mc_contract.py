@@ -66,7 +66,7 @@ def partial_samples():
     counter = {'trial': 0}
 
     def forced_sampling(rng, pool):
-        if pool is ONE:
+        if pool == ONE:
             counter['trial'] += 1
             return ONE[0]
         # First trial: 40 rejected pair collisions, next trial: valid pair.
