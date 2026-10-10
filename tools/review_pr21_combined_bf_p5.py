@@ -58,6 +58,14 @@ def full_field_variants():
     complete=exact.bf_details(3)
     unavailable=missing.bf_details(3)
     stale=altered.bf_details(3)
+    # Independently mutate an OTHER-TABLE player's PID-attributed balance
+    # while leaving the old field chip multiset unchanged. The snapshot is
+    # contradictory: it cannot certify exact full-field ICM.
+    other_table_changed=hand(LOCAL,ALL)
+    other_table_changed.field_pid_stacks['P2'] += 1
+    remote_conflict=other_table_changed.bf_details(3)
+    assert not remote_conflict['is_exact']
+    assert remote_conflict['reason']=='missing_or_mismatched_player_id_snapshot'
     whole=hand(FULL,()).bf_details(3)
     assert complete['is_exact'] and whole['is_exact']
     assert complete['method']=='exact_full_field_icm'
@@ -76,6 +84,7 @@ def full_field_variants():
     assert math.isclose(complete['value'],3.465325154547401,rel_tol=1e-12)
     assert unavailable['value']!=complete['value']
     assert stale['value']!=complete['value']
+    assert remote_conflict['value']==unavailable['value']
     assert whole['value']==complete['value']
     assert I.required_equity(POT,COST,complete['value']) != I.required_equity(
         POT,COST,unavailable['value'])
@@ -111,6 +120,8 @@ def full_field_variants():
     print('PASS combined full/missing/stale BF source and actual planner price threshold')
     print({'exact':complete['value'],'missing_empirical':unavailable['value'],
            'stale_empirical':stale['value'],
+           'remote_contradiction_method':remote_conflict['method'],
+           'remote_contradiction_reason':remote_conflict['reason'],
            'synthetic_midpoint_equity':derived_midpoint,
            'exact_action':action0,'missing_action':action1})
     return complete
