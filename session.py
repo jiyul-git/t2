@@ -3,6 +3,7 @@ import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
 import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS, money_pressure as MP, action_events as AE
 import timing as TM
+import range_posterior_v1 as RP
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -422,7 +423,7 @@ def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
 
 def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                                   active_ranges, locked_ranges, sims=600,
-                                  seed=None):
+                                  seed=None, capture_sampling=False):
     """F8-D3: 현재 참가 가능한 pot layer별 showdown equity.
 
     소비처(stage9 B5 확인, L189): 프리플랍 순수 콜오프와 포스트플랍 콜 판단에서
@@ -490,10 +491,13 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                         int(seed), idx,
                         ','.join(str(x) for x in opps))).encode())
             row['seed'] = _eq_seed
+            _mc_audit = {} if capture_sampling else None
             row['equity'] = round(
                 float(bot.equity_vs_combos(
                     hero_cards, board, pools, sims=int(sims),
-                    seed=_eq_seed)), 6)
+                    seed=_eq_seed, audit=_mc_audit)), 6)
+            if _mc_audit is not None:
+                row['sampling'] = _mc_audit
             row['reason'] = 'computed'
         out.append(row)
 
@@ -1461,6 +1465,55 @@ class HandRun:
 
         _pub_story = dict(public)
         _pub_story['opener_pos'] = h.pos.get(public.get('opener_seat'))
+        # Isolated P8 A/B switch: never consult the actual opponent persona.
+        # A failed contract is explicit missing evidence, never a guessed
+        # RFI/3bet range. Disabled unless specifically requested on this branch.
+        if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
+            _event = RP.classify_public_action(
+                getattr(rnd, 'action_meta', None), target, h.bb,
+                h.pos[target], stack_bb=stack_bb, seats=seats, ante=ante,
+                effective_stack_bb=min(
+                    float(stack_bb or 0.0),
+                    float((getattr(h, '_start_stacks', {}) or {}).get(observer, 0))
+                    / max(1.0, float(h.bb))))
+            _ctx = {'opener_pos': h.pos.get(_event.get('opener_seat')),
+                    'field_q': getattr(h, 'field_q', 0.6),
+                    'bubble_factor': h.bf(target),
+                    'erosion': getattr(h, 'erosion_per_hand', 0.0),
+                    'field_avg_bb': ((getattr(h, 'field_avg_stack', None) or 0)
+                                     / max(1, h.bb)) or None,
+                    # Hidden actor tilt/reads are unknown. Neutral inference
+                    # is an explicit ASSUMPTION, not restored original data.
+                    'tilt': 0.0,
+                    'payout_flat': getattr(h, 'payout_flat', 0.0),
+                    'reentry': getattr(h, 'reentry', False),
+                    'progress': getattr(h, 'progress', 0.0)}
+            if _event.get('kind') in ('first_in_shove', 'open_raise'):
+                _behind_hist, _behind_meta = RP.public_behind_stacks(
+                    getattr(rnd, 'action_meta', None), rnd.order,
+                    target, rnd.stacks, h.bb)
+                _ctx['behind_stacks_bb'] = _behind_hist
+                _ctx['behind_stack_provenance'] = _behind_meta
+            rr_new, _new_meta = RP.conditioned_preflop_range(
+                opp_view, _event, dead=h.hole[observer],
+                observer_context=_ctx)
+            if _event.get('kind') in (
+                    'first_in_shove', 'open_raise',
+                    'threebet_shove', 'threebet_raise'):
+                _new_meta.update({
+                    'source_base': 'public_action_meta',
+                    'stack_bb': _event.get('stack_bb'),
+                    'action_history': _event.get('action_history'),
+                    'observed_total_bb': _event.get('observed_total_bb'),
+                    'observer_model_inputs': {
+                        'opener_pos': _ctx.get('opener_pos'),
+                        'field_q': _ctx.get('field_q'),
+                        'bubble_factor': _ctx.get('bubble_factor'),
+                        'tilt_known': False,
+                        'opener_read_available': False,
+                        'behind_stacks_available': _ctx.get('behind_stacks_bb') is not None,
+                        'behind_stack_provenance': _ctx.get('behind_stack_provenance')}})
+                return rr_new or {}, _new_meta
         rr, _story = _preflop_story_range(
             opp_view, h.pos[target], float(stack_bb or 0.0),
             set(h.hole[observer]), seats, ante, act,
@@ -1634,7 +1687,8 @@ class HandRun:
                     s, h.hole[s], [], _pf_call_layers,
                     _pf_active_ranges, _pf_locked_ranges, sims=800,
                     seed=self._dseed(
-                        s, 'preflop', 'f8_d6c', len(rnd.log)))
+                        s, 'preflop', 'f8_d6c', len(rnd.log)),
+                    capture_sampling=(os.environ.get('T2_RANGE_REPLAY_CAPTURE') == '1'))
                 _pf_call_sum = _layer_call_summary(
                     _pf_call_cost, _pf_call_layers, _pf_call_layer_eq)
                 _pf_call_ev_shadow = {
@@ -1753,6 +1807,13 @@ class HandRun:
                     cold_context=_cold_ctx,
                     cold_decision_seed=self._dseed(
                         s, 'preflop', 'p7_cold', len(rnd.log)))
+                if os.environ.get('T2_RANGE_REPLAY_CAPTURE') == '1':
+                    _seed['pf_opp_range_replay'] = RP.replay_record(
+                        _pf_opp_ranges, _pf_opp_range_meta,
+                        layers=(_pf_call_layer_eq if _pf_call_ev_shadow is not None
+                                else []),
+                        event_tag='%s|%s|preflop|%s' % (
+                            h.hash, s, len(rnd.log)))
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
