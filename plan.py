@@ -3632,8 +3632,10 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         role = 'defend'
 
     _pf_timing = _pf.take_timing_bound()
-    # F8-D6-D1: pure calloff에서 legacy percentile 판단과 layer-EV+ICM 판단을
-    # 나란히 기록한다. 실제 action은 여전히 defend_decision/calloff_cap 소유다.
+    # Pure calloff: conditional showdown equity and actual call price own the
+    # decision when every eligible pot layer has a modeled range. A percentile
+    # defense width is NOT an alternative EV calculation. Retain the legacy
+    # outcome as a comparison/fallback when price/equity input is incomplete.
     _calloff_compare = None
     if (role == 'defend' and call_ev_shadow
             and call_ev_shadow.get('pure_calloff')
@@ -3653,16 +3655,20 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             _legacy_sz = sz
             _selected_act = a
             _selected_sz = sz
-            if _layer_j.get('gate_pass'):
-                _selected_act = _layer_j.get('layer_action')
-                _selected_sz = (
-                    float(to_call_bb or 0.0)
-                    if _selected_act == 'call' else 0.0)
-                a, sz = _selected_act, _selected_sz
-                # 레이어 판단이 행동을 정했으면 그 판단의 경계가 최종 경계다.
-                _pf_timing = {'kind': 'calloff_layer',
-                              'eq': _layer_j.get('layer_effective_equity'),
-                              'need': _layer_j.get('perceived_required_equity')}
+            # The pf_defend knowledge gate is retained for audit, not as a
+            # veto of a computed call-vs-fold EV comparison. A failed gate used
+            # to restore an unrelated percentile cap even when a complete
+            # price/equity comparison existed (HAND130 B37). Individual
+            # imperfect knowledge is already reflected in the opponent range,
+            # perceived ICM factor and pot-odds calculation noise.
+            _selected_act = _layer_j.get('layer_action')
+            _selected_sz = (
+                float(to_call_bb or 0.0)
+                if _selected_act == 'call' else 0.0)
+            a, sz = _selected_act, _selected_sz
+            _pf_timing = {'kind': 'calloff_layer',
+                          'eq': _layer_j.get('layer_effective_equity'),
+                          'need': _layer_j.get('perceived_required_equity')}
             _calloff_consumer = dict(_layer_j)
             _calloff_consumer.update({
                 'eligible': True,
@@ -3672,7 +3678,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 'selected_size_bb': float(_selected_sz or 0.0),
                 'changed': bool(
                     _selected_act != _legacy_act),
-                'strategy_consumer': bool(_layer_j.get('gate_pass')),
+                'strategy_consumer': True,
+                'gate_role': 'diagnostic_only',
+                'decision_quantity': 'perceived_layer_equity_vs_price',
             })
 
     # 현재 판단 사건의 종류. 행동 결과만 남기면

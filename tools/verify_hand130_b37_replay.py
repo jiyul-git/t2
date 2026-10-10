@@ -91,12 +91,16 @@ def main():
         call_ev_shadow=shadow, calloff_decision_seed=decision_seed,
         cold_context=pf["pf_cold_context"])
     assert rng.getstate() == state, "Pure calloff consumed shared decision RNG"
-    assert action == pf["pf_act"] == "fold" and size == 0
+    assert pf["pf_act"] == "fold"  # archived original is not rewritten
+    assert action == "call" and size == pf["pf_to_call_bb"]
     consumer = info["pf_calloff_consumer"]
     assert consumer
-    for key in ("layer_action", "legacy_action", "selected_action",
-                "gate_pass", "strategy_consumer", "changed"):
+    for key in ("layer_action", "legacy_action", "gate_pass"):
         eq(consumer[key], saved[key], key)
+    assert consumer["selected_action"] == "call"
+    assert consumer["strategy_consumer"] is True
+    assert consumer["gate_role"] == "diagnostic_only"
+    assert consumer["changed"] is True
 
     print(json.dumps({
         "fixture": "HAND130/B37",
@@ -110,8 +114,10 @@ def main():
         "gate_pass": layer["gate_pass"], "selected_action": action,
         "mc_recomputed": False,
         "rng_preserved": True,
+        "legacy_action": pf["pf_act"],
+        "decision_quantity": consumer["decision_quantity"],
     }, sort_keys=True))
-    print("PASS HAND130 B37 archived decision-layer baseline")
+    print("PASS HAND130 B37 full-price decision routing on archived inputs")
 
 
 if __name__ == "__main__":

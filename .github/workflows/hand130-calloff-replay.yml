@@ -17,6 +17,8 @@ jobs:
         run: python3 -m py_compile preflop.py plan.py tools/verify_hand130_b37_replay.py
       - name: Exact archived B37 decision replay
         run: python3 tools/verify_hand130_b37_replay.py
+      - name: Synthetic hand-class, call-price and ICM decision routing
+        run: python3 tools/verify_calloff_price_routing.py
       - name: Existing P6 calloff checks
         run: python3 tools/verify_p6_calloff.py
       - name: Existing preflop closure checks
