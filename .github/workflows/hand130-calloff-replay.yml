@@ -1,0 +1,23 @@
+name: HAND130 calloff decision replay
+on:
+  push:
+    branches: [chatgpt/hand130-calloff-audit-20261010]
+  workflow_dispatch:
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile changed decision code
+        run: python3 -m py_compile preflop.py plan.py tools/verify_hand130_b37_replay.py
+      - name: Exact archived B37 decision replay
+        run: python3 tools/verify_hand130_b37_replay.py
+      - name: Existing P6 calloff checks
+        run: python3 tools/verify_p6_calloff.py
+      - name: Existing preflop closure checks
+        run: python3 tools/verify_preflop_closure.py
