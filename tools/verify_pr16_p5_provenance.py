@@ -70,6 +70,19 @@ def test_contract():
         assert failed['missing'] == ['public_actor_stack_bb']
         assert failed['failure_reason'] == 'public_actor_stack_bb'
 
+        # A producer MUST NOT smuggle a nonempty candidate to equity when
+        # the same response explicitly says complete=False.
+        with patch.object(RD,'perceived_profile',return_value=None), patch.object(
+            RP,'conditioned_preflop_range',return_value=(
+                {('As','Ad'):1.0}, {'source': RP.MODEL,
+                    'kind':'threebet_shove', 'complete':False,
+                    'missing':['unverified_action_likelihood']})):
+            candidate, bad = run._preflop_perceived_range(
+                3,9,{'concepts':{}},rnd,9,8,True)
+        assert not candidate and bad['complete'] is False
+        assert bad['failure_reason'] == 'unverified_action_likelihood'
+        print('PASS incomplete producer cannot leak a nonempty candidate into P5 equity')
+
         pools, meta = {},{}
         S._record_preflop_observer_range(pools,meta,9,absent,failed)
         assert pools=={}
