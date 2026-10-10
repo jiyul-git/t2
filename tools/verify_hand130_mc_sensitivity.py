@@ -44,11 +44,26 @@ def run():
             'two_layer_800_sample_independent_95pct_hoeffding_halfwidth':halfwidth,
             'original_288_weights_archived':False,
             'conditional_proxies':[]}
-    for kind in ('TAG','LAG','FISH'):
-        pool=R.preflop_range(kind,'BB','3bet',6.3442,set(hero),
-             n_callers=0,opener_pos='LJ',open_bb=2.0,seats=8,ante=True,
-             raise_level=1)
+    # A different archetype label can produce the same reconstructed combo
+    # support: do not mistake independent RNG variation for range sensitivity.
+    # Instead vary observable counterfactual action context via the EXISTING
+    # T2 range producer (no fabricated probability multipliers).
+    contexts=[
+        ('observed_BB_vs_LJ_6p3442bb', 'LJ', 6.3442, 2.0),
+        ('deeper_BB_vs_LJ_20bb', 'LJ', 20.0, 2.0),
+        ('deeper_BB_vs_LJ_40bb', 'LJ', 40.0, 2.0),
+        ('deeper_BB_vs_BTN_40bb', 'BTN', 40.0, 2.0),
+        ('deeper_BB_vs_UTG_40bb', 'UTG', 40.0, 2.0),
+        ('larger_raise_BB_vs_LJ_40bb', 'LJ', 40.0, 4.0),
+    ]
+    signatures=set()
+    for kind, opener, opp_stack, raise_size in contexts:
+        pool=R.preflop_range('TAG','BB','3bet',opp_stack,set(hero),
+             n_callers=0,opener_pos=opener,open_bb=raise_size,
+             seats=8,ante=True,raise_level=1)
         assert pool and R.range_mass(pool)>0,kind
+        signatures.add(repr(sorted(pool.items())) if isinstance(pool,dict)
+                       else repr(sorted(pool)))
         # Exactly the same sampled Monte Carlo function as the actual engine.
         seeds=[zlib.crc32(('%s|%s|independent|%d'%(o['hash'],kind,j)).encode())
                for j in range(6)]
@@ -56,7 +71,9 @@ def run():
              for seed in seeds]
         assert 0<=min(eqs) and max(eqs)<=1
         report['conditional_proxies'].append({
-            'archetype':kind,'source':'T2 existing perceived action-conditional 3bet likelihood',
+            'scenario':kind,'source':'T2 built-in observer conditional 3bet model; counterfactual public context',
+            'opener_pos':opener,'opponent_stack_bb':opp_stack,
+            'opener_raise_bb':raise_size,
             'card_combo_support':len(pool), 'weighted_range_mass':R.range_mass(pool),
             'seed_ids':seeds,'n_requested_per_seed':n,
             'equities':[round(e,6) for e in eqs],
@@ -66,7 +83,9 @@ def run():
             'call_by_old_objective_bf_point':sum(x>=old_need for x in eqs),
             'call_by_8player_exact_no_tie_breakeven_point':sum(x>=0.3715371093145927 for x in eqs),
         })
-    assert len(report['conditional_proxies'])==3
+    assert len(report['conditional_proxies'])==len(contexts)
+    report['distinct_range_signatures']=len(signatures)
+    assert len(signatures)>=2,'No actual range sensitivity; context variations collapsed'
     print(json.dumps(report,ensure_ascii=False,sort_keys=True))
     print('PASS independent-seed reconstructed-proxy sensitivity; original range missing')
 
