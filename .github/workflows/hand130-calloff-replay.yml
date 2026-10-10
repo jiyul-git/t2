@@ -23,3 +23,51 @@ jobs:
         run: python3 tools/verify_p6_calloff.py
       - name: Existing preflop closure checks
         run: python3 tools/verify_preflop_closure.py
+
+
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Make immutable pre-change comparison worktree
+        run: |
+          git fetch --no-tags --depth=1 origin d4f2194430e366f237271da7dedd6bffc3f2ad2d
+          git worktree add --detach /tmp/hand130-before d4f2194430e366f237271da7dedd6bffc3f2ad2d
+      - name: Before-vs-after six-seed 9max VPIP/PFR fingerprint
+        run: |
+          echo '=== BEFORE 6 seeds x 30 hands ==='
+          (cd /tmp/hand130-before && python3 tools/regress.py check --baseline current) || true
+          echo '=== AFTER 6 seeds x 30 hands ==='
+          python3 tools/regress.py check --baseline current || true
+      - name: Before-vs-after field preflop action samples
+        run: |
+          for seed in 11 12; do
+            (cd /tmp/hand130-before && python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/before_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/after_${seed}.json"
+          done
+          python3 - <<'PY'
+          import collections, json
+          def stats(path):
+              data = json.load(open(path))
+              p = data['pf']
+              acts = collections.Counter(x['act'] for x in p)
+              return {'n':len(p), 'actions':dict(acts)}
+          for seed in (11,12):
+              old=json.load(open('/tmp/before_%s.json'%seed))['pf']
+              new=json.load(open('/tmp/after_%s.json'%seed))['pf']
+              matched=sum((a.get('hash'),a.get('seat'),a.get('act'),a.get('sz'))==
+                          (b.get('hash'),b.get('seat'),b.get('act'),b.get('sz'))
+                          for a,b in zip(old,new))
+              print(json.dumps({'seed':seed,'before':stats('/tmp/before_%s.json'%seed),
+                'after':stats('/tmp/after_%s.json'%seed),
+                'identical_decision_prefix': next(
+                    (i for i,(a,b) in enumerate(zip(old,new))
+                     if (a.get('hash'),a.get('seat'),a.get('act'),a.get('sz')) !=
+                        (b.get('hash'),b.get('seat'),b.get('act'),b.get('sz'))),
+                    min(len(old),len(new))),
+                'paired_same':matched,'paired_checked':min(len(old),len(new))}))
+          PY
