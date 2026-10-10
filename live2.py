@@ -991,6 +991,13 @@ def build_hand(st):
     h.seat_pid = {tb.seat_of(p['pid']): p['pid'] for p in alive}
     h.table_id = tb.id
     h.table_max_seat = getattr(tb, 'max_seat', len(tb.seats))
+    if f.remaining() > len(alive):
+        # Live HERO hand and other-table workers share the round-start
+        # logical valuation epoch, but worker results may be unmerged.
+        # A complete chip snapshot is not proof of *decision-current*
+        # field ICM while other tables progress independently.
+        # This metadata-only marker neither runs a worker nor changes RNG.
+        f._frozen_field = f.field_snapshot()
     f.stamp(h)
     _pids = [str(p['pid']) for p in alive]
     h._telemetry_tilt_before = {

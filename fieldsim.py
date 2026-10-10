@@ -577,7 +577,13 @@ class Field:
         경로마다 다른 기능이 죽어 있었다. 여기 하나로 모은다.
         """
         bb = self.blinds()[1]
-        _fz = getattr(self, '_frozen_field', None) or self.field_snapshot()
+        frozen = getattr(self, '_frozen_field', None)
+        _fz = frozen if frozen is not None else self.field_snapshot()
+        # The frozen field is a common logical round-start baseline. Other
+        # tables may have finished by the time this particular hand acts.
+        # Never silently relabel that baseline as decision-current.
+        snapshot_scope = ('simultaneous_frozen' if frozen is not None
+                          else 'decision_current')
         self.ctx.update(
             field_q=self.field_q,
             field_remaining=_fz['remaining'],
@@ -585,6 +591,10 @@ class Field:
             field_avg_stack=_fz['avg_stack'],
             field_stacks=_fz['stacks'],
             field_pid_stacks=_fz['pid_stacks'],
+            field_snapshot_id=_fz['epoch_id'],
+            field_snapshot_hand_no=_fz['hand_no'],
+            field_snapshot_level=_fz['level'],
+            field_snapshot_scope=snapshot_scope,
             payouts=self.payouts,
             payout_flat=self.fmt['payout_flat'],
             ante=(bb if self.level >= self.fmt['ante_from'] else 0),
@@ -598,6 +608,11 @@ class Field:
                 _fz['remaining'], self.itm, self.payouts),
         )
         self.ctx.apply(h, strict=True)
+        # Transient, non-serialized reference to the actual live tournament
+        # roster. Read it on each BF consumption, not only at stamp time.
+        # No scheduling, player mutation, RNG, or action order changes.
+        h._field_epoch_owner = self
+        h._field_frozen_epoch_ref = frozen
         return h
 
     def blinds(self):
@@ -609,11 +624,17 @@ class Field:
         """핸드에 심는 대회 전체 문맥(남은 인원·평균 스택·전체 스택)."""
         rem = self.remaining()
         live = [p for p in self.players.values() if p['stack'] > 0]
+        pid_stacks = {p['pid']: p['stack'] for p in live}
+        epoch_hand = getattr(self, 'hand_no', None)
+        epoch_level = getattr(self, 'level', None)
         return {'remaining': rem,
                 'avg_stack': self.entries*self.start_stack / max(1, rem),
                 'stacks': tuple(p['stack'] for p in live),
-                # Captured in the SAME snapshot call as counts and chips.
-                'pid_stacks': {p['pid']: p['stack'] for p in live}}
+                'pid_stacks': pid_stacks,
+                'hand_no': epoch_hand,
+                'level': epoch_level,
+                'epoch_id': play.icm.field_epoch_id(
+                    pid_stacks, epoch_hand, epoch_level)}
 
     def remaining(self):
         return sum(1 for p in self.players.values() if p['stack'] > 0)

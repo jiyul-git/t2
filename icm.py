@@ -257,9 +257,28 @@ def field_bf(stack, field_avg, remaining, itm, payout_flat=0.0):
     return max(1.0, min(4.0, 1.0 + _K*st*sp*fl))
 
 
+def field_epoch_id(pid_stacks, hand_no=None, level=None):
+    """Deterministic field-epoch identity: PID/chips + tournament hand/level.
+
+    This is audit evidence, not RNG, an elapsed-time guess, or a promise
+    that a cached snapshot represents later completed tables.
+    """
+    import hashlib
+    import json
+    cells = sorted(
+        ((type(pid).__name__, str(pid), float(chips))
+         for pid, chips in dict(pid_stacks or {}).items()))
+    blob = json.dumps(
+        {'hand_no': hand_no, 'level': level, 'players': cells},
+        sort_keys=True, separators=(',', ':'), allow_nan=False)
+    return hashlib.sha256(blob.encode('utf-8')).hexdigest()
+
+
 def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
              field_avg=None, field_stacks=None, return_details=False,
-             field_pid_stacks=None, table_pids=None, snapshot_is_current=True):
+             field_pid_stacks=None, table_pids=None, snapshot_is_current=True,
+             field_epoch_status=None, field_snapshot_id=None,
+             observed_field_epoch_id=None, field_snapshot_scope=None):
     """Price-independent BF with explicit full-field completeness contract.
 
     `stacks` indexes CURRENT-TABLE players (seat_idx is local to this list).
@@ -271,7 +290,7 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
     computed from exact generic field ICM, NOT a price-specific call payout EV.
 
     For <=EXACT_MAX: exact ICM requires the entire field at this table OR a
-    validated full-field snapshot. Otherwise use the PRE-EXISTING field_bf
+    validated full-field snapshot with an independently checked epoch. Otherwise use the PRE-EXISTING field_bf
     heuristic with explicit `method='field_bf_empirical_approximation'`.
     For >EXACT_MAX: use the same heuristic regardless of snapshot availability.
     No new coefficient, BF=1 shortcut, or unverified exactness label.
@@ -294,7 +313,16 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
         'reason': None,
         'bf_kind': 'generic_default_risk_not_spot_call_prize_ev',
         'price_specific': False,
-        'snapshot_current': bool(snapshot_is_current),
+        'snapshot_current': bool(snapshot_is_current and
+                                 field_epoch_status == 'current_verified'),
+        'field_epoch_status': field_epoch_status or 'unverified',
+        'field_snapshot_scope': field_snapshot_scope or 'unknown',
+        'field_snapshot_id': field_snapshot_id,
+        'observed_field_epoch_id': observed_field_epoch_id,
+        'observed_epoch_diverged': bool(
+            field_snapshot_id and observed_field_epoch_id
+            and field_snapshot_id != observed_field_epoch_id),
+        'snapshot_epoch_exact': False,
     }
 
     def emit(value):
@@ -318,7 +346,9 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
             # is required. Omit dead/zero-stack seats from the prize ranks.
             live_idx = sum(1 for v in table[:seat_idx] if v > 0)
             details.update(method='exact_full_field_icm',
-                           is_exact=True, field_completeness='complete_table',
+                           is_exact=True, snapshot_epoch_exact=True,
+                           snapshot_current=True,
+                           field_completeness='complete_table',
                            reason='remaining_matches_all_live_table_seats')
             return emit(bubble_factor(live, list(payouts)[:rem] or [100.0],
                                       live_idx))
@@ -326,6 +356,13 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
         elif not snapshot_is_current:
             details.update(field_completeness='stale_field_snapshot',
                            reason='table_stacks_changed_after_field_snapshot')
+        elif field_epoch_status not in (
+                'current_verified', 'frozen_epoch_reference'):
+            details.update(
+                field_completeness='unverified_or_stale_field_epoch',
+                reason=('remote_field_changed_after_snapshot'
+                        if field_epoch_status == 'stale_remote'
+                        else 'missing_verified_field_epoch'))
         elif snapshot and len(snapshot) == rem:
             # Player IDs and epoch-matched stacks, not chip counts alone,
             # establish that the whole field is represented at this decision.
@@ -351,9 +388,24 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
                 own = float(table[seat_idx])
                 full = [float(v) for v in snapshot]
                 full_idx = full.index(own)
-                details.update(method='exact_full_field_icm', is_exact=True,
-                               field_completeness='verified_player_id_field_snapshot',
-                               reason='all_table_pids_match_same_hand_start_snapshot')
+                if field_epoch_status == 'frozen_epoch_reference':
+                    # Exact distribution *at the certified common batch epoch*,
+                    # NOT a current-field calculation after another table
+                    # has advanced. Preserve the frozen policy's numeric BF.
+                    details.update(
+                        method='frozen_epoch_reference_icm',
+                        is_exact=False,
+                        snapshot_epoch_exact=True,
+                        snapshot_current=False,
+                        field_completeness='verified_frozen_epoch_not_current',
+                        reason='frozen_common_round_epoch_not_decision_current')
+                else:
+                    details.update(
+                        method='exact_full_field_icm', is_exact=True,
+                        snapshot_epoch_exact=True,
+                        snapshot_current=True,
+                        field_completeness='verified_player_id_field_snapshot',
+                        reason='all_table_pids_match_snapshot_and_live_epoch')
                 return emit(bubble_factor(full, list(payouts)[:rem] or [100.0],
                                           full_idx))
             details.update(
