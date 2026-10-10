@@ -184,42 +184,76 @@ class Hand:
         local_pids = (
             [ids[x] for x in live] if all(x in ids for x in live)
             else None)
-        # The caller must prove freshness of *every* survivor, not only
-        # local _start_stacks. Transient Field.owner is the actual live
-        # roster in the same process / worker that owns this HandRun.
+        # A worker may own only ONE table while the frozen context contains
+        # the whole tournament. Never hash that partial owner.players map as
+        # the observed FULL field. Likewise, a simultaneous batch deliberately
+        # uses one frozen logical epoch, whether the sequential coordinator
+        # has applied another table already or a parallel worker cannot see it.
         owner = getattr(self, '_field_epoch_owner', None)
         expected_id = getattr(self, 'field_snapshot_id', None)
         observed_id = None
         epoch_status = None
+        observation_status = 'no_epoch_attestation'
         scope = getattr(self, 'field_snapshot_scope', None)
         if owner is not None and expected_id:
-            live_pid = {
-                p['pid']: p['stack']
-                for p in owner.players.values() if p['stack'] > 0}
             epoch_hand = getattr(self, 'field_snapshot_hand_no', None)
             epoch_level = getattr(self, 'field_snapshot_level', None)
-            observed_id = icm.field_epoch_id(
-                live_pid, epoch_hand, epoch_level)
-            same_tournament_clock = (
+            clock_matches = (
                 getattr(owner, 'hand_no', None) == epoch_hand
                 and getattr(owner, 'level', None) == epoch_level)
-            if (scope == 'simultaneous_frozen'
-                    and getattr(owner, '_frozen_field', None) is not None
-                    and getattr(owner, '_frozen_field', None)
-                        is getattr(self, '_field_frozen_epoch_ref', None)
-                    and getattr(self, '_field_frozen_epoch_ref', {}).get('epoch_id')
-                        == expected_id):
-                # Always mark a simultaneous common-round snapshot as
-                # historical reference, even if this particular worker has
-                # not yet received any other table's completed hand. This
-                # keeps both sequential and parallel runs truthful and
-                # gives the same BF/provenance regardless of execution order.
-                epoch_status = 'frozen_epoch_reference'
-            elif (same_tournament_clock and observed_id == expected_id
-                    and live_pid == getattr(self, 'field_pid_stacks', None)):
-                epoch_status = 'current_verified'
+            frozen = getattr(owner, '_frozen_field', None)
+            frozen_ref = getattr(self, '_field_frozen_epoch_ref', None)
+            frozen_matches = (
+                scope == 'simultaneous_frozen'
+                and frozen is not None
+                and frozen is frozen_ref
+                and frozen.get('epoch_id') == expected_id
+                and frozen.get('hand_no') == epoch_hand
+                and frozen.get('level') == epoch_level)
+            if scope == 'simultaneous_frozen':
+                if frozen_matches and clock_matches:
+                    # Stable across sequential/parallel table execution:
+                    # do not sample ANY decision-current roster in a frozen
+                    # batch. Even a complete coordinator roster has newer
+                    # intra-batch information that a mini worker lacks.
+                    epoch_status = 'frozen_epoch_reference'
+                    observation_status = 'frozen_reference_not_current'
+                else:
+                    # Expired by release/replacement or tournament hand/level
+                    # advancement. An unchanged object cannot extend its
+                    # logical lifetime. Do NOT turn this into stale_remote.
+                    epoch_status = 'expired_frozen_epoch'
+                    observation_status = (
+                        'frozen_clock_mismatch' if not clock_matches
+                        else 'frozen_reference_released_or_replaced')
             else:
-                epoch_status = 'stale_remote'
+                roster = list(owner.players.values())
+                known_pids = {p['pid'] for p in roster}
+                original_pids = set(
+                    (getattr(self, 'field_pid_stacks', None) or {}).keys())
+                if not original_pids or not original_pids <= known_pids:
+                    # Partial workers know nothing about remote current chips.
+                    epoch_status = 'unobservable_partial_field'
+                    observation_status = 'incomplete_current_field_roster'
+                else:
+                    # A FULL roster was independently observed in this owner.
+                    # Hash it with the ACTUAL owner clock, never the cached
+                    # snapshot clock, so clock-only advancement is detected.
+                    live_pid = {
+                        p['pid']: p['stack'] for p in roster
+                        if p['stack'] > 0}
+                    observed_id = icm.field_epoch_id(
+                        live_pid, getattr(owner, 'hand_no', None),
+                        getattr(owner, 'level', None))
+                    observation_status = 'verified_full_current_roster'
+                    if not clock_matches:
+                        epoch_status = 'stale_clock'
+                    elif (observed_id == expected_id
+                          and live_pid ==
+                              getattr(self, 'field_pid_stacks', None)):
+                        epoch_status = 'current_verified'
+                    else:
+                        epoch_status = 'stale_remote'
         details = icm.table_bf(
             stacks, idx, rem, itm, pays, flat, favg,
             field_stacks=getattr(self, 'field_stacks', None),
@@ -229,6 +263,7 @@ class Hand:
             field_snapshot_id=expected_id,
             observed_field_epoch_id=observed_id,
             field_snapshot_scope=scope,
+            field_observation_status=observation_status,
             return_details=True)
         details['snapshot_hand_no'] = getattr(
             self, 'field_snapshot_hand_no', None)

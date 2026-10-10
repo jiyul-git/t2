@@ -50,6 +50,8 @@ def latest_remote_only():
     assert exact['field_epoch_status']=='current_verified'
     original_id=h.field_snapshot_id
     assert exact['observed_field_epoch_id']==original_id
+    assert exact['observed_epoch_diverged'] is False
+    assert exact['field_observation_status']=='verified_full_current_roster'
     # Only REMOTE players change, conserving the tournament's chips.
     # Local table identities/stacks/hand number remain fixed.
     f.players['2']['stack']+=5000
@@ -61,6 +63,7 @@ def latest_remote_only():
     assert fresh['field_epoch_status']=='stale_remote'
     assert fresh['field_snapshot_id']==original_id
     assert fresh['observed_field_epoch_id']!=original_id
+    assert fresh['observed_epoch_diverged'] is True
     assert fresh['value']!=1.0
     # After restamping at the genuine new decision epoch, full-field generic
     # ICM is again allowed; the changed chips must affect its underlying set.
@@ -87,7 +90,9 @@ def simultaneous_frozen():
     assert not at_start['is_exact'] and not at_start['snapshot_current']
     assert at_start['snapshot_epoch_exact']
     assert at_start['method']=='frozen_epoch_reference_icm'
-    assert at_start['observed_epoch_diverged'] is False
+    assert at_start['observed_epoch_diverged'] is None
+    assert at_start['observed_field_epoch_id'] is None
+    assert at_start['field_observation_status']=='frozen_reference_not_current'
     # Other table completes later in the SAME logical round, *without*
     # rebasing the frozen common-round reference or ordering of actions.
     f.players['2']['stack']+=1500
@@ -97,9 +102,12 @@ def simultaneous_frozen():
     assert after['snapshot_epoch_exact'] is True
     assert after['method']=='frozen_epoch_reference_icm'
     assert after['reason']=='frozen_common_round_epoch_not_decision_current'
-    assert after['observed_epoch_diverged'] is True
+    assert after['observed_epoch_diverged'] is None
+    assert after['observed_field_epoch_id'] is None
+    assert after['field_observation_status']=='frozen_reference_not_current'
     assert after['field_snapshot_scope']=='simultaneous_frozen'
-    assert after['field_snapshot_id']!=after['observed_field_epoch_id']
+    assert after['field_snapshot_id'] is not None
+    assert after['observed_field_epoch_id'] is None
     assert after['value']==at_start['value'] # frozen batch policy unchanged
     # Frozen epoch is no longer valid after the scheduler releases it.
     f._frozen_field=None

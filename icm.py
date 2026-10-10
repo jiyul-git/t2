@@ -278,7 +278,8 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
              field_avg=None, field_stacks=None, return_details=False,
              field_pid_stacks=None, table_pids=None, snapshot_is_current=True,
              field_epoch_status=None, field_snapshot_id=None,
-             observed_field_epoch_id=None, field_snapshot_scope=None):
+             observed_field_epoch_id=None, field_snapshot_scope=None,
+             field_observation_status=None):
     """Price-independent BF with explicit full-field completeness contract.
 
     `stacks` indexes CURRENT-TABLE players (seat_idx is local to this list).
@@ -319,9 +320,14 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
         'field_snapshot_scope': field_snapshot_scope or 'unknown',
         'field_snapshot_id': field_snapshot_id,
         'observed_field_epoch_id': observed_field_epoch_id,
-        'observed_epoch_diverged': bool(
-            field_snapshot_id and observed_field_epoch_id
-            and field_snapshot_id != observed_field_epoch_id),
+        # None is UNKNOWN, not "observed equal": only a proven full-roster
+        # current hash allows a true/false equality comparison.
+        'observed_epoch_diverged': (
+            field_snapshot_id != observed_field_epoch_id
+            if field_snapshot_id is not None
+               and observed_field_epoch_id is not None else None),
+        'field_observation_status': (
+            field_observation_status or 'not_attested'),
         'snapshot_epoch_exact': False,
     }
 
@@ -360,9 +366,13 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
                 'current_verified', 'frozen_epoch_reference'):
             details.update(
                 field_completeness='unverified_or_stale_field_epoch',
-                reason=('remote_field_changed_after_snapshot'
-                        if field_epoch_status == 'stale_remote'
-                        else 'missing_verified_field_epoch'))
+                reason={
+                    'stale_remote': 'remote_field_changed_after_snapshot',
+                    'stale_clock': 'field_snapshot_clock_advanced',
+                    'expired_frozen_epoch': 'frozen_snapshot_lifecycle_expired',
+                    'unobservable_partial_field':
+                        'current_field_unobservable_partial_roster',
+                }.get(field_epoch_status, 'missing_verified_field_epoch'))
         elif snapshot and len(snapshot) == rem:
             # Player IDs and epoch-matched stacks, not chip counts alone,
             # establish that the whole field is represented at this decision.
