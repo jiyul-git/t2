@@ -60,8 +60,12 @@ jobs:
               raise AssertionError('baseline did not reproduce P17-B2 TypeError')
           PY
           cp /tmp/p10_fixed_plan.py plan.py
+      - name: Original P9 PR30 audit, byte-for-byte unchanged
+        run: python3 tools/audit_p9_pr30_mc_contract.py
       - name: New consumer contract and RNG invariance
-        run: python3 tools/verify_p10_postflop_mc_unavailable.py
+        run: |
+          python3 tools/verify_p10_postflop_mc_unavailable.py
+          python3 tools/verify_p10_range_provenance.py
       - name: Existing postflop action / replan regression
         run: |
           python3 tools/verify_f3_checkraise_response.py
@@ -106,6 +110,12 @@ jobs:
           python3 tools/verify_hand130_exact_icm.py
           python3 tools/verify_hand130_partial_call_icm.py
           python3 tools/verify_hand130_skill_semantics.py
+          python3 tools/verify_pr21_actor_bf_provenance.py
+          python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
+          python3 tools/verify_hand130_conditioned_posterior.py
+          python3 tools/verify_hand130_mc_sensitivity.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_calloff_price_routing.py
   normal-action-parity:
     runs-on: ubuntu-latest
     timeout-minutes: 40
