@@ -2,7 +2,7 @@ name: P13 complete surviving-field BF review
 
 on:
   push:
-    branches: [chatgpt/p13-complete-field-bf-20261010, chatgpt/p13-pr18-preview-20261010, chatgpt/p13-p18-p19-isolated-integration-20261010]
+    branches: [chatgpt/p13-complete-field-bf-20261010, chatgpt/p13-pr18-preview-20261010, chatgpt/p13-p18-p19-isolated-integration-20261010, chatgpt/p13-pr21-field-epoch-guard-20261010]
   workflow_dispatch:
 
 jobs:
@@ -31,6 +31,8 @@ jobs:
         run: python3 -m py_compile icm.py play.py session.py plan.py tools/verify_p13_complete_field_bf.py
       - name: Exact complete field / empirical fallback / five-vs-eight BF and P5 actions
         run: python3 tools/verify_p13_complete_field_bf.py
+      - name: Remote-only field drift, frozen common epoch and P8 actor provenance
+        run: python3 tools/verify_p13_field_epoch_freshness.py
       - name: P8 ON/OFF policy likelihood response to generic BF correction
         run: python3 tools/verify_p13_bf_observer_likelihood.py
       - name: Actual HandRun to P5 BF scalar and persisted provenance ON/OFF
