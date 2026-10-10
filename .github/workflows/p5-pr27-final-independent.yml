@@ -1,0 +1,92 @@
+name: P5 PR27 final independent calloff audit
+on:
+  push:
+    branches: [chatgpt/p5-pr27-final-independent-20261010]
+  workflow_dispatch:
+jobs:
+  p5-decision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pin PR27 production source without strategy modifications
+        run: |
+          set -euo pipefail
+          BASE=3c434b28046643ba54c04447951ad148ae6f9c1c
+          for file in plan.py preflop.py session.py bot.py icm.py play.py live2.py range_posterior_v1.py fieldsim.py; do
+            git diff --exit-code "$BASE" HEAD -- "$file"
+          done
+          echo "PASS PR27 tested production files identical to 3c434b2"
+      - name: P5 new independent current frozen partial field BF and actual calloff
+        run: python3 tools/review_p5_pr27_final.py
+      - name: P9 MC 0 partial real zero + P5 calloff + RNG
+        run: |
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_hand130_b37_replay.py
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_skill_semantics.py
+      - name: P13 generic BF, exact price payout ICM, tie and partial call
+        run: |
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/verify_p13_complete_field_bf.py
+          python3 tools/verify_p13_runtime_provenance.py
+      - name: P8 live actor BF provenance and range evidence
+        run: |
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_pr21_actor_bf_provenance.py
+          python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
+      - name: P13 and P15 actual epoch lifecycle checks
+        run: |
+          python3 tools/verify_p13_parallel_epoch_lifetime.py
+          python3 tools/verify_p13_field_epoch_freshness.py
+  p5-27-three-tables:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Independent 27 players 3 table sequential parallel provenance
+        run: python3 tools/verify_parallel_table_processes.py 27 0 11
+  p5-on-off:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fixed-seed ON OFF paired real-field actor and final state
+        run: |
+          set -euo pipefail
+          for seed in 11 12; do
+            T2_RANGE_CONDITIONAL_V1=0 python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p5_pr27_off_${seed}.json"
+            T2_RANGE_CONDITIONAL_V1=1 python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p5_pr27_on_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/p5_pr27_off_%s.json'%seed))
+              b=json.load(open('/tmp/p5_pr27_on_%s.json'%seed))
+              x,y=a['pf'],b['pf']
+              changes=[(i,p.get('act'),q.get('act'),p.get('sz'),q.get('sz'))
+                    for i,(p,q) in enumerate(zip(x,y))
+                    if (p.get('act'),p.get('sz'))!=(q.get('act'),q.get('sz'))]
+              print(json.dumps({'seed':seed,
+                'OFF_pf':len(x),'ON_pf':len(y),
+                'OFF_hands':len(a['hands']),'ON_hands':len(b['hands']),
+                'action_size_differences':len(changes),
+                'first_changes':changes[:3],
+                'full_log_and_state_identical':a==b},sort_keys=True))
+              assert len(x)==len(y),'different number of decisions'
+              assert len(changes)==0,'unexpected ON/OFF action difference'
+              assert a['hands']==b['hands'],'unexpected chip or hand change'
+          print('PASS PR27 ON/OFF actor actions and final hand states')
+          PY
