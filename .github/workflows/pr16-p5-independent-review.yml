@@ -1,0 +1,52 @@
+name: P5 independent review of P8 PR16
+on:
+  push:
+    branches: [chatgpt/hand130-p5-pr16-review-20261010]
+  workflow_dispatch:
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify real P8 to session connection and expose incomplete evidence blockers
+        run: python3 tools/review_pr16_p5_contract.py
+      - name: Confirm unchanged P5 ICM/tie/partial pot invariants
+        run: |
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+      - name: Confirm default-off parent and conditional posterior tests
+        run: python3 tools/verify_hand130_conditioned_posterior.py
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Same-seed ON/OFF field records
+        run: |
+          for seed in 11 12; do
+            T2_RANGE_CONDITIONAL_V1=0 python3 tools/r2_baseline_sim.py "$seed" 6 "/tmp/off_${seed}.json"
+            T2_RANGE_CONDITIONAL_V1=1 python3 tools/r2_baseline_sim.py "$seed" 6 "/tmp/on_${seed}.json"
+          done
+      - name: Attribute differences to first changed decision and action context
+        run: |
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              off=json.load(open('/tmp/off_%s.json'%seed)); on=json.load(open('/tmp/on_%s.json'%seed))
+              a,b=off['pf'],on['pf']
+              pair=[(x,y) for x,y in zip(a,b)]
+              keys=('hash','seat','act','sz')
+              changed=[(i,x,y) for i,(x,y) in enumerate(pair) if any(x.get(k)!=y.get(k) for k in keys)]
+              delta=[]
+              for i,x,y in changed[:8]:
+                  delta.append({'index':i,'off':{k:x.get(k) for k in ('hash','seat','pos','hand','aggr_pos','open_bb','rlevel','act','sz')},'on':{k:y.get(k) for k in ('hash','seat','pos','hand','aggr_pos','open_bb','rlevel','act','sz')}})
+              print(json.dumps({'seed':seed,'off_decisions':len(a),'on_decisions':len(b),'paired':len(pair),'changed_paired':len(changed),'first_differences':delta,'end_records_identical':off['hands']==on['hands']},sort_keys=True))
+          print('PASS same-seed ON/OFF field comparison logged; all action differences require causal attribution, not mere label')
+          PY
