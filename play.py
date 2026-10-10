@@ -184,12 +184,56 @@ class Hand:
         local_pids = (
             [ids[x] for x in live] if all(x in ids for x in live)
             else None)
-        return icm.table_bf(
+        # The caller must prove freshness of *every* survivor, not only
+        # local _start_stacks. Transient Field.owner is the actual live
+        # roster in the same process / worker that owns this HandRun.
+        owner = getattr(self, '_field_epoch_owner', None)
+        expected_id = getattr(self, 'field_snapshot_id', None)
+        observed_id = None
+        epoch_status = None
+        scope = getattr(self, 'field_snapshot_scope', None)
+        if owner is not None and expected_id:
+            live_pid = {
+                p['pid']: p['stack']
+                for p in owner.players.values() if p['stack'] > 0}
+            epoch_hand = getattr(self, 'field_snapshot_hand_no', None)
+            epoch_level = getattr(self, 'field_snapshot_level', None)
+            observed_id = icm.field_epoch_id(
+                live_pid, epoch_hand, epoch_level)
+            same_tournament_clock = (
+                getattr(owner, 'hand_no', None) == epoch_hand
+                and getattr(owner, 'level', None) == epoch_level)
+            if (same_tournament_clock and observed_id == expected_id
+                    and live_pid == getattr(self, 'field_pid_stacks', None)):
+                epoch_status = 'current_verified'
+            elif (scope == 'simultaneous_frozen'
+                    and getattr(owner, '_frozen_field', None) is not None
+                    and getattr(owner, '_frozen_field', None)
+                        is getattr(self, '_field_frozen_epoch_ref', None)
+                    and getattr(self, '_field_frozen_epoch_ref', {}).get('epoch_id')
+                        == expected_id):
+                # A frozen common batch-start epoch is mathematically
+                # self-consistent, but NOT the newest field after other
+                # tables complete. Retain its policy BF without calling
+                # it decision-current exact ICM.
+                epoch_status = 'frozen_epoch_reference'
+            else:
+                epoch_status = 'stale_remote'
+        details = icm.table_bf(
             stacks, idx, rem, itm, pays, flat, favg,
             field_stacks=getattr(self, 'field_stacks', None),
             field_pid_stacks=getattr(self, 'field_pid_stacks', None),
             table_pids=local_pids, snapshot_is_current=same_epoch,
+            field_epoch_status=epoch_status,
+            field_snapshot_id=expected_id,
+            observed_field_epoch_id=observed_id,
+            field_snapshot_scope=scope,
             return_details=True)
+        details['snapshot_hand_no'] = getattr(
+            self, 'field_snapshot_hand_no', None)
+        details['snapshot_level'] = getattr(
+            self, 'field_snapshot_level', None)
+        return details
 
     def bf(self, s):
         """Numeric BF compatibility interface for the existing plan layer."""
