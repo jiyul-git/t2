@@ -1,0 +1,91 @@
+name: P13 P15 Full-Field Epoch and PR26 Provenance Contract
+
+on:
+  push:
+    branches: [chatgpt/p13-pr26-worker-epoch-lifecycle-20261010]
+  workflow_dispatch:
+
+jobs:
+  epoch-and-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      T2_BOT_LOG: "2"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify exact PR26 P8/P9 sources and no strategy or empirical coefficient edits
+        run: |
+          set -eu
+          BASE=0ce4ecd1ecc1e7221ea5a6f00e734aa32100d889
+          git diff --exit-code "$BASE" HEAD -- session.py range_posterior_v1.py bot.py plan.py preflop.py tools/verify_pr21_actor_bf_provenance.py tools/verify_pr24_p8_epoch_evidence_endtoend.py
+          echo "PASS PR26 actor BF range/MC producer and consumer code unchanged"
+      - name: Compile epoch and audit changes
+        run: python3 -m py_compile icm.py play.py live2.py tools/verify_p13_field_epoch_freshness.py tools/verify_p13_parallel_epoch_lifetime.py
+      - name: 15 P13 partial worker, clock expiry and live2.finish sync-phase regression
+        run: python3 tools/verify_p13_parallel_epoch_lifetime.py
+      - name: 13 remote-only changed field, verified frozen batch, live2 and P8 provenance
+        run: python3 tools/verify_p13_field_epoch_freshness.py
+      - name: 15 sequential vs parallel 18 survivors
+        run: python3 tools/verify_parallel_table_processes.py 18 0 11
+      - name: 15 sequential vs parallel 27 survivors and 3 tables
+        run: python3 tools/verify_parallel_table_processes.py 27 0 11
+      - name: 8 PR26 P13 epoch evidence reaches P5 and replay unmodified
+        run: |
+          python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
+          python3 tools/verify_pr21_actor_bf_provenance.py
+      - name: 13 generic field BF 5/8 and actor likelihood ON/OFF
+        run: |
+          python3 tools/verify_p13_complete_field_bf.py
+          python3 tools/verify_p13_bf_observer_likelihood.py
+          python3 tools/verify_p13_runtime_provenance.py
+      - name: 9 Monte Carlo validity, partial, zero, RNG and 8 conditional posterior
+        run: |
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_hand130_conditioned_posterior.py
+      - name: 13 HAND130 tie settlement, 5 calloff, partial call and ICM
+        run: |
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/verify_hand130_calloff_isolation.py
+      - name: 8 conditional range recomputed equity comparator
+        run: python3 tools/compare_hand130_range_v1.py
+      - name: Same seed real gameplay before PR26 versus after OFF
+        run: |
+          set -eu
+          BASE=0ce4ecd1ecc1e7221ea5a6f00e734aa32100d889
+          git worktree add --detach /tmp/pr26_before "$BASE"
+          for seed in 11 12; do
+            (cd /tmp/pr26_before && python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p13_before_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p13_after_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/p13_before_%s.json'%seed))
+              b=json.load(open('/tmp/p13_after_%s.json'%seed))
+              assert a == b, ('off_action_or_state_changed',seed)
+              print('PASS OFF seed',seed,'hands',len(a.get('hands',[])),'decisions',len(a.get('pf',[])),'diffs',0)
+          PY
+      - name: Same seed real gameplay before PR26 versus after ON
+        env:
+          T2_RANGE_CONDITIONAL_V1: "1"
+        run: |
+          set -eu
+          for seed in 11 12; do
+            (cd /tmp/pr26_before && python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p13_on_before_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p13_on_after_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/p13_on_before_%s.json'%seed))
+              b=json.load(open('/tmp/p13_on_after_%s.json'%seed))
+              assert a == b, ('on_action_or_state_changed',seed)
+              print('PASS ON seed',seed,'hands',len(a.get('hands',[])),'decisions',len(a.get('pf',[])),'diffs',0)
+          PY
