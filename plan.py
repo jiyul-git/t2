@@ -454,7 +454,8 @@ def _opp_ranges_signature(opp_ranges):
     return ()
 
 
-def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None):
+def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None,
+                audit=None):
     """**보드를 돌리지 않은** 에쿼티. 상대별 레인지를 각각 보존한다.
 
     소비처(stage9 B3 확인): make_plan 은 이 값을 '지금 바로 쇼다운했을 때'의
@@ -463,6 +464,9 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
     다시 계산한다. (예전 문구 '기록 전용'은 make_plan 소비를 빠뜨렸다.)
     """
     if not board:
+        if audit is not None:
+            audit.update(complete=False, reason='missing_board',
+                         requested=int(sims), accepted=0)
         return None
     dead = set(hero) | set(board)
     pools0 = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
@@ -473,6 +477,9 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
     ]
     # A missing seat is not a zero-equity opponent and must not be dropped.
     if not pools or any(not p for p in pools):
+        if audit is not None:
+            audit.update(complete=False, reason='missing_opponent_range',
+                         requested=int(sims), accepted=0)
         return None
     if seed is None:
         seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
@@ -494,8 +501,16 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
         run += 1
         opp_scores = [bot.eval7(o + board) for o in opps]
         share += bot._showdown_share(hs, opp_scores)
-    # No accepted showdown is unknown; it cannot be interpreted as zero equity.
-    return share / run if run else None
+    # Match bot.equity_vs_pools: even a partial accepted sample is not a
+    # decision-grade estimate. A fully accepted real zero remains numeric 0.0.
+    complete = (sims > 0 and run == sims)
+    if audit is not None:
+        audit.update(complete=complete, requested=int(sims), accepted=run,
+                     rejected=int(sims) - run,
+                     reason=('computed' if complete else
+                             'no_valid_current_samples' if run == 0 else
+                             'insufficient_current_samples'))
+    return share / run if complete else None
 
 
 def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None,
@@ -1018,8 +1033,9 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 기록 전용. 같은 레인지·같은 인원으로 '보드를 안 돌린' 값을 같이 남긴다.
     # eq 하나만 남기면 나중에 0.535 를 보고 '지금 강한 건가, 드로우 때문인가'를
     # 구분할 수 없다. 판단에는 절대 쓰지 않는다 — 쓰려면 먼저 검증이 필요하다.
+    _eq_cur_audit = {}
     eq_cur = _eq_current(hero, board, opp_range, n_opp, sims=400, seed=seed,
-                         opp_ranges=opp_ranges)
+                         opp_ranges=opp_ranges, audit=_eq_cur_audit)
     dang = perceived_board_danger(profile, board)
     outs_true = draw_strength(hero, board)
     outs = outs_true * PS.calc_noise(profile, 'outs', rng) if profile.get('concepts') else outs_true
@@ -1345,6 +1361,8 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'protect': round(min(1.0, dang*(1+0.5*mw)), 2)}
     if _eq_fallback:
         st['eq_field_fallback'] = True
+    if eq_cur is None:
+        st['eq_current_sampling'] = dict(_eq_cur_audit)
     # 의도는 파이프라인 끝(session)에서 최종 계획 기준으로 붙인다.
     return st
 
@@ -4566,8 +4584,13 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         st.pop('eq_field_fallback', None)
     # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
     # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
+    _eqc_audit = {}
     _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed,
-                       opp_ranges=opp_ranges)
+                       opp_ranges=opp_ranges, audit=_eqc_audit)
+    if _eqc is None:
+        st['eq_current_sampling'] = dict(_eqc_audit)
+    else:
+        st.pop('eq_current_sampling', None)
     st.update({'eq_current': (None if _eqc is None else round(_eqc, 3)),
                'eq_delta': (None if _eqc is None else round(eq - _eqc, 3)),
                'eq_sims': 300, 'eq_seed': seed,
