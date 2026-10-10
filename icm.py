@@ -242,7 +242,13 @@ def stack_pressure(stack, field_avg):
 
 
 def field_bf(stack, field_avg, remaining, itm, payout_flat=0.0):
-    """필드 단위 버블팩터 근사. 9명 초과일 때 쓴다."""
+    """Field-level EMPIRICAL approximation, never exact prize ICM.
+
+    The pre-existing log-normal stage/stack curves and coefficients are
+    designer heuristics, not inferred outcome-specific payout probabilities.
+    Keep the legacy constants unchanged; callers must report approximation
+    provenance, including for <=9 surviving players with incomplete stacks.
+    """
     st = stage_pressure(remaining, itm)
     if st <= 1e-6:
         return 1.0
@@ -252,20 +258,115 @@ def field_bf(stack, field_avg, remaining, itm, payout_flat=0.0):
 
 
 def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
-             field_avg=None):
-    """BF 단일 진입점. 인원에 따라 정확 ICM 과 곡선을 나눈다.
+             field_avg=None, field_stacks=None, return_details=False,
+             field_pid_stacks=None, table_pids=None, snapshot_is_current=True):
+    """Price-independent BF with explicit full-field completeness contract.
 
-    stacks 는 그 테이블의 살아있는 스택. remaining 은 필드 전체 잔여.
+    `stacks` indexes CURRENT-TABLE players (seat_idx is local to this list).
+    `remaining` counts the ENTIRE surviving tournament field. Optional
+    `field_stacks` is a complete hand-start snapshot of all surviving stacks.
+    It is exact for a split table only with a matching `field_pid_stacks`
+    identity map, matching `table_pids`, and `snapshot_is_current=True`.
+    Equal chip counts alone do not prove player/epoch identity. The BF is
+    computed from exact generic field ICM, NOT a price-specific call payout EV.
+
+    For <=EXACT_MAX: exact ICM requires the entire field at this table OR a
+    validated full-field snapshot. Otherwise use the PRE-EXISTING field_bf
+    heuristic with explicit `method='field_bf_empirical_approximation'`.
+    For >EXACT_MAX: use the same heuristic regardless of snapshot availability.
+    No new coefficient, BF=1 shortcut, or unverified exactness label.
     """
-    live = [s for s in stacks if s > 0]
-    if len(live) < 2:
-        return 1.0
-    rem = int(remaining or len(live))
-    if rem <= EXACT_MAX:
-        pays = list(payouts)[:rem] or [100.0]
-        return bubble_factor(list(stacks), pays, seat_idx)
-    avg = field_avg if field_avg else (sum(live)/len(live))
-    return field_bf(stacks[seat_idx], avg, rem, itm, payout_flat)
+    table = list(stacks)
+    if not 0 <= seat_idx < len(table):
+        raise IndexError('BF seat_idx outside current table')
+    live = [float(v) for v in table if v > 0]
+    rem = int(remaining) if remaining is not None else 0
+    if remaining is not None and (rem != remaining or rem < 0):
+        raise ValueError('remaining must be a nonnegative integer field count')
+    snapshot = list(field_stacks or ())
+    details = {
+        'method': 'field_bf_empirical_approximation',
+        'is_exact': False,
+        'remaining': rem or None,
+        'table_alive': len(live),
+        'snapshot_alive': len(snapshot),
+        'field_completeness': 'unknown',
+        'reason': None,
+        'bf_kind': 'generic_default_risk_not_spot_call_prize_ev',
+        'price_specific': False,
+        'snapshot_current': bool(snapshot_is_current),
+    }
+
+    def emit(value):
+        details['value'] = value
+        return details if return_details else value
+
+    if len(live) < 2 or table[seat_idx] <= 0:
+        details.update(method='not_applicable', reason='seat_not_active_or_no_opponent')
+        return emit(1.0)
+
+    if 2 <= rem <= EXACT_MAX:
+        if len(live) == rem:
+            # A single complete table needs no separate whole-field snapshot.
+            details.update(method='exact_full_field_icm',
+                           is_exact=True, field_completeness='complete_table',
+                           reason='remaining_matches_all_live_table_seats')
+            return emit(bubble_factor(table, list(payouts)[:rem] or [100.0],
+                                      seat_idx))
+
+        elif not snapshot_is_current:
+            details.update(field_completeness='stale_field_snapshot',
+                           reason='table_stacks_changed_after_field_snapshot')
+        elif snapshot and len(snapshot) == rem:
+            # Player IDs and epoch-matched stacks, not chip counts alone,
+            # establish that the whole field is represented at this decision.
+            from collections import Counter
+            field_ids = dict(field_pid_stacks or {})
+            local_ids = list(table_pids or ())
+            valid_values = (
+                all(_math.isfinite(float(v)) and float(v) > 0 for v in snapshot)
+                and not (Counter(live) -
+                         Counter(float(v) for v in snapshot)))
+            valid_ids = (
+                len(field_ids) == rem
+                and len(local_ids) == len(table)
+                and len(set(local_ids)) == len(local_ids)
+                and all(pid in field_ids and
+                        float(field_ids[pid]) == float(table[j])
+                        for j, pid in enumerate(local_ids))
+                and all(_math.isfinite(float(v)) and float(v) > 0
+                        for v in field_ids.values())
+                and Counter(float(v) for v in field_ids.values()) ==
+                    Counter(float(v) for v in snapshot))
+            if valid_values and valid_ids:
+                own = float(table[seat_idx])
+                full = [float(v) for v in snapshot]
+                full_idx = full.index(own)
+                details.update(method='exact_full_field_icm', is_exact=True,
+                               field_completeness='verified_player_id_field_snapshot',
+                               reason='all_table_pids_match_same_hand_start_snapshot')
+                return emit(bubble_factor(full, list(payouts)[:rem] or [100.0],
+                                          full_idx))
+            details.update(
+                field_completeness='invalid_field_snapshot',
+                reason=('mismatched_table_stack_multiset' if not valid_values
+                        else 'missing_or_mismatched_player_id_snapshot'))
+        else:
+            details.update(
+                field_completeness='incomplete_field_snapshot',
+                reason=('missing_full_field_stacks' if not snapshot
+                        else 'snapshot_size_differs_from_remaining'))
+    elif rem > EXACT_MAX:
+        details.update(field_completeness='not_used_for_large_field',
+                       reason='more_than_exact_max_survivors')
+    else:
+        details.update(field_completeness='unknown_field_count',
+                       reason='remaining_unavailable_for_exact_icm')
+
+    avg = field_avg if field_avg else (sum(live) / len(live))
+    details['field_average_source'] = ('whole_field_context' if field_avg
+                                       else 'local_table_fallback_not_field_average')
+    return emit(field_bf(table[seat_idx], avg, rem, itm, payout_flat))
 
 
 # is_bubble 은 제거했다. 버블 판정은 field.Field.in_bubble 하나뿐이다

@@ -1,0 +1,54 @@
+name: P13 complete surviving-field BF review
+
+on:
+  push:
+    branches: [chatgpt/p13-complete-field-bf-20261010]
+  workflow_dispatch:
+
+jobs:
+  bf-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile P13 and affected entry points
+        run: python3 -m py_compile icm.py play.py session.py plan.py tools/verify_p13_complete_field_bf.py
+      - name: Exact complete field / empirical fallback / five-vs-eight BF and P5 actions
+        run: python3 tools/verify_p13_complete_field_bf.py
+      - name: HAND130 exact ICM, odd-chip settlement, price and original P5 call
+        run: python3 tools/verify_hand130_exact_icm.py
+      - name: Partial call P13 regression
+        run: python3 tools/verify_hand130_partial_call_icm.py
+      - name: Existing P5 calloff isolation
+        run: python3 tools/verify_hand130_calloff_isolation.py
+      - name: Existing 2-to-9 exact ICM parity
+        run: python3 tools/verify_icm_fast.py
+      - name: Conditional P8/P5 replay contract
+        run: python3 tools/compare_hand130_range_v1.py
+      - name: Paired actual 9-max decisions against pinned PR16 SHA
+        run: |
+          git fetch --no-tags --depth=1 origin 54e879863d7d1ef08a14079289f0822e6995b1e2
+          git worktree add --detach /tmp/p13_pr16_before 54e879863d7d1ef08a14079289f0822e6995b1e2
+          for seed in 11 12; do
+            (cd /tmp/p13_pr16_before && python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/p13_prev_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/p13_new_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/p13_prev_%s.json'%seed))
+              b=json.load(open('/tmp/p13_new_%s.json'%seed))
+              old=a.get('pf',[]); new=b.get('pf',[])
+              diff=[i for i in range(min(len(old),len(new))) if old[i]!=new[i]]
+              print({'seed':seed,'old_hands':len(a.get('hands',[])),
+                     'new_hands':len(b.get('hands',[])),
+                     'old_actions':len(old),'new_actions':len(new),
+                     'paired_differences':len(diff),
+                     'first_difference':diff[0] if diff else None,
+                     'old_errors':sum(bool(v.get('error')) for v in a.get('hands',[]) if isinstance(v,dict)),
+                     'new_errors':sum(bool(v.get('error')) for v in b.get('hands',[]) if isinstance(v,dict))})
+          print('PASS paired before/after differences recorded without suppressing action changes')
+          PY
