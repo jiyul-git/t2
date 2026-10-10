@@ -49,6 +49,19 @@ jobs:
             echo "HAND130_REGRESSION_DIAG=$DIAG" >> "$GITHUB_ENV"
           fi
           exit "$EXIT_CODE"
+      - name: Paired fingerprint against pre-audit source SHA
+        id: paired
+        if: always()
+        run: |
+          git fetch --no-tags --depth=1 origin 945758accf095c634e7a543da73d38160f8b00e2
+          git worktree add --detach /tmp/hand130-preaudit 945758accf095c634e7a543da73d38160f8b00e2
+          PYTHONHASHSEED=0 python3 -c 'import json; from tools.regress import fingerprint; print(json.dumps(fingerprint()[0],sort_keys=True))' > /tmp/hand130-current-fp.json
+          (cd /tmp/hand130-preaudit && PYTHONHASHSEED=0 python3 -c 'import json; from tools.regress import fingerprint; print(json.dumps(fingerprint()[0],sort_keys=True))') > /tmp/hand130-preaudit-fp.json
+          echo 'Pre-audit fingerprints:'
+          cat /tmp/hand130-preaudit-fp.json
+          echo 'Audit HEAD fingerprints:'
+          cat /tmp/hand130-current-fp.json
+          diff -u /tmp/hand130-preaudit-fp.json /tmp/hand130-current-fp.json
       - name: Publish auditable commit status
         if: always()
         env:
@@ -57,6 +70,7 @@ jobs:
           COMPILE_RESULT: ${{ steps.compile.outcome }}
           EQUATIONS_RESULT: ${{ steps.equations.outcome }}
           REGRESSION_RESULT: ${{ steps.regression.outcome }}
+          PAIRED_RESULT: ${{ steps.paired.outcome }}
           REGRESSION_DIAG: ${{ env.HAND130_REGRESSION_DIAG }}
         run: |
           case "$TASK_RESULT" in
@@ -73,11 +87,12 @@ jobs:
               -f context="hand130-part2/regression-detail:$REGRESSION_DIAG" \
               -f description="Regression failure summary, see full job logs"
           fi
-          for STEP in compile equations regression; do
+          for STEP in compile equations regression paired; do
             case "$STEP" in
               compile) OUTCOME="$COMPILE_RESULT" ;;
               equations) OUTCOME="$EQUATIONS_RESULT" ;;
               regression) OUTCOME="$REGRESSION_RESULT" ;;
+              paired) OUTCOME="$PAIRED_RESULT" ;;
             esac
             case "$OUTCOME" in
               success) STEP_STATE=success ;;
