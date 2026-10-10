@@ -25,11 +25,11 @@ with tempfile.TemporaryDirectory(prefix='p17_test3_traces_') as td:
   for k in ('test3','approved'):subprocess.run(['git','worktree','remove','--force',str(roots[k])],cwd=ROOT,check=True,capture_output=True)
 rows=[]
 for seed in range(3000,3006):
- a,b,c,d=(data[l,seed] for l in roots);controlled=first(b,d);assert controlled is None,(seed,'unexplained regression with matched showdown policy',controlled)
+ a,b,c,d=(data[l,seed] for l in roots);controlled=first(b,d);assert controlled is None and b['fp']==d['fp'] and len(b['hands'])==len(d['hands']),(seed,'unexplained regression with matched showdown policy',controlled)
  differences={}
  for label,x,y in [('approved_vs_merged_default',b,c),('test3_vs_approved',a,b),('test3_vs_merged_default',a,c)]:
   delta=first(x,y);differences[label]=None if delta is None else {k:v for k,v in delta.items() if not k.endswith('_trace')}
   if delta:(OUT/f'first_{label}_{seed}.json').write_text(json.dumps(delta,indent=2))
- row={'seed':seed,'fingerprints':{l:data[l,seed]['fp'] for l in roots},'normal_muck_control_matches_approved':True,'differences':differences,'attribution':'Default-showdown-policy effect only if difference present and matched-policy control eliminates it; test3-vs-approved differences belong to previously approved producer/consumer changes.'};rows.append(row);print(json.dumps(row),flush=True)
+ row={'seed':seed,'fingerprints':{l:data[l,seed]['fp'] for l in roots},'normal_muck_control_matches_approved':True,'differences':differences,'attribution':'Default-showdown-policy effect only if difference present and matched-policy control eliminates it; Classify test3-vs-approved differences using these same controls; do not assume a new MC/replan defect.'};rows.append(row);print(json.dumps(row),flush=True)
 (OUT/'summary.json').write_text(json.dumps({'head':git('rev-parse','HEAD'),'test3':TEST3,'approved':APPROVED,'frozen_files_written':False,'rows':rows},indent=2))
 print('PASS frozen bytes untouched; all six matched-policy traces preserve approved actions; original/default changes recorded separately')

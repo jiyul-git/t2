@@ -185,12 +185,10 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-    - name: Original full-size late admission
-      run: 'mkdir -p p17-test3-results/scheduled-late
-
-        set -o pipefail
-
-        python ui/tools/verify_scheduled_ui.py | tee p17-test3-results/scheduled-late/run.log'
+    - name: Preserve original55 minute fixture failure diagnosis
+      run: python tools/verify_p17_test3_contract.py late-legacy p17-test3-results/scheduled-late
+    - name: Independent actual full-size break resume admission
+      run: python -u tools/verify_p17_late_break.py p17-test3-results/scheduled-late/break-aware
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -214,8 +212,8 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-    - name: Original paired PR27 records
-      run: python tools/verify_p17_final_integration.py parity p17-test3-results/parity
+    - name: Both histories paired records and original failure diagnosis
+      run: python tools/verify_p17_test3_contract.py parity p17-test3-results/parity
     - uses: actions/upload-artifact@v4
       if: always()
       with:
