@@ -1,0 +1,47 @@
+name: HAND130 P9 Monte Carlo sample contract
+
+on:
+  push:
+    branches:
+      - chatgpt/p9-hand130-mc-sampling-20261010
+  workflow_dispatch:
+
+jobs:
+  sampling-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile changed code and test
+        run: python3 -m py_compile bot.py session.py plan.py preflop.py range_posterior_v1.py tools/verify_hand130_mc_contract.py
+      - name: P9 valid-MC and P5/P8 incomplete handoff
+        run: python3 tools/verify_hand130_mc_contract.py
+      - name: P8 weighted pool equivalence and sampling invariants
+        run: |
+          python3 tools/verify_weighted_sampling.py
+          python3 tools/verify_weighted_range_adapter.py
+          python3 tools/verify_hand130_conditioned_posterior.py
+      - name: P5 calloff isolation and partial-call ICM
+        run: |
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+      - name: Baseline unchanged for default-OFF seeds 11 and 12
+        run: |
+          git fetch --no-tags --depth=1 origin 54e879863d7d1ef08a14079289f0822e6995b1e2
+          git worktree add --detach /tmp/p9-base 54e879863d7d1ef08a14079289f0822e6995b1e2
+          for seed in 11 12; do
+            (cd /tmp/p9-base && python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/p9_base_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/p9_new_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/p9_base_%s.json'%seed))
+              b=json.load(open('/tmp/p9_new_%s.json'%seed))
+              print({'seed':seed,'identical':a==b,'old_pf':len(a['pf']),'new_pf':len(b['pf'])})
+              assert a==b, 'Default-OFF state diverged from PR16 baseline'
+          PY
