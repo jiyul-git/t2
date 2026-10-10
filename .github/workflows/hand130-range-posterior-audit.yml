@@ -1,0 +1,27 @@
+name: HAND130 range posterior audit
+
+on:
+  push:
+    branches:
+      - chatgpt/hand130-range-posterior-audit-20261010
+  workflow_dispatch:
+
+jobs:
+  range_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile static range audit
+        run: python3 -m py_compile tools/verify_hand130_range_posterior.py
+      - name: Verify first-in vs 3bet shove, range weights, and producer
+        run: python3 tools/verify_hand130_range_posterior.py
+      - name: Existing preflop role verification
+        run: python3 tools/verify_pf_threebet_split.py
+# P5 replay and exact ICM scripts remain in the owning P5 workflow, not
+# hidden as green. At parent SHA 874aa76 they fail on stale 5-specific
+# assertions about the now-removed legacy path (Action runs 38038211518,
+# 38038281199). Department 8 must not change their expected contracts.
