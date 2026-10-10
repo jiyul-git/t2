@@ -114,7 +114,10 @@ def simultaneous_frozen():
     released=h.bf_details(3)
     assert released['method']=='field_bf_empirical_approximation'
     assert not released['is_exact']
-    assert released['reason']=='remote_field_changed_after_snapshot'
+    assert released['reason']=='frozen_snapshot_lifecycle_expired'
+    assert released['field_epoch_status']=='expired_frozen_epoch'
+    assert released['observed_field_epoch_id'] is None
+    assert released['observed_epoch_diverged'] is None
     print(json.dumps({'case':'common_simultaneous_round_start',
                       'frozen_value_unchanged':after['value']==at_start['value'],
                       'method_after_remote':after['method'],
