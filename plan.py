@@ -1863,7 +1863,7 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
 
     적용 범위(ledger L146): 상대 한 명(facing seat, 없으면 opp_range)의 콜/폴드만
     본다. 멀티웨이 응답 트리와 사이드팟 레이즈 분기는 다루지 않으며(LATER),
-    레인지를 모르면 allow 로 통과한다(known=False).
+    레인지나 MC 근거를 모르면 공격 허용을 승인하지 않는다(known=False).
     """
     ctx = dict(response_context or {})
     fs = ctx.get('facing_seat')
@@ -2034,7 +2034,7 @@ def semibluff_implied_odds_credit(profile, has_concepts, stack, pot):
 
 def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
                               response_context, hero_contrib, stack, pot, tocall,
-                              mult, profile):
+                              mult, profile, audit=None):
     """밸류 재레이즈 자격(판단). 반환 (ok, continue_eq 또는 None, fair_share).
 
     콜 equity 가 팟오즈를 넘는 것만으로는 부족하다 — 공정지분을 넘어야 하고,
@@ -2045,6 +2045,10 @@ def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
     _fair_share = 1.0 / max(2.0, float(n_opp) + 1.0)
     _vr_eq_cont = None
     _vr_ok = (eq is not None and float(eq) > _fair_share)
+    if audit is not None:
+        audit['status'] = ('fair_share_only' if _vr_ok else
+                           'current_eq_unavailable' if eq is None else
+                           'current_eq_below_fair_share')
 
     # HU에서는 한 단계 더 본다. 내가 제안한 raise를 맞고도 상대가
     # fold하지 않는 전체 range(call + re-raise) 상대로도 50%를 넘어야
@@ -2067,12 +2071,19 @@ def value_raise_qualification(hero, board, street, eq, n_opp, opp_range,
         _cont = R.perceived_continue_range(
             opp_range, board, street, _continue_price, profile=profile)
         if _cont:
+            _mc_audit = {}
             _vr_eq_cont = bot.equity_vs_combos(
-                hero, board, [_cont], sims=400)
+                hero, board, [_cont], sims=400, audit=_mc_audit)
             _vr_ok = ahead_when_called(_vr_eq_cont)
+            if audit is not None:
+                audit['status'] = ('computed' if _vr_eq_cont is not None
+                                   else 'continue_mc_unavailable')
+                audit['mc_audit'] = _mc_audit
         else:
             # An empty continue slice does not certify a value raise.
             _vr_ok = False
+            if audit is not None:
+                audit['status'] = 'continue_range_unavailable'
     return _vr_ok, _vr_eq_cont, _fair_share
 
 
@@ -2191,6 +2202,8 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     has_c = bool(profile.get('concepts'))
 
     plan_state.pop('_last_river_nuts_value', None)
+    plan_state.pop('_last_nonvalue_raise_gate', None)
+    plan_state.pop('_last_value_raise_gate', None)
     nuts = river_nut_value_response(
         profile, hero, board, street, opp_range, pot, tocall, stack,
         hero_contrib, response_context, n_opp, allow_raise)
@@ -2248,9 +2261,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         #   현재 range에 대한 콜 equity가 팟오즈를 넘는 것만으로는 부족하다.
         #   추가 칩을 넣는 "value" raise라면 최소한 공정지분(fair share)을
         #   넘어야 한다. HU에서는 50%, 3-way에서는 33.3%다.
+        _vr_audit = {}
         _vr_ok, _vr_eq_cont, _fair_share = value_raise_qualification(
             hero, board, street, eq, n_opp, opp_range, response_context,
-            hero_contrib, stack, pot, tocall, mult, profile)
+            hero_contrib, stack, pot, tocall, mult, profile,
+            audit=_vr_audit)
 
         plan_state['_last_value_raise_gate'] = {
             'current_eq': round(float(eq), 4),
@@ -2259,8 +2274,9 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
                 round(float(_vr_eq_cont), 4)
                 if _vr_eq_cont is not None else None),
             'ok': bool(_vr_ok),
-            'continue_eq_status': ('computed' if _vr_eq_cont is not None
-                                   else 'unavailable_or_not_requested'),
+            'continue_eq_status': _vr_audit.get('status'),
+            'continue_mc_audit': (_vr_audit.get('mc_audit') if _vr_eq_cont is None
+                                  else None),
         }
 
         if not _vr_ok:
@@ -2321,8 +2337,11 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
         _use_need = _cf_need if _layer_call else need
         act = 'call' if _use_eq >= _use_need else 'fold'
         _gate_note = ''
-        if allow_raise and isinstance(_g_sb, dict) and _g_sb.get('known') and not _g_sb.get('allow'):
-            _gate_note = ' | raise EV %.1f ≤ 0' % float(_g_sb.get('ev') or 0.0)
+        if allow_raise and isinstance(_g_sb, dict) and not _g_sb.get('allow'):
+            if _g_sb.get('ev') is not None:
+                _gate_note = ' | raise EV %.1f ≤ 0' % float(_g_sb['ev'])
+            else:
+                _gate_note = ' | raise EV 계산 불가(%s)' % _g_sb.get('why', 'unknown')
         return act, 0.0, _use_need, (
             '세미블러프 내재오즈 반영%s%s'
             % (' + layer call EV' if _layer_call else '', _gate_note))
@@ -2780,8 +2799,19 @@ def record_response_plan(state, street, response):
     line plan(value_2street 등)과 별개다. 같은 스트리트에서
     bet -> call -> raise처럼 새 정보가 들어오면 response plan도 새로 생긴다.
     """
+    response = dict(response)
+    # Only unavailable evidence needs extra provenance in the final
+    # response record. Do not silently reinterpret this as verified -EV.
+    nonvalue = state.get('_last_nonvalue_raise_gate') or {}
+    if nonvalue.get('equity_status') == 'unavailable_not_negative_ev':
+        response['nonvalue_raise_gate'] = dict(nonvalue)
+    value = state.get('_last_value_raise_gate') or {}
+    if value.get('continue_eq_status') in (
+            'continue_mc_unavailable', 'continue_range_unavailable',
+            'current_eq_unavailable'):
+        response['value_raise_gate'] = dict(value)
     rows = state.setdefault('response_plans', {})
-    rows.setdefault(street, []).append(dict(response))
+    rows.setdefault(street, []).append(response)
     state['_last_response_plan'] = dict(response)
     return response
 
