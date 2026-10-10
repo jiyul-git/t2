@@ -2921,6 +2921,9 @@ def record_response_plan(state, street, response):
     eq_provenance = state.get('eq_provenance')
     if eq_provenance:
         response['plan_equity_provenance'] = dict(eq_provenance)
+    current_sampling = state.get('eq_current_sampling')
+    if current_sampling:
+        response['current_showdown_provenance'] = dict(current_sampling)
     # Only unavailable evidence needs extra provenance in the final
     # response record. Do not silently reinterpret this as verified -EV.
     nonvalue = state.get('_last_nonvalue_raise_gate') or {}
