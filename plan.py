@@ -4073,7 +4073,8 @@ def update_plan(state, hero, board, my_range, opp_range, profile, pot, stack,
             pot, stack, street, seed, n_opp, behind, prev_board,
             oop_vs_aggr=oop_vs_aggr,
             oop_legacy_abs=oop_legacy_abs,
-            initiative=initiative, opp_ranges=opp_ranges)
+            initiative=initiative, tilt=tilt, bb_chips=bb_chips,
+            opp_ranges=opp_ranges)
 
     if st.get('equity_status') == 'unavailable_not_negative_ev':
         return set_intent(st, street, mk_intent(
