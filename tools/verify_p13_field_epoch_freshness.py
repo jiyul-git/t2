@@ -84,7 +84,9 @@ def simultaneous_frozen():
     h=stamped(f)
     assert h.field_snapshot_scope=='simultaneous_frozen'
     at_start=h.bf_details(3)
-    assert at_start['is_exact'] and at_start['snapshot_current']
+    assert not at_start['is_exact'] and not at_start['snapshot_current']
+    assert at_start['snapshot_epoch_exact']
+    assert at_start['method']=='frozen_epoch_reference_icm'
     # Other table completes later in the SAME logical round, *without*
     # rebasing the frozen common-round reference or ordering of actions.
     f.players['2']['stack']+=1500
