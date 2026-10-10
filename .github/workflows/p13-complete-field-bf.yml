@@ -33,6 +33,10 @@ jobs:
         run: python3 tools/verify_p13_complete_field_bf.py
       - name: Remote-only field drift, frozen common epoch and P8 actor provenance
         run: python3 tools/verify_p13_field_epoch_freshness.py
+      - name: Parallel vs sequential frozen-field round semantic parity
+        env:
+          T2_BOT_LOG: "2"
+        run: python3 tools/verify_parallel_table_processes.py 18 0 11
       - name: P8 ON/OFF policy likelihood response to generic BF correction
         run: python3 tools/verify_p13_bf_observer_likelihood.py
       - name: Actual HandRun to P5 BF scalar and persisted provenance ON/OFF
