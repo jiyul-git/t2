@@ -36,7 +36,19 @@ jobs:
         run: python3 tools/verify_hand130_part2.py
       - name: Frozen regression baseline
         id: regression
-        run: python3 tools/regress.py check --baseline current
+        run: |
+          set +e
+          python3 tools/regress.py check --baseline current > /tmp/hand130-regression.log 2>&1
+          EXIT_CODE=$?
+          set -e
+          cat /tmp/hand130-regression.log
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            DIAG="$(grep -E '불일치 시드:|기준선 파일이 없다:|^ModuleNotFoundError:|^ImportError:|^AssertionError:|^FileNotFoundError:' /tmp/hand130-regression.log | tail -1 || true)"
+            if [ -z "$DIAG" ]; then DIAG="$(tail -1 /tmp/hand130-regression.log)"; fi
+            DIAG="$(printf '%s' "$DIAG" | cut -c 1-110 | tr '\\r\\n' '  ')"
+            echo "HAND130_REGRESSION_DIAG=$DIAG" >> "$GITHUB_ENV"
+          fi
+          exit "$EXIT_CODE"
       - name: Publish auditable commit status
         if: always()
         env:
@@ -45,6 +57,7 @@ jobs:
           COMPILE_RESULT: ${{ steps.compile.outcome }}
           EQUATIONS_RESULT: ${{ steps.equations.outcome }}
           REGRESSION_RESULT: ${{ steps.regression.outcome }}
+          REGRESSION_DIAG: ${{ env.HAND130_REGRESSION_DIAG }}
         run: |
           case "$TASK_RESULT" in
             success) STATUS=success ;;
@@ -54,6 +67,12 @@ jobs:
             -f state="$STATUS" \
             -f context="hand130-part2/source-math" \
             -f description="Equation replay and frozen regression: $TASK_RESULT"
+          if [ -n "$REGRESSION_DIAG" ]; then
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+              -f state=failure \
+              -f context="hand130-part2/regression-detail:$REGRESSION_DIAG" \
+              -f description="Regression failure summary, see full job logs"
+          fi
           for STEP in compile equations regression; do
             case "$STEP" in
               compile) OUTCOME="$COMPILE_RESULT" ;;
