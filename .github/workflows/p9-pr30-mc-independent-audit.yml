@@ -1,0 +1,22 @@
+name: P9 PR30 Exact-SHA MC producer consumer independent audit
+on:
+  push:
+    branches: [chatgpt/p9-pr30-mc-independent-audit-20261010]
+  workflow_dispatch:
+jobs:
+  p9-exact-sha-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify audited production files match PR30 exact SHA
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin 1a363fcec0e6ac788952dfee2d48ae9b7b98014b
+          git diff --exit-code 1a363fcec0e6ac788952dfee2d48ae9b7b98014b HEAD -- bot.py plan.py session.py preflop.py ranges.py
+          python3 -m py_compile tools/audit_p9_pr30_mc_contract.py
+      - name: Independent producer, consumer and provenance tests
+        run: python3 tools/audit_p9_pr30_mc_contract.py
