@@ -213,6 +213,28 @@ def run():
     with patch.object(bot, '_sample_pool_combo', lambda rng, pool: ('3c', '2h')):
         current = plan._eq_current(H, B, POOL, 1, sims=10)
         assert current is None, current
+    # Partial acceptance of the independent current-showdown MC must also
+    # remain unavailable (producer bot.equity_vs_pools uses the same rule).
+    attempts = {'count': 0}
+    def one_then_invalid(rng, pool):
+        attempts['count'] += 1
+        return ('Ts', '2h') if attempts['count'] == 1 else ('3c', '2h')
+    current_audit = {}
+    with patch.object(bot, '_sample_pool_combo', one_then_invalid):
+        partial_current = plan._eq_current(
+            H, B, POOL, 1, sims=2, audit=current_audit)
+    assert partial_current is None and current_audit['accepted'] == 1
+    assert current_audit['requested'] == 2
+    assert current_audit['reason'] == 'insufficient_current_samples'
+    assert current_audit['complete'] is False
+
+    # Exact zero with two fully accepted current-showdown trials remains 0.
+    full_audit = {}
+    current_zero = plan._eq_current(
+        H, B, POOL, 1, sims=2, audit=full_audit)
+    assert current_zero == 0.0 and full_audit['complete'] is True
+    assert full_audit['accepted'] == full_audit['requested'] == 2
+
     assert random.getstate() == before, 'postflop MC consumed global RNG'
     print('PASS P10 unavailable 0/partial, true zero, raise EV, value, plan, response, logging, RNG')
 
