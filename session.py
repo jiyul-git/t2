@@ -1456,10 +1456,11 @@ class HandRun:
                     'reentry': getattr(h, 'reentry', False),
                     'progress': getattr(h, 'progress', 0.0)}
             if _event.get('kind') in ('first_in_shove', 'open_raise'):
-                # Exact stack-after-ante for players still behind at the
-                # historical action time is not archived in the seed.
-                # Missing context blocks certification rather than guessing.
-                _ctx['behind_stacks_bb'] = None
+                _behind_hist, _behind_meta = RP.public_behind_stacks(
+                    getattr(rnd, 'action_meta', None), rnd.order,
+                    target, rnd.stacks, h.bb)
+                _ctx['behind_stacks_bb'] = _behind_hist
+                _ctx['behind_stack_provenance'] = _behind_meta
             rr_new, _new_meta = RP.conditioned_preflop_range(
                 opp_view, _event, dead=h.hole[observer],
                 observer_context=_ctx)
@@ -1477,7 +1478,8 @@ class HandRun:
                         'bubble_factor': _ctx.get('bubble_factor'),
                         'tilt_known': False,
                         'opener_read_available': False,
-                        'behind_stacks_available': False}})
+                        'behind_stacks_available': _ctx.get('behind_stacks_bb') is not None,
+                        'behind_stack_provenance': _ctx.get('behind_stack_provenance')}})
                 return rr_new or {}, _new_meta
         rr, _story = _preflop_story_range(
             opp_view, h.pos[target], float(stack_bb or 0.0),
