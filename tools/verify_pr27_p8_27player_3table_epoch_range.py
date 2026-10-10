@@ -101,7 +101,6 @@ def verify_field():
     f._frozen_field=frozen
     fh,s=hand_for(f,tb)
     full_frozen=fh.bf_details(s)
-    assert_unknown(full_frozen,'frozen_epoch_reference') if False else None
     assert full_frozen['field_epoch_status']=='frozen_epoch_reference'
     assert full_frozen['observed_field_epoch_id'] is None
     assert full_frozen['observed_epoch_diverged'] is None
@@ -206,7 +205,13 @@ def verify_pipeline(states):
             assert out['layer_sampling'][0]['range_provenance']['9']['actor_bf_provenance']==src
             assert out['range_metadata']['9']['actor_action_epoch_bf_verified'] is False
             for k in ('observed_field_epoch_id','observed_epoch_diverged'):
-                assert out['range_metadata']['9']['actor_bf_provenance'][k] is src[k],(status,k)
+                observed=out['range_metadata']['9']['actor_bf_provenance'][k]
+                # String hashes survive JSON by VALUE, not object identity;
+                # None and booleans must preserve their distinct JSON types.
+                assert observed==src[k],(status,k)
+                if src[k] is None: assert observed is None,(status,k)
+                if isinstance(src[k],bool):
+                    assert type(observed) is bool,(status,k)
             actual.append({'state':status,'method':src['method'],
                            'field_observation_status':src['field_observation_status'],
                            'snapshot_current':src['snapshot_current'],
