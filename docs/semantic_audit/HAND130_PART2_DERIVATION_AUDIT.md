@@ -1,6 +1,6 @@
 # HAND130 / 파트 2 — 방어·콜오프 계산식 및 경험상수 도입 근거 감사
 
-- 조사 기준: `test3` @ `945758accf095c634e7a543da73d38160f8b00e2` (2026-10-10)
+> **2026-10-10 후속 정정:** 아래 최초 감사의 W5 수치 `0.013483745270`는 실제 엔진 값이 아니라 재계산 오류였다. `tighten_defend_widths_for_raise_level`에서 `tp *= lt`가 먼저 실행되고, 이어지는 `tot = tp + (tot-tp)*(lt*0.8)`에서는 **축소된 tp**를 사용한다. 이 순서대로 재계산하면 `W5=0.016657816839054443`이며 기존 보고 `0.0166578`과 반올림 일치한다. 참조: [후속검증/데이터 계약](HAND130_PART2_W5_FOLLOWUP_CONTRACT.md). 실제 실행 중간 로그·당시 원본 코드 SHA·틸트/플래그 기록이 있었다는 뜻은 아니다.\n\n- 조사 기준: `test3` @ `945758accf095c634e7a543da73d38160f8b00e2` (2026-10-10)
 - 관련 원본: `docs/handoff/T2_T3_HANDOFF_20261010.md` 부록 F (HAND 130)
 - 범위: `gto.py`, `preflop.py`, `persona.py`, `depth.py`, `plan.py`, `session.py`, `ranges.py`, `icm.py`
 - 상태: **판단 전략 변경 없음**. 수식과 소비처 정적 감사; 읽기 전용 재현 스크립트 `tools/verify_hand130_part2.py`.
@@ -27,11 +27,11 @@ HAND130: B37(좌석3, LJ) A♣K♥, 2BB 오픈 후 BB(좌석9) 총7.3442BB 올�
 | `normalize` | 0.011050549970 | 0.072826407931 | `tot=.8*(1-exp(-rawTot/.55))`, tp 원시비율 유지 |
 | `adjust_for_callers` | 0.011050549970 | 0.072826407931 | 콜러0명, 변경 없음 |
 | `adjust_for_short_stack` | 0.017680879952 | 0.045152372917 | 깊이 D=.1318368<.20, tp*1.6, tot*.62 |
-| `tighten_for_raise_level` | 0.006011499184 | **0.013483745270** | 레벨2→lt=.34; `tp*=lt;tot=tp+(oldTot-oldTp)*lt*.8` |
+| `tighten_for_raise_level` | 0.006011499184 | **0.016657816839** | 레벨2→lt=.34; `tp*=lt;tot=tp+(oldTot-tp)*lt*.8` (**갱신된 tp 사용**) |
 
 이후 `calloff_cap`: `C_raw = tot*.22*2.6*(1-.18*D)/max(1,BF)`, BF=3.465325; 중립 exploit. 계산값은 0.005 하한보다 작으므로 **최종 cap=0.005(0.5%)**. 이것을 `legacy_preflop_order_percentile(A♣K♥)=.0302`와 비교하여 폴드한다.
 
-**충돌:** 기존 대화 추적의 `W5=.0166578`와 정적 재계산 `W5=.013483745270`는 다르다. 전자의 공식 적용 시 `C_raw=.002684351...` (0.268435%); 후자의 현재 소스 적용 시 더 작다. 두 경우 최종 하한 .005로 고정된다. 로그에 없는 중간상태/틸트·실행 환경을 임의 확정하지 말 것.
+**오류 해소:** 이전 재계산 `0.013483745270`는 갱신 이전 tp를 빼서 나온 수치이다. 실제 소스의 갱신 순서를 적용한 `W5=0.016657816839054443`과 대화에서 보고된 `0.0166578`은 반올림 일치한다. 정확한 후속 `C_raw=0.0026843541110758663` (0.2684354111%); 하한 적용 후 `0.005`. 과거 실행에서 동일 코드를 실행했음을 입증하는 원본 intermediate telemetry는 없다.
 
 ## 3. 주요 계수·구조별 provenance, 단위, 소비 및 중복 가능성
 
@@ -69,7 +69,7 @@ HAND130: B37(좌석3, LJ) A♣K♥, 2BB 오픈 후 BB(좌석9) 총7.3442BB 올�
 1. actor/observer 공유 producer를 건드리면 상대 posterior가 같이 달라져 5번·8번 파트 및 테스트 영향 추적이 필요하다.
 2. 현재 9-max asymmetric stack/3bet/4bet/올인 상황에 맞는 완전 검증된 action-conditional prior가 없다. `RFI * other multiplier`는 검증된 콜오프 지식으로 대체할 수 없다.
 3. 지식 게이트에 실패한 인간을 어떻게 합리적으로 행동시킬지(불완전 기억·근사 계산)는 5번 파트 정책과 연결된다. 정확한 에쿼티를 모든 낮은 숙련자에게 무조건 강제하는 것도 인간모델의 능력 의미를 훼손한다.
-4. 인수인계 W5와 현 소스 정적 재계산 W5 차이가 해소되지 않았다. 실제 tilted planning profile, 환경 플래그, 실행 프로세스 SHA와 원자료 중간 telemetry 필요.
+4. 인수인계 W5와 정적 재계산의 **수치 차이는 감사 수식 오류로 해소**되었다. 다만 당시 tilted planning profile, 환경 플래그, 실행 프로세스 SHA 및 진짜 W5 중간 telemetry는 별도 미기록이다.
 
 기존 감사 `docs/semantic_audit/r2/CALLOFF_PATH_AUDIT.md`는 P1/P2/P4/P5/P6/P7의 다른 판단량과 first-in shove 레인지 복원 문제를 확인했다. 보고된 비교 9-max push/fold 63 spot에서 solver DB jam range를 주었을 때 94.0% 일치, T2 observer range를 쓸 때 77.1% 일치. 이 데이터는 T2의 해당 비올인/안테 상황과 정확 조건이 같지 않으므로 정답 수치로 직행하지 않는다.
 
