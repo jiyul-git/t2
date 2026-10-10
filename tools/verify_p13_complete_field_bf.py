@@ -76,11 +76,26 @@ def main():
 
     pid_full = {'P%s' % s: ORIGINAL[s] for s in FULL}
     local_pids = ['P%s' % s for s in LOCAL]
+    # Actual fieldsim snapshot producer must capture counts, chips and
+    # PID mapping from one synchronous read, not disjoint samplings.
+    import fieldsim as FS
+    fs = object.__new__(FS.FieldSim)
+    fs.players = {str(k): {'pid':'P%s'%k,'stack':ORIGINAL[k]}
+                  for k in FULL}
+    fs.entries = 8
+    fs.start_stack = 112500
+    captured = fs.field_snapshot()
+    assert captured['remaining'] == 8
+    assert captured['pid_stacks'] == pid_full
+    assert list(captured['stacks']) == ALL
+
     full_info = I.table_bf(
         ST, HERO_LOCAL, 8, 7, PAYOUTS, field_avg=112500,
         field_stacks=ALL, field_pid_stacks=pid_full,
         table_pids=local_pids, return_details=True)
     assert full_info['is_exact']
+    assert full_info['price_specific'] is False
+    assert full_info['bf_kind'] == 'generic_default_risk_not_spot_call_prize_ev'
     assert full_info['method']=='exact_full_field_icm'
     assert full_info['field_completeness']=='verified_player_id_field_snapshot'
     equal(full_info['value'],whole,'exact complete 5-table/8-field BF')
