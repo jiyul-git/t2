@@ -71,10 +71,10 @@ def posterior_tests(shove, ordinary, first):
     assert ms['posterior_support'] == len(vs_shove)
     assert ms['posterior_mass'] == R.range_mass(vs_shove)
 
-    # At a deeper stack the existing raise_form policy has a meaningful
+    # At 20BB the existing raise_form policy has a meaningful
     # nonshove route, and the shove/ordinary posterior MUST differ.
-    deep_s = dict(shove, stack_bb=40.0, observed_total_bb=41.0)
-    deep_r = dict(ordinary, stack_bb=40.0, observed_total_bb=8.0)
+    deep_s = dict(shove, stack_bb=20.0, observed_total_bb=21.0)
+    deep_r = dict(ordinary, stack_bb=20.0, observed_total_bb=8.0)
     ds, dms = RP.conditioned_preflop_range(
         profile, deep_s, dead, observer_context=ctx)
     dr, dmr = RP.conditioned_preflop_range(
@@ -87,8 +87,8 @@ def posterior_tests(shove, ordinary, first):
     # actor's attack probability; no new polar blend coefficient.
     sample = ('Qs', 'Qh')
     lk = PF.defend_action_likelihoods(
-        profile, 'BB', 'LJ', list(sample), 40, 2, 0,
-        raise_level=1, stack_bb=40, seats=8, ante=True,
+        profile, 'BB', 'LJ', list(sample), 20, 2, 0,
+        raise_level=1, stack_bb=20, seats=8, ante=True,
         opener_allin=False, can_raise=True)
     total_attack = lk['attack']
     c1 = ds.get(sample, 0.0)
