@@ -3644,11 +3644,16 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             profile, pos, aggressor_pos, bb, open_bb, raise_level,
             bf=bf, exploit=rd, n_callers=n_callers,
             seats=seats, ante=ante)
+        _exact_hu_icm = (call_ev_shadow.get('exact_hu_icm') or {})
+        # Equivalent bubble factor is derived from the actual win/loss ICM
+        # prize states and true call price. Do not apply a generic
+        # full-stack-risk BF to a much smaller covered all-in.
+        _spot_bf = float(_exact_hu_icm.get('equivalent_bubble_factor', bf))
         _calloff_compare = _pf.calloff_ev_comparison(
-            hand, a, _legacy_cap, call_ev_shadow, bubble_factor=bf)
+            hand, a, _legacy_cap, call_ev_shadow, bubble_factor=_spot_bf)
 
         _layer_j = _pf.calloff_layer_judgment(
-            profile, call_ev_shadow, bubble_factor=bf,
+            profile, call_ev_shadow, bubble_factor=_spot_bf,
             seed=calloff_decision_seed)
         if _layer_j is not None:
             _legacy_act = a
@@ -3680,7 +3685,12 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                     _selected_act != _legacy_act),
                 'strategy_consumer': True,
                 'gate_role': 'diagnostic_only',
-                'decision_quantity': 'perceived_layer_equity_vs_price',
+                'decision_quantity': (
+                    'perceived_layer_equity_vs_spot_icm_price'
+                    if _exact_hu_icm else 'perceived_layer_equity_vs_price'),
+                'objective_unconditional_bf': float(bf),
+                'objective_spot_bf': float(_spot_bf),
+                'exact_hu_icm': dict(_exact_hu_icm) if _exact_hu_icm else None,
             })
 
     # 현재 판단 사건의 종류. 행동 결과만 남기면

@@ -599,6 +599,103 @@ def _layer_call_summary(call_cost, projected_layers, projected_equities):
     }
 
 
+def _terminal_hu_call_icm(stacks, contrib, folded, table_seats, hero,
+                          opponent, cost, dead, call_layers, payouts,
+                          remaining, effective_equity):
+    """Exact payout-ICM win/lose/tie states for a terminal heads-up call.
+
+    Only when the complete remaining field is at this table (<=9 players)
+    and exactly hero + one all-in opponent still hold cards. This calculation
+    uses the ACTUAL incremental call loss and contested prize, unlike a global
+    bubble factor evaluated at an unrelated stack-risk amount.
+
+    With showdown equity e = P(win) + P(tie)/2, the tie probability is not
+    known from e alone. We report the exact ICM-EV bounds over all feasible
+    tie frequencies; no invented tie frequency is used.
+    """
+    seats = list(table_seats or [])
+    if (not payouts or not seats or len(seats) > icm.EXACT_MAX
+            or int(remaining or 0) != len(seats)
+            or set(seats) != set(stacks or {})
+            or set(seats) - set(folded or ()) != {hero, opponent}
+            or float((stacks or {}).get(opponent, 0) or 0) != 0
+            or not call_layers or effective_equity is None):
+        return None
+    cost = float(cost)
+    e = float(effective_equity)
+    if cost <= 0 or e < 0 or e > 1:
+        return None
+
+    # The pending call is not part of the current pot or the hero stack yet.
+    before = {x: float(stacks[x]) for x in seats}
+    if before[hero] < cost:
+        return None
+    pot = sum(float(v) for v in (contrib or {}).values()) + float(dead or 0)
+    fold = dict(before)
+    fold[opponent] += pot
+
+    base = dict(before)
+    base[hero] -= cost
+    win, lose, tie = dict(base), dict(base), dict(base)
+    for layer in call_layers:
+        amount = float(layer.get('amount') or 0)
+        if amount < 0:
+            return None
+        eligible = set(layer.get('eligible_seats') or [])
+        if eligible == {hero, opponent}:
+            win[hero] += amount
+            lose[opponent] += amount
+            tie[hero] += amount / 2.0
+            tie[opponent] += amount / 2.0
+        elif eligible == {hero} or eligible == {opponent}:
+            only = next(iter(eligible))
+            for state in (win, lose, tie):
+                state[only] += amount
+        else:
+            return None
+
+    chips = sum(before.values()) + pot
+    if any(abs(sum(state.values()) - chips) > 1e-6
+           for state in (fold, win, lose, tie)):
+        return None
+
+    order = sorted(seats)
+    hidx = order.index(hero)
+    pays = list(payouts)
+    def prize(state):
+        return icm.icm_equity([state[k] for k in order], pays)[hidx]
+    f, w, l, t = prize(fold), prize(win), prize(lose), prize(tie)
+    gain, loss = w-f, f-l
+    if gain <= 0 or loss < 0:
+        return None
+    # ICM break-even for win/lose outcomes, allowing unequal win/loss chips.
+    required_no_tie = loss / (gain + loss)
+    # Equivalent risk premium can be fed into the existing personal BF model.
+    # e_req = C*bf / (pot + C*bf) exactly reproduces required_no_tie.
+    bf_at_price = (loss / gain) * (pot / cost)
+    tie_max = 2.0 * min(e, 1.0-e)
+    ev_no_tie = l + e * (w-l) - f
+    ev_max_tie = ev_no_tie + tie_max * (t - (w+l)/2.0)
+    lo, hi = min(ev_no_tie, ev_max_tie), max(ev_no_tie, ev_max_tie)
+    verdict = ('call' if lo > 0 else 'fold' if hi < 0 else 'uncertain')
+    return {
+        'source': 'exact_terminal_hu_payout_icm',
+        'fold_prize': f,
+        'win_prize': w,
+        'lose_prize': l,
+        'tie_prize': t,
+        'no_tie_breakeven_equity': required_no_tie,
+        'equivalent_bubble_factor': bf_at_price,
+        'equity_input': e,
+        'payout_ev_lower': lo,
+        'payout_ev_upper': hi,
+        'tie_probability_not_inferred': True,
+        'sampling_error_not_included': True,
+        'opponent_range_error_not_included': True,
+        'objective_action_with_fixed_equity': verdict,
+    }
+
+
 def _perceived_fold_to_bet_probability(profile, opp_est, street):
     """F8-D5-B shadow: 기존 read 체계로부터 target fold-to-bet 확률을 복원.
 
@@ -1523,6 +1620,15 @@ class HandRun:
                     'layer_equities': _pf_call_layer_eq,
                     'strategy_consumer': False,
                 }
+                # Terminal heads-up only: precise prize ICM at this CALL price.
+                # Other pots/remaining seats stay on their prior price/BF path
+                # rather than receiving a guessed exact-ICM surrogate.
+                _pf_call_ev_shadow['exact_hu_icm'] = _terminal_hu_call_icm(
+                    rnd.stacks, rnd.contrib, set(rnd.folded),
+                    h.seats, s, aggressor, _pf_call_cost, ante_pot,
+                    _pf_call_layers, h.payouts,
+                    getattr(h, 'field_remaining', None),
+                    _pf_call_ev_shadow.get('effective_equity'))
 
             _tm_concepts = PS.concept_tap() if self.timing else None
             _opp_est_pf = (RD.perceived_profile(
