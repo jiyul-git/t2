@@ -160,6 +160,13 @@ def run():
     assert rec['value_raise_gate']['continue_mc_audit']['accepted'] == 19, rec
     assert rec['value_raise_gate']['continue_eq'] is None, rec
 
+    # Existing neutral field fallback remains legitimate when it calculates
+    # an actual number (even if the original narrow range failed).
+    with patch.object(bot, 'equity_vs_combos', side_effect=[None, .37]):
+        eq_fallback, used_fallback = plan._plan_eq(H, B, POOL, 1, 13)
+    assert eq_fallback == .37 and used_fallback is True, (
+        eq_fallback, used_fallback)
+
     # Both primary and neutral field-estimate failing must stay unknown.
     with patch.object(bot, 'equity_vs_combos', stub_equity(None)):
         audit = {}
