@@ -18,6 +18,8 @@ jobs:
         run: python3 -m py_compile bot.py session.py range_posterior_v1.py icm.py play.py tools/review_pr21_p8_bf_mc_integration.py
       - name: P8 independently distinguish BF method and actual BF value
         run: python3 tools/review_pr21_p8_bf_mc_integration.py
+      - name: Independent end-to-end conditional combo weights and sampled MC replay
+        run: python3 tools/review_p9_p8_weighted_mc_contract.py
       - name: P9 sample accounting and weighted range invariants
         run: |
           python3 tools/verify_hand130_mc_contract.py
