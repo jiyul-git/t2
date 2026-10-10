@@ -1,0 +1,125 @@
+"""P10 decision-consumer regression for PR27 MC None / zero / valid equity."""
+import random
+from unittest.mock import patch
+import bot
+import plan
+
+H = ['3c', '4d']
+B = ['As', 'Ks', 'Qs', 'Js', '9s']
+POOL = [('Ts', '2h')]
+PROFILE = {'type': 'reg', 'aggr': 5, 'bluff': 5, 'concepts': {}}
+CTX = {'facing_seat': 1, 'facing_contrib': 100, 'facing_stack': 1000,
+       'facing_target': 100}
+
+def gate():
+    return plan._nonvalue_raise_ev_gate(
+        PROFILE, H, B, 'river', POOL, {1: POOL}, 1,
+        pot=300, tocall=100, stack=1000, hero_contrib=0,
+        response_context=CTX, mult=1.0)
+
+def stub_equity(value, reason='no_valid_mc_samples', accepted=0):
+    def f(*args, **kwargs):
+        audit = kwargs.get('audit')
+        if audit is not None:
+            audit.update(requested=kwargs.get('sims', 400), accepted=accepted,
+                         complete=value is not None, reason=reason)
+        return value
+    return f
+
+def run():
+    before = random.getstate()
+
+    # Raw producer: invalid opponent cards prevent all samples.
+    audit = {}
+    impossible = bot.equity_vs_combos(H, B, [[('3c', '2d')]], sims=13, audit=audit)
+    assert impossible is None
+    assert audit['accepted'] == 0 and not audit['complete']
+    assert audit['reason'] == 'missing_opponent_range', audit
+
+    # A real computed equity of exactly zero is numeric and fully accepted.
+    audit = {}
+    true_zero = bot.equity_vs_combos(H, B, [POOL], sims=37, audit=audit)
+    assert true_zero == 0.0, (true_zero, audit)
+    assert audit['complete'] and audit['accepted'] == audit['requested'] == 37
+
+    # Restrict continue subset to known witness; do not let fold estimates vary.
+    with patch.object(plan.R, 'perceived_continue_range', lambda *a, **k: POOL):
+        # Simulates P9 explicit zero-valid/partial-valid unavailable contract.
+        for reason, accepted in (('no_valid_mc_samples', 0),
+                                 ('insufficient_valid_samples', 17),
+                                 ('missing_opponent_range', 0)):
+            with patch.object(bot, 'equity_vs_combos',
+                              stub_equity(None, reason=reason, accepted=accepted)):
+                g = gate()
+                assert g['allow'] is False and g['known'] is False, g
+                assert g['ev'] is None and g['continue_eq'] is None, g
+                assert g['mc_audit']['accepted'] == accepted, g
+                assert g['mc_audit']['reason'] == reason, g
+                assert g['equity_status'] == 'unavailable_not_negative_ev', g
+        # An actual computed zero must remain a mathematical -EV, not 'unknown'.
+        g0 = gate()
+        assert g0['known'] and g0['continue_eq'] == 0.0, g0
+        assert g0['allow'] is False and g0['ev'] < 0, g0
+        with patch.object(bot, 'equity_vs_combos', stub_equity(.9, 'computed', 400)):
+            gp = gate()
+            assert gp['known'] and gp['allow'] and gp['ev'] > 0, gp
+
+    # Value raise: unknown continue equity cannot justify a raise.
+    with patch.object(plan.R, 'perceived_continue_range', lambda *a, **k: POOL):
+        with patch.object(bot, 'equity_vs_combos', stub_equity(None)):
+            ok, eq, fair = plan.value_raise_qualification(
+                H, B, 'river', .7, 1, POOL, CTX, 0, 1000, 300, 100, 1.0,
+                PROFILE)
+            assert not ok and eq is None and fair == .5
+            ok, eq, fair = plan.value_raise_qualification(
+                H, B, 'river', None, 1, POOL, CTX, 0, 1000, 300, 100, 1.0,
+                PROFILE)
+            assert not ok and eq is None
+        with patch.object(bot, 'equity_vs_combos', stub_equity(.7, 'computed', 400)):
+            ok, eq, fair = plan.value_raise_qualification(
+                H, B, 'river', .7, 1, POOL, CTX, 0, 1000, 300, 100, 1.0,
+                PROFILE)
+            assert ok and eq == .7
+
+    # Both primary and neutral field-estimate failing must stay unknown.
+    with patch.object(bot, 'equity_vs_combos', stub_equity(None)):
+        audit = {}
+        eq, fallback = plan._plan_eq(H, B, POOL, 1, 13, audit=audit)
+        assert eq is None and fallback and audit['source'] == 'plan_and_field_equity_unavailable'
+        st = plan.update_plan(
+            None, H, B, [], POOL, PROFILE, 300, 1000, 'river',
+            seed=7, n_opp=1, behind=0, prev_board=B[:-1],
+            oop=False, initiative=True, first=True)
+        assert st['eq'] is None and st['equity_status'] == 'unavailable_not_negative_ev', st
+        assert plan.intent_of(st, 'river')['act'] == 'check', st
+        act, equity, need = plan.act_with_plan(
+            H, B, PROFILE, st, 300, 100, 1000, 'river',
+            opp_range=POOL, opp_ranges={1: POOL}, response_context=CTX,
+            response_kind='face_bet', seed=11)
+        assert act == ('fold', 0) and equity is None and need is None, act
+        rec = st['response_plans']['river'][-1] if isinstance(
+            st['response_plans']['river'], list) else st['response_plans']['river']
+        assert rec['equity_status'] == 'unavailable_not_negative_ev', rec
+        assert rec['equity_unavailable']['plan']['original']['accepted'] == 0, rec
+
+    # Even with an existing numeric plan, a newly failed response MC is not a call/fold EV.
+    st = {'plan': 'showdown', 'eq': .7, 'rel': .5, 'outs': 0, 'made': 0}
+    with patch.object(bot, 'equity_vs_combos', stub_equity(None)):
+        act, eq, need = plan.act_with_plan(
+            H, B, PROFILE, st, 300, 100, 1000, 'river',
+            opp_range=POOL, opp_ranges={1: POOL}, response_context=CTX,
+            response_kind='face_bet', seed=11)
+    assert act == ('fold', 0) and eq is None and need is None
+    assert st['equity_status'] == 'unavailable_not_negative_ev'
+    assert st['equity_unavailable']['reason'] == 'no_valid_mc_samples'
+    assert not st['_last_response_boundary']['mathematically_justified']
+
+    # No accepted samples in same-board current showdown cannot become zero.
+    with patch.object(bot, '_sample_pool_combo', lambda rng, pool: ('3c', '2h')):
+        current = plan._eq_current(H, B, POOL, 1, sims=10)
+        assert current is None, current
+    assert random.getstate() == before, 'postflop MC consumed global RNG'
+    print('PASS P10 unavailable 0/partial, true zero, raise EV, value, plan, response, logging, RNG')
+
+if __name__ == '__main__':
+    run()
