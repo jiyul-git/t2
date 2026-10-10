@@ -27,7 +27,9 @@ def rows(stack=63442, shoved=True):
         {'seat': 9, 'action': 'allin' if shoved else 'raise',
          'raised': True, 'full_raise': True,
          'actor_allin_after': shoved, 'pre_stack': stack,
-         'pre_current': 20000, 'post_current': (stack+10000 if shoved else 52000)},
+         'pre_current': 20000, 'post_current': (stack+10000 if shoved else 52000),
+         'pre_contrib': 10000,
+         'post_contrib': (stack+10000 if shoved else 52000)},
     ]
 
 
@@ -38,7 +40,8 @@ def event_tests():
     first = RP.classify_public_action([
         {'seat': 9, 'action': 'allin', 'raised': True, 'full_raise': True,
          'actor_allin_after': True, 'pre_stack': 90000,
-         'pre_current': 10000, 'post_current': 100000},
+         'pre_current': 10000, 'post_current': 90000,
+         'pre_contrib': 0, 'post_contrib': 90000},
     ], 9, 10000, 'CO')
     assert shove['kind'] == 'threebet_shove'
     assert ordinary['kind'] == 'threebet_raise'
@@ -95,7 +98,8 @@ def posterior_tests(shove, ordinary, first):
 
     # At 20BB the existing raise_form policy has a meaningful
     # nonshove route, and the shove/ordinary posterior MUST differ.
-    deep_s = dict(shove, stack_bb=20.0, observed_total_bb=21.0)
+    deep_s = dict(shove, stack_bb=20.0, observed_total_bb=21.0,
+                  post_contrib_bb=21.0)
     deep_r = dict(ordinary, stack_bb=20.0, observed_total_bb=8.0)
     ds, dms = RP.conditioned_preflop_range(
         profile, deep_s, dead, observer_context=ctx)
