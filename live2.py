@@ -1591,6 +1591,34 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     _hero_tid, _other_tids, _other_pids = _round_owners(_round_base)
     _single_table_round = not _other_tids
 
+    # Audit only: live HERO began at a prior field epoch. In the synchronous
+    # finish(defer_others=False) path the other tables are launched only
+    # AFTER HERO chips have been settled into f.players. They must not be
+    # described as sharing the HERO-hand-start field epoch. Neither this
+    # record nor the stamps affect actions, RNG or worker ordering.
+    _hero_epoch = getattr(h, 'field_snapshot_id', None)
+    _after_hero_epoch = (
+        f.field_snapshot()['epoch_id'] if _other_tids else None)
+    h._field_epoch_finish_timing = {
+        'hero_hand_start_epoch_id': _hero_epoch,
+        'hero_hand_start_phase': 'before_hero_hand_action',
+        'hero_snapshot_scope': getattr(h, 'field_snapshot_scope', None),
+        'other_tables_reference_epoch_id': (
+            _after_hero_epoch
+            if not defer_others and not vclock_others and _other_tids
+            else None),
+        'other_tables_reference_phase': (
+            'after_hero_hand_completed_before_other_table_work'
+            if not defer_others and not vclock_others and _other_tids
+            else 'not_observed_in_synchronous_finish'),
+        'common_start_epoch_verified': False,
+        'execution_path': (
+            'synchronous_after_hero' if not defer_others and not vclock_others
+            else 'deferred_or_vclock'),
+        'field_hand_no': getattr(f, 'hand_no', None),
+        'field_level': getattr(f, 'level', None),
+    }
+
     if vclock_others:
         # 비-HERO 테이블은 UI 서버의 독립 가상시계 선계산기가 소유한다.
         # 여기서는 HERO 핸드 결과만 저장하고, bust/balance는 같은 시간축의
@@ -1787,6 +1815,8 @@ def _archive(st, f, h, res, notes, defer=False, run=None):
            # seat-keyed preflop seeds so audit can prove which range/context path
            # actually produced each open/call/reraise/fold.
            'pf_seed': copy.deepcopy(getattr(h, 'pf_seed', {}) or {}),
+           'field_epoch_timing': copy.deepcopy(
+               getattr(h, '_field_epoch_finish_timing', {}) or {}),
            'intents': copy.deepcopy(getattr(h, 'intents', []) or []),
            'plans': copy.deepcopy(getattr(h, 'plans', {}) or {}),
            'decision_cache': copy.deepcopy(
