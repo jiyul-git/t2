@@ -1534,7 +1534,20 @@ class HandRun:
         if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
             # P8 must retain the *observed actor* BF evidence, not confuse
             # it with pf_bf_provenance for the deciding observer seat.
-            _actor_bf = h.bf_details(target)
+            if hasattr(h, 'bf_details'):
+                _actor_bf = h.bf_details(target)
+            else:
+                # Legacy/external or test-only Hand adapters expose only BF.
+                # Never promote that scalar to attested exact-field ICM.
+                _actor_bf = {
+                    'value': h.bf(target),
+                    'method': 'legacy_scalar_without_epoch_evidence',
+                    'is_exact': False, 'price_specific': False,
+                    'reason': 'bf_details_unavailable',
+                    'field_epoch_status': 'unverified',
+                    'snapshot_current': False,
+                    'field_snapshot_id': None,
+                }
             _event = RP.classify_public_action(
                 getattr(rnd, 'action_meta', None), target, h.bb,
                 h.pos[target], stack_bb=stack_bb, seats=seats, ante=ante,
