@@ -452,7 +452,8 @@ def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
 
 def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                                   active_ranges, locked_ranges, sims=600,
-                                  seed=None, capture_sampling=False):
+                                  seed=None, capture_sampling=False,
+                                  range_metadata=None):
     """F8-D3: 현재 참가 가능한 pot layer별 showdown equity.
 
     소비처(stage9 B5 확인, L189): 프리플랍 순수 콜오프와 포스트플랍 콜 판단에서
@@ -468,6 +469,7 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
     """
     active_ranges = dict(active_ranges or {})
     locked_ranges = dict(locked_ranges or {})
+    range_metadata = dict(range_metadata or {})
     out = []
 
     for idx, layer in enumerate(pot_layers or []):
@@ -476,9 +478,14 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
         missing = []
         pools = []
         sources = {}
+        missing_details = {}
 
         for o in opps:
-            if o in active_ranges and active_ranges.get(o):
+            _rm = range_metadata.get(o) or {}
+            if _rm.get('complete') is False:
+                missing.append(o)
+                missing_details[str(o)] = dict(_rm)
+            elif o in active_ranges and active_ranges.get(o):
                 # list() 로 감싸면 weighted posterior 가 균등 support 로 평탄화된다
                 # (audit9 HAND 17: 콜드 4벳 올인 레인지 KQs eq 0.323 → 0.442 로 부풀어
                 # KQs 가 92bb 콜오프). equity_vs_combos 는 weighted pool 을 그대로 받는다.
@@ -489,6 +496,7 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                 sources[str(o)] = 'locked_allin'
             else:
                 missing.append(o)
+                missing_details[str(o)] = dict(_rm)
 
         row = {
             'idx': idx,
@@ -498,6 +506,7 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
             'opponents': opps,
             'range_sources': sources,
             'missing_ranges': missing,
+            'missing_range_details': missing_details,
             'complete': False,
             'equity': None,
             'sims': int(sims),
@@ -506,13 +515,17 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
         if not row['hero_eligible']:
             row['reason'] = 'hero_not_currently_eligible'
         elif missing:
-            row['reason'] = 'missing_opponent_range'
+            unavailable = any(
+                any('unsupported' in str(v) or 'not_supported' in str(v)
+                    for v in (meta.get('missing') or []))
+                for meta in missing_details.values())
+            row['reason'] = ('unsupported_opponent_model' if unavailable
+                             else 'missing_opponent_range')
         elif not opps:
             row['complete'] = True
             row['equity'] = 1.0
             row['reason'] = 'sole_eligible'
         else:
-            row['complete'] = True
             _eq_seed = None
             if seed is not None:
                 _eq_seed = _zlib.crc32(
@@ -520,14 +533,25 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                         int(seed), idx,
                         ','.join(str(x) for x in opps))).encode())
             row['seed'] = _eq_seed
-            _mc_audit = {} if capture_sampling else None
-            row['equity'] = round(
-                float(bot.equity_vs_combos(
-                    hero_cards, board, pools, sims=int(sims),
-                    seed=_eq_seed, audit=_mc_audit)), 6)
-            if _mc_audit is not None:
+            # Always collect status; verbose replay capture is optional.
+            _mc_audit = {}
+            _equity = bot.equity_vs_combos(
+                hero_cards, board, pools, sims=int(sims),
+                seed=_eq_seed, audit=_mc_audit)
+            row['requested_samples'] = _mc_audit['requested']
+            row['valid_samples'] = _mc_audit['accepted']
+            row['rejected_samples'] = _mc_audit['rejected']
+            row['sample_variance'] = _mc_audit['sample_variance']
+            row['split_pot_draws'] = _mc_audit['split_pot_draws']
+            row['reason'] = _mc_audit['reason']
+            row['complete'] = bool(_mc_audit['complete'])
+            if row['complete'] and _equity is not None:
+                row['equity'] = round(float(_equity), 6)
+            if not row['complete']:
+                row['observed_sample_mean'] = _mc_audit['mean_share']
+            if capture_sampling:
                 row['sampling'] = _mc_audit
-            row['reason'] = 'computed'
+
         out.append(row)
 
     return out
@@ -566,6 +590,7 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
     contestable = 0.0
     gross = 0.0
     missing = []
+    incomplete_reasons = {}
 
     for idx, layer in enumerate(projected_layers or []):
         if not layer.get('hero_eligible'):
@@ -575,6 +600,13 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
         row = rows.get(idx)
         if not row or not row.get('complete') or row.get('equity') is None:
             missing.append(idx)
+            incomplete_reasons[idx] = {
+                'reason': row.get('reason', 'missing_equity_layer') if row else 'missing_equity_layer',
+                'requested_samples': row.get('requested_samples') if row else None,
+                'valid_samples': row.get('valid_samples') if row else None,
+                'missing_ranges': row.get('missing_ranges', []) if row else [],
+                'missing_range_details': row.get('missing_range_details', {}) if row else {},
+            }
             continue
         gross += amount * float(row['equity'])
 
@@ -591,6 +623,7 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
             'breakeven_equity': (
                 round(cost / contestable, 6) if contestable > 0 else None),
             'missing_equity_layers': missing,
+            'incomplete_reasons': incomplete_reasons,
         }
 
     return {
@@ -602,6 +635,7 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
         'effective_equity': round(gross / contestable, 6),
         'breakeven_equity': round(cost / contestable, 6),
         'missing_equity_layers': [],
+        'incomplete_reasons': {},
     }
 
 
@@ -629,6 +663,7 @@ def _layer_call_summary(call_cost, projected_layers, projected_equities):
         'effective_equity': base['effective_equity'],
         'breakeven_equity': base['breakeven_equity'],
         'missing_equity_layers': base['missing_equity_layers'],
+        'incomplete_reasons': base['incomplete_reasons'],
     }
 
 
@@ -1749,7 +1784,7 @@ class HandRun:
                 and rnd.stacks.get(aggressor, 1) <= 0
                 and not rnd.can_raise(s)
                 and tc > 0)
-            if _pf_pure_calloff and _pf_opp_ranges:
+            if _pf_pure_calloff:
                 _pf_call_layers, _pf_call_cost = _project_call_layers(
                     {}, rnd.contrib, set(rnd.folded), rnd.stacks,
                     s, tc, dead=ante_pot)
@@ -1764,7 +1799,8 @@ class HandRun:
                     _pf_active_ranges, _pf_locked_ranges, sims=800,
                     seed=self._dseed(
                         s, 'preflop', 'f8_d6c', len(rnd.log)),
-                    capture_sampling=(os.environ.get('T2_RANGE_REPLAY_CAPTURE') == '1'))
+                    capture_sampling=(os.environ.get('T2_RANGE_REPLAY_CAPTURE') == '1'),
+                    range_metadata=_pf_opp_range_meta)
                 _pf_call_sum = _layer_call_summary(
                     _pf_call_cost, _pf_call_layers, _pf_call_layer_eq)
                 _pf_call_ev_shadow = {
@@ -1779,6 +1815,8 @@ class HandRun:
                     'breakeven_equity': _pf_call_sum.get('breakeven_equity'),
                     'missing_equity_layers': list(
                         _pf_call_sum.get('missing_equity_layers') or []),
+                    'incomplete_reasons': dict(
+                        _pf_call_sum.get('incomplete_reasons') or {}),
                     'layers': _pf_call_layers,
                     'layer_equities': _pf_call_layer_eq,
                     'strategy_consumer': False,

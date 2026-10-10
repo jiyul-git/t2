@@ -3565,6 +3565,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 'decision_quantity': 'unverified_missing_calloff_equity',
                 'missing_equity_layers': list(
                     _sh.get('missing_equity_layers') or []),
+                'incomplete_reasons': dict(
+                    _sh.get('incomplete_reasons') or {}),
+                'equity_status': 'unavailable_not_negative_ev',
                 'legacy_evaluated': False,
                 'mathematically_justified': False,
                 'fallback_reason': 'missing_pot_or_range_evidence',
