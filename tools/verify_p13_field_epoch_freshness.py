@@ -87,6 +87,7 @@ def simultaneous_frozen():
     assert not at_start['is_exact'] and not at_start['snapshot_current']
     assert at_start['snapshot_epoch_exact']
     assert at_start['method']=='frozen_epoch_reference_icm'
+    assert at_start['observed_epoch_diverged'] is False
     # Other table completes later in the SAME logical round, *without*
     # rebasing the frozen common-round reference or ordering of actions.
     f.players['2']['stack']+=1500
@@ -95,7 +96,8 @@ def simultaneous_frozen():
     assert not after['is_exact'] and not after['snapshot_current'],after
     assert after['snapshot_epoch_exact'] is True
     assert after['method']=='frozen_epoch_reference_icm'
-    assert after['reason']=='remote_field_advanced_since_frozen_epoch'
+    assert after['reason']=='frozen_common_round_epoch_not_decision_current'
+    assert after['observed_epoch_diverged'] is True
     assert after['field_snapshot_scope']=='simultaneous_frozen'
     assert after['field_snapshot_id']!=after['observed_field_epoch_id']
     assert after['value']==at_start['value'] # frozen batch policy unchanged
