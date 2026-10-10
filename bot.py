@@ -304,7 +304,7 @@ def _sample_pool_combo(rng, pool):
     return PreparedPool(pool).sample(rng)
 
 
-def equity_vs_pools(hero, board, pools, sims=500, seed=None):
+def equity_vs_pools(hero, board, pools, sims=500, seed=None, audit=None):
     """에쿼티 몬테카를로의 유일한 구현.
 
     pools — 상대별 콤보 리스트. 어떻게 만들었는지는 호출자가 정한다.
@@ -316,6 +316,7 @@ def equity_vs_pools(hero, board, pools, sims=500, seed=None):
     dead = set(hero) | set(board)
     need = 5 - len(board)
     share = 0.0; run = 0
+    sum_sq = 0.0; split_draws = 0
     prepped = [prepare_pool(p) for p in pools]
     for _ in range(sims):
         used = set(dead); opps = []; ok = True
@@ -332,7 +333,26 @@ def equity_vs_pools(hero, board, pools, sims=500, seed=None):
         bd = board + rng.sample(deck, need)
         hs = eval7(hero + bd)
         opp_scores = [eval7(o + bd) for o in opps]
-        share += _showdown_share(hs, opp_scores)
+        result_share = _showdown_share(hs, opp_scores)
+        share += result_share
+        if audit is not None:
+            sum_sq += result_share * result_share
+            if 0.0 < result_share < 1.0:
+                split_draws += 1
+    if audit is not None:
+        # Includes rejection accounting without changing RNG consumption.
+        # Conditional on fixed pools, sample variance is the unbiased
+        # variance of showdown pot shares, not opponent-model uncertainty.
+        mean = share / run if run else None
+        variance = ((sum_sq - run*mean*mean) / (run-1)
+                    if run > 1 else None)
+        audit.update({
+            'seed': seed, 'requested': int(sims), 'accepted': run,
+            'rejected': int(sims)-run, 'split_pot_draws': split_draws,
+            'share_sum': share, 'share_sum_sq': sum_sq,
+            'sample_variance': max(0.0, variance) if variance is not None else None,
+            'mean_share': mean,
+        })
     return share / max(1, run)
 
 
@@ -343,7 +363,7 @@ def equity_vs_range(hero, board, opp_pcts, sims=500, seed=None):
                            [range_combos(p, dead) for p in opp_pcts], sims, seed)
 
 
-def equity_vs_combos(hero, board, opp_ranges, sims=500, seed=None):
+def equity_vs_combos(hero, board, opp_ranges, sims=500, seed=None, audit=None):
     """opp_ranges: 상대별 실제 콤보 리스트 (액션으로 좁혀진 레인지).
 
     비율 근사 대신 추정한 레인지를 그대로 쓸 때 이걸 부른다.
@@ -358,7 +378,7 @@ def equity_vs_combos(hero, board, opp_ranges, sims=500, seed=None):
              for r in (opp_ranges or [])]
     if seed is None:
         seed = _zlib.crc32(repr((sorted(hero), tuple(board), pools, sims)).encode())
-    return equity_vs_pools(hero, board, pools, sims, seed)
+    return equity_vs_pools(hero, board, pools, sims, seed, audit=audit)
 
 
 def draw_strength(hero, board):

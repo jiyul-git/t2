@@ -1,0 +1,60 @@
+name: HAND130 P8 action-conditioned shadow
+
+on:
+  push:
+    branches: [chatgpt/hand130-range-conditional-integrate-20261010]
+  workflow_dispatch:
+
+jobs:
+  posterior:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile edited model and verifier
+        run: python3 -m py_compile range_posterior_v1.py ranges.py bot.py session.py tools/verify_hand130_conditioned_posterior.py
+      - name: Conditional posterior and replay invariants
+        run: python3 tools/verify_hand130_conditioned_posterior.py
+      - name: P5 independent PR16 failure-provenance regression
+        run: python3 tools/verify_pr16_p5_provenance.py
+      - name: Paired B37 opponent range and P5 decision comparison
+        run: python3 tools/compare_hand130_range_v1.py
+      - name: P5 isolation and missing-evidence contract
+        run: python3 tools/verify_hand130_calloff_isolation.py
+      - name: P5 terminal ICM decision replay
+        run: python3 tools/verify_hand130_exact_icm.py
+      - name: P13 odd-chip tie and partial-call ICM regression
+        run: python3 tools/verify_hand130_partial_call_icm.py
+      - name: Compare default-OFF behavior against exact P5 parent
+        run: |
+          git fetch --no-tags --depth=1 origin 6f0d912d7a6c6f62c2f82a38746ca588953544e8
+          git worktree add --detach /tmp/p5base 6f0d912d7a6c6f62c2f82a38746ca588953544e8
+          for seed in 11 12; do
+            (cd /tmp/p5base && python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/p5_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/p8_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              before=json.load(open('/tmp/p5_%s.json'%seed))
+              after=json.load(open('/tmp/p8_%s.json'%seed))
+              print({'seed':seed,'parent_pf':len(before['pf']),
+                     'p8_pf':len(after['pf']), 'parent_hands':len(before['hands']),
+                     'p8_hands':len(after['hands']),
+                     'identical':before==after})
+              assert before==after, 'P8 default-OFF action/state changed'
+          print('PASS exact P5 parent / P8 default-OFF paired field identity')
+          PY
+      - name: Enabled P8 observer mode 9max smoke (not accuracy proof)
+        env:
+          T2_RANGE_CONDITIONAL_V1: "1"
+        run: python3 tools/r2_baseline_sim.py 11 4
+      - name: Existing weighted-sampler verification
+        run: python3 tools/verify_weighted_sampling.py
+      - name: Existing weighted range adapter verification
+        run: python3 tools/verify_weighted_range_adapter.py
+      - name: Existing P8 action likelihood verification
+        run: python3 tools/verify_f7b_defend_likelihood.py
