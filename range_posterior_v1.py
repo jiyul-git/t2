@@ -190,7 +190,14 @@ def _first_in_likelihood(prof, combo, event, observer_context):
     shove_p = _form_prob(
         PF.open_form, prof, feel, r, stack,
         vs=vs, traits=traits, eff_bb=eff, pos=p)
-    return shove_p if event['kind'] == 'first_in_shove' else 1.0-shove_p
+    if event['kind'] == 'first_in_shove':
+        return shove_p
+    # Actual open_decision attempts a limp after rejecting shove, even
+    # for hands inside the raise-entry range. The ordinary RFI likelihood
+    # must reflect that competing action, not simply 1-P(shove).
+    p_limp = PF.limp_p(
+        prof, feel, r, p, traits, hand=list(combo))
+    return (1.0-shove_p) * (1.0-p_limp)
 
 
 def _threebet_likelihood(prof, combo, event, opener_pos, observer_context):
