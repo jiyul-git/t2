@@ -601,7 +601,8 @@ def _layer_call_summary(call_cost, projected_layers, projected_equities):
 
 def _terminal_hu_call_icm(stacks, contrib, folded, table_seats, hero,
                           opponent, cost, dead, call_layers, payouts,
-                          remaining, effective_equity):
+                          remaining, effective_equity, unit=1,
+                          odd_order=None):
     """Exact payout-ICM win/lose/tie states for a terminal heads-up call.
 
     Only when the complete remaining field is at this table (<=9 players)
@@ -637,22 +638,36 @@ def _terminal_hu_call_icm(stacks, contrib, folded, table_seats, hero,
     base = dict(before)
     base[hero] -= cost
     win, lose, tie = dict(base), dict(base), dict(base)
+    contestable_after_call = 0.0
     for layer in call_layers:
         amount = float(layer.get('amount') or 0)
-        if amount < 0:
+        if amount < 0 or abs(amount - round(amount)) > 1e-9:
+            # Tournament chip units must be represented exactly here.
             return None
         eligible = set(layer.get('eligible_seats') or [])
+        if hero in eligible:
+            contestable_after_call += amount
         if eligible == {hero, opponent}:
             win[hero] += amount
             lose[opponent] += amount
-            tie[hero] += amount / 2.0
-            tie[opponent] += amount / 2.0
+            # The LIVE settlement does not always split chips 50/50:
+            # SB-unit rounding and BTN-left remainder apply per layer.
+            winnings = _split_pot_winnings(
+                int(amount), [hero, opponent], unit=unit, odd_order=odd_order)
+            tie[hero] += winnings[hero]
+            tie[opponent] += winnings[opponent]
         elif eligible == {hero} or eligible == {opponent}:
             only = next(iter(eligible))
             for state in (win, lose, tie):
                 state[only] += amount
         else:
             return None
+
+    # For covering opponent overbets, full pre-call contributions include an
+    # opponent-only upper layer. It never belongs in the hero's call price.
+    contestable_before_call = contestable_after_call - cost
+    if contestable_before_call <= 0 or contestable_after_call > pot + cost + 1e-6:
+        return None
 
     chips = sum(before.values()) + pot
     if any(abs(sum(state.values()) - chips) > 1e-6
@@ -670,9 +685,11 @@ def _terminal_hu_call_icm(stacks, contrib, folded, table_seats, hero,
         return None
     # ICM break-even for win/lose outcomes, allowing unequal win/loss chips.
     required_no_tie = loss / (gain + loss)
-    # Equivalent risk premium can be fed into the existing personal BF model.
-    # e_req = C*bf / (pot + C*bf) exactly reproduces required_no_tie.
-    bf_at_price = (loss / gain) * (pot / cost)
+    # The planner calls required_equity(contestable_before_call, cost, bf).
+    # Inverting THAT SAME equation requires the contestable pot, not the
+    # total contribution pot (which may contain uncalled opponent excess).
+    # An equivalent BF is a derived algebraic conversion, NOT a fitted prior.
+    bf_at_price = (loss / gain) * (contestable_before_call / cost)
     tie_max = 2.0 * min(e, 1.0-e)
     ev_no_tie = l + e * (w-l) - f
     ev_max_tie = ev_no_tie + tie_max * (t - (w+l)/2.0)
@@ -686,6 +703,13 @@ def _terminal_hu_call_icm(stacks, contrib, folded, table_seats, hero,
         'tie_prize': t,
         'no_tie_breakeven_equity': required_no_tie,
         'equivalent_bubble_factor': bf_at_price,
+        'full_pre_call_pot': pot,
+        'contestable_before_call': contestable_before_call,
+        'contestable_after_call': contestable_after_call,
+        'uncalled_opponent_excess_after_call': (
+            pot + cost - contestable_after_call),
+        'fold_stacks': fold, 'win_stacks': win,
+        'lose_stacks': lose, 'tie_stacks': tie,
         'equity_input': e,
         'payout_ev_lower': lo,
         'payout_ev_upper': hi,
@@ -1071,6 +1095,34 @@ def _money_jump_attach_action(obs, rnd):
             max(2.0, _base_bb * _sf), 3)
 
 
+def _split_pot_winnings(amount, winners, unit=1, odd_order=None):
+    """The one chip-splitting rule shared by live awards and ICM scenarios.
+
+    Round each equal share DOWN to the SB chip denomination. Distribute
+    remaining units from the first winning seat left of the button; give
+    non-unit remainder to that same first winner (legacy saved-stack rule).
+    Keep this identical to award_pots, not a continuous half-pot model.
+    """
+    if not winners:
+        raise ValueError('pot without winners')
+    u = max(1, int(unit))
+    share = (amount // len(winners) // u) * u
+    rem = amount - share * len(winners)
+    order = [s for s in (odd_order or []) if s in winners]
+    for s in winners:
+        if s not in order:
+            order.append(s)
+    won = {s: share for s in winners}
+    i = 0
+    while rem >= u and order:
+        won[order[i % len(order)]] += u
+        rem -= u
+        i += 1
+    if rem and order:
+        won[order[0]] += rem
+    return won
+
+
 def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
                odd_order=None):
     """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역
@@ -1100,30 +1152,11 @@ def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
             ranks = {s: best5(hole[s]+board) for s in elig}
             top = max(ranks.values())
             winners = [s for s in elig if ranks[s] == top]
-        # 칩 단위(unit) 아래로는 쪼갤 수 없다. 실제 토너에서 300 을 둘이 나눠
-        # 150 씩 갖는 일은 없다 — 나눌 수 없는 칩은 한 명에게 간다.
-        u = max(1, int(unit))
-        share = (amount // len(winners) // u) * u
-        rem = amount - share * len(winners)
-
-        # TDA Rule 21-A: board games의 odd chip은 BTN 왼쪽 첫 승자부터.
-        # rem 전체를 winners[0]에게 몰아주지 않고 최소 칩 단위로 한 개씩 준다.
-        order = [s for s in (odd_order or []) if s in winners]
-        for s in winners:
-            if s not in order:
-                order.append(s)
-
-        for w in winners:
+        # Reuse exactly the same chip-unit and BTN-left odd-chip rule
+        # as the terminal HU ICM scenario calculation.
+        for w, share in _split_pot_winnings(
+                amount, winners, unit=unit, odd_order=odd_order).items():
             won[w] += share
-
-        i = 0
-        while rem >= u and order:
-            won[order[i % len(order)]] += u
-            rem -= u
-            i += 1
-        if rem and order:
-            # 스택/데드머니가 칩 단위와 어긋난 구 저장본 안전망.
-            won[order[0]] += rem
 
         detail.append({'amount': amount, 'eligible': elig, 'winners': winners})
     for s, v in won.items(): stacks[s] += v
@@ -1628,7 +1661,9 @@ class HandRun:
                     h.seats, s, aggressor, _pf_call_cost, ante_pot,
                     _pf_call_layers, h.payouts,
                     getattr(h, 'field_remaining', None),
-                    _pf_call_ev_shadow.get('effective_equity'))
+                    _pf_call_ev_shadow.get('effective_equity'),
+                    unit=getattr(h, 'sb', 0) or 1,
+                    odd_order=getattr(h, 'post_seats', None))
 
             _tm_concepts = PS.concept_tap() if self.timing else None
             _opp_est_pf = (RD.perceived_profile(
