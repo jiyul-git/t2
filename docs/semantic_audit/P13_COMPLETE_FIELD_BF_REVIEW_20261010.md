@@ -59,3 +59,37 @@ The preview begins with PR #18's **entire** code tree. `session.py` only inserts
 Additional P13 observer sensitivity test uses existing synthetic *neutral perceived* observer profile for first-in shove; the P8 OFF legacy range does not consume `h.bf(target)`, while the ON first-in policy `_first_in_likelihood` consumes `bubble_factor` through the pre-existing depth and variance functions. A general 3bet shove's likelihood has no direct `bubble_factor` argument. This test does not reconstruct the original HAND130 opponent Book.
 
 **Release:** hold draft P13 code until departments 5 and 8 explicitly approve PR #18 and the approved P9 code has actually been integrated into PR #16; only then re-integrate and validate against its true latest commit. No production deployment.
+
+
+## PR #22 blocker resolution — field epoch/freshness and actor provenance
+
+**Base PR #21:** `0a45af4ce79faf13d78824448f2e1b8943b4518e`.  
+**P8 audit:** PR #22 `da6764d2e3d7199525973386cb89fb5eef5f4edc`.
+
+### Three distinct meanings that must not be collapsed
+
+1. **Snapshot epoch:** `fieldsim.Field.field_snapshot()` captures `pid_stacks`, `stacks`, `remaining`, `hand_no`, `level` and `epoch_id` (deterministic SHA-256 over player identities, chip amounts and tournament hand/level). `_frozen_field` can designate this snapshot as the common logical beginning of a simultaneous multi-table batch; it does *not* mean all other-table hands are still incomplete at a later decision.
+2. **Actual locally observed latest field:** `Hand.bf_details()` compares that epoch identity to the complete **live field roster** via a transient `Field` owner reference on *every consumption*. A change exclusively on another table is detected even when all current-table stacks stay constant. This attestation does not modify the roster, event order or RNG.
+3. **Price-specific outcome ICM:** `icm.table_bf()` is a default-risk whole-field BF, not an exact win/lose/tie payout EV at a particular call price. The terminal HU call ICM code remains separate.
+
+### Method/exactness mapping
+
+| Source/evidence | BF computation | `is_exact` for decision-current field | Reason |
+|---|---|---:|---|
+| All survivors in live table, internally consistent count | Existing generic field ICM | true | `complete_table` |
+| Split table, PID+chip+epoch attested live | Existing generic field ICM | true | `current_verified` |
+| Split table, certified `_frozen_field` common-round epoch | Same generic BF **of the frozen reference epoch** | **false** | `frozen_common_round_epoch_not_decision_current`; `snapshot_epoch_exact=true` |
+| Split table, stale remote-only changes outside valid batch | Existing `field_bf()` empirical curve | false | `remote_field_changed_after_snapshot` |
+| Snapshot missing/unknown/released or local chips changed | Existing `field_bf()` empirical curve | false | Exact rejection reason in metadata |
+
+A frozen batch is *deliberately* not revalued at later workers' decision times. It remains the simultaneous round-start policy reference. Its BF value is kept to avoid making strategy depend on sequential versus parallel worker execution order. However, `is_exact=false` and `snapshot_current=false` expressly deny that it is **latest field exact ICM**. We cannot detect unmerged remote worker changes that exist only in another process; that uncertainty is why even the first worker in a frozen batch does not claim current-field exactness. The `live2.build_hand()` HERO path uses the same conservative frozen-round labeling when other tables are alive and pending. No hand scheduler ordering, effective stacks, time banks, seed sequence, or card/actor policy has been changed.
+
+Full snapshots with no live owner/epoch attestation never prove a split-table current exact calculation, even if PID+stack counts match. A **new** confirmed field snapshot can reestablish an exact generic BF. Entire-field chip movements below the hand-start boundary of a single hand remain outside this generic BF and must be handled by the separate spot-specific outcome model.
+
+### P8 actor-BF provenance
+
+`session.HandRun._preflop_perceived_range` now gets `h.bf_details(target)`, uses its **unchanged numeric `value`** as `bubble_factor`, and retains the actor's complete BF method, `is_exact`, fallback reason, snapshot identity, scope and observed epoch in `actor_bf_provenance` and `observer_model_inputs.actor_bf_provenance`. This is different from `pf_bf_provenance`, which belongs to the deciding seat. Existing P9 `incomplete_reasons` and original conditional range metadata remain unchanged and are replayed as source metadata. For legacy scalar-only Hand fixtures, method explicitly becomes `legacy_scalar_without_epoch_evidence` and `is_exact=false`; no invented provenance is claimed.
+
+### Required cross-department confirmation
+
+**P15 (simultaneous tournament scheduler):** confirm `_frozen_field` is the common logical round-start valuation reference and never a claim of contemporaneous global stacks; work queues and commit ordering remain unchanged. **P8:** confirm actor BF provenance survives conditional posterior/replay and no numerical likelihood changes from metadata alone. **P5:** confirm generic frozen reference vs terminal spot payout ICM distinction and unchanged calloff contract. **P17:** inspect isolated CI, paired OFF/ON and real parallel worker parity before integration. This fix remains on a separate review branch and is NOT approval to merge PR #21, `test3` or production.
