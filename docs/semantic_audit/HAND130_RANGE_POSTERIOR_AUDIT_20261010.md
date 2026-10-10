@@ -101,3 +101,21 @@ The tie EV range `D(e,q)` can straddle zero below the no-tie threshold; do not c
 ## Verification
 
 `python3 tools/verify_hand130_range_posterior.py` exercises native current repo functions and archived metadata, and explicitly declares `archived_posterior_recomputed=false` and `archived_mc_recomputed=false`. See GitHub Actions run logs for actual runner execution. The numerical ICM sensitivity above was independently recomputed from the four archived prize shares. No claim of an independent HAND130 288-combo equity rerun.
+
+
+## 7. Actual GitHub Actions evidence (2026-10-10 UTC)
+
+The dedicated Department 8 workflow **passed** at run [38038336995](https://github.com/jiyul-git/t2/actions/runs/38038336995), commit `3f64370f188fb2d44621403cc7bf2c274daafedd`. Python compilation, the native conditional-range verifier and the existing `verify_pf_threebet_split.py` passed. Observed verifier output (independent **synthetic perceived default profile**, NOT the original 288 observer snapshot):
+
+| Route | Support | Total mass | Representation | Calls to shared `defend_thresholds` |
+|---|---:|---:|---|---:|
+| BB vs LJ ordinary 3bet, `polar=0` | 677 | 141.0831080646762 | weighted dict | 170 on initial construction |
+| Same public context but 3bet **shove**, `polar=0` | identical distribution to ordinary 3bet | identical | weighted dict | same shared producer |
+| BB vs LJ 3bet shove, `polar=0.25` | 345 | 345.0 | uniform list | 1 |
+| CO first-in shove vs CO normal open | identical distribution | identical | RFI model | not a shove-specific likelihood |
+
+These are **branch wiring tests**, not poker equilibrium validation. They directly confirm missing shove-form conditioning and the hard discontinuity in posterior representation when `polar > .02`.
+
+Two initially included **Department 5 tests** failed at the pinned parent and were isolated, **not labeled as passing**: run [38038211518](https://github.com/jiyul-git/t2/actions/runs/38038211518) failed `verify_hand130_b37_replay.py` with `('legacy_action', None, 'fold')`; run [38038281199](https://github.com/jiyul-git/t2/actions/runs/38038281199) failed `verify_hand130_exact_icm.py` because `pf_calloff_compare` was None. Both arise from assertions about the legacy actor path removed by Department 5. Department 5 owns their contract updates; Department 8 did not silently change those scripts. The final Department 8 workflow intentionally contains only its own verifier and relevant preflop role test.
+
+**Concurrent change warning:** Department 5's original branch advanced past the pinned parent during this audit (observed head `15bee5419c7f6ceb202f78ade502ee3f886420cb`); it now includes a separate `tools/verify_hand130_mc_sensitivity.py` that measures *counterfactual T2 proxy ranges*, not the archived 288. Any proposed merge or strategy edit must re-check that newer base and the Department 5/P13 review contract.
