@@ -60,8 +60,12 @@ def posterior_tests(shove, ordinary, first):
         profile, shove, dead, observer_context=ctx)
     vs_raise, mr = RP.conditioned_preflop_range(
         profile, ordinary, dead, observer_context=ctx)
-    assert ms['complete'] and mr['complete']
-    assert isinstance(vs_shove, dict) and isinstance(vs_raise, dict)
+    assert ms['complete'] and isinstance(vs_shove, dict)
+    # At 6.3442BB the legacy actor raise_form geometrically forces a
+    # shove: observing a non-all-in 3bet is impossible under this model,
+    # not an invitation to fall back to a guessed uniform range.
+    assert vs_raise is None and not mr['complete']
+    assert 'zero_posterior_evidence' in mr['missing']
     assert R.range_mass(vs_shove) > 0
     assert all(0 < w <= 1 for w in vs_shove.values())
     assert ms['posterior_support'] == len(vs_shove)
@@ -150,8 +154,8 @@ def posterior_tests(shove, ordinary, first):
         'original_n': 288,
         'new_6p3442_shove_support': len(vs_shove),
         'new_6p3442_shove_mass': R.range_mass(vs_shove),
-        'new_6p3442_normal_support': len(vs_raise),
-        'new_6p3442_normal_mass': R.range_mass(vs_raise),
+        'new_6p3442_normal_support': 0,
+        'new_6p3442_normal_mass': 0,
         'new_deep_shove_support': len(ds),
         'new_deep_normal_support': len(dr),
         'first_in_shove_support': len(f),
