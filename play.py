@@ -203,20 +203,21 @@ class Hand:
             same_tournament_clock = (
                 getattr(owner, 'hand_no', None) == epoch_hand
                 and getattr(owner, 'level', None) == epoch_level)
-            if (same_tournament_clock and observed_id == expected_id
-                    and live_pid == getattr(self, 'field_pid_stacks', None)):
-                epoch_status = 'current_verified'
-            elif (scope == 'simultaneous_frozen'
+            if (scope == 'simultaneous_frozen'
                     and getattr(owner, '_frozen_field', None) is not None
                     and getattr(owner, '_frozen_field', None)
                         is getattr(self, '_field_frozen_epoch_ref', None)
                     and getattr(self, '_field_frozen_epoch_ref', {}).get('epoch_id')
                         == expected_id):
-                # A frozen common batch-start epoch is mathematically
-                # self-consistent, but NOT the newest field after other
-                # tables complete. Retain its policy BF without calling
-                # it decision-current exact ICM.
+                # Always mark a simultaneous common-round snapshot as
+                # historical reference, even if this particular worker has
+                # not yet received any other table's completed hand. This
+                # keeps both sequential and parallel runs truthful and
+                # gives the same BF/provenance regardless of execution order.
                 epoch_status = 'frozen_epoch_reference'
+            elif (same_tournament_clock and observed_id == expected_id
+                    and live_pid == getattr(self, 'field_pid_stacks', None)):
+                epoch_status = 'current_verified'
             else:
                 epoch_status = 'stale_remote'
         details = icm.table_bf(
