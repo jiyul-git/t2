@@ -42,13 +42,13 @@ No-tie outcome-specific tournament-payout model, 8 players / 7 places:
 - fold 17.700552609563854 payout percentage points
 - lose 15.461616393763215
 - win 21.487760646031855
-- tie 18.733849424660832
+- tie 18.515842285449054 (live odd-chip rules, B37=231422 BB=86884)
 - exact *win/lose only* break-even probability .3715371093145927
 - derived price-specific equivalent BF 1.1996025358246731, compared
   with old whole-stack BF 3.465325.
 - observed E=.631820 implies *conditionally estimated*
   fold-relative payout EV from +1.5685022456677338 to
-  +1.7593379694992364 percentage points over possible tie rates,
+  +1.5988062324692514 percentage points over possible tie rates,
   before opponent-range and MC sampling uncertainties.
 
 This exact spot-BF conversion is restricted to a terminal HU table
@@ -126,12 +126,18 @@ saved `regress current` baseline mismatches in all six seeds on both
 pre-change and changed branch, so should not be called a new regression
 or an all-clear.
 
-Part2's `W5=.0166578` vs static `W5=.013483745270` discrepancy
-remains unresolved; tilted planning profile and original process
-environment are missing. Since actor now bypasses that producer for
+Part2 W5 difference was an audit formula-order error, not a preflop.py source bug. Correct W5=0.016657816839054443; old 0.013483745270 subtracted pre-mutation tp. Original process SHA / tilt still unknown. Since actor now bypasses that producer for
 pure all-in, this disagreement no longer controls P1 behavior.
 
 **Release gate:** Do not merge or deploy without recovering complete
 observer posterior, independent P8 and P13 review of contracts,
 running full canonical gates, identifying prior regression mismatches,
 and verifying coverage for future-responder multiway/P2/P4/P7 paths.
+
+## P13 odd-chip / unmatched-overbet fixes and P2 W5 update
+
+P13 found two mathematical bugs: continuous split on tie (must use live award_pots SB unit and odd-chip order), and partial-call spot BF derived from full contributed pot rather than hero-eligible pot. Both regression cases now pass. HAND130 no-tie break-even is preserved (37.1537109315%).
+
+P2's latest test3 contract is at commit 2781cd547128a616424facedf60ef8654f99d775. Correct legacy W5=0.016657816839054443; producer preflop.py not modified. The former 0.013483745270 was an audit sequencing mistake: new tp is used in tot after tp*=lt. The static verifier, hand fixture and corrected Part2 docs are imported unchanged.
+
+Alignment with calloff_evidence_v1: hero-eligible chip pots and incremental cost, conditionally reconstructed opponent combos, layer equity with sims/seed, and objective vs perceived BF are distinct inputs. **Outstanding contract gaps:** original 288 combo weights, action-conditioned range provenance and source SHA, effective Monte Carlo sample count/error, complete field stacks from other tables, and the nonterminal scalar-BF fallback. A necessary legal fallback fold is tagged as insufficient evidence and not an EV-proven fold. Independent P13/P8 signoff and the legacy closure CI failure block merging.
