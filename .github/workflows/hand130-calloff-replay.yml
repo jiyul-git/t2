@@ -21,6 +21,8 @@ jobs:
         run: python3 tools/verify_calloff_price_routing.py
       - name: Exact 8-player terminal call prize ICM
         run: python3 tools/verify_hand130_exact_icm.py
+      - name: Department13 partial-call exact prize ICM and uncalled excess
+        run: python3 tools/verify_hand130_partial_call_icm.py
       - name: Part 2 derivation audit frozen values
         run: python3 tools/verify_hand130_part2.py
       - name: Verify calloff bypass and observer range ownership
