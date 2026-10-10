@@ -319,6 +319,9 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
         'field_snapshot_scope': field_snapshot_scope or 'unknown',
         'field_snapshot_id': field_snapshot_id,
         'observed_field_epoch_id': observed_field_epoch_id,
+        'observed_epoch_diverged': bool(
+            field_snapshot_id and observed_field_epoch_id
+            and field_snapshot_id != observed_field_epoch_id),
         'snapshot_epoch_exact': False,
     }
 
@@ -395,7 +398,7 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
                         snapshot_epoch_exact=True,
                         snapshot_current=False,
                         field_completeness='verified_frozen_epoch_not_current',
-                        reason='remote_field_advanced_since_frozen_epoch')
+                        reason='frozen_common_round_epoch_not_decision_current')
                 else:
                     details.update(
                         method='exact_full_field_icm', is_exact=True,
