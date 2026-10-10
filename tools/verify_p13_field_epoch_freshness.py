@@ -148,6 +148,24 @@ def live_hero_common_epoch():
                       'epoch':h.field_snapshot_id,
                       'method':prov['method'],
                       'is_exact_current':prov['is_exact']},sort_keys=True))
+    # Actual split final-eight topology, not only the >9 fallback path.
+    small=FS.Field(entries=8,start_stack=30000,hero_pid=0,seed=818,
+                   itm_frac=0.875,format_rules={'seats':5})
+    assert small.remaining()==8
+    newer,_,small_alive,small_h,small_hero=L.build_hand(
+        {'field':L._dump(small),'hand_seed':10118})
+    assert len(small_alive)<newer.remaining()
+    small_prov=small_h.bf_details(small_hero)
+    assert small_prov['method']=='frozen_epoch_reference_icm',small_prov
+    assert not small_prov['is_exact'] and small_prov['snapshot_epoch_exact']
+    assert small_prov['field_epoch_status']=='frozen_epoch_reference'
+    assert small_prov['field_snapshot_scope']=='simultaneous_frozen'
+    print(json.dumps({'case':'live2_split_eight_survivors',
+                      'current_exact':small_prov['is_exact'],
+                      'snapshot_epoch_exact':small_prov['snapshot_epoch_exact'],
+                      'local_seats':len(small_alive),
+                      'remaining':newer.remaining(),
+                      'bf':small_prov['value']},sort_keys=True))
 
 
 def actor_provenance():
