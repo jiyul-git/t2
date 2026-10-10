@@ -61,7 +61,7 @@ def planned(bf, eq):
         pot_bb=pot/10000, to_call_bb=cost/10000,
         prior_pf={'pf_act':'raise','pf_role':'open'},
         call_ev_shadow=sh, calloff_decision_seed=3365551903)
-    assert info['pf_calloff_consumer']['objective_spot_bf'] == round(bf,6)
+    equal(info['pf_calloff_consumer']['objective_spot_bf'], bf, 'P5 objective BF pass-through')
     return action, size
 
 
