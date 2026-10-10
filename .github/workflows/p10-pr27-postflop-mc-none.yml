@@ -88,13 +88,13 @@ jobs:
           git show 3c434b28046643ba54c04447951ad148ae6f9c1c:plan.py > plan.py
           for flag in 0 1; do
             for seed in 11 12; do
-              T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p10_base_$flag_$seed.json
+              T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p10_base_${flag}_${seed}.json
             done
           done
           cp /tmp/p10_fixed_plan.py plan.py
           for flag in 0 1; do
             for seed in 11 12; do
-              T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p10_fixed_$flag_$seed.json
+              T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p10_fixed_${flag}_${seed}.json
             done
           done
           python3 - <<'PY'
