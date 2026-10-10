@@ -1,0 +1,108 @@
+name: P10 PR27 Postflop MC None independent verification
+on:
+  push:
+    branches: [chatgpt/p10-postflop-mc-none-consumer-20261010]
+  workflow_dispatch:
+jobs:
+  p10-consumer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and scope
+        run: |
+          set -euo pipefail
+          python3 -m py_compile plan.py tools/verify_p10_postflop_mc_unavailable.py
+          git diff --name-only 3c434b28046643ba54c04447951ad148ae6f9c1c HEAD
+          git diff --exit-code 3c434b28046643ba54c04447951ad148ae6f9c1c HEAD -- bot.py preflop.py session.py range_posterior_v1.py
+      - name: Prove baseline float(None) failure on actual entry gate
+        run: |
+          set -euo pipefail
+          cp plan.py /tmp/p10_fixed_plan.py
+          git show 3c434b28046643ba54c04447951ad148ae6f9c1c:plan.py > plan.py
+          python3 - <<'PY'
+          from unittest.mock import patch
+          import plan
+          hero=['3c','4d']; board=['As','Ks','Qs','Js','9s']
+          pool=[('Ts','2h')]
+          ctx={'facing_seat':1,'facing_contrib':100,'facing_stack':1000,'facing_target':100}
+          with patch.object(plan.R,'perceived_continue_range',lambda *a, **k: pool):
+              with patch.object(plan.bot,'equity_vs_combos',lambda *a, **k: None):
+                  try:
+                      plan._nonvalue_raise_ev_gate(
+                          {'type':'reg','aggr':5,'bluff':5,'concepts':{}},
+                          hero,board,'river',pool,{1:pool},1,300,100,1000,0,ctx,mult=1.0)
+                  except TypeError as exc:
+                      assert 'NoneType' in str(exc), repr(exc)
+                      print('BASELINE REPRODUCED TypeError:', str(exc))
+                  else:
+                      raise AssertionError('baseline did not reproduce TypeError')
+          PY
+          cp /tmp/p10_fixed_plan.py plan.py
+      - name: New consumer contract and RNG invariance
+        run: python3 tools/verify_p10_postflop_mc_unavailable.py
+      - name: Existing postflop action / replan regression
+        run: |
+          python3 tools/verify_f3_checkraise_response.py
+          python3 tools/verify_f4_facing_bet.py
+          python3 tools/verify_f5_backaction.py
+          python3 tools/verify_replan_contract.py
+          python3 tools/verify_river_nuts_value.py
+          python3 tools/verify_postflop_events.py
+  hand130-mc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: PR27 MC, RNG and HAND130 independent regression
+        run: |
+          set -euo pipefail
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_hand130_b37_replay.py
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/verify_hand130_skill_semantics.py
+  normal-action-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Paired complete decisions baseline versus patched
+        run: |
+          set -euo pipefail
+          cp plan.py /tmp/p10_fixed_plan.py
+          git show 3c434b28046643ba54c04447951ad148ae6f9c1c:plan.py > plan.py
+          for flag in 0 1; do
+            for seed in 11 12; do
+              T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p10_base_$flag_$seed.json
+            done
+          done
+          cp /tmp/p10_fixed_plan.py plan.py
+          for flag in 0 1; do
+            for seed in 11 12; do
+              T2_RANGE_CONDITIONAL_V1=$flag python3 tools/r2_baseline_sim.py $seed 2 /tmp/p10_fixed_$flag_$seed.json
+            done
+          done
+          python3 - <<'PY'
+          import json
+          for flag in (0,1):
+              for seed in (11,12):
+                  a=json.load(open(f'/tmp/p10_base_{flag}_{seed}.json'))
+                  b=json.load(open(f'/tmp/p10_fixed_{flag}_{seed}.json'))
+                  assert a==b, f'changed normal action/state: {flag=} {seed=}'
+                  print(f'PASS full JSON equal {flag=} {seed=} preflop={len(a["pf"])} hands={len(a["hands"])}')
+          PY
