@@ -24,6 +24,7 @@ import persona as PS
 import preflop as PF
 
 SOURCE = ROOT / "docs/handoff/T2_T3_HANDOFF_20261010.md"
+FIXTURE = ROOT / "docs/semantic_audit/fixtures/hand130_b37_part2.json"
 
 
 def close(actual, expected, tol=1e-10):
@@ -32,14 +33,26 @@ def close(actual, expected, tol=1e-10):
 
 
 def archived_hand():
-    text = SOURCE.read_text(encoding="utf-8")
-    section = text.split("부록 F. 직접 확인한 HAND130 원자료 발췌", 1)[1]
-    return json.loads(section.split("```json", 1)[1].split("```", 1)[0])
+    # The full 302KB handoff is tracked on master, NOT on test3.
+    # A minimally projected B37 fixture is pinned on the test branch.
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    assert fixture["_provenance"]["original_hand_hash"] == "6e1ba98ab1a0"
+    if SOURCE.exists():
+        text = SOURCE.read_text(encoding="utf-8")
+        section = text.split("부록 F. 직접 확인한 HAND130 원자료 발췌", 1)[1]
+        original = json.loads(section.split("```json", 1)[1].split("```", 1)[0])
+        assert original["hash"] == fixture["_provenance"]["original_hand_hash"]
+        for key in ("pf_pos", "pf_vs", "pf_level", "pf_open_bb",
+                    "pf_to_call_bb", "pf_stack_bb"):
+            assert original["actor_pf_seed"][key] == fixture["actor_pf_seed"][key]
+        for key in ("pf_defend", "potodds", "icm"):
+            assert original["actor_profile"]["concepts"][key] == fixture["actor_profile"]["concepts"][key]
+    return fixture
 
 
 def audit():
     case = archived_hand()
-    prof = case["actor_profile"]
+    prof = case["actor_profile"]  # Minimal faithful projection for these producers.
     pf = case["actor_pf_seed"]
     context = case["field_context"]
     pos, vs = pf["pf_pos"], pf["pf_vs"]
@@ -174,7 +187,7 @@ def audit():
         raise AssertionError("Current-source W5 fails to reproduce prior analysis")
     report = {
         "status": "CURRENT_CODE_STAGE_IDENTITY__NO_STRATEGY_CHANGE",
-        "code_context": "test3/945758acc, GTO flags OFF, base profile, no tilt",
+        "code_context": "test3/945758acc source, branch-local minimal fixture, GTO flags OFF, no tilt",
         "first_rfi_is_BB": G.rfi(vs, n_seats, bb, ante),
         "stages": {
             "baseline_attack": base_tp, "baseline_continue": base_tot,
