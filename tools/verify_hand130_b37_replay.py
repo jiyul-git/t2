@@ -95,12 +95,16 @@ def main():
     assert action == "call" and size == pf["pf_to_call_bb"]
     consumer = info["pf_calloff_consumer"]
     assert consumer
-    for key in ("layer_action", "legacy_action", "gate_pass"):
+    for key in ("layer_action", "gate_pass"):
         eq(consumer[key], saved[key], key)
     assert consumer["selected_action"] == "call"
     assert consumer["strategy_consumer"] is True
     assert consumer["gate_role"] == "diagnostic_only"
-    assert consumer["changed"] is True
+    assert info["pf_calloff_compare"] is None
+    assert consumer["legacy_evaluated"] is False
+    assert consumer["legacy_action"] is None
+    assert consumer["mathematically_justified"] is True
+    assert consumer["selected_action"] != pf["pf_act"]
 
     print(json.dumps({
         "fixture": "HAND130/B37",
