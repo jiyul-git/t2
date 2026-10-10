@@ -37,6 +37,35 @@ def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
 
+def _record_preflop_observer_range(pools, provenance, seat, pool, story):
+    """Keep failed posterior evidence even when no combos can be sampled.
+
+    A missing range must not be invented. Its error record must reach the
+    decision seed regardless of whether a calloff equity can be computed.
+    """
+    provenance[seat] = dict(story or {})
+    if pool:
+        pools[seat] = pool
+
+
+def _attach_p8_observer_evidence(seed, provenance):
+    """Carry the complete source/missing/fallback contract into final logs.
+
+    Called only when the optional conditional observer flag is enabled.
+    No change to the numeric actor strategy or default-OFF fingerprints.
+    """
+    meta = {str(o): dict(m) for o, m in provenance.items()}
+    seed['pf_opp_range_meta'] = meta
+    if seed.get('pf_calloff_consumer') is not None:
+        consumer = dict(seed['pf_calloff_consumer'])
+        consumer['opponent_range_evidence'] = {
+            key: dict(value) for key, value in meta.items()}
+        consumer['range_estimate_status'] = 'unvalidated_conditional_or_legacy_estimate'
+        consumer['mathematically_justified'] = False
+        seed['pf_calloff_consumer'] = consumer
+    return seed
+
+
 def _merge_pf_seed(prev, new):
     """한 좌석의 프리플랍 판단/액션 스토리를 덮어쓰지 않고 이어 붙인다."""
     prev = dict(prev or {})
@@ -504,8 +533,7 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                         int(seed), idx,
                         ','.join(str(x) for x in opps))).encode())
             row['seed'] = _eq_seed
-            # Always collect status, even when optional verbose replay is off.
-            # Otherwise the session cannot distinguish true zero from MC failure.
+            # Always collect status; verbose replay capture is optional.
             _mc_audit = {}
             _equity = bot.equity_vs_combos(
                 hero_cards, board, pools, sims=int(sims),
@@ -519,7 +547,6 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
             row['complete'] = bool(_mc_audit['complete'])
             if row['complete'] and _equity is not None:
                 row['equity'] = round(float(_equity), 6)
-            # Incomplete sample means are diagnostic, not decision equity.
             if not row['complete']:
                 row['observed_sample_mean'] = _mc_audit['mean_share']
             if capture_sampling:
@@ -1532,6 +1559,11 @@ class HandRun:
             rr_new, _new_meta = RP.conditioned_preflop_range(
                 opp_view, _event, dead=h.hole[observer],
                 observer_context=_ctx)
+            _new_meta = dict(_new_meta or {})
+            # The posterior's declared completeness is authoritative.
+            # A non-empty but incomplete candidate is *not* usable EV input.
+            if not _new_meta.get('complete'):
+                rr_new = None
             if _event.get('kind') in (
                     'first_in_shove', 'open_raise',
                     'threebet_shove', 'threebet_raise'):
@@ -1548,7 +1580,32 @@ class HandRun:
                         'opener_read_available': False,
                         'behind_stacks_available': _ctx.get('behind_stacks_bb') is not None,
                         'behind_stack_provenance': _ctx.get('behind_stack_provenance')}})
+                _new_meta.update({
+                    'status': ('conditioned' if _new_meta.get('complete') and rr_new
+                               else 'missing_evidence'),
+                    'failure_kind': (None if _new_meta.get('complete') and rr_new
+                                     else 'missing_evidence'),
+                    'failure_reason': (
+                        None if _new_meta.get('complete') and rr_new else
+                        ','.join(str(x) for x in _new_meta.get('missing', []))
+                        or 'conditional_posterior_unavailable'),
+                    'range_available': bool(rr_new),
+                    'model_calibrated': False,
+                })
                 return rr_new or {}, _new_meta
+            # Unsupported action forms may still use the explicitly labeled
+            # legacy estimator. This does NOT mean v1 has reconstructed them.
+            _conditional_unavailable = {
+                'source': RP.MODEL,
+                'kind': _event.get('kind'),
+                'complete': False,
+                'missing': list(_new_meta.get('missing') or
+                                ['action_class_not_supported']),
+                'failure_kind': 'model_unavailable',
+                'failure_reason': 'unsupported_conditional_action',
+            }
+        else:
+            _conditional_unavailable = None
         rr, _story = _preflop_story_range(
             opp_view, h.pos[target], float(stack_bb or 0.0),
             set(h.hole[observer]), seats, ante, act,
@@ -1563,6 +1620,23 @@ class HandRun:
                 act == 'open' and pfo.get('pf_act') == 'shove'
                 and pfo.get('pf_role') == 'open'),
         })
+        if _conditional_unavailable is not None:
+            _story = dict(_story)
+            _story.update({
+                'source': 'legacy_fallback',
+                'legacy_source': _story.get('source'),
+                'conditional_source': _conditional_unavailable['source'],
+                'conditional_kind': _conditional_unavailable['kind'],
+                'conditional_complete': False,
+                'complete': False,
+                'status': 'legacy_fallback',
+                'failure_kind': 'model_unavailable',
+                'failure_reason': _conditional_unavailable['failure_reason'],
+                'missing': list(_conditional_unavailable['missing']),
+                'range_available': bool(rr),
+                'model_calibrated': False,
+                'equity_model_status': 'unvalidated_legacy_proxy',
+            })
         return R.range_unique_sorted(rr), _story
 
 
@@ -1695,10 +1769,11 @@ class HandRun:
                 _rr, _rm = self._preflop_perceived_range(
                     s, _o, ax, rnd, aggressor, len(h.seats),
                     (getattr(h, 'ante', h.bb) > 0))
-                # Keep unavailable model provenance as well as valid ranges.
-                _pf_opp_range_meta[_o] = dict(_rm or {})
-                if _rr:
-                    _pf_opp_ranges[_o] = _rr
+                # A missing/failing conditional posterior has NO combo pool,
+                # but its diagnostic source and missing inputs are mandatory
+                # in final pf_seed / calloff records as well.
+                _record_preflop_observer_range(
+                    _pf_opp_ranges, _pf_opp_range_meta, _o, _rr, _rm)
 
             # F8-D6-C: objective call-EV shadow only for the same pure short-shove
             # population that P6 already routes to calloff_decision:
@@ -1746,6 +1821,11 @@ class HandRun:
                     'layer_equities': _pf_call_layer_eq,
                     'strategy_consumer': False,
                 }
+                if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
+                    _pf_call_ev_shadow['range_model_evidence'] = {
+                        str(o): dict(m) for o, m in _pf_opp_range_meta.items()}
+                    _pf_call_ev_shadow['range_equity_confidence'] = (
+                        'unvalidated_conditional_or_legacy_estimate')
                 # Terminal heads-up only: precise prize ICM at this CALL price.
                 # Other pots/remaining seats stay on their prior price/BF path
                 # rather than receiving a guessed exact-ICM surrogate.
@@ -1853,6 +1933,8 @@ class HandRun:
                                 else []),
                         event_tag='%s|%s|preflop|%s' % (
                             h.hash, s, len(rnd.log)))
+                if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
+                    _attach_p8_observer_evidence(_seed, _pf_opp_range_meta)
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
