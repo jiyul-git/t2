@@ -305,20 +305,55 @@ def _sample_pool_combo(rng, pool):
 
 
 def equity_vs_pools(hero, board, pools, sims=500, seed=None, audit=None):
-    """에쿼티 몬테카를로의 유일한 구현.
+    """Estimate showdown pot share without conflating zero wins and no samples.
 
-    pools — 상대별 콤보 리스트. 어떻게 만들었는지는 호출자가 정한다.
-    사본을 만들지 말 것. 아래 3개 진입점이 전부 여기로 온다.
+    Scalar API is retained for valid estimates; None means unavailable.
+    audit['complete'] is true only if every requested draw was accepted.
+    Positive but insufficient samples have a diagnostic mean, never a
+    decision-grade result. A zero-opponent pot is exact equity 1 (no MC).
+    Uses a local RNG exclusively; audit does not consume extra draws.
     """
-    pools = [p for p in (pools or []) if p]
-    if not pools: return 1.0
+    pools = list(pools or [])
+    requested = int(sims)
+    if requested < 0:
+        raise ValueError('negative MC simulation count')
+
+    def _record(accepted, share, sum_sq, split_draws, reason):
+        mean = share / accepted if accepted else None
+        variance = ((sum_sq - accepted * mean * mean) / (accepted - 1)
+                    if accepted > 1 else None)
+        complete = reason in ('computed', 'no_opponents')
+        if audit is not None:
+            audit.update({
+                'seed': seed, 'requested': requested, 'accepted': accepted,
+                'rejected': requested - accepted if pools else 0,
+                'split_pot_draws': split_draws,
+                'share_sum': share, 'share_sum_sq': sum_sq,
+                'sample_variance': max(0.0, variance) if variance is not None else None,
+                'mean_share': mean if pools else 1.0,
+                'complete': complete, 'reason': reason,
+            })
+        return (mean if complete and pools else
+                1.0 if complete else None)
+
+    if not pools:
+        return _record(0, 0.0, 0.0, 0, 'no_opponents')
+    # Never silently drop an empty opponent pool. That would turn an
+    # unknown two-player showdown into known solo equity.
+    if any(not p for p in pools):
+        return _record(0, 0.0, 0.0, 0, 'missing_opponent_range')
+    if requested == 0:
+        return _record(0, 0.0, 0.0, 0, 'no_requested_samples')
+
     rng = random.Random(seed)
     dead = set(hero) | set(board)
     need = 5 - len(board)
-    share = 0.0; run = 0
-    sum_sq = 0.0; split_draws = 0
+    share = 0.0
+    run = 0
+    sum_sq = 0.0
+    split_draws = 0
     prepped = [prepare_pool(p) for p in pools]
-    for _ in range(sims):
+    for _ in range(requested):
         used = set(dead); opps = []; ok = True
         for pool in prepped:
             for _t in range(40):
@@ -339,21 +374,9 @@ def equity_vs_pools(hero, board, pools, sims=500, seed=None, audit=None):
             sum_sq += result_share * result_share
             if 0.0 < result_share < 1.0:
                 split_draws += 1
-    if audit is not None:
-        # Includes rejection accounting without changing RNG consumption.
-        # Conditional on fixed pools, sample variance is the unbiased
-        # variance of showdown pot shares, not opponent-model uncertainty.
-        mean = share / run if run else None
-        variance = ((sum_sq - run*mean*mean) / (run-1)
-                    if run > 1 else None)
-        audit.update({
-            'seed': seed, 'requested': int(sims), 'accepted': run,
-            'rejected': int(sims)-run, 'split_pot_draws': split_draws,
-            'share_sum': share, 'share_sum_sq': sum_sq,
-            'sample_variance': max(0.0, variance) if variance is not None else None,
-            'mean_share': mean,
-        })
-    return share / max(1, run)
+    reason = ('no_valid_mc_samples' if run == 0 else
+              'insufficient_valid_samples' if run < requested else 'computed')
+    return _record(run, share, sum_sq, split_draws, reason)
 
 
 def equity_vs_range(hero, board, opp_pcts, sims=500, seed=None):
