@@ -193,6 +193,15 @@ def run():
     assert st['equity_unavailable']['reason'] == 'no_valid_mc_samples'
     assert not st['_last_response_boundary']['mathematically_justified']
 
+    # Direct public decision helper is also protected against None > float.
+    dstate = {'plan': 'value_2street', 'rel': .8, 'made': 1}
+    decision = plan.decide_response(
+        PROFILE, H, B, 'river', 'value_2street', dstate, None, .25,
+        1, POOL, 300, 100, 1000, False, random.Random(4),
+        response_context=CTX)
+    assert decision[0] == 'fold' and decision[2] == .25, decision
+    assert dstate['equity_status'] == 'unavailable_not_negative_ev', dstate
+
     # No accepted samples in same-board current showdown cannot become zero.
     with patch.object(bot, '_sample_pool_combo', lambda rng, pool: ('3c', '2h')):
         current = plan._eq_current(H, B, POOL, 1, sims=10)
