@@ -512,6 +512,18 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
             'sims': int(sims),
         }
 
+        # Preserve evidence for successful *and* unsuccessful conditional
+        # ranges. Previously only missing_range_details carried metadata.
+        # Do not add new keys to the default-OFF response/fingerprint.
+        _actor_evidence = {
+            str(o): dict(range_metadata[o])
+            for o in opps
+            if o in range_metadata
+            and 'actor_bf_provenance' in (range_metadata.get(o) or {})
+        }
+        if _actor_evidence:
+            row['range_provenance'] = _actor_evidence
+
         if not row['hero_eligible']:
             row['reason'] = 'hero_not_currently_eligible'
         elif missing:
@@ -607,6 +619,9 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
                 'missing_ranges': row.get('missing_ranges', []) if row else [],
                 'missing_range_details': row.get('missing_range_details', {}) if row else {},
             }
+            if row and row.get('range_provenance'):
+                incomplete_reasons[idx]['range_provenance'] = dict(
+                    row['range_provenance'])
             continue
         gross += amount * float(row['equity'])
 
@@ -1539,9 +1554,19 @@ class HandRun:
                     float(stack_bb or 0.0),
                     float((getattr(h, '_start_stacks', {}) or {}).get(observer, 0))
                     / max(1.0, float(h.bb))))
+            # Snapshot the observed ACTOR's BF value and its exactness
+            # evidence in the same call. Do not accidentally use the
+            # observing/deciding player's pf_bf_provenance. Keep every field
+            # produced by P13, including future field-epoch evidence.
+            _actor_bf = dict(h.bf_details(target))
+            _actor_bf_meta = dict(_actor_bf)
+            for _field in ('value', 'method', 'is_exact', 'reason',
+                           'field_completeness', 'snapshot_alive',
+                           'snapshot_current', 'bf_kind', 'price_specific'):
+                _actor_bf_meta.setdefault(_field, None)
             _ctx = {'opener_pos': h.pos.get(_event.get('opener_seat')),
                     'field_q': getattr(h, 'field_q', 0.6),
-                    'bubble_factor': h.bf(target),
+                    'bubble_factor': _actor_bf['value'],
                     'erosion': getattr(h, 'erosion_per_hand', 0.0),
                     'field_avg_bb': ((getattr(h, 'field_avg_stack', None) or 0)
                                      / max(1, h.bb)) or None,
@@ -1560,6 +1585,15 @@ class HandRun:
                 opp_view, _event, dead=h.hole[observer],
                 observer_context=_ctx)
             _new_meta = dict(_new_meta or {})
+            # This is the BF at the observer's reconstruction point, not
+            # evidence that the observed actor had the same BF when acting.
+            # Metadata only; never used to reweight combos.
+            _new_meta['actor_bf_provenance'] = dict(_actor_bf_meta)
+            _new_meta['actor_bf_evidence_source'] = 'Hand.bf_details(target)'
+            _new_meta['actor_bf_evaluation_phase'] = 'observer_reconstruction'
+            _new_meta['actor_action_epoch_bf_verified'] = False
+            _new_meta['actor_bf_likelihood_direct_input'] = (
+                _event.get('kind') in ('first_in_shove', 'open_raise'))
             # The posterior's declared completeness is authoritative.
             # A non-empty but incomplete candidate is *not* usable EV input.
             if not _new_meta.get('complete'):
@@ -1576,6 +1610,7 @@ class HandRun:
                         'opener_pos': _ctx.get('opener_pos'),
                         'field_q': _ctx.get('field_q'),
                         'bubble_factor': _ctx.get('bubble_factor'),
+                        'actor_bf_provenance': dict(_actor_bf_meta),
                         'tilt_known': False,
                         'opener_read_available': False,
                         'behind_stacks_available': _ctx.get('behind_stacks_bb') is not None,
@@ -1596,6 +1631,11 @@ class HandRun:
             # Unsupported action forms may still use the explicitly labeled
             # legacy estimator. This does NOT mean v1 has reconstructed them.
             _conditional_unavailable = {
+                'actor_bf_provenance': dict(_actor_bf_meta),
+                'actor_bf_evidence_source': 'Hand.bf_details(target)',
+                'actor_bf_evaluation_phase': 'observer_reconstruction',
+                'actor_action_epoch_bf_verified': False,
+                'actor_bf_likelihood_direct_input': False,
                 'source': RP.MODEL,
                 'kind': _event.get('kind'),
                 'complete': False,
@@ -1636,6 +1676,12 @@ class HandRun:
                 'range_available': bool(rr),
                 'model_calibrated': False,
                 'equity_model_status': 'unvalidated_legacy_proxy',
+                'actor_bf_provenance': dict(
+                    _conditional_unavailable['actor_bf_provenance']),
+                'actor_bf_evidence_source': 'Hand.bf_details(target)',
+                'actor_bf_evaluation_phase': 'observer_reconstruction',
+                'actor_action_epoch_bf_verified': False,
+                'actor_bf_likelihood_direct_input': False,
             })
         return R.range_unique_sorted(rr), _story
 
