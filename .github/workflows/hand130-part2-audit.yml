@@ -5,6 +5,7 @@ on:
     branches: [test3]
     paths:
       - 'tools/verify_hand130_part2.py'
+      - 'docs/semantic_audit/fixtures/hand130_b37_part2.json'
       - 'docs/semantic_audit/HAND130_PART2_DERIVATION_AUDIT.md'
       - '.github/workflows/hand130-part2-audit.yml'
       - 'preflop.py'
