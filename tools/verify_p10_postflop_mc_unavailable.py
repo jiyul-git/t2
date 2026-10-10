@@ -1,5 +1,8 @@
 """P10 decision-consumer regression for PR27 MC None / zero / valid equity."""
 import random
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from unittest.mock import patch
 import bot
 import plan
