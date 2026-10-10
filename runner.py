@@ -330,8 +330,8 @@ def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, st
                 opp_ranges=None, tilt=0.0, bb_chips=None):
     if board_changed(prev_board, board):
         # 보드 변화로 계획을 다시 세워도 **현재 의사결정 문맥**을 잃으면 안 된다.
-        # opp_* 는 이전 계획 snapshot에서 이어지고, 위치/initiative 세 값은
-        # 현재 액션 순서에서 계산된 값을 호출자가 넘긴다.
+        # opp_* 는 이전 계획 snapshot에서 이어지고 위치/initiative, actor tilt,
+        # hand-level bb_chips 는 호출자의 현재 문맥을 사용한다.
         # blockbet은 (_oop_a and not initiative) AND gate라 둘 중 하나만 빠져도
         # 재계획 시 경로가 닫힌다 (A5 4-B paired replay에서 실제 영향 확인).
         new = PL.make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
