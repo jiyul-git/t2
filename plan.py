@@ -432,7 +432,10 @@ def _normalize_opp_pools(opp_range, n_opp, opp_ranges=None):
             pools.append(None)
         return pools
 
-    if want==1 and opp_range:
+    # Legacy union identifies the HU opponent only when seat-pool input
+    # was genuinely omitted. An explicitly supplied empty seat map is not
+    # authorization to substitute a different opponent's union range.
+    if opp_ranges is None and want==1 and opp_range:
         return [R.range_copy(opp_range)]
     return [None]*want
 
