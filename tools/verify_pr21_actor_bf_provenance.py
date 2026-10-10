@@ -81,6 +81,10 @@ def check_forward_contract():
         corrected=exact['value']
         assert math.isclose(corrected,3.465325154547401,abs_tol=1e-10)
         run,rnd=fixture()
+        # Match the full-field average from the earlier independent P8
+        # first-in BF sensitivity witness (otherwise this is a different
+        # policy context and the BF derivative can legitimately be zero).
+        run.h.field_avg_stack=112500.0
 
         # One single production bf_details(target) invocation per observer
         # reconstruction, and no hidden call to h.bf(target).
