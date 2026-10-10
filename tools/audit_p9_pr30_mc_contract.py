@@ -177,23 +177,24 @@ def audit_original_failure_fallback_provenance():
             'original no_valid_mc_samples (accepted=0) replaced by field equity; caller audit empty')
 
 def audit_missing_facing_seat_nonvalue_gate():
-    # If facing seat has an explicitly empty range, a different union range
-    # is not evidence of that seat's fold/call behavior.
-    meta={}
-    def optimistic(*args,**kwargs):
-        a=kwargs.get('audit')
-        if a is not None:
-            a.update(complete=True,requested=kwargs.get('sims'),
-                     accepted=kwargs.get('sims'),reason='computed')
-        return .95
-    with patch.object(plan.R,'perceived_continue_range',lambda *a,**kw: POOL):
-        with patch.object(bot,'equity_vs_combos',side_effect=optimistic):
-            g=plan._nonvalue_raise_ev_gate(P,H,B,'river',POOL,{1:[]},
-                                1,300,100,1000,0,CTX,mult=1.0)
-    note('nonvalue_facing_seat_missing',gate=g)
+    # Use a genuinely computed positive equity, not a mocked win rate.
+    # The observed union hypothesis is weak: hero's pocket Jacks beats 34
+    # on this complete board, so the exact scalar MC equity is 1.0.
+    # We stub only the continuation *support* to exercise a legal nonempty
+    # continuation-slice counterfactual; no strategic coefficient is changed.
+    hero2=['Jh','Jd']
+    board2=['As','Ks','Qs','7c','2d']
+    union=[('3h','4h')]
+    raw={}
+    actual=bot.equity_vs_combos(hero2,board2,[union],sims=37,seed=71,audit=raw)
+    assert actual==1.0 and raw['complete'] and raw['accepted']==37
+    with patch.object(plan.R,'perceived_continue_range',lambda *a,**kw: union):
+        g=plan._nonvalue_raise_ev_gate(P,hero2,board2,'river',union,{1:[]},
+                               1,300,100,1000,0,CTX,mult=1.0)
+    note('nonvalue_facing_seat_missing',actual_equity=actual,producer=raw,gate=g)
     if g.get('allow') and g.get('known') and not g.get('equity_status'):
         gap('nonvalue_raise_on_missing_facing_seat',
-            'explicitly empty facing-seat pool replaced by union pool, gate marks positive EV known and allows raise')
+            'explicitly empty facing-seat pool replaced by union support; real MC equity supports positive proxy EV, gate marks known and allows raise')
 
 def main():
     before=random.getstate()
