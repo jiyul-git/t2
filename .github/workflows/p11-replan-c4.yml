@@ -1,0 +1,133 @@
+name: P11 C4 replan context isolated independent checks
+on:
+  push:
+    branches: [chatgpt/p11-replan-c4-20261011]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  c4:
+    name: C1-C7 and 810 A6 paired replan
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact four-stage C1-C7 forwarding contract
+        run: |
+          mkdir -p p11-results
+          python tools/verify_replan_contract.py | tee p11-results/c1-c7.log
+          python tools/replan_context_contract_check.py | tee p11-results/position-contract.log
+      - name: A6 original-branch semantics with P11 values dropped ONLY at boundary
+        run: python -u tools/verify_p11_c4_runtime.py old p11-results/a6-old.pkl
+      - name: A6 fixed actual production full seeded fixture
+        run: python -u tools/verify_p11_c4_runtime.py fixed p11-results/a6-fixed.pkl
+      - name: Replay 810 original contexts; compare all arms and final state
+        run: |
+          python -u tools/verify_p11_c4_runtime.py compare p11-results/a6-old.pkl p11-results/a6-fixed.pkl p11-results/a6-comparison.json
+          rm -f p11-results/a6-old.pkl p11-results/a6-fixed.pkl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p11-c4-a6
+          path: p11-results/
+  mc:
+    name: HAND130 postflop F3 F4 F5 MC None and BF context
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/verify_p17_final_integration.py mc p11-results/mc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p11-mc
+          path: p11-results/
+  field:
+    name: Full field BF provenance epoch concurrency and RNG
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/verify_p17_final_integration.py field p11-results/field
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p11-field
+          path: p11-results/
+  install:
+    name: Full installation wallet and installed MC
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/verify_p17_final_integration.py install p11-results/install
+      - run: python tools/verify_p17_final_integration.py installed-mc p11-results/installed-mc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p11-installation
+          path: p11-results/
+  frozen:
+    name: Frozen seed attribution (no baseline regeneration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/compare_p17_final_baselines.py p11-results/frozen
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p11-frozen
+          path: p11-results/
+  scoped:
+    name: SHA exact isolated scope and protected source guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Assert only scoped production deltas and no frozen overwrite
+        shell: bash
+        run: |
+          python - <<'PY'
+          import subprocess
+          BASE='3f30cc82540dc6d69fbf22295f49da20194626a4'
+          names=set(subprocess.check_output(['git','diff','--name-only',BASE,'HEAD'],text=True).splitlines())
+          allow={'plan.py','runner.py','tools/verify_replan_contract.py',
+                 'tools/verify_p11_c4_runtime.py','.github/workflows/p11-replan-c4.yml'}
+          assert names==allow,(names,allow)
+          for p in ['session.py','preflop.py','bot.py','range_posterior_v1.py','icm.py','play.py','fieldsim.py','field.py','tourney.py']:
+              assert subprocess.check_output(['git','show',BASE+':'+p])==open(p,'rb').read(),p
+          for p in subprocess.check_output(['git','ls-files','tools/baseline_9max*.json'],text=True).splitlines():
+              assert subprocess.check_output(['git','show',BASE+':'+p])==open(p,'rb').read(),p
+          print('PASS isolated PR31 parent, protected engines and all frozen baselines unchanged')
+          PY
