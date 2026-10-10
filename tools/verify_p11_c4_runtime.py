@@ -41,8 +41,16 @@ def digest(obj):
 
 
 def serial(obj):
-    return json.loads(json.dumps(obj, ensure_ascii=False, sort_keys=True,
-                                 default=lambda v: repr(v)))
+    if isinstance(obj, dict):
+        return {str(k): serial(v) for k, v in
+                sorted(obj.items(), key=lambda kv: str(kv[0]))}
+    if isinstance(obj, (list, tuple)):
+        return [serial(v) for v in obj]
+    if isinstance(obj, (set, frozenset)):
+        return sorted((serial(v) for v in obj), key=repr)
+    if obj is None or isinstance(obj, (bool, int, float, str)):
+        return obj
+    return repr(obj)
 
 
 def capture(mode, dest):
