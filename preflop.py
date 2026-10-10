@@ -781,12 +781,13 @@ def legacy_calloff_likelihoods(prof, def_pos, opener_pos, hand, bb, open_bb,
                                n_callers, raise_level, stack_bb, exploit, bf,
                                seats, ante, opener_allin, can_raise,
                                pot_bb, to_call_bb):
-    """올인/거의 올인 대면 콜·폴드의 legacy 경로. 해당하지 않으면 None.
+    """레거시 올인/거의 올인 콜·폴드 대응 가능성. 해당하지 않으면 None.
 
-    판단량은 `calloff_cap`(디펜스 폭에서 파생한 pf_rank 백분위 cap)이다 —
-    equity/가격이 아니다(R2 CALLOFF_PATH_AUDIT). 현재 이 값이 행동을 직접 정하는
-    경로: near-all-in(`open_bb >= 스택×0.92`), 계산 게이트를 통과하지 못한
-    순수 콜오프, 관찰자의 '쇼브에 콜한 사람' 레인지 복원. 공격(리쇼브)은 0.
+    판단량은 `calloff_cap`(pf_rank 백분위)이지 가격/EV가 아니다.
+    이는 일반 likelihood/구 레인지 복원 호환용이다.
+    **pure all-in calloff actor**는 plan.preflop_plan의 증거 소비에서
+    이 함수와 defend_decision 모두 우회한다. P7 관찰자와 near-all-in
+    비종결 경로에 남은 부정확한 정책은 별도 미해결 항목이다.
     """
     _st = stack_bb if stack_bb is not None else bb
     _hero_calloff = open_bb >= _st * 0.92
@@ -1531,9 +1532,12 @@ def calloff_ev_comparison(hand, legacy_action, legacy_cap, call_ev_shadow,
 def pf_defend_exact_calc_gate(prof):
     """정확한 프리플랍 콜오프 계산을 실제로 실행할 확률 0~1 (pf_defend 개념).
 
-    pf_defend 개념의 '추론 게이트' 역할이다(ledger L033/L078). 같은 개념의
-    차트 기억 역할(gto_knowledge('defend'))과 질문이 다르다. 통과하지 못하면
-    legacy 콜오프 폭(legacy_calloff_likelihoods)의 행동이 남는다.
+    pf_defend 개념의 과거 '정확계산을 사용할 확률'이다(L033/L078).
+    이제 완전한 순수 콜오프에서는 진단 변수이고 실행을 거부하는
+    스위치가 아니다. 학습된 call-vs-shove prior가 검증되지 않은 상태에서
+    실패 시 잘못된 vs-open 디펜스 cap을 대체 정책으로 쓸 수 없기 때문이다.
+    실제 행동에서 인지 차이는 상대 레인지 추정, icm_bf, potodds calc_noise를
+    통해 남는다. pf_defend 단일 축의 직접 효과는 이 경로에서 보류된다.
     """
     return max(0.0, min(1.0, float(PS.gate(prof, 'pf_defend'))))
 
@@ -1554,7 +1558,8 @@ def calloff_layer_judgment(prof, call_ev_shadow, bubble_factor=1.0,
     personal application:
       - icm_bf: 객관 BF를 이 사람이 인식한 BF로
       - potodds calc_noise: 계산 정확도
-      - pf_defend gate: 이 정확한 프리플랍 디펜스 계산을 실제로 실행하는가
+      - pf_defend gate: 이전 지식 게이트 결과를 로깅한다. 순수 콜오프의
+        계산을 무효화하거나 legacy cap으로 복귀시키지 않는다.
 
     새 side-pot 계수나 새 성향 축은 만들지 않는다.
     """
