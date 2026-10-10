@@ -37,6 +37,35 @@ def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
 
 
+def _record_preflop_observer_range(pools, provenance, seat, pool, story):
+    """Keep failed posterior evidence even when no combos can be sampled.
+
+    A missing range must not be invented. Its error record must reach the
+    decision seed regardless of whether a calloff equity can be computed.
+    """
+    provenance[seat] = dict(story or {})
+    if pool:
+        pools[seat] = pool
+
+
+def _attach_p8_observer_evidence(seed, provenance):
+    """Carry the complete source/missing/fallback contract into final logs.
+
+    Called only when the optional conditional observer flag is enabled.
+    No change to the numeric actor strategy or default-OFF fingerprints.
+    """
+    meta = {str(o): dict(m) for o, m in provenance.items()}
+    seed['pf_opp_range_meta'] = meta
+    if seed.get('pf_calloff_consumer') is not None:
+        consumer = dict(seed['pf_calloff_consumer'])
+        consumer['opponent_range_evidence'] = {
+            key: dict(value) for key, value in meta.items()}
+        consumer['range_estimate_status'] = 'unvalidated_conditional_or_legacy_estimate'
+        consumer['mathematically_justified'] = False
+        seed['pf_calloff_consumer'] = consumer
+    return seed
+
+
 def _merge_pf_seed(prev, new):
     """한 좌석의 프리플랍 판단/액션 스토리를 덮어쓰지 않고 이어 붙인다."""
     prev = dict(prev or {})
@@ -1704,9 +1733,8 @@ class HandRun:
                 # A missing/failing conditional posterior has NO combo pool,
                 # but its diagnostic source and missing inputs are mandatory
                 # in final pf_seed / calloff records as well.
-                _pf_opp_range_meta[_o] = dict(_rm or {})
-                if _rr:
-                    _pf_opp_ranges[_o] = _rr
+                _record_preflop_observer_range(
+                    _pf_opp_ranges, _pf_opp_range_meta, _o, _rr, _rm)
 
             # F8-D6-C: objective call-EV shadow only for the same pure short-shove
             # population that P6 already routes to calloff_decision:
@@ -1864,16 +1892,7 @@ class HandRun:
                         event_tag='%s|%s|preflop|%s' % (
                             h.hash, s, len(rnd.log)))
                 if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
-                    _seed['pf_opp_range_meta'] = {
-                        str(o): dict(m) for o, m in _pf_opp_range_meta.items()}
-                    if _seed.get('pf_calloff_consumer') is not None:
-                        _seed['pf_calloff_consumer'] = dict(
-                            _seed['pf_calloff_consumer'])
-                        _seed['pf_calloff_consumer']['opponent_range_evidence'] = {
-                            str(o): dict(m) for o, m in _pf_opp_range_meta.items()}
-                        _seed['pf_calloff_consumer']['range_estimate_status'] = (
-                            'unvalidated_conditional_or_legacy_estimate')
-                        _seed['pf_calloff_consumer']['mathematically_justified'] = False
+                    _attach_p8_observer_evidence(_seed, _pf_opp_range_meta)
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]
