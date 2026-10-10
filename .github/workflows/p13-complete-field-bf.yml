@@ -1,0 +1,102 @@
+name: P13 complete surviving-field BF review
+
+on:
+  push:
+    branches: [chatgpt/p13-complete-field-bf-20261010, chatgpt/p13-pr18-preview-20261010, chatgpt/p13-p18-p19-isolated-integration-20261010]
+  workflow_dispatch:
+
+jobs:
+  bf-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify actual PR18 plus PR19 two-parent merge and P8/P9 untouched blobs
+        run: |
+          set -euo pipefail
+          MERGE=f6b2578b4068aa571f632ce1bedf3f47bf32f56b
+          test "$(git rev-parse "$MERGE^1")" = 69e55fc35a208679f06409754d4b43260f9f4fe4
+          test "$(git rev-parse "$MERGE^2")" = 791ab4e771d7e239b915594f3ba65594957348d0
+          for file in bot.py plan.py range_posterior_v1.py tools/compare_hand130_range_v1.py tools/verify_hand130_mc_contract.py tools/verify_pr16_p5_provenance.py; do
+            git diff --exit-code "$MERGE^1" "$MERGE" -- "$file"
+          done
+          git diff --exit-code "$MERGE^1" HEAD -- preflop.py
+          echo "PASS two parents PR18+PR19; P5/P8/P9 code blobs preserved"
+      - name: Compile P13 and affected entry points
+        run: python3 -m py_compile icm.py play.py session.py plan.py tools/verify_p13_complete_field_bf.py
+      - name: Exact complete field / empirical fallback / five-vs-eight BF and P5 actions
+        run: python3 tools/verify_p13_complete_field_bf.py
+      - name: P8 ON/OFF policy likelihood response to generic BF correction
+        run: python3 tools/verify_p13_bf_observer_likelihood.py
+      - name: Actual HandRun to P5 BF scalar and persisted provenance ON/OFF
+        run: python3 tools/verify_p13_runtime_provenance.py
+      - name: P9 valid Monte Carlo / P8 range provenance / P5 fail closed
+        run: |
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_hand130_conditioned_posterior.py
+      - name: HAND130 exact ICM, odd-chip settlement, price and original P5 call
+        run: python3 tools/verify_hand130_exact_icm.py
+      - name: Partial call P13 regression
+        run: python3 tools/verify_hand130_partial_call_icm.py
+      - name: Existing P5 calloff isolation
+        run: python3 tools/verify_hand130_calloff_isolation.py
+      - name: Existing 2-to-9 exact ICM parity
+        run: python3 tools/verify_icm_fast.py
+      - name: Conditional P8/P5 replay contract
+        run: python3 tools/compare_hand130_range_v1.py
+      - name: Paired actual 9-max decisions against PR18 MC integration SHA
+        run: |
+          git fetch --no-tags --depth=1 origin 69e55fc35a208679f06409754d4b43260f9f4fe4
+          git worktree add --detach /tmp/p13_pr16_before 69e55fc35a208679f06409754d4b43260f9f4fe4
+          for seed in 11 12; do
+            (cd /tmp/p13_pr16_before && python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/p13_prev_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/p13_new_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/p13_prev_%s.json'%seed))
+              b=json.load(open('/tmp/p13_new_%s.json'%seed))
+              old=a.get('pf',[]); new=b.get('pf',[])
+              diff=[i for i in range(min(len(old),len(new))) if old[i]!=new[i]]
+              print({'seed':seed,'old_hands':len(a.get('hands',[])),
+                     'new_hands':len(b.get('hands',[])),
+                     'old_actions':len(old),'new_actions':len(new),
+                     'paired_differences':len(diff),
+                     'first_difference':diff[0] if diff else None,
+                     'old_errors':sum(bool(v.get('error')) for v in a.get('hands',[]) if isinstance(v,dict)),
+                     'new_errors':sum(bool(v.get('error')) for v in b.get('hands',[]) if isinstance(v,dict))})
+          print('PASS paired before/after differences recorded without suppressing action changes')
+          PY
+      - name: Conditional P8 ON same-seed paired behavior against PR18
+        env:
+          T2_RANGE_CONDITIONAL_V1: "1"
+        run: |
+          set -e
+          for seed in 11 12; do
+            (cd /tmp/p13_pr16_before && python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p13_on_before_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/p13_on_after_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              before=json.load(open('/tmp/p13_on_before_%s.json'%seed))
+              after=json.load(open('/tmp/p13_on_after_%s.json'%seed))
+              a=before.get('pf',[])
+              b=after.get('pf',[])
+              diff=[i for i,(x,y) in enumerate(zip(a,b)) if x!=y]
+              print({'P8_ON':True, 'seed':seed,
+                     'before_decisions':len(a),'after_decisions':len(b),
+                     'changed_decisions':len(diff),
+                     'before_hands':len(before.get('hands',[])),
+                     'after_hands':len(after.get('hands',[]))})
+              assert len(a)==len(b) and not diff, 'P8 ON changes without explicit reason'
+              assert before==after, 'P8 ON changed chips/hand outcomes'
+          print('PASS P8 ON paired decisions and hand states vs PR18')
+          PY

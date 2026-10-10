@@ -153,24 +153,46 @@ class Hand:
         """
         return self.planning_profile(s)
 
-    def bf(self, s):
-        """좌석 s 의 버블팩터. icm.table_bf 가 유일한 계산 지점.
+    def bf_details(self, s):
+        """BF and its evidence label; never claim exact ICM for a partial field.
 
-        예전에는 여기서 필드를 9명 모델로 축약하고 상금표를 임의로 잘랐다.
-        그 근사가 버블(61명)을 70명보다 낮게 만들고 9~40명 구간을 평평하게 했다.
+        Full-field chip stacks are stamped by fieldsim from a hand-start
+        snapshot; the table alone cannot stand in for a split tournament.
+        The 5번 decision layer still consumes the same numeric BF interface.
         """
         rem = getattr(self, 'field_remaining', None)
         itm = getattr(self, 'field_itm', None)
         if not rem or not itm:
-            return 1.0
+            return {'value': 1.0, 'method': 'unavailable_tournament_context',
+                    'is_exact': False, 'reason': 'missing_remaining_or_itm'}
         live = [x for x in self.seats if self.stacks[x] > 0]
         if len(live) < 2 or s not in live:
-            return 1.0
+            return {'value': 1.0, 'method': 'not_applicable',
+                    'is_exact': False, 'reason': 'seat_not_active_or_no_opponent'}
         stacks = [self.stacks[x] for x in live]
         idx = live.index(s)
         pays = getattr(self, 'payouts', None) or [100, 62, 44, 34, 27, 22, 18, 15, 12]
         flat = getattr(self, 'payout_flat', 0.0)
         favg = getattr(self, 'field_avg_stack', None) or (sum(stacks)/len(stacks))
-        return icm.table_bf(stacks, idx, rem, itm, pays, flat, favg)
+        start = getattr(self, '_start_stacks', {}) or {}
+        # A frozen field-wide snapshot is from hand start. Do not compare
+        # changed local stack amounts to a different valuation epoch.
+        same_epoch = all(
+            float(self.stacks[x]) == float(start.get(x, self.stacks[x]))
+            for x in live)
+        ids = getattr(self, 'seat_pid', {}) or {}
+        local_pids = (
+            [ids[x] for x in live] if all(x in ids for x in live)
+            else None)
+        return icm.table_bf(
+            stacks, idx, rem, itm, pays, flat, favg,
+            field_stacks=getattr(self, 'field_stacks', None),
+            field_pid_stacks=getattr(self, 'field_pid_stacks', None),
+            table_pids=local_pids, snapshot_is_current=same_epoch,
+            return_details=True)
+
+    def bf(self, s):
+        """Numeric BF compatibility interface for the existing plan layer."""
+        return self.bf_details(s)['value']
 
     # ---------- 프리플랍 ----------

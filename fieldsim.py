@@ -584,6 +584,7 @@ class Field:
             field_itm=self.itm,
             field_avg_stack=_fz['avg_stack'],
             field_stacks=_fz['stacks'],
+            field_pid_stacks=_fz['pid_stacks'],
             payouts=self.payouts,
             payout_flat=self.fmt['payout_flat'],
             ante=(bb if self.level >= self.fmt['ante_from'] else 0),
@@ -607,10 +608,12 @@ class Field:
     def field_snapshot(self):
         """핸드에 심는 대회 전체 문맥(남은 인원·평균 스택·전체 스택)."""
         rem = self.remaining()
+        live = [p for p in self.players.values() if p['stack'] > 0]
         return {'remaining': rem,
                 'avg_stack': self.entries*self.start_stack / max(1, rem),
-                'stacks': tuple(p['stack'] for p in self.players.values()
-                                if p['stack'] > 0)}
+                'stacks': tuple(p['stack'] for p in live),
+                # Captured in the SAME snapshot call as counts and chips.
+                'pid_stacks': {p['pid']: p['stack'] for p in live}}
 
     def remaining(self):
         return sum(1 for p in self.players.values() if p['stack'] > 0)
