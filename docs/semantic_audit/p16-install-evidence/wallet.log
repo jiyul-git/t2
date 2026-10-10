@@ -1,0 +1,28 @@
+test_both_runtime_helpers_can_copy_a_legacy_ref_without_wallet_modules (__main__.PersonalInstallationTests.test_both_runtime_helpers_can_copy_a_legacy_ref_without_wallet_modules) ... ok
+test_corrupt_binding_is_preserved_and_refused (__main__.PersonalInstallationTests.test_corrupt_binding_is_preserved_and_refused) ... ok
+test_custom_personal_folder_is_kept_on_update (__main__.PersonalInstallationTests.test_custom_personal_folder_is_kept_on_update) ... ok
+test_entire_system_folder_can_be_removed_and_rebuilt (__main__.PersonalInstallationTests.test_entire_system_folder_can_be_removed_and_rebuilt) ... ok
+test_existing_wallet_binding_cannot_be_switched_by_environment (__main__.PersonalInstallationTests.test_existing_wallet_binding_cannot_be_switched_by_environment) ... ok
+test_first_install_creates_personal_wallet_outside_system (__main__.PersonalInstallationTests.test_first_install_creates_personal_wallet_outside_system) ... ok
+test_inconsistent_ledger_is_preserved_and_refused (__main__.PersonalInstallationTests.test_inconsistent_ledger_is_preserved_and_refused) ... ok
+test_install_and_update_support_spaces_in_folder_names (__main__.PersonalInstallationTests.test_install_and_update_support_spaces_in_folder_names) ... ok
+test_installer_detects_legacy_wallet_before_creating_new_one (__main__.PersonalInstallationTests.test_installer_detects_legacy_wallet_before_creating_new_one) ... ok
+test_legacy_migration_preserves_wal_receipts_and_leaves_source (__main__.PersonalInstallationTests.test_legacy_migration_preserves_wal_receipts_and_leaves_source) ... ok
+test_legacy_runtime_wallet_is_never_silently_replaced (__main__.PersonalInstallationTests.test_legacy_runtime_wallet_is_never_silently_replaced) ... ok
+test_manual_runtime_defaults_to_external_user_folder (__main__.PersonalInstallationTests.test_manual_runtime_defaults_to_external_user_folder) ... ok
+test_migration_never_overwrites_existing_personal_wallet (__main__.PersonalInstallationTests.test_migration_never_overwrites_existing_personal_wallet) ... ok
+test_missing_binding_blocks_update_and_startup (__main__.PersonalInstallationTests.test_missing_binding_blocks_update_and_startup) ... ok
+test_missing_binding_cannot_start_a_new_wallet_via_environment (__main__.PersonalInstallationTests.test_missing_binding_cannot_start_a_new_wallet_via_environment) ... ok
+test_missing_wallet_blocks_update_and_new_grant (__main__.PersonalInstallationTests.test_missing_wallet_blocks_update_and_new_grant) ... ok
+test_moving_system_and_personal_together_preserves_binding (__main__.PersonalInstallationTests.test_moving_system_and_personal_together_preserves_binding) ... ok
+test_personal_metadata_cannot_be_linked_into_system (__main__.PersonalInstallationTests.test_personal_metadata_cannot_be_linked_into_system) ... ok
+test_repeated_initial_install_never_resets_or_regrants (__main__.PersonalInstallationTests.test_repeated_initial_install_never_resets_or_regrants) ... ok
+test_runtime_code_and_personal_data_cannot_contain_each_other (__main__.PersonalInstallationTests.test_runtime_code_and_personal_data_cannot_contain_each_other) ... ok
+test_system_update_preserves_all_personal_file_bytes (__main__.PersonalInstallationTests.test_system_update_preserves_all_personal_file_bytes) ... ok
+test_update_refuses_wallet_migration_options (__main__.PersonalInstallationTests.test_update_refuses_wallet_migration_options) ... ok
+test_update_zip_contains_system_only (__main__.PersonalInstallationTests.test_update_zip_contains_system_only) ... ok
+
+----------------------------------------------------------------------
+Ran 23 tests in 6.182s
+
+OK

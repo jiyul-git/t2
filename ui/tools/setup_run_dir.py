@@ -26,12 +26,15 @@ import io, os, shutil, subprocess, sys, tarfile, tempfile
 # setup_run_dir.sh 의 목록과 **같아야 한다.** 예전에는 money_pressure 가
 # .sh 에만 있어 둘이 어긋나 있었다.
 MODULES = """action_events archetypes bot context depth dynamics field fieldsim formats gto icm
-             live2 money_pressure persona plan play preflop ranges reads runner
+             live2 money_pressure persona plan play preflop range_posterior_v1 ranges reads runner
              session storage_paths table telemetry_sync texture timing view tournament_store scheduled_runtime personal_data coarse_sim""".split()
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
 DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json']
-OPTIONAL_MODULES = {'tournament_store', 'scheduled_runtime', 'personal_data', 'coarse_sim'}
+# Older refs predate the posterior import. In current sources session imports it
+# even with T2_RANGE_CONDITIONAL_V1 OFF, so it is required there.
+OPTIONAL_MODULES = {'tournament_store', 'scheduled_runtime', 'personal_data', 'coarse_sim',
+                    'range_posterior_v1'}
 
 
 def main():
@@ -77,6 +80,11 @@ def main():
         source_desc = '%s %s' % (ref, commit[:8])
 
     copied_modules = 0
+    with open(os.path.join(src, 'session.py'), encoding='utf-8') as fh:
+        session_source = fh.read()
+    if (not os.path.isfile(os.path.join(src, 'range_posterior_v1.py'))
+            and 'import range_posterior_v1' in session_source):
+        sys.exit('중단: session.py가 요구하는 range_posterior_v1.py가 원본에 없습니다.')
     for m in MODULES:
         path = os.path.join(src, m + '.py')
         if m in OPTIONAL_MODULES and not os.path.isfile(path):

@@ -1,0 +1,28 @@
+실행 폴더: /tmp/p16_before_grcl98dl
+  원본: working tree 3c434b28 (chatgpt/p16-fresh-install-20261010)
+  모듈 31개, 데이터 3개
+  실행: cd /tmp/p16_before_grcl98dl && python3 ui_server.py
+  텔레메트리: 끔
+  주의: T2_LIVE_STATE 를 설정하지 마세요. 설정하면 접미사가 _alt 로 고정되어
+        cli.py 세션과 아카이브를 공유하게 됩니다.
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/tmp/p16_before_grcl98dl/live2.py", line 5, in <module>
+    import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
+  File "/tmp/p16_before_grcl98dl/fieldsim.py", line 3, in <module>
+    import play, session as SE, persona as PS, reads as RD, field as FLD
+  File "/tmp/p16_before_grcl98dl/session.py", line 6, in <module>
+    import range_posterior_v1 as RP
+ModuleNotFoundError: No module named 'range_posterior_v1'
+
+ENTRYPOINT
+Traceback (most recent call last):
+  File "/tmp/p16_before_grcl98dl/ui_server.py", line 39, in <module>
+    import live2 as L
+  File "/tmp/p16_before_grcl98dl/live2.py", line 5, in <module>
+    import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
+  File "/tmp/p16_before_grcl98dl/fieldsim.py", line 3, in <module>
+    import play, session as SE, persona as PS, reads as RD, field as FLD
+  File "/tmp/p16_before_grcl98dl/session.py", line 6, in <module>
+    import range_posterior_v1 as RP
+ModuleNotFoundError: No module named 'range_posterior_v1'

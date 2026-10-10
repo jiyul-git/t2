@@ -18,6 +18,11 @@ else
 fi
 
 echo
+echo "=== isolated fresh installation and real server startup ==="
+# The verifier removes PYTHONPATH in every installed child process.
+python3 ui/tools/verify_fresh_install_startup.py
+
+echo
 echo "=== forced blind all-in ==="
 python3 tools/verify_forced_blind_allin_view.py
 python3 tools/verify_forced_blind_allin_showdown.py
