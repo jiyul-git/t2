@@ -454,6 +454,50 @@ def _opp_ranges_signature(opp_ranges):
     return ()
 
 
+def _equity_input_provenance(opp_range, n_opp, opp_ranges, raw):
+    """Identify observed versus neutral-proxy seats before MC filtering.
+
+    Unknown actual seat ids are kept as None, not fabricated from order.
+    This records the source of a calculation separately from MC completeness.
+    No opponent range is copied or inferred from another opponent.
+    """
+    n = max(1, int(n_opp or 1))
+    if isinstance(opp_ranges, dict):
+        entries = [(k, opp_ranges[k]) for k in
+                   sorted(opp_ranges, key=lambda x: str(x))][:n]
+        contract = 'seat_keyed'
+    elif isinstance(opp_ranges, (list, tuple)):
+        entries = [(None, p) for p in opp_ranges[:n]]
+        contract = 'positional'
+    elif opp_ranges is None and n == 1 and opp_range:
+        entries = [(None, opp_range)]
+        contract = 'legacy_hu_opp_range'
+    else:
+        entries = []
+        contract = 'unobserved_field'
+    missing = []
+    per_seat = []
+    for i in range(n):
+        seat, original = entries[i] if i < len(entries) else (None, None)
+        observed = bool(original) and bool(raw[i])
+        reason = (None if observed else
+                  'explicit_empty_range' if i < len(entries) else
+                  'unobserved_opponent_slot')
+        item = {'slot': i+1, 'seat': seat,
+                'source': 'observed_range' if observed else 'neutral_field_proxy',
+                'reason': reason}
+        per_seat.append(item)
+        if not observed:
+            missing.append(dict(item))
+    return {'input_contract': contract, 'range_provenance': per_seat,
+            'missing_opponents': missing, 'imputed_seats': missing,
+            'observed_input_complete': not bool(missing),
+            'model_source': ('observed_range_mc' if not missing else
+                             'observed_and_neutral_field_proxy_mc'),
+            'neutral_model': ('existing_field_range_combos_0.35'
+                              if missing else None)}
+
+
 def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None,
                 audit=None):
     """**보드를 돌리지 않은** 에쿼티. 상대별 레인지를 각각 보존한다.
@@ -470,6 +514,9 @@ def _eq_current(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=N
         return None
     dead = set(hero) | set(board)
     pools0 = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
+    if audit is not None:
+        audit.update(_equity_input_provenance(
+            opp_range, n_opp, opp_ranges, pools0))
     pools = [
         (bot._filter_pool(p, dead, sort_legacy=True)
          if p else bot.range_combos(0.35, dead))
@@ -522,6 +569,9 @@ def _eq_vs(hero, board, opp_range, n_opp, sims=400, seed=None, opp_ranges=None,
     """
     dead=set(hero)|set(board or [])
     raw=_normalize_opp_pools(opp_range,n_opp,opp_ranges)
+    if audit is not None:
+        audit.update(_equity_input_provenance(
+            opp_range, n_opp, opp_ranges, raw))
     pools=[
         (bot._filter_pool(p,dead,sort_legacy=True)
          if p else bot.range_combos(0.35,dead))
@@ -550,13 +600,20 @@ def _plan_eq(hero, board, opp_range, n_opp, sims, seed=None, opp_ranges=None,
     eq = _eq_vs(hero, board, opp_range, n_opp, sims=sims, seed=seed,
                 opp_ranges=opp_ranges, audit=original_audit)
     if eq is not None:
+        if audit is not None:
+            audit.update(source=original_audit.get('model_source'),
+                         used_fallback=False, original=original_audit,
+                         field_fallback=None, result_equity=eq)
         return eq, False
     fallback_audit = {}
     eq = _eq_vs(hero, board, None, n_opp, sims=sims, seed=seed,
                 audit=fallback_audit)
-    if eq is None and audit is not None:
-        audit.update(source='plan_and_field_equity_unavailable',
-                     original=original_audit, field_fallback=fallback_audit)
+    if audit is not None:
+        audit.update(source=('neutral_field_after_primary_failure' if eq is not None
+                             else 'plan_and_field_equity_unavailable'),
+                     used_fallback=True, original=original_audit,
+                     field_fallback=fallback_audit, result_equity=eq,
+                     original_failure_reason=original_audit.get('reason'))
     return eq, True
 
 
@@ -1361,7 +1418,10 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             'protect': round(min(1.0, dang*(1+0.5*mw)), 2)}
     if _eq_fallback:
         st['eq_field_fallback'] = True
-    if eq_cur is None:
+        st['eq_provenance'] = dict(_eq_audit)
+    elif _eq_audit.get('original', {}).get('missing_opponents'):
+        st['eq_provenance'] = dict(_eq_audit)
+    if eq_cur is None or _eq_cur_audit.get('missing_opponents'):
         st['eq_current_sampling'] = dict(_eq_cur_audit)
     # 의도는 파이프라인 끝(session)에서 최종 계획 기준으로 붙인다.
     return st
@@ -1886,14 +1946,38 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
     ctx = dict(response_context or {})
     fs = ctx.get('facing_seat')
     pool = None
-    if isinstance(opp_ranges, dict) and fs in opp_ranges:
-        pool = opp_ranges.get(fs)
-    if not pool:
+    range_source = None
+    range_reason = None
+    if isinstance(opp_ranges, dict):
+        keys = [k for k in opp_ranges if fs is not None and str(k) == str(fs)]
+        if len(keys) == 1:
+            pool = opp_ranges[keys[0]]
+            range_source = 'observed_facing_seat'
+            if not pool:
+                range_reason = 'explicit_empty_facing_seat_range'
+        elif fs is None:
+            range_reason = 'facing_seat_unidentified'
+        else:
+            range_reason = 'facing_seat_not_in_observed_ranges'
+    elif isinstance(opp_ranges, (list, tuple)):
+        if int(n_opp or 1) == 1 and len(opp_ranges) == 1:
+            pool = opp_ranges[0]
+            range_source = 'legacy_single_positional_opponent'
+        else:
+            range_reason = 'seat_identity_unavailable_in_positional_ranges'
+    elif opp_ranges is None and int(n_opp or 1) == 1 and opp_range:
+        # Explicitly supported HU legacy contract; not a missing seat-keyed pool.
         pool = opp_range
+        range_source = 'legacy_hu_opp_range'
+    else:
+        range_reason = 'no_supported_facing_range_source'
     if not pool or not board:
         return {'known': False, 'allow': False, 'ev': None,
                 'equity_status': 'unavailable_not_negative_ev',
-                'why': 'opponent range unavailable'}
+                'range_provenance': {'source': range_source,
+                                     'facing_seat': fs,
+                                     'reason': range_reason or 'range_or_board_unavailable'},
+                'why': range_reason or 'opponent range or board unavailable'}
 
     hc = max(0.0, float(hero_contrib or 0.0))
     actor_cap = hc + max(0.0, float(stack or 0.0))
@@ -1975,6 +2059,7 @@ def _nonvalue_raise_ev_gate(profile, hero, board, street, opp_range,
         'price_frac': round(price_frac, 4),
         'optimistic': True,
         'n_opp': int(n_opp or 1),
+        'range_provenance': {'source': range_source, 'facing_seat': fs},
         'why': 'optimistic immediate raise EV',
     }
 
@@ -2827,6 +2912,12 @@ def record_response_plan(state, street, response):
     bet -> call -> raise처럼 새 정보가 들어오면 response plan도 새로 생긴다.
     """
     response = dict(response)
+    response_audit = state.get('_last_response_equity_audit')
+    if response_audit:
+        response['response_equity_audit'] = dict(response_audit)
+    eq_provenance = state.get('eq_provenance')
+    if eq_provenance:
+        response['plan_equity_provenance'] = dict(eq_provenance)
     # Only unavailable evidence needs extra provenance in the final
     # response record. Do not silently reinterpret this as verified -EV.
     nonvalue = state.get('_last_nonvalue_raise_gate') or {}
@@ -3111,6 +3202,9 @@ def response_equity(hero, board, profile, opp_range, opp_ranges, n_opp,
     callers = [(0.30, 5)]*max(0, n_opp-1)
     _raw_pools = _normalize_opp_pools(opp_range, n_opp, opp_ranges)
     _dead = set(hero) | set(board or [])
+    if audit is not None:
+        audit.update(_equity_input_provenance(
+            opp_range, n_opp, opp_ranges, _raw_pools))
     _pools = [
         (bot._filter_pool(p, _dead, sort_legacy=True)
          if p else bot.range_combos(0.35, _dead))
@@ -3280,6 +3374,7 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
     committed = spr(stack, pot) < 1.2          # 커밋 구간
     # 시간 모델용: 이 응답에서 실제로 비교한 eq/need(관측 전용). 이전 결정 값이 남지 않게 비운다.
     plan_state.pop('_last_response_boundary', None)
+    plan_state.pop('_last_response_equity_audit', None)
     if response_kind is not None:
         plan_state['_last_response_kind'] = response_kind
     if response_context is not None:
@@ -3291,6 +3386,8 @@ def act_with_plan(hero, board, profile, plan_state, pot, tocall, stack, street,
               else response_equity(hero, board, profile, opp_range, opp_ranges,
                                    n_opp, opp_est, pot, tocall, street,
                                    response_context, seed, audit=_mc_audit))
+        if _mc_audit:
+            plan_state['_last_response_equity_audit'] = dict(_mc_audit)
         if eq is None:
             details = dict(_mc_audit)
             if plan_state.get('equity_unavailable'):
@@ -4582,12 +4679,16 @@ def refresh(state, hero, board, opp_range, profile, pot, stack, street, n_opp=1,
         st['eq_field_fallback'] = True
     else:
         st.pop('eq_field_fallback', None)
+    if _eq_fallback or _eq_audit.get('original', {}).get('missing_opponents'):
+        st['eq_provenance'] = dict(_eq_audit)
+    else:
+        st.pop('eq_provenance', None)
     # eq 를 갱신했으면 기록용 짝도 같이 갱신한다. 안 그러면 eq 는 새 값,
     # eq_current 는 make_plan 시점 값이 되어 eq_delta 가 의미를 잃는다.
     _eqc_audit = {}
     _eqc = _eq_current(hero, board, opp_range, n_opp, sims=300, seed=seed,
                        opp_ranges=opp_ranges, audit=_eqc_audit)
-    if _eqc is None:
+    if _eqc is None or _eqc_audit.get('missing_opponents'):
         st['eq_current_sampling'] = dict(_eqc_audit)
     else:
         st.pop('eq_current_sampling', None)
