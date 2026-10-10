@@ -1,0 +1,44 @@
+name: P8 independent PR21 combined BF MC review
+
+on:
+  push:
+    branches: [chatgpt/p8-pr21-bf-mc-review-20261010]
+  workflow_dispatch:
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile integrated model and P8 reviewer
+        run: python3 -m py_compile bot.py session.py range_posterior_v1.py icm.py play.py tools/review_pr21_p8_bf_mc_integration.py
+      - name: P8 independently distinguish BF method and actual BF value
+        run: python3 tools/review_pr21_p8_bf_mc_integration.py
+      - name: P9 sample accounting and weighted range invariants
+        run: |
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_weighted_sampling.py
+          python3 tools/verify_weighted_range_adapter.py
+      - name: P8 event-conditional posterior and P5 provenance
+        run: |
+          python3 tools/verify_hand130_conditioned_posterior.py
+          python3 tools/verify_pr16_p5_provenance.py
+      - name: P13 complete PID-snapshot BF and runtime actor log
+        run: |
+          python3 tools/verify_p13_complete_field_bf.py
+          python3 tools/verify_p13_runtime_provenance.py
+      - name: P5 P13 ICM and action replay
+        run: |
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/compare_hand130_range_v1.py
+      - name: Parent PR21 product files intact
+        run: |
+          git fetch --no-tags --depth=1 origin 0a45af4ce79faf13d78824448f2e1b8943b4518e
+          git diff --exit-code 0a45af4ce79faf13d78824448f2e1b8943b4518e HEAD -- bot.py icm.py play.py session.py plan.py ranges.py range_posterior_v1.py fieldsim.py context.py
+          echo "PASS PR21 producer, BF and strategy code untouched"
