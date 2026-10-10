@@ -19,7 +19,7 @@
 
 | 검증 | 결과 | 정확한 의미 |
 |---|---|---|
-| 독립 로컬 Python 산술·계약 단언(13개) 및 컴파일 | PASS | 원자료에서 선택한 칩/레이어/정수/수식 재계산. **GitHub 엔진 전체 실행 아님** |
+| 독립 로컬 Python 산술·계약 단언(12개의 명시적 assert) 및 컴파일 | PASS | 원자료에서 선택한 칩/레이어/정수/수식 재계산. **GitHub 엔진 전체 실행 아님** |
 | GitHub Actions `hand130-part2/compile` | **success** | 감사 파일 및 핵심 계산 모듈 Python 문법 |
 | GitHub Actions `hand130-part2/equations` | **success** | 실제 저장소 함수를 호출한 고정 B37 projection fixture 재현; W5·공격폭 in-place 순서·플래그 스윕·틸트 민감도·콜 가격 계산 검증 |
 | GitHub Actions `hand130-part2/paired` | **success** | 감사 시작 SHA 945758acc와 검증 SHA a3ed1dd에서 동일 Python3.12 runner·`PYTHONHASHSEED=0`·3000~3005(6개) 시드 행동지문 6/6 **완전 동일** |
