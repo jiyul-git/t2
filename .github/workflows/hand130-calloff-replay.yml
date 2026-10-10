@@ -21,6 +21,8 @@ jobs:
         run: python3 tools/verify_calloff_price_routing.py
       - name: Exact 8-player terminal call prize ICM
         run: python3 tools/verify_hand130_exact_icm.py
+      - name: Part 2 derivation audit frozen values
+        run: python3 tools/verify_hand130_part2.py
       - name: Existing P6 calloff checks
         run: python3 tools/verify_p6_calloff.py
       - name: Existing preflop closure checks
