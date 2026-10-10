@@ -88,10 +88,12 @@ def full_field_variants():
     action1,size1,seed1=decision(unavailable['value'],derived_midpoint)
     assert action0!=action1,(action0,action1,eq0,eq1)
     assert {action0,action1}=={'fold','call'}
-    assert seed0['pf_calloff_consumer']['objective_spot_bf']==round(
-        complete['value'],6)
-    assert seed1['pf_calloff_consumer']['objective_spot_bf']==round(
-        unavailable['value'],6)
+    assert math.isclose(
+        seed0['pf_calloff_consumer']['objective_spot_bf'],
+        complete['value'],rel_tol=1e-12)
+    assert math.isclose(
+        seed1['pf_calloff_consumer']['objective_spot_bf'],
+        unavailable['value'],rel_tol=1e-12)
     # There is NO price-specific payout EV for split-table nonterminal hands.
     for details,seed in [(complete,seed0),(unavailable,seed1)]:
         seed['pf_bf_provenance']=dict(details)
