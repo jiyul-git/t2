@@ -49,6 +49,28 @@ def event_tests():
     assert shove['raise_level'] == 1 and shove['opener_seat'] == 3
     assert shove['action_history'][0]['seat'] == 3
     assert shove['effective_stack_bb'] == 6.3442
+    # Public first-in context: a later actor's recorded pre_stack is the
+    # exact stack at the earlier open if that actor has not acted since.
+    behind, provenance = RP.public_behind_stacks(
+        [
+            {'seat': 3, 'action': 'allin', 'raised': True,
+             'full_raise': True, 'actor_allin_after': True,
+             'pre_stack': 60000},
+            {'seat': 4, 'action': 'fold', 'pre_stack': 85000},
+            {'seat': 5, 'action': 'fold', 'pre_stack': 45000},
+        ], [3,4,5], 3, {3:0,4:85000,5:45000}, 10000)
+    assert behind == [8.5, 4.5], (behind, provenance)
+    assert provenance['seats']['4']['source'] == 'later_public_action_pre_stack'
+    assert provenance['seats']['5']['source'] == 'later_public_action_pre_stack'
+    absent, reason = RP.public_behind_stacks(
+        [{'seat':3,'action':'allin'}], [3,4], 3, {}, 10000)
+    assert absent is None and reason['reason'] == 'missing_behind_stack'
+    iso = RP.classify_public_action([
+        {'seat':1,'action':'call','raised':False,'full_raise':False},
+        {'seat':9,'action':'raise','raised':True,'full_raise':True,
+         'actor_allin_after':False,'pre_current':10000,'post_current':30000,
+         'pre_stack':50000}], 9, 10000, 'BB')
+    assert iso['kind'] == 'iso_after_limp'
     return shove, ordinary, first
 
 
