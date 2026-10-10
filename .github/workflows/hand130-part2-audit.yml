@@ -1,0 +1,34 @@
+name: HAND130 Part2 source-math audit
+
+on:
+  push:
+    branches: [test3]
+    paths:
+      - 'tools/verify_hand130_part2.py'
+      - 'docs/semantic_audit/HAND130_PART2_DERIVATION_AUDIT.md'
+      - '.github/workflows/hand130-part2-audit.yml'
+      - 'preflop.py'
+      - 'gto.py'
+      - 'persona.py'
+      - 'depth.py'
+      - 'icm.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile audit and core math
+        run: python3 -m py_compile tools/verify_hand130_part2.py preflop.py gto.py persona.py depth.py icm.py
+      - name: Verify HAND130 static equations and recorded price
+        run: python3 tools/verify_hand130_part2.py
+      - name: Frozen regression baseline
+        run: python3 tools/regress.py check --baseline current
