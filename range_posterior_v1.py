@@ -91,12 +91,17 @@ def classify_public_action(action_meta, seat, bb, position,
     actor_stack = (float(m['pre_stack']) / scale
                    if m.get('pre_stack') is not None else
                    float(stack_bb) if stack_bb is not None else None)
+    pre_contrib = (float(m['pre_contrib']) / scale
+                   if m.get('pre_contrib') is not None else None)
+    post_contrib = (float(m['post_contrib']) / scale
+                    if m.get('post_contrib') is not None else None)
     return {
         'kind': kind, 'source': 'public_action_meta',
         'actor_seat': seat, 'actor_pos': position,
         'opener_seat': previous.get('seat') if previous else None,
         'raise_level': len(full), 'n_callers': n_callers,
         'open_bb': prev_total, 'observed_total_bb': observed_total,
+        'pre_contrib_bb': pre_contrib, 'post_contrib_bb': post_contrib,
         'stack_bb': actor_stack,
         'effective_stack_bb': (float(effective_stack_bb)
                                if effective_stack_bb is not None else None),
@@ -277,6 +282,17 @@ def conditioned_preflop_range(observer_profile, event, dead=(),
     else:
         meta['missing'].extend(x for x in FIRST_IN_FIELDS
                                if x not in context or context[x] is None)
+    # Exact all-in size is a public chip-geometry identity, not a
+    # heuristic density. For an all-in raise:
+    # post_contrib == pre_contrib + pre_action_remaining_stack.
+    if kind in ('first_in_shove', 'threebet_shove'):
+        a, b, c = (event.get('pre_contrib_bb'),
+                   event.get('post_contrib_bb'), event.get('stack_bb'))
+        if a is None or b is None or c is None:
+            meta['missing'].append('allin_contribution_geometry')
+        elif (abs((a+c)-b) > 1e-8 or
+              abs(float(event['observed_total_bb'])-b) > 1e-8):
+            meta['missing'].append('inconsistent_public_allin_wager')
     if meta['missing']:
         return None, meta
     # All-in form corresponds to actor putting in their remaining stack.
@@ -298,7 +314,11 @@ def conditioned_preflop_range(observer_profile, event, dead=(),
     if not out:
         meta['missing'].append('zero_posterior_evidence')
         return None, meta
-    meta.update({'complete': True, 'prior_support': len(filtered),
+    meta.update({'complete': True,
+                 'posterior_scope': 'action_form_only' if kind.endswith('_raise')
+                                    else 'allin_action_and_total_wager',
+                 'exact_nonallin_bet_size_conditioned': False,
+                 'prior_support': len(filtered),
                  'prior_mass': sum(filtered.values()),
                  'posterior_support': len(out),
                  'posterior_mass': R.range_mass(out),
