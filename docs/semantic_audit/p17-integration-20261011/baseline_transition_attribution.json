@@ -1,0 +1,164 @@
+[
+  {
+    "seed": 3000,
+    "hand": 1,
+    "log_index0": 3,
+    "reference_row": [
+      "preflop",
+      2,
+      "call",
+      200
+    ],
+    "transition_parent": "600be397963d01a5843a13e7afb94888ac9e138c",
+    "transition_child": "d1ff356e2f961f8e0ab0171a8fdedddf5cb05c50",
+    "parent_row": [
+      "preflop",
+      2,
+      "call",
+      200
+    ],
+    "child_row": [
+      "preflop",
+      2,
+      "fold",
+      0
+    ],
+    "subject": "Guard weak first-in limps and accelerate exact cold admission",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  },
+  {
+    "seed": 3001,
+    "hand": 2,
+    "log_index0": 5,
+    "reference_row": [
+      "preflop",
+      1,
+      "raise",
+      700
+    ],
+    "transition_parent": "e6cc4618657e12853a12d61627ba19562612cb7b",
+    "transition_child": "42f826112fdaa6b0626034be010334b9abc64044",
+    "parent_row": [
+      "preflop",
+      1,
+      "raise",
+      700
+    ],
+    "child_row": [
+      "preflop",
+      1,
+      "raise",
+      600
+    ],
+    "subject": "fix: preserve planned sizing and reason through limp backaction",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  },
+  {
+    "seed": 3002,
+    "hand": 1,
+    "log_index0": 9,
+    "reference_row": [
+      "flop",
+      9,
+      "bet",
+      900
+    ],
+    "transition_parent": "e6cc4618657e12853a12d61627ba19562612cb7b",
+    "transition_child": "42f826112fdaa6b0626034be010334b9abc64044",
+    "parent_row": [
+      "flop",
+      9,
+      "bet",
+      900
+    ],
+    "child_row": [
+      "flop",
+      9,
+      "bet",
+      800
+    ],
+    "subject": "fix: preserve planned sizing and reason through limp backaction",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  },
+  {
+    "seed": 3003,
+    "hand": 1,
+    "log_index0": 9,
+    "reference_row": [
+      "flop",
+      9,
+      "bet",
+      1200
+    ],
+    "transition_parent": "807436521178009fa0b465ba495c37424ff2ba9b",
+    "transition_child": "5d80528c8faf9861a166341b99768215d03950a9",
+    "parent_row": [
+      "flop",
+      9,
+      "bet",
+      1200
+    ],
+    "child_row": [
+      "flop",
+      9,
+      "bet",
+      1100
+    ],
+    "subject": "core: keep strong flats in perceived call ranges",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  },
+  {
+    "seed": 3004,
+    "hand": 1,
+    "log_index0": 9,
+    "reference_row": [
+      "flop",
+      8,
+      "bet",
+      1100
+    ],
+    "transition_parent": "e6cc4618657e12853a12d61627ba19562612cb7b",
+    "transition_child": "42f826112fdaa6b0626034be010334b9abc64044",
+    "parent_row": [
+      "flop",
+      8,
+      "bet",
+      1100
+    ],
+    "child_row": [
+      "flop",
+      8,
+      "bet",
+      1000
+    ],
+    "subject": "fix: preserve planned sizing and reason through limp backaction",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  },
+  {
+    "seed": 3005,
+    "hand": 1,
+    "log_index0": 12,
+    "reference_row": [
+      "turn",
+      1,
+      "bet",
+      2000
+    ],
+    "transition_parent": "7feaa2f80c9838e99b57fd4d16d60cc40ac656f7",
+    "transition_child": "a4933c19c2d7f55fd3fc80efdad7a1a086411966",
+    "parent_row": [
+      "turn",
+      1,
+      "bet",
+      2000
+    ],
+    "child_row": [
+      "turn",
+      1,
+      "bet",
+      2100
+    ],
+    "subject": "Respect call price when narrowing continue ranges",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  }
+]
