@@ -1,0 +1,37 @@
+name: P8 independent review of P9 MC contract
+
+on:
+  push:
+    branches: [chatgpt/p8-review-p9-mc-contract-20261010]
+  workflow_dispatch:
+
+jobs:
+  p8-p9-consumer-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile producer and independent consumer verifier
+        run: |
+          python3 -m py_compile bot.py session.py plan.py range_posterior_v1.py \
+            tools/review_p9_p8_weighted_mc_contract.py
+      - name: Independent P8 weighted posterior / replay / P5 fail-closed contract
+        run: python3 tools/review_p9_p8_weighted_mc_contract.py
+      - name: P9 MC zero / partial / valid-zero / ties / variance
+        run: python3 tools/verify_hand130_mc_contract.py
+      - name: Existing conditional and weighted range regression
+        run: |
+          python3 tools/verify_hand130_conditioned_posterior.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_weighted_sampling.py
+          python3 tools/verify_weighted_range_adapter.py
+      - name: P5 and P13 regressions
+        run: |
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+      - name: P8/P5/P13 real per-layer B37 proxy comparison
+        run: python3 tools/compare_hand130_range_v1.py
