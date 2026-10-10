@@ -340,7 +340,8 @@ def revise_plan(state, hero, board, my_range, opp_range, profile, pot, stack, st
                            opp_stack_bb=state.get('opp_stack_bb'),
                            oop_vs_aggr=oop_vs_aggr,
                            oop_legacy_abs=oop_legacy_abs,
-                           initiative=initiative, opp_ranges=opp_ranges,
+                           initiative=initiative, tilt=tilt, bb_chips=bb_chips,
+                           opp_ranges=opp_ranges,
                            opp_ests=state.get('opp_ests'),
                            opp_stack_bbs=state.get('opp_stack_bbs'))
         new['revised'] = True
