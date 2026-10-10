@@ -26,7 +26,15 @@ def fixture():
         pf_seed={9: {'pf_stack_bb': 6.3442, 'pf_act':'shove',
                      'pf_role':'defend', 'pf_level':2}},
         _start_stacks={3:231114,9:74692}, book=None,
-        bf=lambda s:1.2, field_q=0.6, payout_flat=0.0,
+        bf=lambda s:1.2,
+        bf_details=lambda s: {
+            'value':1.2, 'method':'field_bf_empirical_approximation',
+            'is_exact':False, 'reason':'missing_full_field_stacks',
+            'field_completeness':'incomplete_field_snapshot',
+            'snapshot_alive':0, 'snapshot_current':False,
+            'bf_kind':'generic_default_risk_not_spot_call_prize_ev',
+            'price_specific':False},
+        field_q=0.6, payout_flat=0.0,
         reentry=False,progress=0.0,erosion_per_hand=0.0,field_avg_stack=0)
     rnd = SimpleNamespace(action_meta=rows(), order=[3,9],
                           stacks={3:209864,9:0})
