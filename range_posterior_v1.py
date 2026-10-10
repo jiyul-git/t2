@@ -343,6 +343,16 @@ def replay_record(ranges, metadata, layers=None, event_tag=None):
             'sha256': hashlib.sha256(canonical.encode()).hexdigest(),
             'source_metadata': (metadata or {}).get(seat, {}),
         }
+    # Failed/incomplete observer posteriors have no combo pool, so they are
+    # absent from 'opponents'. Keep their provenance nonetheless, including
+    # the actor BF snapshot evidence and the original missing/reason fields.
+    # Existing weights, hash and layer arrays remain bit-for-bit untouched.
+    all_metadata = {
+        str(seat): dict(meta or {})
+        for seat, meta in sorted((metadata or {}).items(),
+                                 key=lambda item: str(item[0]))
+    }
     return {'schema': 1, 'event_tag': event_tag,
             'range_model': MODEL, 'opponents': records,
+            'range_metadata': all_metadata,
             'layer_sampling': list(layers or [])}
