@@ -306,13 +306,22 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
         return emit(1.0)
 
     if 2 <= rem <= EXACT_MAX:
-        if len(live) == rem:
-            # A single complete table needs no separate whole-field snapshot.
+        if len(live) == rem and (
+                (snapshot and len(snapshot) != rem)
+                or (field_pid_stacks and len(field_pid_stacks) != rem)):
+            # A contradictory field snapshot means 'remaining' is not a
+            # reliable complete-table certificate. Fail the exactness claim.
+            details.update(field_completeness='contradictory_field_count',
+                           reason='field_snapshot_conflicts_with_table_field_count')
+        elif len(live) == rem:
+            # The live table IS the entire field; no external chip snapshot
+            # is required. Omit dead/zero-stack seats from the prize ranks.
+            live_idx = sum(1 for v in table[:seat_idx] if v > 0)
             details.update(method='exact_full_field_icm',
                            is_exact=True, field_completeness='complete_table',
                            reason='remaining_matches_all_live_table_seats')
-            return emit(bubble_factor(table, list(payouts)[:rem] or [100.0],
-                                      seat_idx))
+            return emit(bubble_factor(live, list(payouts)[:rem] or [100.0],
+                                      live_idx))
 
         elif not snapshot_is_current:
             details.update(field_completeness='stale_field_snapshot',
