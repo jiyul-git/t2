@@ -1,0 +1,31 @@
+name: P5 independent PR21 combined BF and MC review
+on:
+  push:
+    branches: [chatgpt/p5-pr21-combined-review-20261010]
+  workflow_dispatch:
+jobs:
+  independent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile independent P5 combined contract tests
+        run: python3 -m py_compile tools/review_pr21_combined_bf_p5.py tools/review_pr21_combined_mc_p5.py
+      - name: Independently verify merged exact/heuristic BF with MC failure and planner
+        run: python3 tools/review_pr21_combined_bf_p5.py
+      - name: Independent MC 0/partial/true-zero and final planner
+        run: python3 tools/review_pr21_combined_mc_p5.py
+      - name: Real session BF input and provenance (conditional ON/OFF)
+        run: python3 tools/verify_p13_runtime_provenance.py
+      - name: Inherited P9, P8, P13 exact-ICM regression gates
+        run: |
+          python3 tools/verify_hand130_mc_contract.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/verify_p13_complete_field_bf.py
+          python3 tools/verify_p13_bf_observer_likelihood.py
