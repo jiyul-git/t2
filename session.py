@@ -1525,6 +1525,10 @@ class HandRun:
                 opp_view, _event, dead=h.hole[observer],
                 observer_context=_ctx)
             _new_meta = dict(_new_meta or {})
+            # The posterior's declared completeness is authoritative.
+            # A non-empty but incomplete candidate is *not* usable EV input.
+            if not _new_meta.get('complete'):
+                rr_new = None
             if _event.get('kind') in (
                     'first_in_shove', 'open_raise',
                     'threebet_shove', 'threebet_raise'):
