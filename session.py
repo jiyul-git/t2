@@ -1655,6 +1655,7 @@ class HandRun:
                 'range_available': bool(rr),
                 'model_calibrated': False,
                 'equity_model_status': 'unvalidated_legacy_proxy',
+                'actor_bf_provenance': dict(_actor_bf),
             })
         return R.range_unique_sorted(rr), _story
 
