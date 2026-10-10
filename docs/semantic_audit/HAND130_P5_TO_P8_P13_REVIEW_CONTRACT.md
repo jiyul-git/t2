@@ -37,7 +37,7 @@ has been received. Never present this document as signoff.
   fold, call-win, call-lose, and call-tie, with chip conservation per outcome.
   With the *archived* rounded payout percentages, in order:
   17.700552609563854, 21.487760646031855,
-  15.461616393763215, 18.733849424660832.
+  15.461616393763215, 18.515842285449054 (corrected award_pots live SB-unit/button odd-chip tie).
   Win/lose no-tie break-even equity 0.3715371093145927.
 - It makes no assumption on the tie frequency. For an observed equity-share
   point estimate (win probability + half tie probability) bounds are computed
@@ -80,7 +80,7 @@ has been received. Never present this document as signoff.
 
 - `tools/verify_hand130_part2.py` is imported from test3's Part 2 audit.
   It validates original static source and unmodified wrong-quantity cap.
-  Observed W5 0.0166578 vs static 0.013483745270 remains unexplained;
+  The W5 arithmetic discrepancy is resolved: correct in-place tp value gives 0.016657816839054443; original runtime SHA and tilt remain unknown;
   actual planning profile/tilt/env SHA not archived. This historical check
   must not be relabeled as the changed behavior.
 - `tools/verify_hand130_b37_replay.py`: archived B37 profile, decision
@@ -97,3 +97,9 @@ has been received. Never present this document as signoff.
   claim green integration.
 - No deployment or merging to master/test/test3 until P8/P13 review
   and production regression gates pass.
+
+## P13 corrections pending independent signoff
+
+Tie scenario now reproduces actual award_pots SB-unit/button odd-chip distribution (25,000: 10,000/15,000; 136,884: 65,000/71,884), resulting stacks B37=231422, BB=86884. Exact P13 partial-call synthetic regression derives 40.2587519026% rather than 45.7216940363% by using hero-eligible contestable_before_call in spot-BF conversion. No-tie HAND130 37.1537109315% unchanged.
+
+Part2 followup contract confirms correct W5=0.016657816839054443 and no source code repair. General MTT must include all surviving stacks and payout structure before claiming exact ICM, otherwise a logged approximate BF remains uncertain. Original opponent posterior and full source SHA remain unavailable. Independent P13 and P8 approval is still required.
