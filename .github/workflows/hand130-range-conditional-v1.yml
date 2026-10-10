@@ -24,8 +24,30 @@ jobs:
         run: python3 tools/verify_hand130_calloff_isolation.py
       - name: P5 terminal ICM decision replay
         run: python3 tools/verify_hand130_exact_icm.py
-      - name: Unmodified baseline 9max fingerprint
-        run: python3 tools/regress.py check --baseline current
+      - name: Compare default-OFF behavior against exact P5 parent
+        run: |
+          git fetch --no-tags --depth=1 origin 0786d970c769198d2649c75fc520d447ab9b6e9a
+          git worktree add --detach /tmp/p5base 0786d970c769198d2649c75fc520d447ab9b6e9a
+          for seed in 11 12; do
+            (cd /tmp/p5base && python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/p5_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 8 "/tmp/p8_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              before=json.load(open('/tmp/p5_%s.json'%seed))
+              after=json.load(open('/tmp/p8_%s.json'%seed))
+              print({'seed':seed,'parent_pf':len(before['pf']),
+                     'p8_pf':len(after['pf']), 'parent_hands':len(before['hands']),
+                     'p8_hands':len(after['hands']),
+                     'identical':before==after})
+              assert before==after, 'P8 default-OFF action/state changed'
+          print('PASS exact P5 parent / P8 default-OFF paired field identity')
+          PY
+      - name: Enabled P8 observer mode 9max smoke (not accuracy proof)
+        env:
+          T2_RANGE_CONDITIONAL_V1: "1"
+        run: python3 tools/r2_baseline_sim.py 11 4
       - name: Existing weighted-sampler verification
         run: python3 tools/verify_weighted_sampling.py
       - name: Existing weighted range adapter verification
