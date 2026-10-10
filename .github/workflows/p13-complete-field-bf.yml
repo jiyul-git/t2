@@ -20,6 +20,8 @@ jobs:
         run: python3 tools/verify_p13_complete_field_bf.py
       - name: P8 ON/OFF policy likelihood response to generic BF correction
         run: python3 tools/verify_p13_bf_observer_likelihood.py
+      - name: Actual HandRun to P5 BF scalar and persisted provenance ON/OFF
+        run: python3 tools/verify_p13_runtime_provenance.py
       - name: P9 valid Monte Carlo / P8 range provenance / P5 fail closed
         run: |
           python3 tools/verify_hand130_mc_contract.py
