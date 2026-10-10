@@ -3,6 +3,7 @@ import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
 import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS, money_pressure as MP, action_events as AE
 import timing as TM
+import range_posterior_v1 as RP
 from play import Hand, POST, PRE
 
 D = os.path.dirname(os.path.abspath(__file__))
@@ -37,6 +38,35 @@ def oop_vs(order, seat, other):
 
 def _cache_key(street, seat, n):
     return '%s|%s|%d' % (street, seat, n)
+
+
+def _record_preflop_observer_range(pools, provenance, seat, pool, story):
+    """Keep failed posterior evidence even when no combos can be sampled.
+
+    A missing range must not be invented. Its error record must reach the
+    decision seed regardless of whether a calloff equity can be computed.
+    """
+    provenance[seat] = dict(story or {})
+    if pool:
+        pools[seat] = pool
+
+
+def _attach_p8_observer_evidence(seed, provenance):
+    """Carry the complete source/missing/fallback contract into final logs.
+
+    Called only when the optional conditional observer flag is enabled.
+    No change to the numeric actor strategy or default-OFF fingerprints.
+    """
+    meta = {str(o): dict(m) for o, m in provenance.items()}
+    seed['pf_opp_range_meta'] = meta
+    if seed.get('pf_calloff_consumer') is not None:
+        consumer = dict(seed['pf_calloff_consumer'])
+        consumer['opponent_range_evidence'] = {
+            key: dict(value) for key, value in meta.items()}
+        consumer['range_estimate_status'] = 'unvalidated_conditional_or_legacy_estimate'
+        consumer['mathematically_justified'] = False
+        seed['pf_calloff_consumer'] = consumer
+    return seed
 
 
 def _merge_pf_seed(prev, new):
@@ -425,7 +455,8 @@ def _decision_pot_layers(prior_contrib, street_contrib, folded, stacks,
 
 def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                                   active_ranges, locked_ranges, sims=600,
-                                  seed=None):
+                                  seed=None, capture_sampling=False,
+                                  range_metadata=None):
     """F8-D3: 현재 참가 가능한 pot layer별 showdown equity.
 
     소비처(stage9 B5 확인, L189): 프리플랍 순수 콜오프와 포스트플랍 콜 판단에서
@@ -441,6 +472,7 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
     """
     active_ranges = dict(active_ranges or {})
     locked_ranges = dict(locked_ranges or {})
+    range_metadata = dict(range_metadata or {})
     out = []
 
     for idx, layer in enumerate(pot_layers or []):
@@ -449,9 +481,14 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
         missing = []
         pools = []
         sources = {}
+        missing_details = {}
 
         for o in opps:
-            if o in active_ranges and active_ranges.get(o):
+            _rm = range_metadata.get(o) or {}
+            if _rm.get('complete') is False:
+                missing.append(o)
+                missing_details[str(o)] = dict(_rm)
+            elif o in active_ranges and active_ranges.get(o):
                 # list() 로 감싸면 weighted posterior 가 균등 support 로 평탄화된다
                 # (audit9 HAND 17: 콜드 4벳 올인 레인지 KQs eq 0.323 → 0.442 로 부풀어
                 # KQs 가 92bb 콜오프). equity_vs_combos 는 weighted pool 을 그대로 받는다.
@@ -462,6 +499,7 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                 sources[str(o)] = 'locked_allin'
             else:
                 missing.append(o)
+                missing_details[str(o)] = dict(_rm)
 
         row = {
             'idx': idx,
@@ -471,21 +509,38 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
             'opponents': opps,
             'range_sources': sources,
             'missing_ranges': missing,
+            'missing_range_details': missing_details,
             'complete': False,
             'equity': None,
             'sims': int(sims),
         }
 
+        # Evidence must survive successful *and* incomplete pot layers.
+        # Keep the PR24 epoch fields untouched; they refer to the actor BF
+        # at observer reconstruction time, not necessarily action time.
+        _actor_evidence = {
+            str(o): dict(range_metadata[o])
+            for o in opps
+            if o in range_metadata
+            and 'actor_bf_provenance' in (range_metadata.get(o) or {})
+        }
+        if _actor_evidence:
+            row['range_provenance'] = _actor_evidence
+
         if not row['hero_eligible']:
             row['reason'] = 'hero_not_currently_eligible'
         elif missing:
-            row['reason'] = 'missing_opponent_range'
+            unavailable = any(
+                any('unsupported' in str(v) or 'not_supported' in str(v)
+                    for v in (meta.get('missing') or []))
+                for meta in missing_details.values())
+            row['reason'] = ('unsupported_opponent_model' if unavailable
+                             else 'missing_opponent_range')
         elif not opps:
             row['complete'] = True
             row['equity'] = 1.0
             row['reason'] = 'sole_eligible'
         else:
-            row['complete'] = True
             _eq_seed = None
             if seed is not None:
                 _eq_seed = _zlib.crc32(
@@ -493,11 +548,25 @@ def layer_equities_by_pot_layer(hero_seat, hero_cards, board, pot_layers,
                         int(seed), idx,
                         ','.join(str(x) for x in opps))).encode())
             row['seed'] = _eq_seed
-            row['equity'] = round(
-                float(bot.equity_vs_combos(
-                    hero_cards, board, pools, sims=int(sims),
-                    seed=_eq_seed)), 6)
-            row['reason'] = 'computed'
+            # Always collect status; verbose replay capture is optional.
+            _mc_audit = {}
+            _equity = bot.equity_vs_combos(
+                hero_cards, board, pools, sims=int(sims),
+                seed=_eq_seed, audit=_mc_audit)
+            row['requested_samples'] = _mc_audit['requested']
+            row['valid_samples'] = _mc_audit['accepted']
+            row['rejected_samples'] = _mc_audit['rejected']
+            row['sample_variance'] = _mc_audit['sample_variance']
+            row['split_pot_draws'] = _mc_audit['split_pot_draws']
+            row['reason'] = _mc_audit['reason']
+            row['complete'] = bool(_mc_audit['complete'])
+            if row['complete'] and _equity is not None:
+                row['equity'] = round(float(_equity), 6)
+            if not row['complete']:
+                row['observed_sample_mean'] = _mc_audit['mean_share']
+            if capture_sampling:
+                row['sampling'] = _mc_audit
+
         out.append(row)
 
     return out
@@ -536,6 +605,7 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
     contestable = 0.0
     gross = 0.0
     missing = []
+    incomplete_reasons = {}
 
     for idx, layer in enumerate(projected_layers or []):
         if not layer.get('hero_eligible'):
@@ -545,6 +615,16 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
         row = rows.get(idx)
         if not row or not row.get('complete') or row.get('equity') is None:
             missing.append(idx)
+            incomplete_reasons[idx] = {
+                'reason': row.get('reason', 'missing_equity_layer') if row else 'missing_equity_layer',
+                'requested_samples': row.get('requested_samples') if row else None,
+                'valid_samples': row.get('valid_samples') if row else None,
+                'missing_ranges': row.get('missing_ranges', []) if row else [],
+                'missing_range_details': row.get('missing_range_details', {}) if row else {},
+            }
+            if row and row.get('range_provenance'):
+                incomplete_reasons[idx]['range_provenance'] = dict(
+                    row['range_provenance'])
             continue
         gross += amount * float(row['equity'])
 
@@ -561,6 +641,7 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
             'breakeven_equity': (
                 round(cost / contestable, 6) if contestable > 0 else None),
             'missing_equity_layers': missing,
+            'incomplete_reasons': incomplete_reasons,
         }
 
     return {
@@ -572,6 +653,7 @@ def _layer_investment_summary(incremental_cost, projected_layers, projected_equi
         'effective_equity': round(gross / contestable, 6),
         'breakeven_equity': round(cost / contestable, 6),
         'missing_equity_layers': [],
+        'incomplete_reasons': {},
     }
 
 
@@ -599,6 +681,128 @@ def _layer_call_summary(call_cost, projected_layers, projected_equities):
         'effective_equity': base['effective_equity'],
         'breakeven_equity': base['breakeven_equity'],
         'missing_equity_layers': base['missing_equity_layers'],
+        'incomplete_reasons': base['incomplete_reasons'],
+    }
+
+
+def _terminal_hu_call_icm(stacks, contrib, folded, table_seats, hero,
+                          opponent, cost, dead, call_layers, payouts,
+                          remaining, effective_equity, unit=1,
+                          odd_order=None):
+    """Exact payout-ICM win/lose/tie states for a terminal heads-up call.
+
+    Only when the complete remaining field is at this table (<=9 players)
+    and exactly hero + one all-in opponent still hold cards. This calculation
+    uses the ACTUAL incremental call loss and contested prize, unlike a global
+    bubble factor evaluated at an unrelated stack-risk amount.
+
+    With showdown equity e = P(win) + P(tie)/2, the tie probability is not
+    known from e alone. We report the exact ICM-EV bounds over all feasible
+    tie frequencies; no invented tie frequency is used.
+    """
+    seats = list(table_seats or [])
+    if (not payouts or not seats or len(seats) > icm.EXACT_MAX
+            or int(remaining or 0) != len(seats)
+            or set(seats) != set(stacks or {})
+            or set(seats) - set(folded or ()) != {hero, opponent}
+            or float((stacks or {}).get(opponent, 0) or 0) != 0
+            or not call_layers or effective_equity is None):
+        return None
+    cost = float(cost)
+    e = float(effective_equity)
+    if cost <= 0 or e < 0 or e > 1:
+        return None
+
+    # The pending call is not part of the current pot or the hero stack yet.
+    before = {x: float(stacks[x]) for x in seats}
+    if before[hero] < cost:
+        return None
+    pot = sum(float(v) for v in (contrib or {}).values()) + float(dead or 0)
+    fold = dict(before)
+    fold[opponent] += pot
+
+    base = dict(before)
+    base[hero] -= cost
+    win, lose, tie = dict(base), dict(base), dict(base)
+    contestable_after_call = 0.0
+    for layer in call_layers:
+        amount = float(layer.get('amount') or 0)
+        if amount < 0 or abs(amount - round(amount)) > 1e-9:
+            # Tournament chip units must be represented exactly here.
+            return None
+        eligible = set(layer.get('eligible_seats') or [])
+        if hero in eligible:
+            contestable_after_call += amount
+        if eligible == {hero, opponent}:
+            win[hero] += amount
+            lose[opponent] += amount
+            # The LIVE settlement does not always split chips 50/50:
+            # SB-unit rounding and BTN-left remainder apply per layer.
+            winnings = _split_pot_winnings(
+                int(amount), [hero, opponent], unit=unit, odd_order=odd_order)
+            tie[hero] += winnings[hero]
+            tie[opponent] += winnings[opponent]
+        elif eligible == {hero} or eligible == {opponent}:
+            only = next(iter(eligible))
+            for state in (win, lose, tie):
+                state[only] += amount
+        else:
+            return None
+
+    # For covering opponent overbets, full pre-call contributions include an
+    # opponent-only upper layer. It never belongs in the hero's call price.
+    contestable_before_call = contestable_after_call - cost
+    if contestable_before_call <= 0 or contestable_after_call > pot + cost + 1e-6:
+        return None
+
+    chips = sum(before.values()) + pot
+    if any(abs(sum(state.values()) - chips) > 1e-6
+           for state in (fold, win, lose, tie)):
+        return None
+
+    order = sorted(seats)
+    hidx = order.index(hero)
+    pays = list(payouts)
+    def prize(state):
+        return icm.icm_equity([state[k] for k in order], pays)[hidx]
+    f, w, l, t = prize(fold), prize(win), prize(lose), prize(tie)
+    gain, loss = w-f, f-l
+    if gain <= 0 or loss < 0:
+        return None
+    # ICM break-even for win/lose outcomes, allowing unequal win/loss chips.
+    required_no_tie = loss / (gain + loss)
+    # The planner calls required_equity(contestable_before_call, cost, bf).
+    # Inverting THAT SAME equation requires the contestable pot, not the
+    # total contribution pot (which may contain uncalled opponent excess).
+    # An equivalent BF is a derived algebraic conversion, NOT a fitted prior.
+    bf_at_price = (loss / gain) * (contestable_before_call / cost)
+    tie_max = 2.0 * min(e, 1.0-e)
+    ev_no_tie = l + e * (w-l) - f
+    ev_max_tie = ev_no_tie + tie_max * (t - (w+l)/2.0)
+    lo, hi = min(ev_no_tie, ev_max_tie), max(ev_no_tie, ev_max_tie)
+    verdict = ('call' if lo > 0 else 'fold' if hi < 0 else 'uncertain')
+    return {
+        'source': 'exact_terminal_hu_payout_icm',
+        'fold_prize': f,
+        'win_prize': w,
+        'lose_prize': l,
+        'tie_prize': t,
+        'no_tie_breakeven_equity': required_no_tie,
+        'equivalent_bubble_factor': bf_at_price,
+        'full_pre_call_pot': pot,
+        'contestable_before_call': contestable_before_call,
+        'contestable_after_call': contestable_after_call,
+        'uncalled_opponent_excess_after_call': (
+            pot + cost - contestable_after_call),
+        'fold_stacks': fold, 'win_stacks': win,
+        'lose_stacks': lose, 'tie_stacks': tie,
+        'equity_input': e,
+        'payout_ev_lower': lo,
+        'payout_ev_upper': hi,
+        'tie_probability_not_inferred': True,
+        'sampling_error_not_included': True,
+        'opponent_range_error_not_included': True,
+        'objective_action_with_fixed_equity': verdict,
     }
 
 
@@ -977,6 +1181,34 @@ def _money_jump_attach_action(obs, rnd):
             max(2.0, _base_bb * _sf), 3)
 
 
+def _split_pot_winnings(amount, winners, unit=1, odd_order=None):
+    """The one chip-splitting rule shared by live awards and ICM scenarios.
+
+    Round each equal share DOWN to the SB chip denomination. Distribute
+    remaining units from the first winning seat left of the button; give
+    non-unit remainder to that same first winner (legacy saved-stack rule).
+    Keep this identical to award_pots, not a continuous half-pot model.
+    """
+    if not winners:
+        raise ValueError('pot without winners')
+    u = max(1, int(unit))
+    share = (amount // len(winners) // u) * u
+    rem = amount - share * len(winners)
+    order = [s for s in (odd_order or []) if s in winners]
+    for s in winners:
+        if s not in order:
+            order.append(s)
+    won = {s: share for s in winners}
+    i = 0
+    while rem >= u and order:
+        won[order[i % len(order)]] += u
+        rem -= u
+        i += 1
+    if rem and order:
+        won[order[0]] += rem
+    return won
+
+
 def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
                odd_order=None):
     """사이드팟별로 승자에게 분배. 반환: {seat: 획득액}, 팟 내역
@@ -1006,30 +1238,11 @@ def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
             ranks = {s: best5(hole[s]+board) for s in elig}
             top = max(ranks.values())
             winners = [s for s in elig if ranks[s] == top]
-        # 칩 단위(unit) 아래로는 쪼갤 수 없다. 실제 토너에서 300 을 둘이 나눠
-        # 150 씩 갖는 일은 없다 — 나눌 수 없는 칩은 한 명에게 간다.
-        u = max(1, int(unit))
-        share = (amount // len(winners) // u) * u
-        rem = amount - share * len(winners)
-
-        # TDA Rule 21-A: board games의 odd chip은 BTN 왼쪽 첫 승자부터.
-        # rem 전체를 winners[0]에게 몰아주지 않고 최소 칩 단위로 한 개씩 준다.
-        order = [s for s in (odd_order or []) if s in winners]
-        for s in winners:
-            if s not in order:
-                order.append(s)
-
-        for w in winners:
+        # Reuse exactly the same chip-unit and BTN-left odd-chip rule
+        # as the terminal HU ICM scenario calculation.
+        for w, share in _split_pot_winnings(
+                amount, winners, unit=unit, odd_order=odd_order).items():
             won[w] += share
-
-        i = 0
-        while rem >= u and order:
-            won[order[i % len(order)]] += u
-            rem -= u
-            i += 1
-        if rem and order:
-            # 스택/데드머니가 칩 단위와 어긋난 구 저장본 안전망.
-            won[order[0]] += rem
 
         detail.append({'amount': amount, 'eligible': elig, 'winners': winners})
     for s, v in won.items(): stacks[s] += v
@@ -1341,6 +1554,112 @@ class HandRun:
 
         _pub_story = dict(public)
         _pub_story['opener_pos'] = h.pos.get(public.get('opener_seat'))
+        # P8 test-only conditional posterior: observer-model profile, public
+        # action history, no private target cards/persona.
+        if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
+            # P8 must retain the *observed actor* BF evidence, not confuse
+            # it with pf_bf_provenance for the deciding observer seat.
+            if hasattr(h, 'bf_details'):
+                _actor_bf = h.bf_details(target)
+            else:
+                # Legacy/external or test-only Hand adapters expose only BF.
+                # Never promote that scalar to attested exact-field ICM.
+                _actor_bf = {
+                    'value': h.bf(target),
+                    'method': 'legacy_scalar_without_epoch_evidence',
+                    'is_exact': False, 'price_specific': False,
+                    'reason': 'bf_details_unavailable',
+                    'field_epoch_status': 'unverified',
+                    'snapshot_current': False,
+                    'field_snapshot_id': None,
+                }
+            _event = RP.classify_public_action(
+                getattr(rnd, 'action_meta', None), target, h.bb,
+                h.pos[target], stack_bb=stack_bb, seats=seats, ante=ante,
+                effective_stack_bb=min(
+                    float(stack_bb or 0.0),
+                    float((getattr(h, '_start_stacks', {}) or {}).get(observer, 0))
+                    / max(1.0, float(h.bb))))
+            _ctx = {'opener_pos': h.pos.get(_event.get('opener_seat')),
+                    'field_q': getattr(h, 'field_q', 0.6),
+                    'bubble_factor': _actor_bf['value'],
+                    'erosion': getattr(h, 'erosion_per_hand', 0.0),
+                    'field_avg_bb': ((getattr(h, 'field_avg_stack', None) or 0)
+                                     / max(1, h.bb)) or None,
+                    # No access to the actor's private tilt/read signal.
+                    'tilt': 0.0,
+                    'payout_flat': getattr(h, 'payout_flat', 0.0),
+                    'reentry': getattr(h, 'reentry', False),
+                    'progress': getattr(h, 'progress', 0.0)}
+            if _event.get('kind') in ('first_in_shove', 'open_raise'):
+                _behind_hist, _behind_meta = RP.public_behind_stacks(
+                    getattr(rnd, 'action_meta', None), rnd.order,
+                    target, rnd.stacks, h.bb)
+                _ctx['behind_stacks_bb'] = _behind_hist
+                _ctx['behind_stack_provenance'] = _behind_meta
+            rr_new, _new_meta = RP.conditioned_preflop_range(
+                opp_view, _event, dead=h.hole[observer],
+                observer_context=_ctx)
+            _new_meta = dict(_new_meta or {})
+            _new_meta['actor_bf_provenance'] = dict(_actor_bf)
+            _new_meta['actor_bf_evidence_source'] = 'Hand.bf_details(target)' if hasattr(
+                h, 'bf_details') else 'legacy_scalar_without_epoch_evidence'
+            _new_meta['actor_bf_evaluation_phase'] = 'observer_reconstruction'
+            _new_meta['actor_action_epoch_bf_verified'] = False
+            _new_meta['actor_bf_likelihood_direct_input'] = (
+                _event.get('kind') in ('first_in_shove', 'open_raise'))
+            # The posterior's declared completeness is authoritative.
+            # A non-empty but incomplete candidate is *not* usable EV input.
+            if not _new_meta.get('complete'):
+                rr_new = None
+            if _event.get('kind') in (
+                    'first_in_shove', 'open_raise',
+                    'threebet_shove', 'threebet_raise'):
+                _new_meta.update({
+                    'source_base': 'public_action_meta',
+                    'stack_bb': _event.get('stack_bb'),
+                    'action_history': _event.get('action_history'),
+                    'observed_total_bb': _event.get('observed_total_bb'),
+                    'observer_model_inputs': {
+                        'opener_pos': _ctx.get('opener_pos'),
+                        'field_q': _ctx.get('field_q'),
+                        'bubble_factor': _ctx.get('bubble_factor'),
+                        'actor_bf_provenance': dict(_actor_bf),
+                        'tilt_known': False,
+                        'opener_read_available': False,
+                        'behind_stacks_available': _ctx.get('behind_stacks_bb') is not None,
+                        'behind_stack_provenance': _ctx.get('behind_stack_provenance')}})
+                _new_meta.update({
+                    'status': ('conditioned' if _new_meta.get('complete') and rr_new
+                               else 'missing_evidence'),
+                    'failure_kind': (None if _new_meta.get('complete') and rr_new
+                                     else 'missing_evidence'),
+                    'failure_reason': (
+                        None if _new_meta.get('complete') and rr_new else
+                        ','.join(str(x) for x in _new_meta.get('missing', []))
+                        or 'conditional_posterior_unavailable'),
+                    'range_available': bool(rr_new),
+                    'model_calibrated': False,
+                })
+                return rr_new or {}, _new_meta
+            # Unsupported action forms may still use the explicitly labeled
+            # legacy estimator. This does NOT mean v1 has reconstructed them.
+            _conditional_unavailable = {
+                'source': RP.MODEL,
+                'kind': _event.get('kind'),
+                'complete': False,
+                'missing': list(_new_meta.get('missing') or
+                                ['action_class_not_supported']),
+                'failure_kind': 'model_unavailable',
+                'failure_reason': 'unsupported_conditional_action',
+                'actor_bf_provenance': dict(_actor_bf),
+                'actor_bf_evidence_source': _new_meta['actor_bf_evidence_source'],
+                'actor_bf_evaluation_phase': 'observer_reconstruction',
+                'actor_action_epoch_bf_verified': False,
+                'actor_bf_likelihood_direct_input': False,
+            }
+        else:
+            _conditional_unavailable = None
         rr, _story = _preflop_story_range(
             opp_view, h.pos[target], float(stack_bb or 0.0),
             set(h.hole[observer]), seats, ante, act,
@@ -1355,6 +1674,29 @@ class HandRun:
                 act == 'open' and pfo.get('pf_act') == 'shove'
                 and pfo.get('pf_role') == 'open'),
         })
+        if _conditional_unavailable is not None:
+            _story = dict(_story)
+            _story.update({
+                'source': 'legacy_fallback',
+                'legacy_source': _story.get('source'),
+                'conditional_source': _conditional_unavailable['source'],
+                'conditional_kind': _conditional_unavailable['kind'],
+                'conditional_complete': False,
+                'complete': False,
+                'status': 'legacy_fallback',
+                'failure_kind': 'model_unavailable',
+                'failure_reason': _conditional_unavailable['failure_reason'],
+                'missing': list(_conditional_unavailable['missing']),
+                'range_available': bool(rr),
+                'model_calibrated': False,
+                'equity_model_status': 'unvalidated_legacy_proxy',
+                'actor_bf_provenance': dict(_actor_bf),
+                'actor_bf_evidence_source': _conditional_unavailable[
+                    'actor_bf_evidence_source'],
+                'actor_bf_evaluation_phase': 'observer_reconstruction',
+                'actor_action_epoch_bf_verified': False,
+                'actor_bf_likelihood_direct_input': False,
+            })
         return R.range_unique_sorted(rr), _story
 
 
@@ -1487,9 +1829,11 @@ class HandRun:
                 _rr, _rm = self._preflop_perceived_range(
                     s, _o, ax, rnd, aggressor, len(h.seats),
                     (getattr(h, 'ante', h.bb) > 0))
-                if _rr:
-                    _pf_opp_ranges[_o] = _rr
-                    _pf_opp_range_meta[_o] = _rm
+                # A missing/failing conditional posterior has NO combo pool,
+                # but its diagnostic source and missing inputs are mandatory
+                # in final pf_seed / calloff records as well.
+                _record_preflop_observer_range(
+                    _pf_opp_ranges, _pf_opp_range_meta, _o, _rr, _rm)
 
             # F8-D6-C: objective call-EV shadow only for the same pure short-shove
             # population that P6 already routes to calloff_decision:
@@ -1500,7 +1844,7 @@ class HandRun:
                 and rnd.stacks.get(aggressor, 1) <= 0
                 and not rnd.can_raise(s)
                 and tc > 0)
-            if _pf_pure_calloff and _pf_opp_ranges:
+            if _pf_pure_calloff:
                 _pf_call_layers, _pf_call_cost = _project_call_layers(
                     {}, rnd.contrib, set(rnd.folded), rnd.stacks,
                     s, tc, dead=ante_pot)
@@ -1514,7 +1858,9 @@ class HandRun:
                     s, h.hole[s], [], _pf_call_layers,
                     _pf_active_ranges, _pf_locked_ranges, sims=800,
                     seed=self._dseed(
-                        s, 'preflop', 'f8_d6c', len(rnd.log)))
+                        s, 'preflop', 'f8_d6c', len(rnd.log)),
+                    capture_sampling=(os.environ.get('T2_RANGE_REPLAY_CAPTURE') == '1'),
+                    range_metadata=_pf_opp_range_meta)
                 _pf_call_sum = _layer_call_summary(
                     _pf_call_cost, _pf_call_layers, _pf_call_layer_eq)
                 _pf_call_ev_shadow = {
@@ -1529,10 +1875,28 @@ class HandRun:
                     'breakeven_equity': _pf_call_sum.get('breakeven_equity'),
                     'missing_equity_layers': list(
                         _pf_call_sum.get('missing_equity_layers') or []),
+                    'incomplete_reasons': dict(
+                        _pf_call_sum.get('incomplete_reasons') or {}),
                     'layers': _pf_call_layers,
                     'layer_equities': _pf_call_layer_eq,
                     'strategy_consumer': False,
                 }
+                if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
+                    _pf_call_ev_shadow['range_model_evidence'] = {
+                        str(o): dict(m) for o, m in _pf_opp_range_meta.items()}
+                    _pf_call_ev_shadow['range_equity_confidence'] = (
+                        'unvalidated_conditional_or_legacy_estimate')
+                # Terminal heads-up only: precise prize ICM at this CALL price.
+                # Other pots/remaining seats stay on their prior price/BF path
+                # rather than receiving a guessed exact-ICM surrogate.
+                _pf_call_ev_shadow['exact_hu_icm'] = _terminal_hu_call_icm(
+                    rnd.stacks, rnd.contrib, set(rnd.folded),
+                    h.seats, s, aggressor, _pf_call_cost, ante_pot,
+                    _pf_call_layers, h.payouts,
+                    getattr(h, 'field_remaining', None),
+                    _pf_call_ev_shadow.get('effective_equity'),
+                    unit=getattr(h, 'sb', 0) or 1,
+                    odd_order=getattr(h, 'post_seats', None))
 
             _tm_concepts = PS.concept_tap() if self.timing else None
             _opp_est_pf = (RD.perceived_profile(
@@ -1578,13 +1942,14 @@ class HandRun:
                 _cold_ctx = _cold_reraise_context(
                     getattr(rnd, 'action_meta', None), s, rnd.order,
                     folded=rnd.folded, allin=rnd.allin)
+                _bf_provenance = h.bf_details(s)
                 a, sz, _seed = PL.preflop_plan(
                     ax, pos, hand, bbs, h.rng,
                     aggressor_pos=(h.pos[aggressor] if aggressor is not None else None),
                     open_bb=_obb, n_callers=callers, n_limpers=len(limpers),
                     raise_level=_rlevel, behind_stacks=_behind,
                     tilt=h.axes(s)[1], field_q=getattr(h, 'field_q', 0.6),
-                    bf=h.bf(s),
+                    bf=_bf_provenance['value'],
                     seats=len(h.seats), ante=(getattr(h, 'ante', h.bb) > 0),
                     field_avg_bb=((getattr(h, 'field_avg_stack', None) or 0)
                                   / max(1, h.bb)) or None,
@@ -1622,6 +1987,18 @@ class HandRun:
                     cold_context=_cold_ctx,
                     cold_decision_seed=self._dseed(
                         s, 'preflop', 'p7_cold', len(rnd.log)))
+                # P9 MC incomplete status and P8 range metadata are untouched.
+                # Generic field BF is NOT price-specific outcome ICM EV.
+                _seed['pf_bf_provenance'] = dict(_bf_provenance)
+                if os.environ.get('T2_RANGE_REPLAY_CAPTURE') == '1':
+                    _seed['pf_opp_range_replay'] = RP.replay_record(
+                        _pf_opp_ranges, _pf_opp_range_meta,
+                        layers=(_pf_call_layer_eq if _pf_call_ev_shadow is not None
+                                else []),
+                        event_tag='%s|%s|preflop|%s' % (
+                            h.hash, s, len(rnd.log)))
+                if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':
+                    _attach_p8_observer_evidence(_seed, _pf_opp_range_meta)
                 h.pf_seed = getattr(h, 'pf_seed', {})
                 h.pf_seed[s] = _merge_pf_seed(h.pf_seed.get(s), _seed)
                 _seed = h.pf_seed[s]

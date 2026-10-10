@@ -1,5 +1,14 @@
 # t2 PROJECT — current status and branch contract
 
+## 2026-10-10 이전 대화 인수인계 — 최신 재개 지점
+
+[전체 인수인계 및 증거](docs/handoff/T2_T3_HANDOFF_20261010.md)를 먼저 읽는다. 17개 전문 파트, 이전 대화 조회45건(제목별 추가28건), 원 대화 텍스트2개, 실제 코드·Git 도입 이력, 리뷰 ZIP2개 확인 기록을 보존했다. 전체 채팅 원문 내보내기와 검색 증거는 구분한다.
+
+직전 중단점: 06시 터보 HAND130, LJ B37 A♣K♥의 BB 올인 대면 폴드. 원 ZIP에서 게이트 실패→legacy 폴드 유지와 당시 수치를 확인했다. 모든 수정은 기본 개념에서 파생시키며 경험상수로 특정 핸드를 통과시키지 않는다. 기존 상수는 도입 커밋·의도·정량 근거·소비처까지 추적한다. calloff 도입 ac05c00a 및 방어 기준 .22/.68의 4점 경험근사58d64a를 복원했다.
+
+인수인계 업로드 직전 코드 HEAD: master 76437820195909cda6be7ffea2813262d785bb38 / test3 945758accf095c634e7a543da73d38160f8b00e2. 최신 일반 UI 작업선은 이후 지시의 test3이며 아래 과거 test 단일선·5개 브랜치 기록은 당시 기록이다. 이번 변경은 문서 저장이며 전략 코드 변경·GTO 브랜치 정리가 아니다.
+
+
 ## 2026-10-02 코드 재감사 동기화
 
 master `8614f32d` / test 감사 기준 `4b9d33d`. remote 6개, test ahead 544 / behind 8; master ancestor 아님. 재개 확인 때 terminal-census만 `5d9fa389`로 전진했다. 이번 작업은 test semantic-only이며 merge/master promotion/branch cleanup 없음.

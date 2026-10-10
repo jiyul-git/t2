@@ -1,0 +1,90 @@
+name: P8 selective PR23 into PR24 field epoch integration
+
+on:
+  push:
+    branches: [chatgpt/p8-pr24-actor-bf-range-evidence-integrate-20261010]
+  workflow_dispatch:
+
+jobs:
+  p8-p13-epoch-range-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pin PR24 source and preserve all P13 P5 P9 code
+        run: |
+          set -euo pipefail
+          git cat-file -e 75c6ee2db50a06a0f3141835f063695c26c6ebc7^{commit}
+          git diff --exit-code 75c6ee2db50a06a0f3141835f063695c26c6ebc7 HEAD -- icm.py play.py fieldsim.py context.py bot.py preflop.py plan.py
+          echo "PASS P13 epoch, parallel field, P9 MC and P5 strategic producer blobs intact"
+      - name: Compile production dependencies and original P8 PR23 witness
+        run: |
+          python3 -m py_compile session.py range_posterior_v1.py \
+            tools/verify_pr21_actor_bf_provenance.py \
+            tools/verify_p13_field_epoch_freshness.py
+      - name: Execute original PR23 actor BF witness against PR24 code
+        run: python3 tools/verify_pr21_actor_bf_provenance.py
+      - name: P8 real P13 current stale frozen epoch through layers replay P5
+        run: python3 tools/verify_pr24_p8_epoch_evidence_endtoend.py
+      - name: P13 remote-only, frozen common-round, live2 and missing epoch proof
+        run: |
+          python3 tools/verify_p13_field_epoch_freshness.py
+          python3 tools/verify_p13_complete_field_bf.py
+          python3 tools/verify_p13_runtime_provenance.py
+      - name: Parallel vs sequential frozen-field replay
+        env:
+          T2_BOT_LOG: "2"
+        run: python3 tools/verify_parallel_table_processes.py 18 0 11
+      - name: P8 weighted, conditional ON/OFF and missing legacy fallback
+        run: |
+          python3 tools/verify_hand130_conditioned_posterior.py
+          python3 tools/verify_pr16_p5_provenance.py
+          python3 tools/verify_weighted_sampling.py
+          python3 tools/verify_weighted_range_adapter.py
+          python3 tools/verify_p13_bf_observer_likelihood.py
+      - name: P9 zero/partial/valid-zero MC, seed variance ties and RNG
+        run: python3 tools/verify_hand130_mc_contract.py
+      - name: P5 calloff, HAND130 odd chips and P13 partial-call regression
+        run: |
+          python3 tools/verify_hand130_calloff_isolation.py
+          python3 tools/verify_hand130_exact_icm.py
+          python3 tools/verify_hand130_partial_call_icm.py
+          python3 tools/compare_hand130_range_v1.py
+      - name: Default-OFF same-seed full replay against PR24
+        run: |
+          git worktree add --detach /tmp/p8_pr24_before 75c6ee2db50a06a0f3141835f063695c26c6ebc7
+          for seed in 11 12; do
+            (cd /tmp/p8_pr24_before && python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/pr24_off_before_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 4 "/tmp/pr24_off_after_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/pr24_off_before_%s.json'%seed))
+              b=json.load(open('/tmp/pr24_off_after_%s.json'%seed))
+              print({'mode':'OFF','seed':seed,'identical':a==b,'actions':len(a['pf'])})
+              assert a==b
+          print('PASS PR24 vs selective P8 integration default OFF')
+          PY
+      - name: Conditional ON same-seed full replay against PR24
+        env:
+          T2_RANGE_CONDITIONAL_V1: "1"
+        run: |
+          for seed in 11 12; do
+            (cd /tmp/p8_pr24_before && python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr24_on_before_${seed}.json")
+            python3 tools/r2_baseline_sim.py "$seed" 2 "/tmp/pr24_on_after_${seed}.json"
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (11,12):
+              a=json.load(open('/tmp/pr24_on_before_%s.json'%seed))
+              b=json.load(open('/tmp/pr24_on_after_%s.json'%seed))
+              print({'mode':'ON','seed':seed,'identical':a==b,'actions':len(a['pf'])})
+              assert a==b
+          print('PASS PR24 vs selective P8 integration conditional ON')
+          PY

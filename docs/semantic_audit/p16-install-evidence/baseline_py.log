@@ -1,0 +1,27 @@
+실행 폴더: /tmp/p16_before_aaj77r8s
+  원본: working tree 3c434b28 (chatgpt/p16-fresh-install-20261010)
+  모듈 31개, 데이터 3개
+  실행: cd "/tmp/p16_before_aaj77r8s" && python ui_server.py
+  참고: sidecar 이름은 이제 상태 파일 경로에서 나옵니다 —
+        T2_LIVE_STATE 가 다르면 아카이브도 갈립니다 (storage_paths).
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/tmp/p16_before_aaj77r8s/live2.py", line 5, in <module>
+    import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
+  File "/tmp/p16_before_aaj77r8s/fieldsim.py", line 3, in <module>
+    import play, session as SE, persona as PS, reads as RD, field as FLD
+  File "/tmp/p16_before_aaj77r8s/session.py", line 6, in <module>
+    import range_posterior_v1 as RP
+ModuleNotFoundError: No module named 'range_posterior_v1'
+
+ENTRYPOINT
+Traceback (most recent call last):
+  File "/tmp/p16_before_aaj77r8s/ui_server.py", line 39, in <module>
+    import live2 as L
+  File "/tmp/p16_before_aaj77r8s/live2.py", line 5, in <module>
+    import fieldsim as FS, play, session as SE, view, persona as PS, reads as RD
+  File "/tmp/p16_before_aaj77r8s/fieldsim.py", line 3, in <module>
+    import play, session as SE, persona as PS, reads as RD, field as FLD
+  File "/tmp/p16_before_aaj77r8s/session.py", line 6, in <module>
+    import range_posterior_v1 as RP
+ModuleNotFoundError: No module named 'range_posterior_v1'
