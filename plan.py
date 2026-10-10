@@ -3585,11 +3585,15 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 'objective_unconditional_bf': float(bf),
                 'objective_spot_bf': float(_spot_bf),
                 'exact_hu_icm': dict(_exact_hu_icm) if _exact_hu_icm else None,
-                'mathematically_justified': (
-                    not bool(_exact_hu_icm) or
+                # A complete layer is NOT a confidence interval. Even an
+                # exact payout ICM model cannot certify the unarchived
+                # opponent range or finite-MC equity point estimate.
+                'mathematically_justified': False,
+                'conditional_point_estimate_action': True,
+                'objective_icm_tie_verdict_conditional': (
                     _exact_hu_icm.get('objective_action_with_fixed_equity')
-                    != 'uncertain'),
-                'estimate_status': 'point_estimate_range_uncertainty_not_bounded',
+                    if _exact_hu_icm else None),
+                'estimate_status': 'point_estimate_sampling_and_range_error_unbounded',
             })
             _pf_timing = {'kind': 'calloff_layer',
                           'eq': _layer_j.get('layer_effective_equity'),
