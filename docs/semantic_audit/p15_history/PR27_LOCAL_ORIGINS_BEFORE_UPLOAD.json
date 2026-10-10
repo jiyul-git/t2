@@ -1,0 +1,44 @@
+{
+  "pass": true,
+  "baseline": "3c434b28046643ba54c04447951ad148ae6f9c1c",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "entries": 27,
+  "seed": 817,
+  "rounds_per_mode": 3,
+  "modes": [
+    "default",
+    "deferred",
+    "vclock"
+  ],
+  "results": [
+    {
+      "timing": "off",
+      "paired_game_state_and_rng_identical": true,
+      "default_hero_and_bot_epochs_equal": false,
+      "deferred_start_epochs_equal": true,
+      "vclock_independent_batch_origin": true,
+      "synchronous_origin_archived": true,
+      "actual_completed_hands": {
+        "default": 8,
+        "deferred": 8,
+        "vclock": 5
+      },
+      "source_labels": "audit call-stack observations; not new production fields"
+    },
+    {
+      "timing": "on",
+      "paired_game_state_and_rng_identical": true,
+      "default_hero_and_bot_epochs_equal": false,
+      "deferred_start_epochs_equal": true,
+      "vclock_independent_batch_origin": true,
+      "synchronous_origin_archived": true,
+      "actual_completed_hands": {
+        "default": 8,
+        "deferred": 8,
+        "vclock": 6
+      },
+      "source_labels": "audit call-stack observations; not new production fields"
+    }
+  ]
+}

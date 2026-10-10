@@ -1,0 +1,30 @@
+{
+  "pass": true,
+  "entries": 27,
+  "tables": 3,
+  "seed": 4,
+  "plan": [
+    [
+      1,
+      [
+        804164539
+      ]
+    ],
+    [
+      2,
+      [
+        366662051
+      ]
+    ]
+  ],
+  "actual_bot_hands_per_mode": 2,
+  "actual_parallel_workers": 2,
+  "compute_others_parallel_actual_hands_total": 4,
+  "additional_direct_step_others_actual_hands_total": 4,
+  "full_worker_result_equal": true,
+  "actions_and_all_bf_provenance_equal": true,
+  "time_banks_and_coordinator_rng_equal": true,
+  "excluded_log_fields": [
+    "compute_ms"
+  ]
+}

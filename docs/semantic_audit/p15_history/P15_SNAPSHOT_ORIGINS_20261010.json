@@ -1,0 +1,32 @@
+{
+  "pass": true,
+  "baseline": "75c6ee2db50a06a0f3141835f063695c26c6ebc7",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "entries": 27,
+  "seed": 817,
+  "rounds_per_mode": 3,
+  "modes": [
+    "default",
+    "deferred",
+    "vclock"
+  ],
+  "results": [
+    {
+      "timing": "off",
+      "paired_game_state_and_rng_identical": true,
+      "default_hero_and_bot_epochs_equal": false,
+      "deferred_start_epochs_equal": true,
+      "vclock_independent_batch_origin": true,
+      "bf_origin_preserved": true
+    },
+    {
+      "timing": "on",
+      "paired_game_state_and_rng_identical": true,
+      "default_hero_and_bot_epochs_equal": false,
+      "deferred_start_epochs_equal": true,
+      "vclock_independent_batch_origin": true,
+      "bf_origin_preserved": true
+    }
+  ]
+}

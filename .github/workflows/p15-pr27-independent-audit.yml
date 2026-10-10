@@ -1,0 +1,29 @@
+name: P15 PR27 Independent Audit
+on:
+  push:
+    branches: [chatgpt/p15-pr27-remote-audit-20261010]
+  workflow_dispatch:
+jobs:
+  independent-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: P15 nine independent gates and exact production-source guard
+        run: python tools/run_p15_pr27_audit.py
+      - name: Actual executed counts and environment
+        if: always()
+        run: |
+          cat p15-ci-results/summary.json
+          cat p15-ci-results/two_real_nonhero_tables.json
+          cat p15-ci-results/origins_and_paired_game_rng.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p15-pr27-independent-audit
+          path: p15-ci-results/
