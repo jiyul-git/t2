@@ -64,7 +64,7 @@ def main():
     used=pseed['pf_calloff_consumer']
     nearly(used['objective_spot_bf'],x['equivalent_bubble_factor'],'planner BF')
     nearly(pseed['pf_calloff_compare']['icm_required_equity'],
-           x['no_tie_breakeven_equity'],'planner price')
+           round(x['no_tie_breakeven_equity'], 6),'planner rounded price')
     assert used['gate_pass'] is False and used['strategy_consumer'] is True
     assert used['decision_quantity'] == 'perceived_layer_equity_vs_spot_icm_price'
     print('PASS full HAND130 objective-spot BF propagation to personal planner')
