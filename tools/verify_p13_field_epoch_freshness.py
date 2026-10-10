@@ -64,7 +64,7 @@ def latest_remote_only():
     assert fresh['value']!=1.0
     # After restamping at the genuine new decision epoch, full-field generic
     # ICM is again allowed; the changed chips must affect its underlying set.
-    h2=stamped(f) if False else hand(LOCAL,ALL)
+    h2=hand(LOCAL,ALL)
     f.stamp(h2)
     now=h2.bf_details(3)
     assert now['is_exact'] and now['field_epoch_status']=='current_verified'
@@ -125,6 +125,29 @@ def no_attestation():
     print('PASS unverified/PID-only source never claims current exact ICM')
 
 
+def live_hero_common_epoch():
+    # Real live2 hero-hand constructor, NOT only isolated Field.stamp.
+    # Worker completion is not yet incorporated when the hero acts.
+    import live2 as L
+    f=FS.Field(entries=18,start_stack=30000,hero_pid=0,seed=817)
+    state={'field':L._dump(f),'hand_seed':10018}
+    loaded,tb,alive,h,hero=L.build_hand(state)
+    assert loaded.remaining()>len(alive)
+    assert h.field_snapshot_scope=='simultaneous_frozen'
+    assert h.field_snapshot_id==loaded._frozen_field['epoch_id']
+    assert h._field_frozen_epoch_ref is loaded._frozen_field
+    prov=h.bf_details(hero)
+    assert prov['field_snapshot_scope']=='simultaneous_frozen'
+    assert not prov['snapshot_current'] and not prov['is_exact']
+    assert prov['field_epoch_status']=='frozen_epoch_reference'
+    print(json.dumps({'case':'live2_hero_round_start',
+                      'remaining':loaded.remaining(),
+                      'local':len(alive),
+                      'epoch':h.field_snapshot_id,
+                      'method':prov['method'],
+                      'is_exact_current':prov['is_exact']},sort_keys=True))
+
+
 def actor_provenance():
     run,rnd=fixture()
     old=os.environ.get('T2_RANGE_CONDITIONAL_V1')
@@ -157,5 +180,6 @@ if __name__=='__main__':
     latest_remote_only()
     simultaneous_frozen()
     no_attestation()
+    live_hero_common_epoch()
     actor_provenance()
     print('PASS P13 epoch/remote drift, frozen reference and P8 target-actor provenance')
