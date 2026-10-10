@@ -68,8 +68,18 @@ def main(on):
                 actor=meta.get('actor_bf_provenance')
                 if actor is None:continue
                 actor_count+=1
-                assert meta['observer_model_inputs']['actor_bf_provenance']==actor
-                assert meta['observer_model_inputs']['bubble_factor']==actor['value']
+                # Supported action classes have a likelihood-input block.
+                # Unsupported public actions legitimately carry provenance
+                # ONLY at the top level as explicit legacy_fallback; they
+                # must not claim to have conditioned on this BF.
+                if 'observer_model_inputs' in meta:
+                    assert meta['observer_model_inputs']['actor_bf_provenance']==actor
+                    assert meta['observer_model_inputs']['bubble_factor']==actor['value']
+                else:
+                    assert meta['status']=='legacy_fallback',meta
+                    assert meta['complete'] is False
+                    assert meta['failure_kind']=='model_unavailable'
+                    assert meta['actor_bf_likelihood_direct_input'] is False
                 assert meta['actor_bf_evaluation_phase']=='observer_reconstruction'
                 assert meta['actor_action_epoch_bf_verified'] is False
                 assert actor['observed_field_epoch_id'] is None
