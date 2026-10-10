@@ -1,0 +1,237 @@
+name: P17 final C4 integration and independent release review
+on:
+  push:
+    branches: [chatgpt/p17-c4-final-integration-20261011]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  p17-contracts:
+    name: Exact integration and MC HAND130
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/verify_p17_c4_integration.py guard
+    - run: python tools/verify_p17_final_integration.py mc p17-results/mc
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p17-contracts
+        path: p17-results/
+  p17-installation:
+    name: Six ZIPs eight starts wallet and installed MC
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/verify_p17_final_integration.py install p17-results/install
+    - run: python tools/verify_p17_final_integration.py installed-mc p17-results/installed-mc
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p17-installation
+        path: p17-results/
+  p17-field:
+    name: ICM provenance epoch three tables RNG
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/verify_p17_final_integration.py field p17-results/field
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p17-field
+        path: p17-results/
+  p17-normal-parity:
+    name: PR27 versus integration default OFF ON
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/verify_p17_final_integration.py parity p17-results/parity
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p17-normal-parity
+        path: p17-results/
+  p17-frozen-parity:
+    name: Frozen seeds new difference detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/compare_p17_final_baselines.py p17-results/baselines
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p17-frozen-traces
+        path: p17-results/
+  p17-legacy-replan:
+    name: Repaired C1-C7 complete replan contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Execute original test without changing its assertions
+      shell: bash
+      run: 'mkdir -p p17-results/legacy-replan
+
+        set -o pipefail
+
+        python tools/verify_replan_contract.py 2>&1 | tee p17-results/legacy-replan/original.log
+
+        '
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p17-legacy-replan
+        path: p17-results/
+  p11-c4:
+    name: P11 C1-C7 and current 849-event A6 fixture
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Exact four-stage C1-C7 forwarding contract
+      run: 'mkdir -p p11-results
+
+        python tools/verify_replan_contract.py | tee p11-results/c1-c7.log
+
+        python tools/replan_context_contract_check.py | tee p11-results/position-contract.log
+
+        '
+    - name: A6 original-branch semantics with P11 values dropped ONLY at boundary
+      run: python -u tools/verify_p11_c4_runtime.py old p11-results/a6-old.pkl
+    - name: A6 fixed actual production full seeded fixture
+      run: python -u tools/verify_p11_c4_runtime.py fixed p11-results/a6-fixed.pkl
+    - name: Replay 810 original contexts; compare all arms and final state
+      run: 'python -u tools/verify_p11_c4_runtime.py compare p11-results/a6-old.pkl p11-results/a6-fixed.pkl p11-results/a6-comparison.json
+
+        rm -f p11-results/a6-old.pkl p11-results/a6-fixed.pkl
+
+        '
+    - name: Independent P17 exact A6 and event143 review
+      run: python tools/verify_p17_c4_integration.py a6 p11-results/a6-comparison.json
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p11-c4-a6
+        path: p11-results/
+  p11-mc:
+    name: HAND130 postflop F3 F4 F5 MC None and BF context
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/verify_p17_final_integration.py mc p11-results/mc
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p11-mc
+        path: p11-results/
+  p11-field:
+    name: Full field BF provenance epoch concurrency and RNG
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/verify_p17_final_integration.py field p11-results/field
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p11-field
+        path: p11-results/
+  p11-install:
+    name: Full installation wallet and installed MC
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/verify_p17_final_integration.py install p11-results/install
+    - run: python tools/verify_p17_final_integration.py installed-mc p11-results/installed-mc
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p11-installation
+        path: p11-results/
+  p11-frozen:
+    name: Frozen seed attribution (no baseline regeneration)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: python tools/compare_p17_final_baselines.py p11-results/frozen
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: p11-frozen
+        path: p11-results/
+  p11-scoped:
+    name: SHA exact isolated scope and protected source guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Assert only scoped production deltas and no frozen overwrite
+      shell: bash
+      run: python tools/verify_p17_c4_integration.py guard
