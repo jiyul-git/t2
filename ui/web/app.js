@@ -4060,8 +4060,13 @@ async function callStepStream(body, msg) {
       const showConfirmed = () => {
         S.earlyShownHash = e.hash ? String(e.hash) : null;
         S.winners = {};
-        (e.winners || []).forEach((seat) => { S.winners[String(seat)] = 1; });
-        S.awards = null;  // The final server result owns exact side-pot awards.
+        // Display the confirmed winning seat(s) right at the end of the
+        // river hold; do not invent any side-pot amounts or tied-pot splits.
+        S.awards = {};
+        (e.winners || []).forEach((seat) => {
+          S.winners[String(seat)] = 1;
+          S.awards[String(seat)] = [{label: '승리', split: false}];
+        });
         // After the staged board is fully exposed, keep all five cards on
         // screen. The non-final all-in view intentionally hides future cards.
         const fv = revealView(preview, true);
@@ -4074,9 +4079,12 @@ async function callStepStream(body, msg) {
         }
         const row = $('#mainrow');
         if (row) {
+          const names = (e.winners || []).map((seat) =>
+            String(seat) === String(e.hero_seat) ? '나' : seat + '번');
           row.innerHTML = '<div class="wait">' +
-            (preview.showdown ? '쇼다운 공개 완료 · 최종 정산 중…'
-                              : '핸드 결과 확정 · 최종 정산 중…') + '</div>';
+            (names.length ? '승리: ' + esc(names.join(' · '))
+                          : '핸드 결과 확인') +
+            ' · 최종 정산 중…</div>';
         }
         sendMotionAck(e);
         playing = false;
