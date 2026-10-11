@@ -77,6 +77,9 @@ def field(out):
 def parity(out):
  import concurrent.futures
  out.mkdir(parents=True,exist_ok=True)
+ # Captured simulations run from detached worktrees, so output destinations
+ # must be absolute paths in the integration checkout.
+ out=out.resolve()
  # Preserve the original default-policy failure and every original assertion.
  legacy=subprocess.run([sys.executable,'tools/verify_p17_final_integration.py','parity',str(out/'legacy')],cwd=ROOT,capture_output=True,text=True,timeout=1200)
  (out/'legacy_original.log').write_text(legacy.stdout+legacy.stderr)
