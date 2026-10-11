@@ -100,7 +100,7 @@ def main():
                     'result': {'hash':'live'+str(i), 'hero_hole':['Ac','Ad'],
                                'board': [], 'shown_hole': {},
                                'winners':[1], 'how':'fold'},
-                }) + '\\n')
+                }) + '\n')
         class Paths:
             SRC_LEGACY_AMBIGUOUS = 'legacy_alt_ambiguous'
             def resolve_read(self, kind):
