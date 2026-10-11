@@ -3,6 +3,7 @@ import random, json, os, hashlib, itertools, zlib as _zlib
 import zlib as _zlib
 import bot, preflop as pf, ranges as R, plan as PL, icm, dynamics as DY, runner as RU, reads as RD, gto as _GTO, persona as PS, money_pressure as MP, action_events as AE
 import timing as TM
+import time as _bot_walltime  # UI-observed computation; isolated from strategy RNG
 import range_posterior_v1 as RP
 from play import Hand, POST, PRE
 
@@ -1252,12 +1253,14 @@ def award_pots(contrib, hole, board, folded, stacks, dead=0, unit=1,
 class HandRun:
     """히어로 차례에 yield하고 send()로 재개하는 핸드 진행기.
        REPLAY: 이미 확정된 봇 결정은 재계산하지 않고 그대로 재생한다."""
-    def __init__(self, hand, decisions=None, on_bot_action=None, timing_ctx=None):
+    def __init__(self, hand, decisions=None, on_bot_action=None, timing_ctx=None, on_bot_start=None):
         self.h = hand
         self.REPLAY = list(decisions or [])
         self.recorded = []
         self._didx = 0
         self.on_bot_action = on_bot_action
+        self.on_bot_start = on_bot_start
+        self._bot_compute_started = None
         # 시간 규칙(timing.py). None 이면 지금과 완전히 같다.
         #   tour_seed, fmt_key, banks{pid: 초}(이 dict 를 직접 정산), enforce(타임아웃 적용 여부)
         self.timing = timing_ctx
@@ -1321,7 +1324,13 @@ class HandRun:
         timing_c = c * effort['weight']
         v = TM.visible_seconds(traits, timing_c, s_struct, m, K, trivial, commit, jit,
                                base, familiarity=familiar)
-        st = TM.settle(v['visible'], base, bank)
+        observed = (max(0.0, _bot_walltime.monotonic() - self._bot_compute_started[1])
+                    if self._bot_compute_started is not None
+                    and self._bot_compute_started[0] == seat else None)
+        # Only the explicitly streamed hero-table path uses wall-clock computation.
+        # All replay, CLI, worker and frozen-seed simulations remain deterministic.
+        effective = max(1.5, v['visible'], observed) if observed is not None else v['visible']
+        st = TM.settle(effective, base, bank)
         TM.bank_put(banks, pid, st['bank_left'], T.get('clock'))
         rec = {'pid': pid, 'seat': seat, 'street': street, 'c': c, 's': s_struct, 'm': m,
                'commit': commit, 'K': K, 'n_concepts': len(concepts or ()),
@@ -1336,6 +1345,7 @@ class HandRun:
                    'uncertain' if boundary_known and c >= 0.60 else
                    'unclassified' if familiar is None else 'other'),
                'visible': v['visible'], 'elapsed': st['elapsed'], 'base': base,
+               'actual_compute_seconds': observed, 'effective_visible': effective,
                'bank_before': bank, 'bank_used': st['bank_used'],
                'timed_out': st['timed_out']}
         if T.get('fingerprint'):
@@ -1343,6 +1353,18 @@ class HandRun:
             rec['rng_fp'] = _zlib.crc32(repr(self.h.rng.getstate()).encode())
         self.timing_log.append(rec)
         return rec
+
+    def _begin_bot_compute(self, seat, street):
+        """Notify UI before real work; no poker RNG or decisions are consumed."""
+        if self.on_bot_start is None:
+            return
+        self._bot_compute_started = (seat, _bot_walltime.monotonic())
+        try:
+            self.on_bot_start({'kind': 'bot_begin', 'seat': int(seat),
+                               'street': street, 'pid': self._pid(seat)})
+        except Exception:
+            # A lost browser cannot stop the engine from recovering the hand.
+            pass
 
     def _emit_bot_action(self, street, seat, action, amount, board=None):
         """UI 진행 콜백. 전략/난수에는 관여하지 않고 관측만 전달한다."""
@@ -1368,6 +1390,8 @@ class HandRun:
         except Exception:
             # 화면 연결이 끊겨도 핸드 계산과 저장은 끝까지 진행한다.
             pass
+        finally:
+            self._bot_compute_started = None
 
     def _emit_street(self, street, board):
         """새 스트리트 보드는 첫 봇 판단 전에 UI에 먼저 알린다."""
@@ -1814,6 +1838,7 @@ class HandRun:
                 aggressor, callers, limpers = _update_pf_state_after_apply(
                     rnd, s, aggressor, callers, limpers)
                 continue
+            self._begin_bot_compute(s, 'preflop')
             ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
 
             # F8-D6-B: only opponents currently eligible for contributed pot layers.
@@ -2200,6 +2225,8 @@ class HandRun:
                 _tm_concepts = PS.concept_tap() if self.timing else None
                 _ck = _cache_key(street, s, len(r2.log))
                 _forced = next((d for d in self.REPLAY if d[0] == _ck), None)
+                if not _forced:
+                    self._begin_bot_compute(s, street)
                 # 예전에는 여기서 바로 apply 하고 continue 했다. 그러면 계획 수립을
                 # 통째로 건너뛰어서 **액션은 실행되는데 그 근거가 없었다.**
                 # plan=None 기록이 그래서 나왔고, 계획-집행 일치 검사의
