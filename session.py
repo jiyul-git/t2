@@ -1399,6 +1399,22 @@ class HandRun:
         finally:
             self._bot_compute_started = None
 
+    def _emit_hand_settle_begin(self, street, live):
+        """Terminal betting round boundary: never synthesize another bot clock.
+
+        UI-only and opt-in for streamed play; replay, simulation and strategy
+        RNG are untouched. The server waits for the visible prior action ACK.
+        """
+        if self.on_bot_start is None or self.on_bot_action is None:
+            return
+        mode = 'showdown' if len(live) > 1 else 'uncontested'
+        try:
+            self.on_bot_action({'kind': 'hand_settle_begin', 'street': street,
+                                'mode': mode})
+        except Exception:
+            # A disconnected browser cannot strand gameplay settlement.
+            pass
+
     def _emit_street(self, street, board):
         """새 스트리트 보드는 첫 봇 판단 전에 UI에 먼저 알린다."""
         if self.on_bot_action is None:
@@ -2171,6 +2187,7 @@ class HandRun:
         dead = ante_pot
 
         if len(live) <= 1:
+            self._emit_hand_settle_begin('preflop', live)
             self.result = self._finish(contrib, dead, folded, live, [], 'preflop')
             return
 
@@ -3204,6 +3221,7 @@ class HandRun:
                 # 폴드로 끝났다. **여기서 보드를 더 깔면 레빗헌트다.**
                 # 예전에는 h.board(5장 전부)를 넘겨서, 턴에서 끝난 판에도
                 # 리버 카드가 결과에 찍혔다.
+                self._emit_hand_settle_begin(street, live)
                 _r = self._finish(contrib, dead, folded, live, board, 'showdown')
                 # 화면에는 그 시점 보드까지만(레빗헌트 금지).
                 # 남은 카드는 리뷰용으로 별도 키에 담는다 —
@@ -3214,6 +3232,7 @@ class HandRun:
                 return
 
         # 전원이 올인이든 리버까지 왔든, 여기까지 오면 보드가 다 깔린다.
+        self._emit_hand_settle_begin('river', live)
         self.result = self._finish(contrib, dead, folded, live, h.board, 'showdown')
         return
 
