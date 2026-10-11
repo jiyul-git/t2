@@ -99,4 +99,8 @@ assert(code.includes('revealShowdown(preview, runout)') &&
        'early stream bypasses staged board runout');
 assert(code.includes('const fv = revealView(preview, true)'),
        'early stream may erase fully shown river when confirming winner');
+assert(code.includes("S.awards[String(seat)] = [{label: '승리', split: false}]"),
+       'confirmed early winner badge missing at +800ms');
+assert(code.includes("'승리: ' + esc(names.join(' · '))"),
+       'early winner name missing at +800ms');
 console.log('PASS: preflop allin exact 0/1.5/3/3.8s, nonpreflop behavior, no early winner or 5-card leak');
