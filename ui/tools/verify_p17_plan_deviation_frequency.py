@@ -6,8 +6,11 @@ just a standalone Bernoulli formula. A 7.5% policy ceiling is explicitly user
 requested and is not an empirical equity estimate.
 """
 import random
+import sys
+from pathlib import Path
 from unittest import mock
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import plan as P
 
 TRIALS = 12000
