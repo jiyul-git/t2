@@ -54,6 +54,8 @@ def main():
                 raise AssertionError('server did not start')
 
             received = 0
+            settled = False
+            result_seen = False
             for seed in (5, 11, 13, 17):
                 state = req('/api/new', {'entries': 9, 'seed': seed})
                 v = state.get('view') or {}
@@ -68,21 +70,26 @@ def main():
                     headers={'Content-Type': 'application/json'})
                 last_begin = None
                 last_acked = 0
+                settled = False
+                result_seen = False
                 with urllib.request.urlopen(request, timeout=160) as response:
                     for row in response:
                         msg = json.loads(row)
                         if msg.get('type') == 'error':
                             raise AssertionError(msg)
                         if msg.get('type') == 'final':
+                            assert settled and result_seen, ('missing terminal/result event', received)
                             break
                         if msg.get('type') != 'bot_action':
                             continue
                         event = msg['event']
                         if event['kind'] == 'bot_begin':
+                            assert not settled, 'new bot calculation after terminal river/fold'
                             assert event['clock_started_ms'] >= last_acked - 30, (
                                 event, last_acked)
                             last_begin = event
                         elif event['kind'] == 'bot_action':
+                            assert not settled, 'bot action after terminal betting round'
                             assert last_begin is not None, ('missing bot_begin', event)
                             assert last_begin['seat'] == event['seat'], (last_begin, event)
                             dt = event['act_at_ms'] - last_begin['clock_started_ms']
@@ -93,6 +100,20 @@ def main():
                                 dt, model, actual)
                             received += 1
                             last_begin = None
+                        elif event['kind'] == 'hand_settle_begin':
+                            assert last_begin is None, 'terminal started inside bot computation'
+                            assert not settled, 'duplicate terminal boundary'
+                            assert event.get('mode') in ('showdown', 'uncontested'), event
+                            settled = True
+                        elif event['kind'] == 'hand_result_ready':
+                            assert settled and not result_seen, 'early result out of order'
+                            assert event.get('mode') in ('showdown', 'uncontested'), event
+                            assert isinstance(event.get('shown'), dict)
+                            assert isinstance(event.get('winners'), list)
+                            assert isinstance(event.get('board'), list)
+                            assert event.get('hash'), 'result requires the true hand identity'
+                            assert 'hole' not in event, 'unshown cards must never leak'
+                            result_seen = True
                         # Browser ACKs on actual motion completion, not calculation.
                         time.sleep(.08)
                         ack = req('/api/step-ack', {'stream_id': msg['stream_id'],
@@ -102,7 +123,8 @@ def main():
                 if received:
                     break
             assert received >= 1, 'no actual post-hero bot decision was observed'
-            print('PASS: %d real bot turns >= max(1.5,model,actual), next turn after motion ACK' % received)
+            assert settled and result_seen, 'no verified terminal transition and early public result'
+            print('PASS: %d real bot turns, strict ACK order, explicit terminal boundary and muck-safe early result' % received)
         finally:
             proc.terminate()
             try:
