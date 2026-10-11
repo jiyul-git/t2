@@ -3865,6 +3865,21 @@ function stepEventReceiver(onStart, onEvent, onFinal, onError) {
   };
 }
 
+function afterBoardMotion(done) {
+  // The engine may not begin the next-street bot before board/chip animations end.
+  const elements = Array.from(document.querySelectorAll(
+    '#board .card.deal, #chips .toPot'));
+  const ongoing = elements.flatMap((el) =>
+    typeof el.getAnimations === 'function' ? el.getAnimations() : []);
+  if (ongoing.length) {
+    Promise.all(ongoing.map((anim) => anim.finished.catch(() => {})))
+      .then(done);
+  } else {
+    // Reduced motion / no animations: still wait for a completed paint.
+    requestAnimationFrame(() => requestAnimationFrame(done));
+  }
+}
+
 async function callStepStream(body, msg) {
   // Scheduled action times include thinking; allow a brief visible result frame.
   const BOT_ACTION_FEEDBACK_MS = 550;
@@ -4018,24 +4033,13 @@ async function callStepStream(body, msg) {
       publishPrev();
 
       heroPauseUntil = 0;
-      // Wait for the actual CSS board deal and chip-to-pot animations.
-      // Flop cards have staggered delays; 360 ms is NOT always enough.
-      const animated = Array.from(document.querySelectorAll(
-        '#board .card.deal, #chips .toPot'));
-      const ongoing = animated.flatMap((el) =>
-        typeof el.getAnimations === 'function' ? el.getAnimations() : []);
-      const finishBoard = () => {
+      // Flop cards have staggered delays. An arbitrary 360ms ACK would
+      // release the next bot while the board is visibly still opening.
+      afterBoardMotion(() => {
         sendMotionAck(e);
         playing = false;
         playNext();
-      };
-      if (ongoing.length) {
-        Promise.all(ongoing.map((anim) => anim.finished.catch(() => {})))
-          .then(finishBoard);
-      } else {
-        // Fallback for browsers without Web Animations or reduced motion.
-        requestAnimationFrame(() => requestAnimationFrame(finishBoard));
-      }
+      });
       return;
     }
 
