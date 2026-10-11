@@ -76,12 +76,10 @@ def _insert(st, event, at, available=None):
     for entry in event['entries']:
         if entry['status'] not in ('reserved', 'waiting') or entry.get('pid') is not None:
             continue
-        # Paying reserves a stack, not a seat already posting blinds. Seat the
-        # first entry only once the player requests admission.
-        if not event.get('enter_requested'):
-            continue
-        eligible = max(active_seconds(max(0.0, entry['created_at'] - event['starts_at'])),
-                       _enter_time(event))
+        # Paid registration is the seat/stack entitlement. The UI admission
+        # request only switches this already-seated sit-out player into live play.
+        # A player who never opens /play still posts every required ante/SB/BB.
+        eligible = active_seconds(max(0.0, entry['created_at'] - event['starts_at']))
         if eligible > at + 1e-9:
             continue
         tb = _seat(f, available)
@@ -113,6 +111,8 @@ def _insert(st, event, at, available=None):
         entry['status'] = 'playing'
         # Reserve -> seat assignment has one owner. A job may retry, but its
         # revision must still match before these assignments can be committed.
+        # Until the UI actually joins, this pid remains in sitout_pids and
+        # participates in real hands with automatic check/fold.
         st['background_pending'] = {}
         if event.get('enter_requested') and at >= _enter_time(event):
             st['hero_ready'] = True
