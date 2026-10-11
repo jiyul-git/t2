@@ -2372,6 +2372,10 @@ class H(BaseHTTPRequestHandler):
                                                           + float(event.get('timing', {}).get('bank_before') or 0)) * 1000),
                                     actual_compute_seconds=round(calc_sec, 6),
                                     model_elapsed_seconds=model_sec)
+                            elif sequential and kind == 'hand_settle_begin':
+                                # The betting round has ended; this is NOT a bot
+                                # decision and must not schedule a think timer.
+                                pass
                             elif _sched is not None:
                                 _sched.stamp(event)
 
