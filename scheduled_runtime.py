@@ -364,9 +364,26 @@ def advance(event, target, budget=18, parallel=True):
                 st['background_seconds'] = max(st.get('background_seconds', 0), target)
                 st['background_resume_at'] = min(float(e['end']) for e in heads.values())
                 break
+        committed = {tid: pending[tid][:n] for tid, n in batch.items()}
         merged = L.apply_vclock_events(
-            st, {tid: pending[tid][:n] for tid, n in batch.items()}, {}, when,
+            st, committed, {}, when,
             barrier_time=when if h4h else None)
+        # Journal only CONFIRMED table hands, never speculative lookahead
+        # events. The journal is stored in the same revisioned tournament
+        # snapshot as chip stacks, so a worker retry cannot double-count.
+        history = st.setdefault('sitout_hand_history', [])
+        seen = {(h.get('hero_pid'), h.get('table_id'), h.get('table_hand_no'))
+                for h in history}
+        for tid in sorted(committed, key=int):
+            for e in committed[tid]:
+                h = e.get('sitout_hand')
+                if not h:
+                    continue
+                ident = (h.get('hero_pid'), h.get('table_id'),
+                         h.get('table_hand_no'))
+                if ident not in seen:
+                    history.append(dict(h, tournament_id=event['id']))
+                    seen.add(ident)
         st['field']['virtual_play_seconds'] = when
         st['field']['hand_no'] += steps
         _sync_level(st['field'], when)
