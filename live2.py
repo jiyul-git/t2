@@ -1481,6 +1481,27 @@ def step(action=None, amount=0, defer_others=False, others=None,
         raw = raw2
 
     if isinstance(raw, dict) and raw.get('done'):
+        if on_bot_action is not None and on_bot_start is not None:
+            # The HERO-hand result is now known, before any other-table
+            # settlement/archive work. Stream only publicly shown hole cards;
+            # never disclose hidden mucked hands or speculate on final rank.
+            _res = run.result or {}
+            try:
+                on_bot_action({
+                    'kind': 'hand_result_ready',
+                    'mode': 'showdown' if _res.get('showdown') else 'uncontested',
+                    'hash': _res.get('hash'),
+                    'hero_seat': h.hero,
+                    'board': list(_res.get('board') or []),
+                    'pot': int(_res.get('pot') or 0),
+                    'winners': list(_res.get('winners') or []),
+                    'shown': {str(seat): list(cards)
+                              for seat, cards in (_res.get('shown_hole') or {}).items()},
+                    'show_order': list(_res.get('show_order') or []),
+                })
+            except Exception:
+                # A disconnected client must never block settlement.
+                pass
         return finish(st, f, tb, alive, h, run, defer_others=defer_others,
                       parallel_others=others, round_base=_round_base,
                       vclock_others=vclock_others)
