@@ -3942,12 +3942,17 @@ async function callStepStream(body, msg) {
 
     const head = queue[0];
     if (head && head.kind === 'bot_begin') {
-      // This is emitted BEFORE the actual bot calculation starts. The timer
-      // must run while computation and the old modeled think clock run together.
+      // This event is sent only AFTER the preceding action/board ACK.
+      // No "computing" message is permitted before this real start signal.
       queue.shift();
       if (head.clock_started_ms && head.seat !== undefined) {
         seatClock(head.seat, head.clock_started_ms,
                   head.base_deadline_ms, head.bank_deadline_ms);
+      }
+      const row = $('#mainrow');
+      if (row) {
+        row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>';
+        computingHint = true;
       }
       playNext();
       return;
@@ -3968,11 +3973,12 @@ async function callStepStream(body, msg) {
     if (head && head.kind !== 'street' && head.seat !== undefined) clearSeatClock(head.seat);
 
     /*
-     * HERO 액션 직후 같은 스트리트의 첫 봇 액션에는 짧은 호흡을 둔다.
-     * 단, HERO가 스트리트를 닫았다면 street 이벤트는 막지 않는다 —
-     * 보드는 즉시 공개하고, 새 스트리트 쪽 pause가 첫 봇 액션을 늦춘다.
+     * Finish the HERO's visible action before either the board or any bot
+     * motion starts. The board will then ACK its own actual animation end,
+     * before the next street can calculate.
      */
-    if (head && !dueMs && head.kind !== 'street' && Date.now() < heroPauseUntil) {
+    if (head && (head.kind === 'street' || !dueMs) &&
+        Date.now() < heroPauseUntil) {
       playing = true;
       setTimeout(() => {
         playing = false;
@@ -4011,13 +4017,25 @@ async function callStepStream(body, msg) {
         '<span class="cur">' + (STREET[ss.stage] || ss.stage) + '</span> —';
       publishPrev();
 
-      // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
-      setTimeout(() => {
+      // Wait for the actual CSS board deal and chip-to-pot animations.
+      // Flop cards have staggered delays; 360 ms is NOT always enough.
+      const animated = Array.from(document.querySelectorAll(
+        '#board .card.deal, #chips .toPot'));
+      const ongoing = animated.flatMap((el) =>
+        typeof el.getAnimations === 'function' ? el.getAnimations() : []);
+      const finishBoard = () => {
         sendMotionAck(e);
         playing = false;
         playNext();
-      }, e.at_ms ? 360 : 360 + STREET_OPEN_PAUSE);
+      };
+      if (ongoing.length) {
+        Promise.all(ongoing.map((anim) => anim.finished.catch(() => {})))
+          .then(finishBoard);
+      } else {
+        // Fallback for browsers without Web Animations or reduced motion.
+        requestAnimationFrame(() => requestAnimationFrame(finishBoard));
+      }
       return;
     }
 
@@ -4105,11 +4123,8 @@ async function callStepStream(body, msg) {
   const requestBody = Object.assign({}, body, {request_id: requestId});
   let progressTimer = null, progressCursor = 0, streamError = null, progressStopped = false;
   let computingHint = false;
-  const computingTimer = setTimeout(() => {
-    if (settled || playing || queue.length || finalPayload || streamError) return;
-    const row = $('#mainrow');
-    if (row) { row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>'; computingHint = true; }
-  }, 1500);
+  // Never infer "bot calculation" from an elapsed HTTP request. The
+  // previous street may still be opening or the HERO motion still playing.
   const receive = stepEventReceiver(
     (obj) => {
       streamId = obj.stream_id || null;
@@ -4232,7 +4247,6 @@ async function callStepStream(body, msg) {
   } finally {
     progressStopped = true;
     clearTimeout(progressTimer);
-    clearTimeout(computingTimer);
     controller.abort();
     setBusy(false);
     if (S.queuedNew) {
