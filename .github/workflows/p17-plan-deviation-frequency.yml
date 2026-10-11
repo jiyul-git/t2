@@ -1,0 +1,28 @@
+name: P17 Explicit Plan Deviation Cap
+on:
+  push:
+    branches:
+      - chatgpt/p17-plan-deviation-frequency-20261012
+  workflow_dispatch:
+jobs:
+  decision-frequency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m py_compile plan.py
+      - run: python ui/tools/verify_p17_plan_deviation_frequency.py
+  preflop-calloff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: python tools/verify_prelogic_execution_boundary.py
+  old-ui-and-sitout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python ui/tools/verify_p17_sitout_hands.py
+      - run: python ui/tools/verify_p17_sequential_bot_stream.py
+      - run: node ui/tools/verify_p17_preflop_allin_runout_js.js
