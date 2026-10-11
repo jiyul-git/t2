@@ -78,9 +78,54 @@ def main():
             t['hands'] for t in ready['state']['field']['tables'].values())
         # No new wallet charge occurred while posted blinds/antes eroded stack.
         assert store.wallet()['balance'] == 19000
-        print('PASS: registered without login -> real sitout hands (%d), '
-              'own hole/public logs, actual stack settlement, stable hand numbers, '
-              'buy-in once' % len(history))
+        # Execute the exact live HTTP-history/hand-number functions extracted
+        # from the production server AST, without starting a second server or
+        # mutating the SQLite wallet. Verify visible order and card privacy.
+        import ast
+        import json
+        from types import SimpleNamespace
+        src = (ROOT / 'ui/server/ui_server.py').read_text(encoding='utf-8')
+        tree = ast.parse(src)
+        funcs = {'_sitout_hands', '_hero_hand_numbers',
+                 '_display_hand_number', '_public_history'}
+        nodes = [n for n in tree.body if isinstance(n, ast.FunctionDef)
+                 and n.name in funcs]
+        assert {n.name for n in nodes} == funcs
+        archive = pathlib.Path(td) / 'hand_archive2.jsonl'
+        with archive.open('w', encoding='utf-8') as fp:
+            for i, no in enumerate((200, 201)):
+                fp.write(json.dumps({
+                    'tournament_id': tid, 'hand_no': no, 'hero': history[0]['hero_seat'],
+                    'hole': {'1':['Ac','Ad'],'2':['Ks','Kh']},
+                    'result': {'hash':'live'+str(i), 'hero_hole':['Ac','Ad'],
+                               'board': [], 'shown_hole': {},
+                               'winners':[1], 'how':'fold'},
+                }) + '\\n')
+        class Paths:
+            SRC_LEGACY_AMBIGUOUS = 'legacy_alt_ambiguous'
+            def resolve_read(self, kind):
+                assert kind == 'archive'
+                return {'path': str(archive)}
+        globals_ = {
+            '_SP': Paths(), 'L': SimpleNamespace(load=lambda: ready['state']),
+            'os': os, 'json': json, '_HERO_HAND_NUMBER_CACHE': None,
+        }
+        exec(compile(ast.Module(body=nodes, type_ignores=[]),
+                     str(ROOT / 'ui/server/ui_server.py'), 'exec'), globals_)
+        visible = globals_['_public_history']()
+        expected = len(history)
+        assert len(visible) == expected + 2, (len(visible), expected)
+        assert [v['display_hand_no'] for v in visible] == list(
+            range(expected+2, 0, -1)), visible
+        assert sum(bool(v.get('sitout')) for v in visible) == expected
+        assert all('hole' not in v and 'reads' not in v for v in visible)
+        assert all(v.get('shown') == {} or v.get('shown') for v in visible)
+        assert globals_['_display_hand_number'](ready['state'], 202) == expected + 3
+        assert globals_['_hero_hand_numbers'](ready['state'])[200] == expected + 1
+
+        print('PASS: registered without login -> %d real sitout hands; '
+              'forced bets, wallet intact, public review and numbered history 1..%d'
+              % (expected, expected+2))
 
 
 if __name__ == '__main__':
