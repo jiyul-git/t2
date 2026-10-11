@@ -1675,6 +1675,19 @@ def river_bluff_anchor(profile, hero, board, my_range, st, p_old, pot=None, stac
             'w': round(w, 3), 'new': round(sh['new'], 4), 'top': round(sh['top'], 4)}
 
 
+# User-requested policy ceiling for EXPLICIT deviations from an already
+# selected plan, not an estimate of strategy EV or a universal mixed-action
+# probability. The midpoint (7.5%) is inside 1-in-10 to 1-in-20. Regular
+# value bets, bluff plans, mathematically justified responses, and re-plans
+# keep their independently computed probabilities.
+EXPLICIT_PLAN_DEVIATION_CAP = 0.075
+
+
+def explicit_plan_deviation_probability(original):
+    """Bound an explicitly marked plan override without adding an RNG draw."""
+    return max(0.0, min(EXPLICIT_PLAN_DEVIATION_CAP, float(original)))
+
+
 def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
                   street, rng, n_opp, to_act_behind, oop, initiative, opp_est=None,
                   oop_vs_aggr=None, oop_legacy_abs=None, opp_ranges=None, tilt=0.0):
@@ -1721,6 +1734,20 @@ def attach_intent(st, hero, board, my_range, opp_range, profile, pot, stack,
             why_a = '%s | 리버 블러프 기준선 %.0f%%(%s 주장 %.2f팟, 가짜 %.0f%%/미스 %.0f%%, blk %+.3f, w %.2f)' % (
                 why_a, _rb['p']*100, _rb['story'], _rb['size'],
                 _rb['fake']*100, _rb['air']*100, _rb['blk_net'], _rb['w'])
+    # Only an explicitly identified override of giveup/showdown is capped.
+    # Range-based c-bets and river-bluff claims must NOT silently override a
+    # previously chosen check plan at 25-50% just because their baseline is
+    # calibrated for a different reference population. No second RNG roll.
+    if plan in ('giveup', 'showdown') and why_a.startswith('DEVIATE:'):
+        _raw_dev_p = p_aggr
+        p_aggr = explicit_plan_deviation_probability(_raw_dev_p)
+        _trace(st, street, 'explicit_plan_deviation_gate',
+               original_p=round(_raw_dev_p, 6),
+               final_p=round(p_aggr, 6),
+               policy_cap=EXPLICIT_PLAN_DEVIATION_CAP,
+               plan=plan)
+        why_a += ' | 계획이탈 확률 %.2f%%(원래 %.2f%%, 상한 7.5%%)' % (
+            p_aggr * 100.0, _raw_dev_p * 100.0)
     _roll = rng.random()
     why_a += ' | 최종 실행 확률 %.2f%%' % (p_aggr * 100.0)
     _trace(st, street, 'aggression', p=round(p_aggr, 3), roll=round(_roll, 3),
@@ -2464,8 +2491,14 @@ def decide_response(profile, hero, board, street, plan, plan_state, eq, need,
     if plan == 'giveup' and has_c and eq < need - 0.05:
         disc = PS.temper(profile, 'discipline', 5.0)
         blr = (PS.sk(profile, 'reraise')/10.0) * (PS.sk(profile, 'bluff')/10.0)
-        p_dev = blr * 0.28 * max(0.05, 1.0 - 0.085*disc)
+        _raw_dev_p = blr * 0.28 * max(0.05, 1.0 - 0.085*disc)
+        p_dev = explicit_plan_deviation_probability(_raw_dev_p)
         _g_dev = _nv_gate(mult=1.0) if allow_raise else {'allow': False}
+        _trace(plan_state, street, 'explicit_plan_deviation_gate',
+               original_p=round(_raw_dev_p, 6),
+               final_p=round(p_dev, 6),
+               policy_cap=EXPLICIT_PLAN_DEVIATION_CAP,
+               plan=plan, ev_allowed=bool(_g_dev.get('allow')))
         if (allow_raise and _g_dev.get('allow')
                 and plan_state.get('made', 0) < 2
                 and rng.random() < p_dev):
