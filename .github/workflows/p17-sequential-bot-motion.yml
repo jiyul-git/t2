@@ -22,6 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python ui/tools/verify_p17_sequential_bot_stream.py
+  river-showdown-terminal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python ui/tools/verify_p17_terminal_river.py
   existing-timing:
     runs-on: ubuntu-latest
     timeout-minutes: 20
