@@ -3914,6 +3914,18 @@ async function callStepStream(body, msg) {
     });
   };
 
+  const sendMotionAck = (event) => {
+    // The server's gameplay lock is held until this exact visible motion ends.
+    // The ACK endpoint bypasses that lock; errors use the server timeout path.
+    const sid = event && (event._ackSid || streamId);
+    if (!sid || !event._ackSeq) return;
+    fetch('/api/step-ack', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({stream_id: sid, seq: event._ackSeq})
+    }).catch(() => {});
+  };
+
   const maybeFinish = () => {
     if (settled || playing || queue.length || !finalPayload) return;
     settled = true;
@@ -3929,6 +3941,17 @@ async function callStepStream(body, msg) {
     }
 
     const head = queue[0];
+    if (head && head.kind === 'bot_begin') {
+      // This is emitted BEFORE the actual bot calculation starts. The timer
+      // must run while computation and the old modeled think clock run together.
+      queue.shift();
+      if (head.clock_started_ms && head.seat !== undefined) {
+        seatClock(head.seat, head.clock_started_ms,
+                  head.base_deadline_ms, head.bank_deadline_ms);
+      }
+      playNext();
+      return;
+    }
 
     // 시간 규칙: 예정 시각까지 기다린다(봇은 그동안 좌석 시계 링이 줄어든다).
     const dueMs = head && (head.kind === 'street' ? head.at_ms : head.act_at_ms);
@@ -3991,6 +4014,7 @@ async function callStepStream(body, msg) {
       // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
       setTimeout(() => {
+        sendMotionAck(e);
         playing = false;
         playNext();
       }, e.at_ms ? 360 : 360 + STREET_OPEN_PAUSE);
@@ -4031,6 +4055,8 @@ async function callStepStream(body, msg) {
         publishPrev();
 
         setTimeout(() => {
+          // ACK only after the fold/chip/bet visual feedback has completed.
+          sendMotionAck(e);
           playing = false;
           playNext();
         }, e.act_at_ms ? BOT_ACTION_FEEDBACK_MS
@@ -4058,6 +4084,7 @@ async function callStepStream(body, msg) {
       }
       return;
     }
+    sendMotionAck(e);
     playing = false;
     playNext();
   };
@@ -4099,7 +4126,8 @@ async function callStepStream(body, msg) {
     },
     (obj) => {
       noteSchedule([obj.event || {}]);
-      pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
+      pushEvent(Object.assign({}, obj.event || {},
+                              {_ackSeq: obj.seq, _ackSid: obj.stream_id}));
     },
     (payload) => { finalPayload = payload; maybeFinish(); },
     (error) => { streamError = error; resolveDrain(null); }
