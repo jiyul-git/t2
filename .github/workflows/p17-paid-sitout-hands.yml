@@ -1,0 +1,28 @@
+name: P17 Paid Sitout Hand Count
+on:
+  push:
+    branches:
+      - chatgpt/p17-sitout-hands-20261011
+  workflow_dispatch:
+jobs:
+  real-sitout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m py_compile scheduled_runtime.py live2.py ui/server/ui_server.py
+      - run: python ui/tools/verify_p17_sitout_hands.py
+  legacy-scheduled:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python ui/tools/verify_scheduled_ui.py
+  bot-ui-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check ui/web/app.js
+      - run: node ui/tools/verify_p17_preflop_allin_runout_js.js
+      - run: python ui/tools/verify_p17_sequential_bot_stream.py
