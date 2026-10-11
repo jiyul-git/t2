@@ -2683,6 +2683,14 @@ function finishResult(v, resumeAt = null) {
     finishResult2(v);
   };
 
+  // An opt-in live stream already opened the public showdown and revealed
+  // its confirmed winners before other-table settlement. Replaying the same
+  // runout/showdown here would needlessly delay or duplicate the result.
+  if (v.hash && S.earlyShownHash === String(v.hash)) {
+    showWinner();
+    return;
+  }
+
   // A completed snapshot shows the existing result immediately. Pending
   // scheduled actions still finish with the normal showdown/runout sequence.
   if (resumeAt !== null && (!S.botReadyAtMs || resumeAt >= S.botReadyAtMs)) {
@@ -4024,6 +4032,47 @@ async function callStepStream(body, msg) {
         playing = false;
         playNext();
       }));
+      return;
+    }
+
+    if (e.kind === 'hand_result_ready') {
+      // Public HERO-hand result is known even if other tables are still being
+      // settled. Only shown/muck-safe cards are supplied by the engine.
+      // This is a RESULT, not another bot's calculation/think interval.
+      const preview = Object.assign({}, e, {
+        showdown: e.mode === 'showdown',
+        log: shownLog.slice(),
+        shown: e.shown || {},
+        board: (e.board || []).slice()
+      });
+      const showConfirmed = () => {
+        S.earlyShownHash = e.hash ? String(e.hash) : null;
+        S.winners = {};
+        (e.winners || []).forEach((seat) => { S.winners[String(seat)] = 1; });
+        S.awards = null;  // The final server result owns exact side-pot awards.
+        const fv = revealView(preview, false);
+        if (fv) {
+          renderSeats(fv);
+          renderChips(fv, false);
+          renderBoard(fv);
+          renderPot(fv);
+          renderHero(fv);
+        }
+        const row = $('#mainrow');
+        if (row) {
+          row.innerHTML = '<div class="wait">' +
+            (preview.showdown ? '쇼다운 공개 완료 · 최종 정산 중…'
+                              : '핸드 결과 확정 · 최종 정산 중…') + '</div>';
+        }
+        sendMotionAck(e);
+        playing = false;
+        playNext();
+      };
+      if (preview.showdown && Object.keys(preview.shown).length) {
+        revealShowdown(preview, showConfirmed);
+      } else {
+        showConfirmed();
+      }
       return;
     }
 
