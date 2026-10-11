@@ -11,6 +11,15 @@ assert(!src.includes('const computingTimer = setTimeout('),
        'unconditional calculating banner can show before board opens');
 assert(src.includes("if (head && head.kind === 'bot_begin')"),
        'bot countdown is not tied to real calculation start');
+assert(src.includes("e.kind === 'hand_settle_begin'") &&
+       src.includes("e.mode === 'showdown' ? '쇼다운"),
+       'terminal river must display showdown, never a bot calculation');
+assert(src.includes("e.kind === 'hand_result_ready'") &&
+       src.includes("S.earlyShownHash === String(v.hash)"),
+       'public result must be streamed early without replaying the final showdown');
+assert(src.includes("const preview = Object.assign({}, e") &&
+       src.includes("shown: e.shown || {}"),
+       'early showdown must only receive expressly shown cards');
 let resolutions = [];
 const animated = Array.from({length: 2}, () => ({
   getAnimations() {
