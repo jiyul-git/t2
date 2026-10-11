@@ -3992,7 +3992,8 @@ async function callStepStream(body, msg) {
      * motion starts. The board will then ACK its own actual animation end,
      * before the next street can calculate.
      */
-    if (head && (head.kind === 'street' || !dueMs) &&
+    if (head && (head.kind === 'street' ||
+                 head.kind === 'hand_settle_begin' || !dueMs) &&
         Date.now() < heroPauseUntil) {
       playing = true;
       setTimeout(() => {
@@ -4005,6 +4006,26 @@ async function callStepStream(body, msg) {
     playing = true;
     const e = queue.shift();
     const oldStage = ss ? ss.stage : null;
+
+    if (e.kind === 'hand_settle_begin') {
+      // No future actor remains in this betting round. Do not create a bot
+      // timer or misrepresent showdown/pot settlement as a bot calculation.
+      Object.keys(SEAT_CLOCKS).forEach(clearSeatClock);
+      const row = $('#mainrow');
+      if (row) {
+        row.innerHTML = '<div class="wait">' +
+          (e.mode === 'showdown' ? '쇼다운 · 결과 확인 중…' : '핸드 종료 · 팟 정산 중…') +
+          '</div>';
+      }
+      computingHint = false;
+      // Give the terminal frame a paint before permitting full settlement.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        sendMotionAck(e);
+        playing = false;
+        playNext();
+      }));
+      return;
+    }
 
     if (ss && e.kind === 'street') {
       // 보드 전환은 다음 봇 판단과 독립이다. 직전 HERO 액션이 스트리트를
