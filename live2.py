@@ -411,6 +411,13 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
                 )).encode()) % (10**9)
 
             note0 = len(f.notes)
+            _sitout_pid = next((
+                int(pid) for pid in (getattr(f, 'sitout_pids', ()) or ())
+                if pid in f.players and f.players[pid].get('table') == tid
+                and int(f.players[pid].get('stack', 0) or 0) > 0), None)
+            _sitout_seat = tb.seat_of(_sitout_pid) if _sitout_pid is not None else None
+            _sitout_before = (int(f.players[_sitout_pid]['stack'])
+                              if _sitout_pid is not None else None)
             res = f._play_table(
                 tb, seed=seed, return_result=True)
             if not isinstance(res, dict):
@@ -448,9 +455,44 @@ def _vclock_table_task(mini, tid, target_seconds, session_end, frozen,
             barrier = ('hand_for_hand' if h4h_mode
                        else ('bust' if dead else None))
 
+            sitout_hand = None
+            if _sitout_pid is not None and _sitout_seat is not None:
+                # Carry only the seated human's own cards and *shown*
+                # opponent cards across the pending/confirmed boundary.
+                # Never publish res['hole'] or private bot strategies.
+                sitout_hand = {
+                    'kind': 'sitout', 'hero_pid': _sitout_pid,
+                    'table_id': tid, 'table_hand_no': int(tb.hands),
+                    'ended_seconds': float(end), 'hash': res.get('hash'),
+                    'hero_seat': _sitout_seat,
+                    'hero_hole': list(res.get('hero_hole') or []),
+                    'stack_before': _sitout_before,
+                    'stack_after': int(f.players[_sitout_pid]['stack']),
+                    'blinds': list(f.blinds()),
+                    'board': list(res.get('board') or []),
+                    'pot': res.get('pot') or 0,
+                    'pots': copy.deepcopy(res.get('pots') or []),
+                    'how': res.get('how'),
+                    'showdown': bool(res.get('showdown')),
+                    'allin_show': bool(res.get('allin_show')),
+                    'shown': {str(k): list(v)
+                              for k, v in (res.get('shown_hole') or {}).items()},
+                    'show_order': list(res.get('show_order') or []),
+                    'mucked': list(res.get('mucked') or []),
+                    'winners': list(res.get('winners') or []),
+                    'main_winners': list(res.get('main_winners') or []),
+                    'best_five': copy.deepcopy(res.get('best_five') or {}),
+                    'pos': {str(k): v for k, v in (res.get('pos') or {}).items()},
+                    'seat_pid': {str(tb.seat_of(p['pid'])): p['pid']
+                                 for p in tb.ordered_alive()},
+                    'stacks': {str(k): v for k, v in (res.get('stacks') or {}).items()},
+                    'log': copy.deepcopy(res.get('full_log') or []),
+                }
+
             events.append({
                 'tid': tid,
                 'end': float(end),
+                'sitout_hand': sitout_hand,
                 'players': players,
                 'table': copy.deepcopy(row),
                 'tilt': {
