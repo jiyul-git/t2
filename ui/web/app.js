@@ -2507,7 +2507,9 @@ function resultCardSeatName(v, s) {
   return esc(label) + (nick ? ' · ' + esc(nick) : '');
 }
 
-const RUNOUT_HOLD = 2000;
+const RUNOUT_HOLD = 2000; // Legacy pacing for non-preflop runouts.
+const PREFLOP_ALLIN_CARD_GAP = 1500; // Flop -> turn -> river.
+const PREFLOP_ALLIN_WINNER_DELAY = 800; // River -> winner, after deal animation.
 const RESULT_HOLD = 2000;
 
 const COLLECT_MS = 430;
@@ -2616,6 +2618,14 @@ function runoutThen(res, done) {
       ((S.view0 && S.view0.board) || []).length
   );
 
+  // Only a showdown decided by a preflop all-in gets this exact TV-style
+  // 0/3/4/5 pacing. Mid-street all-ins retain their existing runout schedule.
+  const startStreet = res.runout_start_street || actualLastStreet(res);
+  const preflopAllin = Boolean(res.allin_show && startStreet === 'preflop'
+                               && shown === 0 && target === 5);
+  const cardGap = preflopAllin ? PREFLOP_ALLIN_CARD_GAP : RUNOUT_HOLD;
+  const winnerDelay = preflopAllin ? PREFLOP_ALLIN_WINNER_DELAY : RUNOUT_HOLD;
+
   const seq = [];
 
   if (shown < 3 && target >= 3) seq.push(3);
@@ -2649,16 +2659,16 @@ function runoutThen(res, done) {
       '<div class="wait">쇼다운</div>';
 
     if (i >= seq.length) {
-      epochTimer(done, RUNOUT_HOLD, epoch);
+      epochTimer(done, winnerDelay, epoch);
     } else {
-      epochTimer(showNext, RUNOUT_HOLD, epoch);
+      epochTimer(showNext, cardGap, epoch);
     }
   };
 
   if (shown === 0) {
     showNext();
   } else {
-    epochTimer(showNext, RUNOUT_HOLD, epoch);
+    epochTimer(showNext, cardGap, epoch);
   }
 }
 
@@ -4043,6 +4053,8 @@ async function callStepStream(body, msg) {
         showdown: e.mode === 'showdown',
         log: shownLog.slice(),
         shown: e.shown || {},
+        allin_show: Boolean(e.allin_show),
+        runout_start_street: e.runout_start_street || null,
         board: (e.board || []).slice()
       });
       const showConfirmed = () => {
@@ -4050,7 +4062,9 @@ async function callStepStream(body, msg) {
         S.winners = {};
         (e.winners || []).forEach((seat) => { S.winners[String(seat)] = 1; });
         S.awards = null;  // The final server result owns exact side-pot awards.
-        const fv = revealView(preview, false);
+        // After the staged board is fully exposed, keep all five cards on
+        // screen. The non-final all-in view intentionally hides future cards.
+        const fv = revealView(preview, true);
         if (fv) {
           renderSeats(fv);
           renderChips(fv, false);
@@ -4068,8 +4082,11 @@ async function callStepStream(body, msg) {
         playing = false;
         playNext();
       };
+      const runout = () => runoutThen(preview, showConfirmed);
       if (preview.showdown && Object.keys(preview.shown).length) {
-        revealShowdown(preview, showConfirmed);
+        revealShowdown(preview, runout);
+      } else if (preview.showdown) {
+        runout();
       } else {
         showConfirmed();
       }
