@@ -1345,9 +1345,11 @@ class HandRun:
                    'uncertain' if boundary_known and c >= 0.60 else
                    'unclassified' if familiar is None else 'other'),
                'visible': v['visible'], 'elapsed': st['elapsed'], 'base': base,
-               'actual_compute_seconds': observed, 'effective_visible': effective,
                'bank_before': bank, 'bank_used': st['bank_used'],
                'timed_out': st['timed_out']}
+        if observed is not None:
+            rec['actual_compute_seconds'] = observed
+            rec['effective_visible'] = effective
         if T.get('fingerprint'):
             # 검증 전용: 이 결정 시점의 핸드 RNG 상태와 스택(타임아웃 전 동일성 확인용).
             rec['rng_fp'] = _zlib.crc32(repr(self.h.rng.getstate()).encode())
