@@ -1512,6 +1512,15 @@ def _archive_status():
     return out
 
 
+def _sitout_hands(st):
+    """Confirmed seat-specific hands, never a sum of other tables' hands."""
+    tid = st.get('tournament_id')
+    return [h for h in (st.get('sitout_hand_history') or [])
+            if h.get('tournament_id') == tid
+            and h.get('hero_pid') is not None
+            and h.get('table_hand_no') is not None]
+
+
 def _hero_hand_numbers(st):
     """Per-tournament HERO ordinals; engine hand IDs remain unchanged.
 
@@ -1527,7 +1536,7 @@ def _hero_hand_numbers(st):
         stat = os.stat(fn)
     except FileNotFoundError:
         return {}
-    key = (fn, tid, stat.st_mtime_ns, stat.st_size)
+    key = (fn, tid, stat.st_mtime_ns, stat.st_size, len(_sitout_hands(st)))
     cache = globals().get('_HERO_HAND_NUMBER_CACHE')
     if cache and cache[0] == key:
         return cache[1]
@@ -1544,7 +1553,11 @@ def _hero_hand_numbers(st):
                     numbers.add(number)
             except (ValueError, TypeError, KeyError, AttributeError):
                 continue
-    out = {number: i+1 for i, number in enumerate(sorted(numbers))}
+    # The offscreen sit-out hands have their own completed hand journal,
+    # not the interactive engine archive. Ordinals therefore start at
+    # the tournament's FIRST seated hand, not the first browser login.
+    offset = len(_sitout_hands(st))
+    out = {number: offset + i+1 for i, number in enumerate(sorted(numbers))}
     globals()['_HERO_HAND_NUMBER_CACHE'] = (key, out)
     return out
 
@@ -1561,7 +1574,8 @@ def _display_hand_number(st, engine_no=None):
                   (st.get('field') or {}).get('hand_no') or 0)
     if current in numbers:
         return numbers[current]
-    return len(numbers) + (1 if engine_no is not None or st.get('hand_seed') is not None else 0)
+    return max(len(_sitout_hands(st)), max(numbers.values(), default=0)) + (
+        1 if engine_no is not None or st.get('hand_seed') is not None else 0)
 
 
 def _display_hand_response(response, st):
@@ -1591,16 +1605,15 @@ def _public_history():
     _r = _SP.resolve_read('archive')
     fn = _r['path']
 
-    if not fn:
-        return []
-
     try:
-        current_tournament = (L.load() or {}).get('tournament_id')
+        st = L.load() or {}
+        current_tournament = st.get('tournament_id')
     except RuntimeError:
         return []
     out = []
 
-    with open(fn, encoding='utf-8') as f:
+    if fn:
+      with open(fn, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -1687,11 +1700,27 @@ def _public_history():
         except Exception:
             return -1
 
-    out.sort(key=hand_key, reverse=True)
-    ordinals = {number: i+1 for i, number in enumerate(sorted({
+    sitout = _sitout_hands(st)
+    offset = len(sitout)
+    ordinals = {number: offset + i+1 for i, number in enumerate(sorted({
         hand_key(row) for row in out}))}
     for row in out:
         row['display_hand_no'] = ordinals[hand_key(row)]
+    for index, h in enumerate(sitout):
+        # Strict allowlist: never return opponent private holes or reads.
+        row = {k: h.get(k) for k in (
+            'hash', 'hero_seat', 'hero_hole', 'board', 'pot', 'pots',
+            'how', 'showdown', 'allin_show', 'shown', 'show_order',
+            'mucked', 'winners', 'main_winners', 'best_five', 'pos',
+            'seat_pid', 'stacks', 'log', 'table_id', 'table_hand_no',
+            'stack_before', 'stack_after')}
+        row.update(type='result',
+                   hand_no=-(index + 1),
+                   display_hand_no=index + 1,
+                   sitout=True,
+                   notes=['자리 비움 중 실제 진행된 핸드'])
+        out.append(row)
+    out.sort(key=lambda row: row['display_hand_no'], reverse=True)
     return out
 
 def _hero_memos():
