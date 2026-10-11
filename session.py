@@ -1324,9 +1324,9 @@ class HandRun:
         timing_c = c * effort['weight']
         v = TM.visible_seconds(traits, timing_c, s_struct, m, K, trivial, commit, jit,
                                base, familiarity=familiar)
-        observed = (max(0.0, _bot_walltime.monotonic() - self._bot_compute_started[1])
-                    if self._bot_compute_started is not None
-                    and self._bot_compute_started[0] == seat else None)
+        started = getattr(self, '_bot_compute_started', None)
+        observed = (max(0.0, _bot_walltime.monotonic() - started[1])
+                    if started is not None and started[0] == seat else None)
         # Only the explicitly streamed hero-table path uses wall-clock computation.
         # All replay, CLI, worker and frozen-seed simulations remain deterministic.
         effective = max(1.5, v['visible'], observed) if observed is not None else v['visible']
