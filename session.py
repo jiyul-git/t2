@@ -1360,8 +1360,12 @@ class HandRun:
             return
         self._bot_compute_started = (seat, _bot_walltime.monotonic())
         try:
+            t = self.timing or {}
+            base = float(t.get('base_override') or TM.action_seconds(t.get('fmt_key', 'standard')))
+            bank = TM.bank_get(t['banks'], self._pid(seat), t.get('clock')) if t else 0.0
             self.on_bot_start({'kind': 'bot_begin', 'seat': int(seat),
-                               'street': street, 'pid': self._pid(seat)})
+                               'street': street, 'pid': self._pid(seat),
+                               'base': base, 'bank_before': bank})
         except Exception:
             # A lost browser cannot stop the engine from recovering the hand.
             pass
