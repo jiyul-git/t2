@@ -1495,6 +1495,12 @@ def step(action=None, amount=0, defer_others=False, others=None,
                     'board': list(_res.get('board') or []),
                     'pot': int(_res.get('pot') or 0),
                     'winners': list(_res.get('winners') or []),
+                    # Preserve the original runout boundary: the UI may never
+                    # pre-reveal turn/river before the staged animation.
+                    'allin_show': bool(_res.get('allin_show')),
+                    'runout_start_street': (
+                        (_res.get('full_log') or [])[-1][0]
+                        if _res.get('full_log') else 'preflop'),
                     'shown': {str(seat): list(cards)
                               for seat, cards in (_res.get('shown_hole') or {}).items()},
                     'show_order': list(_res.get('show_order') or []),
