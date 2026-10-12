@@ -91,3 +91,17 @@ with the classes over 0.10. It checks the subgame machinery and the root ranges 
   representative 3.0 bb (what T2 executes), 2.75 bb as the size-abstraction comparison; no limp in the baseline-regular tree.
   T2 behaviour figures (SB raise 31-36% at 40-100 bb, BB vs a 3 bb SB open: 3-bet 5%, fold 45-47%, defect D8 = BB never raises an SB
   limp) are bot measurements, not references: they are never used as pass / fail for solver output.
+
+## Amendment A3 (2026-10-12): T2 deep-stack measurement (user; 2 deep tournaments, first 3 h, 9,794 hands) — planning input only
+- Node traffic peaks at 50-80 bb in deep events too (cold 3-bet response 646, opener vs 3-bet 355); overall cold response / opener
+  response = 2,859 / 1,646 (~1.7x, same as turbo / standard). >= 120 bb still carries 499 / 343: 150 and 300 bb are computed
+  independently (never scaled from 100 bb).
+- Opener-vs-3-bet pairs are dominated by SB 3-bets: CO>SB 107, UTG+1>SB 90, UTG>SB 90, UTG+2>SB 86, BTN>SB 84. Next Plan A subgames
+  after the current 9 (same parents, no new parent solve): UTG>SB, UTG+2>SB, BTN>SB (x B35 / B40), registered before they run.
+- Sizes: opens 2.0 bb up to 120 bb, 2.0-2.7 at 120-200, 2.5 / 3.0 above 200; 3-bet IP 2.8-3.2x, blinds 3.4-3.9x (consistent with
+  the 3.0x and 3.5x / 4.0x arms); 4-bet at 35-50 bb mixed jam / non-jam, >= 80 bb almost all non-jam (menu keeps both); 5-bet+ rare (22).
+- Consequences for later stacks: the parent "up to the 3-bet" must stay jam-only for the 4-bet at every depth (at 100 bb a 10x
+  4-bet no longer clamps to the jam: the parent config uses an explicit jam-only 4-bet); from 120 bb the subgame menu needs a non-jam
+  5-bet (T2) — hu_spot supports a jam-only 5-bet today, the extension is registered with the 120+ bb plan.
+- Not used: the < 15 bb IP min-3-bets (1.6-1.9x; treated as a T2 bot anomaly, not a menu size) and defect D8 (bot-side; never a
+  pass / fail reference).
