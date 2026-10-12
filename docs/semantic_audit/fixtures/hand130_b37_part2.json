@@ -1,0 +1,82 @@
+{
+  "_provenance": {
+    "kind": "minimal_hand130_b37_projection",
+    "source": "master:docs/handoff/T2_T3_HANDOFF_20261010.md, Appendix F; source code checked test3/945758acc",
+    "original_hand_hash": "6e1ba98ab1a0",
+    "limitation": "This is NOT a complete actor profile, live tilted view, or full tournament replay."
+  },
+  "hand_no": 130,
+  "pos": {
+    "1": "UTG",
+    "2": "UTG+1",
+    "3": "LJ",
+    "4": "HJ",
+    "5": "CO",
+    "7": "BTN",
+    "8": "SB",
+    "9": "BB"
+  },
+  "hole": {
+    "3": [
+      "Kh",
+      "Ac"
+    ]
+  },
+  "field_context": {
+    "ante": 10000
+  },
+  "actor_profile": {
+    "id": 37,
+    "latent": {
+      "study": 2.9
+    },
+    "concepts": {
+      "bluff": 5.1,
+      "pf_defend": 1.9,
+      "potodds": 5.5,
+      "icm": 0,
+      "checkraise_flop": 5.1,
+      "trap": 6.1,
+      "overbet": 1.6
+    },
+    "temper": {
+      "aggression": 5.7,
+      "looseness": 10,
+      "gamble": 6.1,
+      "tilt_prone": 5.3,
+      "discipline": 7.8,
+      "tilt_swing": 4.1
+    },
+    "type": "FISH"
+  },
+  "actor_pf_seed": {
+    "pf_pos": "LJ",
+    "pf_vs": "BB",
+    "pf_level": 2,
+    "pf_open_bb": 7.3442,
+    "pf_n_callers": 0,
+    "pf_can_raise": false,
+    "pf_facing_allin": true,
+    "pf_pot_bb": 10.8442,
+    "pf_to_call_bb": 5.3442,
+    "pf_stack_bb": 20.9864,
+    "pf_call_ev_shadow": {
+      "call_cost": 53442,
+      "contestable_after_call": 161884,
+      "breakeven_equity": 0.330125,
+      "effective_equity": 0.63182
+    },
+    "pf_calloff_compare": {
+      "legacy_cap": 0.005,
+      "icm_required_equity": 0.630692,
+      "bubble_factor": 3.465325
+    },
+    "pf_calloff_consumer": {
+      "pf_defend_gate_p": 0.439355,
+      "pf_defend_gate_roll": 0.664054,
+      "gate_pass": false,
+      "selected_action": "fold",
+      "layer_action": "call"
+    }
+  }
+}

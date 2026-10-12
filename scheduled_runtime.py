@@ -255,6 +255,7 @@ def advance(event, target, budget=18, parallel=True):
         assignments.update(_insert(st, event, 0.0))
     if st.get('hand_seed') is not None or st.get('others_pending') or st.get('vclock_settle_pending'):
         raise ValueError('An unfinished interactive hand must settle before off-screen advancement')
+    st.pop('background_resume_at', None)
 
     backend = rules.get('field_backend', 'real')
     if st['field'].setdefault('format_rules', {}).get('field_backend') != backend:
@@ -352,6 +353,7 @@ def advance(event, target, budget=18, parallel=True):
             when = max(e['end'] for e in heads.values())
             if when > target + 1e-9:
                 st['background_seconds'] = max(st.get('background_seconds', 0), target)
+                st['background_resume_at'] = when
                 break
             due = dict((tid, [e]) for tid, e in heads.items())
             batch = {tid: 1 for tid in due}
@@ -360,6 +362,7 @@ def advance(event, target, budget=18, parallel=True):
             batch, due, when, steps = _merge_batch(st, event, pending, target, hero_table)
             if not batch:
                 st['background_seconds'] = max(st.get('background_seconds', 0), target)
+                st['background_resume_at'] = min(float(e['end']) for e in heads.values())
                 break
         merged = L.apply_vclock_events(
             st, {tid: pending[tid][:n] for tid, n in batch.items()}, {}, when,

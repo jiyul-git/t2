@@ -10,19 +10,20 @@ plan.update_plan 은 계획을 두 경로로 만든다.
 
 두 경로가 **같은 함수로 같은 dict 를 새로 만드는데** 넘기는 상황 입력이
 다르다. revise 쪽이 빠뜨린 인자는 make_plan 의 기본값으로 떨어진다.
-기본값은 중립이 아니라 특정 주장이다 — initiative=True 는 '내가 공격권을
-갖고 있다', oop_vs_aggr=None 은 '어그레서 대비 관계가 없다' 이다.
+기본값은 중립이 아니다. initiative=True 는 '공격권 보유'를,
+tilt=0.0 는 '틸트 없음'을, bb_chips=None 은 '현재 BB 알 수 없음'을 뜻한다.
 
-이것은 **고쳐지지 않은 알려진 불일치**다. 저장소를 깨뜨리지 않기 위해
-실패로 만들지 않고, 차이를 **정확히 고정**한다. 하나라도 전달되기
-시작하면 이 테스트가 실패하므로, 고칠 때 이 목록도 같이 줄여야 한다.
+이력:
+  A6 최초 누락 5개: oop_vs_aggr, oop_legacy_abs, initiative, tilt, bb_chips.
+  이후 위치/공격권 3개 전달 복구(A5 후속).
+  PR #31 SHA 3f30cc82540dc6d69fbf22295f49da20194626a4 실제 누락 2개:
+    tilt, bb_chips. 그러나 과거 5개를 KNOWN_MISSING 으로 잘못 기대하여 C4 실패.
+  P11 수정 후 기대 누락 0개. 실제 재계획 경로 양쪽 함수 경계를 검증한다.
 
-측정 근거 (seed 5150/9001/4242 x standard/deep/turbo x 16핸드):
-  update_plan 4,736 호출 중 revise 경로 2,580, 그중 make_plan 도달 810.
-  그 810 지점에서 oop_field 는 기본 False 와 478건(59.0%) 다르고,
-  oop_vs_aggr 은 기본 None 과 315건(38.9%) 다르다.
-  반사실 재생: 포지션만/initiative만/tilt만 고치면 출력 변화 0,
-  bb_chips 를 넘기면 810 중 2건에서 사이즈가 바뀐다.
+과거 A6 고정 fixture (seed 5150/9001/4242 x standard/deep/turbo x 16핸드):
+  update_plan 4,736 / revise 경로 2,580 / board_changed make_plan 810.
+  이전 실험 결과: tilt 단독 출력 변화 0, bb_chips 단독 사이징 차이 2.
+  이 수치는 과거 관측값이며 P11 수정본의 실행 결과를 의미하지 않는다.
 """
 import ast
 import os
@@ -32,8 +33,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# 현재 알려진 불일치. 하나라도 revise 쪽에 추가되면 여기서 빼야 한다.
-KNOWN_MISSING = {'oop_vs_aggr', 'oop_legacy_abs', 'initiative', 'tilt', 'bb_chips'}
+# 과거 5개 누락 -> PR31 시점 2개 누락 -> P11 수정 후 0개.
+HISTORICAL_A6_MISSING = frozenset(
+    {'oop_vs_aggr', 'oop_legacy_abs', 'initiative', 'tilt', 'bb_chips'})
+PR31_MISSING = frozenset({'tilt', 'bb_chips'})
+KNOWN_MISSING = frozenset()
 
 FAILS = []
 
@@ -73,7 +77,11 @@ def main():
     print('make_plan 인자 %d개 (위치 필수 %d개)' % (len(params), n_required))
 
     up_calls = _calls(_fn(plan, 'update_plan'), 'make_plan')
-    rv_calls = _calls(_fn(runner, 'revise_plan'), 'make_plan')
+    rv_fn = _fn(runner, 'revise_plan')
+    rv_calls = _calls(rv_fn, 'make_plan')
+    route_calls = _calls(_fn(plan, 'update_plan'), 'revise_plan')
+    session = ast.parse(open(os.path.join(ROOT, 'session.py'), encoding='utf-8').read())
+    source_calls = _calls(session, 'update_plan')
     ok('C1', len(up_calls) == 1, 'update_plan 안의 make_plan 호출 %d개' % len(up_calls))
     ok('C2', len(rv_calls) == 1, 'revise_plan 안의 make_plan 호출 %d개' % len(rv_calls))
     if FAILS:
@@ -94,8 +102,27 @@ def main():
             p, 'O' if p in up_kw else '-', 'O' if p in rv_kw else '-',
             '   <= 알려진 누락' if p in KNOWN_MISSING else ''))
     print()
-    ok('C4', missing == KNOWN_MISSING,
-       '재계획이 빠뜨리는 인자 = %s' % sorted(missing))
+    # 이름만 있는 것이 아니라 session -> update -> revise -> make
+    # 네 단계에서 실제 tilt / bb_chips 문맥을 그대로 전달하는지 고정한다.
+    forwarded = {}
+    if len(route_calls) == 1:
+        forwarded = {k.arg: k.value for k in route_calls[0].keywords if k.arg}
+    source = {}
+    if len(source_calls) == 1:
+        source = {k.arg: ast.unparse(k.value)
+                  for k in source_calls[0].keywords if k.arg}
+    rv_params = {a.arg for a in rv_fn.args.args}
+    links_ok = (
+        len(route_calls) == 1 and len(source_calls) == 1
+        and source.get('tilt') == 'h.axes(s)[1]'
+        and source.get('bb_chips') == 'h.bb'
+        and all(f in rv_params and f in forwarded
+                and isinstance(forwarded[f], ast.Name)
+                and forwarded[f].id == f and f in rv_kw
+                for f in ('tilt', 'bb_chips')))
+    ok('C4', missing == KNOWN_MISSING and links_ok,
+       '재계획 누락=%s; session/update/revise/make 값 전달=%s'
+       % (sorted(missing), links_ok))
     ok('C5', not extra, '재계획에만 있는 인자 = %s' % sorted(extra))
 
     # 기본값이 중립이 아님을 고정한다
@@ -110,9 +137,11 @@ def main():
     print()
     if FAILS:
         print('FAIL %d : %s' % (len(FAILS), ', '.join(FAILS)))
-        print('계약이 바뀌었다. 고의로 고쳤다면 KNOWN_MISSING 을 갱신할 것.')
+        print('C4 원인을 확인할 것. 기대값만 변경해 실제 전달 결함을 숨기지 말 것.')
         return 1
-    print('PASS 재계획 입력 계약 (알려진 누락 %d개 고정)' % len(KNOWN_MISSING))
+    print('PASS 재계획 입력 계약 (A6 누락 5 -> PR31 누락 2 -> P11 누락 0)')
+    print('  과거 A6 누락=%s' % sorted(HISTORICAL_A6_MISSING))
+    print('  PR31 누락=%s' % sorted(PR31_MISSING))
     return 0
 
 

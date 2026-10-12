@@ -1,0 +1,267 @@
+name: P17 test3 integration and post-merge full regression
+on:
+  push:
+    branches: [chatgpt/p17-test3-integration-20261011, test3]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mc:
+    name: MC HAND130 C1-C7 exact merged-source guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Exact both-parent source preservation
+      run: python tools/verify_p17_test3_contract.py guard
+    - name: C1-C7
+      run: python tools/verify_replan_contract.py
+    - name: MC18
+      run: python tools/verify_p17_final_integration.py mc p17-test3-results/mc
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-MC HAND130 C1-C7 exact merged-source guard
+        path: p17-test3-results/
+  field:
+    name: ICM BF epoch concurrency both-history attribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Original field17 and independent whole-state origins
+      run: python tools/verify_p17_test3_contract.py field p17-test3-results/field
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-ICM BF epoch concurrency both-history attribution
+        path: p17-test3-results/
+  install:
+    name: Six ZIP eight actual servers wallet23 installed MC
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Fresh install and wallet
+      run: python tools/verify_p17_final_integration.py install p17-test3-results/install
+    - name: Isolated installed MC
+      run: python tools/verify_p17_final_integration.py installed-mc p17-test3-results/installed-mc
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Six ZIP eight actual servers wallet23 installed MC
+        path: p17-test3-results/
+  timing:
+    name: test3 timing calloff bank forced blinds showdown HAND130
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Original tests
+      run: python tools/verify_p17_test3_contract.py timing p17-test3-results/timing
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-test3 timing calloff bank forced blinds showdown HAND130
+        path: p17-test3-results/
+  http:
+    name: Actual HTTP timeout lobby table review resume clocks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Original actual HTTP regressions
+      run: python tools/verify_p17_test3_contract.py http p17-test3-results/http
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Actual HTTP timeout lobby table review resume clocks
+        path: p17-test3-results/
+  browser:
+    name: Browser return synchronization forced posts break HUD
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Original browser regression fixtures
+      run: python tools/verify_p17_test3_contract.py browser p17-test3-results/browser
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Browser return synchronization forced posts break HUD
+        path: p17-test3-results/
+  scheduled-core:
+    name: Scheduled events reservation activation late-reg wallet
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Original store and wallet invariants
+      run: 'mkdir -p p17-test3-results/scheduled
+
+        set -o pipefail
+
+        python tools/verify_scheduled_tournaments.py | tee p17-test3-results/scheduled/core.log'
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Scheduled events reservation activation late-reg wallet
+        path: p17-test3-results/
+  scheduled-http:
+    name: Scheduled real HTTP ten bots background workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Original scheduled HTTP
+      run: 'mkdir -p p17-test3-results/scheduled-http
+
+        set -o pipefail
+
+        python ui/tools/verify_scheduled_ui.py | tee p17-test3-results/scheduled-http/run.log'
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Scheduled real HTTP ten bots background workers
+        path: p17-test3-results/
+    env:
+      T2_TABLE_WORKERS: '4'
+      T2_VERIFY_SCHEDULE_BOTS: '10'
+      T2_VERIFY_SCHEDULE_DEFER: '1'
+  scheduled-late:
+    name: Scheduled99 player3300 second late admission enforce
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Preserve original55 minute fixture failure diagnosis
+      run: python tools/verify_p17_test3_contract.py late-legacy p17-test3-results/scheduled-late
+    - name: Independent actual full-size break resume admission
+      run: python -u tools/verify_p17_late_break.py p17-test3-results/scheduled-late/break-aware
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Scheduled99 player3300 second late admission enforce
+        path: p17-test3-results/
+    env:
+      T2_TABLE_WORKERS: '4'
+      T2_VERIFY_SCHEDULE_BOTS: '99'
+      T2_VERIFY_SCHEDULE_DEFER: '0'
+      T2_VERIFY_SCHEDULE_LATE: '1'
+      T2_VERIFY_SCHEDULE_LATE_SECONDS: '3300'
+      T2_VERIFY_SCHEDULE_TIMING: enforce
+  normal-parity:
+    name: Original normal OFF ON complete JSON preservation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Both histories paired records and original failure diagnosis
+      run: python tools/verify_p17_test3_contract.py parity p17-test3-results/parity
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Original normal OFF ON complete JSON preservation
+        path: p17-test3-results/
+  frozen-attribution:
+    name: Frozen3000-3005 both histories default and muck control
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Read-only traces and first differences
+      run: python tools/compare_p17_test3_traces.py p17-test3-results/frozen
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Frozen3000-3005 both histories default and muck control
+        path: p17-test3-results/
+  a6:
+    name: Original849 A6 tilt BB replay with explicit policy control
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Old PR31 input semantics
+      run: python -u tools/verify_p11_c4_runtime.py old p17-test3-results/a6/old.pkl
+    - name: Fixed full fixture
+      run: python -u tools/verify_p11_c4_runtime.py fixed p17-test3-results/a6/fixed.pkl
+    - name: Four arms and nine final states
+      run: 'python -u tools/verify_p11_c4_runtime.py compare p17-test3-results/a6/old.pkl p17-test3-results/a6/fixed.pkl p17-test3-results/a6/comparison.json
+
+        rm p17-test3-results/a6/old.pkl p17-test3-results/a6/fixed.pkl'
+    - name: Independent849 and event143
+      run: python tools/verify_p17_c4_integration.py a6 p17-test3-results/a6/comparison.json
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test3-Original849 A6 tilt BB replay with explicit policy control
+        path: p17-test3-results/
+    env:
+      T2_SHOWDOWN_MUCK: '1'

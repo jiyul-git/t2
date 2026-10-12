@@ -127,6 +127,7 @@ def render_result(res, hero=None, hand_no=None, notes=None, bb=None):
             'best_five': {str(k): list(v) for k, v in (res.get('best_five') or {}).items()},
             'stacks': {str(k): v for k, v in (res.get('stacks') or {}).items()},
             'pos': {str(k): v for k, v in (res.get('pos') or {}).items()},
+            'seat_pid': {str(k): v for k, v in (res.get('seat_pid') or {}).items()},
             'log': [{'street': e[0], 'seat': e[1], 'action': e[2], 'amount': e[3]}
                     for e in (res.get('full_log') or [])],
             'hash': res.get('hash'), 'notes': list(notes or [])}

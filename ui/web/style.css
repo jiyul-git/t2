@@ -102,6 +102,8 @@ html, body {
   position: absolute; width: 72px; margin-left: -36px; margin-top: -30px;
   text-align: center; transition: opacity .25s;
 }
+/* Lift the entire active seat; a child's z-index cannot beat a later pod. */
+#seats .pod.bubble-front { z-index: 12; }
 .pod .avatar {
   width: 38px; height: 38px; margin: 0 auto; border-radius: 50%;
   background: linear-gradient(#41544c, #24332d);
@@ -261,6 +263,12 @@ html, body {
   background: radial-gradient(circle at 35% 30%, #f0f3f1, #c9d2cd 60%, #8e9b95);
   border: 2px solid var(--red); vertical-align: -1px; margin-right: 3px;
 }
+.chips.side-right {
+  width: max-content; min-width: 60px; white-space: nowrap; z-index: 17;
+}
+/* The DOM pot anchor is resolved before paint. This is initial placement,
+   not a bet moving from its fallback coordinates past the memo button. */
+.chips.side-right:not(.toPot) { transition: none; }
 .chips.toPot { opacity: 0; }
 
 /* ---------- 히어로 ---------- */
@@ -619,6 +627,9 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
   padding-top:env(safe-area-inset-top);
 }
 #rankDrawer.open { transform:translateX(0); visibility:visible; pointer-events:auto; }
+#rankDrawer.dragging, #rankDrawer.settling { visibility:visible; pointer-events:auto; }
+#rankDrawer.dragging { transition:none; }
+.sheet.tournament-menu, #rankDrawer, #tablewrap { touch-action:pan-y; }
 .rankhead {
   flex:0 0 auto; min-height:58px; padding:10px 10px 8px 14px;
   display:flex; align-items:center; justify-content:space-between;

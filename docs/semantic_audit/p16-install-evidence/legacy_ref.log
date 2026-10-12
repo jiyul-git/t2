@@ -1,0 +1,17 @@
+실행 폴더: /tmp/p16_legacy_ref_30pjspzp
+  원본: 76437820195909cda6be7ffea2813262d785bb38 76437820
+  모듈 31개, 데이터 3개
+  실행: cd "/tmp/p16_legacy_ref_30pjspzp" && python ui_server.py
+  참고: sidecar 이름은 이제 상태 파일 경로에서 나옵니다 —
+        T2_LIVE_STATE 가 다르면 아카이브도 갈립니다 (storage_paths).
+/workspace/scratch/fc735a3d4a9f/t2/ui/tools/setup_run_dir.py:78: DeprecationWarning: Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata. Use the filter argument to control this behavior.
+  tarfile.open(fileobj=io.BytesIO(arc)).extractall(tmp)
+PASS actual legacy ref py without posterior dependency
+실행 폴더: /tmp/p16_legacy_ref_7r8j_kus
+  원본: 76437820195909cda6be7ffea2813262d785bb38 76437820
+  모듈 31개, 데이터 3개
+  실행: cd /tmp/p16_legacy_ref_7r8j_kus && python3 ui_server.py
+  텔레메트리: 끔
+  주의: T2_LIVE_STATE 를 설정하지 마세요. 설정하면 접미사가 _alt 로 고정되어
+        cli.py 세션과 아카이브를 공유하게 됩니다.
+PASS actual legacy ref sh without posterior dependency

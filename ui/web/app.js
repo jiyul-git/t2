@@ -44,6 +44,8 @@ const S = {
   prevBets: null,          // 직전에 그린 좌석별 이번 스트리트 투입액
   replayDone: null,        // 재생 중이면 마지막 프레임을 그리는 함수
   view0: null,             // 마지막 decision 뷰. 관전 재생의 출발점
+  historyHand: null,       // 화면에서 진행 중인 핸드: 서버 계산 완료와 별개
+  historyHandComplete: false,
   folding: {},             // 방금 폴드해서 카드가 사라지는 중인 좌석
   autoTimer: null,         // 결과 화면 자동 진행
   spectating: false,       // 히어로가 접어서 남은 진행을 구경하는 중인가
@@ -67,7 +69,7 @@ const S = {
   actionDeadlineMs: null,    // 서버가 확정한 절대 deadline
   actionToken: null,         // deadline이 속한 engine token
   actionArmPending: false,   // 중복 arm 요청 방지
-  timeoutSubmitting: false,  // 시간초과 자동 폴드 중복 방지
+  timeoutSubmitting: false,  // 시간초과 자동 액션 중복 방지
   actionSubmitted: false,     // 액션 클릭 후 응답 전 deadline 재-arm 방지
   levelRemainingSeconds: null, // 현재 레벨 종료까지 실제 초
   sessionRemainingSeconds: null, // 55분 플레이 세션 종료까지 실제 초
@@ -605,6 +607,30 @@ function fitSeatsInView(box) {
 }
 
 /* ---------------- 좌석 앞 칩 ---------------- */
+function chipPosition(v, seat) {
+  const n = v.n_slots || 8;
+  const side = sideSeatClass(slotPos(seat, v.hero_seat, n, 1, 1));
+  const p = slotPos(seat, v.hero_seat, n, 0.43, 0.62);
+  if (side === ' side-left') { p.x = 26; p.y = 54; }
+  if (side === ' side-right') { p.x = 78; p.y = 50; }
+  return {p, side};
+}
+
+function positionRightChips(box) {
+  const wrap = $('#tablewrap'), pot = $('#pot');
+  if (!wrap || !pot) return;
+  const area = wrap.getBoundingClientRect(), pr = pot.getBoundingClientRect();
+  if (!pr.width) return;
+  box.querySelectorAll('.chips.side-right:not(.toPot)').forEach(el => {
+    const cr = el.getBoundingClientRect(), css = getComputedStyle(el);
+    // Place the whole label to the right of the pot pill, inside the table.
+    const left = Math.max(4, Math.min(pr.right-area.left+8, area.width-cr.width-4));
+    const top = pr.top-area.top+(pr.height-cr.height)/2;
+    el.style.left = (left-parseFloat(css.marginLeft || 0))+'px';
+    el.style.top = (top-parseFloat(css.marginTop || 0))+'px';
+  });
+}
+
 function renderChips(v, streetChanged) {
   const box = $('#chips');
   const old = Array.from(box.children);
@@ -618,22 +644,9 @@ function renderChips(v, streetChanged) {
   } else {
     box.innerHTML = '';
   }
-  const n = v.n_slots || 8;
   (v.seats || []).forEach((s) => {
     if (!s.bet) return;
-    const seatP = slotPos(s.seat, v.hero_seat, n, 1, 1);
-    const p = slotPos(s.seat, v.hero_seat, n, 0.43, 0.62);
-    const side = sideSeatClass(seatP);
-    // 3/9 o'clock gets its own chip lane.
-    // x stays clear of the side-seat cards; y is lowered enough for wider
-    // chip labels while remaining between the upper/lower diagonal lanes.
-    if (side === ' side-left') {
-      // Only the 9-o'clock chip label moves; keep the 8-o'clock lane unchanged.
-      // Tested against nearby cards, board, pot, and lower-left bet label.
-      p.x = 26; p.y = 54;
-    } else if (side === ' side-right') {
-      p.x = 78; p.y = 51;
-    }
+    const {p, side} = chipPosition(v, s.seat);
     const el = document.createElement('div');
     el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
@@ -641,6 +654,9 @@ function renderChips(v, streetChanged) {
     el.innerHTML = `<span class="disc"></span>${fmt(s.bet)}`;
     box.appendChild(el);
   });
+  // Board/pot rendering follows this call in several paths. Measure the
+  // completed frame before paint to use the current pot label's position.
+  requestAnimationFrame(() => positionRightChips(box));
 }
 
 /* ---------------- 보드 / 팟 ---------------- */
@@ -1247,7 +1263,7 @@ function forcedStartState(v) {
 function renderForced(base, ss) {
   const bets =
     ss.seats.reduce(
-      (a, x) => a + Number(x.bet || 0),
+      (a, x) => a + Number(x.bet || 0) + Number(x._antePaid || 0),
       0
     );
 
@@ -1272,15 +1288,7 @@ function makeAnteChip(v, seat, amount) {
   const box = $('#chips');
   if (!box || !amount) return null;
 
-  const n = v.n_slots || 8;
-  const p =
-    slotPos(
-      seat,
-      v.hero_seat,
-      n,
-      0.62,
-      0.62
-    );
+  const {p, side} = chipPosition(v, seat);
 
   const el =
     document.createElement('div');
@@ -1289,7 +1297,8 @@ function makeAnteChip(v, seat, amount) {
    * 일반 벳과 완전히 같은 .chips / .disc를 쓴다.
    * 별도 scale/translate 애니메이션 없음.
    */
-  el.className = 'chips forced-ante';
+  el.className = 'chips forced-ante' + side;
+  el.dataset.seat = String(seat);
   el.style.left = p.x + '%';
   el.style.top = p.y + '%';
 
@@ -1297,6 +1306,7 @@ function makeAnteChip(v, seat, amount) {
     `<span class="disc"></span>${fmt(amount)}`;
 
   box.appendChild(el);
+  requestAnimationFrame(() => positionRightChips(box));
 
   return el;
 }
@@ -1469,15 +1479,13 @@ function dealThen(v, done) {
 
   /*
    * 카드 딜링 동안은 아직 SB/BB가 칩을 내기 전 화면으로 보인다.
-   * 서버 값에는 블라인드가 이미 들어가 있지만 frameView를 bet=0으로
-   * 되감아 시각적으로만 게시 전 상태를 만든다.
+   * 서버 값에는 블라인드/안테가 이미 들어가 있으므로 둘 다 되감아
+   * 시각적으로만 게시 전 상태를 만든다.
    */
-  const noBets = {};
-  (v.seats || []).forEach((s) => {
-    noBets[s.seat] = 0;
-  });
-
-  const fv0 = frameView(v, noBets, {});
+  // Rewind dead-money antes as well as ordinary bets. frameView alone keeps
+  // the already-paid ante pot and stacks, causing the pot to jump backward
+  // when postBlindsThen begins its unpaid frame.
+  const fv0 = forcedStartState(v).base;
 
   const draw0 = () => {
     if (!epochAlive(epoch)) return;
@@ -1514,7 +1522,7 @@ function dealThen(v, done) {
     // 마지막 카드 비행이 끝난 뒤 중앙 덱을 먼저 치운다.
     deckHide(true);
 
-    // 그 다음 SB -> BB 순서로 각각 1.3초.
+    // 그 다음 안테 -> SB -> BB를 FORCED_POST_MS 간격으로 게시한다.
     postBlindsThen(v, afterBlinds, epoch);
   };
 
@@ -1659,6 +1667,8 @@ function stopReplay() {
 function clearBubbles() {
   stopReplay();
   document.querySelectorAll('.bubble').forEach((b) => b.remove());
+  document.querySelectorAll('#seats .pod.bubble-front').forEach((p) =>
+    p.classList.remove('bubble-front'));
 }
 function actionText(e) {
   const t = ACT[e.action] || e.action;
@@ -1704,6 +1714,7 @@ function bubbleAt(seat, e) {
   const b = document.createElement('div');
   b.className = 'bubble' + (e.action === 'fold' ? ' fold' : '');
   b.textContent = actionText(e);
+  pod.classList.add('bubble-front');
   pod.appendChild(b);
 }
 
@@ -2113,6 +2124,14 @@ function heroRequestEntry(v, action, amount) {
   };
 }
 
+function replaceHeroReplay(ss, shownLog, base, action, amount) {
+  ss.seats = (base.seats || []).map((x) => Object.assign({}, x));
+  ss.potCenter = base.pot_center || 0;
+  shownLog.splice(0, shownLog.length, ...fullActionLog(base));
+  const accepted = heroRequestEntry(base, action, amount);
+  if (accepted) { applyEntry(ss, accepted); shownLog.push(accepted); }
+}
+
 function renderSpectate(base, res, ss) {
   const bets = ss.seats.reduce((a, x) => a + (x.bet || 0), 0);
   const fv = Object.assign({}, base, {
@@ -2479,6 +2498,15 @@ function seatName(v, s) {
   return (me ? '나' : s + '번') + (p ? `(${p})` : '');
 }
 
+function resultCardSeatName(v, s) {
+  const label = seatName(v, s);
+  if (String(s) === String(v.hero_seat)) return label;
+  const name = (v.seat_names || {})[String(s)];
+  const pid = (v.seat_pid || {})[String(s)];
+  const nick = name || (pid !== undefined && pid !== null ? 'B' + pid : '');
+  return esc(label) + (nick ? ' · ' + esc(nick) : '');
+}
+
 const RUNOUT_HOLD = 2000;
 const RESULT_HOLD = 2000;
 
@@ -2636,7 +2664,6 @@ function runoutThen(res, done) {
 
 function finishResult(v, resumeAt = null) {
   clearBubbles();
-  histPush(v);
 
   // 보드/홀카드 공개 완료 전에는 결과를 스포일러하지 않는다.
   S.winners = null;
@@ -2681,6 +2708,9 @@ function finishResult2(v) {
   const epoch = S.epoch || 0;
 
   renderResult(v);
+  // Only publish history after runout, reveals and winner rendering finish.
+  if (S.historyHand === v) S.historyHandComplete = true;
+  histPush(v);
 
   const amap = potAwards(v);
   const heroAward =
@@ -2835,7 +2865,7 @@ function potAwards(v) {
       if (!ws.length) return;
 
       const split = ws.length > 1;
-      const base = i === 0 ? 'MAIN' : `SIDE ${i}`;
+      const base = real.length === 1 ? '승리' : (i === 0 ? 'MAIN' : `SIDE ${i}`);
 
       ws.forEach((w) =>
         add(
@@ -2859,7 +2889,7 @@ function potAwards(v) {
     ws.forEach((w) =>
       add(
         w,
-        split ? 'SPLIT' : 'MAIN',
+        split ? '공동 승리' : '승리',
         split,
         0
       )
@@ -2928,7 +2958,7 @@ function resultBodyHTML(v, withLog) {
 
       rows +=
         `<div class="row${lab && !awardMapSplitOnly(awards, s) ? ' win' : ''}">` +
-        `<span class="who">${seatName(v, s)}</span>` +
+        `<span class="who">${resultCardSeatName(v, s)}</span>` +
         `<span class="cards">${cardsHTML(v.shown[s], 'mini')}</span>` +
         `${lab ? `<span class="amt">${esc(lab)}</span>` : ''}` +
         `</div>`;
@@ -3086,8 +3116,27 @@ function histPush(v) {
 }
 function histClear() { try { localStorage.removeItem(HIST_KEY); } catch (e) {} }
 
+function visibleHistory(list) {
+  if (!Array.isArray(list)) return [];
+  const current = S.historyHand;
+  if (!current) return list;
+  return list.filter(v => {
+    if (!v) return false;
+    if (current.hash && v.hash === current.hash) return S.historyHandComplete;
+    // The engine may finish this hand (or deal the next one) ahead of replay.
+    // Use engine hand_no, not the tournament-local display number.
+    const no = Number(v.hand_no), limit = Number(current.hand_no);
+    if (Number.isFinite(no) && Number.isFinite(limit)) {
+      return no < limit || (no === limit && S.historyHandComplete);
+    }
+    return false;
+  });
+}
+
 function renderHistoryList(list, fallbackNote) {
-  list = Array.isArray(list) ? list : [];
+  // Filter at render time: history fetches can overlap live replay or runout.
+  // This also protects the local fallback from an earlier cached result.
+  list = visibleHistory(list);
 
   list.sort((a, b) =>
     Number(b && b.hand_no || 0) -
@@ -3225,7 +3274,7 @@ function tournamentInfoHTML(t) {
 
   const jump = t.next_rank
     ? `<div class="row"><span class="who">다음 머니점프</span><span class="amt">${fmt(t.next_rank)}위 · ${pct(t.next_prize_pct)}</span></div>` +
-      `<div class="potline">현재에서 ${fmt(t.players_to_jump)}명 더 탈락 · 점프 +${pct(t.next_jump_pct)}</div>`
+      `<div class="potline">${t.in_money ? '현재에서 ' + fmt(t.players_to_jump) + '명 더 탈락 · ' : ''}점프 +${pct(t.next_jump_pct)}</div>`
     : '<div class="row"><span class="who">다음 머니점프</span><span class="amt">1위 구간</span></div>';
 
   const jumps = (t.money_jumps || []).slice(0, 5);
@@ -3241,10 +3290,6 @@ function tournamentInfoHTML(t) {
       `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
       `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)} · ${t.virtual_clock ? fmt(t.level_minutes)+'분' : '기존 핸드 기준'}</span></div>` +
       `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
-      `<div class="row"><span class="who">내 칩순위</span><span class="amt">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
-      `<div class="row"><span class="who">내 스택</span><span class="amt">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
-      `<div class="row"><span class="who">평균</span><span class="amt">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
-      `<div class="row"><span class="who">칩리더</span><span class="amt">${fmt(t.leader)}</span></div>` +
       `<div class="row"><span class="who">테이블</span><span class="amt">${fmt(t.tables)}개</span></div>` +
       `<div class="row"><span class="who">버블</span><span class="amt">${t.bubble ? '진입' : '아님'}</span></div>` +
     '</div>' +
@@ -3262,9 +3307,7 @@ function renderRankDrawer(t) {
     ? `<div class="cell"><span class="k">내 칩순위</span><span class="v">${t.hero_rank ? fmt(t.hero_rank) + '위' : '-'}</span></div>` +
       `<div class="cell"><span class="k">내 스택</span><span class="v">${fmt(t.hero_stack)} · ${t.hero_bb}BB</span></div>` +
       `<div class="cell"><span class="k">평균 스택</span><span class="v">${fmt(t.avg_stack)} · ${t.avg_bb}BB</span></div>` +
-      `<div class="cell"><span class="k">${t.in_money ? '보장 상금' : 'ITM까지'}</span><span class="v">${t.in_money ? pct(t.current_prize_pct) : fmt(t.players_to_jump) + '명'}</span></div>` +
-      `<div class="cell"><span class="k">다음 머니점프</span><span class="v">${t.next_rank ? fmt(t.next_rank) + '위 · ' + pct(t.next_prize_pct) : '최종 구간'}</span></div>` +
-      `<div class="cell"><span class="k">블라인드</span><span class="v">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' A' + fmt(t.ante) : ''}</span></div>`
+      `<div class="cell"><span class="k">칩리더</span><span class="v">${fmt(t.leader)}</span></div>`
     : '';
 
   $('#rankList').innerHTML = rows.length
@@ -3287,13 +3330,15 @@ function renderRankDrawer(t) {
     : '<div class="rankempty">순위 정보가 없습니다.</div>';
 }
 
-async function openRankDrawer() {
+async function openRankDrawer(fromMenu = false) {
   if (S.rankOpen) return;
   S.rankOpen = true;
   $('#rankScrim').hidden = false;
+  $('#rankDrawer').classList.toggle('from-menu', fromMenu);
   $('#rankDrawer').classList.add('open');
   $('#rankDrawer').setAttribute('aria-hidden', 'false');
-  $('#rankList').innerHTML = '<div class="rankempty">전체 순위 불러오는 중…</div>';
+  if (S.tournament) renderRankDrawer(S.tournament);
+  else $('#rankList').innerHTML = '<div class="rankempty">전체 순위 불러오는 중…</div>';
   try {
     const t = await tournamentLoad(true);
     renderRankDrawer(t);
@@ -3309,7 +3354,7 @@ function closeRankDrawer() {
   $('#rankDrawer').classList.remove('open');
   $('#rankDrawer').setAttribute('aria-hidden', 'true');
   setTimeout(() => {
-    if (!S.rankOpen) $('#rankScrim').hidden = true;
+    if (!S.rankOpen && !$('#rankDrawer').classList.contains('dragging')) $('#rankScrim').hidden = true;
   }, 250);
 }
 
@@ -3334,6 +3379,11 @@ function stopActionClock() {
     el.classList.remove('urgent', 'ring', 'bank');
     el.textContent = '';
   }
+}
+
+function heroTimeoutAction(v) {
+  const legal = (v && v.legal) || {};
+  return legal.fold ? 'fold' : legal.check ? 'check' : 'fold';
 }
 
 function paintActionClock() {
@@ -3368,7 +3418,7 @@ function paintActionClock() {
   if (leftMs <= 0 && !S.timeoutSubmitting && S.view && S.view.type === 'decision') {
     S.timeoutSubmitting = true;
     closeRaise();
-    send('fold', 0);
+    send(heroTimeoutAction(S.view), 0);
   }
 }
 
@@ -3443,6 +3493,13 @@ async function readReady() {
     return ready;
   } finally { clearTimeout(timer); }
 }
+function updateBreakFromReady(ready) {
+  // Finish the last visible hand before covering it with the break sheet.
+  if (S.breakOpen || (ready.break_remaining > 0 && S.historyHandComplete)) {
+    renderBreak(ready);
+  }
+}
+
 function renderBreak(ready) {
   if (!ready.break_remaining && !ready.working) {
     if (S.breakOpen) { S.breakOpen = false; hideOverlay(); }
@@ -3481,18 +3538,97 @@ async function showMenu() {
     (err
       ? `<div class="sub">대회 정보를 불러오지 못했습니다: ${esc(err)}</div>`
       : tournamentInfoHTML(t)) +
-    '<button type="button" id="mRanks">전체 봇 스택 순위</button>' +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
     `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>'
   );
 
-  $('#mRanks').addEventListener('click', () => {
-    hideOverlay();
-    openRankDrawer();
-  });
+  bindMenuRankSwipe($('#overlay .sheet'));
   $('#mLobby').addEventListener('click', () => { location.href = '/'; });
   $('#mClose').addEventListener('click', hideOverlay);
+}
+
+function bindMenuRankSwipe(sheet) {
+  if (!sheet) return;
+  sheet.classList.add('tournament-menu');
+  sheet.tabIndex = 0;
+  bindRankDrag(sheet, true, () => !S.rankOpen, true);
+  sheet.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); openRankDrawer(true); }
+  });
+}
+
+function bindRankDrag(host, opening, enabled, fromMenu = false) {
+  let drag = null, suppressClick = false;
+  const drawer = $('#rankDrawer'), scrim = $('#rankScrim');
+  const paint = e => {
+    const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+    if (!drag.active) {
+      if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { drag = null; return; }
+      if ((opening ? dx : -dx) <= 8 || Math.abs(dx) <= Math.abs(dy)) return;
+      drag.active = true;
+      drag.width = drawer.getBoundingClientRect().width * 1.02;
+      drawer.classList.toggle('from-menu', fromMenu);
+      drawer.classList.add('dragging');
+      drawer.style.transition = 'none';
+      scrim.hidden = false;
+      if (opening && S.tournament) renderRankDrawer(S.tournament);
+      try { host.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    const now = performance.now();
+    const dt = now-drag.at;
+    if (dt > 0 && e.clientX !== drag.lastX) {
+      drag.velocity = (e.clientX-drag.lastX)/dt;
+      drag.at = now; drag.lastX = e.clientX;
+    }
+    drag.distance = Math.max(0, Math.min(drag.width, opening ? dx : -dx));
+    const visible = opening ? drag.distance : drag.width-drag.distance;
+    drawer.style.transform = `translateX(${visible-drag.width}px)`;
+    scrim.style.opacity = String(visible/drag.width);
+  };
+  const finish = (e, cancelled) => {
+    if (!drag || drag.id !== e.pointerId) return;
+    if (!cancelled) paint(e);
+    if (!drag || !drag.active) { drag = null; return; }
+    const d = drag;
+    const velocity = performance.now()-d.at < 100 ? d.velocity : 0;
+    const commit = !cancelled && (d.distance >= d.width*0.35 ||
+      (d.distance >= 24 && (opening ? velocity : -velocity) >= 0.45));
+    suppressClick = true;
+    drag = null;
+    try { host.releasePointerCapture(e.pointerId); } catch (_) {}
+    // Start settling at the exact last dragged frame, never at the edge.
+    drawer.getBoundingClientRect();
+    drawer.classList.add('settling');
+    drawer.classList.remove('dragging');
+    drawer.style.transition = '';
+    if (commit) {
+      if (opening) openRankDrawer(fromMenu);
+      else closeRankDrawer();
+    }
+    drawer.style.transform = '';
+    scrim.style.opacity = '';
+    setTimeout(() => {
+      drawer.classList.remove('settling');
+      if (!S.rankOpen && !drawer.classList.contains('dragging')) scrim.hidden = true;
+      suppressClick = false;
+    }, 250);
+    drag = null;
+  };
+  host.addEventListener('pointerdown', e => {
+    if (!enabled() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    drag = {x:e.clientX, y:e.clientY, lastX:e.clientX, id:e.pointerId,
+      at:performance.now(), velocity:0, distance:0, active:false};
+  }, {passive:true});
+  host.addEventListener('pointermove', e => {
+    if (drag && drag.id === e.pointerId) paint(e);
+  }, {passive:true});
+  host.addEventListener('pointerup', e => finish(e, false), {passive:true});
+  host.addEventListener('pointercancel', e => finish(e, true), {passive:true});
+  host.addEventListener('lostpointercapture', e => finish(e, true), {passive:true});
+  host.addEventListener('click', e => {
+    if (suppressClick) {e.preventDefault(); e.stopImmediatePropagation();}
+  }, true);
 }
 
 function showHandDetail(v) {
@@ -3688,6 +3824,24 @@ async function req(path, body) {
   return { status: res.status, json };
 }
 
+function resumeAfterBreak(body, msg) {
+  const epoch = S.epoch || 0;
+  const poll = async () => {
+    if (!epochAlive(epoch)) return;
+    try {
+      const ready = await readReady();
+      if (!epochAlive(epoch)) return;
+      renderBreak(ready);
+      if (!ready.break_remaining && !ready.working) {
+        call('/api/step', body, msg);
+        return;
+      }
+    } catch (_) { /* Keep the result; retry the readiness request. */ }
+    S.autoTimer = setTimeout(poll, 1000);
+  };
+  S.autoTimer = setTimeout(poll, 1000);
+}
+
 // Both transports deliver the same events. Sequence de-duplication prevents
 // double bets / animation when a previously buffered stream catches up.
 function stepEventReceiver(onStart, onEvent, onFinal, onError) {
@@ -3712,6 +3866,8 @@ function stepEventReceiver(onStart, onEvent, onFinal, onError) {
 }
 
 async function callStepStream(body, msg) {
+  // Scheduled action times include thinking; allow a brief visible result frame.
+  const BOT_ACTION_FEEDBACK_MS = 550;
   if (S.busy) {
     toast('앞선 요청을 처리하는 중입니다 — 끝나면 다시 눌러 주세요');
     return null;
@@ -3877,7 +4033,8 @@ async function callStepStream(body, msg) {
         setTimeout(() => {
           playing = false;
           playNext();
-        }, (terminalFold(ss, e) || e.act_at_ms) ? 0 : paceMs(e));
+        }, e.act_at_ms ? BOT_ACTION_FEEDBACK_MS
+           : terminalFold(ss, e) ? 0 : paceMs(e));
       };
 
       // 새 스트리트는 기존 재생과 똑같이 보드를 먼저 확인한 뒤 첫 액션을 보여준다.
@@ -3907,6 +4064,11 @@ async function callStepStream(body, msg) {
 
   const pushEvent = (e) => {
     if (!e || settled) return;
+    if (computingHint) {
+      const row = $('#mainrow');
+      if (row) row.innerHTML = '';
+      computingHint = false;
+    }
     queue.push(e);
     playNext();
   };
@@ -3915,9 +4077,23 @@ async function callStepStream(body, msg) {
   const requestId = crypto.randomUUID();
   const requestBody = Object.assign({}, body, {request_id: requestId});
   let progressTimer = null, progressCursor = 0, streamError = null, progressStopped = false;
+  let computingHint = false;
+  const computingTimer = setTimeout(() => {
+    if (settled || playing || queue.length || finalPayload || streamError) return;
+    const row = $('#mainrow');
+    if (row) { row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>'; computingHint = true; }
+  }, 1500);
   const receive = stepEventReceiver(
     (obj) => {
       streamId = obj.stream_id || null;
+      // The request can cross the deadline in transit. Rebuild the hero
+      // preview and replay from the action accepted by the server.
+      if (ss && obj.hero_action &&
+          (obj.hero_action !== body.action || obj.hero_amount !== body.amount)) {
+        replaceHeroReplay(ss, shownLog, base, obj.hero_action, obj.hero_amount);
+        previewHeroAction(obj.hero_action, obj.hero_amount);
+        publishPrev();
+      }
       // A buffered stream_start has an old timestamp. Fresh /ready and
       // progress responses synchronize the clock; replay never moves it back.
     },
@@ -4028,6 +4204,7 @@ async function callStepStream(body, msg) {
   } finally {
     progressStopped = true;
     clearTimeout(progressTimer);
+    clearTimeout(computingTimer);
     controller.abort();
     setBusy(false);
     if (S.queuedNew) {
@@ -4057,7 +4234,20 @@ async function call(path, body, msg) {
   setBusy(true, msg, path === '/api/step');
   try {
     const r = await req(path, body);
+    // An older server can report the same boundary as a ValueError/500.
+    // Keep the automatic next-deal request alive across that response too.
+    if (path === '/api/step' && body && body.action === null &&
+        r.status !== 200 && r.json && /브레이크/.test(r.json.error || '')) {
+      resumeAfterBreak(body, msg);
+      return null;
+    }
     if (r.status === 409) {
+      if (path === '/api/step' && body && body.action === null &&
+          r.json && r.json.code === 'break_active') {
+        renderBreak(r.json);
+        resumeAfterBreak(body, msg);
+        return null;
+      }
       toast((r.json && r.json.error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
       const s = await req('/api/state', null);          // 추정하지 않고 다시 받는다
       if (s.status === 200 && s.json) apply(s.json);
@@ -4170,12 +4360,12 @@ function send(action, amount) {
   }
 
   if (action !== null && S.actionDeadlineMs && serverNow() >= S.actionDeadlineMs) {
-    action = 'fold';
+    action = heroTimeoutAction(S.view);
     amount = 0;
     S.timeoutSubmitting = true;
   }
 
-  // 클릭/자동폴드가 확정되는 순간 카운트다운은 즉시 끝난다.
+  // 클릭/자동 액션이 확정되는 순간 카운트다운은 즉시 끝난다.
   // 응답 전 readReady()가 같은 서버 deadline을 다시 받아도 재-arm하지 않는다.
   if (action !== null) {
     S.actionSubmitted = true;
@@ -4302,6 +4492,8 @@ function apply(resp) {
   const prevView = S.view0;
 
   S.view = v;
+  S.historyHand = v;
+  S.historyHandComplete = false;
 
   // 새 서버 응답은 새 렌더 세대다.
   // 이전 핸드에서 늦게 깨어난 timeout/fetch 콜백은 화면을 건드리지 못한다.
@@ -4521,34 +4713,8 @@ $('#bMenu').addEventListener('click', showMenu);
 $('#rankClose').addEventListener('click', closeRankDrawer);
 $('#rankScrim').addEventListener('click', closeRankDrawer);
 
-// 오른쪽 스와이프 = 전체 스택 순위. 단순 탭/세로 스크롤과 섞이지 않게
-// 수평 이동 80px + 세로 48px 이내일 때만 연다.
-let _swipe = null;
-$('#tablewrap').addEventListener('pointerdown', (e) => {
-  if (S.rankOpen || !$('#overlay').hidden) return;
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  _swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
-}, { passive: true });
-$('#tablewrap').addEventListener('pointerup', (e) => {
-  if (!_swipe || _swipe.id !== e.pointerId) return;
-  const dx = e.clientX - _swipe.x;
-  const dy = e.clientY - _swipe.y;
-  _swipe = null;
-  if (dx >= 80 && Math.abs(dy) <= 48) openRankDrawer();
-}, { passive: true });
-$('#tablewrap').addEventListener('pointercancel', () => { _swipe = null; }, { passive: true });
-
-let _rankSwipe = null;
-$('#rankDrawer').addEventListener('pointerdown', (e) => {
-  _rankSwipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
-}, { passive: true });
-$('#rankDrawer').addEventListener('pointerup', (e) => {
-  if (!_rankSwipe || _rankSwipe.id !== e.pointerId) return;
-  const dx = e.clientX - _rankSwipe.x;
-  const dy = e.clientY - _rankSwipe.y;
-  _rankSwipe = null;
-  if (dx <= -70 && Math.abs(dy) <= 50) closeRankDrawer();
-}, { passive: true });
+bindRankDrag($('#tablewrap'), true, () => !S.rankOpen && $('#overlay').hidden);
+bindRankDrag($('#rankDrawer'), false, () => S.rankOpen);
 
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
@@ -4581,7 +4747,7 @@ setInterval(async () => {
   clockRequestPending = true;
   try {
     const ready = await readReady();
-    if (S.breakOpen) renderBreak(ready);
+    updateBreakFromReady(ready);
   } catch (_) { /* Retain the last confirmed value; retry next tick. */ }
   finally { clockRequestPending = false; }
 }, 1000);

@@ -153,24 +153,126 @@ class Hand:
         """
         return self.planning_profile(s)
 
-    def bf(self, s):
-        """좌석 s 의 버블팩터. icm.table_bf 가 유일한 계산 지점.
+    def bf_details(self, s):
+        """BF and its evidence label; never claim exact ICM for a partial field.
 
-        예전에는 여기서 필드를 9명 모델로 축약하고 상금표를 임의로 잘랐다.
-        그 근사가 버블(61명)을 70명보다 낮게 만들고 9~40명 구간을 평평하게 했다.
+        Full-field chip stacks are stamped by fieldsim from a hand-start
+        snapshot; the table alone cannot stand in for a split tournament.
+        The 5번 decision layer still consumes the same numeric BF interface.
         """
         rem = getattr(self, 'field_remaining', None)
         itm = getattr(self, 'field_itm', None)
         if not rem or not itm:
-            return 1.0
+            return {'value': 1.0, 'method': 'unavailable_tournament_context',
+                    'is_exact': False, 'reason': 'missing_remaining_or_itm'}
         live = [x for x in self.seats if self.stacks[x] > 0]
         if len(live) < 2 or s not in live:
-            return 1.0
+            return {'value': 1.0, 'method': 'not_applicable',
+                    'is_exact': False, 'reason': 'seat_not_active_or_no_opponent'}
         stacks = [self.stacks[x] for x in live]
         idx = live.index(s)
         pays = getattr(self, 'payouts', None) or [100, 62, 44, 34, 27, 22, 18, 15, 12]
         flat = getattr(self, 'payout_flat', 0.0)
         favg = getattr(self, 'field_avg_stack', None) or (sum(stacks)/len(stacks))
-        return icm.table_bf(stacks, idx, rem, itm, pays, flat, favg)
+        start = getattr(self, '_start_stacks', {}) or {}
+        # A frozen field-wide snapshot is from hand start. Do not compare
+        # changed local stack amounts to a different valuation epoch.
+        same_epoch = all(
+            float(self.stacks[x]) == float(start.get(x, self.stacks[x]))
+            for x in live)
+        ids = getattr(self, 'seat_pid', {}) or {}
+        local_pids = (
+            [ids[x] for x in live] if all(x in ids for x in live)
+            else None)
+        # A worker may own only ONE table while the frozen context contains
+        # the whole tournament. Never hash that partial owner.players map as
+        # the observed FULL field. Likewise, a simultaneous batch deliberately
+        # uses one frozen logical epoch, whether the sequential coordinator
+        # has applied another table already or a parallel worker cannot see it.
+        owner = getattr(self, '_field_epoch_owner', None)
+        expected_id = getattr(self, 'field_snapshot_id', None)
+        observed_id = None
+        epoch_status = None
+        observation_status = 'no_epoch_attestation'
+        scope = getattr(self, 'field_snapshot_scope', None)
+        if owner is not None and expected_id:
+            epoch_hand = getattr(self, 'field_snapshot_hand_no', None)
+            epoch_level = getattr(self, 'field_snapshot_level', None)
+            clock_matches = (
+                getattr(owner, 'hand_no', None) == epoch_hand
+                and getattr(owner, 'level', None) == epoch_level)
+            frozen = getattr(owner, '_frozen_field', None)
+            frozen_ref = getattr(self, '_field_frozen_epoch_ref', None)
+            frozen_matches = (
+                scope == 'simultaneous_frozen'
+                and frozen is not None
+                and frozen is frozen_ref
+                and frozen.get('epoch_id') == expected_id
+                and frozen.get('hand_no') == epoch_hand
+                and frozen.get('level') == epoch_level)
+            if scope == 'simultaneous_frozen':
+                if frozen_matches and clock_matches:
+                    # Stable across sequential/parallel table execution:
+                    # do not sample ANY decision-current roster in a frozen
+                    # batch. Even a complete coordinator roster has newer
+                    # intra-batch information that a mini worker lacks.
+                    epoch_status = 'frozen_epoch_reference'
+                    observation_status = 'frozen_reference_not_current'
+                else:
+                    # Expired by release/replacement or tournament hand/level
+                    # advancement. An unchanged object cannot extend its
+                    # logical lifetime. Do NOT turn this into stale_remote.
+                    epoch_status = 'expired_frozen_epoch'
+                    observation_status = (
+                        'frozen_clock_mismatch' if not clock_matches
+                        else 'frozen_reference_released_or_replaced')
+            else:
+                roster = list(owner.players.values())
+                known_pids = {p['pid'] for p in roster}
+                original_pids = set(
+                    (getattr(self, 'field_pid_stacks', None) or {}).keys())
+                if not original_pids or not original_pids <= known_pids:
+                    # Partial workers know nothing about remote current chips.
+                    epoch_status = 'unobservable_partial_field'
+                    observation_status = 'incomplete_current_field_roster'
+                else:
+                    # A FULL roster was independently observed in this owner.
+                    # Hash it with the ACTUAL owner clock, never the cached
+                    # snapshot clock, so clock-only advancement is detected.
+                    live_pid = {
+                        p['pid']: p['stack'] for p in roster
+                        if p['stack'] > 0}
+                    observed_id = icm.field_epoch_id(
+                        live_pid, getattr(owner, 'hand_no', None),
+                        getattr(owner, 'level', None))
+                    observation_status = 'verified_full_current_roster'
+                    if not clock_matches:
+                        epoch_status = 'stale_clock'
+                    elif (observed_id == expected_id
+                          and live_pid ==
+                              getattr(self, 'field_pid_stacks', None)):
+                        epoch_status = 'current_verified'
+                    else:
+                        epoch_status = 'stale_remote'
+        details = icm.table_bf(
+            stacks, idx, rem, itm, pays, flat, favg,
+            field_stacks=getattr(self, 'field_stacks', None),
+            field_pid_stacks=getattr(self, 'field_pid_stacks', None),
+            table_pids=local_pids, snapshot_is_current=same_epoch,
+            field_epoch_status=epoch_status,
+            field_snapshot_id=expected_id,
+            observed_field_epoch_id=observed_id,
+            field_snapshot_scope=scope,
+            field_observation_status=observation_status,
+            return_details=True)
+        details['snapshot_hand_no'] = getattr(
+            self, 'field_snapshot_hand_no', None)
+        details['snapshot_level'] = getattr(
+            self, 'field_snapshot_level', None)
+        return details
+
+    def bf(self, s):
+        """Numeric BF compatibility interface for the existing plan layer."""
+        return self.bf_details(s)['value']
 
     # ---------- 프리플랍 ----------

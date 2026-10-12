@@ -321,7 +321,9 @@ class Store:
         now = time.time() if now is None else now
         with self._db() as db:
             ev = self._event(db, tid)
-            if not ev['entries'] or ev['entries'][-1]['status'] == 'cancelled':
+            # Releasing a previous selection must work after its pending entry
+            # was refunded. Only requesting admission requires a valid receipt.
+            if requested and (not ev['entries'] or ev['entries'][-1]['status'] == 'cancelled'):
                 raise TournamentError('먼저 바이인해 주세요.')
             if requested and ev['enter_requested']:
                 return

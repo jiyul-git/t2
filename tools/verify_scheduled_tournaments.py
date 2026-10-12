@@ -116,6 +116,24 @@ class EconomyTests(unittest.TestCase):
         r = SR.advance(s.event(TID), 300, budget=1, parallel=False)
         self.assertGreater(r['state']['field']['virtual_play_seconds'], 0)
 
+    def test_future_hand_boundary_survives_break_and_worker_cache(self):
+        st = self.start(False)
+        # At the 55-minute pause the current hands cannot yet be merged. Their
+        # future boundary must remain visible even with worker-only queues.
+        st['background_seconds'] = 3290.0
+        st['background_pending'] = {tid: [{'end': 3330.0}]
+                                    for tid in st['field']['tables']}
+        ev = self.s.event(TID)
+        ev['state'] = st
+        for _ in range(2):
+            out = SR.advance(ev, 3300, parallel=False)
+            self.assertEqual(out['work'], 0)
+            self.assertEqual(out['state']['background_seconds'], 3300)
+            self.assertEqual(out['state']['background_resume_at'], 3330)
+            self.assertTrue(out['state']['background_pending_key'])
+            self.assertEqual(out['state']['background_pending'], {})
+            ev['state'] = out['state']
+
     def test_removed_format_retires_only_settled_personal_results(self):
         self.bust(self.start())
         self.s.uses_default_schedule = True
@@ -400,6 +418,25 @@ class EconomyTests(unittest.TestCase):
         self.start()
         with self.assertRaises(TS.TournamentError):
             self.s.reserve(TID, True, 1, now=START + 1)
+
+    def test_refunded_active_reentry_can_release_admission(self):
+        st = self.bust(self.start())
+        self.s.set_active(TID)
+        self.s.reserve(TID, True, 1, now=START + 10)
+        st['refunded_entries'] = [2]
+        self.s.save_state(TID, st, now=START + 11)
+        self.assertEqual(self.s.active_id(), TID)
+        self.assertEqual(self.s.event(TID)['entries'][-1]['status'], 'cancelled')
+        wallet = self.s.wallet()
+        field = copy.deepcopy(self.s.event(TID)['state']['field'])
+        self.s.request_enter(TID, False, now=START + 12)
+        ev = self.s.event(TID)
+        self.assertFalse(ev['enter_requested'])
+        self.assertFalse(ev['state']['hero_ready'])
+        self.assertEqual(ev['state']['field'], field)
+        self.assertEqual(self.s.wallet(), wallet)
+        with self.assertRaises(TS.TournamentError):
+            self.s.request_enter(TID, True, now=START + 12)
         self.assertEqual(self.s.wallet()['balance'], 9000)
 
     def test_stale_worker_does_not_overwrite_paid_reservation(self):

@@ -1,0 +1,107 @@
+[
+  {
+    "path": ".github/workflows/p16-fresh-install.yml",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "e4127f3747d2f3edc428b12d32b3be4c0c90aa23"
+  },
+  {
+    "path": "docs/semantic_audit/P16_FRESH_INSTALL_FIX_20261010.md",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "7a860c18a21e34ffd65c6e81c4e29d09e628ceba"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/baseline_py.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "c0c91e58f5745ee46376e143e1dcab56e2d35d6a"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/baseline_sh.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "ddffaefea5ea0bf503ac66685554412552ba8aaa"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/fresh_install.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "ff76679c3fbd4ab467c425f7bdfb8e29e1f33697"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/legacy_ref.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "45ea6bc55d80d81d78c0e972148479e83dc39957"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/mc.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "0bbff57c7576b44c27c014a28f1d19bc38a8c613"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/paired.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "21fedf3b1c8bc1cb7fc575a8d9873420fc909419"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/posterior.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "2e312afab37403e28dfe938968f39a9e61a74488"
+  },
+  {
+    "path": "docs/semantic_audit/p16-install-evidence/wallet.log",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "3d1bca28d61d0942ec79864d7118b3e4d7210844"
+  },
+  {
+    "path": "ui/tools/predeploy_check.sh",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "bd23e37d4da0521ffa50f52a4bdbdab3fcf8a5eb"
+  },
+  {
+    "path": "ui/tools/setup_run_dir.py",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "b0a75c535616b3667b21b63cb08d16d8164dfcab"
+  },
+  {
+    "path": "ui/tools/setup_run_dir.sh",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "a73436fa430397f71acba25cc921ac157a2df045"
+  },
+  {
+    "path": "ui/tools/verify_fresh_install_startup.py",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "aecc68be10ac05488050f321f6ba8bb4fd33c499"
+  },
+  {
+    "path": "ui/tools/verify_installation_paired_behavior.py",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "e74735aeeeef332bf8eb0ade9acf0176eee2d40b"
+  },
+  {
+    "path": "ui/tools/verify_original_install_failure.py",
+    "source_sha": "a2fdc02ab874371b04469ff36d917009542f0ab8",
+    "blob": "6c60ad6048c184ce232168f4844d2ec23ec6c4ef"
+  },
+  {
+    "path": ".github/workflows/p10-pr27-postflop-mc-none.yml",
+    "source_sha": "2c2acdcc10874c0c6efb205f6684423ac37b04e2",
+    "blob": "47b61d5482168238a069e904e03fd45f5d141af0"
+  },
+  {
+    "path": "plan.py",
+    "source_sha": "2c2acdcc10874c0c6efb205f6684423ac37b04e2",
+    "blob": "80de6c9929c29d5808bb15ed61115ae3ab55c3be"
+  },
+  {
+    "path": "tools/audit_p9_pr30_mc_contract.py",
+    "source_sha": "2c2acdcc10874c0c6efb205f6684423ac37b04e2",
+    "blob": "1538f0c8ea79ebbfd605344f2b10305f2f754171"
+  },
+  {
+    "path": "tools/verify_p10_postflop_mc_unavailable.py",
+    "source_sha": "2c2acdcc10874c0c6efb205f6684423ac37b04e2",
+    "blob": "e0062e0dbdb318681dbb1c8edf6a278931ec0cb0"
+  },
+  {
+    "path": "tools/verify_p10_range_provenance.py",
+    "source_sha": "2c2acdcc10874c0c6efb205f6684423ac37b04e2",
+    "blob": "89fbf9364b27b101d39192284ef8af3dfb9545f3"
+  }
+]

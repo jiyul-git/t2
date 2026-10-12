@@ -1,0 +1,56 @@
+[
+  {
+    "seed": 3003,
+    "hand": 1,
+    "log_index0": 9,
+    "reference_row": [
+      "flop",
+      9,
+      "bet",
+      1200
+    ],
+    "transition_parent": "23572739a071f04be1aebb6e0975d33397b00b72",
+    "transition_child": "4b9d33d5f951fce4b292f6e6e79caaf141b106d2",
+    "parent_row": [
+      "flop",
+      9,
+      "bet",
+      1200
+    ],
+    "child_row": [
+      "flop",
+      9,
+      "check",
+      0
+    ],
+    "subject": "audit9 batch 1: R3 4bet attack evidence + R5a-ext flop line ownership",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  },
+  {
+    "seed": 3005,
+    "hand": 1,
+    "log_index0": 12,
+    "reference_row": [
+      "turn",
+      1,
+      "bet",
+      2000
+    ],
+    "transition_parent": "11669e9428d6f1609c49efae812f091d0f8aae4b",
+    "transition_child": "9b5b81b866246cd268c1ef7e7bbf70915acba72c",
+    "parent_row": [
+      "turn",
+      1,
+      "bet",
+      2200
+    ],
+    "child_row": [
+      "turn",
+      1,
+      "check",
+      0
+    ],
+    "subject": "audit9 checkpoint 3: range/action semantics, shove geometry, plan-semantic fixes",
+    "limitation": "validated local parent/child transition; binary search alone does not prove earliest transition throughout nonmonotone history"
+  }
+]

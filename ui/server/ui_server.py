@@ -199,6 +199,12 @@ def _managed_play_state():
             gap = max(0, int(target - done))
             if target - done <= ADMISSION_SYNC_LAG:
                 message = '진행 중인 핸드를 마치고 좌석을 준비하고 있습니다. 준비되면 자동으로 입장합니다.'
+                phase = max(0.0, time.time() - ev['starts_at']) % 3600.0
+                if phase >= 3300.0:
+                    left = int(3600.0 - phase + 0.999999)
+                    message = ('대회 휴식 중 — 남은 시간 %d분 %02d초. '
+                               '휴식 종료 후 다음 완료 핸드에 좌석을 배정하고 자동으로 입장합니다.'
+                               % (left // 60, left % 60))
             else:
                 message = ('대회 진행 동기화 중 %d%% (따라잡을 시간 %d분 %02d초) — 완료 후 자동으로 입장합니다.'
                            % (pct, gap // 60, gap % 60))
@@ -283,8 +289,10 @@ def _schedule_tick():
             if TIMING_ON and not sitout_now:
                 _settle_hero_bank(st, now, timed_out=True)
                 L.save(st)
-            _last = _wrap(_step_sched(_timeout_action()))
-            _last['auto_folded'] = True
+            timeout_action = _timeout_action()
+            _last = _wrap(_step_sched(timeout_action))
+            _last['auto_action'] = timeout_action
+            _last['auto_folded'] = timeout_action == 'fold'
             st = L.load()
             if away and not st.get('away_sitout'):
                 # 자리 비움 중 첫 타임아웃 뒤로는 실제 사이트처럼 sit-out: 바로 폴드한다.
@@ -348,6 +356,11 @@ def _schedule_tick():
         if es.get('hand_seed') is not None or es.get('others_pending') or es.get('vclock_settle_pending'):
             continue
         target = _TS.active_seconds(now - ev['starts_at'])
+        # No completed hand is due yet. During the five-minute break target
+        # stays fixed, so repeatedly submitting this snapshot cannot help admit
+        # a waiting receipt; resume when the next boundary actually becomes due.
+        if float(es.get('background_resume_at') or 0) > target + 1e-9:
+            continue
         if es and es.get('background_seconds', -1) >= target - 0.25 and not any(
                 e['status'] in ('reserved', 'waiting') for e in ev['entries']):
             continue
@@ -1656,6 +1669,7 @@ def _public_history():
                 'best_five': r.get('best_five') or {},
 
                 'pos': r.get('pos') or h.get('pos') or {},
+                'seat_pid': h.get('seat_pid') or {},
                 'stacks': r.get('stacks') or {},
 
                 # UI 상세 기록에서 사용하는 필드
@@ -1993,6 +2007,7 @@ class H(BaseHTTPRequestHandler):
                     finally:
                         LOCK.release()
                 working = bool(st.get('vclock_settle_pending'))
+                _sync_clock(st)
                 timing = _ui_timing(st)
                 timing['working'] = working
                 timing['vclock_coverage_seconds'] = int(
@@ -2005,6 +2020,7 @@ class H(BaseHTTPRequestHandler):
             else:
                 fut = PENDING.get('future')
                 working = bool(fut and not fut.done())
+                _sync_clock(st)
                 timing = _ui_timing(st)
                 timing['working'] = working
                 timing['worker_elapsed_seconds'] = int(
@@ -2267,8 +2283,14 @@ class H(BaseHTTPRequestHandler):
                     _f = L._load_field(_st['field'])
                     if _st.get('busted') or _f.remaining() <= 1:
                         _last = _game_over(); return self._send(200, _last)
+                    # /ready and the next-deal request can straddle 55:00.
+                    # Resolve the wall-clock boundary before checking the gate,
+                    # rather than letting _step raise a generic ValueError.
+                    _sync_clock(_st)
                     if _st.get('ui_break_pending') and _ui_timing(_st)['break_remaining']:
-                        return self._send(409, {'error': '브레이크가 끝난 뒤 재개됩니다.', 'current': _last})
+                        L.save(_st)
+                        return self._send(409, dict(_ui_timing(_st),
+                            code='break_active', current=_last))
                     a = body.get('action')
                     timed_out = False
                     deadline = _st.get('ui_action_deadline')
@@ -2303,6 +2325,8 @@ class H(BaseHTTPRequestHandler):
                         alive[0] = _publish({
                             'type': 'stream_start',
                             'stream_id': stream_id,
+                            'hero_action': a,
+                            'hero_amount': amt,
                             'server_now_ms': int(time.time() * 1000),
                         })
 
@@ -2350,7 +2374,8 @@ class H(BaseHTTPRequestHandler):
                         else:
                             _last = _wrap(r)
                         if timed_out:
-                            _last['auto_folded'] = True
+                            _last['auto_action'] = a
+                            _last['auto_folded'] = a == 'fold'
                         message = {'type': 'final', 'payload': _last}
                         _step_progress_emit(request_id, message)
                         if alive[0]:
@@ -2368,7 +2393,8 @@ class H(BaseHTTPRequestHandler):
                         return self._send(200, out)
                     _last = _wrap(r)
                     if timed_out:
-                        _last['auto_folded'] = True
+                        _last['auto_action'] = a
+                        _last['auto_folded'] = a == 'fold'
                     return self._send(200, _last)
                 return self._send(404, {'error': 'not found'})
             except _TS.TournamentError as e:

@@ -1,0 +1,105 @@
+name: HAND130 Part2 source-math audit
+
+on:
+  push:
+    branches: [test3]
+    paths:
+      - 'tools/verify_hand130_part2.py'
+      - 'docs/semantic_audit/fixtures/hand130_b37_part2.json'
+      - 'docs/semantic_audit/HAND130_PART2_DERIVATION_AUDIT.md'
+      - '.github/workflows/hand130-part2-audit.yml'
+      - 'preflop.py'
+      - 'gto.py'
+      - 'persona.py'
+      - 'depth.py'
+      - 'icm.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile audit and core math
+        id: compile
+        run: python3 -m py_compile tools/verify_hand130_part2.py preflop.py gto.py persona.py depth.py icm.py
+      - name: Verify HAND130 static equations and recorded price
+        id: equations
+        run: python3 tools/verify_hand130_part2.py
+      - name: Frozen regression baseline
+        id: regression
+        run: |
+          set +e
+          python3 tools/regress.py check --baseline current > /tmp/hand130-regression.log 2>&1
+          EXIT_CODE=$?
+          set -e
+          cat /tmp/hand130-regression.log
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            DIAG="$(grep -E '불일치 시드:|기준선 파일이 없다:|^ModuleNotFoundError:|^ImportError:|^AssertionError:|^FileNotFoundError:' /tmp/hand130-regression.log | tail -1 || true)"
+            if [ -z "$DIAG" ]; then DIAG="$(tail -1 /tmp/hand130-regression.log)"; fi
+            DIAG="$(printf '%s' "$DIAG" | cut -c 1-110 | tr '\\r\\n' '  ')"
+            echo "HAND130_REGRESSION_DIAG=$DIAG" >> "$GITHUB_ENV"
+          fi
+          exit "$EXIT_CODE"
+      - name: Paired fingerprint against pre-audit source SHA
+        id: paired
+        if: always()
+        run: |
+          git fetch --no-tags --depth=1 origin 945758accf095c634e7a543da73d38160f8b00e2
+          git worktree add --detach /tmp/hand130-preaudit 945758accf095c634e7a543da73d38160f8b00e2
+          PYTHONHASHSEED=0 python3 -c 'import json; from tools.regress import fingerprint; print(json.dumps(fingerprint()[0],sort_keys=True))' > /tmp/hand130-current-fp.json
+          (cd /tmp/hand130-preaudit && PYTHONHASHSEED=0 python3 -c 'import json; from tools.regress import fingerprint; print(json.dumps(fingerprint()[0],sort_keys=True))') > /tmp/hand130-preaudit-fp.json
+          echo 'Pre-audit fingerprints:'
+          cat /tmp/hand130-preaudit-fp.json
+          echo 'Audit HEAD fingerprints:'
+          cat /tmp/hand130-current-fp.json
+          diff -u /tmp/hand130-preaudit-fp.json /tmp/hand130-current-fp.json
+      - name: Publish auditable commit status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TASK_RESULT: ${{ job.status }}
+          COMPILE_RESULT: ${{ steps.compile.outcome }}
+          EQUATIONS_RESULT: ${{ steps.equations.outcome }}
+          REGRESSION_RESULT: ${{ steps.regression.outcome }}
+          PAIRED_RESULT: ${{ steps.paired.outcome }}
+          REGRESSION_DIAG: ${{ env.HAND130_REGRESSION_DIAG }}
+        run: |
+          case "$TASK_RESULT" in
+            success) STATUS=success ;;
+            *) STATUS=failure ;;
+          esac
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="$STATUS" \
+            -f context="hand130-part2/source-math" \
+            -f description="Equation replay and frozen regression: $TASK_RESULT"
+          if [ -n "$REGRESSION_DIAG" ]; then
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+              -f state=failure \
+              -f context="hand130-part2/regression-detail:$REGRESSION_DIAG" \
+              -f description="Regression failure summary, see full job logs"
+          fi
+          for STEP in compile equations regression paired; do
+            case "$STEP" in
+              compile) OUTCOME="$COMPILE_RESULT" ;;
+              equations) OUTCOME="$EQUATIONS_RESULT" ;;
+              regression) OUTCOME="$REGRESSION_RESULT" ;;
+              paired) OUTCOME="$PAIRED_RESULT" ;;
+            esac
+            case "$OUTCOME" in
+              success) STEP_STATE=success ;;
+              *) STEP_STATE=failure ;;
+            esac
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+              -f state="$STEP_STATE" \
+              -f context="hand130-part2/$STEP" \
+              -f description="$STEP: $OUTCOME"
+          done

@@ -1,0 +1,115 @@
+name: P17 final isolated integration release gates
+on:
+  push:
+    branches: [chatgpt/p17-final-integration-20261011]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    name: Exact integration and MC HAND130
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/verify_p17_final_integration.py guard p17-results/guard
+      - run: python tools/verify_p17_final_integration.py mc p17-results/mc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p17-contracts
+          path: p17-results/
+  installation:
+    name: Six ZIPs eight starts wallet and installed MC
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/verify_p17_final_integration.py install p17-results/install
+      - run: python tools/verify_p17_final_integration.py installed-mc p17-results/installed-mc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p17-installation
+          path: p17-results/
+  field:
+    name: ICM provenance epoch three tables RNG
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/verify_p17_final_integration.py field p17-results/field
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p17-field
+          path: p17-results/
+  normal-parity:
+    name: PR27 versus integration default OFF ON
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/verify_p17_final_integration.py parity p17-results/parity
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p17-normal-parity
+          path: p17-results/
+  frozen-parity:
+    name: Frozen seeds new difference detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tools/compare_p17_final_baselines.py p17-results/baselines
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p17-frozen-traces
+          path: p17-results/
+  legacy-replan:
+    name: Unmodified legacy replan contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute original test without changing its assertions
+        shell: bash
+        run: |
+          mkdir -p p17-results/legacy-replan
+          set -o pipefail
+          python tools/verify_replan_contract.py 2>&1 | tee p17-results/legacy-replan/original.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p17-legacy-replan
+          path: p17-results/
