@@ -1,0 +1,113 @@
+{
+ "schema": "gto_tree_size_v1",
+ "date": "2026-10-12",
+ "tool": "vendor/gtopen t2_tree_estimate (estimate_tree: builder counting walk, no allocation)",
+ "common": "9-max, open 2.0 (SB 2.5), 3-bet 3.0x (blinds 4.0x), ante 1/9 per seat, hand-start stack exact (cfg.stack = S - 1/9), no limp",
+ "machine": "4 cores, 15 GB RAM: arena limit ~40% of free RAM (~6 GB)",
+ "rows": [
+  {
+   "action_nodes": 447090,
+   "arena_gb": 1.2348492,
+   "nodes": 913351,
+   "truncated": false,
+   "config": "v_j30",
+   "tree": "J30 (validation; audit 913k / 1.23 GB)"
+  },
+  {
+   "action_nodes": 856852,
+   "arena_gb": 2.367395264,
+   "nodes": 1751033,
+   "truncated": false,
+   "config": "v_mr3_22_30",
+   "tree": "30bb mr3 4-bet 2.2x+jam (validation; audit 1.75M)"
+  },
+  {
+   "action_nodes": 7817130,
+   "arena_gb": 21.7419852,
+   "nodes": 16081351,
+   "truncated": false,
+   "config": "v_mr4_22_30",
+   "tree": "30bb mr4 2.2x (validation; audit 16.1M / 21.7 GB)"
+  },
+  {
+   "action_nodes": 447090,
+   "arena_gb": 1.2348492,
+   "nodes": 913351,
+   "truncated": false,
+   "config": "c_mr3_jam_60",
+   "tree": "60bb mr3, 4-bet jam only"
+  },
+  {
+   "action_nodes": 856852,
+   "arena_gb": 2.367395264,
+   "nodes": 1751033,
+   "truncated": false,
+   "config": "a_mr3_225_60",
+   "tree": "60bb mr3, 4-bet 2.25x+jam, no 5-bet"
+  },
+  {
+   "action_nodes": 14777408,
+   "arena_gb": 41.116575136,
+   "nodes": 30411669,
+   "truncated": false,
+   "config": "b_mr4_225_60",
+   "tree": "60bb mr4, 4-bet 2.25x+jam, 5-bet 2.25x+jam"
+  },
+  {
+   "action_nodes": 856851,
+   "arena_gb": 2.367391208,
+   "nodes": 1751030,
+   "truncated": false,
+   "config": "c_mr3_jam_100",
+   "tree": "100bb mr3, 4-bet jam only"
+  },
+  {
+   "action_nodes": 856852,
+   "arena_gb": 2.367395264,
+   "nodes": 1751033,
+   "truncated": false,
+   "config": "a_mr3_225_100",
+   "tree": "100bb mr3, 4-bet 2.25x+jam, no 5-bet"
+  },
+  {
+   "action_nodes": 14777408,
+   "arena_gb": 41.116575136,
+   "nodes": 30411669,
+   "truncated": false,
+   "config": "b_mr4_225_100",
+   "tree": "100bb mr4, 4-bet 2.25x+jam, 5-bet 2.25x+jam"
+  },
+  {
+   "action_nodes": 7817130,
+   "arena_gb": 21.7419852,
+   "nodes": 16081351,
+   "truncated": false,
+   "config": "d_mr4_225_5jam_60",
+   "tree": "60bb mr4, 4-bet 2.25x+jam, 5-bet jam only (fivebet_mults [])"
+  },
+  {
+   "action_nodes": 7817130,
+   "arena_gb": 21.7419852,
+   "nodes": 16081351,
+   "truncated": false,
+   "config": "d_mr4_225_5jam_100",
+   "tree": "100bb same"
+  },
+  {
+   "action_nodes": 7817130,
+   "arena_gb": 21.7419852,
+   "nodes": 16081351,
+   "truncated": false,
+   "config": "d_mr4_225_5jam_150",
+   "tree": "150bb same"
+  },
+  {
+   "action_nodes": 79042376,
+   "arena_gb": 223.080051376,
+   "nodes": 165000001,
+   "truncated": true,
+   "config": "e_mr5_225_5b22_6jam_150",
+   "tree": "150bb mr5, 4-bet 2.25x, 5-bet 2.2x+jam (walk stopped at 165M nodes)"
+  }
+ ]
+}

@@ -241,3 +241,6 @@ required-features = ["preflop-research"]
 [[example]]
 name = "t2_tree_dump"
 required-features = ["t2-cont"]
+
+[[example]]
+name = "t2_tree_estimate"

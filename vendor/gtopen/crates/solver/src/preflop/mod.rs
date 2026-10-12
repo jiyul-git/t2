@@ -131,6 +131,10 @@ pub struct PreflopConfig {
     pub fourbet_mults: Option<Vec<f64>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fourbet_mults_by_seat: Option<Vec<Vec<f64>>>,
+    /// 5-bets and later (raises >= 3) when present; an empty list = jam only (with add_allin). Absent = unchanged
+    /// (fourbet_mults / legacy menu), so existing configs, saves and hashes are untouched.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fivebet_mults: Option<Vec<f64>>,
 }
 
 fn is_false(value: &bool) -> bool { !*value }
@@ -155,6 +159,9 @@ impl PreflopConfig {
         }
     }
     fn mults_of(&self, actor: usize, raises: u8) -> &[f64] {
+        if raises >= 3 {
+            if let Some(five) = &self.fivebet_mults { return five; }
+        }
         if raises >= 2 {
             if let Some(per) = &self.fourbet_mults_by_seat {
                 if !per[actor].is_empty() { return &per[actor]; }
@@ -3135,7 +3142,7 @@ fn validate(cfg: &PreflopConfig) -> Result<usize, String> {
             ));
         }
     }
-    for &m in cfg.raise_mults.iter().chain(cfg.fourbet_mults.iter().flatten()) {
+    for &m in cfg.raise_mults.iter().chain(cfg.fourbet_mults.iter().flatten()).chain(cfg.fivebet_mults.iter().flatten()) {
         if !m.is_finite() || m <= 0.0 {
             return Err(format!("raise_mults must be finite and > 0, got {m}"));
         }
