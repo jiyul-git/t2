@@ -188,6 +188,10 @@ def label(rec, cfg):
         status = 'conditional_verified'
     else:
         status = 'verified'
+    cap = gi.get('status_cap')
+    if cap and STATUS_ORDER.index(status) > STATUS_ORDER.index(cap):
+        status = cap
+        glob.append(f"status capped at {cap}: {gi.get('status_cap_reason')}")
     if status in ('conditional_verified', 'verified'):
         hf = 'complete' if stable_share >= HANDFREQ_COMPLETE else 'partial'
     else:
@@ -227,9 +231,10 @@ def relabel(path):
             rec['grade_inputs']['superseded'] = 'spot loop rule v1 (unconverged), replaced by *_v3'
         rec['grade_inputs']['relabelled_from'] = {'schema': rec.get('schema'), 'gates': g}
         rec.setdefault('panel', 'panel_v1')
-    rec['tree'] = TREE_J30
     dump = rec['parent_preflop_state']['dump']
-    rec['parent_preflop_state'] = {'dump': dump, **PARENT_STATES.get(os.path.basename(dump), {})}
+    if os.path.basename(dump) in PARENT_STATES:
+        rec['tree'] = TREE_J30
+        rec['parent_preflop_state'] = {'dump': dump, **PARENT_STATES[os.path.basename(dump)]}
     label(rec, load_cfg(rec['grade_inputs']['config']))
     json.dump(rec, open(path, 'w'))
     print(path, rec['status'], 'verified' if rec['verified'] else 'not verified', json.dumps(rec['status_reasons'], ensure_ascii=False))
@@ -338,13 +343,14 @@ def main():
                     static += m
     rec2(sp.root_idx, {kk: v.copy() for kk, v in sp.reach0.items()})
     s_share = static / flop if flop > 0 else 0.0
-    rec_out = {'schema': 'spot_record_v2', 'id': spec['id'], 'tree': TREE_J30,
-               'parent_preflop_state': {'dump': spec['dump'], **PARENT_STATES.get(os.path.basename(spec['dump']), {})},
+    rec_out = {'schema': 'spot_record_v2', 'id': spec['id'], 'tree': spec.get('tree_label', TREE_J30),
+               'parent_preflop_state': {'dump': spec['dump'], **(spec.get('parent') or PARENT_STATES.get(os.path.basename(spec['dump']), {}))},
                'root_line': spec['root_line'], 'live': [sp.pos[p] for p in sp.live], 'final_step': k,
                'grade_inputs': {'config': spec['config'], 'rule': spec.get('rule', 'v1'), 'spot_converged': bool(st.get('converged')),
                                 'precision_final': precision,
                                 'p144_consistent_with_24': json.load(open(kd + 'report.json'))['consistent_with_24'] if precision else None,
-                                'static_share': s_share},
+                                'static_share': s_share,
+                                'status_cap': spec.get('status_cap'), 'status_cap_reason': spec.get('status_cap_reason')},
                'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
     rec_out['panel'] = 'panel_v3_144 (precision pass)' if precision else 'panel_v1'
     label(rec_out, sp.cfg)

@@ -9,6 +9,11 @@ and checked against the dump's action lists. Terminals:
   flop      solved continuation table (gross share, looked up by canonical action line) or, without a table, the engine's static
             HU payoff min(pot x eq x r, pot), r = 1 + 0.16 * frac * min(spr, 8) / 8;
   all-in    pot x equity (exact, the solver's own class equity table).
+Subgame menu override (spec "menu", Plan A): below the root the raise menu may differ from the parent tree's, e.g.
+  {"max_raises": 4, "fourbet_ip": 2.15, "fourbet_oop": 2.35, "fivebet": "jam"}: facing a 3-bet the raiser's 4-bet is to = 3-bet-to x
+  (fourbet_ip when the 4-bettor is in position postflop vs the last raiser, else fourbet_oop) plus the jam; facing a 4-bet only the
+  jam; max_raises caps the count. The dump then fixes the arriving ranges at the root only (its action lists below the root belong to
+  the parent's menu and are not compared).
 Class-level like the engine (no card removal between the two players). Solved by CFR+ (alternating, linear averaging); the
 exploitability of the average profile is computed exactly by best response in the same subgame.
 
@@ -79,8 +84,10 @@ class Spot:
         self.labels = None
 
     def load_tables(self):
-        man = json.load(open(self.spec['tables_dir'] + '/manifest.json'))
         self.tables = {}
+        if not self.spec.get('tables_dir'):
+            return
+        man = json.load(open(self.spec['tables_dir'] + '/manifest.json'))
         for t in man['tables']:
             tab = json.load(open(self.spec['tables_dir'] + '/' + t['file']))
             self.tables[tab['line']] = tab
@@ -98,6 +105,24 @@ class Spot:
             return per[actor]
         return self.cfg['raise_mults']
 
+    def postflop_order(self, seat):
+        """postflop acting order: blinds first (SB, BB), then UTG ... BTN"""
+        blinds = sorted([i for i in range(self.n) if self.cfg['posts'][i] > 0], key=lambda i: self.cfg['posts'][i])
+        order = blinds + [i for i in range(self.n) if i not in blinds]
+        return order.index(seat)
+
+    def menu_tos(self, st, actor):
+        """raise targets under the subgame menu for raises >= 2 (None = use the parent's engine rules)"""
+        m = self.spec.get('menu')
+        if not m or st['raises'] < 2:
+            return None
+        if st['raises'] == 2:
+            ip = self.postflop_order(actor) > self.postflop_order(st['aggr'])
+            mult = m['fourbet_ip'] if ip else m['fourbet_oop']
+            return [max(st['to_call'] * mult, st['to_call'] + st['last_raise'])]
+        assert m.get('fivebet', 'jam') == 'jam', m
+        return []
+
     def legal(self, st, actor):
         acts = []
         owed = max(st['to_call'] - (st['invested'][actor] - self.ante), 0.0)
@@ -107,8 +132,12 @@ class Spot:
                 acts.append(('call', st['to_call'], ('Call ' if st['raises'] > 0 else 'Limp ') + trim(st['to_call'])))
         else:
             acts.append(('check', st['to_call'], 'Check'))
-        if st['raises'] < self.cfg['max_raises'] and actor not in self.cfg.get('call_only_seats', []):
-            if st['raises'] == 0:
+        max_raises = self.spec['menu']['max_raises'] if self.spec.get('menu') and st['raises'] >= 2 else self.cfg['max_raises']
+        if st['raises'] < max_raises and actor not in self.cfg.get('call_only_seats', []):
+            mt = self.menu_tos(st, actor)
+            if mt is not None:
+                tos = mt
+            elif st['raises'] == 0:
                 per = self.cfg.get('open_raises_by_seat')
                 tos = list(per[actor] if per and per[actor] else self.cfg['open_raises'])
             else:
@@ -139,13 +168,14 @@ class Spot:
             ns['last_raise'] = to - st['to_call']
             ns['to_call'] = to
             ns['raises'] = st['raises'] + 1
+            ns['aggr'] = actor
         return ns
 
     # ---------- root from the dump ----------
     def root(self):
         root_line = self.spec['root_line']
         st = {'invested': [self.cfg['posts'][i] + self.ante for i in range(self.n)], 'folded': set(), 'to_call': max(self.cfg['posts']),
-              'last_raise': max(self.cfg['posts']), 'raises': 0}
+              'last_raise': max(self.cfg['posts']), 'raises': 0, 'aggr': None}
         path = ()
         reach = None
         lab169 = None
@@ -208,7 +238,7 @@ class Spot:
             acts = self.legal(st, actor)
             other = self.live[0] if actor == self.live[1] else self.live[1]
             node = {'actor': actor, 'acts': acts, 'children': [], 'path': path}
-            dr = self.d.get(path)
+            dr = self.d.get(path) if (not self.spec.get('menu') or path == self.root_path) else None
             if dr is not None:
                 assert dr['actions'] == [x[2] for x in acts], (path, dr['actions'], acts)
                 node['dump'] = dr
