@@ -58,7 +58,8 @@ def amount_of(label):
 
 
 def trim(x):
-    return ('%f' % x).rstrip('0').rstrip('.')
+    """the engine's label format (preflop/mod.rs trim): integer, else one decimal"""
+    return str(int(round(x))) if abs(x - round(x)) < 1e-9 else f'{x:.1f}'
 
 
 class Spot:
@@ -114,7 +115,7 @@ class Spot:
     def menu_tos(self, st, actor):
         """raise targets under the subgame menu for raises >= 2 (None = use the parent's engine rules)"""
         m = self.spec.get('menu')
-        if not m or st['raises'] < 2:
+        if not m or st['raises'] < 2 or not getattr(self, 'in_subgame', False):
             return None
         if st['raises'] == 2:
             ip = self.postflop_order(actor) > self.postflop_order(st['aggr'])
@@ -132,7 +133,8 @@ class Spot:
                 acts.append(('call', st['to_call'], ('Call ' if st['raises'] > 0 else 'Limp ') + trim(st['to_call'])))
         else:
             acts.append(('check', st['to_call'], 'Check'))
-        max_raises = self.spec['menu']['max_raises'] if self.spec.get('menu') and st['raises'] >= 2 else self.cfg['max_raises']
+        max_raises = (self.spec['menu']['max_raises'] if self.spec.get('menu') and st['raises'] >= 2 and getattr(self, 'in_subgame', False)
+                      else self.cfg['max_raises'])
         if st['raises'] < max_raises and actor not in self.cfg.get('call_only_seats', []):
             mt = self.menu_tos(st, actor)
             if mt is not None:
@@ -233,12 +235,13 @@ class Spot:
     # ---------- subgame tree ----------
     def build(self):
         self.nodes = []
+        self.in_subgame = True   # the subgame menu (if any) applies from the root down; root() walked the parent's rules
 
         def rec(st, actor, canon, path, depth):
             acts = self.legal(st, actor)
             other = self.live[0] if actor == self.live[1] else self.live[1]
             node = {'actor': actor, 'acts': acts, 'children': [], 'path': path}
-            dr = self.d.get(path) if (not self.spec.get('menu') or path == self.root_path) else None
+            dr = self.d.get(path) if not self.spec.get('menu') else None   # menu: the dump fixed the root ranges only
             if dr is not None:
                 assert dr['actions'] == [x[2] for x in acts], (path, dr['actions'], acts)
                 node['dump'] = dr
