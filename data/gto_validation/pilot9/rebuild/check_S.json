@@ -1,0 +1,11 @@
+{
+ "schema": "pilot9_rebuild_check_v1",
+ "stage": "S",
+ "S": {
+  "gap_total": 0.00823830400391989,
+  "gap_total_ref": 0.00823830400391989,
+  "gap_abs_diff": 0.0,
+  "rfi_max_abs_diff": 0.0,
+  "bit_exact": true
+ }
+}
