@@ -182,7 +182,7 @@ class Loop:
                 if not os.path.exists(fd + '/done'):
                     env = dict(os.environ)
                     if is_m:
-                        env.update({'T2_PANEL_MATRIX': '1', 'T2_BIN_DIR': '/home/user/gto_ckpt/target_multi/release/examples'})
+                        env.update({'T2_PANEL_MATRIX': '1', 'T2_BIN_DIR': os.path.join(ROOT, 'vendor/gtopen/target/release/examples')})
                     subprocess.run([sys.executable, os.path.join(ROOT, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, PANEL, fd,
                                     '--workers', os.environ.get('SPOT_PANEL_WORKERS', '4'), '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
                     open(fd + '/done', 'w').write('ok')
