@@ -79,6 +79,46 @@ def stack_label(cfg):
             'note': 'hand-start stack = cfg.stack + ante (the ante is posted on top of cfg.stack); key DB rows by hand_start_bb'}
 
 
+def g6a_parent_reproduction(spec):
+    """Plan A G6(a) (docs/GTO_PLAN_A_60BB_V1.md amendment A1): subgame with the parent's menu and static terminals vs the dump"""
+    s2 = {k: v for k, v in spec.items() if k != 'menu'}
+    s2['tables_dir'] = None
+    sp = H.Spot(s2)
+    sp.root()
+    sp.build()
+    sp.solve(3000)
+    ev = sp.node_evs()
+    nodes, ok = [], True
+
+    def rec_(i, reach):
+        nonlocal ok
+        node = sp.nodes[i]
+        actor = node['actor']
+        dr = node.get('dump')
+        if dr is None:
+            return
+        par = np.array(dr['sigma'])
+        w = reach[actor] * 1326
+        reached = w >= REACH_FLOOR
+        d = np.abs(par - sp.avg[i]).max(0)
+        loss = ev[i].max(0) - (par * ev[i]).sum(0)
+        mean = float((w[reached] * d[reached]).sum() / w[reached].sum()) if reached.any() else 0.0
+        big = [{'class': sp.lab169[h], 'delta': round(float(d[h]), 4), 'ev_loss_bb': round(float(loss[h]), 4)}
+               for h in np.where(reached & (d > 0.10))[0]]
+        node_ok = mean <= 0.02 and all(b['ev_loss_bb'] <= 0.05 for b in big)
+        ok = ok and node_ok
+        nodes.append({'path': list(node['path']), 'actor': sp.pos[actor], 'mean_abs_delta': round(mean, 5), 'over_0.10': big,
+                      'pass': node_ok})
+        for a, ch in enumerate(node['children']):
+            if ch[0] == 'node':
+                r2 = {k: v.copy() for k, v in reach.items()}
+                r2[actor] = reach[actor] * sp.avg[i][a]
+                rec_(ch[1], r2)
+    rec_(sp.root_idx, {k: v.copy() for k, v in sp.reach0.items()})
+    return {'status': 'pass' if ok else 'fail', 'definition': 'Plan A amendment A1: parent-menu reproduction',
+            'subgame_exploitability_bb': sp.exploitability()['total_bb'], 'nodes': nodes}
+
+
 def g6_checks(rec, cfg):
     """G6 on a stored record: (a) subgame vs full tree, (b) dominated material actions + chip conservation."""
     u_solver = rec['exploitability']['total_bb']
@@ -108,9 +148,9 @@ def g6_checks(rec, cfg):
     chip = {'ev_sum_bb': ev_sum, 'dead_money_bb': dead, 'abs_diff_bb': abs(ev_sum - dead), 'tol_bb': CHIP_TOL_BB,
             'pass': abs(ev_sum - dead) <= CHIP_TOL_BB,
             'scope': 'spot level (both seats net EV vs folded seats\' posts + antes); export-level conservation of t2_tree_values not run here'}
-    a = {'status': 'not_run',
-         'reason': 'needs the parent full-tree average strategy at this node with the same tables (J dump + a full-tree re-solve '
-                   'on the spot tables); not run'}
+    a = rec.get('G6a_result') or {'status': 'not_run',
+                                  'reason': 'needs the parent full-tree average strategy at this node with the same tables (J dump + a '
+                                            'full-tree re-solve on the spot tables); not run'}
     b_pass = not viol and not premium_fold and chip['pass']
     return {'a_subgame_vs_full_tree': a,
             'b_invariants': {'dominated_material': viol[:50], 'n_dominated_material': len(viol),
@@ -353,6 +393,8 @@ def main():
                                 'status_cap': spec.get('status_cap'), 'status_cap_reason': spec.get('status_cap_reason')},
                'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
     rec_out['panel'] = 'panel_v3_144 (precision pass)' if precision else 'panel_v1'
+    if spec.get('menu'):
+        rec_out['G6a_result'] = g6a_parent_reproduction(spec)
     label(rec_out, sp.cfg)
     os.makedirs(os.path.join(ROOT, 'data/gto_spot/records'), exist_ok=True)
     json.dump(rec_out, open(os.path.join(ROOT, f"data/gto_spot/records/{spec['id']}{'_p144' if precision else ''}.json"), 'w'))

@@ -67,3 +67,10 @@ live players: their continuation is 3-way, which is static until a 3-way method 
 ## 9. Compute order
 Parents B35 and B40 run concurrently with the rebuild chain (4 cores shared; both resumable); then the 10 subgame loops, P144,
 sensitivity, grading. The rebuild chain keeps its order (OL -> s2 -> T3 -> J2 -> UTG-vs-BB P144 / G6(a)).
+
+## Amendment A1 (2026-10-12, before any Plan A grade): G6(a) parent-menu reproduction, numeric
+The subgame is re-solved without the menu (parent rules: 4-bet jam only), no tables, static terminals (the parent's own payoff),
+CFR+ 3000 iterations, at the parent's arriving ranges. Compared with the parent dump's average strategy at every subgame node:
+pass iff at every node the reach-weighted mean |delta freq| over reaching classes (>= 1e-3 combos) is <= 0.02, and every reaching
+class with |delta| > 0.10 loses <= 0.05 bb (subgame EV of the parent's action mix vs the subgame's best action). Reported per node
+with the classes over 0.10. It checks the subgame machinery and the root ranges against the parent; it does not test the new menu.
