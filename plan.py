@@ -3820,7 +3820,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         _spot_bf = float(_exact_hu_icm.get('equivalent_bubble_factor', bf))
         _layer_j = _pf.calloff_layer_judgment(
             profile, _sh, bubble_factor=_spot_bf,
-            seed=calloff_decision_seed)
+            seed=calloff_decision_seed,
+            rebuy_open=bool(reentry), progress=progress)
         if _layer_j is None:
             # Incomplete input is NOT evidence of -EV and must never be
             # presented as a successful mathematical fold. The engine needs

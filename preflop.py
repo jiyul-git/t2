@@ -1574,8 +1574,13 @@ def calloff_by_price(effective_equity, required_equity):
     return 'call' if float(effective_equity) >= required_equity else 'fold'
 
 
+# 리엔트리(리바인)가 열려 있으면 탈락해도 다시 산다 — 생존 프리미엄이 사라져 사람은
+# 애매한 올인을 그냥 콜하고 돌린다. 필요 에쿼티를 대회 초반일수록 이만큼 낮게 본다.
+REBUY_RUN_DISCOUNT = 0.12
+
+
 def calloff_layer_judgment(prof, call_ev_shadow, bubble_factor=1.0,
-                           seed=None):
+                           seed=None, rebuy_open=False, progress=0.0):
     """F8-D6-D2: pure-calloff layer equity를 개인이 실제로 적용한 판단.
 
     factual input:
@@ -1621,7 +1626,11 @@ def calloff_layer_judgment(prof, call_ev_shadow, bubble_factor=1.0,
         noise = max(0.65, min(1.55, float(noise)))
         gate_p = pf_defend_exact_calc_gate(prof)
 
-    need_seen = max(0.01, min(0.95, float(need_base) * noise))
+    rebuy_discount = 0.0
+    if rebuy_open:
+        early = max(0.0, 1.0 - max(0.0, min(1.0, float(progress or 0.0))))
+        rebuy_discount = REBUY_RUN_DISCOUNT * early
+    need_seen = max(0.01, min(0.95, float(need_base) * noise * (1.0 - rebuy_discount)))
     layer_action = calloff_by_price(eq, need_seen)
     gate_roll = random.Random(gate_seed).random()
     gate_pass = bool(gate_roll < gate_p)
@@ -1633,6 +1642,7 @@ def calloff_layer_judgment(prof, call_ev_shadow, bubble_factor=1.0,
         'icm_required_equity_before_calc_error': round(float(need_base), 6),
         'potodds_noise': round(float(noise), 6),
         'perceived_required_equity': round(float(need_seen), 6),
+        'rebuy_run_discount': round(float(rebuy_discount), 6),
         'layer_action': layer_action,
         'pf_defend_gate_p': round(float(gate_p), 6),
         'pf_defend_gate_roll': round(float(gate_roll), 6),
