@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
-"""Grade a spot after spot_loop.py against docs/GTO_VERIFIED_FREQUENCY_STANDARD_V1.md (G2-G5; G1 = tree id in the record,
-G6 = separate checks). Re-solves the final step (deterministic) and the previous step for u_outer.
+"""Grade a spot after spot_loop.py against docs/GTO_VERIFIED_FREQUENCY_STANDARD_V1.md (amendment 4: label semantics).
+Re-solves the final step (deterministic) and the previous step for u_outer.
 
-    python3 tools/gto_spot/grade_spot.py <spot.json>  -> data/gto_spot/records/<id>.json
+    python3 tools/gto_spot/grade_spot.py <spot.json>          -> data/gto_spot/records/<id>[_p144].json
+    python3 tools/gto_spot/grade_spot.py --relabel <rec.json>  re-derive the labels of a stored record (no solve)
 Per decision node and class: frequencies, action EVs, gap = EV(best) - EV(second),
 u_panel = sqrt(u_panel(best)^2 + u_panel(second)^2), u_panel(a) = sqrt(sum_t (q_t(a) se_t)^2) with q_t from +1 bb probes of
 each table, u_outer = |gap_k - gap_{k-1}|, u_solver = spot exploitability (bb); u = u_panel + u_outer + u_solver;
-stable if gap > 2u else near_indifferent. Spot verified iff G2, G3, G4 pass and >= 95% of reaching combos are stable or
-near_indifferent (near-indifferent groups listed).
+stable if gap > 2u else near_indifferent (listed in uncertainty groups, never a verified frequency); classes reaching a node
+with < 1e-3 combos are `unreached` there (average strategy at ~zero reach is solver noise: no frequency reported, not graded).
+
+Two layers (amendment 4):
+- solution_status in research < provisional < conditional_verified < verified
+  spot gates: spot_exploitability <= 0.010 bb (local HU subgame, NOT G2), G3, G4 <= 0.05, G6, precision pass (P144) graded;
+  global gate G2 = parent full-tree gap_total <= 0.010 bb. Spot gates pass + G2 fail -> conditional_verified (conditional on the
+  parent's arriving ranges); `verified` only with G2 as well.
+- hand_frequency_status: blocked_by_solution / partial / complete (stable combo share >= 0.95); per class `stable` or
+  `uncertainty_group`.
+DB promotion stays forbidden whatever the label (`db_promotion: forbidden`).
 """
 import json
 import os
@@ -32,6 +42,197 @@ def solve_with(spec, tables, matrices=None):
     sp.build()
     sp.solve(spec.get('iterations', 3000))
     return sp
+
+
+# ---------------- labels (standard amendment 4) ----------------
+STATUS_ORDER = ['research', 'provisional', 'conditional_verified', 'verified']
+G2_MAX_BB = 0.010          # parent full-tree gap_total per hand (doc G2)
+SPOT_EXPL_MAX_BB = 0.010   # local HU subgame exploitability (separate gate, not G2)
+G4_MAX = 0.05
+G4_PARTIAL_MAX = 0.25
+HANDFREQ_COMPLETE = 0.95   # stable combo share for hand_frequency_status = complete
+MATERIAL = 0.05            # G6b: a clearly dominated action played at >= 5% of a class is a violation
+REACH_FLOOR = 1e-3          # combos; below it a class is `unreached` at the node: no frequency reported, not graded
+CHIP_TOL_BB = 0.010        # G6b: |sum of the two seats' EVs - dead money| per hand
+TREE_J30 = 'J30: 9-max, cfg_mr3_jam (max_raises 3, 4-bet jam only), cfg.stack 30 behind a uniform ante 1/9 (30bb-labelled, not exact 30bb)'
+PARENT_STATES = {
+    'J_dump.jsonl': {'parent': 'J full-tree solve (cfg_mr3_jam)', 'iterations': 100, 'gap_total_bb': 0.042,
+                     'source': 'docs/GTO_MR3_JAM_9MAX_J_RESULT_V1.md'},
+}
+REPO_CFG = {'cfg_mr3_jam.json': 'data/gto_validation/pilot9/step3/cfg_mr3_jam.json'}
+
+
+def load_cfg(path):
+    if os.path.exists(path):
+        return json.load(open(path))
+    return json.load(open(os.path.join(ROOT, REPO_CFG[os.path.basename(path)])))
+
+
+def stack_label(cfg):
+    ante, stack = cfg['ante'], cfg['stack']
+    start = stack + ante
+    target = round(stack)  # the depth the run is named after
+    exact = abs(start - target) < 1e-9
+    return {'label': f'{target:g}bb exact' if exact else f'{target:g}bb-labelled (hand-start {start:.3f}bb)',
+            'cfg_stack_bb': stack, 'ante_per_seat_bb': ante, 'hand_start_bb': round(start, 6), 'exact': exact,
+            'exact_rerun_cfg_stack_bb': None if exact else round(target - ante, 12),
+            'note': 'hand-start stack = cfg.stack + ante (the ante is posted on top of cfg.stack); key DB rows by hand_start_bb'}
+
+
+def g6_checks(rec, cfg):
+    """G6 on a stored record: (a) subgame vs full tree, (b) dominated material actions + chip conservation."""
+    u_solver = rec['exploitability']['total_bb']
+    viol, unreached = [], 0
+    for n in rec['nodes']:
+        for h, x in n['hands'].items():
+            if x['reach_combos'] < REACH_FLOOR:
+                ev, fr = x['ev'], x['freq']
+                best = max(ev, key=ev.get)
+                u = x['u_panel'] + x['u_outer'] + u_solver
+                unreached += any(f >= MATERIAL and ev[best] - ev[a] > 2 * u for a, f in fr.items())
+                continue
+            ev, fr = x['ev'], x['freq']
+            best = max(ev, key=ev.get)
+            u = x['u_panel'] + x['u_outer'] + u_solver
+            for a, f in fr.items():
+                if f >= MATERIAL and ev[best] - ev[a] > 2 * u:
+                    viol.append({'path': n['path'], 'actor': n['actor'], 'class': h, 'action': a, 'freq': f,
+                                 'ev_loss_bb': round(ev[best] - ev[a], 4), 'u': round(u, 4)})
+    premium_fold = [{'path': n['path'], 'class': h, 'fold': n['hands'][h]['freq'].get('Fold', 0.0)}
+                    for n in rec['nodes'] for h in ('AA', 'KK') if h in n['hands'] and n['hands'][h]['reach_combos'] >= REACH_FLOOR
+                    and n['hands'][h]['freq'].get('Fold', 0.0) > 0.01]
+    live = rec['live']
+    pos = cfg['positions']
+    dead = sum(cfg['posts'][i] + cfg['ante'] for i, name in enumerate(pos) if name not in live)
+    ev_sum = sum(rec['exploitability']['per_seat'][p]['ev'] for p in live)
+    chip = {'ev_sum_bb': ev_sum, 'dead_money_bb': dead, 'abs_diff_bb': abs(ev_sum - dead), 'tol_bb': CHIP_TOL_BB,
+            'pass': abs(ev_sum - dead) <= CHIP_TOL_BB,
+            'scope': 'spot level (both seats net EV vs folded seats\' posts + antes); export-level conservation of t2_tree_values not run here'}
+    a = {'status': 'not_run',
+         'reason': 'needs the parent full-tree average strategy at this node with the same tables (J dump + a full-tree re-solve '
+                   'on the spot tables); not run'}
+    b_pass = not viol and not premium_fold and chip['pass']
+    return {'a_subgame_vs_full_tree': a,
+            'b_invariants': {'dominated_material': viol[:50], 'n_dominated_material': len(viol),
+                             'n_dominated_at_unreached_classes': unreached, 'reach_floor_combos': REACH_FLOOR,
+                             'premium_fold': premium_fold,
+                             'chip_conservation': chip, 'pass': b_pass},
+            'c_near_reference': 'orientation only, never pass / fail',
+            'pass': a['status'] == 'pass' and b_pass}
+
+
+def uncertainty_groups(rec):
+    out = []
+    for n in rec['nodes']:
+        groups = {}
+        for h, x in n['hands'].items():
+            if x['status'] != 'near_indifferent' or x['reach_combos'] < REACH_FLOOR:
+                continue
+            ev = x['ev']
+            ranked = sorted(ev, key=ev.get, reverse=True)
+            groups.setdefault(' ~ '.join(sorted(ranked[:2])), []).append(h)
+        for key, members in sorted(groups.items()):
+            out.append({'path': n['path'], 'actor': n['actor'], 'actions': key, 'classes': members,
+                        'reach_combos': round(sum(n['hands'][h]['reach_combos'] for h in members), 3),
+                        'note': 'raw mix kept in nodes[].hands; not a verified frequency'})
+    return out
+
+
+def label(rec, cfg):
+    """Fill gates / status / hand_frequency of a record from its stored nodes and grade_inputs."""
+    gi = rec['grade_inputs']
+    expl = rec['exploitability']['total_bb']
+    parent = rec['parent_preflop_state']
+    pgap = parent.get('gap_total_bb')
+    s_share = gi['static_share']
+    spot_conv = gi['spot_converged'] and (gi['p144_consistent_with_24'] is not False)
+    g4_state = 'pass' if s_share <= G4_MAX else ('partial' if s_share <= G4_PARTIAL_MAX else 'static_dependent')
+    g6 = g6_checks(rec, cfg)
+    stable_mass = sum(x['reach_combos'] for n in rec['nodes'] for x in n['hands'].values() if x['status'] == 'stable')
+    total_mass = sum(x['reach_combos'] for n in rec['nodes'] for x in n['hands'].values())
+    stable_share = stable_mass / total_mass if total_mass > 0 else 0.0
+    gates = {
+        'G1_tree': rec['tree'], 'G1': True,
+        'spot_exploitability_bb': expl, 'spot_exploitability_max_bb': SPOT_EXPL_MAX_BB, 'spot_solver': expl <= SPOT_EXPL_MAX_BB,
+        'G2_parent_gap_total_bb': pgap, 'G2_max_bb': G2_MAX_BB, 'G2': pgap is not None and pgap <= G2_MAX_BB,
+        'G3_outer_converged': spot_conv, 'G3': spot_conv,
+        'G4_static_share': s_share, 'G4': g4_state == 'pass', 'G4_state': g4_state,
+        'G5_stable_combo_share': stable_share,
+        'G6': g6['pass'],
+        'precision_final': bool(gi['precision_final']),
+    }
+    blockers = []
+    if gi.get('superseded'):
+        blockers.append(f"superseded: {gi['superseded']}")
+    if not gates['spot_solver']:
+        blockers.append('spot_exploitability > 0.010 bb')
+    if not spot_conv:
+        blockers.append('G3: spot outer loop not converged' + (' (P144 D144 > U24)' if gi['p144_consistent_with_24'] is False else ''))
+    if g4_state != 'pass':
+        blockers.append(f'G4: static share {s_share:.3f} ({g4_state})')
+    research = bool(blockers) and (gi.get('superseded') or not gates['spot_solver'] or not spot_conv or g4_state == 'static_dependent')
+    prov = []
+    if not gates['precision_final']:
+        prov.append('precision pass (P144) not graded')
+    if not g6['pass']:
+        prov.append('G6: ' + ('(a) not run' if g6['a_subgame_vs_full_tree']['status'] != 'pass' else '') +
+                    ('' if g6['b_invariants']['pass'] else ' (b) invariant violation'))
+    glob = []
+    if not gates['G2']:
+        glob.append(f"G2: parent full-tree gap_total {pgap} bb > {G2_MAX_BB} bb -> global / full-game verified FAIL")
+    if research:
+        status = 'research'
+    elif blockers or prov:
+        status = 'provisional'
+    elif glob:
+        status = 'conditional_verified'
+    else:
+        status = 'verified'
+    if status in ('conditional_verified', 'verified'):
+        hf = 'complete' if stable_share >= HANDFREQ_COMPLETE else 'partial'
+    else:
+        hf = 'blocked_by_solution'
+    for n in rec['nodes']:
+        for x in n['hands'].values():
+            x['frequency_label'] = ('unreached' if x['reach_combos'] < REACH_FLOOR else
+                                    'stable' if x['status'] == 'stable' else 'uncertainty_group')
+    rec['schema'] = 'spot_record_v2'
+    rec['stack'] = stack_label(cfg)
+    rec['gates'] = gates
+    rec['G6'] = g6
+    rec['status'] = status
+    rec['verified'] = status == 'verified'
+    rec['status_reasons'] = {'research_or_spot': blockers, 'provisional': prov, 'global': glob}
+    rec['interpretation'] = ('HU subgame equilibrium of the two live seats GIVEN the arriving ranges of the parent preflop state '
+                             f"({parent.get('parent', parent.get('dump'))}); not a full 9-max verified solution unless status == verified")
+    rec['hand_frequency'] = {'status': hf, 'stable_combo_share': stable_share, 'complete_min': HANDFREQ_COMPLETE,
+                             'verified': rec['verified'] and hf == 'complete',
+                             'rule': 'only `stable` classes carry point frequencies at the solution status; near-indifferent '
+                                     'classes are uncertainty groups (raw mix kept, never called verified frequency)',
+                             'uncertainty_groups': uncertainty_groups(rec)}
+    rec['db_promotion'] = 'forbidden'
+    rec['label_standard'] = 'docs/GTO_VERIFIED_FREQUENCY_STANDARD_V1.md amendment 4'
+    return rec
+
+
+def relabel(path):
+    rec = json.load(open(path))
+    if 'grade_inputs' not in rec:  # spot_record_v1: derive inputs from the old gates
+        g = rec['gates']
+        rec['grade_inputs'] = {'config': '/home/user/gto_ckpt/step3/j/cfg_mr3_jam.json',
+                               'rule': 'v1' if 'rule_v1' in os.path.basename(path) else ('v3' if rec['id'].endswith('_v3') else 'v2'),
+                               'spot_converged': bool(g['G3_outer_converged']), 'precision_final': 'p144' in (rec.get('panel') or ''),
+                               'p144_consistent_with_24': None, 'static_share': g['G4_static_share']}
+        if 'rule_v1' in os.path.basename(path):
+            rec['grade_inputs']['superseded'] = 'spot loop rule v1 (unconverged), replaced by *_v3'
+        rec['grade_inputs']['relabelled_from'] = {'schema': rec.get('schema'), 'gates': g}
+        rec.setdefault('panel', 'panel_v1')
+    rec['tree'] = TREE_J30
+    dump = rec['parent_preflop_state']['dump']
+    rec['parent_preflop_state'] = {'dump': dump, **PARENT_STATES.get(os.path.basename(dump), {})}
+    label(rec, load_cfg(rec['grade_inputs']['config']))
+    json.dump(rec, open(path, 'w'))
+    print(path, rec['status'], 'verified' if rec['verified'] else 'not verified', json.dumps(rec['status_reasons'], ensure_ascii=False))
 
 
 def main():
@@ -137,27 +338,25 @@ def main():
                     static += m
     rec2(sp.root_idx, {kk: v.copy() for kk, v in sp.reach0.items()})
     s_share = static / flop if flop > 0 else 0.0
-    g2 = expl['total_bb'] <= 0.010
-    g3 = bool(st.get('converged'))
-    if precision:
-        g3 = g3 and json.load(open(kd + 'report.json'))['consistent_with_24']
-    g4 = s_share <= 0.05
-    g5_share = stable_mass / total_mass if total_mass > 0 else 0.0
-    g5 = True  # near_indifferent classes are allowed (reported as groups); the >= 95% rule counts stable + near_indifferent
-    verified = g2 and g3 and g4 and g5
-    rec_out = {'schema': 'spot_record_v1', 'id': spec['id'], 'tree': 'J30: 9-max 30 bb, cfg_mr3_jam (max_raises 3, 4-bet jam only), uniform ante 1/9',
-               'parent_preflop_state': {'dump': spec['dump'], 'note': 'arriving ranges from the J full-tree solve (100 it, gap 0.042)'},
+    rec_out = {'schema': 'spot_record_v2', 'id': spec['id'], 'tree': TREE_J30,
+               'parent_preflop_state': {'dump': spec['dump'], **PARENT_STATES.get(os.path.basename(spec['dump']), {})},
                'root_line': spec['root_line'], 'live': [sp.pos[p] for p in sp.live], 'final_step': k,
-               'gates': {'G2_exploitability_bb': expl['total_bb'], 'G2': g2, 'G3_outer_converged': g3,
-                         'G4_static_share': s_share, 'G4': g4, 'G5_stable_combo_share': g5_share, 'verified': verified},
+               'grade_inputs': {'config': spec['config'], 'rule': spec.get('rule', 'v1'), 'spot_converged': bool(st.get('converged')),
+                                'precision_final': precision,
+                                'p144_consistent_with_24': json.load(open(kd + 'report.json'))['consistent_with_24'] if precision else None,
+                                'static_share': s_share},
                'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
-    os.makedirs(os.path.join(ROOT, 'data/gto_spot/records'), exist_ok=True)
     rec_out['panel'] = 'panel_v3_144 (precision pass)' if precision else 'panel_v1'
+    label(rec_out, sp.cfg)
+    os.makedirs(os.path.join(ROOT, 'data/gto_spot/records'), exist_ok=True)
     json.dump(rec_out, open(os.path.join(ROOT, f"data/gto_spot/records/{spec['id']}{'_p144' if precision else ''}.json"), 'w'))
-    print(json.dumps(rec_out['gates'], indent=1))
+    print(json.dumps({kk: rec_out[kk] for kk in ('status', 'verified', 'gates', 'hand_frequency')}, indent=1)[:4000])
     root = nodes[0]
     print('root', root['actor'], {a: round(100 * v, 1) for a, v in root['mix'].items()})
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) > 2 and sys.argv[1] == '--relabel':
+        relabel(sys.argv[2])
+    else:
+        main()
