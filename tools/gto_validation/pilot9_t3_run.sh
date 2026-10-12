@@ -22,6 +22,7 @@ for spec in $TB; do n=${spec%%:*}
     /home/user/t2/data/gto_hu_continuation/panel_v1.json $D/$n/flops --workers 4 --threads 1 >> $D/solve.log 2>&1
 done
 [ -s $D/tables_all/manifest.json ] || python3 $T/pilot9_t3.py tables $D > $D/tables_report.json
+[ -n "$T3_SKIP_PREFLOP" ] && { echo "T3 tables done, preflop T skipped (rebuild)"; echo T3_DONE; exit 0; }
 echo "T3 preflop $(date -u +%FT%TZ)"
 mkdir -p $D/T; cd $D/T
 for spec in $SRP $TB; do n=${spec%%:*}; s=${spec#*:}

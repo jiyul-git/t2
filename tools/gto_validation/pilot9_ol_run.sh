@@ -1,6 +1,6 @@
 #!/bin/sh
 # OL chain (resumable): step k panels at state k -> D / U, stop decision, damped tables -> state k+1 preflop solve -> next step.
-# usage: pilot9_ol_run.sh [k_start]   (state 0 = h1/H must exist)
+# usage: pilot9_ol_run.sh [k_start]   (state 0 = h1/H must exist); OL_KMAX=2 stops after solving state 2 (rebuild: T3 needs s2 only)
 set -e
 R=/home/user/gto_ckpt
 B=/home/user/t2/vendor/gtopen/target/release/examples
@@ -8,7 +8,7 @@ T=/home/user/t2/tools/gto_validation
 export PREFLOP_EQ_SEED=202 PREFLOP_MULTIWAY_SEED=202 PREFLOP_EQ_SAMPLES=1200 T2_CHECKPOINT_EVERY=10
 SPECS="btn:fold,fold,fold,fold,fold,fold,raise,fold,call co:fold,fold,fold,fold,fold,raise,fold,fold,call hj:fold,fold,fold,fold,raise,fold,fold,fold,call utg:raise,fold,fold,fold,fold,fold,fold,fold,call sb:fold,fold,fold,fold,fold,fold,fold,raise,call lj:fold,fold,fold,raise,fold,fold,fold,fold,call utg2:fold,fold,raise,fold,fold,fold,fold,fold,call utg1:fold,raise,fold,fold,fold,fold,fold,fold,call"
 k=${1:-0}
-while [ $k -lt 3 ]; do
+while [ $k -lt ${OL_KMAX:-3} ]; do
   S=$R/ol/step$k
   python3 $T/pilot9_ol.py prep $k
   echo "OL step $k panels $(date -u +%FT%TZ)"
