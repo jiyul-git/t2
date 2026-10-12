@@ -103,5 +103,6 @@ with the classes over 0.10. It checks the subgame machinery and the root ranges 
 - Consequences for later stacks: the parent "up to the 3-bet" must stay jam-only for the 4-bet at every depth (at 100 bb a 10x
   4-bet no longer clamps to the jam: the parent config uses an explicit jam-only 4-bet); from 120 bb the subgame menu needs a non-jam
   5-bet (T2) — hu_spot supports a jam-only 5-bet today, the extension is registered with the 120+ bb plan.
-- Not used: the < 15 bb IP min-3-bets (1.6-1.9x; treated as a T2 bot anomaly, not a menu size) and defect D8 (bot-side; never a
-  pass / fail reference).
+- Not used: the < 15 bb IP "min-3-bets" (1.6-1.9x) — corrected by the user (2026-10-12): a measurement classification error, all 65
+  cases are isolation raises after an effectively all-in opener (< 0.2 bb behind after the ante), not 3-bets; not a menu size either
+  way. Defect D8 (bot-side; never a pass / fail reference).
