@@ -1249,6 +1249,24 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     # generic call 찌꺼기가 남아 랜덤 콜하는 것은 reasoning error다.
     # 계산오차/인간차이는 이미 need의 calc_noise와 reason_skill<1에 들어 있다.
     call, fold = apply_multiway_call_evidence(call, fold, eq, need, reason_skill)
+
+    # The comparison already says fold. Skill-based interpolation alone used
+    # to leave (1 - reason_skill) of a generic call untouched, e.g. a 54.7%
+    # bad-call chance for HAND 1012 (88 vs a shove and an original opener).
+    # Restrict ONLY the residual, evidence-contradicting call probability to
+    # the user's 1/20..1/10 range. This is a ceiling, NOT a mandatory error
+    # rate: a zero baseline stays zero and a perfect reasoner stays exact.
+    # Use existing skill and the existing decision RNG; no new stochastic
+    # draws, no changes to equity/ranges/pot odds/ICM/attack mass.
+    residual_call_before_cap = float(call)
+    residual_call_cap = None
+    if eq < need and (call + fold) > 0.0:
+        skill = max(0.0, min(1.0, float(reason_skill)))
+        residual_call_cap = 0.10 - 0.05 * skill
+        cf_mass = call + fold
+        call = min(call, cf_mass * residual_call_cap)
+        fold = cf_mass - call
+
     _timing_bound({'kind': 'multiway', 'r': float(lik['hand_pct']),
                    'eq': float(eq), 'need': float(need),
                    'reason_skill': float(reason_skill)})
@@ -1333,6 +1351,11 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         'need_seen': round(need, 6),
         'potodds_noise': round(noise, 6),
         'reason_skill': round(reason_skill, 6),
+        'negative_edge_call_cap': (
+            round(residual_call_cap, 6) if residual_call_cap is not None
+            else None),
+        'negative_edge_call_before_cap': round(residual_call_before_cap, 6),
+        'negative_edge_call_after_cap': round(call, 6),
         'players_behind': int(players_behind or 0),
         'fair_share': round(fair, 6),
         'locked_keys': sorted(_locked),

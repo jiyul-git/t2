@@ -1,0 +1,24 @@
+name: P5 multiway negative-edge cold-call gate
+on:
+  push:
+    branches:
+      - chatgpt/p5-multiway-badcall-gate-20261012
+  pull_request:
+    paths:
+      - preflop.py
+      - tools/verify_p5_multiway_badcall_gate.py
+      - tools/verify_core_p7_cold_reraise.py
+      - .github/workflows/p5-multiway-badcall-gate.yml
+jobs:
+  badcall-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m py_compile preflop.py tools/verify_p5_multiway_badcall_gate.py
+      - run: python tools/verify_p5_multiway_badcall_gate.py
+      - run: python tools/verify_core_p7_cold_reraise.py
+      - run: python tools/verify_preflop_error_fallback.py
