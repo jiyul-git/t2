@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild checks against the committed evidence (pilot9_rebuild_run.sh). Never stops the chain; writes
 data/gto_validation/pilot9/rebuild/check_<stage>.json with the max |diff| of every compared number (0.0 = bit-exact).
-    python3 tools/gto_validation/pilot9_rebuild_check.py S|H|OL|T3|L
+    python3 tools/gto_validation/pilot9_rebuild_check.py O|C2|S|H|OL|T3|L
 """
 import glob
 import json
@@ -35,7 +35,21 @@ def cmp_state(export, ref):
 def main():
     st = sys.argv[1]
     res = {'schema': 'pilot9_rebuild_check_v1', 'stage': st}
-    if st == 'S':
+    if st == 'O':
+        res['O'] = cmp_state(R + 'c1/legacy_btn.json', json.load(open(D + 's_analysis.json'))['metrics']['O'])
+    elif st == 'C2':
+        man = json.load(open(D + 'c2/solved_tables/manifest.json'))
+        diffs, n = 0.0, 0
+        for t in man['tables']:
+            a = json.load(open(R + 'c2/rebuilt_tables/' + t['file']))
+            b = json.load(open(D + 'c2/solved_tables/' + t['file']))
+            ga = {s['position']: s['gross'] for s in a['seats']}
+            gb = {s['position']: s['gross'] for s in b['seats']}
+            for pos in gb:
+                diffs = max(diffs, max(abs(x - y) for x, y in zip(ga[pos], gb[pos])))
+                n += 1
+        res['C2'] = {'tables': len(man['tables']), 'seat_rows': n, 'gross_max_abs_diff': diffs, 'bit_exact': diffs == 0.0}
+    elif st == 'S':
         res['S'] = cmp_state(R + 'c3/export_btn.json', json.load(open(D + 's_analysis.json'))['metrics']['S'])
     elif st == 'H':
         res['H'] = cmp_state(R + 'h1/H/export_btn.json', json.load(open(D + 'h1/h1_analysis.json'))['metrics']['H'])
