@@ -49,7 +49,7 @@ def main():
             if is_m:
                 env.update({'T2_PANEL_MATRIX': '1', 'T2_BIN_DIR': '/home/user/gto_ckpt/target_multi/release/examples'})
             subprocess.run([sys.executable, os.path.join(ROOT, 'tools/gto_hu_continuation/solve_panel.py'), tf, L.MENU, P144, fd,
-                            '--exclude-origin', 'panel_v1', '--postflop', '1000', '0.6', '25', '--workers', '4', '--threads', '1'],
+                            '--exclude-origin', 'panel_v1', '--postflop', '1000', '0.6', '25', '--workers', os.environ.get('SPOT_PANEL_WORKERS', '4'), '--threads', '1'],
                            check=True, stdout=open(od + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
             open(fd + '/done144', 'w').write('ok')
         L.PANEL = P144

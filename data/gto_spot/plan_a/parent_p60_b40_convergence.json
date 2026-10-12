@@ -47,6 +47,41 @@
    "iterations": 225,
    "gap_skip_1e-9": 0.046721751973326904,
    "gap_exact": null
+  },
+  {
+   "iterations": 250,
+   "gap_skip_1e-9": 0.04569421049293652,
+   "gap_exact": null
+  },
+  {
+   "iterations": 275,
+   "gap_skip_1e-9": 0.04496079385117864,
+   "gap_exact": null
+  },
+  {
+   "iterations": 300,
+   "gap_skip_1e-9": 0.04446655809413708,
+   "gap_exact": 0.04447168043976462
+  },
+  {
+   "iterations": 325,
+   "gap_skip_1e-9": 0.044076942635453434,
+   "gap_exact": null
+  },
+  {
+   "iterations": 350,
+   "gap_skip_1e-9": 0.04376812638036389,
+   "gap_exact": null
+  },
+  {
+   "iterations": 375,
+   "gap_skip_1e-9": 0.043566193492523546,
+   "gap_exact": null
+  },
+  {
+   "iterations": 400,
+   "gap_skip_1e-9": 0.043408624514065255,
+   "gap_exact": 0.043413966473911686
   }
  ]
 }

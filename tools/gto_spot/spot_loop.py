@@ -184,7 +184,7 @@ class Loop:
                     if is_m:
                         env.update({'T2_PANEL_MATRIX': '1', 'T2_BIN_DIR': '/home/user/gto_ckpt/target_multi/release/examples'})
                     subprocess.run([sys.executable, os.path.join(ROOT, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, PANEL, fd,
-                                    '--workers', '4', '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
+                                    '--workers', os.environ.get('SPOT_PANEL_WORKERS', '4'), '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
                     open(fd + '/done', 'w').write('ok')
                 bv = board_values(fd)
                 raw, se = stratified(bv)
