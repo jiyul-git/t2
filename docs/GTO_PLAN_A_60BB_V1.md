@@ -85,3 +85,9 @@ with the classes over 0.10. It checks the subgame machinery and the root ranges 
 - Spot composition: the blind 3-bet arms only change the 3-bettor's size for SB / BB 3-bets, so the distinct subgames are 9:
   4 blind pairs x {B35, B40} + p60_utg_vs_btn (BTN 3-bets 3.0x) on the B40 parent. p60_utg_vs_btn_b35 is the same subgame on the
   B35 parent: kept only as a parent-arm sensitivity replicate (reported as such, never a separate result), run last.
+- BvB controlled measurement (user, 2026-10-12; T2 real decision path, UTG..BTN fixed to fold, 15-300 bb x 11 stacks x 2 profiles x
+  6,000 = 132k trials): SB open computed 2.75 bb, executed 3.0 bb at almost every stack (0.5 bb rounding below a 15k-chip BB);
+  baseline-regular SB limp 0% (tendency layer 5-7%). Re-registration rule for the SB open (when section 6 or a BvB spot starts):
+  representative 3.0 bb (what T2 executes), 2.75 bb as the size-abstraction comparison; no limp in the baseline-regular tree.
+  T2 behaviour figures (SB raise 31-36% at 40-100 bb, BB vs a 3 bb SB open: 3-bet 5%, fold 45-47%, defect D8 = BB never raises an SB
+  limp) are bot measurements, not references: they are never used as pass / fail for solver output.
