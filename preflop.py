@@ -1152,7 +1152,8 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
                               exploit=None, bf=1.0, seats=8, ante=True,
                               can_raise=True, pot_bb=None, to_call_bb=None,
                               opponent_ranges=None, players_behind=0,
-                              decision_seed=None, locked_keys=None):
+                              decision_seed=None, locked_keys=None,
+                              anchor_pos=None):
     """두 개 이상의 살아 있는 상대 레인지를 함께 보는 재레이즈 판단.
 
     핵심은 '마지막 aggressor 한 명 vs 나'로 축약하지 않는 것이다.
@@ -1236,6 +1237,18 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         exploit=exploit, bf=bf, seats=seats, ante=ante,
         opener_allin=False, can_raise=can_raise,
         pot_bb=pot_bb, to_call_bb=to_call_bb)
+    # 콜드 open+3벳: 3벳 폭의 기준은 '3벳한 자리 대 나'(예: BB 대 BTN 스틸 방어, 가장
+    # 넓다)가 아니라 이야기 전체다. UTG 오픈 위 BTN 3벳은 UTG 오픈만큼(이상) 강하다.
+    # 원래 오프너 기준 폭이 더 좁으면 그 폭을 쓴다(TAG_TIGHT BB 44 콜드콜 32% → 수정).
+    if anchor_pos and anchor_pos != reraiser_pos:
+        _lik_anchor = defend_action_likelihoods(
+            prof, def_pos, anchor_pos, hand, bb, open_bb, n_callers,
+            raise_level=raise_level, stack_bb=stack_bb,
+            exploit=exploit, bf=bf, seats=seats, ante=ante,
+            opener_allin=False, can_raise=can_raise,
+            pot_bb=pot_bb, to_call_bb=to_call_bb)
+        if float(_lik_anchor.get('tot') or 1.0) < float(lik.get('tot') or 1.0):
+            lik = _lik_anchor
 
     attack = float(lik['attack'])
     call = float(lik['call'])
@@ -1249,6 +1262,18 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
     # generic call 찌꺼기가 남아 랜덤 콜하는 것은 reasoning error다.
     # 계산오차/인간차이는 이미 need의 calc_noise와 reason_skill<1에 들어 있다.
     call, fold = apply_multiway_call_evidence(call, fold, eq, need, reason_skill)
+    # 직감: 계산(팟오즈 오차 포함)과 별개로, 실제 가격 대비 에쿼티가 크게 모자라면
+    # '이 자리에서 이 손은 한참 밀린다'는 걸 사람은 느낀다. 타이트한 성향일수록 강하게.
+    # 폴드 쪽으로만 쓴다(루즈한 사람을 더 콜하게 만들지 않는다).
+    #   예: TAG_TIGHT BB, UTG 오픈 + BTN 3벳 앞 77/44 — eq 0.23 / 실제 need 0.35
+    _gut = 0.0
+    if eq < need_base and isinstance(prof, dict) and prof.get('concepts'):
+        _gap = (need_base - eq) / max(1e-9, need_base)
+        _tight = max(0.0, min(1.0, 1.0 - PS.temper(prof, 'looseness', 5.0) / 10.0))
+        _gut = 0.85 * min(1.0, 3.0 * _gap) * _tight ** 0.5
+        _moved = call * _gut
+        call -= _moved
+        fold += _moved
     _timing_bound({'kind': 'multiway', 'r': float(lik['hand_pct']),
                    'eq': float(eq), 'need': float(need),
                    'reason_skill': float(reason_skill)})
@@ -1333,6 +1358,7 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         'need_seen': round(need, 6),
         'potodds_noise': round(noise, 6),
         'reason_skill': round(reason_skill, 6),
+        'gut_fold_share': round(_gut, 6),
         'players_behind': int(players_behind or 0),
         'fair_share': round(fair, 6),
         'locked_keys': sorted(_locked),
@@ -1356,7 +1382,7 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
                           can_raise=True, pot_bb=None, to_call_bb=None,
                           original_opener_range=None, reraiser_range=None,
                           players_behind=0, decision_seed=None,
-                          locked_keys=None):
+                          locked_keys=None, original_opener_pos=None):
     """P7 호환 wrapper: 아직 행동하지 않은 플레이어의 open+re-raise 대응."""
     act, sz, audit = multiway_reraise_decision(
         prof, def_pos, reraiser_pos, hand, bb, open_bb, n_callers, rng,
@@ -1368,7 +1394,8 @@ def cold_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
             'reraiser': reraiser_range,
         },
         players_behind=players_behind,
-        decision_seed=decision_seed, locked_keys=locked_keys)
+        decision_seed=decision_seed, locked_keys=locked_keys,
+        anchor_pos=original_opener_pos)
 
     # 기존 P7 verifier / telemetry 계약은 유지한다.
     if audit.get('reason') == 'missing_multiway_ranges_or_price':

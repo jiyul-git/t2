@@ -1989,6 +1989,9 @@ class HandRun:
                 _cold_ctx = _cold_reraise_context(
                     getattr(rnd, 'action_meta', None), s, rnd.order,
                     folded=rnd.folded, allin=rnd.allin)
+                if _cold_ctx and _cold_ctx.get('original_opener_seat') is not None:
+                    _cold_ctx['original_opener_pos'] = h.pos.get(_cold_ctx['original_opener_seat']) \
+                        if isinstance(h.pos, dict) else h.pos[_cold_ctx['original_opener_seat']]
                 _bf_provenance = h.bf_details(s)
                 a, sz, _seed = PL.preflop_plan(
                     ax, pos, hand, bbs, h.rng,

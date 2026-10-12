@@ -3927,6 +3927,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                 reraiser_range=(opp_ranges or {}).get(_rr_seat),
                 players_behind=len(_cc.get('players_behind') or []),
                 decision_seed=cold_decision_seed,
+                original_opener_pos=_cc.get('original_opener_pos'),
                 locked_keys=[k for k, st_ in (('original_opener', _op_seat),
                                               ('reraiser', _rr_seat))
                              if str(st_) in _locked_seats])
