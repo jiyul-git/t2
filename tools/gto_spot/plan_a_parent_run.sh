@@ -7,7 +7,8 @@ S=$1; A=$2
 CFG=/home/user/t2/data/gto_spot/plan_a/cfg_p${S}_${A}.json
 W=/home/user/gto_ckpt/plan_a/p${S}_${A}
 E=/home/user/gto_ckpt/target_exp/release/examples
-CONV=/home/user/t2/data/gto_spot/plan_a/parent_p${S}_${A}_convergence.json
+CONV=/home/user/gto_ckpt/plan_a/p${S}_${A}/convergence.json   # copied into the repo at the end (no repo churn while running)
+REPO_CONV=/home/user/t2/data/gto_spot/plan_a/parent_p${S}_${A}_convergence.json
 export PREFLOP_EQ_SEED=202 PREFLOP_MULTIWAY_SEED=202 PREFLOP_EQ_SAMPLES=1200 PREFLOP_MAX_NODES=40000000
 P=fold,fold,fold,fold,fold,fold,raise,fold,call
 mkdir -p $W; cd $W
@@ -47,4 +48,5 @@ PY
 done
 echo "p${S}_${A} dump $(date -u +%FT%TZ)"
 [ -s dump.jsonl ] || { $E/t2_tree_dump $CFG ck.gtop 1e-6 dump.tmp > dump.log 2>&1 && mv dump.tmp dump.jsonl; }
+cp $CONV $REPO_CONV
 echo "p${S}_${A} PARENT_DONE"
