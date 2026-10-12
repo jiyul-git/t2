@@ -5,10 +5,12 @@ cd /home/user/t2
 S=${1:-60}
 L=/home/user/gto_ckpt/plan_a/spots.log
 python3 tools/gto_spot/plan_a_specs.py $S > /dev/null || exit 1
-for arm in b40 b35; do
-  [ -s /home/user/gto_ckpt/plan_a/p${S}_${arm}/dump.jsonl ] || continue
-  for pair in co_vs_sb utg1_vs_sb utg_vs_btn btn_vs_bb hj_vs_bb; do
-    id=p${S}_${pair}_${arm}; SP=data/gto_spot/plan_a/specs/$id.json
+# order (amendment A2): B40 all 5 pairs, B35 the 4 blind pairs, then utg_vs_btn on B35 (parent-arm sensitivity replicate only)
+for id in p${S}_co_vs_sb_b40 p${S}_utg1_vs_sb_b40 p${S}_utg_vs_btn_b40 p${S}_btn_vs_bb_b40 p${S}_hj_vs_bb_b40 \
+          p${S}_co_vs_sb_b35 p${S}_utg1_vs_sb_b35 p${S}_btn_vs_bb_b35 p${S}_hj_vs_bb_b35 p${S}_utg_vs_btn_b35; do
+    arm=${id##*_}
+    [ -s /home/user/gto_ckpt/plan_a/p${S}_${arm}/dump.jsonl ] || continue
+    SP=data/gto_spot/plan_a/specs/$id.json
     [ -s data/gto_spot/plan_a/sensitivity/${id}_p144.json ] && continue
     echo "START $id $(date -u +%FT%TZ)" >> $L
     [ -s data/gto_spot/records/$id.json ] || {
@@ -20,6 +22,5 @@ for arm in b40 b35; do
       PRECISION=144 python3 tools/gto_spot/grade_spot.py $SP >> $L 2>&1 || { echo "p144 grade failed $id" >> $L; exit 1; }; }
     PRECISION=144 python3 tools/gto_spot/sensitivity.py $SP >> $L 2>&1 || { echo "sensitivity failed $id" >> $L; exit 1; }
     echo "DONE $id $(date -u +%FT%TZ)" >> $L
-  done
 done
 echo "PLAN_A_PASS_END $(date -u +%FT%TZ)" >> $L

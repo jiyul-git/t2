@@ -74,3 +74,14 @@ CFR+ 3000 iterations, at the parent's arriving ranges. Compared with the parent 
 pass iff at every node the reach-weighted mean |delta freq| over reaching classes (>= 1e-3 combos) is <= 0.02, and every reaching
 class with |delta| > 0.10 loses <= 0.05 bb (subgame EV of the parent's action mix vs the subgame's best action). Reported per node
 with the classes over 0.10. It checks the subgame machinery and the root ranges against the parent; it does not test the new menu.
+
+## Amendment A2 (2026-10-12): SB open declared as a deviation from T2; spot composition
+- T2 measurement (user, 2026-10-12): SB first-in open is 2.15 + 0.6 = 2.75 bb in code, rounded to 0.5 bb steps -> almost always
+  3.0 bb (tournament logs 2.3-3.0 bb, mode 2.7-2.9 bb at 35-80 bb); SB limp 0% for the baseline regular profile (5-7% only in the
+  tendency layer; 7-19% in mixed tournament logs). The Plan A parents open the SB to 2.0 bb with no limp: **a declared condition that
+  differs from T2**. None of the 5 priority pairs has an SB open on its line, so the subgames are not directly affected; the parent's
+  equilibrium (blind-vs-blind lines) can shift the arriving ranges indirectly. Before the outer loop (section 6) or any blind-vs-blind
+  spot the SB open is re-set (about 2.75-3.0 bb; limp excluded for the baseline-regular tree) and re-registered.
+- Spot composition: the blind 3-bet arms only change the 3-bettor's size for SB / BB 3-bets, so the distinct subgames are 9:
+  4 blind pairs x {B35, B40} + p60_utg_vs_btn (BTN 3-bets 3.0x) on the B40 parent. p60_utg_vs_btn_b35 is the same subgame on the
+  B35 parent: kept only as a parent-arm sensitivity replicate (reported as such, never a separate result), run last.

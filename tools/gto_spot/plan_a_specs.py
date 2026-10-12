@@ -60,6 +60,8 @@ def main():
                     'status_cap_reason': 'Plan A: subgame menu differs from the parent tree (4-bet jam only), parent continuation '
                                          'static, arriving ranges from the parent (docs/GTO_PLAN_A_60BB_V1.md section 4)',
                     'out': f'/home/user/gto_ckpt/spots/{sid}/spot.json'}
+            if name == 'utg_vs_btn' and arm == 'b35':
+                spec['role'] = 'parent-arm sensitivity replicate of p%d_utg_vs_btn_b40 (amendment A2); not a separate result' % stack
             json.dump(spec, open(os.path.join(out, sid + '.json'), 'w'), indent=1)
             print(sid, spec['root_line'])
 

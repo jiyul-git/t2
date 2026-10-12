@@ -31,5 +31,6 @@
  },
  "status_cap": "conditional_verified",
  "status_cap_reason": "Plan A: subgame menu differs from the parent tree (4-bet jam only), parent continuation static, arriving ranges from the parent (docs/GTO_PLAN_A_60BB_V1.md section 4)",
- "out": "/home/user/gto_ckpt/spots/p60_utg_vs_btn_b35/spot.json"
+ "out": "/home/user/gto_ckpt/spots/p60_utg_vs_btn_b35/spot.json",
+ "role": "parent-arm sensitivity replicate of p60_utg_vs_btn_b40 (amendment A2); not a separate result"
 }
