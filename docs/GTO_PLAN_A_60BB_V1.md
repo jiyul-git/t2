@@ -138,3 +138,9 @@ IP 3-bet {2.5x, 3.0x} 1.80M / 2.43 GB, opens {2.0, 2.5} 1.83M / 2.47 GB (data in
   the table and is `unsupported` (existing T2 path). (2) After v2b converges, report the first-in AA / KK / QQ 2 bb open EVs per seat
   and whether they are consistent across seats — a check for a residual effect of the static continuation undervaluing opens.
 - The 5 B40 spots continue (no open jam on their lines; parent gap 0.0434 meets amendment 5).
+- 2026-10-13: v2b converged — exact gap_total 0.00957 bb at 200 it (100 it: 0.0327; by seat at 200: 0.0005-0.0010 for UTG..BTN, SB
+  0.0032, BB 0.0015): the first 60 bb parent passing G2. Dump: reach >= 1e-6, 108 MB. Condition (2): first-in AA / KK / QQ 2 bb
+  open EVs rise smoothly with position (AA 7.93 UTG .. 8.82 LJ/HJ/CO, 8.30 BTN; KK 4.14 .. 6.48; QQ 2.45 .. 5.19), all opened 100%;
+  UTG+2 / LJ AA open EVs equal the B40 values (8.32 / 8.82 vs 8.35 / 8.81), so the B40 stall was the inflated jam EV, not the open
+  value. Limit: a uniform undervaluation of opens by the static continuation would not show here (outer loop O1 tests it). SB first
+  in: AA limp 68% (EV 5.44 vs raise 5.22), KK / QQ ~50/50 (within 0.06 bb). Data: data/gto_spot/plan_a/diag/p60_v2b_open_ev_check.json.
