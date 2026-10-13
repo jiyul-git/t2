@@ -218,7 +218,7 @@ def label(rec, cfg):
     if not gates['precision_final']:
         prov.append('precision pass (P144) not graded')
     if not g6['pass']:
-        prov.append('G6: ' + ('(a) not run' if g6['a_subgame_vs_full_tree']['status'] != 'pass' else '') +
+        prov.append('G6: ' + ('' if g6['a_subgame_vs_full_tree']['status'] == 'pass' else f"(a) {g6['a_subgame_vs_full_tree']['status']}") +
                     ('' if g6['b_invariants']['pass'] else ' (b) invariant violation'))
     glob = []
     if not gates['G2']:
