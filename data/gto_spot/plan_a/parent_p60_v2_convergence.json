@@ -1,0 +1,59 @@
+{
+ "schema": "plan_a_parent_convergence_v1",
+ "target_gap_exact_bb": 0.01,
+ "max_iterations": 400,
+ "rows": [
+  {
+   "iterations": 25,
+   "gap_skip_1e-9": 0.6097810333178169,
+   "gap_exact": null
+  },
+  {
+   "iterations": 50,
+   "gap_skip_1e-9": 0.23633678799698066,
+   "gap_exact": null
+  },
+  {
+   "iterations": 75,
+   "gap_skip_1e-9": 0.16063526022834457,
+   "gap_exact": null
+  },
+  {
+   "iterations": 100,
+   "gap_skip_1e-9": 0.1324188481125892,
+   "gap_exact": 0.1324246019058313
+  },
+  {
+   "iterations": 125,
+   "gap_skip_1e-9": 0.11978074433882956,
+   "gap_exact": null
+  },
+  {
+   "iterations": 150,
+   "gap_skip_1e-9": 0.11256845343942311,
+   "gap_exact": null
+  },
+  {
+   "iterations": 175,
+   "gap_skip_1e-9": 0.10844986771915473,
+   "gap_exact": null
+  },
+  {
+   "iterations": 200,
+   "gap_skip_1e-9": 0.1056880090841189,
+   "gap_exact": 0.10569433456440383
+  }
+ ],
+ "stopped": "2026-10-13: stopped at ~250 it by user decision; superseded by p60 v2b (open jam removed). Exact gap at 100 it 0.1324 (UTG+2 0.0597, LJ 0.0426); diagnosis at 200 it: one-step regret UTG+2 0.0577 / LJ 0.0376 at their first-in nodes, AA/KK/QQ open 2 bb while the open jam is +4.5..+6.0 bb (unconverged responders on a near-zero-reach line). No dump, no spots.",
+ "exact_100_by_seat": {
+  "UTG": 0.0026236631254117826,
+  "UTG+1": 0.002074780852889617,
+  "UTG+2": 0.05967951377276952,
+  "LJ": 0.04259090259227252,
+  "HJ": 0.002793170221281718,
+  "CO": 0.004535626648655436,
+  "BTN": 0.00528931325808615,
+  "SB": 0.0076051041113455245,
+  "BB": 0.005232527323119044
+ }
+}

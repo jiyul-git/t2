@@ -127,3 +127,14 @@ IP 3-bet {2.5x, 3.0x} 1.80M / 2.43 GB, opens {2.0, 2.5} 1.83M / 2.47 GB (data in
 - 2026-10-13 (user): the B35 parent is stopped at ~175 it (last logged chunk 150 it, skip-mode gap 0.091; no dump, no B35 spots);
   p60 v2 (data/gto_spot/plan_a/cfg_p60_v2.json, 1,339,314 nodes) starts on its CPU and replaces both arms. The 5 B40 spots continue:
   their lines contain no SB open or limp, and the B40 parent gap (0.0434) meets amendment 5.
+
+## Amendment A5 (2026-10-13, user decision): no open jam in the 60 bb parent (v2b)
+- v2 (SB limp, blind 3-bets {3.5x, 4.0x}) stalled like B40: exact gap 0.1324 at 100 it, ~0.095 of it at two first-in nodes (UTG+2,
+  LJ) where AA / KK / QQ open 2 bb while the open jam evaluates +4.5..+6.0 bb higher (near-zero-reach open-jam lines, responders
+  unconverged). v2 is stopped (~250 it; log data/gto_spot/plan_a/parent_p60_v2_convergence.json, no dump, no spots).
+- v2b = v2 with open_allin = false (engine option; no all-in as the first raise; 3-bet / 4-bet / 5-bet jams unchanged): 1,338,299
+  nodes. Basis: standard solver size candidates (a 60 bb open menu without an open jam is a common solver configuration); not T2.
+- Conditions (user): (1) every record and tree label states "60 bb open jam excluded"; at T2 connection an open jam line is outside
+  the table and is `unsupported` (existing T2 path). (2) After v2b converges, report the first-in AA / KK / QQ 2 bb open EVs per seat
+  and whether they are consistent across seats — a check for a residual effect of the static continuation undervaluing opens.
+- The 5 B40 spots continue (no open jam on their lines; parent gap 0.0434 meets amendment 5).

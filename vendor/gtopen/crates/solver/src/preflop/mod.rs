@@ -139,6 +139,9 @@ pub struct PreflopConfig {
     /// configs, saves and hashes are untouched.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub limp_seats: Option<Vec<usize>>,
+    /// Some(false): no all-in as the first raise (open jam) — later jams (3-bet / 4-bet / 5-bet) unchanged. Absent = unchanged.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_allin: Option<bool>,
 }
 
 fn is_false(value: &bool) -> bool { !*value }
@@ -3257,7 +3260,7 @@ fn legal_actions_of(cfg: &PreflopConfig, st: &BuildState, actor: usize) -> Vec<P
                 tos.push(to);
             }
         }
-        if cfg.add_allin {
+        if cfg.add_allin && !(st.raises == 0 && cfg.open_allin == Some(false)) {
             tos.push(cfg.stack);
         }
         let mut seen: Vec<f64> = Vec::new();

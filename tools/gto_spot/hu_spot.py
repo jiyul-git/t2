@@ -144,7 +144,7 @@ class Spot:
                 tos = list(per[actor] if per and per[actor] else self.cfg['open_raises'])
             else:
                 tos = [max(st['to_call'] * m, st['to_call'] + st['last_raise']) for m in self.mults_of(actor, st['raises'])]
-            if self.cfg['add_allin']:
+            if self.cfg['add_allin'] and not (st['raises'] == 0 and self.cfg.get('open_allin') is False):
                 tos.append(self.stack)
             seen = []
             for to in tos:

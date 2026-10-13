@@ -299,7 +299,7 @@ mod tests {
             realization: "raw".into(),
             call_only_seats: vec![],
             open_raises_by_seat: None,
-            fourbet_mults: None, fourbet_mults_by_seat: None, fivebet_mults: None, limp_seats: None, raise_mults_by_seat: None,
+            fourbet_mults: None, fourbet_mults_by_seat: None, fivebet_mults: None, limp_seats: None, open_allin: None, raise_mults_by_seat: None,
         };
         let mut s = PreflopSolver::new(cfg, Arc::new(EquityTable::build(8))).unwrap();
         assert_eq!(s.multiway_equity_model(), MODEL);

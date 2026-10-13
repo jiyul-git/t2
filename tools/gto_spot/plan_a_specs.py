@@ -53,7 +53,8 @@ def main():
                     'tables_dir': None, 'iterations': 3000, 'rule': 'v3', 'root_line': root_line(cfg, op, tb), 'menu': MENU,
                     'tree_label': f'Plan A p{stack}: 9-max hand-start {stack} bb exact (cfg.stack {cfg["stack"]}), ante 1/9, opens 2.0, '
                                   f'3-bet 3.0x / blinds {cfg["raise_mults_by_seat"][7][0]}x; SB open {cfg["open_raises_by_seat"][7][0]} bb, SB limp '
-                                  f'{"allowed" if 7 in (cfg.get("limp_seats") or []) else "excluded"}; parent max_raises 3, 4-bet jam only, static '
+                                  f'{"allowed" if 7 in (cfg.get("limp_seats") or []) else "excluded"}; open jam '
+                                  f'{"excluded" if cfg.get("open_allin") is False else "included"}; parent max_raises 3, 4-bet jam only, static '
                                   'continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam',
                     'parent': {'parent': f'Plan A parent p{stack}_{arm} (static continuation)', 'gap_total_bb': gap,
                                'source': os.path.relpath(conv, ROOT)},
