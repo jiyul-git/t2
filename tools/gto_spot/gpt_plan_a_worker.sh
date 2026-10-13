@@ -31,8 +31,8 @@ done
 export UV_PYTHON_INSTALL_DIR="$R/python"
 if [ ! -x "$R/venv/bin/python3" ]; then
     uv venv -p 3.11.17 "$R/venv"
-    uv pip install -p "$R/venv/bin/python" numpy==2.4.6
 fi
+uv pip install -p "$R/venv/bin/python" numpy==2.4.6
 export PATH="$R/venv/bin:$PATH"
 python3 -c 'import sys,numpy; assert sys.version_info[:3] == (3,11,17),sys.version; assert numpy.__version__ == "2.4.6",numpy.__version__; print("ENV_OK",sys.version,numpy.__version__)'
 [ -x vendor/gtopen/target/release/examples/t2_cont_panel ] || {
