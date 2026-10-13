@@ -1,0 +1,23 @@
+{
+  "status": "BLOCKED_REPRO_TERM_SHA_MISMATCH",
+  "spot": "p60_btn_vs_bb_b40",
+  "base_commit": "8c6e4d3366d222b45a7ca777961334c39bf54f34",
+  "reproduction_commit": "ca538bce4cd48252103877eb25112d55c5fff205",
+  "control": "p60_co_vs_sb_b40, step 0, terminal 0, AcKc6c",
+  "term_sha256_expected": "addd06e97e9bcfea36027fae7c21d71071cb5d77964ff15ca7aab9e3bf7a3e01",
+  "term_sha256_actual": "ff623d3d9135086cb92c0060c3853ec5aaa6c369c8e5260b330cf7fb743c5752",
+  "flop_digest_expected": "a035dc0cc8ae5a15cdedbf31af63b06030021597b43485f087e9b0f0e9326466",
+  "flop_digest_actual": null,
+  "flop_status": "Reproduction interrupted after terminal mismatch; no completed flop artifact",
+  "inputs_sha256": "All four installer checks passed: PLAN_A_INPUTS_OK",
+  "build": "cargo build --locked --release -p solver --features t2-cont --example t2_cont_panel: passed",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "numpy": "2.3.5",
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "cargo": "cargo 1.99.0 (5f94df478 2026-08-27)",
+  "memory_limit_bytes": 8589934592,
+  "cpu_quota": "800000 100000",
+  "btn_compute_started": false,
+  "root_cause": "Not established; no reference terminal content or reference Python/NumPy/BLAS/CPU environment available",
+  "next_step": "Compare uploaded control terminal with reference terminal and pin reference numerical environment; require both exact hashes before starting BTN vs BB."
+}
