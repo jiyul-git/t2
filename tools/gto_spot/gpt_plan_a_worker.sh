@@ -11,7 +11,14 @@ if ! flock -n 9; then
     exit 0
 fi
 exec >>"$R/worker.log" 2>&1
+trap 'rc=$?; echo "WORKER_EXIT status=$rc $(date -u +%FT%TZ)"; cat /sys/fs/cgroup/memory.events; exit "$rc"' 0
+trap 'echo "WORKER_SIGNAL HUP $(date -u +%FT%TZ)"; exit 129' HUP
+trap 'echo "WORKER_SIGNAL INT $(date -u +%FT%TZ)"; exit 130' INT
+trap 'echo "WORKER_SIGNAL TERM $(date -u +%FT%TZ)"; exit 143' TERM
 echo "WORKER_START $(date -u +%FT%TZ)"
+echo "WORKER_PID $$"
+echo "BOOT_ID $(cat /proc/sys/kernel/random/boot_id)"
+echo "UPTIME $(cat /proc/uptime)"
 cd "$ROOT"
 mkdir -p /home/user
 for item in t2 gto_ckpt; do
