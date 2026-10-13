@@ -74,3 +74,10 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
 - 2026-10-13 (user, Plan A amendment A7): B40 spots stopped everywhere. Claims: T2 session p60v2b_utg_vs_btn, p60v2b_hj_vs_bb_3b40,
   p60v2b_hj_vs_bb_3b35; this session p60v2b_co_vs_sb_3b40, p60v2b_utg1_vs_sb_3b40. Open: p60v2b_co_vs_sb_3b35,
   p60v2b_utg1_vs_sb_3b35, p60v2b_btn_vs_bb_3b40, p60v2b_btn_vs_bb_3b35. v2b reproduction reference: commit 44113004 (table above).
+- 2026-10-13 (user, supersedes the claims above): v2b split, three spots per session, 4.0x spots first in every session:
+  | session | order | result branch |
+  |---|---|---|
+  | this session | p60v2b_co_vs_sb_3b40 -> p60v2b_utg1_vs_sb_3b40 -> p60v2b_utg1_vs_sb_3b35 | chatgpt/terminal-census-v2-20260930 |
+  | T2 session | p60v2b_utg_vs_btn -> p60v2b_hj_vs_bb_3b40 -> p60v2b_hj_vs_bb_3b35 | ccr-9a10123b-0lyye0 |
+  | new Claude session | p60v2b_btn_vs_bb_3b40 -> p60v2b_btn_vs_bb_3b35 -> p60v2b_co_vs_sb_3b35 | claude/p60-btn-vs-bb-b40-20261013 |
+  Sessions may stop at their usage limit: commit / back up after every finished step so another session can resume a spot.
