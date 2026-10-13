@@ -38,7 +38,7 @@ def main():
     stack = int(sys.argv[1]) if len(sys.argv) > 1 else 60
     out = os.path.join(ROOT, 'data/gto_spot/plan_a/specs')
     os.makedirs(out, exist_ok=True)
-    for arm in ('b35', 'b40'):
+    for arm in ('b40',):   # the B35 parent was stopped 2026-10-13 (superseded by p60 v2): no B35 specs
         cfgp = os.path.join(ROOT, f'data/gto_spot/plan_a/cfg_p{stack}_{arm}.json')
         cfg = json.load(open(cfgp))
         pdir = f'{CK}/p{stack}_{arm}'
