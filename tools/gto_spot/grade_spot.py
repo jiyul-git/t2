@@ -53,6 +53,7 @@ G4_PARTIAL_MAX = 0.25
 HANDFREQ_COMPLETE = 0.95   # stable combo share for hand_frequency_status = complete
 MATERIAL = 0.05            # G6b: a clearly dominated action played at >= 5% of a class is a violation
 REACH_FLOOR = 1e-3          # combos; below it a class is `unreached` at the node: no frequency reported, not graded
+T2_FIRST_GAP_MAX_BB = 0.05  # standard amendment 5: first T2 connection
 CHIP_TOL_BB = 0.010        # G6b: |sum of the two seats' EVs - dead money| per hand
 TREE_J30 = 'J30: 9-max, cfg_mr3_jam (max_raises 3, 4-bet jam only), cfg.stack 30 behind a uniform ante 1/9 (30bb-labelled, not exact 30bb)'
 PARENT_STATES = {
@@ -254,6 +255,17 @@ def label(rec, cfg):
                              'rule': 'only `stable` classes carry point frequencies at the solution status; near-indifferent '
                                      'classes are uncertainty groups (raw mix kept, never called verified frequency)',
                              'uncertainty_groups': uncertainty_groups(rec)}
+    sens = os.path.join(ROOT, 'data/gto_spot/plan_a/sensitivity', rec['id'] + ('_p144' if gi['precision_final'] else '') + '.json')
+    rs = json.load(open(sens))['range_sensitive'] if os.path.exists(sens) else None
+    if rs is not None:
+        for n in rec['nodes']:
+            flagged = set(rs.get(f"{n['actor']}@{n['path']}", []))
+            for h, x in n['hands'].items():
+                x['range_sensitive'] = h in flagged
+    elig = (status == 'conditional_verified' and pgap is not None and pgap <= T2_FIRST_GAP_MAX_BB and rs is not None)
+    rec['t2_connection'] = {'status': 'eligible_first' if elig else 'not_eligible',
+                            'rule': 'standard v1 amendment 5: conditional_verified, parent exact gap <= 0.05 bb, sensitivity report',
+                            'parent_gap_bb': pgap, 'sensitivity_report': os.path.relpath(sens, ROOT) if rs is not None else None}
     rec['db_promotion'] = 'forbidden'
     rec['label_standard'] = 'docs/GTO_VERIFIED_FREQUENCY_STANDARD_V1.md amendment 4'
     return rec

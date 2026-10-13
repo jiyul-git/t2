@@ -106,3 +106,21 @@ with the classes over 0.10. It checks the subgame machinery and the root ranges 
 - Not used: the < 15 bb IP "min-3-bets" (1.6-1.9x) — corrected by the user (2026-10-12): a measurement classification error, all 65
   cases are isolation raises after an effectively all-in opener (< 0.2 bb behind after the ante), not 3-bets; not a menu size either
   way. Defect D8 (bot-side; never a pass / fail reference).
+
+## Amendment A4 (2026-10-13, user decisions): tree principle, SB limp, first-connection criterion
+1. Tree principle: a tree is defined by the game rules (stacks, seats, blinds, ante model) and standard solver size candidates only.
+   T2 bot behaviour (baseline-regular frequencies, limping or not, measured sizes) is never a basis of the tree; T2 sizes outside the
+   menu are translated to the nearest menu size at the connection step (mapping and its error recorded there). The current menu
+   (opens 2.0; 3-bet 3.0x IP, 3.5x / 4.0x blinds; 4-bet 2.15x IP / 2.35x OOP + jam; 5-bet jam) stays, its stated basis is now
+   "standard solver sizes" (the T2 measurements of A2 / A3 remain recorded as connection-side information only). A2's re-registration
+   rule "SB open 3.0 bb because T2 executes it" is superseded by this principle.
+2. SB limp: from the next parent on, the SB may limp (engine option limp_seats = [SB]; BB then checks or raises vs the limp), so the
+   BB-vs-SB-limp node exists in the tree (T2 defect D8 needs it as a reference). Tree cost: +17 nodes. The finished p60 parents (B40,
+   B35) are kept; their records state "SB open 2.0 bb, SB limp excluded" and serve as the comparison against the limp tree.
+3. CPU: the rebuild chain is paused before the T3 panels; the 5 B40 priority spots (with sensitivity) run first; the B35 parent
+   continues; the chain resumes after the B40 spots.
+4. First T2 connection quality: `conditional_verified` with the parent's exact gap <= 0.05 bb / hand is accepted for the first
+   connection, supplemented by the T2-side per-hand comparison (spotcmp) and the sensitivity report (standard v1 amendment 5).
+Next parent (registered, runs when CPU allows): p60 v2 = SB limp (limp_seats [SB]), SB open 3.0 bb, BB raise vs limp 3.5 bb, blind
+3-bets {3.5x, 4.0x} as candidates in one tree (1.34M nodes, 1.81 GB; replaces the two arms); size-candidate extensions measured:
+IP 3-bet {2.5x, 3.0x} 1.80M / 2.43 GB, opens {2.0, 2.5} 1.83M / 2.47 GB (data in data/gto_validation/tree_size/).

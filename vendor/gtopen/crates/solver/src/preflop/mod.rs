@@ -135,6 +135,10 @@ pub struct PreflopConfig {
     /// (fourbet_mults / legacy menu), so existing configs, saves and hashes are untouched.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fivebet_mults: Option<Vec<f64>>,
+    /// Seats allowed to limp (complete) first in when `limp` is false (e.g. the SB only). Absent = `limp` alone decides, so existing
+    /// configs, saves and hashes are untouched.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limp_seats: Option<Vec<usize>>,
 }
 
 fn is_false(value: &bool) -> bool { !*value }
@@ -3174,7 +3178,10 @@ fn validate(cfg: &PreflopConfig) -> Result<usize, String> {
     // fold-only root instead of anything the user meant.
     let has_open = cfg.max_raises > 0
         && (cfg.add_allin || cfg.open_raises.iter().any(|&o| o > biggest_post + 1e-9));
-    if !cfg.limp && !has_open {
+    if let Some(&s) = cfg.limp_seats.iter().flatten().find(|&&s| s >= n) {
+        return Err(format!("limp_seats index {s} out of range for {n} seats"));
+    }
+    if !cfg.limp && cfg.limp_seats.is_none() && !has_open {
         return Err(
             "no legal opening actions: enable limp, all-in or an open raise above the biggest blind"
                 .into(),
@@ -3225,7 +3232,7 @@ fn legal_actions_of(cfg: &PreflopConfig, st: &BuildState, actor: usize) -> Vec<P
             label: "Fold".into(),
         });
         // call (limp when no raise yet)
-        if st.raises > 0 || cfg.limp {
+        if st.raises > 0 || cfg.limp || cfg.limp_seats.as_ref().map_or(false, |v| v.contains(&actor)) {
             let label = if st.raises == 0 { "Limp" } else { "Call" };
             acts.push(PAction {
                 kind: "call".into(),

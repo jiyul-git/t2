@@ -129,7 +129,7 @@ class Spot:
         owed = max(st['to_call'] - (st['invested'][actor] - self.ante), 0.0)
         if owed > 1e-9:
             acts.append(('fold', 0.0, 'Fold'))
-            if st['raises'] > 0 or self.cfg.get('limp'):
+            if st['raises'] > 0 or self.cfg.get('limp') or actor in (self.cfg.get('limp_seats') or []):
                 acts.append(('call', st['to_call'], ('Call ' if st['raises'] > 0 else 'Limp ') + trim(st['to_call'])))
         else:
             acts.append(('check', st['to_call'], 'Check'))

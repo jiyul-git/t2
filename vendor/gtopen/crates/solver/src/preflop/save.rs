@@ -262,7 +262,7 @@ mod tests {
             max_raises: 1, add_allin: true, allin_threshold: 0.85,
             rake_pct: 0.0, rake_cap: 0.0, no_flop_no_drop: true,
             realization: "raw".into(), call_only_seats: vec![],
-            open_raises_by_seat: None, fourbet_mults: None, fourbet_mults_by_seat: None, fivebet_mults: None, raise_mults_by_seat: None,
+            open_raises_by_seat: None, fourbet_mults: None, fourbet_mults_by_seat: None, fivebet_mults: None, limp_seats: None, raise_mults_by_seat: None,
         };
         PreflopSolver::new(cfg, EQ.get_or_init(|| Arc::new(EquityTable::build(8))).clone()).unwrap()
     }

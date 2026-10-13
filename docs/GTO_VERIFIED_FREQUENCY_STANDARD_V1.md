@@ -116,3 +116,11 @@ Relabelled records (2026-10-12):
 Hand level of j30_utg_open_bb_v3 (shown for orientation, status provisional): stable 21.5% of reaching combos; 11 uncertainty
 groups (largest: BB root Call 2 ~ Fold, 85 classes / 756 combos). BB root mix fold 36.5 / call 57.8 / 3-bet 3.2 / jam 2.6 is a
 provisional, subgame-conditional result on the 30bb-labelled (30.111 bb) game.
+
+## Amendment 5 (2026-10-13, user decision): first T2 connection criterion
+A record is `t2_connection: eligible_first` when its status is `conditional_verified`, the parent's exact gap_total is <= 0.05 bb
+per hand, and an arriving-range sensitivity report exists for its accepted state. Only `stable` classes carry point frequencies;
+`uncertainty_group` and `unreached` classes are passed as such; classes flagged `range_sensitive` are marked. The T2-side per-hand
+comparison (spotcmp) and the sensitivity report supplement the missing G2. Eligibility is a label: integrating a record set into T2
+is still approved by the user per set, and `db_promotion` (the production DB) stays `forbidden` until lifted. `verified` keeps its
+amendment-4 meaning (G2 <= 0.010 and all spot gates).
