@@ -159,3 +159,20 @@ Rule v4 (spec rule "v4"; all Plan A specs from now on):
   1.80/1.18, 1.92/1.12; SB 2.58/0.85, 1.83/0.83, 1.59/0.83, 1.87/0.83, 1.42/0.80, 1.94/0.84; 4-bet-pot D/U CO 15.5/1.5, 1.45/2.36,
   3.80/1.36, 6.93/1.70, 5.70/2.25, 10.0/1.74; SB 15.7/1.0, 4.08/1.14, 2.55/1.45, 4.65/1.19, 7.99/1.50, 4.90/1.07; step 6 stopped on
   the 9c7d4h flop floor. The new run starts at step 0 (flops reused) under v4.
+
+## Amendment 8 (2026-10-13, POST-OBSERVATION — registered after seeing p60_co_vs_sb_b40 v4 steps 1-3; user review requested)
+Observed (v4): every terminal-seat passes D <= U from step 2 on except the SB at the 4-bet-call terminal (D/U 1.79/1.09, 3.35/1.45),
+where the CO arrives with 0.0 / 0.1 / 0.9 combos at steps 1-3 (CO almost never 4-bets). The SB's value there is M[h, :] times a CO
+distribution normalised from < 1 combo, which is not a stable quantity; its influence on the spot is bounded by that mass.
+Rule (from step 4 of this spot and for every v4 spot): a terminal-seat whose opponent arrives at the terminal with < 1 combo (of
+1326) is exempt from the D <= U stop test; its D, U and the opponent mass are recorded with `exempt: true`. The record also states
+whether the spot would have converged without the exemption (`converged_strict`). Because this rule was written after the data, the
+user decides whether records converged only through it are accepted; until then they carry the flag.
+- Accepted by the user (2026-10-13) with three conditions, now implemented: (1) the threshold stays fixed at < 1 opponent combo and
+  applies to every remaining v4 spot from its start (spot_loop / precision_pass; no per-spot tuning); (2) every decision node of the
+  exempt seat that leads into an exempt terminal is listed in `amendment8_unsupported_nodes`, flagged on the node, and is
+  `unsupported` at T2 connection (its values are not used); (3) both verdicts stay in the record (`converged` / `converged_strict`,
+  P144 `consistent_with_24` / `consistent_with_24_strict`). Records that converge through the exemption are no longer held at
+  provisional for that reason. Counter-view recorded: the low reach itself is part of the equilibrium, so an unstable value there
+  could feed back into the earlier 4-bet frequency; the earlier-node terminal-seats passing D <= U is the evidence that it is small.
+  T2-side observation (utg_vs_btn under v4): 4-bet-call terminal reach probability 1.0e-6 / 2.1e-7 at steps 2 / 3 — same pattern.

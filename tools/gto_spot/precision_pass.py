@@ -87,8 +87,10 @@ def main():
             else:
                 v144 = np.array(raw[pos])
             u24 = np.array(tabs24[line].get('se', {}).get(pos, [np.nan] * 169))
+            opp_mass = float(t['reach'][q].sum() * 1326)
             seats[pos] = {'D144': float((w * np.abs(v144 - v24)).sum() / W), 'signed': float((w * (v144 - v24)).sum() / W),
-                          'U24': float((w * u24).sum() / W), 'U144': float((w * np.array(se[pos])).sum() / W)}
+                          'U24': float((w * u24).sum() / W), 'U144': float((w * np.array(se[pos])).sum() / W),
+                          'opp_arriving_combos': opp_mass, 'exempt': lp.v4 and opp_mass < 1.0}   # standard amendment 8
             for s_ in tab['seats']:
                 if s_['position'] == pos:
                     s_['gross'] = raw[pos]
@@ -96,7 +98,8 @@ def main():
         if is_m:
             new_m[line] = {str(pl['seat']): [[None if np.isnan(x) else float(x) for x in row] for row in M[pl['position']]] for pl in tj['players']}
         rep['terminals'][line] = {'mode': 'matrix' if is_m else 'table', 'seats': seats}
-    rep['consistent_with_24'] = all(s['D144'] <= s['U24'] for t in rep['terminals'].values() for s in t['seats'].values())
+    rep['consistent_with_24'] = all(s['D144'] <= s['U24'] or s['exempt'] for t in rep['terminals'].values() for s in t['seats'].values())
+    rep['consistent_with_24_strict'] = all(s['D144'] <= s['U24'] for t in rep['terminals'].values() for s in t['seats'].values())
     sp = lp.spot(new_t, new_m)
     L.atomic(new_t, od + 'tables_used.json')
     L.atomic(new_m, od + 'matrices_used.json')
