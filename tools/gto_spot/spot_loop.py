@@ -238,7 +238,12 @@ class Loop:
                         cons = None
                     else:
                         D, sg, cons = None, None, None
-                    seats[pos] = {'D': D, 'signed': sg, 'U': U, 'pass': (D is not None and D <= U),
+                    q_ = [x for x in sp.live if sp.pos[x] != pos][0]
+                    opp_mass = float(t['reach'][q_].sum() * 1326)
+                    strict = (D is not None and D <= U)
+                    exempt = self.v4 and opp_mass < 1.0   # standard amendment 8 (post-observation; user review)
+                    seats[pos] = {'D': D, 'signed': sg, 'U': U, 'pass': strict or exempt, 'pass_strict': strict,
+                                  'opp_arriving_combos': opp_mass, 'exempt': exempt,
                                   'matrix_vs_table_at_solve_ranges': cons}
                 rep['terminals'][line] = {'term': j, 'seats': seats, 'prev': (cur or {}).get('provenance', {}).get('kind', 'static')}
                 # damped update (only against a previous spot-solved table; otherwise the raw table)
@@ -277,6 +282,7 @@ class Loop:
                 new_tables[line] = tab
             all_pass = all(s['pass'] for t in rep['terminals'].values() for s in t['seats'].values())
             rep['all_pass'] = all_pass
+            rep['all_pass_strict'] = all(s.get('pass_strict', s['pass']) for t in rep['terminals'].values() for s in t['seats'].values())
             if k == 0:
                 rep['decision'] = 'continue (minimum one update)'
             elif all_pass:
@@ -290,6 +296,8 @@ class Loop:
             if rep['decision'].startswith('stop'):
                 state['final_step'] = k
                 state['converged'] = all_pass and k > 0
+                state['converged_strict'] = rep['all_pass_strict'] and k > 0
+                state['exempt_used'] = all_pass and not rep['all_pass_strict']
                 if all_pass and k > 0:
                     # accepted tables: the step-k tables (D <= U against them); keep them, do not apply the k update
                     pass

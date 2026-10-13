@@ -215,6 +215,8 @@ def label(rec, cfg):
         blockers.append(f'G4: static share {s_share:.3f} ({g4_state})')
     research = bool(blockers) and (gi.get('superseded') or not gates['spot_solver'] or not spot_conv or g4_state == 'static_dependent')
     prov = []
+    if gi.get('exempt_used'):
+        prov.append('G3 passed only with the amendment-8 low-mass exemption (post-observation rule, pending user review)')
     if not gates['precision_final']:
         prov.append('precision pass (P144) not graded')
     if not g6['pass']:
@@ -405,6 +407,7 @@ def main():
                                 'p144_consistent_with_24': json.load(open(kd + 'report.json'))['consistent_with_24'] if precision else None,
                                 'static_share': s_share,
                                 'status_cap': spec.get('status_cap'), 'status_cap_reason': spec.get('status_cap_reason'),
+                                'converged_strict': st.get('converged_strict'), 'exempt_used': st.get('exempt_used'),
                                 'stop_reason': st.get('stop_reason') or (json.load(open(kd + 'report.json')).get('flop_failures') and
                                                                          'P144 flop solver did not converge' if precision else None)},
                'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
