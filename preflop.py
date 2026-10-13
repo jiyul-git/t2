@@ -1199,8 +1199,25 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
 
     import bot as _B
     _seed = int(decision_seed or 0)
-    eq = float(_B.equity_vs_combos(
-        hand, [], pools, sims=900, seed=_seed))
+    _eq_raw = _B.equity_vs_combos(
+        hand, [], pools, sims=900, seed=_seed)
+    if _eq_raw is None:
+        # 상대 레인지가 내 카드·서로와 겹쳐 표본을 만들 수 없으면 에쿼티를
+        # 지어내지 않는다. 레인지가 없을 때와 같은 기존 경로로 돌아간다.
+        act, sz = defend_decision(
+            prof, def_pos, reraiser_pos, hand, bb, open_bb, n_callers, rng,
+            raise_level=raise_level, stack_bb=stack_bb,
+            exploit=exploit, bf=bf, seats=seats, ante=ante,
+            opener_allin=False, can_raise=can_raise,
+            pot_bb=pot_bb, to_call_bb=to_call_bb)
+        return act, sz, {
+            'complete': False,
+            'reason': 'multiway_equity_unavailable',
+            'strategy_consumer': False,
+            'opponent_range_count': len(pools),
+            'opponent_range_seats': range_seats,
+        }
+    eq = float(_eq_raw)
 
     cost = max(0.0, float(to_call_bb or 0.0))
     pot_before = max(0.0, float(pot_bb or 0.0))
@@ -1264,9 +1281,10 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
             opponent_ranges.items(), key=lambda kv: str(kv[0]))
             if r and str(k) in _locked]
         if _lk_pools:
-            eq_locked = float(_B.equity_vs_combos(
-                hand, [], _lk_pools, sims=900, seed=_seed + 17))
-            if eq_locked < need:
+            _eql = _B.equity_vs_combos(
+                hand, [], _lk_pools, sims=900, seed=_seed + 17)
+            # 표본을 만들 수 없으면 '잠긴 상대' 근거는 없는 것으로 본다.
+            if _eql is not None and float(_eql) < need:
                 _rm = attack * reason_skill
                 attack -= _rm
                 fold += _rm
