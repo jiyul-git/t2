@@ -138,3 +138,7 @@ Rule v4 (spec rule "v4"; all Plan A specs from now on):
 - p60_co_vs_sb_b40 continues under v4 from its v3 state after step 5 (its v3 verdict "not converged after 6 steps" stays in the step-5
   report). Spots running elsewhere under v3 that reach step 5 without converging continue the same way (rule "v4" in the spec,
   resume from the saved state).
+- Second instance (T2-side session backup, branch ccr-9a10123b-0lyye0 at 0f190813, p60_utg_vs_btn_b40 under v3): UTG root fold
+  (class mean) 62% / 79% / 7% / 80% at steps 0-3, 4-bet-pot D (UTG) 15.2 / 2.0 / 3.2 / 11.1 vs U 1.0-3.2 — the same period-2 cycle.
+  p60_co_vs_sb_b40 step 5 (v3, last): 4-bet-pot D 10.0 (CO) / 4.9 (SB), 3-bet-pot D 1.9 / 1.9 vs U 1.1 / 0.8 -> v3 not converged;
+  continues under v4 from k = 6.
