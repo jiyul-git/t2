@@ -1,0 +1,18 @@
+{
+  "status": "REFERENCE_MATCHED_RUN_STARTING",
+  "base_commit": "8c6e4d3366d222b45a7ca777961334c39bf54f34",
+  "run_commit": "f7cc56ae98dc11bc211dc193536eabd4d6c28a5f",
+  "python": "3.11.17 (main, Oct  3 2026, 01:05:36) [Clang 22.1.3 ]",
+  "numpy": "2.4.6",
+  "term0_sha256": "addd06e97e9bcfea36027fae7c21d71071cb5d77964ff15ca7aab9e3bf7a3e01",
+  "flop_digest": "a035dc0cc8ae5a15cdedbf31af63b06030021597b43485f087e9b0f0e9326466",
+  "both_reference_hashes_match": true,
+  "plan_a_ids": [
+    "p60_btn_vs_bb_b40"
+  ],
+  "workers": 3,
+  "memory_limit_bytes": 8589934592,
+  "command": "PATH=\"$PWD/.venv311/bin:$PATH\" PLAN_A_IDS=\"p60_btn_vs_bb_b40\" SPOT_PANEL_WORKERS=3 sh tools/gto_spot/run_plan_a.sh 60",
+  "results_complete": false,
+  "previous_failure": "Python 3.12 control terminal mismatch resolved by Python 3.11.17 / NumPy 2.4.6; previous failed reproduction report retained as history."
+}
