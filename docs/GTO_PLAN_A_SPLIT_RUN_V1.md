@@ -61,3 +61,8 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
   p60v2b_utg_vs_btn, p60v2b_btn_vs_bb_3b35, _3b40, p60v2b_hj_vs_bb_3b35, _3b40), taken in this order by whichever session frees up
   first; claim a spot by pushing a one-line note to its result branch before starting it. Inputs: the v2b dump is in the transfer
   set (p60_v2b_dump.jsonl.gz; SHA256SUMS updated; plan_a_install_inputs.sh installs it). Python 3.11 as above.
+- v2b reproduction reference (Python 3.11, step 0, terminal 0, board AcKc6c; v2b dump installed and checked first):
+  | spot | terminal 0 line | term0.json sha256 | flop AcKc6c digest |
+  |---|---|---|---|
+  | p60v2b_co_vs_sb_3b40 | CO raise 2, SB 3-bet 8, CO call | d221ccbed8f7a395434b7f6bf0a1b0ba93b6b82bc60dfca0e6475d987ea81236 | e73299315861596844dea56152413dd3252bd2230f137b71de234948ebffabc6 |
+  Command: `python3 tools/gto_spot/plan_a_repro_step0.py data/gto_spot/plan_a/specs/p60v2b_co_vs_sb_3b40.json 0 AcKc6c /tmp/repro_v2b`
