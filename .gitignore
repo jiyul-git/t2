@@ -23,3 +23,4 @@ bak_*hand_archive2*.jsonl
 bak_testgame*.jsonl
 *.pyc
 *.gtop
+.plan_a_runtime/

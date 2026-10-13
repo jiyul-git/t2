@@ -49,6 +49,13 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
 - a SHA256SUMS of all returned files
 
 ## Status
+- 2026-10-13 GPT recovery: `/home/user` contents were unavailable in a later scheduled run, while workspace repository files
+  survived. Dedicated worker `sh tools/gto_spot/gpt_plan_a_worker.sh` stores interpreter, inputs, reference reproduction,
+  checkpoints and logs under `<repo>/.plan_a_runtime/`; `/home/user/t2` and `/home/user/gto_ckpt` are compatibility symlinks.
+  A file lock prevents duplicate workers. Python 3.11.17 / NumPy 2.4.6 and both reference hashes remain mandatory.
+  `sh tools/gto_spot/gpt_plan_a_checkpoint.sh` creates a checksummed recovery archive, excluding reconstructible inputs and
+  partial files. Scheduled checks save/replace that archive in persistent storage and restore it if runtime files disappear.
+  The earlier four completed BTN flops were not recovered; this is not a claim that they were reused after the path loss.
 - 2026-10-13: the T2-side session reproduced all three references bit for bit (term0 sha256 and flop digest; utg_vs_btn checked on
   the artifact its chain produced) on 79cef4a6 (computation identical to e6ba28b3). Its chain runs utg_vs_btn then hj_vs_bb; results
   return on branch ccr-9a10123b-0lyye0 (same paths + SHA256SUMS).
