@@ -1794,7 +1794,10 @@ def perceived_call_price_share(tocall, tocall_seen, pot_before_bet, bf,
     """
     _p0 = pot_before_bet
     _tocall_seen = tocall_seen
-    need_true = (_tocall_seen*bf)/max(1.0, _p0 + 2.0*_tocall_seen)
+    # icm.required_equity 와 같은 식(bf·C / (P + bf·C), P = 상대 벳 포함 팟).
+    # 분모를 P0 + 2C + (bf-1)·C 로 써서 bf=1 이면 예전 칩 팟오즈와 비트 그대로 같다.
+    need_true = (_tocall_seen*bf)/max(
+        1.0, _p0 + 2.0*_tocall_seen + (bf - 1.0)*_tocall_seen)
 
     # F8-D4: layer-aware call price는 legacy response eq/need를 덮지 않는다.
     # objective_breakeven은 실제 pot-layer geometry의 객관적 break-even equity다.
@@ -1806,7 +1809,8 @@ def perceived_call_price_share(tocall, tocall_seen, pot_before_bet, bf,
         _seen_scalar = _tocall_seen / max(1.0, _p0 + 2.0*_tocall_seen)
         _size_ratio = (_seen_scalar / _base_scalar) if _base_scalar > 1e-12 else 1.0
         call_need_true = max(
-            0.0, float(objective_breakeven) * float(bf) * _size_ratio)
+            0.0, _ICM.required_equity_from_breakeven(
+                float(objective_breakeven) * _size_ratio, bf))
     return need_true, call_need_true
 
 
