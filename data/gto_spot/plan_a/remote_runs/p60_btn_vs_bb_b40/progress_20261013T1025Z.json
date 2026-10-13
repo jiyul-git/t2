@@ -1,0 +1,15 @@
+{
+  "spot": "p60_btn_vs_bb_b40",
+  "checked_at_utc": "2026-10-13T10:25:00Z",
+  "stage": "step0 first terminal",
+  "completed_flops": 6,
+  "total_flops": 24,
+  "overall_complete": false,
+  "worker": "restarted in tty session; six flops solver-verified reused",
+  "checkpoint_library_version": 3,
+  "checkpoint_sha256sums_verified": true,
+  "reference_term_sha256": "addd06e97e9bcfea36027fae7c21d71071cb5d77964ff15ca7aab9e3bf7a3e01",
+  "reference_flop_digest": "a035dc0cc8ae5a15cdedbf31af63b06030021597b43485f087e9b0f0e9326466",
+  "termination_cause": "unconfirmed; no exit or signal recorded; oom_kill=0",
+  "final_gate": "pending"
+}
