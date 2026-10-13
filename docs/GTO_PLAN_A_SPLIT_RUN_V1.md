@@ -1,7 +1,11 @@
 # Plan A split run — second session (T2 side) runs p60_utg_vs_btn_b40 and p60_hj_vs_bb_b40
 
-Split (user, 2026-10-13): this session runs p60_co_vs_sb_b40, p60_utg1_vs_sb_b40, p60_btn_vs_bb_b40; the T2-side session (same
-machine class: 4 cores, 15 GB, cargo) runs p60_utg_vs_btn_b40 and p60_hj_vs_bb_b40 on the same commit, build, scripts and config.
+Split (user, 2026-10-13, revised): the original session runs p60_co_vs_sb_b40 and p60_utg1_vs_sb_b40 only
+(`PLAN_A_IDS="p60_co_vs_sb_b40 p60_utg1_vs_sb_b40"`); the T2-side session runs p60_utg_vs_btn_b40 and p60_hj_vs_bb_b40.
+A separate GPT session owns p60_btn_vs_bb_b40 only (`PLAN_A_IDS="p60_btn_vs_bb_b40"`) and returns results on
+`chatgpt/plan-a-btn-bb-20261013`, based on 8c6e4d3366d222b45a7ca777961334c39bf54f34.
+The original session must remove BTN-vs-BB from its chain; if already started, stop that spot and report its progress.
+All returned results require SHA256SUMS and gate checks before integration. This ownership note does not itself stop another session.
 
 ## Setup (branch chatgpt/terminal-census-v2-20260930, the commit that adds this file)
 1. `python3 -m pip install numpy`
