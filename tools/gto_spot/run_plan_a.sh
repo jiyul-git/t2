@@ -5,9 +5,9 @@ cd /home/user/t2
 S=${1:-60}
 L=/home/user/gto_ckpt/plan_a/spots.log
 python3 tools/gto_spot/plan_a_specs.py $S > /dev/null || exit 1
-# order (amendment A2): B40 all 5 pairs, B35 the 4 blind pairs, then utg_vs_btn on B35 (parent-arm sensitivity replicate only)
-for id in p${S}_co_vs_sb_b40 p${S}_utg1_vs_sb_b40 p${S}_utg_vs_btn_b40 p${S}_btn_vs_bb_b40 p${S}_hj_vs_bb_b40 \
-          p${S}_co_vs_sb_b35 p${S}_utg1_vs_sb_b35 p${S}_btn_vs_bb_b35 p${S}_hj_vs_bb_b35 p${S}_utg_vs_btn_b35; do
+# PLAN_A_IDS overrides the spot list (2026-10-13: utg_vs_btn and hj_vs_bb run in the T2-side session; B35 dropped)
+IDS=${PLAN_A_IDS:-"p${S}_co_vs_sb_b40 p${S}_utg1_vs_sb_b40 p${S}_utg_vs_btn_b40 p${S}_btn_vs_bb_b40 p${S}_hj_vs_bb_b40"}
+for id in $IDS; do
     arm=${id##*_}
     [ -s /home/user/gto_ckpt/plan_a/p${S}_${arm}/dump.jsonl ] || continue
     SP=data/gto_spot/plan_a/specs/$id.json
