@@ -1,0 +1,38 @@
+name: P17 Sequential Bot Motion Clock
+on:
+  push:
+    branches:
+      - chatgpt/p17-bot-motion-clock-20261011
+  workflow_dispatch:
+
+jobs:
+  syntax-and-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m py_compile session.py live2.py ui/server/ui_server.py timing.py
+      - run: node --check ui/web/app.js
+      - run: node ui/tools/verify_clock_ui_js.js
+      - run: node ui/tools/verify_p17_board_gate_js.js
+      - run: node ui/tools/verify_p17_preflop_allin_runout_js.js
+      - run: python ui/tools/verify_stream_write_timeout.py
+  real-ack-and-think-time:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: python ui/tools/verify_p17_sequential_bot_stream.py
+  river-showdown-terminal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python ui/tools/verify_p17_terminal_river.py
+  existing-timing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: python ui/tools/verify_timing_clock.py
+      - run: python tools/verify_timing_calloff_effort.py

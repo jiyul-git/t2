@@ -2528,7 +2528,9 @@ function resultCardSeatName(v, s) {
   return esc(label) + (nick ? ' · ' + esc(nick) : '');
 }
 
-const RUNOUT_HOLD = 2000;
+const RUNOUT_HOLD = 2000; // Legacy pacing for non-preflop runouts.
+const PREFLOP_ALLIN_CARD_GAP = 1500; // Flop -> turn -> river.
+const PREFLOP_ALLIN_WINNER_DELAY = 800; // River -> winner, after deal animation.
 const RESULT_HOLD = 2000;
 
 const COLLECT_MS = 430;
@@ -2637,6 +2639,14 @@ function runoutThen(res, done) {
       ((S.view0 && S.view0.board) || []).length
   );
 
+  // Only a showdown decided by a preflop all-in gets this exact TV-style
+  // 0/3/4/5 pacing. Mid-street all-ins retain their existing runout schedule.
+  const startStreet = res.runout_start_street || actualLastStreet(res);
+  const preflopAllin = Boolean(res.allin_show && startStreet === 'preflop'
+                               && shown === 0 && target === 5);
+  const cardGap = preflopAllin ? PREFLOP_ALLIN_CARD_GAP : RUNOUT_HOLD;
+  const winnerDelay = preflopAllin ? PREFLOP_ALLIN_WINNER_DELAY : RUNOUT_HOLD;
+
   const seq = [];
 
   if (shown < 3 && target >= 3) seq.push(3);
@@ -2670,16 +2680,16 @@ function runoutThen(res, done) {
       '<div class="wait">쇼다운</div>';
 
     if (i >= seq.length) {
-      epochTimer(done, RUNOUT_HOLD, epoch);
+      epochTimer(done, winnerDelay, epoch);
     } else {
-      epochTimer(showNext, RUNOUT_HOLD, epoch);
+      epochTimer(showNext, cardGap, epoch);
     }
   };
 
   if (shown === 0) {
     showNext();
   } else {
-    epochTimer(showNext, RUNOUT_HOLD, epoch);
+    epochTimer(showNext, cardGap, epoch);
   }
 }
 
@@ -2703,6 +2713,14 @@ function finishResult(v, resumeAt = null) {
 
     finishResult2(v);
   };
+
+  // An opt-in live stream already opened the public showdown and revealed
+  // its confirmed winners before other-table settlement. Replaying the same
+  // runout/showdown here would needlessly delay or duplicate the result.
+  if (v.hash && S.earlyShownHash === String(v.hash)) {
+    showWinner();
+    return;
+  }
 
   // A completed snapshot shows the existing result immediately. Pending
   // scheduled actions still finish with the normal showdown/runout sequence.
@@ -3886,6 +3904,21 @@ function stepEventReceiver(onStart, onEvent, onFinal, onError) {
   };
 }
 
+function afterBoardMotion(done) {
+  // The engine may not begin the next-street bot before board/chip animations end.
+  const elements = Array.from(document.querySelectorAll(
+    '#board .card.deal, #chips .toPot'));
+  const ongoing = elements.flatMap((el) =>
+    typeof el.getAnimations === 'function' ? el.getAnimations() : []);
+  if (ongoing.length) {
+    Promise.all(ongoing.map((anim) => anim.finished.catch(() => {})))
+      .then(done);
+  } else {
+    // Reduced motion / no animations: still wait for a completed paint.
+    requestAnimationFrame(() => requestAnimationFrame(done));
+  }
+}
+
 async function callStepStream(body, msg) {
   // Scheduled action times include thinking; allow a brief visible result frame.
   const BOT_ACTION_FEEDBACK_MS = 550;
@@ -3935,6 +3968,18 @@ async function callStepStream(body, msg) {
     });
   };
 
+  const sendMotionAck = (event) => {
+    // The server's gameplay lock is held until this exact visible motion ends.
+    // The ACK endpoint bypasses that lock; errors use the server timeout path.
+    const sid = event && (event._ackSid || streamId);
+    if (!sid || !event._ackSeq) return;
+    fetch('/api/step-ack', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({stream_id: sid, seq: event._ackSeq})
+    }).catch(() => {});
+  };
+
   const maybeFinish = () => {
     if (settled || playing || queue.length || !finalPayload) return;
     settled = true;
@@ -3950,6 +3995,22 @@ async function callStepStream(body, msg) {
     }
 
     const head = queue[0];
+    if (head && head.kind === 'bot_begin') {
+      // This event is sent only AFTER the preceding action/board ACK.
+      // No "computing" message is permitted before this real start signal.
+      queue.shift();
+      if (head.clock_started_ms && head.seat !== undefined) {
+        seatClock(head.seat, head.clock_started_ms,
+                  head.base_deadline_ms, head.bank_deadline_ms);
+      }
+      const row = $('#mainrow');
+      if (row) {
+        row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>';
+        computingHint = true;
+      }
+      playNext();
+      return;
+    }
 
     // 시간 규칙: 예정 시각까지 기다린다(봇은 그동안 좌석 시계 링이 줄어든다).
     const dueMs = head && (head.kind === 'street' ? head.at_ms : head.act_at_ms);
@@ -3966,11 +4027,13 @@ async function callStepStream(body, msg) {
     if (head && head.kind !== 'street' && head.seat !== undefined) clearSeatClock(head.seat);
 
     /*
-     * HERO 액션 직후 같은 스트리트의 첫 봇 액션에는 짧은 호흡을 둔다.
-     * 단, HERO가 스트리트를 닫았다면 street 이벤트는 막지 않는다 —
-     * 보드는 즉시 공개하고, 새 스트리트 쪽 pause가 첫 봇 액션을 늦춘다.
+     * Finish the HERO's visible action before either the board or any bot
+     * motion starts. The board will then ACK its own actual animation end,
+     * before the next street can calculate.
      */
-    if (head && !dueMs && head.kind !== 'street' && Date.now() < heroPauseUntil) {
+    if (head && (head.kind === 'street' ||
+                 head.kind === 'hand_settle_begin' || !dueMs) &&
+        Date.now() < heroPauseUntil) {
       playing = true;
       setTimeout(() => {
         playing = false;
@@ -3982,6 +4045,82 @@ async function callStepStream(body, msg) {
     playing = true;
     const e = queue.shift();
     const oldStage = ss ? ss.stage : null;
+
+    if (e.kind === 'hand_settle_begin') {
+      // No future actor remains in this betting round. Do not create a bot
+      // timer or misrepresent showdown/pot settlement as a bot calculation.
+      Object.keys(SEAT_CLOCKS).forEach(clearSeatClock);
+      const row = $('#mainrow');
+      if (row) {
+        row.innerHTML = '<div class="wait">' +
+          (e.mode === 'showdown' ? '쇼다운 · 결과 확인 중…' : '핸드 종료 · 팟 정산 중…') +
+          '</div>';
+      }
+      computingHint = false;
+      // Give the terminal frame a paint before permitting full settlement.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        sendMotionAck(e);
+        playing = false;
+        playNext();
+      }));
+      return;
+    }
+
+    if (e.kind === 'hand_result_ready') {
+      // Public HERO-hand result is known even if other tables are still being
+      // settled. Only shown/muck-safe cards are supplied by the engine.
+      // This is a RESULT, not another bot's calculation/think interval.
+      const preview = Object.assign({}, e, {
+        showdown: e.mode === 'showdown',
+        log: shownLog.slice(),
+        shown: e.shown || {},
+        allin_show: Boolean(e.allin_show),
+        runout_start_street: e.runout_start_street || null,
+        board: (e.board || []).slice()
+      });
+      const showConfirmed = () => {
+        S.earlyShownHash = e.hash ? String(e.hash) : null;
+        S.winners = {};
+        // Display the confirmed winning seat(s) right at the end of the
+        // river hold; do not invent any side-pot amounts or tied-pot splits.
+        S.awards = {};
+        (e.winners || []).forEach((seat) => {
+          S.winners[String(seat)] = 1;
+          S.awards[String(seat)] = [{label: '승리', split: false}];
+        });
+        // After the staged board is fully exposed, keep all five cards on
+        // screen. The non-final all-in view intentionally hides future cards.
+        const fv = revealView(preview, true);
+        if (fv) {
+          renderSeats(fv);
+          renderChips(fv, false);
+          renderBoard(fv);
+          renderPot(fv);
+          renderHero(fv);
+        }
+        const row = $('#mainrow');
+        if (row) {
+          const names = (e.winners || []).map((seat) =>
+            String(seat) === String(e.hero_seat) ? '나' : seat + '번');
+          row.innerHTML = '<div class="wait">' +
+            (names.length ? '승리: ' + esc(names.join(' · '))
+                          : '핸드 결과 확인') +
+            ' · 최종 정산 중…</div>';
+        }
+        sendMotionAck(e);
+        playing = false;
+        playNext();
+      };
+      const runout = () => runoutThen(preview, showConfirmed);
+      if (preview.showdown && Object.keys(preview.shown).length) {
+        revealShowdown(preview, runout);
+      } else if (preview.showdown) {
+        runout();
+      } else {
+        showConfirmed();
+      }
+      return;
+    }
 
     if (ss && e.kind === 'street') {
       // 보드 전환은 다음 봇 판단과 독립이다. 직전 HERO 액션이 스트리트를
@@ -4009,12 +4148,14 @@ async function callStepStream(body, msg) {
         '<span class="cur">' + (STREET[ss.stage] || ss.stage) + '</span> —';
       publishPrev();
 
-      // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
-      setTimeout(() => {
+      // Flop cards have staggered delays. An arbitrary 360ms ACK would
+      // release the next bot while the board is visibly still opening.
+      afterBoardMotion(() => {
+        sendMotionAck(e);
         playing = false;
         playNext();
-      }, e.at_ms ? 360 : 360 + STREET_OPEN_PAUSE);
+      });
       return;
     }
 
@@ -4052,6 +4193,8 @@ async function callStepStream(body, msg) {
         publishPrev();
 
         setTimeout(() => {
+          // ACK only after the fold/chip/bet visual feedback has completed.
+          sendMotionAck(e);
           playing = false;
           playNext();
         }, e.act_at_ms ? BOT_ACTION_FEEDBACK_MS
@@ -4079,6 +4222,7 @@ async function callStepStream(body, msg) {
       }
       return;
     }
+    sendMotionAck(e);
     playing = false;
     playNext();
   };
@@ -4099,11 +4243,8 @@ async function callStepStream(body, msg) {
   const requestBody = Object.assign({}, body, {request_id: requestId});
   let progressTimer = null, progressCursor = 0, streamError = null, progressStopped = false;
   let computingHint = false;
-  const computingTimer = setTimeout(() => {
-    if (settled || playing || queue.length || finalPayload || streamError) return;
-    const row = $('#mainrow');
-    if (row) { row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>'; computingHint = true; }
-  }, 1500);
+  // Never infer "bot calculation" from an elapsed HTTP request. The
+  // previous street may still be opening or the HERO motion still playing.
   const receive = stepEventReceiver(
     (obj) => {
       streamId = obj.stream_id || null;
@@ -4120,7 +4261,8 @@ async function callStepStream(body, msg) {
     },
     (obj) => {
       noteSchedule([obj.event || {}]);
-      pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
+      pushEvent(Object.assign({}, obj.event || {},
+                              {_ackSeq: obj.seq, _ackSid: obj.stream_id}));
     },
     (payload) => { finalPayload = payload; maybeFinish(); },
     (error) => { streamError = error; resolveDrain(null); }
@@ -4225,7 +4367,6 @@ async function callStepStream(body, msg) {
   } finally {
     progressStopped = true;
     clearTimeout(progressTimer);
-    clearTimeout(computingTimer);
     controller.abort();
     setBusy(false);
     if (S.queuedNew) {

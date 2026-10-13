@@ -1363,7 +1363,8 @@ def resume_others(st, others=None):
 
 # ---------- 진행 ----------
 def step(action=None, amount=0, defer_others=False, others=None,
-         on_bot_action=None, on_round_start=None, vclock_others=False):
+         on_bot_action=None, on_round_start=None, vclock_others=False,
+         on_bot_start=None):
     st = load()
     TM.ensure_session(st)
     # 밀린 진행이 있으면 **다음 핸드를 딜하기 전에** 반드시 끝낸다.
@@ -1450,7 +1451,8 @@ def step(action=None, amount=0, defer_others=False, others=None,
     # 콜백을 처음부터 단다(시간 규칙의 예정표가 첫 액션부터 붙도록). 이미 진행 중인 핸드를
     # 재생할 때는 지금처럼 끈다(과거 액션을 다시 보내지 않게).
     run = SE.HandRun(h, decisions=st.get('decisions'), timing_ctx=f._timing_ctx(),
-                     on_bot_action=(on_bot_action if _new_hand else None))
+                     on_bot_action=(on_bot_action if _new_hand else None),
+                     on_bot_start=(on_bot_start if _new_hand else None))
     raw = run.start()
     for (a, amt) in st['actions']:
         if isinstance(raw, dict) and (raw.get('done') or raw.get('error')): break
@@ -1458,6 +1460,7 @@ def step(action=None, amount=0, defer_others=False, others=None,
 
     # 여기부터가 이번 요청에서 처음 계산되는 구간이다.
     run.on_bot_action = on_bot_action
+    run.on_bot_start = on_bot_start
 
     # 재생 중 기록된 액션이 불법이 됐으면 여기서 멈추고 정상 오류 응답으로 돌려준다.
     # 예전에는 오류 프레임에 **다음 기록 액션**을 그대로 먹였다. session 의
@@ -1478,6 +1481,33 @@ def step(action=None, amount=0, defer_others=False, others=None,
         raw = raw2
 
     if isinstance(raw, dict) and raw.get('done'):
+        if on_bot_action is not None and on_bot_start is not None:
+            # The HERO-hand result is now known, before any other-table
+            # settlement/archive work. Stream only publicly shown hole cards;
+            # never disclose hidden mucked hands or speculate on final rank.
+            _res = run.result or {}
+            try:
+                on_bot_action({
+                    'kind': 'hand_result_ready',
+                    'mode': 'showdown' if _res.get('showdown') else 'uncontested',
+                    'hash': _res.get('hash'),
+                    'hero_seat': h.hero,
+                    'board': list(_res.get('board') or []),
+                    'pot': int(_res.get('pot') or 0),
+                    'winners': list(_res.get('winners') or []),
+                    # Preserve the original runout boundary: the UI may never
+                    # pre-reveal turn/river before the staged animation.
+                    'allin_show': bool(_res.get('allin_show')),
+                    'runout_start_street': (
+                        (_res.get('full_log') or [])[-1][0]
+                        if _res.get('full_log') else 'preflop'),
+                    'shown': {str(seat): list(cards)
+                              for seat, cards in (_res.get('shown_hole') or {}).items()},
+                    'show_order': list(_res.get('show_order') or []),
+                })
+            except Exception:
+                # A disconnected client must never block settlement.
+                pass
         return finish(st, f, tb, alive, h, run, defer_others=defer_others,
                       parallel_others=others, round_base=_round_base,
                       vclock_others=vclock_others)

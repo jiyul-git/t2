@@ -516,6 +516,8 @@ HERO_ACTION_SECONDS = min(120.0, max(1.0, float(os.environ.get('T2_HERO_ACTION_S
 # T7: 기본 ON(timing.mode()). T2_TIMING_V1=off 일 때만 예전 고정 경로(HERO 15초, 봇 1.5초 템포,
 # 액션별 고정비용 가상시간)로 돌아간다 — 호환/fallback 경로로만 남긴다.
 TIMING_ON = TMG.mode() != 'off'
+# Opt-in until Android/real-browser verification: never change batch-worker timing.
+SEQUENTIAL_BOT_MOTION = os.environ.get('T2_UI_SEQUENTIAL_BOTS', '0') == '1'
 STREET_GAP_SECONDS = TMG.STREET_SECONDS   # 사람 테이블 보드 공개 기계 시간(봇 테이블과 같은 값)
 
 
@@ -1333,7 +1335,7 @@ def _kick_pending_worker():
         _clear_worker()
 
 
-def _step(action=None, amount=0, on_bot_action=None):
+def _step(action=None, amount=0, on_bot_action=None, on_bot_start=None):
     """HERO 진행과 비-HERO round worker를 병렬로 조정한다."""
     st0 = None
     try:
@@ -1398,6 +1400,8 @@ def _step(action=None, amount=0, on_bot_action=None):
 
     if on_bot_action is not None:
         kw['on_bot_action'] = on_bot_action
+    if on_bot_start is not None:
+        kw['on_bot_start'] = on_bot_start
 
     r = L.step(action, amount, **kw) if action is not None else L.step(**kw)
 
@@ -2330,9 +2334,51 @@ class H(BaseHTTPRequestHandler):
                             'server_now_ms': int(time.time() * 1000),
                         })
 
+                        sequential = bool(SEQUENTIAL_BOT_MOTION and TIMING_ON and a is not None)
+                        pending_clock = [None]
+
                         def _emit_bot(event):
-                            if _sched is not None:
+                            kind = event.get('kind')
+                            if sequential and kind == 'bot_begin':
+                                # Only after the previous action's motion ACK does
+                                # the engine reach here and start actual computation.
+                                start = time.time()
+                                pending_clock[0] = (start, time.monotonic(), event['seat'])
+                                base_sec = float(event.get('base') or 0.0)
+                                bank_sec = float(event.get('bank_before') or 0.0)
+                                event = dict(event,
+                                    clock_started_ms=int(start * 1000),
+                                    base_deadline_ms=int((start + base_sec) * 1000),
+                                    bank_deadline_ms=int((start + base_sec + bank_sec) * 1000))
+                            elif sequential and kind == 'bot_action' and pending_clock[0]:
+                                start, started_mono, seat = pending_clock[0]
+                                if event.get('seat') != seat:
+                                    raise ValueError('봇 액션 좌석/시계 불일치')
+                                # Both clocks started together; never ADD calculation
+                                # time to modeled time. The settled model elapsed already
+                                # observes the existing base + timebank limit.
+                                model_sec = float((event.get('timing') or {}).get('elapsed') or 0.0)
+                                calc_sec = max(0.0, time.monotonic() - started_mono)
+                                due = start + max(1.5, model_sec, calc_sec)
+                                wait_sec = max(0.0, due - time.time())
+                                if wait_sec:
+                                    time.sleep(wait_sec)
+                                end = time.time()
+                                event = dict(event,
+                                    clock_started_ms=int(start * 1000),
+                                    act_at_ms=int(end * 1000),
+                                    base_deadline_ms=int((start + float(event.get('timing', {}).get('base') or 0)) * 1000),
+                                    bank_deadline_ms=int((start + float(event.get('timing', {}).get('base') or 0)
+                                                          + float(event.get('timing', {}).get('bank_before') or 0)) * 1000),
+                                    actual_compute_seconds=round(calc_sec, 6),
+                                    model_elapsed_seconds=model_sec)
+                            elif sequential and kind in ('hand_settle_begin', 'hand_result_ready'):
+                                # Terminal hand events are NOT bot decisions and
+                                # must never schedule a thought clock.
+                                pass
+                            elif _sched is not None:
                                 _sched.stamp(event)
+
                             seq[0] += 1
                             cur = seq[0]
                             message = {
@@ -2344,13 +2390,25 @@ class H(BaseHTTPRequestHandler):
                             _step_progress_emit(request_id, message)
                             if alive[0]:
                                 alive[0] = self._stream_line(message)
-                            # UI는 이벤트를 기존 템포로 재생하지만,
-                            # 다음 봇 계산은 화면 애니메이션 완료를 기다리지 않는다.
+                            if sequential and kind != 'bot_begin':
+                                # The next decision, including one across a street
+                                # transition, must not start until motion really ends.
+                                if alive[0]:
+                                    _stream_gate_wait(stream_id, cur)
+                                if _sched is not None:
+                                    _sched.cursor = max(_sched.cursor, time.time())
+                                    _sched.events.append({k: event.get(k) for k in (
+                                        'kind', 'seat', 'street', 'action', 'amount',
+                                        'at_ms', 'clock_started_ms', 'act_at_ms',
+                                        'base_deadline_ms', 'bank_deadline_ms')
+                                        if event.get(k) is not None})
+                                pending_clock[0] = None if kind == 'bot_action' else pending_clock[0]
 
                         try:
-                            # 새 핸드(a=None)는 봇 이벤트를 스트림으로 보내지 않는다(화면이 로그로 재생).
-                            # 그래도 예정표는 같은 규칙으로 만든다.
-                            r = (_step(a, amt, on_bot_action=_emit_bot)
+                            # New hands still use the existing non-stream snapshot path.
+                            # Active hero-table streams opt into the ACK-gated contract.
+                            r = (_step(a, amt, on_bot_action=_emit_bot,
+                                       on_bot_start=_emit_bot if sequential else None)
                                  if a is not None else _step_sched())
                         except Exception as e:
                             traceback.print_exc()
