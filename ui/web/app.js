@@ -97,6 +97,8 @@ const paceMs = (e) => (e && e.action === 'fold'
  * 뱅크에 들어갔을 때만 보인다. 봇의 행동 예정 시각은 화면에 쓰지 않는다.
  */
 const serverNow = () => Date.now() + (S.clockOffset || 0);
+// 시계 선이 이름표 테두리를 덮는 폭(px). 0 이면 맞닿고, 0.5 는 안티앨리어싱 틈을 막는다.
+const CLOCK_OVERLAP_PX = 0.5;
 const SEAT_CLOCKS = {};
 
 /* 박스 테두리 시계(WPL 방식): 포지션·스택 박스 둘레의 선이 남은 액션 시계 비율만큼 줄어든다.
@@ -114,20 +116,39 @@ function boxClockPaint(host, startMs, baseMs, bankMs, now) {
                   '<span class="acnum"></span>';
     host.appendChild(c);
   }
-  const w = host.offsetWidth + 6, h = host.offsetHeight + 6;
-  const svg = c.querySelector('svg'), rect = c.querySelector('rect');
+  const inBank = now >= baseMs && bankMs > baseMs;
+  c.classList.toggle('bank', inBank);
+  // 선은 이름표 테두리 바깥에 네 변 같은 간격으로 붙는다. 예전에는 위치(left:-3px)는
+  // 테두리 안쪽(padding box) 기준, 크기(offsetWidth+6)는 바깥 기준이라 왼쪽·위는
+  // 이름표를 덮고 오른쪽·아래는 1px 남짓 떠 있었다. offsetWidth 의 정수 반올림도 뺀다.
+  const cs = getComputedStyle(host);
+  const px = v => parseFloat(v) || 0;
+  const bl = px(cs.borderLeftWidth), bt = px(cs.borderTopWidth);
+  // 이름표 테두리 상자의 실제(소수점) 크기. offsetWidth 는 정수로 반올림되고, 인라인
+  // 요소는 computed width 가 auto 다. 테이블 축소(fitSeatsInView) 배율은 시계 상자를
+  // 100px 로 놓고 화면 크기를 재서 구한다.
+  Object.assign(c.style, { left: '0px', top: '0px', width: '100px', height: '100px', right: 'auto', bottom: 'auto' });
+  const scale = (c.getBoundingClientRect().width / 100) || 1;
+  const hr = host.getBoundingClientRect();
+  const bw = hr.width / scale, bh = hr.height / scale;
+  const rect = c.querySelector('rect'), svg = c.querySelector('svg');
+  const sw = px(getComputedStyle(rect).strokeWidth) || 2.6;
+  const out = sw - CLOCK_OVERLAP_PX;          // 선 안쪽 가장자리가 이름표 바깥 가장자리에 붙는다
+  const w = bw + 2 * out, h = bh + 2 * out;
+  Object.assign(c.style, { left: `${-(bl + out)}px`, top: `${-(bt + out)}px`,
+                           width: `${w}px`, height: `${h}px` });
   svg.setAttribute('width', w); svg.setAttribute('height', h);
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  rect.setAttribute('x', 1.5); rect.setAttribute('y', 1.5);
-  rect.setAttribute('width', Math.max(1, w - 3)); rect.setAttribute('height', Math.max(1, h - 3));
-  rect.setAttribute('rx', Math.min(8, (h - 3) / 2));
-  const inBank = now >= baseMs && bankMs > baseMs;
+  rect.setAttribute('x', sw / 2); rect.setAttribute('y', sw / 2);
+  rect.setAttribute('width', Math.max(1, w - sw)); rect.setAttribute('height', Math.max(1, h - sw));
+  // 모서리는 이름표 모서리와 같은 중심의 곡선(알약 모양이면 알약 그대로).
+  const rTag = Math.min(px(cs.borderTopLeftRadius), bh / 2);
+  rect.setAttribute('rx', Math.max(0, Math.min((h - sw) / 2, rTag + out - sw / 2)));
   const frac = inBank
     ? Math.max(0, (bankMs - now) / Math.max(1, bankMs - baseMs))
     : Math.max(0, (baseMs - now) / Math.max(1, baseMs - startMs));
   rect.setAttribute('stroke-dasharray', `${(frac * 100).toFixed(2)} 100`);
   const left = Math.max(0, Math.ceil(((bankMs > baseMs ? bankMs : baseMs) - now) / 1000));
-  c.classList.toggle('bank', inBank);
   c.classList.toggle('urgent', left <= 10);
   c.querySelector('.acnum').textContent =
     left <= 10 ? (inBank ? 'TIME BANK ' : '') + left : (inBank ? 'TIME BANK' : '');
