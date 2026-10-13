@@ -124,3 +124,6 @@ with the classes over 0.10. It checks the subgame machinery and the root ranges 
 Next parent (registered, runs when CPU allows): p60 v2 = SB limp (limp_seats [SB]), SB open 3.0 bb, BB raise vs limp 3.5 bb, blind
 3-bets {3.5x, 4.0x} as candidates in one tree (1.34M nodes, 1.81 GB; replaces the two arms); size-candidate extensions measured:
 IP 3-bet {2.5x, 3.0x} 1.80M / 2.43 GB, opens {2.0, 2.5} 1.83M / 2.47 GB (data in data/gto_validation/tree_size/).
+- 2026-10-13 (user): the B35 parent is stopped at ~175 it (last logged chunk 150 it, skip-mode gap 0.091; no dump, no B35 spots);
+  p60 v2 (data/gto_spot/plan_a/cfg_p60_v2.json, 1,339,314 nodes) starts on its CPU and replaces both arms. The 5 B40 spots continue:
+  their lines contain no SB open or limp, and the B40 parent gap (0.0434) meets amendment 5.
