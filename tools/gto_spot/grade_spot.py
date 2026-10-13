@@ -207,6 +207,8 @@ def label(rec, cfg):
         blockers.append(f"superseded: {gi['superseded']}")
     if not gates['spot_solver']:
         blockers.append('spot_exploitability > 0.010 bb')
+    if gi.get('stop_reason'):
+        blockers.append(f"stop: {gi['stop_reason']}")
     if not spot_conv:
         blockers.append('G3: spot outer loop not converged' + (' (P144 D144 > U24)' if gi['p144_consistent_with_24'] is False else ''))
     if g4_state != 'pass':
@@ -402,7 +404,9 @@ def main():
                                 'precision_final': precision,
                                 'p144_consistent_with_24': json.load(open(kd + 'report.json'))['consistent_with_24'] if precision else None,
                                 'static_share': s_share,
-                                'status_cap': spec.get('status_cap'), 'status_cap_reason': spec.get('status_cap_reason')},
+                                'status_cap': spec.get('status_cap'), 'status_cap_reason': spec.get('status_cap_reason'),
+                                'stop_reason': st.get('stop_reason') or (json.load(open(kd + 'report.json')).get('flop_failures') and
+                                                                         'P144 flop solver did not converge' if precision else None)},
                'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
     rec_out['panel'] = 'panel_v3_144 (precision pass)' if precision else 'panel_v1'
     if spec.get('menu'):

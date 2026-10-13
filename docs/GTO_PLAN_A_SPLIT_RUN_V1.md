@@ -57,3 +57,17 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
   | T2 session | p60_utg_vs_btn_b40, p60_hj_vs_bb_b40 | ccr-9a10123b-0lyye0 |
   | GPT session | p60_btn_vs_bb_b40 | chatgpt/plan-a-btn-bb-20261013 |
   Every returned set is merged only after its SHA256SUMS and the gates are checked here.
+- 2026-10-13 (user): queue after the B40 spots — the 9 v2b subgames (p60v2b_co_vs_sb_3b35, _3b40, p60v2b_utg1_vs_sb_3b35, _3b40,
+  p60v2b_utg_vs_btn, p60v2b_btn_vs_bb_3b35, _3b40, p60v2b_hj_vs_bb_3b35, _3b40), taken in this order by whichever session frees up
+  first; claim a spot by pushing a one-line note to its result branch before starting it. Inputs: the v2b dump is in the transfer
+  set (p60_v2b_dump.jsonl.gz; SHA256SUMS updated; plan_a_install_inputs.sh installs it). Python 3.11 as above.
+- v2b reproduction reference (Python 3.11, step 0, terminal 0, board AcKc6c; v2b dump installed and checked first):
+  | spot | terminal 0 line | term0.json sha256 | flop AcKc6c digest |
+  |---|---|---|---|
+  | p60v2b_co_vs_sb_3b40 | CO raise 2, SB 3-bet 8, CO call | d221ccbed8f7a395434b7f6bf0a1b0ba93b6b82bc60dfca0e6475d987ea81236 | e73299315861596844dea56152413dd3252bd2230f137b71de234948ebffabc6 |
+  Command: `python3 tools/gto_spot/plan_a_repro_step0.py data/gto_spot/plan_a/specs/p60v2b_co_vs_sb_3b40.json 0 AcKc6c /tmp/repro_v2b`
+- 2026-10-13 (standard amendment 6): spot loop rule v4 = v3 with damped matrices (0.5 old + 0.5 new from step 1), up to 12 steps;
+  all Plan A specs now carry rule "v4" (step 0 is identical, so every reproduction reference above stays valid). Sessions running
+  a spot under v3: pull, and if the spot has not converged by step 5 (v3 would end without a stop decision and the grader would fail),
+  re-run `run_plan_a.sh` on the pulled spec: the loop resumes from the saved state under v4. Reason: p60_co_vs_sb_b40 cycled with
+  period 2 under v3 (CO 4-bet 0% <-> ~10% between steps).

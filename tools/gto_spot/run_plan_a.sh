@@ -8,9 +8,8 @@ python3 tools/gto_spot/plan_a_specs.py $S > /dev/null || exit 1
 # PLAN_A_IDS overrides the spot list (2026-10-13: utg_vs_btn and hj_vs_bb run in the T2-side session; B35 dropped)
 IDS=${PLAN_A_IDS:-"p${S}_co_vs_sb_b40 p${S}_utg1_vs_sb_b40 p${S}_utg_vs_btn_b40 p${S}_btn_vs_bb_b40 p${S}_hj_vs_bb_b40"}
 for id in $IDS; do
-    arm=${id##*_}
-    [ -s /home/user/gto_ckpt/plan_a/p${S}_${arm}/dump.jsonl ] || continue
     SP=data/gto_spot/plan_a/specs/$id.json
+    [ -s "$(python3 -c "import json; print(json.load(open('$SP'))['dump'])")" ] || continue
     [ -s data/gto_spot/plan_a/sensitivity/${id}_p144.json ] && continue
     echo "START $id $(date -u +%FT%TZ)" >> $L
     [ -s data/gto_spot/records/$id.json ] || {

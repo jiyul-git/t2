@@ -53,6 +53,17 @@ def main():
                            check=True, stdout=open(od + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
             open(fd + '/done144', 'w').write('ok')
         L.PANEL = P144
+        bad = L.flop_failures(fd)
+        if bad:   # standard amendment 7: never accepted silently; the precision pass fails (G3 false -> research)
+            L.PANEL = os.path.join(ROOT, 'data/gto_hu_continuation/panel_v1.json')
+            rep['consistent_with_24'] = False
+            rep['flop_failures'] = {'terminal': j, 'boards': bad}
+            # the grader then grades the 24-board state with G3 false (research), naming the failure
+            L.atomic(tabs24, od + 'tables_used.json')
+            L.atomic(mats24, od + 'matrices_used.json')
+            L.atomic(rep, od + 'report.json')
+            print('consistent_with_24', False, 'flop failures', bad)
+            return
         bv = L.board_values(fd)
         raw, se = L.stratified(bv)
         M = lp.matrix_from(fd, sp24) if is_m else None

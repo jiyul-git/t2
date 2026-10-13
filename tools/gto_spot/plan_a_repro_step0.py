@@ -17,7 +17,7 @@ spec = json.load(open(sys.argv[1]))
 j, board, out = int(sys.argv[2]), sys.argv[3], sys.argv[4]
 os.makedirs(out + '/flops/logs', exist_ok=True)
 lp = L.Loop.__new__(L.Loop)
-lp.spec, lp.v3 = spec, spec.get('rule') == 'v3'
+lp.spec, lp.v3 = spec, spec.get('rule') in ('v3', 'v4')   # step 0 is identical under v3 and v4
 sp = lp.spot({}, {})
 terms = lp.terminals(sp)
 line, t = sorted(terms.items())[j]

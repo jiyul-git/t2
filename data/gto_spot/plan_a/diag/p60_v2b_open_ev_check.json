@@ -1,0 +1,326 @@
+{
+ "schema": "plan_a_open_ev_check_v1",
+ "parent": "p60_v2b",
+ "iterations": 200,
+ "exact_gap": 0.00957,
+ "definition": "first-in node per seat (all earlier seats fold): per action EV (bb, net, given the node is reached) and average frequency for AA, KK, QQ",
+ "seats": {
+  "UTG": {
+   "actions": [
+    "Fold",
+    "Raise 2"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 7.932,
+      "freq": 1.0
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 4.14,
+      "freq": 1.0
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 2.452,
+      "freq": 1.0
+     }
+    }
+   }
+  },
+  "UTG+1": {
+   "actions": [
+    "Fold",
+    "Raise 2"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 7.923,
+      "freq": 1.0
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 4.427,
+      "freq": 1.0
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 2.545,
+      "freq": 1.0
+     }
+    }
+   }
+  },
+  "UTG+2": {
+   "actions": [
+    "Fold",
+    "Raise 2"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 8.324,
+      "freq": 1.0
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 4.93,
+      "freq": 1.0
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 2.736,
+      "freq": 1.0
+     }
+    }
+   }
+  },
+  "LJ": {
+   "actions": [
+    "Fold",
+    "Raise 2"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 8.818,
+      "freq": 1.0
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 5.607,
+      "freq": 1.0
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 3.425,
+      "freq": 1.0
+     }
+    }
+   }
+  },
+  "HJ": {
+   "actions": [
+    "Fold",
+    "Raise 2"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 8.815,
+      "freq": 1.0
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 6.045,
+      "freq": 1.0
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 4.051,
+      "freq": 1.0
+     }
+    }
+   }
+  },
+  "CO": {
+   "actions": [
+    "Fold",
+    "Raise 2"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 8.819,
+      "freq": 1.0
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 6.484,
+      "freq": 1.0
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 4.791,
+      "freq": 1.0
+     }
+    }
+   }
+  },
+  "BTN": {
+   "actions": [
+    "Fold",
+    "Raise 2"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 8.302,
+      "freq": 1.0
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 6.479,
+      "freq": 1.0
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.111,
+      "freq": 0.0
+     },
+     "Raise 2": {
+      "ev": 5.194,
+      "freq": 1.0
+     }
+    }
+   }
+  },
+  "SB": {
+   "actions": [
+    "Fold",
+    "Limp 1",
+    "Raise 3"
+   ],
+   "classes": {
+    "AA": {
+     "Fold": {
+      "ev": -0.611,
+      "freq": 0.0
+     },
+     "Limp 1": {
+      "ev": 5.444,
+      "freq": 0.68
+     },
+     "Raise 3": {
+      "ev": 5.222,
+      "freq": 0.32
+     }
+    },
+    "KK": {
+     "Fold": {
+      "ev": -0.611,
+      "freq": 0.0
+     },
+     "Limp 1": {
+      "ev": 4.265,
+      "freq": 0.494
+     },
+     "Raise 3": {
+      "ev": 4.207,
+      "freq": 0.506
+     }
+    },
+    "QQ": {
+     "Fold": {
+      "ev": -0.611,
+      "freq": 0.0
+     },
+     "Limp 1": {
+      "ev": 3.5,
+      "freq": 0.466
+     },
+     "Raise 3": {
+      "ev": 3.522,
+      "freq": 0.534
+     }
+    }
+   }
+  }
+ }
+}

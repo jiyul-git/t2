@@ -124,3 +124,38 @@ per hand, and an arriving-range sensitivity report exists for its accepted state
 comparison (spotcmp) and the sensitivity report supplement the missing G2. Eligibility is a label: integrating a record set into T2
 is still approved by the user per set, and `db_promotion` (the production DB) stays `forbidden` until lifted. `verified` keeps its
 amendment-4 meaning (G2 <= 0.010 and all spot gates).
+
+## Amendment 6 (2026-10-13, before any v4 step): spot loop rule v4 (damped range-reactive matrices)
+Observed on p60_co_vs_sb_b40 under v3 (steps 0-4): a period-2 cycle of the spot strategy — CO 4-bet 0% / 8.6% / 0% / 10.4% and CO
+fold 61% / 28% / 58% / 29% at steps 1-4 (class means) — with the 4-bet-pot matrix terminal moving D = 1.4 -> 3.8 -> 6.9 -> 5.7 (CO) and
+4.1 -> 2.6 -> 4.7 -> 8.0 (SB) against U 1.1-2.4: v3 replaces each matrix by the newest estimate (no damping), so the ranges chase each
+other. Also fixed: under v3 a spot that reached the step cap without D <= U ended without a stop decision (no final_step), which made
+the grader fail; the cap now always produces "stop: not converged".
+Rule v4 (spec rule "v4"; all Plan A specs from now on):
+- matrix terminals: step 0 replaces the static payoff by the raw matrix (as v3); from step 1 on M_{k+1} = 0.5 M_k + 0.5 M_raw,k
+  (cell-wise; a cell missing in M_k takes the raw value); tables keep rule v2;
+- D, U and the stop rule unchanged (every terminal-seat D <= U, k >= 1); at most 12 steps (k = 0..11).
+- p60_co_vs_sb_b40 continues under v4 from its v3 state after step 5 (its v3 verdict "not converged after 6 steps" stays in the step-5
+  report). Spots running elsewhere under v3 that reach step 5 without converging continue the same way (rule "v4" in the spec,
+  resume from the saved state).
+- Second instance (T2-side session backup, branch ccr-9a10123b-0lyye0 at 0f190813, p60_utg_vs_btn_b40 under v3): UTG root fold
+  (class mean) 62% / 79% / 7% / 80% at steps 0-3, 4-bet-pot D (UTG) 15.2 / 2.0 / 3.2 / 11.1 vs U 1.0-3.2 — the same period-2 cycle.
+  p60_co_vs_sb_b40 step 5 (v3, last): 4-bet-pot D 10.0 (CO) / 4.9 (SB), 3-bet-pot D 1.9 / 1.9 vs U 1.1 / 0.8 -> v3 not converged;
+  continues under v4 from k = 6.
+
+## Amendment 7 (2026-10-13, before the rerun): flop non-convergence handling; p60_co_vs_sb_b40 restarted under v4
+- Observed: p60_co_vs_sb_b40 step 6 (first v4 step after the v3 state), 4-bet-pot terminal, board 9c7d4h: the flop solve stops at
+  max_iters 1000 with exploitability 6.47% pot (target 0.3%), flat from ~iteration 300 (7.01 -> 6.55 -> 6.49 -> 6.47) — a floor, not a
+  budget shortfall. Ranges at that terminal are degenerate: SB 16.5 combos in 4 classes (99, 44, AA, QQ: sets on 9c7d4h; SB holds
+  36.38 of the 36.4 bb pot), CO 42.7 combos; the other 23 boards converge (<= 0.283%). Cause not isolated (f32 storage with an extreme
+  value split, or the EPS keep-fraction floor); the solver has no f64 option.
+- Rule: a panel flop that ends unconverged at its iteration budget is never accepted silently. The spot loop stops that spot with
+  decision "stop: flop solver did not converge (board, terminal, step, exploitability)"; the spot is graded `research` and the chain
+  moves on.
+- The degenerate 4-bet-pot ranges come from the v3 cycle (step 5: CO 4-bet range 0 combos). p60_co_vs_sb_b40 therefore restarts under
+  v4 from step 0 (step 0 is identical under v3 and v4: its flops are reused) instead of continuing from the v3 state; the v3 run and the
+  failed v4 step 6 are archived (/home/user/gto_ckpt/spots/p60_co_vs_sb_b40_v3archive, reports summarised here).
+- Archived run summary (p60_co_vs_sb_b40, v3 steps 0-5 + v4 step 6): 3-bet-pot D/U CO 1.75/1.21, 1.71/1.10, 1.96/1.21, 2.00/1.10,
+  1.80/1.18, 1.92/1.12; SB 2.58/0.85, 1.83/0.83, 1.59/0.83, 1.87/0.83, 1.42/0.80, 1.94/0.84; 4-bet-pot D/U CO 15.5/1.5, 1.45/2.36,
+  3.80/1.36, 6.93/1.70, 5.70/2.25, 10.0/1.74; SB 15.7/1.0, 4.08/1.14, 2.55/1.45, 4.65/1.19, 7.99/1.50, 4.90/1.07; step 6 stopped on
+  the 9c7d4h flop floor. The new run starts at step 0 (flops reused) under v4.
