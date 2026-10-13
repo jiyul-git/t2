@@ -71,3 +71,6 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
   a spot under v3: pull, and if the spot has not converged by step 5 (v3 would end without a stop decision and the grader would fail),
   re-run `run_plan_a.sh` on the pulled spec: the loop resumes from the saved state under v4. Reason: p60_co_vs_sb_b40 cycled with
   period 2 under v3 (CO 4-bet 0% <-> ~10% between steps).
+- 2026-10-13 (user, Plan A amendment A7): B40 spots stopped everywhere. Claims: T2 session p60v2b_utg_vs_btn, p60v2b_hj_vs_bb_3b40,
+  p60v2b_hj_vs_bb_3b35; this session p60v2b_co_vs_sb_3b40, p60v2b_utg1_vs_sb_3b40. Open: p60v2b_co_vs_sb_3b35,
+  p60v2b_utg1_vs_sb_3b35, p60v2b_btn_vs_bb_3b40, p60v2b_btn_vs_bb_3b35. v2b reproduction reference: commit 44113004 (table above).

@@ -155,3 +155,13 @@ IP 3-bet {2.5x, 3.0x} 1.80M / 2.43 GB, opens {2.0, 2.5} 1.83M / 2.47 GB (data in
   solved and graded.
 - Note: in v2b the SB 3.5x 3-bet vs a CO open arrives with ~7.9 combos (the parent prefers 4.0x / other actions there); thin arriving
   ranges are reported with the spot.
+
+## Amendment A7 (2026-10-13, user decision): all B40 spot computation stops; v2b only
+- p60_co_vs_sb_b40 converged (v4, step 4, with the amendment-8 exemption; strict: not converged) but G6(a) parent-menu reproduction
+  fails (CO root mean |delta| 0.040 > 0.02; 87s 0.069 bb, SB TT 0.138 bb > 0.05) — the B40 parent is not converged enough (gap 0.043),
+  so no B40 record can reach conditional_verified. Every B40 spot is stopped and archived as parent-sensitivity material: this
+  session's co_vs_sb (24-board record committed, P144 stopped part-way) and utg1_vs_sb (not started), the T2 session's utg_vs_btn
+  (step 4) and hj_vs_bb (not started), the GPT session's btn_vs_bb.
+- v2b queue split: T2 session takes p60v2b_utg_vs_btn, p60v2b_hj_vs_bb_3b40, p60v2b_hj_vs_bb_3b35; this session claims
+  p60v2b_co_vs_sb_3b40 and p60v2b_utg1_vs_sb_3b40 first; the remaining four (co_vs_sb_3b35, utg1_vs_sb_3b35, btn_vs_bb_3b40,
+  btn_vs_bb_3b35) go in queue order to whichever session frees up (claim note on its result branch first).
