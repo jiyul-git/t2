@@ -5,7 +5,7 @@
  "equity": "/home/user/gto_ckpt/plan_a/eq_table_202_1200.json",
  "tables_dir": null,
  "iterations": 3000,
- "rule": "v3",
+ "rule": "v4",
  "root_line": [
   "UTG:Raise 2",
   "UTG+1:Fold",

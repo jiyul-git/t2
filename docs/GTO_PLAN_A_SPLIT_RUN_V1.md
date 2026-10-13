@@ -66,3 +66,8 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
   |---|---|---|---|
   | p60v2b_co_vs_sb_3b40 | CO raise 2, SB 3-bet 8, CO call | d221ccbed8f7a395434b7f6bf0a1b0ba93b6b82bc60dfca0e6475d987ea81236 | e73299315861596844dea56152413dd3252bd2230f137b71de234948ebffabc6 |
   Command: `python3 tools/gto_spot/plan_a_repro_step0.py data/gto_spot/plan_a/specs/p60v2b_co_vs_sb_3b40.json 0 AcKc6c /tmp/repro_v2b`
+- 2026-10-13 (standard amendment 6): spot loop rule v4 = v3 with damped matrices (0.5 old + 0.5 new from step 1), up to 12 steps;
+  all Plan A specs now carry rule "v4" (step 0 is identical, so every reproduction reference above stays valid). Sessions running
+  a spot under v3: pull, and if the spot has not converged by step 5 (v3 would end without a stop decision and the grader would fail),
+  re-run `run_plan_a.sh` on the pulled spec: the loop resumes from the saved state under v4. Reason: p60_co_vs_sb_b40 cycled with
+  period 2 under v3 (CO 4-bet 0% <-> ~10% between steps).

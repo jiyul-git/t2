@@ -61,7 +61,7 @@ def main():
                 if arm != 'b40' and m is None:
                     sid = f'p{stack}{arm}_{name}'
                 spec = {'id': sid, 'config': cfgp, 'dump': f'{pdir}/dump.jsonl', 'equity': f'{CK}/eq_table_202_1200.json',
-                        'tables_dir': None, 'iterations': 3000, 'rule': 'v3', 'root_line': root_line(cfg, op, tb, m), 'menu': MENU,
+                        'tables_dir': None, 'iterations': 3000, 'rule': 'v4', 'root_line': root_line(cfg, op, tb, m), 'menu': MENU,
                         'tree_label': f'Plan A p{stack}{"" if arm == "b40" else " " + arm}: 9-max hand-start {stack} bb exact (cfg.stack {cfg["stack"]}), ante 1/9, opens 2.0, '
                                       f'3-bet 3.0x / blinds {blinds}; SB open {cfg["open_raises_by_seat"][7][0]} bb, SB limp '
                                       f'{"allowed" if 7 in (cfg.get("limp_seats") or []) else "excluded"}; open jam '

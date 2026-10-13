@@ -124,3 +124,17 @@ per hand, and an arriving-range sensitivity report exists for its accepted state
 comparison (spotcmp) and the sensitivity report supplement the missing G2. Eligibility is a label: integrating a record set into T2
 is still approved by the user per set, and `db_promotion` (the production DB) stays `forbidden` until lifted. `verified` keeps its
 amendment-4 meaning (G2 <= 0.010 and all spot gates).
+
+## Amendment 6 (2026-10-13, before any v4 step): spot loop rule v4 (damped range-reactive matrices)
+Observed on p60_co_vs_sb_b40 under v3 (steps 0-4): a period-2 cycle of the spot strategy — CO 4-bet 0% / 8.6% / 0% / 10.4% and CO
+fold 61% / 28% / 58% / 29% at steps 1-4 (class means) — with the 4-bet-pot matrix terminal moving D = 1.4 -> 3.8 -> 6.9 -> 5.7 (CO) and
+4.1 -> 2.6 -> 4.7 -> 8.0 (SB) against U 1.1-2.4: v3 replaces each matrix by the newest estimate (no damping), so the ranges chase each
+other. Also fixed: under v3 a spot that reached the step cap without D <= U ended without a stop decision (no final_step), which made
+the grader fail; the cap now always produces "stop: not converged".
+Rule v4 (spec rule "v4"; all Plan A specs from now on):
+- matrix terminals: step 0 replaces the static payoff by the raw matrix (as v3); from step 1 on M_{k+1} = 0.5 M_k + 0.5 M_raw,k
+  (cell-wise; a cell missing in M_k takes the raw value); tables keep rule v2;
+- D, U and the stop rule unchanged (every terminal-seat D <= U, k >= 1); at most 12 steps (k = 0..11).
+- p60_co_vs_sb_b40 continues under v4 from its v3 state after step 5 (its v3 verdict "not converged after 6 steps" stays in the step-5
+  report). Spots running elsewhere under v3 that reach step 5 without converging continue the same way (rule "v4" in the spec,
+  resume from the saved state).

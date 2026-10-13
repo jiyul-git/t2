@@ -81,7 +81,8 @@ def stratified(vals):
 class Loop:
     def __init__(self, spec):
         self.spec = spec
-        self.v3 = spec.get('rule') == 'v3'
+        self.v4 = spec.get('rule') == 'v4'
+        self.v3 = spec.get('rule') in ('v3', 'v4')   # v4 = v3 with damped matrices (standard amendment 6)
         self.dir = f"/home/user/gto_ckpt/spots/{spec['id']}/"
         os.makedirs(self.dir, exist_ok=True)
 
@@ -160,7 +161,7 @@ class Loop:
     def run(self, k_start=0):
         state = self.load_state()
         state.setdefault('matrices', {})
-        max_steps = 6 if self.v3 else MAX_STEPS
+        max_steps = 12 if self.v4 else (6 if self.v3 else MAX_STEPS)
         for k in range(k_start, max_steps):
             sd = self.dir + f'step{k}/'
             os.makedirs(sd, exist_ok=True)
@@ -170,7 +171,7 @@ class Loop:
             atomic(state['matrices'], sd + 'matrices_used.json')
             atomic({'exploitability': sp.exploitability(), 'nodes': sp.report(), 'class_labels': sp.lab169,
                     'live': [sp.pos[p] for p in sp.live], 'tables_used': sorted(state['tables'])}, sd + 'spot.json')
-            rep = {'k': k, 'terminals': {}, 'rule': 'v3' if self.v3 else 'v2'}
+            rep = {'k': k, 'terminals': {}, 'rule': 'v4' if self.v4 else ('v3' if self.v3 else 'v2')}
             new_tables = {}
             new_matrices = dict(state['matrices'])
             for j, (line, t) in enumerate(sorted(terms.items())):
@@ -240,8 +241,16 @@ class Loop:
                     tab['seats'].append({'seat': pl['seat'], 'position': pos, 'gross': r.tolist()})
                 if is_m:
                     rep['terminals'][line]['mode'] = 'matrix'
-                    new_matrices[line] = {str(pl['seat']): [[None if np.isnan(x) else float(x) for x in row] for row in Mraw[pl['position']]]
-                                          for pl in tj['players']}
+                    Mnew = {}
+                    for pl in tj['players']:
+                        Mr = Mraw[pl['position']]
+                        old = state['matrices'].get(line, {}).get(str(pl['seat']))
+                        if self.v4 and k >= 1 and old is not None:
+                            Mo = np.array([[np.nan if x is None else x for x in row] for row in old])
+                            Mr = np.where(np.isnan(Mo), Mr, np.where(np.isnan(Mr), Mo, 0.5 * Mo + 0.5 * Mr))
+                            rep['terminals'][line]['matrix_alpha'] = 0.5
+                        Mnew[str(pl['seat'])] = [[None if np.isnan(x) else float(x) for x in row] for row in Mr]
+                    new_matrices[line] = Mnew
                     tab['provenance']['kind'] += ' (matrix terminal; table kept for SE / reference)'
                 new_tables[line] = tab
             all_pass = all(s['pass'] for t in rep['terminals'].values() for s in t['seats'].values())
@@ -250,8 +259,8 @@ class Loop:
                 rep['decision'] = 'continue (minimum one update)'
             elif all_pass:
                 rep['decision'] = 'stop: converged at panel_v1 resolution (value space); step-k tables accepted'
-            elif k + 1 >= MAX_STEPS:
-                rep['decision'] = f'stop: not converged after {MAX_STEPS} steps'
+            elif k + 1 >= max_steps:
+                rep['decision'] = f'stop: not converged after {max_steps} steps'
             else:
                 rep['decision'] = 'continue'
             atomic(rep, sd + 'report.json')
