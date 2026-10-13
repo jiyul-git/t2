@@ -1225,7 +1225,10 @@ def multiway_reraise_decision(prof, def_pos, reraiser_pos, hand, bb, open_bb,
         PS.icm_bf(prof, max(1.0, float(bf or 1.0)))
         if isinstance(prof, dict) and prof.get('concepts')
         else max(1.0, float(bf or 1.0)))
-    need_base = (cost * bf_seen) / max(1e-9, pot_before + cost)
+    # icm.required_equity 와 같은 식(bf·C / (P + bf·C)). 분모를 P + C + (bf-1)·C 로
+    # 써서 bf=1 이면 예전 칩 팟오즈와 비트 그대로 같다.
+    need_base = (cost * bf_seen) / max(
+        1e-9, pot_before + cost + (bf_seen - 1.0) * cost)
 
     noise = 1.0
     reason_skill = 0.5

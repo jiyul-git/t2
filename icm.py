@@ -163,8 +163,27 @@ def bubble_factor(stacks, payouts, seat_idx, risk=None):
     return max(1.0, min(4.0, loss / gain))
 
 def required_equity(pot, tocall, bf):
-    """BF를 반영한 콜 필요 승률."""
+    """BF를 반영한 콜 필요 승률.
+
+    BF = (같은 칩을 잃을 때 상금 손실) / (딸 때 상금 이득). 손익분기
+    e·pot = (1-e)·bf·tocall 을 풀면 bf·tocall / (pot + bf·tocall).
+    칩 손익분기에 bf 를 곱하는 형태(bf·C/(P+C))는 손실만 분자에서 키우고
+    분모는 칩 그대로 둬서 BF>1 에서 과대해진다(100%를 넘을 수도 있다).
+    """
     return (tocall * bf) / (pot + tocall * (1 + bf) - tocall) if pot > 0 else 0.5
+
+
+def required_equity_from_breakeven(chip_breakeven, bf):
+    """칩 기준 손익분기 b = C/(P+C) 에서 BF 반영 필요 승률로.
+
+    required_equity 와 같은 식이다(b 로 다시 쓴 것): bf·b / (1 - b + bf·b).
+    팟 층(side pot) 기하로 이미 구한 칩 손익분기에 BF 를 얹을 때 쓴다.
+    """
+    # 분모를 1 + (bf-1)·b 로 쓴다(= 1 - b + bf·b). bf=1 이면 정확히 1.0 이라
+    # 칩 손익분기가 비트 그대로 나온다.
+    b = max(0.0, min(1.0, float(chip_breakeven)))
+    f = max(1.0, float(bf or 1.0))
+    return f * b / (1.0 + (f - 1.0) * b)
 
 
 def players_behind_required_equity_premium(base_need, players_behind):
