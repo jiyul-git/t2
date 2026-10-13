@@ -144,3 +144,14 @@ IP 3-bet {2.5x, 3.0x} 1.80M / 2.43 GB, opens {2.0, 2.5} 1.83M / 2.47 GB (data in
   UTG+2 / LJ AA open EVs equal the B40 values (8.32 / 8.82 vs 8.35 / 8.81), so the B40 stall was the inflated jam EV, not the open
   value. Limit: a uniform undervaluation of opens by the static continuation would not show here (outer loop O1 tests it). SB first
   in: AA limp 68% (EV 5.44 vs raise 5.22), KK / QQ ~50/50 (within 0.06 bb). Data: data/gto_spot/plan_a/diag/p60_v2b_open_ev_check.json.
+
+## Amendment A6 (2026-10-13, user decision): v2b spots queued after the 5 B40 spots; connection policy
+- The 5 B40 spots run to the end. The 9 v2b subgames (blind 3-bettor pairs x {3.5x, 4.0x} + utg_vs_btn; specs
+  data/gto_spot/plan_a/specs/p60v2b_*.json) start in whichever session finishes its B40 spots first (queue in
+  docs/GTO_PLAN_A_SPLIT_RUN_V1.md).
+- T2 connection: B40 records are used provisionally; a pair's v2b record replaces it when available (v2b follows the tree principle
+  and has parent gap 0.0096). Both results of a pair are reported together as a parent-tree sensitivity comparison.
+- The v2b SB first-in limp mix (AA limp 68%, limp vs raise within 0.2 bb) is not D8 reference data until a blind-vs-blind spot is
+  solved and graded.
+- Note: in v2b the SB 3.5x 3-bet vs a CO open arrives with ~7.9 combos (the parent prefers 4.0x / other actions there); thin arriving
+  ranges are reported with the spot.

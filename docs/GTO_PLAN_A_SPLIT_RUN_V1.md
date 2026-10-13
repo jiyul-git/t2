@@ -57,3 +57,7 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
   | T2 session | p60_utg_vs_btn_b40, p60_hj_vs_bb_b40 | ccr-9a10123b-0lyye0 |
   | GPT session | p60_btn_vs_bb_b40 | chatgpt/plan-a-btn-bb-20261013 |
   Every returned set is merged only after its SHA256SUMS and the gates are checked here.
+- 2026-10-13 (user): queue after the B40 spots — the 9 v2b subgames (p60v2b_co_vs_sb_3b35, _3b40, p60v2b_utg1_vs_sb_3b35, _3b40,
+  p60v2b_utg_vs_btn, p60v2b_btn_vs_bb_3b35, _3b40, p60v2b_hj_vs_bb_3b35, _3b40), taken in this order by whichever session frees up
+  first; claim a spot by pushing a one-line note to its result branch before starting it. Inputs: the v2b dump is in the transfer
+  set (p60_v2b_dump.jsonl.gz; SHA256SUMS updated; plan_a_install_inputs.sh installs it). Python 3.11 as above.

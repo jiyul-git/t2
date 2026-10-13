@@ -1,0 +1,35 @@
+{
+ "id": "p60v2b_hj_vs_bb_3b35",
+ "config": "/home/user/t2/data/gto_spot/plan_a/cfg_p60_v2b.json",
+ "dump": "/home/user/gto_ckpt/plan_a/p60_v2b/dump.jsonl",
+ "equity": "/home/user/gto_ckpt/plan_a/eq_table_202_1200.json",
+ "tables_dir": null,
+ "iterations": 3000,
+ "rule": "v3",
+ "root_line": [
+  "UTG:Fold",
+  "UTG+1:Fold",
+  "UTG+2:Fold",
+  "LJ:Fold",
+  "HJ:Raise 2",
+  "CO:Fold",
+  "BTN:Fold",
+  "SB:Fold",
+  "BB:3-bet 7"
+ ],
+ "menu": {
+  "max_raises": 4,
+  "fourbet_ip": 2.15,
+  "fourbet_oop": 2.35,
+  "fivebet": "jam"
+ },
+ "tree_label": "Plan A p60 v2b: 9-max hand-start 60 bb exact (cfg.stack 59.888888888889), ante 1/9, opens 2.0, 3-bet 3.0x / blinds 3.5x/4.0x; SB open 3.0 bb, SB limp allowed; open jam excluded; parent max_raises 3, 4-bet jam only, static continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam",
+ "parent": {
+  "parent": "Plan A parent p60_v2b (static continuation)",
+  "gap_total_bb": 0.009567604837509073,
+  "source": "data/gto_spot/plan_a/parent_p60_v2b_convergence.json"
+ },
+ "status_cap": "conditional_verified",
+ "status_cap_reason": "Plan A: subgame menu differs from the parent tree (4-bet jam only), parent continuation static, arriving ranges from the parent (docs/GTO_PLAN_A_60BB_V1.md section 4)",
+ "out": "/home/user/gto_ckpt/spots/p60v2b_hj_vs_bb_3b35/spot.json"
+}
