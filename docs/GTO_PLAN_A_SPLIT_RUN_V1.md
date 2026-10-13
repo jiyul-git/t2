@@ -48,3 +48,12 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
 - 2026-10-13: the T2-side session reproduced all three references bit for bit (term0 sha256 and flop digest; utg_vs_btn checked on
   the artifact its chain produced) on 79cef4a6 (computation identical to e6ba28b3). Its chain runs utg_vs_btn then hj_vs_bb; results
   return on branch ccr-9a10123b-0lyye0 (same paths + SHA256SUMS).
+- 2026-10-13 (user): p60_btn_vs_bb_b40 moves to a separate GPT session (branch chatgpt/plan-a-btn-bb-20261013, head 2585fca7; its
+  control term0 addd06e9... and flop digest a035dc0c... matched after switching to Python 3.11.17 — Python 3.12's compensated
+  float sum() changes the control pot to 18.0). Current split:
+  | session | spots | result branch |
+  |---|---|---|
+  | this session | p60_co_vs_sb_b40, p60_utg1_vs_sb_b40 (+ the p60 v2b parent) | chatgpt/terminal-census-v2-20260930 |
+  | T2 session | p60_utg_vs_btn_b40, p60_hj_vs_bb_b40 | ccr-9a10123b-0lyye0 |
+  | GPT session | p60_btn_vs_bb_b40 | chatgpt/plan-a-btn-bb-20261013 |
+  Every returned set is merged only after its SHA256SUMS and the gates are checked here.
