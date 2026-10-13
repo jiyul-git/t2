@@ -37,3 +37,8 @@ Per spot: rule-v3 loop -> grade -> P144 -> grade (PRECISION=144) -> sensitivity.
 - per spot from /home/user/gto_ckpt/spots/<id>/: state.json and step*/report.json, step*_p144/report.json -> data/gto_spot/plan_a/remote_runs/<id>/
 - /home/user/gto_ckpt/plan_a/spots.log -> data/gto_spot/plan_a/remote_runs/spots.log
 - a SHA256SUMS of all returned files
+
+## Status
+- 2026-10-13: the T2-side session reproduced all three references bit for bit (term0 sha256 and flop digest; utg_vs_btn checked on
+  the artifact its chain produced) on 79cef4a6 (computation identical to e6ba28b3). Its chain runs utg_vs_btn then hj_vs_bb; results
+  return on branch ccr-9a10123b-0lyye0 (same paths + SHA256SUMS).
