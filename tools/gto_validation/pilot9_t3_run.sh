@@ -19,7 +19,7 @@ done
 echo "T3 panels $(date -u +%FT%TZ)"
 for spec in $TB; do n=${spec%%:*}
   python3 /home/user/t2/tools/gto_hu_continuation/solve_panel.py $D/terminals/term_$n.json /home/user/t2/data/gto_hu_continuation/menu_m2_single_v1.json \
-    /home/user/t2/data/gto_hu_continuation/panel_v1.json $D/$n/flops --workers 4 --threads 1 >> $D/solve.log 2>&1
+    /home/user/t2/data/gto_hu_continuation/panel_v1.json $D/$n/flops --workers ${T3_WORKERS:-2} --threads 1 >> $D/solve.log 2>&1
 done
 [ -s $D/tables_all/manifest.json ] || python3 $T/pilot9_t3.py tables $D > $D/tables_report.json
 [ -n "$T3_SKIP_PREFLOP" ] && { echo "T3 tables done, preflop T skipped (rebuild)"; echo T3_DONE; exit 0; }
