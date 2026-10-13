@@ -49,6 +49,17 @@ def panel_setup():
     return C, boards, draws, p, C.compat_of(boards), panel
 
 
+def flop_failures(flops_dir):
+    """boards whose solve ended unconverged at the iteration budget (standard amendment 7)"""
+    _, boards, _, _, _, _ = panel_setup()
+    bad = []
+    for b in boards:
+        d = json.load(open(os.path.join(flops_dir, b + '.json')))
+        if not (d['converged'] and d['exploitability_pct_pot'] <= d['provenance_key']['target_exploitability_pct_pot'] <= 0.6):
+            bad.append({'board': b, 'exploitability_pct_pot': d['exploitability_pct_pot'], 'iterations': d['iterations']})
+    return bad
+
+
 def board_values(flops_dir):
     _, boards, _, _, _, _ = panel_setup()
     out = {}
@@ -187,6 +198,17 @@ class Loop:
                     subprocess.run([sys.executable, os.path.join(ROOT, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, PANEL, fd,
                                     '--workers', os.environ.get('SPOT_PANEL_WORKERS', '4'), '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
                     open(fd + '/done', 'w').write('ok')
+                bad = flop_failures(fd)
+                if bad:
+                    rep['decision'] = f'stop: flop solver did not converge (terminal {j}, step {k}): {bad}'
+                    rep['flop_failures'] = bad
+                    atomic(rep, sd + 'report.json')
+                    print(json.dumps({'k': k, 'decision': rep['decision']}), flush=True)
+                    state['final_step'] = k
+                    state['converged'] = False
+                    state['stop_reason'] = rep['decision']
+                    self.save_state(state)
+                    return state
                 bv = board_values(fd)
                 raw, se = stratified(bv)
                 Mraw = self.matrix_from(fd, sp) if is_m else None

@@ -142,3 +142,20 @@ Rule v4 (spec rule "v4"; all Plan A specs from now on):
   (class mean) 62% / 79% / 7% / 80% at steps 0-3, 4-bet-pot D (UTG) 15.2 / 2.0 / 3.2 / 11.1 vs U 1.0-3.2 — the same period-2 cycle.
   p60_co_vs_sb_b40 step 5 (v3, last): 4-bet-pot D 10.0 (CO) / 4.9 (SB), 3-bet-pot D 1.9 / 1.9 vs U 1.1 / 0.8 -> v3 not converged;
   continues under v4 from k = 6.
+
+## Amendment 7 (2026-10-13, before the rerun): flop non-convergence handling; p60_co_vs_sb_b40 restarted under v4
+- Observed: p60_co_vs_sb_b40 step 6 (first v4 step after the v3 state), 4-bet-pot terminal, board 9c7d4h: the flop solve stops at
+  max_iters 1000 with exploitability 6.47% pot (target 0.3%), flat from ~iteration 300 (7.01 -> 6.55 -> 6.49 -> 6.47) — a floor, not a
+  budget shortfall. Ranges at that terminal are degenerate: SB 16.5 combos in 4 classes (99, 44, AA, QQ: sets on 9c7d4h; SB holds
+  36.38 of the 36.4 bb pot), CO 42.7 combos; the other 23 boards converge (<= 0.283%). Cause not isolated (f32 storage with an extreme
+  value split, or the EPS keep-fraction floor); the solver has no f64 option.
+- Rule: a panel flop that ends unconverged at its iteration budget is never accepted silently. The spot loop stops that spot with
+  decision "stop: flop solver did not converge (board, terminal, step, exploitability)"; the spot is graded `research` and the chain
+  moves on.
+- The degenerate 4-bet-pot ranges come from the v3 cycle (step 5: CO 4-bet range 0 combos). p60_co_vs_sb_b40 therefore restarts under
+  v4 from step 0 (step 0 is identical under v3 and v4: its flops are reused) instead of continuing from the v3 state; the v3 run and the
+  failed v4 step 6 are archived (/home/user/gto_ckpt/spots/p60_co_vs_sb_b40_v3archive, reports summarised here).
+- Archived run summary (p60_co_vs_sb_b40, v3 steps 0-5 + v4 step 6): 3-bet-pot D/U CO 1.75/1.21, 1.71/1.10, 1.96/1.21, 2.00/1.10,
+  1.80/1.18, 1.92/1.12; SB 2.58/0.85, 1.83/0.83, 1.59/0.83, 1.87/0.83, 1.42/0.80, 1.94/0.84; 4-bet-pot D/U CO 15.5/1.5, 1.45/2.36,
+  3.80/1.36, 6.93/1.70, 5.70/2.25, 10.0/1.74; SB 15.7/1.0, 4.08/1.14, 2.55/1.45, 4.65/1.19, 7.99/1.50, 4.90/1.07; step 6 stopped on
+  the 9c7d4h flop floor. The new run starts at step 0 (flops reused) under v4.
