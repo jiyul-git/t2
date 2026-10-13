@@ -215,8 +215,6 @@ def label(rec, cfg):
         blockers.append(f'G4: static share {s_share:.3f} ({g4_state})')
     research = bool(blockers) and (gi.get('superseded') or not gates['spot_solver'] or not spot_conv or g4_state == 'static_dependent')
     prov = []
-    if gi.get('exempt_used'):
-        prov.append('G3 passed only with the amendment-8 low-mass exemption (post-observation rule, pending user review)')
     if not gates['precision_final']:
         prov.append('precision pass (P144) not graded')
     if not g6['pass']:
@@ -267,7 +265,13 @@ def label(rec, cfg):
             for h, x in n['hands'].items():
                 x['range_sensitive'] = h in flagged
     elig = (status == 'conditional_verified' and pgap is not None and pgap <= T2_FIRST_GAP_MAX_BB and rs is not None)
+    un = rec.get('amendment8_unsupported_nodes') or []
+    unp = {(tuple(u['path']), u['actor']) for u in un}
+    for n in rec['nodes']:
+        if (tuple(n['path']), n['actor']) in unp:
+            n['t2_connection'] = 'unsupported (standard amendment 8: depends on a low-reach exempt terminal)'
     rec['t2_connection'] = {'status': 'eligible_first' if elig else 'not_eligible',
+                            'unsupported_nodes': un,
                             'rule': 'standard v1 amendment 5: conditional_verified, parent exact gap <= 0.05 bb, sensitivity report',
                             'parent_gap_bb': pgap, 'sensitivity_report': os.path.relpath(sens, ROOT) if rs is not None else None}
     rec['db_promotion'] = 'forbidden'
@@ -412,6 +416,17 @@ def main():
                                                                          'P144 flop solver did not converge' if precision else None)},
                'exploitability': expl, 'tables': {l: tabs_k[l]['provenance'] for l in tabs_k}, 'matrix_terminals': sorted(mats_k), 'nodes': nodes}
     rec_out['panel'] = 'panel_v3_144 (precision pass)' if precision else 'panel_v1'
+    # standard amendment 8 (accepted 2026-10-13 with conditions): exempt terminal-seats -> the actor's decision nodes that lead
+    # into that terminal are unsupported for T2 connection (their value at that terminal is not trusted)
+    rep_k = json.load(open(kd + 'report.json')) if os.path.exists(kd + 'report.json') else {}
+    exempt = [(line, pos, sd_.get('opp_arriving_combos')) for line, t_ in rep_k.get('terminals', {}).items()
+              for pos, sd_ in t_.get('seats', {}).items() if sd_.get('exempt')]
+    unsup = []
+    for line, pos, mass in exempt:
+        for nd in sp.nodes:
+            if sp.pos[nd['actor']] == pos and any(ch[0] == 'flop' and ch[1] == line for ch in nd['children']):
+                unsup.append({'path': list(nd['path']), 'actor': pos, 'terminal': line, 'opp_arriving_combos': mass})
+    rec_out['amendment8_unsupported_nodes'] = unsup
     if spec.get('menu'):
         rec_out['G6a_result'] = g6a_parent_reproduction(spec)
     label(rec_out, sp.cfg)

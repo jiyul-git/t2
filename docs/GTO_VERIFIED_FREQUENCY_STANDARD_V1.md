@@ -168,3 +168,11 @@ Rule (from step 4 of this spot and for every v4 spot): a terminal-seat whose opp
 1326) is exempt from the D <= U stop test; its D, U and the opponent mass are recorded with `exempt: true`. The record also states
 whether the spot would have converged without the exemption (`converged_strict`). Because this rule was written after the data, the
 user decides whether records converged only through it are accepted; until then they carry the flag.
+- Accepted by the user (2026-10-13) with three conditions, now implemented: (1) the threshold stays fixed at < 1 opponent combo and
+  applies to every remaining v4 spot from its start (spot_loop / precision_pass; no per-spot tuning); (2) every decision node of the
+  exempt seat that leads into an exempt terminal is listed in `amendment8_unsupported_nodes`, flagged on the node, and is
+  `unsupported` at T2 connection (its values are not used); (3) both verdicts stay in the record (`converged` / `converged_strict`,
+  P144 `consistent_with_24` / `consistent_with_24_strict`). Records that converge through the exemption are no longer held at
+  provisional for that reason. Counter-view recorded: the low reach itself is part of the equilibrium, so an unstable value there
+  could feed back into the earlier 4-bet frequency; the earlier-node terminal-seats passing D <= U is the evidence that it is small.
+  T2-side observation (utg_vs_btn under v4): 4-bet-call terminal reach probability 1.0e-6 / 2.1e-7 at steps 2 / 3 — same pattern.
