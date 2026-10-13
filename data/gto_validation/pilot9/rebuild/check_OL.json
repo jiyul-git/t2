@@ -1,0 +1,30 @@
+{
+ "schema": "pilot9_rebuild_check_v1",
+ "stage": "OL",
+ "s1": {
+  "gap_total": 0.01350573751444788,
+  "gap_total_ref": 0.01350573751444788,
+  "gap_abs_diff": 0.0,
+  "rfi_max_abs_diff": 0.0,
+  "bit_exact": true
+ },
+ "s2": {
+  "gap_total": 0.00978056289245627,
+  "gap_total_ref": 0.00978056289245627,
+  "gap_abs_diff": 0.0,
+  "rfi_max_abs_diff": 0.0,
+  "bit_exact": true
+ },
+ "step0": {
+  "D_U_signed_max_abs_diff": 0.0,
+  "decision": "continue: minimum one update (the 4 S-pilot tables were computed at O ranges); stop test applies from step 1",
+  "decision_ref": "continue: minimum one update (the 4 S-pilot tables were computed at O ranges); stop test applies from step 1",
+  "same_decision": true
+ },
+ "step1": {
+  "D_U_signed_max_abs_diff": 0.0,
+  "decision": "continue: solve state 2",
+  "decision_ref": "continue: solve state 2",
+  "same_decision": true
+ }
+}
