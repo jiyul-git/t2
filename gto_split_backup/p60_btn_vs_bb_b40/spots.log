@@ -1,0 +1,4 @@
+START p60_btn_vs_bb_b40 2026-10-13T11:42:46Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"N:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000": {"BTN": [1.9721625444928275, 1.245], "BB": [2.2289179928723146, 0.875]}, "fold|BB:raise@8.000000|BTN:raise@17.200000|BB:call@17.200000": {"BTN": [15.8543724139054, 1.447], "BB": [16.36324834627522, 1.111]}}}
+START p60_btn_vs_bb_b40 2026-10-13T18:47:52Z
+START p60_btn_vs_bb_b40 2026-10-13T22:18:00Z
