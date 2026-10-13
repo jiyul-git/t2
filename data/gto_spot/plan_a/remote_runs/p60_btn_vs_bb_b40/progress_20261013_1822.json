@@ -1,0 +1,19 @@
+{
+  "checked_at_utc": "2026-10-13 09:22:59 UTC",
+  "spot": "p60_btn_vs_bb_b40",
+  "stage": "step0 term0",
+  "completed_flops": 3,
+  "total_flops": 24,
+  "active_flop_workers": 3,
+  "restarted": true,
+  "completed_artifacts_reused": [
+    "AcQc2c",
+    "AcKc6c",
+    "Tc9c7c"
+  ],
+  "reference_hashes_verified": true,
+  "checkpoint_retained_across_turn": true,
+  "checkpoint_archive_library_version": 2,
+  "results_complete": false,
+  "note": "Workspace checkpoint survived the next check; process was no longer running. Restart reused all three completed artifacts after provenance checks."
+}
