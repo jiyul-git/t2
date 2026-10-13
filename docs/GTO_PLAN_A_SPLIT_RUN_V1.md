@@ -8,7 +8,13 @@ The original session must remove BTN-vs-BB from its chain; if already started, s
 All returned results require SHA256SUMS and gate checks before integration. This ownership note does not itself stop another session.
 
 ## Setup (branch chatgpt/terminal-census-v2-20260930, the commit that adds this file)
-1. `python3 -m pip install numpy`
+1. Use **Python 3.11** for every Python command, including subprocesses in `run_plan_a.sh`.
+   Reference sessions reproduced the control terminal with Python 3.11.15 / NumPy 2.4.6. Python 3.12 changes floating-point
+   `sum()` behavior: the control pot becomes 18.0 instead of 17.999999999999996 and the terminal hash becomes
+   ff623d3d9135086cb92c0060c3853ec5aaa6c369c8e5260b330cf7fb743c5752. Do not accept that hash as the reference.
+   Example: `uv venv -p 3.11 .venv311 && uv pip install -p .venv311/bin/python numpy==2.4.6`, then
+   `export PATH="$PWD/.venv311/bin:$PATH"` from the repository root. Confirm `python3 --version` reports 3.11 and run both
+   reference checks below; matching the version alone does not replace the hash gates.
 2. `cd vendor/gtopen && cargo build --release -p solver --features t2-cont --example t2_cont_panel` (the spot loop calls
    vendor/gtopen/target/release/examples/t2_cont_panel; the subgame solver itself is Python)
 3. `sh tools/gto_spot/plan_a_install_inputs.sh` — unpacks the parent dump and the equity table to the container-local paths the specs
