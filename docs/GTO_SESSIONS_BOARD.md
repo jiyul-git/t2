@@ -16,7 +16,7 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 ## Sessions
 | session | spot | stage | next | blocked / note |
 |---|---|---|---|---|
-| this (01BLRH...) | p60v2b_co_vs_sb_3b40 | 24-board loop converged step 2; P144 rerun under amendment 11 (amendment-7 verdict research archived as *_p144_amend7) | Qc9d4h retry, then amendment-10 144-board loop | - |
+| this (01BLRH...) | p60v2b_co_vs_sb_3b40 | 24-board loop converged step 2; P144 rerun under amendment 11: Qc9d4h retry 3000 its 0.7193% (floor; exempt-level terminal -> recorded, continues); P144 still inconsistent (3-bet-call D144 > U24) | amendment-10 144-board loop (steps 1-3, ~288 flops each) | - |
 | this | p60v2b_utg1_vs_sb_3b40, then _3b35 | queued | | |
 | T2 (01XV9...) | p60v2b_utg_vs_btn | v4 step 5 (from its message) | | |
 | new Claude | p60v2b_btn_vs_bb_3b40 ... | ? | | |
