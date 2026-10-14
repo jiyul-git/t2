@@ -80,8 +80,16 @@ def stack_label(cfg):
             'note': 'hand-start stack = cfg.stack + ante (the ante is posted on top of cfg.stack); key DB rows by hand_start_bb'}
 
 
+G6A_MEAN_LOSS_MAX = 0.010   # standard amendment 9
+G6A_CLASS_LOSS_MAX = 0.05
+G6A_CLASS_MIN_COMBOS = 1.0
+NEAR_INDIFF_EV = 0.05
+
+
 def g6a_parent_reproduction(spec):
-    """Plan A G6(a) (docs/GTO_PLAN_A_60BB_V1.md amendment A1): subgame with the parent's menu and static terminals vs the dump"""
+    """Plan A G6(a), standard amendment 9: the subgame re-solved with the parent's menu and static terminals; the parent strategy is
+    judged by its EV loss inside that subgame (mean over arriving classes <= 0.010 bb; classes with >= 1 combo <= 0.05 bb each).
+    The amendment-A1 frequency metrics are kept and reported (frequency_test_A1)."""
     s2 = {k: v for k, v in spec.items() if k != 'menu'}
     s2['tables_dir'] = None
     sp = H.Spot(s2)
@@ -89,10 +97,10 @@ def g6a_parent_reproduction(spec):
     sp.build()
     sp.solve(3000)
     ev = sp.node_evs()
-    nodes, ok = [], True
+    nodes, ok, ok_a1 = [], True, True
 
     def rec_(i, reach):
-        nonlocal ok
+        nonlocal ok, ok_a1
         node = sp.nodes[i]
         actor = node['actor']
         dr = node.get('dump')
@@ -101,22 +109,36 @@ def g6a_parent_reproduction(spec):
         par = np.array(dr['sigma'])
         w = reach[actor] * 1326
         reached = w >= REACH_FLOOR
+        E = ev[i]
         d = np.abs(par - sp.avg[i]).max(0)
-        loss = ev[i].max(0) - (par * ev[i]).sum(0)
-        mean = float((w[reached] * d[reached]).sum() / w[reached].sum()) if reached.any() else 0.0
-        big = [{'class': sp.lab169[h], 'delta': round(float(d[h]), 4), 'ev_loss_bb': round(float(loss[h]), 4)}
-               for h in np.where(reached & (d > 0.10))[0]]
-        node_ok = mean <= 0.02 and all(b['ev_loss_bb'] <= 0.05 for b in big)
+        loss = E.max(0) - (par * E).sum(0)
+        srt = np.sort(E, 0)
+        gap = srt[-1] - srt[-2] if E.shape[0] > 1 else np.full(169, np.inf)
+        tot = w[reached].sum()
+        mean_loss = float((w[reached] * loss[reached]).sum() / tot) if tot > 0 else 0.0
+        heavy = reached & (w >= G6A_CLASS_MIN_COMBOS)
+        bad = [{'class': sp.lab169[h], 'combos': round(float(w[h]), 3), 'ev_loss_bb': round(float(loss[h]), 4)}
+               for h in np.where(heavy & (loss > G6A_CLASS_LOSS_MAX))[0]]
+        node_ok = mean_loss <= G6A_MEAN_LOSS_MAX and not bad
         ok = ok and node_ok
-        nodes.append({'path': list(node['path']), 'actor': sp.pos[actor], 'mean_abs_delta': round(mean, 5), 'over_0.10': big,
-                      'pass': node_ok})
+        mean_d = float((w[reached] * d[reached]).sum() / tot) if tot > 0 else 0.0
+        big = [{'class': sp.lab169[h], 'delta': round(float(d[h]), 4), 'ev_loss_bb': round(float(loss[h]), 4),
+                'combos': round(float(w[h]), 3), 'near_indifferent_ev': bool(gap[h] < NEAR_INDIFF_EV)}
+               for h in np.where(reached & (d > 0.10))[0]]
+        a1 = mean_d <= 0.02 and all(x['ev_loss_bb'] <= 0.05 for x in big)
+        ok_a1 = ok_a1 and a1
+        nodes.append({'path': list(node['path']), 'actor': sp.pos[actor], 'mean_ev_loss_bb': round(mean_loss, 5),
+                      'classes_over_loss_max': bad, 'pass': node_ok,
+                      'near_indifferent_ev': [sp.lab169[h] for h in np.where(reached & (gap < NEAR_INDIFF_EV))[0]],
+                      'frequency_A1': {'mean_abs_delta': round(mean_d, 5), 'over_0.10': big, 'pass': a1}})
         for a, ch in enumerate(node['children']):
             if ch[0] == 'node':
                 r2 = {k: v.copy() for k, v in reach.items()}
                 r2[actor] = reach[actor] * sp.avg[i][a]
                 rec_(ch[1], r2)
     rec_(sp.root_idx, {k: v.copy() for k, v in sp.reach0.items()})
-    return {'status': 'pass' if ok else 'fail', 'definition': 'Plan A amendment A1: parent-menu reproduction',
+    return {'status': 'pass' if ok else 'fail', 'frequency_test_A1': 'pass' if ok_a1 else 'fail',
+            'definition': 'standard amendment 9: parent EV loss in the re-solved subgame (mean <= 0.010 bb; classes >= 1 combo <= 0.05 bb)',
             'subgame_exploitability_bb': sp.exploitability()['total_bb'], 'nodes': nodes}
 
 
@@ -124,6 +146,8 @@ def g6_checks(rec, cfg):
     """G6 on a stored record: (a) subgame vs full tree, (b) dominated material actions + chip conservation."""
     u_solver = rec['exploitability']['total_bb']
     viol, unreached = [], 0
+    unsup = {(tuple(u['path']), u['actor']) for u in (rec.get('amendment8_unsupported_nodes') or [])}
+    viol_unsup = []
     for n in rec['nodes']:
         for h, x in n['hands'].items():
             if x['reach_combos'] < REACH_FLOOR:
@@ -137,8 +161,9 @@ def g6_checks(rec, cfg):
             u = x['u_panel'] + x['u_outer'] + u_solver
             for a, f in fr.items():
                 if f >= MATERIAL and ev[best] - ev[a] > 2 * u:
-                    viol.append({'path': n['path'], 'actor': n['actor'], 'class': h, 'action': a, 'freq': f,
-                                 'ev_loss_bb': round(ev[best] - ev[a], 4), 'u': round(u, 4)})
+                    v_ = {'path': n['path'], 'actor': n['actor'], 'class': h, 'action': a, 'freq': f,
+                          'ev_loss_bb': round(ev[best] - ev[a], 4), 'u': round(u, 4)}
+                    (viol_unsup if (tuple(n['path']), n['actor']) in unsup else viol).append(v_)
     premium_fold = [{'path': n['path'], 'class': h, 'fold': n['hands'][h]['freq'].get('Fold', 0.0)}
                     for n in rec['nodes'] for h in ('AA', 'KK') if h in n['hands'] and n['hands'][h]['reach_combos'] >= REACH_FLOOR
                     and n['hands'][h]['freq'].get('Fold', 0.0) > 0.01]
@@ -153,11 +178,13 @@ def g6_checks(rec, cfg):
                                   'reason': 'needs the parent full-tree average strategy at this node with the same tables (J dump + a '
                                             'full-tree re-solve on the spot tables); not run'}
     b_pass = not viol and not premium_fold and chip['pass']
+    b_pass_strict = b_pass and not viol_unsup
     return {'a_subgame_vs_full_tree': a,
             'b_invariants': {'dominated_material': viol[:50], 'n_dominated_material': len(viol),
                              'n_dominated_at_unreached_classes': unreached, 'reach_floor_combos': REACH_FLOOR,
                              'premium_fold': premium_fold,
-                             'chip_conservation': chip, 'pass': b_pass},
+                             'chip_conservation': chip, 'pass': b_pass, 'pass_strict': b_pass_strict,
+                             'dominated_at_amendment8_unsupported_nodes': viol_unsup},
             'c_near_reference': 'orientation only, never pass / fail',
             'pass': a['status'] == 'pass' and b_pass}
 
@@ -439,6 +466,11 @@ def main():
 
 if __name__ == '__main__':
     if len(sys.argv) > 2 and sys.argv[1] == '--relabel':
+        relabel(sys.argv[2])
+    elif len(sys.argv) > 3 and sys.argv[1] == '--regrade-g6a':   # <record.json> <spec.json>: recompute G6(a), then relabel
+        r_ = json.load(open(sys.argv[2]))
+        r_['G6a_result'] = g6a_parent_reproduction(json.load(open(sys.argv[3])))
+        json.dump(r_, open(sys.argv[2], 'w'))
         relabel(sys.argv[2])
     else:
         main()
