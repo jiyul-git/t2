@@ -200,6 +200,7 @@ class Loop:
         global PANEL
         if p144:
             PANEL = P144_PANEL
+            self.state_file = 'state.json'      # the 24-board converged state
             st24 = self.load_state()
             fk = st24['final_step']
             self.state_file = 'state_p144.json'
