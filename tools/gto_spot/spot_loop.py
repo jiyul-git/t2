@@ -55,6 +55,8 @@ def retry_flops(term_file, flops_dir, panel, is_m, bad):
     """standard amendment 11 (a): one retry at 3x the iteration budget for each unconverged board; the first artifact is kept"""
     os.makedirs(os.path.join(flops_dir, 'first_attempt'), exist_ok=True)
     for b in bad:
+        if os.path.exists(os.path.join(flops_dir, 'first_attempt', b['board'] + '.json')):
+            continue   # already retried once (e.g. the P144 pass whose flops step 0 of the 144-board loop reuses)
         src = os.path.join(flops_dir, b['board'] + '.json')
         target = json.load(open(src))['provenance_key']['target_exploitability_pct_pot']   # same target as the first attempt
         os.replace(src, os.path.join(flops_dir, 'first_attempt', b['board'] + '.json'))
