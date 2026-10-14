@@ -51,6 +51,28 @@ def panel_setup():
     return C, boards, draws, p, C.compat_of(boards), panel
 
 
+def retry_flops(term_file, flops_dir, panel, is_m, bad):
+    """standard amendment 11 (a): one retry at 3x the iteration budget for each unconverged board; the first artifact is kept"""
+    os.makedirs(os.path.join(flops_dir, 'first_attempt'), exist_ok=True)
+    for b in bad:
+        src = os.path.join(flops_dir, b['board'] + '.json')
+        target = json.load(open(src))['provenance_key']['target_exploitability_pct_pot']   # same target as the first attempt
+        os.replace(src, os.path.join(flops_dir, 'first_attempt', b['board'] + '.json'))
+        env = dict(os.environ, T2_PANEL_BOARDS=b['board'], RAYON_NUM_THREADS='1',
+                   T2_SOURCE_COMMIT=subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip())
+        if is_m:
+            env['T2_PANEL_MATRIX'] = '1'
+        subprocess.run([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
+                        str(3 * b['iterations']), str(target), '25'], env=env, check=True,
+                       stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT)
+    return flop_failures(flops_dir)
+
+
+def terminal_exempt_level(sp, t):
+    """amendment 11 (b): either live seat arrives at the terminal with < 1 combo"""
+    return min(float(t['reach'][q].sum() * 1326) for q in sp.live) < 1.0
+
+
 def flop_failures(flops_dir):
     """boards whose solve ended unconverged at the iteration budget (standard amendment 7)"""
     _, boards, _, _, _, _ = panel_setup()
@@ -62,12 +84,12 @@ def flop_failures(flops_dir):
     return bad
 
 
-def board_values(flops_dir):
+def board_values(flops_dir, allow=()):
     _, boards, _, _, _, _ = panel_setup()
     out = {}
     for b in boards:
         d = json.load(open(os.path.join(flops_dir, b + '.json')))
-        assert d['converged'] and d['exploitability_pct_pot'] <= d['provenance_key']['target_exploitability_pct_pot'] <= 0.6, (flops_dir, b)
+        assert b in allow or d['converged'] and d['exploitability_pct_pot'] <= d['provenance_key']['target_exploitability_pct_pot'] <= 0.6, (flops_dir, b)
         out[b] = {pl['position']: [0.0 if x is None else x for x in pl['gross_eps']] for pl in d['players']}
     return out
 
@@ -226,6 +248,16 @@ class Loop:
                                     '--workers', os.environ.get('SPOT_PANEL_WORKERS', '4'), '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
                     open(fd + '/done', 'w').write('ok')
                 bad = flop_failures(fd)
+                if bad and self.v4:   # amendment 11 (a): one retry at 3x the budget
+                    first = bad
+                    bad = retry_flops(tf, fd, PANEL, is_m, first)
+                    rep.setdefault('flop_retries', []).append({'terminal': j, 'first': first, 'after_retry': bad})
+                allow = ()
+                if bad and self.v4 and terminal_exempt_level(sp, t):   # amendment 11 (b): recorded, not stopping
+                    rep.setdefault('flop_failures_exempt_terminal', []).append({'terminal': j, 'boards': bad})
+                    rep['verdict_without_amendment11'] = 'research (amendment 7: unconverged flop)'
+                    allow = {b['board'] for b in bad}
+                    bad = []
                 if bad:
                     rep['decision'] = f'stop: flop solver did not converge (terminal {j}, step {k}): {bad}'
                     rep['flop_failures'] = bad
@@ -236,7 +268,7 @@ class Loop:
                     state['stop_reason'] = rep['decision']
                     self.save_state(state)
                     return state
-                bv = board_values(fd)
+                bv = board_values(fd, allow)
                 raw, se = stratified(bv)
                 Mraw = self.matrix_from(fd, sp) if is_m else None
                 prior = np.array([H.combos(l) for l in sp.lab169])

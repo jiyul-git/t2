@@ -54,6 +54,16 @@ def main():
             open(fd + '/done144', 'w').write('ok')
         L.PANEL = P144
         bad = L.flop_failures(fd)
+        allow = ()
+        if bad and lp.v4:   # standard amendment 11 (a) retry, (b) exempt-level terminal: recorded, not failing the pass
+            first = bad
+            bad = L.retry_flops(tf, fd, P144, is_m, first)
+            rep.setdefault('flop_retries', []).append({'terminal': j, 'first': first, 'after_retry': bad})
+            if bad and L.terminal_exempt_level(sp24, t):
+                rep.setdefault('flop_failures_exempt_terminal', []).append({'terminal': j, 'boards': bad})
+                rep['verdict_without_amendment11'] = 'research (amendment 7: unconverged flop)'
+                allow = {b['board'] for b in bad}
+                bad = []
         if bad:   # standard amendment 7: never accepted silently; recorded, the terminal keeps its 24-board values, the pass fails
             L.PANEL = os.path.join(ROOT, 'data/gto_hu_continuation/panel_v1.json')
             rep.setdefault('flop_failures', []).append({'terminal': j, 'line': line, 'boards': bad})
@@ -62,7 +72,7 @@ def main():
                                                                  'exempt': lp.v4 and float(t['reach'][[x for x in sp24.live if sp24.pos[x] != pl['position']][0]].sum() * 1326) < 1.0,
                                                                  'D144': None, 'U24': None} for pl in tj['players']}}
             continue
-        bv = L.board_values(fd)
+        bv = L.board_values(fd, allow)
         raw, se = L.stratified(bv)
         M = lp.matrix_from(fd, sp24) if is_m else None
         L.PANEL = os.path.join(ROOT, 'data/gto_hu_continuation/panel_v1.json')

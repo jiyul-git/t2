@@ -205,3 +205,13 @@ panel_v3_144 from the 24-board converged state: step 0 is the P144 pass itself (
 (144 boards each: panel_v1 boards at 0.3%, extension boards at 0.6%); damping, amendment-8 exemptions and amendment-7 flop handling as
 in v4; stop when every terminal-seat has D <= U144 (144-board standard error); otherwise `research`. The grader's P144 inputs are the
 accepted 144-board state (report_p144_check.json keeps the original P144 check). Criterion unchanged in kind (D <= U).
+
+## Amendment 11 (2026-10-14, user decision "a+b", relayed by the T2 session session_01XV9GKUYpuxdA2ckcjg1qsv at 12:40Z; pre-registered for every spot)
+Observed: p60v2b_co_vs_sb_3b40 P144, 4-bet-call terminal (amendment-8 exempt for the SB; CO arrives with 0.017 combos), board Qc9d4h:
+0.72% pot at 1000 iterations vs target 0.6%; under amendment 7 this one flop made the spot research.
+(a) Every flop that ends unconverged gets one retry at 3x the iteration budget (same target); the first artifact is kept beside it.
+(b) If it is still unconverged after the retry and its terminal is exempt-level — one live seat arrives with < 1 combo, so the
+    terminal's joint reach is negligible (interpretation stated here: amendment 8 exempts the seat whose opponent arrives with < 1
+    combo; the terminal counts as exempt-level when either seat's arrival is < 1 combo) — it is recorded and the loop / P144 continue;
+    at any other terminal amendment 7 applies (research).
+Records keep both verdicts: without amendment 11 (amendment-7 research) and with it.
