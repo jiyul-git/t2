@@ -54,16 +54,14 @@ def main():
             open(fd + '/done144', 'w').write('ok')
         L.PANEL = P144
         bad = L.flop_failures(fd)
-        if bad:   # standard amendment 7: never accepted silently; the precision pass fails (G3 false -> research)
+        if bad:   # standard amendment 7: never accepted silently; recorded, the terminal keeps its 24-board values, the pass fails
             L.PANEL = os.path.join(ROOT, 'data/gto_hu_continuation/panel_v1.json')
-            rep['consistent_with_24'] = False
-            rep['flop_failures'] = {'terminal': j, 'boards': bad}
-            # the grader then grades the 24-board state with G3 false (research), naming the failure
-            L.atomic(tabs24, od + 'tables_used.json')
-            L.atomic(mats24, od + 'matrices_used.json')
-            L.atomic(rep, od + 'report.json')
-            print('consistent_with_24', False, 'flop failures', bad)
-            return
+            rep.setdefault('flop_failures', []).append({'terminal': j, 'line': line, 'boards': bad})
+            rep['terminals'][line] = {'mode': 'matrix' if is_m else 'table', 'flop_failure': True,
+                                      'seats': {pl['position']: {'opp_arriving_combos': float(t['reach'][[x for x in sp24.live if sp24.pos[x] != pl['position']][0]].sum() * 1326),
+                                                                 'exempt': lp.v4 and float(t['reach'][[x for x in sp24.live if sp24.pos[x] != pl['position']][0]].sum() * 1326) < 1.0,
+                                                                 'D144': None, 'U24': None} for pl in tj['players']}}
+            continue
         bv = L.board_values(fd)
         raw, se = L.stratified(bv)
         M = lp.matrix_from(fd, sp24) if is_m else None
@@ -98,8 +96,9 @@ def main():
         if is_m:
             new_m[line] = {str(pl['seat']): [[None if np.isnan(x) else float(x) for x in row] for row in M[pl['position']]] for pl in tj['players']}
         rep['terminals'][line] = {'mode': 'matrix' if is_m else 'table', 'seats': seats}
-    rep['consistent_with_24'] = all(s['D144'] <= s['U24'] or s['exempt'] for t in rep['terminals'].values() for s in t['seats'].values())
-    rep['consistent_with_24_strict'] = all(s['D144'] <= s['U24'] for t in rep['terminals'].values() for s in t['seats'].values())
+    ok_ = lambda s: s['D144'] is not None and s['D144'] <= s['U24']
+    rep['consistent_with_24'] = (not rep.get('flop_failures')) and all(ok_(s) or s['exempt'] for t in rep['terminals'].values() for s in t['seats'].values())
+    rep['consistent_with_24_strict'] = (not rep.get('flop_failures')) and all(ok_(s) for t in rep['terminals'].values() for s in t['seats'].values())
     sp = lp.spot(new_t, new_m)
     L.atomic(new_t, od + 'tables_used.json')
     L.atomic(new_m, od + 'matrices_used.json')
