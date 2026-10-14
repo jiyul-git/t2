@@ -28,6 +28,8 @@ import hu_spot as H  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 PANEL = os.path.join(ROOT, 'data/gto_hu_continuation/panel_v1.json')
+PANEL_V1 = PANEL
+P144_PANEL = os.path.join(ROOT, 'data/gto_hu_continuation/panel_v3_144.json')
 MENU = os.path.join(ROOT, 'data/gto_hu_continuation/menu_m2_single_v1.json')
 ALPHA = 0.5
 MAX_STEPS = 8   # rule v2 (standard amendment 1)
@@ -95,6 +97,7 @@ class Loop:
         self.v4 = spec.get('rule') == 'v4'
         self.v3 = spec.get('rule') in ('v3', 'v4')   # v4 = v3 with damped matrices (standard amendment 6)
         self.dir = f"/home/user/gto_ckpt/spots/{spec['id']}/"
+        self.state_file = 'state.json'
         os.makedirs(self.dir, exist_ok=True)
 
     def spot(self, tables, matrices=None):
@@ -169,12 +172,22 @@ class Loop:
                 den[pos][ok] += cc[ok]
         return {pos: np.where(den[pos] > 0, num[pos] / np.where(den[pos] > 0, den[pos], 1), np.nan) for pos in num}
 
-    def run(self, k_start=0):
+    def run(self, k_start=0, p144=False):
+        # p144 = standard amendment 10: after an inconsistent P144 the v4 loop continues on panel_v3_144 from the 24-board
+        # converged state; step 0 is the P144 pass itself (its flops are reused), at most 3 further steps, criterion D <= U144.
+        global PANEL
+        if p144:
+            PANEL = P144_PANEL
+            st24 = self.load_state()
+            fk = st24['final_step']
+            self.state_file = 'state_p144.json'
+            if not os.path.exists(self.dir + self.state_file):
+                self.save_state({'k': 0, 'tables': st24['tables'], 'matrices': st24.get('matrices', {}), 'from_step': fk})
         state = self.load_state()
         state.setdefault('matrices', {})
-        max_steps = 12 if self.v4 else (6 if self.v3 else MAX_STEPS)
+        max_steps = 4 if p144 else (12 if self.v4 else (6 if self.v3 else MAX_STEPS))
         for k in range(k_start, max_steps):
-            sd = self.dir + f'step{k}/'
+            sd = self.dir + (f'p144s{k}/' if p144 else f'step{k}/')
             os.makedirs(sd, exist_ok=True)
             sp = self.spot(state['tables'], state['matrices'])
             terms = self.terminals(sp)
@@ -191,7 +204,21 @@ class Loop:
                 json.dump(tj, open(tf, 'w'))
                 fd = sd + f'term{j}_flops'
                 is_m = self.v3 and self.is_matrix_line(line)
-                if not os.path.exists(fd + '/done'):
+                if p144:
+                    if k == 0:   # the P144 pass solved these 144 boards at exactly these ranges
+                        fd = self.dir + f"step{state['from_step']}/term{j}_flops"
+                        assert json.load(open(self.dir + f"step{state['from_step']}/term{j}.json"))['ranges_hash_fnv1a64'] == tj['ranges_hash_fnv1a64']
+                    elif not os.path.exists(fd + '/done144'):
+                        env = dict(os.environ)
+                        if is_m:
+                            env.update({'T2_PANEL_MATRIX': '1', 'T2_BIN_DIR': os.path.join(ROOT, 'vendor/gtopen/target/release/examples')})
+                        w_ = os.environ.get('SPOT_PANEL_WORKERS', '4')
+                        for extra in ([PANEL_V1], [P144_PANEL, '--exclude-origin', 'panel_v1', '--postflop', '1000', '0.6', '25']):
+                            subprocess.run([sys.executable, os.path.join(ROOT, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, extra[0], fd,
+                                            *extra[1:], '--workers', w_, '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'),
+                                           stderr=subprocess.STDOUT, env=env)
+                        open(fd + '/done144', 'w').write('ok')
+                elif not os.path.exists(fd + '/done'):
                     env = dict(os.environ)
                     if is_m:
                         env.update({'T2_PANEL_MATRIX': '1', 'T2_BIN_DIR': os.path.join(ROOT, 'vendor/gtopen/target/release/examples')})
@@ -283,7 +310,7 @@ class Loop:
             all_pass = all(s['pass'] for t in rep['terminals'].values() for s in t['seats'].values())
             rep['all_pass'] = all_pass
             rep['all_pass_strict'] = all(s.get('pass_strict', s['pass']) for t in rep['terminals'].values() for s in t['seats'].values())
-            if k == 0:
+            if k == 0 and not p144:
                 rep['decision'] = 'continue (minimum one update)'
             elif all_pass:
                 rep['decision'] = 'stop: converged at panel_v1 resolution (value space); step-k tables accepted'
@@ -297,6 +324,9 @@ class Loop:
                 state['final_step'] = k
                 state['converged'] = all_pass and k > 0
                 state['converged_strict'] = rep['all_pass_strict'] and k > 0
+                if p144:
+                    state['converged'] = all_pass
+                    state['converged_strict'] = rep['all_pass_strict']
                 state['exempt_used'] = all_pass and not rep['all_pass_strict']
                 if all_pass and k > 0:
                     # accepted tables: the step-k tables (D <= U against them); keep them, do not apply the k update
@@ -313,18 +343,40 @@ class Loop:
         return state
 
     def load_state(self):
-        f = self.dir + 'state.json'
+        f = self.dir + self.state_file
         if os.path.exists(f):
             return json.load(open(f))
         return {'k': 0, 'tables': {}}
 
     def save_state(self, st):
-        atomic(st, self.dir + 'state.json')
+        atomic(st, self.dir + self.state_file)
 
 
 if __name__ == '__main__':
     spec = json.load(open(sys.argv[1]))
     L = Loop(spec)
-    k0 = int(sys.argv[2]) if len(sys.argv) > 2 else L.load_state().get('k', 0)
-    st = L.run(k0)
-    print('final', st.get('final_step'), 'converged', st.get('converged'))
+    if '--p144' in sys.argv[2:]:
+        # standard amendment 10: 144-board continuation after an inconsistent P144; the result replaces the grader's P144 inputs
+        st24 = L.load_state()
+        fk = st24['final_step']
+        L.state_file = 'state_p144.json'
+        k0 = L.load_state().get('k', 0) if os.path.exists(L.dir + L.state_file) else 0
+        st = L.run(k0, p144=True)
+        od = L.dir + f'step{fk}_p144/'
+        os.makedirs(od, exist_ok=True)
+        if os.path.exists(od + 'report.json') and not os.path.exists(od + 'report_p144_check.json'):
+            os.replace(od + 'report.json', od + 'report_p144_check.json')
+        last = st['final_step']
+        rep = json.load(open(L.dir + f'p144s{last}/report.json'))
+        atomic(json.load(open(L.dir + f'p144s{last}/tables_used.json')) if st.get('converged') else st['tables'], od + 'tables_used.json')
+        atomic(json.load(open(L.dir + f'p144s{last}/matrices_used.json')) if st.get('converged') else st['matrices'], od + 'matrices_used.json')
+        atomic({'k': fk, 'panel': 'panel_v3_144 (amendment-10 loop)', 'p144_loop_steps': last + 1,
+                'consistent_with_24': bool(st.get('converged')), 'consistent_with_24_strict': bool(st.get('converged_strict')),
+                'terminals': rep.get('terminals', {}), 'flop_failures': rep.get('flop_failures'),
+                'decision': rep.get('decision'), 'note': 'criterion D <= U144 at each 144-board step (standard amendment 10)'},
+               od + 'report.json')
+        print('p144 loop final', last, 'converged', st.get('converged'))
+    else:
+        k0 = int(sys.argv[2]) if len(sys.argv) > 2 else L.load_state().get('k', 0)
+        st = L.run(k0)
+        print('final', st.get('final_step'), 'converged', st.get('converged'))

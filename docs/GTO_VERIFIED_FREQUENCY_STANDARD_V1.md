@@ -194,3 +194,14 @@ Rule (fixed numbers, every Plan A spot from now on):
   invariant skips the amendment-8 unsupported nodes (their values are not used, so their strategy is not graded). Observed on
   p60v2b_co_vs_sb_3b40: all 3 hits sit at "SB facing the CO 4-bet to 17.2" (CO arrives with 0.017 combos): KQs fold 20% (-4.67 bb)
   / jam 37% (-2.28 bb), AJs jam 27% (-1.54 bb). The record keeps `pass_strict` (without the skip) next to `pass`.
+
+## Amendment 10 (2026-10-14, user decision, pre-registered for every spot): 144-board continuation after an inconsistent P144
+Observed on p60v2b_co_vs_sb_3b40: the 24-board loop converged (step 2), but P144 found the main 3-bet-call terminal off by more than
+its 24-board error (D144 / U24: CO 1.39 / 0.95, SB 1.31 / 0.75; damping lag 0.48, the raw 24-board estimate itself 1.11 / 1.01 off,
+signed CO -0.68 / SB +0.68 bb on every class): the loop reuses the same 24 boards every step, so a panel that happens to favour one
+seat is locked in; only more boards fix it.
+Procedure (every spot from now on): when P144 is inconsistent (D144 > U24) without a flop failure, the v4 loop continues on
+panel_v3_144 from the 24-board converged state: step 0 is the P144 pass itself (its 144 flops are reused), then at most 3 more steps
+(144 boards each: panel_v1 boards at 0.3%, extension boards at 0.6%); damping, amendment-8 exemptions and amendment-7 flop handling as
+in v4; stop when every terminal-seat has D <= U144 (144-board standard error); otherwise `research`. The grader's P144 inputs are the
+accepted 144-board state (report_p144_check.json keeps the original P144 check). Criterion unchanged in kind (D <= U).

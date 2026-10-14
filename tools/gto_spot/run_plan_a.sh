@@ -19,6 +19,11 @@ for id in $IDS; do
     [ -s data/gto_spot/records/${id}_p144.json ] || {
       python3 tools/gto_spot/precision_pass.py $SP >> $L 2>&1 || { echo "p144 failed $id" >> $L; exit 1; }
       PRECISION=144 python3 tools/gto_spot/grade_spot.py $SP >> $L 2>&1 || { echo "p144 grade failed $id" >> $L; exit 1; }; }
+    # standard amendment 10: an inconsistent P144 (D144 > U24, no flop failure) continues the v4 loop on 144 boards, then regrades
+    if python3 -c "import json,sys; d='/home/user/gto_ckpt/spots/$id/'; k=json.load(open(d+'state.json'))['final_step']; r=json.load(open(d+f'step{k}_p144/report.json')); sys.exit(0 if (not r.get('consistent_with_24')) and not r.get('flop_failures') and 'p144_loop_steps' not in r else 1)"; then
+      python3 tools/gto_spot/spot_loop.py $SP --p144 >> $L 2>&1 || { echo "p144 loop failed $id" >> $L; exit 1; }
+      PRECISION=144 python3 tools/gto_spot/grade_spot.py $SP >> $L 2>&1 || { echo "p144 regrade failed $id" >> $L; exit 1; }
+    fi
     PRECISION=144 python3 tools/gto_spot/sensitivity.py $SP >> $L 2>&1 || { echo "sensitivity failed $id" >> $L; exit 1; }
     echo "DONE $id $(date -u +%FT%TZ)" >> $L
 done
