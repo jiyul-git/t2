@@ -206,6 +206,21 @@
         return '#' + hx(r) + hx(g) + hx(b);
       } catch (e) { return hazeColor; }
     }
+    // Average colour and brightness of the room where people walk (sofas and floor). Characters are
+    // graded toward it so a bright, clean sprite sits inside the painted light instead of on top of it.
+    let room = { color: '#808080', lum: 0.5 };
+    function sampleRoom() {
+      try {
+        const y0 = Math.round(ph * 0.6), h = Math.max(1, Math.round(ph * 0.35));
+        const d = caches.back.ctx.getImageData(0, y0, pw, h).data;
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let i = 0; i < d.length; i += 64) { if (d[i + 3] > 200) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
+        if (!n) return room;
+        r /= n; g /= n; b /= n;
+        const hx = v => Math.round(v).toString(16).padStart(2, '0');
+        return { color: '#' + hx(r) + hx(g) + hx(b), lum: (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 };
+      } catch (e) { return room; }
+    }
     function planeState(t) {
       const p = scene.planes;
       if (!p || !assets.planes) return null;
@@ -256,6 +271,7 @@
       for (const layer of assets.layers) drawLayer(caches[layer.def.group].ctx, layer, L);
       drawBoard(caches.back.ctx, rows);
       hazeColor = sampleHaze();
+      room = sampleRoom();
       planeTint.clear();
       cacheDirty = false;
     }
@@ -341,6 +357,7 @@
       const idx = clip.frames[Math.min(frame, clip.frames.length - 1)];
       return { idx, f: ch.manifest.frames[idx] };
     }
+    const ROOM_GRADE = { base: 0.62, slope: 1.1, min: 0.72, wash: 0.14 };
     function tinted(ch, idx, f, L) {
       const key = ch.manifest.name + '|' + idx;
       let t = tintCache.get(key);
@@ -353,9 +370,22 @@
           c.globalCompositeOperation = 'multiply';
           c.fillStyle = tintColor(L.ambient, s);
           c.fillRect(0, 0, f.w, f.h);
-          c.globalCompositeOperation = 'destination-in';
-          c.drawImage(ch.atlas, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
         }
+        // room grade: a little darker in a dim room, and a touch of the room's own colour
+        const dim = clamp(ROOM_GRADE.base + ROOM_GRADE.slope * room.lum, ROOM_GRADE.min, 1);
+        if (dim < 0.999) {
+          c.globalCompositeOperation = 'multiply';
+          const v = Math.round(dim * 255).toString(16).padStart(2, '0');
+          c.fillStyle = '#' + v + v + v;
+          c.fillRect(0, 0, f.w, f.h);
+        }
+        c.globalCompositeOperation = 'source-atop';
+        c.globalAlpha = ROOM_GRADE.wash;
+        c.fillStyle = room.color;
+        c.fillRect(0, 0, f.w, f.h);
+        c.globalAlpha = 1;
+        c.globalCompositeOperation = 'destination-in';
+        c.drawImage(ch.atlas, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
         tintCache.set(key, t);
       }
       return t;
