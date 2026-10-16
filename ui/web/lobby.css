@@ -109,3 +109,282 @@ main{padding:0 14px 22px}
 .avatarChoices button{border:1px solid #335149;background:#0d1917;border-radius:9px;padding:3px;aspect-ratio:1;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
 .avatarChoices button.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 .avatarChoices img{width:100%;height:auto;display:block}
+
+
+/* Approved screenshot skin. Exact art files, never geometric SVG stand-ins. */
+html[data-airport-theme="night"]{
+ --bg:#071e22;--panel:#123135;--panel2:#193d41;--line:#668783;
+ --gold:#f4d38e;--text:#fff3d8;--muted:#c5d6d0;
+ --paper:#fbf0db;--paper-ink:#1b3338;
+}
+html[data-airport-theme="day"]{
+ --bg:#143c3c;--panel:#255a58;--panel2:#357775;--line:#a0b7a1;
+ --gold:#ffe7a4;--text:#fff4d8;--muted:#e1e7d8;
+ --paper:#fff4dc;--paper-ink:#213f43;
+}
+html,body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+body{background-image:none}
+#lobby{position:relative;max-width:520px;min-height:100dvh;padding-bottom:calc(71px + env(safe-area-inset-bottom));
+ background:linear-gradient(180deg,#122e32,#061b1f 54%,#081f22)}
+html[data-airport-theme="day"] #lobby{background:linear-gradient(180deg,#426b68,#113c3c 48%,#102c31)}
+.top{height:68px;padding:8px 15px;position:sticky;z-index:40;top:0;
+ background:linear-gradient(95deg,#1a3536f2,#081f24f6);border-bottom:1px solid #c8a46477}
+.brand{font-size:24px;letter-spacing:-.06em;color:#ffe1a4;font-style:italic;text-shadow:0 2px 5px #070d1c8a}
+.brand span{color:#ffde9e}
+.strap{display:none}
+.walletBadge{margin-left:auto;padding:7px 10px;min-height:42px;background:#102c32bd;
+ border-color:#e3b97092;color:#f8db9f;border-radius:999px;font-size:9px;min-width:98px}
+.walletBadge b{font-size:16px;margin:0;font-weight:900}
+main{padding:0 14px 28px}
+.airport-scene{position:relative;width:calc(100% + 28px);margin:0 -14px 10px;
+ height:clamp(255px,calc(50vw + 84px),355px);overflow:hidden;background:#112e39}
+.airport-scene-art{position:absolute;inset:0;background-position:center top;
+ background-repeat:no-repeat;background-size:100% auto;pointer-events:none}
+.airport-scene-art-night{background-image:url("assets/t2-airport/lobby_hero_night.webp")}
+.airport-scene-art-day{background-image:url("assets/t2-airport/lobby_hero_day.webp");
+ opacity:var(--airport-day-alpha,0);transition:opacity 45s linear}
+.airport-scene::after{content:"";pointer-events:none;position:absolute;inset:46% 0 0;
+ background:linear-gradient(180deg,transparent 0%,#0b2327ba 60%,#071e22 94%)}
+.airport-scene-copy{z-index:2;position:absolute;bottom:13px;left:20px;right:16px;text-shadow:0 3px 7px #061418}
+.airport-scene-copy h1{margin:0 0 8px;color:#ffe8af;letter-spacing:-.065em;
+ font-size:clamp(25px,7vw,38px);line-height:1.12;font-weight:1000}
+.airport-scene-copy p{margin:0;font-size:12px;line-height:1.4;color:#f9f1dd}
+.featured{border:1px solid #d0aa69;border-radius:16px;margin:6px 0 14px;overflow:hidden;
+ background:linear-gradient(120deg,#0f3638,#0a252c);
+ box-shadow:0 8px 22px #0008}
+.featured-top{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;color:#ffe9b3;
+ font-size:18px;letter-spacing:-.04em;font-weight:900}
+.featured-meta{font-size:10px;font-weight:700;color:#b0e7d5}
+.featured-detail{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 1fr 1fr;gap:6px;
+ align-items:center;margin:0 5px;background:var(--paper);color:var(--paper-ink);
+ border-radius:12px 12px 0 0;padding:13px 12px 10px 37%;min-height:120px;
+ background-image:linear-gradient(90deg,transparent 0%,transparent 29%,var(--paper) 43%),
+ url("assets/t2-airport/card_featured.webp");
+ background-repeat:no-repeat;background-size:100% 100%,40% 100%;background-position:left,left}
+.featured-detail>div:first-child{grid-column:1/-1}
+.featured-detail h2{margin:0;font-size:19px;letter-spacing:-.04em;font-weight:900}
+.featured-detail p{color:#576e72;font-size:10px;margin:2px 0}
+.featured-stat{border-left:1px solid #bbc2b8;padding-left:7px;display:flex;flex-direction:column}
+.featured-stat span{font-size:9px;color:#5b7272}
+.featured-stat strong{font-size:11px;color:#193a41;white-space:nowrap}
+.featured-button{display:block;margin:0;width:100%;background:linear-gradient(#ffe7a1,#e0b25c);
+ border:0;min-height:44px;color:#173437;font-size:14px;font-weight:900}
+.section{margin-top:12px}
+.sectionHead{display:flex;flex-direction:column;align-items:stretch;gap:11px;margin:0 0 12px}
+.section h2{font-size:21px;color:#fbe0a4;margin:0;letter-spacing:-.06em}
+.sectionHead p{display:none}
+.tabs{width:100%;max-width:none;gap:6px}
+.tabs button{flex:1;min-height:39px;white-space:nowrap;font-size:11px;font-weight:800;
+ border:1px solid #4b6e71;border-radius:999px;background:#0b2a2f;color:#f7e9d4;padding:7px 4px}
+.tabs button.active{background:linear-gradient(#ffe8ab,#ddb567);border-color:#fee6b9;color:#152c2e}
+.tournaments{display:grid;grid-template-columns:1fr;gap:8px}
+.card{position:relative;display:grid;grid-template-columns:80px minmax(0,1fr);min-height:96px;
+ gap:8px;border:1px solid #e8d2aa9f;border-radius:11px;overflow:hidden;
+ padding:0;color:#1d363b;background:var(--paper);cursor:pointer;box-shadow:0 3px 7px #0006}
+.card::after{display:none}
+.card:focus-visible{outline:2px solid #ffe39a;outline-offset:3px}
+.card-illustration{overflow:hidden}
+.card-illustration img{width:100%;height:100%;min-height:96px;display:block;object-fit:cover}
+.card-body{padding:8px 9px 7px 0;min-width:0}
+.card-title-line{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.card h3{margin:0;font-size:16px;line-height:1.16;font-weight:900;letter-spacing:-.05em;min-width:0}
+.card .tag{flex:0 0 auto;background:#a5e6c2;color:#174434;font-size:9px;letter-spacing:0;
+ border-radius:99px;padding:4px 7px}
+.card .desc{margin:4px 0;font-size:10px;min-height:0;line-height:1.35;color:#506a73}
+.card .facts{display:flex;flex-wrap:wrap;gap:6px 14px;margin:7px 0 0}
+.card .fact{display:flex;align-items:baseline;flex-direction:row-reverse;gap:4px;border:0;padding:0;min-width:0}
+.card .fact b{font-size:11px;color:#233e42;white-space:normal}
+.card .fact span{font-size:9px;color:#57747c;white-space:nowrap}
+.card .extra-fact{display:none}
+.card .enter{font-size:9px;margin:5px 0 0;color:#4a7874}
+.current{background:linear-gradient(135deg,#30544b,#113338);border-color:#d7b373}
+.bottom{height:65px;grid-template-columns:repeat(4,minmax(0,1fr));background:#08262beF;
+ border-top:1px solid #ba9b66;padding-bottom:env(safe-area-inset-bottom)}
+.bottom button{padding:6px 0;color:#b1c4be;font-size:10px}
+.bottom button span{font-size:20px;color:inherit;line-height:1.2}
+.bottom button.active{color:#ffdc90;background:linear-gradient(180deg,#8d723524,#bd913a42)}
+.sheet{background:#102e30;border-top-color:#d5ba7a}
+@media(max-width:360px){
+ .top{padding:7px 9px}.brand{font-size:19px}
+ .airport-scene{height:260px}
+ .airport-scene-copy h1{font-size:24px}
+ .airport-scene-copy p{font-size:11px}
+ .theme-picker button{padding:5px 7px;font-size:10px}
+ .featured-detail{padding-left:33%;background-size:100% 100%,39% 100%}
+ .featured-detail h2{font-size:16px}
+ .featured-stat strong{font-size:10px}
+ .card{grid-template-columns:64px minmax(0,1fr)}
+ .card h3{font-size:14px}
+ .card .facts{gap:3px 7px}
+ .card .fact b{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}
+
+/* 2026-10-16 / reference-accurate portrait layout. Lobby-only. */
+#lobby{max-width:520px;min-height:100dvh;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+.top{height:56px;min-height:56px;position:relative;top:auto;
+ display:flex;align-items:center;gap:9px;padding:5px 11px;
+ background:linear-gradient(110deg,#163437,#09282d);border-bottom:1px solid #b6945caa}
+.brand{font-size:23px;line-height:1;white-space:nowrap;letter-spacing:-.065em}
+.walletBadge{margin-left:auto;min-width:0;min-height:37px;padding:6px 9px;display:flex;
+ align-items:center;gap:5px;white-space:nowrap;font-size:12px;line-height:1}
+.walletBadge b{font-size:15px}
+.header-profile{border:0;background:transparent;color:#ffe6ae;flex:0 0 32px;
+ font-size:25px;min-height:40px;padding:0;cursor:pointer}
+main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
+.airport-scene{position:relative;width:calc(100% + 24px);margin:0 -12px 0;
+ height:clamp(253px,71vw,295px);overflow:hidden;background:#09262c}
+.airport-scene-art{position:absolute;inset:0;background-size:100% auto;background-repeat:no-repeat;
+ background-position:center top}
+.airport-scene::after{inset:0;background:linear-gradient(180deg,transparent 27%,#08242a00 51%,#09272abf 74%,#071e22 97%)}
+.airport-scene-copy{position:absolute;z-index:2;bottom:13px;left:17px;right:14px;
+ background:transparent;text-shadow:0 2px 6px #061519}
+.airport-scene-copy h1{font-size:clamp(24px,7.0vw,34px);margin:0 0 7px;line-height:1.15;
+ white-space:normal;letter-spacing:-.065em}
+.airport-scene-copy p{font-size:11px;line-height:1.35;margin:0}
+.theme-picker{position:absolute;z-index:5;top:5.5%;right:3%;width:25%;height:14%;
+ display:flex;gap:0;border:0;background:none;box-shadow:none;padding:0;border-radius:0}
+.theme-picker button,.theme-picker button.active{flex:1;width:50%;height:100%;min-height:0;
+ margin:0;padding:0;border:0;background:transparent;box-shadow:none;color:transparent;
+ font-size:0;cursor:pointer;outline-offset:2px}
+.theme-picker button:focus-visible{outline:2px solid #fff0c5}
+.featured{margin:0 0 14px;border-radius:14px;box-shadow:0 5px 10px #0005}
+.featured-top{height:31px;padding:0 12px;font-size:15px;line-height:1.1}
+.featured-meta{font-size:10px;font-weight:600}
+.featured-detail{position:relative;display:grid;grid-template-columns:32% 68%;gap:0;
+ width:auto;margin:0 3px 3px;min-height:98px;padding:0;border:0;
+ background:var(--paper);background-image:none;border-radius:11px;overflow:hidden}
+.featured-thumb{display:block;width:100%;height:100%;min-height:98px;object-fit:cover}
+.featured-main{min-width:0;display:flex;flex-direction:column;justify-content:space-between;
+ gap:5px;padding:9px 9px 8px 9px}
+.featured-head{display:flex;justify-content:space-between;align-items:flex-start;gap:5px;min-width:0}
+.featured-title{min-width:0}
+.featured-head h2{font-size:18px;line-height:1.1;margin:0 0 5px;font-weight:900}
+.featured-head p{font-size:10px;color:#506d71;line-height:1.2;margin:0}
+.featured-status{display:inline-block;background:#9ce7c0;color:#184437;border-radius:99px;
+ padding:5px 8px;white-space:nowrap;font-size:10px;font-weight:800}
+.featured-metrics{display:flex;align-items:end;gap:8px;min-width:0}
+.featured-stat{display:flex;flex-direction:column;gap:1px;min-width:0;border:0;padding:0}
+.featured-stat span{font-size:9px;color:#597276}
+.featured-stat strong{font-size:11px;white-space:nowrap;line-height:1.2}
+.featured-button{display:block;flex:0 0 auto;width:auto;margin:0 0 0 auto;min-height:35px;
+ padding:8px 10px;border:1px solid #af8645;border-radius:15px;
+ background:linear-gradient(#ffe6a2,#e0b161);color:#163437;box-shadow:0 2px 3px #0003;
+ font-size:11px;font-weight:900;cursor:pointer}
+.section{margin-top:3px;scroll-margin-top:60px}
+.sectionHead{gap:10px;margin:0 0 10px}
+.section h2{font-size:20px}
+.tabs button{min-height:37px}
+.tournaments{grid-template-columns:1fr;gap:8px}
+.card{min-height:78px;height:auto;grid-template-columns:24% minmax(0,1fr);
+ border-radius:10px;gap:0}
+.card-illustration{overflow:hidden}
+.card-illustration img{min-height:78px;height:100%;width:100%;object-fit:cover}
+.card-body{padding:7px 10px 7px 9px;min-width:0}
+.card h3{font-size:15px;line-height:1}
+.card .desc{margin:4px 0;font-size:10px;min-height:0}
+.card .facts{display:flex;flex-wrap:wrap;gap:4px 9px;margin:6px 0 0}
+.card .fact{display:flex;flex-direction:row-reverse;gap:3px;border:0;padding:0;white-space:nowrap}
+.card .fact span{font-size:9px}
+.card .fact b{font-size:10px}
+.card .enter{display:none}
+.current{display:flex;align-items:center;gap:8px;padding:9px 11px;margin:16px 0 0;
+ border-radius:11px;background:linear-gradient(110deg,#214746,#123238);
+ min-height:67px}
+.current .kicker{font-size:10px}
+.current h3{font-size:14px;margin:2px 0}
+.current p{font-size:10px}
+.current button{flex:0 0 auto;margin-left:auto;border-radius:10px;padding:10px 12px;
+ min-height:43px;font-size:12px}
+.bottom{height:64px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.bottom button{font-size:11px}
+.bottom button span{font-size:22px}
+@media(max-width:360px){
+ .top{padding:5px 8px;gap:5px}.brand{font-size:19px}
+ .walletBadge b{font-size:13px}
+ .airport-scene{height:254px}
+ .airport-scene-copy h1{font-size:23px}
+ .featured-main{padding:7px 6px;gap:4px}
+ .featured-head h2{font-size:16px}
+ .featured-status{font-size:9px;padding:4px 6px}
+ .featured-metrics{gap:5px}
+ .featured-stat strong{font-size:10px}
+ .featured-button{padding:7px;font-size:10px}
+ .card{grid-template-columns:24% minmax(0,1fr)}
+ .card h3{font-size:14px}
+ .card .facts{gap:3px 6px}
+}
+
+/* Continuous local-clock cross-fade: presentation-only lobby UI. */
+#lobby{background:linear-gradient(180deg,var(--airport-surface-top,#122e32),
+ var(--airport-surface-mid,#061b1f) 54%,var(--airport-surface-bottom,#081f22))}
+.top{background:linear-gradient(95deg,var(--airport-surface-top,#1a3536),
+ var(--airport-surface-mid,#081f24))}
+.airport-scene{background:var(--airport-surface-top,#112e39)}
+.airport-scene-art{width:100%;height:100%;will-change:opacity}
+.airport-scene-art-day{z-index:1}
+.airport-scene-copy{z-index:3}
+.airport-scene::after{z-index:2}
+@media(prefers-reduced-motion:reduce){.airport-scene-art-day{transition:none}}
+
+/* QA time slider: hidden automatically when TEST_CLOCK_MODE=false. */
+.airport-time-test{padding:9px 13px 7px;margin:0 0 10px;border-top:1px solid #cdaa6975;
+ border-bottom:1px solid #cdaa6960;background:linear-gradient(110deg,#112b31,#173c3d)}
+.airport-time-test-title{display:flex;align-items:center;justify-content:space-between;
+ color:#ffe0a1;font-weight:900;font-size:12px;margin-bottom:5px}
+.airport-time-test-title small{font-weight:500;font-size:10px;color:#c2d2cc}
+.airport-time-test-title output{font-size:17px;font-variant-numeric:tabular-nums;
+ background:#071c23;border:1px solid #caa55a;border-radius:8px;padding:3px 8px}
+.airport-time-test input{width:100%;height:23px;display:block;margin:0;accent-color:#e9bd70;
+ cursor:pointer;touch-action:pan-x}
+.airport-time-ticks{display:flex;justify-content:space-between;font-size:9px;
+ font-variant-numeric:tabular-nums;color:#c6d3cd;margin-top:1px}
+.airport-scene-motion{position:absolute;top:0;left:0;width:100%;height:auto;
+ aspect-ratio:648 / 323;z-index:1;opacity:0;pointer-events:none;display:block}
+.airport-scene.airport-motion-ready .airport-scene-motion{opacity:1}
+.airport-scene.airport-motion-ready .airport-scene-art{visibility:hidden}
+.airport-moving-shadows{position:absolute;inset:0;z-index:2;pointer-events:none;
+ opacity:var(--airport-shadow-opacity,0);
+ background:linear-gradient(111deg,transparent 16%,#0b1a23a0 22%,transparent 29%,
+ transparent 41%,#0b1a23a5 46%,transparent 52%,transparent 71%,#0b1a23a0 77%,transparent 84%);
+ transform:translateX(var(--airport-shadow-shift,0%));transition:opacity 0.6s ease,transform 1.2s ease}
+.airport-scene{isolation:isolate}
+.airport-scene::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:radial-gradient(ellipse at 78% 33%,#ffd992,transparent 56%);
+ mix-blend-mode:screen;opacity:var(--airport-gold-opacity,0);transition:opacity 0.7s linear}
+@media(prefers-reduced-motion:reduce){
+ .airport-scene-motion{display:none!important}
+ .airport-moving-shadows{transition:none}
+}
+
+/* Mobile preview time control; remove from production using TEST_CLOCK_MODE only. */
+.airport-time-test-title{gap:8px}
+.airport-time-test-title label{flex:1;min-width:0}
+.airport-time-reset{flex:0 0 auto;min-height:28px;padding:4px 7px;
+ border:1px solid #b9a66ba6;background:#2a4340;color:#f7e1b9;
+ border-radius:8px;font-size:10px;font-weight:800;cursor:pointer}
+.airport-time-reset:disabled{opacity:.4;cursor:default}
+/* Baked day/night badge is removed using tiny matched inpaint patches. */
+.airport-toggle-removal{position:absolute;z-index:3;left:70.679%;top:1.238%;
+ width:29.321%;aspect-ratio:190/76;height:auto;pointer-events:none;
+ background-size:100% 100%;background-repeat:no-repeat;
+ -webkit-mask-image:radial-gradient(ellipse 82% 105% at 55% 50%,#000 65%,transparent 96%);
+ mask-image:radial-gradient(ellipse 82% 105% at 55% 50%,#000 65%,transparent 96%)}
+.badge-removal-night{background-image:url("assets/t2-airport/toggle_remove_night.webp")}
+.badge-removal-day{background-image:url("assets/t2-airport/toggle_remove_day.webp");
+ opacity:var(--airport-day-alpha,0);transition:opacity 10s linear}
+.airport-moving-shadows{transform-origin:center 92%;
+ transform:translateX(var(--airport-shadow-shift,0%))
+ skewX(var(--airport-shadow-angle,0deg))
+ scaleY(var(--airport-shadow-length,1));
+ transition:transform 3s linear,opacity 3s linear}
+.airport-scene::before{opacity:var(--airport-gold-opacity,0)}
+.airport-scene{--airport-lamp-alpha:var(--airport-lamp-alpha,0)}
+@media(max-width:360px){.airport-time-test-title small{display:none}}
+
+/* Single source frame invariant: identical geometry for all times, including
+   WebGL-disabled and reduced-motion browsers. No double silhouettes. */
+.airport-scene-art-day{background-image:url("assets/t2-airport/lobby_hero_night.webp")!important;
+ filter:brightness(1.22) saturate(.95) hue-rotate(5deg);
+ opacity:var(--airport-day-alpha,0)}
+.badge-removal-day{background-image:url("assets/t2-airport/toggle_remove_night.webp")!important}

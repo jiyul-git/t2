@@ -1,0 +1,42 @@
+{
+  "size": [
+    648,
+    323
+  ],
+  "source": "lobby_hero_night.webp",
+  "characters": [
+    {
+      "name": "tiger",
+      "x": 50,
+      "y": 166,
+      "w": 158,
+      "h": 157,
+      "file": "character_tiger.webp"
+    },
+    {
+      "name": "rabbit",
+      "x": 210,
+      "y": 159,
+      "w": 129,
+      "h": 164,
+      "file": "character_rabbit.webp"
+    },
+    {
+      "name": "turtle",
+      "x": 364,
+      "y": 186,
+      "w": 143,
+      "h": 137,
+      "file": "character_turtle.webp"
+    },
+    {
+      "name": "penguin",
+      "x": 505,
+      "y": 257,
+      "w": 104,
+      "h": 66,
+      "file": "character_penguin.webp"
+    }
+  ],
+  "generated_by": "ui/tools/build_airport_layers.py"
+}
