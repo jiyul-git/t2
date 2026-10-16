@@ -1,0 +1,148 @@
+{
+ "placeholder": true,
+ "size": [
+  1440,
+  1040
+ ],
+ "baselineY": 940,
+ "horizonY": 470,
+ "windowFacing": 225,
+ "window": {
+  "x": 560,
+  "y": 40,
+  "w": 880,
+  "h": 560
+ },
+ "board": {
+  "x": 70,
+  "y": 110,
+  "w": 450,
+  "h": 260,
+  "rows": 5
+ },
+ "seats": [
+  {
+   "id": "s0",
+   "x": 330
+  },
+  {
+   "id": "s1",
+   "x": 500
+  },
+  {
+   "id": "s2",
+   "x": 670
+  },
+  {
+   "id": "s3",
+   "x": 840
+  },
+  {
+   "id": "s4",
+   "x": 1010
+  },
+  {
+   "id": "s5",
+   "x": 1180
+  }
+ ],
+ "entries": {
+  "left": -220,
+  "right": 1660
+ },
+ "lamps": [
+  {
+   "x": 150,
+   "y": 900,
+   "r": 520
+  },
+  {
+   "x": 720,
+   "y": 620,
+   "r": 600
+  },
+  {
+   "x": 1330,
+   "y": 900,
+   "r": 520
+  }
+ ],
+ "floorLight": {
+  "file": "bg/floor_light.png",
+  "anchor": [
+   1000,
+   600
+  ]
+ },
+ "layers": [
+  {
+   "id": "outside",
+   "group": "back",
+   "tint": true,
+   "variants": [
+    {
+     "elev": -18,
+     "file": "bg/outside_night.png"
+    },
+    {
+     "elev": 10,
+     "file": "bg/outside_day.png"
+    }
+   ],
+   "emission": "bg/outside_emit.png",
+   "emissionKey": "city"
+  },
+  {
+   "id": "interior",
+   "group": "back",
+   "tint": true,
+   "variants": [
+    {
+     "elev": -18,
+     "file": "bg/interior_night.png"
+    },
+    {
+     "elev": 10,
+     "file": "bg/interior_day.png"
+    }
+   ],
+   "emission": "bg/interior_emit.png",
+   "emissionKey": "lamp"
+  },
+  {
+   "id": "benchBack",
+   "group": "back",
+   "tint": true,
+   "variants": [
+    {
+     "elev": 0,
+     "file": "bg/bench_back.png"
+    }
+   ]
+  },
+  {
+   "id": "benchFront",
+   "group": "mid",
+   "tint": true,
+   "variants": [
+    {
+     "elev": 0,
+     "file": "bg/bench_front.png"
+    }
+   ]
+  },
+  {
+   "id": "props",
+   "group": "front",
+   "tint": true,
+   "variants": [
+    {
+     "elev": 0,
+     "file": "bg/props.png"
+    }
+   ],
+   "emission": "bg/props_emit.png",
+   "emissionKey": "lamp"
+  }
+ ]
+}
