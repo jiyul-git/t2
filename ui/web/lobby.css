@@ -368,8 +368,8 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
 .airport-toggle-removal{position:absolute;z-index:3;left:70.679%;top:1.238%;
  width:29.321%;aspect-ratio:190/76;height:auto;pointer-events:none;
  background-size:100% 100%;background-repeat:no-repeat;
- -webkit-mask-image:radial-gradient(ellipse at 67% 53%,#000 50%,transparent 86%);
- mask-image:radial-gradient(ellipse at 67% 53%,#000 50%,transparent 86%)}
+ -webkit-mask-image:radial-gradient(ellipse 82% 105% at 55% 50%,#000 65%,transparent 96%);
+ mask-image:radial-gradient(ellipse 82% 105% at 55% 50%,#000 65%,transparent 96%)}
 .badge-removal-night{background-image:url("assets/t2-airport/toggle_remove_night.webp")}
 .badge-removal-day{background-image:url("assets/t2-airport/toggle_remove_day.webp");
  opacity:var(--airport-day-alpha,0);transition:opacity 10s linear}
