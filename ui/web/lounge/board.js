@@ -41,12 +41,13 @@
     return 'ON TIME';
   }
 
-  function boardRows(tournaments, serverNowSec, nowMs) {
+  function boardRows(tournaments, serverNowSec, nowMs, rowCount) {
+    const ROWS_N = Number.isInteger(rowCount) && rowCount > 0 ? rowCount : ROWS;
     const nowSec = Number.isFinite(serverNowSec) ? serverNowSec : nowMs / 1000;
     const sorted = (Array.isArray(tournaments) ? tournaments : [])
       .filter(t => t && Number.isFinite(t.starts_at) && !['finished', 'retired'].includes(t.status))
       .sort((a, b) => a.starts_at - b.starts_at)
-      .slice(0, ROWS);
+      .slice(0, ROWS_N);
     const real = sorted.map(t => ({
       flight: 'T2 ' + (fnv1a(String(t.id)) % 900 + 100),
       dest: DESTINATIONS[t.key || t.fmt] || FALLBACK_DEST,
@@ -60,7 +61,7 @@
     const day = kstDateKey(nowMs);
     const cityOffset = fnv1a(day) % FAKE_CITIES.length;
     let minute = sorted.length ? kstMinuteOfDay(sorted[sorted.length - 1].starts_at * 1000) : kstMinuteOfDay(nowMs);
-    for (let i = real.length, j = 0; i < ROWS; i++, j++) {
+    for (let i = real.length, j = 0; i < ROWS_N; i++, j++) {
       minute = Math.ceil((minute + 25) / 5) * 5;
       rows.push({
         flight: 'TT ' + (fnv1a(day + ':' + i) % 900 + 100),
