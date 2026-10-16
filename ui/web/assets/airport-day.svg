@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" preserveAspectRatio="xMidYMid slice" role="img" aria-label="주간 공항 터미널 창밖 풍경">
+<defs>
+ <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#a7d8eb"/><stop offset=".59" stop-color="#d9e8df"/><stop offset="1" stop-color="#f1d6a7"/></linearGradient>
+ <linearGradient id="floor" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#b5b0a0"/><stop offset=".2" stop-color="#829c98"/><stop offset="1" stop-color="#405f62"/></linearGradient>
+ <radialGradient id="sun"><stop stop-color="#fff9d3" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+ <linearGradient id="plane" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#fff9ed"/><stop offset="1" stop-color="#b4ced3"/></linearGradient>
+ <linearGradient id="glass" x1="0" x2="1" y1="0" y2="0"><stop stop-color="#f5e4c7" stop-opacity=".18"/><stop offset=".52" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient>
+</defs>
+<rect width="960" height="580" fill="url(#sky)"/>
+<circle cx="780" cy="98" r="190" fill="url(#sun)"/>
+<g fill="#fffdf0" opacity=".32"><ellipse cx="180" cy="116" rx="89" ry="24"/><ellipse cx="380" cy="96" rx="104" ry="19"/></g>
+<path d="M0 353 L100 336 180 347 252 328 349 345 430 328 552 348 681 334 810 347 960 332 V460 H0Z" fill="#9caeab" opacity=".76"/>
+<g fill="#c6d2ca" opacity=".7"><rect x="53" y="329" width="180" height="36" rx="3"/><rect x="289" y="320" width="242" height="42" rx="3"/><rect x="690" y="320" width="250" height="41" rx="3"/></g>
+<g><rect x="644" y="189" width="22" height="149" rx="3" fill="#b6c1b9"/><path d="M624 185 L688 185 678 213 635 213Z" fill="#829ba1"/><ellipse cx="656" cy="181" rx="38" ry="8" fill="#7b999e"/><rect x="650" y="140" width="12" height="38" rx="5" fill="#bacacc"/><circle cx="656" cy="137" r="3" fill="#f4bb81"/></g>
+<rect x="0" y="367" width="960" height="94" fill="#8799a2"/><path d="M0 411 H960 V455 H0Z" fill="#496574" opacity=".6"/>
+<circle cx="20" cy="407" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="64" cy="410" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="108" cy="413" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="152" cy="407" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="196" cy="410" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="240" cy="413" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="284" cy="407" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="328" cy="410" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="372" cy="413" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="416" cy="407" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="460" cy="410" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="504" cy="413" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="548" cy="407" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="592" cy="410" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="636" cy="413" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="680" cy="407" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="724" cy="410" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="768" cy="413" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="812" cy="407" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="856" cy="410" r="2" fill="#fff9dc" opacity="0.55"/><circle cx="900" cy="413" r="2" fill="#fff9dc" opacity="0.55"/>
+<g transform="translate(220 268)">
+ <path d="M9 73 Q38 38 90 39 H434 Q485 42 513 69 L514 90 H10Z" fill="url(#plane)" stroke="#9fb5bd" stroke-width="3"/>
+ <path d="M424 44 L468 -18 492 -19 480 51Z" fill="#4c7e83"/>
+ <path d="M204 74 L295 16 320 19 291 76Z" fill="#94b2b8"/>
+ <path d="M170 89 L224 128 249 128 220 85Z" fill="#a2b4b5"/>
+ <g fill="#63818b"><rect x="96" y="54" width="12" height="6" rx="2"/><rect x="116" y="54" width="12" height="6" rx="2"/><rect x="136" y="54" width="12" height="6" rx="2"/><rect x="156" y="54" width="12" height="6" rx="2"/><rect x="176" y="54" width="12" height="6" rx="2"/><rect x="196" y="54" width="12" height="6" rx="2"/><rect x="216" y="54" width="12" height="6" rx="2"/><rect x="236" y="54" width="12" height="6" rx="2"/><rect x="256" y="54" width="12" height="6" rx="2"/><rect x="276" y="54" width="12" height="6" rx="2"/><rect x="296" y="54" width="12" height="6" rx="2"/><rect x="316" y="54" width="12" height="6" rx="2"/><rect x="336" y="54" width="12" height="6" rx="2"/><rect x="356" y="54" width="12" height="6" rx="2"/><rect x="376" y="54" width="12" height="6" rx="2"/></g>
+ <path d="M35 69 L78 54 78 70Z" fill="#476f83"/>
+ <g fill="#394c50"><circle cx="150" cy="90" r="16"/><circle cx="418" cy="90" r="16"/></g>
+</g>
+<rect x="60" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="113" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="166" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="219" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="272" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="325" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="378" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="431" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="484" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="537" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="590" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="643" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="696" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="749" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="802" y="337" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/><rect x="855" y="343" width="23" height="10" rx="2" fill="#fff9d7" opacity="0.53"/>
+<!-- glass terminal frame -->
+<path d="M0 28 H960" stroke="#294b51" stroke-width="27"/>
+<path d="M0 0 V580 M312 0 V580 M624 0 V580 M960 0 V580" stroke="#667a7a" stroke-width="18"/>
+<path d="M0 290 H960" stroke="#667a7a" stroke-width="9" opacity=".8"/>
+<path d="M0 0 H960 V455 H0Z" fill="url(#glass)"/>
+<!-- terminal floor and perspective tiles -->
+<path d="M0 452 H960 V580 H0Z" fill="url(#floor)"/>
+<path d="M480 452 L165 580 M480 452 L795 580 M0 512 H960" stroke="#e6eddd" stroke-opacity=".16" stroke-width="2"/>
+<!-- seats / little terminal furniture, mostly hidden under character silhouettes -->
+<g fill="#3a5353" stroke="#849d98" stroke-opacity=".4" stroke-width="2">
+ <rect x="45" y="465" width="170" height="43" rx="13"/><rect x="249" y="466" width="158" height="43" rx="13"/><rect x="550" y="467" width="170" height="42" rx="13"/><rect x="755" y="467" width="160" height="43" rx="13"/>
+</g>
+<g stroke="#81958d" stroke-width="7"><path d="M67 505 V535 M205 505 V535 M266 505 V535 M390 505 V535 M570 505 V535 M703 505 V535 M769 505 V535 M899 505 V535"/></g>
+<rect x="0" y="0" width="960" height="580" fill="none" stroke="#304a4c" stroke-width="0.3"/>
+</svg>

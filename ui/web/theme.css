@@ -76,3 +76,17 @@ html[data-deck="ivory"] .card.back{
 }
 html[data-deck="ivory"] .card.back::after{background:#45665b;border-color:#e2d9c0;box-shadow:0 0 0 1px #45665b}
 #heroinfo .pos{max-width:128px;white-space:normal;line-height:1.2}
+
+/* Airport arrival continuity: keep the existing table, original characters and card backs. */
+html[data-airport-theme="night"] #app {
+  background:linear-gradient(180deg,#0b1d2ad6 0%,#0b2528a8 52%,#081615e8 100%),
+    url("assets/airport-night.svg") center center/cover;
+}
+html[data-airport-theme="day"] #app {
+  background:linear-gradient(180deg,#123940bd 0%,#1b474bb0 52%,#122a2bdc 100%),
+    url("assets/airport-day.svg") center center/cover;
+}
+html[data-airport-theme="day"] #topbar{background:#173d3deb;border-bottom-color:#e2c89266}
+html[data-airport-theme="night"] #topbar{background:#11232dec;border-bottom-color:#d1a86b66}
+html[data-airport-theme="day"] #actionbar{background:#173d3dee}
+html[data-airport-theme="night"] #actionbar{background:#11282aef}

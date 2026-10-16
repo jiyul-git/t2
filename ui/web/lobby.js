@@ -6,7 +6,7 @@ const fmt = n => Number(n || 0).toLocaleString('ko-KR');
 const when = t => new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
 }).format(new Date(t * 1000));
-const labels = {scheduled:'예정', late_registration:'레이트 등록', closed:'등록 마감', finished:'종료', retired:'내 참가 종료'};
+const labels = {scheduled:'시작 전', late_registration:'추가 등록 중', closed:'등록 마감', finished:'종료', retired:'내 대회 종료'};
 function escapeHtml(v) { return String(v == null ? '' : v).replace(/[&<>"]/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function playKey() { try { return localStorage.getItem('t2_play_key') || ''; } catch(e) { return ''; } }
@@ -23,7 +23,7 @@ async function loadLobby() {
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json(); catalog=data.tournaments || []; current=data.current;
     wallet=data.wallet; $('#walletBalance').textContent=fmt(wallet && wallet.balance);
-    renderCurrent(); renderCards();
+    renderCurrent(); renderFeatured(); renderCards();
     if(selected) { selected=catalog.find(t=>t.id===selected.id); if(selected) paintJoin(); }
   } catch(e) { toast('로비 정보를 불러오지 못했습니다: '+e.message); }
 }
@@ -32,10 +32,27 @@ function renderCurrent() {
   const mine=catalog.find(t=>t.active && t.my_entry && !['finished','retired'].includes(t.status));
   if(!mine) { box.hidden=true; return; }
   box.hidden=false;
-  box.innerHTML='<div><div class="kicker">MY TOURNAMENT</div><h3>'+escapeHtml(mine.name)+
+  box.innerHTML='<div><div class="kicker">참가 중인 대회</div><h3>'+escapeHtml(mine.name)+
     '</h3><p>'+when(mine.starts_at)+' · '+(mine.my_entry.rank ? mine.my_entry.rank+'위' : labels[mine.status])+
-    '</p></div><button id="resume" type="button">입장 / 결과</button>';
+    '</p></div><button id="resume" type="button">대회 입장 · 결과</button>';
   $('#resume').onclick=()=>enter(mine);
+}
+function renderFeatured() {
+  const box=$('#featured');
+  const list=catalog.filter(t=>!['finished','retired'].includes(t.status));
+  const open=list.filter(t=>t.registration_open).sort((a,b)=>a.starts_at-b.starts_at);
+  const next=list.filter(t=>t.status==='scheduled').sort((a,b)=>a.starts_at-b.starts_at);
+  const t=open[0] || next[0];
+  if(!t){ box.hidden=true; return; }
+  box.hidden=false;
+  $('#featuredLead').textContent=t.registration_open?'지금 참가 가능한 대회':'다음 예정 대회';
+  $('#featuredStatus').textContent=labels[t.status]||'대회';
+  $('#featuredName').textContent=t.name;
+  $('#featuredWhen').textContent=when(t.starts_at)+' 시작';
+  $('#featuredBuyin').textContent=fmt(t.buyin)+' 칩';
+  $('#featuredCount').textContent=fmt(t.entries)+'명';
+  $('#featuredJoin').textContent=t.registration_open?'대회 정보 보기 ›':'일정 확인 ›';
+  $('#featuredJoin').onclick=()=>openJoin(t.id);
 }
 function visible(t) {
   if(filter==='mine') return t.my_entry && t.my_entry.status !== 'cancelled';
@@ -45,20 +62,33 @@ function visible(t) {
   return t.registration_open || (t.my_entry && t.my_entry.status !== 'cancelled');
 }
 function renderCards() {
-  const items=catalog.filter(visible); const box=$('#tournaments');
-  if(!items.length) { box.innerHTML='<div class="emptyState">해당 토너먼트가 없습니다.</div>'; return; }
-  box.innerHTML=items.map(t=>'<article class="card" data-id="'+escapeHtml(t.id)+'">'+
-    '<span class="tag">'+labels[t.status]+'</span><div class="startTime">'+when(t.starts_at)+
-    '</div><h3>'+escapeHtml(t.name)+'</h3><div class="desc">'+
-    (t.my_entry && t.my_entry.status!=='cancelled' ? '참가 #'+t.my_entry.entry_no+' · ' : '')+
-    '등록 마감 '+when(t.closes_at)+'</div><div class="facts">'+
+  const items=catalog.filter(visible), box=$('#tournaments');
+  if(!items.length){
+    box.innerHTML='<div class="emptyState">조건에 맞는 대회가 없습니다.</div>';
+    return;
+  }
+  box.innerHTML=items.map(t=>'<article class="card" role="button" tabindex="0" data-id="'+escapeHtml(t.id)+
+    '" aria-label="'+escapeHtml(t.name)+' 대회 상세보기">'+
+    '<div class="card-illustration" aria-hidden="true"><span>♠</span><small>T2 GATE</small></div>'+
+    '<div class="card-body"><div class="card-title-line"><h3>'+escapeHtml(t.name)+'</h3>'+
+    '<span class="tag">'+escapeHtml(labels[t.status]||t.status)+'</span></div>'+
+    '<div class="desc">'+(t.my_entry && t.my_entry.status!=='cancelled' ?
+      '내 참가 #'+escapeHtml(t.my_entry.entry_no)+' · ' : '')+
+    '등록 마감 '+when(t.closes_at)+'</div>'+
+    '<div class="facts">'+
+    '<div class="fact"><b>'+when(t.starts_at)+'</b><span>시작</span></div>'+
     '<div class="fact"><b>'+fmt(t.buyin)+' 칩</b><span>바이인</span></div>'+
+    '<div class="fact"><b>'+fmt(t.entries)+'명</b><span>참가</span></div>'+
+    '<div class="fact"><b>'+fmt(t.remaining)+'명</b><span>남은 자리</span></div>'+
     '<div class="fact"><b>'+fmt(t.prize_pool)+' 칩</b><span>현재 상금 풀</span></div>'+
-    '<div class="fact"><b>'+t.remaining+' / '+t.entries+'명</b><span>잔여 / 엔트리</span></div>'+
     '<div class="fact"><b>9-MAX · '+t.level_minutes+'분</b><span>좌석 / 레벨</span></div>'+
-    progressFacts(t)+
-    '</div><div class="enter">'+(t.can_reenter ? '리바이인 가능 →' : '토너 정보 보기 →')+'</div></article>').join('');
-  box.querySelectorAll('.card').forEach(el=>el.onclick=()=>openJoin(el.dataset.id));
+    progressFacts(t)+'</div>'+
+    '<div class="enter">'+(t.can_reenter?'재참가 가능':'자세히 보기')+' <span aria-hidden="true">›</span></div></div></article>').join('');
+  box.querySelectorAll('.card').forEach(el=>{
+    const go=()=>openJoin(el.dataset.id);
+    el.onclick=go;
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}};
+  });
 }
 function playClock(sec) {
   if(sec==null) return '-';
@@ -92,8 +122,8 @@ function paintJoin() {
     .map(x=>'<span>'+escapeHtml(x)+'</span>').join('');
   $('#joinCost').textContent='바이인 '+fmt(t.buyin)+' 칩 · 보유 '+fmt(wallet && wallet.balance)+' 칩';
   const entered=e && e.status!=='cancelled';
-  $('#join').textContent=t.can_reenter ? '리바이인 · '+fmt(t.buyin)+' 칩' : entered ?
-    (t.status==='scheduled' ? '예약 대기실' : '입장 / 결과 확인') : '바이인 · '+fmt(t.buyin)+' 칩';
+  $('#join').textContent=t.can_reenter ? '재참가 · '+fmt(t.buyin)+' 칩' : entered ?
+    (t.status==='scheduled' ? '대회 대기실' : '대회 입장 · 결과 확인') : '참가 신청 · '+fmt(t.buyin)+' 칩';
   $('#join').disabled=sending || (!entered && !t.registration_open);
   $('#cancelRegistration').hidden=!(e && e.status==='reserved' && t.status==='scheduled');
 }
@@ -114,7 +144,7 @@ async function join() {
   try {
     const r=await post(path,{tournament_id:t.id,entry_no:t.my_entry && t.my_entry.entry_no});
     if(!r.scheduled || path==='/api/enter') { location.href='/play'; return; }
-    closeJoin(); toast('예약했습니다. '+when(t.starts_at)+'에 대회가 시작됩니다.'); await loadLobby();
+    closeJoin(); toast('참가 신청이 완료됐습니다. 대회 시작: '+when(t.starts_at)); await loadLobby();
   } catch(e) { $('#joinHint').textContent=e.message; }
   finally { sending=false; if(selected) paintJoin(); }
 }
@@ -153,6 +183,19 @@ const PROFILE_KEYS = {
   avatar: 't2profile_avatar'      // 테이블의 내 캐릭터(visuals.js 가 HERO 자리에 쓴다)
 };
 const AVATARS = 9;
+function syncAirportButtons(){
+  const theme=window.T2AirportTheme;
+  if(!theme)return;
+  document.querySelectorAll('[data-airport-mode]').forEach(button=>{
+    const selected=button.dataset.airportMode===theme.getMode();
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed',selected?'true':'false');
+  });
+}
+document.querySelectorAll('[data-airport-mode]').forEach(button=>
+  button.addEventListener('click',()=>window.T2AirportTheme.setMode(button.dataset.airportMode)));
+window.addEventListener('t2-airport-theme',syncAirportButtons);
+syncAirportButtons();
 function avatarImg(i){ return '<img alt="" draggable="false" src="assets/portraits/'+String(i+1).padStart(2,'0')+'.png">'; }
 function paintAvatars(sel){
   $('#avatarPreview').innerHTML=avatarImg(sel);

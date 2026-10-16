@@ -4,15 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b1514">
-<title>T2 Poker Lobby</title>
+<title>t2 포커 · 토너먼트 로비</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="lobby.css?v=4">
+<script src="airport-theme.js?v=1"></script>
+<link rel="stylesheet" href="lobby.css?v=5">
 </head>
 <body>
 <div id="lobby">
   <header class="top">
     <div>
-      <div class="brand">T2 <span>POKER</span></div>
+      <div class="brand"><span aria-hidden="true">♠</span> t2 포커</div>
       <div class="strap">TOURNAMENT LOBBY</div>
     </div>
     <button id="walletNav" class="walletBadge" type="button">보유 칩 <b id="walletBalance">—</b></button>
@@ -21,23 +22,47 @@
   <main>
     <section id="current" class="current" hidden></section>
 
-    <section class="hero">
-      <div class="eyebrow">PLAY YOUR TOURNAMENT</div>
-      <h1>다음 토너먼트에<br>참가하세요</h1>
-      <p>기본 대회는 매시 정각에 열립니다(표준·터보 교대). 칩으로 바이인하고, 순위에 따른 상금을 받으세요. 대회는 미접속 중에도 진행됩니다.</p>
+    <section class="hero airport-hero" aria-label="공항 라운지">
+      <div class="theme-picker" role="group" aria-label="로비 낮과 밤 테마">
+        <button type="button" data-airport-mode="auto" aria-pressed="true">자동</button>
+        <button type="button" data-airport-mode="day" aria-pressed="false">☀ 낮</button>
+        <button type="button" data-airport-mode="night" aria-pressed="false">☾ 밤</button>
+      </div>
+      <div class="flight-board" aria-hidden="true"><span>✈ DEPARTURES</span><b> T2 GATE</b><span> ON TIME</span></div>
+      <div class="airport-characters" aria-hidden="true">
+        <img src="assets/portraits/01.png" alt="" draggable="false" loading="eager">
+        <img src="assets/portraits/04.png" alt="" draggable="false" loading="eager">
+        <img src="assets/portraits/06.png" alt="" draggable="false" loading="eager">
+        <img src="assets/portraits/09.png" alt="" draggable="false" loading="eager">
+      </div>
+      <div class="hero-copy">
+        <div class="eyebrow">♠ T2 POKER · AIRPORT LOUNGE</div>
+        <h1>오늘의 토너먼트</h1>
+        <p>참가할 대회를 고르고, 테이블에서 만나요.</p>
+      </div>
+    </section>
+
+    <section id="featured" class="featured" hidden aria-label="추천 대회">
+      <div class="featured-top"><span id="featuredLead">참가 가능한 대회</span><span id="featuredStatus"></span></div>
+      <div class="featured-detail">
+        <div><h2 id="featuredName"></h2><p id="featuredWhen"></p></div>
+        <div class="featured-stat"><span>바이인</span><strong id="featuredBuyin"></strong></div>
+        <div class="featured-stat"><span>참가</span><strong id="featuredCount"></strong></div>
+      </div>
+      <button type="button" id="featuredJoin" class="featured-button">대회 정보 보기 <span aria-hidden="true">›</span></button>
     </section>
 
     <section class="section">
       <div class="sectionHead">
         <div>
-          <h2>토너먼트</h2>
-          <p>한국 시간 · 예정 / 레이트 등록 / 내 참가</p>
+          <h2>대회 일정</h2>
+          <p>대회 시작 시간은 한국 기준입니다.</p>
         </div>
         <div class="tabs" id="tabs">
           <button class="active" data-filter="all" type="button">전체</button>
-          <button data-filter="running" type="button">진행</button>
+          <button data-filter="running" type="button">진행 중</button>
           <button data-filter="scheduled" type="button">예정</button>
-          <button data-filter="mine" type="button">내 참가</button>
+          <button data-filter="mine" type="button">참가 내역</button>
         </div>
       </div>
       <div id="tournaments" class="tournaments"></div>
@@ -50,7 +75,7 @@
       <div id="joinTitle" class="joinTitle"></div>
       <div id="joinFacts" class="joinFacts"></div>
       <p id="joinCost" class="cost"></p>
-      <p class="rulesNote">시작 후에도 등록 마감 전까지 참가할 수 있습니다. 미접속 시 체크·폴드하며 블라인드를 냅니다.</p>
+      <p class="rulesNote">등록이 열려 있는 동안 참가할 수 있습니다. 자리를 비우면 자동으로 체크하거나 폴드하며 블라인드는 계속 차감됩니다.</p>
       <button id="join" class="join" type="button">이 토너먼트 참가</button>
       <button id="cancelRegistration" class="secondaryAction" type="button" hidden>예약 취소 · 칩 환불</button>
       <div id="joinHint" class="joinHint"></div>
@@ -97,10 +122,10 @@
   <div id="toast" class="toast" hidden></div>
 
   <nav class="bottom">
-    <button class="active" type="button"><span>♠</span>로비</button>
+    <button class="active" type="button"><span>⌂</span>로비</button>
     <button id="profileNav" type="button"><span>●</span>프로필</button>
   </nav>
 </div>
-<script src="lobby.js?v=8"></script>
+<script src="lobby.js?v=9"></script>
 </body>
 </html>

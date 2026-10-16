@@ -109,3 +109,134 @@ main{padding:0 14px 22px}
 .avatarChoices button{border:1px solid #335149;background:#0d1917;border-radius:9px;padding:3px;aspect-ratio:1;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
 .avatarChoices button.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 .avatarChoices img{width:100%;height:auto;display:block}
+
+/* === Airport lounge day/night visual layer; no changes to tournament semantics === */
+html[data-airport-theme="night"]{
+ --bg:#081b20;--panel:#10272a;--panel2:#193838;--line:#4f6662;
+ --gold:#f2cc86;--text:#f9f0dc;--muted:#b3c7c5;
+ --card-paper:#f4ebd8;--card-ink:#20373b;--scene-shadow:#09242ace;
+}
+html[data-airport-theme="day"]{
+ --bg:#274b50;--panel:#214c4e;--panel2:#37666a;--line:#68918a;
+ --gold:#fae0a3;--text:#fff8e6;--muted:#e0efe6;
+ --card-paper:#fff4df;--card-ink:#294a4d;--scene-shadow:#1e3e42ac;
+}
+html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR","Segoe UI",sans-serif}
+body{background-image:none}
+#lobby{position:relative;background:linear-gradient(180deg,var(--scene-shadow),var(--bg) 43%,var(--bg));padding-bottom:calc(79px + env(safe-area-inset-bottom))}
+.top{height:64px;padding:9px 14px;background:#112b2de9;border-bottom:1px solid #d5b57470}
+html[data-airport-theme="day"] .top{background:#244e50e9}
+.brand{font-weight:900;font-size:23px;letter-spacing:-.06em;color:#ffe3a6;white-space:nowrap}
+.brand span{margin-right:2px;color:#f7d18a}
+.strap{letter-spacing:.21em;font-size:8px;color:#d6d3b6}
+.walletBadge{border-color:#b796578f;background:#193635;padding:6px 11px;font-size:10px}
+.walletBadge b{font-size:15px;margin-top:0}
+main{padding:0 11px 26px}
+.airport-hero{min-height:338px;height:338px;margin:10px 0 13px;padding:0;border-radius:18px;overflow:hidden;
+ background:linear-gradient(180deg,#031a1b38 0%,#091b1b25 43%,#092c30ba 82%,#081d21 100%),
+ url("assets/airport-night.svg") center center/cover;
+ border:1px solid #c8a96b80;box-shadow:0 10px 24px #0006,inset 0 0 0 1px #f9d69b24;isolation:isolate}
+html[data-airport-theme="day"] .airport-hero{
+ background-image:linear-gradient(180deg,#1739403b 0%,#153d3c12 46%,#143f47a9 84%,#102d33 100%),
+ url("assets/airport-day.svg");
+}
+.airport-hero::before{content:"";position:absolute;inset:0;
+ background:linear-gradient(90deg,#081f235a,transparent 45%,#11242a27);
+ pointer-events:none;z-index:-1}
+.theme-picker{position:absolute;z-index:5;top:12px;right:11px;display:flex;gap:2px;
+ border:1px solid #ffe2a48c;border-radius:999px;padding:3px;background:#11262be6;box-shadow:0 3px 8px #0005}
+.theme-picker button{border:0;background:transparent;color:#efdfc3;padding:6px 9px;
+ border-radius:999px;font-size:11px;font-weight:800;min-height:32px;cursor:pointer}
+.theme-picker button.active{background:linear-gradient(#ffe2a5,#e9b869);color:#203432;box-shadow:0 2px 7px #0005}
+.flight-board{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:3px;
+ background:#102a32dd;border:2px solid #cfaf7799;border-radius:7px;padding:8px 11px;
+ font-size:8px;letter-spacing:.14em;color:#eac68b;transform:rotate(-2deg);
+ box-shadow:0 4px 8px #0005;max-width:145px}
+.flight-board b{font-size:13px;color:#f9e8c4}
+.flight-board span:last-child{color:#c0dfd0}
+.airport-characters{position:absolute;left:4px;right:4px;bottom:74px;display:flex;
+ justify-content:space-evenly;align-items:flex-end;height:166px;pointer-events:none}
+.airport-characters img{width:26%;height:136px;object-fit:contain;object-position:center bottom;
+ filter:drop-shadow(0 7px 5px #071518b0);transform:translateY(1px);min-width:0}
+.airport-characters img:nth-child(1){height:153px;transform:translateY(3px)}
+.airport-characters img:nth-child(2){height:131px;transform:translateY(-1px)}
+.airport-characters img:nth-child(3){height:143px;transform:translateY(4px)}
+.airport-characters img:nth-child(4){height:134px;transform:translateY(6px)}
+.hero-copy{position:absolute;left:0;right:0;bottom:0;min-height:99px;padding:21px 18px 13px;
+ background:linear-gradient(180deg,transparent,#092528e8 28%,#071d21f2 100%)}
+.hero .eyebrow{letter-spacing:.17em;font-size:9px}
+.hero h1{font-size:29px;line-height:1.14;margin:7px 0 5px;letter-spacing:-.06em;
+ color:#ffe2a8;text-shadow:0 2px 7px #07171acc}
+.hero p{font-size:12px;color:#f1eada;line-height:1.35}
+.featured{border:1px solid #d7b477;border-radius:17px;overflow:hidden;margin:0 1px 20px;
+ background:linear-gradient(140deg,#214d4cbf,#102d30f2);box-shadow:0 10px 20px #0005}
+.featured-top{display:flex;align-items:center;justify-content:space-between;gap:8px;
+ padding:10px 14px;color:#ffe2a8;font-size:13px;font-weight:900}
+#featuredStatus{background:#a7e5c8;color:#164738;border-radius:999px;padding:3px 8px;font-size:10px;white-space:nowrap}
+.featured-detail{background:var(--card-paper);color:var(--card-ink);
+ border-radius:12px 12px 0 0;margin:0 6px;padding:11px 12px;display:grid;
+ grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:9px}
+.featured-detail h2{margin:0;font-size:19px;letter-spacing:-.04em}
+.featured-detail p{margin:4px 0 0;font-size:11px;color:#50666a}
+.featured-stat{display:flex;flex-direction:column;border-left:1px solid #b1b6aa;
+ padding-left:10px;white-space:nowrap}
+.featured-stat span{color:#718182;font-size:9px}
+.featured-stat strong{font-size:12px}
+.featured-button{margin:0;width:100%;border:0;padding:11px;
+ background:linear-gradient(#f8d68d,#d9a957);color:#19352f;
+ font-size:14px;font-weight:900;min-height:44px;cursor:pointer}
+.featured-button span{font-size:21px;vertical-align:-1px}
+.section{margin-top:10px}
+.sectionHead{display:flex;align-items:flex-start;flex-direction:column;gap:10px;margin:0 3px 12px}
+.section h2{font-size:20px;letter-spacing:-.04em;color:#f5db9f}
+.sectionHead p{font-size:11px;color:var(--muted)}
+.tabs{width:100%;max-width:none;gap:6px}
+.tabs button{flex:1;padding:10px 6px;min-height:39px;font-size:11px;font-weight:800;
+ border-color:#758e81b5;background:#102d30c9;color:#deded1}
+.tabs button.active{background:linear-gradient(#f6d995,#dcb467);color:#263a35;border-color:#fce6b9}
+.tournaments{display:grid;grid-template-columns:1fr;gap:9px}
+.card,.card.featured{grid-column:auto;min-height:0}
+.card{display:grid;grid-template-columns:76px minmax(0,1fr);gap:9px;padding:0;
+ border:1px solid #d7c7a6aa;border-radius:13px;background:var(--card-paper);color:var(--card-ink);
+ box-shadow:0 4px 12px #061a1b7a;cursor:pointer;overflow:hidden}
+.card:focus-visible{outline:3px solid #f7c56c;outline-offset:2px}
+.card::after{display:none}
+.card-illustration{background:linear-gradient(160deg,#426b65,#193a3e);
+ display:flex;align-items:center;justify-content:center;flex-direction:column;
+ color:#f2d59c;text-shadow:0 2px 3px #0006}
+.card-illustration span{font-size:39px;line-height:1}
+.card-illustration small{font-size:7px;letter-spacing:.14em;font-weight:900}
+.card-body{min-width:0;padding:11px 10px 9px 0}
+.card-title-line{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.card h3{margin:0;font-size:16px;letter-spacing:-.03em;white-space:normal;min-width:0}
+.card .tag{white-space:nowrap;font-size:9px;letter-spacing:0;padding:4px 7px;
+ border-radius:999px;background:#a6e1c3;color:#19483b}
+.card .desc{margin:5px 0 0;font-size:10px;color:#657874;min-height:0;line-height:1.35}
+.card .facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 10px;margin-top:9px}
+.card .fact{padding-top:4px;border-color:#d2cfc3}
+.card .fact b{font-size:11px;color:#233b3d;overflow-wrap:anywhere}
+.card .fact span{font-size:9px;color:#677c7c}
+.card .enter{margin-top:7px;font-size:11px;color:#396a61}
+html[data-airport-theme="day"] .card-illustration{background:linear-gradient(160deg,#91b7ad,#497a7b)}
+.current{background:linear-gradient(125deg,#355850,#16363e);border-color:#e9c77da6}
+.bottom{height:66px;grid-template-columns:repeat(2,1fr);background:#10292be9;border-top-color:#d8bc7b6b}
+.bottom button{font-size:11px;color:#c4d8d1;font-weight:700}
+.bottom button span{font-size:20px}
+.bottom button.active{color:#ffe0a2;background:#d4b2671a}
+.sheet{background:#122c30;border-color:#d3ad6c}
+@media (max-width:359px) {
+ .airport-hero{height:309px;min-height:309px}
+ .airport-characters{bottom:75px;height:148px}
+ .airport-characters img,.airport-characters img:nth-child(n){height:126px}
+ .hero h1{font-size:25px}
+ .theme-picker button{padding:5px 7px;font-size:10px}
+ .featured-detail{gap:5px;padding:9px}
+ .featured-stat{padding-left:6px}
+ .featured-stat strong{font-size:10px}
+ .card{grid-template-columns:62px minmax(0,1fr)}
+ .card-body{padding-right:8px}
+ .card h3{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){
+ .card,.featured,.airport-characters img{transition:none;animation:none}
+}
