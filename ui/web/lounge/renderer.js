@@ -160,11 +160,11 @@
       const b = scene.board;
       if (!rows || !rows.length) return;
       const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
-      const q = b.quad || [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h]];
-      const [TL, TR, BR, BL] = q;
       const n = b.rows;
+      // Row i lies between boundary lines i and i+1: the painted ones, or an even split of the box.
+      const line = i => (b.lines ? b.lines[i] : [lerp([b.x, b.y], [b.x, b.y + b.h], i / n), lerp([b.x + b.w, b.y], [b.x + b.w, b.y + b.h], i / n)]);
       rows.slice(0, n).forEach((row, i) => {
-        const L0 = lerp(TL, BL, i / n), R0 = lerp(TR, BR, i / n), L1 = lerp(TL, BL, (i + 1) / n);
+        const [L0, R0] = line(i), L1 = line(i + 1)[0];
         const w = Math.hypot(R0[0] - L0[0], R0[1] - L0[1]), h = Math.hypot(L1[0] - L0[0], L1[1] - L0[1]);
         target.save();
         target.transform((R0[0] - L0[0]) / w, (R0[1] - L0[1]) / w, (L1[0] - L0[0]) / h, (L1[1] - L0[1]) / h, L0[0], L0[1]);

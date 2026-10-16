@@ -129,6 +129,10 @@ def check_scene(root, rep):
         o = scene.get(key)
         if not isinstance(o, dict) or not all(is_num(o.get(f)) for f in fields):
             rep.err('schema', 'scene.json %s needs numeric %s' % (key, ', '.join(fields)))
+    bl = (scene.get('board') or {}).get('lines')
+    if bl is not None and not (isinstance(bl, list) and len(bl) == (scene['board'].get('rows') or 0) + 1 and all(
+            isinstance(l, list) and len(l) == 2 and all(isinstance(p, list) and len(p) == 2 and all(is_num(v) for v in p) for p in l) for l in bl)):
+        rep.err('schema', 'scene.json board.lines must hold rows + 1 lines of [[x, y], [x, y]]')
     seats = scene.get('seats')
     if not isinstance(seats, list) or not seats or not all(
             isinstance(s, dict) and isinstance(s.get('id'), str) and is_num(s.get('x')) and ('y' not in s or is_num(s['y'])) for s in seats):
