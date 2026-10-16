@@ -285,3 +285,4 @@ consistent_with_24 False
 root BTN {'Fold': 61.2, 'Call 8': 32.5, '4-bet 17.2': 6.3, 'All-in 59.9': 0.0}
 {"k": 0, "decision": "continue", "terminals": {"N:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000": {"BTN": [1.2388868543837959, 0.489], "BB": [1.1504343403496293, 0.399]}, "fold|BB:raise@8.000000|BTN:raise@17.200000|BB:call@17.200000": {"BTN": [2.8873107175950263, 0.87], "BB": [2.2337655071787212, 0.607]}}}
 START p60v2b_btn_vs_bb_3b40 2026-10-16T13:18:03Z
+START p60v2b_btn_vs_bb_3b40 2026-10-16T15:18:32Z
