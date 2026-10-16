@@ -73,7 +73,9 @@ near(L.lighting(8).dayness, 1, 1e-12, 'dayness at 8'); near(L.lighting(4).daynes
   eq(n['--airport-surface-bottom'], '#081f22', 'bottom night'); eq(d['--airport-surface-bottom'], '#0f2b30', 'bottom day');
   eq(m['--airport-surface-top'], '#274b4a', 'top at dayness 0.5');   // (18+60)/2=39, (46+103)/2=74.5->75, (50+98)/2=74
   eq(m['--airport-surface-mid'], '#0c2c2e', 'mid at dayness 0.5');
-  eq(Object.keys(m).length, 3, 'three variables');
+  eq(n['--lounge-glow'], '#c98a4a', 'lamp glow at night'); eq(d['--lounge-glow'], '#e9e2cf', 'window light by day');
+  eq(n['--lounge-window'], '#2f5a78', 'window night'); eq(d['--lounge-window'], '#bfe0ee', 'window day');
+  eq(Object.keys(m).length, 5, 'five variables');
 }
 
 console.log(`verify_lounge_lighting OK (${checks} checks)`);
