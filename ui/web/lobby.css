@@ -356,3 +356,28 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
  .airport-scene-motion{display:none!important}
  .airport-moving-shadows{transition:none}
 }
+
+/* Mobile preview time control; remove from production using TEST_CLOCK_MODE only. */
+.airport-time-test-title{gap:8px}
+.airport-time-test-title label{flex:1;min-width:0}
+.airport-time-reset{flex:0 0 auto;min-height:28px;padding:4px 7px;
+ border:1px solid #b9a66ba6;background:#2a4340;color:#f7e1b9;
+ border-radius:8px;font-size:10px;font-weight:800;cursor:pointer}
+.airport-time-reset:disabled{opacity:.4;cursor:default}
+/* Baked day/night badge is removed using tiny matched inpaint patches. */
+.airport-toggle-removal{position:absolute;z-index:3;left:70.679%;top:1.238%;
+ width:29.321%;aspect-ratio:190/76;height:auto;pointer-events:none;
+ background-size:100% 100%;background-repeat:no-repeat;
+ -webkit-mask-image:radial-gradient(ellipse at 67% 53%,#000 50%,transparent 86%);
+ mask-image:radial-gradient(ellipse at 67% 53%,#000 50%,transparent 86%)}
+.badge-removal-night{background-image:url("assets/t2-airport/toggle_remove_night.webp")}
+.badge-removal-day{background-image:url("assets/t2-airport/toggle_remove_day.webp");
+ opacity:var(--airport-day-alpha,0);transition:opacity 10s linear}
+.airport-moving-shadows{transform-origin:center 92%;
+ transform:translateX(var(--airport-shadow-shift,0%))
+ skewX(var(--airport-shadow-angle,0deg))
+ scaleY(var(--airport-shadow-length,1));
+ transition:transform 3s linear,opacity 3s linear}
+.airport-scene::before{opacity:var(--airport-gold-opacity,0)}
+.airport-scene{--airport-lamp-alpha:var(--airport-lamp-alpha,0)}
+@media(max-width:360px){.airport-time-test-title small{display:none}}
