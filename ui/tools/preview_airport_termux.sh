@@ -34,7 +34,7 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT HUP INT TERM
 git -C "$REPO" archive "$REF" ui/web | tar -xf - -C "$TMP"
 cp -R "$TMP/ui/web/." "$TARGET/web/"
-printf '%s\\n' "origin/$BRANCH $REF" > "$TARGET/UI_SOURCE"
+printf '%s\n' "origin/$BRANCH $REF" > "$TARGET/UI_SOURCE"
 if [ ! -f "$TARGET/ui_server.py" ]; then
   echo "먼저 기존의 격리 미리보기 실행 폴더(t2_airport_preview)를 만드세요." >&2
   exit 1
