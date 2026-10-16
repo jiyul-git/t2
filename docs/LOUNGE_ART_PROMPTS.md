@@ -200,6 +200,28 @@
 
 ---
 
+### 3. 아래로 늘리기 (소파·바닥을 끊김 없이 연장)
+
+로비에서 그림 아래 토너먼트 목록이 시작되는 곳이 소파 한가운데서 잘려 있다. 그림을 아래로 늘려 소파 아랫부분과 바닥이 이어지게 한다.
+보낼 그림: `art/requests/extend_bottom_night.jpg` (밤부터. 결과가 좋으면 `_day`, `_golden`도 같은 문장으로).
+
+```
+Extend this illustration DOWNWARD only (outpainting). Make the canvas about 40% taller by adding
+new area at the bottom. Do NOT change, redraw, move or recolor anything in the existing image -
+every existing pixel must stay exactly where it is.
+
+In the new bottom area, continue what is already there: the lower part of the same sofas (seat
+fronts, sofa bases, short legs), then the lounge floor in front of them - the same carpet/floor
+colour and lighting as the room, with soft shadows under the sofas. Keep it calm and fairly plain
+toward the very bottom (UI cards will sit on top of it), getting slightly darker at the bottom edge.
+No new furniture, no people, no animals, no text, no logos, no watermark.
+
+Same art style, same line weight, same lighting and colour palette as the original.
+Output the full extended image (original on top, new area below), same width.
+```
+
+받으면 원본 위쪽과 픽셀 단위로 맞는지 확인한 뒤(어긋나면 위쪽은 원본을 쓰고 아래 새 부분만 이어 붙인다) 라운지 배경 아래로 붙이고, 토너먼트 목록이 그 위에 올라가게 한다.
+
 ## 확인과 보내기
 
 - 한 장씩 볼 때: 기준 그림과 같은 캐릭터인지(얼굴, 옷, 색), 몸 전체가 잘리지 않았는지, 배경이 흰색 단색인지.
