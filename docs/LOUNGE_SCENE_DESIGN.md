@@ -441,6 +441,9 @@ OFFSCREEN → ENTERING(walk) → TURN_IN → SIT_DOWN → SEATED(활동) → STA
 
 - **대화:** 왼쪽 캐릭터는 `chat_*_r`(오른쪽을 봄), 오른쪽 캐릭터는 `chat_*_l`을 쓴다. 4~8초마다 말하기와 듣기를 교대한다. 한쪽이 끝나면 두 캐릭터 모두 `chat_out`으로 돌아간다.
 - 반복 클립은 지속 시간이 끝나도 **루프가 끝나는 프레임**까지 재생한 뒤 `_out`으로 넘어간다.
+- 활동 지속 시간이 남은 착석 시간보다 길면 남은 시간으로 줄이되, 그 활동의 최소 시간 아래로는 줄이지 않는다.
+- **대화 시작 맞추기:** 먼저 대화를 고른 쪽은 `sit_idle` 첫 프레임(= `sit` 포즈)에서 멈춰 기다리고, 옆자리 캐릭터는 자기 `sit_idle` 루프가 한 바퀴 끝나는 시점에 같은 모습으로 멈춘다. 둘 다 멈춘 순간 함께 `chat_in`을 시작한다. 8초 안에 맞춰지지 않으면 대화를 포기하고 원래 활동으로 돌아간다.
+- 말하기/듣기 교대는 각자 자기 루프가 끝나는 지점에서 하므로, 교대 순간에 최대 한 루프(약 1.3초) 어긋날 수 있다.
 
 ### 7.4 난수와 웜 스타트
 
@@ -449,9 +452,17 @@ OFFSCREEN → ENTERING(walk) → TURN_IN → SIT_DOWN → SEATED(활동) → STA
 - 인터페이스:
 
   ```
-  createDirector({seed, scene, characters(manifest 목록), clock: ()=>ms, solar: ()=>{elevation}})
-  .step(dtMs) → 캐릭터별 {name, clip, frame, x, lane, mirrored}
+  createDirector({seed, scene, characters(manifest 목록), clock: ()=>ms, solar: ()=>{elevation}, minuteOfDay?, onEvent?})
+  .step(dtMs) → 화면에 있는 캐릭터별 {name, clip, frame, x, lane, mirrored, state, activity, seat}
+  .warmStart() → 같은 형식 (모두 다시 앉힌다)
   ```
+
+  - `frame`은 클립 안의 번호(0부터)이고, 아틀라스 프레임은 `manifest.clips[clip].frames[frame]`이다. `mirrored`는 지금은 항상 false다.
+  - `seat`는 `scene.seats`의 인덱스이고, 일어나서 나가는 중이라 자리가 비워졌으면 −1이다.
+  - 내부 시뮬레이션은 25ms 단위로 고정이라 `dtMs`를 어떻게 쪼개 넣어도 결과가 같다.
+  - 시각은 `minuteOfDay()`(없으면 `clock()`의 현지 시각)로 판단한다. 테스트는 이 함수로 하루를 재현한다.
+  - 필수 클립 9개가 없는 캐릭터는 등장하지 않는다(`isActive`).
+  - `onEvent({type:'clip', t, name, from, to, state, activity, seat})`는 클립이 바뀔 때마다 불린다(테스트와 디버그용).
 
 ### 7.5 불변식 (`verify_lounge_behavior.js`)
 
