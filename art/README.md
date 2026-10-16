@@ -66,9 +66,9 @@ Gemini가 "16장 모두 오른쪽"이라고 했지만 실제로는 섞여 있다
 
 ### `cutouts/tiger_walk_b/`
 
-- `left_<행><열>.png` — b1을 2배로 키운 뒤(Real-ESRGAN anime) 빈 줄 기준으로 16칸으로 자름. 흰 배경, 바닥 그림자, 팔과 몸 사이 흰 틈은 투명.
-- `right_<행><열>.png` — 같은 그림을 좌우로 뒤집고 가슴·소매의 금색 `T2` 글자만 다시 뒤집어 바르게 읽히게 함.
-- `*_33.png` — Gemini 별 워터마크가 가슴에 남아 있음. **쓰지 않음.**
-- 걷기 순서(그려진 순서가 아니라 다리 자세 순서): `10 → 02 → 03 → 13 → 31 → 30 → 22 → 20` 반복. `walk_left.gif`, `walk_right.gif`가 이 순서로 만든 확인용 움직임.
+- `left_<행><열>.png` — b1을 2배로 키운 뒤(Real-ESRGAN anime) 빈 줄 기준으로 16칸으로 자름. 흰 배경, 바닥 그림자, 팔과 몸 사이 흰 틈은 투명. `left_33`은 Gemini 별 워터마크가 가슴에 남아 쓰지 않음.
+- **`loop/left_0`~`7`, `loop/right_0`~`7` — 실제로 쓸 걷기 8프레임.** Gemini가 칸마다 얼굴·후드를 조금씩 다르게 그려서 칸을 그대로 이어 붙이면 얼굴이 부풀었다 줄고 `T2`가 깨졌다 붙는다. 그래서 윗몸(머리·후드·팔·꼬리·캐리어)은 `left_10` 한 장으로 고정하고, 후드 밑단 아래·캐리어 왼쪽의 다리만 프레임마다 바꿨다. 다리 순서는 그려진 순서가 아니라 자세 순서: `10 → 02 → 03 → 13 → 31 → 30 → 22 → 20`. 밑단을 맞춘 뒤 발 위치 차이로 몸이 살짝 오르내린다.
+- `loop/right_*` — `loop/left_*`를 좌우로 뒤집고 금색 `T2` 글자만 다시 뒤집어 바르게 읽히게 함.
+- `walk_left.gif`, `walk_right.gif` — 위 8프레임 확인용 움직임.
 
-도구: `tools/cut_sheet.py SHEET OUTDIR [행 열]`(칸 자르기), `tools/mirror_logo.py IN OUT`(글자 유지 좌우 반전).
+도구: `tools/cut_sheet.py SHEET OUTDIR [행 열]`(칸 자르기), `tools/lockbody.py DIR BASE OUTDIR f1,f2,…`(윗몸 고정 + 다리 교체), `tools/mirror_logo.py IN OUT`(글자 유지 좌우 반전).
