@@ -107,10 +107,10 @@
       const scale = Math.min(dpr || 1, 1.5);
       const w = Math.max(1, Math.round(cssWidth * scale)), h = Math.max(1, Math.round(w * H / W));
       if (w === pw && h === ph) return false;
-      pw = w; ph = h; k = w / W;
+      pw = w; ph = h; k = w / W; boardBox = null;
       canvas.width = w; canvas.height = h;
       scratch = make(w, h);
-      for (const g of ['far', 'back', 'mid', 'front']) ensureCache(g);
+      for (const g of ['far', 'back', 'mid', 'front', 'board']) ensureCache(g);
       tintCache = new Map();
       cacheDirty = true;
       return true;
@@ -176,6 +176,7 @@
         const pad = w * 0.035, inner = w - pad * 2;
         let cx = pad;
         const cells = [[row.flight, '#ffffff'], [row.dest, '#ffffff'], [row.time, STATUS_COLORS.time], [row.status, STATUS_COLORS[row.status] || '#ffffff']];
+        if (row.statusKey) cells[3][1] = STATUS_COLORS[row.statusKey] || '#ffffff';
         cells.forEach(([text, color], j) => {
           target.fillStyle = color;
           target.fillText(text, cx, h / 2, inner * COLUMN_RATIOS[j] - 6);
@@ -184,6 +185,53 @@
         if (row.mine) { target.fillStyle = '#ffd27a'; target.beginPath(); target.arc(pad * 0.45, h / 2, 4, 0, 6.2832); target.fill(); }
         target.restore();
       });
+    }
+
+    // Split-flap board. The text lives on its own layer; when a row changes its letters roll through
+    // random characters and settle left to right, like the real thing. Idle, the layer is just copied.
+    const FLAP_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const FLAP_SETTLE = 0.16, FLAP_PER_CHAR = 0.035, FLAP_PER_ROW = 0.07, FLAP_TICK = 0.05;
+    let shownRows = [], flip = null, boardBox = null;
+    const state0Rows = () => (flip ? flapRows(flip, flip.t) : shownRows);
+    function boardBounds() {
+      if (boardBox) return boardBox;
+      const b = scene.board, pts = b.lines ? b.lines.flat() : [[b.x, b.y], [b.x + b.w, b.y + b.h]];
+      const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      const x0 = Math.floor((Math.min(...xs) - 4) * k), y0 = Math.floor((Math.min(...ys) - 4) * k);
+      boardBox = { x: Math.max(0, x0), y: Math.max(0, y0), w: Math.ceil((Math.max(...xs) + 4) * k) - Math.max(0, x0), h: Math.ceil((Math.max(...ys) + 4) * k) - Math.max(0, y0) };
+      return boardBox;
+    }
+    function paintBoard(rows) {
+      const c = caches.board.ctx, bb = boardBounds();
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(bb.x, bb.y, bb.w, bb.h);
+      c.setTransform(k, 0, 0, k, 0, 0);
+      drawBoard(c, rows);
+    }
+    function scramble(from, to, t0, t, seed) {
+      if (from === to) return to;
+      const n = Math.max(from.length, to.length), tick = Math.floor(t / FLAP_TICK);
+      let out = '';
+      for (let i = 0; i < n; i++) {
+        const target = to[i] || ' ';
+        if (t - t0 >= FLAP_SETTLE + i * FLAP_PER_CHAR) { out += target; continue; }
+        let h = Math.imul(seed * 1013 + i * 7919 + tick * 104729, 2654435761); h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0;
+        out += (target === ' ' && (from[i] || ' ') === ' ') ? ' ' : FLAP_CHARS[h % FLAP_CHARS.length];
+      }
+      return out.replace(/\s+$/, '');
+    }
+    function flapRows(f, t) {
+      return f.to.map((row, r) => {
+        const old = f.from[r] || { flight: '', dest: '', time: '', status: '' };
+        const t0 = f.t0 + r * FLAP_PER_ROW;
+        return { flight: scramble(old.flight, row.flight, t0, t, r * 4 + 1), dest: scramble(old.dest, row.dest, t0, t, r * 4 + 2),
+          time: scramble(old.time, row.time, t0, t, r * 4 + 3), status: scramble(old.status, row.status, t0, t, r * 4 + 4),
+          statusKey: row.status, mine: row.mine };
+      });
+    }
+    function flipDone(f, t) {
+      const longest = Math.max(1, ...f.to.flatMap(r => [r.flight, r.dest, r.time, r.status].map(x => String(x).length)));
+      return t - f.t0 > FLAP_SETTLE + longest * FLAP_PER_CHAR + f.to.length * FLAP_PER_ROW + 0.05;
     }
 
     // Aircraft taxiing past the window now and then. Deterministic in scene time, so a reload shows
@@ -269,7 +317,7 @@
         c.setTransform(k, 0, 0, k, 0, 0);
       }
       for (const layer of assets.layers) drawLayer(caches[layer.def.group].ctx, layer, L);
-      drawBoard(caches.back.ctx, rows);
+      paintBoard(state0Rows());
       hazeColor = sampleHaze();
       room = sampleRoom();
       planeTint.clear();
@@ -491,8 +539,18 @@
       const L = state.lighting;
       const lk = L.zenith + L.ambient + Math.round(L.h * 20) + '|' + Math.round(L.lamp * 50) + '|' + Math.round(L.city * 50);
       if (lk !== lightKey) { lightKey = lk; cacheDirty = true; tintCache = new Map(); }
-      if (state.boardKey !== boardKey) { boardKey = state.boardKey; cacheDirty = true; }
       if (cacheDirty) rebuild(L, state.boardRows);
+      if (state.boardKey !== boardKey) {
+        boardKey = state.boardKey;
+        const rows = (state.boardRows || []).map(r => ({ ...r }));
+        flip = { from: shownRows, to: rows, t0: state.t, t: state.t };
+        shownRows = rows;
+      }
+      if (flip) {
+        flip.t = state.t;
+        if (flipDone(flip, state.t)) { flip = null; paintBoard(shownRows); }
+        else paintBoard(flapRows(flip, state.t));
+      }
 
       const rel = sunRelative(state.sunAzimuth, scene.windowFacing);
       const sun = { rel, h: L.h, disc: discPosition(scene, rel, L.h) };
@@ -512,6 +570,8 @@
       blit('far');
       drawPlane(ctx, L, state.t);
       blit('back');
+      { const bb = boardBounds(); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(caches.board.canvas, bb.x, bb.y, bb.w, bb.h, bb.x, bb.y, bb.w, bb.h); ctx.restore(); }
       drawFloorLight(ctx, L, rel, L.h, direct);
       const list = state.chars || [];
       drawShadows(ctx, list, L, sun, direct);
@@ -523,7 +583,7 @@
       if (state.debug) drawOverlay(ctx, list, state.debug);
     }
 
-    function dispose() { caches.far = caches.back = caches.mid = caches.front = null; tintCache.clear(); silhouettes.clear(); }
+    function dispose() { caches.far = caches.back = caches.mid = caches.front = caches.board = null; tintCache.clear(); silhouettes.clear(); }
     return { resize, draw, dispose, get size() { return { w: pw, h: ph }; } };
   }
 

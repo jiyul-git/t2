@@ -79,9 +79,11 @@
 
     // The page below the picture starts from the colour of the picture's bottom edge, so the two
     // meet without a seam. Read once after each lighting change (cheap: one row of pixels).
-    let floorDue = true;
+    let floorDue = true, floorAt = -1e9;
     function sampleFloor() {
-      floorDue = false;
+      const nowTs = win.performance.now();
+      if (nowTs - floorAt < 2000) return;          // the debug clock relights every frame; reading pixels is not free
+      floorDue = false; floorAt = nowTs;
       try {
         const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
         if (!w || !h) return;
