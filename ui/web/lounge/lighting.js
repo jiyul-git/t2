@@ -57,6 +57,9 @@
       '--airport-surface-top': mix('#122e32', '#3c6762', d),
       '--airport-surface-mid': mix('#061b1f', '#113c3c', d),
       '--airport-surface-bottom': mix('#081f22', '#0f2b30', d),
+      // the lounge continues below the picture: lamp glow at night, window light by day
+      '--lounge-glow': mix('#c98a4a', '#e9e2cf', d),
+      '--lounge-window': mix('#2f5a78', '#bfe0ee', d),
     };
   }
 

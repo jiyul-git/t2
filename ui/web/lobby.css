@@ -299,3 +299,32 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
  letter-spacing:-.065em;font-weight:1000}
 .airport-scene-copy p{margin:0;font-size:11px;line-height:1.35;color:#f9f1dd}
 @media(max-width:360px){.airport-scene-copy h1{font-size:21px}}
+
+/* Theme defaults. The old theme script that set data-airport-theme is gone, so the paper card and
+   text colours live here (night values); the lounge lighting recolours the surfaces over the day. */
+:root{
+ --bg:#071e22;--panel:#123135;--panel2:#193d41;--line:#668783;
+ --gold:#f4d38e;--text:#fff3d8;--muted:#c5d6d0;
+ --paper:#fbf0db;--paper-ink:#1b3338;
+ --lounge-floor:#151b1d;--lounge-glow:#c98a4a;--lounge-window:#2f5a78;
+}
+/* Below the picture the lounge carries on: it starts from the picture's own bottom colour
+   (--lounge-floor, measured by lounge.js), picks up lamp or window light, and fades into the page.
+   A faint woven texture keeps it from reading as a flat fill. */
+#lobby{
+ --scene-bottom:calc(56px + min(100vw, 520px) * 1000 / 1440);
+ background:
+  radial-gradient(70% 260px at 16% var(--scene-bottom), color-mix(in srgb, var(--lounge-glow) 26%, transparent), transparent 72%),
+  radial-gradient(60% 300px at 92% calc(var(--scene-bottom) + 40px), color-mix(in srgb, var(--lounge-window) 22%, transparent), transparent 70%),
+  repeating-linear-gradient(45deg, #ffffff06 0 1px, transparent 1px 6px),
+  repeating-linear-gradient(-45deg, #00000012 0 1px, transparent 1px 6px),
+  linear-gradient(180deg, var(--lounge-floor) 0, var(--lounge-floor) var(--scene-bottom),
+   color-mix(in srgb, var(--lounge-floor) 55%, var(--airport-surface-mid,#061b1f)) calc(var(--scene-bottom) + 160px),
+   var(--airport-surface-mid,#061b1f) calc(var(--scene-bottom) + 520px), var(--airport-surface-bottom,#081f22));
+ background-attachment:scroll;
+}
+/* a soft shadow line under the picture, like the edge of the carpet in front of the sofas */
+.airport-scene-copy{position:relative}
+.airport-scene-copy::before{content:"";position:absolute;left:-12px;right:-12px;top:0;height:18px;
+ background:linear-gradient(180deg,#0000004d,transparent);pointer-events:none}
+.card h3{color:var(--paper-ink)}

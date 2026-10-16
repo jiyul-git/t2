@@ -74,6 +74,23 @@
       const vars = Light.cssVars(sky.light.h);
       const style = doc.documentElement.style;
       for (const k in vars) style.setProperty(k, vars[k]);
+      floorDue = true;
+    }
+
+    // The page below the picture starts from the colour of the picture's bottom edge, so the two
+    // meet without a seam. Read once after each lighting change (cheap: one row of pixels).
+    let floorDue = true;
+    function sampleFloor() {
+      floorDue = false;
+      try {
+        const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
+        if (!w || !h) return;
+        const row = ctx.getImageData(0, h - 2, w, 1).data;
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let i = 0; i < row.length; i += 16) { r += row[i]; g += row[i + 1]; b += row[i + 2]; n++; }
+        const hx = v => Math.round(v / n).toString(16).padStart(2, '0');
+        doc.documentElement.style.setProperty('--lounge-floor', '#' + hx(r) + hx(g) + hx(b));
+      } catch (e) { /* tainted or unavailable canvas: the CSS fallback colour stays */ }
     }
 
     function updateBoard(force) {
@@ -99,6 +116,7 @@
         lighting: sky.light, sunAzimuth: sky.sun.azimuth, moon: sky.moon, boardRows: rows, boardKey,
         chars, t: simT, debug: debug.enabled ? debug.overlay : null,
       });
+      if (floorDue) sampleFloor();
     }
 
     function frame(ts) {
