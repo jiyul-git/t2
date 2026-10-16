@@ -132,7 +132,7 @@ html[data-airport-theme="day"] .top{background:#244e50e9}
 .walletBadge{border-color:#b796578f;background:#193635;padding:6px 11px;font-size:10px}
 .walletBadge b{font-size:15px;margin-top:0}
 main{padding:0 11px 26px}
-.airport-hero{min-height:338px;height:338px;margin:10px 0 13px;padding:0;border-radius:18px;overflow:hidden;
+.airport-hero{position:relative;min-height:282px;height:282px;margin:10px 0 13px;padding:0;border-radius:18px;overflow:hidden;
  background:linear-gradient(180deg,#031a1b38 0%,#091b1b25 43%,#092c30ba 82%,#081d21 100%),
  url("assets/airport-night.svg") center center/cover;
  border:1px solid #c8a96b80;box-shadow:0 10px 24px #0006,inset 0 0 0 1px #f9d69b24;isolation:isolate}
@@ -148,13 +148,13 @@ html[data-airport-theme="day"] .airport-hero{
 .theme-picker button{border:0;background:transparent;color:#efdfc3;padding:6px 9px;
  border-radius:999px;font-size:11px;font-weight:800;min-height:32px;cursor:pointer}
 .theme-picker button.active{background:linear-gradient(#ffe2a5,#e9b869);color:#203432;box-shadow:0 2px 7px #0005}
-.flight-board{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:3px;
+.flight-board{position:absolute;z-index:4;left:12px;top:12px;display:flex;flex-direction:column;gap:3px;
  background:#102a32dd;border:2px solid #cfaf7799;border-radius:7px;padding:8px 11px;
  font-size:8px;letter-spacing:.14em;color:#eac68b;transform:rotate(-2deg);
  box-shadow:0 4px 8px #0005;max-width:145px}
 .flight-board b{font-size:13px;color:#f9e8c4}
 .flight-board span:last-child{color:#c0dfd0}
-.airport-characters{position:absolute;left:4px;right:4px;bottom:74px;display:flex;
+.airport-characters{position:absolute;left:4px;right:4px;bottom:79px;display:flex;
  justify-content:space-evenly;align-items:flex-end;height:166px;pointer-events:none}
 .airport-characters img{width:26%;height:136px;object-fit:contain;object-position:center bottom;
  filter:drop-shadow(0 7px 5px #071518b0);transform:translateY(1px);min-width:0}
@@ -162,7 +162,7 @@ html[data-airport-theme="day"] .airport-hero{
 .airport-characters img:nth-child(2){height:131px;transform:translateY(-1px)}
 .airport-characters img:nth-child(3){height:143px;transform:translateY(4px)}
 .airport-characters img:nth-child(4){height:134px;transform:translateY(6px)}
-.hero-copy{position:absolute;left:0;right:0;bottom:0;min-height:99px;padding:21px 18px 13px;
+.hero-copy{position:absolute;z-index:3;left:0;right:0;bottom:0;min-height:99px;padding:21px 18px 13px;
  background:linear-gradient(180deg,transparent,#092528e8 28%,#071d21f2 100%)}
 .hero .eyebrow{letter-spacing:.17em;font-size:9px}
 .hero h1{font-size:29px;line-height:1.14;margin:7px 0 5px;letter-spacing:-.06em;
@@ -225,7 +225,7 @@ html[data-airport-theme="day"] .card-illustration{background:linear-gradient(160
 .bottom button.active{color:#ffe0a2;background:#d4b2671a}
 .sheet{background:#122c30;border-color:#d3ad6c}
 @media (max-width:359px) {
- .airport-hero{height:309px;min-height:309px}
+ .airport-hero{height:262px;min-height:262px}
  .airport-characters{bottom:75px;height:148px}
  .airport-characters img,.airport-characters img:nth-child(n){height:126px}
  .hero h1{font-size:25px}
