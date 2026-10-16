@@ -37,7 +37,7 @@
         .map(async v => ({ elev: v.elev, img: await image(v.file) })));
       return { def, variants, emission: def.emission ? await image(def.emission) : null };
     }));
-    const floorLight = await image(scene.floorLight.file);
+    const floorLight = scene.floorLight ? await image(scene.floorLight.file) : null;
     const chars = [];
     await Promise.all((scene.characters || []).map(async (name, i) => {
       try {

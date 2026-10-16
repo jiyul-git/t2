@@ -20,7 +20,7 @@ try:
 except ImportError:           # pragma: no cover - reported as an error below
     cv2 = None
 
-SCENE_SIZE = (1440, 1040)
+SCENE_WIDTH = 1440           # logical width; height follows the artwork (600..1400)
 REQUIRED_CLIPS = ['walk_r', 'walk_l', 'turn_r_front', 'turn_l_front', 'turn_front_r', 'turn_front_l',
                   'sit_down', 'stand_up', 'sit_idle']
 REQUIRED_POSES = ['walk_r', 'walk_l', 'stand_front', 'sit']
@@ -115,8 +115,13 @@ def check_scene(root, rep):
     scene = read_json(root / 'scene.json', rep, 'scene')
     if scene is None:
         return None
-    if scene.get('size') != list(SCENE_SIZE):
-        rep.err('schema', 'scene.json size must be %s' % list(SCENE_SIZE))
+    size = scene.get('size')
+    if not (isinstance(size, list) and len(size) == 2 and size[0] == SCENE_WIDTH and is_int(size[1]) and 600 <= size[1] <= 1400):
+        rep.err('schema', 'scene.json size must be [%d, height 600..1400]' % SCENE_WIDTH)
+        size = [SCENE_WIDTH, 1040]
+    scene_size = tuple(size)
+    if 'charScale' in scene and not (is_num(scene['charScale']) and scene['charScale'] > 0):
+        rep.err('schema', 'scene.json charScale must be a positive number')
     for key in ('baselineY', 'horizonY', 'windowFacing'):
         if not is_num(scene.get(key)):
             rep.err('schema', 'scene.json %s must be a number' % key)
@@ -126,13 +131,13 @@ def check_scene(root, rep):
             rep.err('schema', 'scene.json %s needs numeric %s' % (key, ', '.join(fields)))
     seats = scene.get('seats')
     if not isinstance(seats, list) or not seats or not all(
-            isinstance(s, dict) and isinstance(s.get('id'), str) and is_num(s.get('x')) for s in seats):
+            isinstance(s, dict) and isinstance(s.get('id'), str) and is_num(s.get('x')) and ('y' not in s or is_num(s['y'])) for s in seats):
         rep.err('schema', 'scene.json seats must be a non-empty list of {id, x}')
     elif len({s['id'] for s in seats}) != len(seats):
         rep.err('schema', 'scene.json seat ids must be unique')
     ent = scene.get('entries')
-    if not isinstance(ent, dict) or not (is_num(ent.get('left')) and is_num(ent.get('right')) and ent['left'] < 0 < SCENE_SIZE[0] < ent['right']):
-        rep.err('schema', 'scene.json entries must put left < 0 and right > %d' % SCENE_SIZE[0])
+    if not isinstance(ent, dict) or not (is_num(ent.get('left')) and is_num(ent.get('right')) and ent['left'] < 0 < scene_size[0] < ent['right']):
+        rep.err('schema', 'scene.json entries must put left < 0 and right > %d' % scene_size[0])
     chars = scene.get('characters')
     if not isinstance(chars, list) or not chars or not all(isinstance(n, str) for n in chars):
         rep.err('schema', 'scene.json characters must be a non-empty list of folder names')
@@ -144,7 +149,7 @@ def check_scene(root, rep):
     if not isinstance(lamps, list) or not all(isinstance(l, dict) and all(is_num(l.get(k)) for k in ('x', 'y', 'r')) for l in lamps):
         rep.err('schema', 'scene.json lamps must be a list of {x, y, r}')
 
-    def need_image(rel, what, size=SCENE_SIZE):
+    def need_image(rel, what, size=scene_size):
         arr = load_rgba(root / rel, rep)
         if arr is not None and size is not None and (arr.shape[1], arr.shape[0]) != tuple(size):
             rep.err('schema', '%s %s must be %dx%d, got %dx%d' % (what, rel, size[0], size[1], arr.shape[1], arr.shape[0]))
@@ -152,7 +157,9 @@ def check_scene(root, rep):
         return arr
 
     fl = scene.get('floorLight')
-    if not isinstance(fl, dict) or not isinstance(fl.get('file'), str) or not (
+    if fl is None:
+        pass                                          # no visible floor in this artwork
+    elif not isinstance(fl, dict) or not isinstance(fl.get('file'), str) or not (
             isinstance(fl.get('anchor'), list) and len(fl['anchor']) == 2 and all(is_num(v) for v in fl['anchor'])):
         rep.err('schema', 'scene.json floorLight needs file and anchor [x, y]')
     else:
@@ -189,17 +196,18 @@ def check_scene(root, rep):
         if lid == 'interior':
             w = scene.get('window') or {}
             for v, arr in loaded:
-                if arr is not None and isinstance(w.get('x'), (int, float)):
-                    cx = int(w['x'] + w['w'] * 0.15)
-                    cy = int(w['y'] + w['h'] * 0.25)
-                    if arr[cy, cx, 3] != 0:
-                        rep.err('schema', 'interior %s must be transparent where the window glass is (x=%d, y=%d)' % (v['file'], cx, cy))
+                if arr is not None and all(is_num(w.get(k)) for k in ('x', 'y', 'w', 'h')):
+                    win = arr[int(w['y']):int(w['y'] + w['h']), int(w['x']):int(w['x'] + w['w']), 3]
+                    if win.size and (win < 16).mean() < 0.3:
+                        rep.err('schema', 'interior %s must be transparent where the window glass is (only %.0f%% of the window area is)' % (v['file'], 100 * (win < 16).mean()))
         for (va, a), (vb, b) in zip(loaded, loaded[1:]):
             if a is None or b is None:
                 continue
             ai = iou(a[..., 3] > 127, b[..., 3] > 127)
             if ai < ALPHA_IOU_MIN:
                 rep.err('alignment', 'layer %s: alpha outlines of %s and %s differ (IoU %.3f < %.2f)' % (lid, va['file'], vb['file'], ai, ALPHA_IOU_MIN))
+            if layer.get('cutFrom'):
+                continue                              # cut with one mask from an already-checked layer
             if cv2 is None:
                 rep.err('env', 'opencv-python-headless is required for the edge alignment check')
             else:

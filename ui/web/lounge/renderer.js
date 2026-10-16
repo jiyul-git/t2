@@ -246,6 +246,23 @@
       c.globalAlpha = 1;
     }
 
+    // Seated characters stand on their seat's own line (seat.y); walkers use baselineY. While turning
+    // toward or away from a seat the line slides between the two so nobody jumps.
+    function footY(e) {
+      const idx = Number.isInteger(e.spot) ? e.spot : e.seat;
+      const seat = idx >= 0 ? scene.seats[idx] : null;
+      const seatY = seat && Number.isFinite(seat.y) ? seat.y : scene.baselineY;
+      if (e.state === 'ENTERING' || e.state === 'EXITING' || !seat) return scene.baselineY;
+      if (e.state === 'TURN_IN' || e.state === 'TURN_OUT') {
+        const ch = chars.get(e.name), clip = ch && ch.manifest.clips[e.clip];
+        const n = clip ? clip.frames.length : 1, t = n > 1 ? e.frame / (n - 1) : 1;
+        const k = e.state === 'TURN_IN' ? t : 1 - t;
+        return scene.baselineY + (seatY - scene.baselineY) * k;
+      }
+      return seatY;
+    }
+    const charScale = Number.isFinite(scene.charScale) ? scene.charScale : 1;
+
     function atlasFrame(ch, clipId, frame) {
       const clip = ch.manifest.clips[clipId];
       if (!clip) return null;
@@ -291,7 +308,7 @@
       for (const e of list) {
         const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
         if (!af) continue;
-        const f = af.f, sc = ch.manifest.scale, fy = scene.baselineY;
+        const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
         // contact shadow
         c.save();
         c.globalAlpha = 0.30; c.fillStyle = '#000000';
@@ -315,13 +332,13 @@
     function drawChar(c, e, L) {
       const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
       if (!af) return;
-      const f = af.f, sc = ch.manifest.scale;
-      c.drawImage(tinted(ch, af.idx, f, L), e.x - f.ax * sc, scene.baselineY - f.ay * sc, f.w * sc, f.h * sc);
+      const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
+      c.drawImage(tinted(ch, af.idx, f, L), e.x - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
     }
 
     let floorTint = null, floorTintKey = '';
     function drawFloorLight(c, L, rel, h, direct) {
-      if (direct <= 0.01) return;
+      if (direct <= 0.01 || !assets.floorLight || !scene.floorLight) return;
       const key = L.sunColor;
       if (key !== floorTintKey) {
         const img = assets.floorLight;
@@ -348,18 +365,18 @@
       if (dbg.baseline) { c.strokeStyle = '#00ffd0'; c.beginPath(); c.moveTo(0, scene.baselineY); c.lineTo(W, scene.baselineY); c.stroke(); }
       if (dbg.seats) {
         c.strokeStyle = '#ffd000'; c.fillStyle = '#ffd000'; c.font = '20px monospace';
-        scene.seats.forEach((s, i) => { c.beginPath(); c.moveTo(s.x, scene.baselineY - 30); c.lineTo(s.x, scene.baselineY + 30); c.stroke(); c.fillText(s.id, s.x - 10, scene.baselineY + 54); });
+        scene.seats.forEach(s => { const y = Number.isFinite(s.y) ? s.y : scene.baselineY; c.beginPath(); c.moveTo(s.x, y - 30); c.lineTo(s.x, y + 30); c.stroke(); c.fillText(s.id, s.x - 10, y - 40); });
       }
       for (const e of list) {
         const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
         if (!af) continue;
-        const f = af.f, sc = ch.manifest.scale;
-        if (dbg.feet) { c.strokeStyle = '#ff3060'; c.beginPath(); c.arc(e.x, scene.baselineY, 7, 0, 6.2832); c.stroke(); }
-        if (dbg.frames) { c.strokeStyle = '#60a0ff'; c.strokeRect(e.x - f.ax * sc, scene.baselineY - f.ay * sc, f.w * sc, f.h * sc); }
+        const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
+        if (dbg.feet) { c.strokeStyle = '#ff3060'; c.beginPath(); c.arc(e.x, fy, 7, 0, 6.2832); c.stroke(); }
+        if (dbg.frames) { c.strokeStyle = '#60a0ff'; c.strokeRect(e.x - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc); }
         if (dbg.labels) {
           c.fillStyle = '#ffffff'; c.strokeStyle = '#000000'; c.font = '22px monospace';
           const txt = e.name + ' ' + e.clip + ' #' + e.frame + (e.lane === 'seat' ? ' [seat]' : '');
-          c.strokeText(txt, e.x - 90, scene.baselineY - f.ay * sc - 8); c.fillText(txt, e.x - 90, scene.baselineY - f.ay * sc - 8);
+          c.strokeText(txt, e.x - 90, fy - f.ay * sc - 8); c.fillText(txt, e.x - 90, fy - f.ay * sc - 8);
         }
       }
       c.restore();

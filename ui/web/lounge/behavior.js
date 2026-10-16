@@ -386,7 +386,8 @@
         else if (c.state === 'STAND_UP') lane = frame >= switchAt ? 'aisle' : 'seat';
         if (c.state !== 'ENTERING' && c.state !== 'EXITING') x = seats[c.seat].x;
         out.push({ name: c.name, clip: c.clip, frame, x, lane, mirrored: false, state: c.state,
-          activity: c.activity, seat: c.seat >= 0 && seatOwner[c.seat] === c ? scene.seats.indexOf(seats[c.seat]) : -1 });
+          activity: c.activity, seat: c.seat >= 0 && seatOwner[c.seat] === c ? scene.seats.indexOf(seats[c.seat]) : -1,
+          spot: c.seat >= 0 ? scene.seats.indexOf(seats[c.seat]) : -1 });   // seat it is heading to or leaving, even once released
       }
       return out;
     }
