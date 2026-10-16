@@ -1,0 +1,286 @@
+START p60v2b_btn_vs_bb_3b40 2026-10-16T11:17:55Z
+{
+ "fold|BB:raise@8.000000|BTN:call@8.000000": {
+  "BTN": {
+   "D144": 1.239,
+   "signed": -0.953,
+   "U24": 1.144,
+   "U144": 0.489,
+   "opp_arriving_combos": 79.476,
+   "exempt": 0
+  },
+  "BB": {
+   "D144": 1.15,
+   "signed": 0.953,
+   "U24": 0.831,
+   "U144": 0.399,
+   "opp_arriving_combos": 205.93,
+   "exempt": 0
+  }
+ },
+ "00|BTN:raise@17.200000|BB:call@17.200000": {
+  "BTN": {
+   "D144": 2.887,
+   "signed": 1.964,
+   "U24": 1.486,
+   "U144": 0.87,
+   "opp_arriving_combos": 15.984,
+   "exempt": 0
+  },
+  "BB": {
+   "D144": 2.234,
+   "signed": -1.964,
+   "U24": 1.404,
+   "U144": 0.607,
+   "opp_arriving_combos": 0.409,
+   "exempt": 1
+  }
+ }
+}
+consistent_with_24 False
+{
+ "status": "research",
+ "verified": false,
+ "gates": {
+  "G1_tree": "Plan A p60 v2b: 9-max hand-start 60 bb exact (cfg.stack 59.888888888889), ante 1/9, opens 2.0, 3-bet 3.0x / blinds 3.5x/4.0x; SB open 3.0 bb, SB limp allowed; open jam excluded; parent max_raises 3, 4-bet jam only, static continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam",
+  "G1": true,
+  "spot_exploitability_bb": 0.0002592046289065776,
+  "spot_exploitability_max_bb": 0.01,
+  "spot_solver": true,
+  "G2_parent_gap_total_bb": 0.009567604837509073,
+  "G2_max_bb": 0.01,
+  "G2": true,
+  "G3_outer_converged": false,
+  "G3": false,
+  "G4_static_share": 0.0,
+  "G4": true,
+  "G4_state": "pass",
+  "G5_stable_combo_share": 0.14801146802080534,
+  "G6": false,
+  "precision_final": true
+ },
+ "hand_frequency": {
+  "status": "blocked_by_solution",
+  "stable_combo_share": 0.14801146802080534,
+  "complete_min": 0.95,
+  "verified": false,
+  "rule": "only `stable` classes carry point frequencies at the solution status; near-indifferent classes are uncertainty groups (raw mix kept, never called verified frequency)",
+  "uncertainty_groups": [
+   {
+    "path": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     3
+    ],
+    "actor": "BTN",
+    "actions": "4-bet 17.2 ~ All-in 59.9",
+    "classes": [
+     "JJ"
+    ],
+    "reach_combos": 6.0,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     3
+    ],
+    "actor": "BTN",
+    "actions": "4-bet 17.2 ~ Call 8",
+    "classes": [
+     "66",
+     "77",
+     "88",
+     "98s",
+     "99",
+     "T8s",
+     "TT",
+     "KK",
+     "AKo",
+     "A7s",
+     "AKs",
+     "AA"
+    ],
+    "reach_combos": 69.991,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     3
+    ],
+    "actor": "BTN",
+    "actions": "4-bet 17.2 ~ Fold",
+    "classes": [
+     "K3o",
+     "A3o",
+     "K4o",
+     "A4o",
+     "K6o",
+     "A6o",
+     "Q7o",
+     "K7o",
+     "A7o",
+     "98o",
+     "T8o",
+     "J8o",
+     "Q8o",
+     "K8o",
+     "A8o",
+     "T9o",
+     "J9o",
+     "Q9o",
+     "K9o",
+     "A9o",
+     "JTo",
+     "QTo",
+     "ATo",
+     "J3s",
+     "J6s",
+     "J7s",
+     "J8s",
+     "J9s",
+     "QJo",
+     "KJo",
+     "AJo",
+     "Q2s",
+     "Q3s",
+     "Q4s",
+     "Q5s",
+     "Q6s",
+     "Q7s",
+     "Q8s",
+     "Q9s",
+     "QTs",
+     "QJs",
+     "K9s",
+     "A6s",
+     "A9s"
+    ],
+    "reach_combos": 321.3,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     3
+    ],
+    "actor": "BTN",
+    "actions": "All-in 59.9 ~ Call 8",
+    "classes": [
+     "55",
+     "JTs",
+     "AQo",
+     "KTs",
+     "KJs",
+     "KQs",
+     "A5s",
+     "ATs",
+     "AJs",
+     "AQs"
+    ],
+    "reach_combos": 50.0,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     3
+    ],
+    "actor": "BTN",
+    "actions": "Call 8 ~ Fold",
+    "classes": [
+     "22",
+     "33",
+     "44",
+     "K5o",
+     "A5o",
+     "87s",
+     "97s",
+     "T6s",
+     "T7s",
+     "T9s",
+     "KTo",
+     "J5s",
+     "KQo",
+     "K2s",
+     "K3s",
+     "K4s",
+     "K5s",
+     "K6s",
+     "K7s",
+     "K8s",
+     "A2s",
+     "A8s"
+    ],
+    "reach_combos": 110.876,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     3,
+     2
+    ],
+    "actor": "BB",
+    "actions": "All-in 59.9 ~ Call 17.2",
+    "classes": [
+     "JJ",
+     "QQ",
+     "KQs",
+     "KK",
+     "AKo",
+     "AQs",
+     "AKs",
+     "AA"
+    ],
+    "reach_combos": 21.456,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     
+root BTN {'Fold': 61.2, 'Call 8': 32.5, '4-bet 17.2': 6.3, 'All-in 59.9': 0.0}
+{"k": 0, "decision": "continue", "terminals": {"N:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000": {"BTN": [1.2388868543837959, 0.489], "BB": [1.1504343403496293, 0.399]}, "fold|BB:raise@8.000000|BTN:raise@17.200000|BB:call@17.200000": {"BTN": [2.8873107175950263, 0.87], "BB": [2.2337655071787212, 0.607]}}}
