@@ -11,9 +11,9 @@ if ! git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then
 fi
 TARGET="$HOME/t2_airport_preview"
 ZIP=""
-for CANDIDATE in "$HOME/storage/downloads/t2_airport_final_assets.zip" \
-                 "$HOME/storage/shared/Download/t2_airport_final_assets.zip" \
-                 "/storage/emulated/0/Download/t2_airport_final_assets.zip"; do
+for CANDIDATE in "$HOME/storage/downloads"/t2_airport_final_assets*.zip \
+                 "$HOME/storage/shared/Download"/t2_airport_final_assets*.zip \
+                 /storage/emulated/0/Download/t2_airport_final_assets*.zip; do
   if [ -f "$CANDIDATE" ]; then ZIP="$CANDIDATE"; break; fi
 done
 if [ -z "$ZIP" ]; then
@@ -34,6 +34,7 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT HUP INT TERM
 git -C "$REPO" archive "$REF" ui/web | tar -xf - -C "$TMP"
 cp -R "$TMP/ui/web/." "$TARGET/web/"
+printf '%s\\n' "origin/$BRANCH $REF" > "$TARGET/UI_SOURCE"
 if [ ! -f "$TARGET/ui_server.py" ]; then
   echo "먼저 기존의 격리 미리보기 실행 폴더(t2_airport_preview)를 만드세요." >&2
   exit 1
