@@ -222,6 +222,35 @@ Output the full extended image (original on top, new area below), same width.
 
 받으면 원본 위쪽과 픽셀 단위로 맞는지 확인한 뒤(어긋나면 위쪽은 원본을 쓰고 아래 새 부분만 이어 붙인다) 라운지 배경 아래로 붙이고, 토너먼트 목록이 그 위에 올라가게 한다.
 
+### 4. 호랑이 다리 핵심 자세 4장 (걷기 다시 만들기)
+
+지금 시트에는 한쪽 발만 앞으로 나오는 자세뿐이라, 이어 붙이면 같은 발이 앞뒤로 왔다 갔다 한다. 윗몸은 우리가 한 장으로 고정해 쓰므로, **다리만** 제대로 된 4자세가 필요하다.
+보낼 그림: `art/requests/tiger_legs_reference.png` (기준 호랑이, 왼쪽으로 걷는 중).
+
+```
+Use the attached tiger as the exact character reference (same head, hoodie, phone, tail,
+suitcase, colours, line weight). Draw ONE ROW of 4 separate cells on a plain white background,
+same size and same position in every cell, a clear white gap between cells, no shadows.
+
+The tiger walks to the LEFT in every cell. Keep the upper body (head, hoodie, arms, phone,
+suitcase) IDENTICAL in all 4 cells - copy it from the reference. Change ONLY the legs:
+
+1. CONTACT A: the NEAR leg (closer to the viewer) is stretched forward to the left, heel just
+   touching the floor, toes pointing left. The FAR leg is stretched behind to the right, toes on
+   the floor, heel lifted.
+2. PASSING A: the NEAR leg is straight under the body, foot flat on the floor. The FAR leg is
+   bent and lifted, swinging forward past it.
+3. CONTACT B: the opposite of 1 - the FAR leg is now stretched forward to the left (heel down,
+   toes pointing left) and the NEAR leg is stretched behind (toes down, heel lifted).
+4. PASSING B: the opposite of 2 - the FAR leg is straight under the body, foot flat; the NEAR
+   leg is bent and lifted, swinging forward.
+
+Toes always point LEFT (the walking direction). Never show the bottom of a foot facing the
+viewer. The near leg always overlaps the far leg. No text, no watermark.
+```
+
+받으면 4칸을 잘라 다리만 바꿔 넣고(`lockbody.py`), 사이 프레임이 필요하면 1→2, 2→3 사이에 기존 시트의 비슷한 자세를 끼운다.
+
 ## 확인과 보내기
 
 - 한 장씩 볼 때: 기준 그림과 같은 캐릭터인지(얼굴, 옷, 색), 몸 전체가 잘리지 않았는지, 배경이 흰색 단색인지.
