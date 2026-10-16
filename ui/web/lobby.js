@@ -183,6 +183,12 @@ const PROFILE_KEYS = {
   avatar: 't2profile_avatar'      // 테이블의 내 캐릭터(visuals.js 가 HERO 자리에 쓴다)
 };
 const AVATARS = 9;
+// Exact existing T2 portraits, including the existing separate pupil layer.
+document.querySelectorAll('.airport-character').forEach(el=>{
+  const index=Number(el.dataset.portraitIndex);
+  if(window.PokerVisuals) el.innerHTML=window.PokerVisuals.avatarHTML(index);
+});
+
 function syncAirportButtons(){
   const theme=window.T2AirportTheme;
   if(!theme)return;
