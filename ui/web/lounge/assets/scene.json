@@ -21,11 +21,29 @@
   "h": 700
  },
  "board": {
-  "x": 75,
-  "y": 150,
-  "w": 510,
-  "h": 320,
-  "rows": 6
+  "x": 62,
+  "y": 161,
+  "w": 518,
+  "h": 334,
+  "rows": 4,
+  "quad": [
+   [
+    62,
+    161
+   ],
+   [
+    580,
+    258
+   ],
+   [
+    580,
+    495
+   ],
+   [
+    62,
+    412
+   ]
+  ]
  },
  "seats": [
   {
@@ -66,10 +84,20 @@
   }
  ],
  "floorLight": null,
+ "planes": {
+  "right": "bg/plane_right.webp",
+  "left": "bg/plane_left.webp",
+  "y": 655,
+  "height": 105,
+  "from": 560,
+  "to": 1700,
+  "period": 150,
+  "duration": 55
+ },
  "layers": [
   {
    "id": "outside",
-   "group": "back",
+   "group": "far",
    "tint": false,
    "variants": [
     {

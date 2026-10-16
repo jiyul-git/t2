@@ -220,6 +220,7 @@
         return {
           debug, info, location: () => location, scene: () => assets.scene, characters: () => assets.chars.map(c => c.manifest.name),
           setClock(ms) { debug.clockMs = ms; debug.clockSetAt = Date.now(); updateLighting(true); updateBoard(true); },
+          setSceneTime(sec) { simT = sec; },
           setScale(n) { debug.clockMs = clockMs(); debug.clockSetAt = Date.now(); debug.scale = n; },
           force(name, kind) { return director ? director.force(name, kind) : false; },
           reset() { debug.clockMs = null; debug.scale = 1; updateLighting(true); updateBoard(true); },

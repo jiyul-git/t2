@@ -33,12 +33,16 @@ SCENE = {
     'charScale': 1.25,
     'characters': ['tiger', 'rabbit', 'turtle', 'penguin'],
     'window': {'x': 700, 'y': 0, 'w': 740, 'h': 700},
-    'board': {'x': 75, 'y': 150, 'w': 510, 'h': 320, 'rows': 6},
+    'board': {'x': 62, 'y': 161, 'w': 518, 'h': 334, 'rows': 4,
+              'quad': [[62, 161], [580, 258], [580, 495], [62, 412]]},     # painted panel: TL, TR, BR, BL
     'seats': [{'id': 's0', 'x': 430, 'y': 995}, {'id': 's1', 'x': 665, 'y': 995},
               {'id': 's2', 'x': 1145, 'y': 1050}, {'id': 's3', 'x': 1335, 'y': 1050}],
     'entries': {'left': -320, 'right': 1760},
     'lamps': [{'x': 120, 'y': 700, 'r': 520}, {'x': 660, 'y': 660, 'r': 460}],
     'floorLight': None,
+    # a plane taxis past the window every `period` seconds, taking `duration` seconds
+    'planes': {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
+               'y': 655, 'height': 105, 'from': 560, 'to': 1700, 'period': 150, 'duration': 55},
 }
 
 
@@ -71,9 +75,14 @@ def main(argv=None):
                 sofa.putalpha(Image.fromarray(a))
                 sofa.save(bg / ('sofa_front_%s.webp' % name), 'WEBP', quality=88, method=6)
                 layers['sofaFront'].append({'elev': elev, 'file': 'bg/sofa_front_%s.webp' % name})
+    cut = Path(__file__).resolve().parent.parent / 'cutouts'
+    for side in ('right', 'left'):
+        im = Image.open(cut / ('plane_%s.png' % side)).convert('RGBA')
+        im = im.resize((round(im.width * 260 / im.height), 260), Image.LANCZOS)
+        im.save(bg / ('plane_%s.webp' % side), 'WEBP', quality=90, method=6)
     scene = dict(SCENE)
     scene['layers'] = [
-        {'id': 'outside', 'group': 'back', 'tint': False, 'variants': layers['outside']},
+        {'id': 'outside', 'group': 'far', 'tint': False, 'variants': layers['outside']},
         {'id': 'interior', 'group': 'back', 'tint': False, 'variants': layers['interior']},
         {'id': 'sofaFront', 'group': 'mid', 'tint': False, 'cutFrom': 'interior', 'variants': layers['sofaFront']},
     ]

@@ -38,6 +38,7 @@
       return { def, variants, emission: def.emission ? await image(def.emission) : null };
     }));
     const floorLight = scene.floorLight ? await image(scene.floorLight.file) : null;
+    const planes = scene.planes ? { right: await image(scene.planes.right), left: await image(scene.planes.left) } : null;
     const chars = [];
     await Promise.all((scene.characters || []).map(async (name, i) => {
       try {
@@ -48,7 +49,7 @@
         if (typeof console !== 'undefined') console.warn('lounge: character left out:', name, e && e.message);
       }
     }));
-    return { scene, layers, floorLight, chars: chars.filter(Boolean) };
+    return { scene, layers, floorLight, planes, chars: chars.filter(Boolean) };
   }
 
   return { loadAssets, browserIO };

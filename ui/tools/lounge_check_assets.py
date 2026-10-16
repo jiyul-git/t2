@@ -24,7 +24,7 @@ SCENE_WIDTH = 1440           # logical width; height follows the artwork (600..1
 REQUIRED_CLIPS = ['walk_r', 'walk_l', 'turn_r_front', 'turn_l_front', 'turn_front_r', 'turn_front_l',
                   'sit_down', 'stand_up', 'sit_idle']
 REQUIRED_POSES = ['walk_r', 'walk_l', 'stand_front', 'sit']
-GROUPS = ('back', 'mid', 'front')
+GROUPS = ('far', 'back', 'mid', 'front')
 EMISSION_KEYS = ('lamp', 'city')
 SEAM_MAX_ERR = 6.0           # mean abs error, 0..255, premultiplied RGBA
 LOOP_SEAM_FACTOR = 1.25      # loop wrap may jump at most this much more than the biggest normal step
@@ -165,6 +165,15 @@ def check_scene(root, rep):
     else:
         need_image(fl['file'], 'floorLight', None)
 
+    planes = scene.get('planes')
+    if planes is not None:
+        if not (isinstance(planes, dict) and all(isinstance(planes.get(k), str) for k in ('right', 'left'))
+                and all(is_num(planes.get(k)) for k in ('y', 'height', 'from', 'to', 'period', 'duration'))
+                and 0 < planes['duration'] <= planes['period']):
+            rep.err('schema', 'scene.json planes needs right/left files and numeric y, height, from, to, period >= duration > 0')
+        else:
+            for k in ('right', 'left'):
+                need_image(planes[k], 'plane', None)
     layers = scene.get('layers')
     if not isinstance(layers, list) or not layers:
         rep.err('schema', 'scene.json layers must be a non-empty list')

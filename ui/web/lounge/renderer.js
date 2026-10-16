@@ -110,7 +110,7 @@
       pw = w; ph = h; k = w / W;
       canvas.width = w; canvas.height = h;
       scratch = make(w, h);
-      for (const g of ['back', 'mid', 'front']) ensureCache(g);
+      for (const g of ['far', 'back', 'mid', 'front']) ensureCache(g);
       tintCache = new Map();
       cacheDirty = true;
       return true;
@@ -154,30 +154,73 @@
       }
     }
 
+    // Rows follow the painted panel: each row gets its own affine map from its left edge to its
+    // right edge, which tracks the panel's slant and its slight perspective.
     function drawBoard(target, rows) {
       const b = scene.board;
       if (!rows || !rows.length) return;
-      const rh = b.h / b.rows, pad = 16, inner = b.w - pad * 2;
-      target.save();
-      target.beginPath(); target.rect(b.x, b.y, b.w, b.h); target.clip();
-      target.font = 'bold ' + Math.round(rh * 0.5) + 'px monospace';
-      target.textBaseline = 'middle';
-      rows.slice(0, b.rows).forEach((row, i) => {
-        const cy = b.y + (i + 0.5) * rh - 2;
-        let cx = b.x + pad;
+      const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+      const q = b.quad || [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h]];
+      const [TL, TR, BR, BL] = q;
+      const n = b.rows;
+      rows.slice(0, n).forEach((row, i) => {
+        const L0 = lerp(TL, BL, i / n), R0 = lerp(TR, BR, i / n), L1 = lerp(TL, BL, (i + 1) / n);
+        const w = Math.hypot(R0[0] - L0[0], R0[1] - L0[1]), h = Math.hypot(L1[0] - L0[0], L1[1] - L0[1]);
+        target.save();
+        target.transform((R0[0] - L0[0]) / w, (R0[1] - L0[1]) / w, (L1[0] - L0[0]) / h, (L1[1] - L0[1]) / h, L0[0], L0[1]);
+        target.beginPath(); target.rect(0, 0, w, h); target.clip();
+        target.font = 'bold ' + Math.round(h * 0.5) + 'px monospace';
+        target.textBaseline = 'middle';
+        const pad = w * 0.035, inner = w - pad * 2;
+        let cx = pad;
         const cells = [[row.flight, '#ffffff'], [row.dest, '#ffffff'], [row.time, STATUS_COLORS.time], [row.status, STATUS_COLORS[row.status] || '#ffffff']];
         cells.forEach(([text, color], j) => {
           target.fillStyle = color;
-          target.fillText(text, cx, cy, inner * COLUMN_RATIOS[j] - 6);
+          target.fillText(text, cx, h / 2, inner * COLUMN_RATIOS[j] - 6);
           cx += inner * COLUMN_RATIOS[j];
         });
-        if (row.mine) { target.fillStyle = '#ffd27a'; target.beginPath(); target.arc(b.x + 8, cy, 4, 0, 6.2832); target.fill(); }
+        if (row.mine) { target.fillStyle = '#ffd27a'; target.beginPath(); target.arc(pad * 0.45, h / 2, 4, 0, 6.2832); target.fill(); }
+        target.restore();
       });
-      target.restore();
+    }
+
+    // Aircraft taxiing past the window now and then. Deterministic in scene time, so a reload shows
+    // the same plane at the same moment.
+    const planeTint = new Map();
+    function planeState(t) {
+      const p = scene.planes;
+      if (!p || !assets.planes) return null;
+      const k = Math.floor(t / p.period), phase = t - k * p.period;
+      if (phase > p.duration) return null;
+      const u = phase / p.duration, ease = u * u * (3 - 2 * u) * 0.3 + u * 0.7;
+      const right = k % 2 === 0;
+      const x = right ? p.from + (p.to - p.from) * ease : p.to - (p.to - p.from) * ease;
+      return { x, img: right ? assets.planes.right : assets.planes.left };
+    }
+    function drawPlane(c, L, t) {
+      const st = planeState(t);
+      if (!st) return;
+      const img = st.img, p = scene.planes;
+      const key = (img === assets.planes.right ? 'r' : 'l') + L.ambient + Math.round(L.ambientStr * 50);
+      let tinted = planeTint.get(key);
+      if (!tinted) {
+        tinted = make(img.width, img.height);
+        const g = tinted.getContext('2d');
+        g.drawImage(img, 0, 0);
+        const s2 = clamp(L.ambientStr * 1.3, 0, 1);
+        if (s2 > 0.001) {
+          g.globalCompositeOperation = 'multiply'; g.fillStyle = tintColor(L.ambient, s2); g.fillRect(0, 0, img.width, img.height);
+          g.globalCompositeOperation = 'destination-in'; g.drawImage(img, 0, 0);
+        }
+        if (planeTint.size > 8) planeTint.clear();
+        planeTint.set(key, tinted);
+      }
+      const h = p.height, w = h * img.width / img.height;
+      c.drawImage(tinted, st.x - w / 2, p.y - h, w, h);
     }
 
     function rebuild(L, rows) {
-      for (const g of ['back', 'mid', 'front']) {
+      for (const g of ['far', 'back', 'mid', 'front']) {
         const c = ensureCache(g).ctx;
         c.setTransform(1, 0, 0, 1, 0, 0);
         c.clearRect(0, 0, pw, ph);
@@ -407,6 +450,8 @@
       ctx.setTransform(k, 0, 0, k, 0, 0);
       drawSky(ctx, L, sun, moon, state.t);
       const blit = name => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(caches[name].canvas, 0, 0); ctx.restore(); };
+      blit('far');
+      drawPlane(ctx, L, state.t);
       blit('back');
       drawFloorLight(ctx, L, rel, L.h, direct);
       const list = state.chars || [];
@@ -419,7 +464,7 @@
       if (state.debug) drawOverlay(ctx, list, state.debug);
     }
 
-    function dispose() { caches.back = caches.mid = caches.front = null; tintCache.clear(); silhouettes.clear(); }
+    function dispose() { caches.far = caches.back = caches.mid = caches.front = null; tintCache.clear(); silhouettes.clear(); }
     return { resize, draw, dispose, get size() { return { w: pw, h: ph }; } };
   }
 
