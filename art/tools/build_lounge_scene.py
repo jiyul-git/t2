@@ -34,7 +34,7 @@ SCENE = {
     'characters': ['tiger', 'rabbit', 'turtle', 'penguin'],
     'window': {'x': 700, 'y': 0, 'w': 740, 'h': 700},
     # painted row boundaries of the panel, top to bottom, each [[x_left, y], [x_right, y]]
-    'board': {'x': 64, 'y': 101, 'w': 516, 'h': 398, 'rows': 6,
+    'board': {'x': 64, 'y': 101, 'w': 516, 'h': 398, 'rows': 6, 'textRows': 5,   # bottom row left empty
               'lines': [[[64, 100.7], [580, 208.6]], [[64, 160.9], [580, 258.9]], [[64, 222.0], [580, 308.7]], [[64, 282.1], [580, 359.5]], [[64, 343.2], [580, 413.4]], [[64, 406.3], [580, 465.1]], [[64, 449.4], [580, 497.9]]]},
     'seats': [{'id': 's0', 'x': 430, 'y': 995}, {'id': 's1', 'x': 665, 'y': 995},
               {'id': 's2', 'x': 1145, 'y': 1050}, {'id': 's3', 'x': 1335, 'y': 1050}],
@@ -43,7 +43,7 @@ SCENE = {
     'floorLight': None,
     # a plane taxis past the window every `period` seconds, taking `duration` seconds
     'planes': {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
-               'y': 712, 'height': 170, 'from': 520, 'to': 1760, 'period': 150, 'duration': 70},
+               'y': 760, 'height': 280, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3},
 }
 
 

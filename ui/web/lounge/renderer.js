@@ -187,6 +187,23 @@
     // Aircraft taxiing past the window now and then. Deterministic in scene time, so a reload shows
     // the same plane at the same moment.
     const planeTint = new Map();
+    let hazeColor = '#808080';
+    // Average colour of the apron behind the plane in the current window view; the plane is graded
+    // toward it so a crisp white sprite sits inside the softer painting.
+    function sampleHaze() {
+      const p = scene.planes;
+      if (!p || !caches.far) return hazeColor;
+      try {
+        const x = Math.round(Math.max(scene.window.x, p.from) * k), y = Math.round((p.y - p.height) * k);
+        const w = Math.round(Math.min(scene.window.w, 500) * k), h = Math.round(p.height * k);
+        const d = caches.far.ctx.getImageData(x, y, Math.max(1, w), Math.max(1, h)).data;
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let i = 0; i < d.length; i += 16) { if (d[i + 3] > 200) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
+        if (!n) return hazeColor;
+        const hx = v => Math.round(v / n).toString(16).padStart(2, '0');
+        return '#' + hx(r) + hx(g) + hx(b);
+      } catch (e) { return hazeColor; }
+    }
     function planeState(t) {
       const p = scene.planes;
       if (!p || !assets.planes) return null;
@@ -201,7 +218,7 @@
       const st = planeState(t);
       if (!st) return;
       const img = st.img, p = scene.planes;
-      const key = (img === assets.planes.right ? 'r' : 'l') + L.ambient + Math.round(L.ambientStr * 50);
+      const key = (img === assets.planes.right ? 'r' : 'l') + L.ambient + Math.round(L.ambientStr * 50) + hazeColor;
       let tinted = planeTint.get(key);
       if (!tinted) {
         tinted = make(img.width, img.height);
@@ -212,6 +229,14 @@
           g.globalCompositeOperation = 'multiply'; g.fillStyle = tintColor(L.ambient, s2); g.fillRect(0, 0, img.width, img.height);
           g.globalCompositeOperation = 'destination-in'; g.drawImage(img, 0, 0);
         }
+        // grade toward the scene: pull colours toward the apron's average (distance haze) and soften
+        g.globalCompositeOperation = 'source-atop';
+        g.globalAlpha = Number.isFinite(p.haze) ? p.haze : 0.3;
+        g.fillStyle = hazeColor; g.fillRect(0, 0, img.width, img.height);
+        g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+        const soft = make(Math.max(1, Math.round(img.width * 0.55)), Math.max(1, Math.round(img.height * 0.55)));
+        soft.getContext('2d').drawImage(tinted, 0, 0, soft.width, soft.height);
+        tinted = soft;
         if (planeTint.size > 8) planeTint.clear();
         planeTint.set(key, tinted);
       }
@@ -228,6 +253,8 @@
       }
       for (const layer of assets.layers) drawLayer(caches[layer.def.group].ctx, layer, L);
       drawBoard(caches.back.ctx, rows);
+      hazeColor = sampleHaze();
+      planeTint.clear();
       cacheDirty = false;
     }
 

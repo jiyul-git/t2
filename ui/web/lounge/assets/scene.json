@@ -26,6 +26,7 @@
   "w": 516,
   "h": 398,
   "rows": 6,
+  "textRows": 5,
   "lines": [
    [
     [
@@ -141,12 +142,13 @@
  "planes": {
   "right": "bg/plane_right.webp",
   "left": "bg/plane_left.webp",
-  "y": 712,
-  "height": 170,
-  "from": 520,
-  "to": 1760,
+  "y": 760,
+  "height": 280,
+  "from": 380,
+  "to": 1980,
   "period": 150,
-  "duration": 70
+  "duration": 80,
+  "haze": 0.3
  },
  "layers": [
   {

@@ -82,7 +82,7 @@
       lastBoard = nowTs;
       const ms = clockMs();
       const serverSec = debug.clockMs === null ? (Date.now() + serverOffsetMs) / 1000 : ms / 1000;
-      rows = Board.boardRows(tournaments, serverSec, ms, assets && assets.scene.board.rows);
+      rows = Board.boardRows(tournaments, serverSec, ms, assets && (assets.scene.board.textRows || assets.scene.board.rows));
       boardKey = rows.map(r => [r.flight, r.dest, r.time, r.status, r.mine].join('|')).join(';');
     }
 
