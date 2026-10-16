@@ -403,7 +403,13 @@
         else if (c.state === 'SIT_DOWN') lane = frame >= switchAt ? 'seat' : 'aisle';
         else if (c.state === 'STAND_UP') lane = frame >= switchAt ? 'aisle' : 'seat';
         if (c.state !== 'ENTERING' && c.state !== 'EXITING') x = seats[c.seat].x;
-        out.push({ name: c.name, clip: c.clip, frame, x, lane, mirrored: false, state: c.state,
+        // where to draw: the walk advances in whole steps, the picture glides between them
+        let drawX = x;
+        if (c.walk && (c.state === 'ENTERING' || c.state === 'EXITING')) {
+          const t = c.total + acc / 1000 * clip.fps;
+          drawX = c.walk.x0 + c.walk.dir * clip.advance * (c.state === 'ENTERING' ? Math.min(t, c.walk.total) : t);
+        }
+        out.push({ name: c.name, clip: c.clip, frame, x, drawX, lane, mirrored: false, state: c.state,
           activity: c.activity, seat: c.seat >= 0 && seatOwner[c.seat] === c ? scene.seats.indexOf(seats[c.seat]) : -1,
           spot: c.seat >= 0 ? scene.seats.indexOf(seats[c.seat]) : -1 });   // seat it is heading to or leaving, even once released
       }

@@ -384,19 +384,19 @@
         // contact shadow
         c.save();
         c.globalAlpha = 0.30; c.fillStyle = '#000000';
-        c.beginPath(); c.ellipse(e.x, fy, f.w * sc * 0.225, 9, 0, 0, 6.2832); c.fill();
+        c.beginPath(); c.ellipse((e.drawX ?? e.x), fy, f.w * sc * 0.225, 9, 0, 0, 6.2832); c.fill();
         c.restore();
         const sil = silhouette(ch, af.idx, f);
         const draw = (skew, len, alpha) => {
           c.save();
           c.globalAlpha = alpha;
-          c.translate(e.x, fy);
+          c.translate((e.drawX ?? e.x), fy);
           c.transform(1, 0, skew, -len, 0, 0);
           c.drawImage(sil, -f.ax * sc, -f.ay * sc, f.w * sc, f.h * sc);
           c.restore();
         };
         if (direct > 0) draw(sh.skew, sh.len, 0.35 * direct);
-        const ls = lampShadow(scene.lamps || [], L, direct, e.x, fy);
+        const ls = lampShadow(scene.lamps || [], L, direct, (e.drawX ?? e.x), fy);
         if (ls) draw(ls.skew, ls.len, ls.alpha);
       }
     }
@@ -405,7 +405,7 @@
       const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
       if (!af) return;
       const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
-      c.drawImage(tinted(ch, af.idx, f, L), e.x - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
+      c.drawImage(tinted(ch, af.idx, f, L), (e.drawX ?? (e.drawX ?? e.x)) - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
     }
 
     let floorTint = null, floorTintKey = '';
@@ -443,12 +443,12 @@
         const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
         if (!af) continue;
         const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
-        if (dbg.feet) { c.strokeStyle = '#ff3060'; c.beginPath(); c.arc(e.x, fy, 7, 0, 6.2832); c.stroke(); }
-        if (dbg.frames) { c.strokeStyle = '#60a0ff'; c.strokeRect(e.x - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc); }
+        if (dbg.feet) { c.strokeStyle = '#ff3060'; c.beginPath(); c.arc((e.drawX ?? e.x), fy, 7, 0, 6.2832); c.stroke(); }
+        if (dbg.frames) { c.strokeStyle = '#60a0ff'; c.strokeRect((e.drawX ?? (e.drawX ?? e.x)) - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc); }
         if (dbg.labels) {
           c.fillStyle = '#ffffff'; c.strokeStyle = '#000000'; c.font = '22px monospace';
           const txt = e.name + ' ' + e.clip + ' #' + e.frame + (e.lane === 'seat' ? ' [seat]' : '');
-          c.strokeText(txt, e.x - 90, fy - f.ay * sc - 8); c.fillText(txt, e.x - 90, fy - f.ay * sc - 8);
+          c.strokeText(txt, (e.drawX ?? e.x) - 90, fy - f.ay * sc - 8); c.fillText(txt, (e.drawX ?? e.x) - 90, fy - f.ay * sc - 8);
         }
       }
       c.restore();

@@ -16,7 +16,7 @@
   const Assets = dep('T2LoungeAssets', './assets.js');
   const Renderer = dep('T2LoungeRenderer', './renderer.js');
 
-  const FRAME_MS = 1000 / 24;
+  const FRAME_MS = 1000 / 60;
   const LIGHT_EVERY_MS = 15000;
   const BOARD_EVERY_MS = 60000;
   const WARM_AFTER_MS = 60000;
@@ -103,7 +103,7 @@
 
     function frame(ts) {
       raf = win.requestAnimationFrame(frame);
-      if (ts - lastTs < FRAME_MS) return;
+      if (ts - lastTs < FRAME_MS - 2) return;   // rAF jitters around the display rate
       const dt = lastTs ? Math.min(ts - lastTs, 250) : FRAME_MS;
       lastTs = ts;
       try {
