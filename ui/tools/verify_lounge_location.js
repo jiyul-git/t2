@@ -56,28 +56,28 @@ const make = (o = {}) => createLocation({ navigator: o.navigator, storage: o.sto
   // Broken Intl is survivable.
   eq(make({ intl: { DateTimeFormat() { throw new Error('x'); } } }).init().source, 'offset', 'intl failure');
 
-  // 2. Chip visibility rules.
+  // 2. When asking for a precise position is allowed.
   {
-    ok(await make({ navigator: fakeNav() }).chipVisible(), 'visible: secure, supported, prompt');
-    ok(await make({ navigator: fakeNav({ noPerms: true }) }).chipVisible(), 'visible when the permissions API is missing');
-    ok(!(await make({ navigator: fakeNav(), secure: false }).chipVisible()), 'hidden on an insecure origin');
-    ok(!(await make({ navigator: {} }).chipVisible()), 'hidden without geolocation');
-    ok(!(await make({ navigator: null }).chipVisible()), 'hidden without navigator');
-    ok(!(await make({ navigator: fakeNav({ perm: 'denied' }) }).chipVisible()), 'hidden when denied');
-    ok(await make({ navigator: fakeNav({ perm: 'granted' }) }).chipVisible(), 'visible when granted but nothing saved');
+    ok(await make({ navigator: fakeNav() }).canAsk(), 'may ask: secure, supported, not yet decided');
+    ok(await make({ navigator: fakeNav({ noPerms: true }) }).canAsk(), 'may ask when the permissions API is missing');
+    ok(!(await make({ navigator: fakeNav(), secure: false }).canAsk()), 'no asking on an insecure origin');
+    ok(!(await make({ navigator: {} }).canAsk()), 'no asking without geolocation');
+    ok(!(await make({ navigator: null }).canAsk()), 'no asking without navigator');
+    ok(!(await make({ navigator: fakeNav({ perm: 'denied' }) }).canAsk()), 'no asking when denied');
+    ok(await make({ navigator: fakeNav({ perm: 'granted' }) }).canAsk(), 'may ask when granted but nothing saved');
     const saved = memStorage({ [LOC_KEY]: JSON.stringify({ lat: 35.1, lon: 129.04, ts: T0 }) });
-    ok(!(await make({ navigator: fakeNav(), storage: saved }).chipVisible()), 'hidden once a real position is saved');
-    // Dismissed: hidden for 30 days, then visible again.
+    ok(!(await make({ navigator: fakeNav(), storage: saved }).canAsk()), 'no asking once a real position is saved');
+    // A refusal is remembered for 30 days, then asking resumes.
     const dis = memStorage({ [DISMISS_KEY]: String(T0 - 29 * DAY) });
-    ok(!(await make({ navigator: fakeNav(), storage: dis }).chipVisible()), 'hidden 29 days after dismissal');
+    ok(!(await make({ navigator: fakeNav(), storage: dis }).canAsk()), 'no asking 29 days after a refusal');
     const dis2 = memStorage({ [DISMISS_KEY]: String(T0 - 31 * DAY) });
-    ok(await make({ navigator: fakeNav(), storage: dis2 }).chipVisible(), 'visible 31 days after dismissal');
-    // dismissChip persists.
+    ok(await make({ navigator: fakeNav(), storage: dis2 }).canAsk(), 'asks again 31 days after a refusal');
+    // rememberRefusal persists.
     const st = memStorage(); const l = make({ navigator: fakeNav(), storage: st });
-    l.dismissChip(); ok(!(await l.chipVisible()), 'dismissChip hides'); eq(st._m.get(DISMISS_KEY), String(T0), 'dismissal stored');
+    l.rememberRefusal(); ok(!(await l.canAsk()), 'rememberRefusal stops asking'); eq(st._m.get(DISMISS_KEY), String(T0), 'refusal stored');
     // Permission query that throws counts as unknown, not denied.
     const nav = fakeNav(); nav.permissions = { query: async () => { throw new Error('nope'); } };
-    ok(await make({ navigator: nav }).chipVisible(), 'permissions failure treated as unknown');
+    ok(await make({ navigator: nav }).canAsk(), 'permissions failure treated as unknown');
   }
 
   // 3. Tap: rounding to 2 decimals, saved, options, source.
@@ -87,14 +87,14 @@ const make = (o = {}) => createLocation({ navigator: o.navigator, storage: o.sto
     ok(r.ok, 'request ok'); eq(l.get(), { lat: 37.57, lon: 126.98, source: 'geolocation', ts: T0 }, 'rounded to ~1 km');
     eq(JSON.parse(st._m.get(LOC_KEY)), { lat: 37.57, lon: 126.98, ts: T0 }, 'persisted rounded value only');
     eq(nav.calls.opts, { enableHighAccuracy: false, maximumAge: 86400000, timeout: 10000 }, 'low accuracy, cached ok, 10 s');
-    ok(!(await l.chipVisible()), 'chip hidden after success');
+    ok(!(await l.canAsk()), 'no asking after success');
     // Survives reload.
     eq(make({ navigator: fakeNav(), storage: st }).init().source, 'geolocation', 'restored from storage');
   }
   // Denied: remembered. Other failure: not remembered.
   {
     const st = memStorage(); const l = make({ navigator: fakeNav({ error: { code: 1 } }), storage: st });
-    eq(await l.request(), { ok: false, reason: 'denied' }, 'denied'); ok(st._m.has(DISMISS_KEY), 'denial recorded');
+    eq(await l.request(), { ok: false, reason: 'denied' }, 'denied'); ok(st._m.has(DISMISS_KEY), 'refusal recorded');
     eq(l.get().source, 'timezone', 'stays on time zone');
     const st2 = memStorage(); const l2 = make({ navigator: fakeNav({ error: { code: 3 } }), storage: st2 });
     eq(await l2.request(), { ok: false, reason: 'failed' }, 'timeout'); ok(!st2._m.has(DISMISS_KEY), 'timeout is not remembered');

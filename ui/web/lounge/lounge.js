@@ -44,7 +44,7 @@
   function createLounge(env) {
     const win = env.window, doc = env.document;
     const assetBase = env.assetBase || 'lounge/assets/';
-    let section = null, canvas = null, chipWrap = null, renderer = null, director = null, assets = null, location = null;
+    let section = null, canvas = null, renderer = null, director = null, assets = null, location = null;
     let seed = null, sky = null, rows = [], boardKey = '', tournaments = [], serverOffsetMs = 0;
     let running = false, visible = true, failed = false, stopped = false, reduced = false;
     let raf = 0, lastTs = 0, lastLight = -1e9, lastBoard = -1e9, pausedAt = 0, t0 = 0, simT = 0;
@@ -164,7 +164,6 @@
     async function mount(sectionEl) {
       section = sectionEl;
       canvas = section.querySelector('.lounge-canvas');
-      chipWrap = section.querySelector('.lounge-locate-wrap');
       try {
         if (!canvas || !canvas.getContext || !canvas.getContext('2d')) throw new Error('canvas 2d unavailable');
         reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -191,22 +190,15 @@
           sync();
         }
         if (win.ResizeObserver) new win.ResizeObserver(resize).observe(section); else win.addEventListener('resize', resize);
-        setupChip();
-        location.refreshIfStale().then(changed => { if (changed) updateLighting(true); });
+        location.refreshIfStale().then(changed => { if (changed) updateLighting(true); }).then(askForLocation);
         if (debugWanted(win)) loadDebug();
       } catch (e) { fail(e); }
     }
 
-    function setupChip() {
-      if (!chipWrap) return;
-      const go = chipWrap.querySelector('.lounge-locate'), close = chipWrap.querySelector('.lounge-locate-close');
-      location.chipVisible().then(show => { chipWrap.hidden = !show; });
-      if (go) go.addEventListener('click', async () => {
-        const r = await location.request();
-        chipWrap.hidden = true;
-        if (r.ok) updateLighting(true);
-      });
-      if (close) close.addEventListener('click', () => { location.dismissChip(); chipWrap.hidden = true; });
+    // Ask the browser for the real position once per visit; the browser shows its own permission prompt.
+    // Without permission (or on a plain-http address) the time zone is used, so the scene never waits on it.
+    function askForLocation() {
+      location.canAsk().then(yes => (yes ? location.request() : null)).then(r => { if (r && r.ok) updateLighting(true); });
     }
 
     function loadDebug() {
@@ -228,7 +220,9 @@
         return {
           debug, info, location: () => location, scene: () => assets.scene, characters: () => assets.chars.map(c => c.manifest.name),
           setClock(ms) { debug.clockMs = ms; debug.clockSetAt = Date.now(); updateLighting(true); updateBoard(true); },
-          setScale(n) { debug.scale = n; },
+          setScale(n) { debug.clockMs = clockMs(); debug.clockSetAt = Date.now(); debug.scale = n; },
+          force(name, kind) { return director ? director.force(name, kind) : false; },
+          reset() { debug.clockMs = null; debug.scale = 1; updateLighting(true); updateBoard(true); },
           setPlace(lat, lon) { location.setDebug(lat, lon); updateLighting(true); },
           reseed(s) { seed = s; newDirector(); },
           redraw() { if (renderer && sky) drawNow(director.step(0)); },

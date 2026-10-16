@@ -1,0 +1,57 @@
+name: lounge-scene
+
+# Lobby lounge scene (docs/LOUNGE_SCENE_DESIGN.md): sun/lighting/location/board/behaviour tests,
+# asset contract check and the checker's own self-test. Read-only; it never pushes anything.
+on:
+  push:
+    paths:
+      - 'ui/web/lounge/**'
+      - 'ui/web/lobby.*'
+      - 'ui/tools/*lounge*'
+      - '.github/workflows/lounge-scene.yml'
+  pull_request:
+    paths:
+      - 'ui/web/lounge/**'
+      - 'ui/web/lobby.*'
+      - 'ui/tools/*lounge*'
+      - '.github/workflows/lounge-scene.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lounge-scene-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image tooling
+        run: pip install pillow numpy opencv-python-headless
+      - name: Syntax check
+        run: |
+          for f in ui/web/lounge/*.js ui/web/lobby.js ui/tools/*lounge*.js ui/tools/verify_lounge_*.js; do node --check "$f"; done
+      - name: Sun position
+        run: node ui/tools/verify_lounge_sun.js
+      - name: Lighting table
+        run: node ui/tools/verify_lounge_lighting.js
+      - name: Location
+        run: node ui/tools/verify_lounge_location.js
+      - name: Departure board
+        run: node ui/tools/verify_lounge_board.js
+      - name: Character behaviour invariants
+        run: node ui/tools/verify_lounge_behavior.js
+      - name: Asset contract (committed placeholders)
+        run: python3 ui/tools/lounge_check_assets.py
+      - name: Placeholder generator and checker self-test
+        run: python3 ui/tools/verify_lounge_assets.py

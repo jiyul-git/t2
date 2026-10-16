@@ -211,5 +211,16 @@ ok(chatTotal > 0, 'conversations happen');
   ok(new Set(out.map(c => c.seat)).size === out.length, 'warmStart uses distinct seats');
 }
 
+{
+  // Debug helper: forcing an activity works for seated and absent characters, and refuses unknown ones.
+  const { d, events } = makeDirector(full, 21);
+  for (let i = 0; i < 3000; i++) d.step(100);
+  ok(d.force('rabbit', 'doze') && d.force('tiger', 'eat') && d.force('penguin', 'sunglasses'), 'force accepts known characters');
+  ok(!d.force('nobody', 'eat') && !d.force('rabbit', 'dance'), 'force refuses unknown characters and activities');
+  for (let i = 0; i < 4000; i++) d.step(100);
+  const played = name => new Set(events.filter(e => e.name === name).map(e => e.to));
+  ok(played('rabbit').has('doze_in') && played('tiger').has('eat_in') && played('penguin').has('sunglasses'), 'forced activities were played');
+}
+
 function eq(a, b, m) { checks++; assert.deepStrictEqual(a, b, m); }
 console.log('verify_lounge_behavior OK (' + checks + ' checks)');

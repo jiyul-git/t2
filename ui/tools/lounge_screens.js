@@ -69,7 +69,16 @@ function serve() {
     await scene.screenshot({ path: path.join(OUT, 'lounge_' + label + '.png') });
     report.push(label + ' KST: sun ' + info.elev.toFixed(1) + ' deg, azimuth ' + info.az.toFixed(0) + ', ' + info.people + ' people');
   }
-  await page.evaluate(() => { const h = T2Lounge.debugHandle(); h.setClock(null); });
+  // the debug panel must exist and respond
+  await page.waitForSelector('#loungeDebug');
+  await page.locator('#loungeDebug button:has-text("레이캬비크")').click();
+  await page.locator('#loungeDebug button:has-text("서울")').click();
+  await page.locator('#loungeDebug input[type=range]').evaluate(el => { el.value = 600; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(500);
+  const readout = await page.locator('#loungeDebug pre').innerText();
+  if (!/태양 고도/.test(readout)) problems.push('debug panel readout is empty');
+  await page.screenshot({ path: path.join(OUT, 'lobby_debug_panel.png') });
+  await page.evaluate(() => { const h = T2Lounge.debugHandle(); h.reset(); });
   await page.waitForTimeout(8000);
   const stats = await page.evaluate(() => T2Lounge.debugHandle().stats());
   await page.screenshot({ path: path.join(OUT, 'lobby_full.png') });
@@ -77,5 +86,5 @@ function serve() {
   console.log('frame cost over %d frames: avg %s ms, p95 %s ms (target avg <= 6, p95 <= 12)', stats.n, stats.avg.toFixed(2), stats.p95.toFixed(2));
   if (problems.length) console.log('page problems:\n  ' + problems.join('\n  '));
   await browser.close(); srv.close();
-  process.exit(problems.some(p => !/lounge\/debug\.js|404/.test(p)) ? 1 : 0);
+  process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -6,6 +6,19 @@
 
 ---
 
+## 구현 현황 (2026-10-16)
+
+1단계(11장의 1~10) 구현 완료. 임시 그림으로 동작하며, 실제 그림은 12장에서 이어진다.
+
+- 코드: `ui/web/lounge/` (태양, 조명, 위치, 안내판, 행동, 에셋 로더, 렌더러, 진입점, 디버그 패널)
+- 임시 그림: `ui/web/lounge/assets/` (`ui/tools/lounge_make_placeholders.py`로 다시 만들 수 있다)
+- 시험: `ui/tools/verify_lounge_*.js`, `ui/tools/verify_lounge_assets.py`, `ui/tools/lounge_check_assets.py`. CI는 `.github/workflows/lounge-scene.yml`
+- 화면 확인: `node ui/tools/lounge_screens.js docs/lounge` (Playwright 필요). 서울 2026-03-20의 5개 시각 스크린샷이 `docs/lounge/`에 있고, 프레임 비용은 평균 1ms 안팎(기준 6ms)이다.
+- 위치 버튼은 두지 않는다. 장면이 뜬 뒤 브라우저에 정확한 위치를 한 번 요청한다(5.3절).
+- 알려진 한계: 걷는 캐릭터끼리 겹쳐 지나갈 수 있다(충돌 회피 없음). 대화 교대 순간은 최대 한 루프 어긋난다(7.3절). 위치 요청은 장면을 기다리게 하지 않는다.
+
+---
+
 ## 0. 목표와 범위
 
 **최종 목표**
@@ -157,7 +170,7 @@ ui/tools/
 ```js
 T2Lounge.mount(sectionEl)              // lobby.html 로드 후 자동 호출
 T2Lounge.setTournaments(list, serverNow) // lobby.js의 loadLobby() 성공 직후 호출
-T2Lounge.requestLocation()             // 위치 안내 칩 클릭 시
+T2Lounge.requestLocation()             // 정확한 위치를 다시 요청한다(보통은 장면이 뜬 뒤 자동으로 한 번 요청한다)
 ```
 
 - `lobby.js`에서 바꿀 곳은 `loadLobby()`의 `renderCurrent(); renderFeatured(); renderCards();` 뒤에 아래 한 줄을 넣는 것뿐이다.
@@ -189,10 +202,6 @@ T2Lounge.requestLocation()             // 위치 안내 칩 클릭 시
 <section class="airport-scene" id="lounge" aria-label="공항 라운지 일러스트">
   <div class="lounge-fallback" aria-hidden="true"></div>      <!-- 실패하거나 로딩 중일 때 보이는 lobby_hero_night.webp -->
   <canvas class="lounge-canvas" aria-hidden="true"></canvas>
-  <div class="lounge-locate-wrap" hidden>
-    <button class="lounge-locate" type="button">📍 내 위치의 하늘로 보기</button>
-    <button class="lounge-locate-close" type="button" aria-label="닫기">×</button>
-  </div>
 </section>
 <div class="airport-scene-copy"><h1>…</h1><p>…</p></div>   <!-- 장면 아래에 둔다. 위에 겹치면 캐릭터 발과 벤치를 가린다 -->
 <script src="lounge/sun.js"></script> … <script src="lounge/lounge.js"></script>
@@ -262,21 +271,21 @@ sunPosition(date: Date, lat: number, lon: number)
    - 없으면 `Intl.DateTimeFormat().resolvedOptions().timeZone`을 내장 표에서 찾는다(`source:'timezone'`).
    - 표에 없으면 `lon = −getTimezoneOffset()/4`, `lat = 35`로 둔다(`source:'offset'`).
    - 내장 표에는 최소한 다음 시간대의 도시 좌표를 넣는다: Asia/Seoul, Asia/Tokyo, Asia/Shanghai, Asia/Hong_Kong, Asia/Taipei, Asia/Singapore, Asia/Bangkok, Asia/Ho_Chi_Minh, Asia/Manila, Asia/Jakarta, Asia/Kolkata, Asia/Dubai, Europe/London, Europe/Paris, Europe/Berlin, Europe/Madrid, Europe/Rome, Europe/Moscow, America/New_York, America/Chicago, America/Denver, America/Los_Angeles, America/Toronto, America/Vancouver, America/Sao_Paulo, America/Mexico_City, Australia/Sydney, Australia/Melbourne, Australia/Perth, Pacific/Auckland, Pacific/Honolulu.
-2. **위치 안내 칩**(`.lounge-locate`)은 아래 조건을 **모두** 만족할 때만 보인다.
+2. **정확한 위치 요청:** 장면이 뜬 뒤 방문마다 한 번, 아래 조건을 **모두** 만족하면 브라우저에 위치를 요청한다. 허용 창은 브라우저가 띄운다. 별도 버튼은 두지 않는다.
    - `window.isSecureContext === true`
    - `navigator.geolocation`이 있음
-   - 권한 상태가 `'denied'`가 아님(`navigator.permissions.query({name:'geolocation'})`. 이 API가 없으면 '알 수 없음'으로 보고 표시)
-   - `source !== 'geolocation'`
-   - 칩을 닫은 지 30일이 지남
-   - 칩에는 닫기(×) 버튼을 둔다.
-3. **칩을 누르면** `getCurrentPosition({enableHighAccuracy:false, maximumAge:86400000, timeout:10000})`을 호출한다.
-   - 성공하면 좌표를 **소수 둘째 자리로 반올림**(약 1km)해서 `localStorage['t2_lounge_loc']`에 저장한다. 그다음 조명을 즉시 다시 계산하고 칩을 숨긴다.
-   - 거절되거나 실패하면 칩을 숨기고, 거절일 때는 닫은 것으로 기록한다.
+   - 권한 상태가 `'denied'`가 아님(`navigator.permissions.query({name:'geolocation'})`. 이 API가 없으면 '알 수 없음'으로 보고 요청)
+   - 저장된 위치의 출처가 `geolocation`이 아님(이미 정확한 위치가 있으면 다시 묻지 않는다)
+   - 이전에 거절한 지 30일이 지남
+3. **요청 결과**: `getCurrentPosition({enableHighAccuracy:false, maximumAge:86400000, timeout:10000})`을 호출한다.
+   - 성공하면 좌표를 **소수 둘째 자리로 반올림**(약 1km)해서 `localStorage['t2_lounge_loc']`에 저장하고, 조명을 즉시 다시 계산한다.
+   - 거절되면 거절 시각을 저장해 30일 동안 다시 묻지 않는다. 시간 초과 같은 다른 실패는 기록하지 않고 다음 방문에 다시 시도한다.
+   - 어느 경우든 장면은 위치 결과를 기다리지 않고 시간대 추정으로 먼저 그린다.
 4. **다음 방문 시** 권한 상태가 `'granted'`이고 저장한 지 24시간이 지났으면, 팝업 없이 위치를 조용히 갱신한다.
 5. 좌표는 어디로도 전송하지 않는다. 이 모듈에는 `fetch`나 `XMLHttpRequest`를 쓰지 않는다. 테스트로 확인한다.
 6. **참고:** 위치 권한은 HTTPS나 `127.0.0.1`/`localhost`에서만 작동한다.
    - Termux에서 `http://127.0.0.1:8766`으로 열면 작동한다.
-   - 다른 기기에서 `http://192.168.x.x`로 열면 `isSecureContext`가 false라서 칩이 보이지 않고, 시간대 추정으로 동작한다.
+   - 다른 기기에서 `http://192.168.x.x`로 열면 `isSecureContext`가 false라서 요청하지 않고, 시간대 추정으로 동작한다.
 
 ---
 
@@ -661,7 +670,7 @@ boardRows(tournaments, serverNowSec, nowMs) → [{flight, dest, time, status, mi
 |---|---|---|
 | 1 | `sun.js` + `verify_lounge_sun.js` | 5.1절 표의 모든 값이 허용 오차 안에 든다 |
 | 2 | `lighting.js` + 테스트 | 8.1절 키 값 정확, 보간과 끝값 고정 확인 |
-| 3 | `location.js` + 테스트 | 시간대 표, 오프셋 대체, 반올림, 24시간 갱신, 거절 처리, 보안 컨텍스트 아닐 때 칩 숨김, 네트워크 API 미사용(소스에 `fetch`와 `XMLHttpRequest` 없음) |
+| 3 | `location.js` + 테스트 | 시간대 표, 오프셋 대체, 반올림, 24시간 갱신, 거절 처리, 보안 컨텍스트가 아닐 때 요청하지 않음, 네트워크 API 미사용(소스에 `fetch`와 `XMLHttpRequest` 없음) |
 | 4 | `board.js` + 테스트 | 9장 규칙 전부 |
 | 5 | `lounge_make_placeholders.py`, `scene.json`, 캐릭터 4명 manifest, `lounge_check_assets.py` | 검사기가 임시 그림에서 통과한다. 일부러 어긋나게 만든 변형과 끊긴 클립을 **거부**하는지 확인한다 |
 | 6 | `behavior.js` + 테스트 | 7.5절 불변식 7개가 시드 5개 × 24시간 × 클립 세트 2종에서 모두 통과 |

@@ -1,6 +1,5 @@
 /* Where the viewer is, for sun position (docs/LOUNGE_SCENE_DESIGN.md 5.3).
-   Starts from the device time zone with no permission prompt; precise position only after
-   an explicit tap. Coordinates are rounded to ~1 km, kept on this device, never sent anywhere.
+   Starts from the device time zone, then asks the browser once for a precise position. Coordinates are rounded to ~1 km, kept on this device, never sent anywhere.
    Browser objects are injected so the logic runs under Node. */
 (function (root, factory) {
   const api = factory();
@@ -97,7 +96,8 @@
       return 'unknown';
     }
 
-    async function chipVisible() {
+    // True when asking the browser for a precise position is allowed and worthwhile right now.
+    async function canAsk() {
       if (!secure || !nav || !nav.geolocation) return false;
       if (get().source === 'geolocation') return false;
       const dismissed = Number(read(DISMISS_KEY));
@@ -105,7 +105,7 @@
       return (await permissionState()) !== 'denied';
     }
 
-    function dismissChip() { write(DISMISS_KEY, String(now())); }
+    function rememberRefusal() { write(DISMISS_KEY, String(now())); }
 
     function position(options) {
       return new Promise((resolve, reject) => nav.geolocation.getCurrentPosition(resolve, reject, options));
@@ -119,7 +119,7 @@
       return state;
     }
 
-    // Called from the user's tap on the locate chip.
+    // Ask the browser for a precise position (this is what shows the permission prompt).
     async function request() {
       if (!secure || !nav || !nav.geolocation) return { ok: false, reason: 'unsupported' };
       try {
@@ -128,7 +128,7 @@
         return s ? { ok: true, location: s } : { ok: false, reason: 'invalid' };
       } catch (e) {
         const denied = !!e && e.code === 1;
-        if (denied) dismissChip();          // a refusal is remembered for 30 days; other failures only hide it now
+        if (denied) rememberRefusal();      // a refusal is remembered for 30 days; other failures are tried again next visit
         return { ok: false, reason: denied ? 'denied' : 'failed' };
       }
     }
@@ -145,7 +145,7 @@
       } catch (e) { return false; }
     }
 
-    return { init, get, setDebug, chipVisible, dismissChip, request, refreshIfStale };
+    return { init, get, setDebug, canAsk, rememberRefusal, request, refreshIfStale };
   }
 
   return { createLocation, TIMEZONES, LOC_KEY, DISMISS_KEY };

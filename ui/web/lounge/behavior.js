@@ -16,6 +16,7 @@
     idle: [6, 15], phone: [20, 60], call: [15, 40], eat: [30, 60], doze: [40, 120], chat: [20, 50],
   };
   const CHAT_SEGMENT_SECONDS = [4, 8];
+  const ACTIVITY_KINDS = ['idle', 'phone', 'call', 'eat', 'sunglasses', 'fix_clothes', 'doze', 'chat'];
   const HOLD_TIMEOUT_MS = 8000;
   const TARGET_RECHECK_MS = 10 * 60 * 1000;
 
@@ -182,6 +183,13 @@
       const meal = (m >= 11 * 60 + 30 && m < 13 * 60 + 30) || (m >= 18 * 60 && m < 20 * 60);
       const deepNight = m < 5 * 60;
       const partner = chatPartner(c);
+      const forced = c.forced; c.forced = null;
+      const possible = {
+        idle: true,
+        phone: has(c, 'phone_in', 'phone_loop', 'phone_out'), call: has(c, 'call_in', 'call_loop', 'call_out'),
+        eat: has(c, 'eat_in', 'eat_loop', 'eat_out'), sunglasses: has(c, 'sunglasses'), fix_clothes: has(c, 'fix_clothes'),
+        doze: has(c, 'doze_in', 'doze_loop', 'doze_out'), chat: !!partner,
+      };
       const options = [
         ['idle', 3],
         ['phone', has(c, 'phone_in', 'phone_loop', 'phone_out') ? 3 : 0],
@@ -196,6 +204,7 @@
       for (const o of options) total += o[1];
       let r = rand() * total, kind = 'idle';
       for (const o of options) { if (r < o[1]) { kind = o[0]; break; } r -= o[1]; }
+      if (forced && possible[forced]) kind = forced;
       c.activity = kind;
       if (kind === 'idle') {
         runPlan(c, [{ kind: 'loop', clip: 'sit_idle', ms: duration('idle', c) * 1000 }]);
@@ -391,11 +400,25 @@
         return snapshot();
       },
       warmStart() { acc = 0; warmStart(); return snapshot(); },
+      // Debug helper: make `name` do `kind` at its next decision; a character who is away is called in now.
+      // Returns false when there is no such character or the activity is not available to it.
+      force(name, kind) {
+        const c = chars.find(x => x.name === name);
+        if (!c || !ACTIVITY_KINDS.includes(kind)) return false;
+        if (c.state === 'OFFSCREEN') {
+          const seat = chooseSeat();
+          if (seat < 0) return false;
+          spawn(c, seat);
+        }
+        c.forced = kind;
+        if (c.state === 'SEATED' && c.stage && c.stage.kind === 'loop' && c.activity === 'idle') c.stage.until = 0;
+        return true;
+      },
       get now() { return now; },
       get target() { return target; },
       characterNames() { return chars.map(c => c.name); },
     };
   }
 
-  return { createDirector, mulberry32, isActive, REQUIRED_CLIPS, TICK_MS, DURATIONS, SEAT_SECONDS };
+  return { createDirector, mulberry32, isActive, REQUIRED_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS };
 });
