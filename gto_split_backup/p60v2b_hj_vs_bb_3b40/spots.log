@@ -1,3 +1,6 @@
 START p60v2b_hj_vs_bb_3b40 2026-10-16T11:16:19Z
 START p60v2b_hj_vs_bb_3b40 2026-10-16T13:16:29Z
 {"k": 0, "decision": "continue (minimum one update)", "terminals": {"|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000": {"HJ": [2.270589997636177, 1.167], "BB": [1.841950315221973, 0.619]}, ":fold|BB:raise@8.000000|HJ:raise@17.200000|BB:call@17.200000": {"HJ": [16.052250005916, 1.662], "BB": [15.936175092533217, 0.929]}}}
+START p60v2b_hj_vs_bb_3b40 2026-10-16T15:16:34Z
+START p60v2b_hj_vs_bb_3b40 2026-10-16T16:46:17Z
+{"k": 1, "decision": "continue", "terminals": {"|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000": {"HJ": [2.5490324072662873, 1.16], "BB": [1.9171598703180284, 0.939]}, ":fold|BB:raise@8.000000|HJ:raise@17.200000|BB:call@17.200000": {"HJ": [0.9804847103140717, 1.955], "BB": [1.5739677247780515, 0.71]}}}
