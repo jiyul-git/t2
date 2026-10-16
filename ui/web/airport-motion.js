@@ -19,7 +19,7 @@
  precision mediump float;
  varying vec2 uv;
  uniform sampler2D texNight,texDay;
- uniform float dayWeight,hour,sun,gold,timeSec;
+ uniform float dayWeight,hour,sun,gold,timeSec,shadowDirection,shadowLength,shadowOpacity,lamps,blue;
  float feather(vec2 p,vec2 center,vec2 radius){
    float d=length((p-center)/radius);
    return 1.0-smoothstep(0.58,1.0,d);
@@ -42,22 +42,37 @@
    vec3 sceneColor=mix(texture2D(texNight,sampleUV).rgb,
                        texture2D(texDay,sampleUV).rgb,dayWeight);
    float sunlight=max(0.,sun);
-   // Moving late afternoon window streak and ambient bounce.
-   float lamp=exp(-dot((p-vec2(.66,.43))/vec2(.35,.34),
-                       (p-vec2(.66,.43))/vec2(.35,.34))*2.0);
-   sceneColor+=vec3(.18,.093,.039)*lamp*gold*.28;
-   float floorShape=feather(p,vec2(.50,.965),vec2(.56,.13));
-   float shadowStripe=sin((p.x-p.y*.44)*27.0-hour*.14);
-   float shadow=max(0.,shadowStripe)*floorShape*sunlight*.025;
-   sceneColor*=1.0-shadow;
-   // Gentle character contact shadow breathes in sync with each body.
-   float foot1=feather(p,vec2(.22,.956),vec2(.140,.060));
-   float foot2=feather(p,vec2(.45,.955),vec2(.120,.060));
-   float foot3=feather(p,vec2(.69,.960),vec2(.115,.058));
-   float foot4=feather(p,vec2(.85,.958),vec2(.09,.05));
-   float breathing=(foot1*(wobble1+1.)+foot2*(wobble2+1.)+
-                    foot3*(wobble3+1.)+foot4*(wobble4+1.))*.009;
-   sceneColor*=1.0-breathing;
+   // Separate morning/evening color bleed and cool-blue-hour bounce.
+   float lowAngle=exp(-dot((p-vec2(.67,.31))/vec2(.44,.38),
+                           (p-vec2(.67,.31))/vec2(.44,.38))*1.5);
+   sceneColor+=vec3(.15,.087,.035)*lowAngle*gold*.30;
+   sceneColor+=vec3(.010,.024,.045)*blue*max(.0,1.0-sun)*.36;
+   float lampsGlow=feather(p,vec2(.94,.58),vec2(.15,.23))
+                  +feather(p,vec2(.055,.58),vec2(.12,.26));
+   sceneColor+=vec3(.022,.015,.006)*lampsGlow*lamps*.22;
+
+   // Moving perspective window-frame shadows follow the simulated sun azimuth.
+   // Mask out upper terminal/signs; ground contact is always diffuse.
+   float ground=smoothstep(.74,.97,p.y);
+   float shift=shadowDirection*.085*shadowLength;
+   float slats=pow(max(0.0,sin((p.x+shift-p.y*.16)*34.0)),5.0);
+   sceneColor*=1.0-(ground*slats*shadowOpacity*.13);
+
+   // The four cast shadows change length, direction and softness per minute.
+   float castShadow=0.0;
+   castShadow+=feather(p,vec2(.20+shift,.950),vec2(.14+shadowLength*.027,.07))*0.78;
+   castShadow+=feather(p,vec2(.44+shift,.968),vec2(.12+shadowLength*.024,.065))*0.65;
+   castShadow+=feather(p,vec2(.67+shift,.972),vec2(.12+shadowLength*.026,.06))*0.72;
+   castShadow+=feather(p,vec2(.88+shift,.971),vec2(.084+shadowLength*.023,.054))*0.54;
+   sceneColor*=1.0-ground*min(1.,castShadow)*shadowOpacity*.16;
+
+   // Character silhouettes breathe subtly, while their contact shadows
+   // shift with them. Existing artwork (including the eyes) remains intact.
+   float contact=feather(p,vec2(.20,.97),vec2(.12,.05))*(wobble1+1.0)
+                +feather(p,vec2(.44,.97),vec2(.12,.05))*(wobble2+1.0)
+                +feather(p,vec2(.67,.97),vec2(.10,.05))*(wobble3+1.0)
+                +feather(p,vec2(.88,.97),vec2(.08,.05))*(wobble4+1.0);
+   sceneColor*=1.0-contact*.006;
    gl_FragColor=vec4(clamp(sceneColor,0.,1.),1.0);
  }
  `;
@@ -106,6 +121,11 @@
    setFloat('hour',Number(s.h)||0);
    setFloat('sun',Number(s.sun)||0);
    setFloat('gold',Number(s.gold)||0);
+   setFloat('shadowDirection',Number(s.direction)||0);
+   setFloat('shadowLength',Number(s.shadowLength)||1);
+   setFloat('shadowOpacity',Number(s.shadowOpacity)||0);
+   setFloat('lamps',Number(s.lamp)||0);
+   setFloat('blue',Number(s.blue)||0);
    setFloat('timeSec',t*.001);
    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
  }
