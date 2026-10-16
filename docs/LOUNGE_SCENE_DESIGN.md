@@ -187,14 +187,18 @@ T2Lounge.requestLocation()             // 위치 안내 칩 클릭 시
 
 ```html
 <section class="airport-scene" id="lounge" aria-label="공항 라운지 일러스트">
+  <div class="lounge-fallback" aria-hidden="true"></div>      <!-- 실패하거나 로딩 중일 때 보이는 lobby_hero_night.webp -->
   <canvas class="lounge-canvas" aria-hidden="true"></canvas>
-  <div class="lounge-fallback" aria-hidden="true"></div>   <!-- 실패 시 lobby_hero_night.webp -->
-  <button class="lounge-locate" type="button" hidden>📍 내 위치의 하늘로 보기</button>
-  <div class="airport-scene-copy">…기존 문구 유지…</div>
+  <div class="lounge-locate-wrap" hidden>
+    <button class="lounge-locate" type="button">📍 내 위치의 하늘로 보기</button>
+    <button class="lounge-locate-close" type="button" aria-label="닫기">×</button>
+  </div>
 </section>
+<div class="airport-scene-copy"><h1>…</h1><p>…</p></div>   <!-- 장면 아래에 둔다. 위에 겹치면 캐릭터 발과 벤치를 가린다 -->
 <script src="lounge/sun.js"></script> … <script src="lounge/lounge.js"></script>
 ```
 
+- 장면은 `aspect-ratio: 1440/1040`이고, 엔진이 준비되면 `#lounge.lounge-ready`가 붙어 캔버스가 정적 그림을 대신한다. 실패하면 `lounge-failed`가 붙고 정적 그림이 남는다.
 - 스크립트 순서는 `sun → location → lighting → board → behavior → assets → renderer → lounge`이다. 디버그 모드일 때만 `debug.js`를 동적으로 로드한다.
 - 캐시 무효화용 `?v=` 쿼리는 기존 관례대로 붙인다.
 
@@ -287,6 +291,7 @@ sunPosition(date: Date, lat: number, lon: number)
   "baselineY": 940,
   "horizonY": 470,
   "windowFacing": 225,
+  "characters": ["tiger", "rabbit", "turtle", "penguin"],
   "window": {"x": 560, "y": 40, "w": 880, "h": 560},
   "board": {"x": 70, "y": 110, "w": 450, "h": 260, "rows": 5},
   "seats": [{"id": "s0", "x": 330}, {"id": "s1", "x": 500}, {"id": "s2", "x": 670},
@@ -309,6 +314,7 @@ sunPosition(date: Date, lat: number, lon: number)
 }
 ```
 
+- `characters`: 읽어 들일 캐릭터 폴더 이름(`chars/<이름>/`)이다. 필수 클립이 없는 캐릭터는 읽고도 등장시키지 않는다.
 - `placeholder`: 임시 그림이면 true. 실제 그림으로 교체할 때 지우거나 false로 둔다(용량 상한이 바뀐다, 6.4절). 캐릭터 manifest에도 같은 값이 들어간다.
 - **모든 배경 파일은 1440×1040**이고 알파 채널을 가진다. `interior`는 창문 자리가 투명하다. 그 구멍으로 하늘과 `outside`가 보인다.
 - `variants`: 같은 장면을 시간대별로 다르게 칠한 그림이다. 선, 윤곽, 구도는 **완전히 같아야** 한다(6.4절에서 검사). 렌더러는 현재 태양 고도와 가장 가까운 두 변형을 고도 비율로 섞는다. 변형이 하나뿐이면 그것만 쓴다.

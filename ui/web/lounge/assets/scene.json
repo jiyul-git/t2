@@ -20,6 +20,12 @@
   "h": 260,
   "rows": 5
  },
+ "characters": [
+  "tiger",
+  "rabbit",
+  "turtle",
+  "penguin"
+ ],
  "seats": [
   {
    "id": "s0",

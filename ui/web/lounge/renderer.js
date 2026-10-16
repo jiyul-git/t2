@@ -1,0 +1,416 @@
+/* Canvas 2D drawing for the lounge scene (docs/LOUNGE_SCENE_DESIGN.md 8).
+   Geometry helpers are pure and exported for tests; createRenderer() does the drawing and needs
+   a browser canvas (or anything with the same 2D API). Everything is drawn in the scene's logical
+   1440 x 1040 coordinates under a scale transform. */
+(function (root, factory) {
+  const api = factory(root.T2LoungeLighting || (typeof require === 'function' ? require('./lighting.js') : null));
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.T2LoungeRenderer = api;
+})(typeof window !== 'undefined' ? window : globalThis, function (Lighting) {
+  'use strict';
+  const RAD = Math.PI / 180;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const wrap180 = a => ((((a + 180) % 360) + 360) % 360) - 180;
+  const STATUS_COLORS = { time: '#ffd27a', BOARDING: '#7dffb0', 'LAST CALL': '#ff9d6a', DEPARTED: '#8a97a6', 'ON TIME': '#ffffff' };
+  const COLUMN_RATIOS = [0.22, 0.34, 0.18, 0.26];
+  const SUN_RADIUS = 26, SUN_GLOW = 90, MOON_RADIUS = 22;
+
+  // ---------------------------------------------------------------- geometry (8.2, 8.3)
+  // Fraction of the way between lighting stages for a layer's variants: [{index, alpha}] drawn in order.
+  function blendVariants(variants, elev) {
+    if (variants.length === 1 || elev <= variants[0].elev) return [{ index: 0, alpha: 1 }];
+    const last = variants.length - 1;
+    if (elev >= variants[last].elev) return [{ index: last, alpha: 1 }];
+    let i = 0;
+    while (i < last - 1 && variants[i + 1].elev <= elev) i++;
+    const t = (elev - variants[i].elev) / (variants[i + 1].elev - variants[i].elev);
+    return [{ index: i, alpha: 1 }, { index: i + 1, alpha: t }];
+  }
+  const sunRelative = (azimuth, facing) => wrap180(azimuth - facing);
+  // 0 when the sun is behind the window or below the horizon, up to 1 for a high sun in front of it.
+  const directLight = (rel, h) => clamp(Math.cos(rel * RAD), 0, 1) * Lighting.smoothstep(0, 6, h);
+  function discPosition(scene, rel, h) {
+    const w = scene.window;
+    return {
+      x: w.x + w.w / 2 + (rel / 60) * (w.w / 2),
+      y: scene.horizonY - h * 12,
+      visible: Math.abs(rel) <= 60 && h > -2 && h < 40,
+    };
+  }
+  // Cast shadow of a standing figure: flipped under the feet, leaning away from the sun.
+  function sunShadow(rel, h) {
+    return { skew: -Math.sin(rel * RAD), len: clamp(1 / Math.tan(Math.max(h, 0.1) * RAD), 0.3, 3) * 0.35 };
+  }
+  function floorPatch(rel, h) {
+    return { skewDeg: clamp(-rel * 0.8, -40, 40), scaleY: clamp(0.25 / Math.tan(Math.max(h, 0.1) * RAD), 0.15, 1.0) };
+  }
+  // Nearest lamp that lights the foot point: {lamp, dist, dx} or null.
+  function nearestLamp(lamps, fx, fy) {
+    let best = null;
+    for (const l of lamps) {
+      const dist = Math.hypot(fx - l.x, fy - l.y);
+      if (dist < l.r && (!best || dist < best.dist)) best = { lamp: l, dist, dx: fx - l.x };
+    }
+    return best;
+  }
+  function lampShadow(lamps, lighting, direct, fx, fy) {
+    if (!(lighting.lamp > 0.5 && direct < 0.2)) return null;
+    const n = nearestLamp(lamps, fx, fy);
+    if (!n) return null;
+    return { skew: clamp(n.dx / 300, -1, 1) * 0.8, len: 0.6 * 0.35, alpha: 0.22 * lighting.lamp * (1 - n.dist / n.lamp.r) };
+  }
+  // Offset of the dark disc that carves the lit part of the moon. phase: 0 new .. 0.5 full.
+  function moonShadowOffset(phase, southern, r) {
+    const lit = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+    const waxing = phase < 0.5;
+    const dir = (waxing ? -1 : 1) * (southern ? -1 : 1);
+    return dir * 2 * r * lit;
+  }
+  const tintColor = (ambient, strength) => Lighting.mix('#ffffff', ambient, clamp(strength, 0, 1));
+
+  // ---------------------------------------------------------------- renderer
+  function createRenderer(opts) {
+    const { canvas, assets } = opts;
+    const scene = assets.scene;
+    const W = scene.size[0], H = scene.size[1];
+    const make = opts.createCanvas || function (w, h) {
+      const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
+    };
+    const ctx = canvas.getContext('2d');
+    const chars = new Map(assets.chars.map(c => [c.manifest.name, c]));
+    let pw = 0, ph = 0, k = 1;
+    const caches = {};                 // group -> { canvas, ctx }
+    let scratch = null;
+    let lightKey = '', boardKey = '', cacheDirty = true;
+    let tintCache = new Map();
+    const silhouettes = new Map();
+    let moonSprite = null, moonKey = '';
+    const stars = (function () {       // fixed star field, in the sky area of the window
+      let a = 12345;
+      const r = () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; };
+      const w = scene.window, out = [];
+      for (let i = 0; i < 120; i++) out.push({ x: w.x + 12 + r() * (w.w - 24), y: w.y + 8 + r() * (scene.horizonY - w.y - 40), s: 1 + Math.floor(r() * 2.4), a: 0.5 + r() * 0.5 });
+      return out;
+    }());
+    const clouds = [0, 1, 2, 3, 4].map(i => ({ x: i * 230, y: scene.window.y + 70 + (i * 53) % 210, w: 150 + (i * 37) % 90, speed: 3 + (i % 3) * 1.5 }));
+
+    function ensureCache(group) {
+      if (!caches[group] || caches[group].canvas.width !== pw || caches[group].canvas.height !== ph) {
+        const c = make(pw, ph);
+        caches[group] = { canvas: c, ctx: c.getContext('2d') };
+        cacheDirty = true;
+      }
+      return caches[group];
+    }
+
+    function resize(cssWidth, dpr) {
+      const scale = Math.min(dpr || 1, 1.5);
+      const w = Math.max(1, Math.round(cssWidth * scale)), h = Math.max(1, Math.round(w * H / W));
+      if (w === pw && h === ph) return false;
+      pw = w; ph = h; k = w / W;
+      canvas.width = w; canvas.height = h;
+      scratch = make(w, h);
+      for (const g of ['back', 'mid', 'front']) ensureCache(g);
+      tintCache = new Map();
+      cacheDirty = true;
+      return true;
+    }
+
+    // -------- background caches
+    function drawLayer(target, layer, L) {
+      const sc = scratch.getContext('2d');
+      sc.setTransform(1, 0, 0, 1, 0, 0);
+      sc.clearRect(0, 0, pw, ph);
+      sc.setTransform(k, 0, 0, k, 0, 0);
+      for (const b of blendVariants(layer.variants, L.h)) {
+        sc.globalAlpha = b.alpha;
+        sc.drawImage(layer.variants[b.index].img, 0, 0, W, H);
+      }
+      sc.globalAlpha = 1;
+      if (layer.def.tint) {
+        const strength = L.ambientStr * (layer.variants.length > 1 ? 0.5 : 1);
+        if (strength > 0.001) {
+          sc.globalCompositeOperation = 'multiply';
+          sc.fillStyle = tintColor(L.ambient, strength);
+          sc.fillRect(0, 0, W, H);
+          sc.globalCompositeOperation = 'destination-in';
+          sc.drawImage(layer.variants[0].img, 0, 0, W, H);
+          sc.globalCompositeOperation = 'source-over';
+        }
+      }
+      target.save();
+      target.setTransform(1, 0, 0, 1, 0, 0);
+      target.drawImage(scratch, 0, 0);
+      target.restore();
+      if (layer.emission) {
+        const a = clamp(L[layer.def.emissionKey] || 0, 0, 1);
+        if (a > 0.01) {
+          target.save();
+          target.globalCompositeOperation = 'lighter';
+          target.globalAlpha = a;
+          target.drawImage(layer.emission, 0, 0, W, H);
+          target.restore();
+        }
+      }
+    }
+
+    function drawBoard(target, rows) {
+      const b = scene.board;
+      if (!rows || !rows.length) return;
+      const rh = b.h / b.rows, pad = 16, inner = b.w - pad * 2;
+      target.save();
+      target.beginPath(); target.rect(b.x, b.y, b.w, b.h); target.clip();
+      target.font = 'bold ' + Math.round(rh * 0.5) + 'px monospace';
+      target.textBaseline = 'middle';
+      rows.slice(0, b.rows).forEach((row, i) => {
+        const cy = b.y + (i + 0.5) * rh - 2;
+        let cx = b.x + pad;
+        const cells = [[row.flight, '#ffffff'], [row.dest, '#ffffff'], [row.time, STATUS_COLORS.time], [row.status, STATUS_COLORS[row.status] || '#ffffff']];
+        cells.forEach(([text, color], j) => {
+          target.fillStyle = color;
+          target.fillText(text, cx, cy, inner * COLUMN_RATIOS[j] - 6);
+          cx += inner * COLUMN_RATIOS[j];
+        });
+        if (row.mine) { target.fillStyle = '#ffd27a'; target.beginPath(); target.arc(b.x + 8, cy, 4, 0, 6.2832); target.fill(); }
+      });
+      target.restore();
+    }
+
+    function rebuild(L, rows) {
+      for (const g of ['back', 'mid', 'front']) {
+        const c = ensureCache(g).ctx;
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.clearRect(0, 0, pw, ph);
+        c.setTransform(k, 0, 0, k, 0, 0);
+      }
+      for (const layer of assets.layers) drawLayer(caches[layer.def.group].ctx, layer, L);
+      drawBoard(caches.back.ctx, rows);
+      cacheDirty = false;
+    }
+
+    // -------- per-frame pieces
+    function drawSky(c, L, sun, moon, t) {
+      const w = scene.window, hy = scene.horizonY;
+      const g = c.createLinearGradient(0, w.y, 0, hy);
+      g.addColorStop(0, L.zenith); g.addColorStop(1, L.horizonAway);
+      c.fillStyle = g;
+      c.fillRect(w.x, w.y, w.w, w.h);
+      // glow toward the sun
+      const near = 0.15 + 0.85 * Math.max(0, Math.cos(sun.rel * RAD));
+      const sx = w.x + w.w / 2 + (clamp(sun.rel, -150, 150) / 60) * (w.w / 2);
+      const rg = c.createRadialGradient(sx, hy, 0, sx, hy, w.w * 0.9);
+      rg.addColorStop(0, hexAlpha(L.horizonSun, 0.9 * near)); rg.addColorStop(1, hexAlpha(L.horizonSun, 0));
+      c.fillStyle = rg;
+      c.fillRect(w.x, w.y, w.w, hy - w.y + 20);
+      // stars
+      if (L.stars > 0.01) {
+        c.fillStyle = '#ffffff';
+        for (const s of stars) { c.globalAlpha = L.stars * s.a; c.fillRect(s.x, s.y, s.s, s.s); }
+        c.globalAlpha = 1;
+      }
+      // moon and sun
+      if (moon && moon.visible && sun.h < -4) drawMoon(c, moon, L);
+      if (sun.disc.visible) {
+        const d = sun.disc;
+        const sg = c.createRadialGradient(d.x, d.y, 0, d.x, d.y, SUN_GLOW);
+        sg.addColorStop(0, hexAlpha(L.sunColor, 0.35)); sg.addColorStop(1, hexAlpha(L.sunColor, 0));
+        c.fillStyle = sg; c.fillRect(d.x - SUN_GLOW, d.y - SUN_GLOW, SUN_GLOW * 2, SUN_GLOW * 2);
+        c.fillStyle = L.sunColor;
+        c.beginPath(); c.arc(d.x, d.y, SUN_RADIUS, 0, 6.2832); c.fill();
+      }
+      // clouds
+      const cc = Lighting.mix(L.horizonAway, '#ffffff', 0.6);
+      c.fillStyle = hexAlpha(cc, 0.32 + 0.3 * L.dayness);
+      for (const cl of clouds) {
+        const x = w.x + ((cl.x + t * cl.speed) % (w.w + 400)) - 200;
+        for (const [dx, dy, rx, ry] of [[0, 0, cl.w * 0.5, 18], [cl.w * 0.28, -9, cl.w * 0.3, 16], [-cl.w * 0.3, 4, cl.w * 0.28, 12]]) {
+          c.beginPath(); c.ellipse(x + dx, cl.y + dy, rx, ry, 0, 0, 6.2832); c.fill();
+        }
+      }
+    }
+
+    function drawMoon(c, moon, L) {
+      const key = Math.round(moon.phase * 100) + (moon.southern ? 's' : 'n');
+      if (key !== moonKey) {
+        const size = MOON_RADIUS * 2 + 4;
+        moonSprite = make(size, size);
+        const m = moonSprite.getContext('2d');
+        m.fillStyle = '#f2efe0';
+        m.beginPath(); m.arc(size / 2, size / 2, MOON_RADIUS, 0, 6.2832); m.fill();
+        m.globalCompositeOperation = 'destination-out';
+        m.beginPath(); m.arc(size / 2 + moonShadowOffset(moon.phase, moon.southern, MOON_RADIUS), size / 2, MOON_RADIUS, 0, 6.2832); m.fill();
+        moonKey = key;
+      }
+      c.globalAlpha = clamp((-4 - moon.h) / 6, 0, 1) * 0.95;
+      c.drawImage(moonSprite, moon.x - moonSprite.width / 2, moon.y - moonSprite.height / 2);
+      c.globalAlpha = 1;
+    }
+
+    function atlasFrame(ch, clipId, frame) {
+      const clip = ch.manifest.clips[clipId];
+      if (!clip) return null;
+      const idx = clip.frames[Math.min(frame, clip.frames.length - 1)];
+      return { idx, f: ch.manifest.frames[idx] };
+    }
+    function tinted(ch, idx, f, L) {
+      const key = ch.manifest.name + '|' + idx;
+      let t = tintCache.get(key);
+      if (!t) {
+        t = make(f.w, f.h);
+        const c = t.getContext('2d');
+        c.drawImage(ch.atlas, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
+        const s = clamp(L.ambientStr, 0, 1);
+        if (s > 0.001) {
+          c.globalCompositeOperation = 'multiply';
+          c.fillStyle = tintColor(L.ambient, s);
+          c.fillRect(0, 0, f.w, f.h);
+          c.globalCompositeOperation = 'destination-in';
+          c.drawImage(ch.atlas, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
+        }
+        tintCache.set(key, t);
+      }
+      return t;
+    }
+    function silhouette(ch, idx, f) {
+      const key = ch.manifest.name + '|' + idx;
+      let s = silhouettes.get(key);
+      if (!s) {
+        s = make(Math.max(1, Math.ceil(f.w / 2)), Math.max(1, Math.ceil(f.h / 2)));
+        const c = s.getContext('2d');
+        c.drawImage(ch.atlas, f.x, f.y, f.w, f.h, 0, 0, s.width, s.height);
+        c.globalCompositeOperation = 'source-in';
+        c.fillStyle = '#000000';
+        c.fillRect(0, 0, s.width, s.height);
+        silhouettes.set(key, s);
+      }
+      return s;
+    }
+
+    function drawShadows(c, list, L, sun, direct) {
+      const sh = sunShadow(sun.rel, sun.h);
+      for (const e of list) {
+        const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
+        if (!af) continue;
+        const f = af.f, sc = ch.manifest.scale, fy = scene.baselineY;
+        // contact shadow
+        c.save();
+        c.globalAlpha = 0.30; c.fillStyle = '#000000';
+        c.beginPath(); c.ellipse(e.x, fy, f.w * sc * 0.225, 9, 0, 0, 6.2832); c.fill();
+        c.restore();
+        const sil = silhouette(ch, af.idx, f);
+        const draw = (skew, len, alpha) => {
+          c.save();
+          c.globalAlpha = alpha;
+          c.translate(e.x, fy);
+          c.transform(1, 0, skew, -len, 0, 0);
+          c.drawImage(sil, -f.ax * sc, -f.ay * sc, f.w * sc, f.h * sc);
+          c.restore();
+        };
+        if (direct > 0) draw(sh.skew, sh.len, 0.35 * direct);
+        const ls = lampShadow(scene.lamps || [], L, direct, e.x, fy);
+        if (ls) draw(ls.skew, ls.len, ls.alpha);
+      }
+    }
+
+    function drawChar(c, e, L) {
+      const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
+      if (!af) return;
+      const f = af.f, sc = ch.manifest.scale;
+      c.drawImage(tinted(ch, af.idx, f, L), e.x - f.ax * sc, scene.baselineY - f.ay * sc, f.w * sc, f.h * sc);
+    }
+
+    let floorTint = null, floorTintKey = '';
+    function drawFloorLight(c, L, rel, h, direct) {
+      if (direct <= 0.01) return;
+      const key = L.sunColor;
+      if (key !== floorTintKey) {
+        const img = assets.floorLight;
+        floorTint = make(img.width, img.height);
+        const t = floorTint.getContext('2d');
+        t.drawImage(img, 0, 0);
+        t.globalCompositeOperation = 'multiply'; t.fillStyle = L.sunColor; t.fillRect(0, 0, img.width, img.height);
+        t.globalCompositeOperation = 'destination-in'; t.drawImage(img, 0, 0);
+        floorTintKey = key;
+      }
+      const fp = floorPatch(rel, h), a = scene.floorLight.anchor;
+      c.save();
+      c.globalCompositeOperation = 'soft-light';
+      c.globalAlpha = 0.45 * direct;
+      c.translate(a[0], a[1]);
+      c.transform(1, 0, Math.tan(fp.skewDeg * RAD), fp.scaleY, 0, 0);
+      c.drawImage(floorTint, -floorTint.width / 2, 0);
+      c.restore();
+    }
+
+    function drawOverlay(c, list, dbg) {
+      c.save();
+      c.lineWidth = 2;
+      if (dbg.baseline) { c.strokeStyle = '#00ffd0'; c.beginPath(); c.moveTo(0, scene.baselineY); c.lineTo(W, scene.baselineY); c.stroke(); }
+      if (dbg.seats) {
+        c.strokeStyle = '#ffd000'; c.fillStyle = '#ffd000'; c.font = '20px monospace';
+        scene.seats.forEach((s, i) => { c.beginPath(); c.moveTo(s.x, scene.baselineY - 30); c.lineTo(s.x, scene.baselineY + 30); c.stroke(); c.fillText(s.id, s.x - 10, scene.baselineY + 54); });
+      }
+      for (const e of list) {
+        const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
+        if (!af) continue;
+        const f = af.f, sc = ch.manifest.scale;
+        if (dbg.feet) { c.strokeStyle = '#ff3060'; c.beginPath(); c.arc(e.x, scene.baselineY, 7, 0, 6.2832); c.stroke(); }
+        if (dbg.frames) { c.strokeStyle = '#60a0ff'; c.strokeRect(e.x - f.ax * sc, scene.baselineY - f.ay * sc, f.w * sc, f.h * sc); }
+        if (dbg.labels) {
+          c.fillStyle = '#ffffff'; c.strokeStyle = '#000000'; c.font = '22px monospace';
+          const txt = e.name + ' ' + e.clip + ' #' + e.frame + (e.lane === 'seat' ? ' [seat]' : '');
+          c.strokeText(txt, e.x - 90, scene.baselineY - f.ay * sc - 8); c.fillText(txt, e.x - 90, scene.baselineY - f.ay * sc - 8);
+        }
+      }
+      c.restore();
+    }
+
+    // state: { lighting, sunAzimuth, windowFacing?, moon?: {elevation, azimuth, phase, southern}, boardRows, boardKey,
+    //          chars: [{name, clip, frame, x, lane}], t: seconds, debug?: {...} }
+    function draw(state) {
+      if (!pw) return;
+      const L = state.lighting;
+      const lk = L.zenith + L.ambient + Math.round(L.h * 20) + '|' + Math.round(L.lamp * 50) + '|' + Math.round(L.city * 50);
+      if (lk !== lightKey) { lightKey = lk; cacheDirty = true; tintCache = new Map(); }
+      if (state.boardKey !== boardKey) { boardKey = state.boardKey; cacheDirty = true; }
+      if (cacheDirty) rebuild(L, state.boardRows);
+
+      const rel = sunRelative(state.sunAzimuth, scene.windowFacing);
+      const sun = { rel, h: L.h, disc: discPosition(scene, rel, L.h) };
+      let moon = null;
+      if (state.moon) {
+        const mrel = sunRelative(state.moon.azimuth, scene.windowFacing);
+        const mp = discPosition(scene, mrel, state.moon.elevation);
+        moon = { x: mp.x, y: mp.y, visible: mp.visible && state.moon.elevation > 0, h: state.moon.elevation, phase: state.moon.phase, southern: !!state.moon.southern };
+      }
+      const direct = directLight(rel, L.h);
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, pw, ph);
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      drawSky(ctx, L, sun, moon, state.t);
+      const blit = name => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(caches[name].canvas, 0, 0); ctx.restore(); };
+      blit('back');
+      drawFloorLight(ctx, L, rel, L.h, direct);
+      const list = state.chars || [];
+      drawShadows(ctx, list, L, sun, direct);
+      const byX = (a, b) => a.x - b.x;
+      for (const e of list.filter(e => e.lane === 'seat').sort(byX)) drawChar(ctx, e, L);
+      blit('mid');
+      for (const e of list.filter(e => e.lane !== 'seat').sort(byX)) drawChar(ctx, e, L);
+      blit('front');
+      if (state.debug) drawOverlay(ctx, list, state.debug);
+    }
+
+    function dispose() { caches.back = caches.mid = caches.front = null; tintCache.clear(); silhouettes.clear(); }
+    return { resize, draw, dispose, get size() { return { w: pw, h: ph }; } };
+  }
+
+  function hexAlpha(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + clamp(a, 0, 1).toFixed(3) + ')';
+  }
+
+  return { createRenderer, blendVariants, sunRelative, directLight, discPosition, sunShadow, floorPatch, nearestLamp,
+    lampShadow, moonShadowOffset, tintColor, wrap180 };
+});

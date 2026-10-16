@@ -8,7 +8,7 @@ fi
 if ! git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then
   echo "T2 Git 저장소를 찾을 수 없습니다." >&2; exit 1
 fi
-BRANCH=chatgpt/airport-lobby-day-night-20261016
+BRANCH=claude/t2-ui-changes-dobpqd
 TARGET="$HOME/t2_airport_preview"
 git -C "$REPO" fetch -q origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
 REF=$(git -C "$REPO" rev-parse "refs/remotes/origin/$BRANCH")
@@ -27,15 +27,18 @@ cp -R "$TMP/ui/web/." "$TARGET/web/"
 if [ ! -s "$TARGET/range_posterior_v1.py" ]; then
   git -C "$REPO" show "$REF:range_posterior_v1.py" > "$TARGET/range_posterior_v1.py"
 fi
-# Only print success when all seven GitHub-provided images are present.
-for file in lobby_hero_night.webp lobby_hero_day.webp card_featured.webp \
+# Only print success when the lobby images and the lounge scene files are present.
+for file in lobby_hero_night.webp card_featured.webp \
             card_standard.webp card_turbo.webp card_deepstack.webp card_hyper.webp; do
   if [ ! -s "$TARGET/web/assets/t2-airport/$file" ]; then
     echo "이미지가 없습니다: $file" >&2; exit 1
   fi
 done
 printf '%s\n' "origin/$BRANCH $REF" > "$TARGET/UI_SOURCE"
-echo "GitHub UI 및 공항 일러스트 7개 다운로드 완료"
+if [ ! -s "$TARGET/web/lounge/assets/scene.json" ]; then
+  echo "라운지 장면 파일이 없습니다: lounge/assets/scene.json" >&2; exit 1
+fi
+echo "GitHub UI 및 공항 라운지 장면 다운로드 완료"
 echo "원본 커밋: $REF"
 echo "로비 주소: http://127.0.0.1:8766/"
 cd "$TARGET"

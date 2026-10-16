@@ -273,6 +273,7 @@ def scene_json():
         'windowFacing': 225,
         'window': dict(WINDOW),
         'board': dict(BOARD),
+        'characters': list(CHARS),
         'seats': [{'id': 's%d' % i, 'x': x} for i, x in enumerate(SEAT_X)],
         'entries': {'left': -220, 'right': 1660},
         'lamps': [dict(l) for l in LAMPS],

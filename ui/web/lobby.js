@@ -24,6 +24,7 @@ async function loadLobby() {
     const data=await r.json(); catalog=data.tournaments || []; current=data.current;
     wallet=data.wallet; $('#walletBalance').textContent=fmt(wallet && wallet.balance);
     renderCurrent(); renderFeatured(); renderCards();
+    window.T2Lounge && T2Lounge.setTournaments(catalog, data.server_now);
     if(selected) { selected=catalog.find(t=>t.id===selected.id); if(selected) paintJoin(); }
   } catch(e) { toast('로비 정보를 불러오지 못했습니다: '+e.message); }
 }

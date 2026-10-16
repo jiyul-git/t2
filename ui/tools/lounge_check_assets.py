@@ -133,6 +133,13 @@ def check_scene(root, rep):
     ent = scene.get('entries')
     if not isinstance(ent, dict) or not (is_num(ent.get('left')) and is_num(ent.get('right')) and ent['left'] < 0 < SCENE_SIZE[0] < ent['right']):
         rep.err('schema', 'scene.json entries must put left < 0 and right > %d' % SCENE_SIZE[0])
+    chars = scene.get('characters')
+    if not isinstance(chars, list) or not chars or not all(isinstance(n, str) for n in chars):
+        rep.err('schema', 'scene.json characters must be a non-empty list of folder names')
+    else:
+        for n in chars:
+            if not (root / 'chars' / n / 'manifest.json').is_file():
+                rep.err('file', 'scene.json lists character %s but chars/%s/manifest.json is missing' % (n, n))
     lamps = scene.get('lamps')
     if not isinstance(lamps, list) or not all(isinstance(l, dict) and all(is_num(l.get(k)) for k in ('x', 'y', 'r')) for l in lamps):
         rep.err('schema', 'scene.json lamps must be a list of {x, y, r}')

@@ -1,0 +1,254 @@
+/* Lounge scene entry point (docs/LOUNGE_SCENE_DESIGN.md 4). Wires location, sun, lighting,
+   departure board, behaviour and renderer to the lobby page and keeps the animation loop polite
+   (24 fps cap, stops when hidden or off screen, warm start after a long pause). */
+(function (root, factory) {
+  const api = factory(root);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.T2Lounge = api;
+})(typeof window !== 'undefined' ? window : globalThis, function (root) {
+  'use strict';
+  const dep = (name, file) => root[name] || (typeof require === 'function' ? require(file) : null);
+  const Sun = dep('T2LoungeSun', './sun.js');
+  const Locate = dep('T2LoungeLocation', './location.js');
+  const Light = dep('T2LoungeLighting', './lighting.js');
+  const Board = dep('T2LoungeBoard', './board.js');
+  const Behavior = dep('T2LoungeBehavior', './behavior.js');
+  const Assets = dep('T2LoungeAssets', './assets.js');
+  const Renderer = dep('T2LoungeRenderer', './renderer.js');
+
+  const FRAME_MS = 1000 / 24;
+  const LIGHT_EVERY_MS = 15000;
+  const BOARD_EVERY_MS = 60000;
+  const WARM_AFTER_MS = 60000;
+  const DEBUG_FLAG_KEY = 't2_lounge_debug';
+
+  // Sun, moon and lighting for a moment and a place. Pure; used by the loop and by tests.
+  function computeSky(ms, loc) {
+    const date = new Date(ms);
+    const sun = Sun.sunPosition(date, loc.lat, loc.lon);
+    const moonPos = Sun.moonPosition(date, loc.lat, loc.lon);
+    return {
+      sun,
+      light: Light.lighting(sun.elevation),
+      moon: { elevation: moonPos.elevation, azimuth: moonPos.azimuth, phase: Sun.moonPhase(ms), southern: loc.lat < 0 },
+    };
+  }
+
+  function debugWanted(win) {
+    try {
+      if (/(^|[?&])lounge_debug=1(&|$)/.test(win.location.search)) return true;
+      return win.localStorage.getItem(DEBUG_FLAG_KEY) === '1';
+    } catch (e) { return false; }
+  }
+
+  function createLounge(env) {
+    const win = env.window, doc = env.document;
+    const assetBase = env.assetBase || 'lounge/assets/';
+    let section = null, canvas = null, chipWrap = null, renderer = null, director = null, assets = null, location = null;
+    let seed = null, sky = null, rows = [], boardKey = '', tournaments = [], serverOffsetMs = 0;
+    let running = false, visible = true, failed = false, stopped = false, reduced = false;
+    let raf = 0, lastTs = 0, lastLight = -1e9, lastBoard = -1e9, pausedAt = 0, t0 = 0, simT = 0;
+    const costs = [];                 // recent frame costs in ms (director step + draw), for the debug panel and perf checks
+    const debug = { clockMs: null, clockSetAt: 0, scale: 1, overlay: {}, enabled: false, onInfo: null };
+
+    // the moment the scene is showing: real time, or a debug time that keeps running from where it was set
+    function clockMs() {
+      if (debug.clockMs === null) return Date.now();
+      return debug.clockMs + (Date.now() - debug.clockSetAt) * debug.scale;
+    }
+    const placeNow = () => location.get();
+
+    function fail(why) {
+      if (failed) return;
+      failed = true;
+      if (win.console) console.warn('lounge: showing the still illustration instead:', why && why.message || why);
+      stopLoop();
+      if (section) { section.classList.remove('lounge-ready'); section.classList.add('lounge-failed'); }
+    }
+
+    function updateLighting(force) {
+      const nowTs = win.performance.now();
+      if (!force && nowTs - lastLight < LIGHT_EVERY_MS && debug.clockMs === null) return;
+      lastLight = nowTs;
+      sky = computeSky(clockMs(), placeNow());
+      const vars = Light.cssVars(sky.light.h);
+      const style = doc.documentElement.style;
+      for (const k in vars) style.setProperty(k, vars[k]);
+    }
+
+    function updateBoard(force) {
+      const nowTs = win.performance.now();
+      if (!force && nowTs - lastBoard < BOARD_EVERY_MS) return;
+      lastBoard = nowTs;
+      const ms = clockMs();
+      const serverSec = debug.clockMs === null ? (Date.now() + serverOffsetMs) / 1000 : ms / 1000;
+      rows = Board.boardRows(tournaments, serverSec, ms);
+      boardKey = rows.map(r => [r.flight, r.dest, r.time, r.status, r.mine].join('|')).join(';');
+    }
+
+    function newDirector() {
+      const s = seed === null ? Date.now() : seed;
+      director = Behavior.createDirector({
+        seed: s, scene: assets.scene, characters: assets.chars.map(c => c.manifest),
+        clock: clockMs, solar: () => (sky ? sky.sun : { elevation: 0 }),
+      });
+    }
+
+    function drawNow(chars) {
+      renderer.draw({
+        lighting: sky.light, sunAzimuth: sky.sun.azimuth, moon: sky.moon, boardRows: rows, boardKey,
+        chars, t: simT, debug: debug.enabled ? debug.overlay : null,
+      });
+    }
+
+    function frame(ts) {
+      raf = win.requestAnimationFrame(frame);
+      if (ts - lastTs < FRAME_MS) return;
+      const dt = lastTs ? Math.min(ts - lastTs, 250) : FRAME_MS;
+      lastTs = ts;
+      try {
+        updateLighting(false); updateBoard(false);
+        simT += dt / 1000;
+        const t0f = win.performance.now();
+        drawNow(director.step(dt * debug.scale));
+        costs.push(win.performance.now() - t0f);
+        if (costs.length > 480) costs.shift();
+        if (debug.onInfo) debug.onInfo(info());
+      } catch (e) { fail(e); }
+    }
+
+    function startLoop() {
+      if (running || failed || stopped || reduced || !renderer) return;
+      if (pausedAt && win.performance.now() - pausedAt > WARM_AFTER_MS) { try { director.warmStart(); } catch (e) { fail(e); return; } }
+      pausedAt = 0; running = true; lastTs = 0;
+      raf = win.requestAnimationFrame(frame);
+    }
+    function stopLoop() {
+      if (!running) return;
+      running = false;
+      win.cancelAnimationFrame(raf);
+      pausedAt = win.performance.now();
+    }
+    const sync = () => { if (visible && !doc.hidden && !stopped) startLoop(); else stopLoop(); };
+
+    // Reduced motion: two people sitting still, lighting refreshed once a minute.
+    function startStatic() {
+      const seats = assets.scene.seats;
+      const picks = assets.chars.slice(0, 2).map((c, i) => ({
+        name: c.manifest.name, clip: 'sit_idle', frame: 0, x: seats[[1, 3][i] % seats.length].x, lane: 'seat',
+      }));
+      const redraw = () => {
+        if (failed || stopped) return;
+        try { updateLighting(true); updateBoard(true); drawNow(picks); } catch (e) { fail(e); return; }
+        win.setTimeout(redraw, 60000);
+      };
+      redraw();
+    }
+
+    function resize() {
+      if (!renderer || !section) return;
+      const w = section.clientWidth;
+      if (w > 0 && renderer.resize(w, win.devicePixelRatio || 1) && !running && sky && !failed) {
+        try { drawNow(reduced ? [] : director.step(0)); } catch (e) { fail(e); }
+      }
+    }
+
+    function info() {
+      return {
+        ms: clockMs(), place: placeNow(), sun: sky && sky.sun, light: sky && sky.light,
+        direct: sky ? Renderer.directLight(Renderer.sunRelative(sky.sun.azimuth, assets.scene.windowFacing), sky.light.h) : 0,
+        people: director ? director.step(0).length : 0,
+      };
+    }
+
+    async function mount(sectionEl) {
+      section = sectionEl;
+      canvas = section.querySelector('.lounge-canvas');
+      chipWrap = section.querySelector('.lounge-locate-wrap');
+      try {
+        if (!canvas || !canvas.getContext || !canvas.getContext('2d')) throw new Error('canvas 2d unavailable');
+        reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        let storage = null;
+        try { storage = win.localStorage; } catch (e) { storage = null; }
+        location = Locate.createLocation({ navigator: win.navigator, storage, now: Date.now, intl: win.Intl, isSecureContext: win.isSecureContext });
+        location.init();
+        assets = await Assets.loadAssets(assetBase, Assets.browserIO(), Behavior.isActive);
+        if (!assets.chars.length) throw new Error('no usable characters');
+        renderer = Renderer.createRenderer({ canvas, assets });
+        updateLighting(true); updateBoard(true);
+        newDirector();
+        renderer.resize(section.clientWidth || 360, win.devicePixelRatio || 1);
+        section.classList.add('lounge-ready');
+        if (reduced) startStatic();
+        else {
+          drawNow(director.step(0));
+          if (win.IntersectionObserver) {
+            new win.IntersectionObserver(es => { visible = es[es.length - 1].isIntersecting; sync(); }).observe(section);
+          }
+          doc.addEventListener('visibilitychange', sync);
+          win.addEventListener('pagehide', () => { stopped = true; stopLoop(); });
+          win.addEventListener('pageshow', () => { stopped = false; sync(); });
+          sync();
+        }
+        if (win.ResizeObserver) new win.ResizeObserver(resize).observe(section); else win.addEventListener('resize', resize);
+        setupChip();
+        location.refreshIfStale().then(changed => { if (changed) updateLighting(true); });
+        if (debugWanted(win)) loadDebug();
+      } catch (e) { fail(e); }
+    }
+
+    function setupChip() {
+      if (!chipWrap) return;
+      const go = chipWrap.querySelector('.lounge-locate'), close = chipWrap.querySelector('.lounge-locate-close');
+      location.chipVisible().then(show => { chipWrap.hidden = !show; });
+      if (go) go.addEventListener('click', async () => {
+        const r = await location.request();
+        chipWrap.hidden = true;
+        if (r.ok) updateLighting(true);
+      });
+      if (close) close.addEventListener('click', () => { location.dismissChip(); chipWrap.hidden = true; });
+    }
+
+    function loadDebug() {
+      const s = doc.createElement('script');
+      s.src = 'lounge/debug.js?v=1';
+      s.onload = () => { if (root.T2LoungeDebug) root.T2LoungeDebug.attach(api.debugHandle()); };
+      doc.head.appendChild(s);
+    }
+
+    const api = {
+      mount,
+      setTournaments(list, serverNowSec) {
+        tournaments = Array.isArray(list) ? list : [];
+        if (Number.isFinite(serverNowSec)) serverOffsetMs = serverNowSec * 1000 - Date.now();
+        if (renderer && !failed) { try { updateBoard(true); } catch (e) { fail(e); } }
+      },
+      requestLocation() { return location ? location.request().then(r => { if (r.ok) updateLighting(true); return r; }) : Promise.resolve({ ok: false, reason: 'not mounted' }); },
+      debugHandle() {
+        return {
+          debug, info, location: () => location, scene: () => assets.scene, characters: () => assets.chars.map(c => c.manifest.name),
+          setClock(ms) { debug.clockMs = ms; debug.clockSetAt = Date.now(); updateLighting(true); updateBoard(true); },
+          setScale(n) { debug.scale = n; },
+          setPlace(lat, lon) { location.setDebug(lat, lon); updateLighting(true); },
+          reseed(s) { seed = s; newDirector(); },
+          redraw() { if (renderer && sky) drawNow(director.step(0)); },
+          stats() {
+            const a = costs.slice().sort((x, y) => x - y);
+            return { n: a.length, avg: a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0, p95: a.length ? a[Math.floor(a.length * 0.95)] : 0 };
+          },
+        };
+      },
+    };
+    return api;
+  }
+
+  const api = { createLounge, computeSky, FRAME_MS };
+  if (typeof window !== 'undefined' && root === window) {
+    const lounge = createLounge({ window, document });
+    api.mount = lounge.mount; api.setTournaments = lounge.setTournaments;
+    api.requestLocation = lounge.requestLocation; api.debugHandle = lounge.debugHandle;
+    const boot = () => { const el = document.getElementById('lounge'); if (el) lounge.mount(el); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  }
+  return api;
+});
