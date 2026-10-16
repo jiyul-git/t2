@@ -32,6 +32,15 @@ function setBalance(v){
   };
   setBalance.raf=requestAnimationFrame(step);
 }
+// Sheets slide down when they close (the CSS plays .closing), and can be reopened mid-way.
+function showSheet(el){ clearTimeout(el._closeT); el.classList.remove('closing'); el.hidden=false; }
+function hideSheet(el){
+  if(el.hidden) return;
+  if(reduceMotion){ el.hidden=true; return; }
+  el.classList.add('closing');
+  clearTimeout(el._closeT);
+  el._closeT=setTimeout(()=>{ el.classList.remove('closing'); el.hidden=true; },220);
+}
 async function loadLobby() {
   try {
     const r=await fetch('/api/lobby',{cache:'no-store',headers:headers(false)});
@@ -137,7 +146,7 @@ function progressFacts(t) {
 }
 function openJoin(id) {
   selected=catalog.find(t=>t.id===id); if(!selected) return;
-  $('#joinHint').textContent=''; paintJoin(); $('#joinSheet').hidden=false;
+  $('#joinHint').textContent=''; paintJoin(); showSheet($('#joinSheet'));
 }
 function paintJoin() {
   const t=selected, e=t.my_entry;
@@ -157,7 +166,7 @@ function paintJoin() {
   $('#join').disabled=sending || (!entered && !t.registration_open);
   $('#cancelRegistration').hidden=!(e && e.status==='reserved' && t.status==='scheduled');
 }
-function closeJoin() { $('#joinSheet').hidden=true; selected=null; }
+function closeJoin() { hideSheet($('#joinSheet')); selected=null; }
 async function post(path, body) {
   const r=await fetch(path,{method:'POST',headers:headers(true),body:JSON.stringify(body)});
   const data=await r.json(); if(!r.ok) throw new Error(data.error || 'HTTP '+r.status); return data;
@@ -192,7 +201,7 @@ async function openWallet() {
     $('#walletDetail').innerHTML='<h3>보유 '+fmt(wallet.balance)+' 칩</h3>'+wallet.transactions.map(x=>
       '<div class="walletRow"><span>'+escapeHtml(names[x.kind] || x.kind)+'<small>'+when(x.created_at)+
       '</small></span><b>'+(x.delta>0?'+':'')+fmt(x.delta)+' 칩</b></div>').join('');
-    $('#walletSheet').hidden=false;
+    showSheet($('#walletSheet'));
   } catch(e) { toast(e.message); }
 }
 function syncFilterTabs(){
@@ -206,8 +215,8 @@ $('#joinSheet').onclick=e=>{ if(e.target===$('#joinSheet')) closeJoin(); };
 $('#join').onclick=join;
 $('#cancelRegistration').onclick=cancelRegistration;
 $('#walletNav').onclick=openWallet;
-$('#walletClose').onclick=()=>$('#walletSheet').hidden=true;
-$('#walletSheet').onclick=e=>{ if(e.target===$('#walletSheet')) $('#walletSheet').hidden=true; };
+$('#walletClose').onclick=()=>hideSheet($('#walletSheet'));
+$('#walletSheet').onclick=e=>{ if(e.target===$('#walletSheet')) hideSheet($('#walletSheet')); };
 setInterval(()=>{if(!document.hidden && !sending) loadLobby();},5000);
 
 const PROFILE_KEYS = {
@@ -247,9 +256,9 @@ function openProfile(){
   const deck=profileGet('deck','jade');
   $('#deckChoices').querySelectorAll('button').forEach(b=>
     b.classList.toggle('active',b.dataset.deck===deck));
-  $('#profileSheet').hidden=false;
+  showSheet($('#profileSheet'));
 }
-function closeProfile(){ $('#profileSheet').hidden=true; }
+function closeProfile(){ hideSheet($('#profileSheet')); }
 function saveProfile(){
   const nick=(($('#nickname').value||'플레이어').trim().slice(0,16)||'플레이어');
   const dk=$('#deckChoices button.active');

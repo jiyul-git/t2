@@ -366,3 +366,9 @@ html{-webkit-tap-highlight-color:transparent}
  @keyframes t2-glow{0%,100%{box-shadow:0 2px 3px #0003}50%{box-shadow:0 2px 12px #f3c97066}}
  .featured-button{animation:t2-glow 3.2s ease-in-out infinite}
 }
+@media (prefers-reduced-motion:no-preference){
+ @keyframes t2-sheet-out{to{transform:translateY(100%)}}
+ @keyframes t2-fade-out{to{opacity:0}}
+ .sheetWrap.closing{animation:t2-fade-out .22s ease both;pointer-events:none}
+ .sheetWrap.closing .sheet{animation:t2-sheet-out .22s cubic-bezier(.4,0,.8,.4) both}
+}
