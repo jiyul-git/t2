@@ -3,7 +3,7 @@
   'use strict';
   const KEY='t2_airport_theme_mode', modes=['auto','day','night'];
   function mode(){
-    try { const x=localStorage.getItem(KEY); return modes.includes(x)?x:'auto'; }
+    try { const x=localStorage.getItem(KEY); return modes.includes(x)?x:'night'; }
     catch (_) { return 'auto'; }
   }
   function nowInKorea(){

@@ -45,21 +45,33 @@ function renderFeatured() {
   const t=open[0] || next[0];
   if(!t){ box.hidden=true; return; }
   box.hidden=false;
-  $('#featuredLead').textContent=t.registration_open?'지금 참가 가능한 대회':'다음 예정 대회';
+  $('#featuredLead').textContent=t.registration_open?'참가 가능':'시작 예정';
   $('#featuredStatus').textContent=labels[t.status]||'대회';
   $('#featuredName').textContent=t.name;
   $('#featuredWhen').textContent=when(t.starts_at)+' 시작';
   $('#featuredBuyin').textContent=fmt(t.buyin)+' 칩';
+  box.dataset.fmt=eventFormat(t);
   $('#featuredCount').textContent=fmt(t.entries)+'명';
-  $('#featuredJoin').textContent=t.registration_open?'대회 정보 보기 ›':'일정 확인 ›';
+  $('#featuredJoin').textContent=t.registration_open?'바로 참가 ›':'대회 정보 ›';
   $('#featuredJoin').onclick=()=>openJoin(t.id);
 }
+function eventFormat(t){
+  const fromRules=(t.fmt||t.format||(t.rules&&t.rules.fmt)||'').toLowerCase();
+  const name=String(t.name||'');
+  if(fromRules.includes('deep') || /딥스택/.test(name))return 'deepstack';
+  if(fromRules.includes('hyper') || /하이퍼/.test(name))return 'hyper';
+  if(fromRules.includes('turbo') || /터보/.test(name))return 'turbo';
+  return 'standard';
+}
+function thumb(t){
+  const fmt=eventFormat(t);
+  return 'assets/t2-airport/card_'+fmt+'.webp';
+}
 function visible(t) {
-  if(filter==='mine') return t.my_entry && t.my_entry.status !== 'cancelled';
+  if(filter==='mine') return t.my_entry && t.my_entry.status!=='cancelled';
   if(['finished','retired'].includes(t.status)) return false;
-  if(filter==='scheduled') return t.status==='scheduled';
-  if(filter==='running') return ['late_registration','closed'].includes(t.status);
-  return t.registration_open || (t.my_entry && t.my_entry.status !== 'cancelled');
+  if(['standard','turbo','deepstack','hyper'].includes(filter) && eventFormat(t)!==filter)return false;
+  return t.registration_open || (t.my_entry && t.my_entry.status!=='cancelled') || t.status==='scheduled';
 }
 function renderCards() {
   const items=catalog.filter(visible), box=$('#tournaments');
@@ -69,7 +81,7 @@ function renderCards() {
   }
   box.innerHTML=items.map(t=>'<article class="card" role="button" tabindex="0" data-id="'+escapeHtml(t.id)+
     '" aria-label="'+escapeHtml(t.name)+' 대회 상세보기">'+
-    '<div class="card-illustration" aria-hidden="true"><span>♠</span><small>T2 GATE</small></div>'+
+    '<div class="card-illustration" aria-hidden="true"><img src="'+thumb(t)+'" alt="" loading="lazy"></div>'+
     '<div class="card-body"><div class="card-title-line"><h3>'+escapeHtml(t.name)+'</h3>'+
     '<span class="tag">'+escapeHtml(labels[t.status]||t.status)+'</span></div>'+
     '<div class="desc">'+(t.my_entry && t.my_entry.status!=='cancelled' ?
@@ -79,9 +91,9 @@ function renderCards() {
     '<div class="fact"><b>'+when(t.starts_at)+'</b><span>시작</span></div>'+
     '<div class="fact"><b>'+fmt(t.buyin)+' 칩</b><span>바이인</span></div>'+
     '<div class="fact"><b>'+fmt(t.entries)+'명</b><span>참가</span></div>'+
-    '<div class="fact"><b>'+fmt(t.remaining)+'명</b><span>남은 자리</span></div>'+
-    '<div class="fact"><b>'+fmt(t.prize_pool)+' 칩</b><span>현재 상금 풀</span></div>'+
-    '<div class="fact"><b>9-MAX · '+t.level_minutes+'분</b><span>좌석 / 레벨</span></div>'+
+    '<div class="fact"><b>'+fmt(t.remaining)+'명</b><span>잔여 인원</span></div>'+
+    '<div class="fact extra-fact"><b>'+fmt(t.prize_pool)+' 칩</b><span>현재 상금 풀</span></div>'+
+    '<div class="fact extra-fact"><b>9-MAX · '+t.level_minutes+'분</b><span>좌석 / 레벨</span></div>'+
     progressFacts(t)+'</div>'+
     '<div class="enter">'+(t.can_reenter?'재참가 가능':'자세히 보기')+' <span aria-hidden="true">›</span></div></div></article>').join('');
   box.querySelectorAll('.card').forEach(el=>{
@@ -165,9 +177,12 @@ async function openWallet() {
     $('#walletSheet').hidden=false;
   } catch(e) { toast(e.message); }
 }
+function syncFilterTabs(){
+  $('#tabs').querySelectorAll('button').forEach(x=>
+    x.classList.toggle('active',x.dataset.filter===filter));
+}
 $('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{
-  $('#tabs').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));
-  filter=b.dataset.filter; renderCards(); });
+  filter=b.dataset.filter; syncFilterTabs(); renderCards(); });
 $('#sheetClose').onclick=closeJoin;
 $('#joinSheet').onclick=e=>{ if(e.target===$('#joinSheet')) closeJoin(); };
 $('#join').onclick=join;
@@ -183,12 +198,6 @@ const PROFILE_KEYS = {
   avatar: 't2profile_avatar'      // 테이블의 내 캐릭터(visuals.js 가 HERO 자리에 쓴다)
 };
 const AVATARS = 9;
-// Exact existing T2 portraits, including the existing separate pupil layer.
-document.querySelectorAll('.airport-character').forEach(el=>{
-  const index=Number(el.dataset.portraitIndex);
-  if(window.PokerVisuals) el.innerHTML=window.PokerVisuals.avatarHTML(index);
-});
-
 function syncAirportButtons(){
   const theme=window.T2AirportTheme;
   if(!theme)return;
@@ -248,6 +257,9 @@ function saveProfile(){
   toast('프로필을 저장했습니다');
 }
 $('#profileNav').addEventListener('click',openProfile);
+$('#lobbyNav').addEventListener('click',()=>{filter='all';syncFilterTabs();renderCards();window.scrollTo({top:0,behavior:'smooth'});});
+$('#eventsNav').addEventListener('click',()=>{filter='all';syncFilterTabs();renderCards();document.querySelector('.section').scrollIntoView({behavior:'smooth',block:'start'});});
+$('#myEventsNav').addEventListener('click',()=>{filter='mine';syncFilterTabs();renderCards();document.querySelector('.section').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#profileClose').addEventListener('click',closeProfile);
 $('#profileSheet').addEventListener('click',(e)=>{if(e.target===$('#profileSheet'))closeProfile();});
 $('#profileSave').addEventListener('click',saveProfile);
