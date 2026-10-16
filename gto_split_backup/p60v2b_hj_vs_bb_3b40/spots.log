@@ -1,0 +1,3 @@
+START p60v2b_hj_vs_bb_3b40 2026-10-16T11:16:19Z
+START p60v2b_hj_vs_bb_3b40 2026-10-16T13:16:29Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000": {"HJ": [2.270589997636177, 1.167], "BB": [1.841950315221973, 0.619]}, ":fold|BB:raise@8.000000|HJ:raise@17.200000|BB:call@17.200000": {"HJ": [16.052250005916, 1.662], "BB": [15.936175092533217, 0.929]}}}
