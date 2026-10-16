@@ -381,3 +381,10 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
 .airport-scene::before{opacity:var(--airport-gold-opacity,0)}
 .airport-scene{--airport-lamp-alpha:var(--airport-lamp-alpha,0)}
 @media(max-width:360px){.airport-time-test-title small{display:none}}
+
+/* Single source frame invariant: identical geometry for all times, including
+   WebGL-disabled and reduced-motion browsers. No double silhouettes. */
+.airport-scene-art-day{background-image:url("assets/t2-airport/lobby_hero_night.webp")!important;
+ filter:brightness(1.22) saturate(.95) hue-rotate(5deg);
+ opacity:var(--airport-day-alpha,0)}
+.badge-removal-day{background-image:url("assets/t2-airport/toggle_remove_night.webp")!important}

@@ -18,7 +18,7 @@
  const fragment=`
  precision mediump float;
  varying vec2 uv;
- uniform sampler2D texNight,texDay;
+ uniform sampler2D texNight;
  uniform float dayWeight,hour,sun,gold,timeSec,shadowDirection,shadowLength,shadowOpacity,lamps,blue;
  float feather(vec2 p,vec2 center,vec2 radius){
    float d=length((p-center)/radius);
@@ -39,8 +39,15 @@
    p.x+=.0012*(tiger*cos(timeSec*.70)+bunny*cos(timeSec*.84+1.0)
                +turtle*cos(timeSec*.63+3.0)+penguin*cos(timeSec*.93+4.1));
    vec2 sampleUV=vec2(clamp(p.x,0.,1.),1.-clamp(p.y,0.,1.));
-   vec3 sceneColor=mix(texture2D(texNight,sampleUV).rgb,
-                       texture2D(texDay,sampleUV).rgb,dayWeight);
+   // One identical geometry for all times of day. Never cross-fade two
+   // separately illustrated characters, planes or departure board labels.
+   vec3 sceneColor=texture2D(texNight,sampleUV).rgb;
+   float regionSky=smoothstep(0.39,0.70,p.x)*(1.0-smoothstep(0.15,0.62,p.y));
+   vec3 daylight=pow(max(sceneColor,vec3(0.001)),vec3(0.84));
+   daylight=daylight*vec3(1.10,1.13,1.15)+vec3(.035,.045,.039);
+   // Local blue-white skylight changes colors; all line work stays put.
+   daylight=mix(daylight,daylight*.82+vec3(.12,.19,.25),regionSky*.34);
+   sceneColor=mix(sceneColor,clamp(daylight,0.0,1.0),dayWeight);
    float sunlight=max(0.,sun);
    // Separate morning/evening color bleed and cool-blue-hour bounce.
    float lowAngle=exp(-dot((p-vec2(.67,.31))/vec2(.44,.38),
@@ -103,7 +110,7 @@
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-   gl.uniform1i(gl.getUniformLocation(program,unit?'texDay':'texNight'),unit);
+   gl.uniform1i(gl.getUniformLocation(program,'texNight'),unit);
  }
  function setFloat(name,v){gl.uniform1f(gl.getUniformLocation(program,name),v);}
  let stopped=false,lastFrame=0;
@@ -130,12 +137,9 @@
    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
  }
  root.addEventListener('pagehide',()=>{stopped=true;});
- Promise.all([
-   load('assets/t2-airport/lobby_hero_night.webp'),
-   load('assets/t2-airport/lobby_hero_day.webp')
- ]).then(images=>{
+ load('assets/t2-airport/lobby_hero_night.webp').then(image=>{
    gl.useProgram(program);
-   texture(images[0],0);texture(images[1],1);
+   texture(image,0);
    scene.classList.add('airport-motion-ready');
    root.requestAnimationFrame(frame);
  }).catch(e=>console.warn('공항 정적 이미지로 전환:',e));
