@@ -54,14 +54,11 @@ unwhite(B, int(np.median(hb)), left)
 pad = 40
 yy = np.arange(H + pad)[:, None]; xx = np.arange(W)[None]
 hbp = hb[None]; lp = np.concatenate([left, np.full(pad, left[-1])])[:, None]
-hoodie_end = hem.end
-region = (yy > hbp + 3) & (xx < lp) & ((xx < hoodie_end) | (yy > hbp + 45))   # past the hoodie only the feet rows: the hand stays                       # the legs, in canvas coords
-# the pulling hand sits under the sleeve cuff: keep the base's hand (orange + its outline)
-rB, gB, bB = B[..., 0], B[..., 1], B[..., 2]
-orange = (rB > 150) & (bB < 140) & (rB > bB + 50) & (B[..., 3] > 0)
-zone = (xx[:, :W] > hoodie_end - 70) & (yy[:H] < hbp + 40)
-hand = cv2.dilate((orange & zone[:H]).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(bool)
-region[:H] &= ~hand
+# legs zone: below the hem and left of a line drawn on the base frame (x at y), clear of the
+# tail, the pulling hand, the handle and the suitcase - those always come from the base
+EDGE = [(0, 218), (262, 218), (285, 230), (305, 243), (H + pad, 258)]
+xb = np.interp(np.arange(H + pad), [p[0] for p in EDGE], [p[1] for p in EDGE])[:, None]
+region = (yy > hbp + 3) & (xx < xb)
 band = region[:H] & (yy[:H] < hbp + 24)
 hemB = int(np.median(hb[:int(np.median(left))]))
 for k, n in enumerate(names):
@@ -70,13 +67,13 @@ for k, n in enumerate(names):
     canvas = np.zeros((H + pad, W, 4), np.float32)
     Fl = F.copy(); yf = np.arange(F.shape[0])[:, None]
     xf = np.arange(F.shape[1])[None]
-    r_, g_, b_ = F[..., 0], F[..., 1], F[..., 2]
-    case = ((b_ > r_ + 4) & (b_ >= g_)) | ((np.maximum(np.maximum(r_, g_), b_) < 70) & (r_ < b_ + 6))
-    Fl[~(yf > hf[None] - 4) | ((xf >= fl[:, None] - 8) & case)] = 0   # below its hem, minus its own suitcase                          # this frame below its own hem
+    Fl[~(yf > hf[None] - 4)] = 0                          # this frame below its own hem
     sh = np.zeros_like(canvas)
     ys0, ys1 = max(0, -dy), min(F.shape[0], H + pad - dy); xs0, xs1 = max(0, -dx), min(F.shape[1], W - dx)
     sh[ys0 + dy:ys1 + dy, xs0 + dx:xs1 + dx] = Fl[ys0:ys1, xs0:xs1]
     sh[~region] = 0
+    n_, lab_, st_, _ = cv2.connectedComponentsWithStats((sh[..., 3] > 0).astype(np.uint8))
+    sh[np.isin(lab_, [i for i in range(1, n_) if st_[i, cv2.CC_STAT_AREA] < 80])] = 0   # stray bits of its own tail/suitcase
     # base underneath, only in a band under the hem: fills the small holes where the two frames disagree
     canvas[:H][band] = B[band]
     a = sh[..., 3:4] / 255.

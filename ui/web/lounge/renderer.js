@@ -164,11 +164,13 @@
       // Row i lies between boundary lines i and i+1: the painted ones, or an even split of the box.
       const line = i => (b.lines ? b.lines[i] : [lerp([b.x, b.y], [b.x, b.y + b.h], i / n), lerp([b.x + b.w, b.y], [b.x + b.w, b.y + b.h], i / n)]);
       rows.slice(0, n).forEach((row, i) => {
-        const [L0, R0] = line(i), L1 = line(i + 1)[0];
+        const [L0, R0] = line(i), [L1, R1] = line(i + 1);
         const w = Math.hypot(R0[0] - L0[0], R0[1] - L0[1]), h = Math.hypot(L1[0] - L0[0], L1[1] - L0[1]);
         target.save();
+        // clip to the real band between the two painted lines (they are not parallel), so a glyph
+        // that reaches a line is cut along it
+        target.beginPath(); target.moveTo(L0[0], L0[1]); target.lineTo(R0[0], R0[1]); target.lineTo(R1[0], R1[1]); target.lineTo(L1[0], L1[1]); target.closePath(); target.clip();
         target.transform((R0[0] - L0[0]) / w, (R0[1] - L0[1]) / w, (L1[0] - L0[0]) / h, (L1[1] - L0[1]) / h, L0[0], L0[1]);
-        target.beginPath(); target.rect(0, 0, w, h); target.clip();
         target.font = 'bold ' + Math.round(h * 0.5) + 'px monospace';
         target.textBaseline = 'middle';
         const pad = w * 0.035, inner = w - pad * 2;
