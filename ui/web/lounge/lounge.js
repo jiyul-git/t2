@@ -48,6 +48,7 @@
     let seed = null, sky = null, rows = [], boardKey = '', tournaments = [], serverOffsetMs = 0;
     let running = false, visible = true, failed = false, stopped = false, reduced = false;
     let raf = 0, lastTs = 0, lastLight = -1e9, lastBoard = -1e9, pausedAt = 0, t0 = 0, simT = 0;
+    let frameMs = FRAME_MS, costEma = 0;
     const costs = [];                 // recent frame costs in ms (director step + draw), for the debug panel and perf checks
     const debug = { clockMs: null, clockSetAt: 0, scale: 1, overlay: {}, enabled: false, onInfo: null };
 
@@ -123,15 +124,20 @@
 
     function frame(ts) {
       raf = win.requestAnimationFrame(frame);
-      if (ts - lastTs < FRAME_MS - 2) return;   // rAF jitters around the display rate
-      const dt = lastTs ? Math.min(ts - lastTs, 250) : FRAME_MS;
+      if (ts - lastTs < frameMs - 2) return;    // rAF jitters around the display rate
+      const dt = lastTs ? Math.min(ts - lastTs, 250) : frameMs;
       lastTs = ts;
       try {
         updateLighting(false); updateBoard(false);
         simT += dt / 1000;
         const t0f = win.performance.now();
         drawNow(director.step(dt * debug.scale));
-        costs.push(win.performance.now() - t0f);
+        const cost = win.performance.now() - t0f;
+        costs.push(cost);
+        // a phone that cannot keep up drops to 30 fps rather than stuttering, and comes back when it can
+        costEma = costEma * 0.97 + cost * 0.03;
+        if (frameMs < 20 && costEma > 9) frameMs = 1000 / 30;
+        else if (frameMs > 20 && costEma < 4) frameMs = FRAME_MS;
         if (costs.length > 480) costs.shift();
         if (debug.onInfo) debug.onInfo(info());
       } catch (e) { fail(e); }

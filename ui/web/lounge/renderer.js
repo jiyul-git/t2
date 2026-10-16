@@ -240,18 +240,29 @@
     let hazeColor = '#808080';
     // Average colour of the apron behind the plane in the current window view; the plane is graded
     // toward it so a crisp white sprite sits inside the softer painting.
+    // Average colour of a region of a cache, read from a tiny scaled copy: reading a large region
+    // back from the GPU can stall a phone for several milliseconds.
+    let probe = null;
+    function averageColor(src, sx, sy, sw, sh) {
+      if (!probe) probe = make(24, 16);
+      const pc = probe.getContext('2d');
+      pc.setTransform(1, 0, 0, 1, 0, 0);
+      pc.clearRect(0, 0, 24, 16);
+      pc.drawImage(src, sx, sy, Math.max(1, sw), Math.max(1, sh), 0, 0, 24, 16);
+      const d = pc.getImageData(0, 0, 24, 16).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 200) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
+      return n ? [r / n, g / n, b / n] : null;
+    }
+    const toHex3 = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
     function sampleHaze() {
       const p = scene.planes;
       if (!p || !caches.far) return hazeColor;
       try {
         const x = Math.round(Math.max(scene.window.x, p.from) * k), y = Math.round((p.y - p.height) * k);
         const w = Math.round(Math.min(scene.window.w, 500) * k), h = Math.round(p.height * k);
-        const d = caches.far.ctx.getImageData(x, y, Math.max(1, w), Math.max(1, h)).data;
-        let r = 0, g = 0, b = 0, n = 0;
-        for (let i = 0; i < d.length; i += 16) { if (d[i + 3] > 200) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
-        if (!n) return hazeColor;
-        const hx = v => Math.round(v / n).toString(16).padStart(2, '0');
-        return '#' + hx(r) + hx(g) + hx(b);
+        const c = averageColor(caches.far.canvas, x, y, w, h);
+        return c ? toHex3(c) : hazeColor;
       } catch (e) { return hazeColor; }
     }
     // Average colour and brightness of the room where people walk (sofas and floor). Characters are
@@ -259,14 +270,9 @@
     let room = { color: '#808080', lum: 0.5 };
     function sampleRoom() {
       try {
-        const y0 = Math.round(ph * 0.6), h = Math.max(1, Math.round(ph * 0.35));
-        const d = caches.back.ctx.getImageData(0, y0, pw, h).data;
-        let r = 0, g = 0, b = 0, n = 0;
-        for (let i = 0; i < d.length; i += 64) { if (d[i + 3] > 200) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } }
-        if (!n) return room;
-        r /= n; g /= n; b /= n;
-        const hx = v => Math.round(v).toString(16).padStart(2, '0');
-        return { color: '#' + hx(r) + hx(g) + hx(b), lum: (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 };
+        const c = averageColor(caches.back.canvas, 0, Math.round(ph * 0.6), pw, Math.round(ph * 0.35));
+        if (!c) return room;
+        return { color: toHex3(c), lum: (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 };
       } catch (e) { return room; }
     }
     function planeState(t) {
@@ -309,6 +315,22 @@
       c.drawImage(tinted, st.x - w / 2, p.y - h, w, h);
     }
 
+    let pending = [], pendingL = null, builtKey = '';
+    const stages = {};
+    function stepRebuild() {
+      const g = pending.shift();
+      if (!stages[g] || stages[g].canvas.width !== pw || stages[g].canvas.height !== ph) {
+        const c = make(pw, ph); stages[g] = { canvas: c, ctx: c.getContext('2d') };
+      }
+      const st = stages[g];
+      st.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      st.ctx.clearRect(0, 0, pw, ph);
+      st.ctx.setTransform(k, 0, 0, k, 0, 0);
+      for (const layer of assets.layers) if (layer.def.group === g) drawLayer(st.ctx, layer, pendingL);
+      stages[g] = caches[g]; caches[g] = st;
+      if (g === 'far') { hazeColor = sampleHaze(); planeTint.clear(); }
+      if (g === 'back') { room = sampleRoom(); tintCache = new Map(); }
+    }
     function rebuild(L, rows) {
       for (const g of ['far', 'back', 'mid', 'front']) {
         const c = ensureCache(g).ctx;
@@ -538,8 +560,15 @@
       if (!pw) return;
       const L = state.lighting;
       const lk = L.zenith + L.ambient + Math.round(L.h * 20) + '|' + Math.round(L.lamp * 50) + '|' + Math.round(L.city * 50);
-      if (lk !== lightKey) { lightKey = lk; cacheDirty = true; tintCache = new Map(); }
-      if (cacheDirty) rebuild(L, state.boardRows);
+      lightKey = lk;
+      // A light change redraws one layer group per frame into a spare canvas and swaps it in, so the
+      // cost never lands on a single frame (a full rebuild is ~10 ms, more on a phone). A round in
+      // progress finishes with the newest light before the next one starts.
+      if (cacheDirty) { rebuild(L, state.boardRows); pending = []; builtKey = lk; tintCache = new Map(); }
+      else {
+        if (!pending.length && builtKey !== lk) { pending = ['far', 'back', 'mid', 'front']; builtKey = lk; }
+        if (pending.length) { pendingL = L; stepRebuild(); }
+      }
       if (state.boardKey !== boardKey) {
         boardKey = state.boardKey;
         const rows = (state.boardRows || []).map(r => ({ ...r }));
