@@ -24,12 +24,14 @@ ROOT = Path(__file__).resolve().parents[2]
 CELLS = ROOT / 'art/cutouts/tiger_walk_b'
 SRC = CELLS / 'loop'
 TOOLS = Path(__file__).resolve().parent
-# leg order: contact, contact, passing, passing, other-foot contact (flipped legs) x2, passing x2
-ORDER = ['10', '20', '02', '22', 'm10', 'm20', '30', '02']
+# leg order (as drawn by Gemini, put in pose order). The flipped-legs poses ('m..', mirror_legs.py)
+# turned out worse - toes pointing backward, a doubled frame - so they are not used until a proper
+# "other foot forward" drawing arrives (docs/LOUNGE_ART_PROMPTS.md).
+ORDER = ['10', '02', '03', '13', '31', '30', '22', '20']
 BASE = '10'               # the upper body every frame shares
 OUT = ROOT / 'ui/web/lounge/assets/chars/tiger_walker'
 SCALE = 0.62          # atlas pixels per source pixel (keeps the atlas small)
-FPS, ADVANCE = 10, 22  # frames per second, scene px moved per frame (matches the planted foot, see footslip check)
+FPS, ADVANCE = 10, 25  # frames per second, scene px moved per frame (matches the planted foot, see footslip check)
 
 
 def anchor_x(im):
