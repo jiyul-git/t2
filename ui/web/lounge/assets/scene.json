@@ -4,15 +4,16 @@
   1440,
   1000
  ],
- "baselineY": 1070,
+ "baselineY": 990,
  "horizonY": 560,
  "windowFacing": 225,
  "charScale": 1.25,
  "characters": [
-  "tiger",
-  "rabbit",
-  "turtle",
-  "penguin"
+  "tiger_walker"
+ ],
+ "passEvery": [
+  6,
+  14
  ],
  "window": {
   "x": 700,

@@ -3,7 +3,7 @@
 
     python3 art/tools/build_lounge_scene.py [--out ui/web/lounge/assets]
 
-Writes bg/*.webp at the scene's logical size and rewrites scene.json (characters untouched).
+Writes bg/*.webp at the scene's logical size and rewrites scene.json.
 The sofa front (what hides a seated character's lower body) is cut from each interior variant
 with the polygon below, measured on the 1440 x 1000 scene.
 """
@@ -27,11 +27,14 @@ SOFA_FRONT = [
 SCENE = {
     'placeholder': False,
     'size': [W, H],
-    'baselineY': 1070,             # walkers pass in front, feet below the frame
+    'baselineY': 990,              # walkers pass in front of the sofas, feet just above the bottom edge
     'horizonY': 560,
     'windowFacing': 225,
     'charScale': 1.25,
-    'characters': ['tiger', 'rabbit', 'turtle', 'penguin'],
+    # Only the real tiger so far, as a walker crossing left to right. The placeholder sitters
+    # (tiger, rabbit, turtle, penguin) stay on disk for the tests and come back with real sitting art.
+    'characters': ['tiger_walker'],
+    'passEvery': [6, 14],
     'window': {'x': 700, 'y': 0, 'w': 740, 'h': 700},
     # painted row boundaries of the panel, top to bottom, each [[x_left, y], [x_right, y]]
     'board': {'x': 64, 'y': 101, 'w': 516, 'h': 398, 'rows': 6, 'textRows': 5,   # bottom row left empty

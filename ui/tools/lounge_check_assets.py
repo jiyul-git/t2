@@ -24,6 +24,7 @@ SCENE_WIDTH = 1440           # logical width; height follows the artwork (600..1
 REQUIRED_CLIPS = ['walk_r', 'walk_l', 'turn_r_front', 'turn_l_front', 'turn_front_r', 'turn_front_l',
                   'sit_down', 'stand_up', 'sit_idle']
 REQUIRED_POSES = ['walk_r', 'walk_l', 'stand_front', 'sit']
+WALKER_CLIPS = ['walk_r', 'walk_l']      # a walker (manifest.walker) only crosses the lounge
 GROUPS = ('far', 'back', 'mid', 'front')
 EMISSION_KEYS = ('lamp', 'city')
 SEAM_MAX_ERR = 6.0           # mean abs error, 0..255, premultiplied RGBA
@@ -303,9 +304,14 @@ def check_character(root, name, rep):
     if not good or atlas is None:
         return
 
-    missing = [c for c in REQUIRED_CLIPS if c not in clips] + ['pose:' + p for p in REQUIRED_POSES if p not in poses]
+    if man.get('walker') is True:
+        missing = [c for c in WALKER_CLIPS if c not in clips]
+        if man.get('pass', 'both') not in ('r', 'l', 'both'):
+            rep.err('schema', '%s: pass must be "r", "l" or "both"' % tag)
+    else:
+        missing = [c for c in REQUIRED_CLIPS if c not in clips] + ['pose:' + p for p in REQUIRED_POSES if p not in poses]
     active = not missing
-    rep.chars[name] = 'active' if active else 'inactive'
+    rep.chars[name] = ('walker' if man.get('walker') is True else 'active') if active else 'inactive'
     if not active:
         rep.warn('inactive', '%s lacks %s; it will not appear in the scene' % (tag, ', '.join(missing)))
 
@@ -330,7 +336,7 @@ def check_character(root, name, rep):
             if last_err > SEAM_MAX_ERR:
                 rep.err('seam', '%s: clip %s does not end on pose %s (error %.1f > %.0f)' % (tag, cid, c['to'], last_err, SEAM_MAX_ERR))
 
-    if active:
+    if active and man.get('walker') is not True:
         fwd, back = {}, {}
         for cid, c in clips.items():
             if clip_ok.get(cid):

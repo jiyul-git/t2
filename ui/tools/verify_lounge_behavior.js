@@ -222,5 +222,25 @@ ok(chatTotal > 0, 'conversations happen');
   ok(played('rabbit').has('doze_in') && played('tiger').has('eat_in') && played('penguin').has('sunglasses'), 'forced activities were played');
 }
 
+{
+  // A walker crosses in its pass direction, never sits, never holds a seat, and comes back later.
+  const walker = JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', 'tiger_walker', 'manifest.json'), 'utf8'));
+  ok(B.isActive(walker) && !B.isActive({ ...walker, walker: false }), 'walker is active only as a walker');
+  const { d } = makeDirector([walker, ...full.slice(1)], 31);
+  let crossings = 0, prevX = null, wasOn = false;
+  for (let i = 0; i < 6000; i++) {
+    const w = d.step(100).find(c => c.name === 'tiger_walker');
+    if (w) {
+      ok(w.clip === 'walk_r' && w.lane === 'aisle' && w.seat === -1 && w.state === 'EXITING', 'walker only walks right: ' + JSON.stringify(w));
+      ok(prevX === null || w.x >= prevX, 'walker moves left to right');
+      if (!wasOn) ok(w.x <= scene.entries.left + 2 * walker.clips.walk_r.advance, 'walker enters at the left edge, x=' + w.x);
+      prevX = w.x;
+    } else if (wasOn) { crossings++; prevX = null; }
+    wasOn = !!w;
+  }
+  ok(crossings >= 3, 'walker crossed ' + crossings + ' times in 10 minutes');
+  ok(!d.force('tiger_walker', 'eat'), 'a walker cannot be sent to a seat');
+}
+
 function eq(a, b, m) { checks++; assert.deepStrictEqual(a, b, m); }
 console.log('verify_lounge_behavior OK (' + checks + ' checks)');

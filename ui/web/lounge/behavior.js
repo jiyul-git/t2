@@ -30,8 +30,11 @@
     };
   }
 
+  // A walker (manifest.walker) only crosses the lounge: it needs nothing but its two walking clips.
+  const WALKER_CLIPS = ['walk_r', 'walk_l'];
   function isActive(manifest) {
-    return !!(manifest && manifest.clips && REQUIRED_CLIPS.every(id => manifest.clips[id]));
+    if (!manifest || !manifest.clips) return false;
+    return (manifest.walker ? WALKER_CLIPS : REQUIRED_CLIPS).every(id => manifest.clips[id]);
   }
 
   function createDirector(opts) {
@@ -50,10 +53,12 @@
     const pick = list => list[Math.floor(rand() * list.length)];
 
     const chars = (opts.characters || []).filter(isActive).map(m => ({
-      name: m.name, clips: m.clips, state: 'OFFSCREEN', seat: -1, x: 0, clip: null, total: 0, wraps: 0,
+      name: m.name, clips: m.clips, walker: !!m.walker, pass: m.pass || 'both', nextPassAt: 0, state: 'OFFSCREEN', seat: -1, x: 0, clip: null, total: 0, wraps: 0,
       walk: null, exitSide: null, seatedUntil: 0, activity: '', plan: [], stage: null, sunglassesUsed: false,
       holding: false, holdSince: 0, pending: null, chatRole: '', segEnd: 0, chatEnd: 0, chatSide: '',
     }));
+    const sitters = chars.filter(c => !c.walker), walkers = chars.filter(c => c.walker);
+    const passEvery = Array.isArray(scene.passEvery) ? scene.passEvery : [40, 120];   // seconds between crossings
     const seatOwner = seats.map(() => null);
     let now = 0, acc = 0, nextSpawnAt = 0, target = 0, nextTargetRoll = 0;
 
@@ -62,7 +67,7 @@
     const spawnWaitMs = () => (isDay() ? rnd(20, 70) : rnd(60, 180)) * 1000;
     function rollTarget() {
       const t = isDay() ? 2 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
-      return Math.min(t, chars.length, seats.length);
+      return Math.min(t, sitters.length, seats.length);
     }
 
     // ------------------------------------------------------------------ clips
@@ -124,14 +129,24 @@
     }
 
     function trySpawn() {
-      const present = chars.filter(c => c.state !== 'OFFSCREEN').length;
+      const present = sitters.filter(c => c.state !== 'OFFSCREEN').length;
       if (now < nextSpawnAt) return;
       if (present >= target) { nextSpawnAt = now + spawnWaitMs(); return; }
-      const free = chars.filter(c => c.state === 'OFFSCREEN');
+      const free = sitters.filter(c => c.state === 'OFFSCREEN');
       const seat = chooseSeat();
       if (!free.length || seat < 0) return;
       spawn(pick(free), seat);
       nextSpawnAt = now + spawnWaitMs();
+    }
+
+    // A walker crosses from one edge to the other and is gone; it reuses the leaving walk.
+    function startPass(c) {
+      const toRight = c.pass === 'r' || (c.pass !== 'l' && rand() < 0.5);
+      c.seat = -1; c.activity = ''; c.clip = null; c.state = 'EXITING';
+      beginWalk(c, toRight ? 'walk_r' : 'walk_l', toRight ? entries.left : entries.right, toRight ? 1 : -1, Infinity);
+    }
+    function tryPass() {
+      for (const c of walkers) if (c.state === 'OFFSCREEN' && now >= c.nextPassAt) startPass(c);
     }
 
     // ------------------------------------------------------------------ seated activities
@@ -320,6 +335,7 @@
         c.x = c.walk.x0 + c.walk.dir * clip.advance * Math.floor(c.total);
         if ((c.walk.dir < 0 && c.x <= entries.left) || (c.walk.dir > 0 && c.x >= entries.right)) {
           c.state = 'OFFSCREEN'; c.clip = null; c.seat = -1; c.activity = ''; c.walk = null;
+          if (c.walker) c.nextPassAt = now + rnd(passEvery[0], passEvery[1]) * 1000;
         }
         return;
       }
@@ -341,6 +357,7 @@
       for (const c of chars) tickChar(c);
       resolveChats();
       trySpawn();
+      tryPass();
     }
 
     // ------------------------------------------------------------------ warm start
@@ -352,8 +369,9 @@
       for (let i = 0; i < seatOwner.length; i++) seatOwner[i] = null;
       target = rollTarget();
       nextTargetRoll = now + TARGET_RECHECK_MS;
-      const count = Math.min(Math.ceil(target / 2), chars.length, seats.length);
-      const pool = chars.slice();
+      for (const c of walkers) c.nextPassAt = now + rnd(1, 4) * 1000;   // the first crossing comes soon
+      const count = Math.min(Math.ceil(target / 2), sitters.length, seats.length);
+      const pool = sitters.slice();
       for (let k = 0; k < count; k++) {
         const c = pool.splice(Math.floor(rand() * pool.length), 1)[0];
         const idx = chooseSeat();
@@ -405,7 +423,7 @@
       // Returns false when there is no such character or the activity is not available to it.
       force(name, kind) {
         const c = chars.find(x => x.name === name);
-        if (!c || !ACTIVITY_KINDS.includes(kind)) return false;
+        if (!c || c.walker || !ACTIVITY_KINDS.includes(kind)) return false;
         if (c.state === 'OFFSCREEN') {
           const seat = chooseSeat();
           if (seat < 0) return false;
@@ -421,5 +439,5 @@
     };
   }
 
-  return { createDirector, mulberry32, isActive, REQUIRED_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS };
+  return { createDirector, mulberry32, isActive, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS };
 });
