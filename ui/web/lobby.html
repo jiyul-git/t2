@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#0b1514">
 <title>t2 포커 · 토너먼트 로비</title>
 <link rel="icon" href="data:,">
-<script src="airport-theme.js?v=2"></script>
-<link rel="stylesheet" href="lobby.css?v=9">
+<script src="airport-theme.js?v=3"></script>
+<link rel="stylesheet" href="lobby.css?v=10">
 </head>
 <body>
 <div id="lobby">
@@ -24,10 +24,22 @@
     <section class="airport-scene" aria-label="공항 라운지 일러스트">
       <div class="airport-scene-art airport-scene-art-night" aria-hidden="true"></div>
       <div class="airport-scene-art airport-scene-art-day" aria-hidden="true"></div>
+      <canvas id="airportSceneMotion" class="airport-scene-motion" aria-hidden="true"></canvas>
+      <div class="airport-moving-shadows" aria-hidden="true"></div>
       <div class="airport-scene-copy">
         <h1>오늘 열리는 토너먼트</h1>
         <p>지금 참가할 수 있는 대회와 곧 시작할 대회를 확인하세요.</p>
       </div>
+    </section>
+
+    <section id="airportTimeTest" class="airport-time-test" hidden aria-label="공항 조명 테스트">
+      <div class="airport-time-test-title">
+        <label for="airportTimeSlider">테스트 시간 <small>24시간 · 1분 단위</small></label>
+        <output id="airportTimeValue" for="airportTimeSlider">--:--</output>
+      </div>
+      <input id="airportTimeSlider" type="range" min="0" max="1439" step="1" value="720"
+        aria-label="테스트할 현지 시각">
+      <div class="airport-time-ticks" aria-hidden="true"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
     </section>
 
     <section id="featured" class="featured" hidden aria-label="추천 대회">
@@ -129,6 +141,7 @@
     <button id="profileNav" type="button"><span aria-hidden="true">⚙</span>설정</button>
   </nav>
 </div>
+<script src="airport-motion.js?v=1"></script>
 <script src="lobby.js?v=13"></script>
 </body>
 </html>

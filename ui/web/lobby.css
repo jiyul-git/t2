@@ -326,3 +326,33 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
 .airport-scene-copy{z-index:3}
 .airport-scene::after{z-index:2}
 @media(prefers-reduced-motion:reduce){.airport-scene-art-day{transition:none}}
+
+/* QA time slider: hidden automatically when TEST_CLOCK_MODE=false. */
+.airport-time-test{padding:9px 13px 7px;margin:0 0 10px;border-top:1px solid #cdaa6975;
+ border-bottom:1px solid #cdaa6960;background:linear-gradient(110deg,#112b31,#173c3d)}
+.airport-time-test-title{display:flex;align-items:center;justify-content:space-between;
+ color:#ffe0a1;font-weight:900;font-size:12px;margin-bottom:5px}
+.airport-time-test-title small{font-weight:500;font-size:10px;color:#c2d2cc}
+.airport-time-test-title output{font-size:17px;font-variant-numeric:tabular-nums;
+ background:#071c23;border:1px solid #caa55a;border-radius:8px;padding:3px 8px}
+.airport-time-test input{width:100%;height:23px;display:block;margin:0;accent-color:#e9bd70;
+ cursor:pointer;touch-action:pan-x}
+.airport-time-ticks{display:flex;justify-content:space-between;font-size:9px;
+ font-variant-numeric:tabular-nums;color:#c6d3cd;margin-top:1px}
+.airport-scene-motion{position:absolute;top:0;left:0;width:100%;height:auto;
+ aspect-ratio:648 / 323;z-index:1;opacity:0;pointer-events:none;display:block}
+.airport-scene.airport-motion-ready .airport-scene-motion{opacity:1}
+.airport-scene.airport-motion-ready .airport-scene-art{visibility:hidden}
+.airport-moving-shadows{position:absolute;inset:0;z-index:2;pointer-events:none;
+ opacity:var(--airport-shadow-opacity,0);
+ background:linear-gradient(111deg,transparent 16%,#0b1a23a0 22%,transparent 29%,
+ transparent 41%,#0b1a23a5 46%,transparent 52%,transparent 71%,#0b1a23a0 77%,transparent 84%);
+ transform:translateX(var(--airport-shadow-shift,0%));transition:opacity 0.6s ease,transform 1.2s ease}
+.airport-scene{isolation:isolate}
+.airport-scene::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:radial-gradient(ellipse at 78% 33%,#ffd992,transparent 56%);
+ mix-blend-mode:screen;opacity:var(--airport-gold-opacity,0);transition:opacity 0.7s linear}
+@media(prefers-reduced-motion:reduce){
+ .airport-scene-motion{display:none!important}
+ .airport-moving-shadows{transition:none}
+}
