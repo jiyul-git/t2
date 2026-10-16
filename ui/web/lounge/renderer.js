@@ -234,6 +234,26 @@
       return t - f.t0 > FLAP_SETTLE + longest * FLAP_PER_CHAR + f.to.length * FLAP_PER_ROW + 0.05;
     }
 
+    // Aviation lights in the window view pulse at night: a soft glow brightens over the painted lamp
+    // and fades again (additive, so the painting underneath is never covered).
+    function drawBeacons(c, L, t) {
+      const list = scene.beacons;
+      if (!list || !list.length || L.city < 0.05) return;
+      c.save();
+      c.globalCompositeOperation = 'lighter';
+      for (const b of list) {
+        const u = (((t + b.phase) % b.period) + b.period) % b.period / b.period;
+        const pulse = Math.pow(Math.max(0, Math.sin(u * Math.PI)), 3);     // short bright flash
+        const a = pulse * L.city * 0.9;
+        if (a < 0.01) continue;
+        const g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 2.4);
+        g.addColorStop(0, hexAlpha(b.color, a)); g.addColorStop(0.35, hexAlpha(b.color, a * 0.45)); g.addColorStop(1, hexAlpha(b.color, 0));
+        c.fillStyle = g;
+        c.fillRect(b.x - b.r * 2.4, b.y - b.r * 2.4, b.r * 4.8, b.r * 4.8);
+      }
+      c.restore();
+    }
+
     // Aircraft taxiing past the window now and then. Deterministic in scene time, so a reload shows
     // the same plane at the same moment.
     const planeTint = new Map();
@@ -597,6 +617,7 @@
       drawSky(ctx, L, sun, moon, state.t);
       const blit = name => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(caches[name].canvas, 0, 0); ctx.restore(); };
       blit('far');
+      drawBeacons(ctx, L, state.t);
       drawPlane(ctx, L, state.t);
       blit('back');
       { const bb = boardBounds(); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);

@@ -47,6 +47,15 @@ SCENE = {
     # a plane taxis past the window every `period` seconds, taking `duration` seconds.
     # On hold for now (PLANES below keeps the tuned values); None leaves the window view still.
     'planes': None,
+    # aviation lights painted on the tower and a pole outside: at night they pulse (period s, phase s)
+    'beacons': [
+        {'x': 855, 'y': 197, 'r': 16, 'color': '#ff4a3a', 'period': 1.5, 'phase': 0.0},
+        {'x': 834, 'y': 256, 'r': 12, 'color': '#ff4a3a', 'period': 1.5, 'phase': 0.75},
+        {'x': 884, 'y': 253, 'r': 12, 'color': '#ff4a3a', 'period': 1.5, 'phase': 0.75},
+        {'x': 907, 'y': 217, 'r': 12, 'color': '#ff4a3a', 'period': 1.5, 'phase': 0.0},
+        {'x': 1017, 'y': 426, 'r': 12, 'color': '#ff5a6a', 'period': 2.2, 'phase': 0.4},
+        {'x': 1135, 'y': 436, 'r': 12, 'color': '#6a8bff', 'period': 2.6, 'phase': 1.3},
+    ],
 }
 PLANES = {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
           'y': 760, 'height': 280, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3}
