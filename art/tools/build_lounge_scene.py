@@ -44,10 +44,12 @@ SCENE = {
     'entries': {'left': -320, 'right': 1760},
     'lamps': [{'x': 120, 'y': 700, 'r': 520}, {'x': 660, 'y': 660, 'r': 460}],
     'floorLight': None,
-    # a plane taxis past the window every `period` seconds, taking `duration` seconds
-    'planes': {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
-               'y': 760, 'height': 280, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3},
+    # a plane taxis past the window every `period` seconds, taking `duration` seconds.
+    # On hold for now (PLANES below keeps the tuned values); None leaves the window view still.
+    'planes': None,
 }
+PLANES = {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
+          'y': 760, 'height': 280, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3}
 
 
 def mask_image():
