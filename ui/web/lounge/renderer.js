@@ -104,7 +104,7 @@
     }
 
     function resize(cssWidth, dpr) {
-      const scale = Math.min(dpr || 1, 1.5);
+      const scale = Math.min(dpr || 1, 2);       // sharper on phones; the cost stays well under a millisecond
       const w = Math.max(1, Math.round(cssWidth * scale)), h = Math.max(1, Math.round(w * H / W));
       if (w === pw && h === ph) return false;
       pw = w; ph = h; k = w / W; boardBox = null;
