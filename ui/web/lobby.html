@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#0b1514">
 <title>t2 포커 · 토너먼트 로비</title>
 <link rel="icon" href="data:,">
-<script src="airport-theme.js?v=1"></script>
-<link rel="stylesheet" href="lobby.css?v=8">
+<script src="airport-theme.js?v=2"></script>
+<link rel="stylesheet" href="lobby.css?v=9">
 </head>
 <body>
 <div id="lobby">
@@ -22,11 +22,8 @@
 
   <main>
     <section class="airport-scene" aria-label="공항 라운지 일러스트">
-      <div class="airport-scene-art" aria-hidden="true"></div>
-      <div class="theme-picker" role="group" aria-label="공항 낮과 밤 테마">
-        <button type="button" data-airport-mode="day" aria-label="낮 테마" aria-pressed="false">낮</button>
-        <button type="button" data-airport-mode="night" aria-label="밤 테마" aria-pressed="true">밤</button>
-      </div>
+      <div class="airport-scene-art airport-scene-art-night" aria-hidden="true"></div>
+      <div class="airport-scene-art airport-scene-art-day" aria-hidden="true"></div>
       <div class="airport-scene-copy">
         <h1>오늘 열리는 토너먼트</h1>
         <p>지금 참가할 수 있는 대회와 곧 시작할 대회를 확인하세요.</p>
@@ -132,6 +129,6 @@
     <button id="profileNav" type="button"><span aria-hidden="true">⚙</span>설정</button>
   </nav>
 </div>
-<script src="lobby.js?v=12"></script>
+<script src="lobby.js?v=13"></script>
 </body>
 </html>

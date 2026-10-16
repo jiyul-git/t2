@@ -138,21 +138,17 @@ html[data-airport-theme="day"] #lobby{background:linear-gradient(180deg,#426b68,
 main{padding:0 14px 28px}
 .airport-scene{position:relative;width:calc(100% + 28px);margin:0 -14px 10px;
  height:clamp(255px,calc(50vw + 84px),355px);overflow:hidden;background:#112e39}
-.airport-scene-art{position:absolute;inset:0;background-image:url("assets/t2-airport/lobby_hero_night.webp");
- background-position:center top;background-repeat:no-repeat;background-size:100% auto}
-html[data-airport-theme="day"] .airport-scene-art{background-image:url("assets/t2-airport/lobby_hero_day.webp")}
+.airport-scene-art{position:absolute;inset:0;background-position:center top;
+ background-repeat:no-repeat;background-size:100% auto;pointer-events:none}
+.airport-scene-art-night{background-image:url("assets/t2-airport/lobby_hero_night.webp")}
+.airport-scene-art-day{background-image:url("assets/t2-airport/lobby_hero_day.webp");
+ opacity:var(--airport-day-alpha,0);transition:opacity 45s linear}
 .airport-scene::after{content:"";pointer-events:none;position:absolute;inset:46% 0 0;
  background:linear-gradient(180deg,transparent 0%,#0b2327ba 60%,#071e22 94%)}
 .airport-scene-copy{z-index:2;position:absolute;bottom:13px;left:20px;right:16px;text-shadow:0 3px 7px #061418}
 .airport-scene-copy h1{margin:0 0 8px;color:#ffe8af;letter-spacing:-.065em;
  font-size:clamp(25px,7vw,38px);line-height:1.12;font-weight:1000}
 .airport-scene-copy p{margin:0;font-size:12px;line-height:1.4;color:#f9f1dd}
-.theme-picker{position:absolute;z-index:4;right:12px;top:12px;display:flex;
- border:1px solid #ffd99b96;background:#0b252ad9;padding:3px;border-radius:999px;gap:2px;
- box-shadow:0 2px 8px #0008}
-.theme-picker button{border:0;background:transparent;color:#f4e2c2;font-size:11px;min-height:36px;
- padding:5px 8px;border-radius:999px;font-weight:800}
-.theme-picker button.active{background:linear-gradient(#ffebb1,#e6b96e);color:#1b3134}
 .featured{border:1px solid #d0aa69;border-radius:16px;margin:6px 0 14px;overflow:hidden;
  background:linear-gradient(120deg,#0f3638,#0a252c);
  box-shadow:0 8px 22px #0008}
@@ -318,3 +314,15 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
  .card h3{font-size:14px}
  .card .facts{gap:3px 6px}
 }
+
+/* Continuous local-clock cross-fade: presentation-only lobby UI. */
+#lobby{background:linear-gradient(180deg,var(--airport-surface-top,#122e32),
+ var(--airport-surface-mid,#061b1f) 54%,var(--airport-surface-bottom,#081f22))}
+.top{background:linear-gradient(95deg,var(--airport-surface-top,#1a3536),
+ var(--airport-surface-mid,#081f24))}
+.airport-scene{background:var(--airport-surface-top,#112e39)}
+.airport-scene-art{width:100%;height:100%;will-change:opacity}
+.airport-scene-art-day{z-index:1}
+.airport-scene-copy{z-index:3}
+.airport-scene::after{z-index:2}
+@media(prefers-reduced-motion:reduce){.airport-scene-art-day{transition:none}}

@@ -194,19 +194,6 @@ const PROFILE_KEYS = {
   avatar: 't2profile_avatar'      // 테이블의 내 캐릭터(visuals.js 가 HERO 자리에 쓴다)
 };
 const AVATARS = 9;
-function syncAirportButtons(){
-  const theme=window.T2AirportTheme;
-  if(!theme)return;
-  document.querySelectorAll('[data-airport-mode]').forEach(button=>{
-    const selected=button.dataset.airportMode===theme.getMode();
-    button.classList.toggle('active',selected);
-    button.setAttribute('aria-pressed',selected?'true':'false');
-  });
-}
-document.querySelectorAll('[data-airport-mode]').forEach(button=>
-  button.addEventListener('click',()=>window.T2AirportTheme.setMode(button.dataset.airportMode)));
-window.addEventListener('t2-airport-theme',syncAirportButtons);
-syncAirportButtons();
 function avatarImg(i){ return '<img alt="" draggable="false" src="assets/portraits/'+String(i+1).padStart(2,'0')+'.png">'; }
 function paintAvatars(sel){
   $('#avatarPreview').innerHTML=avatarImg(sel);
