@@ -17,12 +17,27 @@ function headers(json) {
 }
 function toast(msg) { const t=$('#toast'); t.textContent=msg; t.hidden=false;
   clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,3500); }
+// Chip balance: count to a new value instead of jumping (skipped for reduced motion and the first fill).
+const reduceMotion=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function setBalance(v){
+  const el=$('#walletBalance'), from=setBalance.v;
+  setBalance.v=v;
+  cancelAnimationFrame(setBalance.raf);
+  if(typeof v!=='number' || typeof from!=='number' || from===v || reduceMotion){ el.textContent=fmt(v); return; }
+  const t0=performance.now(), dur=650;
+  const step=now=>{
+    const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,3);
+    el.textContent=fmt(Math.round(from+(v-from)*e));
+    if(k<1) setBalance.raf=requestAnimationFrame(step);
+  };
+  setBalance.raf=requestAnimationFrame(step);
+}
 async function loadLobby() {
   try {
     const r=await fetch('/api/lobby',{cache:'no-store',headers:headers(false)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json(); catalog=data.tournaments || []; current=data.current;
-    wallet=data.wallet; $('#walletBalance').textContent=fmt(wallet && wallet.balance);
+    wallet=data.wallet; setBalance(wallet && wallet.balance);
     renderCurrent(); renderFeatured(); renderCards();
     window.T2Lounge && T2Lounge.setTournaments(catalog, data.server_now);
     if(selected) { selected=catalog.find(t=>t.id===selected.id); if(selected) paintJoin(); }
@@ -77,10 +92,11 @@ function visible(t) {
 function renderCards() {
   const items=catalog.filter(visible), box=$('#tournaments');
   if(!items.length){
-    box.innerHTML='<div class="emptyState">조건에 맞는 대회가 없습니다.</div>';
+    const empty='<div class="emptyState">조건에 맞는 대회가 없습니다.</div>';
+    if(box._html!==empty){ box.innerHTML=empty; box._html=empty; }
     return;
   }
-  box.innerHTML=items.map(t=>'<article class="card" role="button" tabindex="0" data-id="'+escapeHtml(t.id)+
+  const html=items.map(t=>'<article class="card" role="button" tabindex="0" data-id="'+escapeHtml(t.id)+
     '" aria-label="'+escapeHtml(t.name)+' 대회 상세보기">'+
     '<div class="card-illustration" aria-hidden="true"><img src="'+thumb(t)+'" alt="" loading="lazy"></div>'+
     '<div class="card-body"><div class="card-title-line"><h3>'+escapeHtml(t.name)+'</h3>'+
@@ -93,6 +109,11 @@ function renderCards() {
     '<div class="fact"><b>'+fmt(t.buyin)+' 칩</b><span>바이인</span></div>'+
     '<div class="fact"><b>'+fmt(t.entries)+'명</b><span>참가</span></div></div>'+
     '<div class="enter">'+(t.can_reenter?'재참가 가능':'자세히 보기')+' <span aria-hidden="true">›</span></div></div></article>').join('');
+  // the lobby polls every few seconds: leave the cards alone unless something on them changed
+  if(box._html===html) return;
+  const first=box._html===undefined;
+  box.innerHTML=html; box._html=html;
+  if(first){ box.classList.add('intro'); setTimeout(()=>box.classList.remove('intro'),1200); }
   box.querySelectorAll('.card').forEach(el=>{
     const go=()=>openJoin(el.dataset.id);
     el.onclick=go;

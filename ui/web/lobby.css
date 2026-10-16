@@ -328,3 +328,41 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
 .airport-scene-copy::before{content:"";position:absolute;left:-12px;right:-12px;top:0;height:18px;
  background:linear-gradient(180deg,#0000004d,transparent);pointer-events:none}
 .card h3{color:var(--paper-ink)}
+
+/* Motion. Short, eased, and only on things the player touches or that just appeared.
+   Everything here is switched off for prefers-reduced-motion. */
+html{-webkit-tap-highlight-color:transparent}
+@media (prefers-reduced-motion:no-preference){
+ .card,.featured-button,.tabs button,.current button,.join,.secondaryAction,.quick button,
+ .bottom button,.walletBadge,.header-profile{
+  transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,background-color .2s ease,color .2s ease,border-color .2s ease}
+ .card:active{transform:scale(.985);box-shadow:0 1px 3px #0006}
+ .featured-button:active,.tabs button:active,.current button:active,.join:active,.secondaryAction:active,
+ .quick button:active,.walletBadge:active,.header-profile:active{transform:scale(.96)}
+ .bottom button:active span{transform:translateY(1px) scale(.94)}
+ .bottom button span{transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+ @media (hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 8px 18px #0007}}
+
+ /* cards rise in one after another the first time the list appears */
+ @keyframes t2-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+ .tournaments.intro .card{animation:t2-rise .42s cubic-bezier(.2,.8,.2,1) both}
+ .tournaments.intro .card:nth-child(2){animation-delay:.05s}
+ .tournaments.intro .card:nth-child(3){animation-delay:.1s}
+ .tournaments.intro .card:nth-child(4){animation-delay:.15s}
+ .tournaments.intro .card:nth-child(n+5){animation-delay:.2s}
+ .featured:not([hidden]){animation:t2-rise .45s cubic-bezier(.2,.8,.2,1) both}
+
+ /* sheets: the shade fades, the sheet comes up with a little give */
+ @keyframes t2-fade{from{opacity:0}to{opacity:1}}
+ @keyframes t2-sheet{from{transform:translateY(100%)}70%{transform:translateY(-1.5%)}to{transform:none}}
+ .sheetWrap:not([hidden]){animation:t2-fade .2s ease both}
+ .sheetWrap:not([hidden]) .sheet{animation:t2-sheet .38s cubic-bezier(.2,.8,.25,1) both}
+
+ /* toast drops in from below */
+ @keyframes t2-toast{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+ .toast:not([hidden]){animation:t2-toast .25s cubic-bezier(.2,.8,.2,1) both}
+
+ /* the join call-to-action breathes very slightly so the eye finds it */
+ @keyframes t2-glow{0%,100%{box-shadow:0 2px 3px #0003}50%{box-shadow:0 2px 12px #f3c97066}}
+ .featured-button{animation:t2-glow 3.2s ease-in-out infinite}
+}
