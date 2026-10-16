@@ -223,3 +223,98 @@ html[data-airport-theme="day"] .airport-scene-art{background-image:url("assets/t
  .card .fact b{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}
+
+/* 2026-10-16 / reference-accurate portrait layout. Lobby-only. */
+#lobby{max-width:520px;min-height:100dvh;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+.top{height:56px;min-height:56px;position:relative;top:auto;
+ display:flex;align-items:center;gap:9px;padding:5px 11px;
+ background:linear-gradient(110deg,#163437,#09282d);border-bottom:1px solid #b6945caa}
+.brand{font-size:23px;line-height:1;white-space:nowrap;letter-spacing:-.065em}
+.walletBadge{margin-left:auto;min-width:0;min-height:37px;padding:6px 9px;display:flex;
+ align-items:center;gap:5px;white-space:nowrap;font-size:12px;line-height:1}
+.walletBadge b{font-size:15px}
+.header-profile{border:0;background:transparent;color:#ffe6ae;flex:0 0 32px;
+ font-size:25px;min-height:40px;padding:0;cursor:pointer}
+main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
+.airport-scene{position:relative;width:calc(100% + 24px);margin:0 -12px 0;
+ height:clamp(253px,71vw,295px);overflow:hidden;background:#09262c}
+.airport-scene-art{position:absolute;inset:0;background-size:100% auto;background-repeat:no-repeat;
+ background-position:center top}
+.airport-scene::after{inset:0;background:linear-gradient(180deg,transparent 27%,#08242a00 51%,#09272abf 74%,#071e22 97%)}
+.airport-scene-copy{position:absolute;z-index:2;bottom:13px;left:17px;right:14px;
+ background:transparent;text-shadow:0 2px 6px #061519}
+.airport-scene-copy h1{font-size:clamp(24px,7.0vw,34px);margin:0 0 7px;line-height:1.15;
+ white-space:normal;letter-spacing:-.065em}
+.airport-scene-copy p{font-size:11px;line-height:1.35;margin:0}
+.theme-picker{position:absolute;z-index:5;top:5.5%;right:3%;width:25%;height:14%;
+ display:flex;gap:0;border:0;background:none;box-shadow:none;padding:0;border-radius:0}
+.theme-picker button,.theme-picker button.active{flex:1;width:50%;height:100%;min-height:0;
+ margin:0;padding:0;border:0;background:transparent;box-shadow:none;color:transparent;
+ font-size:0;cursor:pointer;outline-offset:2px}
+.theme-picker button:focus-visible{outline:2px solid #fff0c5}
+.featured{margin:0 0 14px;border-radius:14px;box-shadow:0 5px 10px #0005}
+.featured-top{height:34px;padding:0 12px;font-size:15px;line-height:1.1}
+.featured-meta{font-size:10px;font-weight:600}
+.featured-detail{position:relative;display:grid;grid-template-columns:32% 68%;gap:0;
+ width:auto;margin:0 3px 3px;min-height:113px;padding:0;border:0;
+ background:var(--paper);background-image:none;border-radius:11px;overflow:hidden}
+.featured-thumb{display:block;width:100%;height:100%;min-height:113px;object-fit:cover}
+.featured-main{min-width:0;display:flex;flex-direction:column;justify-content:space-between;
+ gap:5px;padding:9px 9px 8px 9px}
+.featured-head{display:flex;justify-content:space-between;align-items:flex-start;gap:5px;min-width:0}
+.featured-title{min-width:0}
+.featured-head h2{font-size:18px;line-height:1.1;margin:0 0 5px;font-weight:900}
+.featured-head p{font-size:10px;color:#506d71;line-height:1.2;margin:0}
+.featured-status{display:inline-block;background:#9ce7c0;color:#184437;border-radius:99px;
+ padding:5px 8px;white-space:nowrap;font-size:10px;font-weight:800}
+.featured-metrics{display:flex;align-items:end;gap:8px;min-width:0}
+.featured-stat{display:flex;flex-direction:column;gap:1px;min-width:0;border:0;padding:0}
+.featured-stat span{font-size:9px;color:#597276}
+.featured-stat strong{font-size:11px;white-space:nowrap;line-height:1.2}
+.featured-button{display:block;flex:0 0 auto;width:auto;margin:0 0 0 auto;min-height:35px;
+ padding:8px 10px;border:1px solid #af8645;border-radius:15px;
+ background:linear-gradient(#ffe6a2,#e0b161);color:#163437;box-shadow:0 2px 3px #0003;
+ font-size:11px;font-weight:900;cursor:pointer}
+.section{margin-top:3px;scroll-margin-top:60px}
+.sectionHead{gap:10px;margin:0 0 10px}
+.section h2{font-size:20px}
+.tabs button{min-height:37px}
+.tournaments{grid-template-columns:1fr;gap:8px}
+.card{min-height:78px;height:auto;grid-template-columns:24% minmax(0,1fr);
+ border-radius:10px;gap:0}
+.card-illustration{overflow:hidden}
+.card-illustration img{min-height:78px;height:100%;width:100%;object-fit:cover}
+.card-body{padding:7px 10px 7px 9px;min-width:0}
+.card h3{font-size:15px;line-height:1}
+.card .desc{margin:4px 0;font-size:10px;min-height:0}
+.card .facts{display:flex;flex-wrap:wrap;gap:4px 9px;margin:6px 0 0}
+.card .fact{display:flex;flex-direction:row-reverse;gap:3px;border:0;padding:0;white-space:nowrap}
+.card .fact span{font-size:9px}
+.card .fact b{font-size:10px}
+.card .enter{display:none}
+.current{display:flex;align-items:center;gap:8px;padding:9px 11px;margin:16px 0 0;
+ border-radius:11px;background:linear-gradient(110deg,#214746,#123238);
+ min-height:67px}
+.current .kicker{font-size:10px}
+.current h3{font-size:14px;margin:2px 0}
+.current p{font-size:10px}
+.current button{flex:0 0 auto;margin-left:auto;border-radius:10px;padding:10px 12px;
+ min-height:43px;font-size:12px}
+.bottom{height:64px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.bottom button{font-size:11px}
+.bottom button span{font-size:22px}
+@media(max-width:360px){
+ .top{padding:5px 8px;gap:5px}.brand{font-size:19px}
+ .walletBadge b{font-size:13px}
+ .airport-scene{height:254px}
+ .airport-scene-copy h1{font-size:23px}
+ .featured-main{padding:7px 6px;gap:4px}
+ .featured-head h2{font-size:16px}
+ .featured-status{font-size:9px;padding:4px 6px}
+ .featured-metrics{gap:5px}
+ .featured-stat strong{font-size:10px}
+ .featured-button{padding:7px;font-size:10px}
+ .card{grid-template-columns:24% minmax(0,1fr)}
+ .card h3{font-size:14px}
+ .card .facts{gap:3px 6px}
+}

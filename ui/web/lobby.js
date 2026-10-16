@@ -52,7 +52,7 @@ function renderFeatured() {
   $('#featuredBuyin').textContent=fmt(t.buyin)+' 칩';
   box.dataset.fmt=eventFormat(t);
   $('#featuredCount').textContent=fmt(t.entries)+'명';
-  $('#featuredJoin').textContent=t.registration_open?'바로 참가 ›':'대회 정보 ›';
+  $('#featuredJoin').textContent=t.registration_open?'참가 신청 ›':'대회 정보 ›';
   $('#featuredJoin').onclick=()=>openJoin(t.id);
 }
 function eventFormat(t){
@@ -90,11 +90,7 @@ function renderCards() {
     '<div class="facts">'+
     '<div class="fact"><b>'+when(t.starts_at)+'</b><span>시작</span></div>'+
     '<div class="fact"><b>'+fmt(t.buyin)+' 칩</b><span>바이인</span></div>'+
-    '<div class="fact"><b>'+fmt(t.entries)+'명</b><span>참가</span></div>'+
-    '<div class="fact"><b>'+fmt(t.remaining)+'명</b><span>잔여 인원</span></div>'+
-    '<div class="fact extra-fact"><b>'+fmt(t.prize_pool)+' 칩</b><span>현재 상금 풀</span></div>'+
-    '<div class="fact extra-fact"><b>9-MAX · '+t.level_minutes+'분</b><span>좌석 / 레벨</span></div>'+
-    progressFacts(t)+'</div>'+
+    '<div class="fact"><b>'+fmt(t.entries)+'명</b><span>참가</span></div></div>'+
     '<div class="enter">'+(t.can_reenter?'재참가 가능':'자세히 보기')+' <span aria-hidden="true">›</span></div></div></article>').join('');
   box.querySelectorAll('.card').forEach(el=>{
     const go=()=>openJoin(el.dataset.id);
@@ -257,6 +253,7 @@ function saveProfile(){
   toast('프로필을 저장했습니다');
 }
 $('#profileNav').addEventListener('click',openProfile);
+$('#headerProfileNav').addEventListener('click',openProfile);
 $('#lobbyNav').addEventListener('click',()=>{filter='all';syncFilterTabs();renderCards();window.scrollTo({top:0,behavior:'smooth'});});
 $('#eventsNav').addEventListener('click',()=>{filter='all';syncFilterTabs();renderCards();document.querySelector('.section').scrollIntoView({behavior:'smooth',block:'start'});});
 $('#myEventsNav').addEventListener('click',()=>{filter='mine';syncFilterTabs();renderCards();document.querySelector('.section').scrollIntoView({behavior:'smooth',block:'start'});});
