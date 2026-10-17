@@ -332,7 +332,18 @@
         planeTint.set(key, tinted);
       }
       const h = p.height, w = h * img.width / img.height;
-      c.drawImage(tinted, st.x - w / 2, p.y - h, w, h);
+      // a taxiing plane is never perfectly still: a slow, tiny bounce on its gear (two mixed waves,
+      // under a pixel or so), and a soft shadow on the apron so it sits on the ground
+      const bob = Math.sin(t * 2.3) * 0.7 + Math.sin(t * 5.9 + 1.3) * 0.35;
+      c.save();
+      c.globalAlpha = 0.28 * (0.5 + 0.5 * L.dayness);
+      c.translate(st.x, p.y - 4); c.scale(1, 0.08);
+      const sg = c.createRadialGradient(0, 0, 0, 0, 0, w * 0.45);
+      sg.addColorStop(0, '#000000'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = sg;
+      c.beginPath(); c.arc(0, 0, w * 0.45, 0, 6.2832); c.fill();
+      c.restore();
+      c.drawImage(tinted, st.x - w / 2, p.y - h + bob, w, h);
     }
 
     let pending = [], pendingL = null, builtKey = '';

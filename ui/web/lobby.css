@@ -372,3 +372,11 @@ html{-webkit-tap-highlight-color:transparent}
  .sheetWrap.closing{animation:t2-fade-out .22s ease both;pointer-events:none}
  .sheetWrap.closing .sheet{animation:t2-sheet-out .22s cubic-bezier(.4,0,.8,.4) both}
 }
+
+/* The picture melts into the page from about the walkers' knees down: a soft blur that fades into
+   the floor colour the page continues with, so there is no hard bottom edge. */
+.airport-scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10%;pointer-events:none;
+ -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+ background:linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--lounge-floor) 55%,transparent) 60%,var(--lounge-floor) 100%);
+ -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 45%);mask-image:linear-gradient(180deg,transparent 0%,#000 45%)}
+.airport-scene-copy::before{display:none}
