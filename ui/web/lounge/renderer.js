@@ -487,6 +487,17 @@
       const idx = clip.frames[Math.min(frame, clip.frames.length - 1)];
       return { idx, f: ch.manifest.frames[idx] };
     }
+    // What to draw for a frame with a face (docs/LOUNGE_SCENE_DESIGN.md 6.2): frame.v[face] names another
+    // frame drawn instead. When that frame has "over": j it is a small patch (eyes, mouth) drawn on top
+    // of frame j, both placed by their own anchors. Without the variant, the frame itself.
+    function faceLayers(ch, af, face) {
+      const frames = ch.manifest.frames;
+      const vi = face && af.f.v ? af.f.v[face] : undefined;
+      const vf = Number.isInteger(vi) ? frames[vi] : null;
+      if (!vf) return [af];
+      if (Number.isInteger(vf.over) && frames[vf.over]) return [{ idx: vf.over, f: frames[vf.over] }, { idx: vi, f: vf }];
+      return [{ idx: vi, f: vf }];
+    }
     const ROOM_GRADE = { base: 0.62, slope: 1.1, min: 0.72, wash: 0.14 };
     function tinted(ch, idx, f, L) {
       const key = ch.manifest.name + '|' + idx;
@@ -564,8 +575,8 @@
     function drawChar(c, e, L) {
       const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
       if (!af) return;
-      const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
-      c.drawImage(tinted(ch, af.idx, f, L), (e.drawX ?? (e.drawX ?? e.x)) - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
+      const sc = ch.manifest.scale * charScale, fy = footY(e), x = e.drawX ?? e.x;
+      for (const { idx, f } of faceLayers(ch, af, e.face)) c.drawImage(tinted(ch, idx, f, L), x - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
     }
 
     let floorTint = null, floorTintKey = '';

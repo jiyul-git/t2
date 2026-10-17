@@ -188,7 +188,41 @@ def main():
         Image.fromarray(arr).save(p)
         expect_error(t, 'schema', 'interior without a window hole')
 
-        # 12. Budget: the placeholder total is enforced.
+        # 12. Face variants (frame.v, patch frames with "over"): the real walkers pass; broken ones are caught.
+        real = HERE.parent / 'web' / 'lounge' / 'assets'
+        froot = tmp / 'faces'
+        (froot / 'chars').mkdir(parents=True)
+
+        def char_errors(name):
+            rep = C.Report()
+            C.check_character(froot, name, rep)
+            return rep.errors
+        for name in ('tiger_walker', 'rabbit_walker', 'turtle_walker'):
+            shutil.copytree(real / 'chars' / name, froot / 'chars' / name)
+            m = load_manifest(froot, name)
+            ok(not char_errors(name), name + ' with face variants should pass: %r' % char_errors(name)[:3])
+            ok('blink' in (m['frames'][m['clips']['walk_r']['frames'][0]].get('v') or {}), name + ' has a blink on walk_r')
+        name = 'rabbit_walker'
+        orig = load_manifest(froot, name)
+
+        def broken(mutate, why, kind='face'):
+            m = json.loads(json.dumps(orig))
+            mutate(m)
+            save_manifest(froot, name, m)
+            errs = char_errors(name)
+            ok(any(e.startswith(kind + ':') for e in errs), '%s: expected a "%s" error, got %r' % (why, kind, errs[:3]))
+            save_manifest(froot, name, orig)
+        f0 = orig['clips']['walk_r']['frames'][0]
+        blink = orig['frames'][f0]['v']['blink']
+        broken(lambda m: m['frames'][f0]['v'].update(blink=99999), 'v points at a missing frame')
+        broken(lambda m: m['frames'][f0]['v'].update(blink=f0), 'v points at itself')
+        broken(lambda m: m['frames'][f0]['v'].update(Blink=blink), 'v key is not a lower-case word')
+        broken(lambda m: m['frames'][blink].update(ay=m['frames'][blink]['ay'] + 500), 'patch placed outside its frame')
+        broken(lambda m: m['frames'][blink].update(over=f0 + 1), 'patch made for another frame')
+        broken(lambda m: m['frames'][f0]['v'].update(blink=f0 + 1), 'full variant with another anchor or silhouette')
+        broken(lambda m: m['clips']['walk_r']['frames'].__setitem__(0, blink), 'a clip plays a patch frame', 'schema')
+
+        # 13. Budget: the placeholder total is enforced.
         t = clone(base, tmp / 'budget')
         (t / 'chars' / 'tiger' / 'pad.bin').write_bytes(b'\0' * (C.BUDGET_PLACEHOLDER_TOTAL + 1))
         expect_error(t, 'budget', 'oversized placeholder set')

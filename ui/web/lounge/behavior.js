@@ -18,6 +18,12 @@
   const CHAT_SEGMENT_SECONDS = [4, 8];
   const ACTIVITY_KINDS = ['idle', 'phone', 'call', 'eat', 'sunglasses', 'fix_clothes', 'doze', 'chat'];
   const HOLD_TIMEOUT_MS = 8000;
+  // Faces (docs/LOUNGE_SCENE_DESIGN.md 7.6): blinks for everyone, now and then a short expression for a
+  // character whose frames carry it (manifest frame.v). Own PRNG stream, so the rest is unchanged.
+  const FACE = {
+    blinkEvery: [2200, 6000], blinkMs: [120, 170], doubleChance: 0.15, doubleGap: [110, 200],
+    exprEvery: [15000, 40000], exprMs: [800, 1600], firstExpr: [6000, 30000],
+  };
   const TARGET_RECHECK_MS = 10 * 60 * 1000;
 
   function mulberry32(seed) {
@@ -37,6 +43,15 @@
     return (manifest.walker ? WALKER_CLIPS : REQUIRED_CLIPS).every(id => manifest.clips[id]);
   }
 
+  // Face variants a manifest offers: the keys of its frames' "v" maps (e.g. blink, smile, laugh).
+  function faceKinds(manifest) {
+    const out = new Set();
+    for (const f of (manifest && manifest.frames) || []) {
+      if (f && f.v && typeof f.v === 'object') for (const k of Object.keys(f.v)) out.add(k);
+    }
+    return [...out].sort();
+  }
+
   function createDirector(opts) {
     const scene = opts.scene;
     const seats = scene.seats.slice().sort((a, b) => a.x - b.x);
@@ -48,15 +63,24 @@
     };
     const solar = opts.solar || function () { return { elevation: 0 }; };
     const emit = opts.onEvent || null;
-    const rand = mulberry32(opts.seed === undefined ? Date.now() : opts.seed);
+    const seed = opts.seed === undefined ? Date.now() : opts.seed;
+    const rand = mulberry32(seed);
     const rnd = (lo, hi) => lo + (hi - lo) * rand();
+    const faceRand = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+    const frnd = (lo, hi) => lo + (hi - lo) * faceRand();
     const pick = list => list[Math.floor(rand() * list.length)];
 
     const chars = (opts.characters || []).filter(isActive).map(m => ({
       name: m.name, clips: m.clips, walker: !!m.walker, pass: m.pass || 'both', state: 'OFFSCREEN', seat: -1, x: 0, clip: null, total: 0, wraps: 0,
       walk: null, exitSide: null, seatedUntil: 0, activity: '', plan: [], stage: null, sunglassesUsed: false,
       holding: false, holdSince: 0, pending: null, chatRole: '', segEnd: 0, chatEnd: 0, chatSide: '',
+      frames: Array.isArray(m.frames) ? m.frames : [], exprs: faceKinds(m).filter(k => k !== 'blink'),
+      face: '', faceUntil: 0, nextBlink: 0, nextExpr: 0, secondBlink: false, isSecond: false, forcedFace: null,
     }));
+    for (const c of chars) {
+      c.nextBlink = frnd(300, FACE.blinkEvery[1]);
+      c.nextExpr = frnd(FACE.firstExpr[0], FACE.firstExpr[1]);
+    }
     const sitters = chars.filter(c => !c.walker), walkers = chars.filter(c => c.walker);
     const passEvery = Array.isArray(scene.passEvery) ? scene.passEvery : [40, 120];   // seconds between crossings
     const seatOwner = seats.map(() => null);
@@ -369,8 +393,39 @@
       }
     }
 
+    // ------------------------------------------------------------------ faces
+    function tickFace(c) {
+      if (c.face && now >= c.faceUntil) {
+        const was = c.face;
+        c.face = '';
+        if (was === 'blink' && c.secondBlink) {          // a double blink: the second one follows right away
+          c.secondBlink = false; c.isSecond = true;
+          c.nextBlink = now + frnd(FACE.doubleGap[0], FACE.doubleGap[1]);
+        } else c.nextBlink = now + frnd(FACE.blinkEvery[0], FACE.blinkEvery[1]);
+      }
+      if (c.face) return;
+      if (c.exprs.length && now >= c.nextExpr) {
+        c.face = c.exprs[Math.floor(faceRand() * c.exprs.length)];
+        c.faceUntil = now + frnd(FACE.exprMs[0], FACE.exprMs[1]);
+        c.nextExpr = c.faceUntil + frnd(FACE.exprEvery[0], FACE.exprEvery[1]);
+        c.secondBlink = false; c.isSecond = false;
+      } else if (now >= c.nextBlink) {
+        c.face = 'blink';
+        c.faceUntil = now + frnd(FACE.blinkMs[0], FACE.blinkMs[1]);
+        if (c.isSecond) c.isSecond = false;
+        else c.secondBlink = faceRand() < FACE.doubleChance;
+      }
+    }
+    // The face drawn on atlas frame idx: '' unless that frame has the variant.
+    function faceOn(c, idx) {
+      const face = c.forcedFace !== null ? c.forcedFace : c.face;
+      const f = c.frames[idx];
+      return face && f && f.v && Number.isInteger(f.v[face]) ? face : '';
+    }
+
     function tick() {
       now += TICK_MS;
+      for (const c of chars) tickFace(c);
       if (isDay()) nextSpawnAt = Math.min(nextSpawnAt, now + 70000);
       if (now >= nextTargetRoll) { target = rollTarget(); nextTargetRoll = now + TARGET_RECHECK_MS; }
       for (const c of chars) tickChar(c);
@@ -430,6 +485,7 @@
           drawX = c.walk.x0 + c.walk.dir * clip.advance * (c.state === 'ENTERING' ? Math.min(t, c.walk.total) : t);
         }
         out.push({ name: c.name, clip: c.clip, frame, x, drawX, lane, mirrored: false, state: c.state,
+          face: faceOn(c, clip.frames[Math.min(frame, n - 1)]),
           activity: c.activity, seat: c.seat >= 0 && seatOwner[c.seat] === c ? scene.seats.indexOf(seats[c.seat]) : -1,
           spot: c.seat >= 0 ? scene.seats.indexOf(seats[c.seat]) : -1 });   // seat it is heading to or leaving, even once released
       }
@@ -465,11 +521,20 @@
         if (c.state === 'SEATED' && c.stage && c.stage.kind === 'loop' && c.activity === 'idle') c.stage.until = 0;
         return true;
       },
+      // Debug helper: hold `name`'s face on a variant ('blink', 'smile', ...), or '' for the plain face;
+      // null gives the face back to the timers. Returns false for an unknown character.
+      setFace(name, face) {
+        const c = chars.find(x => x.name === name);
+        if (!c) return false;
+        c.forcedFace = face === null || face === undefined ? null : String(face);
+        return true;
+      },
+      faceKinds(name) { const c = chars.find(x => x.name === name); return c ? ['blink', ...c.exprs] : []; },
       get now() { return now; },
       get target() { return target; },
       characterNames() { return chars.map(c => c.name); },
     };
   }
 
-  return { createDirector, mulberry32, isActive, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS };
+  return { createDirector, mulberry32, isActive, faceKinds, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS, FACE };
 });

@@ -249,6 +249,7 @@
           setSceneTime(sec) { simT = sec; },
           setScale(n) { debug.clockMs = clockMs(); debug.clockSetAt = Date.now(); debug.scale = n; },
           force(name, kind) { return director ? director.force(name, kind) : false; },
+          setFace(name, face) { return director && director.setFace ? director.setFace(name, face) : false; },
           reset() { debug.clockMs = null; debug.scale = 1; updateLighting(true); updateBoard(true); },
           setPlace(lat, lon) { location.setDebug(lat, lon); updateLighting(true); },
           reseed(s) { seed = s; newDirector(); },

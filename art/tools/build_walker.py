@@ -39,6 +39,8 @@ from PIL import Image, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from inkfix import reink, defringe   # noqa: E402
+from walk_bob import spread, bob_series, quantize, stretch_layer, bottom_row   # noqa: E402
+import face_patch   # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = Path(__file__).resolve().parent
@@ -67,6 +69,23 @@ CHARS = {
         atlas=0.62,              # atlas px per working px
         step=13.25,              # planted foot, base-cell px it moves back per frame (--measure / the loop)
         fps=10,
+        # walking bob (walk_bob.py): feet distance = the width of the feet; leg ~ hip to sole, base px;
+        # pp = peak-to-peak as a share of the figure height
+        bob=dict(mode='spread', leg=70, pp=0.01),
+        # face variants (face_patch.py), base-cell px; donors from this same sheet. The base already
+        # laughs with an open mouth, so only the eyes change. Base eyes: (198, 153.5), (259, 149.5).
+        # The sheet has no plain closed eye, only the smiling one of f_12: the blink uses it turned
+        # upside down (a lid curving down, like the tiger's), the smile as drawn.
+        faces=dict(
+            sheet='art/sources/rabbit_walk_sheet_4x4_gemini.webp', donor_upscale=1, preview_box=(165, 120, 290, 190),
+            variants={
+                'blink': dict(cell='12', scale=0.85, erase=[(198, 153.5, 12, 12.5), (259, 149.5, 8.5, 10.5)], feats=[
+                    dict(box=(176, 144, 222, 165), at=(198, 157), flip_v=True),
+                    dict(box=(246, 137, 274, 161), at=(259.5, 153), flip_v=True)]),
+                'smile': dict(cell='12', scale=0.85, erase=[(198, 153.5, 12, 12.5), (259, 149.5, 8.5, 10.5)], feats=[
+                    dict(box=(176, 144, 222, 165), at=(198, 152)),
+                    dict(box=(246, 137, 274, 161), at=(259.5, 148))]),
+            }),
     ),
     'turtle': dict(
         sheet='art/sources/turtle_walk_sheet_4x4_gemini.webp', grid=(4, 4), upscale=2,
@@ -87,6 +106,27 @@ CHARS = {
         atlas=0.62,
         step=5,
         fps=10,
+        # the feet never cross: the hip is highest when the planted foot is right under its own hip
+        bob=dict(mode='stance', leg=32, pp=0.01),
+        # face variants (face_patch.py), base-cell px. The face sheet walks the other way: its cells are
+        # mirrored first, the boxes are in the mirrored cells. Base: big near eye (80.5, 54), narrow far
+        # eye (116.5, 51) by the head's outline, small smile at (104.5, 65.5).
+        faces=dict(
+            sheet='art/sources/turtle_walk_sheet_faces_gemini.webp', donor_upscale=2, donor_flip=True,
+            preview_box=(45, 25, 135, 80),
+            variants={
+                'blink': dict(cell='10', scale=1.05, erase=[(80.5, 54, 12, 15), (117, 50.5, 6.5, 11, 0, False, 16)], feats=[
+                    dict(box=(54, 50, 81, 65), at=(80.5, 57)),
+                    dict(box=(95, 46, 115, 60), at=(116, 54), scale=0.8)]),
+                'smile': dict(cell='11', scale=1.05, erase=[(80.5, 54, 12, 15), (117, 50.5, 6.5, 11, 0, False, 16)], feats=[
+                    dict(box=(53, 44, 81, 63), at=(80.5, 53)),
+                    dict(box=(93, 42, 115, 60), at=(116, 50), scale=0.8)]),
+                'laugh': dict(cell='21', scale=1.05, erase=[(80.5, 54, 12, 15), (117, 50.5, 6.5, 11, 0, False, 16),
+                                                           (104.5, 65.5, 9.5, 4, 0, False)], feats=[
+                    dict(box=(54, 45, 80, 61), at=(80.5, 53)),
+                    dict(box=(94, 42, 115, 59), at=(116, 50), scale=0.8),
+                    dict(box=(75, 59, 103, 74), at=(105, 67.5), scale=0.75, color=True)]),
+            }),
     ),
 }
 
@@ -277,10 +317,62 @@ class Walker:
         return sorted(out)
 
     def frame(self, entry):
+        """(legs layer, legs mask, match info) of one loop entry; compose() makes the picture."""
         n, *shift = entry if isinstance(entry, (tuple, list)) else (entry,)
-        Lp, mask, info = self.legs(n, *shift)
-        out = unpremul(over(Lp, self.top))
-        return defringe(out, width=2 * self.k), mask, info
+        return self.legs(n, *shift)
+
+    def compose(self, Lp):
+        return defringe(unpremul(over(Lp, self.top)), width=2 * self.k)
+
+    def lifts(self, entry):
+        """(front lift, rear lift) of a loop entry: a foot with lift 0 is on the floor."""
+        if not isinstance(entry, (tuple, list)):
+            return 0, 0
+        return (entry[3] if len(entry) > 3 else 0), (entry[4] if len(entry) > 4 else 0)
+
+    def spreads(self, masks, feet):
+        """Per frame, the feet distance s (base-cell px) that sets the hip height (walk_bob.py).
+        'spread': the width of the feet - narrow when the legs cross, wide when they are apart.
+        'stance' (short legs that never cross): twice the planted foot's distance from its own hip,
+        each foot's hip being the middle of its swing."""
+        cfg = self.cfg
+        if cfg['bob']['mode'] == 'spread':
+            w = np.array([spread(m & (self.yy > self.hem[None, :] + cfg['crotch'] * self.k)) / self.k for m in masks])
+            return w - w.min()
+        soles = np.array([[f[3] for f in ff] for ff in feet], np.float64)   # (rear, front) per frame
+        hip = soles.mean(0)
+        out = []
+        for i, entry in enumerate(cfg['loop']):
+            lf, lr = self.lifts(entry)
+            d = [abs(soles[i, 1] - hip[1])] if lf == 0 else []
+            d += [abs(soles[i, 0] - hip[0])] if lr == 0 else []
+            out.append(2 * max(d) if d else 0.0)
+        return np.array(out)
+
+
+def face_cfg(cfg, w):
+    """cfg['faces'] with base-cell coordinates turned into working px of the (padded) frame."""
+    f = cfg.get('faces') or dict(variants={})
+    k, pad = w.k, w.pad
+    P = lambda v: v * k + pad
+    out = dict(f, variants={})
+    for name, v in f['variants'].items():
+        out['variants'][name] = dict(
+            v, scale=v['scale'] * k, line_w=v.get('line_w', 2.4) * k,
+            erase=[(P(e[0]), P(e[1]), e[2] * k, e[3] * k) + tuple(e[4:]) for e in v.get('erase', [])],
+            feats=[dict(ft, at=(P(ft['at'][0]), P(ft['at'][1])), **({'scale': ft['scale'] * k} if 'scale' in ft else {}))
+                   for ft in v.get('feats', [])])
+    if 'preview_box' in f:
+        out['preview_box'] = tuple(int(P(v)) for v in f['preview_box'])
+    return out
+
+
+def face_base(name):
+    """(base cell at working px, faces config in working px), for face_patch.py --preview."""
+    cfg = CHARS[name]
+    tmp = Path(tempfile.mkdtemp())
+    w = Walker(name, cfg, cut_cells(cfg, tmp), pad=30 * cfg['upscale'])
+    return w.B, face_cfg(cfg, w)
 
 
 def build(name, cfg, measure=False, dump=None):
@@ -295,30 +387,58 @@ def build(name, cfg, measure=False, dump=None):
                 _, mask, info = w.legs(n)
                 print('  %s match %.2f scale %.2f feet %s' % (n, info['score'], info['s'], w.feet(mask)))
             return
-        frames, feet = [], []
+        layers, masks, feet = [], [], []
         for n in cfg['loop']:
-            im, mask, info = w.frame(n)
-            frames.append(im); feet.append(w.feet(mask))
-    # one crop for all frames so they share one anchor
+            Lp, mask, info = w.frame(n)
+            layers.append(Lp); masks.append(mask); feet.append(w.feet(mask))
+        k, a = w.k, cfg['atlas']
+        # the crop's top: the head (the upper body is the same in every frame; the legs only move down)
+        al = np.zeros(layers[0].shape[:2], bool)
+        for Lp in layers: al |= (over(Lp, w.top)[..., 3] > 0)
+        ys, xs = np.nonzero(al)
+        y0 = ys.min()
+        # ground line: where the planted (lower) foot of each frame stands, median over the loop
+        ground = float(np.median([max(f[2] for f in ff) for ff in feet])) * k + w.pad - y0
+        fig_h = ground                                    # ear tips (top of the crop) to the ground
+        # walking bob (walk_bob.py): the body a little higher while the legs pass each other. ay of
+        # frame i = body + bob_i in whole atlas px; the legs are stretched so the lowest foot ends on
+        # that row, so the feet stay on the floor while the body rises and sinks
+        bc = cfg['bob']
+        s_feet = w.spreads(masks, feet)
+        pp = bc['pp'] * fig_h * a                         # peak-to-peak in atlas px (bc['pp'] of the figure)
+        bob = quantize(bob_series(s_feet, bc['leg'], pp))
+        ay0 = int(round(ground * a)) - 1
+        ays = [ay0 + b for b in bob]
+        frames, planted = [], []
+        for i, Lp in enumerate(layers):
+            foot = bottom_row(Lp[..., 3] > 20)
+            target = (ays[i] + 1) / a + y0                # working px row the lowest foot should end on
+            Lp = stretch_layer(Lp, w.hem + 4 * k, foot, target)
+            planted.append((foot - w.pad) / k)
+            frames.append(w.compose(Lp))
+        # face variants (face_patch.py) on the first frame: the head is the same in every frame
+        faces = face_patch.variants(frames[0], face_cfg(cfg, w)) if cfg.get('faces') else {}
     al = np.zeros(frames[0].shape[:2], bool)
     for im in frames: al |= im[..., 3] > 0
     ys, xs = np.nonzero(al)
-    x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+    x0, x1, y1 = xs.min(), xs.max() + 1, ys.max() + 1
     frames = [Image.fromarray(im.clip(0, 255).astype(np.uint8)).crop((x0, y0, x1, y1)) for im in frames]
-    # ground line: where the planted (lower) foot of each frame stands, median over the loop
-    ground = float(np.median([max(f[2] for f in ff) for ff in feet])) * w.k + w.pad - y0
-    fig_h = ground                                    # ear tips (top of the crop) to the ground
+    faces = {k: Image.fromarray(im.clip(0, 255).astype(np.uint8)).crop((x0, y0, x1, y1)) for k, im in faces.items()}
     # anchor x: the middle of the base's torso box
     bx = (w.box[0] + w.box[2]) / 2 - x0
+    bobinfo = dict(s=[round(float(v), 1) for v in s_feet], bob=bob, ay=ays, planted_before=planted,
+                   pp_scene=round(cfg['height'] / (fig_h * a) * (max(bob) - min(bob)), 2))
     if dump:
         Path(dump).mkdir(parents=True, exist_ok=True)
         for i, im in enumerate(frames):
             im.save(Path(dump) / ('%s_r%d.png' % (name, i)))
-        (Path(dump) / ('%s_meta.json' % name)).write_text(json.dumps({'ground': ground, 'bx': bx, 'feet': feet}))
-    return frames, ground, bx, fig_h, feet
+        for k, im in faces.items():
+            im.save(Path(dump) / ('%s_r0_%s.png' % (name, k)))
+        (Path(dump) / ('%s_meta.json' % name)).write_text(json.dumps({'ground': ground, 'bx': bx, 'feet': feet, 'bob': bobinfo}))
+    return frames, ays, bx, fig_h, bobinfo, faces
 
 
-def pack(name, cfg, frames, ground, bx, fig_h):
+def pack(name, cfg, frames, ays, bx, fig_h, faces=None):
     a = cfg['atlas']
     n = len(frames)
     right = [im.resize((round(im.width * a), round(im.height * a)), Image.LANCZOS) for im in frames]
@@ -331,7 +451,13 @@ def pack(name, cfg, frames, ground, bx, fig_h):
             x, y = i * (fw + 2), row * (fh + 2)
             atlas.paste(im, (x, y))
             ax = bx * a if row == 0 else fw - bx * a
-            out.append({'x': x, 'y': y, 'w': fw, 'h': fh, 'ax': int(round(ax)), 'ay': int(round(ground * a)) - 1})
+            out.append({'x': x, 'y': y, 'w': fw, 'h': fh, 'ax': int(round(ax)), 'ay': ays[i]})
+    # face variants: one patch per direction, every frame of that direction points at it (frame.v)
+    if faces:
+        varied = {k: im.resize(right[0].size, Image.LANCZOS) for k, im in faces.items()}
+        patches = face_patch.direction_patches(right[0], varied, list(range(n))) + \
+            face_patch.direction_patches(right[0], varied, list(range(n, 2 * n)), flip=True)
+        atlas = face_patch.attach(atlas, out, patches)
     # manifest scale: atlas px -> scene px before charScale, so the figure is cfg['height'] scene px
     scale = cfg['height'] / (fig_h * a * SCENE_CHAR_SCALE)
     # scene px per frame = the planted foot's step, so it stays put on the floor
@@ -364,8 +490,9 @@ def main():
         if a.measure:
             build(name, cfg, measure=True)
             continue
-        frames, ground, bx, fig_h, feet = build(name, cfg, dump=a.dump)
-        pack(name, cfg, frames, ground, bx, fig_h)
+        frames, ays, bx, fig_h, bob, faces = build(name, cfg, dump=a.dump)
+        print('%s bob: s %s -> bob %s atlas px (%.1f scene px peak-to-peak)' % (name, bob['s'], bob['bob'], bob['pp_scene']))
+        pack(name, cfg, frames, ays, bx, fig_h, faces)
 
 
 if __name__ == '__main__':

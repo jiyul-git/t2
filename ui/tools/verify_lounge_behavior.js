@@ -286,5 +286,72 @@ ok(chatTotal > 0, 'conversations happen');
   ok(runs[0] !== runs[1], 'each opening is a different random run');
 }
 
+{
+  // Faces (design doc 7.6): blinks happen and are short, expressions only where the frames have them,
+  // a frame without the variant never shows a face, the face timers are deterministic and do not touch
+  // the walkers' and sitters' own random sequence.
+  const names = scene.characters.filter(n => JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8')).walker);
+  const walkers = names.map(n => JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8')));
+  const strip = m => ({ ...m, frames: m.frames.map(f => { const g = { ...f }; delete g.v; return g; }) });
+  for (const w of walkers) ok(B.faceKinds(w).includes('blink'), w.name + ' offers a blink');
+  function run(chars, seed, minutes) {
+    const { d, events } = makeDirector(chars, seed);
+    const faces = [];                           // per sample: name -> face of characters on screen
+    const runs = {};                            // name -> [{face, ms}] finished face spells
+    const cur = {};
+    for (let i = 0; i < minutes * 60000 / B.TICK_MS; i++) {
+      const out = d.step(B.TICK_MS);
+      const seen = new Set();
+      for (const c of out) {
+        ok(typeof c.face === 'string', 'snapshot has a face field: ' + JSON.stringify(c));
+        seen.add(c.name);
+        const r = cur[c.name];
+        if (r && r.face === c.face) r.ms += B.TICK_MS;
+        else {
+          if (r && r.face && !r.partial) (runs[c.name] = runs[c.name] || []).push(r);
+          cur[c.name] = { face: c.face, ms: B.TICK_MS, partial: !r };   // seen from its start only if it was on screen before
+        }
+      }
+      for (const n of Object.keys(cur)) if (!seen.has(n)) delete cur[n];   // went off screen: spell cut short
+      faces.push(out.map(c => c.name + ':' + c.face + ':' + c.frame).join(','));
+    }
+    return { runs, faces, hash: hashEvents(events) };
+  }
+  const a = run([...walkers, ...full], 5, 30);
+  for (const w of walkers) {
+    const r = a.runs[w.name] || [];
+    const blinks = r.filter(x => x.face === 'blink');
+    ok(blinks.length >= 3, w.name + ' blinked ' + blinks.length + ' times while crossing');
+    for (const b of blinks) ok(b.ms >= 100 && b.ms < 250, w.name + ' blink lasted ' + b.ms + ' ms');
+    const kinds = B.faceKinds(w);
+    for (const x of r) {
+      ok(kinds.includes(x.face), w.name + ' showed a face it does not have: ' + x.face);
+      if (x.face !== 'blink') ok(x.ms <= 1650, w.name + ' ' + x.face + ' lasted ' + x.ms + ' ms');
+    }
+  }
+  // the old placeholder characters have no variants: their face is always ''
+  const seatedOnly = run(full, 5, 10);
+  ok(Object.keys(seatedOnly.runs).length === 0, 'no face on frames without a variant: ' + Object.keys(seatedOnly.runs));
+  // deterministic, and the faces do not change who comes by when
+  const b = run([...walkers, ...full], 5, 30);
+  eq(b.faces, a.faces, 'the same seed gives the same faces');
+  const c = run([...walkers.map(strip), ...full], 5, 30);
+  ok(c.hash === a.hash, 'face variants do not change the clip sequence');
+  // expressions do show up over a longer run (rare: every 15-40 s of the face clock)
+  const long = run([...walkers, ...full], 77, 120);
+  const exprs = Object.values(long.runs).flat().filter(x => x.face !== 'blink');
+  ok(exprs.length >= 1, 'an expression appeared in two hours: ' + exprs.length);
+  // the debug hook holds a face
+  const { d } = makeDirector(walkers, 3);
+  let w = null;
+  for (let i = 0; i < 20000 && !w; i++) w = d.step(100).find(x => x.name === 'rabbit_walker');
+  if (w) {
+    ok(d.setFace('rabbit_walker', 'smile') && d.step(25).find(x => x.name === 'rabbit_walker').face === 'smile', 'setFace holds a face');
+    ok(d.setFace('rabbit_walker', 'laugh') && d.step(25).find(x => x.name === 'rabbit_walker').face === '', 'a face the frame lacks is not shown');
+    d.setFace('rabbit_walker', null);
+  }
+  ok(!d.setFace('nobody', 'blink'), 'setFace refuses unknown characters');
+}
+
 function eq(a, b, m) { checks++; assert.deepStrictEqual(a, b, m); }
 console.log('verify_lounge_behavior OK (' + checks + ' checks)');
