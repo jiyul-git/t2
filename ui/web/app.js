@@ -428,7 +428,9 @@ function boardWinCard(code) {
 function slotPos(slot, heroSlot, n, rfx, rfy) {
   const off = (((slot - heroSlot) % n) + n) % n;
   const th = (90 - off * (360 / n)) * Math.PI / 180;
-  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + 39 * rfy * Math.sin(th) };
+  // the far (top) seats sit a little further out so they clear the rail
+  const sn = Math.sin(th);
+  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + (sn < 0 ? 42 : 39) * rfy * sn };
 }
 
 function sideSeatClass(p) {
