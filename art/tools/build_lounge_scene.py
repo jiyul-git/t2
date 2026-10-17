@@ -64,7 +64,11 @@ SCENE = {
     ],
 }
 PLANES = {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
-          'y': 745, 'height': 370, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3}
+          'y': 745, 'height': 370, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3,
+          # wheel hubs on each cut-out, as fractions of the image (cx, cy, rx, ry): spokes are drawn
+          # on them and turn with the distance travelled, so the gear rolls
+          'wheels': {'right': [[378, 385, 6, 10], [571, 375, 5, 8], [792, 398, 7, 9]],
+                     'left': [[168, 394, 6.5, 8], [387, 371, 6, 9], [578, 381, 6, 9.5]]}}
 
 
 def mask_image():
@@ -107,7 +111,12 @@ def main(argv=None):
         im = im.resize((round(im.width * 400 / im.height), 400), Image.LANCZOS)
         im.save(bg / ('plane_%s.webp' % side), 'WEBP', quality=90, method=6)
     scene = dict(SCENE)
-    scene['planes'] = PLANES
+    scene['planes'] = dict(PLANES)
+    for side in ('right', 'left'):        # source px -> fractions of the cut-out
+        im = Image.open(Path(__file__).resolve().parent.parent / 'cutouts' / ('plane_%s.png' % side))
+        scene['planes']['wheels'] = dict(scene['planes']['wheels'])
+        scene['planes']['wheels'][side] = [[round(cx / im.width, 4), round(cy / im.height, 4), round(rx / im.height, 4), round(ry / im.height, 4)]
+                                           for cx, cy, rx, ry in PLANES['wheels'][side]]
     scene['layers'] = [
         {'id': 'outside', 'group': 'far', 'tint': False, 'variants': layers['outside']},
         {'id': 'interior', 'group': 'back', 'tint': False, 'variants': layers['interior']},

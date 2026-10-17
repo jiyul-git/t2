@@ -344,6 +344,28 @@
       c.beginPath(); c.arc(0, 0, w * 0.45, 0, 6.2832); c.fill();
       c.restore();
       c.drawImage(tinted, st.x - w / 2, p.y - h + bob, w, h);
+      // rolling gear: three spokes on each hub, turned by the distance travelled
+      const wl = p.wheels && p.wheels[st.img === assets.planes.right ? 'right' : 'left'];
+      if (wl) {
+        const ox = st.x - w / 2, oy = p.y - h + bob;
+        c.save();
+        c.lineCap = 'round';
+        c.strokeStyle = '#c9ced6';
+        c.globalAlpha = 0.55 + 0.35 * L.dayness;
+        for (const [fx, fy, frx, fry] of wl) {
+          const cx = ox + fx * w, cy = oy + fy * h, rx = frx * h, ry = fry * h;
+          const ang = st.x / (ry * 1.9);                  // tyre radius ~1.9x the hub
+          c.lineWidth = Math.max(1, ry * 0.22);
+          c.beginPath();
+          for (let k = 0; k < 3; k++) {
+            const a = ang + k * 2.0944;
+            c.moveTo(cx + Math.cos(a) * rx * 0.25, cy + Math.sin(a) * ry * 0.25);
+            c.lineTo(cx + Math.cos(a) * rx * 0.85, cy + Math.sin(a) * ry * 0.85);
+          }
+          c.stroke();
+        }
+        c.restore();
+      }
     }
 
     let pending = [], pendingL = null, builtKey = '';
