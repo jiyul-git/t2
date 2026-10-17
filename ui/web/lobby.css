@@ -288,7 +288,7 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
 
 /* Lounge scene (docs/LOUNGE_SCENE_DESIGN.md). The canvas replaces the still illustration once its
    assets are ready; until then, and if anything fails, the still image shows. */
-.airport-scene{position:relative;width:calc(100% + 24px);margin:0 -12px 0;aspect-ratio:1440/1186;
+.airport-scene{position:relative;width:calc(100% + 24px);margin:0 -12px 0;aspect-ratio:1440/1152;
  overflow:hidden;background:var(--airport-surface-top,#112e39)}
 .lounge-fallback{position:absolute;inset:0;background:url("assets/t2-airport/lobby_hero_night.webp") center top/cover no-repeat}
 .lounge-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;pointer-events:none}
@@ -312,7 +312,7 @@ main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
    (--lounge-floor, measured by lounge.js), picks up lamp or window light, and fades into the page.
    A faint woven texture keeps it from reading as a flat fill. */
 #lobby{
- --scene-bottom:calc(56px + min(100vw, 520px) * 1186 / 1440);
+ --scene-bottom:calc(56px + min(100vw, 520px) * 1152 / 1440);
  background:
   radial-gradient(70% 260px at 16% var(--scene-bottom), color-mix(in srgb, var(--lounge-glow) 26%, transparent), transparent 72%),
   radial-gradient(60% 300px at 92% calc(var(--scene-bottom) + 40px), color-mix(in srgb, var(--lounge-window) 22%, transparent), transparent 70%),

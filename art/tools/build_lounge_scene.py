@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 SRC = Path(__file__).resolve().parent.parent / 'lounge_bg'
 W, H0 = 1440, 1000                 # the original picture
-H = 1186                           # with the floor extension (2050 / 1728 * 1000)
+H = 1152                           # with the floor extension (1990 / 1728 * 1000)
 VARIANTS = [('night', -10), ('golden', 2), ('day', 14)]       # lighting stage -> sun elevation anchor
 
 # Everything in front of a seated character: armrests and the front of the seat cushions.
@@ -32,7 +32,7 @@ SOFA_FRONT = [
 SCENE = {
     'placeholder': False,
     'size': [W, H],
-    'baselineY': 1150,             # walkers pass on the carpet in front of the sofas
+    'baselineY': 1118,             # walkers pass on the carpet in front of the sofas
     'horizonY': 560,
     'windowFacing': 225,
     'charScale': 1.25,
