@@ -17,3 +17,44 @@ Traceback (most recent call last):
 FileNotFoundError: [Errno 2] No such file or directory: '/home/user/gto_ckpt/spots/p60v2b_co_vs_sb_3b40/step2/term1_flops/Qc9d4h.json'
 precision pass failed
 RESUME_START 2026-10-17T02:59:53Z
+{
+ ":raise@8.000000|BB:fold|CO:call@8.000000": {
+  "CO": {
+   "D144": 1.393,
+   "signed": -1.051,
+   "U24": 0.951,
+   "U144": 0.484,
+   "opp_arriving_combos": 118.366,
+   "exempt": 0
+  },
+  "SB": {
+   "D144": 1.308,
+   "signed": 1.051,
+   "U24": 0.749,
+   "U144": 0.393,
+   "opp_arriving_combos": 239.186,
+   "exempt": 0
+  }
+ },
+ "old|CO:raise@17.200000|SB:call@17.200000": {
+  "CO": {
+   "D144": 4.881,
+   "signed": 4.879,
+   "U24": 2.337,
+   "U144": 1.085,
+   "opp_arriving_combos": 18.101,
+   "exempt": 0
+  },
+  "SB": {
+   "D144": 5.132,
+   "signed": -4.879,
+   "U24": 1.074,
+   "U144": 0.548,
+   "opp_arriving_combos": 0.017,
+   "exempt": 1
+  }
+ }
+}
+consistent_with_24 False
+START p60v2b_co_vs_sb_3b40 2026-10-17T04:25:10Z
+{"k": 0, "decision": "continue", "terminals": {"2.000000|BTN:fold|SB:raise@8.000000|BB:fold|CO:call@8.000000": {"CO": [1.3928452753845713, 0.484], "SB": [1.3083194091775856, 0.393]}, ":raise@8.000000|BB:fold|CO:raise@17.200000|SB:call@17.200000": {"CO": [4.8814126617889775, 1.085], "SB": [5.132459409112627, 0.548]}}}
