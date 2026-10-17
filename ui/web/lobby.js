@@ -268,7 +268,33 @@ function saveProfile(){
   profileSet('avatar',av?av.dataset.avatar:'0');
   applyDeckTheme(profileGet('deck','jade'));
   closeProfile();
-  toast('프로필을 저장했습니다');
+  pushProfile().then(ok=>toast(ok?'프로필을 저장했습니다':'이 기기에만 저장했습니다 (서버 연결 실패)'));
+}
+// The account's copy lives on the server; localStorage is the fast cache the table pages read.
+function localProfile(){
+  const av=Number(profileGet('avatar','0'));
+  return {nickname:profileGet('nickname','플레이어'), deck:profileGet('deck','jade'),
+          avatar:Number.isInteger(av)?av:0};
+}
+async function pushProfile(){
+  try{ await post('/api/profile',{profile:localProfile()}); return true; }catch(e){ return false; }
+}
+async function syncProfile(){
+  let server;
+  try{
+    const r=await fetch('/api/profile',{cache:'no-store',headers:headers(false)});
+    if(!r.ok) return;
+    server=(await r.json()).profile||{};
+  }catch(e){ return; }
+  if(Object.keys(server).length){
+    for(const k of ['nickname','deck','avatar']) if(k in server) profileSet(k,server[k]);
+    applyDeckTheme(profileGet('deck','jade'));
+  }else{
+    // first time on this account: keep what this browser already had
+    let hasLocal=false;
+    try{ hasLocal=['nickname','deck','avatar'].some(k=>localStorage.getItem(PROFILE_KEYS[k])!==null); }catch(e){}
+    if(hasLocal) pushProfile();
+  }
 }
 $('#profileNav').addEventListener('click',openProfile);
 $('#headerProfileNav').addEventListener('click',openProfile);
@@ -283,5 +309,6 @@ $('#deckChoices').querySelectorAll('button').forEach(b=>b.addEventListener('clic
   applyDeckTheme(b.dataset.deck);
 }));
 applyDeckTheme(profileGet('deck','jade'));
+syncProfile();
 
 loadLobby();
