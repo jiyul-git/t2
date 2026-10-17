@@ -242,5 +242,39 @@ ok(chatTotal > 0, 'conversations happen');
   ok(!d.force('tiger_walker', 'eat'), 'a walker cannot be sent to a seat');
 }
 
+{
+  // Every walker in scene.json: they take turns (one on screen at a time, never the same one twice in
+  // a row), each walks right from the left edge, and all of them come by within half an hour.
+  const names = scene.characters.filter(n => {
+    const m = JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8'));
+    return m.walker;
+  });
+  ok(names.length >= 3 && names.includes('rabbit_walker') && names.includes('turtle_walker'), 'scene has the rabbit and turtle walkers: ' + names);
+  const walkers = names.map(n => JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8')));
+  for (const w of walkers) ok(B.isActive(w) && w.clips.walk_r.advance > 0 && w.clips.walk_r.frames.length === w.clips.walk_l.frames.length, w.name + ' is a usable walker');
+  for (const seed of [5, 77]) {
+    const { d } = makeDirector([...walkers, ...full], seed);
+    const order = [], seen = new Map();
+    let cur = null;
+    for (let i = 0; i < 18000; i++) {
+      const on = d.step(100).filter(c => c.name.endsWith('_walker'));
+      ok(on.length <= 1, 'one walker at a time: ' + on.map(c => c.name));
+      const w = on[0] || null;
+      if (w) {
+        const m = walkers.find(x => x.name === w.name);
+        if (!cur || cur !== w.name) {
+          ok(w.x <= scene.entries.left + 2 * m.clips.walk_r.advance, w.name + ' enters at the left edge, x=' + w.x);
+          order.push(w.name);
+        } else ok(w.x >= seen.get(w.name), w.name + ' moves left to right');
+        ok(w.clip === 'walk_r' && w.state === 'EXITING' && w.seat === -1, w.name + ' only walks across');
+        seen.set(w.name, w.x);
+      }
+      cur = w ? w.name : null;
+    }
+    for (let k = 1; k < order.length; k++) ok(order[k] !== order[k - 1], 'the same walker twice in a row: ' + order.join());
+    for (const n of names) ok(order.includes(n), n + ' crossed in 30 minutes (seed ' + seed + '): ' + order.join());
+  }
+}
+
 function eq(a, b, m) { checks++; assert.deepStrictEqual(a, b, m); }
 console.log('verify_lounge_behavior OK (' + checks + ' checks)');

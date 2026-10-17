@@ -9,7 +9,9 @@
  "windowFacing": 225,
  "charScale": 1.25,
  "characters": [
-  "tiger_walker"
+  "tiger_walker",
+  "rabbit_walker",
+  "turtle_walker"
  ],
  "passEvery": [
   6,

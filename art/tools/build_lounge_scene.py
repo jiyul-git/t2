@@ -36,9 +36,10 @@ SCENE = {
     'horizonY': 560,
     'windowFacing': 225,
     'charScale': 1.25,
-    # Only the real tiger so far, as a walker crossing left to right. The placeholder sitters
-    # (tiger, rabbit, turtle, penguin) stay on disk for the tests and come back with real sitting art.
-    'characters': ['tiger_walker'],
+    # Only real walkers so far (tiger, rabbit, turtle), crossing left to right one at a time, taking
+    # turns. The placeholder sitters (tiger, rabbit, turtle, penguin) stay on disk for the tests and
+    # come back with real sitting art.
+    'characters': ['tiger_walker', 'rabbit_walker', 'turtle_walker'],
     'passEvery': [6, 14],
     'window': {'x': 700, 'y': 0, 'w': 740, 'h': 700},
     # painted row boundaries of the panel, top to bottom, each [[x_left, y], [x_right, y]]

@@ -53,7 +53,7 @@
     const pick = list => list[Math.floor(rand() * list.length)];
 
     const chars = (opts.characters || []).filter(isActive).map(m => ({
-      name: m.name, clips: m.clips, walker: !!m.walker, pass: m.pass || 'both', nextPassAt: 0, state: 'OFFSCREEN', seat: -1, x: 0, clip: null, total: 0, wraps: 0,
+      name: m.name, clips: m.clips, walker: !!m.walker, pass: m.pass || 'both', state: 'OFFSCREEN', seat: -1, x: 0, clip: null, total: 0, wraps: 0,
       walk: null, exitSide: null, seatedUntil: 0, activity: '', plan: [], stage: null, sunglassesUsed: false,
       holding: false, holdSince: 0, pending: null, chatRole: '', segEnd: 0, chatEnd: 0, chatSide: '',
     }));
@@ -61,6 +61,9 @@
     const passEvery = Array.isArray(scene.passEvery) ? scene.passEvery : [40, 120];   // seconds between crossings
     const seatOwner = seats.map(() => null);
     let now = 0, acc = 0, nextSpawnAt = 0, target = 0, nextTargetRoll = 0;
+    // Walkers take turns: one crossing at a time, passEvery after the last one has left, and never
+    // the same walker twice in a row when there are several.
+    let nextPassAt = 0, lastWalker = null;
 
     // ------------------------------------------------------------------ time of day
     const isDay = () => { const m = minuteOfDay(); return m >= 7 * 60 && m < 23 * 60; };
@@ -146,7 +149,10 @@
       beginWalk(c, toRight ? 'walk_r' : 'walk_l', toRight ? entries.left : entries.right, toRight ? 1 : -1, Infinity);
     }
     function tryPass() {
-      for (const c of walkers) if (c.state === 'OFFSCREEN' && now >= c.nextPassAt) startPass(c);
+      if (!walkers.length || now < nextPassAt || walkers.some(c => c.state !== 'OFFSCREEN')) return;
+      const pool = walkers.length > 1 ? walkers.filter(c => c !== lastWalker) : walkers;
+      lastWalker = pick(pool);
+      startPass(lastWalker);
     }
 
     // ------------------------------------------------------------------ seated activities
@@ -335,7 +341,7 @@
         c.x = c.walk.x0 + c.walk.dir * clip.advance * Math.floor(c.total);
         if ((c.walk.dir < 0 && c.x <= entries.left) || (c.walk.dir > 0 && c.x >= entries.right)) {
           c.state = 'OFFSCREEN'; c.clip = null; c.seat = -1; c.activity = ''; c.walk = null;
-          if (c.walker) c.nextPassAt = now + rnd(passEvery[0], passEvery[1]) * 1000;
+          if (c.walker) nextPassAt = now + rnd(passEvery[0], passEvery[1]) * 1000;
         }
         return;
       }
@@ -369,7 +375,7 @@
       for (let i = 0; i < seatOwner.length; i++) seatOwner[i] = null;
       target = rollTarget();
       nextTargetRoll = now + TARGET_RECHECK_MS;
-      for (const c of walkers) c.nextPassAt = now + rnd(1, 4) * 1000;   // the first crossing comes soon
+      nextPassAt = now + rnd(1, 4) * 1000; lastWalker = null;   // the first crossing comes soon
       const count = Math.min(Math.ceil(target / 2), sitters.length, seats.length);
       const pool = sitters.slice();
       for (let k = 0; k < count; k++) {
