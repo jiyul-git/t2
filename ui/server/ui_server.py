@@ -1690,6 +1690,52 @@ def _public_history():
         row['display_hand_no'] = ordinals[hand_key(row)]
     return out
 
+# Player profile (nickname, card deck colour, table avatar). Kept with the wallet in the personal
+# data folder so it follows the account, not the browser. The page keeps a localStorage copy only
+# as a fast cache (same rule as memos).
+PROFILE_FIELDS = {
+    'nickname': lambda v: isinstance(v, str) and 0 < len(v.strip()) <= 16,
+    'deck': lambda v: v in ('jade', 'navy', 'burgundy', 'ivory'),
+    'avatar': lambda v: isinstance(v, int) and not isinstance(v, bool) and 0 <= v < 64,
+}
+
+
+def _profile_path():
+    return os.path.join(ECONOMY.root, 'profile.json')
+
+
+def _load_profile():
+    try:
+        with open(_profile_path(), encoding='utf-8') as f:
+            obj = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(obj, dict):
+        return {}
+    return {k: v for k, v in obj.items() if k in PROFILE_FIELDS and PROFILE_FIELDS[k](v)}
+
+
+def _save_profile(changes):
+    """Validate and merge; unknown keys or bad values are refused, nothing is half-written."""
+    if not isinstance(changes, dict) or not changes:
+        raise ValueError('변경할 항목이 없습니다')
+    for k, v in changes.items():
+        if k not in PROFILE_FIELDS:
+            raise ValueError('알 수 없는 항목: %s' % k)
+        if k == 'nickname' and isinstance(v, str):
+            v = changes[k] = v.strip()
+        if not PROFILE_FIELDS[k](v):
+            raise ValueError('%s 값이 올바르지 않습니다' % k)
+    prof = _load_profile()
+    prof.update(changes)
+    path = _profile_path()
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(prof, f, ensure_ascii=False)
+    os.replace(tmp, path)
+    return prof
+
+
 def _hero_memos():
     """현재 대회의 사용자 봇 메모. 공개 관전 API에는 절대 섞지 않는다."""
     if not os.path.exists(L.ST):
@@ -2047,6 +2093,9 @@ class H(BaseHTTPRequestHandler):
                 return self._send(
                     500, {'error': '%s: %s' % (type(e).__name__, e)})
 
+        if path == '/api/profile':
+            return self._send(200, {'profile': _load_profile()})
+
         if path == '/api/memos':
             try:
                 return self._send(200, {'memos': _hero_memos()})
@@ -2177,6 +2226,12 @@ class H(BaseHTTPRequestHandler):
                     return self._send(200, {'ok': True, 'receipt': receipt,
                                             'wallet': ECONOMY.wallet(),
                                             'scheduled': time.time() < ECONOMY.event(tid)['starts_at']})
+                if self.path == '/api/profile':
+                    try:
+                        prof = _save_profile(body.get('profile'))
+                    except ValueError as e:
+                        return self._send(400, {'error': str(e)})
+                    return self._send(200, {'ok': True, 'profile': prof})
                 if self.path == '/api/memo':
                     if not os.path.exists(L.ST):
                         return self._send(409, {'error': '진행 중인 게임 없음'})
