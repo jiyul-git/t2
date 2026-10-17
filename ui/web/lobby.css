@@ -54,9 +54,14 @@ main{padding:0 14px 22px}
 .facts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:12px}
 .fact{border-top:1px solid #355249;padding-top:6px}.fact b{display:block;font-size:12px}.fact span{font-size:8px;color:#81968f}
 .card .enter{margin-top:10px;font-size:10px;color:#e7d3a5;font-weight:800}
-.sheetWrap{position:fixed;inset:0;z-index:50;background:#000a;display:flex;align-items:flex-end;justify-content:center}
-.sheet{width:min(100%,560px);padding:24px 18px calc(18px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;
-  background:#10201d;border-top:1px solid #d5b57466;box-shadow:0 -20px 50px #0009;position:relative}
+/* Sheets are separate floating windows: the page behind is dimmed, blurred and takes no touches. */
+.sheetWrap{position:fixed;inset:0;z-index:50;background:#000c;display:flex;align-items:flex-end;justify-content:center;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom));overscroll-behavior:contain;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.sheet{width:min(100%,560px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;
+  padding:28px 18px 18px;border-radius:24px;background:#10201d;border:1px solid #d5b57466;box-shadow:0 18px 60px #000c;position:relative}
+.sheet::before{content:"";position:absolute;left:50%;top:9px;width:38px;height:4px;margin-left:-19px;border-radius:4px;background:#ffffff2e}
+html.sheet-open,html.sheet-open body{overflow:hidden}
 .close{position:absolute;right:15px;top:12px;width:35px;height:35px;border-radius:50%;border:1px solid #375149;background:#162924;font-size:22px}
 .joinTitle h2{margin:0 0 4px;font-size:23px}.joinTitle p{margin:0;color:var(--muted);font-size:11px}
 .joinFacts{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
@@ -195,7 +200,7 @@ main{padding:0 14px 28px}
 .bottom button{padding:6px 0;color:#b1c4be;font-size:10px}
 .bottom button span{font-size:20px;color:inherit;line-height:1.2}
 .bottom button.active{color:#ffdc90;background:linear-gradient(180deg,#8d723524,#bd913a42)}
-.sheet{background:#102e30;border-top-color:#d5ba7a}
+.sheet{background:#102e30;border-color:#d5ba7a}
 @media(max-width:360px){
  .top{padding:7px 9px}.brand{font-size:19px}
  .featured-detail{padding-left:33%;background-size:100% 100%,39% 100%}
@@ -359,7 +364,7 @@ html{-webkit-tap-highlight-color:transparent}
 
  /* sheets: the shade fades, the sheet comes up with a little give */
  @keyframes t2-fade{from{opacity:0}to{opacity:1}}
- @keyframes t2-sheet{from{transform:translateY(100%)}70%{transform:translateY(-1.5%)}to{transform:none}}
+ @keyframes t2-sheet{from{transform:translateY(calc(100% + 24px))}70%{transform:translateY(-1.5%)}to{transform:none}}
  .sheetWrap:not([hidden]){animation:t2-fade .2s ease both}
  .sheetWrap:not([hidden]) .sheet{animation:t2-sheet .38s cubic-bezier(.2,.8,.25,1) both}
 
@@ -372,7 +377,7 @@ html{-webkit-tap-highlight-color:transparent}
  .featured-button{animation:t2-glow 3.2s ease-in-out infinite}
 }
 @media (prefers-reduced-motion:no-preference){
- @keyframes t2-sheet-out{to{transform:translateY(100%)}}
+ @keyframes t2-sheet-out{to{transform:translateY(calc(100% + 24px))}}
  @keyframes t2-fade-out{to{opacity:0}}
  .sheetWrap.closing{animation:t2-fade-out .22s ease both;pointer-events:none}
  .sheetWrap.closing .sheet{animation:t2-sheet-out .22s cubic-bezier(.4,0,.8,.4) both}

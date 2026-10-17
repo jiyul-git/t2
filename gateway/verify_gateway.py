@@ -436,6 +436,18 @@ def main():
         ok(sorted(r.keys()) == ['ok'], 'logout reply: %r' % (r,))
         st, r, _ = b.call('GET', '/auth/me')
         ok(st == 200 and sorted(r) == ['email', 'registered'], 'me has only email and registered: %r' % (r,))
+
+        # a browser reuses one connection: logout's unread body must not spoil the next request ('{}GET')
+        import http.client
+        conn = http.client.HTTPConnection('127.0.0.1', p, timeout=10)
+        for path in ('/auth/logout', '/auth/me', '/auth/google'):
+            conn.request('POST', path, body=b'{}', headers={'Content-Type': 'application/json'})
+            conn.getresponse().read()
+            conn.request('GET', '/healthz')
+            resp = conn.getresponse()
+            ok(resp.status == 200 and json.loads(resp.read()) == {'ok': True},
+               'next request on the same connection after %s is intact: %s' % (path, resp.status))
+        conn.close()
     finally:
         stop(srv)
         shutil.rmtree(root, ignore_errors=True)

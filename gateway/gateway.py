@@ -438,6 +438,7 @@ def make_handler(cfg, accounts, backends, verify_token):
             n = int(self.headers.get('Content-Length') or 0)
             if n > limit:
                 raise ValueError('too large')
+            self.body_read = True
             return self.rfile.read(n) if n else b''
 
         def _too_many_fails(self):
@@ -463,13 +464,25 @@ def make_handler(cfg, accounts, backends, verify_token):
 
         # ---- routes
         def do_GET(self):
-            self._route('GET')
+            self._handle('GET')
 
         def do_POST(self):
-            self._route('POST')
+            self._handle('POST')
 
         def do_HEAD(self):
-            self._route('HEAD')
+            self._handle('HEAD')
+
+        def _handle(self, method):
+            self.body_read = False
+            self._route(method)
+            # a request body we answered without reading would be taken as the start of the next
+            # request on this keep-alive connection (e.g. '{}GET'): read it off, or close if it is huge
+            n = int(self.headers.get('Content-Length') or 0)
+            if n and not self.body_read:
+                if n <= 1 << 20:
+                    self.rfile.read(n)
+                else:
+                    self.close_connection = True
 
         def _route(self, method):
             self.stale = False

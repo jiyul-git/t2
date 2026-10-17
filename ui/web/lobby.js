@@ -33,13 +33,15 @@ function setBalance(v){
   setBalance.raf=requestAnimationFrame(step);
 }
 // Sheets slide down when they close (the CSS plays .closing), and can be reopened mid-way.
-function showSheet(el){ clearTimeout(el._closeT); el.classList.remove('closing'); el.hidden=false; }
+// While one is open the page behind does not scroll (html.sheet-open).
+function lockPage(){ document.documentElement.classList.toggle('sheet-open',!!document.querySelector('.sheetWrap:not([hidden])')); }
+function showSheet(el){ clearTimeout(el._closeT); el.classList.remove('closing'); el.hidden=false; lockPage(); }
 function hideSheet(el){
   if(el.hidden) return;
-  if(reduceMotion){ el.hidden=true; return; }
+  if(reduceMotion){ el.hidden=true; lockPage(); return; }
   el.classList.add('closing');
   clearTimeout(el._closeT);
-  el._closeT=setTimeout(()=>{ el.classList.remove('closing'); el.hidden=true; },220);
+  el._closeT=setTimeout(()=>{ el.classList.remove('closing'); el.hidden=true; lockPage(); },220);
 }
 async function loadLobby() {
   try {
