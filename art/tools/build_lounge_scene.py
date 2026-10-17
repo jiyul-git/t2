@@ -5,7 +5,11 @@
 
 Writes bg/*.webp at the scene's logical size and rewrites scene.json.
 The sofa front (what hides a seated character's lower body) is cut from each interior variant
-with the polygon below, measured on the 1440 x 1000 scene.
+with the polygon below, measured on the 1440 x 1000 picture.
+
+The interior is the floor-extended version (interior_<v>_ext.webp, see extend_floor.py), so the
+scene is taller than the original picture: rows below 1000 are sofa bases and carpet. The window
+view only fills the top, so it is padded down with its own last row.
 """
 import argparse
 import json
@@ -15,19 +19,20 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 SRC = Path(__file__).resolve().parent.parent / 'lounge_bg'
-W, H = 1440, 1000
+W, H0 = 1440, 1000                 # the original picture
+H = 1186                           # with the floor extension (2050 / 1728 * 1000)
 VARIANTS = [('night', -10), ('golden', 2), ('day', 14)]       # lighting stage -> sun elevation anchor
 
 # Everything in front of a seated character: armrests and the front of the seat cushions.
 SOFA_FRONT = [
-    [(0, 770), (300, 770), (300, 868), (870, 868), (870, 1000), (0, 1000)],                 # left sofa
-    [(870, 835), (1050, 835), (1050, 925), (1440, 925), (1440, 1000), (870, 1000)],        # right sofa
+    [(0, 770), (300, 770), (300, 868), (870, 868), (870, H), (0, H)],                       # left sofa
+    [(870, 835), (1050, 835), (1050, 925), (1440, 925), (1440, H), (870, H)],              # right sofa
 ]
 
 SCENE = {
     'placeholder': False,
     'size': [W, H],
-    'baselineY': 990,              # walkers pass in front of the sofas, feet just above the bottom edge
+    'baselineY': 1150,             # walkers pass on the carpet in front of the sofas
     'horizonY': 560,
     'windowFacing': 225,
     'charScale': 1.25,
@@ -81,7 +86,12 @@ def main(argv=None):
     layers = {'outside': [], 'interior': [], 'sofaFront': []}
     for name, elev in VARIANTS:
         for kind in ('outside', 'interior'):
-            im = Image.open(SRC / ('%s_%s.webp' % (kind, name))).convert('RGBA').resize((W, H), Image.LANCZOS)
+            if kind == 'interior':
+                im = Image.open(SRC / ('interior_%s_ext.webp' % name)).convert('RGBA').resize((W, H), Image.LANCZOS)
+            else:
+                top = Image.open(SRC / ('outside_%s.webp' % name)).convert('RGBA').resize((W, H0), Image.LANCZOS)
+                a = np.asarray(top)
+                im = Image.fromarray(np.concatenate([a, np.repeat(a[-1:], H - H0, axis=0)]))
             im.save(bg / ('%s_%s.webp' % (kind, name)), 'WEBP', quality=88, method=6)
             layers[kind].append({'elev': elev, 'file': 'bg/%s_%s.webp' % (kind, name)})
             if kind == 'interior':
