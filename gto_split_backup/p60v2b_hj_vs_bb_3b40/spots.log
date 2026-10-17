@@ -23,3 +23,5 @@ START p60v2b_hj_vs_bb_3b40 2026-10-17T06:00:57Z
 {"k": 2, "decision": "continue", "terminals": {"|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000": {"HJ": [0.7212525677296822, 1.166], "BB": [0.5642549858241561, 0.843]}, ":fold|BB:raise@8.000000|HJ:raise@17.200000|BB:call@17.200000": {"HJ": [1.7500050497473125, 1.473], "BB": [2.6926700407007367, 0.726]}}}
 START p60v2b_hj_vs_bb_3b40 2026-10-17T08:01:03Z
 {"k": 3, "decision": "continue", "terminals": {"|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000": {"HJ": [0.4726589114654987, 1.193], "BB": [0.42470888766083753, 0.845]}, ":fold|BB:raise@8.000000|HJ:raise@17.200000|BB:call@17.200000": {"HJ": [3.1490291903721968, 1.865], "BB": [3.6255361749211756, 1.712]}}}
+START p60v2b_hj_vs_bb_3b40 2026-10-17T10:01:10Z
+{"k": 4, "decision": "continue", "terminals": {"|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000": {"HJ": [0.2779446821864747, 1.132], "BB": [0.24257969677643954, 0.817]}, ":fold|BB:raise@8.000000|HJ:raise@17.200000|BB:call@17.200000": {"HJ": [3.362613327462653, 2.138], "BB": [3.6929733554589785, 0.776]}}}
