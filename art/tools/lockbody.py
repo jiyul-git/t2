@@ -1,87 +1,127 @@
 """One upper body (head, hoodie, arms, tail, suitcase) from a base frame + the legs of each frame.
-Legs = below the hoodie hem and left of the suitcase (per row, from the base frame).
-usage: lockbody.py DIR BASE OUTDIR f1,f2,...   (frames DIR/f_<n>.png, walking left)"""
+usage: lockbody.py DIR BASE OUTDIR f1,f2,...   (frames DIR/f_<n>.png, walking left)
+
+The base frame keeps: everything above its hoodie hem, its suitcase (body + outline), and the block
+right of the pulling hand above the suitcase (hand, handle, tail). Everything else below the hem
+is legs and comes from each frame, aligned on the head and the hem. Cleanup, so no seam shows:
+- each frame contributes only its leg blob (its own suitcase, handle and stray bits are dropped);
+- right under the hem the legs may not stick out past the base's hips;
+- where a leg is cut by the suitcase or the hip line, the cut edge gets the drawing's outline.
+"""
 import sys, os, numpy as np, cv2
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from inkfix import reink, defringe
 from PIL import Image
-d, base, outd, names = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4].split(',')
-os.makedirs(outd, exist_ok=True)
-def load(n): return np.asarray(Image.open(os.path.join(d, 'f_%s.png' % n)).convert('RGBA')).astype(np.float32)
-def hem(a, right):
+
+OUTLINE = np.array([34, 24, 20, 255], np.float32)   # the line colour of the drawing
+HAND_BLOCK = (218, 286)    # x >= 218 and y < 286 in the base: pulling hand, handle, tail -> base
+HIP_ROWS = 22              # rows under the hem where legs stay inside the base's hips
+
+
+def load(d, n):
+    return np.asarray(Image.open(os.path.join(d, 'f_%s.png' % n)).convert('RGBA')).astype(np.float32)
+
+
+def hem_rows(a, right=215):
     r, g, b, al = a[..., 0], a[..., 1], a[..., 2], a[..., 3]
     green = (g > r + 5) & (g > b) & (al > 128)
-    h = np.full(a.shape[1], -1)
-    for x in range(a.shape[1]):
+    W = a.shape[1]
+    h = np.full(W, -1)
+    for x in range(W):
         ys = np.nonzero(green[:, x])[0]
         if len(ys) >= 3: h[x] = ys.max()
-    ok = np.nonzero((h > 0) & (np.arange(len(h)) < right))[0]
-    hh = np.interp(np.arange(len(h)), ok, h[ok])
-    hp = np.pad(hh, 10, mode='edge'); hh = np.array([np.median(hp[i:i + 21]) for i in range(len(hh))])
-    hh[:ok.min()] = hh[ok.min()]; hh[ok.max():] = hh[ok.max()]
-    hem.end = ok.max()
-    return hh.round().astype(int)
-def suitcase_left(a):
-    """per row: leftmost x of the suitcase (navy body + its outline + handle) in the base frame"""
+    ok = np.nonzero((h > 0) & (np.arange(W) < right))[0]
+    hh = np.interp(np.arange(W), ok, h[ok])
+    hp = np.pad(hh, 10, mode='edge')
+    hh = np.array([np.median(hp[i:i + 21]) for i in range(W)])
+    return hh.round().astype(int), int(np.median(h[ok]))
+
+
+def navy_mask(a, grow=3):
     r, g, b, al = a[..., 0], a[..., 1], a[..., 2], a[..., 3]
     navy = (b > r + 4) & (b >= g) & (al > 128)
     n, lab, st, _ = cv2.connectedComponentsWithStats(navy.astype(np.uint8))
-    k = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
-    body = cv2.dilate((lab == k).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(bool)
-    x0, y0 = st[k, 0], st[k, 1]
-    grey = (np.minimum(np.minimum(r, g), b) > 90) & (np.ptp(a[..., :3], axis=2) < 30) & (al > 128)
-    handle = grey.copy(); handle[:, :x0 - 30] = False; handle[y0:] = False; handle[:y0 - 70] = False
-    m = body | handle
-    H, W = m.shape; left = np.full(H, W, float)
-    for y in range(H):
-        xs = np.nonzero(m[y])[0]
-        if len(xs): left[y] = xs.min() - 1
-    rows = np.nonzero(left < W)[0]
-    left[:rows.min()] = W; left[rows.max():] = left[rows.max()]
-    return left.astype(int)
-def head_x(a):
-    al = a[..., 3] > 128; top = np.nonzero(al.any(1))[0][0]
-    return np.nonzero(al[top:top + 120])[1].mean()
-def unwhite(a, hm, left):
-    """light-grey gap between the pulling arm and the body, left over from the sheet"""
-    r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    mn = np.minimum(np.minimum(r, g), b); mx = np.maximum(np.maximum(r, g), b)
-    yy = np.arange(a.shape[0])[:, None]; xx = np.arange(a.shape[1])[None]
-    xl = int(np.median(left[hm - 40:hm]))
-    a[(mn > 200) & (mx - mn < 30) & (xx > xl - 60) & (xx < xl + 25) & (yy > hm - 70) & (yy < hm + 25)] = 0
+    if n < 2: return np.zeros(navy.shape, bool)
+    keep = np.isin(lab, [k for k in range(1, n) if st[k, cv2.CC_STAT_AREA] > 200])
+    return cv2.dilate(keep.astype(np.uint8), np.ones((2 * grow + 1, 2 * grow + 1), np.uint8)).astype(bool)
 
-B = load(base); H, W = B.shape[:2]
-left = suitcase_left(B); hb = hem(B, int(np.median(left)))
-unwhite(B, int(np.median(hb)), left)
-pad = 40
-yy = np.arange(H + pad)[:, None]; xx = np.arange(W)[None]
-hbp = hb[None]; lp = np.concatenate([left, np.full(pad, left[-1])])[:, None]
-# legs zone: below the hem and left of a line drawn on the base frame (x at y), clear of the
-# tail, the pulling hand, the handle and the suitcase - those always come from the base
-EDGE = [(0, 218), (262, 218), (285, 230), (305, 243), (H + pad, 258)]
-xb = np.interp(np.arange(H + pad), [p[0] for p in EDGE], [p[1] for p in EDGE])[:, None]
-region = (yy > hbp + 3) & (xx < xb)
-band = region[:H] & (yy[:H] < hbp + 24)
-hemB = int(np.median(hb[:int(np.median(left))]))
-for k, n in enumerate(names):
-    F = load(n); fl = suitcase_left(F); hf = hem(F, int(np.median(fl)))
-    dx = int(round(head_x(B) - head_x(F))); dy = hemB - int(np.median(hf[:int(np.median(fl))]))
-    canvas = np.zeros((H + pad, W, 4), np.float32)
-    Fl = F.copy(); yf = np.arange(F.shape[0])[:, None]
-    xf = np.arange(F.shape[1])[None]
-    Fl[~(yf > hf[None] - 4)] = 0                          # this frame below its own hem
-    sh = np.zeros_like(canvas)
-    ys0, ys1 = max(0, -dy), min(F.shape[0], H + pad - dy); xs0, xs1 = max(0, -dx), min(F.shape[1], W - dx)
-    sh[ys0 + dy:ys1 + dy, xs0 + dx:xs1 + dx] = Fl[ys0:ys1, xs0:xs1]
-    sh[~region] = 0
-    n_, lab_, st_, _ = cv2.connectedComponentsWithStats((sh[..., 3] > 0).astype(np.uint8))
-    sh[np.isin(lab_, [i for i in range(1, n_) if st_[i, cv2.CC_STAT_AREA] < 80])] = 0   # stray bits of its own tail/suitcase
-    # base underneath, only in a band under the hem: fills the small holes where the two frames disagree
-    canvas[:H][band] = B[band]
-    a = sh[..., 3:4] / 255.
-    canvas[..., :3] = sh[..., :3] * a + canvas[..., :3] * (1 - a); canvas[..., 3:] = np.maximum(canvas[..., 3:], sh[..., 3:])
-    up = B.copy(); up[region[:H]] = 0
-    a = up[..., 3:4] / 255.
-    canvas[:H, :, :3] = up[..., :3] * a + canvas[:H, :, :3] * (1 - a)
-    canvas[:H, :, 3:] = np.maximum(canvas[:H, :, 3:], up[..., 3:])
-    al = canvas[..., 3] > 0; ys, xs = np.nonzero(al)
-    Image.fromarray(canvas.clip(0, 255).astype(np.uint8)).crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)).save(os.path.join(outd, 'f_%d.png' % k))
-    print(n, 'dx', dx, 'dy', dy)
+
+def head_x(a):
+    al = a[..., 3] > 128
+    top = np.nonzero(al.any(1))[0][0]
+    return np.nonzero(al[top:top + 120])[1].mean()
+
+
+def edge_of(mask):
+    m = mask.astype(np.uint8)
+    return mask & ~cv2.erode(m, np.ones((3, 3), np.uint8)).astype(bool)
+
+
+def over(dst, src):                       # premultiplied
+    return src + dst * (1 - src[..., 3:] / 255.)
+
+
+def premul(a):
+    p = a.copy(); p[..., :3] *= p[..., 3:] / 255.; return p
+
+
+def unpremul(p):
+    out = p.copy(); al = p[..., 3:]
+    out[..., :3] = np.where(al > 0, p[..., :3] * 255. / np.maximum(al, 1e-3), 0)
+    return out
+
+
+def main():
+    d, base, outd, names = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4].split(',')
+    os.makedirs(outd, exist_ok=True)
+    B = load(d, base)
+    H, W = B.shape[:2]
+    hb, hemB = hem_rows(B)
+    pad = 40
+    HH = H + pad
+    yy, xx = np.mgrid[0:HH, 0:W]
+    hbp = np.concatenate([hb[None].repeat(HH, 0)], 0)
+    Bp = np.zeros((HH, W, 4), np.float32); Bp[:H] = B
+    keep = (yy <= hbp + 2) | navy_mask(Bp) | ((xx >= HAND_BLOCK[0]) & (yy < HAND_BLOCK[1]))
+    region = ~keep
+    # legs reach a little under the hoodie so no gap shows along the hem's soft edge
+    legzone = (yy > hbp - 4) & ~(navy_mask(Bp) | ((xx >= HAND_BLOCK[0]) & (yy < HAND_BLOCK[1])))
+    base_al = Bp[..., 3] > 20
+    hips = cv2.dilate(base_al.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+    top = premul(Bp); top[region] = 0
+    band = premul(Bp); band[~(region & (yy < hbp + 16))] = 0
+    for k, n in enumerate(names):
+        F = load(d, n)
+        hf, hemF = hem_rows(F)
+        dx = int(round(head_x(B) - head_x(F))); dy = hemB - hemF
+        L = np.zeros((HH, W, 4), np.float32)
+        ys0, ys1 = max(0, -dy), min(F.shape[0], HH - dy)
+        xs0, xs1 = max(0, -dx), min(F.shape[1], W - dx)
+        L[ys0 + dy:ys1 + dy, xs0 + dx:xs1 + dx] = F[ys0:ys1, xs0:xs1]
+        hfp = np.full(W, hemB)                         # the frame's hem, moved like the frame
+        L[yy <= hbp - 4] = 0                            # this frame's hoodie stays out (top covers the rest)
+        L[navy_mask(L)] = 0                             # and its own suitcase
+        before = L[..., 3] > 20
+        clip = legzone & ~((yy < hbp + 2 + HIP_ROWS) & ~hips)
+        L[~clip] = 0
+        a = L[..., 3] > 20
+        n_, lab, st, _ = cv2.connectedComponentsWithStats(a.astype(np.uint8), connectivity=8)
+        if n_ > 1:
+            big = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+            L[(lab != big) & (lab > 0)] = 0
+            a = lab == big
+        # one clean silhouette and outline for the legs; the hem edge is covered by the hoodie
+        Lp = reink(premul(L), allow=clip.astype(np.float32), protect=(yy < hbp + 8))
+        a = Lp[..., 3] > 20
+        # base pants under the hem only fill gaps inside this frame's legs, never widen them
+        bnd = band.copy(); bnd[~cv2.erode(a.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)] = 0
+        out = over(over(bnd, Lp), top)
+        res = defringe(unpremul(out))
+        al = res[..., 3] > 0
+        ys, xs = np.nonzero(al)
+        Image.fromarray(res.clip(0, 255).astype(np.uint8)).crop((0, ys.min(), W, ys.max() + 1)).save(os.path.join(outd, 'f_%d.png' % k))
+        print(n, 'dx', dx, 'dy', dy)
+
+
+if __name__ == '__main__':
+    main()

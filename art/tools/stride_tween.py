@@ -6,7 +6,10 @@ between them are pulled along smoothly. Upper body (above the hem) is untouched.
     python3 art/tools/stride_tween.py IN OUT --front DX [--back DX] [--lift PX] [--cx X]
 """
 import argparse
+import os, sys
 import numpy as np, cv2
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from inkfix import reink
 from PIL import Image
 
 ap = argparse.ArgumentParser()
@@ -45,21 +48,27 @@ def over(dst, src):
     return src + dst * (1 - src[..., 3:] / 255.)
 
 
-# right edge of the legs: a line along the suitcase's front edge (same as lockbody.py), clear of the
-# pulling hand and the handle
-EDGE = [(0, 218), (262, 218), (285, 230), (305, 243), (H, 258)]
-xb = np.interp(np.arange(H), [p[0] for p in EDGE], [p[1] for p in EDGE]).astype(np.float32)[:, None]
-legs = (yy > hm + 2) & (xx < np.minimum(xb, a.right))
+# legs: below the hem, minus the suitcase and the hand/handle/tail block (same rule as lockbody.py)
+from lockbody import navy_mask, HAND_BLOCK
+zone = (yy > hm - 4) & ~navy_mask(im) & ~((xx >= HAND_BLOCK[0]) & (yy < HAND_BLOCK[1]))   # where legs may be
+legs = zone & (im[..., 3] > 0)
 front_m = legs & (xx < a.cx)
 back_m = legs & (xx >= a.cx)
 top = pm.copy(); top[legs] = 0
 band = pm.copy(); band[~(legs & (yy < hm + 16))] = 0     # pants right under the hem fills small gaps
 front = pm.copy(); front[~front_m] = 0
 back = pm.copy(); back[~back_m] = 0
-out = band
-out = over(out, moved(back, -a.back, 0))
-out = over(out, moved(front, a.front, a.lift))
-out = over(out, top)
+mb = moved(back, -a.back, 0)
+mf = moved(front, a.front, a.lift)
+legs_l = over(over(band, mb), mf)
+# the front leg now overlaps the back one: draw its outline where it lies over the back leg
+fa = mf[..., 3] > 40
+edge = fa & ~cv2.erode(fa.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+edge &= (mb[..., 3] > 40) & (yy > hm + 8)
+edge = cv2.dilate(edge.astype(np.uint8), np.ones((2, 2), np.uint8)).astype(bool) & fa
+legs_l[edge] = np.array([34, 24, 20, 255], np.float32)
+legs_l = reink(legs_l, allow=zone.astype(np.float32), protect=(yy < hm + 8))
+out = over(legs_l, top)
 al = out[..., 3:]
 out[..., :3] = np.where(al > 0, out[..., :3] * 255. / np.maximum(al, 1e-3), 0)
 Image.fromarray(out.clip(0, 255).astype(np.uint8)).save(a.dst)
