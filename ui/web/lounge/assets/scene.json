@@ -8,18 +8,19 @@
  "horizonY": 560,
  "windowFacing": 225,
  "charScale": 1.25,
+ "seatedInFront": true,
+ "seatRest": 110,
  "characters": [
-  "tiger_walker",
-  "rabbit_walker",
-  "turtle_walker"
+  "tiger",
+  "rabbit",
+  "turtle"
  ],
  "passEvery": [
   15,
   45
  ],
  "preview": [
-  "rabbit_walker",
-  "turtle_walker"
+  "arrive:tiger"
  ],
  "window": {
   "x": 700,
@@ -110,23 +111,27 @@
  "seats": [
   {
    "id": "s0",
-   "x": 430,
-   "y": 995
+   "x": 440,
+   "y": 1027,
+   "scale": 0.9
   },
   {
    "id": "s1",
    "x": 665,
-   "y": 995
+   "y": 1027,
+   "scale": 0.9
   },
   {
    "id": "s2",
-   "x": 1145,
-   "y": 1050
+   "x": 1030,
+   "y": 1039,
+   "scale": 0.9
   },
   {
    "id": "s3",
-   "x": 1335,
-   "y": 1050
+   "x": 1290,
+   "y": 1076,
+   "scale": 0.9
   }
  ],
  "entries": {

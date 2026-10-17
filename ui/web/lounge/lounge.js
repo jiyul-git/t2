@@ -160,9 +160,10 @@
     // Reduced motion: two people sitting still, lighting refreshed once a minute.
     function startStatic() {
       const seats = assets.scene.seats;
-      const picks = assets.chars.slice(0, 2).map((c, i) => ({
-        name: c.manifest.name, clip: 'sit_idle', frame: 0, x: seats[[1, 3][i] % seats.length].x, lane: 'seat',
-      }));
+      const picks = assets.chars.filter(c => Behavior.canSit(c.manifest)).slice(0, 2).map((c, i) => {
+        const seat = [1, 3][i] % seats.length;
+        return { name: c.manifest.name, clip: 'sit_idle', frame: 0, x: seats[seat].x, lane: 'seat', state: 'SEATED', seat, spot: seat, face: '' };
+      });
       const redraw = () => {
         if (failed || stopped) return;
         try { updateLighting(true); updateBoard(true); drawNow(picks); } catch (e) { fail(e); return; }
@@ -229,7 +230,7 @@
 
     function loadDebug() {
       const s = doc.createElement('script');
-      s.src = 'lounge/debug.js?v=1';
+      s.src = 'lounge/debug.js?v=2';
       s.onload = () => { if (root.T2LoungeDebug) root.T2LoungeDebug.attach(api.debugHandle()); };
       doc.head.appendChild(s);
     }
@@ -249,6 +250,9 @@
           setSceneTime(sec) { simT = sec; },
           setScale(n) { debug.clockMs = clockMs(); debug.clockSetAt = Date.now(); debug.scale = n; },
           force(name, kind) { return director ? director.force(name, kind) : false; },
+          // 'pass' | 'arrive' | 'leave' for a character, as the next event (behavior.js request)
+          request(name, kind, seat) { return director ? director.request(name, kind, seat) : false; },
+          mover() { return director ? director.mover() : null; },
           setFace(name, face) { return director && director.setFace ? director.setFace(name, face) : false; },
           reset() { debug.clockMs = null; debug.scale = 1; updateLighting(true); updateBoard(true); },
           setPlace(lat, lon) { location.setDebug(lat, lon); updateLighting(true); },

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a walking character for the lounge from a 4x4 Gemini walk sheet (one config per character).
 
-    python3 art/tools/build_walker.py rabbit turtle      # build these (default: all in CHARS)
+    python3 art/tools/build_walker.py rabbit turtle [--out DIR]   # build these (default: all in CHARS)
     python3 art/tools/build_walker.py rabbit --measure   # print the feet of every usable cell
     python3 art/tools/build_walker.py rabbit --dump DIR  # also save the loop frames as PNGs
 
@@ -18,8 +18,10 @@ comes from ONE base cell and only the legs below the skirt/jacket hem come from 
    An in-between pose slides each leg (more toward the foot, nothing at the hem) and can lift it;
 4. base upper body on top (the skirt hides where the legs start), pale sheet fringe removed;
 5. walk_r = the frames as drawn (all these sheets walk right), walk_l = mirrored;
-6. ui/web/lounge/assets/chars/<name>_walker/{atlas.webp, manifest.json}, the same format as
-   tiger_walker: one anchor for every frame (body x, ground line), so the body glides level.
+6. <out>/{atlas, manifest.json} (walk_r / walk_l + face patches): one anchor for every frame (body x,
+   ground line), so the body glides level. The scene uses these through art/tools/build_character.py,
+   which builds the whole character (walking and sitting) on top; run alone this writes to a
+   temporary folder unless --out is given.
 
 The loop order is chosen by measuring the feet (--measure): the planted foot moves steadily backward
 relative to the body while the other swings forward; 'advance' (scene px per frame) is that backward
@@ -44,7 +46,6 @@ import face_patch   # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = Path(__file__).resolve().parent
-CHARS_DIR = ROOT / 'ui/web/lounge/assets/chars'
 SCENE_CHAR_SCALE = 1.25        # scene.json charScale (the renderer multiplies manifest.scale by it)
 
 # Coordinates are in the base cell as cut_sheet.py cuts it from the (enlarged) sheet, divided by
@@ -438,7 +439,9 @@ def build(name, cfg, measure=False, dump=None):
     return frames, ays, bx, fig_h, bobinfo, faces
 
 
-def pack(name, cfg, frames, ays, bx, fig_h, faces=None):
+def pack(name, cfg, frames, ays, bx, fig_h, faces=None, out_dir=None, lossless=False, quiet=False):
+    """Write <out_dir>/<name>_walker/{atlas, manifest.json}; out_dir defaults to a new temporary folder.
+    lossless=True writes atlas.png (build_character.py re-encodes the whole atlas once)."""
     a = cfg['atlas']
     n = len(frames)
     right = [im.resize((round(im.width * a), round(im.height * a)), Image.LANCZOS) for im in frames]
@@ -462,11 +465,15 @@ def pack(name, cfg, frames, ays, bx, fig_h, faces=None):
     scale = cfg['height'] / (fig_h * a * SCENE_CHAR_SCALE)
     # scene px per frame = the planted foot's step, so it stays put on the floor
     adv = int(round(cfg['step'] * cfg['upscale'] * cfg['height'] / fig_h))
-    d = CHARS_DIR / (name + '_walker')
+    d = (Path(out_dir) if out_dir else Path(tempfile.mkdtemp(prefix='walkers_'))) / (name + '_walker')
     d.mkdir(parents=True, exist_ok=True)
-    atlas.save(d / 'atlas.webp', lossless=False, quality=90, method=6)
+    aname = 'atlas.png' if lossless else 'atlas.webp'
+    if lossless:
+        atlas.save(d / aname)
+    else:
+        atlas.save(d / aname, lossless=False, quality=90, method=6)
     man = {
-        'name': name + '_walker', 'walker': True, 'pass': 'r', 'atlas': 'atlas.webp',
+        'name': name + '_walker', 'walker': True, 'pass': 'r', 'atlas': aname,
         'scale': round(scale, 4), 'mirrorable': False, 'frames': out,
         'poses': {'walk_r': 0, 'walk_l': n},
         'clips': {
@@ -475,8 +482,10 @@ def pack(name, cfg, frames, ays, bx, fig_h, faces=None):
         },
     }
     (d / 'manifest.json').write_text(json.dumps(man, separators=(',', ':')))
-    print('%s_walker: %d frames, atlas %dx%d, %d bytes, scale %.4f, advance %s' % (
-        name, n, atlas.width, atlas.height, (d / 'atlas.webp').stat().st_size, scale, adv))
+    if not quiet:
+        print('%s_walker: %d frames, atlas %dx%d, %d bytes, scale %.4f, advance %s -> %s' % (
+            name, n, atlas.width, atlas.height, (d / aname).stat().st_size, scale, adv, d))
+    return d
 
 
 def main():
@@ -484,6 +493,7 @@ def main():
     ap.add_argument('names', nargs='*')
     ap.add_argument('--measure', action='store_true')
     ap.add_argument('--dump')
+    ap.add_argument('--out', help='output folder (default: a new temporary folder)')
     a = ap.parse_args()
     for name in a.names or list(CHARS):
         cfg = CHARS[name]
@@ -492,7 +502,7 @@ def main():
             continue
         frames, ays, bx, fig_h, bob, faces = build(name, cfg, dump=a.dump)
         print('%s bob: s %s -> bob %s atlas px (%.1f scene px peak-to-peak)' % (name, bob['s'], bob['bob'], bob['pp_scene']))
-        pack(name, cfg, frames, ays, bx, fig_h, faces)
+        pack(name, cfg, frames, ays, bx, fig_h, faces, out_dir=a.out)
 
 
 if __name__ == '__main__':

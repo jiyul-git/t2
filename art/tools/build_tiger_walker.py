@@ -7,9 +7,11 @@
    by flipping only the legs (mirror_legs.py) - Gemini never drew that foot stepping;
 2. one upper body for every frame (lockbody.py), written to art/cutouts/tiger_walk_b/loop/left_*;
 3. right-facing copies with the T2 letters kept readable (mirror_logo.py) -> loop/right_*;
-4. ui/web/lounge/assets/chars/tiger_walker/{atlas.webp, manifest.json}.
-A walker only has walk_r / walk_l: it crosses the lounge and leaves (no sofa). Every frame shares one
-anchor on the upper body, so the body glides level and only the legs move.
+4. <out>/{atlas, manifest.json}: walk_r / walk_l with the face patches. The scene does not use this
+   directly any more: art/tools/build_character.py builds the whole tiger (walking, sitting) on top
+   of it. Run on its own (python3 art/tools/build_tiger_walker.py [--out DIR]) it writes to a
+   temporary folder unless --out is given.
+Every frame shares one anchor on the upper body, so the body glides level and only the legs move.
 """
 import json
 import shutil
@@ -42,7 +44,6 @@ ORDER = ['22', '30', '03', '10', '12', '21']
 TWEENS = [(3, 30, 40, 10)]
 KEEP_IN_SWAP = {1, 2}     # loop frames (after the in-betweens) with both feet under the body
 BASE = '10'               # the upper body every frame shares
-OUT = ROOT / 'ui/web/lounge/assets/chars/tiger_walker'
 SCALE = 0.62          # atlas pixels per source pixel (keeps the atlas small)
 FPS, ADVANCE = 10, 26  # frames per second, scene px moved per frame (matches the planted foot, see footslip check)
 # walking bob (walk_bob.py): leg ~ hip to sole in source px, pp = peak-to-peak as a share of the figure
@@ -155,9 +156,13 @@ def build_loop():
     return len(seq), ays, info
 
 
-def main():
+def main(out=None, lossless=False, quiet=False):
+    """Build into out (a folder; default: a new temporary one). lossless=True writes atlas.png
+    (for build_character.py, which re-encodes the whole atlas once). Returns the folder."""
+    OUT = Path(out) if out else Path(tempfile.mkdtemp(prefix='tiger_walker_'))
     n, ays, info = build_loop()
-    print('tiger bob: s %s -> bob %s atlas px (%.1f scene px peak-to-peak)' % (info['s'], info['bob'], info['pp_scene'] * 1.25))
+    if not quiet:
+        print('tiger bob: s %s -> bob %s atlas px (%.1f scene px peak-to-peak)' % (info['s'], info['bob'], info['pp_scene'] * 1.25))
     # same height for all (pad at the bottom, before resizing so every frame is resampled alike and
     # the shared head stays pixel-identical): the frames all start at the top of the shared head
     srcs = [Image.open(SRC / ('%s_%d.png' % (side, i))).convert('RGBA') for side in ('right', 'left') for i in range(n)]
@@ -186,9 +191,13 @@ def main():
         face_patch.direction_patches(frames_img[n], varied, list(range(n, 2 * n)))
     atlas = face_patch.attach(atlas, frames, patches)
     OUT.mkdir(parents=True, exist_ok=True)
-    atlas.save(OUT / 'atlas.webp', lossless=False, quality=90, method=6)
+    aname = 'atlas.png' if lossless else 'atlas.webp'
+    if lossless:
+        atlas.save(OUT / aname)
+    else:
+        atlas.save(OUT / aname, lossless=False, quality=90, method=6)
     man = {
-        'name': 'tiger_walker', 'walker': True, 'pass': 'r', 'atlas': 'atlas.webp',
+        'name': 'tiger_walker', 'walker': True, 'pass': 'r', 'atlas': aname,
         'scale': round(1 / SCALE, 4), 'mirrorable': False, 'frames': frames,
         'poses': {'walk_r': 0, 'walk_l': n},
         'clips': {
@@ -197,8 +206,13 @@ def main():
         },
     }
     (OUT / 'manifest.json').write_text(json.dumps(man, separators=(',', ':')))
-    print('tiger_walker: atlas %dx%d, %d bytes' % (atlas.width, atlas.height, (OUT / 'atlas.webp').stat().st_size))
+    if not quiet:
+        print('tiger_walker: atlas %dx%d, %d bytes -> %s' % (atlas.width, atlas.height, (OUT / aname).stat().st_size, OUT))
+    return OUT
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--out', help='output folder (default: a new temporary folder)')
+    main(ap.parse_args().out)

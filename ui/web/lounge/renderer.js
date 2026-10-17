@@ -464,20 +464,23 @@
       c.globalAlpha = 1;
     }
 
-    // Seated characters stand on their seat's own line (seat.y); walkers use baselineY. While turning
-    // toward or away from a seat the line slides between the two so nobody jumps.
-    function footY(e) {
+    // Seated characters stand on their seat's own line (seat.y) and are drawn at the seat's own size
+    // (seat.scale, a touch of perspective: the sofas are farther back than the aisle); walkers use
+    // baselineY and size 1. While turning toward or away from a seat both slide between the two, so
+    // nobody jumps. Returns {y, s}.
+    function place(e) {
       const idx = Number.isInteger(e.spot) ? e.spot : e.seat;
       const seat = idx >= 0 ? scene.seats[idx] : null;
       const seatY = seat && Number.isFinite(seat.y) ? seat.y : scene.baselineY;
-      if (e.state === 'ENTERING' || e.state === 'EXITING' || !seat) return scene.baselineY;
+      const seatS = seat && Number.isFinite(seat.scale) ? seat.scale : 1;
+      if (e.state === 'ENTERING' || e.state === 'EXITING' || !seat) return { y: scene.baselineY, s: 1 };
       if (e.state === 'TURN_IN' || e.state === 'TURN_OUT') {
         const ch = chars.get(e.name), clip = ch && ch.manifest.clips[e.clip];
         const n = clip ? clip.frames.length : 1, t = n > 1 ? e.frame / (n - 1) : 1;
         const k = e.state === 'TURN_IN' ? t : 1 - t;
-        return scene.baselineY + (seatY - scene.baselineY) * k;
+        return { y: scene.baselineY + (seatY - scene.baselineY) * k, s: 1 + (seatS - 1) * k };
       }
-      return seatY;
+      return { y: seatY, s: seatS };
     }
     const charScale = Number.isFinite(scene.charScale) ? scene.charScale : 1;
 
@@ -546,12 +549,33 @@
       return s;
     }
 
-    function drawShadows(c, list, L, sun, direct) {
-      const sh = sunShadow(sun.rel, sun.h);
+    // Seated people over the sofa front (scene.seatedInFront): they rest on the cushion, so instead of a
+    // floor shadow they get a short soft contact shadow on the cushion, scene.seatRest above the seat's
+    // floor line (scaled with the seat), drawn after the sofa front and before them.
+    const seatedInFront = !!scene.seatedInFront;
+    function drawSeatShadows(c, list) {
       for (const e of list) {
         const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
         if (!af) continue;
-        const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
+        const pl = place(e), sc = ch.manifest.scale * charScale * pl.s;
+        const y = pl.y - (Number.isFinite(scene.seatRest) ? scene.seatRest : 0) * pl.s;
+        const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+        g.addColorStop(0, 'rgba(0,0,0,0.30)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        c.save();
+        c.translate(e.drawX ?? e.x, y + 4);
+        c.scale(af.f.w * sc * 0.36, 12 * pl.s);
+        c.fillStyle = g;
+        c.beginPath(); c.arc(0, 0, 1, 0, 6.2832); c.fill();
+        c.restore();
+      }
+    }
+    function drawShadows(c, list, L, sun, direct) {
+      const sh = sunShadow(sun.rel, sun.h);
+      for (const e of list) {
+        if (seatedInFront && e.lane === 'seat') continue;      // up on the cushion: see drawSeatShadows
+        const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
+        if (!af) continue;
+        const pl = place(e), f = af.f, sc = ch.manifest.scale * charScale * pl.s, fy = pl.y;
         // contact shadow
         c.save();
         c.globalAlpha = 0.30; c.fillStyle = '#000000';
@@ -575,7 +599,7 @@
     function drawChar(c, e, L) {
       const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
       if (!af) return;
-      const sc = ch.manifest.scale * charScale, fy = footY(e), x = e.drawX ?? e.x;
+      const pl = place(e), sc = ch.manifest.scale * charScale * pl.s, fy = pl.y, x = e.drawX ?? e.x;
       for (const { idx, f } of faceLayers(ch, af, e.face)) c.drawImage(tinted(ch, idx, f, L), x - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
     }
 
@@ -613,7 +637,7 @@
       for (const e of list) {
         const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
         if (!af) continue;
-        const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
+        const pl = place(e), f = af.f, sc = ch.manifest.scale * charScale * pl.s, fy = pl.y;
         if (dbg.feet) { c.strokeStyle = '#ff3060'; c.beginPath(); c.arc((e.drawX ?? e.x), fy, 7, 0, 6.2832); c.stroke(); }
         if (dbg.frames) { c.strokeStyle = '#60a0ff'; c.strokeRect((e.drawX ?? (e.drawX ?? e.x)) - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc); }
         if (dbg.labels) {
@@ -677,8 +701,15 @@
       const list = state.chars || [];
       drawShadows(ctx, list, L, sun, direct);
       const byX = (a, b) => a.x - b.x;
-      for (const e of list.filter(e => e.lane === 'seat').sort(byX)) drawChar(ctx, e, L);
-      blit('mid');
+      const seated = list.filter(e => e.lane === 'seat').sort(byX);
+      if (seatedInFront) {          // on the cushion, legs over the sofa front; the aisle stays in front of them
+        blit('mid');
+        drawSeatShadows(ctx, seated);
+        for (const e of seated) drawChar(ctx, e, L);
+      } else {
+        for (const e of seated) drawChar(ctx, e, L);
+        blit('mid');
+      }
       for (const e of list.filter(e => e.lane !== 'seat').sort(byX)) drawChar(ctx, e, L);
       blit('front');
       if (state.debug) drawOverlay(ctx, list, state.debug);

@@ -36,18 +36,23 @@ SCENE = {
     'horizonY': 560,
     'windowFacing': 225,
     'charScale': 1.25,
-    # Only real walkers so far (tiger, rabbit, turtle), crossing left to right one at a time, taking
-    # turns. The placeholder sitters (tiger, rabbit, turtle, penguin) stay on disk for the tests and
-    # come back with real sitting art.
-    'characters': ['tiger_walker', 'rabbit_walker', 'turtle_walker'],
-    'passEvery': [15, 45],           # seconds of quiet between crossings (walker or plane), then a random pick
-    'preview': ['rabbit_walker', 'turtle_walker'],   # shown first, right away, while their motion is reviewed
+    'seatedInFront': True,         # seated characters sit on the cushion in front of the sofa front
+    'seatRest': 110,               # scene px (seat scale 1) from a seat's floor line up to the cushion
+    # The real animals (art/tools/build_character.py): each one passes by (left to right) or walks to a
+    # seat, sits a while and leaves - one thing moving at a time (docs/LOUNGE_SCENE_DESIGN.md 7.7).
+    'characters': ['tiger', 'rabbit', 'turtle'],
+    'passEvery': [15, 45],           # seconds of quiet after each mover (walker, sitter, plane), then a random pick
+    # shown first, right away, while their motion is reviewed: a name passes by, 'arrive:<name>' goes to a seat
+    'preview': ['arrive:tiger'],
     'window': {'x': 700, 'y': 0, 'w': 740, 'h': 700},
     # painted row boundaries of the panel, top to bottom, each [[x_left, y], [x_right, y]]
     'board': {'x': 64, 'y': 101, 'w': 516, 'h': 398, 'rows': 6, 'textRows': 5,   # bottom row left empty
               'lines': [[[64, 100.7], [580, 208.6]], [[64, 160.9], [580, 258.9]], [[64, 222.0], [580, 308.7]], [[64, 282.1], [580, 359.5]], [[64, 343.2], [580, 413.4]], [[64, 406.3], [580, 465.1]], [[64, 449.4], [580, 497.9]]]},
-    'seats': [{'id': 's0', 'x': 430, 'y': 995}, {'id': 's1', 'x': 665, 'y': 995},
-              {'id': 's2', 'x': 1145, 'y': 1050}, {'id': 's3', 'x': 1335, 'y': 1050}],
+    # y: the floor line in front of the seat (a character stands there before it hops on); scale: size at
+    # the seat (the aisle is 1). Seated people rest on the cushion seatRest above y (times the scale) and
+    # are drawn over the sofa front so their legs show (seatedInFront).
+    'seats': [{'id': 's0', 'x': 440, 'y': 1027, 'scale': 0.9}, {'id': 's1', 'x': 665, 'y': 1027, 'scale': 0.9},
+              {'id': 's2', 'x': 1030, 'y': 1039, 'scale': 0.9}, {'id': 's3', 'x': 1290, 'y': 1076, 'scale': 0.9}],
     'entries': {'left': -320, 'right': 1760},
     'lamps': [{'x': 120, 'y': 700, 'r': 520}, {'x': 660, 'y': 660, 'r': 460}],
     'floorLight': None,
