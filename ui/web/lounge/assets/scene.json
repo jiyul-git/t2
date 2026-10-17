@@ -140,7 +140,17 @@
   }
  ],
  "floorLight": null,
- "planes": null,
+ "planes": {
+  "right": "bg/plane_right.webp",
+  "left": "bg/plane_left.webp",
+  "y": 745,
+  "height": 370,
+  "from": 380,
+  "to": 1980,
+  "period": 150,
+  "duration": 80,
+  "haze": 0.3
+ },
  "beacons": [
   {
    "x": 855,

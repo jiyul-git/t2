@@ -50,8 +50,9 @@ SCENE = {
     'lamps': [{'x': 120, 'y': 700, 'r': 520}, {'x': 660, 'y': 660, 'r': 460}],
     'floorLight': None,
     # a plane taxis past the window every `period` seconds, taking `duration` seconds.
-    # On hold for now (PLANES below keeps the tuned values); None leaves the window view still.
-    'planes': None,
+    # As big as in the approved illustration: about half the picture wide, fuselage mid-window,
+    # wheels hidden behind the sofas.
+    'planes': None,                # filled from PLANES below
     # aviation lights painted on the tower and a pole outside: at night they pulse (period s, phase s)
     'beacons': [
         {'x': 855, 'y': 197, 'r': 16, 'color': '#ff4a3a', 'period': 1.5, 'phase': 0.0},
@@ -63,7 +64,7 @@ SCENE = {
     ],
 }
 PLANES = {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
-          'y': 760, 'height': 280, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3}
+          'y': 745, 'height': 370, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3}
 
 
 def mask_image():
@@ -103,9 +104,10 @@ def main(argv=None):
     cut = Path(__file__).resolve().parent.parent / 'cutouts'
     for side in ('right', 'left'):
         im = Image.open(cut / ('plane_%s.png' % side)).convert('RGBA')
-        im = im.resize((round(im.width * 260 / im.height), 260), Image.LANCZOS)
+        im = im.resize((round(im.width * 400 / im.height), 400), Image.LANCZOS)
         im.save(bg / ('plane_%s.webp' % side), 'WEBP', quality=90, method=6)
     scene = dict(SCENE)
+    scene['planes'] = PLANES
     scene['layers'] = [
         {'id': 'outside', 'group': 'far', 'tint': False, 'variants': layers['outside']},
         {'id': 'interior', 'group': 'back', 'tint': False, 'variants': layers['interior']},
