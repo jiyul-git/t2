@@ -139,6 +139,19 @@ class Accounts:
     def get(self, uid):
         return self._load().get(uid)
 
+    def register(self, uid, nickname):
+        with self.lock:
+            users = self._load()
+            rec = users.get(uid)
+            if not rec:
+                return False
+            rec.update(registered=int(time.time()), nickname=nickname)
+            tmp = self.path + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(users, f, ensure_ascii=False, indent=1)
+            os.replace(tmp, self.path)
+        return True
+
     # signed, stateless session cookie: "<uid>.<expiry>.<mac>"
     def make_session(self, uid, now=None):
         exp = int((time.time() if now is None else now) + SESSION_DAYS * 86400)
@@ -310,7 +323,9 @@ def make_handler(cfg, accounts, backends, verify_token):
                 fails.setdefault(self.client_address[0], []).append(time.time())
                 return self._json(403, {'error': '초대되지 않은 계정입니다 (%s)' % ident['email']})
             uid = accounts.upsert(ident)
-            return self._json(200, {'ok': True, 'email': ident['email'], 'name': ident['name']},
+            rec = accounts.get(uid)
+            return self._json(200, {'ok': True, 'email': ident['email'], 'name': ident['name'],
+                                    'registered': bool(rec.get('registered'))},
                               cookie=self._cookie(accounts.make_session(uid), SESSION_DAYS * 86400))
 
         # ---- routes
@@ -335,6 +350,8 @@ def make_handler(cfg, accounts, backends, verify_token):
                 if method == 'GET':
                     self.wfile.write(body)
                 return
+            if path.startswith('/pub/') and method in ('GET', 'HEAD'):
+                return self._static(path[len('/pub/'):], method)
             if path == '/healthz':
                 return self._json(200, {'ok': True})
             if path.startswith('/auth/'):
@@ -348,7 +365,33 @@ def make_handler(cfg, accounts, backends, verify_token):
                     self.end_headers()
                     return
                 return self._json(401, {'error': '로그인이 필요합니다'})
+            if not accounts.get(uid).get('registered'):
+                if method == 'GET' and not path.startswith('/api/'):
+                    self.send_response(302)
+                    self.send_header('Location', '/login#signup')
+                    self.send_header('Content-Length', '0')
+                    self.end_headers()
+                    return
+                return self._json(403, {'error': '회원가입을 마쳐 주세요', 'signup': True})
             self._proxy(method, uid)
+
+        def _static(self, rel, method):
+            # only these public pictures are served before sign-in
+            allowed = {'portraits/%02d.png' % i: 'image/png' for i in range(1, 10)}
+            allowed['lobby_hero_night.webp'] = 'image/webp'
+            if rel not in allowed:
+                return self._json(404, {'error': 'not found'})
+            src = os.path.join(REPO, 'ui', 'web', 'assets', 'portraits' if rel.startswith('portraits/') else 't2-airport',
+                               rel.split('/')[-1])
+            with open(src, 'rb') as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', allowed[rel])
+            self.send_header('Content-Length', str(len(data)))
+            self.send_header('Cache-Control', 'public, max-age=86400')
+            self.end_headers()
+            if method == 'GET':
+                self.wfile.write(data)
 
         def _auth(self, method, path):
             if method != 'POST' and path != '/auth/me':
@@ -356,7 +399,9 @@ def make_handler(cfg, accounts, backends, verify_token):
             if path == '/auth/me':
                 uid = self._uid()
                 rec = accounts.get(uid) if uid else None
-                return self._json(200 if rec else 401, {'email': rec['email'], 'name': rec['name']} if rec
+                return self._json(200 if rec else 401, {'email': rec['email'], 'name': rec['name'],
+                                                        'registered': bool(rec.get('registered')),
+                                                        'nickname': rec.get('nickname', '')} if rec
                                   else {'error': '로그인이 필요합니다'})
             if path == '/auth/logout':
                 return self._json(200, {'ok': True}, cookie=self._cookie('', 0))
@@ -378,10 +423,43 @@ def make_handler(cfg, accounts, backends, verify_token):
                     fails.setdefault(self.client_address[0], []).append(time.time())
                     return self._json(401, {'error': str(e)})
                 return self._signed_in(ident)
+            if path == '/auth/register':
+                uid = self._uid()
+                if not uid:
+                    return self._json(401, {'error': '로그인이 필요합니다'})
+                nick = str(body.get('nickname') or '').strip()
+                av = body.get('avatar')
+                if not 1 <= len(nick) <= 16:
+                    return self._json(400, {'error': '닉네임은 1~16자로 정해 주세요'})
+                if not (isinstance(av, int) and not isinstance(av, bool) and 0 <= av < 9):
+                    return self._json(400, {'error': '캐릭터를 골라 주세요'})
+                if body.get('agree') is not True:
+                    return self._json(400, {'error': '이용 안내에 동의해 주세요'})
+                # the game server keeps the profile; create the player's wallet and profile there
+                try:
+                    st, r = self._backend_json(uid, 'POST', '/api/profile',
+                                               {'profile': {'nickname': nick, 'avatar': av, 'deck': 'jade'}})
+                except Exception as e:
+                    return self._json(503, {'error': str(e)})
+                if st != 200:
+                    return self._json(st, r)
+                accounts.register(uid, nick)
+                return self._json(200, {'ok': True, 'nickname': nick})
             if path == '/auth/dev' and cfg['dev_login']:
                 email = str(body.get('email') or '').strip().lower()
                 return self._signed_in({'sub': 'dev:' + email, 'email': email, 'name': email.split('@')[0]})
             return self._json(404, {'error': 'not found'})
+
+        def _backend_json(self, uid, method, path, obj):
+            port = backends.port_for(uid)
+            conn = http.client.HTTPConnection('127.0.0.1', port, timeout=60)
+            try:
+                conn.request(method, path, body=json.dumps(obj).encode(),
+                             headers={'Content-Type': 'application/json', 'X-T2-Client-Mode': 'play'})
+                resp = conn.getresponse()
+                return resp.status, json.loads(resp.read() or b'{}')
+            finally:
+                conn.close()
 
         def _proxy(self, method, uid):
             try:

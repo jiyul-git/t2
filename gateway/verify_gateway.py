@@ -77,6 +77,11 @@ def main():
         ok(st == 401, 'signed-out API is refused: %s' % st)
         st, page, _ = a.call('GET', '/login', raw=True)
         ok(st == 200 and b'web-client' in page and b't2SignIn' in page, 'login page carries the client id')
+        st, img, h = a.call('GET', '/pub/portraits/01.png', raw=True)
+        ok(st == 200 and img[:4] == b'\x89PNG' and h['Content-Type'] == 'image/png', 'sign-up pictures open before sign-in')
+        for bad in ('/pub/../server/ui_server.py', '/pub/portraits/10.png', '/pub/lobby.js'):
+            st, _, _ = a.call('GET', bad, raw=True)
+            ok(st == 404, 'only listed pictures are public: %s %s' % (bad, st))
 
         st, r, _ = a.call('POST', '/auth/google', {'id_token': 'bad-token-xxxxxxxxxxxxxxxx'})
         ok(st == 401 and a.cookie is None, 'bad token refused: %s %r' % (st, r))
@@ -90,12 +95,31 @@ def main():
         st, r, _ = a.call('POST', '/auth/google', {'id_token': 'good:111:Me@Gmail.com'})
         ok(st == 200 and a.cookie and a.cookie.startswith('t2s='), 'invited account signs in: %s %r' % (st, r))
         st, r, _ = a.call('GET', '/auth/me')
-        ok(st == 200 and r['email'] == 'me@gmail.com', 'me: %r' % (r,))
+        ok(st == 200 and r['email'] == 'me@gmail.com' and r['registered'] is False, 'me: %r' % (r,))
 
-        t0 = time.time()
+        # signed in but not signed up yet: the game is closed until sign-up
         st, r, _ = a.call('GET', '/api/lobby')
-        ok(st == 200 and 'wallet' in r, 'lobby through the gateway starts my game server: %s %r' % (st, str(r)[:200]))
-        print('  first request (server start) %.1fs' % (time.time() - t0))
+        ok(st == 403 and r.get('signup') is True, 'unregistered API asks for sign-up: %s %r' % (st, r))
+        st, _, h = a.call('GET', '/')
+        ok(st == 302 and h['Location'] == '/login#signup', 'unregistered page goes to sign-up: %s' % st)
+        for bad in ({'nickname': '', 'avatar': 0, 'agree': True}, {'nickname': 'x' * 17, 'avatar': 0, 'agree': True},
+                    {'nickname': '나', 'avatar': 9, 'agree': True}, {'nickname': '나', 'avatar': True, 'agree': True},
+                    {'nickname': '나', 'avatar': 0, 'agree': False}):
+            st, r, _ = a.call('POST', '/auth/register', bad)
+            ok(st == 400 and 'error' in r, 'sign-up refuses %r: %s %r' % (bad, st, r))
+        st, r, _ = Client(base).call('POST', '/auth/register', {'nickname': '나', 'avatar': 0, 'agree': True})
+        ok(st == 401, 'sign-up needs Google sign-in first: %s' % st)
+        t0 = time.time()
+        st, r, _ = a.call('POST', '/auth/register', {'nickname': ' 나 ', 'avatar': 2, 'agree': True})
+        ok(st == 200 and r['nickname'] == '나', 'sign-up: %s %r' % (st, r))
+        print('  sign-up (server start) %.1fs' % (time.time() - t0))
+        st, r, _ = a.call('GET', '/auth/me')
+        ok(r['registered'] is True and r['nickname'] == '나', 'me after sign-up: %r' % (r,))
+        st, r, _ = a.call('GET', '/api/profile')
+        ok(r['profile'] == {'nickname': '나', 'avatar': 2, 'deck': 'jade'}, 'sign-up made my profile: %r' % (r,))
+
+        st, r, _ = a.call('GET', '/api/lobby')
+        ok(st == 200 and 'wallet' in r, 'lobby through the gateway: %s %r' % (st, str(r)[:200]))
         bal_a = r['wallet']['balance']
         st, r, _ = a.call('POST', '/api/profile', {'profile': {'nickname': '나', 'deck': 'navy'}})
         ok(st == 200, 'profile save through gateway: %s %r' % (st, r))
@@ -115,21 +139,27 @@ def main():
         # the friend gets a separate wallet and profile
         b = Client(base)
         st, r, _ = b.call('POST', '/auth/google', {'id_token': 'good:222:friend@gmail.com'})
-        ok(st == 200, 'friend signs in')
+        ok(st == 200 and r.get('registered') is False, 'friend signs in, not signed up yet: %r' % (r,))
+        st, r, _ = b.call('POST', '/auth/register', {'nickname': '친구', 'avatar': 0, 'agree': True})
+        ok(st == 200, 'friend signs up')
         st, r, _ = b.call('GET', '/api/profile')
-        ok(st == 200 and r['profile'] == {}, 'friend does not see my profile: %r' % (r,))
+        ok(st == 200 and r['profile'].get('nickname') == '친구', 'friend does not see my profile: %r' % (r,))
         st, r, _ = b.call('GET', '/api/lobby')
         ok(st == 200 and r['wallet']['balance'] == bal_a, 'friend has a fresh wallet of their own')
         users = sorted(os.listdir(cfg['data_root']))
         ok(len(users) == 2 and all(u.startswith('u_') and 'gmail' not in u for u in users), 'two private folders: %r' % users)
         ok(os.path.exists(os.path.join(cfg['data_root'], uid_a, 'profile.json')), 'my profile is in my folder')
-        ok(not os.path.exists(os.path.join(cfg['data_root'], b.cookie.split('=', 1)[1].split('.')[0], 'profile.json')),
-           'nothing written to the friend folder by me')
+        with open(os.path.join(cfg['data_root'], b.cookie.split('=', 1)[1].split('.')[0], 'profile.json')) as f:
+            ok('나' not in f.read(), 'nothing written to the friend folder by me')
 
         # max_backends=1: my server was stopped to make room; my next request brings it back with my data
         ok(len([x for x in srv.backends.procs.values() if x['proc'].poll() is None]) == 1, 'one game server at a time')
         st, r, _ = a.call('GET', '/api/profile')
         ok(st == 200 and r['profile'].get('nickname') == '나', 'my data survives being stopped and restarted: %r' % (r,))
+
+        # signing in again later remembers the sign-up
+        st, r, _ = a.call('POST', '/auth/google', {'id_token': 'good:111:me@gmail.com'})
+        ok(st == 200 and r.get('registered') is True, 'returning player skips sign-up: %r' % (r,))
 
         # idle stop
         srv.backends.stop_all()
