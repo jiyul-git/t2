@@ -30,10 +30,14 @@ TOOLS = Path(__file__).resolve().parent
 # turned out worse - toes pointing backward, a doubled frame - so they are not used until a proper
 # "other foot forward" drawing arrives (docs/LOUNGE_ART_PROMPTS.md).
 ORDER = ['22', '30', '03', '10', '12', '21']
+# Hand-made in-betweens (stride_tween.py): (insert before loop frame i, made from loop frame i,
+# front foot back px, back foot forward px, front foot lift px). Fills the long gap where the
+# swinging foot lands, measured from the foot positions.
+TWEENS = [(3, 30, 40, 10)]
 BASE = '10'               # the upper body every frame shares
 OUT = ROOT / 'ui/web/lounge/assets/chars/tiger_walker'
 SCALE = 0.62          # atlas pixels per source pixel (keeps the atlas small)
-FPS, ADVANCE = 9, 30  # frames per second, scene px moved per frame (matches the planted foot, see footslip check)
+FPS, ADVANCE = 10, 26  # frames per second, scene px moved per frame (matches the planted foot, see footslip check)
 
 
 def anchor_x(im):
@@ -56,17 +60,25 @@ def build_loop():
         for n in {o[1:] for o in ORDER if o.startswith('m')}:
             run(TOOLS / 'mirror_legs.py', cells / ('f_%s.png' % n), cells / ('f_m%s.png' % n))
         run(TOOLS / 'lockbody.py', cells, BASE, out, ','.join(ORDER))
+        seq = [out / ('f_%d.png' % i) for i in range(len(ORDER))]
+        for k, (at, front, back, lift) in enumerate(sorted(TWEENS, reverse=True)):
+            t = tmp / ('tween_%d.png' % k)
+            run(TOOLS / 'stride_tween.py', seq[at], t, '--front', front, '--back', back, '--lift', lift, '--right', 300)
+            seq.insert(at, t)
         SRC.mkdir(exist_ok=True)
-        for i in range(len(ORDER)):
-            shutil.copy(out / ('f_%d.png' % i), SRC / ('left_%d.png' % i))
-            run(TOOLS / 'mirror_logo.py', out / ('f_%d.png' % i), SRC / ('right_%d.png' % i))
+        for old in SRC.glob('*.png'):
+            old.unlink()
+        for i, f in enumerate(seq):
+            shutil.copy(f, SRC / ('left_%d.png' % i))
+            run(TOOLS / 'mirror_logo.py', f, SRC / ('right_%d.png' % i))
+    return len(seq)
 
 
 def main():
-    build_loop()
+    n = build_loop()
     frames_img = []
     for side in ('right', 'left'):
-        for i in range(len(ORDER)):
+        for i in range(n):
             im = Image.open(SRC / ('%s_%d.png' % (side, i))).convert('RGBA')
             im = im.resize((round(im.width * SCALE), round(im.height * SCALE)), Image.LANCZOS)
             frames_img.append(im)
@@ -75,15 +87,15 @@ def main():
     for k, im in enumerate(frames_img):
         pad = Image.new('RGBA', (im.width, hmax), (0, 0, 0, 0)); pad.paste(im, (0, 0)); frames_img[k] = pad
     base_h = round(Image.open(SRC / 'left_0.png').height * SCALE)
-    W = sum(im.width for im in frames_img[:len(ORDER)]) + 16
+    W = sum(im.width for im in frames_img[:n]) + 16
     H = max(im.height for im in frames_img) * 2 + 4
-    atlas = Image.new('RGBA', (max(W, sum(im.width for im in frames_img[len(ORDER):]) + 16), H), (0, 0, 0, 0))
+    atlas = Image.new('RGBA', (max(W, sum(im.width for im in frames_img[n:]) + 16), H), (0, 0, 0, 0))
     frames, x, y, rowh = [], 0, 0, max(im.height for im in frames_img) + 2
     # every frame is cropped at the top of the (shared) head, so one foot line for all of them keeps
     # the body level: the base frame's own feet
     body_y = base_h - 1
     for k, im in enumerate(frames_img):
-        if k == len(ORDER): x, y = 0, rowh
+        if k == n: x, y = 0, rowh
         atlas.paste(im, (x, y))
         ax, ay = anchor_x(im), body_y
         frames.append({'x': x, 'y': y, 'w': im.width, 'h': im.height, 'ax': ax, 'ay': ay})
@@ -93,10 +105,10 @@ def main():
     man = {
         'name': 'tiger_walker', 'walker': True, 'pass': 'r', 'atlas': 'atlas.webp',
         'scale': round(1 / SCALE, 4), 'mirrorable': False, 'frames': frames,
-        'poses': {'walk_r': 0, 'walk_l': len(ORDER)},
+        'poses': {'walk_r': 0, 'walk_l': n},
         'clips': {
-            'walk_r': {'from': 'walk_r', 'to': 'walk_r', 'loop': True, 'fps': FPS, 'frames': list(range(len(ORDER))), 'advance': ADVANCE},
-            'walk_l': {'from': 'walk_l', 'to': 'walk_l', 'loop': True, 'fps': FPS, 'frames': list(range(len(ORDER), 2 * len(ORDER))), 'advance': ADVANCE},
+            'walk_r': {'from': 'walk_r', 'to': 'walk_r', 'loop': True, 'fps': FPS, 'frames': list(range(n)), 'advance': ADVANCE},
+            'walk_l': {'from': 'walk_l', 'to': 'walk_l', 'loop': True, 'fps': FPS, 'frames': list(range(n, 2 * n)), 'advance': ADVANCE},
         },
     }
     (OUT / 'manifest.json').write_text(json.dumps(man, separators=(',', ':')))
