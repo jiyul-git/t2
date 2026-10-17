@@ -117,7 +117,7 @@
     function drawNow(chars) {
       renderer.draw({
         lighting: sky.light, sunAzimuth: sky.sun.azimuth, moon: sky.moon, boardRows: rows, boardKey,
-        chars, t: simT, debug: debug.enabled ? debug.overlay : null,
+        chars, plane: director && !reduced ? director.plane() : null, t: simT, debug: debug.enabled ? debug.overlay : null,
       });
       if (floorDue) sampleFloor();
     }

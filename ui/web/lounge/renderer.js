@@ -295,18 +295,25 @@
         return { color: toHex3(c), lum: (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 };
       } catch (e) { return room; }
     }
-    function planeState(t) {
+    // ps: the director's plane ({u, right} or null). Without one (tests, old callers) it runs on a timer.
+    function planeState(t, ps) {
       const p = scene.planes;
       if (!p || !assets.planes) return null;
-      const k = Math.floor(t / p.period), phase = t - k * p.period;
-      if (phase > p.duration) return null;
-      const u = phase / p.duration, ease = u * u * (3 - 2 * u) * 0.3 + u * 0.7;
-      const right = k % 2 === 0;
+      let u, right;
+      if (ps !== undefined) {
+        if (!ps) return null;
+        u = ps.u; right = ps.right;
+      } else {
+        const k = Math.floor(t / p.period), phase = t - k * p.period;
+        if (phase > p.duration) return null;
+        u = phase / p.duration; right = k % 2 === 0;
+      }
+      const ease = u * u * (3 - 2 * u) * 0.3 + u * 0.7;
       const x = right ? p.from + (p.to - p.from) * ease : p.to - (p.to - p.from) * ease;
       return { x, img: right ? assets.planes.right : assets.planes.left };
     }
-    function drawPlane(c, L, t) {
-      const st = planeState(t);
+    function drawPlane(c, L, t, ps) {
+      const st = planeState(t, ps);
       if (!st) return;
       const img = st.img, p = scene.planes;
       const key = (img === assets.planes.right ? 'r' : 'l') + L.ambient + Math.round(L.ambientStr * 50) + hazeColor;
@@ -608,7 +615,7 @@
     }
 
     // state: { lighting, sunAzimuth, windowFacing?, moon?: {elevation, azimuth, phase, southern}, boardRows, boardKey,
-    //          chars: [{name, clip, frame, x, lane}], t: seconds, debug?: {...} }
+    //          chars: [{name, clip, frame, x, lane}], plane?: {u, right} | null, t: seconds, debug?: {...} }
     function draw(state) {
       if (!pw) return;
       const L = state.lighting;
@@ -651,7 +658,7 @@
       const blit = name => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(caches[name].canvas, 0, 0); ctx.restore(); };
       blit('far');
       drawBeacons(ctx, L, state.t);
-      drawPlane(ctx, L, state.t);
+      drawPlane(ctx, L, state.t, state.plane);
       blit('back');
       { const bb = boardBounds(); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(caches.board.canvas, bb.x, bb.y, bb.w, bb.h, bb.x, bb.y, bb.w, bb.h); ctx.restore(); }

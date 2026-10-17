@@ -61,9 +61,13 @@
     const passEvery = Array.isArray(scene.passEvery) ? scene.passEvery : [40, 120];   // seconds between crossings
     const seatOwner = seats.map(() => null);
     let now = 0, acc = 0, nextSpawnAt = 0, target = 0, nextTargetRoll = 0;
-    // Walkers take turns: one crossing at a time, passEvery after the last one has left, and never
-    // the same walker twice in a row when there are several.
-    let nextPassAt = 0, lastWalker = null;
+    // One thing moves at a time: a walker crossing or the plane taxiing past the window, so their
+    // layers never overlap. passEvery after the last one has finished, the next is picked at random
+    // (a walker, the plane, or nobody for a while), never the same one twice in a row. Each opening
+    // of the app starts a new random run. scene.preview names walkers to show first, right away.
+    const planes = scene.planes || null;
+    const preview = (Array.isArray(scene.preview) ? scene.preview : []).filter(n => walkers.some(c => c.name === n));
+    let nextPassAt = 0, lastWalker = null, lastEvent = null, queue = [], plane = null;
 
     // ------------------------------------------------------------------ time of day
     const isDay = () => { const m = minuteOfDay(); return m >= 7 * 60 && m < 23 * 60; };
@@ -149,9 +153,18 @@
       beginWalk(c, toRight ? 'walk_r' : 'walk_l', toRight ? entries.left : entries.right, toRight ? 1 : -1, Infinity);
     }
     function tryPass() {
-      if (!walkers.length || now < nextPassAt || walkers.some(c => c.state !== 'OFFSCREEN')) return;
-      const pool = walkers.length > 1 ? walkers.filter(c => c !== lastWalker) : walkers;
-      lastWalker = pick(pool);
+      if (plane && now >= plane.start + plane.ms) { plane = null; nextPassAt = now + rnd(passEvery[0], passEvery[1]) * 1000; }
+      if (plane || now < nextPassAt || walkers.some(c => c.state !== 'OFFSCREEN')) return;
+      let ev = queue.shift();
+      if (!ev) {
+        const options = walkers.map(c => c.name).concat(planes ? ['plane'] : [], ['none']);
+        const pool = options.length > 2 ? options.filter(o => o !== lastEvent) : options;
+        ev = pick(pool);
+      }
+      if (ev === 'none') { nextPassAt = now + rnd(passEvery[0], passEvery[1]) * 1000; return; }   // a quiet spell
+      lastEvent = ev;
+      if (ev === 'plane') { plane = { start: now, ms: planes.duration * 1000, right: rand() < 0.5 }; return; }
+      lastWalker = walkers.find(c => c.name === ev);
       startPass(lastWalker);
     }
 
@@ -341,7 +354,7 @@
         c.x = c.walk.x0 + c.walk.dir * clip.advance * Math.floor(c.total);
         if ((c.walk.dir < 0 && c.x <= entries.left) || (c.walk.dir > 0 && c.x >= entries.right)) {
           c.state = 'OFFSCREEN'; c.clip = null; c.seat = -1; c.activity = ''; c.walk = null;
-          if (c.walker) nextPassAt = now + rnd(passEvery[0], passEvery[1]) * 1000;
+          if (c.walker) nextPassAt = now + (queue.length ? rnd(2, 5) : rnd(passEvery[0], passEvery[1])) * 1000;
         }
         return;
       }
@@ -375,7 +388,8 @@
       for (let i = 0; i < seatOwner.length; i++) seatOwner[i] = null;
       target = rollTarget();
       nextTargetRoll = now + TARGET_RECHECK_MS;
-      nextPassAt = now + rnd(1, 4) * 1000; lastWalker = null;   // the first crossing comes soon
+      nextPassAt = now + rnd(1, 4) * 1000; lastWalker = null; lastEvent = null; plane = null;   // the first one comes soon
+      queue = preview.slice();
       const count = Math.min(Math.ceil(target / 2), sitters.length, seats.length);
       const pool = sitters.slice();
       for (let k = 0; k < count; k++) {
@@ -431,6 +445,12 @@
         return snapshot();
       },
       warmStart() { acc = 0; warmStart(); return snapshot(); },
+      // The plane taxiing past the window right now: {u: 0..1 along its run, right: heading right}, or null.
+      plane() {
+        if (!plane) return null;
+        const u = (now + acc - plane.start) / plane.ms;
+        return u >= 0 && u <= 1 ? { u, right: plane.right } : null;
+      },
       // Debug helper: make `name` do `kind` at its next decision; a character who is away is called in now.
       // Returns false when there is no such character or the activity is not available to it.
       force(name, kind) {

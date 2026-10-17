@@ -228,7 +228,7 @@ ok(chatTotal > 0, 'conversations happen');
   ok(B.isActive(walker) && !B.isActive({ ...walker, walker: false }), 'walker is active only as a walker');
   const { d } = makeDirector([walker, ...full.slice(1)], 31);
   let crossings = 0, prevX = null, wasOn = false;
-  for (let i = 0; i < 6000; i++) {
+  for (let i = 0; i < 18000; i++) {
     const w = d.step(100).find(c => c.name === 'tiger_walker');
     if (w) {
       ok(w.clip === 'walk_r' && w.lane === 'aisle' && w.seat === -1 && w.state === 'EXITING', 'walker only walks right: ' + JSON.stringify(w));
@@ -238,13 +238,14 @@ ok(chatTotal > 0, 'conversations happen');
     } else if (wasOn) { crossings++; prevX = null; }
     wasOn = !!w;
   }
-  ok(crossings >= 3, 'walker crossed ' + crossings + ' times in 10 minutes');
+  ok(crossings >= 3, 'walker crossed ' + crossings + ' times in 30 minutes');
   ok(!d.force('tiger_walker', 'eat'), 'a walker cannot be sent to a seat');
 }
 
 {
-  // Every walker in scene.json: they take turns (one on screen at a time, never the same one twice in
-  // a row), each walks right from the left edge, and all of them come by within half an hour.
+  // Every walker in scene.json and the plane take turns: one thing moving at a time (a walker and the
+  // plane are never on screen together), the preview walkers come first in order, each walker walks
+  // right from the left edge, all of them come by within half an hour, and each run is different.
   const names = scene.characters.filter(n => {
     const m = JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8'));
     return m.walker;
@@ -252,13 +253,18 @@ ok(chatTotal > 0, 'conversations happen');
   ok(names.length >= 3 && names.includes('rabbit_walker') && names.includes('turtle_walker'), 'scene has the rabbit and turtle walkers: ' + names);
   const walkers = names.map(n => JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8')));
   for (const w of walkers) ok(B.isActive(w) && w.clips.walk_r.advance > 0 && w.clips.walk_r.frames.length === w.clips.walk_l.frames.length, w.name + ' is a usable walker');
+  const runs = [];
   for (const seed of [5, 77]) {
     const { d } = makeDirector([...walkers, ...full], seed);
     const order = [], seen = new Map();
-    let cur = null;
+    let cur = null, planeOn = false, planes = 0;
     for (let i = 0; i < 18000; i++) {
       const on = d.step(100).filter(c => c.name.endsWith('_walker'));
       ok(on.length <= 1, 'one walker at a time: ' + on.map(c => c.name));
+      const pl = d.plane();
+      ok(!(pl && on.length), 'the plane and a walker are never on screen together');
+      if (pl && !planeOn) { planes++; order.push('plane'); }
+      planeOn = !!pl;
       const w = on[0] || null;
       if (w) {
         const m = walkers.find(x => x.name === w.name);
@@ -271,9 +277,13 @@ ok(chatTotal > 0, 'conversations happen');
       }
       cur = w ? w.name : null;
     }
-    for (let k = 1; k < order.length; k++) ok(order[k] !== order[k - 1], 'the same walker twice in a row: ' + order.join());
+    for (let k = 1; k < order.length; k++) ok(order[k] !== order[k - 1], 'the same one twice in a row: ' + order.join());
+    eq(order.slice(0, scene.preview.length), scene.preview, 'preview walkers come first, in order: ' + order.join());
     for (const n of names) ok(order.includes(n), n + ' crossed in 30 minutes (seed ' + seed + '): ' + order.join());
+    ok(planes >= 1, 'the plane came by in 30 minutes (seed ' + seed + ')');
+    runs.push(order.join());
   }
+  ok(runs[0] !== runs[1], 'each opening is a different random run');
 }
 
 function eq(a, b, m) { checks++; assert.deepStrictEqual(a, b, m); }
