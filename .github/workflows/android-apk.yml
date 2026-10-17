@@ -1,0 +1,72 @@
+name: android-apk
+
+# Builds the T2 Android app (android/) and publishes it as the "android-latest" release:
+#   https://github.com/jiyul-git/t2/releases/download/android-latest/t2.apk
+# Optional repository settings:
+#   variables T2_SERVER_URL, T2_WEB_CLIENT_ID  (default: http://127.0.0.1:8080, no Google sign-in)
+#   secrets   T2_KEYSTORE_B64, T2_KEYSTORE_PASSWORD  (permanent signing key; without it a cached test key is used)
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Test signing key (kept between runs so updates install over the old app)
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: t2-test-signing-key
+      - name: Permanent signing key
+        env:
+          KS: ${{ secrets.T2_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/t2.jks"
+            echo "T2_KEYSTORE=$RUNNER_TEMP/t2.jks" >> "$GITHUB_ENV"
+          fi
+      - name: Build
+        env:
+          T2_KEYSTORE_PASSWORD: ${{ secrets.T2_KEYSTORE_PASSWORD }}
+          T2_SERVER_URL: ${{ vars.T2_SERVER_URL }}
+          T2_WEB_CLIENT_ID: ${{ vars.T2_WEB_CLIENT_ID }}
+        run: gradle -p android --no-daemon assembleRelease
+      - name: Signing key fingerprint (for the Google Android client ID)
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk t2.apk
+          keytool -printcert -jarfile t2.apk | grep -E 'SHA1|SHA256' | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: t2-apk
+          path: t2.apk
+      - name: Publish android-latest
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: T2 앱 (최신)
+          body: |
+            최신 T2 안드로이드 앱입니다. `t2.apk`를 받아 설치하세요.
+            빌드: ${{ github.ref_name }} @ ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          files: t2.apk
