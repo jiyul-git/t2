@@ -1,0 +1,9 @@
+{
+  "host": "127.0.0.1",
+  "port": 8080,
+  "dev_login": true,
+  "secure_cookie": false,
+  "allowed_emails": ["kwakjiyul@gmail.com", "friend@example.com"],
+  "max_backends": 2,
+  "backend_env": {"T2_SCHEDULE_ENABLED": "1"}
+}
