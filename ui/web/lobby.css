@@ -87,6 +87,11 @@ main{padding:0 14px 22px}
 .deckSample::after{content:"";position:absolute;width:12px;height:12px;left:50%;top:50%;transform:translate(-50%,-50%) rotate(45deg);border:2px solid currentColor}
 .deckSample.jade{background:#215a59;color:#d3bc85}.deckSample.navy{background:#263b67;color:#d7c38c}
 .deckSample.burgundy{background:#6a2830;color:#dfc38b}.deckSample.ivory{background:#d9d0b8;color:#37594f;border-color:#48665f}
+.accountBlock{margin-top:8px;padding-top:4px;border-top:1px solid #29403a}
+.accountEmail{font-size:12px;color:#d9e2de;word-break:break-all;margin-bottom:2px}
+.dangerAction{width:100%;margin-top:8px;border:1px solid #6b3a35;border-radius:11px;padding:11px;background:#241614;color:var(--danger);font-weight:800}
+.deleteWarn{margin:4px 0 0;font-size:12px;line-height:1.5;color:#c5d3ce}.deleteWarn b{color:var(--danger)}
+.dangerJoin{background:linear-gradient(90deg,#b4554a,#d8806f);color:#fff}
 .settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .settingsGrid label{font-size:10px;color:#aebfb8}
 .settingsGrid select{display:block;width:100%;margin-top:6px;padding:11px 8px;border:1px solid #355149;border-radius:10px;background:#091411;color:#fff}

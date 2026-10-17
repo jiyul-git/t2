@@ -311,4 +311,44 @@ $('#deckChoices').querySelectorAll('button').forEach(b=>b.addEventListener('clic
 applyDeckTheme(profileGet('deck','jade'));
 syncProfile();
 
+// Account block: only behind the online gateway, which answers /auth/me (plain Termux mode has no such endpoint).
+async function initAccount(){
+  let me;
+  try{
+    const r=await fetch('/auth/me',{cache:'no-store'});
+    if(!r.ok) return;
+    me=await r.json();
+  }catch(e){ return; }
+  if(!me || typeof me.email!=='string') return;
+  $('#accountEmail').textContent=me.email;
+  $('#accountBlock').hidden=false;
+}
+async function logout(){
+  try{ await fetch('/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); }catch(e){}
+  location.href='/login';
+}
+function openDelete(){
+  $('#deleteConfirm').value=''; $('#deleteGo').disabled=true; $('#deleteErr').textContent='';
+  closeProfile();
+  showSheet($('#deleteSheet'));
+}
+function closeDelete(){ hideSheet($('#deleteSheet')); }
+async function deleteAccount(){
+  if($('#deleteConfirm').value.trim()!=='삭제') return;
+  $('#deleteGo').disabled=true; $('#deleteErr').textContent='';
+  try{
+    const r=await fetch('/auth/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirm:'삭제'})});
+    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.error||('삭제하지 못했습니다 ('+r.status+')')); }
+  }catch(e){ $('#deleteErr').textContent=e.message; $('#deleteGo').disabled=false; return; }
+  try{ Object.values(PROFILE_KEYS).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  location.href='/login';
+}
+$('#logoutBtn').addEventListener('click',logout);
+$('#deleteAccountBtn').addEventListener('click',openDelete);
+$('#deleteClose').addEventListener('click',closeDelete);
+$('#deleteSheet').addEventListener('click',(e)=>{if(e.target===$('#deleteSheet'))closeDelete();});
+$('#deleteConfirm').addEventListener('input',()=>{$('#deleteGo').disabled=$('#deleteConfirm').value.trim()!=='삭제';});
+$('#deleteGo').addEventListener('click',deleteAccount);
+initAccount();
+
 loadLobby();
