@@ -109,3 +109,274 @@ main{padding:0 14px 22px}
 .avatarChoices button{border:1px solid #335149;background:#0d1917;border-radius:9px;padding:3px;aspect-ratio:1;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
 .avatarChoices button.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 .avatarChoices img{width:100%;height:auto;display:block}
+
+
+/* Approved screenshot skin. Exact art files, never geometric SVG stand-ins. */
+html[data-airport-theme="night"]{
+ --bg:#071e22;--panel:#123135;--panel2:#193d41;--line:#668783;
+ --gold:#f4d38e;--text:#fff3d8;--muted:#c5d6d0;
+ --paper:#fbf0db;--paper-ink:#1b3338;
+}
+html[data-airport-theme="day"]{
+ --bg:#143c3c;--panel:#255a58;--panel2:#357775;--line:#a0b7a1;
+ --gold:#ffe7a4;--text:#fff4d8;--muted:#e1e7d8;
+ --paper:#fff4dc;--paper-ink:#213f43;
+}
+html,body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+body{background-image:none}
+#lobby{position:relative;max-width:520px;min-height:100dvh;padding-bottom:calc(71px + env(safe-area-inset-bottom));
+ background:linear-gradient(180deg,#122e32,#061b1f 54%,#081f22)}
+html[data-airport-theme="day"] #lobby{background:linear-gradient(180deg,#426b68,#113c3c 48%,#102c31)}
+.top{height:68px;padding:8px 15px;position:sticky;z-index:40;top:0;
+ background:linear-gradient(95deg,#1a3536f2,#081f24f6);border-bottom:1px solid #c8a46477}
+.brand{font-size:24px;letter-spacing:-.06em;color:#ffe1a4;font-style:italic;text-shadow:0 2px 5px #070d1c8a}
+.brand span{color:#ffde9e}
+.strap{display:none}
+.walletBadge{margin-left:auto;padding:7px 10px;min-height:42px;background:#102c32bd;
+ border-color:#e3b97092;color:#f8db9f;border-radius:999px;font-size:9px;min-width:98px}
+.walletBadge b{font-size:16px;margin:0;font-weight:900}
+main{padding:0 14px 28px}
+.featured{border:1px solid #d0aa69;border-radius:16px;margin:6px 0 14px;overflow:hidden;
+ background:linear-gradient(120deg,#0f3638,#0a252c);
+ box-shadow:0 8px 22px #0008}
+.featured-top{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;color:#ffe9b3;
+ font-size:18px;letter-spacing:-.04em;font-weight:900}
+.featured-meta{font-size:10px;font-weight:700;color:#b0e7d5}
+.featured-detail{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 1fr 1fr;gap:6px;
+ align-items:center;margin:0 5px;background:var(--paper);color:var(--paper-ink);
+ border-radius:12px 12px 0 0;padding:13px 12px 10px 37%;min-height:120px;
+ background-image:linear-gradient(90deg,transparent 0%,transparent 29%,var(--paper) 43%),
+ url("assets/t2-airport/card_featured.webp");
+ background-repeat:no-repeat;background-size:100% 100%,40% 100%;background-position:left,left}
+.featured-detail>div:first-child{grid-column:1/-1}
+.featured-detail h2{margin:0;font-size:19px;letter-spacing:-.04em;font-weight:900}
+.featured-detail p{color:#576e72;font-size:10px;margin:2px 0}
+.featured-stat{border-left:1px solid #bbc2b8;padding-left:7px;display:flex;flex-direction:column}
+.featured-stat span{font-size:9px;color:#5b7272}
+.featured-stat strong{font-size:11px;color:#193a41;white-space:nowrap}
+.featured-button{display:block;margin:0;width:100%;background:linear-gradient(#ffe7a1,#e0b25c);
+ border:0;min-height:44px;color:#173437;font-size:14px;font-weight:900}
+.section{margin-top:12px}
+.sectionHead{display:flex;flex-direction:column;align-items:stretch;gap:11px;margin:0 0 12px}
+.section h2{font-size:21px;color:#fbe0a4;margin:0;letter-spacing:-.06em}
+.sectionHead p{display:none}
+.tabs{width:100%;max-width:none;gap:6px}
+.tabs button{flex:1;min-height:39px;white-space:nowrap;font-size:11px;font-weight:800;
+ border:1px solid #4b6e71;border-radius:999px;background:#0b2a2f;color:#f7e9d4;padding:7px 4px}
+.tabs button.active{background:linear-gradient(#ffe8ab,#ddb567);border-color:#fee6b9;color:#152c2e}
+.tournaments{display:grid;grid-template-columns:1fr;gap:8px}
+.card{position:relative;display:grid;grid-template-columns:80px minmax(0,1fr);min-height:96px;
+ gap:8px;border:1px solid #e8d2aa9f;border-radius:11px;overflow:hidden;
+ padding:0;color:#1d363b;background:var(--paper);cursor:pointer;box-shadow:0 3px 7px #0006}
+.card::after{display:none}
+.card:focus-visible{outline:2px solid #ffe39a;outline-offset:3px}
+.card-illustration{overflow:hidden}
+.card-illustration img{width:100%;height:100%;min-height:96px;display:block;object-fit:cover}
+.card-body{padding:8px 9px 7px 0;min-width:0}
+.card-title-line{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.card h3{margin:0;font-size:16px;line-height:1.16;font-weight:900;letter-spacing:-.05em;min-width:0}
+.card .tag{flex:0 0 auto;background:#a5e6c2;color:#174434;font-size:9px;letter-spacing:0;
+ border-radius:99px;padding:4px 7px}
+.card .desc{margin:4px 0;font-size:10px;min-height:0;line-height:1.35;color:#506a73}
+.card .facts{display:flex;flex-wrap:wrap;gap:6px 14px;margin:7px 0 0}
+.card .fact{display:flex;align-items:baseline;flex-direction:row-reverse;gap:4px;border:0;padding:0;min-width:0}
+.card .fact b{font-size:11px;color:#233e42;white-space:normal}
+.card .fact span{font-size:9px;color:#57747c;white-space:nowrap}
+.card .extra-fact{display:none}
+.card .enter{font-size:9px;margin:5px 0 0;color:#4a7874}
+.current{background:linear-gradient(135deg,#30544b,#113338);border-color:#d7b373}
+.bottom{height:65px;grid-template-columns:repeat(4,minmax(0,1fr));background:#08262beF;
+ border-top:1px solid #ba9b66;padding-bottom:env(safe-area-inset-bottom)}
+.bottom button{padding:6px 0;color:#b1c4be;font-size:10px}
+.bottom button span{font-size:20px;color:inherit;line-height:1.2}
+.bottom button.active{color:#ffdc90;background:linear-gradient(180deg,#8d723524,#bd913a42)}
+.sheet{background:#102e30;border-top-color:#d5ba7a}
+@media(max-width:360px){
+ .top{padding:7px 9px}.brand{font-size:19px}
+ .featured-detail{padding-left:33%;background-size:100% 100%,39% 100%}
+ .featured-detail h2{font-size:16px}
+ .featured-stat strong{font-size:10px}
+ .card{grid-template-columns:64px minmax(0,1fr)}
+ .card h3{font-size:14px}
+ .card .facts{gap:3px 7px}
+ .card .fact b{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}
+
+/* 2026-10-16 / reference-accurate portrait layout. Lobby-only. */
+#lobby{max-width:520px;min-height:100dvh;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+.top{height:56px;min-height:56px;position:relative;top:auto;
+ display:flex;align-items:center;gap:9px;padding:5px 11px;
+ background:linear-gradient(110deg,#163437,#09282d);border-bottom:1px solid #b6945caa}
+.brand{font-size:23px;line-height:1;white-space:nowrap;letter-spacing:-.065em}
+.walletBadge{margin-left:auto;min-width:0;min-height:37px;padding:6px 9px;display:flex;
+ align-items:center;gap:5px;white-space:nowrap;font-size:12px;line-height:1}
+.walletBadge b{font-size:15px}
+.header-profile{border:0;background:transparent;color:#ffe6ae;flex:0 0 32px;
+ font-size:25px;min-height:40px;padding:0;cursor:pointer}
+main{padding:0 12px calc(81px + env(safe-area-inset-bottom))}
+.featured{margin:0 0 14px;border-radius:14px;box-shadow:0 5px 10px #0005}
+.featured-top{height:31px;padding:0 12px;font-size:15px;line-height:1.1}
+.featured-meta{font-size:10px;font-weight:600}
+.featured-detail{position:relative;display:grid;grid-template-columns:32% 68%;gap:0;
+ width:auto;margin:0 3px 3px;min-height:98px;padding:0;border:0;
+ background:var(--paper);background-image:none;border-radius:11px;overflow:hidden}
+.featured-thumb{display:block;width:100%;height:100%;min-height:98px;object-fit:cover}
+.featured-main{min-width:0;display:flex;flex-direction:column;justify-content:space-between;
+ gap:5px;padding:9px 9px 8px 9px}
+.featured-head{display:flex;justify-content:space-between;align-items:flex-start;gap:5px;min-width:0}
+.featured-title{min-width:0}
+.featured-head h2{font-size:18px;line-height:1.1;margin:0 0 5px;font-weight:900}
+.featured-head p{font-size:10px;color:#506d71;line-height:1.2;margin:0}
+.featured-status{display:inline-block;background:#9ce7c0;color:#184437;border-radius:99px;
+ padding:5px 8px;white-space:nowrap;font-size:10px;font-weight:800}
+.featured-metrics{display:flex;align-items:end;gap:8px;min-width:0}
+.featured-stat{display:flex;flex-direction:column;gap:1px;min-width:0;border:0;padding:0}
+.featured-stat span{font-size:9px;color:#597276}
+.featured-stat strong{font-size:11px;white-space:nowrap;line-height:1.2}
+.featured-button{display:block;flex:0 0 auto;width:auto;margin:0 0 0 auto;min-height:35px;
+ padding:8px 10px;border:1px solid #af8645;border-radius:15px;
+ background:linear-gradient(#ffe6a2,#e0b161);color:#163437;box-shadow:0 2px 3px #0003;
+ font-size:11px;font-weight:900;cursor:pointer}
+.section{margin-top:3px;scroll-margin-top:60px}
+.sectionHead{gap:10px;margin:0 0 10px}
+.section h2{font-size:20px}
+.tabs button{min-height:37px}
+.tournaments{grid-template-columns:1fr;gap:8px}
+.card{min-height:78px;height:auto;grid-template-columns:24% minmax(0,1fr);
+ border-radius:10px;gap:0}
+.card-illustration{overflow:hidden}
+.card-illustration img{min-height:78px;height:100%;width:100%;object-fit:cover}
+.card-body{padding:7px 10px 7px 9px;min-width:0}
+.card h3{font-size:15px;line-height:1}
+.card .desc{margin:4px 0;font-size:10px;min-height:0}
+.card .facts{display:flex;flex-wrap:wrap;gap:4px 9px;margin:6px 0 0}
+.card .fact{display:flex;flex-direction:row-reverse;gap:3px;border:0;padding:0;white-space:nowrap}
+.card .fact span{font-size:9px}
+.card .fact b{font-size:10px}
+.card .enter{display:none}
+.current{display:flex;align-items:center;gap:8px;padding:9px 11px;margin:16px 0 0;
+ border-radius:11px;background:linear-gradient(110deg,#214746,#123238);
+ min-height:67px}
+.current .kicker{font-size:10px}
+.current h3{font-size:14px;margin:2px 0}
+.current p{font-size:10px}
+.current button{flex:0 0 auto;margin-left:auto;border-radius:10px;padding:10px 12px;
+ min-height:43px;font-size:12px}
+.bottom{height:64px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.bottom button{font-size:11px}
+.bottom button span{font-size:22px}
+@media(max-width:360px){
+ .top{padding:5px 8px;gap:5px}.brand{font-size:19px}
+ .walletBadge b{font-size:13px}
+ .featured-main{padding:7px 6px;gap:4px}
+ .featured-head h2{font-size:16px}
+ .featured-status{font-size:9px;padding:4px 6px}
+ .featured-metrics{gap:5px}
+ .featured-stat strong{font-size:10px}
+ .featured-button{padding:7px;font-size:10px}
+ .card{grid-template-columns:24% minmax(0,1fr)}
+ .card h3{font-size:14px}
+ .card .facts{gap:3px 6px}
+}
+
+/* Continuous local-clock cross-fade: presentation-only lobby UI. */
+#lobby{background:linear-gradient(180deg,var(--airport-surface-top,#122e32),
+ var(--airport-surface-mid,#061b1f) 54%,var(--airport-surface-bottom,#081f22))}
+.top{background:linear-gradient(95deg,var(--airport-surface-top,#1a3536),
+ var(--airport-surface-mid,#081f24))}
+
+/* Lounge scene (docs/LOUNGE_SCENE_DESIGN.md). The canvas replaces the still illustration once its
+   assets are ready; until then, and if anything fails, the still image shows. */
+.airport-scene{position:relative;width:calc(100% + 24px);margin:0 -12px 0;aspect-ratio:1440/1152;
+ overflow:hidden;background:var(--airport-surface-top,#112e39)}
+.lounge-fallback{position:absolute;inset:0;background:url("assets/t2-airport/lobby_hero_night.webp") center top/cover no-repeat}
+.lounge-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;pointer-events:none}
+.airport-scene.lounge-ready .lounge-canvas{opacity:1}
+.airport-scene.lounge-ready .lounge-fallback{opacity:0}
+.airport-scene-copy{padding:10px 17px 4px;text-shadow:0 2px 6px #061519}
+.airport-scene-copy h1{font-size:clamp(22px,6.2vw,30px);margin:0 0 5px;line-height:1.15;color:#ffe8af;
+ letter-spacing:-.065em;font-weight:1000}
+.airport-scene-copy p{margin:0;font-size:11px;line-height:1.35;color:#f9f1dd}
+@media(max-width:360px){.airport-scene-copy h1{font-size:21px}}
+
+/* Theme defaults. The old theme script that set data-airport-theme is gone, so the paper card and
+   text colours live here (night values); the lounge lighting recolours the surfaces over the day. */
+:root{
+ --bg:#071e22;--panel:#123135;--panel2:#193d41;--line:#668783;
+ --gold:#f4d38e;--text:#fff3d8;--muted:#c5d6d0;
+ --paper:#fbf0db;--paper-ink:#1b3338;
+ --lounge-floor:#151b1d;--lounge-glow:#c98a4a;--lounge-window:#2f5a78;
+}
+/* Below the picture the lounge carries on: it starts from the picture's own bottom colour
+   (--lounge-floor, measured by lounge.js), picks up lamp or window light, and fades into the page.
+   A faint woven texture keeps it from reading as a flat fill. */
+#lobby{
+ --scene-bottom:calc(56px + min(100vw, 520px) * 1152 / 1440);
+ background:
+  radial-gradient(70% 260px at 16% var(--scene-bottom), color-mix(in srgb, var(--lounge-glow) 26%, transparent), transparent 72%),
+  radial-gradient(60% 300px at 92% calc(var(--scene-bottom) + 40px), color-mix(in srgb, var(--lounge-window) 22%, transparent), transparent 70%),
+  repeating-linear-gradient(45deg, #ffffff06 0 1px, transparent 1px 6px),
+  repeating-linear-gradient(-45deg, #00000012 0 1px, transparent 1px 6px),
+  linear-gradient(180deg, var(--lounge-floor) 0, var(--lounge-floor) var(--scene-bottom),
+   color-mix(in srgb, var(--lounge-floor) 55%, var(--airport-surface-mid,#061b1f)) calc(var(--scene-bottom) + 160px),
+   var(--airport-surface-mid,#061b1f) calc(var(--scene-bottom) + 520px), var(--airport-surface-bottom,#081f22));
+ background-attachment:scroll;
+}
+/* a soft shadow line under the picture, like the edge of the carpet in front of the sofas */
+.airport-scene-copy{position:relative}
+.airport-scene-copy::before{content:"";position:absolute;left:-12px;right:-12px;top:0;height:18px;
+ background:linear-gradient(180deg,#0000004d,transparent);pointer-events:none}
+.card h3{color:var(--paper-ink)}
+
+/* Motion. Short, eased, and only on things the player touches or that just appeared.
+   Everything here is switched off for prefers-reduced-motion. */
+html{-webkit-tap-highlight-color:transparent}
+@media (prefers-reduced-motion:no-preference){
+ .card,.featured-button,.tabs button,.current button,.join,.secondaryAction,.quick button,
+ .bottom button,.walletBadge,.header-profile{
+  transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,background-color .2s ease,color .2s ease,border-color .2s ease}
+ .card:active{transform:scale(.985);box-shadow:0 1px 3px #0006}
+ .featured-button:active,.tabs button:active,.current button:active,.join:active,.secondaryAction:active,
+ .quick button:active,.walletBadge:active,.header-profile:active{transform:scale(.96)}
+ .bottom button:active span{transform:translateY(1px) scale(.94)}
+ .bottom button span{transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+ @media (hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 8px 18px #0007}}
+
+ /* cards rise in one after another the first time the list appears */
+ @keyframes t2-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+ .tournaments.intro .card{animation:t2-rise .42s cubic-bezier(.2,.8,.2,1) both}
+ .tournaments.intro .card:nth-child(2){animation-delay:.05s}
+ .tournaments.intro .card:nth-child(3){animation-delay:.1s}
+ .tournaments.intro .card:nth-child(4){animation-delay:.15s}
+ .tournaments.intro .card:nth-child(n+5){animation-delay:.2s}
+ .featured:not([hidden]){animation:t2-rise .45s cubic-bezier(.2,.8,.2,1) both}
+
+ /* sheets: the shade fades, the sheet comes up with a little give */
+ @keyframes t2-fade{from{opacity:0}to{opacity:1}}
+ @keyframes t2-sheet{from{transform:translateY(100%)}70%{transform:translateY(-1.5%)}to{transform:none}}
+ .sheetWrap:not([hidden]){animation:t2-fade .2s ease both}
+ .sheetWrap:not([hidden]) .sheet{animation:t2-sheet .38s cubic-bezier(.2,.8,.25,1) both}
+
+ /* toast drops in from below */
+ @keyframes t2-toast{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+ .toast:not([hidden]){animation:t2-toast .25s cubic-bezier(.2,.8,.2,1) both}
+
+ /* the join call-to-action breathes very slightly so the eye finds it */
+ @keyframes t2-glow{0%,100%{box-shadow:0 2px 3px #0003}50%{box-shadow:0 2px 12px #f3c97066}}
+ .featured-button{animation:t2-glow 3.2s ease-in-out infinite}
+}
+@media (prefers-reduced-motion:no-preference){
+ @keyframes t2-sheet-out{to{transform:translateY(100%)}}
+ @keyframes t2-fade-out{to{opacity:0}}
+ .sheetWrap.closing{animation:t2-fade-out .22s ease both;pointer-events:none}
+ .sheetWrap.closing .sheet{animation:t2-sheet-out .22s cubic-bezier(.4,0,.8,.4) both}
+}
+
+/* The picture melts into the page from about the walkers' knees down: a soft blur that fades into
+   the floor colour the page continues with, so there is no hard bottom edge. */
+.airport-scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10%;pointer-events:none;
+ -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+ background:linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--lounge-floor) 55%,transparent) 60%,var(--lounge-floor) 100%);
+ -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 45%);mask-image:linear-gradient(180deg,transparent 0%,#000 45%)}
+.airport-scene-copy::before{display:none}

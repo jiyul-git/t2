@@ -1,0 +1,306 @@
+{
+ "placeholder": false,
+ "size": [
+  1440,
+  1152
+ ],
+ "baselineY": 1118,
+ "horizonY": 560,
+ "windowFacing": 225,
+ "charScale": 1.25,
+ "characters": [
+  "tiger_walker"
+ ],
+ "passEvery": [
+  6,
+  14
+ ],
+ "window": {
+  "x": 700,
+  "y": 0,
+  "w": 740,
+  "h": 700
+ },
+ "board": {
+  "x": 64,
+  "y": 101,
+  "w": 516,
+  "h": 398,
+  "rows": 6,
+  "textRows": 5,
+  "lines": [
+   [
+    [
+     64,
+     100.7
+    ],
+    [
+     580,
+     208.6
+    ]
+   ],
+   [
+    [
+     64,
+     160.9
+    ],
+    [
+     580,
+     258.9
+    ]
+   ],
+   [
+    [
+     64,
+     222.0
+    ],
+    [
+     580,
+     308.7
+    ]
+   ],
+   [
+    [
+     64,
+     282.1
+    ],
+    [
+     580,
+     359.5
+    ]
+   ],
+   [
+    [
+     64,
+     343.2
+    ],
+    [
+     580,
+     413.4
+    ]
+   ],
+   [
+    [
+     64,
+     406.3
+    ],
+    [
+     580,
+     465.1
+    ]
+   ],
+   [
+    [
+     64,
+     449.4
+    ],
+    [
+     580,
+     497.9
+    ]
+   ]
+  ]
+ },
+ "seats": [
+  {
+   "id": "s0",
+   "x": 430,
+   "y": 995
+  },
+  {
+   "id": "s1",
+   "x": 665,
+   "y": 995
+  },
+  {
+   "id": "s2",
+   "x": 1145,
+   "y": 1050
+  },
+  {
+   "id": "s3",
+   "x": 1335,
+   "y": 1050
+  }
+ ],
+ "entries": {
+  "left": -320,
+  "right": 1760
+ },
+ "lamps": [
+  {
+   "x": 120,
+   "y": 700,
+   "r": 520
+  },
+  {
+   "x": 660,
+   "y": 660,
+   "r": 460
+  }
+ ],
+ "floorLight": null,
+ "planes": {
+  "right": "bg/plane_right.webp",
+  "left": "bg/plane_left.webp",
+  "y": 745,
+  "height": 370,
+  "from": 380,
+  "to": 1980,
+  "period": 150,
+  "duration": 80,
+  "haze": 0.3,
+  "wheels": {
+   "right": [
+    [
+     0.3921,
+     0.9211,
+     0.0144,
+     0.0239
+    ],
+    [
+     0.5923,
+     0.8971,
+     0.012,
+     0.0191
+    ],
+    [
+     0.8216,
+     0.9522,
+     0.0167,
+     0.0215
+    ]
+   ],
+   "left": [
+    [
+     0.1767,
+     0.9517,
+     0.0157,
+     0.0193
+    ],
+    [
+     0.4069,
+     0.8961,
+     0.0145,
+     0.0217
+    ],
+    [
+     0.6078,
+     0.9203,
+     0.0145,
+     0.0229
+    ]
+   ]
+  }
+ },
+ "beacons": [
+  {
+   "x": 855,
+   "y": 197,
+   "r": 16,
+   "color": "#ff4a3a",
+   "period": 1.5,
+   "phase": 0.0
+  },
+  {
+   "x": 834,
+   "y": 256,
+   "r": 12,
+   "color": "#ff4a3a",
+   "period": 1.5,
+   "phase": 0.75
+  },
+  {
+   "x": 884,
+   "y": 253,
+   "r": 12,
+   "color": "#ff4a3a",
+   "period": 1.5,
+   "phase": 0.75
+  },
+  {
+   "x": 907,
+   "y": 217,
+   "r": 12,
+   "color": "#ff4a3a",
+   "period": 1.5,
+   "phase": 0.0
+  },
+  {
+   "x": 1017,
+   "y": 426,
+   "r": 12,
+   "color": "#ff5a6a",
+   "period": 2.2,
+   "phase": 0.4
+  },
+  {
+   "x": 1135,
+   "y": 436,
+   "r": 12,
+   "color": "#6a8bff",
+   "period": 2.6,
+   "phase": 1.3
+  }
+ ],
+ "layers": [
+  {
+   "id": "outside",
+   "group": "far",
+   "tint": false,
+   "variants": [
+    {
+     "elev": -10,
+     "file": "bg/outside_night.webp"
+    },
+    {
+     "elev": 2,
+     "file": "bg/outside_golden.webp"
+    },
+    {
+     "elev": 14,
+     "file": "bg/outside_day.webp"
+    }
+   ]
+  },
+  {
+   "id": "interior",
+   "group": "back",
+   "tint": false,
+   "variants": [
+    {
+     "elev": -10,
+     "file": "bg/interior_night.webp"
+    },
+    {
+     "elev": 2,
+     "file": "bg/interior_golden.webp"
+    },
+    {
+     "elev": 14,
+     "file": "bg/interior_day.webp"
+    }
+   ]
+  },
+  {
+   "id": "sofaFront",
+   "group": "mid",
+   "tint": false,
+   "cutFrom": "interior",
+   "variants": [
+    {
+     "elev": -10,
+     "file": "bg/sofa_front_night.webp"
+    },
+    {
+     "elev": 2,
+     "file": "bg/sofa_front_golden.webp"
+    },
+    {
+     "elev": 14,
+     "file": "bg/sofa_front_day.webp"
+    }
+   ]
+  }
+ ]
+}
