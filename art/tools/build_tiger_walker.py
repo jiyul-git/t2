@@ -34,6 +34,7 @@ ORDER = ['22', '30', '03', '10', '12', '21']
 # front foot back px, back foot forward px, front foot lift px). Fills the long gap where the
 # swinging foot lands, measured from the foot positions.
 TWEENS = [(3, 30, 40, 10)]
+KEEP_IN_SWAP = {1, 2}     # loop frames (after the in-betweens) with both feet under the body
 BASE = '10'               # the upper body every frame shares
 OUT = ROOT / 'ui/web/lounge/assets/chars/tiger_walker'
 SCALE = 0.62          # atlas pixels per source pixel (keeps the atlas small)
@@ -51,6 +52,11 @@ def run(*args):
     subprocess.run([sys.executable, '-I', *map(str, args)], check=True, stdout=subprocess.DEVNULL)
 
 
+def _swap(src, dst):
+    run(TOOLS / 'swap_legs.py', src, dst)
+    return dst
+
+
 def build_loop():
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp); cells, out = tmp / 'cells', tmp / 'loop'
@@ -65,6 +71,11 @@ def build_loop():
             t = tmp / ('tween_%d.png' % k)
             run(TOOLS / 'stride_tween.py', seq[at], t, '--front', front, '--back', back, '--lift', lift, '--right', 300)
             seq.insert(at, t)
+        # second step: the same frames with the legs' roles swapped (far leg steps out), so the
+        # loop alternates near leg / far leg instead of the near leg kicking out every step
+        # (frames with both feet together under the body stay as drawn: the split would cut a foot,
+        # and which leg is near hardly shows there)
+        seq += [f if i in KEEP_IN_SWAP else _swap(f, tmp / ('swap_%d.png' % i)) for i, f in enumerate(list(seq))]
         SRC.mkdir(exist_ok=True)
         for old in SRC.glob('*.png'):
             old.unlink()
@@ -87,9 +98,9 @@ def main():
     for k, im in enumerate(frames_img):
         pad = Image.new('RGBA', (im.width, hmax), (0, 0, 0, 0)); pad.paste(im, (0, 0)); frames_img[k] = pad
     base_h = round(Image.open(SRC / 'left_0.png').height * SCALE)
-    W = sum(im.width for im in frames_img[:n]) + 16
+    W = sum(im.width for im in frames_img[:n]) + 2 * n + 2
     H = max(im.height for im in frames_img) * 2 + 4
-    atlas = Image.new('RGBA', (max(W, sum(im.width for im in frames_img[n:]) + 16), H), (0, 0, 0, 0))
+    atlas = Image.new('RGBA', (max(W, sum(im.width for im in frames_img[n:]) + 2 * n + 2), H), (0, 0, 0, 0))
     frames, x, y, rowh = [], 0, 0, max(im.height for im in frames_img) + 2
     # every frame is cropped at the top of the (shared) head, so one foot line for all of them keeps
     # the body level: the base frame's own feet
