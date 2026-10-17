@@ -4,3 +4,16 @@ RESUME_START 2026-10-16T13:20:08Z
 RESUME_START 2026-10-16T15:20:34Z
 RESUME_START 2026-10-16T17:21:02Z
 RESUME_START 2026-10-17T00:58:37Z
+RESUME_START 2026-10-17T02:59:27Z
+Traceback (most recent call last):
+  File "/home/user/t2/tools/gto_spot/precision_pass.py", line 123, in <module>
+    main()
+  File "/home/user/t2/tools/gto_spot/precision_pass.py", line 56, in main
+    bad = L.flop_failures(fd)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/home/user/t2/tools/gto_spot/spot_loop.py", line 83, in flop_failures
+    d = json.load(open(os.path.join(flops_dir, b + '.json')))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/user/gto_ckpt/spots/p60v2b_co_vs_sb_3b40/step2/term1_flops/Qc9d4h.json'
+precision pass failed
+RESUME_START 2026-10-17T02:59:53Z
