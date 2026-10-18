@@ -26,7 +26,7 @@ REQUIRED_CLIPS = ['walk_r', 'walk_l', 'turn_r_front', 'turn_l_front', 'turn_fron
                   'sit_down', 'stand_up', 'sit_idle']
 REQUIRED_POSES = ['walk_r', 'walk_l', 'stand_front', 'sit']
 WALKER_CLIPS = ['walk_r', 'walk_l']      # a walker (manifest.walker) only crosses the lounge
-GROUPS = ('far', 'back', 'mid', 'front')
+GROUPS = ('far', 'back', 'mid', 'arms', 'front')
 EMISSION_KEYS = ('lamp', 'city')
 SEAM_MAX_ERR = 6.0           # mean abs error, 0..255, premultiplied RGBA
 LOOP_SEAM_FACTOR = 1.25      # loop wrap may jump at most this much more than the biggest normal step
@@ -347,6 +347,20 @@ def check_character(root, name, rep):
         elif atlas is not None and (f['x'] < 0 or f['y'] < 0 or f['x'] + f['w'] > atlas.shape[1] or f['y'] + f['h'] > atlas.shape[0]):
             rep.err('schema', '%s: frame %d lies outside the atlas' % (tag, i))
             good = False
+    if good:
+        # two frame rectangles are either the same picture or apart: a rectangle that runs into another
+        # picture draws a piece of it (a lifted frame whose rectangle was stretched down to its anchor)
+        rects = sorted({(f['x'], f['y'], f['w'], f['h']) for f in frames})
+        for i, (x, y, w, h) in enumerate(rects):
+            for (x2, y2, w2, h2) in rects[i + 1:]:
+                if x2 >= x + w:
+                    continue
+                if x < x2 + w2 and y < y2 + h2 and y2 < y + h:
+                    rep.err('schema', '%s: frame rectangles %s and %s overlap in the atlas' % (tag, (x, y, w, h), (x2, y2, w2, h2)))
+                    good = False
+                    break
+            if not good:
+                break
     if good and atlas is not None:
         check_faces(atlas, frames, tag, rep)
         good = not any(e.startswith('face:') and tag + ':' in e for e in rep.errors)
@@ -375,8 +389,20 @@ def check_character(root, name, rep):
 
     # A walker (manifest.walker) passes by with its two walking clips; a character with the full set can
     # sit; one with both is a hybrid (the real animals: pass-by or sit, docs/LOUNGE_SCENE_DESIGN.md 7.7).
-    sit_missing = [c for c in REQUIRED_CLIPS if c not in clips] + ['pose:' + p for p in REQUIRED_POSES if p not in poses]
-    sits = not sit_missing
+    # facings (docs/LOUNGE_SCENE_DESIGN.md 7.8): the clips and poses for a seat facing f other than 'f' are
+    # named '<id>@<f>' (walks are shared); a character sits if one of its facings is complete
+    def at(i, f):
+        return i if f == 'f' or i in WALKER_CLIPS else i + '@' + f
+    facings = man.get('facings') or ['f']
+    if not (isinstance(facings, list) and all(isinstance(f, str) and re.match(r'^[a-z]+$', f) for f in facings)):
+        rep.err('schema', '%s: facings must be a list of lower-case words' % tag)
+        facings = ['f']
+    misses = {}
+    for f in facings:
+        pose_names = ['walk_r', 'walk_l', 'stand_front', 'sit'] if f == 'f' else ['walk_r', 'walk_l', 'stand@' + f, 'sit@' + f]
+        misses[f] = [at(c, f) for c in REQUIRED_CLIPS if at(c, f) not in clips] + ['pose:' + p for p in pose_names if p not in poses]
+    sit_missing = min(misses.values(), key=len)
+    sits = any(not m for m in misses.values())
     if man.get('walker') is True:
         missing = [c for c in WALKER_CLIPS if c not in clips]
         if man.get('pass', 'both') not in ('r', 'l', 'both'):

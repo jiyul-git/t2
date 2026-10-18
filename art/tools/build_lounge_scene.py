@@ -29,6 +29,45 @@ SOFA_FRONT = [
     [(870, 835), (1050, 835), (1050, 925), (1440, 925), (1440, H), (870, H)],              # right sofa
 ]
 
+# Sofa parts that are nearer than a seated character and must cover it: the left sofa's left arm (its
+# front face and rounded top, traced on the picture). Drawn after seated people, before the aisle.
+SOFA_ARMS = [
+    [(150, 755), (268, 755), (285, 763), (293, 777), (296, 800), (298, 850), (301, 900), (303, 950), (305, 1000),
+     (302, 1012), (150, 1012)],
+]
+
+# Seats, measured on the 1440 x 1152 interior (docs/LOUNGE_SCENE_DESIGN.md 7.8). cx, cy: where a sitter's
+# butt rests - the middle of a seat cushion, a third of the way from its back edge to its front edge.
+# facing: 'f' the left sofa (seen from the front), 'l' the right sofa (turned three-quarters toward
+# the front-left: its seat edges run down to the right, its back cushions lean). scale: size there.
+# blocks: seats that cannot be taken at the same time (the figures are wider than a cushion).
+# The left sofa has three seat cushions (x 305-590, 590-780, 780-880); the third is too narrow and
+# half under the right arm, so it is not used. The right sofa shows two seats (its right arm is
+# outside the picture).
+SEATS = [
+    dict(id='s0', cx=447, cy=905, facing='f', scale=0.8, blocks=['s1']),
+    dict(id='s1', cx=685, cy=898, facing='f', scale=0.8, blocks=['s0']),
+    dict(id='s2', cx=1095, cy=918, facing='l', scale=0.8, blocks=['s3']),
+    dict(id='s3', cx=1325, cy=965, facing='l', scale=0.88, blocks=['s2']),
+]
+# per facing: from the floor point in front of a seat (seats[].x, y: where a character stops and hops
+# from) to the butt contact, scene px at scale 1 (rest up, dx right): for 'l' the character stands in
+# front-left of the seat, the way the seat faces
+SEAT_FACINGS = {'f': {'rest': 100, 'dx': 0}, 'l': {'rest': 90, 'dx': 40}}
+# the angle (degrees, clockwise) of the cushion's front edge, for the contact shadow
+SEAT_TILT = {'f': -1.5, 'l': 5.5}
+
+
+def seats_json():
+    out = []
+    for s in SEATS:
+        fc = SEAT_FACINGS[s['facing']]
+        out.append({'id': s['id'], 'x': round(s['cx'] - fc['dx'] * s['scale']), 'y': round(s['cy'] + fc['rest'] * s['scale']),
+                    'cx': s['cx'], 'cy': s['cy'], 'scale': s['scale'], 'facing': s['facing'],
+                    'tilt': SEAT_TILT[s['facing']], 'blocks': s['blocks']})
+    return out
+
+
 SCENE = {
     'placeholder': False,
     'size': [W, H],
@@ -37,7 +76,7 @@ SCENE = {
     'windowFacing': 225,
     'charScale': 1.25,
     'seatedInFront': True,         # seated characters sit on the cushion in front of the sofa front
-    'seatRest': 110,               # scene px (seat scale 1) from a seat's floor line up to the cushion
+    'seatFacings': SEAT_FACINGS,
     # The real animals (art/tools/build_character.py): each one passes by (left to right) or walks to a
     # seat, sits a while and leaves - one thing moving at a time (docs/LOUNGE_SCENE_DESIGN.md 7.7).
     'characters': ['tiger', 'rabbit', 'turtle'],
@@ -48,11 +87,7 @@ SCENE = {
     # painted row boundaries of the panel, top to bottom, each [[x_left, y], [x_right, y]]
     'board': {'x': 64, 'y': 101, 'w': 516, 'h': 398, 'rows': 6, 'textRows': 5,   # bottom row left empty
               'lines': [[[64, 100.7], [580, 208.6]], [[64, 160.9], [580, 258.9]], [[64, 222.0], [580, 308.7]], [[64, 282.1], [580, 359.5]], [[64, 343.2], [580, 413.4]], [[64, 406.3], [580, 465.1]], [[64, 449.4], [580, 497.9]]]},
-    # y: the floor line in front of the seat (a character stands there before it hops on); scale: size at
-    # the seat (the aisle is 1). Seated people rest on the cushion seatRest above y (times the scale) and
-    # are drawn over the sofa front so their legs show (seatedInFront).
-    'seats': [{'id': 's0', 'x': 440, 'y': 1027, 'scale': 0.9}, {'id': 's1', 'x': 665, 'y': 1027, 'scale': 0.9},
-              {'id': 's2', 'x': 1030, 'y': 1039, 'scale': 0.9}, {'id': 's3', 'x': 1290, 'y': 1076, 'scale': 0.9}],
+    'seats': None,                 # filled from SEATS below
     'entries': {'left': -320, 'right': 1760},
     'lamps': [{'x': 120, 'y': 700, 'r': 520}, {'x': 660, 'y': 660, 'r': 460}],
     'floorLight': None,
@@ -78,10 +113,10 @@ PLANES = {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
                      'left': [[168, 394, 6.5, 8], [387, 371, 6, 9], [578, 381, 6, 9.5]]}}
 
 
-def mask_image():
+def mask_image(polys=None):
     m = Image.new('L', (W, H), 0)
     d = ImageDraw.Draw(m)
-    for poly in SOFA_FRONT:
+    for poly in (SOFA_FRONT if polys is None else polys):
         d.polygon(poly, fill=255)
     return m.filter(ImageFilter.GaussianBlur(1.5))
 
@@ -95,7 +130,8 @@ def main(argv=None):
     for old in bg.iterdir():
         old.unlink()
     front = mask_image()
-    layers = {'outside': [], 'interior': [], 'sofaFront': []}
+    arms = mask_image(SOFA_ARMS)
+    layers = {'outside': [], 'interior': [], 'sofaFront': [], 'sofaArms': []}
     for name, elev in VARIANTS:
         for kind in ('outside', 'interior'):
             if kind == 'interior':
@@ -112,12 +148,17 @@ def main(argv=None):
                 sofa.putalpha(Image.fromarray(a))
                 sofa.save(bg / ('sofa_front_%s.webp' % name), 'WEBP', quality=88, method=6)
                 layers['sofaFront'].append({'elev': elev, 'file': 'bg/sofa_front_%s.webp' % name})
+                arm = im.copy()
+                arm.putalpha(Image.fromarray(np.minimum(np.asarray(arm.getchannel('A')), np.asarray(arms))))
+                arm.save(bg / ('sofa_arms_%s.webp' % name), 'WEBP', quality=88, method=6)
+                layers['sofaArms'].append({'elev': elev, 'file': 'bg/sofa_arms_%s.webp' % name})
     cut = Path(__file__).resolve().parent.parent / 'cutouts'
     for side in ('right', 'left'):
         im = Image.open(cut / ('plane_%s.png' % side)).convert('RGBA')
         im = im.resize((round(im.width * 400 / im.height), 400), Image.LANCZOS)
         im.save(bg / ('plane_%s.webp' % side), 'WEBP', quality=90, method=6)
     scene = dict(SCENE)
+    scene['seats'] = seats_json()
     scene['planes'] = dict(PLANES)
     for side in ('right', 'left'):        # source px -> fractions of the cut-out
         im = Image.open(Path(__file__).resolve().parent.parent / 'cutouts' / ('plane_%s.png' % side))
@@ -128,6 +169,8 @@ def main(argv=None):
         {'id': 'outside', 'group': 'far', 'tint': False, 'variants': layers['outside']},
         {'id': 'interior', 'group': 'back', 'tint': False, 'variants': layers['interior']},
         {'id': 'sofaFront', 'group': 'mid', 'tint': False, 'cutFrom': 'interior', 'variants': layers['sofaFront']},
+        # over seated characters (seatedInFront), under the aisle
+        {'id': 'sofaArms', 'group': 'arms', 'tint': False, 'cutFrom': 'interior', 'variants': layers['sofaArms']},
     ]
     (out / 'scene.json').write_text(json.dumps(scene, indent=1, ensure_ascii=False) + '\n', encoding='utf-8')
     total = sum(p.stat().st_size for p in bg.iterdir())

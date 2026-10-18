@@ -160,10 +160,16 @@
     // Reduced motion: two people sitting still, lighting refreshed once a minute.
     function startStatic() {
       const seats = assets.scene.seats;
-      const picks = assets.chars.filter(c => Behavior.canSit(c.manifest)).slice(0, 2).map((c, i) => {
-        const seat = [1, 3][i] % seats.length;
-        return { name: c.manifest.name, clip: 'sit_idle', frame: 0, x: seats[seat].x, lane: 'seat', state: 'SEATED', seat, spot: seat, face: '' };
-      });
+      // up to two people, each on a seat whose facing it has, never two seats that block each other
+      const taken = [], picks = [];
+      for (const c of assets.chars.filter(c => Behavior.canSit(c.manifest))) {
+        const fs = Behavior.sitFacings(c.manifest);
+        const seat = seats.findIndex((s, i) => !taken.includes(i) && fs.includes(s.facing || 'f') &&
+          !taken.some(j => (s.blocks || []).includes(seats[j].id) || (seats[j].blocks || []).includes(s.id)));
+        if (seat < 0 || picks.length >= 2) continue;
+        taken.push(seat);
+        picks.push({ name: c.manifest.name, clip: Behavior.clipAt('sit_idle', seats[seat].facing), frame: 0, x: seats[seat].x, lane: 'seat', state: 'SEATED', seat, spot: seat, face: '' });
+      }
       const redraw = () => {
         if (failed || stopped) return;
         try { updateLighting(true); updateBoard(true); drawNow(picks); } catch (e) { fail(e); return; }

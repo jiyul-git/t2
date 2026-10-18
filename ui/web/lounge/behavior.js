@@ -40,7 +40,17 @@
   // character with the full clip set can go to a seat; one with both (walker + full set, the real
   // animals) does either, one thing at a time.
   const WALKER_CLIPS = ['walk_r', 'walk_l'];
-  const canSit = m => !!(m && m.clips) && REQUIRED_CLIPS.every(id => m.clips[id]);
+  // Seat facings (docs/LOUNGE_SCENE_DESIGN.md 7.8): a seat faces 'f' (front, the default) or another way
+  // ('l': three-quarters left). The clips a character plays at a seat are named for its facing: plain for
+  // 'f', '<id>@<facing>' otherwise (walk_r / walk_l are the same everywhere). A character can sit at the
+  // facings for which it has every required clip.
+  const clipAt = (id, facing) => (!facing || facing === 'f' || WALKER_CLIPS.includes(id) ? id : id + '@' + facing);
+  function sitFacings(m) {
+    if (!m || !m.clips) return [];
+    const list = Array.isArray(m.facings) && m.facings.length ? m.facings : ['f'];
+    return list.filter(f => REQUIRED_CLIPS.every(id => m.clips[clipAt(id, f)]));
+  }
+  const canSit = m => sitFacings(m).length > 0;
   const canPass = m => !!(m && m.clips && m.walker) && WALKER_CLIPS.every(id => m.clips[id]);
   function isActive(manifest) { return canSit(manifest) || canPass(manifest); }
   // Movement lock (docs/LOUNGE_SCENE_DESIGN.md 7.7): the event that holds it after a quiet spell.
@@ -74,7 +84,7 @@
     const pick = list => list[Math.floor(rand() * list.length)];
 
     const chars = (opts.characters || []).filter(isActive).map(m => ({
-      name: m.name, clips: m.clips, walker: canPass(m), sitter: canSit(m), pass: m.pass || 'both', state: 'OFFSCREEN', seat: -1, x: 0, clip: null, total: 0, wraps: 0, leaving: false,
+      name: m.name, clips: m.clips, walker: canPass(m), sitter: canSit(m), facings: sitFacings(m), pass: m.pass || 'both', state: 'OFFSCREEN', seat: -1, x: 0, clip: null, total: 0, wraps: 0, leaving: false,
       walk: null, exitSide: null, seatedUntil: 0, activity: '', plan: [], stage: null, sunglassesUsed: false,
       holding: false, holdSince: 0, pending: null, chatRole: '', segEnd: 0, chatEnd: 0, chatSide: '',
       frames: Array.isArray(m.frames) ? m.frames : [], exprs: faceKinds(m).filter(k => k !== 'blink'),
@@ -102,13 +112,26 @@
 
     // ------------------------------------------------------------------ time of day
     const isDay = () => { const m = minuteOfDay(); return m >= 7 * 60 && m < 23 * 60; };
+    // the most people the seats hold at once (seats that block each other are not taken together)
+    const capacity = (function () {
+      let best = 0;
+      for (let mask = 0; mask < (1 << Math.min(seats.length, 12)); mask++) {
+        const on = seats.filter((s, i) => mask & (1 << i));
+        const clash = on.some(a => on.some(b => a !== b && ((a.blocks || []).includes(b.id) || (b.blocks || []).includes(a.id))));
+        if (!clash) best = Math.max(best, on.length);
+      }
+      return best;
+    }());
     function rollTarget() {                  // people seated: 1-3 by day, 1-2 at night
       const t = isDay() ? 1 + Math.floor(rand() * 3) : 1 + Math.floor(rand() * 2);
-      return Math.min(t, sitters.length, seats.length);
+      return Math.min(t, sitters.length, capacity);
     }
 
     // ------------------------------------------------------------------ clips
+    const facingOf = c => (c.seat >= 0 && seats[c.seat].facing) || 'f';
+    const at = (c, id) => clipAt(id, facingOf(c));         // the clip id at the character's seat
     function startClip(c, id) {
+      id = at(c, id);
       const clip = c.clips[id];
       if (!clip) throw new Error('missing clip ' + id + ' for ' + c.name);
       if (c.clip) {
@@ -120,12 +143,17 @@
       if (emit) emit({ type: 'clip', t: now, name: c.name, from: c.clip, to: id, state: c.state, activity: c.activity, seat: c.seat });
       c.clip = id; c.total = 0; c.wraps = 0;
     }
-    const has = (c, ...ids) => ids.every(id => c.clips[id]);
+    const has = (c, ...ids) => ids.every(id => c.clips[at(c, id)]);
 
     // ------------------------------------------------------------------ seats
     function freeSeats() { return seats.map((s, i) => i).filter(i => seatOwner[i] === null); }
-    function chooseSeat() {
-      const free = freeSeats();
+    // seats.blocks: ids of seats that cannot be taken together with this one (the figures would overlap)
+    const blocked = i => seats.some((o, j) => j !== i && seatOwner[j] !== null &&
+      ((Array.isArray(seats[i].blocks) && seats[i].blocks.includes(o.id)) || (Array.isArray(o.blocks) && o.blocks.includes(seats[i].id))));
+    // free seats this character can take now: its facing, not blocked by someone sitting nearby
+    function seatsFor(c) { return freeSeats().filter(i => c.facings.includes(seats[i].facing || 'f') && !blocked(i)); }
+    function chooseSeat(c) {
+      const free = seatsFor(c);
       if (!free.length) return -1;
       const beside = free.filter(i => (i > 0 && seatOwner[i - 1] !== null) || (i < seats.length - 1 && seatOwner[i + 1] !== null));
       if (beside.length && rand() < 0.4) return pick(beside);
@@ -204,7 +232,7 @@
       const seated = seatedNow();
       const free = freeSeats().length;
       if (free && seated.length < target) {
-        const away = sitters.filter(off);
+        const away = sitters.filter(c => off(c) && seatsFor(c).length);
         for (const c of away) out.push(['arrive', c, (seated.length ? 2 : 6) / away.length]);
       }
       for (const c of seated) if (now >= c.seatedUntil && !c.leaving) out.push(['leave', c, 3]);
@@ -217,22 +245,25 @@
       if (kind === 'plane') { plane = { start: now, ms: planes.duration * 1000, right: rand() < 0.5 }; mover = { kind, c: null }; return; }
       mover = { kind, c };
       if (kind === 'pass') startPass(c);
-      else if (kind === 'arrive') spawn(c, seatWish >= 0 ? seatWish : chooseSeat());
+      else if (kind === 'arrive') spawn(c, seatWish >= 0 ? seatWish : chooseSeat(c));
       else if (kind === 'leave') sendOff(c);
     }
     function tryEvent() {
       if (plane && now >= plane.start + plane.ms) { plane = null; release(); }
       if (mover || now < nextEventAt) return;
       // a queued event (the preview walkers, a debug request) goes first while it is still possible
+      const later = [];                      // an arrival that waits for a seat stays queued
       while (queue.length) {
         const [kind, name, wish] = queue.shift();
         const seatWish = Number.isInteger(wish) && seatOwner[wish] === null ? wish : -1;
         const c = chars.find(x => x.name === name);
         if (!c) continue;
-        if (kind === 'pass' && c.walker && c.state === 'OFFSCREEN') return startEvent('pass', c);
-        if (kind === 'arrive' && c.sitter && c.state === 'OFFSCREEN' && freeSeats().length) return startEvent('arrive', c, seatWish);
-        if (kind === 'leave' && c.state === 'SEATED') return startEvent('leave', c);
+        if (kind === 'pass' && c.walker && c.state === 'OFFSCREEN') { queue.push(...later); return startEvent('pass', c); }
+        if (kind === 'arrive' && c.sitter && c.state === 'OFFSCREEN' && seatsFor(c).length) { queue.push(...later); return startEvent('arrive', c, seatsFor(c).includes(seatWish) ? seatWish : -1); }
+        if (kind === 'arrive' && c.sitter && c.state === 'OFFSCREEN') later.push([kind, name, wish]);
+        if (kind === 'leave' && c.state === 'SEATED') { queue.push(...later); return startEvent('leave', c); }
       }
+      queue = later;
       let opts = candidates();
       // someone who has been due to leave for a while goes now; nobody seated: somebody comes
       const overdue = opts.filter(o => o[0] === 'leave' && now - o[1].seatedUntil >= LEAVE_WAIT_MS);
@@ -277,7 +308,7 @@
       const need = s => ['chat_in_', 'chat_talk_', 'chat_listen_', 'chat_out_'].map(p => mine(p, s));
       const options = [];
       for (const j of [c.seat - 1, c.seat + 1]) {
-        const o = seatOwner[j];
+        const o = j >= 0 && j < seats.length ? seatOwner[j] : null;
         if (!o || o === c || o.state !== 'SEATED' || o.activity !== 'idle' || o.holding || o.pending || o.leaving) continue;
         if (has(c, ...need(sideOf(c.seat, j))) && has(o, ...need(sideOf(j, c.seat)))) options.push(o);
       }
@@ -503,13 +534,14 @@
       const count = Math.min(Math.ceil(target / 2), pool.length, seats.length);
       for (let k = 0; k < count; k++) {
         const c = pool.splice(Math.floor(rand() * pool.length), 1)[0];
-        const idx = chooseSeat();
+        const idx = chooseSeat(c);
+        if (idx < 0) continue;
         seatOwner[idx] = c;
         c.seat = idx; c.x = seats[idx].x; c.state = 'SEATED'; c.activity = 'idle'; c.sunglassesUsed = false;
         c.clip = null;
         startClip(c, 'sit_idle');
-        c.total = rand() * c.clips.sit_idle.frames.length;         // random point in the loop
-        c.wraps = Math.floor(c.total / c.clips.sit_idle.frames.length);
+        c.total = rand() * c.clips[c.clip].frames.length;         // random point in the loop
+        c.wraps = Math.floor(c.total / c.clips[c.clip].frames.length);
         c.plan = [{ kind: 'loop', clip: 'sit_idle', ms: rnd(DURATIONS.idle[0], DURATIONS.idle[1]) * 1000 }];
         c.plan[0].until = now + c.plan[0].ms;
         c.stage = c.plan[0];
@@ -568,7 +600,7 @@
         const c = chars.find(x => x.name === name);
         if (!c || !c.sitter || !ACTIVITY_KINDS.includes(kind)) return false;
         if (c.state === 'OFFSCREEN') {
-          if (!freeSeats().length) return false;
+          if (!seatsFor(c).length) return false;
           queue.unshift(['arrive', c.name]);
           if (!mover) nextEventAt = now;
         }
@@ -606,5 +638,5 @@
     };
   }
 
-  return { createDirector, mulberry32, isActive, canSit, canPass, faceKinds, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS, FACE };
+  return { createDirector, mulberry32, isActive, canSit, canPass, sitFacings, clipAt, faceKinds, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS, FACE };
 });

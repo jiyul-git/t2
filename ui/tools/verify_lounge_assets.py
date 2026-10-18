@@ -210,7 +210,10 @@ def main():
         name = 'rabbit'
         orig = load_manifest(froot, name)
         # a hybrid that loses a sitting clip still passes by (walker); its seams are still checked
-        m = json.loads(json.dumps(orig)); del m['clips']['sit_down']; save_manifest(froot, name, m)
+        m = json.loads(json.dumps(orig))
+        for cid in [c for c in m['clips'] if c.split('@')[0] == 'sit_down']:     # every facing's sit_down
+            del m['clips'][cid]
+        save_manifest(froot, name, m)
         rep = C.Report(); C.check_character(froot, name, rep)
         ok(rep.chars.get(name) == 'walker' and not rep.errors, 'hybrid without sit_down is a plain walker: %r %r' % (rep.chars, rep.errors[:2]))
         m = json.loads(json.dumps(orig)); m['clips']['sit_down']['frames'][-1] = m['poses']['stand_front']; save_manifest(froot, name, m)
@@ -233,6 +236,8 @@ def main():
         broken(lambda m: m['frames'][blink].update(over=f0 + 1), 'patch made for another frame')
         broken(lambda m: m['frames'][f0]['v'].update(blink=f0 + 1), 'full variant with another anchor or silhouette')
         broken(lambda m: m['clips']['walk_r']['frames'].__setitem__(0, blink), 'a clip plays a patch frame', 'schema')
+        # a frame rectangle stretched into the next picture of the atlas (it would draw a piece of it)
+        broken(lambda m: m['frames'][m['poses']['sit']].update(h=m['frames'][m['poses']['sit']]['h'] + 400), 'frame rectangle runs into another picture', 'schema')
 
         # 13. Budget: the placeholder total is enforced.
         t = clone(base, tmp / 'budget')

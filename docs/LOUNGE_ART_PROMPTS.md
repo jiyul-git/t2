@@ -253,7 +253,7 @@ viewer. The near leg always overlaps the far leg. No text, no watermark.
 
 ## 추가로 받으면 좋은 그림 (2026-10-17)
 
-지금 앉기·일어서기는 이미 있는 정지 그림으로 만든 것이다(`art/README.md` "앉기 캐릭터"). 서 있는 정면 그림이 폴짝 뛰어 방석 위로 올라가고, 앉은 그림과 겹쳐 바뀌며(크로스페이드) 내려앉는다. 앉은 캐릭터는 다리가 보이게 소파 앞에 그린다. **겹쳐 바뀌는 2장에서 두 그림이 반투명하게 겹쳐 보이는 것**이 가장 약한 부분이다. 아래 그림이 오면 그 2장을 진짜 동작 그림으로 바꿀 수 있다. 호랑이 오르기 시트(`tiger_climb_sit_sheet_a/b`)가 잘 나온 방식 그대로다: **4×4 한 장에 16칸, 번호 순서대로 한 동작, 흰 배경, 칸 사이 흰 여백, 같은 크기**, 그리고 b처럼 **가로선(소파 앞면 윗선)** 을 그려 두면 칸마다 높이를 맞추기 쉽다.
+지금 앉기·일어서기는 이미 있는 정지 그림으로 만든 것이다(`art/README.md` "앉기 캐릭터"). 서 있는 그림이 폴짝 뛰어 오르고, 꼭대기에서 앉은 그림으로 한 프레임에 바뀐 뒤 방석에 내려앉는다(2026-10-18부터 크로스페이드 없음). 좌석에는 방향이 있어(왼쪽 소파 정면, 오른쪽 소파 왼쪽 앞을 향한 3/4) 방향마다 맞는 앉은 그림이 필요하다. **꼭대기에서 그림이 바뀌는 순간**과 **방향에 맞는 그림이 없는 자리**(거북이 정면, 호랑이 정면 폰, 토끼 정면 통화)가 가장 약한 부분이다. 아래 그림이 오면 그 2장을 진짜 동작 그림으로 바꿀 수 있다. 호랑이 오르기 시트(`tiger_climb_sit_sheet_a/b`)가 잘 나온 방식 그대로다: **4×4 한 장에 16칸, 번호 순서대로 한 동작, 흰 배경, 칸 사이 흰 여백, 같은 크기**, 그리고 b처럼 **가로선(소파 앞면 윗선)** 을 그려 두면 칸마다 높이를 맞추기 쉽다.
 
 보낼 때 첨부: 그 동물의 기준 그림 2장(걷는 단체 그림 `chars_walking_group_gemini.webp`과 앉은 단체 그림 `chars_sitting_group_gemini.webp`), 그리고 잘 된 예로 `tiger_climb_sit_sheet_b_ledge_gemini.webp`.
 
@@ -360,6 +360,28 @@ Rows 2-4: the same 4 poses again with tiny differences (scarf end swinging, a bl
 Keep the head, cap, scarf and cup identical in all cells; only the feet and the body tilt change.
 Feet always point RIGHT.
 ```
+
+### 6. 방향별 앉은 자세 (소파 방향에 맞추기) — 4마리
+
+라운지의 왼쪽 소파는 정면, 오른쪽 소파는 **왼쪽 앞을 향해 3/4로** 놓여 있다. 지금 있는 앉은 그림은 대부분 바닥에 앉아 다리를 앞으로 뻗은 모습이고 방향이 제각각이라, 거북이는 정면 소파에 못 앉고 호랑이는 정면 소파에서 폰을, 토끼는 정면 소파에서 통화를 못 한다. 한 마리에 한 장씩, 같은 몸 크기로:
+
+```
+Use the attached <animal> as the exact character reference (same face, outfit, colours, line
+weight, chibi proportions). 4x4 sheet, 16 separate cells, plain white background, white gaps,
+the character the same size in every cell, no shadow, no text, no watermark. In EVERY cell draw one
+thin straight horizontal black line at the same height: the front edge of a sofa seat. The
+<animal> sits ON that edge (its bottom just above the line), legs hanging down in front of it,
+feet off the floor.
+Row 1: body and face toward the viewer (front view): eyes open calm smile / eyes closed (blink) /
+       holding a phone and looking at it / phone at the ear, talking.
+Row 2: the same four, but the whole body turned three-quarters to the viewer's LEFT (we see the
+       right side of its face and body a little), legs hanging down-left.
+Row 3: front view: dozing head tilted, dozing with "zz", yawning, waking up.
+Row 4: three-quarters LEFT: dozing head tilted, dozing with "zz", yawning, waking up.
+The bottom (where it sits) must touch the line at the same place in every cell of a row.
+```
+
+받으면: 1·3행은 정면 좌석(`f`), 2·4행은 3/4 좌석(`l`)의 자세로 넣는다. 가로선이 엉덩이 접촉선이라 따로 잴 필요가 없다. 다리가 방석 앞으로 늘어져 보이게 된다.
 
 ## 확인과 보내기
 

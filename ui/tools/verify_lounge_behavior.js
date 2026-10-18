@@ -26,12 +26,15 @@ const OTHER_MAX_MS = 120 * 1000;
 let checks = 0;
 const ok = (c, m) => { checks++; if (!c) throw new Error(m); };
 
+// The placeholder fixtures have one front-facing pose set; they get the scene's seats without facings
+// or blocks (all four usable, side by side, so conversations can happen).
+const placeholderScene = { ...scene, seats: scene.seats.map(s => ({ id: s.id, x: s.x, y: s.y })) };
 function makeDirector(characters, seed, extra) {
   let d = null;
   const now = () => (d ? d.now : 0);
   const events = [];
   d = B.createDirector({
-    seed, scene, characters,
+    seed, scene: characters.length && characters.every(m => m.placeholder) ? placeholderScene : scene, characters,
     clock: () => START + now(),
     minuteOfDay: () => Math.floor(now() / 60000) % 1440,
     solar: () => Sun.sunPosition(new Date(START + now()), SEOUL[0], SEOUL[1]),
@@ -51,7 +54,7 @@ function hashEvents(events) {
 function simulate(characters, seed, label, hours = 24) {
   const { d, events } = makeDirector(characters, seed);
   const clipsOf = Object.fromEntries(characters.map(m => [m.name, m.clips]));
-  const seatX = scene.seats.map(s => s.x);
+  const seatX = (characters.length && characters.every(m => m.placeholder) ? placeholderScene : scene).seats.map(s => s.x);
   const stepMs = 100, steps = hours * 3600 * 1000 / stepMs;
   const dwell = {};                        // name -> {state, since}
   const lastWalk = {};                     // name -> {x, state}
@@ -80,6 +83,15 @@ function simulate(characters, seed, label, hours = 24) {
     ok(new Set(out.map(c => c.name)).size === out.length, label + ': a character is on screen twice');
     for (const n of Object.keys(dwell)) if (!out.some(c => c.name === n)) delete dwell[n];   // went away: a new visit starts over
     for (const n of Object.keys(lastWalk)) if (!out.some(c => c.name === n)) delete lastWalk[n];
+    // seats (7.8): a character sits only at a facing it has clips for, and never next to a seat it blocks
+    const sc = characters.length && characters.every(m => m.placeholder) ? placeholderScene : scene;
+    const held = out.filter(c => c.seat >= 0).map(c => sc.seats[c.seat]);
+    for (const a of held) for (const b of held) ok(a === b || !((a.blocks || []).includes(b.id)), label + ': seats ' + a.id + ' and ' + b.id + ' are taken together');
+    for (const c of out) if (c.seat >= 0) {
+      const f = sc.seats[c.seat].facing || 'f';
+      ok(B.sitFacings(characters.find(m => m.name === c.name)).includes(f), label + ': ' + c.name + ' sits facing ' + f);
+      if (c.state === 'SEATED') ok(c.clip === B.clipAt(c.clip.split('@')[0], f), label + ': ' + c.name + ' plays ' + c.clip + ' at a seat facing ' + f);
+    }
     const seatsSeen = new Set();
     for (const c of out) {
       // 1. one character per seat
@@ -278,8 +290,11 @@ ok(chatTotal > 0, 'conversations happen');
       ok(c.frames[0] === m.poses[c.from], m.name + ' ' + id + ' starts on pose ' + c.from);
       if (!c.loop) ok(c.frames[c.frames.length - 1] === m.poses[c.to], m.name + ' ' + id + ' ends on pose ' + c.to);
     }
-    for (const id of ['sit_down', 'stand_up']) ok(Number.isInteger(m.clips[id].laneSwitchAt), m.name + ' ' + id + ' says where it goes behind the sofa');
+    // every facing it claims is complete, and every seat facing in the scene is used by someone
+    ok(B.sitFacings(m).length === (m.facings || ['f']).length, m.name + ' has every clip for its facings ' + m.facings);
+    for (const f of B.sitFacings(m)) for (const id of ['sit_down', 'stand_up']) ok(Number.isInteger(m.clips[B.clipAt(id, f)].laneSwitchAt), m.name + ' ' + id + '@' + f + ' has laneSwitchAt');
   }
+  for (const f of new Set(scene.seats.map(s => s.facing || 'f'))) ok(REAL.some(m => B.sitFacings(m).includes(f)), 'someone can sit facing ' + f);
   const runs = [];
   for (const seed of [5, 77]) {
     const { d, events } = makeDirector(REAL, seed);
@@ -327,7 +342,7 @@ ok(chatTotal > 0, 'conversations happen');
     for (const e of events) (by[e.name] = by[e.name] || []).push(e.to);
     for (const n of scene.characters) {
       const seq = (by[n] || []).join(' ');
-      const re = /walk_[lr] turn_[lr]_front sit_down sit_idle .*?stand_up turn_front_[lr] walk_[lr]/;
+      const re = /walk_[lr] turn_[lr]_front(@\w+)? sit_down(@\w+)? sit_idle(@\w+)? .*?stand_up(@\w+)? turn_front_[lr](@\w+)? walk_[lr]/;
       if (re.test(seq)) cycles[n] = (cycles[n] || 0) + 1;
     }
   }
@@ -352,7 +367,7 @@ ok(chatTotal > 0, 'conversations happen');
   let gone = false;
   for (let i = 0; i < 6000 && !gone; i++) {
     const out = d.step(100);
-    gone = !out.some(c => c.name === 'turtle') && events.some(e => e.name === 'turtle' && e.to === 'stand_up');
+    gone = !out.some(c => c.name === 'turtle') && events.some(e => e.name === 'turtle' && /^stand_up/.test(e.to));
   }
   ok(gone, 'the turtle stood up and left');
 }
