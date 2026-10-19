@@ -1,1 +1,2 @@
 CLAIM p60v2b_co_vs_sb_3b35: new Claude session (session_011TJwxsbnvbQgF3L3dSFKFd), claimed 2026-10-19T02:15:03Z; order btn_vs_bb_3b40 -> btn_vs_bb_3b35 -> co_vs_sb_3b35 (user, 2026-10-19); base 9abf2bd; Python 3.11.17 / numpy 2.4.6, SPOT_PANEL_WORKERS=4; v2b repro (co_vs_sb_3b40 term0 d221ccbe / flop e7329931) matched on 9abf2bd.
+WITHDRAWN 2026-10-19T03:37:21Z: user decision 2026-10-19 (quick-fill direction: 60 bb starts nothing new). Never started; no computation done.
