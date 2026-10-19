@@ -1986,7 +1986,21 @@ class HandRun:
                         s, 'preflop', 'f8_d6d2', len(rnd.log)),
                     cold_context=_cold_ctx,
                     cold_decision_seed=self._dseed(
-                        s, 'preflop', 'p7_cold', len(rnd.log)))
+                        s, 'preflop', 'p7_cold', len(rnd.log)),
+                    # 나와 어그레서 말고 이미 돈을 넣고 살아 있는 사람 수.
+                    # GTO 푸시/폴드 기준은 '단독 올인'에만 쓴다(gto_pf_call_choice).
+                    pf_other_live_actors=len({
+                        m.get('seat') for m in (getattr(rnd, 'action_meta', None) or [])
+                        if m.get('seat') not in (s, aggressor)
+                        and m.get('seat') not in rnd.folded
+                        and m.get('action') in ('call', 'raise', 'allin', 'bet')}),
+                    pf_aggressor_total_bb=(
+                        (rnd.stacks.get(aggressor, 0) + rnd.contrib.get(aggressor, 0))
+                        / max(1, h.bb) if aggressor is not None else None),
+                    pf_actor_acted=any(
+                        m.get('seat') == s
+                        and m.get('action') in ('call', 'raise', 'allin', 'bet')
+                        for m in (getattr(rnd, 'action_meta', None) or [])))
                 # P9 MC incomplete status and P8 range metadata are untouched.
                 # Generic field BF is NOT price-specific outcome ICM EV.
                 _seed['pf_bf_provenance'] = dict(_bf_provenance)

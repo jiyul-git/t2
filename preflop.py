@@ -405,6 +405,153 @@ def take_timing_bound():
     return d
 
 
+# ---------- GTO 계산기 기준(10~30bb) ----------
+# 사용자 결정 2026-10-19: 우리 GTO 계산기의 레인지를 T2 기준으로 쓴다.
+# 연결한 판단 — 첫 진입(fold/open/jam), 단독 올인 콜, 오픈 후 3벳 올인 콜,
+# 오픈/3벳을 받았을 때의 공격(3벳·3벳 올인·4벳 올인). 플랫 콜·림프 빈도는
+# 플랍 팟을 간이 모델로 매긴 값이라 교정 전까지 쓰지 않는다(30bb SB 첫 진입 포함).
+# 기준은 칩 EV 라서 ICM 압력이 있는 자리(BF > 상한, 머니점프 개입)에서는 쓰지
+# 않고 기존 경로가 판단한다.
+# 사용자 결정 2026-10-19: GTO 와 인간형의 차이는 포스트플랍 이후다. 그래서
+# 범위 안의 프리플랍 판단은 기준을 그대로 따른다(차트 지식 가중 없음).
+# 범위 밖은 기존 판단(성향·계산 오차)이 그대로 맡는다. T2_GTO_PF=0 이면 끈다.
+GTO_PF_ON = os.environ.get('T2_GTO_PF', '1') != '0'
+GTO_PF_BF_MAX = 1.05
+_POSTED_BB = {'SB': 0.5, 'BB': 1.0}
+
+
+def _gto_pf_icm_free(bf, money_open=None):
+    if float(bf or 1.0) > GTO_PF_BF_MAX:
+        return False
+    # 머니점프 수정자는 압력이 없어도 drive(늦은 단계 넓히기)로 range_factor 가
+    # 1 이 아닐 수 있다. ICM 압력(pressure / brake / 위험 몫)이 있을 때만 막는다.
+    if money_open:
+        try:
+            if max(float(money_open.get(k, 0.0) or 0.0)
+                   for k in ('pressure', 'max_pressure', 'brake',
+                             'danger_fraction', 'limp_pull_shadow')) > 1e-9:
+                return False
+        except (TypeError, ValueError):
+            return False
+    return True
+
+
+def gto_pf_open_eff_bb(pos, bb, behind_stacks, ante=True):
+    """첫 진입 유효 스택(핸드 시작 기준). 자기 시작 스택과 뒤 최대 스택의 작은 쪽."""
+    share = (1.0 / 9.0) if ante else 0.0
+    own = float(bb) + _POSTED_BB.get(pos, 0.0) + share
+    if behind_stacks:
+        try:
+            own = min(own, max(float(x) for x in behind_stacks) + 1.0 + share)
+        except (TypeError, ValueError):
+            pass
+    return own
+
+
+def gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks=None,
+                           bf=1.0, seats=8, ante=True, money_open=None):
+    """범위 안이면 GTO 첫 진입 행동('jam'/'open'/'limp'/'fold'), 밖이면 None.
+
+    범위 밖(스택·좌석·노안테·ICM)이면 RNG 를 쓰지 않고 None 이다.
+    """
+    if not GTO_PF_ON or not _gto_pf_icm_free(bf, money_open):
+        return None
+    import gto_pf as _GPF
+    eff = gto_pf_open_eff_bb(pos, bb, behind_stacks, ante)
+    g = _GPF.first_in(pos, seats, eff, hand, ante)
+    if g is None:
+        return None
+    u = rng.random()
+    act = ('jam' if u < g['jam'] else 'open' if u < g['jam'] + g['open']
+           else 'limp' if u < g['jam'] + g['open'] + g['limp'] else 'fold')
+    _timing_bound({'kind': 'gto_pf_open', 'eq': 1.0 - g['fold'], 'need': 0.5,
+                   'gto': {k: round(v, 4) for k, v in g.items()},
+                   'eff_bb': round(eff, 3), 'choice': act})
+    return act
+
+
+def gto_pf_call_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
+                       to_call_bb, raise_level, prior_pf=None, other_live_actors=None,
+                       n_limpers=0, bf=1.0, seats=8, ante=True, actor_acted=None):
+    """올인을 받은 자리: 범위 안이면 기준의 'call'/'fold', 밖이면 None.
+
+    단독 올인(앞 전원 폴드)과, 내가 오픈한 뒤 받은 3벳 올인만 다룬다.
+    other_live_actors = 나와 올인자 말고 이미 돈을 넣고 살아 있는 사람 수.
+    0 이 아니거나 모르면(None) 다루지 않는다. 범위 밖은 RNG 를 쓰지 않는다.
+    """
+    if (not GTO_PF_ON or other_live_actors is None or other_live_actors
+            or n_limpers or not _gto_pf_icm_free(bf)):
+        return None
+    if not to_call_bb or float(to_call_bb) <= 0:
+        return None
+    import gto_pf as _GPF
+    share = (1.0 / 9.0) if ante else 0.0
+    own_total = float(bb) + max(0.0, float(open_bb) - float(to_call_bb))
+    eff = min(own_total, float(open_bb)) + share
+    # 내가 이미 자발적으로 행동했는가(블라인드 포스팅 제외)는 공개 행동 기록으로
+    # 잰다. 재생(REPLAY)된 앞 행동에는 pf_seed 가 없어 prior_pf 로는 못 잰다.
+    # 나와 올인자만 돈을 넣었고(other_live_actors == 0) 내가 이미 행동했다면
+    # 내 행동은 오픈이다(림프였다면 그 위 레이즈한 사람이 따로 살아 있다).
+    acted = bool(actor_acted) if actor_acted is not None else bool(prior_pf)
+    if raise_level == 1 and not acted:
+        p = _GPF.call_vs_jam(aggressor_pos, pos, seats, eff, hand, ante)
+        kind = 'vs_jam'
+    elif raise_level == 2 and acted:
+        p = _GPF.call_vs_3bet_jam(pos, aggressor_pos, seats, eff, hand, ante)
+        kind = 'vs_3bet_jam'
+    else:
+        return None
+    if p is None:
+        return None
+    act = 'call' if rng.random() < p else 'fold'
+    _timing_bound({'kind': 'gto_pf_' + kind, 'eq': p, 'need': 0.5,
+                   'gto_call': round(p, 4), 'eff_bb': round(eff, 3), 'choice': act})
+    return act
+
+
+def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
+                       to_call_bb, raise_level, other_live_actors=None,
+                       actor_acted=None, n_limpers=0, bf=1.0, seats=8,
+                       ante=True, aggressor_total_bb=None):
+    """오픈/3벳을 받은 자리의 공격 여부만 기준대로: 'jam' / '3bet' / 'pass'.
+
+    단독 오픈을 받았을 때(3벳 올인·일반 3벳)와, 내가 오픈한 뒤 일반 3벳을
+    받았을 때(4벳 올인)만 다룬다. 'pass' 면 기존 판단이 콜/폴드를 정하되
+    공격은 하지 않는다(호출부가 공격을 콜로 바꾼다). 플랫 콜 빈도는 플랍 팟을
+    간이 모델로 매긴 값이라 교정 전까지 쓰지 않는다. 범위 밖이면 None.
+    """
+    if (not GTO_PF_ON or other_live_actors is None or other_live_actors
+            or n_limpers or actor_acted is None or not _gto_pf_icm_free(bf)):
+        return None
+    if not to_call_bb or float(to_call_bb) <= 0:
+        return None
+    import gto_pf as _GPF
+    share = (1.0 / 9.0) if ante else 0.0
+    own_total = float(bb) + max(0.0, float(open_bb) - float(to_call_bb))
+    eff = own_total
+    if aggressor_total_bb is not None:
+        eff = min(eff, float(aggressor_total_bb))
+    eff += share
+    if raise_level == 1 and not actor_acted:
+        g = _GPF.aggr_vs_open(aggressor_pos, pos, seats, eff, hand, ante)
+        if g is None:
+            return None
+        kind, p_jam, p_r3 = 'vs_open', g['jam'], g['r3']
+    elif raise_level == 2 and actor_acted:
+        j = _GPF.jam_vs_3bet(pos, aggressor_pos, seats, eff, hand, ante)
+        if j is None:
+            return None
+        kind, p_jam, p_r3 = 'vs_3bet', j, 0.0
+    else:
+        return None
+    u = rng.random()
+    act = 'jam' if u < p_jam else '3bet' if u < p_jam + p_r3 else 'pass'
+    _timing_bound({'kind': 'gto_pf_aggr_' + kind, 'eq': p_jam + p_r3, 'need': 0.5,
+                   'gto_jam': round(p_jam, 4), 'gto_r3': round(p_r3, 4),
+                   'eff_bb': round(eff, 3), 'choice': act})
+    return act
+
+
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   tilt=0.0, field_q=0.6, bf=1.0, seats=8, ante=True,
                   field_avg_bb=None, erosion=0.0,
@@ -412,6 +559,17 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
                   behind_reads=None, bb_chips=None, money_open=None):
     feel = feel_of(prof, bb, field_avg_bb, erosion, field_q, bf)
     t = _tr(prof)
+    _g = gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks,
+                                bf, seats, ante, money_open)
+    if _g == 'jam':
+        return ('shove', bb)
+    if _g == 'fold':
+        return ('fold', 0)
+    if _g == 'limp':
+        return ('limp', 1.0)
+    if _g == 'open':
+        sz = open_size_bb(feel, pos, rng, prof, ante, 0, bb_chips=bb_chips)
+        return ('raise', sz if sz else 2.0)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 갈 수 있다. 이것은 open_form 의 **계획 선택** 입력이다.
     # P3/P4의 defend_decision 에 있던 variance_seek 는 dead value 였지만,
