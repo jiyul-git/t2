@@ -53,3 +53,13 @@ mixes after 4-bet / jam nodes. G6(b) cause: see open decision item 2.
    Side observation (G3 cycling): in p60v2b_btn_vs_bb_3b40 the BTN 4-bet choice flips between 4-bet 17.2 and jam from the 24-board state
    to the P144 state (BB facing 4-bet: 0.41 -> 36.6 combos; facing jam: 22.7 -> 0.012), so the 4-bet-call terminal's arriving range swings,
    which matches the D cycling there and in hj_vs_bb_3b40.
+3. RELAYED 2026-10-19 (user decision "3" via T2 session 01XV9): when the 4-bet-and-later terminals do not converge, grade the 3-bet-call
+   terminal on its own as the T2 connection candidate; mark 4-bet-and-later research (runtime connection still needs user approval).
+   Not implemented yet: the grading definition is a criterion change and goes to the user first (draft below).
+   Measurement (01BLRH..., hj_vs_bb_3b40 steps 1-5 from the branch backups, no recompute): the 3-bet-call terminal passes D <= U in
+   steps 2-5, but the ROOT node (HJ facing the 3-bet) still swings: call 52.3 / 37.9 / 43.0 / 37.1 % (steps 2-5); between steps 4 and 5,
+   12 classes (57.8 of 358.3 combos, e.g. 55, 88, K9s, Q9s, KJs, K7s) move > 10 pp, mostly whole call <-> fold flips of near-indifferent
+   classes. So "3-bet-call terminal converged" does not by itself make the root call/fold frequencies stable.
+   Draft for the user: 3-bet-call sub-grade = G3 on the 3-bet-call terminal only (both seats D <= U), plus a root-stability check over the
+   last two steps (classes moving > 10 pp listed as unstable / near-indifferent, frequency not exported as GTO); nodes after the 4-bet
+   unsupported at connection; label at most conditional_verified with reason "4-bet-and-later research".
