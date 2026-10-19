@@ -886,7 +886,11 @@ def finalize_vclock_settle(st, notes=None, bot_log='', independent_hero=False):
 def save(st):
     if STATE_STORE is not None and st.get('tournament_id'):
         STATE_STORE.save_active(st)
-    tmp = ST + '.tmp'
+    # 임시 파일 이름은 프로세스·스레드마다 다르게 한다. 같은 이름을 쓰면 두 저장이
+    # 겹칠 때(남은 옛 서버 + 새 서버, 또는 요청 스레드 + 시계 스레드) 한쪽이 먼저
+    # 옮겨 버린 임시 파일을 다른 쪽이 못 찾아 FileNotFoundError 로 판이 멈췄다.
+    import threading as _th
+    tmp = '%s.%d.%d.tmp' % (ST, os.getpid(), _th.get_ident())
     with open(tmp, 'w', encoding='utf-8') as fp:
         json.dump(st, fp)
         fp.flush(); os.fsync(fp.fileno())
