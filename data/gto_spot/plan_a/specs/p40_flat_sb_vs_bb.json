@@ -1,0 +1,29 @@
+{
+ "id": "p40_flat_sb_vs_bb",
+ "config": "/home/user/t2/data/gto_spot/plan_a/cfg_p40_v1.json",
+ "dump": "/home/user/gto_ckpt/plan_a/p40_v1/dump.jsonl",
+ "equity": "/home/user/gto_ckpt/plan_a/eq_table_202_1200.json",
+ "tables_dir": null,
+ "iterations": 3000,
+ "rule": "v4",
+ "max_steps": 8,
+ "root_line": [
+  "UTG:Fold",
+  "UTG+1:Fold",
+  "UTG+2:Fold",
+  "LJ:Fold",
+  "HJ:Fold",
+  "CO:Fold",
+  "BTN:Fold",
+  "SB:Raise 3"
+ ],
+ "tree_label": "Plan A flat-call pot p40 v1: 9-max hand-start 40 bb (cfg.stack 39.888888888888886), ante 1/9, SB opens 3, BB defends; below the root the parent tree (call / 3-bet / jam, 4-bet jam only), static continuation in the parent; quick grade (symmetric stacks)",
+ "parent": {
+  "parent": "Plan A parent p40_v1 (static continuation)",
+  "gap_total_bb": null,
+  "source": "data/gto_spot/plan_a/parent_p40_v1_convergence.json"
+ },
+ "status_cap": "conditional_verified",
+ "status_cap_reason": "flat-call pot spot: parent continuation static outside the loop, symmetric stacks",
+ "out": "/home/user/gto_ckpt/spots/p40_flat_sb_vs_bb/spot.json"
+}
