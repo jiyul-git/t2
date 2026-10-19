@@ -215,3 +215,29 @@ Observed: p60v2b_co_vs_sb_3b40 P144, 4-bet-call terminal (amendment-8 exempt for
     combo; the terminal counts as exempt-level when either seat's arrival is < 1 combo) — it is recorded and the loop / P144 continue;
     at any other terminal amendment 7 applies (research).
 Records keep both verdicts: without amendment 11 (amendment-7 research) and with it.
+
+## Amendment 12 (2026-10-19, user decision, relayed by the T2 session; applies to every spot): nodes the opponent reaches with < 1 combo are unsupported
+Reason (analysis 2026-10-19 on the v2b records): every G6(b) dominated-material violation sits at a "facing jam / 4-bet" node that the
+opponent reaches with < 1 combo (utg1_vs_sb_3b40: SB vs the UTG+1 4-bet jam, 0.00037 combos, QQ fold 28 % / EV loss 14.1 bb; btn_vs_bb_3b40
+P144: BB vs the BTN jam, 0.0115 combos, QJs fold 64 % / 0.42 bb; utg_vs_btn: BTN vs the UTG jam, 0.00039 combos, AKo call 53 % / 5.2 bb). CFR
+updates a node's strategy with the opponent's reach as weight, so at ~0 reach any strategy is an equilibrium there: not a solver error and
+no effect on exploitability, but the frequencies carry no information. Amendment 8 already makes such nodes unsupported when they lead to
+an exempt flop terminal; an all-in node has no flop terminal, so it was missing from that list.
+Rule (fixed threshold, the same as amendment 8; no per-spot tuning):
+- every node (except the root) whose opponent arrives with < 1 combo (parent node reach x the mix of the action taken) is listed in
+  `amendment12_low_reach_nodes`, flagged on the node, listed in `t2_connection.unsupported_nodes`, and is `unsupported` at T2 connection;
+  its frequencies are never used (the T2 connection also excludes attacker < 10 combo nodes);
+- G6(b) skips these nodes (like the amendment-8 nodes); the record keeps `pass_strict` (no skip) and `pass_before_amendment12`
+  (amendment 8 alone) next to `pass`, and `dominated_at_amendment12_only_nodes` lists the hits that only this amendment removes.
+Before / after verdicts (`grade_spot.py --relabel`, records of the census branch; before = G6(b) under amendment 8 alone):
+| record | G6(b) before | G6(b) after | violations removed | status before -> after |
+|---|---|---|---|---|
+| p60v2b_co_vs_sb_3b40 | pass | pass | 0 | provisional -> provisional |
+| p60v2b_co_vs_sb_3b40_p144 | pass | pass | 0 | research -> research |
+| p60v2b_utg1_vs_sb_3b40 | fail (2) | pass | 2 (SB QQ fold, SB JJ call at the UTG+1 jam) | provisional -> provisional (G6 now passes; only "P144 not graded" remains) |
+| p60v2b_btn_vs_bb_3b40 | pass | pass | 0 | provisional -> provisional (G6(a) fails) |
+| p60v2b_btn_vs_bb_3b40_p144 | fail (1) | pass | 1 (BB QJs fold at the BTN jam) | research -> research (G3 and G6(a) remain) |
+| p60v2b_hj_vs_bb_3b40 | pass | pass | 0 | research -> research |
+The p60v2b_utg_vs_btn research record (T2 branch, gto_split_backup) is not relabelled here (its violations are of the same kind, BTN vs the
+UTG jam at 0.00039 combos). Counter-view recorded: the strategy at a node the opponent almost never reaches still matters if a human
+reaches it; the quick records mark such nodes `off_path` for that reason.

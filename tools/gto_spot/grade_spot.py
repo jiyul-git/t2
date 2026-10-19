@@ -142,12 +142,34 @@ def g6a_parent_reproduction(spec):
             'subgame_exploitability_bb': sp.exploitability()['total_bb'], 'nodes': nodes}
 
 
+OPP_LOW_COMBOS = 1.0       # standard amendment 12 (same fixed threshold as amendment 8)
+
+
+def low_reach_nodes(rec):
+    """standard amendment 12: every node the opponent reaches with < 1 combo (opponent arriving = the parent node's reach x the mix of the action
+    taken). The root is not listed (its arriving range is the parent's)."""
+    by = {tuple(n['path']): n for n in rec['nodes']}
+    out = []
+    for n in rec['nodes']:
+        par = by.get(tuple(n['path'][:-1]))
+        if par is None or not n['path']:
+            continue
+        a = par['actions'][n['path'][-1]]
+        mass = par['reach_combos'] * (par['mix'] or {}).get(a, 0.0)
+        if mass < OPP_LOW_COMBOS:
+            out.append({'path': list(n['path']), 'actor': n['actor'], 'opp_arriving_combos': round(mass, 6),
+                        'reason': 'standard amendment 12: the opponent arrives with < 1 combo'})
+    return out
+
+
 def g6_checks(rec, cfg):
     """G6 on a stored record: (a) subgame vs full tree, (b) dominated material actions + chip conservation."""
     u_solver = rec['exploitability']['total_bb']
     viol, unreached = [], 0
-    unsup = {(tuple(u['path']), u['actor']) for u in (rec.get('amendment8_unsupported_nodes') or [])}
-    viol_unsup = []
+    unsup8 = {(tuple(u['path']), u['actor']) for u in (rec.get('amendment8_unsupported_nodes') or [])}
+    unsup12 = {(tuple(u['path']), u['actor']) for u in (rec.get('amendment12_low_reach_nodes') or [])}
+    unsup = unsup8 | unsup12
+    viol_unsup, viol_only12 = [], []
     for n in rec['nodes']:
         for h, x in n['hands'].items():
             if x['reach_combos'] < REACH_FLOOR:
@@ -163,7 +185,10 @@ def g6_checks(rec, cfg):
                 if f >= MATERIAL and ev[best] - ev[a] > 2 * u:
                     v_ = {'path': n['path'], 'actor': n['actor'], 'class': h, 'action': a, 'freq': f,
                           'ev_loss_bb': round(ev[best] - ev[a], 4), 'u': round(u, 4)}
-                    (viol_unsup if (tuple(n['path']), n['actor']) in unsup else viol).append(v_)
+                    key = (tuple(n['path']), n['actor'])
+                    (viol_unsup if key in unsup else viol).append(v_)
+                    if key in unsup12 and key not in unsup8:
+                        viol_only12.append(v_)
     premium_fold = [{'path': n['path'], 'class': h, 'fold': n['hands'][h]['freq'].get('Fold', 0.0)}
                     for n in rec['nodes'] for h in ('AA', 'KK') if h in n['hands'] and n['hands'][h]['reach_combos'] >= REACH_FLOOR
                     and n['hands'][h]['freq'].get('Fold', 0.0) > 0.01]
@@ -179,11 +204,14 @@ def g6_checks(rec, cfg):
                                             'full-tree re-solve on the spot tables); not run'}
     b_pass = not viol and not premium_fold and chip['pass']
     b_pass_strict = b_pass and not viol_unsup
+    b_pass_before12 = not (viol + viol_only12) and not premium_fold and chip['pass']   # verdict under amendment 8 alone (before amendment 12)
     return {'a_subgame_vs_full_tree': a,
             'b_invariants': {'dominated_material': viol[:50], 'n_dominated_material': len(viol),
                              'n_dominated_at_unreached_classes': unreached, 'reach_floor_combos': REACH_FLOOR,
                              'premium_fold': premium_fold,
                              'chip_conservation': chip, 'pass': b_pass, 'pass_strict': b_pass_strict,
+                             'pass_before_amendment12': b_pass_before12,
+                             'dominated_at_amendment12_only_nodes': viol_only12,
                              'dominated_at_amendment8_unsupported_nodes': viol_unsup},
             'c_near_reference': 'orientation only, never pass / fail',
             'pass': a['status'] == 'pass' and b_pass}
@@ -215,6 +243,7 @@ def label(rec, cfg):
     s_share = gi['static_share']
     spot_conv = gi['spot_converged'] and (gi['p144_consistent_with_24'] is not False)
     g4_state = 'pass' if s_share <= G4_MAX else ('partial' if s_share <= G4_PARTIAL_MAX else 'static_dependent')
+    rec['amendment12_low_reach_nodes'] = low_reach_nodes(rec)
     g6 = g6_checks(rec, cfg)
     stable_mass = sum(x['reach_combos'] for n in rec['nodes'] for x in n['hands'].values() if x['status'] == 'stable')
     total_mass = sum(x['reach_combos'] for n in rec['nodes'] for x in n['hands'].values())
@@ -292,11 +321,18 @@ def label(rec, cfg):
             for h, x in n['hands'].items():
                 x['range_sensitive'] = h in flagged
     elig = (status == 'conditional_verified' and pgap is not None and pgap <= T2_FIRST_GAP_MAX_BB and rs is not None)
-    un = rec.get('amendment8_unsupported_nodes') or []
-    unp = {(tuple(u['path']), u['actor']) for u in un}
+    un8 = rec.get('amendment8_unsupported_nodes') or []
+    un12 = [u for u in (rec.get('amendment12_low_reach_nodes') or [])
+            if (tuple(u['path']), u['actor']) not in {(tuple(x['path']), x['actor']) for x in un8}]
+    un = un8 + un12
+    unp8 = {(tuple(u['path']), u['actor']) for u in un8}
+    unp12 = {(tuple(u['path']), u['actor']) for u in un12}
     for n in rec['nodes']:
-        if (tuple(n['path']), n['actor']) in unp:
+        key = (tuple(n['path']), n['actor'])
+        if key in unp8:
             n['t2_connection'] = 'unsupported (standard amendment 8: depends on a low-reach exempt terminal)'
+        elif key in unp12:
+            n['t2_connection'] = 'unsupported (standard amendment 12: the opponent arrives with < 1 combo)'
     rec['t2_connection'] = {'status': 'eligible_first' if elig else 'not_eligible',
                             'unsupported_nodes': un,
                             'rule': 'standard v1 amendment 5: conditional_verified, parent exact gap <= 0.05 bb, sensitivity report',
