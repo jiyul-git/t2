@@ -94,7 +94,7 @@ def main():
                    'iterate_mw_skip_below': 1e-9, 'gap_measured_with_skip': 0},
         'status': 'quick', 'symmetric_stack_assumption': True, 'static_continuation_for_flop_pots': S >= 15, 'chip_ev': True,
         'db_promotion': 'forbidden', 't2_connection': 'needs user approval',
-        'caveats': ([] if S == 10 else ['flat calls into a flop pot (open-call, multiway calls) are valued by the static continuation (positional realization vs SPR); observed at 15 bb: BB defends ~100 % vs a 2.0 open from every seat (fold <= 0.05 %) because with the 1 bb ante the call needs ~18 % realized equity - call vs fold there is model-dependent and a refinement target; all-in decisions (jam, call a jam, 3-bet jam) do not use the continuation model']),
+        'caveats': ([] if (PFX == 'pf' and S == 10) else ['flat calls into a flop pot (open-call, multiway calls) are valued by the static continuation (positional realization vs SPR); observed at 15 bb: BB defends ~100 % vs a 2.0 open from every seat (fold <= 0.05 %) because with the 1 bb ante the call needs ~18 % realized equity - call vs fold there is model-dependent and a refinement target; all-in decisions (jam, call a jam, 3-bet jam) do not use the continuation model']),
         'class_labels': LAB, 'class_combos': COMBOS,
         'standard': STD, 'nodes': kept,
     }
