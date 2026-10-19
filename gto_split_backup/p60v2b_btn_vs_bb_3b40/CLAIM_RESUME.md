@@ -1,0 +1,1 @@
+CLAIM_RESUME p60v2b_btn_vs_bb_3b40: resume session (branch claude/p60v2b_btn_vs_bb_3b40-resume-20261016), started 2026-10-16T11:17:32Z, Python 3.11.17/numpy 2.4.6, SPOT_PANEL_WORKERS=4; repro v2b co_vs_sb_3b40 matched; P144 term1 40 of 144 flops remain (term0 done).
