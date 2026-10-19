@@ -27,3 +27,11 @@ Tools: tools/gto_spot/quick_spot.py, tools/gto_spot/export_parent_chart.py, tool
 | p40_flat_<opener>_vs_bb.json, p40_flat_sb_limp_vs_bb.json | HU subgame BB vs a single open (or SB limp): flat call, 3-bet call (two blind 3-bet sizes) and jam pots with the corrected flop terminals | 24-board loop (rule v4, max 8 steps) -> quick (converged: final step, else mean of last 4 steps); written when each spot finishes |
 Flat-call spots: one spot covers the BB flat call (priority 1) and the 3-bet-call terminals (priority 3); nodes after the 4-bet / jam are research.
 Tools: tools/gto_spot/plan_a_flat_specs.py, run_quick.sh.
+
+## s60 record for the T2 builder (2026-10-19, requested by the T2 session)
+data/gto_spot/records/s60.json (pushfold_record_v1, same format as 011TJ's s30 / s40: per node aggressor_action_combos, actor_arriving_combos,
+class_strategy / class_ev_bb, unsupported_low_reach) built from the 60 bb parent dump with tools/gto_spot/pushfold_record.py (011TJ's builder + env
+overrides PF_W / PF_CFG / PF_STD): stack_bb 60, status quick, symmetric_stack_assumption, static_continuation_for_flop_pots, gap 0.009568 bb at 200 iterations.
+Check: the same builder on this session's 40 bb dump reproduces 011TJ's s40.json exactly (all keys and nodes equal).
+Correction (2026-10-19): chart_*_parent*.json `combos` / `mix` / `reach_combos` were first weighted by class combos twice (RFI play % looked ~3-5 pp too
+narrow, e.g. 60 bb UTG 11.1 % -> 14.1 %); per-class frequencies and EVs were not affected. Fixed and regenerated (60 / 40 bb charts and PNGs).

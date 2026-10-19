@@ -127,3 +127,9 @@ Run files: data/gto_spot/pushfold/runs/pf*/, data/gto_spot/stack3040/runs/s{30,4
   30 bb dump sha256 f8cc8ea5bbb8140bdd949b959119a7e75d84d313ce23323aa12b702b157e3671 (011TJ only).
 - Same finding as the flat-call request: BB flat-call defence vs a 2.0 open ~100 % at 15-40 bb under the static continuation.
 - 011TJ claims on 60 bb (btn_vs_bb_3b35, co_vs_sb_3b35) withdrawn, never started; btn_vs_bb_3b40 left to the 60 bb quick summary.
+
+## 60 bb record for the T2 builder (01BLRH..., 2026-10-19)
+data/gto_spot/records/s60.json (pushfold_record_v1; stack_bb 60, quick, symmetric-stack, static continuation for flop pots, gap 0.009568 bb) built with
+tools/gto_spot/pushfold_record.py (011TJ's builder; env overrides PF_W / PF_CFG / PF_STD added). Verified: the same builder on 01BLRH...'s 40 bb dump
+reproduces 011TJ's s40.json exactly. 100 bb later (parent paused at 200 its). Also fixed: data/gto_spot/quick/chart_*.json first double-weighted combos
+(`mix` / `combos` only; class frequencies and EVs unaffected) - see data/gto_spot/quick/README.md.
