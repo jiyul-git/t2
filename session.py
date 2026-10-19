@@ -1994,6 +1994,9 @@ class HandRun:
                         if m.get('seat') not in (s, aggressor)
                         and m.get('seat') not in rnd.folded
                         and m.get('action') in ('call', 'raise', 'allin', 'bet')}),
+                    pf_aggressor_total_bb=(
+                        (rnd.stacks.get(aggressor, 0) + rnd.contrib.get(aggressor, 0))
+                        / max(1, h.bb) if aggressor is not None else None),
                     pf_actor_acted=any(
                         m.get('seat') == s
                         and m.get('action') in ('call', 'raise', 'allin', 'bet')

@@ -30,9 +30,13 @@ m = G.first_in('UTG', 9, 17.5, ['Kd', 'Qs'])['jam']
 check('interpolation midpoint', abs(m - (a + b) / 2) < 1e-9)
 check('out of range low/high', G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
       and G.first_in('UTG', 9, 31.0, ['Ah', 'Ad']) is None)
-g30 = G.first_in('SB', 9, 30, ['Kh', '7c'])
-check('30bb SB limp read from record', abs(g30['limp'] - d['first_in']['30']['SB']['limp'][d['classes'].index('K7o')]) < 1e-9
-      and g30['jam'] == 0.0)
+check('30bb SB first-in left to existing path (limp is flop-model dependent)',
+      G.first_in('SB', 9, 30, ['Kh', '7c']) is None and G.first_in('SB', 9, 25, ['Kh', '7c']) is not None)
+check('30bb BTN first-in has no jam', G.first_in('BTN', 9, 30, ['Kh', '7c'])['jam'] == 0.0)
+v = G.aggr_vs_open('BTN', 'BB', 9, 30, ['Ah', 'Kc'])
+check('BB vs BTN open 30bb: AKo aggression from record',
+      abs(v['jam'] - d['vs_open']['30']['BTN>BB']['jam'][d['classes'].index('AKo')]) < 1e-9)
+check('vs_open below 15bb not covered', G.aggr_vs_open('BTN', 'BB', 9, 12, ['Ah', 'Kc']) is None)
 check('no ante -> None', G.first_in('UTG', 9, 15, ['Ah', 'Ad'], ante=False) is None)
 check('8-max UTG = 9-max UTG+1', G.pos9('UTG', 8) == 'UTG+1')
 check('6-max UTG = 9-max LJ', G.pos9('UTG', 6) == 'LJ')
@@ -75,4 +79,14 @@ check('UTG folds KJo vs BB 3-bet jam 25bb',
 check('raise level 2 without own action -> None',
       P.gto_pf_call_choice(prof, 'BB', 'UTG', ['Kh', 'Jc'], r, 22.9, 24.9, 22.9, 2,
                            other_live_actors=0, actor_acted=False) is None)
+check('aggr: caller in pot -> None',
+      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['Ah', 'Kc'], r, 29.0, 2.0, 1.0, 1,
+                           other_live_actors=1, actor_acted=False) is None)
+check('aggr: unknown own action -> None',
+      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['Ah', 'Kc'], r, 29.0, 2.0, 1.0, 1,
+                           other_live_actors=0) is None)
+check('aggr: 72o vs BTN open passes',
+      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 29.0, 2.0, 1.0, 1,
+                           other_live_actors=0, actor_acted=False,
+                           aggressor_total_bb=30.0) == 'pass')
 print('%d gto_pf checks passed' % ok)

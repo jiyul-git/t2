@@ -131,3 +131,32 @@ def call_vs_3bet_jam(opener_pos, jammer_pos, seats, eff_bb, hand, ante=True):
     if a is None or b is None:
         return None
     return _at(_interp('vs_3bjam', a + '>' + b, eff_bb, lambda e: e), hand)
+
+
+def aggr_vs_open(opener_pos, def_pos, seats, eff_bb, hand, ante=True):
+    """단독 오픈을 받은 자리의 공격 확률 {'jam','r3'}(3벳 올인, 일반 3벳).
+
+    콜/폴드는 돌려주지 않는다 — 플랍 팟을 간이 모델로 매긴 값이라 교정 전까지
+    기존 판단이 맡는다. 범위 밖이면 None.
+    """
+    if not covered(eff_bb, seats, ante):
+        return None
+    a, b = pos9(opener_pos, seats), pos9(def_pos, seats)
+    if a is None or b is None:
+        return None
+    key = a + '>' + b
+    jam = _at(_interp('vs_open', key, eff_bb, lambda e: e.get('jam')), hand)
+    r3 = _at(_interp('vs_open', key, eff_bb, lambda e: e.get('r3')), hand)
+    if jam is None and r3 is None:
+        return None
+    return {'jam': jam or 0.0, 'r3': r3 or 0.0}
+
+
+def jam_vs_3bet(opener_pos, threebettor_pos, seats, eff_bb, hand, ante=True):
+    """오픈 후 일반 3벳을 받은 오프너의 4벳(올인) 확률. 범위 밖이면 None."""
+    if not covered(eff_bb, seats, ante):
+        return None
+    a, b = pos9(opener_pos, seats), pos9(threebettor_pos, seats)
+    if a is None or b is None:
+        return None
+    return _at(_interp('vs_3bet', a + '>' + b, eff_bb, lambda e: e.get('jam')), hand)

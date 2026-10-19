@@ -407,9 +407,11 @@ def take_timing_bound():
 
 # ---------- GTO 계산기 기준(10~30bb) ----------
 # 사용자 결정 2026-10-19: 우리 GTO 계산기의 레인지를 T2 기준으로 쓴다.
-# 연결한 판단 — 첫 진입(fold/limp/open/jam), 단독 올인 콜, 오픈 후 3벳 올인 콜.
-# 30bb 첫 진입은 오픈 크기와 SB 림프까지 기준을 따른다(30bb 에선 첫 진입 올인이 없다). 기준은 칩 EV 라서 ICM 압력이 있는 자리(BF > 상한,
-# 머니점프 개입)에서는 쓰지 않고 기존 경로가 판단한다.
+# 연결한 판단 — 첫 진입(fold/open/jam), 단독 올인 콜, 오픈 후 3벳 올인 콜,
+# 오픈/3벳을 받았을 때의 공격(3벳·3벳 올인·4벳 올인). 플랫 콜·림프 빈도는
+# 플랍 팟을 간이 모델로 매긴 값이라 교정 전까지 쓰지 않는다(30bb SB 첫 진입 포함).
+# 기준은 칩 EV 라서 ICM 압력이 있는 자리(BF > 상한, 머니점프 개입)에서는 쓰지
+# 않고 기존 경로가 판단한다.
 # 사용자 결정 2026-10-19: GTO 와 인간형의 차이는 포스트플랍 이후다. 그래서
 # 범위 안의 프리플랍 판단은 기준을 그대로 따른다(차트 지식 가중 없음).
 # 범위 밖은 기존 판단(성향·계산 오차)이 그대로 맡는다. T2_GTO_PF=0 이면 끈다.
@@ -504,6 +506,49 @@ def gto_pf_call_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
     act = 'call' if rng.random() < p else 'fold'
     _timing_bound({'kind': 'gto_pf_' + kind, 'eq': p, 'need': 0.5,
                    'gto_call': round(p, 4), 'eff_bb': round(eff, 3), 'choice': act})
+    return act
+
+
+def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
+                       to_call_bb, raise_level, other_live_actors=None,
+                       actor_acted=None, n_limpers=0, bf=1.0, seats=8,
+                       ante=True, aggressor_total_bb=None):
+    """오픈/3벳을 받은 자리의 공격 여부만 기준대로: 'jam' / '3bet' / 'pass'.
+
+    단독 오픈을 받았을 때(3벳 올인·일반 3벳)와, 내가 오픈한 뒤 일반 3벳을
+    받았을 때(4벳 올인)만 다룬다. 'pass' 면 기존 판단이 콜/폴드를 정하되
+    공격은 하지 않는다(호출부가 공격을 콜로 바꾼다). 플랫 콜 빈도는 플랍 팟을
+    간이 모델로 매긴 값이라 교정 전까지 쓰지 않는다. 범위 밖이면 None.
+    """
+    if (not GTO_PF_ON or other_live_actors is None or other_live_actors
+            or n_limpers or actor_acted is None or not _gto_pf_icm_free(bf)):
+        return None
+    if not to_call_bb or float(to_call_bb) <= 0:
+        return None
+    import gto_pf as _GPF
+    share = (1.0 / 9.0) if ante else 0.0
+    own_total = float(bb) + max(0.0, float(open_bb) - float(to_call_bb))
+    eff = own_total
+    if aggressor_total_bb is not None:
+        eff = min(eff, float(aggressor_total_bb))
+    eff += share
+    if raise_level == 1 and not actor_acted:
+        g = _GPF.aggr_vs_open(aggressor_pos, pos, seats, eff, hand, ante)
+        if g is None:
+            return None
+        kind, p_jam, p_r3 = 'vs_open', g['jam'], g['r3']
+    elif raise_level == 2 and actor_acted:
+        j = _GPF.jam_vs_3bet(pos, aggressor_pos, seats, eff, hand, ante)
+        if j is None:
+            return None
+        kind, p_jam, p_r3 = 'vs_3bet', j, 0.0
+    else:
+        return None
+    u = rng.random()
+    act = 'jam' if u < p_jam else '3bet' if u < p_jam + p_r3 else 'pass'
+    _timing_bound({'kind': 'gto_pf_aggr_' + kind, 'eq': p_jam + p_r3, 'need': 0.5,
+                   'gto_jam': round(p_jam, 4), 'gto_r3': round(p_r3, 4),
+                   'eff_bb': round(eff, 3), 'choice': act})
     return act
 
 
