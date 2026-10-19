@@ -67,6 +67,6 @@ for path in sys.argv[1:]:
               and acts[0][0] == n['actor'] and acts[0][1].startswith('Raise')
               and acts[1][1].startswith('All-in')):
             out['vs_3bjam'].setdefault(S, {})[n['actor'] + '>' + acts[1][0]] = r3(cs[call])
-dst = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'gto_pf', 'pushfold_v1.json')
+dst = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'gto_pf_data.json')
 json.dump(out, open(dst, 'w'), separators=(',', ':'))
 print(dst, {k: {s: len(v) for s, v in out[k].items()} for k in ('first_in', 'vs_jam', 'vs_3bjam', 'vs_open', 'vs_3bet')})

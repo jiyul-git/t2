@@ -89,4 +89,28 @@ check('aggr: 72o vs BTN open passes',
       P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 29.0, 2.0, 1.0, 1,
                            other_live_actors=0, actor_acted=False,
                            aggressor_total_bb=30.0) == 'pass')
+# --- packaging: the run folder (gateway / installer) must carry the module and its data ---
+import subprocess, tempfile
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+for kind, exe in (('sh', 'sh'), ('py', sys.executable)):
+    with tempfile.TemporaryDirectory(prefix='t2_gtopf_') as td:
+        subprocess.run([exe, os.path.join(ROOT, 'ui/tools/setup_run_dir.' + kind), td], check=True,
+                       stdout=subprocess.DEVNULL, env=dict(os.environ, T2_TELEMETRY='0'))
+        check('run dir (%s) has gto_pf.py + data' % kind,
+              os.path.isfile(os.path.join(td, 'gto_pf.py')) and os.path.isfile(os.path.join(td, 'gto_pf_data.json')))
+        probe = ("import preflop as P, gto_pf as G; m = P._gto_pf_mod(); "
+                 "assert m is not None and G.first_in('UTG', 9, 15, ['Ah','Ad']) is not None; print('ok')")
+        r = subprocess.run([sys.executable, '-c', probe], cwd=td, capture_output=True, text=True)
+        check('run dir (%s) loads the reference' % kind, r.returncode == 0 and 'ok' in r.stdout)
+# --- a missing module / data must never break a hand ---
+with tempfile.TemporaryDirectory(prefix='t2_gtopf_missing_') as td:
+    subprocess.run(['sh', os.path.join(ROOT, 'ui/tools/setup_run_dir.sh'), td], check=True,
+                   stdout=subprocess.DEVNULL, env=dict(os.environ, T2_TELEMETRY='0'))
+    os.remove(os.path.join(td, 'gto_pf.py'))
+    probe = ("import random, preflop as P; r = random.Random(1); "
+             "assert P.gto_pf_first_in_choice({}, 'SB', 9.39, ['Ah','2c'], r, [8.89], 1.0, 9, True) is None; "
+             "assert P.gto_pf_call_choice({}, 'SB', 'BB', ['Kh','5c'], r, 8.89, 9.89, 8.89, 1, other_live_actors=0, actor_acted=False) is None; "
+             "assert P.gto_pf_aggr_choice({}, 'BTN', 'BB', ['Ah','Kc'], r, 29.0, 2.0, 1.0, 1, other_live_actors=0, actor_acted=False) is None; print('ok')")
+    r = subprocess.run([sys.executable, '-c', probe], cwd=td, capture_output=True, text=True)
+    check('missing gto_pf.py -> existing path, no exception', r.returncode == 0 and 'ok' in r.stdout)
 print('%d gto_pf checks passed' % ok)

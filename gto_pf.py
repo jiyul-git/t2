@@ -16,7 +16,7 @@ pf10/15/20/25 와 s30/s40 기록에서 만든다). 9맥스, 안테 합계 1bb, �
 import json, os
 
 _D = os.path.dirname(os.path.abspath(__file__))
-_PATH = os.path.join(_D, 'data', 'gto_pf', 'pushfold_v1.json')
+_PATH = os.path.join(_D, 'gto_pf_data.json')   # 실행 폴더에 pf_rank.json 처럼 평평하게 복사된다
 _DATA = None
 _IDX = None
 

@@ -17,7 +17,7 @@ import subprocess
 import sys
 import tempfile
 
-STATIC_DATA = {'pf_rank.json', 'style_sig.json', 'style_prior.json'}
+STATIC_DATA = {'pf_rank.json', 'style_sig.json', 'style_prior.json', 'gto_pf_data.json'}
 MARKERS = {'UI_SERVER_DIR', 'UI_SOURCE'}
 
 

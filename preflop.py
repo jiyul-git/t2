@@ -418,6 +418,25 @@ def take_timing_bound():
 GTO_PF_ON = os.environ.get('T2_GTO_PF', '1') != '0'
 GTO_PF_BF_MAX = 1.05
 _POSTED_BB = {'SB': 0.5, 'BB': 1.0}
+_GPF_MOD = [False, None]
+
+
+def _gto_pf_mod():
+    """gto_pf 모듈. 모듈이나 데이터 파일이 실행 폴더에 없으면 None 이다.
+
+    기준은 부가 정보다 — 없다고 판 전체가 죽으면 안 되고 기존 판단으로 간다.
+    (패키징 허용 목록에서 빠져 실행 폴더에 안 들어간 적이 있다.)
+    """
+    if not _GPF_MOD[0]:
+        _GPF_MOD[0] = True
+        try:
+            import gto_pf as _m
+            _m._load()
+            _GPF_MOD[1] = _m
+        except Exception as exc:                       # ImportError, OSError, ValueError
+            import sys
+            print('[gto_pf] 기준 데이터를 쓸 수 없어 기존 판단을 쓴다: %r' % (exc,), file=sys.stderr)
+    return _GPF_MOD[1]
 
 
 def _gto_pf_icm_free(bf, money_open=None):
@@ -456,7 +475,9 @@ def gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks=None,
     """
     if not GTO_PF_ON or not _gto_pf_icm_free(bf, money_open):
         return None
-    import gto_pf as _GPF
+    _GPF = _gto_pf_mod()
+    if _GPF is None:
+        return None
     eff = gto_pf_open_eff_bb(pos, bb, behind_stacks, ante)
     g = _GPF.first_in(pos, seats, eff, hand, ante)
     if g is None:
@@ -484,7 +505,9 @@ def gto_pf_call_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
         return None
     if not to_call_bb or float(to_call_bb) <= 0:
         return None
-    import gto_pf as _GPF
+    _GPF = _gto_pf_mod()
+    if _GPF is None:
+        return None
     share = (1.0 / 9.0) if ante else 0.0
     own_total = float(bb) + max(0.0, float(open_bb) - float(to_call_bb))
     eff = min(own_total, float(open_bb)) + share
@@ -525,7 +548,9 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
         return None
     if not to_call_bb or float(to_call_bb) <= 0:
         return None
-    import gto_pf as _GPF
+    _GPF = _gto_pf_mod()
+    if _GPF is None:
+        return None
     share = (1.0 / 9.0) if ante else 0.0
     own_total = float(bb) + max(0.0, float(open_bb) - float(to_call_bb))
     eff = own_total
