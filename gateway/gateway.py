@@ -16,8 +16,9 @@ Each player gets  <data_root>/<uid>/  (wallet, profile, history; T2_DATA_DIR)  a
 Sign-in: the client gets a Google ID token (web: Google Identity Services button on /login;
 Android app: native Google sign-in) and posts it to /auth/google. The gateway checks it with Google
 (signature via the tokeninfo endpoint, audience = our client IDs, verified e-mail), checks the e-mail
-against the allow-list, and sets a signed session cookie. The first sign-in of an allowed Google
-account creates that player's account. Client-supplied user ids are never trusted.
+against the allow-list (only in signup_mode "invite"), and sets a signed session cookie. The first
+sign-in of a Google account creates that player's account. Client-supplied user ids are never trusted.
+Account data layout and privacy rules: docs/ACCOUNT_DATA.md.
 
 Standard library only.
 """
@@ -28,6 +29,7 @@ import http.client
 import json
 import os
 import secrets
+import shutil
 import socket
 import subprocess
 import sys
@@ -51,7 +53,10 @@ DEFAULTS = {
     'run_root': '~/t2_online/run',
     'state_dir': '~/t2_online/gateway',
     'google_client_ids': [],      # OAuth client IDs (web + Android) whose tokens we accept
-    'allowed_emails': [],         # only these Google accounts may sign in ([] = nobody)
+    'signup_mode': 'open',        # "open": any Google account may sign up; "invite": only allowed_emails
+    'allowed_emails': [],         # used only in "invite" mode ([] = nobody)
+    'max_accounts': 20,           # new sign-ups are refused beyond this many accounts
+    'backup_dir': '~/t2_online/backups',   # used by admin.py backup
     'dev_login': False,           # POST /auth/dev {email}: local testing only, never on a public server
     'secure_cookie': True,        # set False only for plain-http local testing
     'max_backends': 4,            # game servers running at once; the least recently used is stopped
@@ -65,7 +70,9 @@ def load_config(path):
     if path and os.path.exists(path):
         with open(path, encoding='utf-8') as f:
             cfg.update(json.load(f))
-    for k in ('data_root', 'run_root', 'state_dir'):
+    if cfg['signup_mode'] not in ('open', 'invite'):
+        raise SystemExit('signup_mode는 "open" 또는 "invite"여야 합니다')
+    for k in ('data_root', 'run_root', 'state_dir', 'backup_dir'):
         cfg[k] = os.path.abspath(os.path.expanduser(cfg[k]))
     cfg['allowed_emails'] = [e.strip().lower() for e in cfg['allowed_emails']]
     return cfg
@@ -101,13 +108,28 @@ def check_google_claims(claims, client_ids, now=None):
     return {'sub': str(claims['sub']), 'email': str(claims['email']).lower(), 'name': claims.get('name') or ''}
 
 
+def mkdir_private(path):
+    os.makedirs(path, mode=0o700, exist_ok=True)
+    os.chmod(path, 0o700)
+
+
+def delete_user_files(cfg, uid):
+    for root in (cfg['data_root'], cfg['run_root']):
+        shutil.rmtree(os.path.join(root, uid), ignore_errors=True)
+
+
 class Accounts:
-    """Google subject -> our user id. The user id is derived, so it is stable and not guessable."""
+    """accounts.json (version 2): uid -> {sub, email, status, ...} plus by_sub (Google sub -> uid).
+
+    The uid is random and only stored here, so losing or rotating session.key never orphans a wallet.
+    The file is re-read when it changes on disk, so admin.py edits apply on the next request."""
 
     def __init__(self, state_dir):
-        os.makedirs(state_dir, exist_ok=True)
-        self.path = os.path.join(state_dir, 'users.json')
-        self.lock = threading.Lock()
+        mkdir_private(state_dir)
+        self.path = os.path.join(state_dir, 'accounts.json')
+        self.legacy = os.path.join(state_dir, 'users.json')
+        self.lock = threading.RLock()
+        self._data, self._stamp = {'version': 2, 'accounts': {}, 'by_sub': {}}, None
         secret_path = os.path.join(state_dir, 'session.key')
         if not os.path.exists(secret_path):
             fd = os.open(secret_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -115,42 +137,135 @@ class Accounts:
                 f.write(secrets.token_hex(32))
         with open(secret_path) as f:
             self.secret = bytes.fromhex(f.read().strip())
+        with self.lock:
+            if not os.path.exists(self.path) and os.path.exists(self.legacy):
+                self._migrate()
+
+    def _migrate(self):
+        """v1 users.json (uid -> record, no sub) -> v2. Accounts get their sub on their next sign-in."""
+        try:
+            with open(self.legacy, encoding='utf-8') as f:
+                old = json.load(f)
+        except (OSError, ValueError):
+            old = {}
+        accts = {}
+        for uid, r in old.items():
+            if not isinstance(r, dict):
+                continue
+            accts[uid] = {'sub': None, 'email': r.get('email', ''), 'status': 'active' if r.get('registered') else 'pending',
+                          'created': r.get('created', int(time.time())), 'last_login': r.get('last_login'),
+                          'agreed_at': r.get('registered') or None, 'terms': None}
+        self._write({'version': 2, 'accounts': accts, 'by_sub': {}})
+        os.replace(self.legacy, self.legacy + '.v1.bak')
+
+    def _write(self, data):
+        tmp = self.path + '.tmp'
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            os.fchmod(f.fileno(), 0o600)
+            json.dump(data, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, self.path)
+        self._data, self._stamp = data, self._stat()
+
+    def _stat(self):
+        try:
+            st = os.stat(self.path)
+            return (st.st_mtime_ns, st.st_size, st.st_ino)
+        except OSError:
+            return None
 
     def _load(self):
-        try:
-            with open(self.path, encoding='utf-8') as f:
-                return json.load(f)
-        except (OSError, ValueError):
-            return {}
-
-    def upsert(self, ident):
-        uid = 'u_' + hmac.new(self.secret, ('google:' + ident['sub']).encode(), hashlib.sha256).hexdigest()[:20]
         with self.lock:
-            users = self._load()
-            rec = users.get(uid) or {'created': int(time.time())}
-            rec.update(email=ident['email'], name=ident['name'], last_login=int(time.time()))
-            users[uid] = rec
-            tmp = self.path + '.tmp'
-            with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(users, f, ensure_ascii=False, indent=1)
-            os.replace(tmp, self.path)
-        return uid
+            stamp = self._stat()
+            if stamp != self._stamp:
+                try:
+                    with open(self.path, encoding='utf-8') as f:
+                        d = json.load(f)
+                    d.setdefault('accounts', {})
+                    d.setdefault('by_sub', {})
+                    self._data, self._stamp = d, stamp
+                except (OSError, ValueError):
+                    if stamp is None:
+                        self._data, self._stamp = {'version': 2, 'accounts': {}, 'by_sub': {}}, None
+            return self._data
+
+    def _mutate(self, fn):
+        with self.lock:
+            d = self._load()
+            res, changed = fn(d)          # fn returns (result, whether accounts.json changed)
+            if changed:
+                self._write(d)
+            return res
+
+    def legacy_uid(self, sub):
+        return 'u_' + hmac.new(self.secret, ('google:' + sub).encode(), hashlib.sha256).hexdigest()[:20]
+
+    def sign_in(self, ident, max_accounts):
+        """-> (status, uid): 'ok' | 'disabled' | 'full'. Creates a pending account for a new Google sub."""
+        sub, now = ident['sub'], int(time.time())
+
+        def fn(d):
+            uid = d['by_sub'].get(sub)
+            if uid not in d['accounts']:
+                uid = self.legacy_uid(sub)
+                if uid in d['accounts'] and not d['accounts'][uid].get('sub'):
+                    d['accounts'][uid]['sub'] = sub            # migrated v1 account: keep its old folder
+                else:
+                    if len(d['accounts']) >= max_accounts:
+                        return ('full', None), False
+                    uid = 'u_' + secrets.token_hex(10)
+                    d['accounts'][uid] = {'sub': sub, 'email': '', 'status': 'pending', 'created': now,
+                                          'last_login': None, 'agreed_at': None, 'terms': None}
+                d['by_sub'][sub] = uid
+            rec = d['accounts'][uid]
+            if rec.get('status') == 'disabled':
+                return ('disabled', uid), True
+            rec.update(email=ident['email'], last_login=now)
+            return ('ok', uid), True
+
+        return self._mutate(fn)
 
     def get(self, uid):
-        return self._load().get(uid)
+        rec = self._load()['accounts'].get(uid)
+        return dict(rec) if rec else None
 
-    def register(self, uid, nickname):
-        with self.lock:
-            users = self._load()
-            rec = users.get(uid)
-            if not rec:
-                return False
-            rec.update(registered=int(time.time()), nickname=nickname)
-            tmp = self.path + '.tmp'
-            with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(users, f, ensure_ascii=False, indent=1)
-            os.replace(tmp, self.path)
-        return True
+    def all(self):
+        return {u: dict(r) for u, r in self._load()['accounts'].items()}
+
+    def find(self, target):
+        """uid or e-mail -> uid (None if no match)."""
+        accts = self._load()['accounts']
+        if target in accts:
+            return target
+        t = target.strip().lower()
+        return next((u for u, r in accts.items() if (r.get('email') or '').lower() == t), None)
+
+    def register(self, uid, terms='2026-10'):
+        """Pending -> active. False if the account is missing or not pending."""
+        def fn(d):
+            rec = d['accounts'].get(uid)
+            if not rec or rec.get('status') != 'pending':
+                return False, False
+            rec.update(status='active', agreed_at=int(time.time()), terms=terms)
+            return True, True
+        return self._mutate(fn)
+
+    def set_status(self, uid, status):
+        def fn(d):
+            if uid not in d['accounts']:
+                return False, False
+            d['accounts'][uid]['status'] = status
+            return True, True
+        return self._mutate(fn)
+
+    def delete(self, uid):
+        def fn(d):
+            if d['accounts'].pop(uid, None) is None:
+                return False, False
+            for k in [k for k, v in d['by_sub'].items() if v == uid]:
+                del d['by_sub'][k]
+            return True, True
+        return self._mutate(fn)
 
     # signed, stateless session cookie: "<uid>.<expiry>.<mac>"
     def make_session(self, uid, now=None):
@@ -159,6 +274,7 @@ class Accounts:
         return msg + '.' + hmac.new(self.secret, msg.encode(), hashlib.sha256).hexdigest()
 
     def read_session(self, value, now=None):
+        """Valid signature and not expired -> uid (the account itself may be gone; callers check)."""
         try:
             uid, exp, mac = value.split('.')
             exp = int(exp)
@@ -167,7 +283,7 @@ class Accounts:
         good = hmac.new(self.secret, ('%s.%d' % (uid, exp)).encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(mac, good) or exp < (time.time() if now is None else now):
             return None
-        return uid if self.get(uid) else None
+        return uid
 
 
 # ------------------------------------------------------------------------------------- game servers
@@ -187,7 +303,8 @@ class Backends:
     def _spawn(self, uid):
         run = os.path.join(self.cfg['run_root'], uid)
         data = os.path.join(self.cfg['data_root'], uid)
-        os.makedirs(data, exist_ok=True)
+        mkdir_private(data)
+        mkdir_private(run)
         # copies the engine code into the player's run folder; the game state there is left alone
         subprocess.run(['sh', os.path.join(REPO, 'ui', 'tools', 'setup_run_dir.sh'), run],
                        check=True, stdout=subprocess.DEVNULL)
@@ -287,6 +404,8 @@ def make_handler(cfg, accounts, backends, verify_token):
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', 'no-store')
+            if cookie is None and getattr(self, 'stale', False):
+                cookie = self._cookie('', 0)
             if cookie is not None:
                 self.send_header('Set-Cookie', cookie)
             self.end_headers()
@@ -299,16 +418,27 @@ def make_handler(cfg, accounts, backends, verify_token):
             return '; '.join(parts)
 
         def _uid(self):
+            """Signed-in uid, or None. A valid cookie whose account is gone or disabled stops that
+            player's game server and is cleared (self.stale)."""
             for part in (self.headers.get('Cookie') or '').split(';'):
                 k, _, v = part.strip().partition('=')
                 if k == COOKIE:
-                    return accounts.read_session(v)
+                    uid = accounts.read_session(v)
+                    if uid is None:
+                        return None
+                    rec = accounts.get(uid)
+                    if not rec or rec.get('status') == 'disabled':
+                        self.stale = True
+                        backends.stop(uid)
+                        return None
+                    return uid
             return None
 
         def _body(self, limit=1 << 20):
             n = int(self.headers.get('Content-Length') or 0)
             if n > limit:
                 raise ValueError('too large')
+            self.body_read = True
             return self.rfile.read(n) if n else b''
 
         def _too_many_fails(self):
@@ -319,26 +449,43 @@ def make_handler(cfg, accounts, backends, verify_token):
             return len(recent) >= 10
 
         def _signed_in(self, ident):
-            if ident['email'] not in cfg['allowed_emails']:
+            if cfg['signup_mode'] == 'invite' and ident['email'] not in cfg['allowed_emails']:
                 fails.setdefault(self.client_address[0], []).append(time.time())
                 return self._json(403, {'error': '초대되지 않은 계정입니다 (%s)' % ident['email']})
-            uid = accounts.upsert(ident)
+            res, uid = accounts.sign_in(ident, cfg['max_accounts'])
+            if res == 'disabled':
+                return self._json(403, {'error': '이용이 중지된 계정입니다'})
+            if res == 'full':
+                return self._json(403, {'error': '정원이 찼습니다'})
             rec = accounts.get(uid)
             return self._json(200, {'ok': True, 'email': ident['email'], 'name': ident['name'],
-                                    'registered': bool(rec.get('registered'))},
+                                    'registered': rec['status'] == 'active'},
                               cookie=self._cookie(accounts.make_session(uid), SESSION_DAYS * 86400))
 
         # ---- routes
         def do_GET(self):
-            self._route('GET')
+            self._handle('GET')
 
         def do_POST(self):
-            self._route('POST')
+            self._handle('POST')
 
         def do_HEAD(self):
-            self._route('HEAD')
+            self._handle('HEAD')
+
+        def _handle(self, method):
+            self.body_read = False
+            self._route(method)
+            # a request body we answered without reading would be taken as the start of the next
+            # request on this keep-alive connection (e.g. '{}GET'): read it off, or close if it is huge
+            n = int(self.headers.get('Content-Length') or 0)
+            if n and not self.body_read:
+                if n <= 1 << 20:
+                    self.rfile.read(n)
+                else:
+                    self.close_connection = True
 
         def _route(self, method):
+            self.stale = False
             path = urllib.parse.urlsplit(self.path).path
             if path == '/login' and method in ('GET', 'HEAD'):
                 body = login_page.encode()
@@ -361,11 +508,13 @@ def make_handler(cfg, accounts, backends, verify_token):
                 if method == 'GET' and not path.startswith('/api/'):
                     self.send_response(302)
                     self.send_header('Location', '/login')
+                    if self.stale:
+                        self.send_header('Set-Cookie', self._cookie('', 0))
                     self.send_header('Content-Length', '0')
                     self.end_headers()
                     return
                 return self._json(401, {'error': '로그인이 필요합니다'})
-            if not accounts.get(uid).get('registered'):
+            if (accounts.get(uid) or {}).get('status') != 'active':
                 if method == 'GET' and not path.startswith('/api/'):
                     self.send_response(302)
                     self.send_header('Location', '/login#signup')
@@ -399,10 +548,8 @@ def make_handler(cfg, accounts, backends, verify_token):
             if path == '/auth/me':
                 uid = self._uid()
                 rec = accounts.get(uid) if uid else None
-                return self._json(200 if rec else 401, {'email': rec['email'], 'name': rec['name'],
-                                                        'registered': bool(rec.get('registered')),
-                                                        'nickname': rec.get('nickname', '')} if rec
-                                  else {'error': '로그인이 필요합니다'})
+                return self._json(200 if rec else 401, {'email': rec['email'], 'registered': rec['status'] == 'active'}
+                                  if rec else {'error': '로그인이 필요합니다'})
             if path == '/auth/logout':
                 return self._json(200, {'ok': True}, cookie=self._cookie('', 0))
             if self._too_many_fails():
@@ -427,6 +574,8 @@ def make_handler(cfg, accounts, backends, verify_token):
                 uid = self._uid()
                 if not uid:
                     return self._json(401, {'error': '로그인이 필요합니다'})
+                if accounts.get(uid)['status'] != 'pending':
+                    return self._json(409, {'error': '이미 가입한 계정입니다'})
                 nick = str(body.get('nickname') or '').strip()
                 av = body.get('avatar')
                 if not 1 <= len(nick) <= 16:
@@ -443,8 +592,18 @@ def make_handler(cfg, accounts, backends, verify_token):
                     return self._json(503, {'error': str(e)})
                 if st != 200:
                     return self._json(st, r)
-                accounts.register(uid, nick)
+                accounts.register(uid)
                 return self._json(200, {'ok': True, 'nickname': nick})
+            if path == '/auth/delete':
+                uid = self._uid()
+                if not uid:
+                    return self._json(401, {'error': '로그인이 필요합니다'})
+                if body.get('confirm') != '삭제':
+                    return self._json(400, {'error': '확인 문구로 "삭제"를 입력해 주세요'})
+                accounts.delete(uid)          # first, so no request can start the game server again
+                backends.stop(uid)
+                delete_user_files(cfg, uid)
+                return self._json(200, {'ok': True}, cookie=self._cookie('', 0))
             if path == '/auth/dev' and cfg['dev_login']:
                 email = str(body.get('email') or '').strip().lower()
                 return self._signed_in({'sub': 'dev:' + email, 'email': email, 'name': email.split('@')[0]})
@@ -510,6 +669,8 @@ def make_handler(cfg, accounts, backends, verify_token):
 
 
 def serve(cfg, verify_token=google_tokeninfo):
+    for k in ('data_root', 'run_root'):
+        mkdir_private(cfg[k])
     accounts = Accounts(cfg['state_dir'])
     backends = Backends(cfg)
     srv = ThreadingHTTPServer((cfg['host'], cfg['port']), make_handler(cfg, accounts, backends, verify_token))
@@ -525,7 +686,9 @@ def main():
     if cfg['dev_login'] and cfg['host'] not in ('127.0.0.1', 'localhost'):
         sys.exit('dev_login은 127.0.0.1에서만 켤 수 있습니다')
     srv = serve(cfg)
-    print('T2 gateway on http://%s:%d  (players: %s)' % (cfg['host'], cfg['port'], ', '.join(cfg['allowed_emails']) or 'none'))
+    who = ('invite only: %s' % (', '.join(cfg['allowed_emails']) or 'nobody') if cfg['signup_mode'] == 'invite'
+           else 'open signup')
+    print('T2 gateway on http://%s:%d  (%s, max %d accounts)' % (cfg['host'], cfg['port'], who, cfg['max_accounts']))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

@@ -8,6 +8,7 @@ inactive (a warning, not an error). Needs Pillow, numpy and opencv-python-headle
 """
 import argparse
 import json
+import re
 import sys
 from collections import deque
 from pathlib import Path
@@ -25,7 +26,7 @@ REQUIRED_CLIPS = ['walk_r', 'walk_l', 'turn_r_front', 'turn_l_front', 'turn_fron
                   'sit_down', 'stand_up', 'sit_idle']
 REQUIRED_POSES = ['walk_r', 'walk_l', 'stand_front', 'sit']
 WALKER_CLIPS = ['walk_r', 'walk_l']      # a walker (manifest.walker) only crosses the lounge
-GROUPS = ('far', 'back', 'mid', 'front')
+GROUPS = ('far', 'back', 'mid', 'arms', 'front')
 EMISSION_KEYS = ('lamp', 'city')
 SEAM_MAX_ERR = 6.0           # mean abs error, 0..255, premultiplied RGBA
 LOOP_SEAM_FACTOR = 1.25      # loop wrap may jump at most this much more than the biggest normal step
@@ -253,6 +254,62 @@ def frame_error(atlas, fa, fb):
     return float(np.abs(pa - pb).mean())
 
 
+FACE_KEY = re.compile(r'^[a-z][a-z0-9_]*$')
+FACE_IOU_MIN = 0.97          # a face variant keeps the frame's silhouette
+FACE_ANCHOR_TOL = 1          # px a full variant frame's anchor may differ from its frame's
+
+
+def check_faces(atlas, frames, tag, rep):
+    """Face variants (docs/LOUNGE_SCENE_DESIGN.md 6.2): frame.v = {face: index}. The named frame is
+    either a full frame of the same size and registration, or a patch {..., over: this frame} that lies
+    inside the frame when both are placed by their anchors. Either way the silhouette stays."""
+    for i, f in enumerate(frames):
+        if 'over' in f:
+            j = f['over']
+            if not is_int(j) or not 0 <= j < len(frames) or 'over' in frames[j]:
+                rep.err('face', '%s: patch frame %d: over must name a plain frame' % (tag, i))
+            elif not any(v == i for v in (frames[j].get('v') or {}).values()):
+                rep.err('face', '%s: patch frame %d is not named by frame %d\'s v' % (tag, i, j))
+        v = f.get('v')
+        if v is None:
+            continue
+        if 'over' in f or not isinstance(v, dict) or not v:
+            rep.err('face', '%s: frame %d: v must be a non-empty object on a plain frame' % (tag, i))
+            continue
+        for name, k in v.items():
+            if not FACE_KEY.match(str(name)):
+                rep.err('face', '%s: frame %d: face name %r is not a lower-case word' % (tag, i, name))
+                continue
+            if not is_int(k) or not 0 <= k < len(frames) or k == i:
+                rep.err('face', '%s: frame %d: v.%s points at a missing frame' % (tag, i, name))
+                continue
+            g = frames[k]
+            base = atlas[f['y']:f['y'] + f['h'], f['x']:f['x'] + f['w']]
+            if 'over' in g:
+                if g['over'] != i:
+                    rep.err('face', '%s: frame %d: v.%s is a patch for frame %s' % (tag, i, name, g['over']))
+                    continue
+                ox, oy = f['ax'] - g['ax'], f['ay'] - g['ay']
+                if ox < 0 or oy < 0 or ox + g['w'] > f['w'] or oy + g['h'] > f['h']:
+                    rep.err('face', '%s: frame %d: the %s patch lies outside the frame' % (tag, i, name))
+                    continue
+                comp = base.astype(np.float32).copy()
+                pa = atlas[g['y']:g['y'] + g['h'], g['x']:g['x'] + g['w']].astype(np.float32)
+                a = pa[..., 3:4] / 255.0
+                region = comp[oy:oy + g['h'], ox:ox + g['w']]
+                region[..., 3:4] = pa[..., 3:4] + region[..., 3:4] * (1 - a)
+                varied = comp[..., 3] > 127
+            else:
+                if (g['w'], g['h']) != (f['w'], f['h']) or abs(g['ax'] - f['ax']) > FACE_ANCHOR_TOL or abs(g['ay'] - f['ay']) > FACE_ANCHOR_TOL:
+                    rep.err('face', '%s: frame %d: v.%s (frame %d) has another size or anchor' % (tag, i, name, k))
+                    continue
+                varied = aligned(atlas, f, g)[1][..., 3] > 127
+                base = aligned(atlas, f, g)[0]
+            got = iou(base[..., 3] > 127, varied)
+            if got < FACE_IOU_MIN:
+                rep.err('face', '%s: frame %d: v.%s changes the silhouette (IoU %.3f < %.2f)' % (tag, i, name, got, FACE_IOU_MIN))
+
+
 def check_character(root, name, rep):
     cdir = root / 'chars' / name
     man = read_json(cdir / 'manifest.json', rep, 'character manifest')
@@ -276,12 +333,38 @@ def check_character(root, name, rep):
             rep.err('schema', '%s: frame %d needs integer x, y, w, h, ax, ay' % (tag, i))
             good = False
             continue
+        if 'over' in f:               # a face patch, placed on frame `over` by the two anchors (checked below)
+            if f['w'] <= 0 or f['h'] <= 0:
+                rep.err('schema', '%s: frame %d has an empty rectangle' % (tag, i))
+                good = False
+            elif atlas is not None and (f['x'] < 0 or f['y'] < 0 or f['x'] + f['w'] > atlas.shape[1] or f['y'] + f['h'] > atlas.shape[0]):
+                rep.err('schema', '%s: frame %d lies outside the atlas' % (tag, i))
+                good = False
+            continue
         if f['w'] <= 0 or f['h'] <= 0 or not (0 <= f['ax'] <= f['w'] and 0 <= f['ay'] <= f['h']):
             rep.err('schema', '%s: frame %d has an empty rectangle or an anchor outside it' % (tag, i))
             good = False
         elif atlas is not None and (f['x'] < 0 or f['y'] < 0 or f['x'] + f['w'] > atlas.shape[1] or f['y'] + f['h'] > atlas.shape[0]):
             rep.err('schema', '%s: frame %d lies outside the atlas' % (tag, i))
             good = False
+    if good:
+        # two frame rectangles are either the same picture or apart: a rectangle that runs into another
+        # picture draws a piece of it (a lifted frame whose rectangle was stretched down to its anchor)
+        rects = sorted({(f['x'], f['y'], f['w'], f['h']) for f in frames})
+        for i, (x, y, w, h) in enumerate(rects):
+            for (x2, y2, w2, h2) in rects[i + 1:]:
+                if x2 >= x + w:
+                    continue
+                if x < x2 + w2 and y < y2 + h2 and y2 < y + h:
+                    rep.err('schema', '%s: frame rectangles %s and %s overlap in the atlas' % (tag, (x, y, w, h), (x2, y2, w2, h2)))
+                    good = False
+                    break
+            if not good:
+                break
+    if good and atlas is not None:
+        check_faces(atlas, frames, tag, rep)
+        good = not any(e.startswith('face:') and tag + ':' in e for e in rep.errors)
+    patch_frames = {i for i, f in enumerate(frames) if 'over' in f}
     for pname, idx in poses.items():
         if not is_int(idx) or not 0 <= idx < len(frames):
             rep.err('schema', '%s: pose %s points at a missing frame' % (tag, pname))
@@ -290,7 +373,7 @@ def check_character(root, name, rep):
     for cid, c in clips.items():
         ok = isinstance(c, dict) and isinstance(c.get('loop'), bool) and is_num(c.get('fps')) and c['fps'] > 0 \
             and isinstance(c.get('frames'), list) and len(c['frames']) >= 1 \
-            and all(is_int(i) and 0 <= i < len(frames) for i in c['frames']) \
+            and all(is_int(i) and 0 <= i < len(frames) and i not in patch_frames for i in c['frames']) \
             and c.get('from') in poses and c.get('to') in poses
         if not ok:
             rep.err('schema', '%s: clip %s is malformed (needs from/to poses, loop, fps > 0, valid frame indices)' % (tag, cid))
@@ -304,14 +387,30 @@ def check_character(root, name, rep):
     if not good or atlas is None:
         return
 
+    # A walker (manifest.walker) passes by with its two walking clips; a character with the full set can
+    # sit; one with both is a hybrid (the real animals: pass-by or sit, docs/LOUNGE_SCENE_DESIGN.md 7.7).
+    # facings (docs/LOUNGE_SCENE_DESIGN.md 7.8): the clips and poses for a seat facing f other than 'f' are
+    # named '<id>@<f>' (walks are shared); a character sits if one of its facings is complete
+    def at(i, f):
+        return i if f == 'f' or i in WALKER_CLIPS else i + '@' + f
+    facings = man.get('facings') or ['f']
+    if not (isinstance(facings, list) and all(isinstance(f, str) and re.match(r'^[a-z]+$', f) for f in facings)):
+        rep.err('schema', '%s: facings must be a list of lower-case words' % tag)
+        facings = ['f']
+    misses = {}
+    for f in facings:
+        pose_names = ['walk_r', 'walk_l', 'stand_front', 'sit'] if f == 'f' else ['walk_r', 'walk_l', 'stand@' + f, 'sit@' + f]
+        misses[f] = [at(c, f) for c in REQUIRED_CLIPS if at(c, f) not in clips] + ['pose:' + p for p in pose_names if p not in poses]
+    sit_missing = min(misses.values(), key=len)
+    sits = any(not m for m in misses.values())
     if man.get('walker') is True:
         missing = [c for c in WALKER_CLIPS if c not in clips]
         if man.get('pass', 'both') not in ('r', 'l', 'both'):
             rep.err('schema', '%s: pass must be "r", "l" or "both"' % tag)
     else:
-        missing = [c for c in REQUIRED_CLIPS if c not in clips] + ['pose:' + p for p in REQUIRED_POSES if p not in poses]
+        missing = sit_missing
     active = not missing
-    rep.chars[name] = ('walker' if man.get('walker') is True else 'active') if active else 'inactive'
+    rep.chars[name] = ('hybrid' if sits else 'walker') if man.get('walker') is True and active else ('active' if active else 'inactive')
     if not active:
         rep.warn('inactive', '%s lacks %s; it will not appear in the scene' % (tag, ', '.join(missing)))
 
@@ -336,7 +435,7 @@ def check_character(root, name, rep):
             if last_err > SEAM_MAX_ERR:
                 rep.err('seam', '%s: clip %s does not end on pose %s (error %.1f > %.0f)' % (tag, cid, c['to'], last_err, SEAM_MAX_ERR))
 
-    if active and man.get('walker') is not True:
+    if active and sits:
         fwd, back = {}, {}
         for cid, c in clips.items():
             if clip_ok.get(cid):

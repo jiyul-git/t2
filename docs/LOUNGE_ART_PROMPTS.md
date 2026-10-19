@@ -251,6 +251,138 @@ viewer. The near leg always overlaps the far leg. No text, no watermark.
 
 받으면 4칸을 잘라 다리만 바꿔 넣고(`lockbody.py`), 사이 프레임이 필요하면 1→2, 2→3 사이에 기존 시트의 비슷한 자세를 끼운다.
 
+## 추가로 받으면 좋은 그림 (2026-10-17)
+
+지금 앉기·일어서기는 이미 있는 정지 그림으로 만든 것이다(`art/README.md` "앉기 캐릭터"). 서 있는 그림이 폴짝 뛰어 오르고, 꼭대기에서 앉은 그림으로 한 프레임에 바뀐 뒤 방석에 내려앉는다(2026-10-18부터 크로스페이드 없음). 좌석에는 방향이 있어(왼쪽 소파 정면, 오른쪽 소파 왼쪽 앞을 향한 3/4) 방향마다 맞는 앉은 그림이 필요하다. **꼭대기에서 그림이 바뀌는 순간**과 **방향에 맞는 그림이 없는 자리**(거북이 정면, 호랑이 정면 폰, 토끼 정면 통화)가 가장 약한 부분이다. 아래 그림이 오면 그 2장을 진짜 동작 그림으로 바꿀 수 있다. 호랑이 오르기 시트(`tiger_climb_sit_sheet_a/b`)가 잘 나온 방식 그대로다: **4×4 한 장에 16칸, 번호 순서대로 한 동작, 흰 배경, 칸 사이 흰 여백, 같은 크기**, 그리고 b처럼 **가로선(소파 앞면 윗선)** 을 그려 두면 칸마다 높이를 맞추기 쉽다.
+
+보낼 때 첨부: 그 동물의 기준 그림 2장(걷는 단체 그림 `chars_walking_group_gemini.webp`과 앉은 단체 그림 `chars_sitting_group_gemini.webp`), 그리고 잘 된 예로 `tiger_climb_sit_sheet_b_ledge_gemini.webp`.
+
+### 1. 소파에 올라앉기 16칸 — 토끼, 거북이, 펭귄 (각 1장)
+
+`<동물>`에 rabbit / turtle / penguin, `<옷차림>`에 각자 차림을 넣는다(토끼: pink coat, pink scarf, bow on the ear, boots / 거북이: black beanie, navy jacket with gold pattern, brown shell backpack / 펭귄: brown aviator cap with goggles, mustard scarf).
+
+```
+Use the attached <animal> as the exact character reference (same face, <outfit>, colours,
+line weight, chibi proportions). The third attachment is a finished example of the SAME kind of
+sheet for the tiger: copy its layout exactly.
+
+Draw a 4x4 sheet (16 separate cells, read left to right, top to bottom) on a plain white
+background, a clear white gap between cells, every cell the same size and the character the same
+size in every cell. No chair, no sofa, no shadow, no text, no watermark. In cells 1-8 draw one thin
+straight horizontal black line across the cell at the same height in every cell: it is the top
+edge of a sofa seat.
+
+The <animal> climbs onto a sofa and sits down, one step per cell:
+1-2. back view, standing below the line, both hands reaching up and holding the line.
+3-4. back view, pulling up: one knee lifted over the line, the other foot dangling, a small effort mark.
+5-6. lying belly-down across the line (on the seat), legs dangling behind, rolling to the side.
+7-8. side view (facing right), sitting on the line, legs stretched forward along it.
+9-10. turning toward the viewer while sitting, legs forward.
+11. sitting, facing the viewer, legs forward, hands on the lap, eyes OPEN, small calm smile.
+12. same as 11 with the eyes closed (a blink).
+13. same as 11, wiping the brow ("phew").
+14. same as 11, looking left. 15. same as 11, looking right. 16. same as 11, waving.
+Keep the body the same size in every cell; only the pose changes.
+```
+
+받으면: 1~10칸을 `sit_down` 프레임 목록(`build_character.py`의 `sit_frames`)으로 넣고, 거꾸로 돌려 `stand_up`도 만든다. 가로선 높이로 소파 앞면에 맞춘다.
+
+### 2. 소파에서 일어나 내려오기 16칸 (각 1장, 호랑이 포함)
+
+```
+Use the attached <animal> as the exact character reference (same face, outfit, colours, line
+weight). 4x4 sheet, 16 separate cells, plain white background, white gaps, same size in every
+cell, no shadow, no text. A thin horizontal black line in every cell at the same height = the top
+edge of a sofa seat.
+
+The <animal> gets up from the sofa and hops down to the floor in front of it, facing the viewer:
+1. sitting on the line, facing the viewer, legs forward, hands on the lap.
+2. leaning forward, hands pushing on the line on both sides of the body.
+3. sliding forward, bottom at the very front of the line, feet reaching down.
+4-5. feet touching the floor below the line, knees bent, body still leaning forward.
+6-7. standing up straight in front of the line, facing the viewer.
+8. a small hop of joy, both feet just off the floor.
+9-16. standing facing the viewer, arms relaxed at the sides, hands empty: neutral, blink (eyes
+closed), small smile, looking left, looking right, a slight nod, hands together, a small wave.
+```
+
+받으면: 1~8칸이 `stand_up`, 9~16칸이 걷기 전 정면 서기(`stand_front`)와 그 표정이 된다. 지금 쓰는 서기 그림은 물건(커피, 폰)을 들거나 눈이 놀란 모양이라, 손이 빈 평범한 정면 서기가 있으면 돌아서기(종이 넘기기)도 자연스러워진다.
+
+### 3. 눈 뜬 평범한 앉은 정면 4칸 — 토끼, 거북이, 펭귄
+
+지금 토끼는 앉은 눈 뜬 그림이 없어 걷기 그림의 눈을 옮겨 붙였고, 거북이는 잠에서 깬 "어?" 그림의 입을 고쳤고, 펭귄은 커피 든 단체 그림뿐이다.
+
+```
+Use the attached <animal> as the exact character reference (same face, outfit, colours, line
+weight). One row of 4 separate cells, plain white background, white gaps, same size in every cell,
+no chair, no shadow, no text. The <animal> sits on the floor facing the viewer, legs stretched
+forward, both hands resting on the lap, nothing in the hands:
+1. eyes open, calm small smile (the neutral seated pose).
+2. exactly the same pose with the eyes closed (a blink) - nothing else changes.
+3. exactly the same pose, looking a little to the left.
+4. exactly the same pose, smiling with the eyes closed.
+Cells 1-4 must be identical except for the eyes and mouth.
+```
+
+### 4. 옆을 보고 이야기하는 앉은 자세 (대화) — 4마리
+
+엔진에는 옆자리끼리 대화하는 동작(`chat_*`)이 이미 있다. 그림만 없어 지금은 빠져 있다.
+
+```
+Use the attached <animal> as the exact character reference. 4x4 sheet, 16 separate cells, plain
+white background, white gaps, same size, no chair, no shadow, no text. The <animal> sits on the
+floor, legs forward, its body turned three-quarters to the RIGHT (talking to someone sitting on
+its right):
+row 1: turning from facing the viewer to facing right (4 steps).
+row 2: talking - mouth open/closed alternately, one hand gesturing (4 cells).
+row 3: listening - nodding, a small smile, a blink (4 cells).
+row 4: laughing together, then turning back to face the viewer (4 cells).
+Body size and position the same in every cell; only head, arms and mouth change.
+```
+
+왼쪽을 보는 대화는 이것을 좌우로 뒤집어 쓰고, 옷의 글자만 다시 바로 세운다(`mirror_logo.py`).
+
+### 5. 펭귄 걷기 옆모습 4×4
+
+펭귄은 걷는 그림이 단체 그림 한 장뿐이라 장면에 넣지 않았다(뒤뚱걸음을 한 장으로 흉내 내면 한 발을 들고 미끄러지는 것처럼 보인다).
+
+```
+Use the attached penguin as the exact character reference (brown aviator cap with goggles,
+mustard scarf, coffee cup in one flipper, colours, line weight). 4x4 sheet, 16 separate cells,
+plain white background, white gaps, same size in every cell, no shadow, no text.
+The penguin waddles to the RIGHT, side view (three-quarter), the coffee cup always in the same
+flipper. One waddle step per row, 4 cells per row:
+1. body tilted left, left foot planted, right foot lifted forward.
+2. body upright, both feet on the floor (passing).
+3. body tilted right, right foot planted, left foot lifted forward.
+4. body upright, both feet on the floor.
+Rows 2-4: the same 4 poses again with tiny differences (scarf end swinging, a blink in one cell).
+Keep the head, cap, scarf and cup identical in all cells; only the feet and the body tilt change.
+Feet always point RIGHT.
+```
+
+### 6. 방향별 앉은 자세 (소파 방향에 맞추기) — 4마리
+
+라운지의 왼쪽 소파는 정면, 오른쪽 소파는 **왼쪽 앞을 향해 3/4로** 놓여 있다. 지금 있는 앉은 그림은 대부분 바닥에 앉아 다리를 앞으로 뻗은 모습이고 방향이 제각각이라, 거북이는 정면 소파에 못 앉고 호랑이는 정면 소파에서 폰을, 토끼는 정면 소파에서 통화를 못 한다. 한 마리에 한 장씩, 같은 몸 크기로:
+
+```
+Use the attached <animal> as the exact character reference (same face, outfit, colours, line
+weight, chibi proportions). 4x4 sheet, 16 separate cells, plain white background, white gaps,
+the character the same size in every cell, no shadow, no text, no watermark. In EVERY cell draw one
+thin straight horizontal black line at the same height: the front edge of a sofa seat. The
+<animal> sits ON that edge (its bottom just above the line), legs hanging down in front of it,
+feet off the floor.
+Row 1: body and face toward the viewer (front view): eyes open calm smile / eyes closed (blink) /
+       holding a phone and looking at it / phone at the ear, talking.
+Row 2: the same four, but the whole body turned three-quarters to the viewer's LEFT (we see the
+       right side of its face and body a little), legs hanging down-left.
+Row 3: front view: dozing head tilted, dozing with "zz", yawning, waking up.
+Row 4: three-quarters LEFT: dozing head tilted, dozing with "zz", yawning, waking up.
+The bottom (where it sits) must touch the line at the same place in every cell of a row.
+```
+
+받으면: 1·3행은 정면 좌석(`f`), 2·4행은 3/4 좌석(`l`)의 자세로 넣는다. 가로선이 엉덩이 접촉선이라 따로 잴 필요가 없다. 다리가 방석 앞으로 늘어져 보이게 된다.
+
 ## 확인과 보내기
 
 - 한 장씩 볼 때: 기준 그림과 같은 캐릭터인지(얼굴, 옷, 색), 몸 전체가 잘리지 않았는지, 배경이 흰색 단색인지.

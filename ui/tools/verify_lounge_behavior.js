@@ -1,5 +1,7 @@
 'use strict';
-// docs/LOUNGE_SCENE_DESIGN.md 7.5: invariants over 24 simulated hours, several seeds, two clip sets.
+// docs/LOUNGE_SCENE_DESIGN.md 7.5 / 7.7: invariants over 24 simulated hours, several seeds, two clip sets
+// (the old programmatic placeholders, kept as test fixtures in lounge_placeholder_manifests.json), and
+// the real animals of scene.json, which both pass by and sit, under the one-mover-at-a-time lock.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -10,21 +12,29 @@ const Sun = require(path.join(__dirname, '../web/lounge/sun.js'));
 const ASSETS = path.join(__dirname, '../web/lounge/assets');
 const scene = JSON.parse(fs.readFileSync(path.join(ASSETS, 'scene.json'), 'utf8'));
 const NAMES = ['tiger', 'rabbit', 'turtle', 'penguin'];
-const full = NAMES.map(n => JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8')));
+const FIXTURES = JSON.parse(fs.readFileSync(path.join(__dirname, 'lounge_placeholder_manifests.json'), 'utf8'));
+const full = NAMES.map(n => FIXTURES[n]);           // placeholders: every clip of 6.3 incl. chat, sunglasses, fix_clothes
+const REAL = scene.characters.map(n => JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8')));
 const minimal = full.map(m => ({ ...m, clips: Object.fromEntries(B.REQUIRED_CLIPS.map(id => [id, m.clips[id]])) }));
 const START = Date.UTC(2026, 2, 19, 15, 0);          // 2026-03-20 00:00 KST
 const SEOUL = [37.5665, 126.978];
-const SEATED_MAX_MS = (B.SEAT_SECONDS[1] + 120) * 1000;
+// a sitter past its seat time waits for the movement lock (a plane takes 80 s, then a quiet spell) and
+// is sent off at the latest LEAVE_WAIT later, then finishes its activity
+const SEATED_MAX_MS = (B.SEAT_SECONDS[1] + 240) * 1000;
+const MOVING = new Set(['ENTERING', 'TURN_IN', 'SIT_DOWN', 'STAND_UP', 'TURN_OUT', 'EXITING']);
 const OTHER_MAX_MS = 120 * 1000;
 let checks = 0;
 const ok = (c, m) => { checks++; if (!c) throw new Error(m); };
 
+// The placeholder fixtures have one front-facing pose set; they get the scene's seats without facings
+// or blocks (all four usable, side by side, so conversations can happen).
+const placeholderScene = { ...scene, seats: scene.seats.map(s => ({ id: s.id, x: s.x, y: s.y })) };
 function makeDirector(characters, seed, extra) {
   let d = null;
   const now = () => (d ? d.now : 0);
   const events = [];
   d = B.createDirector({
-    seed, scene, characters,
+    seed, scene: characters.length && characters.every(m => m.placeholder) ? placeholderScene : scene, characters,
     clock: () => START + now(),
     minuteOfDay: () => Math.floor(now() / 60000) % 1440,
     solar: () => Sun.sunPosition(new Date(START + now()), SEOUL[0], SEOUL[1]),
@@ -44,13 +54,14 @@ function hashEvents(events) {
 function simulate(characters, seed, label, hours = 24) {
   const { d, events } = makeDirector(characters, seed);
   const clipsOf = Object.fromEntries(characters.map(m => [m.name, m.clips]));
-  const seatX = scene.seats.map(s => s.x);
+  const seatX = (characters.length && characters.every(m => m.placeholder) ? placeholderScene : scene).seats.map(s => s.x);
   const stepMs = 100, steps = hours * 3600 * 1000 / stepMs;
   const dwell = {};                        // name -> {state, since}
   const lastWalk = {};                     // name -> {x, state}
   const walkInfo = {};                     // name -> {x0, dir} learned from the first ENTERING sample
   let zeroRun = 0, maxZeroRun = 0, minPresent = 99, maxPresent = 0;
   const used = new Set();
+  let maxMovers = 0;
 
   const first = d.step(0);
   ok(first.length >= Math.min(Math.ceil(d.target / 2), characters.length) && first.every(c => c.state === 'SEATED' && c.lane === 'seat'),
@@ -65,6 +76,22 @@ function simulate(characters, seed, label, hours = 24) {
     if (day) { minPresent = Math.min(minPresent, out.length); }
     if (out.length === 0 && day) { zeroRun += stepMs; maxZeroRun = Math.max(maxZeroRun, zeroRun); } else zeroRun = 0;
 
+    // movement lock: at most one moving character, and never one while the plane is out
+    const movers = out.filter(c => MOVING.has(c.state));
+    maxMovers = Math.max(maxMovers, movers.length + (d.plane() ? 1 : 0));
+    ok(movers.length + (d.plane() ? 1 : 0) <= 1, label + ': two things move at once at t=' + t + ': ' + movers.map(c => c.name + ' ' + c.state) + (d.plane() ? ' + plane' : ''));
+    ok(new Set(out.map(c => c.name)).size === out.length, label + ': a character is on screen twice');
+    for (const n of Object.keys(dwell)) if (!out.some(c => c.name === n)) delete dwell[n];   // went away: a new visit starts over
+    for (const n of Object.keys(lastWalk)) if (!out.some(c => c.name === n)) delete lastWalk[n];
+    // seats (7.8): a character sits only at a facing it has clips for, and never next to a seat it blocks
+    const sc = characters.length && characters.every(m => m.placeholder) ? placeholderScene : scene;
+    const held = out.filter(c => c.seat >= 0).map(c => sc.seats[c.seat]);
+    for (const a of held) for (const b of held) ok(a === b || !((a.blocks || []).includes(b.id)), label + ': seats ' + a.id + ' and ' + b.id + ' are taken together');
+    for (const c of out) if (c.seat >= 0) {
+      const f = sc.seats[c.seat].facing || 'f';
+      ok(B.sitFacings(characters.find(m => m.name === c.name)).includes(f), label + ': ' + c.name + ' sits facing ' + f);
+      if (c.state === 'SEATED') ok(c.clip === B.clipAt(c.clip.split('@')[0], f), label + ': ' + c.name + ' plays ' + c.clip + ' at a seat facing ' + f);
+    }
     const seatsSeen = new Set();
     for (const c of out) {
       // 1. one character per seat
@@ -137,6 +164,7 @@ function simulate(characters, seed, label, hours = 24) {
   // 5. the lounge is never empty for long while it is open
   ok(maxZeroRun <= 180 * 1000, label + ': empty for ' + maxZeroRun / 1000 + ' s during opening hours');
   ok(maxPresent <= characters.length, label + ': more people than characters');
+  ok(maxMovers <= 1, label + ': movement lock');
   return { events, used, chats: chats.size, maxZeroRun, minPresent, maxPresent };
 }
 
@@ -148,6 +176,8 @@ for (const seed of seeds) {
   r.used.forEach(c => seen.add(c));
   chatTotal += r.chats;
   console.log('  full seed %d: %d clip changes, %d chats, max %d present, longest empty spell %d s', seed, r.events.length, r.chats, r.maxPresent, r.maxZeroRun / 1000);
+  const rr = seed <= 3 ? simulate(REAL, seed, 'real seed ' + seed) : null;
+  if (rr) console.log('  real seed %d: %d clip changes, max %d present, longest empty spell %d s', seed, rr.events.length, rr.maxPresent, rr.maxZeroRun / 1000);
   const m = simulate(minimal, seed, 'minimal seed ' + seed);
   ok([...m.used].every(c => B.REQUIRED_CLIPS.includes(c)), 'minimal set used a clip outside the required nine');
   ok(m.chats === 0, 'no chats without chat clips');
@@ -224,11 +254,14 @@ ok(chatTotal > 0, 'conversations happen');
 
 {
   // A walker crosses in its pass direction, never sits, never holds a seat, and comes back later.
-  const walker = JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', 'tiger_walker', 'manifest.json'), 'utf8'));
+  // (A pure walker: the real tiger with only its walking clips.)
+  const tiger = REAL.find(m => m.name === 'tiger');
+  const walker = { ...tiger, name: 'tiger_walker', clips: { walk_r: tiger.clips.walk_r, walk_l: tiger.clips.walk_l } };
   ok(B.isActive(walker) && !B.isActive({ ...walker, walker: false }), 'walker is active only as a walker');
+  ok(B.canPass(tiger) && B.canSit(tiger) && !B.canSit(walker) && !B.canPass(full[0]), 'hybrid / walker / sitter roles');
   const { d } = makeDirector([walker, ...full.slice(1)], 31);
   let crossings = 0, prevX = null, wasOn = false;
-  for (let i = 0; i < 6000; i++) {
+  for (let i = 0; i < 18000; i++) {
     const w = d.step(100).find(c => c.name === 'tiger_walker');
     if (w) {
       ok(w.clip === 'walk_r' && w.lane === 'aisle' && w.seat === -1 && w.state === 'EXITING', 'walker only walks right: ' + JSON.stringify(w));
@@ -238,8 +271,183 @@ ok(chatTotal > 0, 'conversations happen');
     } else if (wasOn) { crossings++; prevX = null; }
     wasOn = !!w;
   }
-  ok(crossings >= 3, 'walker crossed ' + crossings + ' times in 10 minutes');
+  ok(crossings >= 2, 'walker crossed ' + crossings + ' times in 30 minutes');
   ok(!d.force('tiger_walker', 'eat'), 'a walker cannot be sent to a seat');
+}
+
+{
+  // The real animals of scene.json (7.7): each one passes by or goes to a seat - never both at once,
+  // never on screen twice. One thing moves at a time, the plane included; the preview event comes
+  // first; the same event never twice in a row; each opening is a different random run.
+  ok(REAL.length >= 3 && ['tiger', 'rabbit', 'turtle'].every(n => scene.characters.includes(n)), 'scene has the real tiger, rabbit and turtle: ' + scene.characters);
+  for (const m of REAL) {
+    ok(B.canPass(m) && B.canSit(m), m.name + ' both passes by and sits');
+    ok(m.clips.walk_r.advance > 0 && m.clips.walk_r.frames.length === m.clips.walk_l.frames.length, m.name + ' walks');
+    // pose-graph legality of the clips (the frames themselves are checked by lounge_check_assets.py):
+    // every clip starts on its from-pose frame, a one-shot ends on its to-pose frame, and its pose nodes exist
+    for (const [id, c] of Object.entries(m.clips)) {
+      ok(Number.isInteger(m.poses[c.from]) && Number.isInteger(m.poses[c.to]), m.name + ' ' + id + ' uses known poses');
+      ok(c.frames[0] === m.poses[c.from], m.name + ' ' + id + ' starts on pose ' + c.from);
+      if (!c.loop) ok(c.frames[c.frames.length - 1] === m.poses[c.to], m.name + ' ' + id + ' ends on pose ' + c.to);
+    }
+    // every facing it claims is complete, and every seat facing in the scene is used by someone
+    ok(B.sitFacings(m).length === (m.facings || ['f']).length, m.name + ' has every clip for its facings ' + m.facings);
+    for (const f of B.sitFacings(m)) for (const id of ['sit_down', 'stand_up']) ok(Number.isInteger(m.clips[B.clipAt(id, f)].laneSwitchAt), m.name + ' ' + id + '@' + f + ' has laneSwitchAt');
+  }
+  for (const f of new Set(scene.seats.map(s => s.facing || 'f'))) ok(REAL.some(m => B.sitFacings(m).includes(f)), 'someone can sit facing ' + f);
+  const runs = [];
+  for (const seed of [5, 77]) {
+    const { d, events } = makeDirector(REAL, seed);
+    const order = [];                    // events as they start: 'pass:x', 'arrive:x', 'leave:x', 'plane'
+    let prevMover = null;
+    for (let i = 0; i < 18000; i++) {
+      const out = d.step(100);
+      const moving = out.filter(c => MOVING.has(c.state));
+      const pl = d.plane();
+      ok(moving.length + (pl ? 1 : 0) <= 1, 'one thing moves at a time: ' + moving.map(c => c.name + ' ' + c.state) + (pl ? ' + plane' : ''));
+      ok(new Set(out.map(c => c.name)).size === out.length, 'nobody is on screen twice');
+      for (const c of out) if (c.state === 'EXITING' && c.seat === -1 && c.spot === -1) ok(c.lane === 'aisle', c.name + ' passes in the aisle');
+      const mv = d.mover();
+      const key = mv ? mv.kind + (mv.name ? ':' + mv.name : '') : null;
+      if (key && key !== prevMover) order.push(key);
+      prevMover = key;
+    }
+    for (let k = 1; k < order.length; k++) ok(order[k] !== order[k - 1], 'the same event twice in a row: ' + order.join());
+    const firstPreview = scene.preview[0].includes(':') ? scene.preview[0] : 'pass:' + scene.preview[0];
+    eq(order[0], firstPreview, 'the preview event comes first: ' + order.slice(0, 3).join());
+    for (const n of scene.characters) ok(order.some(e => e.endsWith(':' + n)), n + ' came by in 30 minutes (seed ' + seed + '): ' + order.join());
+    ok(order.includes('plane'), 'the plane came by in 30 minutes (seed ' + seed + ')');
+    ok(order.some(e => e.startsWith('pass:')) && order.some(e => e.startsWith('arrive:')), 'both pass-bys and arrivals happen: ' + order.join());
+    runs.push(order.join() + hashEvents(events));
+  }
+  ok(runs[0] !== runs[1], 'each opening is a different random run');
+}
+
+{
+  // A long run (3 h of director time per seed): every real character completes a whole sit cycle -
+  // walk in, turn, sit down, sit, stand up, turn away, walk out - and the event mix is reported.
+  const mix = {};
+  const cycles = {};
+  for (const seed of [3, 11, 29]) {
+    const { d, events } = makeDirector(REAL, seed);
+    let prev = null;
+    for (let i = 0; i < 3 * 3600 * 10; i++) {
+      d.step(100);
+      const mv = d.mover();
+      const key = mv ? mv.kind : null;
+      if (key && (!prev || prev.kind !== mv.kind || prev.name !== mv.name)) mix[key] = (mix[key] || 0) + 1;
+      prev = mv;
+    }
+    const by = {};
+    for (const e of events) (by[e.name] = by[e.name] || []).push(e.to);
+    for (const n of scene.characters) {
+      const seq = (by[n] || []).join(' ');
+      const re = /walk_[lr] turn_[lr]_front(@\w+)? sit_down(@\w+)? sit_idle(@\w+)? .*?stand_up(@\w+)? turn_front_[lr](@\w+)? walk_[lr]/;
+      if (re.test(seq)) cycles[n] = (cycles[n] || 0) + 1;
+    }
+  }
+  for (const n of scene.characters) ok(cycles[n] >= 1, n + ' completed a full sit cycle in a long run');
+  ok(mix.pass > 0 && mix.arrive > 0 && mix.leave > 0 && mix.plane > 0, 'event mix: ' + JSON.stringify(mix));
+  console.log('  9 h of director time (3 seeds): event mix %s; full sit cycles %s', JSON.stringify(mix), JSON.stringify(cycles));
+}
+
+{
+  // Debug requests keep the lock: an arrival asked for while something moves waits for it.
+  const { d, events } = makeDirector(REAL, 8);
+  for (let i = 0; i < 50; i++) d.step(100);
+  ok(d.request('turtle', 'arrive') && !d.request('nobody', 'pass') && !d.request('turtle', 'dance'), 'request validates its input');
+  let seated = false;
+  for (let i = 0; i < 6000 && !seated; i++) {
+    const out = d.step(100);
+    ok(out.filter(c => MOVING.has(c.state)).length + (d.plane() ? 1 : 0) <= 1, 'a requested arrival keeps the lock');
+    seated = out.some(c => c.name === 'turtle' && c.state === 'SEATED');
+  }
+  ok(seated, 'the requested turtle sat down');
+  ok(d.request('turtle', 'leave'), 'request a leave');
+  let gone = false;
+  for (let i = 0; i < 6000 && !gone; i++) {
+    const out = d.step(100);
+    gone = !out.some(c => c.name === 'turtle') && events.some(e => e.name === 'turtle' && /^stand_up/.test(e.to));
+  }
+  ok(gone, 'the turtle stood up and left');
+}
+
+{
+  // Faces (design doc 7.6): blinks happen and are short, expressions only where the frames have them,
+  // a frame without the variant never shows a face, the face timers are deterministic and do not touch
+  // the characters' own random sequence.
+  const strip = m => ({ ...m, frames: m.frames.map(f => { const g = { ...f }; delete g.v; return g; }) });
+  for (const w of REAL) ok(B.faceKinds(w).includes('blink'), w.name + ' offers a blink');
+  function run(chars, seed, minutes) {
+    const { d, events } = makeDirector(chars, seed);
+    const faces = [];                           // per sample: name -> face of characters on screen
+    const runs = {};                            // name -> [{face, ms}] finished face spells
+    const cur = {};
+    const byName = Object.fromEntries(chars.map(m => [m.name, m]));
+    // a face only shows on frames that carry it: a spell that begins or ends at a change to a frame
+    // without the variant (a cross-fade, a turn) is cut short there and not timed
+    const carries = (c, face) => { const m = byName[c.name], f = m.frames[m.clips[c.clip].frames[c.frame]]; return !!(f && f.v && Number.isInteger(f.v[face])); };
+    for (let i = 0; i < minutes * 60000 / B.TICK_MS; i++) {
+      const out = d.step(B.TICK_MS);
+      const seen = new Set();
+      for (const c of out) {
+        ok(typeof c.face === 'string', 'snapshot has a face field: ' + JSON.stringify(c));
+        seen.add(c.name);
+        const r = cur[c.name];
+        if (r && r.face === c.face) r.ms += B.TICK_MS;
+        else {
+          if (r && r.face && !r.partial && carries(c, r.face)) (runs[c.name] = runs[c.name] || []).push(r);
+          cur[c.name] = { face: c.face, ms: B.TICK_MS, partial: !r || (c.face && !carries(r.last, c.face)) };   // seen from its start only if it was on screen before
+        }
+        cur[c.name].last = c;
+      }
+      for (const n of Object.keys(cur)) if (!seen.has(n)) delete cur[n];   // went off screen: spell cut short
+      faces.push(out.map(c => c.name + ':' + c.face + ':' + c.frame).join(','));
+    }
+    return { runs, faces, hash: hashEvents(events) };
+  }
+  const a = run(REAL, 5, 30);
+  for (const w of REAL) {
+    const r = a.runs[w.name] || [];
+    const blinks = r.filter(x => x.face === 'blink');
+    ok(blinks.length >= 3, w.name + ' blinked ' + blinks.length + ' times in 30 minutes');
+    for (const b of blinks) ok(b.ms >= 100 && b.ms < 250, w.name + ' blink lasted ' + b.ms + ' ms');
+    const kinds = B.faceKinds(w);
+    for (const x of r) {
+      ok(kinds.includes(x.face), w.name + ' showed a face it does not have: ' + x.face);
+      if (x.face !== 'blink') ok(x.ms <= 1650, w.name + ' ' + x.face + ' lasted ' + x.ms + ' ms');
+    }
+  }
+  // the old placeholder characters have no variants: their face is always ''
+  const seatedOnly = run(full, 5, 10);
+  ok(Object.keys(seatedOnly.runs).length === 0, 'no face on frames without a variant: ' + Object.keys(seatedOnly.runs));
+  // deterministic, and the faces do not change who comes by when
+  const b = run(REAL, 5, 30);
+  eq(b.faces, a.faces, 'the same seed gives the same faces');
+  const c = run(REAL.map(strip), 5, 30);
+  ok(c.hash === a.hash, 'face variants do not change the clip sequence');
+  // expressions do show up over a longer run (rare: every 15-40 s of the face clock)
+  const long = run(REAL, 77, 120);
+  const exprs = Object.values(long.runs).flat().filter(x => x.face !== 'blink');
+  ok(exprs.length >= 1, 'an expression appeared in two hours: ' + exprs.length);
+  // the debug hook holds a face
+  const { d } = makeDirector(REAL, 3);
+  let w = null;
+  for (let i = 0; i < 20000 && !w; i++) w = d.step(100).find(x => x.name === 'rabbit' && x.state === 'EXITING');
+  if (w) {
+    ok(d.setFace('rabbit', 'smile') && d.step(25).find(x => x.name === 'rabbit').face === 'smile', 'setFace holds a face');
+    ok(d.setFace('rabbit', 'laugh') && d.step(25).find(x => x.name === 'rabbit').face === '', 'a face the frame lacks is not shown');
+    d.setFace('rabbit', null);
+  }
+  ok(!d.setFace('nobody', 'blink'), 'setFace refuses unknown characters');
+}
+
+{
+  // Determinism with the real characters: same seed, same history, whatever the step size.
+  const run = (seed, dt, ms) => { const { d, events } = makeDirector(REAL, seed); for (let t = 0; t < ms; t += dt) d.step(dt); return hashEvents(events); };
+  const h1 = run(7, 100, 3600e3);
+  ok(h1 === run(7, 100, 3600e3) && h1 === run(7, 25, 3600e3) && h1 === run(7, 250, 3600e3), 'real characters: same seed, same history');
+  ok(h1 !== run(8, 100, 3600e3), 'real characters: different seed, different history');
 }
 
 function eq(a, b, m) { checks++; assert.deepStrictEqual(a, b, m); }

@@ -677,7 +677,8 @@ def build_character(name, out):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('--out', default='ui/web/lounge/assets')
+    # required: the real scene lives in ui/web/lounge/assets now and must not be overwritten
+    ap.add_argument('--out', required=True, help='output folder (a scratch folder; tests use a temporary one)')
     args = ap.parse_args(argv)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

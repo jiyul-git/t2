@@ -110,7 +110,7 @@
       pw = w; ph = h; k = w / W; boardBox = null;
       canvas.width = w; canvas.height = h;
       scratch = make(w, h);
-      for (const g of ['far', 'back', 'mid', 'front', 'board']) ensureCache(g);
+      for (const g of ['far', 'back', 'mid', 'arms', 'front', 'board']) ensureCache(g);
       tintCache = new Map();
       cacheDirty = true;
       return true;
@@ -295,18 +295,25 @@
         return { color: toHex3(c), lum: (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 };
       } catch (e) { return room; }
     }
-    function planeState(t) {
+    // ps: the director's plane ({u, right} or null). Without one (tests, old callers) it runs on a timer.
+    function planeState(t, ps) {
       const p = scene.planes;
       if (!p || !assets.planes) return null;
-      const k = Math.floor(t / p.period), phase = t - k * p.period;
-      if (phase > p.duration) return null;
-      const u = phase / p.duration, ease = u * u * (3 - 2 * u) * 0.3 + u * 0.7;
-      const right = k % 2 === 0;
+      let u, right;
+      if (ps !== undefined) {
+        if (!ps) return null;
+        u = ps.u; right = ps.right;
+      } else {
+        const k = Math.floor(t / p.period), phase = t - k * p.period;
+        if (phase > p.duration) return null;
+        u = phase / p.duration; right = k % 2 === 0;
+      }
+      const ease = u * u * (3 - 2 * u) * 0.3 + u * 0.7;
       const x = right ? p.from + (p.to - p.from) * ease : p.to - (p.to - p.from) * ease;
       return { x, img: right ? assets.planes.right : assets.planes.left };
     }
-    function drawPlane(c, L, t) {
-      const st = planeState(t);
+    function drawPlane(c, L, t, ps) {
+      const st = planeState(t, ps);
       if (!st) return;
       const img = st.img, p = scene.planes;
       const key = (img === assets.planes.right ? 'r' : 'l') + L.ambient + Math.round(L.ambientStr * 50) + hazeColor;
@@ -385,7 +392,7 @@
       if (g === 'back') { room = sampleRoom(); tintCache = new Map(); }
     }
     function rebuild(L, rows) {
-      for (const g of ['far', 'back', 'mid', 'front']) {
+      for (const g of ['far', 'back', 'mid', 'arms', 'front']) {
         const c = ensureCache(g).ctx;
         c.setTransform(1, 0, 0, 1, 0, 0);
         c.clearRect(0, 0, pw, ph);
@@ -457,20 +464,23 @@
       c.globalAlpha = 1;
     }
 
-    // Seated characters stand on their seat's own line (seat.y); walkers use baselineY. While turning
-    // toward or away from a seat the line slides between the two so nobody jumps.
-    function footY(e) {
+    // Seated characters stand on their seat's own line (seat.y) and are drawn at the seat's own size
+    // (seat.scale, a touch of perspective: the sofas are farther back than the aisle); walkers use
+    // baselineY and size 1. While turning toward or away from a seat both slide between the two, so
+    // nobody jumps. Returns {y, s}.
+    function place(e) {
       const idx = Number.isInteger(e.spot) ? e.spot : e.seat;
       const seat = idx >= 0 ? scene.seats[idx] : null;
       const seatY = seat && Number.isFinite(seat.y) ? seat.y : scene.baselineY;
-      if (e.state === 'ENTERING' || e.state === 'EXITING' || !seat) return scene.baselineY;
+      const seatS = seat && Number.isFinite(seat.scale) ? seat.scale : 1;
+      if (e.state === 'ENTERING' || e.state === 'EXITING' || !seat) return { y: scene.baselineY, s: 1 };
       if (e.state === 'TURN_IN' || e.state === 'TURN_OUT') {
         const ch = chars.get(e.name), clip = ch && ch.manifest.clips[e.clip];
         const n = clip ? clip.frames.length : 1, t = n > 1 ? e.frame / (n - 1) : 1;
         const k = e.state === 'TURN_IN' ? t : 1 - t;
-        return scene.baselineY + (seatY - scene.baselineY) * k;
+        return { y: scene.baselineY + (seatY - scene.baselineY) * k, s: 1 + (seatS - 1) * k };
       }
-      return seatY;
+      return { y: seatY, s: seatS };
     }
     const charScale = Number.isFinite(scene.charScale) ? scene.charScale : 1;
 
@@ -479,6 +489,17 @@
       if (!clip) return null;
       const idx = clip.frames[Math.min(frame, clip.frames.length - 1)];
       return { idx, f: ch.manifest.frames[idx] };
+    }
+    // What to draw for a frame with a face (docs/LOUNGE_SCENE_DESIGN.md 6.2): frame.v[face] names another
+    // frame drawn instead. When that frame has "over": j it is a small patch (eyes, mouth) drawn on top
+    // of frame j, both placed by their own anchors. Without the variant, the frame itself.
+    function faceLayers(ch, af, face) {
+      const frames = ch.manifest.frames;
+      const vi = face && af.f.v ? af.f.v[face] : undefined;
+      const vf = Number.isInteger(vi) ? frames[vi] : null;
+      if (!vf) return [af];
+      if (Number.isInteger(vf.over) && frames[vf.over]) return [{ idx: vf.over, f: frames[vf.over] }, { idx: vi, f: vf }];
+      return [{ idx: vi, f: vf }];
     }
     const ROOM_GRADE = { base: 0.62, slope: 1.1, min: 0.72, wash: 0.14 };
     function tinted(ch, idx, f, L) {
@@ -528,12 +549,36 @@
       return s;
     }
 
+    // Seated people over the sofa front (scene.seatedInFront): they rest on the cushion, so instead of a
+    // floor shadow they get a short soft contact shadow on the cushion at the seat's contact point
+    // (seats[].cx, cy), along the cushion's front edge (seats[].tilt), drawn after the sofa front and
+    // before them.
+    const seatedInFront = !!scene.seatedInFront;
+    const seatOf = e => { const i = Number.isInteger(e.spot) ? e.spot : e.seat; return i >= 0 ? scene.seats[i] : null; };
+    function drawSeatShadows(c, list) {
+      for (const e of list) {
+        const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame), seat = seatOf(e);
+        if (!af || !seat) continue;
+        const pl = place(e);
+        const x = Number.isFinite(seat.cx) ? seat.cx : (e.drawX ?? e.x), y = Number.isFinite(seat.cy) ? seat.cy : pl.y - 100 * pl.s;
+        const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+        g.addColorStop(0, 'rgba(0,0,0,0.32)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        c.save();
+        c.translate(x, y + 3);
+        c.rotate((Number.isFinite(seat.tilt) ? seat.tilt : 0) * RAD);
+        c.scale(95 * pl.s, 13 * pl.s);
+        c.fillStyle = g;
+        c.beginPath(); c.arc(0, 0, 1, 0, 6.2832); c.fill();
+        c.restore();
+      }
+    }
     function drawShadows(c, list, L, sun, direct) {
       const sh = sunShadow(sun.rel, sun.h);
       for (const e of list) {
+        if (seatedInFront && e.lane === 'seat') continue;      // up on the cushion: see drawSeatShadows
         const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
         if (!af) continue;
-        const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
+        const pl = place(e), f = af.f, sc = ch.manifest.scale * charScale * pl.s, fy = pl.y;
         // contact shadow
         c.save();
         c.globalAlpha = 0.30; c.fillStyle = '#000000';
@@ -557,8 +602,8 @@
     function drawChar(c, e, L) {
       const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
       if (!af) return;
-      const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
-      c.drawImage(tinted(ch, af.idx, f, L), (e.drawX ?? (e.drawX ?? e.x)) - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
+      const pl = place(e), sc = ch.manifest.scale * charScale * pl.s, fy = pl.y, x = e.drawX ?? e.x;
+      for (const { idx, f } of faceLayers(ch, af, e.face)) c.drawImage(tinted(ch, idx, f, L), x - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc);
     }
 
     let floorTint = null, floorTintKey = '';
@@ -595,7 +640,7 @@
       for (const e of list) {
         const ch = chars.get(e.name), af = ch && atlasFrame(ch, e.clip, e.frame);
         if (!af) continue;
-        const f = af.f, sc = ch.manifest.scale * charScale, fy = footY(e);
+        const pl = place(e), f = af.f, sc = ch.manifest.scale * charScale * pl.s, fy = pl.y;
         if (dbg.feet) { c.strokeStyle = '#ff3060'; c.beginPath(); c.arc((e.drawX ?? e.x), fy, 7, 0, 6.2832); c.stroke(); }
         if (dbg.frames) { c.strokeStyle = '#60a0ff'; c.strokeRect((e.drawX ?? (e.drawX ?? e.x)) - f.ax * sc, fy - f.ay * sc, f.w * sc, f.h * sc); }
         if (dbg.labels) {
@@ -608,7 +653,7 @@
     }
 
     // state: { lighting, sunAzimuth, windowFacing?, moon?: {elevation, azimuth, phase, southern}, boardRows, boardKey,
-    //          chars: [{name, clip, frame, x, lane}], t: seconds, debug?: {...} }
+    //          chars: [{name, clip, frame, x, lane}], plane?: {u, right} | null, t: seconds, debug?: {...} }
     function draw(state) {
       if (!pw) return;
       const L = state.lighting;
@@ -619,7 +664,7 @@
       // progress finishes with the newest light before the next one starts.
       if (cacheDirty) { rebuild(L, state.boardRows); pending = []; builtKey = lk; tintCache = new Map(); }
       else {
-        if (!pending.length && builtKey !== lk) { pending = ['far', 'back', 'mid', 'front']; builtKey = lk; }
+        if (!pending.length && builtKey !== lk) { pending = ['far', 'back', 'mid', 'arms', 'front']; builtKey = lk; }
         if (pending.length) { pendingL = L; stepRebuild(); }
       }
       if (state.boardKey !== boardKey) {
@@ -651,7 +696,7 @@
       const blit = name => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(caches[name].canvas, 0, 0); ctx.restore(); };
       blit('far');
       drawBeacons(ctx, L, state.t);
-      drawPlane(ctx, L, state.t);
+      drawPlane(ctx, L, state.t, state.plane);
       blit('back');
       { const bb = boardBounds(); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(caches.board.canvas, bb.x, bb.y, bb.w, bb.h, bb.x, bb.y, bb.w, bb.h); ctx.restore(); }
@@ -659,14 +704,24 @@
       const list = state.chars || [];
       drawShadows(ctx, list, L, sun, direct);
       const byX = (a, b) => a.x - b.x;
-      for (const e of list.filter(e => e.lane === 'seat').sort(byX)) drawChar(ctx, e, L);
-      blit('mid');
+      // seated people: farther seats first (the seat's contact line, then x), so a nearer one overlaps
+      const depth = e => { const s = seatOf(e); return s ? (Number.isFinite(s.cy) ? s.cy : s.y) : 0; };
+      const seated = list.filter(e => e.lane === 'seat').sort((a, b) => depth(a) - depth(b) || a.x - b.x);
+      if (seatedInFront) {          // on the cushion, legs over the sofa front; sofa arms over them; the aisle in front
+        blit('mid');
+        drawSeatShadows(ctx, seated);
+        for (const e of seated) drawChar(ctx, e, L);
+        blit('arms');
+      } else {
+        for (const e of seated) drawChar(ctx, e, L);
+        blit('mid');
+      }
       for (const e of list.filter(e => e.lane !== 'seat').sort(byX)) drawChar(ctx, e, L);
       blit('front');
       if (state.debug) drawOverlay(ctx, list, state.debug);
     }
 
-    function dispose() { caches.far = caches.back = caches.mid = caches.front = caches.board = null; tintCache.clear(); silhouettes.clear(); }
+    function dispose() { caches.far = caches.back = caches.mid = caches.arms = caches.front = caches.board = null; tintCache.clear(); silhouettes.clear(); }
     return { resize, draw, dispose, get size() { return { w: pw, h: ph }; } };
   }
 

@@ -188,7 +188,58 @@ def main():
         Image.fromarray(arr).save(p)
         expect_error(t, 'schema', 'interior without a window hole')
 
-        # 12. Budget: the placeholder total is enforced.
+        # 12. Face variants (frame.v, patch frames with "over"): the real characters pass; broken ones are caught.
+        real = HERE.parent / 'web' / 'lounge' / 'assets'
+        froot = tmp / 'faces'
+        (froot / 'chars').mkdir(parents=True)
+
+        def char_errors(name):
+            rep = C.Report()
+            C.check_character(froot, name, rep)
+            return rep.errors
+        real_names = json.loads((real / 'scene.json').read_text())['characters']
+        ok({'tiger', 'rabbit', 'turtle'} <= set(real_names), 'the scene has the real tiger, rabbit and turtle: %r' % real_names)
+        for name in real_names:
+            shutil.copytree(real / 'chars' / name, froot / 'chars' / name)
+            m = load_manifest(froot, name)
+            ok(not char_errors(name), name + ' with face variants should pass: %r' % char_errors(name)[:3])
+            ok('blink' in (m['frames'][m['clips']['walk_r']['frames'][0]].get('v') or {}), name + ' has a blink on walk_r')
+            rep = C.Report()
+            C.check_character(froot, name, rep)
+            ok(rep.chars.get(name) == 'hybrid', name + ' passes by and sits (hybrid): %r' % rep.chars)
+        name = 'rabbit'
+        orig = load_manifest(froot, name)
+        # a hybrid that loses a sitting clip still passes by (walker); its seams are still checked
+        m = json.loads(json.dumps(orig))
+        for cid in [c for c in m['clips'] if c.split('@')[0] == 'sit_down']:     # every facing's sit_down
+            del m['clips'][cid]
+        save_manifest(froot, name, m)
+        rep = C.Report(); C.check_character(froot, name, rep)
+        ok(rep.chars.get(name) == 'walker' and not rep.errors, 'hybrid without sit_down is a plain walker: %r %r' % (rep.chars, rep.errors[:2]))
+        m = json.loads(json.dumps(orig)); m['clips']['sit_down']['frames'][-1] = m['poses']['stand_front']; save_manifest(froot, name, m)
+        ok(any(e.startswith('seam:') and 'sit_down' in e for e in char_errors(name)), 'a broken sit_down seam is caught on a hybrid')
+        save_manifest(froot, name, orig)
+
+        def broken(mutate, why, kind='face'):
+            m = json.loads(json.dumps(orig))
+            mutate(m)
+            save_manifest(froot, name, m)
+            errs = char_errors(name)
+            ok(any(e.startswith(kind + ':') for e in errs), '%s: expected a "%s" error, got %r' % (why, kind, errs[:3]))
+            save_manifest(froot, name, orig)
+        f0 = orig['clips']['walk_r']['frames'][0]
+        blink = orig['frames'][f0]['v']['blink']
+        broken(lambda m: m['frames'][f0]['v'].update(blink=99999), 'v points at a missing frame')
+        broken(lambda m: m['frames'][f0]['v'].update(blink=f0), 'v points at itself')
+        broken(lambda m: m['frames'][f0]['v'].update(Blink=blink), 'v key is not a lower-case word')
+        broken(lambda m: m['frames'][blink].update(ay=m['frames'][blink]['ay'] + 500), 'patch placed outside its frame')
+        broken(lambda m: m['frames'][blink].update(over=f0 + 1), 'patch made for another frame')
+        broken(lambda m: m['frames'][f0]['v'].update(blink=f0 + 1), 'full variant with another anchor or silhouette')
+        broken(lambda m: m['clips']['walk_r']['frames'].__setitem__(0, blink), 'a clip plays a patch frame', 'schema')
+        # a frame rectangle stretched into the next picture of the atlas (it would draw a piece of it)
+        broken(lambda m: m['frames'][m['poses']['sit']].update(h=m['frames'][m['poses']['sit']]['h'] + 400), 'frame rectangle runs into another picture', 'schema')
+
+        # 13. Budget: the placeholder total is enforced.
         t = clone(base, tmp / 'budget')
         (t / 'chars' / 'tiger' / 'pad.bin').write_bytes(b'\0' * (C.BUDGET_PLACEHOLDER_TOTAL + 1))
         expect_error(t, 'budget', 'oversized placeholder set')

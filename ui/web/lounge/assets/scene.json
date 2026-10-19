@@ -8,12 +8,28 @@
  "horizonY": 560,
  "windowFacing": 225,
  "charScale": 1.25,
+ "seatedInFront": true,
+ "seatFacings": {
+  "f": {
+   "rest": 100,
+   "dx": 0
+  },
+  "l": {
+   "rest": 90,
+   "dx": 40
+  }
+ },
  "characters": [
-  "tiger_walker"
+  "tiger",
+  "rabbit",
+  "turtle"
  ],
  "passEvery": [
-  6,
-  14
+  15,
+  45
+ ],
+ "preview": [
+  "arrive:tiger"
  ],
  "window": {
   "x": 700,
@@ -104,23 +120,55 @@
  "seats": [
   {
    "id": "s0",
-   "x": 430,
-   "y": 995
+   "x": 447,
+   "y": 985,
+   "cx": 447,
+   "cy": 905,
+   "scale": 0.8,
+   "facing": "f",
+   "tilt": -1.5,
+   "blocks": [
+    "s1"
+   ]
   },
   {
    "id": "s1",
-   "x": 665,
-   "y": 995
+   "x": 685,
+   "y": 978,
+   "cx": 685,
+   "cy": 898,
+   "scale": 0.8,
+   "facing": "f",
+   "tilt": -1.5,
+   "blocks": [
+    "s0"
+   ]
   },
   {
    "id": "s2",
-   "x": 1145,
-   "y": 1050
+   "x": 1063,
+   "y": 990,
+   "cx": 1095,
+   "cy": 918,
+   "scale": 0.8,
+   "facing": "l",
+   "tilt": 5.5,
+   "blocks": [
+    "s3"
+   ]
   },
   {
    "id": "s3",
-   "x": 1335,
-   "y": 1050
+   "x": 1290,
+   "y": 1044,
+   "cx": 1325,
+   "cy": 965,
+   "scale": 0.88,
+   "facing": "l",
+   "tilt": 5.5,
+   "blocks": [
+    "s2"
+   ]
   }
  ],
  "entries": {
@@ -299,6 +347,26 @@
     {
      "elev": 14,
      "file": "bg/sofa_front_day.webp"
+    }
+   ]
+  },
+  {
+   "id": "sofaArms",
+   "group": "arms",
+   "tint": false,
+   "cutFrom": "interior",
+   "variants": [
+    {
+     "elev": -10,
+     "file": "bg/sofa_arms_night.webp"
+    },
+    {
+     "elev": 2,
+     "file": "bg/sofa_arms_golden.webp"
+    },
+    {
+     "elev": 14,
+     "file": "bg/sofa_arms_day.webp"
     }
    ]
   }

@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b1514">
 <title>t2 포커 · 토너먼트 로비</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="lobby.css?v=22">
+<link rel="stylesheet" href="lobby.css?v=24">
 </head>
 <body>
 <div id="lobby">
@@ -116,6 +116,31 @@
       </div>
 
       <button id="profileSave" class="join" type="button">저장</button>
+
+      <div id="accountBlock" class="accountBlock" hidden>
+        <div class="profileLabel">내 계정</div>
+        <div id="accountEmail" class="accountEmail"></div>
+        <button id="logoutBtn" class="secondaryAction" type="button">로그아웃</button>
+        <button id="deleteAccountBtn" class="dangerAction" type="button">계정 삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteSheet" class="sheetWrap" hidden>
+    <div class="sheet">
+      <div class="sheetHeader">
+        <div>
+          <div class="kicker">ACCOUNT</div>
+          <h2>계정 삭제</h2>
+        </div>
+        <button id="deleteClose" class="close" type="button" aria-label="닫기">×</button>
+      </div>
+      <p class="deleteWarn">닉네임·캐릭터, 칩과 대회 기록이 모두 지워지고 되돌릴 수 없습니다. 계속하려면 아래에 <b>삭제</b>를 입력하세요.</p>
+      <label class="inputLabel">확인 입력
+        <input id="deleteConfirm" type="text" autocomplete="off" placeholder="삭제">
+      </label>
+      <button id="deleteGo" class="join dangerJoin" type="button" disabled>계정 삭제</button>
+      <div id="deleteErr" class="joinHint"></div>
     </div>
   </div>
 
@@ -132,10 +157,10 @@
 <script src="lounge/location.js?v=2"></script>
 <script src="lounge/lighting.js?v=2"></script>
 <script src="lounge/board.js?v=2"></script>
-<script src="lounge/behavior.js?v=2"></script>
+<script src="lounge/behavior.js?v=7"></script>
 <script src="lounge/assets.js?v=2"></script>
-<script src="lounge/renderer.js?v=10"></script>
-<script src="lounge/lounge.js?v=4"></script>
-<script src="lobby.js?v=18"></script>
+<script src="lounge/renderer.js?v=14"></script>
+<script src="lounge/lounge.js?v=8"></script>
+<script src="lobby.js?v=20"></script>
 </body>
 </html>

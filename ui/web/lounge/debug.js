@@ -79,9 +79,11 @@
     const forceRows = h.characters().map(name => {
       const sel = el(doc, 'select', {}, ACTIVITIES.map(([v, t]) => el(doc, 'option', { value: v, textContent: t })));
       const msg = el(doc, 'output');
-      return row(el(doc, 'span', { textContent: name, style: 'min-width:62px' }), sel, btn('실행', () => { msg.textContent = h.force(name, sel.value) ? '다음 차례에 실행' : '지금은 할 수 없음'; }), msg);
+      const ask = (kind, label) => btn(label, () => { msg.textContent = h.request && h.request(name, kind) ? '다음 차례에 실행' : '지금은 할 수 없음'; });
+      return row(el(doc, 'span', { textContent: name, style: 'min-width:62px' }), sel, btn('실행', () => { msg.textContent = h.force(name, sel.value) ? '다음 차례에 실행' : '지금은 할 수 없음'; }),
+        ask('pass', '지나가기'), ask('arrive', '앉으러'), ask('leave', '떠나기'), msg);
     });
-    group('활동 강제', ...forceRows);
+    group('활동 강제 (움직이는 것은 한 번에 하나: 지금 움직이는 것이 끝나면 실행)', ...forceRows);
 
     // readout
     const info = el(doc, 'pre');
