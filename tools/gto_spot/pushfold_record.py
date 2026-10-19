@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Push/fold bucket record (docs/GTO_PUSHFOLD_10_25_V1.md section 3) from a whole-tree dump.
 
-    python3 tools/gto_spot/pushfold_record.py <S>   -> data/gto_spot/records/pf<S>.json
+    python3 tools/gto_spot/pushfold_record.py <S>        -> data/gto_spot/records/pf<S>.json  (push/fold buckets)
+    python3 tools/gto_spot/pushfold_record.py <S> s      -> data/gto_spot/records/s<S>.json   (30 / 40 bb, docs/GTO_STACK_30_40_V1.md)
 
 Nodes kept: every decision node whose line before the actor holds at most two non-fold actions and no call, i.e. first-in (RFI),
 facing a single open or jam, and the opener facing a single 3-bet jam. Per node: overall mix, per-class strategy and action EVs,
@@ -13,9 +14,18 @@ import os
 import sys
 
 S = int(sys.argv[1])
-W = f'/home/user/gto_ckpt/pushfold/pf{S}'
-CFG = f'/home/user/t2/data/gto_spot/pushfold/cfg_pf{S}.json'
-OUT = f'/home/user/t2/data/gto_spot/records/pf{S}.json'
+PFX = sys.argv[2] if len(sys.argv) > 2 else 'pf'
+if PFX == 'pf':
+    W = f'/home/user/gto_ckpt/pushfold/pf{S}'
+    CFG = f'/home/user/t2/data/gto_spot/pushfold/cfg_pf{S}.json'
+    STD = 'docs/GTO_PUSHFOLD_10_25_V1.md'
+    MENU = 'jam / fold' if S == 10 else 'fold / open 2.0 (SB 3.0) / jam; facing an open: fold / call / 3-bet jam; facing a jam: fold / call'
+else:
+    W = f'/home/user/gto_ckpt/stack3040/s{S}'
+    CFG = f'/home/user/t2/data/gto_spot/stack3040/cfg_s{S}.json'
+    STD = 'docs/GTO_STACK_30_40_V1.md'
+    MENU = 'Plan A v2b parent menu: open 2.0 (SB 3.0, SB limp), 3-bet 3.0x (blinds 3.5x / 4.0x) or jam, 4-bet jam only'
+OUT = f'/home/user/t2/data/gto_spot/records/{PFX}{S}.json'
 RANKS = '23456789TJQKA'
 
 
@@ -64,7 +74,7 @@ def main():
             else:
                 agg = 0.0   # below the dump's reach floor (1e-6)
         kept.append({
-            'line': prior, 'situation': 'first_in' if not act else ('facing_open_or_jam' if len(act) == 1 else 'facing_3bet_jam'),
+            'line': prior, 'situation': 'first_in' if not act else ('facing_open_or_jam' if len(act) == 1 else ('facing_3bet_jam' if PFX == 'pf' else 'facing_3bet')),
             'actor': d['actor'], 'actions': d['actions'], 'reach_prob': d['reach_prob'],
             'actor_arriving_combos': round(m, 4), 'aggressor_action_combos': None if agg is None else round(agg, 4),
             'unsupported_low_reach': m < 1e-3 or (agg is not None and agg < 1.0),
@@ -75,8 +85,8 @@ def main():
         })
     kept.sort(key=lambda r: (len([p for p in r['line'] if kind(p) != 'fold']), len(r['line'])))
     rec = {
-        'schema': 'pushfold_record_v1', 'id': f'pf{S}', 'stack_bb': S, 'config': json.load(open(CFG)),
-        'menu': 'jam / fold' if S == 10 else 'fold / open 2.0 (SB 3.0) / jam; facing an open: fold / call / 3-bet jam; facing a jam: fold / call',
+        'schema': 'pushfold_record_v1', 'id': f'{PFX}{S}', 'stack_bb': S, 'config': json.load(open(CFG)),
+        'menu': MENU,
         'iterations': final_n, 'gap_total_exact_bb': exact['gap_total'], 'gaps_exact_bb': exact['gaps'], 'evs_bb': exact['evs'],
         'G2_gap_max_bb': 0.010, 'G2': exact['gap_total'] <= 0.010,
         'solver': {'engine': 'vendored gtopen preflop DCFR', 'driver': 't2_pf_solve', 'eq_seed': 202, 'multiway_seed': 202,
@@ -86,11 +96,11 @@ def main():
         'db_promotion': 'forbidden', 't2_connection': 'needs user approval',
         'caveats': ([] if S == 10 else ['flat calls into a flop pot (open-call, multiway calls) are valued by the static continuation (positional realization vs SPR); observed at 15 bb: BB defends ~100 % vs a 2.0 open from every seat (fold <= 0.05 %) because with the 1 bb ante the call needs ~18 % realized equity - call vs fold there is model-dependent and a refinement target; all-in decisions (jam, call a jam, 3-bet jam) do not use the continuation model']),
         'class_labels': LAB, 'class_combos': COMBOS,
-        'standard': 'docs/GTO_PUSHFOLD_10_25_V1.md', 'nodes': kept,
+        'standard': STD, 'nodes': kept,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     json.dump(rec, open(OUT, 'w'), separators=(',', ':'))
-    print(f'pf{S}: {len(kept)} nodes, gap {exact["gap_total"]:.6f} bb, {final_n} iterations -> {OUT}')
+    print(f'{PFX}{S}: {len(kept)} nodes, gap {exact["gap_total"]:.6f} bb, {final_n} iterations -> {OUT}')
     for r in kept:
         if r['situation'] == 'first_in':
             print('  RFI', r['actor'], {a: v for a, v in r['mix'].items()})
