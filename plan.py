@@ -3735,7 +3735,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  prior_pf=None, pot_layers=None, opp_ranges=None,
                  opp_range_meta=None, call_ev_shadow=None,
                  calloff_decision_seed=None, cold_context=None,
-                 cold_decision_seed=None):
+                 cold_decision_seed=None, pf_other_live_actors=None,
+                 pf_actor_acted=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -3756,6 +3757,15 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     # 실제 반영은 defend_decision(exploit=rd) 안의 역치 보정에서 이뤄진다.
     rd = PS.read_opponent(profile, opp_est)
     _pf.take_timing_bound()          # 시간 모델용 경계 기록을 이 결정 것으로만 받는다
+    _gto_call = None
+    if aggressor_pos is not None and opener_allin and float(to_call_bb or 0) > 0:
+        _gto_call = _pf.gto_pf_call_choice(
+            profile, aggressor_pos, pos, hand, rng, bb, open_bb,
+            to_call_bb, raise_level, prior_pf=prior_pf,
+            other_live_actors=pf_other_live_actors, n_limpers=n_limpers,
+            bf=float(dict(dict(call_ev_shadow or {}).get('exact_hu_icm') or {})
+                     .get('equivalent_bubble_factor', bf)),
+            seats=seats, ante=ante, actor_acted=pf_actor_acted)
     if aggressor_pos is None and not n_limpers:
         a, sz = _pf.open_decision(profile, pos, bb, hand, rng,
                                   behind_stacks=behind_stacks,
@@ -3781,6 +3791,12 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             field_avg_bb=field_avg_bb, erosion=erosion, field_q=field_q, bf=bf,
             can_check=can_check)
         role = 'iso'
+    elif _gto_call is not None:
+        # GTO 계산기 기준(푸시/폴드 10~25bb)을 따르는 판단. 범위 밖(스택·좌석·
+        # ICM 압력·콜러가 낀 팟)이면 None 이라 아래 기존 경로(calloff/defend)로 간다.
+        role = 'defend'
+        a = _gto_call
+        sz = float(to_call_bb or 0) if a == 'call' else 0.0
     elif opener_allin and not can_raise and float(to_call_bb or 0) > 0:
         # An all-in call/fold is an incremental-EV question, not a vs-open
         # defend-percentile question. Deliberately bypass defend_decision,
