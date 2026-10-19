@@ -24,3 +24,11 @@ User decisions 2026-10-19 (docs/GTO_SESSIONS_BOARD.md): quick fill, symmetric st
 - Status `quick`: parent-level equilibrium only (no HU subgame loop, no P144 — user decision); flags symmetric_stack_assumption,
   static_continuation_for_flop_pots (flat calls and 3-bet-call pots are model-valued: refinement targets), chip_ev, db_promotion forbidden,
   T2 runtime connection needs user approval. G2 (exact gap <= 0.010 bb) reported.
+
+## 4. Results (2026-10-19, branch claude/pushfold-10-25-20261019; chart docs/img/GTO_STACK_30_40_V1.png)
+| bucket | iterations | exact gap (bb) | G2 | nodes kept | unsupported_low_reach | RFI UTG / BTN; SB raise / limp |
+|---|---|---|---|---|---|---|
+| s30 | 150 | 0.00913 | pass | 308 | 9 | 14 / 37 %; 20 / 80 % |
+| s40 | 150 | 0.00858 | pass | 308 | 67 | 15 / 41 %; 21 / 79 % |
+No open jams at 30 / 40 bb. BB vs a 2.0 open: call 85-96 %, 3-bet 4-15 % (30 bb almost all jam; 40 bb ~4 % non-jam + jam);
+fold ~0 % (same static-continuation caveat as the push/fold buckets). Opener vs a 3-bet (30 bb): fold 28-46, call 38-54, 4-bet jam ~17 %.

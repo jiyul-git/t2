@@ -39,3 +39,13 @@ push/fold first (open jam, 3-bet jam, preflop only), then 30 / 40 bb. Game rules
 
 ## 4. Order
 10 -> 15 -> 20 -> 25 bb, one at a time (4 cores); then 30 / 40 bb (separate pre-registration: open / 3-bet / response).
+
+## 5. Results (2026-10-19, branch claude/pushfold-10-25-20261019; chart docs/img/GTO_PUSHFOLD_10_25_V1.png)
+| bucket | iterations | exact gap (bb) | G2 | nodes kept | unsupported_low_reach | RFI total UTG / BTN / SB |
+|---|---|---|---|---|---|---|
+| pf10 | 25 | 0.00663 | pass | 44 | 0 | 14 / 43 / 73 % (all jam) |
+| pf15 | 75 | 0.00751 | pass | 200 | 0 | 11 / 38 / 64 % (mostly jam) |
+| pf20 | 100 | 0.00539 | pass | 200 | 0 | 12 / 36 / 58 % (UTG opens, BTN 11 open + 25 jam) |
+| pf25 | 75 | 0.00736 | pass | 200 | 15 | 13 / 36 / 58 % (UTG opens, BTN 22 open + 14 jam) |
+Finding (15-25 bb): the BB defends ~100 % vs a 2.0 open (fold <= 0.05 %) - static continuation for the flop pot with the 1 bb ante
+(call 1 to win 4.5); call vs fold there is model-dependent and a refinement target. All-in decisions do not use the continuation.
