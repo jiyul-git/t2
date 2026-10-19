@@ -24,7 +24,7 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 ## Stack split (2026-10-19, user)
 | session | buckets |
 |---|---|
-| Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots (DONE 2026-10-19: data/gto_spot/quick/, see its README; hj_vs_bb_3b35 quick = steps 3-6, refresh when the T2 run ends), then 100 bb and deeper (next) |
+| Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots (DONE 2026-10-19: data/gto_spot/quick/, see its README; hj_vs_bb_3b35 quick = steps 3-6, refresh when the T2 run ends), then 100 bb: parent full tree cfg_p100_v1 running (stack 99.89 = 100 - ante, same sizes as v2b, max_raises 3 with 4-bet 2.25x or jam and no 5-bet in the parent; 2.58M nodes / 3.5 GB; the max_raises 4 tree with a 5-bet jam is 43M nodes / 59 GB, infeasible) -> quick chart (RFI / vs open / vs 3-bet) first, HU subgames (5-bet jam) after |
 | btn session 011TJw... | 10 / 15 / 20 / 25 bb push/fold, then 30 / 40 bb (to confirm on this board) |
 | T2 session 01XV9... | no computation; compares results with T2 bot behaviour hand by hand |
 
