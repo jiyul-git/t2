@@ -24,5 +24,12 @@
   }, { passive: true, capture: true });
   document.addEventListener('pointerup', () => release(false), { passive: true, capture: true });
   document.addEventListener('pointercancel', () => release(true), { passive: true, capture: true });
+  // 길게 누를 때 뜨는 메뉴(복사·이미지 저장 등)를 막는다. 입력칸은 그대로 둔다.
+  document.addEventListener('contextmenu', e => {
+    if (!(e.target.closest && e.target.closest('input, textarea, [contenteditable]'))) e.preventDefault();
+  }, { capture: true });
+  document.addEventListener('selectstart', e => {
+    if (!(e.target.closest && e.target.closest('input, textarea, [contenteditable]'))) e.preventDefault();
+  }, { capture: true });
   window.addEventListener('scroll', () => release(true), { passive: true, capture: true });
 })();
