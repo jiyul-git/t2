@@ -1,0 +1,1 @@
+CLAIM p60v2b_hj_vs_bb_3b35: session_012qfUk9MsH6Hp2gBX6Q18sA (T2 side, after p60v2b_utg_vs_btn), result branch ccr-fb71f1d0-3wvj9e, started 2026-10-17T02:51:43Z, Python 3.11.17 / numpy 2.4.6, SPOT_PANEL_WORKERS=4; v2b step-0 reproduction (p60v2b_co_vs_sb_3b40, AcKc6c) run in this container before the first solve: term0 d221ccbe... and flop e7329931... match the reference table.
