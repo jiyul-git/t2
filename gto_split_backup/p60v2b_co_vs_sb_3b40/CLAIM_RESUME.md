@@ -1,0 +1,1 @@
+Resumed by session_01FbCzydAsRe6XVVGMbFGh7D on 2026-10-16T11:17:53Z: p60v2b_co_vs_sb_3b40 144-board work (P144 pass recompute, then amendment-10 loop); branch claude/p60v2b_co_vs_sb_3b40-resume-20261016.
