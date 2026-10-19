@@ -24,7 +24,7 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 ## Stack split (2026-10-19, user)
 | session | buckets |
 |---|---|
-| Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots, then 100 bb and deeper |
+| Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots (DONE 2026-10-19: data/gto_spot/quick/, see its README; hj_vs_bb_3b35 quick = steps 3-6, refresh when the T2 run ends), then 100 bb and deeper (next) |
 | btn session 011TJw... | 10 / 15 / 20 / 25 bb push/fold, then 30 / 40 bb (to confirm on this board) |
 | T2 session 01XV9... | no computation; compares results with T2 bot behaviour hand by hand |
 
