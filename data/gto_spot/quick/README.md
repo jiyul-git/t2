@@ -19,3 +19,11 @@ HU spot files take precedence over the chart's vs_3bet node of the same pair. In
 for connection; `deep` nodes (after the 4-bet / jam) are research; `off_path` nodes (opponent arrives < 1 combo) are not meaningful;
 `unstable_across_steps` marks classes that moved > 10 pp between averaged steps.
 Tools: tools/gto_spot/quick_spot.py, tools/gto_spot/export_parent_chart.py, tools/gto_spot/plot_rfi.py.
+
+## 40 bb (tree p40 v1 = the 60 bb v2b tree at stack 39.89: ante 1/9, opens 2.0 (SB 3.0, limp allowed), 3-bet 3.0x / blinds 3.5x-4.0x, 4-bet jam only, open jam excluded)
+| file | content | method |
+|---|---|---|
+| chart_40bb_parent.json / chart_40bb_rfi.png | parent full-tree chart (RFI 8, vs open 37, vs 3-bet 51 nodes) | parent exact gap 0.00858 bb at 150 iterations, static realization |
+| p40_flat_<opener>_vs_bb.json, p40_flat_sb_limp_vs_bb.json | HU subgame BB vs a single open (or SB limp): flat call, 3-bet call (two blind 3-bet sizes) and jam pots with the corrected flop terminals | 24-board loop (rule v4, max 8 steps) -> quick (converged: final step, else mean of last 4 steps); written when each spot finishes |
+Flat-call spots: one spot covers the BB flat call (priority 1) and the 3-bet-call terminals (priority 3); nodes after the 4-bet / jam are research.
+Tools: tools/gto_spot/plan_a_flat_specs.py, run_quick.sh.

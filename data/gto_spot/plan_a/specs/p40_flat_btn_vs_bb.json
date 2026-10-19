@@ -20,7 +20,7 @@
  "tree_label": "Plan A flat-call pot p40 v1: 9-max hand-start 40 bb (cfg.stack 39.888888888888886), ante 1/9, BTN opens 2, BB defends; below the root the parent tree (call / 3-bet / jam, 4-bet jam only), static continuation in the parent; quick grade (symmetric stacks)",
  "parent": {
   "parent": "Plan A parent p40_v1 (static continuation)",
-  "gap_total_bb": null,
+  "gap_total_bb": 0.008580545749083214,
   "source": "data/gto_spot/plan_a/parent_p40_v1_convergence.json"
  },
  "status_cap": "conditional_verified",

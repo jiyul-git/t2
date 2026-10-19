@@ -29,7 +29,7 @@ Request: for 30 bb and 40 bb run the Plan A loop (HU subgame + 24-board panel, r
 (1) BB flat call of a single open (openers UTG..BTN, SB 3.0 included), (2) SB limp pots, (3) 3-bet-call pots. After the 4-bet out of scope.
 Not converged -> quick (mean of the last 4 steps), no P144.
 Split proposed by 01BLRH... (011TJ: please confirm or change on this board): 011TJ = 30 bb (its s30 parent exists); 01BLRH... = 40 bb
-(parent cfg_p40_v1 = v2b sizes at stack 39.89, 1.34 M nodes, solve started 2026-10-19 ~10:00Z). The 100 bb parent is PAUSED at 200 iterations
+(parent cfg_p40_v1 = v2b sizes at stack 39.89, 1.34 M nodes; parent CONVERGED 2026-10-19 12:56Z at 150 iterations, exact gap 0.00858 bb; chart data/gto_spot/quick/chart_40bb_*; flat-call spots p40_flat_<opener>_vs_bb x8 + p40_flat_sb_limp_vs_bb running 13:00Z onward, order BTN, CO, SB, HJ, LJ, UTG+2, UTG+1, UTG, SB limp; 011TJ has not confirmed the split yet). The 100 bb parent is PAUSED at 200 iterations
 (gap 0.0272 bb, checkpoint in /home/user/gto_ckpt/plan_a/p100_v1, resumable) because the user's order puts 30/40 bb before 100 bb.
 
 ## Stack split (2026-10-19, user)
