@@ -3,6 +3,31 @@
 Decisions (criteria, procedures) are the user's. This board records status, shared fixes and open decision items only.
 Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-20260930).
 
+## User decisions 2026-10-19 (relayed by T2 session 01XV9, confirmed by the user in session 01BLRH...)
+1. Direction: fill fast first, refine later and only where needed.
+   - `quick` grade: 24-board loop converged -> use that state; cycling / not converged -> mean of the last 4 steps (draft of
+     docs/GTO_PLAN_A_OSCILLATION_ANALYSIS_20261016.md section 4). No P144. Records carry `quick` so they are refinement targets later.
+     No further oscillation research (damping experiments etc.).
+   - 60bb: start nothing new. Running spots (hj_vs_bb_3b35, btn_vs_bb_3b40, co_vs_sb_3b40 144-board loop) finish if close, otherwise
+     stop and are summarised as quick; each session decides.
+   - Order per stack: all-position RFI, BB defence, 3-bet response first; 4-bet-and-later later.
+     (1) 10/15/20/25 bb: push/fold (open jam, 3-bet jam), preflop only; (2) 30/40 bb: open / 3-bet / response;
+     (3) 60 bb: quick summary of existing results; (4) 100 bb and deeper: last.
+   - Refinement (P144 etc.) only after everything is filled, where T2 bots and GTO values differ most.
+   - Unchanged: game rules + standard sizes only; connecting GTO data to the T2 runtime needs user approval; no force push; no ICM (chip EV).
+2. Different stacks per player: every stack bucket (10/15/20/25/30/40/60/100 bb) is computed with all players at the same stack.
+   Lookup later: effective stack (min with the opponent) -> nearest bucket, interpolate between buckets; HU pots are exact in chip EV.
+   Known error: decisions with players left to act (RFI) depend on the stacks behind; ignored now, records state "symmetric-stack assumption".
+   First refinement candidates: <= 25 bb push/fold solved with the real stack vector; measure the symmetric approximation where a short
+   stack sits behind and fix only large errors.
+
+## Stack split (2026-10-19, user)
+| session | buckets |
+|---|---|
+| Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots, then 100 bb and deeper |
+| btn session 011TJw... | 10 / 15 / 20 / 25 bb push/fold, then 30 / 40 bb (to confirm on this board) |
+| T2 session 01XV9... | no computation; compares results with T2 bot behaviour hand by hand |
+
 ## Commits every session should be on
 | commit | content |
 |---|---|
