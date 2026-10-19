@@ -176,3 +176,42 @@ user decides whether records converged only through it are accepted; until then 
   provisional for that reason. Counter-view recorded: the low reach itself is part of the equilibrium, so an unstable value there
   could feed back into the earlier 4-bet frequency; the earlier-node terminal-seats passing D <= U is the evidence that it is small.
   T2-side observation (utg_vs_btn under v4): 4-bet-call terminal reach probability 1.0e-6 / 2.1e-7 at steps 2 / 3 — same pattern.
+
+## Amendment 9 (2026-10-14, POST-OBSERVATION, accepted by the user with conditions): G6(a) on EV, not frequency
+Observed (p60v2b_co_vs_sb_3b40, v2b parent gap 0.0096): the Plan A A1 frequency test fails (CO root reach-weighted mean |delta| 0.075
+> 0.02) although the subgame reproduces the engine's action EVs exactly at the parent's strategy (all classes, 3 decimals) and the
+parent's reach-weighted EV loss inside the subgame is 0.0067 bb per arriving combo. The large frequency differences sit on classes whose
+best and second action are within 0.03-0.08 bb (QTo fold 61% in the parent vs 100% in the re-solve; EV fold -2.111 vs call -2.156):
+mixes there are not unique at equilibrium, so a frequency difference is not an error measure.
+Rule (fixed numbers, every Plan A spot from now on):
+- G6(a) passes iff at every subgame node (a) the parent strategy's EV loss inside the re-solved subgame, averaged over the actor's
+  arriving classes weighted by arriving combos, is <= 0.010 bb, and (b) every class arriving with >= 1 combo loses <= 0.05 bb;
+- frequency differences stay in the record (A1 metrics and its verdict `frequency_test_A1`), and classes whose best and second
+  action are within 0.05 bb are flagged `near_indifferent_ev` (usable by the T2 tendency layer: deviating there costs < 0.05 bb).
+- Principle (user): post-observation changes end here (amendments 8 and 9). Any later change states its reason in this document and
+  records the verdicts before and after the change.
+- Application of amendment 8 condition (2) to G6(b) (2026-10-14, documented with before / after verdicts): the dominated-action
+  invariant skips the amendment-8 unsupported nodes (their values are not used, so their strategy is not graded). Observed on
+  p60v2b_co_vs_sb_3b40: all 3 hits sit at "SB facing the CO 4-bet to 17.2" (CO arrives with 0.017 combos): KQs fold 20% (-4.67 bb)
+  / jam 37% (-2.28 bb), AJs jam 27% (-1.54 bb). The record keeps `pass_strict` (without the skip) next to `pass`.
+
+## Amendment 10 (2026-10-14, user decision, pre-registered for every spot): 144-board continuation after an inconsistent P144
+Observed on p60v2b_co_vs_sb_3b40: the 24-board loop converged (step 2), but P144 found the main 3-bet-call terminal off by more than
+its 24-board error (D144 / U24: CO 1.39 / 0.95, SB 1.31 / 0.75; damping lag 0.48, the raw 24-board estimate itself 1.11 / 1.01 off,
+signed CO -0.68 / SB +0.68 bb on every class): the loop reuses the same 24 boards every step, so a panel that happens to favour one
+seat is locked in; only more boards fix it.
+Procedure (every spot from now on): when P144 is inconsistent (D144 > U24) without a flop failure, the v4 loop continues on
+panel_v3_144 from the 24-board converged state: step 0 is the P144 pass itself (its 144 flops are reused), then at most 3 more steps
+(144 boards each: panel_v1 boards at 0.3%, extension boards at 0.6%); damping, amendment-8 exemptions and amendment-7 flop handling as
+in v4; stop when every terminal-seat has D <= U144 (144-board standard error); otherwise `research`. The grader's P144 inputs are the
+accepted 144-board state (report_p144_check.json keeps the original P144 check). Criterion unchanged in kind (D <= U).
+
+## Amendment 11 (2026-10-14, user decision "a+b", relayed by the T2 session session_01XV9GKUYpuxdA2ckcjg1qsv at 12:40Z; pre-registered for every spot)
+Observed: p60v2b_co_vs_sb_3b40 P144, 4-bet-call terminal (amendment-8 exempt for the SB; CO arrives with 0.017 combos), board Qc9d4h:
+0.72% pot at 1000 iterations vs target 0.6%; under amendment 7 this one flop made the spot research.
+(a) Every flop that ends unconverged gets one retry at 3x the iteration budget (same target); the first artifact is kept beside it.
+(b) If it is still unconverged after the retry and its terminal is exempt-level — one live seat arrives with < 1 combo, so the
+    terminal's joint reach is negligible (interpretation stated here: amendment 8 exempts the seat whose opponent arrives with < 1
+    combo; the terminal counts as exempt-level when either seat's arrival is < 1 combo) — it is recorded and the loop / P144 continue;
+    at any other terminal amendment 7 applies (research).
+Records keep both verdicts: without amendment 11 (amendment-7 research) and with it.
