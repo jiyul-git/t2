@@ -25,7 +25,7 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 | p60v2b_utg1_vs_sb_3b35, p60v2b_co_vs_sb_3b35, p60v2b_btn_vs_bb_3b35 | unclaimed | - | - |
 
 Connection-eligible spots: 0 of 9. Common problems: the 4-bet-call terminal does not converge (D cycles), and G6(b) dominated-material
-mixes after 4-bet / jam nodes. This session (01BLRH...) is analysing the G6(b) cause (no CPU-heavy runs).
+mixes after 4-bet / jam nodes. G6(b) cause: see open decision item 2.
 
 ## Open decision items (user)
 1. DECIDED 2026-10-14 (user, via the T2 session): a+b -> amendment 11. Qc9d4h (p60v2b_co_vs_sb_3b40, 4-bet-call terminal = amendment-8 exempt, CO 0.017 combos): 0.72% pot vs target 0.6% at 1000 its.
@@ -34,3 +34,22 @@ mixes after 4-bet / jam nodes. This session (01BLRH...) is analysing the G6(b) c
    (b) T2-session proposal: unconverged flops at an amendment-8 exempt terminal are recorded but do not stop the loop
        (same logic as amendment-8 condition (2) applied to G6(b)); unconverged flops at judged terminals still stop (research);
    (c) keep amendment 7 as is: the spot stays research.
+2. OPEN (analysis by 01BLRH..., 2026-10-19; records on the branches above, no recompute). Every G6(b) dominated-material violation in the
+   v2b records sits at a node where the OPPONENT arrives with < 1 combo, i.e. the "facing jam" node after an almost never taken jam:
+   | record | node (actor faces) | opponent arriving combos | violations |
+   |---|---|---|---|
+   | p60v2b_utg1_vs_sb_3b40 | SB faces UTG+1 4-bet jam | 0.00037 (UTG+1 jam freq 1.8e-6) | QQ fold 28% (EV loss 14.1 bb), JJ call 40% (4.9 bb) |
+   | p60v2b_btn_vs_bb_3b40 P144 | BB faces BTN 4-bet jam | 0.0115 | QJs fold 64% (0.42 bb) |
+   | p60v2b_utg_vs_btn | BTN faces UTG 4-bet jam | 0.00039 | AKo call 53% (5.2 bb), AKs call 72% (2.4 bb); KK fold 2.2% (premium_fold) |
+   No violation at a node the opponent reaches with >= 1 combo; chip conservation passes in all. Mechanism: CFR updates at a node are
+   weighted by the opponent's reach, so with ~0 reach the strategy there never moves (any strategy is a Nash equilibrium there; it is
+   not a solver bug and does not affect exploitability). Amendment 8 already treats "opponent arrives < 1 combo" as unsupported, but its
+   node list is built only from the outer loop's flop terminals; an all-in node has no flop terminal, so these nodes are not on it.
+   Options for the user: (a) extend the amendment-8 unsupported set to every node whose opponent arrives with < 1 combo (same fixed
+   threshold, all spots; G6(b) skips them, pass_strict kept; before/after verdicts recorded) -> G6(b) would pass in all three records;
+   (b) keep G6(b) as is (these spots stay provisional / research on G6(b)); (c) (a) plus a best-response refinement at those nodes so a
+   connection that hits an off-path jam gets sensible frequencies (later work). Under any option the frequencies at these nodes must not
+   be used by T2 as GTO.
+   Side observation (G3 cycling): in p60v2b_btn_vs_bb_3b40 the BTN 4-bet choice flips between 4-bet 17.2 and jam from the 24-board state
+   to the P144 state (BB facing 4-bet: 0.41 -> 36.6 combos; facing jam: 22.7 -> 0.012), so the 4-bet-call terminal's arriving range swings,
+   which matches the D cycling there and in hj_vs_bb_3b40.
