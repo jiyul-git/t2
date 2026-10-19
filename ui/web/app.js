@@ -2209,7 +2209,7 @@ function spectateTail(res, resumeAt = null) {
    */
   if (S.spectating) {
     $('#mainrow').innerHTML =
-      '<div class="wait">관전 중…</div>';
+      '<div class="wait quiet">관전 중…</div>';
   }
 
   closeRaise();
@@ -4104,7 +4104,7 @@ async function callStepStream(body, msg) {
   const computingTimer = setTimeout(() => {
     if (settled || playing || queue.length || finalPayload || streamError) return;
     const row = $('#mainrow');
-    if (row) { row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>'; computingHint = true; }
+    if (row) { row.innerHTML = '<div class="wait quiet">봇 판단 계산 중…</div>'; computingHint = true; }
   }, 1500);
   const receive = stepEventReceiver(
     (obj) => {
@@ -4365,7 +4365,7 @@ function previewHeroAction(action, amount) {
       txt += ' ' + fmt(amount);
     }
 
-    row.innerHTML = '<div class="wait">나 ' + txt + '</div>';
+    row.innerHTML = '<div class="wait quiet">나 ' + txt + '</div>';
   }
 
   closeRaise();

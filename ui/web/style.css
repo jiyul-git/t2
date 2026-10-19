@@ -419,6 +419,9 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 #bRaise { background: #3a3320; border-color: #6b5c31; }
 #bDeal { background: #26413a; border-color: #3d6b5e; }
 .wait { text-align: center; color: var(--dim); font-size: 13px; padding: 17px 0; }
+/* 플레이 중 진행 문구('나 폴드', '봇 판단 계산 중…', '관전 중…')는 숨긴다. 자리는 그대로 두어 액션바가 흔들리지 않는다.
+   연결 오류·대회 종료·예약됨 같은 알림 문구는 그대로 보인다. */
+.wait.quiet { visibility: hidden; }
 
 /* 레이즈 패널 */
 #actionbar.turn-open #mainrow {
