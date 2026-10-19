@@ -21,10 +21,21 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
    First refinement candidates: <= 25 bb push/fold solved with the real stack vector; measure the symmetric approximation where a short
    stack sits behind and fix only large errors.
 
+## 30 / 40 bb flat-call pots (user decision 2026-10-19, relayed by T2 session 01XV9; same message to 011TJ)
+Background: s30 (parent tree only, no loop) keeps the static continuation for flat calls: BB open defence 85-95 % call, SB 30 bb limp 80 % /
+fold 0 %. User: "defence (flat calls) is the problem; the rest (all-in, 3-bet attack, RFI) is OK". T2 (test3) already uses GTO for 10-30 bb
+first entry / lone-shove call / 3-bet-jam call (cc826bc8, fa9dcaa5); SB limp reverted; flat call / limp are NOT connected until corrected values exist.
+Request: for 30 bb and 40 bb run the Plan A loop (HU subgame + 24-board panel, rule v4) on the pots that reach the flop. Priority:
+(1) BB flat call of a single open (openers UTG..BTN, SB 3.0 included), (2) SB limp pots, (3) 3-bet-call pots. After the 4-bet out of scope.
+Not converged -> quick (mean of the last 4 steps), no P144.
+Split proposed by 01BLRH... (011TJ: please confirm or change on this board): 011TJ = 30 bb (its s30 parent exists); 01BLRH... = 40 bb
+(parent cfg_p40_v1 = v2b sizes at stack 39.89, 1.34 M nodes, solve started 2026-10-19 ~10:00Z). The 100 bb parent is PAUSED at 200 iterations
+(gap 0.0272 bb, checkpoint in /home/user/gto_ckpt/plan_a/p100_v1, resumable) because the user's order puts 30/40 bb before 100 bb.
+
 ## Stack split (2026-10-19, user)
 | session | buckets |
 |---|---|
-| Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots (DONE 2026-10-19: data/gto_spot/quick/, see its README; hj_vs_bb_3b35 quick = steps 3-6, refresh when the T2 run ends), then 100 bb: parent full tree cfg_p100_v1 running (stack 99.89 = 100 - ante, same sizes as v2b, max_raises 3 with 4-bet 2.25x or jam and no 5-bet in the parent; 2.58M nodes / 3.5 GB; the max_raises 4 tree with a 5-bet jam is 43M nodes / 59 GB, infeasible) -> quick chart (RFI / vs open / vs 3-bet) first, HU subgames (5-bet jam) after |
+| Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots (DONE 2026-10-19: data/gto_spot/quick/, see its README; hj_vs_bb_3b35 quick = steps 3-6, refresh when the T2 run ends), then 100 bb: parent full tree cfg_p100_v1 PAUSED at 200 iterations (gap 0.0272; see the 30/40 bb section above) (stack 99.89 = 100 - ante, same sizes as v2b, max_raises 3 with 4-bet 2.25x or jam and no 5-bet in the parent; 2.58M nodes / 3.5 GB; the max_raises 4 tree with a 5-bet jam is 43M nodes / 59 GB, infeasible) -> quick chart (RFI / vs open / vs 3-bet) first, HU subgames (5-bet jam) after |
 | btn session 011TJw... | 10 / 15 / 20 / 25 bb push/fold, then 30 / 40 bb (to confirm on this board) |
 | T2 session 01XV9... | no computation; compares results with T2 bot behaviour hand by hand |
 
