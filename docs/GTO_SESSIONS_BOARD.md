@@ -36,7 +36,7 @@ Split proposed by 01BLRH... (011TJ: please confirm or change on this board): 011
 | session | buckets |
 |---|---|
 | Gto제작 01BLRH... (this board's maintainer, branch chatgpt/terminal-census-v2-20260930) | 60 bb quick summary of all v2b spots (DONE 2026-10-19: data/gto_spot/quick/, see its README; hj_vs_bb_3b35 quick = steps 3-6, refresh when the T2 run ends), then 100 bb: parent full tree cfg_p100_v1 PAUSED at 200 iterations (gap 0.0272; see the 30/40 bb section above) (stack 99.89 = 100 - ante, same sizes as v2b, max_raises 3 with 4-bet 2.25x or jam and no 5-bet in the parent; 2.58M nodes / 3.5 GB; the max_raises 4 tree with a 5-bet jam is 43M nodes / 59 GB, infeasible) -> quick chart (RFI / vs open / vs 3-bet) first, HU subgames (5-bet jam) after |
-| btn session 011TJw... | 10 / 15 / 20 / 25 bb push/fold, then 30 / 40 bb (to confirm on this board) |
+| btn session 011TJw... | 10 / 15 / 20 / 25 bb push/fold and the 30 / 40 bb parent trees: DONE 2026-10-19 (branch claude/pushfold-10-25-20261019, section below); then the 30 bb flat-call pot loop (same 9 spots, tools plan_a_flat_specs.py / run_quick.sh) |
 | T2 session 01XV9... | no computation; compares results with T2 bot behaviour hand by hand |
 
 ## Commits every session should be on
@@ -99,3 +99,31 @@ mixes after 4-bet / jam nodes. G6(b) cause: see open decision item 2.
    Draft for the user: 3-bet-call sub-grade = G3 on the 3-bet-call terminal only (both seats D <= U), plus a root-stability check over the
    last two steps (classes moving > 10 pp listed as unstable / near-indifferent, frequency not exported as GTO); nodes after the 4-bet
    unsupported at connection; label at most conditional_verified with reason "4-bet-and-later research".
+
+## Decisions 2026-10-19 14:00Z (user, via T2 session 01XV9: "reassess the split, decide what is open")
+1. Split confirmed: 40 bb flat-call pot loop = 01BLRH... (the 9 spots running since 12:57Z); 30 bb flat-call pot loop = 011TJ (same tools, same 9 spots);
+   the 100 bb parent resumes after the 40 bb flat-call spots (paused at 200 iterations, gap 0.0272 bb).
+2. Open decision item 2 -> (a): the standard-amendment-8 unsupported set is extended to EVERY node the opponent reaches with < 1 combo (G6(b) skips
+   them, pass_strict kept, before / after verdicts recorded). Frequencies at these nodes are never used by T2 (the T2 connection already excludes
+   attacker < 10 combo nodes). To register as amendment 12 by 01BLRH...
+3. Open decision item 3 (3-bet-call sub-grade) -> closed, replaced by the quick direction; the root-stability measurement stays as a record only.
+4. 60 bb: the stopped runs of the other account's sessions (co_vs_sb_3b40 resume, hj_vs_bb_3b35, btn_vs_bb_3b40 paused) are not resumed. The 60 bb
+   quick summary (data/gto_spot/quick/, 611bfc58) is final for now.
+5. T2 side: master = test3 = 39e204a7 is the new baseline (10-30 bb first entry, lone-shove call, 3-bet-jam call, open / 3-bet facing attacks connected; flat call / limp NOT
+   connected). T2 connects s40 (40 bb) next; BB defence / SB limp are connected when the corrected flat-call values exist.
+6. Computation runs as tracked tasks; restart / back up before the 2 h limit (idle containers are reclaimed).
+
+## Session 011TJw... status (merged from docs/GTO_SESSIONS_BOARD_011TJ_STATUS.md, branch claude/pushfold-10-25-20261019 @30b7c1c9)
+All records `quick`, symmetric stacks, chip EV, 9-max, ante 1 bb, vendored preflop DCFR (seeds 202, 1200 samples), stop at exact gap <= 0.010 bb.
+Pre-registered: docs/GTO_PUSHFOLD_10_25_V1.md, docs/GTO_STACK_30_40_V1.md.
+| bucket | menu | iterations | exact gap (bb) | record |
+|---|---|---|---|---|
+| pf10 | jam / fold | 25 | 0.00663 | data/gto_spot/records/pf10.json |
+| pf15 / pf20 / pf25 | fold / open 2.0 (SB 3.0) / jam; vs open fold / call / 3-bet jam | 75 / 100 / 75 | 0.00751 / 0.00539 / 0.00736 | pf15/20/25.json |
+| s30 / s40 | Plan A v2b parent menu (cfg_p60_v2b with stack S - 1/9) | 150 / 150 | 0.00913 / 0.00858 | s30.json / s40.json |
+Run files: data/gto_spot/pushfold/runs/pf*/, data/gto_spot/stack3040/runs/s{30,40}/ (dump.jsonl.gz + SHA256SUMS) on that branch (not merged into this branch yet).
+- Cross-session reproduction: the 40 bb parent was solved independently by 011TJ and by 01BLRH...: cfg identical (cfg_s40 = cfg_p40_v1), exact gap
+  0.00858 bb at 150 iterations in both, dump.jsonl sha256 a092af6d5eb989aa11c622ad829c3b4083bf3d69b0bdaaddff94705e61af1589 IDENTICAL (checked 2026-10-19 by 01BLRH...).
+  30 bb dump sha256 f8cc8ea5bbb8140bdd949b959119a7e75d84d313ce23323aa12b702b157e3671 (011TJ only).
+- Same finding as the flat-call request: BB flat-call defence vs a 2.0 open ~100 % at 15-40 bb under the static continuation.
+- 011TJ claims on 60 bb (btn_vs_bb_3b35, co_vs_sb_3b35) withdrawn, never started; btn_vs_bb_3b40 left to the 60 bb quick summary.
