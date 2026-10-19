@@ -1,9 +1,9 @@
 """GTO 계산기의 푸시/폴드 기록(pf10/15/20/25, quick) → T2 프리플랍 기준 데이터.
 
-  python3 tools/gto_pf_build.py <pf10.json> <pf15.json> <pf20.json> <pf25.json> <s30.json>
+  python3 tools/gto_pf_build.py <pf10.json> <pf15.json> <pf20.json> <pf25.json> <s30.json> <s40.json>
 
-출처: GTO 브랜치(claude/pushfold-10-25-20261019) data/gto_spot/records/pf*.json, s30.json.
-s30 은 Plan A v2b 부모 메뉴(오픈 2.0, SB 림프/3.0, 3벳 3x 또는 올인)라 첫 진입에 림프가 있다.
+출처: GTO 브랜치(claude/pushfold-10-25-20261019) data/gto_spot/records/pf*.json, s30.json, s40.json.
+s30/s40 은 Plan A v2b 부모 메뉴(오픈 2.0, SB 림프/3.0, 3벳 3x 또는 올인)라 첫 진입에 림프가 있다.
 뽑는 것 (올인 관련만, 사용자 결정 2026-10-19):
   first_in  : 첫 진입 fold / limp / open / jam 클래스별 빈도
   vs_jam    : 앞사람 전원 폴드 뒤 단독 올인에 콜하는 빈도 (올인자, 콜러)

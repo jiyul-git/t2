@@ -1,4 +1,4 @@
-"""GTO 프리플랍 기준(10~30bb) 연결 검사.
+"""GTO 프리플랍 기준(10~40bb) 연결 검사.
 
   python3 tools/verify_gto_pf.py
 
@@ -20,7 +20,7 @@ def check(name, cond):
     print('PASS', name)
 
 d = G._load()
-check('buckets 10..30', d['buckets'] == [10, 15, 20, 25, 30])
+check('buckets 10..40', d['buckets'] == [10, 15, 20, 25, 30, 40])
 i = d['classes'].index('A2o')
 check('SB 10bb A2o jam = record', abs(G.first_in('SB', 9, 10, ['Ah', '2c'])['jam']
                                        - d['first_in']['10']['SB']['jam'][i]) < 1e-9)
@@ -29,7 +29,7 @@ b = G.first_in('UTG', 9, 20, ['Kd', 'Qs'])['jam']
 m = G.first_in('UTG', 9, 17.5, ['Kd', 'Qs'])['jam']
 check('interpolation midpoint', abs(m - (a + b) / 2) < 1e-9)
 check('out of range low/high', G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
-      and G.first_in('UTG', 9, 31.0, ['Ah', 'Ad']) is None)
+      and G.first_in('UTG', 9, 41.0, ['Ah', 'Ad']) is None)
 check('30bb SB first-in left to existing path (limp is flop-model dependent)',
       G.first_in('SB', 9, 30, ['Kh', '7c']) is None and G.first_in('SB', 9, 25, ['Kh', '7c']) is not None)
 check('30bb BTN first-in has no jam', G.first_in('BTN', 9, 30, ['Kh', '7c'])['jam'] == 0.0)
