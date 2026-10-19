@@ -13,13 +13,19 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 | 4c1db4e1 | amendment 8 accepted (exempt terminal-seat when the opponent arrives with < 1 combo; nodes unsupported at connection) |
 | e6efd38c / 609555d9 | rule v4 (damped matrices) / amendment 7 (unconverged flop -> research) |
 
-## Sessions
-| session | spot | stage | next | blocked / note |
-|---|---|---|---|---|
-| this (01BLRH...) | p60v2b_co_vs_sb_3b40 | 24-board loop converged step 2; P144 under amendment 11 inconsistent (3-bet-call D144 > U24). 144-board loop: first launch (13:54Z) re-retried Qc9d4h at 9000 its in step 0 (bug: amendment 11a allows one retry) and was killed at the 2 h task limit; fixed (a board with first_attempt/ is not retried again). Side effect: the original 1000-it Qc9d4h artifact was overwritten by the 3000-it retry (its numbers 0.71956% / 1000 its stay in step2_p144/report.json); the values used are the 3000-it retry as before | 144-board loop running as a tracked task from 19:29Z (detached launches die when the idle container is reclaimed: 16:00Z and 18:27Z restarts, step 1 at 2/288 flops) | - |
-| this | p60v2b_utg1_vs_sb_3b40, then _3b35 | queued | | |
-| T2 (01XV9...) | p60v2b_utg_vs_btn | v4 step 7 running (f597b50b, amendment 11 included). Step 6 continue: 3-bet-call UTG 1.23/1.20, BTN 1.89/0.76; 4-bet-call UTG 1.66/1.07 (opp 24.8 combos), BTN 1.53/1.04 (opp 35.7); no exempt cells; 3-bet-call alternates pass/fail between steps. Backup ccr-9a10123b-0lyye0 e5ee0ff4 (steps 0-6) | hj_vs_bb_3b40 -> _3b35 | - |
-| new Claude | p60v2b_btn_vs_bb_3b40 ... | ? | | |
+## Sessions (survey 2026-10-19 02:30Z from the remote branches; this session's own runs stopped to avoid duplicates)
+| spot | session / branch | stage (last backup) | verdict so far |
+|---|---|---|---|
+| p60v2b_co_vs_sb_3b40 | 01FbCz... / claude/p60v2b_co_vs_sb_3b40-resume-20261016 | P144 recomputed (matches this session's), amendment-10 144-board loop step 1 at 115/288 flops (10-18 04:29Z) | pending; this session's partial p144s1 (term0 18/24 panel_v1) is behind and not resumed here |
+| p60v2b_utg1_vs_sb_3b40 | claude/p60v2b_utg1_vs_sb_3b40-20261016 | 24-board loop converged step 3; record committed (10-17 08:01Z) | provisional: P144 not graded; G6(b) dominated material (SB vs UTG+1 4-bet jam: QQ fold 28%, EV loss 14.1 bb; JJ call 40%, 4.9 bb); G6(a) pass |
+| p60v2b_btn_vs_bb_3b40 | 011TJw... (running) / claude/p60v2b_btn_vs_bb_3b40-resume-20261016 | P144 inconsistent; 144-board loop in progress (10-18 03:41Z) | 24-board provisional; P144 research (G3 D144 > U24, G6 a+b fail: BB QJs fold 64%, 0.42 bb) |
+| p60v2b_hj_vs_bb_3b40 | 01GvcQ... / claude/p60v2b_hj_vs_bb_3b40-20261016 | done (10-17 21:44Z) | research: step 5 flop Qc9d7d 0.3297% at 3000 its (target 0.3) at the 4-bet-call terminal; 4-bet-call D cycles 16.05/0.98/1.75/3.15/3.36 |
+| p60v2b_utg_vs_btn | T2 side / ccr-fb71f1d0-3wvj9e (steps 0-7 on ccr-9a10123b-0lyye0) | done after 12 steps (10-17 02:51Z) | research: G3 not converged; G6(b) invariant violation |
+| p60v2b_hj_vs_bb_3b35 | 012qfU... (T2 side) / ccr-fb71f1d0-3wvj9e | v4 step 7 (10-18 03:59Z) | pending |
+| p60v2b_utg1_vs_sb_3b35, p60v2b_co_vs_sb_3b35, p60v2b_btn_vs_bb_3b35 | unclaimed | - | - |
+
+Connection-eligible spots: 0 of 9. Common problems: the 4-bet-call terminal does not converge (D cycles), and G6(b) dominated-material
+mixes after 4-bet / jam nodes. This session (01BLRH...) is analysing the G6(b) cause (no CPU-heavy runs).
 
 ## Open decision items (user)
 1. DECIDED 2026-10-14 (user, via the T2 session): a+b -> amendment 11. Qc9d4h (p60v2b_co_vs_sb_3b40, 4-bet-call terminal = amendment-8 exempt, CO 0.017 combos): 0.72% pot vs target 0.6% at 1000 its.
