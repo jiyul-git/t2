@@ -1,4 +1,4 @@
-"""GTO 푸시/폴드 기준(10~25bb) 연결 검사.
+"""GTO 프리플랍 기준(10~30bb) 연결 검사.
 
   python3 tools/verify_gto_pf.py
 
@@ -20,7 +20,7 @@ def check(name, cond):
     print('PASS', name)
 
 d = G._load()
-check('buckets 10..25', d['buckets'] == [10, 15, 20, 25])
+check('buckets 10..30', d['buckets'] == [10, 15, 20, 25, 30])
 i = d['classes'].index('A2o')
 check('SB 10bb A2o jam = record', abs(G.first_in('SB', 9, 10, ['Ah', '2c'])['jam']
                                        - d['first_in']['10']['SB']['jam'][i]) < 1e-9)
@@ -29,7 +29,10 @@ b = G.first_in('UTG', 9, 20, ['Kd', 'Qs'])['jam']
 m = G.first_in('UTG', 9, 17.5, ['Kd', 'Qs'])['jam']
 check('interpolation midpoint', abs(m - (a + b) / 2) < 1e-9)
 check('out of range low/high', G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
-      and G.first_in('UTG', 9, 30.0, ['Ah', 'Ad']) is None)
+      and G.first_in('UTG', 9, 31.0, ['Ah', 'Ad']) is None)
+g30 = G.first_in('SB', 9, 30, ['Kh', '7c'])
+check('30bb SB limp read from record', abs(g30['limp'] - d['first_in']['30']['SB']['limp'][d['classes'].index('K7o')]) < 1e-9
+      and g30['jam'] == 0.0)
 check('no ante -> None', G.first_in('UTG', 9, 15, ['Ah', 'Ad'], ante=False) is None)
 check('8-max UTG = 9-max UTG+1', G.pos9('UTG', 8) == 'UTG+1')
 check('6-max UTG = 9-max LJ', G.pos9('UTG', 6) == 'LJ')

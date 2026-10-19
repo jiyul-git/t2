@@ -1,14 +1,14 @@
-"""GTO 계산기 푸시/폴드 기준(10~25bb) — 프리플랍 판단의 **기준(reference)** 층.
+"""GTO 계산기 프리플랍 기준(10~30bb) — 프리플랍 판단의 **기준(reference)** 층.
 
 데이터: data/gto_pf/pushfold_v1.json (tools/gto_pf_build.py 가 GTO 브랜치의
-pf10/15/20/25 기록에서 만든다). 9맥스, 안테 합계 1bb, 전원 같은 스택, 칩 EV,
+pf10/15/20/25 와 s30 기록에서 만든다). 9맥스, 안테 합계 1bb, 전원 같은 스택, 칩 EV,
 등급 quick(빠른 값). 사용자 결정 2026-10-19: 계산한 레인지를 T2 기준으로 쓴다.
 
 이 모듈은 '레귤러가 공부한 답'만 돌려준다. 사람이 그 답을 얼마나 따르는가
 (차트 지식), ICM/버블 체감, 성향 이탈은 preflop.py 가 정한다.
 
 조회 규칙
-  - 스택: 유효 스택(bb, 핸드 시작 기준). 10~25bb(±0.25) 밖이면 None(기존 경로).
+  - 스택: 유효 스택(bb, 핸드 시작 기준). 10~30bb(±0.25) 밖이면 None(기존 경로).
     버킷 사이는 선형 보간. 한쪽 버킷에 노드가 없으면 None.
   - 좌석: 6~9인 테이블은 '뒤에 남은 인원'이 같은 9맥스 자리로 옮긴다.
     SB/BB 는 그대로. 5인 이하와 노안테는 None.
@@ -95,21 +95,22 @@ def _at(trip, hand):
 
 
 def first_in(pos, seats, eff_bb, hand, ante=True):
-    """첫 진입 {'jam','open','fold'} 확률. 범위 밖이면 None."""
+    """첫 진입 {'jam','open','limp','fold'} 확률. 범위 밖이면 None."""
     if not covered(eff_bb, seats, ante):
         return None
     p = pos9(pos, seats)
     if p is None or p == 'BB':
         return None
-    jam = _at(_interp('first_in', p, eff_bb, lambda e: e['jam']), hand)
-    opn = _at(_interp('first_in', p, eff_bb, lambda e: e['open']), hand)
-    if jam is None:
+    trips = {k: _interp('first_in', p, eff_bb, lambda e, k=k: e.get(k))
+             for k in ('jam', 'open', 'limp')}
+    if all(v is None for v in trips.values()):
         return None
-    opn = opn or 0.0
-    s = jam + opn
+    g = {k: (_at(v, hand) or 0.0) for k, v in trips.items()}
+    s = sum(g.values())
     if s > 1.0:
-        jam, opn = jam / s, opn / s
-    return {'jam': jam, 'open': opn, 'fold': max(0.0, 1.0 - jam - opn)}
+        g = {k: v / s for k, v in g.items()}
+    g['fold'] = max(0.0, 1.0 - sum(g.values()))
+    return g
 
 
 def call_vs_jam(jammer_pos, def_pos, seats, eff_bb, hand, ante=True):

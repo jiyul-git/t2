@@ -405,10 +405,10 @@ def take_timing_bound():
     return d
 
 
-# ---------- GTO 계산기 기준(푸시/폴드 10~25bb) ----------
+# ---------- GTO 계산기 기준(10~30bb) ----------
 # 사용자 결정 2026-10-19: 우리 GTO 계산기의 레인지를 T2 기준으로 쓴다.
-# 첫 연결은 올인 관련 판단만이다 — 첫 진입(fold/open/jam), 단독 올인 콜,
-# 오픈 후 3벳 올인 콜. 기준은 칩 EV 라서 ICM 압력이 있는 자리(BF > 상한,
+# 연결한 판단 — 첫 진입(fold/limp/open/jam), 단독 올인 콜, 오픈 후 3벳 올인 콜.
+# 30bb 첫 진입은 오픈 크기와 SB 림프까지 기준을 따른다(30bb 에선 첫 진입 올인이 없다). 기준은 칩 EV 라서 ICM 압력이 있는 자리(BF > 상한,
 # 머니점프 개입)에서는 쓰지 않고 기존 경로가 판단한다.
 # 사용자 결정 2026-10-19: GTO 와 인간형의 차이는 포스트플랍 이후다. 그래서
 # 범위 안의 프리플랍 판단은 기준을 그대로 따른다(차트 지식 가중 없음).
@@ -448,7 +448,7 @@ def gto_pf_open_eff_bb(pos, bb, behind_stacks, ante=True):
 
 def gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks=None,
                            bf=1.0, seats=8, ante=True, money_open=None):
-    """범위 안이면 GTO 첫 진입 행동('jam'/'open'/'fold'), 밖이면 None.
+    """범위 안이면 GTO 첫 진입 행동('jam'/'open'/'limp'/'fold'), 밖이면 None.
 
     범위 밖(스택·좌석·노안테·ICM)이면 RNG 를 쓰지 않고 None 이다.
     """
@@ -460,8 +460,9 @@ def gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks=None,
     if g is None:
         return None
     u = rng.random()
-    act = 'jam' if u < g['jam'] else 'open' if u < g['jam'] + g['open'] else 'fold'
-    _timing_bound({'kind': 'gto_pf_open', 'eq': g['jam'] + g['open'], 'need': 0.5,
+    act = ('jam' if u < g['jam'] else 'open' if u < g['jam'] + g['open']
+           else 'limp' if u < g['jam'] + g['open'] + g['limp'] else 'fold')
+    _timing_bound({'kind': 'gto_pf_open', 'eq': 1.0 - g['fold'], 'need': 0.5,
                    'gto': {k: round(v, 4) for k, v in g.items()},
                    'eff_bb': round(eff, 3), 'choice': act})
     return act
@@ -519,6 +520,8 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
         return ('shove', bb)
     if _g == 'fold':
         return ('fold', 0)
+    if _g == 'limp':
+        return ('limp', 1.0)
     if _g == 'open':
         sz = open_size_bb(feel, pos, rng, prof, ante, 0, bb_chips=bb_chips)
         return ('raise', sz if sz else 2.0)
