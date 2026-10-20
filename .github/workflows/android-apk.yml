@@ -32,29 +32,47 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+      # 서명 키가 빌드마다 바뀌면 새 앱이 옛 앱 위에 설치되지 않는다. 예전에는
+      # ~/.android/debug.keystore 를 캐시했지만 그 자리에 키가 만들어지지 않아(AGP 가 다른
+      # 곳에 둠) 한 번도 저장되지 않았고, 빌드마다 새 디버그 키로 서명됐다.
+      # 이제 테스트 키를 직접 만들어 정해진 자리에 두고 캐시한다(비밀값의 영구 키가 있으면 그것).
       - name: Test signing key (kept between runs so updates install over the old app)
         uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
-          key: t2-test-signing-key
-      - name: Permanent signing key
+          path: ~/.t2-signing/test.jks
+          key: t2-test-signing-key-v2
+      - name: Signing key
         env:
           KS: ${{ secrets.T2_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.T2_KEYSTORE_PASSWORD }}
         run: |
           if [ -n "$KS" ]; then
             echo "$KS" | base64 -d > "$RUNNER_TEMP/t2.jks"
             echo "T2_KEYSTORE=$RUNNER_TEMP/t2.jks" >> "$GITHUB_ENV"
+            echo "T2_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+          else
+            mkdir -p ~/.t2-signing
+            if [ ! -f ~/.t2-signing/test.jks ]; then
+              echo "새 테스트 서명 키를 만든다 (이번 앱은 기존 앱을 지우고 설치해야 한다)"
+              keytool -genkeypair -keystore ~/.t2-signing/test.jks -storepass t2-test-key \
+                -keypass t2-test-key -alias t2 -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname "CN=T2 test, O=T2, C=KR"
+            else
+              echo "캐시된 테스트 서명 키를 쓴다"
+            fi
+            echo "T2_KEYSTORE=$HOME/.t2-signing/test.jks" >> "$GITHUB_ENV"
+            echo "T2_KEYSTORE_PASSWORD=t2-test-key" >> "$GITHUB_ENV"
           fi
       - name: Build
         env:
-          T2_KEYSTORE_PASSWORD: ${{ secrets.T2_KEYSTORE_PASSWORD }}
           T2_SERVER_URL: ${{ vars.T2_SERVER_URL }}
           T2_WEB_CLIENT_ID: ${{ vars.T2_WEB_CLIENT_ID }}
         run: gradle -p android --no-daemon assembleRelease
       - name: Signing key fingerprint (for the Google Android client ID)
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk t2.apk
-          keytool -printcert -jarfile t2.apk | grep -E 'SHA1|SHA256' | tee -a "$GITHUB_STEP_SUMMARY"
+          keytool -list -v -keystore "$T2_KEYSTORE" -storepass "$T2_KEYSTORE_PASSWORD" -alias t2 \
+            | grep -E 'SHA1|SHA256' | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: t2-apk
