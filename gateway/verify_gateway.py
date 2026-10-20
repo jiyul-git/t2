@@ -5,7 +5,7 @@
 
 Google is replaced by a fake token checker (tokens are "good:<sub>:<email>"), so this runs offline.
 """
-import hashlib, hmac, io, json, os, shutil, socket, sqlite3, stat, subprocess, sys, tarfile, tempfile, threading, time
+import hashlib, hmac, io, json, os, re, shutil, socket, sqlite3, stat, subprocess, sys, tarfile, tempfile, threading, time
 import urllib.error, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -140,8 +140,9 @@ def open_suite(root):
         ok(st == 200 and r['registered'] is True and r['email'] == 'alice@example.com', 'existing account still gets in: %r' % (r,))
         st, r, _ = Client(base).call('POST', '/auth/dev', {'email': 'erin@example.com'})
         ok(st == 403, 'dev login obeys max_accounts: %s' % st)
-        st, r, _ = c.call('POST', '/auth/register', {'nickname': '캐롤', 'avatar': 3, 'agree': True})
-        ok(st == 200, 'pending account signs up')
+        st, r, _ = c.call('POST', '/auth/register', {'avatar': 3, 'agree': True})
+        ok(st == 200 and re.fullmatch(r'T-\d{8}', r.get('nickname') or ''),
+           'sign-up without a nickname gets T-######## : %r' % (r,))
         st, r, _ = c.call('POST', '/auth/register', {'nickname': '캐롤2', 'avatar': 3, 'agree': True})
         ok(st == 409, 'sign-up only once: %s' % st)
         with open(os.path.join(sd, 'accounts.json')) as f:
@@ -367,7 +368,8 @@ def main():
         ok(st == 403 and r.get('signup') is True, 'unregistered API asks for sign-up: %s %r' % (st, r))
         st, _, h = a.call('GET', '/')
         ok(st == 302 and h['Location'] == '/login#signup', 'unregistered page goes to sign-up: %s' % st)
-        for bad in ({'nickname': '', 'avatar': 0, 'agree': True}, {'nickname': 'x' * 17, 'avatar': 0, 'agree': True},
+        # 빈 닉네임은 이제 거절이 아니라 자동 이름(T-########)이다 — 위 'sign-up without a nickname' 검사.
+        for bad in ({'nickname': 'x' * 17, 'avatar': 0, 'agree': True},
                     {'nickname': '나', 'avatar': 9, 'agree': True}, {'nickname': '나', 'avatar': True, 'agree': True},
                     {'nickname': '나', 'avatar': 0, 'agree': False}):
             st, r, _ = a.call('POST', '/auth/register', bad)

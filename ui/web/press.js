@@ -18,6 +18,11 @@
     release(true);
     cur = el; t0 = performance.now(); x0 = e.clientX; y0 = e.clientY;
     el.classList.add('pressed');
+    // 살짝 진동: 앱(T2App.tap → 안드로이드 키보드 터치 피드백)이 있으면 그것을, 없으면 무시.
+    // 버튼에만 준다(카드·칩 같은 곳은 진동 없음).
+    if (el.tagName === 'BUTTON') {
+      try { if (window.T2App && window.T2App.tap) window.T2App.tap(); } catch (err) {}
+    }
   }, { passive: true, capture: true });
   document.addEventListener('pointermove', e => {
     if (cur && Math.hypot(e.clientX - x0, e.clientY - y0) > MOVE_PX) release(true);

@@ -266,6 +266,40 @@ input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-ca
   background: radial-gradient(circle at 35% 30%, #f0f3f1, #c9d2cd 60%, #8e9b95);
   border: 2px solid var(--red); vertical-align: -1px; margin-right: 3px;
 }
+/* 칩 더미: 단위별 색 기둥. 칩은 옆면(흰 줄무늬 가장자리) 위에 3px 씩 쌓이고,
+   맨 위 칩은 윗면(가운데 무늬 + 흰 링)이 보인다. 아래에 그림자. */
+.pile { display: inline-flex; align-items: flex-end; margin-right: 4px; vertical-align: middle;
+        position: relative; padding-bottom: 2px; }
+/* 기둥은 서로 살짝 겹쳐 붙어 있고(옆 기둥이 뒤), 바닥에 닿은 그림자가 하나로 깔린다. */
+.pile .col { display: inline-flex; flex-direction: column-reverse; position: relative; }
+.pile .col + .col { margin-left: -3px; }
+.pile .col:nth-child(1) { z-index: 3; } .pile .col:nth-child(2) { z-index: 2; } .pile .col:nth-child(3) { z-index: 1; }
+.pile::after { content: ""; position: absolute; left: -2px; right: -2px; bottom: 0; height: 5px; z-index: 0;
+               border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.6), rgba(0,0,0,0)); }
+.pile .chip { display: block; position: relative; width: 16px; height: 6px; border-radius: 50%;
+  margin-bottom: -3.5px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.28)),
+    linear-gradient(90deg, var(--cc) 0 14%, var(--ce) 14% 24%, var(--cc) 24% 44%, var(--ce) 44% 56%,
+                           var(--cc) 56% 76%, var(--ce) 76% 86%, var(--cc) 86%);
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.45); }
+.pile .chip:first-child { margin-bottom: 0; }
+.pile .col > .chip:last-child {
+  background:
+    radial-gradient(ellipse 34% 30% at 50% 46%, var(--cf) 0 70%, transparent 74%),
+    radial-gradient(ellipse 50% 46% at 50% 46%, var(--ce) 0 76%, transparent 80%),
+    linear-gradient(90deg, var(--cc) 0 14%, var(--ce) 14% 24%, var(--cc) 24% 44%, var(--ce) 44% 56%,
+                           var(--cc) 56% 76%, var(--ce) 76% 86%, var(--cc) 86%);
+  box-shadow: inset 0 -1.5px 0 rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.35); }
+/* --cc 바탕색 / --ce 가장자리 줄무늬 / --cf 윗면 가운데. 테마색 셋(붉은색 · 비취 · 금). */
+.chip.cr { --cc: #a8322f; --ce: #f3ead8; --cf: #bf4541; }
+.chip.cj { --cc: #1f7a5c; --ce: #f3ead8; --cf: #2a9170; }
+.chip.cg { --cc: #d4a845; --ce: #5a3d10; --cf: #e8c062; }
+.amt { cursor: pointer; }
+/* 벳 금액은 작은 어두운 알약 위에 — 테이블 무늬 위에서도 읽힌다. */
+.chips .amt { display: inline-block; padding: 0 5px; border-radius: 8px; line-height: 15px;
+              background: rgba(6,16,13,.55); vertical-align: middle; }
+#pot .pile { margin-right: 6px; }
 .chips.side-right {
   width: max-content; min-width: 60px; white-space: nowrap; z-index: 17;
 }
@@ -706,9 +740,12 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 #turnclock.ring { background: conic-gradient(rgba(232,196,106,.35) var(--p, 100%), transparent 0); }
 #turnclock.ring.bank { background: conic-gradient(rgba(224,118,60,.45) var(--p, 100%), transparent 0); }
 
-/* 봇 시계는 이름표(B62 · S8)를 감싼다. 숫자는 이름표 오른쪽. HERO 시계는 내 정보 아래 숫자로. */
+/* 봇 시계는 이름표(T-########)를 감싼다. 남은 시간 글자는 이름표 자리에. HERO 시계는 내 정보 아래 숫자로. */
 #seats .pod .seatno { position: relative; left: 0; top: 0; overflow: visible; }
-.seatno > .actclock .acnum { left: 100%; bottom: auto; top: 50%; transform: translate(5px, -50%); }
+.seatno > .actclock .acnum { left: 50%; bottom: auto; top: 50%; transform: translate(-50%, -50%);
+  padding: 0 4px; border-radius: 4px; background: #182a25; font-size: 8px; line-height: 1.5; letter-spacing: 0; }
+/* 남은 시간 글자(TIME BANK / 마지막 10초)는 이름표 글자 자리에 대신 나온다 — 이름·포지션과 겹치지 않는다. */
+.seatno.ac-on > .nm { visibility: hidden; }
 #heroinfo #turnclock { position: static; display: inline-block; margin-top: 4px; min-width: 0;
                        padding: 1px 8px; font-size: 13px; }
 #heroinfo #turnclock[hidden] { display: none; }

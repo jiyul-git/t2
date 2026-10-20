@@ -23,6 +23,15 @@ function heroProfileNickname() {
   return String(profileStorage('t2profile_nickname', '플레이어') || '플레이어')
     .trim().slice(0, 16) || '플레이어';
 }
+/* 봇 이름: 'T-' + 8자리 숫자. pid 마다 늘 같은 이름이다(상대 메모도 pid 기준이라 같이 간다).
+ * 2654435761 은 10^8 과 서로소라 pid 가 다르면 번호도 다르다(곱이 정확한 pid 300만 미만). */
+function botName(pid) {
+  if (pid === undefined || pid === null || pid === '') return '?';
+  const n = Number(pid);
+  if (!Number.isFinite(n)) return String(pid);
+  const x = (n % 1e8) * 2654435761 % 1e8;
+  return 'T-' + String((x + 31415926) % 1e8).padStart(8, '0');
+}
 function applyProfileDeck() {
   const allowed = ['jade', 'navy', 'burgundy', 'ivory'];
   const deck = profileStorage('t2profile_deck', 'jade');
@@ -108,7 +117,7 @@ const SEAT_CLOCKS = {};
 function boxClockPaint(host, startMs, baseMs, bankMs, now) {
   if (!host) return;
   let c = host.querySelector(':scope > .actclock');
-  if (now < startMs) { if (c) c.remove(); return; }
+  if (now < startMs) { if (c) c.remove(); host.classList.remove('ac-on'); return; }
   if (!c) {
     c = document.createElement('div');
     c.className = 'actclock';
@@ -150,8 +159,20 @@ function boxClockPaint(host, startMs, baseMs, bankMs, now) {
   rect.setAttribute('stroke-dasharray', `${(frac * 100).toFixed(2)} 100`);
   const left = Math.max(0, Math.ceil(((bankMs > baseMs ? bankMs : baseMs) - now) / 1000));
   c.classList.toggle('urgent', left <= 10);
-  c.querySelector('.acnum').textContent =
+  const num = c.querySelector('.acnum');
+  num.textContent =
     left <= 10 ? (inBank ? 'TIME BANK ' : '') + left : (inBank ? 'TIME BANK' : '');
+  // 남은 시간 글자는 이름표 위에 겹쳐 이름 대신 보인다(.ac-on). 오른쪽 끝 좌석에서
+  // 이름표보다 넓은 'TIME BANK 10' 이 화면 밖으로 나가면 그만큼 안쪽으로 민다.
+  host.classList.toggle('ac-on', !!num.textContent);
+  num.style.transform = '';
+  if (num.textContent) {
+    const nr = num.getBoundingClientRect(), pad = 3;
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const shift = nr.right > vw - pad ? (vw - pad - nr.right)
+                : nr.left < pad ? (pad - nr.left) : 0;
+    if (shift) num.style.transform = `translate(calc(-50% + ${shift / scale}px), -50%)`;
+  }
 }
 
 function clearSeatClock(seat) {
@@ -160,6 +181,8 @@ function clearSeatClock(seat) {
   const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
   const c = pod && pod.querySelector('.seatno > .actclock');
   if (c) c.remove();
+  const tag = pod && pod.querySelector('.seatno');
+  if (tag) tag.classList.remove('ac-on');
 }
 
 function seatClock(seat, startMs, baseMs, bankMs) {
@@ -252,6 +275,51 @@ function replayBotSchedule(schedule) {
 
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
+
+/* ---------------- 금액 단위(칩 ↔ BB) ----------------
+ * 테이블의 금액(스택·벳·팟)을 누르면 칩 ↔ BB 가 번갈아 바뀐다. 보는 사람 기기에만 기억한다.
+ * 금액은 <span class="amt" data-amt="칩">으로 그려서, 단위가 바뀌면 글자만 다시 쓴다. */
+let AMT_UNIT = (() => { try { return localStorage.getItem('t2_amt_unit') === 'bb' ? 'bb' : 'chips'; }
+                        catch (e) { return 'chips'; } })();
+let CUR_BB = 0;
+function noteBB(v) {
+  const bb = Number(((v && v.level) || {}).bb || 0);
+  if (bb > 0) CUR_BB = bb;
+}
+function amtText(n) {
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  if (AMT_UNIT !== 'bb' || !(CUR_BB > 0)) return fmt(n);
+  const x = Number(n) / CUR_BB;
+  return (x >= 100 ? Math.round(x).toLocaleString('en-US') : String(Math.round(x * 10) / 10)) + 'BB';
+}
+function amt(n) {
+  return `<span class="amt" data-amt="${Number(n) || 0}">${amtText(n)}</span>`;
+}
+function toggleAmtUnit() {
+  AMT_UNIT = AMT_UNIT === 'bb' ? 'chips' : 'bb';
+  try { localStorage.setItem('t2_amt_unit', AMT_UNIT); } catch (e) {}
+  document.querySelectorAll('.amt[data-amt]').forEach(el => {
+    el.textContent = amtText(Number(el.dataset.amt));
+  });
+  const box = $('#chips');
+  if (box) requestAnimationFrame(() => positionRightChips(box));
+}
+
+/* ---------------- 칩 더미 ----------------
+ * 금액은 숫자로 읽는다. 칩 더미는 보기 좋게 '크기 느낌'만 준다 — BB 대비 금액이 클수록
+ * 기둥이 늘고 높아진다. 색은 테마(붉은색 · 비취 · 금)로 고정. */
+const PILE_TIERS = [            // [BB 배수 이하, 기둥별 칩 수(왼쪽부터)]
+  [1.01, [1]], [2.5, [2]], [5, [3, 1]], [12, [3, 2]], [25, [4, 3, 1]],
+  [60, [5, 4, 2]], [Infinity, [6, 5, 3]],
+];
+const PILE_COLORS = ['cr', 'cj', 'cg'];
+function chipPileHTML(n) {
+  const r = CUR_BB > 0 ? Number(n) / CUR_BB : 1;
+  const cols = PILE_TIERS.find(([lim]) => r <= lim)[1];
+  return '<span class="pile">' + cols.map((k, i) =>
+    `<span class="col">${('<i class="chip ' + PILE_COLORS[(cols.length - 1 - i) % 3] + '"></i>').repeat(k)}</span>`
+  ).join('') + '</span>';
+}
 
 /* ---------------- 봇 메모 ----------------
  * 좌석 번호는 테이블 밸런싱으로 사람이 바뀌므로 pid 기준으로 저장한다.
@@ -517,6 +585,7 @@ function botAvatarHTML(id) {
 }
 
 function renderSeats(v) {
+  noteBB(v);
   const n = v.n_slots || 8;
   const portraits = PokerVisuals.tablePortraits(v.seats || []);
   const box = $('#seats');
@@ -582,20 +651,17 @@ function renderSeats(v) {
     const memo = (WATCH_MODE || d.pid === undefined || d.pid === null) ? ''
       : `<button type="button" class="memo${memoGet(d.pid) ? ' has' : ''}" ` +
         `data-pid="${d.pid}" data-label="${slot}번(${d.pos || ''})">✎</button>`;
-    const botNo =
-      (d.pid === undefined || d.pid === null)
-        ? '?'
-        : d.pid;
+    const botNo = botName(d.pid);
 
     html += `<div class="${cls}" data-slot="${slot}" style="${style}">` + memo +
             backs +
             `<div class="avatar botavatar">${botAvatarHTML(portraits.get(slot))}</div>` +
-            `<div class="seatno">B${esc(botNo)} · S${slot}</div>` +
+            `<div class="seatno"><span class="nm">${esc(botNo)}</span></div>` +
             (award ? `<div class="winlabel">${esc(award)}</div>` : '') +
             (d.allin ? `<div class="tag">ALL-IN</div>` : '') +
             (v.button_seat === slot ? `<div class="dealer">D</div>` : '') +
             `<div class="meta"><span class="pos">${d.pos || ''}</span>` +
-            `<span class="stack">${fmt(d.stack)}</span></div></div>`;
+            `<span class="stack">${amt(d.stack)}</span></div></div>`;
   }
   // Keep decoded portraits and gaze state across action-clock/seat redraws.
   const keptAvatars = new Map(Array.from(box.querySelectorAll('.pod[data-slot] .botavatar'),
@@ -655,6 +721,7 @@ function positionRightChips(box) {
 }
 
 function renderChips(v, streetChanged) {
+  noteBB(v);
   const box = $('#chips');
   const old = Array.from(box.children);
   if (streetChanged && old.length) {
@@ -674,7 +741,7 @@ function renderChips(v, streetChanged) {
     el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
     el.style.left = p.x + '%'; el.style.top = p.y + '%';
-    el.innerHTML = `<span class="disc"></span>${fmt(s.bet)}`;
+    el.innerHTML = chipPileHTML(s.bet) + amt(s.bet);
     box.appendChild(el);
   });
   // Board/pot rendering follows this call in several paths. Measure the
@@ -787,16 +854,17 @@ function potParts(v) {
 }
 
 function renderPot(v) {
-  $('#pot').textContent = '팟 ' + fmt(v.pot_total);
+  noteBB(v);
+  $('#pot').innerHTML = (v.pot_total ? chipPileHTML(v.pot_total) : '') + '팟 ' + amt(v.pot_total);
   const parts = potParts(v);
   if (parts.length > 1) {
     // 올인 때문에 자격이 갈렸다 — 나눠서 보여준다
-    $('#potsub').textContent = parts.map((p, i) =>
-      (i === 0 ? '메인 ' : '사이드' + i + ' ') + fmt(p.amount)).join(' · ');
+    $('#potsub').innerHTML = parts.map((p, i) =>
+      (i === 0 ? '메인 ' : '사이드' + i + ' ') + amt(p.amount)).join(' · ');
     return;
   }
-  $('#potsub').textContent = (v.pot_center && v.pot_center !== v.pot_total)
-    ? '중앙 ' + fmt(v.pot_center) : '';
+  $('#potsub').innerHTML = (v.pot_center && v.pot_center !== v.pot_total)
+    ? '중앙 ' + amt(v.pot_center) : '';
 }
 
 /* ---------------- 히어로 ---------------- */
@@ -851,6 +919,7 @@ function renderHeroSlot(side, code, seat) {
 }
 
 function renderHero(v) {
+  noteBB(v);
   const me = (v.seats || []).find((x) => x.hero);
   const box = $('#hero');
 
@@ -877,7 +946,7 @@ function renderHero(v) {
     (me && me.allin ? ' · ALL-IN' : '') +
     (award ? ' · ' + award : '');
 
-  $('#heroinfo .stack').textContent = me ? fmt(me.stack) : '';
+  $('#heroinfo .stack').innerHTML = me ? amt(me.stack) : '';
 
   ensureHeroSlots();
 
@@ -1325,8 +1394,7 @@ function makeAnteChip(v, seat, amount) {
   el.style.left = p.x + '%';
   el.style.top = p.y + '%';
 
-  el.innerHTML =
-    `<span class="disc"></span>${fmt(amount)}`;
+  el.innerHTML = chipPileHTML(amount) + amt(amount);
 
   box.appendChild(el);
   requestAnimationFrame(() => positionRightChips(box));
@@ -2526,7 +2594,7 @@ function resultCardSeatName(v, s) {
   if (String(s) === String(v.hero_seat)) return label;
   const name = (v.seat_names || {})[String(s)];
   const pid = (v.seat_pid || {})[String(s)];
-  const nick = name || (pid !== undefined && pid !== null ? 'B' + pid : '');
+  const nick = name || (pid !== undefined && pid !== null ? botName(pid) : '');
   return esc(label) + (nick ? ' · ' + esc(nick) : '');
 }
 
@@ -3338,7 +3406,7 @@ function renderRankDrawer(t) {
         const rank = p.alive
           ? (p.chip_rank ? fmt(p.chip_rank) : '-')
           : (p.finish_rank ? '#' + fmt(p.finish_rank) : 'OUT');
-        const who = p.hero ? '나 · B' + p.pid : 'B' + p.pid;
+        const who = p.hero ? '나 · ' + heroProfileNickname() : botName(p.pid);
         const loc = p.alive
           ? ('T' + (p.table ?? '-') + ' S' + (p.seat ?? '-') + (p.pos ? ' · ' + p.pos : ''))
           : '탈락';
@@ -4739,6 +4807,12 @@ $('#rankScrim').addEventListener('click', closeRankDrawer);
 bindRankDrag($('#tablewrap'), true, () => !S.rankOpen && $('#overlay').hidden);
 bindRankDrag($('#rankDrawer'), false, () => S.rankOpen);
 
+// 금액(스택·벳·팟)을 누르면 칩 ↔ BB.
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('.amt, .chips, #potline, .pod .meta, #heroinfo .stack');
+  if (!t || (e.target.closest && e.target.closest('button'))) return;
+  toggleAmtUnit();
+});
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
   if (!b) return;

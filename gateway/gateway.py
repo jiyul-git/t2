@@ -287,6 +287,11 @@ class Accounts:
 
 
 # ------------------------------------------------------------------------------------- game servers
+
+def default_nickname():
+    """새 플레이어의 기본 닉네임: 'T-' + 8자리 숫자(봇 이름과 같은 꼴)."""
+    return 'T-%08d' % secrets.randbelow(10 ** 8)
+
 class Backends:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -613,7 +618,9 @@ def make_handler(cfg, accounts, backends, verify_token):
                     return self._json(401, {'error': '로그인이 필요합니다'})
                 if accounts.get(uid)['status'] != 'pending':
                     return self._json(409, {'error': '이미 가입한 계정입니다'})
-                nick = str(body.get('nickname') or '').strip()
+                # 가입 때는 닉네임을 묻지 않는다(사용자 결정 2026-10-20). 'T-' + 8자리 숫자를
+                # 붙여 주고, 바꾸고 싶으면 나중에 설정에서 바꾼다. 예전 앱이 보낸 닉네임은 그대로 쓴다.
+                nick = str(body.get('nickname') or '').strip() or default_nickname()
                 av = body.get('avatar')
                 if not 1 <= len(nick) <= 16:
                     return self._json(400, {'error': '닉네임은 1~16자로 정해 주세요'})
