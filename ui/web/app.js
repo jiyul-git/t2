@@ -3657,7 +3657,9 @@ function bindMenuRankSwipe(sheet) {
   });
 }
 
-function bindRankDrag(host, opening, enabled, fromMenu = false) {
+// 순위 창을 여는 끌기는 화면 왼쪽 끝 이 폭 안에서 시작해야 한다. 탭은 그대로 통과(메모 단추 등).
+const RANK_EDGE_PX = 28;
+function bindRankDrag(host, opening, enabled, fromMenu = false, edgePx = 0) {
   let drag = null, suppressClick = false;
   const drawer = $('#rankDrawer'), scrim = $('#rankScrim');
   const paint = e => {
@@ -3716,6 +3718,7 @@ function bindRankDrag(host, opening, enabled, fromMenu = false) {
   };
   host.addEventListener('pointerdown', e => {
     if (!enabled() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    if (edgePx && e.clientX > edgePx) return;
     drag = {x:e.clientX, y:e.clientY, lastX:e.clientX, id:e.pointerId,
       at:performance.now(), velocity:0, distance:0, active:false};
   }, {passive:true});
@@ -3724,7 +3727,10 @@ function bindRankDrag(host, opening, enabled, fromMenu = false) {
   }, {passive:true});
   host.addEventListener('pointerup', e => finish(e, false), {passive:true});
   host.addEventListener('pointercancel', e => finish(e, true), {passive:true});
-  host.addEventListener('lostpointercapture', e => finish(e, true), {passive:true});
+  // 끌기를 시작하면 host 가 터치를 넘겨받는다(setPointerCapture). 그때 처음 눌린 자식 요소가
+  // 잡고 있던 터치를 놓치며 lostpointercapture 가 올라오는데, 이것을 '끌기 취소'로 보면 순위 창이
+  // 열리다 바로 닫혔다(화면만 어두워졌다 밝아짐). host 자신이 놓친 경우만 취소로 본다.
+  host.addEventListener('lostpointercapture', e => { if (e.target === host) finish(e, true); }, {passive:true});
   host.addEventListener('click', e => {
     if (suppressClick) {e.preventDefault(); e.stopImmediatePropagation();}
   }, true);
@@ -4811,10 +4817,12 @@ function apply(resp) {
 /* ---------------- 시작 ---------------- */
 $('#bLog').addEventListener('click', showHistory);
 $('#bMenu').addEventListener('click', showMenu);
-$('#rankClose').addEventListener('click', closeRankDrawer);
 $('#rankScrim').addEventListener('click', closeRankDrawer);
 
-bindRankDrag($('#tablewrap'), true, () => !S.rankOpen && $('#overlay').hidden);
+// 순위 창은 화면 왼쪽 가장자리를 누르고 오른쪽으로 끌 때만 열린다(아무 데서나 열리면 화면이
+// 어두워졌다 밝아지는 오작동이 있었다). 닫기: 창을 왼쪽으로 밀거나 바깥(어두운 곳)을 누른다.
+bindRankDrag($('#tablewrap'), true, () => !S.rankOpen && $('#overlay').hidden, false, RANK_EDGE_PX);
+bindRankDrag($('#hero'), true, () => !S.rankOpen && $('#overlay').hidden, false, RANK_EDGE_PX);
 bindRankDrag($('#rankDrawer'), false, () => S.rankOpen);
 
 // 금액(스택·벳·팟)을 누르면 칩 ↔ BB.
