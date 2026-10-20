@@ -1,15 +1,15 @@
-"""GTO 계산기 프리플랍 기준(10~40bb) — 프리플랍 판단의 **기준(reference)** 층.
+"""GTO 계산기 프리플랍 기준(10~60bb) — 프리플랍 판단의 **기준(reference)** 층.
 
 데이터: data/gto_pf/pushfold_v1.json (tools/gto_pf_build.py 가 GTO 브랜치의
-pf10/15/20/25 와 s30/s40 기록에서 만든다). 9맥스, 안테 합계 1bb, 전원 같은 스택, 칩 EV,
+pf10/15/20/25 와 s30/s40/s60 기록에서 만든다). 9맥스, 안테 합계 1bb, 전원 같은 스택, 칩 EV,
 등급 quick(빠른 값). 사용자 결정 2026-10-19: 계산한 레인지를 T2 기준으로 쓴다.
 
 이 모듈은 '레귤러가 공부한 답'만 돌려준다. 사람이 그 답을 얼마나 따르는가
 (차트 지식), ICM/버블 체감, 성향 이탈은 preflop.py 가 정한다.
 
 조회 규칙
-  - 스택: 유효 스택(bb, 핸드 시작 기준). 10~40bb(±0.25) 밖이면 None(기존 경로).
-    버킷 사이는 선형 보간. 한쪽 버킷에 노드가 없으면 None.
+  - 스택: 유효 스택(bb, 핸드 시작 기준). 10~60bb(±0.25) 밖이면 None(기존 경로).
+    버킷 사이는 선형 보간(40~60 사이는 두 버킷의 직선 보간). 한쪽 버킷에 노드가 없으면 None.
   - 좌석: 6~9인 테이블은 '뒤에 남은 인원'이 같은 9맥스 자리로 옮긴다.
     SB/BB 는 그대로. 5인 이하와 노안테는 None.
 """
@@ -70,6 +70,8 @@ def _interp(table, key, eff_bb, pick):
     """버킷 사이 선형 보간. pick(entry) → 169 리스트 또는 None."""
     d = _load()
     b = d['buckets']
+    if table not in d:
+        return None
     x = max(b[0], min(b[-1], float(eff_bb)))
     hi = next(i for i, v in enumerate(b) if v >= x)
     lo = max(0, hi - 1) if b[hi] > x else hi
@@ -152,8 +154,39 @@ def aggr_vs_open(opener_pos, def_pos, seats, eff_bb, hand, ante=True):
     return {'jam': jam or 0.0, 'r3': r3 or 0.0}
 
 
+FULL_OPEN_BB = (1.8, 2.5)   # 플랫콜 루프는 2.0bb 오픈 기준. 이 범위 밖 오픈 크기는 기존 경로.
+
+
+def defend_vs_open(opener_pos, def_pos, seats, eff_bb, hand, open_bb, ante=True):
+    """단독 오픈을 받은 수비자의 전체 응답 {'fold','call','r3','jam'}.
+
+    플랫콜 루프로 보정된 자리(vs_open_full)만. 양쪽 버킷(예: 30·40)에 모두 있어야
+    하고(한쪽만 있으면 None), 오픈 크기가 FULL_OPEN_BB 안이어야 한다.
+    """
+    if not covered(eff_bb, seats, ante) or open_bb is None:
+        return None
+    if not (FULL_OPEN_BB[0] <= float(open_bb) <= FULL_OPEN_BB[1]):
+        return None
+    a, b = pos9(opener_pos, seats), pos9(def_pos, seats)
+    if a is None or b is None:
+        return None
+    d = _load()
+    if not d.get('vs_open_full'):
+        return None
+    key = a + '>' + b
+    g = {k: _at(_interp('vs_open_full', key, eff_bb, lambda e, k=k: e.get(k)), hand)
+         for k in ('fold', 'call', 'r3', 'jam')}
+    if any(v is None for v in g.values()):
+        return None
+    s = sum(g.values())
+    return {k: v / s for k, v in g.items()} if s > 0 else None
+
+
 def jam_vs_3bet(opener_pos, threebettor_pos, seats, eff_bb, hand, ante=True):
-    """오픈 후 일반 3벳을 받은 오프너의 4벳(올인) 확률. 범위 밖이면 None."""
+    """오픈 후 일반 3벳을 받은 오프너의 4벳(올인) 확률. 범위 밖이면 None.
+
+    s30~s60 트리의 4벳은 올인뿐이다. 60bb 에서도 작은 4벳은 없다(사용자 승인 2026-10-20:
+    60bb 도 올인·3벳·4벳 판단만 같은 방식으로 연결)."""
     if not covered(eff_bb, seats, ante):
         return None
     a, b = pos9(opener_pos, seats), pos9(threebettor_pos, seats)

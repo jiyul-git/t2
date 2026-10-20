@@ -3808,6 +3808,11 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             a, sz = 'shove', float(bb)
         else:
             a, sz = '3bet', float(open_bb) * _pf.reraise_mult(1, pos)
+    elif _gto_aggr in ('call', 'fold'):
+        # 플랫콜 루프로 보정된 자리(30~40bb BTN 오픈 vs BB): 콜·폴드도 기준대로.
+        role = 'defend'
+        a = _gto_aggr
+        sz = float(to_call_bb or 0) if a == 'call' else 0.0
     elif _gto_call is not None:
         # GTO 계산기 기준(푸시/폴드 10~25bb)을 따르는 판단. 범위 밖(스택·좌석·
         # ICM 압력·콜러가 낀 팟)이면 None 이라 아래 기존 경로(calloff/defend)로 간다.

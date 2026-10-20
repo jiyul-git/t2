@@ -1,4 +1,4 @@
-"""GTO 프리플랍 기준(10~40bb) 연결 검사.
+"""GTO 프리플랍 기준(10~60bb) 연결 검사.
 
   python3 tools/verify_gto_pf.py
 
@@ -20,7 +20,7 @@ def check(name, cond):
     print('PASS', name)
 
 d = G._load()
-check('buckets 10..40', d['buckets'] == [10, 15, 20, 25, 30, 40])
+check('buckets 10..60', d['buckets'] == [10, 15, 20, 25, 30, 40, 60])
 i = d['classes'].index('A2o')
 check('SB 10bb A2o jam = record', abs(G.first_in('SB', 9, 10, ['Ah', '2c'])['jam']
                                        - d['first_in']['10']['SB']['jam'][i]) < 1e-9)
@@ -29,7 +29,16 @@ b = G.first_in('UTG', 9, 20, ['Kd', 'Qs'])['jam']
 m = G.first_in('UTG', 9, 17.5, ['Kd', 'Qs'])['jam']
 check('interpolation midpoint', abs(m - (a + b) / 2) < 1e-9)
 check('out of range low/high', G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
-      and G.first_in('UTG', 9, 41.0, ['Ah', 'Ad']) is None)
+      and G.first_in('UTG', 9, 61.0, ['Ah', 'Ad']) is None)
+i60 = d['classes'].index('AKo')
+check('60bb BB vs BTN open AKo 3-bet = record',
+      abs(G.aggr_vs_open('BTN', 'BB', 9, 60, ['Ah', 'Kc'])['r3'] - d['vs_open']['60']['BTN>BB']['r3'][i60]) < 1e-9)
+a40 = G.first_in('CO', 9, 40, ['Kd', 'Ts'])['open']; a60 = G.first_in('CO', 9, 60, ['Kd', 'Ts'])['open']
+check('50bb = midpoint of 40 and 60', abs(G.first_in('CO', 9, 50, ['Kd', 'Ts'])['open'] - (a40 + a60) / 2) < 1e-9)
+check('60bb SB first-in left to existing path', G.first_in('SB', 9, 60, ['Kh', '7c']) is None)
+check('50bb 3-bet-jam call: 60 bucket too thin -> None unless both sides exist',
+      all(G.call_vs_3bet_jam(o, j, 9, 50, ['Ah', 'Qc']) is None
+          for o, j in (('UTG', 'BB'),) if 'UTG>BB' not in d['vs_3bjam']['60']))
 check('30bb SB first-in left to existing path (limp is flop-model dependent)',
       G.first_in('SB', 9, 30, ['Kh', '7c']) is None and G.first_in('SB', 9, 25, ['Kh', '7c']) is not None)
 check('30bb BTN first-in has no jam', G.first_in('BTN', 9, 30, ['Kh', '7c'])['jam'] == 0.0)
@@ -61,8 +70,8 @@ check('money pressure -> None',
 check('money drive only -> covered',
       P.gto_pf_first_in_choice(prof, 'SB', 9.39, ['Ah', '2c'], r, [8.89], 1.0, 9, True,
                                {'pressure': 0.0, 'range_factor': 1.29}) == 'jam')
-check('deep stack -> None', P.gto_pf_first_in_choice(prof, 'SB', 60, ['Ah', '2c'], r,
-                                                      [60], 1.0, 9, True) is None)
+check('deep stack -> None', P.gto_pf_first_in_choice(prof, 'CO', 75, ['Ah', '2c'], r,
+                                                      [75], 1.0, 9, True) is None)
 # BB vs SB jam 10bb: K5o always calls in the record
 check('BB calls SB jam K5o 10bb',
       P.gto_pf_call_choice(prof, 'SB', 'BB', ['Kh', '5c'], r, 8.89, 9.89, 8.89, 1,
@@ -85,10 +94,28 @@ check('aggr: caller in pot -> None',
 check('aggr: unknown own action -> None',
       P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['Ah', 'Kc'], r, 29.0, 2.0, 1.0, 1,
                            other_live_actors=0) is None)
-check('aggr: 72o vs BTN open passes',
-      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 29.0, 2.0, 1.0, 1,
+check('aggr: 72o vs CO open passes (CO not loop-corrected yet)',
+      P.gto_pf_aggr_choice(prof, 'CO', 'BB', ['7h', '2c'], r, 29.0, 2.0, 1.0, 1,
                            other_live_actors=0, actor_acted=False,
                            aggressor_total_bb=30.0) == 'pass')
+# --- 플랫콜 루프로 보정된 BTN 오픈 vs BB (30~40bb): 콜·폴드까지 기준대로 ---
+f = G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.0)
+check('flat: 35bb BB K9s vs BTN 2.0 open calls', f is not None and f['call'] > 0.99)
+check('flat: 72o folds', G.defend_vs_open('BTN', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
+check('flat: 25bb / 45bb / 3x open / CO opener -> None',
+      G.defend_vs_open('BTN', 'BB', 9, 25, ['Kh', '9h'], 2.0) is None
+      and G.defend_vs_open('BTN', 'BB', 9, 45, ['Kh', '9h'], 2.0) is None
+      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 3.0) is None
+      and G.defend_vs_open('CO', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
+check('flat hook: BB K9s vs BTN 2.0 open at 35bb -> call',
+      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['Kh', '9h'], r, 34.0, 2.0, 1.0, 1,
+                           other_live_actors=0, actor_acted=False, aggressor_total_bb=35.0) == 'call')
+check('flat hook: 72o -> fold',
+      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 34.0, 2.0, 1.0, 1,
+                           other_live_actors=0, actor_acted=False, aggressor_total_bb=35.0) == 'fold')
+check('flat hook: 3x open -> back to aggression-only (pass)',
+      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 34.0, 3.0, 2.0, 1,
+                           other_live_actors=0, actor_acted=False, aggressor_total_bb=35.0) == 'pass')
 # --- packaging: the run folder (gateway / installer) must carry the module and its data ---
 import subprocess, tempfile
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

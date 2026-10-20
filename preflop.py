@@ -537,6 +537,7 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
                        actor_acted=None, n_limpers=0, bf=1.0, seats=8,
                        ante=True, aggressor_total_bb=None):
     """오픈/3벳을 받은 자리의 공격 여부만 기준대로: 'jam' / '3bet' / 'pass'.
+    플랫콜 루프로 보정된 자리는 'call' / 'fold' 도 돌려준다(defend_vs_open).
 
     단독 오픈을 받았을 때(3벳 올인·일반 3벳)와, 내가 오픈한 뒤 일반 3벳을
     받았을 때(4벳 올인)만 다룬다. 'pass' 면 기존 판단이 콜/폴드를 정하되
@@ -558,6 +559,17 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
         eff = min(eff, float(aggressor_total_bb))
     eff += share
     if raise_level == 1 and not actor_acted:
+        # 플랫콜 루프로 보정된 자리(현재 30~40bb BTN 오픈 vs BB)는 콜·폴드까지 기준대로.
+        full = getattr(_GPF, 'defend_vs_open', None)
+        f = full(aggressor_pos, pos, seats, eff, hand, open_bb, ante) if full else None
+        if f is not None:
+            u = rng.random()
+            act = ('jam' if u < f['jam'] else '3bet' if u < f['jam'] + f['r3']
+                   else 'call' if u < f['jam'] + f['r3'] + f['call'] else 'fold')
+            _timing_bound({'kind': 'gto_pf_defend_full', 'eq': 1.0 - f['fold'], 'need': 0.5,
+                           'gto': {k: round(v, 4) for k, v in f.items()},
+                           'eff_bb': round(eff, 3), 'choice': act})
+            return act
         g = _GPF.aggr_vs_open(aggressor_pos, pos, seats, eff, hand, ante)
         if g is None:
             return None
