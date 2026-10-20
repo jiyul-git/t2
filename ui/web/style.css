@@ -535,6 +535,7 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 .sheet .row .who { font-weight: 700; min-width: 74px; font-size: 13px; }
 .sheet .row .cards { display: flex; gap: 3px; }
 .sheet .row .amt { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; }
+.sheet .row .amt .dim { color: var(--dim); font-weight: 500; }
 .sheet .potline { font-size: 12px; color: var(--dim); margin: 8px 0 2px; }
 .sheet .logbox {
   margin-top: 10px; font-size: 12px; color: var(--dim); line-height: 1.6;
@@ -547,7 +548,7 @@ button .sub { display: block; font-size: 11px; font-weight: 500; color: var(--di
 .sheet .row.hist .cards { flex: 1 1 auto; }
 .sheet .row.hist .histsub { flex: 1 0 100%; font-size: 11px; color: var(--dim); margin-top: 3px; }
 .sheet .row.hist:active { background: rgba(255,255,255,.07); }
-.sheet .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.sheet .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 6px; }
 .sheet .grid .row { margin-bottom: 0; padding: 5px 7px; }
 .sheet .grid .row .who { min-width: 0; font-size: 12px; }
 .sheet .grid .row .amt { font-size: 12px; }

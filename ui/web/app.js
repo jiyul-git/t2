@@ -3331,14 +3331,6 @@ async function showHistory() {
   }
 }
 
-/* index.html 이 app.js 를 ?v=N 으로 불러온다. 그 N 을 그대로 보여준다.
- * 브라우저가 옛 파일을 캐시하고 있으면 여기 숫자도 옛것이라 바로 드러난다. */
-function buildTag() {
-  const el = document.querySelector('script[src*="app.js"]');
-  const m = el && /[?&]v=([^&]*)/.exec(el.getAttribute('src') || '');
-  return m ? m[1] : '?';
-}
-
 async function tournamentLoad(force) {
   if (!force && S.tournament) return S.tournament;
   const res = await fetch('/api/tournament', { cache: 'no-store' });
@@ -3349,43 +3341,34 @@ async function tournamentLoad(force) {
   return data;
 }
 
-function pct(v) {
-  const n = Number(v || 0);
-  if (!isFinite(n)) return '-';
-  return (Math.round(n * 1000) / 1000).toString() + '%';
-}
-
 function tournamentInfoHTML(t) {
   if (!t || t.no_game) {
     return '<div class="sub">진행 중인 대회가 없습니다.</div>';
   }
+  // 상금은 %가 아니라 칩으로 보인다(상금 총액 × 비율). 총액을 모르면(연습 게임) 순위만.
+  const pool = Number(t.prize_pool || 0);
+  const prize = (p) => pool > 0 ? fmt(Math.round(pool * Number(p || 0) / 100)) + '칩' : '';
+  const row = (k, v, cls) => `<div class="row${cls ? ' ' + cls : ''}"><span class="who">${k}</span><span class="amt">${v}</span></div>`;
 
   const money = t.in_money
-    ? `<div class="row win"><span class="who">인더머니</span><span class="amt">보장 ${pct(t.current_prize_pct)}</span></div>`
-    : `<div class="row"><span class="who">ITM까지</span><span class="amt">${fmt(t.players_to_jump)}명 탈락</span></div>`;
-
+    ? row('인더머니', prize(t.current_prize_pct) ? '보장 ' + prize(t.current_prize_pct) : '진입', 'win')
+    : row('ITM까지', `${fmt(t.players_to_jump)}명 탈락`);
   const jump = t.next_rank
-    ? `<div class="row"><span class="who">다음 머니점프</span><span class="amt">${fmt(t.next_rank)}위 · ${pct(t.next_prize_pct)}</span></div>` +
-      `<div class="potline">${t.in_money ? '현재에서 ' + fmt(t.players_to_jump) + '명 더 탈락 · ' : ''}점프 +${pct(t.next_jump_pct)}</div>`
-    : '<div class="row"><span class="who">다음 머니점프</span><span class="amt">1위 구간</span></div>';
-
-  const jumps = (t.money_jumps || []).slice(0, 5);
-  const jumpLine = jumps.length
-    ? '<div class="potline">구간 · ' + jumps.map((j) =>
-        `${fmt(j.rank)}위 ${pct(j.prize_pct)}`).join(' → ') + '</div>'
+    ? row('다음 머니점프', `${fmt(t.next_rank)}위${prize(t.next_prize_pct) ? ' · ' + prize(t.next_prize_pct) : ''}` +
+          (t.in_money ? ` <span class="dim">(${fmt(t.players_to_jump)}명 더)</span>` : ''))
     : '';
 
   return (
     `<div class="sub">${esc(t.format || '대회')} · HAND ${fmt(displayHandNo(t))}</div>` +
     '<div class="grid">' +
-      `<div class="row"><span class="who">필드</span><span class="amt">${fmt(t.entries)} → ${fmt(t.remaining)}</span></div>` +
-      `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
-      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)} · ${t.virtual_clock ? fmt(t.level_minutes)+'분' : '기존 핸드 기준'}</span></div>` +
-      `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
-      `<div class="row"><span class="who">테이블</span><span class="amt">${fmt(t.tables)}개</span></div>` +
-      `<div class="row"><span class="who">버블</span><span class="amt">${t.bubble ? '진입' : '아님'}</span></div>` +
+      row('남은 인원', `${fmt(t.remaining)}/${fmt(t.entries)}`) +
+      row('ITM', `${fmt(t.itm)}위`) +
+      row('레벨', `${fmt(t.level)}${t.virtual_clock ? ' · ' + fmt(t.level_minutes) + '분' : ''}`) +
+      row('블라인드', `${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}`) +
+      row('테이블', `${fmt(t.tables)}개`) +
+      row('총 상금', pool > 0 ? fmt(pool) + '칩' : '-') +
     '</div>' +
-    money + jump + jumpLine
+    money + jump
   );
 }
 
@@ -3631,7 +3614,6 @@ async function showMenu() {
       ? `<div class="sub">대회 정보를 불러오지 못했습니다: ${esc(err)}</div>`
       : tournamentInfoHTML(t)) +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
-    `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>'
   );
 
