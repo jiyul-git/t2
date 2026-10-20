@@ -498,7 +498,9 @@ function slotPos(slot, heroSlot, n, rfx, rfy) {
   const th = (90 - off * (360 / n)) * Math.PI / 180;
   // the far (top) seats sit a little further out so they clear the rail
   const sn = Math.sin(th);
-  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + (sn < 0 ? 42 : 39) * rfy * sn };
+  // 위쪽이 여유로워서 맨 위 두 자리를 뺀 나머지를 조금씩 위로 올린다(아래로 갈수록 조금 더, 최대 약 3.8%).
+  const lift = 2.2 * Math.max(0, sn + 0.94);
+  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + (sn < 0 ? 42 : 39) * rfy * sn - lift * rfy };
 }
 
 function sideSeatClass(p) {
@@ -699,7 +701,10 @@ function fitSeatsInView(box) {
 function chipPosition(v, seat) {
   const n = v.n_slots || 8;
   const side = sideSeatClass(slotPos(seat, v.hero_seat, n, 1, 1));
-  const p = slotPos(seat, v.hero_seat, n, 0.43, 0.62);
+  // 아래쪽 좌석(테이블 중앙선 아래)은 칩이 좌석에서 너무 떨어져 보였다 — 좌석 쪽으로 당긴다.
+  const lower = slotPos(seat, v.hero_seat, n, 1, 1).y > 44;
+  // 위쪽 좌석은 가로로 더 벌려(각 좌석 아래) 맨 위 두 자리의 칩·금액이 서로 겹치지 않게 한다.
+  const p = lower ? slotPos(seat, v.hero_seat, n, 0.52, 0.78) : slotPos(seat, v.hero_seat, n, 0.75, 0.62);
   if (side === ' side-left') { p.x = 26; p.y = 54; }
   if (side === ' side-right') { p.x = 78; p.y = 50; }
   return {p, side};
@@ -855,7 +860,7 @@ function potParts(v) {
 
 function renderPot(v) {
   noteBB(v);
-  $('#pot').innerHTML = (v.pot_total ? chipPileHTML(v.pot_total) : '') + '팟 ' + amt(v.pot_total);
+  $('#pot').innerHTML = '팟 ' + amt(v.pot_total);
   const parts = potParts(v);
   if (parts.length > 1) {
     // 올인 때문에 자격이 갈렸다 — 나눠서 보여준다
@@ -3577,13 +3582,12 @@ function updateBreakFromReady(ready) {
 
 function renderBreak(ready) {
   if (!ready.break_remaining && !ready.working) {
-    if (S.breakOpen) { S.breakOpen = false; hideOverlay(); }
+    if (S.breakOpen) { S.breakOpen = false; hideBreakBanner(); }
     return;
   }
   if (!S.breakOpen) {
     S.breakOpen = true;
-    showOverlayPersistent('<h2>브레이크</h2><div id="breakCountdown" role="status" aria-live="polite"></div>' +
-      (ready.scheduled_tournament ? '' : '<div class="actions"><button type="button" id="breakSkip">휴식 건너뛰기</button></div>'));
+    showBreakBanner(ready.scheduled_tournament);
     if ($('#breakSkip')) $('#breakSkip').addEventListener('click', async () => {
       try {
         const r = await fetch('/api/break', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({skip:true})});
@@ -3594,6 +3598,28 @@ function renderBreak(ready) {
   }
   if ($('#breakCountdown')) $('#breakCountdown').textContent = ready.break_remaining > 0
     ? `남은 시간 ${clockText(ready.break_remaining)}` : '다른 테이블 진행 완료 대기 중';
+}
+/* 브레이크 알림: 화면을 덮지 않고 위에서 빠르게 내려오는 알림(휴대폰 알림처럼).
+ * 브레이크 동안 테이블(보드·카드·칩·팟)은 비운다. ×는 알림만 올려 보낸다. */
+function showBreakBanner(scheduled) {
+  let b = $('#breakBanner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'breakBanner';
+    $('#app').appendChild(b);
+  }
+  b.innerHTML = '<div class="bb-icon" aria-hidden="true">☕</div>' +
+    '<div class="bb-text"><b>브레이크</b><span id="breakCountdown" role="status" aria-live="polite"></span></div>' +
+    (scheduled ? '' : '<button type="button" id="breakSkip">건너뛰기</button>') +
+    '<button type="button" class="bb-close" aria-label="알림 닫기">×</button>';
+  b.querySelector('.bb-close').addEventListener('click', () => b.classList.remove('show'));
+  $('#app').classList.add('breaktime');
+  requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('show')));
+}
+function hideBreakBanner() {
+  const b = $('#breakBanner');
+  if (b) b.classList.remove('show');
+  $('#app').classList.remove('breaktime');
 }
 async function showMenu() {
   showOverlayPersistent(

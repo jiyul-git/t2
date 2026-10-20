@@ -275,10 +275,15 @@ input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-ca
 .pile .col { display: inline-flex; flex-direction: column-reverse; position: relative; }
 .pile .col + .col { margin-left: -2px; }
 .pile .col:nth-child(1) { z-index: 3; } .pile .col:nth-child(2) { z-index: 2; } .pile .col:nth-child(3) { z-index: 1; }
-.pile::after { content: ""; position: absolute; left: -4px; right: -4px; bottom: -2px; height: 6px; z-index: 0;
-               border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.7), rgba(0,0,0,.25) 60%, rgba(0,0,0,0)); }
-.pile .chip { display: block; position: relative; width: 12px; height: 4.5px; border-radius: 50%;
-  margin-bottom: -2.6px;
+.pile::after { content: ""; position: absolute; left: -2px; right: -2px; bottom: -1.5px; height: 4px; z-index: 0;
+               border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.75), rgba(0,0,0,0)); }
+/* 칩 더미가 펠트 뒤쪽(화면 오른쪽 위 45°)으로 드리우는 그림자 — 앞에서 빛이 비추는 느낌.
+   더미 높이의 70% 만큼을 바닥 기준으로 45° 기울여 깐다. */
+.pile::before { content: ""; position: absolute; left: 1px; right: -1px; bottom: 0; height: 70%; z-index: 0;
+                transform-origin: 0 100%; transform: skewX(-45deg);
+                border-radius: 40% 40% 30% 30%; background: rgba(0,0,0,.38); filter: blur(1.2px); }
+.pile .chip { display: block; position: relative; width: 10px; height: 3.8px; border-radius: 50%;
+  margin-bottom: -2.2px;
   background:
     linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.28)),
     linear-gradient(90deg, var(--cc) 0 14%, var(--ce) 14% 24%, var(--cc) 24% 44%, var(--ce) 44% 56%,
@@ -301,9 +306,7 @@ input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-ca
    (예전에는 금액 상자 위에 칩이 얹혀 테이블에서 떠 보였다.) */
 .chips .amt { color: #f6edd8; font-size: 11px; line-height: 14px; vertical-align: middle;
               text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.45); }
-/* 팟 칩 더미는 팟 알약 안이 아니라 알약 왼쪽 펠트 위에. */
-#pot { position: relative; }
-#pot .pile { position: absolute; right: 100%; bottom: 3px; margin-right: 9px; }
+
 .chips.side-right {
   width: max-content; min-width: 60px; white-space: nowrap; z-index: 17;
 }

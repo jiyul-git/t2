@@ -7,6 +7,9 @@ const context = {S:{}, $: id => elements[id], showOverlayPersistent(){}, hideOve
   setTimeout, clearTimeout, AbortController, console};
 vm.createContext(context);
 vm.runInContext(source.slice(source.indexOf('function clockText('), source.indexOf('async function showMenu(')), context);
+// 브레이크는 이제 화면 위 알림(showBreakBanner/hideBreakBanner)이다 — DOM 부분은 따로 막는다.
+context.showBreakBanner = () => {};
+context.hideBreakBanner = () => { hidden++; };
 context.renderBreak({break_remaining:300, working:true});
 assert.strictEqual(elements['#breakCountdown'].textContent, '남은 시간 05:00');
 context.renderBreak({break_remaining:1, working:true});
