@@ -4812,6 +4812,17 @@ document.addEventListener('keydown', (e) => {
   if (S.rankOpen) closeRankDrawer();
   else hideOverlay();
 });
+/* 좌석(캐릭터·이름표·스택) 크기를 화면 면적에 비례시킨다. 기준 화면 390×844 에서 0.88배
+ * (사용자 결정 2026-10-20: 조금 작게). S23(약 360×760)은 약 0.81배. 0.7~1.05 사이로 묶는다. */
+function applySeatScale() {
+  const w = window.innerWidth || 390, h = window.innerHeight || 844;
+  const s = Math.max(0.7, Math.min(1.05, 0.88 * Math.sqrt((w * h) / (390 * 844))));
+  document.documentElement.style.setProperty('--seat-scale', s.toFixed(3));
+  const box = $('#seats');
+  if (box) fitSeatsInView(box);
+}
+applySeatScale();
+window.addEventListener('resize', applySeatScale);
 memoLoad().finally(sync);
 
 if (location.hash === '#history') {

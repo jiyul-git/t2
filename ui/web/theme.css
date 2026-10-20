@@ -127,3 +127,12 @@ html[data-deck="ivory"] .card.back::after{background:#45665b;border-color:#e2d9c
   #overlay.opening:not([hidden]) { animation: t2g-fade .2s ease both; }
   #overlay.opening:not([hidden]) .sheet { animation: t2g-sheet .38s cubic-bezier(.2,.8,.25,1) both; }
 }
+
+/* 좌석 전체가 --seat-scale 로 줄어도 글자(이름표·포지션·스택)는 원래 크기로 보이게 되돌린다. */
+#seats .pod .seatno { font-size: calc(8px / var(--seat-scale, 1)); }
+#seats .pod .pos { font-size: calc(9px / var(--seat-scale, 1)); }
+#seats .pod .stack { font-size: calc(12px / var(--seat-scale, 1)); }
+@media (max-height:700px) {
+  #seats .pod .pos { font-size: calc(8px / var(--seat-scale, 1)); }
+  #seats .pod .stack { font-size: calc(10px / var(--seat-scale, 1)); }
+}

@@ -104,6 +104,7 @@ input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-ca
 .pod {
   position: absolute; width: 72px; margin-left: -36px; margin-top: -30px;
   text-align: center; transition: opacity .25s;
+  scale: var(--seat-scale, 1);   /* 화면 면적 비례(app.js applySeatScale) */
 }
 /* Lift the entire active seat; a child's z-index cannot beat a later pod. */
 #seats .pod.bubble-front { z-index: 12; }
@@ -272,12 +273,12 @@ input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-ca
         position: relative; padding-bottom: 2px; }
 /* 기둥은 서로 살짝 겹쳐 붙어 있고(옆 기둥이 뒤), 바닥에 닿은 그림자가 하나로 깔린다. */
 .pile .col { display: inline-flex; flex-direction: column-reverse; position: relative; }
-.pile .col + .col { margin-left: -3px; }
+.pile .col + .col { margin-left: -2px; }
 .pile .col:nth-child(1) { z-index: 3; } .pile .col:nth-child(2) { z-index: 2; } .pile .col:nth-child(3) { z-index: 1; }
-.pile::after { content: ""; position: absolute; left: -5px; right: -5px; bottom: -2px; height: 8px; z-index: 0;
+.pile::after { content: ""; position: absolute; left: -4px; right: -4px; bottom: -2px; height: 6px; z-index: 0;
                border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.7), rgba(0,0,0,.25) 60%, rgba(0,0,0,0)); }
-.pile .chip { display: block; position: relative; width: 16px; height: 6px; border-radius: 50%;
-  margin-bottom: -3.5px;
+.pile .chip { display: block; position: relative; width: 12px; height: 4.5px; border-radius: 50%;
+  margin-bottom: -2.6px;
   background:
     linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.28)),
     linear-gradient(90deg, var(--cc) 0 14%, var(--ce) 14% 24%, var(--cc) 24% 44%, var(--ce) 44% 56%,
@@ -298,7 +299,7 @@ input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-ca
 .amt { cursor: pointer; }
 /* 칩은 펠트 위에 바로 놓인다: 칩 더미와 금액을 한 줄로, 금액은 상자 없이 그림자 글자.
    (예전에는 금액 상자 위에 칩이 얹혀 테이블에서 떠 보였다.) */
-.chips .amt { color: #f6edd8; font-size: 12px; line-height: 15px; vertical-align: middle;
+.chips .amt { color: #f6edd8; font-size: 11px; line-height: 14px; vertical-align: middle;
               text-shadow: 0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.45); }
 /* 팟 칩 더미는 팟 알약 안이 아니라 알약 왼쪽 펠트 위에. */
 #pot { position: relative; }
