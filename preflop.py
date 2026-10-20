@@ -605,8 +605,10 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
     if _g == 'limp':
         return ('limp', 1.0)
     if _g == 'open':
-        sz = open_size_bb(feel, pos, rng, prof, ante, 0, bb_chips=bb_chips)
-        return ('raise', sz if sz else 2.0)
+        # 기준 범위 안의 오픈은 계산기 트리와 같은 크기(2.0bb, SB 3.0bb)로 친다(사용자 결정
+        # 2026-10-20). 그래야 뒤 자리의 수비·3벳 기준(2.0bb 오픈을 받은 경우)이 맞는다.
+        # 다른 크기는 계산기가 그 크기를 풀고 나서 연다.
+        return ('raise', 3.0 if pos == 'SB' else 2.0)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 갈 수 있다. 이것은 open_form 의 **계획 선택** 입력이다.
     # P3/P4의 defend_decision 에 있던 variance_seek 는 dead value 였지만,

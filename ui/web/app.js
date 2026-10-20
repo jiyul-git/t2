@@ -2874,8 +2874,9 @@ function finishResult2(v) {
   S.logLen = 0;
   S.prevBets = null;
 
+  // 결과 문구는 숨긴다(사용자 결정 2026-10-20) — 자리는 그대로 둬서 액션바가 흔들리지 않는다.
   $('#mainrow').innerHTML =
-    '<div class="wait resultmsg">' +
+    '<div class="wait quiet resultmsg">' +
     (heroAward || '핸드 종료') +
     ' · 팟 ' + fmt(v.pot) +
     '</div>';
@@ -4493,7 +4494,7 @@ function markQueued(action) {
   if (actionBar) actionBar.classList.remove('turn-open');
   const row = $('#mainrow');
   if (row) {
-    row.innerHTML = '<div class="wait">' + (ACT[action] || action) +
+    row.innerHTML = '<div class="wait quiet">' + (ACT[action] || action) +
       ' 예약됨 — 앞사람 액션이 끝나면 진행합니다</div>';
   }
   closeRaise();
