@@ -1,0 +1,1 @@
+{"k": 0, "tables": {}, "matrices": {}, "final_step": 0, "converged": false, "stop_reason": "stop: flop solver did not converge (terminal 0, step 0): [{'board': 'KcJhJd', 'exploitability_pct_pot': 0.7358867188554039, 'iterations': 3000}]"}
