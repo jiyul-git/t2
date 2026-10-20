@@ -3608,8 +3608,7 @@ function showBreakBanner(scheduled) {
     b.id = 'breakBanner';
     $('#app').appendChild(b);
   }
-  b.innerHTML = '<div class="bb-icon" aria-hidden="true">☕</div>' +
-    '<div class="bb-text"><b>브레이크</b><span id="breakCountdown" role="status" aria-live="polite"></span></div>' +
+  b.innerHTML = '<div class="bb-text"><b>브레이크</b><span id="breakCountdown" role="status" aria-live="polite"></span></div>' +
     (scheduled ? '' : '<button type="button" id="breakSkip">건너뛰기</button>') +
     '<button type="button" class="bb-close" aria-label="알림 닫기">×</button>';
   b.querySelector('.bb-close').addEventListener('click', () => b.classList.remove('show'));

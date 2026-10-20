@@ -139,13 +139,11 @@ html[data-deck="ivory"] .card.back::after{background:#45665b;border-color:#e2d9c
 
 /* ---------- 브레이크: 위에서 빠르게 내려오는 알림 + 테이블 비우기 ---------- */
 #breakBanner { position: absolute; left: 10px; right: 10px; top: calc(8px + env(safe-area-inset-top)); z-index: 40;
-  display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 12px; border-radius: 18px;
+  display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 18px;
   background: rgba(34,26,19,.88); border: 1px solid #d5ba7a80; color: #f3ead8;
   box-shadow: 0 12px 30px #000a; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   transform: translateY(calc(-100% - 24px)); transition: transform .34s cubic-bezier(.2,.9,.25,1.12); }
 #breakBanner.show { transform: none; }
-#breakBanner .bb-icon { width: 34px; height: 34px; flex: none; border-radius: 9px; display: grid; place-items: center;
-  font-size: 18px; background: linear-gradient(135deg,#cda95f,#e1c786); }
 #breakBanner .bb-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
 #breakBanner .bb-text b { font-size: 14px; }
 #breakBanner .bb-text span { font-size: 12px; color: #c9b998; font-variant-numeric: tabular-nums; }
