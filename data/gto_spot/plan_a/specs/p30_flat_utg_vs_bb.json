@@ -6,7 +6,7 @@
  "tables_dir": null,
  "iterations": 3000,
  "rule": "v4",
- "max_steps": 8,
+ "max_steps": 3,
  "root_line": [
   "UTG:Raise 2",
   "UTG+1:Fold",
