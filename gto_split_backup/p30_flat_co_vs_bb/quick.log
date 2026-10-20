@@ -1,0 +1,41 @@
+LAUNCH 2026-10-19T14:35:11Z p30_flat_btn_vs_bb p30_flat_co_vs_bb
+START p30_flat_btn_vs_bb 2026-10-19T14:35:11Z
+LAUNCH 2026-10-19T16:44:01Z p30_flat_btn_vs_bb p30_flat_co_vs_bb
+START p30_flat_btn_vs_bb 2026-10-19T16:44:01Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:call@2.000000": {"BTN": [null, 0.281], "BB": [null, 0.386]}, "N:raise@2.000000|SB:fold|BB:raise@7.000000|BTN:call@7.000000": {"BTN": [3.1733390905771217, 0.747], "BB": [2.538091519292225, 0.561]}, "N:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000": {"BTN": [3.0930241972816366, 0.755], "BB": [2.7308592473845787, 0.652]}}}
+LAUNCH 2026-10-19T19:20:32Z p30_flat_btn_vs_bb p30_flat_co_vs_bb
+START p30_flat_btn_vs_bb 2026-10-19T19:20:32Z
+{"k": 1, "decision": "continue", "terminals": {"|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:call@2.000000": {"BTN": [0.24007949024700387, 0.298], "BB": [0.043168984662949626, 0.402]}, "N:raise@2.000000|SB:fold|BB:raise@7.000000|BTN:call@7.000000": {"BTN": [0.4105948091219496, 0.838], "BB": [0.8028962177828436, 0.591]}, "N:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000": {"BTN": [0.4565563433156059, 0.713], "BB": [0.25458755517462134, 0.695]}}}
+LAUNCH 2026-10-19T21:37:31Z p30_flat_btn_vs_bb p30_flat_co_vs_bb
+START p30_flat_btn_vs_bb 2026-10-19T21:37:31Z
+{"k": 2, "decision": "continue", "terminals": {"|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:call@2.000000": {"BTN": [0.09981059284411738, 0.296], "BB": [0.014915498342216475, 0.404]}, "N:raise@2.000000|SB:fold|BB:raise@7.000000|BTN:call@7.000000": {"BTN": [0.31569755394676463, 0.756], "BB": [0.3510644227250638, 0.619]}, "N:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000": {"BTN": [0.5110512205020735, 0.922], "BB": [0.8050683460372203, 0.608]}}}
+LAUNCH 2026-10-20T00:14:01Z p30_flat_btn_vs_bb p30_flat_co_vs_bb
+START p30_flat_btn_vs_bb 2026-10-20T00:14:01Z
+{"k": 3, "decision": "stop: converged at panel_v1 resolution (value space); step-k tables accepted", "terminals": {"|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:call@2.000000": {"BTN": [0.008752541186918227, 0.295], "BB": [0.009378622001850426, 0.401]}, "N:raise@2.000000|SB:fold|BB:raise@7.000000|BTN:call@7.000000": {"BTN": [0.2807141298917604, 0.82], "BB": [0.32099090357900056, 0.541]}, "N:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000": {"BTN": [0.21946019322500165, 0.801], "BB": [0.18750407152639312, 0.632]}}}
+final 3 converged True
+p30_flat_btn_vs_bb step 3 solved
+p30_flat_btn_vs_bb converged_final_step [3] root BB {'Fold': 0.0975, 'Call 2': 0.7692, '3-bet 7': 0.0455, '3-bet 8': 0.0003, 'All-in 29.9': 0.0875} unstable 0.0 loss [0.0]
+DONE p30_flat_btn_vs_bb 2026-10-20T00:58:39Z
+START p30_flat_co_vs_bb 2026-10-20T00:58:39Z
+LAUNCH 2026-10-20T02:50:41Z p30_flat_co_vs_bb
+START p30_flat_co_vs_bb 2026-10-20T02:50:41Z
+LAUNCH 2026-10-20T03:14:49Z p30_flat_co_vs_bb
+START p30_flat_co_vs_bb 2026-10-20T03:14:50Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:call@2.000000": {"CO": [null, 0.271], "BB": [null, 0.381]}, "2.000000|BTN:fold|SB:fold|BB:raise@7.000000|CO:call@7.000000": {"CO": [3.264794675380206, 0.66], "BB": [3.0746458650375823, 0.697]}, "2.000000|BTN:fold|SB:fold|BB:raise@8.000000|CO:call@8.000000": {"CO": [3.7186876025021633, 0.665], "BB": [3.692726033817223, 0.816]}}}
+LAUNCH 2026-10-20T05:41:36Z p30_flat_co_vs_bb
+START p30_flat_co_vs_bb 2026-10-20T05:41:36Z
+{"k": 1, "decision": "continue", "terminals": {"|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:call@2.000000": {"CO": [0.2905083836121354, 0.287], "BB": [0.05087854898544838, 0.401]}, "2.000000|BTN:fold|SB:fold|BB:raise@7.000000|CO:call@7.000000": {"CO": [0.5416054923586031, 0.801], "BB": [0.9098223079924275, 0.568]}, "2.000000|BTN:fold|SB:fold|BB:raise@8.000000|CO:call@8.000000": {"CO": [0.6151644429488256, 0.663], "BB": [0.25720096724523417, 0.716]}}}
+LAUNCH 2026-10-20T08:18:14Z p30_flat_co_vs_bb
+START p30_flat_co_vs_bb 2026-10-20T08:18:14Z
+{"k": 2, "decision": "continue", "terminals": {"|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:call@2.000000": {"CO": [0.09641983339004348, 0.284], "BB": [0.02092265144733965, 0.399]}, "2.000000|BTN:fold|SB:fold|BB:raise@7.000000|CO:call@7.000000": {"CO": [0.3724423745297887, 0.796], "BB": [0.501896614978324, 0.536]}, "2.000000|BTN:fold|SB:fold|BB:raise@8.000000|CO:call@8.000000": {"CO": [0.6198860864366613, 0.855], "BB": [1.043716495956951, 0.62]}}}
+LAUNCH 2026-10-20T10:18:21Z p30_flat_co_vs_bb
+START p30_flat_co_vs_bb 2026-10-20T10:18:21Z
+LAUNCH 2026-10-20T12:18:32Z p30_flat_co_vs_bb
+START p30_flat_co_vs_bb 2026-10-20T12:18:33Z
+{"k": 3, "decision": "stop: converged at panel_v1 resolution (value space); step-k tables accepted", "terminals": {"|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:call@2.000000": {"CO": [0.023945380417234843, 0.287], "BB": [0.016639377881967548, 0.399]}, "2.000000|BTN:fold|SB:fold|BB:raise@7.000000|CO:call@7.000000": {"CO": [0.42854520164166365, 0.852], "BB": [0.37463248734976556, 0.537]}, "2.000000|BTN:fold|SB:fold|BB:raise@8.000000|CO:call@8.000000": {"CO": [0.5035584537497789, 0.611], "BB": [0.5498092250495518, 0.588]}}}
+final 3 converged True
+p30_flat_co_vs_bb step 3 solved
+p30_flat_co_vs_bb converged_final_step [3] root BB {'Fold': 0.1267, 'Call 2': 0.7801, '3-bet 7': 0.0486, '3-bet 8': 0.0001, 'All-in 29.9': 0.0445} unstable 0.0 loss [0.0]
+DONE p30_flat_co_vs_bb 2026-10-20T12:56:08Z
+QUICK_PASS_END 2026-10-20T12:56:08Z
+CHAIN EXIT rc=0 2026-10-20T12:56:08Z
