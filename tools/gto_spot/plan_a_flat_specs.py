@@ -5,7 +5,7 @@ parent's own tree (no menu override): fold / call (flat call -> flop) / 3-bet (-
 priority 1 (BB flat call of a single open) and the 3-bet-call terminal of the same pair; the 4-bet-and-later terminals are research.
     python3 tools/gto_spot/plan_a_flat_specs.py <stack> <arm>     (parent cfg data/gto_spot/plan_a/cfg_p<stack>_<arm>.json)
       -> data/gto_spot/plan_a/specs/p<stack>_flat_<opener>_vs_bb.json (+ p<stack>_flat_sb_limp_vs_bb)
-Quick grade: spec max_steps 8; the result is made with tools/gto_spot/quick_spot.py (converged -> final step, else mean of last 4 steps)."""
+Quick grade: spec max_steps 8 (BTN, CO) or 3 (the other seats, user decision 2026-10-20); the result is made with tools/gto_spot/quick_spot.py (converged -> final step, else mean of last 4 steps)."""
 import json
 import os
 import sys
@@ -15,6 +15,7 @@ CK = '/home/user/gto_ckpt/plan_a'
 POS = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
 OPENERS = ['BTN', 'CO', 'SB', 'HJ', 'LJ', 'UTG+2', 'UTG+1', 'UTG']     # priority order: late positions first
 SLUG = {'UTG+1': 'utg1', 'UTG+2': 'utg2'}
+FULL = {'BTN', 'CO'}       # user decision 2026-10-20: BTN and CO run to convergence (max 8 steps); the other seats stop at step 3 (quick)
 
 
 def trim(x):
@@ -48,11 +49,11 @@ def main():
     for op in OPENERS:
         o = POS.index(op)
         jobs.append((f'p{stack}_flat_{SLUG.get(op, op.lower())}_vs_bb', op, f'Raise {trim(cfg["open_raises_by_seat"][o][0])}',
-                     f'{op} opens {trim(cfg["open_raises_by_seat"][o][0])}, BB defends'))
-    jobs.append((f'p{stack}_flat_sb_limp_vs_bb', 'SB', 'Limp 1', 'SB limps, BB acts'))
-    for sid, op, act, what in jobs:
+                     f'{op} opens {trim(cfg["open_raises_by_seat"][o][0])}, BB defends', 8 if op in FULL else 3))
+    jobs.append((f'p{stack}_flat_sb_limp_vs_bb', 'SB', 'Limp 1', 'SB limps, BB acts', 3))
+    for sid, op, act, what, cap in jobs:
         spec = {'id': sid, 'config': cfgp, 'dump': f'{pdir}/dump.jsonl', 'equity': f'{CK}/eq_table_202_1200.json', 'tables_dir': None,
-                'iterations': 3000, 'rule': 'v4', 'max_steps': 8, 'root_line': line_for(cfg, op, act),
+                'iterations': 3000, 'rule': 'v4', 'max_steps': cap, 'root_line': line_for(cfg, op, act),
                 'tree_label': f'Plan A flat-call pot p{stack} {arm}: 9-max hand-start {stack} bb (cfg.stack {cfg["stack"]}), ante 1/9, {what}; '
                               'below the root the parent tree (call / 3-bet / jam, 4-bet jam only), static continuation in the parent; '
                               'quick grade (symmetric stacks)',

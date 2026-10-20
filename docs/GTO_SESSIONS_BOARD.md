@@ -133,3 +133,10 @@ data/gto_spot/records/s60.json (pushfold_record_v1; stack_bb 60, quick, symmetri
 tools/gto_spot/pushfold_record.py (011TJ's builder; env overrides PF_W / PF_CFG / PF_STD added). Verified: the same builder on 01BLRH...'s 40 bb dump
 reproduces 011TJ's s40.json exactly. 100 bb later (parent paused at 200 its). Also fixed: data/gto_spot/quick/chart_*.json first double-weighted combos
 (`mix` / `combos` only; class frequencies and EVs unaffected) - see data/gto_spot/quick/README.md.
+
+## Decision 2026-10-20 (user, via the T2 bot-verification session): flat-call loop, remaining seats
+1. BTN and CO run to convergence (max 8 steps). BTN vs BB converged at step 4 (record data/gto_spot/quick/p40_flat_btn_vs_bb.json, f426c9a8); CO in progress.
+2. The other 7 spots (HJ, LJ, UTG, UTG+1, UTG+2, SB open, SB limp) get at most 3 steps (spec max_steps 3, tools/gto_spot/plan_a_flat_specs.py):
+   they stop earlier when converged; if not converged at step 3 the quick record uses the mean of the last 2 steps and carries
+   `stopped_at_step_cap: true` + `status_note` (tools/gto_spot/quick_spot.py).
+3. 40 bb = 01BLRH..., 30 bb = 011TJ (unchanged). T2 connects the corrected BTN vs BB flat call (30 / 40 bb) first; tell T2 if the record format changes.
