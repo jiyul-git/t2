@@ -398,3 +398,6 @@ html{-webkit-tap-highlight-color:transparent}
  background:linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--lounge-floor) 55%,transparent) 60%,var(--lounge-floor) 100%);
  -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 45%);mask-image:linear-gradient(180deg,transparent 0%,#000 45%)}
 .airport-scene-copy::before{display:none}
+/* 왼쪽 위 ♠ T2: 가장자리에서 반 글자쯤 띄우고, ♠ 와 T2 · 글자 사이를 조금 넓힌다. */
+.brand{margin-left:.5em;letter-spacing:.02em}
+.brand span{margin-right:.08em}
