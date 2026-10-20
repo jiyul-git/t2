@@ -3833,6 +3833,8 @@ function showOverlay(html, pinned) {
   const close = pinned
     ? '<button type="button" class="sheetClose" aria-label="닫기">×</button>'
     : '';
+  // 올라오는 움직임은 닫혀 있다가 열릴 때만(내용만 바뀌는 갱신에서는 다시 올라오지 않게).
+  o.classList.toggle('opening', o.hidden);
   o.innerHTML = `<div class="sheet">${close}${html}</div>`;
   o.hidden = false;
   const x = o.querySelector('.sheetClose');
