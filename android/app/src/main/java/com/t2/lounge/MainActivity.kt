@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
@@ -204,6 +205,11 @@ class MainActivity : ComponentActivity() {
     inner class Bridge {
         @JavascriptInterface
         fun signIn() = runOnUiThread { googleSignIn() }
+
+        // 버튼을 누를 때 살짝 진동(키보드 터치 피드백). 권한이 필요 없고, 휴대폰의
+        // '터치 시 진동' 설정을 따른다. 웹(press.js)이 버튼 pointerdown 때 부른다.
+        @JavascriptInterface
+        fun tap() = runOnUiThread { web.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP) }
     }
 
     private fun googleSignIn() {
