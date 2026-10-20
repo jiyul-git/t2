@@ -559,7 +559,7 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
         eff = min(eff, float(aggressor_total_bb))
     eff += share
     if raise_level == 1 and not actor_acted:
-        # 플랫콜 루프로 보정된 자리(현재 30~40bb BTN 오픈 vs BB)는 콜·폴드까지 기준대로.
+        # 플랫콜 루프로 보정된 자리(현재 30~40bb BTN·CO 오픈 vs BB)는 콜·폴드까지 기준대로.
         full = getattr(_GPF, 'defend_vs_open', None)
         f = full(aggressor_pos, pos, seats, eff, hand, open_bb, ante) if full else None
         if f is not None:

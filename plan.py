@@ -3809,7 +3809,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         else:
             a, sz = '3bet', float(open_bb) * _pf.reraise_mult(1, pos)
     elif _gto_aggr in ('call', 'fold'):
-        # 플랫콜 루프로 보정된 자리(30~40bb BTN 오픈 vs BB): 콜·폴드도 기준대로.
+        # 플랫콜 루프로 보정된 자리(30~40bb BTN·CO 오픈 vs BB): 콜·폴드도 기준대로.
         role = 'defend'
         a = _gto_aggr
         sz = float(to_call_bb or 0) if a == 'call' else 0.0

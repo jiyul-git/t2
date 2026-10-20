@@ -14,7 +14,7 @@ s30/s40/s60 은 Plan A v2b 부모 메뉴(오픈 2.0, SB 림프/3.0, 3벳 3x 또�
   vs_3bet   : 오픈 후 일반 3벳을 받은 오프너의 4벳 올인 빈도 (오프너, 3벳터) — 공격만
   vs_open_full : 플랫콜 루프로 보정한 자리(spot_quick_v1, 사용자 결정 2026-10-20)만 —
                  단독 오픈(2.0bb)을 받은 수비자의 폴드 / 콜 / 3벳 / 3벳 올인 전체 빈도
-                 (p30_flat_btn_vs_bb: claude/p30-flat-20261019, p40: census 브랜치)
+                 (p30_flat_btn/co_vs_bb: claude/p30-flat-20261019, p40_flat_btn/co_vs_bb: census 브랜치)
 뺀 것: 보정 안 된 자리의 플랫 콜·림프(플랍 팟을 간이 모델로 계산 — 신뢰 낮음, 30bb SB 첫 진입 포함), 오버콜,
        공격자 콤보 < 10 인 노드(GTO 가 거의 쓰지 않는 올인, unsupported).
 """

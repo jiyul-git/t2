@@ -94,19 +94,22 @@ check('aggr: caller in pot -> None',
 check('aggr: unknown own action -> None',
       P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['Ah', 'Kc'], r, 29.0, 2.0, 1.0, 1,
                            other_live_actors=0) is None)
-check('aggr: 72o vs CO open passes (CO not loop-corrected yet)',
-      P.gto_pf_aggr_choice(prof, 'CO', 'BB', ['7h', '2c'], r, 29.0, 2.0, 1.0, 1,
+check('aggr: 72o vs HJ open passes (HJ not loop-corrected yet)',
+      P.gto_pf_aggr_choice(prof, 'HJ', 'BB', ['7h', '2c'], r, 29.0, 2.0, 1.0, 1,
                            other_live_actors=0, actor_acted=False,
                            aggressor_total_bb=30.0) == 'pass')
 # --- 플랫콜 루프로 보정된 BTN 오픈 vs BB (30~40bb): 콜·폴드까지 기준대로 ---
 f = G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.0)
 check('flat: 35bb BB K9s vs BTN 2.0 open calls', f is not None and f['call'] > 0.99)
 check('flat: 72o folds', G.defend_vs_open('BTN', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
-check('flat: 25bb / 45bb / 3x open / CO opener -> None',
+check('flat: 25bb / 45bb / 3x open / HJ opener -> None',
       G.defend_vs_open('BTN', 'BB', 9, 25, ['Kh', '9h'], 2.0) is None
       and G.defend_vs_open('BTN', 'BB', 9, 45, ['Kh', '9h'], 2.0) is None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 3.0) is None
-      and G.defend_vs_open('CO', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
+      and G.defend_vs_open('HJ', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
+check('flat: CO open vs BB 35bb — K9s calls, 72o folds (loop-corrected 2026-10-20)',
+      G.defend_vs_open('CO', 'BB', 9, 35, ['Kh', '9h'], 2.0)['call'] > 0.99
+      and G.defend_vs_open('CO', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
 check('flat hook: BB K9s vs BTN 2.0 open at 35bb -> call',
       P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['Kh', '9h'], r, 34.0, 2.0, 1.0, 1,
                            other_live_actors=0, actor_acted=False, aggressor_total_bb=35.0) == 'call')
