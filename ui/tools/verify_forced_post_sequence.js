@@ -17,6 +17,7 @@ const ctx = {
   requestAnimationFrame: fn => fn(), positionRightChips() {},
   chipPosition: () => ({p: {x: 78, y: 50}, side: ' side-right'}),
   $: () => box, fmt: String,
+  chipPileHTML: () => '', amt: String,   // 칩 더미·금액 표시(모양만) — 순서 검사와 무관
   document: {createElement: () => ({style: {}, dataset: {}, remove() {}})},
 };
 vm.createContext(ctx);

@@ -1729,7 +1729,7 @@ def _save_profile(changes):
     prof = _load_profile()
     prof.update(changes)
     path = _profile_path()
-    tmp = path + '.tmp'
+    tmp = '%s.%d.%d.tmp' % (path, os.getpid(), threading.get_ident())   # 겹치는 저장끼리 부딪히지 않게
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(prof, f, ensure_ascii=False)
     os.replace(tmp, path)

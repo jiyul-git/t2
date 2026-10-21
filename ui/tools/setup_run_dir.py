@@ -25,12 +25,12 @@ import io, os, shutil, subprocess, sys, tarfile, tempfile
 # ModuleNotFoundError 로 죽는다.
 # setup_run_dir.sh 의 목록과 **같아야 한다.** 예전에는 money_pressure 가
 # .sh 에만 있어 둘이 어긋나 있었다.
-MODULES = """action_events archetypes bot context depth dynamics field fieldsim formats gto icm
+MODULES = """action_events archetypes bot context depth dynamics field fieldsim formats gto gto_pf icm
              live2 money_pressure persona plan play preflop range_posterior_v1 ranges reads runner
              session storage_paths table telemetry_sync texture timing view tournament_store scheduled_runtime personal_data coarse_sim""".split()
 
 # 데이터 파일. pf_rank.json 이 없으면 preflop.py import 자체가 실패한다.
-DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json']
+DATA = ['pf_rank.json', 'style_sig.json', 'style_prior.json', 'gto_pf_data.json']
 # Older refs predate the posterior import. In current sources session imports it
 # even with T2_RANGE_CONDITIONAL_V1 OFF, so it is required there.
 OPTIONAL_MODULES = {'tournament_store', 'scheduled_runtime', 'personal_data', 'coarse_sim',

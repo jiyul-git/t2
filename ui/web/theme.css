@@ -19,10 +19,18 @@
 #topbar { background:linear-gradient(#1a2a26f2,#12201df2); border-bottom:1px solid #d8b97733;
   box-shadow:0 6px 18px #0006; }
 #actionbar { background:linear-gradient(#152420fa,#0b1513fa); border-top:1px solid #d8b97740; }
-#actionbar button { border-radius:13px; box-shadow:0 4px 10px #0007, inset 0 1px 0 #ffffff1c; }
-#bFold { background:linear-gradient(#5a2a2a,#3a1a1c); border-color:#8a4a44; }
-#bCheck, #bCall { background:linear-gradient(#24604a,#163d30); border-color:#3f8a69; }
-#bRaise { background:linear-gradient(#e2c27e,#b68b48); border-color:#f3dba0; color:#1e1609; }
+/* 액션 버튼: 위에서 빛이 드는 입체 음영 + 얇은 금테.
+   누르면(.pressed, press.js) 음영이 뒤집혀 안으로 파이고 금테가 빛난다. */
+#actionbar button { border-radius:13px; border:1.5px solid #b8954f;
+  box-shadow:inset 0 1px 0 #ffffff38, inset 0 -2px 0 #00000059, inset 0 0 0 1px #0000004d, 0 3px 7px #0000008c; }
+#actionbar button.pressed { transform:translateY(2px); border-color:#f5d98c; filter:none;
+  box-shadow:inset 0 3px 8px #0000009e, inset 0 -1px 0 #ffffff1f, 0 0 10px #f5d98c66, 0 1px 1px #00000066; }
+#bFold { background:linear-gradient(180deg,#8a4a42 -40%,#5a2a26 45%,#2e1513 130%); }
+#bFold.pressed { background:linear-gradient(180deg,#2e1513 -30%,#5a2a26 55%); }
+#bCheck, #bCall { background:linear-gradient(180deg,#3f8a6c -40%,#1f5a43 45%,#0e2c21 130%); }
+#bCheck.pressed, #bCall.pressed { background:linear-gradient(180deg,#0e2c21 -30%,#1f5a43 55%); }
+#bRaise { background:linear-gradient(180deg,#f3dca0 -40%,#c9a35a 45%,#7a5a26 130%); border-color:#e8cc85; color:#1e1609; }
+#bRaise.pressed { background:linear-gradient(180deg,#7a5a26 -30%,#c9a35a 55%); border-color:#fff0bf; }
 #bRaise .sub { color:#3d2c12; }
 .pod .avatar.botavatar { width:54px; height:56px; border:2px solid transparent; border-radius:13px; background:transparent; }
 .portrait { display:block; position:relative; width:100%; overflow:hidden; flex-shrink:0; }
@@ -90,3 +98,59 @@ html[data-deck="ivory"] .card.back{
 }
 html[data-deck="ivory"] .card.back::after{background:#45665b;border-color:#e2d9c0;box-shadow:0 0 0 1px #45665b}
 #heroinfo .pos{max-width:128px;white-space:normal;line-height:1.2}
+
+/* ---------- 게임 화면 안내 창: 로비 창(lobby.css .sheetWrap/.sheet)과 같은 모양 ----------
+   아래에서 올라오는 둥근 카드, 금색 테두리, 위쪽 손잡이, 둥근 닫기 단추. 색은 청록 대신 짙은 옻칠 갈색.
+   주 버튼(로비로·확인·휴식 건너뛰기 등)은 로비의 '참가' 단추처럼 금색, 나머지는 보조 단추. */
+#overlay { align-items: flex-end; background: #000c; padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+           -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+#overlay .sheet { max-width: 560px; padding: 28px 18px 18px; border-radius: 24px;
+                  background: linear-gradient(180deg, #221a13, #15100c); border: 1px solid #d5ba7a;
+                  box-shadow: 0 18px 60px #000c, inset 0 1px 0 #ffffff12; }
+#overlay .sheet::before { content: ""; position: absolute; left: 50%; top: 9px; width: 38px; height: 4px;
+                          margin-left: -19px; border-radius: 4px; background: #ffffff2e; }
+#overlay .sheet h2 { font-size: 22px; margin: 2px 0 6px; }
+#overlay .sheet .sub { color: #b9a98e; font-size: 12px; }
+#overlay .sheetClose { width: 35px !important; min-height: 35px !important; margin: -14px -6px 4px 8px !important;
+                       border: 1px solid #5a4630; background: #241c15; font-size: 22px; box-shadow: none; }
+#overlay .sheet .actions { bottom: -18px; margin: 14px -18px -18px; padding: 12px 18px 18px;
+                           background: #15100c; border-top: 1px solid #d5ba7a33; }
+#overlay .sheet button:not(.sheetClose) { border-radius: 12px; border: 1px solid #5a4630; background: #231b14;
+                                          color: #eadfcb; font-weight: 800; min-height: 46px; }
+#overlay .sheet #waitingLobby, #overlay .sheet #bNew, #overlay .sheet #bMoveOk,
+#overlay .sheet #breakSkip, #overlay .sheet #mLobby, #overlay .sheet #bDeal {
+  border: 0; background: linear-gradient(90deg, #cda95f, #e1c786); color: #17201b; font-weight: 900; }
+#overlay .sheet .row { border-color: #4a3a28; background: #1c1610; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes t2g-fade { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes t2g-sheet { from { transform: translateY(calc(100% + 24px)) } 70% { transform: translateY(-1.5%) } to { transform: none } }
+  #overlay.opening:not([hidden]) { animation: t2g-fade .2s ease both; }
+  #overlay.opening:not([hidden]) .sheet { animation: t2g-sheet .38s cubic-bezier(.2,.8,.25,1) both; }
+}
+
+/* 좌석 전체가 --seat-scale 로 줄어도 글자(이름표·포지션·스택)는 원래 크기로 보이게 되돌린다. */
+#seats .pod .seatno { font-size: calc(8px / var(--seat-scale, 1)); }
+#seats .pod .pos { font-size: calc(9px / var(--seat-scale, 1)); }
+#seats .pod .stack { font-size: calc(12px / var(--seat-scale, 1)); }
+@media (max-height:700px) {
+  #seats .pod .pos { font-size: calc(8px / var(--seat-scale, 1)); }
+  #seats .pod .stack { font-size: calc(10px / var(--seat-scale, 1)); }
+}
+
+/* ---------- 브레이크: 위에서 빠르게 내려오는 알림 + 테이블 비우기 ---------- */
+#breakBanner { position: absolute; left: 10px; right: 10px; top: calc(8px + env(safe-area-inset-top)); z-index: 40;
+  display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 18px;
+  background: rgba(34,26,19,.88); border: 1px solid #d5ba7a80; color: #f3ead8;
+  box-shadow: 0 12px 30px #000a; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  transform: translateY(calc(-100% - 24px)); transition: transform .34s cubic-bezier(.2,.9,.25,1.12); }
+#breakBanner.show { transform: none; }
+#breakBanner .bb-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+#breakBanner .bb-text b { font-size: 14px; }
+#breakBanner .bb-text span { font-size: 12px; color: #c9b998; font-variant-numeric: tabular-nums; }
+#breakBanner button { flex: none; min-height: 32px; padding: 0 10px; border-radius: 10px; font-size: 12px;
+  border: 1px solid #5a4630; background: #241c15; color: #eadfcb; }
+#breakBanner .bb-close { width: 32px; padding: 0; border-radius: 50%; font-size: 18px; }
+/* 브레이크 동안 테이블 정리: 보드·좌석 카드·벳 칩·팟·내 카드·승리 표시를 감춘다. */
+#app.breaktime #board, #app.breaktime #chips, #app.breaktime #potline, #app.breaktime #herocards,
+#app.breaktime .pod .backs, #app.breaktime .pod .winlabel, #app.breaktime .pod .tag,
+#app.breaktime .pod .dealer, #app.breaktime .pod .bubble { visibility: hidden; }

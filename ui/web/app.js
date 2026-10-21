@@ -23,6 +23,15 @@ function heroProfileNickname() {
   return String(profileStorage('t2profile_nickname', '플레이어') || '플레이어')
     .trim().slice(0, 16) || '플레이어';
 }
+/* 봇 이름: 'T-' + 8자리 숫자. pid 마다 늘 같은 이름이다(상대 메모도 pid 기준이라 같이 간다).
+ * 2654435761 은 10^8 과 서로소라 pid 가 다르면 번호도 다르다(곱이 정확한 pid 300만 미만). */
+function botName(pid) {
+  if (pid === undefined || pid === null || pid === '') return '?';
+  const n = Number(pid);
+  if (!Number.isFinite(n)) return String(pid);
+  const x = (n % 1e8) * 2654435761 % 1e8;
+  return 'T-' + String((x + 31415926) % 1e8).padStart(8, '0');
+}
 function applyProfileDeck() {
   const allowed = ['jade', 'navy', 'burgundy', 'ivory'];
   const deck = profileStorage('t2profile_deck', 'jade');
@@ -108,7 +117,7 @@ const SEAT_CLOCKS = {};
 function boxClockPaint(host, startMs, baseMs, bankMs, now) {
   if (!host) return;
   let c = host.querySelector(':scope > .actclock');
-  if (now < startMs) { if (c) c.remove(); return; }
+  if (now < startMs) { if (c) c.remove(); host.classList.remove('ac-on'); return; }
   if (!c) {
     c = document.createElement('div');
     c.className = 'actclock';
@@ -150,8 +159,20 @@ function boxClockPaint(host, startMs, baseMs, bankMs, now) {
   rect.setAttribute('stroke-dasharray', `${(frac * 100).toFixed(2)} 100`);
   const left = Math.max(0, Math.ceil(((bankMs > baseMs ? bankMs : baseMs) - now) / 1000));
   c.classList.toggle('urgent', left <= 10);
-  c.querySelector('.acnum').textContent =
+  const num = c.querySelector('.acnum');
+  num.textContent =
     left <= 10 ? (inBank ? 'TIME BANK ' : '') + left : (inBank ? 'TIME BANK' : '');
+  // 남은 시간 글자는 이름표 위에 겹쳐 이름 대신 보인다(.ac-on). 오른쪽 끝 좌석에서
+  // 이름표보다 넓은 'TIME BANK 10' 이 화면 밖으로 나가면 그만큼 안쪽으로 민다.
+  host.classList.toggle('ac-on', !!num.textContent);
+  num.style.transform = '';
+  if (num.textContent) {
+    const nr = num.getBoundingClientRect(), pad = 3;
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const shift = nr.right > vw - pad ? (vw - pad - nr.right)
+                : nr.left < pad ? (pad - nr.left) : 0;
+    if (shift) num.style.transform = `translate(calc(-50% + ${shift / scale}px), -50%)`;
+  }
 }
 
 function clearSeatClock(seat) {
@@ -160,6 +181,8 @@ function clearSeatClock(seat) {
   const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
   const c = pod && pod.querySelector('.seatno > .actclock');
   if (c) c.remove();
+  const tag = pod && pod.querySelector('.seatno');
+  if (tag) tag.classList.remove('ac-on');
 }
 
 function seatClock(seat, startMs, baseMs, bankMs) {
@@ -252,6 +275,51 @@ function replayBotSchedule(schedule) {
 
 const fmt = (n) => (n === null || n === undefined || isNaN(n))
   ? '-' : Number(n).toLocaleString('en-US');
+
+/* ---------------- 금액 단위(칩 ↔ BB) ----------------
+ * 테이블의 금액(스택·벳·팟)을 누르면 칩 ↔ BB 가 번갈아 바뀐다. 보는 사람 기기에만 기억한다.
+ * 금액은 <span class="amt" data-amt="칩">으로 그려서, 단위가 바뀌면 글자만 다시 쓴다. */
+let AMT_UNIT = (() => { try { return localStorage.getItem('t2_amt_unit') === 'bb' ? 'bb' : 'chips'; }
+                        catch (e) { return 'chips'; } })();
+let CUR_BB = 0;
+function noteBB(v) {
+  const bb = Number(((v && v.level) || {}).bb || 0);
+  if (bb > 0) CUR_BB = bb;
+}
+function amtText(n) {
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  if (AMT_UNIT !== 'bb' || !(CUR_BB > 0)) return fmt(n);
+  const x = Number(n) / CUR_BB;
+  return (x >= 100 ? Math.round(x).toLocaleString('en-US') : String(Math.round(x * 10) / 10)) + 'BB';
+}
+function amt(n) {
+  return `<span class="amt" data-amt="${Number(n) || 0}">${amtText(n)}</span>`;
+}
+function toggleAmtUnit() {
+  AMT_UNIT = AMT_UNIT === 'bb' ? 'chips' : 'bb';
+  try { localStorage.setItem('t2_amt_unit', AMT_UNIT); } catch (e) {}
+  document.querySelectorAll('.amt[data-amt]').forEach(el => {
+    el.textContent = amtText(Number(el.dataset.amt));
+  });
+  const box = $('#chips');
+  if (box) requestAnimationFrame(() => positionRightChips(box));
+}
+
+/* ---------------- 칩 더미 ----------------
+ * 금액은 숫자로 읽는다. 칩 더미는 보기 좋게 '크기 느낌'만 준다 — BB 대비 금액이 클수록
+ * 기둥이 늘고 높아진다. 색은 테마(붉은색 · 비취 · 금)로 고정. */
+const PILE_TIERS = [            // [BB 배수 이하, 기둥별 칩 수(왼쪽부터)]
+  [1.01, [1]], [2.5, [2]], [5, [3, 1]], [12, [3, 2]], [25, [4, 3, 1]],
+  [60, [5, 4, 2]], [Infinity, [6, 5, 3]],
+];
+const PILE_COLORS = ['cr', 'cj', 'cg'];
+function chipPileHTML(n) {
+  const r = CUR_BB > 0 ? Number(n) / CUR_BB : 1;
+  const cols = PILE_TIERS.find(([lim]) => r <= lim)[1];
+  return '<span class="pile">' + cols.map((k, i) =>
+    `<span class="col">${('<i class="chip ' + PILE_COLORS[(cols.length - 1 - i) % 3] + '"></i>').repeat(k)}</span>`
+  ).join('') + '</span>';
+}
 
 /* ---------------- 봇 메모 ----------------
  * 좌석 번호는 테이블 밸런싱으로 사람이 바뀌므로 pid 기준으로 저장한다.
@@ -430,7 +498,9 @@ function slotPos(slot, heroSlot, n, rfx, rfy) {
   const th = (90 - off * (360 / n)) * Math.PI / 180;
   // the far (top) seats sit a little further out so they clear the rail
   const sn = Math.sin(th);
-  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + (sn < 0 ? 42 : 39) * rfy * sn };
+  // 위쪽이 여유로워서 맨 위 두 자리를 뺀 나머지를 조금씩 위로 올린다(아래로 갈수록 조금 더, 최대 약 3.8%).
+  const lift = 2.2 * Math.max(0, sn + 0.94);
+  return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + (sn < 0 ? 42 : 39) * rfy * sn - lift * rfy };
 }
 
 function sideSeatClass(p) {
@@ -517,6 +587,7 @@ function botAvatarHTML(id) {
 }
 
 function renderSeats(v) {
+  noteBB(v);
   const n = v.n_slots || 8;
   const portraits = PokerVisuals.tablePortraits(v.seats || []);
   const box = $('#seats');
@@ -582,20 +653,17 @@ function renderSeats(v) {
     const memo = (WATCH_MODE || d.pid === undefined || d.pid === null) ? ''
       : `<button type="button" class="memo${memoGet(d.pid) ? ' has' : ''}" ` +
         `data-pid="${d.pid}" data-label="${slot}번(${d.pos || ''})">✎</button>`;
-    const botNo =
-      (d.pid === undefined || d.pid === null)
-        ? '?'
-        : d.pid;
+    const botNo = botName(d.pid);
 
     html += `<div class="${cls}" data-slot="${slot}" style="${style}">` + memo +
             backs +
             `<div class="avatar botavatar">${botAvatarHTML(portraits.get(slot))}</div>` +
-            `<div class="seatno">B${esc(botNo)} · S${slot}</div>` +
+            `<div class="seatno"><span class="nm">${esc(botNo)}</span></div>` +
             (award ? `<div class="winlabel">${esc(award)}</div>` : '') +
             (d.allin ? `<div class="tag">ALL-IN</div>` : '') +
             (v.button_seat === slot ? `<div class="dealer">D</div>` : '') +
             `<div class="meta"><span class="pos">${d.pos || ''}</span>` +
-            `<span class="stack">${fmt(d.stack)}</span></div></div>`;
+            `<span class="stack">${amt(d.stack)}</span></div></div>`;
   }
   // Keep decoded portraits and gaze state across action-clock/seat redraws.
   const keptAvatars = new Map(Array.from(box.querySelectorAll('.pod[data-slot] .botavatar'),
@@ -633,7 +701,10 @@ function fitSeatsInView(box) {
 function chipPosition(v, seat) {
   const n = v.n_slots || 8;
   const side = sideSeatClass(slotPos(seat, v.hero_seat, n, 1, 1));
-  const p = slotPos(seat, v.hero_seat, n, 0.43, 0.62);
+  // 아래쪽 좌석(테이블 중앙선 아래)은 칩이 좌석에서 너무 떨어져 보였다 — 좌석 쪽으로 당긴다.
+  const lower = slotPos(seat, v.hero_seat, n, 1, 1).y > 44;
+  // 위쪽 좌석은 가로로 더 벌려(각 좌석 아래) 맨 위 두 자리의 칩·금액이 서로 겹치지 않게 한다.
+  const p = lower ? slotPos(seat, v.hero_seat, n, 0.52, 0.78) : slotPos(seat, v.hero_seat, n, 0.75, 0.62);
   if (side === ' side-left') { p.x = 26; p.y = 54; }
   if (side === ' side-right') { p.x = 78; p.y = 50; }
   return {p, side};
@@ -655,6 +726,7 @@ function positionRightChips(box) {
 }
 
 function renderChips(v, streetChanged) {
+  noteBB(v);
   const box = $('#chips');
   const old = Array.from(box.children);
   if (streetChanged && old.length) {
@@ -674,7 +746,7 @@ function renderChips(v, streetChanged) {
     el.className = 'chips' + side;
     el.dataset.seat = String(s.seat);
     el.style.left = p.x + '%'; el.style.top = p.y + '%';
-    el.innerHTML = `<span class="disc"></span>${fmt(s.bet)}`;
+    el.innerHTML = chipPileHTML(s.bet) + amt(s.bet);
     box.appendChild(el);
   });
   // Board/pot rendering follows this call in several paths. Measure the
@@ -787,16 +859,17 @@ function potParts(v) {
 }
 
 function renderPot(v) {
-  $('#pot').textContent = '팟 ' + fmt(v.pot_total);
+  noteBB(v);
+  $('#pot').innerHTML = '팟 ' + amt(v.pot_total);
   const parts = potParts(v);
   if (parts.length > 1) {
     // 올인 때문에 자격이 갈렸다 — 나눠서 보여준다
-    $('#potsub').textContent = parts.map((p, i) =>
-      (i === 0 ? '메인 ' : '사이드' + i + ' ') + fmt(p.amount)).join(' · ');
+    $('#potsub').innerHTML = parts.map((p, i) =>
+      (i === 0 ? '메인 ' : '사이드' + i + ' ') + amt(p.amount)).join(' · ');
     return;
   }
-  $('#potsub').textContent = (v.pot_center && v.pot_center !== v.pot_total)
-    ? '중앙 ' + fmt(v.pot_center) : '';
+  $('#potsub').innerHTML = (v.pot_center && v.pot_center !== v.pot_total)
+    ? '중앙 ' + amt(v.pot_center) : '';
 }
 
 /* ---------------- 히어로 ---------------- */
@@ -851,6 +924,7 @@ function renderHeroSlot(side, code, seat) {
 }
 
 function renderHero(v) {
+  noteBB(v);
   const me = (v.seats || []).find((x) => x.hero);
   const box = $('#hero');
 
@@ -877,7 +951,7 @@ function renderHero(v) {
     (me && me.allin ? ' · ALL-IN' : '') +
     (award ? ' · ' + award : '');
 
-  $('#heroinfo .stack').textContent = me ? fmt(me.stack) : '';
+  $('#heroinfo .stack').innerHTML = me ? amt(me.stack) : '';
 
   ensureHeroSlots();
 
@@ -1325,8 +1399,7 @@ function makeAnteChip(v, seat, amount) {
   el.style.left = p.x + '%';
   el.style.top = p.y + '%';
 
-  el.innerHTML =
-    `<span class="disc"></span>${fmt(amount)}`;
+  el.innerHTML = chipPileHTML(amount) + amt(amount);
 
   box.appendChild(el);
   requestAnimationFrame(() => positionRightChips(box));
@@ -2209,7 +2282,7 @@ function spectateTail(res, resumeAt = null) {
    */
   if (S.spectating) {
     $('#mainrow').innerHTML =
-      '<div class="wait">관전 중…</div>';
+      '<div class="wait quiet">관전 중…</div>';
   }
 
   closeRaise();
@@ -2526,7 +2599,7 @@ function resultCardSeatName(v, s) {
   if (String(s) === String(v.hero_seat)) return label;
   const name = (v.seat_names || {})[String(s)];
   const pid = (v.seat_pid || {})[String(s)];
-  const nick = name || (pid !== undefined && pid !== null ? 'B' + pid : '');
+  const nick = name || (pid !== undefined && pid !== null ? botName(pid) : '');
   return esc(label) + (nick ? ' · ' + esc(nick) : '');
 }
 
@@ -2806,8 +2879,9 @@ function finishResult2(v) {
   S.logLen = 0;
   S.prevBets = null;
 
+  // 결과 문구는 숨긴다(사용자 결정 2026-10-20) — 자리는 그대로 둬서 액션바가 흔들리지 않는다.
   $('#mainrow').innerHTML =
-    '<div class="wait resultmsg">' +
+    '<div class="wait quiet resultmsg">' +
     (heroAward || '핸드 종료') +
     ' · 팟 ' + fmt(v.pot) +
     '</div>';
@@ -3262,14 +3336,6 @@ async function showHistory() {
   }
 }
 
-/* index.html 이 app.js 를 ?v=N 으로 불러온다. 그 N 을 그대로 보여준다.
- * 브라우저가 옛 파일을 캐시하고 있으면 여기 숫자도 옛것이라 바로 드러난다. */
-function buildTag() {
-  const el = document.querySelector('script[src*="app.js"]');
-  const m = el && /[?&]v=([^&]*)/.exec(el.getAttribute('src') || '');
-  return m ? m[1] : '?';
-}
-
 async function tournamentLoad(force) {
   if (!force && S.tournament) return S.tournament;
   const res = await fetch('/api/tournament', { cache: 'no-store' });
@@ -3280,43 +3346,34 @@ async function tournamentLoad(force) {
   return data;
 }
 
-function pct(v) {
-  const n = Number(v || 0);
-  if (!isFinite(n)) return '-';
-  return (Math.round(n * 1000) / 1000).toString() + '%';
-}
-
 function tournamentInfoHTML(t) {
   if (!t || t.no_game) {
     return '<div class="sub">진행 중인 대회가 없습니다.</div>';
   }
+  // 상금은 %가 아니라 칩으로 보인다(상금 총액 × 비율). 총액을 모르면(연습 게임) 순위만.
+  const pool = Number(t.prize_pool || 0);
+  const prize = (p) => pool > 0 ? fmt(Math.round(pool * Number(p || 0) / 100)) + '칩' : '';
+  const row = (k, v, cls) => `<div class="row${cls ? ' ' + cls : ''}"><span class="who">${k}</span><span class="amt">${v}</span></div>`;
 
   const money = t.in_money
-    ? `<div class="row win"><span class="who">인더머니</span><span class="amt">보장 ${pct(t.current_prize_pct)}</span></div>`
-    : `<div class="row"><span class="who">ITM까지</span><span class="amt">${fmt(t.players_to_jump)}명 탈락</span></div>`;
-
+    ? row('인더머니', prize(t.current_prize_pct) ? '보장 ' + prize(t.current_prize_pct) : '진입', 'win')
+    : row('ITM까지', `${fmt(t.players_to_jump)}명 탈락`);
   const jump = t.next_rank
-    ? `<div class="row"><span class="who">다음 머니점프</span><span class="amt">${fmt(t.next_rank)}위 · ${pct(t.next_prize_pct)}</span></div>` +
-      `<div class="potline">${t.in_money ? '현재에서 ' + fmt(t.players_to_jump) + '명 더 탈락 · ' : ''}점프 +${pct(t.next_jump_pct)}</div>`
-    : '<div class="row"><span class="who">다음 머니점프</span><span class="amt">1위 구간</span></div>';
-
-  const jumps = (t.money_jumps || []).slice(0, 5);
-  const jumpLine = jumps.length
-    ? '<div class="potline">구간 · ' + jumps.map((j) =>
-        `${fmt(j.rank)}위 ${pct(j.prize_pct)}`).join(' → ') + '</div>'
+    ? row('다음 머니점프', `${fmt(t.next_rank)}위${prize(t.next_prize_pct) ? ' · ' + prize(t.next_prize_pct) : ''}` +
+          (t.in_money ? ` <span class="dim">(${fmt(t.players_to_jump)}명 더)</span>` : ''))
     : '';
 
   return (
     `<div class="sub">${esc(t.format || '대회')} · HAND ${fmt(displayHandNo(t))}</div>` +
     '<div class="grid">' +
-      `<div class="row"><span class="who">필드</span><span class="amt">${fmt(t.entries)} → ${fmt(t.remaining)}</span></div>` +
-      `<div class="row"><span class="who">ITM</span><span class="amt">${fmt(t.itm)}위</span></div>` +
-      `<div class="row"><span class="who">레벨</span><span class="amt">${fmt(t.level)} · ${t.virtual_clock ? fmt(t.level_minutes)+'분' : '기존 핸드 기준'}</span></div>` +
-      `<div class="row"><span class="who">블라인드</span><span class="amt">${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}</span></div>` +
-      `<div class="row"><span class="who">테이블</span><span class="amt">${fmt(t.tables)}개</span></div>` +
-      `<div class="row"><span class="who">버블</span><span class="amt">${t.bubble ? '진입' : '아님'}</span></div>` +
+      row('남은 인원', `${fmt(t.remaining)}/${fmt(t.entries)}`) +
+      row('ITM', `${fmt(t.itm)}위`) +
+      row('레벨', `${fmt(t.level)}${t.virtual_clock ? ' · ' + fmt(t.level_minutes) + '분' : ''}`) +
+      row('블라인드', `${fmt(t.sb)}/${fmt(t.bb)}${t.ante ? ' · A ' + fmt(t.ante) : ''}`) +
+      row('테이블', `${fmt(t.tables)}개`) +
+      row('총 상금', pool > 0 ? fmt(pool) + '칩' : '-') +
     '</div>' +
-    money + jump + jumpLine
+    money + jump
   );
 }
 
@@ -3338,7 +3395,7 @@ function renderRankDrawer(t) {
         const rank = p.alive
           ? (p.chip_rank ? fmt(p.chip_rank) : '-')
           : (p.finish_rank ? '#' + fmt(p.finish_rank) : 'OUT');
-        const who = p.hero ? '나 · B' + p.pid : 'B' + p.pid;
+        const who = p.hero ? '나 · ' + heroProfileNickname() : botName(p.pid);
         const loc = p.alive
           ? ('T' + (p.table ?? '-') + ' S' + (p.seat ?? '-') + (p.pos ? ' · ' + p.pos : ''))
           : '탈락';
@@ -3525,13 +3582,12 @@ function updateBreakFromReady(ready) {
 
 function renderBreak(ready) {
   if (!ready.break_remaining && !ready.working) {
-    if (S.breakOpen) { S.breakOpen = false; hideOverlay(); }
+    if (S.breakOpen) { S.breakOpen = false; hideBreakBanner(); }
     return;
   }
   if (!S.breakOpen) {
     S.breakOpen = true;
-    showOverlayPersistent('<h2>브레이크</h2><div id="breakCountdown" role="status" aria-live="polite"></div>' +
-      (ready.scheduled_tournament ? '' : '<div class="actions"><button type="button" id="breakSkip">휴식 건너뛰기</button></div>'));
+    showBreakBanner(ready.scheduled_tournament);
     if ($('#breakSkip')) $('#breakSkip').addEventListener('click', async () => {
       try {
         const r = await fetch('/api/break', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({skip:true})});
@@ -3542,6 +3598,27 @@ function renderBreak(ready) {
   }
   if ($('#breakCountdown')) $('#breakCountdown').textContent = ready.break_remaining > 0
     ? `남은 시간 ${clockText(ready.break_remaining)}` : '다른 테이블 진행 완료 대기 중';
+}
+/* 브레이크 알림: 화면을 덮지 않고 위에서 빠르게 내려오는 알림(휴대폰 알림처럼).
+ * 브레이크 동안 테이블(보드·카드·칩·팟)은 비운다. ×는 알림만 올려 보낸다. */
+function showBreakBanner(scheduled) {
+  let b = $('#breakBanner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'breakBanner';
+    $('#app').appendChild(b);
+  }
+  b.innerHTML = '<div class="bb-text"><b>브레이크</b><span id="breakCountdown" role="status" aria-live="polite"></span></div>' +
+    (scheduled ? '' : '<button type="button" id="breakSkip">건너뛰기</button>') +
+    '<button type="button" class="bb-close" aria-label="알림 닫기">×</button>';
+  b.querySelector('.bb-close').addEventListener('click', () => b.classList.remove('show'));
+  $('#app').classList.add('breaktime');
+  requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('show')));
+}
+function hideBreakBanner() {
+  const b = $('#breakBanner');
+  if (b) b.classList.remove('show');
+  $('#app').classList.remove('breaktime');
 }
 async function showMenu() {
   showOverlayPersistent(
@@ -3562,7 +3639,6 @@ async function showMenu() {
       ? `<div class="sub">대회 정보를 불러오지 못했습니다: ${esc(err)}</div>`
       : tournamentInfoHTML(t)) +
     '<button type="button" id="mLobby">로비로 나가기</button>' +
-    `<div class="potline" style="margin-top:14px;opacity:.6">화면 버전 ${buildTag()}</div>` +
     '<div class="actions"><button type="button" id="mClose">닫기</button></div>'
   );
 
@@ -3581,7 +3657,9 @@ function bindMenuRankSwipe(sheet) {
   });
 }
 
-function bindRankDrag(host, opening, enabled, fromMenu = false) {
+// 순위 창을 여는 끌기는 화면 왼쪽 끝 이 폭 안에서 시작해야 한다. 탭은 그대로 통과(메모 단추 등).
+const RANK_EDGE_PX = 28;
+function bindRankDrag(host, opening, enabled, fromMenu = false, edgePx = 0) {
   let drag = null, suppressClick = false;
   const drawer = $('#rankDrawer'), scrim = $('#rankScrim');
   const paint = e => {
@@ -3640,6 +3718,7 @@ function bindRankDrag(host, opening, enabled, fromMenu = false) {
   };
   host.addEventListener('pointerdown', e => {
     if (!enabled() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    if (edgePx && e.clientX > edgePx) return;
     drag = {x:e.clientX, y:e.clientY, lastX:e.clientX, id:e.pointerId,
       at:performance.now(), velocity:0, distance:0, active:false};
   }, {passive:true});
@@ -3648,7 +3727,10 @@ function bindRankDrag(host, opening, enabled, fromMenu = false) {
   }, {passive:true});
   host.addEventListener('pointerup', e => finish(e, false), {passive:true});
   host.addEventListener('pointercancel', e => finish(e, true), {passive:true});
-  host.addEventListener('lostpointercapture', e => finish(e, true), {passive:true});
+  // 끌기를 시작하면 host 가 터치를 넘겨받는다(setPointerCapture). 그때 처음 눌린 자식 요소가
+  // 잡고 있던 터치를 놓치며 lostpointercapture 가 올라오는데, 이것을 '끌기 취소'로 보면 순위 창이
+  // 열리다 바로 닫혔다(화면만 어두워졌다 밝아짐). host 자신이 놓친 경우만 취소로 본다.
+  host.addEventListener('lostpointercapture', e => { if (e.target === host) finish(e, true); }, {passive:true});
   host.addEventListener('click', e => {
     if (suppressClick) {e.preventDefault(); e.stopImmediatePropagation();}
   }, true);
@@ -3764,6 +3846,8 @@ function showOverlay(html, pinned) {
   const close = pinned
     ? '<button type="button" class="sheetClose" aria-label="닫기">×</button>'
     : '';
+  // 올라오는 움직임은 닫혀 있다가 열릴 때만(내용만 바뀌는 갱신에서는 다시 올라오지 않게).
+  o.classList.toggle('opening', o.hidden);
   o.innerHTML = `<div class="sheet">${close}${html}</div>`;
   o.hidden = false;
   const x = o.querySelector('.sheetClose');
@@ -4104,7 +4188,7 @@ async function callStepStream(body, msg) {
   const computingTimer = setTimeout(() => {
     if (settled || playing || queue.length || finalPayload || streamError) return;
     const row = $('#mainrow');
-    if (row) { row.innerHTML = '<div class="wait">봇 판단 계산 중…</div>'; computingHint = true; }
+    if (row) { row.innerHTML = '<div class="wait quiet">봇 판단 계산 중…</div>'; computingHint = true; }
   }, 1500);
   const receive = stepEventReceiver(
     (obj) => {
@@ -4365,7 +4449,7 @@ function previewHeroAction(action, amount) {
       txt += ' ' + fmt(amount);
     }
 
-    row.innerHTML = '<div class="wait">나 ' + txt + '</div>';
+    row.innerHTML = '<div class="wait quiet">나 ' + txt + '</div>';
   }
 
   closeRaise();
@@ -4425,7 +4509,7 @@ function markQueued(action) {
   if (actionBar) actionBar.classList.remove('turn-open');
   const row = $('#mainrow');
   if (row) {
-    row.innerHTML = '<div class="wait">' + (ACT[action] || action) +
+    row.innerHTML = '<div class="wait quiet">' + (ACT[action] || action) +
       ' 예약됨 — 앞사람 액션이 끝나면 진행합니다</div>';
   }
   closeRaise();
@@ -4733,12 +4817,20 @@ function apply(resp) {
 /* ---------------- 시작 ---------------- */
 $('#bLog').addEventListener('click', showHistory);
 $('#bMenu').addEventListener('click', showMenu);
-$('#rankClose').addEventListener('click', closeRankDrawer);
 $('#rankScrim').addEventListener('click', closeRankDrawer);
 
-bindRankDrag($('#tablewrap'), true, () => !S.rankOpen && $('#overlay').hidden);
+// 순위 창은 화면 왼쪽 가장자리를 누르고 오른쪽으로 끌 때만 열린다(아무 데서나 열리면 화면이
+// 어두워졌다 밝아지는 오작동이 있었다). 닫기: 창을 왼쪽으로 밀거나 바깥(어두운 곳)을 누른다.
+bindRankDrag($('#tablewrap'), true, () => !S.rankOpen && $('#overlay').hidden, false, RANK_EDGE_PX);
+bindRankDrag($('#hero'), true, () => !S.rankOpen && $('#overlay').hidden, false, RANK_EDGE_PX);
 bindRankDrag($('#rankDrawer'), false, () => S.rankOpen);
 
+// 금액(스택·벳·팟)을 누르면 칩 ↔ BB.
+document.addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('.amt, .chips, #potline, .pod .meta, #heroinfo .stack');
+  if (!t || (e.target.closest && e.target.closest('button'))) return;
+  toggleAmtUnit();
+});
 $('#seats').addEventListener('click', (e) => {
   const b = e.target.closest && e.target.closest('button.memo');
   if (!b) return;
@@ -4753,6 +4845,17 @@ document.addEventListener('keydown', (e) => {
   if (S.rankOpen) closeRankDrawer();
   else hideOverlay();
 });
+/* 좌석(캐릭터·이름표·스택) 크기를 화면 면적에 비례시킨다. 기준 화면 390×844 에서 1배,
+ * S23(약 360×760)은 약 0.91배(0.80배는 너무 작다는 사용자 의견, 2026-10-20). 0.7~1.05 사이로 묶는다. */
+function applySeatScale() {
+  const w = window.innerWidth || 390, h = window.innerHeight || 844;
+  const s = Math.max(0.7, Math.min(1.05, Math.sqrt((w * h) / (390 * 844))));
+  document.documentElement.style.setProperty('--seat-scale', s.toFixed(3));
+  const box = $('#seats');
+  if (box) fitSeatsInView(box);
+}
+applySeatScale();
+window.addEventListener('resize', applySeatScale);
 memoLoad().finally(sync);
 
 if (location.hash === '#history') {

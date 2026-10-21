@@ -83,9 +83,7 @@
 <section class="screen" id="signup">
   <div class="card" style="margin-top:0">
     <h2>회원가입</h2>
-    <p>라운지에서 쓸 이름과 캐릭터를 정해 주세요.</p>
-    <label for="nick">닉네임</label>
-    <input id="nick" type="text" maxlength="16" autocomplete="nickname" placeholder="1~16자">
+    <p>라운지에서 쓸 캐릭터를 골라 주세요. 닉네임은 자동으로 정해지고, 나중에 설정에서 바꿀 수 있습니다.</p>
     <label>캐릭터</label>
     <div class="avatars" id="avatars"></div>
     <label class="agree"><input type="checkbox" id="agree"><span>저장하는 정보: 구글 이메일(계정 확인용, 다른 사람에게 보이지 않음), 닉네임·캐릭터, 칩과 대회 기록. 칩은 게임용이라 현금으로 바꿀 수 없습니다. 설정에서 언제든 계정을 삭제하면 모두 지워집니다.</span></label>
@@ -164,7 +162,6 @@ function openSignup(me){
   show('signup');
   $('signupWho').innerHTML = (me.email || '') + ' · <a href="#" id="other">다른 계정</a>';
   $('other').onclick = async e => { e.preventDefault(); await api('/auth/logout', {}); openLogin(); };
-  if (!$('nick').value && me.name) $('nick').value = me.name.slice(0, 16);
   $('avatars').innerHTML = Array.from({length: 9}, (_, i) =>
     '<button type="button" data-i="' + i + '"><img alt="" src="/pub/portraits/' + String(i + 1).padStart(2, '0') + '.png"></button>').join('');
   $('avatars').querySelectorAll('button').forEach(b => b.onclick = () => {
@@ -174,15 +171,15 @@ function openSignup(me){
   });
   check();
 }
-function check(){ $('signupBtn').disabled = !($('nick').value.trim() && avatar >= 0 && $('agree').checked); }
-$('nick').oninput = check; $('agree').onchange = check;
+function check(){ $('signupBtn').disabled = !(avatar >= 0 && $('agree').checked); }
+$('agree').onchange = check;
 $('signupBtn').onclick = async () => {
   $('signupBtn').disabled = true; $('signupErr').textContent = '';
   $('signupBtn').textContent = '내 지갑 만드는 중…';
-  const r = await api('/auth/register', {nickname: $('nick').value.trim(), avatar, agree: $('agree').checked});
+  const r = await api('/auth/register', {avatar, agree: $('agree').checked});
   $('signupBtn').textContent = '시작하기';
   if (!r.ok) { $('signupErr').textContent = r.d.error || '가입 실패'; check(); return; }
-  try { localStorage.setItem('t2profile_nickname', $('nick').value.trim()); localStorage.setItem('t2profile_avatar', String(avatar)); } catch(e) {}
+  try { localStorage.setItem('t2profile_nickname', r.d.nickname || ''); localStorage.setItem('t2profile_avatar', String(avatar)); } catch(e) {}
   enterLobby();
 };
 

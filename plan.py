@@ -3735,7 +3735,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  prior_pf=None, pot_layers=None, opp_ranges=None,
                  opp_range_meta=None, call_ev_shadow=None,
                  calloff_decision_seed=None, cold_context=None,
-                 cold_decision_seed=None):
+                 cold_decision_seed=None, pf_other_live_actors=None,
+                 pf_actor_acted=None, pf_aggressor_total_bb=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -3756,6 +3757,25 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     # 실제 반영은 defend_decision(exploit=rd) 안의 역치 보정에서 이뤄진다.
     rd = PS.read_opponent(profile, opp_est)
     _pf.take_timing_bound()          # 시간 모델용 경계 기록을 이 결정 것으로만 받는다
+    _gto_call = None
+    if aggressor_pos is not None and opener_allin and float(to_call_bb or 0) > 0:
+        _gto_call = _pf.gto_pf_call_choice(
+            profile, aggressor_pos, pos, hand, rng, bb, open_bb,
+            to_call_bb, raise_level, prior_pf=prior_pf,
+            other_live_actors=pf_other_live_actors, n_limpers=n_limpers,
+            bf=float(dict(dict(call_ev_shadow or {}).get('exact_hu_icm') or {})
+                     .get('equivalent_bubble_factor', bf)),
+            seats=seats, ante=ante, actor_acted=pf_actor_acted)
+    # 오픈/3벳을 받았을 때 공격(3벳·3벳 올인·4벳 올인)만 GTO 기준으로 정한다.
+    # 'pass' 면 기존 경로가 콜/폴드를 정하고, 기존 경로의 공격은 콜로 바꾼다.
+    _gto_aggr = None
+    if (aggressor_pos is not None and not opener_allin and can_raise
+            and float(to_call_bb or 0) > 0):
+        _gto_aggr = _pf.gto_pf_aggr_choice(
+            profile, aggressor_pos, pos, hand, rng, bb, open_bb,
+            to_call_bb, raise_level, other_live_actors=pf_other_live_actors,
+            actor_acted=pf_actor_acted, n_limpers=n_limpers, bf=bf,
+            seats=seats, ante=ante, aggressor_total_bb=pf_aggressor_total_bb)
     if aggressor_pos is None and not n_limpers:
         a, sz = _pf.open_decision(profile, pos, bb, hand, rng,
                                   behind_stacks=behind_stacks,
@@ -3781,6 +3801,24 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             field_avg_bb=field_avg_bb, erosion=erosion, field_q=field_q, bf=bf,
             can_check=can_check)
         role = 'iso'
+    elif _gto_aggr in ('jam', '3bet'):
+        # GTO 기준의 공격. 3벳 크기는 기존 사이즈 습관(reraise_mult)을 쓴다.
+        role = 'defend'
+        if _gto_aggr == 'jam':
+            a, sz = 'shove', float(bb)
+        else:
+            a, sz = '3bet', float(open_bb) * _pf.reraise_mult(1, pos)
+    elif _gto_aggr in ('call', 'fold'):
+        # 플랫콜 루프로 보정된 자리(30~40bb BTN·CO 오픈 vs BB): 콜·폴드도 기준대로.
+        role = 'defend'
+        a = _gto_aggr
+        sz = float(to_call_bb or 0) if a == 'call' else 0.0
+    elif _gto_call is not None:
+        # GTO 계산기 기준(푸시/폴드 10~25bb)을 따르는 판단. 범위 밖(스택·좌석·
+        # ICM 압력·콜러가 낀 팟)이면 None 이라 아래 기존 경로(calloff/defend)로 간다.
+        role = 'defend'
+        a = _gto_call
+        sz = float(to_call_bb or 0) if a == 'call' else 0.0
     elif opener_allin and not can_raise and float(to_call_bb or 0) > 0:
         # An all-in call/fold is an incremental-EV question, not a vs-open
         # defend-percentile question. Deliberately bypass defend_decision,
@@ -3937,6 +3975,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
 
     # Preserve a dedicated price/ICM timing boundary. Only general defend
     # and open/iso decisions consume the existing preflop timing tracer.
+    if _gto_aggr == 'pass' and a in ('3bet', 'shove', 'raise'):
+        # 기준상 공격하지 않는 패. 기존 경로가 공격을 골랐다면 계속 가는 쪽(콜)으로.
+        a, sz = 'call', float(open_bb)
     _recorded_timing = _pf.take_timing_bound()
     if _calloff_consumer is None:
         _pf_timing = _recorded_timing

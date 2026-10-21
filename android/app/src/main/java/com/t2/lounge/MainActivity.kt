@@ -4,10 +4,13 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Rect
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
@@ -62,6 +65,16 @@ class MainActivity : ComponentActivity() {
         val root = FrameLayout(this).apply { setBackgroundColor(bg) }
         web = WebView(this).apply { setBackgroundColor(bg) }
         root.addView(web, FrameLayout.LayoutParams(-1, -1))
+        // 게임 화면은 왼쪽 가장자리를 끌어 순위 창을 연다. 그 구간(화면 가운데 높이 200dp, 폭 32dp)에서는
+        // 안드로이드의 '뒤로 가기' 끌기를 막는다. 안드로이드가 허용하는 한 변의 최대가 200dp 다.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            web.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+                val dp = resources.displayMetrics.density
+                val h = (200 * dp).toInt()
+                val top = ((v.height - h) / 2).coerceAtLeast(0)
+                v.systemGestureExclusionRects = listOf(Rect(0, top, (32 * dp).toInt(), top + h))
+            }
+        }
         offline = buildOfflineView()
         root.addView(offline, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
@@ -204,6 +217,11 @@ class MainActivity : ComponentActivity() {
     inner class Bridge {
         @JavascriptInterface
         fun signIn() = runOnUiThread { googleSignIn() }
+
+        // 버튼을 누를 때 살짝 진동(키보드 터치 피드백). 권한이 필요 없고, 휴대폰의
+        // '터치 시 진동' 설정을 따른다. 웹(press.js)이 버튼 pointerdown 때 부른다.
+        @JavascriptInterface
+        fun tap() = runOnUiThread { web.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP) }
     }
 
     private fun googleSignIn() {

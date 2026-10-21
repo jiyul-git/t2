@@ -130,7 +130,7 @@ def main():
         source.mkdir()
         for p in ROOT.glob('*.py'):
             shutil.copy2(p, source/p.name)
-        for name in ('pf_rank.json','style_sig.json','style_prior.json'):
+        for name in ('pf_rank.json','style_sig.json','style_prior.json','gto_pf_data.json'):
             shutil.copy2(ROOT/name, source/name)
         for name in ('ui/server','ui/web','ui/tools','coarse_params'):
             shutil.copytree(ROOT/name, source/name)

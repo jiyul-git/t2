@@ -287,6 +287,11 @@ class Accounts:
 
 
 # ------------------------------------------------------------------------------------- game servers
+
+def default_nickname():
+    """새 플레이어의 기본 닉네임: 'T-' + 8자리 숫자(봇 이름과 같은 꼴)."""
+    return 'T-%08d' % secrets.randbelow(10 ** 8)
+
 class Backends:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -300,6 +305,40 @@ class Backends:
             s.bind(('127.0.0.1', 0))
             return s.getsockname()[1]
 
+    @staticmethod
+    def _kill_stale(run):
+        """Stop a game server still running in this run folder from an earlier gateway.
+
+        Backends start in their own session, so when the gateway itself is killed (Android
+        SIGKILL) they keep running. A second server in the same folder then saves the same
+        state file and both break. Only a process whose command is ui_server.py and whose
+        working directory is this run folder is touched.
+        """
+        pidfile = os.path.join(run, 'server.pid')
+        try:
+            pid = int(open(pidfile).read().strip())
+        except (OSError, ValueError):
+            return
+        try:
+            cmd = open('/proc/%d/cmdline' % pid, 'rb').read().split(b'\0')
+            cwd = os.path.realpath('/proc/%d/cwd' % pid)
+        except OSError:
+            return                                   # not running (or not ours to inspect)
+        if b'ui_server.py' not in cmd or cwd != os.path.realpath(run):
+            return
+        import signal
+        os.kill(pid, signal.SIGTERM)                 # ui_server saves its state on the way out
+        for _ in range(200):
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                return
+            time.sleep(0.1)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+
     def _spawn(self, uid):
         run = os.path.join(self.cfg['run_root'], uid)
         data = os.path.join(self.cfg['data_root'], uid)
@@ -311,9 +350,12 @@ class Backends:
         port = self._free_port()
         env = dict(os.environ, IP='127.0.0.1', T2_DATA_DIR=data, T2_TELEMETRY='0',
                    **{k: str(v) for k, v in self.cfg['backend_env'].items()})
+        self._kill_stale(run)
         log = open(os.path.join(run, 'server.log'), 'ab')
         proc = subprocess.Popen([sys.executable, 'ui_server.py', '--port', str(port)], cwd=run, env=env,
                                 stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+        with open(os.path.join(run, 'server.pid'), 'w') as f:
+            f.write(str(proc.pid))
         for _ in range(300):
             if proc.poll() is not None:
                 raise RuntimeError('게임 서버가 시작하지 못했습니다 (로그: %s)' % os.path.join(run, 'server.log'))
@@ -576,7 +618,9 @@ def make_handler(cfg, accounts, backends, verify_token):
                     return self._json(401, {'error': '로그인이 필요합니다'})
                 if accounts.get(uid)['status'] != 'pending':
                     return self._json(409, {'error': '이미 가입한 계정입니다'})
-                nick = str(body.get('nickname') or '').strip()
+                # 가입 때는 닉네임을 묻지 않는다(사용자 결정 2026-10-20). 'T-' + 8자리 숫자를
+                # 붙여 주고, 바꾸고 싶으면 나중에 설정에서 바꾼다. 예전 앱이 보낸 닉네임은 그대로 쓴다.
+                nick = str(body.get('nickname') or '').strip() or default_nickname()
                 av = body.get('avatar')
                 if not 1 <= len(nick) <= 16:
                     return self._json(400, {'error': '닉네임은 1~16자로 정해 주세요'})
