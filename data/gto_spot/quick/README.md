@@ -35,3 +35,5 @@ overrides PF_W / PF_CFG / PF_STD): stack_bb 60, status quick, symmetric_stack_as
 Check: the same builder on this session's 40 bb dump reproduces 011TJ's s40.json exactly (all keys and nodes equal).
 Correction (2026-10-19): chart_*_parent*.json `combos` / `mix` / `reach_combos` were first weighted by class combos twice (RFI play % looked ~3-5 pp too
 narrow, e.g. 60 bb UTG 11.1 % -> 14.1 %); per-class frequencies and EVs were not affected. Fixed and regenerated (60 / 40 bb charts and PNGs).
+
+Resume manual: docs/GTO_RESUME_40BB.md (commands, restore, 100 bb parent, rules).
