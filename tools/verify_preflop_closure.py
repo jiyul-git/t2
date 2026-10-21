@@ -39,8 +39,11 @@ def prof():
 def test_variance_seek_reaches_open_form():
     p=prof()
     seen={}
-    ov, oo, ol = PF.PS.variance_seek, PF.open_form, PF.limp_p
+    ov, oo, ol, og = PF.PS.variance_seek, PF.open_form, PF.limp_p, PF.gto_pf_first_in_choice
     try:
+        # The GTO first-in connection answers before open_form is reached; this test is about
+        # the non-GTO path (open_form receives variance_seek), so the GTO choice is declined.
+        PF.gto_pf_first_in_choice=lambda *a, **k: None
         PF.PS.variance_seek=lambda *a, **k: 0.37
         def fake_open_form(_p, _feel, _r, _bb, _rng, vs=0.0, traits=None, **_kw):
             seen['vs']=vs
@@ -51,7 +54,7 @@ def test_variance_seek_reaches_open_form():
             p,'BTN',40.0,['As','Ah'],random.Random(1),
             seats=8,ante=True,field_avg_bb=40.0)
     finally:
-        PF.PS.variance_seek, PF.open_form, PF.limp_p = ov, oo, ol
+        PF.PS.variance_seek, PF.open_form, PF.limp_p, PF.gto_pf_first_in_choice = ov, oo, ol, og
     assert abs(seen['vs']-0.37)<1e-12, seen
     assert out[0]=='raise', out
     return seen['vs'], out
@@ -74,18 +77,28 @@ def test_sb_complete_reachable():
 
 def test_weak_habit_limp_outside_raise_range():
     p=prof()
-    oo, ol, ob = PF.open_form, PF.limp_p, PF._open
+    oo, ol, ob, og = PF.open_form, PF.limp_p, PF._open, PF.gto_pf_first_in_choice
     try:
-        PF._open=lambda *a, **k:0.01
+        # Non-GTO path under test: the GTO first-in connection would answer 'fold' for 7c2d first.
+        PF.gto_pf_first_in_choice=lambda *a, **k: None
+        PF._open=lambda *a, **k:0.30
         PF.open_form=lambda *a, **k: (_ for _ in ()).throw(
             AssertionError("outside raise range must not call open_form"))
         PF.limp_p=lambda *a, **k:1.0
+        # Qc5d (percentile 0.529) is outside the raise range (0.30) but inside the limp envelope
+        # (threshold x 2.2 = 0.66), so a habitual limper limps it.
         out=PF.open_decision(
+            p,'HJ',100.0,['Qc','5d'],random.Random(3),
+            seats=8,ante=True,field_avg_bb=100.0)
+        # Since d1ff356e (guard weak first-in limps) bottom-range trash is outside the envelope:
+        # 7c2d (percentile 0.982) folds even for a habitual limper.
+        trash=PF.open_decision(
             p,'HJ',100.0,['7c','2d'],random.Random(3),
             seats=8,ante=True,field_avg_bb=100.0)
     finally:
-        PF.open_form, PF.limp_p, PF._open = oo, ol, ob
+        PF.open_form, PF.limp_p, PF._open, PF.gto_pf_first_in_choice = oo, ol, ob, og
     assert out == ('limp',1.0), out
+    assert trash == ('fold',0), trash
     return out
 
 

@@ -7,7 +7,13 @@ const S = {token:1, actionToken:1, actionDeadlineMs:31000, actionStartMs:13000,
   actionBaseMs:31000, timingOn:true, view:{type:'decision'}};
 const ctx = {S, $:()=>clock, serverNow:()=>now, closeRaise(){},send(){submitted++;}};
 vm.createContext(ctx);
-vm.runInContext(source.slice(source.indexOf('function paintActionClock()'), source.indexOf('function noteTiming(')), ctx);
+// paintActionClock now submits heroTimeoutAction(S.view) on expiry; load that real function from app.js
+// (no stub) together with the clock code, and check its legal-action choice.
+vm.runInContext(source.slice(source.indexOf('function heroTimeoutAction('), source.indexOf('function paintActionClock()'))
+  + source.slice(source.indexOf('function paintActionClock()'), source.indexOf('function noteTiming(')), ctx);
+assert.equal(ctx.heroTimeoutAction({legal:{check:true}}), 'check');
+assert.equal(ctx.heroTimeoutAction({legal:{fold:true, call:true}}), 'fold');
+assert.equal(ctx.heroTimeoutAction({legal:{}}), 'fold');
 ctx.paintActionClock(); assert(clock.hidden); assert.equal(submitted,0);
 now=13000;ctx.paintActionClock();assert(!clock.hidden);assert.equal(clock.textContent,'18초');
 now=31001;ctx.paintActionClock();ctx.paintActionClock();assert.equal(submitted,1);
