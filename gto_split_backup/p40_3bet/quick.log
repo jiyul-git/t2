@@ -3,3 +3,6 @@ START p40v1_co_vs_sb_3b40 2026-10-21T19:14:19Z
 {"k": 0, "decision": "continue (minimum one update)", "terminals": {"2.000000|BTN:fold|SB:raise@8.000000|BB:fold|CO:call@8.000000": {"CO": [1.7705155684717053, 1.226], "SB": [2.5489038310103034, 0.69]}, ":raise@8.000000|BB:fold|CO:raise@17.200000|SB:call@17.200000": {"CO": [11.024367579068667, 1.247], "SB": [10.801221210323469, 0.934]}}}
 RESUME40_START 2026-10-21T21:13:36Z
 START p40v1_co_vs_sb_3b40 2026-10-21T21:13:36Z
+RESUME40_START 2026-10-21T21:54:45Z
+START p40v1_co_vs_sb_3b40 2026-10-21T21:54:46Z
+{"k": 1, "decision": "continue", "terminals": {"2.000000|BTN:fold|SB:raise@8.000000|BB:fold|CO:call@8.000000": {"CO": [2.0526739031863035, 0.785], "SB": [2.1428692670835914, 0.733]}, ":raise@8.000000|BB:fold|CO:raise@17.200000|SB:call@17.200000": {"CO": [0.8272504882830326, 1.532], "SB": [1.3390249025084504, 0.664]}}}
