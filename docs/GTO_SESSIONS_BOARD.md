@@ -142,7 +142,7 @@ reproduces 011TJ's s40.json exactly. 100 bb later (parent paused at 200 its). Al
 3. 40 bb = 01BLRH..., 30 bb = 011TJ (unchanged). T2 connects the corrected BTN vs BB flat call (30 / 40 bb) first; tell T2 if the record format changes.
 
 ## Resume manual (2026-10-21, requested by the user via the T2 session)
-docs/GTO_RESUME_40BB.md: fresh-container setup, the exact restart commands for the 40 bb flat-call chain (LJ running; UTG+2, UTG+1, UTG, SB limp queued), restore from
+docs/GTO_RESUME_40BB.md: fresh-container setup, the exact restart commands for the 40 bb flat-call chain (UTG+2 running; UTG+1, UTG, SB limp queued), restore from
 data/gto_spot/plan_a/progress/, the 100 bb parent (paused; checkpoint is not in the repo), 60 bb quick summary, 2 h-limit pattern, rules and standards. Updated after every finished spot.
 New scripts: tools/gto_spot/plan_a_install_p40.sh, plan_a_restore_progress.sh; plan_a_backup_progress.sh now also keeps the small per-step inputs. 40 bb parent dump on the branch:
 data/gto_spot/plan_a/transfer/p40_v1_dump.jsonl.gz (sha256 in SHA256SUMS).

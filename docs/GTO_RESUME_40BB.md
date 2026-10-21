@@ -41,8 +41,8 @@ flat-call terminal (priority 1) and the 3-bet-call terminals (priority 3); after
 | p40_flat_co_vs_bb | 8 | DONE, converged at step 2 | ..._co_vs_bb.json |
 | p40_flat_sb_vs_bb (SB opens 3.0) | 3 | DONE, step cap, mean of steps 1-2 | ..._sb_vs_bb.json |
 | p40_flat_hj_vs_bb | 3 | DONE, step cap, mean of steps 1-2 | ..._hj_vs_bb.json |
-| p40_flat_lj_vs_bb | 3 | RUNNING (started 2026-10-21 10:34Z) | - |
-| p40_flat_utg2_vs_bb | 3 | queued (next) | - |
+| p40_flat_lj_vs_bb | 3 | DONE, step cap, mean of steps 1-2 | ..._lj_vs_bb.json |
+| p40_flat_utg2_vs_bb | 3 | RUNNING (started 2026-10-21 20:41Z) | - |
 | p40_flat_utg1_vs_bb | 3 | queued | - |
 | p40_flat_utg_vs_bb | 3 | queued | - |
 | p40_flat_sb_limp_vs_bb | 3 | queued (last) | - |
@@ -52,7 +52,7 @@ mean of the last 2 steps with `stopped_at_step_cap: true` and a `status_note`. A
 **Start / resume (idempotent; skips spots whose `data/gto_spot/quick/<id>.json` exists; a loop continues at `state.json`'s step; finished flops are reused):**
 ```sh
 # after a container loss first restore the in-progress spot(s), then run the chain:
-sh tools/gto_spot/plan_a_restore_progress.sh p40_flat_lj_vs_bb          # state.json + step reports + step inputs from data/gto_spot/plan_a/progress/
+sh tools/gto_spot/plan_a_restore_progress.sh p40_flat_utg2_vs_bb        # state.json + step reports + step inputs from data/gto_spot/plan_a/progress/
 PLAN_A_IDS="p40_flat_btn_vs_bb p40_flat_co_vs_bb p40_flat_sb_vs_bb p40_flat_hj_vs_bb p40_flat_lj_vs_bb p40_flat_utg2_vs_bb p40_flat_utg1_vs_bb p40_flat_utg_vs_bb p40_flat_sb_limp_vs_bb" \
   SPOT_PANEL_WORKERS=4 sh tools/gto_spot/run_quick.sh        # run as a TRACKED background task, timeout 7200000; log: /home/user/gto_ckpt/plan_a/quick.log
 ```
@@ -71,7 +71,7 @@ Then update `docs/GTO_SESSIONS_BOARD.md` (status line) and this file's table. Re
 folds / unstable classes).
 
 Results so far (BB frequencies, corrected vs static parent chart): BTN open: fold 8.9 / call 76.9 / 3-bet 7 5.5 / 3-bet 8 2.2 / jam 6.4 (parent 0 / 85.5 / 0.6 / 2.9 / 11.0);
-CO open: 12.7 / 77.2 / 0.7 / 6.9 / 2.5 (parent 0 / 89.3 / 1.5 / 2.7 / 6.6); SB 3.0 open: 23.9 / 69.6 / 4.7 / 0.0 / 1.8 (parent 0 / 86.8 / 2.6 / 4.0 / 6.6); HJ open: 14.7 / 76.7 / 3.2 / 4.1 / 1.4.
+CO open: 12.7 / 77.2 / 0.7 / 6.9 / 2.5 (parent 0 / 89.3 / 1.5 / 2.7 / 6.6); SB 3.0 open: 23.9 / 69.6 / 4.7 / 0.0 / 1.8 (parent 0 / 86.8 / 2.6 / 4.0 / 6.6); HJ open: 14.7 / 76.7 / 3.2 / 4.1 / 1.4; LJ open: 19.8 / 73.9 / 4.1 / 1.7 / 0.4.
 The static continuation lets the BB defend 100 %; the corrected values fold the weakest offsuit hands. Flat-call terminals converge by step 1-2; the 3-bet-call terminals of the BB are the slow ones.
 
 ## 3. 30 bb flat-call spots
