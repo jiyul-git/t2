@@ -1,0 +1,293 @@
+diff --git a/ui/tools/verify_lounge_lighting.js b/ui/tools/verify_lounge_lighting.js
+index c3db9012..c4d9b858 100644
+--- a/ui/tools/verify_lounge_lighting.js
++++ b/ui/tools/verify_lounge_lighting.js
+@@ -68,11 +68,11 @@ near(L.lighting(8).dayness, 1, 1e-12, 'dayness at 8'); near(L.lighting(4).daynes
+ // CSS variables: night / day ends and midpoint.
+ {
+   const n = L.cssVars(-20), d = L.cssVars(20), m = L.cssVars(0);
+-  eq(n['--airport-surface-top'], '#122e32', 'top night'); eq(d['--airport-surface-top'], '#3c6762', 'top day');
+-  eq(n['--airport-surface-mid'], '#061b1f', 'mid night'); eq(d['--airport-surface-mid'], '#113c3c', 'mid day');
+-  eq(n['--airport-surface-bottom'], '#081f22', 'bottom night'); eq(d['--airport-surface-bottom'], '#0f2b30', 'bottom day');
+-  eq(m['--airport-surface-top'], '#274b4a', 'top at dayness 0.5');   // (18+60)/2=39, (46+103)/2=74.5->75, (50+98)/2=74
+-  eq(m['--airport-surface-mid'], '#0c2c2e', 'mid at dayness 0.5');
++  eq(n['--airport-surface-top'], '#122e32', 'top night'); eq(d['--airport-surface-top'], '#e8dcc4', 'top day');
++  eq(n['--airport-surface-mid'], '#061b1f', 'mid night'); eq(d['--airport-surface-mid'], '#dccaa8', 'mid day');
++  eq(n['--airport-surface-bottom'], '#081f22', 'bottom night'); eq(d['--airport-surface-bottom'], '#d2bd98', 'bottom day');
++  eq(m['--airport-surface-top'], '#7d857b', 'top at dayness 0.5');   // (18+232)/2=125, (46+220)/2=133, (50+196)/2=123
++  eq(m['--airport-surface-mid'], '#717364', 'mid at dayness 0.5');   // (6+220)/2=113, (27+202)/2=114.5->115, (31+168)/2=99.5->100
+   eq(n['--lounge-glow'], '#c98a4a', 'lamp glow at night'); eq(d['--lounge-glow'], '#e9e2cf', 'window light by day');
+   eq(n['--lounge-window'], '#2f5a78', 'window night'); eq(d['--lounge-window'], '#bfe0ee', 'window day');
+   eq(Object.keys(m).length, 5, 'five variables');
+diff --git a/ui/web/lobby.css b/ui/web/lobby.css
+index 42b60401..abedf4db 100644
+--- a/ui/web/lobby.css
++++ b/ui/web/lobby.css
+@@ -401,3 +401,40 @@ html{-webkit-tap-highlight-color:transparent}
+ /* 왼쪽 위 ♠ T2: 가장자리에서 반 글자쯤 띄우고, ♠ 와 T2 · 글자 사이를 조금 넓힌다. */
+ .brand{margin-left:.5em;letter-spacing:.02em}
+ .brand span{margin-right:.08em}
++
++/* ---------- 대회 카드의 행동 단추(참가 신청 ↔ 참가 취소 / 테이블로 / 결과 보기) ---------- */
++.card .cardFoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
++.card .cardFoot .enter{display:inline;margin:0;font-size:10px;font-weight:800;color:#8a6d33}
++.cardAction{flex:0 0 auto;min-height:30px;padding:0 14px;border:0;border-radius:999px;font-size:11px;font-weight:900;
++ background:linear-gradient(90deg,#cda95f,#e1c786);color:#1b1408;box-shadow:0 1px 3px #0004}
++.cardAction.isCancel,#join.isCancel,#featuredJoin.isCancel{background:#fff8ea;color:#7a2f22;border:1px solid #c9a07a;box-shadow:none}
++.cardAction:disabled{opacity:.5}
++
++/* ---------- 상태 표시·탭: 청록 위 하늘빛 테두리 대신 금색 계열 ---------- */
++.card .tag,.featured-status{background:#f3e2b5;color:#6b4a12}
++.featured-meta{color:#e1c27c}
++.tabs button{border-color:#8a7045;background:#0b2a2f}
++
++/* ---------- 낮(lounge.js 가 html.lobby-day 를 붙인다): 밝은 모래색 바탕에 맞춘 글자·단추 ---------- */
++html.lobby-day .top{border-bottom-color:#b8975a88}
++html.lobby-day .brand,html.lobby-day .brand span{color:#6b4a12;text-shadow:none}
++html.lobby-day .header-profile{color:#6b4a12}
++html.lobby-day .section h2{color:#4a3214;text-shadow:none}
++html.lobby-day .sectionHead p{color:#6e5a3c}
++/* 그림 바로 아래 문구는 그림 바닥(어두운 라운지 바닥) 위라 낮에도 밝은 글자 그대로 둔다. */
++html.lobby-day .featured{background:#fbf3e2;border-color:#c9a55c}
++html.lobby-day .featured-top{background:linear-gradient(90deg,#f3e2b5,#fbf3e2);color:#5a4220}
++html.lobby-day .featured-meta{color:#8a6d33}
++html.lobby-day .tabs button{background:#fffaf0;border-color:#c9a55c;color:#5a4220}
++html.lobby-day .tabs button.active{background:linear-gradient(#f2d48d,#d9b062);border-color:#b8913f;color:#2a1d08}
++html.lobby-day .card{box-shadow:0 2px 6px #6b4a1226;border-color:#d9c39a}
++html.lobby-day .bottom{background:#f7efdfee;border-top-color:#c9a55c}
++html.lobby-day .bottom button{color:#8a7350}
++html.lobby-day .bottom button.active{color:#6b4a12;background:linear-gradient(180deg,#e9cf9333,#d9b06255)}
++html.lobby-day .emptyState{color:#6e5a3c;border-color:#c9a55c}
++
++/* 선 아이콘(유니코드 기호 ⌂ ♜ ▥ ⚙ ◷ 대신) */
++.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em}
++.bottom button span .ic{width:22px;height:22px}
++.header-profile .ic{width:22px;height:22px}
++.featured-top .ic{width:15px;height:15px;margin-right:2px}
+diff --git a/ui/web/lobby.html b/ui/web/lobby.html
+index ef2eb9f3..611b0cd7 100644
+--- a/ui/web/lobby.html
++++ b/ui/web/lobby.html
+@@ -6,7 +6,7 @@
+ <meta name="theme-color" content="#0b1514">
+ <title>t2 포커 · 토너먼트 로비</title>
+ <link rel="icon" href="data:,">
+-<link rel="stylesheet" href="lobby.css?v=27">
++<link rel="stylesheet" href="lobby.css?v=28">
+ </head>
+ <body>
+ <div id="lobby">
+@@ -16,7 +16,7 @@
+       <div class="strap">토너먼트 라운지</div>
+     </div>
+     <button id="walletNav" class="walletBadge" type="button" aria-label="보유 칩 내역">♠ <b id="walletBalance">—</b></button>
+-    <button id="headerProfileNav" class="header-profile" type="button" aria-label="프로필 및 설정">⚙</button>
++    <button id="headerProfileNav" class="header-profile" type="button" aria-label="프로필 및 설정"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6"/></svg></button>
+   </header>
+ 
+   <main>
+@@ -31,7 +31,7 @@
+ 
+     <section id="featured" class="featured" hidden aria-label="추천 대회">
+       <div class="featured-top">
+-        <span>◷ 곧 시작하는 대회</span>
++        <span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg> 곧 시작하는 대회</span>
+         <span id="featuredLead" class="featured-meta"></span>
+       </div>
+       <div class="featured-detail">
+@@ -147,21 +147,21 @@
+   <div id="toast" class="toast" hidden></div>
+ 
+   <nav class="bottom" aria-label="로비 메뉴">
+-    <button id="lobbyNav" class="active" type="button"><span aria-hidden="true">⌂</span>로비</button>
+-    <button id="eventsNav" type="button"><span aria-hidden="true">♜</span>대회</button>
+-    <button id="myEventsNav" type="button"><span aria-hidden="true">▥</span>내 기록</button>
+-    <button id="profileNav" type="button"><span aria-hidden="true">⚙</span>설정</button>
++    <button id="lobbyNav" class="active" type="button"><span aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/><path d="M10 19v-5h4v5"/></svg></span>로비</button>
++    <button id="eventsNav" type="button"><span aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M16 5.5h3v1.5a3 3 0 0 1-3 3M8 5.5H5v1.5a3 3 0 0 0 3 3"/><path d="M12 13v4M9 20h6M10 17h4"/></svg></span>대회</button>
++    <button id="myEventsNav" type="button"><span aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4.5V8h3.5"/><path d="M12 8v4.2l2.8 1.8"/></svg></span>내 기록</button>
++    <button id="profileNav" type="button"><span aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M6 18l1.6-1.6M16.4 7.6 18 6"/></svg></span>설정</button>
+   </nav>
+ </div>
+ <script src="lounge/sun.js?v=2"></script>
+ <script src="lounge/location.js?v=2"></script>
+-<script src="lounge/lighting.js?v=2"></script>
++<script src="lounge/lighting.js?v=3"></script>
+ <script src="lounge/board.js?v=2"></script>
+ <script src="lounge/behavior.js?v=7"></script>
+ <script src="lounge/assets.js?v=2"></script>
+ <script src="lounge/renderer.js?v=14"></script>
+-<script src="lounge/lounge.js?v=8"></script>
++<script src="lounge/lounge.js?v=9"></script>
+ <script src="press.js?v=3"></script>
+-<script src="lobby.js?v=20"></script>
++<script src="lobby.js?v=21"></script>
+ </body>
+ </html>
+diff --git a/ui/web/lobby.js b/ui/web/lobby.js
+index c3cc78db..5c19b6be 100644
+--- a/ui/web/lobby.js
++++ b/ui/web/lobby.js
+@@ -61,8 +61,8 @@ function renderCurrent() {
+   box.hidden=false;
+   box.innerHTML='<div><div class="kicker">참가 중인 대회</div><h3>'+escapeHtml(mine.name)+
+     '</h3><p>'+when(mine.starts_at)+' · '+(mine.my_entry.rank ? mine.my_entry.rank+'위' : labels[mine.status])+
+-    '</p></div><button id="resume" type="button">대회 입장 · 결과</button>';
+-  $('#resume').onclick=()=>enter(mine);
++    '</p></div><button id="resume" type="button">'+entryAction(mine).label+'</button>';
++  $('#resume').onclick=()=>runAction(mine);
+ }
+ function renderFeatured() {
+   const box=$('#featured');
+@@ -79,8 +79,11 @@ function renderFeatured() {
+   $('#featuredBuyin').textContent=fmt(t.buyin)+' 칩';
+   box.dataset.fmt=eventFormat(t);
+   $('#featuredCount').textContent=fmt(t.entries)+'명';
+-  $('#featuredJoin').textContent=t.registration_open?'참가 신청 ›':'대회 정보 ›';
+-  $('#featuredJoin').onclick=()=>openJoin(t.id);
++  const fa=entryAction(t);
++  $('#featuredJoin').textContent=fa.kind==='none' ? '대회 정보' : fa.label;
++  $('#featuredJoin').classList.toggle('isCancel', fa.kind==='cancel');
++  $('#featuredJoin').onclick=ev=>{ ev.stopPropagation(); fa.kind==='none' ? openJoin(t.id) : runAction(t); };
++  $('#featured').onclick=()=>openJoin(t.id);
+ }
+ function eventFormat(t){
+   const fromRules=(t.fmt||t.format||(t.rules&&t.rules.fmt)||'').toLowerCase();
+@@ -100,7 +103,7 @@ function visible(t) {
+   if(['standard','turbo','deepstack','hyper'].includes(filter) && eventFormat(t)!==filter)return false;
+   return t.registration_open || (t.my_entry && t.my_entry.status!=='cancelled') || t.status==='scheduled';
+ }
+-function renderCards() {
++function renderCards(force) {
+   const items=catalog.filter(visible), box=$('#tournaments');
+   if(!items.length){
+     const empty='<div class="emptyState">조건에 맞는 대회가 없습니다.</div>';
+@@ -119,15 +122,21 @@ function renderCards() {
+     '<div class="fact"><b>'+when(t.starts_at)+'</b><span>시작</span></div>'+
+     '<div class="fact"><b>'+fmt(t.buyin)+' 칩</b><span>바이인</span></div>'+
+     '<div class="fact"><b>'+fmt(t.entries)+'명</b><span>참가</span></div></div>'+
+-    '<div class="enter">'+(t.can_reenter?'재참가 가능':'자세히 보기')+' <span aria-hidden="true">›</span></div></div></article>').join('');
++    '<div class="cardFoot"><span class="enter">대회 정보 <span aria-hidden="true">›</span></span>'+
++    (()=>{ const a=entryAction(t); return a.kind==='none' ? '' :
++      '<button type="button" class="cardAction'+(a.kind==='cancel'?' isCancel':'')+'" data-id="'+escapeHtml(t.id)+'"'+
++      (sending?' disabled':'')+'>'+escapeHtml(a.label)+'</button>'; })()+
++    '</div></div></article>').join('');
+   // the lobby polls every few seconds: leave the cards alone unless something on them changed
+-  if(box._html===html) return;
++  if(box._html===html && !force) return;
+   const first=box._html===undefined;
+   box.innerHTML=html; box._html=html;
+   if(first){ box.classList.add('intro'); setTimeout(()=>box.classList.remove('intro'),1200); }
+   box.querySelectorAll('.card').forEach(el=>{
+     const go=()=>openJoin(el.dataset.id);
+-    el.onclick=go;
++    el.onclick=ev=>{ if(ev.target.closest('.cardAction')) return; go(); };
++    const btn=el.querySelector('.cardAction');
++    if(btn) btn.onclick=ev=>{ ev.stopPropagation(); const t=catalog.find(x=>x.id===btn.dataset.id); if(t) runAction(t); };
+     el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}};
+   });
+ }
+@@ -146,6 +155,35 @@ function progressFacts(t) {
+     '<div class="fact"><b>'+playClock(p.play_seconds)+'</b><span>진행 시간</span></div>'+
+     '<div class="fact"><b>'+fmt(p.leader_stack)+'</b><span>칩 리더</span></div>';
+ }
++// 대회마다 지금 누를 수 있는 한 가지 행동. 카드 단추·상세 창 단추·참가 중 배너가 같이 쓴다.
++//   참가 신청 → (시작 전) 참가 취소 → 다시 참가 신청 / 시작 후 테이블로 / 탈락·종료 후 결과 보기
++function entryAction(t) {
++  const e=t.my_entry, entered=e && e.status!=='cancelled';
++  if(t.can_reenter) return {kind:'reenter', label:'재참가 · '+fmt(t.buyin)+' 칩'};
++  if(!entered) return t.registration_open ? {kind:'register', label:'참가 신청'} : {kind:'none', label:'등록 마감'};
++  if(e.status==='reserved' && t.status==='scheduled') return {kind:'cancel', label:'참가 취소'};
++  if(e.status==='busted' || e.status==='finished') return {kind:'enter', label:'결과 보기'};
++  return {kind:'enter', label:t.status==='scheduled' ? '대기실로' : '테이블로'};
++}
++async function runAction(t) {
++  const a=entryAction(t);
++  if(sending || a.kind==='none') return;
++  if(a.kind==='enter') return enter(t);
++  sending=true; renderCards(true); if(selected) paintJoin();
++  try {
++    if(a.kind==='cancel') {
++      await post('/api/unregister',{tournament_id:t.id,entry_no:t.my_entry.entry_no});
++      toast('참가를 취소하고 참가비를 돌려드렸습니다.');
++    } else {
++      const r=await post(a.kind==='reenter' ? '/api/reenter' : '/api/register',
++                         {tournament_id:t.id,entry_no:t.my_entry && t.my_entry.entry_no});
++      if(!r.scheduled) { location.href='/play'; return; }
++      toast('참가 신청 완료 · '+when(t.starts_at)+' 시작');
++    }
++    await loadLobby();
++  } catch(e) { toast(e.message); }
++  finally { sending=false; renderCards(true); if(selected) paintJoin(); }
++}
+ function openJoin(id) {
+   selected=catalog.find(t=>t.id===id); if(!selected) return;
+   $('#joinHint').textContent=''; paintJoin(); showSheet($('#joinSheet'));
+@@ -162,11 +200,11 @@ function paintJoin() {
+     e && e.payout != null ? '지급 상금 '+fmt(e.payout)+' 칩' : ''].filter(Boolean)
+     .map(x=>'<span>'+escapeHtml(x)+'</span>').join('');
+   $('#joinCost').textContent='바이인 '+fmt(t.buyin)+' 칩 · 보유 '+fmt(wallet && wallet.balance)+' 칩';
+-  const entered=e && e.status!=='cancelled';
+-  $('#join').textContent=t.can_reenter ? '재참가 · '+fmt(t.buyin)+' 칩' : entered ?
+-    (t.status==='scheduled' ? '대회 대기실' : '대회 입장 · 결과 확인') : '참가 신청 · '+fmt(t.buyin)+' 칩';
+-  $('#join').disabled=sending || (!entered && !t.registration_open);
+-  $('#cancelRegistration').hidden=!(e && e.status==='reserved' && t.status==='scheduled');
++  const a=entryAction(t);
++  $('#join').textContent=a.kind==='register' ? '참가 신청 · '+fmt(t.buyin)+' 칩' : a.label;
++  $('#join').classList.toggle('isCancel', a.kind==='cancel');
++  $('#join').disabled=sending || a.kind==='none';
++  $('#cancelRegistration').hidden=true;      // 취소는 같은 단추가 '참가 취소'로 바뀌어 맡는다
+ }
+ function closeJoin() { hideSheet($('#joinSheet')); selected=null; }
+ async function post(path, body) {
+@@ -178,16 +216,8 @@ async function enter(t) {
+   catch(e) { toast(e.message); }
+ }
+ async function join() {
+-  if(!selected || sending) return;
+-  const t=selected, entered=t.my_entry && t.my_entry.status!=='cancelled';
+-  const path=t.can_reenter ? '/api/reenter' : entered ? '/api/enter' : '/api/register';
+-  sending=true; paintJoin();
+-  try {
+-    const r=await post(path,{tournament_id:t.id,entry_no:t.my_entry && t.my_entry.entry_no});
+-    if(!r.scheduled || path==='/api/enter') { location.href='/play'; return; }
+-    closeJoin(); toast('참가 신청이 완료됐습니다. 대회 시작: '+when(t.starts_at)); await loadLobby();
+-  } catch(e) { $('#joinHint').textContent=e.message; }
+-  finally { sending=false; if(selected) paintJoin(); }
++  if(!selected) return;
++  await runAction(selected);
+ }
+ async function cancelRegistration() {
+   if(!selected || sending) return; sending=true;
+diff --git a/ui/web/lounge/lighting.js b/ui/web/lounge/lighting.js
+index b48e4a56..e7b66f62 100644
+--- a/ui/web/lounge/lighting.js
++++ b/ui/web/lounge/lighting.js
+@@ -54,9 +54,11 @@
+   function cssVars(h) {
+     const d = lighting(h).dayness;
+     return {
+-      '--airport-surface-top': mix('#122e32', '#3c6762', d),
+-      '--airport-surface-mid': mix('#061b1f', '#113c3c', d),
+-      '--airport-surface-bottom': mix('#081f22', '#0f2b30', d),
++      // 밤: 짙은 청록(금테와 어울림). 낮: 따뜻한 모래색 — 낮 라운지 그림과 이어지게(2026-10-20 사용자 의견:
++      // 낮에도 청록이면 무겁다). 글자·단추 색은 lobby.css html.lobby-day 가 바꾼다.
++      '--airport-surface-top': mix('#122e32', '#e8dcc4', d),
++      '--airport-surface-mid': mix('#061b1f', '#dccaa8', d),
++      '--airport-surface-bottom': mix('#081f22', '#d2bd98', d),
+       // the lounge continues below the picture: lamp glow at night, window light by day
+       '--lounge-glow': mix('#c98a4a', '#e9e2cf', d),
+       '--lounge-window': mix('#2f5a78', '#bfe0ee', d),
+diff --git a/ui/web/lounge/lounge.js b/ui/web/lounge/lounge.js
+index 12cf7086..f27e05aa 100644
+--- a/ui/web/lounge/lounge.js
++++ b/ui/web/lounge/lounge.js
+@@ -75,6 +75,8 @@
+       const vars = Light.cssVars(sky.light.h);
+       const style = doc.documentElement.style;
+       for (const k in vars) style.setProperty(k, vars[k]);
++      // 낮(해가 떠 있음)에는 로비 바탕이 밝은 모래색이라 글자·단추 색을 바꾼다(lobby.css html.lobby-day).
++      doc.documentElement.classList.toggle('lobby-day', sky.light.dayness > 0.5);
+       floorDue = true;
+     }
+ 

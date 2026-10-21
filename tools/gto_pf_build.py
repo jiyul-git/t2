@@ -51,6 +51,9 @@ def flat(rec):
 for path in sys.argv[1:]:
     rec = json.load(open(path))
     if rec.get('schema') == 'spot_quick_v1':
+        if '_limp_' in rec['id']:       # 림프 팟(BB 가 림프를 받음)은 아직 받는 자리가 없다 — 건너뜀
+            print('skip (limp pot, not connected):', rec['id'])
+            continue
         flat(rec)
         continue
     S = str(int(rec['stack_bb']))
