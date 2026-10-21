@@ -59,6 +59,40 @@
     }
     const placeNow = () => location.get();
 
+    // The last picture of the scene is kept (small JPEG) and shown while the next visit loads, so the
+    // page never flashes the old still picture before the scene appears. Older than SNAP_MAX_MS = skipped.
+    const SNAP_KEY = 't2.lounge.snap', SNAP_MAX_MS = 3 * 3600e3, SNAP_W = 480;
+    function paintSnapshot(storage) {
+      try {
+        const raw = storage && storage.getItem(SNAP_KEY);
+        const fb = section && section.querySelector('.lounge-fallback');
+        if (!raw || !fb) return;
+        const snap = JSON.parse(raw);
+        if (Date.now() - snap.ts > SNAP_MAX_MS || typeof snap.url !== 'string') return;
+        fb.style.backgroundImage = 'url("' + snap.url + '")';
+      } catch (e) { /* no snapshot: the plain colour shows */ }
+    }
+    let snapTimer = 0, lastSnapAt = 0;
+    function takeSnapshot(storage) {
+      if (!storage || !canvas || failed || !renderer || !director) return;
+      if (Date.now() - lastSnapAt < 60000) return;
+      try {
+        drawNow([]);                                   // the room without anybody in it
+        const w = SNAP_W, h = Math.round(w * canvas.height / canvas.width);
+        const c = doc.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(canvas, 0, 0, w, h);
+        const url = c.toDataURL('image/jpeg', 0.6);
+        drawNow(director.step(0));
+        storage.setItem(SNAP_KEY, JSON.stringify({ ts: Date.now(), url }));
+        lastSnapAt = Date.now();
+      } catch (e) { /* storage full or canvas tainted: skip */ }
+    }
+    function scheduleSnapshot(storage) {
+      snapTimer = win.setTimeout(() => takeSnapshot(storage), 2500);
+      doc.addEventListener('visibilitychange', () => { if (doc.hidden) takeSnapshot(storage); });
+      win.addEventListener('pagehide', () => takeSnapshot(storage));
+    }
+
     function fail(why) {
       if (failed) return;
       failed = true;
@@ -202,6 +236,7 @@
         reduced = !!(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches);
         let storage = null;
         try { storage = win.localStorage; } catch (e) { storage = null; }
+        paintSnapshot(storage);
         location = Locate.createLocation({ navigator: win.navigator, storage, now: Date.now, intl: win.Intl, isSecureContext: win.isSecureContext });
         location.init();
         assets = await Assets.loadAssets(assetBase, Assets.browserIO(), Behavior.isActive);
@@ -211,6 +246,7 @@
         newDirector();
         renderer.resize(section.clientWidth || 360, win.devicePixelRatio || 1);
         section.classList.add('lounge-ready');
+        scheduleSnapshot(storage);
         if (reduced) startStatic();
         else {
           drawNow(director.step(0));
