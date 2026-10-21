@@ -5,6 +5,10 @@ import copy, os, pathlib, sys
 os.environ.setdefault('T2_BOT_LOG', '0')
 os.environ.setdefault('T2_TABLE_WORKERS', '1')
 os.environ.setdefault('T2_VCLOCK_SCALE', '1.0')
+# The 1.2125 pace calibration below measures the action-shape hand-time model. With the timing rules
+# on (default since T7) hand time is machine time plus the real decision clocks, a different model that
+# this calibration was never fitted to; so the regression pins the model it was written for.
+os.environ.setdefault('T2_TIMING_V1', 'off')
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))

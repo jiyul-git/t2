@@ -55,12 +55,12 @@ print('PASS: five speed/format boundaries, field persistence, legacy clock, coun
 # Real HTTP lifecycle: countdown starts only after a result, survives reload,
 # rejects an early deal, and skip resumes exactly once.
 import tempfile, subprocess, socket, json, urllib.request, urllib.error, os
-with tempfile.TemporaryDirectory(prefix='t2_clock_') as td:
+with tempfile.TemporaryDirectory(prefix='t2_clock_') as td, tempfile.TemporaryDirectory(prefix='t2_clock_data_') as dd:
     subprocess.run(['sh', str(ROOT/'ui/tools/setup_run_dir.sh'), td],check=True,stdout=subprocess.DEVNULL)
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     proc=subprocess.Popen([sys.executable,'ui_server.py','--port',str(port)],cwd=td,
-        env=dict(os.environ,T2_UI_DEFER='0',T2_TIMING_V1='off',T2_ALLOW_PRACTICE_NEW='1'),stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+        env=dict(os.environ,T2_UI_DEFER='0',T2_TIMING_V1='off',T2_ALLOW_PRACTICE_NEW='1',T2_SCHEDULE_ENABLED='0',T2_DATA_DIR=dd),stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
     def request(path,body=None):
         req=urllib.request.Request(f'http://127.0.0.1:{port}'+path,
             data=None if body is None else json.dumps(body).encode(),headers={'Content-Type':'application/json'})

@@ -33,11 +33,22 @@ need('mAuto' not in menu and '자동 진행 끄기' not in menu
      'result/auto-progress control still in menu')
 
 # Field summary moved out of top bar into tournament info/menu.
-need("$('#fieldline').textContent = ''" in APP, 'top field summary not cleared')
-for s in ('ITM', '레벨', '블라인드', '내 칩순위', '다음 머니점프'):
+# Since the virtual-clock work the top line shows only the elapsed play time (or the legacy label),
+# never the field summary (ITM / players / levels), which lives in the tournament info and menu.
+fieldline = APP[APP.index("if ($('#fieldline'))"):]
+fieldline = fieldline[:fieldline.index('\n  }\n') + 5]
+need('경과' in fieldline and '기존 대회' in fieldline, 'top line is not the elapsed-time line')
+need('ITM' not in fieldline and '남은' not in fieldline and 'rank' not in fieldline,
+     'top bar still carries the field summary')
+for s in ('ITM', '레벨', '블라인드', '다음 머니점프'):
     need(s in info, 'tournament info missing %r' % s)
-for s in ('대회 정보', '전체 봇 스택 순위'):
-    need(s in menu, 'menu missing %r' % s)
+# Own chip rank moved from the info panel to the standings drawer summary (102556c9).
+_d0 = APP.index('function renderRankDrawer')
+drawer = APP[_d0:APP.index('\nfunction ', _d0 + 10)]
+need('내 칩순위' in drawer, 'standings drawer summary missing own chip rank')
+need('대회 정보' in menu, "menu missing '대회 정보'")
+# 102556c9: the standings button left the menu on purpose; the drawer opens by swipe only (checked below).
+need('mRanks' not in menu and '전체 봇 스택 순위' not in menu, 'menu still has the removed standings button')
 
 # Standings endpoint returns only public tournament/stack/seat data.
 need("if path == '/api/tournament':" in SERVER,
@@ -52,10 +63,14 @@ for s in ("'standings': rows", "'hero_rank':", "'money_jumps':",
 for s in ('id="rankDrawer"', 'id="rankScrim"', 'id="rankSummary"',
           'id="rankList"'):
     need(s in INDEX, 'drawer shell missing %r' % s)
-need("if (dx >= 80" in APP and 'openRankDrawer()' in APP,
-     'right-swipe open wiring missing')
-need("if (dx <= -70" in APP and 'closeRankDrawer()' in APP,
-     'left-swipe close wiring missing')
+# The fixed-threshold swipe (dx >= 80 / dx <= -70) became a drag-follow drawer (bindRankDrag):
+# opening binds the table and hero areas at the screen edge, closing binds the drawer itself.
+need("bindRankDrag($('#tablewrap'), true" in APP and "bindRankDrag($('#hero'), true" in APP
+     and 'if (opening) openRankDrawer(fromMenu);' in APP and 'RANK_EDGE_PX' in APP,
+     'right-drag open wiring missing')
+need("bindRankDrag($('#rankDrawer'), false" in APP and 'else closeRankDrawer();' in APP
+     and "$('#rankScrim').addEventListener('click', closeRankDrawer)" in APP,
+     'left-drag/scrim close wiring missing')
 need('#rankDrawer' in CSS and '.rankrow.hero' in CSS,
      'standings drawer styling missing')
 
@@ -80,8 +95,13 @@ need("actionBar.classList.remove('turn-open')" in APP,
      'submitted hero action does not clear turn animation state')
 
 # Cache tags must point to this build.
-need('style.css?v=52' in INDEX, 'style cache tag not bumped')
-need('app.js?v=66' in INDEX, 'app cache tag not bumped')
+# The exact numbers (52 / 66) were frozen at the time this check was written; every later web change
+# bumps them again. The contract is that the tags exist and never go below those first values.
+import re
+_css = re.search(r'style\.css\?v=(\d+)', INDEX)
+_app = re.search(r'app\.js\?v=(\d+)', INDEX)
+need(_css and int(_css.group(1)) >= 52, 'style cache tag missing or below 52')
+need(_app and int(_app.group(1)) >= 66, 'app cache tag missing or below 66')
 
 print({'checks': checks,
        'menu_clean': True,
