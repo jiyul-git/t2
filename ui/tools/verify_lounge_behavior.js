@@ -549,5 +549,66 @@ ok(chatTotal > 0, 'conversations happen');
   ok(h1 !== run(8, 100, 3600e3), 'real characters: different seed, different history');
 }
 
+{
+  // Shared timeline (7.9): every device derives the same episode from the server clock; an episode starts
+  // with an empty room, ends with an empty room and lets nobody new in during its last minutes.
+  const EP = 30 * 60000, QUIET = 5 * 60000;
+  const real = scene.characters.map(n => JSON.parse(fs.readFileSync(path.join(ASSETS, 'chars', n, 'manifest.json'), 'utf8')));
+  const T0 = Date.UTC(2026, 9, 21, 3, 17, 42);
+  const e1 = B.sharedEpisode(T0, EP), e2 = B.sharedEpisode(T0, EP), nx = B.sharedEpisode(e1.endMs, EP);
+  eq(e1, e2, 'the same server time gives the same episode');
+  ok(e1.startMs % EP === 0 && e1.endMs - e1.startMs === EP && e1.elapsedMs === T0 - e1.startMs && e1.elapsedMs >= 0 && e1.elapsedMs < EP, 'episode slot arithmetic');
+  ok(nx.slot === e1.slot + 1 && nx.startMs === e1.endMs && nx.elapsedMs === 0 && nx.seed !== e1.seed, 'the next episode starts where this one ends, with its own seed');
+  eq(B.seoulMinuteOfDay(Date.UTC(2026, 9, 21, 0, 0)), 9 * 60, 'Seoul minute of day (UTC+9)');
+  eq(B.seoulMinuteOfDay(Date.UTC(2026, 9, 21, 15, 30)), 30, 'Seoul minute of day wraps past midnight');
+
+  const make = (startMs, seed) => {
+    let d = null;
+    const clock = () => startMs + (d ? d.time : 0);
+    d = B.createDirector({
+      seed, scene, characters: real, clock, minuteOfDay: () => B.seoulMinuteOfDay(clock()),
+      solar: () => Sun.sunPosition(new Date(clock()), SEOUL[0], SEOUL[1]), episode: { lengthMs: EP, quietMs: QUIET },
+    });
+    return d;
+  };
+  let arrivalsSeen = 0;
+  for (const startHour of [3, 13]) {                       // a night slot and a day slot
+    for (let k = 0; k < 6; k++) {
+      const start = Math.floor((Date.UTC(2026, 9, 21, startHour, 0) + k * EP * 7) / EP) * EP;
+      const d = make(start, B.sharedEpisode(start, EP).seed);
+      ok(d.step(0).length === 0 && !d.plane(), 'an episode starts with an empty room (' + startHour + 'h #' + k + ')');
+      let before = new Set(), planeBefore = false;
+      for (let t = 1000; t <= EP; t += 1000) {
+        const snap = d.step(1000), on = new Set(snap.map(c => c.name)), pl = !!d.plane();
+        if (t > EP - QUIET + 1000) {
+          for (const n of on) ok(before.has(n), 'nobody new comes in during the quiet end of an episode: ' + n + ' at ' + t / 1000 + ' s');
+          ok(!(pl && !planeBefore), 'no plane starts during the quiet end of an episode');
+        }
+        if (t > EP - QUIET && t <= EP - QUIET + 1000) ok(d.winding, 'the quiet end begins on time');
+        if (t === EP - 60000) ok(on.size === 0 && !pl, 'the room is already empty a minute before an episode ends (' + startHour + 'h #' + k + '): ' + [...on]);
+        for (const c of snap) if (c.state === 'ENTERING') arrivalsSeen++;
+        before = on; planeBefore = pl;
+      }
+      ok(before.size === 0 && !d.plane() && !d.mover(), 'an episode ends with an empty room and nothing moving (' + startHour + 'h #' + k + '): ' + [...before]);
+    }
+  }
+  ok(arrivalsSeen > 0, 'people do come during episodes');
+
+  // the same moment looks the same however it was reached (fast-forward on opening vs watching live)
+  const start = Math.floor(Date.UTC(2026, 9, 21, 12, 0) / EP) * EP, seed = B.sharedEpisode(start, EP).seed;
+  const look = d => JSON.stringify(d.step(0).map(c => [c.name, c.clip, c.frame, Math.round(c.drawX), c.face, c.state]).concat([d.plane()]));
+  const A = make(start, seed), Bd = make(start, seed), Cd = make(start, seed);
+  A.advance(16 * 60000);                                    // opened 16 min into the episode
+  for (let t = 0; t < 16 * 60; t++) Bd.step(1000);          // watched for 16 min, one frame per second
+  for (let t = 0; t < 16 * 60 * 4; t++) Cd.step(250);       // watched at a different frame rate
+  eq(look(A), look(Bd), 'fast-forward equals watching live (1 s steps)');
+  eq(look(A), look(Cd), 'fast-forward equals watching live (250 ms steps)');
+  A.advance(5 * 60000); for (let t = 0; t < 300; t++) Bd.step(1000);
+  eq(look(A), look(Bd), 'staying in step after more time');
+  // coming back after being away: a late fast-forward lands on the same state as never leaving
+  const Late = make(start, seed); Late.advance(16 * 60000); Late.advance(5 * 60000);
+  eq(look(Late), look(A), 'catching up in two parts equals one long run');
+}
+
 function eq(a, b, m) { checks++; assert.deepStrictEqual(a, b, m); }
 console.log('verify_lounge_behavior OK (' + checks + ' checks)');

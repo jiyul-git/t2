@@ -110,7 +110,14 @@
     // same character twice in a row. Each opening of the app starts a new random run. scene.preview lists
     // events to show first, right away: a name passes by, 'arrive:<name>' goes to a seat.
     const planes = scene.planes || null;
-    const preview = (Array.isArray(scene.preview) ? scene.preview : []).map(p => (String(p).includes(':') ? String(p).split(':') : ['pass', String(p)]))
+    // Shared timeline (7.9): an episode starts with an empty room and ends with an empty room. In its last
+    // quietMs nothing new starts (no arrival, pass-by or plane) and everyone seated is sent off in turn, so
+    // that consecutive episodes join without a jump. With an episode there is no preview and nobody is
+    // seated at the start.
+    const episode = opts.episode && Number.isFinite(opts.episode.lengthMs)
+      ? { lengthMs: opts.episode.lengthMs, quietMs: Math.min(opts.episode.quietMs || 300000, opts.episode.lengthMs / 2) } : null;
+    let winding = false;
+    const preview = (episode ? [] : (Array.isArray(scene.preview) ? scene.preview : [])).map(p => (String(p).includes(':') ? String(p).split(':') : ['pass', String(p)]))
       .filter(([k, n]) => chars.some(c => c.name === n && (k === 'pass' ? c.walker : k === 'arrive' && c.sitter)));
     let nextEventAt = 0, lastEvent = null, lastWho = null, queue = [], plane = null, mover = null;
 
@@ -208,7 +215,7 @@
     const seatedNow = () => sitters.filter(c => c.state === 'SEATED');
     function release() {                     // the mover is done: a quiet spell, then the next event
       mover = null;
-      nextEventAt = now + (queue.length ? rnd(2, 5) : rnd(passEvery[0], passEvery[1])) * 1000;
+      nextEventAt = now + (winding ? rnd(1, 4) : queue.length ? rnd(2, 5) : rnd(passEvery[0], passEvery[1])) * 1000;
     }
     // The leave of a seated character: it finishes what it is doing (a loop ends at its next wrap,
     // an activity goes through its _out clip) and stands up at its next decision.
@@ -230,6 +237,10 @@
     function candidates() {
       const off = c => c.state === 'OFFSCREEN';
       const out = [];
+      if (winding) {                          // the last minutes of an episode: only people going away
+        for (const c of seatedNow()) if (now >= c.seatedUntil && !c.leaving) out.push(['leave', c, 3]);
+        return out;
+      }
       for (const c of walkers) if (off(c)) out.push(['pass', c, 1]);
       if (planes) out.push(['plane', null, 1]);
       out.push(['none', null, 1]);
@@ -260,6 +271,10 @@
     }
     function tryEvent() {
       if (plane && now >= plane.start + plane.ms) { plane = null; release(); }
+      if (episode && !winding && now >= episode.lengthMs - episode.quietMs) {
+        winding = true; queue = [];
+        for (const c of seatedNow()) c.seatedUntil = Math.min(c.seatedUntil, now + rnd(0, 40) * 1000);
+      }
       if (mover || now < nextEventAt) return;
       // a queued event (the preview walkers, a debug request) goes first while it is still possible
       const later = [];                      // an arrival that waits for a seat stays queued
@@ -275,10 +290,11 @@
       }
       queue = later;
       let opts = candidates();
+      if (!opts.length) { nextEventAt = now + 3000; return; }
       // someone who has been due to leave for a while goes now; nobody seated: somebody comes
       const overdue = opts.filter(o => o[0] === 'leave' && now - o[1].seatedUntil >= LEAVE_WAIT_MS);
       if (overdue.length) return startEvent('leave', overdue[0][1]);
-      if (!seatedNow().length && opts.some(o => o[0] === 'arrive')) opts = opts.filter(o => o[0] === 'arrive');
+      if (!winding && !seatedNow().length && opts.some(o => o[0] === 'arrive')) opts = opts.filter(o => o[0] === 'arrive');
       const fresh = opts.filter(o => keyOf(o[0], o[1]) !== lastEvent && !(o[1] && o[1].name === lastWho));
       if (fresh.length) opts = fresh;
       let total = 0;
@@ -465,6 +481,7 @@
         case 'SIT_DOWN':
           c.state = 'SEATED';
           c.seatedUntil = now + rnd(SEAT_SECONDS[0], SEAT_SECONDS[1]) * 1000;
+          if (winding) c.seatedUntil = now + rnd(5, 40) * 1000;      // sat down just as the episode was ending
           if (mover && mover.c === c) release();       // seated: it no longer moves
           decide(c);
           break;
@@ -569,11 +586,12 @@
       for (let i = 0; i < seatOwner.length; i++) seatOwner[i] = null;
       target = rollTarget();
       nextTargetRoll = now + TARGET_RECHECK_MS;
-      nextEventAt = now + rnd(1, 4) * 1000; lastEvent = null; lastWho = null; plane = null; mover = null;   // the first one comes soon
+      nextEventAt = now + (episode ? rnd(8, 40) : rnd(1, 4)) * 1000; lastEvent = null; lastWho = null; plane = null; mover = null;   // the first one comes soon
+      winding = false;
       queue = preview.map(e => e.slice());
       // half the target (rounded up) already seated; the preview characters are kept free for their turn
       const pool = sitters.filter(c => !preview.some(e => e[1] === c.name));
-      const count = Math.min(Math.ceil(target / 2), pool.length, seats.length);
+      const count = episode ? 0 : Math.min(Math.ceil(target / 2), pool.length, seats.length);
       for (let k = 0; k < count; k++) {
         const c = pool.splice(Math.floor(rand() * pool.length), 1)[0];
         const idx = chooseSeat(c);
@@ -627,6 +645,11 @@
         while (acc >= TICK_MS) { acc -= TICK_MS; tick(); }
         return snapshot();
       },
+      // Run `ms` of scene time without building snapshots (fast-forward to the present, 7.9).
+      advance(ms) {
+        acc += Math.max(0, ms);
+        while (acc >= TICK_MS) { acc -= TICK_MS; tick(); }
+      },
       warmStart() { acc = 0; warmStart(); return snapshot(); },
       // The plane taxiing past the window right now: {u: 0..1 along its run, right: heading right,
       // lane: index into scene.planes.lanes}, or null.
@@ -676,10 +699,22 @@
       },
       faceKinds(name) { const c = chars.find(x => x.name === name); return c ? ['blink', ...c.exprs] : []; },
       get now() { return now; },
+      get time() { return now + acc; },        // scene time including the part of a tick not yet run
+      get winding() { return winding; },
       get target() { return target; },
       characterNames() { return chars.map(c => c.name); },
     };
   }
 
-  return { createDirector, mulberry32, isActive, canSit, canPass, sitFacings, clipAt, faceKinds, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS, FACE, DOZE };
+  // The shared timeline (7.9): every device derives the same episode from the server clock.
+  // Returns {slot, startMs, endMs, seed, elapsedMs} for a server time and an episode length.
+  function sharedEpisode(serverMs, lengthMs) {
+    const slot = Math.floor(serverMs / lengthMs);
+    const seed = (Math.imul(slot, 2654435761) ^ 0x5bd1e995) >>> 0;
+    return { slot, startMs: slot * lengthMs, endMs: (slot + 1) * lengthMs, seed, elapsedMs: serverMs - slot * lengthMs };
+  }
+  // Minute of the day in Seoul (UTC+9), the same on every device.
+  const seoulMinuteOfDay = ms => Math.floor((((ms + 9 * 3600e3) % 86400e3) + 86400e3) % 86400e3 / 60000);
+
+  return { createDirector, sharedEpisode, seoulMinuteOfDay, mulberry32, isActive, canSit, canPass, sitFacings, clipAt, faceKinds, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS, FACE, DOZE };
 });

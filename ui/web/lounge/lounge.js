@@ -21,6 +21,12 @@
   const LIGHT_EVERY_MS = 15000;
   const BOARD_EVERY_MS = 60000;
   const WARM_AFTER_MS = 60000;
+  // Shared timeline (docs 7.9): the people in the lounge follow the SERVER clock, so every device and every
+  // visit shows the same scene at the same moment. The scene is cut into EPISODE_MS slots; each slot has its
+  // own seed, starts with an empty room and, from QUIET_MS before its end, lets nobody new in so the room is
+  // empty again when the next slot starts. Opening the app (or coming back to it) fast-forwards to now.
+  const EPISODE_MS = 30 * 60000, QUIET_MS = 5 * 60000, CATCHUP_MS = 2500;
+  const SEOUL = { lat: 37.5665, lon: 126.978 };
   const DEBUG_FLAG_KEY = 't2_lounge_debug';
 
   // Sun, moon and lighting for a moment and a place. Pure; used by the loop and by tests.
@@ -143,12 +149,39 @@
       boardKey = rows.map(r => [r.flight, r.dest, r.time, r.status, r.mine].join('|')).join(';');
     }
 
+    let shared = null;                      // {startMs} of the shared episode being played, null = own random run (debug)
+    const serverMs = () => Date.now() + serverOffsetMs;
+    const sharedMode = () => seed === null && debug.clockMs === null && debug.scale === 1;
     function newDirector() {
-      const s = seed === null ? Date.now() : seed;
+      const chars = assets.chars.map(c => c.manifest);
+      if (sharedMode()) {
+        const e = Behavior.sharedEpisode(serverMs(), EPISODE_MS);
+        let d = null;
+        const clock = () => e.startMs + (d ? d.time : 0);          // scene time of this episode on the server clock
+        d = Behavior.createDirector({
+          seed: e.seed, scene: assets.scene, characters: chars, clock,
+          minuteOfDay: () => Behavior.seoulMinuteOfDay(clock()),   // the same on every device, whatever its time zone
+          solar: () => Sun.sunPosition(new Date(clock()), SEOUL.lat, SEOUL.lon),
+          episode: { lengthMs: EPISODE_MS, quietMs: QUIET_MS },
+        });
+        d.advance(e.elapsedMs);                                     // fast-forward to the present
+        director = d; shared = { startMs: e.startMs };
+        return;
+      }
+      shared = null;
       director = Behavior.createDirector({
-        seed: s, scene: assets.scene, characters: assets.chars.map(c => c.manifest),
+        seed: seed === null ? Date.now() : seed, scene: assets.scene, characters: chars,
         clock: clockMs, solar: () => (sky ? sky.sun : { elevation: 0 }),
       });
+    }
+    // Back in step with the server clock: fast-forward when the app was away or the clock moved ahead, a new
+    // episode when this one is over or the clock moved back.
+    function catchUp() {
+      if (!shared || !director || !sharedMode()) return;
+      const want = serverMs() - shared.startMs;
+      if (want >= EPISODE_MS || want < director.time - 500) { newDirector(); return; }
+      const lag = want - director.time;
+      if (lag > CATCHUP_MS) director.advance(lag);
     }
 
     function drawNow(chars) {
@@ -168,6 +201,7 @@
       try {
         updateLighting(false); updateBoard(false);
         simT += dt / 1000;
+        catchUp();
         const t0f = win.performance.now();
         drawNow(director.step(dt * debug.scale));
         const cost = win.performance.now() - t0f;
@@ -183,7 +217,8 @@
 
     function startLoop() {
       if (running || failed || stopped || reduced || !renderer) return;
-      if (pausedAt && win.performance.now() - pausedAt > WARM_AFTER_MS) { try { director.warmStart(); } catch (e) { fail(e); return; } }
+      if (shared) { try { catchUp(); } catch (e) { fail(e); return; } }
+      else if (pausedAt && win.performance.now() - pausedAt > WARM_AFTER_MS) { try { director.warmStart(); } catch (e) { fail(e); return; } }
       pausedAt = 0; running = true; lastTs = 0;
       raf = win.requestAnimationFrame(frame);
     }
@@ -307,7 +342,7 @@
       setTournaments(list, serverNowSec) {
         tournaments = Array.isArray(list) ? list : [];
         if (Number.isFinite(serverNowSec)) serverOffsetMs = serverNowSec * 1000 - Date.now();
-        if (renderer && !failed) { try { updateBoard(true); } catch (e) { fail(e); } }
+        if (renderer && !failed) { try { updateBoard(true); catchUp(); } catch (e) { fail(e); } }
       },
       // switch the real weather off / on (saved on this device: localStorage['t2_lounge_wx_off'] = '1' when off)
       setWeatherEnabled(on) { if (weather) { weather.setEnabled(!!on); wxCond = weather.get(); } },
