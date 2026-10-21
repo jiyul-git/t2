@@ -443,6 +443,105 @@ ok(chatTotal > 0, 'conversations happen');
 }
 
 {
+  // Seated faces and tempo (docs/LOUNGE_SCENE_DESIGN.md 7.9, art/README.md): what each pose faces, a blink on every
+  // frame of every open-eyed seated loop, how often each character blinks in each activity, and a slow doze.
+  const OK_FACING = { f: ['F', 'Fl', 'Fr'], l: ['L', 'Fl'] };
+  const seatFacings = [...new Set(scene.seats.map(s => s.facing || 'f'))];
+  const loopsOf = m => Object.entries(m.clips).filter(([id, c]) => c.loop && !B.WALKER_CLIPS.includes(id));
+  const dur = c => c.frames.length / c.fps;
+  for (const m of REAL) {
+    // 1. the facing table: every pose of a facing has a recorded facing that the seats of that facing accept
+    ok(m.poseInfo && typeof m.poseInfo === 'object', m.name + ' records what its poses face (poseInfo)');
+    for (const f of B.sitFacings(m)) {
+      ok(seatFacings.includes(f), m.name + ' has poses for a facing no seat has: ' + f);
+      const suffix = f === 'f' ? '' : '@' + f;
+      const posesHere = Object.keys(m.poses).filter(p => !p.startsWith('walk') && (suffix ? p.endsWith(suffix) : !p.includes('@')));
+      ok(posesHere.length >= 3, m.name + '/' + f + ' has seated poses');
+      for (const p of posesHere) {
+        const rec = m.poseInfo[p];
+        ok(rec, m.name + ' pose ' + p + ' has a recorded facing');
+        for (const part of ['head', 'torso', 'legs']) ok(OK_FACING[f].includes(rec[part]), m.name + ' pose ' + p + ': ' + part + ' faces ' + rec[part] + ' but the seat faces ' + f);
+        ok(rec.eyes === 'open' || rec.eyes === 'closed', m.name + ' pose ' + p + ' says whether its eyes are open');
+      }
+      // a clip never starts or ends on a pose of another facing
+      for (const [id, c] of Object.entries(m.clips)) {
+        if (!(suffix ? id.endsWith(suffix) : !id.includes('@')) || B.WALKER_CLIPS.includes(id)) continue;
+        for (const p of [c.from, c.to]) if (!p.startsWith('walk')) ok(suffix ? p.endsWith(suffix) : !p.includes('@'), m.name + ' clip ' + id + ' touches pose ' + p + ' of another facing');
+      }
+    }
+    // 2. blink coverage: every frame of every seated loop whose pose has open eyes can blink
+    let covered = 0;
+    for (const [id, c] of loopsOf(m)) {
+      const rec = m.poseInfo[c.to];
+      ok(rec, m.name + ' loop ' + id + ' ends on a pose with a record');
+      if (rec.eyes === 'open') {
+        for (const i of c.frames) ok(m.frames[i].v && Number.isInteger(m.frames[i].v.blink), m.name + ' ' + id + ' frame ' + i + ' has no blink');
+        covered += c.frames.length;
+      } else ok(/^doze/.test(id), m.name + ' ' + id + ' has closed eyes but is not a doze loop');
+    }
+    ok(covered > 0, m.name + ' has open-eyed loops');
+    // 3. tempo: a breath takes about 4 s everywhere; a doze hold is 6-12 s, settling 1.5-2.5 s, a nod 0.6-1.3 s
+    for (const [id, c] of loopsOf(m)) {
+      if (/^doze_loop/.test(id)) ok(dur(c) >= 6 && dur(c) <= 12, m.name + ' ' + id + ' holds ' + dur(c) + ' s');
+      else ok(dur(c) >= 3.5 && dur(c) <= 5, m.name + ' ' + id + ' breathes in ' + dur(c) + ' s');
+    }
+    for (const [id, c] of Object.entries(m.clips)) {
+      if (/^doze_(in|out)/.test(id)) ok(dur(c) >= 1.5 && dur(c) <= 2.5, m.name + ' ' + id + ' lasts ' + dur(c) + ' s');
+      if (/^doze_(nod|back)_/.test(id)) ok(dur(c) >= 0.6 && dur(c) <= 1.3, m.name + ' ' + id + ' lasts ' + dur(c) + ' s');
+    }
+  }
+  // 4. simulated blink rate: three minutes of every activity the character has, seated, eyes open
+  function blinkRate(m, kind, minOpenMs) {
+    const { d } = makeDirector([m], 11);
+    const clips = m.clips, facingClip = c => clips[c.clip];
+    let open = 0, blinks = 0, prev = '', episodes = 0, last = '';
+    for (let i = 0; i < 4 * 3600 * 1000 / 100 && open < minOpenMs; i++) {
+      if (i % 50 === 0) d.force(m.name, kind);
+      const c = d.step(100).find(x => x.name === m.name);
+      if (!c) { prev = ''; continue; }
+      const cl = facingClip(c);
+      const inKind = c.state === 'SEATED' && c.activity === kind && cl.loop && m.poseInfo[cl.to] && m.poseInfo[cl.to].eyes === 'open';
+      if (c.state === 'SEATED' && c.activity === kind && c.clip !== last) { last = c.clip; episodes++; }
+      if (!inKind) { prev = ''; continue; }
+      open += 100;
+      if (c.face === 'blink' && prev !== 'blink') blinks++;
+      prev = c.face;
+    }
+    return { open, blinks, interval: blinks ? open / blinks : Infinity, episodes };
+  }
+  for (const m of REAL) {
+    const kinds = ['idle', ...['phone', 'call', 'eat'].filter(k => m.clips[k + '_loop'] || m.clips[k + '_loop@l'])];
+    for (const kind of kinds) {
+      const r = blinkRate(m, kind, 180000);
+      ok(r.open >= 180000, m.name + ' ' + kind + ': only ' + r.open + ' ms of open-eyed seated time');
+      ok(r.interval >= 2200 && r.interval <= 6000, m.name + ' ' + kind + ' blinks every ' + Math.round(r.interval) + ' ms on average (' + r.blinks + ' blinks in ' + r.open + ' ms)');
+    }
+  }
+  // 5. a doze through the director: holds are whole wraps, nods come every 20-60 s, a leaving sleeper does not nod on
+  for (const m of REAL) {
+    if (!B.sitFacings(m).some(f => m.clips[B.clipAt('doze_loop', f)])) continue;
+    const { d, events } = makeDirector([m], 5);
+    for (let i = 0; i < 3 * 3600 * 1000 / 100; i++) { if (i % 20 === 0) d.force(m.name, 'doze'); d.step(100); }
+    const seq = events.filter(e => /^doze/.test(e.to));
+    ok(seq.length > 0, m.name + ' dozed');
+    for (let i = 0; i + 1 < seq.length; i++) {
+      const e = seq[i], n = seq[i + 1];
+      if (/^doze_loop/.test(e.to)) {
+        const held = (n.t - e.t) / 1000, wrap = dur(m.clips[e.to]);
+        ok(held >= wrap - 0.2, m.name + ' ' + e.to + ' held ' + held + ' s, less than one wrap');
+        ok(held <= 48 + wrap, m.name + ' ' + e.to + ' held ' + held + ' s');
+      }
+    }
+    const nods = seq.filter(e => /^doze_nod_/.test(e.to));
+    for (let i = 0; i + 1 < nods.length; i++) {
+      const gap = (nods[i + 1].t - nods[i].t) / 1000;
+      if (nods[i + 1].seat === nods[i].seat && gap < 200) ok(gap >= 18, m.name + ' nodded again after only ' + gap + ' s');
+    }
+    if (m.clips['doze_nod_b@l'] || m.clips['doze_nod_b']) ok(nods.length > 0, m.name + ' nods now and then');
+  }
+}
+
+{
   // Determinism with the real characters: same seed, same history, whatever the step size.
   const run = (seed, dt, ms) => { const { d, events } = makeDirector(REAL, seed); for (let t = 0; t < ms; t += dt) d.step(dt); return hashEvents(events); };
   const h1 = run(7, 100, 3600e3);

@@ -1,6 +1,9 @@
 """Cut an R x C white-background sprite sheet into frames: split at the emptiest rows/columns,
 keep each cell's own figure (largest pieces), white bg + pale shadow -> transparent.
-usage: cut_sheet.py SHEET OUTDIR [R C]"""
+usage: cut_sheet.py SHEET OUTDIR [R C [SR4.png]]
+
+With SR4.png (the sheet enlarged 4x by sr_upscale.py) the cells come out 4x: the cut-out mask is made on
+the 1x sheet exactly as before, then enlarged with a steepened edge and applied to the 4x colours."""
 import sys, os, numpy as np, cv2
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -20,6 +23,8 @@ def main():
     src, outdir = sys.argv[1], sys.argv[2]
     R, C = (int(sys.argv[3]), int(sys.argv[4])) if len(sys.argv) > 4 else (4, 4)
     rgb = np.asarray(Image.open(src).convert('RGB'))
+    sr = np.asarray(Image.open(sys.argv[5]).convert('RGB')) if len(sys.argv) > 5 else None
+    up = sr.shape[1] // rgb.shape[1] if sr is not None else 1
     fg = ~background_mask(rgb, False)
     # warm ground shadows (sat ~25) a little past cutout_white's grey limit, still touching the background
     a = rgb.astype(int); mn = a.min(2)
@@ -58,7 +63,16 @@ def main():
             cell = rgb[ys[r]:ys[r + 1], xs[c]:xs[c + 1]]
             yy, xx = np.nonzero(keep)
             box = (xx.min(), yy.min(), xx.max() + 1, yy.max() + 1)
-            im = Image.fromarray(np.dstack([cell, alpha])).crop(box)
+            if sr is not None:
+                x0, y0, x1, y1 = box
+                X0, Y0 = xs[c] + x0, ys[r] + y0
+                a1 = alpha[y0:y1, x0:x1].astype(np.float32) / 255
+                a4 = cv2.resize(a1, ((x1 - x0) * up, (y1 - y0) * up), interpolation=cv2.INTER_CUBIC)
+                a4 = (np.clip((a4 - 0.5) * 2.5 + 0.5, 0, 1) * 255).astype(np.uint8)
+                col = sr[Y0 * up:(Y0 + y1 - y0) * up, X0 * up:(X0 + x1 - x0) * up]
+                im = Image.fromarray(np.dstack([col, a4]))
+            else:
+                im = Image.fromarray(np.dstack([cell, alpha])).crop(box)
             im.save(os.path.join(outdir, 'f_%d%d.png' % (r, c)))
             touch = []
             if xx.min() == 0: touch.append('L')

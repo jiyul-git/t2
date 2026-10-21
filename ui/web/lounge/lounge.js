@@ -15,6 +15,7 @@
   const Behavior = dep('T2LoungeBehavior', './behavior.js');
   const Assets = dep('T2LoungeAssets', './assets.js');
   const Renderer = dep('T2LoungeRenderer', './renderer.js');
+  const Weather = dep('T2LoungeWeather', './weather.js');         // optional: without it (or if it fails) the sky just stays clear
 
   const FRAME_MS = 1000 / 60;
   const LIGHT_EVERY_MS = 15000;
@@ -46,6 +47,8 @@
     const assetBase = env.assetBase || 'lounge/assets/';
     let section = null, canvas = null, renderer = null, director = null, assets = null, location = null;
     let seed = null, sky = null, rows = [], boardKey = '', tournaments = [], serverOffsetMs = 0;
+    let staticPicks = [];                   // reduced motion: the people sitting still
+    let weather = null, wxCond = null;      // the controller (weather.js) and the condition being drawn
     let running = false, visible = true, failed = false, stopped = false, reduced = false;
     let raf = 0, lastTs = 0, lastLight = -1e9, lastBoard = -1e9, pausedAt = 0, t0 = 0, simT = 0;
     let frameMs = FRAME_MS, costEma = 0;
@@ -152,6 +155,7 @@
       renderer.draw({
         lighting: sky.light, sunAzimuth: sky.sun.azimuth, moon: sky.moon, boardRows: rows, boardKey,
         chars, plane: director && !reduced ? director.plane() : null, t: simT, debug: debug.enabled ? debug.overlay : null,
+        weather: wxCond, still: reduced,
       });
       if (floorDue) sampleFloor();
     }
@@ -204,6 +208,7 @@
         taken.push(seat);
         picks.push({ name: c.manifest.name, clip: Behavior.clipAt('sit_idle', seats[seat].facing), frame: 0, x: seats[seat].x, lane: 'seat', state: 'SEATED', seat, spot: seat, face: '' });
       }
+      staticPicks = picks;
       const redraw = () => {
         if (failed || stopped) return;
         try { updateLighting(true); updateBoard(true); drawNow(picks); } catch (e) { fail(e); return; }
@@ -216,16 +221,33 @@
       if (!renderer || !section) return;
       const w = section.clientWidth;
       if (w > 0 && renderer.resize(w, win.devicePixelRatio || 1) && !running && sky && !failed) {
-        try { drawNow(reduced ? [] : director.step(0)); } catch (e) { fail(e); }
+        try { drawNow(reduced ? staticPicks : director.step(0)); } catch (e) { fail(e); }
       }
     }
 
     function info() {
       return {
         ms: clockMs(), place: placeNow(), sun: sky && sky.sun, light: sky && sky.light,
-        direct: sky ? Renderer.directLight(Renderer.sunRelative(sky.sun.azimuth, assets.scene.windowFacing), sky.light.h) : 0,
+        direct: sky ? Renderer.directLight(Renderer.sunRelative(sky.sun.azimuth, assets.scene.windowFacing), sky.light.h, wxCond ? wxCond.cloud : 0) : 0,
+        weather: wxCond,
         people: director ? director.step(0).length : 0,
       };
+    }
+
+    // Weather (weather.js): what the sky is doing at the scene's place. A saved answer is used at once (before
+    // the first picture), a new one is fetched in the background; any problem leaves the sky as it was.
+    function setupWeather(storage) {
+      try {
+        if (!Weather) return;
+        weather = Weather.createWeather({
+          fetch: typeof win.fetch === 'function' ? win.fetch.bind(win) : null, storage, now: Date.now,
+          getPlace: () => { const p = placeNow(); return { lat: p.lat, lon: p.lon }; },
+          isVisible: () => !doc.hidden, setTimeout: win.setTimeout.bind(win), clearTimeout: win.clearTimeout.bind(win),
+          onChange: cond => { wxCond = cond; if (renderer && sky && !running && !failed) { try { drawNow(reduced ? staticPicks : director.step(0)); } catch (e) { fail(e); } } },
+        });
+        weather.init();
+        wxCond = weather.get();
+      } catch (e) { weather = null; wxCond = null; }
     }
 
     async function mount(sectionEl) {
@@ -239,6 +261,7 @@
         paintSnapshot(storage);
         location = Locate.createLocation({ navigator: win.navigator, storage, now: Date.now, intl: win.Intl, isSecureContext: win.isSecureContext });
         location.init();
+        setupWeather(storage);
         assets = await Assets.loadAssets(assetBase, Assets.browserIO(), Behavior.isActive);
         if (!assets.chars.length) throw new Error('no usable characters');
         renderer = Renderer.createRenderer({ canvas, assets });
@@ -247,6 +270,7 @@
         renderer.resize(section.clientWidth || 360, win.devicePixelRatio || 1);
         section.classList.add('lounge-ready');
         scheduleSnapshot(storage);
+        if (weather) { try { weather.start(); } catch (e) { /* the sky stays as it is */ } }
         if (reduced) startStatic();
         else {
           drawNow(director.step(0));
@@ -254,12 +278,13 @@
             new win.IntersectionObserver(es => { visible = es[es.length - 1].isIntersecting; sync(); }).observe(section);
           }
           doc.addEventListener('visibilitychange', sync);
+          doc.addEventListener('visibilitychange', () => { if (weather && !doc.hidden) weather.visible(); });
           win.addEventListener('pagehide', () => { stopped = true; stopLoop(); });
           win.addEventListener('pageshow', () => { stopped = false; sync(); });
           sync();
         }
         if (win.ResizeObserver) new win.ResizeObserver(resize).observe(section); else win.addEventListener('resize', resize);
-        location.refreshIfStale().then(changed => { if (changed) updateLighting(true); }).then(askForLocation);
+        location.refreshIfStale().then(changed => { if (changed) { updateLighting(true); if (weather) weather.refresh(false); } }).then(askForLocation);
         if (debugWanted(win)) loadDebug();
       } catch (e) { fail(e); }
     }
@@ -267,7 +292,7 @@
     // Ask the browser for the real position once per visit; the browser shows its own permission prompt.
     // Without permission (or on a plain-http address) the time zone is used, so the scene never waits on it.
     function askForLocation() {
-      location.canAsk().then(yes => (yes ? location.request() : null)).then(r => { if (r && r.ok) updateLighting(true); });
+      location.canAsk().then(yes => (yes ? location.request() : null)).then(r => { if (r && r.ok) { updateLighting(true); if (weather) weather.refresh(false); } });
     }
 
     function loadDebug() {
@@ -284,6 +309,8 @@
         if (Number.isFinite(serverNowSec)) serverOffsetMs = serverNowSec * 1000 - Date.now();
         if (renderer && !failed) { try { updateBoard(true); } catch (e) { fail(e); } }
       },
+      // switch the real weather off / on (saved on this device: localStorage['t2_lounge_wx_off'] = '1' when off)
+      setWeatherEnabled(on) { if (weather) { weather.setEnabled(!!on); wxCond = weather.get(); } },
       requestLocation() { return location ? location.request().then(r => { if (r.ok) updateLighting(true); return r; }) : Promise.resolve({ ok: false, reason: 'not mounted' }); },
       debugHandle() {
         return {
@@ -296,6 +323,10 @@
           request(name, kind, seat) { return director ? director.request(name, kind, seat) : false; },
           mover() { return director ? director.mover() : null; },
           setFace(name, face) { return director && director.setFace ? director.setFace(name, face) : false; },
+          // pretend the sky: setWeather('rain', 'heavy') | ('rain', 'thunder') | ('snow', 'light') | ('cloudy') | ('fog'); clearWeather() goes back to the real one
+          setWeather(kind, intensity) { if (weather) weather.setOverride(kind, intensity); else { wxCond = Weather ? Weather.synthetic(kind, intensity) : null; } },
+          clearWeather() { if (weather) weather.setOverride(null); wxCond = weather ? weather.get() : null; },
+          weather: () => wxCond,
           reset() { debug.clockMs = null; debug.scale = 1; updateLighting(true); updateBoard(true); },
           setPlace(lat, lon) { location.setDebug(lat, lon); updateLighting(true); },
           reseed(s) { seed = s; newDirector(); },
@@ -314,7 +345,7 @@
   if (typeof window !== 'undefined' && root === window) {
     const lounge = createLounge({ window, document });
     api.mount = lounge.mount; api.setTournaments = lounge.setTournaments;
-    api.requestLocation = lounge.requestLocation; api.debugHandle = lounge.debugHandle;
+    api.requestLocation = lounge.requestLocation; api.debugHandle = lounge.debugHandle; api.setWeatherEnabled = lounge.setWeatherEnabled;
     const boot = () => { const el = document.getElementById('lounge'); if (el) lounge.mount(el); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
   }

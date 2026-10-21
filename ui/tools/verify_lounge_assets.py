@@ -243,6 +243,41 @@ def main():
         t = clone(base, tmp / 'budget')
         (t / 'chars' / 'tiger' / 'pad.bin').write_bytes(b'\0' * (C.BUDGET_PLACEHOLDER_TOTAL + 1))
         expect_error(t, 'budget', 'oversized placeholder set')
+
+        # 14. Weather plates (design doc 13.2) and taxi lanes (14): a plate that is a copy of the outside plate
+        # passes; a shifted one, one with another glass cut, a wrong size and a bad lane are rejected.
+        def with_weather(name, mutate_plate=None, mutate_scene=None):
+            t = clone(base, tmp / name)
+            plate = np.asarray(Image.open(t / 'bg' / 'outside_day.png').convert('RGBA')).copy()
+            if mutate_plate:
+                plate = mutate_plate(plate)
+            Image.fromarray(plate).save(t / 'bg' / 'outside_rain.png')
+            sc = json.loads((t / 'scene.json').read_text())
+            sc['weather'] = {'plates': {'rain': 'bg/outside_rain.png'}, 'rect': [0, 0, 100, 100], 'mask': 'outside'}
+            if mutate_scene:
+                mutate_scene(sc)
+            (t / 'scene.json').write_text(json.dumps(sc))
+            return t
+        _, errs = errors_of(with_weather('wx_ok'))
+        ok(not errs, 'a weather plate that matches the outside plate should pass, got %r' % errs)
+        expect_error(with_weather('wx_shift', lambda a: np.roll(a, 14, axis=1)), 'alignment', 'weather plate shifted 14 px')
+        expect_error(with_weather('wx_cut', lambda a: np.concatenate([a[:, :-120], np.zeros_like(a[:, -120:])], axis=1)), 'alignment', 'weather plate with another glass cut')
+        expect_error(with_weather('wx_size', lambda a: a[:-40]), 'schema', 'weather plate of the wrong size')
+        expect_error(with_weather('wx_noplates', None, lambda sc: sc['weather'].pop('plates')), 'schema', 'weather without plates')
+        lane = {'id': 'far', 'y': [592, 606], 'duration': 80}
+        def lanes(sc, **over):
+            sc['planes'] = {'right': 'bg/plane_right.png', 'left': 'bg/plane_left.png', 'period': 150, 'duration': 80,
+                            'horizon': 475, 'ref': {'y': 690, 'h': 300}, 'ground': 0.97, 'lanes': [dict(lane, **over)]}
+            Image.new('RGBA', (40, 20)).save(base / 'bg' / 'plane_right.png')
+        ok(base.exists(), 'base kept')
+        for name, over, good in (('lane_ok', {}, True), ('lane_above_horizon', {'y': [400, 410]}, False), ('lane_no_duration', {'duration': 'x'}, False), ('lane_too_long', {'duration': 999}, False)):
+            t = clone(base, tmp / name)
+            sc = json.loads((t / 'scene.json').read_text())
+            lanes(sc, **over)
+            Image.new('RGBA', (40, 20)).save(t / 'bg' / 'plane_right.png'); Image.new('RGBA', (40, 20)).save(t / 'bg' / 'plane_left.png')
+            (t / 'scene.json').write_text(json.dumps(sc))
+            rep, errs = errors_of(t)
+            ok(bool(errs) != good, '%s: expected %s, got %r' % (name, 'no errors' if good else 'a schema error', errs[:2]))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print('verify_lounge_assets OK (%d checks)' % checks)

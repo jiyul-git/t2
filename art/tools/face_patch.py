@@ -38,11 +38,20 @@ def donor_cell(sheet, cell, upscale=1, flip=False):
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         src = ROOT / sheet
-        if upscale != 1:
+        extra = []
+        if upscale == 4:                      # super-resolved donor (sr_upscale.py): cut 4x like the base cells
+            import sr_upscale
+            im = sr_upscale.upscale(src)
+            if im is not None:
+                p4 = tmp / 'sr4.png'; im.save(p4, compress_level=1)
+                extra = [str(p4)]
+            else:
+                upscale = 2
+        if upscale != 1 and not extra:
             im = Image.open(src).convert('RGB')
             im = im.resize((im.width * upscale, im.height * upscale), Image.LANCZOS)
             src = tmp / 'sheet.png'; im.save(src)
-        subprocess.run([sys.executable, '-I', str(TOOLS / 'cut_sheet.py'), str(src), str(tmp / 'cells'), '4', '4'],
+        subprocess.run([sys.executable, '-I', str(TOOLS / 'cut_sheet.py'), str(src), str(tmp / 'cells'), '4', '4'] + extra,
                        check=True, stdout=subprocess.DEVNULL)
         im = Image.open(tmp / 'cells' / ('f_%s.png' % cell)).convert('RGBA')
     if flip:
@@ -115,14 +124,35 @@ def centroid(layer):
 
 
 # ---------------------------------------------------------------- base
-def erase(img, ellipses, feather=1.8, protect_px=6, line_w=3.0):
-    """Erase the ellipses one by one (each with the skin around it), see erase_one."""
+def erase(img, ellipses, feather=1.8, protect_px=6, line_w=3.0, k=1, kern=None):
+    """Erase the ellipses one by one (each with the skin around it), see erase_one. k: the picture is k
+    times bigger than the source px the ellipses are given in (a super-resolved sheet)."""
     for e in ellipses:
-        img = erase_one(img, [e], feather, protect_px, line_w)
+        img = erase_one(img, [scaled_ellipse(e, k)], feather, protect_px, line_w, kern or k)
     return img
 
 
-def erase_one(img, ellipses, feather=1.8, protect_px=6, line_w=3.0):
+def scaled_ellipse(e, k):
+    """An erase entry (tuple or dict, see erase_one) with its px values times k (the caller's coordinates
+    are in source px, the picture is k times bigger: a super-resolved sheet)."""
+    if k == 1:
+        return e
+    if isinstance(e, dict):
+        d = dict(e, e=tuple(v * k if i != 4 else v for i, v in enumerate(e['e'])))
+        if 'skin' in e:
+            d['skin'] = (e['skin'][0] * k, e['skin'][1] * k)
+        if e.get('close'):
+            d['close'] = e['close'] * k
+        return d
+    e = list(e)
+    for i in (0, 1, 2, 3):
+        e[i] *= k
+    if len(e) > 6 and e[6]:
+        e[6] *= k
+    return tuple(e)
+
+
+def erase_one(img, ellipses, feather=1.8, protect_px=6, line_w=3.0, ks=1):
     """Paint the ellipses over with the surrounding skin. An ellipse is (cx, cy, rx, ry[, angle[, rim[,
     close]]]): the hole also takes the dark anti-aliased rim around what is erased (rim=True, else the
     fill would pull it in as a grey smudge); the figure's outer outline is never erased. close > 0
@@ -131,6 +161,9 @@ def erase_one(img, ellipses, feather=1.8, protect_px=6, line_w=3.0):
     and given a new outline of line_w px. The fill is a normalised blur of the skin around the hole
     (never of a dark line), so no smudge and no halo."""
     H, W = img.shape[:2]
+    # every px size below is for a 1x picture; ks scales them for a super-resolved one
+    K = lambda n: np.ones((2 * int(round((n - 1) / 2 * ks)) + 1,) * 2, np.uint8)
+    feather, protect_px, line_w = feather * ks, protect_px * ks, line_w * ks
     m = np.zeros((H, W), np.uint8)
     norim = np.zeros((H, W), np.uint8)
     notch_zone = np.zeros((H, W), np.uint8)
@@ -167,12 +200,12 @@ def erase_one(img, ellipses, feather=1.8, protect_px=6, line_w=3.0):
     keep_line = (dist_out < protect_px) & (lum < 110) & sil
     m[keep_line] = 0
     hard = m > 0
-    near = cv2.dilate(hard.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & ~(norim > 0)
-    h5 = cv2.dilate(hard.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
-    ring = cv2.dilate(h5.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & ~h5 & (img[..., 3] > 200)
+    near = cv2.dilate(hard.astype(np.uint8), K(5)).astype(bool) & ~(norim > 0)
+    h5 = cv2.dilate(hard.astype(np.uint8), K(5)).astype(bool)
+    ring = cv2.dilate(h5.astype(np.uint8), K(5)).astype(bool) & ~h5 & (img[..., 3] > 200)
     ref = np.median(lum[ring]) if ring.any() else 200
     rim = near & (lum < ref - 40) & sil
-    hole = cv2.dilate((hard | rim).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+    hole = cv2.dilate((hard | rim).astype(np.uint8), K(3)).astype(bool)
     hole &= ~keep_line & sil2
     skin = np.median(img[..., :3][ring], 0) if ring.any() else np.float32([200, 200, 200])
     if skin_at is not None:          # the eye sits on a patch of this colour: fill with that only
@@ -181,26 +214,80 @@ def erase_one(img, ellipses, feather=1.8, protect_px=6, line_w=3.0):
     src = ~hole & (np.sqrt(((img[..., :3] - skin) ** 2).sum(-1)) < (30 if skin_at is not None else 45)) & (img[..., 3] > 200)
     fill = np.broadcast_to(skin, img[..., :3].shape).astype(np.float32).copy()
     got = np.zeros(hole.shape, bool)
-    for sig in (2.5, 4.0, 6.0, 10.0, 16.0):
+    for sig in (2.5 * ks, 4.0 * ks, 6.0 * ks, 10.0 * ks, 16.0 * ks):
         w = cv2.GaussianBlur(src.astype(np.float32), (0, 0), sig)
         c = cv2.GaussianBlur(img[..., :3] * src[..., None], (0, 0), sig) / np.maximum(w[..., None], 1e-6)
         new = (w > 0.12) & ~got
         fill[new] = c[new]
         got |= new
-    fill = cv2.GaussianBlur(fill, (0, 0), 1.5)
-    k = np.clip(cv2.GaussianBlur(hole.astype(np.float32), (0, 0), feather) * 1.5, 0, 1)[..., None]
-    k = np.where(notch[..., None], 1.0, k)
-    out[..., :3] = img[..., :3] * (1 - k) + fill * k
+    fill = cv2.GaussianBlur(fill, (0, 0), 1.5 * ks)
+    kf = np.clip(cv2.GaussianBlur(hole.astype(np.float32), (0, 0), feather) * 1.5, 0, 1)[..., None]
+    kf = np.where(notch[..., None], 1.0, kf)
+    out[..., :3] = img[..., :3] * (1 - kf) + fill * kf
     if notch.any():
         # the closed silhouette: anti-aliased edge and a new outline where the notch was
-        soft = cv2.GaussianBlur(sil2.astype(np.float32), (0, 0), 0.8)
-        zone = cv2.dilate(notch.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+        soft = cv2.GaussianBlur(sil2.astype(np.float32), (0, 0), 0.8 * ks)
+        zone = cv2.dilate(notch.astype(np.uint8), K(5)).astype(bool)
         a_new = np.clip((soft - 0.5) * 3.0 + 0.5, 0, 1) * 255
         out[..., 3] = np.where(zone, np.maximum(img[..., 3], a_new), img[..., 3])
         d = cv2.distanceTransform(sil2.astype(np.uint8), cv2.DIST_L2, 3)
         ring_l = np.clip(line_w + 0.5 - d, 0, 1) * zone
         out[..., :3] = out[..., :3] * (1 - ring_l[..., None]) + LINE * ring_l[..., None]
     return out
+
+
+def _aa(shape, draw, ss=4):
+    """Anti-aliased mask (float 0..1) of whatever `draw(canvas, ss)` paints on a canvas ss times bigger."""
+    big = np.zeros((shape[0] * ss, shape[1] * ss), np.uint8)
+    draw(big, ss)
+    return cv2.resize(big, (shape[1], shape[0]), interpolation=cv2.INTER_AREA).astype(np.float32) / 255.
+
+
+def paint(img, mask, color):
+    """colour * mask over a straight RGBA image (alpha unchanged: the face is opaque)."""
+    out = img.copy()
+    out[..., :3] = img[..., :3] * (1 - mask[..., None]) + np.float32(color) * mask[..., None]
+    return out
+
+
+def draw_eye(img, e, k=1):
+    """A drawn open eye (the animal's dark round eye with its highlights): e = dict(c=(x, y), r=(rx, ry),
+    angle=0, color=(r, g, b), hl=[(dx, dy, radius, strength)] highlights relative to the centre, in units of
+    rx / ry, radius in px). Coordinates in source px (times k). Used where a cell has no open eye of the right
+    view: both eyes of a pair get the same colour and highlights and are scaled by the view's
+    foreshortening, measured on the real 3/4 faces of the turnaround sheets."""
+    cx, cy = e['c'][0] * k, e['c'][1] * k
+    rx, ry = e['r'][0] * k, e['r'][1] * k
+    ang = e.get('angle', 0.0)
+
+    def disc(c, ss):
+        cv2.ellipse(c, (int(round(cx * ss)), int(round(cy * ss))), (max(1, int(round(rx * ss))), max(1, int(round(ry * ss)))), ang, 0, 360, 255, -1)
+    out = paint(img, _aa(img.shape[:2], disc), e['color'])
+    for dx, dy, r, st in e.get('hl', []):
+        hx, hy = cx + dx * rx, cy + dy * ry
+
+        def dot(c, ss, hx=hx, hy=hy, r=r):
+            cv2.circle(c, (int(round(hx * ss)), int(round(hy * ss))), max(1, int(round(r * k * ss))), 255, -1)
+        out = paint(out, _aa(img.shape[:2], dot) * st, (255, 255, 255))
+    return out
+
+
+def draw_lid(img, l, k=1):
+    """A closed eye: a tapered arc in the line colour. l = dict(c=(x, y), w=width, sag=how far the middle
+    hangs below the ends (negative: bulges up), t=thickness in the middle, angle=0, color=LINE)."""
+    cx, cy = l['c'][0] * k, l['c'][1] * k
+    w, sag, t = l['w'] * k, l['sag'] * k, l['t'] * k
+    c, s_ = np.cos(np.radians(l.get('angle', 0))), np.sin(np.radians(l.get('angle', 0)))
+    u = np.linspace(0, 1, 40)
+    x = (u - 0.5) * w
+    y = (1 - (2 * u - 1) ** 2) * sag - sag / 2            # ends at -sag/2, middle at +sag/2: sags down
+    th = np.maximum(t * np.sin(np.pi * u) ** 0.6, 0.35 * k)
+    top = np.stack([x, y - th / 2], 1); bot = np.stack([x, y + th / 2], 1)[::-1]
+    pts = np.concatenate([top, bot]) @ np.array([[c, s_], [-s_, c]]) + np.array([cx, cy])
+
+    def poly(cv, ss):
+        cv2.fillPoly(cv, [np.int32(np.round(pts * ss))], 255)
+    return paint(img, _aa(img.shape[:2], poly), l.get('color', LINE))
 
 
 def over_straight(img, layer):
@@ -211,19 +298,27 @@ def over_straight(img, layer):
     return out
 
 
-def apply(base, spec, donors, up=1):
-    """The base frame (straight RGBA float, working px) with the variant's face."""
-    img = erase(base, spec.get('erase', []), line_w=spec.get('line_w', 3.0))
+def apply(base, spec, donors, up=1, k=1, kern=None):
+    """The base frame (straight RGBA float, working px) with the variant's face. up: the donor sheet's
+    enlargement (its boxes are in the donor's 1x px). k: the base's enlargement; when it is not 1 the
+    coordinates of the spec (erase, at, skin, scale) are in the base's 1x source px and are multiplied
+    here (build_character.py with super-resolved sheets)."""
+    img = erase(base, spec.get('erase', []), line_w=spec.get('line_w', 3.0), k=k, kern=kern)
     for feat in spec.get('feats', []):
         cell = donors[(spec.get('sheet'), feat.get('cell', spec.get('cell')))]
         u = up
-        lay = matte(cell, tuple(int(round(v * u)) for v in feat['box']), dark=feat.get('dark', (150, 55)), keep_color=feat.get('color', False))
-        lay = cv2.GaussianBlur(lay, (0, 0), feat.get('soften', 0.5))
+        lay = matte(cell, tuple(int(round(v * u)) for v in feat['box']), dark=feat.get('dark', (150, 55) if u == 1 else (135, 70)), keep_color=feat.get('color', False))
+        lay = cv2.GaussianBlur(lay, (0, 0), feat.get('soften', 0.5) if u == 1 else feat.get('soften', 0.8))
         c = feat.get('src') or centroid(lay)
-        lay = place(lay, c, feat['at'], feat.get('scale', spec['scale']) / u, img.shape[:2],
+        at = (feat['at'][0] * k, feat['at'][1] * k)
+        lay = place(lay, c, at, feat.get('scale', spec['scale']) * k / u, img.shape[:2],
                     flip_v=feat.get('flip_v', False), angle=feat.get('angle', 0.0))
         lay *= feat.get('opacity', 1.0)
         img = over_straight(img, lay)
+    for e in spec.get('eyes', []):
+        img = draw_eye(img, e, k)
+    for l in spec.get('lids', []):
+        img = draw_lid(img, l, k)
     return img
 
 
@@ -240,7 +335,7 @@ def load_donors(cfg):
 def variants(base, cfg):
     """{name: patched base} for every variant of a character's FACES config."""
     donors = load_donors(cfg)
-    return {name: apply(base, spec, donors, cfg.get('donor_upscale', 1)) for name, spec in cfg['variants'].items()}
+    return {name: apply(base, spec, donors, cfg.get('donor_upscale', 1), kern=cfg.get('kern')) for name, spec in cfg['variants'].items()}
 
 
 # ---------------------------------------------------------------- atlas patches

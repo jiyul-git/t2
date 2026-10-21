@@ -6,6 +6,7 @@ Gemini로 만든 배경을 정리한 것. 모두 2490×1728이고 서로 겹치�
 |---|---|
 | `interior_night.webp`, `interior_day.webp`, `interior_golden.webp` | 실내. 유리창 부분은 투명 |
 | `outside_night.webp`, `outside_day.webp`, `outside_golden.webp` | 창밖. 유리창 부분만 보이고 나머지는 투명 |
+| `outside_rain.webp`, `outside_snow.webp` | 날씨 창밖(2026-10-21). 위와 같은 오림. 빗줄기·눈송이는 지웠다. `../README.md`의 "날씨 창밖 그림" 참고 |
 
 처리한 내용: 작은 원본은 Real-ESRGAN(anime 6B)으로 4배 키운 뒤 2490×1728로 맞춤, 실내 밤 그림 기준으로 위치 정렬(어긋남 0.5px 이하), 오른쪽 아래 Gemini 워터마크 두 개 제거, 실내 밤·낮 그림의 흰 창 영역으로 유리창 마스크 생성.
 

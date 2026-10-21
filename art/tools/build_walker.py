@@ -41,11 +41,13 @@ from PIL import Image, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from inkfix import reink, defringe   # noqa: E402
+import sr_upscale   # noqa: E402
 from walk_bob import spread, bob_series, quantize, stretch_layer, bottom_row   # noqa: E402
 import face_patch   # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = Path(__file__).resolve().parent
+ATLAS_K = float(os.environ.get('T2_ATLAS_K', '1.25'))   # atlas resolution multiplier (art/README.md): default 1.25 = 0.775 atlas px per working px; T2_ATLAS_K=1 gives the old 0.62
 SCENE_CHAR_SCALE = 1.25        # scene.json charScale (the renderer multiplies manifest.scale by it)
 
 # Coordinates are in the base cell as cut_sheet.py cuts it from the (enlarged) sheet, divided by
@@ -89,7 +91,7 @@ CHARS = {
             }),
     ),
     'turtle': dict(
-        sheet='art/sources/turtle_walk_sheet_4x4_gemini.webp', grid=(4, 4), upscale=2,
+        sheet='art/sources/turtle_walk_sheet_4x4_gemini.webp', grid=(4, 4), upscale=2, sr=True,
         base='11',
         hem=[(18, 135), (30, 139), (45, 141), (60, 146), (80, 146), (100, 143), (112, 138)],
         legx=(25, 135),
@@ -98,17 +100,19 @@ CHARS = {
         crotch=7,
         ramp=18,
         near='rear',             # the rear leg is the one nearer the viewer (drawn on top)
-        # short legs on wide hips: the feet do not cross; each foot swings back and forth under its own
-        # hip. Only the base cell's legs, bent at the foot, so they never flicker; the planted foot
-        # moves back 5 px a frame (front foot planted in frames 0-4, rear foot in 4-0)
-        loop=[('11', 11.5, -9.5, 0, 0), ('11', 6.5, -4.5, 0, 2), ('11', 1.5, 0.5, 0, 4), ('11', -3.5, 5.5, 0, 3),
-              ('11', -8.5, 10.5, 0, 0), ('11', -2.5, 5.5, 3, 0), ('11', 4.5, 0.5, 4, 0), ('11', 10.5, -4.5, 2, 0)],
+        # a real stride (docs/LOUNGE_SCENE_DESIGN.md 7.10, art/README.md): the two leg pieces of the base cell are
+        # pendulums that swing about hip pivots under the hem (rotation, not a slide), the pivots drawn together
+        # to 28 px apart so that the feet really pass each other. Each leg is planted for half a loop (its foot
+        # moves back steadily, 5 px a frame) and swings forward lifted for the other half; the near (rear) leg
+        # stays on top, so the swing leg passes in front of the planted one and, half a loop later, behind it.
+        stride=dict(frames=8, amp=15.0, leg=30.0, slide=(8.0, -9.0), lift=6.0),
+        loop='stride',
         height=400,
         atlas=0.62,
         step=5,
         fps=10,
-        # the feet never cross: the hip is highest when the planted foot is right under its own hip
-        bob=dict(mode='stance', leg=32, pp=0.01),
+        # the hip is highest while the feet pass each other and lowest at the contact (feet spread)
+        bob=dict(mode='spread', leg=32, pp=0.01),
         # face variants (face_patch.py), base-cell px. The face sheet walks the other way: its cells are
         # mirrored first, the boxes are in the mirrored cells. Base: big near eye (80.5, 54), narrow far
         # eye (116.5, 51) by the head's outline, small smile at (104.5, 65.5).
@@ -156,16 +160,67 @@ def gray_on_white(a):
     return ((a[..., :3] @ np.float32([0.3, 0.59, 0.11])) * al + 255 * (1 - al)).astype(np.float32)
 
 
+def stride_loop(cfg):
+    """The loop entries of a 'stride' config: dict(cell, A=(slide, angle, lift), B=(...)) per frame; A is the rear
+    (screen-left, near) leg, B the front leg. The foot of the planted leg moves back linearly, the swing leg
+    comes forward with a smooth ease and a lift."""
+    st = cfg['stride']
+    n, s, L, lift = st['frames'], st['amp'], st['leg'], st['lift']
+    half = n // 2
+    sm = lambda q: q * q * (3 - 2 * q)
+    out = []
+    for f in range(n):
+        g = f % half                         # frame within the half
+        planted_off = s * (1 - 2 * g / half)         # +s ... -s over the stance
+        swing_q = g / half
+        swing_off = -s + 2 * s * sm(swing_q)         # -s ... +s over the swing
+        swing_lift = lift * np.sin(np.pi * swing_q)
+        # first half: B (front) planted, A swings; second half: the other way round
+        offA, liftA, offB, liftB = (swing_off, swing_lift, planted_off, 0.0) if f < half else (planted_off, 0.0, swing_off, swing_lift)
+        ang = lambda off: float(np.degrees(np.arcsin(np.clip(off / L, -0.95, 0.95))))
+        out.append(dict(cell=cfg['base'], A=(st['slide'][0], ang(offA), liftA), B=(st['slide'][1], ang(offB), liftB)))
+    return out
+
+
+def resolve(cfg, sr=True):
+    """(config, sr path) as it is built; see resolve_sr. A 'stride' loop is expanded into its entries."""
+    cfg, path = resolve_sr(cfg, sr)
+    if cfg.get('loop') == 'stride':
+        cfg = dict(cfg, loop=stride_loop(cfg))
+    return cfg, path
+
+
+def resolve_sr(cfg, sr=True):
+    """The config as it is built: a small sheet (cfg 'sr': True) is super-resolved 4x (sr_upscale.py) and
+    cut 4x, so 'upscale' becomes 4 and the atlas factor halves (it is atlas px per working px); without
+    the network weights the old LANCZOS 2x path stays. Returns (config, path of the 4x sheet or None)."""
+    if sr and cfg.get('sr') and cfg['upscale'] == 2:
+        im = sr_upscale.upscale(ROOT / cfg['sheet'])
+        if im is not None:
+            p = Path(tempfile.mkdtemp(prefix='sr_')) / 'sheet4.png'
+            im.save(p, compress_level=1)
+            faces = cfg.get('faces')
+            if faces and faces.get('donor_upscale') == 2:
+                faces = dict(faces, donor_upscale=4, kern=2)       # the face donors are super-resolved too; erase sizes were tuned at 2x
+            return dict(cfg, upscale=4, atlas=cfg['atlas'] * cfg['upscale'] / 4, _sr=str(p), faces=faces), str(p)
+    return cfg, None
+
+
 def cut_cells(cfg, tmp):
-    sheet = Image.open(ROOT / cfg['sheet']).convert('RGB')
     k = cfg['upscale']
-    if k != 1:   # no AI upscaler offline: LANCZOS and a light unsharp so the outlines stay crisp
-        sheet = sheet.resize((sheet.width * k, sheet.height * k), Image.LANCZOS)
-        sheet = sheet.filter(ImageFilter.UnsharpMask(radius=1.2 * k, percent=70, threshold=2))
-    src = tmp / 'sheet.png'; sheet.save(src)
+    if cfg.get('_sr'):            # super-resolved (resolve): cells are cut 4x from the 1x mask and the 4x colours
+        src = ROOT / cfg['sheet']
+        extra = [cfg['_sr']]
+    else:
+        sheet = Image.open(ROOT / cfg['sheet']).convert('RGB')
+        if k != 1:   # no AI upscaler: LANCZOS and a light unsharp so the outlines stay crisp
+            sheet = sheet.resize((sheet.width * k, sheet.height * k), Image.LANCZOS)
+            sheet = sheet.filter(ImageFilter.UnsharpMask(radius=1.2 * k, percent=70, threshold=2))
+        src = tmp / 'sheet.png'; sheet.save(src)
+        extra = []
     cells = tmp / 'cells'
     subprocess.run([sys.executable, '-I', str(TOOLS / 'cut_sheet.py'), str(src), str(cells),
-                    str(cfg['grid'][0]), str(cfg['grid'][1])], check=True, stdout=subprocess.DEVNULL)
+                    str(cfg['grid'][0]), str(cfg['grid'][1])] + extra, check=True, stdout=subprocess.DEVNULL)
     return cells
 
 
@@ -239,7 +294,7 @@ class Walker:
         self.top = premul(self.B); self.top[~keepB] = 0
         self.base_al = cv2.dilate((self.B[..., 3] > 20).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
 
-    def legs(self, n, front=0, rear=0, lift_front=0, lift_rear=0):
+    def legs(self, n, front=0, rear=0, lift_front=0, lift_rear=0, tw=None):
         """The legs of cell n, aligned to the base's hem: (premultiplied layer, alpha mask, info).
         front/rear move the front (right) and rear (left) leg by that many working px, lift_* raise
         them: an in-between pose, made like stride_tween.py (each leg slides as a piece, more toward
@@ -261,11 +316,16 @@ class Walker:
         L = premul(A); L[~keep] = 0
         al = A[..., :3]
         L[(al.min(-1) > 225) & (al.max(-1) - al.min(-1) < 14)] = 0     # white sheet left between the legs
-        if front or rear or lift_front or lift_rear:
+        if tw is not None:                       # a rotation stride (tween_rot)
+            L = tw(L, keep)
+            zone = zone | (self.yy > hemg)
+        elif front or rear or lift_front or lift_rear:
             L = self.tween(L, keep, front * k, rear * k, lift_front * k, lift_rear * k)
             zone = zone | (self.yy > hemg)
-        # right under the hem the legs stay inside the base's silhouette (no bits beside the skirt)
-        L[(self.yy < hemg + 6 * k) & ~self.base_al] = 0
+        # right under the hem the legs stay inside the base's silhouette (no bits beside the skirt); a stride may
+        # reach a little beyond it (the legs swing about pivots under the hem)
+        allowed = self.base_al if tw is None else cv2.dilate(self.base_al.astype(np.uint8), np.ones((1, 12 * k + 1), np.uint8)).astype(bool)
+        L[(self.yy < hemg + 6 * k) & ~allowed] = 0
         Lp = reink(L, allow=zone.astype(np.float32), protect=(self.yy < hemg + 4 * k))
         return Lp, Lp[..., 3] > 20, dict(score=v, dx=dx, dy=dy, s=s)
 
@@ -303,6 +363,80 @@ class Walker:
         out[edge] = np.float32([34, 24, 20, 255])
         return out
 
+    def tween_rot(self, L, mask, e):
+        """The legs as two pendulums (a stride): the layer L is split between the legs; each piece swings about its
+        hip pivot just under the hem by its angle, is slid sideways (pivot towards the other leg) and lifted, e =
+        dict(A=(slide, angle, lift), B=...) in base-cell px / degrees (A = the left piece). A static band under the
+        hem keeps the crotch closed; the near leg (cfg 'near') is drawn over the other and outlined where it lies
+        over it."""
+        cfg, k = self.cfg, self.k
+        hemg = self.hem[None, :]
+        low = mask & (self.yy > hemg + cfg['crotch'] * k)
+        cols = low.sum(0).astype(np.float32)
+        xs = np.nonzero(cols)[0]
+        a, b = xs.min(), xs.max()
+        mid = slice(int(a + 0.3 * (b - a)), int(a + 0.7 * (b - a)) + 1)
+        cx = mid.start + int(np.argmin(cols[mid]))          # the gap between the legs
+        pa, pb = L.copy(), L.copy()
+        pa[self.xx >= cx] = 0
+        pb[self.xx < cx] = 0
+        hem_y = float(np.median(self.hem[self.legx[0]:self.legx[1]])) + 3 * k      # the pivot row, a little under the hem
+        band = L.copy(); band[self.yy > hemg + 9 * k] = 0
+        # close the crotch: between the legs, in every row of the band, fill from the leftmost to the rightmost leg pixel
+        # with the leg's own (shadowed) colour, so no hole shows once the legs have been slid together
+        ba = band[..., 3] > 128
+        shade = np.median(band[..., :3][ba & (self.yy > hemg + 2 * k)], 0) * 0.82 if (ba & (self.yy > hemg + 2 * k)).any() else np.float32([60, 80, 40])
+        for y in np.nonzero(ba.any(1))[0]:
+            xs_ = np.nonzero(ba[y])[0]
+            gap = (np.arange(self.W) > xs_.min()) & (np.arange(self.W) < xs_.max()) & ~ba[y]
+            band[y, gap, :3] = shade
+            band[y, gap, 3] = 255
+
+        def hip(piece):
+            rows = (self.yy > hem_y) & (self.yy < hem_y + 10 * k) & (piece[..., 3] > 128)
+            return float(np.nonzero(rows)[1].mean())
+
+        t = np.clip((self.yy.astype(np.float32) - (hem_y - 3 * k)) / (max(cfg['ramp'], 1) * k), 0, 1)
+        r = (t * t * (3 - 2 * t)).astype(np.float32)          # 0 at the hem, 1 from the ankles down
+
+        def swing(piece, spec):
+            """the piece rotated about its hip pivot by the angle, slid and lifted - by the share r(y) of it, so
+            nothing moves at the hem and the foot gets all of it (no seam, no ragged flap)"""
+            dx, ang, lift = spec
+            px = hip(piece)
+            c_, s_ = np.cos(np.radians(ang)), np.sin(np.radians(ang))
+            X, Y = self.xx.astype(np.float32) - px, self.yy.astype(np.float32) - hem_y
+            # the exact inverse of the full rotation + slide + lift, blended with the identity by r(y)
+            Xo, Yo = X - dx * k, Y + lift * k
+            Xi, Yi = c_ * Xo - s_ * Yo, s_ * Xo + c_ * Yo
+            out = cv2.remap(piece, (self.xx + r * (Xi - X)).astype(np.float32), (self.yy + r * (Yi - Y)).astype(np.float32), cv2.INTER_CUBIC,
+                            borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+            out = np.clip(out, 0, 255)
+            out[..., :3] = np.minimum(out[..., :3], out[..., 3:])
+            return out
+        ma, mb = swing(pa, e['A']), swing(pb, e['B'])
+        near, far = (ma, mb) if cfg.get('near') == 'rear' else (mb, ma)
+        # outline the near leg where it lies over the far one
+        na = near[..., 3] > 40
+        edge = na & ~cv2.erode(na.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        edge &= (far[..., 3] > 40) & (self.yy > hemg + 8 * k)
+        edge = cv2.dilate(edge.astype(np.uint8), np.ones((2, 2), np.uint8)).astype(bool) & na
+        out = over(over(band, far), near)
+        out[edge] = np.float32([34, 24, 20, 255])
+        # a hole between the legs that the slide closed over (the sheet's white between the legs was cut out) is
+        # the shadow between them: fill it with the leg colour, darker
+        solid = (out[..., 3] > 20).astype(np.uint8)
+        n_, lab, st, _ = cv2.connectedComponentsWithStats(1 - solid, connectivity=4)
+        for c in range(1, n_):
+            x, y, w_, h_, area = st[c]
+            if x > 0 and y > 0 and x + w_ < self.W and y + h_ < self.H and area < 400 * k * k:
+                m = lab == c
+                m = cv2.dilate(m.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+                ring = cv2.dilate(m.astype(np.uint8), np.ones((9, 9), np.uint8)).astype(bool) & ~m & (out[..., 3] > 200)
+                col = np.median(out[..., :3][ring], 0) * 0.8 if ring.any() else np.float32([60, 80, 40])
+                out[m, :3] = col; out[m, 3] = 255
+        return out
+
     def feet(self, mask):
         """Both feet, rear first: (x_left, x_right, bottom y, x of the sole's lowest rows) of the two
         leg pieces below the crotch, in base-cell px; one tuple when the legs overlap."""
@@ -319,6 +453,8 @@ class Walker:
 
     def frame(self, entry):
         """(legs layer, legs mask, match info) of one loop entry; compose() makes the picture."""
+        if isinstance(entry, dict):
+            return self.legs(entry['cell'], tw=lambda L, m: self.tween_rot(L, m, entry))
         n, *shift = entry if isinstance(entry, (tuple, list)) else (entry,)
         return self.legs(n, *shift)
 
@@ -327,6 +463,8 @@ class Walker:
 
     def lifts(self, entry):
         """(front lift, rear lift) of a loop entry: a foot with lift 0 is on the floor."""
+        if isinstance(entry, dict):
+            return entry['B'][2], entry['A'][2]
         if not isinstance(entry, (tuple, list)):
             return 0, 0
         return (entry[3] if len(entry) > 3 else 0), (entry[4] if len(entry) > 4 else 0)
@@ -377,6 +515,7 @@ def face_base(name):
 
 
 def build(name, cfg, measure=False, dump=None):
+    cfg, _ = resolve(cfg)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         cells = cut_cells(cfg, tmp)
@@ -392,7 +531,7 @@ def build(name, cfg, measure=False, dump=None):
         for n in cfg['loop']:
             Lp, mask, info = w.frame(n)
             layers.append(Lp); masks.append(mask); feet.append(w.feet(mask))
-        k, a = w.k, cfg['atlas']
+        k, a = w.k, cfg['atlas'] * ATLAS_K
         # the crop's top: the head (the upper body is the same in every frame; the legs only move down)
         al = np.zeros(layers[0].shape[:2], bool)
         for Lp in layers: al |= (over(Lp, w.top)[..., 3] > 0)
@@ -442,7 +581,7 @@ def build(name, cfg, measure=False, dump=None):
 def pack(name, cfg, frames, ays, bx, fig_h, faces=None, out_dir=None, lossless=False, quiet=False):
     """Write <out_dir>/<name>_walker/{atlas, manifest.json}; out_dir defaults to a new temporary folder.
     lossless=True writes atlas.png (build_character.py re-encodes the whole atlas once)."""
-    a = cfg['atlas']
+    a = cfg['atlas'] * ATLAS_K
     n = len(frames)
     right = [im.resize((round(im.width * a), round(im.height * a)), Image.LANCZOS) for im in frames]
     left = [im.transpose(Image.FLIP_LEFT_RIGHT) for im in right]
@@ -502,7 +641,7 @@ def main():
             continue
         frames, ays, bx, fig_h, bob, faces = build(name, cfg, dump=a.dump)
         print('%s bob: s %s -> bob %s atlas px (%.1f scene px peak-to-peak)' % (name, bob['s'], bob['bob'], bob['pp_scene']))
-        pack(name, cfg, frames, ays, bx, fig_h, faces, out_dir=a.out)
+        pack(name, resolve(cfg)[0], frames, ays, bx, fig_h, faces, out_dir=a.out)
 
 
 if __name__ == '__main__':

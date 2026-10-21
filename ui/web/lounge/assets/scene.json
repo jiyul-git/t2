@@ -191,13 +191,40 @@
  "planes": {
   "right": "bg/plane_right.webp",
   "left": "bg/plane_left.webp",
-  "y": 745,
-  "height": 370,
-  "from": 380,
-  "to": 1980,
   "period": 150,
-  "duration": 80,
-  "haze": 0.3,
+  "ground": 0.97,
+  "horizon": 475,
+  "ref": {
+   "y": 690,
+   "h": 300
+  },
+  "lanes": [
+   {
+    "id": "far",
+    "y": [
+     592,
+     606
+    ],
+    "haze": [
+     0.34,
+     0.3
+    ],
+    "duration": 88.3
+   },
+   {
+    "id": "near",
+    "y": [
+     654,
+     677
+    ],
+    "haze": [
+     0.2,
+     0.16
+    ],
+    "duration": 68.3
+   }
+  ],
+  "margin": 30,
   "wheels": {
    "right": [
     [
@@ -239,7 +266,21 @@
      0.0229
     ]
    ]
-  }
+  },
+  "duration": 88.3
+ },
+ "weather": {
+  "plates": {
+   "rain": "bg/outside_rain.webp",
+   "snow": "bg/outside_snow.webp"
+  },
+  "rect": [
+   700,
+   0,
+   740,
+   770
+  ],
+  "mask": "outside"
  },
  "beacons": [
   {

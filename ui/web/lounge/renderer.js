@@ -28,7 +28,8 @@
   }
   const sunRelative = (azimuth, facing) => wrap180(azimuth - facing);
   // 0 when the sun is behind the window or below the horizon, up to 1 for a high sun in front of it.
-  const directLight = (rel, h) => clamp(Math.cos(rel * RAD), 0, 1) * Lighting.smoothstep(0, 6, h);
+  // cloud (0..1, optional): the sky's cloud cover; direct sun is gone under a full overcast (Lighting.sunTransmit).
+  const directLight = (rel, h, cloud) => clamp(Math.cos(rel * RAD), 0, 1) * Lighting.smoothstep(0, 6, h) * (cloud === undefined ? 1 : Lighting.sunTransmit(cloud));
   function discPosition(scene, rel, h) {
     const w = scene.window;
     return {
@@ -67,6 +68,50 @@
     return dir * 2 * r * lit;
   }
   const tintColor = (ambient, strength) => Lighting.mix('#ffffff', ambient, clamp(strength, 0, 1));
+
+  // ---------------------------------------------------------------- weather geometry (docs 13)
+  // Slant of falling rain on the screen (screen px right per px down) from the wind: `dir` is where the
+  // wind comes from (degrees, north = 0), `facing` the compass direction the window looks toward. Looking
+  // out, the screen's right-hand side is facing + 90. A calm sky still tilts the rain a little.
+  // windRight: -1..1, how much the wind blows toward the screen's right-hand side (1 = straight right)
+  const windRight = (dirDeg, facing) => Math.cos(((Number.isFinite(dirDeg) ? dirDeg : 0) + 180 - ((Number.isFinite(facing) ? facing : 225) + 90)) * RAD);
+  const windStrength = speedKmh => clamp((Number.isFinite(speedKmh) ? speedKmh : 0) / 45, 0, 1);
+  function windSlant(speedKmh, dirDeg, facing) {
+    return clamp(-0.1 + windRight(dirDeg, facing) * windStrength(speedKmh) * 0.6, -0.55, 0.55);
+  }
+  // how much of the full rain / snow shows for an intensity word (also the plate's strength)
+  const RAIN_AMT = { none: 0, light: 0.35, moderate: 0.68, heavy: 1 };
+  const SNOW_AMT = { none: 0, light: 0.5, moderate: 0.5, heavy: 1 };
+  const RAIN_PLATE = { none: 0, light: 0.72, moderate: 0.9, heavy: 1 };
+
+  // ---------------------------------------------------------------- the taxiing plane (docs 14)
+  // A lane is a straight line on the ground plane. The plane is drawn upright and unrotated, so it
+  // only slides along the lane, and gets smaller, higher and hazier the farther away it is:
+  //   s(y) = (y - horizon) / (ref.y - horizon)     scale of a plane whose wheels touch screen y
+  // The lane's two y values (start, end of the run in the heading direction) fix s0 and s1. Progress
+  // p (0..1, eased in time) is uniform along the ground, so the screen speed follows the scale:
+  //   s(p) = s0 * (s1/s0)^p,   x(p) = xStart + (xEnd - xStart) * ((s1/s0)^p - 1) / (s1/s0 - 1)
+  // x is then linear in s, i.e. the wheels run along a straight screen line.
+  const laneScale = (pl, y) => (y - pl.horizon) / (pl.ref.y - pl.horizon);
+  function laneRun(pl, lane, aspect, win) {
+    const ln = pl.lanes[lane];
+    const s0 = laneScale(pl, ln.y[0]), s1 = laneScale(pl, ln.y[1]);
+    const half = 0.5 * aspect * pl.ref.h * Math.max(s0, s1) + (Number.isFinite(pl.margin) ? pl.margin : 30);
+    return { s0, s1, xa: win.x - half, xb: win.x + win.w + half, ln };
+  }
+  const planeEase = u => { const c = clamp(u, 0, 1); return c * c * (3 - 2 * c) * 0.3 + c * 0.7; };
+  // Pose of the plane at u (0..1 of its run): {x (centre), y (wheel contact line), h (sprite height), s, p, haze, world}
+  function planePose(pl, lane, right, u, aspect, win) {
+    const L = laneRun(pl, lane, aspect, win), p = planeEase(u);
+    const r = L.s1 / L.s0, grow = Math.abs(r - 1) < 1e-6 ? p : (Math.pow(r, p) - 1) / (r - 1);
+    const xs = right ? L.xa : L.xb, xe = right ? L.xb : L.xa;
+    const s = L.s0 * Math.pow(r, p);
+    const t = Math.abs(L.s1 - L.s0) < 1e-9 ? p : (s - L.s0) / (L.s1 - L.s0);
+    const hz = L.ln.haze || [0.3, 0.3];
+    return { x: xs + (xe - xs) * grow, y: pl.horizon + s * (pl.ref.y - pl.horizon), h: pl.ref.h * s, s, p,
+      haze: hz[0] + (hz[1] - hz[0]) * t,
+      world: Math.abs(L.s1 - L.s0) < 1e-9 ? Math.abs(xe - xs) / L.s0 : Math.abs(xe - xs) / (L.s1 - L.s0) * Math.abs(Math.log(r)) };      // ground distance of the whole run, in px at scale 1
+  }
 
   // ---------------------------------------------------------------- renderer
   function createRenderer(opts) {
@@ -111,6 +156,8 @@
       canvas.width = w; canvas.height = h;
       scratch = make(w, h);
       for (const g of ['far', 'back', 'mid', 'arms', 'front', 'board']) ensureCache(g);
+      dprNow = dpr || 1;
+      layoutWx();
       tintCache = new Map();
       cacheDirty = true;
       return true;
@@ -137,6 +184,15 @@
           sc.drawImage(layer.variants[0].img, 0, 0, W, H);
           sc.globalCompositeOperation = 'source-over';
         }
+      }
+      // under a grey sky the room is a little cooler and dimmer (Lighting.withWeather): the same grey wash
+      // over every room layer so their seams stay invisible (source-atop keeps each layer's own alpha, soft
+      // edges included); the window picture has its own grades
+      if (L.indoorA > 0.002 && layer.def.group !== 'far') {
+        sc.globalCompositeOperation = 'source-atop';
+        sc.fillStyle = hexAlpha(L.indoor, L.indoorA);
+        sc.fillRect(0, 0, W, H);
+        sc.globalCompositeOperation = 'source-over';
       }
       target.save();
       target.setTransform(1, 0, 0, 1, 0, 0);
@@ -257,7 +313,7 @@
     // Aircraft taxiing past the window now and then. Deterministic in scene time, so a reload shows
     // the same plane at the same moment.
     const planeTint = new Map();
-    let hazeColor = '#808080';
+    let hazeColor = '#808080', planeHaze = '#808080';
     // Average colour of the apron behind the plane in the current window view; the plane is graded
     // toward it so a crisp white sprite sits inside the softer painting.
     // Average colour of a region of a cache, read from a tiny scaled copy: reading a large region
@@ -279,8 +335,10 @@
       const p = scene.planes;
       if (!p || !caches.far) return hazeColor;
       try {
-        const x = Math.round(Math.max(scene.window.x, p.from) * k), y = Math.round((p.y - p.height) * k);
-        const w = Math.round(Math.min(scene.window.w, 500) * k), h = Math.round(p.height * k);
+        // the apron the plane taxis on: from just below the horizon down to the bottom of the glass
+        const y0 = Number.isFinite(p.horizon) ? p.horizon + 70 : p.y - p.height, y1 = p.ref ? p.ref.y + 5 : p.y;
+        const x = Math.round(scene.window.x * k), y = Math.round(y0 * k);
+        const w = Math.round(Math.min(scene.window.w, 600) * k), h = Math.round((y1 - y0) * k);
         const c = averageColor(caches.far.canvas, x, y, w, h);
         return c ? toHex3(c) : hazeColor;
       } catch (e) { return hazeColor; }
@@ -295,28 +353,37 @@
         return { color: toHex3(c), lum: (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 };
       } catch (e) { return room; }
     }
-    // ps: the director's plane ({u, right} or null). Without one (tests, old callers) it runs on a timer.
+    // ps: the director's plane ({u, right, lane} or null). Without one (tests, old callers) it runs on a timer.
+    // Scenes without scene.planes.lanes keep the old flat slide at constant size.
     function planeState(t, ps) {
       const p = scene.planes;
       if (!p || !assets.planes) return null;
-      let u, right;
+      const lanes = Array.isArray(p.lanes) && p.lanes.length ? p.lanes : null;
+      let u, right, lane = 0;
       if (ps !== undefined) {
         if (!ps) return null;
-        u = ps.u; right = ps.right;
+        u = ps.u; right = ps.right; lane = Number.isInteger(ps.lane) ? clamp(ps.lane, 0, lanes ? lanes.length - 1 : 0) : 0;
       } else {
-        const k = Math.floor(t / p.period), phase = t - k * p.period;
-        if (phase > p.duration) return null;
-        u = phase / p.duration; right = k % 2 === 0;
+        const n = Math.floor(t / p.period), phase = t - n * p.period;
+        lane = lanes ? n % lanes.length : 0;
+        const dur = lanes && Number.isFinite(lanes[lane].duration) ? lanes[lane].duration : p.duration;
+        if (phase > dur) return null;
+        u = phase / dur; right = n % 2 === 0;
       }
-      const ease = u * u * (3 - 2 * u) * 0.3 + u * 0.7;
-      const x = right ? p.from + (p.to - p.from) * ease : p.to - (p.to - p.from) * ease;
-      return { x, img: right ? assets.planes.right : assets.planes.left };
+      const img = right ? assets.planes.right : assets.planes.left;
+      if (!lanes) {
+        const e = planeEase(u);
+        return { x: right ? p.from + (p.to - p.from) * e : p.to - (p.to - p.from) * e, y: p.y, h: p.height, s: 1, p: e, haze: Number.isFinite(p.haze) ? p.haze : 0.3, world: 0, img, right, lane: 0 };
+      }
+      return Object.assign(planePose(p, lane, right, u, img.width / img.height, scene.window), { img, right, lane });
     }
-    function drawPlane(c, L, t, ps) {
+    // The plane, in scene coordinates on context c (the window layer). wet: 0..1 how rainy / snowy it is.
+    function drawPlane(c, L, t, ps, wet) {
       const st = planeState(t, ps);
       if (!st) return;
       const img = st.img, p = scene.planes;
-      const key = (img === assets.planes.right ? 'r' : 'l') + L.ambient + Math.round(L.ambientStr * 50) + hazeColor;
+      const haze = Math.round(clamp(st.haze + 0.14 * (wet || 0), 0, 0.75) * 30) / 30;       // a wet air is hazier
+      const key = (st.right ? 'r' : 'l') + L.ambient + Math.round(L.ambientStr * 50) + planeHaze + haze;
       let tinted = planeTint.get(key);
       if (!tinted) {
         tinted = make(img.width, img.height);
@@ -329,40 +396,43 @@
         }
         // grade toward the scene: pull colours toward the apron's average (distance haze) and soften
         g.globalCompositeOperation = 'source-atop';
-        g.globalAlpha = Number.isFinite(p.haze) ? p.haze : 0.3;
-        g.fillStyle = hazeColor; g.fillRect(0, 0, img.width, img.height);
+        g.globalAlpha = haze;
+        g.fillStyle = planeHaze; g.fillRect(0, 0, img.width, img.height);
         g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
         const soft = make(Math.max(1, Math.round(img.width * 0.55)), Math.max(1, Math.round(img.height * 0.55)));
         soft.getContext('2d').drawImage(tinted, 0, 0, soft.width, soft.height);
         tinted = soft;
-        if (planeTint.size > 8) planeTint.clear();
+        if (planeTint.size > 24) planeTint.clear();
         planeTint.set(key, tinted);
       }
-      const h = p.height, w = h * img.width / img.height;
+      const h = st.h, w = h * img.width / img.height, ground = Number.isFinite(p.ground) ? p.ground : 1;
       // a taxiing plane is never perfectly still: a slow, tiny bounce on its gear (two mixed waves,
-      // under a pixel or so), and a soft shadow on the apron so it sits on the ground
-      const bob = Math.sin(t * 2.3) * 0.7 + Math.sin(t * 5.9 + 1.3) * 0.35;
+      // about a pixel at full size, smaller far away)
+      const bob = (Math.sin(t * 2.3) * 0.7 + Math.sin(t * 5.9 + 1.3) * 0.35) * st.s;
+      const top = st.y - ground * h + bob;                       // the wheels touch the lane's line (st.y)
+      // soft contact shadow on the apron under the whole plane, scaled with it
       c.save();
-      c.globalAlpha = 0.28 * (0.5 + 0.5 * L.dayness);
-      c.translate(st.x, p.y - 4); c.scale(1, 0.08);
-      const sg = c.createRadialGradient(0, 0, 0, 0, 0, w * 0.45);
-      sg.addColorStop(0, '#000000'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalAlpha = 0.30 * (0.5 + 0.5 * L.dayness) * (1 - 0.35 * (wet || 0));
+      c.translate(st.x + (st.right ? 1 : -1) * w * 0.01, st.y - 0.006 * h); c.scale(1, 0.085);
+      const sg = c.createRadialGradient(0, 0, 0, 0, 0, w * 0.47);
+      sg.addColorStop(0, '#000000'); sg.addColorStop(0.55, 'rgba(0,0,0,0.55)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
       c.fillStyle = sg;
-      c.beginPath(); c.arc(0, 0, w * 0.45, 0, 6.2832); c.fill();
+      c.beginPath(); c.arc(0, 0, w * 0.47, 0, 6.2832); c.fill();
       c.restore();
-      c.drawImage(tinted, st.x - w / 2, p.y - h + bob, w, h);
-      // rolling gear: three spokes on each hub, turned by the distance travelled
-      const wl = p.wheels && p.wheels[st.img === assets.planes.right ? 'right' : 'left'];
+      c.drawImage(tinted, st.x - w / 2, top, w, h);
+      // rolling gear: three spokes on each hub, turned by the distance travelled on the ground
+      const wl = p.wheels && p.wheels[st.right ? 'right' : 'left'];
       if (wl) {
-        const ox = st.x - w / 2, oy = p.y - h + bob;
+        const ox = st.x - w / 2;
         c.save();
         c.lineCap = 'round';
         c.strokeStyle = '#c9ced6';
         c.globalAlpha = 0.55 + 0.35 * L.dayness;
         for (const [fx, fy, frx, fry] of wl) {
-          const cx = ox + fx * w, cy = oy + fy * h, rx = frx * h, ry = fry * h;
-          const ang = st.x / (ry * 1.9);                  // tyre radius ~1.9x the hub
-          c.lineWidth = Math.max(1, ry * 0.22);
+          const cx = ox + fx * w, cy = top + fy * h, rx = frx * h, ry = fry * h;
+          const dist = st.world ? st.p * st.world * (st.right ? 1 : -1) : st.x;       // ground distance, px at scale 1
+          const ang = dist / (fry * (p.ref ? p.ref.h : h) * 1.9);                      // tyre radius ~1.9x the hub
+          c.lineWidth = Math.max(0.8, ry * 0.22);
           c.beginPath();
           for (let k = 0; k < 3; k++) {
             const a = ang + k * 2.0944;
@@ -373,6 +443,363 @@
         }
         c.restore();
       }
+    }
+
+    // ================================================================ weather (docs 13)
+    // Three things are layered on top of the clear window picture, all inside `wr` (scene px) and
+    // clipped to the glass (the alpha of the `outside` layer):
+    //   1. grade caches, rect-sized: an overcast version of the clear plate (`cloudy`) and the rain and
+    //      snow plates, graded for the time of day; crossfaded in by their mixes (0.8 s)
+    //   2. one window layer per frame, only while something moves in it: the plane, the falling rain or
+    //      snow (three depths each, from pre-rendered sprites, pooled typed arrays, no allocation per
+    //      frame), the drops running down the glass, ripples on the apron, fog, lightning
+    //   3. the room's light, through Lighting.withWeather (cool, dimmer, no direct sun)
+    const wxScene = scene.weather || null;
+    const plates = assets.weather || {};
+    const wr = wxScene && Array.isArray(wxScene.rect) ? { x: wxScene.rect[0], y: wxScene.rect[1], w: wxScene.rect[2], h: wxScene.rect[3] }
+      : { x: scene.window.x, y: scene.window.y, w: scene.window.w, h: scene.window.h };
+    let box = { x: 0, y: 0, w: 1, h: 1 }, dprNow = 1, wxSeen = false;
+    const CLEAR_WX = { kind: 'clear', intensity: 'none', thunder: false, cloud: 0, windSpeed: 0, windDir: 0 };
+    let slayer = null, maskC = null;
+    const wxc = { cloudy: null, rain: null, snow: null, lights: null };            // { canvas, key }
+    let farVersion = 0;
+    const WX = { cloud: 0, rain: 0, snow: 0, fog: 0, rainAmt: 0, snowAmt: 0, rainPlate: 0, kind: 'clear', intensity: 'none', thunder: false,
+      slant: -0.1, drift: 0, lastT: null, lastKey: '', haze: { rain: '#6c7a88', snow: '#aeb9c4' } };
+    // small deterministic generator (the particles are the same on every run)
+    let rs = 20261021;
+    const rnd = () => { rs = (rs + 0x6d2b79f5) | 0; let t = Math.imul(rs ^ (rs >>> 15), 1 | rs); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+
+    // ---- particle pools: [x, y, a, b] per particle in rect-local scene px; sized for heavy weather once
+    const RAIN_LAYERS = [   // far, mid, near: count at full rain, length, width, speed (px/s), alpha
+      { n: 170, len: 24, wid: 1.1, vy: 600, a: 0.26 }, { n: 105, len: 42, wid: 1.6, vy: 900, a: 0.40 }, { n: 42, len: 70, wid: 2.4, vy: 1350, a: 0.55 }];
+    const SNOW_LAYERS = [   // far, mid, near: count at full snow, radius, fall speed, sway amplitude, alpha
+      { n: 150, r: 1.7, vy: 24, sw: 5, a: 0.7 }, { n: 95, r: 3.0, vy: 40, sw: 9, a: 0.85 }, { n: 38, r: 5.2, vy: 68, sw: 15, a: 0.95 }];
+    const makePool = (n, fill) => { const a = new Float32Array(n * 4); for (let i = 0; i < n; i++) fill(a, i * 4); return a; };
+    const rainPool = RAIN_LAYERS.map(l => makePool(l.n, (a, o) => { a[o] = rnd() * (wr.w + 200) - 100; a[o + 1] = rnd() * (wr.h + l.len * 2) - l.len; a[o + 2] = 0.8 + rnd() * 0.4; a[o + 3] = rnd(); }));
+    const snowPool = SNOW_LAYERS.map(l => makePool(l.n, (a, o) => { a[o] = rnd() * (wr.w + 100) - 50; a[o + 1] = rnd() * (wr.h + 20) - 10; a[o + 2] = rnd() * 6.2832; a[o + 3] = 0.6 + rnd() * 0.8; }));
+    const NDRIP = 14, NBEAD = 40, NRIP = 14;
+    // drops running down the glass: [x, y, speed, state] + [trail, wait, stop at, phase]
+    const drips = new Float32Array(NDRIP * 8), beads = new Float32Array(NBEAD * 4), ripples = new Float32Array(NRIP * 4);
+    for (let i = 0; i < NDRIP; i++) { const o = i * 8; drips[o] = 30 + rnd() * (wr.w - 60); drips[o + 1] = rnd() * wr.h * 0.7; drips[o + 2] = 10 + rnd() * 18; drips[o + 3] = rnd() < 0.5 ? 1 : 0; drips[o + 4] = 0; drips[o + 5] = rnd() * 6; drips[o + 6] = drips[o + 1] + 60 + rnd() * 260; drips[o + 7] = rnd() * 6.28; }
+    for (let i = 0; i < NBEAD; i++) { const o = i * 4; beads[o] = 20 + rnd() * (wr.w - 40); beads[o + 1] = 20 + rnd() * (wr.h - 120); beads[o + 2] = 0.9 + rnd() * 1.4; beads[o + 3] = rnd() * 6.28; }
+    for (let i = 0; i < NRIP; i++) { const o = i * 4; ripples[o] = 0; ripples[o + 1] = 0; ripples[o + 2] = -1; ripples[o + 3] = 0; }
+    // lightning: next flash time, current flash start and strength
+    const bolt = { next: 6, t0: -9, amp: 0, t1: -9, amp1: 0 };
+
+    // ---- sprites, rebuilt when the slant, the colours or the canvas scale change
+    let sprKey = '', rainSpr = [], snowSpr = [], dripSpr = null, beadSpr = null;
+    function ensureSprites(L) {
+      const slant = Math.round(WX.slant * 50) / 50, day = L.dayness;
+      const key = [slant, k.toFixed(3), Math.round(day * 6)].join('|');
+      if (key === sprKey) return;
+      sprKey = key;
+      // colours: the rain is light against a dark sky and a little dimmer by night
+      const rainC = Lighting.mix('#8da0bd', '#eef4fb', day), flake = Lighting.mix('#aab8d8', '#ffffff', day);
+      rainSpr = RAIN_LAYERS.map(l => {
+        const lenPx = l.len * k, wPx = Math.max(1, l.wid * k), dx = slant * lenPx;
+        const w = Math.ceil(Math.abs(dx) + wPx + 2), h = Math.ceil(lenPx + wPx + 2);
+        const c = make(w, h), g = c.getContext('2d');
+        const x0 = dx >= 0 ? wPx / 2 + 1 : w - wPx / 2 - 1, y0 = wPx / 2 + 1;       // tail at the top
+        const grad = g.createLinearGradient(x0, y0, x0 + dx, y0 + lenPx);
+        grad.addColorStop(0, hexAlpha(rainC, 0)); grad.addColorStop(1, hexAlpha(rainC, 1));
+        g.strokeStyle = grad; g.lineWidth = wPx; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx, y0 + lenPx); g.stroke();
+        return { c, w, h, tailX: x0 };
+      });
+      snowSpr = SNOW_LAYERS.map(l => {
+        const r = Math.max(1, l.r * k), s = Math.ceil(r * 2 + 2), c = make(s, s), g = c.getContext('2d');
+        const grad = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, r);
+        grad.addColorStop(0, hexAlpha(flake, 1)); grad.addColorStop(0.55, hexAlpha(flake, 0.75)); grad.addColorStop(1, hexAlpha(flake, 0));
+        g.fillStyle = grad; g.fillRect(0, 0, s, s);
+        return { c, s };
+      });
+      // a drop on the glass: bright core with a dark rim underneath, like the painted ones
+      const bs = Math.max(6, Math.ceil(7 * k)), b = make(bs, bs), bg2 = b.getContext('2d');
+      const rim = bg2.createRadialGradient(bs / 2, bs / 2 + 0.5, bs * 0.18, bs / 2, bs / 2 + 0.5, bs / 2);
+      rim.addColorStop(0, 'rgba(20,30,45,0)'); rim.addColorStop(0.8, 'rgba(20,30,45,0.45)'); rim.addColorStop(1, 'rgba(20,30,45,0)');
+      bg2.fillStyle = rim; bg2.fillRect(0, 0, bs, bs);
+      const core = bg2.createRadialGradient(bs * 0.42, bs * 0.38, 0, bs / 2, bs / 2, bs * 0.34);
+      core.addColorStop(0, 'rgba(255,255,255,0.95)'); core.addColorStop(1, 'rgba(210,225,240,0.25)');
+      bg2.fillStyle = core; bg2.beginPath(); bg2.arc(bs / 2, bs / 2, bs * 0.34, 0, 6.2832); bg2.fill();
+      beadSpr = { c: b, s: bs };
+      const ts = Math.max(2, Math.ceil(2 * k)), tl = Math.max(16, Math.ceil(64 * k)), t = make(ts, tl), tg = t.getContext('2d');
+      const tgr = tg.createLinearGradient(0, 0, 0, tl); tgr.addColorStop(0, 'rgba(235,243,252,0)'); tgr.addColorStop(1, 'rgba(235,243,252,0.9)');
+      tg.fillStyle = tgr; tg.fillRect(0, 0, ts, tl);
+      dripSpr = { c: t, w: ts, h: tl };
+    }
+
+    // ---- layout: rect in canvas px, the window layer and the glass mask
+    function layoutWx() {
+      box = { x: Math.max(0, Math.floor(wr.x * k)), y: Math.max(0, Math.floor(wr.y * k)), w: 1, h: 1 };
+      box.w = Math.max(1, Math.min(pw - box.x, Math.ceil(wr.w * k))); box.h = Math.max(1, Math.min(ph - box.y, Math.ceil(wr.h * k)));
+      slayer = make(box.w, box.h);
+      maskC = null;
+      const ml = wxScene && assets.layers.find(l => l.def.id === (wxScene.mask || 'outside'));
+      if (ml) {
+        maskC = make(box.w, box.h);
+        const m = maskC.getContext('2d');
+        m.drawImage(ml.variants[0].img, wr.x, wr.y, wr.w, wr.h, 0, 0, box.w, box.h);
+      }
+      wxc.cloudy = wxc.rain = wxc.snow = wxc.lights = null;
+      sprKey = '';
+    }
+
+    // ---- grade caches (rect-sized)
+    function gradeKey(L) { return Math.round(L.h * 10) + '|' + L.zenith + '|' + Math.round(L.dayness * 20); }
+    function rectCanvas() { const c = make(box.w, box.h); return { canvas: c, ctx: c.getContext('2d'), key: '' }; }
+    function ensurePlate(kind, L) {
+      const img = plates[kind];
+      if (!img) return null;
+      const key = Lighting.plateGrade(L.h);
+      let e = wxc[kind];
+      if (!e) e = wxc[kind] = rectCanvas();
+      if (e.key !== key) {
+        const c = e.ctx;
+        c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, box.w, box.h);
+        c.drawImage(img, wr.x, wr.y, wr.w, wr.h, 0, 0, box.w, box.h);
+        if (key !== '#ffffff') {
+          c.globalCompositeOperation = 'multiply'; c.fillStyle = key; c.fillRect(0, 0, box.w, box.h);
+          c.globalCompositeOperation = 'destination-in'; c.drawImage(img, wr.x, wr.y, wr.w, wr.h, 0, 0, box.w, box.h);
+          c.globalCompositeOperation = 'source-over';
+        }
+        e.key = key;
+        try { const col = averageColor(e.canvas, 0, Math.round(box.h * 0.72), box.w, Math.round(box.h * 0.2)); if (col) WX.haze[kind] = toHex3(col); } catch (err) { /* keep the guess */ }
+      }
+      return e;
+    }
+    // the overcast picture for a sky that is only cloudy: the clear plate for this time of day, drained of
+    // colour and lifted toward a flat grey light
+    function ensureCloudy(L) {
+      const key = farVersion + '|' + Math.round(L.dayness * 20);
+      let e = wxc.cloudy;
+      if (!e) e = wxc.cloudy = rectCanvas();
+      if (e.key !== key && caches.far) {
+        const c = e.ctx;
+        c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.clearRect(0, 0, box.w, box.h);
+        c.drawImage(caches.far.canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+        c.globalCompositeOperation = 'saturation'; c.fillStyle = '#808080'; c.globalAlpha = 0.72; c.fillRect(0, 0, box.w, box.h);
+        c.globalCompositeOperation = 'source-atop'; c.globalAlpha = 0.34; c.fillStyle = Lighting.mix('#262e48', '#c3ccd8', L.dayness); c.fillRect(0, 0, box.w, box.h);
+        c.globalCompositeOperation = 'multiply'; c.globalAlpha = 1; c.fillStyle = Lighting.mix('#ffffff', '#cdd6e2', L.dayness); c.fillRect(0, 0, box.w, box.h);
+        c.globalCompositeOperation = 'destination-in'; c.drawImage(caches.far.canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+        c.globalCompositeOperation = 'source-over';
+        e.key = key;
+      }
+      return e;
+    }
+
+    // The lit terminal windows, apron lights and lamp glows of the clear night picture (everything below the
+    // horizon band), laid over the dark rain / snow plate with 'lighten' so a wet night still has its lights
+    function ensureLights() {
+      const key = String(farVersion);
+      let e = wxc.lights;
+      if (!e) e = wxc.lights = rectCanvas();
+      if (e.key !== key && caches.far) {
+        const c = e.ctx;
+        c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, box.w, box.h);
+        c.drawImage(caches.far.canvas, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
+        const g = c.createLinearGradient(0, (430 - wr.y) * k, 0, (475 - wr.y) * k);
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+        c.globalCompositeOperation = 'destination-in'; c.fillStyle = g; c.fillRect(0, 0, box.w, box.h);
+        c.globalCompositeOperation = 'source-over';
+        e.key = key;
+      }
+      return e;
+    }
+
+    // ---- state: ease the mixes toward what the weather asks for
+    const toward = (v, target, up, down, dt) => (target > v ? Math.min(target, v + dt / up) : Math.max(target, v - dt / down));
+    function updateWx(wx, t, snap) {
+      const kind = wx.kind, inten = wx.intensity;
+      const dt = WX.lastT === null || snap ? 0 : clamp(t - WX.lastT, 0, 0.25);
+      WX.lastT = t;
+      const tCloud = kind === 'clear' ? clamp(wx.cloud || 0, 0, 0.5) : (kind === 'cloudy' ? clamp(Math.max(wx.cloud || 0, 0.75), 0, 1) : 1);
+      const tRain = kind === 'rain' ? 1 : 0, tSnow = kind === 'snow' ? 1 : 0, tFog = kind === 'fog' ? (inten === 'heavy' ? 1 : 0.75) : 0;
+      const tRainAmt = kind === 'rain' ? RAIN_AMT[inten] || RAIN_AMT.moderate : 0, tSnowAmt = kind === 'snow' ? SNOW_AMT[inten] || SNOW_AMT.light : 0;
+      const tPlate = kind === 'rain' ? RAIN_PLATE[inten] || 0.9 : 0;
+      if (snap) {
+        WX.cloud = tCloud; WX.rain = tRain; WX.snow = tSnow; WX.fog = tFog; WX.rainAmt = tRainAmt; WX.snowAmt = tSnowAmt; WX.rainPlate = tPlate;
+      } else {
+        WX.cloud = toward(WX.cloud, tCloud, 2.5, 2.5, dt);
+        WX.rain = toward(WX.rain, tRain, 0.8, 0.8, dt); WX.snow = toward(WX.snow, tSnow, 0.8, 0.8, dt);
+        WX.fog = toward(WX.fog, tFog, 2, 2, dt);
+        WX.rainAmt = toward(WX.rainAmt, tRainAmt, 1.5, 3.5, dt); WX.snowAmt = toward(WX.snowAmt, tSnowAmt, 1.5, 3.5, dt);
+        WX.rainPlate = toward(WX.rainPlate, tPlate, 0.8, 0.8, dt);
+      }
+      WX.kind = kind; WX.intensity = inten; WX.thunder = !!wx.thunder;
+      WX.slant = windSlant(wx.windSpeed, wx.windDir, scene.windowFacing);
+      WX.drift = windRight(wx.windDir, scene.windowFacing) * windStrength(wx.windSpeed) * 60;       // px/s sideways, snow
+      return dt;
+    }
+    const smooth01 = v => { const c = clamp(v, 0, 1); return c * c * (3 - 2 * c); };
+
+    // ---- the window layer: plane, rain / snow, drops, ripples, fog, lightning
+    function stepRain(c, L, dt, vis, amt) {
+      const slant = WX.slant;
+      for (let li = 0; li < RAIN_LAYERS.length; li++) {
+        const l = RAIN_LAYERS[li], pool = rainPool[li], spr = rainSpr[li];
+        const n = Math.min(l.n, Math.round(l.n * amt * vis)), alpha = clamp(l.a * (0.55 + 0.45 * amt) * (0.55 + 0.45 * L.dayness) * 1.25, 0, 1);
+        c.globalAlpha = alpha;
+        const wide = wr.w + 200, hh = wr.h + l.len * 2;
+        for (let i = 0; i < n; i++) {
+          const o = i * 4, vy = l.vy * pool[o + 2];
+          pool[o + 1] += vy * dt; pool[o] += slant * vy * dt;
+          if (pool[o + 1] > wr.h + l.len || pool[o] < -120 || pool[o] > wr.w + 120) {
+            pool[o + 1] = -l.len - rnd() * 40; pool[o] = rnd() * wide - 100 - (slant > 0 ? slant * hh * 0.5 : slant * hh * 0.5); pool[o + 2] = 0.8 + rnd() * 0.4;
+          }
+          c.drawImage(spr.c, pool[o] * k - spr.tailX, pool[o + 1] * k);
+        }
+      }
+      c.globalAlpha = 1;
+    }
+    function stepSnow(c, L, t, dt, vis, amt) {
+      for (let li = 0; li < SNOW_LAYERS.length; li++) {
+        const l = SNOW_LAYERS[li], pool = snowPool[li], spr = snowSpr[li];
+        const n = Math.min(l.n, Math.round(l.n * amt * vis)), depth = 0.4 + 0.3 * li;
+        c.globalAlpha = clamp(l.a * (0.6 + 0.4 * L.dayness) * (0.5 + 0.5 * amt), 0, 1);
+        for (let i = 0; i < n; i++) {
+          const o = i * 4;
+          pool[o + 1] += l.vy * pool[o + 3] * dt; pool[o] += WX.drift * depth * dt * 0.5;
+          if (pool[o + 1] > wr.h + 8) { pool[o + 1] = -8 - rnd() * 20; pool[o] = rnd() * (wr.w + 100) - 50; pool[o + 2] = rnd() * 6.2832; pool[o + 3] = 0.6 + rnd() * 0.8; }
+          if (pool[o] < -60) pool[o] += wr.w + 120; else if (pool[o] > wr.w + 60) pool[o] -= wr.w + 120;
+          const sway = Math.sin(t * (0.55 + 0.5 * pool[o + 3]) + pool[o + 2]) * l.sw;
+          c.drawImage(spr.c, (pool[o] + sway) * k - spr.s / 2, pool[o + 1] * k - spr.s / 2);
+        }
+      }
+      c.globalAlpha = 1;
+    }
+    // drops creeping down the glass: slow, stopping and starting, leaving a thin wet trail that fades
+    function stepDrips(c, L, t, dt, amt) {
+      const n = Math.round(NDRIP * amt), bn = Math.round(NBEAD * (0.3 + 0.7 * amt));
+      const dayA = 0.55 + 0.45 * L.dayness;
+      for (let i = 0; i < bn; i++) {              // beads that sit on the glass: they come and go over a minute or so
+        const o = i * 4, life = 0.5 + 0.5 * Math.sin(t * 0.09 + beads[o + 3]);
+        const a = smooth01(life * 1.6 - 0.2) * 0.8 * dayA;
+        if (a < 0.03) continue;
+        const sz = beads[o + 2] * k * 2.2;
+        c.globalAlpha = a;
+        c.drawImage(beadSpr.c, beads[o] * k - sz / 2, beads[o + 1] * k - sz / 2, sz, sz);
+      }
+      for (let i = 0; i < n; i++) {
+        const o = i * 8;
+        if (drips[o + 3] === 1) {                 // running
+          const pace = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.9 + drips[o + 7]));
+          drips[o + 1] += drips[o + 2] * pace * dt;
+          drips[o + 4] = Math.min(drips[o + 4] + drips[o + 2] * pace * dt, 70);
+          if (drips[o + 1] >= drips[o + 6] || drips[o + 1] > wr.h - 30) { drips[o + 3] = 2; drips[o + 5] = 1; }      // stops: the trail fades
+        } else if (drips[o + 3] === 2) {
+          drips[o + 5] -= dt / 3.5;
+          if (drips[o + 5] <= 0) { drips[o + 3] = 0; drips[o + 5] = 1 + rnd() * 5; }
+        } else {                                  // waits, then starts again somewhere higher
+          drips[o + 5] -= dt;
+          if (drips[o + 5] <= 0) { drips[o] = 30 + rnd() * (wr.w - 60); drips[o + 1] = rnd() * wr.h * 0.45; drips[o + 2] = 10 + rnd() * 18; drips[o + 4] = 0; drips[o + 6] = drips[o + 1] + 60 + rnd() * 280; drips[o + 3] = 1; }
+          continue;
+        }
+        const fade = drips[o + 3] === 2 ? clamp(drips[o + 5], 0, 1) : 1;
+        const x = drips[o] * k, y = drips[o + 1] * k, len = drips[o + 4] * k;
+        c.globalAlpha = 0.5 * fade * dayA;
+        if (len > 2) c.drawImage(dripSpr.c, 0, 0, dripSpr.w, dripSpr.h, x - dripSpr.w / 2, y - len, dripSpr.w, len);
+        if (drips[o + 3] === 1 || fade > 0.5) { const sz = 3.2 * k * 1.7; c.globalAlpha = 0.9 * fade * dayA; c.drawImage(beadSpr.c, x - sz / 2, y - sz / 2, sz, sz); }
+      }
+      c.globalAlpha = 1;
+    }
+    // small rings on the wet apron far away: they open, thin and vanish
+    function stepRipples(c, L, t, dt, amt) {
+      const n = Math.round(NRIP * amt);
+      c.save();
+      c.lineWidth = Math.max(1, 1.1 * k);
+      for (let i = 0; i < n; i++) {
+        const o = i * 4;
+        if (ripples[o + 2] < 0 || t - ripples[o + 2] > ripples[o + 3]) {
+          if (ripples[o + 2] >= 0 && rnd() < 0.5) { ripples[o + 2] = -1; continue; }      // rest a moment
+          const y = 575 + rnd() * 110;                                                    // on the apron, left of the stairs truck
+          ripples[o] = 40 + rnd() * (wr.w - 80); ripples[o + 1] = y - wr.y; ripples[o + 2] = t; ripples[o + 3] = 0.7 + rnd() * 0.5;
+        }
+        const u = (t - ripples[o + 2]) / ripples[o + 3];
+        if (u < 0 || u > 1) continue;
+        const persp = (ripples[o + 1] + wr.y - 470) / 215;                                // nearer the glass = bigger
+        const r = (1.5 + u * 9) * persp * k;
+        c.strokeStyle = 'rgba(' + (L.dayness > 0.5 ? '220,232,245' : '150,170,205') + ',' + ((1 - u) * 0.42).toFixed(3) + ')';
+        c.beginPath(); c.ellipse(ripples[o] * k, ripples[o + 1] * k, r, r * 0.28, 0, 0, 6.2832); c.stroke();
+      }
+      c.restore();
+    }
+    // thunder: two quick flashes now and then; returns the strength 0..1 at time t
+    function lightning(t, thunder) {
+      if (!thunder) { bolt.t0 = bolt.t1 = -9; return 0; }
+      if (t >= bolt.next) { bolt.t0 = t; bolt.amp = 0.55 + rnd() * 0.45; bolt.t1 = t + 0.13 + rnd() * 0.1; bolt.amp1 = 0.3 + rnd() * 0.4; bolt.next = t + 7 + rnd() * 16; }
+      const f = (t0, a) => { const d = t - t0; return d < 0 || d > 0.7 ? 0 : a * Math.exp(-d / 0.11) * Math.min(1, d / 0.02 + 0.2); };
+      return Math.max(f(bolt.t0, bolt.amp), f(bolt.t1, bolt.amp1));
+    }
+
+    // Draws the window layer onto `ctx` (the main canvas). Does nothing when nothing moves in the window.
+    function drawWindowLayer(ctxMain, L, t, dt, ps, still) {
+      const amtR = WX.rainAmt, amtS = WX.snowAmt, fog = WX.fog;
+      const planeOn = !!(ps && scene.planes && assets.planes);
+      const flash = lightning(t, WX.thunder && amtR > 0.2);
+      if (!(planeOn || amtR > 0.01 || amtS > 0.01 || fog > 0.01 || flash > 0.01) || !slayer) return;
+      ensureSprites(L);
+      const c = slayer.getContext('2d');
+      c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.clearRect(0, 0, box.w, box.h);
+      const vis = still ? 0.45 : 1;                      // reduced motion: a few streaks and flakes in one still picture
+      if (planeOn) {
+        c.setTransform(k, 0, 0, k, -box.x, -box.y);
+        drawPlane(c, L, t, ps, Math.max(WX.rain, WX.snow));
+        c.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      if (fog > 0.01) {                                  // a veil, thicker toward the ground
+        const g = c.createLinearGradient(0, 0, 0, box.h), col = Lighting.mix('#2a3350', '#cfd6df', L.dayness);
+        g.addColorStop(0, hexAlpha(col, 0.28 * fog)); g.addColorStop(0.6, hexAlpha(col, 0.55 * fog)); g.addColorStop(1, hexAlpha(col, 0.7 * fog));
+        c.fillStyle = g; c.fillRect(0, 0, box.w, box.h);
+      }
+      const wdt = still ? 0 : dt;
+      if (amtS > 0.01) stepSnow(c, L, t, wdt, vis, amtS);
+      if (amtR > 0.01) {
+        stepRain(c, L, wdt, vis, amtR);
+        if (amtR > 0.2) stepRipples(c, L, t, wdt, still ? 0.4 : amtR);
+        stepDrips(c, L, t, wdt, amtR);
+      }
+      if (flash > 0.01) { c.fillStyle = 'rgba(214,226,255,' + (flash * 0.5).toFixed(3) + ')'; c.fillRect(0, 0, box.w, box.h); }
+      if (maskC) { c.globalCompositeOperation = 'destination-in'; c.drawImage(maskC, 0, 0); c.globalCompositeOperation = 'source-over'; }
+      ctxMain.save(); ctxMain.setTransform(1, 0, 0, 1, 0, 0);
+      ctxMain.drawImage(slayer, box.x, box.y);
+      ctxMain.restore();
+      return flash;
+    }
+    // the plates under the window layer: clear (cache `far`, already drawn) -> overcast -> rain -> snow
+    function drawWxPlates(ctxMain, L) {
+      if (!slayer) return;
+      ctxMain.save(); ctxMain.setTransform(1, 0, 0, 1, 0, 0);
+      drawWxPlatesPx(ctxMain, L);
+      ctxMain.restore();
+    }
+    function drawWxPlatesPx(ctxMain, L) {
+      const cm = smooth01(WX.cloud / 0.9);
+      if (cm > 0.01 && (WX.rain < 0.99 || WX.rainPlate < 0.99) && (WX.snow < 0.99)) {
+        const e = ensureCloudy(L);
+        if (e) { ctxMain.globalAlpha = cm; ctxMain.drawImage(e.canvas, box.x, box.y); ctxMain.globalAlpha = 1; }
+      }
+      if (WX.rain > 0.01 && WX.rainPlate > 0.01) {
+        const e = ensurePlate('rain', L);
+        if (e) { ctxMain.globalAlpha = smooth01(WX.rain) * clamp(WX.rainPlate, 0, 1); ctxMain.drawImage(e.canvas, box.x, box.y); ctxMain.globalAlpha = 1; }
+      }
+      if (WX.snow > 0.01) {
+        const e = ensurePlate('snow', L);
+        if (e) { ctxMain.globalAlpha = smooth01(WX.snow); ctxMain.drawImage(e.canvas, box.x, box.y); ctxMain.globalAlpha = 1; }
+      }
+      const wet = Math.max(smooth01(WX.rain) * WX.rainPlate, smooth01(WX.snow));
+      if (wet > 0.01 && L.city > 0.05) {
+        const e = ensureLights();
+        if (e) { ctxMain.globalCompositeOperation = 'lighten'; ctxMain.globalAlpha = clamp(L.city * wet * 0.8, 0, 1); ctxMain.drawImage(e.canvas, box.x, box.y); ctxMain.globalAlpha = 1; ctxMain.globalCompositeOperation = 'source-over'; }
+      }
+    }
+    function mixHex(a, b, t) { return Lighting.mix(a, b, clamp(t, 0, 1)); }
+    // colour the plane is hazed toward: the clear apron, or the wet / snowy one while that plate is up
+    function hazeNow() {
+      let c = hazeColor;
+      const r = Math.round(smooth01(WX.rain) * clamp(WX.rainPlate, 0, 1) * 8) / 8, sn = Math.round(smooth01(WX.snow) * 8) / 8;
+      if (r > 0) c = mixHex(c, WX.haze.rain, r);
+      if (sn > 0) c = mixHex(c, WX.haze.snow, sn);
+      return c;
     }
 
     let pending = [], pendingL = null, builtKey = '';
@@ -388,7 +815,7 @@
       st.ctx.setTransform(k, 0, 0, k, 0, 0);
       for (const layer of assets.layers) if (layer.def.group === g) drawLayer(st.ctx, layer, pendingL);
       stages[g] = caches[g]; caches[g] = st;
-      if (g === 'far') { hazeColor = sampleHaze(); planeTint.clear(); }
+      if (g === 'far') { hazeColor = sampleHaze(); planeTint.clear(); farVersion++; }
       if (g === 'back') { room = sampleRoom(); tintCache = new Map(); }
     }
     function rebuild(L, rows) {
@@ -403,6 +830,7 @@
       hazeColor = sampleHaze();
       room = sampleRoom();
       planeTint.clear();
+      farVersion++;
       cacheDirty = false;
     }
 
@@ -428,7 +856,7 @@
       }
       // moon and sun
       if (moon && moon.visible && sun.h < -4) drawMoon(c, moon, L);
-      if (sun.disc.visible) {
+      if (sun.disc.visible && L.sunTransmit === undefined) {          // (under any cloud the disc is gone)
         const d = sun.disc;
         const sg = c.createRadialGradient(d.x, d.y, 0, d.x, d.y, SUN_GLOW);
         sg.addColorStop(0, hexAlpha(L.sunColor, 0.35)); sg.addColorStop(1, hexAlpha(L.sunColor, 0));
@@ -656,8 +1084,13 @@
     //          chars: [{name, clip, frame, x, lane}], plane?: {u, right} | null, t: seconds, debug?: {...} }
     function draw(state) {
       if (!pw) return;
-      const L = state.lighting;
-      const lk = L.zenith + L.ambient + Math.round(L.h * 20) + '|' + Math.round(L.lamp * 50) + '|' + Math.round(L.city * 50);
+      // the weather's cloud factor (eased, so a change fades in) dims and cools the room; quantized, so a
+      // fade is a few staged rebuilds rather than one per frame
+      const dtw = updateWx(state.weather || CLEAR_WX, state.t, !wxSeen || !!state.still);
+      wxSeen = true;
+      const cq = Math.round(WX.cloud * 10) / 10;
+      const L = Lighting.withWeather(state.lighting, cq);
+      const lk = L.zenith + L.ambient + Math.round(L.h * 20) + '|' + Math.round(L.lamp * 50) + '|' + Math.round(L.city * 50) + '|c' + cq;
       lightKey = lk;
       // A light change redraws one layer group per frame into a spare canvas and swaps it in, so the
       // cost never lands on a single frame (a full rebuild is ~10 ms, more on a phone). A round in
@@ -687,7 +1120,7 @@
         const mp = discPosition(scene, mrel, state.moon.elevation);
         moon = { x: mp.x, y: mp.y, visible: mp.visible && state.moon.elevation > 0, h: state.moon.elevation, phase: state.moon.phase, southern: !!state.moon.southern };
       }
-      const direct = directLight(rel, L.h);
+      const direct = directLight(rel, L.h, WX.cloud);
 
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, pw, ph);
@@ -695,8 +1128,10 @@
       drawSky(ctx, L, sun, moon, state.t);
       const blit = name => { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(caches[name].canvas, 0, 0); ctx.restore(); };
       blit('far');
+      drawWxPlates(ctx, L);
       drawBeacons(ctx, L, state.t);
-      drawPlane(ctx, L, state.t, state.plane);
+      planeHaze = hazeNow();
+      const flash = drawWindowLayer(ctx, L, state.t, dtw, state.plane, !!state.still) || 0;
       blit('back');
       { const bb = boardBounds(); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(caches.board.canvas, bb.x, bb.y, bb.w, bb.h, bb.x, bb.y, bb.w, bb.h); ctx.restore(); }
@@ -718,6 +1153,10 @@
       }
       for (const e of list.filter(e => e.lane !== 'seat').sort(byX)) drawChar(ctx, e, L);
       blit('front');
+      if (flash > 0.05) {                       // lightning lights the room a touch, too
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = 'rgba(120,140,190,' + (flash * 0.07).toFixed(3) + ')'; ctx.fillRect(0, 0, pw, ph); ctx.restore();
+      }
       if (state.debug) drawOverlay(ctx, list, state.debug);
     }
 
@@ -731,5 +1170,5 @@
   }
 
   return { createRenderer, blendVariants, sunRelative, directLight, discPosition, sunShadow, floorPatch, nearestLamp,
-    lampShadow, moonShadowOffset, tintColor, wrap180 };
+    lampShadow, moonShadowOffset, tintColor, wrap180, windSlant, RAIN_AMT, SNOW_AMT, RAIN_PLATE, laneScale, laneRun, planePose, planeEase };
 });

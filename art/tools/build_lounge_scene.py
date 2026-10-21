@@ -13,6 +13,7 @@ view only fills the top, so it is padded down with its own last row.
 """
 import argparse
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -95,6 +96,10 @@ SCENE = {
     # As big as in the approved illustration: about half the picture wide, fuselage mid-window,
     # wheels hidden behind the sofas.
     'planes': None,                # filled from PLANES below
+    # Weather (docs/LOUNGE_SCENE_DESIGN.md 13): overcast window plates cut like `outside`, crossfaded in
+    # when it rains or snows; the rain and the snow are drawn live inside `rect` (scene px) and clipped
+    # to the glass, i.e. to the alpha of the `outside` layer. Needs the plates in bg/.
+    'weather': {'plates': {'rain': 'bg/outside_rain.webp', 'snow': 'bg/outside_snow.webp'}, 'rect': [700, 0, 740, 770], 'mask': 'outside'},
     # aviation lights painted on the tower and a pole outside: at night they pulse (period s, phase s)
     'beacons': [
         {'x': 855, 'y': 197, 'r': 16, 'color': '#ff4a3a', 'period': 1.5, 'phase': 0.0},
@@ -105,12 +110,42 @@ SCENE = {
         {'x': 1135, 'y': 436, 'r': 12, 'color': '#6a8bff', 'period': 2.6, 'phase': 1.3},
     ],
 }
+# Taxi lanes on the apron (docs/LOUNGE_SCENE_DESIGN.md 14). The plane is a pure side view, so it only
+# moves along a lane: a straight line on the ground plane whose depth changes a little along the run.
+#   horizon: screen y of the horizon the apron recedes to (measured on the plates: the ground lines
+#            that run toward the right meet at about (1950, 480); the terminal windows sit at 480-520)
+#   ref: a plane whose wheels touch screen y `ref.y` is `ref.h` tall; elsewhere its height follows
+#        the distance below the horizon, (y - horizon) / (ref.y - horizon)
+#   lane.y: wheel contact line at the start and the end of the run, in the direction of travel. The
+#        art shows the nose toward the viewer, so a plane always comes a little nearer: end y > start y.
+#   lane.haze: share of the apron's colour mixed into the sprite at the start and the end (farther = hazier)
+#   lane.duration: seconds, from a constant ground speed (SPEED screen px/s at scale 1), so a far plane is
+#        slower on screen than a near one; computed below
+#   ground: where the wheels touch inside the sprite, as a fraction of its height from the top (the three
+#        wheels sit at 0.945 / 0.97 / 0.99: the art is seen a little from the front and above)
 PLANES = {'right': 'bg/plane_right.webp', 'left': 'bg/plane_left.webp',
-          'y': 745, 'height': 370, 'from': 380, 'to': 1980, 'period': 150, 'duration': 80, 'haze': 0.3,
+          'period': 150, 'ground': 0.97, 'horizon': 475, 'ref': {'y': 690, 'h': 300},
+          'lanes': [{'id': 'far', 'y': [592, 606], 'haze': [0.34, 0.30]},
+                    {'id': 'near', 'y': [654, 677], 'haze': [0.2, 0.16]}],
+          'margin': 30,
           # wheel hubs on each cut-out, as fractions of the image (cx, cy, rx, ry): spokes are drawn
           # on them and turn with the distance travelled, so the gear rolls
           'wheels': {'right': [[378, 385, 6, 10], [571, 375, 5, 8], [792, 398, 7, 9]],
                      'left': [[168, 394, 6.5, 8], [387, 371, 6, 9], [578, 381, 6, 9.5]]}}
+SPEED = 24                                  # screen px per second at plane scale 1 (the near lane's end)
+PLANE_ASPECT = 922 / 400                    # sprite width / height
+
+
+def plane_lanes(p, window=(700, 1440)):
+    """Fill in each lane's run time: constant ground speed, so the screen speed follows the scale."""
+    out = []
+    for lane in p['lanes']:
+        s0, s1 = [(y - p['horizon']) / (p['ref']['y'] - p['horizon']) for y in lane['y']]
+        half = 0.5 * PLANE_ASPECT * p['ref']['h'] * max(s0, s1) + p['margin']
+        x0, x1 = window[0] - half, window[1] + half               # centre of the sprite from fully left to fully right
+        secs = (x1 - x0) / (SPEED * (s1 - s0)) * math.log(s1 / s0) if abs(s1 - s0) > 1e-6 else (x1 - x0) / (SPEED * s0)
+        out.append(dict(lane, duration=round(secs, 1)))
+    return out
 
 
 def mask_image(polys=None):
@@ -152,6 +187,10 @@ def main(argv=None):
                 arm.putalpha(Image.fromarray(np.minimum(np.asarray(arm.getchannel('A')), np.asarray(arms))))
                 arm.save(bg / ('sofa_arms_%s.webp' % name), 'WEBP', quality=88, method=6)
                 layers['sofaArms'].append({'elev': elev, 'file': 'bg/sofa_arms_%s.webp' % name})
+    for kind in ('rain', 'snow'):         # the weather plates: cut and padded like the outside plates
+        top = Image.open(SRC / ('outside_%s.webp' % kind)).convert('RGBA').resize((W, H0), Image.LANCZOS)
+        a = np.asarray(top)
+        Image.fromarray(np.concatenate([a, np.repeat(a[-1:], H - H0, axis=0)])).save(bg / ('outside_%s.webp' % kind), 'WEBP', quality=88, method=6)
     cut = Path(__file__).resolve().parent.parent / 'cutouts'
     for side in ('right', 'left'):
         im = Image.open(cut / ('plane_%s.png' % side)).convert('RGBA')
@@ -160,6 +199,8 @@ def main(argv=None):
     scene = dict(SCENE)
     scene['seats'] = seats_json()
     scene['planes'] = dict(PLANES)
+    scene['planes']['lanes'] = plane_lanes(PLANES)
+    scene['planes']['duration'] = max(l['duration'] for l in scene['planes']['lanes'])
     for side in ('right', 'left'):        # source px -> fractions of the cut-out
         im = Image.open(Path(__file__).resolve().parent.parent / 'cutouts' / ('plane_%s.png' % side))
         scene['planes']['wheels'] = dict(scene['planes']['wheels'])

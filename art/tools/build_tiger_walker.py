@@ -13,6 +13,7 @@
    temporary folder unless --out is given.
 Every frame shares one anchor on the upper body, so the body glides level and only the legs move.
 """
+import os
 import json
 import shutil
 import subprocess
@@ -44,7 +45,8 @@ ORDER = ['22', '30', '03', '10', '12', '21']
 TWEENS = [(3, 30, 40, 10)]
 KEEP_IN_SWAP = {1, 2}     # loop frames (after the in-betweens) with both feet under the body
 BASE = '10'               # the upper body every frame shares
-SCALE = 0.62          # atlas pixels per source pixel (keeps the atlas small)
+ATLAS_K = float(os.environ.get('T2_ATLAS_K', '1.25'))   # atlas resolution multiplier (art/README.md): default 1.25 = 0.775 atlas px per working px; T2_ATLAS_K=1 gives the old 0.62
+SCALE = 0.62 * ATLAS_K   # atlas pixels per source pixel (keeps the atlas small)
 FPS, ADVANCE = 10, 26  # frames per second, scene px moved per frame (matches the planted foot, see footslip check)
 # walking bob (walk_bob.py): leg ~ hip to sole in source px, pp = peak-to-peak as a share of the figure
 BOB_LEG, BOB_PP = 100, 0.01

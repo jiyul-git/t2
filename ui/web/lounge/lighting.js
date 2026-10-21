@@ -63,5 +63,51 @@
     };
   }
 
-  return { lighting, cssVars, mix, smoothstep, TABLE };
+  // ---- weather (docs/LOUNGE_SCENE_DESIGN.md 13.3). cloud 0 = clear sky, 1 = overcast.
+  // Share of the direct sun that reaches the room: full until half the sky is covered, gone when it is overcast.
+  const sunTransmit = cloud => (Number.isFinite(cloud) ? 1 - smoothstep(0.5, 1.0, cloud) : 1);
+  // What the overcast plates (outside_rain / outside_snow) are multiplied with, by sun elevation: the plates are
+  // painted in grey daylight, this turns them into dusk and night.
+  const PLATE_GRADE = [
+    [-18, '#262f50'], [-12, '#2e3a5c'], [-6, '#464e7c'], [-2, '#7f6a86'], [2, '#cf9f86'], [8, '#efd6c0'], [16, '#ffffff'],
+  ];
+  function plateGrade(h) {
+    const e = Number.isFinite(h) ? h : 45;
+    if (e <= PLATE_GRADE[0][0]) return PLATE_GRADE[0][1];
+    for (let i = 1; i < PLATE_GRADE.length; i++) {
+      if (e <= PLATE_GRADE[i][0]) {
+        const a = PLATE_GRADE[i - 1], b = PLATE_GRADE[i];
+        return mix(a[1], b[1], (e - a[0]) / (b[0] - a[0]));
+      }
+    }
+    return '#ffffff';
+  }
+  // The lighting for a sky with clouds in it: a copy of `L` (the result of lighting(h)) with
+  //   cloud       the cloud factor itself, 0..1
+  //   sunTransmit share of direct sun left (0 under a full overcast)
+  //   ambient / ambientStr  cooler and a little darker (the characters are multiplied by them)
+  //   indoor, indoorA  a cool grey wash (colour, alpha) laid over the room's layers: a little cooler and dimmer
+  //   plate       multiply colour for the overcast window plates at this time of day
+  //   lamp, city, stars     lamps look brighter under a grey sky, stars are hidden
+  // Without clouds the very same object comes back, so clear weather costs nothing and changes nothing.
+  function withWeather(L, cloud) {
+    const c = Number.isFinite(cloud) ? clamp(cloud, 0, 1) : 0;
+    if (c <= 0.001) return L;
+    const day = L.dayness;
+    const dim = c * (0.35 + 0.65 * day);          // by night the sky is dark anyway; the grey matters by day
+    return Object.assign({}, L, {
+      cloud: c,
+      sunTransmit: sunTransmit(c),
+      ambient: mix(L.ambient, '#8493ad', 0.30 * dim),
+      ambientStr: clamp(L.ambientStr + 0.10 * dim, 0, 1),
+      indoor: mix('#3c4a66', '#5e6f8c', L.dayness),           // the grey wash laid over the room's layers ...
+      indoorA: 0.2 * dim,                                      // ... and how strongly (0 clear .. 0.2 overcast by day)
+      plate: plateGrade(L.h),
+      lamp: clamp(L.lamp + 0.18 * c * day, 0, 1),
+      city: L.city,
+      stars: L.stars * (1 - c),
+    });
+  }
+
+  return { lighting, cssVars, mix, smoothstep, TABLE, sunTransmit, plateGrade, withWeather, PLATE_GRADE };
 });

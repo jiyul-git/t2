@@ -49,6 +49,8 @@ jobs:
         run: node ui/tools/verify_lounge_location.js
       - name: Departure board
         run: node ui/tools/verify_lounge_board.js
+      - name: Weather, cloud factor, taxi lanes
+        run: node ui/tools/verify_lounge_weather.js
       - name: Character behaviour invariants
         run: node ui/tools/verify_lounge_behavior.js
       - name: Asset contract (committed placeholders)

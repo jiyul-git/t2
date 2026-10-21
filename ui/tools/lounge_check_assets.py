@@ -32,8 +32,9 @@ SEAM_MAX_ERR = 6.0           # mean abs error, 0..255, premultiplied RGBA
 LOOP_SEAM_FACTOR = 1.25      # loop wrap may jump at most this much more than the biggest normal step
 ALPHA_IOU_MIN = 0.98
 EDGE_IOU_MIN = 0.90
+WEATHER_EDGE_MIN = 0.60      # weather plates repaint the sky and the ground (rain 0.78, snow 0.69 measured); a plate 8 px off falls far below
 BUDGET_BG = 2_500_000
-BUDGET_CHAR = 1_500_000
+BUDGET_CHAR = 2_000_000       # was 1.5 MB; the atlases got 1.25x finer (art/README.md), tiger 1.7 MB
 BUDGET_PLACEHOLDER_TOTAL = 1_000_000
 
 
@@ -173,13 +174,40 @@ def check_scene(root, rep):
 
     planes = scene.get('planes')
     if planes is not None:
+        lanes = planes.get('lanes') if isinstance(planes, dict) else None
         if not (isinstance(planes, dict) and all(isinstance(planes.get(k), str) for k in ('right', 'left'))
-                and all(is_num(planes.get(k)) for k in ('y', 'height', 'from', 'to', 'period', 'duration'))
+                and all(is_num(planes.get(k)) for k in ('period', 'duration'))
                 and 0 < planes['duration'] <= planes['period']):
-            rep.err('schema', 'scene.json planes needs right/left files and numeric y, height, from, to, period >= duration > 0')
+            rep.err('schema', 'scene.json planes needs right/left files and numeric period >= duration > 0')
         else:
+            if lanes is None:                           # the old flat slide
+                if not all(is_num(planes.get(k)) for k in ('y', 'height', 'from', 'to')):
+                    rep.err('schema', 'scene.json planes needs lanes, or y, height, from, to')
+            else:                                       # taxi lanes on the apron (design doc 14)
+                ok = isinstance(lanes, list) and lanes and is_num(planes.get('horizon')) and isinstance(planes.get('ref'), dict) \
+                    and is_num(planes['ref'].get('y')) and is_num(planes['ref'].get('h')) and is_num(planes.get('ground'))
+                if ok:
+                    for ln in lanes:
+                        ys = ln.get('y') if isinstance(ln, dict) else None
+                        ok = ok and isinstance(ys, list) and len(ys) == 2 and all(is_num(v) for v in ys) and is_num(ln.get('duration')) \
+                            and 0 < ln['duration'] <= planes['period'] and all(planes['horizon'] < v <= planes['ref']['y'] + 40 for v in ys)
+                if not ok:
+                    rep.err('schema', 'scene.json planes.lanes: each lane needs y [start, end] below the horizon, duration <= period (and planes.horizon, ref {y, h}, ground)')
             for k in ('right', 'left'):
                 need_image(planes[k], 'plane', None)
+    weather = scene.get('weather')
+    weather_plates = {}
+    if weather is not None:
+        plates = weather.get('plates') if isinstance(weather, dict) else None
+        rect = weather.get('rect') if isinstance(weather, dict) else None
+        if not (isinstance(plates, dict) and plates and all(isinstance(v, str) for v in plates.values())
+                and isinstance(rect, list) and len(rect) == 4 and all(is_num(v) for v in rect)):
+            rep.err('schema', 'scene.json weather needs plates {kind: file} and rect [x, y, w, h]')
+        else:
+            for kind, rel in plates.items():
+                arr = need_image(rel, 'weather plate %s' % kind)
+                if arr is not None:
+                    weather_plates[kind] = (rel, arr)
     layers = scene.get('layers')
     if not isinstance(layers, list) or not layers:
         rep.err('schema', 'scene.json layers must be a non-empty list')
@@ -229,6 +257,18 @@ def check_scene(root, rep):
                 ei = edge_agreement(a, b)
                 if ei < EDGE_IOU_MIN:
                     rep.err('alignment', 'layer %s: line work of %s and %s differs (edge agreement %.3f < %.2f)' % (lid, va['file'], vb['file'], ei, EDGE_IOU_MIN))
+        if lid == (weather or {}).get('mask', 'outside') and weather_plates and loaded and loaded[0][1] is not None:
+            ref = loaded[-1][1]
+            for kind, (rel, arr) in weather_plates.items():
+                # same glass mask as the outside plates, and the same buildings in the same place (the sky and the
+                # snow differ, so the line-work bar is lower than between two lighting variants)
+                wi = iou(ref[..., 3] > 127, arr[..., 3] > 127)
+                if wi < ALPHA_IOU_MIN:
+                    rep.err('alignment', 'weather plate %s: glass cut differs from %s (IoU %.3f < %.2f)' % (rel, lid, wi, ALPHA_IOU_MIN))
+                elif cv2 is not None:
+                    ei = edge_agreement(ref, arr)
+                    if ei < WEATHER_EDGE_MIN:
+                        rep.err('alignment', 'weather plate %s: buildings and apron do not line up with %s (edge agreement %.3f < %.2f)' % (rel, lid, ei, WEATHER_EDGE_MIN))
     return scene
 
 
@@ -308,6 +348,45 @@ def check_faces(atlas, frames, tag, rep):
             got = iou(base[..., 3] > 127, varied)
             if got < FACE_IOU_MIN:
                 rep.err('face', '%s: frame %d: v.%s changes the silhouette (IoU %.3f < %.2f)' % (tag, i, name, got, FACE_IOU_MIN))
+
+
+POSE_FACING_OK = {'f': {'F', 'Fl', 'Fr'}, 'l': {'L', 'Fl'}}      # what a seat facing accepts (docs 7.8, art/README.md)
+FACING_WORDS = {'F', 'Fl', 'Fr', 'L', 'R'}
+
+
+def check_pose_facings(man, poses, facings, sits, tag, rep):
+    """Every seated / standing pose of a facing carries a recorded facing (poseInfo: head, torso, legs, eyes)
+    that the seat's facing accepts: a pose can no longer look the other way from its sofa. Walking poses are
+    not seat poses. Characters made by build_character.py always have poseInfo; hand-made ones may omit it."""
+    info = man.get('poseInfo')
+    if info is None:
+        if sits and man.get('walker') is True and not man.get('placeholder'):
+            rep.err('facing', '%s: seated poses need poseInfo (what each faces)' % tag)
+        return
+    if not isinstance(info, dict):
+        rep.err('facing', '%s: poseInfo must be an object' % tag)
+        return
+    for f in facings:
+        ok_set = POSE_FACING_OK.get(f)
+        if ok_set is None:
+            continue
+        suffix = '' if f == 'f' else '@' + f
+        for pname in poses:
+            if pname in WALKER_CLIPS or pname.startswith('walk'):
+                continue
+            if (suffix and not pname.endswith(suffix)) or (not suffix and '@' in pname):
+                continue
+            rec = info.get(pname)
+            if not isinstance(rec, dict):
+                rep.err('facing', '%s: pose %s has no recorded facing' % (tag, pname))
+                continue
+            for part in ('head', 'torso', 'legs'):
+                if rec.get(part) not in FACING_WORDS:
+                    rep.err('facing', '%s: pose %s: %s facing %r is not one of %s' % (tag, pname, part, rec.get(part), sorted(FACING_WORDS)))
+                elif rec[part] not in ok_set:
+                    rep.err('facing', '%s: pose %s: %s faces %s, but a seat facing %r takes %s' % (tag, pname, part, rec[part], f, sorted(ok_set)))
+            if rec.get('eyes') not in ('open', 'closed'):
+                rep.err('facing', '%s: pose %s: eyes must be "open" or "closed"' % (tag, pname))
 
 
 def check_character(root, name, rep):
@@ -413,6 +492,7 @@ def check_character(root, name, rep):
     rep.chars[name] = ('hybrid' if sits else 'walker') if man.get('walker') is True and active else ('active' if active else 'inactive')
     if not active:
         rep.warn('inactive', '%s lacks %s; it will not appear in the scene' % (tag, ', '.join(missing)))
+    check_pose_facings(man, poses, facings, sits, tag, rep)
 
     for cid, c in clips.items():
         if not clip_ok.get(cid):

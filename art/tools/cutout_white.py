@@ -30,6 +30,7 @@ def main():
     ap.add_argument('--names', default=''); ap.add_argument('--keep-shadow', action='store_true')
     ap.add_argument('--min-area', type=int, default=4000)
     ap.add_argument('--split', type=int, default=0, help='cut into N objects at the emptiest columns (touching figures)')
+    ap.add_argument('--sr', help='the same picture enlarged 4x (sr_upscale.py): the pieces come out 4x')
     ap.add_argument('--join', type=int, default=25, help='px gap closed when grouping pieces')
     a = ap.parse_args()
     rgb = np.asarray(Image.open(a.src).convert('RGB'))
@@ -63,7 +64,16 @@ def main():
         part_alpha = np.where(sel, soft, 0).astype(np.uint8)
         ys, xs = np.where(part_alpha > 8)
         x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
-        out = np.dstack([rgb, part_alpha])[y0:y1, x0:x1]
+        if a.sr:
+            if not hasattr(main, 'sr'):
+                main.sr = np.asarray(Image.open(a.sr).convert('RGB'))
+            up = main.sr.shape[1] // rgb.shape[1]
+            a1 = part_alpha[y0:y1, x0:x1].astype(np.float32) / 255
+            a4 = cv2.resize(a1, ((x1 - x0) * up, (y1 - y0) * up), interpolation=cv2.INTER_CUBIC)
+            a4 = (np.clip((a4 - 0.5) * 2.5 + 0.5, 0, 1) * 255).astype(np.uint8)
+            out = np.dstack([main.sr[y0 * up:y1 * up, x0 * up:x1 * up], a4])
+        else:
+            out = np.dstack([rgb, part_alpha])[y0:y1, x0:x1]
         name = names[k] if k < len(names) else 'part%d' % k
         Image.fromarray(out).save('%s_%s.png' % (a.prefix, name), optimize=True)
         print('%s_%s.png %dx%d' % (a.prefix, name, x1 - x0, y1 - y0))

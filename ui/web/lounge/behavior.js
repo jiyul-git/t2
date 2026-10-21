@@ -16,6 +16,10 @@
     idle: [6, 15], phone: [20, 60], call: [15, 40], eat: [30, 60], doze: [40, 120], chat: [20, 50],
   };
   const CHAT_SEGMENT_SECONDS = [4, 8];
+  // Dozing is slow (docs/LOUNGE_SCENE_DESIGN.md 7.9): one hold of a pose is the doze_loop clip (two breaths, ~8 s)
+  // repeated until its time is up; every nodEvery seconds the sleeper nods into another dozing pose (doze_nod_<b|c>),
+  // holds it and nods back (doze_back_<b|c>), if the character has such poses.
+  const DOZE = { nodEvery: [20, 40], subs: ['b', 'c'] };
   const ACTIVITY_KINDS = ['idle', 'phone', 'call', 'eat', 'sunglasses', 'fix_clothes', 'doze', 'chat'];
   const HOLD_TIMEOUT_MS = 8000;
   // Faces (docs/LOUNGE_SCENE_DESIGN.md 7.6): blinks for everyone, now and then a short expression for a
@@ -242,7 +246,13 @@
     function startEvent(kind, c, seatWish = -1) {
       if (kind === 'none') { nextEventAt = now + rnd(passEvery[0], passEvery[1]) * 1000; return; }   // a quiet spell
       lastEvent = keyOf(kind, c); lastWho = c ? c.name : null;
-      if (kind === 'plane') { plane = { start: now, ms: planes.duration * 1000, right: rand() < 0.5 }; mover = { kind, c: null }; return; }
+      if (kind === 'plane') {
+        // which way, then which taxi lane (scene.planes.lanes, far or near the glass; a run takes that lane's own duration)
+        const right = rand() < 0.5, lanes = Array.isArray(planes.lanes) && planes.lanes.length ? planes.lanes : null;
+        const lane = lanes ? Math.min(lanes.length - 1, Math.floor(rand() * lanes.length)) : 0;
+        const secs = lanes && Number.isFinite(lanes[lane].duration) ? lanes[lane].duration : planes.duration;
+        plane = { start: now, ms: secs * 1000, right, lane }; mover = { kind, c: null }; return;
+      }
       mover = { kind, c };
       if (kind === 'pass') startPass(c);
       else if (kind === 'arrive') spawn(c, seatWish >= 0 ? seatWish : chooseSeat(c));
@@ -282,14 +292,19 @@
     function startStage(c, st) {
       c.stage = st;
       startClip(c, st.kind === 'chatloop' ? 'chat_' + c.chatRole + '_' + c.chatSide : st.clip);
-      if (st.kind === 'loop') st.until = now + st.ms;
+      if (st.sub !== undefined) c.dozeSub = st.sub;               // the dozing pose the sleeper is in (null: the first)
+      if (st.kind === 'loop') st.until = c.leaving ? now : now + st.ms;
     }
     function runPlan(c, plan) {
       c.plan = plan;
       startStage(c, plan[0]);
     }
+    // A sleeper who has to leave drops the holds and nods still ahead of it, except the nod back out of another
+    // dozing pose (st.back), which is needed to reach the pose doze_out starts from.
+    const skippable = (c, st) => c.leaving && (st.back ? !c.dozeSub : !!st.optional);
     function nextStage(c) {
       c.plan.shift();
+      while (c.plan.length && skippable(c, c.plan[0])) c.plan.shift();
       if (c.plan.length) startStage(c, c.plan[0]);
       else decide(c);
     }
@@ -362,11 +377,38 @@
         startClip(c, 'sit_idle');
         c.holding = true; c.holdSince = now; c.pending = partner;
         partner.pending = c;
+      } else if (kind === 'doze') {
+        c.dozeSub = null;
+        runPlan(c, dozePlan(c, duration(kind, c) * 1000));
       } else {
         runPlan(c, [{ kind: 'once', clip: kind + '_in' },
           { kind: 'loop', clip: kind + '_loop', ms: duration(kind, c) * 1000 },
           { kind: 'once', clip: kind + '_out' }]);
       }
+    }
+
+    // doze_in, then holds of the first pose with occasional nods into the other poses, then doze_out. Own PRNG
+    // draws only happen here, so activities of characters that do not doze are unchanged.
+    function dozePlan(c, totalMs) {
+      const subs = DOZE.subs.filter(t => has(c, 'doze_nod_' + t, 'doze_loop_' + t, 'doze_back_' + t));
+      const hold = () => rnd(DOZE.nodEvery[0], DOZE.nodEvery[1]) * 1000;
+      const plan = [{ kind: 'once', clip: 'doze_in' }];
+      let left = totalMs, prev = null;
+      for (;;) {
+        const ms = subs.length ? Math.min(left, hold()) : left;       // one pose: one long hold
+        plan.push({ kind: 'loop', clip: 'doze_loop', ms, optional: true });
+        left -= ms;
+        if (left < DOZE.nodEvery[0] * 500 || !subs.length) break;
+        const t = pick(subs.filter(x => x !== prev).length ? subs.filter(x => x !== prev) : subs);
+        const ms2 = Math.min(left, hold());
+        plan.push({ kind: 'once', clip: 'doze_nod_' + t, sub: t, optional: true },
+          { kind: 'loop', clip: 'doze_loop_' + t, ms: ms2, optional: true },
+          { kind: 'once', clip: 'doze_back_' + t, sub: null, back: true });
+        left -= ms2; prev = t;
+        if (left <= 0) break;
+      }
+      plan.push({ kind: 'once', clip: 'doze_out' });
+      return plan;
     }
 
     function resolveChats() {
@@ -586,11 +628,12 @@
         return snapshot();
       },
       warmStart() { acc = 0; warmStart(); return snapshot(); },
-      // The plane taxiing past the window right now: {u: 0..1 along its run, right: heading right}, or null.
+      // The plane taxiing past the window right now: {u: 0..1 along its run, right: heading right,
+      // lane: index into scene.planes.lanes}, or null.
       plane() {
         if (!plane) return null;
         const u = (now + acc - plane.start) / plane.ms;
-        return u >= 0 && u <= 1 ? { u, right: plane.right } : null;
+        return u >= 0 && u <= 1 ? { u, right: plane.right, lane: plane.lane } : null;
       },
       // Debug helper: make `name` do `kind` at its next decision. A character who is away is called to a
       // seat as the next event (right away when nothing is moving; otherwise as soon as the mover is done -
@@ -638,5 +681,5 @@
     };
   }
 
-  return { createDirector, mulberry32, isActive, canSit, canPass, sitFacings, clipAt, faceKinds, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS, FACE };
+  return { createDirector, mulberry32, isActive, canSit, canPass, sitFacings, clipAt, faceKinds, REQUIRED_CLIPS, WALKER_CLIPS, ACTIVITY_KINDS, TICK_MS, DURATIONS, SEAT_SECONDS, FACE, DOZE };
 });

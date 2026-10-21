@@ -39,6 +39,16 @@
     }));
     const floorLight = scene.floorLight ? await image(scene.floorLight.file) : null;
     const planes = scene.planes ? { right: await image(scene.planes.right), left: await image(scene.planes.left) } : null;
+    // weather plates (overcast window pictures): one that fails to load only switches that weather off
+    let weather = null;
+    if (scene.weather && scene.weather.plates) {
+      weather = {};
+      await Promise.all(Object.keys(scene.weather.plates).map(async kind => {
+        try { weather[kind] = await image(scene.weather.plates[kind]); } catch (e) {
+          if (typeof console !== 'undefined') console.warn('lounge: weather plate left out:', kind, e && e.message);
+        }
+      }));
+    }
     const chars = [];
     await Promise.all((scene.characters || []).map(async (name, i) => {
       try {
@@ -49,7 +59,7 @@
         if (typeof console !== 'undefined') console.warn('lounge: character left out:', name, e && e.message);
       }
     }));
-    return { scene, layers, floorLight, planes, chars: chars.filter(Boolean) };
+    return { scene, layers, floorLight, planes, weather, chars: chars.filter(Boolean) };
   }
 
   return { loadAssets, browserIO };
