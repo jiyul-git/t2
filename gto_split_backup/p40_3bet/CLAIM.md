@@ -1,0 +1,1 @@
+Claimed by session_01FbCzydAsRe6XVVGMbFGh7D on 2026-10-21T19:13:57Z: 40 bb opener-vs-3-bet quick spots p40v1_co_vs_sb_3b40 -> p40v1_utg1_vs_sb_3b40 -> p40v1_utg_vs_btn (3b35 arms only after); branch claude/p40_3bet_20261021.
