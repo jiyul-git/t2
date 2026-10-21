@@ -559,6 +559,17 @@ class _BotSchedule:
         self.events = []
 
     def stamp(self, event):
+        if event.get('kind') == 'bot_turn':
+            # 판단 계산 전에 미리 보내는 시계 시작 알림. 시계 값은 뒤따르는 bot_action 과 같고
+            # (같은 커서), 커서는 움직이지 않으며 예정표(events)에도 넣지 않는다.
+            t = event.get('timing')
+            if t:
+                started = self.cursor
+                event['clock_started_ms'] = int(started * 1000)
+                event['base_deadline_ms'] = int((started + float(t['base'])) * 1000)
+                event['bank_deadline_ms'] = int((started + float(t['base'])
+                                                 + float(t['bank_before'])) * 1000)
+            return event
         if event.get('kind') == 'street':
             self.cursor += STREET_GAP_SECONDS
             event['at_ms'] = int(self.cursor * 1000)
@@ -2385,9 +2396,25 @@ class H(BaseHTTPRequestHandler):
                             'server_now_ms': int(time.time() * 1000),
                         })
 
+                        turn_seq = [0]
+
                         def _emit_bot(event):
                             if _sched is not None:
                                 _sched.stamp(event)
+                            if event.get('kind') == 'bot_turn':
+                                # 봇 차례 시작(판단 계산 전). 재생 순서·ACK 와 무관하게
+                                # 나오는 즉시 보낸다 — 화면이 그 좌석 시계 링을 바로 돌린다.
+                                turn_seq[0] += 1
+                                message = {
+                                    'type': 'bot_turn',
+                                    'stream_id': stream_id,
+                                    'turn_seq': turn_seq[0],
+                                    'event': event,
+                                }
+                                _step_progress_emit(request_id, message)
+                                if alive[0]:
+                                    alive[0] = self._stream_line(message)
+                                return
                             seq[0] += 1
                             cur = seq[0]
                             message = {

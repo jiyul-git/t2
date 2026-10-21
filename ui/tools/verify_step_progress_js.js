@@ -26,7 +26,7 @@ async function run(blocked) {
     apply:p=>applied.push(p),
     setBusy:on=>{sandbox.S.busy=on;},
     noteSchedule:()=>{}, terminalFold:()=>false, paceMs:()=>0,
-    clearSeatClock:()=>{}, SEAT_CLOCKS:{}, seatClock:()=>{},
+    clearSeatClock:()=>{}, SEAT_CLOCKS:{}, seatClock:()=>{}, clearAllSeatClocks:()=>{}, showBotTurn:()=>{},
     renderSeats:v=>frames.push(JSON.parse(JSON.stringify(v))),
     renderChips:()=>{},renderBoard:()=>{},renderPot:()=>{},renderHero:()=>{},
     bubbleAt:()=>{},markFold:()=>{},STREET:{river:'리버'},
@@ -81,6 +81,21 @@ async function main() {
   receive({type:'final',payload:{}});
   receive({type:'final',payload:{}});
   assert.deepEqual(seen,['start',1,2,'final']);
+  // 봇 차례 알림(bot_turn): 순서 대기 없이 바로 전달, 같은 turn_seq 는 한 번만, bot_action 순서에 끼지 않는다.
+  const s2={Set};vm.createContext(s2);
+  vm.runInContext(extract('function stepEventReceiver(', 'async function callStepStream('),s2);
+  const seen2=[];
+  const r2=s2.stepEventReceiver(()=>seen2.push('start'),o=>seen2.push('a'+o.seq),()=>seen2.push('final'),
+    ()=>seen2.push('error'),o=>seen2.push('t'+o.turn_seq));
+  r2({type:'stream_start'});
+  r2({type:'bot_turn',turn_seq:1,event:{kind:'bot_turn',seat:2}});
+  r2({type:'bot_turn',turn_seq:1,event:{kind:'bot_turn',seat:2}});   // 진행 조회가 같은 알림을 또 줘도 한 번
+  r2({type:'bot_action',seq:1});
+  r2({type:'bot_turn',turn_seq:2,event:{kind:'bot_turn',seat:3}});
+  r2({type:'bot_action',seq:2});
+  r2({type:'final',payload:{}});
+  r2({type:'bot_turn',turn_seq:3});                                  // 끝난 뒤의 알림은 무시
+  assert.deepEqual(seen2,['start','t1','a1','t2','a2','final']);
   console.log('PASS: blocked headers recover via progress; one action POST; no duplicate bets/final; delayed timestamp never rewinds clock');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -109,6 +109,7 @@ const serverNow = () => Date.now() + (S.clockOffset || 0);
 // 시계 선이 이름표 테두리를 덮는 폭(px). 0 이면 맞닿고, 0.5 는 안티앨리어싱 틈을 막는다.
 const CLOCK_OVERLAP_PX = 0.5;
 const SEAT_CLOCKS = {};
+const SEAT_PAINT = {};      // 좌석별 링 그리기 함수(테이블을 다시 그린 직후 바로 되살린다)
 
 /* 박스 테두리 시계(WPL 방식): 포지션·스택 박스 둘레의 선이 남은 액션 시계 비율만큼 줄어든다.
  * HERO 외 봇·다른 플레이어의 .pod .meta 에만 쓴다(HERO 는 기존 #turnclock 링 그대로).
@@ -178,6 +179,7 @@ function boxClockPaint(host, startMs, baseMs, bankMs, now) {
 function clearSeatClock(seat) {
   const k = String(seat);
   if (SEAT_CLOCKS[k]) { clearInterval(SEAT_CLOCKS[k]); delete SEAT_CLOCKS[k]; }
+  delete SEAT_PAINT[k];
   const pod = document.querySelector(`.pod[data-slot="${seat}"]`);
   const c = pod && pod.querySelector('.seatno > .actclock');
   if (c) c.remove();
@@ -185,6 +187,12 @@ function clearSeatClock(seat) {
   if (tag) tag.classList.remove('ac-on');
 }
 
+// 스트림 도중 끊김·오류·핸드 종료 때 남은 링을 한꺼번에 지운다.
+function clearAllSeatClocks() {
+  Object.keys(SEAT_CLOCKS).forEach(clearSeatClock);
+}
+
+// startMs 가 아직 미래여도 된다(boxClockPaint 가 시작 전에는 그리지 않고, 시작 시각에 나타난다).
 function seatClock(seat, startMs, baseMs, bankMs) {
   clearSeatClock(seat);
   const paint = () => {
@@ -192,7 +200,18 @@ function seatClock(seat, startMs, baseMs, bankMs) {
     boxClockPaint(pod && pod.querySelector('.seatno'), startMs, baseMs, bankMs, serverNow());
   };
   paint();
+  SEAT_PAINT[String(seat)] = paint;
   SEAT_CLOCKS[String(seat)] = setInterval(paint, 100);
+}
+
+/* 봇 차례 시작 알림(bot_turn). 서버가 봇 판단을 계산하기 *전에* 보낸다 — 재생 대기열·템포와 무관하게
+ * 도착하는 즉시 그 좌석 링을 돌린다. 판단 계산과 링은 동시에 진행되고, 행동(bot_action)은 대기열이
+ * 예정 시각(act_at_ms)에 재생하면서 링을 지운다. 계산이 예정 시각보다 늦게 끝나면 끝나는 즉시 행동한다.
+ * 시계 값은 뒤따르는 bot_action 과 같아서 링이 튀지 않는다.
+ */
+function showBotTurn(e) {
+  if (!e || e.seat === undefined || !e.clock_started_ms) return;
+  seatClock(e.seat, e.clock_started_ms, e.base_deadline_ms, e.bank_deadline_ms);
 }
 
 /* 예정표 조회. 서버가 준 봇 이벤트(스트림·응답 payload 의 bot_schedule)를 액션 기준으로 찾는다.
@@ -678,6 +697,9 @@ function renderSeats(v) {
     }
   });
   fitSeatsInView(box);
+  // renderSeats 가 좌석을 통째로 다시 그리면 링도 지워진다 — 다음 0.1초 주기를 기다리지 않고 바로 되살린다
+  // (봇 차례 알림으로 링이 다른 이벤트 재생과 겹쳐 돌 때 깜빡이지 않게).
+  Object.values(SEAT_PAINT).forEach((f) => f());
   PokerVisuals.scheduleGaze();
 }
 
@@ -3951,7 +3973,7 @@ function resumeAfterBreak(body, msg) {
 
 // Both transports deliver the same events. Sequence de-duplication prevents
 // double bets / animation when a previously buffered stream catches up.
-function stepEventReceiver(onStart, onEvent, onFinal, onError) {
+function stepEventReceiver(onStart, onEvent, onFinal, onError, onTurn) {
   const seen = new Set();
   let started = false, finished = false;
   return (obj) => {
@@ -3962,6 +3984,12 @@ function stepEventReceiver(onStart, onEvent, onFinal, onError) {
       if (seen.has(obj.seq)) return;
       seen.add(obj.seq);
       onEvent(obj);
+    } else if (obj.type === 'bot_turn') {
+      // 봇 차례 시작 알림은 순서 대기 없이 바로 넘긴다(스트림과 진행 조회가 둘 다 줘도 한 번만).
+      const key = 'turn:' + obj.turn_seq;
+      if (seen.has(key)) return;
+      seen.add(key);
+      if (onTurn) onTurn(obj);
     } else if (obj.type === 'final') {
       finished = true;
       onFinal(obj.payload);
@@ -3998,6 +4026,7 @@ async function callStepStream(body, msg) {
 
   let queue = [];
   let playing = false;
+  let actionsPlayed = 0;     // 재생이 끝난 봇 행동 수(늦게 도착한 bot_turn 을 걸러내는 기준)
   let heroPauseUntil = 0;
   let streamId = null;
   let finalPayload = null;
@@ -4024,6 +4053,7 @@ async function callStepStream(body, msg) {
   const maybeFinish = () => {
     if (settled || playing || queue.length || !finalPayload) return;
     settled = true;
+    clearAllSeatClocks();
     const payload = finalPayload;
     apply(payload);
     resolveDrain(payload);
@@ -4067,6 +4097,7 @@ async function callStepStream(body, msg) {
 
     playing = true;
     const e = queue.shift();
+    if (e.kind === 'bot_action') actionsPlayed++;
     const oldStage = ss ? ss.stage : null;
 
     if (ss && e.kind === 'street') {
@@ -4209,7 +4240,14 @@ async function callStepStream(body, msg) {
       pushEvent(Object.assign({}, obj.event || {}, {_ackSeq: obj.seq}));
     },
     (payload) => { finalPayload = payload; maybeFinish(); },
-    (error) => { streamError = error; resolveDrain(null); }
+    (error) => { streamError = error; resolveDrain(null); },
+    (obj) => {
+      // 서버가 판단 계산을 시작하는 순간 그 좌석 시계 링을 바로 돌린다(HERO 액션 직후 0.8초 호흡을
+      // 기다리지 않는다 — 시계 시작은 서버가 이미 HERO 액션 수락 시각으로 정했다).
+      // k번째 bot_turn 은 k번째 bot_action 의 것이다. 그 행동이 이미 재생됐으면 무시한다.
+      if (settled || obj.turn_seq <= actionsPlayed) return;
+      showBotTurn(obj.event);
+    }
   );
   const pollProgress = async () => {
     if (progressStopped || settled || finalPayload || streamError) return;
@@ -4302,6 +4340,7 @@ async function callStepStream(body, msg) {
       settled = true;
       resolveDrain(null);
     }
+    clearAllSeatClocks();
     toast('연결 실패: ' + e.message);
     try {
       const cur = await req('/api/state', null);

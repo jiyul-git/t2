@@ -1294,6 +1294,17 @@ class HandRun:
                     line[-1]['act'] = action
         rnd.apply(seat, action)
 
+    def _timing_clock(self, seat):
+        """이 좌석 결정의 시계 값(기본 초, 결정 직전 타임뱅크). 읽기만 한다 — 상태·난수를 바꾸지 않는다.
+
+        _timing_decide 와 _emit_bot_turn 이 같은 값을 쓰도록 한 곳에 둔다
+        (판단 전에 보낸 시계와 판단 뒤 이벤트의 시계가 어긋나 링이 튀지 않게).
+        """
+        T = self.timing
+        base = float(T.get('base_override') or TM.action_seconds(T.get('fmt_key', 'standard')))
+        bank = TM.bank_get(T['banks'], self._pid(seat), T.get('clock'))
+        return base, bank
+
     def _timing_decide(self, seat, street, ax, c, s_struct, m, commit, trivial, n_log,
                        concepts, boundary_known=True, decision=None):
         """봇 결정 하나의 시간 규칙(사람과 같은 규칙). 전략 RNG 를 쓰지 않는다.
@@ -1302,9 +1313,8 @@ class HandRun:
         """
         T = self.timing
         pid = self._pid(seat)
-        base = float(T.get('base_override') or TM.action_seconds(T.get('fmt_key', 'standard')))
+        base, bank = self._timing_clock(seat)
         banks = T['banks']
-        bank = TM.bank_get(banks, pid, T.get('clock'))
         K = TM.knowledge(ax, concepts)
         if K is None:
             K = 0.5
@@ -1367,6 +1377,26 @@ class HandRun:
             self.on_bot_action(event)
         except Exception:
             # 화면 연결이 끊겨도 핸드 계산과 저장은 끝까지 진행한다.
+            pass
+
+    def _emit_bot_turn(self, street, seat):
+        """봇 차례가 시작됐다는 사실을 판단을 계산하기 *전에* UI에 알린다(관측만, 전략·난수 무관).
+
+        화면은 이 시점부터 그 좌석의 시계 링을 돌린다. 판단 계산은 링과 동시에 진행되고,
+        행동 이벤트(_emit_bot_action)는 예정 시각(시계 시작 + 사람 같은 고민 시간)에 재생된다.
+        시계 값은 _timing_clock 으로 판단 전에 읽어, 뒤따르는 행동 이벤트와 같은 값이다.
+        """
+        if self.on_bot_action is None or not self.timing:
+            return
+        try:
+            base, bank = self._timing_clock(seat)
+            self.on_bot_action({
+                'kind': 'bot_turn',
+                'street': street,
+                'seat': int(seat),
+                'timing': {'base': base, 'bank_before': round(float(bank), 3)},
+            })
+        except Exception:
             pass
 
     def _emit_street(self, street, board):
@@ -1815,6 +1845,10 @@ class HandRun:
                     rnd, s, aggressor, callers, limpers)
                 continue
             ax, _ = h.axes(s); hand = h.hole[s]; bbs = rnd.stacks[s]/h.bb
+            # 이번에 새로 계산하는 봇 차례(캐시 재생이 아님)는 무거운 계산 전에 UI 시계부터 시작시킨다.
+            _pf_key = _cache_key('pre', s, len(rnd.log))
+            if not any(d[0] == _pf_key for d in self.REPLAY):
+                self._emit_bot_turn('preflop', s)
 
             # F8-D6-B: only opponents currently eligible for contributed pot layers.
             _pf_range_seats = sorted({
@@ -2211,6 +2245,8 @@ class HandRun:
                         aggressor = s
                     continue
                 ax, _ = h.axes(s)
+                # 판단 계산 전에 UI 시계부터 시작시킨다(행동 이벤트는 계산 뒤, 예정 시각에).
+                self._emit_bot_turn(street, s)
                 _tm_concepts = PS.concept_tap() if self.timing else None
                 _ck = _cache_key(street, s, len(r2.log))
                 _forced = next((d for d in self.REPLAY if d[0] == _ck), None)

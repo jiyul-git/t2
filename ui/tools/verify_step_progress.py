@@ -40,16 +40,19 @@ namespace = dict(BaseHTTPRequestHandler=BaseHTTPRequestHandler, threading=thread
                  _TS=SimpleNamespace(TournamentError=type('TournamentError', (Exception,), {})),
                  ECONOMY=SimpleNamespace(active_id=lambda:None),
                  _managed_play_state=lambda:None, _token=lambda:17,
+                 _sync_clock=lambda st, *a:None, _ui_timing=lambda st, *a:{'break_remaining':0},
                  _stream_gate_open=lambda:'stream1', _stream_gate_close=lambda sid:None,
                  _wrap=lambda r:r)
 
 def step(action, amount, on_bot_action):
     assert namespace['PLAY_INFLIGHT'] == 1
     assert not namespace['_play_absent'](time.time()+100), 'active stream misclassified as absent'
+    on_bot_action({'kind':'bot_turn','street':'river','seat':3})   # 판단 전 시계 시작 알림
     on_bot_action({'kind':'bot_action','street':'river','seat':3,'action':'check','amount':0})
     emitted.set()
     assert release.wait(3)
     # Still published when the first socket write failed.
+    on_bot_action({'kind':'bot_turn','street':'river','seat':4})
     on_bot_action({'kind':'bot_action','street':'river','seat':4,'action':'check','amount':0})
     return {'token':18,'done':True,'view':{'type':'result','hand_no':87}}
 
@@ -82,17 +85,18 @@ with tempfile.NamedTemporaryFile() as state:
         with urllib.request.urlopen(base+'/api/step-progress?request_id='+request_id, timeout=1) as response:
             progress = json.load(response)
         assert time.monotonic()-t0 < 1
-        assert [m['type'] for m in progress['messages']] == ['stream_start','bot_action']
-        assert progress['messages'][1]['seq'] == 1
+        assert [m['type'] for m in progress['messages']] == ['stream_start','bot_turn','bot_action']
+        assert progress['messages'][1]['turn_seq'] == 1 and 'seq' not in progress['messages'][1]
+        assert progress['messages'][2]['seq'] == 1   # bot_turn 은 bot_action 순번을 쓰지 않는다
         release.set()
         client.join(3)
         assert not client.is_alive() and not errors, errors
-        with urllib.request.urlopen(base+'/api/step-progress?request_id='+request_id+'&after=2', timeout=1) as response:
+        with urllib.request.urlopen(base+'/api/step-progress?request_id='+request_id+'&after=3', timeout=1) as response:
             tail = json.load(response)
-        assert [m['type'] for m in tail['messages']] == ['bot_action','final']
-        assert tail['messages'][0]['seq'] == 2
-        assert tail['messages'][1]['payload']['token'] == 18
-        assert tail['cursor'] == 4
+        assert [m['type'] for m in tail['messages']] == ['bot_turn','bot_action','final']
+        assert tail['messages'][1]['seq'] == 2 and tail['messages'][0]['turn_seq'] == 2
+        assert tail['messages'][2]['payload']['token'] == 18
+        assert tail['cursor'] == 6
         assert namespace['PLAY_INFLIGHT'] == 0
         # Retention is bounded; expired requests are not readable.
         for i in range(40): namespace['_step_progress_open']('request-number-%08d' % i)
