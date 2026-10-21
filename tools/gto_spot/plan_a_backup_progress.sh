@@ -1,7 +1,6 @@
 #!/bin/sh
-# Back up the small resumable state of Plan A spots into the repo, so another session can resume after a usage-limit stop or a container loss:
-# state.json, every step report, and (2026-10-21) per step the small inputs tables_used.json / matrices_used.json / spot.json / term*.json
-# (needed by tools/gto_spot/quick_spot.py to average the last steps). Flop artifacts (term*_flops/) are never backed up: they are recomputed.
+# Back up the small resumable state of Plan A spots (state.json + every step report) into the repo, so another session can resume
+# after a usage-limit stop or a container loss (flop artifacts are recomputed from the same terminals; step 0/1 are deterministic).
 #   sh tools/gto_spot/plan_a_backup_progress.sh <spot_id>...
 cd /home/user/t2
 for id in "$@"; do
@@ -9,9 +8,5 @@ for id in "$@"; do
   [ -d $src ] || continue
   mkdir -p $dst
   cp $src/state.json $dst/ 2>/dev/null || true
-  for d in $src/step*/; do
-    s=$(basename $d); [ -d $d ] || continue
-    mkdir -p $dst/$s
-    for f in report.json tables_used.json matrices_used.json spot.json term0.json term1.json term2.json; do [ -s $d/$f ] && cp $d/$f $dst/$s/; done
-  done
+  for r in $src/step*/report.json; do [ -s "$r" ] || continue; d=$(basename $(dirname $r)); mkdir -p $dst/$d; cp $r $dst/$d/; done
 done
