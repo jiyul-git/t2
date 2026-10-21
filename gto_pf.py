@@ -154,18 +154,18 @@ def aggr_vs_open(opener_pos, def_pos, seats, eff_bb, hand, ante=True):
     return {'jam': jam or 0.0, 'r3': r3 or 0.0}
 
 
-FULL_OPEN_BB = (1.8, 2.5)   # 플랫콜 루프는 2.0bb 오픈 기준. 이 범위 밖 오픈 크기는 기존 경로.
+# 플랫콜 루프는 기록마다 정해진 오픈 크기(BTN·CO·HJ 2.0bb, SB 3.0bb)로 풀었다. 실제 오픈이
+# 그 크기의 0.9~1.25배(2.0bb → 1.8~2.5bb, 3.0bb → 2.7~3.75bb) 안일 때만 쓴다. 밖이면 기존 경로.
+FULL_OPEN_RATIO = (0.9, 1.25)
 
 
 def defend_vs_open(opener_pos, def_pos, seats, eff_bb, hand, open_bb, ante=True):
     """단독 오픈을 받은 수비자의 전체 응답 {'fold','call','r3','jam'}.
 
     플랫콜 루프로 보정된 자리(vs_open_full)만. 양쪽 버킷(예: 30·40)에 모두 있어야
-    하고(한쪽만 있으면 None), 오픈 크기가 FULL_OPEN_BB 안이어야 한다.
+    하고(한쪽만 있으면 None), 오픈 크기가 기록의 오픈 크기 × FULL_OPEN_RATIO 안이어야 한다.
     """
     if not covered(eff_bb, seats, ante) or open_bb is None:
-        return None
-    if not (FULL_OPEN_BB[0] <= float(open_bb) <= FULL_OPEN_BB[1]):
         return None
     a, b = pos9(opener_pos, seats), pos9(def_pos, seats)
     if a is None or b is None:
@@ -174,6 +174,9 @@ def defend_vs_open(opener_pos, def_pos, seats, eff_bb, hand, open_bb, ante=True)
     if not d.get('vs_open_full'):
         return None
     key = a + '>' + b
+    sizes = [e[key].get('open_bb', 2.0) for e in d['vs_open_full'].values() if key in e]
+    if not sizes or not all(FULL_OPEN_RATIO[0] * s <= float(open_bb) <= FULL_OPEN_RATIO[1] * s for s in sizes):
+        return None
     g = {k: _at(_interp('vs_open_full', key, eff_bb, lambda e, k=k: e.get(k)), hand)
          for k in ('fold', 'call', 'r3', 'jam')}
     if any(v is None for v in g.values()):

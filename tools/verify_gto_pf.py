@@ -119,6 +119,13 @@ check('flat hook: 72o -> fold',
 check('flat hook: 3x open -> back to aggression-only (pass)',
       P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 34.0, 3.0, 2.0, 1,
                            other_live_actors=0, actor_acted=False, aggressor_total_bb=35.0) == 'pass')
+check('flat: SB 3.0 open vs BB 35bb uses the SB record; a 2.0 SB open does not',
+      G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 3.0) is not None
+      and G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
+check('flat: HJ only at 40bb (no 30bb record yet), BTN open size 1.8~2.5 only',
+      G.defend_vs_open('HJ', 'BB', 9, 40, ['Kh', '9h'], 2.0) is not None
+      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.5) is not None
+      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.6) is None)
 # --- packaging: the run folder (gateway / installer) must carry the module and its data ---
 import subprocess, tempfile
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

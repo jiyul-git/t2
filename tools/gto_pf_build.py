@@ -34,14 +34,18 @@ def flat(rec):
     name = lambda s: {'utg1': 'UTG+1', 'utg2': 'UTG+2'}.get(s, s.upper())
     n = next(x for x in rec['nodes'] if x['scope'] == '3-bet response' and not x['off_path'])
     acts = n['actions']
-    assert acts[0] == 'Fold' and acts[1] == 'Call 2', acts       # 2.0bb 오픈에 대한 응답
+    assert acts[0] == 'Fold' and acts[1].startswith('Call '), acts
+    open_bb = float(acts[1].split()[1])                            # 오픈 크기(BTN·CO·HJ 2.0, SB 3.0)
     get = lambda c, f: sum(v for a, v in n['hands'][c]['freq'].items() if f(a))
     cols = {'fold': lambda a: a == 'Fold', 'call': lambda a: a.startswith('Call'),
             'r3': lambda a: a.startswith('3-bet'), 'jam': lambda a: a.startswith('All-in')}
-    out['vs_open_full'].setdefault(S, {})[name(m.group(2)) + '>' + name(m.group(3))] = {
-        k: r3([get(c, f) for c in out['classes']]) for k, f in cols.items()}
+    ent = {k: r3([get(c, f) for c in out['classes']]) for k, f in cols.items()}
+    ent['open_bb'] = open_bb
+    out['vs_open_full'].setdefault(S, {})[name(m.group(2)) + '>' + name(m.group(3))] = ent
     out['source'].append({'id': rec['id'], 'status': rec['status'], 'method': rec['method'],
-                          'loop_converged': rec['loop_converged'], 'final_step': rec['final_step']})
+                          'loop_converged': rec['loop_converged'], 'final_step': rec['final_step'],
+                          'stopped_at_step_cap': bool(rec.get('stopped_at_step_cap')),
+                          'stop_reason': rec.get('stop_reason')})
 
 
 for path in sys.argv[1:]:
