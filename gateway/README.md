@@ -29,6 +29,8 @@ python3 ~/t2/gateway/gateway.py --config ~/t2/gateway/gateway.dev.json
 | `signup_mode` | `"open"` | `"open"`: 구글 계정이 있으면 누구나 가입. `"invite"`: `allowed_emails`에 있는 계정만 |
 | `allowed_emails` | `[]` | `"invite"` 모드에서만 쓴다 |
 | `max_accounts` | `20` | 계정 수 상한. 넘으면 새 가입은 "정원이 찼습니다", 기존 계정은 들어온다 |
+| `idle_seconds` | `1800` | 요청이 이만큼 없으면 그 사람의 게임 서버를 끈다(다음 요청에 다시 뜨고 저장된 대회를 이어간다) |
+| `busy_idle_seconds` | `21600` | **대회가 진행 중인** 사람의 게임 서버는 `idle_seconds`가 아니라 이 시간(6시간) 동안 요청이 없을 때만 끈다. 앱을 백그라운드에 두어도 대회가 끊기지 않게 한다 |
 | `max_backends` | `4` | 동시에 띄우는 게임 서버 수 |
 | `backup_dir` | `~/t2_online/backups` | `admin.py backup` 결과 위치 |
 

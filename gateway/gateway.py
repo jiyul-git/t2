@@ -61,6 +61,7 @@ DEFAULTS = {
     'secure_cookie': True,        # set False only for plain-http local testing
     'max_backends': 4,            # game servers running at once; the least recently used is stopped
     'idle_seconds': 1800,         # stop a player's game server after this long without requests
+    'busy_idle_seconds': 21600,   # ... but one with a tournament in progress is kept this long (6 h)
     'backend_env': {},            # extra environment for game servers
 }
 
@@ -416,14 +417,38 @@ class Backends:
         for uid in list(self.procs):
             self.stop(uid)
 
+    def _busy(self, port):
+        """True while the player's game server has a tournament in progress (lobby payload `current`)."""
+        try:
+            conn = http.client.HTTPConnection('127.0.0.1', port, timeout=5)
+            try:
+                conn.request('GET', '/api/lobby', headers={'X-T2-Client-Mode': 'play'})
+                cur = (json.loads(conn.getresponse().read() or b'{}') or {}).get('current')
+            finally:
+                conn.close()
+            return isinstance(cur, dict) and not cur.get('error') and not cur.get('busted')
+        except Exception:
+            return False
+
+    def reap_once(self, now=None):
+        """Stop game servers that died or sat idle. Someone in a tournament is not idle: that server stays
+        (idle_seconds does not apply) until busy_idle_seconds without any request, so a tournament running
+        while the app is in the background is not cut off."""
+        now = time.time() if now is None else now
+        cutoff = now - self.cfg['idle_seconds']
+        busy_cutoff = now - self.cfg.get('busy_idle_seconds', 21600)
+        with self.lock:
+            cand = [(u, b['port'], b['last'], b['proc'].poll() is not None) for u, b in self.procs.items()
+                    if b['last'] < cutoff or b['proc'].poll() is not None]
+        for u, port, last, dead in cand:
+            if not dead and last >= busy_cutoff and self._busy(port):
+                continue
+            self.stop(u)
+
     def _reaper(self):
         while True:
             time.sleep(30)
-            cutoff = time.time() - self.cfg['idle_seconds']
-            with self.lock:
-                idle = [u for u, b in self.procs.items() if b['last'] < cutoff or b['proc'].poll() is not None]
-            for u in idle:
-                self.stop(u)
+            self.reap_once()
 
 
 # ------------------------------------------------------------------------------------------ http

@@ -450,6 +450,31 @@ def main():
             ok(resp.status == 200 and json.loads(resp.read()) == {'ok': True},
                'next request on the same connection after %s is intact: %s' % (path, resp.status))
         conn.close()
+
+        # the idle sweep: a game server with a tournament in progress is not idle (it would cut the tournament
+        # off while the app is in the background); idle ones, dead ones and very old busy ones go
+        class FakeProc:
+            def __init__(self, dead=False): self.dead, self.ended = dead, False
+            def poll(self): return 0 if self.dead else None
+            def terminate(self): self.dead = self.ended = True
+            def wait(self, t=None): pass
+            def kill(self): self.dead = self.ended = True
+        bk = G.Backends(dict(cfg, idle_seconds=100, busy_idle_seconds=1000))
+        busy_ports = {2, 3}
+        bk._busy = lambda port: port in busy_ports
+        now = 10_000
+        bk.procs = {
+            'u_idle': {'proc': FakeProc(), 'port': 1, 'last': now - 500},
+            'u_busy': {'proc': FakeProc(), 'port': 2, 'last': now - 500},
+            'u_busy_old': {'proc': FakeProc(), 'port': 3, 'last': now - 2000},
+            'u_fresh': {'proc': FakeProc(), 'port': 4, 'last': now - 10},
+            'u_dead': {'proc': FakeProc(dead=True), 'port': 5, 'last': now - 10},
+        }
+        keep = {k: v['proc'] for k, v in bk.procs.items()}
+        bk.reap_once(now)
+        ok(sorted(bk.procs) == ['u_busy', 'u_fresh'], 'idle sweep keeps the busy and the fresh ones: %r' % sorted(bk.procs))
+        ok(keep['u_idle'].ended and keep['u_busy_old'].ended and not keep['u_busy'].ended and not keep['u_fresh'].ended,
+           'idle sweep stops the idle and the long-abandoned busy ones only')
     finally:
         stop(srv)
         shutil.rmtree(root, ignore_errors=True)
