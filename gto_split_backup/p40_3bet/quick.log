@@ -1,2 +1,3 @@
 RESUME40_START 2026-10-21T19:14:19Z
 START p40v1_co_vs_sb_3b40 2026-10-21T19:14:19Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"2.000000|BTN:fold|SB:raise@8.000000|BB:fold|CO:call@8.000000": {"CO": [1.7705155684717053, 1.226], "SB": [2.5489038310103034, 0.69]}, ":raise@8.000000|BB:fold|CO:raise@17.200000|SB:call@17.200000": {"CO": [11.024367579068667, 1.247], "SB": [10.801221210323469, 0.934]}}}
