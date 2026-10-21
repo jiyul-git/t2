@@ -1,0 +1,555 @@
+START p60v2b_utg1_vs_sb_3b40 2026-10-16T11:15:11Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-16T11:15:49Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-16T13:16:02Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [2.7706653364954024, 1.331], "SB": [2.584118672661961, 0.71]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [18.81399904991501, 1.46], "SB": [18.53216676852925, 0.779]}}}
+START p60v2b_utg1_vs_sb_3b40 2026-10-16T15:16:07Z
+{"k": 1, "decision": "continue", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [4.103356990915447, 1.002], "SB": [3.138938135249121, 0.777]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [1.0035250674275034, 1.294], "SB": [1.9459521957119703, 0.742]}}}
+START p60v2b_utg1_vs_sb_3b40 2026-10-16T17:16:11Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T00:58:05Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T02:58:07Z
+Traceback (most recent call last):
+  File "/home/user/t2/tools/gto_spot/spot_loop.py", line 416, in <module>
+    st = L.run(k0)
+         ^^^^^^^^^
+  File "/home/user/t2/tools/gto_spot/spot_loop.py", line 253, in run
+    bad = flop_failures(fd)
+          ^^^^^^^^^^^^^^^^^
+  File "/home/user/t2/tools/gto_spot/spot_loop.py", line 83, in flop_failures
+    d = json.load(open(os.path.join(flops_dir, b + '.json')))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/user/gto_ckpt/spots/p60v2b_utg1_vs_sb_3b40/step2/term1_flops/Qc9d7d.json'
+loop failed p60v2b_utg1_vs_sb_3b40
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T02:58:42Z
+{"k": 2, "decision": "continue", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [1.3104187142066832, 1.226], "SB": [0.8822378784974767, 0.737]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [4.547994613293352, 1.259], "SB": [6.036701860015581, 0.346]}}}
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T06:01:10Z
+{"k": 3, "decision": "stop: converged at panel_v1 resolution (value space); step-k tables accepted", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [0.3947199177992657, 1.178], "SB": [0.3948849907391219, 0.748]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [1.5191799745982435, 1.805], "SB": [3.7116887071412314, 0.698]}}}
+final 3 converged True
+{
+ "status": "provisional",
+ "verified": false,
+ "gates": {
+  "G1_tree": "Plan A p60 v2b: 9-max hand-start 60 bb exact (cfg.stack 59.888888888889), ante 1/9, opens 2.0, 3-bet 3.0x / blinds 3.5x/4.0x; SB open 3.0 bb, SB limp allowed; open jam excluded; parent max_raises 3, 4-bet jam only, static continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam",
+  "G1": true,
+  "spot_exploitability_bb": 9.660633494427024e-05,
+  "spot_exploitability_max_bb": 0.01,
+  "spot_solver": true,
+  "G2_parent_gap_total_bb": 0.009567604837509073,
+  "G2_max_bb": 0.01,
+  "G2": true,
+  "G3_outer_converged": true,
+  "G3": true,
+  "G4_static_share": 0.0,
+  "G4": true,
+  "G4_state": "pass",
+  "G5_stable_combo_share": 0.23970800405531897,
+  "G6": false,
+  "precision_final": false
+ },
+ "hand_frequency": {
+  "status": "blocked_by_solution",
+  "stable_combo_share": 0.23970800405531897,
+  "complete_min": 0.95,
+  "verified": false,
+  "rule": "only `stable` classes carry point frequencies at the solution status; near-indifferent classes are uncertainty groups (raw mix kept, never called verified frequency)",
+  "uncertainty_groups": [
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "4-bet 17.2 ~ Call 8",
+    "classes": [
+     "QQ",
+     "KK",
+     "AA"
+    ],
+    "reach_combos": 18.0,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "4-bet 17.2 ~ Fold",
+    "classes": [
+     "A8o",
+     "ATo"
+    ],
+    "reach_combos": 11.989,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "All-in 59.9 ~ Call 8",
+    "classes": [
+     "JJ",
+     "AKs"
+    ],
+    "reach_combos": 10.0,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "Call 8 ~ Fold",
+    "classes": [
+     "A3o",
+     "55",
+     "66",
+     "77",
+     "99",
+     "T9s",
+     "TT",
+     "KTo",
+     "J9s",
+     "JTs",
+     "QJo",
+     "KJo",
+     "AJo",
+     "Q9s",
+     "QTs",
+     "QJs",
+     "KQo",
+     "AQo",
+     "K8s",
+     "K9s",
+     "KTs",
+     "KJs",
+     "KQs",
+     "AKo",
+     "A3s",
+     "A4s",
+     "A5s",
+     "A6s",
+     "A7s",
+     "A8s",
+     "A9s",
+     "ATs",
+     "AJs",
+     "AQs"
+    ],
+    "reach_combos": 149.707,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     2
+    ],
+    "actor": "SB",
+    "actions": "All-in 59.9 ~ Call 17.2",
+    "classes": [
+     "KK",
+     "AA"
+    ],
+    "reach_combos": 8.768,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     2
+    ],
+    "actor": "SB",
+    "actions": "All-in 59.9 ~ Fold",
+    "classes": [
+     "JJ",
+     "KQo",
+     "KQs",
+     "AQs",
+     "AKs"
+    ],
+    "reach_combos": 11.498,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     2
+    ],
+    "actor": "SB",
+    "actions": "Call 17.2 ~ Fold",
+    "classes": [
+     "99",
+     "KTo",
+     "AQo",
+     "KTs"
+    ],
+    "reach_combos": 7.036,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     3
+    ],
+    "actor": "SB",
+    "actions": "Call 59.9 ~ Fold",
+    "classes": [
+     "AQo",
+     "AKo",
+     "AQs",
+     "AKs"
+    ],
+    "reach_combos": 16.971,
+    "note": "r
+root UTG+1 {'Fold': 52.1, 'Call 8': 47.9, '4-bet 17.2': 0.0, 'All-in 59.9': 0.0}
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T08:01:38Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T10:01:45Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T12:01:53Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T15:54:18Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-17T21:43:19Z
+START p60v2b_utg1_vs_sb_3b40 2026-10-18T03:39:11Z
+{
+ "ise@8.000000|BB:fold|UTG+1:call@8.000000": {
+  "UTG+1": {
+   "D144": 1.533,
+   "signed": -1.357,
+   "U24": 1.296,
+   "U144": 0.582,
+   "opp_arriving_combos": 50.452,
+   "exempt": 0
+  },
+  "SB": {
+   "D144": 1.452,
+   "signed": 1.357,
+   "U24": 0.737,
+   "U144": 0.413,
+   "opp_arriving_combos": 99.032,
+   "exempt": 0
+  }
+ },
+ "|UTG+1:raise@17.200000|SB:call@17.200000": {
+  "UTG+1": {
+   "D144": 2.336,
+   "signed": 2.3,
+   "U24": 1.134,
+   "U144": 0.892,
+   "opp_arriving_combos": 8.121,
+   "exempt": 0
+  },
+  "SB": {
+   "D144": 4.11,
+   "signed": -2.3,
+   "U24": 0.822,
+   "U144": 0.438,
+   "opp_arriving_combos": 0.006,
+   "exempt": 1
+  }
+ }
+}
+consistent_with_24 False
+{
+ "status": "research",
+ "verified": false,
+ "gates": {
+  "G1_tree": "Plan A p60 v2b: 9-max hand-start 60 bb exact (cfg.stack 59.888888888889), ante 1/9, opens 2.0, 3-bet 3.0x / blinds 3.5x/4.0x; SB open 3.0 bb, SB limp allowed; open jam excluded; parent max_raises 3, 4-bet jam only, static continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam",
+  "G1": true,
+  "spot_exploitability_bb": 6.983498969009123e-05,
+  "spot_exploitability_max_bb": 0.01,
+  "spot_solver": true,
+  "G2_parent_gap_total_bb": 0.009567604837509073,
+  "G2_max_bb": 0.01,
+  "G2": true,
+  "G3_outer_converged": false,
+  "G3": false,
+  "G4_static_share": 0.0,
+  "G4": true,
+  "G4_state": "pass",
+  "G5_stable_combo_share": 0.1764512251670802,
+  "G6": false,
+  "precision_final": true
+ },
+ "hand_frequency": {
+  "status": "blocked_by_solution",
+  "stable_combo_share": 0.1764512251670802,
+  "complete_min": 0.95,
+  "verified": false,
+  "rule": "only `stable` classes carry point frequencies at the solution status; near-indifferent classes are uncertainty groups (raw mix kept, never called verified frequency)",
+  "uncertainty_groups": [
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "4-bet 17.2 ~ Call 8",
+    "classes": [
+     "AKs"
+    ],
+    "reach_combos": 4.0,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "4-bet 17.2 ~ Fold",
+    "classes": [
+     "A3o",
+     "77",
+     "88",
+     "A8o",
+     "A9o",
+     "T9s",
+     "QTo",
+     "KTo",
+     "ATo",
+     "J9s",
+     "JTs",
+     "QJo",
+     "KJo",
+     "AJo",
+     "Q9s",
+     "QTs",
+     "QJs",
+     "KQo",
+     "AQo",
+     "K8s",
+     "K9s",
+     "KTs",
+     "KJs",
+     "A3s",
+     "A4s",
+     "A6s",
+     "A7s",
+     "A8s",
+     "A9s",
+     "ATs",
+     "AJs"
+    ],
+    "reach_combos": 119.782,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "All-in 59.9 ~ Call 8",
+    "classes": [
+     "JJ",
+     "QQ",
+     "KK",
+     "AA"
+    ],
+    "reach_combos": 24.0,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0
+    ],
+    "actor": "UTG+1",
+    "actions": "Call 8 ~ Fold",
+    "classes": [
+     "22",
+     "33",
+     "44",
+     "55",
+     "66",
+     "99",
+     "TT",
+     "KQs",
+     "AKo",
+     "A5s",
+     "AQs"
+    ],
+    "reach_combos": 59.05,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     2
+    ],
+    "actor": "SB",
+    "actions": "All-in 59.9 ~ Call 17.2",
+    "classes": [
+     "KK"
+    ],
+    "reach_combos": 3.563,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     2
+    ],
+    "actor": "SB",
+    "actions": "All-in 59.9 ~ Fold",
+    "classes": [
+     "88",
+     "99",
+     "JJ",
+     "QQ",
+     "KQo",
+     "AQo",
+     "KQs",
+     "AQs",
+     "AKs"
+    ],
+    "reach_combos": 24.154,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     2
+    ],
+    "actor": "SB",
+    "actions": "Call 17.2 ~ Fold",
+    "classes": [
+     "KTo",
+     "KTs"
+    ],
+    "reach_combos": 0.579,
+    "note": "raw mix kept in nodes[].hands; not a verified frequency"
+   },
+   {
+    "path": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     3,
+     0,
+     3
+    ],
+    "actor": "SB",
+    "actions": "Call 59.9 ~ Fold",
+    "classes": [
+     "66",
+     "88",
+ 
+root UTG+1 {'Fold': 68.5, 'Call 8': 31.5, '4-bet 17.2': 0.0, 'All-in 59.9': 0.0}
+{"k": 0, "decision": "continue", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [1.5332473899362231, 0.582], "SB": [1.4517897899949808, 0.413]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [2.335590308767175, 0.892], "SB": [4.109589730356599, 0.438]}}}
