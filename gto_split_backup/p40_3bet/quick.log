@@ -18,3 +18,12 @@ START p40v1_utg1_vs_sb_3b40 2026-10-22T03:12:47Z
 RESUME40_START 2026-10-22T05:13:13Z
 START p40v1_utg1_vs_sb_3b40 2026-10-22T05:13:13Z
 {"k": 1, "decision": "continue", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [6.080957497147258, 0.873], "SB": [5.23509806174832, 0.874]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [1.118373781808771, 0.75], "SB": [1.841737667220888, 0.695]}}}
+RESUME40_START 2026-10-22T07:13:46Z
+START p40v1_utg1_vs_sb_3b40 2026-10-22T07:13:46Z
+{"k": 2, "decision": "stop: not converged after 3 steps", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [2.6621564949124243, 1.029], "SB": [2.0822069397000935, 0.688]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [0.40766654842950484, 0.927], "SB": [0.7954307220828315, 0.594]}}}
+final 2 converged False
+p40v1_utg1_vs_sb_3b40 step 1 solved
+p40v1_utg1_vs_sb_3b40 step 2 solved
+p40v1_utg1_vs_sb_3b40 mean_of_last_2_steps [1, 2] root UTG+1 {'Fold': 0.4489, 'Call 8': 0.5201, '4-bet 17.2': 0.0, 'All-in 39.9': 0.031} unstable 159.53 loss [0.5932, 0.3781]
+DONE p40v1_utg1_vs_sb_3b40 2026-10-22T07:17:35Z
+START p40v1_utg_vs_btn 2026-10-22T07:17:35Z
