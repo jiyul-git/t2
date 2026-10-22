@@ -1,1 +1,2 @@
 START p30_flat_utg_vs_bb 2026-10-21T20:41:03Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"ld|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.000000": {"UTG": [null, 0.226], "BB": [null, 0.381]}, "CO:fold|BTN:fold|SB:fold|BB:raise@7.000000|UTG:call@7.000000": {"UTG": [4.744689824078453, 0.475], "BB": [4.688616557669654, 0.832]}, "CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|UTG:call@8.000000": {"UTG": [5.188270165065772, 0.505], "BB": [5.31642223287846, 0.92]}}}
