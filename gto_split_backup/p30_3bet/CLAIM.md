@@ -1,0 +1,1 @@
+Claimed by session_01CciSNoah3vthuMqFL1PUtQ on 2026-10-22T10:04:09Z: 30 bb opener-vs-3-bet quick spots p30v1_co_vs_sb_3b40 -> p30v1_utg1_vs_sb_3b40 -> p30v1_utg_vs_btn (3b35 arms not planned); branch claude/p30_3bet_20261022. Parent s30 dump sha256 f8cc8ea5bbb8140bdd949b959119a7e75d84d313ce23323aa12b702b157e3671 (verified).
