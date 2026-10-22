@@ -12,3 +12,5 @@ p40v1_co_vs_sb_3b40 step 2 solved
 p40v1_co_vs_sb_3b40 converged_final_step [2] root CO {'Fold': 0.4972, 'Call 8': 0.4002, '4-bet 17.2': 0.0001, 'All-in 39.9': 0.1025} unstable 0.0 loss [0.0001]
 DONE p40v1_co_vs_sb_3b40 2026-10-21T23:33:26Z
 START p40v1_utg1_vs_sb_3b40 2026-10-21T23:33:26Z
+RESUME40_START 2026-10-22T03:12:47Z
+START p40v1_utg1_vs_sb_3b40 2026-10-22T03:12:47Z
