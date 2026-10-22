@@ -27,3 +27,4 @@ p40v1_utg1_vs_sb_3b40 step 2 solved
 p40v1_utg1_vs_sb_3b40 mean_of_last_2_steps [1, 2] root UTG+1 {'Fold': 0.4489, 'Call 8': 0.5201, '4-bet 17.2': 0.0, 'All-in 39.9': 0.031} unstable 159.53 loss [0.5932, 0.3781]
 DONE p40v1_utg1_vs_sb_3b40 2026-10-22T07:17:35Z
 START p40v1_utg_vs_btn 2026-10-22T07:17:35Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"CO:fold|BTN:raise@6.000000|SB:fold|BB:fold|UTG:call@6.000000": {"UTG": [2.1451538646222432, 0.927], "BTN": [1.4730526006715738, 0.476]}, "00000|SB:fold|BB:fold|UTG:raise@14.100000|BTN:call@14.100000": {"UTG": [12.809106883877385, 1.12], "BTN": [12.600951599177797, 0.643]}}}
