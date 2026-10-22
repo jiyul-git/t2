@@ -5470,5 +5470,5 @@
   }
  ],
  "stopped_at_step_cap": true,
- "status_note": "not converged at step 3 (spec max_steps 3, user decision 2026-10-20): record = mean of the last 2 steps (1-2); step 0 excluded"
+ "status_note": "flag set by hand, quick_spot.py has no step-cap logic; mean of steps 1-2 (not converged at step 3, spec max_steps 3, user decision 2026-10-20; step 0 excluded)"
 }
