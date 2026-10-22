@@ -1,0 +1,1694 @@
+{
+ "schema": "spot_quick_v1",
+ "id": "p30v1_utg1_vs_sb_3b40",
+ "status": "quick",
+ "db_promotion": "forbidden",
+ "decision": "user 2026-10-19: fill fast first (24-board loop; cycling -> mean of the last 4 steps; no P144), refine later",
+ "tree": "Plan A p30 v1 (quick): 9-max hand-start 30 bb (cfg.stack 29.88888888888889), ante 1/9, opens 2.0, 3-bet 3.0x / blinds 3.5x/4.0x; SB open 3.0 bb, SB limp allowed; open jam excluded; parent max_raises 3, 4-bet jam only, static continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam; symmetric stacks",
+ "stack_assumption": "symmetric stacks (all seats at the bucket stack); lookup by effective stack",
+ "method": "mean_of_last_2_steps",
+ "steps": [
+  1,
+  2
+ ],
+ "loop_converged": false,
+ "final_step": 2,
+ "stop_reason": null,
+ "stopped_at_step_cap": true,
+ "status_note": "stopped at the step cap (3 steps), not converged; mean of the last 2 steps (user decision 2026-10-20)",
+ "notes": [
+  "frequencies at off_path nodes are not meaningful (opponent arrives with < 1 combo)",
+  "deep nodes (after the 4-bet) are research; connection uses the 3-bet response only",
+  "unstable_across_steps: class moved > 10 pp between the averaged steps (near-indifferent or cycling)",
+  "never GTO-verified; refinement target (P144 etc.) where T2 bots differ most"
+ ],
+ "solve_s": 3.0,
+ "nodes": [
+  {
+   "path": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3,
+    0
+   ],
+   "actor": "UTG+1",
+   "actions": [
+    "Fold",
+    "Call 8",
+    "4-bet 17.2",
+    "All-in 29.9"
+   ],
+   "scope": "3-bet response",
+   "off_path": false,
+   "opp_arriving_combos": [
+    null,
+    null
+   ],
+   "reach_combos": 199.21,
+   "mix": {
+    "Fold": 0.5132,
+    "Call 8": 0.3459,
+    "4-bet 17.2": 0.0001,
+    "All-in 29.9": 0.1408
+   },
+   "ev_loss_of_mean_vs_each_step_bb": [
+    0.5438,
+    0.1987
+   ],
+   "unstable_combos": 156.78,
+   "hands": {
+    "55": {
+     "combos": 5.999,
+     "freq": {
+      "Fold": 0.5001,
+      "Call 8": 0.4999,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.223,
+      "4-bet 17.2": -5.48,
+      "All-in 29.9": -4.834
+     },
+     "gap_bb": 1.1114,
+     "unstable_across_steps": true
+    },
+    "66": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.682,
+      "4-bet 17.2": -5.792,
+      "All-in 29.9": -4.803
+     },
+     "gap_bb": 0.571,
+     "unstable_across_steps": true
+    },
+    "77": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -1.875,
+      "4-bet 17.2": -5.595,
+      "All-in 29.9": -5.217
+     },
+     "gap_bb": 0.2359,
+     "unstable_across_steps": true
+    },
+    "88": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.999,
+      "Call 8": 0.0009,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.444,
+      "4-bet 17.2": -6.024,
+      "All-in 29.9": -4.741
+     },
+     "gap_bb": 1.3333,
+     "unstable_across_steps": false
+    },
+    "A8o": {
+     "combos": 0.004,
+     "freq": {
+      "Fold": 1.0,
+      "Call 8": 0.0,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -4.461,
+      "4-bet 17.2": -8.598,
+      "All-in 29.9": -6.916
+     },
+     "gap_bb": 2.3502,
+     "unstable_across_steps": false
+    },
+    "99": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.003,
+      "4-bet 17.2": -4.604,
+      "All-in 29.9": -4.583
+     },
+     "gap_bb": 0.1077,
+     "unstable_across_steps": true
+    },
+    "A9o": {
+     "combos": 2.459,
+     "freq": {
+      "Fold": 1.0,
+      "Call 8": 0.0,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -4.424,
+      "4-bet 17.2": -8.602,
+      "All-in 29.9": -7.475
+     },
+     "gap_bb": 2.3124,
+     "unstable_across_steps": false
+    },
+    "TT": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.0,
+      "Call 8": 0.4224,
+      "4-bet 17.2": 0.0002,
+      "All-in 29.9": 0.5774
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -1.256,
+      "4-bet 17.2": -1.498,
+      "All-in 29.9": -1.131
+     },
+     "gap_bb": 0.125,
+     "unstable_across_steps": true
+    },
+    "QTo": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 1.0,
+      "Call 8": 0.0,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -4.066,
+      "4-bet 17.2": -7.674,
+      "All-in 29.9": -5.734
+     },
+     "gap_bb": 1.9549,
+     "unstable_across_steps": false
+    },
+    "KTo": {
+     "combos": 5.213,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.737,
+      "4-bet 17.2": -7.314,
+      "All-in 29.9": -6.669
+     },
+     "gap_bb": 0.626,
+     "unstable_across_steps": true
+    },
+    "ATo": {
+     "combos": 11.992,
+     "freq": {
+      "Fold": 1.0,
+      "Call 8": 0.0,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -4.497,
+      "4-bet 17.2": -8.319,
+      "All-in 29.9": -6.708
+     },
+     "gap_bb": 2.3857,
+     "unstable_across_steps": false
+    },
+    "JTs": {
+     "combos": 3.986,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.693,
+      "4-bet 17.2": -4.77,
+      "All-in 29.9": -3.716
+     },
+     "gap_bb": 0.5817,
+     "unstable_across_steps": true
+    },
+    "JJ": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.0,
+      "Call 8": 0.0,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": 1.796,
+      "4-bet 17.2": -0.794,
+      "All-in 29.9": 2.851
+     },
+     "gap_bb": 1.0542,
+     "unstable_across_steps": false
+    },
+    "QJo": {
+     "combos": 0.537,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -1.84,
+      "4-bet 17.2": -5.563,
+      "All-in 29.9": -5.038
+     },
+     "gap_bb": 0.2709,
+     "unstable_across_steps": true
+    },
+    "KJo": {
+     "combos": 11.987,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.766,
+      "4-bet 17.2": -5.951,
+      "All-in 29.9": -4.883
+     },
+     "gap_bb": 0.6551,
+     "unstable_across_steps": true
+    },
+    "AJo": {
+     "combos": 11.998,
+     "freq": {
+      "Fold": 0.8675,
+      "Call 8": 0.1325,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.322,
+      "4-bet 17.2": -6.743,
+      "All-in 29.9": -4.939
+     },
+     "gap_bb": 1.2112,
+     "unstable_across_steps": true
+    },
+    "Q9s": {
+     "combos": 0.004,
+     "freq": {
+      "Fold": 0.5001,
+      "Call 8": 0.4999,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.977,
+      "4-bet 17.2": -6.952,
+      "All-in 29.9": -5.814
+     },
+     "gap_bb": 0.8655,
+     "unstable_across_steps": true
+    },
+    "QTs": {
+     "combos": 3.997,
+     "freq": {
+      "Fold": 0.9995,
+      "Call 8": 0.0005,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.292,
+      "4-bet 17.2": -5.816,
+      "All-in 29.9": -4.306
+     },
+     "gap_bb": 1.1811,
+     "unstable_across_steps": false
+    },
+    "QJs": {
+     "combos": 3.999,
+     "freq": {
+      "Fold": 0.0012,
+      "Call 8": 0.9988,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -1.244,
+      "4-bet 17.2": -3.877,
+      "All-in 29.9": -3.572
+     },
+     "gap_bb": 0.8673,
+     "unstable_across_steps": false
+    },
+    "QQ": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.0,
+      "Call 8": 0.5002,
+      "4-bet 17.2": 0.0002,
+      "All-in 29.9": 0.4996
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": 5.568,
+      "4-bet 17.2": 5.209,
+      "All-in 29.9": 4.8
+     },
+     "gap_bb": 0.3597,
+     "unstable_across_steps": true
+    },
+    "KQo": {
+     "combos": 11.997,
+     "freq": {
+      "Fold": 0.5022,
+      "Call 8": 0.4978,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.101,
+      "4-bet 17.2": -5.957,
+      "All-in 29.9": -4.662
+     },
+     "gap_bb": 0.9894,
+     "unstable_across_steps": true
+    },
+    "AQo": {
+     "combos": 12.0,
+     "freq": {
+      "Fold": 0.5001,
+      "Call 8": 0.4999,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.103,
+      "4-bet 17.2": -6.006,
+      "All-in 29.9": -5.05
+     },
+     "gap_bb": 0.9918,
+     "unstable_across_steps": true
+    },
+    "K8s": {
+     "combos": 0.048,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.684,
+      "4-bet 17.2": -6.882,
+      "All-in 29.9": -5.891
+     },
+     "gap_bb": 0.5724,
+     "unstable_across_steps": true
+    },
+    "K9s": {
+     "combos": 3.967,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.608,
+      "4-bet 17.2": -6.509,
+      "All-in 29.9": -5.819
+     },
+     "gap_bb": 0.4965,
+     "unstable_across_steps": true
+    },
+    "KTs": {
+     "combos": 3.999,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -1.965,
+      "4-bet 17.2": -5.278,
+      "All-in 29.9": -4.738
+     },
+     "gap_bb": 0.1457,
+     "unstable_across_steps": true
+    },
+    "KJs": {
+     "combos": 4.0,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.095,
+      "4-bet 17.2": -4.357,
+      "All-in 29.9": -3.655
+     },
+     "gap_bb": 0.0162,
+     "unstable_across_steps": true
+    },
+    "KQs": {
+     "combos": 4.0,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.279,
+      "4-bet 17.2": -4.109,
+      "All-in 29.9": -3.121
+     },
+     "gap_bb": 0.1681,
+     "unstable_across_steps": true
+    },
+    "KK": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.0,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0009,
+      "All-in 29.9": 0.4991
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": 9.207,
+      "4-bet 17.2": 8.948,
+      "All-in 29.9": 8.425
+     },
+     "gap_bb": 0.2593,
+     "unstable_across_steps": true
+    },
+    "AKo": {
+     "combos": 12.0,
+     "freq": {
+      "Fold": 0.4721,
+      "Call 8": 0.0001,
+      "4-bet 17.2": 0.0001,
+      "All-in 29.9": 0.5277
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.845,
+      "4-bet 17.2": -2.284,
+      "All-in 29.9": -1.642
+     },
+     "gap_bb": 0.4694,
+     "unstable_across_steps": true
+    },
+    "A5s": {
+     "combos": 3.032,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.706,
+      "4-bet 17.2": -5.395,
+      "All-in 29.9": -4.701
+     },
+     "gap_bb": 0.5945,
+     "unstable_across_steps": true
+    },
+    "A6s": {
+     "combos": 0.014,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.44,
+      "4-bet 17.2": -6.47,
+      "All-in 29.9": -5.58
+     },
+     "gap_bb": 0.3284,
+     "unstable_across_steps": true
+    },
+    "A7s": {
+     "combos": 3.981,
+     "freq": {
+      "Fold": 0.9998,
+      "Call 8": 0.0002,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.601,
+      "4-bet 17.2": -6.676,
+      "All-in 29.9": -5.672
+     },
+     "gap_bb": 1.4899,
+     "unstable_across_steps": false
+    },
+    "A8s": {
+     "combos": 3.995,
+     "freq": {
+      "Fold": 0.5007,
+      "Call 8": 0.4993,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.298,
+      "4-bet 17.2": -6.933,
+      "All-in 29.9": -5.64
+     },
+     "gap_bb": 1.1866,
+     "unstable_across_steps": true
+    },
+    "A9s": {
+     "combos": 3.999,
+     "freq": {
+      "Fold": 0.8273,
+      "Call 8": 0.1727,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.395,
+      "4-bet 17.2": -6.446,
+      "All-in 29.9": -5.165
+     },
+     "gap_bb": 1.2842,
+     "unstable_across_steps": true
+    },
+    "ATs": {
+     "combos": 4.0,
+     "freq": {
+      "Fold": 0.9998,
+      "Call 8": 0.0002,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -3.62,
+      "4-bet 17.2": -5.969,
+      "All-in 29.9": -4.496
+     },
+     "gap_bb": 1.5086,
+     "unstable_across_steps": false
+    },
+    "AJs": {
+     "combos": 4.0,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.433,
+      "4-bet 17.2": -4.832,
+      "All-in 29.9": -3.729
+     },
+     "gap_bb": 0.3216,
+     "unstable_across_steps": true
+    },
+    "AQs": {
+     "combos": 4.0,
+     "freq": {
+      "Fold": 0.5,
+      "Call 8": 0.5,
+      "4-bet 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -2.336,
+      "4-bet 17.2": -4.215,
+      "All-in 29.9": -3.502
+     },
+     "gap_bb": 0.2244,
+     "unstable_across_steps": true
+    },
+    "AKs": {
+     "combos": 4.0,
+     "freq": {
+      "Fold": 0.0,
+      "Call 8": 0.1832,
+      "4-bet 17.2": 0.0009,
+      "All-in 29.9": 0.8159
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": -1.375,
+      "4-bet 17.2": -0.758,
+      "All-in 29.9": -0.538
+     },
+     "gap_bb": 0.2202,
+     "unstable_across_steps": true
+    },
+    "AA": {
+     "combos": 6.0,
+     "freq": {
+      "Fold": 0.0,
+      "Call 8": 0.4999,
+      "4-bet 17.2": 0.0001,
+      "All-in 29.9": 0.5
+     },
+     "ev_bb": {
+      "Fold": -2.111,
+      "Call 8": 15.123,
+      "4-bet 17.2": 15.273,
+      "All-in 29.9": 14.662
+     },
+     "gap_bb": 0.1508,
+     "unstable_across_steps": true
+    }
+   }
+  },
+  {
+   "path": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3,
+    0,
+    2
+   ],
+   "actor": "SB",
+   "actions": [
+    "Fold",
+    "Call 17.2",
+    "All-in 29.9"
+   ],
+   "scope": "deep (after 4-bet / jam): research",
+   "off_path": true,
+   "opp_arriving_combos": [
+    0.0029,
+    0.0235
+   ],
+   "reach_combos": 3.86,
+   "mix": {
+    "Fold": 0.3066,
+    "Call 17.2": 0.3008,
+    "All-in 29.9": 0.3925
+   },
+   "ev_loss_of_mean_vs_each_step_bb": [
+    0.7123,
+    0.4079
+   ],
+   "unstable_combos": 3.17,
+   "hands": {
+    "22": {
+     "combos": 0.003,
+     "freq": {
+      "Fold": 0.9998,
+      "Call 17.2": 0.0001,
+      "All-in 29.9": 0.0001
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -14.284,
+      "All-in 29.9": -12.795
+     },
+     "gap_bb": 4.6841,
+     "unstable_across_steps": false
+    },
+    "33": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 0.0038,
+      "Call 17.2": 0.9962,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -5.17,
+      "All-in 29.9": -13.088
+     },
+     "gap_bb": 2.9409,
+     "unstable_across_steps": false
+    },
+    "44": {
+     "combos": 0.015,
+     "freq": {
+      "Fold": 0.0017,
+      "Call 17.2": 0.9983,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -3.787,
+      "All-in 29.9": -12.123
+     },
+     "gap_bb": 4.3245,
+     "unstable_across_steps": false
+    },
+    "K6o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -17.016,
+      "All-in 29.9": -17.44
+     },
+     "gap_bb": 8.9053,
+     "unstable_across_steps": false
+    },
+    "A6o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -13.783,
+      "All-in 29.9": -13.545
+     },
+     "gap_bb": 5.4336,
+     "unstable_across_steps": false
+    },
+    "77": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 0.9906,
+      "Call 17.2": 0.0093,
+      "All-in 29.9": 0.0001
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -10.857,
+      "All-in 29.9": -11.915
+     },
+     "gap_bb": 2.7458,
+     "unstable_across_steps": false
+    },
+    "J7o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -15.922,
+      "All-in 29.9": -15.605
+     },
+     "gap_bb": 7.494,
+     "unstable_across_steps": false
+    },
+    "88": {
+     "combos": 0.076,
+     "freq": {
+      "Fold": 0.9998,
+      "Call 17.2": 0.0001,
+      "All-in 29.9": 0.0001
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -13.748,
+      "All-in 29.9": -11.686
+     },
+     "gap_bb": 3.5754,
+     "unstable_across_steps": false
+    },
+    "98o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -19.708,
+      "All-in 29.9": -16.192
+     },
+     "gap_bb": 8.0804,
+     "unstable_across_steps": false
+    },
+    "A8o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -15.516,
+      "All-in 29.9": -13.806
+     },
+     "gap_bb": 5.6951,
+     "unstable_across_steps": false
+    },
+    "99": {
+     "combos": 0.272,
+     "freq": {
+      "Fold": 0.7956,
+      "Call 17.2": 0.1464,
+      "All-in 29.9": 0.058
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -10.764,
+      "All-in 29.9": -11.36
+     },
+     "gap_bb": 2.6527,
+     "unstable_across_steps": true
+    },
+    "A9o": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -14.094,
+      "All-in 29.9": -14.241
+     },
+     "gap_bb": 5.9834,
+     "unstable_across_steps": false
+    },
+    "TT": {
+     "combos": 1.138,
+     "freq": {
+      "Fold": 0.3941,
+      "Call 17.2": 0.1417,
+      "All-in 29.9": 0.4642
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -7.856,
+      "All-in 29.9": -6.461
+     },
+     "gap_bb": 1.3957,
+     "unstable_across_steps": true
+    },
+    "JTo": {
+     "combos": 0.003,
+     "freq": {
+      "Fold": 0.9351,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0649
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -16.006,
+      "All-in 29.9": -12.79
+     },
+     "gap_bb": 4.6789,
+     "unstable_across_steps": false
+    },
+    "KTo": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -15.531,
+      "All-in 29.9": -16.184
+     },
+     "gap_bb": 7.4203,
+     "unstable_across_steps": false
+    },
+    "ATo": {
+     "combos": 0.004,
+     "freq": {
+      "Fold": 1.0,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -15.34,
+      "All-in 29.9": -13.594
+     },
+     "gap_bb": 5.483,
+     "unstable_across_steps": false
+    },
+    "JJ": {
+     "combos": 0.031,
+     "freq": {
+      "Fold": 0.0571,
+      "Call 17.2": 0.1753,
+      "All-in 29.9": 0.7676
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -2.811,
+      "All-in 29.9": -1.681
+     },
+     "gap_bb": 1.1301,
+     "unstable_across_steps": true
+    },
+    "KJo": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 0.873,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.127
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -15.302,
+      "All-in 29.9": -13.98
+     },
+     "gap_bb": 5.8694,
+     "unstable_across_steps": true
+    },
+    "AJo": {
+     "combos": 0.01,
+     "freq": {
+      "Fold": 0.8058,
+      "Call 17.2": 0.0,
+      "All-in 29.9": 0.1942
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -13.299,
+      "All-in 29.9": -10.602
+     },
+     "gap_bb": 2.491,
+     "unstable_across_steps": true
+    },
+    "QQ": {
+     "combos": 0.391,
+     "freq": {
+      "Fold": 0.0,
+      "Call 17.2": 0.6166,
+      "All-in 29.9": 0.3834
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": 1.322,
+      "All-in 29.9": 0.288
+     },
+     "gap_bb": 1.0341,
+     "unstable_across_steps": false
+    },
+    "KQo": {
+     "combos": 0.034,
+     "freq": {
+      "Fold": 0.8308,
+      "Call 17.2": 0.1109,
+      "All-in 29.9": 0.0583
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -13.921,
+      "All-in 29.9": -13.771
+     },
+     "gap_bb": 5.6601,
+     "unstable_across_steps": true
+    },
+    "AQo": {
+     "combos": 0.455,
+     "freq": {
+      "Fold": 0.7379,
+      "Call 17.2": 0.1182,
+      "All-in 29.9": 0.1439
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -11.497,
+      "All-in 29.9": -11.235
+     },
+     "gap_bb": 3.1236,
+     "unstable_across_steps": true
+    },
+    "KK": {
+     "combos": 0.168,
+     "freq": {
+      "Fold": 0.0,
+      "Call 17.2": 0.9852,
+      "All-in 29.9": 0.0148
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": 11.169,
+      "All-in 29.9": 9.534
+     },
+     "gap_bb": 1.6354,
+     "unstable_across_steps": false
+    },
+    "AKo": {
+     "combos": 0.174,
+     "freq": {
+      "Fold": 0.0537,
+      "Call 17.2": 0.1656,
+      "All-in 29.9": 0.7807
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -7.303,
+      "All-in 29.9": -5.762
+     },
+     "gap_bb": 1.541,
+     "unstable_across_steps": true
+    },
+    "AJs": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 0.6576,
+      "Call 17.2": 0.1054,
+      "All-in 29.9": 0.2371
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -10.241,
+      "All-in 29.9": -9.057
+     },
+     "gap_bb": 0.9461,
+     "unstable_across_steps": true
+    },
+    "AQs": {
+     "combos": 0.034,
+     "freq": {
+      "Fold": 0.621,
+      "Call 17.2": 0.1887,
+      "All-in 29.9": 0.1904
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -9.185,
+      "All-in 29.9": -9.321
+     },
+     "gap_bb": 1.0742,
+     "unstable_across_steps": true
+    },
+    "AKs": {
+     "combos": 0.456,
+     "freq": {
+      "Fold": 0.0,
+      "Call 17.2": 0.3295,
+      "All-in 29.9": 0.6705
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": -4.952,
+      "All-in 29.9": -4.113
+     },
+     "gap_bb": 0.8386,
+     "unstable_across_steps": true
+    },
+    "AA": {
+     "combos": 0.562,
+     "freq": {
+      "Fold": 0.0,
+      "Call 17.2": 0.5112,
+      "All-in 29.9": 0.4888
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 17.2": 21.128,
+      "All-in 29.9": 20.754
+     },
+     "gap_bb": 0.3747,
+     "unstable_across_steps": true
+    }
+   }
+  },
+  {
+   "path": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3,
+    0,
+    3
+   ],
+   "actor": "SB",
+   "actions": [
+    "Fold",
+    "Call 29.9"
+   ],
+   "scope": "deep (after 4-bet / jam): research",
+   "off_path": false,
+   "opp_arriving_combos": [
+    11.5993,
+    44.5056
+   ],
+   "reach_combos": 3.86,
+   "mix": {
+    "Fold": 0.3468,
+    "Call 29.9": 0.6532
+   },
+   "ev_loss_of_mean_vs_each_step_bb": [
+    0.015,
+    0.0356
+   ],
+   "unstable_combos": 1.21,
+   "hands": {
+    "22": {
+     "combos": 0.003,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -11.63
+     },
+     "gap_bb": 3.5187,
+     "unstable_across_steps": false
+    },
+    "33": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -11.389
+     },
+     "gap_bb": 3.2779,
+     "unstable_across_steps": false
+    },
+    "44": {
+     "combos": 0.015,
+     "freq": {
+      "Fold": 0.9999,
+      "Call 29.9": 0.0001
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -10.602
+     },
+     "gap_bb": 2.4912,
+     "unstable_across_steps": false
+    },
+    "K6o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -15.03
+     },
+     "gap_bb": 6.9185,
+     "unstable_across_steps": false
+    },
+    "A6o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -13.993
+     },
+     "gap_bb": 5.8823,
+     "unstable_across_steps": false
+    },
+    "77": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -11.138
+     },
+     "gap_bb": 3.0268,
+     "unstable_across_steps": false
+    },
+    "J7o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -17.228
+     },
+     "gap_bb": 9.1171,
+     "unstable_across_steps": false
+    },
+    "88": {
+     "combos": 0.076,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -10.638
+     },
+     "gap_bb": 2.5265,
+     "unstable_across_steps": false
+    },
+    "98o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -15.96
+     },
+     "gap_bb": 7.8493,
+     "unstable_across_steps": false
+    },
+    "A8o": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -13.734
+     },
+     "gap_bb": 5.6227,
+     "unstable_across_steps": false
+    },
+    "99": {
+     "combos": 0.272,
+     "freq": {
+      "Fold": 0.9999,
+      "Call 29.9": 0.0001
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -10.363
+     },
+     "gap_bb": 2.2516,
+     "unstable_across_steps": false
+    },
+    "A9o": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -14.874
+     },
+     "gap_bb": 6.7629,
+     "unstable_across_steps": false
+    },
+    "TT": {
+     "combos": 1.138,
+     "freq": {
+      "Fold": 0.3882,
+      "Call 29.9": 0.6118
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -8.11
+     },
+     "gap_bb": 0.0008,
+     "unstable_across_steps": true
+    },
+    "JTo": {
+     "combos": 0.003,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -14.545
+     },
+     "gap_bb": 6.4336,
+     "unstable_across_steps": false
+    },
+    "KTo": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -14.085
+     },
+     "gap_bb": 5.9743,
+     "unstable_across_steps": false
+    },
+    "ATo": {
+     "combos": 0.004,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -14.098
+     },
+     "gap_bb": 5.9864,
+     "unstable_across_steps": false
+    },
+    "JJ": {
+     "combos": 0.031,
+     "freq": {
+      "Fold": 0.0,
+      "Call 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": 0.612
+     },
+     "gap_bb": 8.7233,
+     "unstable_across_steps": false
+    },
+    "KJo": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -12.849
+     },
+     "gap_bb": 4.7374,
+     "unstable_across_steps": false
+    },
+    "AJo": {
+     "combos": 0.01,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -12.614
+     },
+     "gap_bb": 4.5028,
+     "unstable_across_steps": false
+    },
+    "QQ": {
+     "combos": 0.391,
+     "freq": {
+      "Fold": 0.0,
+      "Call 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": 8.336
+     },
+     "gap_bb": 16.4475,
+     "unstable_across_steps": false
+    },
+    "KQo": {
+     "combos": 0.034,
+     "freq": {
+      "Fold": 0.5032,
+      "Call 29.9": 0.4968
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -10.133
+     },
+     "gap_bb": 2.0215,
+     "unstable_across_steps": true
+    },
+    "AQo": {
+     "combos": 0.455,
+     "freq": {
+      "Fold": 0.9851,
+      "Call 29.9": 0.0149
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -10.058
+     },
+     "gap_bb": 1.9472,
+     "unstable_across_steps": false
+    },
+    "KK": {
+     "combos": 0.168,
+     "freq": {
+      "Fold": 0.0,
+      "Call 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": 13.318
+     },
+     "gap_bb": 21.4288,
+     "unstable_across_steps": false
+    },
+    "AKo": {
+     "combos": 0.174,
+     "freq": {
+      "Fold": 0.0,
+      "Call 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -4.147
+     },
+     "gap_bb": 3.9641,
+     "unstable_across_steps": false
+    },
+    "AJs": {
+     "combos": 0.002,
+     "freq": {
+      "Fold": 1.0,
+      "Call 29.9": 0.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -10.728
+     },
+     "gap_bb": 2.617,
+     "unstable_across_steps": false
+    },
+    "AQs": {
+     "combos": 0.034,
+     "freq": {
+      "Fold": 0.4999,
+      "Call 29.9": 0.5001
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -7.656
+     },
+     "gap_bb": 0.4552,
+     "unstable_across_steps": true
+    },
+    "AKs": {
+     "combos": 0.456,
+     "freq": {
+      "Fold": 0.0,
+      "Call 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": -2.854
+     },
+     "gap_bb": 5.257,
+     "unstable_across_steps": false
+    },
+    "AA": {
+     "combos": 0.562,
+     "freq": {
+      "Fold": 0.0,
+      "Call 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -8.111,
+      "Call 29.9": 20.214
+     },
+     "gap_bb": 28.3247,
+     "unstable_across_steps": false
+    }
+   }
+  },
+  {
+   "path": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3,
+    0,
+    2,
+    2
+   ],
+   "actor": "UTG+1",
+   "actions": [
+    "Fold",
+    "Call 29.9"
+   ],
+   "scope": "deep (after 4-bet / jam): research",
+   "off_path": false,
+   "opp_arriving_combos": [
+    1.3213,
+    1.7057
+   ],
+   "reach_combos": 0.01,
+   "mix": {
+    "Fold": 0.0013,
+    "Call 29.9": 0.9987
+   },
+   "ev_loss_of_mean_vs_each_step_bb": [
+    0.0492,
+    0.0039
+   ],
+   "unstable_combos": 0.0,
+   "hands": {
+    "TT": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 0.0002,
+      "Call 29.9": 0.9998
+     },
+     "ev_bb": {
+      "Fold": -17.311,
+      "Call 29.9": -3.061
+     },
+     "gap_bb": 14.2498,
+     "unstable_across_steps": false
+    },
+    "QQ": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 0.0001,
+      "Call 29.9": 0.9999
+     },
+     "ev_bb": {
+      "Fold": -17.311,
+      "Call 29.9": 7.061
+     },
+     "gap_bb": 24.3721,
+     "unstable_across_steps": false
+    },
+    "KK": {
+     "combos": 0.005,
+     "freq": {
+      "Fold": 0.0,
+      "Call 29.9": 1.0
+     },
+     "ev_bb": {
+      "Fold": -17.311,
+      "Call 29.9": 10.7
+     },
+     "gap_bb": 28.0112,
+     "unstable_across_steps": false
+    },
+    "AKo": {
+     "combos": 0.001,
+     "freq": {
+      "Fold": 0.001,
+      "Call 29.9": 0.999
+     },
+     "ev_bb": {
+      "Fold": -17.311,
+      "Call 29.9": -4.899
+     },
+     "gap_bb": 12.4123,
+     "unstable_across_steps": false
+    },
+    "AKs": {
+     "combos": 0.004,
+     "freq": {
+      "Fold": 0.0001,
+      "Call 29.9": 0.9999
+     },
+     "ev_bb": {
+      "Fold": -17.311,
+      "Call 29.9": -3.319
+     },
+     "gap_bb": 13.992,
+     "unstable_across_steps": false
+    }
+   }
+  }
+ ]
+}
