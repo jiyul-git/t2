@@ -14,3 +14,4 @@ DONE p40v1_co_vs_sb_3b40 2026-10-21T23:33:26Z
 START p40v1_utg1_vs_sb_3b40 2026-10-21T23:33:26Z
 RESUME40_START 2026-10-22T03:12:47Z
 START p40v1_utg1_vs_sb_3b40 2026-10-22T03:12:47Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {":fold|BTN:fold|SB:raise@8.000000|BB:fold|UTG+1:call@8.000000": {"UTG+1": [2.280825042172776, 1.16], "SB": [2.3970954547446466, 0.718]}, "ise@8.000000|BB:fold|UTG+1:raise@17.200000|SB:call@17.200000": {"UTG+1": [12.361729695921065, 1.263], "SB": [12.047252059969955, 0.893]}}}
