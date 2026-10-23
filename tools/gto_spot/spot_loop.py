@@ -52,7 +52,8 @@ def panel_setup():
 
 
 def retry_flops(term_file, flops_dir, panel, is_m, bad):
-    """standard amendment 11 (a): one retry at 3x the iteration budget for each unconverged board; the first artifact is kept"""
+    """amendment 11 (a), CFR+ variant (docs/GTO_AMENDMENT_CFRPLUS_RETRY.md): one retry with T2_ALGO=cfr+ at the same iteration budget and
+    target for each unconverged board; the first (DCFR) artifact is kept"""
     os.makedirs(os.path.join(flops_dir, 'first_attempt'), exist_ok=True)
     procs = []   # the retries run in parallel (one thread each): a single 3x retry can take longer than the 2 h task limit
     for b in bad:
@@ -61,12 +62,12 @@ def retry_flops(term_file, flops_dir, panel, is_m, bad):
         src = os.path.join(flops_dir, b['board'] + '.json')
         target = json.load(open(src))['provenance_key']['target_exploitability_pct_pot']   # same target as the first attempt
         os.replace(src, os.path.join(flops_dir, 'first_attempt', b['board'] + '.json'))
-        env = dict(os.environ, T2_PANEL_BOARDS=b['board'], RAYON_NUM_THREADS='1',
+        env = dict(os.environ, T2_PANEL_BOARDS=b['board'], RAYON_NUM_THREADS='1', T2_ALGO='cfr+',
                    T2_SOURCE_COMMIT=subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip())
         if is_m:
             env['T2_PANEL_MATRIX'] = '1'
         procs.append(subprocess.Popen([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
-                        str(3 * b['iterations']), str(target), '25'], env=env,
+                        str(b['iterations']), str(target), '25'], env=env,
                        stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT))
     for p_ in procs:
         if p_.wait() != 0:
@@ -255,7 +256,7 @@ class Loop:
                                     '--workers', os.environ.get('SPOT_PANEL_WORKERS', '4'), '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
                     open(fd + '/done', 'w').write('ok')
                 bad = flop_failures(fd)
-                if bad and self.v4:   # amendment 11 (a): one retry at 3x the budget
+                if bad and self.v4:   # amendment 11 (a) CFR+ variant: one retry with CFR+ at the same budget
                     first = bad
                     bad = retry_flops(tf, fd, PANEL, is_m, first)
                     rep.setdefault('flop_retries', []).append({'terminal': j, 'first': first, 'after_retry': bad})
