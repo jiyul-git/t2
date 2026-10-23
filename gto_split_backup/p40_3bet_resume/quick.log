@@ -1,1 +1,8 @@
 START p40v1_utg_vs_btn 2026-10-23T05:43:46Z
+{"k": 2, "decision": "stop: not converged after 3 steps", "terminals": {"CO:fold|BTN:raise@6.000000|SB:fold|BB:fold|UTG:call@6.000000": {"UTG": [0.5173557371313456, 1.0], "BTN": [0.6582801804245102, 0.528]}, "00000|SB:fold|BB:fold|UTG:raise@14.100000|BTN:call@14.100000": {"UTG": [1.6305233844297657, 0.844], "BTN": [2.7147637113744754, 0.447]}}}
+final 2 converged False
+p40v1_utg_vs_btn step 1 solved
+p40v1_utg_vs_btn step 2 solved
+p40v1_utg_vs_btn mean_of_last_2_steps [1, 2] root UTG {'Fold': 0.5856, 'Call 6': 0.3135, '4-bet 14.1': 0.0001, 'All-in 39.9': 0.1009} unstable 44.24 loss [0.0287, 0.0272]
+DONE p40v1_utg_vs_btn 2026-10-23T06:10:15Z
+QUICK_PASS_END 2026-10-23T06:10:15Z
