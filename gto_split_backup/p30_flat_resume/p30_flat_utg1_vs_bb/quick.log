@@ -15,3 +15,11 @@ START p30_flat_utg1_vs_bb 2026-10-22T09:59:00Z
 {"k": 0, "decision": "continue (minimum one update)", "terminals": {"ld|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.000000": {"UTG+1": [null, 0.236], "BB": [null, 0.383]}, ":fold|BTN:fold|SB:fold|BB:raise@7.000000|UTG+1:call@7.000000": {"UTG+1": [4.585808558719385, 0.484], "BB": [4.509241702708215, 0.776]}, ":fold|BTN:fold|SB:fold|BB:raise@8.000000|UTG+1:call@8.000000": {"UTG+1": [4.959490445229249, 0.508], "BB": [5.030437243028263, 0.854]}}}
 START p30_flat_utg1_vs_bb 2026-10-23T05:45:24Z
 {"k": 1, "decision": "continue", "terminals": {"ld|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.000000": {"UTG+1": [0.33616475897861275, 0.262], "BB": [0.07017906878048959, 0.426]}, ":fold|BTN:fold|SB:fold|BB:raise@7.000000|UTG+1:call@7.000000": {"UTG+1": [1.095810114233616, 0.671], "BB": [1.245165454990168, 0.538]}, ":fold|BTN:fold|SB:fold|BB:raise@8.000000|UTG+1:call@8.000000": {"UTG+1": [1.0589011609315084, 0.524], "BB": [0.7486844038098234, 0.835]}}}
+{"k": 2, "decision": "stop: not converged after 3 steps", "terminals": {"ld|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.000000": {"UTG+1": [0.12483677203228974, 0.256], "BB": [0.0240992001558237, 0.416]}, ":fold|BTN:fold|SB:fold|BB:raise@7.000000|UTG+1:call@7.000000": {"UTG+1": [0.5274180450039281, 0.616], "BB": [0.5602776259893844, 0.644]}, ":fold|BTN:fold|SB:fold|BB:raise@8.000000|UTG+1:call@8.000000": {"UTG+1": [0.8354401158493788, 0.891], "BB": [1.3966034117201835, 0.695]}}}
+final 2 converged False
+p30_flat_utg1_vs_bb step 0 solved
+p30_flat_utg1_vs_bb step 1 solved
+p30_flat_utg1_vs_bb step 2 solved
+p30_flat_utg1_vs_bb mean_of_last_3_steps [0, 1, 2] root BB {'Fold': 0.1893, 'Call 2': 0.7618, '3-bet 7': 0.0221, '3-bet 8': 0.0108, 'All-in 29.9': 0.016} unstable 592.0 loss [0.1178, 0.0411, 0.0331]
+DONE p30_flat_utg1_vs_bb 2026-10-23T08:27:01Z
+QUICK_PASS_END 2026-10-23T08:27:01Z
