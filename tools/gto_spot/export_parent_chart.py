@@ -24,6 +24,10 @@ def lab169():
     return out
 
 
+def combos(lab):
+    return 6 if len(lab) == 2 else (4 if lab[2] == 's' else 12)
+
+
 def kind(line, actor):
     acts = [t.split(':', 1) for t in line]
     aggr = [(p, a) for p, a in acts if not a.startswith('Fold')]
@@ -52,7 +56,7 @@ def main():
         reach = d['actor_reach']
         hands = {}
         for h, lab in enumerate(L):
-            c = reach[h] * 1326   # actor_reach is the class probability (combos / 1326 at the root): arriving combos = reach x 1326
+            c = reach[h] * combos(lab)
             if c < 1e-3:
                 continue
             hands[lab] = {'combos': round(c, 3),

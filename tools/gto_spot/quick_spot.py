@@ -62,16 +62,10 @@ def main():
     st = json.load(open(sroot + 'state.json'))
     converged = bool(st.get('converged'))
     last = int(st.get('final_step', st.get('k')))
-    rl = sroot + f'step{last}/report.json'
-    capped = (not converged) and os.path.exists(rl) and str(json.load(open(rl)).get('decision', '')).startswith('stop: not converged after')
-    if capped:
-        MEAN_STEPS_ = 2   # user decision 2026-10-20: stopped at the step cap -> mean of the last 2 steps
-    else:
-        MEAN_STEPS_ = MEAN_STEPS
     if len(sys.argv) > 3:
         steps = [int(x) for x in sys.argv[3].split(',')]
     else:
-        steps = [last] if converged else list(range(max(0, last - MEAN_STEPS_ + 1), last + 1))
+        steps = [last] if converged else list(range(max(0, last - MEAN_STEPS + 1), last + 1))
     method = 'converged_final_step' if converged and len(steps) == 1 else f'mean_of_last_{len(steps)}_steps'
     t0 = time.time()
     walks = []
@@ -124,8 +118,6 @@ def main():
            'tree': spec.get('tree_label'), 'stack_assumption': 'symmetric stacks (all seats at the bucket stack); lookup by effective stack',
            'method': method, 'steps': steps, 'loop_converged': converged, 'final_step': last,
            'stop_reason': st.get('stop_reason'),
-           'stopped_at_step_cap': bool(capped),
-           'status_note': ('stopped at the step cap (' + str(last + 1) + ' steps), not converged; mean of the last ' + str(len(steps)) + ' steps (user decision 2026-10-20)') if capped else None,
            'notes': ['frequencies at off_path nodes are not meaningful (opponent arrives with < 1 combo)',
                      'deep nodes (after the 4-bet) are research; connection uses the 3-bet response only',
                      'unstable_across_steps: class moved > 10 pp between the averaged steps (near-indifferent or cycling)',
