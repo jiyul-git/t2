@@ -54,6 +54,7 @@ def panel_setup():
 def retry_flops(term_file, flops_dir, panel, is_m, bad):
     """standard amendment 11 (a): one retry at 3x the iteration budget for each unconverged board; the first artifact is kept"""
     os.makedirs(os.path.join(flops_dir, 'first_attempt'), exist_ok=True)
+    procs = []   # the retries run in parallel (one thread each): a single 3x retry can take longer than the 2 h task limit
     for b in bad:
         if os.path.exists(os.path.join(flops_dir, 'first_attempt', b['board'] + '.json')):
             continue   # already retried once (e.g. the P144 pass whose flops step 0 of the 144-board loop reuses)
@@ -64,9 +65,12 @@ def retry_flops(term_file, flops_dir, panel, is_m, bad):
                    T2_SOURCE_COMMIT=subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip())
         if is_m:
             env['T2_PANEL_MATRIX'] = '1'
-        subprocess.run([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
-                        str(3 * b['iterations']), str(target), '25'], env=env, check=True,
-                       stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT)
+        procs.append(subprocess.Popen([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
+                        str(3 * b['iterations']), str(target), '25'], env=env,
+                       stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT))
+    for p_ in procs:
+        if p_.wait() != 0:
+            raise subprocess.CalledProcessError(p_.returncode, p_.args)
     return flop_failures(flops_dir)
 
 
