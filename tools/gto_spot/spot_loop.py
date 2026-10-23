@@ -64,8 +64,13 @@ def retry_flops(term_file, flops_dir, panel, is_m, bad):
                    T2_SOURCE_COMMIT=subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip())
         if is_m:
             env['T2_PANEL_MATRIX'] = '1'
+        # CFR+ retry variant (docs/GTO_AMENDMENT_CFRPLUS_RETRY.md): SPOT_RETRY_ALGO=cfr+ -> same iteration budget, T2_ALGO=cfr+
+        retry_algo = os.environ.get('SPOT_RETRY_ALGO')
+        if retry_algo:
+            env['T2_ALGO'] = retry_algo
+        n_it = b['iterations'] if retry_algo else 3 * b['iterations']
         subprocess.run([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
-                        str(3 * b['iterations']), str(target), '25'], env=env, check=True,
+                        str(n_it), str(target), '25'], env=env, check=True,
                        stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT)
     return flop_failures(flops_dir)
 
