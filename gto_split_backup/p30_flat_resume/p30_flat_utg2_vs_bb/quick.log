@@ -24,3 +24,4 @@ p30_flat_utg1_vs_bb mean_of_last_3_steps [0, 1, 2] root BB {'Fold': 0.1893, 'Cal
 DONE p30_flat_utg1_vs_bb 2026-10-23T08:27:01Z
 QUICK_PASS_END 2026-10-23T08:27:01Z
 START p30_flat_utg2_vs_bb 2026-10-23T09:49:08Z
+{"k": 0, "decision": "continue (minimum one update)", "terminals": {"00|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.000000": {"UTG+2": [null, 0.24], "BB": [null, 0.381]}, ":fold|BTN:fold|SB:fold|BB:raise@7.000000|UTG+2:call@7.000000": {"UTG+2": [4.861444712780513, 0.528], "BB": [4.820519821640807, 0.851]}, ":fold|BTN:fold|SB:fold|BB:raise@8.000000|UTG+2:call@8.000000": {"UTG+2": [5.020161204411861, 0.538], "BB": [5.2690532712181675, 0.947]}}}
