@@ -1,0 +1,3 @@
+CLAIM p30_flat_resume, session on branch claude/p30_flat_resume_20261023, 2026-10-23 (coordinator-approved).
+Spots (in order): (1) p30_flat_utg1_vs_bb: resume from gto_split_backup/p30_flat_tail/p30_flat_utg1_vs_bb/step1_partial.tgz (previous owner stopped in step 1). (2) p30_flat_utg2_vs_bb unless claude/p30-flat-20261019 shows a newer push than 2026-10-21T22:55Z (checked 2026-10-23: no newer push).
+Rule: spec max_steps 3, stop earlier when converged, else mean of last 2 steps with stopped_at_step_cap true (set by hand). No P144. Parent s30 dump sha256 f8cc8ea5bbb8140bdd949b959119a7e75d84d313ce23323aa12b702b157e3671. Records pushed to this branch only.
