@@ -37,3 +37,11 @@ Correction (2026-10-19): chart_*_parent*.json `combos` / `mix` / `reach_combos` 
 narrow, e.g. 60 bb UTG 11.1 % -> 14.1 %); per-class frequencies and EVs were not affected. Fixed and regenerated (60 / 40 bb charts and PNGs).
 
 Resume manual: docs/GTO_RESUME_40BB.md (commands, restore, 100 bb parent, rules).
+
+## 40 bb with a second open size {2.0, 2.5} (branch claude/open_sizes_20261024, 2026-10-24)
+Parent `cfg_p40_o25` (= cfg_p40_v1 but UTG..BTN open {2.0, 2.5}, SB {3.0, 3.5}); 400 iterations (cap), exact gap 0.0116 bb (target 0.010 not reached; plateau ~0.012 from 325 on). Files: `chart_40bb_open25_parent.json`, `chart_40bb_open25_rfi.png`, `../records/s40_open25.json`; dump in `plan_a/transfer/p40_o25_dump.jsonl.gz`; log `plan_a/open25/`.
+- The solver puts almost all the open mass on 2.5: 2.0 is used 0.2-1.2 % (UTG 0.3, LJ 1.2, BTN 0.2, SB 3.0 0.4 vs 3.5 20.2).
+- Per-seat RFI width (2.0-only -> {2.0,2.5}): UTG 14.8 -> 14.4 %, UTG+1 16.5 -> 16.2, UTG+2 19.3 -> 18.2, LJ 22.3 -> 21.3, HJ 26.2 -> 24.6, CO 32.2 -> 30.6, BTN 41.1 -> 39.3; SB open 20.6 -> 20.7 (limp 79 % both). Ranges get 0.2-1.8 points tighter at the larger size.
+- BB vs BTN (fold / call / 3-bet / jam): 2.0-only 0 / 85.5 / 3.5 / 11.0; now vs 2.0 1.8 / 83.3 / 1.7 / 13.2, vs 2.5 0 / 85.1 / 0.1 / 14.8: the BB defends the same ~85 % and shifts 3-bets into jams.
+- BB vs UTG: vs 2.0 0.5 / 94.8 / 3.6 / 1.1; vs 2.5 0.1 / 95.4 / 2.5 / 2.1 (2.0-only 0 / 95.7 / 3.7 / 0.6). BB vs SB: 3.0 0.2 / 85.6 / 4.7 / 9.6; 3.5 9.6 / 77.2 / 0.8 / 12.4 (folds appear only vs the 3.5 open).
+- Static continuation, symmetric stacks, chip EV, quick status as in the 2.0-only records; nodes behind 2.0 are low-reach (use `reach_combos` / `unsupported_low_reach`).
