@@ -1,1 +1,0 @@
-CLAIM p60v2b_btn_vs_bb_3b40: new Claude session (session_011TJwxsbnvbQgF3L3dSFKFd), started 2026-10-13T23:36:44Z on base 21cdcfe, Python 3.11.17 / numpy 2.4.6, SPOT_PANEL_WORKERS=4; repro co_b40 and v2b co_vs_sb_3b40 matched.

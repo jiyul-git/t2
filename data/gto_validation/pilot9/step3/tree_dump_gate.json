@@ -1,9 +1,0 @@
-{
- "nodes_checked": 144,
- "missing": [],
- "sigma_max_abs": 0.0,
- "ev_max_abs": 0.0,
- "ev_max_rel": 0.0,
- "path_mismatch": 0,
- "pass_sigma_exact": true
-}
