@@ -210,7 +210,7 @@ class Loop:
                 self.save_state({'k': 0, 'tables': st24['tables'], 'matrices': st24.get('matrices', {}), 'from_step': fk})
         state = self.load_state()
         state.setdefault('matrices', {})
-        max_steps = 4 if p144 else (self.spec.get('max_steps') or (12 if self.v4 else (6 if self.v3 else MAX_STEPS)))   # quick spots cap the loop
+        max_steps = 4 if p144 else (12 if self.v4 else (6 if self.v3 else MAX_STEPS))
         for k in range(k_start, max_steps):
             sd = self.dir + (f'p144s{k}/' if p144 else f'step{k}/')
             os.makedirs(sd, exist_ok=True)

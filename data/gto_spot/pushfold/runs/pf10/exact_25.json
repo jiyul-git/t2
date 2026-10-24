@@ -1,0 +1,71 @@
+{
+  "config": {
+    "add_allin": true,
+    "allin_threshold": 0.85,
+    "ante": 0.1111111111111111,
+    "call_only_seats": [],
+    "limp": false,
+    "max_raises": 1,
+    "no_flop_no_drop": true,
+    "open_raises": [],
+    "open_raises_by_seat": null,
+    "positions": [
+      "UTG",
+      "UTG+1",
+      "UTG+2",
+      "LJ",
+      "HJ",
+      "CO",
+      "BTN",
+      "SB",
+      "BB"
+    ],
+    "posts": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.5,
+      1.0
+    ],
+    "raise_mults": [],
+    "raise_mults_by_seat": null,
+    "rake_cap": 0.0,
+    "rake_pct": 0.0,
+    "realization": "static",
+    "stack": 9.88888888888889
+  },
+  "config_file": "/home/user/t2/data/gto_spot/pushfold/cfg_pf10.json",
+  "eq_samples": 1200,
+  "evs": [
+    0.03718509092007563,
+    0.058854322762187314,
+    0.08255098472632771,
+    0.10736047540440771,
+    0.13690380673705613,
+    0.16942054194188716,
+    0.20278925731108896,
+    -0.20866259170082235,
+    -0.5857309875372743
+  ],
+  "gap_total": 0.006630689231811815,
+  "gaps": [
+    0.0004125106967688369,
+    0.0005680951234814428,
+    0.0006726855354872979,
+    0.0007868475619429299,
+    0.0008180609785229543,
+    0.0008227810959705378,
+    0.0008033901337423858,
+    0.0008435721053206505,
+    0.0009027460005747792
+  ],
+  "iterations": 25,
+  "multiway_model": "coupled_deck_v1",
+  "mw_skip_below": "0",
+  "nodes": 1021,
+  "solve_s_this_call": 2.55e-7
+}

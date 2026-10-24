@@ -25,10 +25,6 @@ else:
     CFG = f'/home/user/t2/data/gto_spot/stack3040/cfg_s{S}.json'
     STD = 'docs/GTO_STACK_30_40_V1.md'
     MENU = 'Plan A v2b parent menu: open 2.0 (SB 3.0, SB limp), 3-bet 3.0x (blinds 3.5x / 4.0x) or jam, 4-bet jam only'
-# 01BLRH... 2026-10-19: Plan A parent dirs (60 / 100 bb) via env overrides: PF_W (dir with final_n, exact_<n>.json, dump.jsonl), PF_CFG, PF_STD
-W = os.environ.get('PF_W', W)
-CFG = os.environ.get('PF_CFG', CFG)
-STD = os.environ.get('PF_STD', STD)
 OUT = f'/home/user/t2/data/gto_spot/records/{PFX}{S}.json'
 RANKS = '23456789TJQKA'
 
