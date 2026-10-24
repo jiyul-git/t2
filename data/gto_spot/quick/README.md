@@ -45,3 +45,10 @@ Parent `cfg_p40_o25` (= cfg_p40_v1 but UTG..BTN open {2.0, 2.5}, SB {3.0, 3.5});
 - BB vs BTN (fold / call / 3-bet / jam): 2.0-only 0 / 85.5 / 3.5 / 11.0; now vs 2.0 1.8 / 83.3 / 1.7 / 13.2, vs 2.5 0 / 85.1 / 0.1 / 14.8: the BB defends the same ~85 % and shifts 3-bets into jams.
 - BB vs UTG: vs 2.0 0.5 / 94.8 / 3.6 / 1.1; vs 2.5 0.1 / 95.4 / 2.5 / 2.1 (2.0-only 0 / 95.7 / 3.7 / 0.6). BB vs SB: 3.0 0.2 / 85.6 / 4.7 / 9.6; 3.5 9.6 / 77.2 / 0.8 / 12.4 (folds appear only vs the 3.5 open).
 - Static continuation, symmetric stacks, chip EV, quick status as in the 2.0-only records; nodes behind 2.0 are low-reach (use `reach_combos` / `unsupported_low_reach`).
+
+## 30 bb with a second open size {2.0, 2.5} (same branch, 2026-10-24)
+Parent `cfg_p30_o25` (= cfg_s30 but UTG..BTN open {2.0, 2.5}, SB {3.0, 3.5}); 325 iterations, exact gap 0.00969 bb (target reached). Files: `chart_30bb_open25_parent.json`, `chart_30bb_open25_rfi.png`, `../records/s30_open25.json`; dump in `plan_a/transfer/p30_o25_dump.jsonl.gz`; log `plan_a/open25/`.
+- Again 2.5 takes nearly all open mass (2.0 used 0.2-1.5 %; SB 3.5 20.1 % vs 3.0 0.1 %).
+- Per-seat RFI width (2.0-only s30 -> {2.0,2.5}): UTG 14.0 -> 13.4 %, UTG+1 15.0 -> 14.2, UTG+2 17.2 -> 16.1, LJ 19.7 -> 18.2, HJ 22.6 -> 21.2, CO 27.6 -> 26.5, BTN 36.6 -> 35.0; SB open 19.5 -> 20.2 (limp 80 % both).
+- BB vs BTN (fold / call / 3-bet / jam): vs 2.0 0 / 84.9 / 1.1 / 14.0, vs 2.5 0 / 84.7 / 0 / 15.3. BB vs UTG: vs 2.0 0 / 95.1 / 1.0 / 3.9, vs 2.5 0 / 94.9 / 0.1 / 5.0. BB vs SB: 3.0 1.3 / 83.2 / 1.2 / 14.3; 3.5 12.3 / 72.7 / 0 / 15.0 (folds appear against the 3.5 open).
+- Same pattern as 40 bb: ranges 0.6-1.6 points tighter, defence unchanged, 3-bets move into jams; the vs-2.0 nodes are low-reach (use `reach_combos` / `unsupported_low_reach`). Static continuation, symmetric stacks, chip EV, quick status.
