@@ -1,0 +1,42 @@
+{
+ "schema": "plan_a_parent_convergence_v1",
+ "target_gap_exact_bb": 0.01,
+ "max_iterations": 400,
+ "rows": [
+  {
+   "iterations": 25,
+   "gap_skip_1e-9": 0.5501884447751769,
+   "gap_exact": null
+  },
+  {
+   "iterations": 50,
+   "gap_skip_1e-9": 0.1193676313282582,
+   "gap_exact": null
+  },
+  {
+   "iterations": 75,
+   "gap_skip_1e-9": 0.050971962400848815,
+   "gap_exact": null
+  },
+  {
+   "iterations": 100,
+   "gap_skip_1e-9": 0.029304137569772775,
+   "gap_exact": 0.029306398826686817
+  },
+  {
+   "iterations": 125,
+   "gap_skip_1e-9": 0.01922467920590772,
+   "gap_exact": null
+  },
+  {
+   "iterations": 150,
+   "gap_skip_1e-9": 0.013460122538299951,
+   "gap_exact": null
+  },
+  {
+   "iterations": 175,
+   "gap_skip_1e-9": 0.014186887568534721,
+   "gap_exact": null
+  }
+ ]
+}
