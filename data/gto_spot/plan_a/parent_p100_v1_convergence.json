@@ -57,6 +57,31 @@
    "iterations": 275,
    "gap_skip_1e-9": 0.020446732968476045,
    "gap_exact": null
+  },
+  {
+   "iterations": 300,
+   "gap_skip_1e-9": 0.019260778566857345,
+   "gap_exact": 0.019277036935334193
+  },
+  {
+   "iterations": 325,
+   "gap_skip_1e-9": 0.018425798719423573,
+   "gap_exact": null
+  },
+  {
+   "iterations": 350,
+   "gap_skip_1e-9": 0.01786316305724902,
+   "gap_exact": null
+  },
+  {
+   "iterations": 375,
+   "gap_skip_1e-9": 0.01731445374251825,
+   "gap_exact": null
+  },
+  {
+   "iterations": 400,
+   "gap_skip_1e-9": 0.016874710874185732,
+   "gap_exact": 0.016890958575300718
   }
  ]
 }

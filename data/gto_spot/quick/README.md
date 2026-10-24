@@ -37,3 +37,13 @@ Correction (2026-10-19): chart_*_parent*.json `combos` / `mix` / `reach_combos` 
 narrow, e.g. 60 bb UTG 11.1 % -> 14.1 %); per-class frequencies and EVs were not affected. Fixed and regenerated (60 / 40 bb charts and PNGs).
 
 Resume manual: docs/GTO_RESUME_40BB.md (commands, restore, 100 bb parent, rules).
+
+
+## 100 bb (tree p100 v1 = the 60 bb v2b tree at stack 99.89, max_raises 3, 4-bet 2.25x or jam, no parent 5-bet; 2.58 M nodes) — added 2026-10-24
+| file | content | status |
+|---|---|---|
+| chart_100bb_parent.json / chart_100bb_rfi.png | parent full-tree chart (RFI 8, vs open incl. BB defence / cold 3-bet, opener vs 3-bet) | quick, symmetric-stack assumption, static continuation for flop pots (no HU re-solve); parent exact gap **0.01689 bb at 400 iterations** (target 0.010 not reached; iteration cap; exact 0.0272 @200, 0.0193 @300) |
+| ../records/s100.json | pushfold-style record for the T2 builder (tools/gto_spot/pushfold_record.py) | quick, G2 false (gap > 0.010), db_promotion forbidden, T2 connection needs user approval |
+| ../plan_a/parent_p100_v1_convergence.json | gap per iteration (skip-mode and exact) | |
+| ../plan_a/transfer/p100_v1_dump.jsonl.gz | whole-tree dump (30 MB gz, sha256 in SHA256SUMS) | `sh tools/gto_spot/plan_a_parent_run.sh 100 v1` regenerates it (about 8 h) |
+No 100 bb flat-call spots / HU re-solves yet (last priority). Resume manual: docs/GTO_RESUME_40BB.md section 4.
