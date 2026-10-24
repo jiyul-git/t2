@@ -1,0 +1,22 @@
+{
+ "schema": "plan_a_parent_convergence_v1",
+ "target_gap_exact_bb": 0.01,
+ "max_iterations": 400,
+ "rows": [
+  {
+   "iterations": 25,
+   "gap_skip_1e-9": 0.8255184139414816,
+   "gap_exact": null
+  },
+  {
+   "iterations": 50,
+   "gap_skip_1e-9": 0.30187275745931963,
+   "gap_exact": null
+  },
+  {
+   "iterations": 75,
+   "gap_skip_1e-9": 0.1284066323293032,
+   "gap_exact": null
+  }
+ ]
+}
