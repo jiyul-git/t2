@@ -50,3 +50,31 @@ Each scenario is also solved in chip-EV mode with the same code and stacks (cont
 ## 5. What T2 would need to look up
 Key = (players left n, paid places / payout curve id, stack vector in bb per seat relative to the hero seat). The stack vector
 space is too large for a full table. Options in section 7 (decisions).
+
+## 6. Results (2026-10-24; all 18 runs met the stop rule, exact gap <= 0.010; records data/gto_spot/icm/run_<id>_<icm|chip>.json,
+tables data/gto_spot/icm/compare.txt, code tools/gto_icm/). Own jam/fold solver with the simplifications of section 2.
+First-in jam frequency (%), chip control -> ICM, by seat (stack bb):
+- **B2 pilot (bubble 9/8, mean 15 bb)**: UTG(12) 12.9->9.7, UTG+1(30) 11.6->49.6, UTG+2(8) 20.6->13.6, LJ(20) 16.6->35.4, HJ(15) 24.1->29.7,
+  CO(10) 33.0->31.7, BTN(25) 44.5->99.9, SB(9) 81.6->99.9. Calls shrink: mean call frequency over jammer/caller pairs 17.7 -> 6.1 %.
+- Pattern: big stacks jam far wider (they cannot be hurt: callers fold), short stacks jam NARROWER (UTG+2 8 bb: 15 hands jam -> fold, none the
+  other way: 22 87s A8o 98s A9o T8s T9s ATo KJo Q9s KQo K9s + A2s A6s A7s), and calls fall hard (SB 9 bb calling BB 6 bb: 75 % -> 39 %;
+  BTN 25 bb vs SB 9 bb jam: 34 % -> 6.7 %; the calling ranges lose every pair below AA-style value, e.g. 22-66, A2o-A9o, KQs).
+- B1 (bubble, equal 15 bb): everyone jams wider (UTG 9.5->15.1, BTN 35.6->89.5, SB 63.5->99.9) and calls drop 9.8 -> 2.5 %: with equal
+  stacks and 1 place from the money nobody calls, so steals are almost free (pure bubble effect).
+- F1/F2 (final table, top-heavy): milder, same direction (F1 BTN 35.6->49.3, calls 9.8->3.9 %); short stack still tightens (F2 UTG+2).
+- B3/B4 (25 / 10 bb mean): same signs as B2; at 10 bb the short seat (5 bb) goes 34 -> 15 %.
+- F3 (6-handed), H1 (3-handed), S1 (4-handed satellite): H1 changes little (BTN 37.4->40.6, calls 36.6->23.7); S1 chip leader
+  25 bb jams 29.7->75.7, 15 bb seat 40.7->27.2, calls 32.7->7.5 %.
+Reading: ICM changes the answer a lot. The old T2 fallback ("GTO off, older judgement") cannot be better than a table that has these
+shapes: calls must be much tighter (chip-EV GTO calls are too loose under ICM) and steals depend on whether the seat is covered.
+
+## 7. Open decisions for the user
+1. Method for T2: (a) a small precomputed table keyed by scenario type (needs a stack-relative key, many buckets), or
+   (b) solve live inside T2 with this solver (1-30 s numpy for one table; tens of ms would need caching/port) - NOT done, hard rule says
+   no runtime connection without approval, or (c) bubble-factor-adjusted chip-EV tables (cheapest, approximate, no stack asymmetry).
+2. Is the declared simplification set acceptable (jam/fold only, first caller only, no flop play, win/lose without chop)? Real T2 pots at
+   15-25 bb also include opens and 3-bets; exact gtopen ICM terminals would need a Rust change (stack vector + ICM utility).
+3. Which payout structures and sizes matter most: T2 pays 10-15 % of the field with BASE_PAYOUT; ~10 scenarios above cover
+   bubble 8/9, final table 9/9 and 6/6, 3-handed, satellite. Multi-table bubbles (other tables' stacks matter in ICM) are not covered.
+4. Accept stack-bucket granularity for lookup (key = players left, paid places, hero stack and each other seat's stack relative to hero).
+5. Next compute if approved: the 25-40 bb depth with 2.0 bb opens (needs the Rust path) or a denser jam/fold scenario grid (cost: minutes).
