@@ -1,7 +1,7 @@
-"""GTO 계산기 프리플랍 기준(10~60bb) — 프리플랍 판단의 **기준(reference)** 층.
+"""GTO 계산기 프리플랍 기준(10~100bb) — 프리플랍 판단의 **기준(reference)** 층.
 
 데이터: data/gto_pf/pushfold_v1.json (tools/gto_pf_build.py 가 GTO 브랜치의
-pf10/15/20/25 와 s30/s40/s60 기록에서 만든다). 9맥스, 안테 합계 1bb, 전원 같은 스택, 칩 EV,
+pf10/15/20/25 와 s30/s40/s60/s100 기록에서 만든다). 9맥스, 안테 합계 1bb, 전원 같은 스택, 칩 EV,
 등급 quick(빠른 값). 사용자 결정 2026-10-19: 계산한 레인지를 T2 기준으로 쓴다.
 
 이 모듈은 '레귤러가 공부한 답'만 돌려준다. 사람이 그 답을 얼마나 따르는가
@@ -189,7 +189,8 @@ def jam_vs_3bet(opener_pos, threebettor_pos, seats, eff_bb, hand, ante=True):
     """오픈 후 일반 3벳을 받은 오프너의 4벳(올인) 확률. 범위 밖이면 None.
 
     s30~s60 트리의 4벳은 올인뿐이다. 60bb 에서도 작은 4벳은 없다(사용자 승인 2026-10-20:
-    60bb 도 올인·3벳·4벳 판단만 같은 방식으로 연결)."""
+    60bb 도 올인·3벳·4벳 판단만 같은 방식으로 연결). 100bb 트리는 작은 4벳이 있어 이 표에
+    넣지 않는다 — 60bb 초과에서는 None(기존 판단)."""
     if not covered(eff_bb, seats, ante):
         return None
     a, b = pos9(opener_pos, seats), pos9(threebettor_pos, seats)

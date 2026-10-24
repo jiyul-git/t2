@@ -1,4 +1,4 @@
-"""GTO 프리플랍 기준(10~60bb) 연결 검사.
+"""GTO 프리플랍 기준(10~100bb) 연결 검사.
 
   python3 tools/verify_gto_pf.py
 
@@ -20,7 +20,7 @@ def check(name, cond):
     print('PASS', name)
 
 d = G._load()
-check('buckets 10..60', d['buckets'] == [10, 15, 20, 25, 30, 40, 60])
+check('buckets 10..100', d['buckets'] == [10, 15, 20, 25, 30, 40, 60, 100])
 i = d['classes'].index('A2o')
 check('SB 10bb A2o jam = record', abs(G.first_in('SB', 9, 10, ['Ah', '2c'])['jam']
                                        - d['first_in']['10']['SB']['jam'][i]) < 1e-9)
@@ -29,13 +29,24 @@ b = G.first_in('UTG', 9, 20, ['Kd', 'Qs'])['jam']
 m = G.first_in('UTG', 9, 17.5, ['Kd', 'Qs'])['jam']
 check('interpolation midpoint', abs(m - (a + b) / 2) < 1e-9)
 check('out of range low/high', G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
-      and G.first_in('UTG', 9, 61.0, ['Ah', 'Ad']) is None)
+      and G.first_in('UTG', 9, 101.0, ['Ah', 'Ad']) is None)
 i60 = d['classes'].index('AKo')
 check('60bb BB vs BTN open AKo 3-bet = record',
       abs(G.aggr_vs_open('BTN', 'BB', 9, 60, ['Ah', 'Kc'])['r3'] - d['vs_open']['60']['BTN>BB']['r3'][i60]) < 1e-9)
 a40 = G.first_in('CO', 9, 40, ['Kd', 'Ts'])['open']; a60 = G.first_in('CO', 9, 60, ['Kd', 'Ts'])['open']
 check('50bb = midpoint of 40 and 60', abs(G.first_in('CO', 9, 50, ['Kd', 'Ts'])['open'] - (a40 + a60) / 2) < 1e-9)
 check('60bb SB first-in left to existing path', G.first_in('SB', 9, 60, ['Kh', '7c']) is None)
+# --- 100bb 부모(s100, 2026-10-24): 첫 진입·오픈 받은 자리의 공격만. 4벳 표는 작은 4벳이 있어 비운다 ---
+a100 = G.first_in('CO', 9, 100, ['Kd', 'Ts'])['open']
+check('100bb CO KTo open = record', abs(a100 - d['first_in']['100']['CO']['open'][d['classes'].index('KTo')]) < 1e-9)
+check('80bb = midpoint of 60 and 100', abs(G.first_in('CO', 9, 80, ['Kd', 'Ts'])['open'] - (a60 + a100) / 2) < 1e-9)
+check('100bb BB vs BTN open AKo 3-bet = record',
+      abs(G.aggr_vs_open('BTN', 'BB', 9, 100, ['Ah', 'Kc'])['r3'] - d['vs_open']['100']['BTN>BB']['r3'][i60]) < 1e-9)
+check('opener vs 3-bet jam table: 60bb from record, above 60bb None (100bb tree has a small 4-bet)',
+      '100' not in d['vs_3bet'] and G.jam_vs_3bet('CO', 'BTN', 9, 60, ['Ah', 'Kc']) is not None
+      and G.jam_vs_3bet('CO', 'BTN', 9, 61, ['Ah', 'Kc']) is None
+      and G.jam_vs_3bet('CO', 'BTN', 9, 100, ['Ah', 'Kc']) is None)
+check('100bb SB first-in left to existing path', G.first_in('SB', 9, 100, ['Kh', '7c']) is None)
 check('50bb 3-bet-jam call: 60 bucket too thin -> None unless both sides exist',
       all(G.call_vs_3bet_jam(o, j, 9, 50, ['Ah', 'Qc']) is None
           for o, j in (('UTG', 'BB'),) if 'UTG>BB' not in d['vs_3bjam']['60']))
@@ -70,8 +81,10 @@ check('money pressure -> None',
 check('money drive only -> covered',
       P.gto_pf_first_in_choice(prof, 'SB', 9.39, ['Ah', '2c'], r, [8.89], 1.0, 9, True,
                                {'pressure': 0.0, 'range_factor': 1.29}) == 'jam')
-check('deep stack -> None', P.gto_pf_first_in_choice(prof, 'CO', 75, ['Ah', '2c'], r,
-                                                      [75], 1.0, 9, True) is None)
+check('deep stack -> None', P.gto_pf_first_in_choice(prof, 'CO', 110, ['Ah', '2c'], r,
+                                                      [110], 1.0, 9, True) is None)
+check('75bb CO AA -> covered since 100bb bucket (2026-10-24)',
+      P.gto_pf_first_in_choice(prof, 'CO', 75, ['Ah', 'Ad'], r, [75], 1.0, 9, True) == 'open')
 # BB vs SB jam 10bb: K5o always calls in the record
 check('BB calls SB jam K5o 10bb',
       P.gto_pf_call_choice(prof, 'SB', 'BB', ['Kh', '5c'], r, 8.89, 9.89, 8.89, 1,

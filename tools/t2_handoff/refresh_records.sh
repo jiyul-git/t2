@@ -20,7 +20,8 @@ L40=origin/claude/p40_sblimp_cfrplus_20261023   # 40bb SB 림프 (같음)
 T30=origin/claude/p30_3bet_20261022             # 30bb 3벳 받은 오프너 3개
 T40=origin/claude/p40_3bet_20261021             # 40bb CO·UTG+1 vs SB
 T40R=origin/claude/p40_3bet_resume_20261023     # 40bb UTG vs BTN
-for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R; do
+P100=origin/claude/p100_parent_20261024         # 100bb 부모 트리(s100, 4벳 2.25x 또는 올인)
+for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100; do
   n="${b#origin/}"
   git fetch -q origin "$n:refs/remotes/$b" 2>/dev/null \
     || git fetch -q origin "refs/tags/archive/$n:refs/remotes/$b" 2>/dev/null \
@@ -31,6 +32,7 @@ show() {  # show <브랜치> <파일이름>  — 없으면 조용히 건너뛴�
 }
 for b in pf10 pf15 pf20 pf25 s30 s40; do git show $PF:data/gto_spot/records/$b.json > "$OUT/$b.json"; done
 git show $CEN:data/gto_spot/records/s60.json > "$OUT/s60.json"
+git show $P100:data/gto_spot/records/s100.json > "$OUT/s100.json"
 # 옛 플랫콜 기록 (SB 림프 0단계 정지 기록은 빼고 아래 새 기록을 쓴다)
 for f in $(git ls-tree --name-only $P30 data/gto_spot/quick/ | grep 'p30_flat_.*\.json$' | grep -v sb_limp); do
   git show $P30:$f > "$OUT/$(basename $f)"; done
@@ -55,7 +57,7 @@ for f in $(ls "$OUT" | sort); do
   gzip -9n -c "$OUT/$f" > "$D/$f.gz"
   printf '%s\t%s\n' "$f" "$(sha256sum "$OUT/$f" | cut -c1-64)" >> $D/MANIFEST.tsv
 done
-for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R; do
+for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100; do
   printf '# %s %s\n' "${b#origin/}" "$(git rev-parse --short=8 "$b" 2>/dev/null || echo missing)" >> $D/MANIFEST.tsv
 done
 rm -rf "$OUT"; ls $D | wc -l

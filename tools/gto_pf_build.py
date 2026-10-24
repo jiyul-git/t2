@@ -5,6 +5,7 @@
 
 출처: GTO 브랜치(claude/pushfold-10-25-20261019) data/gto_spot/records/pf*.json, s30.json, s40.json;
 s60.json 은 chatgpt/terminal-census-v2-20260930 (60bb v2b 부모, 2026-10-19).
+s100.json 은 claude/p100_parent_20261024 (100bb 부모, 같은 메뉴 + 4벳 2.25x, 400회 상한·G2 미달, 2026-10-24).
 s30/s40/s60 은 Plan A v2b 부모 메뉴(오픈 2.0, SB 림프/3.0, 3벳 3x 또는 올인)라 첫 진입에 림프가 있다.
 뽑는 것 (올인 관련만, 사용자 결정 2026-10-19):
   first_in  : 첫 진입 fold / limp / open / jam 클래스별 빈도
@@ -159,7 +160,11 @@ for path in sys.argv[1:]:
         elif (n['situation'] == 'facing_3bet' and len(acts) == 2
               and acts[0][0] == n['actor'] and acts[0][1].startswith('Raise')
               and acts[1][1].startswith('3-bet')):
-            # 오프너가 일반 3벳을 받음: 4벳(이 트리에선 올인만) 빈도만.
+            # 오프너가 일반 3벳을 받음: 4벳(30~60bb 트리에선 올인만) 빈도만.
+            # 100bb 트리는 작은 4벳(2.25x)도 있어 '올인 빈도'의 뜻이 다르다 — 넣지 않는다
+            # (60~100bb 사이 보간이 None 이 되어 기존 판단이 맡는다. 2026-10-24).
+            if any(a.startswith('4-bet') for a in n['actions']):
+                continue
             out['vs_3bet'].setdefault(S, {})[n['actor'] + '>' + acts[1][0]] = {
                 'jam': r3(cs[jam]) if jam else None}
         elif n['situation'] == 'facing_open_or_jam' and len(acts) == 1 and acts[0][1].startswith('All-in'):
