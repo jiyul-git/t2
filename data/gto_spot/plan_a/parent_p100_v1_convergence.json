@@ -17,6 +17,26 @@
    "iterations": 75,
    "gap_skip_1e-9": 0.1284066323293032,
    "gap_exact": null
+  },
+  {
+   "iterations": 100,
+   "gap_skip_1e-9": 0.07648718330579006,
+   "gap_exact": 0.07650357263395889
+  },
+  {
+   "iterations": 125,
+   "gap_skip_1e-9": 0.05186311380016986,
+   "gap_exact": null
+  },
+  {
+   "iterations": 150,
+   "gap_skip_1e-9": 0.03923804168530941,
+   "gap_exact": null
+  },
+  {
+   "iterations": 175,
+   "gap_skip_1e-9": 0.03150048087584234,
+   "gap_exact": null
   }
  ]
 }
