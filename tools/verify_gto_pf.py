@@ -116,13 +116,12 @@ check('aggr: 72o CO vs HJ open passes (only BB defence is loop-corrected)',
 f = G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.0)
 check('flat: 35bb BB K9s vs BTN 2.0 open calls', f is not None and f['call'] > 0.99)
 check('flat: 72o folds', G.defend_vs_open('BTN', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
-# 2026-10-24: HJ 는 30bb 기록도 생겼다. 한쪽 버킷만 있는 자리는 지금 UTG+2(30bb 만, 40bb 는 계산 중) —
-# 40bb UTG+2 기록이 들어오면 이 두 검사의 UTG+2 부분을 바꾼다.
-check('flat: 25bb / 45bb / 3x open / UTG+2 opener between buckets -> None',
+# 2026-10-24: 40bb UTG+2 기록이 들어와 30~40bb 플랫콜 수비는 UTG~SB 전부 양쪽 버킷이 있다.
+check('flat: 25bb / 45bb / 3x open -> None; UTG+2 opener between buckets now covered',
       G.defend_vs_open('BTN', 'BB', 9, 25, ['Kh', '9h'], 2.0) is None
       and G.defend_vs_open('BTN', 'BB', 9, 45, ['Kh', '9h'], 2.0) is None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 3.0) is None
-      and G.defend_vs_open('UTG+2', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
+      and G.defend_vs_open('UTG+2', 'BB', 9, 35, ['Kh', '9h'], 2.0) is not None)
 check('flat: CO open vs BB 35bb — K9s calls, 72o folds (loop-corrected 2026-10-20)',
       G.defend_vs_open('CO', 'BB', 9, 35, ['Kh', '9h'], 2.0)['call'] > 0.99
       and G.defend_vs_open('CO', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
@@ -138,8 +137,9 @@ check('flat hook: 3x open -> back to aggression-only (pass)',
 check('flat: SB 3.0 open vs BB 35bb uses the SB record; a 2.0 SB open does not',
       G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 3.0) is not None
       and G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
-check('flat: UTG+2 only at 30bb (no 40bb record yet), BTN open size 1.8~2.5 only',
+check('flat: UTG+2 at 30 and 40bb, BTN open size 1.8~2.5 only',
       G.defend_vs_open('UTG+2', 'BB', 9, 30, ['Kh', '9h'], 2.0) is not None
+      and G.defend_vs_open('UTG+2', 'BB', 9, 40, ['Kh', '9h'], 2.0) is not None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.5) is not None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.6) is None)
 # --- packaging: the run folder (gateway / installer) must carry the module and its data ---
