@@ -216,6 +216,14 @@ def play_one(cards, start_bb, forced, actor, seed, extra_caller=None):
     return out
 
 
+def KIND_OF(label):
+    for pre, k in (('Fold', 'fold'), ('Check', 'call'), ('Call', 'call'), ('Limp', 'call'), ('All-in', 'jam'),
+                   ('Raise', 'raise'), ('3-bet', 'raise'), ('4-bet', 'raise'), ('5-bet', 'raise')):
+        if label.startswith(pre):
+            return k
+    return label
+
+
 GTO_KIND = {'flat': 'gto_pf_defend_full', '3bet': 'gto_pf_vs_3bet_full', 'limp': 'gto_pf_vs_limp'}
 
 
@@ -268,9 +276,17 @@ for rec, new in records:
         for x in n['actions']:
             real[x] += w * got[x]
             want[x] += w * hd['freq'].get(x, 0.0)
-        d = max(abs(got[x] - hd['freq'].get(x, 0.0)) for x in n['actions'])
+        # 비교는 행동 종류 단위(폴드/콜·체크/레이즈 종류/올인). 연결은 종류별 빈도만 기록대로 하고, 같은
+        # 종류 안의 크기(예: 플랫콜 기록의 3벳 7bb/8bb)는 봇의 기존 크기 습관이 정한다(2026-10-20 설계,
+        # gto_pf_build 의 r3 합산). 크기 배분 차이는 결과 JSON 의 size_split 에 따로 남긴다.
+        gk = {}; rk = {}
+        for x in n['actions']:
+            kk = KIND_OF(x)
+            gk[kk] = gk.get(kk, 0.0) + got[x]
+            rk[kk] = rk.get(kk, 0.0) + hd['freq'].get(x, 0.0)
+        d = max(abs(gk[kk] - rk[kk]) for kk in gk)
         # 클래스 하나의 허용치: 이항 표준오차 4배(섞인 빈도) + 0.02
-        p = max(hd['freq'].values())
+        p = max(rk.values())
         tol = 4 * math.sqrt(max(p * (1 - p), 1e-9) / REPS) + 0.02
         worst = max(worst, d - tol)
         stats['classes'][c] = {'t2': cnt, 'record': hd['freq'], 'combos': w, 'gto_path': gto_n / REPS,
@@ -280,13 +296,20 @@ for rec, new in records:
     stats['gto_path_share'] = round(tot_gto / max(tot_w, 1e-9), 4)
     stats['mix_t2'] = {x: round(real[x] / tot_w, 4) for x in real}
     stats['mix_record'] = {x: round(want[x] / tot_w, 4) for x in want}
-    stats['mix_abs_diff_max'] = round(max(abs(stats['mix_t2'][x] - stats['mix_record'][x]) for x in real), 4)
+    kt, kr = {}, {}
+    for x in real:
+        kt[KIND_OF(x)] = kt.get(KIND_OF(x), 0.0) + stats['mix_t2'][x]
+        kr[KIND_OF(x)] = kr.get(KIND_OF(x), 0.0) + stats['mix_record'][x]
+    stats['mix_kind_t2'] = {kk: round(v, 4) for kk, v in kt.items()}
+    stats['mix_kind_record'] = {kk: round(v, 4) for kk, v in kr.items()}
+    stats['size_split'] = {x: (stats['mix_t2'][x], stats['mix_record'][x]) for x in real
+                           if sum(1 for y in real if KIND_OF(y) == KIND_OF(x)) > 1}
+    stats['mix_abs_diff_max'] = round(max(abs(kt[kk] - kr[kk]) for kk in kt), 4)
     REPORT['records'][rec['id']]['engine'] = stats
     check('B path %-24s GTO path used for %.1f%% of reaching combos' % (rec['id'], 100 * stats['gto_path_share']),
           stats['gto_path_share'] >= 0.999)
     check('B mix  %-24s T2 %s vs record %s (max diff %.3f)' % (
-        rec['id'], {x[:8]: round(v, 3) for x, v in stats['mix_t2'].items()},
-        {x[:8]: round(v, 3) for x, v in stats['mix_record'].items()}, stats['mix_abs_diff_max']),
+        rec['id'], stats['mix_kind_t2'], stats['mix_kind_record'], stats['mix_abs_diff_max']),
         stats['mix_abs_diff_max'] <= 0.03)
     check('B class%-24s every class within its sampling tolerance (worst excess %.3f)' % (rec['id'], worst),
           worst <= 0.0)
