@@ -1,7 +1,7 @@
 #!/bin/bash
 # 봇 판단 회귀 검사 20개. 결과(종료코드)를 기준 파일과 비교한다. 오래 걸린다(약 10분).
 #   bash tools/t2_handoff/regress.sh            → docs/handoff/regress_baseline.txt 와 다르면 diff 출력
-# 기준에서 원래 실패하는 것: verify_preflop_closure(1) — 옛 master 4f6cf100 에서도 실패.
+# 기준: 20개 모두 0(통과). verify_preflop_closure 는 2026-10-24 검사 갱신(0d9dfa5c 반영)으로 통과한다.
 cd "$(dirname "$0")/../.."
 export T2_DATA_DIR="${T2_DATA_DIR:-$(mktemp -d)}"     # 개인 지갑 폴더를 건드리지 않게
 OUT=$(mktemp)

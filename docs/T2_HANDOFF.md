@@ -1,7 +1,8 @@
 # T2 이어받기 매뉴얼 (봇 판단 검증 · GTO 연결 · 화면)
 
-새 세션이 이 문서만 읽고 이어서 일할 수 있게 쓴다. 마지막 갱신: 2026-10-21, test3 `6fc58080` 기준.
-작성: T2 봇 판단 검증 세션(session_01XV9GKUYpuxdA2ckcjg1qsv).
+새 세션이 이 문서만 읽고 이어서 일할 수 있게 쓴다. 마지막 갱신: 2026-10-24(연결: 3벳 받은 오프너·SB 림프·BB 플랫콜 새 자리).
+작성: T2 봇 판단 검증 세션(session_01XV9GKUYpuxdA2ckcjg1qsv). 2026-10-24 갱신: 코디네이터 세션(session_012qfUk9MsH6Hp2gBX6Q18sA,
+T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 맡음). 연결 검사 결과: `docs/GTO_CONNECT_QUICK_REPORT_20261024.md`.
 
 ---
 
@@ -25,8 +26,13 @@
 | `claude/pushfold-10-25-20261019` | 10/15/20/25bb 푸시/폴드 기록(pf10~25) + 30/40bb 부모 트리(s30, s40) |
 | `claude/p30-flat-20261019` | 30bb 플랫콜 루프 기록. **Gto제작2 세션**(session_011TJwxsbnvbQgF3L3dSFKFd)이 돌린다 |
 | `chatgpt/terminal-census-v2-20260930` | 40bb 플랫콜 루프 + 60bb(s60) + 계산 표준 문서 + `docs/GTO_SESSIONS_BOARD.md`(계산 세션 게시판). **Gto제작1 세션**(session_01BLRHV14gJtnk3f8cLagcNs) |
+| `ccr-fb71f1d0-3wvj9e` | **코디네이터 세션**(session_012qfUk9…, 다른 계정)의 브랜치: 기록 안내 `docs/GTO_RESULTS_FOR_T2_20261024.md`, 진동 분석 문서 |
+| `claude/archive-gto-runs-20261024` | **끝난 계산 브랜치 17개 보관**(2026-10-24). 커밋 하나의 부모가 각 브랜치의 마지막 커밋 — 단계별 백업 tar·state·덤프 조각이 정밀 검사(P144 등)용으로 그대로 있다. 목록·되살리는 법은 `ARCHIVE.md` |
+| `claude/p40_flat_utg2_20261024`, `claude/p100_parent_20261024`, `claude/open_sizes_20261024`, `claude/icm_pushfold_20261024` | 진행 중(10-24): 40bb UTG+2 플랫콜, 100bb 부모, 오픈 2.0/2.5 부모(40·30bb), ICM 푸시/폴드 계획·파일럿(끝남, 사용자 결정 대기) |
 
 - 계산 세션들은 계산만 한다. 봇에 붙이는 일(연결)은 이 문서의 담당(T2 세션)이 한다.
+- **연결에 쓰는 기록은 test3 안의 사본 `data/gto_records/*.json.gz`**(출처표 `MANIFEST.tsv`). 계산 브랜치가 지워져도 연결이 깨지지 않는다.
+- 이 계정과 다른 계정의 세션 사이에는 `send_message` 가 닿지 않는다. 그럴 때는 브랜치의 문서로 주고받는다.
 - 계산 세션에 일을 맡길 때는 `send_message` 로 보낸다(사용자: "둘 다 그냥 너가 보내").
 - 계산 표준·결정 이력은 census 브랜치의 `docs/GTO_SESSIONS_BOARD.md` 가 원본이다.
 
@@ -38,6 +44,8 @@
 | `gto_pf.py` | 기준 데이터 조회. 버킷 사이 직선 보간, ±0.25bb 경계, 6~9인 → 9인 자리 변환, 노안테·범위 밖은 None |
 | `gto_pf_data.json` | 기준 데이터(실행 폴더에 평평하게 복사된다). `tools/gto_pf_build.py` 가 만든다 |
 | `tools/gto_pf_build.py` | 계산 기록 → `gto_pf_data.json` |
+| `data/gto_records/` | 연결에 쓰는 기록 사본(압축) + `MANIFEST.tsv`(파일별 sha256, 브랜치별 커밋). `refresh_records.sh` 가 만든다 |
+| `tools/t2_handoff/verify_gto_connect.py` | 연결 검사(값 일치·실제 엔진 경로·경로 선택·실패 내성). 4장 |
 | `preflop.py` | 연결 지점(아래 2.3). `T2_GTO_PF=0` 이면 전부 끔. 모듈·데이터가 없으면 None(기존 판단) |
 | `plan.py` `preflop_plan` | 연결 결과를 실제 행동으로 바꿈 |
 | `session.py` | `pf_other_live_actors`, `pf_actor_acted`, `pf_aggressor_total_bb` 계산(공개 행동 기록 `action_meta`) |
@@ -52,6 +60,8 @@
 | `vs_open` | 단독 오픈에 대한 공격(3벳·3벳 올인)만 | pf15~s60 |
 | `vs_3bet` | 3벳 받은 오프너의 4벳 올인 | s30~s60 |
 | `vs_open_full` | **플랫콜 루프로 보정된 자리**: 단독 오픈을 받은 BB 의 폴드·콜·3벳·올인 전체 + 오픈 크기(`open_bb`) | p30/p40_flat_*_vs_bb |
+| `vs_3bet_full` | **3벳 받은 오프너**의 폴드·콜·작은 4벳(`r4`)·올인 전체 + 3벳 크기(`threebet_bb`), 4벳 크기. 기록에 없는 클래스(그 오프너가 오픈하지 않는 패)는 null → 기존 판단 | p30/p40v1_*_vs_* (10-24) |
+| `vs_limp_full` | **SB 림프를 받은 BB** 의 체크·레이즈(3.5bb) + 불안정 몫(`unstable_share`) | p30/p40_flat_sb_limp_vs_bb (CFR+ 재시도 기록, 10-24) |
 
 - 공격자 콤보 < 10 인 노드는 뺀다(거의 안 쓰는 올인).
 - 버킷: 10, 15, 20, 25, 30, 40, 60bb. 유효 스택 = 핸드 시작 기준, 상대와의 작은 쪽.
@@ -61,12 +71,16 @@
 |---|---|---|
 | `gto_pf_first_in_choice` | 첫 진입 | ICM 압력(BF > 1.05 또는 머니점프 pressure/brake/위험 몫), 범위 밖 |
 | `gto_pf_call_choice` | 단독 올인 콜, 내가 오픈 후 3벳 올인 콜 | 콜러가 낀 팟, 행동 여부 모름 |
-| `gto_pf_aggr_choice` | 오픈 받음(3벳/3벳 올인), 3벳 받음(4벳 올인). 보정된 자리는 콜·폴드까지 | 위와 같음 |
+| `gto_pf_aggr_choice` | 오픈 받음(3벳/3벳 올인), 3벳 받음(4벳 올인). 보정된 자리는 콜·폴드까지. **3벳 받은 오프너 중 기록이 있는 짝은 폴드·콜·작은 4벳·올인**(`'4bet'` = 3벳 크기 × reraise_mult(2): IP 2.15 / OOP 2.35, 계산기 메뉴와 같음) | 위와 같음 + 3벳 크기가 기록의 0.9~1.25배 밖 |
+| `gto_pf_limp_choice` (10-24) | SB 가 림프하고 나머지 전원 폴드, BB 차례: 체크 / 레이즈 3.5bb | BB 아님, 림퍼가 SB 한 명이 아님, 다른 사람이 돈을 넣음, 체크 불가, ICM 압력, 유효 스택(둘 중 작은 쪽) 범위 밖 |
 
 - 기준 범위 안에서 봇이 오픈할 때는 **계산기와 같은 크기(2.0bb, SB 3.0bb)** 로 친다(사용자 결정 10-20).
 - 보정된 자리(`vs_open_full`)는 실제 오픈 크기가 기록 크기의 0.9~1.25배일 때만 쓴다.
+- 플랫콜 기록의 3벳은 크기 두 개(7·8bb)를 합쳐 빈도만 연결한다. 크기는 봇 습관(3.7배 = 7.4bb). 40bb UTG+1 오픈 vs BB 의
+  KK·AA 처럼 계산기가 8bb 를 고르는 패도 봇은 대부분 7bb 로 친다(연결 검사 size_split 에 기록).
+- 버킷 사이는 양쪽 기록이 모두 있어야 쓴다. 한쪽만 있는 자리(지금 UTG+2 오픈 vs BB: 30bb 만)는 그 버킷 ±0.25bb 에서만 쓰인다.
 
-## 3. 연결 현황 (2026-10-21)
+## 3. 연결 현황 (2026-10-24)
 
 | 상황 | 10~25bb | 30bb | 40bb | 60bb |
 |---|---|---|---|---|
@@ -75,30 +89,41 @@
 | 올인 콜 / 3벳 올인 콜 | ✅ | ✅ | ✅ | ✅(데이터 적음) |
 | 오픈 받은 공격(3벳·3벳 올인) | ✅(15~) | ✅ | ✅ | ✅ |
 | 3벳 받은 4벳 올인 | – | ✅ | ✅ | ✅(작은 4벳 없음) |
-| **BB 플랫콜 수비(보정)** | – | BTN·CO·SB | BTN·CO·SB·HJ | ✗ |
-| 3벳 받은 뒤 콜 | ✗ 기존 판단(봇 12% vs 계산 68%, 가장 큰 차이) | | | |
+| **BB 플랫콜 수비(보정)** | – | UTG·UTG+1·UTG+2·LJ·HJ·CO·BTN·SB | UTG·UTG+1·LJ·HJ·CO·BTN·SB (UTG+2 계산 중) | ✗ |
+| **3벳 받은 오프너(폴드·콜·작은 4벳·올인)** | – | CO·UTG+1 vs SB, UTG vs BTN | 같음 | ✗ |
+| **SB 림프 받은 BB(체크·레이즈)** | – | ✅ | ✅ | ✗ |
+| 3벳 받은 오프너, 그 밖의 짝 | – | 4벳 올인만(기존) | 같음 | 같음 |
 
-플랫콜 기록 상태: 30bb SB 오픈은 1단계에서 멈춤(한 보드 플랍 미수렴 4.2% 팟) — 재계산 대상.
-40bb SB·HJ 는 3단계 상한(마지막 2단계 평균). BTN·CO 는 수렴.
-HJ 는 40bb 기록만 있어 40bb(±0.25) 근처에서만 쓰인다(30bb 기록이 오면 30~40 전체).
-30bb SB 림프 기록은 있지만 **연결 안 함**: 0단계에서 멈췄고, "SB 림프를 받은 BB"를 받는 연결 지점이 아직 없다.
+기록 상태(모두 quick, 대칭 스택, chip EV — 정밀 검사 대상):
+- 3벳 받은 오프너 6개: 40bb CO vs SB 는 수렴, 나머지 5개는 3단계 상한(마지막 2단계 평균). 연결은 뿌리 노드만(4벳·올인 뒤는 연구용).
+- 플랫콜 새 자리: 모두 3단계 상한(마지막 2단계 평균, 일부는 상한 표시를 손으로 붙임 — 기록의 status_note).
+- SB 림프: CFR+ 재시도(사용자 위임 승인 10-23, 근거 `docs/GTO_SB_LIMP_FLOP_DIAG.md` — archive 브랜치)로 3단계까지 갔고 상한.
+  **BB 뿌리에서 콤보의 39%(30bb)·45%(40bb)가 단계마다 체크↔레이즈로 뒤집혀** 평균 50/50 으로 찍힌 클래스가 많다
+  (`vs_limp_full.unstable_share`). 체크·레이즈 차이가 작은 패들이라 손실은 작지만 정밀 검사 1순위.
+- 30bb SB 오픈 vs BB 는 1단계 플랍 미수렴으로 멈춘 기록 그대로(재계산 대상, CFR+ 로 풀릴 가능성).
 
 ## 4. 새 기록이 오면 연결하는 절차
 
 ```
 cd <test3 체크아웃>
-sh tools/t2_handoff/fetch_records.sh /tmp/rec        # 계산 브랜치에서 기록 모으기(새 경로가 생기면 스크립트에 추가)
+sh tools/t2_handoff/refresh_records.sh               # (새 기록이 왔을 때만) 계산 브랜치 → data/gto_records/ 사본 갱신.
+                                                     #   새 브랜치·파일은 스크립트 목록에 한 줄 추가. 지운 브랜치는 archive 에서 읽는다
+sh tools/t2_handoff/fetch_records.sh /tmp/rec        # 사본을 한 폴더에 풀기
 sh tools/t2_handoff/rebuild_gto_pf.sh /tmp/rec       # gto_pf_data.json 다시 만들기 + verify_gto_pf
 python3 tools/t2_handoff/flat_check.py /tmp/rec      # 보정 자리: 연결 값 = 기록 값(클래스별 ≤ 0.002)
-git diff --stat gto_pf_data.json                     # 기존 버킷·자리 값이 바뀌지 않았는지 확인(파이썬으로 표별 비교)
-bash tools/t2_handoff/regress.sh                     # 회귀 20개 = 기준
-bash tools/t2_handoff/ui_checks.sh                   # 화면·게이트웨이(원래 실패 목록은 스크립트 머리말)
+python3 tools/t2_handoff/verify_gto_connect.py /tmp/rec 40 /tmp/connect.json   # 연결 검사(약 30분, 아래)
+# 기존 표 값이 바뀌지 않았는지: 이전 gto_pf_data.json 과 표·키별 비교(바뀐 키가 없어야 함)
+bash tools/t2_handoff/regress.sh                     # 회귀 20개 = 기준(모두 0)
+bash tools/t2_handoff/ui_checks.sh                   # 화면·게이트웨이(모두 0, opencv 필요)
 ```
 
-- 새 종류의 노드(예: 림프 팟, 3벳 콜 팟)는 빌더·연결 지점을 새로 만들어야 한다. 빌더는 모르는 기록을 건너뛴다.
-- 실제 봇 행동 비교(선택): `tools/t2_handoff/pfcmp.py <코드폴더> <기록.json> <노드번호> 2 <out.json>`
-  — 기록 노드를 엔진으로 재현해 169 클래스마다 봇의 첫 행동을 뽑는다. 클래스당 2회라 섞인 빈도는 몇 %p 흔들린다.
-  연결 전과 비교하려면 옛 코드 폴더(예: master `4f6cf100` 워크트리)로 한 번 더 돌린다.
+- 연결 검사(`verify_gto_connect.py`): A 조회 값 = 기록 값(≤ 0.002, 기록에 없는 클래스는 None) /
+  B 실제 엔진 경로로 기록 상황을 재현해 클래스마다 40회: GTO 경로를 탔는가(100%여야), 행동 종류별 빈도(도착 콤보 가중)가
+  기록과 3%p 안인가, 클래스마다 표본 오차 안인가, 엔진 오류 0 / C 경로 선택(버킷 사이·범위 밖·크기 밖·멀티웨이·ICM·다른 림퍼) /
+  D 새 표·모듈이 없어도 예외 없이 기존 판단. 결과 JSON 에 클래스별 숫자와 크기 배분(size_split)이 남는다.
+- 새 종류의 노드는 빌더(`gto_pf_build.py`: id 로 종류를 가른다 — `_limp_`, `v1_`, 나머지 플랫콜)·조회(`gto_pf.py`)·연결 지점(`preflop.py`)·
+  `plan.py` 행동 변환·`verify_gto_connect.py` 를 함께 만든다. 빌더는 `_dcfr_stop` 기록(옛 정지 기록)을 건너뛴다.
+- 실제 봇 행동 비교(옛 기록 형식 spot_record_v2 전용): `tools/t2_handoff/pfcmp.py`. quick 기록은 verify_gto_connect 를 쓴다.
 - 커밋 메시지에 계산기 값과 봇 값(폴드/콜/3벳/올인 %)을 적어 둔다(지금까지 그렇게 해 왔다).
 
 ## 5. 검사에서 알아야 할 함정
@@ -112,6 +137,8 @@ bash tools/t2_handoff/ui_checks.sh                   # 화면·게이트웨이(�
   `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`. 터치는 CDP `Input.dispatchTouchEvent`.
   S23 화면은 360×760. 낮/밤 로비는 `timezoneId`(예 'America/Los_Angeles' 낮, 'Asia/Seoul' 밤)로 바꾼다.
 - 웹 파일을 바꾸면 `index.html`/`lobby.html` 의 `?v=` 캐시 번호를 꼭 올린다(한 번 빠뜨렸다).
+- 라운지 자산 검사(`verify_lounge_assets.py`, `lounge_check_assets.py`)는 `opencv-python-headless` 가 없으면 환경 오류로 실패한다.
+- 이 클라우드 세션 권한으로는 원격 **태그 생성과 브랜치 삭제가 거부(403)** 된다. 브랜치 정리는 보관 브랜치를 만든 뒤 사용자가 GitHub 에서 지운다.
 
 ## 6. 배포·사용자 환경
 
@@ -150,17 +177,19 @@ sh gateway/run_forever.sh
 기존 설계 `docs/LOUNGE_SCENE_DESIGN.md`(프레임 그림만, 포즈 그래프, 움직임 잠금)와 부딪히는 점 정리는 대화 기록 기준 —
 결정이 나면 그 문서에 새 장으로 쓴다.
 
-## 8. 아직 아무도 안 하고 있는 일
+## 8. 아직 아무도 안 하고 있는 일 (2026-10-24 갱신)
 
-| # | 일 | 누가 할 수 있나 | 메모 |
+| # | 일 | 상태 / 누가 | 메모 |
 |---|---|---|---|
-| 1 | **3벳 콜 팟 루프**(오픈 → 3벳 받고 콜) 30/40bb | 계산 세션 | 표준의 우선순위 (3). 봇 12% vs 계산 68% 로 가장 큰 차이 |
-| 2 | **SB 림프 팟 연결**(BB 가 림프를 받음 + SB 첫 진입 30bb 이상) | 계산 + T2 | 30bb 림프 기록 재계산(0단계 정지) + 새 연결 지점 |
-| 3 | **30bb SB 오픈 재계산** | 계산 세션 | 1단계에서 플랍 미수렴(4.2% 팟)으로 멈춤 |
-| 4 | **ICM 푸시/폴드 표**(버블·파이널 테이블) | 계산 세션(새 작업) | 지금 ICM 압력이 있으면 GTO 를 끄고 기존 판단. 토너먼트 승부처 |
-| 5 | **다른 오픈 크기(2.2·2.5bb) 계산** | 계산 세션 | 사용자: 2bb 먼저, 나중에. 사람 플레이어 오픈은 크기가 제각각 |
-| 6 | 60bb 작은 4벳, 100bb 부모(200회에서 멈춤) | 계산 세션 | 사용자 순서상 마지막 |
-| 7 | **원래 실패하는 검사 정리** | 아무 코드 세션 | verify_preflop_closure, verify_clock_ui, verify_vclock_session, verify_action_clock_js, verify_ui_tournament_panel |
-| 8 | **master 반영 준비** | T2 + 사용자 | test3 가 master 보다 크게 앞섬. APK 영구 서명 키 필요(사용자) |
+| 1 | 3벳 받은 오프너 30/40bb | **연결함(10-24)**: CO·UTG+1 vs SB, UTG vs BTN | 남은 짝(UTG+2·LJ·HJ vs SB, BTN vs SB 등)은 계산 필요. 정밀 검사 대상 |
+| 2 | SB 림프 팟 | **BB 쪽 연결함(10-24)** | SB 첫 진입(30bb 이상 림프/오픈 선택)은 아직 기존 판단. BB 뿌리 불안정 39~45% — 정밀 검사 1순위 |
+| 3 | 30bb SB 오픈 vs BB 재계산 | 계산 세션 | 1단계 플랍 미수렴(4.2% 팟). CFR+ 재시도(10-23 승인 방식)로 풀릴 가능성 |
+| 4 | ICM 푸시/폴드 | 계획·파일럿 끝남(`claude/icm_pushfold_20261024`, `docs/GTO_ICM_PLAN.md`) | **사용자 결정 대기**: 표/실시간/버블 팩터, 점프·폴드만 할지, 상금 구조. 연결 안 함 |
+| 5 | 오픈 2.5bb 부모(40·30bb) | 계산 중(`claude/open_sizes_20261024`) | 끝나면 연결 방식(오픈 크기별 조회) 설계 필요 |
+| 6 | 100bb 부모 | 계산 중(`claude/p100_parent_20261024`) | 60bb 작은 4벳은 이 컨테이너(15GB)로 불가능 |
+| 7 | 원래 실패하던 검사 5개 | **끝남(10-24, 0d9dfa5c 반영)** | 남은 문제: 타이밍 규칙을 켜면 시간당 약 58핸드(검사 기준 70) — 검사는 규칙 끔으로 확인 |
+| 8 | master 반영 준비 | T2 + 사용자 | test3 가 master 보다 크게 앞섬. APK 영구 서명 키 필요(사용자) |
 | 9 | 헤즈업 폴드 뒤 결과 지연 확인 | T2 | 로컬 재현 안 됨. 사용자 기기 로그 필요(`~/t2_online/run/*/server.log`) |
 | 10 | 화면 디자인 보류분(7장) | 화면 세션 | 사용자 결정 후 |
+| 11 | 브랜치 삭제 | 사용자 | 끝난 17개는 `claude/archive-gto-runs-20261024` 에 보관 완료. 삭제는 이 세션 권한 밖(403) — GitHub 에서 `ARCHIVE.md` 표대로 |
+| 12 | 3벳 크기 선택 | 미정 | 플랫콜 기록은 3벳 7·8bb 를 나누지만 봇은 3.7배 하나. 크기까지 따르려면 연결 확장 필요 |

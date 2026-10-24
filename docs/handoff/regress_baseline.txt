@@ -3,7 +3,7 @@
 0 tools/verify_core_multiway_reads.py
 0 tools/verify_core_joint_nut.py
 0 tools/verify_core_sizing_ownership.py
-1 tools/verify_preflop_closure.py
+0 tools/verify_preflop_closure.py
 0 tools/verify_human_model_v3.py
 0 tools/verify_human_model_v3_runtime.py
 0 tools/verify_human_model_v3_integration.py
