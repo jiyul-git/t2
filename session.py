@@ -2031,6 +2031,12 @@ class HandRun:
                     pf_aggressor_total_bb=(
                         (rnd.stacks.get(aggressor, 0) + rnd.contrib.get(aggressor, 0))
                         / max(1, h.bb) if aggressor is not None else None),
+                    # 림퍼가 한 명일 때 그 자리와 핸드 시작 스택(BB vs SB 림프 기준용).
+                    pf_limper_pos=(h.pos.get(limpers[0])
+                                   if aggressor is None and len(limpers) == 1 else None),
+                    pf_limper_total_bb=(
+                        (rnd.stacks.get(limpers[0], 0) + rnd.contrib.get(limpers[0], 0))
+                        / max(1, h.bb) if aggressor is None and len(limpers) == 1 else None),
                     pf_actor_acted=any(
                         m.get('seat') == s
                         and m.get('action') in ('call', 'raise', 'allin', 'bet')

@@ -196,3 +196,68 @@ def jam_vs_3bet(opener_pos, threebettor_pos, seats, eff_bb, hand, ante=True):
     if a is None or b is None:
         return None
     return _at(_interp('vs_3bet', a + '>' + b, eff_bb, lambda e: e.get('jam')), hand)
+
+
+# 3벳 받은 오프너의 전체 응답(서브게임 기록, 2026-10-24 연결). 기록마다 3벳 크기가 정해져 있다
+# (블라인드 3벳 4.0x = 8bb, BTN 3벳 3.0x = 6bb). 실제 3벳이 그 크기의 0.9~1.25배 안일 때만 쓴다.
+FULL_3BET_RATIO = (0.9, 1.25)
+
+
+def _at_masked(trip, hand):
+    """_at 과 같지만, 기록에 그 클래스가 없으면(null — 그 자리에 도착하지 않는 패) None."""
+    if trip is None:
+        return None
+    va, vb, t = trip
+    i = _IDX[hand_class(hand)]
+    if va[i] is None or vb[i] is None:
+        return None
+    return max(0.0, min(1.0, va[i] + t * (vb[i] - va[i])))
+
+
+def defend_vs_3bet(opener_pos, threebettor_pos, seats, eff_bb, hand, threebet_bb, ante=True):
+    """오픈 후 일반 3벳을 받은 오프너의 전체 응답 {'fold','call','r4','jam'}.
+
+    vs_3bet_full 에 있는 짝만. 버킷 사이는 양쪽 기록이 모두 있어야 하고, 3벳 크기가 기록의
+    크기 × FULL_3BET_RATIO 안이어야 하며, 그 패가 기록에 있어야 한다(없으면 None = 기존 판단).
+    """
+    if not covered(eff_bb, seats, ante) or threebet_bb is None:
+        return None
+    a, b = pos9(opener_pos, seats), pos9(threebettor_pos, seats)
+    if a is None or b is None:
+        return None
+    d = _load()
+    full = d.get('vs_3bet_full') or {}
+    key = a + '>' + b
+    sizes = [e[key]['threebet_bb'] for e in full.values() if key in e]
+    if not sizes or not all(FULL_3BET_RATIO[0] * s <= float(threebet_bb) <= FULL_3BET_RATIO[1] * s
+                            for s in sizes):
+        return None
+    g = {k: _at_masked(_interp('vs_3bet_full', key, eff_bb, lambda e, k=k: e.get(k)), hand)
+         for k in ('fold', 'call', 'r4', 'jam')}
+    if any(v is None for v in g.values()):
+        return None
+    s = sum(g.values())
+    return {k: v / s for k, v in g.items()} if s > 0 else None
+
+
+def defend_vs_limp(seats, eff_bb, hand, ante=True):
+    """SB 가 림프하고 BB 차례(나머지 전원 폴드)일 때 BB 의 {'check','raise'} 와 레이즈 크기.
+
+    vs_limp_full 만(30·40bb). 버킷 사이는 양쪽 기록이 모두 있어야 한다. 범위 밖이면 None.
+    """
+    if not covered(eff_bb, seats, ante):
+        return None
+    d = _load()
+    if not d.get('vs_limp_full'):
+        return None
+    g = {k: _at(_interp('vs_limp_full', 'SB>BB', eff_bb, lambda e, k=k: e.get(k)), hand)
+         for k in ('check', 'raise')}
+    if any(v is None for v in g.values()):
+        return None
+    s = sum(g.values())
+    if s <= 0:
+        return None
+    sizes = [e['SB>BB']['raise_bb'] for e in d['vs_limp_full'].values() if 'SB>BB' in e]
+    out = {k: v / s for k, v in g.items()}
+    out['raise_bb'] = max(sizes) if sizes else 3.5
+    return out

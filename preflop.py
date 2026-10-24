@@ -538,6 +538,7 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
                        ante=True, aggressor_total_bb=None):
     """오픈/3벳을 받은 자리의 공격 여부만 기준대로: 'jam' / '3bet' / 'pass'.
     플랫콜 루프로 보정된 자리는 'call' / 'fold' 도 돌려준다(defend_vs_open).
+    3벳을 받은 오프너 중 서브게임 기록이 있는 짝은 'jam' / '4bet' / 'call' / 'fold'(defend_vs_3bet).
 
     단독 오픈을 받았을 때(3벳 올인·일반 3벳)와, 내가 오픈한 뒤 일반 3벳을
     받았을 때(4벳 올인)만 다룬다. 'pass' 면 기존 판단이 콜/폴드를 정하되
@@ -575,6 +576,18 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
             return None
         kind, p_jam, p_r3 = 'vs_open', g['jam'], g['r3']
     elif raise_level == 2 and actor_acted:
+        # 3벳을 받은 오프너: 서브게임 기록이 있는 짝(30·40bb CO·UTG+1 vs SB, UTG vs BTN)은
+        # 폴드·콜·작은 4벳·올인 전체를 기준대로(2026-10-24 연결). 없으면 아래 4벳 올인만.
+        full3 = getattr(_GPF, 'defend_vs_3bet', None)
+        f = full3(pos, aggressor_pos, seats, eff, hand, open_bb, ante) if full3 else None
+        if f is not None:
+            u = rng.random()
+            act = ('jam' if u < f['jam'] else '4bet' if u < f['jam'] + f['r4']
+                   else 'call' if u < f['jam'] + f['r4'] + f['call'] else 'fold')
+            _timing_bound({'kind': 'gto_pf_vs_3bet_full', 'eq': 1.0 - f['fold'], 'need': 0.5,
+                           'gto': {k: round(v, 4) for k, v in f.items()},
+                           'eff_bb': round(eff, 3), 'choice': act})
+            return act
         j = _GPF.jam_vs_3bet(pos, aggressor_pos, seats, eff, hand, ante)
         if j is None:
             return None
@@ -587,6 +600,34 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
                    'gto_jam': round(p_jam, 4), 'gto_r3': round(p_r3, 4),
                    'eff_bb': round(eff, 3), 'choice': act})
     return act
+
+
+def gto_pf_limp_choice(prof, pos, hand, rng, bb, limper_pos, limper_total_bb,
+                       n_limpers, other_live_actors=None, can_check=False,
+                       bf=1.0, seats=8, ante=True):
+    """SB 가 림프하고 나머지가 모두 폴드한 뒤 BB 차례: 범위 안이면 ('check'|'raise', 크기), 밖이면 None.
+
+    30·40bb 의 SB 림프 팟 기록(vs_limp_full, CFR+ 재시도, 2026-10-24 연결)만 쓴다.
+    BB 가 아니거나, 림퍼가 SB 한 명이 아니거나, 다른 사람이 돈을 넣었거나(other_live_actors != 1),
+    체크할 수 없거나(SB 가 레이즈한 것), ICM 압력이 있으면 None(기존 iso 판단). 범위 밖은 RNG 를 쓰지 않는다.
+    """
+    if (not GTO_PF_ON or pos != 'BB' or not can_check or int(n_limpers or 0) != 1
+            or limper_pos != 'SB' or other_live_actors != 1 or limper_total_bb is None
+            or not _gto_pf_icm_free(bf)):
+        return None
+    _GPF = _gto_pf_mod()
+    if _GPF is None or not hasattr(_GPF, 'defend_vs_limp'):
+        return None
+    share = (1.0 / 9.0) if ante else 0.0
+    eff = min(float(bb) + 1.0, float(limper_total_bb)) + share     # 핸드 시작 스택(BB 는 1bb 포스팅)
+    g = _GPF.defend_vs_limp(seats, eff, hand, ante)
+    if g is None:
+        return None
+    act = 'raise' if rng.random() < g['raise'] else 'check'
+    _timing_bound({'kind': 'gto_pf_vs_limp', 'eq': g['raise'], 'need': 0.5,
+                   'gto': {'check': round(g['check'], 4), 'raise': round(g['raise'], 4)},
+                   'eff_bb': round(eff, 3), 'choice': act})
+    return (act, float(g['raise_bb']) if act == 'raise' else 0)
 
 
 def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,

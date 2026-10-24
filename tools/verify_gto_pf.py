@@ -94,19 +94,22 @@ check('aggr: caller in pot -> None',
 check('aggr: unknown own action -> None',
       P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['Ah', 'Kc'], r, 29.0, 2.0, 1.0, 1,
                            other_live_actors=0) is None)
-check('aggr: 72o vs HJ open passes (HJ not loop-corrected yet)',
-      P.gto_pf_aggr_choice(prof, 'HJ', 'BB', ['7h', '2c'], r, 29.0, 2.0, 1.0, 1,
+# 2026-10-24: HJ 오픈 vs BB 는 30·40bb 모두 플랫콜 보정이 들어왔다. 보정 안 된 자리(BB 아닌 수비자)로 바꾼다.
+check('aggr: 72o CO vs HJ open passes (only BB defence is loop-corrected)',
+      P.gto_pf_aggr_choice(prof, 'HJ', 'CO', ['7h', '2c'], r, 29.0, 2.0, 2.0, 1,
                            other_live_actors=0, actor_acted=False,
                            aggressor_total_bb=30.0) == 'pass')
 # --- 플랫콜 루프로 보정된 BTN 오픈 vs BB (30~40bb): 콜·폴드까지 기준대로 ---
 f = G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.0)
 check('flat: 35bb BB K9s vs BTN 2.0 open calls', f is not None and f['call'] > 0.99)
 check('flat: 72o folds', G.defend_vs_open('BTN', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
-check('flat: 25bb / 45bb / 3x open / HJ opener -> None',
+# 2026-10-24: HJ 는 30bb 기록도 생겼다. 한쪽 버킷만 있는 자리는 지금 UTG+2(30bb 만, 40bb 는 계산 중) —
+# 40bb UTG+2 기록이 들어오면 이 두 검사의 UTG+2 부분을 바꾼다.
+check('flat: 25bb / 45bb / 3x open / UTG+2 opener between buckets -> None',
       G.defend_vs_open('BTN', 'BB', 9, 25, ['Kh', '9h'], 2.0) is None
       and G.defend_vs_open('BTN', 'BB', 9, 45, ['Kh', '9h'], 2.0) is None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 3.0) is None
-      and G.defend_vs_open('HJ', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
+      and G.defend_vs_open('UTG+2', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
 check('flat: CO open vs BB 35bb — K9s calls, 72o folds (loop-corrected 2026-10-20)',
       G.defend_vs_open('CO', 'BB', 9, 35, ['Kh', '9h'], 2.0)['call'] > 0.99
       and G.defend_vs_open('CO', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
@@ -122,8 +125,8 @@ check('flat hook: 3x open -> back to aggression-only (pass)',
 check('flat: SB 3.0 open vs BB 35bb uses the SB record; a 2.0 SB open does not',
       G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 3.0) is not None
       and G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
-check('flat: HJ only at 40bb (no 30bb record yet), BTN open size 1.8~2.5 only',
-      G.defend_vs_open('HJ', 'BB', 9, 40, ['Kh', '9h'], 2.0) is not None
+check('flat: UTG+2 only at 30bb (no 40bb record yet), BTN open size 1.8~2.5 only',
+      G.defend_vs_open('UTG+2', 'BB', 9, 30, ['Kh', '9h'], 2.0) is not None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.5) is not None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.6) is None)
 # --- packaging: the run folder (gateway / installer) must carry the module and its data ---

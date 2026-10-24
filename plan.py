@@ -3736,7 +3736,8 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                  opp_range_meta=None, call_ev_shadow=None,
                  calloff_decision_seed=None, cold_context=None,
                  cold_decision_seed=None, pf_other_live_actors=None,
-                 pf_actor_acted=None, pf_aggressor_total_bb=None):
+                 pf_actor_acted=None, pf_aggressor_total_bb=None,
+                 pf_limper_pos=None, pf_limper_total_bb=None):
     """프리플랍 판단 층. 액션과 함께 **이 핸드를 어떻게 칠 것인가**를 남긴다.
 
     예전에는 preflop.py 의 세 함수(open/iso/defend)가 각자 액션만 내고 끝났다.
@@ -3776,6 +3777,12 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             to_call_bb, raise_level, other_live_actors=pf_other_live_actors,
             actor_acted=pf_actor_acted, n_limpers=n_limpers, bf=bf,
             seats=seats, ante=ante, aggressor_total_bb=pf_aggressor_total_bb)
+    _gto_limp = None
+    if aggressor_pos is None and n_limpers:
+        _gto_limp = _pf.gto_pf_limp_choice(
+            profile, pos, hand, rng, bb, pf_limper_pos, pf_limper_total_bb,
+            n_limpers, other_live_actors=pf_other_live_actors, can_check=can_check,
+            bf=bf, seats=seats, ante=ante)
     if aggressor_pos is None and not n_limpers:
         a, sz = _pf.open_decision(profile, pos, bb, hand, rng,
                                   behind_stacks=behind_stacks,
@@ -3789,6 +3796,10 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
                                   bb_chips=bb_chips,
                                   money_open=money_open)
         role = 'open'
+    elif aggressor_pos is None and _gto_limp is not None:
+        # SB 림프를 받은 BB(30·40bb, 나머지 전원 폴드): 체크 / 레이즈(3.5bb)를 기준대로.
+        a, sz = _gto_limp
+        role = 'iso'
     elif aggressor_pos is None:
         a, sz = _pf.iso_decision(
             profile, pos, hand, n_limpers, bb, rng,
@@ -3801,11 +3812,15 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
             field_avg_bb=field_avg_bb, erosion=erosion, field_q=field_q, bf=bf,
             can_check=can_check)
         role = 'iso'
-    elif _gto_aggr in ('jam', '3bet'):
+    elif _gto_aggr in ('jam', '3bet', '4bet'):
         # GTO 기준의 공격. 3벳 크기는 기존 사이즈 습관(reraise_mult)을 쓴다.
+        # 작은 4벳(3벳 받은 오프너, 서브게임 기록)은 계산기 메뉴와 같은 배수(IP 2.15 / OOP 2.35 =
+        # reraise_mult(2)) × 3벳 크기.
         role = 'defend'
         if _gto_aggr == 'jam':
             a, sz = 'shove', float(bb)
+        elif _gto_aggr == '4bet':
+            a, sz = '3bet', float(open_bb) * _pf.reraise_mult(2, pos)
         else:
             a, sz = '3bet', float(open_bb) * _pf.reraise_mult(1, pos)
     elif _gto_aggr in ('call', 'fold'):
