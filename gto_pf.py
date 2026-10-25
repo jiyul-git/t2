@@ -159,30 +159,50 @@ def aggr_vs_open(opener_pos, def_pos, seats, eff_bb, hand, ante=True):
 FULL_OPEN_RATIO = (0.9, 1.25)
 
 
+def _full_open(table, key, eff_bb, hand, open_bb):
+    """한 오픈 크기 표에서 {'fold','call','r3','jam'}(합 1) 과 그 표의 오픈 크기. 없거나 창 밖이면 None.
+    open_bb=None 이면 창을 보지 않는다(두 크기 사이 보간용)."""
+    d = _load()
+    if not d.get(table):
+        return None
+    sizes = [e[key].get('open_bb', 2.0) for e in d[table].values() if key in e]
+    if not sizes or (open_bb is not None and not all(
+            FULL_OPEN_RATIO[0] * s <= float(open_bb) <= FULL_OPEN_RATIO[1] * s for s in sizes)):
+        return None
+    g = {k: _at(_interp(table, key, eff_bb, lambda e, k=k: e.get(k)), hand)
+         for k in ('fold', 'call', 'r3', 'jam')}
+    if any(v is None for v in g.values()):
+        return None
+    s = sum(g.values())
+    return ({k: v / s for k, v in g.items()}, sizes[0]) if s > 0 else None
+
+
 def defend_vs_open(opener_pos, def_pos, seats, eff_bb, hand, open_bb, ante=True):
     """단독 오픈을 받은 수비자의 전체 응답 {'fold','call','r3','jam'}.
 
     플랫콜 루프로 보정된 자리(vs_open_full)만. 양쪽 버킷(예: 30·40)에 모두 있어야
     하고(한쪽만 있으면 None), 오픈 크기가 기록의 오픈 크기 × FULL_OPEN_RATIO 안이어야 한다.
+    오픈 2.5bb 기록(vs_open_full_o25, 2026-10-25)이 있으면 실제 오픈 크기로 두 크기 사이를
+    직선 보간한다(2.0 이하는 2.0 기록, 2.5 이상은 2.5 기록). 한쪽만 쓸 수 있으면 그쪽만.
     """
     if not covered(eff_bb, seats, ante) or open_bb is None:
         return None
     a, b = pos9(opener_pos, seats), pos9(def_pos, seats)
     if a is None or b is None:
         return None
-    d = _load()
-    if not d.get('vs_open_full'):
-        return None
     key = a + '>' + b
-    sizes = [e[key].get('open_bb', 2.0) for e in d['vs_open_full'].values() if key in e]
-    if not sizes or not all(FULL_OPEN_RATIO[0] * s <= float(open_bb) <= FULL_OPEN_RATIO[1] * s for s in sizes):
-        return None
-    g = {k: _at(_interp('vs_open_full', key, eff_bb, lambda e, k=k: e.get(k)), hand)
-         for k in ('fold', 'call', 'r3', 'jam')}
-    if any(v is None for v in g.values()):
-        return None
-    s = sum(g.values())
-    return {k: v / s for k, v in g.items()} if s > 0 else None
+    o = float(open_bb)
+    lo = _full_open('vs_open_full', key, eff_bb, hand, None)
+    hi = _full_open('vs_open_full_o25', key, eff_bb, hand, None)
+    if lo and hi and lo[1] < hi[1] and lo[1] <= o <= hi[1]:
+        (gl, sl), (gh, sh) = lo, hi
+        t = (o - sl) / (sh - sl)
+        return {k: (1 - t) * gl[k] + t * gh[k] for k in gl}
+    for tbl in ('vs_open_full', 'vs_open_full_o25'):        # 두 크기 밖: 창 안의 가까운 한쪽
+        g = _full_open(tbl, key, eff_bb, hand, o)
+        if g:
+            return g[0]
+    return None
 
 
 def jam_vs_3bet(opener_pos, threebettor_pos, seats, eff_bb, hand, ante=True):

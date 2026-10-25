@@ -142,6 +142,20 @@ check('flat: UTG+2 at 30 and 40bb, BTN open size 1.8~2.5 only',
       and G.defend_vs_open('UTG+2', 'BB', 9, 40, ['Kh', '9h'], 2.0) is not None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.5) is not None
       and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.6) is None)
+# --- 오픈 2.5bb 기록(vs_open_full_o25, 2026-10-25): 실제 오픈 크기로 2.0·2.5 사이 보간 ---
+if (d.get('vs_open_full_o25') or {}).get('40', {}).get('BTN>BB'):
+    i42 = d['classes'].index('42o')
+    f20, f25 = d['vs_open_full']['40']['BTN>BB']['fold'][i42], d['vs_open_full_o25']['40']['BTN>BB']['fold'][i42]
+    fz = lambda o: G.defend_vs_open('BTN', 'BB', 9, 40, ['4h', '2d'], o)['fold']
+    check('o25: 40bb BB vs BTN 2.5 open = 2.5 record, 2.0 open = 2.0 record',
+          abs(fz(2.5) - f25) < 2e-3 and abs(fz(2.0) - f20) < 2e-3)
+    check('o25: 2.25 open = midpoint of the two records (continuous, no jump)',
+          abs(fz(2.25) - (f20 + f25) / 2) < 2e-3 and min(fz(2.0), fz(2.5)) - 1e-9 <= fz(2.1) <= max(fz(2.0), fz(2.5)) + 1e-9)
+    check('o25: 3.0 open uses the 2.5 record (window 2.25~3.125), 3.2 -> None',
+          abs(fz(3.0) - f25) < 2e-3 and G.defend_vs_open('BTN', 'BB', 9, 40, ['4h', '2d'], 3.2) is None)
+    if not (d['vs_open_full_o25'].get('30') or {}).get('BTN>BB'):
+        check('o25: 35bb without a 30bb 2.5 record -> 2.0 record path as before',
+              G.defend_vs_open('BTN', 'BB', 9, 35, ['4h', '2d'], 2.3) == G.defend_vs_open('BTN', 'BB', 9, 35, ['4h', '2d'], 2.0))
 # --- packaging: the run folder (gateway / installer) must carry the module and its data ---
 import subprocess, tempfile
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

@@ -16,6 +16,7 @@ s30/s40/s60 은 Plan A v2b 부모 메뉴(오픈 2.0, SB 림프/3.0, 3벳 3x 또�
   vs_open_full : 플랫콜 루프로 보정한 자리(spot_quick_v1, 사용자 결정 2026-10-20)만 —
                  단독 오픈(2.0bb)을 받은 수비자의 폴드 / 콜 / 3벳 / 3벳 올인 전체 빈도
                  (p30_flat_btn/co_vs_bb: claude/p30-flat-20261019, p40_flat_btn/co_vs_bb: census 브랜치)
+  vs_open_full_o25 : 같은 수비를 오픈 2.5bb 로 푼 기록(p<S>_flat_<자리>_vs_bb_o25, claude/flat_open25_20261025)
   vs_3bet_full : 3벳 받은 오프너의 폴드 / 콜 / 작은 4벳 / 올인 전체(서브게임 기록 p<S>v1_*, 2026-10-24 연결)
   vs_limp_full : SB 림프를 받은 BB 의 체크 / 레이즈(p<S>_flat_sb_limp_vs_bb, CFR+ 재시도 기록, 2026-10-24 연결)
 뺀 것: 보정 안 된 자리의 플랫 콜·림프(플랍 팟을 간이 모델로 계산 — 신뢰 낮음, 30bb SB 첫 진입 포함), 오버콜,
@@ -26,14 +27,14 @@ import json, os, sys
 AGG_MIN = 10.0
 out = {'schema': 't2_gto_pf_v1', 'source': [], 'buckets': [], 'classes': None,
        'first_in': {}, 'vs_jam': {}, 'vs_3bjam': {}, 'vs_open': {}, 'vs_3bet': {}, 'vs_open_full': {},
-       'vs_3bet_full': {}, 'vs_limp_full': {},
+       'vs_open_full_o25': {}, 'vs_3bet_full': {}, 'vs_limp_full': {},
        'assumptions': {'symmetric_stack': True, 'chip_ev': True, 'ante_total_bb': 1.0,
                        'seats': 9, 'status': 'quick'}}
 r3 = lambda v: [round(float(x), 3) for x in v]
 def flat(rec):
     """플랫콜 루프 기록 → vs_open_full. 연결은 수비자의 첫 응답 노드만(깊은 노드는 연구용)."""
     import re
-    m = re.match(r'p(\d+)_flat_([a-z0-9]+)_vs_([a-z0-9]+)$', rec['id'])
+    m = re.match(r'p(\d+)_flat_([a-z0-9]+)_vs_([a-z0-9]+)(_o25)?$', rec['id'])
     S = str(int(m.group(1)))
     name = lambda s: {'utg1': 'UTG+1', 'utg2': 'UTG+2'}.get(s, s.upper())
     n = next(x for x in rec['nodes'] if x['scope'] == '3-bet response' and not x['off_path'])
@@ -45,7 +46,9 @@ def flat(rec):
             'r3': lambda a: a.startswith('3-bet'), 'jam': lambda a: a.startswith('All-in')}
     ent = {k: r3([get(c, f) for c in out['classes']]) for k, f in cols.items()}
     ent['open_bb'] = open_bb
-    out['vs_open_full'].setdefault(S, {})[name(m.group(2)) + '>' + name(m.group(3))] = ent
+    # _o25: 같은 자리를 오픈 2.5bb 로 푼 기록(2026-10-25) → 별도 표. 조회가 실제 오픈 크기로 두 표를 섞는다.
+    tbl = 'vs_open_full_o25' if m.group(4) else 'vs_open_full'
+    out[tbl].setdefault(S, {})[name(m.group(2)) + '>' + name(m.group(3))] = ent
     _src(rec)
 
 
@@ -175,4 +178,4 @@ for path in sys.argv[1:]:
             out['vs_3bjam'].setdefault(S, {})[n['actor'] + '>' + acts[1][0]] = r3(cs[call])
 dst = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'gto_pf_data.json')
 json.dump(out, open(dst, 'w'), separators=(',', ':'))
-print(dst, {k: {s: len(v) for s, v in out[k].items()} for k in ('first_in', 'vs_jam', 'vs_3bjam', 'vs_open', 'vs_3bet', 'vs_open_full', 'vs_3bet_full', 'vs_limp_full')})
+print(dst, {k: {s: len(v) for s, v in out[k].items()} for k in ('first_in', 'vs_jam', 'vs_3bjam', 'vs_open', 'vs_3bet', 'vs_open_full', 'vs_open_full_o25', 'vs_3bet_full', 'vs_limp_full')})
