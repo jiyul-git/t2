@@ -383,6 +383,34 @@ The bottom (where it sits) must touch the line at the same place in every cell o
 
 받으면: 1·3행은 정면 좌석(`f`), 2·4행은 3/4 좌석(`l`)의 자세로 넣는다. 가로선이 엉덩이 접촉선이라 따로 잴 필요가 없다. 다리가 방석 앞으로 늘어져 보이게 된다.
 
+### 7. 걸으며 돌아서기 2×4 — 4마리 (2026-10-25, 사용자 요청문)
+
+지금 걷기 → 정면 서기는 "종이 뒤집기"(옆모습이 가늘어졌다가 정면이 넓어짐)다. 발을 옮기며 돌아서는 8칸이 오면 `turn_r_front`(오른쪽으로 걷다 정면으로)를 이 칸들로 바꾸고, 좌우로 뒤집어 `turn_l_front`, 거꾸로 틀어 `turn_front_r`/`turn_front_l`(정면에서 돌아 걸어 나가기)로 쓴다. 칸을 통째로만 쓰고(조각 수술 없음), 1칸은 걷기 루프의 한 칸, 8칸은 정면 서기와 이어지게 맞춘다. 같은 발 선이 있어서 칸마다 높이를 따로 잴 필요가 없다.
+
+`<animal>`·`<details>`에 넣을 것: 펭귄 — `penguin` / `brown aviator cap with goggles, mustard scarf, coffee cup held in one flipper`(마지막 줄 "arms at the sides"는 "flippers at the sides, the cup still in the same flipper"로), 토끼 — `rabbit` / `pink coat, pink scarf, bow on the ear, boots`, 거북이 — `turtle` / `black beanie, navy jacket with gold pattern, brown shell backpack`, 호랑이 — `tiger` / `hoodie, phone in one paw, suitcase, tail`. 첨부: 그 동물의 기준 그림 1장(걷는 모습).
+
+```
+Use the attached <animal> as the exact character reference (same face, outfit and every
+detail: <details>, colours, line weight, proportions). Every detail must be identical in
+every cell.
+
+Draw a 2x4 sheet (8 separate cells, left to right, top to bottom), plain white background,
+white gaps, same size and the same foot line in every cell. No floor, no shadow, no text.
+
+The <animal> is walking to the RIGHT and turns to face the viewer by STEPPING, not spinning:
+1. walking right, side view, near foot forward.
+2. the near foot plants; the HEAD turns toward the viewer first, body still side-on.
+3. weight on the planted foot, the far foot lifts; shoulders follow the head, hips still side-on.
+4. the far foot steps out toward the viewer, body at 3/4, hips turning.
+5. the near foot lifts and swings around to join, body almost facing the viewer.
+6. the near foot lands next to the other one, body facing the viewer, a slight overshoot sway.
+7. settling, standing facing the viewer, knees slightly bent.
+8. standing facing the viewer, relaxed, arms at the sides.
+Head leads, shoulders follow, hips last. The feet must clearly move between cells.
+```
+
+받으면 확인할 것: 8칸 모두 같은 캐릭터·같은 크기인지(Gemini는 아래 행을 작게 그리는 일이 잦다 — 머리 기준으로 맞춤), 발이 칸마다 정말 움직이는지, 2·3칸에서 머리만 먼저 돌았는지(몸까지 같이 돌았으면 칸 순서를 바꿔 쓰거나 다시 요청).
+
 ## 확인과 보내기
 
 - 한 장씩 볼 때: 기준 그림과 같은 캐릭터인지(얼굴, 옷, 색), 몸 전체가 잘리지 않았는지, 배경이 흰색 단색인지.
