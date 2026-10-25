@@ -119,10 +119,15 @@ function simulate(characters, seed, label, hours = 24) {
         }
         if (prev && prev.state === c.state) {
           const dx = Math.abs(c.x - prev.x);
-          ok(dx % clip.advance === 0 && dx <= 2 * clip.advance, label + ': walked ' + dx + ' px in one step');
+          if (/^hop_/.test(c.clip) || /^hop_/.test(prev.clip)) {
+            // across a hop (a pass only): whole walk and hop steps, at most two of them
+            const cs = clipsOf[c.name], w = cs[c.clip.replace('hop_', 'walk_')] || clip, h = cs[(/^hop_/.test(c.clip) ? c.clip : prev.clip)];
+            const sums = [0, 1, 2].flatMap(a => [0, 1, 2].filter(b => a + b <= 2).map(b => a * w.advance + b * h.advance));
+            ok(c.state === 'EXITING' && sums.includes(dx), label + ': moved ' + dx + ' px in one step around a hop');
+          } else ok(dx % clip.advance === 0 && dx <= 2 * clip.advance, label + ': walked ' + dx + ' px in one step');
           if (c.state === 'ENTERING' && c.x !== prev.x) ok((c.x > prev.x) === (walkInfo[c.name].dir === 1), label + ': walks toward the seat');
         }
-        lastWalk[c.name] = { x: c.x, state: c.state };
+        lastWalk[c.name] = { x: c.x, state: c.state, clip: c.clip };
         ok(c.lane === 'aisle', label + ': walkers are in the aisle');
       } else {
         const prev = lastWalk[c.name];
@@ -281,9 +286,9 @@ ok(chatTotal > 0, 'conversations happen');
   // first; the same event never twice in a row; each opening is a different random run.
   ok(REAL.length >= 3 && ['tiger', 'rabbit', 'turtle'].every(n => scene.characters.includes(n)), 'scene has the real tiger, rabbit and turtle: ' + scene.characters);
   for (const m of REAL) {
-    // a plain walker (walk_r / walk_l only, no seat facings: the penguin until its sitting art comes)
+    // a plain walker (walk_r / walk_l, maybe hop_r / hop_l; no seat facings: the penguin until its sitting art comes)
     // only passes by; every other real animal both passes by and sits
-    const plainWalker = !m.facings && Object.keys(m.clips).every(id => id === 'walk_r' || id === 'walk_l');
+    const plainWalker = !m.facings && Object.keys(m.clips).every(id => /^(walk|hop)_[lr]$/.test(id));
     ok(B.canPass(m) && (B.canSit(m) || plainWalker), m.name + ' both passes by and sits (or is a plain walker)');
     ok(m.clips.walk_r.advance > 0 && m.clips.walk_r.frames.length === m.clips.walk_l.frames.length, m.name + ' walks');
     // pose-graph legality of the clips (the frames themselves are checked by lounge_check_assets.py):
@@ -448,6 +453,43 @@ ok(chatTotal > 0, 'conversations happen');
     d.setFace('rabbit', null);
   }
   ok(!d.setFace('nobody', 'blink'), 'setFace refuses unknown characters');
+}
+
+{
+  // A walker with hop clips (the penguin): now and then it hops in the middle of a pass. The hop starts and
+  // ends on the walk (walk -> hop -> walk, on walk frame 0), and the drawn x never jumps: every 100 ms it moves
+  // about as far as a walk or hop frame takes it, never backwards.
+  const hoppers = REAL.filter(m => m.clips.hop_r && m.clips.hop_l);
+  for (const m of hoppers) {
+    for (const id of ['hop_r', 'hop_l']) {
+      const c = m.clips[id], w = m.clips[c.from];
+      ok(c.from === c.to && /^walk_[lr]$/.test(c.from) && !c.loop, m.name + ' ' + id + ' goes from a walk back to it');
+      ok(c.frames[0] === w.frames[0] && c.frames[c.frames.length - 1] === w.frames[0], m.name + ' ' + id + ' starts and ends on walk frame 0');
+      ok(c.advance >= w.advance, m.name + ' ' + id + ' moves at least as fast as the walk');
+    }
+    const { d, events } = makeDirector([m], 13);
+    let hops = 0, passes = 0, prev = null, maxStep = 0;
+    const fastest = Math.max(m.clips.walk_r.advance * m.clips.walk_r.fps, m.clips.hop_r.advance * m.clips.hop_r.fps);
+    for (let i = 0; i < 2 * 3600 * 10; i++) {
+      const c = d.step(100).find(x => x.name === m.name);
+      if (!c || (c.state !== 'EXITING' && c.state !== 'ENTERING')) { prev = null; continue; }
+      if (prev !== null) {
+        const dx = Math.abs(c.drawX - prev);
+        maxStep = Math.max(maxStep, dx);
+        ok(dx <= fastest * 0.1 * 1.05 + 1e-6, m.name + ' jumps ' + dx.toFixed(1) + ' px in 100 ms (' + c.clip + ')');
+      }
+      prev = c.drawX;
+    }
+    for (let i = 1; i < events.length; i++) {
+      const e = events[i];
+      if (e.name !== m.name) continue;
+      if (/^hop_/.test(e.to)) { hops++; ok(/^walk_/.test(e.from) && e.state === 'EXITING', m.name + ' hops only while passing: ' + JSON.stringify(e)); }
+      if (/^hop_/.test(e.from)) ok(e.to === m.clips[e.from].to, m.name + ' goes back to its walk after a hop');
+      if (/^walk_/.test(e.to) && !e.from) passes++;
+    }
+    ok(hops >= 1 && hops < passes, m.name + ' hopped in some passes, not all: ' + hops + ' hops in ' + passes + ' passes');
+    console.log('  %s: %d hops in %d passes (2 h), largest move in 100 ms %s px', m.name, hops, passes, maxStep.toFixed(1));
+  }
 }
 
 {

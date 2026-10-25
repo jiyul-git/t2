@@ -206,8 +206,8 @@ def main():
             ok('blink' in (m['frames'][m['clips']['walk_r']['frames'][0]].get('v') or {}), name + ' has a blink on walk_r')
             rep = C.Report()
             C.check_character(froot, name, rep)
-            # a plain walker (walk clips only: the penguin until its sitting art comes) only passes by
-            want = 'walker' if set(m['clips']) == {'walk_r', 'walk_l'} else 'hybrid'
+            # a plain walker (walk and hop clips only: the penguin until its sitting art comes) only passes by
+            want = 'walker' if set(m['clips']) <= {'walk_r', 'walk_l', 'hop_r', 'hop_l'} else 'hybrid'
             ok(rep.chars.get(name) == want, name + ' passes by%s (%s): %r' % (' and sits' if want == 'hybrid' else '', want, rep.chars))
         name = 'rabbit'
         orig = load_manifest(froot, name)

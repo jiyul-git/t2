@@ -44,11 +44,17 @@
   // character with the full clip set can go to a seat; one with both (walker + full set, the real
   // animals) does either, one thing at a time.
   const WALKER_CLIPS = ['walk_r', 'walk_l'];
+  // A walker that also has hop_r / hop_l (the penguin) hops now and then in the middle of a pass: once in
+  // about HOP_CHANCE of its passes, at the first walk-loop wrap past the middle of the room. A hop clip
+  // starts and ends on walk frame 0, so it is swapped in at a wrap and the walk goes on from frame 1,
+  // and the walk's origin moves with it, so the position never jumps.
+  const HOP_CLIPS = { walk_r: 'hop_r', walk_l: 'hop_l' };
+  const HOP_CHANCE = 1 / 3;
   // Seat facings (docs/LOUNGE_SCENE_DESIGN.md 7.8): a seat faces 'f' (front, the default) or another way
   // ('l': three-quarters left). The clips a character plays at a seat are named for its facing: plain for
   // 'f', '<id>@<facing>' otherwise (walk_r / walk_l are the same everywhere). A character can sit at the
   // facings for which it has every required clip.
-  const clipAt = (id, facing) => (!facing || facing === 'f' || WALKER_CLIPS.includes(id) ? id : id + '@' + facing);
+  const clipAt = (id, facing) => (!facing || facing === 'f' || WALKER_CLIPS.includes(id) || /^hop_[lr]$/.test(id) ? id : id + '@' + facing);
   function sitFacings(m) {
     if (!m || !m.clips) return [];
     const list = Array.isArray(m.facings) && m.facings.length ? m.facings : ['f'];
@@ -208,7 +214,10 @@
     function startPass(c) {
       const toRight = c.pass === 'r' || (c.pass !== 'l' && rand() < 0.5);
       c.seat = -1; c.activity = ''; c.clip = null; c.state = 'EXITING';
-      beginWalk(c, toRight ? 'walk_r' : 'walk_l', toRight ? entries.left : entries.right, toRight ? 1 : -1, Infinity);
+      const id = toRight ? 'walk_r' : 'walk_l';
+      beginWalk(c, id, toRight ? entries.left : entries.right, toRight ? 1 : -1, Infinity);
+      // (rand() only for characters that can hop, so the others' runs are unchanged)
+      c.hopPending = !!c.clips[HOP_CLIPS[id]] && rand() < HOP_CHANCE;
     }
 
     // ------------------------------------------------------------------ events and the movement lock
@@ -522,8 +531,23 @@
       if (c.state === 'EXITING') {
         c.x = c.walk.x0 + c.walk.dir * clip.advance * Math.floor(c.total);
         if ((c.walk.dir < 0 && c.x <= entries.left) || (c.walk.dir > 0 && c.x >= entries.right)) {
-          c.state = 'OFFSCREEN'; c.clip = null; c.seat = -1; c.activity = ''; c.walk = null; c.leaving = false;
+          c.state = 'OFFSCREEN'; c.clip = null; c.seat = -1; c.activity = ''; c.walk = null; c.leaving = false; c.hopPending = false;
           if (mover && mover.c === c) release();
+        } else if (!clip.loop && c.total >= n) {
+          // a hop is over: on with the walk from frame 1, where the hop's glide ends (no jump in the drawn x)
+          const walkId = clip.to, over = (c.total - n) / clip.fps, dir = c.walk.dir;
+          c.x = c.walk.x0 + dir * clip.advance * n;
+          c.walk = { x0: c.x - dir * c.clips[walkId].advance, dir, total: Infinity };
+          startClip(c, walkId);
+          c.total = 1 + over * c.clips[walkId].fps;
+        } else if (c.hopPending && clip.loop && Math.floor(c.total) >= n && Math.floor(c.total) % n === 0 &&
+                   (c.x - (entries.left + entries.right) / 2) * c.walk.dir >= 0) {
+          // at a walk wrap past the middle: the hop starts here, on walk frame 0
+          const over = (c.total - Math.floor(c.total)) / clip.fps;
+          c.hopPending = false;
+          c.walk = { x0: c.x, dir: c.walk.dir, total: Infinity };
+          startClip(c, HOP_CLIPS[c.clip]);
+          c.total = over * c.clips[c.clip].fps;
         }
         return;
       }
