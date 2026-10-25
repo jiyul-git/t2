@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the penguin waddle (walk) and hop from WHOLE cells of the waddle sheet, and pack them for the lounge.
 
-    python3 art/tools/build_penguin_walk.py [--out DIR] [--scene DIR]
+    python3 art/tools/build_penguin_walk.py [--out DIR] [--walker DIR]
 
 The first try cut f_00 of the walk sheet into a body and two leg pieces and moved the pieces
 (art/README.md); the user rejected it (seams at pixel level, a rigid body). This one uses only whole
@@ -21,8 +21,8 @@ rows 1-3; row 4 has no cap, f_13 has a stray blob under the feet, f_02 has no co
    removed, pockets of the white sheet kept between a foot and the body opened (see-through); then the hand fixes in FIXES. check_8x_<clip>.png: 8x crops (outline, feet, cup, flipper)
    of every finished right-facing frame to check (left frames are exact mirrors);
 5. writes <out>/right_<i>.png, left_<i>.png, hop_right_<i>.png, hop_left_<i>.png, walk_right.gif /
-   walk_left.gif / hop_right.gif, and the lounge walker <scene>/{atlas.webp, manifest.json}: walk_r /
-   walk_l, and hop_r / hop_l (walk frame 0 -> 8 hop frames -> walk frame 0, so the director can swap
+   walk_left.gif / hop_right.gif. pack() makes the walker (atlas, manifest) that build_character.py
+   builds the whole lounge penguin on (walking, hopping, sitting): walk_r / walk_l, and hop_r / hop_l (walk frame 0 -> 8 hop frames -> walk frame 0, so the director can swap
    it in at a walk-loop wrap, behavior.js). 'advance': two steps per loop, each the feet's distance at
    contact, so the feet do not skate on average (the cells waddle in place: a planted foot does not
    slide back from cell to cell); the hop moves HOP_FASTER times as far per frame.
@@ -43,7 +43,6 @@ import face_patch                  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 CELLS = ROOT / 'art/cutouts/penguin_waddle'
 OUT = ROOT / 'art/cutouts/penguin_walk_loop'
-SCENE = ROOT / 'ui/web/lounge/assets/chars/penguin'
 REF = '00'                       # the head every cell is registered on
 UP = 4                           # cells are enlarged this much (LANCZOS) for the transforms
 DOWN = 2                         # ...and the result brought down by this much: 2x working frames
@@ -195,11 +194,12 @@ def line_colour(a):
     return np.median(a[..., :3][ring & (lum < 70)], 0).astype(np.float32)
 
 
-def finish(f, line):
+def finish(f, line, pockets=True):
     """the finishing pass on one 2x frame (straight RGBA float): the silhouette's edge ring is the
     outline everywhere in this drawing, so every soft, see-through or pale pixel on it becomes the line
     colour (a halo of the white sheet, a lighter fringe from resampling, a broken outline); faint
-    alpha dust and specks away from the figure are dropped; pinholes inside are closed."""
+    alpha dust and specks away from the figure are dropped; pinholes inside are closed. pockets=False
+    leaves small light blobs low on the figure alone (seated pictures: a cup's white lid is down there)."""
     out = f.copy()
     al = out[..., 3]
     al[al < 24] = 0
@@ -224,7 +224,7 @@ def finish(f, line):
     # unsaturated blobs low on the figure (the cream belly is one big piece) become see-through gaps;
     # their rim is then re-inked with the rest of the edge below
     rgb = out[..., :3]
-    light = (rgb.min(-1) > 140) & (rgb.max(-1) - rgb.min(-1) < 40) & (al > 128)
+    light = (rgb.min(-1) > 140) & pockets & (rgb.max(-1) - rgb.min(-1) < 40) & (al > 128)
     rows = np.nonzero((al > 128).any(1))[0]
     light[:rows[0] + int((rows[-1] - rows[0]) * 0.75)] = False
     n, lab, st, _ = cv2.connectedComponentsWithStats(light.astype(np.uint8), connectivity=8)
@@ -394,7 +394,7 @@ def shrink(f, a):
     return im.resize((round(im.width * a), round(im.height * a)), Image.LANCZOS)
 
 
-def pack(walk, blinks, hop, step, out):
+def pack(walk, blinks, hop, step, out, lossless=False):
     """<out>/{atlas.webp, manifest.json}: walk_r / walk_l with a blink patch on every walk frame, and
     hop_r / hop_l, the same format as build_walker.py's. All frames share one canvas and one foot line."""
     a = ATLAS                                         # atlas px per 2x frame px
@@ -433,10 +433,14 @@ def pack(walk, blinks, hop, step, out):
     adv = int(round(step * HEIGHT / fig_h))           # scene px per walk frame = the feet's step
     hop_adv = int(round(adv * HOP_FASTER))
     out.mkdir(parents=True, exist_ok=True)
-    atlas.save(out / 'atlas.webp', lossless=False, quality=90, method=6)
+    aname = 'atlas.png' if lossless else 'atlas.webp'
+    if lossless:
+        atlas.save(out / aname)
+    else:
+        atlas.save(out / aname, lossless=False, quality=90, method=6)
     W, H = list(range(nw)), list(range(nw, n))
     man = {
-        'name': 'penguin', 'walker': True, 'pass': 'r', 'atlas': 'atlas.webp',
+        'name': 'penguin_walker', 'walker': True, 'pass': 'r', 'atlas': aname,
         'scale': round(scale, 4), 'mirrorable': False, 'frames': out_frames,
         'poses': {'walk_r': 0, 'walk_l': n},
         'poseInfo': {},                               # what seat poses face: none yet (no sitting art)
@@ -449,15 +453,12 @@ def pack(walk, blinks, hop, step, out):
         },
     }
     (out / 'manifest.json').write_text(json.dumps(man, separators=(',', ':')))
-    print('penguin: %d frames, atlas %dx%d, %d bytes, scale %.4f, advance %d, hop advance %d -> %s' % (
-        n, atlas.width, atlas.height, (out / 'atlas.webp').stat().st_size, scale, adv, hop_adv, out))
+    print('penguin_walker: %d frames, atlas %dx%d, %d bytes, scale %.4f, advance %d, hop advance %d -> %s' % (
+        n, atlas.width, atlas.height, (out / aname).stat().st_size, scale, adv, hop_adv, out))
 
 
-if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--out', default=str(OUT), help='loop frames, preview GIFs and 8x checks')
-    ap.add_argument('--scene', default=str(SCENE), help="the lounge walker (atlas, manifest); '' to skip")
-    args = ap.parse_args()
+def frames():
+    """(walk frames, their blink faces, hop frames, walk step px) with the hand fixes applied"""
     B = Builder()
     walk, blinks, step = B.walk()
     hop = B.hop()
@@ -466,6 +467,16 @@ if __name__ == '__main__':
         tgt[i] = apply_fixes(tgt[i], fx, B.line)
         if clip == 'walk':
             blinks[i] = apply_fixes(blinks[i], fx, B.line)
+    return walk, blinks, hop, step
+
+
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--out', default=str(OUT), help='loop frames, preview GIFs and 8x checks')
+    ap.add_argument('--walker', help='also write the walker alone (atlas, manifest) here (the scene gets the '
+                                     'whole penguin from build_character.py penguin)')
+    args = ap.parse_args()
+    walk, blinks, hop, step = frames()
     save(walk, hop, Path(args.out))
-    if args.scene:
-        pack(walk, blinks, hop, step, Path(args.scene))
+    if args.walker:
+        pack(walk, blinks, hop, step, Path(args.walker))

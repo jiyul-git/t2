@@ -79,6 +79,11 @@ TURN_RABBIT = S + 'turnaround_rabbit_gemini.webp'
 TURN_TIGER = S + 'turnaround_tiger_gemini.webp'
 TURN_TURTLE = S + 'turnaround_turtle_gemini.webp'
 GROUP_WALK = S + 'chars_walking_group_gemini.webp'
+PENGUIN_WALK = S + 'penguin_walk_sheet_4x4_gemini.webp'
+HOPSIT = S + 'penguin_hop_sit_sheet_4x4_gemini.webp'
+# sheets with full-width guide lines drawn across each row (the sofa lines Gemini was asked for): painted
+# out before cutting (unline()); never super-resolved (the SR copy would still have them)
+LINED = {HOPSIT}
 GROUP_ORDER = ['tiger', 'rabbit', 'turtle', 'penguin']
 BREATH_S = 4.0                      # one breath, seconds (idle, activities, doze)
 BREATH_AMPS = (0, 0.006, 0.012)     # stretch levels of a breath
@@ -226,6 +231,58 @@ CHARS = {
             doze=[dict(src=(ALL_DOZE, '20'), f=1.3, mirror=True, seat=(80, 150), facing=F('L', 'L', 'L')),
                   dict(src=(ALL_DOZE, '21'), f=1.3, mirror=True, seat=(80, 150), facing=F('L', 'L', 'L')),
                   dict(src=(ALL_DOZE, '23'), f=1.3, mirror=True, keep='largest', seat=(80, 150), facing=F('L', 'L', 'L'))],
+        ),
+    }),
+    # the penguin (art/README.md): walker from art/tools/build_penguin_walk.py (whole cells of the waddle sheet,
+    # with a hop); everything seated from the hop-and-sit sheet (HOPSIT, whole cells only). f: the hop-sit heads
+    # are 1/1.09 of the waddle's (template match on the head), the walk sheet's row 4 1/1.13 of its row 1.
+    # Seat points: the middle between the two feet, on the body's bottom outline there (measured).
+    # sit_down is a real hop drawn cell by cell ('hop': crouch, jump, in the air, land, plop down, turn), stand_up
+    # the same backwards; the eat pose holds the cup and the drawn sip ('sip', eyes shut) plays going in and out;
+    # 'wave' is a one-shot clip. finish: build_penguin_walk.finish() on every picture (outline ring, fringe).
+    'penguin': dict(walker='penguin', finish=True, facings={
+        'f': dict(
+            stand=dict(src=(PENGUIN_WALK, '30'), f=1.422, facing=F('F', 'F', 'F')),
+            # turned a little to the viewer's right all over (head, scarf, feet); blink: the calm closed eyes of f_20,
+            # smile: the happy closed eyes of f_13 (both front cells of the same sheet), the far eye narrower; the far eye sits
+            # by the dark side of the head, so its hole is filled from a white spot of the face (`skin`, picked by face_white)
+            sit=dict(src=(HOPSIT, '23'), f=1.352, seat=(80, 159), facing=F('Fr', 'Fr', 'Fr'), face=dict(sheet=HOPSIT, variants={
+                'blink': dict(cell='20', scale=1.0, erase=[(65.2, 57.7, 6.5, 7.5), dict(e=(95.7, 56.3, 4.5, 6.5), skin=(89.7, 56.3))],
+                              feats=[dict(box=(23, 57, 41, 67), at=(65.2, 59)), dict(box=(62, 56, 80, 66), at=(95.7, 57.5), scale=0.75)]),
+                'smile': dict(cell='13', scale=1.0, erase=[(65.2, 57.7, 6.5, 7.5), dict(e=(95.7, 56.3, 4.5, 6.5), skin=(89.7, 56.3))],
+                              feats=[dict(box=(23, 55, 40, 65), at=(65.2, 57.5)), dict(box=(63, 55, 81, 64), at=(95.7, 56), scale=0.75)])})),
+            eat=dict(src=(HOPSIT, '22'), f=1.352, seat=(79, 160), facing=F('Fr', 'Fr', 'Fr'), face=dict(sheet=HOPSIT, variants={
+                'blink': dict(cell='20', scale=1.0, erase=[(64.9, 58.2, 6.5, 7.5), dict(e=(95.4, 55.9, 4.5, 6.5), skin=(89.4, 55.9))],
+                              feats=[dict(box=(23, 57, 41, 67), at=(64.9, 59.5)), dict(box=(62, 56, 80, 66), at=(95.4, 57), scale=0.75)])})),
+            sip=dict(src=(HOPSIT, '21'), f=1.352, seat=(80, 158)),
+            wave=dict(src=(HOPSIT, '33'), f=1.352, seat=(81, 162)),
+            doze=[dict(src=(HOPSIT, '32'), keep='largest', f=1.352, seat=(81, 157), facing=F('Fr', 'Fr', 'Fr')),
+                  dict(src=(HOPSIT, '20'), f=1.352, seat=(54, 156), facing=F('F', 'F', 'F'))],
+            hop=[dict(src=(HOPSIT, '01'), f=1.352, lift=0, slide=0, hold=2),         # crouch
+                 dict(src=(HOPSIT, '02'), f=1.352, lift=0.35, slide=0.3),            # take-off
+                 dict(src=(HOPSIT, '03'), f=1.352, lift=1, slide=0.85, arc=True, lane=True),   # in the air: now in front of the sofa
+                 dict(src=(HOPSIT, '10'), f=1.352, lift=1, slide=1),                 # lands on the cushion
+                 dict(src=(HOPSIT, '11'), f=1.352, seat=(83, 150), hold=2),          # plops down
+                 dict(src=(HOPSIT, '12'), f=1.352, seat=(85, 152))],                 # turns to the front
+        ),
+        'l': dict(
+            stand='walk',
+            # the three-quarter-right cells mirrored (no text on the penguin; the cup changes flipper)
+            sit=dict(src=(HOPSIT, '30'), f=1.352, mirror=True, seat=(142 - 85, 159), facing=F('L', 'L', 'L'), face=dict(sheet=HOPSIT, variants={
+                'blink': dict(cell='31', scale=1.0, erase=[(69.6, 57.8, 6.5, 7.5), dict(e=(99.9, 55.9, 4.5, 6.5), skin=(93.9, 55.9))],      # coordinates before the flip
+                              feats=[dict(box=(57, 56, 74, 64), at=(69.6, 59.5)), dict(box=(91, 53, 103, 61), at=(99.9, 57.5))])})),
+            eat=dict(src=(HOPSIT, '22'), f=1.352, mirror=True, seat=(118 - 79, 160), facing=F('Fl', 'Fl', 'Fl'), face=dict(sheet=HOPSIT, variants={
+                'blink': dict(cell='20', scale=1.0, erase=[(64.9, 58.2, 6.5, 7.5), dict(e=(95.4, 55.9, 4.5, 6.5), skin=(89.4, 55.9))],
+                              feats=[dict(box=(23, 57, 41, 67), at=(64.9, 59.5)), dict(box=(62, 56, 80, 66), at=(95.4, 57), scale=0.75)])})),
+            sip=dict(src=(HOPSIT, '21'), f=1.352, mirror=True, seat=(119 - 80, 158)),
+            wave=dict(src=(HOPSIT, '33'), f=1.352, mirror=True, seat=(134 - 81, 162)),
+            doze=[dict(src=(HOPSIT, '32'), keep='largest', f=1.352, mirror=True, seat=(133 - 81, 157), facing=F('Fl', 'Fl', 'Fl')),
+                  dict(src=(HOPSIT, '31'), f=1.352, mirror=True, seat=(120 - 81, 160), facing=F('L', 'L', 'L'))],
+            hop=[dict(src=(HOPSIT, '01'), f=1.352, mirror=True, lift=0, slide=0, hold=2),
+                 dict(src=(HOPSIT, '02'), f=1.352, mirror=True, lift=0.35, slide=0.3),
+                 dict(src=(HOPSIT, '03'), f=1.352, mirror=True, lift=1, slide=0.85, arc=True, lane=True),
+                 dict(src=(HOPSIT, '10'), f=1.352, mirror=True, lift=1, slide=1),
+                 dict(src=(HOPSIT, '11'), f=1.352, mirror=True, seat=(140 - 83, 150), hold=2)],
         ),
     }),
 }
@@ -415,7 +472,7 @@ class Sources:
         """Path of the 4x sheet (PNG in the temp folder), or None when it is not needed / not available."""
         if sheet not in self.srs:
             self.srs[sheet] = None
-            if self.sr and Image.open(ROOT / sheet).width < 1500:
+            if self.sr and sheet not in LINED and Image.open(ROOT / sheet).width < 1500:
                 im = sr_upscale.upscale(ROOT / sheet)
                 if im is not None:
                     p = self.tmp / ('sr_%d.png' % len(self.srs))
@@ -430,7 +487,11 @@ class Sources:
         if sheet not in self.cache:
             out = self.tmp / ('cells_%d' % len(self.cache))
             sr = self.sr_png(sheet)
-            subprocess.run([sys.executable, '-I', str(TOOLS / 'cut_sheet.py'), str(ROOT / sheet), str(out), '4', '4'] + ([str(sr)] if sr else []),
+            path = ROOT / sheet
+            if sheet in LINED:
+                path = self.tmp / ('unlined_%d.png' % len(self.cache))
+                Image.fromarray(unline(np.asarray(Image.open(ROOT / sheet).convert('RGB')))).save(path)
+            subprocess.run([sys.executable, '-I', str(TOOLS / 'cut_sheet.py'), str(path), str(out), '4', '4'] + ([str(sr)] if sr else []),
                            check=True, stdout=subprocess.DEVNULL)
             self.cache[sheet] = out
         return self.cache[sheet]
@@ -513,6 +574,26 @@ class Sources:
         return a[:ys.max() + 1, :xs.max() + 1]
 
 
+def unline(rgb, reach=5):
+    """Paint out the full-width guide lines of a sheet (the sofa lines Gemini drew across each row of the
+    penguin's hop-and-sit sheet): a dark grey pixel on a line row takes the mean of the pixels `reach` rows
+    above and below when those two agree (the line ran over the background or over one colour); where
+    they differ (an outline crosses it) the pixel stays. The lines run behind the figures."""
+    a = rgb.astype(np.float32)
+    rows = np.nonzero((a.max(-1) < 90).mean(1) > 0.5)[0]
+    out = a.copy()
+    H = a.shape[0]
+    for y in rows:
+        up, dn = a[max(0, y - reach)], a[min(H - 1, y + reach)]
+        same = np.abs(up - dn).max(-1) < 40
+        for yy in range(max(0, y - 3), min(H, y + 4)):
+            px = a[yy]
+            line = (px.max(-1) < 230) & (px.max(-1) - px.min(-1) < 35) & (np.abs(px - (up + dn) / 2).max(-1) > 12)
+            m = line & same
+            out[yy][m] = ((up + dn) / 2)[m]
+    return out.clip(0, 255).astype(np.uint8)
+
+
 def feet_x(a, band=0.06):
     H = a.shape[0]
     ys, xs = np.nonzero(a[int(H * (1 - band)):, :, 3] > 128)
@@ -567,6 +648,19 @@ def standing(src, spec):
     return Pic(r, x * r.shape[1] / a.shape[1], r.shape[0] - 1, 'stand', faces)
 
 
+def hop_pic(src, spec):
+    """A whole cell of a hop (crouch, take-off, in the air, landing), anchored on the floor between its feet like
+    standing(), mirrored when the spec says so (lift / slide are applied by the caller)."""
+    spec = dict(spec, keep=spec.get('keep', 'largest'))
+    ku = src.up(spec['src'][0])
+    a = src.still(spec)
+    if spec.get('mirror'):
+        a = mirrored(a)
+    x = feet_x(a)
+    r, _ = scaled(a, {}, spec['f'] * ATLAS_K, ku)
+    return Pic(r, x * r.shape[1] / a.shape[1], r.shape[0] - 1, 'hop')
+
+
 def mirrored(a, logo=False, k=1):
     """Left-right flip; logo=True turns the gold T2 letters back so they read (mirror_logo.py)."""
     if not logo:
@@ -613,6 +707,10 @@ def walker_build(cfg, cache):
         if name == 'tiger':
             import build_tiger_walker as T
             T.main(out=d, lossless=True, quiet=True)
+        elif name == 'penguin':
+            import build_penguin_walk as P
+            walk, blinks, hop, step = P.frames()
+            P.pack(walk, blinks, hop, step, d, lossless=True)
         else:
             import build_walker as Wk
             wcfg, _ = Wk.resolve(Wk.CHARS[name])            # super-resolved sheet when the weights are there
@@ -730,6 +828,22 @@ class Builder:
         D1 = add(st_s.moved(rise * 0.5, slide * 0.5))
         D2 = add(st.moved(rise * 0.1, slide * 0.1))
         self.clips[P('stand_up')] = dict(frm=sit_pose, to=stand_pose, fps=12, frames=fcfg.get('stand_frames') or [T0, Q, Z1, A, D1, D2, C, S0], laneSwitchAt=4)
+        if fcfg.get('hop'):
+            # a hop drawn cell by cell (the penguin): each cell placed on the floor point raised by lift x rise and moved
+            # slide x slide (feet cells), or on the seat by its butt contact (seated cells); 'hold' repeats a cell.
+            # stand_up is the same hop backwards (a hop down off the sofa).
+            seq, lane_at = [S0], None
+            for h in fcfg['hop']:
+                if 'seat' in h:
+                    p_ = seated(self.src, h, facing, k1)
+                else:
+                    p_ = hop_pic(self.src, h).moved(rise * h['lift'] + (arc if h.get('arc') else 0), slide * h['slide'])
+                if h.get('lane'):
+                    lane_at = len(seq)
+                seq += [add(p_)] * h.get('hold', 1)
+            seq.append(T0)
+            self.clips[P('sit_down')] = dict(frm=stand_pose, to=sit_pose, fps=12, frames=seq, laneSwitchAt=lane_at)
+            self.clips[P('stand_up')] = dict(frm=sit_pose, to=stand_pose, fps=12, frames=seq[::-1], laneSwitchAt=len(seq) - lane_at)
 
         cache = {}
 
@@ -774,6 +888,20 @@ class Builder:
                 self.clips[P(kind + '_in')] = dict(frm=sit_pose, to=P(kind), fps=8, frames=cut(sit, p, T0, Pi))
                 self.clips[P(kind + '_out')] = dict(frm=P(kind), to=sit_pose, fps=8, frames=cut(p, sit, Pi, T0))
                 self.clips[P(kind + '_loop')] = dict(frm=P(kind), to=P(kind), fps=8, loop=True, frames=breathe(p, Pi, 8))
+                if kind == 'eat' and fcfg.get('sip'):
+                    # a drawn sip (eyes shut, cup at the beak) on the way into and out of holding the cup (half a second)
+                    sp_ = seated(self.src, fcfg['sip'], facing, k1)
+                    Si = add(sp_)
+                    sip = [add(STR(sp_, 1.025))] + [Si] * 4 + [add(STR(sp_, 0.98))]
+                    self.clips[P('eat_in')] = dict(frm=sit_pose, to=P(kind), fps=8, frames=[T0, add(STR(sit, 0.98))] + sip + [add(STR(p, 1.025)), Pi])
+                    self.clips[P('eat_out')] = dict(frm=P(kind), to=sit_pose, fps=8, frames=[Pi, add(STR(p, 0.98))] + sip + [add(STR(sit, 1.025)), T0])
+        if fcfg.get('wave'):
+            # a one-shot wave from the seat (the director's 'wave' activity): out of the sitting picture by a squash,
+            # the waving cell held a second, back
+            wv = seated(self.src, fcfg['wave'], facing, k1)
+            Wi = add(wv)
+            self.clips[P('wave')] = dict(frm=sit_pose, to=sit_pose, fps=8,
+                                         frames=[T0, add(STR(sit, 0.98)), add(STR(wv, 1.025))] + [Wi] * 9 + [add(STR(wv, 0.98)), add(STR(sit, 1.025)), T0])
         if fcfg.get('doze'):
             dz = [seated(self.src, d, facing, k1) for d in fcfg['doze']]
             D = [add(p) for p in dz]
@@ -804,6 +932,14 @@ class Builder:
     # ---------------------------------------------------------------- atlas + manifest
     def pack(self, out_dir, dump=None):
         wa = self.walk_atlas
+        if self.cfg.get('finish'):
+            # the penguin's pixel finishing pass (build_penguin_walk.finish): the outline ring in the drawing's
+            # line colour, no fringe, halo, specks or pinholes; on every new picture and its faces
+            import build_penguin_walk as PW
+            line = PW.line_colour(PW.load(PW.REF))
+            for p in self.pics:
+                p.arr = PW.finish(p.arr, line, pockets=False)
+                p.faces = {n: PW.finish(v, line, pockets=False) for n, v in p.faces.items()}
         trims = [trimmed(p, box=True) for p in self.pics]
         # a frame that shows its picture lifted (anchor moved down) needs the rectangle to reach the
         # anchor: pad the picture itself with transparent rows, so the rectangle never takes in the
@@ -858,7 +994,7 @@ class Builder:
         atlas = face_patch.attach(atlas, self.frames, patches)
         clips = {}
         wm = self.walk_man
-        for cid in ('walk_r', 'walk_l'):
+        for cid in wm['clips']:                      # walk_r / walk_l, and the penguin's hop_r / hop_l
             clips[cid] = wm['clips'][cid]
         for cid, c in self.clips.items():
             d = {'from': c['frm'], 'to': c['to'], 'loop': bool(c.get('loop')), 'fps': c['fps'], 'frames': c['frames']}

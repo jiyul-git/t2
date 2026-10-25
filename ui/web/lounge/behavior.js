@@ -20,7 +20,7 @@
   // repeated until its time is up; every nodEvery seconds the sleeper nods into another dozing pose (doze_nod_<b|c>),
   // holds it and nods back (doze_back_<b|c>), if the character has such poses.
   const DOZE = { nodEvery: [20, 40], subs: ['b', 'c'] };
-  const ACTIVITY_KINDS = ['idle', 'phone', 'call', 'eat', 'sunglasses', 'fix_clothes', 'doze', 'chat'];
+  const ACTIVITY_KINDS = ['idle', 'phone', 'call', 'eat', 'sunglasses', 'fix_clothes', 'wave', 'doze', 'chat'];
   const HOLD_TIMEOUT_MS = 8000;
   // Faces (docs/LOUNGE_SCENE_DESIGN.md 7.6): blinks for everyone, now and then a short expression for a
   // character whose frames carry it (manifest frame.v). Own PRNG stream, so the rest is unchanged.
@@ -371,7 +371,7 @@
       const possible = {
         idle: true,
         phone: has(c, 'phone_in', 'phone_loop', 'phone_out'), call: has(c, 'call_in', 'call_loop', 'call_out'),
-        eat: has(c, 'eat_in', 'eat_loop', 'eat_out'), sunglasses: has(c, 'sunglasses'), fix_clothes: has(c, 'fix_clothes'),
+        eat: has(c, 'eat_in', 'eat_loop', 'eat_out'), sunglasses: has(c, 'sunglasses'), fix_clothes: has(c, 'fix_clothes'), wave: has(c, 'wave'),
         doze: has(c, 'doze_in', 'doze_loop', 'doze_out'), chat: !!partner,
       };
       const options = [
@@ -381,6 +381,7 @@
         ['eat', has(c, 'eat_in', 'eat_loop', 'eat_out') ? (meal ? 3 : 0.3) : 0],
         ['sunglasses', has(c, 'sunglasses') && !c.sunglassesUsed && solar().elevation > 10 ? 1.5 : 0],
         ['fix_clothes', has(c, 'fix_clothes') ? 1 : 0],
+        ['wave', has(c, 'wave') ? 1 : 0],                  // a one-shot wave from the seat (the penguin)
         ['doze', has(c, 'doze_in', 'doze_loop', 'doze_out') ? (deepNight ? 3 : 0.2) : 0],
         ['chat', partner ? 4 : 0],
       ];
@@ -392,7 +393,7 @@
       c.activity = kind;
       if (kind === 'idle') {
         runPlan(c, [{ kind: 'loop', clip: 'sit_idle', ms: duration('idle', c) * 1000 }]);
-      } else if (kind === 'sunglasses' || kind === 'fix_clothes') {
+      } else if (kind === 'sunglasses' || kind === 'fix_clothes' || kind === 'wave') {
         if (kind === 'sunglasses') c.sunglassesUsed = true;
         runPlan(c, [{ kind: 'once', clip: kind }]);
       } else if (kind === 'chat') {
