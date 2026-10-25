@@ -373,10 +373,51 @@ python3 art/tools/build_character.py penguin       # 장면의 펭귄 전체(걷
 - **확인**: `tools/preview_clips.py penguin cutouts/penguin_sit` → `cutouts/penguin_sit/sit_f.gif`·`sit_l.gif`(걸어 들어옴 → 돌기 → 폴짝 올라앉기 → 깜빡임 → 마시기 → 흔들기 → 폴짝 내려오기 → 돌기 → 걸어 나감, 10fps, 장면 크기의 절반), `check_8x_sit_f.png`·`check_8x_sit_l.png`(앉은 clip들의 서로 다른 그림마다 8배 확대 4~5곳).
 - **검사**: 앉을 수 있게 되었으므로 1차 때 "걷기만 하는 캐릭터" 예외로 느슨하게 한 검사(`verify_lounge_behavior.js`, `verify_lounge_assets.py`)를 원래대로 되돌림 — 펭귄도 지나가기·앉기 모두, 앉기 한 바퀴, 앉은 얼굴·자세·깜빡임 간격 검사를 그대로 받는다. 남은 변경은 뛰기 검사(걷는 부분만 떼어 2시간: 35번 중 12번 뜀, 100ms에 최대 43px)와, 섞인 9시간 실행에서 펭귄이 한 번 이상 뜀(16번), 그리고 뛰기 앞뒤의 걸음 단위 허용뿐.
 
+### 세부 일치 확인 (프레임 × 세부, 8배로 봄)
+
+캐릭터의 기준: 뒤뚱 시트 `f_00`(모자에 고글 두 알과 끈, 귀덮개, 겨자색 목도리 — 매듭과 앞으로 늘어진 끝(술 4~5개), 오른쪽(보는 사람 기준) 날개에 든 컵 — 흰 뚜껑과 갈색 띠, 볼터치 둘, 주황 부리). 쓰는 칸마다 원본 칸(자르기 직후)과 완성 프레임을 8배로 보고 적음. W = 뒤뚱 시트, H = 폴짝 앉기 시트, O = 옛 걷기 시트. `l`은 같은 칸의 좌우 반전(같은 결과).
+
+| 칸 | 쓰는 곳 | 고글 | 귀덮개 | 목도리 (매듭·술·끝) | 컵 (뚜껑·띠·날개·크기) | 볼터치 | 부리 | 조치 |
+|---|---|---|---|---|---|---|---|---|
+| W22 | 걷기 0·4칸, 뛰기 전부 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| W03, W10, W11, W20, W00, W01 | 걷기 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — (W20은 몸이 1.07배라 컵도 조금 큼) |
+| O30 | 정면 서기(`f`) | ✓ | ✓ | ✓ | **반대 날개** | ✓ | ✓ | **고침**: 칸 전체 좌우 반전(정면, 글자 없음) → 다른 칸과 같은 날개 |
+| H01 | 웅크림 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| H02, H03 | 뛰어오름, 공중 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | **고침**: 날개 위 소파 선 자국(세로 줄무늬) — 선 지우기를 위아래 줄 사이 줄마다 섞기로 바꿈 |
+| H10 | 착지 | ✓ | ✓ | ✓ | 뚜껑 위 선 조각 | ✓ | ✓ | **고침**: 선 조각을 잘라 냄(`cut`) |
+| H11, H12 | 털썩, 정면으로 | ✓ | ✓ | ✓ | **뚜껑 없음** (소파 선이 뚜껑 윤곽과 겹쳐 같이 지워짐), 점 두 개 | ✓ | ✓ | **고침**: H00의 뚜껑을 옮겨 붙임(`transplant`: 컵 몸통·띠로 위치·배율을 템플릿 맞춤), 점은 떨어진 조각이라 삭제 |
+| H30, H31 | `l` 앉기·깜빡임 / `l` 졸기 | ✓ | ✓ | H30 ✓ / H31 **끝 안 보임** | ✓ | ✓ | ✓ | H31: 그림 필요(아래) |
+| H23 | `f` 앉기 | ✓ | ✓ | **끝 안 보임** | ✓ (배 앞에 두 날개로) | ✓ | ✓ | 그림 필요 |
+| H22 | 마시기 들기(`f`, `l`) | ✓ | ✓ | **끝 안 보임** | ✓ | ✓ | ✓ | 그림 필요 |
+| H21 | 한 모금 | ✓ | ✓ | ✓ | ✓ (부리에) | ✓ | ✓ | — |
+| H33 | 손 흔들기 | ✓ | ✓ | ✓ (컵 위로 조금) | ✓ | ✓ | 벌린 부리(그린 표정) | — |
+| H32 | 졸기 | ✓ | ✓ | **끝 안 보임** | ✓ | ✓ | ✓ | 그림 필요 |
+| H20 | `f` 졸기 b, 깜빡임 눈 | ✓ | ✓ | **끝 안 보임** | ✓ | ✓ | ✓ | 그림 필요 |
+| H13 | 웃음 눈(눈만 가져옴) | — | — | — | — | — | — | 눈만 쓰므로 해당 없음 |
+
+**세부: 6 고침(O30 컵 날개, H02·H03 줄무늬, H10 선 조각, H11·H12 뚜껑), 5 그림 필요(H23, H22, H32, H20, H31 — 목도리 끝).** 배 앞에 컵을 두 날개로 드는 칸들은 Gemini가 목도리를 목에만 감고 앞으로 늘어진 끝을 그리지 않았다. 컵 뒤로 가려졌다고 보기엔 매듭 아래 컵 위 사이가 비어 있다. 끝을 다른 칸에서 옮겨 붙이려면 컵 뒤로 들어가게 잘라야 해서(조각 수술) 하지 않았다. 다시 받을 그림:
+
+```
+Use the attached penguin as the exact character reference (brown aviator cap with two goggle
+lenses and strap, ear flaps, mustard scarf tied at the neck with ONE scarf end hanging down the
+front with 4-5 fringe tassels, white-lidded coffee cup with a brown sleeve, pink cheeks, orange
+beak). Every detail identical in every cell. 2x3 sheet, 6 separate cells, plain white background,
+white gaps, same size, no shadow, no text. The penguin sits on the floor, feet forward, holding the
+coffee cup in front of its belly with both flippers; the scarf end must be clearly visible hanging
+down in front, over the chest and above the cup (the cup is held below it).
+1. front view turned slightly to the viewer's right, eyes open, calm smile.
+2. the same, eyes closed (blink).
+3. the same pose, eyes closed, head tilted, dozing (no "zz").
+4. front view, eyes closed calmly, dozing.
+5. three-quarters to the viewer's right, eyes closed (blink).
+6. front view turned slightly right, holding the cup a little higher, looking at it.
+```
+
 ### 약한 곳 (앉기)
 
 - 정면 서기는 다른 시트(옛 걷기 시트 4행)라 선 굵기·크기가 조금 다르다(크기는 머리로 맞춤). 돌기는 다른 캐릭터와 같은 "종이 뒤집기".
 - `f` 소파의 앉은 자세는 진짜 정면이 아니라 조금 오른쪽으로 돈 칸(`23`) — 진짜 정면 칸(`13`, `20`)은 눈을 감고 있어서 웃음·깜빡임으로 씀.
 - 손 흔들기는 그림이 한 칸뿐이라 흔드는 날개가 움직이지 않고 1초 남짓 멈춰 있다.
 - 마시기는 `eat` 활동을 빌려 씀(들고 있다가, 들어가고 나올 때 한 모금). 활동 시간은 `eat`과 같다(30–60초, 식사 시간에 더 자주).
-- 2행 `11`·`12`의 컵 뚜껑은 시트의 선이 뚜껑 윤곽과 겹친 자리라 선을 지운 뒤 뚜껑 위 테두리가 조금 옅다(올라앉는 중 한두 칸이라 눈에 잘 띄지 않음).
+- 2행 `11`·`12`의 컵 뚜껑은 시트의 선과 겹쳐 같이 지워져서 `00`의 뚜껑을 옮겨 붙였다(위 표). 크기는 몸통·띠로 맞췄지만 1px 안팎으로 어긋날 수 있다.
+- 배 앞에 컵을 든 앉은 칸 5개는 목도리 끝이 없다(위 표, 다시 받을 그림 요청문 있음).

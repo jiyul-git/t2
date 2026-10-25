@@ -242,7 +242,8 @@ CHARS = {
     # 'wave' is a one-shot clip. finish: build_penguin_walk.finish() on every picture (outline ring, fringe).
     'penguin': dict(walker='penguin', finish=True, facings={
         'f': dict(
-            stand=dict(src=(PENGUIN_WALK, '30'), f=1.422, facing=F('F', 'F', 'F')),
+            # mirrored: the cup goes to the same flipper as in every other frame (front view, no text: safe)
+            stand=dict(src=(PENGUIN_WALK, '30'), f=1.422, mirror=True, facing=F('F', 'F', 'F')),
             # turned a little to the viewer's right all over (head, scarf, feet); blink: the calm closed eyes of f_20,
             # smile: the happy closed eyes of f_13 (both front cells of the same sheet), the far eye narrower; the far eye sits
             # by the dark side of the head, so its hole is filled from a white spot of the face (`skin`, picked by face_white)
@@ -261,9 +262,9 @@ CHARS = {
             hop=[dict(src=(HOPSIT, '01'), f=1.352, lift=0, slide=0, hold=2),         # crouch
                  dict(src=(HOPSIT, '02'), f=1.352, lift=0.35, slide=0.3),            # take-off
                  dict(src=(HOPSIT, '03'), f=1.352, lift=1, slide=0.85, arc=True, lane=True),   # in the air: now in front of the sofa
-                 dict(src=(HOPSIT, '10'), f=1.352, lift=1, slide=1),                 # lands on the cushion
-                 dict(src=(HOPSIT, '11'), f=1.352, seat=(83, 150), hold=2),          # plops down
-                 dict(src=(HOPSIT, '12'), f=1.352, seat=(85, 152))],                 # turns to the front
+                 dict(src=(HOPSIT, '10'), f=1.352, lift=1, slide=1, cut=[[(110, 82), (132, 82), (132, 89), (110, 89)]]),   # lands on the cushion (cut: sofa-line stubs over the lid)
+                 dict(src=(HOPSIT, '11'), f=1.352, seat=(83, 150), hold=2, keep='largest', transplant=[dict(cell='00', box=(108, 74, 139, 98), key=(111, 87, 135, 104), search=(100, 80, 140, 118))]),   # plops down (lid: the sofa line took it)
+                 dict(src=(HOPSIT, '12'), f=1.352, seat=(85, 152), keep='largest', transplant=[dict(cell='00', box=(108, 74, 139, 98), key=(111, 87, 135, 104), search=(104, 82, 144, 120))])],   # turns to the front
         ),
         'l': dict(
             stand='walk',
@@ -281,8 +282,8 @@ CHARS = {
             hop=[dict(src=(HOPSIT, '01'), f=1.352, mirror=True, lift=0, slide=0, hold=2),
                  dict(src=(HOPSIT, '02'), f=1.352, mirror=True, lift=0.35, slide=0.3),
                  dict(src=(HOPSIT, '03'), f=1.352, mirror=True, lift=1, slide=0.85, arc=True, lane=True),
-                 dict(src=(HOPSIT, '10'), f=1.352, mirror=True, lift=1, slide=1),
-                 dict(src=(HOPSIT, '11'), f=1.352, mirror=True, seat=(140 - 83, 150), hold=2)],
+                 dict(src=(HOPSIT, '10'), f=1.352, mirror=True, lift=1, slide=1, cut=[[(110, 82), (132, 82), (132, 89), (110, 89)]]),
+                 dict(src=(HOPSIT, '11'), f=1.352, mirror=True, seat=(140 - 83, 150), hold=2, keep='largest', transplant=[dict(cell='00', box=(108, 74, 139, 98), key=(111, 87, 135, 104), search=(100, 80, 140, 118))])],
         ),
     }),
 }
@@ -543,6 +544,8 @@ class Sources:
             a = from_pil(Image.open(self.group(sheet) / ('g_%s.png' % cell)))
         else:
             a = from_pil(Image.open(self.cells(sheet) / ('f_%s.png' % cell)))
+        for tp in spec.get('transplant', []):
+            a = transplant(a, from_pil(Image.open(self.cells(sheet) / ('f_%s.png' % tp['cell']))), tp, k)
         if spec.get('keep') == 'largest':
             m = (a[..., 3] > 40).astype(np.uint8)
             n, lab, st, _ = cv2.connectedComponentsWithStats(m, connectivity=8)
@@ -574,11 +577,51 @@ class Sources:
         return a[:ys.max() + 1, :xs.max() + 1]
 
 
+def transplant(a, donor, tp, k=1):
+    """Put a small piece of another cell of the same sheet onto this one (a detail the cell lost or drew
+    differently): tp = dict(cell, box=(x0, y0, x1, y1) of the piece in the donor, key=(x0, y0, x1, y1) a part of
+    it that is intact in this cell too (registers it), search=(x0, y0, x1, y1) where to look here; source px).
+    The key is found by template matching over scales 0.75-1.25 (grey with alpha); the piece is scaled the same
+    and laid over this cell by its own alpha (the cell's own pixels under the piece are replaced)."""
+    def gray(x):
+        g = x[..., :3] @ np.float32([0.3, 0.59, 0.11])
+        return g * (x[..., 3] / 255) + 128 * (1 - x[..., 3] / 255)
+    bx0, by0, bx1, by1 = [int(v * k) for v in tp['box']]
+    kx0, ky0, kx1, ky1 = [int(v * k) for v in tp['key']]
+    sx0, sy0, sx1, sy1 = [int(v * k) for v in tp['search']]
+    key = gray(donor)[ky0:ky1, kx0:kx1]
+    win = np.pad(gray(a), 4, constant_values=128)[sy0:sy1 + 8, sx0:sx1 + 8]
+    best = None
+    for s_ in np.arange(0.75, 1.26, 0.025):
+        t = cv2.resize(key, None, fx=s_, fy=s_, interpolation=cv2.INTER_AREA)
+        if t.shape[0] > win.shape[0] or t.shape[1] > win.shape[1]:
+            continue
+        r = cv2.matchTemplate(win.astype(np.float32), t.astype(np.float32), cv2.TM_CCOEFF_NORMED)
+        _, mv, _, ml = cv2.minMaxLoc(r)
+        if best is None or mv > best[0]:
+            best = (mv, s_, sx0 - 4 + ml[0], sy0 - 4 + ml[1])
+    _, s_, kx, ky = best                                  # where the key's top-left lands, at scale s_
+    piece = resize(donor[by0:by1, bx0:bx1], (bx1 - bx0) * s_, (by1 - by0) * s_)
+    px, py = int(round(kx - (kx0 - bx0) * s_)), int(round(ky - (ky0 - by0) * s_))
+    out = a.copy()
+    h, w = piece.shape[:2]
+    y0, x0 = max(py, 0), max(px, 0)
+    y1, x1 = min(py + h, a.shape[0]), min(px + w, a.shape[1])
+    pc = piece[y0 - py:y1 - py, x0 - px:x1 - px]
+    al = pc[..., 3:] / 255.
+    reg = out[y0:y1, x0:x1]
+    reg[..., :3] = pc[..., :3] * al + reg[..., :3] * (1 - al)
+    reg[..., 3] = np.maximum(reg[..., 3], pc[..., 3])
+    return out
+
+
 def unline(rgb, reach=5):
     """Paint out the full-width guide lines of a sheet (the sofa lines Gemini drew across each row of the
     penguin's hop-and-sit sheet): a dark grey pixel on a line row takes the mean of the pixels `reach` rows
     above and below when those two agree (the line ran over the background or over one colour); where
-    they differ (an outline crosses it) the pixel stays. The lines run behind the figures."""
+    they differ (an outline crosses it) the pixel stays. The lines run behind the figures.
+    (Where a line ran along an outline - the cup lids of f_10-f_12 - it took the outline with it: those
+    lids are transplanted from an intact cell, spec 'transplant'.)"""
     a = rgb.astype(np.float32)
     rows = np.nonzero((a.max(-1) < 90).mean(1) > 0.5)[0]
     out = a.copy()
@@ -587,10 +630,12 @@ def unline(rgb, reach=5):
         up, dn = a[max(0, y - reach)], a[min(H - 1, y + reach)]
         same = np.abs(up - dn).max(-1) < 40
         for yy in range(max(0, y - 3), min(H, y + 4)):
+            t = (yy - (y - reach)) / (2.0 * reach)              # blend row by row (a flat fill showed as streaks)
+            fill = up * (1 - t) + dn * t
             px = a[yy]
-            line = (px.max(-1) < 230) & (px.max(-1) - px.min(-1) < 35) & (np.abs(px - (up + dn) / 2).max(-1) > 12)
+            line = (px.max(-1) < 230) & (px.max(-1) - px.min(-1) < 35) & (np.abs(px - fill).max(-1) > 12)
             m = line & same
-            out[yy][m] = ((up + dn) / 2)[m]
+            out[yy][m] = fill[m]
     return out.clip(0, 255).astype(np.uint8)
 
 
@@ -642,6 +687,8 @@ def standing(src, spec):
     spec = dict(spec, keep=spec.get('keep', 'largest'))
     ku = src.up(spec['src'][0])
     a = src.still(spec)
+    if spec.get('mirror'):                  # (no face spec with a mirrored standing still yet)
+        a = mirrored(a)
     x = spec['x'] * ku if 'x' in spec else feet_x(a)
     a, faces = with_faces(src, a, spec)
     r, faces = scaled(a, faces, spec['f'] * ATLAS_K, ku)
