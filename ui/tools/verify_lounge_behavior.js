@@ -281,7 +281,10 @@ ok(chatTotal > 0, 'conversations happen');
   // first; the same event never twice in a row; each opening is a different random run.
   ok(REAL.length >= 3 && ['tiger', 'rabbit', 'turtle'].every(n => scene.characters.includes(n)), 'scene has the real tiger, rabbit and turtle: ' + scene.characters);
   for (const m of REAL) {
-    ok(B.canPass(m) && B.canSit(m), m.name + ' both passes by and sits');
+    // a plain walker (walk_r / walk_l only, no seat facings: the penguin until its sitting art comes)
+    // only passes by; every other real animal both passes by and sits
+    const plainWalker = !m.facings && Object.keys(m.clips).every(id => id === 'walk_r' || id === 'walk_l');
+    ok(B.canPass(m) && (B.canSit(m) || plainWalker), m.name + ' both passes by and sits (or is a plain walker)');
     ok(m.clips.walk_r.advance > 0 && m.clips.walk_r.frames.length === m.clips.walk_l.frames.length, m.name + ' walks');
     // pose-graph legality of the clips (the frames themselves are checked by lounge_check_assets.py):
     // every clip starts on its from-pose frame, a one-shot ends on its to-pose frame, and its pose nodes exist
@@ -291,7 +294,7 @@ ok(chatTotal > 0, 'conversations happen');
       if (!c.loop) ok(c.frames[c.frames.length - 1] === m.poses[c.to], m.name + ' ' + id + ' ends on pose ' + c.to);
     }
     // every facing it claims is complete, and every seat facing in the scene is used by someone
-    ok(B.sitFacings(m).length === (m.facings || ['f']).length, m.name + ' has every clip for its facings ' + m.facings);
+    ok(plainWalker ? !B.canSit(m) : B.sitFacings(m).length === (m.facings || ['f']).length, m.name + ' has every clip for its facings ' + m.facings);
     for (const f of B.sitFacings(m)) for (const id of ['sit_down', 'stand_up']) ok(Number.isInteger(m.clips[B.clipAt(id, f)].laneSwitchAt), m.name + ' ' + id + '@' + f + ' has laneSwitchAt');
   }
   for (const f of new Set(scene.seats.map(s => s.facing || 'f'))) ok(REAL.some(m => B.sitFacings(m).includes(f)), 'someone can sit facing ' + f);
@@ -324,10 +327,11 @@ ok(chatTotal > 0, 'conversations happen');
 }
 
 {
-  // A long run (3 h of director time per seed): every real character completes a whole sit cycle -
-  // walk in, turn, sit down, sit, stand up, turn away, walk out - and the event mix is reported.
+  // A long run (3 h of director time per seed): every real character that can sit completes a whole
+  // sit cycle - walk in, turn, sit down, sit, stand up, turn away, walk out - a plain walker passes by;
+  // and the event mix is reported.
   const mix = {};
-  const cycles = {};
+  const cycles = {}, passes = {};
   for (const seed of [3, 11, 29]) {
     const { d, events } = makeDirector(REAL, seed);
     let prev = null;
@@ -340,13 +344,17 @@ ok(chatTotal > 0, 'conversations happen');
     }
     const by = {};
     for (const e of events) (by[e.name] = by[e.name] || []).push(e.to);
+    for (const e of events) if (/^walk_/.test(e.to) && e.from !== e.to) passes[e.name] = (passes[e.name] || 0) + 1;
     for (const n of scene.characters) {
       const seq = (by[n] || []).join(' ');
       const re = /walk_[lr] turn_[lr]_front(@\w+)? sit_down(@\w+)? sit_idle(@\w+)? .*?stand_up(@\w+)? turn_front_[lr](@\w+)? walk_[lr]/;
       if (re.test(seq)) cycles[n] = (cycles[n] || 0) + 1;
     }
   }
-  for (const n of scene.characters) ok(cycles[n] >= 1, n + ' completed a full sit cycle in a long run');
+  for (const m of REAL) {
+    if (B.canSit(m)) ok(cycles[m.name] >= 1, m.name + ' completed a full sit cycle in a long run');
+    else ok(passes[m.name] >= 1, m.name + ' (a plain walker) passed by in a long run');
+  }
   ok(mix.pass > 0 && mix.arrive > 0 && mix.leave > 0 && mix.plane > 0, 'event mix: ' + JSON.stringify(mix));
   console.log('  9 h of director time (3 seeds): event mix %s; full sit cycles %s', JSON.stringify(mix), JSON.stringify(cycles));
 }
@@ -449,7 +457,8 @@ ok(chatTotal > 0, 'conversations happen');
   const seatFacings = [...new Set(scene.seats.map(s => s.facing || 'f'))];
   const loopsOf = m => Object.entries(m.clips).filter(([id, c]) => c.loop && !B.WALKER_CLIPS.includes(id));
   const dur = c => c.frames.length / c.fps;
-  for (const m of REAL) {
+  // (seated life: the characters that can sit; a plain walker has none)
+  for (const m of REAL.filter(m => B.canSit(m))) {
     // 1. the facing table: every pose of a facing has a recorded facing that the seats of that facing accept
     ok(m.poseInfo && typeof m.poseInfo === 'object', m.name + ' records what its poses face (poseInfo)');
     for (const f of B.sitFacings(m)) {
@@ -509,7 +518,7 @@ ok(chatTotal > 0, 'conversations happen');
     }
     return { open, blinks, interval: blinks ? open / blinks : Infinity, episodes };
   }
-  for (const m of REAL) {
+  for (const m of REAL.filter(m => B.canSit(m))) {
     const kinds = ['idle', ...['phone', 'call', 'eat'].filter(k => m.clips[k + '_loop'] || m.clips[k + '_loop@l'])];
     for (const kind of kinds) {
       const r = blinkRate(m, kind, 180000);

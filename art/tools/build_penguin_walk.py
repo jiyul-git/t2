@@ -21,19 +21,25 @@ pieces of one cell (art/README.md, "펭귄 걷기 루프"):
    normal and drawn on top with its outline where it covers the far one. So the loop is two steps,
    left-right;
 4. body bob per step frame is measured from the sheet cells (BOB_CELLS: contact, down, passing, up);
+   only the body moves, the feet stay on the floor;
 5. writes <out>/right_<i>.png, left_<i>.png (mirrored) and walk_right.gif / walk_left.gif
-   (FPS, mid-grey background, 2x for viewing).
+   (FPS, mid-grey background, 2x for viewing);
+6. the lounge walker ui/web/lounge/assets/chars/penguin/{atlas.webp, manifest.json} (walk_r / walk_l
+   only, like build_walker.py's; sitting comes with the climb sheet).
 Deterministic: same sheet cells in, same pixels out.
 """
 import argparse
+import json
+import os
 import sys
 from pathlib import Path
 import numpy as np
 import cv2
-from PIL import Image
+from PIL import Image, ImageFilter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from inkfix import LINE, WIDTH    # noqa: E402
+import face_patch                  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 CELLS = ROOT / 'art/cutouts/penguin_walk'
@@ -54,6 +60,20 @@ BOB_CELLS = ['00', '02', '03', '01']   # sheet cells whose body height (over the
 FPS = 10                         # the scene's walk speed (same as tiger / rabbit / turtle)
 PAD = 8                          # canvas margin around the f_00 cell
 GIF_BG = (128, 134, 140)
+SCENE = ROOT / 'ui/web/lounge/assets/chars/penguin'
+HEIGHT = 360                     # scene px from the cap to the soles (tiger ~440, turtle ~400)
+ATLAS = 0.62 * float(os.environ.get('T2_ATLAS_K', '1.25'))   # atlas px per working px, as build_walker.py (the frames are 2x enlarged first)
+SCENE_CHAR_SCALE = 1.25          # scene.json charScale (the renderer multiplies manifest.scale by it)
+# Blink (face_patch.py) on the shared head, frame px (= f_00 px + PAD). Base eyes: near (80.5, 70.5),
+# far (112.4, 68.6) next to the dark side of the head (filled from the white face only, `skin`). Donor: f_01 of the same sheet walks with both
+# eyes shut (happy arcs); its arcs are placed on the base's eyes.
+FACES = dict(
+    sheet='art/sources/penguin_walk_sheet_4x4_gemini.webp', donor_upscale=1,
+    variants={
+        'blink': dict(cell='01', scale=1.0, erase=[(80.5, 70.5, 6.5, 7.5), dict(e=(112.2, 68.6, 4, 6.5), skin=(106, 72))], feats=[
+            dict(box=(62, 56, 81, 68), at=(80.5, 71)),
+            dict(box=(97, 54, 112, 66), at=(112.5, 69))]),
+    })
 
 
 def load(name):
@@ -203,7 +223,6 @@ def build():
         return p
 
     yy, xx = np.mgrid[0:a.shape[0], 0:a.shape[1]].astype(np.float32)
-    vis = np.clip(yy - arc_y(xx) + 1.0, 0, 1)
     frames = []
     for step in range(2):
         for k in range(N):
@@ -217,20 +236,27 @@ def build():
             ls = leg(swing, lift, not p_far)
             far, near = (lp, ls) if p_far else (ls, lp)
             legs = over(far, outline_over(near, far))
-            legs *= vis[..., None]            # stump extensions only ever show under the body arc
-            img = over(legs, body)
-            img = shift(img, 0, -bob[k])
-            frames.append(unpremul(img))
-    return frames
+            # only the body bobs, the feet stay on the floor (the stumps reach far enough up behind
+            # it). Drawn with the head fixed: the legs move down by the bob and the frame's foot line
+            # with them (manifest ay), so the face patches fit every frame. The stump extensions only
+            # ever show under the body's arc.
+            legs = shift(legs, 0, bob[k]) * np.clip(yy - arc_y(xx) + 1.0, 0, 1)[..., None]
+            frames.append(unpremul(over(legs, body)))
+    sole = int(np.nonzero(a[..., 3].max(1) > 128)[0].max())
+    top = int(np.nonzero(a[..., 3].max(1) > 128)[0].min())
+    info = dict(step=(xf - xb) / N, sole=sole, fig_h=sole + 1 - top, bob=bob * 2)
+    return frames, info
 
 
-def save(frames, out):
+def save(frames, info, out):
+    """the loop frames with the feet on one floor line (the body bobs), and the preview GIFs"""
     out.mkdir(parents=True, exist_ok=True)
     for f in out.glob('*_*.png'):
         f.unlink()
     for side in ('right', 'left'):
         gif = []
         for i, f in enumerate(frames):
+            f = unpremul(shift(premul(f), 0, -info['bob'][i]))
             im = Image.fromarray(f.clip(0, 255).astype(np.uint8))
             if side == 'left':
                 im = im.transpose(Image.FLIP_LEFT_RIGHT)
@@ -245,8 +271,75 @@ def save(frames, out):
     print('wrote %d frames x 2 sides + walk_right.gif / walk_left.gif to %s' % (len(frames), out))
 
 
+def pack(frames, info, out):
+    """<out>/{atlas.webp, manifest.json}: a walker (walk_r / walk_l only, no sitting yet), the same
+    format as build_walker.py's. The cells are small, so they are enlarged 2x (LANCZOS + light unsharp,
+    like the turtle) on the way into the atlas."""
+    a = 2 * ATLAS                                     # atlas px per frame px
+    right = [enlarge(f, a) for f in frames]
+    left = [im.transpose(Image.FLIP_LEFT_RIGHT) for im in right]
+    n = len(frames)
+    fw, fh = right[0].size
+    bx = anchor_x(right[0])
+    ay = int(round((info['sole'] + 1) * a)) - 1
+    per = (n + 1) // 2                                # frames per atlas row (keeps it under 2048 px wide)
+    rows = -(-n // per)
+    atlas = Image.new('RGBA', (per * (fw + 2), 2 * rows * (fh + 2)), (0, 0, 0, 0))
+    out_frames = []
+    for side, seq in enumerate((right, left)):
+        for i, im in enumerate(seq):
+            x, y = (i % per) * (fw + 2), (side * rows + i // per) * (fh + 2)
+            atlas.paste(im, (x, y))
+            out_frames.append({'x': x, 'y': y, 'w': fw, 'h': fh, 'ax': bx if side == 0 else fw - bx,
+                               'ay': ay + int(round(info['bob'][i] * a))})
+    # face variants (face_patch.py) on the shared head: one patch per direction, every frame points at it
+    varied = {k: enlarge(v, a) for k, v in face_patch.variants(frames[0], FACES).items()}
+    patches = face_patch.direction_patches(right[0], varied, list(range(n))) + \
+        face_patch.direction_patches(right[0], varied, list(range(n, 2 * n)), flip=True)
+    atlas = face_patch.attach(atlas, out_frames, patches)
+    # manifest scale: atlas px -> scene px before charScale, so the figure is HEIGHT scene px
+    scale = HEIGHT / (info['fig_h'] * a * SCENE_CHAR_SCALE)
+    # scene px per frame = the planted foot's step, so it stays put on the floor
+    adv = int(round(info['step'] * HEIGHT / info['fig_h']))
+    out.mkdir(parents=True, exist_ok=True)
+    atlas.save(out / 'atlas.webp', lossless=False, quality=90, method=6)
+    clip = dict(loop=True, fps=FPS, advance=adv)
+    man = {
+        'name': 'penguin', 'walker': True, 'pass': 'r', 'atlas': 'atlas.webp',
+        'scale': round(scale, 4), 'mirrorable': False, 'frames': out_frames,
+        'poses': {'walk_r': 0, 'walk_l': n},
+        'poseInfo': {},                               # what seat poses face: none yet (no sitting art)
+        'clips': {
+            'walk_r': {'from': 'walk_r', 'to': 'walk_r', 'frames': list(range(n)), **clip},
+            'walk_l': {'from': 'walk_l', 'to': 'walk_l', 'frames': list(range(n, 2 * n)), **clip},
+        },
+    }
+    (out / 'manifest.json').write_text(json.dumps(man, separators=(',', ':')))
+    print('penguin: %d frames, atlas %dx%d, %d bytes, scale %.4f, advance %d -> %s' % (
+        n, atlas.width, atlas.height, (out / 'atlas.webp').stat().st_size, scale, adv, out))
+
+
+def enlarge(f, a):
+    im = Image.fromarray(f.clip(0, 255).round().astype(np.uint8))
+    im = im.resize((round(im.width * a), round(im.height * a)), Image.LANCZOS)
+    rgb = im.convert('RGB').filter(ImageFilter.UnsharpMask(radius=1.2, percent=40, threshold=2))
+    return Image.merge('RGBA', (*rgb.split(), im.getchannel('A')))
+
+
+def anchor_x(im):
+    """body x: the middle of the top 35 % of the figure (head and cap), as build_tiger_walker.py"""
+    m = np.asarray(im)[..., 3] > 128
+    top = int(np.nonzero(m.any(1))[0][0])
+    xs = np.nonzero(m[top:top + int(im.height * 0.35)])[1]
+    return int(round(xs.mean()))
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument('--out', default=str(OUT))
+    ap.add_argument('--out', default=str(OUT), help='loop frames and preview GIFs')
+    ap.add_argument('--scene', default=str(SCENE), help="the lounge walker (atlas, manifest); '' to skip")
     a = ap.parse_args()
-    save(build(), Path(a.out))
+    frames, info = build()
+    save(frames, info, Path(a.out))
+    if a.scene:
+        pack(frames, info, Path(a.scene))
