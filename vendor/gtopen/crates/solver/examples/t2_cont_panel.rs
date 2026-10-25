@@ -134,11 +134,17 @@ fn main() -> Result<(), String> {
     tree.effective_stack = behind;
     tree.rake_pct = 0.0;
     tree.rake_cap = 0.0;
+    // diagnostic knobs (SB-limp flop diagnosis): T2_EPS overrides the keep-fraction floor, T2_TRIM=<x> drops combos
+    // whose class keep fraction is below x (weight 0 instead of the floor), T2_ALGO=dcfr|cfr+|pcfr+, T2_PROGRESS=1 prints each check.
+    let eps: f32 = std::env::var("T2_EPS").ok().map_or(EPS, |v| v.parse().unwrap());
+    let trim: Option<f32> = std::env::var("T2_TRIM").ok().map(|v| v.parse().unwrap());
+    let algo = std::env::var("T2_ALGO").ok().map(|v| solver::cfr::Algorithm::parse(&v).unwrap());
+    let progress = std::env::var("T2_PROGRESS").is_ok();
     let storage_name = std::env::var("T2_STORAGE").unwrap_or_else(|_| "f32".into());
     let storage = if storage_name == "compressed" { solver::store::Storage::Compressed } else { solver::store::Storage::F32 };
     let key = serde_json::json!({
         "value_convention": "gross_share", "zero_reach_definition": "eps_tremble_avg",
-        "eps": EPS, "ranges_hash_fnv1a64": term["ranges_hash_fnv1a64"], "menu_hash_fnv1a64": fnv(&menu_b),
+        "eps": eps, "trim": trim, "algo": std::env::var("T2_ALGO").ok(), "ranges_hash_fnv1a64": term["ranges_hash_fnv1a64"], "menu_hash_fnv1a64": fnv(&menu_b),
         "menu_id": menu["id"], "panel_hash_sha256": panel["panel_hash_sha256"], "tree_config": tree,
         "pot_bb": pot, "effective_behind_bb": behind, "target_exploitability_pct_pot": target,
         "max_iters": max_iters, "storage": storage_name,
@@ -176,7 +182,8 @@ fn main() -> Result<(), String> {
         let mut spot = Spot::new(SpotConfig { board: board.into(), range_oop: full_range(), range_ip: full_range(), tree: tree.clone() })?;
         for p in 0..2 {
             for (i, h) in spot.hands[p].iter_mut().enumerate() {
-                let w = (keep[p][class_index(rank(h.c1), rank(h.c2), suit(h.c1) == suit(h.c2))] as f32).max(EPS);
+                let k = keep[p][class_index(rank(h.c1), rank(h.c2), suit(h.c1) == suit(h.c2))] as f32;
+                let w = if trim.map_or(false, |x| k < x) { 0.0 } else { k.max(eps) };
                 h.weight = w;
                 spot.weights[p][i] = w;
             }
@@ -184,6 +191,9 @@ fn main() -> Result<(), String> {
         let build_ms = t.elapsed().as_secs_f64() * 1e3;
         let nodes = spot.tree.nodes.len();
         let mut s = Solver::with_storage(Arc::new(spot), storage);
+        if let Some(a) = algo {
+            s.algo = a;
+        }
         let t = Instant::now();
         let (mut iters, mut expl) = (0u32, f64::INFINITY);
         let mut trace = Vec::new();
@@ -194,6 +204,9 @@ fn main() -> Result<(), String> {
             }
             expl = s.exploitability() / pot * 100.0;
             trace.push(serde_json::json!([iters, expl]));
+            if progress {
+                eprintln!("{board} it {iters} expl {expl:.4}% t {:.0}s", t.elapsed().as_secs_f64());
+            }
             if expl <= target {
                 break;
             }
@@ -201,6 +214,30 @@ fn main() -> Result<(), String> {
         let solve_ms = t.elapsed().as_secs_f64() * 1e3;
         s.ensure_symmetric();
         let denom = s.pair_weight_sum();
+        if std::env::var("T2_DIAG").is_ok() {
+            // where the exploitability sits: per player and per class, w_i * (br_i - avg_i) / denom, in % of pot
+            for p in 0..2 {
+                let w_o = s.spot.weights[1 - p].clone();
+                let c_avg = s.traverse_avg(0, p, &w_o, Dealt::default());
+                let c_br = s.traverse_br(0, p, &w_o, Dealt::default());
+                let mut by = vec![(0f64, 0f64, 0u32); NUM_CLASSES];
+                let mut tot = 0f64;
+                for (i, h) in s.spot.hands[p].iter().enumerate() {
+                    let g = s.spot.weights[p][i] as f64 * (c_br[i] as f64 - c_avg[i] as f64) / denom * 100.0 / pot;
+                    let k = cls(h);
+                    by[k].0 += g;
+                    by[k].1 += s.spot.weights[p][i] as f64;
+                    by[k].2 += 1;
+                    tot += g;
+                }
+                let mut ord: Vec<usize> = (0..NUM_CLASSES).collect();
+                ord.sort_by(|&a, &b| by[b].0.partial_cmp(&by[a].0).unwrap());
+                eprintln!("DIAG {} p{} sum_gap {:.4}%pot (exploit = mean over players)", board, p, tot);
+                for &k in ord.iter().take(12) {
+                    eprintln!("DIAG   {} gap {:.4}%pot  combo-weight {:.4}  combos {}", class_label(k), by[k].0, by[k].1, by[k].2);
+                }
+            }
+        }
         let mut players = Vec::new();
         let mut inv = [0f64; 2];
         for p in 0..2 {

@@ -1,0 +1,29 @@
+{
+ "id": "p40_flat_co_vs_bb_o25",
+ "config": "/home/user/t2/data/gto_spot/plan_a/cfg_p40_o25.json",
+ "dump": "/home/user/gto_ckpt/plan_a/p40_o25/dump.jsonl",
+ "equity": "/home/user/gto_ckpt/plan_a/eq_table_202_1200.json",
+ "tables_dir": null,
+ "iterations": 3000,
+ "rule": "v4",
+ "max_steps": 3,
+ "root_line": [
+  "UTG:Fold",
+  "UTG+1:Fold",
+  "UTG+2:Fold",
+  "LJ:Fold",
+  "HJ:Fold",
+  "CO:Raise 2.5",
+  "BTN:Fold",
+  "SB:Fold"
+ ],
+ "tree_label": "Plan A flat-call pot p40 o25: 9-max hand-start 40 bb (cfg.stack 39.888888888888886), ante 1/9, CO opens 2.5, BB defends; below the root the parent tree (call / 3-bet / jam, 4-bet jam only), static continuation in the parent; quick grade (symmetric stacks)",
+ "parent": {
+  "parent": "Plan A parent p40_o25 (static continuation)",
+  "gap_total_bb": 0.011568705916051102,
+  "source": "data/gto_spot/plan_a/open25/parent_p40_o25_convergence.json"
+ },
+ "status_cap": "conditional_verified",
+ "status_cap_reason": "flat-call pot spot: parent continuation static outside the loop, symmetric stacks",
+ "out": "/home/user/gto_ckpt/spots/p40_flat_co_vs_bb_o25/spot.json"
+}
