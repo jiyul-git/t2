@@ -368,7 +368,9 @@ Every detail must be identical in every cell.
 Draw a 2x4 sheet (8 separate cells, left to right, top to bottom), plain white background,
 white gaps, same size and the same foot line in every cell. No floor, no shadow, no text.
 
-The tiger is walking to the RIGHT and turns to face the viewer by STEPPING, not spinning:
+The tiger is walking to the RIGHT and turns to face the viewer by STEPPING, not spinning,
+holding the same phone in the right hand and the same navy suitcase in the left hand as
+while walking, in every cell:
 1. walking right, side view, near foot forward.
 2. the near foot plants; the HEAD turns toward the viewer first, body still side-on.
 3. weight on the planted foot, the far foot lifts; shoulders follow the head, hips still side-on.
@@ -398,3 +400,56 @@ must be identical in every cell.
 ```
 
 (각 동물 이름 자리 `The tiger is walking…`도 `The rabbit` / `The turtle`로 바꾼다.)
+
+## 돌아서기 v2: 소품 이어짐, 색 맞추기, 세부 점검 (2026-10-25)
+
+사용자 검토(임시 GIF): "캐리어가 사라지고, 커피가 나타나고, 티켓이 갑자기 다른 손에 나타난다. 칸마다 색·밝기가 다르다."
+
+### 소품 이어짐 (`tools/props.py`)
+
+- 걷는 동안 든 소품을 돌기 내내 **같은 손에** 든다. `walk_r` 프레임에서 소품을 손으로 그린 다각형 안의 털·피부가 아닌 픽셀로 잘라(폰·티켓은 옷 색도 뺌) 세운 뒤(호랑이·토끼 30°), 턴어라운드 칸의 손 위치(8배 격자에서 읽은 값, `CHARS[...]['turn']['props']['hands']`)에 그림 **뒤에** 그린다: 캐리어는 손 옆 바닥에 세우고, 폰·티켓은 손 바깥쪽에 매단다. `walk_l` 쪽 칸은 `walk_l`이 `walk_r`의 반전이므로 소품도 반전하고 손을 바꾼다. 자른 가장자리는 이진 알파 + `finish_edges`, 소품 안 바늘구멍은 주변 색으로 메운다.
+  - 호랑이: 캐리어(왼손), 폰(오른손). 토끼: 캐리어(왼손), 폰(오른손). 거북이: 티켓(오른손).
+- **다른 소품을 든 칸은 뺐다**: 정면 서기가 토끼는 포즈 시트 `f_31`(커피 컵), 호랑이는 서기 시트 `f_02`(폰을 다른 손, 캐리어 없음)였다. 둘 다 이제 턴어라운드 정면 칸 + 걷기 소품(`stand='turn'`)이다. 그래서 정면 서기 → 앉기에서는 소품을 든 서기 그림이 소품 없는 앉은 그림으로 바뀐다(앉기 꼭대기의 한 프레임, 전과 같은 자리).
+- 약한 곳: 토끼 정면은 두 손을 가슴 앞에 모은 칸이라 오른손 폰이 몸 뒤에 가려 거의 안 보인다. 폰·티켓은 세운 채 손 옆에 붙인 것이라 손가락이 소품을 감싸지 않는다.
+
+### 색·밝기 맞추기 (`tools/color_match.py`)
+
+- 턴어라운드 칸마다 영역(털·피부 `fur`, 큰 옷 `cloth`, 먹선 `line`)을 나눠 CIE Lab 평균과 퍼짐을 옆 걷기 프레임의 같은 영역에 맞춘다(퍼짐 배율 0.7~1.4로 제한). 소품·머리 먼저 칸은 이 맞춘 그림에서 만든다.
+- **검사**: `python3 art/tools/color_match.py [--max 6]` — 모든 `turn_*`/`walk_*` 클립에서 이어지는 서로 다른 그림 사이의 영역별 평균 ΔE76을 재고, 6.0을 넘으면 실패(종료 코드 1). 결과: 맞추기 전 최대 13.3(토끼 선, `ql` → `walk_l`), 8클립 초과 → 맞춘 뒤 **최대 5.44**(거북이 털, `walk_r` → 머리 먼저 칸), 0클립 초과. 걷기 루프 자체는 0.1~1.5.
+- `ui_checks.sh`(다른 브랜치와 같이 쓰는 파일)는 건드리지 않았다. 캐릭터를 다시 만든 뒤 위 명령을 함께 돌린다.
+
+### 세부 일관성 점검 (모든 포즈 그림, 8배 확대로 확인)
+
+점검표: 호랑이 — 소매 `T2`(모양·자리·방향), 가슴 `T2`, 후드 끈 두 개. 토끼 — 귀 리본(같은 쪽 귀), 분홍 목도리, 코트 단추, 부츠. 거북이 — 모자 엠블럼, 재킷 금색 무늬, 등껍질 가방 끈.
+
+| 캐릭터 | 그림 | 결과 |
+|---|---|---|
+| 호랑이 | `walk_r`/`walk_l`(14칸씩, 윗몸 픽셀 동일) | 가슴 `T2` ok, 소매 `T2` ok(반전 쪽도 `mirror_logo`로 읽힘), 끈 ok |
+| 호랑이 | 돌기 3/4 오른쪽(턴어라운드 `f_32`) | 가슴 표시가 `T2`가 아닌 다른 엠블럼 → **고침**: 엠블럼을 옷 색으로 덮고 `walk_r`의 금색 `T2`를 0.85배 폭으로 옮김(`props.emblem`, 끈 위에는 안 그림). 소매 `T2`: 이 각도에서 보이는 소매에 없음 → **그림 필요** |
+| 호랑이 | 돌기 3/4 왼쪽(`f_10`), 정면(`f_00`, 이제 정면 서기) | 가슴 `T2` ok. 소매 `T2`: 정면·3/4 왼쪽에서 보이는 소매에 없음 → **그림 필요**(정면은 소매 옆면이 안 보여 각도상 없어도 맞을 수 있음) |
+| 호랑이 | 앉기 `sit`, `sit@l`, 졸기 a/b/c, 졸기@l a/b/c, 폰@l | 가슴·소매 `T2` ok(가슴은 손·폰에 일부 가려진 칸 있음 — 그림 그대로), 끈 ok |
+| 토끼 | `walk_r`/`walk_l`, 돌기 3칸, 정면 서기, `sit`, 졸기 a/b, `sit@l`, 졸기@l a/b | 리본·목도리·단추·부츠 ok. `walk_l`·`ql`은 반전 그림이라 리본이 반대쪽 귀(걷는 방향 기준으로는 같은 쪽 — 한 방향으로 걸을 때는 바뀌지 않는다) |
+| 토끼 | 통화 `call@l`(단체 그림 반전) | 리본이 다른 앉은 그림들과 반대쪽 귀 → **그림 필요**(귀 각도가 달라 옮겨 붙이면 몸 수술이 됨) |
+| 토끼 | 졸기@l c(`f_13` 반전) | 리본 **없음** → **그림 필요**(귀가 머리 뒤로 누워 붙일 자리가 그려져 있지 않음) |
+| 거북이 | 모든 그림(걷기, 돌기, 앉기, 티켓, 졸기 a/b/c) | 모자 엠블럼·금색 무늬·가방 끈 ok |
+
+**고침 1, 그림 필요 3**(호랑이 돌기 칸의 소매 `T2`, 토끼 `call@l` 리본 방향, 토끼 졸기@l c 리본).
+
+그림 필요한 칸 주문서(각 1장, 걷기 시트 한 칸 첨부, `docs/LOUNGE_ART_PROMPTS.md`의 공통 지시문을 끝에 붙인다):
+
+```
+첨부한 토끼와 똑같은 캐릭터(분홍 리본은 늘 화면에서 오른쪽 귀, 분홍 목도리, 단추 코트, 분홍 부츠)로,
+보이지 않는 의자에 왼쪽 앞을 향해(3/4) 앉아 웃으며 폰으로 통화하는 모습 한 장. 폰은 왼손으로 왼쪽 귀에.
+```
+
+```
+첨부한 토끼와 똑같은 캐릭터(분홍 리본은 화면에서 오른쪽 귀에 꼭 보이게)로, 보이지 않는 의자에 왼쪽 앞을 향해(3/4)
+앉아 팔짱을 끼고 고개를 숙여 조는 모습 한 장.
+```
+
+```
+첨부한 호랑이와 똑같은 캐릭터로 4칸(2×2): 정면, 3/4 오른쪽, 3/4 왼쪽, 옆모습 오른쪽 서기. 가슴의 금색 "T2"와
+왼쪽 소매의 금색 "T2"를 보이는 각도마다 꼭 그려 줘. 오른손에 폰, 왼손에 남색 캐리어 손잡이.
+```
+
+발 디딤 시트 주문서(위 "빠진 각도와 주문서")에는 이제 **"걷는 동안 든 것과 같은 소품을 같은 손에, 모든 칸에서 들고 있게"**를 넣는다: 호랑이 "holding the same phone in the right hand and the same navy suitcase in the left hand as while walking, in every cell", 토끼 "the same phone in the right hand and the same pink suitcase in the left hand", 거북이 "the same small T2 ticket in the right hand".

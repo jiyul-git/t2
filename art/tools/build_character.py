@@ -54,6 +54,8 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import face_patch   # noqa: E402
 import head_lead as head_lead_mod   # noqa: E402
+import props as props_mod   # noqa: E402
+import color_match   # noqa: E402
 import sr_upscale   # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -128,12 +130,16 @@ def F(head, torso, legs):
 
 CHARS = {
     # turn in-betweens (art/README.md "돌아서기"): turnaround cells 3/4 right, front, 3/4 left; 'step': the stepping-turn
-    # sheet (2 x 4, walking right -> facing front) that replaces them when it is in art/sources
-    'tiger': dict(walker='tiger', turn=dict(sheet=TURN_TIGER, step=S + 'tiger_turn_step_sheet_2x4_gemini.webp', step_mirror='logo', qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
+    # sheet (2 x 4, walking right -> facing front) that replaces them when it is in art/sources; 'props': the walk_r
+    # frame's props (polygon in walk_r frame px, degrees that stand it upright, the hand: 'l'/'r' as seen) and the
+    # paw points of each view (px of its trimmed picture, read off 8x grids), see with_props
+    'tiger': dict(walker='tiger', turn=dict(sheet=TURN_TIGER, step=S + 'tiger_turn_step_sheet_2x4_gemini.webp', step_mirror='logo', emblem=dict(qr=(140, 138, 170, 156)), props=dict(pieces=dict(case=([(0, 255), (22, 188), (58, 180), (70, 182), (88, 200), (88, 262), (0, 268)], 30, 'l'),
+                                                            phone=([(203, 118), (222, 106), (250, 110), (252, 130), (228, 170), (203, 167)], 30, 'r')),
+                                               hands=dict(qr=dict(l=(57, 214), r=(185, 210)), front=dict(l=(22, 214), r=(178, 215)), ql=dict(l=(8, 214), r=(148, 220)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
         'f': dict(
-            # surprised "o" mouth -> the small smile of the seated cell (same sheet family, 1.13x bigger there)
-            stand=dict(src=(STAND_A, '02'), f=0.479, facing=F('F', 'F', 'F'), face=dict(sheet=CLIMB_A, fix=dict(
-                cell='23', scale=1.13, erase=[(132, 177, 14, 17)], feats=[dict(box=(90, 128, 148, 152), at=(127, 163))]))),
+            # standing at the seat: the turnaround front view carrying the walk frame's suitcase and phone (the stand
+            # sheet's f_02 held the phone in the other paw and had no suitcase)
+            stand='turn',
             # sitting, legs forward, soles to the viewer; head turned a little to the viewer's left; blink: the
             # closed eyes of the climb sheet's cheek-on-hand cell, one on each pupil
             sit=dict(src=(CLIMB_A, '23'), f=0.542, seat=(175, 330), facing=F('Fl', 'F', 'F'), face=dict(sheet=CLIMB_A, variants={'blink': dict(
@@ -167,11 +173,13 @@ CHARS = {
         ),
     }),
     # the only 3/4 cell with both arms down faces right (f_33); mirrored for the left, like walk_l is the mirrored walk_r
-    'rabbit': dict(walker='rabbit', turn=dict(sheet=TURN_RABBIT, step=S + 'rabbit_turn_step_sheet_2x4_gemini.webp', head_cut=dict(stand=0.556), qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
+    'rabbit': dict(walker='rabbit', turn=dict(sheet=TURN_RABBIT, step=S + 'rabbit_turn_step_sheet_2x4_gemini.webp', props=dict(pieces=dict(case=([(0, 265), (25, 222), (55, 215), (68, 200), (85, 205), (85, 230), (80, 302), (0, 302)], 30, 'l'),
+                                                             phone=([(208, 150), (225, 138), (254, 143), (254, 192), (210, 190)], 30, 'r')),
+                                                hands=dict(qr=dict(l=(10, 226), r=(162, 224)), front=dict(l=(15, 215), r=(66, 210)), ql=dict(l=(12, 222), r=(165, 226)))), qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
         'f': dict(
-            # the boots of the cell above poke into this one, touching the left ear tip: cut away
-            stand=dict(src=(RABBIT_POSE, '31'), f=0.528, facing=F('F', 'F', 'F'),
-                       cut=[[(48, 0), (112, 0), (112, 52), (99, 52), (93, 40), (84, 26), (74, 17), (62, 12), (48, 8)], [(100, 0), (186, 0), (186, 35), (172, 43), (160, 49), (100, 54)]]),
+            # standing at the seat: the turnaround front view carrying the walk frame's suitcase and phone (the pose
+            # sheet's coffee-cup cell f_31 changed the prop in the middle of the turn)
+            stand='turn',
             # hands on the cheeks, facing the viewer. The drawing has happy closed eyes: they are opened
             # with a pair of drawn round eyes (same size, same highlights, like the front view of the
             # turnaround sheet) and the drawn closed eyes are the blink
@@ -215,7 +223,8 @@ CHARS = {
         ),
     }),
     # no frontal seated turtle exists (every cell is three-quarters): it only takes the right sofa
-    'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, step=S + 'turtle_turn_step_sheet_2x4_gemini.webp', qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
+    'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, step=S + 'turtle_turn_step_sheet_2x4_gemini.webp', props=dict(pieces=dict(ticket=([(183, 118), (229, 118), (229, 160), (183, 160)], 0, 'r')),
+                                                hands=dict(qr=dict(l=(32, 210), r=(160, 198)), front=dict(l=(10, 205), r=(148, 205)), ql=dict(l=(8, 210), r=(130, 212)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
         'l': dict(
             stand='walk',
             # the waking-up cell (faces right, mirrored): its surprised "o" mouth becomes the sleeping
@@ -588,10 +597,10 @@ def finish_edges(a, min_piece=30):
     px = a[band][:, :3]
     lum = px.mean(1)
     line = np.median(px[lum <= np.percentile(lum, 40)], 0)
-    for _ in range(2):
-        op = (al > 200).astype(np.uint8)
-        nb = sum(np.roll(op, s, ax) for s in (1, -1) for ax in (0, 1))
-        hole = (al == 0) & (nb >= 3)
+    for _ in range(3):
+        op = np.pad((al > 128).astype(np.uint8), 1)
+        nb = op[:-2, 1:-1] + op[2:, 1:-1] + op[1:-1, :-2] + op[1:-1, 2:]
+        hole = (al < 128) & (nb >= 3)
         a[hole, :3] = line
         al[hole] = 255
     clear = np.pad(al == 0, 1, constant_values=True)
@@ -672,6 +681,22 @@ def head_lead(body, head_from, kind, cuts=None):
     f, _ = finish_edges(a)
     a = np.where(zone[..., None], f, a)
     return Pic(a, body.ax + dx, body.ay + dy, 'head')
+
+
+def with_props(view, pieces, assign, hp):
+    """the view with the walk frame's props drawn behind its paws (props.py). assign 'R': as in walk_r (pieces as
+    cut), 'L': as in walk_l (walk_l is walk_r mirrored, so the pieces are mirrored and change hands). hp: paw
+    points in px of the view's trimmed picture (as the atlas frame shows it)"""
+    ys, xs = np.nonzero(view.arr[..., 3] > 0)
+    hp = {k: (x + xs.min(), y + ys.min()) for k, (x, y) in hp.items()}
+    lst = []
+    for name, (p, rot, side) in pieces.items():
+        if assign == 'L':
+            p, rot, side = p[:, ::-1].copy(), -rot, {'l': 'r', 'r': 'l'}[side]
+        lst.append((name, side, p, rot))
+    a, ax, ay, zone = props_mod.carry(view.arr, view.ax, view.ay, hp, lst)
+    f, _ = finish_edges(a)               # the whole picture (the view was finished the same way already)
+    return Pic(f, ax, ay, view.tag + '+props')
 
 
 def figure_h(p):
@@ -778,6 +803,23 @@ class Builder:
         hw = (figure_h(wr) + figure_h(wl)) / 2
         like = {'qr': wr, 'front': wr, 'ql': wl}            # the walk frame each view sits next to
         views = {key: turn_view(self.src, dict(tc[key], sheet=tc['sheet']), hw, like[key]) for key in ('qr', 'front', 'ql')}
+        # colour / value: each region (fur, clothes, outline) moved to the Lab mean and spread of the walk frame beside it
+        for key in ('qr', 'front', 'ql'):
+            v = views[key]
+            views[key] = Pic(color_match.match(v.arr, like[key].arr, cfg['walker']), v.ax, v.ay, v.tag)
+        # chest marks the turnaround cell drew differently: the walk frame's letters instead (cfg 'emblem': view -> box
+        # of the letters in walk_r px)
+        for key, box in tc.get('emblem', {}).items():
+            v = views[key]
+            src = wr.arr if key != 'ql' else wl.arr
+            views[key] = Pic(props_mod.emblem(v.arr, src, box, head_lead_mod.cloth, cfg['walker']), v.ax, v.ay, v.tag)
+        # the walk frame's props (suitcase, phone, ticket) on the views, in the same hands
+        pc = tc.get('props')
+        if pc:
+            pieces = {k: (props_mod.piece(wr.arr, poly, cfg['walker'], None if k == 'case' else head_lead_mod.cloth), rot, side)
+                      for k, (poly, rot, side) in pc['pieces'].items()}
+            for key, assign in (('qr', 'R'), ('front', 'R'), ('ql', 'L')):
+                views[key] = with_props(views[key], pieces, assign, pc['hands'][key])
         views['walk_r'], views['walk_l'] = wr, wl
         # a stepping-turn sheet (2 x 4, walking right -> facing the viewer, art/README.md), when it has come:
         # cells 2-7 replace the turnaround views; mirrored for the turn from walking left. One scale for the
@@ -834,8 +876,12 @@ class Builder:
             self.clips[P('turn_l_front')] = dict(frm='walk_l', to=stand_pose, fps=12, frames=[S0])   # already facing left
             self.clips[P('turn_front_l')] = dict(frm=stand_pose, to='walk_l', fps=12, frames=[S0])
         else:
-            st = standing(self.src, fcfg['stand'])
-            note('stand_front' if facing == 'f' else 'stand', fcfg['stand'])
+            if fcfg['stand'] == 'turn':          # the turnaround front view, carrying the walk frame's props
+                st = views['front']
+                self.poseinfo['stand_front'] = dict(head='F', torso='F', legs='F', eyes='open')
+            else:
+                st = standing(self.src, fcfg['stand'])
+                note('stand_front' if facing == 'f' else 'stand', fcfg['stand'])
             S0 = add(st)
             stand_pose = 'stand_front' if facing == 'f' else P('stand')
             self.poses[stand_pose] = S0
