@@ -53,6 +53,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import face_patch   # noqa: E402
+import head_lead as head_lead_mod   # noqa: E402
 import sr_upscale   # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -126,8 +127,9 @@ def F(head, torso, legs):
 
 
 CHARS = {
-    # turn in-betweens (art/README.md "돌아서기"): turnaround cells 3/4 right, front, 3/4 left
-    'tiger': dict(walker='tiger', turn=dict(sheet=TURN_TIGER, qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
+    # turn in-betweens (art/README.md "돌아서기"): turnaround cells 3/4 right, front, 3/4 left; 'step': the stepping-turn
+    # sheet (2 x 4, walking right -> facing front) that replaces them when it is in art/sources
+    'tiger': dict(walker='tiger', turn=dict(sheet=TURN_TIGER, step=S + 'tiger_turn_step_sheet_2x4_gemini.webp', step_mirror='logo', qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
         'f': dict(
             # surprised "o" mouth -> the small smile of the seated cell (same sheet family, 1.13x bigger there)
             stand=dict(src=(STAND_A, '02'), f=0.479, facing=F('F', 'F', 'F'), face=dict(sheet=CLIMB_A, fix=dict(
@@ -165,7 +167,7 @@ CHARS = {
         ),
     }),
     # the only 3/4 cell with both arms down faces right (f_33); mirrored for the left, like walk_l is the mirrored walk_r
-    'rabbit': dict(walker='rabbit', turn=dict(sheet=TURN_RABBIT, qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
+    'rabbit': dict(walker='rabbit', turn=dict(sheet=TURN_RABBIT, step=S + 'rabbit_turn_step_sheet_2x4_gemini.webp', head_cut=dict(stand=0.556), qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
         'f': dict(
             # the boots of the cell above poke into this one, touching the left ear tip: cut away
             stand=dict(src=(RABBIT_POSE, '31'), f=0.528, facing=F('F', 'F', 'F'),
@@ -213,7 +215,7 @@ CHARS = {
         ),
     }),
     # no frontal seated turtle exists (every cell is three-quarters): it only takes the right sofa
-    'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
+    'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, step=S + 'turtle_turn_step_sheet_2x4_gemini.webp', qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
         'l': dict(
             stand='walk',
             # the waking-up cell (faces right, mirrored): its surprised "o" mouth becomes the sleeping
@@ -421,11 +423,11 @@ class Sources:
     def up(self, sheet):
         return 4 if self.sr_png(sheet) else 1
 
-    def cells(self, sheet):
+    def cells(self, sheet, grid=(4, 4)):
         if sheet not in self.cache:
             out = self.tmp / ('cells_%d' % len(self.cache))
             sr = self.sr_png(sheet)
-            subprocess.run([sys.executable, '-I', str(TOOLS / 'cut_sheet.py'), str(ROOT / sheet), str(out), '4', '4'] + ([str(sr)] if sr else []),
+            subprocess.run([sys.executable, '-I', str(TOOLS / 'cut_sheet.py'), str(ROOT / sheet), str(out), str(grid[0]), str(grid[1])] + ([str(sr)] if sr else []),
                            check=True, stdout=subprocess.DEVNULL)
             self.cache[sheet] = out
         return self.cache[sheet]
@@ -476,7 +478,7 @@ class Sources:
         elif cell in GROUP_ORDER:
             a = from_pil(Image.open(self.group(sheet) / ('g_%s.png' % cell)))
         else:
-            a = from_pil(Image.open(self.cells(sheet) / ('f_%s.png' % cell)))
+            a = from_pil(Image.open(self.cells(sheet, spec.get('grid', (4, 4))) / ('f_%s.png' % cell)))
         if spec.get('keep') == 'largest':
             m = (a[..., 3] > 40).astype(np.uint8)
             n, lab, st, _ = cv2.connectedComponentsWithStats(m, connectivity=8)
@@ -615,20 +617,26 @@ def outline(a):
     return width, np.median(a[band & (dist >= 1) & (dist <= 2.5)][:, :3], 0)
 
 
-def turn_view(src, spec, h, like):
-    """A turnaround cell for a turn in-between (spec: cell, mirror), scaled to h atlas px from the crown to
-    the soles (the turnaround rows are drawn at different sizes, so each cell is scaled to its own height),
-    finished (finish_edges) and anchored on the floor between the feet like the walk and stand frames.
-    The turnaround sheet is inked heavier and nearly black: the outer outline is thinned to the width of
-    `like` (the walk frame beside it; eroded at the 4x size, before shrinking) and every ink px takes its
-    line colour, so the line weight and colour do not change from frame to frame."""
-    a = src.still(dict(src=(spec['sheet'], spec['cell']), keep='largest'))
+def turn_cell(src, spec):
+    """a turn cell (spec: sheet, cell, grid, mirror) in working px, cropped to the figure"""
+    a = src.still(dict(src=(spec['sheet'], spec['cell']), grid=spec.get('grid', (4, 4)), keep='largest'))
     ku = src.up(spec['sheet'])
     if spec.get('mirror'):
         a = mirrored(a, spec['mirror'] == 'logo', ku)
     ys, xs = np.nonzero(a[..., 3] > 128)
-    a = a[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-    k = h / a.shape[0]
+    return a[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+
+
+def turn_view(src, spec, h, like, ref_h=None):
+    """A turnaround cell for a turn in-between (spec: cell, mirror), scaled to h atlas px from the crown to
+    the soles (the turnaround rows are drawn at different sizes, so each cell is scaled to its own height;
+    ref_h: scale so that a figure ref_h working px tall is h instead - one factor for a whole step sheet),
+    finished (finish_edges) and anchored on the floor between the feet like the walk and stand frames.
+    The turnaround sheet is inked heavier and nearly black: the outer outline is thinned to the width of
+    `like` (the walk frame beside it; eroded at the 4x size, before shrinking) and every ink px takes its
+    line colour, so the line weight and colour do not change from frame to frame."""
+    a = turn_cell(src, spec)
+    k = h / (ref_h or a.shape[0])
     w_like, c_like = outline(like.arr)
 
     def make(e):
@@ -655,6 +663,15 @@ def turn_view(src, spec, h, like):
     r = np.pad(r, ((1, 1), (1, 1), (0, 0)))
     ys, xs = np.nonzero(r[..., 3] > 128)
     return Pic(r, feet_x(r) + spec.get('dx', 0), ys.max(), 'turn' + spec['cell'])
+
+
+def head_lead(body, head_from, kind, cuts=None):
+    """the next view's head on this view's body (head_lead.py), edge-finished around the neck and head only
+    (the rest of the body stays exactly as it was); anchored like the body. cuts: (body, head) head_mask limits"""
+    a, dx, dy, zone = head_lead_mod.transplant(body.arr, head_from.arr, kind, *(cuts or (None, None)))
+    f, _ = finish_edges(a)
+    a = np.where(zone[..., None], f, a)
+    return Pic(a, body.ax + dx, body.ay + dy, 'head')
 
 
 def figure_h(p):
@@ -761,6 +778,20 @@ class Builder:
         hw = (figure_h(wr) + figure_h(wl)) / 2
         like = {'qr': wr, 'front': wr, 'ql': wl}            # the walk frame each view sits next to
         views = {key: turn_view(self.src, dict(tc[key], sheet=tc['sheet']), hw, like[key]) for key in ('qr', 'front', 'ql')}
+        views['walk_r'], views['walk_l'] = wr, wl
+        # a stepping-turn sheet (2 x 4, walking right -> facing the viewer, art/README.md), when it has come:
+        # cells 2-7 replace the turnaround views; mirrored for the turn from walking left. One scale for the
+        # sheet (its cells share a foot line and size): the last cell, standing, is the walker's height.
+        views['step_r'] = views['step_l'] = None
+        if tc.get('step') and (ROOT / tc['step']).is_file():
+            cells = ['%d%d' % (i // 4, i % 4) for i in range(8)]
+            ref = turn_cell(self.src, dict(sheet=tc['step'], cell=cells[-1], grid=(2, 4))).shape[0]
+            for side, w in (('r', wr), ('l', wl)):
+                mir = False if side == 'r' else tc.get('step_mirror', True)
+                views['step_' + side] = [turn_view(self.src, dict(sheet=tc['step'], cell=c, grid=(2, 4), mirror=mir), hw, w, ref)
+                                         for c in cells[1:7]]
+        self.kind = cfg['walker']
+        self.cut = tc.get('head_cut', {})
         self.info = {}
         for facing, fcfg in cfg['facings'].items():
             self.build_facing(facing, fcfg, wr, wl, W_r, W_l, views)
@@ -790,9 +821,14 @@ class Builder:
             self.poseinfo[P('stand')] = dict(head='L', torso='L', legs='L', eyes='open')   # the walker's own 3/4-left picture
             self.poses[P('stand')] = S0
             stand_pose = P('stand')
-            # facing right -> facing left through the front: 3/4 right, front, 3/4 left (turnaround cells)
-            qr, fr, ql = (add(views[k]) for k in ('qr', 'front', 'ql'))
-            seq = [W_r, qr, qr, fr, ql, ql, S0]
+            # facing right -> facing left through the front. The head leads: each view first shows the next
+            # view's head on its own body (head_lead), then the body follows
+            V = views
+            hl = lambda b, h: add(head_lead(V[b], V[h], self.kind, (self.cut.get(b), self.cut.get(h))))
+            if V['step_r']:
+                seq = [W_r] + [add(p) for p in V['step_r']] + [hl('front', 'ql'), add(V['ql']), S0]
+            else:
+                seq = [W_r, hl('walk_r', 'qr'), add(V['qr']), hl('qr', 'front'), add(V['front']), hl('front', 'ql'), add(V['ql']), S0]
             self.clips[P('turn_r_front')] = dict(frm='walk_r', to=stand_pose, fps=12, frames=seq)
             self.clips[P('turn_front_r')] = dict(frm=stand_pose, to='walk_r', fps=12, frames=seq[::-1])
             self.clips[P('turn_l_front')] = dict(frm='walk_l', to=stand_pose, fps=12, frames=[S0])   # already facing left
@@ -803,11 +839,17 @@ class Builder:
             S0 = add(st)
             stand_pose = 'stand_front' if facing == 'f' else P('stand')
             self.poses[stand_pose] = S0
-            # walk (3/4) -> turnaround 3/4 (nearer the front) -> stand. The turnaround's own front view is not
-            # shown here: it is a second front drawing next to the stand (the tiger's head 8 % wider) and pops
+            # walk (3/4) -> [3/4 head on the walking body] -> turnaround 3/4 (nearer the front) -> [the stand's head on
+            # the 3/4 body] -> stand: the head leads, the body follows. The turnaround's own front view is not shown
+            # here: it is a second front drawing next to the stand (the tiger's head 8 % wider) and pops
+            V = dict(views, stand=st)
+            hl = lambda b, h: add(head_lead(V[b], V[h], self.kind, (self.cut.get(b), self.cut.get(h))))
             for side, W0 in (('r', W_r), ('l', W_l)):
-                q = add(views['q' + side])
-                seq = [W0, q, q, q, S0, S0, S0]
+                if V['step_' + side]:
+                    seq = [W0] + [add(p) for p in V['step_' + side]] + [S0]
+                else:
+                    q = 'q' + side
+                    seq = [W0, hl('walk_' + side, q), add(V[q]), add(V[q]), hl(q, 'stand'), S0, S0]
                 self.clips[P('turn_%s_front' % side)] = dict(frm='walk_' + side, to=stand_pose, fps=12, frames=seq)
                 self.clips[P('turn_front_%s' % side)] = dict(frm=stand_pose, to='walk_' + side, fps=12, frames=seq[::-1])
 
