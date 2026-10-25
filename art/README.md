@@ -173,7 +173,7 @@ python3 art/tools/build_character.py tiger --dump DIR         # 아틀라스를 
 1. **걷기**: `build_tiger_walker.py` / `build_walker.py`를 라이브러리로 불러 임시 폴더에 무손실로 만들고, 그 아틀라스(걷기 프레임, 몸 오르내림 `ay`, 얼굴 조각 `v`/`over`)를 **그대로 맨 위에 복사**한다. 새 프레임은 그 아래에 붙인다. 매니페스트 `scale`도 걷는 캐릭터 그대로라, 모든 그림이 걷는 캐릭터의 아틀라스 px로 맞춰진다.
 2. **크기 맞추기**: 칸마다 머리 폭(볼 끝에서 볼 끝)을 재서 `f = 걷는 캐릭터 머리 폭 / 칸 머리 폭`으로 줄인다. 같은 시트의 칸은 한 배율을 쓴다(Gemini가 한 시트 안에서는 크기를 맞춰 그리기 때문). 걷는 머리는 3/4 옆모습이라 정면 그림의 머리가 조금 커 보일 수 있다 — 거북이는 졸기 시트 배율을 눈으로 보고 15 % 키웠다.
 3. **좌석 방향(2026-10-18)**: 좌석마다 방향이 있다 — 왼쪽 소파는 정면(`f`), 오른쪽 소파는 왼쪽 앞을 향한 3/4(`l`). 캐릭터는 방향마다 자세 한 벌을 가지며(`CHARS[...]['facings']`), 그 방향을 향해 그려진 칸이나 반대쪽을 향한 칸을 좌우 반전한 것만 쓴다. `l` 방향의 클립·포즈 이름에는 `@l`이 붙는다.
-4. **돌아서기(종이 넘기기)**: 걷기 첫 프레임이 가로로 0.7 → 0.4 → 0.12배로 접히고(조금 어두워짐), 서기 그림이 0.4 → 0.75 → 1배로 펼쳐진다. 발은 기준선에 고정. `f` 좌석은 정면 서기로, `l` 좌석은 걷는 3/4 옆모습(`walk_l` 첫 프레임)이 그대로 서기 자세다: 왼쪽으로 걸어오면 돌 필요가 없고, 오른쪽으로 걸어오면 `walk_r` → `walk_l`로 넘긴다. 그동안 렌더러가 발 위치를 통로(1118)에서 좌석 앞 바닥점(`seats[].x, y`)으로, 크기를 1에서 `seats[].scale`로 옮긴다.
+4. **돌아서기**: (2026-10-25부터, 아래 "돌아서기: 턴어라운드 사이 칸") 걷기 3/4 → 턴어라운드 시트의 진짜 3/4·정면 칸 → 서기. 예전의 종이 넘기기(가로로 0.7 → 0.4 → 0.12배로 접었다 펼치기)는 없앴다. 발은 기준선에 고정. `f` 좌석은 정면 서기로, `l` 좌석은 걷는 3/4 옆모습(`walk_l` 첫 프레임)이 그대로 서기 자세다: 왼쪽으로 걸어오면 돌 필요가 없고, 오른쪽으로 걸어오면 `walk_r` → 정면을 거쳐 `walk_l`로 돈다. 그동안 렌더러가 발 위치를 통로(1118)에서 좌석 앞 바닥점(`seats[].x, y`)으로, 크기를 1에서 `seats[].scale`로 옮긴다.
 5. **앉기(`sit_down`, 8프레임 12fps)**: 서기 → 웅크림(세로 0.93) → 위로 늘어나며(1.05) 뛰어오름 → **꼭대기**(방석 높이 + 22 %, `l` 좌석은 오른쪽 뒤로 비스듬히) → 여기서 앉은 그림으로 **바로 바뀜**(공중에서 위로 늘어난 채) → 내려옴 → 착지 찌그러짐(0.95) → 앉은 자세. 크로스페이드는 없다(두 그림이 반투명하게 겹치는 프레임이 없다). 일어서기(`stand_up`)는 거꾸로. 앉은 그림은 칸마다 잰 **엉덩이 접촉점**(`seat`)을 좌석의 `cx`, `cy`(방석 위)에 놓고, 소파 앞면 앞에 그려져 다리가 보인다. 왼쪽 소파의 왼쪽 팔걸이는 따로 오린 레이어(`bg/sofa_arms_*.webp`)로 앉은 캐릭터 위에 다시 그린다.
 6. **앉아 가만히(`sit_idle`)**: 앉은 그림 + 좌석 기준 세로 +0.6 %·+1.2 % 늘인 그림 2장으로 숨쉬기(21프레임 8fps, 2.6초), 깜빡임은 얼굴 조각(`face_patch.py`).
 7. **활동**: 들어가기·나오기는 하던 그림을 살짝 누르고(0.96) 새 그림을 살짝 늘인(1.03) 다음 제자리(4프레임). 루프는 같은 그림을 1~2 px 천천히 들었다 놓아 숨쉬기. 졸기는 졸기 그림 2~3장을 같은 방식(누른 한 장 → 새 그림)으로 오가며 꾸벅인다(6fps).
@@ -198,7 +198,7 @@ python3 art/tools/build_character.py tiger --dump DIR         # 아틀라스를 
 ### 약한 곳 (솔직하게)
 
 - **공중에서 바뀌는 순간**: 앉기·일어서기의 꼭대기에서 서 있는 그림이 앉은 그림으로 한 프레임(0.08초)에 바뀐다. 늘어난 모양이라 움직임처럼 읽히지만, 크게 보면 바뀌는 게 보인다. 진짜 올라앉는 그림이 오면 없어진다.
-- **돌아서기**: 정면 좌석은 옆모습이 실처럼 가늘어졌다가 정면이 펼쳐지는 종이 넘기기다. 걷는 그림은 캐리어·폰을 들고 있는데 정면 서기는 들고 있지 않거나(호랑이 캐리어, 토끼 폰·캐리어) 다른 것(토끼 커피)을 든다. `l` 좌석은 걷는 그림 그대로 뛰어올라 캐리어를 든 채 앉았다가, 꼭대기에서 캐리어 없는 앉은 그림으로 바뀐다.
+- **돌아서기**: (2026-10-25에 고침, 맨 아래) 전에는 정면 좌석이 옆모습이 실처럼 가늘어졌다가 정면이 펼쳐지는 종이 넘기기였다. 걷는 그림은 캐리어·폰을 들고 있는데 정면 서기는 들고 있지 않거나(호랑이 캐리어, 토끼 폰·캐리어) 다른 것(토끼 커피)을 든다. `l` 좌석은 걷는 그림 그대로 뛰어올라 캐리어를 든 채 앉았다가, 꼭대기에서 캐리어 없는 앉은 그림으로 바뀐다.
 - **소파마다 한 명**: 캐릭터가 방석보다 넓어 같은 소파에는 한 명만 앉는다. 앉아 있는 사람은 많아야 두 명.
 - **호랑이 `l` 가만히**: 오르기 시트의 "턱에 걸터앉은" 칸이라 한 다리를 옆으로 쭉 뻗은 모양이 조금 과장돼 보인다. s2에서는 뻗은 발이 방석 왼쪽 앞 모서리 근처까지 간다.
 - **토끼**: 정면 졸기가 한 장뿐이라 꾸벅임이 없다. 뜬 눈은 두 방향 모두 걷기 그림의 눈을 옮겨 붙인 것이다. 통화의 칠한 소매는 확대하면 평평하다.
@@ -287,7 +287,7 @@ python3 art/tools/build_character.py tiger --dump DIR         # 아틀라스를 
 ### 7. 다음 차례를 위한 메모 (아직 쓰지 않음)
 
 - `sources/climb_sit_sheet_rabbit_turtle_penguin_gemini.webp`(4×4, 1024 px): `f_03` 토끼 3/4 왼쪽 앉기(이번에 `sit@l`로 씀). 나머지 칸(올라가는 중, 매달리기 등)은 토끼·거북이·펭귄의 진짜 앉기 동작(`sit_down`)과 돌아서기에 쓸 수 있다. 칸 번호별 판정은 SR로 키운 뒤 `build_character.py`의 `Sources.still`로 바로 볼 수 있다(`dev/cellgrid` 방식).
-- 턴어라운드 시트(`turnaround_*_gemini.webp`, 동물마다 16컷: 정면·3/4·옆·뒤): 정면, 3/4 왼쪽, 오른쪽 머리와 몸이 있어 돌아서기(`turn_*_front`)의 중간 컷과 서기 `stand@l`의 머리를 걷기 그림 대신 진짜 3/4로 바꾸는 데 쓸 수 있다. 토끼 눈 크기와 호랑이/거북이 눈 형태의 기준으로 이미 일부 썼다.
+- 턴어라운드 시트(`turnaround_*_gemini.webp`, 동물마다 16컷: 정면·3/4·옆·뒤): 돌아서기(`turn_*_front`)의 중간 컷으로 2026-10-25에 씀(맨 아래). 남은 쓰임: 서기 `stand@l`의 머리를 걷기 그림 대신 진짜 3/4로 바꾸는 데 쓸 수 있다. 토끼 눈 크기와 호랑이/거북이 눈 형태의 기준으로 이미 일부 썼다.
 - 호랑이 오르기 시트(`tiger_climb_sit_sheet_a`)의 나머지 칸: `f_21`~`f_33` 올라앉기 순서(`sit_frames`/`stand_frames`로 엔진 변경 없이 연결).
 - 펭귄: 걷기 그림이 단체 그림 한 장뿐이라 아직 장면에 없다(턴어라운드 + 오르기 시트가 이제 있어 다음 차례에 가능).
 
@@ -300,3 +300,89 @@ python3 art/tools/build_character.py tiger --dump DIR         # 아틀라스를 
 - 거북이 걸음은 발 속도 ±25 % 변동, 확대하면 겹친 다리 윤곽이 거칠다.
 - 걷기 그림(호랑이·토끼)의 해상도는 아틀라스 1.25배 외에는 그대로다(2400 px 시트라 SR 불필요).
 - 아틀라스 용량이 늘었다(호랑이 1.29 → 1.69 MB, 합계 디코드 44 → 68.6 MB).
+
+## 돌아서기: 턴어라운드 사이 칸 (2026-10-25)
+
+사용자 지적: 호랑이·토끼·거북이가 돌아설 때 "몸이 얇아진다". 원인은 종이 넘기기(걷기 그림을 가로로 0.7 → 0.4 → 0.12배로 눌렀다가 서기 그림을 0.4 → 0.75 → 1배로 펼침)였다. 이제 누르기는 없고, 턴어라운드 시트(`sources/turnaround_*_gemini.webp`)의 **진짜 중간 각도 칸**을 몸 두께 그대로 쓴다. 만드는 법은 그대로 `python3 art/tools/build_character.py tiger rabbit turtle`(SR 가중치가 있으면 같은 바이트; 없으면 LANCZOS로 돌아가고 한 줄 안내).
+
+### 쓰는 칸
+
+| 동물 | 3/4 오른쪽 (`qr`) | 정면 (`front`) | 3/4 왼쪽 (`ql`) |
+|---|---|---|---|
+| 호랑이 | `f_32` | `f_00` | `f_10` |
+| 토끼 | `f_33` | `f_00` | `f_33` 좌우 반전 — 두 팔을 내린 3/4 왼쪽 칸이 없다(`f_10` 손 흔듦, `f_11` 볼에 손, `f_13` 손가락질). `walk_l`도 `walk_r`의 반전이라 리본 귀가 같은 쪽으로 바뀌어 서로 맞는다 |
+| 거북이 | `f_32` | `f_00` | `f_02` |
+
+### 클립 (12 fps, 프레임 수는 그대로 7)
+
+- `f` 좌석(정면 서기): `turn_r_front` = `walk_r, qr, qr, qr, 서기, 서기, 서기`, `turn_l_front` = `walk_l, ql, ql, ql, 서기 …`. 되돌아가기는 거꾸로. 턴어라운드의 정면 칸은 여기서 쓰지 않는다: 서기 그림과 다른 두 번째 정면 그림이라(호랑이 머리 폭 약 8 % 차이) 연달아 보이면 튄다.
+- `l` 좌석(서기 = `walk_l`): `turn_r_front@l` = `walk_r, qr, qr, front, ql, ql, walk_l` — 오른쪽 3/4에서 정면을 지나 왼쪽 3/4로 돈다. `turn_l_front@l`은 전처럼 돌 필요가 없다(1프레임).
+- 포즈 그래프는 그대로(첫 프레임 = `from` 포즈, 끝 프레임 = `to` 포즈)라 검사(`lounge_check_assets.py` seam, `verify_lounge_*`)가 바뀌지 않는다.
+
+### 칸 다루기 (통째로, 몸 일부를 잘라 붙이지 않음)
+
+1. SR(4배) 시트에서 칸을 자르고(`Sources.still`, 떨어진 조각 버림) 그림 상자로 다듬는다.
+2. **크기**: 턴어라운드 시트는 줄마다 크기가 달라서(정면 줄 칸 높이 190 px, 3/4 줄 176 px) 시트 배율 하나가 아니라 칸마다 정수리~발바닥 높이를 걷는 그림 두 방향의 평균 높이에 맞춘다(호랑이 273, 토끼 299, 거북이 261 아틀라스 px). 눈높이와 머리 폭을 걷기·서기와 나란히 놓고 확인했다.
+3. **선 굵기·색**: 턴어라운드 시트는 바깥선이 더 굵고 거의 검정이다(걷기 선: 호랑이 (23,12,7), 토끼 (46,9,8) 갈색). 옆 걷기 프레임의 바깥선 폭(`outline`: 가장자리에 닿은 어두운 띠의 넓이 ÷ 가장자리 길이)을 재서, 그 차이만큼 4배 그림에서 실루엣 바깥을 깎고(줄인 뒤 다시 재서 최대 4번) 모든 먹선 픽셀을 걷기 프레임의 선 색으로 옮긴다(선만큼 어두운 픽셀은 전부, 밝을수록 덜).
+4. **픽셀 마감**(`finish_edges`, 아틀라스 크기에서 모든 새 프레임에 같은 규칙): 옅은 알파(< 20)와 30 px 미만의 떨어진 부스러기 삭제, 실루엣의 바늘구멍(불투명 이웃 3개 이상인 투명 픽셀)을 선 색으로 메움, 가장자리 픽셀(반투명이거나 투명 이웃이 있는 것)을 그 그림의 선 색으로 다시 칠함, 가장자리 2 px 안의 밝고 색 없는 픽셀(시트의 흰 바탕)을 선 색으로. 돌아서기가 끝나는 **정면 서기 그림**(호랑이·토끼 `stand_front`)도 같은 마감을 한다: 전에는 가장자리 픽셀의 약 75 %가 흰 테두리였다(호랑이 1337/1786, 토끼 1257/1657).
+5. 발 사이 가운데를 앵커로 바닥선(`ay`)에 놓는다(걷기·서기와 같은 기준).
+
+측정(최종 `atlas.webp`, 손실 압축 후): 새 사이 칸과 정면 서기의 가장자리 밝은 픽셀(lum > 110) 0, 부스러기 0, 바늘구멍 0(걷기 프레임은 원래대로 약 100 / 18 / 0). 바깥선 폭(px) 걷기 → 사이 칸: 호랑이 3.44 → 3.50~3.55, 토끼 2.17 → 2.26~2.27, 거북이 3.27 → 3.21~3.47.
+
+### 확인용 그림 (`cutouts/turns/`, `python3 art/tools/turn_preview.py`)
+
+- `<동물>_turn_8x.png`: 돌아서기에 나오는 모든 그림(걷기, 사이 칸, 서기)을 8배 최근접으로, 발을 한 줄에 맞춰 회색 위에.
+- `<동물>_<좌석 방향>.gif`: 걷기 → 돌아서기 → 서기 → 되돌아서기 → 걷기(12 fps, 아틀라스 크기). `tiger_f`, `tiger_l`, `rabbit_f`, `rabbit_l`, `turtle_l`.
+
+### 약한 곳 (솔직하게)
+
+- **소품이 사이 칸에서 사라진다**: 턴어라운드 칸에는 캐리어·폰·카드가 없다. 호랑이는 폰·캐리어(걷기) → 빈손(사이 칸) → 폰(정면 서기), 토끼는 폰·캐리어 → 빈손 → 커피, 거북이는 카드 → 빈손 → 카드. 0.25초 동안이지만 크게 보면 보인다.
+- **발이 움직이지 않는다**: 사이 칸은 모두 선 자세라 걷던 다리가 한 프레임에 모인다. 진짜 "발을 디디며 도는" 그림은 시트에 없다(아래 주문서).
+- **안쪽 선**: 바깥선 폭과 선 색은 맞췄지만 턴어라운드 그림의 안쪽 선(토끼 리본·코트 솔기, 호랑이 줄무늬 끝)은 걷기 그림보다 약 30 % 굵다. 가는 선(눈, 입)이 지워지므로 안쪽 선은 깎지 않았다.
+- **그림체 차이**: 턴어라운드 호랑이·거북이 정면은 조금 더 통통하다(`l` 좌석의 정면 한 칸). 토끼 3/4 왼쪽은 반전 그림이다.
+- `walk_r` → 3/4 사이 칸에서 머리 가운데가 몇 px(최대 약 10 아틀라스 px) 옆으로 옮겨진다(앵커를 발 사이에 둠).
+
+### 빠진 각도와 주문서
+
+3/4 오른쪽·정면·3/4 왼쪽 각도는 세 동물 모두 시트에 있다(토끼 3/4 왼쪽은 반전으로 대신). 없는 것은 **소품을 든 채 발을 디디며 도는 칸**이다. 아래를 그대로 붙여 동물마다 한 장씩 요청하면(걷기 시트 한 칸을 첨부) 지금 사이 칸을 그 8칸으로 바꿀 수 있다(`CHARS[...]['turn']`에 칸만 바꿔 넣음, 엔진 변경 없음).
+
+```
+Use the attached tiger as the exact character reference (same face, outfit and every
+detail: dark green hoodie with the gold "T2" on the chest and on the sleeve, white
+drawstrings, dark brown shorts, orange fur with dark stripes, striped tail, phone in
+one hand, navy rolling suitcase in the other, colours, line weight, proportions).
+Every detail must be identical in every cell.
+
+Draw a 2x4 sheet (8 separate cells, left to right, top to bottom), plain white background,
+white gaps, same size and the same foot line in every cell. No floor, no shadow, no text.
+
+The tiger is walking to the RIGHT and turns to face the viewer by STEPPING, not spinning:
+1. walking right, side view, near foot forward.
+2. the near foot plants; the HEAD turns toward the viewer first, body still side-on.
+3. weight on the planted foot, the far foot lifts; shoulders follow the head, hips still side-on.
+4. the far foot steps out toward the viewer, body at 3/4, hips turning.
+5. the near foot lifts and swings around to join, body almost facing the viewer.
+6. the near foot lands next to the other one, body facing the viewer, a slight overshoot sway.
+7. settling, standing facing the viewer, knees slightly bent.
+8. standing facing the viewer, relaxed, arms at the sides.
+Head leads, shoulders follow, hips last. The feet must clearly move between cells.
+```
+
+토끼·거북이는 첫 문단만 바꾼다.
+
+```
+Use the attached rabbit as the exact character reference (same face, outfit and every
+detail: pink bow on one ear, pink knitted scarf, pink button coat with pockets, short
+pleated skirt, cream stockings, pink boots, phone in one hand, pink rolling suitcase in
+the other, colours, line weight, proportions). Every detail must be identical in every cell.
+```
+
+```
+Use the attached turtle as the exact character reference (same face, outfit and every
+detail: black beanie with the small gold emblem, navy jacket with gold patterns and
+a brown cord at the collar, brown shell backpack with straps, green skin, white toe
+claws, the small "T2" card in one hand, colours, line weight, proportions). Every detail
+must be identical in every cell.
+```
+
+(각 동물 이름 자리 `The tiger is walking…`도 `The rabbit` / `The turtle`로 바꾼다.)

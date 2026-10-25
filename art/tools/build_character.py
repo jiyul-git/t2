@@ -23,8 +23,9 @@ Where each piece comes from:
   cell head width), so the head keeps its size from pose to pose; one factor per sheet.
 - seated stills are placed by their BUTT CONTACT point (cfg 'seat') on the seat's contact point
   (scene.json seats[].cx/cy, measured on the sofa cushions), not by their lowest foot.
-- turns (walk <-> standing at the seat): a "paper flip": the side view squeezes to a sliver around its
-  anchor, the other view grows out of it (feet fixed). The renderer slides the foot line from the aisle
+- turns (walk <-> standing at the seat): real in-between angles from the turnaround sheet (cfg 'turn':
+  3/4 right, front, 3/4 left), scaled to the walker's height, edge-finished (finish_edges) and anchored
+  between the feet; the body keeps its thickness (no squeeze). The renderer slides the foot line from the aisle
   to the seat's floor point meanwhile (renderer.js place()).
 - sit_down / stand_up: crouch, hop backwards up onto the cushion; at the top of the hop the standing
   picture is replaced by the seated one (both stretched, so the cut reads as motion), which drops onto
@@ -125,7 +126,8 @@ def F(head, torso, legs):
 
 
 CHARS = {
-    'tiger': dict(walker='tiger', facings={
+    # turn in-betweens (art/README.md "돌아서기"): turnaround cells 3/4 right, front, 3/4 left
+    'tiger': dict(walker='tiger', turn=dict(sheet=TURN_TIGER, qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
         'f': dict(
             # surprised "o" mouth -> the small smile of the seated cell (same sheet family, 1.13x bigger there)
             stand=dict(src=(STAND_A, '02'), f=0.479, facing=F('F', 'F', 'F'), face=dict(sheet=CLIMB_A, fix=dict(
@@ -162,7 +164,8 @@ CHARS = {
                   dict(src=(TIGER_DOZE, '00'), f=1.139, seat=(85, 160), facing=F('L', 'L', 'L'))],
         ),
     }),
-    'rabbit': dict(walker='rabbit', facings={
+    # the only 3/4 cell with both arms down faces right (f_33); mirrored for the left, like walk_l is the mirrored walk_r
+    'rabbit': dict(walker='rabbit', turn=dict(sheet=TURN_RABBIT, qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
         'f': dict(
             # the boots of the cell above poke into this one, touching the left ear tip: cut away
             stand=dict(src=(RABBIT_POSE, '31'), f=0.528, facing=F('F', 'F', 'F'),
@@ -210,7 +213,7 @@ CHARS = {
         ),
     }),
     # no frontal seated turtle exists (every cell is three-quarters): it only takes the right sofa
-    'turtle': dict(walker='turtle', facings={
+    'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
         'l': dict(
             stand='walk',
             # the waking-up cell (faces right, mirrored): its surprised "o" mouth becomes the sleeping
@@ -274,14 +277,6 @@ class Pic:
     def moved(self, dy=0.0, dx=0.0):
         """The same picture drawn dy atlas px higher (dx to the right): only the anchor changes."""
         return Pic(self.arr, self.ax - dx, self.ay + dy, self.tag, self.faces)
-
-    def squeezed(self, sx, shade=0.0):
-        """Narrowed to sx of its width around the anchor column (a paper flip), a little darker."""
-        w = max(2, int(round(self.w * sx)))
-        a = resize(self.arr, w, self.h)
-        if shade:
-            a[..., :3] *= 1 - shade
-        return Pic(a, self.ax * w / self.w, self.ay, self.tag + '~%.2f' % sx)
 
     def stretched(self, sy, pivot=None):
         """Scaled vertically by sy about the row `pivot` (default: the anchor row), which stays put."""
@@ -564,7 +559,108 @@ def standing(src, spec):
     x = spec['x'] * ku if 'x' in spec else feet_x(a)
     a, faces = with_faces(src, a, spec)
     r, faces = scaled(a, faces, spec['f'] * ATLAS_K, ku)
+    # the turns land on this picture: the same edge finishing as their in-betweens (no white fringe next to them)
+    r, faces = finish_edges(r)[0], {n: finish_edges(v)[0] for n, v in faces.items()}
     return Pic(r, x * r.shape[1] / a.shape[1], r.shape[0] - 1, 'stand', faces)
+
+
+def finish_edges(a, min_piece=30):
+    """Pixel finishing of a turn in-between at atlas size (straight RGBA float in and out), the same on every
+    frame so the line weight stays even:
+    1. faint alpha (< 20) goes, and separate scraps under min_piece px (stray pixels) are deleted;
+    2. pinholes in the silhouette (a transparent px with 3+ solid 4-neighbours) are closed with line colour;
+    3. every edge px (semi-transparent, or solid with a transparent 4-neighbour) is re-inked in the drawing's
+       own line colour (the median of the darkest 40 % of the outline just inside the edge): no white or
+       grey fringe, no halo, no soft outline;
+    4. light, colourless px within 2 px of the edge (sheet white left by the cut) become line colour too."""
+    a = a.copy()
+    al = a[..., 3]
+    al[al < 20] = 0
+    solid = al > 0
+    n, lab, st, _ = cv2.connectedComponentsWithStats(solid.astype(np.uint8), connectivity=8)
+    for i in range(1, n):
+        if st[i, cv2.CC_STAT_AREA] < min_piece:
+            a[lab == i] = 0
+    inner = cv2.erode((al > 250).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+    band = inner & ~cv2.erode(inner.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+    px = a[band][:, :3]
+    lum = px.mean(1)
+    line = np.median(px[lum <= np.percentile(lum, 40)], 0)
+    for _ in range(2):
+        op = (al > 200).astype(np.uint8)
+        nb = sum(np.roll(op, s, ax) for s in (1, -1) for ax in (0, 1))
+        hole = (al == 0) & (nb >= 3)
+        a[hole, :3] = line
+        al[hole] = 255
+    clear = np.pad(al == 0, 1, constant_values=True)
+    edge_nb = clear[:-2, 1:-1] | clear[2:, 1:-1] | clear[1:-1, :-2] | clear[1:-1, 2:]
+    edge = (al > 0) & ((al < 255) | edge_nb)
+    a[edge, :3] = line
+    near = (al > 0) & ~cv2.erode((al > 0).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+    mn, mx = a[..., :3].min(-1), a[..., :3].max(-1)
+    a[near & (mn > 150) & (mx - mn < 40), :3] = line
+    return a, line
+
+
+def outline(a):
+    """(mean width in px, colour) of the outer outline of a picture: the dark run (lum < 75) that touches
+    the silhouette's edge, within 6 px of it; its area over the edge length is the width, its middle the colour."""
+    m = (a[..., 3] > 128).astype(np.uint8)
+    dist = cv2.distanceTransform(m, cv2.DIST_L2, 3)
+    dark = (a[..., :3].mean(-1) < 75) & (m > 0)
+    n, lab = cv2.connectedComponents(dark.astype(np.uint8), connectivity=8)
+    edge = list(set(np.unique(lab[(dist <= 1.5) & dark])) - {0})
+    band = np.isin(lab, edge) & (dist <= 6)
+    width = band.sum() / max(1, ((dist > 0) & (dist <= 1.5)).sum())
+    return width, np.median(a[band & (dist >= 1) & (dist <= 2.5)][:, :3], 0)
+
+
+def turn_view(src, spec, h, like):
+    """A turnaround cell for a turn in-between (spec: cell, mirror), scaled to h atlas px from the crown to
+    the soles (the turnaround rows are drawn at different sizes, so each cell is scaled to its own height),
+    finished (finish_edges) and anchored on the floor between the feet like the walk and stand frames.
+    The turnaround sheet is inked heavier and nearly black: the outer outline is thinned to the width of
+    `like` (the walk frame beside it; eroded at the 4x size, before shrinking) and every ink px takes its
+    line colour, so the line weight and colour do not change from frame to frame."""
+    a = src.still(dict(src=(spec['sheet'], spec['cell']), keep='largest'))
+    ku = src.up(spec['sheet'])
+    if spec.get('mirror'):
+        a = mirrored(a, spec['mirror'] == 'logo', ku)
+    ys, xs = np.nonzero(a[..., 3] > 128)
+    a = a[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    k = h / a.shape[0]
+    w_like, c_like = outline(like.arr)
+
+    def make(e):
+        """e: atlas px to take off the outside of the outline"""
+        b = a
+        if e > 0:
+            d = cv2.distanceTransform((a[..., 3] > 128).astype(np.uint8), cv2.DIST_L2, 5)
+            b = a.copy()
+            b[..., 3] = np.minimum(b[..., 3], np.clip(d - e / k + 0.5, 0, 1) * 255)
+        r = resize(b, b.shape[1] * k, b.shape[0] * k)
+        return finish_edges(r)
+    r, line = make(0)
+    e = 0.0
+    for _ in range(4):                     # the edge re-ink adds back a little: measure again and take more
+        d = outline(r)[0] - w_like
+        if d <= 0.08:
+            break
+        e += d
+        r, line = make(e)
+    # ink to the walk frame's line colour: a px as dark as the line moves all the way, lighter ones less
+    lum, l0 = r[..., :3].mean(-1), float(line.mean())
+    t = np.clip((90 - lum) / max(1.0, 90 - l0), 0, 1)[..., None]
+    r[..., :3] = np.clip(r[..., :3] + (c_like - line) * t, 0, 255)
+    r = np.pad(r, ((1, 1), (1, 1), (0, 0)))
+    ys, xs = np.nonzero(r[..., 3] > 128)
+    return Pic(r, feet_x(r) + spec.get('dx', 0), ys.max(), 'turn' + spec['cell'])
+
+
+def figure_h(p):
+    """crown-to-sole height of a picture (opaque rows)"""
+    ys = np.nonzero((p.arr[..., 3] > 128).any(1))[0]
+    return ys.max() - ys.min()
 
 
 def mirrored(a, logo=False, k=1):
@@ -659,14 +755,19 @@ class Builder:
         W_l = wm['clips']['walk_l']['frames'][0]
         wr, wl = frame_pic(self.walk_atlas, wm['frames'][W_r]), frame_pic(self.walk_atlas, wm['frames'][W_l])
         self.poses['walk_r'], self.poses['walk_l'] = W_r, W_l      # the walker's own first loop frames
-        shrink = {side: [add(w.squeezed(s, 0.12 * (1 - s))) for s in (0.7, 0.4, 0.12)] for side, w in (('r', wr), ('l', wl))}
+        # turn in-betweens: real three-quarter and front views from the turnaround sheet (cfg 'turn'), each scaled
+        # to the walker's crown-to-sole height, so the body keeps its thickness through the turn
+        tc = cfg['turn']
+        hw = (figure_h(wr) + figure_h(wl)) / 2
+        like = {'qr': wr, 'front': wr, 'ql': wl}            # the walk frame each view sits next to
+        views = {key: turn_view(self.src, dict(tc[key], sheet=tc['sheet']), hw, like[key]) for key in ('qr', 'front', 'ql')}
         self.info = {}
         for facing, fcfg in cfg['facings'].items():
-            self.build_facing(facing, fcfg, wr, wl, W_r, W_l, shrink)
+            self.build_facing(facing, fcfg, wr, wl, W_r, W_l, views)
         self.facings = sorted(cfg['facings'])
         return self
 
-    def build_facing(self, facing, fcfg, wr, wl, W_r, W_l, shrink):
+    def build_facing(self, facing, fcfg, wr, wl, W_r, W_l, views):
         add, x = self.add, sfx(facing)
         k1 = self.scale * SCENE_CHAR_SCALE                     # scene px per atlas px at seat scale 1
         fc = FACINGS[facing]
@@ -689,10 +790,11 @@ class Builder:
             self.poseinfo[P('stand')] = dict(head='L', torso='L', legs='L', eyes='open')   # the walker's own 3/4-left picture
             self.poses[P('stand')] = S0
             stand_pose = P('stand')
-            grow = [add(wl.squeezed(s, 0.12 * (1 - s))) for s in (0.4, 0.75)]
-            flip_r = [W_r] + shrink['r'] + grow + [S0]          # paper flip: facing right -> facing left
-            self.clips[P('turn_r_front')] = dict(frm='walk_r', to=stand_pose, fps=12, frames=flip_r)
-            self.clips[P('turn_front_r')] = dict(frm=stand_pose, to='walk_r', fps=12, frames=flip_r[::-1])
+            # facing right -> facing left through the front: 3/4 right, front, 3/4 left (turnaround cells)
+            qr, fr, ql = (add(views[k]) for k in ('qr', 'front', 'ql'))
+            seq = [W_r, qr, qr, fr, ql, ql, S0]
+            self.clips[P('turn_r_front')] = dict(frm='walk_r', to=stand_pose, fps=12, frames=seq)
+            self.clips[P('turn_front_r')] = dict(frm=stand_pose, to='walk_r', fps=12, frames=seq[::-1])
             self.clips[P('turn_l_front')] = dict(frm='walk_l', to=stand_pose, fps=12, frames=[S0])   # already facing left
             self.clips[P('turn_front_l')] = dict(frm=stand_pose, to='walk_l', fps=12, frames=[S0])
         else:
@@ -701,9 +803,11 @@ class Builder:
             S0 = add(st)
             stand_pose = 'stand_front' if facing == 'f' else P('stand')
             self.poses[stand_pose] = S0
-            grow = [add(st.squeezed(s, 0.12 * (1 - s))) for s in (0.4, 0.75)]
-            for side, W0 in (('r', W_r), ('l', W_l)):           # paper flip: side view -> front view
-                seq = [W0] + shrink[side] + grow + [S0]
+            # walk (3/4) -> turnaround 3/4 (nearer the front) -> stand. The turnaround's own front view is not
+            # shown here: it is a second front drawing next to the stand (the tiger's head 8 % wider) and pops
+            for side, W0 in (('r', W_r), ('l', W_l)):
+                q = add(views['q' + side])
+                seq = [W0, q, q, q, S0, S0, S0]
                 self.clips[P('turn_%s_front' % side)] = dict(frm='walk_' + side, to=stand_pose, fps=12, frames=seq)
                 self.clips[P('turn_front_%s' % side)] = dict(frm=stand_pose, to='walk_' + side, fps=12, frames=seq[::-1])
 
