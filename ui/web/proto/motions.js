@@ -31,7 +31,7 @@ const VIEWS = {
 };
 let view = 'fp';
 function applyView() {
-  const v = VIEWS[view], w = window.innerWidth, h = window.innerHeight, a = w / h;
+  const v = VIEWS[view], w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight, a = w / h;
   cam.aspect = a;
   cam.fov = 2 * Math.atan(Math.tan(v.hfov / 2 * Math.PI / 180) / a) * 180 / Math.PI;
   cam.position.set(...v.pos);
