@@ -134,8 +134,8 @@ CHARS = {
     # frame's props (polygon in walk_r frame px, degrees that stand it upright, the hand: 'l'/'r' as seen) and the
     # paw points of each view (px of its trimmed picture, read off 8x grids), see with_props
     'tiger': dict(walker='tiger', turn=dict(sheet=TURN_TIGER, step=S + 'tiger_turn_step_sheet_2x4_gemini.webp', step_mirror='logo', emblem=dict(qr=(140, 138, 170, 156)), props=dict(pieces=dict(case=([(0, 255), (22, 188), (58, 180), (70, 182), (88, 200), (88, 262), (0, 268)], 30, 'l'),
-                                                            phone=([(203, 118), (222, 106), (250, 110), (252, 130), (228, 170), (203, 167)], 30, 'r')),
-                                               hands=dict(qr=dict(l=(57, 214), r=(185, 210)), front=dict(l=(22, 214), r=(178, 215)), ql=dict(l=(8, 214), r=(148, 220)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
+                                                            phone=([(218, 113), (265, 110), (265, 168), (228, 168), (216, 150)], (240, 162), 'r')),
+                                               hands=dict(qr=dict(l=(57, 214), r=(185, 210)), front=dict(l=(22, 214), r=(183, 211)), ql=dict(l=(8, 214), r=(148, 220)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
         'f': dict(
             # standing at the seat: the turnaround front view carrying the walk frame's suitcase and phone (the stand
             # sheet's f_02 held the phone in the other paw and had no suitcase)
@@ -174,7 +174,7 @@ CHARS = {
     }),
     # the only 3/4 cell with both arms down faces right (f_33); mirrored for the left, like walk_l is the mirrored walk_r
     'rabbit': dict(walker='rabbit', turn=dict(sheet=TURN_RABBIT, step=S + 'rabbit_turn_step_sheet_2x4_gemini.webp', props=dict(pieces=dict(case=([(0, 265), (25, 222), (55, 215), (68, 200), (85, 205), (85, 230), (80, 302), (0, 302)], 30, 'l'),
-                                                             phone=([(208, 150), (225, 138), (254, 143), (254, 192), (210, 190)], 30, 'r')),
+                                                             phone=([(222, 138), (256, 138), (256, 190), (222, 190)], (237, 184), 'r')),
                                                 hands=dict(qr=dict(l=(10, 226), r=(162, 224)), front=dict(l=(15, 215), r=(66, 210)), ql=dict(l=(12, 222), r=(165, 226)))), qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
         'f': dict(
             # standing at the seat: the turnaround front view carrying the walk frame's suitcase and phone (the pose
@@ -223,8 +223,8 @@ CHARS = {
         ),
     }),
     # no frontal seated turtle exists (every cell is three-quarters): it only takes the right sofa
-    'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, step=S + 'turtle_turn_step_sheet_2x4_gemini.webp', props=dict(pieces=dict(ticket=([(183, 118), (229, 118), (229, 160), (183, 160)], 0, 'r')),
-                                                hands=dict(qr=dict(l=(32, 210), r=(160, 198)), front=dict(l=(10, 205), r=(148, 205)), ql=dict(l=(8, 210), r=(130, 212)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
+    'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, step=S + 'turtle_turn_step_sheet_2x4_gemini.webp', props=dict(pieces=dict(ticket=([(186, 120), (225, 120), (225, 182), (186, 182)], (205, 178), 'r')),
+                                                hands=dict(qr=dict(l=(32, 210), r=(160, 198)), front=dict(l=(10, 205), r=(158, 213)), ql=dict(l=(8, 210), r=(130, 212)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
         'l': dict(
             stand='walk',
             # the waking-up cell (faces right, mirrored): its surprised "o" mouth becomes the sleeping
@@ -683,20 +683,35 @@ def head_lead(body, head_from, kind, cuts=None):
     return Pic(a, body.ax + dx, body.ay + dy, 'head')
 
 
-def with_props(view, pieces, assign, hp):
-    """the view with the walk frame's props drawn behind its paws (props.py). assign 'R': as in walk_r (pieces as
-    cut), 'L': as in walk_l (walk_l is walk_r mirrored, so the pieces are mirrored and change hands). hp: paw
-    points in px of the view's trimmed picture (as the atlas frame shows it)"""
+def with_props(view, pieces, assign, hp, kind, f=1.0):
+    """the view with the walk frame's props (props.py). assign 'R': as in walk_r (pieces as cut), 'L': as in walk_l
+    (walk_l is walk_r mirrored: pieces mirrored, hands swapped), 'C': the hand-over - both hand-held props and the
+    suitcase handle at the middle point hp['c'], between the paws. hp: paw points (bottom of the paw) in px of the
+    view's trimmed picture before its head scaling f. Returns (Pic, metrics)."""
     ys, xs = np.nonzero(view.arr[..., 3] > 0)
-    hp = {k: (x + xs.min(), y + ys.min()) for k, (x, y) in hp.items()}
+    hp = {k: (x * f + xs.min(), y * f + ys.min()) for k, (x, y) in hp.items()}
+    if assign == 'C':
+        hp['c'] = ((hp['l'][0] + hp['r'][0]) / 2, (hp['l'][1] + hp['r'][1]) / 2)
     lst = []
-    for name, (p, rot, side) in pieces.items():
+    for name, (p, info, side) in pieces.items():
         if assign == 'L':
-            p, rot, side = p[:, ::-1].copy(), -rot, {'l': 'r', 'r': 'l'}[side]
-        lst.append((name, side, p, rot))
-    a, ax, ay, zone = props_mod.carry(view.arr, view.ax, view.ay, hp, lst)
-    f, _ = finish_edges(a)               # the whole picture (the view was finished the same way already)
-    return Pic(f, ax, ay, view.tag + '+props')
+            p = p[:, ::-1].copy()
+            info = -info if name == 'case' else (p.shape[1] - 1 - info[0], info[1])
+            side = {'l': 'r', 'r': 'l'}[side]
+        if assign == 'C':
+            side = 'c'
+        lst.append((name, side, p, info))
+    a, ax, ay, zone, metrics = props_mod.carry(view.arr, view.ax, view.ay, hp, lst, kind)
+    f_, _ = finish_edges(a)
+    return Pic(f_, ax, ay, view.tag + '+props'), metrics
+
+
+def head_scaled(v, like, kind):
+    """v scaled so its face (head_lead.face_size: sqrt of the area) is as big as the walk frame's beside it; feet stay on the floor"""
+    f = head_lead_mod.face_size(like.arr, kind)[0] / head_lead_mod.face_size(v.arr, kind)[0]
+    a = resize(v.arr, v.w * f, v.h * f)
+    ys = np.nonzero((a[..., 3] > 128).any(1))[0]
+    return Pic(a, v.ax * a.shape[1] / v.w, ys.max(), v.tag), f
 
 
 def figure_h(p):
@@ -807,6 +822,11 @@ class Builder:
         for key in ('qr', 'front', 'ql'):
             v = views[key]
             views[key] = Pic(color_match.match(v.arr, like[key].arr, cfg['walker']), v.ax, v.ay, v.tag)
+        # head size: each view scaled so its head matches the walk frame's (the turnaround rows draw heads bigger or
+        # smaller than the walk sheet; the body follows the head)
+        hf = {}
+        for key in ('qr', 'front', 'ql'):
+            views[key], hf[key] = head_scaled(views[key], like[key], cfg['walker'])
         # chest marks the turnaround cell drew differently: the walk frame's letters instead (cfg 'emblem': view -> box
         # of the letters in walk_r px)
         for key, box in tc.get('emblem', {}).items():
@@ -815,11 +835,22 @@ class Builder:
             views[key] = Pic(props_mod.emblem(v.arr, src, box, head_lead_mod.cloth, cfg['walker']), v.ax, v.ay, v.tag)
         # the walk frame's props (suitcase, phone, ticket) on the views, in the same hands
         pc = tc.get('props')
+        self.metrics = {}
+        views['hand'] = None
+        views['bare'] = {}
         if pc:
-            pieces = {k: (props_mod.piece(wr.arr, poly, cfg['walker'], None if k == 'case' else head_lead_mod.cloth), rot, side)
-                      for k, (poly, rot, side) in pc['pieces'].items()}
+            pieces = {}
+            for k, (poly, info, side) in pc['pieces'].items():
+                held = k != 'case'                       # hand-held: cut with its paw, grip in piece px
+                p, (ox, oy) = props_mod.piece(wr.arr, poly, cfg['walker'], head_lead_mod.cloth if held else None, paw=held)
+                pieces[k] = (p, (info[0] - ox, info[1] - oy) if held else info, side)
+            bare = dict(views)
+            views['bare'] = bare                         # head-first frames take the head from the view without props
+            bare['stand'] = bare['front']               # the front stand is the front view ('turn')
             for key, assign in (('qr', 'R'), ('front', 'R'), ('ql', 'L')):
-                views[key] = with_props(views[key], pieces, assign, pc['hands'][key])
+                views[key], self.metrics[key] = with_props(bare[key], pieces, assign, pc['hands'][key], cfg['walker'], hf[key])
+            # the hand-over: front view, both props passed between the paws (the walk_l side holds them in the other hand)
+            views['hand'], self.metrics['hand'] = with_props(bare['front'], pieces, 'C', pc['hands']['front'], cfg['walker'], hf['front'])
         views['walk_r'], views['walk_l'] = wr, wl
         # a stepping-turn sheet (2 x 4, walking right -> facing the viewer, art/README.md), when it has come:
         # cells 2-7 replace the turnaround views; mirrored for the turn from walking left. One scale for the
@@ -866,11 +897,13 @@ class Builder:
             # facing right -> facing left through the front. The head leads: each view first shows the next
             # view's head on its own body (head_lead), then the body follows
             V = views
-            hl = lambda b, h: add(head_lead(V[b], V[h], self.kind, (self.cut.get(b), self.cut.get(h))))
+            hl = lambda b, h: add(head_lead(V[b], V['bare'].get(h, V[h]), self.kind, (self.cut.get(b), self.cut.get(h))))
             if V['step_r']:
                 seq = [W_r] + [add(p) for p in V['step_r']] + [hl('front', 'ql'), add(V['ql']), S0]
             else:
-                seq = [W_r, hl('walk_r', 'qr'), add(V['qr']), hl('qr', 'front'), add(V['front']), hl('front', 'ql'), add(V['ql']), S0]
+                # the props change hands at the front (the walk_r side holds them in one hand, walk_l in the other)
+                ho = [add(V['hand'])] if V['hand'] else [hl('front', 'ql')]
+                seq = [W_r, hl('walk_r', 'qr'), add(V['qr']), hl('qr', 'front'), add(V['front'])] + ho + [add(V['ql']), S0]
             self.clips[P('turn_r_front')] = dict(frm='walk_r', to=stand_pose, fps=12, frames=seq)
             self.clips[P('turn_front_r')] = dict(frm=stand_pose, to='walk_r', fps=12, frames=seq[::-1])
             self.clips[P('turn_l_front')] = dict(frm='walk_l', to=stand_pose, fps=12, frames=[S0])   # already facing left
@@ -889,13 +922,16 @@ class Builder:
             # the 3/4 body] -> stand: the head leads, the body follows. The turnaround's own front view is not shown
             # here: it is a second front drawing next to the stand (the tiger's head 8 % wider) and pops
             V = dict(views, stand=st)
-            hl = lambda b, h: add(head_lead(V[b], V[h], self.kind, (self.cut.get(b), self.cut.get(h))))
+            hl = lambda b, h: add(head_lead(V[b], V['bare'].get(h, V[h]), self.kind, (self.cut.get(b), self.cut.get(h))))
             for side, W0 in (('r', W_r), ('l', W_l)):
                 if V['step_' + side]:
                     seq = [W0] + [add(p) for p in V['step_' + side]] + [S0]
                 else:
                     q = 'q' + side
-                    seq = [W0, hl('walk_' + side, q), add(V[q]), add(V[q]), hl(q, 'stand'), S0, S0]
+                    if side == 'l' and V['hand']:        # coming from walk_l: the props change hands before the stand
+                        seq = [W0, hl('walk_' + side, q), add(V[q]), add(V['hand']), add(V['hand']), S0, S0]
+                    else:
+                        seq = [W0, hl('walk_' + side, q), add(V[q]), add(V[q]), hl(q, 'stand'), S0, S0]
                 self.clips[P('turn_%s_front' % side)] = dict(frm='walk_' + side, to=stand_pose, fps=12, frames=seq)
                 self.clips[P('turn_front_%s' % side)] = dict(frm=stand_pose, to='walk_' + side, fps=12, frames=seq[::-1])
 
@@ -1073,6 +1109,9 @@ def build(name, cache, src, dump=None):
     wa, wm = walker_build(cfg, cache)
     b = Builder(name, cfg, wa, wm, src).build()
     man, atlas = b.pack(CHARS_DIR / name, dump)
+    if getattr(b, 'metrics', None):           # prop gap / pieces per turn view, for the turn table (turn_preview.py)
+        d = ROOT / 'art/cutouts/turns'; d.mkdir(parents=True, exist_ok=True)
+        (d / ('%s_props.json' % name)).write_text(json.dumps({k: {n: [round(g, 2), c] for n, (g, c) in v.items()} for k, v in b.metrics.items()}, sort_keys=True))
     size = (CHARS_DIR / name / 'atlas.webp').stat().st_size
     print('%s: %d frames (%d new pictures), atlas %dx%d, %d bytes, %s' % (name, len(man['frames']), len(b.pics), atlas.width, atlas.height, size, b.info))
     return man

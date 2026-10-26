@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Colour / value match of the turn views to the walk frames, and the check that keeps it so (art/README.md "돌아서기").
 
-regions(a, kind): masks of the picture's colour regions - 'fur' (fur / skin), 'cloth' (the main garment), 'line'
-    (dark outline px) - from head_lead.cloth / props.skin and lightness.
+regions(a, kind): masks of the picture's colour regions - 'fur' (fur / skin), 'cloth' (the main garment; the
+    turtle's shell backpack is 'shell'), 'line' (dark outline px) - from head_lead.cloth / props.skin and lightness.
 match(a, ref, kind): a with each region's CIE Lab mean and spread moved to those of the same region in ref (the
     walk frame next to it); px outside every region are left alone.
 delta(a, b, kind): {region: ΔE76 between the region means of a and b}.
@@ -26,7 +26,7 @@ import head_lead   # noqa: E402
 import props       # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-REGIONS = ('fur', 'cloth', 'line')
+REGIONS = ('fur', 'cloth', 'shell', 'line')
 
 
 def lab(rgb):
@@ -40,14 +40,19 @@ def regions(a, kind):
     line = op & (L < 22)
     cloth = op & head_lead.cloth(rgb, kind) & ~line
     fur = op & props.skin(rgb, kind) & ~line & ~cloth
-    return dict(fur=fur, cloth=cloth, line=line)
+    out = dict(fur=fur, cloth=cloth, line=line)
+    if kind == 'turtle':     # navy jacket and brown shell apart: how much of each shows changes with the angle
+        r, b = rgb[..., 0].astype(np.float32), rgb[..., 2].astype(np.float32)
+        out['cloth'], out['shell'] = cloth & (b > r), cloth & (b <= r) & (L < 45)   # gold patterns (lighter) left out
+    return out
 
 
 def stats(a, kind):
     L = lab(a[..., :3])
     out = {}
+    floor = 0.02 * (a[..., 3] > 200).sum()      # a region under 2 % of the figure is too few px for a stable mean
     for k, m in regions(a, kind).items():
-        if m.sum() > 50:
+        if m.sum() > max(50, floor):
             out[k] = (L[m].mean(0), L[m].std(0))
     return out
 

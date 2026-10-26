@@ -19,21 +19,34 @@ def skin(rgb, kind):
         return (r > 150) & (r - b > 60) & (r > g)
     if kind == 'rabbit':
         return (r > 205) & (g > 175) & (b > 150) & (r - b < 70)
-    return (g > r + 5) & (g > b + 25)
+    return (g > r - 12) & (g > b + 40) & (r < 215)
 
 
-def piece(walk, poly, kind, cloth=None):
+def piece(walk, poly, kind, cloth=None, paw=False):
+    """paw=True keeps the paw holding it (a hand-held prop moves with its paw); the clothes are always left behind
+    when cloth is given"""
     m = np.zeros(walk.shape[:2], np.uint8)
     cv2.fillPoly(m, [np.int32(poly)], 1)
-    keep = (m > 0) & (walk[..., 3] > 0) & ~skin(walk[..., :3], kind)
-    if cloth is not None:                      # a small prop held against the clothes: leave the clothes behind
+    keep = (m > 0) & (walk[..., 3] > 0)
+    if not paw:
+        keep &= ~skin(walk[..., :3], kind)
+    if cloth is not None:
         keep &= ~cloth(walk[..., :3], kind)
+    if paw:                  # only the prop and the paw with their own outline: no stray bits of the sleeve's line
+        lum = walk[..., :3].mean(-1)
+        core = keep & (lum >= 45)
+        if kind == 'tiger':  # the hood string's white tip beside the phone is not part of it
+            keep &= ~(walk[..., :3].min(-1) > 170)
+            core &= keep
+        n, lab, st, _ = cv2.connectedComponentsWithStats(core.astype(np.uint8), connectivity=8)
+        core = np.isin(lab, [i for i in range(1, n) if st[i, cv2.CC_STAT_AREA] >= 30])
+        keep &= cv2.dilate(core.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
     n, lab, st, _ = cv2.connectedComponentsWithStats(keep.astype(np.uint8), connectivity=8)
     big = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
     keep = lab == big
     a = walk * keep[..., None]
     ys, xs = np.nonzero(keep)
-    return a[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    return a[ys.min():ys.max() + 1, xs.min():xs.max() + 1], (xs.min(), ys.min())
 
 
 def rotate(a, ang):
@@ -78,54 +91,95 @@ def hands(a, kind, cloth):
     return out
 
 
-def carry(a, ax, ay, hp, pieces):
-    """hp: {'l': (x, y), 'r': (x, y)} paw points (bottom middle) of the picture; pieces: [(name, side 'l'/'r', rgba,
-    degrees that turn it upright)]. Returns (array, ax, ay, zone)."""
+def clean(q):
+    """binary alpha, inner pinholes painted from around them, only the biggest piece (no islands)"""
+    q = q.copy()
+    q[..., 3] = np.where(q[..., 3] > 110, 255, 0)
+    n, lab, st, _ = cv2.connectedComponentsWithStats((q[..., 3] > 0).astype(np.uint8), connectivity=8)
+    if n > 2:
+        q[lab != 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))] = 0
+    ff = np.pad((q[..., 3] > 0).astype(np.uint8), 1)
+    cv2.floodFill(ff, np.zeros((ff.shape[0] + 2, ff.shape[1] + 2), np.uint8), (0, 0), 1)
+    hole = ff[1:-1, 1:-1] == 0
+    if hole.any():
+        q[..., :3] = cv2.inpaint(q[..., :3].clip(0, 255).astype(np.uint8), hole.astype(np.uint8), 2, cv2.INPAINT_TELEA)
+        q[hole, 3] = 255
+    return q
+
+
+def carry(a, ax, ay, hp, pieces, kind):
+    """hp: {'l': (x, y), 'r': (x, y), 'c': (x, y)} paw points of the picture ('c': the middle, where both paws meet
+    for a hand-over). pieces: [(name, side, rgba, info)]:
+    - a hand-held prop ('phone', 'ticket') is cut WITH the walk frame's paw that holds it; info = grip (x, y) in the
+      piece: it is drawn IN FRONT of the figure with the grip on the paw point, so prop and paw move together;
+    - 'case': info = degrees that stand it upright; drawn BEHIND the figure on the floor, its handle (top corner on the
+      paw's side) under the paw.
+    Returns (array, ax, ay, zone, metrics): metrics {name: (gap px from the prop to the paw, pieces of the prop)}."""
     floor = np.nonzero((a[..., 3] > 128).any(1))[0].max()
-    layers = []
-    for name, side, p, ang in pieces:
+    back, front = [], []
+    for name, side, p, info in pieces:
         if side not in hp:
             continue
         hx, hy = hp[side]
-        q = rotate(p, ang)
-        q[..., 3] = np.where(q[..., 3] > 110, 255, 0)      # a clean cut edge (finish_edges inks it)
-        solid = q[..., 3] > 0                               # pinholes inside the piece: painted from around them
-        ff = np.pad(solid.astype(np.uint8), 1)
-        cv2.floodFill(ff, np.zeros((ff.shape[0] + 2, ff.shape[1] + 2), np.uint8), (0, 0), 1)
-        hole = (ff[1:-1, 1:-1] == 0)
-        if hole.any():
-            q[..., :3] = cv2.inpaint(q[..., :3].clip(0, 255).astype(np.uint8), hole.astype(np.uint8), 2, cv2.INPAINT_TELEA)
-            q[hole, 3] = 255
-        h, w = q.shape[:2]
-        out_ = -1 if side == 'l' else 1                     # away from the body
         if name == 'case':
-            y0 = floor - h + 1
-            x0 = hx - w + 0.25 * w if side == 'l' else hx - 0.25 * w
-        else:                                               # hanging from the paw, outside the silhouette
-            y0 = hy - 0.45 * h
-            x0 = hx - w / 2 + out_ * 0.45 * w
-        layers.append((q, int(round(x0)), int(round(y0))))
+            q = clean(rotate(p, info))
+            h, w = q.shape[:2]
+            cols = np.nonzero(q[:max(3, h // 8), :, 3].any(0))[0]        # the handle: the top rows
+            tx = cols.mean()
+            back.append((name, q, int(round(hx - tx)), int(floor - h + 1)))
+        else:
+            q = clean(p)
+            gx, gy = info
+            front.append((name, q, int(round(hx - gx)), int(round(hy - gy))))
+    layers = back + front
     if not layers:
-        return a, ax, ay, np.zeros(a.shape[:2], bool)
-    X0 = min([0] + [x for _, x, _ in layers])
-    Y0 = min([0] + [y for _, _, y in layers])
-    X1 = max([a.shape[1]] + [x + q.shape[1] for q, x, _ in layers])
-    Y1 = max([a.shape[0]] + [y + q.shape[0] for q, _, y in layers])
-    out = np.zeros((Y1 - Y0, X1 - X0, 4), np.float32)
-    zone = np.zeros(out.shape[:2], bool)
-    for q, x, y in layers:
-        sl = (slice(y - Y0, y - Y0 + q.shape[0]), slice(x - X0, x - X0 + q.shape[1]))
-        k = q[..., 3:] / 255.
-        out[sl][..., :3] = q[..., :3] * k + out[sl][..., :3] * (1 - k)
-        out[sl][..., 3] = np.maximum(out[sl][..., 3], q[..., 3])
-        zone[sl] |= q[..., 3] > 0
-    fig = np.zeros_like(out)
+        return a, ax, ay, np.zeros(a.shape[:2], bool), {}
+    X0 = min([0] + [x for _, _, x, _ in layers])
+    Y0 = min([0] + [y for _, _, _, y in layers])
+    X1 = max([a.shape[1]] + [x + q.shape[1] for _, q, x, _ in layers])
+    Y1 = max([a.shape[0]] + [y + q.shape[0] for _, q, _, y in layers])
+    H, W = Y1 - Y0, X1 - X0
+    out = np.zeros((H, W, 4), np.float32)
+    zone = np.zeros((H, W), bool)
+    masks = {}
+
+    def over(dst, src):
+        k = src[..., 3:] / 255.
+        dst[..., :3] = src[..., :3] * k + dst[..., :3] * (1 - k)
+        dst[..., 3] = src[..., 3] + dst[..., 3] * (1 - k[..., 0])
+
+    def lay(name, q, x, y):
+        t = np.zeros((H, W, 4), np.float32)
+        t[y - Y0:y - Y0 + q.shape[0], x - X0:x - X0 + q.shape[1]] = q
+        masks[name] = t[..., 3] > 0
+        return t
+    for name, q, x, y in back:
+        over(out, lay(name, q, x, y))
+    fig = np.zeros((H, W, 4), np.float32)
     fig[-Y0:-Y0 + a.shape[0], -X0:-X0 + a.shape[1]] = a
-    k = fig[..., 3:] / 255.
-    out[..., :3] = fig[..., :3] * k + out[..., :3] * (1 - k)
-    out[..., 3] = fig[..., 3] + out[..., 3] * (1 - k[..., 0])
+    over(out, fig)
+    for name, q, x, y in front:
+        over(out, lay(name, q, x, y))
+    # metrics: the prop's visible px, its pieces, and its gap to the paw (skin px of the figure near the paw point)
+    sk = skin(fig[..., :3], kind) & (fig[..., 3] > 128)
+    metrics = {}
+    for name, side, _, _ in pieces:
+        if name not in masks:
+            continue
+        hx, hy = hp[side][0] - X0, hp[side][1] - Y0
+        yy, xx = np.mgrid[:H, :W]
+        paw = sk & ((xx - hx) ** 2 + (yy - hy) ** 2 < 14 ** 2) & ~masks[name]
+        n = cv2.connectedComponents(masks[name].astype(np.uint8), connectivity=8)[0] - 1   # the prop itself (a suitcase
+        # behind a tail or leg can show in two places; that is the figure covering it, not a fragment)
+        if paw.any():
+            d = cv2.distanceTransform((~paw).astype(np.uint8), cv2.DIST_L2, 3)
+            gap = float(d[masks[name]].min()) - 1 if name != 'case' else float(d[masks[name]].min()) - 1
+        else:
+            gap = 0.0                      # the paw is covered by the prop's own paw (hand-held pieces)
+        metrics[name] = (max(0.0, gap), n)
+        zone |= masks[name]
     zone = cv2.dilate(zone.astype(np.uint8), np.ones((7, 7), np.uint8)).astype(bool)
-    return out, ax - X0, ay - Y0, zone
+    return out, ax - X0, ay - Y0, zone, metrics
 
 
 def gold(rgb):

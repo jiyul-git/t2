@@ -145,6 +145,7 @@ def transplant(body, head_from, kind, cut_body=None, cut_head=None):
     wgt = np.clip((D - dist) / (0.5 * D), 0, 1) * band
     body_on = out[..., 3] > 128
     wgt = np.where(body_on, wgt, (wgt >= 1) * band)
+    wgt = np.where(body_on & ~cloth(out[..., :3], kind), 0, wgt)    # never over a prop the body holds (phone, ticket)
     lay[band] = full[band]
     lay[..., 3] *= np.where(band, wgt, 1)
     new = lay[..., 3] > 0
@@ -183,3 +184,21 @@ def transplant(body, head_from, kind, cut_body=None, cut_head=None):
             if i != big and st[i, cv2.CC_STAT_AREA] < 0.02 * st[big, cv2.CC_STAT_AREA]:
                 out[lab == i] = 0
     return out, -x0, -y0, zone
+
+
+def face_size(a, kind):
+    """(sqrt(area), height, width) of the face: the biggest fur / skin / cream blob in the upper half, holes (eyes,
+    nose, stripes) filled. Ears, bow, beanie and hood are left out, so it does not change with how the ears stand."""
+    import props
+    al = a[..., 3] > 128
+    rgb = a[..., :3]
+    lum = rgb.astype(np.float32).mean(-1)
+    ys = np.nonzero(al.any(1))[0]
+    top, H = ys.min(), ys.max() - ys.min()
+    fm = al & (lum >= 60) & ~cloth(rgb, kind) & (props.skin(rgb, kind) | ((rgb.min(-1) > 170) & (lum > 190)))
+    fm[int(top + 0.5 * H):] = False
+    fm = cv2.morphologyEx(fm.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)).astype(bool)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(fm.astype(np.uint8), connectivity=8)
+    m = fill_holes(lab == 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA])))
+    y, x = np.nonzero(m)
+    return float(m.sum()) ** 0.5, int(y.max() - y.min() + 1), int(x.max() - x.min() + 1)
