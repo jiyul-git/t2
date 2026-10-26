@@ -4,6 +4,12 @@ Written 2026-10-26 04:10Z so another session (or this one after a token reset) c
 (section 3) at the end of every big step. Companion docs: docs/GTO_STACK_30_40_V1.md (30 / 40 bb parent trees), docs/GTO_PUSHFOLD_10_25_V1.md,
 docs/GTO_SESSIONS_BOARD.md (on chatgpt/terminal-census-v2-20260930), docs/GTO_SESSIONS_BOARD_011TJ_FLAT30_STATUS.md (board text, same branch as this file).
 
+> **SUPERSEDED 2026-10-26 ~05:00Z for UTG+2 / UTG+1 / UTG / SB limp.** Other sessions finished these on other branches while this session was idle: UTG, UTG+1, UTG+2 quick records on
+> `claude/p30_flat_resume_20261023` (and `claude/p30_flat_tail_20261021` for UTG); SB limp redone with CFR+ on `claude/p30_sblimp_cfrplus_20261023` (diagnosis: `claude/sb_limp_flop_diag_20261022`);
+> 30 bb 3-bet-call spots on `claude/p30_3bet_20261022`; T2 hand-off with what is connected: `docs/T2_HANDOFF.md` on `claude/connect_open25_co40_20261025`; survey in docs/GTO_SESSIONS_BOARD.md (status 2026-10-26).
+> This session's chains were stopped (PIDs killed) at that point: **do not relaunch them** (duplicate compute). Use sections 2-6 only if a spot is recomputed on purpose.
+> Still open (per the T2 hand-off): **30 bb SB open vs BB** (record here is step 1 only, flop KcTd9h unconverged; the SB-limp CFR+ retry method of 2026-10-23 may solve it) - needs the user's go before compute.
+
 ## 1. What is being computed and why
 User decision (2026-10-19 / 20, relayed by the T2 sessions and confirmed in the 011TJ chat): the 30 bb parent tree (`s30`, symmetric stacks) keeps the
 *static continuation* for flat calls, so BB defence vs an open (and the SB limp pot) is wrong (BB fold ~0 %). Fix = run the Plan A loop (HU subgame +
@@ -35,10 +41,10 @@ Everything below lives under /home/user (scripts hard-code /home/user/t2 and /ho
 | p30_flat_hj_vs_bb | DONE, step cap (3 steps), not converged: flat terminal passes at steps 1-2, BB fails at the 3-bet-8 call terminal | mean of steps 1-2, usable for the flat-call node only | 19.3 / 72.8 / 4.7 / 3.3 |
 | p30_flat_lj_vs_bb | DONE, step cap, flat terminal passes at step 2, BB fails at the 3-bet-call terminals | mean of steps 1-2, flat-call node only | 22.5 / 70.1 / 4.9 / 2.5 |
 | p30_flat_sb_vs_bb | STOPPED at step 1: flop KcTd9h unconverged at the 3x retry (4.16 % pot) in the 3-bet-call terminal (amendment 7) | step 1 only, `usable_for_t2_connection: false` | fold 33.4 / call 63.4 / 3-bet 1.4 / jam 1.8 (steps 0-1 mean was 16.7 / 74.8: not converged) |
-| p30_flat_sb_limp_vs_bb | STOPPED at step 0: flop KcJhJd unconverged at the 3x retry (0.736 % pot vs 0.3) at the flat terminal | step 0 only (undamped), `usable_for_t2_connection: false` | check 64.5 / raise 3.5 35.5 (= parent static) |
-| p30_flat_utg2_vs_bb | RUNNING: step 0 done; step 1 terminals 0-1 done, terminal 2 (BB 3-bet 8 call) just restarted | no | - |
-| p30_flat_utg1_vs_bb | RUNNING: step 0 done, step 1 starting | no | - |
-| p30_flat_utg_vs_bb | NOT STARTED (last in chain A) | no | - |
+| p30_flat_sb_limp_vs_bb | (superseded by the CFR+ retry on claude/p30_sblimp_cfrplus_20261023) STOPPED here at step 0: flop KcJhJd unconverged at the 3x retry (0.736 % pot vs 0.3) at the flat terminal | step 0 only (undamped), `usable_for_t2_connection: false` | check 64.5 / raise 3.5 35.5 (= parent static) |
+| p30_flat_utg2_vs_bb | STOPPED here (superseded: finished on claude/p30_flat_resume_20261023, quick record there); was RUNNING: step 0 done; step 1 terminals 0-1 done, terminal 2 (BB 3-bet 8 call) just restarted | no | - |
+| p30_flat_utg1_vs_bb | STOPPED here (superseded: quick record on claude/p30_flat_resume_20261023); was at step 1 terminal 0 | no | - |
+| p30_flat_utg_vs_bb | NOT STARTED here (superseded: quick record on claude/p30_flat_tail_20261021 / claude/p30_flat_resume_20261023) | no | - |
 Cost: ~2.3 h per terminal at 4 workers, ~7 h per step with 2 workers (3 terminals), up to 3 steps per spot -> UTG+2 needs ~9 h (step 1 terminal 2 + step 2), UTG+1 ~14 h (steps 1-2), in parallel,
 UTG ~21 h after UTG+2. Stop earlier if a spot converges (loop decision `stop: converged`).
 Parent numbers for comparison (s30 static continuation): BB vs BTN fold 0.0 / call 84.8 / 3-bet 0.1 / jam 15.1; vs CO 0.0 / 89.4 / 0.3 / 10.2.
@@ -89,3 +95,4 @@ connecting GTO data to the T2 runtime needs user approval, ICM out of scope. Sta
 
 ## 9. Update log
 - 2026-10-26 04:10Z: manual written; chains relaunched after a container restart (UTG+2 at step 1 terminal 2, UTG+1 at step 1 terminal 0).
+- 2026-10-26 ~05:00Z: user hint "other branches may already be done" -> surveyed the remote branches; UTG+2 / UTG+1 / UTG / SB limp were done elsewhere; this session's chains killed; manual marked superseded. Nothing running.
