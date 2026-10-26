@@ -1,0 +1,98 @@
+B1 n=9 stacks=[15, 15, 15, 15, 15, 15, 15, 15, 15]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG       15     9.5     15.1  9/19
+  UTG+1     15    10.6     18.8  8/23
+  UTG+2     15    13.4     24.4  5/30
+  LJ        15    15.7     33.3  1/39
+  HJ        15    19.8     41.7  0/45
+  CO        15    26.1     58.5  0/62
+  BTN       15    35.6     89.5  0/84
+  SB        15    63.5     99.9  0/47
+  call pct (jammer->caller: chip / icm), mean over pairs: 9.8 / 2.5
+B2 n=9 stacks=[12, 30, 8, 20, 15, 10, 25, 9, 6]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG       12    12.9      9.7  11/7
+  UTG+1     30    11.6     49.6  0/77
+  UTG+2      8    20.6     13.6  15/0
+  LJ        20    16.6     35.4  0/42
+  HJ        15    24.1     29.7  3/24
+  CO        10    33.0     31.7  6/15
+  BTN       25    44.5     99.9  0/84
+  SB         9    81.6     99.9  0/23
+  call pct (jammer->caller: chip / icm), mean over pairs: 17.7 / 6.1
+B3 n=9 stacks=[20, 50, 13, 33, 25, 17, 42, 15, 10]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG       20     9.0      6.5  13/8
+  UTG+1     50     7.7     34.9  0/63
+  UTG+2     13    14.7      9.9  15/6
+  LJ        33    12.0     23.2  0/26
+  HJ        25    17.3     22.8  0/13
+  CO        17    26.1     25.9  4/11
+  BTN       42    37.4     99.9  0/91
+  SB        15    71.7     99.9  0/36
+  call pct (jammer->caller: chip / icm), mean over pairs: 10.0 / 3.6
+B4 n=9 stacks=[8, 20, 5, 13, 10, 7, 17, 6, 4]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG        8    15.9     12.2  6/3
+  UTG+1     20    14.1     55.4  0/83
+  UTG+2      5    34.2     15.2  30/1
+  LJ        13    20.9     38.4  0/41
+  HJ        10    29.2     33.8  4/24
+  CO         7    37.9     32.7  11/10
+  BTN       17    50.6     95.3  0/71
+  SB         6    87.4     99.9  0/17
+  call pct (jammer->caller: chip / icm), mean over pairs: 33.8 / 9.3
+F1 n=9 stacks=[15, 15, 15, 15, 15, 15, 15, 15, 15]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG       15     9.5      9.9  7/8
+  UTG+1     15    10.6     13.9  3/12
+  UTG+2     15    13.4     14.9  7/9
+  LJ        15    15.7     19.7  2/13
+  HJ        15    19.8     24.0  3/12
+  CO        15    26.1     33.9  4/29
+  BTN       15    35.6     49.3  4/40
+  SB        15    63.5     93.7  0/40
+  call pct (jammer->caller: chip / icm), mean over pairs: 9.8 / 3.9
+F2 n=9 stacks=[12, 30, 8, 20, 15, 10, 25, 9, 6]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG       12    12.9     10.8  7/6
+  UTG+1     30    11.6     22.4  0/26
+  UTG+2      8    20.6     15.6  12/1
+  LJ        20    16.6     23.5  0/16
+  HJ        15    24.1     25.7  3/15
+  CO        10    33.0     29.4  6/7
+  BTN       25    44.5     65.9  0/43
+  SB         9    81.6     89.4  0/12
+  call pct (jammer->caller: chip / icm), mean over pairs: 17.7 / 8.7
+F3 n=6 stacks=[12, 30, 8, 20, 15, 5]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG       12    19.6     14.2  8/0
+  UTG+1     30    21.5     41.1  0/44
+  UTG+2      8    34.5     24.9  17/0
+  BTN       20    37.7     54.7  0/36
+  SB        15    83.4     93.1  0/14
+  call pct (jammer->caller: chip / icm), mean over pairs: 31.2 / 16.5
+H1 n=3 stacks=[20, 15, 10]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  BTN       20    37.4     40.6  0/9
+  SB        15    73.3     79.3  0/11
+  call pct (jammer->caller: chip / icm), mean over pairs: 36.6 / 23.7
+S1 n=4 stacks=[25, 15, 12, 8]
+  seat  stack  jam%chip  jam%icm  flips(J->F / F->J)
+  UTG       25    29.7     75.7  0/86
+  BTN       15    40.7     27.2  18/3
+  SB        12    77.8     99.9  0/27
+  call pct (jammer->caller: chip / icm), mean over pairs: 32.7 / 7.5
+
+UTG 12 jam->fold: 33 44 55 T9s J9s JTs AJo QTs KQo K9s KTs | fold->jam: A2s A3s A4s A5s A6s A7s A8s
+UTG+1 30 jam->fold: - | fold->jam: 22 A2o A3o 42s 43s 54o A4o 52s 53s 54s 65o K5o A5o 63s 64s 65s 76o K6o A6o 74s 75s 76s 87o K7o A7o 84s 85s 86s 87s K8o A8o 95s 96s 97s 98s T9o Q9o K9o A9o T6s T7s T8s JTo QTo KTo ATo J5s J6s J7s J8s QJo KJo Q2s Q3s Q4s Q5s Q6s Q7s Q8s Q9s KQo K2s K3s K4s K5s K6s K7s K8s K9s A2s A3s A4s A5s A6s A7s A8s A9s
+UTG+2 8 jam->fold: 22 87s A8o 98s A9o T8s T9s ATo KJo Q9s KQo K9s A2s A6s A7s | fold->jam: -
+LJ 20 jam->fold: - | fold->jam: A3o 43s A4o 53s 54s A5o 64s 65s 75s 76s A7o 85s 86s 87s A8o 97s A9o T7s T8s JTo QTo KTo J7s J8s QJo Q3s Q4s Q5s Q6s Q7s Q8s K2s K3s K4s K5s K6s K7s K8s A2s A3s A4s A6s
+HJ 15 jam->fold: A7o A8o A9o | fold->jam: 53s 54s 64s 65s 75s 76s 86s 96s 97s T7s JTo QTo J8s Q5s Q6s Q7s Q8s K2s K3s K4s K5s K6s K7s K8s
+CO 10 jam->fold: A2o A3o A4o A6o A7o K9o | fold->jam: 54s 64s 65s 75s 85s 86s 96s T9o T7s J7s Q5s Q6s Q7s K3s K4s
+BTN 25 jam->fold: - | fold->jam: 32o 42o 52o 62o 72o 82o 92o T2o J2o Q2o K2o 32s 43o 53o 63o 73o 83o 93o T3o J3o Q3o K3o 42s 43s 54o 64o 74o 84o 94o T4o J4o Q4o 52s 53s 54s 65o 75o 85o 95o T5o J5o Q5o 62s 63s 64s 76o 86o 96o T6o J6o Q6o 72s 73s 74s 75s 87o 97o T7o J7o Q7o 82s 83s 84s 85s 98o T8o J8o 92s 93s 94s 95s 96s T2s T3s T4s T5s T6s J2s J3s J4s J5s J6s Q2s Q3s
+SB 9 jam->fold: - | fold->jam: 32o 42o 52o 62o 72o 82o 92o T2o 32s 43o 53o 63o 73o 83o 93o 42s 54o 64o 74o 84o 94o 62s 72s
+call UTG 12 vs BB 6 chip 18.6% icm 3.5% call->fold: 33 44 55 66 77 88 99 A9o T9s KTo ATo J9s JTs KJo AJo Q9s QTs QJs KQo AQo K9s KTs KJs KQs A3s A4s A5s A6s A7s A8s A9s ATs AJs AQs | fold->call: -
+call UTG+1 30 vs BB 6 chip 16.9% icm 12.9% call->fold: 44 T9s KTo JTs KJo Q9s QTs QJs K9s A5s | fold->call: A9o
+call SB 9 vs BB 6 chip 75.0% icm 39.2% call->fold: 22 J2o Q2o K2o J3o Q3o K3o T4o J4o Q4o K4o 54s T5o J5o Q5o 64s 65s 76o 86o 96o T6o J6o Q6o 74s 75s 76s 87o 97o T7o J7o Q7o 84s 85s 86s 87s 98o T8o J8o 92s 93s 94s 95s 96s 97s 98s T9o T2s T3s T4s T5s T6s T7s T8s J2s J3s J4s J5s J6s J7s Q2s Q3s Q4s | fold->call: -
+call BTN 25 vs SB 9 chip 34.0% icm 6.7% call->fold: 22 A2o 33 A3o 44 A4o 55 A5o 66 A6o K7o A7o K8o A8o Q9o K9o A9o JTo QTo KTo ATo J9s JTs QJo KJo AJo Q8s Q9s QTs QJs KQo K4s K5s K6s K7s K8s K9s KTs KJs KQs A2s A3s A4s A5s A6s A7s A8s A9s | fold->call: -
