@@ -36,10 +36,10 @@ Everything below lives under /home/user (scripts hard-code /home/user/t2 and /ho
 | p30_flat_lj_vs_bb | DONE, step cap, flat terminal passes at step 2, BB fails at the 3-bet-call terminals | mean of steps 1-2, flat-call node only | 22.5 / 70.1 / 4.9 / 2.5 |
 | p30_flat_sb_vs_bb | STOPPED at step 1: flop KcTd9h unconverged at the 3x retry (4.16 % pot) in the 3-bet-call terminal (amendment 7) | step 1 only, `usable_for_t2_connection: false` | fold 33.4 / call 63.4 / 3-bet 1.4 / jam 1.8 (steps 0-1 mean was 16.7 / 74.8: not converged) |
 | p30_flat_sb_limp_vs_bb | STOPPED at step 0: flop KcJhJd unconverged at the 3x retry (0.736 % pot vs 0.3) at the flat terminal | step 0 only (undamped), `usable_for_t2_connection: false` | check 64.5 / raise 3.5 35.5 (= parent static) |
-| p30_flat_utg2_vs_bb | RUNNING: step 0 done, step 1 starting | no | - |
+| p30_flat_utg2_vs_bb | RUNNING: step 0 done; step 1 terminals 0-1 done, terminal 2 (BB 3-bet 8 call) just restarted | no | - |
 | p30_flat_utg1_vs_bb | RUNNING: step 0 done, step 1 starting | no | - |
 | p30_flat_utg_vs_bb | NOT STARTED (last in chain A) | no | - |
-Cost: ~2.3 h per terminal at 4 workers, ~7 h per step with 2 workers (3 terminals), up to 3 steps per spot -> UTG+2 and UTG+1 need ~14 h more each (parallel),
+Cost: ~2.3 h per terminal at 4 workers, ~7 h per step with 2 workers (3 terminals), up to 3 steps per spot -> UTG+2 needs ~9 h (step 1 terminal 2 + step 2), UTG+1 ~14 h (steps 1-2), in parallel,
 UTG ~21 h after UTG+2. Stop earlier if a spot converges (loop decision `stop: converged`).
 Parent numbers for comparison (s30 static continuation): BB vs BTN fold 0.0 / call 84.8 / 3-bet 0.1 / jam 15.1; vs CO 0.0 / 89.4 / 0.3 / 10.2.
 
@@ -88,4 +88,4 @@ Quick-fill direction (2026-10-19), symmetric stacks, no P144, 4-bet-and-later ou
 connecting GTO data to the T2 runtime needs user approval, ICM out of scope. Standard amendments 7-12 (docs/GTO_VERIFIED_FREQUENCY_STANDARD_V1.md) apply to the loop.
 
 ## 9. Update log
-- 2026-10-26 04:10Z: manual written; chains relaunched after a container restart (UTG+2 and UTG+1 at step 1 start).
+- 2026-10-26 04:10Z: manual written; chains relaunched after a container restart (UTG+2 at step 1 terminal 2, UTG+1 at step 1 terminal 0).
