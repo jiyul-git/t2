@@ -4,6 +4,7 @@ P=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','ui','web','
 FONT='/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'
 f=lambda s: ImageFont.truetype(FONT,s)
 A,B,TH=1.55,0.95,0.75          # table semi-axes (m), table height
+B=float(os.environ.get('TB',0.80))  # 테이블 세로 반축(내 쪽↔맞은편). 2026-10-26 사용자: 더 얇게 → 0.68
 EYE=1.22; HFOV=80
 import os as _o; HFOV=float(_o.environ.get('HFOV',HFOV))
 import sys as _s
@@ -65,6 +66,7 @@ def render(hero):
         if not base or not top or not (-0.15*W*SC< base[0] < 1.15*W*SC): off.append((kind,k,x,z)); continue
         if base[0]<0 or base[0]>W*SC: off.append((kind,k,x,z))
         items_z=base[2]; vis.append((items_z,kind,k,base,top,x,z))
+    print('hero',hero,'visible',sorted([(k if k else 'D') for _,kind,k,base,*_ in vis if 0<=base[0]<=W*SC],key=str))
     bubbles=[]
     for zz,kind,k,base,top,x,z in sorted(vis,reverse=True):
         h=base[1]-top[1]
@@ -141,4 +143,4 @@ cells=[tm]+views
 for i,v in enumerate(cells):
     r,c=divmod(i,cols); x=G+c*(W+G)+((W-v.width)//2 if v is tm else 0); out.paste(v,(x,90+r*(H+G)))
 d.text((G,28),'1인칭 A안 가로 · 가슴 높이 %.2fm · 시야 %d° · %d° 내려다봄 — 상대 몸은 임시 상자, 손은 파란 박스'%(EYE,HFOV,-PITCH),font=f(30),fill='#2b1d0e')
-out.save('fp_A_chest.png'); print(out.size)
+out.save(os.environ.get('OUT','fp_A_chest.png')); print(out.size)

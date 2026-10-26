@@ -13,6 +13,8 @@ let vt = 0;
 const clock = () => MANUAL ? vt : performance.now();
 const INK = 0x2a1a10;
 const TOP = 0.75;
+// 테이블 세로 반축(내 쪽↔맞은편). 2026-10-26 사용자: 더 얇게. 0.95 → 0.80. ?tb= 로 바꿔 볼 수 있다.
+const TB = Number(Q.get('tb') || 0.80);
 
 // ---------- 렌더러 / 장면 ----------
 const canvas = document.getElementById('c');
@@ -27,7 +29,7 @@ scene.background = new THREE.Color(0x1d2238);
 // 카메라: 사양 2장 — 가슴 높이 1.0m, 가로 시야 55°. '가까이'는 동작 확인용.
 const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 30);
 const VIEWS = {
-  fp:    { pos: [0, 1.0, 0.30],  at: [0, TOP, -0.9],   hfov: 55 },
+  fp:    { pos: [0, 1.0, 0.30],  at: [0, TOP, -0.9 * TB / 0.95 - 0.05],   hfov: 55 },
   close: { pos: [0.02, 1.13, 0.0], at: [0.03, TOP, -0.36], hfov: 55 },
 };
 let view = 'fp';
@@ -82,17 +84,19 @@ function canvasTex(w, h, draw) {
 const FELT_C = 0x1f5a44;
 {
   const felt = new THREE.Mesh(new THREE.CircleGeometry(1, 96), toon(FELT_C));
-  felt.rotation.x = -Math.PI / 2; felt.scale.set(1.55, 0.95, 1); felt.position.set(0, TOP, -0.95);
+  felt.rotation.x = -Math.PI / 2; felt.scale.set(1.55, TB, 1); felt.position.set(0, TOP, -TB);
   felt.receiveShadow = true; scene.add(felt);
   const line = new THREE.Mesh(new THREE.RingGeometry(0.60, 0.606, 96),
     new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 }));
-  line.rotation.x = -Math.PI / 2; line.scale.set(1.55, 0.95, 1); line.position.set(0, TOP + 0.0005, -0.95);
+  line.rotation.x = -Math.PI / 2; line.scale.set(1.55, TB, 1); line.position.set(0, TOP + 0.0005, -TB);
   scene.add(line);
   const rail = outlined(new THREE.TorusGeometry(1, 0.055, 12, 120), toon(0x6b4426), 1.03);
-  rail.rotation.x = -Math.PI / 2; rail.scale.set(1.58, 0.98, 1); rail.position.set(0, TOP + 0.01, -0.95);
+  rail.rotation.x = -Math.PI / 2; rail.scale.set(1.58, TB + 0.03, 1); rail.position.set(0, TOP + 0.01, -TB);
   scene.add(rail);
   // 맞은편 상대 몸통(임시) — 1인칭 구도에서 위치감만 준다
-  [[-0.95, -1.35, 0xc9706a], [-0.35, -1.75, 0xd9cdb0], [0.35, -1.75, 0x8a2f3a], [0.95, -1.35, 0x2f3f66]].forEach(([x, z, c]) => {
+  // 깊이를 테이블 세로 반축에 맞춰 줄인다(원래 0.95 기준 좌표)
+  [[-0.95, -1.35, 0xc9706a], [-0.35, -1.75, 0xd9cdb0], [0.35, -1.75, 0x8a2f3a], [0.95, -1.35, 0x2f3f66]].forEach(([x, z0, c]) => {
+    const z = -TB + (z0 + 0.95) * TB / 0.95;
     const b = outlined(new THREE.BoxGeometry(0.42, 0.42, 0.18), toon(c), 1.03);
     b.position.set(x, TOP + 0.19, z); b.lookAt(0, TOP + 0.19, 0.3); scene.add(b);
   });
@@ -205,9 +209,22 @@ resetChips();
 
 // ---------- 손 (HandRig — 임시 상자) ----------
 // 몸체만 바꾸면 그림/3D 모델로 교체된다. 동작은 손 그룹의 위치·회전만 움직인다.
+// 캐릭터별 손(피부·털)과 소매 색. 순서는 assets/portraits 와 같다.
+const CHARS = [
+  ['갓 남자', 0xf2c2a6, 0x5f8a6a], ['땋은머리 여자', 0xf2cdb0, 0xe9dcc4], ['머리띠 남자', 0xf2c2a6, 0xe3b84f],
+  ['호랑이', 0xf08a3c, 0x5f8a6a], ['크림 강아지', 0xf3e6cf, 0x5d78a0], ['토끼', 0xf6eee6, 0xe2786a],
+  ['곰', 0x7a4a2c, 0xe9dcc4], ['여우', 0xe8823a, 0x7a2e36], ['거북이', 0x8fa060, 0x3e5a8a],
+];
+let charIdx = Math.max(0, Math.min(8, Number(Q.get('char') || 9) - 1));
+const handSkin = toon(CHARS[charIdx][1]), handSleeve = toon(CHARS[charIdx][2]);
+function setChar(i) {
+  charIdx = (i + 9) % 9;
+  handSkin.color.setHex(CHARS[charIdx][1]); handSleeve.color.setHex(CHARS[charIdx][2]);
+  const b = document.querySelector('[data-act="char"]'); if (b) b.textContent = '손: ' + CHARS[charIdx][0];
+}
 function makeHand(side) {
   const g = new THREE.Group();
-  const skin = toon(0x5aa6e8), sleeve = toon(0x2f3f66);
+  const skin = handSkin, sleeve = handSleeve;
   const palm = outlined(new THREE.BoxGeometry(0.072, 0.022, 0.080), skin, 1.08);
   const fingers = outlined(new THREE.BoxGeometry(0.066, 0.016, 0.040), skin, 1.1);
   fingers.position.set(0, -0.004, -0.058);
@@ -534,6 +551,7 @@ const ACTS = {
   protector: () => run(() => protOn ? protectorOff() : protectorOn()), fold: () => run(fold),
   shuffle: () => run(shuffle), bet: () => run(() => pushChips(4)), allin: () => run(() => allIn(false)),
   allin_s: () => run(() => allIn(true)), chipreset: () => run(chipReset), check: () => run(check),
+  char: () => setChar(charIdx + 1),
   style: () => { const i = CHECK_STYLES.findIndex(x => x[0] === checkStyle); setCheckStyle(CHECK_STYLES[(i + 1) % CHECK_STYLES.length][0]); },
 };
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
