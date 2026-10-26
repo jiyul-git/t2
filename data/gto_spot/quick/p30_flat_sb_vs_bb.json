@@ -15,7 +15,7 @@
  "final_step": 1,
  "stop_reason": "stop: flop solver did not converge (terminal 1, step 1): [{'board': 'KcTd9h', 'exploitability_pct_pot': 0.6754875331348139, 'iterations': 1000}]",
  "stopped_at_step_cap": false,
- "status_note": null,
+ "status_note": "stopped at step 1: flop KcTd9h at the 3-bet 10.5 bb call terminal did not converge (DCFR 4.16% pot; CFR+ retry at the same budget 0.675% pot, target 0.3%) -> amendment 7; quick = mean of steps 0-1 only (EV loss of the mean 0.09 / 0.14 bb per combo, 654 unstable combos): LOW QUALITY, refinement target. A CFR+ retry of that flop at 3x the budget was started afterwards (deviation from the approved variants, see the board); this record is the stopped version.",
  "notes": [
   "frequencies at off_path nodes are not meaningful (opponent arrives with < 1 combo)",
   "deep nodes (after the 4-bet) are research; connection uses the 3-bet response only",
@@ -9228,5 +9228,6 @@
     }
    }
   }
- ]
+ ],
+ "stopped_at_flop_failure": true
 }
