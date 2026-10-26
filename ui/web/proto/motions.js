@@ -1,5 +1,6 @@
 // 1인칭 테이블 손 동작 시제품 (docs/presentation-spec.md 7장).
-// 칩 셔플, 칩 내밀기, 카드 정리, 들춰보기, 카드 프로텍터, 폴드.
+// 칩 셔플, 칩 내밀기, 카드 정리, 들춰보기, 카드 프로텍터, 폴드, 체크(스타일 옵션).
+// 평소 두 손은 화면 밖. 오른손 위주. 두 손은 들춰보기와 칩이 많은 올인만. '팔짱' 스타일은 예외(늘 보임).
 // 손은 임시 상자다. HandRig 자리만 잡아 두고, 그림·모델이 오면 몸통만 바꾼다.
 // 단위는 m. 테이블 윗면 y=0.75, 내 쪽 레일이 z=0, 테이블은 -z 로 뻗는다.
 import * as THREE from '../vendor/three-0.160.0.module.min.js';
@@ -155,7 +156,7 @@ const protTop = canvasTex(256, 256, (x, w) => {
 const PR = 0.026, PH = 0.008;
 const protector = outlined(new THREE.CylinderGeometry(PR, PR * 1.04, PH, 48),
   [toon(0xd99a32), toon(0, protTop), toon(0xb57b20)], 1.07, 1.12);
-const PROT_REST = new THREE.Vector3(-0.115, TOP + PH / 2, -0.30);
+const PROT_REST = new THREE.Vector3(-0.105, TOP + PH / 2, -0.30);
 protector.position.copy(PROT_REST);
 scene.add(protector);
 let protOn = false;
@@ -220,10 +221,23 @@ function makeHand(side) {
   return g;
 }
 const RH = makeHand(1), LH = makeHand(-1);
-const REST = {
-  R: { x: 0.215, y: TOP + 0.045, z: -0.17, ry: -0.35, rx: 0.08, rz: 0 },
-  L: { x: -0.215, y: TOP + 0.045, z: -0.17, ry: 0.35, rx: 0.08, rz: 0 },
+// 사양 7장: 평소에는 두 손 모두 화면 밖(아래). 동작할 때만 들어왔다가 내려간다.
+// 1인칭 카메라에서 테이블 높이의 화면 아래 끝은 z≈-0.2 이므로, z>-0.1 이면 보이지 않는다.
+const HIDE = {
+  R: { x: 0.215, y: TOP + 0.02, z: 0.04, ry: -0.35, rx: 0.08, rz: 0 },
+  L: { x: -0.215, y: TOP + 0.02, z: 0.04, ry: 0.35, rx: 0.08, rz: 0 },
 };
+// 팔짱 자세(체크 스타일 '팔짱'): 팔뚝을 포개 레일 앞에 둔다. 두 손이 늘 보인다.
+// 오른팔이 위, 오른손 끝은 왼팔 위(상완 쪽), 왼손 끝은 오른팔 아래.
+const ARMS = {
+  R: { x: -0.115, y: TOP + 0.050, z: -0.135, ry: 1.45, rx: 0.05, rz: 0 },
+  L: { x: 0.115, y: TOP + 0.030, z: -0.160, ry: -1.45, rx: 0.05, rz: 0 },
+};
+// 체크 스타일(옵션): 사람마다 다르다
+const CHECK_STYLES = [['tap', '톡톡'], ['palm', '손바닥'], ['knock', '노크'], ['arms', '팔짱']];
+let checkStyle = Q.get('check') || 'tap';
+const rest = () => checkStyle === 'arms' ? ARMS : HIDE;
+const REST = { get R() { return rest().R; }, get L() { return rest().L; } };
 const setPose = (h, p) => { h.position.set(p.x, p.y, p.z); h.rotation.set(p.rx || 0, p.ry || 0, p.rz || 0); };
 setPose(RH, REST.R); setPose(LH, REST.L);
 
@@ -282,22 +296,22 @@ async function deal() {
     moveObj(c, { x: messy[i].x, y: CARD_Y + i * (CT + 0.0002), z: messy[i].z, ry: messy[i].ry }, 520, ease.out))));
 }
 
-// 카드 정리: 왼손이 두 장을 모아 가지런히 놓고 톡 친다
+// 카드 정리: 오른손이 두 장을 모아 가지런히 놓고 톡 친다
 async function tidy() {
   if (!cardsIn) return;
-  // 왼손이 카드 왼쪽 옆으로 와서(손가락이 오른쪽을 향함) 두 장을 모은다
-  await moveHand(LH, { x: -0.115, y: TOP + 0.022, z: -0.325, ry: -1.3, rx: 0.05 }, 320);
+  // 오른손이 카드 오른쪽 옆으로 와서(손가락이 왼쪽을 향함) 두 장을 모은다
+  await moveHand(RH, { x: 0.115, y: TOP + 0.022, z: -0.325, ry: 1.3, rx: 0.05, rz: 0 }, 320);
   await Promise.all([
     ...cards.map((c, i) => moveObj(c, { x: NEAT[i].x, z: NEAT[i].z, ry: NEAT[i].ry, y: NEAT[i].y }, 380)),
-    moveHand(LH, { x: -0.085 }, 380),
+    moveHand(RH, { x: 0.085 }, 380),
     protOn ? moveObj(protector, { x: protOnCardsPos().x, z: protOnCardsPos().z, y: protOnCardsPos().y }, 380) : null,
   ]);
   // 톡: 손이 살짝 눌렀다 뗀다, 카드가 아주 조금 튄다
-  await moveHand(LH, { y: TOP + 0.014 }, 110);
-  await Promise.all([moveHand(LH, { y: TOP + 0.026 }, 140),
+  await moveHand(RH, { y: TOP + 0.014 }, 110);
+  await Promise.all([moveHand(RH, { y: TOP + 0.026 }, 140),
     ...cards.map(c => moveObj(c, { arc: 0.0018 }, 140))]);
   cardsNeat = true;
-  await moveHand(LH, REST.L, 340);
+  await moveHand(RH, REST.R, 340);
 }
 
 // 들춰보기(스퀴즈): 가까운 모서리를 들어 앞면을 본다. 프로텍터는 먼 쪽에 그대로 둔다.
@@ -305,64 +319,71 @@ async function peek() {
   if (!cardsIn) return;
   if (!cardsNeat) await tidy();
   if (cards[0].userData.faceUp) return;
-  // 왼손을 카드 왼쪽 아래 모서리에 대고, 가까운 모서리를 들어 올린다(먼 쪽 모서리가 경첩)
-  await moveHand(LH, { x: -0.095, y: TOP + 0.016, z: -0.30, ry: -1.15, rx: 0.05, rz: 0 }, 300);
+  // 두 손으로 감싼다: 양쪽 아래 모서리에 대고, 가까운 모서리를 들어 올린다(먼 쪽 모서리가 경첩)
+  await Promise.all([moveHand(LH, { x: -0.095, y: TOP + 0.016, z: -0.30, ry: -1.15, rx: 0.05, rz: 0 }, 300),
+    moveHand(RH, { x: 0.095, y: TOP + 0.016, z: -0.30, ry: 1.15, rx: 0.05, rz: 0 }, 300)]);
   // 카메라가 움직이지 않으므로 실제보다 크게(약 65°) 들어 앞면이 화면에 보이게 한다
   const lift = -1.12;
   // 프로텍터가 올라가 있으면 들리는 카드에 밀려 먼 쪽 테이블로 살짝 미끄러졌다가 돌아온다
   const pBack = protOn ? protector.position.clone() : null;
   if (protOn) moveObj(protector, { z: NEAT[0].z - CH / 2 - PR - 0.004, y: TOP + PH / 2 }, 300);
   await Promise.all([...cards.map((c, i) => tween(340, t => { c.userData.hinge.rotation.x = lift * t * (i ? 0.92 : 1); })),
-    moveHand(LH, { y: TOP + 0.07, z: -0.29, rz: -0.6 }, 340)]);
+    moveHand(LH, { y: TOP + 0.07, z: -0.29, rz: -0.6 }, 340), moveHand(RH, { y: TOP + 0.07, z: -0.29, rz: 0.6 }, 340)]);
   await wait(900);
   await Promise.all([...cards.map((c, i) => tween(260, t => { c.userData.hinge.rotation.x = lift * (1 - t) * (i ? 0.92 : 1); })),
-    moveHand(LH, { y: TOP + 0.016, z: -0.30, rz: 0 }, 260)]);
+    moveHand(LH, { y: TOP + 0.016, z: -0.30, rz: 0 }, 260), moveHand(RH, { y: TOP + 0.016, z: -0.30, rz: 0 }, 260)]);
   if (pBack) await moveObj(protector, { z: pBack.z, y: pBack.y, arc: 0.006 }, 260);
-  await moveHand(LH, REST.L, 320);
+  await Promise.all([moveHand(LH, REST.L, 320), moveHand(RH, REST.R, 320)]);
 }
 
 async function flipCards() {
   if (!cardsIn) return;
   if (protOn) await protectorOff();
   const up = !cards[0].userData.faceUp;
-  await moveHand(LH, { x: -0.01, y: TOP + 0.03, z: -0.29, rx: 0.3, ry: 0 }, 260);
+  await moveHand(RH, { x: 0.01, y: TOP + 0.03, z: -0.29, rx: 0.3, ry: 0, rz: 0 }, 260);
   await Promise.all([...cards.map((c, i) => wait(i * 90).then(() => tween(380, t => {
     c.userData.flip.rotation.x = (up ? t : 1 - t) * Math.PI;
     c.userData.flip.position.y = Math.sin(Math.PI * t) * 0.035;
-  }))), moveHand(LH, { y: TOP + 0.06, z: -0.31 }, 380)]);
+  }))), moveHand(RH, { y: TOP + 0.06, z: -0.31 }, 380)]);
   cards.forEach(c => { c.userData.faceUp = up; });
-  await moveHand(LH, REST.L, 300);
+  await moveHand(RH, REST.R, 300);
 }
 
-// 카드 프로텍터: 왼손이 집어 카드 위에 살짝 돌리며 올린다
+// 카드 프로텍터: 오른손이 집어 카드 위에 살짝 돌리며 올린다(오른쪽에서 잡는다)
+const OVER = TOP + 0.06;   // 카드 위를 지나갈 때의 높이
+async function grabMove(to, ms) {
+  const grab = new THREE.Vector3().subVectors(protector.position, RH.position);
+  const follow = () => protector.position.copy(RH.position).add(grab);
+  await Promise.all([moveHand(RH, { y: OVER }, 180 * ms), tween(180 * ms, follow)]);
+  await Promise.all([moveHand(RH, { x: to.x - grab.x, z: to.z - grab.z }, 360 * ms), tween(360 * ms, follow)]);
+  await Promise.all([moveHand(RH, { y: to.y - grab.y + 0.002 }, 200 * ms, ease.out), tween(200 * ms, follow)]);
+}
+async function reachProtector(ms) {
+  const p = protector.position;
+  // 카드를 뚫지 않게 위로 넘어가서 내려온다
+  await moveHand(RH, { x: p.x + 0.062, y: OVER, z: p.z + 0.004, ry: 1.35, rx: 0.05, rz: 0 }, 280 * ms);
+  await moveHand(RH, { y: p.y + 0.004 }, 140 * ms);
+}
 async function protectorOn() {
   if (!cardsIn || protOn) return;
   if (!cardsNeat) await tidy();
-  const p = protector.position;
-  await moveHand(LH, { x: p.x - 0.062, y: TOP + 0.012, z: p.z + 0.004, ry: -1.35, rx: 0.05 }, 300);
+  await reachProtector(1);
   const to = protOnCardsPos();
-  const grab = new THREE.Vector3().subVectors(protector.position, LH.position);
-  const follow = () => protector.position.copy(LH.position).add(grab);
-  await Promise.all([moveHand(LH, { y: TOP + 0.06 }, 180), tween(180, follow)]);
-  await Promise.all([moveHand(LH, { x: to.x - grab.x, z: to.z - grab.z }, 360), tween(360, follow)]);
-  await Promise.all([moveHand(LH, { y: to.y - grab.y + 0.002 }, 200, ease.out), tween(200, follow)]);
+  await grabMove(to, 1);
   const r0 = protector.rotation.y;
   await Promise.all([tween(260, t => { protector.rotation.y = r0 + 0.9 * ease.out(t); protector.position.y = to.y; }),
-    moveHand(LH, { ry: -1.55 }, 260)]);
+    moveHand(RH, { ry: 1.55 }, 260)]);
   protOn = true;
-  await moveHand(LH, REST.L, 320);
+  await moveHand(RH, REST.R, 320);
 }
 async function protectorOff(fast) {
   if (!protOn) return;
   const ms = fast ? 0.6 : 1;
-  await moveHand(LH, { x: protector.position.x - 0.062, y: protector.position.y + 0.004, z: protector.position.z + 0.004, ry: -1.35, rx: 0.05 }, 280 * ms);
-  const grab = new THREE.Vector3().subVectors(protector.position, LH.position);
-  const follow = () => protector.position.copy(LH.position).add(grab);
-  await Promise.all([moveHand(LH, { y: TOP + 0.065 }, 160 * ms), tween(160 * ms, follow)]);
-  await Promise.all([moveHand(LH, { x: PROT_REST.x - grab.x, z: PROT_REST.z - grab.z }, 320 * ms), tween(320 * ms, follow)]);
-  await Promise.all([moveHand(LH, { y: PROT_REST.y - grab.y }, 160 * ms), tween(160 * ms, follow)]);
+  await reachProtector(ms);
+  await grabMove(PROT_REST, ms);
+  protector.position.y = PROT_REST.y;
   protOn = false;
-  await moveHand(LH, REST.L, 260 * ms);
+  await moveHand(RH, REST.R, 260 * ms);
 }
 
 // 폴드: 프로텍터를 치우고, 두 장을 앞으로 밀어 낸다
@@ -370,12 +391,12 @@ async function fold() {
   if (!cardsIn) return;
   if (protOn) await protectorOff(true);
   if (cards[0].userData.faceUp) await flipCards();
-  await moveHand(LH, { x: 0, y: TOP + 0.025, z: -0.255, ry: 0, rx: 0.1 }, 260);
+  await moveHand(RH, { x: 0, y: TOP + 0.025, z: -0.255, ry: 0, rx: 0.1, rz: 0 }, 260);
   await Promise.all([
-    moveHand(LH, { z: -0.40, y: TOP + 0.03 }, 300, ease.out),
+    moveHand(RH, { z: -0.40, y: TOP + 0.03 }, 300, ease.out),
     ...cards.map((c, i) => moveObj(c, { z: -0.72 - i * 0.02, x: c.position.x * 0.5 + (i ? 0.03 : -0.02), ry: c.rotation.y + (i ? 0.6 : -0.4), arc: 0.012 }, 520, ease.out)),
   ]);
-  await Promise.all([moveHand(LH, REST.L, 320),
+  await Promise.all([moveHand(RH, REST.R, 320),
     tween(300, t => cards.forEach(c => c.userData.mats.forEach(m => { m.opacity = 1 - t; })))]);
   cards.forEach(c => { c.visible = false; });
   cardsIn = false; cardsNeat = false;
@@ -442,10 +463,13 @@ async function pushChips(n = 4) {
   await moveHand(RH, REST.R, 380);
 }
 
-// 올인: 두 손으로 앞의 칩을 모두 감싸 밀어 낸다
-async function allIn() {
+// 올인: 칩이 많으면 두 손으로 감싸 밀고, 적으면 오른손으로 민다(사양 7장)
+const TWO_HAND_CHIPS = 16;   // 임시 기준. 사양 12장(칩 단위)이 정해지면 바꾼다
+async function allIn(small) {
+  if (small) { if (stackC.length === 0) await chipReset(); return pushChips(stackC.length); }
   const all = [...stackA, ...stackB, ...stackC];
   if (!all.length) return;
+  if (all.length < TWO_HAND_CHIPS) return pushChips(stackC.length);
   await Promise.all([moveHand(RH, { x: 0.255, y: TOP + 0.03, z: -0.22, ry: 0.45, rx: 0.05 }, 360),
     moveHand(LH, { x: 0.035, y: TOP + 0.03, z: -0.22, ry: -0.45, rx: 0.05 }, 360)]);
   const piles = [];
@@ -469,24 +493,51 @@ async function chipReset() {
   stackA.length = stackB.length = stackC.length = 0; stackA.push(...a); stackB.push(...b); stackC.push(...g); betPile = [];
 }
 
-// 대기 중 셔플: 아무 동작이 없을 때 가끔 칩을 섞는다
-let idle = false, idleTimer = 0;
-function scheduleIdle() {
-  clearTimeout(idleTimer);
-  if (!idle) return;
-  idleTimer = setTimeout(() => { if (idle && busy === 0) run(shuffle).then(scheduleIdle); else scheduleIdle(); },
-    (2500 + Math.random() * 3500) / SPEED);
+// ---------- 동작: 체크 (스타일 옵션) ----------
+async function check() {
+  if (checkStyle === 'arms') {
+    // 팔짱: 오른손 손가락으로 왼팔 상완을 두 번 톡톡
+    const r = ARMS.R;
+    for (let k = 0; k < 2; k++) {
+      await moveHand(RH, { y: r.y + 0.014, rz: -0.25 }, 110, ease.out);
+      await moveHand(RH, { y: r.y, rz: 0 }, 90);
+    }
+    return;
+  }
+  const at = { x: 0.06, z: -0.27, ry: 0.15, rz: 0 };
+  if (checkStyle === 'palm') {
+    // 손바닥으로 한 번 툭
+    await moveHand(RH, Object.assign({ y: TOP + 0.06, rx: 0 }, at), 260);
+    await moveHand(RH, { y: TOP + 0.012 }, 90, ease.out);
+    await moveHand(RH, { y: TOP + 0.05 }, 160);
+  } else if (checkStyle === 'knock') {
+    // 주먹 마디로 두 번 노크(손을 옆으로 세운다)
+    await moveHand(RH, Object.assign({ y: TOP + 0.05, rx: 0.1 }, at, { rz: 1.2 }), 260);
+    for (let k = 0; k < 2; k++) { await moveHand(RH, { y: TOP + 0.03 }, 80, ease.out); await moveHand(RH, { y: TOP + 0.05 }, 110); }
+  } else {
+    // 기본: 손끝으로 두 번 톡톡
+    await moveHand(RH, Object.assign({ y: TOP + 0.04, rx: 0.35 }, at), 260);
+    for (let k = 0; k < 2; k++) { await moveHand(RH, { y: TOP + 0.026 }, 80, ease.out); await moveHand(RH, { y: TOP + 0.04 }, 110); }
+  }
+  await moveHand(RH, REST.R, 300);
+}
+function setCheckStyle(st) {
+  checkStyle = st;
+  const btn = document.querySelector('[data-act="style"]');
+  if (btn) btn.textContent = '체크: ' + CHECK_STYLES.find(x => x[0] === st)[1];
+  run(() => Promise.all([moveHand(RH, REST.R, 360), moveHand(LH, REST.L, 360)]));
 }
 
 // ---------- 버튼 ----------
 const ACTS = {
   deal: () => run(deal), tidy: () => run(tidy), peek: () => run(peek), flip: () => run(flipCards),
   protector: () => run(() => protOn ? protectorOff() : protectorOn()), fold: () => run(fold),
-  shuffle: () => run(shuffle), bet: () => run(() => pushChips(4)), allin: () => run(allIn), chipreset: () => run(chipReset),
+  shuffle: () => run(shuffle), bet: () => run(() => pushChips(4)), allin: () => run(() => allIn(false)),
+  allin_s: () => run(() => allIn(true)), chipreset: () => run(chipReset), check: () => run(check),
+  style: () => { const i = CHECK_STYLES.findIndex(x => x[0] === checkStyle); setCheckStyle(CHECK_STYLES[(i + 1) % CHECK_STYLES.length][0]); },
 };
 document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
   const a = b.dataset.act;
-  if (a === 'idle') { idle = !idle; b.classList.toggle('on', idle); scheduleIdle(); return; }
   ACTS[a]();
 }));
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
@@ -495,7 +546,7 @@ document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click'
 }));
 
 // 스크린샷·검사용 손잡이
-window.__t2motion = { run: (a) => { ACTS[a](); }, view: (v) => { view = v; applyView(); render(); }, idle: () => busy === 0,
+window.__t2motion = { run: (a) => { ACTS[a](); }, style: setCheckStyle, view: (v) => { view = v; applyView(); render(); }, idle: () => busy === 0,
   step: async (ms) => { const n = Math.max(1, Math.round(ms / 16)); for (let i = 0; i < n; i++) { vt += ms / n; tick(); await Promise.resolve(); await Promise.resolve(); } render(); } };
 
 // ---------- 루프 ----------
@@ -506,9 +557,8 @@ function tick() {
     tw.fn(tw.e(t));
     if (t >= 1) { tweens.delete(tw); tw.res(); }
   }
-  // 숨쉬기 같은 아주 작은 대기 움직임(손)
-  const s = Math.sin(now / 900) * 0.0012;
-  if (busy === 0) { RH.position.y = REST.R.y + s; LH.position.y = REST.L.y - s; }
+  // 팔짱 자세일 때만 아주 작은 숨쉬기(손이 보이는 자세라서). 숨긴 자세에서는 움직이지 않는다.
+  if (busy === 0 && checkStyle === 'arms') { const s = Math.sin(now / 900) * 0.0012; RH.position.y = ARMS.R.y + s; LH.position.y = ARMS.L.y + s; }
 }
 function render() { renderer.render(scene, cam); }
 function frame() {
