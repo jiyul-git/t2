@@ -103,6 +103,15 @@ def flop_failures(flops_dir):
             f = os.path.join(flops_dir, 'first_attempt', b + '.json')   # retry interrupted: still counts as unconverged
         d = json.load(open(f))
         if not (d['converged'] and d['exploitability_pct_pot'] <= d['provenance_key']['target_exploitability_pct_pot'] <= 0.6):
+            # user-approved exception (2026-10-26, p30_flat_sb_vs_bb): FLOP_ACCEPT_PCT=0.7 accepts a flop that plateaued after the
+            # retry (exploitability <= 0.7 % pot, retried at 3x) and records it; default unset = unchanged
+            acc = float(os.environ.get('FLOP_ACCEPT_PCT', '0'))
+            if acc and f == os.path.join(flops_dir, b + '.json') and d['exploitability_pct_pot'] <= acc and os.path.exists(os.path.join(flops_dir, 'first_attempt', b + '.json')):
+                af = os.path.join(flops_dir, 'accepted_above_target.json')
+                cur = json.load(open(af)) if os.path.exists(af) else {}
+                cur[b] = {'exploitability_pct_pot': d['exploitability_pct_pot'], 'iterations': d['iterations'], 'accept_pct': acc}
+                json.dump(cur, open(af, 'w'), indent=1)
+                continue
             bad.append({'board': b, 'exploitability_pct_pot': d['exploitability_pct_pot'], 'iterations': d['iterations']})
     return bad
 
