@@ -1,0 +1,2773 @@
+[
+ {
+  "name": "A1",
+  "seats": [
+   "BTN",
+   "SB",
+   "BB"
+  ],
+  "stacks": [
+   20,
+   8,
+   40
+  ],
+  "gap": 0.009841202337629374,
+  "rules": {
+   "R1": [
+    {
+     "node": "BTN first-in",
+     "stack": 20,
+     "X": 20,
+     "jam_asym": 39.9,
+     "jam_approx": 32.1,
+     "mean_abs_diff_pct": 7.87,
+     "flips": [
+      "A2o",
+      "A3o",
+      "75s",
+      "K8o",
+      "J9o",
+      "Q9o",
+      "K9o",
+      "J7s",
+      "Q5s",
+      "Q6s",
+      "Q7s",
+      "K2s",
+      "K3s",
+      "K4s",
+      "K5s"
+     ],
+     "loss_bb": 0.0165,
+     "reach": 1.0
+    },
+    {
+     "node": "SB first-in",
+     "stack": 8,
+     "X": 8,
+     "jam_asym": 77.1,
+     "jam_approx": 77.1,
+     "mean_abs_diff_pct": 0.18,
+     "flips": [],
+     "loss_bb": 0.0021,
+     "reach": 0.6009
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 32.9,
+     "call_approx": 36.9,
+     "mean_abs_diff_pct": 4.07,
+     "flips": [
+      "K6o",
+      "K7o",
+      "Q9o",
+      "K2s",
+      "K3s"
+     ],
+     "loss_bb": 0.0101,
+     "reach": 0.3991
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 40,
+     "X": 20,
+     "call_asym": 24.1,
+     "call_approx": 18.4,
+     "mean_abs_diff_pct": 5.67,
+     "flips": [
+      "22",
+      "A4o",
+      "A5o",
+      "A6o",
+      "KTo",
+      "QJo",
+      "QTs",
+      "K9s",
+      "A2s",
+      "A3s"
+     ],
+     "loss_bb": 0.0431,
+     "reach": 0.268
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 40,
+     "X": 8,
+     "call_asym": 62.0,
+     "call_approx": 62.0,
+     "mean_abs_diff_pct": 0.1,
+     "flips": [],
+     "loss_bb": 0.0029,
+     "reach": 0.4632
+    }
+   ],
+   "R2": [
+    {
+     "node": "BTN first-in",
+     "stack": 20,
+     "X": 8,
+     "jam_asym": 39.9,
+     "jam_approx": 46.6,
+     "mean_abs_diff_pct": 7.19,
+     "flips": [
+      "K3o",
+      "K4o",
+      "K5o",
+      "K6o",
+      "K7o",
+      "Q8o",
+      "Q4s"
+     ],
+     "loss_bb": 0.016,
+     "reach": 1.0
+    },
+    {
+     "node": "SB first-in",
+     "stack": 8,
+     "X": 8,
+     "jam_asym": 77.1,
+     "jam_approx": 77.1,
+     "mean_abs_diff_pct": 0.18,
+     "flips": [],
+     "loss_bb": 0.0021,
+     "reach": 0.6009
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 32.9,
+     "call_approx": 36.9,
+     "mean_abs_diff_pct": 4.07,
+     "flips": [
+      "K6o",
+      "K7o",
+      "Q9o",
+      "K2s",
+      "K3s"
+     ],
+     "loss_bb": 0.0101,
+     "reach": 0.3991
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 40,
+     "X": 20,
+     "call_asym": 24.1,
+     "call_approx": 18.4,
+     "mean_abs_diff_pct": 5.67,
+     "flips": [
+      "22",
+      "A4o",
+      "A5o",
+      "A6o",
+      "KTo",
+      "QJo",
+      "QTs",
+      "K9s",
+      "A2s",
+      "A3s"
+     ],
+     "loss_bb": 0.0431,
+     "reach": 0.268
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 40,
+     "X": 8,
+     "call_asym": 62.0,
+     "call_approx": 62.0,
+     "mean_abs_diff_pct": 0.1,
+     "flips": [],
+     "loss_bb": 0.0029,
+     "reach": 0.4632
+    }
+   ],
+   "R3": [
+    {
+     "node": "BTN first-in",
+     "stack": 20,
+     "X": 11.96,
+     "jam_asym": 39.9,
+     "jam_approx": 38.3,
+     "mean_abs_diff_pct": 2.67,
+     "flips": [
+      "64s",
+      "85s",
+      "K8o",
+      "J9o",
+      "Q9o",
+      "T6s",
+      "K2s"
+     ],
+     "loss_bb": 0.0027,
+     "reach": 1.0
+    },
+    {
+     "node": "SB first-in",
+     "stack": 8,
+     "X": 8.0,
+     "jam_asym": 77.1,
+     "jam_approx": 77.1,
+     "mean_abs_diff_pct": 0.18,
+     "flips": [],
+     "loss_bb": 0.0021,
+     "reach": 0.6009
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 32.9,
+     "call_approx": 36.9,
+     "mean_abs_diff_pct": 4.07,
+     "flips": [
+      "K6o",
+      "K7o",
+      "Q9o",
+      "K2s",
+      "K3s"
+     ],
+     "loss_bb": 0.0101,
+     "reach": 0.3991
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 40,
+     "X": 20,
+     "call_asym": 24.1,
+     "call_approx": 18.4,
+     "mean_abs_diff_pct": 5.67,
+     "flips": [
+      "22",
+      "A4o",
+      "A5o",
+      "A6o",
+      "KTo",
+      "QJo",
+      "QTs",
+      "K9s",
+      "A2s",
+      "A3s"
+     ],
+     "loss_bb": 0.0431,
+     "reach": 0.268
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 40,
+     "X": 8,
+     "call_asym": 62.0,
+     "call_approx": 62.0,
+     "mean_abs_diff_pct": 0.1,
+     "flips": [],
+     "loss_bb": 0.0029,
+     "reach": 0.4632
+    }
+   ]
+  }
+ },
+ {
+  "name": "A2",
+  "seats": [
+   "CO",
+   "BTN",
+   "SB",
+   "BB"
+  ],
+  "stacks": [
+   15,
+   40,
+   10,
+   10
+  ],
+  "gap": 0.009895672836204534,
+  "rules": {
+   "R1": [
+    {
+     "node": "CO first-in",
+     "stack": 15,
+     "X": 15,
+     "jam_asym": 30.5,
+     "jam_approx": 26.1,
+     "mean_abs_diff_pct": 4.83,
+     "flips": [
+      "A3o",
+      "A4o",
+      "A5o",
+      "A6o",
+      "Q8s",
+      "K7s",
+      "K8s"
+     ],
+     "loss_bb": 0.006,
+     "reach": 1.0
+    },
+    {
+     "node": "BTN first-in",
+     "stack": 40,
+     "X": 10,
+     "jam_asym": 42.9,
+     "jam_approx": 42.9,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0016,
+     "reach": 0.6951
+    },
+    {
+     "node": "SB first-in",
+     "stack": 10,
+     "X": 10,
+     "jam_asym": 72.1,
+     "jam_approx": 72.1,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0011,
+     "reach": 0.3966
+    },
+    {
+     "node": "BTN calls CO jam",
+     "stack": 40,
+     "X": 15,
+     "call_asym": 16.7,
+     "call_approx": 14.7,
+     "mean_abs_diff_pct": 1.96,
+     "flips": [
+      "33",
+      "KJo",
+      "A5s",
+      "A6s"
+     ],
+     "loss_bb": 0.0088,
+     "reach": 0.3049
+    },
+    {
+     "node": "SB calls CO jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 23.0,
+     "call_approx": 24.8,
+     "mean_abs_diff_pct": 1.78,
+     "flips": [
+      "A4o",
+      "JTs"
+     ],
+     "loss_bb": 0.0072,
+     "reach": 0.2541
+    },
+    {
+     "node": "BB calls CO jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 25.1,
+     "call_approx": 27.8,
+     "mean_abs_diff_pct": 2.71,
+     "flips": [
+      "A2o",
+      "A3o",
+      "Q9s",
+      "K7s"
+     ],
+     "loss_bb": 0.0065,
+     "reach": 0.1956
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 31.5,
+     "call_approx": 31.5,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0038,
+     "reach": 0.2984
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 34.6,
+     "call_approx": 34.6,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0035,
+     "reach": 0.2045
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 53.4,
+     "call_approx": 53.4,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0018,
+     "reach": 0.2861
+    }
+   ],
+   "R2": [
+    {
+     "node": "CO first-in",
+     "stack": 15,
+     "X": 10,
+     "jam_asym": 30.5,
+     "jam_approx": 32.7,
+     "mean_abs_diff_pct": 2.17,
+     "flips": [
+      "A2o",
+      "K6s"
+     ],
+     "loss_bb": 0.0031,
+     "reach": 1.0
+    },
+    {
+     "node": "BTN first-in",
+     "stack": 40,
+     "X": 10,
+     "jam_asym": 42.9,
+     "jam_approx": 42.9,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0016,
+     "reach": 0.6951
+    },
+    {
+     "node": "SB first-in",
+     "stack": 10,
+     "X": 10,
+     "jam_asym": 72.1,
+     "jam_approx": 72.1,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0011,
+     "reach": 0.3966
+    },
+    {
+     "node": "BTN calls CO jam",
+     "stack": 40,
+     "X": 15,
+     "call_asym": 16.7,
+     "call_approx": 14.7,
+     "mean_abs_diff_pct": 1.96,
+     "flips": [
+      "33",
+      "KJo",
+      "A5s",
+      "A6s"
+     ],
+     "loss_bb": 0.0088,
+     "reach": 0.3049
+    },
+    {
+     "node": "SB calls CO jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 23.0,
+     "call_approx": 24.8,
+     "mean_abs_diff_pct": 1.78,
+     "flips": [
+      "A4o",
+      "JTs"
+     ],
+     "loss_bb": 0.0072,
+     "reach": 0.2541
+    },
+    {
+     "node": "BB calls CO jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 25.1,
+     "call_approx": 27.8,
+     "mean_abs_diff_pct": 2.71,
+     "flips": [
+      "A2o",
+      "A3o",
+      "Q9s",
+      "K7s"
+     ],
+     "loss_bb": 0.0065,
+     "reach": 0.1956
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 31.5,
+     "call_approx": 31.5,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0038,
+     "reach": 0.2984
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 34.6,
+     "call_approx": 34.6,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0035,
+     "reach": 0.2045
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 53.4,
+     "call_approx": 53.4,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0018,
+     "reach": 0.2861
+    }
+   ],
+   "R3": [
+    {
+     "node": "CO first-in",
+     "stack": 15,
+     "X": 11.61,
+     "jam_asym": 30.5,
+     "jam_approx": 31.3,
+     "mean_abs_diff_pct": 0.83,
+     "flips": [],
+     "loss_bb": 0.0018,
+     "reach": 1.0
+    },
+    {
+     "node": "BTN first-in",
+     "stack": 40,
+     "X": 10.0,
+     "jam_asym": 42.9,
+     "jam_approx": 42.9,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0016,
+     "reach": 0.6951
+    },
+    {
+     "node": "SB first-in",
+     "stack": 10,
+     "X": 10.0,
+     "jam_asym": 72.1,
+     "jam_approx": 72.1,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0011,
+     "reach": 0.3966
+    },
+    {
+     "node": "BTN calls CO jam",
+     "stack": 40,
+     "X": 15,
+     "call_asym": 16.7,
+     "call_approx": 14.7,
+     "mean_abs_diff_pct": 1.96,
+     "flips": [
+      "33",
+      "KJo",
+      "A5s",
+      "A6s"
+     ],
+     "loss_bb": 0.0088,
+     "reach": 0.3049
+    },
+    {
+     "node": "SB calls CO jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 23.0,
+     "call_approx": 24.8,
+     "mean_abs_diff_pct": 1.78,
+     "flips": [
+      "A4o",
+      "JTs"
+     ],
+     "loss_bb": 0.0072,
+     "reach": 0.2541
+    },
+    {
+     "node": "BB calls CO jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 25.1,
+     "call_approx": 27.8,
+     "mean_abs_diff_pct": 2.71,
+     "flips": [
+      "A2o",
+      "A3o",
+      "Q9s",
+      "K7s"
+     ],
+     "loss_bb": 0.0065,
+     "reach": 0.1956
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 31.5,
+     "call_approx": 31.5,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0038,
+     "reach": 0.2984
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 34.6,
+     "call_approx": 34.6,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0035,
+     "reach": 0.2045
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 53.4,
+     "call_approx": 53.4,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0018,
+     "reach": 0.2861
+    }
+   ]
+  }
+ },
+ {
+  "name": "A3",
+  "seats": [
+   "UTG",
+   "UTG+1",
+   "UTG+2",
+   "LJ",
+   "HJ",
+   "CO",
+   "BTN",
+   "SB",
+   "BB"
+  ],
+  "stacks": [
+   25,
+   10,
+   40,
+   15,
+   60,
+   8,
+   30,
+   20,
+   18
+  ],
+  "gap": 0.00999090633819805,
+  "rules": {
+   "R1": [
+    {
+     "node": "UTG first-in",
+     "stack": 25,
+     "X": 25,
+     "jam_asym": 8.4,
+     "jam_approx": 5.6,
+     "mean_abs_diff_pct": 3.02,
+     "flips": [
+      "66",
+      "77",
+      "88",
+      "JTs",
+      "QTs",
+      "QJs",
+      "AQo",
+      "KJs",
+      "ATs"
+     ],
+     "loss_bb": 0.0036,
+     "reach": 1.0
+    },
+    {
+     "node": "UTG+1 first-in",
+     "stack": 10,
+     "X": 10,
+     "jam_asym": 16.1,
+     "jam_approx": 16.0,
+     "mean_abs_diff_pct": 0.11,
+     "flips": [],
+     "loss_bb": 0.001,
+     "reach": 0.9161
+    },
+    {
+     "node": "UTG+2 first-in",
+     "stack": 40,
+     "X": 40,
+     "jam_asym": 9.6,
+     "jam_approx": 4.8,
+     "mean_abs_diff_pct": 5.52,
+     "flips": [
+      "55",
+      "66",
+      "77",
+      "88",
+      "99",
+      "JTs",
+      "QTs",
+      "QJs",
+      "AQo",
+      "KTs",
+      "KJs",
+      "KQs",
+      "A4s"
+     ],
+     "loss_bb": 0.0167,
+     "reach": 0.769
+    },
+    {
+     "node": "LJ first-in",
+     "stack": 15,
+     "X": 15,
+     "jam_asym": 17.6,
+     "jam_approx": 15.7,
+     "mean_abs_diff_pct": 2.11,
+     "flips": [
+      "97s",
+      "ATo",
+      "J8s",
+      "K8s",
+      "A5s",
+      "A7s"
+     ],
+     "loss_bb": 0.0025,
+     "reach": 0.695
+    },
+    {
+     "node": "HJ first-in",
+     "stack": 60,
+     "X": 30,
+     "jam_asym": 17.0,
+     "jam_approx": 11.3,
+     "mean_abs_diff_pct": 6.91,
+     "flips": [
+      "22",
+      "33",
+      "87s",
+      "97s",
+      "98s",
+      "T8s",
+      "ATo",
+      "J8s",
+      "AJo",
+      "Q9s",
+      "KQo",
+      "K8s",
+      "K9s",
+      "A5s",
+      "A8s",
+      "A9s"
+     ],
+     "loss_bb": 0.0133,
+     "reach": 0.5725
+    },
+    {
+     "node": "CO first-in",
+     "stack": 8,
+     "X": 8,
+     "jam_asym": 35.5,
+     "jam_approx": 35.5,
+     "mean_abs_diff_pct": 0.03,
+     "flips": [],
+     "loss_bb": 0.0002,
+     "reach": 0.4749
+    },
+    {
+     "node": "BTN first-in",
+     "stack": 30,
+     "X": 20,
+     "jam_asym": 32.7,
+     "jam_approx": 31.9,
+     "mean_abs_diff_pct": 1.03,
+     "flips": [
+      "A3o"
+     ],
+     "loss_bb": 0.0002,
+     "reach": 0.3062
+    },
+    {
+     "node": "SB first-in",
+     "stack": 20,
+     "X": 18,
+     "jam_asym": 57.3,
+     "jam_approx": 57.3,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0001,
+     "reach": 0.2059
+    },
+    {
+     "node": "UTG+1 calls UTG jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 4.8,
+     "call_approx": 8.8,
+     "mean_abs_diff_pct": 3.99,
+     "flips": [
+      "55",
+      "66",
+      "77",
+      "AJo",
+      "AQo",
+      "KQs",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.0405,
+     "reach": 0.0839
+    },
+    {
+     "node": "UTG+2 calls UTG jam",
+     "stack": 40,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0799
+    },
+    {
+     "node": "LJ calls UTG jam",
+     "stack": 15,
+     "X": 15,
+     "call_asym": 4.3,
+     "call_approx": 4.9,
+     "mean_abs_diff_pct": 0.61,
+     "flips": [
+      "88"
+     ],
+     "loss_bb": 0.0066,
+     "reach": 0.0766
+    },
+    {
+     "node": "HJ calls UTG jam",
+     "stack": 60,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0733
+    },
+    {
+     "node": "CO calls UTG jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 5.5,
+     "call_approx": 11.0,
+     "mean_abs_diff_pct": 5.49,
+     "flips": [
+      "44",
+      "55",
+      "66",
+      "77",
+      "ATo",
+      "AJo",
+      "KQs",
+      "A9s",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.0539,
+     "reach": 0.0704
+    },
+    {
+     "node": "BTN calls UTG jam",
+     "stack": 30,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0665
+    },
+    {
+     "node": "SB calls UTG jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 4.3,
+     "call_approx": 4.0,
+     "mean_abs_diff_pct": 0.26,
+     "flips": [
+      "AQs"
+     ],
+     "loss_bb": 0.0047,
+     "reach": 0.0638
+    },
+    {
+     "node": "BB calls UTG jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 4.4,
+     "call_approx": 4.5,
+     "mean_abs_diff_pct": 0.19,
+     "flips": [],
+     "loss_bb": 0.0044,
+     "reach": 0.0611
+    },
+    {
+     "node": "UTG+2 calls UTG+1 jam",
+     "stack": 40,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.1471
+    },
+    {
+     "node": "LJ calls UTG+1 jam",
+     "stack": 15,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.1329
+    },
+    {
+     "node": "HJ calls UTG+1 jam",
+     "stack": 60,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.12
+    },
+    {
+     "node": "CO calls UTG+1 jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 11.4,
+     "call_approx": 12.3,
+     "mean_abs_diff_pct": 0.93,
+     "flips": [
+      "A8s"
+     ],
+     "loss_bb": 0.0043,
+     "reach": 0.1084
+    },
+    {
+     "node": "BTN calls UTG+1 jam",
+     "stack": 30,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.096
+    },
+    {
+     "node": "SB calls UTG+1 jam",
+     "stack": 20,
+     "X": 10,
+     "call_asym": 11.4,
+     "call_approx": 11.3,
+     "mean_abs_diff_pct": 0.19,
+     "flips": [],
+     "loss_bb": 0.0027,
+     "reach": 0.0867
+    },
+    {
+     "node": "BB calls UTG+1 jam",
+     "stack": 18,
+     "X": 10,
+     "call_asym": 12.6,
+     "call_approx": 12.4,
+     "mean_abs_diff_pct": 0.18,
+     "flips": [],
+     "loss_bb": 0.0026,
+     "reach": 0.0768
+    },
+    {
+     "node": "LJ calls UTG+2 jam",
+     "stack": 15,
+     "X": 15,
+     "call_asym": 4.8,
+     "call_approx": 7.1,
+     "mean_abs_diff_pct": 2.33,
+     "flips": [
+      "66",
+      "77",
+      "AQo",
+      "KQs",
+      "AJs"
+     ],
+     "loss_bb": 0.0189,
+     "reach": 0.074
+    },
+    {
+     "node": "HJ calls UTG+2 jam",
+     "stack": 60,
+     "X": 40,
+     "call_asym": 4.0,
+     "call_approx": 2.0,
+     "mean_abs_diff_pct": 1.99,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0815,
+     "reach": 0.0705
+    },
+    {
+     "node": "CO calls UTG+2 jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 6.3,
+     "call_approx": 14.3,
+     "mean_abs_diff_pct": 8.06,
+     "flips": [
+      "33",
+      "44",
+      "55",
+      "66",
+      "A9o",
+      "ATo",
+      "AJo",
+      "QJs",
+      "KQo",
+      "KTs",
+      "KJs",
+      "KQs",
+      "A7s",
+      "A8s",
+      "A9s",
+      "ATs"
+     ],
+     "loss_bb": 0.0691,
+     "reach": 0.0676
+    },
+    {
+     "node": "BTN calls UTG+2 jam",
+     "stack": 30,
+     "X": 30,
+     "call_asym": 4.1,
+     "call_approx": 3.1,
+     "mean_abs_diff_pct": 1.04,
+     "flips": [
+      "99"
+     ],
+     "loss_bb": 0.0226,
+     "reach": 0.0634
+    },
+    {
+     "node": "SB calls UTG+2 jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 4.8,
+     "call_approx": 5.3,
+     "mean_abs_diff_pct": 0.52,
+     "flips": [
+      "AQo"
+     ],
+     "loss_bb": 0.0053,
+     "reach": 0.0607
+    },
+    {
+     "node": "BB calls UTG+2 jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 5.0,
+     "call_approx": 6.3,
+     "mean_abs_diff_pct": 1.36,
+     "flips": [
+      "77",
+      "AQo",
+      "AJs"
+     ],
+     "loss_bb": 0.0051,
+     "reach": 0.0578
+    },
+    {
+     "node": "HJ calls LJ jam",
+     "stack": 60,
+     "X": 15,
+     "call_asym": 8.9,
+     "call_approx": 8.5,
+     "mean_abs_diff_pct": 0.42,
+     "flips": [
+      "55"
+     ],
+     "loss_bb": 0.002,
+     "reach": 0.1225
+    },
+    {
+     "node": "CO calls LJ jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 12.4,
+     "call_approx": 18.2,
+     "mean_abs_diff_pct": 5.86,
+     "flips": [
+      "22",
+      "33",
+      "A7o",
+      "A8o",
+      "A9o",
+      "KJo",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.0184,
+     "reach": 0.1115
+    },
+    {
+     "node": "BTN calls LJ jam",
+     "stack": 30,
+     "X": 15,
+     "call_asym": 8.9,
+     "call_approx": 8.5,
+     "mean_abs_diff_pct": 0.42,
+     "flips": [
+      "55"
+     ],
+     "loss_bb": 0.002,
+     "reach": 0.0978
+    },
+    {
+     "node": "SB calls LJ jam",
+     "stack": 20,
+     "X": 15,
+     "call_asym": 10.0,
+     "call_approx": 8.9,
+     "mean_abs_diff_pct": 1.12,
+     "flips": [
+      "ATo",
+      "A9s"
+     ],
+     "loss_bb": 0.0038,
+     "reach": 0.089
+    },
+    {
+     "node": "BB calls LJ jam",
+     "stack": 18,
+     "X": 15,
+     "call_asym": 11.4,
+     "call_approx": 10.4,
+     "mean_abs_diff_pct": 0.93,
+     "flips": [
+      "44",
+      "KQo"
+     ],
+     "loss_bb": 0.003,
+     "reach": 0.0801
+    },
+    {
+     "node": "CO calls HJ jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 12.4,
+     "call_approx": 22.4,
+     "mean_abs_diff_pct": 10.0,
+     "flips": [
+      "22",
+      "33",
+      "A5o",
+      "A6o",
+      "A7o",
+      "A8o",
+      "A9o",
+      "KTo",
+      "KJo",
+      "QTs",
+      "K9s",
+      "A2s",
+      "A3s",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.0461,
+     "reach": 0.0976
+    },
+    {
+     "node": "BTN calls HJ jam",
+     "stack": 30,
+     "X": 30,
+     "call_asym": 8.1,
+     "call_approx": 4.7,
+     "mean_abs_diff_pct": 3.35,
+     "flips": [
+      "66",
+      "77",
+      "AJo",
+      "AQo",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.054,
+     "reach": 0.0855
+    },
+    {
+     "node": "SB calls HJ jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 8.5,
+     "call_approx": 8.3,
+     "mean_abs_diff_pct": 0.16,
+     "flips": [],
+     "loss_bb": 0.0014,
+     "reach": 0.0786
+    },
+    {
+     "node": "BB calls HJ jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 9.9,
+     "call_approx": 10.6,
+     "mean_abs_diff_pct": 0.71,
+     "flips": [
+      "A9s"
+     ],
+     "loss_bb": 0.0021,
+     "reach": 0.0719
+    },
+    {
+     "node": "BTN calls CO jam",
+     "stack": 30,
+     "X": 8,
+     "call_asym": 26.1,
+     "call_approx": 26.0,
+     "mean_abs_diff_pct": 0.03,
+     "flips": [],
+     "loss_bb": 0.0006,
+     "reach": 0.1687
+    },
+    {
+     "node": "SB calls CO jam",
+     "stack": 20,
+     "X": 8,
+     "call_asym": 30.0,
+     "call_approx": 30.0,
+     "mean_abs_diff_pct": 0.02,
+     "flips": [],
+     "loss_bb": 0.0005,
+     "reach": 0.1248
+    },
+    {
+     "node": "BB calls CO jam",
+     "stack": 18,
+     "X": 8,
+     "call_asym": 34.9,
+     "call_approx": 34.9,
+     "mean_abs_diff_pct": 0.02,
+     "flips": [],
+     "loss_bb": 0.0004,
+     "reach": 0.0873
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 17.7,
+     "call_approx": 17.3,
+     "mean_abs_diff_pct": 0.35,
+     "flips": [
+      "A4s"
+     ],
+     "loss_bb": 0.001,
+     "reach": 0.1002
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 19.4,
+     "call_approx": 21.0,
+     "mean_abs_diff_pct": 1.58,
+     "flips": [
+      "22",
+      "A6o",
+      "K9s",
+      "A2s"
+     ],
+     "loss_bb": 0.0018,
+     "reach": 0.0825
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 35.3,
+     "call_approx": 35.3,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0004,
+     "reach": 0.118
+    }
+   ],
+   "R2": [
+    {
+     "node": "UTG first-in",
+     "stack": 25,
+     "X": 8,
+     "jam_asym": 8.4,
+     "jam_approx": 16.0,
+     "mean_abs_diff_pct": 7.61,
+     "flips": [
+      "22",
+      "33",
+      "44",
+      "55",
+      "87s",
+      "98s",
+      "T8s",
+      "T9s",
+      "ATo",
+      "J9s",
+      "AJo",
+      "Q9s",
+      "KQo",
+      "K9s",
+      "KTs",
+      "A8s",
+      "A9s"
+     ],
+     "loss_bb": 0.017,
+     "reach": 1.0
+    },
+    {
+     "node": "UTG+1 first-in",
+     "stack": 10,
+     "X": 8,
+     "jam_asym": 16.1,
+     "jam_approx": 18.5,
+     "mean_abs_diff_pct": 2.68,
+     "flips": [
+      "A9o",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.006,
+     "reach": 0.9161
+    },
+    {
+     "node": "UTG+2 first-in",
+     "stack": 40,
+     "X": 8,
+     "jam_asym": 9.6,
+     "jam_approx": 21.3,
+     "mean_abs_diff_pct": 11.66,
+     "flips": [
+      "22",
+      "33",
+      "44",
+      "76s",
+      "87s",
+      "A8o",
+      "98s",
+      "A9o",
+      "T8s",
+      "T9s",
+      "ATo",
+      "J9s",
+      "KJo",
+      "AJo",
+      "Q9s",
+      "KQo",
+      "K9s",
+      "A2s",
+      "A3s",
+      "A4s",
+      "A6s",
+      "A7s",
+      "A8s",
+      "A9s"
+     ],
+     "loss_bb": 0.0205,
+     "reach": 0.769
+    },
+    {
+     "node": "LJ first-in",
+     "stack": 15,
+     "X": 8,
+     "jam_asym": 17.6,
+     "jam_approx": 25.1,
+     "mean_abs_diff_pct": 9.01,
+     "flips": [
+      "A5o",
+      "A6o",
+      "76s",
+      "A7o",
+      "A8o",
+      "97s",
+      "A9o",
+      "J8s",
+      "QJo",
+      "KJo",
+      "K8s",
+      "A2s",
+      "A3s",
+      "A4s",
+      "A6s"
+     ],
+     "loss_bb": 0.0185,
+     "reach": 0.695
+    },
+    {
+     "node": "HJ first-in",
+     "stack": 60,
+     "X": 8,
+     "jam_asym": 17.0,
+     "jam_approx": 30.5,
+     "mean_abs_diff_pct": 13.41,
+     "flips": [
+      "A2o",
+      "A3o",
+      "A4o",
+      "A5o",
+      "A6o",
+      "76s",
+      "A7o",
+      "A8o",
+      "A9o",
+      "JTo",
+      "QTo",
+      "KTo",
+      "QJo",
+      "KJo",
+      "A2s",
+      "A3s",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.0405,
+     "reach": 0.5725
+    },
+    {
+     "node": "CO first-in",
+     "stack": 8,
+     "X": 8,
+     "jam_asym": 35.5,
+     "jam_approx": 35.5,
+     "mean_abs_diff_pct": 0.03,
+     "flips": [],
+     "loss_bb": 0.0002,
+     "reach": 0.4749
+    },
+    {
+     "node": "BTN first-in",
+     "stack": 30,
+     "X": 18,
+     "jam_asym": 32.7,
+     "jam_approx": 33.7,
+     "mean_abs_diff_pct": 0.94,
+     "flips": [
+      "75s",
+      "K7s"
+     ],
+     "loss_bb": 0.0003,
+     "reach": 0.3062
+    },
+    {
+     "node": "SB first-in",
+     "stack": 20,
+     "X": 18,
+     "jam_asym": 57.3,
+     "jam_approx": 57.3,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0001,
+     "reach": 0.2059
+    },
+    {
+     "node": "UTG+1 calls UTG jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 4.8,
+     "call_approx": 8.8,
+     "mean_abs_diff_pct": 3.99,
+     "flips": [
+      "55",
+      "66",
+      "77",
+      "AJo",
+      "AQo",
+      "KQs",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.0405,
+     "reach": 0.0839
+    },
+    {
+     "node": "UTG+2 calls UTG jam",
+     "stack": 40,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0799
+    },
+    {
+     "node": "LJ calls UTG jam",
+     "stack": 15,
+     "X": 15,
+     "call_asym": 4.3,
+     "call_approx": 4.9,
+     "mean_abs_diff_pct": 0.61,
+     "flips": [
+      "88"
+     ],
+     "loss_bb": 0.0066,
+     "reach": 0.0766
+    },
+    {
+     "node": "HJ calls UTG jam",
+     "stack": 60,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0733
+    },
+    {
+     "node": "CO calls UTG jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 5.5,
+     "call_approx": 11.0,
+     "mean_abs_diff_pct": 5.49,
+     "flips": [
+      "44",
+      "55",
+      "66",
+      "77",
+      "ATo",
+      "AJo",
+      "KQs",
+      "A9s",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.0539,
+     "reach": 0.0704
+    },
+    {
+     "node": "BTN calls UTG jam",
+     "stack": 30,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0665
+    },
+    {
+     "node": "SB calls UTG jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 4.3,
+     "call_approx": 4.0,
+     "mean_abs_diff_pct": 0.26,
+     "flips": [
+      "AQs"
+     ],
+     "loss_bb": 0.0047,
+     "reach": 0.0638
+    },
+    {
+     "node": "BB calls UTG jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 4.4,
+     "call_approx": 4.5,
+     "mean_abs_diff_pct": 0.19,
+     "flips": [],
+     "loss_bb": 0.0044,
+     "reach": 0.0611
+    },
+    {
+     "node": "UTG+2 calls UTG+1 jam",
+     "stack": 40,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.1471
+    },
+    {
+     "node": "LJ calls UTG+1 jam",
+     "stack": 15,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.1329
+    },
+    {
+     "node": "HJ calls UTG+1 jam",
+     "stack": 60,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.12
+    },
+    {
+     "node": "CO calls UTG+1 jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 11.4,
+     "call_approx": 12.3,
+     "mean_abs_diff_pct": 0.93,
+     "flips": [
+      "A8s"
+     ],
+     "loss_bb": 0.0043,
+     "reach": 0.1084
+    },
+    {
+     "node": "BTN calls UTG+1 jam",
+     "stack": 30,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.096
+    },
+    {
+     "node": "SB calls UTG+1 jam",
+     "stack": 20,
+     "X": 10,
+     "call_asym": 11.4,
+     "call_approx": 11.3,
+     "mean_abs_diff_pct": 0.19,
+     "flips": [],
+     "loss_bb": 0.0027,
+     "reach": 0.0867
+    },
+    {
+     "node": "BB calls UTG+1 jam",
+     "stack": 18,
+     "X": 10,
+     "call_asym": 12.6,
+     "call_approx": 12.4,
+     "mean_abs_diff_pct": 0.18,
+     "flips": [],
+     "loss_bb": 0.0026,
+     "reach": 0.0768
+    },
+    {
+     "node": "LJ calls UTG+2 jam",
+     "stack": 15,
+     "X": 15,
+     "call_asym": 4.8,
+     "call_approx": 7.1,
+     "mean_abs_diff_pct": 2.33,
+     "flips": [
+      "66",
+      "77",
+      "AQo",
+      "KQs",
+      "AJs"
+     ],
+     "loss_bb": 0.0189,
+     "reach": 0.074
+    },
+    {
+     "node": "HJ calls UTG+2 jam",
+     "stack": 60,
+     "X": 40,
+     "call_asym": 4.0,
+     "call_approx": 2.0,
+     "mean_abs_diff_pct": 1.99,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0815,
+     "reach": 0.0705
+    },
+    {
+     "node": "CO calls UTG+2 jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 6.3,
+     "call_approx": 14.3,
+     "mean_abs_diff_pct": 8.06,
+     "flips": [
+      "33",
+      "44",
+      "55",
+      "66",
+      "A9o",
+      "ATo",
+      "AJo",
+      "QJs",
+      "KQo",
+      "KTs",
+      "KJs",
+      "KQs",
+      "A7s",
+      "A8s",
+      "A9s",
+      "ATs"
+     ],
+     "loss_bb": 0.0691,
+     "reach": 0.0676
+    },
+    {
+     "node": "BTN calls UTG+2 jam",
+     "stack": 30,
+     "X": 30,
+     "call_asym": 4.1,
+     "call_approx": 3.1,
+     "mean_abs_diff_pct": 1.04,
+     "flips": [
+      "99"
+     ],
+     "loss_bb": 0.0226,
+     "reach": 0.0634
+    },
+    {
+     "node": "SB calls UTG+2 jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 4.8,
+     "call_approx": 5.3,
+     "mean_abs_diff_pct": 0.52,
+     "flips": [
+      "AQo"
+     ],
+     "loss_bb": 0.0053,
+     "reach": 0.0607
+    },
+    {
+     "node": "BB calls UTG+2 jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 5.0,
+     "call_approx": 6.3,
+     "mean_abs_diff_pct": 1.36,
+     "flips": [
+      "77",
+      "AQo",
+      "AJs"
+     ],
+     "loss_bb": 0.0051,
+     "reach": 0.0578
+    },
+    {
+     "node": "HJ calls LJ jam",
+     "stack": 60,
+     "X": 15,
+     "call_asym": 8.9,
+     "call_approx": 8.5,
+     "mean_abs_diff_pct": 0.42,
+     "flips": [
+      "55"
+     ],
+     "loss_bb": 0.002,
+     "reach": 0.1225
+    },
+    {
+     "node": "CO calls LJ jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 12.4,
+     "call_approx": 18.2,
+     "mean_abs_diff_pct": 5.86,
+     "flips": [
+      "22",
+      "33",
+      "A7o",
+      "A8o",
+      "A9o",
+      "KJo",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.0184,
+     "reach": 0.1115
+    },
+    {
+     "node": "BTN calls LJ jam",
+     "stack": 30,
+     "X": 15,
+     "call_asym": 8.9,
+     "call_approx": 8.5,
+     "mean_abs_diff_pct": 0.42,
+     "flips": [
+      "55"
+     ],
+     "loss_bb": 0.002,
+     "reach": 0.0978
+    },
+    {
+     "node": "SB calls LJ jam",
+     "stack": 20,
+     "X": 15,
+     "call_asym": 10.0,
+     "call_approx": 8.9,
+     "mean_abs_diff_pct": 1.12,
+     "flips": [
+      "ATo",
+      "A9s"
+     ],
+     "loss_bb": 0.0038,
+     "reach": 0.089
+    },
+    {
+     "node": "BB calls LJ jam",
+     "stack": 18,
+     "X": 15,
+     "call_asym": 11.4,
+     "call_approx": 10.4,
+     "mean_abs_diff_pct": 0.93,
+     "flips": [
+      "44",
+      "KQo"
+     ],
+     "loss_bb": 0.003,
+     "reach": 0.0801
+    },
+    {
+     "node": "CO calls HJ jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 12.4,
+     "call_approx": 22.4,
+     "mean_abs_diff_pct": 10.0,
+     "flips": [
+      "22",
+      "33",
+      "A5o",
+      "A6o",
+      "A7o",
+      "A8o",
+      "A9o",
+      "KTo",
+      "KJo",
+      "QTs",
+      "K9s",
+      "A2s",
+      "A3s",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.0461,
+     "reach": 0.0976
+    },
+    {
+     "node": "BTN calls HJ jam",
+     "stack": 30,
+     "X": 30,
+     "call_asym": 8.1,
+     "call_approx": 4.7,
+     "mean_abs_diff_pct": 3.35,
+     "flips": [
+      "66",
+      "77",
+      "AJo",
+      "AQo",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.054,
+     "reach": 0.0855
+    },
+    {
+     "node": "SB calls HJ jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 8.5,
+     "call_approx": 8.3,
+     "mean_abs_diff_pct": 0.16,
+     "flips": [],
+     "loss_bb": 0.0014,
+     "reach": 0.0786
+    },
+    {
+     "node": "BB calls HJ jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 9.9,
+     "call_approx": 10.6,
+     "mean_abs_diff_pct": 0.71,
+     "flips": [
+      "A9s"
+     ],
+     "loss_bb": 0.0021,
+     "reach": 0.0719
+    },
+    {
+     "node": "BTN calls CO jam",
+     "stack": 30,
+     "X": 8,
+     "call_asym": 26.1,
+     "call_approx": 26.0,
+     "mean_abs_diff_pct": 0.03,
+     "flips": [],
+     "loss_bb": 0.0006,
+     "reach": 0.1687
+    },
+    {
+     "node": "SB calls CO jam",
+     "stack": 20,
+     "X": 8,
+     "call_asym": 30.0,
+     "call_approx": 30.0,
+     "mean_abs_diff_pct": 0.02,
+     "flips": [],
+     "loss_bb": 0.0005,
+     "reach": 0.1248
+    },
+    {
+     "node": "BB calls CO jam",
+     "stack": 18,
+     "X": 8,
+     "call_asym": 34.9,
+     "call_approx": 34.9,
+     "mean_abs_diff_pct": 0.02,
+     "flips": [],
+     "loss_bb": 0.0004,
+     "reach": 0.0873
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 17.7,
+     "call_approx": 17.3,
+     "mean_abs_diff_pct": 0.35,
+     "flips": [
+      "A4s"
+     ],
+     "loss_bb": 0.001,
+     "reach": 0.1002
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 19.4,
+     "call_approx": 21.0,
+     "mean_abs_diff_pct": 1.58,
+     "flips": [
+      "22",
+      "A6o",
+      "K9s",
+      "A2s"
+     ],
+     "loss_bb": 0.0018,
+     "reach": 0.0825
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 35.3,
+     "call_approx": 35.3,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0004,
+     "reach": 0.118
+    }
+   ],
+   "R3": [
+    {
+     "node": "UTG first-in",
+     "stack": 25,
+     "X": 17.47,
+     "jam_asym": 8.4,
+     "jam_approx": 8.9,
+     "mean_abs_diff_pct": 0.52,
+     "flips": [
+      "55"
+     ],
+     "loss_bb": 0.0006,
+     "reach": 1.0
+    },
+    {
+     "node": "UTG+1 first-in",
+     "stack": 10,
+     "X": 9.69,
+     "jam_asym": 16.1,
+     "jam_approx": 16.0,
+     "mean_abs_diff_pct": 0.16,
+     "flips": [],
+     "loss_bb": 0.0011,
+     "reach": 0.9161
+    },
+    {
+     "node": "UTG+2 first-in",
+     "stack": 40,
+     "X": 20.45,
+     "jam_asym": 9.6,
+     "jam_approx": 10.0,
+     "mean_abs_diff_pct": 0.98,
+     "flips": [
+      "T9s",
+      "J9s",
+      "A5s"
+     ],
+     "loss_bb": 0.0007,
+     "reach": 0.769
+    },
+    {
+     "node": "LJ first-in",
+     "stack": 15,
+     "X": 13.12,
+     "jam_asym": 17.6,
+     "jam_approx": 17.3,
+     "mean_abs_diff_pct": 0.38,
+     "flips": [
+      "A5s"
+     ],
+     "loss_bb": 0.0007,
+     "reach": 0.695
+    },
+    {
+     "node": "HJ first-in",
+     "stack": 60,
+     "X": 17.24,
+     "jam_asym": 17.0,
+     "jam_approx": 18.0,
+     "mean_abs_diff_pct": 0.94,
+     "flips": [
+      "A5s",
+      "A7s"
+     ],
+     "loss_bb": 0.0006,
+     "reach": 0.5725
+    },
+    {
+     "node": "CO first-in",
+     "stack": 8,
+     "X": 8.0,
+     "jam_asym": 35.5,
+     "jam_approx": 35.5,
+     "mean_abs_diff_pct": 0.03,
+     "flips": [],
+     "loss_bb": 0.0002,
+     "reach": 0.4749
+    },
+    {
+     "node": "BTN first-in",
+     "stack": 30,
+     "X": 19.05,
+     "jam_asym": 32.7,
+     "jam_approx": 32.9,
+     "mean_abs_diff_pct": 0.18,
+     "flips": [],
+     "loss_bb": 0.0002,
+     "reach": 0.3062
+    },
+    {
+     "node": "SB first-in",
+     "stack": 20,
+     "X": 18.0,
+     "jam_asym": 57.3,
+     "jam_approx": 57.3,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0001,
+     "reach": 0.2059
+    },
+    {
+     "node": "UTG+1 calls UTG jam",
+     "stack": 10,
+     "X": 10,
+     "call_asym": 4.8,
+     "call_approx": 8.8,
+     "mean_abs_diff_pct": 3.99,
+     "flips": [
+      "55",
+      "66",
+      "77",
+      "AJo",
+      "AQo",
+      "KQs",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.0405,
+     "reach": 0.0839
+    },
+    {
+     "node": "UTG+2 calls UTG jam",
+     "stack": 40,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0799
+    },
+    {
+     "node": "LJ calls UTG jam",
+     "stack": 15,
+     "X": 15,
+     "call_asym": 4.3,
+     "call_approx": 4.9,
+     "mean_abs_diff_pct": 0.61,
+     "flips": [
+      "88"
+     ],
+     "loss_bb": 0.0066,
+     "reach": 0.0766
+    },
+    {
+     "node": "HJ calls UTG jam",
+     "stack": 60,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0733
+    },
+    {
+     "node": "CO calls UTG jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 5.5,
+     "call_approx": 11.0,
+     "mean_abs_diff_pct": 5.49,
+     "flips": [
+      "44",
+      "55",
+      "66",
+      "77",
+      "ATo",
+      "AJo",
+      "KQs",
+      "A9s",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.0539,
+     "reach": 0.0704
+    },
+    {
+     "node": "BTN calls UTG jam",
+     "stack": 30,
+     "X": 25,
+     "call_asym": 4.0,
+     "call_approx": 2.7,
+     "mean_abs_diff_pct": 1.31,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0248,
+     "reach": 0.0665
+    },
+    {
+     "node": "SB calls UTG jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 4.3,
+     "call_approx": 4.0,
+     "mean_abs_diff_pct": 0.26,
+     "flips": [
+      "AQs"
+     ],
+     "loss_bb": 0.0047,
+     "reach": 0.0638
+    },
+    {
+     "node": "BB calls UTG jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 4.4,
+     "call_approx": 4.5,
+     "mean_abs_diff_pct": 0.19,
+     "flips": [],
+     "loss_bb": 0.0044,
+     "reach": 0.0611
+    },
+    {
+     "node": "UTG+2 calls UTG+1 jam",
+     "stack": 40,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.1471
+    },
+    {
+     "node": "LJ calls UTG+1 jam",
+     "stack": 15,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.1329
+    },
+    {
+     "node": "HJ calls UTG+1 jam",
+     "stack": 60,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.12
+    },
+    {
+     "node": "CO calls UTG+1 jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 11.4,
+     "call_approx": 12.3,
+     "mean_abs_diff_pct": 0.93,
+     "flips": [
+      "A8s"
+     ],
+     "loss_bb": 0.0043,
+     "reach": 0.1084
+    },
+    {
+     "node": "BTN calls UTG+1 jam",
+     "stack": 30,
+     "X": 10,
+     "call_asym": 9.7,
+     "call_approx": 9.1,
+     "mean_abs_diff_pct": 0.62,
+     "flips": [
+      "ATo"
+     ],
+     "loss_bb": 0.0022,
+     "reach": 0.096
+    },
+    {
+     "node": "SB calls UTG+1 jam",
+     "stack": 20,
+     "X": 10,
+     "call_asym": 11.4,
+     "call_approx": 11.3,
+     "mean_abs_diff_pct": 0.19,
+     "flips": [],
+     "loss_bb": 0.0027,
+     "reach": 0.0867
+    },
+    {
+     "node": "BB calls UTG+1 jam",
+     "stack": 18,
+     "X": 10,
+     "call_asym": 12.6,
+     "call_approx": 12.4,
+     "mean_abs_diff_pct": 0.18,
+     "flips": [],
+     "loss_bb": 0.0026,
+     "reach": 0.0768
+    },
+    {
+     "node": "LJ calls UTG+2 jam",
+     "stack": 15,
+     "X": 15,
+     "call_asym": 4.8,
+     "call_approx": 7.1,
+     "mean_abs_diff_pct": 2.33,
+     "flips": [
+      "66",
+      "77",
+      "AQo",
+      "KQs",
+      "AJs"
+     ],
+     "loss_bb": 0.0189,
+     "reach": 0.074
+    },
+    {
+     "node": "HJ calls UTG+2 jam",
+     "stack": 60,
+     "X": 40,
+     "call_asym": 4.0,
+     "call_approx": 2.0,
+     "mean_abs_diff_pct": 1.99,
+     "flips": [
+      "99",
+      "TT",
+      "AKo"
+     ],
+     "loss_bb": 0.0815,
+     "reach": 0.0705
+    },
+    {
+     "node": "CO calls UTG+2 jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 6.3,
+     "call_approx": 14.3,
+     "mean_abs_diff_pct": 8.06,
+     "flips": [
+      "33",
+      "44",
+      "55",
+      "66",
+      "A9o",
+      "ATo",
+      "AJo",
+      "QJs",
+      "KQo",
+      "KTs",
+      "KJs",
+      "KQs",
+      "A7s",
+      "A8s",
+      "A9s",
+      "ATs"
+     ],
+     "loss_bb": 0.0691,
+     "reach": 0.0676
+    },
+    {
+     "node": "BTN calls UTG+2 jam",
+     "stack": 30,
+     "X": 30,
+     "call_asym": 4.1,
+     "call_approx": 3.1,
+     "mean_abs_diff_pct": 1.04,
+     "flips": [
+      "99"
+     ],
+     "loss_bb": 0.0226,
+     "reach": 0.0634
+    },
+    {
+     "node": "SB calls UTG+2 jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 4.8,
+     "call_approx": 5.3,
+     "mean_abs_diff_pct": 0.52,
+     "flips": [
+      "AQo"
+     ],
+     "loss_bb": 0.0053,
+     "reach": 0.0607
+    },
+    {
+     "node": "BB calls UTG+2 jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 5.0,
+     "call_approx": 6.3,
+     "mean_abs_diff_pct": 1.36,
+     "flips": [
+      "77",
+      "AQo",
+      "AJs"
+     ],
+     "loss_bb": 0.0051,
+     "reach": 0.0578
+    },
+    {
+     "node": "HJ calls LJ jam",
+     "stack": 60,
+     "X": 15,
+     "call_asym": 8.9,
+     "call_approx": 8.5,
+     "mean_abs_diff_pct": 0.42,
+     "flips": [
+      "55"
+     ],
+     "loss_bb": 0.002,
+     "reach": 0.1225
+    },
+    {
+     "node": "CO calls LJ jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 12.4,
+     "call_approx": 18.2,
+     "mean_abs_diff_pct": 5.86,
+     "flips": [
+      "22",
+      "33",
+      "A7o",
+      "A8o",
+      "A9o",
+      "KJo",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.0184,
+     "reach": 0.1115
+    },
+    {
+     "node": "BTN calls LJ jam",
+     "stack": 30,
+     "X": 15,
+     "call_asym": 8.9,
+     "call_approx": 8.5,
+     "mean_abs_diff_pct": 0.42,
+     "flips": [
+      "55"
+     ],
+     "loss_bb": 0.002,
+     "reach": 0.0978
+    },
+    {
+     "node": "SB calls LJ jam",
+     "stack": 20,
+     "X": 15,
+     "call_asym": 10.0,
+     "call_approx": 8.9,
+     "mean_abs_diff_pct": 1.12,
+     "flips": [
+      "ATo",
+      "A9s"
+     ],
+     "loss_bb": 0.0038,
+     "reach": 0.089
+    },
+    {
+     "node": "BB calls LJ jam",
+     "stack": 18,
+     "X": 15,
+     "call_asym": 11.4,
+     "call_approx": 10.4,
+     "mean_abs_diff_pct": 0.93,
+     "flips": [
+      "44",
+      "KQo"
+     ],
+     "loss_bb": 0.003,
+     "reach": 0.0801
+    },
+    {
+     "node": "CO calls HJ jam",
+     "stack": 8,
+     "X": 8,
+     "call_asym": 12.4,
+     "call_approx": 22.4,
+     "mean_abs_diff_pct": 10.0,
+     "flips": [
+      "22",
+      "33",
+      "A5o",
+      "A6o",
+      "A7o",
+      "A8o",
+      "A9o",
+      "KTo",
+      "KJo",
+      "QTs",
+      "K9s",
+      "A2s",
+      "A3s",
+      "A4s",
+      "A5s",
+      "A6s",
+      "A7s"
+     ],
+     "loss_bb": 0.0461,
+     "reach": 0.0976
+    },
+    {
+     "node": "BTN calls HJ jam",
+     "stack": 30,
+     "X": 30,
+     "call_asym": 8.1,
+     "call_approx": 4.7,
+     "mean_abs_diff_pct": 3.35,
+     "flips": [
+      "66",
+      "77",
+      "AJo",
+      "AQo",
+      "ATs",
+      "AJs"
+     ],
+     "loss_bb": 0.054,
+     "reach": 0.0855
+    },
+    {
+     "node": "SB calls HJ jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 8.5,
+     "call_approx": 8.3,
+     "mean_abs_diff_pct": 0.16,
+     "flips": [],
+     "loss_bb": 0.0014,
+     "reach": 0.0786
+    },
+    {
+     "node": "BB calls HJ jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 9.9,
+     "call_approx": 10.6,
+     "mean_abs_diff_pct": 0.71,
+     "flips": [
+      "A9s"
+     ],
+     "loss_bb": 0.0021,
+     "reach": 0.0719
+    },
+    {
+     "node": "BTN calls CO jam",
+     "stack": 30,
+     "X": 8,
+     "call_asym": 26.1,
+     "call_approx": 26.0,
+     "mean_abs_diff_pct": 0.03,
+     "flips": [],
+     "loss_bb": 0.0006,
+     "reach": 0.1687
+    },
+    {
+     "node": "SB calls CO jam",
+     "stack": 20,
+     "X": 8,
+     "call_asym": 30.0,
+     "call_approx": 30.0,
+     "mean_abs_diff_pct": 0.02,
+     "flips": [],
+     "loss_bb": 0.0005,
+     "reach": 0.1248
+    },
+    {
+     "node": "BB calls CO jam",
+     "stack": 18,
+     "X": 8,
+     "call_asym": 34.9,
+     "call_approx": 34.9,
+     "mean_abs_diff_pct": 0.02,
+     "flips": [],
+     "loss_bb": 0.0004,
+     "reach": 0.0873
+    },
+    {
+     "node": "SB calls BTN jam",
+     "stack": 20,
+     "X": 20,
+     "call_asym": 17.7,
+     "call_approx": 17.3,
+     "mean_abs_diff_pct": 0.35,
+     "flips": [
+      "A4s"
+     ],
+     "loss_bb": 0.001,
+     "reach": 0.1002
+    },
+    {
+     "node": "BB calls BTN jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 19.4,
+     "call_approx": 21.0,
+     "mean_abs_diff_pct": 1.58,
+     "flips": [
+      "22",
+      "A6o",
+      "K9s",
+      "A2s"
+     ],
+     "loss_bb": 0.0018,
+     "reach": 0.0825
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 18,
+     "X": 18,
+     "call_asym": 35.3,
+     "call_approx": 35.3,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0004,
+     "reach": 0.118
+    }
+   ]
+  }
+ },
+ {
+  "name": "A4",
+  "seats": [
+   "SB",
+   "BB"
+  ],
+  "stacks": [
+   20,
+   60
+  ],
+  "gap": 0.00991628501899881,
+  "rules": {
+   "R1": [
+    {
+     "node": "SB first-in",
+     "stack": 20,
+     "X": 20,
+     "jam_asym": 53.8,
+     "jam_approx": 53.8,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0038,
+     "reach": 1.0
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 60,
+     "X": 20,
+     "call_asym": 33.0,
+     "call_approx": 33.0,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0114,
+     "reach": 0.5379
+    }
+   ],
+   "R2": [
+    {
+     "node": "SB first-in",
+     "stack": 20,
+     "X": 20,
+     "jam_asym": 53.8,
+     "jam_approx": 53.8,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0038,
+     "reach": 1.0
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 60,
+     "X": 20,
+     "call_asym": 33.0,
+     "call_approx": 33.0,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0114,
+     "reach": 0.5379
+    }
+   ],
+   "R3": [
+    {
+     "node": "SB first-in",
+     "stack": 20,
+     "X": 20.0,
+     "jam_asym": 53.8,
+     "jam_approx": 53.8,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0038,
+     "reach": 1.0
+    },
+    {
+     "node": "BB calls SB jam",
+     "stack": 60,
+     "X": 20,
+     "call_asym": 33.0,
+     "call_approx": 33.0,
+     "mean_abs_diff_pct": 0.0,
+     "flips": [],
+     "loss_bb": 0.0114,
+     "reach": 0.5379
+    }
+   ]
+  }
+ }
+]
