@@ -5,7 +5,9 @@ parent's own tree (no menu override): fold / call (flat call -> flop) / 3-bet (-
 priority 1 (BB flat call of a single open) and the 3-bet-call terminal of the same pair; the 4-bet-and-later terminals are research.
     python3 tools/gto_spot/plan_a_flat_specs.py <stack> <arm>     (parent cfg data/gto_spot/plan_a/cfg_p<stack>_<arm>.json)
       -> data/gto_spot/plan_a/specs/p<stack>_flat_<opener>_vs_bb.json (+ p<stack>_flat_sb_limp_vs_bb)
-Quick grade: spec max_steps 8 (BTN, CO) or 3 (the other seats, user decision 2026-10-20); the result is made with tools/gto_spot/quick_spot.py (converged -> final step, else mean of last 4 steps)."""
+Quick grade: spec max_steps 8 (BTN, CO) or 3 (the other seats, user decision 2026-10-20); the result is made with tools/gto_spot/quick_spot.py (converged -> final step, else mean of last 4 steps).
+    python3 tools/gto_spot/plan_a_flat_specs.py <stack> <arm> <open_size> <id_suffix> <max_steps> <openers,...>
+      second open size of a multi-size parent (e.g. 40 o25 2.5 _o25 3 BTN,CO -> p40_flat_btn_vs_bb_o25.json), only the listed openers, no SB limp"""
 import json
 import os
 import sys
@@ -35,22 +37,28 @@ def line_for(cfg, opener, action):
 
 def main():
     stack, arm = int(sys.argv[1]), sys.argv[2]
+    size, suffix, cap_all, only = (float(sys.argv[3]), sys.argv[4], int(sys.argv[5]), sys.argv[6].split(',')) if len(sys.argv) > 6 else (None, '', None, None)
     cfgp = os.path.join(ROOT, f'data/gto_spot/plan_a/cfg_p{stack}_{arm}.json')
     cfg = json.load(open(cfgp))
     pdir = f'{CK}/p{stack}_{arm}'
     conv = os.path.join(ROOT, f'data/gto_spot/plan_a/parent_p{stack}_{arm}_convergence.json')
     gap = None
+    if not os.path.exists(conv):
+        conv = os.path.join(ROOT, f'data/gto_spot/plan_a/open25/parent_p{stack}_{arm}_convergence.json')
     if os.path.exists(conv):
         rows = [r for r in json.load(open(conv))['rows'] if r['gap_exact'] is not None]
         gap = rows[-1]['gap_exact'] if rows else None
     out = os.path.join(ROOT, 'data/gto_spot/plan_a/specs')
     os.makedirs(out, exist_ok=True)
     jobs = []
-    for op in OPENERS:
+    for op in (only or OPENERS):
         o = POS.index(op)
-        jobs.append((f'p{stack}_flat_{SLUG.get(op, op.lower())}_vs_bb', op, f'Raise {trim(cfg["open_raises_by_seat"][o][0])}',
-                     f'{op} opens {trim(cfg["open_raises_by_seat"][o][0])}, BB defends', 8 if op in FULL else 3))
-    jobs.append((f'p{stack}_flat_sb_limp_vs_bb', 'SB', 'Limp 1', 'SB limps, BB acts', 3))
+        sz = trim(size if size is not None else cfg["open_raises_by_seat"][o][0])
+        assert float(sz) in cfg['open_raises_by_seat'][o], (op, sz)
+        jobs.append((f'p{stack}_flat_{SLUG.get(op, op.lower())}_vs_bb{suffix}', op, f'Raise {sz}',
+                     f'{op} opens {sz}, BB defends', cap_all or (8 if op in FULL else 3)))
+    if only is None:
+        jobs.append((f'p{stack}_flat_sb_limp_vs_bb', 'SB', 'Limp 1', 'SB limps, BB acts', 3))
     for sid, op, act, what, cap in jobs:
         spec = {'id': sid, 'config': cfgp, 'dump': f'{pdir}/dump.jsonl', 'equity': f'{CK}/eq_table_202_1200.json', 'tables_dir': None,
                 'iterations': 3000, 'rule': 'v4', 'max_steps': cap, 'root_line': line_for(cfg, op, act),

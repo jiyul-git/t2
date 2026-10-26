@@ -52,21 +52,29 @@ def panel_setup():
 
 
 def retry_flops(term_file, flops_dir, panel, is_m, bad):
-    """standard amendment 11 (a): one retry at 3x the iteration budget for each unconverged board; the first artifact is kept"""
+    """amendment 11 (a), CFR+ variant (docs/GTO_AMENDMENT_CFRPLUS_RETRY.md): one retry with T2_ALGO=cfr+ at the same iteration budget and
+    target for each unconverged board; the first (DCFR) artifact is kept"""
     os.makedirs(os.path.join(flops_dir, 'first_attempt'), exist_ok=True)
+    procs = []   # the retries run in parallel (one thread each): a single 3x retry can take longer than the 2 h task limit
     for b in bad:
-        if os.path.exists(os.path.join(flops_dir, 'first_attempt', b['board'] + '.json')):
-            continue   # already retried once (e.g. the P144 pass whose flops step 0 of the 144-board loop reuses)
         src = os.path.join(flops_dir, b['board'] + '.json')
-        target = json.load(open(src))['provenance_key']['target_exploitability_pct_pot']   # same target as the first attempt
-        os.replace(src, os.path.join(flops_dir, 'first_attempt', b['board'] + '.json'))
-        env = dict(os.environ, T2_PANEL_BOARDS=b['board'], RAYON_NUM_THREADS='1',
+        first = os.path.join(flops_dir, 'first_attempt', b['board'] + '.json')
+        if os.path.exists(first) and os.path.exists(src):
+            continue   # already retried once (e.g. the P144 pass whose flops step 0 of the 144-board loop reuses)
+        if not os.path.exists(first):
+            os.replace(src, first)
+        # else: a retry killed by a relaunch (first attempt moved, no retry artifact): run it again
+        target = json.load(open(first))['provenance_key']['target_exploitability_pct_pot']   # same target as the first attempt
+        env = dict(os.environ, T2_PANEL_BOARDS=b['board'], RAYON_NUM_THREADS='1', T2_ALGO='cfr+',
                    T2_SOURCE_COMMIT=subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip())
         if is_m:
             env['T2_PANEL_MATRIX'] = '1'
-        subprocess.run([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
-                        str(3 * b['iterations']), str(target), '25'], env=env, check=True,
-                       stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT)
+        procs.append(subprocess.Popen([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
+                        str(b['iterations']), str(target), '25'], env=env,
+                       stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT))
+    for p_ in procs:
+        if p_.wait() != 0:
+            raise subprocess.CalledProcessError(p_.returncode, p_.args)
     return flop_failures(flops_dir)
 
 
@@ -80,7 +88,10 @@ def flop_failures(flops_dir):
     _, boards, _, _, _, _ = panel_setup()
     bad = []
     for b in boards:
-        d = json.load(open(os.path.join(flops_dir, b + '.json')))
+        f = os.path.join(flops_dir, b + '.json')
+        if not os.path.exists(f) and os.path.exists(os.path.join(flops_dir, 'first_attempt', b + '.json')):
+            f = os.path.join(flops_dir, 'first_attempt', b + '.json')   # retry interrupted: still counts as unconverged
+        d = json.load(open(f))
         if not (d['converged'] and d['exploitability_pct_pot'] <= d['provenance_key']['target_exploitability_pct_pot'] <= 0.6):
             bad.append({'board': b, 'exploitability_pct_pot': d['exploitability_pct_pot'], 'iterations': d['iterations']})
     return bad
@@ -251,7 +262,7 @@ class Loop:
                                     '--workers', os.environ.get('SPOT_PANEL_WORKERS', '4'), '--threads', '1'], check=True, stdout=open(sd + 'solve.log', 'a'), stderr=subprocess.STDOUT, env=env)
                     open(fd + '/done', 'w').write('ok')
                 bad = flop_failures(fd)
-                if bad and self.v4:   # amendment 11 (a): one retry at 3x the budget
+                if bad and self.v4:   # amendment 11 (a) CFR+ variant: one retry with CFR+ at the same budget
                     first = bad
                     bad = retry_flops(tf, fd, PANEL, is_m, first)
                     rep.setdefault('flop_retries', []).append({'terminal': j, 'first': first, 'after_retry': bad})

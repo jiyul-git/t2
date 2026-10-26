@@ -1,0 +1,36 @@
+{
+ "id": "p30v1_btn_vs_sb_3b40",
+ "config": "/home/user/t2/data/gto_spot/plan_a/cfg_p30_v1.json",
+ "dump": "/home/user/gto_ckpt/plan_a/p30_v1/dump.jsonl",
+ "equity": "/home/user/gto_ckpt/plan_a/eq_table_202_1200.json",
+ "tables_dir": null,
+ "iterations": 3000,
+ "rule": "v4",
+ "max_steps": 3,
+ "root_line": [
+  "UTG:Fold",
+  "UTG+1:Fold",
+  "UTG+2:Fold",
+  "LJ:Fold",
+  "HJ:Fold",
+  "CO:Fold",
+  "BTN:Raise 2",
+  "SB:3-bet 8",
+  "BB:Fold"
+ ],
+ "menu": {
+  "max_raises": 4,
+  "fourbet_ip": 2.15,
+  "fourbet_oop": 2.35,
+  "fivebet": "jam"
+ },
+ "tree_label": "Plan A p30 v1 (quick): 9-max hand-start 30 bb (cfg.stack 29.88888888888889), ante 1/9, opens 2.0, 3-bet 3.0x / blinds 3.5x/4.0x; SB open 3.0 bb, SB limp allowed; open jam excluded; parent max_raises 3, 4-bet jam only, static continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam; symmetric stacks",
+ "parent": {
+  "parent": "Plan A parent p30_v1 (static continuation)",
+  "gap_total_bb": 0.009128066613629627,
+  "source": "data/gto_spot/plan_a/parent_p30_v1_convergence.json"
+ },
+ "status_cap": "conditional_verified",
+ "status_cap_reason": "Plan A: subgame menu differs from the parent tree (4-bet jam only), parent continuation static, arriving ranges from the parent; quick grade, symmetric stacks",
+ "out": "/home/user/gto_ckpt/spots/p30v1_btn_vs_sb_3b40/spot.json"
+}
