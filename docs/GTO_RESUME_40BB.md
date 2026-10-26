@@ -1,4 +1,16 @@
-# GTO resume manual — 40 bb flat-call spots, 100 bb parent, 60 bb quick (written 2026-10-21 by session 01BLRH..., "Gto제작")
+# GTO resume manual — 40 bb flat-call spots, 100 bb parent, 60 bb quick (written 2026-10-21 by session 01BLRH...)
+
+> **STATUS 2026-10-26 (read this first).** This manual's section 2 chain was STOPPED on 2026-10-21 21:37Z (this session's container idled, then restarted) and is NOT to be
+> relaunched: other sessions finished the work in the meantime. Current facts, from the remote branches on 2026-10-26:
+> - 40 bb flat-call tail (UTG, UTG+1, UTG+2, SB limp) was finished by the coordinator session (012qfUk9...): branches `claude/p40_flat_tail_20261021`, `claude/p40_flat_utg2_20261024`,
+>   `claude/p40_sblimp_cfrplus_20261023` (SB limp redone with CFR+ in the amendment-11(a) retry, user delegated the approval to the coordinator on 2026-10-23). This session's records
+>   BTN / CO / SB / HJ / LJ (data/gto_spot/quick/ on this branch) are the ones in use. All nine 40 bb flat-call records, s30, s40, s100 are copied into test3 `data/gto_records/*.json.gz` (MANIFEST.tsv).
+> - 30 bb flat-call and 3-bet-call spots, the 100 bb parent (400-iteration cap, exact gap 0.01689 bb, branch `claude/p100_parent_20261024`), the open-size 2.0 / 2.5 parents (`claude/open_sizes_20261024`) and the 2.5 bb flat-call
+>   defence (`claude/flat_open25_20261025`) were done or are running on other branches. 17 finished calculation branches are archived in `claude/archive-gto-runs-20261024` (ARCHIVE.md).
+> - Connection to the T2 bot and the open decisions (ICM push/fold, open size 2.0 vs 2.5, 3-bet size choice) are tracked in `docs/T2_HANDOFF.md` section 8 (branch `claude/connect_open25_co40_20261025`).
+> - Section 4 below (100 bb parent: resume from checkpoint) is obsolete; sections 0, 1, 6 and 7 (rules, setup, limit pattern, file map) still hold for any new calculation.
+> - If you need to compute more here, first check the branches above so nothing is duplicated; the local progress backups under `data/gto_spot/plan_a/progress/` for utg2 / lj are stale.
+
 
 For whoever continues this work after the session or its container is gone (weekly limit warning, reset 2026-10-26 02:00Z). Read this file,
 then `docs/GTO_SESSIONS_BOARD.md` (status + user decisions) and `data/gto_spot/quick/README.md` (file map). The T2-side connection manual is

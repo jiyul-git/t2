@@ -146,3 +146,10 @@ docs/GTO_RESUME_40BB.md: fresh-container setup, the exact restart commands for t
 data/gto_spot/plan_a/progress/, the 100 bb parent (paused; checkpoint is not in the repo), 60 bb quick summary, 2 h-limit pattern, rules and standards. Updated after every finished spot.
 New scripts: tools/gto_spot/plan_a_install_p40.sh, plan_a_restore_progress.sh; plan_a_backup_progress.sh now also keeps the small per-step inputs. 40 bb parent dump on the branch:
 data/gto_spot/plan_a/transfer/p40_v1_dump.jsonl.gz (sha256 in SHA256SUMS).
+
+## Status 2026-10-26 (01BLRH..., survey of the remote branches after this session's container idled 2026-10-21 -> 2026-10-26)
+This board was not updated by the other sessions (the coordinator 012qfUk9 cannot push here). What happened since 2026-10-21 (from their branches; details in `docs/T2_HANDOFF.md` section 8 on
+`claude/connect_open25_co40_20261025`): all nine 40 bb flat-call records exist (BTN, CO, SB, HJ, LJ from this branch; UTG, UTG+1, UTG+2, SB limp by the coordinator, SB limp redone with CFR+), the 30 bb flat-call spots
+and the 3-bet-call spots for 30 / 40 bb are done (CO / UTG+1 vs SB, UTG vs BTN), the 100 bb parent is done (400-iteration cap, exact gap 0.01689 bb), parents with open sizes 2.0 / 2.5 are done for 30 and 40 bb,
+the 2.5 bb flat-call defence (BTN, CO at 40 bb first) runs on `claude/flat_open25_20261025`, an ICM push/fold plan + pilot is on `claude/icm_pushfold_20261024` (waiting for the user's decision), and the T2 session connected
+first entry, lone-shove calls, 3-bet-jam calls, open / 3-bet facing attacks, BB flat-call defence, 3-bet-facing opener and BB vs SB limp (T2 branch `test3`). This session's own chain (UTG+2 at step 0-1) was stopped and is not to be relaunched.
