@@ -37,6 +37,11 @@
    "iterations": 175,
    "gap_skip_1e-9": 0.01638928868968553,
    "gap_exact": null
+  },
+  {
+   "iterations": 200,
+   "gap_skip_1e-9": 0.012856073007498268,
+   "gap_exact": 0.0128703255255148
   }
  ]
 }
