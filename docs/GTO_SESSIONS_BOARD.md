@@ -158,3 +158,12 @@ first entry, lone-shove calls, 3-bet-jam calls, open / 3-bet facing attacks, BB 
 The 17 finished calculation branches listed in ARCHIVE.md of `claude/archive-gto-runs-20261024` were deleted from origin by the user (Termux, `git push origin --delete ...`; deletes from the
 agent sandbox are denied with HTTP 403). Checked before deleting: each branch tip equalled the archived commit and is a parent of the archive commit (17 / 17), so everything stays reachable from the archive branch
 (`git fetch origin claude/archive-gto-runs-20261024 && git branch <name> <commit>`). Checked after: none of the 17 remains on origin; the archive branch is intact.
+
+## Branch cleanup, second round 2026-10-26 (01BLRH..., on the user's instruction)
+36 older branches (31 chatgpt/*, test / test2 / test-online / telemetry/live, ccr-51887278-cposgm) were fetched and compared with master, test3 and the census branch (file by file; PR states from GitHub).
+12 were verified as reflected and deleted by the user: chatgpt/mini-cfr-solver-20260928, gto-30bb-uniform-pilot-20261003, test, p10-postflop-mc-none-consumer, p11-replan-c4, p9-pr30-final-independent, p9-pr30-mc-independent-audit,
+p8-pr27-independent-epoch-range-audit, p13-pr24-partial-roster-lifecycle, p13-pr18-preview, hand130-range-conditional-v1, test3-local-browser-play. Their tips are the 12 parents of `claude/archive-old-branches-20261026` (ARCHIVE.md has the reason per branch).
+Kept on purpose: the 4 branches with open draft PRs (#35-#38: p17-bot-motion-clock, p17-sitout-hands, p17-plan-deviation-frequency, p5-multiway-badcall-gate), 10 closed review / audit branches whose documents exist nowhere else
+(hand130-p5-pr16-review, hand130-range-posterior-audit, p5-pr21-combined-review, p5-pr27-final-independent, p5-review-p9-mc, p8-pr21-actor-bf-provenance, p8-pr21-bf-mc-review, p8-review-p9-mc-contract, p13-p8-pr23-pr24-provenance-epoch, p15-pr27-remote-audit),
+6 old GTO database experiments (gto-reference, gto-external-harvest, gto-db-worker-v1, gto-exact-bba-audit, gto-unified-lookup-v1, gto-worker-parallel-v2: data/gto_db, gto_public, gto_external exist nowhere else),
+ccr-51887278-cposgm (30 bb RFI diagnostic files), test2 / test-online (online_server prototype), telemetry/live. The user decides about these later.
