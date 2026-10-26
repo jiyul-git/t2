@@ -3,7 +3,9 @@
 // 평소 두 손은 화면 밖. 오른손 위주. 두 손은 들춰보기와 칩이 많은 올인만. '팔짱' 스타일은 예외(늘 보임).
 // 손은 임시 상자다. HandRig 자리만 잡아 두고, 그림·모델이 오면 몸통만 바꾼다.
 // 단위는 m. 테이블 윗면 y=0.75, 내 쪽 레일이 z=0, 테이블은 -z 로 뻗는다.
-import * as THREE from '../vendor/three-0.160.0.module.min.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 const Q = new URLSearchParams(location.search);
 const SPEED = Math.max(0.05, Number(Q.get('speed') || 1));    // 느리게 돌려 보기
@@ -220,6 +222,7 @@ const handSkin = toon(CHARS[charIdx][1]), handSleeve = toon(CHARS[charIdx][2]);
 function setChar(i) {
   charIdx = (i + 9) % 9;
   handSkin.color.setHex(CHARS[charIdx][1]); handSleeve.color.setHex(CHARS[charIdx][2]);
+  [RH, LH].forEach(showHandModel);
   const b = document.querySelector('[data-act="char"]'); if (b) b.textContent = '손: ' + CHARS[charIdx][0];
 }
 function makeHand(side) {
@@ -233,11 +236,59 @@ function makeHand(side) {
   // 팔뚝은 짧고 낮게 — 손목에서 내 쪽 레일(팔꿈치)로 거의 수평으로 간다. 길면 화면을 가린다.
   const arm = outlined(new THREE.CylinderGeometry(0.025, 0.031, 0.22, 18), sleeve, 1.06);
   arm.rotation.x = Math.PI / 2 - 0.12; arm.position.set(0, 0.012, 0.15);
-  g.add(palm, fingers, thumb, arm);
+  // 임시 상자는 ph 묶음에 두고, 손 모델이 있는 캐릭터면 모델로 바꿔 보인다
+  const ph = new THREE.Group(); ph.add(palm, fingers, thumb, arm); g.add(ph);
+  g.userData = { side, ph, model: null, mixer: null, actions: {}, cur: null };
   scene.add(g);
   return g;
 }
 const RH = makeHand(1), LH = makeHand(-1);
+
+// ---------- 손 모델 (tools/art/make_paw.py 로 만든 GLB, 본·자세 포함) ----------
+// 지금은 호랑이 앞발 하나. 다른 캐릭터는 모델이 오기 전까지 색만 바꾼 임시 상자다.
+const HAND_MODELS = { '호랑이': 'models/tiger_paw.glb' };
+const skinOutlineMat = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide });
+skinOutlineMat.onBeforeCompile = sh => {
+  sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  transformed += normal * 0.0028;');
+};
+function attachPaw(h, src, clips) {
+  const model = h.userData.side > 0 ? src : SkeletonUtils.clone(src);
+  model.position.z = 0.030;                      // 손바닥 가운데를 손 그룹 원점에
+  if (h.userData.side < 0) model.scale.x = -1;   // 왼손 = 오른손 거울
+  const lines = [];
+  model.traverse(o => {
+    if (!o.isSkinnedMesh) return;
+    o.material = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: grad });
+    o.castShadow = true; o.frustumCulled = false;
+    const line = new THREE.SkinnedMesh(o.geometry, skinOutlineMat);
+    line.bind(o.skeleton, o.bindMatrix); line.frustumCulled = false;
+    lines.push([o.parent, line]);
+  });
+  lines.forEach(([p, l]) => p.add(l));
+  h.add(model);
+  const mixer = new THREE.AnimationMixer(model);
+  clips.forEach(c => { const a = mixer.clipAction(c); h.userData.actions[c.name] = a; });
+  Object.assign(h.userData, { model, mixer });
+  const a = h.userData.actions.rest; if (a) { a.play(); h.userData.cur = a; }
+  showHandModel(h);
+}
+function showHandModel(h) {
+  const on = !!h.userData.model && !!HAND_MODELS[CHARS[charIdx][0]];
+  if (h.userData.model) h.userData.model.visible = on;
+  h.userData.ph.visible = !on;
+}
+function setHandPose(h, name, ms = 200) {
+  const u = h.userData, next = u.actions[name];
+  if (!next || next === u.cur) return;
+  next.reset().setEffectiveWeight(1).play();
+  if (u.cur) u.cur.crossFadeTo(next, Math.max(0.05, ms / 1000), false);
+  u.cur = next;
+}
+new GLTFLoader().load(HAND_MODELS['호랑이'], gl => { attachPaw(RH, gl.scene, gl.animations); attachPaw(LH, gl.scene, gl.animations); },
+  undefined, err => console.warn('손 모델을 못 불러와 임시 상자를 쓴다', err));
+// 동작별 손 자세: 쥐기(셔플), 편 손(밀기·정리·폴드·올인·체크), 집기(들춰보기·프로텍터). 끝나면 rest.
+const ACT_POSE = { shuffle: 'grip', bet: 'flat', allin: 'flat', allin_s: 'flat', fold: 'flat', tidy: 'flat',
+  check: 'point', peek: 'pinch', protector: 'pinch', flip: 'pinch', deal: 'rest', chipreset: 'rest' };
 // 사양 7장: 평소에는 두 손 모두 화면 밖(아래). 동작할 때만 들어왔다가 내려간다.
 // 1인칭 카메라에서 테이블 높이의 화면 아래 끝은 z≈-0.2 이므로, z>-0.1 이면 보이지 않는다.
 const HIDE = {
@@ -554,22 +605,28 @@ const ACTS = {
   char: () => setChar(charIdx + 1),
   style: () => { const i = CHECK_STYLES.findIndex(x => x[0] === checkStyle); setCheckStyle(CHECK_STYLES[(i + 1) % CHECK_STYLES.length][0]); },
 };
-document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
-  const a = b.dataset.act;
-  ACTS[a]();
-}));
+function act(a) {
+  const pose = ACT_POSE[a];
+  if (pose) [RH, LH].forEach(h => setHandPose(h, pose, 180));
+  const r = ACTS[a]();
+  if (pose && r && r.then) r.then(() => { if (busy === 0) [RH, LH].forEach(h => setHandPose(h, 'rest', 240)); });
+}
+document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
   view = b.dataset.view; applyView();
   document.querySelectorAll('[data-view]').forEach(x => x.classList.toggle('on', x === b));
 }));
 
 // 스크린샷·검사용 손잡이
-window.__t2motion = { run: (a) => { ACTS[a](); }, style: setCheckStyle, view: (v) => { view = v; applyView(); render(); }, idle: () => busy === 0,
+window.__t2motion = { ready: () => !!RH.userData.mixer, run: (a) => { act(a); }, style: setCheckStyle, view: (v) => { view = v; applyView(); render(); }, idle: () => busy === 0,
   step: async (ms) => { const n = Math.max(1, Math.round(ms / 16)); for (let i = 0; i < n; i++) { vt += ms / n; tick(); await Promise.resolve(); await Promise.resolve(); } render(); } };
 
 // ---------- 루프 ----------
+let lastT = null;
 function tick() {
   const now = clock();
+  const dt = lastT === null ? 0 : Math.min(0.1, (now - lastT) / 1000); lastT = now;
+  [RH, LH].forEach(h => { if (h.userData.mixer) h.userData.mixer.update(dt * SPEED); });
   for (const tw of tweens) {
     const t = Math.min(1, (now - tw.t0) / tw.ms);
     tw.fn(tw.e(t));
