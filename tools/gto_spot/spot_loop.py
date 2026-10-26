@@ -55,22 +55,32 @@ def retry_flops(term_file, flops_dir, panel, is_m, bad):
     """amendment 11 (a), CFR+ variant (docs/GTO_AMENDMENT_CFRPLUS_RETRY.md): one retry with T2_ALGO=cfr+ at the same iteration budget and
     target for each unconverged board; the first (DCFR) artifact is kept"""
     os.makedirs(os.path.join(flops_dir, 'first_attempt'), exist_ok=True)
+    # user-approved larger retry (2026-10-26, p30_flat_sb_vs_bb): RETRY_ITER_MULT=3 redoes a CFR+ retry that stopped short of
+    # 3x the first-attempt budget; RETRY_THREADS sets the threads of each retry (default 1)
+    mult = float(os.environ.get('RETRY_ITER_MULT', '1'))
+    threads = os.environ.get('RETRY_THREADS', '1')
     procs = []   # the retries run in parallel (one thread each): a single 3x retry can take longer than the 2 h task limit
     for b in bad:
         src = os.path.join(flops_dir, b['board'] + '.json')
         first = os.path.join(flops_dir, 'first_attempt', b['board'] + '.json')
+        iters = int(b['iterations'] * mult)
         if os.path.exists(first) and os.path.exists(src):
-            continue   # already retried once (e.g. the P144 pass whose flops step 0 of the 144-board loop reuses)
+            want = int(json.load(open(first))['iterations'] * mult)
+            if mult > 1 and json.load(open(src))['iterations'] < want:
+                os.replace(src, os.path.join(flops_dir, b['board'] + '.cfrplus%d.json' % json.load(open(src))['iterations']))
+                iters = want
+            else:
+                continue   # already retried once (e.g. the P144 pass whose flops step 0 of the 144-board loop reuses)
         if not os.path.exists(first):
             os.replace(src, first)
         # else: a retry killed by a relaunch (first attempt moved, no retry artifact): run it again
         target = json.load(open(first))['provenance_key']['target_exploitability_pct_pot']   # same target as the first attempt
-        env = dict(os.environ, T2_PANEL_BOARDS=b['board'], RAYON_NUM_THREADS='1', T2_ALGO='cfr+',
+        env = dict(os.environ, T2_PANEL_BOARDS=b['board'], RAYON_NUM_THREADS=threads, T2_ALGO='cfr+',
                    T2_SOURCE_COMMIT=subprocess.run(['git', '-C', ROOT, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip())
         if is_m:
             env['T2_PANEL_MATRIX'] = '1'
         procs.append(subprocess.Popen([os.path.join(ROOT, 'vendor/gtopen/target/release/examples/t2_cont_panel'), term_file, MENU, panel, flops_dir,
-                        str(b['iterations']), str(target), '25'], env=env,
+                        str(iters), str(target), '25'], env=env,
                        stdout=open(os.path.join(flops_dir, 'logs', b['board'] + '.retry.log'), 'w'), stderr=subprocess.STDOUT))
     for p_ in procs:
         if p_.wait() != 0:
