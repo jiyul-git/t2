@@ -28,8 +28,10 @@ a = G.first_in('UTG', 9, 15, ['Kd', 'Qs'])['jam']
 b = G.first_in('UTG', 9, 20, ['Kd', 'Qs'])['jam']
 m = G.first_in('UTG', 9, 17.5, ['Kd', 'Qs'])['jam']
 check('interpolation midpoint', abs(m - (a + b) / 2) < 1e-9)
-check('out of range low/high', G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
-      and G.first_in('UTG', 9, 101.0, ['Ah', 'Ad']) is None)
+check('out of range low -> None, deeper than 100bb -> 100bb values',
+      G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
+      and G.first_in('UTG', 9, 150.0, ['Kh', '9c']) == G.first_in('UTG', 9, 100.0, ['Kh', '9c'])
+      and G.first_in('UTG', 9, 150.0, ['Kh', '9c']) is not None)
 i60 = d['classes'].index('AKo')
 check('60bb BB vs BTN open AKo 3-bet = record',
       abs(G.aggr_vs_open('BTN', 'BB', 9, 60, ['Ah', 'Kc'])['r3'] - d['vs_open']['60']['BTN>BB']['r3'][i60]) < 1e-9)
@@ -81,8 +83,13 @@ check('money pressure -> None',
 check('money drive only -> covered',
       P.gto_pf_first_in_choice(prof, 'SB', 9.39, ['Ah', '2c'], r, [8.89], 1.0, 9, True,
                                {'pressure': 0.0, 'range_factor': 1.29}) == 'jam')
-check('deep stack -> None', P.gto_pf_first_in_choice(prof, 'CO', 110, ['Ah', '2c'], r,
-                                                      [110], 1.0, 9, True) is None)
+check('150bb CO AA -> 100bb values (2026-10-26)',
+      P.gto_pf_first_in_choice(prof, 'CO', 150, ['Ah', 'Ad'], r, [150], 1.0, 9, True) == 'open')
+check('GTO open size: 2.0bb below 60bb, 2.5bb from 60bb, SB 3.0 (2026-10-26)',
+      P.open_decision(prof, 'CO', 40, ['Ah', 'Ad'], r, [40])[1] == 2.0
+      and P.open_decision(prof, 'CO', 75, ['Ah', 'Ad'], r, [75])[1] == 2.5
+      and P.open_decision(prof, 'CO', 150, ['Ah', 'Ad'], r, [150])[1] == 2.5
+      and P.open_decision(prof, 'CO', 150, ['Ah', 'Ad'], r, [40])[1] == 2.0)
 check('75bb CO AA -> covered since 100bb bucket (2026-10-24)',
       P.gto_pf_first_in_choice(prof, 'CO', 75, ['Ah', 'Ad'], r, [75], 1.0, 9, True) == 'open')
 # BB vs SB jam 10bb: K5o always calls in the record

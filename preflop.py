@@ -417,6 +417,8 @@ def take_timing_bound():
 # 범위 밖은 기존 판단(성향·계산 오차)이 그대로 맡는다. T2_GTO_PF=0 이면 끈다.
 GTO_PF_ON = os.environ.get('T2_GTO_PF', '1') != '0'
 GTO_PF_BF_MAX = 1.05
+GTO_PF_OPEN_DEEP_FROM = 60.0   # 이 유효 스택(bb) 이상이면 기준 오픈 크기를
+GTO_PF_OPEN_DEEP_BB = 2.5      # 2.5bb 로 친다(사용자 결정 2026-10-26)
 _POSTED_BB = {'SB': 0.5, 'BB': 1.0}
 _GPF_MOD = [False, None]
 
@@ -649,7 +651,13 @@ def open_decision(prof, pos, bb, hand, rng, behind_stacks=None,
         # 기준 범위 안의 오픈은 계산기 트리와 같은 크기(2.0bb, SB 3.0bb)로 친다(사용자 결정
         # 2026-10-20). 그래야 뒤 자리의 수비·3벳 기준(2.0bb 오픈을 받은 경우)이 맞는다.
         # 다른 크기는 계산기가 그 크기를 풀고 나서 연다.
-        return ('raise', 3.0 if pos == 'SB' else 2.0)
+        # 60bb 이상은 2.5bb(사용자 결정 2026-10-26). 그 깊이의 수비·3벳 기준(s60·s100)은
+        # 아직 2.0bb 오픈으로 푼 값이라, 2.5 부모 기록이 오면 다시 연결한다.
+        if pos == 'SB':
+            return ('raise', 3.0)
+        return ('raise', GTO_PF_OPEN_DEEP_BB
+                if gto_pf_open_eff_bb(pos, bb, behind_stacks, ante) >= GTO_PF_OPEN_DEEP_FROM
+                else 2.0)
     # 분산 추구: 실력 열세를 자각한 사람(또는 틸트난 사람)은 딥스택에서도
     # 프리플랍 쇼브로 갈 수 있다. 이것은 open_form 의 **계획 선택** 입력이다.
     # P3/P4의 defend_decision 에 있던 variance_seek 는 dead value 였지만,

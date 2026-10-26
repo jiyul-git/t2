@@ -8,7 +8,9 @@ pf10/15/20/25 와 s30/s40/s60/s100 기록에서 만든다). 9맥스, 안테 합�
 (차트 지식), ICM/버블 체감, 성향 이탈은 preflop.py 가 정한다.
 
 조회 규칙
-  - 스택: 유효 스택(bb, 핸드 시작 기준). 10~60bb(±0.25) 밖이면 None(기존 경로).
+  - 스택: 유효 스택(bb, 핸드 시작 기준). 10bb(-0.25) 미만이면 None(기존 경로).
+    가장 깊은 버킷(100bb)보다 깊으면 그 버킷 값을 쓴다(사용자 결정 2026-10-26:
+    standard 시작 150bb 는 100bb 로 대체 — 평균이 100bb 를 넘는 것은 L1 뿐이다).
     버킷 사이는 선형 보간(40~60 사이는 두 버킷의 직선 보간). 한쪽 버킷에 노드가 없으면 None.
   - 좌석: 6~9인 테이블은 '뒤에 남은 인원'이 같은 9맥스 자리로 옮긴다.
     SB/BB 는 그대로. 5인 이하와 노안테는 None.
@@ -63,7 +65,7 @@ def covered(eff_bb, seats, ante):
     d = _load()
     b = d['buckets']
     return (bool(ante) and int(seats) in SEATS_OK and eff_bb is not None
-            and b[0] - EDGE_BB <= float(eff_bb) <= b[-1] + EDGE_BB)
+            and b[0] - EDGE_BB <= float(eff_bb))
 
 
 def _interp(table, key, eff_bb, pick):
