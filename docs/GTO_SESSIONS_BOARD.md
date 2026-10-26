@@ -153,3 +153,8 @@ This board was not updated by the other sessions (the coordinator 012qfUk9 canno
 and the 3-bet-call spots for 30 / 40 bb are done (CO / UTG+1 vs SB, UTG vs BTN), the 100 bb parent is done (400-iteration cap, exact gap 0.01689 bb), parents with open sizes 2.0 / 2.5 are done for 30 and 40 bb,
 the 2.5 bb flat-call defence (BTN, CO at 40 bb first) runs on `claude/flat_open25_20261025`, an ICM push/fold plan + pilot is on `claude/icm_pushfold_20261024` (waiting for the user's decision), and the T2 session connected
 first entry, lone-shove calls, 3-bet-jam calls, open / 3-bet facing attacks, BB flat-call defence, 3-bet-facing opener and BB vs SB limp (T2 branch `test3`). This session's own chain (UTG+2 at step 0-1) was stopped and is not to be relaunched.
+
+## Branch cleanup 2026-10-26 (01BLRH..., on the user's instruction)
+The 17 finished calculation branches listed in ARCHIVE.md of `claude/archive-gto-runs-20261024` were deleted from origin by the user (Termux, `git push origin --delete ...`; deletes from the
+agent sandbox are denied with HTTP 403). Checked before deleting: each branch tip equalled the archived commit and is a parent of the archive commit (17 / 17), so everything stays reachable from the archive branch
+(`git fetch origin claude/archive-gto-runs-20261024 && git branch <name> <commit>`). Checked after: none of the 17 remains on origin; the archive branch is intact.
