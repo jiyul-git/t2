@@ -167,3 +167,9 @@ Kept on purpose: the 4 branches with open draft PRs (#35-#38: p17-bot-motion-clo
 (hand130-p5-pr16-review, hand130-range-posterior-audit, p5-pr21-combined-review, p5-pr27-final-independent, p5-review-p9-mc, p8-pr21-actor-bf-provenance, p8-pr21-bf-mc-review, p8-review-p9-mc-contract, p13-p8-pr23-pr24-provenance-epoch, p15-pr27-remote-audit),
 6 old GTO database experiments (gto-reference, gto-external-harvest, gto-db-worker-v1, gto-exact-bba-audit, gto-unified-lookup-v1, gto-worker-parallel-v2: data/gto_db, gto_public, gto_external exist nowhere else),
 ccr-51887278-cposgm (30 bb RFI diagnostic files), test2 / test-online (online_server prototype), telemetry/live. The user decides about these later.
+
+## 30 bb SB open vs BB (p30_flat_sb_vs_bb), 2026-10-26 (01BLRH...)
+The loop stopped at step 1 (amendment 7): flop KcTd9h at the 3-bet 10.5 bb call terminal stayed above target after the approved CFR+ retry at the same budget (DCFR 4.16 % pot -> CFR+ 0.675 % pot, target 0.3 %).
+Record `data/gto_spot/quick/p30_flat_sb_vs_bb.json` = mean of steps 0-1, flagged LOW QUALITY (`stopped_at_flop_failure`; BB root: fold 16.7 / call 74.8 / 3-bet 10.5 0.7 / jam 7.8 %; EV loss of the mean 0.09-0.14 bb; 654 unstable combos).
+Deviation, for the coordinator / user to approve or reject: that single flop is being re-solved with CFR+ at 3x the budget (3000 iterations; neither approved variant: 3x DCFR, or CFR+ at the same budget). If it converges the loop is continued
+from step 1 (steps 2 follows) and the record is replaced; both verdicts are kept (`state.stopped_at_step1.json`, the 1000-iteration artifact in first_attempt/KcTd9h.cfrplus1000.json).

@@ -119,12 +119,19 @@ def main():
                       'ev_loss_of_mean_vs_each_step_bb': [None if x is None else round(x, 4) for x in losses],
                       'unstable_combos': round(float(reach[flip].sum()), 2),
                       'hands': hands})
+    import glob
+    accepted = {}
+    for k in steps:
+        for f in glob.glob(sroot + f'step{k}/term*_flops/accepted_above_target.json'):
+            for b, v in json.load(open(f)).items():
+                accepted[f'step{k}/{os.path.basename(os.path.dirname(f))}/{b}'] = v
     rec = {'schema': 'spot_quick_v1', 'id': sid, 'status': 'quick', 'db_promotion': 'forbidden',
            'decision': 'user 2026-10-19: fill fast first (24-board loop; cycling -> mean of the last 4 steps; no P144), refine later',
            'tree': spec.get('tree_label'), 'stack_assumption': 'symmetric stacks (all seats at the bucket stack); lookup by effective stack',
            'method': method, 'steps': steps, 'loop_converged': converged, 'final_step': last,
            'stop_reason': st.get('stop_reason'),
            'stopped_at_step_cap': bool(capped),
+           'flops_accepted_above_target': accepted or None,   # user exception 2026-10-26: plateaued flops (<= 0.7 % pot after the 3x CFR+ retry) accepted
            'status_note': ('stopped at the step cap (' + str(last + 1) + ' steps), not converged; mean of the last ' + str(len(steps)) + ' steps (user decision 2026-10-20)') if capped else None,
            'notes': ['frequencies at off_path nodes are not meaningful (opponent arrives with < 1 combo)',
                      'deep nodes (after the 4-bet) are research; connection uses the 3-bet response only',
