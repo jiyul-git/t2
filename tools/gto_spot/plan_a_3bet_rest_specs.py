@@ -13,7 +13,8 @@ sys.path.insert(0, HERE)
 import plan_a_specs as P  # noqa: E402
 
 ROOT, CK, POS = P.ROOT, P.CK, P.POS
-ARM = 'v1'
+ARM = os.environ.get('PLAN_A_ARM', 'v1')            # 'o25' = 60 / 100 bb parents with open 2.5 (ids p<stack>v1_<pair>..._o25)
+IDTAG = '' if ARM == 'v1' else '_' + ARM
 PAIRS = {'btn_vs_sb': ('BTN', 'SB'), 'hj_vs_sb': ('HJ', 'SB'), 'lj_vs_sb': ('LJ', 'SB'), 'utg2_vs_sb': ('UTG+2', 'SB'),
          'co_vs_btn': ('CO', 'BTN'), 'hj_vs_btn': ('HJ', 'BTN'), 'lj_vs_btn': ('LJ', 'BTN'), 'utg2_vs_btn': ('UTG+2', 'BTN'),
          'utg1_vs_btn': ('UTG+1', 'BTN'),
@@ -34,12 +35,12 @@ def main():
         op, tb = PAIRS[name]
         mults = cfg['raise_mults_by_seat'][POS.index(tb)]
         m = 4.0 if len(mults) > 1 else None              # 4.0x arm first (as at 60 bb); the 3.5x arm is not run in the first pass
-        sid = f'p{stack}{ARM}_{name}' + ('' if m is None else f'_3b{int(round(m * 10))}')
+        sid = f'p{stack}v1_{name}' + ('' if m is None else f'_3b{int(round(m * 10))}') + IDTAG
         blinds = '/'.join(f'{x}x' for x in cfg['raise_mults_by_seat'][7])
         spec = {'id': sid, 'config': cfgp, 'dump': f'{CK}/p{stack}_{ARM}/dump.jsonl', 'equity': f'{CK}/eq_table_202_1200.json',
                 'tables_dir': None, 'iterations': 3000, 'rule': 'v4', 'max_steps': CAP,
                 'root_line': P.root_line(cfg, op, tb, m), 'menu': P.MENU,
-                'tree_label': f'Plan A p{stack} {ARM} (quick): 9-max hand-start {stack} bb (cfg.stack {cfg["stack"]}), ante 1/9, opens 2.0, '
+                'tree_label': f'Plan A p{stack} {ARM} (quick): 9-max hand-start {stack} bb (cfg.stack {cfg["stack"]}), ante 1/9, opens {cfg["open_raises_by_seat"][POS.index(op)][0]}, '
                               f'3-bet 3.0x / blinds {blinds}; SB open {cfg["open_raises_by_seat"][7][0]} bb, SB limp allowed; open jam excluded; '
                               'parent max_raises 3, 4-bet jam only, static continuation; subgame 4-bet IP 2.15x / OOP 2.35x + jam, 5-bet jam; '
                               'symmetric stacks',
