@@ -325,7 +325,8 @@ cases = [
      and G.defend_vs_3bet('CO', 'SB', 9, 45, AK, 8.0) is None),
     ('3bet size 12bb vs 8bb record -> None; 7.5bb -> used',
      G.defend_vs_3bet('CO', 'SB', 9, 35, AK, 12.0) is None and G.defend_vs_3bet('CO', 'SB', 9, 35, AK, 7.5) is not None),
-    ('3bet pair without a record (HJ vs SB) -> None', G.defend_vs_3bet('HJ', 'SB', 9, 35, AK, 8.0) is None),
+    # 2026-10-27: HJ vs SB 기록이 30·40bb 모두 들어왔다. UTG+1 vs BTN 은 30bb 만 있어 35bb 는 아직 None.
+    ('3bet pair with only one bucket (UTG+1 vs BTN 35bb) -> None', G.defend_vs_3bet('UTG+1', 'BTN', 9, 35, AK, 7.0) is None),
     ('3bet hook: caller in pot -> None (old path)',
      PF.gto_pf_aggr_choice(prof, 'SB', 'CO', AK, r, 34.0, 8.0, 6.0, 2, other_live_actors=1, actor_acted=True,
                            aggressor_total_bb=35.0) is None),

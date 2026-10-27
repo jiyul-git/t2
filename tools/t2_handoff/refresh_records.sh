@@ -7,6 +7,9 @@
 set -e
 cd "$(dirname "$0")/../.."
 OUT=$(mktemp -d)
+# 이미 있는 사본을 먼저 푼다. 계산 브랜치가 지워져 가져오지 못한 기록은 이 사본이 그대로 남는다
+# (2026-10-27: 옛 브랜치 일부가 지워져 전체를 다시 만들면 기록이 빠졌다).
+for g in data/gto_records/*.json.gz; do [ -e "$g" ] && gunzip -c "$g" > "$OUT/$(basename "$g" .gz)"; done
 PF=origin/claude/pushfold-10-25-20261019        # 10~25bb 푸시/폴드 + 30/40bb 부모 트리
 P30=origin/claude/p30-flat-20261019             # 30bb 플랫콜 루프 (011TJ 세션)
 CEN=origin/chatgpt/terminal-census-v2-20260930  # 40bb 플랫콜 루프 + 60bb (Gto제작 세션)
@@ -28,16 +31,18 @@ for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 
     || git fetch -q origin "refs/tags/archive/$n:refs/remotes/$b" 2>/dev/null \
     || echo "fetch 실패(건너뜀): $b" >&2
 done
-show() {  # show <브랜치> <파일이름>  — 없으면 조용히 건너뛴다
-  git show "$1:data/gto_spot/quick/$2" > "$OUT/$2" 2>/dev/null || rm -f "$OUT/$2"
+show() {  # show <브랜치> <파일이름>  — 없으면 기존 사본을 그대로 둔다
+  git show "$1:data/gto_spot/quick/$2" > "$OUT/$2.new" 2>/dev/null && mv "$OUT/$2.new" "$OUT/$2" || rm -f "$OUT/$2.new"
 }
-for b in pf10 pf15 pf20 pf25 s30 s40; do git show $PF:data/gto_spot/records/$b.json > "$OUT/$b.json"; done
-git show $CEN:data/gto_spot/records/s60.json > "$OUT/s60.json"
-git show $P100:data/gto_spot/records/s100.json > "$OUT/s100.json"
+for b in pf10 pf15 pf20 pf25 s30 s40; do git show $PF:data/gto_spot/records/$b.json > "$OUT/$b.json.new" 2>/dev/null && mv "$OUT/$b.json.new" "$OUT/$b.json" || rm -f "$OUT/$b.json.new"; done
+# 60·100bb 부모: 오픈 2.5bb(SB 3.0) 로 푼 판(2026-10-27). 봇이 60bb 이상에서 2.5bb 로 오픈하므로 이 판을 쓴다.
+#   옛 2.0 판: $CEN records/s60.json, $P100 records/s100.json
+git show $CEN:data/gto_spot/records/s60_open25.json > "$OUT/s60.json"
+git show $CEN:data/gto_spot/records/s100_open25.json > "$OUT/s100.json"
 # 옛 플랫콜 기록 (SB 림프 0단계 정지 기록은 빼고 아래 새 기록을 쓴다)
-for f in $(git ls-tree --name-only $P30 data/gto_spot/quick/ | grep 'p30_flat_.*\.json$' | grep -v sb_limp); do
+for f in $(git ls-tree --name-only $P30 data/gto_spot/quick/ 2>/dev/null | grep 'p30_flat_.*\.json$' | grep -v sb_limp | grep -v p30_flat_sb_vs_bb); do
   git show $P30:$f > "$OUT/$(basename $f)"; done
-for f in $(git ls-tree --name-only $CEN data/gto_spot/quick/ | grep 'p40_flat_.*\.json$' | grep -v sb_limp); do
+for f in $(git ls-tree --name-only $CEN data/gto_spot/quick/ | grep 'p40_flat_.*\.json$' | grep -v sb_limp | grep -v _stopped_); do
   git show $CEN:$f > "$OUT/$(basename $f)"; done
 # 새 기록
 show $P30T p30_flat_utg_vs_bb.json
@@ -52,6 +57,13 @@ for x in p30v1_co_vs_sb_3b40 p30v1_utg1_vs_sb_3b40 p30v1_utg_vs_btn; do show $T3
 for x in p40v1_co_vs_sb_3b40 p40v1_utg1_vs_sb_3b40; do show $T40 $x.json; done
 show $T40R p40v1_utg_vs_btn.json
 for x in p40_flat_btn_vs_bb_o25 p40_flat_co_vs_bb_o25 p30_flat_btn_vs_bb_o25 p30_flat_co_vs_bb_o25; do show $FO25 $x.json; done
+# 2026-10-27 Gto제작1(CEN): 3벳 받은 오프너 짝 추가, 오픈 2.5 수비(30 CO, 60 BTN·CO), 30bb SB 오픈 재계산 최종본
+#   (_stopped_step1 은 옛 정지 기록이라 쓰지 않는다)
+for x in p30v1_btn_vs_sb_3b40 p30v1_hj_vs_sb_3b40 p30v1_lj_vs_sb_3b40 p30v1_utg2_vs_sb_3b40 p30v1_utg_vs_sb_3b40 \
+         p30v1_co_vs_btn p30v1_hj_vs_btn p30v1_lj_vs_btn p30v1_utg2_vs_btn p30v1_utg1_vs_btn \
+         p40v1_btn_vs_sb_3b40 p40v1_hj_vs_sb_3b40 p40v1_lj_vs_sb_3b40 p40v1_utg2_vs_sb_3b40 p40v1_utg_vs_sb_3b40 \
+         p40v1_co_vs_btn p40v1_hj_vs_btn p40v1_lj_vs_btn \
+         p30_flat_co_vs_bb_o25 p60_flat_btn_vs_bb_o25 p60_flat_co_vs_bb_o25 p30_flat_sb_vs_bb; do show $CEN $x.json; done
 # 사본 갱신: 압축본 + 출처표(파일, 브랜치/태그, 커밋, sha256)
 D=data/gto_records; mkdir -p $D; rm -f $D/*.json.gz
 printf 'file\tsha256_json\n' > $D/MANIFEST.tsv

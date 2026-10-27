@@ -124,10 +124,11 @@ f = G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.0)
 check('flat: 35bb BB K9s vs BTN 2.0 open calls', f is not None and f['call'] > 0.99)
 check('flat: 72o folds', G.defend_vs_open('BTN', 'BB', 9, 35, ['7h', '2c'], 2.0)['fold'] > 0.99)
 # 2026-10-24: 40bb UTG+2 기록이 들어와 30~40bb 플랫콜 수비는 UTG~SB 전부 양쪽 버킷이 있다.
-check('flat: 25bb / 45bb / 3x open -> None; UTG+2 opener between buckets now covered',
+# 2026-10-27: 30bb 2.5 오픈 기록이 들어와 35bb 의 3.0 오픈은 2.5 기록 창(2.25~3.125) 안이라 연결된다. 3.2 는 두 창 밖.
+check('flat: 25bb / 45bb 2.0 / 3.2x open -> None; UTG+2 opener between buckets now covered',
       G.defend_vs_open('BTN', 'BB', 9, 25, ['Kh', '9h'], 2.0) is None
       and G.defend_vs_open('BTN', 'BB', 9, 45, ['Kh', '9h'], 2.0) is None
-      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 3.0) is None
+      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 3.2) is None
       and G.defend_vs_open('UTG+2', 'BB', 9, 35, ['Kh', '9h'], 2.0) is not None)
 check('flat: CO open vs BB 35bb — K9s calls, 72o folds (loop-corrected 2026-10-20)',
       G.defend_vs_open('CO', 'BB', 9, 35, ['Kh', '9h'], 2.0)['call'] > 0.99
@@ -138,17 +139,18 @@ check('flat hook: BB K9s vs BTN 2.0 open at 35bb -> call',
 check('flat hook: 72o -> fold',
       P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 34.0, 2.0, 1.0, 1,
                            other_live_actors=0, actor_acted=False, aggressor_total_bb=35.0) == 'fold')
-check('flat hook: 3x open -> back to aggression-only (pass)',
-      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 34.0, 3.0, 2.0, 1,
+check('flat hook: 3.2x open (outside both record windows) -> back to aggression-only (pass)',
+      P.gto_pf_aggr_choice(prof, 'BTN', 'BB', ['7h', '2c'], r, 34.0, 3.2, 2.2, 1,
                            other_live_actors=0, actor_acted=False, aggressor_total_bb=35.0) == 'pass')
 check('flat: SB 3.0 open vs BB 35bb uses the SB record; a 2.0 SB open does not',
       G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 3.0) is not None
       and G.defend_vs_open('SB', 'BB', 9, 35, ['Kh', '9h'], 2.0) is None)
-check('flat: UTG+2 at 30 and 40bb, BTN open size 1.8~2.5 only',
+check('flat: UTG+2 at 30 and 40bb (2.0 only), BTN open size 1.8~3.125 (2.0 and 2.5 records)',
       G.defend_vs_open('UTG+2', 'BB', 9, 30, ['Kh', '9h'], 2.0) is not None
       and G.defend_vs_open('UTG+2', 'BB', 9, 40, ['Kh', '9h'], 2.0) is not None
-      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.5) is not None
-      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.6) is None)
+      and G.defend_vs_open('UTG+2', 'BB', 9, 35, ['Kh', '9h'], 2.6) is None
+      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 2.6) is not None
+      and G.defend_vs_open('BTN', 'BB', 9, 35, ['Kh', '9h'], 3.2) is None)
 # --- 오픈 2.5bb 기록(vs_open_full_o25, 2026-10-25): 실제 오픈 크기로 2.0·2.5 사이 보간 ---
 if (d.get('vs_open_full_o25') or {}).get('40', {}).get('BTN>BB'):
     i42 = d['classes'].index('42o')
