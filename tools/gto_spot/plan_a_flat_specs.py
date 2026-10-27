@@ -51,14 +51,14 @@ def main():
     out = os.path.join(ROOT, 'data/gto_spot/plan_a/specs')
     os.makedirs(out, exist_ok=True)
     jobs = []
-    for op in (only or OPENERS):
+    for op in [x for x in (only or OPENERS) if x != 'LIMP']:
         o = POS.index(op)
         sz = trim(size if size is not None else cfg["open_raises_by_seat"][o][0])
         assert float(sz) in cfg['open_raises_by_seat'][o], (op, sz)
         jobs.append((f'p{stack}_flat_{SLUG.get(op, op.lower())}_vs_bb{suffix}', op, f'Raise {sz}',
                      f'{op} opens {sz}, BB defends', cap_all or (8 if op in FULL else 3)))
-    if only is None:
-        jobs.append((f'p{stack}_flat_sb_limp_vs_bb', 'SB', 'Limp 1', 'SB limps, BB acts', 3))
+    if only is None or 'LIMP' in only:   # LIMP in the opener list adds the SB-limp spot (id gets the suffix)
+        jobs.append((f'p{stack}_flat_sb_limp_vs_bb{suffix}', 'SB', 'Limp 1', 'SB limps, BB acts', 3))
     for sid, op, act, what, cap in jobs:
         spec = {'id': sid, 'config': cfgp, 'dump': f'{pdir}/dump.jsonl', 'equity': f'{CK}/eq_table_202_1200.json', 'tables_dir': None,
                 'iterations': 3000, 'rule': 'v4', 'max_steps': cap, 'root_line': line_for(cfg, op, act),
