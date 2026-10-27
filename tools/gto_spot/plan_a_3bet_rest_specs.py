@@ -16,13 +16,14 @@ ROOT, CK, POS = P.ROOT, P.CK, P.POS
 ARM = 'v1'
 PAIRS = {'btn_vs_sb': ('BTN', 'SB'), 'hj_vs_sb': ('HJ', 'SB'), 'lj_vs_sb': ('LJ', 'SB'), 'utg2_vs_sb': ('UTG+2', 'SB'),
          'co_vs_btn': ('CO', 'BTN'), 'hj_vs_btn': ('HJ', 'BTN'), 'lj_vs_btn': ('LJ', 'BTN'), 'utg2_vs_btn': ('UTG+2', 'BTN'),
-         'utg1_vs_btn': ('UTG+1', 'BTN')}              # run order
+         'utg1_vs_btn': ('UTG+1', 'BTN'),
+         'utg_vs_sb': ('UTG', 'SB')}                   # run order; utg_vs_sb added 2026-10-27 (the last uncovered SB-3-bettor pair)
 CAP = 3
 
 
 def main():
     stack = int(sys.argv[1])
-    names = sys.argv[2:] or list(PAIRS)
+    names = sys.argv[2:] or list(PAIRS)[:-1]
     cfgp = os.path.join(ROOT, f'data/gto_spot/plan_a/cfg_p{stack}_{ARM}.json')
     cfg = json.load(open(cfgp))
     conv = os.path.join(ROOT, f'data/gto_spot/plan_a/parent_p{stack}_{ARM}_convergence.json')
