@@ -285,11 +285,15 @@ class Loop:
                     first = bad
                     bad = retry_flops(tf, fd, PANEL, is_m, first)
                     rep.setdefault('flop_retries', []).append({'terminal': j, 'first': first, 'after_retry': bad})
-                allow = ()
+                allow = set()
+                af_ = os.path.join(fd, 'accepted_above_target.json')   # FLOP_ACCEPT_PCT exception (flop_failures): accepted plateaued boards
+                if os.path.exists(af_):
+                    allow |= set(json.load(open(af_)))
+                    rep.setdefault('flops_accepted_above_target', {})[f'terminal{j}'] = json.load(open(af_))
                 if bad and self.v4 and terminal_exempt_level(sp, t):   # amendment 11 (b): recorded, not stopping
                     rep.setdefault('flop_failures_exempt_terminal', []).append({'terminal': j, 'boards': bad})
                     rep['verdict_without_amendment11'] = 'research (amendment 7: unconverged flop)'
-                    allow = {b['board'] for b in bad}
+                    allow |= {b['board'] for b in bad}
                     bad = []
                 if bad:
                     rep['decision'] = f'stop: flop solver did not converge (terminal {j}, step {k}): {bad}'
