@@ -219,6 +219,9 @@ function showBotTurn(e) {
  * 첫 핸드만 고정 템포인 예외를 두지 않는다. 예정표가 없으면(시간 규칙 off) 기존 템포.
  */
 S.sched = {};
+// street 이벤트의 at_ms 는 서버의 보드 공개 시간(2초)이 끝나는 시각 = 다음 사람 시계 시작이다.
+// 보드는 그보다 이만큼 먼저 깔아, 칩 수거·보드 모션(약 0.7초)이 끝난 직후 시계가 시작되게 한다.
+const BOARD_LEAD_MS = 1000;
 const schedKeys = (e) => [
   [e.street || '', e.seat, e.action, Number(e.amount || 0)].join('|'),
   ['*', e.seat, e.action, Number(e.amount || 0)].join('|')
@@ -226,7 +229,7 @@ const schedKeys = (e) => [
 function noteSchedule(list) {
   S.streetSchedule = {};
   (list || []).forEach((ev) => {
-    if (ev && ev.kind === 'street' && ev.at_ms) S.streetSchedule[ev.street] = ev.at_ms;
+    if (ev && ev.kind === 'street' && ev.at_ms) S.streetSchedule[ev.street] = ev.at_ms - BOARD_LEAD_MS;
     if (!ev || !ev.act_at_ms) return;
     schedKeys(ev).forEach((k) => { S.sched[k] = ev; });
   });
@@ -1951,6 +1954,13 @@ function drawFrame(v, bets, folded) {
 }
 
 function finalFrame(v) {
+  // 보드는 다음 시계 시작보다 먼저 깔리므로(BOARD_LEAD_MS) 재생이 HERO 차례보다 먼저 끝날 수 있다.
+  // HERO 버튼은 서버가 정한 차례 시각(bot_ready_at_ms)에 띄운다 — 그 전 액션은 서버가 거절한다.
+  if (v && v.type === 'decision' && S.timingOn && S.botReadyAtMs && serverNow() < S.botReadyAtMs - 20) {
+    const ep = S.epoch || 0;
+    S.timers.push(setTimeout(() => { if (epochAlive(ep)) finalFrame(v); }, S.botReadyAtMs - serverNow()));
+    return;
+  }
   renderActions(v);
   // clearBubbles -> stopReplay 가 예약을 지우므로 먼저 챙겨둔다.
   // stopReplay 가 지우는 이유는 '응답이 왔을 때' 를 위한 것이고,
@@ -4064,6 +4074,9 @@ function stepEventReceiver(onStart, onEvent, onFinal, onError, onTurn) {
 async function callStepStream(body, msg) {
   // Scheduled action times include thinking; allow a brief visible result frame.
   const BOT_ACTION_FEEDBACK_MS = 550;
+  // 화면이 다시 보이며 현재 상태로 맞추면(resyncLive) 이 스트림의 남은 재생은 버린다.
+  const gen = S.resyncGen || 0;
+  const stale = () => gen !== (S.resyncGen || 0);
   if (S.busy) {
     toast('앞선 요청을 처리하는 중입니다 — 끝나면 다시 눌러 주세요');
     return null;
@@ -4112,6 +4125,7 @@ async function callStepStream(body, msg) {
   };
 
   const maybeFinish = () => {
+    if (!settled && stale()) { settled = true; resolveDrain(null); return; }
     if (settled || playing || queue.length || !finalPayload) return;
     settled = true;
     clearAllSeatClocks();
@@ -4129,7 +4143,7 @@ async function callStepStream(body, msg) {
     const head = queue[0];
 
     // 시간 규칙: 예정 시각까지 기다린다(봇은 그동안 좌석 시계 링이 줄어든다).
-    const dueMs = head && (head.kind === 'street' ? head.at_ms : head.act_at_ms);
+    const dueMs = head && (head.kind === 'street' ? (head.at_ms && head.at_ms - BOARD_LEAD_MS) : head.act_at_ms);
     if (dueMs && serverNow() < dueMs - 20) {
       playing = true;
       if (head.kind !== 'street' && head.clock_started_ms) {
@@ -4270,7 +4284,7 @@ async function callStepStream(body, msg) {
   };
 
   const pushEvent = (e) => {
-    if (!e || settled) return;
+    if (!e || settled || stale()) return;
     if (computingHint) {
       const row = $('#mainrow');
       if (row) row.innerHTML = '';
@@ -4281,6 +4295,7 @@ async function callStepStream(body, msg) {
   };
 
   const controller = new AbortController();
+  S.abortStream = () => controller.abort();
   const requestId = crypto.randomUUID();
   const requestBody = Object.assign({}, body, {request_id: requestId});
   let progressTimer = null, progressCursor = 0, streamError = null, progressStopped = false;
@@ -4314,7 +4329,7 @@ async function callStepStream(body, msg) {
       // 서버가 판단 계산을 시작하는 순간 그 좌석 시계 링을 바로 돌린다(HERO 액션 직후 0.8초 호흡을
       // 기다리지 않는다 — 시계 시작은 서버가 이미 HERO 액션 수락 시각으로 정했다).
       // k번째 bot_turn 은 k번째 bot_action 의 것이다. 그 행동이 이미 재생됐으면 무시한다.
-      if (settled || obj.turn_seq <= actionsPlayed) return;
+      if (settled || stale() || obj.turn_seq <= actionsPlayed) return;
       showBotTurn(obj.event);
     }
   );
@@ -4357,7 +4372,8 @@ async function callStepStream(body, msg) {
         let j = null;
         try { j = await res.json(); } catch (e) {}
         if (res.status === 409) {
-          toast((j && j.error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
+          // 차례가 이미 넘어간 옛 요청(token 불일치)은 알릴 일이 아니다 — 조용히 현재 상태로 맞춘다.
+          if (!/token 불일치/.test(((j) && (j).error) || '')) toast(((j) && (j).error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
           const cur = await req('/api/state', null);
           if (cur.status === 200 && cur.json) apply(cur.json);
           return null;
@@ -4409,6 +4425,7 @@ async function callStepStream(body, msg) {
       settled = true;
       resolveDrain(null);
     }
+    if (stale()) return null;          // resyncLive 가 끊은 스트림 — 화면은 이미 현재 상태다
     clearAllSeatClocks();
     toast('연결 실패: ' + e.message);
     try {
@@ -4447,8 +4464,15 @@ async function call(path, body, msg) {
     return null;
   }
   setBusy(true, msg, path === '/api/step');
+  const gen = S.resyncGen || 0;
   try {
     const r = await req(path, body);
+    if (gen !== (S.resyncGen || 0)) {
+      // 기다리는 동안 화면이 다시 보여 현재 상태로 맞췄다. 이 요청이 서버를 바꿨을 수 있으니 한 번 더 받는다.
+      const s = await req('/api/state', null);
+      if (s.status === 200 && s.json) apply(s.json);
+      return null;
+    }
     // An older server can report the same boundary as a ValueError/500.
     // Keep the automatic next-deal request alive across that response too.
     if (path === '/api/step' && body && body.action === null &&
@@ -4463,7 +4487,8 @@ async function call(path, body, msg) {
         resumeAfterBreak(body, msg);
         return null;
       }
-      toast((r.json && r.json.error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
+      // 차례가 이미 넘어간 옛 요청(token 불일치)은 알릴 일이 아니다 — 조용히 현재 상태로 맞춘다.
+          if (!/token 불일치/.test(((r.json) && (r.json).error) || '')) toast(((r.json) && (r.json).error) || '요청이 충돌했습니다 — 화면을 다시 맞춥니다');
       const s = await req('/api/state', null);          // 추정하지 않고 다시 받는다
       if (s.status === 200 && s.json) apply(s.json);
       return null;
@@ -4723,6 +4748,10 @@ function apply(resp) {
   if (resp.resume) {
     const at = serverNow();
     const opening = resp.opening_view;
+    // 처음 보는 판이고 서버에서 아직 딜 시간 안이면(입장 첫 판, 딜 직후 복귀) 딜 모션을 남은 시간에 맞춰 보여 준다.
+    const resumeDealAt = S.handNo !== v.hand_no ? handDealAtMs(resp) : null;
+    const dealLive = v.type === 'decision' && opening && opening.type === 'decision' &&
+      resumeDealAt !== null && at < resumeDealAt + HAND_DEAL_MS - 1500;
     clearBubbles();
     resetFolding();
     S.prevBets = null;
@@ -4748,6 +4777,17 @@ function apply(resp) {
       S.won = (resp.remaining === 1 && !resp.busted);
       S.entries = resp.entries || S.entries;
       if (!spectateTail(v, at)) finishResult(v, at);
+    } else if (dealLive) {
+      S.handFirstClockMs = resumeDealAt + HAND_DEAL_MS;
+      const ep = S.epoch || 0;
+      renderBoard(opening);
+      dealThen(opening, () => {
+        if (!epochAlive(ep)) return;
+        if (!playDecisionTail(opening, v, serverNow())) {
+          snapshotPaint(() => { renderBoard(v); finalFrame(v); });
+        }
+        S.view0 = v;
+      });
     } else {
       if (!playDecisionTail(opening, v, at)) {
         snapshotPaint(() => { renderBoard(v); finalFrame(v); });
@@ -4972,6 +5012,39 @@ memoLoad().finally(sync);
 
 if (location.hash === '#history') {
   setTimeout(showHistory, 250);
+}
+
+/* 앱을 나갔다 돌아왔을 때: 안드로이드는 안 보이는 웹 화면을 멈추지만 서버의 게임은 계속 진행된다.
+ * 다시 보이면 서버의 현재 상태(/api/state, 재접속 응답)를 받아 지금 시점으로 맞춘다 — 지난 딜·블라인드·
+ * 봇 행동은 끝난 모습으로, 아직 오지 않은 봇 행동은 제 시각에, HERO 차례면 서버 기준 남은 시간으로.
+ * 진행 중이던 재생·스트림·다음 판 예약은 버린다(옛 화면이 판 처음부터 다시 틀던 문제). */
+let hiddenSince = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenSince = Date.now(); return; }
+  const away = hiddenSince ? Date.now() - hiddenSince : 0;
+  hiddenSince = 0;
+  if (away >= 1500) resyncLive();
+});
+// 안드로이드 WebView 가 visibilitychange 를 보내지 않는 경우의 안전장치: 화면이 얼었다 풀리면
+// 1초 간격 타이머 사이의 실제 시간이 크게 벌어진다 — 그때도 지금 시점으로 맞춘다.
+let lastBeat = Date.now();
+setInterval(() => {
+  const now = Date.now();
+  if (now - lastBeat > 4000 && !document.hidden) resyncLive();
+  lastBeat = now;
+}, 1000);
+async function resyncLive() {
+  S.resyncGen = (S.resyncGen || 0) + 1;
+  const gen = S.resyncGen;
+  if (S.abortStream) { try { S.abortStream(); } catch (_) {} }
+  clearTimeout(S.autoTimer); S.autoTimer = null;
+  stopReplay();
+  clearAllSeatClocks();
+  try {
+    const r = await req('/api/state', null);
+    if (gen !== S.resyncGen || !r.json) return;
+    if (r.status === 200) { setBusy(false); apply(r.json); }
+  } catch (_) { /* 연결이 돌아오면 평소 흐름(ready 조회)이 다시 맞춘다 */ }
 }
 
 // Keep the clock moving during hero decisions and animations too.
