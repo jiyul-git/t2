@@ -548,6 +548,21 @@ def _settle_hero_bank(st, now, timed_out=False):
     st.pop('ui_action_base_deadline', None)
 
 
+def _bot_time_log(event):
+    """봇 이벤트의 계산 시각과 예정 시각을 server.log 에 한 줄 남긴다(링 공백 진단용, 2026-10-28).
+    now = 이 이벤트가 계산돼 화면으로 나가는 시각. 시계 시작(start)보다 now 가 크게 늦으면 서버 계산이
+    느려 화면 링이 늦게 뜬 것이고, 그렇지 않은데 링이 비면 화면 쪽 문제다."""
+    try:
+        now = int(time.time() * 1000)
+        start, act, at = event.get('clock_started_ms'), event.get('act_at_ms'), event.get('at_ms')
+        print('[봇시각] now=%d %s seat=%s start%+d act%+d street%+d %s' % (
+            now, event.get('kind'), event.get('seat'),
+            (start - now) if start else 0, (act - now) if act else 0, (at - now) if at else 0,
+            event.get('action') or ''), flush=True)
+    except Exception:
+        pass
+
+
 class _BotSchedule:
     """사람 테이블 봇 액션의 절대 예정 시각. 엔진은 즉시 계산하고 화면 재생만 이 시각을 따른다.
 
@@ -569,6 +584,7 @@ class _BotSchedule:
                 event['base_deadline_ms'] = int((started + float(t['base'])) * 1000)
                 event['bank_deadline_ms'] = int((started + float(t['base'])
                                                  + float(t['bank_before'])) * 1000)
+            _bot_time_log(event)
             return event
         if event.get('kind') == 'street':
             self.cursor += STREET_GAP_SECONDS
@@ -583,6 +599,7 @@ class _BotSchedule:
             event['bank_deadline_ms'] = int((started + float(t['base'])
                                              + float(t['bank_before'])) * 1000)
             self.cursor = act
+        _bot_time_log(event)
         self.events.append({k: event.get(k) for k in (
             'kind', 'seat', 'street', 'action', 'amount', 'at_ms', 'clock_started_ms',
             'act_at_ms', 'base_deadline_ms', 'bank_deadline_ms') if event.get(k) is not None})

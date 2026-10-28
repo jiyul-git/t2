@@ -4100,7 +4100,12 @@ async function callStepStream(body, msg) {
 
   let queue = [];
   let playing = false;
-  let actionsPlayed = 0;     // 재생이 끝난 봇 행동 수(늦게 도착한 bot_turn 을 걸러내는 기준)
+  // 이미 재생한 봇 행동의 (좌석, 시계 시작). 늦게 도착한 bot_turn 을 걸러내는 기준이다.
+  // 예전에는 순번(turn_seq ≤ 재생한 행동 수)으로 걸렀는데, 미리 계산해 둔 봇 행동은 bot_turn 을 보내지 않아
+  // 순번이 밀렸다 — 그 뒤 실제로 계산하는 봇의 bot_turn 이 '이미 지난 것'으로 버려져 링 없이 기다렸다
+  // (2026-10-28 영상: BB 가 11초 생각하는 동안 링 없음).
+  const playedTurns = new Set();
+  const turnKey = (e) => (e && e.seat !== undefined && e.clock_started_ms) ? e.seat + '|' + e.clock_started_ms : null;
   let heroPauseUntil = 0;
   let streamId = null;
   let finalPayload = null;
@@ -4172,7 +4177,7 @@ async function callStepStream(body, msg) {
 
     playing = true;
     const e = queue.shift();
-    if (e.kind === 'bot_action') actionsPlayed++;
+    if (turnKey(e)) playedTurns.add(turnKey(e));
     const oldStage = ss ? ss.stage : null;
 
     if (ss && e.kind === 'street') {
@@ -4328,8 +4333,8 @@ async function callStepStream(body, msg) {
     (obj) => {
       // 서버가 판단 계산을 시작하는 순간 그 좌석 시계 링을 바로 돌린다(HERO 액션 직후 0.8초 호흡을
       // 기다리지 않는다 — 시계 시작은 서버가 이미 HERO 액션 수락 시각으로 정했다).
-      // k번째 bot_turn 은 k번째 bot_action 의 것이다. 그 행동이 이미 재생됐으면 무시한다.
-      if (settled || stale() || obj.turn_seq <= actionsPlayed) return;
+      // 같은 좌석·같은 시계 시작의 행동이 이미 재생됐으면 무시한다.
+      if (settled || stale() || playedTurns.has(turnKey(obj.event))) return;
       showBotTurn(obj.event);
     }
   );
