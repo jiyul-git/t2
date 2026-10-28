@@ -64,6 +64,8 @@ for x in p30v1_btn_vs_sb_3b40 p30v1_hj_vs_sb_3b40 p30v1_lj_vs_sb_3b40 p30v1_utg2
          p40v1_btn_vs_sb_3b40 p40v1_hj_vs_sb_3b40 p40v1_lj_vs_sb_3b40 p40v1_utg2_vs_sb_3b40 p40v1_utg_vs_sb_3b40 \
          p40v1_co_vs_btn p40v1_hj_vs_btn p40v1_lj_vs_btn \
          p30_flat_co_vs_bb_o25 p60_flat_btn_vs_bb_o25 p60_flat_co_vs_bb_o25 p30_flat_sb_vs_bb; do show $CEN $x.json; done
+# 2026-10-28 Gto제작1(CEN) 2차: 40bb vs BTN 나머지 짝(UTG+2·UTG+1 → 40bb vs BTN 완성), 60bb BTN vs SB(오픈 2.5, _o25)
+for x in p40v1_utg2_vs_btn p40v1_utg1_vs_btn p60v1_btn_vs_sb_3b40_o25; do show $CEN $x.json; done
 # 사본 갱신: 압축본 + 출처표(파일, 브랜치/태그, 커밋, sha256)
 D=data/gto_records; mkdir -p $D; rm -f $D/*.json.gz
 printf 'file\tsha256_json\n' > $D/MANIFEST.tsv

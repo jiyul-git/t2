@@ -5,5 +5,5 @@
 set -e
 R="${1:?기록 폴더}"; cd "$(dirname "$0")/../.."
 python3 tools/gto_pf_build.py $R/pf10.json $R/pf15.json $R/pf20.json $R/pf25.json $R/s30.json $R/s40.json $R/s60.json $R/s100.json \
-  $(ls $R/p30_flat_*.json $R/p40_flat_*.json $R/p60_flat_*.json $R/p30v1_*.json $R/p40v1_*.json 2>/dev/null)
+  $(ls $R/p30_flat_*.json $R/p40_flat_*.json $R/p60_flat_*.json $R/p30v1_*.json $R/p40v1_*.json $R/p60v1_*.json 2>/dev/null)
 python3 tools/verify_gto_pf.py | tail -1

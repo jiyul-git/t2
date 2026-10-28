@@ -91,7 +91,7 @@ def rec_freq(hd, cols):
 
 # ---------------------------------------------------------------- A. 값 일치
 records = []
-for path in sorted(glob.glob(os.path.join(REC, 'p[34]0*_vs_*.json'))):
+for path in sorted(glob.glob(os.path.join(REC, 'p[346]0*_vs_*.json'))):
     rec = json.load(open(path))
     if rec.get('schema') != 'spot_quick_v1' or rec['id'].endswith('_dcfr_stop'):
         continue
@@ -325,8 +325,15 @@ cases = [
      and G.defend_vs_3bet('CO', 'SB', 9, 45, AK, 8.0) is None),
     ('3bet size 12bb vs 8bb record -> None; 7.5bb -> used',
      G.defend_vs_3bet('CO', 'SB', 9, 35, AK, 12.0) is None and G.defend_vs_3bet('CO', 'SB', 9, 35, AK, 7.5) is not None),
-    # 2026-10-27: HJ vs SB 기록이 30·40bb 모두 들어왔다. UTG+1 vs BTN 은 30bb 만 있어 35bb 는 아직 None.
-    ('3bet pair with only one bucket (UTG+1 vs BTN 35bb) -> None', G.defend_vs_3bet('UTG+1', 'BTN', 9, 35, AK, 7.0) is None),
+    # 2026-10-28: 40bb vs BTN 짝이 다 들어왔다(UTG+1 vs BTN 30·40bb). 60bb 는 BTN vs SB(오픈 2.5, 3벳 10bb) 하나뿐.
+    ('3bet UTG+1 vs BTN 35bb (30/40 both) -> interpolated', G.defend_vs_3bet('UTG+1', 'BTN', 9, 35, AK, 6.0) is not None),
+    ('3bet pair with only one bucket (CO vs SB 50bb, no 60bb) -> None', G.defend_vs_3bet('CO', 'SB', 9, 50, AK, 8.0) is None),
+    ('3bet BTN vs SB 35bb 8bb still used (60bb 10bb record not size-checked)',
+     G.defend_vs_3bet('BTN', 'SB', 9, 35, AK, 8.0) is not None),
+    ('3bet BTN vs SB 50bb: 8bb -> None (60bb record is 10bb), 10bb -> interpolated',
+     G.defend_vs_3bet('BTN', 'SB', 9, 50, AK, 8.0) is None and G.defend_vs_3bet('BTN', 'SB', 9, 50, AK, 10.0) is not None),
+    ('3bet BTN vs SB 60bb 10bb -> used; 70bb (no 100bb) -> None',
+     G.defend_vs_3bet('BTN', 'SB', 9, 60, AK, 10.0) is not None and G.defend_vs_3bet('BTN', 'SB', 9, 70, AK, 10.0) is None),
     ('3bet hook: caller in pot -> None (old path)',
      PF.gto_pf_aggr_choice(prof, 'SB', 'CO', AK, r, 34.0, 8.0, 6.0, 2, other_live_actors=1, actor_acted=True,
                            aggressor_total_bb=35.0) is None),

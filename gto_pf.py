@@ -251,8 +251,15 @@ def defend_vs_3bet(opener_pos, threebettor_pos, seats, eff_bb, hand, threebet_bb
     d = _load()
     full = d.get('vs_3bet_full') or {}
     key = a + '>' + b
-    sizes = [e[key]['threebet_bb'] for e in full.values() if key in e]
-    if not sizes or not all(FULL_3BET_RATIO[0] * s <= float(threebet_bb) <= FULL_3BET_RATIO[1] * s
+    # 크기 검사는 보간에 실제로 쓰는 두 버킷 기록만 본다(2026-10-28). 60bb 기록은 오픈 2.5 기준이라
+    # 3벳이 10bb 로 30·40bb(8bb)와 다르다 — 모든 버킷을 보면 30·40bb 조회까지 꺼진다.
+    bk = d['buckets']
+    x = max(bk[0], min(bk[-1], float(eff_bb)))
+    hi = next(i for i, v in enumerate(bk) if v >= x)
+    lo = max(0, hi - 1) if bk[hi] > x else hi
+    used = [full.get(str(bk[i])) or {} for i in {lo, hi}]
+    sizes = [e[key]['threebet_bb'] for e in used if key in e]
+    if len(sizes) < len({lo, hi}) or not all(FULL_3BET_RATIO[0] * s <= float(threebet_bb) <= FULL_3BET_RATIO[1] * s
                             for s in sizes):
         return None
     g = {k: _at_masked(_interp('vs_3bet_full', key, eff_bb, lambda e, k=k: e.get(k)), hand)

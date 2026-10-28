@@ -76,7 +76,8 @@ def threebet(rec):
     4-bet <크기> / All-in. 오프너의 폴드·콜·작은 4벳·올인 빈도를 그대로 넣는다.
     """
     import re
-    m = re.match(r'p(\d+)v1_([a-z0-9]+)_vs_([a-z0-9]+)(?:_3b\d+)?$', rec['id'])
+    # _o25: 오픈 2.5bb 로 푼 기록(60bb 이상, 2026-10-28). 봇이 60bb 이상에서 2.5bb 로 오픈하므로 같은 표에 넣는다.
+    m = re.match(r'p(\d+)v1_([a-z0-9]+)_vs_([a-z0-9]+)(?:_3b\d+)?(?:_o25)?$', rec['id'])
     S = str(int(m.group(1)))
     n = _root(rec)
     acts = n['actions']
