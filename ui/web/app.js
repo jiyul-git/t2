@@ -754,7 +754,7 @@ function renderChips(v, streetChanged) {
   if (streetChanged && old.length) {
     // 스트리트가 끝났다 — 칩을 중앙으로 보내고 지운다
     old.forEach((el) => {
-      el.style.left = '50%'; el.style.top = '50%';
+      el.style.left = '50%'; el.style.top = '50%'; el.style.translate = '';
       el.classList.add('toPot');
     });
     setTimeout(() => old.forEach((el) => el.remove()), 420);
@@ -773,7 +773,46 @@ function renderChips(v, streetChanged) {
   });
   // Board/pot rendering follows this call in several paths. Measure the
   // completed frame before paint to use the current pot label's position.
-  requestAnimationFrame(() => positionRightChips(box));
+  requestAnimationFrame(() => { positionRightChips(box); nudgeChips(box); });
+}
+
+/* 칩이 이름표·포지션·스택·카드·보드·팟·다른 칩을 가리면 테이블 중앙 쪽(또는 옆)으로 조금씩 옮긴다.
+ * 좌석 위치는 고정 비율이라 화면 크기·금액 길이에 따라 겹쳤다(2026-10-28 검사: 9자리 벳에서
+ * LJ·UTG 포지션 글자, BB 이름, SB 카드가 가려짐). 옮길 자리가 없으면 가장 덜 가리는 자리에 둔다. */
+function nudgeChips(box) {
+  const wrap = $('#tablewrap');
+  if (!wrap) return;
+  const area = wrap.getBoundingClientRect();
+  const keep = [];
+  document.querySelectorAll('.pod .seatno, .pod .nm, .pod .pos, .pod .stack, .pod .card, .pod .memo, #board > *, #pot, #potsub')
+    .forEach((e) => { const r = e.getBoundingClientRect(); if (r.width && r.height) keep.push(r); });
+  const cx = area.left + area.width / 2, cy = area.top + area.height / 2;
+  const hit = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *
+                        Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  const placed = [];
+  box.querySelectorAll('.chips:not(.toPot)').forEach((el) => {
+    el.style.translate = '';
+    const r0 = el.getBoundingClientRect();
+    const mx = (r0.left + r0.right) / 2, my = (r0.top + r0.bottom) / 2;
+    const len = Math.hypot(cx - mx, cy - my) || 1;
+    const ux = (cx - mx) / len, uy = (cy - my) / len;          // 중앙 방향
+    // 중앙 쪽, 중앙에서 비스듬히, 가로, 세로 순으로 가까운 거리부터 빈 자리를 찾는다.
+    const dirs = [[ux, uy], [ux - uy * 0.6, uy + ux * 0.6], [ux + uy * 0.6, uy - ux * 0.6],
+                  [Math.sign(ux) || 1, 0], [-(Math.sign(ux) || 1), 0], [0, Math.sign(uy) || 1], [0, -(Math.sign(uy) || 1)]];
+    let best = null;
+    for (let d = 0; d <= 64 && !(best && best.cost === 0); d += 6) {
+      for (const [ax, ay] of dirs) {
+        const dx = Math.round(ax * d), dy = Math.round(ay * d);
+        const r = { left: r0.left + dx, right: r0.right + dx, top: r0.top + dy, bottom: r0.bottom + dy };
+        if (r.left < area.left || r.right > area.right || r.top < area.top || r.bottom > area.bottom) continue;
+        const cost = keep.concat(placed).reduce((a, k) => a + hit(r, k), 0);
+        if (!best || cost < best.cost) best = { dx, dy, cost, r };
+        if (cost === 0) break;
+      }
+    }
+    if (best && (best.dx || best.dy)) el.style.translate = best.dx + 'px ' + best.dy + 'px';
+    placed.push(best ? best.r : r0);
+  });
 }
 
 /* ---------------- 보드 / 팟 ---------------- */
@@ -1186,6 +1225,18 @@ const SHUFFLE_MS = 700;       // 가운데 덱이 섞이는 구간
 // 카드 하나하나는 천천히 도는 것과 같은 그림이다.
 const dealMs = () => Math.round(paceMs({ action:'fold' }) / 3);
 const FORCED_POST_MS = 500;  // SB/BB/ante 표시 간격
+// 서버가 새 판의 봇 시계를 딜 시작 + 이 시간 뒤에 시작한다(timing.DEAL_SECONDS 7.5초, ui_server HAND_START_SECONDS).
+const HAND_DEAL_MS = 7500;
+
+/* 이 응답의 새 판이 서버에서 딜된 시각(ms). 예정표의 첫 봇 시계 시작 또는 봇 예정표 끝(HERO 차례
+ * 시작) 중 이른 쪽에서 딜 시간을 뺀다. 시각 정보가 없으면 null(딜 연출은 기본 간격). */
+function handDealAtMs(resp) {
+  const starts = (resp.bot_schedule || [])
+    .map((e) => Number(e.clock_started_ms || e.at_ms || 0))
+    .filter((x) => x > 0);
+  if (resp.bot_ready_at_ms) starts.push(Number(resp.bot_ready_at_ms));
+  return starts.length ? Math.min(...starts) - HAND_DEAL_MS : null;
+}
 
 /* 모션 길이는 style.css 의 :root 에서 읽는다. 같은 숫자를 두 곳에 적어두면
  * 한쪽만 고쳐진다 — 실제로 CSS 를 .24s 에서 .5s 로 늘리면서 여기 240 을
@@ -1586,7 +1637,17 @@ function postBlindsThen(v, done, epoch) {
 function dealThen(v, done) {
   const epoch = S.epoch || 0;
   const order = dealOrder(v);
-  const gap = dealMs();
+  // 카드 간격: 딜 + 블라인드 게시가 서버의 첫 시계 시작(S.handFirstClockMs)에 맞춰 끝나게 늘이거나 줄인다.
+  // 기본 간격으로 돌리면 서버 딜 시간(7.5초)보다 1~1.5초 일찍 끝나 첫 링이 뜰 때까지 화면이 멈춰 보였다.
+  const gap = (() => {
+    const base = dealMs();
+    const first = S.handFirstClockMs;
+    if (!first || !order.length) return base;
+    const posts = (Number((v.level || {}).ante || 0) > 0 ? 1 : 0) + 2;   // 안테 → SB → BB
+    const fixed = SHUFFLE_MS + Math.max(0, DEAL_ANIM - base) + 40 + posts * FORCED_POST_MS;
+    const per = (first - serverNow() - fixed) / (order.length * 2);
+    return Math.round(Math.max(base * 0.5, Math.min(base * 1.6, per)));
+  })();
 
   if (!order.length) {
     S.dealt = null;
@@ -4168,6 +4229,14 @@ async function callStepStream(body, msg) {
         });
         publishPrev();
 
+        // 다음 봇의 시계는 서버에서 이 행동 시각에 이미 시작됐다. 0.55초 피드백을 기다렸다가
+        // 대기열에서 꺼낼 때 링을 그리면 그만큼 아무 링도 없는 구간이 생긴다 — 바로 잇는다.
+        const nx = queue[0];
+        if (nx && nx.kind !== 'street' && nx.seat !== undefined && nx.clock_started_ms &&
+            nx.seat !== (base && base.hero_seat) && !SEAT_CLOCKS[String(nx.seat)]) {
+          seatClock(nx.seat, nx.clock_started_ms, nx.base_deadline_ms, nx.bank_deadline_ms);
+        }
+
         setTimeout(() => {
           playing = false;
           playNext();
@@ -4646,6 +4715,10 @@ function apply(resp) {
   S.epoch = (S.epoch || 0) + 1;
 
   stopReplay();
+
+  // 새 판의 첫 시계(봇 링 또는 HERO 차례)가 시작되는 서버 시각. 딜 연출을 여기에 맞춰 끝낸다(dealThen).
+  const dealAt0 = (!resp.resume && S.handNo !== v.hand_no) ? handDealAtMs(resp) : null;
+  S.handFirstClockMs = dealAt0 === null ? null : dealAt0 + HAND_DEAL_MS;
 
   if (resp.resume) {
     const at = serverNow();
