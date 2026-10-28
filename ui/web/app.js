@@ -2286,6 +2286,32 @@ function applyEntry(ss, e) {
   if (st.stack === 0) st.allin = true;
 }
 
+/* 다음에 행동할 좌석 예측(화면 전용). 서버는 봇 판단을 계산하기 직전에야 그 봇의 시계 신호(bot_turn)를
+ * 보내는데, 폰 서버는 그 전에 핸드를 처음부터 다시 훑느라 수 초가 걸려 링이 늦거나 아예 안 보였다
+ * (2026-10-28 영상: 레이즈 뒤 SB·BB 가 각 4~5초 링 없이 생각). 화면이 아는 좌석 상태로 다음 차례를 계산해
+ * 서버와 같은 시각부터 링을 먼저 돌리고, 진짜 신호가 오면 정확한 값으로 바꾼다.
+ * acted: 이번 스트리트에 이미 행동한 좌석. 블라인드는 행동이 아니다(BB 옵션). HERO 좌석은 돌려주지 않는다. */
+function predictNextActor(ss, afterSeat, acted, heroSeat) {
+  if (!ss) return null;
+  const inHand = ss.seats.filter((x) => x.in_hand !== false);
+  if (inHand.length <= 1) return null;
+  const maxBet = Math.max(0, ...ss.seats.map((x) => x.bet || 0));
+  const canAct = inHand.filter((x) => !x.allin);
+  const needs = (x) => (x.bet || 0) < maxBet || !acted.has(x.seat);
+  if (canAct.length <= 1 && !(canAct[0] && (canAct[0].bet || 0) < maxBet)) return null;
+  const order = ss.seats.map((x) => x.seat).sort((a, b) => a - b);
+  const i0 = order.indexOf(afterSeat);
+  for (let k = 1; k < order.length; k++) {
+    const st = ss.seats.find((x) => x.seat === order[(i0 + k + order.length) % order.length]);
+    if (st && st.in_hand !== false && !st.allin && needs(st)) return st.seat === heroSeat ? null : st.seat;
+  }
+  return null;
+}
+function botBaseMs() {
+  return (S.actionBaseMs && S.actionStartMs && S.actionBaseMs > S.actionStartMs)
+    ? S.actionBaseMs - S.actionStartMs : 15000;
+}
+
 function heroRequestEntry(v, action, amount) {
   if (!v || v.type !== 'decision' || action === null) return null;
   const me = (v.seats || []).find((x) => x.seat === v.hero_seat);
@@ -4098,6 +4124,23 @@ async function callStepStream(body, msg) {
     shownLog.push(heroEntry);
   }
 
+  // 예측 링(predictNextActor). 진짜 신호(bot_turn/bot_action)가 오면 바뀌거나 지워진다.
+  let predicted = null;
+  const actedNow = () => new Set(shownLog.filter((x) => (x.street || ss.stage) === ss.stage).map((x) => x.seat));
+  const predictRing = (afterSeat, startMs) => {
+    if (!S.timingOn || !ss) return;
+    const seat = predictNextActor(ss, afterSeat, actedNow(), base && base.hero_seat);
+    if (seat === null || SEAT_CLOCKS[String(seat)]) return;
+    const start = startMs || serverNow();
+    seatClock(seat, start, start + botBaseMs(), start + botBaseMs());
+    predicted = seat;
+  };
+  const dropPrediction = (seat) => {
+    if (predicted !== null && predicted !== seat) clearSeatClock(predicted);
+    predicted = null;
+  };
+  if (ss && heroEntry) predictRing(base.hero_seat, serverNow());
+
   let queue = [];
   let playing = false;
   // 이미 재생한 봇 행동의 (좌석, 시계 시작). 늦게 도착한 bot_turn 을 걸러내는 기준이다.
@@ -4152,8 +4195,10 @@ async function callStepStream(body, msg) {
     if (dueMs && serverNow() < dueMs - 20) {
       playing = true;
       if (head.kind !== 'street' && head.clock_started_ms) {
-        if (!SEAT_CLOCKS[String(head.seat)]) {
+        // 예측 링이 돌고 있었으면 서버의 정확한 시계(타임뱅크 포함)로 바꾼다.
+        if (!SEAT_CLOCKS[String(head.seat)] || predicted === head.seat) {
           seatClock(head.seat, head.clock_started_ms, head.base_deadline_ms, head.bank_deadline_ms);
+          if (predicted === head.seat) predicted = null;
         }
       }
       setTimeout(() => { playing = false; playNext(); }, Math.max(0, dueMs - serverNow()));
@@ -4177,6 +4222,7 @@ async function callStepStream(body, msg) {
 
     playing = true;
     const e = queue.shift();
+    if (e && e.seat !== undefined && e.kind !== 'street') dropPrediction(e.seat);
     if (turnKey(e)) playedTurns.add(turnKey(e));
     const oldStage = ss ? ss.stage : null;
 
@@ -4206,6 +4252,8 @@ async function callStepStream(body, msg) {
         '<span class="cur">' + (STREET[ss.stage] || ss.stage) + '</span> —';
       publishPrev();
 
+      // 새 스트리트 첫 차례: 버튼 다음부터. 시계는 보드 시간이 끝나는 at_ms 에 시작한다.
+      if (!queue.length && base) predictRing(base.button_seat, e.at_ms);
       // 새 스트리트는 HERO 직후 pause와 중복시키지 않는다.
       heroPauseUntil = 0;
       setTimeout(() => {
@@ -4254,6 +4302,8 @@ async function callStepStream(body, msg) {
         if (nx && nx.kind !== 'street' && nx.seat !== undefined && nx.clock_started_ms &&
             nx.seat !== (base && base.hero_seat) && !SEAT_CLOCKS[String(nx.seat)]) {
           seatClock(nx.seat, nx.clock_started_ms, nx.base_deadline_ms, nx.bank_deadline_ms);
+        } else if (!nx) {
+          predictRing(e.seat, e.act_at_ms);       // 서버가 아직 다음 봇을 계산하지 못했다
         }
 
         setTimeout(() => {
@@ -4335,6 +4385,7 @@ async function callStepStream(body, msg) {
       // 기다리지 않는다 — 시계 시작은 서버가 이미 HERO 액션 수락 시각으로 정했다).
       // 같은 좌석·같은 시계 시작의 행동이 이미 재생됐으면 무시한다.
       if (settled || stale() || playedTurns.has(turnKey(obj.event))) return;
+      if (obj.event) dropPrediction(obj.event.seat);
       showBotTurn(obj.event);
     }
   );
