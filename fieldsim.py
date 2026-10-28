@@ -1062,6 +1062,7 @@ class Field:
             if not act:
                 break
 
+            stuck = False
             for m in movers:
                 # 인원수가 가장 적은 테이블들의 '허용된 빈 좌석' 전체가 seat pool.
                 mn = min(tb.n() for tb in act.values())
@@ -1077,7 +1078,19 @@ class Field:
                     pool.extend((tgt, s) for s in seats)
 
                 if not pool:
-                    raise RuntimeError('테이블 브레이크 좌석 풀 없음')
+                    # 가장 적은 테이블들이 아직 자리를 비우지 않은 탈락자 때문에 꽉 차 보일 수 있다
+                    # (2026-10-28: 100명 연습 게임 202초에 이 경우로 RuntimeError → 게임 정지).
+                    # 그때만 빈자리가 있는 다른 테이블까지 넓힌다. 평소 경로(위)는 그대로다.
+                    for tgt in sorted(act.values(), key=lambda x: (x.n(), x.id)):
+                        tgt.reconcile_next_hand()
+                        seats = tgt.broken_open_seats() or [
+                            i + 1 for i, pid in enumerate(tgt.seats) if pid is None]
+                        pool.extend((tgt, s) for s in seats)
+                if not pool:
+                    # 옮길 자리가 전혀 없다 — 이번에는 이 테이블을 깨지 않는다(남은 사람은 그대로 앉아 있다).
+                    self.tables[small.id] = small
+                    stuck = True
+                    break
 
                 tgt, seat = self.rng.choice(pool)
                 small.stand(m['pid'])
@@ -1092,6 +1105,8 @@ class Field:
                         '🔄 테이블 브레이크 — 너 자리 이동 (%d번째)'
                         % self.hero_moves)
 
+            if stuck:
+                break
             act = {t: tb for t, tb in self.tables.items() if tb.n() > 0 and t != protected_tid}
 
         # ---------- 인원 균등화 ----------
