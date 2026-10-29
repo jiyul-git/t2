@@ -36,7 +36,9 @@ def piece(walk, poly, kind, cloth=None, paw=False):
         lum = walk[..., :3].mean(-1)
         core = keep & (lum >= 45)
         if kind == 'tiger':  # the hood string's white tip beside the phone is not part of it
-            keep &= ~(walk[..., :3].min(-1) > 170)
+            r_, g_ = walk[..., 0], walk[..., 1]
+            keep &= ~((walk[..., :3].mean(-1) > 125) & (r_ - g_ < 50))   # the phone is dark, the paw orange: the string's
+            # beige tip (light, not orange) stays behind
             core &= keep
         n, lab, st, _ = cv2.connectedComponentsWithStats(core.astype(np.uint8), connectivity=8)
         core = np.isin(lab, [i for i in range(1, n) if st[i, cv2.CC_STAT_AREA] >= 30])
@@ -166,6 +168,15 @@ def carry(a, ax, ay, hp, pieces, kind):
     for name, side, _, _ in pieces:
         if name not in masks:
             continue
+        if name != 'case':
+            # a hand-held prop is cut with its paw: the gap is between the prop px and the paw px of the piece itself
+            q = dict((n_, q_) for n_, q_, _, _ in front)[name]
+            pw = skin(q[..., :3], kind) & (q[..., 3] > 0)
+            pr = (q[..., 3] > 0) & ~pw & (q[..., :3].mean(-1) >= 45)
+            g_ = float(cv2.distanceTransform((~pw).astype(np.uint8), cv2.DIST_L2, 3)[pr].min()) - 1 if pw.any() and pr.any() else 99.0
+            metrics[name] = (max(0.0, g_), cv2.connectedComponents(masks[name].astype(np.uint8), connectivity=8)[0] - 1)
+            zone |= masks[name]
+            continue
         hx, hy = hp[side][0] - X0, hp[side][1] - Y0
         yy, xx = np.mgrid[:H, :W]
         paw = sk & ((xx - hx) ** 2 + (yy - hy) ** 2 < 14 ** 2) & ~masks[name]
@@ -185,6 +196,14 @@ def carry(a, ax, ay, hp, pieces, kind):
 def gold(rgb):
     r, g, b = (rgb[..., i].astype(np.float32) for i in range(3))
     return (r > 100) & (g > 85) & (r - b > 40) & (g - b > 25) & (r - g < 70) & (r > g)
+
+
+def logo_mask(a, cloth, kind='tiger'):
+    """the gold letters on the hoodie (the T2 marks): light gold (r - g 15-55, g - b over 35) next to the garment"""
+    r, g, b = (a[..., i].astype(np.float32) for i in range(3))
+    m = (r > 120) & (r - g > 10) & (r - g < 60) & (g - b > 28) & (a[..., 3] > 200)
+    near = cv2.dilate(cloth(a[..., :3], kind).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(bool)
+    return m & near
 
 
 def emblem(a, walk, box, cloth, kind, wx=0.85):
@@ -216,6 +235,47 @@ def emblem(a, walk, box, cloth, kind, wx=0.85):
     m = cv2.resize(m, (W, h), interpolation=cv2.INTER_AREA)
     X, Y = int(round(cx - W / 2)), int(round(cy - h / 2))
     sub = a[Y:Y + h, X:X + W]
-    k = (m[:sub.shape[0], :sub.shape[1]] * (sub[..., 3] > 200) * cloth(sub[..., :3], kind))[..., None]   # never over a string
+    k = (m[:sub.shape[0], :sub.shape[1]] * (sub[..., 3] > 200) * ~(sub[..., :3].min(-1) > 185))[..., None]   # never over a string
     sub[..., :3] = sub[..., :3] * (1 - k) + p[:sub.shape[0], :sub.shape[1], :3] * k
+    return a
+
+
+def paw_only(p, kind):
+    """the paw of a hand-held piece without the prop: skin px and the dark outline around them"""
+    sk = skin(p[..., :3], kind) & (p[..., 3] > 128)
+    n, lab, st, _ = cv2.connectedComponentsWithStats(sk.astype(np.uint8), connectivity=8)
+    if n < 2:
+        return p
+    sk = lab == 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+    near = cv2.dilate(sk.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+    keep = (sk | (near & (p[..., :3].mean(-1) < 70))) & (p[..., 3] > 0)
+    return p * keep[..., None]
+
+
+def erase_paw(a, pt, kind):
+    """the figure's own paw near pt (read off the view) taken away, for a frame where that paw is in the middle: the
+    paw-sized skin blob nearest pt (within 25 px) and its dark outline; a tail or a leg (other blobs) stays"""
+    a = a.copy()
+    sk = skin(a[..., :3], kind) & (a[..., 3] > 128)
+    n, lab, st, cen = cv2.connectedComponentsWithStats(sk.astype(np.uint8), connectivity=8)
+    big = 0.04 * (a[..., 3] > 128).sum()           # a leg or the face is bigger than a paw
+    cand = [i for i in range(1, n) if 40 <= st[i, cv2.CC_STAT_AREA] < big and np.hypot(*(cen[i] - np.float64(pt))) < 25]
+    if not cand:
+        return a
+    i = min(cand, key=lambda i: np.hypot(*(cen[i] - np.float64(pt))))
+    blob = lab == i
+    m = blob | (cv2.dilate(blob.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & (a[..., :3].mean(-1) < 70) & ~sk)
+    a[m] = 0
+    # a paw held in front of the body leaves a hole in the coat: painted from the coat around it
+    sol = a[..., 3] > 0
+    ff = np.pad(sol.astype(np.uint8), 1)
+    cv2.floodFill(ff, np.zeros((ff.shape[0] + 2, ff.shape[1] + 2), np.uint8), (0, 0), 1)
+    hole = (ff[1:-1, 1:-1] == 0)
+    n, lab = cv2.connectedComponents(hole.astype(np.uint8), connectivity=4)
+    mine = set(np.unique(lab[m & hole])) - {0}           # only holes the erase opened (a paw in front of the coat),
+    hole = np.isin(lab, list(mine))                      # not the gaps between arm, body, tail and legs
+    if hole.any():
+        rgb = cv2.inpaint(a[..., :3].clip(0, 255).astype(np.uint8), cv2.dilate(hole.astype(np.uint8), np.ones((3, 3), np.uint8)), 4, cv2.INPAINT_TELEA)
+        a[hole, :3] = rgb[hole]
+        a[hole, 3] = 255
     return a

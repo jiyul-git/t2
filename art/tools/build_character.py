@@ -135,7 +135,7 @@ CHARS = {
     # paw points of each view (px of its trimmed picture, read off 8x grids), see with_props
     'tiger': dict(walker='tiger', turn=dict(sheet=TURN_TIGER, step=S + 'tiger_turn_step_sheet_2x4_gemini.webp', step_mirror='logo', emblem=dict(qr=(140, 138, 170, 156)), props=dict(pieces=dict(case=([(0, 255), (22, 188), (58, 180), (70, 182), (88, 200), (88, 262), (0, 268)], 30, 'l'),
                                                             phone=([(218, 113), (265, 110), (265, 168), (228, 168), (216, 150)], (240, 162), 'r')),
-                                               hands=dict(qr=dict(l=(57, 214), r=(185, 210)), front=dict(l=(22, 214), r=(183, 211)), ql=dict(l=(8, 214), r=(148, 220)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
+                                               hands=dict(qr=dict(l=(57, 214), r=(185, 210)), front=dict(l=(22, 214), r=(183, 211), paws=dict(l=(17, 192), r=(167, 192))), ql=dict(l=(8, 214), r=(148, 220)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='10')), facings={
         'f': dict(
             # standing at the seat: the turnaround front view carrying the walk frame's suitcase and phone (the stand
             # sheet's f_02 held the phone in the other paw and had no suitcase)
@@ -175,7 +175,7 @@ CHARS = {
     # the only 3/4 cell with both arms down faces right (f_33); mirrored for the left, like walk_l is the mirrored walk_r
     'rabbit': dict(walker='rabbit', turn=dict(sheet=TURN_RABBIT, step=S + 'rabbit_turn_step_sheet_2x4_gemini.webp', props=dict(pieces=dict(case=([(0, 265), (25, 222), (55, 215), (68, 200), (85, 205), (85, 230), (80, 302), (0, 302)], 30, 'l'),
                                                              phone=([(222, 138), (256, 138), (256, 190), (222, 190)], (237, 184), 'r')),
-                                                hands=dict(qr=dict(l=(10, 226), r=(162, 224)), front=dict(l=(15, 215), r=(66, 210)), ql=dict(l=(12, 222), r=(165, 226)))), qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
+                                                hands=dict(qr=dict(l=(10, 226), r=(162, 224)), front=dict(l=(15, 215), r=(66, 210), clasped=(69, 194)), ql=dict(l=(12, 222), r=(165, 226)))), qr=dict(cell='33'), front=dict(cell='00'), ql=dict(cell='33', mirror=True)), facings={
         'f': dict(
             # standing at the seat: the turnaround front view carrying the walk frame's suitcase and phone (the pose
             # sheet's coffee-cup cell f_31 changed the prop in the middle of the turn)
@@ -224,7 +224,7 @@ CHARS = {
     }),
     # no frontal seated turtle exists (every cell is three-quarters): it only takes the right sofa
     'turtle': dict(walker='turtle', turn=dict(sheet=TURN_TURTLE, step=S + 'turtle_turn_step_sheet_2x4_gemini.webp', props=dict(pieces=dict(ticket=([(186, 120), (225, 120), (225, 182), (186, 182)], (205, 178), 'r')),
-                                                hands=dict(qr=dict(l=(32, 210), r=(160, 198)), front=dict(l=(10, 205), r=(158, 213)), ql=dict(l=(8, 210), r=(130, 212)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
+                                                hands=dict(qr=dict(l=(32, 210), r=(160, 198)), front=dict(l=(10, 205), r=(158, 213), paws=dict(l=(13, 206), r=(148, 206))), ql=dict(l=(8, 210), r=(130, 212)))), qr=dict(cell='32'), front=dict(cell='00'), ql=dict(cell='02')), facings={
         'l': dict(
             stand='walk',
             # the waking-up cell (faces right, mirrored): its surprised "o" mouth becomes the sleeping
@@ -680,28 +680,96 @@ def head_lead(body, head_from, kind, cuts=None):
     a, dx, dy, zone = head_lead_mod.transplant(body.arr, head_from.arr, kind, *(cuts or (None, None)))
     f, _ = finish_edges(a)
     a = np.where(zone[..., None], f, a)
+    if kind == 'tiger':          # the body's gold T2 marks come back over the new collar (it must not swallow them)
+        m = cv2.dilate(props_mod.logo_mask(body.arr, head_lead_mod.cloth).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
+        ys, xs = np.nonzero(m)
+        a[ys + int(dy), xs + int(dx)] = body.arr[ys, xs]
     return Pic(a, body.ax + dx, body.ay + dy, 'head')
 
 
-def with_props(view, pieces, assign, hp, kind, f=1.0):
+def with_props(view, pieces, assign, hp, kind, f=1.0, bare=None):
     """the view with the walk frame's props (props.py). assign 'R': as in walk_r (pieces as cut), 'L': as in walk_l
-    (walk_l is walk_r mirrored: pieces mirrored, hands swapped), 'C': the hand-over - both hand-held props and the
-    suitcase handle at the middle point hp['c'], between the paws. hp: paw points (bottom of the paw) in px of the
-    view's trimmed picture before its head scaling f. Returns (Pic, metrics)."""
+    (walk_l is walk_r mirrored: pieces mirrored, hands swapped), 'C1' / 'C2' / 'C3': the hand-over at the front, from
+    the walk_r hands to the walk_l hands - C1 the hand-held prop raised to the middle in its paw, C2 both paws meet
+    with it between them (the suitcase stands on the floor), C3 it is in the other paw. The figure's own paw that is
+    in the middle is taken off its side (props.erase_paw). hp: paw points (bottom of the paw) in px of the view's
+    trimmed picture before its head scaling f. Returns (Pic, metrics)."""
     ys, xs = np.nonzero(view.arr[..., 3] > 0)
-    hp = {k: (x * f + xs.min(), y * f + ys.min()) for k, (x, y) in hp.items()}
-    if assign == 'C':
-        hp['c'] = ((hp['l'][0] + hp['r'][0]) / 2, (hp['l'][1] + hp['r'][1]) / 2)
+    paws = hp.get('paws', {})                       # the view's own paw centres, in px of the (scaled) view itself
+    hp = {k: (x * f + xs.min(), y * f + ys.min()) for k, (x, y) in hp.items() if k != 'paws'}
+    arr = view.arr
     lst = []
-    for name, (p, info, side) in pieces.items():
-        if assign == 'L':
-            p = p[:, ::-1].copy()
-            info = -info if name == 'case' else (p.shape[1] - 1 - info[0], info[1])
-            side = {'l': 'r', 'r': 'l'}[side]
-        if assign == 'C':
-            side = 'c'
-        lst.append((name, side, p, info))
-    a, ax, ay, zone, metrics = props_mod.carry(view.arr, view.ax, view.ay, hp, lst, kind)
+    mirror = lambda p: p[:, ::-1].copy()
+    if 'clasped' in hp and assign != 'L':
+        # a front view drawn with both paws clasped in the middle (the rabbit): the hand-held prop alone (bare, without
+        # the walk frame's paw) sits in the clasped paws; the hand-over slides it from one side of them to the other
+        dx = {'R': 0, 'C1': 4, 'C2': 0, 'C3': -4}[assign]
+        cx, cy = hp['clasped']
+        for name, (p, info, side) in pieces.items():
+            if name == 'case':
+                if assign in ('R', 'C1'):
+                    lst.append((name, side, p, info))
+                elif assign == 'C2':
+                    hp['floor'] = (cx, cy)
+                    lst.append((name, 'floor', p, info))
+                else:
+                    lst.append((name, {'l': 'r', 'r': 'l'}[side], mirror(p), -info))
+                continue
+            q = bare[name] if assign in ('R', 'C1') else mirror(bare[name])
+            hp['cl'] = (cx + dx, cy)
+            lst.append((name, 'cl', q, (q.shape[1] / 2, q.shape[0] * 0.6)))
+    elif assign in ('R', 'L'):
+        for name, (p, info, side) in pieces.items():
+            if assign == 'L':
+                p = mirror(p)
+                info = -info if name == 'case' else (p.shape[1] - 1 - info[0], info[1])
+                side = {'l': 'r', 'r': 'l'}[side]
+            lst.append((name, side, p, info))
+    else:
+        (lx, ly), (rx, ry) = hp['l'], hp['r']   # noqa: E501 - the paws at the sides: they come to the middle
+        cx, cy = (lx + rx) / 2, (ly + ry) / 2 + 0.03 * figure_h(view)   # at the belly: under the chest mark
+        off = 0.14 * abs(rx - lx)
+        stage = int(assign[1])
+        for name, (p, info, side) in pieces.items():
+            other = {'l': 'r', 'r': 'l'}[side]
+            if name == 'case':
+                if stage == 1:
+                    lst.append((name, side, p, info))
+                elif stage == 2:
+                    hp['floor'] = (cx, cy)
+                    lst.append((name, 'floor', p, info))
+                else:
+                    lst.append((name, other, mirror(p), -info))
+                continue
+            mp, mg = mirror(p), (p.shape[1] - 1 - info[0], info[1])
+            sgn = 1 if side == 'r' else -1                  # the walk_r hand's side of the middle
+            if stage in (1, 2):
+                hp[name + '1'] = (cx + sgn * off * (1 if stage == 1 else 0.5), cy)
+                lst.append((name, name + '1', p, info))
+                arr = props_mod.erase_paw(arr, paws[side], kind)
+            if stage == 2:
+                hp[name + '2'] = (cx - sgn * off * 0.5, cy + 2)
+                lst.append((name + '_paw', name + '2', props_mod.paw_only(mp, kind), mg))
+            if stage in (2, 3):
+                arr = props_mod.erase_paw(arr, paws[other], kind)
+            if stage == 3:
+                hp[name + '3'] = (cx - sgn * off, cy)
+                lst.append((name, name + '3', mp, mg))
+    a, ax, ay, zone, metrics = props_mod.carry(arr, view.ax, view.ay, hp, lst, kind)
+    metrics.pop('phone_paw', None); metrics.pop('ticket_paw', None)
+    if 'clasped' in hp and assign != 'L':
+        # the clasped paws drawn again over the prop: it is held between them
+        sk = props_mod.skin(arr[..., :3], kind) & (arr[..., 3] > 128)
+        n, lab = cv2.connectedComponents(sk.astype(np.uint8), connectivity=8)
+        yy, xx = np.mgrid[:arr.shape[0], :arr.shape[1]]
+        cx, cy = hp['clasped']
+        hit = set(np.unique(lab[sk & ((xx - cx) ** 2 + (yy - cy) ** 2 < 24 ** 2)])) - {0}
+        m = np.isin(lab, list(hit))
+        m |= cv2.dilate(m.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & (arr[..., :3].mean(-1) < 90)
+        X0, Y0 = int(round(view.ax - ax)), int(round(view.ay - ay))
+        ys_, xs_ = np.nonzero(m)
+        a[ys_ - Y0, xs_ - X0] = arr[ys_, xs_]
+        metrics = {k: (0.0, v[1]) for k, v in metrics.items()}   # held between the paws
     f_, _ = finish_edges(a)
     return Pic(f_, ax, ay, view.tag + '+props'), metrics
 
@@ -839,18 +907,26 @@ class Builder:
         views['hand'] = None
         views['bare'] = {}
         if pc:
-            pieces = {}
+            pieces, bare_p = {}, {}
             for k, (poly, info, side) in pc['pieces'].items():
                 held = k != 'case'                       # hand-held: cut with its paw, grip in piece px
                 p, (ox, oy) = props_mod.piece(wr.arr, poly, cfg['walker'], head_lead_mod.cloth if held else None, paw=held)
                 pieces[k] = (p, (info[0] - ox, info[1] - oy) if held else info, side)
+                if held:                                 # the prop alone, for a front view with clasped paws
+                    bare_p[k] = props_mod.piece(wr.arr, poly, cfg['walker'], head_lead_mod.cloth)[0]
             bare = dict(views)
+            if os.environ.get('T2_DUMP_VIEWS'):          # the plain views, to read paw points off a grid
+                for k_ in ('qr', 'front', 'ql'):
+                    to_pil(bare[k_].arr).save(Path(os.environ['T2_DUMP_VIEWS']) / ('%s_%s.png' % (cfg['walker'], k_)))
             views['bare'] = bare                         # head-first frames take the head from the view without props
             bare['stand'] = bare['front']               # the front stand is the front view ('turn')
             for key, assign in (('qr', 'R'), ('front', 'R'), ('ql', 'L')):
-                views[key], self.metrics[key] = with_props(bare[key], pieces, assign, pc['hands'][key], cfg['walker'], hf[key])
+                views[key], self.metrics[key] = with_props(bare[key], pieces, assign, pc['hands'][key], cfg['walker'], hf[key], bare_p)
             # the hand-over: front view, both props passed between the paws (the walk_l side holds them in the other hand)
-            views['hand'], self.metrics['hand'] = with_props(bare['front'], pieces, 'C', pc['hands']['front'], cfg['walker'], hf['front'])
+            views['hand'] = []
+            for st_ in ('C1', 'C2', 'C3'):
+                v_, self.metrics['hand' + st_[1]] = with_props(bare['front'], pieces, st_, pc['hands']['front'], cfg['walker'], hf['front'], bare_p)
+                views['hand'].append(v_)
         views['walk_r'], views['walk_l'] = wr, wl
         # a stepping-turn sheet (2 x 4, walking right -> facing the viewer, art/README.md), when it has come:
         # cells 2-7 replace the turnaround views; mirrored for the turn from walking left. One scale for the
@@ -902,8 +978,10 @@ class Builder:
                 seq = [W_r] + [add(p) for p in V['step_r']] + [hl('front', 'ql'), add(V['ql']), S0]
             else:
                 # the props change hands at the front (the walk_r side holds them in one hand, walk_l in the other)
-                ho = [add(V['hand'])] if V['hand'] else [hl('front', 'ql')]
-                seq = [W_r, hl('walk_r', 'qr'), add(V['qr']), hl('qr', 'front'), add(V['front'])] + ho + [add(V['ql']), S0]
+                ho = [add(h) for h in V['hand']] if V['hand'] else [hl('front', 'ql')]
+                # (a front head on the 3/4 body is not used: the turnaround's front head is bigger and lower and tore up
+                # the collar, drawstring and chest mark; the head leads only out of the walk)
+                seq = [W_r, hl('walk_r', 'qr'), add(V['qr']), add(V['front'])] + ho + [add(V['ql']), S0]
             self.clips[P('turn_r_front')] = dict(frm='walk_r', to=stand_pose, fps=12, frames=seq)
             self.clips[P('turn_front_r')] = dict(frm=stand_pose, to='walk_r', fps=12, frames=seq[::-1])
             self.clips[P('turn_l_front')] = dict(frm='walk_l', to=stand_pose, fps=12, frames=[S0])   # already facing left
@@ -929,9 +1007,9 @@ class Builder:
                 else:
                     q = 'q' + side
                     if side == 'l' and V['hand']:        # coming from walk_l: the props change hands before the stand
-                        seq = [W0, hl('walk_' + side, q), add(V[q]), add(V['hand']), add(V['hand']), S0, S0]
+                        seq = [W0, hl('walk_' + side, q), add(V[q])] + [add(h) for h in V['hand'][::-1]] + [S0]
                     else:
-                        seq = [W0, hl('walk_' + side, q), add(V[q]), add(V[q]), hl(q, 'stand'), S0, S0]
+                        seq = [W0, hl('walk_' + side, q), add(V[q]), add(V[q]), add(V[q]), S0, S0]
                 self.clips[P('turn_%s_front' % side)] = dict(frm='walk_' + side, to=stand_pose, fps=12, frames=seq)
                 self.clips[P('turn_front_%s' % side)] = dict(frm=stand_pose, to='walk_' + side, fps=12, frames=seq[::-1])
 

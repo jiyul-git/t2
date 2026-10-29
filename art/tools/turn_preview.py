@@ -90,11 +90,34 @@ def gif(name, man, atlas, facing):
     return p
 
 
+def clip_sheets(name, man, atlas, zoom=4):
+    """art/cutouts/turns/<name>_<clip>_4x.png: every frame of each turn clip in order, feet on one line, 4x nearest"""
+    out = []
+    for cid, c in man['clips'].items():
+        if cid.split('@')[0] not in ('turn_r_front', 'turn_l_front') or len(set(c['frames'])) < 2:
+            continue                                  # (turn_front_* are the same frames backwards)
+        seq = [i for j, i in enumerate(c['frames']) if j == 0 or c['frames'][j - 1] != i]
+        fr = [man['frames'][i] for i in seq]
+        up = max(f['ay'] for f in fr)
+        down = max(f['h'] - f['ay'] for f in fr)
+        W = sum(f['w'] for f in fr) + 4 * (len(fr) + 1)
+        sheet = Image.new('RGBA', (W, up + down + 8), BG)
+        x = 4
+        for f in fr:
+            sheet.alpha_composite(crop(atlas, f), (x, 4 + up - f['ay']))
+            x += f['w'] + 4
+        p = OUT / ('%s_%s_4x.png' % (name, cid.replace('@', '_at_')))
+        sheet.resize((sheet.width * zoom, sheet.height * zoom), Image.NEAREST).convert('RGB').save(p, optimize=True)
+        out.append(p)
+    return out
+
+
 def main():
     names = sys.argv[1:] or ['tiger', 'rabbit', 'turtle']
     for name in names:
         man, atlas = load(name)
         p, order = contact(name, man, atlas)
+        clip_sheets(name, man, atlas)
         print(p.relative_to(ROOT), 'frames', order)
         for facing in man['facings']:
             print(gif(name, man, atlas, facing).relative_to(ROOT))
