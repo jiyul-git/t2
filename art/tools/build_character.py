@@ -979,9 +979,10 @@ class Builder:
             else:
                 # the props change hands at the front (the walk_r side holds them in one hand, walk_l in the other)
                 ho = [add(h) for h in V['hand']] if V['hand'] else [hl('front', 'ql')]
-                # (a front head on the 3/4 body is not used: the turnaround's front head is bigger and lower and tore up
+                # head-first frames (head_lead.py) are no longer used out of the walk either: the join left a stair step
+                # and a straight seam at the collar (2026-10-29 review). (a front head on the 3/4 body is not used: the turnaround's front head is bigger and lower and tore up
                 # the collar, drawstring and chest mark; the head leads only out of the walk)
-                seq = [W_r, hl('walk_r', 'qr'), add(V['qr']), add(V['front'])] + ho + [add(V['ql']), S0]
+                seq = [W_r, add(V['qr']), add(V['qr']), add(V['front'])] + ho + [add(V['ql']), S0]
             self.clips[P('turn_r_front')] = dict(frm='walk_r', to=stand_pose, fps=12, frames=seq)
             self.clips[P('turn_front_r')] = dict(frm=stand_pose, to='walk_r', fps=12, frames=seq[::-1])
             self.clips[P('turn_l_front')] = dict(frm='walk_l', to=stand_pose, fps=12, frames=[S0])   # already facing left
@@ -1007,9 +1008,9 @@ class Builder:
                 else:
                     q = 'q' + side
                     if side == 'l' and V['hand']:        # coming from walk_l: the props change hands before the stand
-                        seq = [W0, hl('walk_' + side, q), add(V[q])] + [add(h) for h in V['hand'][::-1]] + [S0]
+                        seq = [W0, add(V[q]), add(V[q])] + [add(h) for h in V['hand'][::-1]] + [S0]
                     else:
-                        seq = [W0, hl('walk_' + side, q), add(V[q]), add(V[q]), add(V[q]), S0, S0]
+                        seq = [W0, add(V[q]), add(V[q]), add(V[q]), add(V[q]), S0, S0]
                 self.clips[P('turn_%s_front' % side)] = dict(frm='walk_' + side, to=stand_pose, fps=12, frames=seq)
                 self.clips[P('turn_front_%s' % side)] = dict(frm=stand_pose, to='walk_' + side, fps=12, frames=seq[::-1])
 

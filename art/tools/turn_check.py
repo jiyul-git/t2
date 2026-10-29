@@ -33,7 +33,7 @@ import props         # noqa: E402
 
 
 def pixels(a):
-    """(stray islands, outline breaks, spurs) of a picture"""
+    """(stray islands, outline breaks, spurs, specks near the figure, straight seams) of a picture"""
     al = a[..., 3] > 0
     n, lab, st, _ = cv2.connectedComponentsWithStats(al.astype(np.uint8), connectivity=8)
     stray = int((st[1:, cv2.CC_STAT_AREA] < 30).sum()) if n > 2 else 0
@@ -42,7 +42,24 @@ def pixels(a):
     edge = al & (nb > 0)
     light = int((edge & (a[..., :3].mean(-1) > 110)).sum())
     spur = int((al & (nb >= 3)).sum())
-    return stray, light, spur
+    # specks: any separate piece (even faint alpha) other than the figure, within 8 px of it
+    fig = lab == 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA])) if n > 1 else al
+    ring = cv2.dilate(fig.astype(np.uint8), np.ones((17, 17), np.uint8)).astype(bool) & ~fig
+    speck = int(cv2.connectedComponents((al & ring).astype(np.uint8), connectivity=8)[0] - 1)
+    # straight seams: runs of 12+ silhouette edge px in one column (or row) with nothing beside them on one side -
+    # a cut, not a drawn curve
+    seam = 0
+    out = ~fig
+    for axis in (0, 1):
+        e = fig & (np.roll(out, 1, axis) | np.roll(out, -1, axis))
+        f = e.T if axis == 1 else e          # outside left/right: runs down a column; above/below: along a row
+        for line in f:
+            run = 0
+            for v in line:
+                run = run + 1 if v else 0
+                if run == 12:
+                    seam += 1
+    return stray, light, spur, speck, seam
 
 
 def logo(a):
@@ -106,8 +123,8 @@ def main():
                 if i in walkers or i in done:
                     continue
                 done.add(i)
-                st_, li, sp = pixels(pic(i))
-                ok = st_ == 0 and li <= base[1] * 1.1 and sp <= base[2] * 1.1
+                st_, li, sp, sk, sm = pixels(pic(i))
+                ok = st_ == 0 and sk == 0 and li <= base[1] * 1.1 and sp <= base[2] * 1.1 and sm <= max(base[4], 2)
                 lg = ''
                 if name == 'tiger':
                     lp, lpc = logo(pic(i))
@@ -115,7 +132,8 @@ def main():
                     lg = 'T2 %d px / %d pc (walk %d)' % (lp, lpc, ref_logo[0])
                 bad += not ok
                 worst['stray'] = max(worst['stray'], st_)
-                pix.append('| %s | %d | %d | %d (walk %d) | %d (walk %d) | %s | %s |' % (name, i, st_, li, base[1], sp, base[2], lg, 'ok' if ok else 'FAIL'))
+                pix.append('| %s | %d | %d | %d | %d (walk %d) | %d (walk %d) | %d (walk %d) | %s | %s |' % (
+                    name, i, st_, sk, li, base[1], sp, base[2], sm, base[4], lg, 'ok' if ok else 'FAIL'))
             worst['head'] = max(worst['head'], hmax)
             worst['de'] = max(worst['de'], dmax)
             bad += hmax > HEAD_MAX
@@ -131,7 +149,7 @@ def main():
     head_ = '| 동물 | 클립 / 소품 | 그림(프레임 번호) | 머리 크기 √면적 px | 머리 최대 변화 % | 최대 ΔE |\n|---|---|---|---|---|---|'
     text = head_ + '\n' + '\n'.join(rows) + '\n\nmax head %.1f %% (limit %.0f), max prop gap %.1f px (limit %.0f), max dE %.2f\n' % (
         worst['head'], HEAD_MAX, worst['gap'], GAP_MAX, worst['de'])
-    text += '\n| 동물 | 그림 | 떨어진 조각 | 윤곽 끊김(밝은 가장자리 px) | 계단·돌기 px | 로고 | 판정 |\n|---|---|---|---|---|---|---|\n' + '\n'.join(pix) + '\n'
+    text += '\n| 동물 | 그림 | 떨어진 조각 | 8 px 안 티끌 | 윤곽 끊김(밝은 가장자리 px) | 계단·돌기 px | 곧은 이음매 | 로고 | 판정 |\n|---|---|---|---|---|---|---|---|---|\n' + '\n'.join(pix) + '\n'
     print(text)
     if md:
         Path(md).write_text(text)

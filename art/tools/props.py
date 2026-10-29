@@ -234,6 +234,13 @@ def emblem(a, walk, box, cloth, kind, wx=0.85):
     p = cv2.resize(p, (W, h), interpolation=cv2.INTER_AREA)
     m = cv2.resize(m, (W, h), interpolation=cv2.INTER_AREA)
     X, Y = int(round(cx - W / 2)), int(round(cy - h / 2))
+    # beside the drawstrings, not under them: the nearest offset (up to 12 px) where no light string px is under a letter
+    light = (a[..., :3].min(-1) > 150) & (a[..., 3] > 200)
+    for dx in sorted(range(-12, 13), key=abs):
+        sub_ = light[Y - 2:Y + h + 2, X + dx - 2:X + dx + W + 2]
+        if not sub_.any():
+            X += dx
+            break
     sub = a[Y:Y + h, X:X + W]
     k = (m[:sub.shape[0], :sub.shape[1]] * (sub[..., 3] > 200) * ~(sub[..., :3].min(-1) > 185))[..., None]   # never over a string
     sub[..., :3] = sub[..., :3] * (1 - k) + p[:sub.shape[0], :sub.shape[1], :3] * k
