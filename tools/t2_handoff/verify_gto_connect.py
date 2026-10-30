@@ -91,7 +91,7 @@ def rec_freq(hd, cols):
 
 # ---------------------------------------------------------------- A. 값 일치
 records = []
-for path in sorted(glob.glob(os.path.join(REC, 'p[346]0*_vs_*.json'))):
+for path in sorted(glob.glob(os.path.join(REC, 'p[136]0*_vs_*.json')) + glob.glob(os.path.join(REC, 'p40*_vs_*.json'))):   # 2026-10-30: p100 도
     rec = json.load(open(path))
     if rec.get('schema') != 'spot_quick_v1' or rec['id'].endswith('_dcfr_stop'):
         continue
@@ -332,8 +332,10 @@ cases = [
      G.defend_vs_3bet('BTN', 'SB', 9, 35, AK, 8.0) is not None),
     ('3bet BTN vs SB 50bb: 8bb -> None (60bb record is 10bb), 10bb -> interpolated',
      G.defend_vs_3bet('BTN', 'SB', 9, 50, AK, 8.0) is None and G.defend_vs_3bet('BTN', 'SB', 9, 50, AK, 10.0) is not None),
-    ('3bet BTN vs SB 60bb 10bb -> used; 70bb (no 100bb) -> None',
-     G.defend_vs_3bet('BTN', 'SB', 9, 60, AK, 10.0) is not None and G.defend_vs_3bet('BTN', 'SB', 9, 70, AK, 10.0) is None),
+    # 2026-10-30: 100bb BTN vs SB(3벳 10bb) 기록이 들어와 60~100bb 는 보간. 두 버킷이 없는 짝(CO vs SB 70bb)은 여전히 None
+    ('3bet BTN vs SB 60/70/100bb 10bb -> used (60·100 interpolated); CO vs SB 70bb (no 60/100 record) -> None',
+     G.defend_vs_3bet('BTN', 'SB', 9, 60, AK, 10.0) is not None and G.defend_vs_3bet('BTN', 'SB', 9, 70, AK, 10.0) is not None
+     and G.defend_vs_3bet('BTN', 'SB', 9, 100, AK, 10.0) is not None and G.defend_vs_3bet('CO', 'SB', 9, 70, AK, 10.0) is None),
     ('3bet hook: caller in pot -> None (old path)',
      PF.gto_pf_aggr_choice(prof, 'SB', 'CO', AK, r, 34.0, 8.0, 6.0, 2, other_live_actors=1, actor_acted=True,
                            aggressor_total_bb=35.0) is None),
