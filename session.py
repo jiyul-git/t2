@@ -103,6 +103,7 @@ def _merge_pf_seed(prev, new):
         'cold_audit': dict(out.get('pf_cold_audit') or {})
                       if out.get('pf_cold_audit') is not None else None,
         'stack_bb': out.get('pf_stack_bb'),
+        'gto_spot': out.get('pf_gto_spot'),
     })
     out['pf_line'] = line
     out['pf_origin_role'] = prev.get(
@@ -280,6 +281,17 @@ def _preflop_story_range(range_profile, pos, stack_bb, dead, seats, ante,
                  if pfo else int(public.get('n_callers', 0) or 0))
     level = (int(pfo.get('pf_level', 1) or 1)
              if pfo else int(public.get('raise_level', 1) or 1))
+
+    # 이 행동을 GTO 기준이 정했으면 상대 레인지도 같은 빈도로(2026-10-30). 기준 밖이면 아래 옛 경로.
+    if pfo.get('pf_gto_spot'):
+        rr, meta = R.gto_pf_story_range(
+            pfo, dead, range_profile, pos, float(stack_bb or 0.0), seats=seats, ante=ante,
+            old_range=lambda: _preflop_story_range(
+                range_profile, pos, stack_bb, dead, seats, ante, action,
+                pfo=dict(pfo, pf_gto_spot=None), public=public, polar=polar,
+                fourbet_rate=fourbet_rate)[0])
+        if rr is not None:
+            return rr, meta
 
     if (pfo and action == '3bet' and level >= 2
             and pfo.get('pf_decision_kind') == 'opener_backaction'):
@@ -1584,6 +1596,17 @@ class HandRun:
 
         _pub_story = dict(public)
         _pub_story['opener_pos'] = h.pos.get(public.get('opener_seat'))
+        # GTO 기준이 정한 행동은 그 빈도가 레인지의 기준값이다(조건부 v1 보다 먼저).
+        if pfo.get('pf_gto_spot') and not pfo.get('pf_execution_error'):
+            rr, _story = _preflop_story_range(
+                opp_view, h.pos[target], float(stack_bb or 0.0),
+                set(h.hole[observer]), seats, ante, act,
+                pfo=pfo, public=_pub_story, polar=pol,
+                fourbet_rate=((oe or {}).get('pf_4bet')))
+            if _story.get('source') == 'gto_pf_spot_range':
+                _story.update({'source_base': 'pf_seed',
+                               'stack_bb': float(stack_bb or 0.0)})
+                return R.range_unique_sorted(rr), _story
         # P8 test-only conditional posterior: observer-model profile, public
         # action history, no private target cards/persona.
         if os.environ.get('T2_RANGE_CONDITIONAL_V1') == '1':

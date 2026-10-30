@@ -457,6 +457,72 @@ def _gto_pf_icm_free(bf, money_open=None):
     return True
 
 
+# ---- GTO 기준이 실제로 행동을 정한 자리(spot) — 상대 레인지 모델과 공유한다(2026-10-30) ----
+# 훅은 gto_pf_spot_freqs(spot, hand) 로만 빈도를 읽고, 행동을 정했으면 그 spot 을 남긴다.
+# preflop_plan 이 seed_info['pf_gto_spot'] 으로 옮기고, ranges.gto_pf_story_range 가 같은 함수로
+# 169 클래스 빈도를 읽어 가중 레인지를 만든다. 빈도 계산이 한 곳뿐이라 봇이 치는 레인지와
+# 상대가 읽는 레인지가 갈라질 수 없다. 새 표·새 훅을 연결하면 여기(GTO_PF_SPOT_TABLES)와
+# tools/verify_range_sync.py 가 함께 바뀌어야 한다 — 안 바꾸면 그 검사가 실패한다.
+GTO_PF_SPOT_TABLES = {
+    'first_in': ('first_in',),
+    'vs_jam': ('vs_jam',),
+    'vs_3bjam': ('vs_3bjam',),
+    'vs_open': ('vs_open_full', 'vs_open_full_o25', 'vs_open'),
+    'vs_3bet': ('vs_3bet_full', 'vs_3bet'),
+    'vs_limp': ('vs_limp_full',),
+}
+_GTO_SPOT = [None]
+
+
+def take_gto_spot():
+    """이 결정에서 GTO 기준이 쓴 spot 을 받고 비운다(없으면 None)."""
+    s, _GTO_SPOT[0] = _GTO_SPOT[0], None
+    return s
+
+
+def gto_pf_spot_freqs(spot, hand):
+    """spot 에서 이 패의 기준 빈도. (빈도 dict, 'full'|'partial') 또는 None(그 패는 기존 경로).
+
+    full    : 행동 전체 빈도(합 1). partial: 공격 빈도만 + 'pass'(나머지는 기존 판단이 콜/폴드).
+    """
+    _GPF = _gto_pf_mod()
+    if _GPF is None or not spot:
+        return None
+    fn, a = spot['fn'], spot['args']
+    if fn == 'first_in':
+        g = _GPF.first_in(a['pos'], a['seats'], a['eff'], hand, a['ante'])
+        return (g, 'full') if g is not None else None
+    if fn in ('vs_jam', 'vs_3bjam'):
+        p = (_GPF.call_vs_jam(a['aggressor_pos'], a['pos'], a['seats'], a['eff'], hand, a['ante'])
+             if fn == 'vs_jam' else
+             _GPF.call_vs_3bet_jam(a['pos'], a['aggressor_pos'], a['seats'], a['eff'], hand, a['ante']))
+        return ({'call': p, 'fold': 1.0 - p}, 'full') if p is not None else None
+    if fn == 'vs_open':
+        full = getattr(_GPF, 'defend_vs_open', None)
+        f = (full(a['aggressor_pos'], a['pos'], a['seats'], a['eff'], hand, a['open_bb'], a['ante'])
+             if full else None)
+        if f is not None:
+            return f, 'full'
+        g = _GPF.aggr_vs_open(a['aggressor_pos'], a['pos'], a['seats'], a['eff'], hand, a['ante'])
+        if g is None:
+            return None
+        return {'jam': g['jam'], 'r3': g['r3'], 'pass': max(0.0, 1.0 - g['jam'] - g['r3'])}, 'partial'
+    if fn == 'vs_3bet':
+        full3 = getattr(_GPF, 'defend_vs_3bet', None)
+        f = (full3(a['pos'], a['aggressor_pos'], a['seats'], a['eff'], hand, a['open_bb'], a['ante'])
+             if full3 else None)
+        if f is not None:
+            return f, 'full'
+        j = _GPF.jam_vs_3bet(a['pos'], a['aggressor_pos'], a['seats'], a['eff'], hand, a['ante'])
+        if j is None:
+            return None
+        return {'jam': j, 'r3': 0.0, 'pass': max(0.0, 1.0 - j)}, 'partial'
+    if fn == 'vs_limp':
+        g = _GPF.defend_vs_limp(a['seats'], a['eff'], hand, a['ante'])
+        return (g, 'full') if g is not None else None
+    raise ValueError('unknown gto_pf spot %r' % (fn,))
+
+
 def gto_pf_open_eff_bb(pos, bb, behind_stacks, ante=True):
     """첫 진입 유효 스택(핸드 시작 기준). 자기 시작 스택과 뒤 최대 스택의 작은 쪽."""
     share = (1.0 / 9.0) if ante else 0.0
@@ -481,9 +547,12 @@ def gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks=None,
     if _GPF is None:
         return None
     eff = gto_pf_open_eff_bb(pos, bb, behind_stacks, ante)
-    g = _GPF.first_in(pos, seats, eff, hand, ante)
-    if g is None:
+    spot = {'fn': 'first_in', 'args': {'pos': pos, 'seats': seats, 'eff': eff, 'ante': ante}}
+    r = gto_pf_spot_freqs(spot, hand)
+    if r is None:
         return None
+    g = r[0]
+    _GTO_SPOT[0] = spot
     u = rng.random()
     act = ('jam' if u < g['jam'] else 'open' if u < g['jam'] + g['open']
            else 'limp' if u < g['jam'] + g['open'] + g['limp'] else 'fold')
@@ -519,15 +588,18 @@ def gto_pf_call_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
     # 내 행동은 오픈이다(림프였다면 그 위 레이즈한 사람이 따로 살아 있다).
     acted = bool(actor_acted) if actor_acted is not None else bool(prior_pf)
     if raise_level == 1 and not acted:
-        p = _GPF.call_vs_jam(aggressor_pos, pos, seats, eff, hand, ante)
-        kind = 'vs_jam'
+        fn, kind = 'vs_jam', 'vs_jam'
     elif raise_level == 2 and acted:
-        p = _GPF.call_vs_3bet_jam(pos, aggressor_pos, seats, eff, hand, ante)
-        kind = 'vs_3bet_jam'
+        fn, kind = 'vs_3bjam', 'vs_3bet_jam'
     else:
         return None
-    if p is None:
+    spot = {'fn': fn, 'args': {'aggressor_pos': aggressor_pos, 'pos': pos, 'seats': seats,
+                               'eff': eff, 'ante': ante}}
+    r = gto_pf_spot_freqs(spot, hand)
+    if r is None:
         return None
+    p = r[0]['call']
+    _GTO_SPOT[0] = spot
     act = 'call' if rng.random() < p else 'fold'
     _timing_bound({'kind': 'gto_pf_' + kind, 'eq': p, 'need': 0.5,
                    'gto_call': round(p, 4), 'eff_bb': round(eff, 3), 'choice': act})
@@ -563,39 +635,37 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
     eff += share
     if raise_level == 1 and not actor_acted:
         # 플랫콜 루프로 보정된 자리(현재 30~40bb BTN·CO 오픈 vs BB)는 콜·폴드까지 기준대로.
-        full = getattr(_GPF, 'defend_vs_open', None)
-        f = full(aggressor_pos, pos, seats, eff, hand, open_bb, ante) if full else None
-        if f is not None:
-            u = rng.random()
-            act = ('jam' if u < f['jam'] else '3bet' if u < f['jam'] + f['r3']
-                   else 'call' if u < f['jam'] + f['r3'] + f['call'] else 'fold')
-            _timing_bound({'kind': 'gto_pf_defend_full', 'eq': 1.0 - f['fold'], 'need': 0.5,
-                           'gto': {k: round(v, 4) for k, v in f.items()},
-                           'eff_bb': round(eff, 3), 'choice': act})
-            return act
-        g = _GPF.aggr_vs_open(aggressor_pos, pos, seats, eff, hand, ante)
-        if g is None:
-            return None
-        kind, p_jam, p_r3 = 'vs_open', g['jam'], g['r3']
+        fn = 'vs_open'
     elif raise_level == 2 and actor_acted:
         # 3벳을 받은 오프너: 서브게임 기록이 있는 짝(30·40bb CO·UTG+1 vs SB, UTG vs BTN)은
-        # 폴드·콜·작은 4벳·올인 전체를 기준대로(2026-10-24 연결). 없으면 아래 4벳 올인만.
-        full3 = getattr(_GPF, 'defend_vs_3bet', None)
-        f = full3(pos, aggressor_pos, seats, eff, hand, open_bb, ante) if full3 else None
-        if f is not None:
-            u = rng.random()
-            act = ('jam' if u < f['jam'] else '4bet' if u < f['jam'] + f['r4']
-                   else 'call' if u < f['jam'] + f['r4'] + f['call'] else 'fold')
-            _timing_bound({'kind': 'gto_pf_vs_3bet_full', 'eq': 1.0 - f['fold'], 'need': 0.5,
-                           'gto': {k: round(v, 4) for k, v in f.items()},
-                           'eff_bb': round(eff, 3), 'choice': act})
-            return act
-        j = _GPF.jam_vs_3bet(pos, aggressor_pos, seats, eff, hand, ante)
-        if j is None:
-            return None
-        kind, p_jam, p_r3 = 'vs_3bet', j, 0.0
+        # 폴드·콜·작은 4벳·올인 전체를 기준대로(2026-10-24 연결). 없으면 4벳 올인만.
+        fn = 'vs_3bet'
     else:
         return None
+    spot = {'fn': fn, 'args': {'aggressor_pos': aggressor_pos, 'pos': pos, 'seats': seats,
+                               'eff': eff, 'open_bb': open_bb, 'ante': ante}}
+    r = gto_pf_spot_freqs(spot, hand)
+    if r is None:
+        return None
+    f, src = r
+    _GTO_SPOT[0] = spot
+    if src == 'full' and fn == 'vs_open':
+        u = rng.random()
+        act = ('jam' if u < f['jam'] else '3bet' if u < f['jam'] + f['r3']
+               else 'call' if u < f['jam'] + f['r3'] + f['call'] else 'fold')
+        _timing_bound({'kind': 'gto_pf_defend_full', 'eq': 1.0 - f['fold'], 'need': 0.5,
+                       'gto': {k: round(v, 4) for k, v in f.items()},
+                       'eff_bb': round(eff, 3), 'choice': act})
+        return act
+    if src == 'full':
+        u = rng.random()
+        act = ('jam' if u < f['jam'] else '4bet' if u < f['jam'] + f['r4']
+               else 'call' if u < f['jam'] + f['r4'] + f['call'] else 'fold')
+        _timing_bound({'kind': 'gto_pf_vs_3bet_full', 'eq': 1.0 - f['fold'], 'need': 0.5,
+                       'gto': {k: round(v, 4) for k, v in f.items()},
+                       'eff_bb': round(eff, 3), 'choice': act})
+        return act
+    kind, p_jam, p_r3 = fn, f['jam'], f['r3']
     u = rng.random()
     act = 'jam' if u < p_jam else '3bet' if u < p_jam + p_r3 else 'pass'
     _timing_bound({'kind': 'gto_pf_aggr_' + kind, 'eq': p_jam + p_r3, 'need': 0.5,
@@ -622,9 +692,12 @@ def gto_pf_limp_choice(prof, pos, hand, rng, bb, limper_pos, limper_total_bb,
         return None
     share = (1.0 / 9.0) if ante else 0.0
     eff = min(float(bb) + 1.0, float(limper_total_bb)) + share     # 핸드 시작 스택(BB 는 1bb 포스팅)
-    g = _GPF.defend_vs_limp(seats, eff, hand, ante)
-    if g is None:
+    spot = {'fn': 'vs_limp', 'args': {'seats': seats, 'eff': eff, 'ante': ante}}
+    r = gto_pf_spot_freqs(spot, hand)
+    if r is None:
         return None
+    g = r[0]
+    _GTO_SPOT[0] = spot
     act = 'raise' if rng.random() < g['raise'] else 'check'
     _timing_bound({'kind': 'gto_pf_vs_limp', 'eq': g['raise'], 'need': 0.5,
                    'gto': {'check': round(g['check'], 4), 'raise': round(g['raise'], 4)},

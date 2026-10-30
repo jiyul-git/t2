@@ -3758,6 +3758,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
     # 실제 반영은 defend_decision(exploit=rd) 안의 역치 보정에서 이뤄진다.
     rd = PS.read_opponent(profile, opp_est)
     _pf.take_timing_bound()          # 시간 모델용 경계 기록을 이 결정 것으로만 받는다
+    _pf.take_gto_spot()              # GTO 기준 spot 도 이 결정 것만(상대 레인지 동기화용)
     _gto_call = None
     if aggressor_pos is not None and opener_allin and float(to_call_bb or 0) > 0:
         _gto_call = _pf.gto_pf_call_choice(
@@ -3994,6 +3995,7 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         # 기준상 공격하지 않는 패. 기존 경로가 공격을 골랐다면 계속 가는 쪽(콜)으로.
         a, sz = 'call', float(open_bb)
     _recorded_timing = _pf.take_timing_bound()
+    _gto_spot = _pf.take_gto_spot()
     if _calloff_consumer is None:
         _pf_timing = _recorded_timing
 
@@ -4061,6 +4063,9 @@ def preflop_plan(profile, pos, hand, bb, rng, aggressor_pos=None, open_bb=0.0,
         # D2 provenance: later streets must not rebuild an all-in player's
         # preflop range from current stack=0.
         'pf_stack_bb': float(bb or 0.0),
+        # 이 행동을 GTO 기준이 정했으면 그 spot(훅 입력). 상대 레인지 모델이 같은 빈도로
+        # 이 좌석의 레인지를 만든다(ranges.gto_pf_story_range, 2026-10-30). 기준 밖이면 None.
+        'pf_gto_spot': _gto_spot,
         'pf_initiative': a in ('raise', '3bet', 'shove'),
         'pf_multiway': (n_callers + n_limpers) >= 2,
         'pf_hand_pct': _pf.pct(hand),

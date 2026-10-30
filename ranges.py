@@ -346,6 +346,149 @@ def _defend_likelihood_range(prof, pos, action, bb, ok, n_callers, opener_pos,
     return out or None
 
 
+# ---------- GTO 기준으로 행동한 좌석의 프리플랍 레인지 (2026-10-30) ----------
+#
+# 봇은 기준 범위 안에서 gto_pf 빈도로 행동한다(preflop.gto_pf_*_choice). 그 행동을 본 상대가
+# 옛 경로(gto.rfi × 성향, defend_thresholds)로 레인지를 만들면 실제 레인지와 어긋난다.
+# 행동을 정한 훅이 남긴 spot(pf_seed['pf_gto_spot'], 공개 정보: 자리·스택·크기)으로
+# 같은 함수(preflop.gto_pf_spot_freqs)를 169 클래스에 불러, 콤보 질량 = 그 행동의 클래스 빈도로 둔다.
+# 앞 행동도 기준이 정했으면(pf_line 의 gto_spot) 그 빈도를 곱한다(오픈 → 3벳 받고 콜 = 오픈 × 콜).
+# partial(공격 빈도만 기준, 콜/폴드는 기존 판단) 의 콜 = 'pass' 빈도 × 관찰자 모델의 기존 계속 확률.
+# 기록에 없는 클래스(그 패는 기존 경로로 행동)는 기존 경로 레인지의 그 클래스 질량을 쓴다.
+GTO_ACT_KEY = {
+    'first_in': {'shove': 'jam', 'raise': 'open', 'limp': 'limp'},
+    'vs_jam': {'call': 'call'},
+    'vs_3bjam': {'call': 'call'},
+    'vs_open': {'shove': 'jam', '3bet': 'r3', 'raise': 'r3', 'call': 'call'},
+    'vs_3bet': {'shove': 'jam', '3bet': 'r4', 'raise': 'r4', 'call': 'call'},
+    'vs_limp': {'check': 'check', 'raise': 'raise'},
+}
+_CLS_COMBOS = {}
+_GTO_CLS_CACHE = {}
+_GTO_CONT_CACHE = {}
+
+
+def _cls_combos():
+    if not _CLS_COMBOS:
+        for c in _SORTED:
+            _CLS_COMBOS.setdefault(pf.cls(list(c)), []).append(tuple(c))
+    return _CLS_COMBOS
+
+
+def gto_pf_steps(pfo):
+    """pf_seed → [(spot, act), ...] (앞 행동부터). 마지막 행동에 spot 이 없으면 []."""
+    pfo = dict(pfo or {})
+    if not pfo.get('pf_gto_spot') or pfo.get('pf_execution_error'):
+        return []
+    line = list(pfo.get('pf_line') or [])
+    prev = [(x.get('gto_spot'), x.get('act')) for x in line[:-1]]
+    return prev + [(pfo['pf_gto_spot'], pfo.get('pf_act'))]
+
+
+def gto_pf_class_weights(steps):
+    """클래스 → (기준 질량, 'gto'|'old_continue'|'fallback'). 마지막 행동을 기준이 설명 못 하면 None.
+
+    'old_continue': partial 콜 — 질량에 관찰자 모델의 기존 계속 확률을 더 곱해야 한다.
+    'fallback'    : 그 클래스는 마지막 행동에서 기준 기록이 없다(기존 경로가 그 패를 정했다).
+    """
+    import json as _json
+    key = _json.dumps(steps, sort_keys=True, default=str)
+    hit = _GTO_CLS_CACHE.get(key)
+    if hit is not None:
+        return hit
+    spot_l, act_l = steps[-1]
+    if act_l not in GTO_ACT_KEY.get(spot_l['fn'], {}):
+        return None
+    out = {}
+    for k, combos in _cls_combos().items():
+        rep = list(combos[0])
+        w, mode = 1.0, 'gto'
+        for i, (spot, act) in enumerate(steps):
+            last = i == len(steps) - 1
+            if not spot:
+                continue                     # 그 앞 행동은 기준 밖: 옛 모델처럼 곱하지 않는다
+            r = pf.gto_pf_spot_freqs(spot, rep)
+            if r is None:
+                if last:
+                    mode = 'fallback'
+                continue
+            f, src = r
+            ak = GTO_ACT_KEY.get(spot['fn'], {}).get(act)
+            if src == 'partial':
+                if act == 'call':
+                    w *= f['pass']
+                    if last:
+                        mode = 'old_continue'
+                    continue
+                ak = 'r3' if ak in ('r3', 'r4') else ak
+            w *= float(f.get(ak, 0.0)) if ak else 0.0
+        out[k] = (w, mode)
+    if len(_GTO_CLS_CACHE) > 2048:
+        _GTO_CLS_CACHE.clear()
+    _GTO_CLS_CACHE[key] = out
+    return out
+
+
+def gto_pf_story_range(pfo, dead, prof_type, pos, bb, seats=8, ante=True,
+                       old_range=None):
+    """기준이 정한 행동의 가중 레인지와 메타. 기준 밖이면 (None, None)."""
+    steps = gto_pf_steps(pfo)
+    if not steps:
+        return None, None
+    cw = gto_pf_class_weights(steps)
+    if cw is None:
+        return None, None
+    dead = set(dead or ())
+    pfo = dict(pfo)
+    old_cls = None
+    if any(m == 'fallback' for _w, m in cw.values()):
+        old = weighted_range(old_range() if old_range else {})
+        old_cls = {}
+        for c, w in old.items():
+            k = pf.cls(list(c))
+            old_cls[k] = max(old_cls.get(k, 0.0), w)
+    out = {}
+    n_fb = n_old = 0
+    ckey = (_prof_key(prof_type), pos, pfo.get('pf_vs'), round(float(bb or 0), 2),
+            round(float(pfo.get('pf_open_bb') or 2.5), 3), int(pfo.get('pf_n_callers') or 0),
+            int(pfo.get('pf_level') or 1), seats, ante)
+    for k, (w, mode) in cw.items():
+        if mode == 'fallback':
+            w = old_cls.get(k, 0.0); n_fb += 1
+        elif mode == 'old_continue' and w > 0:
+            ck = ckey + (k,)
+            cont = _GTO_CONT_CACHE.get(ck)
+            if cont is None:
+                lk = pf.defend_action_likelihoods(
+                    prof_type, pos, pfo.get('pf_vs'), list(_cls_combos()[k][0]), bb,
+                    float(pfo.get('pf_open_bb') or 2.5), int(pfo.get('pf_n_callers') or 0),
+                    raise_level=int(pfo.get('pf_level') or 1), stack_bb=bb, seats=seats, ante=ante)
+                cont = max(0.0, min(1.0, float(lk['call']) + float(lk['attack'])))
+                if len(_GTO_CONT_CACHE) > 200000:
+                    _GTO_CONT_CACHE.clear()
+                _GTO_CONT_CACHE[ck] = cont
+            w *= cont
+            n_old += 1
+        if w <= 0:
+            continue
+        for c in _cls_combos()[k]:
+            if c[0] not in dead and c[1] not in dead:
+                out[c] = w
+    spot = steps[-1][0]
+    return out, {
+        'source': 'gto_pf_spot_range',
+        'action': pfo.get('pf_act'),
+        'gto_fn': spot['fn'],
+        'gto_args': dict(spot['args']),
+        'chain': [s['fn'] if s else None for s, _a in steps],
+        'fallback_classes': n_fb,
+        'old_continue_classes': n_old,
+        'raise_level': int(pfo.get('pf_level') or 1),
+        'opener_pos': pfo.get('pf_vs'),
+        'open_bb': float(pfo.get('pf_open_bb') or 0.0),
+    }
+
+
 def preflop_range(prof_type, pos, action, bb, dead, n_callers=0,
                   opener_pos=None, open_bb=2.5, seats=8, ante=True, polar=0.0,
                   raise_level=1):
