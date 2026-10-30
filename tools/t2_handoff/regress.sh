@@ -5,6 +5,9 @@
 cd "$(dirname "$0")/../.."
 export T2_DATA_DIR="${T2_DATA_DIR:-$(mktemp -d)}"     # 개인 지갑 폴더를 건드리지 않게
 OUT=$(mktemp)
+# 상대 레인지 ↔ GTO 기준 동기화(2026-10-30). 기준 파일 비교와 별개로, 실패하면 바로 멈춘다.
+python3 tools/verify_range_sync.py > /dev/null 2>&1 || { echo "RANGE_SYNC_FAIL: python3 tools/verify_range_sync.py"; exit 1; }
+echo "range sync ok"
 for t in tools/verify_core_p7_cold_reraise.py tools/verify_core_p7_observation.py tools/verify_core_multiway_reads.py \
   tools/verify_core_joint_nut.py tools/verify_core_sizing_ownership.py tools/verify_preflop_closure.py \
   tools/verify_human_model_v3.py tools/verify_human_model_v3_runtime.py tools/verify_human_model_v3_integration.py \

@@ -146,7 +146,8 @@ sh tools/t2_handoff/rebuild_gto_pf.sh /tmp/rec       # gto_pf_data.json 다시 �
 python3 tools/t2_handoff/flat_check.py /tmp/rec      # 보정 자리: 연결 값 = 기록 값(클래스별 ≤ 0.002)
 python3 tools/t2_handoff/verify_gto_connect.py /tmp/rec 40 /tmp/connect.json   # 연결 검사(약 30분, 아래)
 # 기존 표 값이 바뀌지 않았는지: 이전 gto_pf_data.json 과 표·키별 비교(바뀐 키가 없어야 함)
-bash tools/t2_handoff/regress.sh                     # 회귀 20개 = 기준(모두 0)
+python3 tools/verify_range_sync.py                  # 상대 레인지 동기화(필수, 약 30초): 레인지 클래스 질량 = 훅 빈도(≤ 0.005)
+bash tools/t2_handoff/regress.sh                     # 레인지 동기화 + 회귀 20개 = 기준(모두 0)
 bash tools/t2_handoff/ui_checks.sh                   # 화면·게이트웨이(모두 0, opencv 필요)
 ```
 
@@ -156,6 +157,18 @@ bash tools/t2_handoff/ui_checks.sh                   # 화면·게이트웨이(�
   D 새 표·모듈이 없어도 예외 없이 기존 판단. 결과 JSON 에 클래스별 숫자와 크기 배분(size_split)이 남는다.
 - 새 종류의 노드는 빌더(`gto_pf_build.py`: id 로 종류를 가른다 — `_limp_`, `v1_`, 나머지 플랫콜)·조회(`gto_pf.py`)·연결 지점(`preflop.py`)·
   `plan.py` 행동 변환·`verify_gto_connect.py` 를 함께 만든다. 빌더는 `_dcfr_stop` 기록(옛 정지 기록)을 건너뛴다.
+- **상대 레인지 모델 동기화는 연결의 일부다(필수, 2026-10-30).** 봇이 기준 빈도로 행동하는 자리에서 상대가 옛 경로
+  (`gto.rfi` × 성향, `defend_thresholds`)로 레인지를 읽으면 포스트플랍 EV 가 틀린 레인지 위에서 계산된다. 구조:
+  훅은 `preflop.gto_pf_spot_freqs(spot, hand)` 로만 빈도를 읽고, 행동을 정했으면 spot(자리·스택·크기 = 공개 정보)을
+  남긴다 → `plan.preflop_plan` 이 `seed_info['pf_gto_spot']`, `session._merge_pf_seed` 가 `pf_line[].gto_spot` 에 옮긴다 →
+  `session._preflop_story_range`(조건부 v1 경로보다 먼저)가 `ranges.gto_pf_story_range` 로 같은 함수를 169 클래스에 불러
+  가중 레인지(콤보 질량 = 그 행동의 클래스 빈도, 앞 행동도 기준이면 곱함)를 만든다. partial(공격만 기준) 콜 = 'pass' 빈도 ×
+  관찰자 모델의 기존 계속 확률, 기록 없는 클래스 = 기존 경로 질량. 기준 밖은 옛 경로 그대로. 관찰자 실력·인지 층
+  (`reconstruct_range_with_accuracy`, `blend_action_range_by_grasp`)은 이 기준값 위에 그대로 얹힌다.
+  새 표·새 조회 함수·새 훅을 연결할 때 함께 바꿀 곳: `preflop.GTO_PF_SPOT_TABLES`·`gto_pf_spot_freqs`(훅은 이것만 부른다),
+  `ranges.GTO_ACT_KEY`(관찰 행동 → 빈도 키), `tools/verify_range_sync.py`(격자·행동 목록). 빠뜨리면
+  `verify_range_sync.py` 가 실패한다(표가 목록에 없음 / 조회 함수가 spot 함수를 안 거침 / 클래스 질량 ≠ 훅 빈도).
+  `regress.sh` 는 이 검사가 실패하면 회귀 20개 전에 멈춘다(RANGE_SYNC_FAIL).
 - 실제 봇 행동 비교(옛 기록 형식 spot_record_v2 전용): `tools/t2_handoff/pfcmp.py`. quick 기록은 verify_gto_connect 를 쓴다.
 - 커밋 메시지에 계산기 값과 봇 값(폴드/콜/3벳/올인 %)을 적어 둔다(지금까지 그렇게 해 왔다).
 
