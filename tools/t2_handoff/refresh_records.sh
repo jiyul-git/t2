@@ -31,7 +31,9 @@ WB=origin/claude/p3bet_b_20261026               # 100bb BTN vs SB 3벳(오픈 2.
 WC=origin/claude/p3bet_c_20261026               # 60bb HJ 오픈 2.5 수비
 WD=origin/claude/p3bet_d_20261026               # 100bb HJ 오픈 2.5 수비
 W100=origin/claude/p100_flat_o25_20261027       # 100bb BTN 오픈 2.5 수비
-for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100; do
+RS1=origin/claude/resume_p100_flat_20261030     # 10-28 에 끊긴 100bb CO·LJ 오픈 2.5 수비 이어 돌림(코디네이터 10-30)
+RS2=origin/claude/resume_p3bet_20261030         # 10-28 에 끊긴 100bb CO vs BTN 3벳, 60bb LJ 오픈 2.5 수비 이어 돌림
+for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100 $RS1 $RS2; do
   n="${b#origin/}"
   git fetch -q origin "$n:refs/remotes/$b" 2>/dev/null \
     || git fetch -q origin "refs/tags/archive/$n:refs/remotes/$b" 2>/dev/null \
@@ -78,6 +80,8 @@ show $WB p100v1_btn_vs_sb_3b40_o25.json
 show $WC p60_flat_hj_vs_bb_o25.json
 show $WD p100_flat_hj_vs_bb_o25.json
 show $W100 p100_flat_btn_vs_bb_o25.json
+for x in p100_flat_co_vs_bb_o25 p100_flat_lj_vs_bb_o25; do show $RS1 $x.json; done   # 끝난 것만 있다
+for x in p100v1_co_vs_btn_o25 p60_flat_lj_vs_bb_o25; do show $RS2 $x.json; done
 # 사본 갱신: 압축본 + 출처표(파일, 브랜치/태그, 커밋, sha256)
 D=data/gto_records; mkdir -p $D; rm -f $D/*.json.gz
 printf 'file\tsha256_json\n' > $D/MANIFEST.tsv
@@ -85,7 +89,7 @@ for f in $(ls "$OUT" | sort); do
   gzip -9n -c "$OUT/$f" > "$D/$f.gz"
   printf '%s\t%s\n' "$f" "$(sha256sum "$OUT/$f" | cut -c1-64)" >> $D/MANIFEST.tsv
 done
-for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100; do
+for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100 $RS1 $RS2; do
   printf '# %s %s\n' "${b#origin/}" "$(git rev-parse --short=8 "$b" 2>/dev/null || echo missing)" >> $D/MANIFEST.tsv
 done
 rm -rf "$OUT"; ls $D | wc -l

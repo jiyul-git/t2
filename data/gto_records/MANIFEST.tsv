@@ -1,5 +1,6 @@
 file	sha256_json
 p100_flat_btn_vs_bb_o25.json	f418e0c49d3ff28999265e89bc9e4f0605c9f203f1859aed76d103d04fe49637
+p100_flat_co_vs_bb_o25.json	9ff5ed7249fcac520e213e2191e65ac8a64795ee213495bf3cbba25dde59ca06
 p100_flat_hj_vs_bb_o25.json	48fbeef2b91345df4aa4b71c2a92ee885c398db557026de49a3801c6653cc75a
 p100v1_btn_vs_sb_3b40_o25.json	655a7c29cc926eb174350c02946e0d08e8116de63fa2229e5f9d1bc3bb125a0f
 p30_flat_btn_vs_bb.json	3221e5265cd765ee4d621752054e3dfea3372e2b40c486c86a1a5b4e8db72acb
@@ -82,3 +83,5 @@ s60.json	f3cbb1e1cc3595d2dee05a846534f9f37e352bd3e13237d335c6e539cf9f57b6
 # claude/p3bet_c_20261026 94dc2ef4
 # claude/p3bet_d_20261026 1e272bf7
 # claude/p100_flat_o25_20261027 0b512bd6
+# claude/resume_p100_flat_20261030 6863927c
+# claude/resume_p3bet_20261030 31adef82
