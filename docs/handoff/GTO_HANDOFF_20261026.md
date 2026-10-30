@@ -8,6 +8,7 @@ UI(라운지 그림)는 제외. GTO 계산과 T2 연결만. 이 문서 하나로
 - master 는 사용자 승인 때만. test3 = 시험 배포(빨리감기 push 만, force push 금지). PR 은 요청 때만.
 - GTO 값을 T2 에 연결하는 건 사용자 승인 사항 — **지금까지 승인된 범위**: 퀵 기록 연결(10-24), 100bb 부모(첫 진입·오픈 받은 공격), 40bb UTG+2, 오픈 크기별 수비(2.0/2.5/3.0, 10-25 "그렇게 ㄱㄱ"). 새 종류의 연결은 물어본다.
 - 연결 전 반드시: 연결 검사 + 회귀 20개 + 화면·게이트웨이 28개 (아래 3장). 커밋 메시지에 모델 이름 금지.
+- **(사용자 지시 10-30) GTO 빈도를 새로 연결할 때마다 상대 레인지 추정(`ranges.preflop_range`·`range_posterior_v1`)도 같은 GTO 값으로 맞추는 것까지가 연결 범위다.** 봇이 실제로 치는 레인지와 플랍 이후 계산에 쓰는 상대 레인지가 따로 놀면 안 된다. 레인지 동기화 검사(작업 중: `claude/range_sync_gto_20261030`, `tools/verify_range_sync.py`)가 통과해야 test3 에 올린다.
 - 커밋 끝줄: `Co-Authored-By: <모델> <noreply@anthropic.com>` / `Claude-Session: https://claude.ai/code/session_<id>`.
 
 ## 1. 지금 test3 에 연결된 것 (test3 3cf9cc5d 기준)
