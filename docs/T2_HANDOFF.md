@@ -111,6 +111,15 @@ T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 
 - verify_gto_connect 는 p60 기록(60bb 플랫콜 o25 2개, 3벳 1개)도 A·B 검사에 넣는다(전에는 p30·p40 만 봤다).
 - 검사: verify_gto_pf 53 / flat_check 전부 ≤ 0.002 / verify_gto_connect 275 통과(기록 51개) / regress 기준과 같음 / ui_checks 28 통과.
 
+연결 갱신 2026-10-30(사용자 승인 "완료된 5개 연결", 코디네이터 session_012qfUk9):
+- 일꾼 브랜치에서 끝난 기록 5개(census 로 아직 안 모인 3개 포함)를 바로 가져와 추가: 60bb CO vs BTN 3벳(오픈 2.5, 3벳 7.5bb),
+  100bb BTN vs SB 3벳(오픈 2.5, 3벳 10bb), 오픈 2.5 수비 60bb HJ, 100bb HJ·BTN. 기존 표 값은 하나도 바뀌지 않음(새 항목 5개만).
+- 100bb BTN vs SB 가 생겨 60~100bb BTN vs SB(3벳 10bb)는 보간으로 쓰인다(전에는 60bb 초과면 기존 판단).
+- refresh_records.sh 에 일꾼 브랜치 5개(WA~WD, W100), rebuild 에 p100 기록, verify_gto_connect 가 p100 도 A·B 검사.
+- 검사: verify_gto_pf 53 / verify_gto_connect 302 통과(p100 3개 포함) / regress 기준과 같음 / ui_checks 28 통과.
+- 이어서 계산 중(10-28 에 끊긴 4개, 이 계정 세션이 이어 돌림): 100bb CO·LJ 오픈 2.5 수비, 100bb CO vs BTN 3벳, 60bb LJ 오픈 2.5 수비
+  → `claude/resume_p100_flat_20261030`, `claude/resume_p3bet_20261030`.
+
 사용자 결정 2026-10-26:
 - 100bb 를 넘는 스택(standard 시작 150bb)은 100bb 표를 그대로 쓴다(`gto_pf.covered` 상한 없음).
 - 기준 범위 안 GTO 오픈은 유효 스택 60bb 이상이면 2.5bb, 그 아래는 2.0bb, SB 는 3.0bb
