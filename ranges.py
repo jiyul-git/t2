@@ -352,6 +352,7 @@ def _defend_likelihood_range(prof, pos, action, bb, ok, n_callers, opener_pos,
 # 옛 경로(gto.rfi × 성향, defend_thresholds)로 레인지를 만들면 실제 레인지와 어긋난다.
 # 행동을 정한 훅이 남긴 spot(pf_seed['pf_gto_spot'], 공개 정보: 자리·스택·크기)으로
 # 같은 함수(preflop.gto_pf_spot_freqs)를 169 클래스에 불러, 콤보 질량 = 그 행동의 클래스 빈도로 둔다.
+# 빈도는 개인 층을 거친 값이다(2026-10-31): 관찰자 모델의 그 사람 프로필(range_profile)로 부른다.
 # 앞 행동도 기준이 정했으면(pf_line 의 gto_spot) 그 빈도를 곱한다(오픈 → 3벳 받고 콜 = 오픈 × 콜).
 # partial(공격 빈도만 기준, 콜/폴드는 기존 판단) 의 콜 = 'pass' 빈도 × 관찰자 모델의 기존 계속 확률.
 # 기록에 없는 클래스(그 패는 기존 경로로 행동)는 기존 경로 레인지의 그 클래스 질량을 쓴다.
@@ -385,14 +386,17 @@ def gto_pf_steps(pfo):
     return prev + [(pfo['pf_gto_spot'], pfo.get('pf_act'))]
 
 
-def gto_pf_class_weights(steps):
+def gto_pf_class_weights(steps, prof=None):
     """클래스 → (기준 질량, 'gto'|'old_continue'|'fallback'). 마지막 행동을 기준이 설명 못 하면 None.
 
     'old_continue': partial 콜 — 질량에 관찰자 모델의 기존 계속 확률을 더 곱해야 한다.
     'fallback'    : 그 클래스는 마지막 행동에서 기준 기록이 없다(기존 경로가 그 패를 정했다).
     """
     import json as _json
-    key = _json.dumps(steps, sort_keys=True, default=str)
+    # 개인 층(2026-10-31): 관찰자가 아는 그 사람의 프로필로 같은 개인 빈도를 읽는다.
+    pps = tuple(pf.gto_pf_personal(prof, s['fn']) if s and prof is not None else None
+                for s, _a in steps)
+    key = _json.dumps([steps, pps], sort_keys=True, default=str)
     hit = _GTO_CLS_CACHE.get(key)
     if hit is not None:
         return hit
@@ -407,7 +411,7 @@ def gto_pf_class_weights(steps):
             last = i == len(steps) - 1
             if not spot:
                 continue                     # 그 앞 행동은 기준 밖: 옛 모델처럼 곱하지 않는다
-            r = pf.gto_pf_spot_freqs(spot, rep)
+            r = pf.gto_pf_spot_freqs(spot, rep, prof)
             if r is None:
                 if last:
                     mode = 'fallback'
@@ -435,7 +439,7 @@ def gto_pf_story_range(pfo, dead, prof_type, pos, bb, seats=8, ante=True,
     steps = gto_pf_steps(pfo)
     if not steps:
         return None, None
-    cw = gto_pf_class_weights(steps)
+    cw = gto_pf_class_weights(steps, prof_type)
     if cw is None:
         return None, None
     dead = set(dead or ())

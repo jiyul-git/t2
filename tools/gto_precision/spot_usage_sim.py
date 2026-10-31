@@ -120,8 +120,8 @@ EFF = defaultdict(list)
 _orig_sf = PF.gto_pf_spot_freqs
 
 
-def _wrapped(spot, hand):
-    r = _orig_sf(spot, hand)
+def _wrapped(spot, hand, prof=None):
+    r = _orig_sf(spot, hand, prof)
     caller = sys._getframe(1).f_code.co_name
     if caller.startswith('gto_pf_') and caller.endswith('_choice'):
         fn = spot['fn']

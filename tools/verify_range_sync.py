@@ -64,7 +64,7 @@ pub = {n for n, f in vars(G).items() if inspect.isfunction(f) and not n.startswi
 for n in sorted(pub - LOOKUPS - NON_LOOKUP):
     fail('gto_pf.%s is a new public lookup; route it through preflop.gto_pf_spot_freqs '
          'and add it to this check' % n)
-src = inspect.getsource(P.gto_pf_spot_freqs)
+src = inspect.getsource(P.gto_pf_spot_freqs) + inspect.getsource(P._raw_class)
 for n in sorted(LOOKUPS):
     if n not in src:
         fail('gto_pf.%s not used by preflop.gto_pf_spot_freqs' % n)
@@ -235,6 +235,36 @@ for x in stack_points('vs_limp_full', 'SB>BB'):
     a = {'seats': SEATS, 'eff': x, 'ante': True}
     covered += check_spot('vs_limp', a, 'BB', 'SB', 1.0, 1)
 print('covered spots %d, class comparisons %d' % (n_spots, n_cmp))
+
+# 개인 층(2026-10-31): 프로필이 달라도 훅과 레인지가 같은 개인 빈도여야 한다. 대표 프로필 몇 개로 표본 spot 을 다시 본다.
+def _mk(skill, loose, gamble=5.0, positional=None):
+    p = PS.make_player(random.Random(11), pid=2)
+    for c in p['concepts']:
+        p['concepts'][c] = skill
+    if positional is not None:
+        p['concepts']['positional'] = positional
+    p['temper'].update(looseness=loose, aggression=loose, gamble=gamble)
+    return p
+_P0 = PROF
+_n0 = n_spots
+for PROF in (_mk(10, 5), _mk(0, 10, gamble=10), _mk(2, 0), _mk(5, 8, positional=1)):
+    for key in ('UTG', 'CO', 'BTN', 'SB'):
+        for x in (12.0, 27.5, 50.0):
+            a = {'pos': key, 'seats': SEATS, 'eff': x, 'ante': True}
+            check_spot('first_in', a, key, None, 0.0, 1)
+            check_spot('first_in', dict(a, rf=1.2), key, None, 0.0, 1)
+    for agg, pos, x in (('BTN', 'BB', 15.0), ('SB', 'BB', 10.0)):
+        check_spot('vs_jam', {'aggressor_pos': agg, 'pos': pos, 'seats': SEATS, 'eff': x, 'ante': True},
+                   pos, agg, x, 1)
+    for o, dfn, x, ob in (('BTN', 'BB', 30.0, 2.0), ('CO', 'BB', 35.0, 2.25), ('UTG', 'BTN', 60.0, 2.0)):
+        check_spot('vs_open', {'aggressor_pos': o, 'pos': dfn, 'seats': SEATS, 'eff': x, 'ante': True,
+                               'open_bb': ob}, dfn, o, ob, 1)
+    for o, tb, x, tsz in (('CO', 'SB', 30.0, 8.0), ('UTG', 'BTN', 40.0, 6.0)):
+        check_spot('vs_3bet', {'aggressor_pos': tb, 'pos': o, 'seats': SEATS, 'eff': x, 'ante': True,
+                               'open_bb': tsz}, o, tb, tsz, 2)
+    check_spot('vs_limp', {'seats': SEATS, 'eff': 35.0, 'ante': True}, 'BB', 'SB', 1.0, 1)
+PROF = _P0
+print('personal-layer profiles: %d more spots, class comparisons %d' % (n_spots - _n0, n_cmp))
 if n_spots < 50:
     fail('too few covered spots exercised: %d' % n_spots)
 
@@ -288,8 +318,8 @@ if [x.get('gto_spot') for x in s2['pf_line']] != [want, vs]:
     fail('_merge_pf_seed does not carry gto_spot into pf_line')
 w, meta = range_cls(s2, 'CO', 30.0, 'call')
 for k in ('AKs', 'QJs', 'T9s', '72o'):
-    f1 = P.gto_pf_spot_freqs(want, REP[k])[0]['open']
-    r2 = P.gto_pf_spot_freqs(vs, REP[k])
+    f1 = P.gto_pf_spot_freqs(want, REP[k], PROF)[0]['open']
+    r2 = P.gto_pf_spot_freqs(vs, REP[k], PROF)
     f2 = r2[0]['call'] if r2 and r2[1] == 'full' else None
     if f2 is None:
         continue

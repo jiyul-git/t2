@@ -531,17 +531,14 @@ def compose_first_in(base, rf):
     return out
 
 
-def _first_in_composed(_GPF, a, hand):
+def _first_in_composed(_GPF, a, hand, pp=None):
     k = cls(hand)
-    key = (a['pos'], a['seats'], round(float(a['eff']), 4), bool(a['ante']), a['rf'])
+    key = (a['pos'], a['seats'], round(float(a['eff']), 4), bool(a['ante']), a['rf'], pp)
     tab = _COMPOSE_CACHE.get(key)
     if tab is None:
-        base = {}
-        for c in PCT:
-            g = _GPF.first_in(a['pos'], a['seats'], a['eff'], _cls_rep(c), a['ante'])
-            if g is None:
-                return None
-            base[c] = g
+        base = _personal_table(_GPF, 'first_in', a, pp) if pp else _raw_table(_GPF, 'first_in', a)
+        if base is None or any(v is None for v in base.values()):
+            return None
         tab = compose_first_in(base, float(a['rf']))
         if len(_COMPOSE_CACHE) > 4096:
             _COMPOSE_CACHE.clear()
@@ -549,43 +546,202 @@ def _first_in_composed(_GPF, a, hand):
     return tab.get(k)
 
 
-# ---- GTO 기준이 실제로 행동을 정한 자리(spot) — 상대 레인지 모델과 공유한다(2026-10-30) ----
-# 훅은 gto_pf_spot_freqs(spot, hand) 로만 빈도를 읽고, 행동을 정했으면 그 spot 을 남긴다.
-# preflop_plan 이 seed_info['pf_gto_spot'] 으로 옮기고, ranges.gto_pf_story_range 가 같은 함수로
-# 169 클래스 빈도를 읽어 가중 레인지를 만든다. 빈도 계산이 한 곳뿐이라 봇이 치는 레인지와
-# 상대가 읽는 레인지가 갈라질 수 없다. 새 표·새 훅을 연결하면 여기(GTO_PF_SPOT_TABLES)와
-# tools/verify_range_sync.py 가 함께 바뀌어야 한다 — 안 바꾸면 그 검사가 실패한다.
-GTO_PF_SPOT_TABLES = {
-    'first_in': ('first_in',),
-    'vs_jam': ('vs_jam',),
-    'vs_3bjam': ('vs_3bjam',),
-    'vs_open': ('vs_open_full', 'vs_open_full_o25', 'vs_open'),
-    'vs_3bet': ('vs_3bet_full', 'vs_3bet'),
-    'vs_limp': ('vs_limp_full',),
-}
-_GTO_SPOT = [None]
+# ---- 개인 층: GTO 표 → 그 사람의 빈도 (사용자 결정 2026-10-31) ----
+# 표(gto_pf)는 '공부한 답'이고, 사람은 그 위에서 차트 지식·기질·포지션 인식만큼 벗어난다.
+# 모든 gto_pf 훅과 상대 레인지 모델이 gto_pf_spot_freqs(spot, hand, prof) 하나로 같은 개인 빈도를 읽는다.
+# 나중에 더 정밀한 표가 오면 표만 바뀌고 이 층은 그대로다.
+#   이탈 여지 room = 1 − 차트 지식. 지식 = 0.10 + 0.90·min(1, 숙련/8) — 숙련 8 이상은 1.0(표 그대로, 비트까지).
+#     (open_pct 의 상한 0.90 은 '실력 있는 LAG' 를 위한 것이었다. 그 모양은 나중의 익스플로잇 층이 맡는다.)
+#   폭 배수 = 1 + room × 기질 방향 × 0.95 (open_pct 와 같은 식). 방향: 루즈 0.75 + 공격 0.25,
+#     림프 받은 BB 의 레이즈와 partial(공격 빈도만 기준)의 공격 폭은 공격성만.
+#   포지션 눌림(첫 진입만): 자리 폭 → 테이블 평균 쪽으로 flat = (1 − 포지션 인식) × 0.60. 인식도 숙련 8 에서 1.0.
+#   목표 폭(콤보 질량)을 맞추는 방법은 단조다. 패는 고정된 '사람의 플레이 감각 순서'(_PLAY, Chen 식:
+#   높은 카드·페어·수딧·연결)로만 들어오고 나간다 — EV 순서도 GTO 순서도 아니다.
+#     넓힐 때: ① 섞인 클래스(0 < p < 0.95)를 같은 비율로 1 쪽으로 늘린다(순서를 바꾸지 않고 비례).
+#              ② 그래도 모자라면 표가 0 인 클래스를 감각 순서 높은 것부터 채운다(경계에서 바깥으로).
+#     좁힐 때: ① 섞인 클래스를 같은 비율로 줄인다. ② 그래도 남으면 표가 0.95 이상인 클래스를 감각 순서
+#              낮은 것부터, 각각 최대 '좁힘 몫'(1 − 목표/표 폭)만큼만 줄인다 — 그래서 0.95 이상인 패는
+#              어떤 프로필도 접지 않고, 프리미엄은 표보다 좁힘 몫 이상 줄지 않는다.
+#   쓰레기(72o·83o 등): 따로 바닥 상수는 없다 — 감각 순서의 맨 끝 PF_TRASH_FRAC(콤보 몫)이다.
+#     보통 프로필은 그 구간에 새로 들어가지 않는다(표가 이미 치는 몫만 남는다). 극단적 도박 기질(gamble > 8)
+#     이고 차트 지식이 낮을 때(room > 0.5)만 PF_TRASH_MAX 이하의 작은 빈도로 들어간다. 값은 사용자와 정할 일.
+#   행동 몫: 기존 클래스는 자기 몫 유지, 새로 들어온 클래스는 섞인 클래스들의 평균 몫(없으면 경계 클래스 몫).
+#   이탈이 0 이면(room = 0, flat = 0) 표를 그대로 돌려준다. 머니점프 배수(rf)는 이 층 다음에 얹는다.
+PF_TRASH_FRAC = 0.12        # 감각 순서 맨 끝 콤보 몫 = 쓰레기 구간
+PF_TRASH_MAX = 0.04         # 쓰레기 구간 최대 빈도(gamble 10 · 숙련 0 일 때). 보수적 기본값
+PF_PURE = 0.95              # 이 이상은 '순수' 클래스 — 접지 않는다
+_PERS_CACHE = {}
+_RAW_CACHE = {}
+_AVG_CACHE = {}
 
 
-def take_gto_spot():
-    """이 결정에서 GTO 기준이 쓴 spot 을 받고 비운다(없으면 None)."""
-    s, _GTO_SPOT[0] = _GTO_SPOT[0], None
-    return s
+def _play_score(k):
+    """사람의 플레이 감각 점수(Chen 식). 높을수록 치고 싶은 패. 동점은 높은 카드·둘째 카드·수딧 순."""
+    hv = {'A': 10.0, 'K': 8.0, 'Q': 7.0, 'J': 6.0}
+    a, b = RV[k[0]], RV[k[1]]
+    s = hv.get(k[0], a / 2.0)
+    if len(k) == 2:
+        s = max(5.0, 2.0 * s)
+    else:
+        if k[2] == 's':
+            s += 2.0
+        gap = a - b - 1
+        s -= (0, 1, 2, 4)[gap] if gap < 4 else 5
+        if gap <= 1 and a < RV['Q']:
+            s += 1.0
+    return (s, a, b, len(k) == 2 or k[2] == 's')
 
 
-def gto_pf_spot_freqs(spot, hand):
-    """spot 에서 이 패의 기준 빈도. (빈도 dict, 'full'|'partial') 또는 None(그 패는 기존 경로).
+_PLAY = sorted(PCT, key=_play_score, reverse=True)          # 감각 순서(높은 것부터)
+_NCOMBO = {k: (6 if len(k) == 2 else 4 if k[2] == 's' else 12) for k in PCT}
 
-    full    : 행동 전체 빈도(합 1). partial: 공격 빈도만 + 'pass'(나머지는 기존 판단이 콜/폴드).
+
+def _trash_set():
+    tot = float(sum(_NCOMBO.values()))
+    out, acc = set(), 0.0
+    for k in reversed(_PLAY):
+        if acc + _NCOMBO[k] > PF_TRASH_FRAC * tot + 1e-9:
+            break
+        out.add(k)
+        acc += _NCOMBO[k]
+    return frozenset(out)
+
+
+PF_TRASH = _trash_set()
+
+
+def pf_chart_knowledge(prof, concept):
+    """개인 층의 차트 지식 0.10~1.00. 숙련 8 이상이면 1.0(표 그대로)."""
+    return 0.10 + 0.90 * min(1.0, max(0.0, PS.sk(prof, concept)) / 8.0)
+
+
+def gto_pf_personal(prof, fn):
+    """이 프로필의 개인 층 값 (room, dir, dir_aggr, flat, trash) 또는 None(이탈 없음 = 표 그대로).
+
+    상대 레인지 모델은 관찰자가 아는 프로필(reads.range_profile)로 같은 함수를 부른다.
     """
-    _GPF = _gto_pf_mod()
-    if _GPF is None or not spot:
+    if not isinstance(prof, dict) or not prof:
         return None
-    fn, a = spot['fn'], spot['args']
+    room = 1.0 - pf_chart_knowledge(prof, 'pf_range' if fn == 'first_in' else 'pf_defend')
+    loose = PS.temper(prof, 'looseness', 5.0)
+    aggr = PS.temper(prof, 'aggression', 5.0)
+    d = PS.preflop_temper_direction(0.75 * loose + 0.25 * aggr)
+    da = PS.preflop_temper_direction(aggr)
+    flat = 0.0
     if fn == 'first_in':
-        if a.get('rf') is not None:
-            g = _first_in_composed(_GPF, a, hand)
+        flat = (1.0 - pf_chart_knowledge(prof, 'positional')) * 0.60
+    g = PS.temper(prof, 'gamble', 5.0)
+    trash = PF_TRASH_MAX * max(0.0, min(1.0, (g - 8.0) / 2.0)) * max(0.0, min(1.0, (room - 0.5) / 0.4))
+    pp = tuple(round(x, 4) for x in (room, d, da, flat, trash))
+    if pp[0] <= 0.0 and pp[3] <= 0.0:
+        return None
+    return pp
+
+
+# 각 spot 의 '들어감' 행동(폭)과 '안 들어감' 행동
+_PERS_IN = {
+    'first_in': (('jam', 'open', 'limp'), 'fold'),
+    'vs_jam': (('call',), 'fold'), 'vs_3bjam': (('call',), 'fold'),
+    'vs_open_full': (('jam', 'r3', 'call'), 'fold'),
+    'vs_3bet_full': (('jam', 'r4', 'call'), 'fold'),
+    'partial': (('jam', 'r3'), 'pass'),
+    'vs_limp': (('raise',), 'check'),
+}
+
+
+def personalize(base, kind, pp, target_mult=None, avg_in=None):
+    """{클래스: 표 빈도} → {클래스: 개인 빈도}. 순수 함수. 클래스 값이 None 이면(기록 없음) 그대로 둔다."""
+    ins, out_k = _PERS_IN[kind]
+    room, d, da, flat, trash = pp
+    dirv = da if kind in ('vs_limp', 'partial') else d
+    live = {k: g for k, g in base.items() if g is not None}
+    p = {k: max(0.0, min(1.0, sum(g.get(a, 0.0) for a in ins))) for k, g in live.items()}
+    W = sum(_NCOMBO[k] * p[k] for k in live)
+    if W <= 1e-12:
+        return dict(base)
+    T = W
+    if flat > 0.0 and avg_in is not None:
+        T = W * (1.0 - flat) + avg_in * flat
+    T *= (1.0 + room * dirv * 0.95) if target_mult is None else target_mult
+    T = max(0.0, T)
+    if abs(T - W) < 1e-12 and trash <= 0.0:
+        return dict(base)
+    new = dict(p)
+    mixed = [k for k in live if 0.0 < p[k] < PF_PURE]
+    if T > W:
+        left = T - W
+        # 극단 도박 기질: 쓰레기 구간에 작은 빈도로 먼저 들어간다
+        if trash > 0.0:
+            tr = [k for k in live if k in PF_TRASH and p[k] < trash]
+            need = sum(_NCOMBO[k] * (trash - p[k]) for k in tr)
+            f = min(1.0, left / need) if need > 0 else 0.0
+            for k in tr:
+                new[k] = p[k] + f * (trash - p[k])
+            left -= f * need
+        mx = [k for k in mixed if k not in PF_TRASH]
+        room_m = sum(_NCOMBO[k] * (1.0 - p[k]) for k in mx)
+        if room_m > 0 and left > 0:
+            s = min(1.0, left / room_m)
+            for k in mx:
+                new[k] = p[k] + s * (1.0 - p[k])
+            left -= s * room_m
+        for k in _PLAY:
+            if left <= 1e-12:
+                break
+            if k not in live or p[k] > 0.0 or k in PF_TRASH:
+                continue
+            add = min(1.0, left / _NCOMBO[k])
+            new[k] = add
+            left -= add * _NCOMBO[k]
+    elif T < W:
+        rel = 1.0 - T / W
+        left = W - T
+        m_mass = sum(_NCOMBO[k] * p[k] for k in mixed)
+        if m_mass > 0:
+            s = min(1.0, left / m_mass)
+            for k in mixed:
+                new[k] = p[k] * (1.0 - s)
+            left -= s * m_mass
+        for k in reversed(_PLAY):
+            if left <= 1e-12:
+                break
+            if k not in live or p[k] < PF_PURE:
+                continue
+            cut = min(rel * p[k], left / _NCOMBO[k])
+            new[k] = p[k] - cut
+            left -= cut * _NCOMBO[k]
+    # 새로 들어온 클래스의 행동 몫 = 섞인 클래스 평균 몫(콤보·빈도 가중), 없으면 가장 낮은 감각의 친 클래스 몫
+    acc = {a: 0.0 for a in ins}
+    for k in mixed:
+        for a in ins:
+            acc[a] += _NCOMBO[k] * live[k].get(a, 0.0)
+    if sum(acc.values()) <= 1e-12:
+        edge = next((k for k in reversed(_PLAY) if k in live and p[k] > 0), None)
+        acc = {a: (live[edge].get(a, 0.0) if edge else (1.0 if a == ins[-1] else 0.0)) for a in ins}
+    sa = sum(acc.values()) or 1.0
+    split_new = {a: v / sa for a, v in acc.items()}
+    res = {}
+    for k, g in base.items():
+        if g is None:
+            res[k] = None
+            continue
+        q = max(0.0, min(1.0, new[k]))
+        if p[k] > 1e-12:
+            o = {a: g.get(a, 0.0) * q / p[k] for a in ins}
         else:
-            g = _GPF.first_in(a['pos'], a['seats'], a['eff'], hand, a['ante'])
+            o = {a: q * split_new[a] for a in ins}
+        o[out_k] = max(0.0, 1.0 - sum(o.values()))
+        for a, v in g.items():                     # 표에만 있는 다른 키(raise_bb 등)는 그대로
+            if a not in o:
+                o[a] = v
+        res[k] = o
+    return res
+
+
+def _raw_class(_GPF, fn, a, hand):
+    """표 그대로의 (빈도, 'full'|'partial') 또는 None — 개인 층 이전."""
+    if fn == 'first_in':
+        g = _GPF.first_in(a['pos'], a['seats'], a['eff'], hand, a['ante'])
         return (g, 'full') if g is not None else None
     if fn in ('vs_jam', 'vs_3bjam'):
         p = (_GPF.call_vs_jam(a['aggressor_pos'], a['pos'], a['seats'], a['eff'], hand, a['ante'])
@@ -616,6 +772,124 @@ def gto_pf_spot_freqs(spot, hand):
         g = _GPF.defend_vs_limp(a['seats'], a['eff'], hand, a['ante'])
         return (g, 'full') if g is not None else None
     raise ValueError('unknown gto_pf spot %r' % (fn,))
+
+
+def _spot_key(fn, a):
+    return (fn,) + tuple(sorted((k, round(v, 6) if isinstance(v, float) else v)
+                                for k, v in a.items() if k != 'rf'))
+
+
+def _raw_table(_GPF, fn, a, with_src=False):
+    """169 클래스의 표 빈도 {클래스: dict|None} (with_src 면 {클래스: (dict, src)|None})."""
+    key = _spot_key(fn, a)
+    t = _RAW_CACHE.get(key)
+    if t is None:
+        t = {c: _raw_class(_GPF, fn, a, _cls_rep(c)) for c in PCT}
+        if len(_RAW_CACHE) > 2048:
+            _RAW_CACHE.clear()
+        _RAW_CACHE[key] = t
+    if with_src:
+        return t
+    return {c: (v[0] if v else None) for c, v in t.items()}
+
+
+def _first_in_avg(_GPF, a):
+    """같은 스택·좌석 수에서 첫 진입 자리들(BB 제외)의 평균 진입 질량(콤보). 포지션 눌림의 목표."""
+    import table as _TB
+    seats = int(a['seats'])
+    key = (seats, round(float(a['eff']) * 4.0) / 4.0, bool(a['ante']))
+    v = _AVG_CACHE.get(key)
+    if v is None:
+        _, pre, _ = _TB.orders(seats)
+        ws = []
+        for pos in pre:
+            if pos == 'BB':
+                continue
+            t = _raw_table(_GPF, 'first_in', dict(a, pos=pos, eff=key[1]))
+            if any(g is None for g in t.values()):
+                continue
+            ws.append(sum(_NCOMBO[k] * (1.0 - g['fold']) for k, g in t.items()))
+        v = (sum(ws) / len(ws)) if ws else None
+        _AVG_CACHE[key] = v
+    return v
+
+
+def _personal_table(_GPF, fn, a, pp):
+    """개인 층을 거친 169 클래스 빈도 {클래스: dict|None} (src 는 _raw_table 과 같다)."""
+    key = _spot_key(fn, a) + (pp,)
+    t = _PERS_CACHE.get(key)
+    if t is None:
+        raw = _raw_table(_GPF, fn, a, with_src=True)
+        srcs = {v[1] for v in raw.values() if v}
+        base = {c: (v[0] if v else None) for c, v in raw.items()}
+        if fn == 'first_in':
+            kind, avg = 'first_in', _first_in_avg(_GPF, a)
+        elif fn in ('vs_open', 'vs_3bet'):
+            kind, avg = (fn + '_full' if srcs == {'full'} else 'partial'), None
+        else:
+            kind, avg = fn, None
+        if len(srcs) > 1:
+            # 한 spot 에 full 과 partial 이 섞이면(3벳 서브게임 기록에 없는 클래스) full 클래스만 개인 층,
+            # partial 클래스는 표 그대로(그 패의 콜/폴드는 기존 판단이 이미 성향을 탄다).
+            sub = {c: (v[0] if v and v[1] == 'full' else None) for c, v in raw.items()}
+            t = personalize(sub, fn + '_full', pp)
+            t = {c: (t[c] if t.get(c) is not None else base[c]) for c in base}
+        else:
+            t = personalize(base, kind, pp, avg_in=avg)
+        if len(_PERS_CACHE) > 4096:
+            _PERS_CACHE.clear()
+        _PERS_CACHE[key] = t
+    return t
+
+
+# ---- GTO 기준이 실제로 행동을 정한 자리(spot) — 상대 레인지 모델과 공유한다(2026-10-30) ----
+# 훅은 gto_pf_spot_freqs(spot, hand) 로만 빈도를 읽고, 행동을 정했으면 그 spot 을 남긴다.
+# preflop_plan 이 seed_info['pf_gto_spot'] 으로 옮기고, ranges.gto_pf_story_range 가 같은 함수로
+# 169 클래스 빈도를 읽어 가중 레인지를 만든다. 빈도 계산이 한 곳뿐이라 봇이 치는 레인지와
+# 상대가 읽는 레인지가 갈라질 수 없다. 새 표·새 훅을 연결하면 여기(GTO_PF_SPOT_TABLES)와
+# tools/verify_range_sync.py 가 함께 바뀌어야 한다 — 안 바꾸면 그 검사가 실패한다.
+GTO_PF_SPOT_TABLES = {
+    'first_in': ('first_in',),
+    'vs_jam': ('vs_jam',),
+    'vs_3bjam': ('vs_3bjam',),
+    'vs_open': ('vs_open_full', 'vs_open_full_o25', 'vs_open'),
+    'vs_3bet': ('vs_3bet_full', 'vs_3bet'),
+    'vs_limp': ('vs_limp_full',),
+}
+_GTO_SPOT = [None]
+
+
+def take_gto_spot():
+    """이 결정에서 GTO 기준이 쓴 spot 을 받고 비운다(없으면 None)."""
+    s, _GTO_SPOT[0] = _GTO_SPOT[0], None
+    return s
+
+
+def gto_pf_spot_freqs(spot, hand, prof=None):
+    """spot 에서 이 패의 개인 빈도. (빈도 dict, 'full'|'partial') 또는 None(그 패는 기존 경로).
+
+    full    : 행동 전체 빈도(합 1). partial: 공격 빈도만 + 'pass'(나머지는 기존 판단이 콜/폴드).
+    prof    : 행동하는 사람(훅) 또는 관찰자가 아는 그 사람(레인지 모델). 표 → 개인 층(gto_pf_personal)
+              → 첫 진입이면 머니점프 배수(rf). 이탈이 없으면(prof 없음, 숙련 최상) 표 그대로.
+    """
+    _GPF = _gto_pf_mod()
+    if _GPF is None or not spot:
+        return None
+    fn, a = spot['fn'], spot['args']
+    if fn not in GTO_PF_SPOT_TABLES:
+        raise ValueError('unknown gto_pf spot %r' % (fn,))
+    pp = gto_pf_personal(prof, fn) if prof is not None else None
+    if fn == 'first_in' and a.get('rf') is not None:
+        g = _first_in_composed(_GPF, a, hand, pp)
+        return (g, 'full') if g is not None else None
+    if pp is None:
+        return _raw_class(_GPF, fn, a, hand)
+    raw = _raw_class(_GPF, fn, a, hand)
+    if raw is None:
+        return None
+    t = _personal_table(_GPF, fn, a, pp)
+    g = t.get(cls(hand))
+    return (g, raw[1]) if g is not None else None
 
 
 def gto_pf_open_eff_bb(pos, bb, behind_stacks, ante=True):
@@ -650,13 +924,15 @@ def gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks=None,
     spot = {'fn': 'first_in', 'args': {'pos': pos, 'seats': seats, 'eff': eff, 'ante': ante}}
     if rf != 1.0:
         spot['args']['rf'] = rf
-    r = gto_pf_spot_freqs(spot, hand)
+    r = gto_pf_spot_freqs(spot, hand, prof)
     if r is None:
         return None
     g = r[0]
     _GTO_SPOT[0] = spot
     if money_open is not None:
-        base = (_GPF.first_in(pos, seats, eff, hand, ante) if rf != 1.0 else g)
+        pp = gto_pf_personal(prof, 'first_in')
+        base = g if rf == 1.0 else (_personal_table(_GPF, 'first_in', spot['args'], pp)[cls(hand)] if pp
+                                    else _GPF.first_in(pos, seats, eff, hand, ante))
         money_open['gto_compose'] = {
             'rf': rf, 'base_in': round(1.0 - base['fold'], 6),
             'composed_in': round(1.0 - g['fold'], 6)}
@@ -702,7 +978,7 @@ def gto_pf_call_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
         return None
     spot = {'fn': fn, 'args': {'aggressor_pos': aggressor_pos, 'pos': pos, 'seats': seats,
                                'eff': eff, 'ante': ante}}
-    r = gto_pf_spot_freqs(spot, hand)
+    r = gto_pf_spot_freqs(spot, hand, prof)
     if r is None:
         return None
     p = r[0]['call']
@@ -751,7 +1027,7 @@ def gto_pf_aggr_choice(prof, aggressor_pos, pos, hand, rng, bb, open_bb,
         return None
     spot = {'fn': fn, 'args': {'aggressor_pos': aggressor_pos, 'pos': pos, 'seats': seats,
                                'eff': eff, 'open_bb': open_bb, 'ante': ante}}
-    r = gto_pf_spot_freqs(spot, hand)
+    r = gto_pf_spot_freqs(spot, hand, prof)
     if r is None:
         return None
     f, src = r
@@ -800,7 +1076,7 @@ def gto_pf_limp_choice(prof, pos, hand, rng, bb, limper_pos, limper_total_bb,
     share = (1.0 / 9.0) if ante else 0.0
     eff = min(float(bb) + 1.0, float(limper_total_bb)) + share     # 핸드 시작 스택(BB 는 1bb 포스팅)
     spot = {'fn': 'vs_limp', 'args': {'seats': seats, 'eff': eff, 'ante': ante}}
-    r = gto_pf_spot_freqs(spot, hand)
+    r = gto_pf_spot_freqs(spot, hand, prof)
     if r is None:
         return None
     g = r[0]
