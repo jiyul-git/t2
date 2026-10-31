@@ -71,3 +71,13 @@
   - session_01JQGBPKuQRnsWkdDiV74y6n (claude/gto_gaps_20261031): 실제 대회 빈도로 빈 자리 순위 → 보고 후 대기 → quick 계산.
   - session_01JQGBPMv985bSc2TKc8UVq5 (claude/precision_runner_20261031): 정밀 도구만 만들고 멈춤(계산 안 함).
 - 사이즈 불일치 발견(사용자 확인 대기): SB/BB 3벳을 봇은 오픈×3.7, GTO 계산은 ×4.0. 4벳은 일치(2.15/2.35). 4벳 받은 뒤 GTO 표 없음, 봇은 100bb에서 올인 아닌 5벳 가능.
+
+## 11. 10-31 저녁 방향 전환 (사용자 승인: "4번까지 ㄱㄱ")
+측정(claude/gto_gaps_20261031, docs/GTO_GAPS_RANK_20261031.md): 봇 프리플랍 결정 중 GTO 표가 행동 전체를 정한 건 1.7%. 표 없음 34%, 관문에 막힘 55%, 노안테·5인 이하 범위 밖.
+전부 정밀 계산(수천 시간) 대신:
+1. 막힌 데 풀기: 머니 합성 test3 병합(session_01JQGBPJXzHE761rR7r9WDtn), 6~8인 자리 이름 버그 + 노안테는 안테 표로 근사(session_01JQGBPLwBcUByPMTXVvw2k4, claude/gto_lookup_fix_20261031).
+2. 부모 표 오차 측정(BB 28짝: 부모 값 vs 보정값) → 작으면 BB 외 수비 콜/폴드를 부모 값으로 근사 연결(session_01JQGBPKuQRnsWkdDiV74y6n).
+3. 10bb 미만 푸시/폴드 계산(같은 세션).
+4. 정밀은 p100_flat_co_vs_bb_o25 1단계 시험만(session_01JQGBPMv985bSc2TKc8UVq5, claude/precision_runner_20261031). 결과 보고 계속할지 결정.
+- test3 반영: 블라인드 3벳 크기 SB 4.0 / BB 3.5 (e2778534). UTG+1·UTG+2 콜드 3벳은 OOP 판정 3.7(기록 3.0) — 미수정.
+- 아트(회전 v5, 펭귄)는 보류.
