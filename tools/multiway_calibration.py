@@ -8,7 +8,8 @@
 3) data/calibration/multiway_<커밋>_<gto sha 앞 8자>[_old].json 에 스냅샷(git 커밋, gto_pf_data.json sha256).
 
 fit 절: 보정에 쓸 값은 여기서 **현재 레인지 기록으로 계산**한다(손으로 넣은 상수 금지).
-지금은 진단만 — 계산값을 기록할 뿐 plan.py 에 적용하지 않는다(docs/MULTIWAY_PASSIVITY_DIAG_20261030.md).
+fit.rel_unit 의 k(멀티웨이 joint rel → 헤즈업 단위 환산 지수)는 plan.MW_REL_JOINT_EXPONENT 에 옮겨 쓴다
+(docs/MULTIWAY_FIX_20261031.md). 레인지가 바뀌면 다시 돌려 k 를 비교·갱신한다.
 """
 import sys, os, json, subprocess, hashlib, collections, argparse, tempfile
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -34,9 +35,10 @@ tmp = tempfile.mkdtemp(prefix='mwcal_')
 procs, outs = [], []
 for sd in SEEDS:
     j = os.path.join(tmp, 'diag_%d.jsonl' % sd); b = os.path.join(tmp, 'bf_%d.json' % sd)
-    outs.append((j, b))
-    procs.append(['python3', 'tools/multiway_passivity_diag.py', str(a.hands), str(sd), '--jsonl', j]
-                 + (['--old'] if a.old else []))
+    rf = os.path.join(tmp, 'relfit_%d.jsonl' % sd)
+    outs.append((j, b, rf))
+    procs.append(['python3', 'tools/multiway_passivity_diag.py', str(a.hands), str(sd), '--jsonl', j,
+                  '--relfit', rf] + (['--old'] if a.old else []))
     if not a.old:   # betfreq 는 현재 레인지 경로만 안다
         procs.append(['python3', 'tools/multiway_betfreq.py', str(a.hands), str(sd), '--json', b])
 running = []
@@ -47,9 +49,10 @@ for cmd in procs:
 for p in running:
     p.wait()
 
-rows = [json.loads(l) for j, _ in outs if os.path.exists(j) for l in open(j)]
+rows = [json.loads(l) for j, _, _ in outs if os.path.exists(j) for l in open(j)]
+relfit = [json.loads(l) for _, _, rf in outs if os.path.exists(rf) for l in open(rf)]
 bet = collections.Counter()
-for _, b in outs:
+for _, b, _ in outs:
     if os.path.exists(b):
         for k, (n, nb) in json.load(open(b))['rows'].items():
             bet[(k, 'n')] += n; bet[(k, 'bet')] += nb
@@ -70,6 +73,8 @@ def term(r):
 
 def band(eq, rel, n, mw0=False):
     _, v3, v2, pcz = P.multiway_value_thresholds(1 if mw0 else n, 0, 0)
+    if not mw0 and hasattr(P, 'per_opponent_rel'):   # plan.make_plan 과 같은 환산(현재 코드 그대로)
+        rel = P.per_opponent_rel(rel, n)
     v3, v2 = P.relative_strength_value_threshold_shift(v3, v2, rel)
     return 'value' if eq >= v2 else 'mid' if eq >= pcz else 'weak'
 
@@ -106,13 +111,40 @@ for n in sorted({r['n_opp'] for r in rows}):
         'joint_unit_v3_v2_pcz': [round(b3 ** n, 3), round(b2 ** n, 3), round(bz ** n, 3)],
         'tp_mean_eq': round(sum(r['eq'] for r in g) / max(1, len(g)), 3)}
 
+# ---- fit: rel 단위 (plan.MW_REL_JOINT_EXPONENT 의 근거) ----
+# 멀티웨이 rel 은 '어느 상대에게도 뒤지지 않을 확률'(전원 동시). 밸류 문턱 rel 구간(0.45~0.85)은
+# 헤즈업(상대 한 명) rel 단위로 정해졌다. 상대가 서로 독립이면 joint = Π(좌석별 rel) 이고,
+# 좌석별 rel 이 비슷하면 joint ≈ (한 명 기준 rel)^N. 실제 레인지에서는 카드 제거·레인지 차이로
+# N 과 조금 다르므로 지수 k 를 기록에서 잰다: log(joint) ≈ k · mean_i log(rel_i)  (원점 지나는 최소제곱).
+# 쓰는 값은 좌석별 rel(정확 계산)과 joint(MC) 뿐이다. 벳 빈도는 보지 않는다.
+import math
+relfit_fit = {}
+for n in sorted({r['n_opp'] for r in relfit}):
+    xs, ys, prod_err = [], [], []
+    for r in relfit:
+        if r['n_opp'] != n or r['joint'] is None or not r['seat']:
+            continue
+        if not (0.02 < r['joint'] < 0.98) or min(r['seat']) <= 0.0 or max(r['seat']) >= 1.0:
+            continue          # log 가 0/무한이 되는 끝값(완전 넛/완전 미스)은 단위 정보가 없다
+        x = sum(math.log(v) for v in r['seat']) / len(r['seat'])
+        xs.append(x); ys.append(math.log(r['joint']))
+        prod_err.append(r['joint'] - math.prod(r['seat']))
+    if len(xs) < 30:
+        continue
+    k = sum(x * y for x, y in zip(xs, ys)) / sum(x * x for x in xs)
+    relfit_fit['n_opp=%d' % n] = {
+        'samples': len(xs), 'k': round(k, 3), 'k_independent': n,
+        'joint_minus_product_mean': round(sum(prod_err) / len(prod_err), 4),
+        'plan_exponent_now': P.MW_REL_JOINT_EXPONENT.get(n) if hasattr(P, 'MW_REL_JOINT_EXPONENT') else None}
+fit['rel_unit'] = relfit_fit
+
 gto = os.path.join(ROOT, 'gto_pf_data.json')
 snap = {'commit': sh(['git', 'rev-parse', 'HEAD']),
         'gto_pf_data_sha256': hashlib.sha256(open(gto, 'rb').read()).hexdigest(),
         'ranges': 'old_pre_sync' if a.old else 'current',
         'hands_per_seed': a.hands, 'seeds': SEEDS, 'fmt': os.environ.get('MW_FMT', 'standard'),
         'decision_rows': len(rows), 'bet_table': bet_table, 'top_pair_overpair': per, 'fit': fit,
-        'applied': False}
+        'applied': hasattr(P, 'MW_REL_JOINT_EXPONENT')}
 od = os.path.join(ROOT, 'data', 'calibration'); os.makedirs(od, exist_ok=True)
 fn = os.path.join(od, 'multiway_%s_%s%s.json' % (snap['commit'][:8], snap['gto_pf_data_sha256'][:8],
                                                   '_old' if a.old else ''))

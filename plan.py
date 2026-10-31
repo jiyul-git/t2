@@ -891,16 +891,25 @@ def continue_range_commit_strength(hero, board, profile, pot, stack, street, rel
 
 
 def multiway_value_thresholds(n_opp, monster, strong):
-    """다인원 보정된 밸류 문턱. 반환 (mw, v3, v2, pcz).
+    """밸류 문턱. 반환 (mw, v3, v2, pcz).
 
-    넛급(monster)은 상대 수와 무관, 트립스/셋(strong)은 보정 절반(L115).
+    mw(다인원 정도)는 계속 돌려준다 — 팟컨트롤·쇼다운 가치·2스트리트 축소·블러프
+    감쇠가 이 값을 쓴다(넛급 0, 트립스/셋 최대 1, L115). 그 수비 개념은 그대로다.
+
+    문턱 자체에는 더 이상 인원 가산(예전 +0.06/0.07/0.06 × mw)을 붙이지 않는다
+    (2026-10-31, docs/MULTIWAY_FIX_20261031.md). 이 문턱과 비교하는 eq 는
+    _plan_eq 가 **상대 전원과 동시에 겨룬** 에쿼티라, 인원이 늘면 eq 가 이미
+    떨어진다(3인 팟 탑페어 평균 0.52). 같은 '사람이 많으면 이기기 어렵다'를
+    문턱에서 한 번 더 올리면 두 번 깎인다 — 개념 등록부가 이미 지적한 중복
+    (CONCEPT_FUNCTION_REGISTRY.csv:233). 가산은 eq 가 합집합/광역 레인지 기준이던
+    시절의 보정이었다.
     """
     mw = max(0, n_opp - 1)
     if monster: mw = 0                      # 넛급은 상대 수와 무관하게 밸류
     elif strong: mw = min(mw, 1)            # 트립스/셋은 보정 절반만
-    v3 = 0.80 + 0.06*mw          # 3스트리트 밸류 문턱
-    v2 = 0.66 + 0.07*mw
-    pcz = 0.50 + 0.06*mw
+    v3 = 0.80                    # 3스트리트 밸류 문턱
+    v2 = 0.66
+    pcz = 0.50
     return mw, v3, v2, pcz
 
 
@@ -944,10 +953,33 @@ def pure_bluff_attempt_probability(bluff_ok, outs, eq, bluff_skill_03):
             * (0.45 + 0.28*bluff_skill_03))
 
 
+# 멀티웨이 joint rel → 상대 한 명 단위 환산 지수 (2026-10-31).
+# joint rel = '어느 상대에게도 뒤지지 않을 확률'. 상대가 서로 독립이면
+# joint = Π 좌석별 rel ≈ (한 명 기준 rel)^N 이므로 지수의 이론값은 N 이다.
+# 아래 값은 지금 레인지(GTO 동기화, gto_pf_data a539bbf5)에서
+# tools/multiway_calibration.py 의 fit.rel_unit 이 잰 값
+# (log joint ≈ k · 평균 log 좌석별 rel, 2인 809건 / 3인 79건; 벳 빈도는 보지 않음).
+# 카드 제거로 N 보다 조금 크다. 표에 없는 인원은 이론값 N.
+MW_REL_JOINT_EXPONENT = {2: 2.05, 3: 3.21}
+
+
+def per_opponent_rel(rel, n_opp):
+    """멀티웨이 joint rel 을 헤즈업(상대 한 명) rel 단위로 환산. 헤즈업은 그대로."""
+    n = int(n_opp or 1)
+    if n <= 1 or rel is None:
+        return rel
+    k = MW_REL_JOINT_EXPONENT.get(n, float(n))
+    return max(0.0, min(1.0, rel)) ** (1.0 / k)
+
+
 def relative_strength_value_threshold_shift(v3, v2, rel):
     """상대 레인지 대비 강도(rel)로 밸류 문턱을 연속적으로 옮긴다(L115).
 
     약하면 올리고(봉쇄 강), 넛급이면 약하게 내린다(완화 약). 반환 (v3, v2).
+    구간(0.45~0.85)은 **헤즈업 rel 단위**다. 멀티웨이는 호출 전에
+    per_opponent_rel 로 환산해서 넣는다 — joint rel 을 그대로 넣으면
+    (F7-B 이후 2026-10-31 이전처럼) 3인 팟 탑페어가 대부분 0.45 아래로 떨어져
+    문턱이 최대치까지 올라간다(RANGE_MODEL.md 4절, 구간 넘나듦 61.5%).
     """
     if rel <= 0.45:
         _pen = 1.0
@@ -1204,11 +1236,15 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     trap_ok = (to_act_behind > 0)
 
     # 상대 레인지에 지는 콤보가 많으면 밸류 계획 자체를 강등한다.
-    # eq(랜덤/광역 레인지 대비)가 높아도 rel이 낮으면 얇은 밸류다.
+    # eq(추정 레인지 대비 런아웃 포함 에쿼티; 멀티웨이는 전원 동시)가 높아도
+    # rel(지금 보드 순위 몫)이 낮으면 얇은 밸류다.
     # 상대 레인지에 지는 콤보가 많으면 밸류 문턱을 올린다.
     # 예전에는 0.45 / 0.65 / 0.92 세 계단이라 rel 0.44 와 0.46 이
     # 완전히 다른 계획으로 갈렸다. 연속 곡선으로 바꾼다.
-    v3, v2 = relative_strength_value_threshold_shift(v3, v2, rel)
+    # rel 은 멀티웨이에서 joint(전원 동시) 값이다. 구간은 헤즈업 단위라 환산해서 넣는다.
+    # 판단의 다른 곳(얇은 밸류·블락벳·커밋 등)은 joint rel 그대로 쓴다 — 이번 수정 범위 밖.
+    v3, v2 = relative_strength_value_threshold_shift(
+        v3, v2, per_opponent_rel(rel, n_opp))
 
     T = profile.get('type')
     if profile.get('concepts'):

@@ -19,6 +19,9 @@ args = sys.argv[1:]
 OLD = '--old' in args
 args = [a for a in args if a != '--old']
 i = args.index('--jsonl'); out = args[i + 1]; del args[i:i + 2]
+relfit_out = None
+if '--relfit' in args:      # rel 단위 보정용: 멀티웨이 joint rel 과 좌석별 헤즈업 rel 을 같이 남긴다
+    i = args.index('--relfit'); relfit_out = args[i + 1]; del args[i:i + 2]
 HANDS, SEED = int(args[0]), int(args[1])
 NB = {'flop': 3, 'turn': 4, 'river': 5}
 AGG = ('bet', 'raise', 'allin')
@@ -82,6 +85,24 @@ def attach_intent(st, hero, board, *a, **k):
 
 P.decide_aggression, P.attach_intent = decide_aggression, attach_intent
 
+RELFIT = []
+_drs = P._decision_relative_strength
+
+
+def _decision_relative_strength(hero, board, opp_range, n_opp=1, opp_ranges=None, sims=600, seed=None):
+    r = _drs(hero, board, opp_range, n_opp=n_opp, opp_ranges=opp_ranges, sims=sims, seed=seed)
+    meta = r[1] if isinstance(r, tuple) else {}
+    if (relfit_out and int(n_opp or 1) >= 2 and meta.get('source') == 'joint_seat_pools'
+            and isinstance(opp_ranges, dict) and len(board) >= 3):
+        # 읽기만 한다: relative_strength 는 RNG 를 쓰지 않는 정확 계산(캐시만 채움).
+        seat = [P.relative_strength(list(hero), list(board), rr) for _k, rr in sorted(opp_ranges.items(), key=lambda kv: str(kv[0]))]
+        RELFIT.append({'n_opp': int(n_opp), 'street': len(board), 'joint': meta.get('joint'),
+                       'union': meta.get('union'), 'seat': seat})
+    return r
+
+
+P._decision_relative_strength = _decision_relative_strength
+
 rows = []
 t = T.Tournament(entries=100, seed=SEED, fmt=os.environ.get('MW_FMT', 'standard'), hero_seat=7)
 for hn in range(HANDS):
@@ -117,4 +138,8 @@ for hn in range(HANDS):
 with open(out, 'w') as f:
     for r in rows:
         f.write(json.dumps(r, ensure_ascii=False) + '\n')
+if relfit_out:
+    with open(relfit_out, 'w') as f:
+        for r in RELFIT:
+            f.write(json.dumps(r) + '\n')
 print('rows', len(rows), 'old' if OLD else 'cur')

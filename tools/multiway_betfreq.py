@@ -8,7 +8,8 @@
   lead   : 공격자가 아직 행동 전(뒤에 살아 있음)인데 먼저 벳
   probe  : 공격자가 이미 체크했거나 없음(폴드·올인)
 팟 인원 = 그 스트리트에 행동한 좌석 수(2 / 3 / 4+). 패 강도는 홀카드 기여(bot.made_strength,
-draw_strength): 투페어+, 탑페어+(투페어 포함), 드로우(8아웃+, 페어 미만).
+draw_strength): 투페어+, 탑페어+(투페어 포함), 중간(탑페어 미만 페어),
+드로우(8아웃+, 페어 미만), 에어(페어 미만, 8아웃 미만). 넷(tp+/mid/draw/air)이 기회를 빠짐없이 나눈다.
 range sync 전후 비교용(2026-10-30). 히어로 좌석은 폴드만 한다.
 """
 import sys, os, json, collections
@@ -38,8 +39,12 @@ def bucket(hole, board):
         pocket = hole[0][0] == hole[1][0] and B.RV[hole[0][0]] > top
         if m >= 2 or (prs and max(prs) == top) or pocket:
             out.append('tp+')
+    if m >= 1 and 'tp+' not in out:
+        out.append('mid')                   # 탑페어 미만 메이드(세컨·바텀·언더페어)
     if m < 1 and B.draw_strength(list(hole), board) >= 8:
         out.append('draw')
+    elif m < 1:
+        out.append('air')                   # 페어 미만 + 8아웃 미만
     return out
 
 
