@@ -1,0 +1,455 @@
+diff --git a/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs b/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
+index b814bca..04a93f3 100644
+--- a/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
++++ b/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
+@@ -156,6 +156,12 @@ fn main() -> Result<(), String> {
+         key["matrix"] = serde_json::json!(true);
+         key["matrix_opp_classes"] = term["matrix_opp_classes"].clone();
+     }
++    // T2_BRICK_MERGE=1 (opt-in, default off): merge brick turn/river cards (solver::brick, rule brick_v1). Recorded in the
++    // provenance key, so merged and exact artifacts are never mixed; per board the merged cards are written to the artifact.
++    let brick_on = std::env::var("T2_BRICK_MERGE").ok().as_deref() == Some("1");
++    if brick_on {
++        key["brick_merge"] = serde_json::json!({"rule": solver::brick::RULE, "draw_share_max": solver::brick::DRAW_SHARE_MAX});
++    }
+     let commit = std::env::var("T2_SOURCE_COMMIT").unwrap_or_else(|_| "unknown".into());
+     let only: Option<Vec<String>> = std::env::var("T2_PANEL_BOARDS").ok().map(|v| v.split(',').map(|x| x.to_string()).collect());
+     let boards: Vec<&str> = panel["panel"].as_array().ok_or("panel")?.iter().map(|f| f["board"].as_str().unwrap()).collect();
+@@ -194,6 +200,8 @@ fn main() -> Result<(), String> {
+         if let Some(a) = algo {
+             s.algo = a;
+         }
++        let brick_map = if brick_on { Some(Arc::new(solver::brick::BrickMap::new(&s.spot))) } else { None };
++        s.brick = brick_map.clone();
+         let t = Instant::now();
+         let (mut iters, mut expl) = (0u32, f64::INFINITY);
+         let mut trace = Vec::new();
+@@ -308,6 +316,15 @@ fn main() -> Result<(), String> {
+                           "note": "at the EPS-floored ranges the solve used"},
+             "players": players,
+         });
++        let out = match &brick_map {
++            Some(bm) => {
++                let mut o = out;
++                o["brick_merge"] = serde_json::json!({"rule": solver::brick::RULE, "contexts": bm.log,
++                    "note": "contexts[0] = turn cards on the flop, then one context per turn card (river cards); merged = bricks, one representative per node"});
++                o
++            }
++            None => out,
++        };
+         let tmp = path.with_extension("partial");
+         std::fs::write(&tmp, serde_json::to_vec(&out).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+         std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+diff --git a/vendor/gtopen/crates/solver/src/brick.rs b/vendor/gtopen/crates/solver/src/brick.rs
+new file mode 100644
+index 0000000..be2a2dd
+--- /dev/null
++++ b/vendor/gtopen/crates/solver/src/brick.rs
+@@ -0,0 +1,200 @@
++//! T2 brick merge (opt-in, T2_BRICK_MERGE=1 in t2_cont_panel; off by default = bit-identical solver).
++//!
++//! At a turn / river chance node, "brick" cards (rule `brick_v1` below, fixed in code before any comparison
++//! run) are merged into ONE representative branch: only the representative's subtree is solved, and every
++//! other brick card c of the group reuses it through the card transposition tau = (rep c):
++//!     value of hand h in the c-branch := value of tau(h) in the rep-branch,
++//! i.e. the same action tree and (tau-mapped) strategy, each merged card keeping its own 1/45 (1/44) chance
++//! weight, so the representative effectively counts as many times as the group has cards. tau fixes the board
++//! and maps the 7-card world {board, c, h} onto {board, rep, tau(h)}; the only approximation is the rank of the
++//! dealt low card itself (hands holding that rank, kickers), which the rule keeps away from flushes, straights,
++//! board pairs and the top two board ranks.
++//!
++//! Rule brick_v1 (board B = cards on the board before the dealt card x; B has 3 cards at the turn, 4 at the river):
++//!   1. rank(x) is not a rank of B                                   (no paired board)
++//!   2. rank(x) < second-highest card of B (sorted with duplicates)  (no new overcard / second card)
++//!   3. turn: suit(x) does not occur on B (no new flush draw, no completed flush; a rainbow flop's 4th suit only)
++//!      river: suit(x) occurs at most once on B (after x at most 2 of that suit: no flush possible in it)
++//!   4. straights, per player p, weighted by p's root range weights over the combos not blocked by B and x:
++//!      share of combos for which x completes a straight, or (turn only) x creates a new one-card straight out
++//!      (some river rank y makes a straight with x that it would not make without x) <= DRAW_SHARE_MAX.
++//! Merging needs >= 2 brick cards among the suit-isomorphism representatives of the node.
++use crate::cards::{card_to_string, rank, suit, Card};
++use crate::game::{Dealt, Spot};
++use crate::tree::SENTINEL;
++
++pub const RULE: &str = "brick_v1";
++/// Rule 4 threshold, fixed before any comparison: at most 2% of either player's range (combo weight).
++pub const DRAW_SHARE_MAX: f64 = 0.02;
++
++pub struct BrickMap {
++    /// idx[p][a*52+b] = index in spot.hands[p] of the combo {a,b} (both orders), SENTINEL if absent.
++    pub idx: [Vec<u32>; 2],
++    /// brick cards for the card dealt right after the root board.
++    pub first: u64,
++    /// root = flop: brick cards for the river after turn card t (index t); empty otherwise.
++    pub second: Vec<u64>,
++    root_len: usize,
++    /// per context: (board string, brick cards, max share of rule 4 per player) for the record
++    pub log: Vec<serde_json::Value>,
++}
++
++fn rank_bits(cards: impl Iterator<Item = u8>) -> u16 {
++    // bit 0 = ace low, bit r+1 = rank r
++    let mut m = 0u16;
++    for r in cards {
++        m |= 1 << (r + 1);
++        if r == 12 {
++            m |= 1;
++        }
++    }
++    m
++}
++
++fn straight(m: u16) -> bool {
++    (0..=9).any(|lo| (m >> lo) & 0x1f == 0x1f)
++}
++
++fn rb(r: u8) -> u16 {
++    rank_bits(std::iter::once(r))
++}
++
++/// Rule brick_v1 for card x on board `b` (3 or 4 cards). Returns (brick, reason, max rule-4 share over players).
++pub fn classify(spot: &Spot, b: &[Card], x: Card) -> (bool, &'static str, f64) {
++    let river = b.len() == 4;
++    if b.iter().any(|&c| rank(c) == rank(x)) {
++        return (false, "pair", 0.0);
++    }
++    let mut rs: Vec<u8> = b.iter().map(|&c| rank(c)).collect();
++    rs.sort_unstable_by(|a, c| c.cmp(a));
++    if rank(x) >= rs[1] {
++        return (false, "high", 0.0);
++    }
++    let ns = b.iter().filter(|&&c| suit(c) == suit(x)).count();
++    if (!river && ns > 0) || (river && ns > 1) {
++        return (false, "suit", 0.0);
++    }
++    let bm = rank_bits(b.iter().map(|&c| rank(c)));
++    let xm = rb(rank(x));
++    let dead: u64 = b.iter().fold(1u64 << x, |m, &c| m | 1u64 << c);
++    let mut worst = 0f64;
++    for p in 0..2 {
++        let (mut tot, mut hit) = (0f64, 0f64);
++        for (i, h) in spot.hands[p].iter().enumerate() {
++            if h.mask & dead != 0 {
++                continue;
++            }
++            let w = spot.weights[p][i] as f64;
++            tot += w;
++            let hm = bm | rb(rank(h.c1)) | rb(rank(h.c2));
++            let completes = straight(hm | xm) && !straight(hm);
++            let new_out = !river && (0..13u8).any(|y| straight(hm | xm | rb(y)) && !straight(hm | rb(y)));
++            if completes || new_out {
++                hit += w;
++            }
++        }
++        let share = if tot > 0.0 { hit / tot } else { 0.0 };
++        worst = worst.max(share);
++    }
++    if worst > DRAW_SHARE_MAX {
++        return (false, "straight", worst);
++    }
++    (true, "brick", worst)
++}
++
++impl BrickMap {
++    /// Build after the root range weights are final (rule 4 reads spot.weights).
++    pub fn new(spot: &Spot) -> BrickMap {
++        let mut idx = [vec![SENTINEL; 52 * 52], vec![SENTINEL; 52 * 52]];
++        for p in 0..2 {
++            for (i, h) in spot.hands[p].iter().enumerate() {
++                idx[p][h.c1 as usize * 52 + h.c2 as usize] = i as u32;
++                idx[p][h.c2 as usize * 52 + h.c1 as usize] = i as u32;
++            }
++        }
++        let mut log = Vec::new();
++        let ctx = |b: &[Card], log: &mut Vec<serde_json::Value>| -> u64 {
++            let mut m = 0u64;
++            let mut cards = Vec::new();
++            let mut why = serde_json::Map::new();
++            let mut avail = 0;
++            for x in 0..52u8 {
++                if b.contains(&x) {
++                    continue;
++                }
++                avail += 1;
++                let (ok, reason, share) = classify(spot, b, x);
++                if ok {
++                    m |= 1u64 << x;
++                    cards.push(serde_json::json!([card_to_string(x), (share * 1e4).round() / 1e4]));
++                } else {
++                    *why.entry(reason).or_insert(serde_json::json!(0)) =
++                        serde_json::json!(why.get(reason).and_then(|v| v.as_u64()).unwrap_or(0) + 1);
++                }
++            }
++            let bs: String = b.iter().map(|&c| card_to_string(c)).collect();
++            log.push(serde_json::json!({"board": bs, "available": avail, "bricks": cards, "rejected": why}));
++            m
++        };
++        let root_len = spot.board.len();
++        let mut first = 0u64;
++        let mut second = Vec::new();
++        if root_len < 5 {
++            first = ctx(&spot.board, &mut log);
++        }
++        if root_len == 3 {
++            second = vec![0u64; 52];
++            for t in 0..52u8 {
++                if spot.board.contains(&t) {
++                    continue;
++                }
++                let mut b = spot.board.clone();
++                b.push(t);
++                second[t as usize] = ctx(&b, &mut log);
++            }
++        }
++        BrickMap { idx, first, second, root_len, log }
++    }
++
++    /// Brick cards for the next card dealt after `dealt`.
++    pub fn mask(&self, dealt: &Dealt) -> u64 {
++        match (self.root_len, dealt.len) {
++            (3, 0) | (4, 0) => self.first,
++            (3, 1) => self.second[dealt.cards[0] as usize],
++            _ => 0,
++        }
++    }
++
++    /// Representative of a group (sorted card ids): the median card.
++    pub fn pick_rep(group: &[u8]) -> u8 {
++        group[group.len() / 2]
++    }
++
++    /// Index of tau(h) for tau = transposition (a b), in hands[p].
++    #[inline]
++    pub fn tau_index(&self, p: usize, c1: u8, c2: u8, a: u8, b: u8) -> u32 {
++        let t = |c: u8| if c == a { b } else if c == b { a } else { c };
++        self.idx[p][t(c1) as usize * 52 + t(c2) as usize]
++    }
++
++    /// Merge plan at a chance node: for each card, the brick representative it reuses (255 = itself).
++    /// `reps` = the suit-isomorphism representatives of the node (sorted ascending).
++    pub fn plan(&self, dealt: &Dealt, reps: &[u8]) -> Option<[u8; 52]> {
++        let mask = self.mask(dealt);
++        if mask == 0 {
++            return None;
++        }
++        let group: Vec<u8> = reps.iter().copied().filter(|&c| mask & (1u64 << c) != 0).collect();
++        if group.len() < 2 {
++            return None;
++        }
++        let b = Self::pick_rep(&group);
++        let mut src = [255u8; 52];
++        for &c in &group {
++            if c != b {
++                src[c as usize] = b;
++            }
++        }
++        Some(src)
++    }
++}
+diff --git a/vendor/gtopen/crates/solver/src/cfr.rs b/vendor/gtopen/crates/solver/src/cfr.rs
+index 3930687..0994736 100644
+--- a/vendor/gtopen/crates/solver/src/cfr.rs
++++ b/vendor/gtopen/crates/solver/src/cfr.rs
+@@ -85,6 +85,8 @@ pub struct Solver {
+     pub use_isomorphism: bool,
+     /// Non-representative branches hold stale data until symmetrize() runs.
+     sym_dirty: bool,
++    /// T2 brick merge (opt-in, see brick.rs). None = original solver, bit-identical.
++    pub brick: Option<std::sync::Arc<crate::brick::BrickMap>>,
+ }
+ 
+ #[derive(Debug, Clone, Serialize)]
+@@ -186,6 +188,7 @@ impl Solver {
+             lock_labels: std::collections::HashMap::new(),
+             use_isomorphism: true,
+             sym_dirty: false,
++            brick: None,
+         }
+     }
+ 
+@@ -652,6 +655,21 @@ impl Solver {
+             }
+         }
+         let reps = &reps_arr[..nreps];
++        // T2 brick merge: drop merged brick cards from the traversal; they reuse their representative below.
++        let brick_src = self.brick.as_ref().and_then(|b| b.plan(&dealt, reps));
++        let mut trav_arr = [0u8; 52];
++        let reps: &[u8] = if let Some(src) = &brick_src {
++            let mut n = 0usize;
++            for &c in reps {
++                if src[c as usize] == 255 {
++                    trav_arr[n] = c;
++                    n += 1;
++                }
++            }
++            &trav_arr[..n]
++        } else {
++            reps
++        };
+ 
+         // Parallelize when children start betting rounds (not bare runouts).
+         let parallel = cards
+@@ -685,6 +703,31 @@ impl Solver {
+             reps.iter().map(|&c| run_child(c)).collect()
+         };
+ 
++        let mut results = results;
++        if let (Some(src), Some(bm)) = (&brick_src, &self.brick) {
++            // merged brick card c: value of hand h := value of tau(h) in the representative's branch, tau = (rep c)
++            let mut extra: Vec<(u8, Buf)> = Vec::new();
++            for &c in reps_arr[..nreps].iter() {
++                let b = src[c as usize];
++                if b == 255 {
++                    continue;
++                }
++                let vb = &results.iter().find(|(x, _)| *x == b).expect("brick rep traversed").1;
++                let cm = 1u64 << c;
++                let mut v = Buf::zeroed(nh);
++                for (i, h) in spot.hands[p].iter().enumerate() {
++                    if h.mask & cm != 0 {
++                        continue;
++                    }
++                    let j = bm.tau_index(p, h.c1, h.c2, b, c);
++                    if j != SENTINEL {
++                        v[i] = vb[j as usize];
++                    }
++                }
++                extra.push((c, v));
++            }
++            results.extend(extra);
++        }
+         let mut by_card: [Option<&[f32]>; 52] = [None; 52];
+         for (c, v) in &results {
+             by_card[*c as usize] = Some(&v[..]);
+@@ -798,7 +841,7 @@ impl Solver {
+     /// isomorphic siblings (suit-permuted), so queries and saves see a fully
+     /// populated tree. Cheap no-op when nothing changed or no symmetry exists.
+     pub fn ensure_symmetric(&mut self) {
+-        if !self.sym_dirty || !self.use_isomorphism || self.spot.suit_perms.len() < 2 {
++        if !self.sym_dirty || ((!self.use_isomorphism || self.spot.suit_perms.len() < 2) && self.brick.is_none()) {
+             self.sym_dirty = false;
+             return;
+         }
+@@ -817,7 +860,7 @@ impl Solver {
+                 }
+             }
+             KIND_CHANCE => {
+-                let valid = spot.perms_fixing(&dealt);
++                let valid = if self.use_isomorphism { spot.perms_fixing(&dealt) } else { Vec::new() };
+                 let cards: Vec<u8> = (0..52u8)
+                     .filter(|&c| {
+                         spot.tree.children[node.children_start as usize + c as usize] != SENTINEL
+@@ -837,13 +880,26 @@ impl Solver {
+                     }
+                     orbit.push((c, rep, k_rep));
+                 }
++                // T2 brick merge: merged iso-representatives are filled from their brick representative
++                let reps: Vec<u8> = orbit.iter().filter(|o| o.0 == o.1).map(|o| o.0).collect();
++                let brick_src = self.brick.as_ref().and_then(|b| b.plan(&dealt, &reps));
+                 // first finish the representatives' own subtrees...
+                 for &(c, rep, _) in &orbit {
+-                    if c == rep {
++                    if c == rep && brick_src.map_or(true, |s| s[c as usize] == 255) {
+                         let child = spot.tree.children[node.children_start as usize + c as usize];
+                         self.symmetrize_node(child, dealt.push(c));
+                     }
+                 }
++                if let Some(src) = brick_src {
++                    for &c in &reps {
++                        let b = src[c as usize];
++                        if b != 255 {
++                            let s_ = spot.tree.children[node.children_start as usize + b as usize];
++                            let d_ = spot.tree.children[node.children_start as usize + c as usize];
++                            self.copy_branch_tau(s_, d_, b, c);
++                        }
++                    }
++                }
+                 // ...then transport them onto the other orbit members
+                 for &(c, rep, k) in &orbit {
+                     if c != rep {
+@@ -922,6 +978,73 @@ impl Solver {
+     }
+ }
+ 
++impl Solver {
++    /// Like copy_branch, for the card transposition tau = (a b) (T2 brick merge): dst hand h reads src hand tau(h).
++    fn copy_branch_tau(&mut self, src_idx: u32, dst_idx: u32, a: u8, b: u8) {
++        let spot = self.spot.clone();
++        let bm = self.brick.clone().expect("brick map");
++        let src = &spot.tree.nodes[src_idx as usize];
++        let dst = &spot.tree.nodes[dst_idx as usize];
++        debug_assert_eq!(src.kind, dst.kind);
++        let tau = |c: u8| if c == a { b } else if c == b { a } else { c };
++        match src.kind {
++            KIND_ACTION => {
++                let p = src.player as usize;
++                let nh = spot.hands[p].len();
++                let na = src.num_children as usize;
++                let n = na * nh;
++                let tbl: Vec<u32> = spot.hands[p].iter().map(|h| bm.tau_index(p, h.c1, h.c2, a, b)).collect();
++                let lock = self.locks.get(&src_idx).cloned();
++                let mut src_r = Buf::zeroed(n);
++                let mut src_s = Buf::zeroed(n);
++                unsafe {
++                    self.regrets[p].read_f32(src_idx, src.data_offset, n, &mut src_r);
++                    self.strat[p].read_f32(src_idx, src.data_offset, n, &mut src_s);
++                }
++                let mut dst_r = Buf::zeroed(n);
++                let mut dst_s = Buf::zeroed(n);
++                for x in 0..na {
++                    for i in 0..nh {
++                        let j = tbl[i];
++                        if j == SENTINEL {
++                            continue;
++                        }
++                        let j = j as usize;
++                        dst_r[x * nh + i] = src_r[x * nh + j];
++                        dst_s[x * nh + i] = match &lock {
++                            Some(l) => l[x * nh + j],
++                            None => src_s[x * nh + j],
++                        };
++                    }
++                }
++                unsafe {
++                    self.regrets[p].write_f32(dst_idx, dst.data_offset, n, &dst_r);
++                    self.strat[p].write_f32(dst_idx, dst.data_offset, n, &dst_s);
++                }
++                for x in 0..na {
++                    let sc = spot.tree.children[src.children_start as usize + x];
++                    let dc = spot.tree.children[dst.children_start as usize + x];
++                    self.copy_branch_tau(sc, dc, a, b);
++                }
++            }
++            KIND_CHANCE => {
++                for x in 0..52u8 {
++                    let dc = spot.tree.children[dst.children_start as usize + x as usize];
++                    if dc == SENTINEL {
++                        continue;
++                    }
++                    let sc = spot.tree.children[src.children_start as usize + tau(x) as usize];
++                    if sc == SENTINEL {
++                        continue;
++                    }
++                    self.copy_branch_tau(sc, dc, a, b);
++                }
++            }
++            _ => {}
++        }
++    }
++}
++
+ /// Regret matching: sigma[a][i] = max(r,0)/sum, uniform when all non-positive.
+ pub fn regret_match(regrets: &[f32], na: usize, nh: usize, sigma: &mut [f32]) {
+     debug_assert_eq!(regrets.len(), na * nh);
+diff --git a/vendor/gtopen/crates/solver/src/lib.rs b/vendor/gtopen/crates/solver/src/lib.rs
+index 09bdf77..c947000 100644
+--- a/vendor/gtopen/crates/solver/src/lib.rs
++++ b/vendor/gtopen/crates/solver/src/lib.rs
+@@ -8,6 +8,7 @@
+ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+ 
+ pub mod best_response;
++pub mod brick;
+ pub mod cards;
+ pub mod cfr;
+ mod contextual_postflop;
