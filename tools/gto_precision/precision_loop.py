@@ -221,6 +221,12 @@ class Prec:
             allow = {b['board'] for b in bad}
             bad = []
         info['bad'] = bad
+        if os.environ.get('T2_EXPORT_STRATEGY') == '1' and not TEST:   # boards solved before strategy export: re-solve, bit-check, add strategy
+            r = subprocess.run([sys.executable, os.path.join(REPO, 'tools/gto_precision/strategy_backfill.py'), tf, L.MENU, PANEL_FILE[panel], fd,
+                                '--workers', WORKERS], stdout=open(sd + 'backfill.log', 'a'), stderr=subprocess.STDOUT)
+            info['strategy_backfill_rc'] = r.returncode
+            pj = json.load(open(PANEL_FILE[panel]))
+            info['strategy_files'] = sum(os.path.exists(os.path.join(fd, f['board'] + '.strategy.json')) for f in pj['panel'])
         return allow, info
 
     def run(self):

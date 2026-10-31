@@ -12,6 +12,7 @@ cd "$REPO"
 : "${PREC_CALC_ROOT:=/home/user/calc}"; export PREC_CALC_ROOT
 : "${PREC_SESSION:?set PREC_SESSION=session_<id> for the commit trailer}"
 export SPOT_PANEL_WORKERS=${SPOT_PANEL_WORKERS:-4}
+export T2_EXPORT_STRATEGY=${T2_EXPORT_STRATEGY:-1}   # flop strategy files (<board>.strategy.json; needs the patched solver, docs 8장)
 PY=${PREC_PYTHON:-/home/user/gto_ckpt/py311bin/python3}      # Python 3.11 (float sums / hashes as the quick runs)
 BR=$(git rev-parse --abbrev-ref HEAD)
 case "$BR" in master|test3|HEAD) echo "refusing to commit on $BR"; exit 2;; esac
@@ -34,8 +35,16 @@ backup() {   # $1 = message
     for f in $d/term*.json; do [ -s "$f" ] && cp "$f" $P/$s/; done
     for f in $d/term*_[AB]/run_ledger.jsonl; do [ -s "$f" ] && cp "$f" $P/$s/$(basename $(dirname $f)).ledger.jsonl; done
     ls -d $d/term*_[AB] 2>/dev/null | while read x; do [ -e $x/done ] && echo "$(basename $x)"; done > $P/$s/panels_done.txt
+    for x in $d/term*_[AB]; do   # finished panel: its flop strategies as one tarball (values stay container-local, they are recomputable)
+      [ -e $x/done ] || continue
+      n=$(ls $x/*.strategy.json 2>/dev/null | wc -l); [ $n -gt 0 ] || continue
+      T=data/gto_precision/strategy/$ID/$s/$(basename $x).tgz
+      [ -s $T ] && [ "$(cat $T.count 2>/dev/null)" = "$n" ] && continue
+      mkdir -p $(dirname $T); tar -C $x -czf $T $(cd $x && ls *.strategy.json) && echo $n > $T.count
+      [ -s $x/strategy_backfill.json ] && cp $x/strategy_backfill.json data/gto_precision/strategy/$ID/$s/$(basename $x).backfill.json
+    done
   done
-  git add -A $P data/gto_precision/records 2>/dev/null
+  git add -A $P data/gto_precision/records data/gto_precision/strategy 2>/dev/null
   git commit -qm "$1
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
