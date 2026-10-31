@@ -1,4 +1,4 @@
-"""GTO 프리플랍 기준(10~100bb) 연결 검사.
+"""GTO 프리플랍 기준(4~100bb; 4·6·8bb 는 2026-10-31) 연결 검사.
 
   python3 tools/verify_gto_pf.py
 
@@ -20,7 +20,7 @@ def check(name, cond):
     print('PASS', name)
 
 d = G._load()
-check('buckets 10..100', d['buckets'] == [10, 15, 20, 25, 30, 40, 60, 100])
+check('buckets 4..100', d['buckets'] == [4, 6, 8, 10, 15, 20, 25, 30, 40, 60, 100])
 i = d['classes'].index('A2o')
 check('SB 10bb A2o jam = record', abs(G.first_in('SB', 9, 10, ['Ah', '2c'])['jam']
                                        - d['first_in']['10']['SB']['jam'][i]) < 1e-9)
@@ -29,9 +29,28 @@ b = G.first_in('UTG', 9, 20, ['Kd', 'Qs'])['jam']
 m = G.first_in('UTG', 9, 17.5, ['Kd', 'Qs'])['jam']
 check('interpolation midpoint', abs(m - (a + b) / 2) < 1e-9)
 check('out of range low -> None, deeper than 100bb -> 100bb values',
-      G.first_in('UTG', 9, 9.0, ['Ah', 'Ah'.replace('h', 'd')]) is None
+      G.first_in('UTG', 9, 3.5, ['Ah', 'Ah'.replace('h', 'd')]) is None
       and G.first_in('UTG', 9, 150.0, ['Kh', '9c']) == G.first_in('UTG', 9, 100.0, ['Kh', '9c'])
       and G.first_in('UTG', 9, 150.0, ['Kh', '9c']) is not None)
+# --- 10bb 미만 푸시/폴드(pf4·pf6·pf8, 2026-10-31): 첫 진입·단독 올인 콜만, 3.75bb 미만은 기존 판단 ---
+iq = d['classes'].index('Q7o')
+check('pf4/pf6/pf8 first-in = record (SB Q7o jam)',
+      all(abs(G.first_in('SB', 9, S, ['Qh', '7c'])['jam'] - d['first_in'][str(S)]['SB']['jam'][iq]) < 1e-9 for S in (4, 6, 8)))
+j6 = G.first_in('HJ', 9, 6, ['Th', '8c'])['jam']; j8 = G.first_in('HJ', 9, 8, ['Th', '8c'])['jam']
+check('7bb = midpoint of 6 and 8; 9bb between 8 and 10',
+      abs(G.first_in('HJ', 9, 7, ['Th', '8c'])['jam'] - (j6 + j8) / 2) < 1e-9
+      and G.first_in('HJ', 9, 9.0, ['Th', '8c']) is not None)
+check('3.75bb edge covered, 3.7bb not', G.first_in('BTN', 9, 3.75, ['9h', '4c']) is not None
+      and G.first_in('BTN', 9, 3.7, ['9h', '4c']) is None and not G.covered(3.7, 9, True))
+check('vs_jam below 10bb = record (BB vs SB jam K5o, 6bb)',
+      abs(G.call_vs_jam('SB', 'BB', 9, 6, ['Kh', '5c']) - d['vs_jam']['6']['SB>BB'][d['classes'].index('K5o')]) < 1e-9)
+cls = d['classes']; cmb = [6 if len(c) == 2 else 4 if c[2] == 's' else 12 for c in cls]
+rng_sb = {S: sum(c * x for c, x in zip(cmb, d['first_in'][str(S)]['SB']['jam'])) / 1326 for S in (4, 6, 8, 10)}
+check('SB jam range widens as stacks shrink (4 > 6 > 8 > 10)', rng_sb[4] > rng_sb[6] > rng_sb[8] > rng_sb[10])
+check('below 10bb: no open / 3-bet tables (vs_open, vs_3bjam, vs_open_full stay None)',
+      G.aggr_vs_open('BTN', 'BB', 9, 8, ['Ah', 'Kc']) is None
+      and G.call_vs_3bet_jam('BTN', 'BB', 9, 8, ['Ah', 'Kc']) is None
+      and G.defend_vs_open('BTN', 'BB', 9, 8, ['Ah', 'Kc'], 2.0) is None)
 i60 = d['classes'].index('AKo')
 check('60bb BB vs BTN open AKo 3-bet = record',
       abs(G.aggr_vs_open('BTN', 'BB', 9, 60, ['Ah', 'Kc'])['r3'] - d['vs_open']['60']['BTN>BB']['r3'][i60]) < 1e-9)

@@ -33,7 +33,8 @@ WD=origin/claude/p3bet_d_20261026               # 100bb HJ 오픈 2.5 수비
 W100=origin/claude/p100_flat_o25_20261027       # 100bb BTN 오픈 2.5 수비
 RS1=origin/claude/resume_p100_flat_20261030     # 10-28 에 끊긴 100bb CO·LJ 오픈 2.5 수비 이어 돌림(코디네이터 10-30)
 RS2=origin/claude/resume_p3bet_20261030         # 10-28 에 끊긴 100bb CO vs BTN 3벳, 60bb LJ 오픈 2.5 수비 이어 돌림
-for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100 $RS1 $RS2; do
+SUB=origin/claude/gto_gaps_20261031             # 10bb 미만 푸시/폴드 pf4·pf6·pf8 (코디네이터 10-31 연결 지시, docs/GTO_PUSHFOLD_SUB10_V1.md)
+for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100 $RS1 $RS2 $SUB; do
   n="${b#origin/}"
   git fetch -q origin "$n:refs/remotes/$b" 2>/dev/null \
     || git fetch -q origin "refs/tags/archive/$n:refs/remotes/$b" 2>/dev/null \
@@ -42,6 +43,7 @@ done
 show() {  # show <브랜치> <파일이름>  — 없으면 기존 사본을 그대로 둔다
   git show "$1:data/gto_spot/quick/$2" > "$OUT/$2.new" 2>/dev/null && mv "$OUT/$2.new" "$OUT/$2" || rm -f "$OUT/$2.new"
 }
+for b in pf4 pf6 pf8; do git show $SUB:data/gto_spot/records/$b.json > "$OUT/$b.json.new" 2>/dev/null && mv "$OUT/$b.json.new" "$OUT/$b.json" || rm -f "$OUT/$b.json.new"; done
 for b in pf10 pf15 pf20 pf25 s30 s40; do git show $PF:data/gto_spot/records/$b.json > "$OUT/$b.json.new" 2>/dev/null && mv "$OUT/$b.json.new" "$OUT/$b.json" || rm -f "$OUT/$b.json.new"; done
 # 60·100bb 부모: 오픈 2.5bb(SB 3.0) 로 푼 판(2026-10-27). 봇이 60bb 이상에서 2.5bb 로 오픈하므로 이 판을 쓴다.
 #   옛 2.0 판: $CEN records/s60.json, $P100 records/s100.json
@@ -89,7 +91,7 @@ for f in $(ls "$OUT" | sort); do
   gzip -9n -c "$OUT/$f" > "$D/$f.gz"
   printf '%s\t%s\n' "$f" "$(sha256sum "$OUT/$f" | cut -c1-64)" >> $D/MANIFEST.tsv
 done
-for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100 $RS1 $RS2; do
+for b in $PF $P30 $CEN $P30T $P30R $P40T $P40U2 $L30 $L40 $T30 $T40 $T40R $P100 $FO25 $WA $WB $WC $WD $W100 $RS1 $RS2 $SUB; do
   printf '# %s %s\n' "${b#origin/}" "$(git rev-parse --short=8 "$b" 2>/dev/null || echo missing)" >> $D/MANIFEST.tsv
 done
 rm -rf "$OUT"; ls $D | wc -l
