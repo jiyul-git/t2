@@ -963,6 +963,27 @@ def pure_bluff_attempt_probability(bluff_ok, outs, eq, bluff_skill_03):
 MW_REL_JOINT_EXPONENT = {2: 2.05, 3: 3.21}
 
 
+# 멀티웨이 에쿼티(전원 동시) → 상대 한 명 단위 환산 지수 (2026-10-31, 수정 ①).
+# 밸류 문턱 0.80/0.66/0.50 은 헤즈업 에쿼티 단위다. 멀티웨이 eq 는 _plan_eq 가 상대 전원과
+# 동시에 겨룬 값이라 같은 패라도 낮게 나온다(3인 팟 공정 몫 1/3, 헤즈업 1/2).
+# rel 과 달리 에쿼티는 남은 카드를 공유한다 — 런아웃이 나를 도우면 두 상대를 같이 이긴다 —
+# 그래서 joint 가 좌석별 곱보다 크고(평균 +0.04~0.06) 지수는 N 보다 작다.
+# 값은 tools/multiway_calibration.py fit.eq_unit 이 지금 레인지에서 잰 것
+# (좌석별 헤즈업 _eq_vs 와 전원 _plan_eq 비교, 2인 1013건 / 3인 149건; 벳 빈도는 보지 않음).
+# 확인: 공정 몫 1/3 → 0.47, 1/4 → 0.45 로, 헤즈업 공정 몫 0.5 근처로 옮겨진다.
+# 표에 없는 인원(4+)은 표본이 없어 마지막 측정값(3인)을 쓴다 — N 을 쓰면 과하게 올라간다.
+MW_EQ_JOINT_EXPONENT = {2: 1.46, 3: 1.74}
+
+
+def per_opponent_eq(eq, n_opp):
+    """멀티웨이 전원 동시 에쿼티를 헤즈업(상대 한 명) 에쿼티 단위로 환산. 헤즈업은 그대로."""
+    n = int(n_opp or 1)
+    if n <= 1 or eq is None:
+        return eq
+    k = MW_EQ_JOINT_EXPONENT.get(n, MW_EQ_JOINT_EXPONENT[max(MW_EQ_JOINT_EXPONENT)])
+    return max(0.0, min(1.0, eq)) ** (1.0 / k)
+
+
 def per_opponent_rel(rel, n_opp):
     """멀티웨이 joint rel 을 헤즈업(상대 한 명) rel 단위로 환산. 헤즈업은 그대로."""
     n = int(n_opp or 1)
@@ -1241,10 +1262,12 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 상대 레인지에 지는 콤보가 많으면 밸류 문턱을 올린다.
     # 예전에는 0.45 / 0.65 / 0.92 세 계단이라 rel 0.44 와 0.46 이
     # 완전히 다른 계획으로 갈렸다. 연속 곡선으로 바꾼다.
-    # rel 은 멀티웨이에서 joint(전원 동시) 값이다. 구간은 헤즈업 단위라 환산해서 넣는다.
-    # 판단의 다른 곳(얇은 밸류·블락벳·커밋 등)은 joint rel 그대로 쓴다 — 이번 수정 범위 밖.
-    v3, v2 = relative_strength_value_threshold_shift(
-        v3, v2, per_opponent_rel(rel, n_opp))
+    # 밸류 사다리(문턱·얇은 밸류·블락벳 구간)는 헤즈업 단위다. 멀티웨이는 eq·rel 을
+    # 상대 한 명 단위로 환산한 값(_eq_v, _rel_v)으로 비교한다. 헤즈업은 eq/rel 그대로.
+    # 기록(st['eq'], st['rel'])과 다른 판단(쇼다운 가치·블러프·커밋 등)은 원래 값을 쓴다.
+    _eq_v = per_opponent_eq(eq, n_opp)
+    _rel_v = per_opponent_rel(rel, n_opp)
+    v3, v2 = relative_strength_value_threshold_shift(v3, v2, _rel_v)
 
     T = profile.get('type')
     if profile.get('concepts'):
@@ -1259,7 +1282,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 미완성 핸드를 '쇼다운 가치 있음'으로 잘못 분류할 수 있다.
     _sd_eq = eq_cur if eq_cur is not None else eq
 
-    if eq >= v3:
+    if _eq_v >= v3:
         # 트랩은 '확률로 고르는 것'이 아니라 상대를 보고 내리는 판단이다.
         # 개념을 가졌는가(sk)는 사람마다 다르지만, 그 도구를 지금 쓸지는
         # 상대가 벳해줄 사람인가 · 스택이 남았는가 · 보드가 안전한가로 결정된다.
@@ -1281,7 +1304,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             _goal, _mode = 'value_3street', 'trap'
         else:
             plan = 'value_3street'; why.append('강도 최상위 → 3스트리트 밸류')
-    elif eq >= v2:
+    elif _eq_v >= v2:
         # 중간 밸류는 "실력이 높으면 무조건 3스트리트"가 아니다.
         # 사람은 현재 equity가 밸류 구간 어디쯤인지, 보드 취약성, SPR,
         # 다인원을 함께 보고 몇 거리까지 갈지 정한다.
@@ -1291,7 +1314,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # pot-pot-pot value_3street가 된 원인이다. 숙련도는 위험을 지우는
         # 방향이 아니라 **상황 기반 판단을 더 정확히 따르는 정도**로 쓴다.
         _p2 = middle_value_two_street_probability(
-            profile, street, eq, v2, v3, dang, s_true, made, mw)
+            profile, street, _eq_v, v2, v3, dang, s_true, made, mw)
 
         if rng.random() < max(0.05, min(0.95, _p2)):
             plan = 'value_2street'
@@ -1304,9 +1327,9 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             why.append(
                 '중간 밸류이나 3스트리트 유지(eq %.2f, rel %.2f, p2 %.2f)'
                 % (eq, rel, _p2))
-    elif eq >= pcz:
+    elif _eq_v >= pcz:
         # 블락벳: OOP + 이니셔티브 없음 + 쇼다운은 되는 중간 강도
-        block_p = blockbet_probability(profile, rel, dang, oop_vs_aggr, initiative)
+        block_p = blockbet_probability(profile, _rel_v, dang, oop_vs_aggr, initiative)
         if sk('blockbet') >= 1 and rng.random() < block_p:
             plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
         else:
@@ -1328,7 +1351,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             _pc_p = medium_potcontrol_probability(pc, mw, _mg)
             if sk('potcontrol') >= 1 and rng.random() < _pc_p:
                 plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
-            elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
+            elif _rel_v >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
                 plan = 'value_2street'
                 why.append('중간강도(eq %.2f, rel %.2f, 머징 %.1f) → 얇은 밸류' % (eq, rel, _mg))
             else:

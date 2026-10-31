@@ -96,12 +96,30 @@ def _decision_relative_strength(hero, board, opp_range, n_opp=1, opp_ranges=None
             and isinstance(opp_ranges, dict) and len(board) >= 3):
         # 읽기만 한다: relative_strength 는 RNG 를 쓰지 않는 정확 계산(캐시만 채움).
         seat = [P.relative_strength(list(hero), list(board), rr) for _k, rr in sorted(opp_ranges.items(), key=lambda kv: str(kv[0]))]
-        RELFIT.append({'n_opp': int(n_opp), 'street': len(board), 'joint': meta.get('joint'),
+        RELFIT.append({'kind': 'rel', 'n_opp': int(n_opp), 'street': len(board), 'joint': meta.get('joint'),
                        'union': meta.get('union'), 'seat': seat})
     return r
 
 
 P._decision_relative_strength = _decision_relative_strength
+
+_peq = P._plan_eq
+
+
+def _plan_eq(hero, board, opp_range, n_opp, sims, seed=None, opp_ranges=None, audit=None):
+    r = _peq(hero, board, opp_range, n_opp, sims, seed=seed, opp_ranges=opp_ranges, audit=audit)
+    if (relfit_out and int(n_opp or 1) >= 2 and r[0] is not None and not r[1]
+            and isinstance(opp_ranges, dict) and len(opp_ranges) == int(n_opp) and len(board) >= 3):
+        # 읽기만 한다: _eq_vs 는 내용에서 시드를 유도하는 자체 RNG(공유 RNG 소비 없음).
+        seat = [P._eq_vs(list(hero), list(board), rr, 1, sims=600)
+                for _k, rr in sorted(opp_ranges.items(), key=lambda kv: str(kv[0]))]
+        if all(v is not None for v in seat):
+            RELFIT.append({'kind': 'eq', 'n_opp': int(n_opp), 'street': len(board),
+                           'joint': r[0], 'seat': seat})
+    return r
+
+
+P._plan_eq = _plan_eq
 
 rows = []
 t = T.Tournament(entries=100, seed=SEED, fmt=os.environ.get('MW_FMT', 'standard'), hero_seat=7)

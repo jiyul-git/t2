@@ -75,6 +75,8 @@ def band(eq, rel, n, mw0=False):
     _, v3, v2, pcz = P.multiway_value_thresholds(1 if mw0 else n, 0, 0)
     if not mw0 and hasattr(P, 'per_opponent_rel'):   # plan.make_plan 과 같은 환산(현재 코드 그대로)
         rel = P.per_opponent_rel(rel, n)
+    if not mw0 and hasattr(P, 'per_opponent_eq'):
+        eq = P.per_opponent_eq(eq, n)
     v3, v2 = P.relative_strength_value_threshold_shift(v3, v2, rel)
     return 'value' if eq >= v2 else 'mid' if eq >= pcz else 'weak'
 
@@ -111,32 +113,41 @@ for n in sorted({r['n_opp'] for r in rows}):
         'joint_unit_v3_v2_pcz': [round(b3 ** n, 3), round(b2 ** n, 3), round(bz ** n, 3)],
         'tp_mean_eq': round(sum(r['eq'] for r in g) / max(1, len(g)), 3)}
 
-# ---- fit: rel 단위 (plan.MW_REL_JOINT_EXPONENT 의 근거) ----
+# ---- fit: rel·eq 단위 (plan.MW_REL_JOINT_EXPONENT / MW_EQ_JOINT_EXPONENT 의 근거) ----
 # 멀티웨이 rel 은 '어느 상대에게도 뒤지지 않을 확률'(전원 동시). 밸류 문턱 rel 구간(0.45~0.85)은
 # 헤즈업(상대 한 명) rel 단위로 정해졌다. 상대가 서로 독립이면 joint = Π(좌석별 rel) 이고,
 # 좌석별 rel 이 비슷하면 joint ≈ (한 명 기준 rel)^N. 실제 레인지에서는 카드 제거·레인지 차이로
 # N 과 조금 다르므로 지수 k 를 기록에서 잰다: log(joint) ≈ k · mean_i log(rel_i)  (원점 지나는 최소제곱).
 # 쓰는 값은 좌석별 rel(정확 계산)과 joint(MC) 뿐이다. 벳 빈도는 보지 않는다.
 import math
-relfit_fit = {}
-for n in sorted({r['n_opp'] for r in relfit}):
-    xs, ys, prod_err = [], [], []
-    for r in relfit:
-        if r['n_opp'] != n or r['joint'] is None or not r['seat']:
+
+
+def unit_fit(kind, plan_attr):
+    out = {}
+    recs = [r for r in relfit if r.get('kind', 'rel') == kind]
+    for n in sorted({r['n_opp'] for r in recs}):
+        xs, ys, prod_err = [], [], []
+        for r in recs:
+            if r['n_opp'] != n or r['joint'] is None or not r['seat']:
+                continue
+            if not (0.02 < r['joint'] < 0.98) or min(r['seat']) <= 0.0 or max(r['seat']) >= 1.0:
+                continue      # log 가 0/무한이 되는 끝값(완전 넛/완전 미스)은 단위 정보가 없다
+            x = sum(math.log(v) for v in r['seat']) / len(r['seat'])
+            xs.append(x); ys.append(math.log(r['joint']))
+            prod_err.append(r['joint'] - math.prod(r['seat']))
+        if len(xs) < 30:
             continue
-        if not (0.02 < r['joint'] < 0.98) or min(r['seat']) <= 0.0 or max(r['seat']) >= 1.0:
-            continue          # log 가 0/무한이 되는 끝값(완전 넛/완전 미스)은 단위 정보가 없다
-        x = sum(math.log(v) for v in r['seat']) / len(r['seat'])
-        xs.append(x); ys.append(math.log(r['joint']))
-        prod_err.append(r['joint'] - math.prod(r['seat']))
-    if len(xs) < 30:
-        continue
-    k = sum(x * y for x, y in zip(xs, ys)) / sum(x * x for x in xs)
-    relfit_fit['n_opp=%d' % n] = {
-        'samples': len(xs), 'k': round(k, 3), 'k_independent': n,
-        'joint_minus_product_mean': round(sum(prod_err) / len(prod_err), 4),
-        'plan_exponent_now': P.MW_REL_JOINT_EXPONENT.get(n) if hasattr(P, 'MW_REL_JOINT_EXPONENT') else None}
-fit['rel_unit'] = relfit_fit
+        k = sum(x * y for x, y in zip(xs, ys)) / sum(x * x for x in xs)
+        out['n_opp=%d' % n] = {
+            'samples': len(xs), 'k': round(k, 3), 'k_independent': n,
+            'joint_minus_product_mean': round(sum(prod_err) / len(prod_err), 4),
+            'plan_exponent_now': getattr(P, plan_attr, {}).get(n)}
+    return out
+
+
+# rel: 지금 보드 순위 몫(정확 계산) / eq: 런아웃 포함 에쿼티(MC, 좌석별 헤즈업 _eq_vs vs 전원 동시 _plan_eq).
+fit['rel_unit'] = unit_fit('rel', 'MW_REL_JOINT_EXPONENT')
+fit['eq_unit'] = unit_fit('eq', 'MW_EQ_JOINT_EXPONENT')
 
 gto = os.path.join(ROOT, 'gto_pf_data.json')
 snap = {'commit': sh(['git', 'rev-parse', 'HEAD']),
