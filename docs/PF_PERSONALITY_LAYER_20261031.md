@@ -73,4 +73,4 @@ top 층 개인 진입 − GTO 진입 최대 차이: 0.000000 (결정 754)
   섞인 클래스 한 비율, 쓰레기 도달 조건, 루즈할수록 넓음 — 1,754,223 통과.
 - `verify_range_sync`: 훅과 레인지가 같은 개인 빈도 — 대표 프로필 4개 표본 추가, 1705 spot 통과.
 - `verify_gto_pf` 53, `verify_money_compose` 2806 통과. `regress.sh` 기준과 같음. `ui_checks.sh` 전부 통과(opencv 설치 후).
-- `verify_gto_connect`(fetch_records.sh 기록, max-skill 프로필 = 표 그대로): 실행 중(지금까지 실패 0)
+- `verify_gto_connect`(fetch_records.sh 기록, max-skill 프로필 = 표 그대로): 318 통과, 실패 0
