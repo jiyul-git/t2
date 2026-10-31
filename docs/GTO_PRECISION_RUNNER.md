@@ -71,3 +71,13 @@ PREC_START=fresh PREC_CALC_ROOT=/home/user/calc PREC_SESSION=session_<id> sh too
 - 보고 항목: 통과 ①(D ≤ U144) / ②(복제) 여부, 끝점·자리별 D/U, 복제 차이 |V_A−V_B| 와 허용폭 2√(U_A²+U_B²), 뿌리 클래스별 5%p 초과 몫과 클래스,
   u_rep 크기(뿌리 콤보 가중 평균·최대, u_panel·u_outer 와 비교), stable 콤보 몫, quick 대비 5%p 넘게 바뀐 뿌리 클래스.
 - 진행 기록: 끝점·패널 하나가 끝날 때마다 커밋·푸시(`run_precision.sh`).
+
+## 8. 플랍 전략 저장 (사용자 요청 10-31, p100 CO 1단계부터)
+- 이전까지 플랍 풀이(`t2_cont_panel`)는 핸드별 값만 남기고 플랍·턴·리버 전략을 버렸다. 이제 보드마다 `<board>.strategy.json` 을 같이 쓴다.
+- 솔버 패치: `tools/gto_precision/t2_cont_panel_strategy.patch` (계산 브랜치에서 `git apply` 후 위 2장 3번처럼 빌드). 켜기: `T2_EXPORT_STRATEGY=1`(run_precision.sh 기본 켬).
+  풀이가 끝난 뒤 평균 전략을 **읽기만** 한다 — 값·결과 파일·출처키(provenance key)는 그대로(재사용·비교가 깨지지 않음).
+- 내용(`schema t2_flop_strategy_v1`): 줄(line)마다 행동자, 행동 목록, 169 클래스별 빈도(천분율, -1 = 그 클래스 안 옴), 자기 도달 가중.
+  줄 표기: X 체크, B/R 금액(그 스트리트 누적), C 콜, F 폴드, `|` = 카드 한 장. 저장 범위: **플랍 모든 행동 노드, 턴 모든 행동 노드, 리버 첫 행동** — 턴·리버는 카드별이 아니라 카드 평균(자기 도달 가중).
+- 이미 풀린 보드: `tools/gto_precision/strategy_backfill.py` 가 같은 입력(출처키에서 읽은 반복 수·목표·알고리즘·행렬 모드)으로 다시 풀고 `flop_digest` 규칙으로 비트 단위 비교 → 같을 때만 전략 파일을 넣는다(값은 절대 안 바꿈, 결과는 `strategy_backfill.json`).
+- 시험(10-31, 끝점0 A 패널 7c4c3c): digest 동일(b43e835a…), 내보내기 0.25초, 압축 약 29KB/보드 → 1단계 720보드 약 21MB.
+- 저장 위치: 패널(끝점 × A/B)이 끝날 때마다 `data/gto_precision/strategy/<id>/s<k>/term<j>_<A|B>.tgz` 로 커밋(+ 소급 확인 기록 `.backfill.json`).
