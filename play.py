@@ -153,8 +153,11 @@ class Hand:
         """
         return self.planning_profile(s)
 
-    def bf_details(self, s):
+    def bf_details(self, s, risk_seats=None):
         """BF and its evidence label; never claim exact ICM for a partial field.
+
+        risk_seats(선택): 이 손에서 내 칩을 가져갈 수 있는 자리(첫 진입이면 아직 행동하지 않은
+        사람). 주면 자리 기준 BF 다(icm.table_bf risk_idx).
 
         Full-field chip stacks are stamped by fieldsim from a hand-start
         snapshot; the table alone cannot stand in for a split tournament.
@@ -264,6 +267,8 @@ class Hand:
             observed_field_epoch_id=observed_id,
             field_snapshot_scope=scope,
             field_observation_status=observation_status,
+            risk_idx=(None if risk_seats is None else
+                      [live.index(x) for x in risk_seats if x in live and x != s]),
             return_details=True)
         details['snapshot_hand_no'] = getattr(
             self, 'field_snapshot_hand_no', None)

@@ -77,9 +77,12 @@ Spy.n = 0
 check('ICM pressure -> None, no RNG',
       P.gto_pf_first_in_choice(prof, 'SB', 9.39, ['Ah', '2c'], r, [8.89], 1.3, 9, True) is None
       and Spy.n == 0)
-check('money pressure -> None',
+# 2026-10-31: 머니점프 값이 있으면 막지 않고 기준 빈도에 진입 폭 배수를 합성한다(verify_money_compose).
+P.take_gto_spot()
+check('money pressure -> GTO composed with range_factor',
       P.gto_pf_first_in_choice(prof, 'SB', 9.39, ['Ah', '2c'], r, [8.89], 1.0, 9, True,
-                               {'pressure': 0.2, 'range_factor': 0.9}) is None)
+                               {'pressure': 0.2, 'range_factor': 0.9}) is not None
+      and P.take_gto_spot()['args'].get('rf') == 0.9)
 check('money drive only -> covered',
       P.gto_pf_first_in_choice(prof, 'SB', 9.39, ['Ah', '2c'], r, [8.89], 1.0, 9, True,
                                {'pressure': 0.0, 'range_factor': 1.29}) == 'jam')

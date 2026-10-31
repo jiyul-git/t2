@@ -88,8 +88,10 @@ def hook_call(fn, a, hand):
     rng = _Roll(1)
     E = a['eff'] - SHARE
     if fn == 'first_in':
+        # a['rf'] 가 있으면 머니점프 진입 폭 배수를 합성한 첫 진입(2026-10-31)
+        mo = {'range_factor': a['rf']} if a.get('rf') else None
         out = P.gto_pf_first_in_choice(PROF, a['pos'], E - P._POSTED_BB.get(a['pos'], 0.0),
-                                       hand, rng, None, 1.0, SEATS, True)
+                                       hand, rng, None, 1.0, SEATS, True, money_open=mo)
     elif fn in ('vs_jam', 'vs_3bjam'):
         out = P.gto_pf_call_choice(PROF, a['aggressor_pos'], a['pos'], hand, rng, E, E, E,
                                    1 if fn == 'vs_jam' else 2, other_live_actors=0, bf=1.0,
@@ -194,6 +196,9 @@ for key in pairs('first_in'):
     for x in stack_points('first_in', key):
         a = {'pos': key, 'seats': SEATS, 'eff': x, 'ante': True}
         covered += check_spot('first_in', a, key, None, 0.0, 1)
+        # 머니점프 합성 빈도(좁힘·넓힘)도 훅과 레인지가 같아야 한다.
+        for rf in (0.85, 1.2):
+            covered += check_spot('first_in', dict(a, rf=rf), key, None, 0.0, 1)
 for table, fn in (('vs_jam', 'vs_jam'), ('vs_3bjam', 'vs_3bjam')):
     for key in pairs(table):
         o, dfn = key.split('>')
@@ -242,6 +247,8 @@ outside = [
     ('no ante', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.0, 9, False)),
     ('5-handed', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.0, 5, True)),
     ('ICM bf 1.3', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.3, 9, True)),
+    ('degenerate money range_factor', lambda r: P.gto_pf_first_in_choice(
+        PROF, 'CO', 30.0, hand, r, None, 1.0, 9, True, money_open={'range_factor': 50.0})),
     ('caller in pot', lambda r: P.gto_pf_aggr_choice(PROF, 'CO', 'BB', hand, r, 30.0, 2.0, 1.0, 1,
                                                      other_live_actors=1, actor_acted=False)),
     ('vs_3bet 100bb jam table empty', lambda r: P.gto_pf_aggr_choice(

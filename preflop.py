@@ -442,19 +442,111 @@ def _gto_pf_mod():
 
 
 def _gto_pf_icm_free(bf, money_open=None):
-    if float(bf or 1.0) > GTO_PF_BF_MAX:
-        return False
-    # 머니점프 수정자는 압력이 없어도 drive(늦은 단계 넓히기)로 range_factor 가
-    # 1 이 아닐 수 있다. ICM 압력(pressure / brake / 위험 몫)이 있을 때만 막는다.
-    if money_open:
-        try:
-            if max(float(money_open.get(k, 0.0) or 0.0)
-                   for k in ('pressure', 'max_pressure', 'brake',
-                             'danger_fraction', 'limp_pull_shadow')) > 1e-9:
-                return False
-        except (TypeError, ValueError):
-            return False
-    return True
+    """콜·공격·림프 훅의 ICM 관문: BF 가 상한 이하일 때만 칩 기준을 쓴다.
+
+    첫 진입은 이 관문을 쓰지 않는다(2026-10-31) — 아래 _gto_pf_money_rf 로 기준 빈도에
+    머니점프 진입 폭 배수를 합성한다. money_open 인자는 옛 호출 호환용으로만 남긴다.
+    """
+    return float(bf or 1.0) <= GTO_PF_BF_MAX
+
+
+# ---- 첫 진입: GTO 빈도 × 머니점프 진입 폭 합성 (사용자 결정 2026-10-31) ----
+# 예전에는 머니점프 값(pressure 등)이 1e-9 만 넘어도 GTO 를 끄고 기존 경로로 갔다. 그 값은 일부러
+# 문턱 없는 연속 신호라 대회 첫 레벨부터 0 이 아니어서, 첫 진입 GTO 가 거의 쓰이지 않았다.
+# 이제는 GTO 클래스 빈도를 바탕으로 두고, 기존 경로와 같은 진입 폭 배수(range_factor =
+# (1 + drive) / (1 + brake))를 그 위에 얹는다. 기존 경로가 '진입 문턱 × 배수'이듯, 기준 레인지의
+# 진입 질량(콤보 가중)을 배수만큼 늘리거나 줄인다.
+#   줄일 때: 기준이 가장 덜 원하는 패(진입 빈도 낮은 순, 같으면 약한 순)부터 뺀다.
+#   늘릴 때: 기준이 가장 더 원하는 패(섞인 패 중 빈도 높은 순, 그다음 0 인 패를 강한 순)부터 채운다.
+#   행동 몫(jam/open/limp)은 그 패의 기준 몫을 유지하고, 새로 들어온 패는 경계 패의 몫을 따른다.
+# 배수가 1 이면 기준 그대로다. 배수는 spot 에 실어 상대 레인지 모델이 같은 빈도를 읽는다.
+GTO_PF_RF_MIN, GTO_PF_RF_MAX = 0.2, 5.0        # 이 밖(또는 숫자 아님)은 퇴화 → 기존 경로
+_CLS_REP = {}
+_COMPOSE_CACHE = {}
+
+
+def _cls_rep(k):
+    h = _CLS_REP.get(k)
+    if h is None:
+        if len(k) == 2:
+            h = [k[0] + 'h', k[1] + 'd']
+        else:
+            h = [k[0] + 'h', k[1] + ('h' if k[2] == 's' else 'd')]
+        _CLS_REP[k] = h
+    return h
+
+
+def _gto_pf_money_rf(money_open):
+    """첫 진입에 합성할 진입 폭 배수. 1.0(합성 없음) / 숫자 / None(퇴화 → 기존 경로)."""
+    if not money_open:
+        return 1.0
+    try:
+        rf = float(money_open.get('range_factor', 1.0))
+    except (TypeError, ValueError):
+        return None
+    if not (rf == rf) or rf < GTO_PF_RF_MIN or rf > GTO_PF_RF_MAX:
+        return None
+    return round(rf, 4)
+
+
+def compose_first_in(base, rf):
+    """{클래스: 기준 첫 진입 빈도} × 진입 폭 배수 → {클래스: 합성 빈도}. 순수 함수."""
+    if abs(rf - 1.0) < 1e-12:
+        return dict(base)
+    n = {k: (6 if len(k) == 2 else 4 if k[2] == 's' else 12) for k in base}
+    p_in = {k: 1.0 - g['fold'] for k, g in base.items()}
+    W = sum(n[k] * p_in[k] for k in base)
+    tot = float(sum(n.values()))
+    target = max(0.0, min(tot, W * rf))
+    order = sorted(base, key=lambda k: (-p_in[k], PCT[k]))       # 기준이 원하는 순
+    new = dict(p_in)
+    if target < W:
+        left = W - target
+        for k in reversed(order):
+            if left <= 0:
+                break
+            take = min(new[k] * n[k], left)
+            new[k] -= take / n[k]
+            left -= take
+    elif target > W:
+        left = target - W
+        for k in order:
+            if left <= 0:
+                break
+            room = (1.0 - new[k]) * n[k]
+            add = min(room, left)
+            new[k] += add / n[k]
+            left -= add
+    edge = next((k for k in reversed(order) if p_in[k] > 0), None)
+    out = {}
+    for k, g in base.items():
+        q = max(0.0, min(1.0, new[k]))
+        src = g if p_in[k] > 1e-12 else (base[edge] if edge else {'open': 1.0})
+        s = sum(src.get(a, 0.0) for a in ('jam', 'open', 'limp'))
+        if s <= 1e-12:
+            src, s = {'open': 1.0}, 1.0
+        o = {a: q * src.get(a, 0.0) / s for a in ('jam', 'open', 'limp')}
+        o['fold'] = max(0.0, 1.0 - sum(o.values()))
+        out[k] = o
+    return out
+
+
+def _first_in_composed(_GPF, a, hand):
+    k = cls(hand)
+    key = (a['pos'], a['seats'], round(float(a['eff']), 4), bool(a['ante']), a['rf'])
+    tab = _COMPOSE_CACHE.get(key)
+    if tab is None:
+        base = {}
+        for c in PCT:
+            g = _GPF.first_in(a['pos'], a['seats'], a['eff'], _cls_rep(c), a['ante'])
+            if g is None:
+                return None
+            base[c] = g
+        tab = compose_first_in(base, float(a['rf']))
+        if len(_COMPOSE_CACHE) > 4096:
+            _COMPOSE_CACHE.clear()
+        _COMPOSE_CACHE[key] = tab
+    return tab.get(k)
 
 
 # ---- GTO 기준이 실제로 행동을 정한 자리(spot) — 상대 레인지 모델과 공유한다(2026-10-30) ----
@@ -490,7 +582,10 @@ def gto_pf_spot_freqs(spot, hand):
         return None
     fn, a = spot['fn'], spot['args']
     if fn == 'first_in':
-        g = _GPF.first_in(a['pos'], a['seats'], a['eff'], hand, a['ante'])
+        if a.get('rf') is not None:
+            g = _first_in_composed(_GPF, a, hand)
+        else:
+            g = _GPF.first_in(a['pos'], a['seats'], a['eff'], hand, a['ante'])
         return (g, 'full') if g is not None else None
     if fn in ('vs_jam', 'vs_3bjam'):
         p = (_GPF.call_vs_jam(a['aggressor_pos'], a['pos'], a['seats'], a['eff'], hand, a['ante'])
@@ -541,24 +636,36 @@ def gto_pf_first_in_choice(prof, pos, bb, hand, rng, behind_stacks=None,
 
     범위 밖(스택·좌석·노안테·ICM)이면 RNG 를 쓰지 않고 None 이다.
     """
-    if not GTO_PF_ON or not _gto_pf_icm_free(bf, money_open):
+    if not GTO_PF_ON:
+        return None
+    # 머니점프 값이 있으면 관문 대신 합성(위 compose_first_in). 머니점프 값이 없는 호출만
+    # 예전처럼 BF 상한을 본다(합성할 보정이 없으니 ICM 압력이 있으면 기존 경로).
+    rf = _gto_pf_money_rf(money_open)
+    if rf is None or (not money_open and not _gto_pf_icm_free(bf)):
         return None
     _GPF = _gto_pf_mod()
     if _GPF is None:
         return None
     eff = gto_pf_open_eff_bb(pos, bb, behind_stacks, ante)
     spot = {'fn': 'first_in', 'args': {'pos': pos, 'seats': seats, 'eff': eff, 'ante': ante}}
+    if rf != 1.0:
+        spot['args']['rf'] = rf
     r = gto_pf_spot_freqs(spot, hand)
     if r is None:
         return None
     g = r[0]
     _GTO_SPOT[0] = spot
+    if money_open is not None:
+        base = (_GPF.first_in(pos, seats, eff, hand, ante) if rf != 1.0 else g)
+        money_open['gto_compose'] = {
+            'rf': rf, 'base_in': round(1.0 - base['fold'], 6),
+            'composed_in': round(1.0 - g['fold'], 6)}
     u = rng.random()
     act = ('jam' if u < g['jam'] else 'open' if u < g['jam'] + g['open']
            else 'limp' if u < g['jam'] + g['open'] + g['limp'] else 'fold')
     _timing_bound({'kind': 'gto_pf_open', 'eq': 1.0 - g['fold'], 'need': 0.5,
                    'gto': {k: round(v, 4) for k, v in g.items()},
-                   'eff_bb': round(eff, 3), 'choice': act})
+                   'eff_bb': round(eff, 3), 'choice': act, 'rf': rf})
     return act
 
 
