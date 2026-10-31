@@ -12,6 +12,7 @@ cd "$REPO"
 : "${PREC_CALC_ROOT:=/home/user/calc}"; export PREC_CALC_ROOT
 : "${PREC_SESSION:?set PREC_SESSION=session_<id> for the commit trailer}"
 export SPOT_PANEL_WORKERS=${SPOT_PANEL_WORKERS:-4}
+export FLOP_ACCEPT_PCT=${FLOP_ACCEPT_PCT:-0.6}   # coordinator decision 2026-10-31: retried flop <= 0.6 % pot accepted + listed; > 0.6 stops
 export T2_EXPORT_STRATEGY=${T2_EXPORT_STRATEGY:-1}   # flop strategy files (<board>.strategy.json; needs the patched solver, docs 8장)
 PY=${PREC_PYTHON:-/home/user/gto_ckpt/py311bin/python3}      # Python 3.11 (float sums / hashes as the quick runs)
 BR=$(git rev-parse --abbrev-ref HEAD)

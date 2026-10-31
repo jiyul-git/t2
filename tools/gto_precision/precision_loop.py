@@ -216,9 +216,13 @@ class Prec:
             bad = L.retry_flops(tf, fd, PANEL_FILE[panel], is_m, first)
             info['flop_retries'] = {'first': first, 'after_retry': bad}
         allow = ()
+        af = os.path.join(fd, 'accepted_above_target.json')   # coordinator decision 2026-10-31 (option 2): after the CFR+ retry a flop at
+        if os.path.exists(af):                                  # <= FLOP_ACCEPT_PCT (0.6 % pot) is accepted, listed and its share recorded
+            info['accepted_above_target'] = json.load(open(af))
+            allow = set(info['accepted_above_target'])
         if bad and L.terminal_exempt_level(sp, t):   # amendment 11 (b)
             info['flop_failures_exempt_terminal'] = bad
-            allow = {b['board'] for b in bad}
+            allow = set(allow) | {b['board'] for b in bad}
             bad = []
         info['bad'] = bad
         if os.environ.get('T2_EXPORT_STRATEGY') == '1' and not TEST:   # boards solved before strategy export: re-solve, bit-check, add strategy
@@ -573,7 +577,10 @@ def summary(g, rep, qroot):
             'root_mean_u_outer_bb': sum(x['u_outer'] * x['reach_combos'] for x in rh) / wsum if wsum else None,
             'root_share_where_u_rep_is_largest_term': sum(x['reach_combos'] for x in rh if x['u_rep'] >= max(x['u_panel'], x['u_outer'], x['u_solver'])) / wsum if wsum else None}
     rr = rep['root_replication']
+    acc = {f"{l[-40:]} {n}": v.get('accepted_above_target') for l, t in rep['terminals'].items() for n, v in t.get('flops', {}).items() if v.get('accepted_above_target')}
+    nfl = sum(len(json.load(open(PANEL_FILE[n]))['panel']) for t in rep['terminals'].values() for n in t.get('flops', {}))
     return {'decision': rep['decision'], 'u_rep': urep,
+            'flops_accepted_above_target': acc, 'flops_accepted_share': (sum(len(v) for v in acc.values()) / nfl) if nfl else None,
             'root_replication_share_over_5pp': 1 - rr['share_within_5pp'], 'root_replication_classes_over_5pp': [c['class'] for c in rr['classes_over_5pp']], 'pass_D_le_U144': rep['pass_D_le_U144'], 'pass_rep_values': rep['pass_rep_values'],
             'root_replication_share_within_5pp': rep['root_replication']['share_within_5pp'], 'pass_rep_root': rep['pass_rep_root'],
             'terminals': du, 'spot_exploitability_bb': g['exploitability']['total_bb'],

@@ -90,3 +90,5 @@ PREC_START=fresh PREC_CALC_ROOT=/home/user/calc PREC_SESSION=session_<id> sh too
   (quick 때 사용자 예외 FLOP_ACCEPT_PCT=0.7 과 같은 방식; 지금은 72보드 중 1개, 0.444%) ③ 그 보드만 반복 3배 재시도(RETRY_ITER_MULT=3, 승인된 방식) 후 다시 판단.
 - 기록: `data/gto_precision/progress/p100_flat_co_vs_bb_o25/s0/term0_A_flop_failures.json`, 패널 기록 `term0_A.ledger.jsonl`, 전략 `data/gto_precision/strategy/.../term0_A.tgz`.
 - 2시간 강제 종료는 setsid 로 띄운 계산까지 같이 죽인다(분리 실행은 효과 없음). 재실행 때 진행 중이던 보드만 다시 푼다.
+- **결정(코디네이터 10-31 22:34Z): ②.** CFR+ 재시도 후 0.6% pot 이하인 플랍은 받아들이고 목록·몫을 기록(`accepted_above_target.json`, 기록 `summary.flops_accepted_above_target`/`flops_accepted_share`), 0.6% 를 넘으면 다시 멈추고 보고.
+  `run_precision.sh` 기본 `FLOP_ACCEPT_PCT=0.6`(quick 때 spot_loop 의 같은 장치). 계속 진행: B 패널, 끝점 1~4. 1단계 끝나면 보고 후 멈춤.
