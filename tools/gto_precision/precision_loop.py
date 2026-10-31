@@ -358,7 +358,7 @@ class Prec:
                 rep['decision'] = 'precision_pass: (1) D <= U144 and (2) A/B replication; precision state = A u B values'
                 st.update({'final': 'precision_pass', 'final_step': k})
             elif k + 1 >= MAX_STEPS:
-                rep['decision'] = f'precision_failed: not passed after {MAX_STEPS} steps; the quick record stays (a mean of steps is not precision)'
+                rep['decision'] = f'precision_failed: not passed after {MAX_STEPS} steps; ' + ('no record for this spot' if st.get('fresh') else 'the quick record stays') + ' (a mean of steps is not precision)'
                 st.update({'final': 'precision_failed', 'final_step': k, 'stop_reason': rep['decision']})
             else:
                 rep['decision'] = 'continue: next tables = (1 - a) T_k + a V_AuB (a = 0.5, cycling terminal 0.25)'

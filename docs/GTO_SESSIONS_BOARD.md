@@ -7,7 +7,7 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 정밀 검사 도구·표준: `docs/GTO_PRECISION_RUNNER.md`. spot 하나를 시작하기 전에 여기 한 줄을 추가하고 커밋·푸시한다. 이미 줄이 있는 spot 은 돌리지 않는다.
 | spot | 단계 | 세션 | 진행 브랜치 | 시작(UTC) | 상태 |
 |---|---|---|---|---|---|
-| p100_flat_co_vs_bb_o25 | 1단계(복제) | session_01JQGBPMv985bSc2TKc8UVq5 | claude/precision_runner_20261031 | 2026-10-31 | CLAIMED, 계산 중 |
+| p100_flat_co_vs_bb_o25 | 1단계(복제) | session_01JQGBPMv985bSc2TKc8UVq5 | claude/precision_runner_20261031 | — | **보류**(코디네이터 10-31: 정밀 계산은 빈 자리 채우기 뒤로). 계산 시작 안 함. 다시 할 때 이 줄을 고쳐 CLAIM |
 
 ---
 (아래는 계산 브랜치 claude/resume_p100_flat_20261030 의 게시판 사본, 10-31 기준)
