@@ -159,3 +159,5 @@ spot_usage_sim.py 와 같은 경로(field_backend='real', scheduled_runtime.adva
 짧은 스택이 올인하고 깊은 스택 여럿이 남았을 때 사이드팟에서 블러프하지 않고 체크해 내려가는 규칙은 **없다**.
 올인한 상대는 팟 층(`session._pot_layers` 의 locked_allin_opponents)으로 추적되고, 층별 승률(F8-D3, session.py `layer_equities_by_pot_layer`)은 진단값으로만 기록되며
 ("전략 무영향"), 프리플랍 콜 계산(plan.py `locked_keys`)에만 쓰인다. 베팅·블러프 판단에 들어가는 곳은 없다.
+- `tools/t2_handoff/verify_gto_connect.py`(fetch_records.sh 기록): 318 통과, 실패 0. `regress.sh`: 범위 동기화·합성 통과, 20개 기준과 같음.
+  `ui_checks.sh`: 로비 자산 검사 2개가 실패(opencv 없음 — 바꾸기 전 커밋에서도 같은 실패), 나머지 통과.
