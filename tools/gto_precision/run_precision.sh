@@ -20,7 +20,9 @@ W=/home/user/gto_ckpt/precision/$ID
 P=data/gto_precision/progress/$ID
 LOG=/home/user/gto_ckpt/precision/$ID.log
 mkdir -p $W
-pkill -f "gto_precision/precision_loop.py $ID" 2>/dev/null; pkill -f t2_cont_panel 2>/dev/null; pkill -f solve_panel.py 2>/dev/null; sleep 2   # orphans of a killed launch
+# the computation runs detached (setsid) so the 2 h task kill does not lose the boards in progress; a relaunch only re-attaches
+alive() { [ -s $W/loop.pid ] && kill -0 $(cat $W/loop.pid) 2>/dev/null; }
+if ! alive; then pkill -f t2_cont_panel 2>/dev/null; pkill -f solve_panel.py 2>/dev/null; sleep 2; fi   # orphans of a dead loop
 
 push() { for t in 2 4 8 16; do git push -q -u origin "$BR" && return 0; sleep $t; done; return 1; }
 backup() {   # $1 = message
@@ -62,14 +64,16 @@ fi
 if [ -s $W/state.json ] && $PY -c "import json,sys; d=json.load(open('$W/state.json')); sys.exit(0 if d.get('final') else 1)"; then echo PREC_DONE; exit 0; fi
 
 backup "precision $ID: launch $(date -u +%FT%TZ)"
-$PY tools/gto_precision/precision_loop.py $ID >> $LOG 2>&1 &
-RUN=$!
+if alive; then echo "re-attach to running loop $(cat $W/loop.pid)"; else
+  setsid nohup sh -c "$PY tools/gto_precision/precision_loop.py $ID >> $LOG 2>&1; echo \$? > $W/loop.rc" > /dev/null 2>&1 &
+  sleep 3; pgrep -f "gto_precision/precision_loop.py $ID" | head -1 > $W/loop.pid; rm -f $W/loop.rc
+fi
 seen=$(ndone)
-while kill -0 $RUN 2>/dev/null; do
+while alive; do
   sleep 60
   n=$(ndone); [ "$n" != "$seen" ] && { seen=$n; backup "precision $ID: progress ($n panels/steps done)"; }
 done
-wait $RUN; rc=$?
+sleep 2; rc=$(cat $W/loop.rc 2>/dev/null || echo 1)
 backup "precision $ID: launch end rc=$rc"
 tail -3 $LOG
 if [ $rc -ne 0 ]; then echo PREC_FAILED_RUN; exit 1; fi
