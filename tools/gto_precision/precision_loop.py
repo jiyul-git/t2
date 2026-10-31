@@ -268,12 +268,12 @@ class Prec:
                     finfo[n] = {**info, 'solver': flop_solver_stats(fds[n], n)}
                     if info['bad']:
                         failed.append({'terminal': j, 'panel': n, 'boards': info['bad']})
-                        continue
+                        break   # stop rule (docs 7장): an unconverged flop after the retry ends the check at once
                     allow |= set(al)
                     bv.update(board_values(fds[n], n, al))
                 rep['terminals'][line] = {'term': j, 'mode': 'matrix' if is_m else 'table', 'flops': finfo}
                 if failed:
-                    continue
+                    break
                 for key, names in (('A', ['A']), ('B', ['B']), ('AB', ['A', 'B'])):
                     raw[key][line] = stratified(bv, names)
                     if is_m:
