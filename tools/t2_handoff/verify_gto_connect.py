@@ -14,6 +14,7 @@
   C. 경로 선택 : 버킷 사이(35bb, 두 기록 보간), 범위 밖(25/45bb), 크기 밖(3벳 12bb, 오픈 3bb), 멀티웨이,
                  ICM 압력(BF 1.2), 다른 림퍼·SB 아닌 림퍼 → GTO 경로를 타지 않거나(None) 탄다(보간)를 확인.
   D. 실패 내성 : 새 표가 없는 데이터 / 모듈 없음에서도 None(기존 판단)이고 예외가 없다.
+  F. 10bb 미만 : pf4·pf6·pf8(2026-10-31) 첫 진입·단독 올인 콜 값 일치 + 엔진 경로(BTN·SB 첫 진입, SB 올인 받은 BB) + 경로 선택.
   E. 요약      : 기록별 표 — 결과 JSON 에 클래스별 숫자를 남긴다(값을 맞추지 않는다, 차이는 그대로 보고).
 """
 import copy, glob, json, math, os, random, re, sys
@@ -314,6 +315,97 @@ for rec, new in records:
     check('B class%-24s every class within its sampling tolerance (worst excess %.3f)' % (rec['id'], worst),
           worst <= 0.0)
     check('B eng  %-24s engine errors = %d' % (rec['id'], stats['engine_errors']), stats['engine_errors'] == 0)
+
+# ---------------------------------------------------------------- F. 10bb 미만 푸시/폴드 (pf4·pf6·pf8, 2026-10-31)
+# 값 일치: 기록의 모든 첫 진입·단독 올인 노드에서 조회 == 기록(≤ 0.002, 표는 소수 3자리).
+# 실제 경로: 버킷마다 첫 진입 BTN·SB 와 SB 올인 받은 BB 를 엔진으로 재현(B 와 같은 방식, 같은 허용치).
+PF_SPOTS = (('first_in', 'BTN', None), ('first_in', 'SB', None), ('vs_jam', 'BB', 'SB'))
+for S in (4, 6, 8):
+    p = os.path.join(REC, 'pf%d.json' % S)
+    if not os.path.exists(p):
+        check('F pf%d record present' % S, False)
+        continue
+    prec = json.load(open(p))
+    labels = prec['class_labels']
+    worst = 0.0
+    nn = 0
+    for nd in prec['nodes']:
+        acts = [x.split(':', 1) for x in nd['line'] if not x.endswith(':Fold')]
+        cs = nd['class_strategy']
+        if nd['situation'] == 'first_in':
+            jam = next(a for a in nd['actions'] if a.startswith('All-in'))
+            for i, c in enumerate(labels):
+                g = G.first_in(nd['actor'], 9, S, hand_of(c))
+                worst = max(worst, 9.0 if g is None else abs(g['jam'] - cs[jam][i]))
+            nn += 1
+        elif (nd['situation'] == 'facing_open_or_jam' and len(acts) == 1 and acts[0][1].startswith('All-in')
+              and not nd['unsupported_low_reach'] and (nd['aggressor_action_combos'] or 0) >= 10):
+            call = next(a for a in nd['actions'] if a.startswith('Call'))
+            for i, c in enumerate(labels):
+                g = G.call_vs_jam(acts[0][0], nd['actor'], 9, S, hand_of(c))
+                worst = max(worst, 9.0 if g is None else abs(g - cs[call][i]))
+            nn += 1
+    check('F value pf%d %d nodes max|hook-record| = %.4f' % (S, nn, worst), worst <= 0.002)
+    REPORT['records']['pf%d' % S] = {'kind': 'pushfold', 'new': True, 'value_max_abs_diff': round(worst, 4),
+                                     'nodes_checked': nn, 'gap_total_exact_bb': prec['gap_total_exact_bb']}
+    for sit, actor_pos, jammer in PF_SPOTS:
+        if sit == 'first_in':
+            nd = next(x for x in prec['nodes'] if x['situation'] == 'first_in' and x['actor'] == actor_pos)
+            forced = [(seat_of[q], ('fold', 0)) for q in POS[:POS.index(actor_pos)]]
+            want_kind = 'gto_pf_open'
+        else:
+            nd = next(x for x in prec['nodes'] if x['actor'] == actor_pos and x['situation'] == 'facing_open_or_jam'
+                      and [y.split(':', 1)[0] for y in x['line'] if not y.endswith(':Fold')] == [jammer])
+            ij = POS.index(jammer)
+            forced = ([(seat_of[q], ('fold', 0)) for q in POS[:ij]] + [(seat_of[jammer], ('allin', 0))]
+                      + [(seat_of[q], ('fold', 0)) for q in POS[ij + 1:POS.index(actor_pos)]])
+            want_kind = 'gto_pf_vs_jam'
+        aggr = next(a for a in nd['actions'] if a != 'Fold')        # 'All-in x' 또는 'Call x'
+        cs = nd['class_strategy']
+        tot_w = tot_gto = real = want = 0.0
+        worst_x, errs = 0.0, 0
+        cls_out = {}
+        for ci, c in enumerate(labels):
+            w = float(nd['class_arriving_combos'][ci])
+            if w < 0.05:
+                continue
+            cl = combos(c)
+            k_aggr = k_gto = 0
+            for j in range(REPS):
+                o = play_one(cl[j % len(cl)], S, forced, seat_of[actor_pos], 900001 + 7919 * j + 104729 * ci)
+                errs += o['errors']
+                k_gto += want_kind in o['kinds']
+                k_aggr += o.get('a') in ('allin', 'call', 'raise')
+            got = k_aggr / REPS
+            ref = cs[aggr][ci]
+            tol = 4 * math.sqrt(max(ref * (1 - ref), 1e-9) / REPS) + 0.02
+            worst_x = max(worst_x, abs(got - ref) - tol)
+            tot_w += w; tot_gto += w * k_gto / REPS; real += w * got; want += w * ref
+            cls_out[c] = {'t2': round(got, 3), 'record': ref, 'combos': w}
+        name = 'pf%d %s%s' % (S, (jammer + ' jam -> ') if jammer else 'first-in ', actor_pos)
+        share = tot_gto / max(tot_w, 1e-9)
+        REPORT['records']['pf%d' % S].setdefault('engine', {})[name] = {
+            'gto_path_share': round(share, 4), 'mix_t2': round(real / tot_w, 4), 'mix_record': round(want / tot_w, 4),
+            'engine_errors': errs, 'classes': cls_out}
+        check('F path  %-24s GTO path used for %.1f%% of combos' % (name, 100 * share), share >= 0.999)
+        check('F mix   %-24s T2 %.4f vs record %.4f' % (name, real / tot_w, want / tot_w), abs(real - want) / tot_w <= 0.03)
+        check('F class %-24s every class within tolerance (worst excess %.3f)' % (name, worst_x), worst_x <= 0.0)
+        check('F eng   %-24s engine errors = %d' % (name, errs), errs == 0)
+f_cases = [
+    ('first-in 3.5bb (below the 4bb bucket) -> None (old rule)', G.first_in('BTN', 9, 3.5, ['Ah', 'Kc']) is None),
+    ('first-in 7bb / 9bb -> interpolated (6-8, 8-10)', G.first_in('BTN', 9, 7, ['Ah', 'Kc']) is not None
+     and G.first_in('BTN', 9, 9, ['Ah', 'Kc']) is not None),
+    ('vs_jam 5bb SB jam -> BB call value', G.call_vs_jam('SB', 'BB', 9, 5, ['9h', '4c']) is not None),
+    ('below 10bb: open / 3-bet / flat tables still None',
+     G.aggr_vs_open('BTN', 'BB', 9, 8, ['Ah', 'Kc']) is None and G.defend_vs_open('BTN', 'BB', 9, 8, ['Ah', 'Kc'], 2.0) is None
+     and G.call_vs_3bet_jam('BTN', 'BB', 9, 8, ['Ah', 'Kc']) is None),
+    ('first-in hook 3bb -> None, 6bb -> GTO jam/fold',
+     PF.gto_pf_first_in_choice(prof if 'prof' in dir() else maxskill(), 'CO', 3.0, ['Ah', 'Kc'], random.Random(1)) is None
+     and PF.gto_pf_first_in_choice(maxskill(), 'CO', 6.0 - 1 / 9.0, ['Ah', 'Kc'], random.Random(1)) in ('jam', 'fold')),
+]
+for name, okc in f_cases:
+    check('F ' + name, bool(okc))
+    REPORT['routing'].append({'case': 'F ' + name, 'pass': bool(okc)})
 
 # ---------------------------------------------------------------- C. 경로 선택
 r = random.Random(5)

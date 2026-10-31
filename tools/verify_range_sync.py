@@ -238,7 +238,8 @@ if n_spots < 50:
 hand = ['Ah', 'Kd']
 P.take_gto_spot()
 outside = [
-    ('8bb first-in', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 8.0, hand, r, None, 1.0, 9, True)),
+    # 2026-10-31: 4·6·8bb 버킷이 들어와 8bb 는 기준 안이다. 가장 얕은 버킷(4bb − 0.25) 아래로 바꾼다.
+    ('3bb first-in', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 3.0, hand, r, None, 1.0, 9, True)),
     ('no ante', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.0, 9, False)),
     ('5-handed', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.0, 5, True)),
     ('ICM bf 1.3', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.3, 9, True)),
@@ -267,7 +268,8 @@ a, sz, seed = PL.preflop_plan(PROF, 'CO', ['As', 'Ad'], 29.9, random.Random(3), 
 want = {'fn': 'first_in', 'args': {'pos': 'CO', 'seats': 9, 'eff': 29.9 + SHARE, 'ante': True}}
 if seed.get('pf_gto_spot') != want:
     fail('preflop_plan seed pf_gto_spot %r != %r' % (seed.get('pf_gto_spot'), want))
-a2, _sz, seed2 = PL.preflop_plan(PROF, 'CO', ['As', 'Ad'], 5.0, random.Random(3), seats=9, ante=True)
+# 2026-10-31: 5bb 는 이제 기준 안(pf4·pf6). 기준 밖 예는 3bb 로.
+a2, _sz, seed2 = PL.preflop_plan(PROF, 'CO', ['As', 'Ad'], 3.0, random.Random(3), seats=9, ante=True)
 if seed2.get('pf_gto_spot') is not None:
     fail('preflop_plan uncovered seed has pf_gto_spot')
 # 오픈 → 3벳 받고 콜: 줄에 두 spot, 질량 = 오픈 빈도 × 콜 빈도
