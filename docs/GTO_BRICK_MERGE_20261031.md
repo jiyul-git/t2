@@ -47,8 +47,33 @@
 
 규칙 1~3 만 남겨도 턴 49장 중 2~8장(4~16%)만 묶인다 — 브릭 묶음의 최대 이득 자체가 작다.
 
-### 2.3 구현 확인용 값 비교 (가장 많이 묶이는 경우 = 규칙 4·5 끔, QdKhTs)
-(진행 중 — 아래 3장에 채움)
+### 2.3 구현 확인용 값 비교 — 가장 많이 묶이는 경우(규칙 4·5 끔), QdKhTs, 4코어, 목표 0.3% pot
+턴 49장 중 9장 브릭(2~9, J 의 클럽) → 8장 묶임, 리버 평균 56% 브릭. 기록 `data/gto_brick/compare_QdKhTs_loose.json`, `hands_QdKhTs_loose.txt`.
 
-## 3. 값 비교
-(진행 중)
+| | 정확(끔) | 묶음(켬, 기준 해제) |
+|---|---|---|
+| 반복 / 풀이 시간 | 275회 / 478초 | 150회 / 136초 → **3.5배**(반복당 1.9배) |
+| 착취도 | 0.276% | 0.126%(묶인 게임 기준, 정확한 게임 기준 아님) |
+| 두 사람 값 합 − 팟 | −1e-8 | −0.074bb (바꿔치기 비중 차이 때문에 합이 안 맞음) |
+
+핸드별 값 차이(자기 레인지 콤보 가중): BB 평균 0.33bb·최대 1.62bb, CO 평균 0.27bb·최대 1.03bb. 레인지 평균: BB +0.08bb, CO −0.15bb.
+→ **패널 오차 U(144, 약 0.15bb)보다 크다 → 지시대로 여기서 멈춤.** 정한 기준(2%/1%)으로는 묶이는 게 없어 비교 자체가 무의미(끔과 같음).
+
+핸드 예(bb, 정확 → 묶음): BB A2s 0.51→0.15, A5s 0.50→0.13, K2s 3.12→3.84, AQs 4.86→4.25, KTs 7.67→8.37 / CO A2s 3.20→2.79, 22 2.69→2.55, 33 2.54→2.43, JJ 5.22→4.90.
+작은 페어(22~55)는 차이 ±0.07~0.14bb 로 작고, 큰 차이는 J·9·8·7 처럼 드로우를 만드는 카드까지 묶었을 때 나타나는 A-x 수티드·브로드웨이 핸드.
+즉 규칙 4(스트레이트) 를 끄는 것이 큰 오차의 원인이고, 규칙 1~3·5 만으로 묶이는 카드는 거의 없다.
+
+## 3. 결론
+- 보수적 기준(사용자 규칙 + 코디네이터 보강)에서는 이 4보드에서 턴 묶음이 0장 → 속도 이득 없음.
+- 기준을 풀면 빨라지지만(최대 3.5배) 값 차이가 패널 오차보다 커진다. 중간 기준(예: 2%/5%)은 묶이는 카드가 턴 0~1장이라 이득이 작다.
+- 한계: 비교는 한 끝점(p100 CO 단일 레이즈 팟)·한 보드의 실측뿐. 착취도는 묶인 게임 안에서 잰 값.
+- 정밀 계산에는 적용하지 않음. 다음 단계(쓸지 말지, 기준 조정)는 코디네이터/사용자 결정.
+
+## 4. 재현
+```sh
+cd /home/user/calc && git apply /home/user/t2/tools/gto_brick/t2_brick_merge.patch && cd vendor/gtopen && cargo build --release -p solver --features t2-cont --example t2_cont_panel
+T2_BRICK_MERGE=1 [T2_BRICK_DRAW_MAX=.. T2_BRICK_SWAP_MAX=..] RAYON_NUM_THREADS=4 T2_PANEL_BOARDS=QdKhTs t2_cont_panel <term0.json> <menu_m2_single_v1.json> data/gto_brick/panel4.json <out> 1000 0.3 25
+python3 tools/gto_brick/brick_counts.py <out>                 # 묶인 카드 수
+python3 tools/gto_brick/compare_brick.py <off> <on> <term0.json>   # 값 차이·속도
+```
+끝점 = 계산 브랜치 `data/gto_spot/plan_a/progress/p100_flat_co_vs_bb_o25/step2/term0.json`. 기준값을 env 로 바꾸면 출처키에 기록된다(민감도 계산용; 기본값은 코드 상수).
