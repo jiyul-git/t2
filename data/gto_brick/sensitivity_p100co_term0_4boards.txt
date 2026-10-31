@@ -1,0 +1,60 @@
+sens_0.02_0.01
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.00 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks  6.73 merged  0.00 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks  8.78 merged  0.20 (per 48)
+  QdKhTs  turn bricks  4 merged  0 []  river bricks 20.20 merged  0.20 (per 48)
+sens_0.02_0.02
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.00 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks  6.73 merged  0.00 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks  8.78 merged  0.27 (per 48)
+  QdKhTs  turn bricks  4 merged  1 ['3c']  river bricks 20.20 merged  0.80 (per 48)
+sens_0.02_0.05
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.00 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks  6.73 merged  0.67 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks  8.78 merged  0.98 (per 48)
+  QdKhTs  turn bricks  4 merged  1 ['3c']  river bricks 20.20 merged  4.14 (per 48)
+sens_0.02_1
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.27 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks  6.73 merged  3.76 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks  8.78 merged  6.57 (per 48)
+  QdKhTs  turn bricks  4 merged  3 ['2c', '3c', '5c']  river bricks 20.20 merged 16.94 (per 48)
+sens_0.05_0.01
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.00 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks 15.16 merged  0.00 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks 15.14 merged  0.27 (per 48)
+  QdKhTs  turn bricks  7 merged  0 []  river bricks 21.27 merged  0.00 (per 48)
+sens_0.05_0.02
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.00 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks 15.16 merged  0.00 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks 15.14 merged  0.27 (per 48)
+  QdKhTs  turn bricks  7 merged  0 []  river bricks 21.27 merged  0.00 (per 48)
+sens_0.05_0.05
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.00 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks 15.16 merged  1.63 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks 15.14 merged  2.53 (per 48)
+  QdKhTs  turn bricks  7 merged  1 ['7c']  river bricks 21.27 merged  3.80 (per 48)
+sens_0.05_1
+  7h6c5d  turn bricks  1 merged  0 []  river bricks  3.27 merged  0.27 (per 48)
+  Ah9h4c  turn bricks  0 merged  0 []  river bricks 15.16 merged 10.35 (per 48)
+  Kd7c2h  turn bricks  0 merged  0 []  river bricks 15.14 merged 11.88 (per 48)
+  QdKhTs  turn bricks  7 merged  6 ['2c', '3c', '4c', '6c', '7c', '8c']  river bricks 21.27 merged 18.00 (per 48)
+sens_1_0.01
+  7h6c5d  turn bricks  3 merged  1 ['4s']  river bricks  9.00 merged  2.73 (per 48)
+  Ah9h4c  turn bricks 12 merged  0 []  river bricks 17.18 merged  0.00 (per 48)
+  Kd7c2h  turn bricks  4 merged  0 []  river bricks 17.00 merged  0.47 (per 48)
+  QdKhTs  turn bricks  9 merged  0 []  river bricks 27.00 merged  0.00 (per 48)
+sens_1_0.02
+  7h6c5d  turn bricks  3 merged  1 ['4s']  river bricks  9.00 merged  2.73 (per 48)
+  Ah9h4c  turn bricks 12 merged  0 []  river bricks 17.18 merged  0.00 (per 48)
+  Kd7c2h  turn bricks  4 merged  0 []  river bricks 17.00 merged  0.53 (per 48)
+  QdKhTs  turn bricks  9 merged  0 []  river bricks 27.00 merged  0.00 (per 48)
+sens_1_0.05
+  7h6c5d  turn bricks  3 merged  1 ['4s']  river bricks  9.00 merged  2.73 (per 48)
+  Ah9h4c  turn bricks 12 merged  1 ['3d']  river bricks 17.18 merged  2.00 (per 48)
+  Kd7c2h  turn bricks  4 merged  0 []  river bricks 17.00 merged  2.92 (per 48)
+  QdKhTs  turn bricks  9 merged  2 ['3c', '4c']  river bricks 27.00 merged  5.43 (per 48)
+sens_1_1
+  7h6c5d  turn bricks  3 merged  2 ['2s', '4s']  river bricks  9.00 merged  5.73 (per 48)
+  Ah9h4c  turn bricks 12 merged  5 ['2d', '3d', '5d', '7d', '8d']  river bricks 17.18 merged 12.00 (per 48)
+  Kd7c2h  turn bricks  4 merged  3 ['3s', '4s', '6s']  river bricks 17.00 merged 13.73 (per 48)
+  QdKhTs  turn bricks  9 merged  8 ['2c', '3c', '4c', '5c', '7c', '8c', '9c', 'Jc']  river bricks 27.00 merged 23.73 (per 48)
