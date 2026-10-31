@@ -298,8 +298,17 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
              field_pid_stacks=None, table_pids=None, snapshot_is_current=True,
              field_epoch_status=None, field_snapshot_id=None,
              observed_field_epoch_id=None, field_snapshot_scope=None,
-             field_observation_status=None):
+             field_observation_status=None, risk_idx=None):
     """Price-independent BF with explicit full-field completeness contract.
+
+    risk_idx(선택, 2026-10-31): 자리 기준 BF. 이 손에서 내 칩을 실제로 가져갈 수 있는 사람
+    (첫 진입이면 아직 행동하지 않은 사람)의 현재 테이블 번호. 주면 위험 칩 = 그 사람들 각각의
+    min(내 스택, 그 사람 스택) 평균이다(누가 받아칠지 모르니 한 사람씩 같은 몫). 뒤에 나를 덮는
+    사람이 많을수록 내 스택 전체에 가깝고, 짧은 사람뿐이면 작아 BF 가 1 쪽으로 내려간다.
+    (예전 머니점프의 '덮는 사람 몫'(danger_fraction)을 BF 안으로 옮긴 것 — 수가 아니라 칩으로 잰다.)
+    정확 ICM 경로는 bubble_factor(risk=...) 로, 곡선 근사(field_bf)는 (BF-1) 에 위험 몫
+    (위험 칩 / 내 스택)을 곱한다(곡선에 위험 크기 입력이 없어서 쓴 근사: 위험 0 → 1, 전부 → 그대로).
+    없으면(None) 예전처럼 테이블 전체 최대 스택이다.
 
     `stacks` indexes CURRENT-TABLE players (seat_idx is local to this list).
     `remaining` counts the ENTIRE surviving tournament field. Optional
@@ -358,6 +367,16 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
         details.update(method='not_applicable', reason='seat_not_active_or_no_opponent')
         return emit(1.0)
 
+    _risk = None
+    if risk_idx is not None:
+        _own = float(table[seat_idx])
+        _rs = [float(table[i]) for i in risk_idx
+               if 0 <= i < len(table) and i != seat_idx and table[i] > 0]
+        _risk = (sum(min(_own, x) for x in _rs) / len(_rs)) if _rs else 0.0
+        details['risk_kind'] = 'players_still_to_act'
+        details['risk_chips'] = _risk
+        details['risk_frac'] = (_risk / _own) if _own > 0 else 0.0
+
     if 2 <= rem <= EXACT_MAX:
         if len(live) == rem and (
                 (snapshot and len(snapshot) != rem)
@@ -376,7 +395,7 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
                            field_completeness='complete_table',
                            reason='remaining_matches_all_live_table_seats')
             return emit(bubble_factor(live, list(payouts)[:rem] or [100.0],
-                                      live_idx))
+                                      live_idx, risk=_risk))
 
         elif not snapshot_is_current:
             details.update(field_completeness='stale_field_snapshot',
@@ -436,7 +455,7 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
                         field_completeness='verified_player_id_field_snapshot',
                         reason='all_table_pids_match_snapshot_and_live_epoch')
                 return emit(bubble_factor(full, list(payouts)[:rem] or [100.0],
-                                          full_idx))
+                                          full_idx, risk=_risk))
             details.update(
                 field_completeness='invalid_field_snapshot',
                 reason=('mismatched_table_stack_multiset' if not valid_values
@@ -456,7 +475,10 @@ def table_bf(stacks, seat_idx, remaining, itm, payouts, payout_flat=0.0,
     avg = field_avg if field_avg else (sum(live) / len(live))
     details['field_average_source'] = ('whole_field_context' if field_avg
                                        else 'local_table_fallback_not_field_average')
-    return emit(field_bf(table[seat_idx], avg, rem, itm, payout_flat))
+    _fb = field_bf(table[seat_idx], avg, rem, itm, payout_flat)
+    if _risk is not None:
+        _fb = 1.0 + (_fb - 1.0) * max(0.0, min(1.0, details['risk_frac']))
+    return emit(_fb)
 
 
 # is_bubble 은 제거했다. 버블 판정은 field.Field.in_bubble 하나뿐이다

@@ -111,6 +111,10 @@ def objective_self_preservation(state):
     """개인차 전의 탈락 회피 가치."""
     payout = payout_importance(state)
     ladder = ladder_buffer(state) * shorter_severity(state) * waiting_feasibility(state)
+    # 자리 기준 상태(첫 진입: 아직 행동하지 않은 사람 대비, session 이 risk_frac 을 넣는다)면
+    # bf 가 이미 자리 기준이고, 사다리 몫도 이 손에서 실제로 잃을 수 있는 칩 몫만큼만 센다.
+    if state.get('risk_frac') is not None:
+        ladder *= clamp01(state.get('risk_frac'))
     survival = union01(bf_signal(state), ladder)
     return clamp01(payout * survival)
 
@@ -286,7 +290,14 @@ def unopened_modifiers(state):
     danger_frac = clamp01(n_covering / n_behind) if n_behind > 0 else 0.0
 
     drive = union01(pressure, urgency)
-    range_brake = preserve * (1.0 - urgency) * danger_frac
+    # 2026-10-31: '나를 덮는 뒤 사람 몫'은 자리 기준 BF 안으로 옮겼다(icm.table_bf risk_idx).
+    # self_preservation_pos = 그 BF·위험 몫으로 잰 보존 압력. 있으면 그대로 브레이크다.
+    # 없으면(자리 기준 BF 를 못 잰 호출) 예전 식(덮는 사람 수 몫을 곱함).
+    preserve_pos = ms.get('self_preservation_pos')
+    if preserve_pos is not None:
+        range_brake = clamp01(preserve_pos) * (1.0 - urgency)
+    else:
+        range_brake = preserve * (1.0 - urgency) * danger_frac
     range_factor = (1.0 + drive) / (1.0 + range_brake)
 
     # 사이즈/림프는 아직 shadow. 여기서는 '탈락 가능 여부'만이 아니라
@@ -316,6 +327,9 @@ def unopened_modifiers(state):
         'pressure': round(pressure, 6),
         'max_pressure': round(max_pressure, 6),
         'danger_fraction': round(danger_frac, 6),
+        'risk_frac': (round(clamp01(state.get('bf_risk_frac')), 6)
+                      if state.get('bf_risk_frac') is not None else None),
+        'bf_pos': state.get('bf_pos'),
         'drive': round(drive, 6),
         'brake': round(range_brake, 6),
         'pot_brake_shadow': round(pot_brake, 6),

@@ -1119,6 +1119,17 @@ def _money_jump_observe(h, seat, rnd, street, profile, to_call=0, pot=0,
 
     _actor = MP.actor_from_profile(profile, PS.sk, PS.temper)
     obs['money_signals'] = MP.signals(obs, _actor)
+    # 첫 진입: 자리 기준 BF(아직 행동하지 않은 사람이 가져갈 수 있는 칩 기준, 2026-10-31).
+    # 예전 '덮는 뒤 사람 몫'(danger_fraction)을 BF 안으로 옮긴 값으로 보존 압력을 다시 잰다.
+    # 브레이크(unopened_modifiers)가 이것을 쓴다. 위험 몫을 못 재면 넣지 않는다(예전 식).
+    if decision_context.get('kind') == 'unopened' and hasattr(h, 'bf_details'):
+        _bp = h.bf_details(seat, risk_seats=pending)
+        if _bp.get('risk_frac') is not None:
+            obs['bf_pos'] = round(float(_bp['value']), 4)
+            obs['bf_risk_frac'] = round(float(_bp['risk_frac']), 4)
+            obs['money_signals']['self_preservation_pos'] = round(
+                MP.perceived_self_preservation(
+                    dict(obs, bf=obs['bf_pos'], risk_frac=obs['bf_risk_frac']), _actor), 6)
 
     def _target_state(t):
         if not t:
