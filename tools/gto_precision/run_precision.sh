@@ -44,7 +44,7 @@ backup() {   # $1 = message
       [ -s $x/strategy_backfill.json ] && cp $x/strategy_backfill.json data/gto_precision/strategy/$ID/$s/$(basename $x).backfill.json
     done
   done
-  git add -A $P data/gto_precision/records data/gto_precision/strategy 2>/dev/null
+  for x in $P data/gto_precision/records data/gto_precision/strategy; do [ -e $x ] && git add -A $x; done
   git commit -qm "$1
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
