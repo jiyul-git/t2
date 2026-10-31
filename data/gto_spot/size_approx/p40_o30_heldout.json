@@ -1,0 +1,3919 @@
+{
+ "schema": "size_approx_experiment_v1",
+ "model": "per class x action group, linear through 2 anchors, clip [0,1], renormalise",
+ "price_def": "BB required equity = (open - 1) / (open + 0.5 + 1 + 1 ante + open - 1)",
+ "spots": {
+  "btn": {
+   "price": {
+    "tv_mean_combo_weighted": 0.2167113211637944,
+    "tv_max": 0.9997266967059043,
+    "tv_max_hand": "Q8o",
+    "abs_err_mean_by_action": {
+     "fold": 0.16656655188129996,
+     "call": 0.16905097588052365,
+     "3bet": 0.0632018168462081,
+     "jam": 0.03460329771955705
+    },
+    "abs_err_max_by_action": {
+     "fold": 0.9996266967059043,
+     "call": 0.9996266666666667,
+     "3bet": 0.9997266967059043,
+     "jam": 0.9977209006943797
+    },
+    "classes_tv_over_0.10": 45,
+    "classes_tv_over_0.25": 35,
+    "aggregate_pred": {
+     "fold": 0.2034473244384587,
+     "call": 0.6559147725047212,
+     "3bet": 0.07092290327600051,
+     "jam": 0.06971499978081978
+    },
+    "aggregate_test": {
+     "fold": 0.37001206636500766,
+     "call": 0.49633574660633506,
+     "3bet": 0.04801719457013576,
+     "jam": 0.08563333333333333
+    },
+    "worst": [
+     {
+      "hand": "Q8o",
+      "combos": 12.0,
+      "tv": 0.9997,
+      "err": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 1.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.0,
+       "3bet": 1.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.936,
+       "3bet": 0.064,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.092,
+       "3bet": 0.908,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "84o",
+      "combos": 12.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "J4o",
+      "combos": 12.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.992,
+       "3bet": 0.008,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "92s",
+      "combos": 4.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "83o",
+      "combos": 12.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "Q7o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "K8o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.365,
+       "3bet": 0.634,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.365,
+       "3bet": 0.635,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.0,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.868,
+       "3bet": 0.132,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.578,
+       "3bet": 0.422,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "J2s",
+      "combos": 4.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.998,
+       "call": 0.999,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.0,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "93o",
+      "combos": 12.0,
+      "tv": 0.9991,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.99,
+       "3bet": 0.01,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "96o",
+      "combos": 12.0,
+      "tv": 0.9988,
+      "err": {
+       "fold": 0.999,
+       "call": 0.995,
+       "3bet": 0.004,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.995,
+       "3bet": 0.005,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 0.997,
+       "3bet": 0.003,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "73o",
+      "combos": 12.0,
+      "tv": 0.9988,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "54o",
+      "combos": 12.0,
+      "tv": 0.9987,
+      "err": {
+       "fold": 0.92,
+       "call": 0.999,
+       "3bet": 0.079,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.92,
+       "call": 0.001,
+       "3bet": 0.079,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.698,
+       "3bet": 0.302,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.994,
+       "3bet": 0.006,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     }
+    ]
+   },
+   "bb": {
+    "tv_mean_combo_weighted": 0.21723959008749005,
+    "tv_max": 0.9997000399920016,
+    "tv_max_hand": "Q8o",
+    "abs_err_mean_by_action": {
+     "fold": 0.16647323590671997,
+     "call": 0.1684233513887183,
+     "3bet": 0.06450024753402704,
+     "jam": 0.03508234534551478
+    },
+    "abs_err_max_by_action": {
+     "fold": 0.9996000399920016,
+     "call": 0.9996,
+     "3bet": 0.9997000399920016,
+     "jam": 0.9974014991005397
+    },
+    "classes_tv_over_0.10": 46,
+    "classes_tv_over_0.25": 35,
+    "aggregate_pred": {
+     "fold": 0.2035406404130387,
+     "call": 0.6544555724896657,
+     "3bet": 0.07277313324354878,
+     "jam": 0.0692306538537469
+    },
+    "aggregate_test": {
+     "fold": 0.37001206636500766,
+     "call": 0.49633574660633506,
+     "3bet": 0.04801719457013576,
+     "jam": 0.08563333333333333
+    },
+    "worst": [
+     {
+      "hand": "Q8o",
+      "combos": 12.0,
+      "tv": 0.9997,
+      "err": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 1.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.0,
+       "3bet": 1.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.936,
+       "3bet": 0.064,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.092,
+       "3bet": 0.908,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "84o",
+      "combos": 12.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "J4o",
+      "combos": 12.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.992,
+       "3bet": 0.008,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "83o",
+      "combos": 12.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "92s",
+      "combos": 4.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "Q7o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "K8o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.287,
+       "3bet": 0.712,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.287,
+       "3bet": 0.713,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.0,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.868,
+       "3bet": 0.132,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.578,
+       "3bet": 0.422,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "J2s",
+      "combos": 4.0,
+      "tv": 0.9993,
+      "err": {
+       "fold": 0.998,
+       "call": 0.999,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.0,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "93o",
+      "combos": 12.0,
+      "tv": 0.9991,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.99,
+       "3bet": 0.01,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "54o",
+      "combos": 12.0,
+      "tv": 0.9987,
+      "err": {
+       "fold": 0.92,
+       "call": 0.999,
+       "3bet": 0.079,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.92,
+       "call": 0.001,
+       "3bet": 0.079,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.698,
+       "3bet": 0.302,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.994,
+       "3bet": 0.006,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "96o",
+      "combos": 12.0,
+      "tv": 0.9987,
+      "err": {
+       "fold": 0.999,
+       "call": 0.994,
+       "3bet": 0.005,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.994,
+       "3bet": 0.005,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 0.997,
+       "3bet": 0.003,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "73o",
+      "combos": 12.0,
+      "tv": 0.9986,
+      "err": {
+       "fold": 0.999,
+       "call": 0.998,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.998,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     }
+    ]
+   },
+   "clamp": {
+    "tv_mean_combo_weighted": 0.21713069381598793,
+    "tv_max": 0.99975,
+    "tv_max_hand": "J4o",
+    "abs_err_mean_by_action": {
+     "fold": 0.16716138763197588,
+     "call": 0.17276440422322775,
+     "3bet": 0.061053695324283556,
+     "jam": 0.03328190045248869
+    },
+    "abs_err_max_by_action": {
+     "fold": 0.9997,
+     "call": 0.9997,
+     "3bet": 0.9390000000000001,
+     "jam": 0.9985
+    },
+    "classes_tv_over_0.10": 44,
+    "classes_tv_over_0.25": 36,
+    "aggregate_pred": {
+     "fold": 0.20285067873303161,
+     "call": 0.6619254901960782,
+     "3bet": 0.064184012066365,
+     "jam": 0.07103257918552036
+    },
+    "aggregate_test": {
+     "fold": 0.37001206636500766,
+     "call": 0.49633574660633506,
+     "3bet": 0.04801719457013576,
+     "jam": 0.08563333333333333
+    },
+    "worst": [
+     {
+      "hand": "J4o",
+      "combos": 12.0,
+      "tv": 0.9998,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.992,
+       "3bet": 0.008,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "84o",
+      "combos": 12.0,
+      "tv": 0.9997,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "Q8o",
+      "combos": 12.0,
+      "tv": 0.9997,
+      "err": {
+       "fold": 1.0,
+       "call": 0.092,
+       "3bet": 0.908,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.092,
+       "3bet": 0.908,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.936,
+       "3bet": 0.064,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.092,
+       "3bet": 0.908,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "92s",
+      "combos": 4.0,
+      "tv": 0.9997,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "83o",
+      "combos": 12.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "J2s",
+      "combos": 4.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 0.998,
+       "call": 1.0,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.0,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "Q7o",
+      "combos": 12.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "K8o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.578,
+       "3bet": 0.422,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.578,
+       "3bet": 0.422,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.0,
+       "3bet": 0.001,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.868,
+       "3bet": 0.132,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.578,
+       "3bet": 0.422,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "73o",
+      "combos": 12.0,
+      "tv": 0.9993,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "93o",
+      "combos": 12.0,
+      "tv": 0.9992,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.99,
+       "3bet": 0.01,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "96o",
+      "combos": 12.0,
+      "tv": 0.9992,
+      "err": {
+       "fold": 0.999,
+       "call": 0.997,
+       "3bet": 0.002,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.997,
+       "3bet": 0.003,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 0.997,
+       "3bet": 0.003,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "98o",
+      "combos": 12.0,
+      "tv": 0.9986,
+      "err": {
+       "fold": 0.999,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.999
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.999
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.999
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.999
+      },
+      "unstable_test": false
+     }
+    ]
+   },
+   "boundary_flags": [
+    {
+     "hand": "32o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "42o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "62o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "A2o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "3bet"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "32s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "3bet",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "33",
+     "combos": 6.0,
+     "dominant": [
+      "3bet",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "73o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "83o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "93o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T3o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J3o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K3o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "54o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "84o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T4o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J4o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "55",
+     "combos": 6.0,
+     "dominant": [
+      "call",
+      "call",
+      "3bet"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "85o",
+     "combos": 12.0,
+     "dominant": [
+      "3bet",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "95o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "Q5o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K5o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "76o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "96o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T6o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J6o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "72s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "77",
+     "combos": 6.0,
+     "dominant": [
+      "call",
+      "3bet",
+      "jam"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "87o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "97o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "J7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "3bet",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "Q7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "A7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "82s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "87s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "jam",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "98o",
+     "combos": 12.0,
+     "dominant": [
+      "jam",
+      "jam",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T8o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "3bet",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "Q8o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "3bet",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K8o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "92s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "93s",
+     "combos": 4.0,
+     "dominant": [
+      "3bet",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T9o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "jam"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "J9o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "3bet"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "T2s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "TT",
+     "combos": 6.0,
+     "dominant": [
+      "3bet",
+      "jam",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "JTo",
+     "combos": 12.0,
+     "dominant": [
+      "jam",
+      "jam",
+      "jam"
+     ],
+     "unstable_test": true
+    },
+    {
+     "hand": "J2s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J3s",
+     "combos": 4.0,
+     "dominant": [
+      "3bet",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "JJ",
+     "combos": 6.0,
+     "dominant": [
+      "3bet",
+      "jam",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "KQo",
+     "combos": 12.0,
+     "dominant": [
+      "jam",
+      "call",
+      "call"
+     ],
+     "unstable_test": true
+    }
+   ],
+   "x": {
+    "price": [
+     0.1818,
+     0.2308,
+     0.2667
+    ],
+    "bb": [
+     2.0,
+     2.5,
+     3.0
+    ]
+   },
+   "records": {
+    "2.0": {
+     "id": "p40_flat_btn_vs_bb",
+     "method": "converged_final_step",
+     "final_step": 4,
+     "stopped_at_step_cap": null
+    },
+    "2.5": {
+     "id": "p40_flat_btn_vs_bb_o25",
+     "method": "converged_final_step",
+     "final_step": 2,
+     "stopped_at_step_cap": false
+    },
+    "3.0": {
+     "id": "p40_flat_btn_vs_bb_o30",
+     "method": "mean_of_last_2_steps",
+     "final_step": 2,
+     "stopped_at_step_cap": true
+    }
+   }
+  },
+  "co": {
+   "price": {
+    "tv_mean_combo_weighted": 0.17800759011460124,
+    "tv_max": 1.0,
+    "tv_max_hand": "A2o",
+    "abs_err_mean_by_action": {
+     "fold": 0.1377603337343522,
+     "call": 0.1584420006358248,
+     "3bet": 0.04053007993086278,
+     "jam": 0.01928276592816269
+    },
+    "abs_err_max_by_action": {
+     "fold": 1.0,
+     "call": 1.0,
+     "3bet": 0.918,
+     "jam": 0.9865266666666667
+    },
+    "classes_tv_over_0.10": 37,
+    "classes_tv_over_0.25": 30,
+    "aggregate_pred": {
+     "fold": 0.3035286557075784,
+     "call": 0.6003483793235448,
+     "3bet": 0.05902734085171431,
+     "jam": 0.0370956241171626
+    },
+    "aggregate_test": {
+     "fold": 0.4412871794871797,
+     "call": 0.46537345399698316,
+     "3bet": 0.04679019607843137,
+     "jam": 0.04654374057315234
+    },
+    "worst": [
+     {
+      "hand": "A2o",
+      "combos": 12.0,
+      "tv": 1.0,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.029,
+       "3bet": 0.972,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.692,
+       "3bet": 0.308,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "Q6o",
+      "combos": 12.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "83o",
+      "combos": 12.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "K3o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "T9o",
+      "combos": 12.0,
+      "tv": 0.9993,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "54o",
+      "combos": 12.0,
+      "tv": 0.9991,
+      "err": {
+       "fold": 0.999,
+       "call": 0.951,
+       "3bet": 0.048,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.951,
+       "3bet": 0.049,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.998,
+       "3bet": 0.002,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.971,
+       "3bet": 0.029,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "84o",
+      "combos": 12.0,
+      "tv": 0.999,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "94o",
+      "combos": 12.0,
+      "tv": 0.999,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "97o",
+      "combos": 12.0,
+      "tv": 0.9983,
+      "err": {
+       "fold": 0.998,
+       "call": 0.998,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "T3s",
+      "combos": 4.0,
+      "tv": 0.9982,
+      "err": {
+       "fold": 0.08,
+       "call": 0.998,
+       "3bet": 0.918,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.08,
+       "call": 0.002,
+       "3bet": 0.918,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "76o",
+      "combos": 12.0,
+      "tv": 0.9969,
+      "err": {
+       "fold": 0.997,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.003,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.489,
+       "3bet": 0.511,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.002,
+       "call": 0.811,
+       "3bet": 0.187,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "93o",
+      "combos": 12.0,
+      "tv": 0.9954,
+      "err": {
+       "fold": 0.995,
+       "call": 0.995,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.005,
+       "call": 0.995,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.003,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     }
+    ]
+   },
+   "bb": {
+    "tv_mean_combo_weighted": 0.17757119684955777,
+    "tv_max": 1.0,
+    "tv_max_hand": "A2o",
+    "abs_err_mean_by_action": {
+     "fold": 0.13445767005095588,
+     "call": 0.15575589323084987,
+     "3bet": 0.044540304916440156,
+     "jam": 0.020388525500869645
+    },
+    "abs_err_max_by_action": {
+     "fold": 1.0,
+     "call": 1.0,
+     "3bet": 0.918,
+     "jam": 0.9865
+    },
+    "classes_tv_over_0.10": 36,
+    "classes_tv_over_0.25": 30,
+    "aggregate_pred": {
+     "fold": 0.30683131939097474,
+     "call": 0.5934133701413677,
+     "3bet": 0.06236885994768192,
+     "jam": 0.03738645051997554
+    },
+    "aggregate_test": {
+     "fold": 0.4412871794871797,
+     "call": 0.46537345399698316,
+     "3bet": 0.04679019607843137,
+     "jam": 0.04654374057315234
+    },
+    "worst": [
+     {
+      "hand": "A2o",
+      "combos": 12.0,
+      "tv": 1.0,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.029,
+       "3bet": 0.972,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.692,
+       "3bet": 0.308,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "Q6o",
+      "combos": 12.0,
+      "tv": 0.9996,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "83o",
+      "combos": 12.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "K3o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "T9o",
+      "combos": 12.0,
+      "tv": 0.9993,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "54o",
+      "combos": 12.0,
+      "tv": 0.999,
+      "err": {
+       "fold": 0.999,
+       "call": 0.943,
+       "3bet": 0.056,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.943,
+       "3bet": 0.056,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.998,
+       "3bet": 0.002,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.971,
+       "3bet": 0.029,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "94o",
+      "combos": 12.0,
+      "tv": 0.999,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "84o",
+      "combos": 12.0,
+      "tv": 0.9989,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "97o",
+      "combos": 12.0,
+      "tv": 0.9982,
+      "err": {
+       "fold": 0.998,
+       "call": 0.998,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "T3s",
+      "combos": 4.0,
+      "tv": 0.9982,
+      "err": {
+       "fold": 0.08,
+       "call": 0.998,
+       "3bet": 0.918,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.08,
+       "call": 0.002,
+       "3bet": 0.918,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "76o",
+      "combos": 12.0,
+      "tv": 0.9965,
+      "err": {
+       "fold": 0.996,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.003,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.489,
+       "3bet": 0.511,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.002,
+       "call": 0.811,
+       "3bet": 0.187,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "93o",
+      "combos": 12.0,
+      "tv": 0.9947,
+      "err": {
+       "fold": 0.995,
+       "call": 0.995,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.005,
+       "call": 0.995,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.003,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     }
+    ]
+   },
+   "clamp": {
+    "tv_mean_combo_weighted": 0.19405784313725488,
+    "tv_max": 0.99995,
+    "tv_max_hand": "A2o",
+    "abs_err_mean_by_action": {
+     "fold": 0.15698491704374057,
+     "call": 0.17323242835595776,
+     "3bet": 0.03907194570135747,
+     "jam": 0.018826395173454
+    },
+    "abs_err_max_by_action": {
+     "fold": 1.0,
+     "call": 0.9997,
+     "3bet": 0.918,
+     "jam": 0.9884000000000001
+    },
+    "classes_tv_over_0.10": 40,
+    "classes_tv_over_0.25": 34,
+    "aggregate_pred": {
+     "fold": 0.28430226244343887,
+     "call": 0.6241570135746605,
+     "3bet": 0.05730377073906486,
+     "jam": 0.03423046757164404
+    },
+    "aggregate_test": {
+     "fold": 0.4412871794871797,
+     "call": 0.46537345399698316,
+     "3bet": 0.04679019607843137,
+     "jam": 0.04654374057315234
+    },
+    "worst": [
+     {
+      "hand": "A2o",
+      "combos": 12.0,
+      "tv": 1.0,
+      "err": {
+       "fold": 1.0,
+       "call": 0.692,
+       "3bet": 0.308,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.692,
+       "3bet": 0.308,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.029,
+       "3bet": 0.972,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.692,
+       "3bet": 0.308,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "83o",
+      "combos": 12.0,
+      "tv": 0.9997,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "Q6o",
+      "combos": 12.0,
+      "tv": 0.9997,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "K3o",
+      "combos": 12.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 1.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "T9o",
+      "combos": 12.0,
+      "tv": 0.9995,
+      "err": {
+       "fold": 0.999,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "54o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.971,
+       "3bet": 0.029,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 0.971,
+       "3bet": 0.029,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.998,
+       "3bet": 0.002,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 0.971,
+       "3bet": 0.029,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "84o",
+      "combos": 12.0,
+      "tv": 0.9994,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.001,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.001,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "94o",
+      "combos": 12.0,
+      "tv": 0.9991,
+      "err": {
+       "fold": 0.999,
+       "call": 0.999,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "97o",
+      "combos": 12.0,
+      "tv": 0.9984,
+      "err": {
+       "fold": 0.998,
+       "call": 0.998,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.999,
+       "call": 0.001,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "T3s",
+      "combos": 4.0,
+      "tv": 0.9982,
+      "err": {
+       "fold": 0.08,
+       "call": 0.998,
+       "3bet": 0.918,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 0.08,
+       "call": 0.002,
+       "3bet": 0.918,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "76o",
+      "combos": 12.0,
+      "tv": 0.9979,
+      "err": {
+       "fold": 0.998,
+       "call": 0.811,
+       "3bet": 0.187,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.002,
+       "call": 0.811,
+       "3bet": 0.187,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 0.489,
+       "3bet": 0.511,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.002,
+       "call": 0.811,
+       "3bet": 0.187,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     },
+     {
+      "hand": "93o",
+      "combos": 12.0,
+      "tv": 0.9973,
+      "err": {
+       "fold": 0.997,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "pred": {
+       "fold": 0.003,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "test": {
+       "fold": 1.0,
+       "call": 0.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "a": {
+       "fold": 0.0,
+       "call": 1.0,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "b": {
+       "fold": 0.003,
+       "call": 0.997,
+       "3bet": 0.0,
+       "jam": 0.0
+      },
+      "unstable_test": false
+     }
+    ]
+   },
+   "boundary_flags": [
+    {
+     "hand": "42o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "A2o",
+     "combos": 12.0,
+     "dominant": [
+      "3bet",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "32s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "73o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "83o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "93o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T3o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J3o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K3o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "54o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "84o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "94o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T4o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J4o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "95o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "Q5o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K5o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "66",
+     "combos": 6.0,
+     "dominant": [
+      "jam",
+      "3bet",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "76o",
+     "combos": 12.0,
+     "dominant": [
+      "3bet",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "96o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T6o",
+     "combos": 12.0,
+     "dominant": [
+      "3bet",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J6o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "Q6o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K6o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "72s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "87o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "97o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "Q7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "A7o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "82s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T8o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "Q8o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "K8o",
+     "combos": 12.0,
+     "dominant": [
+      "3bet",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "A8o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "92s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "98s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "jam",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "99",
+     "combos": 6.0,
+     "dominant": [
+      "3bet",
+      "3bet",
+      "3bet"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T9o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J9o",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T2s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T3s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "3bet"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "T5s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "3bet"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "TT",
+     "combos": 6.0,
+     "dominant": [
+      "jam",
+      "3bet",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "JTo",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "QTo",
+     "combos": 12.0,
+     "dominant": [
+      "call",
+      "call",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J2s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "fold",
+      "fold"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "J5s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "JTs",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "JJ",
+     "combos": 6.0,
+     "dominant": [
+      "3bet",
+      "jam",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "KJs",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "AKo",
+     "combos": 12.0,
+     "dominant": [
+      "3bet",
+      "jam",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "A3s",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "jam"
+     ],
+     "unstable_test": false
+    },
+    {
+     "hand": "AQs",
+     "combos": 4.0,
+     "dominant": [
+      "call",
+      "call",
+      "call"
+     ],
+     "unstable_test": false
+    }
+   ],
+   "x": {
+    "price": [
+     0.1818,
+     0.2308,
+     0.2667
+    ],
+    "bb": [
+     2.0,
+     2.5,
+     3.0
+    ]
+   },
+   "records": {
+    "2.0": {
+     "id": "p40_flat_co_vs_bb",
+     "method": "converged_final_step",
+     "final_step": 2,
+     "stopped_at_step_cap": false
+    },
+    "2.5": {
+     "id": "p40_flat_co_vs_bb_o25",
+     "method": "mean_of_last_2_steps",
+     "final_step": 2,
+     "stopped_at_step_cap": true
+    },
+    "3.0": {
+     "id": "p40_flat_co_vs_bb_o30",
+     "method": "converged_final_step",
+     "final_step": 2,
+     "stopped_at_step_cap": false
+    }
+   }
+  }
+ }
+}
