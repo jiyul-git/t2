@@ -65,7 +65,7 @@ T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 
 | `vs_limp_full` | **SB 림프를 받은 BB** 의 체크·레이즈(3.5bb) + 불안정 몫(`unstable_share`) | p30/p40_flat_sb_limp_vs_bb (CFR+ 재시도 기록, 10-24) |
 
 - 공격자 콤보 < 10 인 노드는 뺀다(거의 안 쓰는 올인).
-- 버킷: 10, 15, 20, 25, 30, 40, 60, 100bb. 3벳 받은 4벳 올인(`vs_3bet`)은 100bb 트리에 작은 4벳이 있어 비운다 → 60bb 초과는 기존 판단. 유효 스택 = 핸드 시작 기준, 상대와의 작은 쪽.
+- 버킷: 4, 6, 8(2026-10-31, 올인/폴드), 10, 15, 20, 25, 30, 40, 60, 100bb. 3.75bb 미만은 범위 밖(기존 판단). 3벳 받은 4벳 올인(`vs_3bet`)은 100bb 트리에 작은 4벳이 있어 비운다 → 60bb 초과는 기존 판단. 유효 스택 = 핸드 시작 기준, 상대와의 작은 쪽.
 
 ### 2.3 연결 지점 (preflop.py)
 | 함수 | 상황 | 막는 조건 |
@@ -127,6 +127,17 @@ T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 
 - 검사: verify_gto_pf 53 / verify_gto_connect 302 통과(p100 3개 포함) / regress 기준과 같음 / ui_checks 28 통과.
 - 이어서 계산 중(10-28 에 끊긴 4개, 이 계정 세션이 이어 돌림): 100bb CO·LJ 오픈 2.5 수비, 100bb CO vs BTN 3벳, 60bb LJ 오픈 2.5 수비
   → `claude/resume_p100_flat_20261030`, `claude/resume_p3bet_20261030`.
+
+연결 갱신 2026-10-31(코디네이터 session_012qfUk9 지시 — 빈 자리 순위 4번, `docs/GTO_GAPS_RANK_20261031.md` 브랜치 claude/gto_gaps_20261031):
+- **10bb 미만 푸시/폴드 4·6·8bb** 버킷 추가: 첫 진입(SB 포함, 올인/폴드)과 단독 올인 콜(`first_in`, `vs_jam`)만. 오픈·3벳·플랫 표는 10~15bb 부터라 4~10bb 에서는 None(기존 판단).
+  3.75bb(4bb − 0.25) 미만은 기존 규칙 그대로. 4~10bb 사이는 이웃 버킷 직선 보간.
+- 기록 pf4·pf6·pf8(claude/gto_gaps_20261031 334fcfe4, 사전 등록 `docs/GTO_PUSHFOLD_SUB10_V1.md`): pf10 과 같은 틀·같은 빌드·같은 씨앗, 25회에서 정확 gap 0.0027 / 0.0039 / 0.0052bb.
+  같은 빌드로 pf10 을 다시 풀어 기존 기록과 노드까지 같음을 먼저 확인했다.
+- 데이터 diff: `first_in`·`vs_jam` 에 '4'·'6'·'8' 키만 늘었다. 기존 값 변화 0.
+- refresh_records.sh 에 SUB(claude/gto_gaps_20261031) 줄, rebuild 순서 pf4·pf6·pf8 먼저. MANIFEST 의 지워진 브랜치 커밋 줄은 예전 값 유지(스크립트가 missing 으로 덮어써서 손으로 되돌림).
+- 검사: verify_gto_pf 59(새 6개: 기록값·보간·3.75 경계·vs_jam·SB 범위 단조·10bb 미만 다른 표 None) / verify_range_sync ok(covered spots 1369 → 1633; 기준 밖 예를 8bb·5bb → 3bb 로 바꿈) /
+  verify_gto_connect VCRESULT(새 F 묶음: pf4·6·8 값 일치 + BTN·SB 첫 진입·SB 올인 받은 BB 엔진 경로 + 경로 선택) / regress SAME_AS_BASELINE / ui_checks 28 통과.
+- 주의: 10bb 미만 결정은 5인 이하 테이블·6~8인 자리 이름 문제(빈 자리 순위 3장)로 범위 밖인 것이 많아 실제 사용은 측정 109회/1000핸드보다 적다. 대칭 스택 가정 오차는 짧은 스택일수록 크다(정밀 후보).
 
 사용자 결정 2026-10-26:
 - 100bb 를 넘는 스택(standard 시작 150bb)은 100bb 표를 그대로 쓴다(`gto_pf.covered` 상한 없음).
