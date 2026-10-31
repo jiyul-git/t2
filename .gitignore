@@ -29,3 +29,4 @@ T2-update.zip
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm
+data/gto_gaps/runs/
