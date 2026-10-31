@@ -1,0 +1,241 @@
+diff --git a/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs b/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
+index b814bca..db2380b 100644
+--- a/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
++++ b/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
+@@ -95,6 +95,121 @@ fn class_values_vs(s: &Solver, p: usize, cfv: &[f32], opp_w: &[f32]) -> Vec<Opti
+     (0..NUM_CLASSES).map(|k| if den[k] > 0.0 { Some(num[k] / den[k] + pot / 2.0) } else { None }).collect()
+ }
+ 
++/// 169-class action frequencies at every flop decision node below `idx` (stops at chance / terminal nodes),
++/// weighted by the actor's own reach (range weight x own action probabilities on the path).
++fn export_flop_classes(s: &Solver, idx: u32, reach: [Vec<f32>; 2], key: String, out: &mut Vec<serde_json::Value>) {
++    use solver::tree::KIND_ACTION;
++    let spot = &*s.spot;
++    let node = &spot.tree.nodes[idx as usize];
++    if node.kind != KIND_ACTION {
++        return;
++    }
++    let p = node.player as usize;
++    let nh = spot.hands[p].len();
++    let na = node.num_children as usize;
++    let sigma = s.average_strategy(idx, node);
++    let mut num = vec![vec![0f64; NUM_CLASSES]; na];
++    let mut den = vec![0f64; NUM_CLASSES];
++    for (i, h) in spot.hands[p].iter().enumerate() {
++        let k = cls(h);
++        let r = reach[p][i] as f64;
++        den[k] += r;
++        for a in 0..na {
++            num[a][k] += r * sigma[a * nh + i] as f64;
++        }
++    }
++    let acts: Vec<serde_json::Value> = (0..na).map(|a| serde_json::to_value(spot.tree.actions[node.actions_start as usize + a]).unwrap()).collect();
++    let freq: Vec<Vec<Option<f64>>> = (0..na).map(|a| (0..NUM_CLASSES).map(|k| if den[k] > 1e-12 { Some(num[a][k] / den[k]) } else { None }).collect()).collect();
++    out.push(serde_json::json!({"key": key, "actor": p, "pot": node.put[0] + node.put[1], "put": node.put, "actions": acts,
++        "class_freq": freq, "class_reach": den}));
++    for a in 0..na {
++        let mut r2 = reach.clone();
++        for i in 0..nh {
++            r2[p][i] = reach[p][i] * sigma[a * nh + i];
++        }
++        let child = spot.tree.children[node.children_start as usize + a];
++        let k2 = if key.is_empty() { format!("a{a}") } else { format!("{key},a{a}") };
++        export_flop_classes(s, child, r2, k2, out);
++    }
++}
++
++
++// ---- strategy export (T2_EXPORT_STRATEGY=1, precision runs from 2026-10-31): read-only walk of the solved average strategy.
++// Writes <board>.strategy.json next to the artifact; the artifact, its provenance key and every value are unchanged.
++// Recorded per line (cards summed out = average over the dealt cards, weighted by the actor's own reach):
++//   every flop action node, every turn action node, the first river action node. freq = per mille, -1 = class not reached.
++struct StratAcc { street: u8, player: u8, acts: Vec<String>, num: Vec<f64>, den: Vec<f64> }
++
++fn act_label(a: &solver::tree::Action) -> String {
++    use solver::tree::Action::*;
++    match a { Fold => "F".into(), Check => "X".into(), Call(_) => "C".into(), Bet(x) => format!("B{:.3}", x), Raise(x) => format!("R{:.3}", x) }
++}
++
++fn strat_walk(s: &Solver, idx: u32, reach: &[Vec<f32>; 2], dealt: u64, w: f64, line: &str, cls: &[Vec<usize>; 2],
++              map: &mut std::collections::BTreeMap<String, StratAcc>, order: &mut Vec<String>) {
++    use solver::tree::{KIND_ACTION, KIND_CHANCE, SENTINEL};
++    let spot = &s.spot;
++    let n = &spot.tree.nodes[idx as usize];
++    if n.kind == KIND_ACTION {
++        let p = n.player as usize;
++        let na = n.num_children as usize;
++        let nh = spot.hands[p].len();
++        let sigma = s.average_strategy(idx, n);
++        let first_river = n.street == 2 && line.ends_with('|');
++        if n.street < 2 || first_river {
++            if !map.contains_key(line) {
++                let acts = (0..na).map(|a| act_label(&spot.tree.actions[n.actions_start as usize + a])).collect();
++                map.insert(line.to_string(), StratAcc { street: n.street, player: n.player, acts, num: vec![0.0; na * NUM_CLASSES], den: vec![0.0; NUM_CLASSES] });
++                order.push(line.to_string());
++            }
++            let acc = map.get_mut(line).unwrap();
++            for j in 0..nh {
++                if spot.hands[p][j].mask & dealt != 0 { continue; }
++                let r = reach[p][j] as f64 * w;
++                if r <= 0.0 { continue; }
++                let c = cls[p][j];
++                acc.den[c] += r;
++                for a in 0..na { acc.num[a * NUM_CLASSES + c] += r * sigma[a * nh + j] as f64; }
++            }
++        }
++        if n.street == 2 { return; }
++        for a in 0..na {
++            let child = spot.tree.children[n.children_start as usize + a];
++            let mut r2 = reach.clone();
++            for j in 0..nh { r2[p][j] *= sigma[a * nh + j]; }
++            let lab = act_label(&spot.tree.actions[n.actions_start as usize + a]);
++            strat_walk(s, child, &r2, dealt, w, &format!("{}{}{}", line, if line.is_empty() || line.ends_with('|') { "" } else { "-" }, lab), cls, map, order);
++        }
++    } else if n.kind == KIND_CHANCE {
++        let cards: Vec<u8> = (0..52u8).filter(|&c| spot.tree.children[n.children_start as usize + c as usize] != SENTINEL && dealt & (1u64 << c) == 0).collect();
++        let wc = w / cards.len() as f64;
++        for c in cards {
++            let child = spot.tree.children[n.children_start as usize + c as usize];
++            strat_walk(s, child, reach, dealt | (1u64 << c), wc, &format!("{}|", line), cls, map, order);
++        }
++    }
++}
++
++fn strategy_export(s: &Solver, board: &str, roles: [&str; 2]) -> serde_json::Value {
++    let spot = &s.spot;
++    let cls: [Vec<usize>; 2] = [0, 1].map(|p| spot.hands[p].iter().map(|h| cls(h)).collect());
++    let reach = [spot.weights[0].clone(), spot.weights[1].clone()];
++    let mut map = std::collections::BTreeMap::new();
++    let mut order = Vec::new();
++    strat_walk(s, 0, &reach, 0, 1.0, "", &cls, &mut map, &mut order);
++    let nodes: Vec<serde_json::Value> = order.iter().map(|l| {
++        let a = &map[l];
++        let na = a.acts.len();
++        let freq: Vec<Vec<i32>> = (0..na).map(|k| (0..NUM_CLASSES).map(|c| if a.den[c] > 0.0 { (a.num[k * NUM_CLASSES + c] / a.den[c] * 1000.0).round() as i32 } else { -1 }).collect()).collect();
++        let reach: Vec<f64> = a.den.iter().map(|x| (x * 1e4).round() / 1e4).collect();
++        serde_json::json!({"line": l, "street": a.street, "actor": roles[a.player as usize], "actions": a.acts, "freq_permille": freq, "own_reach_weight": reach})
++    }).collect();
++    serde_json::json!({"schema": "t2_flop_strategy_v1", "board": board, "roles": {"OOP": roles[0], "IP": roles[1]},
++        "classes": "169 standard class order (solver::preflop::equity::class_label)",
++        "definition": "average strategy of the solved flop; per line (X check, B/R amount = street total, C call, F fold, | = card dealt, cards averaged out) the actor's class frequency weighted by its own reach (range weight x own action probabilities) and averaged over dealt cards; every flop and turn action node, first river action node",
++        "nodes": nodes})
++}
++
+ fn main() -> Result<(), String> {
+     let a: Vec<String> = std::env::args().collect();
+     if a.len() < 8 {
+@@ -214,6 +329,25 @@ fn main() -> Result<(), String> {
+         let solve_ms = t.elapsed().as_secs_f64() * 1e3;
+         s.ensure_symmetric();
+         let denom = s.pair_weight_sum();
++        // strategy export (T2_REPORT_OUT=<dir>, added 2026-10-31 for the postflop GTO reference): a SEPARATE file
++        // <dir>/<board>.report.json; the flop artifact above is unchanged (its flop_digest does not see this).
++        if let Ok(rdir) = std::env::var("T2_REPORT_OUT") {
++            std::fs::create_dir_all(&rdir).map_err(|e| e.to_string())?;
++            let lines = s.report_lines();
++            let mut flop_nodes = Vec::new();
++            let reach = [s.spot.weights[0].clone(), s.spot.weights[1].clone()];
++            export_flop_classes(&s, 0, reach, String::new(), &mut flop_nodes);
++            let rep = serde_json::json!({
++                "schema": "t2_postflop_strategy_report_v1", "board": board, "stratum": f["stratum"], "panel_weight": f["weight"],
++                "provenance_key": key, "iterations": iters, "exploitability_pct_pot": expl,
++                "roles": {"0": pos[oop_i], "1": pos[ip_i]},
++                "made_categories": solver::report::MADE, "draw_categories": solver::report::DRAW, "eqa_categories": solver::report::EQA,
++                "note": "lines: report_lines() (line key a<i> per action, c per chance card; turn/river pooled over all cards, pair-mass weighted); flop_class: own-reach-weighted 169-class action frequencies at every flop decision node",
++                "lines": lines, "flop_class": flop_nodes,
++            });
++            let rp = std::path::Path::new(&rdir).join(format!("{board}.report.json"));
++            std::fs::write(&rp, serde_json::to_vec(&rep).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
++        }
+         if std::env::var("T2_DIAG").is_ok() {
+             // where the exploitability sits: per player and per class, w_i * (br_i - avg_i) / denom, in % of pot
+             for p in 0..2 {
+@@ -296,6 +430,16 @@ fn main() -> Result<(), String> {
+             matrix = serde_json::json!({"players": per, "ms": tm.elapsed().as_secs_f64() * 1e3,
+                 "definition": "matrix[h][j] = gross share (bb) of own class h vs opponent class j at the solved average strategies"});
+         }
++        if std::env::var("T2_EXPORT_STRATEGY").ok().as_deref() == Some("1") {
++            let te = Instant::now();
++            let mut sx = strategy_export(&s, board, [pos[oop_i], pos[ip_i]]);
++            sx["export_s"] = serde_json::json!(te.elapsed().as_secs_f64());
++            sx["provenance_key"] = key.clone();
++            let sp_ = out_dir.join(format!("{board}.strategy.json"));
++            let tmp = sp_.with_extension("partial");
++            std::fs::write(&tmp, serde_json::to_vec(&sx).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
++            std::fs::rename(&tmp, &sp_).map_err(|e| e.to_string())?;
++        }
+         let out = serde_json::json!({
+             "matrix": matrix,
+             "schema": "t2_hu_continuation_flop_v1", "board": board, "stratum": f["stratum"], "panel_weight": f["weight"],
+diff --git a/vendor/gtopen/crates/solver/src/report.rs b/vendor/gtopen/crates/solver/src/report.rs
+index 0945ad9..65b291c 100644
+--- a/vendor/gtopen/crates/solver/src/report.rs
++++ b/vendor/gtopen/crates/solver/src/report.rs
+@@ -267,6 +267,9 @@ pub struct CatBreakdown {
+     pub made: Vec<CatStat>,
+     pub draw: Vec<CatStat>,
+     pub eqa: Vec<CatStat>,
++    /// 2026-10-31 (T2 postflop reference): joint made x draw, index made * DRAW.len() + draw
++    #[serde(default, skip_serializing_if = "Vec::is_empty")]
++    pub joint: Vec<CatStat>,
+ }
+ 
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+@@ -320,7 +323,7 @@ struct PAcc {
+     wev: f64,
+     weq: f64,
+     has_eq: bool,
+-    cats: Option<[Vec<Acc1>; 3]>,
++    cats: Option<[Vec<Acc1>; 4]>,
+ }
+ 
+ #[derive(Clone)]
+@@ -361,7 +364,7 @@ fn merge_line(a: &mut LineAcc, b: &LineAcc) {
+         pa.has_eq |= pb.has_eq;
+         match (&mut pa.cats, &pb.cats) {
+             (Some(ca), Some(cb)) => {
+-                for d in 0..3 {
++                for d in 0..4 {
+                     for (x, y) in ca[d].iter_mut().zip(&cb[d]) {
+                         merge_acc1(x, y);
+                     }
+@@ -411,7 +414,7 @@ fn finish(acc: LineAcc) -> LineSummary {
+                             })
+                             .collect()
+                     };
+-                    CatBreakdown { made: conv(&c[0]), draw: conv(&c[1]), eqa: conv(&c[2]) }
++                    CatBreakdown { made: conv(&c[0]), draw: conv(&c[1]), eqa: conv(&c[2]), joint: conv(&c[3]) }
+                 });
+                 PlayerStat {
+                     w: r4(pa.w),
+@@ -448,7 +451,7 @@ fn finish(acc: LineAcc) -> LineSummary {
+ /// every flop node, the turn's first decision + responses, and the river's
+ /// first decision.
+ const RECORD_DEPTH: [u8; 3] = [255, 255, 1];
+-const FULL_DEPTH: [u8; 3] = [255, 1, 0];
++const FULL_DEPTH: [u8; 3] = [255, 1, 1]; // 2026-10-31: river depth 1 too (IP river decision after a check), report output only
+ 
+ /// Per-hand (made, draw) categories on one board, for both players.
+ struct BoardCats {
+@@ -718,7 +721,7 @@ impl Solver {
+                                 (0..n).map(|_| Acc1 { fsum: vec![0.0; na], ..Default::default() }).collect()
+                             };
+                             let fna = if p == q { na } else { 0 };
+-                            pa.cats = Some([mk(MADE.len(), fna), mk(DRAW.len(), fna), mk(EQA.len(), fna)]);
++                            pa.cats = Some([mk(MADE.len(), fna), mk(DRAW.len(), fna), mk(EQA.len(), fna), mk(MADE.len() * DRAW.len(), fna)]);
+                         }
+                         for i in 0..nh[p] {
+                             if valid[i] <= 1e-9 || reach[p][i] <= 0.0 {
+@@ -741,9 +744,9 @@ impl Solver {
+                             if let Some(c) = pa.cats.as_mut() {
+                                 let (mi, di) = cats.cats[p][i];
+                                 let ei = e.map(eqa_bucket);
+-                                let slots: [Option<usize>; 3] =
+-                                    [Some(mi as usize), Some(di as usize), ei];
+-                                for d in 0..3 {
++                                let slots: [Option<usize>; 4] =
++                                    [Some(mi as usize), Some(di as usize), ei, Some(mi as usize * DRAW.len() + di as usize)];
++                                for d in 0..4 {
+                                     let Some(k) = slots[d] else { continue };
+                                     let a1 = &mut c[d][k];
+                                     a1.w += w;
