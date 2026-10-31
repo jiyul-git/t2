@@ -1,0 +1,46 @@
+diff --git a/crates/solver/Cargo.toml b/crates/solver/Cargo.toml
+index 68c460d..4411c8b 100644
+--- a/crates/solver/Cargo.toml
++++ b/crates/solver/Cargo.toml
+@@ -244,3 +244,6 @@ required-features = ["t2-cont"]
+ 
+ [[example]]
+ name = "t2_tree_estimate"
++
++[[example]]
++name = "t2_terminal_census"
+diff --git a/crates/solver/src/preflop/mod.rs b/crates/solver/src/preflop/mod.rs
+index dc39dfc..eb09cd7 100644
+--- a/crates/solver/src/preflop/mod.rs
++++ b/crates/solver/src/preflop/mod.rs
+@@ -3879,3 +3879,30 @@ impl PreflopSolver {
+ 
+ #[cfg(test)]
+ mod checkpoint_tests;
++
++// ---- t2 terminal census (2026-10-31, read-only planning tool for docs/GTO_FULLTREE_PILOT_60BB.md) ----
++/// One row per pot-share terminal: (live seats bitmask, all-in bitmask, raise count, invested per seat).
++#[derive(Debug, Clone, Serialize)]
++pub struct TerminalRow { pub live: u32, pub allin: u32, pub raises: u8, pub invested: Vec<f64>, pub line: Vec<String> }
++
++pub fn terminal_census(cfg: &PreflopConfig) -> Result<Vec<TerminalRow>, String> {
++    let n = validate(cfg)?;
++    let mut out = Vec::new();
++    census_walk(cfg, n, root_state(cfg, n), &mut Vec::new(), &mut out);
++    Ok(out)
++}
++
++fn census_walk(cfg: &PreflopConfig, n: usize, st: BuildState, line: &mut Vec<String>, out: &mut Vec<TerminalRow>) {
++    let live = ((1u32 << n) - 1) & !st.folded;
++    if live.count_ones() == 1 { return; }
++    let Some(actor) = next_actor_of(n, &st) else {
++        out.push(TerminalRow { live, allin: st.allin & live, raises: st.raises, invested: st.invested.clone(), line: line.clone() });
++        return;
++    };
++    let acts = legal_actions_of(cfg, &st, actor);
++    for a in &acts {
++        line.push(format!("{}:{:?}", actor, a));
++        census_walk(cfg, n, next_state_of(cfg, n, &st, actor, a), line, out);
++        line.pop();
++    }
++}
