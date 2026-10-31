@@ -77,7 +77,7 @@ def main():
                 return '%s / %s' % (pct(g), (pct(t['bet']) if t['n'] >= MIN_N else '(%s, n=%d)' % (pct(t['bet']), t['n'])) if t else '-')
             out.append('| %s | %s | ' % (k, c('all')) + ' | '.join(c(sl) for sl, _ in GRP) + ' |')
         out.append('')
-        out.append('**T2 벳 크기 (팟 대비, 중앙값 [25%%–75%%]); GTO 메뉴는 50%% 하나**\n')
+        out.append('**T2 벳 크기 (팟 대비, 중앙값 [25%–75%]); GTO 메뉴는 50% 하나**\n')
         out.append('| 스트리트·자리 | 표본 | 중앙값 | 25–75% |')
         out.append('|---|---|---|---|')
         for k, v in sorted(s['t2_bet_sizes'].items()):
