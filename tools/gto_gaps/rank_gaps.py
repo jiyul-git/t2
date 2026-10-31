@@ -85,6 +85,29 @@ def main():
             'sizes': {s: round(x, 1) for s, x in sizes[g].most_common(4)},
         })
     rows.sort(key=lambda r: -r['gap'])
+    # 3벳 받은 오프너: 오픈 크기 × 3벳 배수별 발생과 GTO 전체 응답(full) 사용 — 코디네이터 요청(10-31):
+    # 30·40bb 2.5 오픈 후 3벳, SB 5배 3벳.
+    tb = defaultdict(Counter)
+    for r in runs:
+        for k, v in r['rows'].items():
+            sit, bk, pk, sz = k.split('|')
+            if sit != 'vs_3bet' or not sz.startswith('o'):
+                continue
+            o, t3 = (float(x[1:] if i == 0 else x[2:]) for i, x in enumerate(sz.split(':')))
+            mult = (t3 / o) if o > 0 else 0.0
+            who = pk.split('>')[0]
+            grp = 'SB' if who == 'SB' else 'BB' if who == 'BB' else 'IP'
+            mb = '%.1f' % (round(mult * 2) / 2.0)
+            g = (bk, grp, '%.2f' % o, mb)
+            tb[g]['n'] += v['n'] - v.get('no_ante', 0.0) - v.get('seats_le5', 0.0) - v.get('icm', 0.0)
+            tb[g]['full'] += v.get('full', 0.0)
+            tb[g]['key_unused'] += v.get('full_key_but_unused', 0.0)
+            tb[g]['fold'] += v.get('fold', 0.0)
+    three_bet = sorted(({'bucket': g[0], 'threebettor': g[1], 'open_bb': g[2], 'mult': g[3],
+                         'n': round(c['n'], 2), 'per_1000_hands': round(1000 * c['n'] / hands, 2),
+                         'gto_full': round(c['full'], 2), 'pair_record_but_unused': round(c['key_unused'], 2),
+                         'old_fold': round(c['fold'], 2)} for g, c in tb.items() if c['n'] > 0),
+                       key=lambda x: -x['n'])
     by_sit = Counter()
     for r in rows:
         by_sit[r['situation']] += r['gap']
@@ -92,6 +115,7 @@ def main():
            'totals': {k: round(v, 1) for k, v in tot.items()},
            'gap_by_situation': {k: round(v, 1) for k, v in by_sit.most_common()},
            'no_ante_by_situation_bucket': {'%s|%s' % k: round(v, 1) for k, v in noante.most_common() if v > 0},
+           'three_bet_sizes': three_bet,
            'rows': rows}
     json.dump(res, open(out_json, 'w'), indent=1, ensure_ascii=False)
     with open(out_md, 'w') as f:
