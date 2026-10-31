@@ -62,3 +62,12 @@ PREC_START=fresh PREC_CALC_ROOT=/home/user/calc PREC_SESSION=session_<id> sh too
   끝까지 돌았다(단계 보고, 복제 비교, 등급·라벨, 멈춤/실패 처리). 값은 의미 없음. 실제 72+72 계산은 아직 한 번도 안 돌렸다.
 - 시간 실측: 100bb 행렬 끝점(3벳 팟) 플랍 하나는 반복 1회여도 약 10분(행렬 내보내기), 단순 끝점은 약 25초 + 반복 시간.
 `PREC_TEST=1 PREC_PANELS=<작은 패널 폴더> PREC_WORKDIR=/tmp/x PREC_POSTFLOP="10 50 5"` 로 배관만 시험할 수 있다(솔버 검사 끔, 결과는 의미 없음, 기록은 PREC_WORKDIR 안).
+
+## 7. 첫 시험 p100_flat_co_vs_bb_o25 — 멈춤 기준 (계산 시작 전에 적음, 2026-10-31)
+사용자 결정(10-31, 코디네이터 전달): 정밀 검사가 "되는지" 시험부터. 1단계(복제)만 돌린다.
+- 시작: 계산 브랜치 `claude/resume_p100_flat_20261030` 의 `progress/p100_flat_co_vs_bb_o25/state.json`(quick 3단계 상한 끝 상태), `PREC_STAGE_LIMIT=1`.
+- 1단계가 끝나면 **무조건 멈춘다**(통과해도, 실패해도). 2단계 이상은 코디네이터 확인 후에만.
+- 1단계 중간에도 멈추는 경우: 플랍이 CFR+ 재시도 후에도 안 풀림(→ precision_failed 기록, 그대로 보고), 같은 오류로 실행이 두 번 연속 죽음(→ 원인 보고).
+- 보고 항목: 통과 ①(D ≤ U144) / ②(복제) 여부, 끝점·자리별 D/U, 복제 차이 |V_A−V_B| 와 허용폭 2√(U_A²+U_B²), 뿌리 클래스별 5%p 초과 몫과 클래스,
+  u_rep 크기(뿌리 콤보 가중 평균·최대, u_panel·u_outer 와 비교), stable 콤보 몫, quick 대비 5%p 넘게 바뀐 뿌리 클래스.
+- 진행 기록: 끝점·패널 하나가 끝날 때마다 커밋·푸시(`run_precision.sh`).

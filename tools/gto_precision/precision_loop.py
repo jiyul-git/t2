@@ -559,7 +559,16 @@ def summary(g, rep, qroot):
     du = {l[-60:]: {p: {'D': round(s['D'], 4), 'U144': round(s['U144'], 4), 'D/U': None if s['D_over_U'] is None else round(s['D_over_U'], 2),
                         'rep_diff': round(s['rep_diff'], 4), 'rep_bound': round(s['rep_bound'], 4), 'exempt': s['exempt']}
                 for p, s in t['seats'].items()} for l, t in rep['terminals'].items()}
-    return {'decision': rep['decision'], 'pass_D_le_U144': rep['pass_D_le_U144'], 'pass_rep_values': rep['pass_rep_values'],
+    rh = [x for x in root['hands'].values() if x['reach_combos'] >= REACH_FLOOR]
+    wsum = sum(x['reach_combos'] for x in rh)
+    urep = {'root_combo_weighted_mean_bb': sum(x['u_rep'] * x['reach_combos'] for x in rh) / wsum if wsum else None,
+            'root_max_bb': max((x['u_rep'] for x in rh), default=None),
+            'root_mean_u_panel_bb': sum(x['u_panel'] * x['reach_combos'] for x in rh) / wsum if wsum else None,
+            'root_mean_u_outer_bb': sum(x['u_outer'] * x['reach_combos'] for x in rh) / wsum if wsum else None,
+            'root_share_where_u_rep_is_largest_term': sum(x['reach_combos'] for x in rh if x['u_rep'] >= max(x['u_panel'], x['u_outer'], x['u_solver'])) / wsum if wsum else None}
+    rr = rep['root_replication']
+    return {'decision': rep['decision'], 'u_rep': urep,
+            'root_replication_share_over_5pp': 1 - rr['share_within_5pp'], 'root_replication_classes_over_5pp': [c['class'] for c in rr['classes_over_5pp']], 'pass_D_le_U144': rep['pass_D_le_U144'], 'pass_rep_values': rep['pass_rep_values'],
             'root_replication_share_within_5pp': rep['root_replication']['share_within_5pp'], 'pass_rep_root': rep['pass_rep_root'],
             'terminals': du, 'spot_exploitability_bb': g['exploitability']['total_bb'],
             'stable_combo_share_all_nodes': g.get('hand_frequency', {}).get('stable_combo_share'),
