@@ -16,3 +16,7 @@
 - 재현 확인: 먼저 pf10 을 같은 빌드로 다시 풀어 기존 기록(25회, gap 0.00663bb)과 같은지 본다. 다르면 멈추고 보고.
 - 기록: `tools/gto_spot/pushfold_record.py <S>` → `data/gto_spot/records/pf<S>.json`(pushfold_record_v1, status quick, G2 = gap ≤ 0.010bb).
 - precision 표준(144보드)은 플랍이 없는 트리라 해당 없음(보드 패널이 없다). 솔버 정확도(gap)만이 기준.
+
+## 3. 진행
+- 재현 확인 통과(2026-10-31 13:50Z): 같은 빌드로 pf10 을 다시 풀어 25회 정확 gap 0.006630689231811815bb(기존 기록과 같은 수), 다시 만든 기록이
+  test3 `data/gto_records/pf10.json.gz` 와 노드·키 전부 같음(재현용이라 커밋하지 않음).
