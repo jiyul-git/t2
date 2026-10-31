@@ -1,0 +1,6330 @@
+[
+ {
+  "id": "p100_flat_btn_vs_bb_o25",
+  "stack": 100,
+  "opener": "BTN",
+  "open_bb": 2.5,
+  "parent": "s100(open25)",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.3324,
+  "tv_max": 1.0,
+  "tv_max_class": "72o",
+  "share_classes_tv_gt_10pp": 0.3922,
+  "signed_parent_minus_loop": {
+   "fold": -0.1911,
+   "call": 0.1959,
+   "r3": -0.0061,
+   "jam": 0.0012
+  },
+  "mix_loop": {
+   "fold": 0.1911,
+   "call": 0.6816,
+   "r3": 0.1273,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8775,
+   "r3": 0.1212,
+   "jam": 0.0012
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.4435,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.3252,
+     "r3": 0.3166,
+     "jam": 0.0086
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.4935,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0847,
+     "r3": -0.0847,
+     "jam": 0.0
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.3347,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.1957,
+     "r3": -0.2075,
+     "jam": 0.0118
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1634,
+    "signed": {
+     "fold": -0.05,
+     "call": 0.158,
+     "r3": -0.1107,
+     "jam": 0.0027
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2503,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2496,
+     "r3": 0.2496,
+     "jam": -0.0
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1752,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1688,
+     "r3": 0.1688,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.398,
+    "signed": {
+     "fold": -0.3353,
+     "call": 0.398,
+     "r3": -0.0628,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": -0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p100_flat_co_vs_bb_o25",
+  "stack": 100,
+  "opener": "CO",
+  "open_bb": 2.5,
+  "parent": "s100(open25)",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3939,
+  "tv_max": 1.0,
+  "tv_max_class": "72o",
+  "share_classes_tv_gt_10pp": 0.4917,
+  "signed_parent_minus_loop": {
+   "fold": -0.2646,
+   "call": 0.2372,
+   "r3": 0.0258,
+   "jam": 0.0016
+  },
+  "mix_loop": {
+   "fold": 0.2647,
+   "call": 0.664,
+   "r3": 0.0713,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0001,
+   "call": 0.9012,
+   "r3": 0.0971,
+   "jam": 0.0016
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.6321,
+    "signed": {
+     "fold": -0.0002,
+     "call": -0.3117,
+     "r3": 0.2992,
+     "jam": 0.0126
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.3622,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2151,
+     "r3": 0.2027,
+     "jam": 0.0123
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.3615,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.117,
+     "r3": 0.1159,
+     "jam": 0.001
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1543,
+    "signed": {
+     "fold": -0.0846,
+     "call": 0.1497,
+     "r3": -0.0674,
+     "jam": 0.0023
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2649,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2317,
+     "r3": 0.2316,
+     "jam": 0.0
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1705,
+    "signed": {
+     "fold": -0.0,
+     "call": -0.1395,
+     "r3": 0.1396,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4992,
+    "signed": {
+     "fold": -0.4591,
+     "call": 0.4992,
+     "r3": -0.0401,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": -0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "33",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "44",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p100_flat_hj_vs_bb_o25",
+  "stack": 100,
+  "opener": "HJ",
+  "open_bb": 2.5,
+  "parent": "s100(open25)",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.4198,
+  "tv_max": 1.0,
+  "tv_max_class": "82o",
+  "share_classes_tv_gt_10pp": 0.5098,
+  "signed_parent_minus_loop": {
+   "fold": -0.3108,
+   "call": 0.2997,
+   "r3": 0.0088,
+   "jam": 0.0023
+  },
+  "mix_loop": {
+   "fold": 0.3117,
+   "call": 0.6245,
+   "r3": 0.0638,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0009,
+   "call": 0.9242,
+   "r3": 0.0726,
+   "jam": 0.0023
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.6294,
+    "signed": {
+     "fold": -0.0382,
+     "call": -0.2276,
+     "r3": 0.2476,
+     "jam": 0.0181
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.3182,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2133,
+     "r3": 0.196,
+     "jam": 0.0172
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.2726,
+    "signed": {
+     "fold": 0.0001,
+     "call": 0.0567,
+     "r3": -0.0569,
+     "jam": 0.0
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1693,
+    "signed": {
+     "fold": -0.0911,
+     "call": 0.1614,
+     "r3": -0.0735,
+     "jam": 0.0031
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2111,
+    "signed": {
+     "fold": -0.008,
+     "call": -0.1232,
+     "r3": 0.131,
+     "jam": 0.0001
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1077,
+    "signed": {
+     "fold": -0.0007,
+     "call": -0.0446,
+     "r3": 0.0453,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5653,
+    "signed": {
+     "fold": -0.5363,
+     "call": 0.5643,
+     "r3": -0.028,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "33",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "44",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p100_flat_lj_vs_bb_o25",
+  "stack": 100,
+  "opener": "LJ",
+  "open_bb": 2.5,
+  "parent": "s100(open25)",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.516,
+  "tv_max": 0.9999,
+  "tv_max_class": "K2o",
+  "share_classes_tv_gt_10pp": 0.6109,
+  "signed_parent_minus_loop": {
+   "fold": -0.4268,
+   "call": 0.4229,
+   "r3": 0.0039,
+   "jam": 0.0
+  },
+  "mix_loop": {
+   "fold": 0.4276,
+   "call": 0.5141,
+   "r3": 0.0583,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0007,
+   "call": 0.937,
+   "r3": 0.0622,
+   "jam": 0.0
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5792,
+    "signed": {
+     "fold": -0.0769,
+     "call": -0.1174,
+     "r3": 0.1937,
+     "jam": 0.0006
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2124,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1324,
+     "r3": 0.1321,
+     "jam": 0.0003
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.199,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0256,
+     "r3": -0.0256,
+     "jam": 0.0
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1968,
+    "signed": {
+     "fold": -0.1166,
+     "call": 0.1962,
+     "r3": -0.0796,
+     "jam": 0.0
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.3256,
+    "signed": {
+     "fold": -0.1212,
+     "call": -0.0075,
+     "r3": 0.1286,
+     "jam": 0.0
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.2499,
+    "signed": {
+     "fold": -0.2499,
+     "call": 0.2498,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.7111,
+    "signed": {
+     "fold": -0.6897,
+     "call": 0.7107,
+     "r3": -0.021,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "22",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "33",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "44",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K5o",
+    1.0,
+    {
+     "fold": -0.838,
+     "call": 1.0,
+     "r3": -0.162,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J6o",
+    1.0,
+    {
+     "fold": -0.997,
+     "call": 1.0,
+     "r3": -0.003,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q8o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_btn_vs_bb",
+  "stack": 30,
+  "opener": "BTN",
+  "open_bb": 2.0,
+  "parent": "s30",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.2164,
+  "tv_max": 1.0,
+  "tv_max_class": "72o",
+  "share_classes_tv_gt_10pp": 0.279,
+  "signed_parent_minus_loop": {
+   "fold": -0.0975,
+   "call": 0.0787,
+   "r3": -0.0444,
+   "jam": 0.0632
+  },
+  "mix_loop": {
+   "fold": 0.0975,
+   "call": 0.7692,
+   "r3": 0.0458,
+   "jam": 0.0875
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8479,
+   "r3": 0.0014,
+   "jam": 0.1507
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5332,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1937,
+     "r3": -0.3386,
+     "jam": 0.5322
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.308,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0951,
+     "r3": -0.0538,
+     "jam": 0.1489
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.6925,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.6524,
+     "r3": -0.025,
+     "jam": 0.6774
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1084,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1079,
+     "r3": 0.0,
+     "jam": 0.1079
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.0707,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0646,
+     "r3": -0.045,
+     "jam": -0.0196
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.123,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0368,
+     "r3": -0.0,
+     "jam": 0.0368
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.2346,
+    "signed": {
+     "fold": -0.1795,
+     "call": 0.2207,
+     "r3": -0.0317,
+     "jam": -0.0095
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -0.267,
+     "call": 1.0,
+     "r3": -0.733,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -0.907,
+     "call": 1.0,
+     "r3": -0.093,
+     "jam": 0.0
+    }
+   ],
+   [
+    "KQs",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -0.998,
+     "r3": -0.002,
+     "jam": 1.0
+    }
+   ],
+   [
+    "AJs",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -1.0,
+     "r3": 0.009,
+     "jam": 0.991
+    }
+   ],
+   [
+    "32o",
+    0.999,
+    {
+     "fold": -0.824,
+     "call": 0.999,
+     "r3": -0.175,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    0.999,
+    {
+     "fold": -0.838,
+     "call": 0.999,
+     "r3": -0.161,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_btn_vs_bb_o25",
+  "stack": 30,
+  "opener": "BTN",
+  "open_bb": 2.5,
+  "parent": "chart_30bb_open25_parent",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3303,
+  "tv_max": 1.0,
+  "tv_max_class": "32o",
+  "share_classes_tv_gt_10pp": 0.3906,
+  "signed_parent_minus_loop": {
+   "fold": -0.217,
+   "call": 0.2068,
+   "r3": -0.0334,
+   "jam": 0.0436
+  },
+  "mix_loop": {
+   "fold": 0.217,
+   "call": 0.64,
+   "r3": 0.0334,
+   "jam": 0.1097
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8468,
+   "r3": 0.0,
+   "jam": 0.1532
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.4295,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1397,
+     "r3": -0.2893,
+     "jam": 0.4289
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.288,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1731,
+     "r3": -0.0474,
+     "jam": 0.2205
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.6195,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.554,
+     "r3": -0.0003,
+     "jam": 0.5543
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.2005,
+    "signed": {
+     "fold": -0.075,
+     "call": -0.0327,
+     "r3": -0.0089,
+     "jam": 0.1165
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1088,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.1087,
+     "r3": -0.0016,
+     "jam": -0.1071
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.0963,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0852,
+     "r3": -0.0046,
+     "jam": 0.0898
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4237,
+    "signed": {
+     "fold": -0.3747,
+     "call": 0.4237,
+     "r3": -0.0232,
+     "jam": -0.0258
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "42o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "32s",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_co_vs_bb",
+  "stack": 30,
+  "opener": "CO",
+  "open_bb": 2.0,
+  "parent": "s30",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.2304,
+  "tv_max": 1.0,
+  "tv_max_class": "72o",
+  "share_classes_tv_gt_10pp": 0.3017,
+  "signed_parent_minus_loop": {
+   "fold": -0.1266,
+   "call": 0.114,
+   "r3": -0.045,
+   "jam": 0.0577
+  },
+  "mix_loop": {
+   "fold": 0.1267,
+   "call": 0.7801,
+   "r3": 0.0487,
+   "jam": 0.0445
+  },
+  "mix_parent": {
+   "fold": 0.0001,
+   "call": 0.8941,
+   "r3": 0.0036,
+   "jam": 0.1022
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.6362,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1127,
+     "r3": -0.2893,
+     "jam": 0.402
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2199,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1331,
+     "r3": -0.0328,
+     "jam": 0.1659
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.6469,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.5223,
+     "r3": -0.0159,
+     "jam": 0.5382
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0623,
+    "signed": {
+     "fold": 0.0002,
+     "call": -0.0443,
+     "r3": 0.0,
+     "jam": 0.0441
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1406,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0431,
+     "r3": -0.099,
+     "jam": 0.0559
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1122,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0279,
+     "r3": -0.07,
+     "jam": 0.042
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.259,
+    "signed": {
+     "fold": -0.2333,
+     "call": 0.2518,
+     "r3": -0.0221,
+     "jam": 0.0036
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    1.0,
+    {
+     "fold": -0.997,
+     "call": 1.0,
+     "r3": -0.002,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.001
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_co_vs_bb_o25",
+  "stack": 30,
+  "opener": "CO",
+  "open_bb": 2.5,
+  "parent": "chart_30bb_open25_parent",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.4261,
+  "tv_max": 1.0,
+  "tv_max_class": "62o",
+  "share_classes_tv_gt_10pp": 0.5008,
+  "signed_parent_minus_loop": {
+   "fold": -0.3231,
+   "call": 0.2902,
+   "r3": -0.0288,
+   "jam": 0.0617
+  },
+  "mix_loop": {
+   "fold": 0.3231,
+   "call": 0.5945,
+   "r3": 0.0288,
+   "jam": 0.0536
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8847,
+   "r3": 0.0001,
+   "jam": 0.1152
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.6822,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1953,
+     "r3": -0.2643,
+     "jam": 0.4596
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2362,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1912,
+     "r3": -0.044,
+     "jam": 0.2352
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.7951,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.7951,
+     "r3": -0.0,
+     "jam": 0.7951
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1416,
+    "signed": {
+     "fold": -0.0917,
+     "call": 0.0426,
+     "r3": -0.0002,
+     "jam": 0.0493
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1737,
+    "signed": {
+     "fold": -0.0629,
+     "call": 0.0793,
+     "r3": -0.0303,
+     "jam": 0.0139
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.2018,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0163,
+     "r3": -0.0077,
+     "jam": 0.024
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5665,
+    "signed": {
+     "fold": -0.552,
+     "call": 0.5665,
+     "r3": -0.0145,
+     "jam": -0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "42o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "32s",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "73o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_hj_vs_bb",
+  "stack": 30,
+  "opener": "HJ",
+  "open_bb": 2.0,
+  "parent": "s30",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.282,
+  "tv_max": 0.9994,
+  "tv_max_class": "98o",
+  "share_classes_tv_gt_10pp": 0.3801,
+  "signed_parent_minus_loop": {
+   "fold": -0.1921,
+   "call": 0.1862,
+   "r3": -0.032,
+   "jam": 0.0378
+  },
+  "mix_loop": {
+   "fold": 0.193,
+   "call": 0.7276,
+   "r3": 0.0468,
+   "jam": 0.0326
+  },
+  "mix_parent": {
+   "fold": 0.001,
+   "call": 0.9139,
+   "r3": 0.0148,
+   "jam": 0.0703
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5448,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0473,
+     "r3": -0.2296,
+     "jam": 0.2769
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2113,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1287,
+     "r3": -0.0191,
+     "jam": 0.1477
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.4897,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.4549,
+     "r3": -0.0187,
+     "jam": 0.4735
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0823,
+    "signed": {
+     "fold": -0.0409,
+     "call": 0.0008,
+     "r3": -0.0001,
+     "jam": 0.0401
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1366,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0311,
+     "r3": -0.0307,
+     "jam": -0.0004
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.0741,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0047,
+     "r3": 0.0004,
+     "jam": 0.0042
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.3676,
+    "signed": {
+     "fold": -0.3401,
+     "call": 0.3658,
+     "r3": -0.026,
+     "jam": 0.0002
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "K2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "87o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J7o",
+    0.999,
+    {
+     "fold": -0.97,
+     "call": 0.999,
+     "r3": -0.029,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    0.999,
+    {
+     "fold": -1.0,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2s",
+    0.999,
+    {
+     "fold": -0.992,
+     "call": 0.998,
+     "r3": -0.007,
+     "jam": 0.001
+    }
+   ],
+   [
+    "82o",
+    0.998,
+    {
+     "fold": -0.998,
+     "call": 0.998,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    0.998,
+    {
+     "fold": -0.998,
+     "call": 0.998,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    0.998,
+    {
+     "fold": -0.998,
+     "call": 0.998,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    0.998,
+    {
+     "fold": -0.999,
+     "call": 0.998,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    0.998,
+    {
+     "fold": -0.998,
+     "call": 0.998,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_lj_vs_bb",
+  "stack": 30,
+  "opener": "LJ",
+  "open_bb": 2.0,
+  "parent": "s30",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3101,
+  "tv_max": 1.0,
+  "tv_max_class": "72o",
+  "share_classes_tv_gt_10pp": 0.4374,
+  "signed_parent_minus_loop": {
+   "fold": -0.2249,
+   "call": 0.2273,
+   "r3": -0.0298,
+   "jam": 0.0274
+  },
+  "mix_loop": {
+   "fold": 0.2251,
+   "call": 0.7008,
+   "r3": 0.0488,
+   "jam": 0.0252
+  },
+  "mix_parent": {
+   "fold": 0.0003,
+   "call": 0.9281,
+   "r3": 0.019,
+   "jam": 0.0526
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5066,
+    "signed": {
+     "fold": -0.0,
+     "call": 0.0321,
+     "r3": -0.1539,
+     "jam": 0.1218
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2119,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.1294,
+     "r3": 0.0002,
+     "jam": 0.1291
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.3556,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.3556,
+     "r3": 0.0,
+     "jam": 0.3555
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0833,
+    "signed": {
+     "fold": -0.0567,
+     "call": 0.0367,
+     "r3": -0.0029,
+     "jam": 0.0229
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.172,
+    "signed": {
+     "fold": 0.0001,
+     "call": 0.0424,
+     "r3": -0.0647,
+     "jam": 0.0222
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1023,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0251,
+     "r3": -0.0215,
+     "jam": 0.0465
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4178,
+    "signed": {
+     "fold": -0.3952,
+     "call": 0.4174,
+     "r3": -0.0222,
+     "jam": 0.0001
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T4o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": -0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_sb_vs_bb",
+  "stack": 30,
+  "opener": "SB",
+  "open_bb": 3.0,
+  "parent": "s30",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.4143,
+  "tv_max": 1.0,
+  "tv_max_class": "Q2o",
+  "share_classes_tv_gt_10pp": 0.5234,
+  "signed_parent_minus_loop": {
+   "fold": -0.2746,
+   "call": 0.1917,
+   "r3": 0.0168,
+   "jam": 0.0662
+  },
+  "mix_loop": {
+   "fold": 0.2764,
+   "call": 0.6689,
+   "r3": 0.0159,
+   "jam": 0.0388
+  },
+  "mix_parent": {
+   "fold": 0.0018,
+   "call": 0.8606,
+   "r3": 0.0327,
+   "jam": 0.105
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.6601,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2155,
+     "r3": 0.1013,
+     "jam": 0.1141
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.5105,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.3841,
+     "r3": 0.1106,
+     "jam": 0.2735
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.7056,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.7056,
+     "r3": 0.0915,
+     "jam": 0.6141
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.2124,
+    "signed": {
+     "fold": -0.0668,
+     "call": -0.0751,
+     "r3": 0.0028,
+     "jam": 0.1391
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.226,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1108,
+     "r3": 0.0234,
+     "jam": 0.0874
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1542,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1542,
+     "r3": 0.0221,
+     "jam": 0.1322
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5026,
+    "signed": {
+     "fold": -0.4835,
+     "call": 0.4881,
+     "r3": 0.0017,
+     "jam": -0.0063
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.997,
+     "r3": 0.003,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.996,
+     "r3": 0.004,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.998,
+     "r3": 0.002,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.995,
+     "r3": 0.004,
+     "jam": 0.0
+    }
+   ],
+   [
+    "96o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.998,
+     "r3": 0.002,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T6o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.997,
+     "r3": 0.003,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72s",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.996,
+     "r3": 0.004,
+     "jam": 0.0
+    }
+   ],
+   [
+    "87o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.997,
+     "r3": 0.003,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.978,
+     "r3": 0.022,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82s",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.997,
+     "r3": 0.003,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.986,
+     "r3": 0.013,
+     "jam": 0.001
+    }
+   ],
+   [
+    "99",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -1.0,
+     "r3": 0.042,
+     "jam": 0.958
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_utg1_vs_bb",
+  "stack": 30,
+  "opener": "UTG+1",
+  "open_bb": 2.0,
+  "parent": "s30",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3503,
+  "tv_max": 1.0,
+  "tv_max_class": "92o",
+  "share_classes_tv_gt_10pp": 0.457,
+  "signed_parent_minus_loop": {
+   "fold": -0.2836,
+   "call": 0.2804,
+   "r3": -0.0318,
+   "jam": 0.035
+  },
+  "mix_loop": {
+   "fold": 0.2839,
+   "call": 0.6667,
+   "r3": 0.0493,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0003,
+   "call": 0.9471,
+   "r3": 0.0175,
+   "jam": 0.035
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.3995,
+    "signed": {
+     "fold": -0.0676,
+     "call": -0.012,
+     "r3": -0.1436,
+     "jam": 0.2233
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.11,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0958,
+     "r3": -0.001,
+     "jam": 0.0967
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.4113,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.4113,
+     "r3": 0.0002,
+     "jam": 0.411
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1087,
+    "signed": {
+     "fold": -0.0792,
+     "call": 0.067,
+     "r3": -0.0083,
+     "jam": 0.0204
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.158,
+    "signed": {
+     "fold": 0.0002,
+     "call": 0.0154,
+     "r3": -0.082,
+     "jam": 0.0663
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1812,
+    "signed": {
+     "fold": -0.1668,
+     "call": 0.1798,
+     "r3": -0.0138,
+     "jam": 0.0007
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4948,
+    "signed": {
+     "fold": -0.4719,
+     "call": 0.4944,
+     "r3": -0.0225,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T4o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T6o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": -0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_utg2_vs_bb",
+  "stack": 30,
+  "opener": "UTG+2",
+  "open_bb": 2.0,
+  "parent": "s30",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3446,
+  "tv_max": 1.0,
+  "tv_max_class": "32o",
+  "share_classes_tv_gt_10pp": 0.451,
+  "signed_parent_minus_loop": {
+   "fold": -0.2575,
+   "call": 0.2572,
+   "r3": -0.0535,
+   "jam": 0.0538
+  },
+  "mix_loop": {
+   "fold": 0.2575,
+   "call": 0.6827,
+   "r3": 0.0566,
+   "jam": 0.0031
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.94,
+   "r3": 0.0031,
+   "jam": 0.0569
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.4671,
+    "signed": {
+     "fold": -0.0241,
+     "call": 0.0532,
+     "r3": -0.3696,
+     "jam": 0.3406
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.1792,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1215,
+     "r3": -0.0382,
+     "jam": 0.1597
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.4951,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.4951,
+     "r3": 0.0002,
+     "jam": 0.4949
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1194,
+    "signed": {
+     "fold": -0.0583,
+     "call": 0.0103,
+     "r3": -0.0065,
+     "jam": 0.0545
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.205,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0797,
+     "r3": -0.1606,
+     "jam": 0.081
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1084,
+    "signed": {
+     "fold": -0.0834,
+     "call": 0.0933,
+     "r3": -0.0176,
+     "jam": 0.0077
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4639,
+    "signed": {
+     "fold": -0.4439,
+     "call": 0.4639,
+     "r3": -0.02,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T4o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p30_flat_utg_vs_bb",
+  "stack": 30,
+  "opener": "UTG",
+  "open_bb": 2.0,
+  "parent": "s30",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3747,
+  "tv_max": 1.0,
+  "tv_max_class": "32o",
+  "share_classes_tv_gt_10pp": 0.4691,
+  "signed_parent_minus_loop": {
+   "fold": -0.3096,
+   "call": 0.3071,
+   "r3": -0.0369,
+   "jam": 0.0393
+  },
+  "mix_loop": {
+   "fold": 0.3097,
+   "call": 0.6449,
+   "r3": 0.0453,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0001,
+   "call": 0.9521,
+   "r3": 0.0084,
+   "jam": 0.0394
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.4268,
+    "signed": {
+     "fold": -0.0768,
+     "call": -0.007,
+     "r3": -0.2127,
+     "jam": 0.2965
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.119,
+    "signed": {
+     "fold": 0.0002,
+     "call": -0.119,
+     "r3": 0.0116,
+     "jam": 0.1073
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.2972,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2973,
+     "r3": 0.0001,
+     "jam": 0.2971
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1149,
+    "signed": {
+     "fold": -0.083,
+     "call": 0.0683,
+     "r3": -0.0083,
+     "jam": 0.023
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1579,
+    "signed": {
+     "fold": 0.0002,
+     "call": 0.0273,
+     "r3": -0.1056,
+     "jam": 0.0781
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.2652,
+    "signed": {
+     "fold": -0.2495,
+     "call": 0.2649,
+     "r3": -0.0154,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5297,
+    "signed": {
+     "fold": -0.5093,
+     "call": 0.5295,
+     "r3": -0.0203,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "22",
+    1.0,
+    {
+     "fold": -0.999,
+     "call": 1.0,
+     "r3": -0.0,
+     "jam": -0.001
+    }
+   ],
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -0.823,
+     "call": 1.0,
+     "r3": -0.177,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T4o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_btn_vs_bb",
+  "stack": 40,
+  "opener": "BTN",
+  "open_bb": 2.0,
+  "parent": "s40",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.2421,
+  "tv_max": 1.0,
+  "tv_max_class": "72o",
+  "share_classes_tv_gt_10pp": 0.3575,
+  "signed_parent_minus_loop": {
+   "fold": -0.0888,
+   "call": 0.0857,
+   "r3": -0.0425,
+   "jam": 0.0455
+  },
+  "mix_loop": {
+   "fold": 0.0888,
+   "call": 0.769,
+   "r3": 0.0778,
+   "jam": 0.0644
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8548,
+   "r3": 0.0354,
+   "jam": 0.1099
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5422,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0868,
+     "r3": -0.3345,
+     "jam": 0.4213
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.3907,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2275,
+     "r3": 0.0268,
+     "jam": 0.2006
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.7649,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.7649,
+     "r3": 0.0004,
+     "jam": 0.7645
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1279,
+    "signed": {
+     "fold": -0.0,
+     "call": -0.0706,
+     "r3": -0.0284,
+     "jam": 0.099
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2195,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0535,
+     "r3": 0.098,
+     "jam": -0.0445
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1206,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0799,
+     "r3": 0.0147,
+     "jam": -0.0947
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.237,
+    "signed": {
+     "fold": -0.1635,
+     "call": 0.2342,
+     "r3": -0.0554,
+     "jam": -0.0154
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -0.95,
+     "call": 1.0,
+     "r3": -0.05,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    0.999,
+    {
+     "fold": -0.0,
+     "call": 0.999,
+     "r3": -0.999,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    0.999,
+    {
+     "fold": -0.849,
+     "call": 0.999,
+     "r3": -0.149,
+     "jam": 0.0
+    }
+   ],
+   [
+    "99",
+    0.999,
+    {
+     "fold": 0.0,
+     "call": 0.0,
+     "r3": -0.999,
+     "jam": 0.999
+    }
+   ],
+   [
+    "AJs",
+    0.999,
+    {
+     "fold": 0.0,
+     "call": -0.999,
+     "r3": 0.997,
+     "jam": 0.002
+    }
+   ],
+   [
+    "33",
+    0.998,
+    {
+     "fold": 0.0,
+     "call": 0.018,
+     "r3": -0.998,
+     "jam": 0.98
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_btn_vs_bb_o25",
+  "stack": 40,
+  "opener": "BTN",
+  "open_bb": 2.5,
+  "parent": "chart_40bb_open25_parent",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.3512,
+  "tv_max": 1.0,
+  "tv_max_class": "32o",
+  "share_classes_tv_gt_10pp": 0.4027,
+  "signed_parent_minus_loop": {
+   "fold": -0.2029,
+   "call": 0.189,
+   "r3": -0.0633,
+   "jam": 0.0771
+  },
+  "mix_loop": {
+   "fold": 0.2029,
+   "call": 0.6619,
+   "r3": 0.0642,
+   "jam": 0.071
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8509,
+   "r3": 0.0009,
+   "jam": 0.1482
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.6388,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2523,
+     "r3": -0.386,
+     "jam": 0.6384
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.3185,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1508,
+     "r3": -0.1637,
+     "jam": 0.3145
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.7035,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.694,
+     "r3": -0.0092,
+     "jam": 0.7032
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1814,
+    "signed": {
+     "fold": -0.0501,
+     "call": -0.0548,
+     "r3": -0.0131,
+     "jam": 0.118
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1133,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0976,
+     "r3": -0.0582,
+     "jam": -0.0394
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1687,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0226,
+     "r3": 0.002,
+     "jam": 0.0207
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4328,
+    "signed": {
+     "fold": -0.3569,
+     "call": 0.4097,
+     "r3": -0.0477,
+     "jam": -0.005
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "42o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "33",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -0.999,
+     "r3": -0.0,
+     "jam": 1.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_co_vs_bb",
+  "stack": 40,
+  "opener": "CO",
+  "open_bb": 2.0,
+  "parent": "s40",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.2563,
+  "tv_max": 1.0,
+  "tv_max_class": "72o",
+  "share_classes_tv_gt_10pp": 0.3379,
+  "signed_parent_minus_loop": {
+   "fold": -0.1265,
+   "call": 0.1207,
+   "r3": -0.0347,
+   "jam": 0.0406
+  },
+  "mix_loop": {
+   "fold": 0.1267,
+   "call": 0.7723,
+   "r3": 0.0759,
+   "jam": 0.0251
+  },
+  "mix_parent": {
+   "fold": 0.0002,
+   "call": 0.893,
+   "r3": 0.0412,
+   "jam": 0.0656
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5736,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0939,
+     "r3": -0.1189,
+     "jam": 0.2128
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2976,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2149,
+     "r3": 0.0974,
+     "jam": 0.1175
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.6341,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.6141,
+     "r3": 0.0161,
+     "jam": 0.5979
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0347,
+    "signed": {
+     "fold": 0.0004,
+     "call": -0.0346,
+     "r3": -0.0,
+     "jam": 0.0342
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.3134,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0145,
+     "r3": -0.0572,
+     "jam": 0.0716
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1043,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0188,
+     "r3": 0.0398,
+     "jam": -0.021
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.2842,
+    "signed": {
+     "fold": -0.2331,
+     "call": 0.2835,
+     "r3": -0.0507,
+     "jam": 0.0003
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K8o",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "AQo",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -1.0,
+     "r3": 0.715,
+     "jam": 0.285
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_co_vs_bb_o25",
+  "stack": 40,
+  "opener": "CO",
+  "open_bb": 2.5,
+  "parent": "chart_40bb_open25_parent",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3988,
+  "tv_max": 1.0,
+  "tv_max_class": "32o",
+  "share_classes_tv_gt_10pp": 0.5038,
+  "signed_parent_minus_loop": {
+   "fold": -0.2843,
+   "call": 0.2711,
+   "r3": -0.0553,
+   "jam": 0.0685
+  },
+  "mix_loop": {
+   "fold": 0.2843,
+   "call": 0.6242,
+   "r3": 0.0573,
+   "jam": 0.0342
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8952,
+   "r3": 0.002,
+   "jam": 0.1027
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.6558,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1204,
+     "r3": -0.3547,
+     "jam": 0.4751
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.1798,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0567,
+     "r3": -0.1108,
+     "jam": 0.1674
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.5207,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.5105,
+     "r3": -0.0058,
+     "jam": 0.5162
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.178,
+    "signed": {
+     "fold": -0.0921,
+     "call": 0.0337,
+     "r3": -0.0116,
+     "jam": 0.07
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.207,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0349,
+     "r3": -0.1131,
+     "jam": 0.0782
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.136,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0449,
+     "r3": -0.0276,
+     "jam": 0.0725
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5197,
+    "signed": {
+     "fold": -0.4929,
+     "call": 0.5194,
+     "r3": -0.0266,
+     "jam": 0.0001
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "42o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T4o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_hj_vs_bb",
+  "stack": 40,
+  "opener": "HJ",
+  "open_bb": 2.0,
+  "parent": "s40",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.2551,
+  "tv_max": 0.9998,
+  "tv_max_class": "AQs",
+  "share_classes_tv_gt_10pp": 0.368,
+  "signed_parent_minus_loop": {
+   "fold": -0.1464,
+   "call": 0.1482,
+   "r3": -0.0292,
+   "jam": 0.0274
+  },
+  "mix_loop": {
+   "fold": 0.1469,
+   "call": 0.7666,
+   "r3": 0.0726,
+   "jam": 0.0139
+  },
+  "mix_parent": {
+   "fold": 0.0005,
+   "call": 0.9148,
+   "r3": 0.0434,
+   "jam": 0.0413
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.4173,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0279,
+     "r3": -0.0695,
+     "jam": 0.0974
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.287,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2278,
+     "r3": 0.1317,
+     "jam": 0.0961
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.5119,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.512,
+     "r3": 0.0057,
+     "jam": 0.5062
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0791,
+    "signed": {
+     "fold": -0.0309,
+     "call": 0.0265,
+     "r3": -0.0216,
+     "jam": 0.0259
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2716,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0348,
+     "r3": -0.0142,
+     "jam": 0.0489
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.042,
+    "signed": {
+     "fold": 0.0001,
+     "call": 0.0365,
+     "r3": -0.018,
+     "jam": -0.0187
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.3035,
+    "signed": {
+     "fold": -0.2593,
+     "call": 0.3026,
+     "r3": -0.0434,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "AQs",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -1.0,
+     "r3": 0.971,
+     "jam": 0.029
+    }
+   ],
+   [
+    "82o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    0.999,
+    {
+     "fold": -0.8,
+     "call": 0.999,
+     "r3": -0.199,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    0.999,
+    {
+     "fold": -0.996,
+     "call": 0.999,
+     "r3": -0.003,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    0.999,
+    {
+     "fold": -0.5,
+     "call": 0.999,
+     "r3": -0.499,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_lj_vs_bb",
+  "stack": 40,
+  "opener": "LJ",
+  "open_bb": 2.0,
+  "parent": "s40",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.2891,
+  "tv_max": 0.9996,
+  "tv_max_class": "98o",
+  "share_classes_tv_gt_10pp": 0.4208,
+  "signed_parent_minus_loop": {
+   "fold": -0.1974,
+   "call": 0.187,
+   "r3": -0.0171,
+   "jam": 0.0275
+  },
+  "mix_loop": {
+   "fold": 0.198,
+   "call": 0.7394,
+   "r3": 0.0585,
+   "jam": 0.0041
+  },
+  "mix_parent": {
+   "fold": 0.0006,
+   "call": 0.9264,
+   "r3": 0.0414,
+   "jam": 0.0316
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.3716,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1534,
+     "r3": 0.0413,
+     "jam": 0.112
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2319,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.1995,
+     "r3": 0.1149,
+     "jam": 0.0846
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.4558,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.4558,
+     "r3": 0.0181,
+     "jam": 0.4377
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0766,
+    "signed": {
+     "fold": -0.0419,
+     "call": 0.039,
+     "r3": -0.0156,
+     "jam": 0.0184
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2624,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0249,
+     "r3": -0.0334,
+     "jam": 0.0582
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1099,
+    "signed": {
+     "fold": 0.0001,
+     "call": 0.0989,
+     "r3": -0.1043,
+     "jam": 0.0052
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.3725,
+    "signed": {
+     "fold": -0.3496,
+     "call": 0.3716,
+     "r3": -0.022,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    0.999,
+    {
+     "fold": -0.909,
+     "call": 0.999,
+     "r3": -0.09,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": -0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2s",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_sb_vs_bb",
+  "stack": 40,
+  "opener": "SB",
+  "open_bb": 3.0,
+  "parent": "s40",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3738,
+  "tv_max": 1.0,
+  "tv_max_class": "32o",
+  "share_classes_tv_gt_10pp": 0.5158,
+  "signed_parent_minus_loop": {
+   "fold": -0.2392,
+   "call": 0.172,
+   "r3": 0.0188,
+   "jam": 0.0485
+  },
+  "mix_loop": {
+   "fold": 0.2392,
+   "call": 0.6957,
+   "r3": 0.0471,
+   "jam": 0.0179
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8677,
+   "r3": 0.0659,
+   "jam": 0.0664
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5184,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2531,
+     "r3": 0.2709,
+     "jam": -0.0177
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.4056,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2595,
+     "r3": 0.1796,
+     "jam": 0.0798
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.5953,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.5952,
+     "r3": 0.045,
+     "jam": 0.5503
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1535,
+    "signed": {
+     "fold": -0.0581,
+     "call": -0.0301,
+     "r3": -0.0017,
+     "jam": 0.0899
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2707,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2303,
+     "r3": 0.0872,
+     "jam": 0.1431
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1446,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1446,
+     "r3": 0.055,
+     "jam": 0.0896
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4656,
+    "signed": {
+     "fold": -0.4212,
+     "call": 0.4518,
+     "r3": -0.0306,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.886,
+     "r3": 0.114,
+     "jam": 0.0
+    }
+   ],
+   [
+    "42o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.99,
+     "r3": 0.01,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.829,
+     "r3": 0.171,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.989,
+     "r3": 0.011,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.999,
+     "r3": 0.001,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.998,
+     "r3": 0.002,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.972,
+     "r3": 0.029,
+     "jam": 0.0
+    }
+   ],
+   [
+    "73o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 0.998,
+     "r3": 0.002,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_utg1_vs_bb",
+  "stack": 40,
+  "opener": "UTG+1",
+  "open_bb": 2.0,
+  "parent": "s40",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3777,
+  "tv_max": 0.9997,
+  "tv_max_class": "22",
+  "share_classes_tv_gt_10pp": 0.4585,
+  "signed_parent_minus_loop": {
+   "fold": -0.3162,
+   "call": 0.3091,
+   "r3": -0.0048,
+   "jam": 0.0118
+  },
+  "mix_loop": {
+   "fold": 0.3168,
+   "call": 0.6407,
+   "r3": 0.0425,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0006,
+   "call": 0.9498,
+   "r3": 0.0377,
+   "jam": 0.0118
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.3551,
+    "signed": {
+     "fold": -0.0767,
+     "call": -0.1322,
+     "r3": 0.1259,
+     "jam": 0.083
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.145,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.145,
+     "r3": 0.084,
+     "jam": 0.0608
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.0238,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0239,
+     "r3": 0.0,
+     "jam": 0.0237
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1095,
+    "signed": {
+     "fold": -0.0846,
+     "call": 0.0955,
+     "r3": -0.0176,
+     "jam": 0.0065
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1879,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0486,
+     "r3": 0.0197,
+     "jam": 0.0287
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.3116,
+    "signed": {
+     "fold": -0.1661,
+     "call": 0.3114,
+     "r3": -0.1453,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5414,
+    "signed": {
+     "fold": -0.5293,
+     "call": 0.5408,
+     "r3": -0.0116,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "22",
+    1.0,
+    {
+     "fold": -0.997,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": -0.003
+    }
+   ],
+   [
+    "98o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "32o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T4o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_utg2_vs_bb",
+  "stack": 40,
+  "opener": "UTG+2",
+  "open_bb": 2.0,
+  "parent": "s40",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3273,
+  "tv_max": 1.0,
+  "tv_max_class": "98o",
+  "share_classes_tv_gt_10pp": 0.4299,
+  "signed_parent_minus_loop": {
+   "fold": -0.2494,
+   "call": 0.2363,
+   "r3": -0.0055,
+   "jam": 0.0185
+  },
+  "mix_loop": {
+   "fold": 0.2494,
+   "call": 0.7013,
+   "r3": 0.0488,
+   "jam": 0.0004
+  },
+  "mix_parent": {
+   "fold": 0.0001,
+   "call": 0.9377,
+   "r3": 0.0433,
+   "jam": 0.0189
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.3307,
+    "signed": {
+     "fold": -0.0003,
+     "call": -0.2284,
+     "r3": 0.1361,
+     "jam": 0.0925
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.1267,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.1038,
+     "r3": 0.0664,
+     "jam": 0.0373
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.3398,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.3398,
+     "r3": 0.0742,
+     "jam": 0.2655
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0965,
+    "signed": {
+     "fold": -0.0609,
+     "call": 0.067,
+     "r3": -0.0207,
+     "jam": 0.0146
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.2305,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.0627,
+     "r3": 0.0237,
+     "jam": 0.0389
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1083,
+    "signed": {
+     "fold": -0.007,
+     "call": 0.1048,
+     "r3": -0.0978,
+     "jam": -0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4581,
+    "signed": {
+     "fold": -0.4382,
+     "call": 0.458,
+     "r3": -0.0198,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T4o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p40_flat_utg_vs_bb",
+  "stack": 40,
+  "opener": "UTG",
+  "open_bb": 2.0,
+  "parent": "s40",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.3727,
+  "tv_max": 0.9999,
+  "tv_max_class": "32o",
+  "share_classes_tv_gt_10pp": 0.4736,
+  "signed_parent_minus_loop": {
+   "fold": -0.3171,
+   "call": 0.309,
+   "r3": 0.0017,
+   "jam": 0.0064
+  },
+  "mix_loop": {
+   "fold": 0.3172,
+   "call": 0.6478,
+   "r3": 0.0349,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0001,
+   "call": 0.9568,
+   "r3": 0.0366,
+   "jam": 0.0064
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.3762,
+    "signed": {
+     "fold": -0.0769,
+     "call": -0.1227,
+     "r3": 0.1491,
+     "jam": 0.0504
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.1182,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.1182,
+     "r3": 0.0722,
+     "jam": 0.0459
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.0817,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0817,
+     "r3": 0.0811,
+     "jam": 0.0005
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1076,
+    "signed": {
+     "fold": -0.0837,
+     "call": 0.0887,
+     "r3": -0.0147,
+     "jam": 0.0096
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.1663,
+    "signed": {
+     "fold": -0.0356,
+     "call": -0.0046,
+     "r3": 0.0398,
+     "jam": 0.0004
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.2129,
+    "signed": {
+     "fold": -0.1619,
+     "call": 0.1975,
+     "r3": -0.0356,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5446,
+    "signed": {
+     "fold": -0.5245,
+     "call": 0.5445,
+     "r3": -0.02,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "22",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": -0.0
+    }
+   ],
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "42o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "73o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p60_flat_btn_vs_bb_o25",
+  "stack": 60,
+  "opener": "BTN",
+  "open_bb": 2.5,
+  "parent": "s60(open25)",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.3762,
+  "tv_max": 1.0,
+  "tv_max_class": "J2o",
+  "share_classes_tv_gt_10pp": 0.4525,
+  "signed_parent_minus_loop": {
+   "fold": -0.1929,
+   "call": 0.2047,
+   "r3": -0.0588,
+   "jam": 0.047
+  },
+  "mix_loop": {
+   "fold": 0.1929,
+   "call": 0.6544,
+   "r3": 0.1335,
+   "jam": 0.0192
+  },
+  "mix_parent": {
+   "fold": 0.0,
+   "call": 0.8591,
+   "r3": 0.0747,
+   "jam": 0.0662
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.512,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.1344,
+     "r3": -0.0351,
+     "jam": 0.1695
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.3438,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2631,
+     "r3": 0.1825,
+     "jam": 0.0806
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.673,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.5065,
+     "r3": -0.0844,
+     "jam": 0.5909
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1317,
+    "signed": {
+     "fold": -0.05,
+     "call": -0.0227,
+     "r3": -0.0044,
+     "jam": 0.077
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.5593,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0601,
+     "r3": -0.1719,
+     "jam": 0.1117
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1165,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0305,
+     "r3": 0.0793,
+     "jam": -0.0487
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4246,
+    "signed": {
+     "fold": -0.3386,
+     "call": 0.4246,
+     "r3": -0.086,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "32o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "62o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "A4o",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T5o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p60_flat_co_vs_bb_o25",
+  "stack": 60,
+  "opener": "CO",
+  "open_bb": 2.5,
+  "parent": "s60(open25)",
+  "loop_status": "converged_final_step",
+  "loop_converged": true,
+  "combos": 1326.0,
+  "tv_mean": 0.3733,
+  "tv_max": 0.9996,
+  "tv_max_class": "K2o",
+  "share_classes_tv_gt_10pp": 0.4872,
+  "signed_parent_minus_loop": {
+   "fold": -0.2324,
+   "call": 0.2336,
+   "r3": -0.0188,
+   "jam": 0.0175
+  },
+  "mix_loop": {
+   "fold": 0.2329,
+   "call": 0.662,
+   "r3": 0.0941,
+   "jam": 0.011
+  },
+  "mix_parent": {
+   "fold": 0.0005,
+   "call": 0.8956,
+   "r3": 0.0754,
+   "jam": 0.0285
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.4961,
+    "signed": {
+     "fold": 0.0,
+     "call": 0.0052,
+     "r3": 0.0526,
+     "jam": -0.0579
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2655,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.2551,
+     "r3": 0.2415,
+     "jam": 0.0136
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.5141,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.5141,
+     "r3": 0.073,
+     "jam": 0.4411
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.0978,
+    "signed": {
+     "fold": -0.0715,
+     "call": 0.0459,
+     "r3": 0.0002,
+     "jam": 0.0254
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.4271,
+    "signed": {
+     "fold": 0.0,
+     "call": -0.0768,
+     "r3": 0.0014,
+     "jam": 0.0754
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.3127,
+    "signed": {
+     "fold": 0.0001,
+     "call": 0.1494,
+     "r3": -0.1426,
+     "jam": -0.0069
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.4495,
+    "signed": {
+     "fold": -0.4041,
+     "call": 0.449,
+     "r3": -0.0449,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "K2o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "72o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "82o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "92o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T3o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "44",
+    0.999,
+    {
+     "fold": 0.0,
+     "call": 0.997,
+     "r3": -0.999,
+     "jam": 0.002
+    }
+   ],
+   [
+    "T4o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p60_flat_hj_vs_bb_o25",
+  "stack": 60,
+  "opener": "HJ",
+  "open_bb": 2.5,
+  "parent": "s60(open25)",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.4276,
+  "tv_max": 0.9998,
+  "tv_max_class": "99",
+  "share_classes_tv_gt_10pp": 0.5415,
+  "signed_parent_minus_loop": {
+   "fold": -0.3194,
+   "call": 0.3028,
+   "r3": 0.0044,
+   "jam": 0.0122
+  },
+  "mix_loop": {
+   "fold": 0.3215,
+   "call": 0.6109,
+   "r3": 0.0675,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0022,
+   "call": 0.9137,
+   "r3": 0.0719,
+   "jam": 0.0122
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.487,
+    "signed": {
+     "fold": -0.0384,
+     "call": -0.1543,
+     "r3": 0.1413,
+     "jam": 0.0514
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.2213,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.2212,
+     "r3": 0.2171,
+     "jam": 0.0041
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.3688,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.3688,
+     "r3": 0.1401,
+     "jam": 0.2285
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.158,
+    "signed": {
+     "fold": -0.0992,
+     "call": 0.1471,
+     "r3": -0.0528,
+     "jam": 0.0049
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.3469,
+    "signed": {
+     "fold": -0.0321,
+     "call": -0.1013,
+     "r3": 0.0971,
+     "jam": 0.0364
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.1252,
+    "signed": {
+     "fold": -0.0,
+     "call": 0.0142,
+     "r3": -0.0145,
+     "jam": 0.0004
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.5731,
+    "signed": {
+     "fold": -0.5446,
+     "call": 0.5712,
+     "r3": -0.0267,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "33",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": 1.0,
+     "r3": -1.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "99",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -1.0,
+     "r3": 0.986,
+     "jam": 0.014
+    }
+   ],
+   [
+    "K2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K5o",
+    0.999,
+    {
+     "fold": -0.509,
+     "call": 0.999,
+     "r3": -0.49,
+     "jam": 0.0
+    }
+   ],
+   [
+    "87o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T7o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q8o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K8o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J9o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "T2s",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J2s",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ },
+ {
+  "id": "p60_flat_lj_vs_bb_o25",
+  "stack": 60,
+  "opener": "LJ",
+  "open_bb": 2.5,
+  "parent": "s60(open25)",
+  "loop_status": "mean_of_last_2_steps",
+  "loop_converged": false,
+  "combos": 1326.0,
+  "tv_mean": 0.4683,
+  "tv_max": 1.0,
+  "tv_max_class": "K8o",
+  "share_classes_tv_gt_10pp": 0.5792,
+  "signed_parent_minus_loop": {
+   "fold": -0.379,
+   "call": 0.3655,
+   "r3": 0.0116,
+   "jam": 0.0019
+  },
+  "mix_loop": {
+   "fold": 0.3799,
+   "call": 0.5625,
+   "r3": 0.0576,
+   "jam": 0.0
+  },
+  "mix_parent": {
+   "fold": 0.0009,
+   "call": 0.928,
+   "r3": 0.0693,
+   "jam": 0.0019
+  },
+  "by_group": {
+   "pair": {
+    "combos": 78.0,
+    "tv_mean": 0.5166,
+    "signed": {
+     "fold": -0.0769,
+     "call": -0.1557,
+     "r3": 0.2174,
+     "jam": 0.0151
+    }
+   },
+   "Axs": {
+    "combos": 48.0,
+    "tv_mean": 0.1607,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.1597,
+     "r3": 0.1573,
+     "jam": 0.0023
+    }
+   },
+   "suited_broadway": {
+    "combos": 24.0,
+    "tv_mean": 0.2323,
+    "signed": {
+     "fold": 0.0001,
+     "call": -0.2323,
+     "r3": 0.2205,
+     "jam": 0.0117
+    }
+   },
+   "suited_other": {
+    "combos": 240.0,
+    "tv_mean": 0.1852,
+    "signed": {
+     "fold": -0.1075,
+     "call": 0.1799,
+     "r3": -0.0747,
+     "jam": 0.0023
+    }
+   },
+   "Axo": {
+    "combos": 144.0,
+    "tv_mean": 0.3491,
+    "signed": {
+     "fold": -0.0831,
+     "call": 0.029,
+     "r3": 0.0515,
+     "jam": 0.0026
+    }
+   },
+   "offsuit_broadway": {
+    "combos": 72.0,
+    "tv_mean": 0.3526,
+    "signed": {
+     "fold": -0.2497,
+     "call": 0.2193,
+     "r3": 0.0304,
+     "jam": 0.0
+    }
+   },
+   "offsuit_other": {
+    "combos": 720.0,
+    "tv_mean": 0.6211,
+    "signed": {
+     "fold": -0.6122,
+     "call": 0.6206,
+     "r3": -0.0084,
+     "jam": 0.0
+    }
+   }
+  },
+  "worst_classes": [
+   [
+    "22",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "98o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K8o",
+    1.0,
+    {
+     "fold": -1.0,
+     "call": 1.0,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "TT",
+    1.0,
+    {
+     "fold": 0.0,
+     "call": -1.0,
+     "r3": 0.989,
+     "jam": 0.011
+    }
+   ],
+   [
+    "K2o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "A2o",
+    0.999,
+    {
+     "fold": -0.998,
+     "call": 0.999,
+     "r3": -0.001,
+     "jam": 0.0
+    }
+   ],
+   [
+    "33",
+    0.999,
+    {
+     "fold": 0.0,
+     "call": 0.999,
+     "r3": -0.999,
+     "jam": 0.0
+    }
+   ],
+   [
+    "85o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "95o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "J5o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "Q5o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ],
+   [
+    "K5o",
+    0.999,
+    {
+     "fold": -0.999,
+     "call": 0.999,
+     "r3": 0.0,
+     "jam": 0.0
+    }
+   ]
+  ]
+ }
+]
