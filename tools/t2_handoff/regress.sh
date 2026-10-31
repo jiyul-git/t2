@@ -11,6 +11,9 @@ echo "range sync ok"
 # 첫 진입 GTO × 머니점프 합성·자리 기준 BF(2026-10-31). 실패하면 바로 멈춘다.
 python3 tools/verify_money_compose.py > /dev/null 2>&1 || { echo "MONEY_COMPOSE_FAIL: python3 tools/verify_money_compose.py"; exit 1; }
 echo "money compose ok"
+# 프리플랍 개인 층(GTO 표 → 그 사람의 빈도) 보장(2026-10-31). 실패하면 바로 멈춘다.
+python3 tools/verify_pf_personal.py > /dev/null 2>&1 || { echo "PF_PERSONAL_FAIL: python3 tools/verify_pf_personal.py"; exit 1; }
+echo "pf personal ok"
 for t in tools/verify_core_p7_cold_reraise.py tools/verify_core_p7_observation.py tools/verify_core_multiway_reads.py \
   tools/verify_core_joint_nut.py tools/verify_core_sizing_ownership.py tools/verify_preflop_closure.py \
   tools/verify_human_model_v3.py tools/verify_human_model_v3_runtime.py tools/verify_human_model_v3_integration.py \
