@@ -126,7 +126,10 @@ def _classify(k):
     if rl == 1 and acted:
         return 'limper_vs_raise', eff, agg, _sz(obb)             # 내가 림프 → 뒤에서 레이즈
     if rl == 2 and acted:
-        return ('vs_3bet' if not others else 'vs_3bet_multi'), eff, agg, _sz(obb)
+        # 3벳 받은 오프너: 내 오픈 = 지금 금액 - 콜할 금액. 크기 키 = 'o<오픈>:3b<3벳>'(배수는 순위 단계에서 계산)
+        own_open = max(0.0, obb - tc)
+        return (('vs_3bet' if not others else 'vs_3bet_multi'), eff, agg,
+                'o%s:3b%s' % (_sz(own_open), _sz(obb)))
     if rl == 2:
         return 'cold_vs_3bet', eff, agg, _sz(obb)                # 행동 안 한 채로 오픈+3벳을 받음
     if rl == 3 and acted:
@@ -168,6 +171,10 @@ def _record(k, looks, out):
     icm = (float(k.get('bf') or 1.0) > PF.GTO_PF_BF_MAX
            or (sit == 'first_in' and not PF._gto_pf_icm_free(k.get('bf'), k.get('money_open'))))
     act = out[0] if out else None
+    full3_key = False
+    if sit == 'vs_3bet' and agg is not None:
+        key3 = '%s>%s' % (_p9(k['pos'], seats), _p9(agg, seats))
+        full3_key = any(key3 in e for e in (G._load().get('vs_3bet_full') or {}).values())
     tbl = None                    # 첫 진입: 관문(ICM·머니점프)과 상관없이 표에 값이 있는가
     if sit == 'first_in':
         tbl = G.first_in(k['pos'], seats, eff, k['hand'], k.get('ante', True)) is not None
@@ -180,6 +187,8 @@ def _record(k, looks, out):
         r[src] += w
         if src == 'partial':
             r['pass_w'] += w * pass_w
+        if sit == 'vs_3bet' and src != 'full' and full3_key:
+            r['full_key_but_unused'] += w          # 짝 기록은 있는데 크기 창·버킷·클래스 때문에 못 씀
         if icm:
             r['icm'] += w
         if tbl is not None:
