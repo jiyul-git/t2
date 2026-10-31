@@ -8,6 +8,8 @@ PREC_CALC_ROOT = a checkout of the spot's calculation branch (tools/gto_spot, to
 touches the T2 runtime (gto_pf_data.json): it computes and records only.
 
 Start: the 24-board loop's final state (state.json of the quick run: tables + matrices after its last step; PREC_START overrides the path).
+PREC_START=fresh: a new spot without a quick run -> step 0 uses the static continuation and never passes (minimum one update), then the
+precision rule from step 1; default PREC_MAX_STEPS 4 and no stage pause; not passed -> no record to connect.
 Step k (work dir /home/user/gto_ckpt/precision/<id>/s<k>/):
   spot solve with the current tables -> terminal ranges -> every terminal solved on panel A (72) and panel B (72)
   (data/gto_precision/panels, pairwise disjoint and disjoint from panel_v1; same flop solver target as quick, CFR+ retry of
@@ -45,8 +47,11 @@ PANELS = os.environ.get('PREC_PANELS') or os.path.join(REPO, 'data/gto_precision
 TEST = os.environ.get('PREC_TEST') == '1'   # plumbing test only: tiny panels / budgets, solver checks off, output under PREC_WORKDIR
 PANEL_FILE = {'A': os.path.join(PANELS, 'panel_prec_A72.json'), 'B': os.path.join(PANELS, 'panel_prec_B72.json')}
 MAX_STEPS = int(os.environ.get('PREC_MAX_STEPS', '3'))
-STAGE_LIMIT = int(os.environ.get('PREC_STAGE_LIMIT', '1'))
 ALPHA, ALPHA_CYCLE = 0.5, 0.25
+FRESH = os.environ.get('PREC_START') == 'fresh'
+if FRESH and 'PREC_MAX_STEPS' not in os.environ:
+    MAX_STEPS = 4   # fresh spot: step 0 (static) + up to 3 precision updates; the coordinator may set PREC_MAX_STEPS
+STAGE_LIMIT = int(os.environ.get('PREC_STAGE_LIMIT', str(MAX_STEPS) if FRESH else '1'))   # fresh spot: run to the end unless limited
 ROOT_CLASS_PP = 0.05
 ROOT_SHARE_MIN = 0.95
 REACH_FLOOR = 1e-3
@@ -175,13 +180,19 @@ class Prec:
         f = self.dir + 'state.json'
         if os.path.exists(f):
             return json.load(open(f))
+        commit = subprocess.run(['git', '-C', CALC, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+        panels = json.load(open(os.path.join(PANELS, 'MANIFEST.json')))['files']
+        if FRESH:   # new spot: no 24-board state; static continuation at step 0, then the precision panels from the start
+            st = {'k': 0, 'tables': {}, 'matrices': {}, 'history': {}, 'fresh': True,
+                  'start': {'file': None, 'mode': 'fresh (static continuation; precision panels from step 0)', 'calc_commit': commit}, 'panels': panels}
+            self.save_state(st)
+            return st
         src = os.environ.get('PREC_START') or os.path.join(CALC, 'data/gto_spot/plan_a/progress', self.sid, 'state.json')
         st24 = json.load(open(src))
         st = {'k': 0, 'tables': st24['tables'], 'matrices': st24.get('matrices', {}), 'history': {},
-              'start': {'file': os.path.relpath(src, CALC) if src.startswith(CALC) else src, 'sha256': sha(src),
-                        'quick_final_step': st24.get('final_step'), 'quick_converged': st24.get('converged'),
-                        'calc_commit': subprocess.run(['git', '-C', CALC, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()},
-              'panels': json.load(open(os.path.join(PANELS, 'MANIFEST.json')))['files']}
+              'start': {'file': os.path.relpath(src, CALC) if src.startswith(CALC) else src, 'sha256': sha(src), 'mode': 'from the 24-board quick state',
+                        'quick_final_step': st24.get('final_step'), 'quick_converged': st24.get('converged'), 'calc_commit': commit},
+              'panels': panels}
         self.save_state(st)
         return st
 
@@ -340,6 +351,9 @@ class Prec:
                 tr['cycling'] = cyc
                 alphas[line] = ALPHA_CYCLE if cyc else ALPHA
                 tr['alpha_next'] = alphas[line]
+            if st.get('fresh') and k == 0:
+                rep['pass'] = False   # fresh spot: step 0 was solved against the static continuation -> minimum one update (as the quick loop)
+                rep['fresh_step0'] = True
             if rep['pass']:
                 rep['decision'] = 'precision_pass: (1) D <= U144 and (2) A/B replication; precision state = A u B values'
                 st.update({'final': 'precision_pass', 'final_step': k})
@@ -385,10 +399,11 @@ class Prec:
         spec = self.spec
         sd = self.dir + f's{k}/'
         rep = json.load(open(sd + 'report.json'))
-        t24 = json.load(open(self.dir + 's0/tables_used.json'))
-        m24 = json.load(open(self.dir + 's0/matrices_used.json'))
+        ref = f's{k}/' if st.get('fresh') else 's0/'   # u_outer reference: the 24-board start state, or (fresh spot) the tables this step used
+        t24 = json.load(open(self.dir + ref + 'tables_used.json'))
+        m24 = json.load(open(self.dir + ref + 'matrices_used.json'))
         out = {'schema': 'precision_check_v1', 'id': self.sid, 'step': k, 'decision': rep['decision'],
-               'status': 'precision' if st.get('final') == 'precision_pass' else 'quick',
+               'status': 'precision' if st.get('final') == 'precision_pass' else ('no_record (fresh spot, precision not passed)' if st.get('fresh') else 'quick'),
                'status_note': None if st.get('final') == 'precision_pass' else
                ('precision check not passed (yet): the quick record stays in use; the values below are the A u B candidate, NOT precision'),
                'standard': 'docs/GTO_PRECISION_PRIORITY_20261030.md section 3; runner docs/GTO_PRECISION_RUNNER.md',

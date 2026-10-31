@@ -9,10 +9,21 @@
 PREC_CALC_ROOT=/home/user/calc PREC_SESSION=session_<내 세션 id> sh tools/gto_precision/run_precision.sh <spot_id>   # 추적 백그라운드, 타임아웃 7200000, PREC_DONE/PREC_PAUSED 나올 때까지 같은 명령 재실행
 ```
 
+### 1.1 새 spot (24보드 quick 상태 없이, precision 패널로 바로 시작)
+```sh
+PREC_START=fresh PREC_CALC_ROOT=/home/user/calc PREC_SESSION=session_<id> sh tools/gto_precision/run_precision.sh <spot_id>
+```
+- 필요한 것: 계산 브랜치의 `data/gto_spot/plan_a/specs/<id>.json`(hu_spot spec, `rule: v4`) + 부모 덤프·승률표 설치. state.json·quick 기록은 필요 없다.
+- 0단계: 정적 연속값(부모 트리 값)으로 spot 을 풀고 끝점마다 A·B 를 푼다 → **0단계는 통과로 치지 않는다**(quick 루프처럼 최소 1회 갱신; 이전 표가 없는 끝점은 A∪B 값을 그대로 받음).
+- 1단계부터 3장 통과 조건 그대로. 기본 최대 4단계(0단계 + 3), 기본으로 끝까지 돈다(`PREC_STAGE_LIMIT` 로 끊을 수 있음, `PREC_MAX_STEPS` 로 바꿀 수 있음 — 코디네이터 결정).
+- 4단계 안에 못 통과 → `precision_failed`(기록 `status: quick` 아님 — 빈 자리이므로 **연결할 값 없음**으로 보고). 평균값을 만들지 않는다.
+- u_outer 기준: 그 단계가 쓴 표(이전 단계 상태).
+- spec 만들기: 기존 `tools/gto_spot/plan_a_flat_specs.py` 등(계산 브랜치)으로 만든 뒤 내 브랜치에 커밋해 두면 다른 세션도 같은 spec 을 쓴다.
+
 ## 2. 준비 (컨테이너 하나, 약 20분)
 1. 이 브랜치(`claude/precision_runner_20261031`)에서 내 브랜치를 판다: `git checkout -b claude/precision_<spot>_<날짜> origin/claude/precision_runner_20261031`. 진행 기록은 **지금 체크아웃된 브랜치**에 커밋·푸시된다(master/test3 이면 거부).
 2. 계산 브랜치(그 spot 의 quick 기록이 있는 브랜치, 예: p100 CO = `claude/resume_p100_flat_20261030`)를 작업 트리로: `git worktree add /home/user/calc origin/<계산 브랜치>`.
-   필요한 것: `data/gto_spot/plan_a/specs/<id>.json`, `data/gto_spot/plan_a/progress/<id>/state.json`(24보드 최종 상태), `data/gto_spot/quick/<id>.json`(바뀐 클래스 비교용).
+   필요한 것(24보드 상태에서 시작할 때): `data/gto_spot/plan_a/specs/<id>.json`, `data/gto_spot/plan_a/progress/<id>/state.json`(24보드 최종 상태), `data/gto_spot/quick/<id>.json`(바뀐 클래스 비교용).
    state.json 이 그 브랜치에 없으면(보관 브랜치 tar 안) 꺼내서 `PREC_START=<경로>` 로 준다.
 3. 솔버: `cd /home/user/calc/vendor/gtopen && cargo build --release -p solver --features t2-cont --example t2_cont_panel`.
 4. Python 3.11 + numpy 2.4.6(3.12+ 는 float 합·해시가 달라짐):
