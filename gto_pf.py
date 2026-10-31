@@ -13,7 +13,8 @@ pf10/15/20/25 와 s30/s40/s60/s100 기록에서 만든다). 9맥스, 안테 합�
     standard 시작 150bb 는 100bb 로 대체 — 평균이 100bb 를 넘는 것은 L1 뿐이다).
     버킷 사이는 선형 보간(40~60 사이는 두 버킷의 직선 보간). 한쪽 버킷에 노드가 없으면 None.
   - 좌석: 6~9인 테이블은 '뒤에 남은 인원'이 같은 9맥스 자리로 옮긴다.
-    SB/BB 는 그대로. 5인 이하와 노안테는 None.
+    SB/BB 는 그대로. 5인 이하는 None. dead button 이름표(산 사람+1/+2)도 같은 규칙(pos9).
+  - 노안테: 안테 표로 근사한다(사용자 결정 2026-10-31, covered 참고).
 """
 import json, os
 
@@ -44,14 +45,29 @@ def hand_class(c):
 
 
 def pos9(pos, seats):
-    """좌석 수가 다른 테이블의 자리를 뒤 인원이 같은 9맥스 자리로."""
+    """좌석 수가 다른 테이블의 자리를 뒤 인원이 같은 9맥스 자리로.
+
+    seats 는 산 사람 수다(session: len(h.seats)). 토너먼트 경로(fieldsim.hand_layout,
+    TDA dead button)는 BTN·SB 마커가 빈 자리면 그 빈 자리까지 센 좌석 수(산 사람 +1/+2)의
+    이름표에서 BTN/SB 만 뺀 이름을 붙인다. 그래서 8명에 'UTG+2', 7명에 'UTG+1', 6명에 'LJ'
+    처럼 orders(seats) 에 없는 이름이 온다(2026-10-31 발견, 1000핸드당 ~220 결정에서 조회가 꺼졌다).
+    그 이름은 그 이름이 나온 이름표(seats+1, seats+2)에서 같은 규칙(뒤 인원 → 9맥스 자리)으로 옮긴다.
+    orders(seats) 에 있는 이름은 예전과 똑같이 옮긴다. 5인 이하는 그대로 범위 밖.
+    """
     if pos in ('SB', 'BB'):
         return pos
     if int(seats) not in SEATS_OK:
         return None
     import table as _TB
-    _, pre, _ = _TB.orders(int(seats))
-    if pos not in pre:
+    pre = None
+    for n in (int(seats), int(seats) + 1, int(seats) + 2):   # 산 사람 수 → dead 마커 1·2개
+        if n > len(PRE9):
+            break
+        cand = _TB.orders(n)[1]
+        if pos in cand:
+            pre = cand
+            break
+    if pre is None:
         return None
     behind = len(pre) - 1 - pre.index(pos)          # 뒤에 남은 인원(블라인드 포함)
     i = len(PRE9) - 1 - behind
@@ -62,9 +78,16 @@ EDGE_BB = 0.25      # 경계 허용폭: 10bb/25bb 시작 스택이 안테·소�
 
 
 def covered(eff_bb, seats, ante):
+    """기준 범위 안인가. ante 는 보지 않는다(근사).
+
+    노안테 근사(사용자 결정 2026-10-31): 표는 안테 합계 1bb 로 풀었다. 노안테 레벨은 토너먼트
+    초반 몇 핸드뿐이라 따로 풀지 않고 안테 표를 그대로 쓴다. 팟이 1bb 작아 실제 GTO 보다
+    조금 넓게(특히 첫 진입·스틸) 친다 — 정확한 값이 아니라 근사다. 스택 버킷·인원 조건은 그대로.
+    ante 인자는 호출 쪽 호환으로 남긴다.
+    """
     d = _load()
     b = d['buckets']
-    return (bool(ante) and int(seats) in SEATS_OK and eff_bb is not None
+    return (int(seats) in SEATS_OK and eff_bb is not None
             and b[0] - EDGE_BB <= float(eff_bb))
 
 

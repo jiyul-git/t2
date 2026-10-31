@@ -41,7 +41,7 @@ T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 
 ### 2.1 파일
 | 파일 | 하는 일 |
 |---|---|
-| `gto_pf.py` | 기준 데이터 조회. 버킷 사이 직선 보간, ±0.25bb 경계, 6~9인 → 9인 자리 변환, 노안테·범위 밖은 None |
+| `gto_pf.py` | 기준 데이터 조회. 버킷 사이 직선 보간, ±0.25bb 경계, 6~9인 → 9인 자리 변환(dead button 이름표 포함), 노안테는 안테 표로 근사, 범위 밖은 None |
 | `gto_pf_data.json` | 기준 데이터(실행 폴더에 평평하게 복사된다). `tools/gto_pf_build.py` 가 만든다 |
 | `tools/gto_pf_build.py` | 계산 기록 → `gto_pf_data.json` |
 | `data/gto_records/` | 연결에 쓰는 기록 사본(압축) + `MANIFEST.tsv`(파일별 sha256, 브랜치별 커밋). `refresh_records.sh` 가 만든다 |
@@ -127,6 +127,17 @@ T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 
 - 검사: verify_gto_pf 53 / verify_gto_connect 302 통과(p100 3개 포함) / regress 기준과 같음 / ui_checks 28 통과.
 - 이어서 계산 중(10-28 에 끊긴 4개, 이 계정 세션이 이어 돌림): 100bb CO·LJ 오픈 2.5 수비, 100bb CO vs BTN 3벳, 60bb LJ 오픈 2.5 수비
   → `claude/resume_p100_flat_20261030`, `claude/resume_p3bet_20261030`.
+
+조회 수정 2026-10-31(사용자 승인, 코디네이터 session_012qfUk9, 근거 `docs/GTO_GAPS_RANK_20261031.md` 3장 ②③):
+- **노안테 = 안테 표 근사.** `gto_pf.covered` 가 ante 를 보지 않는다. 표는 안테 합계 1bb 로 풀었고 노안테 트리는 없다.
+  노안테 레벨은 토너먼트 초반 몇 핸드뿐이라 따로 풀지 않고 같은 표를 쓴다 — 팟이 1bb 작아 실제 노안테 GTO 보다 조금 넓다(근사, 정확한 값 아님).
+  스택 버킷(10bb−0.25 이상)·인원(6~9인) 조건은 그대로. 유효 스택 계산의 안테 몫(`preflop.gto_pf_*_eff`)은 그대로 0 이다.
+- **dead button 자리 이름.** 토너먼트 경로(`fieldsim.hand_layout`, TDA dead button)는 빈 BTN/SB 마커까지 센 좌석 수(산 사람 +1/+2)의
+  이름표에서 BTN/SB 만 빼고 이름을 붙인다(8명에 UTG+2, 7명에 UTG+1, 6명에 LJ). 훅은 seats=산 사람 수를 넘겨 `pos9` 가 None 을 돌렸다
+  (1000핸드당 ~220 결정에서 GTO 조회 전체가 꺼짐). 이름 붙이기는 TDA 규칙대로라 그대로 두고, `pos9` 가 orders(seats) 에 없는 이름을
+  그 이름이 나온 이름표(seats+1, seats+2)에서 같은 규칙(뒤 인원 → 9맥스 자리)으로 옮긴다. orders(seats) 에 있는 이름의 변환은
+  한 글자도 안 바뀐다(2~9인 전체 비교). 5인 이하는 그대로 범위 밖. dead button 판에서 산 뒤 인원이 이름표보다 1명 적은 것은 반영하지 않는다(이름 기준 규칙 그대로).
+- 상대 레인지는 같은 `gto_pf_spot_freqs` 를 쓰므로 자동으로 같다(verify_range_sync 에 노안테 근사 검사 추가).
 
 사용자 결정 2026-10-26:
 - 100bb 를 넘는 스택(standard 시작 150bb)은 100bb 표를 그대로 쓴다(`gto_pf.covered` 상한 없음).

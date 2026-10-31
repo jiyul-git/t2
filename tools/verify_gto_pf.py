@@ -59,10 +59,19 @@ v = G.aggr_vs_open('BTN', 'BB', 9, 30, ['Ah', 'Kc'])
 check('BB vs BTN open 30bb: AKo aggression from record',
       abs(v['jam'] - d['vs_open']['30']['BTN>BB']['jam'][d['classes'].index('AKo')]) < 1e-9)
 check('vs_open below 15bb not covered', G.aggr_vs_open('BTN', 'BB', 9, 12, ['Ah', 'Kc']) is None)
-check('no ante -> None', G.first_in('UTG', 9, 15, ['Ah', 'Ad'], ante=False) is None)
+# 노안테 = 안테 표 근사(사용자 결정 2026-10-31): 같은 값이 나와야 한다.
+_na = G.first_in('UTG', 9, 15, ['Ah', 'Ad'], ante=False)
+check('no ante -> ante table (approx)', _na is not None and _na == G.first_in('UTG', 9, 15, ['Ah', 'Ad'], ante=True))
 check('8-max UTG = 9-max UTG+1', G.pos9('UTG', 8) == 'UTG+1')
 check('6-max UTG = 9-max LJ', G.pos9('UTG', 6) == 'LJ')
 check('5-handed not covered', G.pos9('UTG', 5) is None)
+# dead button 이름표(산 사람 +1/+2 좌석의 이름, fieldsim.hand_layout): 2026-10-31
+check('8 live dead-BTN UTG+2 = 9-max UTG+2', G.pos9('UTG+2', 8) == 'UTG+2')
+check('7 live dead-BTN UTG+1 = 9-max UTG+2', G.pos9('UTG+1', 7) == 'UTG+2')
+check('6 live dead-BTN LJ = 9-max LJ', G.pos9('LJ', 6) == 'LJ')
+check('6 live dead-BTN+SB UTG+1 = 9-max UTG+2', G.pos9('UTG+1', 6) == 'UTG+2')
+check('names in orders(seats) unchanged', G.pos9('UTG', 7) == 'UTG+2' and G.pos9('CO', 7) == 'CO')
+check('5 live dead-BTN still not covered', G.pos9('UTG', 5) is None and G.pos9('HJ', 5) is None)
 
 prof = {}
 class Spy(random.Random):

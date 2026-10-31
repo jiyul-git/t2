@@ -244,7 +244,6 @@ hand = ['Ah', 'Kd']
 P.take_gto_spot()
 outside = [
     ('8bb first-in', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 8.0, hand, r, None, 1.0, 9, True)),
-    ('no ante', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.0, 9, False)),
     ('5-handed', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.0, 5, True)),
     ('ICM bf 1.3', lambda r: P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, r, None, 1.3, 9, True)),
     ('degenerate money range_factor', lambda r: P.gto_pf_first_in_choice(
@@ -259,6 +258,21 @@ for name, f in outside:
     sp = P.take_gto_spot()
     if out is not None or sp is not None:
         fail('outside coverage %s: hook=%r spot=%r' % (name, out, sp))
+# 노안테 = 안테 표 근사(사용자 결정 2026-10-31): 기준 안이고, 레인지도 같은 spot(ante=False)으로 만든다.
+_na = P.gto_pf_first_in_choice(PROF, 'CO', 30.0, hand, _Roll(1), None, 1.0, 9, False)
+_nsp = P.take_gto_spot()
+if _na is None or _nsp is None or _nsp['args'].get('ante') is not False:
+    fail('no-ante approx: hook=%r spot=%r' % (_na, _nsp))
+else:
+    _ga = P.gto_pf_spot_freqs(_nsp, hand)
+    _gb = P.gto_pf_spot_freqs(dict(_nsp, args=dict(_nsp['args'], ante=True)), hand)
+    if _ga != _gb:
+        fail('no-ante approx: freqs differ from ante table %r %r' % (_ga, _gb))
+    _rr, _meta = SE._preflop_story_range(PROF, 'CO', 30.0, {'Ah'}, 9, False, 'raise',
+                                         pfo={'pf_gto_spot': _nsp, 'pf_act': 'raise', 'pf_vs': None,
+                                              'pf_open_bb': 2.0, 'pf_level': 1, 'pf_n_callers': 0})
+    if _meta.get('source') == 'standard_preflop_range':
+        fail('no-ante approx: story range did not use the gto spot (%r)' % (_meta,))
 for act, opener in (('open', None), ('call', 'CO'), ('3bet', 'CO'), ('limp', None)):
     pfo = {'pf_gto_spot': None, 'pf_act': act, 'pf_vs': opener, 'pf_open_bb': 2.5,
            'pf_level': 1, 'pf_n_callers': 0}
