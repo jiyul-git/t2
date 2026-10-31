@@ -81,3 +81,12 @@ PREC_START=fresh PREC_CALC_ROOT=/home/user/calc PREC_SESSION=session_<id> sh too
 - 이미 풀린 보드: `tools/gto_precision/strategy_backfill.py` 가 같은 입력(출처키에서 읽은 반복 수·목표·알고리즘·행렬 모드)으로 다시 풀고 `flop_digest` 규칙으로 비트 단위 비교 → 같을 때만 전략 파일을 넣는다(값은 절대 안 바꿈, 결과는 `strategy_backfill.json`).
 - 시험(10-31, 끝점0 A 패널 7c4c3c): digest 동일(b43e835a…), 내보내기 0.25초, 압축 약 29KB/보드 → 1단계 720보드 약 21MB.
 - 저장 위치: 패널(끝점 × A/B)이 끝날 때마다 `data/gto_precision/strategy/<id>/s<k>/term<j>_<A|B>.tgz` 로 커밋(+ 소급 확인 기록 `.backfill.json`).
+
+## 9. p100 CO 1단계 — 멈춤 (2026-10-31 22:5xZ, 7장 멈춤 기준)
+- 끝점0(BB 플랫콜 팟) A 패널 72보드 끝. 목표(0.3% pot) 못 맞춘 보드 2개 → CFR+ 재시도(개정 11(a)):
+  9d9c2h 0.304% → 0.279%(통과), **8d8c6h 1.236% → 0.444%(재시도 후에도 목표 초과, 1000회에서 정체)**. 끝점0 은 면제 끝점이 아님.
+- 7장 기준(재시도 후에도 안 풀림 → 멈춤, 보고)대로 계산을 멈췄다. B 패널·다른 끝점 4개는 시작 안 함. 값 계산(D/U, 복제)은 아직 없음.
+- 판단 필요(코디네이터/사용자): ① 기준대로 precision_failed(quick 유지) ② 표준 초안 3장 "솔버" 줄처럼 0.6% 이하 초과 플랍은 목록·몫을 기록하고 계속
+  (quick 때 사용자 예외 FLOP_ACCEPT_PCT=0.7 과 같은 방식; 지금은 72보드 중 1개, 0.444%) ③ 그 보드만 반복 3배 재시도(RETRY_ITER_MULT=3, 승인된 방식) 후 다시 판단.
+- 기록: `data/gto_precision/progress/p100_flat_co_vs_bb_o25/s0/term0_A_flop_failures.json`, 패널 기록 `term0_A.ledger.jsonl`, 전략 `data/gto_precision/strategy/.../term0_A.tgz`.
+- 2시간 강제 종료는 setsid 로 띄운 계산까지 같이 죽인다(분리 실행은 효과 없음). 재실행 때 진행 중이던 보드만 다시 푼다.
