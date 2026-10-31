@@ -136,7 +136,7 @@ T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 
 - 데이터 diff: `first_in`·`vs_jam` 에 '4'·'6'·'8' 키만 늘었다. 기존 값 변화 0.
 - refresh_records.sh 에 SUB(claude/gto_gaps_20261031) 줄, rebuild 순서 pf4·pf6·pf8 먼저. MANIFEST 의 지워진 브랜치 커밋 줄은 예전 값 유지(스크립트가 missing 으로 덮어써서 손으로 되돌림).
 - 검사: verify_gto_pf 59(새 6개: 기록값·보간·3.75 경계·vs_jam·SB 범위 단조·10bb 미만 다른 표 None) / verify_range_sync ok(covered spots 1369 → 1633; 기준 밖 예를 8bb·5bb → 3bb 로 바꿈) /
-  verify_gto_connect VCRESULT(새 F 묶음: pf4·6·8 값 일치 + BTN·SB 첫 진입·SB 올인 받은 BB 엔진 경로 + 경로 선택) / regress SAME_AS_BASELINE / ui_checks 28 통과.
+  verify_gto_connect 367 통과(10-31 전 323, 새 F 묶음: pf4·6·8 값 일치 + BTN·SB 첫 진입·SB 올인 받은 BB 엔진 경로 + 경로 선택) / regress SAME_AS_BASELINE / ui_checks 28 통과.
 - 주의: 10bb 미만 결정은 5인 이하 테이블·6~8인 자리 이름 문제(빈 자리 순위 3장)로 범위 밖인 것이 많아 실제 사용은 측정 109회/1000핸드보다 적다. 대칭 스택 가정 오차는 짧은 스택일수록 크다(정밀 후보).
 
 사용자 결정 2026-10-26:
