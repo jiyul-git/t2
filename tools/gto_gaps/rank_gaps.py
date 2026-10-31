@@ -52,15 +52,23 @@ def main():
                 sizes[g][sz] += v['n']
     rows = []
     tot = Counter()
+    noante = Counter()
     for g, v in agg.items():
         sit = g[0]
         n = v['n']
         icm = v.get('icm', 0.0)
+        # 노안테 테이블·5인 이하 테이블은 gto_pf 가 통째로 안 다룬다(covered/pos9) — 표 하나를 채우는 일이
+        # 아니라 다른 트리(노안테, 짧은 테이블)라 따로 센다. 두 조건의 결정은 모두 none 이다.
+        out_scope = min(n, v.get('no_ante', 0.0) + v.get('seats_le5', 0.0))
+        tot['no_ante'] += v.get('no_ante', 0.0)
+        tot['seats_le5'] += v.get('seats_le5', 0.0)
+        noante[(sit, g[1])] += v.get('no_ante', 0.0)
         if sit == 'first_in':
-            gap = v.get('tbl_no', 0.0)
+            # tbl_no 에는 노안테·짧은 테이블 몫이 들어 있다 — 빼고 남은 것이 '표가 없는 자리'
+            gap = max(0.0, v.get('tbl_no', 0.0) - out_scope)
             gate = v.get('tbl_yes', 0.0) - v.get('full', 0.0)
         else:
-            gap = max(0.0, v.get('partial', 0.0) + v.get('none', 0.0) - icm)
+            gap = max(0.0, v.get('partial', 0.0) + v.get('none', 0.0) - icm - out_scope)
             gate = icm
         kind = ('partial' if v.get('partial', 0) > v.get('none', 0) - icm else 'none')
         tot['n'] += n
@@ -83,6 +91,7 @@ def main():
     res = {'hands': hands, 'runs': [{k: r[k] for k in ('fmt', 'day', 'hands', 'finished')} for r in runs],
            'totals': {k: round(v, 1) for k, v in tot.items()},
            'gap_by_situation': {k: round(v, 1) for k, v in by_sit.most_common()},
+           'no_ante_by_situation_bucket': {'%s|%s' % k: round(v, 1) for k, v in noante.most_common() if v > 0},
            'rows': rows}
     json.dump(res, open(out_json, 'w'), indent=1, ensure_ascii=False)
     with open(out_md, 'w') as f:
@@ -93,7 +102,7 @@ def main():
                 i, r['situation_ko'], r['bucket'], r['pair'], r['per_1000_hands'], r['gap'], r['gto_partial'],
                 '%.0f%%' % (100 * r['old_fold_share']) if r['old_fold_share'] is not None else '-',
                 ', '.join('%s:%d' % (s, x) for s, x in r['sizes'].items()) or '-'))
-    print(json.dumps({k: res[k] for k in ('hands', 'totals', 'gap_by_situation')}, ensure_ascii=False, indent=1))
+    print(json.dumps({k: res[k] for k in ('hands', 'totals', 'gap_by_situation', 'no_ante_by_situation_bucket')}, ensure_ascii=False, indent=1))
 
 
 if __name__ == '__main__':
