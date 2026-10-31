@@ -161,3 +161,12 @@ spot_usage_sim.py 와 같은 경로(field_backend='real', scheduled_runtime.adva
 ("전략 무영향"), 프리플랍 콜 계산(plan.py `locked_keys`)에만 쓰인다. 베팅·블러프 판단에 들어가는 곳은 없다.
 - `tools/t2_handoff/verify_gto_connect.py`(fetch_records.sh 기록): 318 통과, 실패 0. `regress.sh`: 범위 동기화·합성 통과, 20개 기준과 같음.
   `ui_checks.sh`: 로비 자산 검사 2개가 실패(opencv 없음 — 바꾸기 전 커밋에서도 같은 실패), 나머지 통과.
+- (test3 e277853 merge 뒤 다시) verify_range_sync 통과(1593 spot), verify_money_compose 2806, verify_gto_pf 53, regress.sh 기준과 같음,
+  ui_checks.sh 28 통과(opencv-python-headless 설치 후), verify_gto_connect 323 통과 / 실패 0.
+
+### 5.1 넣는다면 (제안만, 구현 안 함)
+- 위치: session.py 포스트플랍 결정 직전, `_pot_layers` 와 `layer_equities_by_pot_layer`(F8-D3) 를 이미 계산하는 곳. 올인한 짧은 스택이 메인팟에 있고
+  (locked_allin_opponents), 내 베팅이 들어갈 사이드팟에 살아 있는 깊은 스택이 둘 이상이면 `dry_side` 맥락을 만들어 plan.make_plan 에 넘긴다.
+- 방법: 그 맥락에서 블러프·세미블러프 확률(plan.pure_bluff_attempt_probability, semibluff_line_probability, bluff_mode)과 얇은 밸류를
+  "올인한 사람이 탈락할 때의 상금 이득(자리 기준 BF·사다리, money_pressure)" × 개인 인식(money_jump·icm 개념)만큼 줄인다 — 문턱 없이 연속.
+  강한 패의 밸류 베팅은 그대로. 먼저 shadow(행동 불변 기록)로 bet_ev_shadow 의 bet_vs_check 와 함께 재고, 측정 후 승격 여부를 사용자가 정한다.
