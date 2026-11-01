@@ -1327,7 +1327,15 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             why.append(
                 '중간 밸류이나 3스트리트 유지(eq %.2f, rel %.2f, p2 %.2f)'
                 % (eq, rel, _p2))
-    elif _eq_v >= pcz:
+    elif _eq_v >= pcz and not (int(n_opp or 1) > 1 and made == 0 and outs >= 8):
+        # (2026-11-01) 멀티웨이에서 메이드 없는 8아웃+ 드로우(플러시 드로우·오픈엔드·콤보)는
+        # 이 중간 강도 분기를 건너뛰고 아래 세미블러프 판단으로 간다.
+        # 이 분기의 선택지(블락벳·팟컨트롤·얇은 밸류·쇼다운)는 **지금 쇼다운 가치가 있는 패**의
+        # 수다. 드로우의 에쿼티는 미래 카드에서 오고 지금은 진다 — 그 가치는 '접게 하거나
+        # 맞추거나'(세미블러프)로 실현된다. 수정 ①로 전원 에쿼티를 한 명 단위로 환산하자
+        # 3인 팟 드로우(전원 0.36 → 0.50)가 여기로 빨려 들어와 쇼다운/포기가 됐다.
+        # 헤즈업은 손대지 않는다(헤즈업 불변; 헤즈업 0.50+ 드로우의 기존 경로 유지).
+        # 아웃 수는 위의 outs(draw_strength + 인식 노이즈), 세미블러프 조건·확률은 기존 그대로.
         # 블락벳: OOP + 이니셔티브 없음 + 쇼다운은 되는 중간 강도
         block_p = blockbet_probability(profile, _rel_v, dang, oop_vs_aggr, initiative)
         if sk('blockbet') >= 1 and rng.random() < block_p:

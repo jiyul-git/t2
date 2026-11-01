@@ -137,3 +137,36 @@ rel(지금 보드 순위)은 k≈N 인데 eq 는 N 보다 작다: 남은 카드�
 
 range_sync 통과 · regress.sh SAME_AS_BASELINE(차이 0) · ui_checks 28개 0 · verify_replan_contract / verify_river_nuts_value / verify_thin_value_flop_split / verify_multiway_fix_hu_invariance 통과.
 (verify_multiway_range_preservation 은 test3 에서도 같은 기존 실패, 무관.)
+
+---
+
+# 드로우 경로 (2026-11-01, 사용자 결정 ⓑ)
+
+## 11. 바꾼 것
+
+make_plan 중간 강도 분기 조건에 `not (n_opp > 1 and made == 0 and outs >= 8)` 를 더했다.
+멀티웨이에서 메이드 없는 8아웃+ 드로우(플러시 드로우 9·오픈엔드 8·콤보 12+, `draw_strength` + 기존 인식 노이즈)는
+환산 에쿼티가 중간 구간이어도 그 분기를 건너뛰어 기존 세미블러프 판단(`semibluff_line_probability`, 조건 `to_act_behind ≤ 1`·개념 0.4+ 그대로)으로 간다.
+떨어지면 예전처럼 블러프 판단 → 쇼다운/포기.
+
+근거(게임 논리): 중간 강도 분기의 수(블락벳·팟컨트롤·얇은 밸류·쇼다운)는 **지금 쇼다운 가치가 있는 패**의 수다.
+드로우의 에쿼티는 미래 카드에서 오고 지금은 지고 있어서, 그 가치는 '접게 하거나 맞추거나'로만 실현된다.
+환산 에쿼티(밸류 문턱 v2 이상)로 밸류 구간에 드는 아주 강한 콤보 드로우는 그대로 밸류 계획.
+헤즈업은 손대지 않음(헤즈업 0.50+ 드로우의 기존 경로 유지, 불변 검사).
+
+## 12. 전후 (multiway_betfreq, 9100–9107 × 300핸드, 3명 이상 팟, 플랍/턴/리버)
+
+| 묶음 | 원래(test3) | ②① 후 | ②①+드로우 |
+|---|---|---|---|
+| 드로우 | 29 / 4 / — | 7 / 14 / — | **30 / 9 / —** (27 / 32건) |
+| 탑페어 이상 | 45 / 23 / 26% | 53 / 33 / 29% | 57 / 25 / 32% |
+| 중간 | 13 / 1 / 0% | 13 / 2 / 0% | 10 / 3 / 0% |
+| 에어 | 4 / 8 / 0% | 5 / 5 / 3% | 6 / 5 / 2% |
+| 전체 | 18 / 9 / 9% | 18 / 12 / 9% | 21 / 10 / 10% |
+
+탑페어 판단은 이 변경과 무관(made ≥ 1)이라 턴 33 → 25% 는 판 흐름이 바뀐 표본 차이(60건대). 드로우 턴도 30건대라 소수점은 믿지 말 것.
+헤즈업 불변 검사: 헤즈업 139건 전부 같음(멀티웨이 93건 중 14건 다름).
+
+## 13. 검사
+
+range_sync 통과 · regress.sh SAME_AS_BASELINE · ui_checks 28개 0 · verify_replan_contract / river_nuts_value / thin_value_flop_split / multiway_fix_hu_invariance 통과.
