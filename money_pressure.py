@@ -296,9 +296,15 @@ def unopened_modifiers(state):
     preserve_pos = ms.get('self_preservation_pos')
     if preserve_pos is not None:
         range_brake = clamp01(preserve_pos) * (1.0 - urgency)
+        brake_gto = clamp01(preserve_pos)
     else:
         range_brake = preserve * (1.0 - urgency) * danger_frac
+        brake_gto = preserve * danger_frac
     range_factor = (1.0 + drive) / (1.0 + range_brake)
+    # GTO 표 자리용: 급함(urgency)을 뺀 배수. GTO 표는 이미 지금 블라인드·안테 부담을 반영한
+    # 칩EV 답이라, 급함(강제 비용 비중·짧은 스택)을 또 얹으면 같은 효과가 두 번 들어간다.
+    # 버블 압박(pressure)과 포지션 인식 브레이크는 그대로.
+    range_factor_gto = (1.0 + pressure) / (1.0 + brake_gto)
 
     # 사이즈/림프는 아직 shadow. 여기서는 '탈락 가능 여부'만이 아니라
     # 칩을 잃는 비용도 중요하므로 일반 preservation을 유지한다.
@@ -338,6 +344,7 @@ def unopened_modifiers(state):
         'size_awareness_shadow': round(size_awareness, 6),
         'form_awareness_shadow': round(form_awareness, 6),
         'range_factor': round(range_factor, 6),
+        'range_factor_gto': round(range_factor_gto, 6),
         'size_factor_shadow': round(size_factor, 6),
         'limp_pull_shadow': round(limp_pull, 6),
     }

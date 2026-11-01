@@ -481,7 +481,8 @@ def _gto_pf_money_rf(money_open):
     if not money_open:
         return 1.0
     try:
-        rf = float(money_open.get('range_factor', 1.0))
+        # 급함(urgency)을 뺀 값이 있으면 그것(GTO 표 자리). 없으면 예전 range_factor.
+        rf = float(money_open.get('range_factor_gto', money_open.get('range_factor', 1.0)))
     except (TypeError, ValueError):
         return None
     if not (rf == rf) or rf < GTO_PF_RF_MIN or rf > GTO_PF_RF_MAX:

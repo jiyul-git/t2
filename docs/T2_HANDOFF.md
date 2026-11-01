@@ -89,6 +89,11 @@ T2 세션이 사용량 한도로 멈춘 동안 사용자 승인으로 연결을 
   보정 안 된 부모 트리는 BB 도 4.0x 우세(62~86%)지만 BB 수비 연결은 보정 기록을 쓴다.
 - UTG+1·UTG+2 콜드 3벳(OOP 판정)은 3.7 그대로(기록 메뉴는 3.0). 4벳·5벳 배수, 멀티웨이 콜러 +1.0×n 은 그대로.
 
+### 급함(urgency)은 GTO 표 자리에서 뺌 (2026-11-01)
+
+`money_pressure.unopened_modifiers` 가 `range_factor`(기존 경로용)와 함께 `range_factor_gto = (1+pressure)/(1+브레이크, 급함 항 없음)` 를 돌려주고, GTO 첫 진입 합성(`preflop._gto_pf_money_rf` → `compose_first_in`)과 spot 의 `rf`(상대 레인지 모델)는 이 값을 쓴다(없으면 `range_factor`). GTO 표 없는 기존 경로는 `range_factor` 그대로.
+이유: GTO 표는 이미 지금 블라인드·안테 부담을 반영한 칩EV 답인데 급함(강제 비용 비중·짧은 스택)이 짧은 스택에서 커져 첫 진입을 거의 2배로 넓혀 같은 효과가 두 번 들어갔다(pf4/pf6 BTN·SB 첫 진입이 기록보다 넓음). 버블 압박(pressure)과 포지션 인식 BF 브레이크는 그대로.
+
 ## 3. 연결 현황 (2026-10-24)
 
 | 상황 | 10~25bb | 30bb | 40bb | 60bb | 100bb(10-24) |
