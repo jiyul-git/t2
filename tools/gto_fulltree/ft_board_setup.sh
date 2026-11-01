@@ -10,7 +10,7 @@ if [ ! -x $C/vendor/gtopen/target/release/examples/t2_cont_panel ]; then
   for i in 1 2 3 4; do git -C $R fetch -q --depth=1 origin chatgpt/terminal-census-v2-20260930 && break || sleep $((2 ** i)); done
   [ "$(git -C $R rev-parse FETCH_HEAD)" = "$CEN" ] || { echo "census tip moved: $(git -C $R rev-parse FETCH_HEAD) != $CEN"; exit 1; }
   [ -d $C ] || git -C $R worktree add --no-checkout $C $CEN
-  git -C $C sparse-checkout set vendor/gtopen tools/gto_spot tools/gto_validation tools/gto_hu_continuation data/gto_hu_continuation
+  git -C $C sparse-checkout set vendor/gtopen tools/gto_spot tools/gto_validation tools/gto_hu_continuation data/gto_hu_continuation data/gto_terminal_expansion/terminals
   git -C $C checkout -q $CEN
   git -C $C apply --check $R/tools/gto_fulltree/t2_cont_panel_strategy.patch 2>/dev/null && git -C $C apply $R/tools/gto_fulltree/t2_cont_panel_strategy.patch
   (cd $C/vendor/gtopen && cargo build --release -p solver --features t2-cont --example t2_cont_panel)

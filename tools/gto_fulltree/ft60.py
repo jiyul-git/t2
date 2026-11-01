@@ -157,7 +157,19 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
         f.write('\t'.join(cols) + '\n')
         for r in rows:
             f.write('\t'.join(str(r[c]) for c in cols) + '\n')
-    summ = {'step': k, 'hu_terminals': len(hu), 'picked': len(pick), 'picked_share_of_hu_mass': sum(w for w, _ in pick) / tot,
+    # 묶음 → 보드 세션 배분(가장 긴 것부터 가장 덜 찬 세션에): 예상 시간 = 행렬 끝점 1.9h(실측 9.4절), 그 밖 0.8h(추정, 0단계 결과로 고침)
+    n_sess = int(os.environ.get('FT_SESSIONS', '5'))
+    load = [0.0] * n_sess
+    assign = []
+    for r in sorted(rows, key=lambda r: (-(1.9 if r['matrix'] else 0.8), -r['reach'], r['bundle'])):
+        i = min(range(n_sess), key=lambda x: (load[x], x))
+        load[i] += 1.9 if r['matrix'] else 0.8
+        assign.append((r['bundle'], i + 1))
+    with open(os.path.join(sd, 'assign.tsv'), 'w') as f:
+        f.write('bundle\tsession\n')
+        for bnd, i in sorted(assign, key=lambda x: (x[1], x[0])):
+            f.write('%s\t%d\n' % (bnd, i))
+    summ = {'step': k, 'hu_terminals': len(hu), 'session_load_h': [round(x, 1) for x in load], 'picked': len(pick), 'picked_share_of_hu_mass': sum(w for w, _ in pick) / tot,
             'hu_mass': tot, 'bundles': len(rows), 'matrix_terms': sum(1 for r in rows if r['matrix']) // 2,
             'ck_sha256': sha(ck), 'dump_sha256': sha(dump)}
     json.dump(summ, open(os.path.join(sd, 'prepare.json'), 'w'), indent=1)
