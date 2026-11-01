@@ -111,7 +111,7 @@ sh tools/gto_fulltree/ft_board_setup.sh          # 끝줄 FT_BOARD_SETUP_OK (계
 ```
 ### 9.3 실행 (2시간 작업 제한 피하기: setsid nohup 으로 떼어 내고, 로그만 확인)
 ```sh
-git fetch origin claude/ft60_coord && git merge -q --ff-only origin/claude/ft60_coord     # 새 단계 입력 받기(내 결과 커밋과 겹치지 않음)
+git fetch origin claude/ft60_coord && git merge -q --no-edit origin/claude/ft60_coord   # 새 단계 입력 받기(내 결과와 파일이 겹치지 않아 충돌 없음)
 B=$(awk -F'\t' -v n=<n> 'NR>1 && $2==n {print $1}' data/ft60/step0/assign.tsv | tr '\n' ' ')
 FT_SESSION=<내 세션 id> setsid nohup /home/user/gto_ckpt/py311bin/python3 tools/gto_fulltree/ft_board.py $B > /home/user/gto_ckpt/ft60_board.log 2>&1 < /dev/null &
 tail -3 /home/user/gto_ckpt/ft60_board.log          # 진행 확인(12보드마다 한 줄 + 커밋·푸시). 끝줄 FT_BOARD_ALL_DONE

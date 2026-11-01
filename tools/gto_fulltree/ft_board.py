@@ -47,6 +47,8 @@ def branch():
 
 
 def push(msg):
+    if os.environ.get('FT_NO_PUSH') == '1':   # 배관 시험용(로컬만)
+        return
     sh('git', 'add', 'data/ft60/results')
     if subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=REPO).returncode == 0:
         return
@@ -100,6 +102,8 @@ def run_bundle(b, r):
         with tarfile.open(tgz) as t:
             t.extractall(fd)
     boards = [f['board'] for f in json.load(open(pf))['panel']]
+    if os.environ.get('FT_TEST_BOARDS'):      # 배관 시험용: 앞 N 보드만(결과는 쓰지 말 것)
+        boards = boards[:int(os.environ['FT_TEST_BOARDS'])]
     matrix = r['matrix'] == 'True'
     env = dict(os.environ, T2_BIN_DIR=os.path.join(CALC, 'vendor/gtopen/target/release/examples'), T2_EXPORT_STRATEGY='1',
                T2_SOURCE_COMMIT=SOURCE_COMMIT)
@@ -120,7 +124,7 @@ def run_bundle(b, r):
         print(json.dumps({'bundle': b, 'boards_done': n, 'min': round((time.time() - t0) / 60, 1)}), flush=True)
     import spot_loop as L
     L.PANEL = pf
-    bad = L.flop_failures(fd)
+    bad = [] if os.environ.get('FT_TEST_BOARDS') else L.flop_failures(fd)   # flop_failures 는 패널 전체를 본다
     first = list(bad)
     if bad:   # amendment 11 (a): one CFR+ retry at the same budget and target
         env_old = dict(os.environ)
@@ -148,7 +152,7 @@ def run_bundle(b, r):
 
 
 def main():
-    if not re.match(r'^claude/ft60_board_\d+$', branch()):
+    if not re.match(r'^claude/ft60_board_\d+$', branch()) and os.environ.get('FT_NO_PUSH') != '1':
         raise SystemExit('checkout claude/ft60_board_<n> first (now %s)' % branch())
     rows = bundles()
     for b in sys.argv[1:]:
