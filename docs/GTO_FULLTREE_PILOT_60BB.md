@@ -90,3 +90,37 @@
 
 ## 8. 남는 한계 (정밀로도 안 없어지는 것)
 대칭 스택, chip EV(ICM 없음), 3명 이상 플랍은 간이 값, 크기 메뉴 고정(오픈 2.5·3벳 3배/블라인드 3.5·4배·4벳 올인 — 다른 크기는 연결 때 근사), 대표 보드 144장.
+
+## 9. 실행 규약 (2026-11-01, 사용자 승인: 헤즈업 끝점 40개, precision 바로, 보드 세션 5개부터, 브릭 묶음 안 씀, 전략 저장 켬)
+모으는 세션 = session_01JQGBPKuQRnsWkdDiV74y6n, 조정 브랜치 = `claude/ft60_coord`. 보드 세션 결과 브랜치 = `claude/ft60_board_<n>`(n = 1..5).
+
+### 9.1 파일
+| 파일 | 내용 |
+|---|---|
+| `data/ft60/step<k>/bundles.tsv` | 묶음 목록(모으는 세션이 만듦): bundle(`s<k>_t<jj>_<A|B>`), 끝점 번호, 패널, 행렬 여부, 도달, 노드 번호, 끝점 파일·sha256, 패널 파일·sha256, 줄 |
+| `data/ft60/step<k>/assign.tsv` | 묶음 → 보드 세션 번호 |
+| `data/ft60/step<k>/terms/term<jj>.json` | 끝점 입력(spot_terminal_v1: 두 자리의 클래스별 도착 몫, 팟, 남은 스택, 행렬 열 목록) |
+| `data/ft60/step<k>/tables/manifest.json` | 그 단계 전체 트리 풀이에 쓴 값 표(0단계 = BB 씨앗 HJ·LJ 6개) |
+| `data/ft60/panels/panel_prec_{A,B}72.json` | precision 패널(precision_runner 사본, sha256 = 그 브랜치 MANIFEST 의 file_sha256) |
+| `data/ft60/results/step<k>/<bundle>/flops.tgz`, `done.json` | 보드 세션 결과(보드별 솔버 결과물 + 전략 파일 + 실행 기록, 끝나면 done.json) |
+
+### 9.2 보드 세션 한 번 준비
+```sh
+git fetch origin claude/ft60_coord && git checkout -b claude/ft60_board_<n> origin/claude/ft60_coord
+sh tools/gto_fulltree/ft_board_setup.sh          # 끝줄 FT_BOARD_SETUP_OK (계산 체크아웃 sparse + 전략 저장 패치 + t2_cont_panel 빌드 + Python 3.11/numpy 2.4.6)
+```
+### 9.3 실행 (2시간 작업 제한 피하기: setsid nohup 으로 떼어 내고, 로그만 확인)
+```sh
+git fetch origin claude/ft60_coord && git merge -q --ff-only origin/claude/ft60_coord     # 새 단계 입력 받기(내 결과 커밋과 겹치지 않음)
+B=$(awk -F'\t' -v n=<n> 'NR>1 && $2==n {print $1}' data/ft60/step0/assign.tsv | tr '\n' ' ')
+FT_SESSION=<내 세션 id> setsid nohup /home/user/gto_ckpt/py311bin/python3 tools/gto_fulltree/ft_board.py $B > /home/user/gto_ckpt/ft60_board.log 2>&1 < /dev/null &
+tail -3 /home/user/gto_ckpt/ft60_board.log          # 진행 확인(12보드마다 한 줄 + 커밋·푸시). 끝줄 FT_BOARD_ALL_DONE
+```
+- 입력 해시: ft_board.py 가 묶음마다 끝점·패널 파일 sha256 을 bundles.tsv 와 비교하고 다르면 멈춘다. 손으로 확인: `sha256sum data/ft60/step0/terms/term00.json` ↔ bundles.tsv 의 term_sha256.
+- 컨테이너가 죽으면 같은 명령을 다시 실행: 브랜치에 올린 flops.tgz 를 되살리고 남은 보드만 푼다(솔버가 출처키로 재사용 확인).
+- 한 컨테이너에 ft_board.py 하나만. 다른 세션의 묶음은 풀지 않는다. 값 계산·판정은 하지 않는다(모으는 세션 몫).
+- 보드 하나가 CFR+ 재시도 뒤에도 안 풀리면 done.json 의 flop_failures_after_retry 에 남고 그대로 끝난다 → 모으는 세션이 멈춤 기준(7장)으로 판단.
+
+### 9.4 보드 시간 실측 (2026-11-01, 0단계 전, 부모 덤프 레인지, 4코어 4 workers × 1 thread, 전략 저장 켬)
+- 3벳 팟 행렬 끝점: 보드 하나 약 380초(풀이 약 148초 + 행렬 내보내기), 메모리 보드당 1.9GB, 100회 반복에서 수렴(0.20~0.27% pot). → 72보드 묶음 ≈ 1.9시간.
+- (끝점별 표는 아래 9.5 에 채움)

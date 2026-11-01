@@ -1,0 +1,36 @@
+{
+ "schema": "t2_hu_continuation_manifest_v1",
+ "tables": [
+  {
+   "file": "node844.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.500000|CO:fold|BTN:fold|SB:fold|BB:call@2.500000",
+   "seed": "p60_flat_hj_vs_bb_o25.state.json"
+  },
+  {
+   "file": "node853.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.500000|CO:fold|BTN:fold|SB:fold|BB:raise@10.000000|HJ:call@10.000000",
+   "seed": "p60_flat_hj_vs_bb_o25.state.json"
+  },
+  {
+   "file": "node847.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.500000|CO:fold|BTN:fold|SB:fold|BB:raise@8.750000|HJ:call@8.750000",
+   "seed": "p60_flat_hj_vs_bb_o25.state.json"
+  },
+  {
+   "file": "node3905.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.500000",
+   "seed": "p60_flat_lj_vs_bb_o25.state.json"
+  },
+  {
+   "file": "node3914.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@10.000000|LJ:call@10.000000",
+   "seed": "p60_flat_lj_vs_bb_o25.state.json"
+  },
+  {
+   "file": "node3908.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@8.750000|LJ:call@8.750000",
+   "seed": "p60_flat_lj_vs_bb_o25.state.json"
+  }
+ ],
+ "note": "step 0 seeds: BB loop final tables (p60 HJ, LJ o25); every other terminal static (docs/GTO_FULLTREE_PILOT_60BB.md 3\uc7a5)"
+}
