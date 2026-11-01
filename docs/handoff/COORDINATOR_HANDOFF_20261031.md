@@ -81,3 +81,9 @@
 4. 정밀은 p100_flat_co_vs_bb_o25 1단계 시험만(session_01JQGBPMv985bSc2TKc8UVq5, claude/precision_runner_20261031). 결과 보고 계속할지 결정.
 - test3 반영: 블라인드 3벳 크기 SB 4.0 / BB 3.5 (e2778534). UTG+1·UTG+2 콜드 3벳은 OOP 판정 3.7(기록 3.0) — 미수정.
 - 아트(회전 v5, 펭귄)는 보류.
+
+## 12. 11-01 사용자 규칙 추가
+- **새 하위 세션은 Sonnet 으로 연다** (create_session model: claude-sonnet-5-5).
+- 결정: 브릭 카드 묶기는 쓰지 않음(속도 이득 없음 / 풀면 오차가 U 초과, claude/brick_merge_20261031 기본 꺼짐). 멀티웨이 드로우는 ⓑ(강한 드로우는 중간 강도여도 세미블러프 경로).
+- 대기 결정: ① 4~6bb '급함' 계수를 GTO 표 자리에서 뺄지(통합본 claude/integrate_20261031 의 pf4/pf6 첫 진입 검사 실패 원인) ② 헤즈업 플랍 이후 규칙 보강(claude/postflop_export_20261031 참고표 기준) ③ 60bb 전체 트리 시작(claude/gto_gaps_20261031 docs/GTO_FULLTREE_PILOT_60BB.md).
+- verify_gto_connect 는 2시간 넘게 걸림 → 백그라운드 2시간 제한에 죽음. 기록 폴더는 data/gto_records/*.json.gz 를 풀어서 넘긴다.
