@@ -1,0 +1,577 @@
+{
+ "commit": "9414870bbcdda3140f1ef5d7dc5be9f1c5163f12",
+ "gto_pf_data_sha256": "46834f02a775a238f135b9c8837364e9c6860f5837018271ccb03b87b9b5fb3b",
+ "ranges": "current",
+ "hands_per_seed": 300,
+ "seeds": [
+  9100,
+  9101,
+  9102,
+  9103
+ ],
+ "fmt": "standard",
+ "decision_rows": 127,
+ "bet_table": {
+  "flop 2 lead": {
+   "n": 157,
+   "bet_pct": 8.9
+  },
+  "flop 2 cbet": {
+   "n": 221,
+   "bet_pct": 65.2
+  },
+  "turn 2 lead": {
+   "n": 60,
+   "bet_pct": 8.3
+  },
+  "turn 2 barrel": {
+   "n": 87,
+   "bet_pct": 51.7
+  },
+  "river 2 probe": {
+   "n": 157,
+   "bet_pct": 16.6
+  },
+  "flop 2 probe": {
+   "n": 61,
+   "bet_pct": 31.1
+  },
+  "flop 2 probe|2p+": {
+   "n": 8,
+   "bet_pct": 62.5
+  },
+  "flop 2 probe|tp+": {
+   "n": 18,
+   "bet_pct": 66.7
+  },
+  "turn 2 probe": {
+   "n": 135,
+   "bet_pct": 24.4
+  },
+  "turn 2 probe|2p+": {
+   "n": 18,
+   "bet_pct": 66.7
+  },
+  "turn 2 probe|tp+": {
+   "n": 30,
+   "bet_pct": 66.7
+  },
+  "river 2 barrel": {
+   "n": 37,
+   "bet_pct": 59.5
+  },
+  "river 2 barrel|2p+": {
+   "n": 21,
+   "bet_pct": 81.0
+  },
+  "river 2 barrel|tp+": {
+   "n": 26,
+   "bet_pct": 69.2
+  },
+  "flop 2 lead|2p+": {
+   "n": 13,
+   "bet_pct": 61.5
+  },
+  "flop 2 lead|tp+": {
+   "n": 34,
+   "bet_pct": 29.4
+  },
+  "turn 2 barrel|2p+": {
+   "n": 25,
+   "bet_pct": 88.0
+  },
+  "turn 2 barrel|tp+": {
+   "n": 41,
+   "bet_pct": 75.6
+  },
+  "flop 3 lead": {
+   "n": 95,
+   "bet_pct": 5.3
+  },
+  "flop 3 cbet": {
+   "n": 69,
+   "bet_pct": 24.6
+  },
+  "flop 3 probe": {
+   "n": 38,
+   "bet_pct": 13.2
+  },
+  "turn 3 probe": {
+   "n": 127,
+   "bet_pct": 10.2
+  },
+  "river 2 lead": {
+   "n": 16,
+   "bet_pct": 6.2
+  },
+  "river 2 lead|2p+": {
+   "n": 4,
+   "bet_pct": 25.0
+  },
+  "river 2 lead|tp+": {
+   "n": 8,
+   "bet_pct": 12.5
+  },
+  "flop 2 cbet|tp+": {
+   "n": 61,
+   "bet_pct": 77.0
+  },
+  "turn 3 probe|tp+": {
+   "n": 35,
+   "bet_pct": 31.4
+  },
+  "river 3 probe": {
+   "n": 96,
+   "bet_pct": 11.5
+  },
+  "flop 4+ probe": {
+   "n": 9,
+   "bet_pct": 33.3
+  },
+  "flop 4+ probe|2p+": {
+   "n": 1,
+   "bet_pct": 100.0
+  },
+  "flop 4+ probe|tp+": {
+   "n": 2,
+   "bet_pct": 100.0
+  },
+  "flop 3 cbet|tp+": {
+   "n": 19,
+   "bet_pct": 52.6
+  },
+  "turn 2 probe|draw": {
+   "n": 12,
+   "bet_pct": 25.0
+  },
+  "turn 2 lead|tp+": {
+   "n": 28,
+   "bet_pct": 10.7
+  },
+  "river 2 probe|tp+": {
+   "n": 46,
+   "bet_pct": 39.1
+  },
+  "flop 4+ lead": {
+   "n": 5,
+   "bet_pct": 0.0
+  },
+  "flop 4+ cbet": {
+   "n": 5,
+   "bet_pct": 20.0
+  },
+  "flop 4+ cbet|tp+": {
+   "n": 2,
+   "bet_pct": 0.0
+  },
+  "turn 4+ probe": {
+   "n": 8,
+   "bet_pct": 0.0
+  },
+  "turn 4+ probe|tp+": {
+   "n": 3,
+   "bet_pct": 0.0
+  },
+  "river 4+ probe": {
+   "n": 5,
+   "bet_pct": 20.0
+  },
+  "river 4+ probe|tp+": {
+   "n": 2,
+   "bet_pct": 50.0
+  },
+  "flop 3 cbet|2p+": {
+   "n": 3,
+   "bet_pct": 33.3
+  },
+  "flop 3 probe|tp+": {
+   "n": 4,
+   "bet_pct": 25.0
+  },
+  "turn 3 probe|2p+": {
+   "n": 12,
+   "bet_pct": 66.7
+  },
+  "river 3 probe|2p+": {
+   "n": 14,
+   "bet_pct": 57.1
+  },
+  "river 3 probe|tp+": {
+   "n": 28,
+   "bet_pct": 35.7
+  },
+  "flop 2 cbet|2p+": {
+   "n": 17,
+   "bet_pct": 58.8
+  },
+  "turn 3 probe|draw": {
+   "n": 16,
+   "bet_pct": 0.0
+  },
+  "flop 4+ cbet|draw": {
+   "n": 1,
+   "bet_pct": 100.0
+  },
+  "turn 2 barrel|draw": {
+   "n": 6,
+   "bet_pct": 66.7
+  },
+  "flop 3 lead|tp+": {
+   "n": 21,
+   "bet_pct": 19.0
+  },
+  "flop 3 lead|draw": {
+   "n": 8,
+   "bet_pct": 0.0
+  },
+  "flop 2 cbet|draw": {
+   "n": 7,
+   "bet_pct": 57.1
+  },
+  "flop 2 probe|draw": {
+   "n": 1,
+   "bet_pct": 0.0
+  },
+  "flop 3 cbet|draw": {
+   "n": 4,
+   "bet_pct": 50.0
+  },
+  "flop 3 lead|2p+": {
+   "n": 8,
+   "bet_pct": 50.0
+  },
+  "river 2 probe|2p+": {
+   "n": 23,
+   "bet_pct": 43.5
+  },
+  "flop 3 probe|draw": {
+   "n": 3,
+   "bet_pct": 66.7
+  },
+  "turn 2 lead|2p+": {
+   "n": 9,
+   "bet_pct": 22.2
+  },
+  "turn 4+ probe|draw": {
+   "n": 1,
+   "bet_pct": 0.0
+  },
+  "river 4+ probe|2p+": {
+   "n": 1,
+   "bet_pct": 100.0
+  },
+  "turn 3 lead": {
+   "n": 5,
+   "bet_pct": 0.0
+  },
+  "turn 3 lead|tp+": {
+   "n": 3,
+   "bet_pct": 0.0
+  },
+  "turn 3 barrel": {
+   "n": 4,
+   "bet_pct": 50.0
+  },
+  "turn 3 barrel|tp+": {
+   "n": 3,
+   "bet_pct": 66.7
+  },
+  "river 3 lead": {
+   "n": 3,
+   "bet_pct": 0.0
+  },
+  "river 3 lead|tp+": {
+   "n": 3,
+   "bet_pct": 0.0
+  },
+  "river 3 barrel": {
+   "n": 2,
+   "bet_pct": 0.0
+  },
+  "river 3 barrel|tp+": {
+   "n": 2,
+   "bet_pct": 0.0
+  },
+  "flop 2 lead|draw": {
+   "n": 6,
+   "bet_pct": 33.3
+  },
+  "turn 2 lead|draw": {
+   "n": 3,
+   "bet_pct": 33.3
+  },
+  "turn 3 barrel|2p+": {
+   "n": 2,
+   "bet_pct": 50.0
+  },
+  "river 3 lead|2p+": {
+   "n": 1,
+   "bet_pct": 0.0
+  },
+  "flop 3 probe|2p+": {
+   "n": 1,
+   "bet_pct": 0.0
+  }
+ },
+ "top_pair_overpair": {
+  "flop tp_weak": {
+   "n": 14,
+   "bet_pct": 28.6,
+   "mean_eq": 0.541,
+   "blocking": {
+    "pot_control": 6,
+    "line_owner": 2,
+    "showdown(no-init)": 2
+   },
+   "band_now": {
+    "value": 14.3,
+    "weak": 64.3,
+    "mid": 21.4
+   },
+   "band_hu_equiv": {
+    "value": 85.7,
+    "mid": 14.3
+   }
+  },
+  "flop tp_gk": {
+   "n": 13,
+   "bet_pct": 23.1,
+   "mean_eq": 0.496,
+   "blocking": {
+    "showdown(cbet-freq)": 3,
+    "pot_control": 3,
+    "showdown(no-init)": 3,
+    "line_owner": 1
+   },
+   "band_now": {
+    "mid": 23.1,
+    "weak": 76.9
+   },
+   "band_hu_equiv": {
+    "value": 84.6,
+    "mid": 15.4
+   }
+  },
+  "flop overpair": {
+   "n": 8,
+   "bet_pct": 50.0,
+   "mean_eq": 0.595,
+   "blocking": {
+    "pot_control": 3,
+    "semibluff": 1
+   },
+   "band_now": {
+    "mid": 37.5,
+    "weak": 37.5,
+    "value": 25.0
+   },
+   "band_hu_equiv": {
+    "value": 87.5,
+    "mid": 12.5
+   }
+  },
+  "flop tp": {
+   "n": 27,
+   "bet_pct": 25.9,
+   "mean_eq": 0.52,
+   "blocking": {
+    "pot_control": 9,
+    "showdown(no-init)": 5,
+    "showdown(cbet-freq)": 3,
+    "line_owner": 3
+   },
+   "band_now": {
+    "value": 7.4,
+    "mid": 22.2,
+    "weak": 70.4
+   },
+   "band_hu_equiv": {
+    "value": 85.2,
+    "mid": 14.8
+   }
+  },
+  "turn tp_weak": {
+   "n": 15,
+   "bet_pct": 6.7,
+   "mean_eq": 0.494,
+   "blocking": {
+    "pot_control": 5,
+    "giveup(no-init)": 3,
+    "showdown(no-init)": 3,
+    "showdown(cbet-freq)": 1,
+    "value(p<1)": 1,
+    "giveup(cbet-freq)": 1
+   },
+   "band_now": {
+    "weak": 66.7,
+    "mid": 33.3
+   },
+   "band_hu_equiv": {
+    "mid": 26.7,
+    "value": 73.3
+   }
+  },
+  "turn tp_gk": {
+   "n": 11,
+   "bet_pct": 18.2,
+   "mean_eq": 0.474,
+   "blocking": {
+    "showdown(no-init)": 4,
+    "showdown(cbet-freq)": 3,
+    "pot_control": 2
+   },
+   "band_now": {
+    "weak": 54.5,
+    "mid": 45.5
+   },
+   "band_hu_equiv": {
+    "value": 63.6,
+    "mid": 27.3,
+    "weak": 9.1
+   }
+  },
+  "turn overpair": {
+   "n": 4,
+   "bet_pct": 25.0,
+   "mean_eq": 0.516,
+   "blocking": {
+    "pot_control": 3
+   },
+   "band_now": {
+    "weak": 75.0,
+    "mid": 25.0
+   },
+   "band_hu_equiv": {
+    "value": 50.0,
+    "mid": 50.0
+   }
+  },
+  "turn tp": {
+   "n": 26,
+   "bet_pct": 11.5,
+   "mean_eq": 0.486,
+   "blocking": {
+    "showdown(no-init)": 7,
+    "pot_control": 7,
+    "showdown(cbet-freq)": 4,
+    "giveup(no-init)": 3,
+    "value(p<1)": 1,
+    "giveup(cbet-freq)": 1
+   },
+   "band_now": {
+    "weak": 61.5,
+    "mid": 38.5
+   },
+   "band_hu_equiv": {
+    "mid": 26.9,
+    "value": 69.2,
+    "weak": 3.8
+   }
+  },
+  "river tp_weak": {
+   "n": 11,
+   "bet_pct": 18.2,
+   "mean_eq": 0.587,
+   "blocking": {
+    "showdown(no-init)": 6,
+    "thin_river": 2,
+    "showdown(river)": 1
+   },
+   "band_now": {
+    "mid": 63.6,
+    "weak": 27.3,
+    "value": 9.1
+   },
+   "band_hu_equiv": {
+    "value": 72.7,
+    "mid": 27.3
+   }
+  },
+  "river tp_gk": {
+   "n": 4,
+   "bet_pct": 0.0,
+   "mean_eq": 0.474,
+   "blocking": {
+    "showdown(river)": 2,
+    "showdown(no-init)": 2
+   },
+   "band_now": {
+    "weak": 50.0,
+    "mid": 50.0
+   },
+   "band_hu_equiv": {
+    "mid": 50.0,
+    "value": 50.0
+   }
+  },
+  "river overpair": {
+   "n": 4,
+   "bet_pct": 0.0,
+   "mean_eq": 0.593,
+   "blocking": {
+    "showdown(river)": 3,
+    "showdown(no-init)": 1
+   },
+   "band_now": {
+    "mid": 75.0,
+    "weak": 25.0
+   },
+   "band_hu_equiv": {
+    "value": 75.0,
+    "mid": 25.0
+   }
+  },
+  "river tp": {
+   "n": 15,
+   "bet_pct": 13.3,
+   "mean_eq": 0.557,
+   "blocking": {
+    "showdown(no-init)": 8,
+    "showdown(river)": 3,
+    "thin_river": 2
+   },
+   "band_now": {
+    "weak": 33.3,
+    "mid": 60.0,
+    "value": 6.7
+   },
+   "band_hu_equiv": {
+    "mid": 33.3,
+    "value": 66.7
+   }
+  }
+ },
+ "fit": {
+  "n_opp=2": {
+   "samples_tp": 62,
+   "fair_share": 0.333,
+   "current_v3_v2_pcz": [
+    0.86,
+    0.73,
+    0.56
+   ],
+   "joint_unit_v3_v2_pcz": [
+    0.64,
+    0.436,
+    0.25
+   ],
+   "tp_mean_eq": 0.526
+  },
+  "n_opp=3": {
+   "samples_tp": 6,
+   "fair_share": 0.25,
+   "current_v3_v2_pcz": [
+    0.92,
+    0.8,
+    0.62
+   ],
+   "joint_unit_v3_v2_pcz": [
+    0.512,
+    0.287,
+    0.125
+   ],
+   "tp_mean_eq": 0.401
+  }
+ },
+ "applied": false
+}

@@ -891,16 +891,25 @@ def continue_range_commit_strength(hero, board, profile, pot, stack, street, rel
 
 
 def multiway_value_thresholds(n_opp, monster, strong):
-    """다인원 보정된 밸류 문턱. 반환 (mw, v3, v2, pcz).
+    """밸류 문턱. 반환 (mw, v3, v2, pcz).
 
-    넛급(monster)은 상대 수와 무관, 트립스/셋(strong)은 보정 절반(L115).
+    mw(다인원 정도)는 계속 돌려준다 — 팟컨트롤·쇼다운 가치·2스트리트 축소·블러프
+    감쇠가 이 값을 쓴다(넛급 0, 트립스/셋 최대 1, L115). 그 수비 개념은 그대로다.
+
+    문턱 자체에는 더 이상 인원 가산(예전 +0.06/0.07/0.06 × mw)을 붙이지 않는다
+    (2026-10-31, docs/MULTIWAY_FIX_20261031.md). 이 문턱과 비교하는 eq 는
+    _plan_eq 가 **상대 전원과 동시에 겨룬** 에쿼티라, 인원이 늘면 eq 가 이미
+    떨어진다(3인 팟 탑페어 평균 0.52). 같은 '사람이 많으면 이기기 어렵다'를
+    문턱에서 한 번 더 올리면 두 번 깎인다 — 개념 등록부가 이미 지적한 중복
+    (CONCEPT_FUNCTION_REGISTRY.csv:233). 가산은 eq 가 합집합/광역 레인지 기준이던
+    시절의 보정이었다.
     """
     mw = max(0, n_opp - 1)
     if monster: mw = 0                      # 넛급은 상대 수와 무관하게 밸류
     elif strong: mw = min(mw, 1)            # 트립스/셋은 보정 절반만
-    v3 = 0.80 + 0.06*mw          # 3스트리트 밸류 문턱
-    v2 = 0.66 + 0.07*mw
-    pcz = 0.50 + 0.06*mw
+    v3 = 0.80                    # 3스트리트 밸류 문턱
+    v2 = 0.66
+    pcz = 0.50
     return mw, v3, v2, pcz
 
 
@@ -944,10 +953,54 @@ def pure_bluff_attempt_probability(bluff_ok, outs, eq, bluff_skill_03):
             * (0.45 + 0.28*bluff_skill_03))
 
 
+# 멀티웨이 joint rel → 상대 한 명 단위 환산 지수 (2026-10-31).
+# joint rel = '어느 상대에게도 뒤지지 않을 확률'. 상대가 서로 독립이면
+# joint = Π 좌석별 rel ≈ (한 명 기준 rel)^N 이므로 지수의 이론값은 N 이다.
+# 아래 값은 지금 레인지(GTO 동기화, gto_pf_data a539bbf5)에서
+# tools/multiway_calibration.py 의 fit.rel_unit 이 잰 값
+# (log joint ≈ k · 평균 log 좌석별 rel, 2인 809건 / 3인 79건; 벳 빈도는 보지 않음).
+# 카드 제거로 N 보다 조금 크다. 표에 없는 인원은 이론값 N.
+MW_REL_JOINT_EXPONENT = {2: 2.05, 3: 3.21}
+
+
+# 멀티웨이 에쿼티(전원 동시) → 상대 한 명 단위 환산 지수 (2026-10-31, 수정 ①).
+# 밸류 문턱 0.80/0.66/0.50 은 헤즈업 에쿼티 단위다. 멀티웨이 eq 는 _plan_eq 가 상대 전원과
+# 동시에 겨룬 값이라 같은 패라도 낮게 나온다(3인 팟 공정 몫 1/3, 헤즈업 1/2).
+# rel 과 달리 에쿼티는 남은 카드를 공유한다 — 런아웃이 나를 도우면 두 상대를 같이 이긴다 —
+# 그래서 joint 가 좌석별 곱보다 크고(평균 +0.04~0.06) 지수는 N 보다 작다.
+# 값은 tools/multiway_calibration.py fit.eq_unit 이 지금 레인지에서 잰 것
+# (좌석별 헤즈업 _eq_vs 와 전원 _plan_eq 비교, 2인 1013건 / 3인 149건; 벳 빈도는 보지 않음).
+# 확인: 공정 몫 1/3 → 0.47, 1/4 → 0.45 로, 헤즈업 공정 몫 0.5 근처로 옮겨진다.
+# 표에 없는 인원(4+)은 표본이 없어 마지막 측정값(3인)을 쓴다 — N 을 쓰면 과하게 올라간다.
+MW_EQ_JOINT_EXPONENT = {2: 1.46, 3: 1.74}
+
+
+def per_opponent_eq(eq, n_opp):
+    """멀티웨이 전원 동시 에쿼티를 헤즈업(상대 한 명) 에쿼티 단위로 환산. 헤즈업은 그대로."""
+    n = int(n_opp or 1)
+    if n <= 1 or eq is None:
+        return eq
+    k = MW_EQ_JOINT_EXPONENT.get(n, MW_EQ_JOINT_EXPONENT[max(MW_EQ_JOINT_EXPONENT)])
+    return max(0.0, min(1.0, eq)) ** (1.0 / k)
+
+
+def per_opponent_rel(rel, n_opp):
+    """멀티웨이 joint rel 을 헤즈업(상대 한 명) rel 단위로 환산. 헤즈업은 그대로."""
+    n = int(n_opp or 1)
+    if n <= 1 or rel is None:
+        return rel
+    k = MW_REL_JOINT_EXPONENT.get(n, float(n))
+    return max(0.0, min(1.0, rel)) ** (1.0 / k)
+
+
 def relative_strength_value_threshold_shift(v3, v2, rel):
     """상대 레인지 대비 강도(rel)로 밸류 문턱을 연속적으로 옮긴다(L115).
 
     약하면 올리고(봉쇄 강), 넛급이면 약하게 내린다(완화 약). 반환 (v3, v2).
+    구간(0.45~0.85)은 **헤즈업 rel 단위**다. 멀티웨이는 호출 전에
+    per_opponent_rel 로 환산해서 넣는다 — joint rel 을 그대로 넣으면
+    (F7-B 이후 2026-10-31 이전처럼) 3인 팟 탑페어가 대부분 0.45 아래로 떨어져
+    문턱이 최대치까지 올라간다(RANGE_MODEL.md 4절, 구간 넘나듦 61.5%).
     """
     if rel <= 0.45:
         _pen = 1.0
@@ -1204,11 +1257,17 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     trap_ok = (to_act_behind > 0)
 
     # 상대 레인지에 지는 콤보가 많으면 밸류 계획 자체를 강등한다.
-    # eq(랜덤/광역 레인지 대비)가 높아도 rel이 낮으면 얇은 밸류다.
+    # eq(추정 레인지 대비 런아웃 포함 에쿼티; 멀티웨이는 전원 동시)가 높아도
+    # rel(지금 보드 순위 몫)이 낮으면 얇은 밸류다.
     # 상대 레인지에 지는 콤보가 많으면 밸류 문턱을 올린다.
     # 예전에는 0.45 / 0.65 / 0.92 세 계단이라 rel 0.44 와 0.46 이
     # 완전히 다른 계획으로 갈렸다. 연속 곡선으로 바꾼다.
-    v3, v2 = relative_strength_value_threshold_shift(v3, v2, rel)
+    # 밸류 사다리(문턱·얇은 밸류·블락벳 구간)는 헤즈업 단위다. 멀티웨이는 eq·rel 을
+    # 상대 한 명 단위로 환산한 값(_eq_v, _rel_v)으로 비교한다. 헤즈업은 eq/rel 그대로.
+    # 기록(st['eq'], st['rel'])과 다른 판단(쇼다운 가치·블러프·커밋 등)은 원래 값을 쓴다.
+    _eq_v = per_opponent_eq(eq, n_opp)
+    _rel_v = per_opponent_rel(rel, n_opp)
+    v3, v2 = relative_strength_value_threshold_shift(v3, v2, _rel_v)
 
     T = profile.get('type')
     if profile.get('concepts'):
@@ -1223,7 +1282,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     # 미완성 핸드를 '쇼다운 가치 있음'으로 잘못 분류할 수 있다.
     _sd_eq = eq_cur if eq_cur is not None else eq
 
-    if eq >= v3:
+    if _eq_v >= v3:
         # 트랩은 '확률로 고르는 것'이 아니라 상대를 보고 내리는 판단이다.
         # 개념을 가졌는가(sk)는 사람마다 다르지만, 그 도구를 지금 쓸지는
         # 상대가 벳해줄 사람인가 · 스택이 남았는가 · 보드가 안전한가로 결정된다.
@@ -1245,7 +1304,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             _goal, _mode = 'value_3street', 'trap'
         else:
             plan = 'value_3street'; why.append('강도 최상위 → 3스트리트 밸류')
-    elif eq >= v2:
+    elif _eq_v >= v2:
         # 중간 밸류는 "실력이 높으면 무조건 3스트리트"가 아니다.
         # 사람은 현재 equity가 밸류 구간 어디쯤인지, 보드 취약성, SPR,
         # 다인원을 함께 보고 몇 거리까지 갈지 정한다.
@@ -1255,7 +1314,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
         # pot-pot-pot value_3street가 된 원인이다. 숙련도는 위험을 지우는
         # 방향이 아니라 **상황 기반 판단을 더 정확히 따르는 정도**로 쓴다.
         _p2 = middle_value_two_street_probability(
-            profile, street, eq, v2, v3, dang, s_true, made, mw)
+            profile, street, _eq_v, v2, v3, dang, s_true, made, mw)
 
         if rng.random() < max(0.05, min(0.95, _p2)):
             plan = 'value_2street'
@@ -1268,9 +1327,17 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             why.append(
                 '중간 밸류이나 3스트리트 유지(eq %.2f, rel %.2f, p2 %.2f)'
                 % (eq, rel, _p2))
-    elif eq >= pcz:
+    elif _eq_v >= pcz and not (int(n_opp or 1) > 1 and made == 0 and outs >= 8):
+        # (2026-11-01) 멀티웨이에서 메이드 없는 8아웃+ 드로우(플러시 드로우·오픈엔드·콤보)는
+        # 이 중간 강도 분기를 건너뛰고 아래 세미블러프 판단으로 간다.
+        # 이 분기의 선택지(블락벳·팟컨트롤·얇은 밸류·쇼다운)는 **지금 쇼다운 가치가 있는 패**의
+        # 수다. 드로우의 에쿼티는 미래 카드에서 오고 지금은 진다 — 그 가치는 '접게 하거나
+        # 맞추거나'(세미블러프)로 실현된다. 수정 ①로 전원 에쿼티를 한 명 단위로 환산하자
+        # 3인 팟 드로우(전원 0.36 → 0.50)가 여기로 빨려 들어와 쇼다운/포기가 됐다.
+        # 헤즈업은 손대지 않는다(헤즈업 불변; 헤즈업 0.50+ 드로우의 기존 경로 유지).
+        # 아웃 수는 위의 outs(draw_strength + 인식 노이즈), 세미블러프 조건·확률은 기존 그대로.
         # 블락벳: OOP + 이니셔티브 없음 + 쇼다운은 되는 중간 강도
-        block_p = blockbet_probability(profile, rel, dang, oop_vs_aggr, initiative)
+        block_p = blockbet_probability(profile, _rel_v, dang, oop_vs_aggr, initiative)
         if sk('blockbet') >= 1 and rng.random() < block_p:
             plan = 'block'; why.append('OOP 중간강도 → 블락벳으로 가격 통제')
         else:
@@ -1292,7 +1359,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
             _pc_p = medium_potcontrol_probability(pc, mw, _mg)
             if sk('potcontrol') >= 1 and rng.random() < _pc_p:
                 plan = 'pot_control'; why.append('중간강도(eq %.2f, rel %.2f) → 팟 컨트롤' % (eq, rel))
-            elif rel >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
+            elif _rel_v >= max(0.28, 0.52 - 0.080*_mg) and made >= 1:
                 plan = 'value_2street'
                 why.append('중간강도(eq %.2f, rel %.2f, 머징 %.1f) → 얇은 밸류' % (eq, rel, _mg))
             else:
