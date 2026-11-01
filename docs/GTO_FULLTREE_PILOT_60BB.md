@@ -118,7 +118,7 @@ FT_SESSION=<내 세션 id> setsid nohup /home/user/gto_ckpt/py311bin/python3 too
 tail -3 /home/user/gto_ckpt/ft60_board.log          # 진행 확인(12보드마다 한 줄 + 커밋·푸시). 끝줄 FT_BOARD_ALL_DONE
 ```
 - 입력 해시: ft_board.py 가 묶음마다 끝점·패널 파일 sha256 을 bundles.tsv 와 비교하고 다르면 멈춘다. 손으로 확인: `sha256sum data/ft60/step0/terms/term00.json` ↔ bundles.tsv 의 term_sha256.
-- 컨테이너가 죽으면 같은 명령을 다시 실행: 브랜치에 올린 flops.tgz 를 되살리고 남은 보드만 푼다(솔버가 출처키로 재사용 확인).
+- 컨테이너가 죽으면 같은 명령을 다시 실행: 브랜치에 올라간 덩어리(12보드)는 건너뛰고 남은 덩어리만 푼다(최대 12보드 ≈ 20분 손해).
 - 한 컨테이너에 ft_board.py 하나만. 다른 세션의 묶음은 풀지 않는다. 값 계산·판정은 하지 않는다(모으는 세션 몫).
 - 보드 하나가 CFR+ 재시도 뒤에도 안 풀리면 done.json 의 flop_failures_after_retry 에 남고 그대로 끝난다 → 모으는 세션이 멈춤 기준(7장)으로 판단.
 
