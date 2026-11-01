@@ -20,7 +20,7 @@ P = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
 def main():
     dump, out = sys.argv[1], sys.argv[2]
     nodes = {}
-    for line in gzip.open(dump, 'rt'):
+    for line in (gzip.open(dump, 'rt') if dump.endswith('.gz') else open(dump)):
         d = json.loads(line)
         nodes[tuple(d['line'])] = d
     rows = []
