@@ -146,9 +146,32 @@ def run_bundle(b, r):
         if i in st['chunks_done']:
             continue
         chunk = boards[i:i + CHUNK]
-        subprocess.run([sys.executable, os.path.join(CALC, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, pf, fd,
-                        '--workers', WORKERS, '--threads', '1', '--boards', ','.join(chunk)], check=True, env=env,
-                       stdout=open(os.path.join(WORK, b, 'solve.log'), 'a'), stderr=subprocess.STDOUT)
+        cmd = [sys.executable, os.path.join(CALC, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, pf, fd,
+               '--workers', WORKERS, '--threads', '1', '--boards', ','.join(chunk)]
+        if subprocess.run(cmd, env=env, stdout=open(os.path.join(WORK, b, 'solve.log'), 'a'), stderr=subprocess.STDOUT).returncode != 0:
+            # 2026-11-04: 컨테이너가 멈출 때 쓰다 만 보드 결과물은 솔버가 재사용 검증에서 바로(rc=1) 거부한다. 아직 올리지 않은 덩어리의
+            # 보드이므로 그 결과물을 bad_<시각>/ 로 옮기고(지우지 않음) 덩어리를 한 번 더 푼다. 두 번째도 실패하면 멈춘다.
+            bad_dir = os.path.join(fd, 'bad_' + time.strftime('%Y%m%dT%H%M%S'))
+            moved = []
+            for x in chunk:
+                f = os.path.join(fd, x + '.json')
+                okf = False
+                if os.path.exists(f):
+                    try:
+                        okf = 'provenance_key' in json.load(open(f))
+                    except ValueError:
+                        okf = False
+                led = [json.loads(l) for l in open(os.path.join(fd, 'run_ledger.jsonl'))] if os.path.exists(os.path.join(fd, 'run_ledger.jsonl')) else []
+                last = [e for e in led if e.get('board') == x]
+                refused = bool(last) and last[-1].get('status') == 'failed'
+                if os.path.exists(f) and (refused or not okf):
+                    os.makedirs(bad_dir, exist_ok=True)
+                    for suf in ('.json', '.strategy.json'):
+                        if os.path.exists(os.path.join(fd, x + suf)):
+                            os.replace(os.path.join(fd, x + suf), os.path.join(bad_dir, x + suf))
+                    moved.append(x)
+            print(json.dumps({'bundle': b, 'solve_panel_failed': True, 'moved_aside': moved, 'to': bad_dir}), flush=True)
+            subprocess.run(cmd, check=True, env=env, stdout=open(os.path.join(WORK, b, 'solve.log'), 'a'), stderr=subprocess.STDOUT)
         bad = [x for x in chunk if not ok_board(json.load(open(os.path.join(fd, x + '.json'))))]
         retried = {}
         if bad:   # amendment 11 (a): one CFR+ retry at the same budget and target, in parallel (one thread each)
