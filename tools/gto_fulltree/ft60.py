@@ -246,7 +246,7 @@ def fetch_results(k, out):
     got = {}
     for ref in refs:
         br = ref.replace('refs/heads/', '')
-        _git('fetch', '-q', '--depth=1', 'origin', br + ':refs/remotes/origin/' + br)
+        _git('fetch', '-q', '--depth=1', 'origin', '+' + br + ':refs/remotes/origin/' + br)   # '+': 얕은 ref 는 조상 확인이 안 돼 + 없으면 갱신이 거부된다
         ls = _git('ls-tree', '-r', '--name-only', 'origin/' + br, 'data/ft60/results/step%d' % k).stdout.split()
         for p in ls:
             if not p.endswith('/done.json'):
