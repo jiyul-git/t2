@@ -93,6 +93,15 @@ def retry(tf, fd, b, matrix):
     os.makedirs(os.path.dirname(first), exist_ok=True)
     if not os.path.exists(first):
         os.replace(src, first)
+    elif os.path.exists(src):
+        # 2026-11-04 (보드 세션 2): 재시작 뒤 같은 보드를 1차(DCFR)로 다시 푼 결과가 있고 first_attempt/ 에는 예전 1차 결과가 이미 있다.
+        # 지금 결과를 그대로 두면 CFR+ 재시도가 출처키(algo) 차이로 덮어쓰기를 거부한다(rc=1). 1차 결과는 예전 것을 기록으로 두고,
+        # 다시 푼 1차 결과는 dup_first/<시각>/ 로 옮긴다(지우지 않음). 같은 입력·같은 설정이라 두 1차 결과는 같은 절차의 결과다.
+        dup = os.path.join(fd, 'dup_first', time.strftime('%Y%m%dT%H%M%S'))
+        os.makedirs(dup, exist_ok=True)
+        for suf in ('.json', '.strategy.json'):
+            if os.path.exists(os.path.join(fd, b + suf)):
+                os.replace(os.path.join(fd, b + suf), os.path.join(dup, b + suf))
     d0 = json.load(open(first))
     env = dict(os.environ, T2_PANEL_BOARDS=b, RAYON_NUM_THREADS='1', T2_ALGO='cfr+', T2_SOURCE_COMMIT=SOURCE_COMMIT, T2_EXPORT_STRATEGY='1')
     if matrix:
@@ -146,15 +155,57 @@ def run_bundle(b, r):
         if i in st['chunks_done']:
             continue
         chunk = boards[i:i + CHUNK]
-        subprocess.run([sys.executable, os.path.join(CALC, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, pf, fd,
-                        '--workers', WORKERS, '--threads', '1', '--boards', ','.join(chunk)], check=True, env=env,
-                       stdout=open(os.path.join(WORK, b, 'solve.log'), 'a'), stderr=subprocess.STDOUT)
-        bad = [x for x in chunk if not ok_board(json.load(open(os.path.join(fd, x + '.json'))))]
+        # 2026-11-04 (보드 세션 2): 이미 CFR+ 재시도까지 끝난 보드(first_attempt/ 에 첫 결과, 지금 결과는 algo=cfr+)는 출처키의 algo 가
+        # 달라 solve_panel(기본 DCFR)이 재사용을 거부한다(rc=1, 정상 동작). 그 보드는 다시 풀지 않고 재시도 결과로 받는다.
+        def _retried_already(x):
+            f, f0 = os.path.join(fd, x + '.json'), os.path.join(fd, 'first_attempt', x + '.json')
+            if not (os.path.exists(f) and os.path.exists(f0)):
+                return False
+            try:
+                return json.load(open(f))['provenance_key'].get('algo') == 'cfr+'
+            except (ValueError, KeyError):
+                return False
+        to_solve = [x for x in chunk if not _retried_already(x)]
+        cmd = [sys.executable, os.path.join(CALC, 'tools/gto_hu_continuation/solve_panel.py'), tf, MENU, pf, fd,
+               '--workers', WORKERS, '--threads', '1', '--boards', ','.join(to_solve)]
+        if to_solve and subprocess.run(cmd, env=env, stdout=open(os.path.join(WORK, b, 'solve.log'), 'a'), stderr=subprocess.STDOUT).returncode != 0:
+            # 2026-11-04: 컨테이너가 멈출 때 쓰다 만 보드 결과물은 솔버가 재사용 검증에서 바로(rc=1) 거부한다. 아직 올리지 않은 덩어리의
+            # 보드이므로 그 결과물을 bad_<시각>/ 로 옮기고(지우지 않음) 덩어리를 한 번 더 푼다. 두 번째도 실패하면 멈춘다.
+            bad_dir = os.path.join(fd, 'bad_' + time.strftime('%Y%m%dT%H%M%S'))
+            moved = []
+            for x in to_solve:
+                f = os.path.join(fd, x + '.json')
+                okf = False
+                if os.path.exists(f):
+                    try:
+                        okf = 'provenance_key' in json.load(open(f))
+                    except ValueError:
+                        okf = False
+                led = [json.loads(l) for l in open(os.path.join(fd, 'run_ledger.jsonl'))] if os.path.exists(os.path.join(fd, 'run_ledger.jsonl')) else []
+                last = [e for e in led if e.get('board') == x]
+                refused = bool(last) and last[-1].get('status') == 'failed'
+                if os.path.exists(f) and (refused or not okf):
+                    os.makedirs(bad_dir, exist_ok=True)
+                    for suf in ('.json', '.strategy.json'):
+                        if os.path.exists(os.path.join(fd, x + suf)):
+                            os.replace(os.path.join(fd, x + suf), os.path.join(bad_dir, x + suf))
+                    moved.append(x)
+            print(json.dumps({'bundle': b, 'solve_panel_failed': True, 'moved_aside': moved, 'to': bad_dir}), flush=True)
+            subprocess.run(cmd, check=True, env=env, stdout=open(os.path.join(WORK, b, 'solve.log'), 'a'), stderr=subprocess.STDOUT)
+        bad = [x for x in to_solve if not ok_board(json.load(open(os.path.join(fd, x + '.json'))))]
         retried = {}
+        for x in chunk:
+            if x not in to_solve:   # 재시도가 이미 끝난 보드(위 설명)
+                d1 = json.load(open(os.path.join(fd, 'first_attempt', x + '.json')))
+                d2 = json.load(open(os.path.join(fd, x + '.json')))
+                retried[x] = {'first_pct_pot': d1['exploitability_pct_pot'], 'retry_pct_pot': d2['exploitability_pct_pot'],
+                              'ok_after_retry': ok_board(d2), 'retried_before_restart': True}
         if bad:   # amendment 11 (a): one CFR+ retry at the same budget and target, in parallel (one thread each)
             ps = [retry(tf, fd, x, matrix) for x in bad]
-            for p_ in ps:
+            for x, p_ in zip(bad, ps):
                 if p_.wait() != 0:
+                    tail = open(os.path.join(fd, 'logs', x + '.retry.log')).read()[-2000:]
+                    print(json.dumps({'bundle': b, 'retry_failed': x, 'retry_log_tail': tail}), flush=True)
                     raise subprocess.CalledProcessError(p_.returncode, p_.args)
             for x in bad:
                 d1 = json.load(open(os.path.join(fd, 'first_attempt', x + '.json')))

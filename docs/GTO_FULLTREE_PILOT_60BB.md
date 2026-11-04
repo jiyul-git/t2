@@ -117,6 +117,11 @@ B=$(awk -F'\t' -v n=<n> 'NR>1 && $2==n {print $1}' data/ft60/step0/assign.tsv | 
 FT_SESSION=<내 세션 id> setsid nohup /home/user/gto_ckpt/py311bin/python3 tools/gto_fulltree/ft_board.py $B > /home/user/gto_ckpt/ft60_board.log 2>&1 < /dev/null &
 tail -3 /home/user/gto_ckpt/ft60_board.log          # 진행 확인(12보드마다 한 줄 + 커밋·푸시). 끝줄 FT_BOARD_ALL_DONE
 ```
+- **추적되는 대기 작업을 늘 하나 켜 둔다**(2026-11-01 보드 세션 4 보고: 대기 작업 없이 턴을 끝내면 컨테이너가 쉬면서 떼어 낸 프로세스도 정리된다).
+  Bash 도구 `run_in_background=true, timeout=7100000`:
+  `until ! pgrep -f ft_board.py > /dev/null; do sleep 120; done; tail -5 /home/user/gto_ckpt/ft60_board.log`
+  알림이 오면: ft_board.py 가 살아 있으면 대기 작업만 다시 켜고, 죽었으면(끝줄이 FT_BOARD_ALL_DONE 아님) 실행 + 대기를 다시 한다.
+- 로그 0바이트는 정상(첫 12보드가 끝나야 한 줄). 보드별 진행: `/home/user/gto_ckpt/ft60_board/<묶음>/solve.log`.
 - 입력 해시: ft_board.py 가 묶음마다 끝점·패널 파일 sha256 을 bundles.tsv 와 비교하고 다르면 멈춘다. 손으로 확인: `sha256sum data/ft60/step0/terms/term00.json` ↔ bundles.tsv 의 term_sha256.
 - 컨테이너가 죽으면 같은 명령을 다시 실행: 브랜치에 올라간 덩어리(12보드)는 건너뛰고 남은 덩어리만 푼다(최대 12보드 ≈ 20분 손해).
 - 한 컨테이너에 ft_board.py 하나만. 다른 세션의 묶음은 풀지 않는다. 값 계산·판정은 하지 않는다(모으는 세션 몫).
