@@ -93,6 +93,15 @@ def retry(tf, fd, b, matrix):
     os.makedirs(os.path.dirname(first), exist_ok=True)
     if not os.path.exists(first):
         os.replace(src, first)
+    elif os.path.exists(src):
+        # 2026-11-04 (보드 세션 2): 재시작 뒤 같은 보드를 1차(DCFR)로 다시 푼 결과가 있고 first_attempt/ 에는 예전 1차 결과가 이미 있다.
+        # 지금 결과를 그대로 두면 CFR+ 재시도가 출처키(algo) 차이로 덮어쓰기를 거부한다(rc=1). 1차 결과는 예전 것을 기록으로 두고,
+        # 다시 푼 1차 결과는 dup_first/<시각>/ 로 옮긴다(지우지 않음). 같은 입력·같은 설정이라 두 1차 결과는 같은 절차의 결과다.
+        dup = os.path.join(fd, 'dup_first', time.strftime('%Y%m%dT%H%M%S'))
+        os.makedirs(dup, exist_ok=True)
+        for suf in ('.json', '.strategy.json'):
+            if os.path.exists(os.path.join(fd, b + suf)):
+                os.replace(os.path.join(fd, b + suf), os.path.join(dup, b + suf))
     d0 = json.load(open(first))
     env = dict(os.environ, T2_PANEL_BOARDS=b, RAYON_NUM_THREADS='1', T2_ALGO='cfr+', T2_SOURCE_COMMIT=SOURCE_COMMIT, T2_EXPORT_STRATEGY='1')
     if matrix:
@@ -193,8 +202,10 @@ def run_bundle(b, r):
                               'ok_after_retry': ok_board(d2), 'retried_before_restart': True}
         if bad:   # amendment 11 (a): one CFR+ retry at the same budget and target, in parallel (one thread each)
             ps = [retry(tf, fd, x, matrix) for x in bad]
-            for p_ in ps:
+            for x, p_ in zip(bad, ps):
                 if p_.wait() != 0:
+                    tail = open(os.path.join(fd, 'logs', x + '.retry.log')).read()[-2000:]
+                    print(json.dumps({'bundle': b, 'retry_failed': x, 'retry_log_tail': tail}), flush=True)
                     raise subprocess.CalledProcessError(p_.returncode, p_.args)
             for x in bad:
                 d1 = json.load(open(os.path.join(fd, 'first_attempt', x + '.json')))
