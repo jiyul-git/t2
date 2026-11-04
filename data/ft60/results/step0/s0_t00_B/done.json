@@ -1,0 +1,78 @@
+{
+ "bundle": "s0_t00_B",
+ "step": 0,
+ "term_sha256": "5fabd5ea7d5150031275e936ae36eed6b1b208cb69c43d81d7c7b10449caf9a6",
+ "panel_sha256": "106a07a2070b61b338b1eb13a68bcd9024b19b07b6f0fc360e8a52dce8937255",
+ "matrix": false,
+ "boards": 72,
+ "flop_failures_after_retry": [],
+ "retried": {
+  "AcQcTc": {
+   "first_pct_pot": 0.6516398091857899,
+   "retry_pct_pot": 0.29914268204238315,
+   "ok_after_retry": true
+  },
+  "AcQcJc": {
+   "first_pct_pot": 0.3809536174024566,
+   "retry_pct_pot": 0.2863632203818004,
+   "ok_after_retry": true
+  },
+  "QcTc9c": {
+   "first_pct_pot": 0.3552349739954672,
+   "retry_pct_pot": 0.2767819689852855,
+   "ok_after_retry": true
+  },
+  "Kc9c4c": {
+   "first_pct_pot": 0.30122684761917423,
+   "retry_pct_pot": 0.29007913370924143,
+   "ok_after_retry": true
+  },
+  "Ac6d6c": {
+   "first_pct_pot": 0.3277416275433024,
+   "retry_pct_pot": 0.2701654156675152,
+   "ok_after_retry": true
+  },
+  "AcQhQd": {
+   "first_pct_pot": 2.71178286240234,
+   "retry_pct_pot": 0.2572424953094399,
+   "ok_after_retry": true
+  },
+  "Ac9h9d": {
+   "first_pct_pot": 1.9148805032096872,
+   "retry_pct_pot": 0.2701331195831528,
+   "ok_after_retry": true
+  },
+  "Ac3h3d": {
+   "first_pct_pot": 0.8523534689506682,
+   "retry_pct_pot": 0.27422438832509033,
+   "ok_after_retry": true
+  },
+  "6c2d2c": {
+   "first_pct_pot": 1.0926107177298956,
+   "retry_pct_pot": 0.29378309161151583,
+   "ok_after_retry": true
+  },
+  "QdQcJc": {
+   "first_pct_pot": 0.5790887614420527,
+   "retry_pct_pot": 0.28814028107785417,
+   "ok_after_retry": true
+  },
+  "KcQhQd": {
+   "first_pct_pot": 2.0533993553534673,
+   "retry_pct_pot": 0.2676898298051881,
+   "ok_after_retry": true
+  },
+  "KcTdTc": {
+   "first_pct_pot": 0.3178123443297579,
+   "retry_pct_pot": 0.29308344058903146,
+   "ok_after_retry": true
+  }
+ },
+ "max_pct_pot": 0.29914268204238315,
+ "mean_pct_pot": 0.2776329258085617,
+ "values_sha256": "8b5e6ca867cef2b9344ad0550b2788ec56c2b81d00bad3478f141f34a0be0826",
+ "matrix_sums_sha256": null,
+ "session": "session_01JQGBPHQN7WAPcdpveH1Tg7",
+ "branch": "claude/ft60_board_3",
+ "wall_min_this_run": 33.6
+}
