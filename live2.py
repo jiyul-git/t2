@@ -952,7 +952,9 @@ def new_game(entries=100, start_stack=30000, seed=None, itm_frac=0.15,
 def _hero_table_setup(f):
     """히어로 테이블을 TDA dead-button layout과 함께 구성한다."""
     tb = f.hero_table()
-    alive = [p for p in tb.alive() if tb.seat_of(p['pid'])]
+    _wait = getattr(tb, 'waiting', None) or ()
+    alive = [p for p in tb.alive() if tb.seat_of(p['pid'])
+             and p['pid'] not in _wait]
     alive.sort(key=lambda p: tb.seat_of(p['pid']))
     seats = [tb.seat_of(p['pid']) for p in alive]
     hero_seat = None
@@ -968,6 +970,9 @@ def _hero_table_setup(f):
 
 def build_hand(st):
     f = _load_field(st['field'])
+    if st.get('hero_wait_hand'):
+        # 늦게 들어온 판: HERO 는 관전만 하고 다음 판부터 참여한다.
+        f.hero_table().waiting = {f.hero_pid}
     tb, alive, seats, profs, stacks, layout, hero_seat = _hero_table_setup(f)
     sb, bb = f.blinds()
     # 리딩 장부는 이 대회 상태 안에 산다. 전역 book.json 을 쓰면
@@ -1571,6 +1576,9 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     for p in alive:
         s = tb.seat_of(p['pid'])
         if s: p['stack'] = int(h.stacks.get(s, p['stack']))
+    # 관전 판이 끝났다: 다음 판부터 HERO 도 정상 좌석이다(버튼 이동·밸런싱 포함).
+    if getattr(tb, 'waiting', None):
+        tb.waiting = set()
     # 고정 좌석 기준으로 다음 딜러를 정한다.
     tb.advance_button()
     tb.hands += 1
@@ -1702,6 +1710,7 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
     st['field'] = _dump(f)                     # 리딩 누적(장부)은 field 안에 함께 저장된다
     st.pop('book', None)
     st['hand_seed'] = None; st['actions'] = []; st['decisions'] = []
+    st.pop('hero_wait_hand', None)
     st['notes'] = notes
     st['busted'] = busted; st['rank'] = rank
     save(st)
@@ -1743,6 +1752,21 @@ def finish(st, f, tb, alive, h, run, defer_others=False,
                                       notes=notes, bb=f.blinds()[1])
     except Exception as e:
         view_txt = '결과 렌더 실패: %s: %s' % (type(e).__name__, e)
+    if h.hero is None:
+        _hp = f.players.get(f.hero_pid) or {}
+        _spec = {'seat': tb.seat_of(f.hero_pid), 'pid': f.hero_pid,
+                 'stack': int(_hp.get('stack', 0))}
+        for _v in (view_txt, opening_view):
+            if isinstance(_v, dict):
+                _v['spectating'] = _spec
+                # 결과 화면에는 레벨이 없다. 관전 판은 앞선 내 결정 화면도 없으니
+                # 시작 화면 것을 그대로 쓴다(상단 레벨 표시).
+                if (_v is view_txt and isinstance(opening_view, dict)
+                        and opening_view.get('level') and not _v.get('level')):
+                    _v['level'] = opening_view['level']
+                # 화면 회전 기준(내 자리가 아래). 카드·액션은 없다.
+                if _spec['seat'] is not None:
+                    _v['hero_seat'] = _spec['seat']
     return {'done': True, 'view': view_txt, 'result': res, 'notes': notes,
             'hand_no': f.hand_no, 'busted': busted, 'rank': rank,
             'bust_pending': bool(st.get('bust_pending')),

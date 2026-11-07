@@ -24,7 +24,7 @@ def build(raw, hand, field=None, level=None, blinds=None, hand_no=None, notes=No
     pos_of = hand.pos; seat_of = hand.seat_of
     v = {'stage': raw['stage'], 'hash': raw['hash'], 'hand_no': hand_no,
          'notes': list(notes or [])}
-    v['hero'] = {'seat': hero, 'pos': pos_of[hero], 'hole': raw['hole'],
+    v['hero'] = {'seat': hero, 'pos': pos_of.get(hero, ''), 'hole': raw['hole'],
                  'stack': raw['stack'], 'bb': bbs(raw['stack'], bb)}
     v['pot'] = raw['pot']; v['pot_bb'] = bbs(raw['pot'], bb)
     v['tocall'] = raw['tocall']; v['tocall_bb'] = bbs(raw['tocall'], bb)

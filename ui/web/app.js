@@ -611,7 +611,7 @@ function botAvatarHTML(id) {
 function renderSeats(v) {
   noteBB(v);
   const n = v.n_slots || 8;
-  const portraits = PokerVisuals.tablePortraits(v.seats || []);
+  const portraits = PokerVisuals.tablePortraits(portraitSeats(v));
   const box = $('#seats');
   // 카드가 가운데 덱에서 날아오게 하려면 '가운데 → 이 자리' 를 픽셀로 알아야
   // 한다. 좌석은 %로 배치되는데 CSS transform 의 %는 자기 박스 기준이라
@@ -987,6 +987,15 @@ function renderHeroSlot(side, code, seat) {
   slot.dataset.win = win ? '1' : '0';
 }
 
+/* 관전 판에는 내 자리가 seats 에 없다. 초상화 배정에서 빠지면 봇이 내 얼굴을
+ * 가져가고 나는 기본 얼굴이 된다 → 다음 판에 얼굴이 바뀐다. 배정에만 넣는다. */
+function portraitSeats(v) {
+  const seats = v.seats || [];
+  const sp = v.spectating;
+  if (!sp || sp.seat == null || seats.some((x) => x.seat === sp.seat)) return seats;
+  return seats.concat([{ seat: sp.seat, pid: sp.pid, hero: true }]);
+}
+
 function renderHero(v) {
   noteBB(v);
   const me = (v.seats || []).find((x) => x.hero);
@@ -994,7 +1003,7 @@ function renderHero(v) {
 
   box.hidden = false;
   const portrait = $('#heroavatar');
-  const portraitId = PokerVisuals.tablePortraits(v.seats || []).get(
+  const portraitId = PokerVisuals.tablePortraits(portraitSeats(v)).get(
     me ? me.seat : v.hero_seat
   ) ?? 0;
   if (portrait && portrait.dataset.portraitId !== String(portraitId)) {
@@ -1003,19 +1012,23 @@ function renderHero(v) {
   }
   PokerVisuals.scheduleGaze();
   box.classList.toggle('folded', !!me && !me.in_hand);
+  // 늦게 들어온 판: 자리는 있지만 이번 판은 카드 없이 관전(다음 판부터 참여).
+  const spec = !me && v.spectating ? v.spectating : null;
+  box.classList.toggle('spectating', !!spec);
 
   const d = v.button_seat === v.hero_seat ? ' · D' : '';
   const award = awardLabel(v.hero_seat);
 
   const heroName = WATCH_MODE ? '' : heroProfileNickname();
-  $('#heroinfo .pos').textContent =
-    (heroName ? heroName + (me && me.pos ? ' · ' : '') : '') +
+  $('#heroinfo .pos').textContent = spec
+    ? (heroName ? heroName + ' · ' : '') + '관전 중 · 다음 판부터 참여'
+    : (heroName ? heroName + (me && me.pos ? ' · ' : '') : '') +
     (me ? (me.pos || '') : '') +
     d +
     (me && me.allin ? ' · ALL-IN' : '') +
     (award ? ' · ' + award : '');
 
-  $('#heroinfo .stack').innerHTML = me ? amt(me.stack) : '';
+  $('#heroinfo .stack').innerHTML = me ? amt(me.stack) : (spec ? amt(spec.stack) : '');
 
   ensureHeroSlots();
 

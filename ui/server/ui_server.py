@@ -221,6 +221,16 @@ def _managed_play_state():
         st['offscreen'] = False
         st.pop('background_pending', None)
         st['field']['sitout_pids'] = []
+        # 늦게 들어온 경우(테이블이 이미 돌고 있음): 첫 판은 카드·블라인드 없이
+        # 관전하고 다음 판부터 참여한다. 시작 전에 미리 들어와 있던 경우는 해당 없음.
+        try:
+            _fd = st['field']
+            _ht = (_fd.get('players') or {}).get(str(_fd.get('hero_pid')), {}).get('table')
+            _hands = int(((_fd.get('tables') or {}).get(str(_ht)) or {}).get('hands') or 0)
+        except Exception:
+            _hands = 0
+        if st.get('hand_seed') is None and _hands > 0:
+            st['hero_wait_hand'] = True
         st['field']['virtual_play_seconds'] = _TS.active_seconds(time.time() - ev['starts_at'])
         st['ui_clock_started_at'] = ev['starts_at']
         _sync_clock(st)

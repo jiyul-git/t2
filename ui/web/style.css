@@ -336,6 +336,7 @@ input, textarea { user-select: text; -webkit-user-select: text; -webkit-touch-ca
 }
 #hero[hidden] { display: none; }
 #hero.folded { opacity: .45; }
+#hero.spectating { opacity: .7; }
 #heroinfo { text-align: left; min-width: 96px; }
 #heroinfo .pos { font-size: 11px; color: var(--gold); letter-spacing: .4px; }
 #heroinfo .stack { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }

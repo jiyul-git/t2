@@ -94,8 +94,12 @@ class Table:
 
     def ordered_alive(self):
         """고정 물리 좌석의 시계방향 순서로 생존자를 반환한다."""
+        # 관전 대기(레이트 입장 첫 판): 자리는 있지만 이번 판엔 카드도
+        # 블라인드도 없다. build_hand 가 그 판에만 잠깐 넣는다.
+        _wait = getattr(self, 'waiting', None) or ()
         return sorted(
-            (p for p in self.alive() if self.seat_of(p['pid']) is not None),
+            (p for p in self.alive() if self.seat_of(p['pid']) is not None
+             and p['pid'] not in _wait),
             key=lambda p: self.seat_of(p['pid'])
         )
 
