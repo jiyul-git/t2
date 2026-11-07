@@ -1373,6 +1373,20 @@ def _kick_pending_worker():
 
 def _step(action=None, amount=0, on_bot_action=None):
     """HERO 진행과 비-HERO round worker를 병렬로 조정한다."""
+    # 폰에서만 생기는 긴 멈춤을 찾기 위한 처리 시간 기록(server.log '[처리시간]').
+    _t0 = time.monotonic()
+    _mark = {'engine': 0.0}
+    try:
+        r = _step_inner(action, amount, on_bot_action, _mark)
+    finally:
+        _dt = time.monotonic() - _t0
+        if _dt >= 0.5:
+            print('[처리시간] action=%s 전체 %.2f초 (엔진 %.2f초, 앞뒤 정리 %.2f초)' % (
+                action, _dt, _mark['engine'], _dt - _mark['engine']), flush=True)
+    return r
+
+
+def _step_inner(action, amount, on_bot_action, _mark):
     st0 = None
     try:
         if os.path.exists(L.ST):
@@ -1437,7 +1451,9 @@ def _step(action=None, amount=0, on_bot_action=None):
     if on_bot_action is not None:
         kw['on_bot_action'] = on_bot_action
 
+    _te = time.monotonic()
     r = L.step(action, amount, **kw) if action is not None else L.step(**kw)
+    _mark['engine'] = time.monotonic() - _te
 
     if DEFER and not vclock:
         try:
