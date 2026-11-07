@@ -525,6 +525,21 @@ function slotPos(slot, heroSlot, n, rfx, rfy) {
   return { x: 50 + 42 * rfx * Math.cos(th), y: 44 + (sn < 0 ? 42 : 39) * rfy * sn - lift * rfy };
 }
 
+/* 좌석 자리. 내 바로 양옆 아래 두 자리(시계방향 첫·마지막)는 테이블 바깥쪽으로 조금 뺀다
+ * (2026-11-07 폰 화면: 두 자리가 안쪽으로 몰려 보였다). 칩 위치도 이 자리를 기준으로 잡는다. */
+const NEAR_HERO_OUT = 5;   // 가로 % 만큼 바깥으로
+function nearHeroSide(slot, heroSlot, n) {
+  if (n < 6 || heroSlot == null) return 0;
+  const off = (((slot - heroSlot) % n) + n) % n;
+  return off === 1 ? 1 : off === n - 1 ? -1 : 0;   // 1 = 오른쪽 아래, -1 = 왼쪽 아래
+}
+function seatPos(slot, heroSlot, n) {
+  const p = slotPos(slot, heroSlot, n, 1, 1);
+  const k = nearHeroSide(slot, heroSlot, n);
+  if (k) p.x += k * NEAR_HERO_OUT;
+  return p;
+}
+
 function sideSeatClass(p) {
   if (!p || p.y < 34 || p.y > 58) return '';
   if (p.x >= 84) return ' side-right';
@@ -623,7 +638,7 @@ function renderSeats(v) {
   let html = '';
   for (let slot = 1; slot <= n; slot++) {
     if (slot === v.hero_seat) continue;           // 히어로는 하단 바에 그린다
-    const p = slotPos(slot, v.hero_seat, n, 1, 1);
+    const p = seatPos(slot, v.hero_seat, n);
     const d = by[slot];
     // '가운데 → 이 자리' 를 좌석 자신에 심는다. 커스텀 속성은 상속되므로
     // 카드가 var(--dx)/var(--dy) 를 그대로 받는다. 카드마다 style 을 따로
@@ -730,6 +745,12 @@ function chipPosition(v, seat) {
   const lower = slotPos(seat, v.hero_seat, n, 1, 1).y > 44;
   // 위쪽 좌석은 가로로 더 벌려(각 좌석 아래) 맨 위 두 자리의 칩·금액이 서로 겹치지 않게 한다.
   const p = lower ? slotPos(seat, v.hero_seat, n, 0.52, 0.78) : slotPos(seat, v.hero_seat, n, 0.75, 0.62);
+  // 내 양옆 아래 두 자리: 칩이 팟 쪽(가운데)으로 너무 들어가 있었다 → 그 자리 바로 안쪽 위에 둔다.
+  const k = nearHeroSide(seat, v.hero_seat, n);
+  if (k) {
+    const sp = seatPos(seat, v.hero_seat, n);
+    p.x = sp.x - k * 16; p.y = sp.y - 4;
+  }
   if (side === ' side-left') { p.x = 26; p.y = 54; }
   if (side === ' side-right') { p.x = 78; p.y = 50; }
   return {p, side};
