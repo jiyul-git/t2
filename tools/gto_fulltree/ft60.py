@@ -7,7 +7,9 @@
   python3 tools/gto_fulltree/ft60.py collect <k>        # 보드 세션 결과 모으기 → step<k>/collect/report.json + tables_{A,B,AB}
   python3 tools/gto_fulltree/ft60.py next_tables <k>    # k+1단계 표(감쇠) manifest
 
-환경: FT_CALC (계산 체크아웃, 기본 /home/user/calc — census 79a9aca6 + 전략 저장 패치 + t2_ft_export), FT_WORK(기본 /home/user/gto_ckpt/ft60).
+환경: FT_CALC (계산 체크아웃, 기본 /home/user/calc — census 79a9aca6 + 전략 저장 패치 + t2_ft_export), FT_WORK(기본 /home/user/gto_ckpt/ft<스택>).
+스택 매개변수(2026-11-07, ft30 용 일반화): FT_STACK(기본 60 = 예전 동작 그대로), FT_CFG(설정 파일 이름; 기본 60→cfg_p60_o25.json, 30→cfg_p30_v1.json),
+FT_N_TERMS(기본 40), FT_MIN_REACH(있으면 헤즈업 도달 >= 이 값인 끝점 전부, FT_N_TERMS 무시), FT_SESSIONS(보드 세션 수, 기본 5).
 """
 import gzip
 import hashlib
@@ -17,12 +19,14 @@ import subprocess
 import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+STACK = int(os.environ.get('FT_STACK', '60'))
 CALC = os.environ.get('FT_CALC', '/home/user/calc')
-WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft60')
+WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft%d' % STACK)
 BIN = os.path.join(CALC, 'vendor/gtopen/target/release/examples')
-CFG = os.path.join(CALC, 'data/gto_spot/plan_a/cfg_p60_o25.json')
-D = os.path.join(REPO, 'data/ft60')
-N_TERMS = 40                      # 사용자 결정 10-31: 헤즈업 끝점 40개
+CFG = os.path.join(CALC, 'data/gto_spot/plan_a', os.environ.get('FT_CFG') or {60: 'cfg_p60_o25.json', 30: 'cfg_p30_v1.json'}[STACK])
+D = os.path.join(REPO, 'data/ft%d' % STACK)
+N_TERMS = int(os.environ.get('FT_N_TERMS', '40'))   # 사용자 결정 10-31: 헤즈업 끝점 40개 (ft60)
+MIN_REACH = float(os.environ['FT_MIN_REACH']) if os.environ.get('FT_MIN_REACH') else None
 PANELS = {'A': os.path.join(D, 'panels/panel_prec_A72.json'), 'B': os.path.join(D, 'panels/panel_prec_B72.json')}
 POS = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
 RANKS = '23456789TJQKA'
@@ -74,7 +78,8 @@ def seeds():
     os.makedirs(WORK, exist_ok=True)
     info = export('-', lines, os.path.join(WORK, 'seed_nodes.jsonl'))
     man = {'schema': 't2_hu_continuation_manifest_v1', 'tables': [],
-           'note': 'step 0 seeds: BB loop final tables (p60 HJ, LJ o25); every other terminal static (docs/GTO_FULLTREE_PILOT_60BB.md 3장)'}
+           'note': ('step 0 seeds: BB loop final tables (p60 HJ, LJ o25); every other terminal static (docs/GTO_FULLTREE_PILOT_60BB.md 3장)' if STACK == 60 else
+                    'step 0 seeds: BB loop tables found in data/ft%d/seed (%d bb); every other terminal static (docs/GTO_FULLTREE_30BB.md)' % (STACK, STACK))}
     for (f, line, t), e in zip(rows, info):
         assert e['kind'] == 'pot_share' and int(e['live']) == int(t['live']) and abs(e['pot_bb'] - float(t['pot_bb'])) < 1e-9, (line, e)
         tab = dict(t)
@@ -141,7 +146,7 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
     os.makedirs(os.path.join(sd, 'terms'), exist_ok=True)
     hu = hu_terminals(dump)
     tot = sum(w for w, _ in hu)
-    pick = hu[:n]
+    pick = [x for x in hu if x[0] >= MIN_REACH] if MIN_REACH is not None else hu[:n]
     man = os.path.join(sd, 'tables/manifest.json')
     info = export(ck, [l for _, l in pick], os.path.join(WORK, 'step%d_export.jsonl' % k), man if os.path.exists(man) else None)
     rows = []
@@ -161,11 +166,12 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
             f.write('\t'.join(str(r[c]) for c in cols) + '\n')
     # 묶음 → 보드 세션 배분(가장 긴 것부터 가장 덜 찬 세션에): 예상 시간 = 행렬 끝점 1.9h(실측 9.4절), 그 밖 0.8h(추정, 0단계 결과로 고침)
     n_sess = int(os.environ.get('FT_SESSIONS', '5'))
+    h_mat, h_simple = float(os.environ.get('FT_H_MATRIX', '1.9')), float(os.environ.get('FT_H_SIMPLE', '0.8'))   # 예상 시간(시간): 행렬 끝점 / 그 밖
     load = [0.0] * n_sess
     assign = []
-    for r in sorted(rows, key=lambda r: (-(1.9 if r['matrix'] else 0.8), -r['reach'], r['bundle'])):
+    for r in sorted(rows, key=lambda r: (-(h_mat if r['matrix'] else h_simple), -r['reach'], r['bundle'])):
         i = min(range(n_sess), key=lambda x: (load[x], x))
-        load[i] += 1.9 if r['matrix'] else 0.8
+        load[i] += h_mat if r['matrix'] else h_simple
         assign.append((r['bundle'], i + 1))
     with open(os.path.join(sd, 'assign.tsv'), 'w') as f:
         f.write('bundle\tsession\n')
@@ -241,13 +247,13 @@ def _git(*a):
 
 
 def fetch_results(k, out):
-    """원격의 claude/ft60_board_* 브랜치에서 step k 결과를 out/<bundle>/ 로 꺼낸다(done.json 이 있는 것만, sha 확인)."""
-    refs = [l.split()[1] for l in _git('ls-remote', 'origin', 'refs/heads/claude/ft60_board_*').stdout.splitlines()]
+    """원격의 claude/ft<스택>_board_* 브랜치에서 step k 결과를 out/<bundle>/ 로 꺼낸다(done.json 이 있는 것만, sha 확인)."""
+    refs = [l.split()[1] for l in _git('ls-remote', 'origin', 'refs/heads/claude/ft%d_board_*' % STACK).stdout.splitlines()]
     got = {}
     for ref in refs:
         br = ref.replace('refs/heads/', '')
         _git('fetch', '-q', '--depth=1', 'origin', '+' + br + ':refs/remotes/origin/' + br)   # '+': 얕은 ref 는 조상 확인이 안 돼 + 없으면 갱신이 거부된다
-        ls = _git('ls-tree', '-r', '--name-only', 'origin/' + br, 'data/ft60/results/step%d' % k).stdout.split()
+        ls = _git('ls-tree', '-r', '--name-only', 'origin/' + br, 'data/ft%d/results/step%d' % (STACK, k)).stdout.split()
         for p in ls:
             if not p.endswith('/done.json'):
                 continue
@@ -371,7 +377,7 @@ def collect(k):
             for n in ('A', 'B', 'AB'):
                 t = tables_raw[n].setdefault(node, {'schema': 't2_hu_continuation_table_v1', 'node': node, 'line': tj['line'],
                                                     'live': tj['terminal_live_mask'], 'pot_bb': tj['pot_bb'], 'value_convention': 'gross_share',
-                                                    'seats': [], 'provenance': {'kind': 'ft60 step %d panel %s (raw%s)' % (k, n, ', matrix x arriving dist' if matrix else '')}})
+                                                    'seats': [], 'provenance': {'kind': 'ft%d step %d panel %s (raw%s)' % (STACK, k, n, ', matrix x arriving dist' if matrix else '')}})
                 t['seats'].append({'seat': pl['seat'], 'position': pos, 'gross': [float(x) for x in V[n]], 'se': raw[n][1][pos]})
         rep['terminals'][str(j)] = {'node': node, 'line': tj['line'], 'matrix': matrix, 'reach': next(float(r['reach']) for r in rows if int(r['term']) == j),
                                     'seats': seats, 'max_D_over_U': max((s['D_over_U'] or 0) for s in seats.values())}
@@ -416,7 +422,7 @@ def next_tables(k):
     hp = os.path.join(D, 'history.json')
     if os.path.exists(hp):
         hist = json.load(open(hp))
-    man = {'schema': 't2_hu_continuation_manifest_v1', 'tables': [], 'note': 'ft60 step %d tables from step %d' % (k + 1, k)}
+    man = {'schema': 't2_hu_continuation_manifest_v1', 'tables': [], 'note': 'ft%d step %d tables from step %d' % (STACK, k + 1, k)}
     ab_dir = os.path.join(sd, 'collect/tables_AB')
     done_nodes = set()
     for j, tr in rep['terminals'].items():
@@ -431,7 +437,7 @@ def next_tables(k):
             og = {s['seat']: s['gross'] for s in old['seats']}
             for s in tab['seats']:
                 s['gross'] = [(1 - a) * x + a * y for x, y in zip(og[s['seat']], s['gross'])]
-        tab['provenance'] = {'kind': 'ft60 step %d -> %d (alpha %s%s)' % (k, k + 1, a, ', no previous table: raw A u B' if old is None else ''),
+        tab['provenance'] = {'kind': 'ft%d step %d -> %d (alpha %s%s)' % (STACK, k, k + 1, a, ', no previous table: raw A u B' if old is None else ''),
                              'cycling': cyc}
         json.dump(tab, open(os.path.join(nd, 'node%d.json' % node), 'w'))
         man['tables'].append({'file': 'node%d.json' % node, 'line': tab['line'], 'alpha': a if old is not None else 1.0})

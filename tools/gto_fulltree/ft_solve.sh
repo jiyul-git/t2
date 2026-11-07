@@ -1,14 +1,16 @@
 #!/bin/sh
-# 60bb 전체 트리 k단계 풀이(이어서 가능): ft_solve.sh <k>
-#   T2_CONT_FILE = data/ft60/step<k>/tables/manifest.json (없으면 정적). 50회 단위, 각 덩어리 뒤 gap(스킵 1e-9),
+# 전체 트리 k단계 풀이(이어서 가능; 스택 FT_STACK, 기본 60): ft_solve.sh <k>
+#   T2_CONT_FILE = data/ft<스택>/step<k>/tables/manifest.json (없으면 정적). 50회 단위, 각 덩어리 뒤 gap(스킵 1e-9),
 #   스킵 gap <= 0.012 이면 정확 gap(스킵 0) 측정. 정확 gap <= 0.010bb 또는 400회에서 멈춤 → 트리 덤프(reach >= 1e-6).
 #   2시간 작업 제한을 피하려면: setsid nohup sh tools/gto_fulltree/ft_solve.sh <k> > <log> 2>&1 &
 set -e
 K=$1; R=$(cd "$(dirname "$0")/../.." && pwd)
+S=${FT_STACK:-60}    # 스택(기본 60 = 예전 동작). 설정 파일 이름: FT_CFG, 없으면 60 -> cfg_p60_o25.json, 30 -> cfg_p30_v1.json
+if [ -z "$FT_CFG" ]; then case $S in 60) FT_CFG=cfg_p60_o25.json;; 30) FT_CFG=cfg_p30_v1.json;; *) echo "set FT_CFG for stack $S"; exit 1;; esac; fi
 E=${FT_CALC:-/home/user/calc}/vendor/gtopen/target/release/examples
-CFG=${FT_CALC:-/home/user/calc}/data/gto_spot/plan_a/cfg_p60_o25.json
-W=${FT_WORK:-/home/user/gto_ckpt/ft60}/solve_s$K; mkdir -p $W; cd $W
-M=$R/data/ft60/step$K/tables/manifest.json
+CFG=${FT_CALC:-/home/user/calc}/data/gto_spot/plan_a/$FT_CFG
+W=${FT_WORK:-/home/user/gto_ckpt/ft$S}/solve_s$K; mkdir -p $W; cd $W
+M=$R/data/ft$S/step$K/tables/manifest.json
 [ -f $M ] && export T2_CONT_FILE=$M && echo "tables: $M"
 export PREFLOP_EQ_SEED=202 PREFLOP_MULTIWAY_SEED=202 PREFLOP_EQ_SAMPLES=1200
 N=$(cat next_n 2>/dev/null || echo 50)

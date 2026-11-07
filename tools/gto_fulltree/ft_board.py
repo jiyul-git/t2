@@ -3,7 +3,8 @@
 
   python3 tools/gto_fulltree/ft_board.py <bundle_id> [<bundle_id> ...]
 
-묶음 하나 = (단계 k 의 헤즈업 끝점 하나, 패널 A 또는 B) 72보드. 묶음 목록 = data/ft60/step<k>/bundles.tsv(모으는 세션이 만든다).
+묶음 하나 = (단계 k 의 헤즈업 끝점 하나, 패널 A 또는 B) 72보드. 묶음 목록 = data/ft<스택>/step<k>/bundles.tsv(모으는 세션이 만든다).
+스택(2026-11-07 일반화): 브랜치 이름 claude/ft<스택>_board_<n> 에서 읽는다(또는 FT_STACK). ft60 은 예전과 같은 동작.
 묶음마다:
   1) 입력 해시 확인: 끝점 파일·패널 파일 sha256 == bundles.tsv (다르면 멈춤 — 옛 단계 입력으로 풀지 않는다).
   2) 12보드 덩어리마다: solve_panel.py(quick·precision 과 같은 솔버 목표, 3벳 이상 팟은 행렬 모드, 전략 저장 T2_EXPORT_STRATEGY=1)
@@ -15,7 +16,7 @@
         strategy_<i>.tgz 그 덩어리 보드들의 전략 파일 + 실행 기록
      보드 원본(보드당 행렬 약 1MB)은 올리지 않는다(단계당 수 GB). 컨테이너가 죽으면 끝난 덩어리는 건너뛰고 나머지만 다시 푼다.
   3) 72보드가 끝나면 done.json.
-값 판정(A∪B, D/U, 복제)은 하지 않는다 — 모으는 세션 몫. 런타임 연결 없음. 브랜치가 claude/ft60_board_<n> 이 아니면 거부.
+값 판정(A∪B, D/U, 복제)은 하지 않는다 — 모으는 세션 몫. 런타임 연결 없음. 브랜치가 claude/ft<스택>_board_<n> 이 아니면 거부.
 환경: FT_CALC(기본 /home/user/calc), FT_WORK(기본 /home/user/gto_ckpt/ft60_board), SPOT_PANEL_WORKERS(기본 4), FT_SESSION(세션 id).
 시험용: FT_NO_PUSH=1(커밋·푸시 안 함, 브랜치 검사 안 함), FT_TEST_BOARDS=N(앞 N 보드만).
 """
@@ -34,10 +35,8 @@ import numpy as np
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 CALC = os.environ.get('FT_CALC', '/home/user/calc')
-WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft60_board')
 WORKERS = os.environ.get('SPOT_PANEL_WORKERS', '4')
 CHUNK = 12
-SOURCE_COMMIT = 'census79a9aca6+strategy_patch+ft60'   # 모든 보드 세션이 같은 값(출처키에 들어간다)
 BIN = os.path.join(CALC, 'vendor/gtopen/target/release/examples')
 MENU = os.path.join(CALC, 'data/gto_hu_continuation/menu_m2_single_v1.json')
 sys.path.insert(0, os.path.join(CALC, 'tools/gto_hu_continuation'))
@@ -56,10 +55,26 @@ def branch():
     return sh('git', 'rev-parse', '--abbrev-ref', 'HEAD')
 
 
+def _stack():
+    """스택: FT_STACK 환경 변수, 없으면 브랜치 이름 claude/ft<스택>_board_<n>, 그것도 아니면 60(예전 동작)."""
+    if os.environ.get('FT_STACK'):
+        return int(os.environ['FT_STACK'])
+    try:
+        m = re.match(r'^claude/ft(\d+)_board_\d+$', branch())
+    except Exception:
+        m = None
+    return int(m.group(1)) if m else 60
+
+
+STACK = _stack()
+WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft%d_board' % STACK)
+SOURCE_COMMIT = 'census79a9aca6+strategy_patch+ft%d' % STACK   # 한 스택의 모든 보드 세션이 같은 값(출처키에 들어간다)
+
+
 def push(msg):
     if os.environ.get('FT_NO_PUSH') == '1':
         return
-    sh('git', 'add', 'data/ft60/results')
+    sh('git', 'add', 'data/ft%d/results' % STACK)
     if subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=REPO).returncode == 0:
         return
     sh('git', 'commit', '-q', '-m', msg + '\n\nClaude-Session: https://claude.ai/code/' + os.environ.get('FT_SESSION', 'unknown'))
@@ -72,7 +87,7 @@ def push(msg):
 
 def bundles():
     rows = {}
-    base = os.path.join(REPO, 'data/ft60')
+    base = os.path.join(REPO, 'data/ft%d' % STACK)
     for f in sorted(os.listdir(base)):
         p = os.path.join(base, f, 'bundles.tsv')
         if f.startswith('step') and os.path.exists(p):
@@ -119,7 +134,7 @@ def run_bundle(b, r):
     if sha(tf) != r['term_sha256'] or sha(pf) != r['panel_sha256']:
         raise SystemExit('%s: input sha256 differs from bundles.tsv — stop (do not solve stale inputs)' % b)
     PANEL_PATH[0] = pf
-    res = os.path.join(REPO, 'data/ft60/results/step%d/%s' % (k, b))
+    res = os.path.join(REPO, 'data/ft%d/results/step%d/%s' % (STACK, k, b))
     os.makedirs(res, exist_ok=True)
     if os.path.exists(os.path.join(res, 'done.json')):
         print('%s: already done' % b, flush=True)
@@ -249,7 +264,7 @@ def run_bundle(b, r):
         st['chunks_done'].append(i)
         st['boards_done'] = sorted(vals)
         json.dump(st, open(stf, 'w'), indent=1)
-        push('ft60 %s: %d/%d boards' % (b, len(vals), len(boards)))
+        push('ft%d %s: %d/%d boards' % (STACK, b, len(vals), len(boards)))
         print(json.dumps({'bundle': b, 'boards_done': len(vals), 'retried': len(retried), 'min': round((time.time() - t0) / 60, 1)}), flush=True)
     failed = [x for x in boards if not vals[x]['ok']]
     done = {'bundle': b, 'step': k, 'term_sha256': r['term_sha256'], 'panel_sha256': r['panel_sha256'], 'matrix': matrix,
@@ -258,13 +273,13 @@ def run_bundle(b, r):
             'values_sha256': sha(vf), 'matrix_sums_sha256': sha(mf) if matrix else None,
             'session': os.environ.get('FT_SESSION', 'unknown'), 'branch': branch(), 'wall_min_this_run': round((time.time() - t0) / 60, 1)}
     json.dump(done, open(os.path.join(res, 'done.json'), 'w'), indent=1)
-    push('ft60 %s: done (%d boards, %d failed after retry)' % (b, len(boards), len(failed)))
+    push('ft%d %s: done (%d boards, %d failed after retry)' % (STACK, b, len(boards), len(failed)))
     print(json.dumps({'bundle': b, 'done': True, 'failed_after_retry': len(failed)}), flush=True)
 
 
 def main():
-    if not re.match(r'^claude/ft60_board_\d+$', branch()) and os.environ.get('FT_NO_PUSH') != '1':
-        raise SystemExit('checkout claude/ft60_board_<n> first (now %s)' % branch())
+    if not re.match(r'^claude/ft%d_board_\d+$' % STACK, branch()) and os.environ.get('FT_NO_PUSH') != '1':
+        raise SystemExit('checkout claude/ft%d_board_<n> first (now %s)' % (STACK, branch()))
     rows = bundles()
     for b in sys.argv[1:]:
         if b not in rows:
