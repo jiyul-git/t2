@@ -1,0 +1,16 @@
+{
+ "seed_A": 20261031,
+ "seed_B": 20261131,
+ "per_stratum": 6,
+ "files": {
+  "panel_prec_A72.json": "7cac7b381055e7891dcf0970de41390faa40e5662639eda7fd2dd8897f2ede40",
+  "panel_prec_B72.json": "535dea6f81f2fa768af84de350bd7e5c9d1e3c4c23138a4e244997f52eee786a",
+  "panel_prec_AB144.json": "9f54a7d614c401b77534331465420a6e6a7db32fcc5673770f932b4b05865437"
+ },
+ "excluded_panel_v1_sha256": "4bec90159fe5466edb2596c4b116c8f870f185f74924b62a6517761f9d56ebec",
+ "file_sha256": {
+  "panel_prec_A72.json": "7c8949fdcd095ba41b4659d4040f13c02adeab82cb29af778de213c1e2e72e09",
+  "panel_prec_B72.json": "106a07a2070b61b338b1eb13a68bcd9024b19b07b6f0fc360e8a52dce8937255",
+  "panel_prec_AB144.json": "0b6ed0abce32da7b5a9c548da8603e9c1ec2386750d4c9af185d513b6969d625"
+ }
+}
