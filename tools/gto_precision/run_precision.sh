@@ -50,7 +50,7 @@ backup() {   # $1 = message
   for x in $P data/gto_precision/records data/gto_precision/strategy; do [ -e $x ] && git add -A $x; done
   git commit -qm "$1
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/$PREC_SESSION" && push
 }
 ndone() { ls $W/s*/term*_[AB]/done $W/s*/report.json 2>/dev/null | wc -l; }
