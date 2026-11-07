@@ -9,7 +9,7 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 |---|---|---|---|---|---|
 | p100_flat_co_vs_bb_o25 | 1단계(복제) | session_01JQGBPMv985bSc2TKc8UVq5 | claude/precision_runner_20261031 | 2026-10-31 | 1단계(s0) 11-05 끝, 통과 못함(8d8c6h 0.444% 는 코디네이터 결정 ②로 기록 후 계속, 9장) |
 | p100_flat_co_vs_bb_o25 | 2단계(s1) | session_01QsV6TaMqXUVnVJruThpfnG | claude/precision_runner_20261031 | 2026-11-07 | **CLAIMED, 2단계 진행 중**(이전 세션 인수, 사용자 승인) |
-| p30_flat_lj_vs_bb | 0~3단계(PREC_STAGE_LIMIT=4) | session_01QsV6TZAtgkRGdFr9Hs8zgv | claude/precision_p30_flat_lj_vs_bb_20261107 | 2026-11-07 | **CLAIMED**, 준비 중(상태: claude/p30-flat-20261019 gto_split_backup) |
+| p30_flat_lj_vs_bb | 0~3단계(PREC_STAGE_LIMIT=4) | session_01QsV6TZAtgkRGdFr9Hs8zgv | claude/precision_p30_flat_lj_vs_bb_20261107 | 2026-11-07 | **중단**(사용자 결정 11-07: 짝별 정밀 검사 대신 전체 트리 방식으로 전환). 계산 결과 없음. 상태 파일 위치: claude/p30-flat-20261019 gto_split_backup/p30_flat_lj_vs_bb/state.json, 부모 덤프: claude/p30_btn3bet_20261026 transfer/p30_v1_dump.jsonl.gz |
 
 ---
 (아래는 계산 브랜치 claude/resume_p100_flat_20261030 의 게시판 사본, 10-31 기준)
