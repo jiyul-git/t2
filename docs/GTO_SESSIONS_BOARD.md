@@ -9,6 +9,7 @@ Updated by session_01BLRHV14gJtnk3f8cLagcNs (branch chatgpt/terminal-census-v2-2
 |---|---|---|---|---|---|
 | p100_flat_co_vs_bb_o25 | 1단계(복제) | session_01JQGBPMv985bSc2TKc8UVq5 | claude/precision_runner_20261031 | 2026-10-31 | 1단계(s0) 11-05 끝, 통과 못함(8d8c6h 0.444% 는 코디네이터 결정 ②로 기록 후 계속, 9장) |
 | p100_flat_co_vs_bb_o25 | 2단계(s1) | session_01QsV6TaMqXUVnVJruThpfnG | claude/precision_runner_20261031 | 2026-11-07 | **CLAIMED, 2단계 진행 중**(이전 세션 인수, 사용자 승인) |
+| p100_flat_hj_vs_bb_o25 | 0~3단계(최대 4단계, STAGE_LIMIT=4) | session_01QsV6TdLWjkfA4z6WLTcAMh | claude/precision_p100_flat_hj_vs_bb_o25_20261107 | 2026-11-07 | **CLAIMED**, 준비 중(24보드 상태: claude/p3bet_d_20261026) |
 
 ---
 (아래는 계산 브랜치 claude/resume_p100_flat_20261030 의 게시판 사본, 10-31 기준)
