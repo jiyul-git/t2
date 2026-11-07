@@ -20,7 +20,7 @@
 | 항목 | 하는 일 | 상수 | 무엇에 맞춰졌나 (근거) |
 |---|---|---|---|
 | `multiway_value_thresholds` (plan.py:893) | 밸류 문턱을 인원만큼 올림 | v3 0.80+0.06/명, v2 0.66+0.07/명, 중간 0.50+0.06/명 | 숫자 크기가 헤즈업 승률 단위. 개념 등록부가 이미 지적: *"independent from joint equity already computed vs all pools (possible double count; behavior change deferred)"* (`docs/semantic_audit/CONCEPT_FUNCTION_REGISTRY.csv:233`). 코드 주석도 eq 를 *"랜덤/광역 레인지 대비"* 로 설명(plan.py:1207). git 이력은 10-24 이전이 잘려 날짜 불명 |
-| `relative_strength_value_threshold_shift` (plan.py:947) | 상대강도(rel) 낮으면 문턱 +최대 0.30/0.22 | rel 0.45~0.85 구간 | rel 은 원래 상대 합집합 레인지 1개 대비였고, F7-B 에서 "어느 상대에게도 지지 않을 확률"(전원 동시)로 바뀜. 그때 **기존 rel 구간을 61.5% 가 넘나들었는데 문턱은 그대로** (`RANGE_MODEL.md` 4절 B1-A: "existing rel strategy band crossing 59/96 = 61.5%") |
+| `relative_strength_value_threshold_shift` (plan.py:947) | 상대강도(rel) 낮으면 문턱 +최대 0.30/0.22 | rel 0.45~0.85 구간 | rel 은 원래 상대 합집합 레인지 1개 대비였고, F7-B 에서 "어느 상대에게도 지지 않을 확률"(전원 동시)로 바뀜. 그때 **기존 rel 구간을 61.5% 가 넘나들었는데 문턱은 그대로** (`docs/design/RANGE_MODEL.md` 4절 B1-A: "existing rel strategy band crossing 59/96 = 61.5%") |
 | 쇼다운 가치 → 팟컨트롤 0.72 (plan.py:1346) | 문턱 아래 메이드 패는 72% 팟컨트롤 | 0.72, `has_showdown_value` 0.42+0.05/명 | 인원 무관 고정값 |
 | `medium_potcontrol_probability` (plan.py:1037) | 중간 구간 팟컨트롤 확률 | 0.12+0.8·성향+**0.18/명**, 최대 0.75 | 인원 가산 (근거 문서 없음) |
 | `potcontrol_bet_probability` (plan.py:2568) | 팟컨트롤이어도 칠 확률 | 0.18+0.035·공격성, 어그레서 뒤면 0.04 | 인원 무관 |

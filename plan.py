@@ -1000,7 +1000,7 @@ def relative_strength_value_threshold_shift(v3, v2, rel):
     구간(0.45~0.85)은 **헤즈업 rel 단위**다. 멀티웨이는 호출 전에
     per_opponent_rel 로 환산해서 넣는다 — joint rel 을 그대로 넣으면
     (F7-B 이후 2026-10-31 이전처럼) 3인 팟 탑페어가 대부분 0.45 아래로 떨어져
-    문턱이 최대치까지 올라간다(RANGE_MODEL.md 4절, 구간 넘나듦 61.5%).
+    문턱이 최대치까지 올라간다(docs/design/RANGE_MODEL.md 4절, 구간 넘나듦 61.5%).
     """
     if rel <= 0.45:
         _pen = 1.0
@@ -1497,7 +1497,7 @@ def make_plan(hero, board, my_range, opp_range, profile, pot, stack, street,
     return st
 
 
-# ---------- 레인지 주장 기준선 (FLOP_CLAIM_BASELINE.md, 2026-10-06) ----------
+# ---------- 레인지 주장 기준선 (docs/design/FLOP_CLAIM_BASELINE.md, 2026-10-06) ----------
 # 숙련자의 c벳 빈도는 '자기 레인지에 실제로 있는 주장 가능한 핸드 비율'에 수렴한다(층 A).
 # 예전에는 range_adv 가 지속벳 빈도를 몇 % 흔드는 곱셈항일 뿐이라 보드별 빈도가
 # 레인지 구성을 따라가지 않았다(봇 A·K 하이 62% vs 목표 80%+, 숙련자일수록 더 낮음).
@@ -1590,7 +1590,7 @@ def range_claim_anchor(profile, hero, board, my_range, p_old, oop=False):
             'hand_target': round(tgt, 4), 'w': round(w, 3)}
 
 
-# ---------- 리버 블러프 기준선 v2 (FLOP_CLAIM_BASELINE.md 10절, 2026-10-07) ----------
+# ---------- 리버 블러프 기준선 v2 (docs/design/FLOP_CLAIM_BASELINE.md 10절, 2026-10-07) ----------
 # 주장(이야기)마다 진짜:가짜 비율을 맞춘다. 그 비율은 벳 사이즈가 정한다 —
 # 상대가 콜/폴드에 무차별해지는 가짜 비율 = s/(1+2s)
 #   1/3팟 20%(8:2), 팟 33%(7:3, 사용자 기준), 1.5배 38%(6:4, '넓힐 수도').
@@ -4330,7 +4330,7 @@ def continue_range_call_equity(hero, board, profile, street, size_frac,
 # 이 rel 이상이면 '분명한 밸류'다 — 콜 레인지 대비 재평가 없이 계획대로 친다.
 # 리버 재평가에 있던 리터럴을 턴 재평가와 공유하려고 이름을 붙였다(값 불변).
 CLEAR_VALUE_REL = 0.92
-# 리버 얇은 밸류 v2 (FLOP_CLAIM_BASELINE.md 7절): 쇼다운 계획도 재평가하고,
+# 리버 얇은 밸류 v2 (docs/design/FLOP_CLAIM_BASELINE.md 7절): 쇼다운 계획도 재평가하고,
 # 콜 받아도 앞서는 자리는 숙련만큼 친다.
 RIVER_THIN_VALUE_V2 = True
 
