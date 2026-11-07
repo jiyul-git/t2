@@ -1,0 +1,96 @@
+{
+ "schema": "t2_hu_continuation_manifest_v1",
+ "tables": [
+  {
+   "file": "node50.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:call@2.000000",
+   "seed": "p40_flat_btn_vs_bb.state.json"
+  },
+  {
+   "file": "node53.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:raise@7.000000|BTN:call@7.000000",
+   "seed": "p40_flat_btn_vs_bb.state.json"
+  },
+  {
+   "file": "node59.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000",
+   "seed": "p40_flat_btn_vs_bb.state.json"
+  },
+  {
+   "file": "node183.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:call@2.000000",
+   "seed": "p40_flat_co_vs_bb.state.json"
+  },
+  {
+   "file": "node186.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:raise@7.000000|CO:call@7.000000",
+   "seed": "p40_flat_co_vs_bb.state.json"
+  },
+  {
+   "file": "node192.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:raise@8.000000|CO:call@8.000000",
+   "seed": "p40_flat_co_vs_bb.state.json"
+  },
+  {
+   "file": "node844.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.000000|CO:fold|BTN:fold|SB:fold|BB:call@2.000000",
+   "seed": "p40_flat_hj_vs_bb.state.json"
+  },
+  {
+   "file": "node847.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.000000|CO:fold|BTN:fold|SB:fold|BB:raise@7.000000|HJ:call@7.000000",
+   "seed": "p40_flat_hj_vs_bb.state.json"
+  },
+  {
+   "file": "node853.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.000000|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000",
+   "seed": "p40_flat_hj_vs_bb.state.json"
+  },
+  {
+   "file": "node3905.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.000000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.000000",
+   "seed": "p40_flat_lj_vs_bb.state.json"
+  },
+  {
+   "file": "node3908.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.000000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@7.000000|LJ:call@7.000000",
+   "seed": "p40_flat_lj_vs_bb.state.json"
+  },
+  {
+   "file": "node3914.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.000000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|LJ:call@8.000000",
+   "seed": "p40_flat_lj_vs_bb.state.json"
+  },
+  {
+   "file": "node31.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:raise@3.000000|BB:call@3.000000",
+   "seed": "p40_flat_sb_vs_bb.state.json"
+  },
+  {
+   "file": "node34.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:raise@3.000000|BB:raise@10.500000|SB:call@10.500000",
+   "seed": "p40_flat_sb_vs_bb.state.json"
+  },
+  {
+   "file": "node40.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:raise@3.000000|BB:raise@12.000000|SB:call@12.000000",
+   "seed": "p40_flat_sb_vs_bb.state.json"
+  },
+  {
+   "file": "node17454.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:raise@2.000000|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:call@2.000000",
+   "seed": "p40_flat_utg2_vs_bb.state.json"
+  },
+  {
+   "file": "node17457.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:raise@2.000000|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@7.000000|UTG+2:call@7.000000",
+   "seed": "p40_flat_utg2_vs_bb.state.json"
+  },
+  {
+   "file": "node17463.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:raise@2.000000|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|UTG+2:call@8.000000",
+   "seed": "p40_flat_utg2_vs_bb.state.json"
+  }
+ ],
+ "note": "step 0 seeds: BB loop final tables (p60 HJ, LJ o25); every other terminal static (docs/GTO_FULLTREE_PILOT_60BB.md 3\uc7a5)"
+}

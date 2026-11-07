@@ -34,10 +34,12 @@ import numpy as np
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 CALC = os.environ.get('FT_CALC', '/home/user/calc')
-WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft60_board')
+STACK = os.environ.get('FT_STACK', '60')   # 스택 매개변수(기본 60 = ft60 동작 그대로)
+TAG = 'ft' + STACK
+WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/%s_board' % TAG)
 WORKERS = os.environ.get('SPOT_PANEL_WORKERS', '4')
 CHUNK = 12
-SOURCE_COMMIT = 'census79a9aca6+strategy_patch+ft60'   # 모든 보드 세션이 같은 값(출처키에 들어간다)
+SOURCE_COMMIT = 'census79a9aca6+strategy_patch+' + TAG   # 모든 보드 세션이 같은 값(출처키에 들어간다)
 BIN = os.path.join(CALC, 'vendor/gtopen/target/release/examples')
 MENU = os.path.join(CALC, 'data/gto_hu_continuation/menu_m2_single_v1.json')
 sys.path.insert(0, os.path.join(CALC, 'tools/gto_hu_continuation'))
@@ -59,7 +61,7 @@ def branch():
 def push(msg):
     if os.environ.get('FT_NO_PUSH') == '1':
         return
-    sh('git', 'add', 'data/ft60/results')
+    sh('git', 'add', 'data/%s/results' % TAG)
     if subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=REPO).returncode == 0:
         return
     sh('git', 'commit', '-q', '-m', msg + '\n\nClaude-Session: https://claude.ai/code/' + os.environ.get('FT_SESSION', 'unknown'))
@@ -72,7 +74,7 @@ def push(msg):
 
 def bundles():
     rows = {}
-    base = os.path.join(REPO, 'data/ft60')
+    base = os.path.join(REPO, 'data/' + TAG)
     for f in sorted(os.listdir(base)):
         p = os.path.join(base, f, 'bundles.tsv')
         if f.startswith('step') and os.path.exists(p):
@@ -119,7 +121,7 @@ def run_bundle(b, r):
     if sha(tf) != r['term_sha256'] or sha(pf) != r['panel_sha256']:
         raise SystemExit('%s: input sha256 differs from bundles.tsv — stop (do not solve stale inputs)' % b)
     PANEL_PATH[0] = pf
-    res = os.path.join(REPO, 'data/ft60/results/step%d/%s' % (k, b))
+    res = os.path.join(REPO, 'data/%s/results/step%d/%s' % (TAG, k, b))
     os.makedirs(res, exist_ok=True)
     if os.path.exists(os.path.join(res, 'done.json')):
         print('%s: already done' % b, flush=True)
@@ -249,7 +251,7 @@ def run_bundle(b, r):
         st['chunks_done'].append(i)
         st['boards_done'] = sorted(vals)
         json.dump(st, open(stf, 'w'), indent=1)
-        push('ft60 %s: %d/%d boards' % (b, len(vals), len(boards)))
+        push('%s %s: %d/%d boards' % (TAG, b, len(vals), len(boards)))
         print(json.dumps({'bundle': b, 'boards_done': len(vals), 'retried': len(retried), 'min': round((time.time() - t0) / 60, 1)}), flush=True)
     failed = [x for x in boards if not vals[x]['ok']]
     done = {'bundle': b, 'step': k, 'term_sha256': r['term_sha256'], 'panel_sha256': r['panel_sha256'], 'matrix': matrix,
@@ -258,13 +260,13 @@ def run_bundle(b, r):
             'values_sha256': sha(vf), 'matrix_sums_sha256': sha(mf) if matrix else None,
             'session': os.environ.get('FT_SESSION', 'unknown'), 'branch': branch(), 'wall_min_this_run': round((time.time() - t0) / 60, 1)}
     json.dump(done, open(os.path.join(res, 'done.json'), 'w'), indent=1)
-    push('ft60 %s: done (%d boards, %d failed after retry)' % (b, len(boards), len(failed)))
+    push('%s %s: done (%d boards, %d failed after retry)' % (TAG, b, len(boards), len(failed)))
     print(json.dumps({'bundle': b, 'done': True, 'failed_after_retry': len(failed)}), flush=True)
 
 
 def main():
-    if not re.match(r'^claude/ft60_board_\d+$', branch()) and os.environ.get('FT_NO_PUSH') != '1':
-        raise SystemExit('checkout claude/ft60_board_<n> first (now %s)' % branch())
+    if not re.match(r'^claude/%s_board_\d+$' % TAG, branch()) and os.environ.get('FT_NO_PUSH') != '1':
+        raise SystemExit('checkout claude/%s_board_<n> first' % TAG + ' (now %s)' % branch())
     rows = bundles()
     for b in sys.argv[1:]:
         if b not in rows:

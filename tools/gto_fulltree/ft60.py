@@ -18,11 +18,13 @@ import sys
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 CALC = os.environ.get('FT_CALC', '/home/user/calc')
-WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft60')
+STACK = os.environ.get('FT_STACK', '60')   # 스택 매개변수(기본 60 = ft60 동작 그대로). 40 이면 data/ft40, claude/ft40_board_<n>
+TAG = 'ft' + STACK
+WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/' + TAG)
 BIN = os.path.join(CALC, 'vendor/gtopen/target/release/examples')
-CFG = os.path.join(CALC, 'data/gto_spot/plan_a/cfg_p60_o25.json')
-D = os.path.join(REPO, 'data/ft60')
-N_TERMS = 40                      # 사용자 결정 10-31: 헤즈업 끝점 40개
+D = os.path.join(REPO, 'data/' + TAG)
+CFG = os.environ.get('FT_CFG') or (os.path.join(CALC, 'data/gto_spot/plan_a/cfg_p60_o25.json') if STACK == '60' else os.path.join(D, 'cfg.json'))
+N_TERMS = int(os.environ.get('FT_N_TERMS', '40'))   # 사용자 결정 10-31: 헤즈업 끝점 40개
 PANELS = {'A': os.path.join(D, 'panels/panel_prec_A72.json'), 'B': os.path.join(D, 'panels/panel_prec_B72.json')}
 POS = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
 RANKS = '23456789TJQKA'
@@ -242,12 +244,12 @@ def _git(*a):
 
 def fetch_results(k, out):
     """원격의 claude/ft60_board_* 브랜치에서 step k 결과를 out/<bundle>/ 로 꺼낸다(done.json 이 있는 것만, sha 확인)."""
-    refs = [l.split()[1] for l in _git('ls-remote', 'origin', 'refs/heads/claude/ft60_board_*').stdout.splitlines()]
+    refs = [l.split()[1] for l in _git('ls-remote', 'origin', 'refs/heads/claude/%s_board_*' % TAG).stdout.splitlines()]
     got = {}
     for ref in refs:
         br = ref.replace('refs/heads/', '')
         _git('fetch', '-q', '--depth=1', 'origin', '+' + br + ':refs/remotes/origin/' + br)   # '+': 얕은 ref 는 조상 확인이 안 돼 + 없으면 갱신이 거부된다
-        ls = _git('ls-tree', '-r', '--name-only', 'origin/' + br, 'data/ft60/results/step%d' % k).stdout.split()
+        ls = _git('ls-tree', '-r', '--name-only', 'origin/' + br, 'data/%s/results/step%d' % (TAG, k)).stdout.split()
         for p in ls:
             if not p.endswith('/done.json'):
                 continue
@@ -371,7 +373,7 @@ def collect(k):
             for n in ('A', 'B', 'AB'):
                 t = tables_raw[n].setdefault(node, {'schema': 't2_hu_continuation_table_v1', 'node': node, 'line': tj['line'],
                                                     'live': tj['terminal_live_mask'], 'pot_bb': tj['pot_bb'], 'value_convention': 'gross_share',
-                                                    'seats': [], 'provenance': {'kind': 'ft60 step %d panel %s (raw%s)' % (k, n, ', matrix x arriving dist' if matrix else '')}})
+                                                    'seats': [], 'provenance': {'kind': TAG + ' step %d panel %s (raw%s)' % (k, n, ', matrix x arriving dist' if matrix else '')}})
                 t['seats'].append({'seat': pl['seat'], 'position': pos, 'gross': [float(x) for x in V[n]], 'se': raw[n][1][pos]})
         rep['terminals'][str(j)] = {'node': node, 'line': tj['line'], 'matrix': matrix, 'reach': next(float(r['reach']) for r in rows if int(r['term']) == j),
                                     'seats': seats, 'max_D_over_U': max((s['D_over_U'] or 0) for s in seats.values())}
@@ -416,7 +418,7 @@ def next_tables(k):
     hp = os.path.join(D, 'history.json')
     if os.path.exists(hp):
         hist = json.load(open(hp))
-    man = {'schema': 't2_hu_continuation_manifest_v1', 'tables': [], 'note': 'ft60 step %d tables from step %d' % (k + 1, k)}
+    man = {'schema': 't2_hu_continuation_manifest_v1', 'tables': [], 'note': TAG + ' step %d tables from step %d' % (k + 1, k)}
     ab_dir = os.path.join(sd, 'collect/tables_AB')
     done_nodes = set()
     for j, tr in rep['terminals'].items():
@@ -431,7 +433,7 @@ def next_tables(k):
             og = {s['seat']: s['gross'] for s in old['seats']}
             for s in tab['seats']:
                 s['gross'] = [(1 - a) * x + a * y for x, y in zip(og[s['seat']], s['gross'])]
-        tab['provenance'] = {'kind': 'ft60 step %d -> %d (alpha %s%s)' % (k, k + 1, a, ', no previous table: raw A u B' if old is None else ''),
+        tab['provenance'] = {'kind': TAG + ' step %d -> %d (alpha %s%s)' % (k, k + 1, a, ', no previous table: raw A u B' if old is None else ''),
                              'cycling': cyc}
         json.dump(tab, open(os.path.join(nd, 'node%d.json' % node), 'w'))
         man['tables'].append({'file': 'node%d.json' % node, 'line': tab['line'], 'alpha': a if old is not None else 1.0})
