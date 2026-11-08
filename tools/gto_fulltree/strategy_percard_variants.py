@@ -50,10 +50,12 @@ def hdr(lid, t, r):
     return struct.pack('<IBB', lid, t, r)
 
 
-def encode(recs, q8=False, reach16=False, pure=False, thr=None, mask=None):
+def encode(recs, q8=False, reach16=False, pure=False, thr=None, noreach=False):
     """recs 를 바이트열 하나로. mask 가 필요한 방식(생략·순수)은 클래스 비트마스크를 붙인다. (바이트열, 통계) 반환"""
     parts, kept_n, tot_n, mass_kept, mass_all = [], 0, 0, 0.0, 0.0
-    use_mask = pure or thr is not None
+    use_mask = pure or thr is not None or noreach
+    if noreach and thr is None:
+        thr = 1e-4
     for lid, t, r, reach, fr in recs:
         na = fr.shape[0]
         keep = reach > 0
@@ -70,7 +72,8 @@ def encode(recs, q8=False, reach16=False, pure=False, thr=None, mask=None):
         else:
             rr = reach
             keep = np.ones(NC, bool)
-        p.append(rr.astype('<f2' if reach16 else '<f4').tobytes())
+        if not noreach:   # 도달 값은 앞 노드 전략에서 다시 계산할 수 있어 뺄 수 있다(마스크만 남김)
+            p.append(rr.astype('<f2' if reach16 else '<f4').tobytes())
         f = fr[:, keep].astype(np.int64)
         if pure:
             # 순수 = 어떤 행동이 퍼밀 1000. 코드: 행동 번호, 섞인 클래스는 255
@@ -232,6 +235,10 @@ def main():
     # 조합
     b, _ = encode(recs, q8=True, reach16=True, pure=True, thr=1e-4)
     res['combo_1_3_4'] = {'raw': len(b), 'xz': xz(b)}
+    b, _ = encode(recs, q8=True, noreach=True, pure=True)
+    res['combo_1_3_4_noreach'] = {'raw': len(b), 'xz': xz(b)}
+    b, _ = encode(recs, q8=True, noreach=True)
+    res['q8_mask_noreach_nopure'] = {'raw': len(b), 'xz': xz(b)}
     b, _ = encode(g8, q8=True, reach16=True, pure=True, thr=1e-4)
     res['combo_1_3_4_5level8'] = {'raw': len(b), 'xz': xz(b)}
     json.dump(res, open(os.path.join(d, 'variants_%s.json' % board), 'w'), indent=1)

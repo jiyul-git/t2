@@ -126,8 +126,10 @@ def main():
     if '--no-old' not in sys.argv:
         a0 = json.load(open(os.path.join(d0, board + '.json')))
         s0 = json.load(open(os.path.join(d0, board + '.strategy.json')))
-        for k in ('cost',):
-            a0.pop(k), a1.pop(k)
+        for x in (a0, a1):   # 시간·메모리 칸은 실행마다 다르다(cost, 행렬 소요 ms). 나머지는 한 글자도 같아야 한다
+            x.pop('cost')
+            if isinstance(x.get('matrix'), dict):
+                x['matrix'].pop('ms', None)
         e0, e1 = s0.pop('export_s'), s1.pop('export_s')
         res['identical'] = {'artifact_without_cost': a0 == a1, 'strategy_json_without_export_s': s0 == s1}
         res['current_export_s'] = e0
