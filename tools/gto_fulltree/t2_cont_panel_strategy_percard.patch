@@ -1,6 +1,6 @@
 --- a/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
 +++ b/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
-@@ -172,6 +172,110 @@
+@@ -172,6 +172,109 @@
          "nodes": nodes})
  }
  
@@ -62,7 +62,6 @@
 +        sink.w.write_all(&buf).map_err(|e| e.to_string())?;
 +        sink.bytes += buf.len() as u64;
 +        sink.records += 1;
-+        if n.street == 2 { return Ok(()); }
 +        for a in 0..na {
 +            let child = spot.tree.children[n.children_start as usize + a];
 +            let mut r2 = reach.clone();
@@ -111,7 +110,7 @@
  fn main() -> Result<(), String> {
      let a: Vec<String> = std::env::args().collect();
      if a.len() < 8 {
-@@ -383,6 +487,9 @@
+@@ -383,6 +486,9 @@
              std::fs::write(&tmp, serde_json::to_vec(&sx).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
              std::fs::rename(&tmp, &sp_).map_err(|e| e.to_string())?;
          }

@@ -12,6 +12,7 @@
 """
 import gzip
 import json
+import lzma
 import os
 import resource
 import struct
@@ -47,10 +48,7 @@ def comp(path):
     """gzip -6 와 zstd -19 크기(zstd 가 없으면 None)"""
     raw = open(path, 'rb').read()
     out = {'raw': len(raw), 'gzip': len(gzip.compress(raw, 6))}
-    try:
-        out['zstd19'] = len(subprocess.run(['zstd', '-19', '-q', '-c', path], check=True, capture_output=True).stdout)
-    except (OSError, subprocess.CalledProcessError):
-        out['zstd19'] = None
+    out['xz6'] = len(lzma.compress(raw, preset=6))   # zstd 가 컨테이너에 없어 xz 로 잰다
     return out
 
 
@@ -115,7 +113,8 @@ def main():
     matrix = r['matrix'] == 'True'
     res = {'bundle': bundle, 'board': board, 'matrix': matrix, 'line': r['line'], 'step': int(r['step'])}
     d0, d1 = os.path.join(out, 'R0_old'), os.path.join(out, 'R1_percard')
-    if '--no-old' not in sys.argv:
+    reuse = os.path.exists(os.path.join(d0, board + '.strategy.json'))   # 이미 끝난 R0 가 있으면 다시 풀지 않는다(재시작 뒤 이어하기)
+    if '--no-old' not in sys.argv and not reuse:
         res['R0'] = run(BIN_OLD, tf, pf, d0, board, matrix, {'T2_EXPORT_STRATEGY': '1'})
     res['R1'] = run(BIN_NEW, tf, pf, d1, board, matrix, {'T2_EXPORT_STRATEGY': '1', 'T2_EXPORT_PERCARD': '169,1326'})
     a1 = json.load(open(os.path.join(d1, board + '.json')))
@@ -124,7 +123,7 @@ def main():
     res['solve'] = {'iterations': a1['iterations'], 'pct_pot': a1['exploitability_pct_pot'], 'converged': a1['converged'],
                     'solve_s': a1['cost']['solve_ms'] / 1e3, 'build_s': a1['cost']['build_ms'] / 1e3, 'tree_nodes': a1['cost']['tree_nodes'],
                     'arena_mb': a1['cost']['arena_bytes'] / 2**20, 'rss_after_solve_mb': a1['cost']['peak_rss_kb'] / 1024}
-    if 'R0' in res:
+    if '--no-old' not in sys.argv:
         a0 = json.load(open(os.path.join(d0, board + '.json')))
         s0 = json.load(open(os.path.join(d0, board + '.strategy.json')))
         for k in ('cost',):
@@ -132,6 +131,7 @@ def main():
         e0, e1 = s0.pop('export_s'), s1.pop('export_s')
         res['identical'] = {'artifact_without_cost': a0 == a1, 'strategy_json_without_export_s': s0 == s1}
         res['current_export_s'] = e0
+        res['R0_reused'] = reuse
         res['R0_solve_s'] = json.load(open(os.path.join(d0, board + '.json')))['cost']['solve_ms'] / 1e3
     else:
         res['current_export_s'] = s1['export_s']
