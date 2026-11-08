@@ -29,6 +29,7 @@
 | 문서 | 내용 |
 |---|---|
 | `docs/STATUS.md` | **지금 상태**: 배포, 화면 남은 문제, GTO 방향, 사용자 결정 대기 |
+| `docs/HANDOFF_ACCOUNT.md` | 다른 계정으로 인계: 누가 무엇을 돌리는지, 세션 여는 문구, 조정 이어받기 |
 | `docs/GTO_FULLTREE_STATUS.md` | GTO 전체 트리 정밀 계산 진행(스택·단계·브랜치·세션) |
 | `docs/T2_HANDOFF.md` | 일하는 방법: 사용자 규칙, 연결 절차, 검사 함정, Termux 명령 |
 | `docs/handoff/` | 날짜별 인계 기록(색인 `docs/handoff/README.md`) |
