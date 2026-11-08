@@ -1,0 +1,201 @@
+{
+ "schema": "t2_hu_continuation_manifest_v1",
+ "tables": [
+  {
+   "file": "node10.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Check",
+   "alpha": 1.0
+  },
+  {
+   "file": "node31.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Raise 3|BB:Call 3",
+   "alpha": 0.5
+  },
+  {
+   "file": "node320768.json",
+   "line": "UTG:Raise 2|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2",
+   "alpha": 1.0
+  },
+  {
+   "file": "node75667.json",
+   "line": "UTG:Fold|UTG+1:Raise 2|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2",
+   "alpha": 1.0
+  },
+  {
+   "file": "node50.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2|SB:Fold|BB:Call 2",
+   "alpha": 0.5
+  },
+  {
+   "file": "node17454.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2",
+   "alpha": 1.0
+  },
+  {
+   "file": "node13.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Raise 3.5|SB:Call 3.5",
+   "alpha": 1.0
+  },
+  {
+   "file": "node183.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2|BTN:Fold|SB:Fold|BB:Call 2",
+   "alpha": 0.5
+  },
+  {
+   "file": "node844.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2",
+   "alpha": 0.5
+  },
+  {
+   "file": "node3905.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2",
+   "alpha": 0.5
+  },
+  {
+   "file": "node72815.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2|LJ:3-bet 6|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node16514.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2|HJ:3-bet 6|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node3597.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2|CO:3-bet 6|BTN:Fold|SB:Fold|BB:Fold|HJ:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node312148.json",
+   "line": "UTG:Fold|UTG+1:Raise 2|UTG+2:3-bet 6|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node1312321.json",
+   "line": "UTG:Raise 2|UTG+1:3-bet 6|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node557249.json",
+   "line": "UTG:Raise 2|UTG+1:Fold|UTG+2:3-bet 6|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node131028.json",
+   "line": "UTG:Fold|UTG+1:Raise 2|UTG+2:Fold|LJ:3-bet 6|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node376129.json",
+   "line": "UTG:Raise 2|UTG+1:Fold|UTG+2:Fold|LJ:3-bet 6|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node30063.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2|LJ:Fold|HJ:3-bet 6|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node744.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2|BTN:3-bet 6|SB:Fold|BB:Fold|CO:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node6658.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2|HJ:Fold|CO:3-bet 6|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node88276.json",
+   "line": "UTG:Fold|UTG+1:Raise 2|UTG+2:Fold|LJ:Fold|HJ:3-bet 6|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node333377.json",
+   "line": "UTG:Raise 2|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:3-bet 6|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node20207.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2|LJ:Fold|HJ:Fold|CO:3-bet 6|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node4466.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2|HJ:Fold|CO:Fold|BTN:3-bet 6|SB:Fold|BB:Fold|LJ:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node78420.json",
+   "line": "UTG:Fold|UTG+1:Raise 2|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 6|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node1405.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2|CO:Fold|BTN:3-bet 6|SB:Fold|BB:Fold|HJ:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node18015.json",
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 6|SB:Fold|BB:Fold|UTG+2:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node323521.json",
+   "line": "UTG:Raise 2|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 6|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 6",
+   "alpha": 1.0
+  },
+  {
+   "file": "node53.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:raise@7.000000|BTN:call@7.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node59.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.000000|SB:fold|BB:raise@8.000000|BTN:call@8.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node186.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:raise@7.000000|CO:call@7.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node192.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.000000|BTN:fold|SB:fold|BB:raise@8.000000|CO:call@8.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node847.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.000000|CO:fold|BTN:fold|SB:fold|BB:raise@7.000000|HJ:call@7.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node853.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:raise@2.000000|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|HJ:call@8.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node3908.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.000000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@7.000000|LJ:call@7.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node3914.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.000000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@8.000000|LJ:call@8.000000",
+   "carried_over": true
+  },
+  {
+   "file": "node34.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:raise@3.000000|BB:raise@10.500000|SB:call@10.500000",
+   "carried_over": true
+  },
+  {
+   "file": "node40.json",
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:fold|SB:raise@3.000000|BB:raise@12.000000|SB:call@12.000000",
+   "carried_over": true
+  }
+ ],
+ "note": "ft30 step 1 tables from step 0"
+}
