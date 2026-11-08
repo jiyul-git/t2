@@ -52,7 +52,7 @@ http://127.0.0.1:8765
 4. 상대 홀카드는 실제 공개 규칙에 맞는 경우만 표시한다.
 5. UI 변경과 엔진 판단 변경은 별개로 검증한다.
 6. 실시간 액션의 화면 모션 순서는 유지하되 엔진 계산은 모션 ACK를 기다리지 않는다. 기록/대회정보 같은 읽기 요청도 계산 중 응답 가능해야 한다.
-7. final-table 배선 검증은 `tools/playtest_final_table_ui.py`와 `.github/workflows/final-table-wiring.yml`에서 자동 수행한다.
+7. final-table 배선 검증은 `tools/playtest_final_table_ui.py`와 `legacy/workflows/final-table-wiring.yml`(2026-11-07 보관, 트리거 브랜치가 없어져 자동 실행 안 됨)에 남아 있다.
 
 ## 개인 지갑을 분리한 설치와 업데이트 (test, 2026-10-05)
 

@@ -1,6 +1,6 @@
 # T2 — 사람처럼 두는 포커 봇 토너먼트
 
-처음 보는 사람(또는 새 세션)이 가장 먼저 읽는 지도다. 자세한 이어받기는 `docs/T2_HANDOFF.md`.
+처음 보는 사람(또는 새 세션)이 가장 먼저 읽는 지도다. **지금 상태는 `docs/STATUS.md`**, 일하는 방법은 `docs/T2_HANDOFF.md`.
 
 ## 브랜치
 | 이름 | 역할 |
@@ -22,13 +22,16 @@
 | `data/gto_records/` | 봇에 연결한 GTO 기록 사본(출처표 `MANIFEST.tsv`) |
 | `tools/` | 검사·분석 도구. 분류는 `tools/README.md`, 이어받기 검사는 `tools/t2_handoff/` |
 | `docs/` | 문서. 아래 표 |
-| `legacy/` | 더 이상 쓰지 않는 코드·결과물 보관(지우지 않음). 각 폴더 README 에 이유 |
+| `legacy/` | 더 이상 쓰지 않는 코드·결과물·Actions 설정 보관(지우지 않음). 각 폴더 README 에 이유 |
+| `.github/workflows/` | 지금 도는 자동 검사 5개(앱 빌드, 라운지 그림, test3 검사 3개) |
 
 ## 문서
 | 문서 | 내용 |
 |---|---|
-| `docs/T2_HANDOFF.md` | 이어받기 매뉴얼: 사용자 규칙, 연결 절차, Termux 명령, 화면 상태 |
-| `docs/handoff/` | 세션 간 인계(코디네이터, GTO, 온라인 앱) |
+| `docs/STATUS.md` | **지금 상태**: 배포, 화면 남은 문제, GTO 방향, 사용자 결정 대기 |
+| `docs/GTO_FULLTREE_STATUS.md` | GTO 전체 트리 정밀 계산 진행(스택·단계·브랜치·세션) |
+| `docs/T2_HANDOFF.md` | 일하는 방법: 사용자 규칙, 연결 절차, 검사 함정, Termux 명령 |
+| `docs/handoff/` | 날짜별 인계 기록(색인 `docs/handoff/README.md`) |
 | `docs/design/` | 설계 문서(결정 시스템, 레인지, 토너먼트 런타임, 머니점프 등 — 2026-10-08 기준 정리본) |
 | `docs/GTO_*`, `docs/MULTIWAY_*`, `docs/PF_*` | GTO 연결·조사 보고(날짜별) |
 | `docs/semantic_audit/` | 예전 전수 점검 기록(기록이므로 고치지 않음) |
