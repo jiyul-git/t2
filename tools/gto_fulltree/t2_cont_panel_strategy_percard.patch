@@ -1,0 +1,123 @@
+--- a/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
++++ b/vendor/gtopen/crates/solver/examples/t2_cont_panel.rs
+@@ -172,6 +172,110 @@
+         "nodes": nodes})
+ }
+ 
++// ---- per-card strategy export (T2_EXPORT_PERCARD=169,1326 ; measurement variant, layered on the T2_EXPORT_STRATEGY patch).
++// Read-only walk of the solved average strategy AFTER ensure_symmetric, like strategy_export. Nothing in the artifact changes.
++// One record per (action node, dealt cards): turn node per turn card, river node per (turn, river) pair, ALL action nodes of every street.
++// Record = u32 line_id | u8 turn_card | u8 river_card (255 = not dealt yet) | payload (little endian):
++//   mode 169 : f32 own_reach[169] (sum over the class's unblocked combos of range weight x own action probs), then u16 freq_permille[na][169] (65535 = class not reached)
++//   mode 1326: the actor's combos in spot.hands order minus those blocked by the dealt cards (nhu): f32 own_reach[nhu], then u16 freq_permille[na][nhu]
++// Line ids / actions / hands are in <board>.pc.meta.json.
++struct PcSink { w: std::io::BufWriter<std::fs::File>, bytes: u64, records: u64 }
++struct PcLines { ids: std::collections::HashMap<String, u32>, meta: Vec<serde_json::Value> }
++
++fn pc_walk(s: &Solver, idx: u32, reach: &[Vec<f32>; 2], dealt: u64, seq: &[u8], line: &str, cls: &[Vec<usize>; 2], mode169: bool,
++           lines: &mut PcLines, sink: &mut PcSink) -> Result<(), String> {
++    use solver::tree::{KIND_ACTION, KIND_CHANCE, SENTINEL};
++    use std::io::Write;
++    let spot = &s.spot;
++    let n = &spot.tree.nodes[idx as usize];
++    if n.kind == KIND_ACTION {
++        let p = n.player as usize;
++        let na = n.num_children as usize;
++        let nh = spot.hands[p].len();
++        let sigma = s.average_strategy(idx, n);
++        let next_id = lines.ids.len() as u32;
++        let lid = *lines.ids.entry(line.to_string()).or_insert(next_id);
++        if lid == next_id {
++            let acts: Vec<String> = (0..na).map(|a| act_label(&spot.tree.actions[n.actions_start as usize + a])).collect();
++            lines.meta.push(serde_json::json!({"id": lid, "line": line, "street": n.street, "player": n.player, "actions": acts}));
++        }
++        let mut buf: Vec<u8> = Vec::new();
++        buf.extend_from_slice(&lid.to_le_bytes());
++        buf.push(seq.get(0).copied().unwrap_or(255));
++        buf.push(seq.get(1).copied().unwrap_or(255));
++        if mode169 {
++            let mut den = vec![0f64; NUM_CLASSES];
++            let mut num = vec![0f64; na * NUM_CLASSES];
++            for j in 0..nh {
++                if spot.hands[p][j].mask & dealt != 0 { continue; }
++                let r = reach[p][j] as f64;
++                if r <= 0.0 { continue; }
++                let c = cls[p][j];
++                den[c] += r;
++                for a in 0..na { num[a * NUM_CLASSES + c] += r * sigma[a * nh + j] as f64; }
++            }
++            for c in 0..NUM_CLASSES { buf.extend_from_slice(&(den[c] as f32).to_le_bytes()); }
++            for a in 0..na { for c in 0..NUM_CLASSES {
++                let v: u16 = if den[c] > 0.0 { (num[a * NUM_CLASSES + c] / den[c] * 1000.0).round() as u16 } else { 65535 };
++                buf.extend_from_slice(&v.to_le_bytes());
++            } }
++        } else {
++            let js: Vec<usize> = (0..nh).filter(|&j| spot.hands[p][j].mask & dealt == 0).collect();
++            for &j in &js { buf.extend_from_slice(&reach[p][j].to_le_bytes()); }
++            for a in 0..na { for &j in &js {
++                let v: u16 = (sigma[a * nh + j] * 1000.0).round() as u16;
++                buf.extend_from_slice(&v.to_le_bytes());
++            } }
++        }
++        sink.w.write_all(&buf).map_err(|e| e.to_string())?;
++        sink.bytes += buf.len() as u64;
++        sink.records += 1;
++        if n.street == 2 { return Ok(()); }
++        for a in 0..na {
++            let child = spot.tree.children[n.children_start as usize + a];
++            let mut r2 = reach.clone();
++            for j in 0..nh { r2[p][j] *= sigma[a * nh + j]; }
++            let lab = act_label(&spot.tree.actions[n.actions_start as usize + a]);
++            pc_walk(s, child, &r2, dealt, seq, &format!("{}{}{}", line, if line.is_empty() || line.ends_with('|') { "" } else { "-" }, lab), cls, mode169, lines, sink)?;
++        }
++    } else if n.kind == KIND_CHANCE {
++        for c in 0..52u8 {
++            let child = spot.tree.children[n.children_start as usize + c as usize];
++            if child == SENTINEL || dealt & (1u64 << c) != 0 { continue; }
++            let mut sq = seq.to_vec();
++            sq.push(c);
++            pc_walk(s, child, reach, dealt | (1u64 << c), &sq, &format!("{}|", line), cls, mode169, lines, sink)?;
++        }
++    }
++    Ok(())
++}
++
++fn percard_export(s: &Solver, board: &str, roles: [&str; 2], modes: &str, out_dir: &std::path::Path) -> Result<(), String> {
++    let spot = &s.spot;
++    let cls: [Vec<usize>; 2] = [0, 1].map(|p| spot.hands[p].iter().map(|h| cls(h)).collect());
++    let reach = [spot.weights[0].clone(), spot.weights[1].clone()];
++    let mut report = serde_json::Map::new();
++    let mut meta_lines = Vec::new();
++    for m in modes.split(',') {
++        let mode169 = match m { "169" => true, "1326" => false, _ => return Err(format!("T2_EXPORT_PERCARD: unknown mode {m}")) };
++        let te = Instant::now();
++        let path = out_dir.join(format!("{board}.pc{m}.bin"));
++        let f = std::fs::File::create(&path).map_err(|e| e.to_string())?;
++        let mut sink = PcSink { w: std::io::BufWriter::with_capacity(8 << 20, f), bytes: 0, records: 0 };
++        let mut lines = PcLines { ids: Default::default(), meta: Vec::new() };
++        pc_walk(s, 0, &reach, 0, &[], "", &cls, mode169, &mut lines, &mut sink)?;
++        std::io::Write::flush(&mut sink.w).map_err(|e| e.to_string())?;
++        report.insert(m.to_string(), serde_json::json!({"export_s": te.elapsed().as_secs_f64(), "raw_bytes": sink.bytes, "records": sink.records}));
++        meta_lines = lines.meta;
++    }
++    let hands: Vec<Vec<serde_json::Value>> = (0..2).map(|p| spot.hands[p].iter().enumerate().map(|(j, h)| serde_json::json!([h.c1, h.c2, cls[p][j]])).collect()).collect();
++    let meta = serde_json::json!({"schema": "t2_percard_strategy_v1", "board": board, "roles": {"OOP": roles[0], "IP": roles[1]}, "modes": report,
++        "record": "u32 line_id, u8 turn, u8 river (255 none); 169: f32 reach[169], u16 permille[na][169] (65535 = unreached); 1326: f32 reach[nhu], u16 permille[na][nhu], nhu = actor combos (hands order) not blocked by dealt cards",
++        "hands_by_player_0_oop_1_ip": hands, "lines": meta_lines});
++    std::fs::write(out_dir.join(format!("{board}.pc.meta.json")), serde_json::to_vec(&meta).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
++    Ok(())
++}
++
+ fn main() -> Result<(), String> {
+     let a: Vec<String> = std::env::args().collect();
+     if a.len() < 8 {
+@@ -383,6 +487,9 @@
+             std::fs::write(&tmp, serde_json::to_vec(&sx).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+             std::fs::rename(&tmp, &sp_).map_err(|e| e.to_string())?;
+         }
++        if let Ok(modes) = std::env::var("T2_EXPORT_PERCARD") {
++            percard_export(&s, board, [pos[oop_i], pos[ip_i]], &modes, &out_dir)?;
++        }
+         let out = serde_json::json!({
+             "matrix": matrix,
+             "schema": "t2_hu_continuation_flop_v1", "board": board, "stratum": f["stratum"], "panel_weight": f["weight"],
