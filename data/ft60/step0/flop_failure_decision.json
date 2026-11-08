@@ -1,0 +1,25 @@
+{
+ "rule": "retry exploitability <=0.6% pot accepted (accepted_above_target), else terminal stays static; rule as relayed by T2 session, docs/GTO_PRECISION_RUNNER.md not on this branch",
+ "boards": {
+  "s0_t00_A/8c6d6c": {
+   "retry_pct_pot": 0.5298,
+   "accepted": true
+  },
+  "s0_t00_A/8c4d4c": {
+   "retry_pct_pot": 0.6546,
+   "accepted": false
+  },
+  "s0_t09_A/Qc3h3d": {
+   "retry_pct_pot": 3.0109,
+   "accepted": false
+  },
+  "s0_t09_A/Qc7h7d": {
+   "retry_pct_pot": 0.5159,
+   "accepted": true
+  }
+ },
+ "static_terminals": {
+  "t00": "node 10 (SB limp, BB check)",
+  "t09": "node 31 (SB raise 3, BB call)"
+ }
+}
