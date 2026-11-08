@@ -3,19 +3,27 @@
  "chunks_done": [
   0,
   12,
-  24
+  24,
+  36
  ],
  "boards_done": [
   "7c4c3c",
   "8c4d4c",
+  "8c6d4h",
   "8c6d6c",
   "8d8c6h",
   "9c8d8c",
   "9d9c2h",
   "Ac4d4c",
+  "Ac6d2h",
+  "Ac6d5h",
   "Ac7c4c",
   "Ac8c6c",
+  "Ac8d2h",
   "Ac9c5c",
+  "AcJd2h",
+  "AcJdTh",
+  "AcKd6h",
   "AcKhKd",
   "AcQc7c",
   "AcQdQc",
@@ -24,9 +32,13 @@
   "AcTdTc",
   "AdAc4c",
   "AdAc5c",
+  "Jc5d2h",
   "Jc6c3c",
   "Jc7c2c",
+  "Jc8d5h",
+  "Jc8d6h",
   "Jc9c2c",
+  "JcTd5h",
   "Kc7c4c",
   "KcJc7c",
   "KcQc8c",
@@ -41,6 +53,7 @@
   "QdQc8h",
   "Tc4h4d",
   "Tc7c3c",
-  "Tc8c5c"
+  "Tc8c5c",
+  "Tc8d5h"
  ]
 }
