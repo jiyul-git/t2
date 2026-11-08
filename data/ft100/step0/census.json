@@ -1,0 +1,38 @@
+{
+ "mass": {
+  "allin_showdown_2": 0.006047,
+  "allin_showdown_3": 5.8e-05,
+  "allin_showdown_4": 3e-06,
+  "flop_2": 0.468175,
+  "flop_3": 0.368334,
+  "flop_4": 0.040852,
+  "flop_5": 0.001304,
+  "flop_6": 4.3e-05,
+  "flop_7": 1e-05,
+  "flop_8": 5e-06,
+  "flop_9": 2e-06,
+  "fold_win": 0.115167
+ },
+ "flop_mass": 0.878725,
+ "hu_flop_mass": 0.468175,
+ "hu_terminals_reached": 1197,
+ "hu_cover": {
+  "0.001": {
+   "n": 49,
+   "share_of_hu_mass": 0.8887
+  },
+  "0.0003": {
+   "n": 101,
+   "share_of_hu_mass": 0.9533
+  },
+  "0.0001": {
+   "n": 178,
+   "share_of_hu_mass": 0.9808
+  },
+  "1e-05": {
+   "n": 391,
+   "share_of_hu_mass": 0.9975
+  }
+ },
+ "multiway_terminals_reached": 4827
+}
