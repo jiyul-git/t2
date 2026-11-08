@@ -1,0 +1,46 @@
+{
+ "bundle": "s1_t00_B",
+ "step": 1,
+ "term_sha256": "c6fa10bb60c544718166a81a577d06a0fb214f920aa5d5b5b4c510b72f22968c",
+ "panel_sha256": "106a07a2070b61b338b1eb13a68bcd9024b19b07b6f0fc360e8a52dce8937255",
+ "matrix": false,
+ "boards": 72,
+ "flop_failures_after_retry": [
+  "QdQcJc",
+  "KcQhQd"
+ ],
+ "retried": {
+  "JdJc7c": {
+   "first_pct_pot": 0.350067344352931,
+   "retry_pct_pot": 0.276960238684714,
+   "ok_after_retry": true
+  },
+  "QdQcJc": {
+   "first_pct_pot": 0.4395650201967146,
+   "retry_pct_pot": 1.0120793010438,
+   "ok_after_retry": false
+  },
+  "KcJdJc": {
+   "first_pct_pot": 0.5007236793422932,
+   "retry_pct_pot": 0.25531643122739733,
+   "ok_after_retry": true
+  },
+  "KcQhQd": {
+   "first_pct_pot": 3.94942006726769,
+   "retry_pct_pot": 4.09283112795508,
+   "ok_after_retry": false
+  },
+  "KcTdTc": {
+   "first_pct_pot": 0.3499312966893161,
+   "retry_pct_pot": 0.26417465118541944,
+   "ok_after_retry": true
+  }
+ },
+ "max_pct_pot": 4.09283112795508,
+ "mean_pct_pot": 0.3180712398780262,
+ "values_sha256": "36ccd6ca2ad90ee928a8f0793d65ff80a6e85cb5984fd6bc2d3793f17ee720cc",
+ "matrix_sums_sha256": null,
+ "session": "session_01QsV6TaRNcPLYkef46RqnQa",
+ "branch": "claude/ft60_board_16",
+ "wall_min_this_run": 196.3
+}
