@@ -428,8 +428,14 @@ def next_tables(k):
     man = {'schema': 't2_hu_continuation_manifest_v1', 'tables': [], 'note': '%s step %d tables from step %d' % (TAG, k + 1, k)}
     ab_dir = os.path.join(sd, 'collect/tables_AB')
     done_nodes = set()
+    # 플랍 실패 판정(재시도 뒤 0.6% pot 초과)으로 정적 유지가 정해진 끝점: 새 표를 만들지 않고, 이전 표가 있어도 옮기지 않는다
+    fd = os.path.join(sd, 'flop_failure_decision.json')
+    static_nodes = {int(v.split()[1]) for v in json.load(open(fd)).get('static_terminals', {}).values()} if os.path.exists(fd) else set()
     for j, tr in rep['terminals'].items():
         node = tr['node']
+        if node in static_nodes:
+            done_nodes.add(node)
+            continue
         h = hist.setdefault(str(node), [])
         h.append(tr['max_D_over_U'])
         cyc = len(h) >= 3 and h[-1] > 1 and (h[-3] - h[-2]) * (h[-2] - h[-1]) < 0
@@ -446,7 +452,7 @@ def next_tables(k):
         man['tables'].append({'file': 'node%d.json' % node, 'line': tab['line'], 'alpha': a if old is not None else 1.0})
         done_nodes.add(node)
     for node, tab in cur.items():
-        if node not in done_nodes:
+        if node not in done_nodes and node not in static_nodes:
             json.dump(tab, open(os.path.join(nd, 'node%d.json' % node), 'w'))
             man['tables'].append({'file': 'node%d.json' % node, 'line': tab.get('line'), 'carried_over': True})
     json.dump(man, open(os.path.join(nd, 'manifest.json'), 'w'), indent=1)
