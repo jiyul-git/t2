@@ -1,0 +1,46 @@
+{
+ "bundle": "s1_t00_A",
+ "step": 1,
+ "term_sha256": "ae92186bc21bbe0d2970499b77e768762aaed03518bb1888ad3b11de74fb510e",
+ "panel_sha256": "7c8949fdcd095ba41b4659d4040f13c02adeab82cb29af778de213c1e2e72e09",
+ "matrix": false,
+ "boards": 72,
+ "flop_failures_after_retry": [
+  "8d8c6h",
+  "QdQc3c"
+ ],
+ "retried": {
+  "8d8c6h": {
+   "first_pct_pot": 1.6011102307563714,
+   "retry_pct_pot": 1.2234142258079581,
+   "ok_after_retry": false
+  },
+  "8c6d6c": {
+   "first_pct_pot": 0.753690160993133,
+   "retry_pct_pot": 0.28217532809629575,
+   "ok_after_retry": true
+  },
+  "Tc4h4d": {
+   "first_pct_pot": 0.30211927162021246,
+   "retry_pct_pot": 0.2953282601542253,
+   "ok_after_retry": true
+  },
+  "9d9c2h": {
+   "first_pct_pot": 0.3316937694248822,
+   "retry_pct_pot": 0.29573515086513125,
+   "ok_after_retry": true
+  },
+  "QdQc3c": {
+   "first_pct_pot": 1.919301289903802,
+   "retry_pct_pot": 0.4208447883756461,
+   "ok_after_retry": false
+  }
+ },
+ "max_pct_pot": 1.2234142258079581,
+ "mean_pct_pot": 0.2826980004182907,
+ "values_sha256": "657f4a217189e19feef46a3127a021deabad4a388859dd63cef83189bce487d9",
+ "matrix_sums_sha256": null,
+ "session": "session_01QsV6TZZkMnHr1xLipC13E1",
+ "branch": "claude/ft40_board_15",
+ "wall_min_this_run": 474.9
+}
