@@ -11,7 +11,7 @@ E=${FT_CALC:-/home/user/calc}/vendor/gtopen/target/release/examples
 CFG=${FT_CALC:-/home/user/calc}/data/gto_spot/plan_a/cfg_p${S}_o25.json
 B=${FT_WORK:-/home/user/gto_ckpt/ft$S}; W=$B/solve_s${K}_$M; mkdir -p $W; cd $W
 if [ "$M" = cont ] && [ ! -f ck.gtop ]; then cp $B/solve_s$K/ck.gtop ck.gtop; fi
-export T2_CONT_FILE=$R/data/ft$S/step$K/tables/manifest.json
+export T2_CONT_FILE=${FT_MANIFEST:-$R/data/ft$S/step$K/tables/manifest.json}
 export PREFLOP_EQ_SEED=202 PREFLOP_MULTIWAY_SEED=202 PREFLOP_EQ_SAMPLES=1200
 if [ "$M" = cont ]; then N0=$(( $(ls $B/solve_s$K/solve_*.json | sed 's/.*solve_//;s/.json//' | sort -n | tail -1) + 50 )); else N0=50; fi
 N=$(cat next_n 2>/dev/null || echo $N0)
