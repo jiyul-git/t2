@@ -49,3 +49,9 @@
   - 1단계 표 56개(투영 전): 어긋난 것 14개(|합−팟|>0.01), 최대 12.99bb, 중앙값 6e-8. 새로 만든 V_A∪B 표 48개 중 시드와 섞인 6개를 빼면 합이 맞고, 어긋난 것은 시드에서 온 표(이월 8개 + 섞인 6개)다.
 - 조치: 노드마다 δ = 합 − 팟 을 구해 각 자리 gross 에서 δ/2 를 뺌(두 자리 차이 유지). 혼합 비율 α=0.5 는 그대로(어긋남이 있었으므로 α=0.25 안 씀). 투영 뒤 |합−팟| 최대 7e-15. 투영으로 node 6818 BB 의 최소 gross 가 −4.77 이 됨(시드가 원래 안 맞던 표). 표 로드는 문제없음. 결과 `data/ft100/step1/sum_check.json`.
 - 투영한 1단계 표로 **처음부터 다시 풀기**(`ft_solve_free.sh 1 fresh`, 정지 = 정확 gap < 0.02 만, 200회 동안 감소 <10% 면 보고).
+
+### 6.2 행렬 끝점 도구로 갈아탐 (사용자 결정 2026-11-10, `docs/GTO_FT_MATRIX_TERMINAL.md`)
+- 60bb 조정 세션 `claude/ft60_coord` 961208e 의 `tools/gto_fulltree`(행렬 끝점 엔진 패치·ft60.py·ft_board.py·ft_coord_setup.sh)를 가져옴. `ft_coord_setup.sh` 로 엔진 패치·빌드(FT_COORD_SETUP_OK). ft100 쪽 추가: `FT_MIN_REACH`(도달 ≥ 값 끝점 전부), `FT_N_TERMS`, `FT_H_ALL`(모든 묶음 예상 시간 상수).
+- 0단계 결과를 새 도구로 재집계: `FT_MATRIX_ALL=0` 로 prepare 0 을 다시 돌려 끝점 입력이 이전과 비트 동일함을 확인(git 에 변경 없음, `static_matrix.npz` 만 추가) → `collect 0` → `next_tables 0`(정적 유지 `step0/static_nodes.json` = [37]).
+- 1단계 표: 새 끝점 48개는 행렬 표(0.5·이전 행렬 + 0.5·M_A∪B, 이전 표가 없거나 벡터면 정적 행렬; 합=팟 투영은 도구가 함), 이월 시드 8개는 벡터 표라 합−팟 최대 12.96bb → 투영으로 맞춤(`step1/carried_seed_projection.json`).
+- 트리는 이 1단계 표로 **처음부터** 다시 풀기(`ft_solve_free.sh 1 fresh`), 정지 = 정확 gap < 0.02 만, 200회 감소 <10% 면 보고. (벡터 표로 풀던 이전 처음부터 풀기는 150회까지 gap 0.278 → 0.154 → 0.135 였고 중단.)

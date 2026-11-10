@@ -49,197 +49,236 @@
   {
    "file": "node1214.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:3-bet 7.5|SB:Fold|BB:Fold|CO:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node7760.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|LJ:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node11694.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node220.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:3-bet 10|BB:Fold|BTN:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node2328.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|HJ:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node29954.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node6262.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|HJ:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node65.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:3-bet 8.8|BTN:Call 8.8",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node427.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:3-bet 10|BB:Fold|CO:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node36586.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node54846.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node135790.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node32652.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node146118.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node142184.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node164378.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node245322.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node593474.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node714286.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node1062438.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node281.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:Fold|BB:3-bet 10|CO:Call 10",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node6973.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|LJ:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node2529502.json",
    "line": "UTG:Raise 2.5|UTG+1:3-bet 7.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node633342.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node611148.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node1541.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|HJ:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node615082.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node346.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:Call 2.5|BB:3-bet 10|CO:Call 10|SB:Fold",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node6892.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Call 2.5|BB:3-bet 10|LJ:Call 10|SB:Fold",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node139.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Call 2.5|BB:3-bet 10|BTN:Call 10|SB:Fold",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node131.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Call 2.5|BB:3-bet 10|BTN:Fold|SB:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node31865.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|UTG+2:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node1460.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:Call 2.5|BB:3-bet 10|HJ:Call 10|SB:Fold",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node1217.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:3-bet 7.5|SB:Fold|BB:Fold|CO:4-bet 16.9|BTN:Call 16.9",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node74.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:3-bet 10|BTN:Call 10",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node1395.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:Fold|BB:3-bet 10|HJ:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node31784.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Call 2.5|BB:3-bet 10|UTG+2:Call 10|SB:Fold",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node141397.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|UTG+1:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node6821.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:3-bet 8.8|LJ:4-bet 19.7|BB:Call 19.7",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node77.json",
@@ -282,5 +321,5 @@
    "carried_over": true
   }
  ],
- "note": "ft100 step 1 tables from step 0"
+ "note": "ft60 step 1 tables from step 0"
 }
