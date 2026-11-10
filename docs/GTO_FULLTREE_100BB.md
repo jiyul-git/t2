@@ -69,3 +69,13 @@
   5. 0단계 collect 는 D≤U 0/98(시드 표 합 어긋남 영향 가능성, 검증 안 함), 플랍 실패 3(정적 1: node 37).
   6. 보드 시간(100bb): 3벳 ≈2.0h, 4벳 ≈1.6h, 단일 레이즈 비행렬 ≈2.05h(묶음). **행렬 모드 단일 레이즈 100bb 는 실측 안 함**(60bb 는 비행렬의 약 1.9배).
 - 다음 일(이어받는 쪽): 이 체크포인트·덤프로 `FT_STACK=100 FT_MIN_REACH=1e-3 FT_SESSIONS=20 FT_MATRIX_ALL=1 python3 tools/gto_fulltree/ft60.py prepare 1 <ck> <dump>`, 예상 시간은 `FT_H_ALL` 로 지정(실측 후).
+
+### 7.1 다른 계정용: 올린 파일과 다시 만드는 법
+- **올림**: `data/ft100/step1/dump/dump_static_500.jsonl.gz`(23.8MB, gzip -9, 원본 `dump.jsonl` 93MB = reach ≥ 1e-6 행동 노드 덤프). `prepare 1` 에 필요한 입력은 체크포인트(`ck`)와 덤프인데, 덤프로 끝점 선택·레인지(actor_reach)가 나온다.
+- **안 올림**: `ck.gtop` 3.49GB — 압축해도 300MB 를 넘어(앞 300MB 만 압축해도 300MB) 100MB 조각으로 나누면 30개 이상이라 올리지 않음. `prepare` 가 체크포인트를 쓰는 부분(`t2_ft_export`로 끝점 레인지·정적 행렬 내보내기)은 체크포인트가 필요하므로, 다시 만들거나 덤프에서 레인지를 계산하는 경로(부모 덤프용 `timing` 처럼 `actor_reach × σ`)를 써야 한다.
+- **다시 만드는 명령**(500회, 4코어 15GB 기준 **약 6.5시간**: 50회 약 30~37분 × 10 + 450·500회 정확 gap 측정 각 약 20분. 2시간 작업 제한이 있으므로 `setsid nohup` + 추적되는 대기 작업 필요):
+  ```sh
+  sh tools/gto_fulltree/ft_coord_setup.sh        # 계산 체크아웃·엔진 패치·빌드 (FT_COORD_SETUP_OK)
+  FT_STACK=100 FT_MANIFEST=$PWD/data/ft100/step1/tables_static/manifest.json setsid nohup sh tools/gto_fulltree/ft_solve_free.sh 1 static > /home/user/gto_ckpt/ft100_s1_static.log 2>&1 < /dev/null &
+  ```
+  결과가 비트 동일한지는 `data/ft100/step1/solve_static/solve_500.json` 의 `gap_total`(0.01973…)과 `exact_500.json`(0.019738…)로 확인. 원본 체크포인트 sha256 앞 16자 df746d51c443a332, 덤프 원본 44086522f99e138f, gz 파일 a558ea142facfcbb.
