@@ -49,82 +49,98 @@
   {
    "file": "node260.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:3-bet 8.8|BB:Fold|CO:Call 8.8",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node744.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:3-bet 7.5|SB:Fold|BB:Fold|CO:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node151.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:3-bet 10|BB:Fold|BTN:Call 10",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node3597.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|HJ:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node1405.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|HJ:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node6658.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node4466.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|LJ:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node16514.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node40.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Raise 3|BB:3-bet 12|SB:Call 12",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node945.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|HJ:Call 10",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node59.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:3-bet 10|BTN:Call 10",
-   "alpha": 1.0
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node72815.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node18015.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node30063.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node312148.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node4006.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|LJ:Call 10",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node320785.json",
@@ -134,12 +150,14 @@
   {
    "file": "node131028.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node20207.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node75684.json",
@@ -149,47 +167,56 @@
   {
    "file": "node333377.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node88276.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node557249.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node1312321.json",
    "line": "UTG:Raise 2.5|UTG+1:3-bet 7.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node323521.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node376129.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node78420.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node321329.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node76228.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+1:Call 7.5",
-   "alpha": 0.5
+   "alpha": 0.5,
+   "matrix": true
   },
   {
    "file": "node17471.json",
@@ -232,5 +259,5 @@
    "carried_over": true
   }
  ],
- "note": "ft60 step 2 tables from step 1 | node 10 (t00) kept static: step1 flop failures QdQcJc 1.01%, KcQhQd 4.09% pot > 0.6%; tables projected so range-weighted sum == pot (step1 ranges), raw in tables_raw/"
+ "note": "ft60 step 2 tables from step 1"
 }

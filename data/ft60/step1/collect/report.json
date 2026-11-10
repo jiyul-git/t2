@@ -7,6 +7,8 @@
    "node": 31,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Raise 3|BB:Call 3",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.054962153247409294,
    "seats": {
     "SB": {
@@ -50,6 +52,8 @@
    "node": 50,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:Call 2.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.044934130143509866,
    "seats": {
     "BTN": {
@@ -93,6 +97,8 @@
    "node": 183,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:Fold|BB:Call 2.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.042416741269909526,
    "seats": {
     "CO": {
@@ -136,6 +142,8 @@
    "node": 844,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.025814273086546793,
    "seats": {
     "HJ": {
@@ -179,6 +187,8 @@
    "node": 10,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Check",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.022968647282333676,
    "seats": {
     "SB": {
@@ -222,6 +232,8 @@
    "node": 3905,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.017098734142872635,
    "seats": {
     "LJ": {
@@ -265,6 +277,8 @@
    "node": 17454,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.013528982114358844,
    "seats": {
     "UTG+2": {
@@ -308,6 +322,8 @@
    "node": 75667,
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.011717428182274432,
    "seats": {
     "UTG+1": {
@@ -351,6 +367,8 @@
    "node": 13,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Raise 3.5|SB:Call 3.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.011370605245220216,
    "seats": {
     "SB": {
@@ -394,6 +412,8 @@
    "node": 320768,
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.01084955254302764,
    "seats": {
     "UTG": {
@@ -437,6 +457,14 @@
    "node": 260,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:3-bet 8.8|BB:Fold|CO:Call 8.8",
    "matrix": true,
+   "sum_check": {
+    "pot": 19.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 2.770028849852224e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 2.770028849852224e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.00719466137600338,
    "seats": {
     "CO": {
@@ -454,7 +482,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 191.1623169663232,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.417328248298019,
+     "Dm_over_U": 7.41908024264289
     },
     "SB": {
      "D": 1.8817982136498679,
@@ -471,7 +503,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 187.00185007366707,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.373307054209571,
+     "Dm_over_U": 10.724725939314574
     }
    },
    "max_D_over_U": 4.614761749934846
@@ -480,6 +516,14 @@
    "node": 744,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:3-bet 7.5|SB:Fold|BB:Fold|CO:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 1.4396123479087919e-05,
+    "max_abs_pair_sum_minus_pot_all_cells": 1.4396123479087919e-05,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.006854790583698594,
    "seats": {
     "CO": {
@@ -497,7 +541,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 211.74051694238233,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 2.9608012176127847,
+     "Dm_over_U": 5.378939637240339
     },
     "BTN": {
      "D": 1.7012635505018503,
@@ -514,7 +562,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 140.37592273042992,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 3.216612926646958,
+     "Dm_over_U": 8.694173827818803
     }
    },
    "max_D_over_U": 4.598340357480845
@@ -523,6 +575,14 @@
    "node": 151,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:3-bet 10|BB:Fold|BTN:Call 10",
    "matrix": true,
+   "sum_check": {
+    "pot": 21.999999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 2.30867830808279e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 2.30867830808279e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.005054064264878566,
    "seats": {
     "BTN": {
@@ -540,7 +600,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 228.4969182858244,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.001193274971592,
+     "Dm_over_U": 7.656970572235953
     },
     "SB": {
      "D": 1.9974206563024135,
@@ -557,7 +621,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 141.0560360847308,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.305785426120775,
+     "Dm_over_U": 11.61653279011749
     }
    },
    "max_D_over_U": 4.373170169182567
@@ -566,6 +634,14 @@
    "node": 3597,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|HJ:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 1.1379435470360022e-05,
+    "max_abs_pair_sum_minus_pot_all_cells": 1.1379435470360022e-05,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0035139128780151815,
    "seats": {
     "HJ": {
@@ -583,7 +659,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 151.167654248239,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.177427549865824,
+     "Dm_over_U": 7.977075738200442
     },
     "CO": {
      "D": 3.767073267468996,
@@ -600,7 +680,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 79.1471058089035,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.992143305609757,
+     "Dm_over_U": 11.835570785644371
     }
    },
    "max_D_over_U": 8.931126288329201
@@ -609,6 +693,14 @@
    "node": 1405,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|HJ:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 3.8116012852640324e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 3.8116012852640324e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0030058687926718865,
    "seats": {
     "HJ": {
@@ -626,7 +718,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 157.48330926254272,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.327939118705734,
+     "Dm_over_U": 8.360312672530867
     },
     "BTN": {
      "D": 3.96568554911666,
@@ -643,7 +739,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 72.67800952026192,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.095661186960183,
+     "Dm_over_U": 11.580909158024232
     }
    },
    "max_D_over_U": 9.012813530682715
@@ -652,6 +752,14 @@
    "node": 6658,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 3.117683963438367e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 3.117683963438367e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0026052593733570943,
    "seats": {
     "LJ": {
@@ -669,7 +777,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 132.6398841352501,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.734259657359159,
+     "Dm_over_U": 9.205781747470153
     },
     "CO": {
      "D": 4.253702862117087,
@@ -686,7 +798,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 64.1164415676128,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.514041953991647,
+     "Dm_over_U": 12.026626792553293
     }
    },
    "max_D_over_U": 9.277712653612406
@@ -695,6 +811,14 @@
    "node": 4466,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|LJ:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 0.00023974003380189401,
+    "max_abs_pair_sum_minus_pot_all_cells": 0.00023974003380189401,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0025634420489027117,
    "seats": {
     "LJ": {
@@ -712,7 +836,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 133.77552266865,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.753130950227948,
+     "Dm_over_U": 9.199964565759448
     },
     "BTN": {
      "D": 3.6200773235837844,
@@ -729,7 +857,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 70.50982772405925,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.190128298277232,
+     "Dm_over_U": 11.335119642020834
     }
    },
    "max_D_over_U": 7.906164783982171
@@ -738,6 +870,14 @@
    "node": 16514,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 3.92129195958546e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 3.92129195958546e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0024831069894423216,
    "seats": {
     "LJ": {
@@ -755,7 +895,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 120.74683896818789,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.914897417768981,
+     "Dm_over_U": 9.56036618593202
     },
     "HJ": {
      "D": 4.67227949168619,
@@ -772,7 +916,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 60.69926494000952,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.793074204589099,
+     "Dm_over_U": 13.188301618780095
     }
    },
    "max_D_over_U": 10.636741220194445
@@ -781,6 +929,14 @@
    "node": 40,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Raise 3|BB:3-bet 12|SB:Call 12",
    "matrix": true,
+   "sum_check": {
+    "pot": 25.0,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 5.896683646255951e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 5.896683646255951e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": null,
    "reach": 0.0021995732498066383,
    "seats": {
     "SB": {
@@ -798,7 +954,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 122.23182114311672,
      "exempt": false,
-     "used_was_table": false
+     "used_was_table": false,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 3.2449560416573426,
+     "Dm_over_U": 5.330510231333555
     },
     "BB": {
      "D": 2.375858399769307,
@@ -815,7 +975,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 202.15534471685731,
      "exempt": false,
-     "used_was_table": false
+     "used_was_table": false,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 3.1631609388489763,
+     "Dm_over_U": 6.408146010971968
     }
    },
    "max_D_over_U": 4.813175118638132
@@ -824,6 +988,14 @@
    "node": 945,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|HJ:Call 10",
    "matrix": true,
+   "sum_check": {
+    "pot": 21.999999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 2.5545147472882945e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 2.5545147472882945e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.001783933718865768,
    "seats": {
     "HJ": {
@@ -841,7 +1013,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 129.70245078827512,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 6.169551601762654,
+     "Dm_over_U": 10.238578632320172
     },
     "SB": {
      "D": 5.167938954514484,
@@ -858,7 +1034,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 61.39192250097991,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 6.429733294111667,
+     "Dm_over_U": 13.154889065517313
     }
    },
    "max_D_over_U": 10.573325600653268
@@ -867,6 +1047,14 @@
    "node": 59,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:3-bet 10|BTN:Call 10",
    "matrix": true,
+   "sum_check": {
+    "pot": 21.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 2.9218559483012996e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 2.9218559483012996e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": null,
    "reach": 0.0017528560534153463,
    "seats": {
     "BTN": {
@@ -884,7 +1072,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 60.32424875914501,
      "exempt": false,
-     "used_was_table": false
+     "used_was_table": false,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.554142381513153,
+     "Dm_over_U": 6.673351509055332
     },
     "BB": {
      "D": 4.035304545763576,
@@ -901,7 +1093,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 382.28943609059803,
      "exempt": false,
-     "used_was_table": false
+     "used_was_table": false,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.626891821891505,
+     "Dm_over_U": 9.927552489435833
     }
    },
    "max_D_over_U": 8.658230888257473
@@ -910,6 +1106,14 @@
    "node": 72815,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 4.684770857465992e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 4.684770857465992e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0016697991458722065,
    "seats": {
     "UTG+2": {
@@ -927,7 +1131,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 101.4276176839542,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.563264065719055,
+     "Dm_over_U": 7.800244052531173
     },
     "LJ": {
      "D": 4.056081454414884,
@@ -944,7 +1152,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 43.594767470363614,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.263918114721476,
+     "Dm_over_U": 11.056070132834504
     }
    },
    "max_D_over_U": 8.519190467474273
@@ -953,6 +1165,14 @@
    "node": 18015,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+2:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 3.882364122631543e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 3.882364122631543e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0015455014124592778,
    "seats": {
     "UTG+2": {
@@ -970,7 +1190,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 118.72814099859397,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.679612023879191,
+     "Dm_over_U": 12.093814890039486
     },
     "BTN": {
      "D": 4.6506576130712585,
@@ -987,7 +1211,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 46.794751370823285,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 6.0611690349174765,
+     "Dm_over_U": 10.990796902874399
     }
    },
    "max_D_over_U": 8.433098135955346
@@ -996,6 +1224,14 @@
    "node": 30063,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 7.1806289376752375e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 7.1806289376752375e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0015120441187649336,
    "seats": {
     "UTG+2": {
@@ -1013,7 +1249,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 105.02487280959967,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.644206298079358,
+     "Dm_over_U": 8.054692406139832
     },
     "HJ": {
      "D": 4.2147446751344635,
@@ -1030,7 +1270,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 41.64257998814987,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.390194560171426,
+     "Dm_over_U": 10.845151404495963
     }
    },
    "max_D_over_U": 8.480128801078509
@@ -1039,6 +1283,14 @@
    "node": 312148,
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 1.0887242442692013e-05,
+    "max_abs_pair_sum_minus_pot_all_cells": 1.0887242442692013e-05,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0015044268084277899,
    "seats": {
     "UTG+1": {
@@ -1056,7 +1308,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 93.02622859843022,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.203918219830067,
+     "Dm_over_U": 7.342791796863565
     },
     "UTG+2": {
      "D": 4.916554524170363,
@@ -1073,7 +1329,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 38.12531956366961,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.620837442753462,
+     "Dm_over_U": 12.501494733157823
     }
    },
    "max_D_over_U": 10.935075265064016
@@ -1082,6 +1342,14 @@
    "node": 4006,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|LJ:Call 10",
    "matrix": true,
+   "sum_check": {
+    "pot": 21.999999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 2.448558209522389e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 2.448558209522389e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0014520068099445266,
    "seats": {
     "LJ": {
@@ -1099,7 +1367,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 120.84193112155548,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 7.003076287205885,
+     "Dm_over_U": 14.115155132584887
     },
     "SB": {
      "D": 5.648637806238257,
@@ -1116,7 +1388,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 51.46039383201769,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 6.87944131502154,
+     "Dm_over_U": 12.655454456963108
     }
    },
    "max_D_over_U": 10.391262200992324
@@ -1125,6 +1401,8 @@
    "node": 320785,
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Call 2.5|BB:Fold",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.0014280366777161015,
    "seats": {
     "UTG": {
@@ -1168,6 +1446,14 @@
    "node": 131028,
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 9.307960803184301e-05,
+    "max_abs_pair_sum_minus_pot_all_cells": 9.307960803184301e-05,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0014194537481230234,
    "seats": {
     "UTG+1": {
@@ -1185,7 +1471,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 96.57001863320532,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.208545957542869,
+     "Dm_over_U": 7.36972123367615
     },
     "LJ": {
      "D": 4.897748121934725,
@@ -1202,7 +1492,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 37.881209312740694,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.643254363092443,
+     "Dm_over_U": 12.409803282185466
     }
    },
    "max_D_over_U": 10.770397151759152
@@ -1211,6 +1505,14 @@
    "node": 20207,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.5,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 3.749736833924544e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 3.749736833924544e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0014157431670058238,
    "seats": {
     "UTG+2": {
@@ -1228,7 +1530,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 109.71864607322111,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.6663858379646665,
+     "Dm_over_U": 8.160532213211422
     },
     "CO": {
      "D": 3.9907189277348887,
@@ -1245,7 +1551,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 41.05662468372895,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.265537267046406,
+     "Dm_over_U": 10.39860258572462
     }
    },
    "max_D_over_U": 7.881038165004116
@@ -1254,6 +1564,8 @@
    "node": 75684,
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Call 2.5|BB:Fold",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.0014003851326891466,
    "seats": {
     "UTG+1": {
@@ -1297,6 +1609,14 @@
    "node": 333377,
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 8.37546572185488e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 8.37546572185488e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0013752479633421446,
    "seats": {
     "UTG": {
@@ -1314,7 +1634,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 93.498890175064,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.360290780994026,
+     "Dm_over_U": 7.64365795666757
     },
     "HJ": {
      "D": 4.518306669224777,
@@ -1331,7 +1655,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 39.71706505486018,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.433332773406485,
+     "Dm_over_U": 11.569551185268672
     }
    },
    "max_D_over_U": 9.621126196465717
@@ -1340,6 +1668,14 @@
    "node": 88276,
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 6.036893264393939e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 6.036893264393939e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0013254513239541546,
    "seats": {
     "UTG+1": {
@@ -1357,7 +1693,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 99.43697373913696,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.549345627308643,
+     "Dm_over_U": 8.044174089756156
     },
     "HJ": {
      "D": 4.555830641849288,
@@ -1374,7 +1714,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 37.552792377601264,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.83565005150272,
+     "Dm_over_U": 11.206692101816863
     }
    },
    "max_D_over_U": 8.748946701846942
@@ -1383,6 +1727,14 @@
    "node": 557249,
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 4.153069323109548e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 4.153069323109548e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.001271743043071524,
    "seats": {
     "UTG": {
@@ -1400,7 +1752,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 84.28142014090957,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.346446707680858,
+     "Dm_over_U": 7.816923963588698
     },
     "UTG+2": {
      "D": 4.34722539835592,
@@ -1417,7 +1773,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 34.13333137370719,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.407748615218982,
+     "Dm_over_U": 11.382441603675113
     }
    },
    "max_D_over_U": 9.150210698689403
@@ -1426,6 +1786,14 @@
    "node": 1312321,
    "line": "UTG:Raise 2.5|UTG+1:3-bet 7.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 4.181192299057557e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 4.181192299057557e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0012666368369372817,
    "seats": {
     "UTG": {
@@ -1443,7 +1811,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 81.56692185117197,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.234626396436338,
+     "Dm_over_U": 7.408054908505205
     },
     "UTG+1": {
      "D": 4.768593150246624,
@@ -1460,7 +1832,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 32.629288529175604,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.670627254261997,
+     "Dm_over_U": 13.009556387241412
     }
    },
    "max_D_over_U": 10.94010921442948
@@ -1469,6 +1845,14 @@
    "node": 323521,
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 3.3263453680376642e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 3.3263453680376642e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.001246919279116008,
    "seats": {
     "UTG": {
@@ -1486,7 +1870,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 94.53705872758496,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.601614545511691,
+     "Dm_over_U": 8.153051475029425
     },
     "CO": {
      "D": 4.426932414385856,
@@ -1503,7 +1891,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 39.07916393391934,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.45696784065448,
+     "Dm_over_U": 10.61074459874848
     }
    },
    "max_D_over_U": 8.607902882443154
@@ -1512,6 +1904,14 @@
    "node": 376129,
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 2.6313790659315828e-05,
+    "max_abs_pair_sum_minus_pot_all_cells": 2.6313790659315828e-05,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0012256560917414672,
    "seats": {
     "UTG": {
@@ -1529,7 +1929,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 89.26876983403452,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.260671313616968,
+     "Dm_over_U": 7.454574904667916
     },
     "LJ": {
      "D": 4.145434952781218,
@@ -1546,7 +1950,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 33.83847207498513,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.3024465208213645,
+     "Dm_over_U": 10.507368459502766
     }
    },
    "max_D_over_U": 8.214625513474582
@@ -1555,6 +1963,14 @@
    "node": 78420,
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 2.482220325461526e-05,
+    "max_abs_pair_sum_minus_pot_all_cells": 2.482220325461526e-05,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0011652893180136895,
    "seats": {
     "UTG+1": {
@@ -1572,7 +1988,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 99.54510527380343,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.908940500879206,
+     "Dm_over_U": 8.832009610339806
     },
     "CO": {
      "D": 4.55415845703326,
@@ -1589,7 +2009,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 35.955642580535674,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.82088760177587,
+     "Dm_over_U": 10.612237571769255
     }
    },
    "max_D_over_U": 8.302825065849806
@@ -1598,6 +2022,14 @@
    "node": 321329,
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 9.324089131013125e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 9.324089131013125e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0010659994163810468,
    "seats": {
     "UTG": {
@@ -1615,7 +2047,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 93.715277995282,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 4.947889831541566,
+     "Dm_over_U": 8.776360316042016
     },
     "BTN": {
      "D": 4.4262263868695175,
@@ -1632,7 +2068,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 37.55433045654749,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.662094613680285,
+     "Dm_over_U": 10.458856021300639
     }
    },
    "max_D_over_U": 8.175996279910276
@@ -1641,6 +2081,14 @@
    "node": 76228,
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+1:Call 7.5",
    "matrix": true,
+   "sum_check": {
+    "pot": 17.499999999999996,
+    "cells_both_measured": 1.0,
+    "max_abs_pair_sum_minus_pot_measured": 4.553473566204502e-06,
+    "max_abs_pair_sum_minus_pot_all_cells": 4.553473566204502e-06,
+    "static_filled_cells_mean_abs_residual": 0.0
+   },
+   "dM_vs_prev_step": {},
    "reach": 0.0009775823061240168,
    "seats": {
     "UTG+1": {
@@ -1658,7 +2106,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 98.43948008653325,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.0330996224694955,
+     "Dm_over_U": 9.14779691631543
     },
     "BTN": {
      "D": 4.654390292320703,
@@ -1675,7 +2127,11 @@
      "pass_rep_value_strict": true,
      "opp_arriving_combos": 34.23366315687014,
      "exempt": false,
-     "used_was_table": true
+     "used_was_table": true,
+     "matrix_fill_cells": 0.0,
+     "matrix_fill_mass": 0.0,
+     "Dm": 5.825668452666164,
+     "Dm_over_U": 10.433724195148415
     }
    },
    "max_D_over_U": 8.335974661315534
@@ -1684,6 +2140,8 @@
    "node": 17471,
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Call 2.5|BB:Fold",
    "matrix": false,
+   "sum_check": null,
+   "dM_vs_prev_step": null,
    "reach": 0.0009153957639515243,
    "seats": {
     "UTG+2": {
