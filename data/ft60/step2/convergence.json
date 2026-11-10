@@ -1,0 +1,15 @@
+{
+ "step": 2,
+ "status": "gap 0.01864 (<0.02, user criterion; document criterion 0.010 not met)",
+ "final_iterations": 200,
+ "exact_gap": 0.018636148804947048,
+ "start": "from scratch, step2 matrix tables (27 matrix + 19 vector), step 1 vector tables took 950 it for gap 0.0193",
+ "skip_gap_by_iteration": {
+  "50": 0.3243362869108757,
+  "100": 0.07454289561449419,
+  "150": 0.03323225744916004,
+  "200": 0.018630308798335396
+ },
+ "endpoints": "new 4 dropped 4, all 40 endpoints matrix mode (FT_MATRIX_ALL=1)",
+ "static_terminals": "node 10 (t00) static"
+}
