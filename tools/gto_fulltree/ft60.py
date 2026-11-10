@@ -171,9 +171,11 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
     n_sess = int(os.environ.get('FT_SESSIONS', '5'))
     load = [0.0] * n_sess
     assign = []
-    for r in sorted(rows, key=lambda r: (-(1.9 if r['matrix'] else 0.8), -r['reach'], r['bundle'])):
+    def est_h(r):   # 실측: 3벳 행렬 1.9h / 단일 레이즈 행렬 2.6h(보드 4장 529~569초 ×18) / 단일 레이즈 비행렬 1.4h(279~303초 ×18)
+        return 1.9 if (r['matrix'] and n_raises(r['line']) >= 2) else 2.6 if r['matrix'] else 1.4
+    for r in sorted(rows, key=lambda r: (-est_h(r), -r['reach'], r['bundle'])):
         i = min(range(n_sess), key=lambda x: (load[x], x))
-        load[i] += 1.9 if r['matrix'] else 0.8
+        load[i] += est_h(r)
         assign.append((r['bundle'], i + 1))
     with open(os.path.join(sd, 'assign.tsv'), 'w') as f:
         f.write('bundle\tsession\n')
