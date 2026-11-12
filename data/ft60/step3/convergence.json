@@ -1,0 +1,17 @@
+{
+ "step": 3,
+ "status": "exact gap 0.01696 (<0.02, user criterion; >0.010 recorded)",
+ "final_iterations": 250,
+ "exact_gap": 0.01696002641051883,
+ "start": "from scratch, step3 matrix tables (next_tables 2)",
+ "skip_gap_by_iteration": {
+  "50": 0.25712781956269276,
+  "100": 0.07354420163761449,
+  "150": 0.0372817103074398,
+  "200": 0.02358922374177048,
+  "250": 0.01695482956293228
+ },
+ "exact_gap_200": 0.023594412250999328,
+ "endpoints": "all 40 matrix mode (FT_MATRIX_ALL=1); new 5 dropped 5 vs step2",
+ "time_estimate": "per-node measured step2 wall_min_this_run median (data/ft60/step3_board_hours.json), 20 sessions, ~18h each"
+}
