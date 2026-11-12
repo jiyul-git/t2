@@ -171,7 +171,16 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
     n_sess = int(os.environ.get('FT_SESSIONS', '5'))
     load = [0.0] * n_sess
     assign = []
-    def est_h(r):   # 실측: 3벳 행렬 1.9h / 단일 레이즈 행렬 2.6h(보드 4장 529~569초 ×18) / 단일 레이즈 비행렬 1.4h(279~303초 ×18)
+    meas = {}
+    mf = os.environ.get('FT_BOARD_HOURS')   # 이전 단계 실측(노드 번호 → 시간, wall_min_this_run 중앙값); 없는 노드는 중앙값
+    if mf and os.path.exists(mf):
+        meas = json.load(open(mf))
+    med = sorted(meas.values())[len(meas) // 2] if meas else None
+    def est_h(r):
+        if meas:
+            return float(meas.get(str(r['node']), med))
+        return est_h0(r)
+    def est_h0(r):   # 실측: 3벳 행렬 1.9h / 단일 레이즈 행렬 2.6h(보드 4장 529~569초 ×18) / 단일 레이즈 비행렬 1.4h(279~303초 ×18)
         return 1.9 if (r['matrix'] and n_raises(r['line']) >= 2) else 2.6 if r['matrix'] else 1.4
     for r in sorted(rows, key=lambda r: (-est_h(r), -r['reach'], r['bundle'])):
         i = min(range(n_sess), key=lambda x: (load[x], x))
