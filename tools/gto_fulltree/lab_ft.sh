@@ -1,6 +1,7 @@
 #!/bin/bash
 # 연구실 컴퓨터(우분투 22.04, 8코어, 메모리 약 35GB 사용 가능)에서 ft 보드 묶음을 끝까지 풀고 깃허브에 자동으로 올린다.
-#   bash lab_ft.sh start    # 백그라운드로 시작(창을 닫아도 계속). 이미 돌고 있으면 아무것도 안 함
+#   bash lab_ft.sh run      # 이 창에서 돌린다(WSL 1 은 창을 닫으면 계산도 꺼지므로 창을 열어 둔다)
+#   bash lab_ft.sh start    # 백그라운드로 시작(WSL 2·일반 우분투용). 이미 돌고 있으면 아무것도 안 함
 #   bash lab_ft.sh status   # 진행 상황(보드별 끝난 묶음, 최근 로그)
 #   bash lab_ft.sh stop     # 멈춤(다시 start 하면 올라간 12보드 덩어리는 건너뛰고 이어서)
 # 기본: 30bb 1단계, 보드 6~19, 동시에 2개(각 4 worker = 8코어, 메모리 약 17GB).
@@ -102,6 +103,7 @@ case "${1:-}" in
     setsid nohup bash "$0" run > $ROOT/logs/main.log 2>&1 < /dev/null &
     echo $! > $ROOT/lab.pid; sleep 2; echo "시작함 (pid $(cat $ROOT/lab.pid)). 상태 보기: bash $0 status"; tail -3 $LOG 2>/dev/null ;;
   run)
+    echo $$ > $ROOT/lab.pid
     setup || { say "준비 실패 — 위 메시지 확인"; exit 1; }
     rm -rf $ROOT/lock/*
     for j in $(seq 1 $PAR); do worker & sleep 5; done
