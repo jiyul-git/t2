@@ -1,0 +1,98 @@
+diff --git a/vendor/gtopen/crates/solver/src/preflop/mod.rs b/vendor/gtopen/crates/solver/src/preflop/mod.rs
+index dc39dfc..f02be8c 100644
+--- a/vendor/gtopen/crates/solver/src/preflop/mod.rs
++++ b/vendor/gtopen/crates/solver/src/preflop/mod.rs
+@@ -1747,6 +1747,22 @@ impl PreflopSolver {
+                 }
+                 #[cfg(feature = "t2-cont")]
+                 if let Some(g) = t2cont::gross_for(node, nd.live, nd.pot, p) {
++                    // ft matrix terminal: range-reactive hand-vs-hand form, value(h) = sum_j dist_opp[j] * M[h][j]
++                    if let Some(m) = t2cont::matrix_for(node, nd.live, nd.pot, p) {
++                        if let Some(q) = (0..self.n).find(|&q| q != p && nd.live & (1 << q) != 0) {
++                            let s: f32 = reaches[q].iter().sum();
++                            let dist: Vec<f64> = reaches[q].iter().map(|&x| (x / s) as f64).collect();
++                            for h in 0..NUM_CLASSES {
++                                let row = &m[h * NUM_CLASSES..(h + 1) * NUM_CLASSES];
++                                let mut v = 0f64;
++                                for j in 0..NUM_CLASSES {
++                                    v += dist[j] * row[j];
++                                }
++                                out[h] = (prob * (v - inv_p)) as f32;
++                            }
++                            return;
++                        }
++                    }
+                     // externally solved HU continuation (gross share, zero rake)
+                     for h in 0..NUM_CLASSES {
+                         out[h] = (prob * (g[h] - inv_p)) as f32;
+diff --git a/vendor/gtopen/crates/solver/src/preflop/t2cont.rs b/vendor/gtopen/crates/solver/src/preflop/t2cont.rs
+index 5cd658a..188a547 100644
+--- a/vendor/gtopen/crates/solver/src/preflop/t2cont.rs
++++ b/vendor/gtopen/crates/solver/src/preflop/t2cont.rs
+@@ -34,6 +34,10 @@ pub struct Table {
+     pub live: u32,
+     pub pot: f64,
+     pub gross: Vec<(usize, Vec<f64>)>,
++    /// Optional range-reactive form (ft matrix terminals): per seat a row-major 169x169 matrix M[h*169+j],
++    /// the gross chips class h ends with against opponent class j. When present the terminal pays
++    /// sum_j dist_opp[j] * M[h][j] with the opponent's CURRENT normalised reach instead of the fixed `gross`.
++    pub matrix: Vec<(usize, Vec<f64>)>,
+     pub file: String,
+ }
+ 
+@@ -56,6 +60,7 @@ fn parse_table(v: &serde_json::Value, file: &str) -> Result<Table, String> {
+     let pot = v["pot_bb"].as_f64().filter(|x| x.is_finite() && *x > 0.0).ok_or(format!("{file}: pot_bb"))?;
+     let seats = v["seats"].as_array().ok_or(format!("{file}: seats"))?;
+     let mut gross: Vec<(usize, Vec<f64>)> = Vec::new();
++    let mut matrix: Vec<(usize, Vec<f64>)> = Vec::new();
+     for s in seats {
+         let seat = s["seat"].as_u64().ok_or(format!("{file}: seat"))? as usize;
+         if seat >= 32 || live & (1 << seat) == 0 {
+@@ -76,11 +81,29 @@ fn parse_table(v: &serde_json::Value, file: &str) -> Result<Table, String> {
+             }
+         }
+         gross.push((seat, vals));
++        if let Some(m) = s.get("matrix").filter(|m| !m.is_null()) {
++            let m = m.as_array().ok_or(format!("{file}: seat {seat} matrix is not an array"))?;
++            let nn = super::NUM_CLASSES * super::NUM_CLASSES;
++            if m.len() != nn {
++                return Err(format!("{file}: seat {seat} matrix has {} values, not {nn}", m.len()));
++            }
++            let mut mv = Vec::with_capacity(nn);
++            for x in m {
++                match x.as_f64() {
++                    Some(f) if f.is_finite() => mv.push(f),
++                    _ => return Err(format!("{file}: seat {seat} matrix has a non-finite or non-numeric value")),
++                }
++            }
++            matrix.push((seat, mv));
++        }
+     }
+     if gross.len() != live.count_ones() as usize {
+         return Err(format!("{file}: {} seats for a live mask with {} seats", gross.len(), live.count_ones()));
+     }
+-    Ok(Table { node, live, pot, gross, file: file.to_string() })
++    if !matrix.is_empty() && matrix.len() != gross.len() {
++        return Err(format!("{file}: matrix given for {} of {} seats", matrix.len(), gross.len()));
++    }
++    Ok(Table { node, live, pot, gross, matrix, file: file.to_string() })
+ }
+ 
+ /// Parse a single table or a manifest of tables (fail closed; no tree needed).
+@@ -161,6 +184,16 @@ pub fn gross_for(node: usize, live: u32, pot: f64, p: usize) -> Option<&'static
+     t.gross.iter().find(|(s, _)| *s == p).map(|(_, g)| g.as_slice())
+ }
+ 
++/// Matrix form for traverser `p` at `node`, if the table carries one (same guards as `gross_for`).
++pub fn matrix_for(node: usize, live: u32, pot: f64, p: usize) -> Option<&'static [f64]> {
++    if BYPASS.load(Ordering::Relaxed) {
++        return None;
++    }
++    let t = tables()?.by_node.get(&node)?;
++    assert!(t.live == live && (t.pot - pot).abs() < 1e-9, "T2_CONT_FILE node {node} does not match the tree");
++    t.matrix.iter().find(|(s, _)| *s == p).map(|(_, m)| m.as_slice())
++}
++
+ impl super::PreflopSolver {
+     /// Read-only diagnostic (no strategy or regret is touched): at the node reached by
+     /// `path` under the average strategy, the acting seat's expected value of each action
