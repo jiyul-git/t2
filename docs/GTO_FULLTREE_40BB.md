@@ -39,3 +39,9 @@
 
 ## 알려진 한계
 `t2_ft_export` 는 ft60 코디네이터의 로컬 도구가 저장소에 없어 같은 쓰임새로 다시 쓴 것(출력 항목: kind, node, live, pot_bb, invested, 자리별 reach·static/used gross). ft60 용 `prepare` 는 수정 전후 해시가 같음을 대체 입력으로 확인했다.
+
+## 2단계 입력 (2026-11-12, 인계 계정)
+- 1단계 플랍 실패 3장 판정(`step1/flop_failure_decision.json`): 8d8c6h 1.22%·KdKc2h 1.40% pot > 0.6% → node 10(SB 림프→BB 체크) 정적 유지(`step1/static_nodes.json`), QdQc3c 0.42% 받아들임.
+- 표: `next_tables 1`(FT_MATRIX_ALL=1) 48개. 트리는 처음부터 풀이(체크포인트 없음): 200회, **정확 gap 0.016879bb**(< 0.02, > 0.010 — 기록). 추이 150회 0.03063 → 200회 0.01688.
+- 끝점: 헤즈업 267개 중 reach ≥ 1e-3 인 38개(헤즈업 질량의 97.5%). 전부 행렬 끝점, 묶음 76, 세션 20(예상 6.4~8.3h).
+- `ft_coord_setup.sh`: census 브랜치 tip 이 움직여 고정 sha 로 직접 fetch 하도록 고침.
