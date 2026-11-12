@@ -1,0 +1,9 @@
+{
+ "rule": "retry exploitability <=0.6% pot accepted, else terminal stays static (11-10 user rule; ft60 step0 precedent)",
+ "boards": {
+  "s1_t00_A/8d8c6h": {"retry_pct_pot": 1.2234, "accepted": false},
+  "s1_t00_A/QdQc3c": {"retry_pct_pot": 0.4208, "accepted": true},
+  "s1_t00_B/KdKc2h": {"retry_pct_pot": 1.4043, "accepted": false}
+ },
+ "static_terminals": {"t00": "node 10 (SB limp, BB check)"}
+}
