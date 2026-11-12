@@ -8,7 +8,7 @@ R=$(cd "$(dirname "$0")/../.." && pwd)
 C=${FT_CALC:-/home/user/calc}
 CEN=79a9aca658a2c1fcbec7e24d910429a2a8e79917
 if [ ! -d $C ]; then
-  for i in 1 2 3 4; do git -C $R fetch -q --depth=1 origin chatgpt/terminal-census-v2-20260930 && break || sleep $((2 ** i)); done
+  for i in 1 2 3 4; do git -C $R fetch -q --depth=1 origin $CEN && break || sleep $((2 ** i)); done
   [ "$(git -C $R rev-parse FETCH_HEAD)" = "$CEN" ] || { echo "census tip moved"; exit 1; }
   git -C $R worktree add --no-checkout $C $CEN
   git -C $C sparse-checkout set vendor/gtopen tools/gto_spot tools/gto_validation tools/gto_hu_continuation data/gto_hu_continuation data/gto_terminal_expansion/terminals data/gto_spot/plan_a
