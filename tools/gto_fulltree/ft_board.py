@@ -34,23 +34,11 @@ import numpy as np
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 CALC = os.environ.get('FT_CALC', '/home/user/calc')
-def _stack():
-    """스택: FT_STACK 환경변수, 없으면 현재 브랜치 claude/ft<스택>_board_<n> 에서, 그것도 아니면 60(기존 동작)."""
-    if os.environ.get('FT_STACK'):
-        return os.environ['FT_STACK']
-    try:
-        m = re.match(r'^claude/ft(\d+)_board_\d+$', subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True, cwd=REPO).stdout.strip())
-    except OSError:
-        m = None
-    return m.group(1) if m else '60'
-
-
-STACK = _stack()
-TAG = 'ft' + STACK
-WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/%s_board' % TAG)
+STACK = os.environ.get('FT_STACK', '60')          # 공용 도구: 데이터 data/ft<STACK>, 브랜치 claude/ft<STACK>_board_<n>
+WORK = os.environ.get('FT_WORK', '/home/user/gto_ckpt/ft%s_board' % STACK)
 WORKERS = os.environ.get('SPOT_PANEL_WORKERS', '4')
 CHUNK = 12
-SOURCE_COMMIT = 'census79a9aca6+strategy_patch+' + TAG   # 모든 보드 세션이 같은 값(출처키에 들어간다)
+SOURCE_COMMIT = 'census79a9aca6+strategy_patch+ft60'   # 모든 보드 세션이 같은 값(출처키에 들어간다)
 BIN = os.path.join(CALC, 'vendor/gtopen/target/release/examples')
 MENU = os.path.join(CALC, 'data/gto_hu_continuation/menu_m2_single_v1.json')
 sys.path.insert(0, os.path.join(CALC, 'tools/gto_hu_continuation'))
@@ -72,10 +60,10 @@ def branch():
 def push(msg):
     if os.environ.get('FT_NO_PUSH') == '1':
         return
-    sh('git', 'add', 'data/%s/results' % TAG)
+    sh('git', 'add', 'data/ft%s/results' % STACK)
     if subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=REPO).returncode == 0:
         return
-    sh('git', 'commit', '-q', '-m', msg + '\n\n' + ('' if TAG == 'ft60' else 'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\n') + 'Claude-Session: https://claude.ai/code/' + os.environ.get('FT_SESSION', 'unknown'))
+    sh('git', 'commit', '-q', '-m', msg + '\n\nClaude-Session: https://claude.ai/code/' + os.environ.get('FT_SESSION', 'unknown'))
     for wait in (0, 2, 4, 8, 16):
         time.sleep(wait)
         if subprocess.run(['git', 'push', '-q', '-u', 'origin', branch()], cwd=REPO).returncode == 0:
@@ -85,7 +73,7 @@ def push(msg):
 
 def bundles():
     rows = {}
-    base = os.path.join(REPO, 'data/' + TAG)
+    base = os.path.join(REPO, 'data/ft' + STACK)
     for f in sorted(os.listdir(base)):
         p = os.path.join(base, f, 'bundles.tsv')
         if f.startswith('step') and os.path.exists(p):
@@ -132,7 +120,7 @@ def run_bundle(b, r):
     if sha(tf) != r['term_sha256'] or sha(pf) != r['panel_sha256']:
         raise SystemExit('%s: input sha256 differs from bundles.tsv — stop (do not solve stale inputs)' % b)
     PANEL_PATH[0] = pf
-    res = os.path.join(REPO, 'data/%s/results/step%d/%s' % (TAG, k, b))
+    res = os.path.join(REPO, 'data/ft%s/results/step%d/%s' % (STACK, k, b))
     os.makedirs(res, exist_ok=True)
     if os.path.exists(os.path.join(res, 'done.json')):
         print('%s: already done' % b, flush=True)
@@ -262,7 +250,7 @@ def run_bundle(b, r):
         st['chunks_done'].append(i)
         st['boards_done'] = sorted(vals)
         json.dump(st, open(stf, 'w'), indent=1)
-        push('%s %s: %d/%d boards' % (TAG, b, len(vals), len(boards)))
+        push('ft%s %s: %d/%d boards' % (STACK, b, len(vals), len(boards)))
         print(json.dumps({'bundle': b, 'boards_done': len(vals), 'retried': len(retried), 'min': round((time.time() - t0) / 60, 1)}), flush=True)
     failed = [x for x in boards if not vals[x]['ok']]
     done = {'bundle': b, 'step': k, 'term_sha256': r['term_sha256'], 'panel_sha256': r['panel_sha256'], 'matrix': matrix,
@@ -271,13 +259,13 @@ def run_bundle(b, r):
             'values_sha256': sha(vf), 'matrix_sums_sha256': sha(mf) if matrix else None,
             'session': os.environ.get('FT_SESSION', 'unknown'), 'branch': branch(), 'wall_min_this_run': round((time.time() - t0) / 60, 1)}
     json.dump(done, open(os.path.join(res, 'done.json'), 'w'), indent=1)
-    push('%s %s: done (%d boards, %d failed after retry)' % (TAG, b, len(boards), len(failed)))
+    push('ft%s %s: done (%d boards, %d failed after retry)' % (STACK, b, len(boards), len(failed)))
     print(json.dumps({'bundle': b, 'done': True, 'failed_after_retry': len(failed)}), flush=True)
 
 
 def main():
-    if not re.match(r'^claude/%s_board_\d+$' % TAG, branch()) and os.environ.get('FT_NO_PUSH') != '1':
-        raise SystemExit('checkout claude/%s_board_<n> first (now %s)' % (TAG, branch()))
+    if not re.match(r'^claude/ft%s_board_\d+$' % STACK, branch()) and os.environ.get('FT_NO_PUSH') != '1':
+        raise SystemExit('checkout claude/ft%s_board_<n> first (now %s)' % (STACK, branch()))
     rows = bundles()
     for b in sys.argv[1:]:
         if b not in rows:
