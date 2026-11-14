@@ -9,7 +9,7 @@ K=${2:?단계(0~3)}
 git fetch -q origin "claude/ft${S}_coord" || { echo "조정 브랜치 없음: claude/ft${S}_coord"; exit 1; }
 A=$(git show "origin/claude/ft${S}_coord:data/ft${S}/step${K}/assign.tsv" 2>/dev/null) || { echo "배분표 없음: data/ft${S}/step${K}/assign.tsv"; exit 1; }
 td=0; ta=0
-for n in $(seq 1 20); do
+for n in $(seq 1 40); do
   a=$(printf '%s\n' "$A" | awk -F'\t' -v n="$n" 'NR>1 && $2==n' | wc -l)
   [ "$a" -eq 0 ] && continue
   r="origin/claude/ft${S}_board_$n"
