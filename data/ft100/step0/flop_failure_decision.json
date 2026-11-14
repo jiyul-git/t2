@@ -1,0 +1,11 @@
+{
+ "rule": "재시도 뒤 정확도가 0.6% pot 이하면 받아들이고 기록, 넘으면 그 끝점만 정적 유지 (T2 세션 전달 2026-11-08 규칙 2; 60bb 와 같은 형식)",
+ "boards": {
+  "s0_t20_A/AcKd6h": {"retry_pct_pot": 0.3000, "accepted": true},
+  "s0_t22_B/AcKd5c": {"retry_pct_pot": 0.3884, "accepted": true},
+  "s0_t16_A/Qc7h7d": {"retry_pct_pot": 1.7695, "accepted": false}
+ },
+ "static_terminals": {
+  "t16": "node 37 (SB raise 3, BB call)"
+ }
+}
