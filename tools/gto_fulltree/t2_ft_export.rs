@@ -63,6 +63,26 @@ fn main() -> Result<(), String> {
                     seat["static_gross"] = serde_json::json!(s.t2_terminal_gross(node, p, &reaches, true).ok());
                     seat["used_gross"] = serde_json::json!(s.t2_terminal_gross(node, p, &reaches, false).ok());
                 }
+                #[cfg(feature = "t2-cont")]
+                if !tree_only && std::env::var("T2_EXPORT_STATIC_MATRIX").is_ok() {
+                    // ft matrix terminals: the static (no-table) payoff as a hand-vs-hand matrix M[h*169+j], one opponent class at a time
+                    // (exact where the static payoff is linear in the opponent distribution; the pot clip in the static branch is not).
+                    if let Some(q) = (0..s.n).find(|&q| q != p && nd.live & (1 << q) != 0) {
+                        let nc = solver::preflop::equity::NUM_CLASSES;
+                        let mut m = vec![0f64; nc * nc];
+                        for j in 0..nc {
+                            let mut r = reaches.clone();
+                            r[q] = vec![0f32; nc];
+                            r[q][j] = 1.0;
+                            if let Ok(g) = s.t2_terminal_gross(node, p, &r, true) {
+                                for h in 0..nc {
+                                    m[h * nc + j] = g[h];
+                                }
+                            }
+                        }
+                        seat["static_matrix"] = serde_json::json!(m);
+                    }
+                }
                 seats.push(seat);
             }
             row["seats"] = serde_json::Value::Array(seats);
