@@ -1,0 +1,351 @@
+{
+ "rule": "\ud569 \ub9de\ucda4 \ud22c\uc601: \ub178\ub4dc\ub9c8\ub2e4 (\uc790\ub9ac\ubcc4 \ub808\uc778\uc9c0 \uac00\uc911 \ud3c9\uade0 gross \uc758 \ud569 \u2212 \ud31f) = \u03b4 \ub97c \uad6c\ud574 \uac01 \uc790\ub9ac gross \uc5d0\uc11c \u03b4/2 \ub97c \ube80\ub2e4(\ub450 \uc790\ub9ac \uac12 \ucc28\uc774 \uc720\uc9c0). \uac00\uc911\uce58=\ub0b4\ubcf4\ub0b4\uae30 reach(0\ub2e8\uacc4 \uccb4\ud06c\ud3ec\uc778\ud2b8 500\ud68c).",
+ "nodes": {
+  "10": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Check",
+   "pot_bb": 3.0,
+   "delta_before": -0.021724819066498036,
+   "delta_after": 0.0
+  },
+  "610203": {
+   "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
+   "pot_bb": 6.5,
+   "delta_before": -0.0022967211201132542,
+   "delta_after": 8.881784197001252e-16
+  },
+  "141239": {
+   "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
+   "pot_bb": 6.5,
+   "delta_before": -0.0006394798536284441,
+   "delta_after": 8.881784197001252e-16
+  },
+  "31707": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
+   "pot_bb": 6.5,
+   "delta_before": -0.0006854013461374819,
+   "delta_after": 0.0
+  },
+  "1383": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
+   "pot_bb": 6.5,
+   "delta_before": 4.0916710553062785e-05,
+   "delta_after": 0.0
+  },
+  "62": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:Call 2.5",
+   "pot_bb": 6.5,
+   "delta_before": 0.03322027499247682,
+   "delta_after": 0.0
+  },
+  "269": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:Fold|BB:Call 2.5",
+   "pot_bb": 6.5,
+   "delta_before": -0.004296468996372482,
+   "delta_after": 0.0
+  },
+  "6815": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
+   "pot_bb": 6.5,
+   "delta_before": 0.0024521764363107934,
+   "delta_after": -1.7763568394002505e-15
+  },
+  "13": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Raise 3.5|SB:Call 3.5",
+   "pot_bb": 8.0,
+   "delta_before": 0.0006799057463542368,
+   "delta_after": 0.0
+  },
+  "1214": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:3-bet 7.5|SB:Fold|BB:Fold|CO:Call 7.5",
+   "pot_bb": 17.5,
+   "delta_before": 2.914681829224719e-10,
+   "delta_after": 0.0
+  },
+  "7760": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|LJ:Call 7.5",
+   "pot_bb": 17.5,
+   "delta_before": 7.089933973247753e-09,
+   "delta_after": 0.0
+  },
+  "11694": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
+   "pot_bb": 17.5,
+   "delta_before": 5.265448521640792e-09,
+   "delta_after": 0.0
+  },
+  "220": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:3-bet 10|BB:Fold|BTN:Call 10",
+   "pot_bb": 21.999999999999996,
+   "delta_before": 7.504834442784158e-08,
+   "delta_after": 0.0
+  },
+  "2328": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|HJ:Call 7.5",
+   "pot_bb": 17.5,
+   "delta_before": -5.860151475189923e-09,
+   "delta_after": 3.552713678800501e-15
+  },
+  "29954": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|LJ:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 3.4334206588937377e-09,
+   "delta_after": 0.0
+  },
+  "6262": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|HJ:Call 7.5",
+   "pot_bb": 17.5,
+   "delta_before": 1.404912097768829e-08,
+   "delta_after": 0.0
+  },
+  "65": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:3-bet 8.8|BTN:Call 8.8",
+   "pot_bb": 19.0,
+   "delta_before": 2.482053300660507,
+   "delta_after": 0.0
+  },
+  "427": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:3-bet 10|BB:Fold|CO:Call 10",
+   "pot_bb": 21.999999999999996,
+   "delta_before": 6.583354661415797e-08,
+   "delta_after": 0.0
+  },
+  "36586": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
+   "pot_bb": 17.5,
+   "delta_before": -7.273047941680488e-09,
+   "delta_after": 0.0
+  },
+  "54846": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 3.4407747762088547e-09,
+   "delta_after": 0.0
+  },
+  "135790": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+2:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": -1.427854456892419e-08,
+   "delta_after": 0.0
+  },
+  "32652": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+2:Call 7.5",
+   "pot_bb": 17.5,
+   "delta_before": 7.036323523834653e-09,
+   "delta_after": 0.0
+  },
+  "146118": {
+   "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": -1.2349307354497796e-08,
+   "delta_after": 0.0
+  },
+  "142184": {
+   "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG+1:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 2.4489050787224187e-08,
+   "delta_after": 0.0
+  },
+  "164378": {
+   "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": -1.2111243563595053e-08,
+   "delta_after": 0.0
+  },
+  "245322": {
+   "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 2.414579824971952e-08,
+   "delta_after": 0.0
+  },
+  "593474": {
+   "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG+1:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 2.807342269761648e-08,
+   "delta_after": 0.0
+  },
+  "714286": {
+   "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:3-bet 7.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 2.288186706778106e-08,
+   "delta_after": 3.552713678800501e-15
+  },
+  "1062438": {
+   "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:3-bet 7.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 2.1698799201885777e-08,
+   "delta_after": 0.0
+  },
+  "281": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:Fold|BB:3-bet 10|CO:Call 10",
+   "pot_bb": 21.5,
+   "delta_before": 3.4819977665880657,
+   "delta_after": 0.0
+  },
+  "6973": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|LJ:Call 10",
+   "pot_bb": 21.999999999999996,
+   "delta_before": 8.56571453766719e-08,
+   "delta_after": -3.552713678800501e-15
+  },
+  "2529502": {
+   "line": "UTG:Raise 2.5|UTG+1:3-bet 7.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 2.029597823138829e-09,
+   "delta_after": 3.552713678800501e-15
+  },
+  "633342": {
+   "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:3-bet 7.5|CO:Fold|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": -3.709642371063637e-08,
+   "delta_after": 0.0
+  },
+  "611148": {
+   "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:3-bet 7.5|SB:Fold|BB:Fold|UTG:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": 2.1940465444458823e-08,
+   "delta_after": -3.552713678800501e-15
+  },
+  "1541": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|HJ:Call 10",
+   "pot_bb": 21.999999999999996,
+   "delta_before": 7.179236050092186e-08,
+   "delta_after": -3.552713678800501e-15
+  },
+  "615082": {
+   "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:3-bet 7.5|BTN:Fold|SB:Fold|BB:Fold|UTG:Call 7.5",
+   "pot_bb": 17.499999999999996,
+   "delta_before": -2.4392836195374912e-08,
+   "delta_after": 0.0
+  },
+  "346": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:Call 2.5|BB:3-bet 10|CO:Call 10|SB:Fold",
+   "pot_bb": 23.5,
+   "delta_before": 4.502108197357302e-08,
+   "delta_after": 0.0
+  },
+  "6892": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Call 2.5|BB:3-bet 10|LJ:Call 10|SB:Fold",
+   "pot_bb": 23.5,
+   "delta_before": 3.297471806718022e-08,
+   "delta_after": 3.552713678800501e-15
+  },
+  "139": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Call 2.5|BB:3-bet 10|BTN:Call 10|SB:Fold",
+   "pot_bb": 23.5,
+   "delta_before": 5.6413568927382585e-08,
+   "delta_after": 3.552713678800501e-15
+  },
+  "131": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Call 2.5|BB:3-bet 10|BTN:Fold|SB:Call 10",
+   "pot_bb": 23.5,
+   "delta_before": 4.084191118636227e-08,
+   "delta_after": 0.0
+  },
+  "31865": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|UTG+2:Call 10",
+   "pot_bb": 21.999999999999996,
+   "delta_before": 4.6126420016889824e-08,
+   "delta_after": -3.552713678800501e-15
+  },
+  "1460": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:Call 2.5|BB:3-bet 10|HJ:Call 10|SB:Fold",
+   "pot_bb": 23.5,
+   "delta_before": 6.705312571853028e-08,
+   "delta_after": 0.0
+  },
+  "1217": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:3-bet 7.5|SB:Fold|BB:Fold|CO:4-bet 16.9|BTN:Call 16.9",
+   "pot_bb": 36.25000000000001,
+   "delta_before": 2.5219655697128474e-07,
+   "delta_after": -7.105427357601002e-15
+  },
+  "74": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:3-bet 10|BTN:Call 10",
+   "pot_bb": 21.5,
+   "delta_before": 0.7393733925955956,
+   "delta_after": 0.0
+  },
+  "1395": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:Fold|BB:3-bet 10|HJ:Call 10",
+   "pot_bb": 21.5,
+   "delta_before": -3.3834162138646207e-08,
+   "delta_after": 0.0
+  },
+  "31784": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Call 2.5|BB:3-bet 10|UTG+2:Call 10|SB:Fold",
+   "pot_bb": 23.499999999999996,
+   "delta_before": 7.992865036499097e-08,
+   "delta_after": 3.552713678800501e-15
+  },
+  "141397": {
+   "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:3-bet 10|BB:Fold|UTG+1:Call 10",
+   "pot_bb": 21.999999999999996,
+   "delta_before": 5.455890672578789e-08,
+   "delta_after": -3.552713678800501e-15
+  },
+  "6821": {
+   "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:3-bet 8.8|LJ:4-bet 19.7|BB:Call 19.7",
+   "pot_bb": 40.875,
+   "delta_before": 12.98689484945136,
+   "delta_after": 0.0
+  },
+  "77": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.500000|SB:fold|BB:raise@10.000000|BTN:raise@22.500000|BB:call@22.500000",
+   "pot_bb": 46.5,
+   "delta_before": 9.78204559504303,
+   "delta_after": 7.105427357601002e-15
+  },
+  "68": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.500000|SB:fold|BB:raise@8.750000|BTN:raise@19.687500|BB:call@19.687500",
+   "pot_bb": 40.875,
+   "delta_before": 12.35932259956249,
+   "delta_after": 0.0
+  },
+  "284": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.500000|BTN:fold|SB:fold|BB:raise@10.000000|CO:raise@22.500000|BB:call@22.500000",
+   "pot_bb": 46.5,
+   "delta_before": 12.95747404632121,
+   "delta_after": 0.0
+  },
+  "272": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.500000|BTN:fold|SB:fold|BB:raise@8.750000|CO:call@8.750000",
+   "pot_bb": 19.0,
+   "delta_before": 2.7607495131615174,
+   "delta_after": 0.0
+  },
+  "275": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.500000|BTN:fold|SB:fold|BB:raise@8.750000|CO:raise@19.687500|BB:call@19.687500",
+   "pot_bb": 40.875,
+   "delta_before": 5.0210328212930335,
+   "delta_after": 0.0
+  },
+  "6827": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@10.000000|LJ:call@10.000000",
+   "pot_bb": 21.5,
+   "delta_before": 2.313196829990943,
+   "delta_after": 0.0
+  },
+  "6830": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@10.000000|LJ:raise@22.500000|BB:call@22.500000",
+   "pot_bb": 46.5,
+   "delta_before": 0.6399204606060351,
+   "delta_after": 0.0
+  },
+  "6818": {
+   "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@8.750000|LJ:call@8.750000",
+   "pot_bb": 19.0,
+   "delta_before": 12.84078599410664,
+   "delta_after": 0.0
+  }
+ },
+ "summary": {
+  "step1_before_max": 12.98689484945136,
+  "step1_before_median": 6.112355777077028e-08,
+  "n_over_0.01": 14,
+  "after_max": 7.105427357601002e-15,
+  "step0_tables": 15,
+  "step0_max": 25.97378950097533,
+  "step0_median": 4.964106579136107,
+  "step0_n_over_0.01": 15
+ }
+}
