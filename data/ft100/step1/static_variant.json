@@ -1,0 +1,87 @@
+{
+ "10": {
+  "pot_bb": 3.0,
+  "residual_before": 0.21219988835588843,
+  "residual_after": 4.440892098500626e-16
+ },
+ "610203": {
+  "pot_bb": 6.5,
+  "residual_before": 0.45976643115323945,
+  "residual_after": 8.881784197001252e-16
+ },
+ "141239": {
+  "pot_bb": 6.5,
+  "residual_before": 0.45976641239423977,
+  "residual_after": 8.881784197001252e-16
+ },
+ "31707": {
+  "pot_bb": 6.5,
+  "residual_before": 0.4597663927757578,
+  "residual_after": 8.881784197001252e-16
+ },
+ "1383": {
+  "pot_bb": 6.5,
+  "residual_before": 0.4597662597690846,
+  "residual_after": 8.881784197001252e-16
+ },
+ "62": {
+  "pot_bb": 6.5,
+  "residual_before": 0.45976641003643337,
+  "residual_after": 8.881784197001252e-16
+ },
+ "269": {
+  "pot_bb": 6.5,
+  "residual_before": 0.4597663776047307,
+  "residual_after": 8.881784197001252e-16
+ },
+ "6815": {
+  "pot_bb": 6.5,
+  "residual_before": 0.4597662099407325,
+  "residual_after": 8.881784197001252e-16
+ },
+ "13": {
+  "pot_bb": 8.0,
+  "residual_before": 0.5658661523853246,
+  "residual_after": 8.881784197001252e-16
+ },
+ "77": {
+  "pot_bb": 46.5,
+  "residual_before": 0.8525006425198569,
+  "residual_after": 7.105427357601002e-15
+ },
+ "68": {
+  "pot_bb": 40.875,
+  "residual_before": 0.7493742536602213,
+  "residual_after": 7.105427357601002e-15
+ },
+ "284": {
+  "pot_bb": 46.5,
+  "residual_before": 0.8525005283282638,
+  "residual_after": 7.105427357601002e-15
+ },
+ "272": {
+  "pot_bb": 19.0,
+  "residual_before": 0.8058194558159286,
+  "residual_after": 3.552713678800501e-15
+ },
+ "275": {
+  "pot_bb": 40.875,
+  "residual_before": 0.7493743439907661,
+  "residual_after": 7.105427357601002e-15
+ },
+ "6827": {
+  "pot_bb": 21.5,
+  "residual_before": 0.7947694922574371,
+  "residual_after": 3.552713678800501e-15
+ },
+ "6830": {
+  "pot_bb": 46.5,
+  "residual_before": 0.8525006046632484,
+  "residual_after": 7.105427357601002e-15
+ },
+ "6818": {
+  "pot_bb": 19.0,
+  "residual_before": 0.8058195654108928,
+  "residual_after": 3.552713678800501e-15
+ }
+}
