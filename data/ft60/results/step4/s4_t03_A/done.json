@@ -1,0 +1,38 @@
+{
+ "bundle": "s4_t03_A",
+ "step": 4,
+ "term_sha256": "a7bf933de48bbeeeb2c2ea3bae5950343a1ab3f981d2582fd50e0cf3a07dcdff",
+ "panel_sha256": "7c8949fdcd095ba41b4659d4040f13c02adeab82cb29af778de213c1e2e72e09",
+ "matrix": true,
+ "boards": 72,
+ "flop_failures_after_retry": [],
+ "retried": {
+  "AcTdTc": {
+   "first_pct_pot": 1.065662971209632,
+   "retry_pct_pot": 0.2813049491903715,
+   "ok_after_retry": true
+  },
+  "9c8d8c": {
+   "first_pct_pot": 0.9205808214950671,
+   "retry_pct_pot": 0.29306197067679446,
+   "ok_after_retry": true
+  },
+  "AcJdTh": {
+   "first_pct_pot": 0.5265294716397622,
+   "retry_pct_pot": 0.2916913680639307,
+   "ok_after_retry": true
+  },
+  "Ac6d5h": {
+   "first_pct_pot": 0.37506562673548427,
+   "retry_pct_pot": 0.2985792455353983,
+   "ok_after_retry": true
+  }
+ },
+ "max_pct_pot": 0.29999938810971094,
+ "mean_pct_pot": 0.2756212050459247,
+ "values_sha256": "7b2bd2ce77ad6178a009d0ad03650689f082d6e68fe434ddcfd501c00a2ab68c",
+ "matrix_sums_sha256": "ab12fb80e4b98ec2b186dae7c57de43dd960ab394853d62cb20bd07d9f77eb22",
+ "session": "session_01JQGBPLeG7wiAWNb4VsTUqg",
+ "branch": "claude/ft60_board_1",
+ "wall_min_this_run": 422.0
+}
