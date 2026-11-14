@@ -1,0 +1,42 @@
+{
+ "77": {
+  "pot_bb": 46.5,
+  "delta_before": 9.78204559504303,
+  "delta_after": 7.105427357601002e-15
+ },
+ "68": {
+  "pot_bb": 40.875,
+  "delta_before": 12.35932259956249,
+  "delta_after": 0.0
+ },
+ "284": {
+  "pot_bb": 46.5,
+  "delta_before": 12.95747404632121,
+  "delta_after": 0.0
+ },
+ "272": {
+  "pot_bb": 19.0,
+  "delta_before": 2.7607495131615174,
+  "delta_after": 0.0
+ },
+ "275": {
+  "pot_bb": 40.875,
+  "delta_before": 5.0210328212930335,
+  "delta_after": 0.0
+ },
+ "6827": {
+  "pot_bb": 21.5,
+  "delta_before": 2.313196829990943,
+  "delta_after": 0.0
+ },
+ "6830": {
+  "pot_bb": 46.5,
+  "delta_before": 0.6399204606060351,
+  "delta_after": 0.0
+ },
+ "6818": {
+  "pot_bb": 19.0,
+  "delta_before": 12.84078599410664,
+  "delta_after": 0.0
+ }
+}
