@@ -4,47 +4,56 @@
   {
    "file": "node10.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Check",
-   "alpha": 1.0
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node610203.json",
    "line": "UTG:Raise 2.5|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
-   "alpha": 1.0
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node141239.json",
    "line": "UTG:Fold|UTG+1:Raise 2.5|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
-   "alpha": 1.0
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node31707.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Raise 2.5|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
-   "alpha": 1.0
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node1383.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Raise 2.5|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
-   "alpha": 1.0
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node62.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Raise 2.5|SB:Fold|BB:Call 2.5",
-   "alpha": 0.5
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node269.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Raise 2.5|BTN:Fold|SB:Fold|BB:Call 2.5",
-   "alpha": 0.5
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node6815.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Raise 2.5|HJ:Fold|CO:Fold|BTN:Fold|SB:Fold|BB:Call 2.5",
-   "alpha": 0.5
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node13.json",
    "line": "UTG:Fold|UTG+1:Fold|UTG+2:Fold|LJ:Fold|HJ:Fold|CO:Fold|BTN:Fold|SB:Limp 1|BB:Raise 3.5|SB:Call 3.5",
-   "alpha": 1.0
+   "alpha": 0.0,
+   "matrix": true
   },
   {
    "file": "node1214.json",
@@ -283,43 +292,51 @@
   {
    "file": "node77.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.500000|SB:fold|BB:raise@10.000000|BTN:raise@22.500000|BB:call@22.500000",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   },
   {
    "file": "node68.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:fold|BTN:raise@2.500000|SB:fold|BB:raise@8.750000|BTN:raise@19.687500|BB:call@19.687500",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   },
   {
    "file": "node284.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.500000|BTN:fold|SB:fold|BB:raise@10.000000|CO:raise@22.500000|BB:call@22.500000",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   },
   {
    "file": "node272.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.500000|BTN:fold|SB:fold|BB:raise@8.750000|CO:call@8.750000",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   },
   {
    "file": "node275.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:fold|HJ:fold|CO:raise@2.500000|BTN:fold|SB:fold|BB:raise@8.750000|CO:raise@19.687500|BB:call@19.687500",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   },
   {
    "file": "node6827.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@10.000000|LJ:call@10.000000",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   },
   {
    "file": "node6830.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@10.000000|LJ:raise@22.500000|BB:call@22.500000",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   },
   {
    "file": "node6818.json",
    "line": "UTG:fold|UTG+1:fold|UTG+2:fold|LJ:raise@2.500000|HJ:fold|CO:fold|BTN:fold|SB:fold|BB:raise@8.750000|LJ:call@8.750000",
-   "carried_over": true
+   "matrix": true,
+   "alpha": 0.0
   }
  ],
- "note": "ft60 step 1 tables from step 0"
+ "note": "ft100 step1 variant: every table is a matrix table; vector endpoints replaced by projected static matrices"
 }

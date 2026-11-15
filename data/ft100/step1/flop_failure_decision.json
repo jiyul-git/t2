@@ -1,0 +1,3 @@
+{"rule": "재시도 뒤 0.6% pot 이하 수용, 초과면 그 끝점만 정적 유지",
+ "boards": {"s1_t09_A/Qc7h7d": {"retry_pct_pot": 11.8130, "first_pct_pot": 7.9127, "accepted": false}},
+ "static_terminals": {"t09": "node 37 (SB raise 3, BB call)"}}
