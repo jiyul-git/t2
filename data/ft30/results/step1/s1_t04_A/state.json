@@ -2,10 +2,16 @@
  "bundle": "s1_t04_A",
  "chunks_done": [
   0,
-  12
+  12,
+  24
  ],
  "boards_done": [
   "7c4c3c",
+  "8c4d4c",
+  "8c6d6c",
+  "8d8c6h",
+  "9c8d8c",
+  "9d9c2h",
   "Ac4d4c",
   "Ac7c4c",
   "Ac8c6c",
@@ -24,9 +30,16 @@
   "Kc7c4c",
   "KcJc7c",
   "KcQc8c",
+  "Qc3h3d",
+  "Qc5h5d",
   "Qc6c4c",
+  "Qc7h7d",
   "Qc8c6c",
   "Qc9c8c",
+  "QdQc2c",
+  "QdQc3c",
+  "QdQc8h",
+  "Tc4h4d",
   "Tc7c3c",
   "Tc8c5c"
  ]
