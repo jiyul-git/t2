@@ -1,0 +1,48 @@
+{
+ "bundle": "s1_t00_B",
+ "step": 1,
+ "term_sha256": "588c4ca927346fc3a0852095aaf53a2f2410affa8a0bae3f7bf4e1be13aa6060",
+ "panel_sha256": "106a07a2070b61b338b1eb13a68bcd9024b19b07b6f0fc360e8a52dce8937255",
+ "matrix": true,
+ "boards": 72,
+ "flop_failures_after_retry": [],
+ "retried": {
+  "QcTc9c": {
+   "first_pct_pot": 0.4416397105864815,
+   "retry_pct_pot": 0.2787610004854465,
+   "ok_after_retry": true
+  },
+  "Ac6d6c": {
+   "first_pct_pot": 2.1598405841388835,
+   "retry_pct_pot": 0.28322628834626384,
+   "ok_after_retry": true
+  },
+  "Ac4h4d": {
+   "first_pct_pot": 0.32808058390534167,
+   "retry_pct_pot": 0.29158740865405186,
+   "ok_after_retry": true
+  },
+  "Ac9h9d": {
+   "first_pct_pot": 0.9117724693516164,
+   "retry_pct_pot": 0.272341923769411,
+   "ok_after_retry": true
+  },
+  "Ac3h3d": {
+   "first_pct_pot": 1.6992914949013893,
+   "retry_pct_pot": 0.298831480917929,
+   "ok_after_retry": true
+  },
+  "KcQhQd": {
+   "first_pct_pot": 0.8472876964098245,
+   "retry_pct_pot": 0.292135136472114,
+   "ok_after_retry": true
+  }
+ },
+ "max_pct_pot": 0.29892859082134204,
+ "mean_pct_pot": 0.28423828457828654,
+ "values_sha256": "f1dc99f51a7e05068cdb3e28fb6e9a181be29f0d519fe9861f1deb280ceab441",
+ "matrix_sums_sha256": "2ba2a6ac1c371b568d7a28391cbb43f1ca2c01eac3fc0225ea4e6046447adb9e",
+ "session": "session_01QsV6Td1B9Kw2g7fmNmvMgS",
+ "branch": "claude/ft100_board_2",
+ "wall_min_this_run": 84.3
+}
