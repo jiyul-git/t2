@@ -1,10 +1,10 @@
 bundle	session
 s1_t00_A	1
-s1_t20_A	1
-s1_t40_A	1
+s1_t20_A	41
+s1_t40_A	42
 s1_t00_B	2
-s1_t20_B	2
-s1_t40_B	2
+s1_t20_B	43
+s1_t40_B	44
 s1_t01_A	3
 s1_t11_A	3
 s1_t31_A	3
