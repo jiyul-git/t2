@@ -1,0 +1,7 @@
+{
+ "rule": "retry exploitability <=0.6% pot accepted (accepted_above_target), else terminal stays static; same rule as ft60 step0 flop_failure_decision.json (relayed by T2 session)",
+ "boards": {
+  "s0_t00_B/Ac9h9d": {"first_pct_pot": 4.2106, "retry_pct_pot": 0.4318, "accepted": true}
+ },
+ "static_terminals": {}
+}
