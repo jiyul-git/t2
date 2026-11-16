@@ -1,7 +1,8 @@
 {
  "bundle": "s4_t01_Xt2",
  "chunks_done": [
-  0
+  0,
+  12
  ],
  "boards_done": [
   "7d6s3s",
@@ -15,6 +16,12 @@
   "Jd3c2d",
   "Js6h4s",
   "Js8d7d",
+  "Kc4h2h",
+  "KdQd7c",
+  "Ks9s3h",
+  "KsJcTc",
+  "QcJd5c",
+  "Qh7h2s",
   "Td7h3h"
  ]
 }
