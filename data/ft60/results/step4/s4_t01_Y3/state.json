@@ -1,20 +1,33 @@
 {
  "bundle": "s4_t01_Y3",
  "chunks_done": [
-  0
+  0,
+  12
  ],
  "boards_done": [
+  "5c3s2s",
+  "7d5h4d",
+  "8d4s2s",
+  "8d6c3c",
   "Ac7d3c",
   "Ac9h4h",
   "AcKs7c",
   "Ad4s3s",
   "As6h2h",
   "As8c5s",
+  "JcTc3s",
+  "Js8d7s",
   "KcQd8h",
+  "Kd9s3s",
   "Kh7c2d",
+  "KhTd4d",
   "Ks9d6h",
+  "KsJc5c",
   "KsQh2d",
   "Qc4h3s",
-  "Qs7c3d"
+  "Qd9d5c",
+  "QhTd7d",
+  "Qs7c3d",
+  "QsJd2s"
  ]
 }
