@@ -1,0 +1,6 @@
+engine: 0.753 GB (trunk 0.325, frontier 0.428), players [0, 1, 2], scheme mono-alt, build 0.0s, rss Some(13388) kB
+it 25 expl 3.2854% pot, conservation -1.98e-9, 226s (collect 0.0 frontier 0.0 trunk 170.9 eval 55.1) rss Some(762924)
+it 50 expl 0.9446% pot, conservation -1.59e-8, 434s (collect 0.0 frontier 0.0 trunk 325.4 eval 108.4) rss Some(762924)
+it 75 expl 0.4447% pot, conservation 3.47e-9, 655s (collect 0.0 frontier 0.0 trunk 478.5 eval 176.4) rss Some(762924)
+it 100 expl 0.2586% pot, conservation -2.74e-9, 879s (collect 0.0 frontier 0.0 trunk 638.7 eval 240.5) rss Some(762924)
+rc=0 sec=880
