@@ -1,0 +1,8 @@
+engine: 0.753 GB (trunk 0.325, frontier 0.428), players [0, 1, 2], scheme mono-alt, build 0.0s, rss Some(13376) kB
+it 25 expl 3.5077% pot, conservation 8.72e-9, 246s (collect 0.0 frontier 0.0 trunk 188.0 eval 58.3) rss Some(762780)
+it 50 expl 0.8913% pot, conservation -1.59e-8, 443s (collect 0.0 frontier 0.0 trunk 332.2 eval 110.3) rss Some(762780)
+it 75 expl 0.3928% pot, conservation 1.25e-8, 636s (collect 0.0 frontier 0.0 trunk 468.1 eval 168.2) rss Some(762780)
+it 100 expl 0.2217% pot, conservation -1.08e-9, 828s (collect 0.0 frontier 0.0 trunk 604.0 eval 223.5) rss Some(762780)
+it 125 expl 0.1422% pot, conservation -5.77e-9, 1032s (collect 0.0 frontier 0.0 trunk 751.8 eval 279.9) rss Some(762780)
+it 150 expl 0.0990% pot, conservation -8.87e-9, 1214s (collect 0.0 frontier 0.0 trunk 878.1 eval 335.7) rss Some(762780)
+rc=0 sec=1213 turns=2h,6c,Ad,4h,7h,Tc,Ah,3h rivers=Ac,5s,5c,Ts,Jd,9c,As,7c
