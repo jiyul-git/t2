@@ -10,8 +10,11 @@ for c in "${FT_CALC:-}" /home/user/calc $HOME/calc $HOME/t2lab/calc; do [ -n "$c
 [ -n "${CALC:-}" ] || { echo "계산 체크아웃이 없음 (lab_ft.sh 를 한 번 돌리면 생김)"; exit 1; }
 [ -f $CALC/vendor/gtopen/crates/solver/examples/t2_3way.rs ] || { echo "t2_3way.rs 없음: $CALC"; exit 1; }
 (cd $CALC/vendor/gtopen && cargo build --release --example t2_3way) || exit 1
-avail=$(awk '/MemAvailable/{print int($2/1048576)}' /proc/meminfo); echo "사용 가능 메모리 ${avail}GB (필요 약 27GB)"
-[ "$avail" -ge 28 ] || { echo "메모리 부족 — 다른 계산(lab_ft.sh 등)을 멈추고 다시"; exit 1; }
+# WSL 1 은 /proc/meminfo 에 MemAvailable 이 없을 수 있다 → MemFree+Cached, 그래도 없으면 free 의 마지막 칸
+avail=$(awk '/MemAvailable/{a=$2} /MemFree/{f=$2} /^Cached/{c=$2} END{if(a)print int(a/1048576); else if(f)print int((f+c)/1048576)}' /proc/meminfo)
+[ -n "$avail" ] || avail=$(free -g 2>/dev/null | awk '/^Mem:/{print $NF}')
+echo "사용 가능 메모리 ${avail:-?}GB (필요 약 27GB)"; free -g 2>/dev/null | head -2
+if [ -n "$avail" ] && [ "$avail" -lt 28 ] 2>/dev/null && [ -z "${FORCE:-}" ]; then echo "메모리 부족으로 보임 — 다른 계산이 없는데도 이렇게 나오면 FORCE=1 을 앞에 붙여 다시"; exit 1; fi
 git fetch -q origin claude/ft60_baltest && git checkout -q -B claude/ft3way_lab_1 origin/claude/ft60_baltest || exit 1
 mkdir -p data/gto_3way_probe; O=data/gto_3way_probe/${B}_full
 echo "$(date '+%m-%d %H:%M') 시작 $B 반복 최대 $IT, 스레드 $(nproc)"
