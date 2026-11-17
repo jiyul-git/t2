@@ -1,0 +1,13 @@
+engine: 26.875 GB (trunk 11.529, frontier 15.346), players [0, 1, 2], scheme mono-alt, build 0.1s, rss Some(0) kB
+it 25 expl 6.5802% pot, conservation -4.01e-9, 3381s (collect 0.0 frontier 0.0 trunk 2589.5 eval 791.0) rss Some(0)
+it 50 expl 2.2088% pot, conservation 1.84e-8, 6503s (collect 0.0 frontier 0.0 trunk 4915.2 eval 1588.0) rss Some(0)
+it 75 expl 1.1076% pot, conservation -5.35e-9, 9487s (collect 0.0 frontier 0.0 trunk 7109.9 eval 2377.4) rss Some(0)
+it 100 expl 0.6902% pot, conservation 5.42e-9, 12418s (collect 0.0 frontier 0.0 trunk 9255.1 eval 3163.0) rss Some(0)
+it 125 expl 0.5595% pot, conservation 1.66e-9, 15349s (collect 0.0 frontier 0.0 trunk 11392.1 eval 3956.9) rss Some(0)
+it 150 expl 0.3982% pot, conservation -2.10e-8, 18268s (collect 0.0 frontier 0.0 trunk 13522.8 eval 4744.6) rss Some(0)
+it 175 expl 0.2830% pot, conservation -2.05e-8, 21094s (collect 0.0 frontier 0.0 trunk 15568.1 eval 5525.4) rss Some(0)
+it 200 expl 0.2099% pot, conservation 7.89e-9, 23884s (collect 0.0 frontier 0.0 trunk 17577.6 eval 6306.7) rss Some(0)
+it 225 expl 0.1616% pot, conservation -3.43e-8, 26666s (collect 0.0 frontier 0.0 trunk 19578.7 eval 7087.5) rss Some(0)
+it 250 expl 0.1284% pot, conservation 2.89e-8, 29443s (collect 0.0 frontier 0.0 trunk 21568.2 eval 7874.6) rss Some(0)
+it 275 expl 0.1048% pot, conservation 1.12e-8, 32202s (collect 0.0 frontier 0.0 trunk 23547.2 eval 8655.1) rss Some(0)
+it 300 expl 0.0875% pot, conservation -7.39e-9, 34973s (collect 0.0 frontier 0.0 trunk 25529.1 eval 9443.4) rss Some(0)
