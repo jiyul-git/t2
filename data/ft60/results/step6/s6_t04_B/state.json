@@ -1,19 +1,32 @@
 {
  "bundle": "s6_t04_B",
  "chunks_done": [
-  0
+  0,
+  12
  ],
  "boards_done": [
   "9h8h3h",
   "9s3s2s",
   "9s8s2s",
   "Ac6c4c",
+  "AcAd2h",
   "AcQc5c",
   "Ad6d4d",
+  "AdAsJh",
   "AdJd5d",
+  "AdKcKs",
   "Ah9h2h",
+  "AhQdQs",
+  "AhTcTh",
+  "AhTdTh",
   "As9s2s",
   "Jh5h3h",
+  "KdJdTd",
+  "Kh6h4h",
+  "KhTh8h",
+  "Qd9d8d",
+  "QhTh6h",
+  "QsTs6s",
   "Ts8s6s",
   "Ts8s7s"
  ]
