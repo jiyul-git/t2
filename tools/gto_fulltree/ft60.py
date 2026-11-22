@@ -25,7 +25,9 @@ CFG = os.environ.get('FT_CFG', os.path.join(CALC, 'data/gto_spot/plan_a/cfg_p%s_
 D = os.path.join(REPO, 'data/ft' + STACK)
 MATRIX_ALL = os.environ.get('FT_MATRIX_ALL', '1') == '1'   # 모든 헤즈업 끝점이 손패×손패 행렬(matrix_sums)을 갖는다(0·1단계 재현은 FT_MATRIX_ALL=0)
 N_TERMS = 40                      # 사용자 결정 10-31: 헤즈업 끝점 40개
-PANELS = {'A': os.path.join(D, 'panels/panel_prec_A72.json'), 'B': os.path.join(D, 'panels/panel_prec_B72.json')}
+PANEL_SET = os.environ.get('FT_PANEL_SET', 'prec')   # 'bal': 숫자·숫자쌍 개수를 맞춘 균형 패널(docs/GTO_PANEL_BALANCE_20261115.md). 5단계부터 bal
+PANELS = {'A': os.path.join(D, 'panels/panel_%s_A72.json' % PANEL_SET), 'B': os.path.join(D, 'panels/panel_%s_B72.json' % PANEL_SET)}
+REPLACE = os.environ.get('FT_REPLACE', '0') == '1'   # next_tables: 1 이면 고른 2명 끝점을 섞지 않고 새 값으로 바꾼다(a=1)
 POS = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
 RANKS = '23456789TJQKA'
 
@@ -511,7 +513,7 @@ def next_tables(k):
         h = hist.setdefault(str(node), [])
         h.append(tr['max_D_over_U'])
         cyc = len(h) >= 3 and h[-1] > 1 and (h[-3] - h[-2]) * (h[-2] - h[-1]) < 0
-        a = ALPHA_CYCLE if cyc else ALPHA
+        a = 1.0 if REPLACE else (ALPHA_CYCLE if cyc else ALPHA)
         if node in static_nodes:      # 플랍 실패(재시도 후 > 0.6% pot 등)로 정적 유지로 정한 끝점: 표를 만들지 않는다
             done_nodes.add(node)
             continue
