@@ -1,0 +1,17 @@
+{
+ "bundle": "s5_t18_A",
+ "step": 5,
+ "term_sha256": "938a671be8dd0fbb7b4f19e12b0b0c03efc30f1690c6d7e0ed297fcf9270d180",
+ "panel_sha256": "f284ce826bc7267c2ebf17d8ee8cbf170d6402d097583e4fe439998746428f8a",
+ "matrix": true,
+ "boards": 72,
+ "flop_failures_after_retry": [],
+ "retried": {},
+ "max_pct_pot": 0.29974042183393995,
+ "mean_pct_pot": 0.23920904318401254,
+ "values_sha256": "bdd114824ea005f1bb9c62dbea07d694a5081392173f956edc94b3023d55f077",
+ "matrix_sums_sha256": "8dd71dfe1d1d6319ed9d68cbb952764727439ac0b41617085414e50300d62626",
+ "session": "session_01JQGBPJ7a6shKjwh6Zuj36G",
+ "branch": "claude/ft40_board_17",
+ "wall_min_this_run": 257.5
+}
