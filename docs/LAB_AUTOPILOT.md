@@ -67,7 +67,7 @@
 - 일하는 동안 30분마다 `t_heartbeat` 갱신. 하트비트가 `claim_ttl_hours`(3시간)보다 오래되면 죽은 claim 으로 보고 인계 가능. 끝나거나 실패하면 파일을 지운다(release).
 - 다른 계정·클라우드 세션도 같은 방식으로 쓸 수 있다: `python3 tools/gto_fulltree/lab_autopilot/autopilot.py claim 30 1 board_7 --owner <이름>` (성공 시 `CLAIM_OK`, 이미 잡혔으면 종료코드 3 `CLAIM_TAKEN`), 끝나면 `release`.
 
-(c) **건너뛰는 규칙**(보드 번호 n 마다):
+(c) **건너뛰는 규칙**(보드 번호 n 마다; **판단은 묶음 단위** — 묶음이 `assign.tsv` 의 번호가 아니라 다른 보드 브랜치(`…_board_4b`, 21 등)로 재배정돼 끝났거나 진행 중이어도 모든 `claude/ft<S>_board_*` 에서 그 묶음의 `done.json`·최근 푸시를 보고 건너뜀. 봇이 일하는 중에도 묶음마다 다시 확인. 조정 대기 판단(마지막 푸시 4시간)에서는 봇 자신의 커밋은 뺌):
 | 상태 | 연구실 행동 |
 |---|---|
 | 모든 묶음 `done.json` 있음 | 건너뜀(끝남) |

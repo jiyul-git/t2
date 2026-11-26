@@ -30,7 +30,7 @@ def check(name, cond, extra=''):
 
 
 def sh(*a, cwd=None, env=None):
-    e = dict(os.environ, GIT_AUTHOR_NAME='x', GIT_AUTHOR_EMAIL='x@x', GIT_COMMITTER_NAME='x', GIT_COMMITTER_EMAIL='x@x', **(env or {}))
+    e = dict(dict(os.environ, GIT_AUTHOR_NAME='x', GIT_AUTHOR_EMAIL='x@x', GIT_COMMITTER_NAME='x', GIT_COMMITTER_EMAIL='x@x'), **(env or {}))
     return subprocess.run(a, cwd=cwd, env=e, capture_output=True, text=True, check=True).stdout.strip()
 
 
@@ -112,6 +112,26 @@ board_branch(4, 1, 0, 5)                # 일부 끝, 5시간 전(활동 아님 
 board_branch(5, 0, 0, 100)              # 옛 단계(0단계) 흔적만 → 새로
 board_branch(6, 0, 0, 0.5)              # 방금 푸시(막 시작) → 건너뜀
 
+# 묶음 단위 판단(보드 번호 재배정): board_10 의 묶음이 다른 이름 브랜치에서 방금 푸시됨 / board_11 의 묶음 전부가 다른 브랜치에서 끝남
+def board_branch_named(name, bundles, done, age_h):
+    sh('git', 'checkout', '-q', '-B', 'tmp', 'claude/ft30_coord', cwd=seed)
+    for b in bundles:
+        d = os.path.join(seed, 'data/ft30/results/step1', b)
+        os.makedirs(d, exist_ok=True)
+        open(os.path.join(d, 'done.json' if done else 'state.json'), 'w').write('{}')
+    sh('git', 'add', '-A', cwd=seed)
+    dt_ = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(time.time() - age_h * 3600))
+    sh('git', 'commit', '-q', '--allow-empty', '-m', name, cwd=seed, env={'GIT_COMMITTER_DATE': dt_, 'GIT_AUTHOR_DATE': dt_})
+    sh('git', 'push', '-q', O, 'tmp:refs/heads/claude/ft30_board_%s' % name, cwd=seed)
+
+
+board_branch_named('21', per[10][:1], False, 0.5)      # board_10 의 첫 묶음을 보드 21 이 진행 중
+board_branch_named('11b', per[11], True, 30)           # board_11 의 묶음 전부를 11b 가 끝냄
+# 봇 자신이 쓴 조정 커밋은 '조정 세션 작업 중' 판단에서 뺀다
+sh('git', 'checkout', '-q', '-B', 'own', 'claude/ft30_coord', cwd=seed)
+sh('git', 'commit', '-q', '--allow-empty', '-m', 'lab own push', cwd=seed, env={'GIT_AUTHOR_NAME': 't2-lab', 'GIT_COMMITTER_NAME': 't2-lab'})
+sh('git', 'push', '-q', O, 'own:refs/heads/claude/ft30_coord', cwd=seed)
+
 # 연구실 설정
 R = os.path.join(T, 'repo')
 sh('git', 'clone', '-q', O, R)
@@ -135,6 +155,9 @@ check('일부 끝+5시간 전 보드 4 는 건너뜀', 'board_4' not in plan)
 check('0단계 흔적만(100시간 전) 보드 5 는 새로', 'board_5' in plan and plan['board_5'] == '새로', plan.get('board_5'))
 check('방금 푸시된 보드 6 은 건너뜀', 'board_6' not in plan)
 check('아무 브랜치 없는 보드 7 은 새로', plan.get('board_7') == '새로')
+check('묶음이 다른 브랜치(21)에서 진행 중이면 보드 10 건너뜀', 'board_10' not in plan)
+check('묶음 전부가 다른 브랜치(11b)에서 끝났으면 보드 11 은 끝난 것', 'board_11' not in plan and sv.boards[11]['all_done'])
+check('봇 자신의 조정 푸시는 조정 대기 판단에서 제외(약 10시간 전 외부 푸시 기준)', sv.last_commit_age_h is not None and 9 < sv.last_commit_age_h < 12, str(sv.last_commit_age_h))
 
 # claim 원자성: 두 프로세스 동시
 ap.hub.push = True          # 가짜 origin 이라 푸시 허용

@@ -232,16 +232,16 @@ class Hub:
             raise RuntimeError('ls-remote 실패: ' + r.err[-200:])
         return {l.split()[1].replace('refs/heads/', ''): l.split()[0] for l in r.out.splitlines() if l.strip()}
 
-    def fetch(self, br, force=False):
+    def fetch(self, br, force=False, depth=1):
         """br 를 peek 에 얕게 가져와 origin/<br> 로 둔다(sha 가 같으면 건너뜀). 성공 시 sha."""
         want = self.heads.get(br)
         if want is None:
             return None
         if not force and self.seen.get(br) == want:
             return want
-        r = with_retry(lambda: self.peek.run('fetch', '-q', '--depth=1', '--filter=blob:none', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (br, br), timeout=300), 3)
+        r = with_retry(lambda: self.peek.run('fetch', '-q', '--depth=%d' % depth, '--filter=blob:none', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (br, br), timeout=300), 3)
         if r.returncode != 0:
-            r = with_retry(lambda: self.peek.run('fetch', '-q', '--depth=1', 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (br, br), timeout=300), 2)
+            r = with_retry(lambda: self.peek.run('fetch', '-q', '--depth=%d' % depth, 'origin', '+refs/heads/%s:refs/remotes/origin/%s' % (br, br), timeout=300), 2)
         if r.returncode != 0:
             log.info('가져오기 실패 %s: %s', br, r.err[-150:])
             return None
@@ -258,6 +258,12 @@ class Hub:
 
     def tip_time(self, br):
         r = self.peek.run('log', '-1', '--format=%ct', 'origin/' + br)
+        return int(r.out) if r.returncode == 0 and r.out else None
+
+    def tip_time_foreign(self, br):
+        """봇 자신(git 이름 = owner 설정의 git_user)이 쓴 커밋을 뺀 가장 최근 커밋 시각. 가져온 이력(얕게 30개) 안에 없으면 None."""
+        name = re.escape(self.cfg['git_user'])
+        r = self.peek.run('log', '-1', '--format=%ct', '--perl-regexp', '--author=^(?!%s <)' % name, 'origin/' + br)
         return int(r.out) if r.returncode == 0 and r.out else None
 
     def refresh_heads(self, stacks):
@@ -489,13 +495,13 @@ class StackView:
 def read_stack(hub, S, sc, claims):
     sv = StackView(S)
     br = sc['coord_branch']
-    if br not in hub.heads or not hub.fetch(br):
+    if br not in hub.heads or not hub.fetch(br, depth=30):
         sv.phase, sv.why = 'no_coord', '조정 브랜치를 못 읽음'
         return sv
     files = hub.ls(br, 'data/ft%s' % S)
     ev = Evidence(S, lambda p: hub.show(br, p), files)
-    ct = hub.tip_time(br)
-    sv.last_commit_age_h = age_h(ct) if ct else None
+    ct = hub.tip_time_foreign(br)          # 봇 자신의 푸시는 '조정 세션이 작업 중' 판단에서 뺀다
+    sv.last_commit_age_h = age_h(ct) if ct else 9999.0
     sv.ev = ev
     steps = ev.steps()
     if not steps:
@@ -526,19 +532,30 @@ def read_stack(hub, S, sc, claims):
         per = {}
         for r in assign:
             per.setdefault(int(r['session']), []).append(r['bundle'])
+        # 묶음이 어느 보드 브랜치에서 돌든(보드 번호 재배정·'4b' 같은 이름 포함) 모든 claude/ft<S>_board_* 에서 그 묶음의 결과·최근 푸시를 본다(collect 와 같은 방식)
+        holders = {}          # bundle -> {branch: (done?, tip_age_h)}
+        tips = {}
+        for bb in sorted(x for x in hub.heads if re.match(r'claude/ft%s_board_' % re.escape(S), x)):
+            if not hub.fetch(bb):
+                continue
+            fs = hub.ls(bb, 'data/ft%s/results/step%d' % (S, K))
+            t = hub.tip_time(bb)
+            tips[bb] = age_h(t) if t else None
+            for p in fs:
+                m = re.search(r'/results/step\d+/([^/]+)/', p)
+                if m:
+                    d = holders.setdefault(m.group(1), {})
+                    prev = d.get(bb, (False, tips[bb]))
+                    d[bb] = (prev[0] or p.endswith('/done.json'), tips[bb])
         for n, bl in sorted(per.items()):
             bb = 'claude/ft%s_board_%s' % (S, n)
-            info = {'branch': bb, 'bundles': {}, 'exists': bb in hub.heads, 'tip_age_h': None, 'sha': hub.heads.get(bb)}
-            if info['exists'] and hub.fetch(bb):
-                fs = hub.ls(bb, 'data/ft%s/results/step%d' % (S, K))
-                t = hub.tip_time(bb)
-                info['tip_age_h'] = age_h(t) if t else None
-                for b in bl:
-                    mine = [p for p in fs if '/%s/' % b in p]
-                    info['bundles'][b] = 'done' if any(p.endswith('/%s/done.json' % b) for p in mine) else ('partial' if mine else 'none')
-            else:
-                info['bundles'] = {b: 'none' for b in bl}
-            info['all_done'] = all(s == 'done' for s in info['bundles'].values())
+            info = {'branch': bb, 'bundles': {}, 'exists': bb in hub.heads, 'tip_age_h': tips.get(bb), 'sha': hub.heads.get(bb), 'holders': {}, 'done_on_own': False}
+            for b in bl:
+                h = holders.get(b, {})
+                info['bundles'][b] = 'done' if any(v[0] for v in h.values()) else ('partial' if h else 'none')
+                info['holders'][b] = [(x, v[1]) for x, v in h.items() if not v[0]]
+                info['done_on_own'] |= bool(h.get(bb, (False,))[0])
+            info['all_done'] = all(st == 'done' for st in info['bundles'].values())
             sv.boards[n] = info
         nd = sum(1 for b in sv.boards.values() if b['all_done'])
         sv.why = '보드 번호 %d/%d 끝' % (nd, len(sv.boards))
@@ -555,7 +572,7 @@ def read_stack(hub, S, sc, claims):
 
 
 def board_free(hub, cfg, sv, n, claims, local_branches):
-    """보드 n 을 연구실이 잡아도 되는가. (가능?, 이유)"""
+    """보드 번호 n 을 연구실이 잡아도 되는가. (가능?, 이유). 판단은 **묶음 단위**: 묶음이 다른 보드 브랜치로 옮겨져 끝났거나 진행 중이면 그 묶음은 남의 일."""
     b = sv.boards[n]
     L = cfg['loop']
     if b['all_done']:
@@ -563,9 +580,23 @@ def board_free(hub, cfg, sv, n, claims, local_branches):
     c = claims.get((sv.S, sv.K, 'board_%d' % n))
     if c and c.get('owner') != hub.me and age_h(c.get('t_heartbeat', c['t_claim'])) < L['claim_ttl_hours']:
         return False, '다른 쪽이 claim(%s)' % c.get('owner')
-    mine = (c and c.get('owner') == hub.me) or b['branch'] in local_branches
-    partial = any(s == 'partial' for s in b['bundles'].values())
-    started_other = (partial or any(s == 'done' for s in b['bundles'].values())) and not mine
+    own = b['branch']
+    mine = (c and c.get('owner') == hub.me) or own in local_branches
+    started_other = bool(b.get('done_on_own')) and not mine      # 이 번호 브랜치에 남이 끝낸 묶음이 있음 = 남이 시작함
+    for bundle, st in b['bundles'].items():
+        if st == 'done':
+            continue
+        for hb, age in b['holders'].get(bundle, []):
+            if hb in local_branches or (hb == own and mine):
+                continue
+            if age is not None and age >= L['stale_takeover_hours']:
+                started_other |= hb == own    # 오래 멈춘 남의 부분 결과: 내 보드 브랜치면 인계, 다른 브랜치면 무시
+                continue
+            if age is None or age < L['active_hours']:
+                return False, '묶음 %s 를 %s 가 %.1f시간 전에 푸시(진행 중)' % (bundle, hb, -1 if age is None else age)
+            if hb != own:
+                return False, '묶음 %s 는 다른 브랜치 %s 에서 시작됨(%.0f시간 전)' % (bundle, hb, age)
+            started_other = True
     tip = b['tip_age_h']
     if not mine and tip is not None and tip < L['active_hours']:
         return False, '그 브랜치에 %.1f시간 전 푸시(다른 쪽 작업 중)' % tip
@@ -970,7 +1001,7 @@ class Autopilot:
             env['FT_NO_PUSH'] = '1'
         fails = 0
         while True:
-            left = [b for b in B if not os.path.exists(res(b))]
+            left = [b for b in B if not os.path.exists(res(b)) and not self.bundle_taken(S, n, b)]
             job.progress = '%d/%d 묶음' % (len(B) - len(left), len(B))
             if job.cancelled:
                 raise JobFail('cancelled', '원격 명령으로 취소')
@@ -1003,6 +1034,22 @@ class Autopilot:
             if br in self.hub.heads:
                 g.run('pull', '-q', '--no-edit', '--no-rebase', 'origin', br)
             g.run('merge', '-q', '--no-edit', 'origin/claude/ft%s_coord' % S)
+
+    def bundle_taken(self, S, n, b):
+        """이 묶음을 다른 브랜치가 이미 끝냈거나(done) 최근에 푸시 중이면 True — 최신 깃허브 읽기(view) 기준."""
+        sv = self.view.get(S)
+        info = sv.boards.get(n) if sv else None
+        if not info:
+            return False
+        if info['bundles'].get(b) == 'done':
+            return True
+        lb = self.local_board_branches()
+        for hb, age in info['holders'].get(b, []):
+            if hb in lb:
+                continue
+            if age is None or age < self.cfg['loop']['active_hours']:
+                return True
+        return False
 
     def after_bundle(self, S, k, bundle, donef):
         """묶음이 끝났을 때: 재시도 뒤에도 안 풀린 플랍이 0.6% pot 을 넘으면 경고(판정은 collect 때 다시 한다)."""
