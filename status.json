@@ -1,0 +1,42 @@
+{
+ "schema": "lab_status_v1",
+ "status": "ok",
+ "time": "2026-11-26T06:59:14Z",
+ "host": "DESKTOP-FUUG7O5",
+ "owner": "t2-lab",
+ "uptime_h": 0.0,
+ "mode": "live",
+ "code_release": "9559eee644",
+ "code_sha": "9559eee64",
+ "update": {
+  "pending": null,
+  "failed": null
+ },
+ "cpu": {
+  "budget": 6,
+  "in_use": 0,
+  "load": [
+   0.5185546875,
+   0.57763671875,
+   0.5859375
+  ]
+ },
+ "mem_avail_gb": null,
+ "disk_free_gb": 89.5,
+ "paused": {
+  "all": false,
+  "stacks": []
+ },
+ "jobs": [],
+ "stacks": {},
+ "alerts": [],
+ "recent_errors": [],
+ "control": {
+  "applied": {},
+  "skip": [],
+  "priority": null,
+  "cfg_overrides": {},
+  "stack_overrides": {}
+ },
+ "blocked": {}
+}
