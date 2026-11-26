@@ -1,10 +1,10 @@
 {
  "schema": "lab_status_v1",
  "status": "ok",
- "time": "2026-11-26T08:11:38Z",
+ "time": "2026-11-26T09:47:32Z",
  "host": "DESKTOP-FUUG7O5",
  "owner": "t2-lab",
- "uptime_h": 0.0,
+ "uptime_h": 1.6,
  "mode": "live",
  "code_release": "89a54b7211",
  "code_sha": "89a54b721",
@@ -14,7 +14,7 @@
  },
  "cpu": {
   "budget": 6,
-  "in_use": 0,
+  "in_use": 3,
   "load": [
    0.5185546875,
    0.57763671875,
@@ -22,13 +22,526 @@
   ]
  },
  "mem_avail_gb": null,
- "disk_free_gb": 87.8,
+ "disk_free_gb": 85.7,
  "paused": {
   "all": false,
   "stacks": []
  },
- "jobs": [],
- "stacks": {},
+ "jobs": [
+  {
+   "stack": "30",
+   "step": 2,
+   "unit": "coord_solve",
+   "started": "2026-11-26T08:15:23Z",
+   "progress": "",
+   "cpu_idle_min": 0,
+   "file_idle_min": 8
+  }
+ ],
+ "stacks": {
+  "30": {
+   "phase": "solve",
+   "why": "단계 2 표는 있음, 트리 풀이 없음",
+   "step": 2,
+   "coord_tip_age_h": 253.8,
+   "stall_streak": 0
+  },
+  "40": {
+   "phase": "boards",
+   "why": "보드 번호 19/20 끝",
+   "step": 5,
+   "coord_tip_age_h": 100.6,
+   "stall_streak": 0,
+   "boards": {
+    "1": {
+     "done": true,
+     "bundles": {
+      "s5_t00_A": "done",
+      "s5_t10_A": "done",
+      "s5_t20_A": "done",
+      "s5_t30_A": "done"
+     },
+     "tip_age_h": 85.8,
+     "claim": null
+    },
+    "2": {
+     "done": true,
+     "bundles": {
+      "s5_t00_B": "done",
+      "s5_t10_B": "done",
+      "s5_t20_B": "done",
+      "s5_t30_B": "done"
+     },
+     "tip_age_h": 85.9,
+     "claim": null
+    },
+    "3": {
+     "done": false,
+     "bundles": {
+      "s5_t01_A": "partial",
+      "s5_t11_A": "done",
+      "s5_t21_A": "done",
+      "s5_t31_A": "done"
+     },
+     "tip_age_h": 2.1,
+     "claim": null
+    },
+    "4": {
+     "done": true,
+     "bundles": {
+      "s5_t01_B": "done",
+      "s5_t11_B": "done",
+      "s5_t21_B": "done",
+      "s5_t31_B": "done"
+     },
+     "tip_age_h": 2.2,
+     "claim": null
+    },
+    "5": {
+     "done": true,
+     "bundles": {
+      "s5_t02_A": "done",
+      "s5_t12_A": "done",
+      "s5_t22_A": "done",
+      "s5_t32_A": "done"
+     },
+     "tip_age_h": 2.4,
+     "claim": null
+    },
+    "6": {
+     "done": true,
+     "bundles": {
+      "s5_t02_B": "done",
+      "s5_t12_B": "done",
+      "s5_t22_B": "done",
+      "s5_t32_B": "done"
+     },
+     "tip_age_h": 3.1,
+     "claim": null
+    },
+    "7": {
+     "done": true,
+     "bundles": {
+      "s5_t03_A": "done",
+      "s5_t13_A": "done",
+      "s5_t23_A": "done",
+      "s5_t33_A": "done"
+     },
+     "tip_age_h": 82.8,
+     "claim": null
+    },
+    "8": {
+     "done": true,
+     "bundles": {
+      "s5_t03_B": "done",
+      "s5_t13_B": "done",
+      "s5_t23_B": "done",
+      "s5_t33_B": "done"
+     },
+     "tip_age_h": 85.6,
+     "claim": null
+    },
+    "9": {
+     "done": true,
+     "bundles": {
+      "s5_t04_A": "done",
+      "s5_t14_A": "done",
+      "s5_t24_A": "done"
+     },
+     "tip_age_h": 84.5,
+     "claim": null
+    },
+    "10": {
+     "done": true,
+     "bundles": {
+      "s5_t04_B": "done",
+      "s5_t14_B": "done",
+      "s5_t24_B": "done"
+     },
+     "tip_age_h": 84.8,
+     "claim": null
+    },
+    "11": {
+     "done": true,
+     "bundles": {
+      "s5_t05_A": "done",
+      "s5_t15_A": "done",
+      "s5_t25_A": "done"
+     },
+     "tip_age_h": 83.0,
+     "claim": null
+    },
+    "12": {
+     "done": true,
+     "bundles": {
+      "s5_t05_B": "done",
+      "s5_t15_B": "done",
+      "s5_t25_B": "done"
+     },
+     "tip_age_h": 84.4,
+     "claim": null
+    },
+    "13": {
+     "done": true,
+     "bundles": {
+      "s5_t06_A": "done",
+      "s5_t16_A": "done",
+      "s5_t26_A": "done"
+     },
+     "tip_age_h": 85.7,
+     "claim": null
+    },
+    "14": {
+     "done": true,
+     "bundles": {
+      "s5_t06_B": "done",
+      "s5_t16_B": "done",
+      "s5_t26_B": "done"
+     },
+     "tip_age_h": 84.0,
+     "claim": null
+    },
+    "15": {
+     "done": true,
+     "bundles": {
+      "s5_t07_A": "done",
+      "s5_t17_A": "done",
+      "s5_t27_A": "done"
+     },
+     "tip_age_h": 85.7,
+     "claim": null
+    },
+    "16": {
+     "done": true,
+     "bundles": {
+      "s5_t07_B": "done",
+      "s5_t17_B": "done",
+      "s5_t27_B": "done"
+     },
+     "tip_age_h": 85.5,
+     "claim": null
+    },
+    "17": {
+     "done": true,
+     "bundles": {
+      "s5_t08_A": "done",
+      "s5_t18_A": "done",
+      "s5_t28_A": "done"
+     },
+     "tip_age_h": 86.3,
+     "claim": null
+    },
+    "18": {
+     "done": true,
+     "bundles": {
+      "s5_t08_B": "done",
+      "s5_t18_B": "done",
+      "s5_t28_B": "done"
+     },
+     "tip_age_h": 2.2,
+     "claim": null
+    },
+    "19": {
+     "done": true,
+     "bundles": {
+      "s5_t09_A": "done",
+      "s5_t19_A": "done",
+      "s5_t29_A": "done"
+     },
+     "tip_age_h": 84.0,
+     "claim": null
+    },
+    "20": {
+     "done": true,
+     "bundles": {
+      "s5_t09_B": "done",
+      "s5_t19_B": "done",
+      "s5_t29_B": "done"
+     },
+     "tip_age_h": 3.9,
+     "claim": null
+    }
+   }
+  },
+  "60": {
+   "phase": "collect",
+   "why": "묶음 전부 끝 → collect",
+   "step": 4,
+   "coord_tip_age_h": 258.3,
+   "stall_streak": 0,
+   "boards": {
+    "1": {
+     "done": true,
+     "bundles": {
+      "s4_t03_A": "done",
+      "s4_t19_A": "done",
+      "s4_t29_A": "done",
+      "s4_t39_A": "done"
+     },
+     "tip_age_h": 265.4,
+     "claim": null
+    },
+    "2": {
+     "done": true,
+     "bundles": {
+      "s4_t03_B": "done",
+      "s4_t19_B": "done",
+      "s4_t29_B": "done",
+      "s4_t39_B": "done"
+     },
+     "tip_age_h": 252.6,
+     "claim": null
+    },
+    "3": {
+     "done": true,
+     "bundles": {
+      "s4_t04_A": "done",
+      "s4_t18_A": "done",
+      "s4_t28_A": "done",
+      "s4_t38_A": "done"
+     },
+     "tip_age_h": 268.9,
+     "claim": null
+    },
+    "4": {
+     "done": true,
+     "bundles": {
+      "s4_t04_B": "done",
+      "s4_t18_B": "done",
+      "s4_t28_B": "done",
+      "s4_t38_B": "done"
+     },
+     "tip_age_h": 266.6,
+     "claim": null
+    },
+    "5": {
+     "done": true,
+     "bundles": {
+      "s4_t00_A": "done",
+      "s4_t17_A": "done",
+      "s4_t27_A": "done",
+      "s4_t37_A": "done"
+     },
+     "tip_age_h": 264.2,
+     "claim": null
+    },
+    "6": {
+     "done": true,
+     "bundles": {
+      "s4_t00_B": "done",
+      "s4_t17_B": "done",
+      "s4_t27_B": "done",
+      "s4_t37_B": "done"
+     },
+     "tip_age_h": 269.5,
+     "claim": null
+    },
+    "7": {
+     "done": true,
+     "bundles": {
+      "s4_t01_A": "done",
+      "s4_t10_A": "done",
+      "s4_t20_A": "done",
+      "s4_t30_A": "done"
+     },
+     "tip_age_h": 262.9,
+     "claim": null
+    },
+    "8": {
+     "done": true,
+     "bundles": {
+      "s4_t01_B": "done",
+      "s4_t10_B": "done",
+      "s4_t20_B": "done",
+      "s4_t30_B": "done"
+     },
+     "tip_age_h": 255.3,
+     "claim": null
+    },
+    "9": {
+     "done": true,
+     "bundles": {
+      "s4_t02_A": "done",
+      "s4_t11_A": "done",
+      "s4_t21_A": "done",
+      "s4_t31_A": "done"
+     },
+     "tip_age_h": 263.9,
+     "claim": null
+    },
+    "10": {
+     "done": true,
+     "bundles": {
+      "s4_t02_B": "done",
+      "s4_t11_B": "done",
+      "s4_t21_B": "done",
+      "s4_t31_B": "done"
+     },
+     "tip_age_h": 263.0,
+     "claim": null
+    },
+    "11": {
+     "done": true,
+     "bundles": {
+      "s4_t05_A": "done",
+      "s4_t12_A": "done"
+     },
+     "tip_age_h": 268.9,
+     "claim": null
+    },
+    "12": {
+     "done": true,
+     "bundles": {
+      "s4_t05_B": "done",
+      "s4_t12_B": "done",
+      "s4_t22_B": "done",
+      "s4_t32_B": "done"
+     },
+     "tip_age_h": 265.6,
+     "claim": null
+    },
+    "13": {
+     "done": true,
+     "bundles": {
+      "s4_t06_A": "done",
+      "s4_t13_A": "done",
+      "s4_t23_A": "done",
+      "s4_t33_A": "done"
+     },
+     "tip_age_h": 252.2,
+     "claim": null
+    },
+    "14": {
+     "done": true,
+     "bundles": {
+      "s4_t06_B": "done",
+      "s4_t13_B": "done",
+      "s4_t23_B": "done",
+      "s4_t33_B": "done"
+     },
+     "tip_age_h": 263.7,
+     "claim": null
+    },
+    "15": {
+     "done": true,
+     "bundles": {
+      "s4_t07_A": "done",
+      "s4_t14_A": "done",
+      "s4_t24_A": "done",
+      "s4_t34_A": "done"
+     },
+     "tip_age_h": 262.9,
+     "claim": null
+    },
+    "16": {
+     "done": true,
+     "bundles": {
+      "s4_t07_B": "done",
+      "s4_t14_B": "done"
+     },
+     "tip_age_h": 269.3,
+     "claim": null
+    },
+    "17": {
+     "done": true,
+     "bundles": {
+      "s4_t08_A": "done",
+      "s4_t15_A": "done"
+     },
+     "tip_age_h": 268.4,
+     "claim": null
+    },
+    "18": {
+     "done": true,
+     "bundles": {
+      "s4_t08_B": "done",
+      "s4_t15_B": "done"
+     },
+     "tip_age_h": 269.5,
+     "claim": null
+    },
+    "19": {
+     "done": true,
+     "bundles": {
+      "s4_t09_A": "done",
+      "s4_t16_A": "done"
+     },
+     "tip_age_h": 273.4,
+     "claim": null
+    },
+    "20": {
+     "done": true,
+     "bundles": {
+      "s4_t09_B": "done",
+      "s4_t16_B": "done"
+     },
+     "tip_age_h": 265.4,
+     "claim": null
+    },
+    "21": {
+     "done": true,
+     "bundles": {
+      "s4_t22_A": "done",
+      "s4_t32_A": "done"
+     },
+     "tip_age_h": 271.3,
+     "claim": null
+    },
+    "22": {
+     "done": true,
+     "bundles": {
+      "s4_t24_B": "done",
+      "s4_t34_B": "done"
+     },
+     "tip_age_h": 270.8,
+     "claim": null
+    },
+    "23": {
+     "done": true,
+     "bundles": {
+      "s4_t25_A": "done",
+      "s4_t35_A": "done"
+     },
+     "tip_age_h": 269.5,
+     "claim": null
+    },
+    "24": {
+     "done": true,
+     "bundles": {
+      "s4_t25_B": "done",
+      "s4_t35_B": "done"
+     },
+     "tip_age_h": 266.1,
+     "claim": null
+    },
+    "25": {
+     "done": true,
+     "bundles": {
+      "s4_t26_A": "done",
+      "s4_t36_A": "done"
+     },
+     "tip_age_h": 263.5,
+     "claim": null
+    },
+    "26": {
+     "done": true,
+     "bundles": {
+      "s4_t26_B": "done",
+      "s4_t36_B": "done"
+     },
+     "tip_age_h": 263.3,
+     "claim": null
+    }
+   }
+  },
+  "100": {
+   "phase": "solve",
+   "why": "단계 2 표는 있음, 트리 풀이 없음",
+   "step": 2,
+   "coord_tip_age_h": 259.9,
+   "stall_streak": 0
+  }
+ },
  "alerts": [],
  "recent_errors": [],
  "control": {
@@ -56,6 +569,12 @@
     "cmd": "config",
     "ok": true,
     "msg": "loop.coord_idle_hours = 0.25"
+   },
+   "c5": {
+    "t": "2026-11-26T09:47:32Z",
+    "cmd": "stack",
+    "ok": true,
+    "msg": "스택 60 설정 {'enabled': False}"
    }
   },
   "skip": [],
@@ -65,6 +584,9 @@
   },
   "stack_overrides": {
    "40": {
+    "enabled": false
+   },
+   "60": {
     "enabled": false
    }
   }
