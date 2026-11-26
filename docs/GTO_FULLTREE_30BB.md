@@ -97,3 +97,18 @@ git fetch origin claude/ft30_coord && git checkout -b claude/ft30_board_<n> orig
 ```sh
 git fetch origin claude/ft30_coord claude/ft30_board_<n> && git checkout -B claude/ft30_board_<n> origin/claude/ft30_board_<n> && git merge -q --no-edit origin/claude/ft30_coord && sh tools/gto_fulltree/ft_board_setup.sh && B=$(awk -F'\t' -v n=<n> 'NR>1 && $2==n {print $1}' data/ft30/step1/assign.tsv | tr '\n' ' ') && (setsid nohup /home/user/gto_ckpt/py311bin/python3 tools/gto_fulltree/ft_board.py $B > /home/user/gto_ckpt/ft30_board.log 2>&1 < /dev/null &)
 ```
+
+## 9. 실측 시간과 진행 (2026-11-08 기록)
+- **묶음 하나 ≈ 5시간**(4코어 컨테이너, 72보드): 0단계 `s0_t00_B`(단순 끝점) 353분, 1단계 첫 묶음들은 시작 4시간 뒤 60/72보드(1·2·3·5·20번 세션; 4번은 48/72). 문서의 추정(단순 0.8h, 행렬 1.9h)은 **60bb 값이라 30bb 에서 틀렸다** — 단순·행렬 구분 없이 약 5시간으로 잡아야 한다. 세션당 2~3묶음이면 10~15시간.
+- 1단계 세션 6~19번은 계정 동시 실행 수 제한으로 시작을 못 하고 PENDING(T2 세션 보고). 60bb 보드 세션이 끝나 자리가 나면 T2 세션이 다시 만든다. `assign.tsv` 는 그대로.
+- 다음 단계 배분은 `FT_H_MATRIX=5 FT_H_SIMPLE=5` 로 `prepare` 를 돌려 실측에 맞춘다(추정 상수가 환경 변수라 코드 수정 없음).
+
+## 10. 1단계 판정 (2026-11-15, collect 1)
+- 묶음 50/50, 빠진 것 없음, 재시도 뒤 안 풀린 플랍 0장. 끝점 25개 × 자리 2 = 50자리(0단계는 58자리).
+- **D ≤ U: 5/50 자리**(모두 BB 자리, D/U 0.50~0.99). 0단계는 0/58. 통과 기준(전부 D ≤ U) 미달 → `continue`.
+- **D/U 중앙값 3.13**(0단계 4.38), **최대 17.58**(0단계 10.98). 단순 끝점 중앙값 1.67(3.18), 최대 5.14(5.50). 행렬 끝점 중앙값 4.99(5.85), 최대 17.58(10.98).
+- 0단계와 겹치는 48자리 비교: D/U 가 줄어든 자리 34, 늘어난 자리 14, 변화 중앙값 −1.09. |D| 중앙값 1.087 → 0.733. 행렬 끝점은 28자리 중 16자리만 줄었다. 최대값은 오히려 커졌다(행렬 끝점 일부가 오르내림).
+- **A·B 복제(값 기준) 50/50 통과**. 뿌리 복제(전략 차이 ≤ 5%p)는 이번 collect 에 포함되지 않아 돌리지 않았다.
+- **sum_check(표 합 = 팟)**는 collect 에 없다. 다음 표(`next_tables 1`)를 만들 때 하는 검사라 아직 안 했다.
+- 이 판정은 끝점 값 기준이다. 다음 단계 준비는 하지 않았다(사용자 결정 대기).
+- 계산 환경: 모으기는 python 3.11 + numpy 2.4.6, 계산 체크아웃 census 79a9aca6(sparse, 빌드 없음).

@@ -1,0 +1,33 @@
+{
+ "step": 2,
+ "hu_terminals": 204,
+ "session_load_h": [
+  6.4,
+  6.4,
+  6.4,
+  6.4,
+  6.4,
+  6.4,
+  6.4,
+  6.4,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5,
+  4.5
+ ],
+ "picked": 24,
+ "picked_share_of_hu_mass": 0.9694985534591511,
+ "hu_mass": 0.3255121914504371,
+ "bundles": 48,
+ "matrix_terms": 24,
+ "ck_sha256": "c420afb82d234f4b06c2a1d0b5a1163ccdb9fad073133f5cc2cd75c899a55688",
+ "dump_sha256": "26135f8508925db26f44d27b3508c0bb8fcbb8caff349238fc34cfb1f61b69ed"
+}
