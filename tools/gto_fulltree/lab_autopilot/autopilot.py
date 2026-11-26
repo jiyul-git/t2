@@ -50,11 +50,12 @@ def deep_merge(a, b):
 
 def load_config(extra=None):
     cfg = json.load(open(os.path.join(HERE, 'config.json')))
-    root = os.path.expanduser(os.path.expandvars(cfg['root']))
+    root = os.path.expanduser(os.path.expandvars(os.environ.get('LAB_ROOT') or cfg['root']))
+    cfg['root'] = root
     for p in (os.path.join(root, 'config.local.json'), extra or os.environ.get('LAB_CONFIG')):
         if p and os.path.exists(p):
             deep_merge(cfg, json.load(open(p)))
-    cfg['root'] = os.path.expanduser(os.path.expandvars(cfg['root']))
+    cfg['root'] = os.path.expanduser(os.path.expandvars(os.environ.get('LAB_ROOT') or cfg['root']))
     for k in ('repo', 'calc', 'work'):
         cfg[k] = os.path.expanduser(os.path.expandvars(cfg[k]))
     for sc in cfg['stacks'].values():       # 판정 설정: 공통 + 스택별
