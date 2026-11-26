@@ -10,7 +10,6 @@
 """
 import json
 import statistics
-import sys
 
 DEFAULTS = {
     'flop_accept_pct_pot': 0.6,        # [U 11-08] 재시도 뒤에도 안 풀린 플랍은 0.6% pot 이하면 받아들이고 기록
@@ -23,7 +22,7 @@ DEFAULTS = {
     'alpha': 0.5, 'alpha_cycle': 0.25,  # [C] 감쇠, 진동 끝점
     'rep_factor': 2.0,                 # [P3-②] |V_A-V_B| <= 2*sqrt(U_A^2+U_B^2) (collect 가 pass_rep_value 로 이미 계산)
     'stall_steps': 3, 'stall_min_improve': 0.05,   # NC-2: 정체 경고 문턱(경고만, 자동 중단 안 함) — 문서에 숫자 없음, 임시값
-    'max_steps': 12,                   # NC-2: 단계 상한(11-12 '제한 없음' → 무인 안전장치로만). 넘으면 사람 확인 대기
+    'max_steps': None,                 # 단계 상한 없음(사용자 11-12, 코디네이터 확인). 숫자를 넣으면 그 단계를 넘을 때 사람 확인 대기
     'step0_never_passes': True,        # [C] 0단계는 통과로 치지 않는다(최소 1회 갱신)
 }
 
@@ -107,7 +106,7 @@ def judge(report, step=None, history=None, prev_report=None, prev_reports=None, 
         checks.append({'id': cid, 'name': name, 'rule': rule, 'value': value, 'ok': ok, 'source': src, 'note': note})
 
     m = summarize(report)
-    out = {'step': k, 'metrics': m, 'checks': checks, 'reasons': reasons, 'needs_confirmation': needs, 'warnings': warns,
+    out = {'step': k, 'stall': False, 'metrics': m, 'checks': checks, 'reasons': reasons, 'needs_confirmation': needs, 'warnings': warns,
            'static_nodes_add': [], 'cycling': [], 'alpha_plan': {}}
 
     # C1 모두 왔나
@@ -195,12 +194,13 @@ def judge(report, step=None, history=None, prev_report=None, prev_reports=None, 
     meds = [x['dou_median'] for x in trend if x['dou_median'] is not None]
     if len(meds) > n and (meds[-n - 1] - meds[-1]) / meds[-n - 1] < c['stall_min_improve']:
         warns.append('정체 경고: 최근 %d단계 동안 D/U 중앙값이 %.0f%% 도 안 줄었음(%.2f → %.2f). 임시 문턱(NC-2), 자동 중단 안 함.' % (n, 100 * c['stall_min_improve'], meds[-n - 1], meds[-1]))
+        out['stall'] = True
     sc = m['sum_check_max']
     add('C10', '합=팟 점검(기록)', '보드 M 칸 단위 합−팟 최대. 문턱은 문서에 없음 → 기록만', sc, None, '[M]', '정보')
 
     # C11 단계 상한
-    over = k + 1 > c['max_steps']
-    add('C11', '단계 상한(무인 안전장치)', '다음 단계 번호 <= %d. 사용자 11-12 는 "제한 없음" — 무인 운영용 임시값(NC-2)' % c['max_steps'], k + 1, not over, '설정')
+    over = bool(c['max_steps']) and k + 1 > c['max_steps']
+    add('C11', '단계 상한', '없음(사용자 11-12 "단계 제한 없음", 코디네이터 확인). 설정 max_steps 가 있을 때만 적용', k + 1, not over, '[U 11-12]', '기본 상한 없음')
 
     # 결정
     values_ok = m['pass_D_le_U'] == m['seats'] and m['rep_pass'] == m['seats'] and not bad

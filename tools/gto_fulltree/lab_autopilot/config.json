@@ -1,5 +1,5 @@
 {
-  "_설명": "연구실 자동 계산 봇 설정. 바꾸려면 이 파일 대신 $HOME/t2lab/config.local.json 에 바꿀 항목만 적는다(깊이 병합). 문서: docs/LAB_AUTOPILOT.md",
+  "_설명": "연구실 자동 계산 봇 설정. 바꾸려면 이 파일 대신 $HOME/t2lab/config.local.json 에 바꿀 항목만 적는다(깊이 병합). 원격으로는 claude/lab_status 의 control.json 명령. 문서: docs/LAB_AUTOPILOT.md",
   "root": "~/t2lab",
   "repo": "/home/user/t2",
   "calc": "/home/user/calc",
@@ -8,7 +8,6 @@
   "owner": "t2-lab",
   "git_user": "t2-lab",
   "git_email": "t2-lab@localhost",
-
   "cpu": {
     "total_cores": 6,
     "boards_parallel": 2,
@@ -17,48 +16,98 @@
     "nice": 19,
     "ionice_class": 3
   },
-
   "loop": {
     "poll_seconds": 300,
     "idle_wait_seconds": 1800,
     "github_refresh_seconds": 600,
-    "status_push_minutes": 30,
     "claim_heartbeat_minutes": 30,
     "claim_ttl_hours": 3,
     "active_hours": 3,
     "stale_takeover_hours": 24,
     "coord_idle_hours": 4,
     "self_update": true,
-    "self_update_force_hours": 12
+    "self_update_force_hours": 12,
+    "heartbeat_hours": 6,
+    "control_poll_seconds": 300,
+    "no_progress_min_hours": 2.0,
+    "no_progress_coord_hours": 4.0,
+    "min_free_mem_gb": 3
   },
-
   "branches": {
     "claims": "claude/ft_claims",
     "status": "claude/lab_status"
   },
-
   "disk": {
     "min_free_gb": 15,
     "keep_collect_steps": 2
   },
-
   "stacks": {
     "30": {
-      "enabled": true, "priority": 1, "boards": true, "coord_actions": true,
-      "coord_branch": "claude/ft30_coord", "coord_push_branch": "claude/ft30_coord",
+      "enabled": true,
+      "priority": 1,
+      "boards": true,
+      "coord_actions": true,
+      "coord_branch": "claude/ft30_coord",
+      "coord_push_branch": "claude/ft30_coord",
       "cfg_file": "cfg_p30_v1.json",
-      "solve_env": {"FT_GAP_TARGET": "0.02", "FT_GATE": "0.024", "FT_MAX_N": "100000", "FT_STOP_GAP": "0.02"},
-      "prepare_env": {"FT_MIN_REACH": "1e-3", "FT_SESSIONS": "20"},
+      "solve_env": {
+        "FT_GAP_TARGET": "0.02",
+        "FT_GATE": "0.024",
+        "FT_MAX_N": "100000",
+        "FT_STOP_GAP": "0.02"
+      },
+      "prepare_env": {
+        "FT_MIN_REACH": "1e-3",
+        "FT_SESSIONS": "20",
+        "FT_MATRIX_ALL": "1"
+      },
+      "judge": {},
+      "tools_ref": "claude/ft60_3way_s5",
+      "tools_markers": [
+        "FT_MATRIX_ALL",
+        "FT_PANEL_SET",
+        "FT_REPLACE",
+        "FT_MIN_REACH"
+      ],
+      "panel_set_from_step": 2,
+      "copy_panels": {
+        "ref": "claude/ft60_3way_s5",
+        "files": [
+          "data/ft60/panels/panel_bal_A72.json",
+          "data/ft60/panels/panel_bal_B72.json"
+        ],
+        "to": "data/ft30/panels"
+      },
+      "three_way_tables": false
+    },
+    "40": {
+      "enabled": true,
+      "priority": 2,
+      "boards": true,
+      "coord_actions": false,
+      "coord_branch": "claude/ft40_coord",
+      "cfg_file": "cfg_p40_o25.json",
       "judge": {}
     },
-    "40": {"enabled": true, "priority": 2, "boards": true, "coord_actions": false,
-           "coord_branch": "claude/ft40_coord", "cfg_file": "cfg_p40_o25.json", "judge": {}},
-    "60": {"enabled": true, "priority": 3, "boards": true, "coord_actions": false,
-           "coord_branch": "claude/ft60_coord", "cfg_file": "cfg_p60_o25.json", "judge": {}},
-    "100": {"enabled": true, "priority": 4, "boards": true, "coord_actions": false,
-            "coord_branch": "claude/ft100_coord", "cfg_file": "cfg_p100_o25.json", "judge": {}}
+    "60": {
+      "enabled": true,
+      "priority": 3,
+      "boards": true,
+      "coord_actions": false,
+      "coord_branch": "claude/ft60_coord",
+      "cfg_file": "cfg_p60_o25.json",
+      "judge": {}
+    },
+    "100": {
+      "enabled": true,
+      "priority": 4,
+      "boards": true,
+      "coord_actions": false,
+      "coord_branch": "claude/ft100_coord",
+      "cfg_file": "cfg_p100_o25.json",
+      "judge": {}
+    }
   },
-
   "judge": {
     "flop_accept_pct_pot": 0.6,
     "flop_fail_action": "static",
@@ -68,6 +117,6 @@
     "root_replication": "required",
     "stall_steps": 3,
     "stall_min_improve": 0.05,
-    "max_steps": 12
+    "max_steps": null
   }
 }

@@ -163,5 +163,106 @@ ap.no_push = False
 ap.push_status(force=True)
 ap.hub.heads = ap.hub.remote_heads(['refs/heads/' + cfg['branches']['status']])
 check('상태(heartbeat) 브랜치에 푸시됨', cfg['branches']['status'] in ap.hub.heads)
+
+# ---- 4) 오류 경고·중복 푸시 줄이기·원격 명령·감시·도구 갱신·자체 점검
+import types
+ap.no_push = False
+ap.hub.push = True
+ap.refresh()
+ap.derive_alerts()
+d = ap.status_doc()
+check('경고 없으면 status=ok', d['status'] == 'ok' and d['alerts'] == [], d['status'])
+ap.alert('solver_rc', ('30', 1, 'board_7'), 'warn', '시험 오류', log=os.path.join(T, 'lab/logs/autopilot.log'), ttl_h=1)
+ap.derive_alerts()
+d = ap.status_doc()
+check('경고 있으면 status!=ok, 로그 꼬리·시각 포함', d['status'] == 'warn' and d['alerts'][0]['code'] == 'solver_rc' and 'log_tail' in d['alerts'][0], d['status'])
+ap.alert('solver_rc', ('30', 1, 'board_7'), 'error', '시험 오류 2')
+check('같은 경고 반복 → 한 건(count 증가)', len(ap.alerts) == 1 and ap.status_doc()['alerts'][0]['count'] == 2 and ap.status_doc()['status'] == 'error')
+ap.t_pushed = 0; ap.pushed_sig = None
+ap.push_status()
+head1 = ap.hub.remote_heads(['refs/heads/' + cfg['branches']['status']])[cfg['branches']['status']]
+ap.t_pushed = time.time() - 400          # 5분 지남, 같은 경고 → 다시 안 올림
+ap.push_status()
+head2 = ap.hub.remote_heads(['refs/heads/' + cfg['branches']['status']])[cfg['branches']['status']]
+check('같은 오류가 계속되면 중복 푸시 안 함', head1 == head2)
+ap.alert('disk_low', 'disk', 'error', '새 경고')
+ap.t_pushed = time.time() - 400
+ap.push_status()
+head3 = ap.hub.remote_heads(['refs/heads/' + cfg['branches']['status']])[cfg['branches']['status']]
+check('경고가 바뀌면 바로 푸시', head3 != head2)
+ap.clear('disk_low'); ap.clear('solver_rc')
+ap.t_pushed = time.time() - 6 * 3600 - 10
+ap.derive_alerts(); ap.push_status()
+head4 = ap.hub.remote_heads(['refs/heads/' + cfg['branches']['status']])[cfg['branches']['status']]
+check('오류 없음 + 6시간 지나면 heartbeat 한 번', head4 != head3 and ap.status_doc()['status'] == 'ok')
+sd = json.loads(subprocess.run(['git', '-C', ap.hub.cr.path, 'show', 'origin/%s:status.json' % cfg['branches']['status']], capture_output=True, text=True).stdout or '{}') if False else None
+
+# 원격 명령: 코디네이터가 lab_status 에 control.json 을 올린다
+cdir = os.path.join(T, 'ctl')
+sh('git', 'clone', '-q', '-b', cfg['branches']['status'], O, cdir)
+json.dump({'seq': 1, 'commands': [{'id': 'a1', 'cmd': 'pause', 'stack': '30'}, {'id': 'a2', 'cmd': 'skip', 'stack': '30', 'unit': 'board_7'},
+                                  {'id': 'a3', 'cmd': 'priority', 'order': ['30']}, {'id': 'a4', 'cmd': 'config', 'path': 'cpu.boards_parallel', 'value': 1},
+                                  {'id': 'a5', 'cmd': 'config', 'path': 'cpu.total_cores', 'value': 99}, {'id': 'a6', 'cmd': 'rm -rf'}]}, open(os.path.join(cdir, 'control.json'), 'w'))
+sh('git', 'add', '-A', cwd=cdir); sh('git', 'commit', '-qm', 'control', cwd=cdir); sh('git', 'push', '-q', 'origin', 'HEAD', cwd=cdir)
+ap.t_control = 0
+ap.poll_control()
+res = ap.state['ctl']['applied']
+check('원격 명령 처리: pause/skip/priority/config 성공', all(res[k]['ok'] for k in ('a1', 'a2', 'a3', 'a4')), str({k: v['ok'] for k, v in res.items()}))
+check('허용 안 된 설정·모르는 명령은 실패로 기록', not res['a5']['ok'] and not res['a6']['ok'])
+ap.derive_alerts()
+check('pause 중이면 candidates 에서 스택 30 제외 + paused 경고', not [x for x in ap.candidates() if x[0] == '30'] and any(a['code'] == 'paused' for a in ap.alerts.values()))
+ap.apply_command({'cmd': 'resume', 'stack': '30'})
+check('resume 후 다시 계획에 나옴, skip 한 보드 7 은 제외', any(x[0] == '30' for x in ap.candidates()) and 'board_7' not in {x[3] for x in ap.candidates()})
+ap.apply_command({'cmd': 'retry', 'stack': '30', 'unit': 'board_7'})
+check('retry 로 skip 해제', 'board_7' in {x[3] for x in ap.candidates()})
+ap.t_control = 0; ap.poll_control()
+check('같은 명령 id 는 다시 처리 안 함', len(ap.state['ctl']['applied']) == 6)
+
+# 감시: CPU 를 안 쓰는 프로세스를 계산 프로세스처럼 등록 → 진행 없음 경고 + 종료
+sl = subprocess.Popen(['sleep', '1000'], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+jb = A.Job(ap, 'board', '30', 1, 'board_99', lambda j: None, 3)
+jb.pids.add(sl.pid); jb.no_progress_h = 0.0001; jb.t_cpu = jb.t_file = time.time() - 3600
+jb.is_alive = lambda: True
+ap.jobs[('30', 1, 'board_99')] = jb
+ap.t_watch = 0; ap.watchdog()      # 첫 틱은 기준 CPU 시간을 잰다
+ap.t_watch = 0; jb.t_cpu = time.time() - 3600; ap.watchdog()      # 둘째 틱: CPU 증가 없음 → 종료
+time.sleep(0.5)
+check('CPU 안 쓰는 계산 프로세스 → no_progress 경고 + 프로세스 종료', ('no_progress', '30|1|board_99') in ap.alerts and sl.poll() is not None, str(list(ap.alerts)))
+del ap.jobs[('30', 1, 'board_99')]
+t0 = A.proc_ticks(os.getpgid(0)); check('proc_ticks 가 CPU 시간을 읽음(>=0)', t0 >= 0)
+
+# 도구 갱신(sync_tools): 구버전 coord 도구 → 최신 도구 기준 브랜치로 덮어쓰기 + 균형 패널 복사 + FT_MIN_REACH
+sh('git', 'checkout', '-q', '-B', 'tools3', 'claude/ft30_coord', cwd=seed)
+sh('bash', '-c', 'git -C %s archive origin/claude/ft60_3way_s5 tools/gto_fulltree data/ft60/panels | tar x -C %s' % (REPO, seed))
+sh('git', 'add', '-A', cwd=seed); sh('git', 'commit', '-qm', 'tools ref', cwd=seed)
+sh('git', 'push', '-q', O, 'tools3:refs/heads/claude/ft60_3way_s5', cwd=seed)
+sh('git', 'checkout', '-q', 'claude/ft30_coord', cwd=seed)
+sc = cfg['stacks']['30']
+ap.refresh()
+W, g = ap.coord_wt('30', sc)
+before = open(os.path.join(W, 'tools/gto_fulltree/ft60.py')).read()
+paths = []
+ap.sync_tools('30', 2, sc, W, g, paths)
+after = open(os.path.join(W, 'tools/gto_fulltree/ft60.py')).read()
+check('구버전 도구가 최신 기준(행렬 끝점·균형 패널·FT_REPLACE)으로 갱신됨', 'FT_MATRIX_ALL' not in before and all(m in after for m in sc['tools_markers']))
+check('FT_MIN_REACH 3줄 패치(도달 >= 값인 끝점 전부)', 'hu[:n] if MIN_REACH is None else [x for x in hu if x[0] >= MIN_REACH]' in after)
+check('균형 패널 파일이 data/ft30/panels 에 복사됨', all(os.path.exists(os.path.join(W, 'data/ft30/panels/panel_bal_%s72.json' % x)) for x in 'AB') and 'data/ft30/panels' in paths)
+paths2 = []
+ap.sync_tools('30', 2, sc, W, g, paths2)
+check('이미 최신이면 다시 안 덮어씀', paths2 == [])
+env2 = ap.tool_env('30', W, sc, step=2); env1 = ap.tool_env('30', W, sc, step=1)
+check('패널 세트: 2단계부터 bal, 1단계 재계산은 prec', env2.get('FT_PANEL_SET') == 'bal' and env1.get('FT_PANEL_SET') == 'prec')
+compile(open(os.path.join(W, 'tools/gto_fulltree/ft60.py')).read(), 'ft60.py', 'exec')
+check('덮어쓴 ft60.py 문법 정상', True)
+
+# 자체 점검 + 업데이트 실패 시 이전 버전 유지
+r = subprocess.run([sys.executable, os.path.join(HERE, 'autopilot.py'), 'selfcheck'], capture_output=True, text=True, env=dict(os.environ, LAB_CONFIG=cfgp, FT_NO_PUSH='1'))
+check('selfcheck 통과(문법·판정 재현·드라이런)', r.returncode == 0 and 'SELFCHECK_OK' in r.stdout, (r.stdout + r.stderr)[-200:])
+bad = os.path.join(T, 'badrel/tools/gto_fulltree/lab_autopilot')
+shutil.copytree(HERE, bad)
+open(os.path.join(bad, 'judge.py'), 'a').write('\ndef broken(:\n')
+r = subprocess.run([sys.executable, os.path.join(bad, 'autopilot.py'), 'selfcheck'], capture_output=True, text=True, env=dict(os.environ, LAB_CONFIG=cfgp, FT_NO_PUSH='1'))
+check('깨진 새 버전은 selfcheck 실패(교체 안 됨)', r.returncode != 0 and 'SELFCHECK_FAIL' in r.stdout + r.stderr or r.returncode != 0, (r.stdout + r.stderr)[-150:])
+
 print('\n전체:', '통과' if ok_all else '실패')
 sys.exit(0 if ok_all else 1)
