@@ -213,7 +213,11 @@ class Hub:
         self.peek.run('config', 'remote.origin.partialclonefilter', 'blob:none')
         self.peek.run('config', 'extensions.partialClone', 'origin')
         if not os.path.isdir(os.path.join(self.cr.path, '.git')):
-            Git(self.root).run('clone', '-q', '--no-checkout', self.url, self.cr.path)
+            # 전체 이력의 큰 파일(blob)은 받지 않는 부분 복제(처음 한 번도 빠르게). 필요한 파일은 체크아웃·git show 때 그때그때 받는다
+            r = Git(self.root).run('clone', '-q', '--no-checkout', '--filter=blob:none', self.url, self.cr.path, timeout=1800)
+            if r.returncode != 0:
+                shutil.rmtree(self.cr.path, ignore_errors=True)
+                Git(self.root).run('clone', '-q', '--no-checkout', self.url, self.cr.path, check=True, timeout=3600)
         if self.cfg.get('partial_fetch', True):     # collect 가 보드 브랜치를 얕게 가져올 때 전략 묶음(strategy_*.tgz, 큼)은 받지 않고 필요한 파일만 그때그때
             self.cr.run('config', 'remote.origin.promisor', 'true')
             self.cr.run('config', 'remote.origin.partialclonefilter', 'blob:none')
