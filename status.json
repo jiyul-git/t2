@@ -1,10 +1,10 @@
 {
  "schema": "lab_status_v1",
  "status": "warn",
- "time": "2026-11-26T08:02:36Z",
+ "time": "2026-11-26T08:11:34Z",
  "host": "DESKTOP-FUUG7O5",
  "owner": "t2-lab",
- "uptime_h": 1.1,
+ "uptime_h": 1.2,
  "mode": "live",
  "code_release": "9559eee644",
  "code_sha": "9559eee64",
@@ -14,7 +14,7 @@
  },
  "cpu": {
   "budget": 6,
-  "in_use": 6,
+  "in_use": 0,
   "load": [
    0.5185546875,
    0.57763671875,
@@ -22,31 +22,12 @@
   ]
  },
  "mem_avail_gb": null,
- "disk_free_gb": 88.0,
+ "disk_free_gb": 87.8,
  "paused": {
   "all": false,
   "stacks": []
  },
- "jobs": [
-  {
-   "stack": "40",
-   "step": 5,
-   "unit": "board_3",
-   "started": "2026-11-26T07:01:00Z",
-   "progress": "0/4 묶음",
-   "cpu_idle_min": 0,
-   "file_idle_min": 0
-  },
-  {
-   "stack": "40",
-   "step": 5,
-   "unit": "board_4",
-   "started": "2026-11-26T07:06:08Z",
-   "progress": "3/4 묶음",
-   "cpu_idle_min": 0,
-   "file_idle_min": 4
-  }
- ],
+ "jobs": [],
  "stacks": {
   "30": {
    "phase": "solve",

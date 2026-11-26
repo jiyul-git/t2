@@ -12,3 +12,21 @@
 11-26 17:02:36 원격 명령 c4 config → OK loop.coord_idle_hours = 0.25
 11-26 17:02:36 ft40 보드 3: 멈춤(1번째) 종료코드 -15
 11-26 17:02:36 ft40 보드 4: 멈춤(1번째) 종료코드 -15
+11-26 17:03:37 일 실패 ('40', 5, 'board_3')
+Traceback (most recent call last):
+  File "/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py", line 670, in run
+    self.result = self.fn(self)
+  File "/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py", line 976, in job_board
+    raise JobFail('cancelled', '원격 명령으로 취소')
+JobFail: 원격 명령으로 취소
+11-26 17:03:37 일 실패 ('40', 5, 'board_4')
+Traceback (most recent call last):
+  File "/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py", line 670, in run
+    self.result = self.fn(self)
+  File "/home/user/t2lab/current/tools/gto_fulltree/lab_autopilot/autopilot.py", line 976, in job_board
+    raise JobFail('cancelled', '원격 명령으로 취소')
+JobFail: 원격 명령으로 취소
+11-26 17:07:43 취소됨(원격 명령): ('40', 5, 'board_3')
+11-26 17:07:47 취소됨(원격 명령): ('40', 5, 'board_4')
+11-26 17:11:33 새 봇 코드 89a54b7211 자체 점검 통과 — 진행 중인 묶음이 끝나는 대로 교체
+11-26 17:11:34 봇을 다시 시작합니다(새 코드 89a54b7211)
