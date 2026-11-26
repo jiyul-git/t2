@@ -1,10 +1,10 @@
 {
  "schema": "lab_status_v1",
- "status": "ok",
- "time": "2026-11-26T06:59:14Z",
+ "status": "warn",
+ "time": "2026-11-26T08:02:36Z",
  "host": "DESKTOP-FUUG7O5",
  "owner": "t2-lab",
- "uptime_h": 0.0,
+ "uptime_h": 1.1,
  "mode": "live",
  "code_release": "9559eee644",
  "code_sha": "9559eee64",
@@ -14,7 +14,7 @@
  },
  "cpu": {
   "budget": 6,
-  "in_use": 0,
+  "in_use": 6,
   "load": [
    0.5185546875,
    0.57763671875,
@@ -22,21 +22,609 @@
   ]
  },
  "mem_avail_gb": null,
- "disk_free_gb": 89.5,
+ "disk_free_gb": 88.0,
  "paused": {
   "all": false,
   "stacks": []
  },
- "jobs": [],
- "stacks": {},
- "alerts": [],
+ "jobs": [
+  {
+   "stack": "40",
+   "step": 5,
+   "unit": "board_3",
+   "started": "2026-11-26T07:01:00Z",
+   "progress": "0/4 묶음",
+   "cpu_idle_min": 0,
+   "file_idle_min": 0
+  },
+  {
+   "stack": "40",
+   "step": 5,
+   "unit": "board_4",
+   "started": "2026-11-26T07:06:08Z",
+   "progress": "3/4 묶음",
+   "cpu_idle_min": 0,
+   "file_idle_min": 4
+  }
+ ],
+ "stacks": {
+  "30": {
+   "phase": "solve",
+   "why": "단계 2 표는 있음, 트리 풀이 없음",
+   "step": 2,
+   "coord_tip_age_h": 1.0,
+   "stall_streak": 0
+  },
+  "40": {
+   "phase": "boards",
+   "why": "보드 번호 16/20 끝",
+   "step": 5,
+   "coord_tip_age_h": 98.9,
+   "stall_streak": 0,
+   "boards": {
+    "1": {
+     "done": true,
+     "bundles": {
+      "s5_t00_A": "done",
+      "s5_t10_A": "done",
+      "s5_t20_A": "done",
+      "s5_t30_A": "done"
+     },
+     "tip_age_h": 84.1,
+     "claim": null
+    },
+    "2": {
+     "done": true,
+     "bundles": {
+      "s5_t00_B": "done",
+      "s5_t10_B": "done",
+      "s5_t20_B": "done",
+      "s5_t30_B": "done"
+     },
+     "tip_age_h": 84.2,
+     "claim": null
+    },
+    "3": {
+     "done": false,
+     "bundles": {
+      "s5_t01_A": "partial",
+      "s5_t11_A": "none",
+      "s5_t21_A": "none",
+      "s5_t31_A": "none"
+     },
+     "tip_age_h": 0.3,
+     "claim": "t2-lab"
+    },
+    "4": {
+     "done": false,
+     "bundles": {
+      "s5_t01_B": "done",
+      "s5_t11_B": "done",
+      "s5_t21_B": "done",
+      "s5_t31_B": "partial"
+     },
+     "tip_age_h": 0.5,
+     "claim": "t2-lab"
+    },
+    "5": {
+     "done": false,
+     "bundles": {
+      "s5_t02_A": "done",
+      "s5_t12_A": "done",
+      "s5_t22_A": "done",
+      "s5_t32_A": "none"
+     },
+     "tip_age_h": 0.7,
+     "claim": null
+    },
+    "6": {
+     "done": false,
+     "bundles": {
+      "s5_t02_B": "done",
+      "s5_t12_B": "done",
+      "s5_t22_B": "done",
+      "s5_t32_B": "none"
+     },
+     "tip_age_h": 1.4,
+     "claim": null
+    },
+    "7": {
+     "done": true,
+     "bundles": {
+      "s5_t03_A": "done",
+      "s5_t13_A": "done",
+      "s5_t23_A": "done",
+      "s5_t33_A": "done"
+     },
+     "tip_age_h": 81.0,
+     "claim": null
+    },
+    "8": {
+     "done": true,
+     "bundles": {
+      "s5_t03_B": "done",
+      "s5_t13_B": "done",
+      "s5_t23_B": "done",
+      "s5_t33_B": "done"
+     },
+     "tip_age_h": 83.9,
+     "claim": null
+    },
+    "9": {
+     "done": true,
+     "bundles": {
+      "s5_t04_A": "done",
+      "s5_t14_A": "done",
+      "s5_t24_A": "done"
+     },
+     "tip_age_h": 82.7,
+     "claim": null
+    },
+    "10": {
+     "done": true,
+     "bundles": {
+      "s5_t04_B": "done",
+      "s5_t14_B": "done",
+      "s5_t24_B": "done"
+     },
+     "tip_age_h": 83.0,
+     "claim": null
+    },
+    "11": {
+     "done": true,
+     "bundles": {
+      "s5_t05_A": "done",
+      "s5_t15_A": "done",
+      "s5_t25_A": "done"
+     },
+     "tip_age_h": 81.2,
+     "claim": null
+    },
+    "12": {
+     "done": true,
+     "bundles": {
+      "s5_t05_B": "done",
+      "s5_t15_B": "done",
+      "s5_t25_B": "done"
+     },
+     "tip_age_h": 82.7,
+     "claim": null
+    },
+    "13": {
+     "done": true,
+     "bundles": {
+      "s5_t06_A": "done",
+      "s5_t16_A": "done",
+      "s5_t26_A": "done"
+     },
+     "tip_age_h": 84.0,
+     "claim": null
+    },
+    "14": {
+     "done": true,
+     "bundles": {
+      "s5_t06_B": "done",
+      "s5_t16_B": "done",
+      "s5_t26_B": "done"
+     },
+     "tip_age_h": 82.3,
+     "claim": null
+    },
+    "15": {
+     "done": true,
+     "bundles": {
+      "s5_t07_A": "done",
+      "s5_t17_A": "done",
+      "s5_t27_A": "done"
+     },
+     "tip_age_h": 83.9,
+     "claim": null
+    },
+    "16": {
+     "done": true,
+     "bundles": {
+      "s5_t07_B": "done",
+      "s5_t17_B": "done",
+      "s5_t27_B": "done"
+     },
+     "tip_age_h": 83.8,
+     "claim": null
+    },
+    "17": {
+     "done": true,
+     "bundles": {
+      "s5_t08_A": "done",
+      "s5_t18_A": "done",
+      "s5_t28_A": "done"
+     },
+     "tip_age_h": 84.5,
+     "claim": null
+    },
+    "18": {
+     "done": true,
+     "bundles": {
+      "s5_t08_B": "done",
+      "s5_t18_B": "done",
+      "s5_t28_B": "done"
+     },
+     "tip_age_h": 0.5,
+     "claim": null
+    },
+    "19": {
+     "done": true,
+     "bundles": {
+      "s5_t09_A": "done",
+      "s5_t19_A": "done",
+      "s5_t29_A": "done"
+     },
+     "tip_age_h": 82.2,
+     "claim": null
+    },
+    "20": {
+     "done": true,
+     "bundles": {
+      "s5_t09_B": "done",
+      "s5_t19_B": "done",
+      "s5_t29_B": "done"
+     },
+     "tip_age_h": 2.2,
+     "claim": null
+    }
+   }
+  },
+  "60": {
+   "phase": "collect",
+   "why": "묶음 전부 끝 → collect",
+   "step": 4,
+   "coord_tip_age_h": 256.5,
+   "stall_streak": 0,
+   "boards": {
+    "1": {
+     "done": true,
+     "bundles": {
+      "s4_t03_A": "done",
+      "s4_t19_A": "done",
+      "s4_t29_A": "done",
+      "s4_t39_A": "done"
+     },
+     "tip_age_h": 263.6,
+     "claim": null
+    },
+    "2": {
+     "done": true,
+     "bundles": {
+      "s4_t03_B": "done",
+      "s4_t19_B": "done",
+      "s4_t29_B": "done",
+      "s4_t39_B": "done"
+     },
+     "tip_age_h": 250.9,
+     "claim": null
+    },
+    "3": {
+     "done": true,
+     "bundles": {
+      "s4_t04_A": "done",
+      "s4_t18_A": "done",
+      "s4_t28_A": "done",
+      "s4_t38_A": "done"
+     },
+     "tip_age_h": 267.1,
+     "claim": null
+    },
+    "4": {
+     "done": true,
+     "bundles": {
+      "s4_t04_B": "done",
+      "s4_t18_B": "done",
+      "s4_t28_B": "done",
+      "s4_t38_B": "done"
+     },
+     "tip_age_h": 264.8,
+     "claim": null
+    },
+    "5": {
+     "done": true,
+     "bundles": {
+      "s4_t00_A": "done",
+      "s4_t17_A": "done",
+      "s4_t27_A": "done",
+      "s4_t37_A": "done"
+     },
+     "tip_age_h": 262.5,
+     "claim": null
+    },
+    "6": {
+     "done": true,
+     "bundles": {
+      "s4_t00_B": "done",
+      "s4_t17_B": "done",
+      "s4_t27_B": "done",
+      "s4_t37_B": "done"
+     },
+     "tip_age_h": 267.7,
+     "claim": null
+    },
+    "7": {
+     "done": true,
+     "bundles": {
+      "s4_t01_A": "done",
+      "s4_t10_A": "done",
+      "s4_t20_A": "done",
+      "s4_t30_A": "done"
+     },
+     "tip_age_h": 261.1,
+     "claim": null
+    },
+    "8": {
+     "done": true,
+     "bundles": {
+      "s4_t01_B": "done",
+      "s4_t10_B": "done",
+      "s4_t20_B": "done",
+      "s4_t30_B": "done"
+     },
+     "tip_age_h": 253.6,
+     "claim": null
+    },
+    "9": {
+     "done": true,
+     "bundles": {
+      "s4_t02_A": "done",
+      "s4_t11_A": "done",
+      "s4_t21_A": "done",
+      "s4_t31_A": "done"
+     },
+     "tip_age_h": 262.1,
+     "claim": null
+    },
+    "10": {
+     "done": true,
+     "bundles": {
+      "s4_t02_B": "done",
+      "s4_t11_B": "done",
+      "s4_t21_B": "done",
+      "s4_t31_B": "done"
+     },
+     "tip_age_h": 261.2,
+     "claim": null
+    },
+    "11": {
+     "done": true,
+     "bundles": {
+      "s4_t05_A": "done",
+      "s4_t12_A": "done"
+     },
+     "tip_age_h": 267.1,
+     "claim": null
+    },
+    "12": {
+     "done": true,
+     "bundles": {
+      "s4_t05_B": "done",
+      "s4_t12_B": "done",
+      "s4_t22_B": "done",
+      "s4_t32_B": "done"
+     },
+     "tip_age_h": 263.9,
+     "claim": null
+    },
+    "13": {
+     "done": true,
+     "bundles": {
+      "s4_t06_A": "done",
+      "s4_t13_A": "done",
+      "s4_t23_A": "done",
+      "s4_t33_A": "done"
+     },
+     "tip_age_h": 250.4,
+     "claim": null
+    },
+    "14": {
+     "done": true,
+     "bundles": {
+      "s4_t06_B": "done",
+      "s4_t13_B": "done",
+      "s4_t23_B": "done",
+      "s4_t33_B": "done"
+     },
+     "tip_age_h": 261.9,
+     "claim": null
+    },
+    "15": {
+     "done": true,
+     "bundles": {
+      "s4_t07_A": "done",
+      "s4_t14_A": "done",
+      "s4_t24_A": "done",
+      "s4_t34_A": "done"
+     },
+     "tip_age_h": 261.1,
+     "claim": null
+    },
+    "16": {
+     "done": true,
+     "bundles": {
+      "s4_t07_B": "done",
+      "s4_t14_B": "done"
+     },
+     "tip_age_h": 267.6,
+     "claim": null
+    },
+    "17": {
+     "done": true,
+     "bundles": {
+      "s4_t08_A": "done",
+      "s4_t15_A": "done"
+     },
+     "tip_age_h": 266.7,
+     "claim": null
+    },
+    "18": {
+     "done": true,
+     "bundles": {
+      "s4_t08_B": "done",
+      "s4_t15_B": "done"
+     },
+     "tip_age_h": 267.7,
+     "claim": null
+    },
+    "19": {
+     "done": true,
+     "bundles": {
+      "s4_t09_A": "done",
+      "s4_t16_A": "done"
+     },
+     "tip_age_h": 271.6,
+     "claim": null
+    },
+    "20": {
+     "done": true,
+     "bundles": {
+      "s4_t09_B": "done",
+      "s4_t16_B": "done"
+     },
+     "tip_age_h": 263.7,
+     "claim": null
+    },
+    "21": {
+     "done": true,
+     "bundles": {
+      "s4_t22_A": "done",
+      "s4_t32_A": "done"
+     },
+     "tip_age_h": 269.6,
+     "claim": null
+    },
+    "22": {
+     "done": true,
+     "bundles": {
+      "s4_t24_B": "done",
+      "s4_t34_B": "done"
+     },
+     "tip_age_h": 269.0,
+     "claim": null
+    },
+    "23": {
+     "done": true,
+     "bundles": {
+      "s4_t25_A": "done",
+      "s4_t35_A": "done"
+     },
+     "tip_age_h": 267.7,
+     "claim": null
+    },
+    "24": {
+     "done": true,
+     "bundles": {
+      "s4_t25_B": "done",
+      "s4_t35_B": "done"
+     },
+     "tip_age_h": 264.3,
+     "claim": null
+    },
+    "25": {
+     "done": true,
+     "bundles": {
+      "s4_t26_A": "done",
+      "s4_t36_A": "done"
+     },
+     "tip_age_h": 261.7,
+     "claim": null
+    },
+    "26": {
+     "done": true,
+     "bundles": {
+      "s4_t26_B": "done",
+      "s4_t36_B": "done"
+     },
+     "tip_age_h": 261.6,
+     "claim": null
+    }
+   }
+  },
+  "100": {
+   "phase": "solve",
+   "why": "단계 2 표는 있음, 트리 풀이 없음",
+   "step": 2,
+   "coord_tip_age_h": 258.1,
+   "stall_streak": 0
+  }
+ },
+ "alerts": [
+  {
+   "code": "process_dead",
+   "severity": "warn",
+   "key": "40|5|board_3",
+   "msg": "종료코드 -15, 마지막 줄: {\"bundle\": \"s5_t01_A\", \"boards_done\": 12, \"retried\": 0, \"min\": 40.3}",
+   "since": "2026-11-26T08:02:36Z",
+   "last": "2026-11-26T08:02:36Z",
+   "count": 1,
+   "ctx": {},
+   "log_file": "board_ft40_3.log",
+   "log_tail": [
+    "",
+    "=== 2026-11-26T07:01:15Z ionice -c 3 nice -n 19 /home/user/gto_ckpt/py311bin/python3 /home/user/t2lab/releases/9559eee644/tools/gto_fulltree/lab_autopilot/board_run.py s5_t01_A",
+    "{\"bundle\": \"s5_t01_A\", \"boards_done\": 12, \"retried\": 0, \"min\": 40.3}"
+   ]
+  },
+  {
+   "code": "process_dead",
+   "severity": "warn",
+   "key": "40|5|board_4",
+   "msg": "종료코드 -15, 마지막 줄: {\"bundle\": \"s5_t31_B\", \"boards_done\": 12, \"retried\": 0, \"min\": 26.6}",
+   "since": "2026-11-26T08:02:36Z",
+   "last": "2026-11-26T08:02:36Z",
+   "count": 1,
+   "ctx": {},
+   "log_file": "board_ft40_4.log",
+   "log_tail": [
+    "",
+    "=== 2026-11-26T07:06:39Z ionice -c 3 nice -n 19 /home/user/gto_ckpt/py311bin/python3 /home/user/t2lab/releases/9559eee644/tools/gto_fulltree/lab_autopilot/board_run.py s5_t31_B",
+    "{\"bundle\": \"s5_t31_B\", \"boards_done\": 12, \"retried\": 0, \"min\": 26.6}"
+   ]
+  }
+ ],
  "recent_errors": [],
  "control": {
-  "applied": {},
+  "applied": {
+   "c1": {
+    "t": "2026-11-26T08:02:36Z",
+    "cmd": "stack",
+    "ok": true,
+    "msg": "스택 40 설정 {'enabled': False}"
+   },
+   "c2": {
+    "t": "2026-11-26T08:02:36Z",
+    "cmd": "cancel",
+    "ok": true,
+    "msg": "cancel 40|*|board_3 (실행 중 1개 취소)"
+   },
+   "c3": {
+    "t": "2026-11-26T08:02:36Z",
+    "cmd": "cancel",
+    "ok": true,
+    "msg": "cancel 40|*|board_4 (실행 중 1개 취소)"
+   },
+   "c4": {
+    "t": "2026-11-26T08:02:36Z",
+    "cmd": "config",
+    "ok": true,
+    "msg": "loop.coord_idle_hours = 0.25"
+   }
+  },
   "skip": [],
   "priority": null,
-  "cfg_overrides": {},
-  "stack_overrides": {}
+  "cfg_overrides": {
+   "loop.coord_idle_hours": 0.25
+  },
+  "stack_overrides": {
+   "40": {
+    "enabled": false
+   }
+  }
  },
- "blocked": {}
+ "blocked": {
+  "30|1|coord_next_tables": "2026-11-26T13:06:03Z"
+ }
 }
