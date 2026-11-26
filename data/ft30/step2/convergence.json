@@ -1,0 +1,8 @@
+{
+ "step": 2,
+ "status": "exact gap 0.01403 (<0.02 \uc0ac\uc6a9\uc790 \uae30\uc900)",
+ "final_iterations": 150,
+ "exact_gap": 0.014027921796020866,
+ "start": "from scratch, lab autopilot",
+ "by": "lab autopilot"
+}
