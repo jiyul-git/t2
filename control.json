@@ -1,6 +1,35 @@
-{"seq": 1, "commands": [
-  {"id": "c1", "cmd": "stack", "stack": "40", "enabled": false},
-  {"id": "c2", "cmd": "cancel", "stack": "40", "unit": "board_3"},
-  {"id": "c3", "cmd": "cancel", "stack": "40", "unit": "board_4"},
-  {"id": "c4", "cmd": "config", "path": "loop.coord_idle_hours", "value": 0.25}
-]}
+{
+ "seq": 2,
+ "commands": [
+  {
+   "id": "c1",
+   "cmd": "stack",
+   "stack": "40",
+   "enabled": false
+  },
+  {
+   "id": "c2",
+   "cmd": "cancel",
+   "stack": "40",
+   "unit": "board_3"
+  },
+  {
+   "id": "c3",
+   "cmd": "cancel",
+   "stack": "40",
+   "unit": "board_4"
+  },
+  {
+   "id": "c4",
+   "cmd": "config",
+   "path": "loop.coord_idle_hours",
+   "value": 0.25
+  },
+  {
+   "id": "c5",
+   "cmd": "stack",
+   "stack": "60",
+   "enabled": false
+  }
+ ]
+}
