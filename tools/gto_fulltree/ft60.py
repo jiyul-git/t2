@@ -24,7 +24,8 @@ BIN = os.path.join(CALC, 'vendor/gtopen/target/release/examples')
 CFG = os.environ.get('FT_CFG', os.path.join(CALC, 'data/gto_spot/plan_a/cfg_p%s_o25.json' % STACK))
 D = os.path.join(REPO, 'data/ft' + STACK)
 MATRIX_ALL = os.environ.get('FT_MATRIX_ALL', '1') == '1'   # 모든 헤즈업 끝점이 손패×손패 행렬(matrix_sums)을 갖는다(0·1단계 재현은 FT_MATRIX_ALL=0)
-N_TERMS = 40                      # 사용자 결정 10-31: 헤즈업 끝점 40개
+N_TERMS = int(os.environ.get('FT_N_TERMS', '40'))   # 사용자 결정 10-31: 헤즈업 끝점 40개 (ft100: FT_MIN_REACH 로 도달 >= 값인 끝점 전부)
+MIN_REACH = float(os.environ['FT_MIN_REACH']) if os.environ.get('FT_MIN_REACH') else None
 PANEL_SET = os.environ.get('FT_PANEL_SET', 'prec')   # 'bal': 숫자·숫자쌍 개수를 맞춘 균형 패널(docs/GTO_PANEL_BALANCE_20261115.md). 5단계부터 bal
 PANELS = {'A': os.path.join(D, 'panels/panel_%s_A72.json' % PANEL_SET), 'B': os.path.join(D, 'panels/panel_%s_B72.json' % PANEL_SET)}
 REPLACE = os.environ.get('FT_REPLACE', '0') == '1'   # next_tables: 1 이면 고른 2명 끝점을 섞지 않고 새 값으로 바꾼다(a=1). 패널 치우침처럼 알려진 오류를 뺄 때
@@ -148,7 +149,7 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
     os.makedirs(os.path.join(sd, 'terms'), exist_ok=True)
     hu = hu_terminals(dump)
     tot = sum(w for w, _ in hu)
-    pick = hu[:n]
+    pick = hu[:n] if MIN_REACH is None else [x for x in hu if x[0] >= MIN_REACH]
     man = os.path.join(sd, 'tables/manifest.json')
     info = export(ck, [l for _, l in pick], os.path.join(WORK, 'step%d_export.jsonl' % k), man if os.path.exists(man) else None, static_matrix=True)
     import numpy as np
@@ -179,6 +180,8 @@ def prepare(k, ck, dump, n=N_TERMS, sd=None):
         meas = json.load(open(mf))
     med = sorted(meas.values())[len(meas) // 2] if meas else None
     def est_h(r):
+        if os.environ.get('FT_H_ALL'):   # 스택 전체에 쓰는 실측 상수(예: ft100 약 2.0h)
+            return float(os.environ['FT_H_ALL'])
         if meas:
             return float(meas.get(str(r['node']), med))
         return est_h0(r)
