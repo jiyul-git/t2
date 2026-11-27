@@ -1,0 +1,10 @@
+{
+ "owner": "cloud-coord-session_01XV9GKU",
+ "host": "vm",
+ "stack": "100",
+ "step": 2,
+ "unit": "coord_solve",
+ "t_claim": "2026-11-27T14:36:35Z",
+ "t_heartbeat": "2026-11-27T14:36:35Z",
+ "note": ""
+}
